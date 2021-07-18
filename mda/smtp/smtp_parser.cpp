@@ -63,28 +63,13 @@ static BOOL smtp_parser_pass_statistic(SMTP_CONTEXT *pcontext,
 	char *reason, int length);
 static void smtp_parser_reset_stream_reading(SMTP_CONTEXT *pcontext);
 
-static unsigned int g_context_num, g_threads_num;
 static int g_ssl_port;
-static BOOL g_domainlist_valid;
-static BOOL g_need_auth;
-static BOOL g_support_pipeline;
-static BOOL g_support_starttls;
-static BOOL g_force_starttls;
-static size_t g_max_mail_length;
-static size_t g_max_mail_sessions;
-static size_t g_blktime_sessions;
-static size_t g_flushing_size;
-static unsigned int g_timeout;
-static size_t g_auth_times;
-static size_t g_blktime_auths;
 static std::vector<SMTP_CONTEXT> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static int g_block_ID;
-static char g_certificate_path[256];
-static char g_private_key_path[256];
-static char g_certificate_passwd[1024];
 static SSL_CTX *g_ssl_ctx;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
+static smtp_param g_param;
 
 /* 
  * construct a smtp parser object
@@ -100,38 +85,11 @@ static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
  *        auth_times         maximum authentification times, session permit
  *        blktime_auths      block interval if max auths is exceeded
  */
-void smtp_parser_init(unsigned int context_num, unsigned int threads_num,
-	BOOL dm_valid, BOOL need_auth, size_t max_mail_length,
-	size_t max_mail_sessions, size_t blktime_sessions, size_t flushing_size,
-	size_t timeout,  size_t auth_times, size_t blktime_auths,
-	BOOL support_pipeline, BOOL support_starttls, BOOL force_starttls,
-	const char *certificate_path, const char *cb_passwd, const char *key_path)
+void smtp_parser_init(smtp_param &&param)
 {
-	g_context_num           = context_num;
-	g_threads_num           = threads_num;
-	g_domainlist_valid      = dm_valid;
-	g_need_auth             = need_auth;
-	g_max_mail_length       = max_mail_length;
-	g_max_mail_sessions     = max_mail_sessions;
-	g_blktime_sessions      = blktime_sessions;
-	g_flushing_size         = flushing_size;
-	g_auth_times            = auth_times;
-	g_blktime_auths         = blktime_auths;
-	g_timeout               = timeout;
-	g_support_pipeline      = support_pipeline;
-	g_support_starttls      = support_starttls;
+	g_param = std::move(param);
 	g_block_ID              = 0;
 	g_ssl_mutex_buf         = NULL;
-	if (TRUE == support_starttls) {
-		g_force_starttls = force_starttls;
-		gx_strlcpy(g_certificate_path, certificate_path, GX_ARRAY_SIZE(g_certificate_path));
-		if (NULL != cb_passwd) {
-			gx_strlcpy(g_certificate_passwd, cb_passwd, GX_ARRAY_SIZE(g_certificate_passwd));
-		} else {
-			g_certificate_passwd[0] = '\0';
-		}
-		gx_strlcpy(g_private_key_path, key_path, GX_ARRAY_SIZE(g_private_key_path));
-	}
 }
 
 #ifdef OLD_SSL
@@ -156,7 +114,7 @@ static void smtp_parser_ssl_id(CRYPTO_THREADID* id)
  */
 int smtp_parser_run()
 {
-	if (TRUE == g_support_starttls) {
+	if (g_param.support_starttls) {
 		SSL_library_init();
 		OpenSSL_add_all_algorithms();
 		SSL_load_error_strings();
@@ -165,21 +123,14 @@ int smtp_parser_run()
 			printf("[smtp_parser]: Failed to init SSL context\n");
 			return -1;
 		}
-		
-		if ('\0' != g_certificate_passwd[0]) {
-			SSL_CTX_set_default_passwd_cb_userdata(g_ssl_ctx,
-				g_certificate_passwd);
-		}
-
-		if (SSL_CTX_use_certificate_chain_file(g_ssl_ctx,
-			g_certificate_path) <= 0) {
+		if (g_param.cert_passwd.size() > 0)
+			SSL_CTX_set_default_passwd_cb_userdata(g_ssl_ctx, deconst(g_param.cert_passwd.c_str()));
+		if (SSL_CTX_use_certificate_chain_file(g_ssl_ctx, g_param.cert_path.c_str()) <= 0) {
 			printf("[smtp_parser]: fail to use certificate file:");
 			ERR_print_errors_fp(stdout);
 			return -2;
 		}
-		
-		if (SSL_CTX_use_PrivateKey_file(g_ssl_ctx, g_private_key_path,
-			SSL_FILETYPE_PEM) <= 0) {
+		if (SSL_CTX_use_PrivateKey_file(g_ssl_ctx, g_param.key_path.c_str(), SSL_FILETYPE_PEM) <= 0) {
 			printf("[smtp_parser]: fail to use private key file:");
 			ERR_print_errors_fp(stdout);
 			return -3;
@@ -203,9 +154,9 @@ int smtp_parser_run()
 #endif
 	}
 	try {
-		g_context_list.resize(g_context_num);
-		g_context_list2.resize(g_context_num);
-		for (size_t i = 0; i < g_context_num; ++i) {
+		g_context_list.resize(g_param.context_num);
+		g_context_list2.resize(g_param.context_num);
+		for (size_t i = 0; i < g_param.context_num; ++i) {
 			g_context_list[i].context_id = i;
 			g_context_list2[i] = &g_context_list[i];
 		}
@@ -222,12 +173,11 @@ void smtp_parser_stop()
 {
 	g_context_list2.clear();
 	g_context_list.clear();
-	if (TRUE == g_support_starttls && NULL != g_ssl_ctx) {
+	if (g_param.support_starttls && g_ssl_ctx != nullptr) {
 		SSL_CTX_free(g_ssl_ctx);
 		g_ssl_ctx = NULL;
 	}
-
-	if (TRUE == g_support_starttls && NULL != g_ssl_mutex_buf) {
+	if (g_param.support_starttls && g_ssl_mutex_buf != nullptr) {
 		CRYPTO_set_id_callback(NULL);
 		CRYPTO_set_locking_callback(NULL);
 		g_ssl_mutex_buf.reset();
@@ -236,12 +186,7 @@ void smtp_parser_stop()
 
 void smtp_parser_free()
 {
-	g_context_num       = 0;
-	g_max_mail_length   = 0;
-	g_max_mail_sessions = 0;
-	g_flushing_size     = 0;
-	g_timeout           = 0x7FFFFFFF;
-	g_auth_times        = 0;
+	g_param = {};
 }
 
 int smtp_parser_get_context_socket(SCHEDULE_CONTEXT *ctx)
@@ -405,9 +350,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 				SSL_ERROR_WANT_WRITE == ssl_errno) {
 				gettimeofday(&current_time, NULL);
 				if (CALCULATE_INTERVAL(current_time,
-					pcontext->connection.last_timestamp) < g_timeout) {
+				    pcontext->connection.last_timestamp) < g_param.timeout)
 					return PROCESS_POLLING_RDONLY;
-				}
 				/* 451 Timeout */
 				auto smtp_reply_str = resource_get_smtp_code(412, 1, &string_length);
 				write(pcontext->connection.sockd, smtp_reply_str, string_length);
@@ -491,8 +435,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			goto LOST_READ;
 		}
 		/* check if context is timed out */
-		if (CALCULATE_INTERVAL(current_time,pcontext->connection.last_timestamp)
-			>= g_timeout) {
+		if (CALCULATE_INTERVAL(current_time,
+		    pcontext->connection.last_timestamp) >= g_param.timeout) {
 			/* 451 Timeout */
 			auto smtp_reply_str = resource_get_smtp_code(412, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {
@@ -602,10 +546,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 	} else {
 	/* data command is met */
  DATA_PROCESS:
-		if (stream_get_total_length(&pcontext->stream) >= g_flushing_size) {
+		if (stream_get_total_length(&pcontext->stream) >= g_param.flushing_size)
 			b_should_flush = TRUE;
-		}
-		
 		if (actual_read >= 4) {
 			memcpy(pcontext->last_bytes, pbuff + actual_read - 4, 4);
 		} else {
@@ -657,7 +599,7 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 	
 	pcontext->total_length += stream_get_total_length(&pcontext->stream) -
 							  pcontext->pre_rstlen;
-	if (pcontext->total_length >= g_max_mail_length && is_whole == FALSE) {
+	if (pcontext->total_length >= g_param.max_mail_length && !is_whole) {
 		/* 552 message exceeds fixed maximum message size */
 		auto smtp_reply_str = resource_get_smtp_code(521, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
@@ -758,27 +700,27 @@ long smtp_parser_get_param(int param)
 {
 	switch (param) {
 	case MAX_MAIL_LENGTH:
-		return g_max_mail_length;
+		return g_param.max_mail_length;
 	case SMTP_MAX_MAILS:
-		return g_max_mail_sessions;
+		return g_param.max_mail_sessions;
 	case BLOCK_TIME_EXCEED_SESSIONS:
-		return g_blktime_sessions;
+		return g_param.blktime_sessions;
 	case SMTP_NEED_AUTH:
-		return g_need_auth;
+		return g_param.need_auth;
 	case MAX_FLUSHING_SIZE:
-		return g_flushing_size;
+		return g_param.flushing_size;
 	case MAX_AUTH_TIMES:
-		return g_auth_times;
+		return g_param.auth_times;
 	case BLOCK_TIME_EXCEED_AUTHS:
-		return g_blktime_auths;
+		return g_param.blktime_auths;
 	case SMTP_SESSION_TIMEOUT:
-		return g_timeout;
+		return g_param.timeout;
 	case SMTP_SUPPORT_PIPELINE:
-		return g_support_pipeline;
+		return g_param.support_pipeline;
 	case SMTP_SUPPORT_STARTTLS:
-		return g_support_starttls;
+		return g_param.support_starttls;
 	case SMTP_FORCE_STARTTLS:
-		return g_force_starttls;
+		return g_param.force_starttls;
 	default:
 		return 0;
 	}
@@ -806,43 +748,31 @@ int smtp_parser_set_param(int param, long value)
 {
 	switch (param) {
 	case MAX_AUTH_TIMES:
-		g_auth_times = (int)value;
+		g_param.auth_times = value;
 		break;
 	case SMTP_SESSION_TIMEOUT:
-		g_timeout = (int)value;
+		g_param.timeout = value;
 		break;
 	case BLOCK_TIME_EXCEED_SESSIONS:
-		g_blktime_sessions = (int)value;
+		g_param.blktime_sessions = value;
 		break;
 	case MAX_MAIL_LENGTH:
-		g_max_mail_length = value;
+		g_param.max_mail_length = value;
 		break;
 	case SMTP_NEED_AUTH:
-		if (0 == value) {
-			g_need_auth = FALSE;
-		} else {
-			g_need_auth = TRUE;
-		}
+		g_param.need_auth = value != 0 ? TRUE : false;
 		break;
 	case BLOCK_TIME_EXCEED_AUTHS:
-		g_blktime_auths = (int)value;
+		g_param.blktime_auths = value;
 		break;
 	case SMTP_MAX_MAILS:
-		g_max_mail_sessions = (int)value;
+		g_param.max_mail_sessions = value;
 		break;
 	case SMTP_SUPPORT_PIPELINE:
-		if (0 == value) {
-			g_support_pipeline = FALSE;
-		} else {
-			g_support_pipeline = TRUE;
-		}
+		g_param.support_pipeline = value != 0 ? TRUE : false;
 		break;
 	case SMTP_FORCE_STARTTLS:
-		if (0 == value) {
-			g_force_starttls = FALSE;
-		} else {
-			g_force_starttls = TRUE;
-		}
+		g_param.force_starttls = value != 0 ? TRUE : false;
 		break;
 	default:
 		return -1;
@@ -852,13 +782,13 @@ int smtp_parser_set_param(int param, long value)
 
 BOOL smtp_parser_validate_domainlist(BOOL b_valid)
 {
-	g_domainlist_valid = b_valid;
+	g_param.domainlist_valid = b_valid;
 	return TRUE;
 }
 
 BOOL smtp_parser_domainlist_valid()
 {
-	return g_domainlist_valid;
+	return g_param.domainlist_valid;
 }
 
 /* 
@@ -883,7 +813,7 @@ static int smtp_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 		/* 500 syntax error - line too long */
 		return 502;
 	}
-	if (pcontext->session_num == g_max_mail_sessions &&
+	if (pcontext->session_num == static_cast<unsigned int>(g_param.max_mail_sessions) &&
 		(4 != line_length || 0 != strncasecmp(cmd_line, "QUIT", 4))) {
 		/* reach the maximum of mail transactions */
 		smtp_reply_str = resource_get_smtp_code(529, 1, &string_length);
@@ -894,7 +824,7 @@ static int smtp_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 		}
 		if (system_services_add_ip_into_temp_list != nullptr)
 			system_services_add_ip_into_temp_list(pcontext->connection.client_ip,
-				g_blktime_sessions);
+				g_param.blktime_sessions);
 		smtp_parser_log_info(pcontext, 8, "add %s into temporary list because"
 							" it exceeds the maximum mail number on session",
 							pcontext->connection.client_ip);

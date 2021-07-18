@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/stream.hpp>
@@ -173,7 +174,19 @@ struct SMTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	EXT_DATA ext_data{};
 };
 
-extern void smtp_parser_init(unsigned int context_num, unsigned int threads_num, BOOL dm_valid, BOOL need_auth, size_t max_mail_length, size_t max_mail_sessions, size_t blktime_sessions, size_t flushing_size, size_t timeout, size_t auth_times, size_t blktime_auths, BOOL support_pipeline, BOOL support_starttls, BOOL force_starttls, const char *certificate_path, const char *cb_passwd, const char *key_path);
+struct smtp_param {
+	unsigned int context_num = 0, threads_num = 0;
+	BOOL domainlist_valid = false, need_auth = false;
+	BOOL support_pipeline = TRUE;
+	BOOL support_starttls = false, force_starttls = false;
+	size_t max_mail_length = 64ULL * 1024 * 1024;
+	int max_mail_sessions = 0; /* max num of mails in any one session */
+	size_t flushing_size = 0;
+	int timeout = 0x7FFFFFFF, auth_times = 0, blktime_auths = 60, blktime_sessions = 60;
+	std::string cert_path, cert_passwd, key_path;
+};
+
+extern void smtp_parser_init(smtp_param &&);
 extern int smtp_parser_run();
 int smtp_parser_process(SMTP_CONTEXT *pcontext);
 extern void smtp_parser_stop();
