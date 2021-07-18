@@ -672,8 +672,6 @@ PHP_RSHUTDOWN_FUNCTION(mapi)
 	return SUCCESS;
 }
 
-/*---------------------------------------------------------------------------*/
-
 ZEND_FUNCTION(mapi_last_hresult)
 {
 	RETURN_LONG(MAPI_G(hr));

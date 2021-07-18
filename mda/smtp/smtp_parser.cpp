@@ -295,7 +295,6 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 	BOOL b_should_flush = FALSE;
 	size_t string_length = 0;
 
-	/*========================================================================*/
 	/* first check the context is flushed last time */
 	if (FLUSH_RESULT_OK == pcontext->flusher.flush_result) {
 		if (FLUSH_WHOLE_MAIL == pcontext->flusher.flush_action) {
@@ -447,7 +446,6 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		}
 	}
 
-	/*========================================================================*/
 	/* read buffer from socket into stream */
 	pbuff = static_cast<char *>(stream_getbuffer_for_writing(&pcontext->stream,
 	        reinterpret_cast<unsigned int *>(&size)));
@@ -532,7 +530,6 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			return PROCESS_POLLING_RDONLY;
 		}
 	}
-	/*========================================================================*/
 	/* envelope command is met */
  CMD_PROCESS:
 	if (T_DATA_CMD != pcontext->last_cmd) {    
@@ -614,7 +611,6 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			return PROCESS_CONTINUE;
 		}
 	} else {
-	/*=======================================================================*/
 	/* data command is met */
  DATA_PROCESS:
 		if (stream_get_total_length(&pcontext->stream) >= g_flushing_size) {
@@ -915,46 +911,32 @@ static int smtp_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 							pcontext->connection.client_ip);
 		return DISPATCH_SHOULD_CLOSE; 
 	}
-	/*========================================================================*/
 	if (0 == strncasecmp(cmd_line, "HELO", 4)) {
 		return smtp_cmd_handler_helo(cmd_line, line_length, pcontext);    
-	/*========================================================================*/
 	} else if (0 == strncasecmp(cmd_line, "EHLO", 4)) {
 		return smtp_cmd_handler_ehlo(cmd_line, line_length, pcontext);
-	/*========================================================================*/
 	} else if (0 == strncasecmp(cmd_line, "STARTTLS", 8)) {
 		return smtp_cmd_handler_starttls(cmd_line, line_length, pcontext);
-	/*========================================================================*/
 	} else if (0 == strncasecmp(cmd_line, "AUTH", 4)) {
 		return smtp_cmd_handler_auth(cmd_line, line_length, pcontext);    
-	/*========================================================================*/
 	} else if (0 == strncasecmp(cmd_line, "MAIL", 4)) {
 		return smtp_cmd_handler_mail(cmd_line, line_length, pcontext);    
-	/*========================================================================*/
 	} else if (0 == strncasecmp(cmd_line, "RCPT", 4)) {
 		return smtp_cmd_handler_rcpt(cmd_line, line_length, pcontext);    
-	/*========================================================================*/
 	} else if (0 == strncasecmp(cmd_line, "DATA", 4)) {
 		return smtp_cmd_handler_data(cmd_line, line_length, pcontext);    
-	/*========================================================================*/
 	} else if (0 == strncasecmp(cmd_line, "RSET", 4)) {
 		return smtp_cmd_handler_rset(cmd_line, line_length, pcontext);    
-	/*========================================================================*/
 	} else if (0 == strncasecmp(cmd_line, "NOOP", 4)) {
 		return smtp_cmd_handler_noop(cmd_line, line_length, pcontext);    
-	/*========================================================================*/
 	} else if (0 == strncasecmp(cmd_line, "HELP", 4)) {
 		return smtp_cmd_handler_help(cmd_line, line_length, pcontext);    
-	/*========================================================================*/
 	} else if (0 == strncasecmp(cmd_line, "VRFY", 4)) {
 		return smtp_cmd_handler_vrfy(cmd_line, line_length, pcontext);    
-	/*========================================================================*/
 	} else if (0 == strncasecmp(cmd_line, "QUIT", 4)) {
 		return smtp_cmd_handler_quit(cmd_line, line_length, pcontext);    
-	/*========================================================================*/
 	} else if (0 == strncasecmp(cmd_line, "ETRN", 4)) {
 		return smtp_cmd_handler_etrn(cmd_line, line_length, pcontext);    
-	/*========================================================================*/
 	} else {
 		return smtp_cmd_handler_else(cmd_line, line_length, pcontext);    
 	}

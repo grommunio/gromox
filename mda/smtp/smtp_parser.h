@@ -70,7 +70,6 @@ enum{
     SMTP_SESSION_TIMEOUT
 };
 
-//////////////////////////////////////////////////////////////////////////
 enum {
     ENCODING_UNKNOWN    = 0,
     ENCODING_7BIT,
@@ -79,7 +78,6 @@ enum {
     ENCODING_QUOTED_PRINTABLE
 };
 
-//////////////////////////////////////////////////////////////////////////
 struct ENVELOPE_INFO {
 	char parsed_domain[UDOM_SIZE]; /* parsed domain according connection*/
 	char hello_domain[UDOM_SIZE]; /* domain name after helo */

@@ -916,10 +916,6 @@ void pdu_ndr_free_ncacnpkt(DCERPC_NCACN_PACKET *pkt)
 	pdu_ndr_free_dcerpc_payload(pkt->pkt_type, &pkt->payload);
 }
 
-
-/*--------------------------------------- PUSH ------------------------------*/
-
-
 static int pdu_ndr_push_dcerpc_object(NDR_PUSH *pndr,
 	const DCERPC_OBJECT *r)
 {

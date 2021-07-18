@@ -711,46 +711,32 @@ char* pop3_parser_cdn_path()
 static int pop3_parser_dispatch_cmd2(const char *cmd_line, int line_length,
     POP3_CONTEXT *pcontext)
 {
-    /*========================================================================*/
     if (0 == strncasecmp(cmd_line, "CAPA", 4)) {
         return pop3_cmd_handler_capa(cmd_line, line_length, pcontext);    
-    /*========================================================================*/
 	} else if (0 == strncasecmp(cmd_line, "STLS", 4)) {
         return pop3_cmd_handler_stls(cmd_line, line_length, pcontext);    
-    /*========================================================================*/
     } else if (0 == strncasecmp(cmd_line, "USER", 4)) {
         return pop3_cmd_handler_user(cmd_line, line_length, pcontext);    
-    /*========================================================================*/
     } else if (0 == strncasecmp(cmd_line, "PASS", 4)) {
         return pop3_cmd_handler_pass(cmd_line, line_length, pcontext);    
-    /*========================================================================*/
     } else if (0 == strncasecmp(cmd_line, "STAT", 4)) {
         return pop3_cmd_handler_stat(cmd_line, line_length, pcontext);    
-    /*========================================================================*/
     } else if (0 == strncasecmp(cmd_line, "UIDL", 4)) {
         return pop3_cmd_handler_uidl(cmd_line, line_length, pcontext);    
-    /*========================================================================*/
     } else if (0 == strncasecmp(cmd_line, "LIST", 4)) {
         return pop3_cmd_handler_list(cmd_line, line_length, pcontext);    
-    /*========================================================================*/
     } else if (0 == strncasecmp(cmd_line, "RETR", 4)) {
         return pop3_cmd_handler_retr(cmd_line, line_length, pcontext);    
-    /*========================================================================*/
     } else if (0 == strncasecmp(cmd_line, "RSET", 4)) {
         return pop3_cmd_handler_rset(cmd_line, line_length, pcontext);    
-    /*========================================================================*/
     } else if (0 == strncasecmp(cmd_line, "NOOP", 4)) {
         return pop3_cmd_handler_noop(cmd_line, line_length, pcontext);    
-    /*========================================================================*/
     } else if (0 == strncasecmp(cmd_line, "DELE", 4)) {
         return pop3_cmd_handler_dele(cmd_line, line_length, pcontext);    
-    /*========================================================================*/
     } else if (0 == strncasecmp(cmd_line, "TOP", 3)) {
         return pop3_cmd_handler_top(cmd_line, line_length, pcontext);    
-    /*========================================================================*/
     } else if (0 == strncasecmp(cmd_line, "QUIT", 4)) {
         return pop3_cmd_handler_quit(cmd_line, line_length, pcontext);    
-    /*========================================================================*/
     } else {
         return pop3_cmd_handler_else(cmd_line, line_length, pcontext);    
     }

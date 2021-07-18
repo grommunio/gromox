@@ -1864,8 +1864,6 @@ static void rtf_process_color_table(
 	} while ((pword = simple_tree_node_get_sibling(pword)) != nullptr);
 }
 
-/*------------------------begin of cmd functions-----------------------------*/
-
 static int rtf_cmd_rtf(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
     bool have_param, int num)
 {
@@ -2879,8 +2877,6 @@ static int rtf_cmd_htmltag(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
 			return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
-
-/*------------------------_end of cmd functions------------------------------*/
 
 static void rtf_unescape_string(char *string)
 {

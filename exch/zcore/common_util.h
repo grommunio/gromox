@@ -7,7 +7,7 @@
 #include "message_object.h"
 #define SOCKET_TIMEOUT								60
 
-/* ---------------------- defined by zarafa ---------------------- */
+/* defined by zarafa */
 #define MAPI_STORE_PROVIDER							33
 #define MAPI_AB										34
 #define MAPI_AB_PROVIDER							35
@@ -93,7 +93,7 @@
 	STORE_UNCOMPRESSED_RTF | \
 	STORE_HTML_OK | STORE_UNICODE_OK | STORE_PUBLIC_FOLDERS)
 
-/* ------------------------ end of zarafa ------------------------ */
+/* end of zarafa defs */
 
 #define NOTIFY_RECEIPT_READ							1
 #define NOTIFY_RECEIPT_NON_READ						2

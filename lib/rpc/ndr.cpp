@@ -336,8 +336,6 @@ int ndr_pull_context_handle(NDR_PULL *pndr, CONTEXT_HANDLE *r)
 	return NDR_ERR_SUCCESS;
 }
 
-/********************************** NDR PHSH *********************************/
-
 void ndr_push_set_ptrcnt(NDR_PUSH *pndr, uint32_t ptr_count)
 {
 	pndr->ptr_count = ptr_count;

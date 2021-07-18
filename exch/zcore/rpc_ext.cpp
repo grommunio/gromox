@@ -773,8 +773,6 @@ static BOOL rpc_ext_push_znotification_array(
 	return TRUE;
 }
 
-/*---------------------------------------------------------------------------*/
-
 static BOOL rpc_ext_pull_logon_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {

@@ -1574,112 +1574,77 @@ static int imap_parser_dispatch_cmd2(int argc, char **argv, IMAP_CONTEXT *pconte
 	const char *imap_reply_str;
 	char reply_buff[1024];
 	
-	
-    /*========================================================================*/
     if (0 == strcasecmp(argv[1], "CAPABILITY")) {
         return imap_cmd_parser_capability(argc, argv, pcontext);
-	/*========================================================================*/
 	} else if (0 == strcasecmp(argv[1], "ID")) {
         return imap_cmd_parser_id(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (0 == strcasecmp(argv[1], "NOOP")) {
         return imap_cmd_parser_noop(argc, argv, pcontext);
-    /*========================================================================*/
     } else if (0 == strcasecmp(argv[1], "LOGOUT")) {
         return imap_cmd_parser_logout(argc, argv, pcontext);
-    /*========================================================================*/
     } else if (0 == strcasecmp(argv[1], "STARTTLS")) {
         return imap_cmd_parser_starttls(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (0 == strcasecmp(argv[1], "AUTHENTICATE")) {
         return imap_cmd_parser_authenticate(argc, argv, pcontext);
-    /*========================================================================*/
     } else if (0 == strcasecmp(argv[1], "LOGIN")) {
         return imap_cmd_parser_login(argc, argv, pcontext);
-    /*========================================================================*/
     } else if (0 == strcasecmp(argv[1], "SELECT")) {
         return imap_cmd_parser_select(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (0 == strcasecmp(argv[1], "IDLE")) {
         return imap_cmd_parser_idle(argc, argv, pcontext);
-    /*========================================================================*/
     } else if (0 == strcasecmp(argv[1], "EXAMINE")) {
         return imap_cmd_parser_examine(argc, argv, pcontext);
-    /*========================================================================*/
     } else if (0 == strcasecmp(argv[1], "CREATE")) {
         return imap_cmd_parser_create(argc, argv, pcontext);
-    /*========================================================================*/
     } else if (0 == strcasecmp(argv[1], "DELETE")) {
         return imap_cmd_parser_delete(argc, argv, pcontext);
-    /*========================================================================*/
     } else if (0 == strcasecmp(argv[1], "RENAME")) {
         return imap_cmd_parser_rename(argc, argv, pcontext);
-    /*========================================================================*/
     } else if (0 == strcasecmp(argv[1], "SUBSCRIBE")) {
         return imap_cmd_parser_subscribe(argc, argv, pcontext);
-    /*========================================================================*/
     } else if (0 == strcasecmp(argv[1], "UNSUBSCRIBE")) {
         return imap_cmd_parser_unsubscribe(argc, argv, pcontext);
-    /*========================================================================*/
     } else if (0 == strcasecmp(argv[1], "LIST")) {
         return imap_cmd_parser_list(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (0 == strcasecmp(argv[1], "XLIST")) {
         return imap_cmd_parser_xlist(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (0 == strcasecmp(argv[1], "LSUB")) {
         return imap_cmd_parser_lsub(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (0 == strcasecmp(argv[1], "STATUS")) {
         return imap_cmd_parser_status(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (0 == strcasecmp(argv[1], "APPEND")) {
         return imap_cmd_parser_append(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (0 == strcasecmp(argv[1], "CHECK")) {
         return imap_cmd_parser_check(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (0 == strcasecmp(argv[1], "CLOSE")) {
         return imap_cmd_parser_close(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (0 == strcasecmp(argv[1], "EXPUNGE")) {
         return imap_cmd_parser_expunge(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (0 == strcasecmp(argv[1], "UNSELECT")) {
         return imap_cmd_parser_unselect(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (0 == strcasecmp(argv[1], "SEARCH")) {
         return imap_cmd_parser_search(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (0 == strcasecmp(argv[1], "FETCH")) {
         return imap_cmd_parser_fetch(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (0 == strcasecmp(argv[1], "STORE")) {
         return imap_cmd_parser_store(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (0 == strcasecmp(argv[1], "COPY")) {
         return imap_cmd_parser_copy(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (argc > 2 && 0 == strcasecmp(argv[1], "UID") &&
 		0 == strcasecmp(argv[2], "SEARCH")) {
         return imap_cmd_parser_uid_search(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (argc > 2 && 0 == strcasecmp(argv[1], "UID") &&
 		0 == strcasecmp(argv[2], "FETCH")) {
         return imap_cmd_parser_uid_fetch(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (argc > 2 && 0 == strcasecmp(argv[1], "UID") &&
 		0 == strcasecmp(argv[2], "STORE")) {
         return imap_cmd_parser_uid_store(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (argc > 2 && 0 == strcasecmp(argv[1], "UID") &&
 		0 == strcasecmp(argv[2], "COPY")) {
         return imap_cmd_parser_uid_copy(argc, argv, pcontext);
-    /*========================================================================*/
 	} else if (argc > 2 && 0 == strcasecmp(argv[1], "UID") &&
 		0 == strcasecmp(argv[2], "EXPUNGE")) {
         return imap_cmd_parser_uid_expunge(argc, argv, pcontext);
-    /*========================================================================*/
     } else {
 		imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
 		string_length = gx_snprintf(reply_buff, GX_ARRAY_SIZE(reply_buff), "%s %s", argv[0], imap_reply_str);

@@ -48,7 +48,7 @@ int smtp_cmd_handler_ehlo(const char* cmd_line, int line_length,
 	size_t string_length = 0;
     char buff[1024];
             
-    /* SAME AS HELO ------------------------ begin */
+	/* SAME AS HELO [begin] */
     if (line_length >= 5 && line_length <= 255 + 1 + 4 ) {
         /* command error, cannot be recognized by system */
         if (cmd_line[4] != ' ') {
@@ -63,7 +63,7 @@ int smtp_cmd_handler_ehlo(const char* cmd_line, int line_length,
 		return 202;
     }
 	smtp_parser_reset_context_envelope(pcontext);
-    /* SAME AS HELO ------------------------ end */
+	/* SAME AS HELO [end] */
 
     /* inform client side the esmtp type*/
     pcontext->last_cmd = T_EHLO_CMD;
