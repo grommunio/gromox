@@ -13,6 +13,7 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
+#include <gromox/midb.hpp>
 #include <gromox/paths.h>
 #include "resource.h"
 #include <gromox/util.hpp>
@@ -116,17 +117,17 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{1915, "NO server internal error: out of memery"},
 	{1916, "NO COPY failed"},
 	{1917, "NO UID COPY failed"},
-	{2000, "midb command not found"},
-	{2001, "midb command parameter error"},
-	{2002, "midb hash table full"},
-	{2003, "midb fail to read and load folder"},
-	{2004, "midb out of memory"},
-	{2005, "mail not found"},
-	{2006, "mail digest error"},
-	{2007, "folder already exist"},
-	{2008, "reach the limitation of folders"},
-	{2009, "mailbox is full"},
-	{2010, "midb fail to delete the folder"},
+	{2000 | MIDB_E_UNKNOWN_COMMAND, "midb: unknown command"},
+	{2000 | MIDB_E_PARAMETER_ERROR, "midb: command parameter error"},
+	{2000 | MIDB_E_HASHTABLE_FULL, "midb: hash table full"},
+	{2000 | MIDB_E_NO_FOLDER, "midb: failed to read folder"},
+	{2000 | MIDB_E_NO_MEMORY, "midb: out of memory"},
+	{2000 | MIDB_E_NO_MESSAGE, "mail not found"},
+	{2000 | MIDB_E_DIGEST, "mail digest error"},
+	{2000 | MIDB_E_FOLDER_EXISTS, "folder already exists"},
+	{2000 | MIDB_E_FOLDER_LIMIT, "reached the limitation of folders"},
+	{2000 | MIDB_E_MAILBOX_FULL, "mailbox is full"},
+	{2000 | MIDB_E_NO_DELETE, "midb: failed to delete the folder"},
 };
 
 static std::unordered_map<unsigned int, std::string> g_def_code_table;
