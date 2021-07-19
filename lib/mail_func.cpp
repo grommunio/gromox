@@ -1193,7 +1193,7 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 	BOOL is_quoted;
 	char *last_space;
 	char *last_square;
-	char *last_quota;
+	char *last_quote = nullptr;
 	char *last_brace;
 	char *last_bracket;
 
@@ -1202,13 +1202,12 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 	ptr = cmdline;
 	/* Build the argv list */
 	argc = 0;
-	last_quota = NULL;
 	last_bracket = NULL;
 	last_square = NULL;
 	last_space = cmdline;
 	is_quoted = FALSE;
 	while (ptr - cmdline < cmdlen && argc < argmax - 1) {
-		if ('{' == *ptr && NULL == last_quota) {
+		if (*ptr == '{' && last_quote == nullptr) {
 			last_brace = static_cast<char *>(memchr(ptr + 1, '}', 16));
 			if (last_brace != nullptr) {
 				*last_brace = '\0';
@@ -1224,16 +1223,16 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 		if ('\"' == *ptr) {
 			memmove(ptr, ptr + 1, cmdline + cmdlen - ptr - 1);
 			cmdlen --;
-			if (NULL == last_quota) {
+			if (last_quote == nullptr) {
 				is_quoted = TRUE;
-				last_quota = ptr;
+				last_quote = ptr;
 				/* continue the lookp for the empty "" because of memmove */
 				continue;
 			} else {
-				last_quota = NULL;
+				last_quote = nullptr;
 			}
 		}
-		if ('[' == *ptr && NULL == last_quota) {
+		if (*ptr == '[' && last_quote == nullptr) {
 			if (NULL == last_square) {
 				last_square = ptr;
 				s_count = 0;
@@ -1248,7 +1247,7 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 				s_count --;
 			}
 		}
-		if ('(' == *ptr && NULL == last_quota) {
+		if (*ptr == '(' && last_quote == nullptr) {
 			if (NULL == last_bracket) {
 				last_bracket = ptr;
 				b_count = 0;
@@ -1263,7 +1262,7 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 				b_count --;
 			}
 		}
-		if (' ' == *ptr && NULL == last_quota &&
+		if (*ptr == ' ' && last_quote == nullptr &&
 			NULL == last_bracket && NULL == last_square) {
 			/* ignore leading spaces */
 			if (ptr == last_space && FALSE == is_quoted) {
@@ -1281,8 +1280,8 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 		}
 		ptr ++;
 	}
-	/* only one quota is found, error */
-	if (NULL != last_quota || NULL != last_bracket || NULL != last_square) {
+	/* only one quote is found, error */
+	if (last_quote != nullptr || last_bracket != nullptr || last_square != nullptr) {
 		argv[0] = NULL;
 		return -1;
 	}

@@ -627,7 +627,7 @@ static int parse_line(char *pbuff, const char* cmdline, char** argv)
     char *ptr;                   /* ptr that traverses command line  */
     int argc;                    /* number of args */
 	char *last_space;
-	char *last_quota;
+	char *last_quote = nullptr;
 
 	string_len = strlen(cmdline);
 	memcpy(pbuff, cmdline, string_len);
@@ -637,7 +637,6 @@ static int parse_line(char *pbuff, const char* cmdline, char** argv)
 	ptr = pbuff;
     /* Build the argv list */
     argc = 0;
-	last_quota = NULL;
 	last_space = pbuff;
     while (*ptr != '\0') {
 		/* back slash should be treated as transferred meaning */
@@ -647,17 +646,17 @@ static int parse_line(char *pbuff, const char* cmdline, char** argv)
 			ptr ++;
 		}
 		if ('\"' == *ptr) {
-			if (NULL == last_quota) {
-				last_quota = ptr + 1;
+			if (last_quote == nullptr) {
+				last_quote = ptr + 1;
 			} else {
 				/* ignore "" */
-				if (ptr == last_quota) {
-					last_quota = NULL;
+				if (ptr == last_quote) {
+					last_quote = nullptr;
 					last_space = ptr + 1;
 				} else {
-					argv[argc] = last_quota;
+					argv[argc] = last_quote;
 					*ptr = '\0';
-					last_quota = NULL;
+					last_quote = nullptr;
 					last_space = ptr + 1;
 					argc ++;
 					if (argc >= MAXARGS) {
@@ -666,7 +665,7 @@ static int parse_line(char *pbuff, const char* cmdline, char** argv)
 				}
 			}
 		}
-		if (' ' == *ptr && NULL == last_quota) {
+		if (*ptr == ' ' && last_quote == nullptr) {
 			/* ignore leading spaces */
 			if (ptr == last_space) {
 				last_space ++;
@@ -682,10 +681,9 @@ static int parse_line(char *pbuff, const char* cmdline, char** argv)
 		}
 		ptr ++;
     }
-	/* only one quota is found, error */
-	if (NULL != last_quota) {
+	/* only one quote is found, error */
+	if (last_quote != nullptr)
 		argc = 0;
-	}
     argv[argc] = NULL;
     return argc;
 }
