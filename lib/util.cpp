@@ -1932,6 +1932,31 @@ std::string bin2hex(const void *vin, size_t len)
 	return buffer;
 }
 
+std::string hex2bin(const char *input)
+{
+	auto max = strlen(input) / 2; /* ignore last nibble if needed */
+	std::string buf;
+	buf.resize(max);
+	for (size_t n = 0; n < max; ++n) {
+		unsigned char c = HX_tolower(input[2*n]);
+		unsigned char d = HX_tolower(input[2*n+1]);
+		if (c >= '0' && c <= '9')
+			c -= '0';
+		else if (c >= 'A' && c <= 'F')
+			c -= 'A' + 10;
+		else
+			c = 0;
+		if (d >= '0' && d <= '9')
+			d -= '0';
+		else if (d >= 'A' && d <= 'F')
+			d -= 'A' + 10;
+		else
+			d = 0;
+		buf[n] = (c << 4) | d;
+	}
+	return buf;
+}
+
 void rfc1123_dstring(char *buf, size_t z, time_t ts)
 {
 	if (ts == 0)
