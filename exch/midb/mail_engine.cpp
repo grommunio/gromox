@@ -4191,7 +4191,7 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	}
 	sqlite3_bind_text(pstmt, 1, argv[2], -1, SQLITE_STATIC);
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		return MIDB_E_NO_MEMORY;
+		return MIDB_E_NO_FOLDER;
 	}
 	folder_id = sqlite3_column_int64(pstmt, 0);
 	uidnext = sqlite3_column_int64(pstmt, 1);
