@@ -1251,11 +1251,11 @@ int main(int argc, const char **argv)
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	if (g_wet_run && g_username == nullptr) {
-		fprintf(stderr, "When -N is absent, the -u option is mandatory.\n");
+		fprintf(stderr, "When -n is absent, the -u option is mandatory.\n");
 		return EXIT_FAILURE;
 	}
 	if (argc < 2) {
-		fprintf(stderr, "Usage: pffimport [-t] username pstfilename...\n");
+		fprintf(stderr, "Usage: pffimport [-pst] {-n|-u username} input.pst...\n");
 		return EXIT_FAILURE;
 	}
 	if (g_username != nullptr) {

@@ -1,7 +1,10 @@
 .TH gromox\-pffimport 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+gromox\-pffimport(8gx) \(em Utility for importing PFF/PST/OST into Gromox
 .SH Synopsis
 .PP
-\fBgromox\-pffimport\fP [\fB\-npt \-u\fP \fIuser@company\fP]
+\fBgromox\-pffimport\fP [\fB\-pst] {\fB\-n\fP|\-u\fP \fIuser@company\fP}
 \fIinput.pst\fP...
 .SH Description
 .PP
@@ -33,7 +36,7 @@ etc.) are mapped to special folders in the store if the PFF has the necessary
 information.
 .TP
 \fB\-t\fP
-Output tree analysis of the PFF file.
+Show a diagnostic tree view of the source data as it is being read.
 .TP
 \fB\-u\fP \fIuser@company\fP
 Target mail store which to import mails to.
