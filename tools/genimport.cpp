@@ -22,6 +22,7 @@
 #include <gromox/scope.hpp>
 #include <gromox/socket.h>
 #include <gromox/tpropval_array.hpp>
+#include <gromox/util.hpp>
 #include "genimport.hpp"
 
 using namespace gromox;
@@ -51,6 +52,90 @@ void tlog(const char *fmt, ...)
 	va_start(args, fmt);
 	vprintf(fmt, args);
 	va_end(args);
+}
+
+static void gi_dump_tpropval(unsigned int depth, TAGGED_PROPVAL &tp)
+{
+	if (g_show_props)
+		tree(depth);
+	tlog("%08xh:", tp.proptag);
+
+	switch (PROP_TYPE(tp.proptag)) {
+	case PT_LONG:
+		tlog("%u", *static_cast<uint32_t *>(tp.pvalue));
+		break;
+	case PT_BOOLEAN:
+		tlog("%u", *static_cast<uint8_t *>(tp.pvalue));
+		break;
+	case PT_STRING8:
+	case PT_UNICODE: {
+		auto s = static_cast<const char *>(tp.pvalue);
+		char u = PROP_TYPE(tp.proptag) == PT_UNICODE ? 'w' : 'a';
+		auto z = strlen(s);
+		if (g_show_props)
+			tlog("%cstr(%zu)=\"%s\"", u, z, s);
+		else
+			tlog("%cstr(%zu)", u, z);
+		break;
+	}
+	case PT_BINARY: {
+		auto &b = *static_cast<BINARY *>(tp.pvalue);
+		if (g_show_props)
+			tlog("bin(%zu)=%s", b.cb, bin2hex(b.pv, b.cb).c_str());
+		else
+			tlog("bin(%zu)", b.cb);
+		break;
+	}
+	case PT_MV_LONG: {
+		auto &sl = *static_cast<LONG_ARRAY *>(tp.pvalue);
+		tlog("mvlong[%zu]", sl.count);
+		if (!g_show_props)
+			break;
+		tlog("={", sl.count);
+		for (size_t i = 0; i < sl.count; ++i)
+			tlog("%u,", sl.pl[i]);
+		tlog("}");
+		break;
+	}
+	case PT_MV_BINARY: {
+		auto &sb = *static_cast<BINARY_ARRAY *>(tp.pvalue);
+		tlog("mvbin[%zu]", sb.count);
+		if (!g_show_props)
+			break;
+		tlog("={", sb.count);
+		for (size_t i = 0; i < sb.count; ++i)
+			tlog("%s,", bin2hex(sb.pbin[i].pv, sb.pbin[i].cb).c_str());
+		tlog("}");
+		break;
+	}
+	case PT_MV_UNICODE: {
+		auto &ss = *static_cast<STRING_ARRAY *>(tp.pvalue);
+		tlog("mvstr[%zu]", ss.count);
+		if (!g_show_props)
+			break;
+		tlog("={", ss.count);
+		for (size_t i = 0; i < ss.count; ++i)
+			tlog("\"%s\",", ss.ppstr[i]);
+		tlog("}");
+		break;
+	}
+	default:
+		break;
+	}
+	tlog(g_show_props ? "\n" : ", ");
+}
+
+void gi_dump_tpropval_a(unsigned int depth, TPROPVAL_ARRAY &props)
+{
+	if (props.count == 0)
+		return;
+	tree(depth);
+	tlog("props(%d):", props.count);
+	tlog(g_show_props ? "\n" : " {");
+	for (size_t i = 0; i < props.count; ++i)
+		gi_dump_tpropval(depth + 1, props.ppropval[i]);
+	if (!g_show_props)
+		tlog("}\n");
 }
 
 static BOOL exm_dorpc(const char *dir, const EXMDB_REQUEST *prequest, EXMDB_RESPONSE *presponse)

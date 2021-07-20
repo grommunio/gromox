@@ -233,115 +233,6 @@ static std::string az_item_get_str(libpff_item_t *item, uint32_t proptag)
 	return reinterpret_cast<char *>(buf.get());
 }
 
-/* Pretty-print a libpff record entry (property) */
-static void az_recordent(unsigned int depth, libpff_record_entry_t *rent)
-{
-	uint32_t etype = 0, vtype = 0;
-	size_t size = 0;
-
-	if (libpff_record_entry_get_entry_type(rent, &etype, nullptr) < 1)
-		throw "PF-1005";
-	if (libpff_record_entry_get_value_type(rent, &vtype, nullptr) < 1)
-		throw "PF-1006";
-	if (libpff_record_entry_get_data_size(rent, &size, nullptr) < 1)
-		throw "PF-1007";
-	if (g_show_props)
-		tree(depth);
-	tlog("%08xh:", static_cast<unsigned int>((etype << 16) | vtype));
-	switch (vtype) {
-	case LIBPFF_VALUE_TYPE_INTEGER_32BIT_SIGNED: {
-		uint32_t v;
-		if (libpff_record_entry_get_data_as_32bit_integer(rent, &v, nullptr) < 1)
-			throw "PF-1008";
-		tlog("%u", v);
-		break;
-	}
-	case LIBPFF_VALUE_TYPE_BOOLEAN: {
-		uint8_t v = 0;
-		if (libpff_record_entry_get_data_as_boolean(rent, &v, nullptr) < 1)
-			throw "PF-1009";
-		tlog("%u", v);
-		break;
-	}
-	case LIBPFF_VALUE_TYPE_STRING_ASCII: {
-		size_t dsize = 0;
-		if (g_show_props &&
-		    libpff_record_entry_get_data_as_utf8_string_size(rent, &dsize, nullptr) >= 1) {
-			++dsize;
-			auto buf = std::make_unique<uint8_t[]>(dsize);
-			if (libpff_record_entry_get_data_as_utf8_string(rent, buf.get(), dsize, nullptr) >= 1)
-				tlog("astr(%zu)=\"%s\"", size, buf.get());
-		} else {
-			tlog("astr(%zu)", size);
-		}
-		break;
-	}
-	case LIBPFF_VALUE_TYPE_STRING_UNICODE: {
-		size_t dsize = 0;
-		if (g_show_props &&
-		    libpff_record_entry_get_data_as_utf8_string_size(rent, &dsize, nullptr) >= 1) {
-			++dsize;
-			auto buf = std::make_unique<uint8_t[]>(dsize);
-			if (libpff_record_entry_get_data_as_utf8_string(rent, buf.get(), dsize, nullptr) >= 1)
-				tlog("wstr(%zu)=\"%s\"", size / 2, buf.get());
-		} else {
-			tlog("wstr(%zu)", size / 2);
-		}
-		break;
-	}
-	case LIBPFF_VALUE_TYPE_BINARY_DATA: {
-		auto buf = std::make_unique<uint8_t[]>(size);
-		if (g_show_props &&
-		    libpff_record_entry_get_data(rent, buf.get(), size, nullptr) >= 1)
-			tlog("bin(%zu)=%s", size, bin2hex(buf.get(), size).c_str());
-		else
-			tlog("bin(%zu)", size);
-		break;
-	}
-	case LIBPFF_VALUE_TYPE_MULTI_VALUE_INTEGER_16BIT_SIGNED ... LIBPFF_VALUE_TYPE_MULTI_VALUE_BINARY_DATA: {
-		libpff_multi_value_ptr mv;
-		int numv = 0;
-		auto ret = libpff_record_entry_get_multi_value(rent, &unique_tie(mv), nullptr);
-		if (ret == 0)
-			return;
-		if (ret < 0)
-			throw "PF-1038";
-		if (libpff_multi_value_get_number_of_values(mv.get(), &numv, nullptr) < 1)
-			throw "PF-1039";
-		auto buf = std::make_unique<uint8_t[]>(size);
-		if (g_show_props &&
-		    libpff_record_entry_get_data(rent, buf.get(), size, nullptr) >= 1)
-			tlog("mv[%d]-arb(%zu)=%s", numv, size, bin2hex(buf.get(), size).c_str());
-		else
-			tlog("mv[%d]-arb(%zu)", numv, size);
-		break;
-	}
-	default:
-		break;
-	}
-	tlog(g_show_props ? "\n" : ", ");
-}
-
-/* Pretty-print a libpff record set (property set) */
-static void az_recordset(unsigned int depth, libpff_record_set_t *rset)
-{
-	int nent = 0;
-	if (libpff_record_set_get_number_of_entries(rset, &nent, nullptr) < 1)
-		throw "PF-1010";
-	tree(depth);
-	tlog("props(%d):", nent);
-	tlog(g_show_props ? "\n" : " {");
-	for (int i = 0; i < nent; ++i) {
-		libpff_record_entry_ptr rent;
-
-		if (libpff_record_set_get_entry_by_index(rset, i, &unique_tie(rent), nullptr) < 1)
-			throw "PF-1011";
-		az_recordent(depth + 1, rent.get());
-	}
-	if (!g_show_props)
-		tlog("}\n");
-}
-
 static int do_attach(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t *atx)
 {
 	int atype = 0;
@@ -633,11 +524,11 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 
 		if (libpff_item_get_record_set_by_index(item, s, &unique_tie(rset), nullptr) < 1)
 			throw "PF-1022";
-		if (g_show_tree)
-			az_recordset(depth, rset.get());
 		auto ret = recordset_to_tpropval_a(rset.get(), props.get());
 		if (ret < 0)
 			return ret;
+		if (g_show_tree)
+			gi_dump_tpropval_a(depth, *props);
 		if (item_type != LIBPFF_ITEM_TYPE_RECIPIENTS)
 			/* For folders, messages, attachments, etc. keep properties in @props. */
 			continue;
