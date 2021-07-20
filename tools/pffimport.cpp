@@ -589,6 +589,27 @@ static int exm_connect(const char *dir)
 	return -1;
 }
 
+static int gi_setup(const char *username)
+{
+	auto sqh = sql_login();
+	if (sqh == nullptr)
+		return EXIT_FAILURE;
+	auto ret = sql_meta(sqh, g_username, &g_user_id, g_storedir_s);
+	mysql_close(sqh);
+	if (ret == -ENOENT) {
+		fprintf(stderr, "No such user \"%s\"\n", g_username);
+		return EXIT_FAILURE;
+	} else if (ret < 0) {
+		fprintf(stderr, "sql_meta(\"%s\"): %s\n", g_username, strerror(-ret));
+		return EXIT_FAILURE;
+	}
+	g_storedir = g_storedir_s.c_str();
+	g_socket = exm_connect(g_storedir);
+	if (g_socket < 0)
+		return EXIT_FAILURE;
+	return EXIT_SUCCESS;
+}
+
 static int az_resolve_inplace(libpff_record_entry_t *rent, uint32_t &proptag)
 {
 	if (!g_wet_run)
@@ -1264,24 +1285,8 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "Usage: pffimport [-pst] {-n|-u username} input.pst...\n");
 		return EXIT_FAILURE;
 	}
-	if (g_username != nullptr) {
-		auto sqh = sql_login();
-		if (sqh == nullptr)
-			return EXIT_FAILURE;
-		auto ret = sql_meta(sqh, g_username, &g_user_id, g_storedir_s);
-		mysql_close(sqh);
-		if (ret == -ENOENT) {
-			fprintf(stderr, "No such user \"%s\"\n", g_username);
-			return EXIT_FAILURE;
-		} else if (ret < 0) {
-			fprintf(stderr, "sql_meta(\"%s\"): %s\n", g_username, strerror(-ret));
-			return EXIT_FAILURE;
-		}
-		g_storedir = g_storedir_s.c_str();
-		g_socket = exm_connect(g_storedir);
-		if (g_socket < 0)
-			return EXIT_FAILURE;
-	}
+	if (g_username != nullptr && gi_setup(g_username) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
 	int ret = EXIT_SUCCESS;
 	while (--argc > 0) {
 		auto r2 = do_file(*++argv);
