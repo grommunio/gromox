@@ -12,7 +12,7 @@ and output, respectively.
 .SH Options
 .TP
 \fB\-b\fP
-Produce ABKT from JSON.
+Produce type-1 ABKT from JSON.
 .TP
 \fB\-c\fP \fIcpid\fP
 When converting to ABKT (\-b), convert strings to the given codepage and emit
@@ -24,7 +24,7 @@ what Exchange would do. Without \-g, the ABKT stream will have no unnecessary
 gaps.
 .TP
 \fB\-j\fP
-Produce JSON from ABKT.
+Produce JSON from ABKT type-1 or type-2.
 .TP
 \fB\-w\fP
 When converting to ABKT (\-b), emit strings in UTF-16 form. This is the
@@ -35,6 +35,8 @@ Display option summary.
 .SH Normative references
 .IP \(bu 4
 MS-OXOABKT: Address Book User Interface Templates Protocol
+.IP \(bu 4
+oxoabkt.rst: Type-2 ABKT template protocol
 .SH See also
 .PP
 \fBgromox\fP(7), \fBgromox-abktpull\fP(8gx)

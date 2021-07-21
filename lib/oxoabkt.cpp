@@ -30,10 +30,13 @@ static unsigned int abkt_cttype2int(const char *s)
 	E("label", DTCT_LABEL);
 	E("textctrl", DTCT_EDIT);
 	E("listbox", DTCT_LBX);
+	E("combobox", DTCT_COMBOBOX);
+	E("dropdown", DTCT_DDLBX);
 	E("checkbox", DTCT_CHECKBOX);
 	E("groupbox", DTCT_GROUPBOX);
 	E("button", DTCT_BUTTON);
 	E("tabpage", DTCT_PAGE);
+	E("radiobutton", DTCT_RADIOBUTTON);
 	E("mvlistbox", DTCT_MVLISTBOX);
 	E("mvdropdown", DTCT_MVDDLBX);
 	return _DTCT_NONE;
@@ -46,10 +49,13 @@ static const char *abkt_cttype2str(unsigned int v)
 	case DTCT_LABEL: return "label";
 	case DTCT_EDIT: return "textctrl";
 	case DTCT_LBX: return "listbox";
+	case DTCT_COMBOBOX: return "combobox";
+	case DTCT_DDLBX: return "dropdown";
 	case DTCT_CHECKBOX: return "checkbox";
 	case DTCT_GROUPBOX: return "groupbox";
 	case DTCT_BUTTON: return "button";
 	case DTCT_PAGE: return "tabpage";
+	case DTCT_RADIOBUTTON: return "radiobutton";
 	case DTCT_MVLISTBOX: return "mvlistbox";
 	case DTCT_MVDDLBX: return "mvdropdown";
 	}
@@ -58,29 +64,38 @@ static const char *abkt_cttype2str(unsigned int v)
 
 static inline bool cttype_uses_proptag(unsigned int t)
 {
-	return t == DTCT_EDIT || t == DTCT_LBX || t == DTCT_CHECKBOX ||
-	       t == DTCT_BUTTON || t == DTCT_MVLISTBOX || t == DTCT_MVDDLBX;
+	return t == DTCT_EDIT || t == DTCT_LBX || t == DTCT_COMBOBOX ||
+	       t == DTCT_DDLBX || t == DTCT_CHECKBOX || t == DTCT_BUTTON ||
+	       t == DTCT_RADIOBUTTON || t == DTCT_MVLISTBOX || t == DTCT_MVDDLBX;
 }
 
 static inline bool cttype_uses_label(unsigned int t)
 {
 	return t == DTCT_LABEL || t == DTCT_CHECKBOX || t == DTCT_GROUPBOX ||
-	       t == DTCT_BUTTON || t == DTCT_PAGE;
+	       t == DTCT_BUTTON || t == DTCT_RADIOBUTTON || t == DTCT_PAGE;
 }
 
 static inline bool cttype_uses_pattern(unsigned int t)
 {
-	return t == DTCT_EDIT || t == DTCT_LBX || t == DTCT_MVLISTBOX;
+	return t == DTCT_EDIT || t == DTCT_LBX || t == DTCT_DDLBX ||
+	       t == DTCT_COMBOBOX || t == DTCT_MVLISTBOX;
 }
 
-static void abkt_read_row(lb_reader &bin, Json::Value &jrow, unsigned int cpid)
+// DTBLCOMBOBOX has two proptags: ulPRPropertyName [to be PT_TSTRING], ulPRTableName [to be PT_OBJECT]
+// DTBLDDLBX has three proptags: ulPRDisplayProperty [to be PT_TSTRING], ulPRSetProperty [PT_*], ulPRTableName [PT_OBJECT].
+// DTBLLBX has two proptags: ulPRSetProperty [PT_*], ulPRTableName [PT_OBJECT]
+
+static void abkt_read_row(lb_reader &bin, Json::Value &jrow,
+    unsigned int vers, unsigned int cpid)
 {
 	jrow["posx"]  = bin.r4();
 	jrow["sizex"] = bin.r4();
 	jrow["posy"]  = bin.r4();
 	jrow["sizey"] = bin.r4();
-	auto ct_type = bin.r4(), flags = bin.r4(), proptag = bin.r4();
-	auto maxlen = bin.r4(), stroffset = bin.r4();
+	auto ct_type = bin.r4(), flags = bin.r4();
+	uint32_t gxT2Extra = vers == 2 ? bin.r4() : 0;
+	auto dwType = bin.r4();
+	auto ulSize = bin.r4(), ulString = bin.r4();
 	if (ct_type == DTCT_PAGE)
 		flags = _DT_NONE;
 	jrow["ct_type"] = abkt_cttype2str(ct_type);
@@ -91,32 +106,41 @@ static void abkt_read_row(lb_reader &bin, Json::Value &jrow, unsigned int cpid)
 	jrow["is_doublebyte"] = !!(flags & DT_ACCEPT_DBCS);
 	jrow["is_index"]      = !!(flags & DT_SET_SELECTION);
 	if (cttype_uses_proptag(ct_type))
-		jrow["proptag"] = proptag;
-	if (ct_type == DTCT_EDIT)
-		jrow["maxlen"] = maxlen;
+		jrow["proptag"] = dwType;
+	if (ct_type == DTCT_EDIT) {
+		jrow["ulSize"] = ulSize;
+	} else if (ct_type == DTCT_DDLBX) {
+		jrow["proptag2"] = gxT2Extra;
+		jrow["proptag3"] = ulSize;
+	} else if (ct_type == DTCT_RADIOBUTTON) {
+		jrow["num_buttons"] = gxT2Extra;
+		jrow["return_value"] = ulSize;
+	}
 	std::string text;
 	if (cttype_uses_label(ct_type) || cttype_uses_pattern(ct_type)) {
 		if (cpid == 0) {
-			text = bin.preadustr(stroffset);
+			text = bin.preadustr(ulString);
 		} else {
-			text = bin.preadstr(stroffset);
+			text = bin.preadstr(ulString);
 			text = iconvtext(text.data(), text.size(), cpid_to_cset(cpid), "UTF-8");
 		}
 	}
 	if (cttype_uses_label(ct_type))
 		jrow["label"] = std::move(text);
-	else if (ct_type == DTCT_EDIT)
+	else if (cttype_uses_pattern(ct_type))
 		jrow["pattern"] = std::move(text);
 }
 
 static void abkt_read(lb_reader &bin, Json::Value &tpl, unsigned int cpid)
 {
-	bin.x4(1);
+	auto vers = bin.r4();
+	if (vers != 1 && vers != 2)
+		throw lb_reader::invalid();
 	auto &rowdata = tpl["rowdata"] = Json::arrayValue;
 	auto rows = bin.r4();
 	while (rows-- > 0) {
 		auto &row = rowdata.append(Json::objectValue);
-		abkt_read_row(bin, row, cpid);
+		abkt_read_row(bin, row, vers, cpid);
 	}
 }
 

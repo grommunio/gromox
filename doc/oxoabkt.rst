@@ -23,7 +23,7 @@ Within each locale, there are nodes for different templates.
 * ``CN=Exchange``: Exchange Send Options
 
 Within each template, there are a number of attributes that may
-appear of interest.
+appear of interest. The following four are type-1 ABKT templates:
 
 * ``addressEntryDisplayTable``: current settings (possibly user-modified;
   or possibly Exchange default) for the domain
@@ -32,6 +32,70 @@ appear of interest.
   pixel units
 * ``originalDisplayTable``: Exchange default for Outlook
 * ``originalDisplayTableMSDOS``: Exchange default for DOS
-* ``perMsgDialogDisplayTable``
 
-All share the same ABKT format.
+A fifth attribute exists, but it uses a type-2 ABKT template, which is not
+documented by MS-OXOABKT. It appears to be a remnant of Exchange 2003.
+
+* ``perMsgDialogDisplayTable``: Exchange Send Options
+
+
+Type-2 template
+===============
+
+Type-2 templates have a CNTRL structure of 16 instead of 12 bytes (TRow
+structure of 40 instead 36 bytes).
+
+```
+struct TRow_v2 {
+	uint32_t XPos, DeltaX, YPos, DeltaY, ControlType, ControlFlags;
+	struct CNTRL_v2 ControlStructure;
+};
+struct CNTRL_v2 {
+	uint32_t extra2;
+	uint32_t dwSize, ulSize, ulString;
+};
+```
+
+Possible values for ``ControlType`` are given by ``DTCT_`` definitions in
+``mapidefs.h`` (and/or ``wabdefs.h``). “New” control types — MAPI has known
+these all along — are: combobox (0x3), dropdown listbox (0x4), radio button
+(0x9).
+
+CNTRL structure describing a combobox
+-------------------------------------
+
+* ``gxT2Extra`` (presumably ``ulPRTableName``). No info. In the only ABKT-2
+  template ever seen, it specifies a ``PT_LONG`` property.
+* ``dwType`` (``ulPRPropertyName``): Property tag of type ``PT_TSTRING``.
+* ``ulSize`` (``ulNumCharsAllowed``): Number of characters allowed to be
+  entered into the edit control.
+* ``ulString``: Offset to a string specifying the regular expression for characters
+  allowed in the edit control.
+
+CNTRL structure describing a dropdown listbox
+---------------------------------------------
+
+* ``gxT2Extra`` (``ulPRDisplayProperty``): Property tag of type ``PT_TSTRING``.
+  This property is one of the columns in the table identified by the
+  ``ulPRTableName`` member. The values for this property are displayed in the
+  list. (Unused? Because the values are in ulString…)
+* ``dwType``. No info. In the only ABKT-2 template ever seen, it specifies a
+  ``PT_LONG`` property.
+* ``ulSize``. No info. In the only ABKT-2 template ever seen, it specifies a
+  ``PT_LONG`` property.
+* ``ulString``: Offset to a string specifying a backslash-separated list of
+  selectable list values.
+
+CNTRL structure describing a radiobutton
+----------------------------------------
+
+* ``gxT2Extra`` (``ulcButtons``): Count of buttons in the radio button group.
+  The structures for the other buttons in the group must be contained in
+  successive rows of the display table. Each of these rows must contain the
+  same value for the ``ulcButtons`` member.
+* ``dwType`` (``ulPropTag``): Property tag of type ``PT_LONG``. The initial
+  selection in the radio button group is based on the initial value of this
+  property. Each button in the group must have the same ``ulPropTag``.
+* ``ulSize`` (``lReturnValue``): Unique number that identifies the selected
+  button.
+* ``ulString``: Offset to the label text of the control.

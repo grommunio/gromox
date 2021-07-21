@@ -369,10 +369,13 @@ enum {
 	DTCT_LABEL = 0x0,
 	DTCT_EDIT = 0x1,
 	DTCT_LBX = 0x2, /* listbox */
+	DTCT_COMBOBOX = 0x3,
+	DTCT_DDLBX = 0x4,
 	DTCT_CHECKBOX = 0x5,
 	DTCT_GROUPBOX = 0x6,
 	DTCT_BUTTON = 0x7,
 	DTCT_PAGE = 0x8,
+	DTCT_RADIOBUTTON = 0x9,
 	DTCT_MVLISTBOX  = 0xb,
 	DTCT_MVDDLBX = 0xc, /* multi-value dropdown list box */
 	_DTCT_NONE = 0xff, /* (sentinel value for gromox) */
