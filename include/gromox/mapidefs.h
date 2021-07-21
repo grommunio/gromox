@@ -131,6 +131,7 @@ enum {
 	PR_VIEWS_ENTRYID = PROP_TAG(PT_BINARY, 0x35E5), /* PidTagViewsEntryId */
 	PR_COMMON_VIEWS_ENTRYID = PROP_TAG(PT_BINARY, 0x35E6), /* PidTagCommonViewsEntryId */
 	PR_FINDER_ENTRYID = PROP_TAG(PT_BINARY, 0x35E7), /* PidTagFinderEntryId */
+	PR_DETAILS_TABLE  = PROP_TAG(PT_OBJECT, 0x3605), /* PidTagDetailsTable */
 	PR_IPM_APPOINTMENT_ENTRYID = PROP_TAG(PT_BINARY, 0x36D0), /* PidTagIpmAppointmentEntryId */
 	PR_IPM_CONTACT_ENTRYID = PROP_TAG(PT_BINARY, 0x36D1), /* PidTagIpmContactEntryId */
 	PR_IPM_JOURNAL_ENTRYID = PROP_TAG(PT_BINARY, 0x36D2), /* PidTagIpmJournalEntryId */
@@ -154,6 +155,8 @@ enum {
 	PR_DISPLAY_TYPE_EX = PROP_TAG(PT_LONG, 0x3905), /* PidTagDisplayTypeEx */
 	PR_SMTP_ADDRESS = PROP_TAG(PT_UNICODE, 0x39FE), /* PidTagSmtpAddress */
 	PR_RESOURCE_TYPE = PROP_TAG(PT_LONG, 0x3E03), /* PidTagResourceType */
+	PR_CONTROL_FLAGS = PROP_TAG(PT_LONG, 0x3F02), /* PidTagControlFlags */
+	PR_CONTROL_TYPE = PROP_TAG(PT_LONG, 0x3F02), /* PidTagControlType */
 	PR_INTERNET_CPID = PROP_TAG(PT_LONG, 0x3FDE), /* PidTagInternetCodepage */
 	PR_MESSAGE_CODEPAGE = PROP_TAG(PT_LONG, 0x3FFD), /* PidTagMessageCodepage */
 	PR_MESSAGE_LOCALE_ID = PROP_TAG(PT_LONG, 0x3FF1), /* PidTagMessageLocaleId */
@@ -336,6 +339,7 @@ enum calendar_scale {
 };
 
 enum {
+	/* one-off entryid flags, MS-OXCDATA v15.2 §2.2.5.1 */
 	CTRL_FLAG_BINHEX = 0x00,
 	CTRL_FLAG_UUENCODE = 0x20,
 	CTRL_FLAG_APPLESINGLE = 0x40,
@@ -346,6 +350,32 @@ enum {
 	CTRL_FLAG_NORICH = 0x01,
 	CTRL_FLAG_UNICODE = 0x8000,
 	CTRL_FLAG_DONTLOOKUP = 0x1000,
+};
+
+enum {
+	/* PR_CONTROL_FLAGS (PidTagControlFlags), MS-OXOABKT v12 §2.2.2.1.2 */
+	_DT_NONE         = 0U, /* gromox-only */
+	DT_MULTILINE     = 1U << 0,
+	DT_EDITABLE      = 1U << 1,
+	DT_REQUIRED      = 1U << 2,
+	DT_SET_IMMEDIATE = 1U << 3,
+	DT_PASSWORD_EDIT = 1U << 4,
+	DT_ACCEPT_DBCS   = 1U << 5,
+	DT_SET_SELECTION = 1U << 6,
+};
+
+enum {
+	/* PR_CONTROL_TYPE (PidTagControlType) */
+	DTCT_LABEL = 0x0,
+	DTCT_EDIT = 0x1,
+	DTCT_LBX = 0x2, /* listbox */
+	DTCT_CHECKBOX = 0x5,
+	DTCT_GROUPBOX = 0x6,
+	DTCT_BUTTON = 0x7,
+	DTCT_PAGE = 0x8,
+	DTCT_MVLISTBOX  = 0xb,
+	DTCT_MVDDLBX = 0xc, /* multi-value dropdown list box */
+	_DTCT_NONE = 0xff, /* (sentinel value for gromox) */
 };
 
 enum {

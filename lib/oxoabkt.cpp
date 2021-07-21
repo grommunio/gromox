@@ -11,34 +11,11 @@
 #include <json/writer.h>
 #include <gromox/binrdwr.hpp>
 #include <gromox/fileio.h>
+#include <gromox/mapidefs.h>
 #include <gromox/oxoabkt.hpp>
 #include <gromox/textmaps.hpp>
 
 using namespace gromox;
-
-enum TRow_ctl_type {
-	TRC_LABEL      = 0x0,
-	TRC_TEXTCTRL   = 0x1,
-	TRC_LISTBOX    = 0x2,
-	TRC_CHECKBOX   = 0x5,
-	TRC_GROUPBOX   = 0x6,
-	TRC_BUTTON     = 0x7,
-	TRC_TABPAGE    = 0x8,
-	TRC_MVLISTBOX  = 0xb,
-	TRC_MVDROPDOWN = 0xc,
-	TRC_NONE       = 0xff,
-};
-
-enum TRow_ctl_flags {
-	TRF_NONE       = 0,
-	TRF_MULTILINE  = 1 << 0,
-	TRF_EDITABLE   = 1 << 1,
-	TRF_MANDATORY  = 1 << 2,
-	TRF_IMMEDIATE  = 1 << 3,
-	TRF_PASSWORD   = 1 << 4,
-	TRF_DOUBLEBYTE = 1 << 5,
-	TRF_INDEX      = 1 << 6,
-};
 
 namespace {
 struct abktaux {
@@ -50,50 +27,50 @@ struct abktaux {
 static unsigned int abkt_cttype2int(const char *s)
 {
 #define E(q, w) do { if (strcmp(s, (q)) == 0) return w; } while (false)
-	E("label", TRC_LABEL);
-	E("textctrl", TRC_TEXTCTRL);
-	E("listbox", TRC_LISTBOX);
-	E("checkbox", TRC_CHECKBOX);
-	E("groupbox", TRC_GROUPBOX);
-	E("button", TRC_BUTTON);
-	E("tabpage", TRC_TABPAGE);
-	E("mvlistbox", TRC_MVLISTBOX);
-	E("mvdropdown", TRC_MVDROPDOWN);
-	return TRC_NONE;
+	E("label", DTCT_LABEL);
+	E("textctrl", DTCT_EDIT);
+	E("listbox", DTCT_LBX);
+	E("checkbox", DTCT_CHECKBOX);
+	E("groupbox", DTCT_GROUPBOX);
+	E("button", DTCT_BUTTON);
+	E("tabpage", DTCT_PAGE);
+	E("mvlistbox", DTCT_MVLISTBOX);
+	E("mvdropdown", DTCT_MVDDLBX);
+	return _DTCT_NONE;
 #undef E
 }
 
 static const char *abkt_cttype2str(unsigned int v)
 {
 	switch (v) {
-	case TRC_LABEL: return "label";
-	case TRC_TEXTCTRL: return "textctrl";
-	case TRC_LISTBOX: return "listbox";
-	case TRC_CHECKBOX: return "checkbox";
-	case TRC_GROUPBOX: return "groupbox";
-	case TRC_BUTTON: return "button";
-	case TRC_TABPAGE: return "tabpage";
-	case TRC_MVLISTBOX: return "mvlistbox";
-	case TRC_MVDROPDOWN: return "mvdropdown";
+	case DTCT_LABEL: return "label";
+	case DTCT_EDIT: return "textctrl";
+	case DTCT_LBX: return "listbox";
+	case DTCT_CHECKBOX: return "checkbox";
+	case DTCT_GROUPBOX: return "groupbox";
+	case DTCT_BUTTON: return "button";
+	case DTCT_PAGE: return "tabpage";
+	case DTCT_MVLISTBOX: return "mvlistbox";
+	case DTCT_MVDDLBX: return "mvdropdown";
 	}
 	return "invalid";
 }
 
 static inline bool cttype_uses_proptag(unsigned int t)
 {
-	return t == TRC_TEXTCTRL || t == TRC_LISTBOX || t == TRC_CHECKBOX ||
-	       t == TRC_BUTTON || t == TRC_MVLISTBOX || t == TRC_MVDROPDOWN;
+	return t == DTCT_EDIT || t == DTCT_LBX || t == DTCT_CHECKBOX ||
+	       t == DTCT_BUTTON || t == DTCT_MVLISTBOX || t == DTCT_MVDDLBX;
 }
 
 static inline bool cttype_uses_label(unsigned int t)
 {
-	return t == TRC_LABEL || t == TRC_CHECKBOX || t == TRC_GROUPBOX ||
-	       t == TRC_BUTTON || t == TRC_TABPAGE;
+	return t == DTCT_LABEL || t == DTCT_CHECKBOX || t == DTCT_GROUPBOX ||
+	       t == DTCT_BUTTON || t == DTCT_PAGE;
 }
 
 static inline bool cttype_uses_pattern(unsigned int t)
 {
-	return t == TRC_TEXTCTRL || t == TRC_LISTBOX || t == TRC_MVLISTBOX;
+	return t == DTCT_EDIT || t == DTCT_LBX || t == DTCT_MVLISTBOX;
 }
 
 static void abkt_read_row(lb_reader &bin, Json::Value &jrow, unsigned int cpid)
@@ -104,18 +81,18 @@ static void abkt_read_row(lb_reader &bin, Json::Value &jrow, unsigned int cpid)
 	jrow["sizey"] = bin.r4();
 	auto ct_type = bin.r4(), flags = bin.r4(), proptag = bin.r4();
 	auto maxlen = bin.r4(), stroffset = bin.r4();
-	if (ct_type == TRC_TABPAGE)
-		flags = 0;
+	if (ct_type == DTCT_PAGE)
+		flags = _DT_NONE;
 	jrow["ct_type"] = abkt_cttype2str(ct_type);
-	jrow["is_multiline"]  = !!(flags & TRF_MULTILINE);
-	jrow["is_editable"]   = !!(flags & TRF_EDITABLE);
-	jrow["is_mandatory"]  = !!(flags & TRF_MANDATORY);
-	jrow["is_password"]   = !!(flags & TRF_PASSWORD);
-	jrow["is_doublebyte"] = !!(flags & TRF_DOUBLEBYTE);
-	jrow["is_index"]      = !!(flags & TRF_INDEX);
+	jrow["is_multiline"]  = !!(flags & DT_MULTILINE);
+	jrow["is_editable"]   = !!(flags & DT_EDITABLE);
+	jrow["is_mandatory"]  = !!(flags & DT_REQUIRED);
+	jrow["is_password"]   = !!(flags & DT_PASSWORD_EDIT);
+	jrow["is_doublebyte"] = !!(flags & DT_ACCEPT_DBCS);
+	jrow["is_index"]      = !!(flags & DT_SET_SELECTION);
 	if (cttype_uses_proptag(ct_type))
 		jrow["proptag"] = proptag;
-	if (ct_type == TRC_TEXTCTRL)
+	if (ct_type == DTCT_EDIT)
 		jrow["maxlen"] = maxlen;
 	std::string text;
 	if (cttype_uses_label(ct_type) || cttype_uses_pattern(ct_type)) {
@@ -128,7 +105,7 @@ static void abkt_read_row(lb_reader &bin, Json::Value &jrow, unsigned int cpid)
 	}
 	if (cttype_uses_label(ct_type))
 		jrow["label"] = std::move(text);
-	else if (ct_type == TRC_TEXTCTRL)
+	else if (ct_type == DTCT_EDIT)
 		jrow["pattern"] = std::move(text);
 }
 
@@ -146,19 +123,19 @@ static void abkt_read(lb_reader &bin, Json::Value &tpl, unsigned int cpid)
 static void abkt_write_row(Json::Value &jrow, abktaux &aux, lb_writer &bin, unsigned int cpid)
 {
 	unsigned int ct_type = abkt_cttype2int(jrow["ct_type"].asString().c_str());
-	unsigned int flags = 0;
-	if (ct_type == TRC_NONE) {
-		ct_type = TRC_LABEL;
+	unsigned int flags = _DT_NONE;
+	if (ct_type == _DTCT_NONE) {
+		ct_type = DTCT_LABEL;
 		jrow["label"] = "";
-	} else if (ct_type == TRC_LISTBOX || ct_type == TRC_MVLISTBOX) {
+	} else if (ct_type == DTCT_LBX || ct_type == DTCT_MVLISTBOX) {
 		jrow["pattern"] = "*";
 	}
-	if (jrow["is_multiline"].asBool())  flags |= TRF_MULTILINE;
-	if (jrow["is_editable"].asBool())   flags |= TRF_EDITABLE;
-	if (jrow["is_mandatory"].asBool())  flags |= TRF_MANDATORY;
-	if (jrow["is_password"].asBool())   flags |= TRF_PASSWORD;
-	if (jrow["is_doublebyte"].asBool()) flags |= TRF_DOUBLEBYTE;
-	if (jrow["is_index"].asBool())      flags |= TRF_INDEX;
+	if (jrow["is_multiline"].asBool())  flags |= DT_MULTILINE;
+	if (jrow["is_editable"].asBool())   flags |= DT_EDITABLE;
+	if (jrow["is_mandatory"].asBool())  flags |= DT_REQUIRED;
+	if (jrow["is_password"].asBool())   flags |= DT_PASSWORD_EDIT;
+	if (jrow["is_doublebyte"].asBool()) flags |= DT_ACCEPT_DBCS;
+	if (jrow["is_index"].asBool())      flags |= DT_SET_SELECTION;
 
 	bin.w4(jrow["posx"].asUInt());
 	bin.w4(jrow["sizex"].asUInt());
@@ -167,7 +144,7 @@ static void abkt_write_row(Json::Value &jrow, abktaux &aux, lb_writer &bin, unsi
 	bin.w4(ct_type);
 	bin.w4(flags);
 	bin.w4(cttype_uses_proptag(ct_type) ? jrow["proptag"].asUInt() : 0);
-	bin.w4(ct_type == TRC_TEXTCTRL ? jrow["maxlen"].asUInt() : 0);
+	bin.w4(ct_type == DTCT_EDIT ? jrow["maxlen"].asUInt() : 0);
 	if (!cttype_uses_label(ct_type) && !cttype_uses_pattern(ct_type)) {
 		bin.w4(0);
 		return;
