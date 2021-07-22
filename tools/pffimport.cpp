@@ -722,6 +722,22 @@ static void az_lookup_specials(libpff_file_t *file)
 		g_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_FINDER), "FID_FINDER"});
 }
 
+static void az_fmap_standard(libpff_file_t *file, const char *filename)
+{
+	char timebuf[64];
+	time_t now = time(nullptr);
+	auto tm = localtime(&now);
+	strftime(timebuf, arsizeof(timebuf), " @%FT%T", tm);
+	g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{true, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
+		"Import of "s + HX_basename(filename) + timebuf});
+}
+
+static void az_fmap_splice(libpff_file_t *file)
+{
+	g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_ROOT), "FID_ROOT"});
+	az_lookup_specials(file);
+}
+
 static int do_file(const char *filename) try
 {
 	libpff_error_ptr err;
@@ -741,17 +757,10 @@ static int do_file(const char *filename) try
 	g_propname_cache.clear();
 	if (g_wet_run)
 		fprintf(stderr, "Transferring objects...\n");
-	if (!g_splice) {
-		char timebuf[64];
-		time_t now = time(nullptr);
-		auto tm = localtime(&now);
-		strftime(timebuf, GX_ARRAY_SIZE(timebuf), " @%FT%T", tm);
-		g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{true, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
-			"Import of "s + HX_basename(filename) + timebuf});
-	} else {
-		g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_ROOT), "FID_ROOT"});
-		az_lookup_specials(file.get());
-	}
+	if (g_splice)
+		az_fmap_splice(file.get());
+	else
+		az_fmap_standard(file.get(), filename);
 	if (g_show_props) {
 		printf("Folder map:\n");
 		for (const auto &pair : g_folder_map)
