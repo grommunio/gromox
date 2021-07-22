@@ -162,6 +162,20 @@ void gi_dump_tpropval_a(unsigned int depth, TPROPVAL_ARRAY &props)
 		tlog("}\n");
 }
 
+uint16_t gi_resolve_namedprop(const PROPERTY_NAME *pn_req)
+{
+	PROPNAME_ARRAY pna_req;
+	pna_req.count = 1;
+	pna_req.ppropname = deconst(pn_req);
+
+	PROPID_ARRAY pid_rsp{};
+	if (!exmdb_client::get_named_propids(g_storedir, TRUE, &pna_req, &pid_rsp))
+		throw YError("PF-1047: request to server for propname mapping failed");
+	if (pid_rsp.count != 1)
+		throw YError("PF-1048");
+	return pid_rsp.ppropid[0];
+}
+
 static BOOL exm_dorpc(const char *dir, const EXMDB_REQUEST *prequest, EXMDB_RESPONSE *presponse)
 {
 	BINARY tb;

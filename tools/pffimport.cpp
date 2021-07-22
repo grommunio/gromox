@@ -276,32 +276,26 @@ static int do_attach(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t 
 	return 0;
 }
 
-static int az_resolve_inplace(libpff_record_entry_t *rent, uint32_t &proptag)
+static uint32_t az_resolve_namedprop(libpff_record_entry_t *rent, uint32_t proptag)
 {
 	if (!g_wet_run)
-		return 0;
+		return proptag;
 	auto it = g_propname_cache.find(proptag);
-	if (it != g_propname_cache.end()) {
-		proptag = PROP_TAG(PROP_TYPE(proptag), it->second);
-		return 0;
-	}
+	if (it != g_propname_cache.end())
+		return PROP_TAG(PROP_TYPE(proptag), it->second);
 
 	libpff_nti_entry_ptr nti_entry;
 	uint8_t nti_type = 0;
 	if (libpff_record_entry_get_name_to_id_map_entry(rent, &unique_tie(nti_entry), nullptr) < 1)
-		return 0;
+		return proptag;
 	if (libpff_name_to_id_map_entry_get_type(nti_entry.get(), &nti_type, nullptr) < 1)
-		return 0;
+		return proptag;
 
 	std::unique_ptr<char[]> pnstr;
 	PROPERTY_NAME pn_req{};
-	PROPNAME_ARRAY pna_req;
-	pna_req.count = 1;
-	pna_req.ppropname = &pn_req;
-
 	if (libpff_name_to_id_map_entry_get_guid(nti_entry.get(),
 	    reinterpret_cast<uint8_t *>(&pn_req.guid), sizeof(pn_req.guid), nullptr) < 1)
-		return 0;
+		return proptag;
 
 	if (nti_type == LIBPFF_NAME_TO_ID_MAP_ENTRY_TYPE_NUMERIC) {
 		if (libpff_name_to_id_map_entry_get_number(nti_entry.get(), &pn_req.lid, nullptr) < 1)
@@ -310,7 +304,7 @@ static int az_resolve_inplace(libpff_record_entry_t *rent, uint32_t &proptag)
 	} else if (nti_type == LIBPFF_NAME_TO_ID_MAP_ENTRY_TYPE_STRING) {
 		size_t dsize = 0;
 		if (libpff_name_to_id_map_entry_get_utf8_string_size(nti_entry.get(), &dsize, nullptr) < 1)
-			return 0;
+			return proptag;
 		pnstr = std::make_unique<char[]>(dsize + 1);
 		if (libpff_name_to_id_map_entry_get_utf8_string(nti_entry.get(), reinterpret_cast<uint8_t *>(pnstr.get()), dsize + 1, nullptr) < 1)
 			throw YError("PF-1009");
@@ -321,14 +315,9 @@ static int az_resolve_inplace(libpff_record_entry_t *rent, uint32_t &proptag)
 		throw YError("PF-1010: EOPNOTSUPP");
 	}
 
-	PROPID_ARRAY pid_rsp{};
-	if (!exmdb_client::get_named_propids(g_storedir, TRUE, &pna_req, &pid_rsp))
-		throw YError("PF-1047: request to server for propname mapping failed\n");
-	if (pid_rsp.count != 1)
-		throw YError("PF-1048");
-	g_propname_cache.emplace(PROP_ID(proptag), pid_rsp.ppropid[0]);
-	proptag = PROP_TAG(PROP_TYPE(proptag), pid_rsp.ppropid[0]);
-	return 0;
+	auto new_propid = gi_resolve_namedprop(&pn_req);
+	g_propname_cache.emplace(PROP_ID(proptag), new_propid);
+	return PROP_TAG(PROP_TYPE(proptag), new_propid);
 }
 
 static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar)
@@ -348,16 +337,15 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 
 	TAGGED_PROPVAL pv;
 	pv.proptag = PROP_TAG(vtype, etype);
-	auto ret = az_resolve_inplace(rent, pv.proptag);
-	if (ret < 0)
-		throw YError("PF-1052: %s", strerror(-ret));
+	if (g_wet_run)
+		pv.proptag = az_resolve_namedprop(rent, pv.proptag);
 	auto buf = std::make_unique<uint8_t[]>(dsize + 1);
 	if (dsize == 0)
 		buf[0] = '\0';
 	else if (libpff_record_entry_get_data(rent, buf.get(), dsize + 1, &~unique_tie(err)) < 1)
 		throw az_error("PF-1033", err);
 	if (vtype & LIBPFF_VALUE_TYPE_MULTI_VALUE_FLAG) {
-		ret = libpff_record_entry_get_multi_value(rent, &unique_tie(mv), &~unique_tie(err));
+		auto ret = libpff_record_entry_get_multi_value(rent, &unique_tie(mv), &~unique_tie(err));
 		if (ret == 0)
 			return;
 		if (ret < 0)

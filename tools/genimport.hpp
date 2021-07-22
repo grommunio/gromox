@@ -71,6 +71,7 @@ extern std::unordered_map<uint32_t, tgt_folder> g_folder_map;
 extern void tree(unsigned int d);
 extern void tlog(const char *f, ...);
 extern void gi_dump_tpropval_a(unsigned int depth, TPROPVAL_ARRAY &);
+extern uint16_t gi_resolve_namedprop(const PROPERTY_NAME *);
 extern int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl, uint64_t *new_fld_id);
 extern int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *);
 extern int gi_setup(const char *dstmbox);
