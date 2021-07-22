@@ -234,7 +234,7 @@ static std::string az_item_get_str(libpff_item_t *item, uint32_t proptag)
 	return reinterpret_cast<char *>(buf.get());
 }
 
-static int do_attach(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t *atx)
+static int do_attach2(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t *atx)
 {
 	int atype = 0;
 	uint64_t asize = 0;
@@ -520,124 +520,134 @@ static void do_print_extra(unsigned int depth, libpff_item_t *item,
 	}
 }
 
-static int do_item2(unsigned int depth, const parent_desc &parent,
-    libpff_item_t *item, unsigned int item_type, uint32_t ident, int nsets,
-    uint64_t *new_fld_id)
+static int do_folder(unsigned int depth, const parent_desc &parent,
+    libpff_item_t *item, uint64_t *new_fld_id)
 {
-	std::unique_ptr<MESSAGE_CONTENT, gi_delete> ctnt;
-
-	if (item_type == LIBPFF_ITEM_TYPE_FOLDER) {
-		auto props = item_to_tpropval_a(item);
-		if (g_show_tree)
-			gi_dump_tpropval_a(depth, *props);
-		if (g_wet_run) {
-		auto iter = g_folder_map.find(ident);
-		if (iter == g_folder_map.end() && parent.type == MAPI_FOLDER) {
-			/* O_EXCL style behavior <=> not splicing. */
-			bool o_excl = !g_splice;
-			/* PST folder with name -> new folder in store */
-			auto ret = exm_create_folder(parent.folder_id, props.get(), o_excl, new_fld_id);
-			if (ret < 0)
-				return ret;
-		} else if (iter == g_folder_map.end()) {
-			/* No @parent for writing the item anywhere, and no hints in map => do not create. */
-		} else if (!iter->second.create) {
-			/* Splice request (e.g. PST wastebox -> Store wastebox) */
-			*new_fld_id = iter->second.fid_to;
-		} else {
-			/* Create request (e.g. PST root without name -> new folder in store with name) */
-			if (!tpropval_array_set_propval(props.get(), PR_DISPLAY_NAME,
-			    iter->second.create_name.c_str()))
-				throw std::bad_alloc();
-			auto ret = exm_create_folder(iter->second.fid_to,
-			           props.get(), false, new_fld_id);
-			if (ret < 0)
-				return ret;
-		}
-		}
-	} else if (is_mapi_message(ident)) {
-		auto props = item_to_tpropval_a(item);
-		if (g_show_tree)
-			gi_dump_tpropval_a(depth, *props);
-		ctnt.reset(message_content_init());
-		if (ctnt == nullptr)
-			throw std::bad_alloc();
-		ctnt->children.pattachments = attachment_list_init();
-		if (ctnt->children.pattachments == nullptr)
-			throw std::bad_alloc();
-		ctnt->children.prcpts = tarray_set_init();
-		if (ctnt->children.prcpts == nullptr)
-			throw std::bad_alloc();
-		std::swap(ctnt->proplist.count, props->count);
-		std::swap(ctnt->proplist.ppropval, props->ppropval);
-		libpff_item_ptr recip_set;
-		if (libpff_message_get_recipients(item, &unique_tie(recip_set), nullptr) >= 1) {
-			auto ret = do_item(depth + 1, parent_desc::as_msg(ctnt.get()), recip_set.get());
-			if (ret < 0)
-				return ret;
-		}
-		int atnum = 0;
-		if (libpff_message_get_number_of_attachments(item, &atnum, nullptr) >= 1) {
-			for (int atidx = 0; atidx < atnum; ++atidx) {
-				libpff_item_ptr atx;
-				libpff_error_ptr err;
-				if (libpff_message_get_attachment(item, atidx,
-				    &unique_tie(atx), &~unique_tie(err)) < 1)
-					throw az_error("PF-1017", err);
-				auto ret = do_item(depth, parent_desc::as_msg(ctnt.get()), atx.get());
-				if (ret < 0)
-					return ret;
-			}
-		}
-	} else if (item_type == LIBPFF_ITEM_TYPE_RECIPIENTS) {
-		libpff_error_ptr err;
-		if (libpff_item_get_number_of_record_sets(item, &nsets, &unique_tie(err)) < 1)
-			throw az_error("PF-1050", err);
-		tpropval_array_ptr props(tpropval_array_init());
-		if (props == nullptr)
-			throw std::bad_alloc();
-		for (int s = 0; s < nsets; ++s) {
-			libpff_record_set_ptr rset;
-			if (libpff_item_get_record_set_by_index(item, s, &unique_tie(rset), nullptr) < 1)
-				throw YError("PF-1049");
-			recordset_to_tpropval_a(rset.get(), props.get());
-			if (g_show_tree)
-				gi_dump_tpropval_a(depth, *props);
-			assert(parent.type == MAPI_MESSAGE);
-			if (!tarray_set_append_internal(parent.message->children.prcpts, props.get()))
-				throw std::bad_alloc();
-			props.release();
-			props.reset(tpropval_array_init());
-			if (props == nullptr)
-				throw std::bad_alloc();
-		}
-	} else if (item_type == LIBPFF_ITEM_TYPE_ATTACHMENT) {
-		attachment_content_ptr atc(attachment_content_init());
-		if (atc == nullptr)
-			throw std::bad_alloc();
-		auto props = item_to_tpropval_a(item);
-		if (g_show_tree)
-			gi_dump_tpropval_a(depth, *props);
-		std::swap(atc->proplist.count, props->count);
-		std::swap(atc->proplist.ppropval, props->ppropval);
-		auto ret = do_attach(depth, atc.get(), item);
+	auto props = item_to_tpropval_a(item);
+	if (g_show_tree)
+		gi_dump_tpropval_a(depth, *props);
+	uint32_t ident = 0;
+	if (libpff_item_get_identifier(item, &ident, nullptr) < 1)
+		throw YError("PF-1051");
+	if (!g_wet_run)
+		return 0;
+	auto iter = g_folder_map.find(ident);
+	if (iter == g_folder_map.end() && parent.type == MAPI_FOLDER) {
+		/* O_EXCL style behavior <=> not splicing. */
+		bool o_excl = !g_splice;
+		/* PST folder with name -> new folder in store */
+		auto ret = exm_create_folder(parent.folder_id, props.get(), o_excl, new_fld_id);
 		if (ret < 0)
 			return ret;
-		if (parent.type == MAPI_MESSAGE) {
-			if (!attachment_list_append_internal(parent.message->children.pattachments, atc.get()))
-				throw std::bad_alloc();
-			atc.release();
+	} else if (iter == g_folder_map.end()) {
+		/* No @parent for writing the item anywhere, and no hints in map => do not create. */
+	} else if (!iter->second.create) {
+		/* Splice request (e.g. PST wastebox -> Store wastebox) */
+		*new_fld_id = iter->second.fid_to;
+	} else {
+		/* Create request (e.g. PST root without name -> new folder in store with name) */
+		if (!tpropval_array_set_propval(props.get(), PR_DISPLAY_NAME,
+		    iter->second.create_name.c_str()))
+			throw std::bad_alloc();
+		auto ret = exm_create_folder(iter->second.fid_to,
+			   props.get(), false, new_fld_id);
+		if (ret < 0)
+			return ret;
+	}
+	return 0;
+}
+
+static int do_message(unsigned int depth, const parent_desc &parent,
+    libpff_item_t *item, unsigned int item_type)
+{
+	auto props = item_to_tpropval_a(item);
+	if (g_show_tree)
+		gi_dump_tpropval_a(depth, *props);
+
+	message_content_ptr ctnt(message_content_init());
+	if (ctnt == nullptr)
+		throw std::bad_alloc();
+	ctnt->children.pattachments = attachment_list_init();
+	if (ctnt->children.pattachments == nullptr)
+		throw std::bad_alloc();
+	ctnt->children.prcpts = tarray_set_init();
+	if (ctnt->children.prcpts == nullptr)
+		throw std::bad_alloc();
+	std::swap(ctnt->proplist.count, props->count);
+	std::swap(ctnt->proplist.ppropval, props->ppropval);
+	libpff_item_ptr recip_set;
+	if (libpff_message_get_recipients(item, &unique_tie(recip_set), nullptr) >= 1) {
+		auto ret = do_item(depth + 1, parent_desc::as_msg(ctnt.get()), recip_set.get());
+		if (ret < 0)
+			return ret;
+	}
+	int atnum = 0;
+	if (libpff_message_get_number_of_attachments(item, &atnum, nullptr) >= 1) {
+		for (int atidx = 0; atidx < atnum; ++atidx) {
+			libpff_item_ptr atx;
+			libpff_error_ptr err;
+			if (libpff_message_get_attachment(item, atidx,
+			    &unique_tie(atx), &unique_tie(err)) < 1)
+				throw az_error("PF-1017", err);
+			auto ret = do_item(depth, parent_desc::as_msg(ctnt.get()), atx.get());
+			if (ret < 0)
+				return ret;
 		}
 	}
-
 	if (g_show_tree)
-		do_print_extra(depth, item, item_type, parent, *new_fld_id);
-	if (!is_mapi_message(ident))
-		return 0;
+		do_print_extra(depth, item, item_type, parent, 0);
 	if (g_wet_run && parent.type == MAPI_FOLDER)
 		return exm_create_msg(parent.folder_id, ctnt.get());
 	if (parent.type == MAPI_ATTACH)
 		attachment_content_set_embedded_internal(parent.attach, ctnt.release());
+	return 0;
+}
+
+static int do_recips(unsigned int depth, const parent_desc &parent, libpff_item_t *item)
+{
+	int nsets = 0;
+	libpff_error_ptr err;
+	if (libpff_item_get_number_of_record_sets(item, &nsets, &unique_tie(err)) < 1)
+		throw az_error("PF-1050", err);
+	tpropval_array_ptr props(tpropval_array_init());
+	if (props == nullptr)
+		throw std::bad_alloc();
+	for (int s = 0; s < nsets; ++s) {
+		libpff_record_set_ptr rset;
+		if (libpff_item_get_record_set_by_index(item, s, &unique_tie(rset), nullptr) < 1)
+			throw YError("PF-1049");
+		recordset_to_tpropval_a(rset.get(), props.get());
+		if (g_show_tree)
+			gi_dump_tpropval_a(depth, *props);
+		assert(parent.type == MAPI_MESSAGE);
+		if (!tarray_set_append_internal(parent.message->children.prcpts, props.get()))
+			throw std::bad_alloc();
+		props.release();
+		props.reset(tpropval_array_init());
+		if (props == nullptr)
+			throw std::bad_alloc();
+	}
+	return 0;
+}
+
+static int do_attach(unsigned int depth, const parent_desc &parent, libpff_item_t *item)
+{
+	attachment_content_ptr atc(attachment_content_init());
+	if (atc == nullptr)
+		throw std::bad_alloc();
+	auto props = item_to_tpropval_a(item);
+	if (g_show_tree)
+		gi_dump_tpropval_a(depth, *props);
+	std::swap(atc->proplist.count, props->count);
+	std::swap(atc->proplist.ppropval, props->ppropval);
+	auto ret = do_attach2(depth, atc.get(), item);
+	if (ret < 0)
+		return ret;
+	if (parent.type == MAPI_MESSAGE) {
+		if (!attachment_list_append_internal(parent.message->children.pattachments, atc.get()))
+			throw std::bad_alloc();
+		atc.release();
+	}
 	return 0;
 }
 
@@ -665,14 +675,20 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 	}
 
 	++depth;
-	/*
-	 * If folder: collect props and create.
-	 * If message: collect props and recurse into recipient sets & attachments...
-	 */
 	uint64_t new_fld_id = 0;
-	auto ret = do_item2(depth, parent, item, item_type, ident, nsets, &new_fld_id);
-	if (ret < 0)
+	int ret = 0;
+	if (item_type == LIBPFF_ITEM_TYPE_FOLDER)
+		ret = do_folder(depth, parent, item, &new_fld_id);
+	else if (is_mapi_message(ident))
+		return do_message(depth, parent, item, item_type);
+	else if (item_type == LIBPFF_ITEM_TYPE_RECIPIENTS)
+		ret = do_recips(depth, parent, item);
+	else if (item_type == LIBPFF_ITEM_TYPE_ATTACHMENT)
+		ret = do_attach(depth, parent, item);
+	if (ret != 0)
 		return ret;
+	if (g_show_tree)
+		do_print_extra(depth, item, item_type, parent, new_fld_id);
 	auto new_parent = parent;
 	if (new_fld_id != 0) {
 		new_parent.type = MAPI_FOLDER;

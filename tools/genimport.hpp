@@ -64,6 +64,7 @@ struct tgt_folder {
 };
 
 using attachment_content_ptr = std::unique_ptr<ATTACHMENT_CONTENT, gi_delete>;
+using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, gi_delete>;
 using tpropval_array_ptr = std::unique_ptr<TPROPVAL_ARRAY, gi_delete>;
 
 extern const char *g_storedir;
