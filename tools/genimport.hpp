@@ -63,6 +63,9 @@ struct tgt_folder {
 	std::string create_name;
 };
 
+using attachment_content_ptr = std::unique_ptr<ATTACHMENT_CONTENT, gi_delete>;
+using tpropval_array_ptr = std::unique_ptr<TPROPVAL_ARRAY, gi_delete>;
+
 extern const char *g_storedir;
 extern unsigned int g_show_tree, g_show_props, g_wet_run;
 extern std::unordered_map<uint16_t, uint16_t> g_propname_cache;

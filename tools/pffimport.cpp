@@ -476,38 +476,36 @@ static void recordset_to_tpropval_a(libpff_record_set_t *rset, TPROPVAL_ARRAY *p
 	}
 }
 
-/* Process an arbitrary PFF item (folder, message, recipient table, attachment, ...) */
+static tpropval_array_ptr item_to_tpropval_a(libpff_item_t *item)
+{
+	tpropval_array_ptr props(tpropval_array_init());
+	if (props == nullptr)
+		throw std::bad_alloc();
+	int nsets = 0;
+	libpff_error_ptr err;
+	if (libpff_item_get_number_of_record_sets(item, &nsets, &unique_tie(err)) < 1)
+		throw az_error("PF-1060", err);
+	for (int n = 0; n < nsets; ++n) {
+		libpff_record_set_ptr rset;
+		if (libpff_item_get_record_set_by_index(item, 0,
+		    &unique_tie(rset), &~unique_tie(err)) < 1)
+			throw az_error("PF-1022", err);
+		recordset_to_tpropval_a(rset.get(), props.get());
+	}
+	return props;
+}
+
 static int do_item2(unsigned int depth, const parent_desc &parent,
     libpff_item_t *item, unsigned int item_type, uint32_t ident, int nsets,
     uint64_t *new_fld_id)
 {
-	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> props(tpropval_array_init());
-	if (props == nullptr)
-		throw std::bad_alloc();
+	std::unique_ptr<MESSAGE_CONTENT, gi_delete> ctnt;
 
-	for (int s = 0; s < nsets; ++s) {
-		libpff_record_set_ptr rset;
-
-		if (libpff_item_get_record_set_by_index(item, s, &unique_tie(rset), nullptr) < 1)
-			throw YError("PF-1022");
-		recordset_to_tpropval_a(rset.get(), props.get());
+	if (item_type == LIBPFF_ITEM_TYPE_FOLDER) {
+		auto props = item_to_tpropval_a(item);
 		if (g_show_tree)
 			gi_dump_tpropval_a(depth, *props);
-		if (item_type != LIBPFF_ITEM_TYPE_RECIPIENTS)
-			/* For folders, messages, attachments, etc. keep properties in @props. */
-			continue;
-
-		/* Turn this property set into a "recipient". */
-		assert(parent.type == MAPI_MESSAGE);
-		if (!tarray_set_append_internal(parent.message->children.prcpts, props.get()))
-			throw std::bad_alloc();
-		props.release();
-		props.reset(tpropval_array_init());
-		if (props == nullptr)
-			throw std::bad_alloc();
-	}
-
-	if (g_wet_run && item_type == LIBPFF_ITEM_TYPE_FOLDER) {
+		if (g_wet_run) {
 		auto iter = g_folder_map.find(ident);
 		if (iter == g_folder_map.end() && parent.type == MAPI_FOLDER) {
 			/* O_EXCL style behavior <=> not splicing. */
@@ -531,10 +529,70 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 			if (ret < 0)
 				return ret;
 		}
+		}
+	} else if (is_mapi_message(ident)) {
+		auto props = item_to_tpropval_a(item);
+		if (g_show_tree)
+			gi_dump_tpropval_a(depth, *props);
+		ctnt.reset(message_content_init());
+		if (ctnt == nullptr)
+			throw std::bad_alloc();
+		ctnt->children.pattachments = attachment_list_init();
+		if (ctnt->children.pattachments == nullptr)
+			throw std::bad_alloc();
+		ctnt->children.prcpts = tarray_set_init();
+		if (ctnt->children.prcpts == nullptr)
+			throw std::bad_alloc();
+		std::swap(ctnt->proplist.count, props->count);
+		std::swap(ctnt->proplist.ppropval, props->ppropval);
+		libpff_item_ptr recip_set;
+		if (libpff_message_get_recipients(item, &unique_tie(recip_set), nullptr) >= 1) {
+			auto ret = do_item(depth + 1, parent_desc::as_msg(ctnt.get()), recip_set.get());
+			if (ret < 0)
+				return ret;
+		}
+		int atnum = 0;
+		if (libpff_message_get_number_of_attachments(item, &atnum, nullptr) >= 1) {
+			for (int atidx = 0; atidx < atnum; ++atidx) {
+				libpff_item_ptr atx;
+				libpff_error_ptr err;
+				if (libpff_message_get_attachment(item, atidx,
+				    &unique_tie(atx), &~unique_tie(err)) < 1)
+					throw az_error("PF-1017", err);
+				auto ret = do_item(depth, parent_desc::as_msg(ctnt.get()), atx.get());
+				if (ret < 0)
+					return ret;
+			}
+		}
+	} else if (item_type == LIBPFF_ITEM_TYPE_RECIPIENTS) {
+		libpff_error_ptr err;
+		if (libpff_item_get_number_of_record_sets(item, &nsets, &unique_tie(err)) < 1)
+			throw az_error("PF-1050", err);
+		tpropval_array_ptr props(tpropval_array_init());
+		if (props == nullptr)
+			throw std::bad_alloc();
+		for (int s = 0; s < nsets; ++s) {
+			libpff_record_set_ptr rset;
+			if (libpff_item_get_record_set_by_index(item, s, &unique_tie(rset), nullptr) < 1)
+				throw YError("PF-1049");
+			recordset_to_tpropval_a(rset.get(), props.get());
+			if (g_show_tree)
+				gi_dump_tpropval_a(depth, *props);
+			assert(parent.type == MAPI_MESSAGE);
+			if (!tarray_set_append_internal(parent.message->children.prcpts, props.get()))
+				throw std::bad_alloc();
+			props.release();
+			props.reset(tpropval_array_init());
+			if (props == nullptr)
+				throw std::bad_alloc();
+		}
 	} else if (item_type == LIBPFF_ITEM_TYPE_ATTACHMENT) {
-		std::unique_ptr<ATTACHMENT_CONTENT, gi_delete> atc(attachment_content_init());
+		attachment_content_ptr atc(attachment_content_init());
 		if (atc == nullptr)
 			throw std::bad_alloc();
+		auto props = item_to_tpropval_a(item);
+		if (g_show_tree)
+			gi_dump_tpropval_a(depth, *props);
 		std::swap(atc->proplist.count, props->count);
 		std::swap(atc->proplist.ppropval, props->ppropval);
 		auto ret = do_attach(depth, atc.get(), item);
@@ -544,43 +602,6 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 			if (!attachment_list_append_internal(parent.message->children.pattachments, atc.get()))
 				throw std::bad_alloc();
 			atc.release();
-		}
-	}
-
-	/*
-	 * Unconditionally parse recipients/attachments into @ctnt. If it is
-	 * not a message, it just gets freed without being sent to the server.
-	 */
-	std::unique_ptr<MESSAGE_CONTENT, gi_delete> ctnt(message_content_init());
-	if (ctnt == nullptr)
-		throw std::bad_alloc();
-	ctnt->children.pattachments = attachment_list_init();
-	if (ctnt->children.pattachments == nullptr)
-		throw std::bad_alloc();
-	ctnt->children.prcpts = tarray_set_init();
-	if (ctnt->children.prcpts == nullptr)
-		throw std::bad_alloc();
-	std::swap(ctnt->proplist.count, props->count);
-	std::swap(ctnt->proplist.ppropval, props->ppropval);
-
-	libpff_item_ptr recip_set;
-	if (libpff_message_get_recipients(item, &unique_tie(recip_set), nullptr) >= 1) {
-		auto ret = do_item(depth + 1, parent_desc::as_msg(ctnt.get()), recip_set.get());
-		if (ret < 0)
-			return ret;
-	}
-
-	int atnum = 0;
-	if (libpff_message_get_number_of_attachments(item, &atnum, nullptr) >= 1) {
-		for (int atidx = 0; atidx < atnum; ++atidx) {
-			libpff_item_ptr atx;
-			libpff_error_ptr err;
-			if (libpff_message_get_attachment(item, atidx,
-			    &unique_tie(atx), &unique_tie(err)) < 1)
-				throw az_error("PF-1017", err);
-			auto ret = do_item(depth, parent_desc::as_msg(ctnt.get()), atx.get());
-			if (ret < 0)
-				return ret;
 		}
 	}
 
