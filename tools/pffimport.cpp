@@ -495,6 +495,31 @@ static tpropval_array_ptr item_to_tpropval_a(libpff_item_t *item)
 	return props;
 }
 
+static void do_print_extra(unsigned int depth, libpff_item_t *item,
+    unsigned int item_type, const parent_desc &parent, uint64_t new_fld_id)
+{
+	auto name = az_item_get_str(item, PR_DISPLAY_NAME);
+	if (g_show_tree) {
+		if (!name.empty()) {
+			tree(depth);
+			tlog("display_name=\"%s\"\n", name.c_str());
+		}
+		name = az_item_get_str(item, PR_SUBJECT);
+		if (!name.empty()) {
+			tree(depth);
+			tlog("subject=\"%s\"\n", name.c_str());
+		}
+		name = az_item_get_str(item, PR_ATTACH_LONG_FILENAME);
+		if (!name.empty()) {
+			tree(depth);
+			tlog("filename=\"%s\"\n", name.c_str());
+		}
+	} else if (item_type == LIBPFF_ITEM_TYPE_FOLDER &&
+	    (parent.type == MAPI_FOLDER || new_fld_id != 0)) {
+		printf("Processing folder \"%s\"...\n", name.c_str());
+	}
+}
+
 static int do_item2(unsigned int depth, const parent_desc &parent,
     libpff_item_t *item, unsigned int item_type, uint32_t ident, int nsets,
     uint64_t *new_fld_id)
@@ -605,27 +630,8 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 		}
 	}
 
-	auto name = az_item_get_str(item, PR_DISPLAY_NAME);
-	if (g_show_tree) {
-		if (!name.empty()) {
-			tree(depth);
-			tlog("display_name=\"%s\"\n", name.c_str());
-		}
-		name = az_item_get_str(item, PR_SUBJECT);
-		if (!name.empty()) {
-			tree(depth);
-			tlog("subject=\"%s\"\n", name.c_str());
-		}
-		name = az_item_get_str(item, PR_ATTACH_LONG_FILENAME);
-		if (!name.empty()) {
-			tree(depth);
-			tlog("filename=\"%s\"\n", name.c_str());
-		}
-	} else if (item_type == LIBPFF_ITEM_TYPE_FOLDER &&
-	    (parent.type == MAPI_FOLDER || *new_fld_id != 0)) {
-		printf("Processing folder \"%s\"...\n", name.c_str());
-	}
-
+	if (g_show_tree)
+		do_print_extra(depth, item, item_type, parent, *new_fld_id);
 	if (!is_mapi_message(ident))
 		return 0;
 	if (g_wet_run && parent.type == MAPI_FOLDER)
