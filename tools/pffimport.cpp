@@ -369,7 +369,10 @@ static void az_recordent(unsigned int depth, libpff_record_entry_t *rent)
 	case LIBPFF_VALUE_TYPE_MULTI_VALUE_INTEGER_16BIT_SIGNED ... LIBPFF_VALUE_TYPE_MULTI_VALUE_BINARY_DATA: {
 		libpff_multi_value_ptr mv;
 		int numv = 0;
-		if (libpff_record_entry_get_multi_value(rent, &unique_tie(mv), nullptr) < 1)
+		auto ret = libpff_record_entry_get_multi_value(rent, &unique_tie(mv), nullptr);
+		if (ret == 0)
+			return;
+		if (ret < 0)
 			throw "PF-1038";
 		if (libpff_multi_value_get_number_of_values(mv.get(), &numv, nullptr) < 1)
 			throw "PF-1039";
@@ -678,7 +681,10 @@ static int recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar
 	else if (libpff_record_entry_get_data(rent, buf.get(), dsize + 1, nullptr) < 1)
 		throw "PF-1033";
 	if (vtype & LIBPFF_VALUE_TYPE_MULTI_VALUE_FLAG) {
-		if (libpff_record_entry_get_multi_value(rent, &unique_tie(mv), nullptr) < 1)
+		ret = libpff_record_entry_get_multi_value(rent, &unique_tie(mv), nullptr);
+		if (ret == 0)
+			return 0;
+		if (ret < 0)
 			throw "PF-1034";
 		if (libpff_multi_value_get_number_of_values(mv.get(), &mvnum, nullptr) < 1)
 			throw "PF-1035";
