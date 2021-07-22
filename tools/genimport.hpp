@@ -1,10 +1,23 @@
 #pragma once
 #include <cstdint>
+#include <cstdlib>
+#include <exception>
 #include <string>
 #include <gromox/element_data.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/tpropval_array.hpp>
+
+class YError : public std::exception {
+	public:
+	YError(const std::string &);
+	YError(std::string &&);
+	YError(const char *fmt, ...);
+	virtual const char *what() const noexcept { return m_str.c_str(); }
+
+	protected:
+	std::string m_str;
+};
 
 struct gi_delete {
 	void operator()(ATTACHMENT_CONTENT *x) const { attachment_content_free(x); }
@@ -12,6 +25,7 @@ struct gi_delete {
 	void operator()(MESSAGE_CONTENT *x) const { message_content_free(x); }
 	void operator()(PCL *x) const { pcl_free(x); }
 	void operator()(TPROPVAL_ARRAY *x) const { tpropval_array_free(x); }
+	void operator()(void *x) const { free(x); }
 };
 
 struct parent_desc {

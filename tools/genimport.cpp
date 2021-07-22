@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2021 grammm GmbH
 // This file is part of Gromox.
+#define _GNU_SOURCE 1
 #include <algorithm>
+#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -9,6 +11,7 @@
 #include <mysql.h>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include <gromox/config_file.hpp>
 #include <gromox/database_mysql.hpp>
@@ -21,6 +24,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/socket.h>
+#include <gromox/tie.hpp>
 #include <gromox/tpropval_array.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"
@@ -36,6 +40,26 @@ const char *g_storedir;
 unsigned int g_show_tree, g_show_props, g_wet_run = 1;
 std::unordered_map<uint16_t, uint16_t> g_propname_cache;
 std::unordered_map<uint32_t, tgt_folder> g_folder_map;
+
+YError::YError(const std::string &s) : m_str(s)
+{}
+
+YError::YError(std::string &&s) : m_str(std::move(s))
+{}
+
+YError::YError(const char *fmt, ...)
+{
+	if (strchr(fmt, '%') == nullptr) {
+		m_str = fmt;
+		return;
+	}
+	va_list args;
+	va_start(args, fmt);
+	std::unique_ptr<char[], gi_delete> strp;
+	auto ret = vasprintf(&unique_tie(strp), fmt, args);
+	va_end(args);
+	m_str = ret >= 0 && strp != nullptr ? strp.get() : "vasprintf";
+}
 
 void tree(unsigned int depth)
 {

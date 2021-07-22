@@ -132,13 +132,12 @@ static const struct HXoption g_options_table[] = {
 
 static int do_item(unsigned int, const parent_desc &, libpff_item_t *);
 
-static int az_error(const char *prefix, const libpff_error_ptr &err)
+static YError az_error(const char *prefix, const libpff_error_ptr &err)
 {
 	char buf[160];
 	buf[0] = '\0';
 	libpff_error_sprint(err.get(), buf, arsizeof(buf));
-	fprintf(stderr, "%s: %s\n", prefix, buf);
-	return 0;
+	return YError(std::string(prefix) + ": " + buf);
 }
 
 static const char *az_item_type_to_str(uint8_t t)
@@ -194,10 +193,11 @@ static bool az_item_get_propv(libpff_item_t *item, uint32_t proptag,
 		return false;
 	uint8_t flags = PROP_TYPE(proptag) == PT_UNSPECIFIED ?
 	                LIBPFF_ENTRY_VALUE_FLAG_MATCH_ANY_VALUE_TYPE : 0;
+	libpff_error_ptr err;
 	ret = libpff_record_set_get_entry_by_type(rset.get(), PROP_ID(proptag),
-	      PROP_TYPE(proptag), rent, flags, nullptr);
+	      PROP_TYPE(proptag), rent, flags, &unique_tie(err));
 	if (ret < 0)
-		throw "PF-1001";
+		throw az_error("PF-1001", err);
 	else if (ret == 0)
 		return false;
 	return true;
@@ -224,12 +224,13 @@ static std::string az_item_get_str(libpff_item_t *item, uint32_t proptag)
 	if (ret == 0)
 		return {};
 	size_t dsize = 0;
-	if (libpff_record_entry_get_data_as_utf8_string_size(rent.get(), &dsize, nullptr) < 1)
-		throw "PF-1026";
+	libpff_error_ptr err;
+	if (libpff_record_entry_get_data_as_utf8_string_size(rent.get(), &dsize, &unique_tie(err)) < 1)
+		throw az_error("PF-1026", err);
 	++dsize;
 	auto buf = std::make_unique<uint8_t[]>(dsize);
-	if (libpff_record_entry_get_data_as_utf8_string(rent.get(), buf.get(), dsize, nullptr) < 1)
-		throw "PF-1002";
+	if (libpff_record_entry_get_data_as_utf8_string(rent.get(), buf.get(), dsize, &~unique_tie(err)) < 1)
+		throw az_error("PF-1002", err);
 	return reinterpret_cast<char *>(buf.get());
 }
 
@@ -239,12 +240,16 @@ static int do_attach(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t 
 	uint64_t asize = 0;
 	libpff_error_ptr err;
 
-	if (libpff_attachment_get_type(atx, &atype, &unique_tie(err)) < 1)
-		return az_error("PF-1012: Attachment is corrupted", err);
+	if (libpff_attachment_get_type(atx, &atype, &unique_tie(err)) < 1) {
+		fprintf(stderr, "%s\n", az_error("PF-1012: Attachment is corrupted", err).what());
+		return 0;
+	}
 	tree(depth);
 	if (atype == LIBPFF_ATTACHMENT_TYPE_DATA) {
-		if (libpff_attachment_get_data_size(atx, &asize, &unique_tie(err)) < 1)
-			return az_error("PF-1013: Attachment is corrupted", err);
+		if (libpff_attachment_get_data_size(atx, &asize, &~unique_tie(err)) < 1) {
+			fprintf(stderr, "%s\n", az_error("PF-1013: Attachment is corrupted", err).what());
+			return 0;
+		}
 		/*
 		 * Data is in PR_ATTACH_DATA_BIN, and so was
 		 * already spooled into atc->proplist by the caller.
@@ -253,18 +258,20 @@ static int do_attach(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t 
 	} else if (atype == LIBPFF_ATTACHMENT_TYPE_ITEM) {
 		libpff_item_ptr emb_item;
 		if (libpff_attachment_get_item(atx, &unique_tie(emb_item),
-		    &unique_tie(err)) < 1)
-			return az_error("PF-1014: Attachment is corrupted", err);
+		    &~unique_tie(err)) < 1) {
+			fprintf(stderr, "%s\n", az_error("PF-1014: Attachment is corrupted", err).what());
+			return 0;
+		}
 		tlog("[attachment type=%c embedded_msg]\n", atype);
 		auto ret = do_item(depth + 1, parent_desc::as_attach(atc), emb_item.get());
 		if (ret < 0)
 			return ret;
 	} else if (atype == LIBPFF_ATTACHMENT_TYPE_REFERENCE) {
 		tlog("[attachment type=%c]\n", atype);
-		return -EOPNOTSUPP;
+		throw YError("PF-1005: EOPNOTSUPP");
 	} else {
 		tlog("[attachment type=unknown]\n");
-		return -EOPNOTSUPP;
+		throw YError("PF-1006: EOPNOTSUPP");
 	}
 	return 0;
 }
@@ -298,81 +305,70 @@ static int az_resolve_inplace(libpff_record_entry_t *rent, uint32_t &proptag)
 
 	if (nti_type == LIBPFF_NAME_TO_ID_MAP_ENTRY_TYPE_NUMERIC) {
 		if (libpff_name_to_id_map_entry_get_number(nti_entry.get(), &pn_req.lid, nullptr) < 1)
-			return -EIO;
+			throw YError("PF-1007");
 		pn_req.kind = MNID_ID;
 	} else if (nti_type == LIBPFF_NAME_TO_ID_MAP_ENTRY_TYPE_STRING) {
 		size_t dsize = 0;
 		if (libpff_name_to_id_map_entry_get_utf8_string_size(nti_entry.get(), &dsize, nullptr) < 1)
 			return 0;
-		try {
-			pnstr = std::make_unique<char[]>(dsize + 1);
-		} catch (const std::bad_alloc &) {
-			return -ENOMEM;
-		}
+		pnstr = std::make_unique<char[]>(dsize + 1);
 		if (libpff_name_to_id_map_entry_get_utf8_string(nti_entry.get(), reinterpret_cast<uint8_t *>(pnstr.get()), dsize + 1, nullptr) < 1)
-			return -EIO;
+			throw YError("PF-1009");
 		pn_req.kind = MNID_STRING;
 		pn_req.pname = pnstr.get();
 	} else {
 		fprintf(stderr, "PF-1046: unable to handle libpff propname type %xh\n", nti_type);
-		return -EOPNOTSUPP;
+		throw YError("PF-1010: EOPNOTSUPP");
 	}
 
 	PROPID_ARRAY pid_rsp{};
-	if (!exmdb_client::get_named_propids(g_storedir, TRUE, &pna_req, &pid_rsp)) {
-		fprintf(stderr, "PF-1047: request to server for propname mapping failed\n");
-		return -EIO;
-	}
-	if (pid_rsp.count != 1) {
-		fprintf(stderr, "PF-1048\n");
-		return -EIO;
-	}
-	try {
-		g_propname_cache.emplace(PROP_ID(proptag), pid_rsp.ppropid[0]);
-	} catch (const std::bad_alloc &) {
-		return -ENOMEM;
-	}
+	if (!exmdb_client::get_named_propids(g_storedir, TRUE, &pna_req, &pid_rsp))
+		throw YError("PF-1047: request to server for propname mapping failed\n");
+	if (pid_rsp.count != 1)
+		throw YError("PF-1048");
+	g_propname_cache.emplace(PROP_ID(proptag), pid_rsp.ppropid[0]);
 	proptag = PROP_TAG(PROP_TYPE(proptag), pid_rsp.ppropid[0]);
 	return 0;
 }
 
-static int recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar)
+static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar)
 {
 	libpff_multi_value_ptr mv;
+	libpff_error_ptr err;
 	unsigned int etype = 0, vtype = 0;
 	size_t dsize = 0;
 	int mvnum = 0;
 
-	if (libpff_record_entry_get_entry_type(rent, &etype, nullptr) < 1)
-		throw "PF-1030";
-	if (libpff_record_entry_get_value_type(rent, &vtype, nullptr) < 1)
-		throw "PF-1031";
-	if (libpff_record_entry_get_data_size(rent, &dsize, nullptr) < 1)
-		throw "PF-1032";
+	if (libpff_record_entry_get_entry_type(rent, &etype, &unique_tie(err)) < 1)
+		throw az_error("PF-1030", err);
+	if (libpff_record_entry_get_value_type(rent, &vtype, &~unique_tie(err)) < 1)
+		throw az_error("PF-1031", err);
+	if (libpff_record_entry_get_data_size(rent, &dsize, &~unique_tie(err)) < 1)
+		throw az_error("PF-1032", err);
 
 	TAGGED_PROPVAL pv;
 	pv.proptag = PROP_TAG(vtype, etype);
 	auto ret = az_resolve_inplace(rent, pv.proptag);
 	if (ret < 0)
-		return ret;
+		throw YError("PF-1052: %s", strerror(-ret));
 	auto buf = std::make_unique<uint8_t[]>(dsize + 1);
 	if (dsize == 0)
 		buf[0] = '\0';
-	else if (libpff_record_entry_get_data(rent, buf.get(), dsize + 1, nullptr) < 1)
-		throw "PF-1033";
+	else if (libpff_record_entry_get_data(rent, buf.get(), dsize + 1, &~unique_tie(err)) < 1)
+		throw az_error("PF-1033", err);
 	if (vtype & LIBPFF_VALUE_TYPE_MULTI_VALUE_FLAG) {
-		ret = libpff_record_entry_get_multi_value(rent, &unique_tie(mv), nullptr);
+		ret = libpff_record_entry_get_multi_value(rent, &unique_tie(mv), &~unique_tie(err));
 		if (ret == 0)
-			return 0;
+			return;
 		if (ret < 0)
-			throw "PF-1034";
-		if (libpff_multi_value_get_number_of_values(mv.get(), &mvnum, nullptr) < 1)
-			throw "PF-1035";
+			throw az_error("PF-1034", err);
+		if (libpff_multi_value_get_number_of_values(mv.get(), &mvnum, &~unique_tie(err)) < 1)
+			throw az_error("PF-1035", err);
 		if (dsize > 4 && mvnum == 0) {
 			/* See also MS-PST 2.3.3.4.2 */
 			fprintf(stderr, "Broken PFF file: Multivalue property %xh with 0 items, but still with size %zu.\n",
 			        pv.proptag, dsize);
-			return 0;
+			return;
 		}
 	}
 
@@ -388,35 +384,29 @@ static int recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar
 	case PT_SHORT:
 		if (dsize == sizeof(uint16_t))
 			break;
-		fprintf(stderr, "Datasize mismatch on %xh\n", pv.proptag);
-		return -EINVAL;
+		throw YError("PF-1015: Datasize mismatch on %xh\n", pv.proptag);
 	case PT_LONG:
 		if (dsize == sizeof(uint32_t))
 			break;
-		fprintf(stderr, "Datasize mismatch on %xh\n", pv.proptag);
-		return -EINVAL;
+		throw YError("PF-1016: Datasize mismatch on %xh\n", pv.proptag);
 	case PT_I8:
 	case PT_SYSTIME:
 		if (dsize == sizeof(uint64_t))
 			break;
-		fprintf(stderr, "Datasize mismatch on %xh\n", pv.proptag);
-		return -EINVAL;
+		throw YError("PF-1019: Datasize mismatch on %xh\n", pv.proptag);
 	case PT_FLOAT:
 		if (dsize == sizeof(float))
 			break;
-		fprintf(stderr, "Datasize mismatch on %xh\n", pv.proptag);
-		return -EINVAL;
+		throw YError("PF-1020: Datasize mismatch on %xh\n", pv.proptag);
 	case PT_DOUBLE:
 	case PT_APPTIME:
 		if (dsize == sizeof(double))
 			break;
-		fprintf(stderr, "Datasize mismatch on %xh\n", pv.proptag);
-		return -EINVAL;
+		throw YError("PF-1021: Datasize mismatch on %xh\n", pv.proptag);
 	case PT_BOOLEAN:
 		if (dsize == sizeof(uint8_t))
 			break;
-		fprintf(stderr, "Datasize mismatch on %xh\n", pv.proptag);
-		return -EINVAL;
+		throw YError("PF-1024: Datasize mismatch on %xh\n", pv.proptag);
 	case PT_STRING8:
 	case PT_UNICODE: {
 		libpff_error_ptr err;
@@ -424,8 +414,9 @@ static int recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar
 		if (libpff_record_entry_get_data_as_utf8_string_size(rent, &dsize2, &unique_tie(err)) >= 1) {
 			++dsize2;
 			buf = std::make_unique<uint8_t[]>(dsize2);
-			if (libpff_record_entry_get_data_as_utf8_string(rent, buf.get(), dsize2, nullptr) < 1)
-				throw "PF-1036";
+			if (libpff_record_entry_get_data_as_utf8_string(rent,
+			    buf.get(), dsize2, &~unique_tie(err)) < 1)
+				throw az_error("PF-1036", err);
 		} else {
 			fprintf(stderr, "PF-1041: Garbage in Unicode string\n");
 			auto s = iconvtext(reinterpret_cast<char *>(buf.get()), dsize, "UTF-16", "UTF-8//IGNORE");
@@ -443,69 +434,58 @@ static int recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar
 		break;
 	case PT_CLSID:
 		if (dsize != sizeof(u.guid))
-			throw "PF-1040: GUID size incorrect " + std::to_string(dsize);
+			throw YError("PF-1040: GUID size incorrect: " + std::to_string(dsize));
 		memcpy(&u.guid, buf.get(), sizeof(u.guid));
 		pv.pvalue = &u.guid;
 		break;
 	case PT_MV_SHORT:
-		if (dsize != mvnum * sizeof(uint16_t)) {
-			fprintf(stderr, "Datasize mismatch on %xh\n", pv.proptag);
-			return -EINVAL;
-		}
+		if (dsize != mvnum * sizeof(uint16_t))
+			throw YError("PF-1027: Datasize mismatch on %xh\n", pv.proptag);
 		u.sa.count = mvnum;
 		u.sa.ps = reinterpret_cast<uint16_t *>(buf.get());
 		pv.pvalue = &u.sa;
 		break;
 	case PT_MV_LONG:
-		if (dsize != mvnum * sizeof(uint32_t)) {
-			fprintf(stderr, "Datasize mismatch on %xh\n", pv.proptag);
-			return -EINVAL;
-		}
+		if (dsize != mvnum * sizeof(uint32_t))
+			throw YError("PF-1037: Datasize mismatch on %xh\n", pv.proptag);
 		u.la.count = mvnum;
 		u.la.pl = reinterpret_cast<uint32_t *>(buf.get());
 		pv.pvalue = &u.la;
 		break;
 	case PT_MV_I8:
 	case PT_MV_SYSTIME:
-		if (dsize != mvnum * sizeof(uint64_t)) {
-			fprintf(stderr, "Datasize mismatch on %xh\n", pv.proptag);
-			return -EINVAL;
-		}
+		if (dsize != mvnum * sizeof(uint64_t))
+			throw YError("PF-1038: Datasize mismatch on %xh\n", pv.proptag);
 		u.lla.count = mvnum;
 		u.lla.pll = reinterpret_cast<uint64_t *>(buf.get());
 		pv.pvalue = &u.lla;
 		break;
 	case PT_OBJECT:
 		if (pv.proptag == PR_ATTACH_DATA_OBJ)
-			return 0; /* Embedded message, which separately handled. */
-		fprintf(stderr, "Unsupported proptag %xh (datasize %zu). Implement me!\n",
+			return; /* Embedded message, which separately handled. */
+		throw YError("PF-1039: Unsupported proptag %xh (datasize %zu). Implement me!\n",
 		        pv.proptag, dsize);
-		return -EOPNOTSUPP;
 	default:
-		fprintf(stderr, "Unsupported proptype %xh (datasize %zu). Implement me!\n",
+		throw YError("PF-1042: Unsupported proptype %xh (datasize %zu). Implement me!\n",
 		        pv.proptag, dsize);
-		return -EOPNOTSUPP;
 	}
 	if (!tpropval_array_set_propval(ar, &pv))
-		return -ENOMEM;
-	return 0;
+		throw std::bad_alloc();
 }
 
-static int recordset_to_tpropval_a(libpff_record_set_t *rset, TPROPVAL_ARRAY *props)
+static void recordset_to_tpropval_a(libpff_record_set_t *rset, TPROPVAL_ARRAY *props)
 {
 	int nent = 0;
-	if (libpff_record_set_get_number_of_entries(rset, &nent, nullptr) < 1)
-		throw "PF-1028";
+	libpff_error_ptr err;
+	if (libpff_record_set_get_number_of_entries(rset, &nent, &unique_tie(err)) < 1)
+		throw az_error("PF-1028", err);
 	for (int i = 0; i < nent; ++i) {
 		libpff_record_entry_ptr rent;
-
-		if (libpff_record_set_get_entry_by_index(rset, i, &unique_tie(rent), nullptr) < 1)
-			throw "PF-1029";
-		auto ret = recordent_to_tpropval(rent.get(), props);
-		if (ret < 0)
-			return ret;
+		if (libpff_record_set_get_entry_by_index(rset, i,
+		    &unique_tie(rent), &~unique_tie(err)) < 1)
+			throw az_error("PF-1029", err);
+		recordent_to_tpropval(rent.get(), props);
 	}
-	return 0;
 }
 
 /* Process an arbitrary PFF item (folder, message, recipient table, attachment, ...) */
@@ -514,19 +494,15 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
     uint64_t *new_fld_id)
 {
 	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> props(tpropval_array_init());
-	if (props == nullptr) {
-		fprintf(stderr, "tpropval_array_init: ENOMEM\n");
-		return -ENOMEM;
-	}
+	if (props == nullptr)
+		throw std::bad_alloc();
 
 	for (int s = 0; s < nsets; ++s) {
 		libpff_record_set_ptr rset;
 
 		if (libpff_item_get_record_set_by_index(item, s, &unique_tie(rset), nullptr) < 1)
-			throw "PF-1022";
-		auto ret = recordset_to_tpropval_a(rset.get(), props.get());
-		if (ret < 0)
-			return ret;
+			throw YError("PF-1022");
+		recordset_to_tpropval_a(rset.get(), props.get());
 		if (g_show_tree)
 			gi_dump_tpropval_a(depth, *props);
 		if (item_type != LIBPFF_ITEM_TYPE_RECIPIENTS)
@@ -535,16 +511,12 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 
 		/* Turn this property set into a "recipient". */
 		assert(parent.type == MAPI_MESSAGE);
-		if (!tarray_set_append_internal(parent.message->children.prcpts, props.get())) {
-			fprintf(stderr, "tarray_set_append: ENOMEM\n");
-			return -ENOMEM;
-		}
+		if (!tarray_set_append_internal(parent.message->children.prcpts, props.get()))
+			throw std::bad_alloc();
 		props.release();
 		props.reset(tpropval_array_init());
-		if (props == nullptr) {
-			fprintf(stderr, "tpropval_array_init: ENOMEM\n");
-			return -ENOMEM;
-		}
+		if (props == nullptr)
+			throw std::bad_alloc();
 	}
 
 	if (g_wet_run && item_type == LIBPFF_ITEM_TYPE_FOLDER) {
@@ -564,10 +536,8 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 		} else {
 			/* Create request (e.g. PST root without name -> new folder in store with name) */
 			if (!tpropval_array_set_propval(props.get(), PR_DISPLAY_NAME,
-			    iter->second.create_name.c_str())) {
-				fprintf(stderr, "tpropval: ENOMEM\n");
-				return -ENOMEM;
-			}
+			    iter->second.create_name.c_str()))
+				throw std::bad_alloc();
 			auto ret = exm_create_folder(iter->second.fid_to,
 			           props.get(), false, new_fld_id);
 			if (ret < 0)
@@ -575,20 +545,16 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 		}
 	} else if (item_type == LIBPFF_ITEM_TYPE_ATTACHMENT) {
 		std::unique_ptr<ATTACHMENT_CONTENT, gi_delete> atc(attachment_content_init());
-		if (atc == nullptr) {
-			fprintf(stderr, "attachment_content_init: ENOMEM\n");
-			return -ENOMEM;
-		}
+		if (atc == nullptr)
+			throw std::bad_alloc();
 		std::swap(atc->proplist.count, props->count);
 		std::swap(atc->proplist.ppropval, props->ppropval);
 		auto ret = do_attach(depth, atc.get(), item);
 		if (ret < 0)
 			return ret;
 		if (parent.type == MAPI_MESSAGE) {
-			if (!attachment_list_append_internal(parent.message->children.pattachments, atc.get())) {
-				fprintf(stderr, "attachment_list_append_internal: ENOMEM\n");
-				return -ENOMEM;
-			}
+			if (!attachment_list_append_internal(parent.message->children.pattachments, atc.get()))
+				throw std::bad_alloc();
 			atc.release();
 		}
 	}
@@ -598,20 +564,14 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 	 * not a message, it just gets freed without being sent to the server.
 	 */
 	std::unique_ptr<MESSAGE_CONTENT, gi_delete> ctnt(message_content_init());
-	if (ctnt == nullptr) {
-		fprintf(stderr, "message_content_init: ENOMEM\n");
-		return -ENOMEM;
-	}
+	if (ctnt == nullptr)
+		throw std::bad_alloc();
 	ctnt->children.pattachments = attachment_list_init();
-	if (ctnt->children.pattachments == nullptr) {
-		fprintf(stderr, "attachment_list_init: ENOMEM\n");
-		return -ENOMEM;
-	}
+	if (ctnt->children.pattachments == nullptr)
+		throw std::bad_alloc();
 	ctnt->children.prcpts = tarray_set_init();
-	if (ctnt->children.prcpts == nullptr) {
-		fprintf(stderr, "tarray_set_init: ENOMEM\n");
-		return -ENOMEM;
-	}
+	if (ctnt->children.prcpts == nullptr)
+		throw std::bad_alloc();
 	std::swap(ctnt->proplist.count, props->count);
 	std::swap(ctnt->proplist.ppropval, props->ppropval);
 
@@ -626,8 +586,10 @@ static int do_item2(unsigned int depth, const parent_desc &parent,
 	if (libpff_message_get_number_of_attachments(item, &atnum, nullptr) >= 1) {
 		for (int atidx = 0; atidx < atnum; ++atidx) {
 			libpff_item_ptr atx;
-			if (libpff_message_get_attachment(item, atidx, &unique_tie(atx), nullptr) < 1)
-				throw "PF-1017";
+			libpff_error_ptr err;
+			if (libpff_message_get_attachment(item, atidx,
+			    &unique_tie(atx), &unique_tie(err)) < 1)
+				throw az_error("PF-1017", err);
 			auto ret = do_item(depth, parent_desc::as_msg(ctnt.get()), atx.get());
 			if (ret < 0)
 				return ret;
@@ -670,9 +632,10 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 	uint32_t ident = 0, nent = 0;
 	uint8_t item_type = LIBPFF_ITEM_TYPE_UNDEFINED;
 	int nsets = 0;
+	libpff_error_ptr err;
 
-	if (libpff_item_get_identifier(item, &ident, nullptr) < 1)
-		throw "PF-1018";
+	if (libpff_item_get_identifier(item, &ident, &unique_tie(err)) < 1)
+		throw az_error("PF-1018", err);
 	libpff_item_get_type(item, &item_type, nullptr);
 	libpff_item_get_number_of_record_sets(item, &nsets, nullptr);
 	if (g_show_tree) {
@@ -706,12 +669,12 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 	 * are not subitems, even if they are nested (sub) within a message).
 	 */
 	int nsub = 0;
-	if (libpff_item_get_number_of_sub_items(item, &nsub, nullptr) < 1)
-		throw "PF-1003";
+	if (libpff_item_get_number_of_sub_items(item, &nsub, &~unique_tie(err)) < 1)
+		throw az_error("PF-1003", err);
 	for (int i = 0; i < nsub; ++i) {
 		libpff_item_ptr subitem;
-		if (libpff_item_get_sub_item(item, i, &unique_tie(subitem), nullptr) < 1)
-			throw "PF-1004";
+		if (libpff_item_get_sub_item(item, i, &unique_tie(subitem), &~unique_tie(err)) < 1)
+			throw az_error("PF-1004", err);
 		ret = do_item(depth, new_parent, subitem.get());
 		if (ret < 0)
 			return ret;
@@ -764,7 +727,7 @@ static int do_file(const char *filename) try
 	libpff_error_ptr err;
 	libpff_file_ptr file;
 	if (libpff_file_initialize(&unique_tie(file), &unique_tie(err)) < 1) {
-		az_error("PF-1023", err);
+		fprintf(stderr, "%s\n", az_error("PF-1023", err).what());
 		return -EIO;
 	}
 	fprintf(stderr, "Reading %s...\n", filename);
@@ -797,14 +760,17 @@ static int do_file(const char *filename) try
 	}
 
 	libpff_item_ptr root;
-	if (libpff_file_get_root_item(file.get(), &~unique_tie(root), nullptr) < 1)
-		throw "PF-1025";
+	if (libpff_file_get_root_item(file.get(), &~unique_tie(root), &~unique_tie(err)) < 1)
+		throw az_error("PF-1025", err);
 	return do_item(0, {}, root.get());
 } catch (const char *e) {
 	fprintf(stderr, "Exception: %s\n", e);
 	return -ECANCELED;
 } catch (const std::string &e) {
 	fprintf(stderr, "Exception: %s\n", e.c_str());
+	return -ECANCELED;
+} catch (const std::exception &e) {
+	fprintf(stderr, "Exception: %s\n", e.what());
 	return -ECANCELED;
 }
 
