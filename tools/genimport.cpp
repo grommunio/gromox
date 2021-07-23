@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #define _GNU_SOURCE 1
 #include <algorithm>
+#include <cerrno>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -10,6 +11,7 @@
 #include <memory>
 #include <mysql.h>
 #include <string>
+#include <unistd.h>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -38,8 +40,6 @@ static unsigned int g_user_id;
 static std::string g_storedir_s;
 const char *g_storedir;
 unsigned int g_show_tree, g_show_props, g_wet_run = 1;
-std::unordered_map<uint16_t, uint16_t> g_propname_cache;
-std::unordered_map<uint32_t, tgt_folder> g_folder_map;
 
 YError::YError(const std::string &s) : m_str(s)
 {}
@@ -216,8 +216,8 @@ void gi_dump_folder_map(const gi_folder_map_t &map)
 		return;
 	fprintf(stderr, "Folder map (%zu entries):\n", map.size());
 	for (const auto &[nid, tgt] : map)
-		fprintf(stderr, "\t%lxh -> %s%s\n", static_cast<unsigned long>(nid),
-		        tgt.create_name.c_str(), tgt.create ? " (create)" : "");
+		fprintf(stderr, "\t%xh -> %s%s\n", nid, tgt.create_name.c_str(),
+		        tgt.create ? " (create)" : "");
 }
 
 void gi_dump_name_map(const gi_name_map &map)
@@ -233,6 +233,101 @@ void gi_dump_name_map(const gi_name_map &map)
 			fprintf(stderr, "\t%08xh <-> {MNID_STRING, %s, %s}\n",
 				propid, bin2hex(propname.guid).c_str(), propname.pname);
 	}
+}
+
+static void *zalloc(size_t z) { return calloc(1, z); }
+
+void gi_folder_map_read(const void *buf, size_t bufsize, gi_folder_map_t &map)
+{
+	EXT_PULL ep;
+	ep.init(buf, bufsize, zalloc, EXT_FLAG_WCOUNT);
+	uint64_t max = 0;
+	if (ep.g_uint64(&max) != EXT_ERR_SUCCESS)
+		throw YError("PG-1100");
+	for (size_t n = 0; n < max; ++n) {
+		uint32_t nid;
+		uint8_t create;
+		uint64_t fidto;
+		std::unique_ptr<char[], gi_delete> name;
+		if (ep.g_uint32(&nid) != EXT_ERR_SUCCESS ||
+		    ep.g_uint8(&create) != EXT_ERR_SUCCESS ||
+		    ep.g_uint64(&fidto) != EXT_ERR_SUCCESS ||
+		    ep.g_str(&unique_tie(name)) != EXT_ERR_SUCCESS)
+			throw YError("PG-1101");
+		map.insert_or_assign(nid, tgt_folder{static_cast<bool>(create), fidto, name != nullptr ? name.get() : ""});
+	}
+}
+
+void gi_folder_map_write(const gi_folder_map_t &map)
+{
+	EXT_PUSH ep;
+	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
+		throw std::bad_alloc();
+	if (ep.p_uint64(map.size()) != EXT_ERR_SUCCESS)
+		throw YError("PG-1102");
+	for (const auto &[nid, tgt] : map)
+		if (ep.p_uint32(nid) != EXT_ERR_SUCCESS ||
+		    ep.p_uint8(!!tgt.create) != EXT_ERR_SUCCESS ||
+		    ep.p_uint64(tgt.fid_to) != EXT_ERR_SUCCESS ||
+		    ep.p_str(tgt.create_name.c_str()) != EXT_ERR_SUCCESS)
+			throw YError("PG-1103");
+	uint64_t xsize = cpu_to_le64(ep.m_offset);
+	auto ret = write(STDOUT_FILENO, &xsize, sizeof(xsize));
+	if (ret < 0)
+		throw YError("PG-1104: %s", strerror(errno));
+	else if (ret != sizeof(xsize))
+		throw YError("PG-1105");
+	ret = write(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
+	if (ret < 0)
+		throw YError("PG-1106: %s", strerror(errno));
+	else if (ret != ep.m_offset)
+		throw YError("PG-1107");
+}
+
+void gi_name_map_read(const void *buf, size_t bufsize, gi_name_map &map)
+{
+	EXT_PULL ep;
+	ep.init(buf, bufsize, zalloc, EXT_FLAG_WCOUNT);
+	uint64_t max = 0;
+	if (ep.g_uint64(&max) != EXT_ERR_SUCCESS)
+		throw YError("PG-1108");
+	for (size_t n = 0; n < max; ++n) {
+		uint32_t proptag;
+		PROPERTY_NAME propname;
+		if (ep.g_uint32(&proptag) != EXT_ERR_SUCCESS ||
+		    ep.g_propname(&propname) != EXT_ERR_SUCCESS)
+			throw YError("PG-1109");
+		try {
+			map.insert_or_assign(proptag, std::move(propname));
+		} catch (const std::bad_alloc &) {
+			free(propname.pname);
+			throw;
+		}
+	}
+}
+
+void gi_name_map_write(const gi_name_map &map)
+{
+	EXT_PUSH ep;
+	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
+		throw std::bad_alloc();
+	if (ep.p_uint64(map.size()) != EXT_ERR_SUCCESS)
+		throw YError("PG-1110");
+	for (const auto &[propid, propname] : map)
+		if (ep.p_uint32(propid) != EXT_ERR_SUCCESS ||
+		    ep.p_propname(&propname) != EXT_ERR_SUCCESS)
+			throw YError("PG-1111");
+	uint64_t xsize = cpu_to_le64(ep.m_offset);
+	auto ret = write(STDOUT_FILENO, &xsize, sizeof(xsize));
+	if (ret < 0)
+		throw YError("PG-1112: %s", strerror(errno));
+	else if (ret != sizeof(xsize))
+		throw YError("PG-1113");
+	ret = write(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
+	if (ret < 0)
+		throw YError("PG-1114: %s", strerror(errno));
+	else if (ret != ep.m_offset)
+		throw YError("PG-1115");
 }
 
 uint16_t gi_resolve_namedprop(const PROPERTY_NAME *pn_req)

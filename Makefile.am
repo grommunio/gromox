@@ -84,9 +84,9 @@ noinst_DATA += \
 agent_service_progs = freebusy rtf2html
 system_admin_progs = adaptor event timer
 system_admin_tools = mkmidb mkprivate mkpublic rebuild
-sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-mailq
+sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-mailq gromox-mt2exm
 if HAVE_PFF
-sbin_PROGRAMS += gromox-pffimport
+sbin_PROGRAMS += gromox-pff2mt
 endif
 sbin_SCRIPTS = gromox-abktpull
 pkglibexec_SCRIPTS = tools/create_queue.sh tools/sa_format_area.sh
@@ -254,8 +254,10 @@ mkprivate_SOURCES = tools/mkprivate.cpp
 mkprivate_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 mkpublic_SOURCES = tools/mkpublic.cpp
 mkpublic_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-gromox_pffimport_SOURCES = tools/genimport.cpp tools/pffimport.cpp
-gromox_pffimport_LDADD = ${HX_LIBS} ${mysql_LIBS} ${pff_LIBS} libgromox_common.la libgromox_cplus.la libgromox_exrpc.la libgromox_mapi.la
+gromox_mt2exm_SOURCES = tools/genimport.cpp tools/mt2exm.cpp
+gromox_mt2exm_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_cplus.la libgromox_exrpc.la libgromox_mapi.la
+gromox_pff2mt_SOURCES = tools/genimport.cpp tools/pffimport.cpp
+gromox_pff2mt_LDADD = ${HX_LIBS} ${mysql_LIBS} ${pff_LIBS} libgromox_common.la libgromox_cplus.la libgromox_exrpc.la libgromox_mapi.la
 rebuild_SOURCES = tools/rebuild.cpp
 rebuild_LDADD = ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 timer_SOURCES = tools/timer.cpp
@@ -291,7 +293,7 @@ man_MANS = \
 	doc/exmdb_local.4gx doc/exmdb_provider.4gx \
 	doc/freebusy.8gx doc/gromox.7 doc/gromox-abktconv.8gx \
 	doc/gromox-abktpull.8gx doc/gromox-dbop.8gx doc/gromox-mailq.8gx \
-	doc/http.8gx \
+	doc/gromox-mt2exm.8gx doc/http.8gx \
 	doc/imap.8gx doc/ip6_container.4gx doc/ldap_adaptor.4gx \
 	doc/logthru.4gx \
 	doc/mapi.4gx doc/message_enqueue.4gx doc/midb.8gx doc/midb_agent.4gx \
@@ -303,7 +305,7 @@ man_MANS = \
 	doc/str_table.4gx doc/textmaps.4gx doc/user_filter.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
 if HAVE_PFF
-man_MANS += doc/gromox-pffimport.8gx
+man_MANS += doc/gromox-pff2mt.8gx
 endif
 
 include/gromox/paths.h: include/gromox/paths.h.in ${top_builddir}/config.status

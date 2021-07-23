@@ -29,7 +29,8 @@ Makefile.in
 /gromox-abktconv
 /gromox-dbop
 /gromox-mailq
-/gromox-pffimport
+/gromox-mt2exm
+/gromox-pff2mt
 /http
 /imap
 /midb

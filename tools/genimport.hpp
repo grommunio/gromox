@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <exception>
 #include <string>
+#include <unordered_map>
 #include <gromox/element_data.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
@@ -34,7 +35,8 @@ struct gi_name_map : public std::unordered_map<uint32_t, PROPERTY_NAME> {
 };
 
 struct parent_desc {
-	enum mapi_object_type type = MAPI_STORE; /* here: pseudo-value for "unset" */
+	/* Here, MAPI_STORE is used to mean "unset" */
+	enum mapi_object_type type = MAPI_STORE;
 	union {
 		void *unknown = nullptr;
 		uint64_t folder_id;
@@ -71,12 +73,11 @@ struct tgt_folder {
 using attachment_content_ptr = std::unique_ptr<ATTACHMENT_CONTENT, gi_delete>;
 using gi_folder_map_t = std::unordered_map<uint32_t, tgt_folder>;
 using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, gi_delete>;
+using propname_array_ptr = std::unique_ptr<PROPNAME_ARRAY, gi_delete>;
 using tpropval_array_ptr = std::unique_ptr<TPROPVAL_ARRAY, gi_delete>;
 
 extern const char *g_storedir;
 extern unsigned int g_show_tree, g_show_props, g_wet_run;
-extern std::unordered_map<uint16_t, uint16_t> g_propname_cache;
-extern gi_folder_map_t g_folder_map;
 
 extern void tree(unsigned int d);
 extern void tlog(const char *f, ...);
@@ -84,6 +85,10 @@ extern void gi_dump_tpropval_a(unsigned int depth, const TPROPVAL_ARRAY &);
 extern void gi_dump_msgctnt(unsigned int depth, const MESSAGE_CONTENT &);
 extern void gi_dump_folder_map(const gi_folder_map_t &);
 extern void gi_dump_name_map(const gi_name_map &);
+extern void gi_folder_map_read(const void *, size_t, gi_folder_map_t &);
+extern void gi_folder_map_write(const gi_folder_map_t &);
+extern void gi_name_map_read(const void *, size_t, gi_name_map &);
+extern void gi_name_map_write(const gi_name_map &);
 extern uint16_t gi_resolve_namedprop(const PROPERTY_NAME *);
 extern int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl, uint64_t *new_fld_id);
 extern int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *);

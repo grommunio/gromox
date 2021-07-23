@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2021 grammm GmbH
 // This file is part of Gromox.
-#include <algorithm>
 #include <cassert>
 #include <cerrno>
 #include <cstdarg>
@@ -10,24 +9,14 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <list>
 #include <memory>
 #include <string>
-#include <unordered_map>
+#include <unistd.h>
 #include <libpff.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
-#include <gromox/config_file.hpp>
-#include <gromox/database_mysql.hpp>
-#include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
-#include <gromox/list_file.hpp>
-#include <gromox/paths.h>
-#include <gromox/pcl.hpp>
-#include <gromox/rop_util.hpp>
-#include <gromox/scope.hpp>
-#include <gromox/socket.h>
 #include <gromox/tarray_set.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/tpropval_array.hpp>
@@ -116,16 +105,13 @@ enum {
 
 using namespace std::string_literals;
 using namespace gromox;
-namespace exmdb_client = exmdb_client_remote;
 
-static char *g_username;
+static gi_folder_map_t g_folder_map;
 static unsigned int g_splice;
 static const struct HXoption g_options_table[] = {
-	{nullptr, 'n', HXTYPE_VAL, &g_wet_run, nullptr, nullptr, 0, "Dry run"},
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Splice PFF objects into existing store hierarchy"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
-	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -257,50 +243,6 @@ static int do_attach2(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t
 	return 0;
 }
 
-static uint32_t az_resolve_namedprop(libpff_record_entry_t *rent, uint32_t proptag)
-{
-	if (!g_wet_run)
-		return proptag;
-	auto it = g_propname_cache.find(proptag);
-	if (it != g_propname_cache.end())
-		return PROP_TAG(PROP_TYPE(proptag), it->second);
-
-	libpff_nti_entry_ptr nti_entry;
-	uint8_t nti_type = 0;
-	if (libpff_record_entry_get_name_to_id_map_entry(rent, &unique_tie(nti_entry), nullptr) < 1)
-		return proptag;
-	if (libpff_name_to_id_map_entry_get_type(nti_entry.get(), &nti_type, nullptr) < 1)
-		return proptag;
-
-	std::unique_ptr<char[]> pnstr;
-	PROPERTY_NAME pn_req{};
-	if (libpff_name_to_id_map_entry_get_guid(nti_entry.get(),
-	    reinterpret_cast<uint8_t *>(&pn_req.guid), sizeof(pn_req.guid), nullptr) < 1)
-		return proptag;
-
-	if (nti_type == LIBPFF_NAME_TO_ID_MAP_ENTRY_TYPE_NUMERIC) {
-		if (libpff_name_to_id_map_entry_get_number(nti_entry.get(), &pn_req.lid, nullptr) < 1)
-			throw YError("PF-1007");
-		pn_req.kind = MNID_ID;
-	} else if (nti_type == LIBPFF_NAME_TO_ID_MAP_ENTRY_TYPE_STRING) {
-		size_t dsize = 0;
-		if (libpff_name_to_id_map_entry_get_utf8_string_size(nti_entry.get(), &dsize, nullptr) < 1)
-			return proptag;
-		pnstr = std::make_unique<char[]>(dsize + 1);
-		if (libpff_name_to_id_map_entry_get_utf8_string(nti_entry.get(), reinterpret_cast<uint8_t *>(pnstr.get()), dsize + 1, nullptr) < 1)
-			throw YError("PF-1009");
-		pn_req.kind = MNID_STRING;
-		pn_req.pname = pnstr.get();
-	} else {
-		fprintf(stderr, "PF-1046: unable to handle libpff propname type %xh\n", nti_type);
-		throw YError("PF-1010: EOPNOTSUPP");
-	}
-
-	auto new_propid = gi_resolve_namedprop(&pn_req);
-	g_propname_cache.emplace(PROP_ID(proptag), new_propid);
-	return PROP_TAG(PROP_TYPE(proptag), new_propid);
-}
-
 static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar)
 {
 	libpff_multi_value_ptr mv;
@@ -318,8 +260,6 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 
 	TAGGED_PROPVAL pv;
 	pv.proptag = PROP_TAG(vtype, etype);
-	if (g_wet_run)
-		pv.proptag = az_resolve_namedprop(rent, pv.proptag);
 	auto buf = std::make_unique<uint8_t[]>(dsize + 1);
 	if (dsize == 0)
 		buf[0] = '\0';
@@ -477,7 +417,7 @@ static tpropval_array_ptr item_to_tpropval_a(libpff_item_t *item)
 }
 
 static int do_folder(unsigned int depth, const parent_desc &parent,
-    libpff_item_t *item, uint64_t *new_fld_id)
+    libpff_item_t *item)
 {
 	auto props = item_to_tpropval_a(item);
 	if (g_show_tree)
@@ -487,29 +427,34 @@ static int do_folder(unsigned int depth, const parent_desc &parent,
 		throw YError("PF-1051");
 	if (!g_wet_run)
 		return 0;
+	bool b_create = false;
 	auto iter = g_folder_map.find(ident);
 	if (iter == g_folder_map.end() && parent.type == MAPI_FOLDER) {
-		/* O_EXCL style behavior <=> not splicing. */
-		bool o_excl = !g_splice;
-		/* PST folder with name -> new folder in store */
-		auto ret = exm_create_folder(parent.folder_id, props.get(), o_excl, new_fld_id);
-		if (ret < 0)
-			return ret;
+		/* PST folder with name -> new folder in store. Create. */
+		b_create = true;
 	} else if (iter == g_folder_map.end()) {
 		/* No @parent for writing the item anywhere, and no hints in map => do not create. */
 	} else if (!iter->second.create) {
 		/* Splice request (e.g. PST wastebox -> Store wastebox) */
-		*new_fld_id = iter->second.fid_to;
+		b_create = true;
 	} else {
 		/* Create request (e.g. PST root without name -> new folder in store with name) */
-		if (!tpropval_array_set_propval(props.get(), PR_DISPLAY_NAME,
-		    iter->second.create_name.c_str()))
-			throw std::bad_alloc();
-		auto ret = exm_create_folder(iter->second.fid_to,
-			   props.get(), false, new_fld_id);
-		if (ret < 0)
-			return ret;
+		b_create = true;
 	}
+
+	if (!b_create)
+		return 0;
+	EXT_PUSH ep;
+	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
+		throw std::bad_alloc();
+	ep.p_uint32(MAPI_FOLDER);
+	ep.p_uint32(ident);
+	ep.p_uint32(parent.type);
+	ep.p_uint64(parent.folder_id);
+	ep.p_tpropval_a(props.get());
+	uint64_t xsize = cpu_to_le64(ep.m_offset);
+	write(STDOUT_FILENO, &xsize, sizeof(xsize));
+	write(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
 	return 0;
 }
 
@@ -550,15 +495,30 @@ static message_content_ptr extract_message(unsigned int depth,
 	return ctnt;
 }
 
-static int do_message(unsigned int depth, const parent_desc &parent, libpff_item_t *item)
+static int do_message(unsigned int depth, const parent_desc &parent,
+    libpff_item_t *item, uint32_t ident)
 {
 	auto ctnt = extract_message(depth, parent, item);
-	if (g_wet_run && parent.type == MAPI_FOLDER)
-		return exm_create_msg(parent.folder_id, ctnt.get());
 	if (parent.type == MAPI_ATTACH)
 		attachment_content_set_embedded_internal(parent.attach, ctnt.release());
-	else if (g_show_tree)
+	if (parent.type != MAPI_FOLDER)
+		return 0;
+
+	/* Normal message, not embedded */
+	if (g_show_tree)
 		gi_dump_msgctnt(depth, *ctnt);
+	EXT_PUSH ep;
+	if (!ep.init(nullptr, 0, EXT_FLAG_WCOUNT))
+		throw std::bad_alloc();
+	if (ep.p_uint32(MAPI_MESSAGE) != EXT_ERR_SUCCESS ||
+	    ep.p_uint32(ident) != EXT_ERR_SUCCESS ||
+	    ep.p_uint32(parent.type) != EXT_ERR_SUCCESS ||
+	    ep.p_uint64(parent.folder_id) != EXT_ERR_SUCCESS ||
+	    ep.p_msgctnt(ctnt.get()) != EXT_ERR_SUCCESS)
+		throw YError("PF-1058");
+	uint64_t xsize = cpu_to_le64(ep.m_offset);
+	write(STDOUT_FILENO, &xsize, sizeof(xsize));
+	write(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
 	return 0;
 }
 
@@ -629,7 +589,6 @@ static void do_print(unsigned int depth, libpff_item_t *item)
 
 static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t *item)
 {
-	uint64_t new_fld_id = 0;
 	uint32_t ident = 0;
 	uint8_t item_type = LIBPFF_ITEM_TYPE_UNDEFINED;
 	int ret = 0;
@@ -637,14 +596,17 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 
 	libpff_item_get_identifier(item, &ident, nullptr);
 	libpff_item_get_type(item, &item_type, nullptr);
+	auto new_parent = parent;
 	if (item_type == LIBPFF_ITEM_TYPE_FOLDER) {
 		if (g_show_tree)
 			do_print(depth++, item);
-		ret = do_folder(depth, parent, item, &new_fld_id);
+		ret = do_folder(depth, parent, item);
+		new_parent.type = MAPI_FOLDER;
+		new_parent.folder_id = ident;
 	} else if (is_mapi_message(ident)) {
 		if (g_show_tree)
 			do_print(depth++, item);
-		return do_message(depth, parent, item);
+		return do_message(depth, parent, item, ident);
 	} else if (item_type == LIBPFF_ITEM_TYPE_RECIPIENTS) {
 		ret = do_recips(depth, parent, item);
 	} else if (item_type == LIBPFF_ITEM_TYPE_ATTACHMENT) {
@@ -654,12 +616,6 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 	}
 	if (ret != 0)
 		return ret;
-	auto new_parent = parent;
-	if (new_fld_id != 0) {
-		new_parent.type = MAPI_FOLDER;
-		new_parent.folder_id = new_fld_id;
-	}
-
 	/*
 	 * Subitems usually consist exclusively of messages (<=> attachments
 	 * are not subitems, even if they are nested (sub) within a message).
@@ -761,7 +717,8 @@ static void npg_ent(gi_name_map &map, libpff_record_entry_t *rent)
 		size_t dsize = 0;
 		if (libpff_name_to_id_map_entry_get_utf8_string_size(nti_entry.get(), &dsize, nullptr) < 1)
 			return;
-		pnstr = std::make_unique<char[]>(dsize + 1);
+		/* malloc: match up with allocator used by ext_buffer.cpp etc. */
+		pnstr.reset(static_cast<char *>(malloc(dsize + 1)));
 		if (libpff_name_to_id_map_entry_get_utf8_string(nti_entry.get(), reinterpret_cast<uint8_t *>(pnstr.get()), dsize + 1, nullptr) < 1)
 			return;
 		pn_req.kind = MNID_STRING;
@@ -836,28 +793,27 @@ static int do_file(const char *filename) try
 		return -(errno = s);
 	}
 
+	uint8_t xsplice = g_splice;
+	write(STDOUT_FILENO, &xsplice, sizeof(xsplice));
 	g_folder_map.clear();
-	g_propname_cache.clear();
 	if (g_splice)
 		az_fmap_splice(file.get());
 	else
 		az_fmap_standard(file.get(), filename);
 	gi_dump_folder_map(g_folder_map);
+	gi_folder_map_write(g_folder_map);
 
 	libpff_item_ptr root;
 	if (libpff_file_get_root_item(file.get(), &~unique_tie(root), &~unique_tie(err)) < 1)
 		throw az_error("PF-1025", err);
-#if 0
 	fprintf(stderr, "Building list of named properties...\n");
 	gi_name_map name_map;
 	npg_item(name_map, root.get());
 	gi_dump_name_map(name_map);
-#endif
+	gi_name_map_write(name_map);
 
-	if (g_wet_run)
-		fprintf(stderr, "Transferring objects...\n");
-	else if (g_show_tree)
-		fprintf(stderr, "Tree dump:\n");
+	if (g_show_tree)
+		fprintf(stderr, "Object tree:\n");
 	return do_item(0, {}, root.get());
 } catch (const char *e) {
 	fprintf(stderr, "Exception: %s\n", e);
@@ -875,25 +831,19 @@ int main(int argc, const char **argv)
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	if (g_wet_run && g_username == nullptr) {
-		fprintf(stderr, "When -n is absent, the -u option is mandatory.\n");
+	if (argc != 2) {
+		fprintf(stderr, "Usage: gromox-pff2mt [-pst] input.pst | gromox-mt2.... \n");
 		return EXIT_FAILURE;
 	}
-	if (argc < 2) {
-		fprintf(stderr, "Usage: pffimport [-pst] {-n|-u username} input.pst...\n");
+	if (isatty(STDOUT_FILENO)) {
+		fprintf(stderr, "Refusing to output the binary Mailbox Transfer Data Stream to a terminal.\n"
+			"You probably wanted to redirect output into a file or pipe.\n");
 		return EXIT_FAILURE;
 	}
-	if (g_username != nullptr && gi_setup(g_username) != EXIT_SUCCESS)
-		return EXIT_FAILURE;
-	int ret = EXIT_SUCCESS;
-	while (--argc > 0) {
-		auto r2 = do_file(*++argv);
-		if (r2 < 0) {
-			ret = EXIT_FAILURE;
-			break;
-		}
-	}
-	if (ret == EXIT_FAILURE)
+	auto ret = do_file(argv[1]);
+	if (ret < 0) {
 		fprintf(stderr, "Import unsuccessful.\n");
-	return ret ? EXIT_SUCCESS : EXIT_FAILURE;
+		return EXIT_FAILURE;
+	}
+	return EXIT_SUCCESS;
 }
