@@ -758,9 +758,9 @@ static int do_file(const char *filename) try
 	else
 		az_fmap_standard(file.get(), filename);
 	if (g_show_props) {
-		printf("Folder map:\n");
+		fprintf(stderr, "Folder map:\n");
 		for (const auto &pair : g_folder_map)
-			printf("\t%xh -> %s%s\n", pair.first, pair.second.create_name.c_str(),
+			fprintf(stderr, "\t%xh -> %s%s\n", pair.first, pair.second.create_name.c_str(),
 			       pair.second.create ? " (create)" : "");
 	}
 

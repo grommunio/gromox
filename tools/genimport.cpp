@@ -65,7 +65,7 @@ void tree(unsigned int depth)
 {
 	if (!g_show_tree)
 		return;
-	printf("%-*s \\_ ", depth * 4, "");
+	fprintf(stderr, "%-*s \\_ ", depth * 4, "");
 }
 
 void tlog(const char *fmt, ...)
@@ -74,7 +74,7 @@ void tlog(const char *fmt, ...)
 		return;
 	va_list args;
 	va_start(args, fmt);
-	vprintf(fmt, args);
+	vfprintf(stderr, fmt, args);
 	va_end(args);
 }
 
