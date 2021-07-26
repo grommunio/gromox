@@ -170,19 +170,13 @@ int EXT_PULL::g_wstr(char **ppstr)
 			break;
 	if (i >= max_len - 1)
 		return EXT_ERR_BUFSIZE;
-	len = i + 2;
+	len = i + 2; /* octets */
+	/* Going from UTF-16 (2 octets) to UTF-8 (up to 4 octets) */
 	*ppstr = pext->anew<char>(2 * len);
 	if (*ppstr == nullptr)
 		return EXT_ERR_ALLOC;
-	auto pbuff = static_cast<char *>(malloc(len));
-	if (pbuff == nullptr)
-		return EXT_ERR_ALLOC;
-	memcpy(pbuff, &m_udata[m_offset], len);
-	if (FALSE == utf16le_to_utf8(pbuff, len, *ppstr, 2*len)) {
-		free(pbuff);
+	if (!utf16le_to_utf8(&m_cdata[m_offset], len, *ppstr, 2 * len))
 		return EXT_ERR_CHARCNV;
-	}
-	free(pbuff);
 	return pext->advance(len);
 }
 
