@@ -734,6 +734,93 @@ static void az_fmap_splice(libpff_file_t *file)
 	az_lookup_specials(file);
 }
 
+static void npg_ent(gi_name_map &map, libpff_record_entry_t *rent)
+{
+	libpff_nti_entry_ptr nti_entry;
+	uint32_t etype = 0, vtype = 0;
+	uint8_t nti_type = 0;
+
+	if (libpff_record_entry_get_entry_type(rent, &etype, nullptr) < 1 ||
+	    etype < 0x8000 ||
+	    libpff_record_entry_get_value_type(rent, &vtype, nullptr) < 1)
+		return;
+	if (libpff_record_entry_get_name_to_id_map_entry(rent, &unique_tie(nti_entry), nullptr) < 1)
+		return;
+	if (libpff_name_to_id_map_entry_get_type(nti_entry.get(), &nti_type, nullptr) < 1)
+		return;
+	std::unique_ptr<char[]> pnstr;
+	PROPERTY_NAME pn_req{};
+	if (libpff_name_to_id_map_entry_get_guid(nti_entry.get(),
+	    reinterpret_cast<uint8_t *>(&pn_req.guid), sizeof(pn_req.guid), nullptr) < 1)
+		return;
+	if (nti_type == LIBPFF_NAME_TO_ID_MAP_ENTRY_TYPE_NUMERIC) {
+		if (libpff_name_to_id_map_entry_get_number(nti_entry.get(), &pn_req.lid, nullptr) < 1)
+			return;
+		pn_req.kind = MNID_ID;
+	} else if (nti_type == LIBPFF_NAME_TO_ID_MAP_ENTRY_TYPE_STRING) {
+		size_t dsize = 0;
+		if (libpff_name_to_id_map_entry_get_utf8_string_size(nti_entry.get(), &dsize, nullptr) < 1)
+			return;
+		pnstr = std::make_unique<char[]>(dsize + 1);
+		if (libpff_name_to_id_map_entry_get_utf8_string(nti_entry.get(), reinterpret_cast<uint8_t *>(pnstr.get()), dsize + 1, nullptr) < 1)
+			return;
+		pn_req.kind = MNID_STRING;
+		pn_req.pname = pnstr.release();
+	}
+	map.emplace((etype << 16) | vtype, pn_req);
+	pn_req.pname = nullptr;
+}
+
+static void npg_set(gi_name_map &map, libpff_record_set_t *rset)
+{
+	int nent = 0;
+	if (libpff_record_set_get_number_of_entries(rset, &nent, nullptr) < 1)
+		return;
+	for (int i = 0; i < nent; ++i) {
+		libpff_record_entry_ptr rent;
+		if (libpff_record_set_get_entry_by_index(rset, i,
+		    &unique_tie(rent), nullptr) > 0)
+			npg_ent(map, rent.get());
+	}
+}
+
+static void npg_item(gi_name_map &map, libpff_item_t *item)
+{
+	uint8_t item_type = LIBPFF_ITEM_TYPE_UNDEFINED;
+	uint32_t ident = 0;
+	libpff_item_get_identifier(item, &ident, nullptr);
+	libpff_item_get_type(item, &item_type, nullptr);
+	int nsets = 0;
+	if (libpff_item_get_number_of_record_sets(item, &nsets, nullptr) > 0) {
+		for (int n = 0; n < nsets; ++n) {
+			libpff_record_set_ptr rset;
+			if (libpff_item_get_record_set_by_index(item, 0,
+			    &unique_tie(rset), nullptr) > 0)
+				npg_set(map, rset.get());
+		}
+	}
+
+	int nsub = 0;
+	if (libpff_item_get_number_of_sub_items(item, &nsub, nullptr) > 0) {
+		for (int i = 0; i < nsub; ++i) {
+			libpff_item_ptr subitem;
+			if (libpff_item_get_sub_item(item, i, &unique_tie(subitem), nullptr) > 0)
+				npg_item(map, subitem.get());
+		}
+	}
+	nsub = 0;
+	if (libpff_message_get_number_of_attachments(item, &nsub, nullptr) > 0) {
+		for (int i = 0; i < nsub; ++i) {
+			libpff_item_ptr subitem;
+			if (libpff_message_get_attachment(item, i, &unique_tie(subitem), nullptr) > 0)
+				npg_item(map, subitem.get());
+		}
+	}
+	libpff_item_ptr subitem;
+	if (libpff_message_get_recipients(item, &unique_tie(subitem), nullptr) > 0)
+		npg_item(map, subitem.get());
+}
+
 static int do_file(const char *filename) try
 {
 	libpff_error_ptr err;
@@ -751,8 +838,6 @@ static int do_file(const char *filename) try
 
 	g_folder_map.clear();
 	g_propname_cache.clear();
-	if (g_wet_run)
-		fprintf(stderr, "Transferring objects...\n");
 	if (g_splice)
 		az_fmap_splice(file.get());
 	else
@@ -762,6 +847,17 @@ static int do_file(const char *filename) try
 	libpff_item_ptr root;
 	if (libpff_file_get_root_item(file.get(), &~unique_tie(root), &~unique_tie(err)) < 1)
 		throw az_error("PF-1025", err);
+#if 0
+	fprintf(stderr, "Building list of named properties...\n");
+	gi_name_map name_map;
+	npg_item(name_map, root.get());
+	gi_dump_name_map(name_map);
+#endif
+
+	if (g_wet_run)
+		fprintf(stderr, "Transferring objects...\n");
+	else if (g_show_tree)
+		fprintf(stderr, "Tree dump:\n");
 	return do_item(0, {}, root.get());
 } catch (const char *e) {
 	fprintf(stderr, "Exception: %s\n", e);

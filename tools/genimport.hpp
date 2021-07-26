@@ -28,6 +28,11 @@ struct gi_delete {
 	void operator()(void *x) const { free(x); }
 };
 
+struct gi_name_map : public std::unordered_map<uint32_t, PROPERTY_NAME> {
+	using unordered_map::unordered_map;
+	~gi_name_map();
+};
+
 struct parent_desc {
 	enum mapi_object_type type = MAPI_STORE; /* here: pseudo-value for "unset" */
 	union {
@@ -78,6 +83,7 @@ extern void tlog(const char *f, ...);
 extern void gi_dump_tpropval_a(unsigned int depth, TPROPVAL_ARRAY &);
 extern void gi_dump_msgctnt(unsigned int depth, MESSAGE_CONTENT &);
 extern void gi_dump_folder_map(const gi_folder_map_t &);
+extern void gi_dump_name_map(const gi_name_map &);
 extern uint16_t gi_resolve_namedprop(const PROPERTY_NAME *);
 extern int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl, uint64_t *new_fld_id);
 extern int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *);

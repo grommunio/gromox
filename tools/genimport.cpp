@@ -61,6 +61,12 @@ YError::YError(const char *fmt, ...)
 	m_str = ret >= 0 && strp != nullptr ? strp.get() : "vasprintf";
 }
 
+gi_name_map::~gi_name_map()
+{
+	for (auto &e : *this)
+		free(e.second.pname);
+}
+
 void tree(unsigned int depth)
 {
 	if (!g_show_tree)
@@ -212,6 +218,21 @@ void gi_dump_folder_map(const gi_folder_map_t &map)
 	for (const auto &[nid, tgt] : map)
 		fprintf(stderr, "\t%lxh -> %s%s\n", static_cast<unsigned long>(nid),
 		        tgt.create_name.c_str(), tgt.create ? " (create)" : "");
+}
+
+void gi_dump_name_map(const gi_name_map &map)
+{
+	if (!g_show_props)
+		return;
+	fprintf(stderr, "Named properties (%zu entries):\n", map.size());
+	for (const auto &[propid, propname] : map) {
+		if (propname.kind == MNID_ID)
+			fprintf(stderr, "\t%08xh <-> {MNID_ID, %s, %u}\n",
+				propid, bin2hex(propname.guid).c_str(), propname.lid);
+		else if (propname.kind == MNID_STRING)
+			fprintf(stderr, "\t%08xh <-> {MNID_STRING, %s, %s}\n",
+				propid, bin2hex(propname.guid).c_str(), propname.pname);
+	}
 }
 
 uint16_t gi_resolve_namedprop(const PROPERTY_NAME *pn_req)
