@@ -64,18 +64,20 @@ struct tgt_folder {
 };
 
 using attachment_content_ptr = std::unique_ptr<ATTACHMENT_CONTENT, gi_delete>;
+using gi_folder_map_t = std::unordered_map<uint32_t, tgt_folder>;
 using message_content_ptr = std::unique_ptr<MESSAGE_CONTENT, gi_delete>;
 using tpropval_array_ptr = std::unique_ptr<TPROPVAL_ARRAY, gi_delete>;
 
 extern const char *g_storedir;
 extern unsigned int g_show_tree, g_show_props, g_wet_run;
 extern std::unordered_map<uint16_t, uint16_t> g_propname_cache;
-extern std::unordered_map<uint32_t, tgt_folder> g_folder_map;
+extern gi_folder_map_t g_folder_map;
 
 extern void tree(unsigned int d);
 extern void tlog(const char *f, ...);
 extern void gi_dump_tpropval_a(unsigned int depth, TPROPVAL_ARRAY &);
 extern void gi_dump_msgctnt(unsigned int depth, MESSAGE_CONTENT &);
+extern void gi_dump_folder_map(const gi_folder_map_t &);
 extern uint16_t gi_resolve_namedprop(const PROPERTY_NAME *);
 extern int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl, uint64_t *new_fld_id);
 extern int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *);

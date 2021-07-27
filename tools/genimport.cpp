@@ -204,6 +204,16 @@ void gi_dump_msgctnt(unsigned int depth, MESSAGE_CONTENT &ctnt)
 	}
 }
 
+void gi_dump_folder_map(const gi_folder_map_t &map)
+{
+	if (!g_show_props)
+		return;
+	fprintf(stderr, "Folder map (%zu entries):\n", map.size());
+	for (const auto &[nid, tgt] : map)
+		fprintf(stderr, "\t%lxh -> %s%s\n", static_cast<unsigned long>(nid),
+		        tgt.create_name.c_str(), tgt.create ? " (create)" : "");
+}
+
 uint16_t gi_resolve_namedprop(const PROPERTY_NAME *pn_req)
 {
 	PROPNAME_ARRAY pna_req;

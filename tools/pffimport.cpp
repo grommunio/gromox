@@ -757,12 +757,7 @@ static int do_file(const char *filename) try
 		az_fmap_splice(file.get());
 	else
 		az_fmap_standard(file.get(), filename);
-	if (g_show_props) {
-		fprintf(stderr, "Folder map:\n");
-		for (const auto &pair : g_folder_map)
-			fprintf(stderr, "\t%xh -> %s%s\n", pair.first, pair.second.create_name.c_str(),
-			       pair.second.create ? " (create)" : "");
-	}
+	gi_dump_folder_map(g_folder_map);
 
 	libpff_item_ptr root;
 	if (libpff_file_get_root_item(file.get(), &~unique_tie(root), &~unique_tie(err)) < 1)
