@@ -115,13 +115,12 @@ void attachment_list_remove(ATTACHMENT_LIST *plist, uint16_t index)
 BOOL attachment_list_append_internal(ATTACHMENT_LIST *plist,
 	ATTACHMENT_CONTENT *pattachment)
 {
-	uint16_t count;
 	ATTACHMENT_CONTENT **pplist;
 	
 	if (plist->count >= 0x8000) {
 		return FALSE;
 	}
-	count = (plist->count / 20 + 1) * 20;
+	uint16_t count = strange_roundup(plist->count, 20);
 	if (plist->count + 1 >= count) {
 		count += 20;
 		pplist = static_cast<ATTACHMENT_CONTENT **>(realloc(plist->pplist, count * sizeof(ATTACHMENT_CONTENT *)));
@@ -381,10 +380,8 @@ PROPERTY_GROUPINFO* property_groupinfo_init(uint32_t group_id)
 BOOL property_groupinfo_append_internal(
 	PROPERTY_GROUPINFO *pgpinfo, PROPTAG_ARRAY *pgroup)
 {
-	uint32_t count;
 	PROPTAG_ARRAY *pgroups;
-	
-	count = (pgpinfo->count / 20 + 1) * 20;
+	uint32_t count = strange_roundup(pgpinfo->count, 20);
 	if (pgpinfo->count + 1 >= count) {
 		count += 20;
 		pgroups = static_cast<PROPTAG_ARRAY *>(realloc(pgpinfo->pgroups, sizeof(PROPTAG_ARRAY) * count));

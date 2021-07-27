@@ -267,8 +267,7 @@ NSP_ROWSET* common_util_proprowset_init()
 NSP_PROPROW* common_util_proprowset_enlarge(NSP_ROWSET *pset)
 {
 	NSP_PROPROW *prows;
-	
-	size_t count = (pset->crows / 100 + 1) * 100;
+	size_t count = strange_roundup(pset->crows, 100);
 	if (pset->crows + 1 >= count) {
 		count += 100;
 		prows = ndr_stack_anew<NSP_PROPROW>(NDR_STACK_OUT, count);
@@ -302,7 +301,7 @@ PROPERTY_VALUE* common_util_propertyrow_enlarge(NSP_PROPROW *prow)
 {
 	PROPERTY_VALUE *pprops;
 	
-	size_t count = (prow->cvalues / 40 + 1) * 40;
+	size_t count = strange_roundup(prow->cvalues, 40);
 	if (prow->cvalues + 1 >= count) {
 		count += 40;
 		pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT, count);
@@ -334,8 +333,7 @@ LPROPTAG_ARRAY* common_util_proptagarray_init()
 uint32_t* common_util_proptagarray_enlarge(LPROPTAG_ARRAY *pproptags)
 {
 	uint32_t *pproptag;
-	
-	size_t count = (pproptags->cvalues / 100 + 1) * 100;
+	size_t count = strange_roundup(pproptags->cvalues, 100);
 	if (pproptags->cvalues + 1 >= count) {
 		count += 100;
 		pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, count);

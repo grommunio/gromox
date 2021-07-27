@@ -1938,7 +1938,6 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 {
 	int fd;
 	MAIL imail;
-	char *pbuff;
 	size_t length1;
 	char *pbuff1;
 	MJSON temp_mjson;
@@ -1972,7 +1971,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 	}
 	
 	auto length = mjson_get_mime_length(pmime, MJSON_MIME_CONTENT);
-	pbuff = static_cast<char *>(malloc(((length - 1) / (64 * 1024) + 1) * 64 * 1024));
+	auto pbuff = static_cast<char *>(malloc(strange_roundup(length - 1, 64 * 1024)));
 	if (NULL == pbuff) {
 		close(fd);
 		pbuild->build_result = FALSE;
@@ -1991,7 +1990,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 	close(fd);
 	
 	if (0 == strcasecmp(pmime->encoding, "base64")) {
-		pbuff1 = static_cast<char *>(malloc(((length - 1) / (64 * 1024) + 1) * 64 * 1024));
+		pbuff1 = static_cast<char *>(malloc(strange_roundup(length - 1, 64 * 1024)));
 		if (NULL == pbuff1) {
 			free(pbuff);
 			pbuild->build_result = FALSE;
@@ -2007,7 +2006,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		pbuff = pbuff1;
 		length = length1;
 	} else if (0 == strcasecmp(pmime->encoding, "quoted-printable")) {
-		pbuff1 = static_cast<char *>(malloc(((length - 1) / (64 * 1024) + 1) * 64 * 1024));
+		pbuff1 = static_cast<char *>(malloc(strange_roundup(length - 1, 64 * 1024)));
 		if (NULL == pbuff1) {
 			free(pbuff);
 			pbuild->build_result = FALSE;

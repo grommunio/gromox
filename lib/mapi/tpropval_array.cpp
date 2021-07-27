@@ -9,7 +9,6 @@
 static bool tpropval_array_append(TPROPVAL_ARRAY *parray,
 	const TAGGED_PROPVAL *ppropval)
 {
-	int count;
 	TAGGED_PROPVAL *ppropvals;
 	
 	if (NULL == ppropval->pvalue) {
@@ -17,7 +16,7 @@ static bool tpropval_array_append(TPROPVAL_ARRAY *parray,
 			" NULL in tpropval_array_append");
 		return true;
 	}
-	count = (parray->count/100 + 1) * 100;
+	int count = strange_roundup(parray->count, 100);
 	if (parray->count + 1 >= count) {
 		count += 100;
 		ppropvals = static_cast<TAGGED_PROPVAL *>(realloc(parray->ppropval, count * sizeof(TAGGED_PROPVAL)));

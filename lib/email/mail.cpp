@@ -913,7 +913,6 @@ BOOL mail_dup(MAIL *pmail_src, MAIL *pmail_dst)
 {
 	unsigned int size;
 	void *ptr;
-	char *pbuff;
 	STREAM tmp_stream;
 	LIB_BUFFER *pallocator;
 	
@@ -939,7 +938,7 @@ BOOL mail_dup(MAIL *pmail_src, MAIL *pmail_dst)
 		lib_buffer_free(pallocator);
 		return FALSE;
 	}
-	pbuff = static_cast<char *>(malloc(((mail_len - 1) / (64 * 1024) + 1) * 64 * 1024));
+	auto pbuff = static_cast<char *>(malloc(strange_roundup(mail_len - 1, 64 * 1024)));
 	if (NULL == pbuff) {
 		debug_info("[mail]: Failed to allocate memory in mail_dup");
 		stream_free(&tmp_stream);

@@ -921,10 +921,8 @@ static BOOL container_object_get_specialtables_from_node(
 	SIMPLE_TREE_NODE *pnode, const PROPTAG_ARRAY *pproptags,
 	BOOL b_depth, TARRAY_SET *pset)
 {
-	uint32_t count;
 	TPROPVAL_ARRAY **pparray;
-	
-	count = (pset->count / 100 + 1) * 100;
+	uint32_t count = strange_roundup(pset->count, 100);
 	if (pset->count + 1 >= count) {
 		count += 100;
 		pparray = cu_alloc<TPROPVAL_ARRAY *>(count);
@@ -964,7 +962,6 @@ static BOOL container_object_query_folder_hierarchy(
 	BOOL b_depth, TARRAY_SET *pset)
 {
 	void *pvalue;
-	uint32_t count;
 	uint32_t row_num;
 	uint32_t table_id;
 	TARRAY_SET tmp_set;
@@ -991,7 +988,7 @@ static BOOL container_object_query_folder_hierarchy(
 			tmp_set.pparray[i], PROP_TAG_CONTAINERCLASS);
 		if (pvalue == nullptr || strcasecmp(static_cast<char *>(pvalue), "IPF.Contact") != 0)
 			continue;
-		count = (pset->count / 100 + 1) * 100;
+		uint32_t count = strange_roundup(pset->count, 100);
 		if (pset->count + 1 >= count) {
 			count += 100;
 			pparray = cu_alloc<TPROPVAL_ARRAY *>(count);

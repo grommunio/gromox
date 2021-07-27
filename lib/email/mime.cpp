@@ -311,7 +311,6 @@ BOOL mime_write_content(MIME *pmime, const char *pcontent, size_t length,
 	size_t i, j;
 	char *pbuff;
 	/* align the buffer with 64K */
-	size_t buff_length;
 	BOOL added_crlf;
 	
 #ifdef _DEBUG_UMTA
@@ -349,14 +348,14 @@ BOOL mime_write_content(MIME *pmime, const char *pcontent, size_t length,
 		return TRUE;
 	}
 	switch (encoding_type) {
-	case MIME_ENCODING_NONE:
+	case MIME_ENCODING_NONE: {
 		/* should add '\r\n' at the end of buffer if it misses */
 		if ('\n' != pcontent[length - 1]) {
 			added_crlf = TRUE;
 		} else {
 			added_crlf = FALSE;
 		}
-		buff_length = ((2 * length) / (64 * 1024) + 1) * 64 * 1024;
+		size_t buff_length = strange_roundup(2 * length, 64 * 1024);
 		pmime->content_begin = static_cast<char *>(malloc(buff_length));
 		if (NULL == pmime->content_begin) {
 			return FALSE;
@@ -384,8 +383,9 @@ BOOL mime_write_content(MIME *pmime, const char *pcontent, size_t length,
 			pmime->content_length = length;
 		}
 		return TRUE;
+	}
 	case MIME_ENCODING_QP: {
-		buff_length = ((4 * length) / (64 * 1024) + 1) * 64 * 1024;
+		size_t buff_length = strange_roundup(4 * length, 64 * 1024);
 		pbuff = static_cast<char *>(malloc(buff_length));
 		if (NULL == pbuff) {
 			return FALSE;
@@ -425,8 +425,8 @@ BOOL mime_write_content(MIME *pmime, const char *pcontent, size_t length,
 		mime_set_field(pmime, "Content-Transfer-Encoding", "quoted-printable");
 		return TRUE;
 	}
-	case MIME_ENCODING_BASE64:
-		buff_length = ((2 * length) / (64 * 1024) + 1) * 64 * 1024;
+	case MIME_ENCODING_BASE64: {
+		size_t buff_length = strange_roundup(2 * length, 64 * 1024);
 		pmime->content_begin = static_cast<char *>(malloc(buff_length));
 		if (NULL == pmime->content_begin) {
 			return FALSE;
@@ -435,6 +435,7 @@ BOOL mime_write_content(MIME *pmime, const char *pcontent, size_t length,
 				&pmime->content_length);
 		mime_set_field(pmime, "Content-Transfer-Encoding", "base64");
 		return TRUE;
+	}
 	}
 	return false;
 }

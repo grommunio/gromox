@@ -47,13 +47,12 @@ void tarray_set_remove(TARRAY_SET *pset, uint32_t index)
 
 bool tarray_set_append_internal(TARRAY_SET *pset, TPROPVAL_ARRAY *pproplist)
 {
-	uint16_t count;
 	TPROPVAL_ARRAY **pparray;
 	
 	if (pset->count >= 0xFF00) {
 		return false;
 	}
-	count = (pset->count / 100 + 1) * 100;
+	uint16_t count = strange_roundup(pset->count, 100);
 	if (pset->count + 1 >= count) {
 		count += 100;
 		pparray = static_cast<TPROPVAL_ARRAY **>(realloc(pset->pparray, count * sizeof(TPROPVAL_ARRAY *)));

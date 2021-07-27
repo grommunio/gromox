@@ -3201,7 +3201,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 					*ppcall = pcall;
 					return PDU_PROCESSOR_OUTPUT;
 				}
-				alloc_size = ((alloc_size - 1) / (16*1024) + 1) * (16*1024);
+				alloc_size = strange_roundup(alloc_size - 1, 16 * 1024);
 				pdata = malloc(alloc_size);
 				if (NULL == pdata) {
 					if (FALSE == pdu_processor_fault(pcall,
@@ -3261,9 +3261,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 					*ppcall = pcall;
 					return PDU_PROCESSOR_OUTPUT;
 				}	
-				
-				alloc_size = ((alloc_size - 1) / (16*1024) + 1) * (16*1024);
-
+				alloc_size = strange_roundup(alloc_size - 1, 16 * 1024);
 				pdata = malloc(alloc_size);
 				if (NULL == pdata) {
 					pdu_processor_free_call(pcallx);
