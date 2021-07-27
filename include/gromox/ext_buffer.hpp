@@ -72,7 +72,7 @@ struct XID;
 
 struct EXT_PULL {
 	EXT_BUFFER_ALLOC m_alloc{};
-	void init(const void *, uint32_t, EXT_BUFFER_ALLOC, uint32_t);
+	void init(const void *, uint32_t, EXT_BUFFER_ALLOC, uint32_t) __attribute__((nonnull(4)));
 	int advance(uint32_t);
 	int g_rpc_header_ext(RPC_HEADER_EXT *);
 	int g_uint8(uint8_t *);
