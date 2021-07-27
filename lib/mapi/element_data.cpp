@@ -381,7 +381,8 @@ BOOL property_groupinfo_append_internal(
 	PROPERTY_GROUPINFO *pgpinfo, PROPTAG_ARRAY *pgroup)
 {
 	PROPTAG_ARRAY *pgroups;
-	uint32_t count = strange_roundup(pgpinfo->count, 20);
+	/* allocate like proptag_array.cpp does */
+	uint32_t count = strange_roundup(pgpinfo->count, 100);
 	if (pgpinfo->count + 1 >= count) {
 		count += 20;
 		pgroups = static_cast<PROPTAG_ARRAY *>(realloc(pgpinfo->pgroups, sizeof(PROPTAG_ARRAY) * count));
