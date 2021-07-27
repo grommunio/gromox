@@ -84,7 +84,7 @@ void tlog(const char *fmt, ...)
 	va_end(args);
 }
 
-static void gi_dump_tpropval(unsigned int depth, TAGGED_PROPVAL &tp)
+static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 {
 	if (g_show_props)
 		tree(depth);
@@ -155,7 +155,7 @@ static void gi_dump_tpropval(unsigned int depth, TAGGED_PROPVAL &tp)
 	tlog(g_show_props ? "\n" : ", ");
 }
 
-void gi_dump_tpropval_a(unsigned int depth, TPROPVAL_ARRAY &props)
+void gi_dump_tpropval_a(unsigned int depth, const TPROPVAL_ARRAY &props)
 {
 	if (props.count == 0)
 		return;
@@ -183,7 +183,7 @@ void gi_dump_tpropval_a(unsigned int depth, TPROPVAL_ARRAY &props)
 	}
 }
 
-void gi_dump_msgctnt(unsigned int depth, MESSAGE_CONTENT &ctnt)
+void gi_dump_msgctnt(unsigned int depth, const MESSAGE_CONTENT &ctnt)
 {
 	gi_dump_tpropval_a(depth, ctnt.proplist);
 	auto &r = ctnt.children.prcpts;

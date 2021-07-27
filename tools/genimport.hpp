@@ -80,8 +80,8 @@ extern gi_folder_map_t g_folder_map;
 
 extern void tree(unsigned int d);
 extern void tlog(const char *f, ...);
-extern void gi_dump_tpropval_a(unsigned int depth, TPROPVAL_ARRAY &);
-extern void gi_dump_msgctnt(unsigned int depth, MESSAGE_CONTENT &);
+extern void gi_dump_tpropval_a(unsigned int depth, const TPROPVAL_ARRAY &);
+extern void gi_dump_msgctnt(unsigned int depth, const MESSAGE_CONTENT &);
 extern void gi_dump_folder_map(const gi_folder_map_t &);
 extern void gi_dump_name_map(const gi_name_map &);
 extern uint16_t gi_resolve_namedprop(const PROPERTY_NAME *);
