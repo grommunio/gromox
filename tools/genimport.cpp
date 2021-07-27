@@ -160,6 +160,48 @@ void gi_dump_tpropval_a(unsigned int depth, TPROPVAL_ARRAY &props)
 		gi_dump_tpropval(depth + 1, props.ppropval[i]);
 	if (!g_show_props)
 		tlog("}\n");
+	auto p = static_cast<const char *>(tpropval_array_get_propval(&props, PR_DISPLAY_NAME));
+	if (p != nullptr) {
+		tree(depth);
+		tlog("display_name=\"%s\"\n", p);
+	}
+	p = static_cast<const char *>(tpropval_array_get_propval(&props, PR_SUBJECT));
+	if (p != nullptr) {
+		tree(depth);
+		tlog("subject=\"%s\"\n", p);
+	}
+	p = static_cast<const char *>(tpropval_array_get_propval(&props, PR_ATTACH_LONG_FILENAME));
+	if (p != nullptr) {
+		tree(depth);
+		tlog("filename=\"%s\"\n", p);
+	}
+}
+
+void gi_dump_msgctnt(unsigned int depth, MESSAGE_CONTENT &ctnt)
+{
+	gi_dump_tpropval_a(depth, ctnt.proplist);
+	auto &r = ctnt.children.prcpts;
+	if (r != nullptr) {
+		for (size_t n = 0; n < r->count; ++n) {
+			tree(depth);
+			tlog("Recipient #%zu\n", n);
+			if (r->pparray[n] != nullptr)
+				gi_dump_tpropval_a(depth + 1, *r->pparray[n]);
+		}
+	}
+	auto &a = ctnt.children.pattachments;
+	if (a != nullptr) {
+		for (size_t n = 0; n < a->count; ++n) {
+			tree(depth);
+			tlog("Attachment #%zu\n", n);
+			auto atc = a->pplist[n];
+			if (atc == nullptr)
+				continue;
+			gi_dump_tpropval_a(depth + 1, atc->proplist);
+			if (atc->pembedded != nullptr)
+				gi_dump_msgctnt(depth + 1, *atc->pembedded);
+		}
+	}
 }
 
 uint16_t gi_resolve_namedprop(const PROPERTY_NAME *pn_req)

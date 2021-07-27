@@ -130,6 +130,7 @@ static const struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
+static void do_print(unsigned int depth, libpff_item_t *);
 static int do_item(unsigned int, const parent_desc &, libpff_item_t *);
 
 static YError az_error(const char *prefix, const libpff_error_ptr &err)
@@ -212,26 +213,6 @@ static bool is_mapi_message(uint32_t nid)
 	 */
 	nid &= NID_TYPE_MASK;
 	return nid == NID_TYPE_NORMAL_MESSAGE || nid == NID_TYPE_ASSOC_MESSAGE;
-}
-
-/* Obtain a string value from a libpff item's property */
-static std::string az_item_get_str(libpff_item_t *item, uint32_t proptag)
-{
-	libpff_record_entry_ptr rent;
-
-	auto ret = az_item_get_propv(item, CHANGE_PROP_TYPE(proptag, PT_UNSPECIFIED),
-	           &unique_tie(rent));
-	if (ret == 0)
-		return {};
-	size_t dsize = 0;
-	libpff_error_ptr err;
-	if (libpff_record_entry_get_data_as_utf8_string_size(rent.get(), &dsize, &unique_tie(err)) < 1)
-		throw az_error("PF-1026", err);
-	++dsize;
-	auto buf = std::make_unique<uint8_t[]>(dsize);
-	if (libpff_record_entry_get_data_as_utf8_string(rent.get(), buf.get(), dsize, &~unique_tie(err)) < 1)
-		throw az_error("PF-1002", err);
-	return reinterpret_cast<char *>(buf.get());
 }
 
 static int do_attach2(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t *atx)
@@ -495,31 +476,6 @@ static tpropval_array_ptr item_to_tpropval_a(libpff_item_t *item)
 	return props;
 }
 
-static void do_print_extra(unsigned int depth, libpff_item_t *item,
-    unsigned int item_type, const parent_desc &parent, uint64_t new_fld_id)
-{
-	auto name = az_item_get_str(item, PR_DISPLAY_NAME);
-	if (g_show_tree) {
-		if (!name.empty()) {
-			tree(depth);
-			tlog("display_name=\"%s\"\n", name.c_str());
-		}
-		name = az_item_get_str(item, PR_SUBJECT);
-		if (!name.empty()) {
-			tree(depth);
-			tlog("subject=\"%s\"\n", name.c_str());
-		}
-		name = az_item_get_str(item, PR_ATTACH_LONG_FILENAME);
-		if (!name.empty()) {
-			tree(depth);
-			tlog("filename=\"%s\"\n", name.c_str());
-		}
-	} else if (item_type == LIBPFF_ITEM_TYPE_FOLDER &&
-	    (parent.type == MAPI_FOLDER || new_fld_id != 0)) {
-		printf("Processing folder \"%s\"...\n", name.c_str());
-	}
-}
-
 static int do_folder(unsigned int depth, const parent_desc &parent,
     libpff_item_t *item, uint64_t *new_fld_id)
 {
@@ -557,13 +513,10 @@ static int do_folder(unsigned int depth, const parent_desc &parent,
 	return 0;
 }
 
-static int do_message(unsigned int depth, const parent_desc &parent,
-    libpff_item_t *item, unsigned int item_type)
+static message_content_ptr extract_message(unsigned int depth,
+    const parent_desc &parent, libpff_item_t *item)
 {
 	auto props = item_to_tpropval_a(item);
-	if (g_show_tree)
-		gi_dump_tpropval_a(depth, *props);
-
 	message_content_ptr ctnt(message_content_init());
 	if (ctnt == nullptr)
 		throw std::bad_alloc();
@@ -577,9 +530,9 @@ static int do_message(unsigned int depth, const parent_desc &parent,
 	std::swap(ctnt->proplist.ppropval, props->ppropval);
 	libpff_item_ptr recip_set;
 	if (libpff_message_get_recipients(item, &unique_tie(recip_set), nullptr) >= 1) {
-		auto ret = do_item(depth + 1, parent_desc::as_msg(ctnt.get()), recip_set.get());
+		auto ret = do_item(depth, parent_desc::as_msg(ctnt.get()), recip_set.get());
 		if (ret < 0)
-			return ret;
+			throw YError("PF-1052: %s", strerror(-ret));
 	}
 	int atnum = 0;
 	if (libpff_message_get_number_of_attachments(item, &atnum, nullptr) >= 1) {
@@ -591,15 +544,21 @@ static int do_message(unsigned int depth, const parent_desc &parent,
 				throw az_error("PF-1017", err);
 			auto ret = do_item(depth, parent_desc::as_msg(ctnt.get()), atx.get());
 			if (ret < 0)
-				return ret;
+				throw YError("PF-1053: %s", strerror(-ret));
 		}
 	}
-	if (g_show_tree)
-		do_print_extra(depth, item, item_type, parent, 0);
+	return ctnt;
+}
+
+static int do_message(unsigned int depth, const parent_desc &parent, libpff_item_t *item)
+{
+	auto ctnt = extract_message(depth, parent, item);
 	if (g_wet_run && parent.type == MAPI_FOLDER)
 		return exm_create_msg(parent.folder_id, ctnt.get());
 	if (parent.type == MAPI_ATTACH)
 		attachment_content_set_embedded_internal(parent.attach, ctnt.release());
+	else if (g_show_tree)
+		gi_dump_msgctnt(depth, *ctnt);
 	return 0;
 }
 
@@ -617,8 +576,6 @@ static int do_recips(unsigned int depth, const parent_desc &parent, libpff_item_
 		if (libpff_item_get_record_set_by_index(item, s, &unique_tie(rset), nullptr) < 1)
 			throw YError("PF-1049");
 		recordset_to_tpropval_a(rset.get(), props.get());
-		if (g_show_tree)
-			gi_dump_tpropval_a(depth, *props);
 		assert(parent.type == MAPI_MESSAGE);
 		if (!tarray_set_append_internal(parent.message->children.prcpts, props.get()))
 			throw std::bad_alloc();
@@ -636,10 +593,9 @@ static int do_attach(unsigned int depth, const parent_desc &parent, libpff_item_
 	if (atc == nullptr)
 		throw std::bad_alloc();
 	auto props = item_to_tpropval_a(item);
-	if (g_show_tree)
-		gi_dump_tpropval_a(depth, *props);
 	std::swap(atc->proplist.count, props->count);
 	std::swap(atc->proplist.ppropval, props->ppropval);
+	do_print(depth++, item);
 	auto ret = do_attach2(depth, atc.get(), item);
 	if (ret < 0)
 		return ret;
@@ -651,44 +607,53 @@ static int do_attach(unsigned int depth, const parent_desc &parent, libpff_item_
 	return 0;
 }
 
-/* General look at an (arbitrary) PFF item */
-static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t *item)
+static void do_print(unsigned int depth, libpff_item_t *item)
 {
 	uint32_t ident = 0, nent = 0;
 	uint8_t item_type = LIBPFF_ITEM_TYPE_UNDEFINED;
 	int nsets = 0;
 	libpff_error_ptr err;
 
-	if (libpff_item_get_identifier(item, &ident, &unique_tie(err)) < 1)
-		throw az_error("PF-1018", err);
+	libpff_item_get_identifier(item, &ident, nullptr);
 	libpff_item_get_type(item, &item_type, nullptr);
 	libpff_item_get_number_of_record_sets(item, &nsets, nullptr);
-	if (g_show_tree) {
-		libpff_item_get_number_of_entries(item, &nent, nullptr);
-		tree(depth);
-		auto sp_nid = az_special_ident(ident);
-		tlog("[id=%lxh%s%s type=%s nent=%lu nset=%d]\n",
-		        static_cast<unsigned long>(ident),
-		        *sp_nid != '\0' ? " " : "", sp_nid,
-		        az_item_type_to_str(item_type),
-		        static_cast<unsigned long>(nent), nsets);
-	}
+	libpff_item_get_number_of_entries(item, &nent, nullptr);
+	tree(depth);
+	auto sp_nid = az_special_ident(ident);
+	tlog("[id=%lxh%s%s type=%s nent=%lu nset=%d]\n",
+		static_cast<unsigned long>(ident),
+		*sp_nid != '\0' ? " " : "", sp_nid,
+		az_item_type_to_str(item_type),
+		static_cast<unsigned long>(nent), nsets);
+}
 
-	++depth;
+static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t *item)
+{
 	uint64_t new_fld_id = 0;
+	uint32_t ident = 0;
+	uint8_t item_type = LIBPFF_ITEM_TYPE_UNDEFINED;
 	int ret = 0;
-	if (item_type == LIBPFF_ITEM_TYPE_FOLDER)
+	libpff_error_ptr err;
+
+	libpff_item_get_identifier(item, &ident, nullptr);
+	libpff_item_get_type(item, &item_type, nullptr);
+	if (item_type == LIBPFF_ITEM_TYPE_FOLDER) {
+		if (g_show_tree)
+			do_print(depth++, item);
 		ret = do_folder(depth, parent, item, &new_fld_id);
-	else if (is_mapi_message(ident))
-		return do_message(depth, parent, item, item_type);
-	else if (item_type == LIBPFF_ITEM_TYPE_RECIPIENTS)
+	} else if (is_mapi_message(ident)) {
+		if (g_show_tree)
+			do_print(depth++, item);
+		return do_message(depth, parent, item);
+	} else if (item_type == LIBPFF_ITEM_TYPE_RECIPIENTS) {
 		ret = do_recips(depth, parent, item);
-	else if (item_type == LIBPFF_ITEM_TYPE_ATTACHMENT)
+	} else if (item_type == LIBPFF_ITEM_TYPE_ATTACHMENT) {
 		ret = do_attach(depth, parent, item);
+	} else if (g_show_tree) {
+		do_print(depth++, item);
+	}
 	if (ret != 0)
 		return ret;
-	if (g_show_tree)
-		do_print_extra(depth, item, item_type, parent, new_fld_id);
 	auto new_parent = parent;
 	if (new_fld_id != 0) {
 		new_parent.type = MAPI_FOLDER;
