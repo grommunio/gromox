@@ -111,17 +111,17 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 	case PT_BINARY: {
 		auto &b = *static_cast<BINARY *>(tp.pvalue);
 		if (g_show_props)
-			tlog("bin(%zu)=%s", b.cb, bin2hex(b.pv, b.cb).c_str());
+			tlog("bin(%zu)=%s", static_cast<size_t>(b.cb), bin2hex(b.pv, b.cb).c_str());
 		else
-			tlog("bin(%zu)", b.cb);
+			tlog("bin(%zu)", static_cast<size_t>(b.cb));
 		break;
 	}
 	case PT_MV_LONG: {
 		auto &sl = *static_cast<LONG_ARRAY *>(tp.pvalue);
-		tlog("mvlong[%zu]", sl.count);
+		tlog("mvlong[%zu]", static_cast<size_t>(sl.count));
 		if (!g_show_props)
 			break;
-		tlog("={", sl.count);
+		tlog("={");
 		for (size_t i = 0; i < sl.count; ++i)
 			tlog("%u,", sl.pl[i]);
 		tlog("}");
@@ -129,10 +129,10 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 	}
 	case PT_MV_BINARY: {
 		auto &sb = *static_cast<BINARY_ARRAY *>(tp.pvalue);
-		tlog("mvbin[%zu]", sb.count);
+		tlog("mvbin[%zu]", static_cast<size_t>(sb.count));
 		if (!g_show_props)
 			break;
-		tlog("={", sb.count);
+		tlog("={");
 		for (size_t i = 0; i < sb.count; ++i)
 			tlog("%s,", bin2hex(sb.pbin[i].pv, sb.pbin[i].cb).c_str());
 		tlog("}");
@@ -140,10 +140,10 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 	}
 	case PT_MV_UNICODE: {
 		auto &ss = *static_cast<STRING_ARRAY *>(tp.pvalue);
-		tlog("mvstr[%zu]", ss.count);
+		tlog("mvstr[%zu]", static_cast<size_t>(ss.count));
 		if (!g_show_props)
 			break;
-		tlog("={", ss.count);
+		tlog("={");
 		for (size_t i = 0; i < ss.count; ++i)
 			tlog("\"%s\",", ss.ppstr[i]);
 		tlog("}");
