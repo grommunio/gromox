@@ -1,9 +1,7 @@
 .TH timer_agent 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 timer_agent \(em Service plugin for deferred command execution with timer(8gx)
 .SH Description
-.PP
 timer_agent connects to a remote timer(8gx) daemon and locally installs two
 service functions, "add_timer" and "cancel_timer", which can be used to set up
 and rescind, respectively, jobs for later execution.
@@ -27,5 +25,4 @@ The TCP port number for contacting the timer daemon.
 .br
 Default: \fI6666\fP
 .SH See also
-.PP
 \fBgromox\fP(7), \fBtimer\fP(8gx), \fBat_client\fP(4gx)

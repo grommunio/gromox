@@ -1,9 +1,7 @@
 .TH authmgr 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 authmgr(4gx) \(em Demultiplexer for authentication requests
 .SH Description
-.PP
 authmgr is a service plugin that, for mail account authentication, dynamically
 selects the authentication backend per user account. The
 libgxs_mysql_adaptor.so and/or libgxs_ldap_adaptor.so plugins need to be
@@ -37,5 +35,4 @@ verification with LDAP servers.
 \fIexternid\fP will cause authmgr to selectively pick LDAP/MySQL, depending on
 whether the user was imported from LDAP or not.
 .SH See also
-.PP
 \fBgromox\fP(7), \fBldap_adaptor\fP(4gx), \fBmysql_adaptor\fP(4gx)

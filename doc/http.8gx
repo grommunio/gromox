@@ -1,9 +1,9 @@
 .TH http 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+http \(em Central server for RPC and the message database
 .SH Synopsis
-.PP
 \fBhttp\fP [\fB\-c\fP \fIconfig\fP]
 .SH Description
-.PP
 http(8gx) is a trivial HTTP server. It understands the special HTTP methods as
 used by RPC-over-HTTP protocol as used by Outlook, it can serve files verbatim,
 or forward requests to a FastCGI server such as php-fpm(8).
@@ -35,7 +35,6 @@ if the module handled the request.
 .IP \(bu 4
 Otherwise, the request is rejected.
 .SH RPC-over-HTTP
-.PP
 RPC-over-HTTP utilizes two special HTTP methods, RPC_IN_DATA and RPC_OUT_DATA.
 These requests can, similarly to HTTP CONNECT, be very long-lived. The RPC data
 stream is handled by the included exchange_emsmdb(4gx) plugin.
@@ -255,6 +254,5 @@ MS-RPCE: Remote Procedure Call Protocol Extensions
 DCERPC / C706: Technical Standard DCE 1.1: Remote Procedure Call by The Open
 Group, 1997
 .SH See also
-.PP
 \fBgromox\fP(7), \fBmod_cache\fP(4gx), \fBmod_fastcgi\fP(4gx),
 \fBmod_rewrite\fP(4gx)

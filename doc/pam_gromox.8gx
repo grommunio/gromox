@@ -1,8 +1,8 @@
 .TH pam_gromox 8gx "" "Gromox" "Gromox admin reference"
-.SH Synopsis
+.SH Name
 .PP
 pam_gromox \(em a PAM plugin to authenticate with Gromox
-.SH Overview
+.SH Description
 .PP
 This module forwards authentication requests to the Gromox service plugins
 which themselves may pick MySQL or LDAP as a backend. pam_gromox is meant to be

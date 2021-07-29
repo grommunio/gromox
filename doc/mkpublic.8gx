@@ -1,4 +1,7 @@
 .TH mkpublic 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+mkpublic \(em Tool for creating a blank public store
 .SH Synopsis
 .PP
 \fBmkpublic\fP [\fB\-c\fP \fIconfig\fP] [\fB\-d\fP \fIdata_path\fP]

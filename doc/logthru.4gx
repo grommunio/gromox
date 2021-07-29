@@ -1,9 +1,7 @@
 .TH logthru 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 logthru \(em service plugin for a stdout/file logger
 .SH Description
-.PP
 logthru registers a "log_info" service function. Log messages sent to this API
 will be emitted without delay to stdout or a file of choice. When programs are
 run under the control of systemd (i.e. have been started with systemctl),
@@ -26,5 +24,4 @@ error (3), warning (4), notice/info (5), debug (6).
 .br
 Default: \fI4\fP
 .SH See also
-.PP
 \fBgromox\fP(7)

@@ -1,4 +1,7 @@
 .TH event 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+event \(em Folder change notification daemon
 .SH Synopsis
 .PP
 \fBevent\fP [\fB\-c\fP \fIconfig\fP]

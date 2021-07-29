@@ -1,4 +1,6 @@
 .TH filter 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+user_filter \(em Service plugin for application of user login limits
 .SH Configuration file directives
 .TP
 \fBadd_service_name\fP
@@ -58,5 +60,4 @@ load libgxs_user_list.so.)
 .IP \(bu 4
 \fIstate_file_path\fP/\fIinstance\fP.txt: greylist
 .SH See also
-.PP
 \fBgromox\fP(7)

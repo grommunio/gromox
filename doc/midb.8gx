@@ -1,7 +1,17 @@
 .TH midb 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+midb \(em Message Index database daemon
 .SH Synopsis
 .PP
 \fBmidb\fP [\fB\-c\fP \fIconfig\fP]
+.SH Description
+.PP
+midb is used by imap(8gx) and pop3(8gx) to generate and keep track of folder
+and message summaries. In particular, it enumerates messages to give them their
+IMAP UID and have at all times a suitable UIDNEXT value for folders ready. midb
+also caches the Message-Id, modification date, message flags, subject and
+sender to facilitate IMAP listings.
 .SH Options
 .TP
 \fB\-c\fP \fIconfig\fP

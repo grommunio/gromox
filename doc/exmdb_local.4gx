@@ -1,14 +1,11 @@
 .TH exmdb_local 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 exmdb_local(4gx) \(em LDA hook plugin that offers a exmdb_provider(4gx) client
 with a C API
 .SH Description
-.PP
 An LDA hook plugin for delivery(8gx) which places mail into a store by
 connecting to a exmdb_provider(4gx) service.
 .SH Config file directives
-.PP
 This plugin has no directives.
 .SH Files
 .IP \(bu 4
@@ -20,5 +17,4 @@ exmdb_provider(4gx) for details.
 \fIdata_file_path\fP/local_bounce/: response templates for when mail cannot be
 delivered
 .SH See also
-.PP
 \fBgromox\fP(7), \fBdelivery\fP(8gx), \fBexmdb_provider\fP(4gx)

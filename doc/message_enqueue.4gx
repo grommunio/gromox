@@ -1,9 +1,7 @@
 .TH message_enqueue 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 message_enqueue \(em Message enqueueing flusher plugin for smtp(8gx)
 .SH Description
-.PP
 When the SMTP server has finished processing a mail, the mail will be
 handed off to a flusher plugin. message_enqueue is such a plugin, in
 fact, presently the only flusher plugin available.
@@ -11,5 +9,4 @@ fact, presently the only flusher plugin available.
 message_enqueue(4gx) is the approximate equivalent of the Postfix cleanup(8)
 process.
 .SH See also
-.PP
 \fBgromox\fP(7), \fBsmtp\fP(8gx)

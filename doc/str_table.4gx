@@ -1,9 +1,7 @@
 .TH str_table 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 str_table \(em string table match service plugin
 .SH Description
-.PP
 str_table implements checking for a trivial presence lookup of something in a
 text file. The plugin can be used in any Gromox process, but in practice
 only makes an appeareance in smtp(8gx) and delivery(8gx).
@@ -66,5 +64,4 @@ made to load libgxs_domain_list.so.)
 string table on which matches are carried out (e.g.
 /var/lib/gromox/domain_list.txt)
 .SH See also
-.PP
 \fBgromox\fP(7)

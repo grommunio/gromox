@@ -1,7 +1,8 @@
 .TH rtf2html 8gx "" "Gromox" "Gromox admin reference"
-.SH Synopsis
+.SH Name
 .PP
-\fBrtf2html\fP \(em RTFCP to HTML converter
+\fBrtf2html\fP \(em C++ helper program for the mapi(4gx) mapi_decompressrtf
+function
 .SH Description
 .PP
 rtf2html decodes an RTFCP file from standard input and converts the included

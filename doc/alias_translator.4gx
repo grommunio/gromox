@@ -1,9 +1,7 @@
 .TH alias_translator 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 alias_translator \(em Alias resolution plugin for delivery(8gx)
 .SH Description
-.PP
 alias_translator is a mail transfer agent hook plugin which rewrites the
 envelope FROM and RCPT addresses of mails and replaces aliases by their
 respective primary addresses.
@@ -15,5 +13,4 @@ normally generated from MySQL data by adaptor(8gx). The adaptor process is also
 the one triggering the reload in alias_translator(4gx) via delivery(8gx)'s
 telnet console mechanism.
 .SH See also
-.PP
 \fBgromox\fP(7), \fBadaptor\fP(8gx), \fBdelivery\fP(8gx)
