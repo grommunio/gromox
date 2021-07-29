@@ -33,7 +33,7 @@ If the file is absent however, a set of default entries will be used.
 /autodiscover/autodiscover.xml => \\0/ews/autodiscover.php
 /EWS/Exchange.asmx => \\0/ews/exchange.php
 /OAB/oab.xml => \\0/ews/oab.php
-\\(/Microsoft-Server-ActiveSync\\) => \\1/grammm-sync/index.php
+\\(/Microsoft-Server-ActiveSync\\) => \\1/grommunio-sync/index.php
 \\(/.well-known/autoconfig/mail/config-v1.1.xml\\) => \\1/well-known/autoconfig-mail.php
 .fi
 .SH Files

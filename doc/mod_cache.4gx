@@ -29,7 +29,7 @@ If the file is absent however, a set of default entries will be used.
 .SS Default entries
 .PP
 .nf
-* /web /usr/share/grammm-web
+* /web /usr/share/grommunio-web
 .fi
 .SH Files
 .IP \(bu 4

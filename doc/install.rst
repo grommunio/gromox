@@ -1,7 +1,7 @@
 Source build procedure
 ======================
 
-A pre-built version of Gromox is readily available by way of the grammm Linux
+A pre-built version of Gromox is readily available by way of the grommunio Linux
 distribution. If you choose to build from source nevertheless, a number of
 dependencies are needed:
 
@@ -24,7 +24,7 @@ prefix is /usr, not /usr/local.
 For true developers, the ``qconf`` helper script may be used as a typing
 shortcut and to configure the paths such that just-built program binaries, from
 within the source directory, would work with a (pre-existing) Gromox
-installation from the grammm distribution.
+installation from the grommunio distribution.
 
 The rest of the documentation assumes that Gromox was configured with
 ``--prefix=/usr --sysconfdir=/etc --localstatedir=/var``.
@@ -75,7 +75,7 @@ corresponding manpage is mysql_adaptor(4gx). The database can then be populated
 using ``gromox-dbop -C``.
 
 Gromox only requires SELECT,UPDATE permissions on this database as it does not
-create or delete users. The grammm Administration Backend is in charge of user
+create or delete users. The grommunio Administration Backend is in charge of user
 management, and this role will need more permissions.
 
 
@@ -158,7 +158,7 @@ Service start
 
 * ``gromox-http`` — at the very least, the main process needs to be started. This is sufficient for e.g. Outlook to open and browse mailboxes.
 * ``gromox-adaptor`` — caches SQL data and generates work files used by other daemons
-* ``gromox-zcore`` — the zcore process is needed by anything using php-mapi (grammmm-web, grammm-sync, ...)
+* ``gromox-zcore`` — the zcore process is needed by anything using php-mapi (grommuniom-web, grommunio-sync, ...)
 * ``gromox-smtp`` — SMTP half of the local delivery agent (for incoming mail)
 * ``gromox-delivery`` — Dequeueing half of the local delivery agent
 * ``gromox-imap`` — for ye Thunderbird
