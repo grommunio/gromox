@@ -1,4 +1,8 @@
 .TH exchange_rfr 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+exchange_rfr(4gx) \(em http(8gx) processing plugin for the Address Book Name
+Service Provider Interface Referral Protocol.
 .SH Description
 .PP
 exchange_rfr is a processing plugin for http(8gx) which handles the Address

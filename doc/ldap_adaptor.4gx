@@ -1,4 +1,7 @@
 .TH ldap_adaptor 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+ldap_adaptor \(em LDAP connector for authentication
 .SH Description
 .PP
 ldap_adaptor is a service plugin that facilitates querying an LDAP directory

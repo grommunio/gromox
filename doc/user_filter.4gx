@@ -1,4 +1,7 @@
 .TH filter 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+user_filter \(em Service plugin for application of user login limits
 .SH Configuration file directives
 .TP
 \fBadd_service_name\fP

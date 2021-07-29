@@ -1,4 +1,7 @@
 .TH http 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+http \(em Central server for RPC and the message database
 .SH Synopsis
 .PP
 \fBhttp\fP [\fB\-c\fP \fIconfig\fP]

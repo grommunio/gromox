@@ -1,4 +1,7 @@
 .TH zcore 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+zcore \(em Protocol handler for Z-MAPI
 .SH Synopsis
 .PP
 \fBzcore\fP [\fB\-c\fP \fIconfig\fP]
@@ -6,7 +9,10 @@
 .PP
 zcore is a bridge process (proxy) between mapi(4gx) and exmdb_provider(4gx). It
 listens on /run/gromox/zcore.sock (hardcoded) for zcore RPCs, a Gromox-specific
-protocol. It issues exmdb RPCs to exmdb_provider(4gx).
+protocol and issues exmdb RPCs to exmdb_provider(4gx). As exmdb_provider connections
+have no state to speak of, zcore is the process that defines the logins sessions.
+zcore needs to run on the same server as the program that uses the Z-MAPI
+PHP functions.
 .SH Options
 .TP
 \fB\-c\fP \fIconfig\fP

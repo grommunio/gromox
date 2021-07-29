@@ -1,7 +1,7 @@
 .TH freebusy 8gx "" "Gromox" "Gromox admin reference"
-.SH Synopsis
+.SH Name
 .PP
-\fBfreebusy\fP \(em helper utility for EWS Freebusy actions
+\fBfreebusy\fP \(em Helper program for EWS Freebusy actions
 .SH Description
 .PP
 The freebusy program is used by the EWS handler (a PHP script)

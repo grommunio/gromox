@@ -1,4 +1,7 @@
 .TH adaptor 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+adaptor \(em SQL data cache generator
 .SH Synopsis
 .PP
 \fBadaptor\fP [\fB\-c\fP \fIconfig\fP]

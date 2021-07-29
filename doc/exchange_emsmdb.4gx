@@ -1,4 +1,8 @@
 .TH exchange_emsmdb 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+http(8gx) processing plugin for the Wire Format Protocol (Outlook/Exchange
+RPCs).
 .SH Description
 .PP
 exchange_emsmdb is a processing plugin for http(8gx) which handles the remote

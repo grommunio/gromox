@@ -1,4 +1,7 @@
 .TH exmdb_provider 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+exmdb_provider(4gx) \(em http(8gx) service plugin for exmdb connections
 .SH Description
 .PP
 exmdb_provider is a service plugin for http(8gx). It offers a plethora

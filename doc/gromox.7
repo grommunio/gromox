@@ -1,8 +1,8 @@
 .TH gromox 7 "" "Gromox" "Gromox admin reference"
-.SH Synopsis
+.SH Name
 .PP
 gromox \(em overview of the Gromox groupware server
-.SH Overview
+.SH Description
 .PP
 Gromox is a groupware server capable of serving as a replacement for Microsoft
 Exchange. Connectivity options include RPC/HTTP (Outlook Anywhere),
@@ -52,7 +52,7 @@ Service Provider Interface Referral Protocol.
 .IP \(bu 4
 exmdb_provider(4gx) \(em http(8gx) service plugin for exmdb connections
 .IP \(bu 4
-freebusy(8gx) \(em C++ helper for the EWS Freebusy mechanism
+freebusy(8gx) \(em Helper program for the EWS Freebusy mechanism
 .IP \(bu 4
 http(8gx)
 .IP \(bu 4
@@ -70,7 +70,7 @@ URIs before processing
 timer(8gx) \(em deferred command executor
 .SH PHP-MAPI subsystem
 .IP \(bu 4
-rtf2html(1gx) \(em C++ helper for php_mapi's mapi_decompressrtf function
+rtf2html(1gx) \(em C++ helper program for the mapi(4gx) mapi_decompressrtf function
 .IP \(bu 4
 zcore(8gx)
 .SH Mail retrieval agent subsystem
@@ -94,18 +94,18 @@ smtp(8gx) \(em SMTP frontend for local delivery
 .IP \(bu 4
 str_table(4gx) \(em string table match plugin
 .IP \(bu 4
-user_filter(4gx) \(em
+user_filter(4gx) \(em Service plugin for application of user login limits
 .SH Auxiliary services
 .IP \(bu 4
 pam_gromox(8gx) \(em a PAM plugin to authenticate with Gromox
 .IP \(bu 4
 rtf2html(1gx) \(em C++ helper for php_mapi's mapi_decompressrtf function
 .IP \(bu 4
-adaptor(8gx)
+adaptor(8gx) \(em SQL data cache generator
 .IP \(bu 4
-event(8gx)
+event(8gx) \(em Folder change notification daemon
 .IP \(bu 4
-midb(8gx)
+midb(8gx) \(em Message Index database daemon
 .SH System administration
 .IP \(bu 4
 gromox\-abktconv(8gx) \(em Utility for converting between ABKT and JSON
@@ -123,13 +123,13 @@ store
 .IP \(bu 4
 gromox\-pff2mt(8gx) \(em Utility for analysis of PFF/PST/OST files
 .IP \(bu 4
-mkmidb(8gx)
+mkmidb(8gx) \(em Tool for creating a blank message index database
 .IP \(bu 4
-mkprivate(8gx)
+mkprivate(8gx) \(em Tool for creating a blank private store
 .IP \(bu 4
-mkpublic(8gx)
+mkpublic(8gx) \(em Tool for creating a blank public store
 .IP \(bu 4
-rebuild(8gx)
+rebuild(8gx) \(em Tool for rebuilding a message store
 .IP \(bu 4
 sa.cfg(5gx) \(em configuration file for system administration CGI programs
 .SH Service plugins
@@ -140,14 +140,14 @@ authmgr(4gx) \(em Demultiplexer for authentication requests
 .IP \(bu 4
 ip6_container(4gx) \(em trivial source connection counter
 .IP \(bu 4
-ldap_adaptor(4gx) \(em LDAP connector for user metadata and authentication
+ldap_adaptor(4gx) \(em LDAP connector for authentication
 .IP \(bu 4
 logthru(4gx) \(em service plugin for a stdout/file logger
 .IP \(bu 4
 mysql_adaptor(4gx) \(em MySQL/MariaDB connector for user metadata and
 authentication
 .IP \(bu 4
-textmaps(4gx) \(em Various data maps
+textmaps(4gx) \(em Service plugin for various data maps
 .IP \(bu 4
 timer_agent(4gx) \(em Service plugin for deferred command execution with
 timer(8gx)
@@ -159,7 +159,7 @@ to capture keyword searches within the documentation for said obsolete/removed c
 gromox\-pffimport \(em replaced by gromox\-pff2mt and gromox\-mt2exm.
 .SH Language bindings
 .IP \(bu 4
-mapi(4gx) \(em PHP module for Gromox services
+mapi(4gx) \(em PHP module providing MAPI functions
 .SH Listening sockets
 .IP \(bu 4
 /run/gromox/zcore.sock \(em zcore(8gx)

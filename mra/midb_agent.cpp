@@ -3484,4 +3484,3 @@ static BOOL get_digest_integer(const char *src, int length, const char *tag, int
 	}
 	return FALSE;
 }
-

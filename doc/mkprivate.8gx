@@ -1,4 +1,7 @@
 .TH mkprivate 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+mkprivate \(em Tool for creating a blank private store
 .SH Synopsis
 .PP
 \fBmkprivate\fP [\fB\-c\fP \fIconfig\fP] [\fB\-d\fP \fIdatapath\fP]

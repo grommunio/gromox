@@ -1,4 +1,7 @@
 .TH rebuild 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+rebuild \(em Tool for rebuilding a message store
 .SH Synopsis
 .PP
 \fBrebuild\fP [\fB\-c\fP \fIconfig\fP] [\fB\-d\fP \fIdatapath\fP] \fImaildir\fP

@@ -1,4 +1,7 @@
 .TH mapi 4gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+mapi.so \(em PHP module providing MAPI functions
 .SH Description
 .PP
 mapi.so is a PHP module that makes available a number of functions to PHP for

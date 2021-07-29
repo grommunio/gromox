@@ -1,4 +1,7 @@
 .TH mkmidb 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+.PP
+mkmidb \(em Tool for creating a blank message index database
 .SH Synopsis
 .PP
 \fBmkmidb\fP [\fB\-c\fP \fIconfig\fP] [\fB\-d\fP \fIdatapath\fP] \fIusername\fP
