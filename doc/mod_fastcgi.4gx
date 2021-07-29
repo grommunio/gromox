@@ -1,19 +1,15 @@
 .TH mod_fastcgi 4gx "" "Gromox" "Gromox admin references"
 .SH Name
-.PP
 mod_fastcgi \(em http(8gx) processing plugin for proxying requests to
 FastCGI servers
 .SH Description
-.PP
 mod_fastcgi can forward HTTP requests to one or more FastCGI servers when
 certain URIs are requested.
 .PP
 mod_fastcgi plugin is built into http(8gx) and not a separate .so file.
 .SH Config file directives
-.PP
 This (built-in) plugin shares \fBhttp.cfg\fP. See http(8gx).
 .SH URI map
-.PP
 The filemap that specifies which URIs to handle is \fBfastcgi.txt\fP,
 which is searched for in \fIconfig_file_path\fP.
 .PP
@@ -53,5 +49,4 @@ If the file is absent however, a set of default entries will be used.
 \fIconfig_file_path\fP/fastcgi.txt: URI map specifying which paths this plugin
 shall handle.
 .SH See also
-.PP
 \fBgromox\fP(7), \fBhttp\fP(8gx)

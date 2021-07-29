@@ -1,13 +1,10 @@
 .TH mapi 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 mapi.so \(em PHP module providing MAPI functions
 .SH Description
-.PP
 mapi.so is a PHP module that makes available a number of functions to PHP for
 connecting to Gromox services. In particular, it will talk to zcore(8gx).
 .SH Configuration
-.PP
 The PHP ini fragment, mapi.ini, may look like this:
 .in +4n
 .EX
@@ -17,7 +14,6 @@ zcore_socket=/run/gromox/zcore.sock
 .EE
 .in
 .SH Compatibility with other implementations
-.PP
 The Gromox implementation of mapi.so is missing (-) some functions and offering
 others (+) compared to KGWC:
 .PP
@@ -70,5 +66,4 @@ others (+) compared to KGWC:
 .EE
 .in
 .SH See also
-.PP
 \fBgromox\fP(7), \fPzcore\fP(8gx)

@@ -1,17 +1,13 @@
 .TH mod_rewrite 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 mod_rewrite \(em http(8gx) processing plugin for altering HTTP request URIs
 before processing
 .SH Description
-.PP
 mod_rewrite can alter request URIs. It runs before any of the other built-in or
 HPM processing plugins.
 .SH Config file directives
-.PP
 This (built-in) plugin shares \fBhttp.cfg\fP. See http(8gx).
 .SH Rewrite map
-.PP
 The filemap that specifies which URIs to handle is \fBrewrite.txt\fP,
 which is searched for in \fIconfig_file_path\fP.
 .PP
@@ -28,7 +24,6 @@ to a maximum of \fB\\9\fP. The sequence \fB\\0\fP splices the entire string
 If the file has no lines, no paths will be rewritten.
 If the file is absent however, a set of default entries will be used.
 .SH Default rules
-.PP
 .nf
 /autodiscover/autodiscover.xml => \\0/ews/autodiscover.php
 /EWS/Exchange.asmx => \\0/ews/exchange.php
@@ -41,5 +36,4 @@ If the file is absent however, a set of default entries will be used.
 \fIconfig_file_path\fP/rewrite.txt: Rewrite map specifying which paths this
 plugin shall handle.
 .SH See also
-.PP
 \fBgromox\fP(7), \fBhttp\fP(8gx)

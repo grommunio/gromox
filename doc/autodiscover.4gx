@@ -1,9 +1,7 @@
 .TH autodiscover 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 Autodiscover HTTP Service Protocol handler
 .SH Description
-.PP
 Autodiscover clients can locate the Autodiscover server for a given domain
 \fIexample.com\fP by attempting to resolve the
 \fB_autodiscover._tcp.\fP\fIexample.com\fP IN SRV record from DNS, and
@@ -35,7 +33,6 @@ Autodiscover requests. (In other words, removing the DNS entry for the
 Autodiscover server after a profile is set up would break the address book, but
 not the message store.)
 .SH Configuration file directives
-.PP
 The configuration file is /etc/gromox/autodiscover.ini. In its absence,
 built-in defaults, tuned for the minimal Gromox installation, are used. A few
 ini sections and keys are recognized.
@@ -96,5 +93,4 @@ MS-OXDISCO: Autodiscover HTTP Service Protocol
 .IP \(bu 4
 MS-OXDSCLI: Autodiscover Publishing and Lookup Protocol
 .SH See also
-.PP
 \fBgromox\fP(7)

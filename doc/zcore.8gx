@@ -1,12 +1,9 @@
 .TH zcore 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 zcore \(em Protocol handler for Z-MAPI
 .SH Synopsis
-.PP
 \fBzcore\fP [\fB\-c\fP \fIconfig\fP]
 .SH Description
-.PP
 zcore is a bridge process (proxy) between mapi(4gx) and exmdb_provider(4gx). It
 listens on /run/gromox/zcore.sock (hardcoded) for zcore RPCs, a Gromox-specific
 protocol and issues exmdb RPCs to exmdb_provider(4gx). As exmdb_provider connections
@@ -25,7 +22,6 @@ Output version information and exit.
 \fB\-?\fP
 Display option summary.
 .SH Network protocol
-.PP
 The transmissions on the zcore socket are simple concatenations of protocol
 data units built using the NDR format. The PDU length is present within the PDU
 itself near the start.
@@ -49,7 +45,6 @@ pdu := {
 	}
 }
 .SH Store lookup
-.PP
 zcore determines the store path for a user from the user database, which may be
 provided by a service plugin like mysql_adaptor(4gx).
 .PP
@@ -238,9 +233,7 @@ delivered
 \fI/var/lib/gromox/user/**/config/zarafa.dat\fP: file for the
 PR_EC_WEBACCESS_JSON property.
 .SH Notes
-.PP
 Behavior for the address book generally mirrors exchange_nsp(4gx), so see that
 manpage for additional notes.
 .SH See also
-.PP
 \fBgromox\fP(7)

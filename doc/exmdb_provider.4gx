@@ -1,9 +1,7 @@
 .TH exmdb_provider 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 exmdb_provider(4gx) \(em http(8gx) service plugin for exmdb connections
 .SH Description
-.PP
 exmdb_provider is a service plugin for http(8gx). It offers a plethora
 of individual functions (124 of them) for operating on mailbox stores.
 In addition, this functionality is also exposed by way of a Gromox-specific
@@ -84,7 +82,6 @@ Default: \fI5000\fP
 .br
 Default: (unspecified)
 .SH Multiserver selection map
-.PP
 The SQL column \fBusers.homedir\fP specifies a home directory location in an
 abstract namespace. This abstract namespace is shared between all Gromox
 programs, and can be used to divide users into custom subsets and steer
@@ -116,7 +113,6 @@ In the absence of exmdb_list.txt, two implicit default entries are used:
 .fi
 .RE
 .SH Network protocol
-.PP
 The transmissions on the socket are simple concatenations of protocol data
 units built using the NDR format. The PDU length is present within the PDU
 itself near the start.
@@ -152,5 +148,4 @@ default-whitelisted.
 \fIconfig_file_path\fP and \fIdata_file_path\fP is determined by the
 configuration of the program that loaded the exmdb_provider plugin.
 .SH See also
-.PP
 \fBgromox\fP(7), \fBhttp\fP(8gx)

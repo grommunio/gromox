@@ -1,9 +1,7 @@
 .TH event_stub 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 event_stub \(em event receiver service plugin
 .SH Description
-.PP
 event_stub connects to the event(8gx) daemon and sets itself up to receive
 notifications asynchronously with the help of an extra thread. (No
 notifications are sent towards event(8gx) by this service plugin.)
@@ -15,5 +13,4 @@ notification is received from the event daemon.
 In practice, imap handles FOLDER-TOUCH and MESSAGE-FLAG notifications received
 through this event channel.
 .SH See also
-.PP
 \fBevent\fP(8gx), \fBevent_proxy\fP(4gx)

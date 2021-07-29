@@ -1,9 +1,7 @@
 .TH mysql_adaptor 4gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 mysql_adaptor \(em MySQL/MariaDB connector for user metadata and authentication
 .SH Description
-.PP
 mysql_adaptor is a service plugin for integrating mail accounts from
 a MySQL/MariaDB database.
 .SH Configuration file directives
@@ -78,5 +76,4 @@ gromox\-dbop(8gx).
 Default: \fIskip\fP
 .RE
 .SH See also
-.PP
 \fBgromox\fP(7), \fBauthmgr\fP(4gx)
