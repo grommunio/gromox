@@ -18,6 +18,7 @@
 #include <gromox/database_mysql.hpp>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/fileio.h>
 #include <gromox/tarray_set.hpp>
 #include <gromox/tpropval_array.hpp>
 #include <gromox/util.hpp>
@@ -88,16 +89,20 @@ struct sql_login_param {
 
 static int do_item(driver &, unsigned int, const parent_desc &, kpd_item &);
 
-static char *g_sqlhost, *g_sqlport, *g_sqldb, *g_sqluser, *g_srcguid, *g_srcmbox;
-static unsigned int g_splice;
+static char *g_sqlhost, *g_sqlport, *g_sqldb, *g_sqluser, *g_atxdir;
+static char *g_srcguid, *g_srcmbox;
+static unsigned int g_splice, g_level1_fan = 10, g_level2_fan = 20;
 static const struct HXoption g_options_table[] = {
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Splice source mail objects into existing destination mailbox hierarchy"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the source archive"},
+	{"l1", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L1 fan number for attachment directories of type files_v1 (default: 10)", "N"},
+	{"l2", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L2 fan number for attachment directories of type files_v1 (default: 20)", "N"},
 	{"src-host", 0, HXTYPE_STRING, &g_sqlhost, nullptr, nullptr, 0, "Hostname for SQL connection (default: localhost)", "HOST"},
 	{"src-port", 0, HXTYPE_STRING, &g_sqlport, nullptr, nullptr, 0, "Port for SQL connection (default: auto)", "PORT"},
 	{"src-db", 0, HXTYPE_STRING, &g_sqldb, nullptr, nullptr, 0, "Database name (default: kopano)", "NAME"},
 	{"src-user", 0, HXTYPE_STRING, &g_sqluser, nullptr, nullptr, 0, "Username for SQL connection (default: root)", "USER"},
+	{"src-at", 0, HXTYPE_STRING, &g_atxdir, nullptr, nullptr, 0, "Attachment directory", "DIR"},
 	{"src-guid", 0, HXTYPE_STRING, &g_srcguid, nullptr, nullptr, 0, "Mailbox to extract from SQL", "GUID"},
 	{"src-mbox", 0, HXTYPE_STRING, &g_srcmbox, nullptr, nullptr, 0, "Mailbox to extract from SQL", "USERNAME"},
 	HXOPT_AUTOHELP,
@@ -605,7 +610,44 @@ static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent,
 	if (atc == nullptr)
 		throw std::bad_alloc();
 	auto props = item.get_props();
+
+	char qstr[96];
+	snprintf(qstr, arsizeof(qstr), "SELECT filename, instanceid FROM singleinstances WHERE hierarchyid=%u LIMIT 1", item.m_hid);
+	auto res = drv.query(qstr);
+	auto row = res.fetch_row();
+	if (row == nullptr || row[0] == nullptr) {
+		fprintf(stderr, "PK-1012: attachment %lu has no SIID and is lost",
+		        static_cast<unsigned long>(item.m_hid));
+		return 0;
+	}
+	std::string filename;
+	auto siid = strtoul(row[1], nullptr, 0);
+	if (row[0] != nullptr && row[0][0] != '\0')
+		filename = g_atxdir + "/"s + row[0] + "/content";
+	else
+		filename = g_atxdir + "/"s + std::to_string(siid % g_level1_fan) +
+		           "/" + std::to_string(siid / g_level1_fan % g_level2_fan) +
+		           "/" + std::to_string(siid);
+	if (g_show_tree) {
+		tree(depth);
+		fprintf(stderr, "Attachment source: %s\n", filename.c_str());
+	}
+	std::string contents = slurp_file(filename.c_str());
+	BINARY bin;
+	bin.cb = contents.size();
+	bin.pv = contents.data();
+	TAGGED_PROPVAL pv;
+	pv.proptag = PR_ATTACH_DATA_BIN;
+	pv.pvalue = &bin;
+	if (!tpropval_array_set_propval(props, &pv))
+		throw std::bad_alloc();
+
 	std::swap(atc->proplist, *props);
+	if (parent.type == MAPI_MESSAGE) {
+		if (!attachment_list_append_internal(parent.message->children.pattachments, atc.get()))
+			throw std::bad_alloc();
+		atc.release();
+	}
 	return 0;
 }
 
@@ -666,10 +708,13 @@ int main(int argc, const char **argv)
 	if ((g_srcguid != nullptr) == (g_srcmbox != nullptr)) {
 		fprintf(stderr, "Exactly one of --src-guid or --src-mbox must be specified.\n");
 		return EXIT_FAILURE;
+	} else if (g_atxdir == nullptr) {
+		fprintf(stderr, "You need to specify the --src-at option.\n");
+		return EXIT_FAILURE;
 	}
 	if (argc != 1) {
 		fprintf(stderr, "Usage: SRCPASS=sqlpass gromox-kpd2mt --src-sql kdb.lan "
-		        "--src-attach /tmp/ka --src-mbox jdoe\n");
+		        "--src-attach /tmp/at --src-mbox jdoe\n");
 		return EXIT_FAILURE;
 	}
 
