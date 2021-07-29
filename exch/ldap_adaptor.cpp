@@ -61,12 +61,11 @@ static bool validate_response(LDAP *ld, LDAPMessage *result)
 	auto msg = ldap_first_message(ld, result);
 	if (msg == nullptr || ldap_msgtype(msg) != LDAP_RES_SEARCH_ENTRY)
 		return false;
-	msg = ldap_next_message(ld, msg);
-	if (msg == nullptr)
-		return true;
-	if (ldap_msgtype(msg) != LDAP_RES_SEARCH_RESULT)
-		return false;
-	return ldap_next_message(ld, msg) == nullptr;
+	while ((msg = ldap_next_message(ld, msg)) != nullptr)
+		if (ldap_msgtype(msg) != LDAP_RES_SEARCH_RESULT &&
+		    ldap_msgtype(msg) != LDAP_RES_SEARCH_REFERENCE)
+			return false;
+	return true;
 }
 
 static ldap_ptr make_conn(bool perform_bind)
