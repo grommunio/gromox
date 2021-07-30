@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021 grammm GmbH
+// SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
 #include <memory>
@@ -150,7 +150,7 @@ static int mod_rewrite_default()
 	node.reg_set = true;
 	g_rewrite_list.push_back(std::move(node));
 
-	node.replace_string = "\\1/grammm-sync/index.php";
+	node.replace_string = "\\1/grommunio-sync/index.php";
 	ret = regcomp(&node.search_pattern, "\\(/Microsoft-Server-ActiveSync\\)", REG_ICASE);
 	if (ret != 0) {
 		regerror(ret, &node.search_pattern, errbuf.get(), ebufsize);

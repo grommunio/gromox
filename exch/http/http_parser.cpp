@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021 grammm GmbH
+// SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
 /* http parser is a module, which first read data from socket, parses rpc over http and
    relay the stream to pdu processor. it also process other http request

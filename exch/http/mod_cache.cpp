@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// This file is part of Gromox.
 #include <algorithm>
 #include <atomic>
 #include <cerrno>
@@ -154,7 +156,7 @@ static int mod_cache_defaults()
 	DIRECTORY_NODE node;
 	node.domain = "*";
 	node.path = "/web";
-	node.dir = DATADIR "/grammm-web";
+	node.dir = DATADIR "/grommunio-web";
 	g_directory_list.push_back(std::move(node));
 	return 0;
 }

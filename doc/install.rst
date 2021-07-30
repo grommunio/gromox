@@ -97,7 +97,7 @@ The Gromox Autodiscover handler `forces`__ a HTTPS redirect, which is why a
 certificate should indeed be set up. Then, since you already have the
 certificates, you could also use them in e.g. ``smtp.cfg``.
 
-__ https://github.com/grammm-dev/gromox/blob/master/exch/php/ews/autodiscover.php#L24
+__ https://github.com/grommunio/gromox/blob/master/exch/php/ews/autodiscover.php#L24
 
 
 x500_org_name

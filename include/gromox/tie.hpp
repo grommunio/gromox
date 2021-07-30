@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH licensing exception
-// SPDX-FileCopyrightText: 2020 grammm GmbH
+// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
 #pragma once
 #include <memory>

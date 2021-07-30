@@ -77,7 +77,7 @@ Fixes:
 * pffimport: skip over unknown nodes when doing tree-analyze (-t)
 * tools: fix crash when /etc/gromox is unreadable
 * Overquota events are now signalled with better error message
-  in grammm-web (MAPI_E_STORE_FULL rather than MAPI_E_DISK_FULL).
+  in grommunio-web (MAPI_E_STORE_FULL rather than MAPI_E_DISK_FULL).
 
 Changes:
 
@@ -195,7 +195,7 @@ Changes:
 * mod_cache: added the /web path to the built-in defaults
 * mod_fastcgi: fix php-fpm yielding Not Found for /web
 * mod_fastcgi: changed the underlying path of the built-in rule for
-  /web to /usr/share/grammm-web
+  /web to /usr/share/grommunio-web
 * The systemd .target units were removed
 
 Fixes:

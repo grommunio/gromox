@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2020 grammm GmbH
+// SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
 #include <atomic>
 #include <csignal>
@@ -4547,7 +4547,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	}
 	/*
 	 * If there is no sourcekey, it is a new message. That is how
-	 * grammm-sync creates new items coming from mobile devices.
+	 * grommunio-sync creates new items coming from mobile devices.
 	 */
 	pbin = static_cast<BINARY *>(common_util_get_propvals(pproplist, PR_SOURCE_KEY));
 	if (pbin == nullptr)

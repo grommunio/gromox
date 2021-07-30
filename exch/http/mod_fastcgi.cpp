@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021 grammm GmbH
+// SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
 #include <string>
@@ -154,11 +154,11 @@ static int mod_fastcgi_defaults()
 	node.sock_path = PKGRUNDIR "/php-fpm.sock";
 	g_fastcgi_list.push_back(node);
 	node.path = "/sync";
-	node.dir = DATADIR "/grammm-sync";
+	node.dir = DATADIR "/grommunio-sync";
 	node.header_list.clear();
 	g_fastcgi_list.push_back(node);
 	node.path = "/web";
-	node.dir = DATADIR "/grammm-web";
+	node.dir = DATADIR "/grommunio-web";
 	g_fastcgi_list.push_back(node);
 	return 0;
 }

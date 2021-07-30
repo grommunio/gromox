@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2020 grammm GmbH
+// SPDX-FileCopyrightText: 2020 grommunio GmbH
 // This file is part of Gromox.
 #pragma once
 #include <exception>
