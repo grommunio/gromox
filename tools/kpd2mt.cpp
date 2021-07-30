@@ -727,15 +727,26 @@ int main(int argc, const char **argv)
 	sqp.dbname = g_sqldb != nullptr ? g_sqldb : "kopano";
 	sqp.user = g_sqluser != nullptr ? g_sqluser : "root";
 
-	std::shared_ptr<driver> drv;
-	if (g_srcguid != nullptr)
-		drv = kpd_open_by_guid(g_srcguid, sqp);
-	else if (g_srcmbox != nullptr)
-		drv = kpd_open_by_user(g_srcmbox, sqp);
-	if (drv == nullptr) {
-		fprintf(stderr, "Problem?!\n");
-		return EXIT_FAILURE;
+	try {
+		std::shared_ptr<driver> drv;
+		if (g_srcguid != nullptr)
+			drv = kpd_open_by_guid(g_srcguid, sqp);
+		else if (g_srcmbox != nullptr)
+			drv = kpd_open_by_user(g_srcmbox, sqp);
+		if (drv == nullptr) {
+			fprintf(stderr, "Problem?!\n");
+			return EXIT_FAILURE;
+		}
+		ret = do_database(std::move(drv), g_srcguid != nullptr ? g_srcguid : g_srcmbox);
+	} catch (const char *e) {
+		fprintf(stderr, "Exception: %s\n", e);
+		return -ECANCELED;
+	} catch (const std::string &e) {
+		fprintf(stderr, "Exception: %s\n", e.c_str());
+		return -ECANCELED;
+	} catch (const std::exception &e) {
+		fprintf(stderr, "Exception: %s\n", e.what());
+		return -ECANCELED;
 	}
-	ret = do_database(std::move(drv), g_srcguid != nullptr ? g_srcguid : g_srcmbox);
 	return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
