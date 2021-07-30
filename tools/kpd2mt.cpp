@@ -48,8 +48,11 @@ enum propcol {
 
 struct kpd_item;
 
-struct driver final : public std::enable_shared_from_this<driver> {
+struct driver final {
+	driver() = default;
+	driver(driver &&o) = delete;
 	~driver();
+	void operator=(driver &&) = delete;
 	DB_RESULT query(const char *);
 	uint32_t hid_from_mst(kpd_item &, uint32_t);
 	std::unique_ptr<kpd_item> get_store_item();
@@ -65,15 +68,15 @@ struct driver final : public std::enable_shared_from_this<driver> {
 };
 
 struct kpd_item final {
-	kpd_item(std::shared_ptr<driver> drv) : m_drv(std::move(drv)) {}
-	static std::unique_ptr<kpd_item> load_hid_base(std::shared_ptr<driver>, uint32_t hid);
+	kpd_item(driver &drv) : m_drv(drv) {}
+	static std::unique_ptr<kpd_item> load_hid_base(driver &, uint32_t hid);
 	TPROPVAL_ARRAY *get_props();
 	size_t get_sub_count() { return m_sub_hids.size(); }
 	std::unique_ptr<kpd_item> get_sub_item(size_t idx);
 
 	using hidxtype = std::pair<uint32_t, unsigned int>;
 
-	std::shared_ptr<driver> m_drv;
+	driver &m_drv;
 	uint32_t m_hid = 0;
 	enum mapi_object_type m_mapitype{};
 	tpropval_array_ptr m_props;
@@ -282,8 +285,8 @@ static void do_print(unsigned int depth, kpd_item &item)
 	     kp_item_type_to_str(item.m_mapitype));
 }
 
-static std::shared_ptr<driver>
-kpd_open_by_guid_1(std::shared_ptr<driver> &&drv, const char *guid)
+static std::unique_ptr<driver>
+kpd_open_by_guid_1(std::unique_ptr<driver> &&drv, const char *guid)
 {
 	if (hex2bin(guid).size() != 16)
 		throw YError("PK-1011: invalid GUID passed");
@@ -295,13 +298,13 @@ kpd_open_by_guid_1(std::shared_ptr<driver> &&drv, const char *guid)
 		throw YError("PK-1014: no store by that GUID");
 	drv->m_user_id = strtoul(row[1], nullptr, 0);
 	drv->m_store_hid = strtoul(row[0], nullptr, 0);
-	return drv;
+	return std::move(drv);
 }
 
-static std::shared_ptr<driver>
+static std::unique_ptr<driver>
 kpd_open_by_guid(const char *guid, const sql_login_param &sqp)
 {
-	auto drv = std::make_shared<driver>();
+	auto drv = std::make_unique<driver>();
 	drv->m_conn = mysql_init(nullptr);
 	if (drv->m_conn == nullptr)
 		throw std::bad_alloc();
@@ -313,10 +316,10 @@ kpd_open_by_guid(const char *guid, const sql_login_param &sqp)
 	return kpd_open_by_guid_1(std::move(drv), guid);
 }
 
-static std::shared_ptr<driver>
+static std::unique_ptr<driver>
 kpd_open_by_user(const char *storeuser, const sql_login_param &sqp)
 {
-	auto drv = std::make_shared<driver>();
+	auto drv = std::make_unique<driver>();
 	drv->m_conn = mysql_init(nullptr);
 	if (drv->m_conn == nullptr)
 		throw std::bad_alloc();
@@ -410,7 +413,7 @@ void driver::fmap_setup_standard(const char *title)
 
 std::unique_ptr<kpd_item> driver::get_store_item()
 {
-	return kpd_item::load_hid_base(shared_from_this(), m_store_hid);
+	return kpd_item::load_hid_base(*this, m_store_hid);
 }
 
 std::unique_ptr<kpd_item> driver::get_root_folder()
@@ -424,15 +427,15 @@ std::unique_ptr<kpd_item> driver::get_root_folder()
 			throw YError("PK-1017: no root folder for store");
 		m_root_hid = strtoul(row[0], nullptr, 0);
 	}
-	return kpd_item::load_hid_base(shared_from_this(), m_root_hid);
+	return kpd_item::load_hid_base(*this, m_root_hid);
 }
 
-std::unique_ptr<kpd_item> kpd_item::load_hid_base(std::shared_ptr<driver> drv, uint32_t hid)
+std::unique_ptr<kpd_item> kpd_item::load_hid_base(driver &drv, uint32_t hid)
 {
 	char qstr[80];
 	snprintf(qstr, arsizeof(qstr), "SELECT id, type FROM hierarchy WHERE id=%u OR parent=%u", hid, hid);
-	auto res = drv->query(qstr);
-	auto yi = std::make_unique<kpd_item>(std::move(drv));
+	auto res = drv.query(qstr);
+	auto yi = std::make_unique<kpd_item>(drv);
 	DB_ROW row;
 	while ((row = res.fetch_row()) != nullptr) {
 		auto xid   = strtoul(row[0], nullptr, 0);
@@ -467,7 +470,7 @@ std::unique_ptr<kpd_item> kpd_item::load_hid_base(std::shared_ptr<driver> drv, u
 TPROPVAL_ARRAY *kpd_item::get_props()
 {
 	if (m_props == nullptr)
-		m_props = hid_to_propval_a(*m_drv, m_hid);
+		m_props = hid_to_propval_a(m_drv, m_hid);
 	return m_props.get();
 }
 
@@ -475,7 +478,7 @@ std::unique_ptr<kpd_item> kpd_item::get_sub_item(size_t idx)
 {
 	if (idx >= m_sub_hids.size())
 		return nullptr;
-	return load_hid_base(m_drv->shared_from_this(), m_sub_hids[idx].first);
+	return load_hid_base(m_drv, m_sub_hids[idx].first);
 }
 
 static gi_name_map do_namemap(driver &drv)
@@ -680,7 +683,7 @@ static int do_item(driver &drv, unsigned int depth, const parent_desc &parent, k
 	return 0;
 }
 
-static int do_database(std::shared_ptr<driver> &&drv, const char *title)
+static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 {
 	uint8_t xsplice = g_splice;
 	write(STDOUT_FILENO, &xsplice, sizeof(xsplice));
@@ -728,7 +731,7 @@ int main(int argc, const char **argv)
 	sqp.user = g_sqluser != nullptr ? g_sqluser : "root";
 
 	try {
-		std::shared_ptr<driver> drv;
+		std::unique_ptr<driver> drv;
 		if (g_srcguid != nullptr)
 			drv = kpd_open_by_guid(g_srcguid, sqp);
 		else if (g_srcmbox != nullptr)
