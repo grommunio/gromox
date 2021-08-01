@@ -78,6 +78,8 @@ have_pamheader=""
 AC_CHECK_HEADERS([security/pam_modules.h], [have_pamheader="yes"])
 AM_CONDITIONAL([HAVE_PAM], [test "$have_pamheader" = yes])
 AM_CONDITIONAL([HAVE_PFF], [test "$have_pff" = 1])
+AC_SEARCH_LIBS([ldap_init], [ldap_r ldap], [libldap_LIBS="$LIBS"; LIBS=""])
+AC_SUBST([libldap_LIBS])
 AC_DEFUN([MYSQL_WITH_MYSQL_CONFIG],[
 	AC_PATH_PROGS([MYSQL_CONFIG], [mysql_config mariadb_config])
 	AC_ARG_WITH([mysql-config], AS_HELP_STRING([--with-mysql-config=PATH], [path to the mysql-config script of mysql]),
