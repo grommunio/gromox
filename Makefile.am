@@ -24,9 +24,9 @@ phpini_DATA = php_mapi/mapi.ini
 phplibdir = ${PHP_EXTENSION_DIR}
 phplib_LTLIBRARIES = mapi.la
 endif
-unit_DATA = system/gromox-adaptor.service system/gromox-delivery.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-midb.service system/gromox-pop3.service system/gromox-smtp.service system/gromox-timer.service system/gromox-zcore.service
+unit_DATA = system/gromox-adaptor.service system/gromox-delivery.service system/gromox-delivery-queue.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-midb.service system/gromox-pop3.service system/gromox-timer.service system/gromox-zcore.service
 
-mta_system = delivery smtp
+mta_system = delivery delivery-queue
 mta_plugins = \
 	libgxf_message_enqueue.la \
 	libgxm_alias_translator.la \
@@ -118,8 +118,8 @@ libgromox_rpc_la_LIBADD = ${crypto_LIBS} ${HX_LIBS} libgromox_common.la
 
 delivery_SOURCES = exch/http/service.cpp lib/console_server.cpp mda/delivery_app/console_cmd_handler.cpp mda/delivery_app/main.cpp mda/delivery_app/message_dequeue.cpp mda/delivery_app/system_services.cpp mda/delivery_app/transporter.cpp
 delivery_LDADD = -ldl -lpthread ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-smtp_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp lib/console_server.cpp mda/smtp/console_cmd_handler.cpp mda/smtp/flusher.cpp mda/smtp/listener.cpp mda/smtp/main.cpp mda/smtp/resource.cpp mda/smtp/smtp_cmd_handler.cpp mda/smtp/smtp_parser.cpp mda/smtp/system_services.cpp
-smtp_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la
+delivery_queue_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp lib/console_server.cpp mda/smtp/console_cmd_handler.cpp mda/smtp/flusher.cpp mda/smtp/listener.cpp mda/smtp/main.cpp mda/smtp/resource.cpp mda/smtp/smtp_cmd_handler.cpp mda/smtp/smtp_parser.cpp mda/smtp/system_services.cpp
+delivery_queue_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la
 libgxf_message_enqueue_la_SOURCES = mda/message_enqueue.cpp
 libgxf_message_enqueue_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxf_message_enqueue_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
@@ -287,7 +287,7 @@ tests_zendfake_LDADD = libmapi4zf.la
 
 man_MANS = \
 	doc/adaptor.8gx doc/alias_translator.4gx doc/at_client.4gx \
-	doc/authmgr.4gx doc/autodiscover.4gx doc/delivery.8gx \
+	doc/authmgr.4gx doc/autodiscover.4gx doc/delivery.8gx doc/delivery-queue.8gx \
 	doc/domain_list.4gx \
 	doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \
 	doc/exchange_emsmdb.4gx \
@@ -304,7 +304,7 @@ man_MANS = \
 	doc/mod_cache.4gx doc/mod_fastcgi.4gx doc/mod_rewrite.4gx \
 	doc/mysql_adaptor.4gx \
 	doc/pam_gromox.8gx doc/pop3.8gx doc/rebuild.8gx \
-	doc/rtf2html.1gx doc/sa.cfg.5gx doc/smtp.8gx \
+	doc/rtf2html.1gx doc/sa.cfg.5gx \
 	doc/str_table.4gx doc/textmaps.4gx doc/user_filter.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
 if HAVE_PFF

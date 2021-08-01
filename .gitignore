@@ -23,6 +23,7 @@ Makefile.in
 
 /adaptor
 /delivery
+/delivery-queue
 /digest
 /event
 /freebusy
@@ -41,7 +42,6 @@ Makefile.in
 /pop3
 /rebuild
 /rtf2html
-/smtp
 /timer
 /zcore
 

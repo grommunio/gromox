@@ -4,7 +4,7 @@ str_table \(em string table match service plugin
 .SH Description
 str_table implements checking for a trivial presence lookup of something in a
 text file. The plugin can be used in any Gromox process, but in practice
-only makes an appeareance in smtp(8gx) and delivery(8gx).
+only makes an appeareance in delivery-queue(8gx) and delivery(8gx).
 .PP
 The str_table plugin has multiple instances. These are:
 \fBdomain_list\fP.

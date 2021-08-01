@@ -1,20 +1,14 @@
-.TH smtp 8gx "" "Gromox" "Gromox admin reference"
+.TH delivery-queue 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 .PP
-smtp \(em SMTP frontend for local delivery
+delivery\-queue \(em LMTP/SMTP frontend for local delivery
 .SH Synopsis
 .PP
-\fBsmtp\fP [\fB\-c\fP \fIconfig\fP]
+\fBdelivery\-queue\fP [\fB\-c\fP \fIconfig\fP]
 .SH Description
 .PP
-The SMTP server accepts network connection requests and performs zero or more
-SMTP transactions per connection. Each received message is given to one
-configured flusher plugin, of which there currently is also just one to choose
-from, message_enqueue(4gx).
-.PP
-smtp(8gx) is the equivalent of the Postfix smtpd(8) process.
-message_enqueue(4gx) is the approximate equivalent of the Postfix cleanup(8)
-process.
+delivery\-queue is an additional mail queue in front of delivery\(8gx\).
+It may be removed in a future version.
 .SH Options
 .TP
 \fB\-c\fP \fIconfig\fP

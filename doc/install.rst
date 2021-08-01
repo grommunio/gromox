@@ -141,14 +141,14 @@ SMTP
 ----
 
 exchange_emsmdb.cfg and zcore.cfg implicitly default to using localhost:25 as
-outgoing SMTP. gromox-smtp listens on port 25 by default, but it is only the
-LDA, so such setup would only allow to send mail locally. To enable Internet
-mail or to add spam filtration, you will have reconfigure gromox-smtp to listen
-on port 24 rather than 25, and install a full MTA like Postfix with
-configuration directives similar to::
+outgoing SMTP. gromox-delivery-queue listens on port 25 by default, but it is
+only the local delivery agent (LDA), so such setup would only allow to send
+mail locally. To enable Internet mail or to add spam filtration, you will have
+reconfigure gromox-delivery-queue to listen on port 24 rather than 25, and
+install a full MTA like Postfix with configuration directives similar to::
 
 	virtual_mailbox_domains = mydomain.de myotherdomain.com
-	virtual_transport = smtp:localhost:24
+	virtual_transport = lmtp:localhost:24
 
 
 Service start
@@ -159,6 +159,6 @@ Service start
 * ``gromox-http`` — at the very least, the main process needs to be started. This is sufficient for e.g. Outlook to open and browse mailboxes.
 * ``gromox-adaptor`` — caches SQL data and generates work files used by other daemons
 * ``gromox-zcore`` — the zcore process is needed by anything using php-mapi (grommuniom-web, grommunio-sync, ...)
-* ``gromox-smtp`` — SMTP half of the local delivery agent (for incoming mail)
-* ``gromox-delivery`` — Dequeueing half of the local delivery agent
+* ``gromox-delivery-queue`` — LMTP/SMTP frontend of the local delivery agent (for incoming mail)
+* ``gromox-delivery`` — Dequeueing backend of the local delivery agent
 * ``gromox-imap`` — for ye Thunderbird

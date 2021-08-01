@@ -1,13 +1,13 @@
 .TH gromox\-mailq 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-gromox\-mailq \(em SMTP queue lister
+gromox\-mailq \(em Local delivery agent queue lister
 .SH Synopsis
 .PP
 \fBgromox\-mailq\fP
 .SH Description
 .PP
-gromox\-mailq looks in the queue directory for smtp(8gx) and prints the
-summaries for all queued mail.
+gromox\-mailq looks in the queue directory for delivery-queue(8gx) and prints
+the summaries for all queued mail.
 .SH See also
 .PP
-\fBsmtp\fP(8gx)
+\fBgromox\fP(7), \fBdelivery-queue\fP(8gx)

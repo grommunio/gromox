@@ -86,11 +86,11 @@ alias_translator(4gx) \(em Alias resolution plugin for delivery(8gx)
 .IP \(bu 4
 delivery(8gx) \(em Backend for local delivery
 .IP \(bu 4
+delivery-queue(8gx) \(em LMTP/SMTP frontend for local delivery
+.IP \(bu 4
 domain_list(4gx) \(em instance of str_table(4gx)
 .IP \(bu 4
-message_enqueue(4gx) \(em Message enqueueing flusher plugin for smtp(8gx)
-.IP \(bu 4
-smtp(8gx) \(em SMTP frontend for local delivery
+message_enqueue(4gx) \(em Message enqueueing flusher plugin for delivery-queue(8gx)
 .IP \(bu 4
 str_table(4gx) \(em string table match plugin
 .IP \(bu 4
@@ -164,7 +164,10 @@ mapi(4gx) \(em PHP module providing MAPI functions
 .IP \(bu 4
 /run/gromox/zcore.sock \(em zcore(8gx)
 .IP \(bu 4
-*:25 \(em smtp(8gx) SMTP service
+*:24 \(em delivery-queue(8gx) LMTP/SMTP service (when Postfix is on 25)
+.IP \(bu 4
+*:25 \(em delivery-queue(8gx) LMTP/SMTP service (developer setup without
+Postfix)
 .IP \(bu 4
 *:80 \(em http(8gx) HTTP service
 .IP \(bu 4
@@ -186,7 +189,7 @@ mapi(4gx) \(em PHP module providing MAPI functions
 .IP \(bu 4
 [::1]:5555 \(em midb(8gx) service
 .IP \(bu 4
-[::1]:5566 \(em smtp(8gx) management console
+[::1]:5566 \(em delivery-queue(8gx) management console
 .IP \(bu 4
 [::1]:6666 \(em timer(8gx) service
 .IP \(bu 4
@@ -206,7 +209,7 @@ Especially the path for libraries, represented in this documentation as
 /usr/lib/gromox, may for example actually be /usr/lib64/gromox or
 /usr/lib/riscv64-linux-gnu, depending on the platform.
 .IP \(bu 4
-/usr/lib/gromox/libgxf_*.so: flusher plugins for smtp(8gx)
+/usr/lib/gromox/libgxf_*.so: flusher plugins for delivery-queue(8gx)
 .IP \(bu 4
 /usr/lib/gromox/libgxh_*.so: HTTP processing plugins for http(8gx)
 .IP \(bu 4
