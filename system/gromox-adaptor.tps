@@ -1,7 +1,6 @@
 [Unit]
 Description=Gromox adaptor service
 Documentation=man:adaptor(8gx)
-PartOf=gromox-sa.target
 
 [Service]
 Type=simple

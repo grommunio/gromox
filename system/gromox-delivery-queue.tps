@@ -1,7 +1,6 @@
 [Unit]
 Description=Gromox local delivery agent frontend
 Documentation=man:delivery-queue(8gx)
-PartOf=gromox-mta.target
 After=mariadb.service mysql.service
 
 [Service]
