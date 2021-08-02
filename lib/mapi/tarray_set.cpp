@@ -11,7 +11,8 @@ TARRAY_SET* tarray_set_init()
 		return NULL;
 	}
 	pset->count = 0;
-	pset->pparray = static_cast<TPROPVAL_ARRAY **>(malloc(100 * sizeof(TPROPVAL_ARRAY *)));
+	auto count = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
+	pset->pparray = static_cast<TPROPVAL_ARRAY **>(malloc(sizeof(TPROPVAL_ARRAY *) * count));
 	if (NULL == pset->pparray) {
 		free(pset);
 		return NULL;
@@ -52,9 +53,9 @@ bool tarray_set_append_internal(TARRAY_SET *pset, TPROPVAL_ARRAY *pproplist)
 	if (pset->count >= 0xFF00) {
 		return false;
 	}
-	uint16_t count = strange_roundup(pset->count, 100);
+	auto count = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
 	if (pset->count + 1 >= count) {
-		count += 100;
+		count += SR_GROW_TPROPVAL_ARRAY;
 		pparray = static_cast<TPROPVAL_ARRAY **>(realloc(pset->pparray, count * sizeof(TPROPVAL_ARRAY *)));
 		if (NULL == pparray) {
 			return false;

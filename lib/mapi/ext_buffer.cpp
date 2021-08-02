@@ -940,8 +940,7 @@ int EXT_PULL::g_proptag_a(PROPTAG_ARRAY *r)
 		r->pproptag = NULL;
 		return EXT_ERR_SUCCESS;
 	}
-	/* allocate like proptag_array.cpp/element_data.cpp does */
-	r->pproptag = pext->anew<uint32_t>(strange_roundup(r->count, 100));
+	r->pproptag = pext->anew<uint32_t>(strange_roundup(r->count, SR_GROW_PROPTAG_ARRAY));
 	if (NULL == r->pproptag) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
@@ -1022,8 +1021,7 @@ int EXT_PULL::g_tpropval_a(TPROPVAL_ARRAY *r)
 		r->ppropval = NULL;
 		return EXT_ERR_SUCCESS;
 	}
-	/* allocate like tpropval_array.cpp does */
-	r->ppropval = pext->anew<TAGGED_PROPVAL>(strange_roundup(r->count, 100));
+	r->ppropval = pext->anew<TAGGED_PROPVAL>(strange_roundup(r->count, SR_GROW_TAGGED_PROPVAL));
 	if (NULL == r->ppropval) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
@@ -1041,8 +1039,7 @@ int EXT_PULL::g_tarray_set(TARRAY_SET *r)
 		r->pparray = NULL;
 		return EXT_ERR_SUCCESS;
 	}
-	/* allocate like tarray_set.cpp does */
-	r->pparray = pext->anew<TPROPVAL_ARRAY *>(strange_roundup(r->count, 100));
+	r->pparray = pext->anew<TPROPVAL_ARRAY *>(strange_roundup(r->count, SR_GROW_TPROPVAL_ARRAY));
 	if (NULL == r->pparray) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;
@@ -1930,8 +1927,7 @@ static int ext_buffer_pull_attachment_list(EXT_PULL *pext, ATTACHMENT_LIST *r)
 	uint8_t tmp_byte;
 	
 	TRY(pext->g_uint16(&r->count));
-	/* allocate like element_data.cpp does */
-	r->pplist = pext->anew<ATTACHMENT_CONTENT *>(strange_roundup(r->count, 20));
+	r->pplist = pext->anew<ATTACHMENT_CONTENT *>(strange_roundup(r->count, SR_GROW_ATTACHMENT_CONTENT));
 	if (NULL == r->pplist) {
 		r->count = 0;
 		return EXT_ERR_ALLOC;

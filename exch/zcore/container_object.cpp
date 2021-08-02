@@ -922,9 +922,9 @@ static BOOL container_object_get_specialtables_from_node(
 	BOOL b_depth, TARRAY_SET *pset)
 {
 	TPROPVAL_ARRAY **pparray;
-	uint32_t count = strange_roundup(pset->count, 100);
+	auto count = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
 	if (pset->count + 1 >= count) {
-		count += 100;
+		count += SR_GROW_TPROPVAL_ARRAY;
 		pparray = cu_alloc<TPROPVAL_ARRAY *>(count);
 		if (NULL == pparray) {
 			return FALSE;
@@ -988,9 +988,9 @@ static BOOL container_object_query_folder_hierarchy(
 			tmp_set.pparray[i], PROP_TAG_CONTAINERCLASS);
 		if (pvalue == nullptr || strcasecmp(static_cast<char *>(pvalue), "IPF.Contact") != 0)
 			continue;
-		uint32_t count = strange_roundup(pset->count, 100);
+		auto count = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
 		if (pset->count + 1 >= count) {
-			count += 100;
+			count += SR_GROW_TPROPVAL_ARRAY;
 			pparray = cu_alloc<TPROPVAL_ARRAY *>(count);
 			if (NULL == pparray) {
 				return FALSE;

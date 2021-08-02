@@ -114,6 +114,11 @@ template<typename T> constexpr T *deconst(const T *x) { return const_cast<T *>(x
 #undef roundup /* you naughty glibc */
 template<typename T> constexpr T roundup(T x, T y) { return (x + y - 1) / y * y; }
 template<typename T, typename U> constexpr auto strange_roundup(T x, U y) -> decltype(x / y) { return (x / y + 1) * y; }
+#define SR_GROW_ATTACHMENT_CONTENT 20U
+#define SR_GROW_EID_ARRAY 100U
+#define SR_GROW_PROPTAG_ARRAY 100U
+#define SR_GROW_TAGGED_PROPVAL 100U
+#define SR_GROW_TPROPVAL_ARRAY 100U
 
 #ifdef COMPILE_DIAG
 /* snprintf takes about 2.65x the time */

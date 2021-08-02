@@ -16,9 +16,9 @@ static bool tpropval_array_append(TPROPVAL_ARRAY *parray,
 			" NULL in tpropval_array_append");
 		return true;
 	}
-	int count = strange_roundup(parray->count, 100);
-	if (parray->count + 1 >= count) {
-		count += 100;
+	auto count = strange_roundup(parray->count, SR_GROW_TAGGED_PROPVAL);
+	if (parray->count + 1U >= count) {
+		count += SR_GROW_TAGGED_PROPVAL;
 		ppropvals = static_cast<TAGGED_PROPVAL *>(realloc(parray->ppropval, count * sizeof(TAGGED_PROPVAL)));
 		if (NULL == ppropvals) {
 			return false;
@@ -88,7 +88,8 @@ void tpropval_array_remove_propval(TPROPVAL_ARRAY *parray, uint32_t proptag)
 bool tpropval_array_init_internal(TPROPVAL_ARRAY *parray)
 {
 	parray->count = 0;
-	parray->ppropval = static_cast<TAGGED_PROPVAL *>(malloc(100 * sizeof(TAGGED_PROPVAL)));
+	auto count = strange_roundup(parray->count, SR_GROW_TAGGED_PROPVAL);
+	parray->ppropval = static_cast<TAGGED_PROPVAL *>(malloc(sizeof(TAGGED_PROPVAL) * count));
 	return parray->ppropval != nullptr;
 }
 

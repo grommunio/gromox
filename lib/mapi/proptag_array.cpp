@@ -7,7 +7,8 @@ static bool proptag_array_init_internal(PROPTAG_ARRAY *pproptags)
 {
 	
 	pproptags->count = 0;
-	pproptags->pproptag = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * 100));
+	auto count = strange_roundup(pproptags->count, SR_GROW_PROPTAG_ARRAY);
+	pproptags->pproptag = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * count));
 	return pproptags->pproptag != nullptr;
 }
 
@@ -48,9 +49,9 @@ bool proptag_array_append(PROPTAG_ARRAY *pproptags, uint32_t proptag)
 		if (pproptags->pproptag[i] == proptag) {
 			return true;
 		}
-	size_t count = strange_roundup(pproptags->count, 100);
+	auto count = strange_roundup(pproptags->count, SR_GROW_PROPTAG_ARRAY);
 	if (pproptags->count + 1U >= count) {
-		count += 100;
+		count += SR_GROW_PROPTAG_ARRAY;
 		pproptag = static_cast<uint32_t *>(realloc(pproptags->pproptag, sizeof(uint32_t) * count));
 		if (NULL == pproptag) {
 			return false;
@@ -93,7 +94,7 @@ bool proptag_array_check(const PROPTAG_ARRAY *pproptags, uint32_t proptag)
 static bool proptag_array_dup_internal(const PROPTAG_ARRAY *pproptags,
     PROPTAG_ARRAY *pproptags_dst)
 {
-	uint32_t count = strange_roundup(pproptags->count, 100);
+	auto count = strange_roundup(pproptags->count, SR_GROW_PROPTAG_ARRAY);
 	pproptags_dst->count = pproptags->count;
 	pproptags_dst->pproptag = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * count));
 	if (NULL == pproptags_dst->pproptag) {

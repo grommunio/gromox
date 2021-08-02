@@ -77,7 +77,8 @@ ATTACHMENT_LIST* attachment_list_init()
 		return NULL;
 	}
 	plist->count = 0;
-	plist->pplist = static_cast<ATTACHMENT_CONTENT **>(malloc(20 * sizeof(ATTACHMENT_CONTENT *)));
+	auto count = strange_roundup(plist->count, SR_GROW_ATTACHMENT_CONTENT);
+	plist->pplist = static_cast<ATTACHMENT_CONTENT **>(malloc(sizeof(ATTACHMENT_CONTENT *) * count));
 	if (NULL == plist->pplist) {
 		free(plist);
 		return NULL;
@@ -120,9 +121,9 @@ BOOL attachment_list_append_internal(ATTACHMENT_LIST *plist,
 	if (plist->count >= 0x8000) {
 		return FALSE;
 	}
-	uint16_t count = strange_roundup(plist->count, 20);
-	if (plist->count + 1 >= count) {
-		count += 20;
+	auto count = strange_roundup(plist->count, SR_GROW_ATTACHMENT_CONTENT);
+	if (plist->count + 1U >= count) {
+		count += SR_GROW_ATTACHMENT_CONTENT;
 		pplist = static_cast<ATTACHMENT_CONTENT **>(realloc(plist->pplist, count * sizeof(ATTACHMENT_CONTENT *)));
 		if (NULL == pplist) {
 			return FALSE;
@@ -357,7 +358,8 @@ BOOL property_groupinfo_init_internal(
 	pgpinfo->group_id = group_id;
 	pgpinfo->reserved = 0;
 	pgpinfo->count = 0;
-	pgpinfo->pgroups = static_cast<PROPTAG_ARRAY *>(malloc(sizeof(PROPTAG_ARRAY) * 100));
+	auto count = strange_roundup(pgpinfo->count, SR_GROW_PROPTAG_ARRAY);
+	pgpinfo->pgroups = static_cast<PROPTAG_ARRAY *>(malloc(sizeof(PROPTAG_ARRAY) * count));
 	if (NULL == pgpinfo->pgroups) {
 		return FALSE;
 	}
@@ -382,9 +384,9 @@ BOOL property_groupinfo_append_internal(
 {
 	PROPTAG_ARRAY *pgroups;
 	/* allocate like proptag_array.cpp does */
-	uint32_t count = strange_roundup(pgpinfo->count, 100);
+	auto count = strange_roundup(pgpinfo->count, SR_GROW_PROPTAG_ARRAY);
 	if (pgpinfo->count + 1 >= count) {
-		count += 100;
+		count += SR_GROW_PROPTAG_ARRAY;
 		pgroups = static_cast<PROPTAG_ARRAY *>(realloc(pgpinfo->pgroups, sizeof(PROPTAG_ARRAY) * count));
 		if (NULL == pgroups) {
 			return FALSE;

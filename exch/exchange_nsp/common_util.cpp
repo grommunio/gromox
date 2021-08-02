@@ -15,6 +15,7 @@
 #include <cstdio>
 #include <ctime>
 
+static constexpr unsigned int SR_GROW_NSP_PROPROW = 40, SR_GROW_NSP_ROWSET = 100;
 static GUID g_server_guid;
 static const uint8_t g_guid_nspi[] = {0xDC, 0xA7, 0x40, 0xC8,
 									   0xC0, 0x42, 0x10, 0x1A,
@@ -257,7 +258,8 @@ NSP_ROWSET* common_util_proprowset_init()
 		return NULL;
 	}
 	memset(pset, 0, sizeof(NSP_ROWSET));
-	pset->prows = ndr_stack_anew<NSP_PROPROW>(NDR_STACK_OUT, 100);
+	auto count = strange_roundup(pset->crows, SR_GROW_NSP_PROPROW);
+	pset->prows = ndr_stack_anew<NSP_PROPROW>(NDR_STACK_OUT, count);
 	if (NULL == pset->prows) {
 		return NULL;
 	}
@@ -267,9 +269,9 @@ NSP_ROWSET* common_util_proprowset_init()
 NSP_PROPROW* common_util_proprowset_enlarge(NSP_ROWSET *pset)
 {
 	NSP_PROPROW *prows;
-	size_t count = strange_roundup(pset->crows, 100);
+	auto count = strange_roundup(pset->crows, SR_GROW_NSP_ROWSET);
 	if (pset->crows + 1 >= count) {
-		count += 100;
+		count += SR_GROW_NSP_ROWSET;
 		prows = ndr_stack_anew<NSP_PROPROW>(NDR_STACK_OUT, count);
 		if (NULL == prows) {
 			return NULL;
@@ -290,7 +292,8 @@ NSP_PROPROW* common_util_propertyrow_init(NSP_PROPROW *prow)
 		}
 	}
 	memset(prow, 0, sizeof(NSP_PROPROW));
-	prow->pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT, 40);
+	auto count = strange_roundup(prow->cvalues, SR_GROW_NSP_PROPROW);
+	prow->pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT, count);
 	if (NULL == prow->pprops) {
 		return NULL;
 	}
@@ -300,10 +303,9 @@ NSP_PROPROW* common_util_propertyrow_init(NSP_PROPROW *prow)
 PROPERTY_VALUE* common_util_propertyrow_enlarge(NSP_PROPROW *prow)
 {
 	PROPERTY_VALUE *pprops;
-	
-	size_t count = strange_roundup(prow->cvalues, 40);
+	auto count = strange_roundup(prow->cvalues, SR_GROW_NSP_PROPROW);
 	if (prow->cvalues + 1 >= count) {
-		count += 40;
+		count += SR_GROW_NSP_PROPROW;
 		pprops = ndr_stack_anew<PROPERTY_VALUE>(NDR_STACK_OUT, count);
 		if (NULL == pprops) {
 			return NULL;
@@ -323,7 +325,8 @@ LPROPTAG_ARRAY* common_util_proptagarray_init()
 		return NULL;
 	}
 	memset(pproptags, 0, sizeof(LPROPTAG_ARRAY));
-	pproptags->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, 100);
+	auto count = strange_roundup(pproptags->cvalues, SR_GROW_PROPTAG_ARRAY);
+	pproptags->pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, count);
 	if (NULL == pproptags->pproptag) {
 		return NULL;
 	}
@@ -333,9 +336,9 @@ LPROPTAG_ARRAY* common_util_proptagarray_init()
 uint32_t* common_util_proptagarray_enlarge(LPROPTAG_ARRAY *pproptags)
 {
 	uint32_t *pproptag;
-	size_t count = strange_roundup(pproptags->cvalues, 100);
+	auto count = strange_roundup(pproptags->cvalues, SR_GROW_PROPTAG_ARRAY);
 	if (pproptags->cvalues + 1 >= count) {
-		count += 100;
+		count += SR_GROW_PROPTAG_ARRAY;
 		pproptag = ndr_stack_anew<uint32_t>(NDR_STACK_OUT, count);
 		if (NULL == pproptag) {
 			return NULL;
