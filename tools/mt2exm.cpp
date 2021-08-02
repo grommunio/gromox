@@ -148,7 +148,7 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
 		    current_it->second.create_name.c_str()))
 			throw std::bad_alloc();
 		auto ret = exm_create_folder(current_it->second.fid_to,
-			   &props, true /*O_EXCL*/, &new_fid);
+			   &props, true /* O_EXCL */, &new_fid);
 		if (ret < 0 && ignore_mkdir_fail)
 			return 0;
 		if (ret < 0)
@@ -178,7 +178,7 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
 		 * Create or reuse (depending on splice) "subfolder of e.g. wastebasket".
 		 */
 		auto ret = exm_create_folder(parent_it->second.fid_to,
-			   &props, g_splice, &new_fid);
+			   &props, !g_splice, &new_fid);
 		if (ret < 0 && ignore_mkdir_fail)
 			return 0;
 		if (ret < 0)
