@@ -1,20 +1,20 @@
-.TH gromox\-kpd2mt 8gx "" "Gromox" "Gromox admin reference"
+.TH gromox\-kdb2mt 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
 .PP
-\fBgromox\-kpd2mt\fP \(em Utility for analysis of Kopano databases
+\fBgromox\-kdb2mt\fP \(em Utility for analysis of Kopano databases
 .SH Synopsis
 .PP
-\fBgromox\-kpd2mt\fP [\fB\-pst\fP] [\fB\-\-src\-host\fP \fIsqlhost\fP]
+\fBgromox\-kdb2mt\fP [\fB\-pst\fP] [\fB\-\-src\-host\fP \fIsqlhost\fP]
 [\fB\-\-src\-user\fP \fIsqluser\fP] [\fB\-\-src-port\fP \fIsqlport\fP]
 \fB\-\-src\-at\fP \fIdir\fP {\fB\-\-src\-guid\fP
 \fImboxguid\fP|\fB\-\-src\-mbox\fP \fIusername\fP} \fB\-\-dst\-mbox\fP
 \fIemailaddr\fP
 .SH Description
 .PP
-gromox\-kpd2mt reads one store from the Kopano SQL database and, for
+gromox\-kdb2mt reads one store from the Kopano SQL database and, for
 attachments, the associated filesystem. The data is then re-exported in a
 Gromox-specific mailbox transfer format to stdout for consumption by pipe by
-the gromox-mt2exm(8gx) program. Optionally, kpd2mt can print a summary of the
+the gromox-mt2exm(8gx) program. Optionally, kdb2mt can print a summary of the
 hierarchy during extraction.
 .PP
 The SQL server that carries the Kopano database for the home server of the user
@@ -23,7 +23,7 @@ must be active.
 The kopano\-server(8) process need not be running.
 .PP
 The directory of Kopano attachments of the home server should be made available
-in the mount namespace whereever gromox\-kpd2mt runs.
+in the mount namespace whereever gromox\-kdb2mt runs.
 .SH Options
 .TP
 \fB\-p\fP
@@ -69,13 +69,13 @@ Extract the mailbox of the given username from the source.
 Password for the source SQL connection.
 .SH Examples
 .PP
-Scenario 1. Gromox and Kopano are located on two different hosts; gromox\-kpd2mt
+Scenario 1. Gromox and Kopano are located on two different hosts; gromox\-kdb2mt
 is executed from the Gromox system and pulls from a remote SQL and remote
 filesystem presented locally.
 .PP
 sshfs root@kdb.lan:/var/lib/kopano/attachments /tmp/at
 .PP
-SRCPASS=rootpass gromox\-kpd2mt \-\-src\-sql kdb.lan \-\-src\-attach /tmp/at
+SRCPASS=rootpass gromox\-kdb2mt \-\-src\-sql kdb.lan \-\-src\-attach /tmp/at
 \-\-src\-mbox jdoe \-\-dst\-mbox john.doe@gromox.lan | gromox\-mt2exm
 target@domain.de
 .PP
@@ -83,7 +83,7 @@ Scenario 2. Gromox can be installed on the Kopano host, pulling from a
 local/remote SQL and local filesystem, while sending its export stream to
 another machine.
 .PP
-gromox\-kpd2mt \-\-src\-attach /var/lib/kopano/attachments \-\-src\-mbox jdoe |
+gromox\-kdb2mt \-\-src\-attach /var/lib/kopano/attachments \-\-src\-mbox jdoe |
 ssh -Tenone root@gromox.lan "gromox\-mt2exm \-u target@domain.de"
 .PP
 It is also possible to copy the attachment directory beforehand, or to store

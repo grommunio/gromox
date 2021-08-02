@@ -46,7 +46,7 @@ enum propcol {
 	PCOL_LONGINT, PCOL_HI, PCOL_LO,
 };
 
-struct kpd_item;
+struct kdb_item;
 
 struct driver final {
 	driver() = default;
@@ -54,9 +54,9 @@ struct driver final {
 	~driver();
 	void operator=(driver &&) = delete;
 	DB_RESULT query(const char *);
-	uint32_t hid_from_mst(kpd_item &, uint32_t);
-	std::unique_ptr<kpd_item> get_store_item();
-	std::unique_ptr<kpd_item> get_root_folder();
+	uint32_t hid_from_mst(kdb_item &, uint32_t);
+	std::unique_ptr<kdb_item> get_store_item();
+	std::unique_ptr<kdb_item> get_root_folder();
 	void fmap_setup_standard(const char *title);
 	void fmap_setup_splice();
 
@@ -67,12 +67,12 @@ struct driver final {
 	gi_folder_map_t m_folder_map;
 };
 
-struct kpd_item final {
-	kpd_item(driver &drv) : m_drv(drv) {}
-	static std::unique_ptr<kpd_item> load_hid_base(driver &, uint32_t hid);
+struct kdb_item final {
+	kdb_item(driver &drv) : m_drv(drv) {}
+	static std::unique_ptr<kdb_item> load_hid_base(driver &, uint32_t hid);
 	TPROPVAL_ARRAY *get_props();
 	size_t get_sub_count() { return m_sub_hids.size(); }
-	std::unique_ptr<kpd_item> get_sub_item(size_t idx);
+	std::unique_ptr<kdb_item> get_sub_item(size_t idx);
 
 	using hidxtype = std::pair<uint32_t, unsigned int>;
 
@@ -90,7 +90,7 @@ struct sql_login_param {
 
 }
 
-static int do_item(driver &, unsigned int, const parent_desc &, kpd_item &);
+static int do_item(driver &, unsigned int, const parent_desc &, kdb_item &);
 
 static char *g_sqlhost, *g_sqlport, *g_sqldb, *g_sqluser, *g_atxdir;
 static char *g_srcguid, *g_srcmbox;
@@ -278,7 +278,7 @@ static const char *kp_item_type_to_str(enum mapi_object_type t)
 	}
 }
 
-static void do_print(unsigned int depth, kpd_item &item)
+static void do_print(unsigned int depth, kdb_item &item)
 {
 	tree(depth);
 	tlog("[hid=%lu type=%s]\n", static_cast<unsigned long>(item.m_hid),
@@ -286,7 +286,7 @@ static void do_print(unsigned int depth, kpd_item &item)
 }
 
 static std::unique_ptr<driver>
-kpd_open_by_guid_1(std::unique_ptr<driver> &&drv, const char *guid)
+kdb_open_by_guid_1(std::unique_ptr<driver> &&drv, const char *guid)
 {
 	if (hex2bin(guid).size() != 16)
 		throw YError("PK-1011: invalid GUID passed");
@@ -302,7 +302,7 @@ kpd_open_by_guid_1(std::unique_ptr<driver> &&drv, const char *guid)
 }
 
 static std::unique_ptr<driver>
-kpd_open_by_guid(const char *guid, const sql_login_param &sqp)
+kdb_open_by_guid(const char *guid, const sql_login_param &sqp)
 {
 	auto drv = std::make_unique<driver>();
 	drv->m_conn = mysql_init(nullptr);
@@ -313,11 +313,11 @@ kpd_open_by_guid(const char *guid, const sql_login_param &sqp)
 	    sqp.pass.c_str(), sqp.dbname.c_str(), 0, nullptr, 0) == nullptr)
 		throw YError("PK-1018: mysql_connect %s@%s: %s",
 		      sqp.user.c_str(), sqp.host.c_str(), mysql_error(drv->m_conn));
-	return kpd_open_by_guid_1(std::move(drv), guid);
+	return kdb_open_by_guid_1(std::move(drv), guid);
 }
 
 static std::unique_ptr<driver>
-kpd_open_by_user(const char *storeuser, const sql_login_param &sqp)
+kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
 {
 	auto drv = std::make_unique<driver>();
 	drv->m_conn = mysql_init(nullptr);
@@ -337,7 +337,7 @@ kpd_open_by_user(const char *storeuser, const sql_login_param &sqp)
 	if (row == nullptr || row[0] == nullptr)
 		throw YError("PK-1022: no store for that user");
 	auto rowlen = res.row_lengths();
-	return kpd_open_by_guid_1(std::move(drv), bin2hex(row[0], rowlen[0]).c_str());
+	return kdb_open_by_guid_1(std::move(drv), bin2hex(row[0], rowlen[0]).c_str());
 }
 
 driver::~driver()
@@ -357,7 +357,7 @@ DB_RESULT driver::query(const char *qstr)
 	return res;
 }
 
-uint32_t driver::hid_from_mst(kpd_item &item, uint32_t proptag)
+uint32_t driver::hid_from_mst(kdb_item &item, uint32_t proptag)
 {
 	auto props = item.get_props();
 	auto eid = static_cast<BINARY *>(tpropval_array_get_propval(props, proptag));
@@ -411,12 +411,12 @@ void driver::fmap_setup_standard(const char *title)
 		"Import of "s + title + timebuf});
 }
 
-std::unique_ptr<kpd_item> driver::get_store_item()
+std::unique_ptr<kdb_item> driver::get_store_item()
 {
-	return kpd_item::load_hid_base(*this, m_store_hid);
+	return kdb_item::load_hid_base(*this, m_store_hid);
 }
 
-std::unique_ptr<kpd_item> driver::get_root_folder()
+std::unique_ptr<kdb_item> driver::get_root_folder()
 {
 	if (m_root_hid == 0) {
 		char qstr[80];
@@ -427,15 +427,15 @@ std::unique_ptr<kpd_item> driver::get_root_folder()
 			throw YError("PK-1017: no root folder for store");
 		m_root_hid = strtoul(row[0], nullptr, 0);
 	}
-	return kpd_item::load_hid_base(*this, m_root_hid);
+	return kdb_item::load_hid_base(*this, m_root_hid);
 }
 
-std::unique_ptr<kpd_item> kpd_item::load_hid_base(driver &drv, uint32_t hid)
+std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 {
 	char qstr[80];
 	snprintf(qstr, arsizeof(qstr), "SELECT id, type FROM hierarchy WHERE id=%u OR parent=%u", hid, hid);
 	auto res = drv.query(qstr);
-	auto yi = std::make_unique<kpd_item>(drv);
+	auto yi = std::make_unique<kdb_item>(drv);
 	DB_ROW row;
 	while ((row = res.fetch_row()) != nullptr) {
 		auto xid   = strtoul(row[0], nullptr, 0);
@@ -467,14 +467,14 @@ std::unique_ptr<kpd_item> kpd_item::load_hid_base(driver &drv, uint32_t hid)
 	return yi;
 }
 
-TPROPVAL_ARRAY *kpd_item::get_props()
+TPROPVAL_ARRAY *kdb_item::get_props()
 {
 	if (m_props == nullptr)
 		m_props = hid_to_propval_a(m_drv, m_hid);
 	return m_props.get();
 }
 
-std::unique_ptr<kpd_item> kpd_item::get_sub_item(size_t idx)
+std::unique_ptr<kdb_item> kdb_item::get_sub_item(size_t idx)
 {
 	if (idx >= m_sub_hids.size())
 		return nullptr;
@@ -510,7 +510,7 @@ static gi_name_map do_namemap(driver &drv)
 	return map;
 }
 
-static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent, kpd_item &item)
+static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
 {
 	auto props = item.get_props();
 	if (g_show_tree)
@@ -548,7 +548,7 @@ static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent,
 }
 
 static message_content_ptr build_message(driver &drv, unsigned int depth,
-    kpd_item &item)
+    kdb_item &item)
 {
 	auto props = item.get_props();
 	message_content_ptr ctnt(message_content_init());
@@ -573,7 +573,7 @@ static message_content_ptr build_message(driver &drv, unsigned int depth,
 	return ctnt;
 }
 
-static int do_message(driver &drv, unsigned int depth, const parent_desc &parent, kpd_item &item)
+static int do_message(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
 {
 	auto ctnt = build_message(drv, depth, item);
 	if (parent.type == MAPI_ATTACH)
@@ -598,7 +598,7 @@ static int do_message(driver &drv, unsigned int depth, const parent_desc &parent
 	return 0;
 }
 
-static int do_recip(driver &drv, unsigned int depth, const parent_desc &parent, kpd_item &item)
+static int do_recip(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
 {
 	auto props = item.get_props();
 	if (!tarray_set_append_internal(parent.message->children.prcpts, props))
@@ -607,7 +607,7 @@ static int do_recip(driver &drv, unsigned int depth, const parent_desc &parent, 
 	return 0;
 }
 
-static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent, kpd_item &item)
+static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
 {
 	attachment_content_ptr atc(attachment_content_init());
 	if (atc == nullptr)
@@ -654,7 +654,7 @@ static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent,
 	return 0;
 }
 
-static int do_item(driver &drv, unsigned int depth, const parent_desc &parent, kpd_item &item)
+static int do_item(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
 {
 	auto new_parent = parent;
 	int ret = 0;
@@ -716,7 +716,7 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 	if (argc != 1) {
-		fprintf(stderr, "Usage: SRCPASS=sqlpass gromox-kpd2mt --src-sql kdb.lan "
+		fprintf(stderr, "Usage: SRCPASS=sqlpass gromox-kdb2mt --src-sql kdb.lan "
 		        "--src-attach /tmp/at --src-mbox jdoe\n");
 		return EXIT_FAILURE;
 	}
@@ -733,9 +733,9 @@ int main(int argc, const char **argv)
 	try {
 		std::unique_ptr<driver> drv;
 		if (g_srcguid != nullptr)
-			drv = kpd_open_by_guid(g_srcguid, sqp);
+			drv = kdb_open_by_guid(g_srcguid, sqp);
 		else if (g_srcmbox != nullptr)
-			drv = kpd_open_by_user(g_srcmbox, sqp);
+			drv = kdb_open_by_user(g_srcmbox, sqp);
 		if (drv == nullptr) {
 			fprintf(stderr, "Problem?!\n");
 			return EXIT_FAILURE;

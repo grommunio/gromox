@@ -84,7 +84,7 @@ noinst_DATA += \
 agent_service_progs = freebusy rtf2html
 system_admin_progs = adaptor event timer
 system_admin_tools = mkmidb mkprivate mkpublic rebuild
-sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-mailq gromox-kpd2mt gromox-mt2exm
+sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-mailq gromox-kdb2mt gromox-mt2exm
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
@@ -254,11 +254,11 @@ mkprivate_SOURCES = tools/mkprivate.cpp
 mkprivate_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 mkpublic_SOURCES = tools/mkpublic.cpp
 mkpublic_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-gromox_kpd2mt_SOURCES = tools/genimport.cpp tools/kpd2mt.cpp
-gromox_kpd2mt_LDADD = ${HX_LIBS} ${mysql_LIBS} ${pff_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la
+gromox_kdb2mt_SOURCES = tools/genimport.cpp tools/kdb2mt.cpp
+gromox_kdb2mt_LDADD = ${HX_LIBS} ${mysql_LIBS} ${pff_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la
 gromox_mt2exm_SOURCES = tools/genimport.cpp tools/mt2exm.cpp
 gromox_mt2exm_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_cplus.la libgromox_exrpc.la libgromox_mapi.la
-gromox_pff2mt_SOURCES = tools/genimport.cpp tools/pffimport.cpp
+gromox_pff2mt_SOURCES = tools/genimport.cpp tools/pff2mt.cpp
 gromox_pff2mt_LDADD = ${HX_LIBS} ${mysql_LIBS} ${pff_LIBS} libgromox_common.la libgromox_cplus.la libgromox_exrpc.la libgromox_mapi.la
 rebuild_SOURCES = tools/rebuild.cpp
 rebuild_LDADD = ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
@@ -295,7 +295,7 @@ man_MANS = \
 	doc/exmdb_local.4gx doc/exmdb_provider.4gx \
 	doc/freebusy.8gx doc/gromox.7 doc/gromox-abktconv.8gx \
 	doc/gromox-abktpull.8gx doc/gromox-dbop.8gx \
-	doc/gromox-kpd2mt.8gx doc/gromox-mailq.8gx \
+	doc/gromox-kdb2mt.8gx doc/gromox-mailq.8gx \
 	doc/gromox-mt2exm.8gx doc/http.8gx \
 	doc/imap.8gx doc/ip6_container.4gx doc/ldap_adaptor.4gx \
 	doc/logthru.4gx \
