@@ -357,7 +357,7 @@ BOOL property_groupinfo_init_internal(
 	pgpinfo->group_id = group_id;
 	pgpinfo->reserved = 0;
 	pgpinfo->count = 0;
-	pgpinfo->pgroups = static_cast<PROPTAG_ARRAY *>(malloc(sizeof(PROPTAG_ARRAY) * 20));
+	pgpinfo->pgroups = static_cast<PROPTAG_ARRAY *>(malloc(sizeof(PROPTAG_ARRAY) * 100));
 	if (NULL == pgpinfo->pgroups) {
 		return FALSE;
 	}
@@ -384,7 +384,7 @@ BOOL property_groupinfo_append_internal(
 	/* allocate like proptag_array.cpp does */
 	uint32_t count = strange_roundup(pgpinfo->count, 100);
 	if (pgpinfo->count + 1 >= count) {
-		count += 20;
+		count += 100;
 		pgroups = static_cast<PROPTAG_ARRAY *>(realloc(pgpinfo->pgroups, sizeof(PROPTAG_ARRAY) * count));
 		if (NULL == pgroups) {
 			return FALSE;
