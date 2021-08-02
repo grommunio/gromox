@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <limits>
 #include <gromox/tzfile.hpp>
 #include <gromox/timezone.hpp>
 #include <sys/types.h>
@@ -1573,11 +1574,8 @@ static time_t time2sub(const struct state *const sp,
 		}
 		lo = -hi;
 	} else {
-		lo = 1;
-		for (i = 0; i < (int) TYPE_BIT(time_t) - 1; ++i) {
-			lo *= 2;
-		}
-		hi = -(lo + 1);
+		lo = std::numeric_limits<time_t>::min();
+		hi = std::numeric_limits<time_t>::max();
 	}
 	for ( ; ; ) {
 		t = lo / 2 + hi / 2;
