@@ -442,8 +442,17 @@ static int do_folder(unsigned int depth, const parent_desc &parent,
     libpff_item_t *item)
 {
 	auto props = item_to_tpropval_a(item);
-	if (g_show_tree)
+	if (g_show_tree) {
 		gi_dump_tpropval_a(depth, *props);
+	} else {
+		auto name = static_cast<char *>(tpropval_array_get_propval(props.get(), PR_DISPLAY_NAME));
+		if (name != nullptr)
+			fprintf(stderr, "Processing \"%s\"...\n", name);
+		/*
+		 * There are a bunch of folders with no dispname property at all.
+		 * Probably not worth mentioning in the low-verbosity level here.
+		 */
+	}
 	uint32_t ident = 0;
 	if (libpff_item_get_identifier(item, &ident, nullptr) < 1)
 		throw YError("PF-1051");
