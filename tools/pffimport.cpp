@@ -447,7 +447,7 @@ static int do_folder(unsigned int depth, const parent_desc &parent,
 	} else {
 		auto name = static_cast<char *>(tpropval_array_get_propval(props.get(), PR_DISPLAY_NAME));
 		if (name != nullptr)
-			fprintf(stderr, "Processing \"%s\"...\n", name);
+			fprintf(stderr, "pff: Processing \"%s\"...\n", name);
 		/*
 		 * There are a bunch of folders with no dispname property at all.
 		 * Probably not worth mentioning in the low-verbosity level here.
@@ -817,10 +817,10 @@ static int do_file(const char *filename) try
 		fprintf(stderr, "%s\n", az_error("PF-1023", err).what());
 		return -EIO;
 	}
-	fprintf(stderr, "Reading %s...\n", filename);
+	fprintf(stderr, "pff: Reading %s...\n", filename);
 	if (libpff_file_open(file.get(), filename, LIBPFF_OPEN_READ, nullptr) < 1) {
 		int s = errno;
-		fprintf(stderr, "Could not open \"%s\": %s\n", filename, strerror(s));
+		fprintf(stderr, "pff: Could not open \"%s\": %s\n", filename, strerror(s));
 		return -(errno = s);
 	}
 
@@ -837,7 +837,7 @@ static int do_file(const char *filename) try
 	libpff_item_ptr root;
 	if (libpff_file_get_root_item(file.get(), &~unique_tie(root), &~unique_tie(err)) < 1)
 		throw az_error("PF-1025", err);
-	fprintf(stderr, "Building list of named properties...\n");
+	fprintf(stderr, "pff: Building list of named properties...\n");
 	gi_name_map name_map;
 	npg_item(name_map, root.get());
 	gi_dump_name_map(name_map);
@@ -847,13 +847,13 @@ static int do_file(const char *filename) try
 		fprintf(stderr, "Object tree:\n");
 	return do_item(0, {}, root.get());
 } catch (const char *e) {
-	fprintf(stderr, "Exception: %s\n", e);
+	fprintf(stderr, "pff: Exception: %s\n", e);
 	return -ECANCELED;
 } catch (const std::string &e) {
-	fprintf(stderr, "Exception: %s\n", e.c_str());
+	fprintf(stderr, "pff: Exception: %s\n", e.c_str());
 	return -ECANCELED;
 } catch (const std::exception &e) {
-	fprintf(stderr, "Exception: %s\n", e.what());
+	fprintf(stderr, "pff: Exception: %s\n", e.what());
 	return -ECANCELED;
 }
 
@@ -873,7 +873,7 @@ int main(int argc, const char **argv)
 	}
 	auto ret = do_file(argv[1]);
 	if (ret < 0) {
-		fprintf(stderr, "Import unsuccessful.\n");
+		fprintf(stderr, "pff: Import unsuccessful.\n");
 		return EXIT_FAILURE;
 	}
 	return EXIT_SUCCESS;

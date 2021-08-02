@@ -371,18 +371,18 @@ static int exm_connect(const char *dir)
 	std::vector<EXMDB_ITEM> exmlist;
 	auto ret = list_file_read_exmdb("exmdb_list.txt", PKGSYSCONFDIR, exmlist);
 	if (ret < 0) {
-		fprintf(stderr, "[exmdb_client]: list_file_read_exmdb: %s\n", strerror(-ret));
+		fprintf(stderr, "exm: list_file_read_exmdb: %s\n", strerror(-ret));
 		return ret;
 	}
 	auto xn = std::find_if(exmlist.begin(), exmlist.end(),
 	          [&](const EXMDB_ITEM &s) { return strncmp(s.prefix.c_str(), dir, s.prefix.size()) == 0; });
 	if (xn == exmlist.end()) {
-		fprintf(stderr, "No target for %s\n", dir);
+		fprintf(stderr, "exm: No target for %s\n", dir);
 		return -ENOENT;
 	}
 	wrapfd fd(gx_inet_connect(xn->host.c_str(), xn->port, 0));
 	if (fd.get() < 0) {
-		fprintf(stderr, "gx_inet_connect genimport@[%s]:%hu: %s\n",
+		fprintf(stderr, "exm: gx_inet_connect genimport@[%s]:%hu: %s\n",
 		        xn->host.c_str(), xn->port, strerror(-fd.get()));
 		return -errno;
 	}
@@ -398,26 +398,26 @@ static int exm_connect(const char *dir)
 	BINARY tb{};
 	if (exmdb_ext_push_request(&rq, &tb) != EXT_ERR_SUCCESS ||
 	    !exmdb_client_write_socket(fd.get(), &tb)) {
-		fprintf(stderr, "Protocol failure\n");
+		fprintf(stderr, "exm: Protocol failure\n");
 		return -1;
 	}
 	free(tb.pb);
 	if (!exmdb_client_read_socket(fd.get(), &tb)) {
-		fprintf(stderr, "Protocol failure\n");
+		fprintf(stderr, "exm: Protocol failure\n");
 		return -1;
 	}
 	auto cl_0 = make_scope_exit([&]() { free(tb.pb); });
 	auto response_code = tb.pb[0];
 	if (response_code == exmdb_response::SUCCESS) {
 		if (tb.cb != 5) {
-			fprintf(stderr, "response format error during connect to "
+			fprintf(stderr, "exm: response format error during connect to "
 				"[%s]:%hu/%s\n", xn->host.c_str(),
 				xn->port, xn->prefix.c_str());
 			return -1;
 		}
 		return fd.release();
 	}
-	fprintf(stderr, "Failed to connect to [%s]:%hu/%s: %s\n",
+	fprintf(stderr, "exm: Failed to connect to [%s]:%hu/%s: %s\n",
 	        xn->host.c_str(), xn->port, xn->prefix.c_str(), exmdb_rpc_strerror(response_code));
 	return -1;
 }
@@ -427,7 +427,7 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
 {
 	uint64_t change_num = 0;
 	if (!exmdb_client::allocate_cn(g_storedir, &change_num)) {
-		fprintf(stderr, "allocate_cn RPC failed\n");
+		fprintf(stderr, "exm: allocate_cn(fld) RPC failed\n");
 		return -EIO;
 	}
 	SIZED_XID zxid;
@@ -439,37 +439,37 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
 	EXT_PUSH ep;
 	if (!ep.init(tmp_buff, arsizeof(tmp_buff), 0) ||
 	    ep.p_xid(22, &zxid.xid) != EXT_ERR_SUCCESS) {
-		fprintf(stderr, "ext_push: ENOMEM\n");
+		fprintf(stderr, "exm: ext_push: ENOMEM\n");
 		return -ENOMEM;
 	}
 	bxid.pv = tmp_buff;
 	bxid.cb = ep.m_offset;
 	std::unique_ptr<PCL, gi_delete> pcl(pcl_init());
 	if (pcl == nullptr) {
-		fprintf(stderr, "pcl_init: ENOMEM\n");
+		fprintf(stderr, "exm: pcl_init: ENOMEM\n");
 		return -ENOMEM;
 	}
 	if (!pcl_append(pcl.get(), &zxid)) {
-		fprintf(stderr, "pcl_append: ENOMEM\n");
+		fprintf(stderr, "exm: pcl_append: ENOMEM\n");
 		return -ENOMEM;
 	}
 	std::unique_ptr<BINARY, gi_delete> pclbin(pcl_serialize(pcl.get()));
 	if (pclbin == nullptr){
-		fprintf(stderr, "pcl_serialize: ENOMEM\n");
+		fprintf(stderr, "exm: pcl_serialize: ENOMEM\n");
 		return -ENOMEM;
 	}
 	if (!tpropval_array_set_propval(props, PROP_TAG_PARENTFOLDERID, &parent_fld) ||
 	    !tpropval_array_set_propval(props, PROP_TAG_CHANGENUMBER, &change_num) ||
 	    !tpropval_array_set_propval(props, PR_CHANGE_KEY, &bxid) ||
 	    !tpropval_array_set_propval(props, PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) {
-		fprintf(stderr, "tpropval: ENOMEM\n");
+		fprintf(stderr, "exm: tpropval: ENOMEM\n");
 		return -ENOMEM;
 	}
 	auto dn = static_cast<const char *>(tpropval_array_get_propval(props, PR_DISPLAY_NAME));
 	if (!o_excl && dn != nullptr) {
 		if (!exmdb_client::get_folder_by_name(g_storedir,
 		    parent_fld, dn, new_fld_id)) {
-			fprintf(stderr, "get_folder_by_name \"%s\" RPC/network failed\n", dn);
+			fprintf(stderr, "exm: get_folder_by_name \"%s\" RPC/network failed\n", dn);
 			return -EIO;
 		}
 		if (*new_fld_id != 0)
@@ -478,11 +478,12 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
 	if (dn == nullptr)
 		dn = "";
 	if (!exmdb_client::create_folder_by_properties(g_storedir, 0, props, new_fld_id)) {
-		fprintf(stderr, "create_folder_by_properties \"%s\" RPC failed\n", dn);
+		fprintf(stderr, "exm: create_folder_by_properties \"%s\" RPC failed\n", dn);
 		return -EIO;
 	}
 	if (*new_fld_id == 0) {
-		fprintf(stderr, "createfolder: folder \"%s\" already existed or some other problem\n", dn);
+		fprintf(stderr, "exm: Could not create folder \"%s\". "
+			"Either it already existed or some there was some other unspecified problem.\n", dn);
 		return -EEXIST;
 	}
 	return 0;
@@ -492,10 +493,10 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 {
 	uint64_t msg_id = 0, change_num = 0;
 	if (!exmdb_client::allocate_message_id(g_storedir, parent_fld, &msg_id)) {
-		fprintf(stderr, "allocate_message_id RPC failed (timeout?)\n");
+		fprintf(stderr, "exm: allocate_message_id RPC failed (timeout?)\n");
 		return -EIO;
 	} else if (!exmdb_client::allocate_cn(g_storedir, &change_num)) {
-		fprintf(stderr, "allocate_cn RPC failed\n");
+		fprintf(stderr, "exm: allocate_cn(msg) RPC failed\n");
 		return -EIO;
 	}
 
@@ -508,23 +509,23 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 	EXT_PUSH ep;
 	if (!ep.init(tmp_buff, arsizeof(tmp_buff), 0) ||
 	    ep.p_xid(22, &zxid.xid) != EXT_ERR_SUCCESS) {
-		fprintf(stderr, "ext_push: ENOMEM\n");
+		fprintf(stderr, "exm: ext_push: ENOMEM\n");
 		return -ENOMEM;
 	}
 	bxid.pv = tmp_buff;
 	bxid.cb = ep.m_offset;
 	std::unique_ptr<PCL, gi_delete> pcl(pcl_init());
 	if (pcl == nullptr) {
-		fprintf(stderr, "pcl_init: ENOMEM\n");
+		fprintf(stderr, "exm: pcl_init: ENOMEM\n");
 		return -ENOMEM;
 	}
 	if (!pcl_append(pcl.get(), &zxid)) {
-		fprintf(stderr, "pcl_append: ENOMEM\n");
+		fprintf(stderr, "exm: pcl_append: ENOMEM\n");
 		return -ENOMEM;
 	}
 	std::unique_ptr<BINARY, gi_delete> pclbin(pcl_serialize(pcl.get()));
 	if (pclbin == nullptr){
-		fprintf(stderr, "pcl_serialize: ENOMEM\n");
+		fprintf(stderr, "exm: pcl_serialize: ENOMEM\n");
 		return -ENOMEM;
 	}
 	auto props = &ctnt->proplist;
@@ -532,16 +533,16 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 	    !tpropval_array_set_propval(props, PROP_TAG_CHANGENUMBER, &change_num) ||
 	    !tpropval_array_set_propval(props, PR_CHANGE_KEY, &bxid) ||
 	    !tpropval_array_set_propval(props, PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) {
-		fprintf(stderr, "tpropval: ENOMEM\n");
+		fprintf(stderr, "exm: tpropval: ENOMEM\n");
 		return -ENOMEM;
 	}
 	gxerr_t e_result = GXERR_SUCCESS;
 	if (!exmdb_client::write_message(g_storedir, g_dstuser.c_str(), 65001,
 	    parent_fld, ctnt, &e_result)) {
-		fprintf(stderr, "write_message RPC failed\n");
+		fprintf(stderr, "exm: write_message RPC failed\n");
 		return -EIO;
 	} else if (e_result != 0) {
-		fprintf(stderr, "write_message: gxerr %d\n", e_result);
+		fprintf(stderr, "exm: write_message: gxerr %d\n", e_result);
 		return -EIO;
 	}
 	return 0;
@@ -560,7 +561,7 @@ static MYSQL *sql_login()
 {
 	auto cfg = config_file_initd("mysql_adaptor.cfg", PKGSYSCONFDIR);
 	if (cfg == nullptr) {
-		fprintf(stderr, "No mysql_adaptor.cfg: %s\n", strerror(errno));
+		fprintf(stderr, "exm: No mysql_adaptor.cfg: %s\n", strerror(errno));
 		return nullptr;
 	}
 	auto sql_host = config_file_get_value(cfg, "mysql_host");
@@ -575,14 +576,14 @@ static MYSQL *sql_login()
 		sql_dbname = "email";
 	auto conn = mysql_init(nullptr);
 	if (conn == nullptr) {
-		fprintf(stderr, "mysql_init failed\n");
+		fprintf(stderr, "exm: mysql_init failed\n");
 		return nullptr;
 	}
 	mysql_options(conn, MYSQL_SET_CHARSET_NAME, "utf8mb4");
 	if (mysql_real_connect(conn, sql_host, sql_user, sql_pass, sql_dbname,
 	    sql_port, nullptr, 0) != nullptr)
 		return conn;
-	fprintf(stderr, "Failed to connect to SQL %s@%s: %s\n",
+	fprintf(stderr, "exm: Failed to connect to SQL %s@%s: %s\n",
 	        sql_user, sql_host, mysql_error(conn));
 	mysql_close(conn);
 	return nullptr;
@@ -594,12 +595,12 @@ static int sql_meta(MYSQL *sqh, const char *username, unsigned int *user_id,
 	auto query = "SELECT id, maildir FROM users WHERE username='" +
 	             sql_escape(sqh, username) + "'";
 	if (mysql_real_query(sqh, query.c_str(), query.size()) != 0) {
-		fprintf(stderr, "mysql_query: %s\n", mysql_error(sqh));
+		fprintf(stderr, "exm: mysql_query: %s\n", mysql_error(sqh));
 		return -EINVAL;
 	}
 	DB_RESULT result = mysql_store_result(sqh);
 	if (result == nullptr) {
-		fprintf(stderr, "mysql_store: %s\n", mysql_error(sqh));
+		fprintf(stderr, "exm: mysql_store: %s\n", mysql_error(sqh));
 		return -ENOENT;
 	}
 	auto row = result.fetch_row();
@@ -620,10 +621,10 @@ int gi_setup(const char *username)
 	auto ret = sql_meta(sqh, username, &g_user_id, g_storedir_s);
 	mysql_close(sqh);
 	if (ret == -ENOENT) {
-		fprintf(stderr, "No such user \"%s\"\n", username);
+		fprintf(stderr, "exm: No such user \"%s\"\n", username);
 		return EXIT_FAILURE;
 	} else if (ret < 0) {
-		fprintf(stderr, "sql_meta(\"%s\"): %s\n", username, strerror(-ret));
+		fprintf(stderr, "exm: sql_meta(\"%s\"): %s\n", username, strerror(-ret));
 		return EXIT_FAILURE;
 	}
 	g_dstuser = username;

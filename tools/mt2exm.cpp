@@ -127,7 +127,7 @@ static void exm_folder_adjust(TPROPVAL_ARRAY &props)
 static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
 {
 	if (g_verbose) {
-		printf("Folder %lxh (parent=%llxh)\n",
+		printf("exm: Folder %lxh (parent=%llxh)\n",
 			static_cast<unsigned long>(obd.nid),
 			static_cast<unsigned long long>(obd.parent.folder_id));
 		if (g_show_props)
@@ -186,14 +186,14 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
 		if (new_fid != 0) {
 			/* Make subobjects (seen later) to take exm_folder case #3/exm_messages case #n. */
 			if (g_verbose)
-				fprintf(stderr, "Insert mapping {%lxh -> %llxh}\n",
+				fprintf(stderr, "exm: Learned new folder {%lxh -> %llxh}\n",
 				        static_cast<unsigned long>(obd.nid),
 				        static_cast<unsigned long long>(new_fid));
 			g_folder_map.try_emplace(obd.nid, tgt_folder{false, new_fid});
 		}
 		return 0;
 	}
-	fprintf(stderr, "No known placement method for NID %lxh, skipping.\n",
+	fprintf(stderr, "exm: No known placement method for NID %lxh, skipping.\n",
 	        static_cast<unsigned long>(obd.nid));
 	return 0;
 }
@@ -201,7 +201,7 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
 static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt)
 {
 	if (g_verbose) {
-		printf("Message %lxh (parent=%llxh)\n",
+		printf("exm: Message %lxh (parent=%llxh)\n",
 			static_cast<unsigned long>(obd.nid),
 			static_cast<unsigned long long>(obd.parent.folder_id));
 		if (g_show_props)
