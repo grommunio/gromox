@@ -89,7 +89,7 @@ if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
 sbin_SCRIPTS = gromox-abktpull gromox-pffimport
-pkglibexec_SCRIPTS = tools/create_queue.sh tools/sa_format_area.sh
+pkglibexec_SCRIPTS = tools/create_queue.sh
 
 BUILT_SOURCES = include/gromox/paths.h php_mapi/zarafa_rpc.cpp exch/exmdb_provider/exmdb_rpc.cpp lib/exmdb_rpc.cpp
 CLEANFILES = ${BUILT_SOURCES}
