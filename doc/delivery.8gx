@@ -1,9 +1,7 @@
 .TH delivery 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 delivery(8gx) \(em Backend for local delivery
 .SH Synopsis
-.PP
 \fBdelivery\fP [\fB\-c\fP \fIconfig\fP]
 .SH Options
 .TP
@@ -14,7 +12,6 @@ specified, /etc/gromox/delivery.cfg will be read if it exists.
 \fB\-?\fP
 Display option summary.
 .SH Plugins
-.PP
 The delivery daemon can be extended by a number of plugins. In Gromox, their
 filenames begin with libmtahook_.
 .SH Configuration file directives
@@ -120,5 +117,4 @@ Default: \fI16\fP
 .IP \(bu 4
 /usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also
-.PP
 \fBgromox\fP(7)

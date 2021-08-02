@@ -1,9 +1,7 @@
 .TH mkpublic 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 mkpublic \(em Tool for creating a blank public store
 .SH Synopsis
-.PP
 \fBmkpublic\fP [\fB\-c\fP \fIconfig\fP] [\fB\-d\fP \fIdata_path\fP]
 \fIdomainname\fP
 .SH Options
@@ -29,8 +27,6 @@ of a public store.
 \fIdata_file_path\fP/sqlite3_public.txt: SQLite instructions to generate part
 of a public store.
 .SH Config file directives
-.PP
-The config file is shared with other pgorams. See \fBsa.cfg\fP(5gx).
+The config file is shared with other programs. See \fBsa.cfg\fP(5gx).
 .SH See also
-.PP
 \fBgromox\fP(7), \fBsa.cfg\fP(5gx)

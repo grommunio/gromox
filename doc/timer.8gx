@@ -1,12 +1,9 @@
 .TH timer 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 \fBtimer\fP \(em deferred command executor
 .SH Synopsis
-.PP
 \fBtimer\fP [\fB\-c\fP \fIconfig\fP]
 .SH Description
-.PP
 The timer daemon can be used to schedule commands to be executed once, at a
 particular time in the future. It is similar to the at(1) command and its
 associated daemon, atd.
@@ -57,7 +54,6 @@ The minimum number of client processing threads to keep around.
 .br
 Default: \fI50\fP
 .SH Timer protocol
-.PP
 The timer service is exposed as a line-based text protocol. Upon connection,
 the event server gratitiously writes "OK", following which the server will wait
 for timer commands, and execute them synchronously.
@@ -68,5 +64,4 @@ to be executed in that many seconds from now. The server will respond with
 .PP
 The command "CANCEL <id>" revokes the timer with the chosen ID.
 .SH See also
-.PP
 \fBgromox\fP(7), \fBtimer_agent\fP(4gx)

@@ -1,16 +1,13 @@
 .TH gromox\-kdb2mt 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 \fBgromox\-kdb2mt\fP \(em Utility for analysis of Kopano databases
 .SH Synopsis
-.PP
 \fBgromox\-kdb2mt\fP [\fB\-pst\fP] [\fB\-\-src\-host\fP \fIsqlhost\fP]
 [\fB\-\-src\-user\fP \fIsqluser\fP] [\fB\-\-src-port\fP \fIsqlport\fP]
 \fB\-\-src\-at\fP \fIdir\fP {\fB\-\-src\-guid\fP
 \fImboxguid\fP|\fB\-\-src\-mbox\fP \fIusername\fP} \fB\-\-dst\-mbox\fP
 \fIemailaddr\fP
 .SH Description
-.PP
 gromox\-kdb2mt reads one store from the Kopano SQL database and, for
 attachments, the associated filesystem. The data is then re-exported in a
 Gromox-specific mailbox transfer format to stdout for consumption by pipe by
@@ -68,7 +65,6 @@ Extract the mailbox of the given username from the source.
 \fBSRCPASS\fP
 Password for the source SQL connection.
 .SH Examples
-.PP
 Scenario 1. Gromox and Kopano are located on two different hosts; gromox\-kdb2mt
 is executed from the Gromox system and pulls from a remote SQL and remote
 filesystem presented locally.
@@ -90,5 +86,4 @@ It is also possible to copy the attachment directory beforehand, or to store
 the MT data stream, though additional disk space for these intermediate objects
 and representation would be required.
 .SH See also
-.PP
 \fBgromox\fP(7), \fBgromox\-mt2exm\fP(8gx)

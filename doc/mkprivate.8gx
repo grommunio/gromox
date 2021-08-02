@@ -1,9 +1,7 @@
 .TH mkprivate 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 mkprivate \(em Tool for creating a blank private store
 .SH Synopsis
-.PP
 \fBmkprivate\fP [\fB\-c\fP \fIconfig\fP] [\fB\-d\fP \fIdatapath\fP]
 \fIusername\fP
 .SH Options
@@ -32,8 +30,6 @@ of a private store.
 \fIdata_file_path\fP/sqlite3_private.txt: SQLite instructions to generate part
 of a private store.
 .SH Config file directives
-.PP
-The config file is shared with other pgorams. See \fBsa.cfg\fP(5gx).
+The config file is shared with other programs. See \fBsa.cfg\fP(5gx).
 .SH See also
-.PP
 \fBgromox\fP(7), \fBsa.cfg\fP(5gx)

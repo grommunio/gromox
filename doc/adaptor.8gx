@@ -1,12 +1,9 @@
 .TH adaptor 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 adaptor \(em SQL data cache generator
 .SH Synopsis
-.PP
 \fBadaptor\fP [\fB\-c\fP \fIconfig\fP]
 .SH Description
-.PP
 adaptor reads table data from MySQL and builds text files that act as caches
 for modules that utilize them. See the FILES section for example uses.
 .SH Options
@@ -65,5 +62,4 @@ Default: \fI/var/lib/gromox\fP
 \fBsubsystem_address\fP
 Default: (unset)
 .SH See also
-.PP
 \fBgromox\fP(7)

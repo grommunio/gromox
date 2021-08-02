@@ -1,12 +1,9 @@
 .TH gromox\-pff2mt 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 gromox\-pff2mt(8gx) \(em Utility for analysis of PFF/PST/OST files
 .SH Synopsis
-.PP
 \fBgromox\-pff2mt\fP [\fB\-pst] \fIinput.pst\fP
 .SH Description
-.PP
 gromox\-pff2mt reads a file that conforms to the Personal Folder File (PFF) and
 the Offline Folder File (OFF) format and re-exports the data in a
 Gromox-specific mailbox transfer format to stdout for consumption by pipe by
@@ -36,8 +33,6 @@ information.
 \fB\-t\fP
 Show a diagnostic tree view of the source data as it is being read.
 .SH Examples
-.PP
 gromox\-pff2mt sample.pst | gromox\-mt2exm \-u target@mailbox.de
 .SH See also
-.PP
 \fBgromox\fP(7), \fBgromox\-mt2exm\fP(8gx)

@@ -1,9 +1,7 @@
 .TH gromox 7 "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 gromox \(em overview of the Gromox groupware server
 .SH Description
-.PP
 Gromox is a groupware server capable of serving as a replacement for Microsoft
 Exchange. Connectivity options include RPC/HTTP (Outlook Anywhere),
 IMAP, POP3, an SMTP-speaking LDA, and a PHP module with a Z-MAPI function
@@ -14,7 +12,6 @@ such as Postfix as a mail transfer agent, and grommunio-admin for user managemen
 A web interface is available with grommunio-web. The grommunio distribution ships
 these essentials and has a ready-to-run installation of Gromox. system.
 .SH Configuration files
-.PP
 Program configuration files reside within /etc/gromox. Most of the programs
 have a \fBconfig_file_path\fP directive with which the search path for further
 config files can be specified. For example, http(8gx) defaults to
@@ -152,7 +149,6 @@ textmaps(4gx) \(em Service plugin for various data maps
 timer_agent(4gx) \(em Service plugin for deferred command execution with
 timer(8gx)
 .SH Past commands that have been removed
-.PP
 The following is a list of programs that no longer exist. It is inteded solely
 to capture keyword searches within the documentation for said obsolete/removed commands.
 .IP \(bu 4
@@ -203,7 +199,6 @@ Postfix)
 .IP \(bu 4
 [::1]:33333 \(em event(8gx) service
 .SH Files
-.PP
 The exact paths depend on the options used when Gromox's build was configured.
 Especially the path for libraries, represented in this documentation as
 /usr/lib/gromox, may for example actually be /usr/lib64/gromox or

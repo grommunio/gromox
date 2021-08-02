@@ -2,7 +2,6 @@
 .SH Name
 gromox\-dbop \(em Database maintenance utility
 .SH Synopsis
-.PP
 \fBgromox\-dbop [\-CU\fP] [\fB\-\-create\-old\fP] [\fB\-c\fP
 \fImysql_adaptor.cfg\fP]
 .SH Options
@@ -22,5 +21,4 @@ Path to a configuration file that defines MYSQL_HOST, MYSQL_USERNAME, etc. If
 omitted, gromox\-dbop will read /etc/gromox/http.cfg to locate
 mysql_adaptor.cfg to locate the mysql parameter.
 .SH See also
-.PP
 \fBgromox\fP(7), \fBmysql_adaptor\fP(4gx)

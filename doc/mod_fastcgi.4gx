@@ -38,7 +38,6 @@ An AF_LOCAL socket path to make the FastCGI request to.
 If the file has no lines, no documents will be served this way.
 If the file is absent however, a set of default entries will be used.
 .SS Default entries
-.PP
 .nf
 * /ews /usr/share/gromox/http/php/ews php index.php X-MAPIHttpCapability|X-AnchorMailbox|X-ClientCanHandle /run/gromox/php-fpm.sock
 * /sync /usr/share/grommunio-sync php index.php | /run/gromox/php-fpm.sock

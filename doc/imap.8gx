@@ -1,9 +1,7 @@
 .TH imap 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 imap \(em Gromox IMAP server
 .SH Synopsis
-.PP
 \fBimap\fP [\fB\-c\fP \fIconfig\fP]
 .SH Options
 .TP
@@ -190,5 +188,4 @@ textual descriptions.
 .IP \(bu 4
 /usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also
-.PP
 \fBgromox\fP(7), \fBmidb_agent\fP(4gx)

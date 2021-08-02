@@ -1,12 +1,9 @@
 .TH event 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 event \(em Folder change notification daemon
 .SH Synopsis
-.PP
 \fBevent\fP [\fB\-c\fP \fIconfig\fP]
 .SH Description
-.PP
 The event daemon is a software bus, inter-process communication (IPC) mechanism
 that allows communication between multiple processes running concurrently on
 multiple machines.
@@ -52,7 +49,6 @@ The minimum number of client processing threads to keep around.
 .br
 Default: \fI50\fP
 .SH Event protocol
-.PP
 The event service is exposed as a line-based text protocol. Upon connection,
 the event server gratitiously writes "OK" and will wait for commands. Each
 connection to the event daemon starts out in Enqueue Mode, and this is the only
@@ -94,5 +90,4 @@ Clients in Dequeue Mode will receive notifications. Each notification line
 received by the client needs to be acknowledged with a "TRUE" response. It is
 not possible to exit Dequeue Mode; connection termination is the only way out.
 .SH See also
-.PP
 \fBgromox\fP(7), \fBevent_proxy\fP(4gx), \fBevent_stub\fP(4gx)

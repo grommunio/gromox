@@ -1,12 +1,9 @@
 .TH delivery-queue 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-.PP
 delivery\-queue \(em LMTP/SMTP frontend for local delivery
 .SH Synopsis
-.PP
 \fBdelivery\-queue\fP [\fB\-c\fP \fIconfig\fP]
 .SH Description
-.PP
 delivery\-queue is an additional mail queue in front of delivery\(8gx\).
 It may be removed in a future version.
 .SH Options
@@ -187,6 +184,5 @@ textual descriptions.
 .IP \(bu 4
 /usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also
-.PP
 \fBgromox\fP(7), \fBdelivery\fP(8gx), \fBmessage_enqueue\fP(4gx),
 \fBmidb_agent\fP(4gx)

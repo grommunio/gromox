@@ -69,7 +69,6 @@ Default: \fI0\fP.
 Default: (unspecified)
 .SS [system]
 .SS [http-proxy]
-.PP
 This section contains the emsmdb multiserver map. This conveys the HTTP home
 server for users. If a HTTP home server is not also the exmdb/sqlite home
 server for a user, said HTTP server will proxy the datastream to the right

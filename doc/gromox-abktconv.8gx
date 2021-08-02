@@ -2,10 +2,8 @@
 .SH Name
 gromox\-abktconv \(em Utility for converting between ABKT and JSON
 .SH Synopsis
-.PP
 \fBgromox\-abktconv\fP {\fB\-b\fP|\fB\-j\fP} [\fB\-gw?\fP] [\fB\-c\fP \fIcpid\fP]
 .SH Description
-.PP
 gromox\-abktconv can be used to convert between data streams as specified in
 MS-OXOABKT and a textual representation. It reads and writes to standard input
 and output, respectively.
@@ -38,5 +36,4 @@ MS-OXOABKT: Address Book User Interface Templates Protocol
 .IP \(bu 4
 oxoabkt.rst: Type-2 ABKT template protocol
 .SH See also
-.PP
 \fBgromox\fP(7), \fBgromox-abktpull\fP(8gx)
