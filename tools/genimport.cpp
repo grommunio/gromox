@@ -227,8 +227,9 @@ void gi_dump_name_map(const gi_name_map &map)
 	fprintf(stderr, "Named properties (%zu entries):\n", map.size());
 	for (const auto &[propid, propname] : map) {
 		if (propname.kind == MNID_ID)
-			fprintf(stderr, "\t%08xh <-> {MNID_ID, %s, %u}\n",
-				propid, bin2hex(propname.guid).c_str(), propname.lid);
+			fprintf(stderr, "\t%08xh <-> {MNID_ID, %s, %xh}\n",
+				propid, bin2hex(propname.guid).c_str(),
+				static_cast<unsigned int>(propname.lid));
 		else if (propname.kind == MNID_STRING)
 			fprintf(stderr, "\t%08xh <-> {MNID_STRING, %s, %s}\n",
 				propid, bin2hex(propname.guid).c_str(), propname.pname);
