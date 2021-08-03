@@ -45,16 +45,16 @@ Type-2 template
 Type-2 templates have a CNTRL structure of 16 instead of 12 bytes (TRow
 structure of 40 instead 36 bytes).
 
-```
-struct TRow_v2 {
-	uint32_t XPos, DeltaX, YPos, DeltaY, ControlType, ControlFlags;
-	struct CNTRL_v2 ControlStructure;
-};
-struct CNTRL_v2 {
-	uint32_t extra2;
-	uint32_t dwSize, ulSize, ulString;
-};
-```
+.. code-block:: c
+
+	struct TRow_v2 {
+		uint32_t XPos, DeltaX, YPos, DeltaY, ControlType, ControlFlags;
+		struct CNTRL_v2 ControlStructure;
+	};
+	struct CNTRL_v2 {
+		uint32_t extra2;
+		uint32_t dwSize, ulSize, ulString;
+	};
 
 Possible values for ``ControlType`` are given by ``DTCT_`` definitions in
 ``mapidefs.h`` (and/or ``wabdefs.h``). “New” control types — MAPI has known

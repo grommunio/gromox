@@ -195,12 +195,12 @@ have these characteristic properties:
 
 	For Organizer2, a 16-byte packed value:
 
-	```
-	struct {
-		uint32_t magic[2] = {1, 1};
-		double timestamp; /* PT_APPTIME */
-	};
-	```
+	.. code-block:: c
+
+		struct {
+			uint32_t magic[2] = {1, 1};
+			double timestamp; /* PT_APPTIME */
+		};
 
 ``PR_RULE_MSG_SEQUENCE``
 	Equivalent to ``PR_RULE_SEQUENCE``. Outlook starts with sequence number
@@ -261,27 +261,27 @@ ways:
 
 #. The absence of 3B encoding has been verified:
 
-   ```
-   uint8_t len;
-   ```
+   .. code-block:: c
+
+	   uint8_t len;
 
 #. The Outlook UI prevents the user from entering a long enough value,
    or the user cannot otherwise influence its length to observe
    behavior with 255 chars or more:
 
-   ```
-   uint8_t len;
-   if (len == 0xff) /* conjecture */
-           uint16_t len;
-   ```
+   .. code-block:: c
+
+	uint8_t len;
+	if (len == 0xff) /* conjecture */
+		uint16_t len;
 
 #. The presence of 3B encoding has been verified:
 
-   ```
-   uint8_t len;
-   if (len == 0xff)
-           uint16_t len;
-   ```
+   .. code-block:: c
+
+	uint8_t len;
+	if (len == 0xff)
+		uint16_t len;
 
 
 Timestamps
@@ -342,20 +342,20 @@ in OV1 are a result of 9 being a factor of 1440.
 Rules Stream
 ============
 
-```
-uint32_t magic[] =
-	{0x00140000, 0x06140000, 0, 0,
-	0, 0, 0, 0, 1, 1, 0};
-uint16_t numrules;
-repeat numrules {
-	XR_Begin;
-};
-uint32_t tdlen;
-char16_t template_dir[tdlen];
-uint32_t magic = 0;
-double timestamp;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t magic[] =
+		{0x00140000, 0x06140000, 0, 0,
+		0, 0, 0, 0, 1, 1, 0};
+	uint16_t numrules;
+	repeat numrules {
+		XR_Begin;
+	};
+	uint32_t tdlen;
+	char16_t template_dir[tdlen];
+	uint32_t magic = 0;
+	double timestamp;
+	uint32_t magic = 0;
 
 ``template_dir``
 	The most recently used location from which a template file was used.
@@ -367,9 +367,9 @@ Rule order is defined by their logical position to one another in XR_Begin.
 XR_Begin
 ========
 
-```
-uint8_t magic[3];
-```
+.. code-block:: c
+
+	uint8_t magic[3];
 
 ``magic``
 	The bit pattern suggests this could be a flags field. However, before
@@ -385,14 +385,14 @@ uint8_t magic[3];
 XR_Rule
 =======
 
-```
-XR_Header
-repeat zero-or-more {
-	<any XR_Condition or XR_Action>;
-	if (there are more conds/actions)
-		XR_Separator
-};
-```
+.. code-block:: c
+
+	XR_Header
+	repeat zero-or-more {
+		<any XR_Condition or XR_Action>;
+		if (there are more conds/actions)
+			XR_Separator
+	};
 
 The size of a XR element can be variadic and generally there are no length
 indiciators. The byte stream is therefore best parsed field-by-field rather
@@ -411,36 +411,36 @@ actions, and only then exception conditions.
 XR_Header
 =========
 
-```
-uint8_t locator;
-uint8_t rname_len;
-if (rname_len == 0xff)
-	uint16_t rname_len;
-char16_t rule_name[rname_len];
-uint32_t rule_is_active;
-alternative {
-	uint32_t ptact_recv_rule_activated[]  = {0, 0, 0, 1};
-	uint32_t ptact_recv_rule_activated2[] = {0, 0, 0, 2};
-	uint32_t strm_recv_rule_activated[]   = {0, 1, 0, 1};
-	uint32_t strm_recv_rule_activated2[]  = {0, 1, 0, 2};
-	uint32_t strm_recv_rule_activated3[]  = {0, 1, 0, 3};
-	uint32_t strm_recv_rule_deactivated[] = {0, 0, 0, 0};
-	uint32_t strm_send_rule_activated[]   = {0, 0, 0, 0};
-	uint32_t strm_send_rule_deactivated[] = {0, 0, 0, 0};
-} magic;
-uint32_t bytecount;
-uint16_t rule_elements;
-uint16_t separator;
-if (separator == 0xffff) {
-	uint16_t magic = 0;
-	uint16_t rcls_len;
-	char rule_class[rcls_len];
-} else if (separator == 0x8001) {
-	/* ok */
-} else {
-	REJECT-PARSE;
-}
-```
+.. code-block:: c
+
+	uint8_t locator;
+	uint8_t rname_len;
+	if (rname_len == 0xff)
+		uint16_t rname_len;
+	char16_t rule_name[rname_len];
+	uint32_t rule_is_active;
+	alternative {
+		uint32_t ptact_recv_rule_activated[]  = {0, 0, 0, 1};
+		uint32_t ptact_recv_rule_activated2[] = {0, 0, 0, 2};
+		uint32_t strm_recv_rule_activated[]   = {0, 1, 0, 1};
+		uint32_t strm_recv_rule_activated2[]  = {0, 1, 0, 2};
+		uint32_t strm_recv_rule_activated3[]  = {0, 1, 0, 3};
+		uint32_t strm_recv_rule_deactivated[] = {0, 0, 0, 0};
+		uint32_t strm_send_rule_activated[]   = {0, 0, 0, 0};
+		uint32_t strm_send_rule_deactivated[] = {0, 0, 0, 0};
+	} magic;
+	uint32_t bytecount;
+	uint16_t rule_elements;
+	uint16_t separator;
+	if (separator == 0xffff) {
+		uint16_t magic = 0;
+		uint16_t rcls_len;
+		char rule_class[rcls_len];
+	} else if (separator == 0x8001) {
+		/* ok */
+	} else {
+		REJECT-PARSE;
+	}
 
 ``locator``
 	A magic value:
@@ -467,9 +467,9 @@ excess keypresses.
 XR_Separator: Element Separator
 ===============================
 
-```
-uint16_t magic = 0x8001;
-```
+.. code-block:: c
+
+	uint16_t magic = 0x8001;
 
 
 XR_PropValArray: Property value array
@@ -477,39 +477,39 @@ XR_PropValArray: Property value array
 
 This common structure appears for reference in other XR elements.
 
-```
-uint32_t magic = 0;
-uint32_t numprops;
-uint32_t bytes_in_propblock;
+.. code-block:: c
 
-/* propblock begins here */
-repeat numprops {
-	uint32_t proptag;
-	switch (PROP_TYPE(proptag)) {
-	case PT_UNICODE:
-		/* Conjecture: probably also applies for PT_STRING8 */
-		uint32_t magic = 0;
-		uint32_t offset_from_propblock;
-		uint32_t magic = 0;
-		break;
-	case PT_BINARY:
-		uint32_t magic = 0;
-		uint32_t proplen;
-		uint32_t offset_from_propblock;
-		break;
-	case PT_LONG:
-	case PT_ERROR:
-	case PT_BOOLEAN:
-		uint32_t magic = 0;
-		uint32_t propvalue;
-		uint32_t magic = 0;
-		break;
-	}
-} propindex;
+	uint32_t magic = 0;
+	uint32_t numprops;
+	uint32_t bytes_in_propblock;
 
-char data[bytes_in_propblock - 16 * numprops];
-/* propblock ends here */
-```
+	/* propblock begins here */
+	repeat numprops {
+		uint32_t proptag;
+		switch (PROP_TYPE(proptag)) {
+		case PT_UNICODE:
+			/* Conjecture: probably also applies for PT_STRING8 */
+			uint32_t magic = 0;
+			uint32_t offset_from_propblock;
+			uint32_t magic = 0;
+			break;
+		case PT_BINARY:
+			uint32_t magic = 0;
+			uint32_t proplen;
+			uint32_t offset_from_propblock;
+			break;
+		case PT_LONG:
+		case PT_ERROR:
+		case PT_BOOLEAN:
+			uint32_t magic = 0;
+			uint32_t propvalue;
+			uint32_t magic = 0;
+			break;
+		}
+	} propindex;
+
+	char data[bytes_in_propblock - 16 * numprops];
+	/* propblock ends here */
 
 ``data``
 	This is a concatenation of the values for properties of type PT_BINARY
@@ -529,10 +529,10 @@ Not visible in the UI at all.
 
 Layout:
 
-```
-uint32_t act_kind = 0x64;
-uint32_t magic[] = {1, 0, 1};
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x64;
+	uint32_t magic[] = {1, 0, 1};
 
 
 Condition 200 (0xc8): Name in To
@@ -549,16 +549,16 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0xc8;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xc8;
+	uint32_t magic = 0;
 
 SRestriction:
 
-```
-{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_TO_ME, true}
-```
+.. code-block:: c
+
+	{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_TO_ME, true}
 
 
 Condition 201 (0xc9): Only to me
@@ -575,20 +575,20 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0xc9;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xc9;
+	uint32_t magic = 0;
 
 SRestriction:
 
-```
-{RES_AND, {
-	{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_TO_ME, true},
-	{RES_NOT, {RES_CONTENT, FL_SUBSTRING, PR_DISPLAY_TO, ";"}},
-	{RES_PROPERTY, RELOP_EQ, PR_DISPLAY_CC, ""},
-}}
-```
+.. code-block:: c
+
+	{RES_AND, {
+		{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_TO_ME, true},
+		{RES_NOT, {RES_CONTENT, FL_SUBSTRING, PR_DISPLAY_TO, ";"}},
+		{RES_PROPERTY, RELOP_EQ, PR_DISPLAY_CC, ""},
+	}}
 
 
 Condition 202 (0xca): Name not in To
@@ -605,16 +605,16 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0xca;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xca;
+	uint32_t magic = 0;
 
 SRestriction:
 
-```
-{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_TO_ME, false}
-```
+.. code-block:: c
+
+	{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_TO_ME, false}
 
 
 Condition 203 (0xcb): From
@@ -631,30 +631,30 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0xcb;
-uint32_t magic[] = {1, 0};
-uint32_t numrcpt; /* numsenders */
-repeat numrcpt {
-	XR_PropValArray;
-};
-uint32_t magic[] = {1, 0};
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xcb;
+	uint32_t magic[] = {1, 0};
+	uint32_t numrcpt; /* numsenders */
+	repeat numrcpt {
+		XR_PropValArray;
+	};
+	uint32_t magic[] = {1, 0};
 
 SRestriction:
 
-```
-{RES_COMMENT,
-lpProp={
-	{PROP_TAG(PT_LONG, 0x6000), 1},
-	{PROP_TAG(PT_BINARY, 0x0001), <PR_ENTRYID from an ABK or OneOff>},
-	{PROP_TAG(PT_TSTRING, 0x0001), <Display name of recipient>},
-	{PR_DISPLAY_TYPE, DT_MAILUSER}},
-lpRes={
-	{RES_PROPERTY, RELOP_EQ, PR_SENDER_SEARCH_KEY,
-		"EX:/O=TOPORGUM/..."}},
-}
-```
+.. code-block:: c
+
+	{RES_COMMENT,
+	lpProp={
+		{PROP_TAG(PT_LONG, 0x6000), 1},
+		{PROP_TAG(PT_BINARY, 0x0001), <PR_ENTRYID from an ABK or OneOff>},
+		{PROP_TAG(PT_TSTRING, 0x0001), <Display name of recipient>},
+		{PR_DISPLAY_TYPE, DT_MAILUSER}},
+	lpRes={
+		{RES_PROPERTY, RELOP_EQ, PR_SENDER_SEARCH_KEY,
+			"EX:/O=TOPORGUM/..."}},
+	}
 
 Specifying multiple senders will add a level of RES_OR.
 
@@ -740,18 +740,18 @@ The layout is the same as From (0xcb), but with act_kind=0xcc.
 
 SRestriction:
 
-```
-{RES_COMMENT,
-lpProp={
-	{PROP_TAG(PT_LONG, 0x6000), 1},
-	{PROP_TAG(PT_BINARY, 0x0001), <PR_ENTRYID from an ABK or OneOff>},
-	{PROP_TAG(PT_TSTRING, 0x0001), <Display name of recipient>},
-	{PR_DISPLAY_TYPE, DT_MAILUSER}},
-lpRes={
-	{RES_PROPERTY, RELOP_EQ, PR_SEARCH_KEY,
-		"EX:/O=TOPORGUM/..."}},
-}
-```
+.. code-block:: c
+
+	{RES_COMMENT,
+	lpProp={
+		{PROP_TAG(PT_LONG, 0x6000), 1},
+		{PROP_TAG(PT_BINARY, 0x0001), <PR_ENTRYID from an ABK or OneOff>},
+		{PROP_TAG(PT_TSTRING, 0x0001), <Display name of recipient>},
+		{PR_DISPLAY_TYPE, DT_MAILUSER}},
+	lpRes={
+		{RES_PROPERTY, RELOP_EQ, PR_SEARCH_KEY,
+			"EX:/O=TOPORGUM/..."}},
+	}
 
 Specifying multiple recipients will add a level of RES_OR.
 
@@ -766,23 +766,23 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0xcd;
-uint32_t matches;
-repeat matches {
-	uint32_t possibly_flags = 0;
-	uint8_t mlen;
-	if (mlen == 0xff)
-		uint16_t mlen;
-	char16_t substring[mlen];
-} m;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xcd;
+	uint32_t matches;
+	repeat matches {
+		uint32_t possibly_flags = 0;
+		uint8_t mlen;
+		if (mlen == 0xff)
+			uint16_t mlen;
+		char16_t substring[mlen];
+	} m;
 
 SRestriction:
 
-```
-{RES_CONTENT, FL_IGNORECASE | FL_SUBSTRING, PR_SUBJECT, "text"}
-```
+.. code-block:: c
+
+	{RES_CONTENT, FL_IGNORECASE | FL_SUBSTRING, PR_SUBJECT, "text"}
 
 Specifying multiple strings will add a level of RES_OR.
 
@@ -807,9 +807,9 @@ The layout is the same as Subject (0xcd), but with act_kind=0xce.
 
 SRestriction:
 
-```
-{RES_CONTENT, FL_IGNORECASE | FL_SUBSTRING, PR_BODY, "text"}
-```
+.. code-block:: c
+
+	{RES_CONTENT, FL_IGNORECASE | FL_SUBSTRING, PR_BODY, "text"}
 
 Specifying multiple strings will add a level of RES_OR.
 
@@ -826,12 +826,12 @@ The layout is the same as Subject (0xcd), but with act_kind=0xcf.
 
 SRestriction:
 
-```
-{RES_OR, {
-	{RES_CONTENT, FL_IGNORECASE | FL_SUBSTRING, PR_SUBJECT, "t"},
-	{RES_CONTENT, FL_IGNORECASE | FL_SUBSTRING, PR_BODY, "t"},
-}}
-```
+.. code-block:: c
+
+	{RES_OR, {
+		{RES_CONTENT, FL_IGNORECASE | FL_SUBSTRING, PR_SUBJECT, "t"},
+		{RES_CONTENT, FL_IGNORECASE | FL_SUBSTRING, PR_BODY, "t"},
+	}}
 
 Specifying multiple strings will not add a level of RES_OR; the existing RES_OR
 will be filled.
@@ -851,25 +851,25 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0xd0;
-uint32_t magic[] = {1, 0, 0};
-uint8_t nlen;
-if (nlen == 0xff)
-	uint16_t nlen;
-char16_t action[nlen];
-uint32_t magic = 1;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xd0;
+	uint32_t magic[] = {1, 0, 0};
+	uint8_t nlen;
+	if (nlen == 0xff)
+		uint16_t nlen;
+	char16_t action[nlen];
+	uint32_t magic = 1;
 
 SRestriction:
 
-```
-{RES_AND, {
-	{RES_PROPERTY, RELOP_EQ, PR_FLAG_STATUS, 2},
-	{RES_PROPERTY, RELOP_EQ,
-		PROP_TAG(PT_TSTRING, 0x802A), "action"},
-}}
-```
+.. code-block:: c
+
+	{RES_AND, {
+		{RES_PROPERTY, RELOP_EQ, PR_FLAG_STATUS, 2},
+		{RES_PROPERTY, RELOP_EQ,
+			PROP_TAG(PT_TSTRING, 0x802A), "action"},
+	}}
 
 
 Condition 210 (0xd2): Importance
@@ -882,21 +882,21 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0xd2;
-uint32_t magic[] = {1, 0};
-enum : uint32_t {
-	IMPORTANCE_LOW = 0
-	IMPORTANCE_MEDIUM = 1,
-	IMPORTANCE_HIGH = 2,
-} level;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xd2;
+	uint32_t magic[] = {1, 0};
+	enum : uint32_t {
+		IMPORTANCE_LOW = 0
+		IMPORTANCE_MEDIUM = 1,
+		IMPORTANCE_HIGH = 2,
+	} level;
 
 SRestriction:
 
-```
-{RES_PROPERTY, RELOP_EQ, PR_IMPORTANCE, level}
-```
+.. code-block:: c
+
+	{RES_PROPERTY, RELOP_EQ, PR_IMPORTANCE, level}
 
 
 Condition 211 (0xd3): Sensitivity
@@ -909,22 +909,22 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0xd3;
-uint32_t magic[] = {1, 0};
-enum : uint32_t {
-	SENSITIVITY_NORMAL = 0
-	SENSITIVITY_PERSONAL = 1,
-	SENSITIVITY_PRIVATE = 2,
-	SENSITIVITY_COMPANY_CONFIDENTIAL = 3,
-} level;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xd3;
+	uint32_t magic[] = {1, 0};
+	enum : uint32_t {
+		SENSITIVITY_NORMAL = 0
+		SENSITIVITY_PERSONAL = 1,
+		SENSITIVITY_PRIVATE = 2,
+		SENSITIVITY_COMPANY_CONFIDENTIAL = 3,
+	} level;
 
 SRestriction:
 
-```
-{RES_PROPERTY, RELOP_EQ, PR_SENSITIVITY, level}
-```
+.. code-block:: c
+
+	{RES_PROPERTY, RELOP_EQ, PR_SENSITIVITY, level}
 
 
 Condition 215 (0xd7): Category
@@ -937,14 +937,14 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0xd7;
-uint32_t magic[] = {1, 0};
-uint8_t cname_len;
-if (cname_len == 0xff)
-	uint16_t cname_len;
-char16_t categories[cname_len];
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xd7;
+	uint32_t magic[] = {1, 0};
+	uint8_t cname_len;
+	if (cname_len == 0xff)
+		uint16_t cname_len;
+	char16_t categories[cname_len];
 
 SRestriction:
 
@@ -974,17 +974,17 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0xdc;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xdc;
+	uint32_t magic = 0;
 
 SRestriction:
 
-```
-{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_CLASS,
-	"IPM.Note.Rules.OofTemplate.Microsoft"}
-```
+.. code-block:: c
+
+	{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_CLASS,
+		"IPM.Note.Rules.OofTemplate.Microsoft"}
 
 
 Condition 222 (0xde): Attachment
@@ -997,16 +997,16 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0xde;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xde;
+	uint32_t magic = 0;
 
 SRestriction:
 
-```
-{RES_BITMASK, BMR_NEZ, PR_MESSAGE_FLAGS, MSGFLAG_HASATTACH}
-```
+.. code-block:: c
+
+	{RES_BITMASK, BMR_NEZ, PR_MESSAGE_FLAGS, MSGFLAG_HASATTACH}
 
 
 Condition 223 (0xdf): Form property
@@ -1019,58 +1019,58 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0xdf;
-uint32_t magic[] = {1, 0};
-uint8_t flen;
-if (flen == 0xff)
-	uint16_t flen;
-char16_t forms[flen];
-uint16_t numprops;
-repeat numprops {
-	uint8_t flen;
-	if (flen == 0xff) /* conjecture */
-		uint16_t flen;
-	char16_t fieldname[flen];
-	uint32_t proptag;
+.. code-block:: c
 
-	enum : uint32_t {
-		CONTAINS = 0,
-		IS_EQUAL = 1,
-		NOT_CONTAINS = 2,
-	} string_match_type;
-	uint8_t svlen;
-	if (svlen == 0xff) /* conjecture */
-		uint16_t svlen;
-	char16_t v_string[svlen];
-	enum : uint32_t {
-		EQ = 0,
-		NE = 1,
-		LE = 2, /* called "at most" */
-		GE = 3, /* called "at least" */
-		GT = 4,
-		LT = 5,
-	} long_match_type;
-	uint32_t magic = 0;
-	uint32_t v_long;
-	uint32_t v_boolean; /* seemingly inverted */
-	uint32_t magic = 1;
-	enum : uint32_t {
-		BEFORE = 0,
-		AFTER = 1,
-	} time_match_type;
-	uint32_t magic = 0;
-	double v_apptime;
-	uint32_t magic = 0;
-};
-uint32_t classcount;
-repeat classcount {
-	uint8_t clen;
-	if (clen == 0xff) /* conjecture */
-		uint16_t clen;
-	char msgclass[clen];
-};
-```
+	uint32_t act_kind = 0xdf;
+	uint32_t magic[] = {1, 0};
+	uint8_t flen;
+	if (flen == 0xff)
+		uint16_t flen;
+	char16_t forms[flen];
+	uint16_t numprops;
+	repeat numprops {
+		uint8_t flen;
+		if (flen == 0xff) /* conjecture */
+			uint16_t flen;
+		char16_t fieldname[flen];
+		uint32_t proptag;
+
+		enum : uint32_t {
+			CONTAINS = 0,
+			IS_EQUAL = 1,
+			NOT_CONTAINS = 2,
+		} string_match_type;
+		uint8_t svlen;
+		if (svlen == 0xff) /* conjecture */
+			uint16_t svlen;
+		char16_t v_string[svlen];
+		enum : uint32_t {
+			EQ = 0,
+			NE = 1,
+			LE = 2, /* called "at most" */
+			GE = 3, /* called "at least" */
+			GT = 4,
+			LT = 5,
+		} long_match_type;
+		uint32_t magic = 0;
+		uint32_t v_long;
+		uint32_t v_boolean; /* seemingly inverted */
+		uint32_t magic = 1;
+		enum : uint32_t {
+			BEFORE = 0,
+			AFTER = 1,
+		} time_match_type;
+		uint32_t magic = 0;
+		double v_apptime;
+		uint32_t magic = 0;
+	};
+	uint32_t classcount;
+	repeat classcount {
+		uint8_t clen;
+		if (clen == 0xff) /* conjecture */
+			uint16_t clen;
+		char msgclass[clen];
+	};
 
 SRestriction:
 
@@ -1133,21 +1133,21 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0xe0;
-uint32_t magic[] = {1, 0};
-uint32_t min_size_kb;
-uint32_t max_size_kb;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xe0;
+	uint32_t magic[] = {1, 0};
+	uint32_t min_size_kb;
+	uint32_t max_size_kb;
 
 SRestriction:
 
-```
-{RES_AND, {
-	{RES_PROPERTY, RELOP_GT, PR_MESSAGE_SIZE, xx},
-	{RES_PROPERTY, RELOP_LE, PR_MESSAGE_SIZE, yy},
-}}
-```
+.. code-block:: c
+
+	{RES_AND, {
+		{RES_PROPERTY, RELOP_GT, PR_MESSAGE_SIZE, xx},
+		{RES_PROPERTY, RELOP_LE, PR_MESSAGE_SIZE, yy},
+	}}
 
 
 Condition 225 (0xe1): Date
@@ -1164,22 +1164,30 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0xe1;
-uint32_t magic[] = {1, 0};
-uint32_t test_after;
-uint32_t magic = 0;
-double ts_after;
-uint32_t test_before;
-uint32_t magic = 0;
-double ts_before;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xe1;
+	uint32_t magic[] = {1, 0};
+	uint32_t test_after;
+	uint32_t magic = 0;
+	double ts_after;
+	uint32_t test_before;
+	uint32_t magic = 0;
+	double ts_before;
 
 SRestriction:
 
-``{RES_PROPERTY, RELOP_GT, PR_MESSAGE_DELIVERY_TIME, xx}`` or
-``{RES_PROPERTY, RELOP_LE, PR_MESSAGE_DELIVERY_TIME, yy}`` or
-both combined via RES_AND.
+.. code-block:: c
+
+	{RES_PROPERTY, RELOP_GT, PR_MESSAGE_DELIVERY_TIME, xx}
+
+or
+
+.. code-block:: c
+
+	{RES_PROPERTY, RELOP_LE, PR_MESSAGE_DELIVERY_TIME, yy}
+
+both combined via ``RES_AND``.
 
 ``test_after``
 	Boolean indicating whether or not to run a comparison ``NOW >
@@ -1214,20 +1222,20 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0xe2;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xe2;
+	uint32_t magic = 0;
 
 SRestriction:
 
-```
-{RES_AND, {
-	{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_CC_ME, true},
-	{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_RECIP_ME, true},
-	{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_TO_ME, false},
-}}
-```
+.. code-block:: c
+
+	{RES_AND, {
+		{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_CC_ME, true},
+		{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_RECIP_ME, true},
+		{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_TO_ME, false},
+	}}
 
 
 Condition 227 (0xe3): Name in To or Cc
@@ -1244,16 +1252,16 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0xe3;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xe3;
+	uint32_t magic = 0;
 
 SRestriction:
 
-```
-{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_RECIP_ME, true}
-```
+.. code-block:: c
+
+	{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_RECIP_ME, true}
 
 
 Condition 228 (0xe4): Form / message class
@@ -1266,31 +1274,31 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0xe4;
-uint32_t numforms;
-uint32_t magic = 0;
-repeat numforms {
-	uint8_t nlen;
-	if (nlen == 0xff)
-		uint16_t nlen;
-	char16_t name[nlen];
-	uint8_t clen;
-	if (clen == 0xff) /* conjecture */
-		uint16_t clen;
-	char msgclass[clen];
-};
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xe4;
+	uint32_t numforms;
+	uint32_t magic = 0;
+	repeat numforms {
+		uint8_t nlen;
+		if (nlen == 0xff)
+			uint16_t nlen;
+		char16_t name[nlen];
+		uint8_t clen;
+		if (clen == 0xff) /* conjecture */
+			uint16_t clen;
+		char msgclass[clen];
+	};
 
 SRestriction:
 
-```
-{RES_OR, {
-	{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_CLASS, "IPM.Note.MyName"},
-}}
-```
+.. code-block:: c
 
-The RES_OR is always present, even if just a single class is used.
+	{RES_OR, {
+		{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_CLASS, "IPM.Note.MyName"},
+	}}
+
+The ``RES_OR`` is always present, even if just a single class is used.
 
 The OL2019 UI, when saving forms, arbitrarily restricts form names to 128
 characters by ignoring excess keypresses. A nlen >= 255 was therefore not
@@ -1320,9 +1328,9 @@ The layout is the same as Subject words (0xcd), but with act_kind=0xe5.
 
 SRestriction:
 
-```
-{RES_CONTENT, FL_SUBSTRING, PR_SEARCH_KEY, "SMTP:FOO@BAR.DE"}
-```
+.. code-block:: c
+
+	{RES_CONTENT, FL_SUBSTRING, PR_SEARCH_KEY, "SMTP:FOO@BAR.DE"}
 
 
 Condition 230 (0xe6): Sender words
@@ -1341,9 +1349,9 @@ The layout is the same as Subject words (0xcd), but with act_kind=0xe6.
 
 SRestriction:
 
-```
-{RES_CONTENT, FL_SUBSTRING, PR_SENDER_SEARCH_KEY, "SMTP:FOO@BAR.DE"}
-```
+.. code-block:: c
+
+	{RES_CONTENT, FL_SUBSTRING, PR_SENDER_SEARCH_KEY, "SMTP:FOO@BAR.DE"}
 
 
 Condition 232 (0xe8): Header words
@@ -1362,10 +1370,10 @@ The layout is the same as Subject (0xcd), but with act_kind=0xe8.
 
 SRestriction:
 
-```
-{RES_CONTENT, FL_IGNORECASE | FL_SUBSTRING,
-PR_TRANSPORT_MESSAGE_HEADERS, "text"}
-```
+.. code-block:: c
+
+	{RES_CONTENT, FL_IGNORECASE | FL_SUBSTRING,
+	PR_TRANSPORT_MESSAGE_HEADERS, "text"}
 
 
 Condition 238 (0xee): Account
@@ -1383,18 +1391,18 @@ Machine", and one cannot deselect Machine.
 
 Layout:
 
-```
-uint32_t act_kind = 0xee;
-uint32_t magic[] = {1, 0};
-uint8_t alen;
-if (alen == 0xff) /* conjecture */
-	uint16_t alen;
-char16_t account_name[alen];
-uint8_t abc_len;
-if (abc_len == 0xff) /* conjecture */
-	uint16_t abc_len;
-char abc[abc_len];
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xee;
+	uint32_t magic[] = {1, 0};
+	uint8_t alen;
+	if (alen == 0xff) /* conjecture */
+		uint16_t alen;
+	char16_t account_name[alen];
+	uint8_t abc_len;
+	if (abc_len == 0xff) /* conjecture */
+		uint16_t abc_len;
+	char abc[abc_len];
 
 SRestriction:
 
@@ -1422,11 +1430,11 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0xef;
-uint32_t magic[] = {1, 0};
-unsigned char some_guid[16];
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xef;
+	uint32_t magic[] = {1, 0};
+	unsigned char some_guid[16];
 
 SRestriction:
 
@@ -1447,16 +1455,16 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0xf0;
-uint32_t magic[] = {1, 0};
-uint32_t eidlen;
-char eid[eidlen];
-uint8_t nlen;
-if (nlen == 0xff) /* conjecture */
-	uint16_t nlen;
-char16_t name[nlen];
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xf0;
+	uint32_t magic[] = {1, 0};
+	uint32_t eidlen;
+	char eid[eidlen];
+	uint8_t nlen;
+	if (nlen == 0xff) /* conjecture */
+		uint16_t nlen;
+	char16_t name[nlen];
 
 SRestriction:
 
@@ -1464,14 +1472,15 @@ SRestriction:
 
 ``eid``
 	For example,
-	```
-	00000000  00 00 00 00 87 12 f5 ef  5b 95 8f 43 94 a0 89 8c  |........[..C....|
-	00000010  07 4d 16 c4 01 00 00 00  00 01 00 00 2f 67 75 69  |.M........../gui|
-	00000020  64 3d 33 34 45 46 39 34  38 39 30 34 44 42 34 33  |d=34EF948904DB43|
-	00000030  37 37 39 31 32 36 33 41  37 34 42 42 46 39 31 32  |7791263A74BBF912|
-	00000040  34 42 00                                          |4B.|
-	00000043
-	```
+
+	::
+
+		00000000  00 00 00 00 87 12 f5 ef  5b 95 8f 43 94 a0 89 8c  ........[..C....
+		00000010  07 4d 16 c4 01 00 00 00  00 01 00 00 2f 67 75 69  .M........../gui
+		00000020  64 3d 33 34 45 46 39 34  38 39 30 34 44 42 34 33  d=34EF948904DB43
+		00000030  37 37 39 31 32 36 33 41  37 34 42 42 46 39 31 32  7791263A74BBF912
+		00000040  34 42 00                                          4B.
+		00000043
 
 ``name``
 	For example, "Global Addressbook"
@@ -1487,10 +1496,10 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0xf1;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xf1;
+	uint32_t magic = 0;
 
 
 Condition 245 (0xf5): RSS feed
@@ -1503,25 +1512,25 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0xf5;
-uint32_t mgc[] = {1, 0};
-uint8_t nlen;
-if (nlen == 0xff)
-	uint16_t nlen;
-char16_t name[nlen];
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xf5;
+	uint32_t mgc[] = {1, 0};
+	uint8_t nlen;
+	if (nlen == 0xff)
+		uint16_t nlen;
+	char16_t name[nlen];
 
 SRestriction:
 
-```
-{RES_OR, {
-	{RES_CONTENT, RELOP_EQ, PR_MESSAGE_CLASS,
-		"IPM.Schedule.Meeting.Request"},
-	{RES_CONTENT, RELOP_EQ, PR_MESSAGE_CLASS,
-		"IPM.Schedule.Meeting.Canceled"},
-}}
-```
+.. code-block:: c
+
+	{RES_OR, {
+		{RES_CONTENT, RELOP_EQ, PR_MESSAGE_CLASS,
+			"IPM.Schedule.Meeting.Request"},
+		{RES_CONTENT, RELOP_EQ, PR_MESSAGE_CLASS,
+			"IPM.Schedule.Meeting.Canceled"},
+	}}
 
 
 Condition 246 (0xf6): Any category
@@ -1534,16 +1543,16 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0xf6;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xf6;
+	uint32_t magic = 0;
 
 SRestriction:
 
-```
-{RES_EXIST, PROP_TAG(PT_MV_STRING8, 0x8002)}
-```
+.. code-block:: c
+
+	{RES_EXIST, PROP_TAG(PT_MV_STRING8, 0x8002)}
 
 Namedprop: PT_MV_STRING8:PS_PUBLIC_STRINGS:Keywords
 
@@ -1561,16 +1570,16 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0xf7;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xf7;
+	uint32_t magic = 0;
 
 SRestriction:
 
-```
-{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_CLASS, ""}
-```
+.. code-block:: c
+
+	{RES_PROPERTY, RELOP_EQ, PR_MESSAGE_CLASS, ""}
 
 
 Action 300 (0x12c): Move
@@ -1583,31 +1592,31 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0x12c;
-uint32_t magic[] = {1, 0};
-uint32_t feid_len;
-char folder_eid[feid_len];
-uint32_t seid_len;
-char store_eid[seid_len];
-uint8_t fname_len;
-if (fname_len == 0xff)
-	uint16_t fname_len;
-char16_t folder_name[fname_len];
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x12c;
+	uint32_t magic[] = {1, 0};
+	uint32_t feid_len;
+	char folder_eid[feid_len];
+	uint32_t seid_len;
+	char store_eid[seid_len];
+	uint8_t fname_len;
+	if (fname_len == 0xff)
+		uint16_t fname_len;
+	char16_t folder_name[fname_len];
+	uint32_t magic = 0;
 
 SSRT:
 
-```
-given ACTION *act;
-act->acttype = OP_MOVE
-act->ulActionFlavor = 0
-act->actMoveCopy.cbStoreEntryId = @seid_len
-act->actMoveCopy.lpStoreEntryId = @store_eid
-act->actMoveCopy.cbFldEntryId = @feid_len
-act->actMoveCopy.lpFldEntryId = @folder_eid
-```
+.. code-block:: c
+
+	given ACTION *act;
+	act->acttype = OP_MOVE
+	act->ulActionFlavor = 0
+	act->actMoveCopy.cbStoreEntryId = @seid_len
+	act->actMoveCopy.lpStoreEntryId = @store_eid
+	act->actMoveCopy.cbFldEntryId = @feid_len
+	act->actMoveCopy.lpFldEntryId = @folder_eid
 
 The OL2019 UI's left pane arbitrarily restricts folder names to 127 characters
 by ignoring excess keypresses. The folder property dialog (via context menu)
@@ -1628,19 +1637,19 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0x12d;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x12d;
+	uint32_t magic = 0;
 
 SSRT:
 
-```
-given ACTION *act;
-act->acttype = OP_MOVE
-act->ulActionFlavor = 0
-act->actMoveCopy = (set to the wastebasket)
-```
+.. code-block:: c
+
+	given ACTION *act;
+	act->acttype = OP_MOVE
+	act->ulActionFlavor = 0
+	act->actMoveCopy = (set to the wastebasket)
 
 
 Action 302 (0x12e): Forward
@@ -1656,26 +1665,26 @@ OL2019 offers no way to set the flavor bits FWD_PRESERVE_SENDER...?, etc. (see e
 
 Layout:
 
-```
-uint32_t act_kind = 0x12e;
-uint32_t magic[] = {1, 0};
-uint32_t numrcpt;
-repeat numrcpt {
-	XR_PropValArray;
-};
-uint32_t magic[] = {0, 0};
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x12e;
+	uint32_t magic[] = {1, 0};
+	uint32_t numrcpt;
+	repeat numrcpt {
+		XR_PropValArray;
+	};
+	uint32_t magic[] = {0, 0};
 
 The propvalarray for a recipient is the same as for a sender (0xcb).
 
 SSRT:
 
-```
-given ACTION *act;
-act->acttype = OP_FORWARD
-act->ulActionFlavor = 0
-act->lpadrlist = ...
-```
+.. code-block:: c
+
+	given ACTION *act;
+	act->acttype = OP_FORWARD
+	act->ulActionFlavor = 0
+	act->lpadrlist = ...
 
 Typically 12 props for an SMTP target:
 
@@ -1728,23 +1737,23 @@ and \\unc\paths.
 
 Layout:
 
-```
-uint32_t act_kind = 0x12f;
-uint32_t magic[] = {1, 0};
-uint8_t plen;
-if (plen == 0xff)
-	uint16_t plen;
-char16_t pathname[plen];
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x12f;
+	uint32_t magic[] = {1, 0};
+	uint8_t plen;
+	if (plen == 0xff)
+		uint16_t plen;
+	char16_t pathname[plen];
 
 SSRT:
 
-```
-given ACTION *act;
-act->acttype = OP_DEFER_ACTION
-act->ulActionFlavor = 0
-act->actDeferAction.pbData = /* see XR_Begin */
-```
+.. code-block:: c
+
+	given ACTION *act;
+	act->acttype = OP_DEFER_ACTION
+	act->ulActionFlavor = 0
+	act->actDeferAction.pbData = /* see XR_Begin */
 
 
 Action 304 (0x130): Show Outlook notification
@@ -1757,18 +1766,18 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0x130;
-uint32_t magic[] = {1, 0};
-uint8_t tlen;
-if (tlen == 0xff)
-	uint16_t tlen;
-char16_t text[tlen];
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x130;
+	uint32_t magic[] = {1, 0};
+	uint8_t tlen;
+	if (tlen == 0xff)
+		uint16_t tlen;
+	char16_t text[tlen];
 
 SSRT:
 
-(Mapped to OP_DEFER_ACTION/XR_Begin)
+(Mapped to ``OP_DEFER_ACTION``/``XR_Begin``)
 
 The OL2019 UI restricts entering messages to 65536 characters by ignoring
 excess keypresses. When trying to save such a large text, OL will claim
@@ -1797,16 +1806,16 @@ Only selectable for send rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0x131;
-uint32_t magic[] = {1, 0};
-uint32_t days;
-uint8_t nlen;
-if (nlen == 0xff)
-	uint16_t nlen;
-char16_t action[nlen];
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x131;
+	uint32_t magic[] = {1, 0};
+	uint32_t days;
+	uint8_t nlen;
+	if (nlen == 0xff)
+		uint16_t nlen;
+	char16_t action[nlen];
+	uint32_t magic = 0;
 
 SSRT:
 
@@ -1823,14 +1832,14 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0x132;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x132;
+	uint32_t magic = 0;
 
 SSRT:
 
-(Mapped to OP_DEFER_ACTION/XR_Begin)
+(Mapped to ``OP_DEFER_ACTION``/``XR_Begin``)
 
 
 Action 307 (0x133): Set categories
@@ -1843,18 +1852,18 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0x133;
-uint32_t magic[] = {1, 0};
-uint8_t clen;
-if (clen == 0xff)
-	uint16_t clen;
-char16_t categories[clen];
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x133;
+	uint32_t magic[] = {1, 0};
+	uint8_t clen;
+	if (clen == 0xff)
+		uint16_t clen;
+	char16_t categories[clen];
 
 SSRT:
 
-(Mapped to OP_DEFER_ACTION/XR_Begin, because OP_TAG resets the
+(Mapped to ``OP_DEFER_ACTION``/``XR_Begin``, because ``OP_TAG`` resets the
 property, i.e. would unset all previous categories.)
 
 ``categories``
@@ -1889,7 +1898,7 @@ However, one can deselect Machine by going back, and then forward again.
 
 SSRT:
 
-(Mapped to OP_DEFER_ACTION/XR_Begin)
+(Mapped to ``OP_DEFER_ACTION``/``XR_Begin``)
 
 The layout is the same as Reply with Template (0x12f), but with act_kind=0x136.
 
@@ -1904,19 +1913,20 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0x137;
-uint32_t magic[] = {1, 0};
-enum : uint32_t {
-	IMPORTANCE_LOW = 0,
-	IMPORTANCE_MEDIUM = 1,
-	IMPORTANCE_HIGH = 2,
-} importance;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x137;
+	uint32_t magic[] = {1, 0};
+	enum : uint32_t {
+		IMPORTANCE_LOW = 0,
+		IMPORTANCE_MEDIUM = 1,
+		IMPORTANCE_HIGH = 2,
+	} importance;
 
 SSRT:
 
-(Mapped to OP_DEFER_ACTION/XR_Begin, even though OP_TAG could do it.)
+(Mapped to ``OP_DEFER_ACTION``/``XR_Begin``, even though ``OP_TAG`` could do
+it.)
 
 
 Action 313 (0x139): Copy
@@ -1933,10 +1943,10 @@ SSRT:
 
 The layout is the same as Move (300), but with
 
-```
-act->acttype = OP_COPY
-act->ulActionFlavor = 0
-```
+.. code-block:: c
+
+	act->acttype = OP_COPY
+	act->ulActionFlavor = 0
 
 
 Action 314 (0x13a): Notify when read
@@ -1953,10 +1963,10 @@ Only selectable for send rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0x13a;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x13a;
+	uint32_t magic = 0;
 
 SSRT:
 
@@ -1977,10 +1987,10 @@ Only selectable for send rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0x13b;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x13b;
+	uint32_t magic = 0;
 
 SSRT:
 
@@ -2023,11 +2033,11 @@ Only selectable for send rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0x13e;
-uint32_t magic[] = {1, 0};
-uint32_t minutes;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x13e;
+	uint32_t magic[] = {1, 0};
+	uint32_t minutes;
 
 SSRT:
 
@@ -2049,16 +2059,16 @@ action list.
 
 Layout:
 
-```
-uint32_t act_kind = 0x142;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x142;
+	uint32_t magic = 0;
 
 SSRT:
 
-```
-PR_RULE_STATE |= ST_EXIT_LEVEL
-```
+.. code-block:: c
+
+	PR_RULE_STATE |= ST_EXIT_LEVEL
 
 
 Action 324 (0x144): Redirect
@@ -2080,10 +2090,10 @@ SSRT:
 
 The layout is the same as Forward (302), but with
 
-```
-act->acttype = OP_FORWARD
-act->ulActionFlavor = FWD_PRESERVE_SENDER | FWD_DO_NOT_MUNGE_MSG
-```
+.. code-block:: c
+
+	act->acttype = OP_FORWARD
+	act->ulActionFlavor = FWD_PRESERVE_SENDER | FWD_DO_NOT_MUNGE_MSG
 
 
 Action 326 (0x146): Reply
@@ -2101,25 +2111,25 @@ representable as server-side rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0x146;
-uint32_t magic[] = {1, 0};
-uint32_t eidlen;
-char eid[eidlen];
-uint8_t slen;
-if (slen == 0xff)
-	uint16_t slen;
-char16_t subject[slen];
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x146;
+	uint32_t magic[] = {1, 0};
+	uint32_t eidlen;
+	char eid[eidlen];
+	uint8_t slen;
+	if (slen == 0xff)
+		uint16_t slen;
+	char16_t subject[slen];
 
 SSRT:
 
-```
-act->acttype = OP_REPLY
-act->ulActionFlavor = 0
-act->actReply.cbEntryId = @eidlen
-act->actReply.lpEntryId = @eid
-```
+.. code-block:: c
+
+	act->acttype = OP_REPLY
+	act->ulActionFlavor = 0
+	act->actReply.cbEntryId = @eidlen
+	act->actReply.lpEntryId = @eid
 
 The associated message referenced by ``eid`` is stored in the inbox's
 Associated Contents and has a PR_MESSAGE_CLASS of
@@ -2140,10 +2150,10 @@ SSRT:
 
 The layout is the same as Forward (302), but with
 
-```
-act->acttype = OP_FORWARD
-act->ulActionFlavor = FWD_AS_ATTACHMENT
-```
+.. code-block:: c
+
+	act->acttype = OP_FORWARD
+	act->ulActionFlavor = FWD_AS_ATTACHMENT
 
 
 Action 328 (0x148): Print
@@ -2160,14 +2170,14 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0x148;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x148;
+	uint32_t magic = 0;
 
 SSRT:
 
-(Mapped to OP_DEFER_ACTION/XR_Begin)
+(Mapped to ``OP_DEFER_ACTION``/``XR_Begin``)
 
 
 Action 330 (0x14a): Hard delete
@@ -2184,15 +2194,15 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0x14a;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x14a;
+	uint32_t magic = 0;
 
 SSRT:
 
-(Mapped to OP_DEFER_ACTION/XR_Begin, even though it could use
-OP_DELETE.)
+(Mapped to ``OP_DEFER_ACTION``/``XR_Begin``, even though it could use
+``OP_DELETE``.)
 
 
 Action 332 (0x14c): Mark as read
@@ -2209,14 +2219,14 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0x14c;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x14c;
+	uint32_t magic = 0;
 
 SSRT:
 
-(Mapped to OP_DEFER_ACTION/XR_Begin.)
+(Mapped to ``OP_DEFER_ACTION``/``XR_Begin``.)
 
 
 Action 335 (0x14f): Desktop notification
@@ -2233,14 +2243,14 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0x14f;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x14f;
+	uint32_t magic = 0;
 
 SSRT:
 
-(Mapped to OP_DEFER_ACTION/XR_Begin.)
+(Mapped to ``OP_DEFER_ACTION``/``XR_Begin``.)
 
 
 Action 337 (0x151): Set follow-up flag
@@ -2257,24 +2267,24 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0x151;
-uint32_t magic[] = {1, 0};
-enum : uint32_t {
-	FOLLOWUP_TODAY = 0x1,
-	FOLLOWUP_TOMORROW = 0x2,
-	FOLLOWUP_THISWEEK = 0x3,
-	FOLLOWUP_NEXTWEEK = 0x4,
-	FOLLOWUP_NODATE = 0x7,
-	FOLLOWUP_DONE = 0xa,
-};
-uint8_t fu_name_len;
-char16_t fu_name[fu_name_len];
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x151;
+	uint32_t magic[] = {1, 0};
+	enum : uint32_t {
+		FOLLOWUP_TODAY = 0x1,
+		FOLLOWUP_TOMORROW = 0x2,
+		FOLLOWUP_THISWEEK = 0x3,
+		FOLLOWUP_NEXTWEEK = 0x4,
+		FOLLOWUP_NODATE = 0x7,
+		FOLLOWUP_DONE = 0xa,
+	};
+	uint8_t fu_name_len;
+	char16_t fu_name[fu_name_len];
 
 SSRT:
 
-	(Mapped to OP_DEFER_ACTION/XR_Begin.)
+(Mapped to ``OP_DEFER_ACTION``/``XR_Begin``.)
 
 
 Action 338 (0x152): Clear categories
@@ -2287,19 +2297,19 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0x152;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x152;
+	uint32_t magic = 0;
 
 SSRT:
 
-```
-given ACTION *act;
-act->acttype = OP_TAG
-act->ulActionFlavor = 0
-act->propTag.ulPropTag = PROP_TAG(PT_MV_UNICODE, 0x8002)
-```
+.. code-block:: c
+
+	given ACTION *act;
+	act->acttype = OP_TAG
+	act->ulActionFlavor = 0
+	act->propTag.ulPropTag = PROP_TAG(PT_MV_UNICODE, 0x8002)
 
 
 Condition 400 (0x190): Receive/Send
@@ -2314,11 +2324,11 @@ UI label:
 
 Layout:
 
-```
-uint32_t act_kind = 0x190;
-uint32_t magic[] = {1, 0};
-uint32_t flagbits;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x190;
+	uint32_t magic[] = {1, 0};
+	uint32_t flagbits;
 
 SSRT:
 
@@ -2326,8 +2336,8 @@ All rules in the SSRT are receive rules by definition.
 The SSRT does not keep send rules.
 
 ``flagbits``
-	* `0x01`: message was received
-	* `0x04`: message was sent
+	* ``0x01``: message was received
+	* ``0x04``: message was sent
 
 
 Condition 500 (0x1f4): Except name in To
@@ -2345,10 +2355,10 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0x1f4;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x1f4;
+	uint32_t magic = 0;
 
 
 Condition 501 (0x1f5): Except only to me
@@ -2366,10 +2376,10 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0xc9;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0xc9;
+	uint32_t magic = 0;
 
 
 Condition 502 (0x1f6): Except name not in To
@@ -2387,10 +2397,10 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0x1f4;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x1f4;
+	uint32_t magic = 0;
 
 
 Condition 503 (0x1f7): Except from
@@ -2543,10 +2553,10 @@ Availability: !OL2007 OL2019
 
 Layout:
 
-```
-uint32_t act_kind = 0x208;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x208;
+	uint32_t magic = 0;
 
 
 Condition 522 (0x20a): Except attachment
@@ -2563,10 +2573,10 @@ Availability: OL2007 OL2019
 
 Layout:
 
-```
-uint32_t act_kind = 0x20a;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x20a;
+	uint32_t magic = 0;
 
 
 Condition 523 (0x20b): Except form property
@@ -2598,12 +2608,12 @@ Availability: OL2007 OL2019
 
 Layout:
 
-```
-uint32_t act_kind = 0x20c;
-uint32_t magic[] = {1, 0};
-uint32_t min_size_kb;
-uint32_t max_size_kb;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x20c;
+	uint32_t magic[] = {1, 0};
+	uint32_t min_size_kb;
+	uint32_t max_size_kb;
 
 
 Condition 525 (0x20d): Except date
@@ -2635,10 +2645,10 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0x20e;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x20e;
+	uint32_t magic = 0;
 
 
 Condition 527 (0x20f): Except name in To or Cc
@@ -2656,10 +2666,10 @@ Only selectable for receive rules.
 
 Layout:
 
-```
-uint32_t act_kind = 0x20f;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x20f;
+	uint32_t magic = 0;
 
 
 Condition 528 (0x210): Except form / message class
@@ -2770,10 +2780,10 @@ Availability: OL2007 OL2019
 
 Layout:
 
-```
-uint32_t act_kind = 0x216;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x216;
+	uint32_t magic = 0;
 
 
 Condition 537 (0x219): Except RSS feed
@@ -2805,10 +2815,10 @@ Availability: OL2007 OL2019
 
 Layout:
 
-```
-uint32_t act_kind = 0x21a;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x21a;
+	uint32_t magic = 0;
 
 
 Condition 539 (0x21b): Except any RSS feed
@@ -2825,10 +2835,10 @@ Availability: OL2007 OL2019
 
 Layout:
 
-```
-uint32_t act_kind = 0x21b;
-uint32_t magic = 0;
-```
+.. code-block:: c
+
+	uint32_t act_kind = 0x21b;
+	uint32_t magic = 0;
 
 
 Condition ??: Form class
@@ -2855,7 +2865,7 @@ UI label:
 
 UI behavior:
 
-In OL2019, clicking the ``<...>``` hyperlink leads to no dialog and no action.
+In OL2019, clicking the ``<...>`` hyperlink leads to no dialog and no action.
 The feature is practically not observable.
 
 The layout is presumably the same as Form class.
@@ -2870,12 +2880,12 @@ Perhaps the earliest way inbox rules were defined. The "Inside MAPI" book from
 The rules table is a special property (i.e. cannot be obtained with
 ``IMessage::GetProps``) on the inbox, which is to be accessed using:
 
-```
-object_ptr<IExchangeModifyTable> emt;
-object_ptr<IMAPITable> tbl;
-inbox->OpenProperty(PR_RULES_TABLE, &IID_IExchangeModifyTable, 0, 0, &~emt);
-emt->GetTable(&~tbl);
-```
+.. code-block:: c
+
+	object_ptr<IExchangeModifyTable> emt;
+	object_ptr<IMAPITable> tbl;
+	inbox->OpenProperty(PR_RULES_TABLE, &IID_IExchangeModifyTable, 0, 0, &~emt);
+	emt->GetTable(&~tbl);
 
 From there on, it is a regular IMAPITable with a number of properties. This
 table is documented on MSDN, therefore abridged here and limited to notes.
@@ -2957,26 +2967,26 @@ information.
 AR_DeferAction
 ==============
 
-```
-uint8_t magic[5] = {0x20, 0x20, 0x20, 0x20, 0x20};
-uint8_t actionbytes[2];
-```
+.. code-block:: c
+
+	uint8_t magic[5] = {0x20, 0x20, 0x20, 0x20, 0x20};
+	uint8_t actionbytes[2];
 
 
 AR Action 0x30 0x3b: Notify with string
 =======================================
 
-```
-char8_t message[]; /* \0-terminated */
-```
+.. code-block:: c
+
+	char8_t message[]; /* \0-terminated */
 
 
 AR Action 0x32 0x37: Notify with sound
 ======================================
 
-```
-char8_t path_and_msg[]; /* \0-terminated */
-```
+.. code-block:: c
+
+	char8_t path_and_msg[]; /* \0-terminated */
 
 ``path_and_msg``
 	e.g. ``C:\foo.wav;Message here`` or just ``C:\foo.wav;`` for no
