@@ -396,7 +396,6 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	char date_buff[128];
 	struct tm time_buff;
 	int i, len, until_tag;
-	const struct state *sp;
 	DSN_FIELDS *pdsn_fields;
 	char original_ptr[256*1024];
 	char lang[32], time_zone[64];
@@ -418,9 +417,9 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	}
 	
 	if('\0' != time_zone[0]) {
-		sp = tz_alloc(time_zone);
-		tz_localtime_r(sp, &cur_time, &time_buff);
-		tz_free(sp);
+		auto sp = tz::tz_alloc(time_zone);
+		tz::tz_localtime_r(sp, &cur_time, &time_buff);
+		tz::tz_free(sp);
 	} else {
 		localtime_r(&cur_time, &time_buff);
 	}

@@ -363,7 +363,6 @@ BOOL bounce_producer_make_content(const char *from,
 	const char *pcharset;
 	int i, len, until_tag;
 	uint32_t message_size;
-	const struct state *sp;
 	char lang[32], time_zone[64];
 
 	time(&cur_time);
@@ -375,12 +374,12 @@ BOOL bounce_producer_make_content(const char *from,
 		common_util_get_timezone(from, time_zone);
 	}
 	if('\0' != time_zone[0]) {
-		sp = tz_alloc(time_zone);
+		auto sp = tz::tz_alloc(time_zone);
 		if (NULL == sp) {
 			return FALSE;
 		}
-		tz_localtime_r(sp, &cur_time, &time_buff);
-		tz_free(sp);
+		tz::tz_localtime_r(sp, &cur_time, &time_buff);
+		tz::tz_free(sp);
 	} else {
 		localtime_r(&cur_time, &time_buff);
 	}

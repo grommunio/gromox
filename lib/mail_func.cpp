@@ -1291,28 +1291,28 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 
 time_t make_gmtime(struct tm *ptm)
 {
-	static const struct state *sp;
+	static const struct tz::state *sp;
 	
 	if (NULL == sp) {
-		sp = tz_alloc("UTC");
+		sp = tz::tz_alloc("UTC");
 		if (NULL == sp) {
 			return 0;
 		}
 	}
-	return tz_mktime(sp, ptm);
+	return tz::tz_mktime(sp, ptm);
 }
 
 void make_gmtm(time_t gm_time, struct tm *ptm)
 {
-	static const struct state *sp;
+	static const struct tz::state *sp;
 	
 	if (NULL == sp) {
-		sp = tz_alloc("UTC");
+		sp = tz::tz_alloc("UTC");
 		if (NULL == sp) {
 			return;
 		}
 	}
-	tz_localtime_r(sp, &gm_time, ptm);
+	tz::tz_localtime_r(sp, &gm_time, ptm);
 }
 
 BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)
