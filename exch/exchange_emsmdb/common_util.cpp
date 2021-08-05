@@ -1188,8 +1188,6 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 	TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pcolumns,
 	RECIPIENT_ROW *prow)
 {
-	uint8_t display_type;
-	
 	memset(prow, 0, sizeof(RECIPIENT_ROW));
 	prow->flags |= RECIPIENT_ROW_FLAG_UNICODE;
 	auto pvalue = common_util_get_propvals(ppropvals, PROP_TAG_RESPONSIBILITY);
@@ -1250,14 +1248,13 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 			prow->pprefix_used = deconst(&dummy_zero);
 			pvalue = common_util_get_propvals(ppropvals, PR_DISPLAY_TYPE);
 			if (NULL == pvalue) {
-				display_type = DT_MAILUSER;
+				prow->display_type = DT_MAILUSER;
 			} else {
-				display_type = *(uint32_t*)pvalue;
-				if (display_type > 6) {
-					display_type = DT_MAILUSER;
-				}
+				prow->display_type = *static_cast<uint32_t *>(pvalue);
+				if (prow->display_type >= DT_ROOM)
+					prow->display_type = DT_MAILUSER;
 			}
-			prow->pdisplay_type = &display_type;
+			prow->have_display_type = true;
 			prow->px500dn = static_cast<char *>(common_util_get_propvals(
 			                ppropvals, PR_EMAIL_ADDRESS));
 			if (NULL == prow->px500dn) {

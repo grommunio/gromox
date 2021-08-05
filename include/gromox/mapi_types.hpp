@@ -308,9 +308,7 @@ struct GHOST_SERVER {
 #define OBJECT_DLIST								0x00000008
 
 struct RECIPIENT_ROW {
-	uint16_t flags;
 	uint8_t *pprefix_used;
-	uint8_t *pdisplay_type;
 	char *px500dn;
 	BINARY *pentry_id;
 	BINARY *psearch_key;
@@ -319,7 +317,8 @@ struct RECIPIENT_ROW {
 	char *pdisplay_name;
 	char *psimple_name;
 	char *ptransmittable_name;
-	uint16_t count;
+	uint8_t have_display_type, display_type;
+	uint16_t flags, count;
 	PROPERTY_ROW properties;
 };
 

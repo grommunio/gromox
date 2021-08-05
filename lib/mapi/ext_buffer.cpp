@@ -1448,17 +1448,15 @@ int EXT_PULL::g_recipient_row(const PROPTAG_ARRAY *pproptags, RECIPIENT_ROW *r)
 	if (r->flags & RECIPIENT_ROW_FLAG_UNICODE)
 		b_unicode = TRUE;
 	r->pprefix_used = NULL;
-	r->pdisplay_type = NULL;
+	r->have_display_type = false;
 	r->px500dn = NULL;
 	if (RECIPIENT_ROW_TYPE_X500DN == type) {
 		r->pprefix_used = pext->anew<uint8_t>();
 		if (r->pprefix_used == nullptr)
 			return EXT_ERR_ALLOC;
 		TRY(pext->g_uint8(r->pprefix_used));
-		r->pdisplay_type = pext->anew<uint8_t>();
-		if (r->pprefix_used == nullptr)
-			return EXT_ERR_ALLOC;
-		TRY(pext->g_uint8(r->pdisplay_type));
+		TRY(pext->g_uint8(&r->display_type));
+		r->have_display_type = true;
 		TRY(pext->g_str(&r->px500dn));
 	}
 	r->pentry_id = NULL;
@@ -3035,8 +3033,8 @@ int EXT_PUSH::p_recipient_row(const PROPTAG_ARRAY *pproptags, const RECIPIENT_RO
 	TRY(pext->p_uint16(r->flags));
 	if (r->pprefix_used != nullptr)
 		TRY(pext->p_uint8(*r->pprefix_used));
-	if (r->pdisplay_type != nullptr)
-		TRY(pext->p_uint8(*r->pdisplay_type));
+	if (r->have_display_type)
+		TRY(pext->p_uint8(r->display_type));
 	if (r->px500dn != nullptr)
 		TRY(pext->p_str(r->px500dn));
 	if (r->pentry_id != nullptr)
