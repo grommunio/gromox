@@ -36,20 +36,9 @@ ICSUPCTX_OBJECT::~ICSUPCTX_OBJECT()
 	}
 }
 
-uint8_t icsupctx_object_get_sync_type(ICSUPCTX_OBJECT *pctx)
+BOOL ICSUPCTX_OBJECT::begin_state_stream(uint32_t state_property)
 {
-	return pctx->sync_type;
-}
-
-FOLDER_OBJECT* icsupctx_object_get_parent_object(
-	ICSUPCTX_OBJECT *pctx)
-{
-	return pctx->pfolder;
-}
-
-BOOL icsupctx_object_begin_state_stream(ICSUPCTX_OBJECT *pctx,
-	uint32_t state_property)
-{
+	auto pctx = this;
 	if (TRUE == pctx->b_started) {
 		return FALSE;
 	}
@@ -75,9 +64,9 @@ BOOL icsupctx_object_begin_state_stream(ICSUPCTX_OBJECT *pctx,
 	return TRUE;
 }
 
-BOOL icsupctx_object_continue_state_stream(ICSUPCTX_OBJECT *pctx,
-	const BINARY *pstream_data)
+BOOL ICSUPCTX_OBJECT::continue_state_stream(const BINARY *pstream_data)
 {
+	auto pctx = this;
 	if (TRUE == pctx->b_started) {
 		return FALSE;
 	}
@@ -95,8 +84,9 @@ BOOL icsupctx_object_continue_state_stream(ICSUPCTX_OBJECT *pctx,
 	return TRUE;
 }
 
-BOOL icsupctx_object_end_state_stream(ICSUPCTX_OBJECT *pctx)
+BOOL ICSUPCTX_OBJECT::end_state_stream()
 {
+	auto pctx = this;
 	IDSET *pset;
 	BINARY tmp_bin;
 	uint32_t state_property;
@@ -149,12 +139,7 @@ BOOL icsupctx_object_end_state_stream(ICSUPCTX_OBJECT *pctx)
 	return TRUE;
 }
 
-ICS_STATE* icsupctx_object_get_state(ICSUPCTX_OBJECT *pctx)
+void ICSUPCTX_OBJECT::mark_started()
 {
-	return pctx->pstate.get();
-}
-
-void icsupctx_object_mark_started(ICSUPCTX_OBJECT *pctx)
-{
-	pctx->b_started = TRUE;
+	b_started = TRUE;
 }

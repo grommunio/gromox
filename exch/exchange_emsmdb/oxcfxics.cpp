@@ -912,7 +912,6 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	int object_type;
 	uint64_t message_id;
 	uint32_t permission = rightsNone, tag_access = 0, tmp_proptag;
-	FOLDER_OBJECT *pfolder;
 	PROPTAG_ARRAY proptags;
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -939,11 +938,10 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	if (OBJECT_TYPE_ICSUPCTX != object_type) {
 		return ecNotSupported;
 	}
-	if (SYNC_TYPE_CONTENTS != icsupctx_object_get_sync_type(pctx)) {
+	if (pctx->get_sync_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
-	}
-	icsupctx_object_mark_started(pctx);
-	pfolder = icsupctx_object_get_parent_object(pctx);
+	pctx->mark_started();
+	auto pfolder = pctx->get_parent_object();
 	auto folder_id = pfolder->folder_id;
 	auto pbin = static_cast<BINARY *>(ppropvals->ppropval[0].pvalue);
 	if (pbin == nullptr || pbin->cb != 22)
@@ -1078,7 +1076,6 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 	uint64_t message_id;
 	uint32_t permission;
 	const char *username;
-	FOLDER_OBJECT *pfolder;
 	uint32_t proptag_buff[2];
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -1095,14 +1092,13 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 	if (OBJECT_TYPE_ICSUPCTX != object_type) {
 		return ecNotSupported;
 	}
-	if (SYNC_TYPE_CONTENTS != icsupctx_object_get_sync_type(pctx)) {
+	if (pctx->get_sync_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
-	}
-	icsupctx_object_mark_started(pctx);
+	pctx->mark_started();
 	username = NULL;
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode != LOGON_MODE_OWNER) {
-		pfolder = icsupctx_object_get_parent_object(pctx);
+		auto pfolder = pctx->get_parent_object();
 		folder_id = pfolder->folder_id;
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    folder_id, rpc_info.username, &permission))
@@ -1189,7 +1185,6 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	uint64_t change_num;
 	uint32_t permission;
 	uint32_t parent_type;
-	FOLDER_OBJECT *pfolder;
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -1213,11 +1208,10 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	if (OBJECT_TYPE_ICSUPCTX != object_type) {
 		return ecNotSupported;
 	}
-	if (SYNC_TYPE_HIERARCHY != icsupctx_object_get_sync_type(pctx)) {
+	if (pctx->get_sync_type() != SYNC_TYPE_HIERARCHY)
 		return ecNotSupported;
-	}
-	icsupctx_object_mark_started(pctx);
-	pfolder = icsupctx_object_get_parent_object(pctx);
+	pctx->mark_started();
+	auto pfolder = pctx->get_parent_object();
 	auto rpc_info = get_rpc_info();
 	if (0 == ((BINARY*)phichyvals->ppropval[0].pvalue)->cb) {
 		parent_type = pfolder->type;
@@ -1450,11 +1444,9 @@ uint32_t rop_syncimportdeletes(
 	BOOL b_partial;
 	int object_type;
 	uint16_t replid;
-	uint8_t sync_type;
 	uint32_t permission;
 	const char *username;
 	EID_ARRAY message_ids;
-	FOLDER_OBJECT *pfolder;
 	
 	if (ppropvals->count != 1 ||
 	    PROP_TYPE(ppropvals->ppropval[0].proptag) != PT_MV_BINARY)
@@ -1471,15 +1463,15 @@ uint32_t rop_syncimportdeletes(
 	if (OBJECT_TYPE_ICSUPCTX != object_type) {
 		return ecNotSupported;
 	}
-	sync_type = icsupctx_object_get_sync_type(pctx);
+	auto sync_type = pctx->get_sync_type();
 	BOOL b_hard = (flags & SYNC_DELETES_FLAG_HARDDELETE) ? TRUE : false;
 	if (SYNC_DELETES_FLAG_HIERARCHY & flags) {
 		if (SYNC_TYPE_CONTENTS == sync_type) {
 			return ecNotSupported;
 		}
 	}
-	icsupctx_object_mark_started(pctx);
-	pfolder = icsupctx_object_get_parent_object(pctx);
+	pctx->mark_started();
+	auto pfolder = pctx->get_parent_object();
 	auto folder_id = pfolder->folder_id;
 	auto rpc_info = get_rpc_info();
 	username = rpc_info.username;
@@ -1621,7 +1613,6 @@ uint32_t rop_syncimportmessagemove(
 	uint64_t src_mid;
 	uint64_t dst_mid;
 	uint32_t permission;
-	FOLDER_OBJECT *pfolder;
 	TAGGED_PROPVAL tmp_propval;
 	
 	if (22 != psrc_folder_id->cb ||
@@ -1644,11 +1635,10 @@ uint32_t rop_syncimportmessagemove(
 	if (OBJECT_TYPE_ICSUPCTX != object_type) {
 		return ecNotSupported;
 	}
-	if (SYNC_TYPE_CONTENTS != icsupctx_object_get_sync_type(pctx)) {
+	if (pctx->get_sync_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
-	}
-	icsupctx_object_mark_started(pctx);
-	pfolder = icsupctx_object_get_parent_object(pctx);
+	pctx->mark_started();
+	auto pfolder = pctx->get_parent_object();
 	auto folder_id = pfolder->folder_id;
 	if (FALSE == common_util_binary_to_xid(
 		psrc_folder_id, &xid_fsrc) ||
@@ -1785,7 +1775,7 @@ uint32_t rop_syncgettransferstate(void *plogmap,
 	if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
 		pstate = static_cast<ICSDOWNCTX_OBJECT *>(pobject)->get_state();
 	} else if (OBJECT_TYPE_ICSUPCTX == object_type) {
-		pstate = icsupctx_object_get_state(static_cast<ICSUPCTX_OBJECT *>(pobject));
+		pstate = static_cast<ICSUPCTX_OBJECT *>(pobject)->get_state();
 	} else {
 		return ecNotSupported;
 	}
@@ -1823,7 +1813,7 @@ uint32_t rop_syncuploadstatestreambegin(uint32_t proptag_state,
 		if (!static_cast<ICSDOWNCTX_OBJECT *>(pctx)->begin_state_stream(proptag_state))
 			return ecError;
 	} else if (OBJECT_TYPE_ICSUPCTX == object_type) {
-		if (!icsupctx_object_begin_state_stream(static_cast<ICSUPCTX_OBJECT *>(pctx), proptag_state))
+		if (!static_cast<ICSUPCTX_OBJECT *>(pctx)->begin_state_stream(proptag_state))
 			return ecError;
 	} else {
 		return ecNotSupported;
@@ -1846,7 +1836,7 @@ uint32_t rop_syncuploadstatestreamcontinue(const BINARY *pstream_data,
 		if (!static_cast<ICSDOWNCTX_OBJECT *>(pctx)->continue_state_stream(pstream_data))
 			return ecError;
 	} else if (OBJECT_TYPE_ICSUPCTX == object_type) {
-		if (!icsupctx_object_continue_state_stream(static_cast<ICSUPCTX_OBJECT *>(pctx), pstream_data))
+		if (!static_cast<ICSUPCTX_OBJECT *>(pctx)->continue_state_stream(pstream_data))
 			return ecError;
 	} else {
 		return ecNotSupported;
@@ -1869,7 +1859,7 @@ uint32_t rop_syncuploadstatestreamend(void *plogmap,
 		if (!static_cast<ICSDOWNCTX_OBJECT *>(pctx)->end_state_stream())
 			return ecError;
 	} else if (OBJECT_TYPE_ICSUPCTX == object_type) {
-		if (!icsupctx_object_end_state_stream(static_cast<ICSUPCTX_OBJECT *>(pctx)))
+		if (!static_cast<ICSUPCTX_OBJECT *>(pctx)->end_state_stream())
 			return ecError;
 	} else {
 		return ecNotSupported;
