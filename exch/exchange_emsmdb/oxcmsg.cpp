@@ -809,7 +809,7 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 	if (NULL == pattachment) {
 		return ecError;
 	}
-	if (attachment_object_get_instance_id(pattachment.get()) == 0)
+	if (pattachment->get_instance_id() == 0)
 		return ecNotFound;
 	auto hnd = rop_processor_add_object_handle(plogmap, logon_id,
 	           hin, OBJECT_TYPE_ATTACHMENT, pattachment.get());
@@ -847,11 +847,11 @@ uint32_t rop_createattachment(uint32_t *pattachment_id,
 	if (NULL == pattachment) {
 		return ecError;
 	}
-	*pattachment_id = attachment_object_get_attachment_num(pattachment.get());
+	*pattachment_id = pattachment->get_attachment_num();
 	if (ATTACHMENT_NUM_INVALID == *pattachment_id) {
 		return ecMaxAttachmentExceeded;
 	}
-	if (!attachment_object_init_attachment(pattachment.get()))
+	if (!pattachment->init_attachment())
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap, logon_id,
 	           hin, OBJECT_TYPE_ATTACHMENT, pattachment.get());
@@ -888,8 +888,6 @@ uint32_t rop_savechangesattachment(uint8_t save_flags,
 	void *plogmap, uint8_t logon_id, uint32_t hresponse, uint32_t hin)
 {
 	int object_type;
-	uint8_t open_flags;
-	uint32_t tag_access;
 	
 	save_flags &= SAVE_FLAG_KEEPOPENREADONLY |
 					SAVE_FLAG_KEEPOPENREADWRITE |
@@ -909,23 +907,23 @@ uint32_t rop_savechangesattachment(uint8_t save_flags,
 	if (OBJECT_TYPE_ATTACHMENT != object_type) {
 		return ecNotSupported;
 	}
-	tag_access = attachment_object_get_tag_access(pattachment);
+	auto tag_access = pattachment->get_tag_access();
 	if (0 == (TAG_ACCESS_MODIFY & tag_access)) {
 		return ecAccessDenied;
 	}
-	open_flags = attachment_object_get_open_flags(pattachment);
+	auto open_flags = pattachment->get_open_flags();
 	if (0 == (open_flags & OPEN_MODE_FLAG_READWRITE) &&
 		SAVE_FLAG_FORCESAVE != save_flags) {
 		return ecAccessDenied;
 	}
-	gxerr_t err = attachment_object_save(pattachment);
+	auto err = pattachment->save();
 	if (err != GXERR_SUCCESS)
 		return gxerr_to_hresult(err);
 	switch (save_flags) {
 	case SAVE_FLAG_KEEPOPENREADWRITE:
 	case SAVE_FLAG_FORCESAVE:
 		open_flags = OPEN_MODE_FLAG_READWRITE;
-		attachment_object_set_open_flags(pattachment, open_flags);
+		pattachment->set_open_flags(open_flags);
 		break;
 	}
 	return ecSuccess;
@@ -941,7 +939,6 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 {
 	int object_type;
 	TARRAY_SET rcpts;
-	uint32_t tag_access;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	uint32_t proptag_buff[4];
@@ -968,7 +965,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	if (OBJECT_TYPE_ATTACHMENT != object_type) {
 		return ecNotSupported;
 	}
-	tag_access = attachment_object_get_tag_access(pattachment);
+	auto tag_access = pattachment->get_tag_access();
 	if (0 == (tag_access & TAG_ACCESS_MODIFY) &&
 		((OPEN_EMBEDDED_FLAG_READWRITE & open_embedded_flags))) {
 		return ecAccessDenied;

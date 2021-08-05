@@ -648,13 +648,11 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 			return ecError;
 		break;
 	case OBJECT_TYPE_ATTACHMENT:
-		if (!attachment_object_flush_streams(static_cast<ATTACHMENT_OBJECT *>(pobject))) {
+		if (!static_cast<ATTACHMENT_OBJECT *>(pobject)->flush_streams())
 			return ecError;
-		}
 		if (!exmdb_client_read_attachment_instance(plogon->get_dir(),
-		    attachment_object_get_instance_id(static_cast<ATTACHMENT_OBJECT *>(pobject)), &attctnt)) {
+		    static_cast<ATTACHMENT_OBJECT *>(pobject)->get_instance_id(), &attctnt))
 			return ecError;
-		}
 		for (i=0; i<pproptags->count; i++) {
 			switch (pproptags->pproptag[i]) {
 			case PR_ATTACH_DATA_OBJ:
@@ -801,13 +799,11 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			return ecError;
 		break;
 	case OBJECT_TYPE_ATTACHMENT:
-		if (!attachment_object_flush_streams(static_cast<ATTACHMENT_OBJECT *>(pobject))) {
+		if (!static_cast<ATTACHMENT_OBJECT *>(pobject)->flush_streams())
 			return ecError;
-		}
 		if (!exmdb_client_read_attachment_instance(plogon->get_dir(),
-		    attachment_object_get_instance_id(static_cast<ATTACHMENT_OBJECT *>(pobject)), &attctnt)) {
+		    static_cast<ATTACHMENT_OBJECT *>(pobject)->get_instance_id(), &attctnt))
 			return ecError;
-		}
 		i = 0;
 		while (i < attctnt.proplist.count) {
 			if (-1 == common_util_index_proptags(pproptags,

@@ -59,10 +59,8 @@ std::unique_ptr<STREAM_OBJECT> stream_object_create(void *pparent, int object_ty
 		proptags.pproptag = proptag_buff;
 		proptag_buff[0] = proptag;
 		proptag_buff[1] = PROP_TAG_ATTACHSIZE;
-		if (!attachment_object_get_properties(static_cast<ATTACHMENT_OBJECT *>(pparent),
-		    0, &proptags, &propvals)) {
+		if (!static_cast<ATTACHMENT_OBJECT *>(pparent)->get_properties(0, &proptags, &propvals))
 			return NULL;
-		}
 		psize = static_cast<uint32_t *>(common_util_get_propvals(
 		        &propvals, PROP_TAG_ATTACHSIZE));
 		if (NULL != psize && *psize >= common_util_get_param(
@@ -177,7 +175,7 @@ uint16_t stream_object_write(STREAM_OBJECT *pstream,
 	    !stream_object_set_length(pstream, newpos))
 		return 0;
 	if (OBJECT_TYPE_ATTACHMENT == pstream->object_type) {
-		if (!attachment_object_append_stream_object(static_cast<ATTACHMENT_OBJECT *>(pstream->pparent), pstream))
+		if (!static_cast<ATTACHMENT_OBJECT *>(pstream->pparent)->append_stream_object(pstream))
 			return 0;	
 	} else if (OBJECT_TYPE_MESSAGE == pstream->object_type) {
 		if (!static_cast<MESSAGE_OBJECT *>(pstream->pparent)->append_stream_object(pstream))
@@ -370,7 +368,7 @@ STREAM_OBJECT::~STREAM_OBJECT()
 		break;
 	case OBJECT_TYPE_ATTACHMENT:
 		if (TRUE == pstream->b_touched) {
-			attachment_object_commit_stream_object(static_cast<ATTACHMENT_OBJECT *>(pstream->pparent), pstream);
+			static_cast<ATTACHMENT_OBJECT *>(pstream->pparent)->commit_stream_object(pstream);
 		}
 		break;
 	case OBJECT_TYPE_MESSAGE:

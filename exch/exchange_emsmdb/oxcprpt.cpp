@@ -146,9 +146,9 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
 		auto atx = static_cast<ATTACHMENT_OBJECT *>(pobject);
-		if (!attachment_object_get_properties(atx, 0, ptmp_proptags, &propvals))
+		if (!atx->get_properties(0, ptmp_proptags, &propvals))
 			return ecError;
-		cpid = attachment_object_get_cpid(atx);
+		cpid = atx->get_cpid();
 		break;
 	}
 	default:
@@ -286,16 +286,15 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
 		auto atx = static_cast<ATTACHMENT_OBJECT *>(pobject);
-		if (!attachment_object_get_all_proptags(atx, &proptags))
+		if (!atx->get_all_proptags(&proptags))
 			return ecError;
 		ptmp_proptags = common_util_trim_proptags(&proptags);
 		if (NULL == ptmp_proptags) {
 			return ecMAPIOOM;
 		}
-		if (!attachment_object_get_properties(atx, size_limit,
-		    ptmp_proptags, ppropvals))
+		if (!atx->get_properties(size_limit, ptmp_proptags, ppropvals))
 			return ecError;
-		cpid = attachment_object_get_cpid(atx);
+		cpid = atx->get_cpid();
 		break;
 	}
 	default:
@@ -336,7 +335,7 @@ uint32_t rop_getpropertieslist(PROPTAG_ARRAY *pproptags,
 			return ecError;
 		return ecSuccess;
 	case OBJECT_TYPE_ATTACHMENT:
-		if (!attachment_object_get_all_proptags(static_cast<ATTACHMENT_OBJECT *>(pobject), pproptags))
+		if (!static_cast<ATTACHMENT_OBJECT *>(pobject)->get_all_proptags(pproptags))
 			return ecError;
 		return ecSuccess;
 	default:
@@ -394,11 +393,11 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
 		auto atx = static_cast<ATTACHMENT_OBJECT *>(pobject);
-		auto tag_access = attachment_object_get_tag_access(atx);
+		auto tag_access = atx->get_tag_access();
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
 		}
-		if (!attachment_object_set_properties(atx, ppropvals, pproblems))
+		if (!atx->set_properties(ppropvals, pproblems))
 			return ecError;
 		return ecSuccess;
 	}
@@ -465,12 +464,11 @@ uint32_t rop_deleteproperties(
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
 		auto atx = static_cast<ATTACHMENT_OBJECT *>(pobject);
-		auto tag_access = attachment_object_get_tag_access(atx);
+		auto tag_access = atx->get_tag_access();
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
 		}
-		if (!attachment_object_remove_properties(static_cast<ATTACHMENT_OBJECT *>(atx),
-		    pproptags, pproblems))
+		if (!atx->remove_properties(pproptags, pproblems))
 			return ecError;
 		return ecSuccess;
 	}
@@ -529,7 +527,7 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 			return ecError;
 		break;
 	case OBJECT_TYPE_ATTACHMENT:
-		if (!attachment_object_get_all_proptags(static_cast<ATTACHMENT_OBJECT *>(pobject), &proptags))
+		if (!static_cast<ATTACHMENT_OBJECT *>(pobject)->get_all_proptags(&proptags))
 			return ecError;
 		break;
 	default:
@@ -790,16 +788,16 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 	case OBJECT_TYPE_ATTACHMENT: {
 		auto atsrc = static_cast<ATTACHMENT_OBJECT *>(pobject);
 		auto atdst = static_cast<ATTACHMENT_OBJECT *>(pobject_dst);
-		auto tag_access = attachment_object_get_tag_access(atdst);
+		auto tag_access = atdst->get_tag_access();
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
 		}
 		if (copy_flags & COPY_FLAG_NOOVERWRITE) {
-			if (!attachment_object_get_all_proptags(atdst, &proptags1))
+			if (!atdst->get_all_proptags(&proptags1))
 				return ecError;
 		}
 		for (i=0; i<pproptags->count; i++) {
-			if (attachment_object_check_readonly_property(atdst, pproptags->pproptag[i])) {
+			if (atdst->check_readonly_property(pproptags->pproptag[i])) {
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 										pproptags->pproptag[i];
@@ -817,7 +815,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 			poriginal_indices[proptags.count] = i;
 			proptags.count ++;
 		}
-		if (!attachment_object_get_properties(atsrc, 0, &proptags, &propvals))
+		if (!atsrc->get_properties(0, &proptags, &propvals))
 			return ecError;
 		for (i=0; i<proptags.count; i++) {
 			if (NULL == common_util_get_propvals(
@@ -830,7 +828,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 				pproblems->count ++;
 			}
 		}
-		if (!attachment_object_set_properties(atdst, &propvals, &tmp_problems))
+		if (!atdst->set_properties(&propvals, &tmp_problems))
 			return ecError;
 		for (i=0; i<tmp_problems.count; i++) {
 			tmp_problems.pproblem[i].index = common_util_index_proptags(
@@ -1000,13 +998,12 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
 		auto atdst = static_cast<ATTACHMENT_OBJECT *>(pobject_dst);
-		auto tag_access = attachment_object_get_tag_access(atdst);
+		auto tag_access = atdst->get_tag_access();
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
 		}
-		if (!attachment_object_copy_properties(atdst,
-		    static_cast<ATTACHMENT_OBJECT *>(pobject), pexcluded_proptags,
-		    b_force, &b_cycle, pproblems))
+		if (!atdst->copy_properties(static_cast<ATTACHMENT_OBJECT *>(pobject),
+		    pexcluded_proptags, b_force, &b_cycle, pproblems))
 			return ecError;
 		if (TRUE == b_cycle) {
 			return ecMsgCycle;
@@ -1085,7 +1082,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 		if (TRUE == b_write) {
 			auto tag_access = object_type == OBJECT_TYPE_MESSAGE ?
 				static_cast<MESSAGE_OBJECT *>(pobject)->get_tag_access() :
-			             attachment_object_get_tag_access(static_cast<ATTACHMENT_OBJECT *>(pobject));
+				static_cast<ATTACHMENT_OBJECT *>(pobject)->get_tag_access();
 			if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 				return ecAccessDenied;
 			}
