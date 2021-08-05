@@ -870,7 +870,7 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
-	if (SYNC_TYPE_CONTENTS == SYNC_TYPE_CONTENTS) {
+	if (sync_type == SYNC_TYPE_CONTENTS) {
 		if (plogon->logon_mode != LOGON_MODE_OWNER) {
 			auto rpc_info = get_rpc_info();
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
