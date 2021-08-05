@@ -136,18 +136,9 @@ std::unique_ptr<STREAM_OBJECT> stream_object_create(void *pparent, int object_ty
 	}
 }
 
-BOOL stream_object_check(STREAM_OBJECT *pstream)
+uint32_t STREAM_OBJECT::read(void *pbuff, uint32_t buf_len)
 {
-	return pstream->content_bin.pb != nullptr ? TRUE : false;
-}
-
-uint32_t stream_object_get_max_length(STREAM_OBJECT *pstream)
-{
-	return pstream->max_length;
-}
-
-uint32_t stream_object_read(STREAM_OBJECT *pstream, void *pbuff, uint32_t buf_len)
-{
+	auto pstream = this;
 	if (pstream->content_bin.cb <= pstream->seek_ptr) {
 		return 0;
 	}
@@ -157,9 +148,9 @@ uint32_t stream_object_read(STREAM_OBJECT *pstream, void *pbuff, uint32_t buf_le
 	return length;
 }
 
-uint16_t stream_object_write(STREAM_OBJECT *pstream,
-	void *pbuff, uint16_t buf_len)
+uint16_t STREAM_OBJECT::write(void *pbuff, uint16_t buf_len)
 {
+	auto pstream = this;
 	if (OPENSTREAM_FLAG_READONLY == pstream->open_flags) {
 		return 0;
 	}
@@ -171,8 +162,7 @@ uint16_t stream_object_write(STREAM_OBJECT *pstream,
 	auto newpos = safe_add_s(pstream->seek_ptr, buf_len, &clamped);
 	if (clamped >= 1)
 		return 0;
-	if (newpos > pstream->content_bin.cb &&
-	    !stream_object_set_length(pstream, newpos))
+	if (newpos > pstream->content_bin.cb && !set_length(newpos))
 		return 0;
 	if (OBJECT_TYPE_ATTACHMENT == pstream->object_type) {
 		if (!static_cast<ATTACHMENT_OBJECT *>(pstream->pparent)->append_stream_object(pstream))
@@ -188,23 +178,9 @@ uint16_t stream_object_write(STREAM_OBJECT *pstream,
 	return buf_len;
 }
 
-uint8_t stream_object_get_open_flags(STREAM_OBJECT *pstream)
+void *STREAM_OBJECT::get_content()
 {
-	return pstream->open_flags;
-}
-
-int stream_object_get_parent_type(STREAM_OBJECT *pstream)
-{
-	return pstream->object_type;
-}
-
-uint32_t stream_object_get_proptag(STREAM_OBJECT *pstream)
-{
-	return pstream->proptag;
-}
-
-void* stream_object_get_content(STREAM_OBJECT *pstream)
-{
+	auto pstream = this;
 	void *pcontent;
 	uint32_t length;
 	
@@ -227,14 +203,9 @@ void* stream_object_get_content(STREAM_OBJECT *pstream)
 	return NULL;
 }
 
-uint32_t stream_object_get_length(STREAM_OBJECT *pstream)
+BOOL STREAM_OBJECT::set_length(uint32_t length)
 {
-	return pstream->content_bin.cb;
-}
-
-BOOL stream_object_set_length(
-	STREAM_OBJECT *pstream, uint32_t length)
-{
+	auto pstream = this;
 	void *pdata;
 	
 	if (OPENSTREAM_FLAG_READONLY == pstream->open_flags) {
@@ -261,8 +232,9 @@ BOOL stream_object_set_length(
 	return TRUE;
 }
 
-BOOL stream_object_seek(STREAM_OBJECT *pstream, uint8_t opt, int64_t offset)
+BOOL STREAM_OBJECT::seek(uint8_t opt, int64_t offset)
 {	
+	auto pstream = this;
 	uint64_t origin;
 	switch (opt) {
 	case STREAM_SEEK_SET: origin = 0; break;
@@ -274,21 +246,15 @@ BOOL stream_object_seek(STREAM_OBJECT *pstream, uint8_t opt, int64_t offset)
 	auto newpos = safe_add_s(origin, offset, &clamped);
 	if (clamped > 1)
 		return false;
-	if (newpos > pstream->content_bin.cb &&
-	    !stream_object_set_length(pstream, newpos))
+	if (newpos > pstream->content_bin.cb && !set_length(newpos))
 		return false;
 	pstream->seek_ptr = newpos;
 	return TRUE;
 }
 
-uint32_t stream_object_get_seek_position(STREAM_OBJECT *pstream)
+BOOL STREAM_OBJECT::copy(STREAM_OBJECT *pstream_src, uint32_t *plength)
 {
-	return pstream->seek_ptr;
-}
-
-BOOL stream_object_copy(STREAM_OBJECT *pstream_dst,
-	STREAM_OBJECT *pstream_src, uint32_t *plength)
-{
+	auto pstream_dst = this;
 	if (pstream_src->seek_ptr >=
 		pstream_src->content_bin.cb) {
 		*plength = 0;
@@ -311,10 +277,8 @@ BOOL stream_object_copy(STREAM_OBJECT *pstream_dst,
 	}
 	if (pstream_dst->seek_ptr + *plength >
 		pstream_dst->content_bin.cb) {
-		if (FALSE == stream_object_set_length(
-			pstream_dst, pstream_dst->seek_ptr + *plength)) {
+		if (!pstream_dst->set_length(pstream_dst->seek_ptr + *plength))
 			return FALSE;	
-		}
 	}
 	memcpy(pstream_dst->content_bin.pb +
 		pstream_dst->seek_ptr,
@@ -325,8 +289,9 @@ BOOL stream_object_copy(STREAM_OBJECT *pstream_dst,
 	return TRUE;
 }
 
-BOOL stream_object_commit(STREAM_OBJECT *pstream)
+BOOL STREAM_OBJECT::commit()
 {
+	auto pstream = this;
 	TAGGED_PROPVAL propval;
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
@@ -343,7 +308,7 @@ BOOL stream_object_commit(STREAM_OBJECT *pstream)
 	propvals.count = 1;
 	propvals.ppropval = &propval;
 	propval.proptag = pstream->proptag;
-	propval.pvalue = stream_object_get_content(pstream);
+	propval.pvalue = get_content();
 	if (NULL == propval.pvalue) {
 		return FALSE;
 	}
@@ -363,7 +328,7 @@ STREAM_OBJECT::~STREAM_OBJECT()
 	switch (pstream->object_type) {
 	case OBJECT_TYPE_FOLDER:
 		if (TRUE == pstream->b_touched) {
-			stream_object_commit(pstream);
+			commit();
 		}
 		break;
 	case OBJECT_TYPE_ATTACHMENT:

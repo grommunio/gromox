@@ -875,7 +875,6 @@ BOOL MESSAGE_OBJECT::query_attachment_table(const PROPTAG_ARRAY *pproptags,
 BOOL MESSAGE_OBJECT::append_stream_object(STREAM_OBJECT *pstream)
 {
 	auto pmessage = this;
-	uint32_t proptag;
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (pnode=double_list_get_head(&pmessage->stream_list); NULL!=pnode;
@@ -885,8 +884,7 @@ BOOL MESSAGE_OBJECT::append_stream_object(STREAM_OBJECT *pstream)
 		}
 	}
 	if (FALSE == pmessage->b_new && 0 != pmessage->message_id) {
-		proptag = message_object_rectify_proptag(
-			stream_object_get_proptag(pstream));
+		auto proptag = message_object_rectify_proptag(pstream->get_proptag());
 		if (!proptag_array_append(pmessage->pchanged_proptags, proptag))
 			return FALSE;
 		proptag_array_remove(
@@ -915,8 +913,8 @@ BOOL MESSAGE_OBJECT::commit_stream_object(STREAM_OBJECT *pstream)
 		if (pnode->pdata == pstream) {
 			double_list_remove(&pmessage->stream_list, pnode);
 			free(pnode);
-			tmp_propval.proptag = stream_object_get_proptag(pstream);
-			tmp_propval.pvalue = stream_object_get_content(pstream);
+			tmp_propval.proptag = pstream->get_proptag();
+			tmp_propval.pvalue = pstream->get_content();
 			if (!exmdb_client_set_instance_property(pmessage->plogon->get_dir(),
 			    pmessage->instance_id, &tmp_propval, &result))
 				return FALSE;
@@ -936,8 +934,8 @@ BOOL MESSAGE_OBJECT::flush_streams()
 	
 	while ((pnode = double_list_pop_front(&pmessage->stream_list)) != nullptr) {
 		pstream = static_cast<STREAM_OBJECT *>(pnode->pdata);
-		tmp_propval.proptag = stream_object_get_proptag(pstream);
-		tmp_propval.pvalue = stream_object_get_content(pstream);
+		tmp_propval.proptag = pstream->get_proptag();
+		tmp_propval.pvalue = pstream->get_content();
 		if (!exmdb_client_set_instance_property(pmessage->plogon->get_dir(),
 		    pmessage->instance_id, &tmp_propval, &result)) {
 			double_list_insert_as_head(&pmessage->stream_list, pnode);
@@ -976,7 +974,6 @@ BOOL MESSAGE_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	auto pmessage = this;
 	int i;
 	int nodes_num;
-	uint32_t proptag;
 	DOUBLE_LIST_NODE *pnode;
 	PROPTAG_ARRAY tmp_proptags;
 	
@@ -1008,7 +1005,7 @@ BOOL MESSAGE_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	}
 	for (pnode=double_list_get_head(&pmessage->stream_list); NULL!=pnode;
 		pnode=double_list_get_after(&pmessage->stream_list, pnode)) {
-		proptag = stream_object_get_proptag(static_cast<STREAM_OBJECT *>(pnode->pdata));
+		auto proptag = static_cast<STREAM_OBJECT *>(pnode->pdata)->get_proptag();
 		if (common_util_index_proptags(pproptags, proptag) < 0) {
 			pproptags->pproptag[pproptags->count] = proptag;
 			pproptags->count ++;
@@ -1168,8 +1165,8 @@ static void* message_object_get_stream_property_value(
 	for (pnode=double_list_get_head(&pmessage->stream_list); NULL!=pnode;
 		pnode=double_list_get_after(&pmessage->stream_list, pnode)) {
 		auto so = static_cast<STREAM_OBJECT *>(pnode->pdata);
-		if (stream_object_get_proptag(so) == proptag)
-			return stream_object_get_content(so);
+		if (so->get_proptag() == proptag)
+			return so->get_content();
 	}
 	return NULL;
 }
@@ -1273,7 +1270,7 @@ static BOOL message_object_check_stream_property(
 	
 	for (pnode=double_list_get_head(&pmessage->stream_list); NULL!=pnode;
 		pnode=double_list_get_after(&pmessage->stream_list, pnode)) {
-		if (stream_object_get_proptag(static_cast<STREAM_OBJECT *>(pnode->pdata)) == proptag)
+		if (static_cast<STREAM_OBJECT *>(pnode->pdata)->get_proptag() == proptag)
 			return TRUE;
 	}
 	return FALSE;

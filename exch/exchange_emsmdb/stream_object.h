@@ -7,6 +7,20 @@
 
 struct STREAM_OBJECT {
 	~STREAM_OBJECT();
+	BOOL check() const { return content_bin.pb != nullptr ? TRUE : false; }
+	uint32_t get_max_length() const { return max_length; }
+	uint32_t read(void *buf, uint32_t len);
+	uint16_t write(void *buf, uint16_t len);
+	uint8_t get_open_flags() const { return open_flags; }
+	int get_parent_type() const { return object_type; }
+	uint32_t get_proptag() const { return proptag; }
+	void* get_content();
+	uint32_t get_length() const { return content_bin.cb; }
+	BOOL set_length(uint32_t len);
+	BOOL seek(uint8_t opt, int64_t offset);
+	uint32_t get_seek_position() const { return seek_ptr; }
+	BOOL copy(STREAM_OBJECT *src, uint32_t *len);
+	BOOL commit();
 
 	void *pparent = nullptr;
 	int object_type = 0;
@@ -18,20 +32,3 @@ struct STREAM_OBJECT {
 };
 
 extern std::unique_ptr<STREAM_OBJECT> stream_object_create(void *parent, int object_type, uint32_t open_flags, uint32_t proptag, uint32_t max_length);
-BOOL stream_object_check(STREAM_OBJECT *pstream);
-uint32_t stream_object_get_max_length(STREAM_OBJECT *pstream);
-extern uint32_t stream_object_read(STREAM_OBJECT *pstream, void *pbuff, uint32_t buf_len);
-uint16_t stream_object_write(STREAM_OBJECT *pstream,
-	void *pbuff, uint16_t buf_len);
-uint8_t stream_object_get_open_flags(STREAM_OBJECT *pstream);
-int stream_object_get_parent_type(STREAM_OBJECT *pstream);
-uint32_t stream_object_get_proptag(STREAM_OBJECT *pstream);
-void* stream_object_get_content(STREAM_OBJECT *pstream);
-uint32_t stream_object_get_length(STREAM_OBJECT *pstream);
-BOOL stream_object_set_length(
-	STREAM_OBJECT *pstream, uint32_t length);
-extern BOOL stream_object_seek(STREAM_OBJECT *pstream, uint8_t opt, int64_t offset);
-uint32_t stream_object_get_seek_position(STREAM_OBJECT *pstream);
-BOOL stream_object_copy(STREAM_OBJECT *pstream_dst,
-	STREAM_OBJECT *pstream_src, uint32_t *plength);
-BOOL stream_object_commit(STREAM_OBJECT *pstream);

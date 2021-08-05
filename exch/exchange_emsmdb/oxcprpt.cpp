@@ -1097,7 +1097,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 	if (NULL == pstream) {
 		return ecError;
 	}
-	if (!stream_object_check(pstream.get()))
+	if (!pstream->check())
 		return ecNotFound;
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, OBJECT_TYPE_STREAM, pstream.get());
@@ -1105,7 +1105,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 		return ecError;
 	}
 	*phout = hnd;
-	*pstream_size = stream_object_get_length(pstream.get());
+	*pstream_size = pstream->get_length();
 	pstream.release();
 	return ecSuccess;
 }
@@ -1146,7 +1146,7 @@ uint32_t rop_readstream(uint16_t byte_count,
 	pdata_bin->pv = common_util_alloc(buffer_size);
 	if (pdata_bin->pv == nullptr)
 		return ecMAPIOOM;
-	read_len = stream_object_read(pstream, pdata_bin->pv, buffer_size);
+	read_len = pstream->read(pdata_bin->pv, buffer_size);
 	pdata_bin->cb = read_len;
 	return ecSuccess;
 }
@@ -1165,20 +1165,15 @@ uint32_t rop_writestream(const BINARY *pdata_bin,
 	if (OBJECT_TYPE_STREAM != object_type) {
 		return ecNotSupported;
 	}
-	if (stream_object_get_open_flags(pstream) ==
-		OPENSTREAM_FLAG_READONLY) {
+	if (pstream->get_open_flags() == OPENSTREAM_FLAG_READONLY)
 		return STG_E_ACCESSDENIED;	
-	}
 	if (0 == pdata_bin->cb) {
 		*pwritten_size = 0;
 		return ecSuccess;
 	}
-	if (stream_object_get_seek_position(pstream) >=
-		stream_object_get_max_length(pstream)) {
+	if (pstream->get_seek_position() >= pstream->get_max_length())
 		return ecTooBig;
-	}
-	*pwritten_size = stream_object_write(
-			pstream, pdata_bin->pb, pdata_bin->cb);
+	*pwritten_size = pstream->write(pdata_bin->pb, pdata_bin->cb);
 	if (0 == *pwritten_size) {
 		return ecError;
 	}
@@ -1201,11 +1196,10 @@ uint32_t rop_commitstream(void *plogmap,
 	if (OBJECT_TYPE_STREAM != object_type) {
 		return ecNotSupported;
 	}
-	switch (stream_object_get_parent_type(pstream)) {
+	switch (pstream->get_parent_type()) {
 	case OBJECT_TYPE_FOLDER:
-		if (FALSE == stream_object_commit(pstream)) {
+		if (!pstream->commit())
 			return ecError;
-		}
 		return ecSuccess;
 	case OBJECT_TYPE_MESSAGE:
 	case OBJECT_TYPE_ATTACHMENT:
@@ -1228,7 +1222,7 @@ uint32_t rop_getstreamsize(uint32_t *pstream_size,
 	if (OBJECT_TYPE_STREAM != object_type) {
 		return ecNotSupported;
 	}
-	*pstream_size = stream_object_get_length(pstream);
+	*pstream_size = pstream->get_length();
 	return ecSuccess;
 }
 
@@ -1248,12 +1242,10 @@ uint32_t rop_setstreamsize(uint64_t stream_size,
 	if (OBJECT_TYPE_STREAM != object_type) {
 		return ecNotSupported;
 	}
-	if (stream_size > stream_object_get_max_length(pstream)) {
+	if (stream_size > pstream->get_max_length())
 		return ecTooBig;
-	}
-	if (FALSE == stream_object_set_length(pstream, stream_size)) {
+	if (!pstream->set_length(stream_size))
 		return ecError;
-	}
 	return ecSuccess;
 }
 
@@ -1283,10 +1275,9 @@ uint32_t rop_seekstream(uint8_t seek_pos,
 	if (OBJECT_TYPE_STREAM != object_type) {
 		return ecNotSupported;
 	}
-	if (FALSE == stream_object_seek(pstream, seek_pos, offset)) {
+	if (!pstream->seek(seek_pos, offset))
 		return StreamSeekError;
-	}
-	*pnew_pos = stream_object_get_seek_position(pstream);
+	*pnew_pos = pstream->get_seek_position();
 	return ecSuccess;
 }
 
@@ -1310,20 +1301,16 @@ uint32_t rop_copytostream(uint64_t byte_count,
 	                   logon_id, hdst, &object_type));
 	if (pdst_stream == nullptr)
 		return ecDstNullObject;
-	if (stream_object_get_open_flags(pdst_stream)
-		== OPENSTREAM_FLAG_READONLY) {
+	if (pdst_stream->get_open_flags() == OPENSTREAM_FLAG_READONLY)
 		return ecAccessDenied;
-	}
 	if (0 == byte_count) {
 		*pread_bytes = 0;
 		*pwritten_bytes = 0;
 		return ecSuccess;
 	}
 	length = byte_count;
-	if (FALSE == stream_object_copy(
-		pdst_stream, psrc_stream, &length)) {
+	if (!pdst_stream->copy(psrc_stream, &length))
 		return ecError;
-	}
 	*pread_bytes = length;
 	*pwritten_bytes = length;
 	return ecSuccess;

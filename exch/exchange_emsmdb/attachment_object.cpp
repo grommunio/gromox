@@ -171,8 +171,8 @@ BOOL ATTACHMENT_OBJECT::commit_stream_object(STREAM_OBJECT *pstream)
 		pnode=double_list_get_after(&pattachment->stream_list, pnode)) {
 		if (pnode->pdata == pstream) {
 			double_list_remove(&pattachment->stream_list, pnode);
-			tmp_propval.proptag = stream_object_get_proptag(pstream);
-			tmp_propval.pvalue = stream_object_get_content(pstream);
+			tmp_propval.proptag = pstream->get_proptag();
+			tmp_propval.pvalue = pstream->get_content();
 			if (!exmdb_client_set_instance_property(pattachment->pparent->plogon->get_dir(),
 			    pattachment->instance_id, &tmp_propval, &result))
 				return FALSE;
@@ -192,8 +192,8 @@ BOOL ATTACHMENT_OBJECT::flush_streams()
 	
 	while ((pnode = double_list_pop_front(&pattachment->stream_list)) != nullptr) {
 		pstream = static_cast<STREAM_OBJECT *>(pnode->pdata);
-		tmp_propval.proptag = stream_object_get_proptag(pstream);
-		tmp_propval.pvalue = stream_object_get_content(pstream);
+		tmp_propval.proptag = pstream->get_proptag();
+		tmp_propval.pvalue = pstream->get_content();
 		if (!exmdb_client_set_instance_property(pattachment->pparent->plogon->get_dir(),
 		    pattachment->instance_id, &tmp_propval, &result)) {
 			double_list_insert_as_head(&pattachment->stream_list, pnode);
@@ -209,7 +209,6 @@ BOOL ATTACHMENT_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pattachment = this;
 	int nodes_num;
-	uint32_t proptag;
 	DOUBLE_LIST_NODE *pnode;
 	PROPTAG_ARRAY tmp_proptags;
 	
@@ -227,7 +226,7 @@ BOOL ATTACHMENT_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 				sizeof(uint32_t)*tmp_proptags.count);
 	for (pnode=double_list_get_head(&pattachment->stream_list); NULL!=pnode;
 		pnode=double_list_get_after(&pattachment->stream_list, pnode)) {
-		proptag = stream_object_get_proptag(static_cast<STREAM_OBJECT *>(pnode->pdata));
+		auto proptag = static_cast<STREAM_OBJECT *>(pnode->pdata)->get_proptag();
 		if (common_util_index_proptags(pproptags, proptag) < 0) {
 			pproptags->pproptag[pproptags->count] = proptag;
 			pproptags->count ++;
@@ -301,8 +300,8 @@ static void* attachment_object_get_stream_property_value(
 	for (pnode=double_list_get_head(&pattachment->stream_list); NULL!=pnode;
 		pnode=double_list_get_after(&pattachment->stream_list, pnode)) {
 		auto so = static_cast<STREAM_OBJECT *>(pnode->pdata);
-		if (stream_object_get_proptag(so) == proptag)
-			return stream_object_get_content(so);
+		if (so->get_proptag() == proptag)
+			return so->get_content();
 	}
 	return NULL;
 }
@@ -375,7 +374,7 @@ static BOOL attachment_object_check_stream_property(
 	
 	for (pnode=double_list_get_head(&pattachment->stream_list); NULL!=pnode;
 		pnode=double_list_get_after(&pattachment->stream_list, pnode)) {
-		if (stream_object_get_proptag(static_cast<STREAM_OBJECT *>(pnode->pdata)) == proptag)
+		if (static_cast<STREAM_OBJECT *>(pnode->pdata)->get_proptag() == proptag)
 			return TRUE;
 	}
 	return FALSE;
