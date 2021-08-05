@@ -621,13 +621,11 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		break;
 	}
 	case OBJECT_TYPE_MESSAGE:
-		if (!message_object_flush_streams(static_cast<MESSAGE_OBJECT *>(pobject))) {
+		if (!static_cast<MESSAGE_OBJECT *>(pobject)->flush_streams())
 			return ecError;
-		}
 		if (!exmdb_client_read_message_instance(plogon->get_dir(),
-		    message_object_get_instance_id(static_cast<MESSAGE_OBJECT *>(pobject)), &msgctnt)) {
+		    static_cast<MESSAGE_OBJECT *>(pobject)->get_instance_id(), &msgctnt))
 			return ecError;
-		}
 		for (i=0; i<pproptags->count; i++) {
 			switch (pproptags->pproptag[i]) {
 			case PR_MESSAGE_RECIPIENTS:	
@@ -776,13 +774,11 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		break;
 	}
 	case OBJECT_TYPE_MESSAGE:
-		if (!message_object_flush_streams(static_cast<MESSAGE_OBJECT *>(pobject))) {
+		if (!static_cast<MESSAGE_OBJECT *>(pobject)->flush_streams())
 			return ecError;
-		}
 		if (!exmdb_client_read_message_instance(plogon->get_dir(),
-		    message_object_get_instance_id(static_cast<MESSAGE_OBJECT *>(pobject)), &msgctnt)) {
+		    static_cast<MESSAGE_OBJECT *>(pobject)->get_instance_id(), &msgctnt))
 			return ecError;
-		}
 		i = 0;
 		while (i < msgctnt.proplist.count) {
 			if (-1 == common_util_index_proptags(pproptags,
@@ -1031,8 +1027,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 		proptags.count = 1;
 		proptags.pproptag = &tmp_proptag;
 		tmp_proptag = PR_PREDECESSOR_CHANGE_LIST;
-		if (!message_object_get_properties(pmessage.get(),
-		    0, &proptags, &tmp_propvals))
+		if (!pmessage->get_properties(0, &proptags, &tmp_propvals))
 			return ecError;
 		pvalue = common_util_get_propvals(&tmp_propvals,  PR_PREDECESSOR_CHANGE_LIST);
 		if (NULL == pvalue) {
@@ -1052,21 +1047,18 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	}
 	if (FALSE == b_new) {
 		if (!exmdb_client_clear_message_instance(plogon->get_dir(),
-		    message_object_get_instance_id(pmessage.get())))
+		    pmessage->get_instance_id()))
 			return ecError;
 	} else {
 		BOOL b_fai = (import_flags & IMPORT_FLAG_ASSOCIATED) ? TRUE : false;
-		if (!message_object_init_message(pmessage.get(),
-		    b_fai, pinfo->cpid))
+		if (!pmessage->init_message(b_fai, pinfo->cpid))
 			return ecError;
 	}
 	tmp_propvals.count = 3;
 	tmp_propvals.ppropval = ppropvals->ppropval + 1;
 	if (!exmdb_client_set_instance_properties(plogon->get_dir(),
-	    message_object_get_instance_id(pmessage.get()),
-		&tmp_propvals, &tmp_problems)) {
+	    pmessage->get_instance_id(), &tmp_propvals, &tmp_problems))
 		return ecError;
-	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage.get());
 	if (hnd < 0) {

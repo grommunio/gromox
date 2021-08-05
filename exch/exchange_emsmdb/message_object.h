@@ -14,6 +14,39 @@ struct ATTACHMENT_OBJECT;
 
 struct MESSAGE_OBJECT {
 	~MESSAGE_OBJECT();
+	uint32_t get_instance_id() const { return instance_id; }
+	BOOL check_orignal_touched(BOOL *touched);
+	BOOL check_importing() const;
+	BOOL init_message(BOOL fai, uint32_t cpid);
+	uint64_t get_id() const { return message_id; }
+	uint32_t get_cpid() const { return cpid; }
+	uint32_t get_tag_access() const { return tag_access; }
+	uint8_t get_open_flags() const { return open_flags; }
+	void set_open_flags(uint8_t open_flags);
+	gxerr_t save();
+	BOOL reload();
+	PROPTAG_ARRAY *get_rcpt_columns() const { return precipient_columns; }
+	BOOL read_recipients(uint32_t row_id, uint16_t need_count, TARRAY_SET *);
+	BOOL get_recipient_num(uint16_t *);
+	BOOL set_rcpts(TARRAY_SET *);
+	BOOL empty_rcpts();
+	BOOL get_attachments_num(uint16_t *);
+	BOOL delete_attachment(uint32_t attachment_num);
+	BOOL get_attachment_table_all_proptags(PROPTAG_ARRAY *);
+	BOOL query_attachment_table(const PROPTAG_ARRAY *, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
+	BOOL append_stream_object(STREAM_OBJECT *);
+	BOOL commit_stream_object(STREAM_OBJECT *);
+	BOOL flush_streams();
+	BOOL clear_unsent();
+	BOOL get_all_proptags(PROPTAG_ARRAY *);
+	BOOL check_readonly_property(uint32_t proptag) const;
+	BOOL get_properties(uint32_t size_limit, const PROPTAG_ARRAY *tags, TPROPVAL_ARRAY *vals);
+	BOOL set_properties(const TPROPVAL_ARRAY *vals, PROBLEM_ARRAY *);
+	BOOL remove_properties(const PROPTAG_ARRAY *tags, PROBLEM_ARRAY *);
+	BOOL copy_to(MESSAGE_OBJECT *src, const PROPTAG_ARRAY *exclprop, BOOL force, BOOL *cycle, PROBLEM_ARRAY *);
+	BOOL copy_rcpts(MESSAGE_OBJECT *src, BOOL force, BOOL *result);
+	BOOL copy_attachments(MESSAGE_OBJECT *src, BOOL force, BOOL *result);
+	BOOL set_readflag(uint8_t read_flag, BOOL *changed);
 
 	LOGON_OBJECT *plogon = nullptr;
 	BOOL b_new = false, b_touched = false;
@@ -30,59 +63,3 @@ struct MESSAGE_OBJECT {
 };
 
 extern std::unique_ptr<MESSAGE_OBJECT> message_object_create(LOGON_OBJECT *, BOOL b_new, uint32_t cpid, uint64_t message_id, void *parent, uint32_t tag_access, uint8_t open_flags, ICS_STATE *);
-uint32_t message_object_get_instance_id(MESSAGE_OBJECT *pmessage);
-BOOL message_object_check_orignal_touched(
-	MESSAGE_OBJECT *pmessage, BOOL *pb_touched);
-BOOL message_object_check_importing(MESSAGE_OBJECT *pmessage);
-BOOL message_object_init_message(MESSAGE_OBJECT *pmessage,
-	BOOL b_fai, uint32_t cpid);
-uint64_t message_object_get_id(MESSAGE_OBJECT *pmessage);
-uint32_t message_object_get_cpid(MESSAGE_OBJECT *pmessage);
-uint32_t message_object_get_tag_access(MESSAGE_OBJECT *pmessage);
-uint8_t message_object_get_open_flags(MESSAGE_OBJECT *pmessage);
-void message_object_set_open_flags(
-	MESSAGE_OBJECT *pmessage, uint8_t open_flags);
-extern gxerr_t message_object_save(MESSAGE_OBJECT *);
-BOOL message_object_reload(MESSAGE_OBJECT *pmessage);
-PROPTAG_ARRAY* message_object_get_rcpt_columns(MESSAGE_OBJECT *pmessage);
-BOOL message_object_read_recipients(MESSAGE_OBJECT *pmessage,
-	uint32_t row_id, uint16_t need_count, TARRAY_SET *pset);
-BOOL message_object_get_recipient_num(
-	MESSAGE_OBJECT *pmessage, uint16_t *pnum);
-BOOL message_object_set_rcpts(MESSAGE_OBJECT *pmessage, TARRAY_SET *pset);
-BOOL message_object_empty_rcpts(MESSAGE_OBJECT *pmessage);
-BOOL message_object_get_attachments_num(
-	MESSAGE_OBJECT *pmessage, uint16_t *pnum);
-extern BOOL message_object_delete_attachment(MESSAGE_OBJECT *, uint32_t attachment_num);
-BOOL message_object_get_attachment_table_all_proptags(
-	MESSAGE_OBJECT *pmessage, PROPTAG_ARRAY *pproptags);
-BOOL message_object_query_attachment_table(
-	MESSAGE_OBJECT *pmessage, const PROPTAG_ARRAY *pproptags,
-	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset);
-BOOL message_object_append_stream_object(
-	MESSAGE_OBJECT *pmessage, STREAM_OBJECT *pstream);
-BOOL message_object_commit_stream_object(
-	MESSAGE_OBJECT *pmessage, STREAM_OBJECT *pstream);
-BOOL message_object_flush_streams(MESSAGE_OBJECT *pmessage);
-BOOL message_object_clear_unsent(MESSAGE_OBJECT *pmessage);
-BOOL message_object_get_all_proptags(MESSAGE_OBJECT *pmessage,
-	PROPTAG_ARRAY *pproptags);
-BOOL message_object_check_readonly_property(
-	MESSAGE_OBJECT *pmessage, uint32_t proptag);
-BOOL message_object_get_properties(MESSAGE_OBJECT *pmessage,
-	uint32_t size_limit, const PROPTAG_ARRAY *pproptags,
-	TPROPVAL_ARRAY *ppropvals);
-BOOL message_object_set_properties(MESSAGE_OBJECT *pmessage,
-	const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems);
-BOOL message_object_remove_properties(MESSAGE_OBJECT *pmessage,
-	const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems);
-BOOL message_object_copy_to(
-	MESSAGE_OBJECT *pmessage, MESSAGE_OBJECT *pmessage_src,
-	const PROPTAG_ARRAY *pexcluded_proptags, BOOL b_force,
-	BOOL *pb_cycle, PROBLEM_ARRAY *pproblems);
-BOOL message_object_copy_rcpts(MESSAGE_OBJECT *pmessage,
-	MESSAGE_OBJECT *pmessage_src, BOOL b_force, BOOL *pb_result);
-BOOL message_object_copy_attachments(MESSAGE_OBJECT *pmessage,
-	MESSAGE_OBJECT *pmessage_src, BOOL b_force, BOOL *pb_result);
-BOOL message_object_set_readflag(MESSAGE_OBJECT *pmessage,
-	uint8_t read_flag, BOOL *pb_changed);

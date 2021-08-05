@@ -124,7 +124,7 @@ static uint32_t fastupctx_object_get_last_message_instance(
 			return ((MARKER_NODE*)pnode->pdata)->data.instance_id;
 		}
 	}
-	return message_object_get_instance_id(static_cast<MESSAGE_OBJECT *>(pctx->pobject));
+	return static_cast<MESSAGE_OBJECT *>(pctx->pobject)->get_instance_id();
 }
 
 static BOOL fastupctx_object_create_folder(
@@ -906,7 +906,7 @@ static gxerr_t fastupctx_object_record_propval(FASTUPCTX_OBJECT *pctx,
 			       GXERR_SUCCESS : GXERR_CALL_FAILED;
 		case ROOT_ELEMENT_MESSAGECONTENT:
 			return exmdb_client_set_instance_property(pctx->pstream->plogon->get_dir(),
-			       message_object_get_instance_id(static_cast<MESSAGE_OBJECT *>(pctx->pobject)),
+			       static_cast<MESSAGE_OBJECT *>(pctx->pobject)->get_instance_id(),
 					ppropval, &b_result) == TRUE ?
 					GXERR_SUCCESS : GXERR_CALL_FAILED;
 		case ROOT_ELEMENT_ATTACHMENTCONTENT:

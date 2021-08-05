@@ -46,10 +46,8 @@ std::unique_ptr<STREAM_OBJECT> stream_object_create(void *pparent, int object_ty
 		proptags.pproptag = proptag_buff;
 		proptag_buff[0] = proptag;
 		proptag_buff[1] = PR_MESSAGE_SIZE;
-		if (!message_object_get_properties(static_cast<MESSAGE_OBJECT *>(pparent),
-		    0, &proptags, &propvals)) {
+		if (!static_cast<MESSAGE_OBJECT *>(pparent)->get_properties(0, &proptags, &propvals))
 			return NULL;
-		}
 		psize = static_cast<uint32_t *>(common_util_get_propvals(&propvals, PR_MESSAGE_SIZE));
 		if (NULL != psize && *psize >= common_util_get_param(
 			COMMON_UTIL_MAX_MAIL_LENGTH)) {
@@ -182,7 +180,7 @@ uint16_t stream_object_write(STREAM_OBJECT *pstream,
 		if (!attachment_object_append_stream_object(static_cast<ATTACHMENT_OBJECT *>(pstream->pparent), pstream))
 			return 0;	
 	} else if (OBJECT_TYPE_MESSAGE == pstream->object_type) {
-		if (!message_object_append_stream_object(static_cast<MESSAGE_OBJECT *>(pstream->pparent), pstream))
+		if (!static_cast<MESSAGE_OBJECT *>(pstream->pparent)->append_stream_object(pstream))
 			return 0;	
 	}
 	memcpy(pstream->content_bin.pb +
@@ -377,7 +375,7 @@ STREAM_OBJECT::~STREAM_OBJECT()
 		break;
 	case OBJECT_TYPE_MESSAGE:
 		if (TRUE == pstream->b_touched) {
-			message_object_commit_stream_object(static_cast<MESSAGE_OBJECT *>(pstream->pparent), pstream);
+			static_cast<MESSAGE_OBJECT *>(pstream->pparent)->commit_stream_object(pstream);
 		}
 		break;
 	}

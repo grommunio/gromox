@@ -102,11 +102,9 @@ static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[14].pvalue = pentryid;
 	propval_buff[15].proptag = PROP_TAG_SENTREPRESENTINGSEARCHKEY;
 	propval_buff[15].pvalue = &search_bin1;
-	if (FALSE == message_object_set_properties(
-		pmessage, &tmp_propvals, &tmp_problems)) {
+	if (!pmessage->set_properties(&tmp_propvals, &tmp_problems))
 		return GXERR_CALL_FAILED;
-	}
-	return message_object_save(pmessage);
+	return pmessage->save();
 }
 
 static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size_t ulen)
@@ -121,10 +119,8 @@ static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size
 	proptag_buff[1] = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
 	proptag_buff[2] = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
 	proptag_buff[3] = PROP_TAG_SENTREPRESENTINGENTRYID;
-	if (FALSE == message_object_get_properties(
-		pmessage, 0, &tmp_proptags, &tmp_propvals)) {
+	if (!pmessage->get_properties(0, &tmp_proptags, &tmp_propvals))
 		return FALSE;	
-	}
 	if (0 == tmp_propvals.count) {
 		username[0] = '\0';
 		return TRUE;
@@ -205,7 +201,6 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	uint16_t rcpt_num;
 	char username[UADDR_SIZE];
 	int32_t max_length;
-	uint32_t tag_access;
 	uint32_t mail_length;
 	uint64_t submit_time;
 	uint32_t deferred_time;
@@ -236,22 +231,16 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
 	}
-	if (0 == message_object_get_id(pmessage)) {
+	if (pmessage->get_id() == 0)
 		return ecNotSupported;
-	}
-	if (TRUE == message_object_check_importing(pmessage)) {
+	if (pmessage->check_importing())
 		return ecAccessDenied;
-	}
-	
-	tag_access = message_object_get_tag_access(pmessage);
+	auto tag_access = pmessage->get_tag_access();
 	if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 		return ecAccessDenied;
 	}
-	
-	if (FALSE == message_object_get_recipient_num(
-		pmessage, &rcpt_num)) {
+	if (!pmessage->get_recipient_num(&rcpt_num))
 		return ecError;
-	}
 	if (rcpt_num > common_util_get_param(COMMON_UTIL_MAX_RCPT)) {
 		return ecTooManyRecips;
 	}
@@ -259,10 +248,8 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_ASSOCIATED;
-	if (FALSE == message_object_get_properties(
-		pmessage, 0, &tmp_proptags, &tmp_propvals)) {
+	if (!pmessage->get_properties(0, &tmp_proptags, &tmp_propvals))
 		return ecError;
-	}
 	auto pvalue = common_util_get_propvals(
 		&tmp_propvals, PROP_TAG_ASSOCIATED);
 	/* FAI message cannot be sent */
@@ -312,10 +299,8 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	proptag_buff[3] = PROP_TAG_DEFERREDSENDNUMBER;
 	proptag_buff[4] = PROP_TAG_DEFERREDSENDUNITS;
 	proptag_buff[5] = PROP_TAG_DELETEAFTERSUBMIT;
-	if (FALSE == message_object_get_properties(
-		pmessage, 0, &tmp_proptags, &tmp_propvals)) {
+	if (!pmessage->get_properties(0, &tmp_proptags, &tmp_propvals))
 		return ecError;
-	}
 	pvalue = common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE);
 	if (NULL == pvalue) {
 		return ecError;
@@ -339,24 +324,22 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	/* check if it is alread in spooler queue */
 	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
 	if (!exmdb_client_check_message(plogon->get_dir(), fid_spooler,
-	    message_object_get_id(pmessage), &b_exist))
+	    pmessage->get_id(), &b_exist))
 		return ecError;
 	if (TRUE == b_exist) {
 		return ecAccessDenied;
 	}
 	if (submit_flags & SUBMIT_FLAG_NEEDS_SPOOLER) {
 		if (!exmdb_client_link_message(plogon->get_dir(), pinfo->cpid,
-		    fid_spooler, message_object_get_id(pmessage), &b_result) ||
-		    !b_result)
+		    fid_spooler, pmessage->get_id(), &b_result) || !b_result)
 			return ecError;
 		return ecSuccess;
 	}
 #endif
 	
 	if (!exmdb_client_try_mark_submit(plogon->get_dir(),
-		message_object_get_id(pmessage), &b_marked)) {
+	    pmessage->get_id(), &b_marked))
 		return ecError;
-	}
 	if (FALSE == b_marked) {
 		return ecAccessDenied;
 	}
@@ -401,33 +384,29 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 		snprintf(command_buff, 1024, "%s %s %llu",
 		         common_util_get_submit_command(),
 		         plogon->get_account(),
-			static_cast<unsigned long long>(rop_util_get_gc_value(
-				message_object_get_id(pmessage))));
+		         static_cast<unsigned long long>(rop_util_get_gc_value(pmessage->get_id())));
 		timer_id = common_util_add_timer(
 			command_buff, deferred_time);
 		if (0 == timer_id) {
 			goto SUBMIT_FAIL;
 		}
 		exmdb_client_set_message_timer(plogon->get_dir(),
-			message_object_get_id(pmessage), timer_id);
-		message_object_reload(pmessage);
+			pmessage->get_id(), timer_id);
+		pmessage->reload();
 		return ecSuccess;
 	}
 	
-	if (FALSE == common_util_send_message(plogon,
-		message_object_get_id(pmessage), TRUE)) {
+	if (!common_util_send_message(plogon, pmessage->get_id(), TRUE))
 		goto SUBMIT_FAIL;
-	}
 	if (FALSE == b_delete) {
-		message_object_reload(pmessage);
+		pmessage->reload();
 	} else {
-		message_object_clear_unsent(pmessage);
+		pmessage->clear_unsent();
 	}
 	return ecSuccess;
 
  SUBMIT_FAIL:
-	exmdb_client_clear_submit(plogon->get_dir(),
-				message_object_get_id(pmessage), b_unsent);
+	exmdb_client_clear_submit(plogon->get_dir(), pmessage->get_id(), b_unsent);
 	return ecError;
 }
 
@@ -630,14 +609,12 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
 	}
-	if (0 == message_object_get_id(pmessage)) {
+	if (pmessage->get_id() == 0)
 		return ecNotSupported;
-	}
-	if (TRUE == message_object_check_importing(pmessage)) {
+	if (pmessage->check_importing())
 		return ecAccessDenied;
-	}
 	if (!exmdb_client_get_message_property(plogon->get_dir(), nullptr, 0,
-	    message_object_get_id(pmessage), PR_MESSAGE_FLAGS, &pvalue))
+	    pmessage->get_id(), PR_MESSAGE_FLAGS, &pvalue))
 		return ecError;
 	if (pvalue != nullptr && *static_cast<uint32_t *>(pvalue) & MSGFLAG_SUBMITTED)
 		return ecAccessDenied;
@@ -665,10 +642,8 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 		proptag_buff[4] = PROP_TAG_SENTREPRESENTINGENTRYID;
 		proptag_buff[5] = PROP_TAG_SENTREPRESENTINGSEARCHKEY;
 		proptag_buff[6] = PROP_TAG_PROVIDERSUBMITTIME;
-		if (FALSE == message_object_get_properties(
-			pmessage, 0, &proptags, *pppropvals)) {
+		if (!pmessage->get_properties(0, &proptags, *pppropvals))
 			*pppropvals = NULL;
-		}
 		if (NULL == common_util_get_propvals(
 			*pppropvals, PROP_TAG_PROVIDERSUBMITTIME)) {
 			propval.proptag = PROP_TAG_PROVIDERSUBMITTIME;
@@ -679,10 +654,8 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 			}
 		}
 	}
-	if (FALSE == common_util_send_message(plogon,
-		message_object_get_id(pmessage), FALSE)) {
+	if (!common_util_send_message(plogon, pmessage->get_id(), false))
 		return ecError;
-	}
 	return ecSuccess;
 }
 

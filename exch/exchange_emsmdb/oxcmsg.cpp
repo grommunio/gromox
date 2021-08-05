@@ -37,7 +37,6 @@ uint32_t rop_openmessage(uint16_t cpid,
 	uint32_t permission;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
-	PROPTAG_ARRAY *pcolumns;
 	uint32_t proptag_buff[3];
 	
 	if (0x0FFF == cpid) {
@@ -128,7 +127,7 @@ uint32_t rop_openmessage(uint16_t cpid,
 	proptag_buff[0] = PROP_TAG_HASNAMEDPROPERTIES;
 	proptag_buff[1] = PR_SUBJECT_PREFIX;
 	proptag_buff[2] = PR_NORMALIZED_SUBJECT;
-	if (!message_object_get_properties(pmessage.get(), 0, &proptags, &propvals))
+	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
 	pvalue = common_util_get_propvals(&propvals,
 				PROP_TAG_HASNAMEDPROPERTIES);
@@ -149,13 +148,13 @@ uint32_t rop_openmessage(uint16_t cpid,
 		pnormalized_subject->string_type = STRING_TYPE_UNICODE;
 		pnormalized_subject->pstring = static_cast<char *>(pvalue);
 	}
-	if (!message_object_get_recipient_num(pmessage.get(), precipient_count))
+	if (!pmessage->get_recipient_num(precipient_count))
 		return ecError;
-	pcolumns = message_object_get_rcpt_columns(pmessage.get());
+	auto pcolumns = pmessage->get_rcpt_columns();
 	*precipient_columns = *pcolumns;
 	emsmdb_interface_get_rop_num(&rop_num);
 	uint8_t rcpt_num = rop_num == 1 ? 0xFE : 5;
-	if (!message_object_read_recipients(pmessage.get(), 0, rcpt_num, &rcpts))
+	if (!pmessage->read_recipients(0, rcpt_num, &rcpts))
 		return ecError;
 	*prow_count = rcpts.count;
 	if (rcpts.count > 0) {
@@ -271,9 +270,8 @@ uint32_t rop_createmessage(uint16_t cpid,
 		return ecMAPIOOM;
 	}
 	BOOL b_fai = associated_flag == 0 ? false : TRUE;
-	if (!message_object_init_message(pmessage.get(), b_fai, cpid)) {
+	if (!pmessage->init_message(b_fai, cpid))
 		return ecError;
-	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage.get());
 	if (hnd < 0) {
@@ -290,8 +288,6 @@ uint32_t rop_savechangesmessage(uint8_t save_flags,
 {
 	BOOL b_touched;
 	int object_type;
-	uint8_t open_flags;
-	uint32_t tag_access;
 	uint32_t tmp_proptag;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
@@ -307,20 +303,18 @@ uint32_t rop_savechangesmessage(uint8_t save_flags,
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
 	}
-	tag_access = message_object_get_tag_access(pmessage);
+	auto tag_access = pmessage->get_tag_access();
 	if (0 == (TAG_ACCESS_MODIFY & tag_access)) {
 		return ecAccessDenied;
 	}
-	open_flags = message_object_get_open_flags(pmessage);
+	auto open_flags = pmessage->get_open_flags();
 	if (0 == (open_flags & OPEN_MODE_FLAG_READWRITE) &&
 		SAVE_FLAG_FORCESAVE != save_flags) {
 		return ecAccessDenied;
 	}
 	if (SAVE_FLAG_FORCESAVE != save_flags) {
-		if (FALSE == message_object_check_orignal_touched(
-			pmessage, &b_touched)) {
+		if (!pmessage->check_orignal_touched(&b_touched))
 			return ecError;
-		}
 		if (TRUE == b_touched) {
 			return ecObjectModified;
 		}
@@ -328,23 +322,21 @@ uint32_t rop_savechangesmessage(uint8_t save_flags,
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
 	tmp_proptag = PROP_TAG_MID;
-	if (FALSE == message_object_get_properties(
-		pmessage, 0, &proptags, &propvals)) {
+	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
-	}
 	auto pvalue = common_util_get_propvals(&propvals, PROP_TAG_MID);
 	if (NULL == pvalue) {
 		return ecError;
 	}
 	*pmessage_id = *(uint64_t*)pvalue;
-	gxerr_t err = message_object_save(pmessage);
+	auto err = pmessage->save();
 	if (err != GXERR_SUCCESS)
 		return gxerr_to_hresult(err);
 	switch (save_flags) {
 	case SAVE_FLAG_KEEPOPENREADWRITE:
 	case SAVE_FLAG_FORCESAVE:
 		open_flags = OPEN_MODE_FLAG_READWRITE;
-		message_object_set_open_flags(pmessage, open_flags);
+		pmessage->set_open_flags(open_flags);
 		break;
 	}
 	return ecSuccess;
@@ -363,7 +355,7 @@ uint32_t rop_removeallrecipients(uint32_t reserved,
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
 	}
-	message_object_empty_rcpts(pmessage);
+	pmessage->empty_rcpts();
 	return ecSuccess;
 }
 
@@ -431,9 +423,8 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags,
 		}
 		tmp_set.pparray[i] = ppropvals;
 	}
-	if (FALSE == message_object_set_rcpts(pmessage, &tmp_set)) {
+	if (!pmessage->set_rcpts(&tmp_set))
 		return ecError;
-	}
 	return ecSuccess;
 }
 
@@ -455,21 +446,17 @@ uint32_t rop_readrecipients(uint32_t row_id,
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
 	}
-	if (FALSE == message_object_read_recipients(
-		pmessage, row_id, 0xFE, &tmp_set)) {
+	if (!pmessage->read_recipients(row_id, 0xFE, &tmp_set))
 		return ecError;
-	}
 	if (0 == tmp_set.count) {
 		return ecNotFound;
 	}
 	for (i = 0; i < tmp_set.count; ++i) {
-		if (FALSE == common_util_propvals_to_readrecipient(
-			message_object_get_cpid(pmessage), tmp_set.pparray[i],
-			message_object_get_rcpt_columns(pmessage), &tmp_row)) {
+		if (!common_util_propvals_to_readrecipient(pmessage->get_cpid(),
+		    tmp_set.pparray[i], pmessage->get_rcpt_columns(), &tmp_row))
 			return ecMAPIOOM;
-		}
 		uint32_t last_offset = ext.m_offset;
-		if (pext->p_readrecipient_row(message_object_get_rcpt_columns(pmessage),
+		if (pext->p_readrecipient_row(pmessage->get_rcpt_columns(),
 		    &tmp_row) != EXT_ERR_SUCCESS) {
 			ext.m_offset = last_offset;
 			break;
@@ -493,7 +480,6 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 	TARRAY_SET rcpts;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
-	PROPTAG_ARRAY *pcolumns;
 	uint32_t proptag_buff[3];
 	
 	auto pmessage = static_cast<MESSAGE_OBJECT *>(rop_processor_get_object(plogmap,
@@ -509,10 +495,8 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 	proptag_buff[0] = PROP_TAG_HASNAMEDPROPERTIES;
 	proptag_buff[1] = PR_SUBJECT_PREFIX;
 	proptag_buff[2] = PR_NORMALIZED_SUBJECT;
-	if (FALSE == message_object_get_properties(
-		pmessage, 0, &proptags, &propvals)) {
+	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
-	}
 	auto pvalue = common_util_get_propvals(&propvals,
 				PROP_TAG_HASNAMEDPROPERTIES);
 	*phas_named_properties = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0; /* XXX */
@@ -532,27 +516,21 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 		pnormalized_subject->string_type = STRING_TYPE_UNICODE;
 		pnormalized_subject->pstring = static_cast<char *>(pvalue);
 	}
-	if (FALSE == message_object_get_recipient_num(
-		pmessage, precipient_count)) {
+	if (!pmessage->get_recipient_num(precipient_count))
 		return ecError;
-	}
-	pcolumns = message_object_get_rcpt_columns(pmessage);
+	auto pcolumns = pmessage->get_rcpt_columns();
 	*precipient_columns = *pcolumns;
-	if (FALSE == message_object_read_recipients(
-		pmessage, 0, 0xFE, &rcpts)) {
+	if (!pmessage->read_recipients(0, 0xFE, &rcpts))
 		return ecError;
-	}
 	*prow_count = rcpts.count;
 	*pprecipient_row = cu_alloc<OPENRECIPIENT_ROW>(rcpts.count);
 	if (NULL == *pprecipient_row) {
 		return ecMAPIOOM;
 	}
 	for (size_t i = 0; i < rcpts.count; ++i) {
-		if (FALSE == common_util_propvals_to_openrecipient(
-			message_object_get_cpid(pmessage), rcpts.pparray[i],
-			pcolumns, *pprecipient_row + i)) {
+		if (!common_util_propvals_to_openrecipient(pmessage->get_cpid(),
+		    rcpts.pparray[i], pcolumns, *pprecipient_row + i))
 			return ecMAPIOOM;
-		}
 	}
 	return ecSuccess;
 }
@@ -793,10 +771,8 @@ uint32_t rop_setmessagereadflag(uint8_t read_flags,
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
 	}
-	if (FALSE == message_object_set_readflag(
-		pmessage, read_flags, &b_changed)) {
+	if (!pmessage->set_readflag(read_flags, &b_changed))
 		return ecError;
-	}
 	*pread_change = !b_changed;
 	return ecSuccess;
 }
@@ -805,7 +781,6 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 	void *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	int object_type;
-	uint32_t tag_access;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -820,7 +795,7 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 		return ecNotSupported;
 	}
 	if (flags & OPEN_MODE_FLAG_READWRITE) {
-		tag_access = message_object_get_tag_access(pmessage);
+		auto tag_access = pmessage->get_tag_access();
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			if (flags & OPEN_MODE_FLAG_BESTACCESS) {
 				flags &= ~OPEN_MODE_FLAG_BESTACCESS;
@@ -850,7 +825,6 @@ uint32_t rop_createattachment(uint32_t *pattachment_id,
 	void *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	int object_type;
-	uint32_t tag_access;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -864,7 +838,7 @@ uint32_t rop_createattachment(uint32_t *pattachment_id,
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
 	}
-	tag_access = message_object_get_tag_access(pmessage);
+	auto tag_access = pmessage->get_tag_access();
 	if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 		return ecAccessDenied;
 	}
@@ -893,8 +867,6 @@ uint32_t rop_deleteattachment(uint32_t attachment_id,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	uint32_t tag_access;
-	
 	auto pmessage = static_cast<MESSAGE_OBJECT *>(rop_processor_get_object(plogmap,
 	                logon_id, hin, &object_type));
 	if (NULL == pmessage) {
@@ -903,11 +875,11 @@ uint32_t rop_deleteattachment(uint32_t attachment_id,
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
 	}
-	tag_access = message_object_get_tag_access(pmessage);
+	auto tag_access = pmessage->get_tag_access();
 	if (0 == (TAG_ACCESS_MODIFY & tag_access)) {
 		return ecAccessDenied;
 	}
-	if (!message_object_delete_attachment(pmessage, attachment_id))
+	if (!pmessage->delete_attachment(attachment_id))
 		return ecError;
 	return ecSuccess;
 }
@@ -972,7 +944,6 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	uint32_t tag_access;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
-	PROPTAG_ARRAY *pcolumns;
 	uint32_t proptag_buff[4];
 	
 	*preserved = 0;
@@ -1008,7 +979,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	if (NULL == pmessage) {
 		return ecError;
 	}
-	if (message_object_get_instance_id(pmessage.get()) == 0) {
+	if (pmessage->get_instance_id() == 0) {
 		if (0 == (OPEN_EMBEDDED_FLAG_CREATE & open_embedded_flags)) {
 			return ecNotFound;
 		}
@@ -1021,13 +992,12 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 		if (NULL == pmessage) {
 			return ecError;
 		}
-		if (!message_object_init_message(pmessage.get(), false, cpid))
+		if (!pmessage->init_message(false, cpid))
 			return ecError;
 		proptags.count = 1;
 		proptags.pproptag = proptag_buff;
 		proptag_buff[0] = PROP_TAG_MID;
-		if (!message_object_get_properties(pmessage.get(),
-		    0, &proptags, &propvals))
+		if (!pmessage->get_properties(0, &proptags, &propvals))
 			return ecError;
 		auto pvalue = common_util_get_propvals(&propvals, PROP_TAG_MID);
 		if (NULL == pvalue) {
@@ -1059,7 +1029,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	proptag_buff[1] = PROP_TAG_HASNAMEDPROPERTIES;
 	proptag_buff[2] = PR_SUBJECT_PREFIX;
 	proptag_buff[3] = PR_NORMALIZED_SUBJECT;
-	if (!message_object_get_properties(pmessage.get(), 0, &proptags, &propvals))
+	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
 	auto pvalue = common_util_get_propvals(&propvals, PROP_TAG_MID);
 	if (NULL == pvalue) {
@@ -1085,11 +1055,11 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 		pnormalized_subject->string_type = STRING_TYPE_UNICODE;
 		pnormalized_subject->pstring = static_cast<char *>(pvalue);
 	}
-	if (!message_object_get_recipient_num(pmessage.get(), precipient_count))
+	if (!pmessage->get_recipient_num(precipient_count))
 		return ecError;
-	pcolumns = message_object_get_rcpt_columns(pmessage.get());
+	auto pcolumns = pmessage->get_rcpt_columns();
 	*precipient_columns = *pcolumns;
-	if (!message_object_read_recipients(pmessage.get(), 0, 0xFE, &rcpts))
+	if (!pmessage->read_recipients(0, 0xFE, &rcpts))
 		return ecError;
 	*prow_count = rcpts.count;
 	*pprecipient_row = cu_alloc<OPENRECIPIENT_ROW>(rcpts.count);
@@ -1097,11 +1067,9 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 		return ecMAPIOOM;
 	}
 	for (size_t i = 0; i < rcpts.count; ++i) {
-		if (FALSE == common_util_propvals_to_openrecipient(
-			message_object_get_cpid(pmessage.get()), rcpts.pparray[i],
-			pcolumns, *pprecipient_row + i)) {
+		if (!common_util_propvals_to_openrecipient(pmessage->get_cpid(),
+		    rcpts.pparray[i], pcolumns, *pprecipient_row + i))
 			return ecMAPIOOM;
-		}
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage.get());

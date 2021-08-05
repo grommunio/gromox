@@ -153,8 +153,7 @@ BOOL TABLE_OBJECT::query_rows(BOOL b_forward, uint16_t row_count, TARRAY_SET *ps
 	}
 	int32_t row_needed = b_forward ? row_count : -row_count; /* XXX */
 	if (ptable->rop_id == ropGetAttachmentTable) {
-		return message_object_query_attachment_table(
-		       static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj),
+		return static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj)->query_attachment_table(
 		       m_columns, m_position, row_needed, pset);
 	}
 	if (!ptable->plogon->check_private()) {
@@ -240,7 +239,7 @@ uint32_t TABLE_OBJECT::get_total() const
 	
 	if (ptable->rop_id == ropGetAttachmentTable) {
 		num = 0;
-		message_object_get_attachments_num(static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj), &num);
+		static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj)->get_attachments_num(&num);
 		return num;
 	}
 	exmdb_client_sum_table(ptable->plogon->get_dir(),
@@ -399,8 +398,8 @@ BOOL TABLE_OBJECT::get_all_columns(PROPTAG_ARRAY *pcolumns)
 {
 	auto ptable = this;
 	if (ptable->rop_id == ropGetAttachmentTable)
-		return message_object_get_attachment_table_all_proptags(
-		       static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj), pcolumns);
+		return static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj)->
+		       get_attachment_table_all_proptags(pcolumns);
 	return exmdb_client_get_table_all_proptags(ptable->plogon->get_dir(),
 	       m_table_id, pcolumns);
 }

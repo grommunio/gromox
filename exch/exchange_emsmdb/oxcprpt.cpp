@@ -139,9 +139,9 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 	}
 	case OBJECT_TYPE_MESSAGE: {
 		auto msg = static_cast<MESSAGE_OBJECT *>(pobject);
-		if (!message_object_get_properties(msg, 0, ptmp_proptags, &propvals))
+		if (!msg->get_properties(0, ptmp_proptags, &propvals))
 			return ecError;
-		cpid = message_object_get_cpid(msg);
+		cpid = msg->get_cpid();
 		break;
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
@@ -273,16 +273,15 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 	}
 	case OBJECT_TYPE_MESSAGE: {
 		auto msg = static_cast<MESSAGE_OBJECT *>(pobject);
-		if (!message_object_get_all_proptags(msg, &proptags))
+		if (!msg->get_all_proptags(&proptags))
 			return ecError;
 		ptmp_proptags = common_util_trim_proptags(&proptags);
 		if (NULL == ptmp_proptags) {
 			return ecMAPIOOM;
 		}
-		if (!message_object_get_properties(msg, size_limit,
-		    ptmp_proptags, ppropvals))
+		if (!msg->get_properties(size_limit, ptmp_proptags, ppropvals))
 			return ecError;
-		cpid = message_object_get_cpid(msg);
+		cpid = msg->get_cpid();
 		break;
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
@@ -333,7 +332,7 @@ uint32_t rop_getpropertieslist(PROPTAG_ARRAY *pproptags,
 			return ecError;
 		return ecSuccess;
 	case OBJECT_TYPE_MESSAGE:
-		if (!message_object_get_all_proptags(static_cast<MESSAGE_OBJECT *>(pobject), pproptags))
+		if (!static_cast<MESSAGE_OBJECT *>(pobject)->get_all_proptags(pproptags))
 			return ecError;
 		return ecSuccess;
 	case OBJECT_TYPE_ATTACHMENT:
@@ -351,7 +350,6 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 {
 	void *pobject;
 	int object_type;
-	uint32_t tag_access;
 	uint32_t permission;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
@@ -386,17 +384,17 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 	}
 	case OBJECT_TYPE_MESSAGE: {
 		auto msg = static_cast<MESSAGE_OBJECT *>(pobject);
-		tag_access = message_object_get_tag_access(msg);
+		auto tag_access = msg->get_tag_access();
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
 		}
-		if (!message_object_set_properties(msg, ppropvals, pproblems))
+		if (!msg->set_properties(ppropvals, pproblems))
 			return ecError;
 		return ecSuccess;
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
 		auto atx = static_cast<ATTACHMENT_OBJECT *>(pobject);
-		tag_access = attachment_object_get_tag_access(atx);
+		auto tag_access = attachment_object_get_tag_access(atx);
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
 		}
@@ -423,7 +421,6 @@ uint32_t rop_deleteproperties(
 {
 	void *pobject;
 	int object_type;
-	uint32_t tag_access;
 	uint32_t permission;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
@@ -458,17 +455,17 @@ uint32_t rop_deleteproperties(
 	}
 	case OBJECT_TYPE_MESSAGE: {
 		auto msg = static_cast<MESSAGE_OBJECT *>(pobject);
-		tag_access = message_object_get_tag_access(msg);
+		auto tag_access = msg->get_tag_access();
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
 		}
-		if (!message_object_remove_properties(msg, pproptags, pproblems))
+		if (!msg->remove_properties(pproptags, pproblems))
 			return ecError;
 		return ecSuccess;
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
 		auto atx = static_cast<ATTACHMENT_OBJECT *>(pobject);
-		tag_access = attachment_object_get_tag_access(atx);
+		auto tag_access = attachment_object_get_tag_access(atx);
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
 		}
@@ -528,7 +525,7 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 			return ecError;
 		break;
 	case OBJECT_TYPE_MESSAGE:
-		if (!message_object_get_all_proptags(static_cast<MESSAGE_OBJECT *>(pobject), &proptags))
+		if (!static_cast<MESSAGE_OBJECT *>(pobject)->get_all_proptags(&proptags))
 			return ecError;
 		break;
 	case OBJECT_TYPE_ATTACHMENT:
@@ -603,7 +600,6 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 	int object_type;
 	void *pobject_dst;
 	uint32_t permission;
-	uint32_t tag_access;
 	PROPTAG_ARRAY proptags;
 	PROPTAG_ARRAY proptags1;
 	TPROPVAL_ARRAY propvals;
@@ -714,20 +710,19 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 	case OBJECT_TYPE_MESSAGE: {
 		auto msgsrc = static_cast<MESSAGE_OBJECT *>(pobject);
 		auto msgdst = static_cast<MESSAGE_OBJECT* >(pobject_dst);
-		tag_access = message_object_get_tag_access(msgdst);
+		auto tag_access = msgdst->get_tag_access();
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
 		}
 		b_force = TRUE;
 		if (copy_flags & COPY_FLAG_NOOVERWRITE) {
 			b_force = FALSE;
-			if (!message_object_get_all_proptags(msgdst, &proptags1))
+			if (!msgdst->get_all_proptags(&proptags1))
 				return ecError;
 		}
 		for (i=0; i<pproptags->count; i++) {
 			if (pproptags->pproptag[i] == PR_MESSAGE_ATTACHMENTS) {
-				if (!message_object_copy_attachments(msgdst,
-				    msgsrc, b_force, &b_result))
+				if (!msgdst->copy_attachments(msgsrc, b_force, &b_result))
 					return ecError;
 				if (FALSE == b_result) {
 					pproblems->pproblem[pproblems->count].index = i;
@@ -737,8 +732,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 				}
 				continue;
 			} else if (pproptags->pproptag[i] == PR_MESSAGE_RECIPIENTS) {
-				if (!message_object_copy_rcpts(msgdst, msgsrc,
-				    b_force, &b_result))
+				if (!msgdst->copy_rcpts(msgsrc, b_force, &b_result))
 					return ecError;
 				if (FALSE == b_result) {
 					pproblems->pproblem[pproblems->count].index = i;
@@ -748,7 +742,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 				}
 				continue;
 			}
-			if (message_object_check_readonly_property(msgdst, pproptags->pproptag[i])) {
+			if (msgdst->check_readonly_property(pproptags->pproptag[i])) {
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 										pproptags->pproptag[i];
@@ -766,7 +760,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 			poriginal_indices[proptags.count] = i;
 			proptags.count ++;
 		}
-		if (!message_object_get_properties(msgsrc, 0, &proptags, &propvals))
+		if (!msgsrc->get_properties(0, &proptags, &propvals))
 			return ecError;
 		for (i=0; i<proptags.count; i++) {
 			if (NULL == common_util_get_propvals(
@@ -779,7 +773,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 				pproblems->count ++;
 			}
 		}
-		if (!message_object_set_properties(msgdst, &propvals, &tmp_problems))
+		if (!msgdst->set_properties(&propvals, &tmp_problems))
 			return ecError;
 		for (i=0; i<tmp_problems.count; i++) {
 			tmp_problems.pproblem[i].index = common_util_index_proptags(
@@ -796,7 +790,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 	case OBJECT_TYPE_ATTACHMENT: {
 		auto atsrc = static_cast<ATTACHMENT_OBJECT *>(pobject);
 		auto atdst = static_cast<ATTACHMENT_OBJECT *>(pobject_dst);
-		tag_access = attachment_object_get_tag_access(atdst);
+		auto tag_access = attachment_object_get_tag_access(atdst);
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
 		}
@@ -870,7 +864,6 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 	BOOL b_partial;
 	int object_type;
 	void *pobject_dst;
-	uint32_t tag_access;
 	uint32_t permission;
 	const char *username;
 	PROPTAG_ARRAY proptags;
@@ -993,11 +986,11 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 	}
 	case OBJECT_TYPE_MESSAGE: {
 		auto msgdst = static_cast<MESSAGE_OBJECT *>(pobject_dst);
-		tag_access = message_object_get_tag_access(msgdst);
+		auto tag_access = msgdst->get_tag_access();
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
 		}
-		if (!message_object_copy_to(msgdst, static_cast<MESSAGE_OBJECT *>(pobject),
+		if (!msgdst->copy_to(static_cast<MESSAGE_OBJECT *>(pobject),
 		    pexcluded_proptags, b_force, &b_cycle, pproblems))
 			return ecError;
 		if (TRUE == b_cycle) {
@@ -1007,7 +1000,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
 		auto atdst = static_cast<ATTACHMENT_OBJECT *>(pobject_dst);
-		tag_access = attachment_object_get_tag_access(atdst);
+		auto tag_access = attachment_object_get_tag_access(atdst);
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
 		}
@@ -1040,7 +1033,6 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 	void *pobject;
 	int object_type;
 	uint32_t max_length;
-	uint32_t tag_access;
 	uint32_t permission;
 	
 	/* MS-OXCPERM 3.1.4.1 */
@@ -1091,8 +1083,8 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 			return ecNotSupported;
 		}
 		if (TRUE == b_write) {
-			tag_access = object_type == OBJECT_TYPE_MESSAGE ?
-			             message_object_get_tag_access(static_cast<MESSAGE_OBJECT *>(pobject)) :
+			auto tag_access = object_type == OBJECT_TYPE_MESSAGE ?
+				static_cast<MESSAGE_OBJECT *>(pobject)->get_tag_access() :
 			             attachment_object_get_tag_access(static_cast<ATTACHMENT_OBJECT *>(pobject));
 			if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 				return ecAccessDenied;
