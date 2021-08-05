@@ -583,7 +583,7 @@ BOOL container_object_load_user_table(
 			}
 			propval.proptag = PR_DISPLAY_TYPE;
 			propval.pvalue = &tmp_int;
-			tmp_int = DISPLAY_TYPE_MAILUSER;
+			tmp_int = DT_MAILUSER;
 			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;

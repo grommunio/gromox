@@ -20,22 +20,6 @@
 #define FLAG_UNICODEPROPTYPES			0x80000000
 
 #define CODEPAGE_UNICODE				0x04B0
-#define DT_MAILUSER						0x0
-#define DT_DISTLIST						0x1
-#define DT_FORUM						0x2
-#define DT_AGENT						0x3
-#define DT_ORGANIZATION					0x4
-#define DT_PRIVATE_DISTLIST				0x5
-#define DT_REMOTE_MAILUSER				0x6
-#define DT_ROOM							0x7
-#define DT_EQUIPMENT					0x8
-#define DT_SEC_DISTLIST					0x9
-#define DT_CONTAINER					0x100
-#define DT_TEMPLATE						0x101
-#define DT_ADDRESS_TEMPLATE				0x102
-#define DT_SEARCH						0x200
-
-#define DTE_FLAG_ACL_CAPABLE			0x40000000
 
 /* PROP_TAG_CONTAINERFLAGS values */
 #define	AB_RECIPIENTS					0x1

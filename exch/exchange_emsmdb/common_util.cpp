@@ -1250,11 +1250,11 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 			prow->pprefix_used = deconst(&dummy_zero);
 			pvalue = common_util_get_propvals(ppropvals, PR_DISPLAY_TYPE);
 			if (NULL == pvalue) {
-				display_type = DISPLAY_TYPE_MAILUSER;
+				display_type = DT_MAILUSER;
 			} else {
 				display_type = *(uint32_t*)pvalue;
 				if (display_type > 6) {
-					display_type = DISPLAY_TYPE_MAILUSER;
+					display_type = DT_MAILUSER;
 				}
 			}
 			prow->pdisplay_type = &display_type;

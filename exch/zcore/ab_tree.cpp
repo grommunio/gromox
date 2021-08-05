@@ -37,9 +37,6 @@
 #include "../mysql_adaptor/mysql_adaptor.h"
 
 #define EPOCH_DIFF 							11644473600LL
-
-#define DTE_FLAG_ACL_CAPABLE				0x40000000
-
 #define ADDRESS_TYPE_NORMAL					0
 #define ADDRESS_TYPE_ALIAS 1 /* historic; no longer used in db schema */
 #define ADDRESS_TYPE_MLIST					2
@@ -1631,11 +1628,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		if (NODE_TYPE_MLIST == node_type) {
-			*(uint32_t*)pvalue = DISPLAY_TYPE_DISTLIST;
-		} else {
-			*(uint32_t*)pvalue = DISPLAY_TYPE_MAILUSER;
-		}
+		*static_cast<uint32_t *>(pvalue) = node_type == NODE_TYPE_MLIST ? DT_DISTLIST : DT_MAILUSER;
 		*ppvalue = pvalue;
 		return TRUE;
 	case PR_DISPLAY_TYPE_EX:
@@ -1646,14 +1639,10 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		if (NODE_TYPE_ROOM == node_type) {
-			*(uint32_t*)pvalue = DISPLAY_TYPE_ROOM;
-		} else if (NODE_TYPE_EQUIPMENT == node_type) {
-			*(uint32_t*)pvalue = DISPLAY_TYPE_EQUIPMENT;
-		} else {
-			*(uint32_t*)pvalue = DISPLAY_TYPE_MAILUSER
-								| DTE_FLAG_ACL_CAPABLE;
-		}
+		*static_cast<uint32_t *>(pvalue) =
+			node_type == NODE_TYPE_ROOM ? DT_ROOM :
+			node_type == NODE_TYPE_EQUIPMENT ? DT_EQUIPMENT :
+			DT_MAILUSER | DTE_FLAG_ACL_CAPABLE;
 		*ppvalue = pvalue;
 		return TRUE;
 	case PR_MAPPING_SIGNATURE:
