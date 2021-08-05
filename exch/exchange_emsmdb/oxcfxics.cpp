@@ -383,11 +383,10 @@ uint32_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 			return ecError;
 	} else if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
 		auto dobj = static_cast<ICSDOWNCTX_OBJECT *>(pobject);
-		if (!icsdownctx_object_check_started(dobj))
-			if (!icsdownctx_object_make_sync(dobj))
-				return ecError;
-		if (!icsdownctx_object_get_buffer(dobj, ptransfer_data->pv,
-		    &len, &b_last, pin_progress_count, ptotal_step_count))
+		if (!dobj->check_started() && !dobj->make_sync())
+			return ecError;
+		if (!dobj->get_buffer(ptransfer_data->pv, &len, &b_last,
+		    pin_progress_count, ptotal_step_count))
 			return ecError;
 	}
 	if (0xBABE != buffer_size && len > max_rop) {
@@ -1784,7 +1783,7 @@ uint32_t rop_syncgettransferstate(void *plogmap,
 		return ecNullObject;
 	}
 	if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
-		pstate = icsdownctx_object_get_state(static_cast<ICSDOWNCTX_OBJECT *>(pobject));
+		pstate = static_cast<ICSDOWNCTX_OBJECT *>(pobject)->get_state();
 	} else if (OBJECT_TYPE_ICSUPCTX == object_type) {
 		pstate = icsupctx_object_get_state(static_cast<ICSUPCTX_OBJECT *>(pobject));
 	} else {
@@ -1821,7 +1820,7 @@ uint32_t rop_syncuploadstatestreambegin(uint32_t proptag_state,
 		return ecNullObject;
 	}
 	if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
-		if (!icsdownctx_object_begin_state_stream(static_cast<ICSDOWNCTX_OBJECT *>(pctx), proptag_state))
+		if (!static_cast<ICSDOWNCTX_OBJECT *>(pctx)->begin_state_stream(proptag_state))
 			return ecError;
 	} else if (OBJECT_TYPE_ICSUPCTX == object_type) {
 		if (!icsupctx_object_begin_state_stream(static_cast<ICSUPCTX_OBJECT *>(pctx), proptag_state))
@@ -1844,7 +1843,7 @@ uint32_t rop_syncuploadstatestreamcontinue(const BINARY *pstream_data,
 		return ecNullObject;
 	}
 	if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
-		if (!icsdownctx_object_continue_state_stream(static_cast<ICSDOWNCTX_OBJECT *>(pctx), pstream_data))
+		if (!static_cast<ICSDOWNCTX_OBJECT *>(pctx)->continue_state_stream(pstream_data))
 			return ecError;
 	} else if (OBJECT_TYPE_ICSUPCTX == object_type) {
 		if (!icsupctx_object_continue_state_stream(static_cast<ICSUPCTX_OBJECT *>(pctx), pstream_data))
@@ -1867,7 +1866,7 @@ uint32_t rop_syncuploadstatestreamend(void *plogmap,
 		return ecNullObject;
 	}
 	if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
-		if (!icsdownctx_object_end_state_stream(static_cast<ICSDOWNCTX_OBJECT *>(pctx)))
+		if (!static_cast<ICSDOWNCTX_OBJECT *>(pctx)->end_state_stream())
 			return ecError;
 	} else if (OBJECT_TYPE_ICSUPCTX == object_type) {
 		if (!icsupctx_object_end_state_stream(static_cast<ICSUPCTX_OBJECT *>(pctx)))

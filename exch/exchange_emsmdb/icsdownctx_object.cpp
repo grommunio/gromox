@@ -714,8 +714,9 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 	return TRUE;
 }
 
-BOOL icsdownctx_object_make_sync(ICSDOWNCTX_OBJECT *pctx)
+BOOL ICSDOWNCTX_OBJECT::make_sync()
 {
+	auto pctx = this;
 	if (TRUE == pctx->b_started) {
 		return FALSE;
 	}
@@ -730,11 +731,6 @@ BOOL icsdownctx_object_make_sync(ICSDOWNCTX_OBJECT *pctx)
 	}
 	pctx->b_started = TRUE;
 	return TRUE;
-}
-
-ICS_STATE* icsdownctx_object_get_state(ICSDOWNCTX_OBJECT *pctx)
-{
-	return pctx->pstate.get();
 }
 
 static BOOL icsdownctx_object_extract_msgctntinfo(
@@ -1651,10 +1647,10 @@ static BOOL icsdownctx_object_get_buffer_internal(
 	return TRUE;
 }
 
-BOOL icsdownctx_object_get_buffer(ICSDOWNCTX_OBJECT *pctx,
-	void *pbuff, uint16_t *plen, BOOL *pb_last,
+BOOL ICSDOWNCTX_OBJECT::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
 	uint16_t *pprogress, uint16_t *ptotal)
 {
+	auto pctx = this;
 	*pprogress = pctx->progress_steps / pctx->ratio;
 	*ptotal = pctx->total_steps / pctx->ratio;
 	if (0 == *ptotal) {
@@ -1708,9 +1704,9 @@ ICSDOWNCTX_OBJECT::~ICSDOWNCTX_OBJECT()
 	}
 }
 
-BOOL icsdownctx_object_begin_state_stream(ICSDOWNCTX_OBJECT *pctx,
-	uint32_t state_property)
+BOOL ICSDOWNCTX_OBJECT::begin_state_stream(uint32_t state_property)
 {
+	auto pctx = this;
 	if (TRUE == pctx->b_started) {
 		return FALSE;
 	}
@@ -1736,9 +1732,9 @@ BOOL icsdownctx_object_begin_state_stream(ICSDOWNCTX_OBJECT *pctx,
 	return TRUE;
 }
 
-BOOL icsdownctx_object_continue_state_stream(ICSDOWNCTX_OBJECT *pctx,
-	const BINARY *pstream_data)
+BOOL ICSDOWNCTX_OBJECT::continue_state_stream(const BINARY *pstream_data)
 {
+	auto pctx = this;
 	if (TRUE == pctx->b_started) {
 		return FALSE;
 	}
@@ -1752,8 +1748,9 @@ BOOL icsdownctx_object_continue_state_stream(ICSDOWNCTX_OBJECT *pctx,
 	return TRUE;
 }
 
-BOOL icsdownctx_object_end_state_stream(ICSDOWNCTX_OBJECT *pctx)
+BOOL ICSDOWNCTX_OBJECT::end_state_stream()
 {
+	auto pctx = this;
 	IDSET *pset;
 	BINARY tmp_bin;
 	uint32_t state_property;
@@ -1798,9 +1795,4 @@ BOOL icsdownctx_object_end_state_stream(ICSDOWNCTX_OBJECT *pctx)
 		return FALSE;
 	}
 	return TRUE;
-}
-
-BOOL icsdownctx_object_check_started(ICSDOWNCTX_OBJECT *pctx)
-{
-	return pctx->b_started;
 }

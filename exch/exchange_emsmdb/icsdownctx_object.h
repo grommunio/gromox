@@ -9,6 +9,13 @@
 
 struct ICSDOWNCTX_OBJECT final {
 	~ICSDOWNCTX_OBJECT();
+	BOOL begin_state_stream(uint32_t state_property);
+	BOOL continue_state_stream(const BINARY *stream_data);
+	BOOL end_state_stream();
+	BOOL check_started() const { return b_started; }
+	BOOL make_sync();
+	ICS_STATE *get_state() const { return pstate.get(); }
+	BOOL get_buffer(void *buf, uint16_t *len, BOOL *last, uint16_t *progress, uint16_t *total);
 
 	std::unique_ptr<FTSTREAM_PRODUCER> pstream;
 	uint8_t sync_type = 0;
@@ -34,14 +41,3 @@ struct ICSDOWNCTX_OBJECT final {
 };
 
 extern std::unique_ptr<ICSDOWNCTX_OBJECT> icsdownctx_object_create(LOGON_OBJECT *, FOLDER_OBJECT *, uint8_t sync_type, uint8_t send_options, uint16_t sync_flags, const RESTRICTION *, uint32_t extra_flags, const PROPTAG_ARRAY *);
-BOOL icsdownctx_object_begin_state_stream(ICSDOWNCTX_OBJECT *pctx,
-	uint32_t state_property);
-BOOL icsdownctx_object_continue_state_stream(ICSDOWNCTX_OBJECT *pctx,
-	const BINARY *pstream_data);
-BOOL icsdownctx_object_end_state_stream(ICSDOWNCTX_OBJECT *pctx);
-BOOL icsdownctx_object_check_started(ICSDOWNCTX_OBJECT *pctx);
-BOOL icsdownctx_object_make_sync(ICSDOWNCTX_OBJECT *pctx);
-ICS_STATE* icsdownctx_object_get_state(ICSDOWNCTX_OBJECT *pctx);
-BOOL icsdownctx_object_get_buffer(ICSDOWNCTX_OBJECT *pctx,
-	void *pbuff, uint16_t *plen, BOOL *pb_last,
-	uint16_t *pprogress, uint16_t *ptotal);
