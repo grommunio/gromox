@@ -459,6 +459,11 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
 		fprintf(stderr, "exm: pcl_serialize: ENOMEM\n");
 		return -ENOMEM;
 	}
+	if (tpropval_array_get_propval(props, PR_LAST_MODIFICATION_TIME) == nullptr) {
+		auto last_time = rop_util_current_nttime();
+		if (!tpropval_array_set_propval(props, PR_LAST_MODIFICATION_TIME, &last_time))
+			return -ENOMEM;
+	}
 	if (!tpropval_array_set_propval(props, PROP_TAG_PARENTFOLDERID, &parent_fld) ||
 	    !tpropval_array_set_propval(props, PROP_TAG_CHANGENUMBER, &change_num) ||
 	    !tpropval_array_set_propval(props, PR_CHANGE_KEY, &bxid) ||
@@ -530,6 +535,11 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 		return -ENOMEM;
 	}
 	auto props = &ctnt->proplist;
+	if (tpropval_array_get_propval(props, PR_LAST_MODIFICATION_TIME) == nullptr) {
+		auto last_time = rop_util_current_nttime();
+		if (!tpropval_array_set_propval(props, PR_LAST_MODIFICATION_TIME, &last_time))
+			return -ENOMEM;
+	}
 	if (!tpropval_array_set_propval(props, PROP_TAG_MID, &msg_id) ||
 	    !tpropval_array_set_propval(props, PROP_TAG_CHANGENUMBER, &change_num) ||
 	    !tpropval_array_set_propval(props, PR_CHANGE_KEY, &bxid) ||
