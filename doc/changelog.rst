@@ -1,3 +1,23 @@
+1.0 (2021-08-06)
+================
+
+Enhancements:
+
+* Added an importer for Kopano databases, gromox-kdb2mt.
+  This is meant to be used with gromox-mt2exm.
+* ldap_adaptor: referrals in search results emitted by MSAD are now ignored.
+
+Changes:
+
+* gromox-pffimport was split into two programs that now need to be
+  used as a piped combination, gromox-pff2mt and gromox-mt2exm.
+* gromox-smtp has been renamed to gromox-delivery-queue.
+
+Fixes:
+
+* pffimport/pff2mt no longer aborts with assertion PF-1034/1038.
+
+
 0.27 (2021-07-13)
 =================
 
