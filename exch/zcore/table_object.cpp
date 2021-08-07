@@ -43,8 +43,9 @@ static void table_object_set_table_id(
 	ptable->table_id = table_id;
 }
 
-BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
+BOOL TABLE_OBJECT::check_to_load()
 {
+	auto ptable = this;
 	uint32_t row_num;
 	uint32_t table_id;
 	uint32_t permission;
@@ -124,14 +125,16 @@ BOOL table_object_check_to_load(TABLE_OBJECT *ptable)
 	return TRUE;
 }
 
-void table_object_unload(TABLE_OBJECT *ptable)
+void TABLE_OBJECT::unload()
 {
+	auto ptable = this;
 	if (USER_TABLE == ptable->table_type) {
 		container_object_clear(static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj));
 	} else {
 		table_object_set_table_id(ptable, 0);
 	}
 }
+
 static BOOL table_object_get_store_table_all_proptags(
 	PROPTAG_ARRAY *pproptags)
 {
@@ -515,9 +518,10 @@ static BOOL hierconttbl_query_rows(const TABLE_OBJECT *ptable,
 	return TRUE;
 }
 
-BOOL table_object_query_rows(TABLE_OBJECT *ptable,
-    const PROPTAG_ARRAY *pcolumns, uint32_t row_count, TARRAY_SET *pset)
+BOOL TABLE_OBJECT::query_rows(const PROPTAG_ARRAY *pcolumns,
+    uint32_t row_count, TARRAY_SET *pset)
 {
+	auto ptable = this;
 	PROPTAG_ARRAY tmp_columns;
 	if (NULL == pcolumns) {
 		if (NULL != ptable->pcolumns) {
@@ -534,7 +538,7 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable,
 	if (NULL == pinfo) {
 		return FALSE;
 	}
-	uint32_t row_num = table_object_get_total(ptable);
+	auto row_num = get_total();
 	if (ptable->position >= row_num) {
 		pset->count = 0;
 		return TRUE;
@@ -583,14 +587,14 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable,
 	       pcolumns, ptable->position, row_count, pset);
 }
 
-void table_object_seek_current(TABLE_OBJECT *ptable,
-	BOOL b_forward, uint32_t row_count)
+void TABLE_OBJECT::seek_current(BOOL b_forward, uint32_t row_count)
 {
+	auto ptable = this;
 	uint32_t total_rows;
 	
 	if (TRUE == b_forward) {
 		ptable->position += row_count;
-		total_rows = table_object_get_total(ptable);
+		total_rows = get_total();
 		if (ptable->position > total_rows) {
 			ptable->position = total_rows;
 		}
@@ -603,19 +607,9 @@ void table_object_seek_current(TABLE_OBJECT *ptable,
 	ptable->position -= row_count;
 }
 
-uint8_t table_object_get_table_type(TABLE_OBJECT *ptable)
+BOOL TABLE_OBJECT::set_columns(const PROPTAG_ARRAY *pcolumns)
 {
-	return ptable->table_type;
-}
-
-const PROPTAG_ARRAY* table_object_get_columns(TABLE_OBJECT *ptable)
-{
-	return ptable->pcolumns;
-}
-
-BOOL table_object_set_columns(TABLE_OBJECT *ptable,
-	const PROPTAG_ARRAY *pcolumns)
-{
+	auto ptable = this;
 	if (NULL != ptable->pcolumns) {
 		proptag_array_free(ptable->pcolumns);
 	}
@@ -630,9 +624,9 @@ BOOL table_object_set_columns(TABLE_OBJECT *ptable,
 	return TRUE;
 }
 
-BOOL table_object_set_sorts(TABLE_OBJECT *ptable,
-	const SORTORDER_SET *psorts)
+BOOL TABLE_OBJECT::set_sorts(const SORTORDER_SET *psorts)
 {
+	auto ptable = this;
 	if (NULL != ptable->psorts) {
 		sortorder_set_free(ptable->psorts);
 	}
@@ -647,9 +641,9 @@ BOOL table_object_set_sorts(TABLE_OBJECT *ptable,
 	return TRUE;
 }
 
-BOOL table_object_set_restriction(TABLE_OBJECT *ptable,
-	const RESTRICTION *prestriction)
+BOOL TABLE_OBJECT::set_restriction(const RESTRICTION *prestriction)
 {
+	auto ptable = this;
 	if (NULL != ptable->prestriction) {
 		restriction_free(ptable->prestriction);
 	}
@@ -664,29 +658,19 @@ BOOL table_object_set_restriction(TABLE_OBJECT *ptable,
 	return TRUE;
 }
 
-uint32_t table_object_get_position(TABLE_OBJECT *ptable)
+void TABLE_OBJECT::set_position(uint32_t position)
 {
-	return ptable->position;
-}
-
-void table_object_set_position(TABLE_OBJECT *ptable, uint32_t position)
-{
-	uint32_t total_rows;
-	
-	total_rows = table_object_get_total(ptable);
+	auto ptable = this;
+	auto total_rows = get_total();
 	if (position > total_rows) {
 		position = total_rows;
 	}
 	ptable->position = position;
 }
 
-void table_object_clear_position(TABLE_OBJECT *ptable)
+uint32_t TABLE_OBJECT::get_total()
 {
-	ptable->position = 0;
-}
-
-uint32_t table_object_get_total(TABLE_OBJECT *ptable)
-{
+	auto ptable = this;
 	uint16_t num;
 	uint32_t num1;
 	uint32_t total_rows;
@@ -759,8 +743,9 @@ TABLE_OBJECT::~TABLE_OBJECT()
 	}
 }
 
-BOOL table_object_create_bookmark(TABLE_OBJECT *ptable, uint32_t *pindex)
+BOOL TABLE_OBJECT::create_bookmark(uint32_t *pindex)
 {
+	auto ptable = this;
 	uint64_t inst_id;
 	uint32_t row_type;
 	uint32_t inst_num;
@@ -787,15 +772,14 @@ BOOL table_object_create_bookmark(TABLE_OBJECT *ptable, uint32_t *pindex)
 	return TRUE;
 }
 
-BOOL table_object_retrieve_bookmark(TABLE_OBJECT *ptable,
-	uint32_t index, BOOL *pb_exist)
+BOOL TABLE_OBJECT::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 {
+	auto ptable = this;
 	uint64_t inst_id;
 	uint32_t row_type;
 	uint32_t inst_num;
 	uint32_t position;
 	uint32_t tmp_type;
-	uint32_t total_rows;
 	int32_t tmp_position;
 	DOUBLE_LIST_NODE *pnode;
 	
@@ -828,15 +812,16 @@ BOOL table_object_retrieve_bookmark(TABLE_OBJECT *ptable,
 	} else {
 		ptable->position = position;
 	}
-	total_rows = table_object_get_total(ptable);
+	auto total_rows = get_total();
 	if (ptable->position > total_rows) {
 		ptable->position = total_rows;
 	}
 	return TRUE;
 }
 
-void table_object_remove_bookmark(TABLE_OBJECT *ptable, uint32_t index)
+void TABLE_OBJECT::remove_bookmark(uint32_t index)
 {
+	auto ptable = this;
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (pnode=double_list_get_head(&ptable->bookmark_list); NULL!=pnode;
@@ -849,8 +834,9 @@ void table_object_remove_bookmark(TABLE_OBJECT *ptable, uint32_t index)
 	}
 }
 
-void table_object_clear_bookmarks(TABLE_OBJECT *ptable)
+void TABLE_OBJECT::clear_bookmarks()
 {
+	auto ptable = this;
 	DOUBLE_LIST_NODE *pnode;
 	
 	while ((pnode = double_list_pop_front(&ptable->bookmark_list)) != nullptr)
@@ -873,7 +859,7 @@ static void table_object_reset(TABLE_OBJECT *ptable)
 	}
 	ptable->position = 0;
 	table_object_set_table_id(ptable, 0);
-	table_object_clear_bookmarks(ptable);
+	ptable->clear_bookmarks();
 }
 
 static BOOL table_object_evaluate_restriction(
@@ -1029,10 +1015,10 @@ static BOOL table_object_evaluate_restriction(
 	return FALSE;
 }
 
-BOOL table_object_filter_rows(TABLE_OBJECT *ptable,
-	uint32_t count, const RESTRICTION *pres,
+BOOL TABLE_OBJECT::filter_rows(uint32_t count, const RESTRICTION *pres,
 	const PROPTAG_ARRAY *pcolumns, TARRAY_SET *pset)
 {
+	auto ptable = this;
 	TARRAY_SET tmp_set;
 	uint32_t tmp_proptag;
 	PROPTAG_ARRAY proptags;
@@ -1082,10 +1068,10 @@ BOOL table_object_filter_rows(TABLE_OBJECT *ptable,
 	return TRUE;
 }
 
-BOOL table_object_match_row(TABLE_OBJECT *ptable,
-	BOOL b_forward, const RESTRICTION *pres,
+BOOL TABLE_OBJECT::match_row(BOOL b_forward, const RESTRICTION *pres,
 	int32_t *pposition)
 {
+	auto ptable = this;
 	PROPTAG_ARRAY proptags;
 	uint32_t proptag_buff[2];
 	TPROPVAL_ARRAY tmp_propvals;

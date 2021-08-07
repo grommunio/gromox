@@ -2763,7 +2763,6 @@ uint32_t zarafa_server_queryrows(
 	uint32_t row_num;
 	int32_t position;
 	uint8_t mapi_type;
-	uint8_t table_type;
 	TARRAY_SET tmp_set;
 	uint32_t *pobject_type = nullptr;
 	TAGGED_PROPVAL *ppropvals;
@@ -2783,19 +2782,18 @@ uint32_t zarafa_server_queryrows(
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
 		return ecNotSupported;
-	if (FALSE == table_object_check_to_load(ptable)) {
+	if (!ptable->check_to_load())
 		return ecError;
-	}
-	table_type = table_object_get_table_type(ptable);
+	auto table_type = ptable->get_table_type();
 	if (0xFFFFFFFF != start) {
-		table_object_set_position(ptable, start);
+		ptable->set_position(start);
 	}
 	if (NULL != prestriction) {
-		switch (table_object_get_table_type(ptable)) {
+		switch (ptable->get_table_type()) {
 		case HIERARCHY_TABLE:
 		case CONTENT_TABLE:
 		case RULE_TABLE:
-			row_num = table_object_get_total(ptable);
+			row_num = ptable->get_total();
 			if (row_num > count) {
 				row_num = count;
 			}
@@ -2804,20 +2802,18 @@ uint32_t zarafa_server_queryrows(
 			if (prowset->pparray == nullptr)
 				return ecError;
 			while (TRUE) {
-				if (FALSE == table_object_match_row(ptable,
-					TRUE, prestriction, &position)) {
+				if (!ptable->match_row(TRUE, prestriction, &position))
 					return ecError;
-				}
 				if (position < 0) {
 					break;
 				}
-				table_object_set_position(ptable, position);
-				if (!table_object_query_rows(ptable, pproptags, 1, &tmp_set))
+				ptable->set_position(position);
+				if (!ptable->query_rows(pproptags, 1, &tmp_set))
 					return ecError;
 				if (1 != tmp_set.count) {
 					break;
 				}
-				table_object_seek_current(ptable, TRUE, 1);
+				ptable->seek_current(TRUE, 1);
 				prowset->pparray[prowset->count] = tmp_set.pparray[0];
 				prowset->count ++;
 				if (count == prowset->count) {
@@ -2828,18 +2824,16 @@ uint32_t zarafa_server_queryrows(
 		case ATTACHMENT_TABLE:
 		case RECIPIENT_TABLE:
 		case USER_TABLE:
-			if (FALSE == table_object_filter_rows(ptable,
-				count, prestriction, pproptags, prowset)) {
+			if (!ptable->filter_rows(count, prestriction, pproptags, prowset))
 				return ecError;
-			}
 			break;
 		default:
 			return ecNotSupported;
 		}
 	} else {
-		if (!table_object_query_rows(ptable, pproptags, count, prowset))
+		if (!ptable->query_rows(pproptags, count, prowset))
 			return ecError;
-		table_object_seek_current(ptable, TRUE, prowset->count);
+		ptable->seek_current(TRUE, prowset->count);
 	}
 	pinfo.reset();
 	if ((STORE_TABLE != table_type &&
@@ -2890,7 +2884,7 @@ uint32_t zarafa_server_setcolumns(GUID hsession, uint32_t htable,
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
 		return ecNotSupported;
-	return table_object_set_columns(ptable, pproptags) ? ecSuccess : ecError;
+	return ptable->set_columns(pproptags) ? ecSuccess : ecError;
 }
 
 uint32_t zarafa_server_seekrow(GUID hsession,
@@ -2909,43 +2903,39 @@ uint32_t zarafa_server_seekrow(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
 		return ecNotSupported;
-	if (FALSE == table_object_check_to_load(ptable)) {
+	if (!ptable->check_to_load())
 		return ecError;
-	}
 	switch (bookmark) {
 	case BOOKMARK_BEGINNING:
 		if (seek_rows < 0) {
 			return ecInvalidParam;
 		}
 		original_position = 0;
-		table_object_set_position(ptable, static_cast<uint32_t>(seek_rows));
+		ptable->set_position(seek_rows);
 		break;
 	case BOOKMARK_END:
 		if (seek_rows > 0) {
 			return ecInvalidParam;
 		}
-		original_position = table_object_get_total(ptable);
-		table_object_set_position(ptable, safe_add_s(original_position, seek_rows));
+		original_position = ptable->get_total();
+		ptable->set_position(safe_add_s(original_position, seek_rows));
 		break;
 	case BOOKMARK_CURRENT:
-		original_position = table_object_get_position(ptable);
-		table_object_set_position(ptable, safe_add_s(original_position, seek_rows));
+		original_position = ptable->get_position();
+		ptable->set_position(safe_add_s(original_position, seek_rows));
 		break;
 	default: {
-		original_position = table_object_get_position(ptable);
-		if (FALSE == table_object_retrieve_bookmark(
-			ptable, bookmark, &b_exist)) {
+		original_position = ptable->get_position();
+		if (!ptable->retrieve_bookmark(bookmark, &b_exist))
 			return ecError;
-		}
 		if (!b_exist)
 			return ecNotFound;
-		auto original_position1 = table_object_get_position(ptable);
-		table_object_set_position(ptable, safe_add_s(original_position1, seek_rows));
+		auto original_position1 = ptable->get_position();
+		ptable->set_position(safe_add_s(original_position1, seek_rows));
 		break;
 	}
 	}
-	*psought_rows = table_object_get_position(
-					ptable) - original_position;
+	*psought_rows = ptable->get_position() - original_position;
 	return ecSuccess;
 }
 
@@ -2958,7 +2948,6 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 	uint8_t mapi_type;
 	BOOL b_multi_inst;
 	uint32_t tmp_proptag;
-	const PROPTAG_ARRAY *pcolumns;
 	
 	if (psortset->count > MAXIMUM_SORT_COUNT) {
 		return ecTooComplex;
@@ -2971,9 +2960,8 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
 		return ecNotSupported;
-	if (CONTENT_TABLE != table_object_get_table_type(ptable)) {
+	if (ptable->get_table_type() != CONTENT_TABLE)
 		return ecSuccess;
-	}
 	b_max = FALSE;
 	b_multi_inst = FALSE;
 	for (i=0; i<psortset->ccategories; i++) {
@@ -3062,16 +3050,15 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 			b_max = TRUE;
 		}
 	}
-	pcolumns = table_object_get_columns(ptable);
+	auto pcolumns = ptable->get_columns();
 	if (b_multi_inst && pcolumns != nullptr &&
 	    !common_util_verify_columns_and_sorts(pcolumns, psortset))
 		return ecNotSupported;
-	if (FALSE == table_object_set_sorts(ptable, psortset)) {
+	if (!ptable->set_sorts(psortset))
 		return ecError;
-	}
-	table_object_unload(ptable);
-	table_object_clear_bookmarks(ptable);
-	table_object_clear_position(ptable);
+	ptable->unload();
+	ptable->clear_bookmarks();
+	ptable->clear_position();
 	return ecSuccess;
 }
 
@@ -3087,10 +3074,9 @@ uint32_t zarafa_server_getrowcount(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
 		return ecNotSupported;
-	if (FALSE == table_object_check_to_load(ptable)) {
+	if (!ptable->check_to_load())
 		return ecError;
-	}
-	*pcount = table_object_get_total(ptable);
+	*pcount = ptable->get_total();
 	return ecSuccess;
 }
 
@@ -3106,7 +3092,7 @@ uint32_t zarafa_server_restricttable(GUID hsession, uint32_t htable,
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
 		return ecNotSupported;
-	switch (table_object_get_table_type(ptable)) {
+	switch (ptable->get_table_type()) {
 	case HIERARCHY_TABLE:
 	case CONTENT_TABLE:
 	case RULE_TABLE:
@@ -3115,12 +3101,11 @@ uint32_t zarafa_server_restricttable(GUID hsession, uint32_t htable,
 	default:
 		return ecNotSupported;
 	}
-	if (FALSE == table_object_set_restriction(ptable, prestriction)) {
+	if (!ptable->set_restriction(prestriction))
 		return ecError;
-	}
-	table_object_unload(ptable);
-	table_object_clear_bookmarks(ptable);
-	table_object_clear_position(ptable);
+	ptable->unload();
+	ptable->clear_bookmarks();
+	ptable->clear_position();
 	return ecSuccess;
 }
 
@@ -3140,7 +3125,7 @@ uint32_t zarafa_server_findrow(GUID hsession, uint32_t htable,
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
 		return ecNotSupported;
-	switch (table_object_get_table_type(ptable)) {
+	switch (ptable->get_table_type()) {
 	case HIERARCHY_TABLE:
 	case CONTENT_TABLE:
 	case RULE_TABLE:
@@ -3148,37 +3133,30 @@ uint32_t zarafa_server_findrow(GUID hsession, uint32_t htable,
 	default:
 		return ecNotSupported;
 	}
-	if (FALSE == table_object_check_to_load(ptable)) {
+	if (!ptable->check_to_load())
 		return ecError;
-	}
 	switch (bookmark) {
 	case BOOKMARK_BEGINNING:
-		table_object_set_position(ptable, 0);
+		ptable->set_position(0);
 		break;
 	case BOOKMARK_END:
-		table_object_set_position(ptable,
-			table_object_get_total(ptable));
+		ptable->set_position(ptable->get_total());
 		break;
 	case BOOKMARK_CURRENT:
 		break;
 	default:
-		if (RULE_TABLE == table_object_get_table_type(ptable)) {
+		if (ptable->get_table_type() == RULE_TABLE)
 			return ecNotSupported;
-		}
-		if (FALSE == table_object_retrieve_bookmark(
-			ptable, bookmark, &b_exist)) {
+		if (!ptable->retrieve_bookmark(bookmark, &b_exist))
 			return ecInvalidBookmark;
-		}
 		break;
 	}
-	if (FALSE == table_object_match_row(ptable,
-		TRUE, prestriction, &position)) {
+	if (ptable->match_row(TRUE, prestriction, &position))
 		return ecError;
-	}
 	if (position < 0) {
 		return ecNotFound;
 	}
-	table_object_set_position(ptable, position);
+	ptable->set_position(position);
 	*prow_idx = position;
 	return ecSuccess;
 }
@@ -3195,17 +3173,16 @@ uint32_t zarafa_server_createbookmark(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
 		return ecNotSupported;
-	switch (table_object_get_table_type(ptable)) {
+	switch (ptable->get_table_type()) {
 	case HIERARCHY_TABLE:
 	case CONTENT_TABLE:
 		break;
 	default:
 		return ecNotSupported;
 	}
-	if (FALSE == table_object_check_to_load(ptable)) {
+	if (!ptable->check_to_load())
 		return ecError;
-	}
-	return table_object_create_bookmark(ptable, pbookmark) ? ecSuccess : ecError;
+	return ptable->create_bookmark(pbookmark) ? ecSuccess : ecError;
 }
 
 uint32_t zarafa_server_freebookmark(GUID hsession,
@@ -3220,14 +3197,14 @@ uint32_t zarafa_server_freebookmark(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_TABLE)
 		return ecNotSupported;
-	switch (table_object_get_table_type(ptable)) {
+	switch (ptable->get_table_type()) {
 	case HIERARCHY_TABLE:
 	case CONTENT_TABLE:
 		break;
 	default:
 		return ecNotSupported;
 	}
-	table_object_remove_bookmark(ptable, bookmark);
+	ptable->remove_bookmark(bookmark);
 	return ecSuccess;
 }
 
