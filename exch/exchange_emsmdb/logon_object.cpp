@@ -538,8 +538,7 @@ BOOL LOGON_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-static BOOL logon_object_check_readonly_property(
-	LOGON_OBJECT *plogon, uint32_t proptag)
+static BOOL lo_check_readonly_property(const LOGON_OBJECT *plogon, uint32_t proptag)
 {
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
@@ -892,8 +891,7 @@ BOOL LOGON_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	}
 	auto plogon = this;
 	for (i=0; i<ppropvals->count; i++) {
-		if (TRUE == logon_object_check_readonly_property(
-			plogon, ppropvals->ppropval[i].proptag)) {
+		if (lo_check_readonly_property(plogon, ppropvals->ppropval[i].proptag)) {
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 							ppropvals->ppropval[i].proptag;
@@ -947,8 +945,7 @@ BOOL LOGON_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags,
 	}
 	auto plogon = this;
 	for (i=0; i<pproptags->count; i++) {
-		if (TRUE == logon_object_check_readonly_property(
-			plogon, pproptags->pproptag[i])) {
+		if (lo_check_readonly_property(plogon, pproptags->pproptag[i])) {
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 									pproptags->pproptag[i];
