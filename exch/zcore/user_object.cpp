@@ -21,8 +21,9 @@ std::unique_ptr<USER_OBJECT> user_object_create(int base_id, uint32_t minid)
 	return puser;
 }
 
-BOOL user_object_check_valid(USER_OBJECT *puser)
+BOOL USER_OBJECT::check_valid()
 {
+	auto puser = this;
 	char username[UADDR_SIZE];
 	SIMPLE_TREE_NODE *pnode;
 	auto pbase = ab_tree_get_base(puser->base_id);
@@ -39,9 +40,10 @@ BOOL user_object_check_valid(USER_OBJECT *puser)
 	return TRUE;
 }
 
-BOOL user_object_get_properties(USER_OBJECT *puser,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+BOOL USER_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
+    TPROPVAL_ARRAY *ppropvals)
 {
+	auto puser = this;
 	char username[UADDR_SIZE];
 	char tmp_buff[1024];
 	SIMPLE_TREE_NODE *pnode;

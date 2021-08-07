@@ -1290,7 +1290,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		pobject = userobj.get();
 		if (userobj == nullptr)
 			return ecError;
-		if (!user_object_check_valid(userobj.get()))
+		if (!userobj->check_valid())
 			return ecNotFound;
 		*pmapi_type = address_type == ADDRESSBOOK_ENTRYID_TYPE_DLIST ?
 			      ZMG_DISTLIST : ZMG_MAILUSER;
@@ -3858,10 +3858,8 @@ uint32_t zarafa_server_getpropvals(GUID hsession,
 			container_object_get_user_table_all_proptags(&proptags);
 			pproptags = &proptags;
 		}
-		if (!user_object_get_properties(static_cast<USER_OBJECT *>(pobject),
-		    pproptags, ppropvals)) {
+		if (!static_cast<USER_OBJECT *>(pobject)->get_properties(pproptags, ppropvals))
 			return ecError;
-		}
 		return ecSuccess;
 	default:
 		return ecNotSupported;
