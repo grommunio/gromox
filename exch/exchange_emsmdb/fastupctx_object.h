@@ -11,6 +11,7 @@
 
 struct FASTUPCTX_OBJECT final {
 	~FASTUPCTX_OBJECT();
+	gxerr_t write_buffer(const BINARY *transfer_data);
 
 	std::unique_ptr<FTSTREAM_PARSER> pstream;
 	void *pobject = nullptr;
@@ -22,4 +23,3 @@ struct FASTUPCTX_OBJECT final {
 };
 
 extern std::unique_ptr<FASTUPCTX_OBJECT> fastupctx_object_create(LOGON_OBJECT *, void *pobject, int root_element);
-extern gxerr_t fastupctx_object_write_buffer(FASTUPCTX_OBJECT *, const BINARY *transfer_data);

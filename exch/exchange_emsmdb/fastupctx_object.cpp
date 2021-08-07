@@ -961,9 +961,9 @@ static gxerr_t fastupctx_object_record_propval(FASTUPCTX_OBJECT *pctx,
 	}
 }
 
-gxerr_t fastupctx_object_write_buffer(FASTUPCTX_OBJECT *pctx,
-    const BINARY *ptransfer_data)
+gxerr_t FASTUPCTX_OBJECT::write_buffer(const BINARY *ptransfer_data)
 {
+	auto pctx = this;
 	/* check if the fast stream is marked as ended */
 	if (TRUE == pctx->b_ended) {
 		return GXERR_CALL_FAILED;
