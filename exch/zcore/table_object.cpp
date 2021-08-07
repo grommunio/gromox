@@ -57,9 +57,8 @@ BOOL TABLE_OBJECT::check_to_load()
 		STORE_TABLE == ptable->table_type) {
 		return TRUE;
 	} else if (USER_TABLE == ptable->table_type) {
-		return container_object_load_user_table(
-		       static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj),
-		       ptable->prestriction);
+		auto ct = static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj);
+		return ct->load_user_table(ptable->prestriction);
 	}
 	if (0 != ptable->table_id) {
 		return TRUE;
@@ -129,7 +128,7 @@ void TABLE_OBJECT::unload()
 {
 	auto ptable = this;
 	if (USER_TABLE == ptable->table_type) {
-		container_object_clear(static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj));
+		static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj)->clear();
 	} else {
 		table_object_set_table_id(ptable, 0);
 	}
@@ -555,13 +554,13 @@ BOOL TABLE_OBJECT::query_rows(const PROPTAG_ARRAY *pcolumns,
 	} else if (RECIPIENT_TABLE == ptable->table_type) {
 		return rcpttable_query_rows(ptable, pcolumns, pset, row_count);
 	} else if (CONTAINER_TABLE == ptable->table_type) {
-		return container_object_query_container_table(static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj),
-		       pcolumns, (ptable->table_flags & FLAG_CONVENIENT_DEPTH) ? TRUE : false,
+		auto ct = static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj);
+		return ct->query_container_table(pcolumns,
+		       (ptable->table_flags & FLAG_CONVENIENT_DEPTH) ? TRUE : false,
 		       ptable->position, row_count, pset);
 	} else if (USER_TABLE == ptable->table_type) {
-		return container_object_query_user_table(
-		       static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj),
-		       pcolumns, ptable->position, row_count, pset);
+		auto ct = static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj);
+		return ct->query_user_table(pcolumns, ptable->position, row_count, pset);
 	} else if (RULE_TABLE == ptable->table_type) {
 		if (!exmdb_client::query_table(ptable->pstore->get_dir(),
 		    nullptr, pinfo->cpid, ptable->table_id, pcolumns,
@@ -687,12 +686,13 @@ uint32_t TABLE_OBJECT::get_total()
 		return num;
 	} else if (CONTAINER_TABLE == ptable->table_type) {
 		num1 = 0;
-		container_object_get_container_table_num(static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj),
-			(ptable->table_flags & FLAG_CONVENIENT_DEPTH) ? TRUE : false, &num1);
+		auto ct = static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj);
+		ct->get_container_table_num((ptable->table_flags & FLAG_CONVENIENT_DEPTH) ? TRUE : false, &num1);
 		return num1;
 	} else if (USER_TABLE == ptable->table_type) {
 		num1 = 0;
-		container_object_get_user_table_num(static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj), &num1);
+		auto ct = static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj);
+		ct->get_user_table_num(&num1);
 		return num1;
 	} else if (STORE_TABLE == ptable->table_type) {
 		return 2;
@@ -1044,9 +1044,8 @@ BOOL TABLE_OBJECT::filter_rows(uint32_t count, const RESTRICTION *pres,
 		break;
 	case USER_TABLE:
 		container_object_get_user_table_all_proptags(&proptags);
-		if (!container_object_query_user_table(
-		    static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj),
-		    &proptags, ptable->position, 0x7FFFFFFF, &tmp_set))
+		if (!static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj)->
+		    query_user_table(&proptags, ptable->position, 0x7FFFFFFF, &tmp_set))
 			return FALSE;	
 		break;
 	default:

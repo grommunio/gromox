@@ -19,7 +19,15 @@ union CONTAINER_ID {
 };
 
 struct CONTAINER_OBJECT {
-	~CONTAINER_OBJECT();
+	~CONTAINER_OBJECT() { clear(); }
+	BOOL fetch_special_property(uint8_t special_type, uint32_t proptag, void **out);
+	void clear();
+	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+	BOOL load_user_table(const RESTRICTION *);
+	BOOL get_container_table_num(BOOL depth, uint32_t *num);
+	BOOL query_container_table(const PROPTAG_ARRAY *, BOOL depth, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
+	BOOL get_user_table_num(uint32_t *);
+	BOOL query_user_table(const PROPTAG_ARRAY *, uint32_t start_pos, int32_t row_needed, TARRAY_SET *);
 
 	uint8_t type = 0;
 	CONTAINER_ID id{};
@@ -32,25 +40,7 @@ struct CONTAINER_OBJECT {
 BOOL container_object_fetch_special_property(
 	uint8_t special_type, uint32_t proptag, void **ppvalue);
 extern std::unique_ptr<CONTAINER_OBJECT> container_object_create(uint8_t type, CONTAINER_ID);
-void container_object_clear(CONTAINER_OBJECT *pcontainer);
-BOOL container_object_get_properties(CONTAINER_OBJECT *pcontainer,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals);
-BOOL container_object_load_user_table(
-	CONTAINER_OBJECT *pcontainer,
-	const RESTRICTION *prestriction);
-BOOL container_object_get_container_table_num(
-	CONTAINER_OBJECT *pcontainer, BOOL b_depth,
-	uint32_t *pnum);
 void container_object_get_container_table_all_proptags(
 	PROPTAG_ARRAY *pproptags);
-BOOL container_object_query_container_table(
-	CONTAINER_OBJECT *pcontainer, const PROPTAG_ARRAY *pproptags,
-	BOOL b_depth, uint32_t start_pos, int32_t row_needed,
-	TARRAY_SET *pset);
-BOOL container_object_get_user_table_num(
-	CONTAINER_OBJECT *pcontainer, uint32_t *pnum);
 void container_object_get_user_table_all_proptags(
 	PROPTAG_ARRAY *pproptags);
-BOOL container_object_query_user_table(
-	CONTAINER_OBJECT *pcontainer, const PROPTAG_ARRAY *pproptags,
-	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset);

@@ -3849,10 +3849,8 @@ uint32_t zarafa_server_getpropvals(GUID hsession,
 				&proptags);
 			pproptags = &proptags;
 		}
-		if (!container_object_get_properties(static_cast<CONTAINER_OBJECT *>(pobject),
-		    pproptags, ppropvals)) {
+		if (!static_cast<CONTAINER_OBJECT *>(pobject)->get_properties(pproptags, ppropvals))
 			return ecError;
-		}
 		return ecSuccess;
 	case ZMG_MAILUSER:
 	case ZMG_DISTLIST:

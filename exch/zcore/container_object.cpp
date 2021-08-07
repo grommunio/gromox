@@ -31,9 +31,9 @@ std::unique_ptr<CONTAINER_OBJECT> container_object_create(
 	return pcontainer;
 }
 
-void container_object_clear(
-	CONTAINER_OBJECT *pcontainer)
+void CONTAINER_OBJECT::clear()
 {
+	auto pcontainer = this;
 	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
 		if (NULL == pcontainer->contents.pminid_array) {
 			return;
@@ -49,11 +49,6 @@ void container_object_clear(
 			pcontainer->contents.prow_set = NULL;
 		}
 	}
-}
-
-CONTAINER_OBJECT::~CONTAINER_OBJECT()
-{
-	container_object_clear(this);
 }
 
 static BOOL container_object_match_contact_message(
@@ -300,10 +295,9 @@ static BINARY* container_object_message_to_addressbook_entryid(
 	return pbin;
 }
 
-BOOL container_object_load_user_table(
-	CONTAINER_OBJECT *pcontainer,
-	const RESTRICTION *prestriction)
+BOOL CONTAINER_OBJECT::load_user_table(const RESTRICTION *prestriction)
 {
+	auto pcontainer = this;
 	void *pvalue;
 	char *paddress;
 	BINARY tmp_bin;
@@ -844,9 +838,10 @@ static const PROPTAG_ARRAY* container_object_get_folder_proptags()
 	return &proptags;
 }
 
-BOOL container_object_get_properties(CONTAINER_OBJECT *pcontainer,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+BOOL CONTAINER_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
+    TPROPVAL_ARRAY *ppropvals)
 {
+	auto pcontainer = this;
 	SIMPLE_TREE_NODE *pnode;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -880,20 +875,17 @@ BOOL container_object_get_properties(CONTAINER_OBJECT *pcontainer,
 	}
 }
 
-BOOL container_object_get_container_table_num(
-	CONTAINER_OBJECT *pcontainer, BOOL b_depth,
-	uint32_t *pnum)
+BOOL CONTAINER_OBJECT::get_container_table_num(BOOL b_depth, uint32_t *pnum)
 {
+	auto pcontainer = this;
 	TARRAY_SET tmp_set;
 	PROPTAG_ARRAY proptags;
 	
 	proptags.count = 0;
 	proptags.pproptag = NULL;
-	if (FALSE == container_object_query_container_table(
-		pcontainer, &proptags, b_depth, 0, 0x7FFFFFFF,
-		&tmp_set)) {
+	if (!pcontainer->query_container_table(&proptags, b_depth, 0,
+	    0x7FFFFFFF, &tmp_set))
 		return FALSE;	
-	}
 	*pnum = tmp_set.count;
 	return TRUE;
 }
@@ -1012,11 +1004,11 @@ static BOOL container_object_query_folder_hierarchy(
 	return TRUE;
 }
 
-BOOL container_object_query_container_table(
-	CONTAINER_OBJECT *pcontainer, const PROPTAG_ARRAY *pproptags,
+BOOL CONTAINER_OBJECT::query_container_table(const PROPTAG_ARRAY *pproptags,
 	BOOL b_depth, uint32_t start_pos, int32_t row_needed,
 	TARRAY_SET *pset)
 {
+	auto pcontainer = this;
 	TARRAY_SET tmp_set;
 	DOMAIN_NODE *pdnode;
 	SINGLE_LIST_NODE *psnode;
@@ -1139,9 +1131,9 @@ BOOL container_object_query_container_table(
 	return TRUE;
 }
 
-BOOL container_object_get_user_table_num(
-	CONTAINER_OBJECT *pcontainer, uint32_t *pnum)
+BOOL CONTAINER_OBJECT::get_user_table_num(uint32_t *pnum)
 {
+	auto pcontainer = this;
 	SIMPLE_TREE_NODE *pnode;
 	
 	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
@@ -1173,10 +1165,8 @@ BOOL container_object_get_user_table_num(
 		}
 	} else {
 		if (NULL == pcontainer->contents.prow_set) {
-			if (FALSE == container_object_load_user_table(
-				pcontainer, NULL)) {
+			if (!pcontainer->load_user_table(nullptr))
 				return FALSE;	
-			}
 		}
 		*pnum = pcontainer->contents.prow_set != nullptr ?
 		        pcontainer->contents.prow_set->count : 0;
@@ -1227,10 +1217,10 @@ void container_object_get_user_table_all_proptags(
 	pproptags->pproptag = deconst(proptag_buff);
 }
 
-BOOL container_object_query_user_table(
-	CONTAINER_OBJECT *pcontainer, const PROPTAG_ARRAY *pproptags,
+BOOL CONTAINER_OBJECT::query_user_table(const PROPTAG_ARRAY *pproptags,
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
 {
+	auto pcontainer = this;
 	BOOL b_forward;
 	uint32_t first_pos;
 	uint32_t row_count;
@@ -1346,10 +1336,8 @@ BOOL container_object_query_user_table(
 		}
 	} else {
 		if (NULL == pcontainer->contents.prow_set) {
-			if (FALSE == container_object_load_user_table(
-				pcontainer, NULL)) {
+			if (!pcontainer->load_user_table(nullptr))
 				return FALSE;	
-			}
 		}
 		if (pcontainer->contents.prow_set != nullptr) {
 			for (size_t i = first_pos;
