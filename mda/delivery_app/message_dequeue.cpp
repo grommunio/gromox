@@ -14,6 +14,7 @@
 #include <csignal>
 #include <cstring>
 #include <mutex>
+#include <string>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -38,6 +39,7 @@
 #define BLOCK_SIZE				64*1024*2
 #define SLEEP_INTERVAL			50000
 
+using namespace std::string_literals;
 using namespace gromox;
 
 namespace {
@@ -49,7 +51,7 @@ struct MSG_BUFF {
 
 }
 
-static char				g_path[256];    /* directory name for message queue */
+static std::string g_path, g_path_mess, g_path_save;
 static int				g_msg_id;	    /* message queue id */
 static size_t			g_message_units;/* allocated message units number */
 static size_t			g_max_memory;   /* maximum allocated memory for mess*/
@@ -80,7 +82,9 @@ static void *mdq_thrwork(void *);
  */
 void message_dequeue_init(const char *path, size_t max_memory)
 {	
-	gx_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
+	g_path = path;
+	g_path_mess = path + "/mess"s;
+	g_path_save = path + "/save"s;
 	g_max_memory = ((max_memory-1)/(BLOCK_SIZE/2) + 1) * (BLOCK_SIZE/2);
 	single_list_init(&g_used_list);
 	single_list_init(&g_free_list);
@@ -101,36 +105,33 @@ void message_dequeue_init(const char *path, size_t max_memory)
  */
 static BOOL message_dequeue_check()
 {
-	char 	name[256];
 	struct	stat node_stat;
 
 	/* check if the directory exists and is a real directory */
-	if (0 != stat(g_path, &node_stat)) {
-		printf("[message_dequeue]: cannot find directory %s\n", g_path);
+	if (stat(g_path.c_str(), &node_stat) != 0) {
+		printf("[message_dequeue]: cannot find directory %s\n", g_path.c_str());
 		return FALSE;
 	}
 	if (0 == S_ISDIR(node_stat.st_mode)) {
-		printf("[message_dequeue]: %s is not a directory\n", g_path);
+		printf("[message_dequeue]: %s is not a directory\n", g_path.c_str());
 		return FALSE;
 	}
 	/* mess directory is used to save the message larger than BLOCK_SIZE */
-	snprintf(name, GX_ARRAY_SIZE(name), "%s/mess", g_path);
-	if (0 != stat(name, &node_stat)) {
-        printf("[message_dequeue]: cannot find directory %s\n", name);
+	if (stat(g_path_mess.c_str(), &node_stat) != 0) {
+		printf("[message_dequeue]: cannot find directory %s\n", g_path_mess.c_str());
         return FALSE;
     }
     if (0 == S_ISDIR(node_stat.st_mode)) {
-        printf("[message_dequeue]: %s is not a directory\n", name);
+		printf("[message_dequeue]: %s is not a directory\n", g_path_mess.c_str());
         return FALSE;
     }
 	/* save directory is used to save the message for debugging */
-	snprintf(name, GX_ARRAY_SIZE(name), "%s/save", g_path);
-    if (0 != stat(name, &node_stat)) {
-        printf("[message_dequeue]: cannot find directory %s\n", name);
+	if (stat(g_path_save.c_str(), &node_stat) != 0) {
+		printf("[message_dequeue]: cannot find directory %s\n", g_path_save.c_str());
         return FALSE;
     }
     if (0 == S_ISDIR(node_stat.st_mode)) {
-        printf("[message_dequeue]: %s is not a directory\n", name);
+		printf("[message_dequeue]: %s is not a directory\n", g_path_save.c_str());
         return FALSE;
     }
 	return TRUE;
@@ -151,21 +152,25 @@ static void message_dequeue_collect_resource()
 int message_dequeue_run()
 {
 	size_t size;
-	key_t k_msg;
-    char name[256];
 	MESSAGE *pmessage;
 	pthread_attr_t attr;
 
 	if (FALSE == message_dequeue_check()) {
 		return -1;
 	}
-	snprintf(name, GX_ARRAY_SIZE(name), "%s/token.ipc", g_path);
-	int fd = open(name, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+	std::string name;
+	try {
+		name = g_path + "/token.ipc"s;
+	} catch (const std::bad_alloc &) {
+		printf("[message_dequeue]: MDQ-167\n");
+		return false;
+	}
+	int fd = open(name.c_str(), O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd >= 0)
 		close(fd);
-    k_msg = ftok(name, TOKEN_MESSAGE_QUEUE);
+	auto k_msg = ftok(name.c_str(), TOKEN_MESSAGE_QUEUE);
     if (-1 == k_msg) {
-		printf("[message_dequeue]: ftok %s: %s\n", name, strerror(errno));
+		printf("[message_dequeue]: ftok %s: %s\n", name.c_str(), strerror(errno));
         return -2;
     }
 	/* create the message queue */
@@ -229,20 +234,20 @@ MESSAGE* message_dequeue_get()
  *	@param
  *		pmessage [in]		pointer to message struct
  */
-void message_dequeue_put(MESSAGE *pmessage)
+void message_dequeue_put(MESSAGE *pmessage) try
 {
-	char name[256];
-
 	free(pmessage->begin_address);
 	pmessage->begin_address = NULL;
-	snprintf(name, GX_ARRAY_SIZE(name), "%s/mess/%d", g_path, pmessage->message_data);
-	if (remove(name) < 0 && errno != ENOENT)
-		fprintf(stderr, "W-1352: remove %s: %s\n", name, strerror(errno));
+	auto name = g_path_mess + "/" + std::to_string(pmessage->message_data);
+	if (remove(name.c_str()) < 0 && errno != ENOENT)
+		fprintf(stderr, "W-1352: remove %s: %s\n", name.c_str(), strerror(errno));
 	std::unique_lock h(g_hash_mutex);
 	int_hash_remove(g_mess_hash, pmessage->message_data);
 	h.unlock();
 	message_dequeue_put_to_free(pmessage);
 	g_dequeued_num ++;
+} catch (const std::bad_alloc &) {
+	printf("[message_dequeue]: MDQ-254\n");
 }
 
 void message_dequeue_stop()
@@ -256,7 +261,6 @@ void message_dequeue_stop()
 
 void message_dequeue_free()
 {
-	g_path[0] = '\0';
     g_max_memory = 0;
 	g_current_mem  = 0;
     g_msg_id = -1;
@@ -365,7 +369,6 @@ static void message_dequeue_put_to_used(MESSAGE *pmessage)
  */
 static void message_dequeue_load_from_mess(int mess)
 {
-	char name[256];
 	struct stat node_stat;
 	MESSAGE *pmessage;
 	char *ptr;
@@ -377,8 +380,14 @@ static void message_dequeue_load_from_mess(int mess)
 	if (NULL != pmessage) {
 		return;
 	}
-	snprintf(name, GX_ARRAY_SIZE(name), "%s/mess/%d", g_path, mess);
-	wrapfd fd = open(name, O_RDONLY);
+	std::string name;
+	try {
+		name = g_path_mess + "/" + std::to_string(mess);
+	} catch (const std::bad_alloc &) {
+		printf("[message_dequeue]: MDQ-390\n");
+		return;
+	}
+	wrapfd fd = open(name.c_str(), O_RDONLY);
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
 	    !S_ISREG(node_stat.st_mode))
 		return;
@@ -414,16 +423,13 @@ static void *mdq_thrwork(void *arg)
 {
 	MSG_BUFF msg;
 	size_t size;
-    char dir_name[256];
-    char file_name[256];
     DIR *dirp;
     struct dirent *direntp;
-	int mess_fd, len, mess;
+	int len, mess;
 
-	snprintf(dir_name, GX_ARRAY_SIZE(dir_name), "%s/mess", g_path);
-    while (NULL == (dirp = opendir(dir_name))) {
+	while ((dirp = opendir(g_path_mess.c_str())) == nullptr) {
 		printf("[message_dequeue]: failed to open directory %s: %s\n",
-			dir_name, strerror(errno));
+		       g_path_mess.c_str(), strerror(errno));
         sleep(1);
     }
 
@@ -453,9 +459,13 @@ static void *mdq_thrwork(void *arg)
 			if (g_current_mem == g_max_memory) {
 				break;
 			}
-			snprintf(file_name, GX_ARRAY_SIZE(file_name),
-			         "%s/mess/%s", g_path, direntp->d_name);
-			mess_fd = open(file_name, O_RDONLY);
+			std::string file_name;
+			try {
+				file_name = g_path_mess + "/" + direntp->d_name;
+			} catch (const std::bad_alloc &) {
+				continue;
+			}
+			auto mess_fd = open(file_name.c_str(), O_RDONLY);
 			if (-1 == mess_fd) {
 				continue;
 			}
@@ -514,21 +524,24 @@ int message_dequeue_get_param(int param)
  */
 void message_dequeue_save(MESSAGE *pmessage)
 {
-	char new_file[256];
-	char old_file[256];
+	std::string new_file, old_file;
 	char *ptr;
-	int fd, len;
+	int len;
 	
-	snprintf(new_file, GX_ARRAY_SIZE(new_file), "%s/save/%d",
-	         g_path, pmessage->flush_ID);
+	try {
+		new_file = g_path_save + "/" + std::to_string(pmessage->flush_ID);
+		old_file = g_path_mess + "/" + std::to_string(pmessage->message_data);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "[message_dequeue]: MDQ-536\n");
+		return;
+	}
 	if (MESSAGE_MESS == pmessage->message_option) {
-		snprintf(old_file, GX_ARRAY_SIZE(old_file), "%s/mess/%d",
-		         g_path, pmessage->message_data);
-		link(old_file, new_file);		
+		link(old_file.c_str(), new_file.c_str());
 	} else {
-		fd = open(new_file, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);	
+		int fd = open(new_file.c_str(), O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 		if (fd < 0) {
-			printf("[message_dequeue]: open/w %s: %s\n", new_file, strerror(errno));
+			printf("[message_dequeue]: open/w %s: %s\n",
+			       new_file.c_str(), strerror(errno));
 			return;
 		}
 		write(fd, pmessage->begin_address, pmessage->mail_length + 4*sizeof(int));
