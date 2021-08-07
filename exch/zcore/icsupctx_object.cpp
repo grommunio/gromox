@@ -25,28 +25,12 @@ std::unique_ptr<ICSUPCTX_OBJECT> icsupctx_object_create(
 	return pctx;
 }
 
-BOOL icsupctx_object_upload_state(
-	ICSUPCTX_OBJECT *pctx, const BINARY *pstate)
+BOOL ICSUPCTX_OBJECT::upload_state(const BINARY *out)
 {
-	return ics_state_deserialize(pctx->pstate, pstate);
+	return ics_state_deserialize(pstate, out);
 }
 
-BINARY* icsupctx_object_get_state(ICSUPCTX_OBJECT *pctx)
+BINARY *ICSUPCTX_OBJECT::get_state()
 {
-	return ics_state_serialize(pctx->pstate);
-}
-
-STORE_OBJECT* icsupctx_object_get_store(ICSUPCTX_OBJECT *pctx)
-{
-	return pctx->pstore;
-}
-
-uint8_t icsupctx_object_get_type(ICSUPCTX_OBJECT *pctx)
-{
-	return pctx->sync_type;
-}
-
-uint64_t icsupctx_object_get_parent_folder_id(ICSUPCTX_OBJECT *pctx)
-{
-	return pctx->folder_id;
+	return ics_state_serialize(pstate);
 }

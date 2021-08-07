@@ -4450,13 +4450,12 @@ uint32_t zarafa_server_configimport(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSUPCTX)
 		return ecNotSupported;
-	return icsupctx_object_upload_state(pctx, pstate) ? ecSuccess : ecError;
+	return pctx->upload_state(pstate) ? ecSuccess : ecError;
 }
 
 uint32_t zarafa_server_stateimport(GUID hsession,
 	uint32_t hctx, BINARY *pstate)
 {
-	BINARY *pbin;
 	uint8_t mapi_type;
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
@@ -4466,7 +4465,7 @@ uint32_t zarafa_server_stateimport(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSUPCTX)
 		return ecNotSupported;
-	pbin = icsupctx_object_get_state(pctx);
+	auto pbin = pctx->get_state();
 	if (pbin == nullptr)
 		return ecError;
 	*pstate = *pbin;
@@ -4483,10 +4482,8 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	BINARY *pbin;
 	void *pvalue;
 	uint8_t mapi_type;
-	uint64_t folder_id;
 	uint64_t message_id;
 	uint32_t permission = rightsNone, tag_access = 0;
-	STORE_OBJECT *pstore;
 	
 	pvalue = common_util_get_propvals(pproplist, PROP_TAG_ASSOCIATED);
 	if (NULL != pvalue) {
@@ -4512,11 +4509,10 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSUPCTX)
 		return ecNotSupported;
-	pstore = icsupctx_object_get_store(pctx);
-	if (SYNC_TYPE_CONTENTS != icsupctx_object_get_type(pctx)) {
+	auto pstore = pctx->get_store();
+	if (pctx->get_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
-	}
-	folder_id = icsupctx_object_get_parent_folder_id(pctx);
+	auto folder_id = pctx->get_parent_folder_id();
 	if (FALSE == b_new) {
 		pbin = static_cast<BINARY *>(common_util_get_propvals(pproplist, PR_SOURCE_KEY));
 		if (pbin == nullptr || pbin->cb != 22) {
@@ -4621,7 +4617,6 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 	uint64_t parent_id1;
 	uint64_t change_num;
 	uint32_t permission;
-	STORE_OBJECT *pstore;
 	TPROPVAL_ARRAY *pproplist;
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -4657,12 +4652,11 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSUPCTX)
 		return ecNotSupported;
-	pstore = icsupctx_object_get_store(pctx);
-	if (SYNC_TYPE_HIERARCHY != icsupctx_object_get_type(pctx)) {
+	auto pstore = pctx->get_store();
+	if (pctx->get_type() != SYNC_TYPE_HIERARCHY)
 		return ecNotSupported;
-	}
 	if (0 == ((BINARY*)pproplist->ppropval[0].pvalue)->cb) {
-		parent_id1 = icsupctx_object_get_parent_folder_id(pctx);
+		parent_id1 = pctx->get_parent_folder_id();
 		if (!exmdb_client::check_folder_id(pstore->get_dir(),
 		    parent_id1, &b_exist))
 			return ecError;
@@ -4861,10 +4855,7 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 	BOOL b_partial;
 	uint16_t replid;
 	uint8_t mapi_type;
-	uint8_t sync_type;
-	uint64_t folder_id;
 	uint32_t permission;
-	STORE_OBJECT *pstore;
 	EID_ARRAY message_ids;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
@@ -4875,13 +4866,13 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSUPCTX)
 		return ecNotSupported;
-	pstore = icsupctx_object_get_store(pctx);
-	sync_type = icsupctx_object_get_type(pctx);
+	auto pstore = pctx->get_store();
+	auto sync_type = pctx->get_type();
 	BOOL b_hard = (flags & SYNC_DELETES_FLAG_HARDDELETE) ? TRUE : false;
 	if (flags & SYNC_DELETES_FLAG_HIERARCHY &&
 	    sync_type == SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
-	folder_id = icsupctx_object_get_parent_folder_id(pctx);
+	auto folder_id = pctx->get_parent_folder_id();
 	auto username = pinfo->get_username();
 	if (pstore->check_owner_mode()) {
 		username = NULL;
@@ -5005,7 +4996,6 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 	uint64_t folder_id;
 	uint64_t message_id;
 	uint32_t permission;
-	STORE_OBJECT *pstore;
 	uint32_t proptag_buff[2];
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -5018,13 +5008,12 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSUPCTX)
 		return ecNotSupported;
-	pstore = icsupctx_object_get_store(pctx);
-	if (SYNC_TYPE_CONTENTS != icsupctx_object_get_type(pctx)) {
+	auto pstore = pctx->get_store();
+	if (pctx->get_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
-	}
 	const char *username = nullptr;
 	if (!pstore->check_owner_mode()) {
-		folder_id = icsupctx_object_get_parent_folder_id(pctx);
+		folder_id = pctx->get_parent_folder_id();
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    folder_id, pinfo->get_username(), &permission))
 			return ecError;
