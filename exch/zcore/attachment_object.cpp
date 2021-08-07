@@ -41,20 +41,9 @@ std::unique_ptr<ATTACHMENT_OBJECT> attachment_object_create(
 	return pattachment;
 }
 
-uint32_t attachment_object_get_attachment_num(
-	ATTACHMENT_OBJECT *pattachment)
+BOOL ATTACHMENT_OBJECT::init_attachment()
 {
-	return pattachment->attachment_num;
-}
-
-uint32_t attachment_object_get_instance_id(
-	ATTACHMENT_OBJECT *pattachment)
-{
-	return pattachment->instance_id;
-}
-
-BOOL attachment_object_init_attachment(ATTACHMENT_OBJECT *pattachment)
-{
+	auto pattachment = this;
 	void *pvalue;
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
@@ -109,13 +98,9 @@ ATTACHMENT_OBJECT::~ATTACHMENT_OBJECT()
 	}
 }
 
-uint32_t attachment_object_get_tag_access(ATTACHMENT_OBJECT *pattachment)
+gxerr_t ATTACHMENT_OBJECT::save()
 {
-	return pattachment->pparent->tag_access;
-}
-
-gxerr_t attachment_object_save(ATTACHMENT_OBJECT *pattachment)
-{
+	auto pattachment = this;
 	uint64_t nt_time;
 	TAGGED_PROPVAL tmp_propval;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -129,10 +114,8 @@ gxerr_t attachment_object_save(ATTACHMENT_OBJECT *pattachment)
 	tmp_propval.proptag = PR_LAST_MODIFICATION_TIME;
 	nt_time = rop_util_current_nttime();
 	tmp_propval.pvalue = &nt_time;
-	if (FALSE == attachment_object_set_properties(
-		pattachment, &tmp_propvals)) {
+	if (!set_properties(&tmp_propvals))
 		return GXERR_CALL_FAILED;
-	}
 	gxerr_t e_result = GXERR_CALL_FAILED;
 	if (!exmdb_client::flush_instance(pattachment->pparent->pstore->get_dir(),
 	    pattachment->instance_id, nullptr, &e_result) || e_result != GXERR_SUCCESS)
@@ -144,9 +127,9 @@ gxerr_t attachment_object_save(ATTACHMENT_OBJECT *pattachment)
 	return GXERR_SUCCESS;
 }
 
-BOOL attachment_object_get_all_proptags(
-	ATTACHMENT_OBJECT *pattachment, PROPTAG_ARRAY *pproptags)
+BOOL ATTACHMENT_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
+	auto pattachment = this;
 	PROPTAG_ARRAY tmp_proptags;
 	
 	if (!exmdb_client::get_instance_all_proptags(pattachment->pparent->pstore->get_dir(),
@@ -168,8 +151,8 @@ BOOL attachment_object_get_all_proptags(
 	return TRUE;
 }
 
-static BOOL attachment_object_check_readonly_property(
-	ATTACHMENT_OBJECT *pattachment, uint32_t proptag)
+static BOOL aobj_check_readonly_property(const ATTACHMENT_OBJECT *pattachment,
+    uint32_t proptag)
 {
 	if (PROP_TYPE(proptag) == PT_OBJECT && proptag != PR_ATTACH_DATA_OBJ)
 		return TRUE;
@@ -229,9 +212,10 @@ static BOOL attachment_object_get_calculated_property(
 	return FALSE;
 }
 
-BOOL attachment_object_get_properties(ATTACHMENT_OBJECT *pattachment,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
+BOOL ATTACHMENT_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
+    TPROPVAL_ARRAY *ppropvals)
 {
+	auto pattachment = this;
 	int i;
 	void *pvalue;
 	PROPTAG_ARRAY tmp_proptags;
@@ -278,9 +262,9 @@ BOOL attachment_object_get_properties(ATTACHMENT_OBJECT *pattachment,
 	return TRUE;	
 }
 
-BOOL attachment_object_set_properties(ATTACHMENT_OBJECT *pattachment,
-	const TPROPVAL_ARRAY *ppropvals)
+BOOL ATTACHMENT_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals)
 {
+	auto pattachment = this;
 	int i;
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -291,10 +275,9 @@ BOOL attachment_object_set_properties(ATTACHMENT_OBJECT *pattachment,
 		return FALSE;
 	}
 	for (i=0; i<ppropvals->count; i++) {
-		if (TRUE == attachment_object_check_readonly_property(
-			pattachment, ppropvals->ppropval[i].proptag)) {
+		if (aobj_check_readonly_property(pattachment,
+		    ppropvals->ppropval[i].proptag))
 			continue;
-		}
 		tmp_propvals.ppropval[tmp_propvals.count] =
 							ppropvals->ppropval[i];
 		tmp_propvals.count ++;
@@ -311,9 +294,9 @@ BOOL attachment_object_set_properties(ATTACHMENT_OBJECT *pattachment,
 	return TRUE;
 }
 
-BOOL attachment_object_remove_properties(ATTACHMENT_OBJECT *pattachment,
-	const PROPTAG_ARRAY *pproptags)
+BOOL ATTACHMENT_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags)
 {
+	auto pattachment = this;
 	int i;
 	PROBLEM_ARRAY tmp_problems;
 	PROPTAG_ARRAY tmp_proptags;
@@ -324,10 +307,9 @@ BOOL attachment_object_remove_properties(ATTACHMENT_OBJECT *pattachment,
 		return FALSE;
 	}
 	for (i=0; i<pproptags->count; i++) {
-		if (TRUE == attachment_object_check_readonly_property(
-			pattachment, pproptags->pproptag[i])) {
+		if (aobj_check_readonly_property(pattachment,
+		    pproptags->pproptag[i]))
 			continue;
-		}
 		tmp_proptags.pproptag[tmp_proptags.count] =
 								pproptags->pproptag[i];
 		tmp_proptags.count ++;
@@ -344,10 +326,10 @@ BOOL attachment_object_remove_properties(ATTACHMENT_OBJECT *pattachment,
 	return TRUE;
 }
 
-BOOL attachment_object_copy_properties(
-	ATTACHMENT_OBJECT *pattachment, ATTACHMENT_OBJECT *pattachment_src,
+BOOL ATTACHMENT_OBJECT::copy_properties(ATTACHMENT_OBJECT *pattachment_src,
 	const PROPTAG_ARRAY *pexcluded_proptags, BOOL b_force, BOOL *pb_cycle)
 {
+	auto pattachment = this;
 	int i;
 	PROBLEM_ARRAY tmp_problems;
 	ATTACHMENT_CONTENT attctnt;
@@ -378,14 +360,4 @@ BOOL attachment_object_copy_properties(
 		return FALSE;	
 	pattachment->b_touched = TRUE;
 	return TRUE;
-}
-
-STORE_OBJECT* attachment_object_get_store(ATTACHMENT_OBJECT *pattachment)
-{
-	return pattachment->pparent->pstore;
-}
-
-BOOL attachment_object_check_writable(ATTACHMENT_OBJECT *pattachment)
-{
-	return pattachment->b_writable;
 }

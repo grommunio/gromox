@@ -1,4 +1,6 @@
 #pragma once
+#include <cstdint>
+#include <memory>
 #include <gromox/defs.h>
 #include "message_object.h"
 
@@ -6,6 +8,18 @@
 	so they can operate internal variables of each other */
 struct ATTACHMENT_OBJECT {
 	~ATTACHMENT_OBJECT();
+	uint32_t get_instance_id() const { return instance_id; }
+	BOOL init_attachment();
+	uint32_t get_attachment_num() const { return attachment_num; }
+	uint32_t get_tag_access() const { return pparent->tag_access; }
+	gxerr_t save();
+	BOOL get_all_proptags(PROPTAG_ARRAY *);
+	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+	BOOL set_properties(const TPROPVAL_ARRAY *);
+	BOOL remove_properties(const PROPTAG_ARRAY *);
+	BOOL copy_properties(ATTACHMENT_OBJECT *src, const PROPTAG_ARRAY *exclprop, BOOL force, BOOL *cycle);
+	STORE_OBJECT *get_store() const { return pparent->pstore; }
+	BOOL check_writable() const { return b_writable; }
 
 	BOOL b_new = false, b_writable = false, b_touched = false;
 	MESSAGE_OBJECT *pparent = nullptr;
@@ -13,23 +27,3 @@ struct ATTACHMENT_OBJECT {
 };
 
 extern std::unique_ptr<ATTACHMENT_OBJECT> attachment_object_create(MESSAGE_OBJECT *parent, uint32_t at_num);
-uint32_t attachment_object_get_instance_id(
-	ATTACHMENT_OBJECT *pattachment);
-BOOL attachment_object_init_attachment(ATTACHMENT_OBJECT *pattachment);
-uint32_t attachment_object_get_attachment_num(
-	ATTACHMENT_OBJECT *pattachment);
-uint32_t attachment_object_get_tag_access(ATTACHMENT_OBJECT *pattachment);
-extern gxerr_t attachment_object_save(ATTACHMENT_OBJECT *);
-BOOL attachment_object_get_all_proptags(
-	ATTACHMENT_OBJECT *pattachment, PROPTAG_ARRAY *pproptags);
-BOOL attachment_object_get_properties(ATTACHMENT_OBJECT *pattachment,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals);
-BOOL attachment_object_set_properties(ATTACHMENT_OBJECT *pattachment,
-	const TPROPVAL_ARRAY *ppropvals);
-BOOL attachment_object_remove_properties(ATTACHMENT_OBJECT *pattachment,
-	const PROPTAG_ARRAY *pproptags);
-BOOL attachment_object_copy_properties(
-	ATTACHMENT_OBJECT *pattachment, ATTACHMENT_OBJECT *pattachment_src,
-	const PROPTAG_ARRAY *pexcluded_proptags, BOOL b_force, BOOL *pb_cycle);
-STORE_OBJECT* attachment_object_get_store(ATTACHMENT_OBJECT *pattachment);
-BOOL attachment_object_check_writable(ATTACHMENT_OBJECT *pattachment);

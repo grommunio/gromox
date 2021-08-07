@@ -3668,9 +3668,8 @@ uint32_t zarafa_server_openattachment(GUID hsession,
 	auto pattachment = attachment_object_create(pmessage, attach_id);
 	if (pattachment == nullptr)
 		return ecError;
-	if (attachment_object_get_instance_id(pattachment.get()) == 0) {
+	if (pattachment->get_instance_id() == 0)
 		return ecNotFound;
-	}
 	*phobject = pinfo->ptree->add_object_handle(hmessage, ZMG_ATTACH, pattachment.get());
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
@@ -3696,12 +3695,10 @@ uint32_t zarafa_server_createattachment(GUID hsession,
 		pmessage, ATTACHMENT_NUM_INVALID);
 	if (pattachment == nullptr)
 		return ecError;
-	if (attachment_object_get_attachment_num(pattachment.get()) == ATTACHMENT_NUM_INVALID) {
+	if (pattachment->get_attachment_num() == ATTACHMENT_NUM_INVALID)
 		return ecMaxAttachmentExceeded;
-	}
-	if (!attachment_object_init_attachment(pattachment.get())) {
+	if (!pattachment->init_attachment())
 		return ecError;
-	}
 	*phobject = pinfo->ptree->add_object_handle(hmessage, ZMG_ATTACH, pattachment.get());
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
@@ -3781,9 +3778,9 @@ uint32_t zarafa_server_setpropvals(GUID hsession,
 	}
 	case ZMG_ATTACH: {
 		auto atx = static_cast<ATTACHMENT_OBJECT *>(pobject);
-		if (!attachment_object_check_writable(atx))
+		if (!atx->check_writable())
 			return ecAccessDenied;
-		if (!attachment_object_set_properties(atx, ppropvals))
+		if (!atx->set_properties(ppropvals))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3861,11 +3858,11 @@ uint32_t zarafa_server_getpropvals(GUID hsession,
 	case ZMG_ATTACH: {
 		auto atx = static_cast<ATTACHMENT_OBJECT *>(pobject);
 		if (NULL == pproptags) {
-			if (!attachment_object_get_all_proptags(atx, &proptags))
+			if (!atx->get_all_proptags(&proptags))
 				return ecError;
 			pproptags = &proptags;
 		}
-		if (!attachment_object_get_properties(atx, pproptags, ppropvals))
+		if (!atx->get_properties(pproptags, ppropvals))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3948,9 +3945,9 @@ uint32_t zarafa_server_deletepropvals(GUID hsession,
 	}
 	case ZMG_ATTACH: {
 		auto atx = static_cast<ATTACHMENT_OBJECT *>(pobject);
-		if (!attachment_object_check_writable(atx))
+		if (!atx->check_writable())
 			return ecAccessDenied;
-		if (!attachment_object_remove_properties(atx, pproptags))
+		if (!atx->remove_properties(pproptags))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3978,10 +3975,7 @@ uint32_t zarafa_server_setmessagereadflag(
 uint32_t zarafa_server_openembedded(GUID hsession,
 	uint32_t hattachment, uint32_t flags, uint32_t *phobject)
 {
-	BOOL b_writable;
 	uint8_t mapi_type;
-	uint32_t tag_access;
-	STORE_OBJECT *pstore;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
@@ -3991,12 +3985,12 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_ATTACH)
 		return ecNotSupported;
-	pstore = attachment_object_get_store(pattachment);
+	auto pstore = pattachment->get_store();
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
 	if (hstore == INVALID_HANDLE)
 		return ecNullObject;
-	b_writable = attachment_object_check_writable(pattachment);
-	tag_access = attachment_object_get_tag_access(pattachment);
+	auto b_writable = pattachment->check_writable();
+	auto tag_access = pattachment->get_tag_access();
 	if ((flags & FLAG_CREATE) && !b_writable)
 		return ecAccessDenied;
 	auto pmessage = message_object_create(pstore,
@@ -4181,13 +4175,11 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 	}
 	case ZMG_ATTACH: {
 		auto adst = static_cast<ATTACHMENT_OBJECT *>(pobject_dst);
-		if (!attachment_object_check_writable(adst))
+		if (!adst->check_writable())
 			return ecAccessDenied;
-		if (!attachment_object_copy_properties(adst,
-		    static_cast<ATTACHMENT_OBJECT *>(pobject),
-		    pexclude_proptags, b_force, &b_cycle)) {
+		if (!adst->copy_properties(static_cast<ATTACHMENT_OBJECT *>(pobject),
+		    pexclude_proptags, b_force, &b_cycle))
 			return ecError;
-		}
 		return b_cycle ? ecMsgCycle : ecSuccess;
 	}
 	default:
@@ -4218,13 +4210,12 @@ uint32_t zarafa_server_savechanges(GUID hsession, uint32_t hobject)
 			return gxerr_to_hresult(err);
 		return ecSuccess;
 	} else if (mapi_type == ZMG_ATTACH) {
-		if (!attachment_object_check_writable(static_cast<ATTACHMENT_OBJECT *>(pobject))) {
+		auto atx = static_cast<ATTACHMENT_OBJECT *>(pobject);
+		if (!atx->check_writable())
 			return ecAccessDenied;
-		}
-		gxerr_t err = attachment_object_save(static_cast<ATTACHMENT_OBJECT *>(pobject));
-		if (err != GXERR_SUCCESS) {
+		auto err = atx->save();
+		if (err != GXERR_SUCCESS)
 			return gxerr_to_hresult(err);
-		}
 		return ecSuccess;
 	} else {
 		return ecNotSupported;
