@@ -968,9 +968,8 @@ gxerr_t FASTUPCTX_OBJECT::write_buffer(const BINARY *ptransfer_data)
 	if (TRUE == pctx->b_ended) {
 		return GXERR_CALL_FAILED;
 	}
-	if (!ftstream_parser_write_buffer(pctx->pstream.get(), ptransfer_data))
+	if (!pstream->write_buffer(ptransfer_data))
 		return GXERR_CALL_FAILED;
-	return ftstream_parser_process(pctx->pstream.get(),
-	       fastupctx_object_record_marker,
+	return pstream->process(fastupctx_object_record_marker,
 	       fastupctx_object_record_propval, pctx);
 }

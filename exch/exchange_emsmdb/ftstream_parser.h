@@ -11,6 +11,8 @@ typedef gxerr_t (*RECORD_PROPVAL)(FASTUPCTX_OBJECT *, const TAGGED_PROPVAL *);
 
 struct FTSTREAM_PARSER {
 	~FTSTREAM_PARSER();
+	BOOL write_buffer(const BINARY *transfer_data);
+	gxerr_t process(RECORD_MARKER, RECORD_PROPVAL, void *param);
 
 	int fd = -1;
 	uint32_t offset = 0, st_size = 0;
@@ -19,7 +21,3 @@ struct FTSTREAM_PARSER {
 };
 
 extern std::unique_ptr<FTSTREAM_PARSER> ftstream_parser_create(LOGON_OBJECT *);
-BOOL ftstream_parser_write_buffer(
-	FTSTREAM_PARSER *pstream,
-	const BINARY *ptransfer_data);
-extern gxerr_t ftstream_parser_process(FTSTREAM_PARSER *, RECORD_MARKER, RECORD_PROPVAL, void *param);

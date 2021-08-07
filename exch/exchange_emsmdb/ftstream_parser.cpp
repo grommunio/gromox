@@ -782,10 +782,9 @@ static int ftstream_parser_read_element(
 	return FTSTREAM_PARSER_READ_CONTINUE;
 }
 
-BOOL ftstream_parser_write_buffer(
-	FTSTREAM_PARSER *pstream,
-	const BINARY *ptransfer_data)
+BOOL FTSTREAM_PARSER::write_buffer(const BINARY *ptransfer_data)
 {
+	auto pstream = this;
 	lseek(pstream->fd, 0, SEEK_END);
 	if (ptransfer_data->cb != write(pstream->fd,
 		ptransfer_data->pb, ptransfer_data->cb)) {
@@ -827,9 +826,10 @@ static BOOL ftstream_parser_truncate_fd(
 	return TRUE;
 }
 
-gxerr_t ftstream_parser_process(FTSTREAM_PARSER *pstream,
-    RECORD_MARKER record_marker, RECORD_PROPVAL record_propval, void *pparam)
+gxerr_t FTSTREAM_PARSER::process(RECORD_MARKER record_marker,
+    RECORD_PROPVAL record_propval, void *pparam)
 {
+	auto pstream = this;
 	int len;
 	void *pvalue;
 	uint32_t marker;
