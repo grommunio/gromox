@@ -6,6 +6,7 @@
 
 struct SUBSCRIPTION_OBJECT {
 	~SUBSCRIPTION_OBJECT();
+	void set_handle(uint32_t handle);
 
 	LOGON_OBJECT *plogon = nullptr;
 	CXH cxh{};
@@ -15,5 +16,3 @@ struct SUBSCRIPTION_OBJECT {
 };
 
 extern std::unique_ptr<SUBSCRIPTION_OBJECT> subscription_object_create(LOGON_OBJECT *, uint8_t logon_id, uint16_t notification_types, BOOL whole, uint64_t folder_id, uint64_t message_id);
-void subscription_object_set_handle(
-	SUBSCRIPTION_OBJECT *psub, uint32_t handle);

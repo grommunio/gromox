@@ -27,9 +27,9 @@ std::unique_ptr<SUBSCRIPTION_OBJECT> subscription_object_create(
 	return psub;
 }
 
-void subscription_object_set_handle(
-	SUBSCRIPTION_OBJECT *psub, uint32_t handle)
+void SUBSCRIPTION_OBJECT::set_handle(uint32_t handle)
 {
+	auto psub = this;
 	psub->handle = handle;
 	emsmdb_interface_add_subscription_notify(psub->plogon->get_dir(),
 		psub->sub_id, psub->handle, psub->logon_id, &psub->cxh.guid);

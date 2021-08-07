@@ -47,7 +47,7 @@ uint32_t rop_registernotification(
 	if (hnd < 0) {
 		return ecError;
 	}
-	subscription_object_set_handle(psub.get(), hnd);
+	psub->set_handle(hnd);
 	psub.release();
 	*phout = hnd;
 	return ecSuccess;
