@@ -198,11 +198,11 @@ static BOOL table_object_get_all_columns(TABLE_OBJECT *ptable,
 	PROPTAG_ARRAY *pcolumns)
 {
 	if (ATTACHMENT_TABLE == ptable->table_type) {
-		return message_object_get_attachment_table_all_proptags(
-		       static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj), pcolumns);
+		auto msg = static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj);
+		return msg->get_attachment_table_all_proptags(pcolumns);
 	} else if (RECIPIENT_TABLE == ptable->table_type) {
-		return message_object_get_recipient_all_proptags(
-		       static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj), pcolumns);
+		auto msg = static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj);
+		return msg->get_recipient_all_proptags(pcolumns);
 	} else if (CONTAINER_TABLE == ptable->table_type) {
 		container_object_get_container_table_all_proptags(pcolumns);
 		return TRUE;
@@ -266,8 +266,8 @@ static BOOL rcpttable_query_rows(const TABLE_OBJECT *ptable,
 {
 	TARRAY_SET rcpt_set;
 
-	if (!message_object_read_recipients(static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj),
-	    0, 0xFFFF, &rcpt_set))
+	if (!static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj)->
+	    read_recipients(0, 0xFFFF, &rcpt_set))
 		return FALSE;
 	uint32_t end_pos = ptable->position + row_needed > rcpt_set.count ?
 	                   rcpt_set.count : ptable->position + row_needed;
@@ -546,9 +546,8 @@ BOOL table_object_query_rows(TABLE_OBJECT *ptable,
 		row_count = INT32_MAX;
 
 	if (ATTACHMENT_TABLE == ptable->table_type) {
-		return message_object_query_attachment_table(
-		       static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj),
-		       pcolumns, ptable->position, row_count, pset);
+		auto msg = static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj);
+		return msg->query_attachment_table(pcolumns, ptable->position, row_count, pset);
 	} else if (RECIPIENT_TABLE == ptable->table_type) {
 		return rcpttable_query_rows(ptable, pcolumns, pset, row_count);
 	} else if (CONTAINER_TABLE == ptable->table_type) {
@@ -694,11 +693,13 @@ uint32_t table_object_get_total(TABLE_OBJECT *ptable)
 	
 	if (ATTACHMENT_TABLE == ptable->table_type) {
 		num = 0;
-		message_object_get_attachments_num(static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj), &num);
+		auto msg = static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj);
+		msg->get_attachments_num(&num);
 		return num;
 	} else if (RECIPIENT_TABLE == ptable->table_type) {
 		num = 0;
-		message_object_get_recipient_num(static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj), &num);
+		auto msg = static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj);
+		msg->get_recipient_num(&num);
 		return num;
 	} else if (CONTAINER_TABLE == ptable->table_type) {
 		num1 = 0;
@@ -1038,23 +1039,21 @@ BOOL table_object_filter_rows(TABLE_OBJECT *ptable,
 	PROPTAG_ARRAY tmp_proptags;
 	
 	switch (ptable->table_type) {
-	case ATTACHMENT_TABLE:
-		if (!message_object_get_attachment_table_all_proptags(
-		    static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj), &proptags))
+	case ATTACHMENT_TABLE: {
+		auto msg = static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj);
+		if (!msg->get_attachment_table_all_proptags(&proptags))
 			return FALSE;	
 		tmp_proptag = PR_ATTACH_DATA_BIN;
 		tmp_proptags.count = 1;
 		tmp_proptags.pproptag = &tmp_proptag;
 		common_util_reduce_proptags(&proptags, &tmp_proptags);
-		if (!message_object_query_attachment_table(
-		    static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj),
-		    &proptags, ptable->position, 0x7FFFFFFF, &tmp_set))
+		if (!msg->query_attachment_table(&proptags, ptable->position, 0x7FFFFFFF, &tmp_set))
 			return FALSE;	
 		break;
+	}
 	case RECIPIENT_TABLE:
-		if (!message_object_read_recipients(
-		    static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj),
-		    0, 0xFFFF, &tmp_set))
+		if (!static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj)->
+		    read_recipients(0, 0xFFFF, &tmp_set))
 			return FALSE;	
 		break;
 	case USER_TABLE:

@@ -150,10 +150,8 @@ BOOL common_util_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size_t
 	proptag_buff[1] = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
 	proptag_buff[2] = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
 	proptag_buff[3] = PROP_TAG_SENTREPRESENTINGENTRYID;
-	if (FALSE == message_object_get_properties(
-		pmessage, &tmp_proptags, &tmp_propvals)) {
+	if (!pmessage->get_properties(&tmp_proptags, &tmp_propvals))
 		return FALSE;	
-	}
 	if (0 == tmp_propvals.count) {
 		username[0] = '\0';
 		return TRUE;
@@ -316,11 +314,9 @@ gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[14].pvalue = pentryid;
 	propval_buff[15].proptag = PROP_TAG_SENTREPRESENTINGSEARCHKEY;
 	propval_buff[15].pvalue = &search_bin1;
-	if (FALSE == message_object_set_properties(
-		pmessage, &tmp_propvals)) {
+	if (!pmessage->set_properties(&tmp_propvals))
 		return GXERR_CALL_FAILED;
-	}
-	return message_object_save(pmessage);
+	return pmessage->save();
 }
 
 void common_util_set_propvals(TPROPVAL_ARRAY *parray,
@@ -2720,8 +2716,8 @@ MESSAGE_CONTENT* common_util_ical_to_message(
 
 BOOL common_util_message_to_vcf(MESSAGE_OBJECT *pmessage, BINARY *pvcf_bin)
 {
-	STORE_OBJECT *pstore = message_object_get_store(pmessage);
-	uint64_t message_id = message_object_get_id(pmessage);
+	auto pstore = pmessage->get_store();
+	auto message_id = pmessage->get_id();
 	VCARD vcard;
 	MESSAGE_CONTENT *pmsgctnt;
 	
@@ -2746,7 +2742,7 @@ BOOL common_util_message_to_vcf(MESSAGE_OBJECT *pmessage, BINARY *pvcf_bin)
 	}
 	vcard_free(&vcard);
 	pvcf_bin->cb = strlen(pvcf_bin->pc);
-	if (!message_object_write_message(pmessage, pmsgctnt))
+	if (!pmessage->write_message(pmsgctnt))
 		/* ignore */;
 	return TRUE;
 }

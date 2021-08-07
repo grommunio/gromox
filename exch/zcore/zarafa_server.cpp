@@ -1624,7 +1624,7 @@ uint32_t zarafa_server_loadrecipienttable(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
-	auto ptable = table_object_create(message_object_get_store(pmessage),
+	auto ptable = table_object_create(pmessage->get_store(),
 	              pmessage, RECIPIENT_TABLE, 0);
 	if (ptable == nullptr)
 		return ecError;
@@ -1731,9 +1731,8 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	if (pmessage == nullptr)
 		return ecError;
 	BOOL b_fai = (flags & FLAG_ASSOCIATED) ? TRUE : false;
-	if (!message_object_init_message(pmessage.get(), b_fai, pinfo->cpid)) {
+	if (!pmessage->init_message(b_fai, pinfo->cpid))
 		return ecError;
-	}
 	/* add the store handle as the parent object handle
 		because the caller normaly will not keep the
 		handle of folder */
@@ -3299,7 +3298,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
 	if (MODRECIP_MODIFY == flags) {
-		message_object_empty_rcpts(pmessage);
+		pmessage->empty_rcpts();
 	} else if (MODRECIP_REMOVE == flags) {
 		for (size_t i = 0; i < prcpt_list->count; ++i) {
 			prcpt = prcpt_list->pparray[i];
@@ -3315,14 +3314,12 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			if (!b_found)
 				return ecInvalidParam;
 		}
-		if (FALSE == message_object_set_rcpts(pmessage, prcpt_list)) {
+		if (!pmessage->set_rcpts(prcpt_list))
 			return ecError;
-		}
 		return ecSuccess;
 	}
-	if (FALSE == message_object_get_rowid_begin(pmessage, &last_rowid)) {
+	if (!pmessage->get_rowid_begin(&last_rowid))
 		return ecError;
-	}
 	for (size_t i = 0; i < prcpt_list->count; ++i, ++last_rowid) {
 		if (common_util_get_propvals(prcpt_list->pparray[i], PR_ENTRYID) == nullptr &&
 		    common_util_get_propvals(prcpt_list->pparray[i], PR_EMAIL_ADDRESS) == nullptr &&
@@ -3439,7 +3436,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			}
 		}
 	}
-	return message_object_set_rcpts(pmessage, prcpt_list) ? ecSuccess : ecError;
+	return pmessage->set_rcpts(prcpt_list) ? ecSuccess : ecError;
 }
 
 uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
@@ -3453,7 +3450,6 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	uint16_t rcpt_num;
 	char username[UADDR_SIZE];
 	uint32_t mail_length;
-	STORE_OBJECT *pstore;
 	uint64_t submit_time;
 	uint32_t deferred_time;
 	uint32_t message_flags;
@@ -3470,7 +3466,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
-	pstore = message_object_get_store(pmessage);
+	auto pstore = pmessage->get_store();
 	if (!pstore->b_private)
 		return ecNotSupported;
 	if (!pstore->check_owner_mode()) {
@@ -3481,27 +3477,20 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		if (!(permission & frightsGromoxSendAs))
 			return ecAccessDenied;
 	}
-	if (0 == message_object_get_id(pmessage)) {
+	if (pmessage->get_id() == 0)
 		return ecNotSupported;
-	}
-	if (TRUE == message_object_check_importing(pmessage) ||
-		FALSE == message_object_check_writable(pmessage)) {
+	if (pmessage->check_importing() || !pmessage->check_writable())
 		return ecAccessDenied;
-	}
-	if (FALSE == message_object_get_recipient_num(
-		pmessage, &rcpt_num)) {
+	if (!pmessage->get_recipient_num(&rcpt_num))
 		return ecError;
-	}
 	if (rcpt_num > common_util_get_param(COMMON_UTIL_MAX_RCPT)) {
 		return ecTooManyRecips;
 	}
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_ASSOCIATED;
-	if (FALSE == message_object_get_properties(
-		pmessage, &tmp_proptags, &tmp_propvals)) {
+	if (!pmessage->get_properties(&tmp_proptags, &tmp_propvals))
 		return ecError;
-	}
 	pvalue = common_util_get_propvals(
 		&tmp_propvals, PROP_TAG_ASSOCIATED);
 	/* FAI message cannot be sent */
@@ -3548,10 +3537,8 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	proptag_buff[3] = PROP_TAG_DEFERREDSENDNUMBER;
 	proptag_buff[4] = PROP_TAG_DEFERREDSENDUNITS;
 	proptag_buff[5] = PROP_TAG_DELETEAFTERSUBMIT;
-	if (FALSE == message_object_get_properties(
-		pmessage, &tmp_proptags, &tmp_propvals)) {
+	if (!pmessage->get_properties(&tmp_proptags, &tmp_propvals))
 		return ecError;
-	}
 	pvalue = common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE);
 	if (pvalue == nullptr)
 		return ecError;
@@ -3573,10 +3560,8 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	BOOL b_delete = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 ? TRUE : false;
 	if (!(message_flags & MSGFLAG_SUBMITTED)) {
 		if (!exmdb_client::try_mark_submit(pstore->get_dir(),
-			message_object_get_id(pmessage),
-			&b_marked)) {
+		    pmessage->get_id(), &b_marked))
 			return ecError;
-		}
 		if (!b_marked)
 			return ecAccessDenied;
 		deferred_time = 0;
@@ -3619,33 +3604,29 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 			snprintf(command_buff, 1024, "%s %s %llu",
 				common_util_get_submit_command(),
 			         pstore->get_account(),
-				static_cast<unsigned long long>(rop_util_get_gc_value(
-					message_object_get_id(pmessage))));
+			         static_cast<unsigned long long>(rop_util_get_gc_value(pmessage->get_id())));
 			timer_id = system_services_add_timer(
 					command_buff, deferred_time);
 			if (0 == timer_id) {
 				exmdb_client::clear_submit(pstore->get_dir(),
-					message_object_get_id(pmessage),
-					b_unsent);
+					pmessage->get_id(), b_unsent);
 				return ecError;
 			}
 			exmdb_client::set_message_timer(pstore->get_dir(),
-				message_object_get_id(pmessage), timer_id);
-			message_object_reload(pmessage);
+				pmessage->get_id(), timer_id);
+			pmessage->reload();
 			return ecSuccess;
 		}
 	}
-	if (FALSE == common_util_send_message(pstore,
-		message_object_get_id(pmessage), TRUE)) {
+	if (!common_util_send_message(pstore, pmessage->get_id(), TRUE)) {
 		exmdb_client::clear_submit(pstore->get_dir(),
-			message_object_get_id(pmessage),
-			b_unsent);
+			pmessage->get_id(), b_unsent);
 		return ecError;
 	}
 	if (!b_delete)
-		message_object_reload(pmessage);
+		pmessage->reload();
 	else
-		message_object_clear_unsent(pmessage);
+		pmessage->clear_unsent();
 	return ecSuccess;
 }
 
@@ -3653,7 +3634,6 @@ uint32_t zarafa_server_loadattachmenttable(GUID hsession,
 	uint32_t hmessage, uint32_t *phobject)
 {
 	uint8_t mapi_type;
-	STORE_OBJECT *pstore;
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
@@ -3662,7 +3642,7 @@ uint32_t zarafa_server_loadattachmenttable(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
-	pstore = message_object_get_store(pmessage);
+	auto pstore = pmessage->get_store();
 	auto ptable = table_object_create(pstore, pmessage, ATTACHMENT_TABLE, 0);
 	if (ptable == nullptr)
 		return ecError;
@@ -3710,9 +3690,8 @@ uint32_t zarafa_server_createattachment(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
-	if (FALSE == message_object_check_writable(pmessage)) {
+	if (!pmessage->check_writable())
 		return ecAccessDenied;
-	}
 	auto pattachment = attachment_object_create(
 		pmessage, ATTACHMENT_NUM_INVALID);
 	if (pattachment == nullptr)
@@ -3742,10 +3721,9 @@ uint32_t zarafa_server_deleteattachment(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
-	if (FALSE == message_object_check_writable(pmessage)) {
+	if (!pmessage->check_writable())
 		return ecAccessDenied;
-	}
-	return message_object_delete_attachment(pmessage, attach_id) ? ecSuccess : ecError;
+	return pmessage->delete_attachment(attach_id) ? ecSuccess : ecError;
 }
 
 uint32_t zarafa_server_setpropvals(GUID hsession,
@@ -3795,9 +3773,9 @@ uint32_t zarafa_server_setpropvals(GUID hsession,
 	}
 	case ZMG_MESSAGE: {
 		auto msg = static_cast<MESSAGE_OBJECT *>(pobject);
-		if (!message_object_check_writable(msg))
+		if (!msg->check_writable())
 			return ecAccessDenied;
-		if (!message_object_set_properties(msg, ppropvals))
+		if (!msg->set_properties(ppropvals))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3872,11 +3850,11 @@ uint32_t zarafa_server_getpropvals(GUID hsession,
 	case ZMG_MESSAGE: {
 		auto msg = static_cast<MESSAGE_OBJECT *>(pobject);
 		if (NULL == pproptags) {
-			if (!message_object_get_all_proptags(msg, &proptags))
+			if (!msg->get_all_proptags(&proptags))
 				return ecError;
 			pproptags = &proptags;
 		}
-		if (!message_object_get_properties(msg, pproptags, ppropvals))
+		if (!msg->get_properties(pproptags, ppropvals))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3962,9 +3940,9 @@ uint32_t zarafa_server_deletepropvals(GUID hsession,
 	}
 	case ZMG_MESSAGE: {
 		auto msg = static_cast<MESSAGE_OBJECT *>(pobject);
-		if (!message_object_check_writable(msg))
+		if (!msg->check_writable())
 			return ecAccessDenied;
-		if (!message_object_remove_properties(msg, pproptags))
+		if (!msg->remove_properties(pproptags))
 			return ecError;
 		return ecSuccess;
 	}
@@ -3994,7 +3972,7 @@ uint32_t zarafa_server_setmessagereadflag(
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
-	return message_object_set_readflag(pmessage, flags, &b_changed) ? ecSuccess : ecError;
+	return pmessage->set_readflag(flags, &b_changed) ? ecSuccess : ecError;
 }
 
 uint32_t zarafa_server_openembedded(GUID hsession,
@@ -4026,7 +4004,7 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 		tag_access, b_writable, NULL);
 	if (pmessage == nullptr)
 		return ecError;
-	if (message_object_get_instance_id(pmessage.get()) == 0) {
+	if (pmessage->get_instance_id() == 0) {
 		if (0 == (FLAG_CREATE & flags)) {
 			return ecNotFound;
 		}
@@ -4037,10 +4015,8 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 			TRUE, NULL);
 		if (pmessage == nullptr)
 			return ecError;
-		if (!message_object_init_message(pmessage.get(),
-		    false, pinfo->cpid)) {
+		if (!pmessage->init_message(false, pinfo->cpid))
 			return ecError;
-		}
 	}
 	/* add the store handle as the parent object handle
 		because the caller normaly will not keep the
@@ -4196,13 +4172,11 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 	}
 	case ZMG_MESSAGE: {
 		auto mdst = static_cast<MESSAGE_OBJECT *>(pobject_dst);
-		if (!message_object_check_writable(mdst))
+		if (!mdst->check_writable())
 			return ecAccessDenied;
-		if (!message_object_copy_to(mdst,
-		    static_cast<MESSAGE_OBJECT *>(pobject), pexclude_proptags,
-		    b_force, &b_cycle)) {
+		if (!mdst->copy_to(static_cast<MESSAGE_OBJECT *>(pobject),
+		    pexclude_proptags, b_force, &b_cycle))
 			return ecError;
-		}
 		return b_cycle ? ecMsgCycle : ecSuccess;
 	}
 	case ZMG_ATTACH: {
@@ -4232,18 +4206,16 @@ uint32_t zarafa_server_savechanges(GUID hsession, uint32_t hobject)
 	if (pobject == nullptr)
 		return ecNullObject;
 	if (mapi_type == ZMG_MESSAGE) {
-		if (!message_object_check_writable(static_cast<MESSAGE_OBJECT *>(pobject))) {
+		auto msg = static_cast<MESSAGE_OBJECT *>(pobject);
+		if (!msg->check_writable())
 			return ecAccessDenied;
-		}
-		if (!message_object_check_orignal_touched(static_cast<MESSAGE_OBJECT *>(pobject), &b_touched)) {
+		if (!msg->check_orignal_touched(&b_touched))
 			return ecError;
-		}
 		if (b_touched)
 			return ecObjectModified;
-		gxerr_t err = message_object_save(static_cast<MESSAGE_OBJECT *>(pobject));
-		if (err != GXERR_SUCCESS) {
+		auto err = msg->save();
+		if (err != GXERR_SUCCESS)
 			return gxerr_to_hresult(err);
-		}
 		return ecSuccess;
 	} else if (mapi_type == ZMG_ATTACH) {
 		if (!attachment_object_check_writable(static_cast<ATTACHMENT_OBJECT *>(pobject))) {
@@ -4639,10 +4611,8 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 		OPEN_MODE_FLAG_READWRITE, pctx->pstate);
 	if (pmessage == nullptr)
 		return ecError;
-	if (b_new && !message_object_init_message(pmessage.get(),
-	    b_fai, pinfo->cpid)) {
+	if (b_new && !pmessage->init_message(b_fai, pinfo->cpid))
 		return ecError;
-	}
 	*phobject = pinfo->ptree->add_object_handle(hctx, ZMG_MESSAGE, pmessage.get());
 	if (*phobject == INVALID_HANDLE)
 		return ecError;
@@ -5260,15 +5230,14 @@ uint32_t zarafa_server_messagetorfc822(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
-	return common_util_message_to_rfc822(message_object_get_store(pmessage),
-	       message_object_get_id(pmessage), peml_bin) ? ecSuccess : ecError;
+	return common_util_message_to_rfc822(pmessage->get_store(),
+	       pmessage->get_id(), peml_bin) ? ecSuccess : ecError;
 }
 
 uint32_t zarafa_server_rfc822tomessage(GUID hsession,
 	uint32_t hmessage, const BINARY *peml_bin)
 {
 	uint8_t mapi_type;
-	MESSAGE_CONTENT *pmsgctnt;
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
@@ -5277,11 +5246,10 @@ uint32_t zarafa_server_rfc822tomessage(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
-	pmsgctnt = common_util_rfc822_to_message(
-		message_object_get_store(pmessage), peml_bin);
+	auto pmsgctnt = common_util_rfc822_to_message(pmessage->get_store(), peml_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
-	return message_object_write_message(pmessage, pmsgctnt) ? ecSuccess : ecError;
+	return pmessage->write_message(pmsgctnt) ? ecSuccess : ecError;
 }
 
 uint32_t zarafa_server_messagetoical(GUID hsession,
@@ -5296,15 +5264,14 @@ uint32_t zarafa_server_messagetoical(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
-	return common_util_message_to_ical(message_object_get_store(pmessage),
-	       message_object_get_id(pmessage), pical_bin) ? ecSuccess : ecError;
+	return common_util_message_to_ical(pmessage->get_store(),
+	       pmessage->get_id(), pical_bin) ? ecSuccess : ecError;
 }
 
 uint32_t zarafa_server_icaltomessage(GUID hsession,
 	uint32_t hmessage, const BINARY *pical_bin)
 {
 	uint8_t mapi_type;
-	MESSAGE_CONTENT *pmsgctnt;
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
@@ -5313,11 +5280,10 @@ uint32_t zarafa_server_icaltomessage(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
-	pmsgctnt = common_util_ical_to_message(
-		message_object_get_store(pmessage), pical_bin);
+	auto pmsgctnt = common_util_ical_to_message(pmessage->get_store(), pical_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
-	return message_object_write_message(pmessage, pmsgctnt) ? ecSuccess : ecError;
+	return pmessage->write_message(pmsgctnt) ? ecSuccess : ecError;
 }
 
 uint32_t zarafa_server_messagetovcf(GUID hsession,
@@ -5339,7 +5305,6 @@ uint32_t zarafa_server_vcftomessage(GUID hsession,
 	uint32_t hmessage, const BINARY *pvcf_bin)
 {
 	uint8_t mapi_type;
-	MESSAGE_CONTENT *pmsgctnt;
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
@@ -5348,11 +5313,10 @@ uint32_t zarafa_server_vcftomessage(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
-	pmsgctnt = common_util_vcf_to_message(
-		message_object_get_store(pmessage), pvcf_bin);
+	auto pmsgctnt = common_util_vcf_to_message(pmessage->get_store(), pvcf_bin);
 	if (pmsgctnt == nullptr)
 		return ecError;
-	return message_object_write_message(pmessage, pmsgctnt) ? ecSuccess : ecError;
+	return pmessage->write_message(pmsgctnt) ? ecSuccess : ecError;
 }
 
 uint32_t zarafa_server_getuseravailability(GUID hsession,
