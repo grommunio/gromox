@@ -4288,16 +4288,12 @@ uint32_t zarafa_server_configsync(GUID hsession, uint32_t hctx, uint32_t flags,
 	if (mapi_type != ZMG_ICSDOWNCTX)
 		return ecNotSupported;
 	BOOL b_changed = false;
-	if (SYNC_TYPE_CONTENTS == icsdownctx_object_get_type(pctx)) {
-		if (FALSE == icsdownctx_object_make_content(pctx,
-			pstate, prestriction, flags, &b_changed, pcount)) {
+	if (pctx->get_type() == SYNC_TYPE_CONTENTS) {
+		if (!pctx->make_content(pstate, prestriction, flags, &b_changed, pcount))
 			return ecError;
-		}
 	} else {
-		if (FALSE == icsdownctx_object_make_hierarchy(
-			pctx, pstate, flags, &b_changed, pcount)) {
+		if (!pctx->make_hierarchy(pstate, flags, &b_changed, pcount))
 			return ecError;
-		}
 	}
 	*pb_changed = !!b_changed;
 	return ecSuccess;
@@ -4306,7 +4302,6 @@ uint32_t zarafa_server_configsync(GUID hsession, uint32_t hctx, uint32_t flags,
 uint32_t zarafa_server_statesync(GUID hsession,
 	uint32_t hctx, BINARY *pstate)
 {
-	BINARY *pbin;
 	uint8_t mapi_type;
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
@@ -4316,7 +4311,7 @@ uint32_t zarafa_server_statesync(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSDOWNCTX)
 		return ecNotSupported;
-	pbin = icsdownctx_object_get_state(pctx);
+	auto pbin = pctx->get_state();
 	if (pbin == nullptr)
 		return ecError;
 	*pstate = *pbin;
@@ -4334,14 +4329,11 @@ uint32_t zarafa_server_syncmessagechange(GUID hsession, uint32_t hctx,
 	auto pctx = pinfo->ptree->get_object<ICSDOWNCTX_OBJECT>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_ICSDOWNCTX ||
-	    icsdownctx_object_get_type(pctx) != SYNC_TYPE_CONTENTS)
+	if (mapi_type != ZMG_ICSDOWNCTX || pctx->get_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
 	BOOL b_new = false;
-	if (FALSE == icsdownctx_object_sync_message_change(
-	    pctx, &b_found, &b_new, pproplist)) {
+	if (!pctx->sync_message_change(&b_found, &b_new, pproplist))
 		return ecError;
-	}
 	*pb_new = !!b_new;
 	return b_found ? ecSuccess : ecNotFound;
 }
@@ -4357,13 +4349,10 @@ uint32_t zarafa_server_syncfolderchange(GUID hsession,
 	auto pctx = pinfo->ptree->get_object<ICSDOWNCTX_OBJECT>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_ICSDOWNCTX ||
-	    icsdownctx_object_get_type(pctx) != SYNC_TYPE_HIERARCHY)
+	if (mapi_type != ZMG_ICSDOWNCTX || pctx->get_type() != SYNC_TYPE_HIERARCHY)
 		return ecNotSupported;
-	if (FALSE == icsdownctx_object_sync_folder_change(
-		pctx, &b_found, pproplist)) {
+	if (!pctx->sync_folder_change(&b_found, pproplist))
 		return ecError;
-	}
 	return b_found ? ecSuccess : ecNotFound;
 }
 
@@ -4377,10 +4366,9 @@ uint32_t zarafa_server_syncreadstatechanges(
 	auto pctx = pinfo->ptree->get_object<ICSDOWNCTX_OBJECT>(hctx, &mapi_type);
 	if (pctx == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_ICSDOWNCTX ||
-	    icsdownctx_object_get_type(pctx) != SYNC_TYPE_CONTENTS)
+	if (mapi_type != ZMG_ICSDOWNCTX || pctx->get_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
-	return icsdownctx_object_sync_readstates(pctx, pstates) ? ecSuccess : ecError;
+	return pctx->sync_readstates(pstates) ? ecSuccess : ecError;
 }
 
 uint32_t zarafa_server_syncdeletions(GUID hsession,
@@ -4395,7 +4383,7 @@ uint32_t zarafa_server_syncdeletions(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_ICSDOWNCTX)
 		return ecNotSupported;
-	return icsdownctx_object_sync_deletions(pctx, flags, pbins) ? ecSuccess : ecError;
+	return pctx->sync_deletions(flags, pbins) ? ecSuccess : ecError;
 }
 
 uint32_t zarafa_server_hierarchyimport(GUID hsession,
