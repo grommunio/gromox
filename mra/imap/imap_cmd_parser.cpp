@@ -32,6 +32,8 @@
 
 #define MAX_DIGLEN		256*1024
 
+using namespace std::string_literals;
+
 namespace {
 
 struct SEQUENCE_NODE {
@@ -2647,7 +2649,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int temp_argc;
-	int i, fd, len;
+	int i, len;
 	char buff[1024];
 	char *str_received = nullptr, *flags_string = nullptr;
 	char* temp_argv[5];
@@ -2697,11 +2699,15 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pc
 			}
 		}
 	}
-	snprintf(pcontext->mid, GX_ARRAY_SIZE(pcontext->mid), "%ld.%d.%s", time(nullptr),
-		imap_parser_get_sequence_ID(), resource_get_string("HOST_ID"));
-	snprintf(pcontext->file_path, GX_ARRAY_SIZE(pcontext->file_path), "%s/tmp/%s",
-				pcontext->maildir, pcontext->mid);
-	fd = open(pcontext->file_path, O_CREAT|O_RDWR|O_TRUNC, 0666);
+	try {
+		pcontext->mid = std::to_string(time(nullptr)) + "." +
+			std::to_string(imap_parser_get_sequence_ID()) + "." +
+			resource_get_string("HOST_ID");
+		pcontext->file_path = pcontext->maildir + "/tmp/"s + pcontext->mid;
+	} catch (const std::bad_alloc &) {
+		return 1918 | DISPATCH_BREAK;
+	}
+	int fd = open(pcontext->file_path.c_str(), O_CREAT|O_RDWR|O_TRUNC, 0666);
 	if (-1 == fd) {
 		return 1909 | DISPATCH_BREAK;
 	}
@@ -2763,11 +2769,12 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	b_draft = FALSE;
 	if (0 != fstat(pcontext->message_fd, &node_stat)) {
 		close(pcontext->message_fd);
-		if (remove(pcontext->file_path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1342: remove %s: %s\n", pcontext->file_path, strerror(errno));
+		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1342: remove %s: %s\n",
+				pcontext->file_path.c_str(), strerror(errno));
 		pcontext->message_fd = -1;
-		pcontext->mid[0] = '\0';
-		pcontext->file_path[0] = '\0';
+		pcontext->mid.clear();
+		pcontext->file_path.clear();
 		return 1909 | DISPATCH_TAG;
 	}
 	lseek(pcontext->message_fd, 0, SEEK_SET);
@@ -2778,11 +2785,12 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 			free(pbuff);
 		}
 		close(pcontext->message_fd);
-		if (remove(pcontext->file_path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1343: remove %s: %s\n", pcontext->file_path, strerror(errno));
+		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1343: remove %s: %s\n",
+				pcontext->file_path.c_str(), strerror(errno));
 		pcontext->message_fd = -1;
-		pcontext->mid[0] = '\0';
-		pcontext->file_path[0] = '\0';
+		pcontext->mid.clear();
+		pcontext->file_path.clear();
 		return 1909 | DISPATCH_TAG;
 	}
 	close(pcontext->message_fd);
@@ -2793,10 +2801,11 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		node_stat.st_size - tmp_len)) {
 		mail_free(&imail);
 		free(pbuff);
-		if (remove(pcontext->file_path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1344: remove %s: %s\n", pcontext->file_path, strerror(errno));
-		pcontext->mid[0] = '\0';
-		pcontext->file_path[0] = '\0';
+		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1344: remove %s: %s\n",
+				pcontext->file_path.c_str(), strerror(errno));
+		pcontext->mid.clear();
+		pcontext->file_path.clear();
 		return 1909;
 	}
 	str_name = pbuff + sizeof(int);
@@ -2845,10 +2854,11 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	if (-1 == fd || FALSE == mail_to_file(&imail, fd)) {
 		mail_free(&imail);
 		free(pbuff);
-		if (remove(pcontext->file_path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1345: remove %s: %s\n", pcontext->file_path, strerror(errno));
-		pcontext->mid[0] = '\0';
-		pcontext->file_path[0] = '\0';
+		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1345: remove %s: %s\n",
+				pcontext->file_path.c_str(), strerror(errno));
+		pcontext->mid.clear();
+		pcontext->file_path.clear();
 		if (-1 != fd) {
 			close(fd);
 			if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
@@ -2860,25 +2870,26 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	close(fd);
 	mail_free(&imail);
 	free(pbuff);
-	if (remove(pcontext->file_path) < 0 && errno != ENOENT)
-		fprintf(stderr, "W-1347: remove %s: %s\n", pcontext->file_path, strerror(errno));
-	pcontext->file_path[0] = '\0';
-	switch (system_services_insert_mail(pcontext->maildir,
-	        temp_name, pcontext->mid, flag_buff, tmp_time, &errnum)) {
+	if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
+		fprintf(stderr, "W-1347: remove %s: %s\n",
+			pcontext->file_path.c_str(), strerror(errno));
+	pcontext->file_path.clear();
+	switch (system_services_insert_mail(pcontext->maildir, temp_name,
+	        pcontext->mid.c_str(), flag_buff, tmp_time, &errnum)) {
 	case MIDB_RESULT_OK:
-		pcontext->mid[0] = '\0';
+		pcontext->mid.clear();
 		imap_parser_log_info(pcontext, 8, "message %s is appended OK", eml_path.c_str());
 		break;
 	case MIDB_NO_SERVER: {
-		pcontext->mid[0] = '\0';
+		pcontext->mid.clear();
 		return 1905 | DISPATCH_TAG;
 	}
 	case MIDB_RDWR_ERROR: {
-		pcontext->mid[0] = '\0';
+		pcontext->mid.clear();
 		return 1906 | DISPATCH_TAG;
 	}
 	default: {
-		pcontext->mid[0] = '\0';
+		pcontext->mid.clear();
 		return errnum | DISPATCH_MIDB | DISPATCH_TAG;
 	}
 	}
@@ -2895,7 +2906,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		    temp_name, nullptr, nullptr, nullptr, &uidvalid,
 		    nullptr, nullptr, &errnum) == MIDB_RESULT_OK &&
 		    system_services_get_uid(pcontext->maildir, temp_name,
-		    pcontext->mid, &uid) == MIDB_RESULT_OK) {
+		    pcontext->mid.c_str(), &uid) == MIDB_RESULT_OK) {
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s [APPENDUID %u %d] %s",
 				pcontext->tag_string, imap_reply_str, (unsigned int)uidvalid,
 				uid, imap_reply_str1);

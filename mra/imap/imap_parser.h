@@ -1,12 +1,13 @@
 #pragma once
+#include <ctime>
+#include <string>
+#include <sys/time.h>
+#include <openssl/ssl.h>
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/mime_pool.hpp>
-#include <ctime>
-#include <sys/time.h>
-#include <openssl/ssl.h>
 #define MAX_LINE_LENGTH			64*1024
 #define FLAG_RECENT				0x1
 #define FLAG_ANSWERED			0x2
@@ -86,9 +87,9 @@ struct IMAP_CONTEXT final : public SCHEDULE_CONTEXT {
 	~IMAP_CONTEXT();
 
 	CONNECTION connection{};
+	std::string mid, file_path;
 	DOUBLE_LIST_NODE hash_node{}, sleeping_node{};
 	int proto_stat = 0, sched_stat = 0;
-	char mid[128]{}, file_path[256]{};
 	int message_fd = -1;
 	char *write_buff = nullptr;
 	size_t write_length = 0, write_offset = 0;

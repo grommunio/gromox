@@ -732,11 +732,11 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 					close(pcontext->message_fd);
 					pcontext->message_fd = -1;
 				}
-				if ('\0' != pcontext->file_path[0]) {
-					if (remove(pcontext->file_path) != 0 && errno != ENOENT)
+				if (!pcontext->file_path.empty()) {
+					if (remove(pcontext->file_path.c_str()) != 0 && errno != ENOENT)
 						fprintf(stderr, "W-1474: remove %s: %s\n",
-						        pcontext->file_path, strerror(errno));
-					pcontext->file_path[0] = '\0';
+						        pcontext->file_path.c_str(), strerror(errno));
+					pcontext->file_path.clear();
 				}
 				size_t string_length = 0;
 				auto imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
@@ -1135,10 +1135,11 @@ static int ps_end_processing(IMAP_CONTEXT *pcontext,
 		close(pcontext->message_fd);
 		pcontext->message_fd = -1;
 	}
-	if ('\0' != pcontext->file_path[0]) {
-		if (remove(pcontext->file_path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1381: remove %s: %s\n", pcontext->file_path, strerror(errno));
-		pcontext->file_path[0] = '\0';
+	if (!pcontext->file_path.empty()) {
+		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1381: remove %s: %s\n",
+				pcontext->file_path.c_str(), strerror(errno));
+		pcontext->file_path.clear();
 	}
 	if (system_services_container_remove_ip != nullptr)
 		system_services_container_remove_ip(pcontext->connection.client_ip);
@@ -1714,9 +1715,10 @@ IMAP_CONTEXT::~IMAP_CONTEXT()
 	if (-1 != pcontext->message_fd) {
 		close(pcontext->message_fd);
 	}
-	if (pcontext->file_path[0] != '\0')
-		if (remove(pcontext->file_path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1351: chmod %s: %s\n", pcontext->file_path, strerror(errno));
+	if (!pcontext->file_path.empty())
+		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1351: chmod %s: %s\n",
+				pcontext->file_path.c_str(), strerror(errno));
 }
 
 static void *imps_thrwork(void *argp)
