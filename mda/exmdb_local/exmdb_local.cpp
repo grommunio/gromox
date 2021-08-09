@@ -381,7 +381,6 @@ static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
 
 int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 {
-	int fd;
 	int result;
 	MAIL *pmail;
 	int tmp_len;
@@ -445,6 +444,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		}
 	}
 	std::string mid_string, json_string, eml_path;
+	int fd = -1;
 	try {
 		mid_string = std::to_string(cur_time) + "." +
 		             std::to_string(sequence_ID) + "." + hostname;

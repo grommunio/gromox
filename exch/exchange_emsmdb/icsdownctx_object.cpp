@@ -309,7 +309,7 @@ static void icsdownctx_object_adjust_fldchgs(FOLDER_CHANGES *pfldchgs,
 
 static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 {
-	BINARY *pbin;
+	BINARY *pbin = nullptr;
 	IDSET *pidset;
 	BINARY tmp_bin;
 	EXT_PUSH ext_push;
