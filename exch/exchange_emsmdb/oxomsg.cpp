@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <string>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include "emsmdb_interface.h"
@@ -13,6 +14,8 @@
 #include <gromox/rop_util.hpp>
 #include "rops.h"
 #include <cstdio>
+
+using namespace std::string_literals;
 
 static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
     const char *representing_username)
@@ -161,10 +164,9 @@ static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size
 }
 
 static BOOL oxomsg_check_permission(const char *account,
-	const char *account_representing)
+	const char *account_representing) try
 {
 	char maildir[256];
-	char temp_path[256];
 	
 	if (0 == strcasecmp(account, account_representing)) {
 		return TRUE;
@@ -173,9 +175,9 @@ static BOOL oxomsg_check_permission(const char *account,
 		account_representing, maildir)) {
 		return FALSE;
 	}
-	snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s/config/delegates.txt", maildir);
+	auto dlg_path = maildir + "/config/delegates.txt"s;
 	struct srcitem { char a[324]; };
-	auto pfile = list_file_initd(temp_path, nullptr, "%s:324");
+	auto pfile = list_file_initd(dlg_path.c_str(), nullptr, "%s:324");
 	if (NULL == pfile) {
 		return FALSE;
 	}
@@ -188,6 +190,9 @@ static BOOL oxomsg_check_permission(const char *account,
 		}
 	}
 	return FALSE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1500: ENOMEM\n");
+	return false;
 }
 
 uint32_t rop_submitmessage(uint8_t submit_flags,

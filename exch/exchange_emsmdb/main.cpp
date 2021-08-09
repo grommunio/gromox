@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <cstdint>
 #include <mutex>
+#include <string>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/paths.h>
@@ -24,6 +25,8 @@
 #include <cstring>
 #include <cstdio>
 #include "rop_dispatch.h"
+
+using namespace std::string_literals;
 
 enum {
 	ecDoDisconnect = 1,
@@ -88,7 +91,6 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 	int average_handles;
 	char temp_buff[256];
 	char file_name[256];
-	char temp_path[256];
 	char submit_command[1024], *psearch;
 	DCERPC_INTERFACE interface_emsmdb;
 	DCERPC_INTERFACE interface_async_emsmdb;
@@ -105,11 +107,11 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		if (NULL != psearch) {
 			*psearch = '\0';
 		}
-		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s.cfg", file_name);
-		auto pfile = config_file_initd(temp_path, get_config_path());
+		auto cfg_path = file_name + ".cfg"s;
+		auto pfile = config_file_initd(cfg_path.c_str(), get_config_path());
 		if (NULL == pfile) {
 			printf("[exchange_emsmdb]: config_file_initd %s: %s\n",
-			       temp_path, strerror(errno));
+			       cfg_path.c_str(), strerror(errno));
 			return FALSE;
 		}
 		auto str_value = config_file_get_value(pfile, "SEPARATOR_FOR_BOUNCE");

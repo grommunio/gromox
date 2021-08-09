@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <cstdio>
 #include <cstring>
+#include <dirent.h>
+#include <string>
+#include <sys/types.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -12,11 +16,9 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/util.hpp>
-#include <sys/types.h>
-#include <dirent.h>
-#include <cstdio>
 #include "common_util.h"
 
+using namespace std::string_literals;
 using namespace gromox;
 
 namespace {
@@ -162,28 +164,26 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 	char *ptoken;
 	char *ptoken1;
 	uint32_t proptag;
-	uint32_t group_id;
-	char file_path[256];
 	TAG_NODE *ptag_node;
 	INFO_NODE *pinfo_node;
 	
-	gx_strlcpy(file_path, file_name + 2, GX_ARRAY_SIZE(file_path));
-	ptoken = strchr(file_path, '.');
-	if (NULL != ptoken) {
-		*ptoken = '\0';
-	}
-	group_id = strtol(file_path, NULL, 16);
+	uint32_t group_id = strtoul(file_name + 2, nullptr, 16);
 	if (0 == group_id || 0xFFFFFFFF == group_id) {
 		printf("[exchange_emsmdb]: file name"
 			" %s format error\n", file_name);
 		return NULL;
 	}
-	snprintf(file_path, GX_ARRAY_SIZE(file_path), "%s/%s",
-	         dir, file_name);
-	auto pfile = list_file_initd(file_path, nullptr, "%s:256");
+	std::string file_path;
+	try {
+		file_path = dir + "/"s + file_name;
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1493: ENOMEM\n");
+		return nullptr;
+	}
+	auto pfile = list_file_initd(file_path.c_str(), nullptr, "%s:256");
 	if (NULL == pfile) {
 		printf("[exchange_emsmdb]: list_file_init %s: %s\n",
-			file_path, strerror(errno));
+		       file_path.c_str(), strerror(errno));
 		return NULL;
 	}
 	pinfo_node = msgchg_grouping_create_info_node(group_id);
@@ -201,7 +201,7 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 			index = atoi(pline + 6);
 			if (index < 0) {
 				printf("[exchange_emsmdb]: index %d "
-					"error in %s\n", index, file_path);
+					"error in %s\n", index, file_path.c_str());
 				return NULL;
 			}
 			pgp_node = msgchg_grouping_create_group_node(index);
@@ -220,13 +220,13 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 		} else if (0 == strncasecmp(pline, "0x", 2)) {
 			if (-1 == index) {
 				printf("[exchange_emsmdb]: file %s must "
-					"begin with \"index:\"\n", file_path);
+					"begin with \"index:\"\n", file_path.c_str());
 				return NULL;
 			}
 			proptag = strtol(pline + 2, NULL, 16);
 			if (PROP_ID(proptag) == 0 || PROP_ID(proptag) >= 0x8000) {
 				printf("[exchange_emsmdb]: fail to parse line"
-					"\"%s\" in %s\n", pline, file_path);
+					"\"%s\" in %s\n", pline, file_path.c_str());
 				return NULL;
 			}
 			ptag_node = me_alloc<TAG_NODE>();
@@ -244,7 +244,7 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 		} else if (0 == strncasecmp(pline, "GUID=", 5)) {
 			if (-1 == index) {
 				printf("[exchange_emsmdb]: file %s must "
-					"begin with \"index:\"\n", file_path);
+					"begin with \"index:\"\n", file_path.c_str());
 				return NULL;
 			}
 			ptoken = strchr(pline + 5, ',');
