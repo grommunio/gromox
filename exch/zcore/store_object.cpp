@@ -37,6 +37,7 @@
 #define PROP_TAG_ECUSERLANGUAGE							0x6770001F
 #define PROP_TAG_ECUSERTIMEZONE							0x6771001F
 
+using namespace std::string_literals;
 using namespace gromox;
 
 static BOOL store_object_enlarge_propid_hash(STORE_OBJECT *pstore)
@@ -1292,20 +1293,22 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	int buff_len;
 	char *ptoken;
 	char temp_buff[64];
-	char temp_path[256];
-	struct stat node_stat;
+	std::string autoreply_path;
 	
-	sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
-	if (0 != stat(temp_path, &node_stat)) {
-		auto fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
-		if (-1 == fd) {
-			return FALSE;
-		}
-		close(fd);
+	try {
+		autoreply_path = maildir + "/config/autoreply.cfg"s;
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1483: ENOMEM\n");
+		return false;
 	}
+	/* Ensure file exists for config_file_prg */
+	auto fd = open(autoreply_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
+	if (fd < 0)
+		return false;
+	close(fd);
 	switch (proptag) {
 	case PR_OOF_STATE: {
-		auto pconfig = config_file_prg(nullptr, temp_path);
+		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str());
 		if (NULL == pconfig) {
 			return FALSE;
 		}
@@ -1327,7 +1330,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	}
 	case PR_EC_OUTOFOFFICE_FROM:
 	case PR_EC_OUTOFOFFICE_UNTIL: {
-		auto pconfig = config_file_prg(nullptr, temp_path);
+		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str());
 		if (NULL == pconfig) {
 			return FALSE;
 		}
@@ -1341,11 +1344,16 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	}
 	case PR_EC_OUTOFOFFICE_MSG:
 	case PR_EC_EXTERNAL_REPLY: {
-		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
-		         proptag == PR_EC_OUTOFOFFICE_MSG ?
-		         "%s/config/internal-reply" : "%s/config/external-reply",
-		         maildir);
-		wrapfd fd = open(temp_path, O_RDONLY);
+		try {
+			autoreply_path = maildir;
+			autoreply_path += proptag == PR_EC_OUTOFOFFICE_MSG ?
+			             "/config/internal-reply" : "/config/external-reply";
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1484: ENOMEM\n");
+			return false;
+		}
+		wrapfd fd = open(autoreply_path.c_str(), O_RDONLY);
+		struct stat node_stat;
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0) {
 			buff_len = strlen(static_cast<const char *>(pvalue));
 			pbuff = cu_alloc<char>(buff_len + 256);
@@ -1371,18 +1379,23 @@ static BOOL store_object_set_oof_property(const char *maildir,
 				           static_cast<const char *>(pvalue));
 			}
 		}
-		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
+		fd = open(autoreply_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
 		if (fd.get() < 0 || write(fd.get(), pbuff, buff_len) != buff_len)
 			return FALSE;
 		return TRUE;
 	}
 	case PR_EC_OUTOFOFFICE_SUBJECT:
 	case PR_EC_EXTERNAL_SUBJECT: {
-		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
-		         proptag == PR_EC_OUTOFOFFICE_SUBJECT ?
-		         "%s/config/internal-reply" : "%s/config/external-reply",
-		         maildir);
-		if (0 != stat(temp_path, &node_stat)) {
+		try {
+			autoreply_path = maildir;
+			autoreply_path += proptag == PR_EC_OUTOFOFFICE_MSG ?
+			             "/config/internal-reply" : "/config/external-reply";
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1485: ENOMEM\n");
+			return false;
+		}
+		struct stat node_stat;
+		if (stat(autoreply_path.c_str(), &node_stat) != 0) {
 			buff_len = strlen(static_cast<const char *>(pvalue));
 			pbuff = cu_alloc<char>(buff_len + 256);
 			if (NULL == pbuff) {
@@ -1401,7 +1414,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			if (NULL == ptoken) {
 				return FALSE;
 			}
-			auto fd = open(temp_path, O_RDONLY);
+			auto fd = open(autoreply_path.c_str(), O_RDONLY);
 			if (-1 == fd) {
 				return FALSE;
 			}
@@ -1422,7 +1435,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 				           static_cast<const char *>(pvalue), ptoken);
 			}
 		}
-		auto fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
+		auto fd = open(autoreply_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
 		if (-1 == fd) {
 			return FALSE;
 		}
@@ -1435,7 +1448,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	}
 	case PR_EC_ALLOW_EXTERNAL:
 	case PR_EC_EXTERNAL_AUDIENCE: {
-		auto pconfig = config_file_prg(nullptr, temp_path);
+		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str());
 		if (NULL == pconfig) {
 			return FALSE;
 		}
@@ -1551,9 +1564,7 @@ static void set_store_lang(STORE_OBJECT *store, const char *locale)
 
 BOOL STORE_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals)
 {
-	int i, fd;
-	char temp_path[256];
-	
+	int i;
 	auto pinfo = zarafa_server_get_info();
 	auto pstore = this;
 	if (FALSE == pstore->b_private ||
@@ -1588,18 +1599,23 @@ BOOL STORE_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals)
 				system_services_set_timezone(pstore->account,
 					static_cast<char *>(ppropvals->ppropval[i].pvalue));
 			break;
-		case PROP_TAG_THUMBNAILPHOTO:
+		case PROP_TAG_THUMBNAILPHOTO: {
 			if (!pstore->b_private)
 				break;
-			snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
-				 "%s/config/portrait.jpg", pstore->dir);
-			fd = open(temp_path, O_CREAT | O_TRUNC | O_WRONLY, 0666);
+			int fd = -1;
+			try {
+				auto pic_path = pstore->dir + "/config/portrait.jpg"s;
+				fd = open(pic_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
+			} catch (const std::bad_alloc &) {
+				fprintf(stderr, "E-1494: ENOMEM\n");
+			}
 			if (-1 != fd) {
 				write(fd, ((BINARY *)ppropvals->ppropval[i].pvalue)->pb,
 					((BINARY *)ppropvals->ppropval[i].pvalue)->cb);
 				close(fd);
 			}
 			break;
+		}
 		default:
 			if (!pinfo->ptree->set_zstore_propval(&ppropvals->ppropval[i]))
 				return FALSE;	

@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <unistd.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -21,6 +22,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+using namespace std::string_literals;
 using namespace gromox;
 
 std::unique_ptr<FOLDER_OBJECT> folder_object_create(STORE_OBJECT *pstore,
@@ -935,11 +937,10 @@ static BOOL folder_object_flush_delegates(int fd,
 
 BOOL FOLDER_OBJECT::updaterules(uint32_t flags, const RULE_LIST *plist)
 {
-	int i, fd;
+	int i;
 	BOOL b_exceed;
 	BOOL b_delegate;
 	char *pprovider;
-	char temp_path[256];
 	RULE_ACTIONS *pactions = nullptr;
 	auto pfolder = this;
 	
@@ -970,9 +971,13 @@ BOOL FOLDER_OBJECT::updaterules(uint32_t flags, const RULE_LIST *plist)
 	if (pfolder->pstore->b_private &&
 		PRIVATE_FID_INBOX == rop_util_get_gc_value(pfolder->folder_id)
 		&& ((flags & MODIFY_RULES_FLAG_REPLACE) || TRUE == b_delegate)) {
-		snprintf(temp_path, arsizeof(temp_path), "%s/config/delegates.txt",
-		         pfolder->pstore->get_dir());
-		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
+		int fd = -1;
+		try {
+			auto dlg_path = pfolder->pstore->get_dir() + "/config/delegates.txt"s;
+			fd = open(dlg_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1491: ENOMEM\n");
+		}
 		if (-1 != fd) {
 			if (TRUE == b_delegate) {
 				for (i=0; i<pactions->count; i++) {

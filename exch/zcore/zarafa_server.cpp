@@ -10,6 +10,7 @@
 #include <string>
 #include <unistd.h>
 #include <unordered_map>
+#include <utility>
 #include <sys/wait.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -42,6 +43,7 @@
 #include <cstdio>
 #include <poll.h>
 
+using namespace std::string_literals;
 using namespace gromox;
 
 namespace {
@@ -2598,7 +2600,6 @@ uint32_t zarafa_server_storeadvise(GUID hsession,
 	BOOL b_private;
 	int account_id;
 	uint8_t mapi_type;
-	char tmp_buff[256];
 	uint64_t folder_id;
 	uint64_t message_id;
 	
@@ -2641,7 +2642,6 @@ uint32_t zarafa_server_storeadvise(GUID hsession,
 		return ecError;
 	gx_strlcpy(dir, pstore->get_dir(), arsizeof(dir));
 	pinfo.reset();
-	snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%u|%s", *psub_id, dir);
 	std::unique_lock nl_hold(g_notify_lock);
 	if (g_notify_table.size() == g_table_size) {
 		nl_hold.unlock();
@@ -2649,7 +2649,8 @@ uint32_t zarafa_server_storeadvise(GUID hsession,
 		return ecError;
 	}
 	try {
-		g_notify_table.try_emplace(tmp_buff, hsession, hstore);
+		auto tmp_buf = std::to_string(*psub_id) + "|" + dir;
+		g_notify_table.try_emplace(std::move(tmp_buf), hsession, hstore);
 	} catch (const std::bad_alloc &) {
 		nl_hold.unlock();
 		exmdb_client::unsubscribe_notification(dir, *psub_id);
@@ -2658,13 +2659,10 @@ uint32_t zarafa_server_storeadvise(GUID hsession,
 	return ecSuccess;
 }
 
-uint32_t zarafa_server_unadvise(GUID hsession,
-	uint32_t hstore, uint32_t sub_id)
+uint32_t zarafa_server_unadvise(GUID hsession, uint32_t hstore,
+     uint32_t sub_id) try
 {	
-	char dir[256];
 	uint8_t mapi_type;
-	char tmp_buff[256];
-	
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
@@ -2673,13 +2671,16 @@ uint32_t zarafa_server_unadvise(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_STORE)
 		return ecNotSupported;
-	gx_strlcpy(dir, pstore->get_dir(), arsizeof(dir));
+	std::string dir = pstore->get_dir();
 	pinfo.reset();
-	exmdb_client::unsubscribe_notification(dir, sub_id);
-	snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%u|%s", sub_id, dir);
+	exmdb_client::unsubscribe_notification(dir.c_str(), sub_id);
+	auto tmp_buf = std::to_string(sub_id) + "|"s + std::move(dir);
 	std::unique_lock nl_hold(g_notify_lock);
-	g_notify_table.erase(tmp_buff);
+	g_notify_table.erase(std::move(tmp_buf));
 	return ecSuccess;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1498: ENOMEM\n");
+	return ecMAPIOOM;
 }
 
 uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
@@ -2688,7 +2689,6 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 	int i;
 	int count;
 	uint8_t mapi_type;
-	char tmp_buff[256];
 	DOUBLE_LIST_NODE *pnode;
 	ZNOTIFICATION* ppnotifications[1024];
 	
@@ -2700,11 +2700,16 @@ uint32_t zarafa_server_notifdequeue(const NOTIF_SINK *psink,
 		auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(psink->padvise[i].hstore, &mapi_type);
 		if (pstore == nullptr || mapi_type != ZMG_STORE)
 			continue;
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%u|%s",
-			psink->padvise[i].sub_id,
-			pstore->get_dir());
+		std::string tmp_buf;
+		try {
+			tmp_buf = std::to_string(psink->padvise[i].sub_id) +
+			          "|" + pstore->get_dir();
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1496: ENOMEM\n");
+			continue;
+		}
 		std::unique_lock nl_hold(g_notify_lock);
-		auto iter = g_notify_table.find(tmp_buff);
+		auto iter = g_notify_table.find(std::move(tmp_buf));
 		if (iter == g_notify_table.end())
 			continue;
 		auto pnitem = &iter->second;

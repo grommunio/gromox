@@ -6,6 +6,7 @@
 #endif
 #include <cerrno>
 #include <cstdint>
+#include <string>
 #include <unistd.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
@@ -44,6 +45,7 @@
 #include <fcntl.h>
 #include <cstdio>
 
+using namespace std::string_literals;
 using namespace gromox;
 
 enum {
@@ -2547,17 +2549,18 @@ BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 	void *pvalue;
 	int body_type;
 	STREAM tmp_stream;
-	char tmp_path[256];
 	LIB_BUFFER *pallocator;
 	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	if (exmdb_client_get_message_property(pstore->get_dir(), nullptr, 0,
-	    message_id, PROP_TAG_MIDSTRING, &pvalue) && pvalue != nullptr) {
-		snprintf(tmp_path, sizeof(tmp_path), "%s/eml/%s",
-		         pstore->get_dir(),
-		         static_cast<const char *>(pvalue));
-		return common_util_load_file(tmp_path, peml_bin);
+	    message_id, PROP_TAG_MIDSTRING, &pvalue) && pvalue != nullptr) try {
+		auto eml_path = pstore->get_dir() + "/eml/"s +
+		                static_cast<const char *>(pvalue);
+		return common_util_load_file(eml_path.c_str(), peml_bin);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1495: ENOMEM\n");
+		return false;
 	}
 	auto pinfo = zarafa_server_get_info();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
