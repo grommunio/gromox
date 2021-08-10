@@ -175,10 +175,8 @@ static BOOL rpc_ext_pull_tpropval_array(
 		return FALSE;
 	}
 	for (i=0; i<r->count; i++) {
-		if (TRUE != rpc_ext_pull_tagged_propval(
-			pext, r->ppropval + i)) {
+		if (!rpc_ext_pull_tagged_propval(pext, &r->ppropval[i]))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
@@ -206,10 +204,8 @@ static BOOL rpc_ext_pull_rule_list(
 		return FALSE;
 	}
 	for (i=0; i<r->count; i++) {
-		if (TRUE != rpc_ext_pull_rule_data(
-			pext, &r->prule[i])) {
+		if (!rpc_ext_pull_rule_data(pext, &r->prule[i]))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
@@ -235,10 +231,8 @@ static BOOL rpc_ext_pull_permission_set(
 		return FALSE;
 	}
 	for (i=0; i<r->count; i++) {
-		if (TRUE != rpc_ext_pull_permission_row(
-			pext, &r->prows[i])) {
+		if (!rpc_ext_pull_permission_row(pext, &r->prows[i]))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
@@ -265,10 +259,8 @@ static BOOL rpc_ext_pull_state_array(
 		return FALSE;
 	}
 	for (size_t i = 0; i < r->count; ++i)
-		if (TRUE != rpc_ext_pull_message_state(
-			pext, &r->pstate[i])) {
+		if (!rpc_ext_pull_message_state(pext, &r->pstate[i]))
 			return FALSE;
-		}
 	return TRUE;
 }
 
@@ -358,10 +350,8 @@ static BOOL rpc_ext_push_tpropval_array(
 	
 	QRF(pext->p_uint16(r->count));
 	for (i=0; i<r->count; i++) {
-		if (TRUE != rpc_ext_push_tagged_propval(
-			pext, r->ppropval + i)) {
+		if (!rpc_ext_push_tagged_propval(pext, &r->ppropval[i]))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
@@ -394,10 +384,8 @@ static BOOL rpc_ext_push_permission_set(
 	
 	QRF(pext->p_uint16(r->count));
 	for (i=0; i<r->count; i++) {
-		if (TRUE != rpc_ext_push_permission_row(
-			pext, &r->prows[i])) {
+		if (!rpc_ext_push_permission_row(pext, &r->prows[i]))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
@@ -415,10 +403,8 @@ static BOOL rpc_ext_push_state_array(
 {
 	QRF(pext->p_uint32(r->count));
 	for (size_t i = 0; i < r->count; ++i)
-		if (TRUE != rpc_ext_push_message_state(
-			pext, &r->pstate[i])) {
+		if (!rpc_ext_push_message_state(pext, &r->pstate[i]))
 			return FALSE;
-		}
 	return TRUE;
 }
 
@@ -498,10 +484,8 @@ static BOOL rpc_ext_push_znotification_array(
 	
 	QRF(pext->p_uint16(r->count));
 	for (i=0; i<r->count; i++) {
-		if (TRUE != rpc_ext_push_znotification(
-			pext, r->ppnotification[i])) {
+		if (!rpc_ext_push_znotification(pext, r->ppnotification[i]))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }

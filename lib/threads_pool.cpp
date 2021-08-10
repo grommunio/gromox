@@ -184,7 +184,7 @@ static void *tpol_thrwork(void *pparam)
 	}   
 	
 	cannot_served_times = 0;
-	while (TRUE != pdata->notify_stop) {
+	while (!pdata->notify_stop) {
 		pcontext = contexts_pool_get_context(CONTEXT_TURNING);
 		if (NULL == pcontext) {
 			if (MAX_TIMES_NOT_SERVED == cannot_served_times) {
