@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <string>
 #include <utility>
 #include <libHX/string.h>
 #include "bounce_producer.h"
@@ -34,6 +35,7 @@
 
 #define MIN_BATCH_MESSAGE_NUM						20
 
+using namespace std::string_literals;
 using namespace gromox;
 
 namespace {
@@ -3749,7 +3751,6 @@ static BOOL message_rule_new_message(BOOL b_oof,
 	EXT_PULL ext_pull;
 	char *pmid_string;
 	char maildir[256];
-	char tmp_path[256];
 	char tmp_path1[256];
 	MESSAGE_NODE *pmnode;
 	BINARY searchkey_bin;
@@ -4108,17 +4109,15 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					&rcpt_list, pnode1)) {
 					if (!common_util_get_maildir(static_cast<char *>(pnode1->pdata), maildir))
 						continue;
-					snprintf(mid_string, 128, "%ld.%d.%s", time(NULL),
-							common_util_sequence_ID(), get_host_ID());
-					snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path),
-					         "%s/eml/%s", maildir, mid_string);
-					if (FALSE == common_util_copy_file(
-						tmp_path1, tmp_path)) {
+					auto mid_string = std::to_string(time(nullptr)) + "." +
+					                  std::to_string(common_util_sequence_ID()) + "." +
+					                  get_host_ID();
+					auto eml_path = maildir + "/eml/"s + mid_string;
+					if (!common_util_copy_file(tmp_path1, eml_path.c_str()))
 						continue;
-					}
 					strcpy(tmp_buff, pdigest);
-					snprintf(mid_string1, GX_ARRAY_SIZE(mid_string1), "\"%s\"", mid_string);
-					set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string1);
+					auto mid_string1 = "\"" + mid_string + "\"";
+					set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string1.c_str());
 					pdigest1 = tmp_buff;
 					if (!exmdb_client_relay_delivery(maildir,
 					    from_address, static_cast<char *>(pnode1->pdata),
@@ -4525,17 +4524,15 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					&rcpt_list, pnode1)) {
 					if (!common_util_get_maildir(static_cast<char *>(pnode1->pdata), maildir))
 						continue;
-					snprintf(mid_string, 128, "%ld.%d.%s", time(NULL),
-							common_util_sequence_ID(), get_host_ID());
-					snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path),
-					         "%s/eml/%s", maildir, mid_string);
-					if (FALSE == common_util_copy_file(
-						tmp_path1, tmp_path)) {
+					auto mid_string = std::to_string(time(nullptr)) + "." +
+					                  std::to_string(common_util_sequence_ID()) + "." +
+					                  get_host_ID();
+					auto eml_path = maildir + "/eml/"s + mid_string;
+					if (!common_util_copy_file(tmp_path1, eml_path.c_str()))
 						continue;
-					}
 					strcpy(tmp_buff, pdigest);
-					snprintf(mid_string1, GX_ARRAY_SIZE(mid_string1), "\"%s\"", mid_string);
-					set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string1);
+					auto mid_string1 = "\"" + mid_string + "\"";
+					set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string1.c_str());
 					pdigest1 = tmp_buff;
 					if (!exmdb_client_relay_delivery(maildir,
 					    from_address, static_cast<char *>(pnode1->pdata),

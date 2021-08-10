@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <string>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
@@ -17,6 +18,8 @@
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
+
+using namespace std::string_literals;
 
 DECLARE_API();
 
@@ -87,7 +90,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 	BOOL b_wal;
 	BOOL b_async;
 	int max_rule;
-	char *psearch;
 	int table_size;
 	int listen_port;
 	int threads_num;
@@ -99,8 +101,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 	int populating_num;
 	char listen_ip[40];
 	char org_name[256];
-	char file_name[256];
-	char config_path[256];
 
 	switch(reason) {
 	case PLUGIN_RELOAD:
@@ -111,16 +111,15 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		exmdb_rpc_alloc = common_util_alloc;
 		exmdb_rpc_free = [](void *) {};
 		exmdb_rpc_exec = exmdb_client_do_rpc;
-		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
-		psearch = strrchr(file_name, '.');
-		if (NULL != psearch) {
-			*psearch = '\0';
-		}
-		snprintf(config_path, GX_ARRAY_SIZE(config_path), "%s.cfg", file_name);
-		auto pconfig = config_file_initd(config_path, get_config_path());
+		std::string cfg_path = get_plugin_name();
+		auto pos = cfg_path.find_last_of('.');
+		if (pos != cfg_path.npos)
+			cfg_path.erase(pos);
+		cfg_path += ".cfg";
+		auto pconfig = config_file_initd(cfg_path.c_str(), get_config_path());
 		if (NULL == pconfig) {
 			printf("[exmdb_provider]: config_file_initd %s: %s\n",
-			       config_path, strerror(errno));
+			       cfg_path.c_str(), strerror(errno));
 			return FALSE;
 		}
 		

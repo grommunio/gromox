@@ -6,6 +6,7 @@
 #include <climits>
 #include <cstdint>
 #include <new>
+#include <string>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -53,6 +54,7 @@
 #define SERVICE_ID_LOG_INFO									16
 #define SERVICE_ID_GET_HANDLE								17
 
+using namespace std::string_literals;
 using namespace gromox;
 
 namespace {
@@ -5197,10 +5199,8 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 	BOOL b_create, const PROPNAME_ARRAY *ppropnames,
 	PROPID_ARRAY *ppropids)
 {
-	int i;
 	char sql_string[128];
 	char guid_string[64];
-	char name_string[2560];
 	
 	ppropids->ppropid = cu_alloc<uint16_t>(ppropnames->count);
 	if (NULL == ppropids->ppropid) {
@@ -5233,26 +5233,27 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 			return FALSE;
 		}
 	}
-	for (i=0; i<ppropnames->count; i++) {
+	for (size_t i = 0; i < ppropnames->count; ++i) try {
 		guid_to_string(&ppropnames->ppropname[i].guid, guid_string, 64);
+		std::string name_string;
 		switch (ppropnames->ppropname[i].kind) {
 		case MNID_ID:
-			snprintf(name_string, 1024, "GUID=%s,LID=%u",
-			         guid_string, ppropnames->ppropname[i].lid);
+			name_string = "GUID="s + guid_string + ",LID=" +
+			              std::to_string(ppropnames->ppropname[i].lid);
 			break;
 		case MNID_STRING:
 			if (strlen(ppropnames->ppropname[i].pname) >= 1024) {
 				ppropids->ppropid[i] = 0;
 				continue;
 			}
-			snprintf(name_string, 1024, "GUID=%s,NAME=%s",
-				guid_string, ppropnames->ppropname[i].pname);
+			name_string = "GUID="s + guid_string + ",NAME=" +
+			              ppropnames->ppropname[i].pname;
 			break;
 		default:
 			ppropids->ppropid[i] = 0;
 			continue;
 		}
-		sqlite3_bind_text(pstmt, 1, name_string, -1, SQLITE_STATIC);
+		sqlite3_bind_text(pstmt, 1, name_string.c_str(), -1, SQLITE_STATIC);
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
 			ppropids->ppropid[i] = sqlite3_column_int64(pstmt, 0);
 			sqlite3_reset(pstmt);
@@ -5260,7 +5261,7 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 		}
 		sqlite3_reset(pstmt);
 		if (TRUE == b_create) {
-			sqlite3_bind_text(pstmt1, 1, name_string, -1, SQLITE_STATIC);
+			sqlite3_bind_text(pstmt1, 1, name_string.c_str(), -1, SQLITE_STATIC);
 			if (SQLITE_DONE != sqlite3_step(pstmt1)) {
 				return FALSE;
 			}
@@ -5269,6 +5270,9 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 		} else {
 			ppropids->ppropid[i] = 0;
 		}
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1503: ENOMEM\n");
+		return false;
 	}
 	return TRUE;
 }
