@@ -4426,6 +4426,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					LLU(message_id), LLU(folder_id));
 				break;
 			case OP_FORWARD:
+				pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(ext_actions.pblock[i].pdata);
 				if (pextfwddlgt->count > MAX_RULE_RECIPIENTS) {
 					if (FALSE == message_disable_rule(
 						psqlite, TRUE, prnode->id)) {
@@ -4433,16 +4434,15 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					}
 					continue;
 				}
-				pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(pactions->pblock[i].pdata);
 				if (FALSE == message_forward_message(from_address,
 					account, psqlite, cpid, message_id, pdigest,
-					pactions->pblock[i].flavor, TRUE,
+					ext_actions.pblock[i].flavor, TRUE,
 					pextfwddlgt->count, pextfwddlgt->pblock)) {
 					return FALSE;
 				}
 				break;
 			case OP_DELEGATE:
-				pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(pactions->pblock[i].pdata);
+				pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(ext_actions.pblock[i].pdata);
 				if (FALSE == exmdb_server_check_private() ||
 					NULL == pdigest || 0 == pextfwddlgt->count) {
 					continue;
