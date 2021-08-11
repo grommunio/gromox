@@ -4328,6 +4328,62 @@ static bool opx_move(BOOL b_oof, const char *from_address,
 	return true;
 }
 
+static bool opx_reply(const char *from_address, const char *account,
+    sqlite3 *psqlite, uint64_t message_id, const EXT_ACTION_BLOCK &block,
+    RULE_NODE *prnode)
+{
+	auto pextreply = static_cast<EXT_REPLY_ACTION *>(block.pdata);
+	if (TRUE == exmdb_server_check_private()) {
+		int tmp_id = 0;
+		if (FALSE == common_util_get_id_from_username(
+		    account, &tmp_id)) {
+			return true;
+		}
+		auto tmp_guid = rop_util_make_user_guid(tmp_id);
+		if (0 != guid_compare(&tmp_guid,
+		    &pextreply->message_eid.message_database_guid)) {
+			if (FALSE == message_disable_rule(
+			    psqlite, TRUE, prnode->id)) {
+				return FALSE;
+			}
+			return true;
+		}
+	} else {
+		auto pc = strchr(account, '@');
+		if (pc == nullptr)
+			return true;
+		++pc;
+		int tmp_id = 0, tmp_id1 = 0;
+		if (!common_util_get_domain_ids(pc, &tmp_id, &tmp_id1))
+			return true;
+		auto tmp_guid = rop_util_make_domain_guid(tmp_id);
+		if (0 != guid_compare(&tmp_guid,
+		    &pextreply->message_eid.message_database_guid)) {
+			if (FALSE == message_disable_rule(
+			    psqlite, TRUE, prnode->id)) {
+				return FALSE;
+			}
+			return true;
+		}
+	}
+	auto dst_mid = rop_util_gc_to_value(
+		       pextreply->message_eid.message_global_counter);
+	BOOL b_result = false;
+	if (FALSE == message_auto_reply(
+	    psqlite, message_id, from_address, account,
+	    block.type, block.flavor,
+	    dst_mid, pextreply->template_guid, &b_result))
+		return FALSE;
+	if (FALSE == b_result) {
+		if (FALSE == message_disable_rule(
+		    psqlite, TRUE, prnode->id)) {
+			return FALSE;
+		}
+		return true;
+	}
+	return true;
+}
+
 static bool opx_switcheroo(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
@@ -4344,58 +4400,11 @@ static bool opx_switcheroo(BOOL b_oof, const char *from_address,
 			return false;
 		break;
 	case OP_REPLY:
-	case OP_OOF_REPLY: {
-		auto pextreply = static_cast<EXT_REPLY_ACTION *>(block.pdata);
-		if (TRUE == exmdb_server_check_private()) {
-			int tmp_id = 0;
-			if (FALSE == common_util_get_id_from_username(
-			    account, &tmp_id)) {
-				return true;
-			}
-			auto tmp_guid = rop_util_make_user_guid(tmp_id);
-			if (0 != guid_compare(&tmp_guid,
-			    &pextreply->message_eid.message_database_guid)) {
-				if (FALSE == message_disable_rule(
-				    psqlite, TRUE, prnode->id)) {
-					return FALSE;
-				}
-				return true;
-			}
-		} else {
-			auto pc = strchr(account, '@');
-			if (pc == nullptr)
-				return true;
-			++pc;
-			int tmp_id = 0, tmp_id1 = 0;
-			if (!common_util_get_domain_ids(pc, &tmp_id, &tmp_id1))
-				return true;
-			auto tmp_guid = rop_util_make_domain_guid(tmp_id);
-			if (0 != guid_compare(&tmp_guid,
-			    &pextreply->message_eid.message_database_guid)) {
-				if (FALSE == message_disable_rule(
-				    psqlite, TRUE, prnode->id)) {
-					return FALSE;
-				}
-				return true;
-			}
-		}
-		auto dst_mid = rop_util_gc_to_value(
-		               pextreply->message_eid.message_global_counter);
-		BOOL b_result = false;
-		if (FALSE == message_auto_reply(
-		    psqlite, message_id, from_address, account,
-		    block.type, block.flavor,
-		    dst_mid, pextreply->template_guid, &b_result))
-			return FALSE;
-		if (FALSE == b_result) {
-			if (FALSE == message_disable_rule(
-			    psqlite, TRUE, prnode->id)) {
-				return FALSE;
-			}
-			return true;
-		}
+	case OP_OOF_REPLY:
+		if (!opx_reply(from_address, account, psqlite, message_id,
+		    block, prnode))
+			return false;
 		break;
-	}
 	case OP_DEFER_ACTION:
 		break;
 	case OP_BOUNCE:
