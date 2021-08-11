@@ -3904,7 +3904,6 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						from_address, account, cpid, psqlite,
 						dst_fid, dst_mid, pdigest1, pfolder_list,
 						pmsg_list)) {
-						remove(tmp_path);
 						return FALSE;
 					}
 					if (pactions->pblock[i].type == OP_MOVE) {
@@ -4343,7 +4342,6 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					from_address, account, cpid, psqlite,
 					dst_fid, dst_mid, pdigest1, pfolder_list,
 					pmsg_list)) {
-					remove(tmp_path);
 					return FALSE;
 				}
 				if (ext_actions.pblock[i].type == OP_MOVE) {
