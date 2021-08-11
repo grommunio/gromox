@@ -23,7 +23,6 @@ extern BOOL add_digest(char *src, size_t length, const char *tag, const char *va
 void swap_string(char *dest, const char *src);
 char* search_string(const char *haystack, const char *needle, 
     size_t haystacklen);
-char* ltoa(long value, char *string, long radix);
 #ifdef _STRCASESTR_
 char *strcasestr(const char *s1, const char *s2);
 #endif

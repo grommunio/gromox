@@ -616,34 +616,6 @@ char *strcasestr(const char *s1, const char *s2)
 }
 #endif
 
-char* ltoa(long value, char *string, long radix)
-{
-	long n, val, step;
-	char tmp;
-	long i = 0;
-
-	if (radix < 2 || radix > 16) {
-		return NULL;
-	}
-
-	do {
-		val	 = value % radix;
-		step = (val > 9) ? 39 : 0;
-		string[i] = 48 + val + step;
-		value /= radix;
-		i++;
-	} while (value>0);
-
-	string[i] = '\0';
-	n = i - 1;
-	for (i=0; i<n/2+1; i++) {
-		tmp = string[i];
-		string[i]	= string[n-i];
-		string[n-i] = tmp;
-	}
-	return string;
-}
-
 char* itvltoa(long interval, char *string)
 {
 	long days, hours;
@@ -681,7 +653,7 @@ char* itvltoa(long interval, char *string)
 	}
 	if (0 != days) {
 		if (days > 1) {
-			ltoa(days, string, 10);
+			sprintf(string, "%ld", days);
 			offset = strlen(string);
 			strcpy(string + offset, "days");
 			offset += 4;
@@ -692,7 +664,7 @@ char* itvltoa(long interval, char *string)
 	}
 	if (0 != hours) {
 		if (hours > 1) {
-			ltoa(hours, string + offset, 10);
+			sprintf(string + offset, "%ld", hours);
 			offset = strlen(string);
 			strcpy(string + offset, "hours");
 			offset += 5;
@@ -703,7 +675,7 @@ char* itvltoa(long interval, char *string)
 	}
 	if (0 != minutes) {
 		if (minutes > 1) {
-			ltoa(minutes, string + offset, 10);
+			sprintf(string + offset, "%ld", minutes);
 			offset = strlen(string);
 			strcpy(string + offset, "minutes");
 			offset += 7;
@@ -714,7 +686,7 @@ char* itvltoa(long interval, char *string)
 	}
 	if (0 != seconds) {
 		if (seconds > 1) {
-			ltoa(seconds, string + offset, 10);
+			sprintf(string + offset, "%ld", seconds);
 			offset = strlen(string);
 			strcpy(string + offset, "seconds");
 		} else if (1 == seconds) {
