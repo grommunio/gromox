@@ -337,7 +337,6 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 		throw YError("PF-1024: Datasize mismatch on %xh\n", pv.proptag);
 	case PT_STRING8:
 	case PT_UNICODE: {
-		libpff_error_ptr err;
 		size_t dsize2 = 0;
 		if (libpff_record_entry_get_data_as_utf8_string_size(rent, &dsize2, &unique_tie(err)) >= 1) {
 			++dsize2;
