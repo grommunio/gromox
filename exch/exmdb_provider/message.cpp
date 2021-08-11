@@ -3861,6 +3861,35 @@ static bool op_move_same(uint64_t folder_id, uint64_t message_id,
 	return true;
 }
 
+static bool op_reply(const char *from_address, const char *account,
+    sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
+    DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block, size_t rule_idx,
+    RULE_NODE *prnode)
+{
+	auto preply = static_cast<REPLY_ACTION *>(block.pdata);
+	BOOL b_result = false;
+	if (FALSE == message_auto_reply(psqlite, message_id,
+	    from_address, account, block.type,
+	    block.flavor, rop_util_get_gc_value(
+	    preply->template_message_id), preply->template_guid,
+	    &b_result)) {
+		return FALSE;
+	}
+	if (FALSE == b_result) {
+		message_make_deferred_error_message(
+			account, psqlite, folder_id, message_id,
+			prnode->id, RULE_ERROR_RETRIEVE_TEMPLATE,
+			block.type, rule_idx, prnode->provider,
+			pmsg_list);
+		if (FALSE == message_disable_rule(
+		    psqlite, FALSE, prnode->id)) {
+			return FALSE;
+		}
+		return true;
+	}
+	return true;
+}
+
 static bool op_switcheroo(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
@@ -3882,30 +3911,11 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 		break;
 	}
 	case OP_REPLY:
-	case OP_OOF_REPLY: {
-		auto preply = static_cast<REPLY_ACTION *>(block.pdata);
-		BOOL b_result = false;
-		if (FALSE == message_auto_reply(psqlite, message_id,
-		    from_address, account, block.type,
-		    block.flavor, rop_util_get_gc_value(
-		    preply->template_message_id), preply->template_guid,
-		    &b_result)) {
-			return FALSE;
-		}
-		if (FALSE == b_result) {
-			message_make_deferred_error_message(
-				account, psqlite, folder_id, message_id,
-				prnode->id, RULE_ERROR_RETRIEVE_TEMPLATE,
-				block.type, rule_idx, prnode->provider,
-				pmsg_list);
-			if (FALSE == message_disable_rule(
-			    psqlite, FALSE, prnode->id)) {
-				return FALSE;
-			}
-			return true;
-		}
+	case OP_OOF_REPLY:
+		if (!op_reply(from_address, account, psqlite, folder_id,
+		    message_id, pmsg_list, block, rule_idx, prnode))
+			return false;
 		break;
-	}
 	case OP_DEFER_ACTION: {
 		if (FALSE == exmdb_server_check_private()) {
 			return true;
