@@ -582,40 +582,6 @@ char* search_string(const char *haystack, const char *needle,
 	return NULL;
 }
 
-#ifdef _STRCASESTR_ 
-char *strcasestr(const char *s1, const char *s2)
-{
-	char *cp = (char*)s1;
-	char *s, *t;
-	char l, r;
-
-	while (*cp) {
-		s = cp;
-		t = (char*)s2;
-
-		while ((*s) && (*t)) {
-			l = ( (*s >= 'A') && (*s <= 'Z') ) ?  *s + 'a' - 'A' : *s;
-			r = ( (*t >= 'A') && (*t <= 'Z') ) ?  *t + 'a' - 'A' : *t;
-
-			if (l != r) {
-				break;
-			}
-
-			s++;
-			t++;
-		}
-
-		if ('\0' == (*t)) {
-			return cp;
-		}
-
-		cp++;
-	}
-
-	return 0;
-}
-#endif
-
 char* itvltoa(long interval, char *string)
 {
 	long days, hours;

@@ -23,9 +23,6 @@ extern BOOL add_digest(char *src, size_t length, const char *tag, const char *va
 void swap_string(char *dest, const char *src);
 char* search_string(const char *haystack, const char *needle, 
     size_t haystacklen);
-#ifdef _STRCASESTR_
-char *strcasestr(const char *s1, const char *s2);
-#endif
 char* itvltoa(long interval, char *string);
 long atoitvl(const char *string);
 char* bytetoa(uint64_t byte, char *string);
