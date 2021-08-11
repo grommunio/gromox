@@ -363,7 +363,7 @@ uint32_t driver::hid_from_mst(kdb_item &item, uint32_t proptag)
 	auto eid = static_cast<BINARY *>(tpropval_array_get_propval(props, proptag));
 	if (eid == nullptr)
 		return 0;
-	char qstr[20];
+	char qstr[80];
 	snprintf(qstr, arsizeof(qstr), "SELECT hierarchyid FROM indexedproperties "
 		"WHERE tag=0x0FFF AND val_binary=0x%.48s LIMIT 1", bin2hex(eid->pv, eid->cb).c_str());
 	auto res = query(qstr);
