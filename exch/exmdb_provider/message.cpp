@@ -54,7 +54,7 @@ struct DAM_NODE {
 	uint64_t folder_id;
 	uint64_t message_id;
 	char *provider;
-	ACTION_BLOCK *pblock;
+	const ACTION_BLOCK *pblock;
 };
 
 struct MESSAGE_NODE {
@@ -3725,14 +3725,14 @@ static BOOL message_make_deferred_action_messages(
 static bool op_switcheroo(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
-    DOUBLE_LIST *pmsg_list, RULE_ACTIONS *pactions, size_t rule_idx,
+    DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block, size_t rule_idx,
     RULE_NODE *prnode, BOOL &b_del, DOUBLE_LIST &dam_list)
 {
 	static const uint8_t fake_true = 1;
-	switch (pactions->pblock[rule_idx].type) {
+	switch (block.type) {
 	case OP_MOVE:
 	case OP_COPY: {
-		auto pmovecopy = static_cast<MOVECOPY_ACTION *>(pactions->pblock[rule_idx].pdata);
+		auto pmovecopy = static_cast<MOVECOPY_ACTION *>(block.pdata);
 		if (0 != pmovecopy->same_store) {
 			auto dst_fid = rop_util_get_gc_value(static_cast<SVREID *>(
 			               pmovecopy->pfolder_eid)->folder_id);
@@ -3755,7 +3755,7 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 			if (FALSE == b_exist) {
 				message_make_deferred_error_message(account,
 					psqlite, folder_id, message_id, prnode->id,
-					RULE_ERROR_MOVECOPY, pactions->pblock[rule_idx].type,
+					RULE_ERROR_MOVECOPY, block.type,
 					rule_idx, prnode->provider, pmsg_list);
 				if (FALSE == message_disable_rule(
 				    psqlite, FALSE, prnode->id)) {
@@ -3786,7 +3786,7 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 			if (FALSE == b_result) {
 				message_make_deferred_error_message(account,
 					psqlite, folder_id, message_id, prnode->id,
-					RULE_ERROR_MOVECOPY, pactions->pblock[rule_idx].type,
+					RULE_ERROR_MOVECOPY, block.type,
 					rule_idx, prnode->provider, pmsg_list);
 				return true;
 			}
@@ -3828,7 +3828,7 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 			    pmsg_list)) {
 				return FALSE;
 			}
-			if (pactions->pblock[rule_idx].type == OP_MOVE) {
+			if (block.type == OP_MOVE) {
 				b_del = TRUE;
 				common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
 					"Message %llu in folder %llu is going"
@@ -3855,7 +3855,7 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 			pdnode->folder_id = folder_id;
 			pdnode->message_id = message_id;
 			pdnode->provider = prnode->provider;
-			pdnode->pblock = &pactions->pblock[rule_idx];
+			pdnode->pblock = &block;
 			double_list_append_as_tail(
 				&dam_list, &pdnode->node);
 		}
@@ -3863,11 +3863,11 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 	}
 	case OP_REPLY:
 	case OP_OOF_REPLY: {
-		auto preply = static_cast<REPLY_ACTION *>(pactions->pblock[rule_idx].pdata);
+		auto preply = static_cast<REPLY_ACTION *>(block.pdata);
 		BOOL b_result = false;
 		if (FALSE == message_auto_reply(psqlite, message_id,
-		    from_address, account, pactions->pblock[rule_idx].type,
-		    pactions->pblock[rule_idx].flavor, rop_util_get_gc_value(
+		    from_address, account, block.type,
+		    block.flavor, rop_util_get_gc_value(
 		    preply->template_message_id), preply->template_guid,
 		    &b_result)) {
 			return FALSE;
@@ -3876,7 +3876,7 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 			message_make_deferred_error_message(
 				account, psqlite, folder_id, message_id,
 				prnode->id, RULE_ERROR_RETRIEVE_TEMPLATE,
-				pactions->pblock[rule_idx].type, rule_idx, prnode->provider,
+				block.type, rule_idx, prnode->provider,
 				pmsg_list);
 			if (FALSE == message_disable_rule(
 			    psqlite, FALSE, prnode->id)) {
@@ -3899,7 +3899,7 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 		pdnode->folder_id = folder_id;
 		pdnode->message_id = message_id;
 		pdnode->provider = prnode->provider;
-		pdnode->pblock = &pactions->pblock[rule_idx];
+		pdnode->pblock = &block;
 		double_list_append_as_tail(
 			&dam_list, &pdnode->node);
 		break;
@@ -3907,7 +3907,7 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 	case OP_BOUNCE:
 		if (FALSE == message_bounce_message(
 		    from_address, account, psqlite, message_id,
-		    *static_cast<uint32_t *>(pactions->pblock[rule_idx].pdata)))
+		    *static_cast<uint32_t *>(block.pdata)))
 			return FALSE;
 		b_del = TRUE;
 		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
@@ -3919,13 +3919,13 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 		if (FALSE == exmdb_server_check_private()) {
 			return true;
 		}
-		auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(pactions->pblock[rule_idx].pdata);
+		auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
 		if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
 			message_make_deferred_error_message(
 				account, psqlite, folder_id,
 				message_id, prnode->id,
 				RULE_ERROR_TOO_MANY_RCPTS,
-				pactions->pblock[rule_idx].type, rule_idx,
+				block.type, rule_idx,
 				prnode->provider, pmsg_list);
 			if (FALSE == message_disable_rule(
 			    psqlite, FALSE, prnode->id)) {
@@ -3935,13 +3935,13 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 		}
 		if (FALSE == message_forward_message(from_address,
 		    account, psqlite, cpid, message_id, pdigest,
-		    pactions->pblock[rule_idx].flavor, false,
+		    block.flavor, false,
 		    pfwddlgt->count, pfwddlgt->pblock))
 			return FALSE;
 		break;
 	}
 	case OP_DELEGATE: {
-		auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(pactions->pblock[rule_idx].pdata);
+		auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
 		if (FALSE == exmdb_server_check_private() ||
 			NULL == pdigest || 0 == pfwddlgt->count) {
 			return true;
@@ -3951,7 +3951,7 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 				account, psqlite, folder_id,
 				message_id, prnode->id,
 				RULE_ERROR_TOO_MANY_RCPTS,
-				pactions->pblock[rule_idx].type, rule_idx,
+				block.type, rule_idx,
 				prnode->provider, pmsg_list);
 			if (FALSE == message_disable_rule(
 			    psqlite, FALSE, prnode->id)) {
@@ -4064,7 +4064,7 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 		BOOL b_result = false;
 		if (!common_util_set_property(MESSAGE_PROPERTIES_TABLE,
 		    message_id, cpid, psqlite,
-		    static_cast<TAGGED_PROPVAL *>(pactions->pblock[rule_idx].pdata),
+		    static_cast<TAGGED_PROPVAL *>(block.pdata),
 		    &b_result))
 			return FALSE;
 		break;
@@ -4098,14 +4098,14 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 static bool opx_switcheroo(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
-    DOUBLE_LIST *pmsg_list, const EXT_RULE_ACTIONS &ext_actions,
+    DOUBLE_LIST *pmsg_list, const EXT_ACTION_BLOCK &block,
     size_t rule_idx, RULE_NODE *prnode, BOOL &b_del)
 {
 	static const uint8_t fake_true = 1;
-	switch (ext_actions.pblock[rule_idx].type) {
+	switch (block.type) {
 	case OP_MOVE:
 	case OP_COPY: {
-		auto pextmvcp = static_cast<EXT_MOVECOPY_ACTION *>(ext_actions.pblock[rule_idx].pdata);
+		auto pextmvcp = static_cast<EXT_MOVECOPY_ACTION *>(block.pdata);
 		if (TRUE == exmdb_server_check_private()) {
 			if (EITLT_PRIVATE_FOLDER !=
 			    pextmvcp->folder_eid.folder_type) {
@@ -4242,7 +4242,7 @@ static bool opx_switcheroo(BOOL b_oof, const char *from_address,
 		    pmsg_list)) {
 			return FALSE;
 		}
-		if (ext_actions.pblock[rule_idx].type == OP_MOVE) {
+		if (block.type == OP_MOVE) {
 			b_del = TRUE;
 			common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
 				"Message %llu in folder %llu is going"
@@ -4260,7 +4260,7 @@ static bool opx_switcheroo(BOOL b_oof, const char *from_address,
 	}
 	case OP_REPLY:
 	case OP_OOF_REPLY: {
-		auto pextreply = static_cast<EXT_REPLY_ACTION *>(ext_actions.pblock[rule_idx].pdata);
+		auto pextreply = static_cast<EXT_REPLY_ACTION *>(block.pdata);
 		if (TRUE == exmdb_server_check_private()) {
 			int tmp_id = 0;
 			if (FALSE == common_util_get_id_from_username(
@@ -4299,7 +4299,7 @@ static bool opx_switcheroo(BOOL b_oof, const char *from_address,
 		BOOL b_result = false;
 		if (FALSE == message_auto_reply(
 		    psqlite, message_id, from_address, account,
-		    ext_actions.pblock[rule_idx].type, ext_actions.pblock[rule_idx].flavor,
+		    block.type, block.flavor,
 		    dst_mid, pextreply->template_guid, &b_result))
 			return FALSE;
 		if (FALSE == b_result) {
@@ -4316,7 +4316,7 @@ static bool opx_switcheroo(BOOL b_oof, const char *from_address,
 	case OP_BOUNCE:
 		if (FALSE == message_bounce_message(
 		    from_address, account, psqlite, message_id,
-		    *static_cast<uint32_t *>(ext_actions.pblock[rule_idx].pdata)))
+		    *static_cast<uint32_t *>(block.pdata)))
 			return FALSE;
 		b_del = TRUE;
 		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
@@ -4325,7 +4325,7 @@ static bool opx_switcheroo(BOOL b_oof, const char *from_address,
 			LLU(message_id), LLU(folder_id));
 		break;
 	case OP_FORWARD: {
-		auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(ext_actions.pblock[rule_idx].pdata);
+		auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
 		if (pextfwddlgt->count > MAX_RULE_RECIPIENTS) {
 			if (FALSE == message_disable_rule(
 			    psqlite, TRUE, prnode->id)) {
@@ -4335,13 +4335,13 @@ static bool opx_switcheroo(BOOL b_oof, const char *from_address,
 		}
 		if (FALSE == message_forward_message(from_address,
 		    account, psqlite, cpid, message_id, pdigest,
-		    ext_actions.pblock[rule_idx].flavor, TRUE,
+		    block.flavor, TRUE,
 		    pextfwddlgt->count, pextfwddlgt->pblock))
 			return FALSE;
 		break;
 	}
 	case OP_DELEGATE: {
-		auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(ext_actions.pblock[rule_idx].pdata);
+		auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
 		if (FALSE == exmdb_server_check_private() ||
 		    NULL == pdigest || 0 == pextfwddlgt->count) {
 			return true;
@@ -4457,7 +4457,7 @@ static bool opx_switcheroo(BOOL b_oof, const char *from_address,
 		BOOL b_result = false;
 		if (!common_util_set_property(MESSAGE_PROPERTIES_TABLE,
 		    message_id, cpid, psqlite,
-		    static_cast<TAGGED_PROPVAL *>(ext_actions.pblock[rule_idx].pdata),
+		    static_cast<TAGGED_PROPVAL *>(block.pdata),
 		    &b_result))
 			return FALSE;
 		break;
@@ -4536,7 +4536,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 		for (size_t i = 0; i < pactions->count; ++i)
 			if (!op_switcheroo(b_oof, from_address, account, cpid, psqlite,
 			    folder_id, message_id, pdigest, pfolder_list,
-			    pmsg_list, pactions, i, prnode, b_del, dam_list))
+			    pmsg_list, pactions->pblock[i], i, prnode, b_del, dam_list))
 				return false;
 	}
 	if (double_list_get_nodes_num(&dam_list) > 0) {
@@ -4605,7 +4605,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 		for (size_t i = 0; i < ext_actions.count; ++i)
 			if (!opx_switcheroo(b_oof, from_address, account, cpid, psqlite,
 			    folder_id, message_id, pdigest, pfolder_list,
-			    pmsg_list, ext_actions, i, prnode, b_del))
+			    pmsg_list, ext_actions.pblock[i], i, prnode, b_del))
 				return false;
 	}
 	if (TRUE == b_del) {
