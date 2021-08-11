@@ -3941,6 +3941,132 @@ static bool op_forward(const char *from_address, const char *account,
 	return true;
 }
 
+static bool op_delegate(const char *from_address, const char *account,
+    uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
+    const char *pdigest, DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block,
+    size_t rule_idx, RULE_NODE *prnode)
+{
+	auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
+	if (FALSE == exmdb_server_check_private() ||
+		NULL == pdigest || 0 == pfwddlgt->count) {
+		return true;
+	}
+	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
+		message_make_deferred_error_message(
+			account, psqlite, folder_id,
+			message_id, prnode->id,
+			RULE_ERROR_TOO_MANY_RCPTS,
+			block.type, rule_idx,
+			prnode->provider, pmsg_list);
+		if (FALSE == message_disable_rule(
+		    psqlite, FALSE, prnode->id)) {
+			return FALSE;
+		}
+		return true;
+	}
+	MESSAGE_CONTENT *pmsgctnt = nullptr;
+	if (FALSE == message_read_message(psqlite, cpid,
+	    message_id, &pmsgctnt) || NULL == pmsgctnt) {
+		return FALSE;
+	}
+	if (NULL != common_util_get_propvals(
+	    &pmsgctnt->proplist, PROP_TAG_DELEGATEDBYRULE)) {
+		common_util_log_info(LV_DEBUG, "user=%s host=unkonwn  Delegated"
+			" message %llu in folder %llu cannot be delegated"
+			" again", account, LLU(message_id), LLU(folder_id));
+		return true;
+	}
+	static constexpr uint32_t tags[] = {
+		PR_DISPLAY_TO, PR_DISPLAY_TO_A,
+		PR_DISPLAY_CC, PR_DISPLAY_CC_A,
+		PR_DISPLAY_BCC, PR_DISPLAY_BCC_A,
+		PROP_TAG_MID, PR_MESSAGE_SIZE,
+		PR_ASSOCIATED, PROP_TAG_CHANGENUMBER,
+		PR_CHANGE_KEY, PR_READ,
+		PROP_TAG_HASATTACHMENTS,
+		PR_PREDECESSOR_CHANGE_LIST,
+		PROP_TAG_MESSAGETOME, PROP_TAG_MESSAGECCME
+	};
+	for (auto t : tags)
+		common_util_remove_propvals(&pmsgctnt->proplist, t);
+	if (NULL == common_util_get_propvals(&pmsgctnt->proplist,
+	    PROP_TAG_RECEIVEDREPRESENTINGENTRYID)) {
+		char essdn_buff[1280];
+		memcpy(essdn_buff, "EX:", 3);
+		if (!common_util_username_to_essdn(account,
+		    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
+			return FALSE;
+		HX_strupper(essdn_buff);
+		auto pvalue = common_util_username_to_addressbook_entryid(account);
+		if (NULL == pvalue) {
+			return FALSE;
+		}
+		TAGGED_PROPVAL propval;
+		propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGENTRYID;
+		propval.pvalue = pvalue;
+		common_util_set_propvals(&pmsgctnt->proplist, &propval);
+		propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGADDRESSTYPE;
+		propval.pvalue  = deconst("EX");
+		common_util_set_propvals(&pmsgctnt->proplist, &propval);
+		propval.proptag =
+			PROP_TAG_RECEIVEDREPRESENTINGEMAILADDRESS;
+		propval.pvalue = essdn_buff + 3;
+		common_util_set_propvals(&pmsgctnt->proplist, &propval);
+		char display_name[1024];
+		if (TRUE == common_util_get_user_displayname(
+		    account, display_name)) {
+			propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGNAME;
+			propval.pvalue = display_name;
+			common_util_set_propvals(
+				&pmsgctnt->proplist, &propval);
+		}
+		BINARY searchkey_bin;
+		searchkey_bin.cb = strlen(essdn_buff) + 1;
+		searchkey_bin.pv = essdn_buff;
+		propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGSEARCHKEY;
+		propval.pvalue = &searchkey_bin;
+		common_util_set_propvals(&pmsgctnt->proplist, &propval);
+	}
+	static constexpr uint8_t fake_true = true;
+	TAGGED_PROPVAL propval;
+	propval.proptag = PROP_TAG_DELEGATEDBYRULE;
+	propval.pvalue = deconst(&fake_true);
+	common_util_set_propvals(&pmsgctnt->proplist, &propval);
+	DOUBLE_LIST rcpt_list;
+	if (FALSE == message_recipient_blocks_to_list(
+	    pfwddlgt->count, pfwddlgt->pblock, &rcpt_list)) {
+		return FALSE;
+	}
+	char mid_string1[128], tmp_path1[256];
+	get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
+	snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
+		 exmdb_server_get_dir(), mid_string1);
+	for (auto pnode1 = double_list_get_head(&rcpt_list);
+	     NULL != pnode1; pnode1 = double_list_get_after(
+	     &rcpt_list, pnode1)) {
+		char maildir[256];
+		if (!common_util_get_maildir(static_cast<char *>(pnode1->pdata), maildir))
+			continue;
+		auto mid_string = std::to_string(time(nullptr)) + "." +
+				  std::to_string(common_util_sequence_ID()) + "." +
+				  get_host_ID();
+		auto eml_path = maildir + "/eml/"s + mid_string;
+		if (!common_util_copy_file(tmp_path1, eml_path.c_str()))
+			continue;
+		char tmp_buff[MAX_DIGLEN];
+		strcpy(tmp_buff, pdigest);
+		auto mid_string1 = "\"" + mid_string + "\"";
+		set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string1.c_str());
+		const char *pdigest1 = tmp_buff;
+		uint32_t result = 0;
+		if (!exmdb_client_relay_delivery(maildir,
+		    from_address, static_cast<char *>(pnode1->pdata),
+		    cpid, pmsgctnt, pdigest1, &result))
+			return FALSE;
+	}
+	return true;
+}
+
 static bool op_switcheroo(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
@@ -3982,132 +4108,17 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 			" to be deleted by rule", account,
 			LLU(message_id), LLU(folder_id));
 		break;
-	case OP_FORWARD: {
+	case OP_FORWARD:
 		if (!op_forward(from_address, account, cpid, psqlite, folder_id,
 		    message_id, pdigest, pmsg_list, block, rule_idx, prnode))
 			return false;
 		break;
-	}
-	case OP_DELEGATE: {
-		auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
-		if (FALSE == exmdb_server_check_private() ||
-			NULL == pdigest || 0 == pfwddlgt->count) {
-			return true;
-		}
-		if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
-			message_make_deferred_error_message(
-				account, psqlite, folder_id,
-				message_id, prnode->id,
-				RULE_ERROR_TOO_MANY_RCPTS,
-				block.type, rule_idx,
-				prnode->provider, pmsg_list);
-			if (FALSE == message_disable_rule(
-			    psqlite, FALSE, prnode->id)) {
-				return FALSE;
-			}
-			return true;
-		}
-		MESSAGE_CONTENT *pmsgctnt = nullptr;
-		if (FALSE == message_read_message(psqlite, cpid,
-		    message_id, &pmsgctnt) || NULL == pmsgctnt) {
-			return FALSE;
-		}
-		if (NULL != common_util_get_propvals(
-		    &pmsgctnt->proplist, PROP_TAG_DELEGATEDBYRULE)) {
-			common_util_log_info(LV_DEBUG, "user=%s host=unkonwn  Delegated"
-				" message %llu in folder %llu cannot be delegated"
-				" again", account, LLU(message_id), LLU(folder_id));
-			break;
-		}
-		static constexpr uint32_t tags[] = {
-			PR_DISPLAY_TO, PR_DISPLAY_TO_A,
-			PR_DISPLAY_CC, PR_DISPLAY_CC_A,
-			PR_DISPLAY_BCC, PR_DISPLAY_BCC_A,
-			PROP_TAG_MID, PR_MESSAGE_SIZE,
-			PR_ASSOCIATED, PROP_TAG_CHANGENUMBER,
-			PR_CHANGE_KEY, PR_READ,
-			PROP_TAG_HASATTACHMENTS,
-			PR_PREDECESSOR_CHANGE_LIST,
-			PROP_TAG_MESSAGETOME, PROP_TAG_MESSAGECCME
-		};
-		for (auto t : tags)
-			common_util_remove_propvals(&pmsgctnt->proplist, t);
-		if (NULL == common_util_get_propvals(&pmsgctnt->proplist,
-		    PROP_TAG_RECEIVEDREPRESENTINGENTRYID)) {
-			char essdn_buff[1280];
-			memcpy(essdn_buff, "EX:", 3);
-			if (!common_util_username_to_essdn(account,
-			    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
-				return FALSE;
-			HX_strupper(essdn_buff);
-			auto pvalue = common_util_username_to_addressbook_entryid(account);
-			if (NULL == pvalue) {
-				return FALSE;
-			}
-			TAGGED_PROPVAL propval;
-			propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGENTRYID;
-			propval.pvalue = pvalue;
-			common_util_set_propvals(&pmsgctnt->proplist, &propval);
-			propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGADDRESSTYPE;
-			propval.pvalue  = deconst("EX");
-			common_util_set_propvals(&pmsgctnt->proplist, &propval);
-			propval.proptag =
-				PROP_TAG_RECEIVEDREPRESENTINGEMAILADDRESS;
-			propval.pvalue = essdn_buff + 3;
-			common_util_set_propvals(&pmsgctnt->proplist, &propval);
-			char display_name[1024];
-			if (TRUE == common_util_get_user_displayname(
-			    account, display_name)) {
-				propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGNAME;
-				propval.pvalue = display_name;
-				common_util_set_propvals(
-					&pmsgctnt->proplist, &propval);
-			}
-			BINARY searchkey_bin;
-			searchkey_bin.cb = strlen(essdn_buff) + 1;
-			searchkey_bin.pv = essdn_buff;
-			propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGSEARCHKEY;
-			propval.pvalue = &searchkey_bin;
-			common_util_set_propvals(&pmsgctnt->proplist, &propval);
-		}
-		TAGGED_PROPVAL propval;
-		propval.proptag = PROP_TAG_DELEGATEDBYRULE;
-		propval.pvalue = deconst(&fake_true);
-		common_util_set_propvals(&pmsgctnt->proplist, &propval);
-		DOUBLE_LIST rcpt_list;
-		if (FALSE == message_recipient_blocks_to_list(
-		    pfwddlgt->count, pfwddlgt->pblock, &rcpt_list)) {
-			return FALSE;
-		}
-		char mid_string1[128], tmp_path1[256];
-		get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
-		snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
-		         exmdb_server_get_dir(), mid_string1);
-		for (auto pnode1 = double_list_get_head(&rcpt_list);
-		     NULL != pnode1; pnode1 = double_list_get_after(
-		     &rcpt_list, pnode1)) {
-			char maildir[256];
-			if (!common_util_get_maildir(static_cast<char *>(pnode1->pdata), maildir))
-				continue;
-			auto mid_string = std::to_string(time(nullptr)) + "." +
-					  std::to_string(common_util_sequence_ID()) + "." +
-					  get_host_ID();
-			auto eml_path = maildir + "/eml/"s + mid_string;
-			if (!common_util_copy_file(tmp_path1, eml_path.c_str()))
-				continue;
-			char tmp_buff[MAX_DIGLEN];
-			strcpy(tmp_buff, pdigest);
-			auto mid_string1 = "\"" + mid_string + "\"";
-			set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string1.c_str());
-			const char *pdigest1 = tmp_buff;
-			uint32_t result = 0;
-			if (!exmdb_client_relay_delivery(maildir,
-			    from_address, static_cast<char *>(pnode1->pdata),
-			    cpid, pmsgctnt, pdigest1, &result))
-				return FALSE;
-		}
+	case OP_DELEGATE:
+		if (!op_delegate(from_address, account, cpid, psqlite,
+		    folder_id, message_id, pdigest, pmsg_list, block,
+		    rule_idx, prnode))
+			return false;
 		break;
-	}
 	case OP_TAG: {
 		BOOL b_result = false;
 		if (!common_util_set_property(MESSAGE_PROPERTIES_TABLE,
