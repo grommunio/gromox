@@ -3890,6 +3890,27 @@ static bool op_reply(const char *from_address, const char *account,
 	return true;
 }
 
+static bool op_defer(uint64_t folder_id, uint64_t message_id,
+    const ACTION_BLOCK &block, RULE_NODE *prnode, DOUBLE_LIST &dam_list)
+{
+	if (FALSE == exmdb_server_check_private()) {
+		return true;
+	}
+	auto pdnode = cu_alloc<DAM_NODE>();
+	if (NULL == pdnode) {
+		return FALSE;
+	}
+	pdnode->node.pdata = pdnode;
+	pdnode->rule_id = prnode->id;
+	pdnode->folder_id = folder_id;
+	pdnode->message_id = message_id;
+	pdnode->provider = prnode->provider;
+	pdnode->pblock = &block;
+	double_list_append_as_tail(
+		&dam_list, &pdnode->node);
+	return true;
+}
+
 static bool op_switcheroo(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
@@ -3916,24 +3937,10 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 		    message_id, pmsg_list, block, rule_idx, prnode))
 			return false;
 		break;
-	case OP_DEFER_ACTION: {
-		if (FALSE == exmdb_server_check_private()) {
-			return true;
-		}
-		auto pdnode = cu_alloc<DAM_NODE>();
-		if (NULL == pdnode) {
-			return FALSE;
-		}
-		pdnode->node.pdata = pdnode;
-		pdnode->rule_id = prnode->id;
-		pdnode->folder_id = folder_id;
-		pdnode->message_id = message_id;
-		pdnode->provider = prnode->provider;
-		pdnode->pblock = &block;
-		double_list_append_as_tail(
-			&dam_list, &pdnode->node);
+	case OP_DEFER_ACTION:
+		if (!op_defer(folder_id, message_id, block, prnode, dam_list))
+			return false;
 		break;
-	}
 	case OP_BOUNCE:
 		if (FALSE == message_bounce_message(
 		    from_address, account, psqlite, message_id,
