@@ -3767,6 +3767,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 			continue;
 		}
 		for (size_t i = 0; i < pactions->count; ++i) {
+			auto l = [&]() -> bool {
 			switch (pactions->pblock[i].type) {
 			case OP_MOVE:
 			case OP_COPY: {
@@ -3783,7 +3784,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						}
 					}
 					if (NULL != pnode1) {
-						continue;
+						return true;
 					}
 					BOOL b_exist = false;
 					if (FALSE == common_util_check_folder_id(
@@ -3799,7 +3800,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 							psqlite, FALSE, prnode->id)) {
 							return FALSE;
 						}
-						continue;
+						return true;
 					}
 					int tmp_id = 0, tmp_id1 = 0;
 					if (TRUE == exmdb_server_check_private()) {
@@ -3826,7 +3827,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 							psqlite, folder_id, message_id, prnode->id,
 							RULE_ERROR_MOVECOPY, pactions->pblock[i].type,
 							i, prnode->provider, pmsg_list);
-						continue;
+						return true;
 					}
 					auto nt_time = rop_util_current_nttime();
 					TAGGED_PROPVAL propval;
@@ -3882,7 +3883,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					}
 				} else {
 					if (FALSE == exmdb_server_check_private()) {
-						continue;
+						return true;
 					}
 					auto pdnode = cu_alloc<DAM_NODE>();
 					if (NULL == pdnode) {
@@ -3920,13 +3921,13 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						psqlite, FALSE, prnode->id)) {
 						return FALSE;
 					}
-					continue;
+					return true;
 				}
 				break;
 			}
 			case OP_DEFER_ACTION: {
 				if (FALSE == exmdb_server_check_private()) {
-					continue;
+					return true;
 				}
 				auto pdnode = cu_alloc<DAM_NODE>();
 				if (NULL == pdnode) {
@@ -3956,7 +3957,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				break;
 			case OP_FORWARD: {
 				if (FALSE == exmdb_server_check_private()) {
-					continue;
+					return true;
 				}
 				auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(pactions->pblock[i].pdata);
 				if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
@@ -3970,7 +3971,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						psqlite, FALSE, prnode->id)) {
 						return FALSE;
 					}
-					continue;
+					return true;
 				}
 				if (FALSE == message_forward_message(from_address,
 					account, psqlite, cpid, message_id, pdigest,
@@ -3984,7 +3985,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(pactions->pblock[i].pdata);
 				if (FALSE == exmdb_server_check_private() ||
 					NULL == pdigest || 0 == pfwddlgt->count) {
-					continue;
+					return true;
 				}
 				if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
 					message_make_deferred_error_message(
@@ -3997,7 +3998,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						psqlite, FALSE, prnode->id)) {
 						return FALSE;
 					}
-					continue;
+					return true;
 				}
 				MESSAGE_CONTENT *pmsgctnt = nullptr;
 				if (FALSE == message_read_message(psqlite, cpid,
@@ -4119,7 +4120,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				break;
 			case OP_MARK_AS_READ: {
 				if (FALSE == exmdb_server_check_private()) {
-					continue;
+					return true;
 				}
 				TAGGED_PROPVAL propval;
 				propval.proptag = PR_READ;
@@ -4133,6 +4134,10 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				break;
 			}
 			}
+			return true;
+			};
+			if (!l())
+				return false;
 		}
 		
 	}
@@ -4200,6 +4205,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 			return FALSE;
 		}
 		for (size_t i = 0; i < ext_actions.count; ++i) {
+			auto l = [&]() -> bool {
 			switch (ext_actions.pblock[i].type) {
 			case OP_MOVE:
 			case OP_COPY: {
@@ -4211,12 +4217,12 @@ static BOOL message_rule_new_message(BOOL b_oof,
 							psqlite, TRUE, prnode->id)) {
 							return FALSE;
 						}
-						continue;
+						return true;
 					}
 					int tmp_id = 0;
 					if (FALSE == common_util_get_id_from_username(
 						account, &tmp_id)) {
-						continue;
+						return true;
 					}
 					auto tmp_guid = rop_util_make_user_guid(tmp_id);
 					if (0 != guid_compare(&tmp_guid,
@@ -4225,7 +4231,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 							psqlite, TRUE, prnode->id)) {
 							return FALSE;
 						}
-						continue;
+						return true;
 					}
 				} else {
 					if (EITLT_PUBLIC_FOLDER !=
@@ -4234,7 +4240,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 							psqlite, TRUE, prnode->id)) {
 							return FALSE;
 						}
-						continue;
+						return true;
 					}
 					auto pc = strchr(account, '@');
 					if (pc == nullptr)
@@ -4243,7 +4249,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						++pc;
 					int tmp_id = 0, tmp_id1 = 0;
 					if (!common_util_get_domain_ids(pc, &tmp_id, &tmp_id1))
-						continue;
+						return true;
 					auto tmp_guid = rop_util_make_domain_guid(tmp_id);
 					if (0 != guid_compare(&tmp_guid,
 						&pextmvcp->folder_eid.database_guid)) {
@@ -4251,7 +4257,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 							psqlite, TRUE, prnode->id)) {
 							return FALSE;
 						}
-						continue;
+						return true;
 					}
 				}
 				auto dst_fid = rop_util_gc_to_value(
@@ -4265,7 +4271,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					}
 				}
 				if (NULL != pnode1) {
-					continue;
+					return true;
 				}
 				BOOL b_exist = false;
 				if (FALSE == common_util_check_folder_id(
@@ -4277,7 +4283,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						psqlite, TRUE, prnode->id)) {
 						return FALSE;
 					}
-					continue;
+					return true;
 				}
 				int tmp_id = 0, tmp_id1 = 0;
 				if (TRUE == exmdb_server_check_private()) {
@@ -4300,7 +4306,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					return FALSE;
 				}
 				if (FALSE == b_result) {
-					continue;
+					return true;
 				}
 				auto nt_time = rop_util_current_nttime();
 				TAGGED_PROPVAL propval;
@@ -4363,7 +4369,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					int tmp_id = 0;
 					if (FALSE == common_util_get_id_from_username(
 						account, &tmp_id)) {
-						continue;
+						return true;
 					}
 					auto tmp_guid = rop_util_make_user_guid(tmp_id);
 					if (0 != guid_compare(&tmp_guid,
@@ -4372,16 +4378,16 @@ static BOOL message_rule_new_message(BOOL b_oof,
 							psqlite, TRUE, prnode->id)) {
 							return FALSE;
 						}
-						continue;
+						return true;
 					}
 				} else {
 					auto pc = strchr(account, '@');
 					if (pc == nullptr)
-						continue;
+						return true;
 					++pc;
 					int tmp_id = 0, tmp_id1 = 0;
 					if (!common_util_get_domain_ids(pc, &tmp_id, &tmp_id1))
-						continue;
+						return true;
 					auto tmp_guid = rop_util_make_domain_guid(tmp_id);
 					if (0 != guid_compare(&tmp_guid,
 						&pextreply->message_eid.message_database_guid)) {
@@ -4389,7 +4395,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 							psqlite, TRUE, prnode->id)) {
 							return FALSE;
 						}
-						continue;
+						return true;
 					}
 				}
 				auto dst_mid = rop_util_gc_to_value(
@@ -4406,7 +4412,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						psqlite, TRUE, prnode->id)) {
 						return FALSE;
 					}
-					continue;
+					return true;
 				}
 				break;
 			}
@@ -4431,7 +4437,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 						psqlite, TRUE, prnode->id)) {
 						return FALSE;
 					}
-					continue;
+					return true;
 				}
 				if (FALSE == message_forward_message(from_address,
 					account, psqlite, cpid, message_id, pdigest,
@@ -4445,14 +4451,14 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(ext_actions.pblock[i].pdata);
 				if (FALSE == exmdb_server_check_private() ||
 					NULL == pdigest || 0 == pextfwddlgt->count) {
-					continue;
+					return true;
 				}
 				if (pextfwddlgt->count > MAX_RULE_RECIPIENTS) {
 					if (FALSE == message_disable_rule(
 						psqlite, TRUE, prnode->id)) {
 						return FALSE;
 					}
-					continue;
+					return true;
 				}
 				MESSAGE_CONTENT *pmsgctnt = nullptr;
 				if (FALSE == message_read_message(psqlite, cpid,
@@ -4573,7 +4579,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				break;
 			case OP_MARK_AS_READ: {
 				if (FALSE == exmdb_server_check_private()) {
-					continue;
+					return true;
 				}
 				TAGGED_PROPVAL propval;
 				propval.proptag = PR_READ;
@@ -4587,6 +4593,10 @@ static BOOL message_rule_new_message(BOOL b_oof,
 				break;
 			}
 			}
+			return true;
+			};
+			if (!l())
+				return false;
 		}
 	}
 	if (TRUE == b_del) {
