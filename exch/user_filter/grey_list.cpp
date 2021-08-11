@@ -456,7 +456,7 @@ BOOL grey_list_dump(const char *path)
 					localtime_r(&pentry->last_access.tv_sec, &time_buff));
 			temp_string[len] = '\t';
 			len ++;
-			itoa(pentry->current_times, temp_string + len, 10);
+			sprintf(temp_string + len, "%d", pentry->current_times);
 			len += strlen(temp_string + len);
 			temp_string[len] = '\n';
 			len ++;

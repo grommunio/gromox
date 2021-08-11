@@ -345,6 +345,6 @@ BOOL config_file_get_uint(std::shared_ptr<CONFIG_FILE> cf, const char *key,
 BOOL config_file_set_int(std::shared_ptr<CONFIG_FILE> cf, const char *key, int value)
 {
 	char buf[HXSIZEOF_Z32];
-	itoa(value, buf, sizeof(buf));
+	snprintf(buf, arsizeof(buf), "%d", value);
 	return config_file_set_value(cf, key, buf);
 }

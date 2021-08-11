@@ -616,34 +616,6 @@ char *strcasestr(const char *s1, const char *s2)
 }
 #endif
 
-char* itoa(int value, char *string, int radix)
-{
-	int n, val, step;
-	char tmp;
-	int i = 0;
-
-	if (radix < 2 || radix > 16) {
-		return NULL;
-	}
-
-	do {
-		val	 = value % radix;
-		step = (val > 9) ? 39 : 0;
-		string[i] = 48 + val + step;
-		value /= radix;
-		i++;
-	} while (value>0);
-
-	string[i] = '\0';
-	n = i - 1;
-	for (i=0; i<n/2+1; i++) {
-		tmp = string[i];
-		string[i]	= string[n-i];
-		string[n-i] = tmp;
-	}
-	return string;
-}
-
 char* ltoa(long value, char *string, long radix)
 {
 	long n, val, step;
