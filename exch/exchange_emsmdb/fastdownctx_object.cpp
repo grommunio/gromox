@@ -234,20 +234,16 @@ BOOL FASTDOWNCTX_OBJECT::make_state(ICS_STATE *pstate)
 }
 
 BOOL FASTDOWNCTX_OBJECT::make_foldercontent(BOOL b_subfolders,
-    std::unique_ptr<FOLDER_CONTENT> &&pfldctnt)
+    std::unique_ptr<FOLDER_CONTENT> &&fc)
 {
 	auto pctx = this;
 	DOUBLE_LIST_NODE *pnode;
 	
-	if (FALSE == fastdownctx_object_record_flow_node(
-		&pctx->flow_list, FUNC_ID_PROPLIST,
-		(void*)&pfldctnt->proplist)) {
+	if (!fastdownctx_object_record_flow_node(&pctx->flow_list,
+	    FUNC_ID_PROPLIST, &fc->proplist))
 		return FALSE;
-	}
-	if (FALSE == fastdownctx_object_record_foldermessages(
-		&pctx->flow_list, &pfldctnt->fldmsgs)) {
+	if (!fastdownctx_object_record_foldermessages(&pctx->flow_list, &fc->fldmsgs))
 		return FALSE;	
-	}
 	if (TRUE == b_subfolders) {
 		if (FALSE == fastdownctx_object_record_flow_node(
 			&pctx->flow_list, FUNC_ID_UINT32,
@@ -259,11 +255,11 @@ BOOL FASTDOWNCTX_OBJECT::make_foldercontent(BOOL b_subfolders,
 			(void*)PROP_TAG_CONTAINERHIERARCHY)) {
 			return FALSE;
 		}
-		for (const auto &f : pfldctnt->psubflds)
+		for (const auto &f : fc->psubflds)
 			if (!fastdownctx_object_record_subfolder(&pctx->flow_list, &f))
 				return FALSE;	
 	}
-	pctx->pfldctnt = std::move(pfldctnt);
+	pctx->pfldctnt = std::move(fc);
 	pctx->progress_steps = 0;
 	pctx->total_steps = 0;
 	for (pnode=double_list_get_head(&pctx->flow_list); NULL!=pnode;
@@ -276,7 +272,7 @@ BOOL FASTDOWNCTX_OBJECT::make_foldercontent(BOOL b_subfolders,
 	return TRUE;
 }
 	
-BOOL FASTDOWNCTX_OBJECT::make_topfolder(std::unique_ptr<FOLDER_CONTENT> &&pfldctnt)
+BOOL FASTDOWNCTX_OBJECT::make_topfolder(std::unique_ptr<FOLDER_CONTENT> &&fc)
 {
 	auto pctx = this;
 	DOUBLE_LIST_NODE *pnode;
@@ -285,13 +281,13 @@ BOOL FASTDOWNCTX_OBJECT::make_topfolder(std::unique_ptr<FOLDER_CONTENT> &&pfldct
 		&pctx->flow_list, FUNC_ID_UINT32, (void*)STARTTOPFLD)) {
 		return FALSE;
 	}
-	if (!fastdownctx_object_record_foldercontentnodelprops(&pctx->flow_list, pfldctnt.get()))
+	if (!fastdownctx_object_record_foldercontentnodelprops(&pctx->flow_list, fc.get()))
 		return FALSE;
 	if (FALSE == fastdownctx_object_record_flow_node(
 		&pctx->flow_list, FUNC_ID_UINT32, (void*)ENDFOLDER)) {
 		return FALSE;
 	}
-	pctx->pfldctnt = std::move(pfldctnt);
+	pctx->pfldctnt = std::move(fc);
 	pctx->progress_steps = 0;
 	pctx->total_steps = 0;
 	for (pnode=double_list_get_head(&pctx->flow_list); NULL!=pnode;
@@ -304,17 +300,15 @@ BOOL FASTDOWNCTX_OBJECT::make_topfolder(std::unique_ptr<FOLDER_CONTENT> &&pfldct
 	return TRUE;
 }
 
-BOOL FASTDOWNCTX_OBJECT::make_messagelist(BOOL b_chginfo, EID_ARRAY *pmsglst)
+BOOL FASTDOWNCTX_OBJECT::make_messagelist(BOOL chginfo, EID_ARRAY *msglst)
 {
 	auto pctx = this;
 	DOUBLE_LIST_NODE *pnode;
 	
-	if (FALSE == fastdownctx_object_record_messagelist(
-		&pctx->flow_list, pmsglst)) {
+	if (!fastdownctx_object_record_messagelist(&pctx->flow_list, msglst))
 		return FALSE;
-	}
-	pctx->b_chginfo = b_chginfo;
-	pctx->pmsglst = pmsglst;
+	pctx->b_chginfo = chginfo;
+	pctx->pmsglst = msglst;
 	pctx->progress_steps = 0;
 	pctx->total_steps = 0;
 	for (pnode=double_list_get_head(&pctx->flow_list); NULL!=pnode;
