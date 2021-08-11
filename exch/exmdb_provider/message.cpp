@@ -3728,7 +3728,6 @@ static BOOL message_rule_new_message(BOOL b_oof,
 	DOUBLE_LIST *pfolder_list, DOUBLE_LIST *pmsg_list)
 {
 	DOUBLE_LIST dam_list, rule_list, ext_rule_list;
-	static const uint8_t fake_true = 1;
 	
 	double_list_init(&dam_list);
 	double_list_init(&rule_list);
@@ -3767,7 +3766,13 @@ static BOOL message_rule_new_message(BOOL b_oof,
 			continue;
 		}
 		for (size_t i = 0; i < pactions->count; ++i) {
-			auto l = [&]() -> bool {
+			auto l = [](BOOL b_oof, const char *from_address, const char *account,
+			            uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
+			            uint64_t message_id, const char *pdigest,
+			            DOUBLE_LIST *pfolder_list, DOUBLE_LIST *pmsg_list,
+			            RULE_ACTIONS *pactions, size_t i, RULE_NODE *prnode,
+			            BOOL &b_del, DOUBLE_LIST &dam_list) -> bool {
+			static const uint8_t fake_true = 1;
 			switch (pactions->pblock[i].type) {
 			case OP_MOVE:
 			case OP_COPY: {
@@ -4033,8 +4038,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
 						return FALSE;
 					HX_strupper(essdn_buff);
-					pvalue = common_util_username_to_addressbook_entryid(
-																account);
+					auto pvalue = common_util_username_to_addressbook_entryid(account);
 					if (NULL == pvalue) {
 						return FALSE;
 					}
@@ -4136,7 +4140,9 @@ static BOOL message_rule_new_message(BOOL b_oof,
 			}
 			return true;
 			};
-			if (!l())
+			if (!l(b_oof, from_address, account, cpid, psqlite,
+			    folder_id, message_id, pdigest, pfolder_list,
+			    pmsg_list, pactions, i, prnode, b_del, dam_list))
 				return false;
 		}
 		
@@ -4205,7 +4211,13 @@ static BOOL message_rule_new_message(BOOL b_oof,
 			return FALSE;
 		}
 		for (size_t i = 0; i < ext_actions.count; ++i) {
-			auto l = [&]() -> bool {
+			auto l = [](BOOL b_oof, const char *from_address, const char *account,
+			            uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
+			            uint64_t message_id, const char *pdigest,
+			            DOUBLE_LIST *pfolder_list, DOUBLE_LIST *pmsg_list,
+			            const EXT_RULE_ACTIONS &ext_actions, size_t i,
+			            RULE_NODE *prnode, BOOL &b_del) -> bool {
+			static const uint8_t fake_true = 1;
 			switch (ext_actions.pblock[i].type) {
 			case OP_MOVE:
 			case OP_COPY: {
@@ -4492,8 +4504,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					if (!common_util_username_to_essdn(account,
 					    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
 						return FALSE;
-					pvalue = common_util_username_to_addressbook_entryid(
-																account);
+					auto pvalue = common_util_username_to_addressbook_entryid(account);
 					if (NULL == pvalue) {
 						return FALSE;
 					}
@@ -4595,7 +4606,9 @@ static BOOL message_rule_new_message(BOOL b_oof,
 			}
 			return true;
 			};
-			if (!l())
+			if (!l(b_oof, from_address, account, cpid, psqlite,
+			    folder_id, message_id, pdigest, pfolder_list,
+			    pmsg_list, ext_actions, i, prnode, b_del))
 				return false;
 		}
 	}
