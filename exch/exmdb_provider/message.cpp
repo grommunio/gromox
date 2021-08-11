@@ -3911,6 +3911,36 @@ static bool op_defer(uint64_t folder_id, uint64_t message_id,
 	return true;
 }
 
+static bool op_forward(const char *from_address, const char *account,
+    uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
+    const char *pdigest, DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block,
+    size_t rule_idx, RULE_NODE *prnode)
+{
+	if (FALSE == exmdb_server_check_private()) {
+		return true;
+	}
+	auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
+	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
+		message_make_deferred_error_message(
+			account, psqlite, folder_id,
+			message_id, prnode->id,
+			RULE_ERROR_TOO_MANY_RCPTS,
+			block.type, rule_idx,
+			prnode->provider, pmsg_list);
+		if (FALSE == message_disable_rule(
+		    psqlite, FALSE, prnode->id)) {
+			return FALSE;
+		}
+		return true;
+	}
+	if (FALSE == message_forward_message(from_address,
+	    account, psqlite, cpid, message_id, pdigest,
+	    block.flavor, false,
+	    pfwddlgt->count, pfwddlgt->pblock))
+		return FALSE;
+	return true;
+}
+
 static bool op_switcheroo(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
@@ -3953,28 +3983,9 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 			LLU(message_id), LLU(folder_id));
 		break;
 	case OP_FORWARD: {
-		if (FALSE == exmdb_server_check_private()) {
-			return true;
-		}
-		auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
-		if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
-			message_make_deferred_error_message(
-				account, psqlite, folder_id,
-				message_id, prnode->id,
-				RULE_ERROR_TOO_MANY_RCPTS,
-				block.type, rule_idx,
-				prnode->provider, pmsg_list);
-			if (FALSE == message_disable_rule(
-			    psqlite, FALSE, prnode->id)) {
-				return FALSE;
-			}
-			return true;
-		}
-		if (FALSE == message_forward_message(from_address,
-		    account, psqlite, cpid, message_id, pdigest,
-		    block.flavor, false,
-		    pfwddlgt->count, pfwddlgt->pblock))
-			return FALSE;
+		if (!op_forward(from_address, account, cpid, psqlite, folder_id,
+		    message_id, pdigest, pmsg_list, block, rule_idx, prnode))
+			return false;
 		break;
 	}
 	case OP_DELEGATE: {
