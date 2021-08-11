@@ -3356,7 +3356,7 @@ static BOOL message_forward_message(const char *from_address,
 			return FALSE;
 	}
 	if (NULL != pdigest) {
-		get_digest(pdigest, "file", mid_string, 128);
+		get_digest(pdigest, "file", mid_string, arsizeof(mid_string));
 		snprintf(tmp_path, arsizeof(tmp_path), "%s/eml/%s",
 			exmdb_server_get_dir(), mid_string);
 		wrapfd fd = open(tmp_path, O_RDONLY);
@@ -4100,7 +4100,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					pfwddlgt->count, pfwddlgt->pblock, &rcpt_list)) {
 					return FALSE;
 				}
-				get_digest(pdigest, "file", mid_string1, 128);
+				get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
 				snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
 					exmdb_server_get_dir(), mid_string1);
 				for (pnode1=double_list_get_head(&rcpt_list);
@@ -4515,7 +4515,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					pextfwddlgt->count, pextfwddlgt->pblock, &rcpt_list)) {
 					return FALSE;
 				}
-				get_digest(pdigest, "file", mid_string1, 128);
+				get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
 				snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
 					exmdb_server_get_dir(), mid_string1);
 				for (pnode1=double_list_get_head(&rcpt_list);
@@ -4585,7 +4585,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 			return FALSE;
 		}
 		if (NULL != pdigest) {
-			get_digest(pdigest, "file", mid_string1, 128);
+			get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
 			snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
 				exmdb_server_get_dir(), mid_string1);
 			remove(tmp_path1);
@@ -4795,8 +4795,8 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		*presult = 2;
 		return TRUE;
 	}
-	if (NULL != pdigest && TRUE == get_digest(
-		pdigest, "file", mid_string, 128)) {
+	if (pdigest != nullptr &&
+	    get_digest(pdigest, "file", mid_string, arsizeof(mid_string))) {
 		strcpy(digest_buff, pdigest);
 		set_digest(digest_buff, MAX_DIGLEN, "file", "\"\"");
 		snprintf(tmp_path, arsizeof(tmp_path), "%s/ext/%s", exmdb_server_get_dir(), mid_string);

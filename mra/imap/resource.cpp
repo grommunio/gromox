@@ -243,18 +243,18 @@ static int resource_construct_lang_list(std::list<LANG_FOLDER> &plist)
 		HX_strrtrim(plang->lang);
 		HX_strltrim(plang->lang);
 		if (0 == strlen(plang->lang) ||
-			FALSE == get_digest(ptr + 1, "default-charset",
-			plang->charset, 256) || 0 == strlen(plang->charset) ||
-			FALSE == get_digest(ptr + 1, "draft", temp_buff, 256) ||
+		    !get_digest(ptr + 1, "default-charset", plang->charset, arsizeof(plang->charset)) ||
+		    strlen(plang->charset) == 0 ||
+		    !get_digest(ptr + 1, "draft", temp_buff, arsizeof(temp_buff)) ||
 			0 == strlen(temp_buff) ||
 			0 != decode64(temp_buff, strlen(temp_buff), plang->draft, &temp_len) ||
-			FALSE == get_digest(ptr + 1, "sent", temp_buff, 256) ||
+		    !get_digest(ptr + 1, "sent", temp_buff, arsizeof(temp_buff)) ||
 			0 == strlen(temp_buff) ||
 			0 != decode64(temp_buff, strlen(temp_buff), plang->sent, &temp_len) ||
-			FALSE == get_digest(ptr + 1, "trash", temp_buff, 256) ||
+		    !get_digest(ptr + 1, "trash", temp_buff, arsizeof(temp_buff)) ||
 			0 == strlen(temp_buff) ||
 			0 != decode64(temp_buff, strlen(temp_buff), plang->trash, &temp_len) ||
-			FALSE == get_digest(ptr + 1, "junk", temp_buff, 256) ||
+		    !get_digest(ptr + 1, "junk", temp_buff, arsizeof(temp_buff)) ||
 			0 == strlen(temp_buff) ||
 			0 != decode64(temp_buff, strlen(temp_buff), plang->junk, &temp_len)) {
 			printf("[resource]: line %d format error in %s\n", total + 1, filename);

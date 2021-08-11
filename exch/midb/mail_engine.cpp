@@ -727,9 +727,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					}
 					b_loaded = TRUE;
 				}
-				if (TRUE == get_digest(digest_buff, "cc", temp_buff,
-					sizeof(temp_buff)) && 0 == decode64(temp_buff,
-					strlen(temp_buff), temp_buff1, &temp_len)) {
+				if (get_digest(digest_buff, "cc", temp_buff, arsizeof(temp_buff)) &&
+				    decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
 					ret_string = mail_engine_ct_decode_mime(charset, temp_buff1);
 					if (NULL != ret_string) {
@@ -782,9 +781,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					}
 					b_loaded = TRUE;
 				}
-				if (TRUE == get_digest(digest_buff, "from", temp_buff,
-					sizeof(temp_buff)) && 0 == decode64(temp_buff,
-					strlen(temp_buff), temp_buff1, &temp_len)) {
+				if (get_digest(digest_buff, "from", temp_buff, arsizeof(temp_buff)) &&
+				    decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
 					ret_string = mail_engine_ct_decode_mime(charset, temp_buff1);
 					if (NULL != ret_string) {
@@ -950,9 +948,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					}
 					b_loaded = TRUE;
 				}
-				if (TRUE == get_digest(digest_buff, "subject", temp_buff,
-					sizeof(temp_buff)) && 0 == decode64(temp_buff,
-					strlen(temp_buff), temp_buff1, &temp_len)) {
+				if (get_digest(digest_buff, "subject", temp_buff, arsizeof(temp_buff)) &&
+				    decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
 					ret_string = mail_engine_ct_decode_mime(charset, temp_buff1);
 					if (NULL != ret_string) {
@@ -972,9 +969,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					}
 					b_loaded = TRUE;
 				}
-				if (TRUE == get_digest(digest_buff, "cc", temp_buff,
-					sizeof(temp_buff)) && 0 == decode64(temp_buff,
-					strlen(temp_buff), temp_buff1, &temp_len)) {
+				if (get_digest(digest_buff, "cc", temp_buff, arsizeof(temp_buff)) &&
+				    decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
 					ret_string = mail_engine_ct_decode_mime(
 										charset, temp_buff1);
@@ -989,9 +985,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				if (TRUE == b_result1) {
 					break;
 				}
-				if (TRUE == get_digest(digest_buff, "from", temp_buff,
-					sizeof(temp_buff)) && 0 == decode64(temp_buff,
-					strlen(temp_buff), temp_buff1, &temp_len)) {
+				if (get_digest(digest_buff, "from", temp_buff, arsizeof(temp_buff)) &&
+				    decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
 					ret_string = mail_engine_ct_decode_mime(
 										charset, temp_buff1);
@@ -1006,9 +1001,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				if (TRUE == b_result1) {
 					break;
 				}
-				if (TRUE == get_digest(digest_buff, "subject", temp_buff,
-					sizeof(temp_buff)) && 0 == decode64(temp_buff,
-					strlen(temp_buff), temp_buff1, &temp_len)) {
+				if (get_digest(digest_buff, "subject", temp_buff, arsizeof(temp_buff)) &&
+				    decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
 					ret_string = mail_engine_ct_decode_mime(
 										charset, temp_buff1);
@@ -1023,9 +1017,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				if (TRUE == b_result1) {
 					break;
 				}
-				if (TRUE == get_digest(digest_buff, "to", temp_buff,
-					sizeof(temp_buff)) && 0 == decode64(temp_buff,
-					strlen(temp_buff), temp_buff1, &temp_len)) {
+				if (get_digest(digest_buff, "to", temp_buff, arsizeof(temp_buff)) &&
+				    decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
 					ret_string = mail_engine_ct_decode_mime(
 										charset, temp_buff1);
@@ -1065,9 +1058,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					}
 					b_loaded = TRUE;
 				}
-				if (TRUE == get_digest(digest_buff, "to", temp_buff,
-					sizeof(temp_buff)) && 0 == decode64(temp_buff,
-					strlen(temp_buff), temp_buff1, &temp_len)) {
+				if (get_digest(digest_buff, "to", temp_buff, arsizeof(temp_buff)) &&
+				    decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
 					ret_string = mail_engine_ct_decode_mime(charset, temp_buff1);
 					if (NULL != ret_string) {
@@ -1939,13 +1931,13 @@ static void mail_engine_extract_digest_fields(const char *digest,
 	EMAIL_ADDR temp_address;
 	
 	subject[0] = '\0';
-	if (TRUE == get_digest(digest, "subject", temp_buff, 1024)) {
+	if (get_digest(digest, "subject", temp_buff, arsizeof(temp_buff))) {
 		if (decode64(temp_buff, strlen(temp_buff), subject, &out_len) != 0)
 			/* Decode failed */
 			subject[0] = '\0';
 	}
 	from[0] = '\0';
-	if (TRUE == get_digest(digest, "from", temp_buff, 1024)) {
+	if (get_digest(digest, "from", temp_buff, arsizeof(temp_buff))) {
 		if (0 == decode64(temp_buff, strlen(temp_buff),
 			temp_buff1, &out_len)) {
 			memset(&temp_address, 0, sizeof(temp_address));
@@ -1955,7 +1947,7 @@ static void mail_engine_extract_digest_fields(const char *digest,
 		}
 	}
 	rcpt[0] = '\0';
-	if (TRUE == get_digest(digest, "to", temp_buff, 64*1024)) {
+	if (get_digest(digest, "to", temp_buff, arsizeof(temp_buff))) {
 		if (0 == decode64(temp_buff, strlen(temp_buff),
 			temp_buff1, &out_len)) {
 			for (size_t i = 0; i < out_len; ++i) {
@@ -1973,9 +1965,8 @@ static void mail_engine_extract_digest_fields(const char *digest,
 		}
 	}
 	*psize = 0;
-	if (TRUE == get_digest(digest, "size", temp_buff, 32)) {
+	if (get_digest(digest, "size", temp_buff, arsizeof(temp_buff)))
 		*psize = atol(temp_buff);
-	}
 }
 
 static void mail_engine_insert_message(sqlite3_stmt *pstmt,
