@@ -4,7 +4,7 @@ delivery\-queue \(em LMTP/SMTP frontend for local delivery
 .SH Synopsis
 \fBdelivery\-queue\fP [\fB\-c\fP \fIconfig\fP]
 .SH Description
-delivery\-queue is an additional mail queue in front of delivery\(8gx\).
+delivery\-queue is an additional mail queue in front of delivery(8gx).
 It may be removed in a future version.
 .SH Options
 .TP
