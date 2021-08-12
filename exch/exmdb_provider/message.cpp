@@ -4592,6 +4592,72 @@ static bool opx_switcheroo(BOOL b_oof, const char *from_address,
 	return true;
 }
 
+static bool opx_process(BOOL b_oof, const char *from_address,
+    const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
+    uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
+    DOUBLE_LIST *pmsg_list, DOUBLE_LIST_NODE *pnode, BOOL &b_del, BOOL &b_exit)
+{
+	auto prnode = static_cast<RULE_NODE *>(pnode->pdata);
+	if (TRUE == b_exit && 0 == (prnode->state
+	    & RULE_STATE_ONLY_WHEN_OOF)) {
+		return true;
+	}
+	void *pvalue = nullptr;
+	if (FALSE == common_util_get_property(
+	    MESSAGE_PROPERTIES_TABLE, prnode->id, 0, psqlite,
+	    PROP_TAG_EXTENDEDRULEMESSAGECONDITION, &pvalue)) {
+		return FALSE;
+	}
+	auto bv = static_cast<BINARY *>(pvalue);
+	if (pvalue == nullptr || bv->cb == 0)
+		return true;
+	EXT_PULL ext_pull;
+	ext_pull.init(bv->pb, bv->cb, common_util_alloc,
+		EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
+	NAMEDPROPERTY_INFOMATION propname_info;
+	RESTRICTION restriction;
+	if (ext_pull.g_namedprop_info(&propname_info) != EXT_ERR_SUCCESS ||
+	    ext_pull.g_restriction(&restriction) != EXT_ERR_SUCCESS)
+		return true;
+	if (FALSE == message_replace_restriction_propid(
+	    psqlite, &propname_info, &restriction)) {
+		return FALSE;
+	}
+	if (FALSE == common_util_evaluate_message_restriction(
+	    psqlite, 0, message_id, &restriction)) {
+		return true;
+	}
+	if (prnode->state & RULE_STATE_EXIT_LEVEL) {
+		b_exit = TRUE;
+	}
+	if (FALSE == common_util_get_property(
+	    MESSAGE_PROPERTIES_TABLE, prnode->id, 0, psqlite,
+	    PROP_TAG_EXTENDEDRULEMESSAGEACTIONS, &pvalue)) {
+		return FALSE;
+	}
+	if (NULL == pvalue) {
+		return true;
+	}
+	ext_pull.init(bv->pb, bv->cb, common_util_alloc,
+		EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
+	EXT_RULE_ACTIONS ext_actions;
+	uint32_t version = 0;
+	if (ext_pull.g_namedprop_info(&propname_info) != EXT_ERR_SUCCESS ||
+	    ext_pull.g_uint32(&version) != EXT_ERR_SUCCESS ||
+	    version != 1 ||
+	    ext_pull.g_ext_rule_actions(&ext_actions) != EXT_ERR_SUCCESS)
+		return true;
+	if (FALSE == message_replace_actions_propid(
+	    psqlite, &propname_info, &ext_actions)) {
+		return FALSE;
+	}
+	for (size_t i = 0; i < ext_actions.count; ++i)
+		if (!opx_switcheroo(b_oof, from_address, account, cpid, psqlite,
+		    folder_id, message_id, pdigest, pfolder_list,
+		    pmsg_list, ext_actions.pblock[i], i, prnode, b_del))
+			return false;
+	return true;
+}
 /* extended rules do not produce DAM or DEM */
 static BOOL message_rule_new_message(BOOL b_oof,
 	const char *from_address, const char *account,
@@ -4651,67 +4717,12 @@ static BOOL message_rule_new_message(BOOL b_oof,
 		}
 	}
 	for (auto pnode = double_list_get_head(&ext_rule_list); pnode != nullptr;
-		pnode=double_list_get_after(&ext_rule_list, pnode)) {
-		auto prnode = static_cast<RULE_NODE *>(pnode->pdata);
-		if (TRUE == b_exit && 0 == (prnode->state
-			& RULE_STATE_ONLY_WHEN_OOF)) {
-			continue;
-		}
-		void *pvalue = nullptr;
-		if (FALSE == common_util_get_property(
-			MESSAGE_PROPERTIES_TABLE, prnode->id, 0, psqlite,
-			PROP_TAG_EXTENDEDRULEMESSAGECONDITION, &pvalue)) {
-			return FALSE;
-		}
-		auto bv = static_cast<BINARY *>(pvalue);
-		if (pvalue == nullptr || bv->cb == 0)
-			continue;
-		EXT_PULL ext_pull;
-		ext_pull.init(bv->pb, bv->cb, common_util_alloc,
-			EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
-		NAMEDPROPERTY_INFOMATION propname_info;
-		RESTRICTION restriction;
-		if (ext_pull.g_namedprop_info(&propname_info) != EXT_ERR_SUCCESS ||
-		    ext_pull.g_restriction(&restriction) != EXT_ERR_SUCCESS)
-			continue;
-		if (FALSE == message_replace_restriction_propid(
-			psqlite, &propname_info, &restriction)) {
-			return FALSE;
-		}
-		if (FALSE == common_util_evaluate_message_restriction(
-			psqlite, 0, message_id, &restriction)) {
-			continue;
-		}
-		if (prnode->state & RULE_STATE_EXIT_LEVEL) {
-			b_exit = TRUE;
-		}
-		if (FALSE == common_util_get_property(
-			MESSAGE_PROPERTIES_TABLE, prnode->id, 0, psqlite,
-			PROP_TAG_EXTENDEDRULEMESSAGEACTIONS, &pvalue)) {
-			return FALSE;
-		}
-		if (NULL == pvalue) {
-			continue;
-		}
-		ext_pull.init(bv->pb, bv->cb, common_util_alloc,
-			EXT_FLAG_WCOUNT | EXT_FLAG_UTF16);
-		EXT_RULE_ACTIONS ext_actions;
-		uint32_t version = 0;
-		if (ext_pull.g_namedprop_info(&propname_info) != EXT_ERR_SUCCESS ||
-		    ext_pull.g_uint32(&version) != EXT_ERR_SUCCESS ||
-		    version != 1 ||
-		    ext_pull.g_ext_rule_actions(&ext_actions) != EXT_ERR_SUCCESS)
-			continue;
-		if (FALSE == message_replace_actions_propid(
-			psqlite, &propname_info, &ext_actions)) {
-			return FALSE;
-		}
-		for (size_t i = 0; i < ext_actions.count; ++i)
-			if (!opx_switcheroo(b_oof, from_address, account, cpid, psqlite,
-			    folder_id, message_id, pdigest, pfolder_list,
-			    pmsg_list, ext_actions.pblock[i], i, prnode, b_del))
-				return false;
-	}
+	     pnode = double_list_get_after(&ext_rule_list, pnode))
+		if (!opx_process(b_oof, from_address, account, cpid, psqlite,
+		    folder_id, message_id, pdigest, pfolder_list, pmsg_list,
+		    pnode, b_del, b_exit))
+			return false;
+
 	if (TRUE == b_del) {
 		void *pvalue = nullptr;
 		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
