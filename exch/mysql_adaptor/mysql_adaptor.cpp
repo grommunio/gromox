@@ -1131,8 +1131,11 @@ BOOL mysql_adaptor_check_user(const char *username, char *path)
 	if (pmyres == nullptr)
 		return false;
 	conn.finish();
-	if (pmyres.num_rows() != 1) {
+	if (pmyres.num_rows() == 0) {
 		return FALSE;
+	} else if (pmyres.num_rows() > 1) {
+		fprintf(stderr, "W-1510: userdb conflict: <%s> is in both \"users\" and \"aliases\"\n", username);
+		return false;
 	} else {
 		auto myrow = pmyres.fetch_row();
 		if (0 != atoi(myrow[0])) {
