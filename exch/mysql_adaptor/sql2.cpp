@@ -245,7 +245,7 @@ static int userlist_parse(sqlconn &conn, const char *query,
 
 int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) try
 {
-	char query[1024];
+	char query[360];
 
 	auto conn = g_sqlconn_pool.get_wait();
 	if (conn.res == nullptr)
@@ -260,7 +260,8 @@ int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) tr
 	snprintf(query, GX_ARRAY_SIZE(query),
 	         "SELECT u.id, p.proptag, p.propval_bin, p.propval_str FROM users AS u "
 	         "INNER JOIN user_properties AS p ON u.id=p.user_id "
-	         "INNER JOIN members AS m ON m.class_id=%d AND m.username=u.username", class_id);
+	         "INNER JOIN members AS m ON m.class_id=%d AND m.username=u.username "
+	         "ORDER BY p.user_id, p.proptag, p.order_id", class_id);
 	propmap_t pmap;
 	propmap_load(conn.res, query, pmap);
 
@@ -280,7 +281,7 @@ int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) tr
 
 int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) try
 {
-	char query[1024];
+	char query[328];
 
 	auto conn = g_sqlconn_pool.get_wait();
 	if (conn.res == nullptr)
@@ -293,7 +294,8 @@ int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) 
 
 	snprintf(query, GX_ARRAY_SIZE(query),
 	         "SELECT u.id, p.proptag, p.propval_bin, p.propval_str FROM users AS u "
-	         "INNER JOIN user_properties AS p ON u.domain_id=%d AND u.id=p.user_id", domain_id);
+	         "INNER JOIN user_properties AS p ON u.domain_id=%d AND u.id=p.user_id "
+	         "ORDER BY p.user_id, p.proptag, p.order_id", domain_id);
 	propmap_t pmap;
 	propmap_load(conn.res, query, pmap);
 
@@ -313,7 +315,7 @@ int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) 
 
 int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) try
 {
-	char query[1024];
+	char query[388];
 
 	auto conn = g_sqlconn_pool.get_wait();
 	if (conn.res == nullptr)
@@ -330,7 +332,8 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) tr
 	snprintf(query, GX_ARRAY_SIZE(query),
 	         "SELECT u.id, p.proptag, p.propval_bin, p.propval_str FROM users AS u "
 	         "INNER JOIN user_properties AS p ON u.group_id=%d AND u.id=p.user_id "
-	         "WHERE (SELECT COUNT(*) AS num FROM members AS m WHERE u.username=m.username)=0",
+	         "WHERE (SELECT COUNT(*) AS num FROM members AS m WHERE u.username=m.username)=0 "
+	         "ORDER BY p.user_id, p.proptag, p.order_id",
 	         group_id);
 	propmap_t pmap;
 	propmap_load(conn.res, query, pmap);
