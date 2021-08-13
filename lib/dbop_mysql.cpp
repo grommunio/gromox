@@ -482,9 +482,10 @@ static const char tbl_uprops_top[] =
 "CREATE TABLE `user_properties` ("
 "  `user_id` int(10) unsigned NOT NULL,"
 "  `proptag` int(10) unsigned NOT NULL,"
+"  `order_id` int(10) unsigned DEFAULT 1,"
 "  `propval_bin` varbinary(4096) DEFAULT NULL,"
 "  `propval_str` varchar(4096) DEFAULT NULL,"
-"  PRIMARY KEY (`user_id`,`proptag`),"
+"  PRIMARY KEY (`user_id`,`proptag`,`order_id`),"
 "  CONSTRAINT `user_properties_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
 ") DEFAULT CHARSET=utf8mb4";
 
@@ -635,6 +636,8 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{77, "ALTER TABLE `domains` ADD COLUMN `sync_policy` text CHARACTER SET ascii DEFAULT NULL"},
 	{78, "ALTER TABLE `users` ADD COLUMN `chat_id` varchar(26)"},
 	{79, "ALTER TABLE `domains` ADD COLUMN `chat_id` varchar(26)"},
+	{80, "ALTER TABLE `user_properties` ADD COLUMN `order_id` int(10) unsigned DEFAULT 1 AFTER `proptag`"},
+	{81, "ALTER TABLE `user_properties` DROP PRIMARY KEY, ADD PRIMARY KEY (`user_id`, `proptag`, `order_id`)"},
 	{0, nullptr},
 };
 

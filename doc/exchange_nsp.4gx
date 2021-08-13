@@ -32,14 +32,11 @@ PR_DEPARTMENT: This property is synthesized from the department
 that a user has been assigned to (cf. SQL table "users", column
 "group_id", and SQL table "group", column "title").
 .PP
-For user-defined properties that are read from SQL (cf. table
+For user-attached properties that are read from SQL (cf. table
 "user_properties"), exchange_nsp (as well as zcore(8gx)'s AB) only
 handles a subset of property types: PT_BOOLEAN, PT_SHORT, PT_LONG,
 PT_I8, PT_SYSTIME, PT_BINARY, PT_UNICODE/STRING8 and
 PT_MV_UNICODE/STRING8.
-.PP
-Multi-valued properties are only supported up to 1 element due to current
-limitations in the SQL schema.
 .SH Normative references
 .IP \(bu 4
 MS-OXNSPI: Exchange Server Name Service Provider Interface (NSPI) Protocol
