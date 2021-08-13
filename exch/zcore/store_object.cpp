@@ -507,7 +507,7 @@ static BOOL store_object_check_readonly_property(
 	switch (proptag) {
 	case PR_ACCESS:
 	case PR_ACCESS_LEVEL:
-	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
+	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
 	case PROP_TAG_CODEPAGEID:
 	case PROP_TAG_CONTENTCOUNT:
 	case PROP_TAG_DEFAULTSTORE:
@@ -597,7 +597,7 @@ BOOL STORE_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		pproptags->pproptag[pproptags->count] = PR_EMAIL_ADDRESS;
 		pproptags->count ++;
 		pproptags->pproptag[pproptags->count] =
-		PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE;
+		PR_EMS_AB_DISPLAY_NAME_PRINTABLE;
 		pproptags->count ++;
 		pproptags->pproptag[pproptags->count++] = PR_FINDER_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_IPM_OUTBOX_ENTRYID;
@@ -852,7 +852,7 @@ static BOOL store_object_get_calculated_property(
 			sprintf(static_cast<char *>(*ppvalue), "Public Folders - %s", pstore->account);
 		}
 		return TRUE;
-	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
+	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
 		if (!pstore->b_private)
 			return FALSE;
 		*ppvalue = common_util_alloc(256);

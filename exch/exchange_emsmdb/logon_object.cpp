@@ -500,9 +500,7 @@ BOOL LOGON_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		pproptags->pproptag[pproptags->count++] = PR_MAX_SUBMIT_MESSAGE_SIZE;
 		pproptags->pproptag[pproptags->count] = PR_EMAIL_ADDRESS;
 		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-		PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PR_EMS_AB_DISPLAY_NAME_PRINTABLE;
 	} else {
 		pproptags->pproptag[pproptags->count] =
 						PROP_TAG_HIERARCHYSERVER;
@@ -544,8 +542,8 @@ static BOOL lo_check_readonly_property(const LOGON_OBJECT *plogon, uint32_t prop
 		return TRUE;
 	switch (proptag) {
 	case PR_ACCESS_LEVEL:
-	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
-	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE_STRING8:
+	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
+	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A:
 	case PROP_TAG_CODEPAGEID:
 	case PROP_TAG_CONTENTCOUNT:
 	case PROP_TAG_DELETEAFTERSUBMIT:
@@ -642,8 +640,8 @@ static BOOL logon_object_get_calculated_property(
 		}
 		**reinterpret_cast<uint32_t **>(ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
-	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
-	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE_STRING8:
+	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
+	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A:
 		if (!plogon->check_private())
 			return FALSE;
 		*ppvalue = common_util_alloc(256);

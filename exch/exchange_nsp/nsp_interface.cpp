@@ -85,8 +85,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	node_type = ab_tree_get_node_type(pnode);
 	/* Properties that need to be force-generated */
 	switch (proptag) {
-	case PROP_TAG_ADDRESSBOOKHOMEMESSAGEDATABASE:
-	case PROP_TAG_ADDRESSBOOKHOMEMESSAGEDATABASE_STRING8:
+	case PR_EMS_AB_HOME_MDB:
+	case PR_EMS_AB_HOME_MDB_A:
 		if (NODE_TYPE_ROOM != node_type &&
 		    node_type != NODE_TYPE_PERSON &&
 			NODE_TYPE_EQUIPMENT != node_type) {
@@ -106,7 +106,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			gx_strlcpy(pprop->value.pstr, dn, pbsize);
 		}
 		return ecSuccess;
-	case PROP_TAG_ADDRESSBOOKOBJECTGUID:
+	case PR_EMS_AB_OBJECT_GUID:
 		ab_tree_node_to_guid(pnode, &temp_guid);
 		if (NULL == pbuff) {
 			pprop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, 16);
@@ -117,7 +117,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		common_util_guid_to_binary(&temp_guid, &pprop->value.bin);
 		return ecSuccess;
-	case PROP_TAG_ADDRESSBOOKCONTAINERID:
+	case PR_EMS_AB_CONTAINERID:
 		pnode = simple_tree_node_get_parent(pnode);
 		pprop->value.l = pnode == nullptr ? 0 : ab_tree_get_node_minid(pnode);
 		return ecSuccess;
@@ -238,7 +238,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		[[fallthrough]];
 	case PR_DISPLAY_NAME:
-	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
+	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
 		ab_tree_get_display_name(pnode, codepage, dn, arsizeof(dn));
 		if ('\0' == dn[0]) {
 			return ecNotFound;
@@ -262,7 +262,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		[[fallthrough]];
 	case PR_DISPLAY_NAME_A:
-	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE_STRING8:
+	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A:
 		ab_tree_get_display_name(pnode, codepage, dn, arsizeof(dn));
 		if ('\0' == dn[0]) {
 			return ecNotFound;
@@ -406,8 +406,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		strcpy(pprop->value.pstr, dn);
 		return ecSuccess;
-	case PROP_TAG_ADDRESSBOOKPROXYADDRESSES:
-	case PROP_TAG_ADDRESSBOOKPROXYADDRESSES_STRING8: {
+	case PR_EMS_AB_PROXY_ADDRESSES:
+	case PR_EMS_AB_PROXY_ADDRESSES_A: {
 		if (NODE_TYPE_MLIST == node_type) {
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
 		} else if (node_type == NODE_TYPE_PERSON ||
@@ -445,8 +445,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		return ecSuccess;
 	}
-	case PROP_TAG_ADDRESSBOOKNETWORKADDRESS:
-	case PROP_TAG_ADDRESSBOOKNETWORKADDRESS_STRING8: {
+	case PR_EMS_AB_NETWORK_ADDRESS:
+	case PR_EMS_AB_NETWORK_ADDRESS_A: {
 		auto rpc_info = get_rpc_info();
 		temp_len = strlen(rpc_info.ep_host);
 		pprop->value.string_array.count = 2;
@@ -872,7 +872,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 			*pprows = NULL;
 			return ecMAPIOOM;
 		}
-		nt->pproptag[0] = PROP_TAG_ADDRESSBOOKCONTAINERID;
+		nt->pproptag[0] = PR_EMS_AB_CONTAINERID;
 		nt->pproptag[1] = PR_OBJECT_TYPE;
 		nt->pproptag[2] = PR_DISPLAY_TYPE;
 		nt->pproptag[3] = PR_DISPLAY_NAME_A;
@@ -1065,9 +1065,8 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 			return ecError;
 		}
 	} else if (SORT_TYPE_PHONETICDISPLAYNAME == pstat->sort_type) {
-		if (PROP_TAG_ADDRESSBOOKPHONETICDISPLAYNAME != ptarget->proptag
-			&& PROP_TAG_ADDRESSBOOKPHONETICDISPLAYNAME_STRING8 != 
-			ptarget->proptag) {
+		if (ptarget->proptag != PR_EMS_AB_PHONETIC_DISPLAY_NAME &&
+		    ptarget->proptag != PR_EMS_AB_PHONETIC_DISPLAY_NAME_A) {
 			*pprows = NULL;
 			return ecError;
 		}
@@ -1088,7 +1087,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 			*pprows = NULL;
 			return ecMAPIOOM;
 		}
-		nt->pproptag[0] = PROP_TAG_ADDRESSBOOKCONTAINERID;
+		nt->pproptag[0] = PR_EMS_AB_CONTAINERID;
 		nt->pproptag[1] = PR_OBJECT_TYPE;
 		nt->pproptag[2] = PR_DISPLAY_TYPE;
 		nt->pproptag[3] = PR_DISPLAY_NAME_A;
@@ -1617,7 +1616,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		return ecError;
 	}
 	
-	if (PROP_TAG_ADDRESSBOOKPUBLICDELEGATES == pstat->container_id) {
+	if (pstat->container_id == PR_EMS_AB_PUBLIC_DELEGATES) {
 		pnode = ab_tree_minid_to_node(pbase.get(), pstat->cur_rec);
 		if (NULL == pnode) {
 			result = ecInvalidBookmark;
@@ -1899,7 +1898,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 	t[z++] = U(PR_DISPLAY_NAME);
 	t[z++] = U(PROP_TAG_ADDRESSTYPE);
 	t[z++] = U(PR_EMAIL_ADDRESS);
-	t[z++] = U(PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE);
+	t[z++] = U(PR_EMS_AB_DISPLAY_NAME_PRINTABLE);
 	t[z++] = PR_OBJECT_TYPE;
 	t[z++] = PR_DISPLAY_TYPE;
 	t[z++] = PR_DISPLAY_TYPE_EX;
@@ -1911,7 +1910,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 	t[z++] = PR_MAPPING_SIGNATURE;
 	t[z++] = PROP_TAG_SENDRICHINFO;
 	t[z++] = PROP_TAG_TEMPLATEID;
-	t[z++] = PROP_TAG_ADDRESSBOOKOBJECTGUID;
+	t[z++] = PR_EMS_AB_OBJECT_GUID;
 	switch (node_type) {
 	case NODE_TYPE_DOMAIN:
 	case NODE_TYPE_GROUP:
@@ -1932,8 +1931,8 @@ static int nsp_interface_get_default_proptags(int node_type,
 		t[z++] = U(PR_SMTP_ADDRESS);
 		t[z++] = U(PROP_TAG_ACCOUNT);
 		t[z++] = U(PROP_TAG_TRANSMITTABLEDISPLAYNAME);
-		t[z++] = U(PROP_TAG_ADDRESSBOOKPROXYADDRESSES);
-		t[z++] = U(PROP_TAG_ADDRESSBOOKHOMEMESSAGEDATABASE);
+		t[z++] = U(PR_EMS_AB_PROXY_ADDRESSES);
+		t[z++] = U(PR_EMS_AB_HOME_MDB);
 		t[z++] = PR_CREATION_TIME;
 		if (node_type == NODE_TYPE_PERSON)
 			t[z++] = PROP_TAG_THUMBNAILPHOTO;
@@ -1942,7 +1941,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 		t[z++] = U(PR_SMTP_ADDRESS);
 		t[z++] = U(PROP_TAG_COMPANYNAME);
 		t[z++] = U(PROP_TAG_DEPARTMENTNAME);
-		t[z++] = U(PROP_TAG_ADDRESSBOOKPROXYADDRESSES);
+		t[z++] = U(PR_EMS_AB_PROXY_ADDRESSES);
 		t[z++] = PR_CREATION_TIME;
 		break;
 	case NODE_TYPE_FOLDER:
@@ -2281,8 +2280,7 @@ static BOOL nsp_interface_build_specialtable(NSP_PROPROW *prow,
 	prow->pprops[2].reserved = 0;
 	prow->pprops[2].value.l = depth;
 	
-	/* PROP_TAG_ADDRESSBOOKCONTAINERID */
-	prow->pprops[3].proptag = PROP_TAG_ADDRESSBOOKCONTAINERID;
+	prow->pprops[3].proptag = PR_EMS_AB_CONTAINERID;
 	prow->pprops[3].reserved = 0;
 	prow->pprops[3].value.l = container_id;
 	
@@ -2313,14 +2311,12 @@ static BOOL nsp_interface_build_specialtable(NSP_PROPROW *prow,
 		}
 	}
 	
-	/* PROP_TAG_ADDRESSBOOKISMASTER */
-	prow->pprops[5].proptag = PROP_TAG_ADDRESSBOOKISMASTER;
+	prow->pprops[5].proptag = PR_EMS_AB_IS_MASTER;
 	prow->pprops[5].reserved = 0;
 	prow->pprops[5].value.b = 0;
 	
-	/* PROP_TAG_ADDRESSBOOKPARENTENTRYID */
 	if (0 != depth) {
-		prow->pprops[6].proptag = PROP_TAG_ADDRESSBOOKPARENTENTRYID;
+		prow->pprops[6].proptag = PR_EMS_AB_PARENT_ENTRYID;
 		prow->pprops[6].reserved = 0;
 		if (FALSE == common_util_permanent_entryid_to_binary(
 			ppermeid_parent, &prow->pprops[6].value.bin)) {
@@ -2503,9 +2499,8 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	if (0 == mid) {
 		return ecInvalidObject;
 	}
-	if (PROP_TAG_ADDRESSBOOKPUBLICDELEGATES != proptag) {
+	if (proptag != PR_EMS_AB_PUBLIC_DELEGATES)
 		return ecNotSupported;
-	}
 	auto rpc_info = get_rpc_info();
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
@@ -2666,10 +2661,10 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	t[11] = U(PROP_TAG_ADDRESSTYPE);
 	t[12] = U(PR_SMTP_ADDRESS);
 	t[13] = U(PR_EMAIL_ADDRESS);
-	t[14] = U(PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE);
+	t[14] = U(PR_EMS_AB_DISPLAY_NAME_PRINTABLE);
 	t[15] = U(PROP_TAG_ACCOUNT);
 	t[16] = U(PROP_TAG_TRANSMITTABLEDISPLAYNAME);
-	t[17] = U(PROP_TAG_ADDRESSBOOKPROXYADDRESSES);
+	t[17] = U(PR_EMS_AB_PROXY_ADDRESSES);
 	t[18] = PR_OBJECT_TYPE;
 	t[19] = PR_DISPLAY_TYPE;
 	t[20] = PR_DISPLAY_TYPE_EX;
@@ -2681,7 +2676,7 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	t[26] = PR_MAPPING_SIGNATURE;
 	t[27] = PROP_TAG_SENDRICHINFO;
 	t[28] = PROP_TAG_TEMPLATEID;
-	t[29] = PROP_TAG_ADDRESSBOOKOBJECTGUID;
+	t[29] = PR_EMS_AB_OBJECT_GUID;
 	t[30] = PR_CREATION_TIME;
 #undef U
 	return ecSuccess;
@@ -2837,8 +2832,8 @@ static uint32_t nsp_interface_fetch_smtp_property(
 	case PROP_TAG_TRANSMITTABLEDISPLAYNAME_STRING8:
 	case PR_DISPLAY_NAME:
 	case PR_DISPLAY_NAME_A:
-	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
-	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE_STRING8:
+	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
+	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A:
 		pprop->value.pv = ndr_stack_alloc(
 			NDR_STACK_OUT, strlen(paddress) + 1);
 		if (NULL == pprop->value.pstr) {
@@ -2919,7 +2914,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			*pprows = NULL;
 			return ecMAPIOOM;
 		}
-		nt->pproptag[0] = PROP_TAG_ADDRESSBOOKCONTAINERID;
+		nt->pproptag[0] = PR_EMS_AB_CONTAINERID;
 		nt->pproptag[1] = PR_OBJECT_TYPE;
 		nt->pproptag[2] = PR_DISPLAY_TYPE;
 		nt->pproptag[3] = PR_DISPLAY_NAME_A;

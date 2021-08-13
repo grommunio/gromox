@@ -1538,7 +1538,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		*(uint32_t*)pvalue = simple_tree_node_get_depth(pnode) + 1;
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_ADDRESSBOOKISMASTER:
+	case PR_EMS_AB_IS_MASTER:
 		if (node_type < 0x80) {
 			return TRUE;
 		}
@@ -1549,7 +1549,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		*(uint8_t*)pvalue = 0;
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_ADDRESSBOOKHOMEMESSAGEDATABASE:
+	case PR_EMS_AB_HOME_MDB:
 		if (node_type > 0x80) {
 			return TRUE;
 		}
@@ -1561,7 +1561,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		}
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_ADDRESSBOOKOBJECTGUID:
+	case PR_EMS_AB_OBJECT_GUID:
 		ab_tree_node_to_guid(pnode, &temp_guid);
 		pvalue = common_util_guid_to_binary(temp_guid);
 		if (NULL == pvalue) {
@@ -1569,7 +1569,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		}
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_ADDRESSBOOKCONTAINERID:
+	case PR_EMS_AB_CONTAINERID:
 		pvalue = cu_alloc<uint32_t>();
 		if (NULL == pvalue) {
 			return FALSE;
@@ -1736,7 +1736,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		}
 		[[fallthrough]];
 	case PR_DISPLAY_NAME:
-	case PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE:
+	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
 		ab_tree_get_display_name(pnode, codepage, dn, arsizeof(dn));
 		if ('\0' == dn[0]) {
 			return TRUE;
@@ -1795,7 +1795,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		}
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_ADDRESSBOOKPROXYADDRESSES: {
+	case PR_EMS_AB_PROXY_ADDRESSES: {
 		if (NODE_TYPE_MLIST == node_type) {
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
 		} else if (node_type == NODE_TYPE_PERSON ||

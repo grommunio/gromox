@@ -1228,10 +1228,10 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 		prow->flags |= RECIPIENT_ROW_FLAG_DISPLAY;
 	}
 	prow->psimple_name = static_cast<char *>(common_util_get_propvals(
-	                     ppropvals, PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE));
+	                     ppropvals, PR_EMS_AB_DISPLAY_NAME_PRINTABLE));
 	if (NULL == prow->psimple_name) {
 		pvalue = common_util_get_propvals(ppropvals,
-			PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE_STRING8);
+		         PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A);
 		if (NULL != pvalue) {
 			prow->psimple_name =
 				common_util_dup_mb_to_utf8(cpid, static_cast<char *>(pvalue));

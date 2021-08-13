@@ -505,7 +505,7 @@ BOOL CONTAINER_OBJECT::load_user_table(const RESTRICTION *prestriction)
 					tpropval_array_free(ppropvals);
 					return FALSE;
 				}
-				propval.proptag = PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE;
+				propval.proptag = PR_EMS_AB_DISPLAY_NAME_PRINTABLE;
 				if (!tpropval_array_set_propval(ppropvals, &propval)) {
 					tpropval_array_free(ppropvals);
 					return FALSE;
@@ -662,7 +662,7 @@ BOOL container_object_fetch_special_property(
 		           deconst("Global Address List") :
 		           deconst("Gromox Contact Folders");
 		return TRUE;
-	case PROP_TAG_ADDRESSBOOKISMASTER:
+	case PR_EMS_AB_IS_MASTER:
 		pvalue = cu_alloc<uint8_t>();
 		if (NULL == pvalue) {
 			return FALSE;
@@ -810,7 +810,7 @@ static BOOL container_object_fetch_folder_properties(
 			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
 			pout_propvals->count ++;
 			break;
-		case PROP_TAG_ADDRESSBOOKISMASTER:
+		case PR_EMS_AB_IS_MASTER:
 			pvalue = cu_alloc<uint8_t>();
 			if (NULL == pvalue) {
 				return FALSE;
@@ -898,10 +898,10 @@ void container_object_get_container_table_all_proptags(
 		PROP_TAG_CONTAINERFLAGS,
 		PROP_TAG_DEPTH,
 		PROP_TAG_INSTANCEKEY,
-		PROP_TAG_ADDRESSBOOKCONTAINERID,
+		PR_EMS_AB_CONTAINERID,
 		PR_DISPLAY_NAME,
-		PROP_TAG_ADDRESSBOOKISMASTER,
-		PROP_TAG_ADDRESSBOOKPARENTENTRYID,
+		PR_EMS_AB_IS_MASTER,
+		PR_EMS_AB_PARENT_ENTRYID,
 		PROP_TAG_ABPROVIDERID
 	};
 	
@@ -1194,10 +1194,10 @@ void container_object_get_user_table_all_proptags(
 		PROP_TAG_ADDRESSTYPE,
 		PR_SMTP_ADDRESS,
 		PR_EMAIL_ADDRESS,
-		PROP_TAG_ADDRESSBOOKDISPLAYNAMEPRINTABLE,
+		PR_EMS_AB_DISPLAY_NAME_PRINTABLE,
 		PROP_TAG_ACCOUNT,
 		PROP_TAG_TRANSMITTABLEDISPLAYNAME,
-		PROP_TAG_ADDRESSBOOKPROXYADDRESSES,
+		PR_EMS_AB_PROXY_ADDRESSES,
 		PR_OBJECT_TYPE,
 		PR_DISPLAY_TYPE,
 		PR_DISPLAY_TYPE_EX,
@@ -1209,7 +1209,7 @@ void container_object_get_user_table_all_proptags(
 		PR_MAPPING_SIGNATURE,
 		PROP_TAG_SENDRICHINFO,
 		PROP_TAG_TEMPLATEID,
-		PROP_TAG_ADDRESSBOOKOBJECTGUID,
+		PR_EMS_AB_OBJECT_GUID,
 		PR_CREATION_TIME,
 		PROP_TAG_THUMBNAILPHOTO
 	};
