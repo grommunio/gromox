@@ -151,7 +151,7 @@ BOOL ICSDOWNCTX_OBJECT::make_content(const BINARY *pstate_bin,
 	return TRUE;
 }
 
-BOOL ICSDOWNCTX_OBJECT::make_hierarchy(const BINARY *pstate,
+BOOL ICSDOWNCTX_OBJECT::make_hierarchy(const BINARY *state,
     uint16_t sync_flags, BOOL *pb_changed, uint32_t *pfld_count)
 {
 	auto pctx = this;
@@ -164,9 +164,8 @@ BOOL ICSDOWNCTX_OBJECT::make_hierarchy(const BINARY *pstate,
 	if (SYNC_TYPE_HIERARCHY != pctx->sync_type) {
 		return FALSE;
 	}
-	if (FALSE == ics_state_deserialize(pctx->pstate, pstate)) {
+	if (!ics_state_deserialize(pctx->pstate, state))
 		return FALSE;
-	}
 	auto pinfo = zarafa_server_get_info();
 	auto username = pctx->pstore->check_owner_mode() ? nullptr : pinfo->get_username();
 	if (!exmdb_client::get_hierarchy_sync(pctx->pstore->get_dir(),
@@ -341,8 +340,6 @@ BOOL ICSDOWNCTX_OBJECT::sync_folder_change(BOOL *pb_found,
     TPROPVAL_ARRAY *pproplist)
 {
 	auto pctx = this;
-	void *pvalue;
-	uint64_t folder_id;
 	uint64_t parent_fid;
 	uint64_t change_num;
 	PROPTAG_ARRAY proptags;
@@ -358,7 +355,7 @@ BOOL ICSDOWNCTX_OBJECT::sync_folder_change(BOOL *pb_found,
 		*pb_found = FALSE;
 		return TRUE;
 	}
-	folder_id = pctx->pchg_eids->pids[pctx->eid_pos];
+	uint64_t fid = pctx->pchg_eids->pids[pctx->eid_pos];
 	pctx->eid_pos ++;
 	pproplist->count = 0;
 	pproplist->ppropval = cu_alloc<TAGGED_PROPVAL>(8);
@@ -366,8 +363,7 @@ BOOL ICSDOWNCTX_OBJECT::sync_folder_change(BOOL *pb_found,
 		return FALSE;
 	}
 	pproplist->ppropval[pproplist->count].proptag = PR_SOURCE_KEY;
-	pvalue = common_util_calculate_folder_sourcekey(
-							pctx->pstore, folder_id);
+	void *pvalue = common_util_calculate_folder_sourcekey(pctx->pstore, fid);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -389,7 +385,7 @@ BOOL ICSDOWNCTX_OBJECT::sync_folder_change(BOOL *pb_found,
 	proptag_buff[4] = PROP_TAG_EXTENDEDFOLDERFLAGS;
 	proptag_buff[5] = PROP_TAG_CHANGENUMBER;
 	if (!exmdb_client::get_folder_properties(pctx->pstore->get_dir(), 0,
-	    folder_id, &proptags, &tmp_propvals))
+	    fid, &proptags, &tmp_propvals))
 		return FALSE;
 	pvalue = common_util_get_propvals(
 		&tmp_propvals, PROP_TAG_CHANGENUMBER);
@@ -453,12 +449,9 @@ BOOL ICSDOWNCTX_OBJECT::sync_folder_change(BOOL *pb_found,
 		pproplist->count ++;
 	}
 	*pb_found = TRUE;
-	if (FALSE == idset_append(
-		pctx->pstate->pgiven, folder_id)
-		|| FALSE == idset_append(
-		pctx->pstate->pseen, change_num)) {
+	if (!idset_append(pctx->pstate->pgiven, fid) ||
+	    !idset_append(pctx->pstate->pseen, change_num))
 		return FALSE;
-	}
 	return TRUE;
 }
 

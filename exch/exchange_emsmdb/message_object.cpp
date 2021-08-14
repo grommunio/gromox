@@ -215,7 +215,7 @@ MESSAGE_OBJECT::~MESSAGE_OBJECT()
 	double_list_free(&pmessage->stream_list);
 }
 
-BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t cpid)
+BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t new_cpid)
 {
 	auto pmessage = this;
 	GUID tmp_guid;
@@ -244,7 +244,7 @@ BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t cpid)
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	*(uint32_t*)pvalue = cpid;
+	*static_cast<uint32_t *>(pvalue) = new_cpid;
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
 	
@@ -403,7 +403,6 @@ gxerr_t MESSAGE_OBJECT::save()
 {
 	auto pmessage = this;
 	int i;
-	BOOL b_new;
 	XID tmp_xid;
 	void *pvalue;
 	uint32_t result;
@@ -603,7 +602,7 @@ gxerr_t MESSAGE_OBJECT::save()
 	    pmessage->instance_id, pmessage->plogon->get_account(),
 	    &e_result) || e_result != GXERR_CALL_FAILED)
 		return e_result;
-	b_new = pmessage->b_new;
+	auto is_new = pmessage->b_new;
 	pmessage->b_new = FALSE;
 	pmessage->b_touched = FALSE;
 	if (0 == pmessage->message_id) {
@@ -622,9 +621,8 @@ gxerr_t MESSAGE_OBJECT::save()
 		return GXERR_SUCCESS;
 	}
 	
-	if (TRUE == b_new || NULL != pmessage->pstate) {
+	if (is_new || pmessage->pstate != nullptr)
 		goto SAVE_FULL_CHANGE;
-	}
 	if (!exmdb_client_get_message_group_id(pmessage->plogon->get_dir(),
 	    pmessage->message_id, &pgroup_id))
 		return GXERR_CALL_FAILED;
@@ -716,7 +714,7 @@ gxerr_t MESSAGE_OBJECT::save()
 		return GXERR_CALL_FAILED;
 	/* trigger the rule evaluation under public mode 
 		when the message is first saved to the folder */
-	if (b_new && !b_fai && pmessage->message_id != 0 &&
+	if (is_new && !b_fai && pmessage->message_id != 0 &&
 	    !pmessage->plogon->check_private())
 		exmdb_client_rule_new_message(pmessage->plogon->get_dir(),
 			rpc_info.username, pmessage->plogon->get_account(),

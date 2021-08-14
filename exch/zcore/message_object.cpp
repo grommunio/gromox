@@ -142,7 +142,7 @@ MESSAGE_OBJECT::~MESSAGE_OBJECT()
 	}
 }
 
-BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t cpid)
+BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t new_cpid)
 {
 	auto pmessage = this;
 	void *pvalue;
@@ -165,7 +165,7 @@ BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t cpid)
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	*(uint32_t*)pvalue = cpid;
+	*static_cast<uint32_t *>(pvalue) = new_cpid;
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
 	
@@ -329,7 +329,6 @@ gxerr_t MESSAGE_OBJECT::save()
 {
 	auto pmessage = this;
 	int i;
-	BOOL b_new;
 	XID tmp_xid;
 	void *pvalue;
 	uint32_t result;
@@ -459,7 +458,7 @@ gxerr_t MESSAGE_OBJECT::save()
 	    e_result != GXERR_SUCCESS)
 		return e_result;
 
-	b_new = pmessage->b_new;
+	auto is_new = pmessage->b_new;
 	pmessage->b_new = FALSE;
 	pmessage->b_touched = FALSE;
 	if (0 == pmessage->message_id) {
@@ -484,7 +483,7 @@ gxerr_t MESSAGE_OBJECT::save()
 		proptag_array_clear(pmessage->premoved_proptags);
 		return GXERR_SUCCESS;
 	}
-	if (b_new)
+	if (is_new)
 		goto SAVE_FULL_CHANGE;
 	if (!exmdb_client::get_message_group_id(
 		dir, pmessage->message_id, &pgroup_id)) {
@@ -583,7 +582,7 @@ gxerr_t MESSAGE_OBJECT::save()
 	}
 	/* trigger the rule evaluation under public mode 
 		when the message is first saved to the folder */
-	if (b_new && !b_fai && pmessage->message_id != 0 &&
+	if (is_new && !b_fai && pmessage->message_id != 0 &&
 	    !pmessage->pstore->b_private)
 		exmdb_client::rule_new_message(dir, pinfo->get_username(),
 			pmessage->pstore->get_account(), pmessage->cpid,

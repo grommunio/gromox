@@ -36,7 +36,7 @@ ICSUPCTX_OBJECT::~ICSUPCTX_OBJECT()
 	}
 }
 
-BOOL ICSUPCTX_OBJECT::begin_state_stream(uint32_t state_property)
+BOOL ICSUPCTX_OBJECT::begin_state_stream(uint32_t new_state_prop)
 {
 	auto pctx = this;
 	if (TRUE == pctx->b_started) {
@@ -45,7 +45,7 @@ BOOL ICSUPCTX_OBJECT::begin_state_stream(uint32_t state_property)
 	if (0 != pctx->state_property) {
 		return FALSE;
 	}
-	switch (state_property) {
+	switch (new_state_prop) {
 	case META_TAG_IDSETGIVEN:
 	case META_TAG_IDSETGIVEN1:
 	case META_TAG_CNSETSEEN:
@@ -59,7 +59,7 @@ BOOL ICSUPCTX_OBJECT::begin_state_stream(uint32_t state_property)
 	default:
 		return FALSE;
 	}
-	pctx->state_property = state_property;
+	pctx->state_property = new_state_prop;
 	mem_file_init(&pctx->f_state_stream, common_util_get_allocator());
 	return TRUE;
 }
@@ -89,7 +89,6 @@ BOOL ICSUPCTX_OBJECT::end_state_stream()
 	auto pctx = this;
 	IDSET *pset;
 	BINARY tmp_bin;
-	uint32_t state_property;
 	
 	if (TRUE == pctx->b_started) {
 		return FALSE;
@@ -115,7 +114,7 @@ BOOL ICSUPCTX_OBJECT::end_state_stream()
 	}
 	mem_file_read(&pctx->f_state_stream, tmp_bin.pv, tmp_bin.cb);
 	mem_file_free(&pctx->f_state_stream);
-	state_property = pctx->state_property;
+	auto saved_state_prop = pctx->state_property;
 	pctx->state_property = 0;
 	if (FALSE == idset_deserialize(pset, &tmp_bin)) {
 		idset_free(pset);
@@ -132,7 +131,7 @@ BOOL ICSUPCTX_OBJECT::end_state_stream()
 		idset_free(pset);
 		return FALSE;
 	}
-	if (!pctx->pstate->append_idset(state_property, pset)) {
+	if (!pctx->pstate->append_idset(saved_state_prop, pset)) {
 		idset_free(pset);
 		return FALSE;
 	}
