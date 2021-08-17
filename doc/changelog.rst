@@ -1,3 +1,15 @@
+1.1 (2021-08-17)
+================
+
+Changes:
+
+
+* mt2exm: wait for pff2mt stream begin before connecting to exmdb
+  so as to not run into a timeout
+* mysql_adaptor: complain if there is an overlap between user and
+  alias table
+
+
 1.0 (2021-08-06)
 ================
 
