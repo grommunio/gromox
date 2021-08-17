@@ -258,10 +258,10 @@ int main(int argc, const char **argv) try
 		fprintf(stderr, "Usage: gromox-mt2exm -u username\n");
 		return EXIT_FAILURE;
 	}
-	if (gi_setup(g_username) != EXIT_SUCCESS)
-		return EXIT_FAILURE;
 
 	exm_read_base_maps();
+	if (gi_setup(g_username) != EXIT_SUCCESS)
+		return EXIT_FAILURE;
 	while (true) {
 		uint64_t xsize = 0;
 		errno = 0;
