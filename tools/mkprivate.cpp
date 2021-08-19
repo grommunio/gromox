@@ -462,7 +462,8 @@ int main(int argc, const char **argv)
 	if (NULL == mysql_real_connect(pmysql, mysql_host, mysql_user,
 		mysql_passwd, db_name, mysql_port, NULL, 0)) {
 		mysql_close(pmysql);
-		printf("Failed to connect to the database\n");
+		printf("Failed to connect to the database %s@%s/%s\n",
+		       mysql_user, mysql_host, db_name);
 		return 3;
 	}
 	
