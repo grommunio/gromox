@@ -168,7 +168,7 @@ static void *p3ls_thrwork(void *arg)
 			fprintf(stderr, "W-1405: fctnl: %s\n", strerror(errno));
 		flag = 1;
 		if (setsockopt(sockd2, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0)
-			fprintf(stderr, "W-1406: setsockopt: %s\n", strerror(errno));
+			fprintf(stderr, "W-1339: setsockopt: %s\n", strerror(errno));
 		pcontext = (POP3_CONTEXT*)contexts_pool_get_context(CONTEXT_FREE);
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {

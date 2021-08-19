@@ -2866,7 +2866,7 @@ static BOOL common_util_set_message_header(
 			sizeof(int) != write(fd, &len, sizeof(int))) {
 			close(fd);
 			if (remove(path) < 0 && errno != ENOENT)
-				fprintf(stderr, "W-1366: remove %s: %s\n", path, strerror(errno));
+				fprintf(stderr, "W-1335: remove %s: %s\n", path, strerror(errno));
 			return FALSE;
 		}
 	}

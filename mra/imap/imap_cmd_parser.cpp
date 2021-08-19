@@ -2871,7 +2871,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	mail_free(&imail);
 	free(pbuff);
 	if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
-		fprintf(stderr, "W-1347: remove %s: %s\n",
+		fprintf(stderr, "W-1336: remove %s: %s\n",
 			pcontext->file_path.c_str(), strerror(errno));
 	pcontext->file_path.clear();
 	switch (system_services_insert_mail(pcontext->maildir, temp_name,

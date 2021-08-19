@@ -138,7 +138,7 @@ int main(int argc, const char **argv)
 	
 	auto temp_path = dir + "/exmdb"s;
 	if (mkdir(temp_path.c_str(), 0777) != 0 && errno != EEXIST) {
-		fprintf(stderr, "E-1471: mkdir %s: %s\n", temp_path.c_str(), strerror(errno));
+		fprintf(stderr, "E-1337: mkdir %s: %s\n", temp_path.c_str(), strerror(errno));
 		return 6;
 	}
 	temp_path += "/midb.sqlite3";
