@@ -3485,6 +3485,8 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	if ('\0' == username[0]) {
 		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
 	} else if (!common_util_check_delegate_permission_ex(account, username)) {
+		fprintf(stderr, "I-1334: store %s tried to send with from=%s, but no delegate permission.\n",
+		        account, username);
 		return ecAccessDenied;
 	}
 	gxerr_t err = common_util_rectify_message(pmessage, username);
