@@ -279,7 +279,7 @@ std::string slurp_file(const char *file)
 		return slurp_file(stdin);
 	std::unique_ptr<FILE, file_deleter> fp(fopen(file, "r"));
 	if (fp == nullptr) {
-		fprintf(stderr, "open %s: %s", file, strerror(errno));
+		fprintf(stderr, "slurp_file: open %s: %s\n", file, strerror(errno));
 		return data;
 	}
 	return slurp_file(fp.get());
