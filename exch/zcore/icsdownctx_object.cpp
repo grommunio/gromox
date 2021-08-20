@@ -370,7 +370,7 @@ BOOL ICSDOWNCTX_OBJECT::sync_folder_change(BOOL *pb_found,
 	pproplist->ppropval[pproplist->count].pvalue = pvalue;
 	pproplist->count ++;
 	pproplist->ppropval[pproplist->count].proptag = PR_ENTRYID;
-	pvalue = common_util_to_folder_entryid(pctx->pstore, folder_id);
+	pvalue = common_util_to_folder_entryid(pctx->pstore, fid);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
