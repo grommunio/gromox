@@ -1867,6 +1867,9 @@ BOOL common_util_send_message(STORE_OBJECT *pstore,
 		return FALSE;
 	}
 	double_list_init(&temp_list);
+	if (prcpts->count == 0)
+		fprintf(stderr, "I-1504: Store %s attempted to send message %llxh to 0 recipients\n",
+		        pstore->get_account(), static_cast<unsigned long long>(message_id));
 	for (size_t i = 0; i < prcpts->count; ++i) {
 		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode) {
