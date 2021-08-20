@@ -729,6 +729,9 @@ int main(int argc, const char **argv)
 		sqp.port = strtoul(g_sqlport, nullptr, 0);
 	sqp.dbname = g_sqldb != nullptr ? g_sqldb : "kopano";
 	sqp.user = g_sqluser != nullptr ? g_sqluser : "root";
+	auto s = getenv("SRCPASS");
+	if (s != nullptr)
+		sqp.pass = s;
 
 	try {
 		std::unique_ptr<driver> drv;
