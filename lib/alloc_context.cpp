@@ -39,28 +39,26 @@ void* alloc_context_alloc(ALLOC_CONTEXT *pcontext, size_t size)
 		double_list_insert_as_head(&pcontext->list, pnode);
 		pcontext->total += size_al;
 		return pnode->pdata;
-	} else {
-		if (size > ALLOC_FRAME_SIZE - node_al - pcontext->offset) {
-			auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(ALLOC_FRAME_SIZE));
-			if (NULL == pnode) {
-				return NULL;
-			}
-			pnode->pdata = reinterpret_cast<char *>(pnode) + node_al;
-			double_list_append_as_tail(&pcontext->list, pnode);
-			pcontext->offset = size_al;
-			pcontext->total += size_al;
-			return pnode->pdata;
-		} else {
-			auto pnode = double_list_get_tail(&pcontext->list);
-			if (NULL == pnode) {
-				return NULL;
-			}
-			ptr = static_cast<char *>(pnode->pdata) + pcontext->offset;
-			pcontext->offset += size_al;
-			pcontext->total  += size_al;
-			return ptr;
-		}
 	}
+	if (size > ALLOC_FRAME_SIZE - node_al - pcontext->offset) {
+		auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(ALLOC_FRAME_SIZE));
+		if (NULL == pnode) {
+			return NULL;
+		}
+		pnode->pdata = reinterpret_cast<char *>(pnode) + node_al;
+		double_list_append_as_tail(&pcontext->list, pnode);
+		pcontext->offset = size_al;
+		pcontext->total += size_al;
+		return pnode->pdata;
+	}
+	auto pnode = double_list_get_tail(&pcontext->list);
+	if (NULL == pnode) {
+		return NULL;
+	}
+	ptr = static_cast<char *>(pnode->pdata) + pcontext->offset;
+	pcontext->offset += size_al;
+	pcontext->total  += size_al;
+	return ptr;
 }
 
 void alloc_context_free(ALLOC_CONTEXT *pcontext)
