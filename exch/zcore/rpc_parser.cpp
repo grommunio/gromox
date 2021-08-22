@@ -639,8 +639,10 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 	if (g_zrpc_debug == 0)
 		return DISPATCH_TRUE;
 	if (presponse->result != 0 || g_zrpc_debug == 2)
-		fprintf(stderr, "ZRPC %s %xh\n", zcore_rpc_idtoname(prequest->call_id),
-		        presponse->result);
+		fprintf(stderr, "ZRPC %s %8xh %s\n",
+		        presponse->result == 0 ? "ok  " : "FAIL",
+		        presponse->result,
+		        zcore_rpc_idtoname(prequest->call_id));
 	return DISPATCH_TRUE;
 }
 
