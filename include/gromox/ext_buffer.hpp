@@ -21,6 +21,7 @@ enum {
 	EXT_FLAG_WCOUNT = 1U << 1,
 	EXT_FLAG_TBLLMT = 1U << 2,
 	EXT_FLAG_ABK = 1U << 3,
+	EXT_FLAG_ZCORE = 1U << 4,
 };
 
 typedef void* (*EXT_BUFFER_ALLOC)(size_t);

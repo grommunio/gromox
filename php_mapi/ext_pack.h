@@ -16,7 +16,7 @@ using PUSH_CTX = EXT_PUSH;
 extern void *ext_pack_alloc(size_t);
 extern const struct EXT_BUFFER_MGT ext_buffer_mgt;
 
-#define ext_pack_pull_init(c, d, s) ((c)->init((d), (s), ext_pack_alloc, EXT_FLAG_WCOUNT))
+#define ext_pack_pull_init(c, d, s) ((c)->init((d), (s), ext_pack_alloc, EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE))
 #define ext_pack_pull_advance(c, s) ((c)->advance(s) == EXT_ERR_SUCCESS)
 #define ext_pack_pull_uint8(c, v) ((c)->g_uint8(v) == EXT_ERR_SUCCESS)
 #define ext_pack_pull_uint16(c, v) ((c)->g_uint16(v) == EXT_ERR_SUCCESS)
@@ -52,7 +52,7 @@ zend_bool ext_pack_pull_state_array(PULL_CTX *pctx, STATE_ARRAY *r);
 zend_bool ext_pack_pull_znotification_array(
 	PULL_CTX *pctx, ZNOTIFICATION_ARRAY *r);
 
-#define ext_pack_push_init(c) ((c)->init(nullptr, 0, EXT_FLAG_WCOUNT, &ext_buffer_mgt))
+#define ext_pack_push_init(c) ((c)->init(nullptr, 0, EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE, &ext_buffer_mgt))
 #define ext_pack_push_advance(c, v) ((c)->advance(v) == EXT_ERR_SUCCESS)
 #define ext_pack_push_bytes(c, v, z) ((c)->p_bytes((v), (z)) == EXT_ERR_SUCCESS)
 #define ext_pack_push_uint8(c, v) ((c)->p_uint8(v) == EXT_ERR_SUCCESS)

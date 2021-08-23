@@ -677,6 +677,12 @@ int EXT_PULL::g_store_eid(STORE_ENTRYID *r)
 	return pext->g_str(&r->pmailbox_dn);
 }
 
+static int ext_buffer_pull_zmovecopy_action(EXT_PULL *e, ZMOVECOPY_ACTION *r)
+{
+	TRY(e->g_bin(&r->store_eid));
+	return e->g_bin(&r->folder_eid);
+}
+
 static int ext_buffer_pull_movecopy_action(EXT_PULL *pext, MOVECOPY_ACTION *r)
 {
 	uint16_t eid_size;
@@ -703,6 +709,12 @@ static int ext_buffer_pull_movecopy_action(EXT_PULL *pext, MOVECOPY_ACTION *r)
 			return EXT_ERR_ALLOC;
 		return pext->g_bin(static_cast<BINARY *>(r->pfolder_eid));
 	}
+}
+
+static int ext_buffer_pull_zreply_action(EXT_PULL *e, ZREPLY_ACTION *r)
+{
+	TRY(e->g_bin(&r->message_eid));
+	return e->g_guid(&r->template_guid);
 }
 
 static int ext_buffer_pull_reply_action(EXT_PULL *pext, REPLY_ACTION *r)
@@ -755,17 +767,35 @@ static int ext_buffer_pull_action_block(EXT_PULL *pext, ACTION_BLOCK *r)
 	TRY(pext->g_uint32(&r->flags));
 	switch (r->type) {
 	case OP_MOVE:
-	case OP_COPY:
-		r->pdata = pext->anew<MOVECOPY_ACTION>();
-		if (r->pdata == nullptr)
+	case OP_COPY: {
+		if (pext->m_flags & EXT_FLAG_ZCORE) {
+			auto mc = pext->anew<ZMOVECOPY_ACTION>();
+			if (mc == nullptr)
+				return EXT_ERR_ALLOC;
+			r->pdata = mc;
+			return ext_buffer_pull_zmovecopy_action(pext, mc);
+		}
+		auto mc = pext->anew<MOVECOPY_ACTION>();
+		if (mc == nullptr)
 			return EXT_ERR_ALLOC;
-		return ext_buffer_pull_movecopy_action(pext, static_cast<MOVECOPY_ACTION *>(r->pdata));
+		r->pdata = mc;
+		return ext_buffer_pull_movecopy_action(pext, mc);
+	}
 	case OP_REPLY:
-	case OP_OOF_REPLY:
-		r->pdata = pext->anew<REPLY_ACTION>();
-		if (r->pdata == nullptr)
+	case OP_OOF_REPLY: {
+		if (pext->m_flags & EXT_FLAG_ZCORE) {
+			auto rp = pext->anew<ZREPLY_ACTION>();
+			if (rp == nullptr)
+				return EXT_ERR_ALLOC;
+			r->pdata = rp;
+			return ext_buffer_pull_zreply_action(pext, rp);
+		}
+		auto rp = pext->anew<REPLY_ACTION>();
+		if (rp == nullptr)
 			return EXT_ERR_ALLOC;
-		return ext_buffer_pull_reply_action(pext, static_cast<REPLY_ACTION *>(r->pdata));
+		r->pdata = rp;
+		return ext_buffer_pull_reply_action(pext, rp);
+	}
 	case OP_DEFER_ACTION:
 		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
 		r->pdata = ext.m_alloc(tmp_len);
@@ -2559,6 +2589,13 @@ int EXT_PUSH::p_store_eid(const STORE_ENTRYID *r)
 	return pext->p_str(r->pmailbox_dn);
 }
 
+static int ext_buffer_push_zmovecopy_action(EXT_PUSH *e,
+    const ZMOVECOPY_ACTION *r)
+{
+	TRY(e->p_bin(&r->store_eid));
+	return e->p_bin(&r->folder_eid);
+}
+
 static int ext_buffer_push_movecopy_action(EXT_PUSH *pext,
     const MOVECOPY_ACTION *r)
 {
@@ -2585,6 +2622,12 @@ static int ext_buffer_push_movecopy_action(EXT_PUSH *pext,
 		return pext->p_svreid(static_cast<SVREID *>(r->pfolder_eid));
 	else
 		return pext->p_bin(static_cast<BINARY *>(r->pfolder_eid));
+}
+
+static int ext_buffer_push_zreply_action(EXT_PUSH *e, const ZREPLY_ACTION *r)
+{
+	TRY(e->p_bin(&r->message_eid));
+	return e->p_guid(&r->template_guid);
 }
 
 static int ext_buffer_push_reply_action(
@@ -2631,11 +2674,15 @@ static int ext_buffer_push_action_block(
 	switch (r->type) {
 	case OP_MOVE:
 	case OP_COPY:
-		TRY(ext_buffer_push_movecopy_action(pext, static_cast<MOVECOPY_ACTION *>(r->pdata)));
+		TRY((pext->m_flags & EXT_FLAG_ZCORE) ?
+		    ext_buffer_push_zmovecopy_action(pext, static_cast<ZMOVECOPY_ACTION *>(r->pdata)) :
+		    ext_buffer_push_movecopy_action(pext, static_cast<MOVECOPY_ACTION *>(r->pdata)));
 		break;
 	case OP_REPLY:
 	case OP_OOF_REPLY:
-		TRY(ext_buffer_push_reply_action(pext, static_cast<REPLY_ACTION *>(r->pdata)));
+		TRY((pext->m_flags & EXT_FLAG_ZCORE) ?
+		    ext_buffer_push_zreply_action(pext, static_cast<ZREPLY_ACTION *>(r->pdata)) :
+		    ext_buffer_push_reply_action(pext, static_cast<REPLY_ACTION *>(r->pdata)));
 		break;
 	case OP_DEFER_ACTION: {
 		uint16_t tmp_len = r->length - sizeof(uint8_t) - 2 * sizeof(uint32_t);
