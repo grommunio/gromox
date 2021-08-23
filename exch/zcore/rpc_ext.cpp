@@ -12,155 +12,6 @@ using RPC_RESPONSE = ZCORE_RPC_RESPONSE;
 using REQUEST_PAYLOAD = ZCORE_REQUEST_PAYLOAD;
 using RESPONSE_PAYLOAD = ZCORE_RESPONSE_PAYLOAD;
 
-static BOOL rpc_ext_pull_zmovecopy_action(
-	EXT_PULL *pext, ZMOVECOPY_ACTION *r)
-{
-	QRF(pext->g_bin(&r->store_eid));
-	QRF(pext->g_bin(&r->folder_eid));
-	return TRUE;
-}
-
-static BOOL rpc_ext_pull_zreply_action(
-	EXT_PULL *pext, ZREPLY_ACTION *r)
-{
-	QRF(pext->g_bin(&r->message_eid));
-	QRF(pext->g_guid(&r->template_guid));
-	return TRUE;
-}
-
-static BOOL rpc_ext_pull_recipient_block(
-	EXT_PULL *pext, RECIPIENT_BLOCK *r)
-{
-	int i;
-	
-	QRF(pext->g_uint8(&r->reserved));
-	QRF(pext->g_uint16(&r->count));
-	if (0 == r->count) {
-		return FALSE;
-	}
-	r->ppropval = pext->anew<TAGGED_PROPVAL>(r->count);
-	if (NULL == r->ppropval) {
-		r->count = 0;
-		return FALSE;
-	}
-	for (i=0; i<r->count; i++) {
-		QRF(pext->g_tagged_pv(&r->ppropval[i]));
-	}
-	return TRUE;
-}
-
-static BOOL rpc_ext_pull_forwarddelegate_action(
-	EXT_PULL *pext, FORWARDDELEGATE_ACTION *r)
-{
-	int i;
-	
-	QRF(pext->g_uint16(&r->count));
-	if (0 == r->count) {
-		return FALSE;
-	}
-	r->pblock = pext->anew<RECIPIENT_BLOCK>(r->count);
-	if (NULL == r->pblock) {
-		r->count = 0;
-		return FALSE;
-	}
-	for (i=0; i<r->count; i++) {
-		if (FALSE == rpc_ext_pull_recipient_block(
-			pext, &r->pblock[i])) {
-			return FALSE;
-		}
-	}
-	return TRUE;
-}
-
-static BOOL rpc_ext_pull_action_block(
-	EXT_PULL *pext, ACTION_BLOCK *r)
-{
-	auto &ext = *pext;
-	uint16_t tmp_len;
-	
-	QRF(pext->g_uint16(&r->length));
-	QRF(pext->g_uint8(&r->type));
-	QRF(pext->g_uint32(&r->flavor));
-	QRF(pext->g_uint32(&r->flags));
-	switch (r->type) {
-	case OP_MOVE:
-	case OP_COPY:
-		r->pdata = pext->anew<ZMOVECOPY_ACTION>();
-		if (NULL == r->pdata) {
-			return FALSE;
-		}
-		return rpc_ext_pull_zmovecopy_action(pext,
-		       static_cast<ZMOVECOPY_ACTION *>(r->pdata));
-	case OP_REPLY:
-	case OP_OOF_REPLY:
-		r->pdata = pext->anew<ZREPLY_ACTION>();
-		if (NULL == r->pdata) {
-			return FALSE;
-		}
-		return rpc_ext_pull_zreply_action(pext,
-		       static_cast<ZREPLY_ACTION *>(r->pdata));
-	case OP_DEFER_ACTION:
-		tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
-		r->pdata = ext.m_alloc(tmp_len);
-		if (NULL == r->pdata) {
-			return FALSE;
-		}
-		QRF(pext->g_bytes(r->pdata, tmp_len));
-		return TRUE;
-	case OP_BOUNCE:
-		r->pdata = pext->anew<uint32_t>();
-		if (NULL == r->pdata) {
-			return FALSE;
-		}
-		QRF(pext->g_uint32(static_cast<uint32_t *>(r->pdata)));
-		return TRUE;
-	case OP_FORWARD:
-	case OP_DELEGATE:
-		r->pdata = pext->anew<FORWARDDELEGATE_ACTION>();
-		if (NULL == r->pdata) {
-			return FALSE;
-		}
-		return rpc_ext_pull_forwarddelegate_action(pext,
-		       static_cast<FORWARDDELEGATE_ACTION *>(r->pdata));
-	case OP_TAG:
-		r->pdata = pext->anew<TAGGED_PROPVAL>();
-		if (NULL == r->pdata) {
-			return FALSE;
-		}
-		QRF(pext->g_tagged_pv(static_cast<TAGGED_PROPVAL *>(r->pdata)));
-		return TRUE;
-	case OP_DELETE:
-	case OP_MARK_AS_READ:
-		r->pdata = NULL;
-		return TRUE;
-	default:
-		return FALSE;
-	}
-}
-
-static BOOL rpc_ext_pull_rule_actions(
-	EXT_PULL *pext, RULE_ACTIONS *r)
-{
-	int i;
-	
-	QRF(pext->g_uint16(&r->count));
-	if (0 == r->count) {
-		return FALSE;
-	}
-	r->pblock = pext->anew<ACTION_BLOCK>(r->count);
-	if (NULL == r->pblock) {
-		r->count = 0;
-		return FALSE;
-	}
-	for (i=0; i<r->count; i++) {
-		if (TRUE != rpc_ext_pull_action_block(
-			pext, &r->pblock[i])) {
-			return FALSE;
-		}
-	}
-	return TRUE;
-}
-
 static BOOL rpc_ext_pull_propval(
 	EXT_PULL *pext, uint16_t type, void **ppval)
 {
@@ -238,7 +89,8 @@ static BOOL rpc_ext_pull_propval(
 		if (NULL == *ppval) {
 			return FALSE;
 		}
-		return rpc_ext_pull_rule_actions(pext, static_cast<RULE_ACTIONS *>(*ppval));
+		QRF(pext->g_rule_actions(static_cast<RULE_ACTIONS *>(*ppval)));
+		return TRUE;
 	case PT_BINARY:
 		*ppval = pext->anew<BINARY>();
 		if (NULL == *ppval) {
@@ -420,126 +272,6 @@ static BOOL rpc_ext_pull_state_array(
 	return TRUE;
 }
 
-static BOOL rpc_ext_push_zmovecopy_action(
-	EXT_PUSH *pext, const ZMOVECOPY_ACTION *r)
-{
-	QRF(pext->p_bin(&r->store_eid));
-	QRF(pext->p_bin(&r->folder_eid));
-	return TRUE;
-}
-
-static BOOL rpc_ext_push_zreply_action(
-	EXT_PUSH *pext, const ZREPLY_ACTION *r)
-{	
-	QRF(pext->p_bin(&r->message_eid));
-	QRF(pext->p_guid(&r->template_guid));
-	return TRUE;
-}
-
-static BOOL rpc_ext_push_recipient_block(
-	EXT_PUSH *pext, const RECIPIENT_BLOCK *r)
-{
-	int i;
-	
-	if (0 == r->count) {
-		return FALSE;
-	}
-	QRF(pext->p_uint8(r->reserved));
-	QRF(pext->p_uint16(r->count));
-	for (i=0; i<r->count; i++) {
-		QRF(pext->p_tagged_pv(&r->ppropval[i]));
-	}
-	return TRUE;
-}
-
-static BOOL rpc_ext_push_forwarddelegate_action(
-	EXT_PUSH *pext, const FORWARDDELEGATE_ACTION *r)
-{
-	int i;
-	
-	if (0 == r->count) {
-		return FALSE;
-	}
-	QRF(pext->p_uint16(r->count));
-	for (i=0; i<r->count; i++) {
-		if (FALSE == rpc_ext_push_recipient_block(
-			pext, &r->pblock[i])) {
-			return FALSE;
-		}
-	}
-	return TRUE;
-}
-
-static BOOL rpc_ext_push_action_block(
-	EXT_PUSH *pext, const ACTION_BLOCK *r)
-{
-	auto &ext = *pext;
-	uint32_t offset = ext.m_offset;
-
-	QRF(pext->advance(sizeof(uint16_t)));
-	QRF(pext->p_uint8(r->type));
-	QRF(pext->p_uint32(r->flavor));
-	QRF(pext->p_uint32(r->flags));
-	switch (r->type) {
-	case OP_MOVE:
-	case OP_COPY:
-		if (!rpc_ext_push_zmovecopy_action(pext,
-		    static_cast<const ZMOVECOPY_ACTION *>(r->pdata)))
-			return FALSE;
-		break;
-	case OP_REPLY:
-	case OP_OOF_REPLY:
-		if (!rpc_ext_push_zreply_action(pext,
-		    static_cast<const ZREPLY_ACTION *>(r->pdata)))
-			return FALSE;
-		break;
-	case OP_DEFER_ACTION: {
-		uint16_t tmp_len = r->length - sizeof(uint8_t) - 2*sizeof(uint32_t);
-		QRF(pext->p_bytes(r->pdata, tmp_len));
-		break;
-	}
-	case OP_BOUNCE:
-		QRF(pext->p_uint32(*static_cast<uint32_t *>(r->pdata)));
-		break;
-	case OP_FORWARD:
-	case OP_DELEGATE:
-		return rpc_ext_push_forwarddelegate_action(pext,
-		       static_cast<const FORWARDDELEGATE_ACTION *>(r->pdata));
-	case OP_TAG:
-		QRF(pext->p_tagged_pv(static_cast<const TAGGED_PROPVAL *>(r->pdata)));
-		break;
-	case OP_DELETE:
-	case OP_MARK_AS_READ:
-		break;
-	default:
-		return FALSE;
-	}
-	uint16_t tmp_len = ext.m_offset - (offset + sizeof(uint16_t));
-	uint32_t offset1 = ext.m_offset;
-	ext.m_offset = offset;
-	QRF(pext->p_uint16(tmp_len));
-	ext.m_offset = offset1;
-	return TRUE;
-}
-
-static BOOL rpc_ext_push_rule_actions(
-	EXT_PUSH *pext, const RULE_ACTIONS *r)
-{
-	int i;
-	
-	if (0 == r->count) {
-		return FALSE;
-	}
-	QRF(pext->p_uint16(r->count));
-	for (i=0; i<r->count; i++) {
-		if (TRUE != rpc_ext_push_action_block(
-			pext, &r->pblock[i])) {
-			return FALSE;
-		}
-	}
-	return TRUE;
-}
-
 static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 	uint16_t type, const void *pval)
 {
@@ -581,7 +313,8 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 		QRF(pext->p_restriction(static_cast<const RESTRICTION *>(pval)));
 		return TRUE;
 	case PT_ACTIONS:
-		return rpc_ext_push_rule_actions(pext, static_cast<const RULE_ACTIONS *>(pval));
+		QRF(pext->p_rule_actions(static_cast<const RULE_ACTIONS *>(pval)));
+		return TRUE;
 	case PT_BINARY:
 		QRF(pext->p_bin(static_cast<const BINARY *>(pval)));
 		return TRUE;
@@ -2142,7 +1875,7 @@ BOOL rpc_ext_pull_request(const BINARY *pbin_in,
 {
 	EXT_PULL ext_pull;
 	
-	ext_pull.init(pbin_in->pb, pbin_in->cb, common_util_alloc, EXT_FLAG_WCOUNT);
+	ext_pull.init(pbin_in->pb, pbin_in->cb, common_util_alloc, EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE);
 	QRF(ext_pull.g_uint8(&prequest->call_id));
 	switch (prequest->call_id) {
 	case zcore_callid::LOGON:
@@ -2408,7 +2141,7 @@ BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
 	BOOL b_result;
 	EXT_PUSH ext_push;
 
-	if (!ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT))
+	if (!ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE))
 		return FALSE;
 	QRF(ext_push.p_uint8(zcore_response::SUCCESS));
 	if (EXT_ERR_SUCCESS != presponse->result) {
