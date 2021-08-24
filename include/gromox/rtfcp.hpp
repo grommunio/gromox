@@ -1,4 +1,5 @@
 #pragma once
+#include <unistd.h>
 #include <gromox/defs.h>
 #include <gromox/mapi_types.hpp>
 
