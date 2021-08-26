@@ -1430,6 +1430,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 		if (pcontext->bytes_rw < pcontext->total_length) {
 			return PROCESS_CONTINUE;
 		}
+		return X_RUNOFF;
 	}
 	if (EAGAIN != errno) {
 		http_parser_log_info(pcontext, 6, "connection lost");
