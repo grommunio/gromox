@@ -618,7 +618,7 @@ static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent,
 	snprintf(qstr, arsizeof(qstr), "SELECT filename, instanceid FROM singleinstances WHERE hierarchyid=%u LIMIT 1", item.m_hid);
 	auto res = drv.query(qstr);
 	auto row = res.fetch_row();
-	if (row == nullptr || row[0] == nullptr) {
+	if (row == nullptr || row[1] == nullptr) {
 		fprintf(stderr, "PK-1012: attachment %lu is missing from \"singleinstances\" table and is lost\n",
 		        static_cast<unsigned long>(item.m_hid));
 		return 0;
