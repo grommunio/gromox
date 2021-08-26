@@ -703,7 +703,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 				"Server: %s\r\n"
 				"Content-Length: 0\r\n"
 				"Keep-Alive: timeout=%d\r\n"
-				"Connection: Keep-Alive\r\n"
+				"Connection: close\r\n"
 				"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
 				"\r\n", dstring, resource_get_string("HOST_ID"),
 				g_timeout);
@@ -711,6 +711,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 				response_buff, response_len);
 			pcontext->total_length = response_len;
 			pcontext->bytes_rw = 0;
+			pcontext->b_close = TRUE;
 			pcontext->sched_stat = SCHED_STAT_WRREP;
 			http_parser_log_info(pcontext, 6, "can not get maildir");
 			return X_LOOP;
@@ -740,7 +741,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 		"Date: %s\r\n"
 		"Server: %s\r\n"
 		"Keep-Alive: timeout=%d\r\n"
-		"Connection: Keep-Alive\r\n"
+		"Connection: close\r\n"
 		"Content-Type: text/plain; charset=ascii\r\n"
 		"Content-Length: %zu\r\n"
 		"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
@@ -751,6 +752,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 		response_buff, response_len);
 	pcontext->total_length = response_len;
 	pcontext->bytes_rw = 0;
+	pcontext->b_close = TRUE;
 	pcontext->sched_stat = SCHED_STAT_WRREP;
 	return X_LOOP;
 }
@@ -816,7 +818,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, const STREAM &stream_1)
 			"Server: %s\r\n"
 			"Content-Length: 0\r\n"
 			"Keep-Alive: timeout=%d\r\n"
-			"Connection: Keep-Alive\r\n"
+			"Connection: close\r\n"
 			"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
 			"\r\n", dstring, resource_get_string("HOST_ID"),
 			g_timeout);
@@ -824,6 +826,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, const STREAM &stream_1)
 			response_buff, response_len);
 		pcontext->total_length = response_len;
 		pcontext->bytes_rw = 0;
+		pcontext->b_close = TRUE;
 		pcontext->sched_stat = SCHED_STAT_WRREP;
 		http_parser_log_info(pcontext, 6,
 			"authentification needed");
@@ -1038,6 +1041,7 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 					"HTTP/1.1 404 Not Found\r\n"
 					"Date: %s\r\n"
 					"Server: %s\r\n"
+					"Connection: close\r\n"
 					"Content-Length: 134\r\n\r\n"
 					"<html>\r\n"
 					"<head><title>404 Not Found</title></head>\r\n"
@@ -1049,6 +1053,7 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 		stream_write(&pcontext->stream_out, response_buff, response_len);
 		pcontext->total_length = response_len;
 		pcontext->bytes_rw = 0;
+		pcontext->b_close = TRUE;
 		pcontext->sched_stat = SCHED_STAT_WRREP;
 		return X_LOOP;
 	}
