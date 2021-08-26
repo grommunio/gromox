@@ -318,6 +318,23 @@ kdb_open_by_guid(const char *guid, const sql_login_param &sqp)
 	return kdb_open_by_guid_1(std::move(drv), guid);
 }
 
+static void present_stores(const char *storeuser, DB_RESULT &res)
+{
+	DB_ROW row;
+	fprintf(stderr, "PK-1008: This utility only does a heuristic search, "
+	        "lest it would require the full original user database, "
+	        "a requirement this tool does not want to impose. "
+	        "The search for \"%s\" has turned up multiple candidate stores:\n\n", storeuser);
+	fprintf(stderr, "GUID                              user_id  most_recent_owner\n");
+	fprintf(stderr, "============================================================\n");
+	while ((row = res.fetch_row()) != nullptr) {
+		auto colen = res.row_lengths();
+		fprintf(stderr, "%s  %7lu  %s\n", bin2hex(row[0], colen[0]).c_str(),
+		        strtoul(row[1], nullptr, 0), storeuser);
+	}
+	fprintf(stderr, "============================================================\n");
+}
+
 static std::unique_ptr<driver>
 kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
 {
@@ -331,10 +348,12 @@ kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
 		throw YError("PK-1019: mysql_connect %s@%s: %s",
 		      sqp.user.c_str(), sqp.host.c_str(), mysql_error(drv->m_conn));
 
-	auto qstr = "SELECT guid FROM stores WHERE user_name='" + sql_escape(drv->m_conn, storeuser) + "' LIMIT 2";
+	auto qstr = "SELECT guid, user_id FROM stores WHERE user_name='" + sql_escape(drv->m_conn, storeuser) + "'";
 	auto res = drv->query(qstr.c_str());
-	if (mysql_num_rows(res.get()) > 1)
-		throw YError("PK-1013: Username led to ambiguous store [trivial search only]");
+	if (mysql_num_rows(res.get()) > 1) {
+		present_stores(storeuser, res);
+		throw YError("PK-1013: \"%s\" was ambiguous.\n", storeuser);
+	}
 	auto row = res.fetch_row();
 	if (row == nullptr || row[0] == nullptr)
 		throw YError("PK-1022: no store for that user");
