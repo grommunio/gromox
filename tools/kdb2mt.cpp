@@ -384,37 +384,38 @@ uint32_t driver::hid_from_mst(kdb_item &item, uint32_t proptag)
 	auto eid = static_cast<BINARY *>(tpropval_array_get_propval(props, proptag));
 	if (eid == nullptr)
 		return 0;
-	char qstr[80];
+	char qstr[184];
 	snprintf(qstr, arsizeof(qstr), "SELECT hierarchyid FROM indexedproperties "
-		"WHERE tag=0x0FFF AND val_binary=0x%.48s LIMIT 1", bin2hex(eid->pv, eid->cb).c_str());
+		"WHERE tag=0x0FFF AND val_binary=0x%.96s LIMIT 1", bin2hex(eid->pv, eid->cb).c_str());
 	auto res = query(qstr);
 	auto row = res.fetch_row();
 	if (row == nullptr || row[0] == nullptr)
-		throw YError("PK-1005");
+		return 0;
 	return strtoul(row[0], nullptr, 0);
 }
 
 void driver::fmap_setup_splice()
 {
 	m_folder_map.clear();
+	auto store = get_store_item();
 	auto root = get_root_folder();
 	m_folder_map.emplace(root->m_hid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_ROOT), "FID_ROOT"});
-	auto nid = hid_from_mst(*root, PR_IPM_SUBTREE_ENTRYID);
+	auto nid = hid_from_mst(*store, PR_IPM_SUBTREE_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE), "FID_IPMSUBTREE"});
-	nid = hid_from_mst(*root, PR_IPM_OUTBOX_ENTRYID);
+	nid = hid_from_mst(*store, PR_IPM_OUTBOX_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_OUTBOX), "FID_OUTBOX"});
-	nid = hid_from_mst(*root, PR_IPM_WASTEBASKET_ENTRYID);
+	nid = hid_from_mst(*store, PR_IPM_WASTEBASKET_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_DELETED_ITEMS), "FID_DELETED_ITEMS"});
-	nid = hid_from_mst(*root, PR_IPM_SENTMAIL_ENTRYID);
+	nid = hid_from_mst(*store, PR_IPM_SENTMAIL_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS), "FID_SENT_ITEMS"});
-	nid = hid_from_mst(*root, PR_COMMON_VIEWS_ENTRYID);
+	nid = hid_from_mst(*store, PR_COMMON_VIEWS_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_COMMON_VIEWS), "FID_COMMON_VIEWS"});
-	nid = hid_from_mst(*root, PR_FINDER_ENTRYID);
+	nid = hid_from_mst(*store, PR_FINDER_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_FINDER), "FID_FINDER"});
 }
