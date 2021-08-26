@@ -16,6 +16,7 @@ saved_CFLAGS="$CFLAGS"
 saved_CXXFLAGS="$CXXFLAGS"
 saved_LDFLAGS="$LDFLAGS"
 saved_LIBS="$LIBS"
+AC_LANG_PUSH([C++])
 
 my_CFLAGS="-Wall -Wmissing-declarations -Wwrite-strings"
 my_CXXFLAGS="-Wall -Wmissing-declarations"
@@ -30,6 +31,8 @@ CXXFLAGS="$CXXFLAGS_system"
 AS_IF([test -n "$cxxmode"], [
 	my_CXXFLAGS="$my_CXXFLAGS -std=$cxxmode"
 	AC_MSG_RESULT([$cxxmode])
+], [
+	AC_MSG_RESULT([none])
 ])
 
 AC_ARG_WITH([asan], AS_HELP_STRING([--with-asan], [Activate Address Sanitizer]),
@@ -122,5 +125,8 @@ AC_SUBST([my_CFLAGS])
 AC_SUBST([my_CXXFLAGS])
 AH_TEMPLATE([PROJECT_VERSION], [])
 AC_DEFINE([PROJECT_VERSION], [PACKAGE_VERSION]) dnl for now
+
+AS_IF([test -z "$cxxmode"], [AC_MSG_RESULT([*** No usable -std= argument was detected for this C++ compiler.])])
+AC_LANG_POP([C++])
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
