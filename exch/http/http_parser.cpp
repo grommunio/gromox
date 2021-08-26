@@ -1471,7 +1471,7 @@ static int htparse_rdbody_nochan(HTTP_CONTEXT *pcontext)
 	auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 		"HTTP/1.1 200 Success\r\n"
 		"Connection: Keep-Alive\r\n"
-		"Content-length: 20\r\n"
+		"Content-Length: 20\r\n"
 		"Content-Type: application/rpc\r\n\r\n");
 	pdu_processor_rts_echo(response_buff + response_len);
 	response_len += 20;
@@ -1672,7 +1672,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 				"Cache-Control: private\r\n"
 				"Content-Type: application/rpc\r\n"
 				"Persistent-Auth: true\r\n"
-				"Content-length: %u\r\n\r\n",
+				"Content-Length: %u\r\n\r\n",
 				dstring, OUT_CHANNEL_MAX_LENGTH);
 			stream_write(&pcontext->stream_out,
 				response_buff, response_len);

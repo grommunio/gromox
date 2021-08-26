@@ -32,7 +32,7 @@
 		imagejpeg($newimage, $tsrc, 100);
 		chmod("$tsrc", 0666);
 		session_destroy();
-		header("Content-type: image/jpeg");
+		header("Content-Type: image/jpeg");
 		imagejpeg($newimage);
 		exit(0);
 	} else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
