@@ -415,9 +415,34 @@ void driver::fmap_setup_splice()
 	nid = hid_from_mst(*store, PR_COMMON_VIEWS_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_COMMON_VIEWS), "FID_COMMON_VIEWS"});
+	nid = hid_from_mst(*store, PR_VIEWS_ENTRYID);
+	if (nid != 0)
+		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_VIEWS), "FID_VIEWS"});
 	nid = hid_from_mst(*store, PR_FINDER_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_FINDER), "FID_FINDER"});
+	nid = hid_from_mst(*store, PR_SCHEDULE_FOLDER_ENTRYID);
+	if (nid != 0)
+		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_SCHEDULE), "FID_SCHEDULE"});
+
+	nid = hid_from_mst(*root, PR_IPM_APPOINTMENT_ENTRYID);
+	if (nid != 0)
+		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR), "FID_CALENDAR"});
+	nid = hid_from_mst(*root, PR_IPM_CONTACT_ENTRYID);
+	if (nid != 0)
+		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS), "FID_CONTACTS"});
+	nid = hid_from_mst(*root, PR_IPM_JOURNAL_ENTRYID);
+	if (nid != 0)
+		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL), "FID_JOURNAL"});
+	nid = hid_from_mst(*root, PR_IPM_NOTE_ENTRYID);
+	if (nid != 0)
+		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_NOTES), "FID_NOTES"});
+	nid = hid_from_mst(*root, PR_IPM_TASK_ENTRYID);
+	if (nid != 0)
+		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_TASKS), "FID_TASKS"});
+	nid = hid_from_mst(*root, PR_IPM_DRAFTS_ENTRYID);
+	if (nid != 0)
+		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT), "FID_DRAFTS"});
 }
 
 void driver::fmap_setup_standard(const char *title)
