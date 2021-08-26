@@ -560,8 +560,13 @@ static gi_name_map do_namemap(driver &drv)
 static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
 {
 	auto props = item.get_props();
-	if (g_show_tree)
+	if (g_show_tree) {
 		gi_dump_tpropval_a(depth, *props);
+	} else {
+		auto dn = static_cast<const char *>(tpropval_array_get_propval(props, PR_DISPLAY_NAME));
+		fprintf(stderr, "Processing folder \"%s\" (%zu elements)...\n",
+		        dn != nullptr ? dn : "", item.m_sub_hids.size());
+	}
 
 	bool b_create = false;
 	auto iter = drv.m_folder_map.find(item.m_hid);
