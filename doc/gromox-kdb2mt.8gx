@@ -5,8 +5,7 @@
 \fBgromox\-kdb2mt\fP [\fB\-pst\fP] [\fB\-\-src\-host\fP \fIsqlhost\fP]
 [\fB\-\-src\-user\fP \fIsqluser\fP] [\fB\-\-src-port\fP \fIsqlport\fP]
 \fB\-\-src\-at\fP \fIdir\fP {\fB\-\-src\-guid\fP
-\fImboxguid\fP|\fB\-\-src\-mbox\fP \fIusername\fP} \fB\-\-dst\-mbox\fP
-\fIemailaddr\fP
+\fImboxguid\fP|\fB\-\-src\-mbox\fP \fIusername\fP} [...]
 .SH Description
 gromox\-kdb2mt reads one store from the Kopano SQL database and, for
 attachments, the associated filesystem. The data is then re-exported in a
@@ -60,6 +59,10 @@ Extract the mailbox with the particular GUID from the source.
 .TP
 \fB\-\-src\-mbox\fP \fIusername\fP
 Extract the mailbox of the given username from the source.
+.TP
+\fB\-\-l1\fP \fIx\fP, \fB\-\-l2\fP \fIy\fP
+If you are using "attachment_storage=files_v1-\fIx\fP-\fIy\fP" in
+kopano-server.cfg, call kdb2mt with the L1 and L2 options.
 .SH Environment variables
 .TP
 \fBSRCPASS\fP
