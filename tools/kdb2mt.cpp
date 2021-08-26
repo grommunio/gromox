@@ -348,7 +348,7 @@ kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
 		throw YError("PK-1019: mysql_connect %s@%s: %s",
 		      sqp.user.c_str(), sqp.host.c_str(), mysql_error(drv->m_conn));
 
-	auto qstr = "SELECT guid, user_id FROM stores WHERE user_name='" + sql_escape(drv->m_conn, storeuser) + "'";
+	auto qstr = "SELECT stores.guid, stores.user_id FROM stores INNER JOIN users ON stores.user_id=users.id WHERE stores.user_name='" + sql_escape(drv->m_conn, storeuser) + "'";
 	auto res = drv->query(qstr.c_str());
 	if (mysql_num_rows(res.get()) > 1) {
 		present_stores(storeuser, res);
