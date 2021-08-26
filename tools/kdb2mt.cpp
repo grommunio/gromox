@@ -619,7 +619,7 @@ static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent,
 	auto res = drv.query(qstr);
 	auto row = res.fetch_row();
 	if (row == nullptr || row[0] == nullptr) {
-		fprintf(stderr, "PK-1012: attachment %lu has no SIID and is lost",
+		fprintf(stderr, "PK-1012: attachment %lu is missing from \"singleinstances\" table and is lost\n",
 		        static_cast<unsigned long>(item.m_hid));
 		return 0;
 	}
