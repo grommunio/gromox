@@ -31,9 +31,9 @@ static gi_folder_map_t g_folder_map;
 static gi_name_map g_src_name_map;
 static std::unordered_map<uint16_t, uint16_t> g_thru_name_map;
 static uint8_t g_splice, ignore_mkdir_fail;
-static auto &g_verbose = g_show_tree;
 static const struct HXoption g_options_table[] = {
-	{nullptr, 'v', HXTYPE_NONE, &g_verbose, nullptr, nullptr, 0, "Increase verbosity"},
+	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
+	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
@@ -79,6 +79,7 @@ static void exm_read_base_maps()
 	if (ret < 0 || static_cast<size_t>(ret) != xsize)
 		throw YError("PG-1002: %s", strerror(errno));
 	gi_folder_map_read(buf.get(), xsize, g_folder_map);
+	gi_dump_folder_map(g_folder_map);
 
 	errno = 0;
 	ret = fullread(STDIN_FILENO, &xsize, sizeof(xsize));
@@ -90,6 +91,7 @@ static void exm_read_base_maps()
 	if (ret < 0 || static_cast<size_t>(ret) != xsize)
 		throw YError("PG-1004: %s", strerror(errno));
 	gi_name_map_read(buf.get(), xsize, g_src_name_map);
+	gi_dump_name_map(g_src_name_map);
 }
 
 static void exm_adjust_namedprops(TPROPVAL_ARRAY &props)
@@ -126,7 +128,7 @@ static void exm_folder_adjust(TPROPVAL_ARRAY &props)
 
 static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
 {
-	if (g_verbose) {
+	if (g_show_tree) {
 		printf("exm: Folder %lxh (parent=%llxh)\n",
 			static_cast<unsigned long>(obd.nid),
 			static_cast<unsigned long long>(obd.parent.folder_id));
@@ -154,7 +156,7 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
 		if (ret < 0)
 			return ret;
 		if (new_fid != 0) {
-			if (g_verbose)
+			if (g_show_tree)
 				fprintf(stderr, "Updated mapping {%lxh -> %llxh}\n",
 				        static_cast<unsigned long>(obd.nid),
 				        static_cast<unsigned long long>(new_fid));
@@ -185,7 +187,7 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
 			return ret;
 		if (new_fid != 0) {
 			/* Make subobjects (seen later) to take exm_folder case #3/exm_messages case #n. */
-			if (g_verbose)
+			if (g_show_tree)
 				fprintf(stderr, "exm: Learned new folder {%lxh -> %llxh}\n",
 				        static_cast<unsigned long>(obd.nid),
 				        static_cast<unsigned long long>(new_fid));
@@ -200,7 +202,7 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
 
 static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt)
 {
-	if (g_verbose) {
+	if (g_show_tree) {
 		printf("exm: Message %lxh (parent=%llxh)\n",
 			static_cast<unsigned long>(obd.nid),
 			static_cast<unsigned long long>(obd.parent.folder_id));
