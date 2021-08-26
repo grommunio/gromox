@@ -14,11 +14,13 @@
 #include <vector>
 #include <mysql.h>
 #include <unistd.h>
+#include <zlib.h>
 #include <libHX/option.h>
 #include <gromox/database_mysql.hpp>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
+#include <gromox/scope.hpp>
 #include <gromox/tarray_set.hpp>
 #include <gromox/tpropval_array.hpp>
 #include <gromox/util.hpp>
@@ -607,6 +609,40 @@ static int do_recip(driver &drv, unsigned int depth, const parent_desc &parent, 
 	return 0;
 }
 
+static std::string slurp_file_gz(const char *file)
+{
+	std::string file_gz, outstr;
+	gzFile fp = gzopen(file, "rb");
+	if (fp == nullptr && errno == ENOENT) {
+		file_gz = file + ".gz"s;
+		file = file_gz.c_str();
+		fp = gzopen(file, "rb");
+	}
+	if (fp == nullptr) {
+		fprintf(stderr, "gzopen %s: %s\n", file, strerror(errno));
+		return outstr;
+	}
+	auto cl_0 = make_scope_exit([&]() { gzclose(fp); });
+	char buf[4096];
+	while (!gzeof(fp)) {
+		auto rd = gzread(fp, buf, arsizeof(buf));
+		/* save errno because gzread might just fail save-restoring it */
+		int saved_errno = errno, zerror;
+		const char *zerrstr = gzerror(fp, &zerror);
+		if (rd < 0 && zerror == Z_ERRNO) {
+			fprintf(stderr, "gzread %s: %s (%d): %s\n", file, zerrstr, zerror, strerror(saved_errno));
+			break;
+		} else if (rd < 0) {
+			fprintf(stderr, "gzread %s: %s (%d)\n", file, zerrstr, zerror);
+			break;
+		}
+		if (rd == 0)
+			break;
+		outstr.append(buf, rd);
+	}
+	return outstr;
+}
+
 static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
 {
 	attachment_content_ptr atc(attachment_content_init());
@@ -635,7 +671,7 @@ static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent,
 		tree(depth);
 		fprintf(stderr, "Attachment source: %s\n", filename.c_str());
 	}
-	std::string contents = slurp_file(filename.c_str());
+	std::string contents = slurp_file_gz(filename.c_str());
 	BINARY bin;
 	bin.cb = contents.size();
 	bin.pv = contents.data();
