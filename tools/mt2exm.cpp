@@ -63,7 +63,13 @@ static ssize_t fullread(int fd, void *vbuf, size_t size)
 static void exm_read_base_maps()
 {
 	errno = 0;
-	auto ret = fullread(STDIN_FILENO, &g_splice, sizeof(g_splice));
+	char magic[8];
+	auto ret = fullread(STDIN_FILENO, magic, arsizeof(magic));
+	if (ret < 0 || static_cast<size_t>(ret) != arsizeof(magic))
+		throw YError("PG-1126: %s", strerror(errno));
+	if (memcmp(magic, "GXMT0000", 8) != 0)
+		throw YError("PG-1127: Unrecognized input format");
+	ret = fullread(STDIN_FILENO, &g_splice, sizeof(g_splice));
 	if (ret < 0 || static_cast<size_t>(ret) != sizeof(g_splice))
 		throw YError("PG-1120: %s", strerror(errno));
 

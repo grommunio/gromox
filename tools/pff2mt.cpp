@@ -824,6 +824,7 @@ static int do_file(const char *filename) try
 		return -(errno = s);
 	}
 
+	write(STDOUT_FILENO, "GXMT0000", 8);
 	uint8_t xsplice = g_splice;
 	write(STDOUT_FILENO, &xsplice, sizeof(xsplice));
 	g_folder_map.clear();

@@ -819,6 +819,7 @@ static int do_item(driver &drv, unsigned int depth, const parent_desc &parent, k
 
 static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 {
+	write(STDOUT_FILENO, "GXMT0000", 8);
 	uint8_t xsplice = g_splice;
 	write(STDOUT_FILENO, &xsplice, sizeof(xsplice));
 	if (g_splice)
