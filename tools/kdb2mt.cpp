@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -96,7 +97,7 @@ static int do_item(driver &, unsigned int, const parent_desc &, kdb_item &);
 
 static char *g_sqlhost, *g_sqlport, *g_sqldb, *g_sqluser, *g_atxdir;
 static char *g_srcguid, *g_srcmbox;
-static unsigned int g_splice, g_level1_fan = 10, g_level2_fan = 20;
+static unsigned int g_splice, g_level1_fan = 10, g_level2_fan = 20, g_verbose;
 static std::vector<uint32_t> g_only_objs;
 
 static void cb_only_obj(const HXoptcb *cb) {
@@ -107,6 +108,7 @@ static const struct HXoption g_options_table[] = {
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Splice source mail objects into existing destination mailbox hierarchy"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the source archive"},
+	{nullptr, 'v', HXTYPE_NONE | HXOPT_INC, &g_verbose, nullptr, nullptr, 0, "More detailed progress reports"},
 	{"l1", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L1 fan number for attachment directories of type files_v1 (default: 10)", "N"},
 	{"l2", 0, HXTYPE_UINT, &g_level1_fan, nullptr, nullptr, 0, "L2 fan number for attachment directories of type files_v1 (default: 20)", "N"},
 	{"src-host", 0, HXTYPE_STRING, &g_sqlhost, nullptr, nullptr, 0, "Hostname for SQL connection (default: localhost)", "HOST"},
@@ -790,12 +792,28 @@ static int do_item(driver &drv, unsigned int depth, const parent_desc &parent, k
 	if (ret < 0)
 		return ret;
 
+	auto istty = isatty(STDERR_FILENO);
+	auto last_ts = std::chrono::steady_clock::now();
+	unsigned int verb = (new_parent.type == MAPI_STORE ||
+	                    new_parent.type == MAPI_FOLDER) &&
+	                    !g_show_tree && g_verbose;
+
 	for (size_t i = 0; i < item.m_sub_hids.size(); ++i) {
 		auto subitem = item.get_sub_item(i);
 		ret = do_item(drv, depth, new_parent, *subitem);
 		if (ret < 0)
 			return ret;
+		auto now_ts = decltype(last_ts)::clock::now();
+		auto tsdiff = now_ts - last_ts;
+		if (verb > 0 && tsdiff > std::chrono::seconds(1)) {
+			fprintf(stderr, " %zu/%zu (%.0f%%)%c", i, item.m_sub_hids.size(),
+			        i * 100.0 / item.m_sub_hids.size(), istty ? '\r' : '\n');
+			last_ts = now_ts;
+			verb = 2;
+		}
 	}
+	if (verb > 0 && istty)
+		fprintf(stderr, "\e[2K");
 	return 0;
 }
 

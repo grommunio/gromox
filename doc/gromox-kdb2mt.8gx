@@ -2,7 +2,7 @@
 .SH Name
 \fBgromox\-kdb2mt\fP \(em Utility for analysis of Kopano databases
 .SH Synopsis
-\fBgromox\-kdb2mt\fP [\fB\-pst\fP] [\fB\-\-src\-host\fP \fIsqlhost\fP]
+\fBgromox\-kdb2mt\fP [\fB\-pstv\fP] [\fB\-\-src\-host\fP \fIsqlhost\fP]
 [\fB\-\-src\-user\fP \fIsqluser\fP] [\fB\-\-src-port\fP \fIsqlport\fP]
 \fB\-\-src\-at\fP \fIdir\fP {\fB\-\-src\-guid\fP
 \fImboxguid\fP|\fB\-\-src\-mbox\fP \fIusername\fP} [...]
@@ -33,6 +33,10 @@ in the target store.
 .TP
 \fB\-t\fP
 Show a diagnostic tree view of the source data as it is being read.
+.TP
+\fB\-v\fP
+Print message count progress while processing larger folders. This option has
+no effect if (the even more verbose) \fB\-t\fP option was used.
 .TP
 \fB\-\-src\-host\fP \fIhostname\fP
 Hostname for the source SQL connection.
