@@ -97,6 +97,12 @@ static int do_item(driver &, unsigned int, const parent_desc &, kdb_item &);
 static char *g_sqlhost, *g_sqlport, *g_sqldb, *g_sqluser, *g_atxdir;
 static char *g_srcguid, *g_srcmbox;
 static unsigned int g_splice, g_level1_fan = 10, g_level2_fan = 20;
+static std::vector<uint32_t> g_only_objs;
+
+static void cb_only_obj(const HXoptcb *cb) {
+		g_only_objs.push_back(cb->data_long);
+}
+
 static const struct HXoption g_options_table[] = {
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Splice source mail objects into existing destination mailbox hierarchy"},
@@ -110,6 +116,7 @@ static const struct HXoption g_options_table[] = {
 	{"src-at", 0, HXTYPE_STRING, &g_atxdir, nullptr, nullptr, 0, "Attachment directory", "DIR"},
 	{"src-guid", 0, HXTYPE_STRING, &g_srcguid, nullptr, nullptr, 0, "Mailbox to extract from SQL", "GUID"},
 	{"src-mbox", 0, HXTYPE_STRING, &g_srcmbox, nullptr, nullptr, 0, "Mailbox to extract from SQL", "USERNAME"},
+	{"only-obj", 0, HXTYPE_ULONG, nullptr, nullptr, cb_only_obj, 0, "Extract specific object only", "OBJID"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -786,7 +793,17 @@ static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 
 	if (g_show_tree)
 		fprintf(stderr, "Object tree:\n");
-	return do_item(*drv, 0, {}, *drv->get_store_item());
+	if (g_only_objs.size() == 0)
+		return do_item(*drv, 0, {}, *drv->get_store_item());
+
+	auto pd = parent_desc::as_folder(~0ULL);
+	for (const auto hid : g_only_objs) {
+		auto item = kdb_item::load_hid_base(*drv, hid);
+		auto ret = do_item(*drv, 0, pd, *item);
+		if (ret < 0)
+			throw YError("PK-1015: %s", strerror(-ret));
+	}
+	return 0;
 }
 
 int main(int argc, const char **argv)
