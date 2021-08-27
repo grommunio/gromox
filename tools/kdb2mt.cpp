@@ -342,7 +342,7 @@ kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
 	drv->m_conn = mysql_init(nullptr);
 	if (drv->m_conn == nullptr)
 		throw std::bad_alloc();
-	//mysql_options(drv->m_conn, MYSQL_SET_CHARSET_NAME, "utf8mb4");
+	mysql_options(drv->m_conn, MYSQL_SET_CHARSET_NAME, "utf8mb4");
 	if (mysql_real_connect(drv->m_conn, snul(sqp.host), sqp.user.c_str(),
 	    sqp.pass.c_str(), sqp.dbname.c_str(), 0, nullptr, 0) == nullptr)
 		throw YError("PK-1019: mysql_connect %s@%s: %s",
