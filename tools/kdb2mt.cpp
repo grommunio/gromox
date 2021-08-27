@@ -537,9 +537,8 @@ std::unique_ptr<kdb_item> kdb_item::get_sub_item(size_t idx)
 	return load_hid_base(m_drv, m_sub_hids[idx].first);
 }
 
-static gi_name_map do_namemap(driver &drv)
+static void do_namemap_table(driver &drv, gi_name_map &map)
 {
-	gi_name_map map;
 	auto res = drv.query("SELECT id, guid, nameid, namestring FROM names");
 	DB_ROW row;
 	while ((row = res.fetch_row()) != nullptr) {
@@ -563,6 +562,35 @@ static gi_name_map do_namemap(driver &drv)
 		pnstr.release();
 		pn_req.pname = nullptr;
 	}
+}
+
+static gi_name_map do_namemap(driver &drv)
+{
+	gi_name_map map;
+	static constexpr struct {
+		unsigned int psetid, lid_min, lid_max, base;
+	} hardmapped_nprops[] = {
+		{PSETID_ADDRESS,          0x8000, 0x80EF, 0x80B0},
+		{PSETID_TASK,             0x8100, 0x813F, 0x8070},
+		{PSETID_APPOINTMENT,      0x8200, 0x826F, 0x8000},
+		{PSETID_COMMON,           0x8500, 0x85FF, 0x81A0},
+		{PSETID_LOG,              0x8700, 0x871F, 0x82A0},
+		{PSETID_BUSINESSCARDVIEW, 0x8800, 0x881F, 0x82C0},
+		{PSETID_NOTE,             0x8B00, 0x8B1F, 0x82E0},
+		{PSETID_REPORT,           0x8D00, 0x8D1F, 0x8300},
+		{PSETID_REMOTE,           0x8F00, 0x8F1F, 0x8320},
+		{PSETID_MEETING,          0x0000, 0x003F, 0x8340},
+		{PSETID_KC,               0x0002, 0x0002, 0x8380},
+	};
+	PROPERTY_NAME pn;
+	pn.kind = MNID_ID;
+
+	for (const auto &row : hardmapped_nprops) {
+		rop_util_get_common_pset(row.psetid, &pn.guid);
+		for (pn.lid = row.lid_min; pn.lid < row.lid_max; ++pn.lid)
+			map.emplace(pn.lid - row.lid_min + row.base, pn);
+	}
+	do_namemap_table(drv, map);
 	return map;
 }
 

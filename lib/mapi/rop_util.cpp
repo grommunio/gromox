@@ -250,7 +250,7 @@ void rop_util_guid_to_binary(GUID guid, BINARY *pbin)
 
 BOOL rop_util_get_common_pset(unsigned int pset_type, GUID *pguid)
 {
-	static GUID guids[18];
+	static GUID guids[PSETID__MAX];
 	static BOOL b_parsed;
 	
 	if (FALSE == b_parsed) {
@@ -272,6 +272,11 @@ BOOL rop_util_get_common_pset(unsigned int pset_type, GUID *pguid)
 		guid_from_string(&guids[PS_MAPI], "00020328-0000-0000-c000-000000000046");
 		guid_from_string(&guids[PSETID_ATTACHMENT], "96357F7F-59E1-47D0-99A7-46515C183B54");
 		guid_from_string(&guids[PSETID_GROMOX], "1de937e2-85c6-40a1-bd9d-a6e2b7b787b1");
+		guid_from_string(&guids[PSETID_BUSINESSCARDVIEW], "0006200b-0000-0000-c000-000000000046");
+		guid_from_string(&guids[PSETID_REPORT], "00062013-0000-0000-c000-000000000046");
+		guid_from_string(&guids[PSETID_REMOTE], "00062014-0000-0000-c000-000000000046");
+		guid_from_string(&guids[PSETID_KC], "63aed8c8-4049-4b75-bc8896df9d723f2f");
+		guid_from_string(&guids[PSETID_KCARCHIVE], "72e98ebc-57d2-4ab5-b0aad50a7b531cb9");
 		b_parsed = TRUE;
 	}
 	if (pset_type >= GX_ARRAY_SIZE(guids))
