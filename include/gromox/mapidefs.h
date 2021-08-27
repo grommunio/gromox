@@ -146,6 +146,7 @@ enum {
 	PR_ATTACH_EXTENSION = PROP_TAG(PT_UNICODE, 0x3703), /* PidTagAttachExtension */
 	PR_ATTACH_FILENAME_A = PROP_TAG(PT_STRING8, 0x3704),
 	PR_ATTACH_FILENAME = PROP_TAG(PT_UNICODE, 0x3704), /* PidTagAttachFilename (8.3 format) */
+	PR_ATTACH_METHOD = PROP_TAG(PT_LONG, 0x3705), /* PidTagAttachMethod */
 	PR_ATTACH_LONG_FILENAME_A = PROP_TAG(PT_STRING8, 0x3707),
 	PR_ATTACH_LONG_FILENAME = PROP_TAG(PT_UNICODE, 0x3707), /* PidTagAttachLongFilename */
 	// PR_ATTACH_LONG_PATHNAME = PROP_TAG(PT_UNICODE, 0x370D), /* PidTagAttachLongPathname */
@@ -371,6 +372,17 @@ enum ACTTYPE {
 	OP_TAG = 0x9U,
 	OP_DELETE = 0xaU,
 	OP_MARK_AS_READ = 0xbU,
+};
+
+enum attach_method {
+	NO_ATTACHMENT = 0, /* afNone */
+	ATTACH_BY_VALUE = 1, /* afByValue */
+	ATTACH_BY_REFERENCE = 2, /* afByReference */
+	ATTACH_BY_REF_RESOLVE = 3,
+	ATTACH_BY_REF_ONLY = 4, /* afByReferenceOnly */
+	ATTACH_EMBEDDED_MSG = 5, /* afEmbeddedMessage */
+	ATTACH_OLE = 6, /* afStorage */
+	ATTACH_BY_WEBREFERENCE = 7, /* afByWebReference */
 };
 
 enum bm_relop {

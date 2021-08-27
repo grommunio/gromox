@@ -2276,7 +2276,6 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	BINARY tmp_bin;
 	BINARY key_bin;
 	uint8_t tmp_byte;
-	uint32_t *pmethod;
 	REND_DATA tmp_rend;
 	ATTR_ADDR tmp_addr;
 	uint16_t tmp_int16;
@@ -2777,23 +2776,22 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		pattachment = pmsg->children.pattachments->pplist[i];
 		tmp_proptags.count = 0;
 		/* ATTRIBUTE_ID_ATTACHRENDDATA */
-		pmethod = static_cast<uint32_t *>(tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_ATTACHMETHOD));
+		auto pmethod = static_cast<uint32_t *>(tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_METHOD));
 		if (NULL == pmethod) {
 			tmp_rend.attach_type = ATTACH_TYPE_FILE;
 			break;
 		} else {
 			switch (*pmethod) {
-			case ATTACH_METHOD_NONE:
-			case ATTACH_METHOD_BY_VALUE:
-			case ATTACH_METHOD_EMBEDDED:
+			case NO_ATTACHMENT:
+			case ATTACH_BY_VALUE:
+			case ATTACH_EMBEDDED_MSG:
 				tmp_rend.attach_type = ATTACH_TYPE_FILE;
 				break;
-			case ATTACH_METHOD_STORAGE:
+			case ATTACH_OLE:
 				tmp_rend.attach_type = ATTACH_TYPE_OLE;
 				break;
 			default:
-				debug_info("[tnef]: unsupported type in "
-					"PROP_TAG_ATTACHMETHOD by attachment");
+				debug_info("[tnef]: unsupported type in PR_ATTACH_METHOD by attachment");
 				return FALSE;
 			}
 		}
@@ -2821,7 +2819,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			return FALSE;
 		}
 		/* ATTRIBUTE_ID_ATTACHDATA */
-		if (NULL != pmethod && ATTACH_METHOD_BY_VALUE == *pmethod) {
+		if (pmethod != nullptr && *pmethod == ATTACH_BY_VALUE) {
 			pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_DATA_BIN);
 			if (NULL != pvalue) {
 				attribute.attr_id = ATTRIBUTE_ID_ATTACHDATA;

@@ -2048,9 +2048,9 @@ static BOOL oxcical_parse_exceptional_attachment(ATTACHMENT_CONTENT *pattachment
 	uint64_t tmp_int64;
 	TAGGED_PROPVAL propval;
 	
-	propval.proptag = PROP_TAG_ATTACHMETHOD;
+	propval.proptag = PR_ATTACH_METHOD;
 	propval.pvalue = &tmp_int32;
-	tmp_int32 = ATTACH_METHOD_EMBEDDED;
+	tmp_int32 = ATTACH_EMBEDDED_MSG;
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
 	propval.proptag = PROP_TAG_RENDERINGPOSITION;
@@ -2179,9 +2179,9 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			propval.proptag = PR_DISPLAY_NAME;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			propval.proptag = PROP_TAG_ATTACHMETHOD;
+			propval.proptag = PR_ATTACH_METHOD;
 			propval.pvalue = &tmp_int32;
-			tmp_int32 = ATTACH_METHOD_BY_VALUE;
+			tmp_int32 = ATTACH_BY_VALUE;
 			pvalue1 = piline->get_first_paramval("FMTYPE");
 			if (NULL != pvalue1) {
 				propval.proptag = PROP_TAG_ATTACHMIMETAG;
@@ -2298,9 +2298,9 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 		propval.proptag = PR_DISPLAY_NAME;
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		propval.proptag = PROP_TAG_ATTACHMETHOD;
+		propval.proptag = PR_ATTACH_METHOD;
 		propval.pvalue = &tmp_int32;
-		tmp_int32 = ATTACH_METHOD_BY_VALUE;
+		tmp_int32 = ATTACH_BY_VALUE;
 		pvalue1 = piline->get_first_paramval("FMTYPE");
 		if (NULL != pvalue1) {
 			propval.proptag = PROP_TAG_ATTACHMIMETAG;

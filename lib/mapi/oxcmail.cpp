@@ -2859,9 +2859,9 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	}
 	/* Content-Type is multipart/appledouble */
 	if (NULL != pmime1) {
-		propval.proptag = PROP_TAG_ATTACHMETHOD;
+		propval.proptag = PR_ATTACH_METHOD;
 		propval.pvalue = &tmp_int32;
-		tmp_int32 = ATTACH_METHOD_BY_VALUE;
+		tmp_int32 = ATTACH_BY_VALUE;
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 			pmime_enum->b_result = FALSE;
 			return;
@@ -2909,9 +2909,9 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 					NULL != (pmsg = oxvcard_import(
 					&vcard, pmime_enum->get_propids))) {
 					attachment_content_set_embedded_internal(pattachment, pmsg);
-					propval.proptag = PROP_TAG_ATTACHMETHOD;
+					propval.proptag = PR_ATTACH_METHOD;
 					propval.pvalue = &tmp_int32;
-					tmp_int32 = ATTACH_METHOD_EMBEDDED;
+					tmp_int32 = ATTACH_EMBEDDED_MSG;
 					if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 						pmime_enum->b_result = FALSE;
 					vcard_free(&vcard);
@@ -2920,7 +2920,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 				}
 				vcard_free(&vcard);
 			}
-			tmp_int32 = ATTACH_METHOD_EMBEDDED;
+			tmp_int32 = ATTACH_EMBEDDED_MSG;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				pmime_enum->b_result = FALSE;
 				free(pcontent);
@@ -2978,9 +2978,9 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 					}
 				}
 			}
-			propval.proptag = PROP_TAG_ATTACHMETHOD;
+			propval.proptag = PR_ATTACH_METHOD;
 			propval.pvalue = &tmp_int32;
-			tmp_int32 = ATTACH_METHOD_EMBEDDED;
+			tmp_int32 = ATTACH_EMBEDDED_MSG;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				mail_free(&mail);
 				free(pcontent);
@@ -3043,9 +3043,9 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			pmime_enum->b_result = FALSE;
 		return;
 	}
-	propval.proptag = PROP_TAG_ATTACHMETHOD;
+	propval.proptag = PR_ATTACH_METHOD;
 	propval.pvalue = &tmp_int32;
-	tmp_int32 = ATTACH_METHOD_BY_VALUE;
+	tmp_int32 = ATTACH_BY_VALUE;
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		pmime_enum->b_result = FALSE;
 		return;
@@ -4048,9 +4048,9 @@ static BOOL oxcmail_parse_smime_message(
 		return FALSE;
 	}
 	free(pcontent);
-	propval.proptag = PROP_TAG_ATTACHMETHOD;
+	propval.proptag = PR_ATTACH_METHOD;
 	propval.pvalue = &tmp_int32;
-	tmp_int32 = ATTACH_METHOD_BY_VALUE;
+	tmp_int32 = ATTACH_BY_VALUE;
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
 	propval.proptag = PROP_TAG_ATTACHMIMETAG;
@@ -7149,8 +7149,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 		}
 		if (NULL == pattachment->pembedded &&
 			(pvalue = tpropval_array_get_propval(
-			&pattachment->proplist, PROP_TAG_ATTACHMETHOD)) &&
-			ATTACH_METHOD_BY_VALUE == *(uint32_t*)pvalue &&
+		    &pattachment->proplist, PR_ATTACH_METHOD)) &&
+		    *static_cast<uint32_t *>(pvalue) == ATTACH_BY_VALUE &&
 			(pvalue = tpropval_array_get_propval(
 			&pattachment->proplist, PROP_TAG_ATTACHENCODING)) &&
 			9 == ((BINARY*)pvalue)->cb && 0 == memcmp(
