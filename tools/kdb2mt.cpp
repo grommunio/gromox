@@ -700,21 +700,16 @@ static std::string slurp_file_gz(const char *file)
 	return outstr;
 }
 
-static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
+static void do_attach_byval(driver &drv, unsigned int depth, unsigned int hid,
+    TPROPVAL_ARRAY *props)
 {
-	attachment_content_ptr atc(attachment_content_init());
-	if (atc == nullptr)
-		throw std::bad_alloc();
-	auto props = item.get_props();
-
 	char qstr[96];
-	snprintf(qstr, arsizeof(qstr), "SELECT filename, instanceid FROM singleinstances WHERE hierarchyid=%u LIMIT 1", item.m_hid);
+	snprintf(qstr, arsizeof(qstr), "SELECT filename, instanceid FROM singleinstances WHERE hierarchyid=%u LIMIT 1", hid);
 	auto res = drv.query(qstr);
 	auto row = res.fetch_row();
 	if (row == nullptr || row[1] == nullptr) {
-		fprintf(stderr, "PK-1012: attachment %lu is missing from \"singleinstances\" table and is lost\n",
-		        static_cast<unsigned long>(item.m_hid));
-		return 0;
+		fprintf(stderr, "PK-1012: attachment %u is missing from \"singleinstances\" table and is lost\n", hid);
+		return;
 	}
 	std::string filename;
 	auto siid = strtoul(row[1], nullptr, 0);
@@ -737,6 +732,34 @@ static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent,
 	pv.pvalue = &bin;
 	if (!tpropval_array_set_propval(props, &pv))
 		throw std::bad_alloc();
+}
+
+static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
+{
+	attachment_content_ptr atc(attachment_content_init());
+	if (atc == nullptr)
+		throw std::bad_alloc();
+	auto props = item.get_props();
+	auto mode = static_cast<uint32_t *>(tpropval_array_get_propval(props, PR_ATTACH_METHOD));
+
+	if (mode == nullptr)
+		fprintf(stderr, "PK-1005: Attachment %u without PR_ATTACH_METHOD.\n",
+		        static_cast<unsigned int>(item.m_hid));
+	else if (*mode == ATTACH_BY_VALUE)
+		do_attach_byval(drv, depth, item.m_hid, props);
+
+	auto saved_show_tree = g_show_tree;
+	g_show_tree = false;
+	auto new_parent = parent_desc::as_attach(atc.get());
+	for (size_t i = 0; i < item.m_sub_hids.size(); ++i) {
+		auto subitem = item.get_sub_item(i);
+		auto ret = do_item(drv, depth + 1, new_parent, *subitem);
+		if (ret < 0) {
+			g_show_tree = saved_show_tree;
+			return ret;
+		}
+	}
+	g_show_tree = saved_show_tree;
 
 	std::swap(atc->proplist, *props);
 	if (parent.type == MAPI_MESSAGE) {

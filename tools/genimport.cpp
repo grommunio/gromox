@@ -205,8 +205,11 @@ void gi_dump_msgctnt(unsigned int depth, const MESSAGE_CONTENT &ctnt)
 			if (atc == nullptr)
 				continue;
 			gi_dump_tpropval_a(depth + 1, atc->proplist);
-			if (atc->pembedded != nullptr)
-				gi_dump_msgctnt(depth + 1, *atc->pembedded);
+			if (atc->pembedded == nullptr)
+				continue;
+			tree(depth + 1);
+			tlog("Embedded message\n");
+			gi_dump_msgctnt(depth + 2, *atc->pembedded);
 		}
 	}
 }
