@@ -51,7 +51,8 @@ Default: \fIroot\fP
 .TP
 \fB\-\-src\-at\fP \fIdirectory\fP
 Required specification to the /var/lib/kopano/attachments directory mounted
-somewhere locally.
+somewhere locally. (To skip over file-based attachments, use the empty
+value, i.e. \fB\-\-src\-at ""\fP.)
 .TP
 \fB\-\-src\-guid\fP \fIguid\fP
 Extract the mailbox with the particular GUID from the source.

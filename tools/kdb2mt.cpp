@@ -745,7 +745,7 @@ static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent,
 	if (mode == nullptr)
 		fprintf(stderr, "PK-1005: Attachment %u without PR_ATTACH_METHOD.\n",
 		        static_cast<unsigned int>(item.m_hid));
-	else if (*mode == ATTACH_BY_VALUE)
+	else if (*mode == ATTACH_BY_VALUE && *g_atxdir != '\0')
 		do_attach_byval(drv, depth, item.m_hid, props);
 
 	auto saved_show_tree = g_show_tree;
@@ -839,6 +839,7 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	} else if (g_atxdir == nullptr) {
 		fprintf(stderr, "You need to specify the --src-at option.\n");
+		fprintf(stderr, "(To skip importing file-based attachments, use --src-at \"\".)\n");
 		return EXIT_FAILURE;
 	}
 	if (argc != 1) {
