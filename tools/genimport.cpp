@@ -64,7 +64,8 @@ YError::YError(const char *fmt, ...)
 gi_name_map::~gi_name_map()
 {
 	for (auto &e : *this)
-		free(e.second.pname);
+		if (e.second.kind == MNID_STRING)
+			free(e.second.pname);
 }
 
 void tree(unsigned int depth)
