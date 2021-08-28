@@ -26,10 +26,12 @@ struct ob_desc {
 
 }
 
+using gi_thru_map = std::unordered_map<uint16_t, uint16_t>;
+
 static char *g_username;
 static gi_folder_map_t g_folder_map;
 static gi_name_map g_src_name_map;
-static std::unordered_map<uint16_t, uint16_t> g_thru_name_map;
+static gi_thru_map g_thru_name_map;
 static uint8_t g_splice, ignore_mkdir_fail;
 static const struct HXoption g_options_table[] = {
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
@@ -113,8 +115,10 @@ static void exm_adjust_namedprops(TPROPVAL_ARRAY &props)
 			continue;
 		}
 		auto name_iter = g_src_name_map.find(old_tag);
-		if (name_iter == g_src_name_map.end())
+		if (name_iter == g_src_name_map.end()) {
+			fprintf(stderr, "Database corruption: No named property entry for proptag %xh.\n", old_tag);
 			continue;
+		}
 		auto new_id = gi_resolve_namedprop(&name_iter->second);
 		props.ppropval[i].proptag = PROP_TAG(PROP_TYPE(old_tag), new_id);
 		g_thru_name_map.emplace(PROP_ID(old_tag), new_id);
@@ -261,6 +265,15 @@ static int exm_packet(const void *buf, size_t bufsize)
 	throw YError("PG-1117: unknown obd.mapitype %u", obd.mapitype);
 }
 
+static void gi_dump_thru_map(const gi_thru_map &map)
+{
+	if (!g_show_props)
+		return;
+	fprintf(stderr, "Named properties, thru-map (%zu entries):\n", map.size());
+	for (const auto &[from, to] : map)
+		fprintf(stderr, "\t%04xh <-> %04xh\n", from, to);
+}
+
 int main(int argc, const char **argv) try
 {
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -290,6 +303,7 @@ int main(int argc, const char **argv) try
 			throw YError("PG-1006: %s", strerror(errno));
 		exm_packet(buf.get(), xsize);
 	}
+	gi_dump_thru_map(g_thru_name_map);
 	return EXIT_SUCCESS;
 } catch (const std::exception &e) {
 	fprintf(stderr, "Exception: %s\n", e.what());
