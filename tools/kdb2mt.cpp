@@ -488,8 +488,8 @@ std::unique_ptr<kdb_item> driver::get_root_folder()
 
 std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 {
-	char qstr[80];
-	snprintf(qstr, arsizeof(qstr), "SELECT id, type FROM hierarchy WHERE id=%u OR parent=%u", hid, hid);
+	char qstr[92];
+	snprintf(qstr, arsizeof(qstr), "SELECT id, type FROM hierarchy WHERE (id=%u OR parent=%u) AND (flags&2)=0", hid, hid);
 	auto res = drv.query(qstr);
 	auto yi = std::make_unique<kdb_item>(drv);
 	DB_ROW row;
