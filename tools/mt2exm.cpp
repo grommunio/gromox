@@ -105,6 +105,8 @@ static void exm_adjust_namedprops(TPROPVAL_ARRAY &props)
 {
 	for (size_t i = 0; i < props.count; ++i) {
 		auto old_tag = props.ppropval[i].proptag;
+		if (PROP_ID(old_tag) < 0x8000)
+			continue;
 		auto thru_iter = g_thru_name_map.find(PROP_ID(old_tag));
 		if (thru_iter != g_thru_name_map.end()) {
 			props.ppropval[i].proptag = PROP_TAG(PROP_TYPE(old_tag), thru_iter->second);
