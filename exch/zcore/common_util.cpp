@@ -2341,7 +2341,7 @@ static BOOL common_util_create_folder(
 		PROP_TAG_ARTICLENUMBERNEXT, PROP_TAG_INTERNETARTICLENUMBER,
 		PR_DISPLAY_TYPE, PR_DELETED_ON, PR_ENTRYID,
 		PROP_TAG_FOLDERCHILDCOUNT, PROP_TAG_FOLDERFLAGS, PROP_TAG_FOLDERID,
-		PROP_TAG_FOLDERTYPE, PROP_TAG_HASRULES, PROP_TAG_HIERARCHYCHANGENUMBER,
+		PR_FOLDER_TYPE, PROP_TAG_HASRULES, PROP_TAG_HIERARCHYCHANGENUMBER,
 		PROP_TAG_LOCALCOMMITTIME, PROP_TAG_LOCALCOMMITTIMEMAX,
 		PR_MESSAGE_SIZE, PR_MESSAGE_SIZE_EXTENDED, PROP_TAG_NATIVEBODY,
 		PR_OBJECT_TYPE, PR_PARENT_ENTRYID, PR_RECORD_KEY,
@@ -2352,9 +2352,9 @@ static BOOL common_util_create_folder(
 		common_util_remove_propvals(pproplist, t);
 	if (common_util_get_propvals(pproplist, PR_DISPLAY_NAME) == nullptr)
 		return FALSE;
-	propval.proptag = PROP_TAG_FOLDERTYPE;
+	propval.proptag = PR_FOLDER_TYPE;
 	propval.pvalue = &tmp_type;
-	tmp_type = FOLDER_TYPE_GENERIC;
+	tmp_type = FOLDER_GENERIC;
 	common_util_set_propvals(pproplist, &propval);
 	propval.proptag = PROP_TAG_PARENTFOLDERID;
 	propval.pvalue = &parent_id;

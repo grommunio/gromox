@@ -130,6 +130,7 @@ enum {
 	PR_VIEWS_ENTRYID = PROP_TAG(PT_BINARY, 0x35E5), /* PidTagViewsEntryId */
 	PR_COMMON_VIEWS_ENTRYID = PROP_TAG(PT_BINARY, 0x35E6), /* PidTagCommonViewsEntryId */
 	PR_FINDER_ENTRYID = PROP_TAG(PT_BINARY, 0x35E7), /* PidTagFinderEntryId */
+	PR_FOLDER_TYPE = PROP_TAG(PT_LONG, 0x3601), /* PidTagFolderType */
 	// PR_DETAILS_TABLE  = PROP_TAG(PT_OBJECT, 0x3605), /* PidTagDetailsTable */
 	PR_IPM_APPOINTMENT_ENTRYID = PROP_TAG(PT_BINARY, 0x36D0), /* PidTagIpmAppointmentEntryId */
 	PR_IPM_CONTACT_ENTRYID = PROP_TAG(PT_BINARY, 0x36D1), /* PidTagIpmContactEntryId */
@@ -492,6 +493,12 @@ enum {
 	EVENT_TYPE_OBJECTMOVED = 1U << 5,
 	EVENT_TYPE_OBJECTCOPIED = 1U << 6,
 	EVENT_TYPE_SEARCHCOMPLETE = 1U << 7,
+};
+
+enum mapi_folder_type {
+	FOLDER_ROOT = 0,
+	FOLDER_GENERIC = 1,
+	FOLDER_SEARCH = 2,
 };
 
 enum mapi_object_type {

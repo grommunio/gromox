@@ -1544,7 +1544,6 @@ ZEND_FUNCTION(mapi_folder_createfolder)
 	size_t name_len = 0, comment_len = 0;
 	char *pcomment;
 	uint32_t result;
-	long folder_type;
 	uint32_t hobject;
 	zval *pzresource;
 	MAPI_RESOURCE *pfolder;
@@ -1554,7 +1553,7 @@ ZEND_FUNCTION(mapi_folder_createfolder)
 	flags = 0;
 	pcomment = NULL;
 	comment_len = 0;
-	folder_type = FOLDER_TYPE_GENERIC;
+	long folder_type = FOLDER_GENERIC;
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "rs|sll",
 		&pzresource, &pfname, &name_len, &pcomment, &comment_len,
 		&flags, &folder_type) == FAILURE || NULL == pzresource ||

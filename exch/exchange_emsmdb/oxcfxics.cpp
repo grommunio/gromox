@@ -1242,16 +1242,15 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		}
 		parent_id1 = rop_util_make_eid(1, tmp_xid.local_id);
 		if (!exmdb_client_get_folder_property(plogon->get_dir(), 0,
-		    parent_id1, PROP_TAG_FOLDERTYPE, &pvalue))
+		    parent_id1, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
 		if (NULL == pvalue) {
 			return SYNC_E_NO_PARENT;
 		}
 		parent_type = *(uint32_t*)pvalue;
 	}
-	if (FOLDER_TYPE_SEARCH == parent_type) {
+	if (parent_type == FOLDER_SEARCH)
 		return ecNotSupported;
-	}
 	pbin = static_cast<BINARY *>(phichyvals->ppropval[1].pvalue);
 	if (pbin == nullptr || pbin->cb != 22)
 		return ecInvalidParam;
@@ -1328,11 +1327,9 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 								ppropvals->ppropval[i];
 			tmp_propvals.count ++;
 		}
-		if (NULL == common_util_get_propvals(
-			&tmp_propvals, PROP_TAG_FOLDERTYPE)) {
-			tmp_type = FOLDER_TYPE_GENERIC;
-			tmp_propvals.ppropval[tmp_propvals.count].proptag =
-											PROP_TAG_FOLDERTYPE;
+		if (common_util_get_propvals(&tmp_propvals, PR_FOLDER_TYPE) == nullptr) {
+			tmp_type = FOLDER_GENERIC;
+			tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_FOLDER_TYPE;
 			tmp_propvals.ppropval[tmp_propvals.count].pvalue =
 													&tmp_type;
 			tmp_propvals.count ++;
@@ -1567,14 +1564,13 @@ uint32_t rop_syncimportdeletes(
 		} else {
 			if (plogon->check_private()) {
 				if (!exmdb_client_get_folder_property(plogon->get_dir(),
-				    0, eid, PROP_TAG_FOLDERTYPE, &pvalue))
+				    0, eid, PR_FOLDER_TYPE, &pvalue))
 					return ecError;
 				if (NULL == pvalue) {
 					return ecSuccess;
 				}
-				if (FOLDER_TYPE_SEARCH == *(uint32_t*)pvalue) {
+				if (*static_cast<uint32_t *>(pvalue) == FOLDER_SEARCH)
 					goto DELETE_FOLDER;
-				}
 			}
 			if (!exmdb_client_empty_folder(plogon->get_dir(),
 			    pinfo->cpid, username, eid, b_hard, TRUE, TRUE,

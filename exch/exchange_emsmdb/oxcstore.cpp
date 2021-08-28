@@ -310,14 +310,13 @@ uint32_t rop_setreceivefolder(uint64_t folder_id,
 		return ecNotSupported;
 	if (0 != folder_id) {
 		if (!exmdb_client_get_folder_property(plogon->get_dir(), 0,
-		    folder_id, PROP_TAG_FOLDERTYPE, &pvalue))
+		    folder_id, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
 		if (NULL == pvalue) {
 			return ecNotFound;
 		}
-		if (FOLDER_TYPE_SEARCH == *(uint32_t*)pvalue) {
+		if (*static_cast<uint32_t *>(pvalue) == FOLDER_SEARCH)
 			return ecNotSupported;
-		}
 	}
 	if (plogon->logon_mode != LOGON_MODE_OWNER)
 		return ecAccessDenied;

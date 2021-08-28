@@ -493,23 +493,22 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	change_num = rop_util_get_gc_value(*(uint64_t*)pvalue);
 	if (common_util_get_propvals(pproperties, PR_PREDECESSOR_CHANGE_LIST) == nullptr)
 		return TRUE;
-	pvalue = common_util_get_propvals(pproperties, PROP_TAG_FOLDERTYPE);
+	pvalue = common_util_get_propvals(pproperties, PR_FOLDER_TYPE);
 	if (NULL == pvalue) {
-		type = FOLDER_TYPE_GENERIC;
+		type = FOLDER_GENERIC;
 	} else {
 		type = *(uint32_t*)pvalue;
 		switch (type) {
-		case FOLDER_TYPE_GENERIC:
+		case FOLDER_GENERIC:
 			break;
-		case FOLDER_TYPE_SEARCH:
+		case FOLDER_SEARCH:
 			if (!exmdb_server_check_private())
 				return TRUE;
 			break;
 		default:
 			return TRUE;
 		}
-		common_util_remove_propvals((TPROPVAL_ARRAY*)
-				pproperties, PROP_TAG_FOLDERTYPE);
+		common_util_remove_propvals(const_cast<TPROPVAL_ARRAY *>(pproperties), PR_FOLDER_TYPE);
 	}
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -527,7 +526,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		pdb->psqlite, parent_id, &parent_type)) {
 		return FALSE;
 	}
-	if (parent_type == FOLDER_TYPE_SEARCH)
+	if (parent_type == FOLDER_SEARCH)
 		return TRUE;
 	if (0 != tmp_fid) {
 		tmp_val = rop_util_get_gc_value(tmp_fid);
@@ -571,7 +570,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	}
 	pstmt1.finalize();
 	pstmt.finalize();
-	if (FOLDER_TYPE_GENERIC == type) {
+	if (type == FOLDER_GENERIC) {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT "
 			"max(range_end) FROM allocated_eids");
 		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
@@ -834,7 +833,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 		pdb->psqlite, folder_id, &folder_type)) {
 		return FALSE;
 	}
-	if (FOLDER_TYPE_SEARCH == folder_type) {
+	if (folder_type == FOLDER_SEARCH) {
 		/* always in private store, there's only hard deletion */
 		if (TRUE == b_normal || TRUE == b_fai) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT messages.message_id,"
@@ -1648,7 +1647,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 		pdb->psqlite, fid_val, &folder_type)) {
 		return FALSE;
 	}
-	if (FOLDER_TYPE_SEARCH == folder_type) {
+	if (folder_type == FOLDER_SEARCH) {
 		if (TRUE == b_guest) {
 			if (FALSE == common_util_check_folder_permission(
 				pdb->psqlite, dst_fid, username, &permission)) {
@@ -1889,7 +1888,7 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 					pdb->psqlite, fid_val, &folder_type)) {
 					return FALSE;
 				}
-				if (FOLDER_TYPE_SEARCH == folder_type) {
+				if (folder_type == FOLDER_SEARCH) {
 					if (FALSE == folder_copy_search_folder(pdb, cpid,
 						b_guest, username, fid_val, dst_fid, &fid_val)) {
 						return FALSE;
@@ -1907,9 +1906,8 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 				if (NULL != pfolder_count) {
 					(*pfolder_count) ++;
 				}
-				if (FOLDER_TYPE_SEARCH == folder_type) {
+				if (folder_type == FOLDER_SEARCH)
 					continue;
-				}
 				if (FALSE == folder_copy_folder_internal(pdb, account_id,
 					cpid, b_guest, username, src_fid1, TRUE, TRUE, TRUE,
 					fid_val, &b_partial, pnormal_size, pfai_size, NULL)) {
@@ -2133,7 +2131,7 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 			pdb->psqlite, src_val, &folder_type)) {
 			return FALSE;
 		}
-		if (FOLDER_TYPE_SEARCH == folder_type) {
+		if (folder_type == FOLDER_SEARCH) {
 			if (FALSE == folder_copy_search_folder(pdb, cpid,
 				b_guest, username, src_val, dst_val, &fid_val)) {
 				return FALSE;
@@ -2159,7 +2157,7 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 			return FALSE;
 		}
 		pstmt.finalize();
-		if (FOLDER_TYPE_SEARCH != folder_type) {
+		if (folder_type != FOLDER_SEARCH) {
 			normal_size = 0;
 			fai_size = 0;
 			if (FALSE == folder_copy_folder_internal(pdb, account_id,

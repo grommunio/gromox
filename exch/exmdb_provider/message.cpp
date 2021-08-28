@@ -301,7 +301,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 	if (!common_util_get_folder_type(pdb->psqlite, src_val, &folder_type, dir))
 		return FALSE;
 	if (TRUE == b_guest) {
-		if (FOLDER_TYPE_SEARCH != folder_type) {
+		if (folder_type != FOLDER_SEARCH) {
 			if (FALSE == common_util_check_folder_permission(
 				pdb->psqlite, src_val, username, &permission)) {
 				return FALSE;
@@ -361,7 +361,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		parent_fid = sqlite3_column_int64(pstmt, 0);
 		is_associated = sqlite3_column_int64(pstmt, 1);
 		sqlite3_reset(pstmt);
-		if (FOLDER_TYPE_SEARCH == folder_type) {
+		if (folder_type == FOLDER_SEARCH) {
 			if (TRUE == b_check) {
 				if (FALSE == common_util_check_folder_permission(
 					pdb->psqlite, parent_fid, username, &permission)) {
@@ -559,7 +559,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 		return FALSE;
 	}
 	if (NULL != username) {
-		if (FOLDER_TYPE_SEARCH != folder_type) {
+		if (folder_type != FOLDER_SEARCH) {
 			if (FALSE == common_util_check_folder_permission(
 				pdb->psqlite, src_val, username, &permission)) {
 				return FALSE;
@@ -619,7 +619,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 			fai_size += sqlite3_column_int64(pstmt, 2);
 		}
 		sqlite3_reset(pstmt);
-		if (FOLDER_TYPE_SEARCH == folder_type) {
+		if (folder_type == FOLDER_SEARCH) {
 			if (TRUE == b_check) {
 				if (FALSE == common_util_check_folder_permission(
 					pdb->psqlite, parent_fid, username, &permission)) {
@@ -677,11 +677,10 @@ BOOL exmdb_server_delete_messages(const char *dir,
 		db_engine_proc_dynamic_event(pdb, cpid,
 			DYNAMIC_EVENT_DELETE_MESSAGE,
 			parent_fid, tmp_val, 0);
-		if (FOLDER_TYPE_SEARCH == folder_type) {
+		if (folder_type == FOLDER_SEARCH)
 			db_engine_notify_link_deletion(pdb, src_val, tmp_val);
-		} else {
+		else
 			db_engine_notify_message_deletion(pdb, src_val, tmp_val);
-		}
 		sqlite3_bind_int64(pstmt1, 1, tmp_val);
 		if (SQLITE_DONE != sqlite3_step(pstmt1)) {
 			pstmt.finalize();
@@ -959,14 +958,14 @@ BOOL exmdb_server_check_message(const char *dir,
 		pdb->psqlite, fid_val, &folder_type)) {
 		return FALSE;
 	}
-	if (FOLDER_TYPE_SEARCH == folder_type) {
+	if (folder_type == FOLDER_SEARCH)
 		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM"
 					" search_result WHERE folder_id=%llu AND"
 					" message_id=%llu", LLU(fid_val), LLU(mid_val));
-	} else {
+	else
 		snprintf(sql_string, arsizeof(sql_string), "SELECT parent_fid FROM"
 					" messages WHERE message_id=%llu", LLU(mid_val));
-	}
+
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
@@ -1554,7 +1553,7 @@ BOOL exmdb_server_link_message(const char *dir, uint32_t cpid,
 		pdb->psqlite, fid_val, &folder_type)) {
 		return FALSE;
 	}
-	if (FOLDER_TYPE_SEARCH != folder_type) {
+	if (folder_type != FOLDER_SEARCH) {
 		*pb_result = FALSE;
 		return TRUE;
 	}	

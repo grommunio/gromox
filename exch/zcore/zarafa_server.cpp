@@ -1112,8 +1112,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 				return ecNotFound;
 		}
 		if (!exmdb_client_get_folder_property(pstore->get_dir(), 0,
-		    folder_id, PROP_TAG_FOLDERTYPE, &pvalue) ||
-		    pvalue == nullptr)
+		    folder_id, PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
 			return ecError;
 		folder_type = *(uint32_t*)pvalue;
 		if (pstore->check_owner_mode()) {
@@ -1882,7 +1881,7 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 	auto pdst_folder = pinfo->ptree->get_object<FOLDER_OBJECT>(hdstfolder, &mapi_type);
 	if (pdst_folder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER || pdst_folder->type == FOLDER_TYPE_SEARCH)
+	if (mapi_type != ZMG_FOLDER || pdst_folder->type == FOLDER_SEARCH)
 		return ecNotSupported;
 	auto pstore1 = pdst_folder->pstore;
 	BOOL b_copy = (flags & FLAG_MOVE) ? false : TRUE;
@@ -2127,10 +2126,8 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 	PERMISSION_DATA permission_row;
 	TAGGED_PROPVAL propval_buff[10];
 	
-	if (FOLDER_TYPE_SEARCH != folder_type &&
-		FOLDER_TYPE_GENERIC != folder_type) {
+	if (folder_type != FOLDER_SEARCH && folder_type != FOLDER_GENERIC)
 		return ecNotSupported;
-	}
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
@@ -2140,10 +2137,10 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	if (rop_util_get_replid(pparent->folder_id) != 1 ||
-	    pparent->type == FOLDER_TYPE_SEARCH)
+	    pparent->type == FOLDER_SEARCH)
 		return ecNotSupported;
 	auto pstore = pparent->pstore;
-	if (!pstore->b_private && folder_type == FOLDER_TYPE_SEARCH)
+	if (!pstore->b_private && folder_type == FOLDER_SEARCH)
 		return ecNotSupported;
 	if (!pstore->check_owner_mode()) {
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
@@ -2157,8 +2154,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		return ecError;
 	if (0 != folder_id) {
 		if (!exmdb_client_get_folder_property(pstore->get_dir(), 0,
-		    folder_id, PROP_TAG_FOLDERTYPE, &pvalue) ||
-		    pvalue == nullptr)
+		    folder_id, PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
 			return ecError;
 		if (0 == (flags & FLAG_OPEN_IF_EXISTS) ||
 			folder_type != *(uint32_t*)pvalue) {
@@ -2174,7 +2170,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		tmp_propvals.ppropval = propval_buff;
 		propval_buff[0].proptag = PROP_TAG_PARENTFOLDERID;
 		propval_buff[0].pvalue = &parent_id;
-		propval_buff[1].proptag = PROP_TAG_FOLDERTYPE;
+		propval_buff[1].proptag = PR_FOLDER_TYPE;
 		propval_buff[1].pvalue = &tmp_type;
 		propval_buff[2].proptag = PR_DISPLAY_NAME;
 		propval_buff[2].pvalue = deconst(folder_name);
@@ -2226,7 +2222,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		folder_id, folder_type, tag_access);
 	if (pfolder == nullptr)
 		return ecError;
-	if (FOLDER_TYPE_SEARCH == folder_type) {
+	if (folder_type == FOLDER_SEARCH) {
 		/* add the store handle as the parent object handle
 			because the caller normaly will not keep the
 			handle of parent folder */
@@ -2301,13 +2297,12 @@ uint32_t zarafa_server_deletefolder(GUID hsession,
 	BOOL b_hard = (flags & DELETE_HARD_DELETE) ? TRUE : false;
 	if (pstore->b_private) {
 		if (!exmdb_client_get_folder_property(pstore->get_dir(), 0,
-		    folder_id, PROP_TAG_FOLDERTYPE, &pvalue))
+		    folder_id, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
 		if (pvalue == nullptr)
 			return ecSuccess;
-		if (FOLDER_TYPE_SEARCH == *(uint32_t*)pvalue) {
+		if (*static_cast<uint32_t *>(pvalue) == FOLDER_SEARCH)
 			goto DELETE_FOLDER;
-		}
 	}
 	if (TRUE == b_sub || TRUE == b_normal || TRUE == b_fai) {
 		if (!exmdb_client::empty_folder(pstore->get_dir(), pinfo->cpid,
@@ -2382,7 +2377,7 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 	if (psrc_parent == nullptr)
 		return ecNullObject;
 	BOOL b_copy = (flags & FLAG_MOVE) ? false : TRUE;
-	if (psrc_parent->type == FOLDER_TYPE_SEARCH && !b_copy)
+	if (psrc_parent->type == FOLDER_SEARCH && !b_copy)
 		return ecNotSupported;
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
@@ -4376,7 +4371,7 @@ uint32_t zarafa_server_hierarchyimport(GUID hsession,
 	auto pfolder = pinfo->ptree->get_object<FOLDER_OBJECT>(hfolder, &mapi_type);
 	if (pfolder == nullptr)
 		return ecNullObject;
-	if (mapi_type != ZMG_FOLDER || pfolder->type == FOLDER_TYPE_SEARCH)
+	if (mapi_type != ZMG_FOLDER || pfolder->type == FOLDER_SEARCH)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
@@ -4663,7 +4658,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		}
 		parent_id1 = rop_util_make_eid(1, tmp_xid.local_id);
 		if (!exmdb_client_get_folder_property(pstore->get_dir(), 0,
-		    parent_id1, PROP_TAG_FOLDERTYPE, &pvalue))
+		    parent_id1, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
 		if (pvalue == nullptr)
 			return SYNC_E_NO_PARENT;
@@ -4740,11 +4735,9 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 								ppropvals->ppropval[i];
 			tmp_propvals.count ++;
 		}
-		if (NULL == common_util_get_propvals(
-			&tmp_propvals, PROP_TAG_FOLDERTYPE)) {
-			tmp_type = FOLDER_TYPE_GENERIC;
-			tmp_propvals.ppropval[tmp_propvals.count].proptag =
-											PROP_TAG_FOLDERTYPE;
+		if (common_util_get_propvals(&tmp_propvals, PR_FOLDER_TYPE) == nullptr) {
+			tmp_type = FOLDER_GENERIC;
+			tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_FOLDER_TYPE;
 			tmp_propvals.ppropval[tmp_propvals.count].pvalue =
 													&tmp_type;
 			tmp_propvals.count ++;
@@ -4939,13 +4932,12 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 		} else {
 			if (pstore->b_private) {
 				if (!exmdb_client_get_folder_property(pstore->get_dir(),
-				    0, eid, PROP_TAG_FOLDERTYPE, &pvalue))
+				    0, eid, PR_FOLDER_TYPE, &pvalue))
 					return ecError;
 				if (pvalue == nullptr)
 					return ecSuccess;
-				if (FOLDER_TYPE_SEARCH == *(uint32_t*)pvalue) {
+				if (*static_cast<uint32_t *>(pvalue) == FOLDER_SEARCH)
 					goto DELETE_FOLDER;
-				}
 			}
 			if (!exmdb_client::empty_folder(pstore->get_dir(),
 			    pinfo->cpid, username, eid, b_hard, TRUE, TRUE, TRUE,
@@ -5068,7 +5060,7 @@ uint32_t zarafa_server_getsearchcriteria(GUID hsession,
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
-	if (pfolder->type != FOLDER_TYPE_SEARCH)
+	if (pfolder->type != FOLDER_SEARCH)
 		return ecNotSearchFolder;
 	if (!exmdb_client::get_search_criteria(pstore->get_dir(),
 	    pfolder->folder_id, psearch_stat, pprestriction, &folder_ids))

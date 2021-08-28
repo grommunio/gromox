@@ -218,7 +218,6 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	BINARY *pbin;
 	SIZED_XID xid;
 	BINARY tmp_bin;
-	uint32_t tmp_type;
 	EXT_PUSH ext_push;
 	uint64_t last_time;
 	char tmp_buff[128];
@@ -229,13 +228,13 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	if (!exmdb_client::allocate_cn(dir, &change_num)) {
 		return FALSE;
 	}
-	tmp_type = FOLDER_TYPE_GENERIC;
+	uint32_t tmp_type = FOLDER_GENERIC;
 	last_time = rop_util_unix_to_nttime(time(NULL));
 	tmp_propvals.count = 9;
 	tmp_propvals.ppropval = propval_buff;
 	propval_buff[0].proptag = PROP_TAG_PARENTFOLDERID;
 	propval_buff[0].pvalue = &parent_id;
-	propval_buff[1].proptag = PROP_TAG_FOLDERTYPE;
+	propval_buff[1].proptag = PR_FOLDER_TYPE;
 	propval_buff[1].pvalue = &tmp_type;
 	propval_buff[2].proptag = PR_DISPLAY_NAME;
 	propval_buff[2].pvalue = (void*)folder_name;

@@ -150,7 +150,7 @@ static BOOL fastupctx_object_create_folder(
 		PROP_TAG_ARTICLENUMBERNEXT, PROP_TAG_INTERNETARTICLENUMBER,
 		PR_DISPLAY_TYPE, PR_DELETED_ON, PR_ENTRYID,
 		PROP_TAG_FOLDERCHILDCOUNT, PROP_TAG_FOLDERFLAGS, PROP_TAG_FOLDERID,
-		PROP_TAG_FOLDERTYPE, PROP_TAG_HASRULES, PROP_TAG_HIERARCHYCHANGENUMBER,
+		PR_FOLDER_TYPE, PROP_TAG_HASRULES, PROP_TAG_HIERARCHYCHANGENUMBER,
 		PROP_TAG_LOCALCOMMITTIME, PROP_TAG_LOCALCOMMITTIMEMAX,
 		PR_MESSAGE_SIZE, PR_MESSAGE_SIZE_EXTENDED, PROP_TAG_NATIVEBODY,
 		PR_OBJECT_TYPE, PR_PARENT_ENTRYID, PR_RECORD_KEY,
@@ -161,9 +161,9 @@ static BOOL fastupctx_object_create_folder(
 		tpropval_array_remove_propval(pproplist, t);
 	if (tpropval_array_get_propval(pproplist, PR_DISPLAY_NAME) == nullptr)
 		return FALSE;
-	propval.proptag = PROP_TAG_FOLDERTYPE;
+	propval.proptag = PR_FOLDER_TYPE;
 	propval.pvalue = &tmp_type;
-	tmp_type = FOLDER_TYPE_GENERIC;
+	tmp_type = FOLDER_GENERIC;
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
 	propval.proptag = PROP_TAG_PARENTFOLDERID;

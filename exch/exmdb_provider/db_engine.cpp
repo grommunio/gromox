@@ -996,13 +996,9 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, uint32_t cpid,
 					if (b_included == b_included1) {
 						continue;
 					}
-					if (FOLDER_TYPE_SEARCH == folder_type) {
-						snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
-						          "FROM search_result WHERE folder_id=%llu", LLU(id3));
-					} else {
-						snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
-						          "FROM messages WHERE parent_fid=%llu", LLU(id3));
-					}
+					snprintf(sql_string, arsizeof(sql_string), folder_type == FOLDER_SEARCH ?
+					         "SELECT message_id FROM search_result WHERE folder_id=%llu" :
+					         "SELECT message_id FROM messages WHERE parent_fid=%llu", LLU(id3));
 					auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 					if (pstmt == nullptr)
 						continue;

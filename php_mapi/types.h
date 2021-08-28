@@ -1,7 +1,6 @@
 #pragma once
 #include <cstdint>
 #include <gromox/mapidefs.h>
-#define FOLDER_TYPE_GENERIC							1
 #define SYNC_DELETES_FLAG_HARDDELETE				0x02
 
 /* defined by zarafa */

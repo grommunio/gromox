@@ -133,11 +133,11 @@ static void exm_folder_adjust(TPROPVAL_ARRAY &props)
 	 * exmdb_server_create_folder_by_properties only takes two types,
 	 * upgrade everything else for best import.
 	 */
-	auto ftp = tpropval_array_get_propval(&props, PROP_TAG_FOLDERTYPE);
+	auto ftp = tpropval_array_get_propval(&props, PR_FOLDER_TYPE);
 	if (ftp != nullptr) {
 		auto &ft = *static_cast<uint32_t *>(ftp);
-		if (ft != FOLDER_TYPE_GENERIC && ft != FOLDER_TYPE_SEARCH)
-			ft = FOLDER_TYPE_GENERIC;
+		if (ft != FOLDER_GENERIC && ft != FOLDER_SEARCH)
+			ft = FOLDER_GENERIC;
 	}
 }
 

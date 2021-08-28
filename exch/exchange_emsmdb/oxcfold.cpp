@@ -71,7 +71,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 		}
 	}
 	if (!exmdb_client_get_folder_property(plogon->get_dir(), 0, folder_id,
-	    PROP_TAG_FOLDERTYPE, &pvalue) || pvalue == nullptr)
+	    PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
 		return ecError;
 	type = *(uint32_t*)pvalue;
 	auto rpc_info = get_rpc_info();
@@ -160,8 +160,8 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	
 	
 	switch (folder_type) {
-	case FOLDER_TYPE_GENERIC:
-	case FOLDER_TYPE_SEARCH:
+	case FOLDER_GENERIC:
+	case FOLDER_SEARCH:
 		break;
 	default:
 		return ecInvalidParam;
@@ -175,13 +175,13 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	}
 	if (rop_util_get_replid(pparent->folder_id) != 1)
 		return ecAccessDenied;
-	if (pparent->type == FOLDER_TYPE_SEARCH)
+	if (pparent->type == FOLDER_SEARCH)
 		return ecNotSupported;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
 		return ecError;
 	}
-	if (!plogon->check_private() && folder_type == FOLDER_TYPE_SEARCH)
+	if (!plogon->check_private() && folder_type == FOLDER_SEARCH)
 		return ecNotSupported;
 	if (0 == use_unicode) {
 		if (common_util_convert_string(TRUE, pfolder_name,
@@ -212,7 +212,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		return ecError;
 	if (0 != folder_id) {
 		if (!exmdb_client_get_folder_property(plogon->get_dir(), 0,
-		    folder_id, PROP_TAG_FOLDERTYPE, &pvalue) || pvalue == nullptr)
+		    folder_id, PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
 			return ecError;
 		if (0 == open_existing || folder_type != *(uint32_t*)pvalue) {
 			return ecDuplicateName;
@@ -227,7 +227,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		tmp_propvals.ppropval = propval_buff;
 		propval_buff[0].proptag = PROP_TAG_PARENTFOLDERID;
 		propval_buff[0].pvalue = &parent_id;
-		propval_buff[1].proptag = PROP_TAG_FOLDERTYPE;
+		propval_buff[1].proptag = PR_FOLDER_TYPE;
 		propval_buff[1].pvalue = &tmp_type;
 		propval_buff[2].proptag = PR_DISPLAY_NAME;
 		propval_buff[2].pvalue = folder_name;
@@ -361,15 +361,14 @@ uint32_t rop_deletefolder(uint8_t flags,
 	BOOL b_hard   = (flags & DELETE_HARD_DELETE) ? TRUE : false;
 	if (plogon->check_private()) {
 		if (!exmdb_client_get_folder_property(plogon->get_dir(), 0,
-		    folder_id, PROP_TAG_FOLDERTYPE, &pvalue))
+		    folder_id, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
 		if (NULL == pvalue) {
 			*ppartial_completion = 0;
 			return ecSuccess;
 		}
-		if (FOLDER_TYPE_SEARCH == *(uint32_t*)pvalue) {
+		if (*static_cast<uint32_t *>(pvalue) == FOLDER_SEARCH)
 			goto DELETE_FOLDER;
-		}
 	}
 	if (TRUE == b_sub || TRUE == b_normal || TRUE == b_fai) {
 		if (!exmdb_client_empty_folder(plogon->get_dir(), pinfo->cpid,
@@ -422,7 +421,7 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	if (pfolder->type != FOLDER_TYPE_SEARCH)
+	if (pfolder->type != FOLDER_SEARCH)
 		return ecNotSearchFolder;
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode != LOGON_MODE_OWNER) {
@@ -494,7 +493,7 @@ uint32_t rop_getsearchcriteria(uint8_t use_unicode,
 	if (NULL == pfolder || OBJECT_TYPE_FOLDER != object_type) {
 		return ecNullObject;
 	}
-	if (pfolder->type != FOLDER_TYPE_SEARCH)
+	if (pfolder->type != FOLDER_SEARCH)
 		return ecNotSearchFolder;
 	if (0 == include_restriction) {
 		*ppres = NULL;
@@ -547,7 +546,7 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	if (pdst_folder->type == FOLDER_TYPE_SEARCH)
+	if (pdst_folder->type == FOLDER_SEARCH)
 		return ecNotSupported;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {

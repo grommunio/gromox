@@ -657,7 +657,7 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 		proptags[i++] = PROP_TAG_ASSOCMESSAGESIZEEXTENDED;
 		proptags[i++] = PROP_TAG_NORMALMESSAGESIZEEXTENDED;
 		proptags[i++] = PROP_TAG_FOLDERCHILDCOUNT;
-		proptags[i++] = PROP_TAG_FOLDERTYPE;
+		proptags[i++] = PR_FOLDER_TYPE;
 		proptags[i++] = PROP_TAG_CONTENTUNREADCOUNT;
 		proptags[i++] = PROP_TAG_SUBFOLDERS;
 		proptags[i++] = PROP_TAG_HASRULES;
@@ -941,9 +941,8 @@ static uint32_t common_util_get_folder_count(sqlite3 *psqlite,
 	uint32_t folder_type;
 	char sql_string[256];
 	
-	if (TRUE == common_util_get_folder_type(
-		psqlite, folder_id, &folder_type) &&
-		FOLDER_TYPE_SEARCH == folder_type) {
+	if (common_util_get_folder_type(psqlite, folder_id, &folder_type) &&
+	    folder_type == FOLDER_SEARCH) {
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
 			" FROM messages JOIN search_result ON "
 			"search_result.folder_id=%llu AND "
@@ -976,9 +975,8 @@ uint32_t common_util_get_folder_unread_count(
 	const char *username;
 	
 	if (TRUE == exmdb_server_check_private()) {
-		if (TRUE == common_util_get_folder_type(
-			psqlite, folder_id, &folder_type) &&
-			FOLDER_TYPE_SEARCH == folder_type) {
+		if (common_util_get_folder_type(psqlite, folder_id, &folder_type) &&
+		    folder_type == FOLDER_SEARCH) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT count(*)"
 				" FROM messages JOIN search_result ON "
 				"search_result.folder_id=%llu AND "
@@ -1026,9 +1024,8 @@ static uint64_t common_util_get_folder_message_size(
 	uint32_t folder_type;
 	char sql_string[256];
 	
-	if (TRUE == common_util_get_folder_type(
-		psqlite, folder_id, &folder_type) &&
-		FOLDER_TYPE_SEARCH == folder_type) {
+	if (common_util_get_folder_type(psqlite, folder_id, &folder_type) &&
+	    folder_type == FOLDER_SEARCH) {
 		if (TRUE == b_normal && TRUE == b_associated) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT "
 				"sum(messages.message_size) FROM "
@@ -1082,7 +1079,7 @@ BOOL common_util_get_folder_type(sqlite3 *psqlite, uint64_t folder_id,
 	
 	if (TRUE == exmdb_server_check_private()) {
 		if (PRIVATE_FID_ROOT == folder_id) {
-			*pfolder_type = FOLDER_TYPE_ROOT;
+			*pfolder_type = FOLDER_ROOT;
 			return TRUE;
 		}
 		snprintf(sql_string, arsizeof(sql_string), "SELECT is_search "
@@ -1098,9 +1095,9 @@ BOOL common_util_get_folder_type(sqlite3 *psqlite, uint64_t folder_id,
 			 */
 			return FALSE;
 		}
-		*pfolder_type = sqlite3_column_int64(pstmt, 0) == 0 ? FOLDER_TYPE_GENERIC : FOLDER_TYPE_SEARCH;
+		*pfolder_type = sqlite3_column_int64(pstmt, 0) == 0 ? FOLDER_GENERIC : FOLDER_SEARCH;
 	} else {
-		*pfolder_type = folder_id == PUBLIC_FID_ROOT ? FOLDER_TYPE_ROOT : FOLDER_TYPE_GENERIC;
+		*pfolder_type = folder_id == PUBLIC_FID_ROOT ? FOLDER_ROOT : FOLDER_GENERIC;
 	}
 	return TRUE;
 }
@@ -1127,11 +1124,7 @@ static uint32_t common_util_get_folder_flags(
 	folder_flags = 0;
 	if (TRUE == common_util_get_folder_type(
 		psqlite, folder_id, &folder_type)) {
-		if (FOLDER_TYPE_SEARCH == folder_type) {
-			folder_flags |= FOLDER_FLAGS_SEARCH;
-		} else {
-			folder_flags |= FOLDER_FLAGS_NORMAL;
-		}
+		folder_flags |= folder_type == FOLDER_SEARCH ? FOLDER_FLAGS_SEARCH : FOLDER_FLAGS_NORMAL;
 	}
 	if (TRUE == common_util_check_folder_rules(
 		psqlite, folder_id)) {
@@ -1970,7 +1963,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 			return GP_ERR;
 		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_folder_unread_count(db, id);
 		return GP_ADV;
-	case PROP_TAG_FOLDERTYPE:
+	case PR_FOLDER_TYPE:
 		pv.pvalue = cu_alloc<uint32_t>();
 		return pv.pvalue != nullptr && common_util_get_folder_type(db,
 		       id, static_cast<uint32_t *>(pv.pvalue)) ? GP_ADV : GP_ERR;
@@ -3086,7 +3079,7 @@ BOOL common_util_set_properties(int table_type,
 			case PROP_TAG_ASSOCIATEDCONTENTCOUNT:
 			case PROP_TAG_FOLDERCHILDCOUNT:
 			case PROP_TAG_CONTENTUNREADCOUNT:
-			case PROP_TAG_FOLDERTYPE:
+			case PR_FOLDER_TYPE:
 			case PROP_TAG_HASRULES:
 			case PROP_TAG_FOLDERPATHNAME:
 			case PR_PARENT_SOURCE_KEY:
