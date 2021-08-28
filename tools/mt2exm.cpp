@@ -115,6 +115,8 @@ static void exm_adjust_namedprops(TPROPVAL_ARRAY &props)
 			continue;
 		}
 		auto name_iter = g_src_name_map.find(old_tag);
+		if (name_iter == g_src_name_map.end())
+			name_iter = g_src_name_map.find(CHANGE_PROP_TYPE(old_tag, PT_UNSPECIFIED));
 		if (name_iter == g_src_name_map.end()) {
 			fprintf(stderr, "Database corruption: No named property entry for proptag %xh.\n", old_tag);
 			continue;
