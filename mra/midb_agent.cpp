@@ -447,7 +447,6 @@ static int list_mail(const char *path, const char *folder,
 	int lines;
 	int count;
 	int offset;
-	int length;
 	BOOL b_fail;
 	int last_pos;
 	int read_len;
@@ -463,7 +462,7 @@ static int list_mail(const char *path, const char *folder,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-UIDL %s %s\r\n", path, folder);
+	auto length = gx_snprintf(buff, arsizeof(buff), "M-UIDL %s %s\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -594,7 +593,6 @@ static int list_mail(const char *path, const char *folder,
 
 static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist)
 {
-	int length;
 	int cmd_len;
 	int temp_len;
 	MSG_UNIT *pmsg;
@@ -609,7 +607,7 @@ static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist)
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-DELE %s %s", path, folder);
+	auto length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
 	cmd_len = length;
 	
 	for (pnode=single_list_get_head(plist); NULL!=pnode;
@@ -685,8 +683,6 @@ static int imap_search(const char *path, const char *folder,
     int *plen, int *perrno)
 {
 	int i;
-	int length;
-	int length1;
 	size_t encode_len;
 	char buff[256*1025];
 	char buff1[16*1024];
@@ -695,9 +691,9 @@ static int imap_search(const char *path, const char *folder,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SRHL %s %s %s ",
+	auto length = gx_snprintf(buff, arsizeof(buff), "P-SRHL %s %s %s ",
 				path, folder, charset);
-	length1 = 0;
+	int length1 = 0;
 	for (i=0; i<argc; i++) {
 		length1 += gx_snprintf(buff1 + length1, GX_ARRAY_SIZE(buff1) - length1,
 					"%s", argv[i]) + 1;
@@ -764,8 +760,6 @@ static int imap_search_uid(const char *path, const char *folder,
    int *plen, int *perrno)
 {
 	int i;
-	int length;
-	int length1;
 	size_t encode_len;
 	char buff[256*1025];
 	char buff1[16*1024];
@@ -774,9 +768,9 @@ static int imap_search_uid(const char *path, const char *folder,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SRHU %s %s %s ",
+	auto length = gx_snprintf(buff, arsizeof(buff), "P-SRHU %s %s %s ",
 				path, folder, charset);
-	length1 = 0;
+	int length1 = 0;
 	for (i=0; i<argc; i++) {
 		length1 += gx_snprintf(buff1 + length1, GX_ARRAY_SIZE(buff1) - length1,
 					"%s", argv[i]) + 1;
@@ -841,14 +835,13 @@ static int imap_search_uid(const char *path, const char *folder,
 static int get_mail_id(const char *path, const char *folder,
     const char *mid_string, unsigned int *pid)
 {
-	int length;
 	char buff[1024];
 
 	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-OFST %s %s %s UID ASC\r\n",
+	auto length = gx_snprintf(buff, arsizeof(buff), "P-OFST %s %s %s UID ASC\r\n",
 				path, folder, mid_string);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
@@ -884,14 +877,13 @@ static int get_mail_id(const char *path, const char *folder,
 static int get_mail_uid(const char *path, const char *folder,
     const char *mid_string, unsigned int *puid)
 {
-	int length;
 	char buff[1024];
 
 	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-UNID %s %s %s\r\n",
+	auto length = gx_snprintf(buff, arsizeof(buff), "P-UNID %s %s %s\r\n",
 				path, folder, mid_string);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
@@ -927,7 +919,6 @@ static int summary_folder(const char *path, const char *folder, int *pexists,
 	int *precent, int *punseen, unsigned long *puidvalid,
 	unsigned int *puidnext, int *pfirst_unseen, int *perrno)
 {
-	int length;
 	char buff[1024];
 	int exists, recent;
 	int unseen, first_unseen;
@@ -938,7 +929,7 @@ static int summary_folder(const char *path, const char *folder, int *pexists,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-FDDT %s %s UID ASC\r\n", path, folder);
+	auto length = gx_snprintf(buff, arsizeof(buff), "P-FDDT %s %s UID ASC\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -998,14 +989,13 @@ static int summary_folder(const char *path, const char *folder, int *pexists,
 	
 static int make_folder(const char *path, const char *folder, int *perrno)
 {
-	int length;
 	char buff[1024];
 
 	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-MAKF %s %s\r\n", path, folder);
+	auto length = gx_snprintf(buff, arsizeof(buff), "M-MAKF %s %s\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -1038,14 +1028,13 @@ static int make_folder(const char *path, const char *folder, int *perrno)
 
 static int remove_folder(const char *path, const char *folder, int *perrno)
 {
-	int length;
 	char buff[1024];
 	
 	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-REMF %s %s\r\n", path, folder);
+	auto length = gx_snprintf(buff, arsizeof(buff), "M-REMF %s %s\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -1078,14 +1067,13 @@ static int remove_folder(const char *path, const char *folder, int *perrno)
 
 static int ping_mailbox(const char *path, int *perrno)
 {
-	int length;
 	char buff[1024];
 	
 	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-PING %s\r\n", path);
+	auto length = gx_snprintf(buff, arsizeof(buff), "M-PING %s\r\n", path);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -1119,14 +1107,13 @@ static int ping_mailbox(const char *path, int *perrno)
 static int rename_folder(const char *path, const char *src_name,
     const char *dst_name, int *perrno)
 {
-	int length;
 	char buff[1024];
 
 	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-RENF %s %s %s\r\n", path,
+	auto length = gx_snprintf(buff, arsizeof(buff), "M-RENF %s %s %s\r\n", path,
 				src_name, dst_name);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
@@ -1160,14 +1147,13 @@ static int rename_folder(const char *path, const char *src_name,
 
 static int subscribe_folder(const char *path, const char *folder, int *perrno)
 {
-	int length;
 	char buff[1024];
 
 	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SUBF %s %s\r\n", path, folder);
+	auto length = gx_snprintf(buff, arsizeof(buff), "P-SUBF %s %s\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -1200,14 +1186,13 @@ static int subscribe_folder(const char *path, const char *folder, int *perrno)
 
 static int unsubscribe_folder(const char *path, const char *folder, int *perrno)
 {
-	int length;
 	char buff[1024];
 
 	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-UNSF %s %s\r\n", path, folder);
+	auto length = gx_snprintf(buff, arsizeof(buff), "P-UNSF %s %s\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -1244,7 +1229,6 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 	int lines;
 	int count;
 	int offset;
-	int length;
 	int last_pos;
 	int read_len;
 	int line_pos;
@@ -1258,7 +1242,7 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-ENUM %s\r\n", path);
+	auto length = gx_snprintf(buff, arsizeof(buff), "M-ENUM %s\r\n", path);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -1367,7 +1351,6 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 	int lines;
 	int count;
 	int offset;
-	int length;
 	int last_pos;
 	int read_len;
 	int line_pos;
@@ -1381,7 +1364,7 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SUBL %s\r\n", path);
+	auto length = gx_snprintf(buff, arsizeof(buff), "P-SUBL %s\r\n", path);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -1489,14 +1472,13 @@ static int insert_mail(const char *path, const char *folder,
     const char *file_name, const char *flags_string, long time_stamp,
     int *perrno)
 {
-	int length;
 	char buff[1024];
 
 	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-INST %s %s %s %s %ld\r\n",
+	auto length = gx_snprintf(buff, arsizeof(buff), "M-INST %s %s %s %s %ld\r\n",
 				path, folder, file_name, flags_string, time_stamp);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
@@ -1531,7 +1513,6 @@ static int insert_mail(const char *path, const char *folder,
 static int remove_mail(const char *path, const char *folder,
     SINGLE_LIST *plist, int *perrno)
 {
-	int length;
 	int cmd_len;
 	int temp_len;
 	MITEM *pitem;
@@ -1545,7 +1526,7 @@ static int remove_mail(const char *path, const char *folder,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-DELE %s %s", path, folder);
+	auto length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
 	cmd_len = length;
 	
 	for (pnode=single_list_get_head(plist); NULL!=pnode;
@@ -1625,7 +1606,6 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 	int lines;
 	int count;
 	int offset;
-	int length;
 	int last_pos;
 	int read_len;
 	int line_pos;
@@ -1643,7 +1623,7 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SIML %s %s UID ASC\r\n", path, folder);
+	auto length = gx_snprintf(buff, arsizeof(buff), "P-SIML %s %s UID ASC\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -1797,7 +1777,6 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 	int lines;
 	int count;
 	int offset;
-	int length;
 	int last_pos;
 	int read_len;
 	int line_pos;
@@ -1815,7 +1794,7 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-DELL %s %s UID ASC\r\n", path, folder);
+	auto length = gx_snprintf(buff, arsizeof(buff), "P-DELL %s %s UID ASC\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
 	}
@@ -1951,7 +1930,6 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 	int lines;
 	int count;
 	int offset;
-	int length;
 	int last_pos;
 	int read_len;
 	int line_pos;
@@ -1971,7 +1949,7 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-LIST %s %s UID ASC\r\n",
+	auto length = gx_snprintf(buff, arsizeof(buff), "M-LIST %s %s UID ASC\r\n",
 				path, folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
@@ -2569,7 +2547,6 @@ static int fetch_simple_uid(const char *path, const char *folder,
 	int lines;
 	int count;
 	int offset;
-	int length;
 	int last_pos;
 	int read_len;
 	int line_pos;
@@ -2593,7 +2570,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
 		auto pseq = static_cast<SEQUENCE_NODE *>(pnode->pdata);
-		length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SIMU %s %s UID ASC %d %d\r\n", path, folder,
+		auto length = gx_snprintf(buff, arsizeof(buff), "P-SIMU %s %s UID ASC %d %d\r\n", path, folder,
 					pseq->min, pseq->max);
 		if (length != write(pback->sockd, buff, length)) {
 			goto RDWR_ERROR;
@@ -2762,7 +2739,6 @@ static int fetch_detail_uid(const char *path, const char *folder,
 	int lines;
 	int count;
 	int offset;
-	int length;
 	int last_pos;
 	int read_len;
 	int line_pos;
@@ -2789,7 +2765,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
 		auto pseq = static_cast<SEQUENCE_NODE *>(pnode->pdata);
-		length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-DTLU %s %s UID ASC %d %d\r\n", path,
+		auto length = gx_snprintf(buff, arsizeof(buff), "P-DTLU %s %s UID ASC %d %d\r\n", path,
 					folder, pseq->min, pseq->max);
 		if (length != write(pback->sockd, buff, length)) {
 			goto RDWR_ERROR;
@@ -2971,7 +2947,6 @@ static int fetch_detail_uid(const char *path, const char *folder,
 static int set_mail_flags(const char *path, const char *folder,
     const char *mid_string, int flag_bits, int *perrno)
 {
-	int length;
 	char buff[1024];
 	char flags_string[16];
 
@@ -2981,7 +2956,7 @@ static int set_mail_flags(const char *path, const char *folder,
 	}
 
 	flags_string[0] = '(';
-	length = 1;
+	int length = 1;
 	if (flag_bits & FLAG_ANSWERED) {
 		flags_string[length] = 'A';
 		length ++;
@@ -3049,7 +3024,6 @@ static int set_mail_flags(const char *path, const char *folder,
 static int unset_mail_flags(const char *path, const char *folder,
     const char *mid_string, int flag_bits, int *perrno)
 {
-	int length;
 	char buff[1024];
 	char flags_string[16];
 
@@ -3059,7 +3033,7 @@ static int unset_mail_flags(const char *path, const char *folder,
 	}
 
 	flags_string[0] = '(';
-	length = 1;
+	int length = 1;
 	if (flag_bits & FLAG_ANSWERED) {
 		flags_string[length] = 'A';
 		length ++;
@@ -3127,14 +3101,13 @@ static int unset_mail_flags(const char *path, const char *folder,
 static int get_mail_flags(const char *path, const char *folder,
     const char *mid_string, int *pflag_bits, int *perrno)
 {
-	int length;
 	char buff[1024];
 
 	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-GFLG %s %s %s\r\n",
+	auto length = gx_snprintf(buff, arsizeof(buff), "P-GFLG %s %s %s\r\n",
 				path, folder, mid_string);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
@@ -3192,14 +3165,13 @@ static int get_mail_flags(const char *path, const char *folder,
 static int copy_mail(const char *path, const char *src_folder,
     const char *mid_string, const char *dst_folder, char *dst_mid, int *perrno)
 {
-	int length;
 	char buff[1024];
 
 	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-COPY %s %s %s %s\r\n",
+	auto length = gx_snprintf(buff, arsizeof(buff), "M-COPY %s %s %s %s\r\n",
 				path, src_folder, mid_string, dst_folder);
 	if (length != write(pback->sockd, buff, length)) {
 		goto RDWR_ERROR;
@@ -3271,7 +3243,6 @@ static BOOL read_line(int sockd, char *buff, int length)
 
 static BOOL check_full(const char *path)
 {
-	int length;
 	int offset;
 	int read_len;
 	fd_set myset;
@@ -3282,7 +3253,7 @@ static BOOL check_full(const char *path)
 	if (NULL == pback) {
 		return TRUE;
 	}
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-CKFL %s\r\n", path);
+	auto length = gx_snprintf(buff, arsizeof(buff), "M-CKFL %s\r\n", path);
 	if (length != write(pback->sockd, buff, length)) {
 		goto CHECK_ERROR;
 	}
