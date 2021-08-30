@@ -181,9 +181,12 @@ const char *resource_get_imap_code(unsigned int code_type, unsigned int n, size_
 {
 #define FIRST_PART      1
 #define SECOND_PART     2
+	thread_local char reason[40];
 	auto it = g_def_code_table.find(code_type);
-	if (it == g_def_code_table.end())
-		return "OMG";
+	if (it == g_def_code_table.end()) {
+		*len = snprintf(reason, arsizeof(reason), "Unknown IMAPCODE %u\r\n", code_type);
+		return reason;
+	}
 	int ret_len = it->second[0];
 	auto ret_ptr = &it->second[1];
     if (FIRST_PART == n)    {
