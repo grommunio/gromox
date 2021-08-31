@@ -2,6 +2,8 @@
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
+#include <string>
+#include <unordered_map>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
@@ -23,14 +25,8 @@
 
 #define CONN_BUFFLEN        (257*1024)
 
-namespace {
-struct COMMAND_ENTRY {
-	char cmd[64];
-	MIDB_CMD_HANDLER cmd_handler;
-};
-}
+using namespace gromox;
 
-static int g_cmd_num;
 static size_t g_threads_num;
 static std::atomic<bool> g_notify_stop{false};
 static int g_timeout_interval;
@@ -39,7 +35,7 @@ static std::mutex g_connection_lock, g_cond_mutex;
 static std::condition_variable g_waken_cond;
 static DOUBLE_LIST g_connection_list;
 static DOUBLE_LIST g_connection_list1;
-static COMMAND_ENTRY g_cmd_entry[128];
+static std::unordered_map<std::string, MIDB_CMD_HANDLER> g_cmd_entry;
 
 static void *midcp_thrwork(void *);
 static int cmd_parser_generate_args(char* cmd_line, int cmd_len, char** argv);
@@ -48,7 +44,6 @@ static int cmd_parser_ping(int argc, char **argv, int sockd);
 
 void cmd_parser_init(size_t threads_num, int timeout)
 {
-	g_cmd_num = 0;
 	g_threads_num = threads_num;
 	g_timeout_interval = timeout;
 	double_list_init(&g_connection_list);
@@ -162,23 +157,40 @@ void cmd_parser_stop()
 
 void cmd_parser_register_command(const char *command, MIDB_CMD_HANDLER handler)
 {
-	gx_strlcpy(g_cmd_entry[g_cmd_num].cmd, command, GX_ARRAY_SIZE(g_cmd_entry[g_cmd_num].cmd));
-	g_cmd_entry[g_cmd_num].cmd_handler = handler;
-	g_cmd_num ++;
+	g_cmd_entry.emplace(command, handler);
+}
+
+static std::pair<bool, int> midcp_exec1(int argc, char **argv, CONNECTION *conn)
+{
+	if (g_notify_stop)
+		return {false, 0};
+	auto cmd_iter = g_cmd_entry.find(argv[0]);
+	if (cmd_iter == g_cmd_entry.end())
+		return {false, 0};
+	if (!common_util_build_environment(argv[1]))
+		return {false, 0};
+	auto result = cmd_iter->second(argc, argv, conn->sockd);
+	common_util_free_environment();
+	if (result == 0)
+		return {true, 0};
+	return {false, result};
+}
+
+static void midcp_exec(int argc, char **argv, CONNECTION *conn)
+{
+	auto [replied, result] = midcp_exec1(argc, argv, conn);
+	if (replied)
+		return;
+	char rsp[20];
+	auto len = snprintf(rsp, arsizeof(rsp), "FALSE %d\r\n", result);
+	write(conn->sockd, rsp, len);
 }
 
 static void *midcp_thrwork(void *param)
 {
-	int i, j;
-	int argc;
-	int result;
-	int offset;
-	int tv_msec;
-	int temp_len;
-	int read_len;
+	int i, argc, offset, tv_msec, read_len;
 	char *argv[MAX_ARGS];
 	struct pollfd pfd_read;
-	char temp_response[128];
 	CONNECTION *pconnection;
 	DOUBLE_LIST_NODE *pnode;
 	char buffer[CONN_BUFFLEN];
@@ -252,27 +264,8 @@ static void *midcp_thrwork(void *param)
 					break;	
 				}
 				
-				/* compare build-in command */
-				for (j=0; j<g_cmd_num; j++) {
-					if (!g_notify_stop && strcasecmp(g_cmd_entry[j].cmd, argv[0]) == 0) {
-						if (FALSE == common_util_build_environment(argv[1])) {
-							write(pconnection->sockd, "FALSE 0\r\n", 9);
-							break;
-						}
-						result = g_cmd_entry[j].cmd_handler(
-							argc, argv, pconnection->sockd);
-						common_util_free_environment();
-						if (0 != result) {
-							temp_len = sprintf(temp_response,
-										"FALSE %d\r\n", result);
-							write(pconnection->sockd, temp_response, temp_len);
-						}
-						break;
-					}
-				}
-				
-				if (!g_notify_stop && j == g_cmd_num)
-					write(pconnection->sockd, "FALSE 0\r\n", 9);
+				HX_strupper(argv[0]);
+				midcp_exec(argc, argv, pconnection);
 				offset -= i + 2;
 				memmove(buffer, buffer + i + 2, offset);
 				break;	
