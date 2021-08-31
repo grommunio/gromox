@@ -2391,7 +2391,6 @@ static int fetch_detail(const char *path, const char *folder,
 				}
 			}
 
-			if (count >= lines) {
 				if (TRUE == b_format_error) {
 					std::unique_lock sv_hold(g_server_lock);
 					double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
@@ -2404,8 +2403,8 @@ static int fetch_detail(const char *path, const char *folder,
 					}
 					return MIDB_RESULT_ERROR;
 				}
+			if (count >= lines)
 				break;
-			}
 
 			if ('\r' == buff[offset - 1]) {
 				last_pos = offset - 1;
