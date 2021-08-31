@@ -257,7 +257,7 @@ static void *midcp_thrwork(void *param)
 					if (!g_notify_stop && strcasecmp(g_cmd_entry[j].cmd, argv[0]) == 0) {
 						if (FALSE == common_util_build_environment(argv[1])) {
 							write(pconnection->sockd, "FALSE 0\r\n", 9);
-							continue;
+							break;
 						}
 						result = g_cmd_entry[j].cmd_handler(
 							argc, argv, pconnection->sockd);
