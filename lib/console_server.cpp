@@ -7,6 +7,9 @@
 #include <csignal>
 #include <cstdint>
 #include <mutex>
+#include <string>
+#include <unordered_map>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -43,11 +46,6 @@ typedef struct sockaddr     SA;
 
 namespace {
 
-struct CCMD_ENTRY {
-    char    cmd[MAX_CMD_LENGTH];
-    COMMAND_HANDLER cmd_handler;
-};
-
 struct CONSOLE_NODE {
 	DOUBLE_LIST_NODE	node;
 	pthread_t			tid;
@@ -58,7 +56,6 @@ struct CONSOLE_NODE {
 
 extern std::atomic<bool> g_notify_stop;
 static std::atomic<bool> g_terminate{false};
-static size_t g_cmd_num;
 static char g_listen_ip[40];
 static uint16_t g_listen_port;
 static pthread_t g_listening_tid;
@@ -67,7 +64,8 @@ static DOUBLE_LIST g_free_list;
 static DOUBLE_LIST g_console_list;
 static std::mutex g_list_lock, g_execute_lock;
 static pthread_key_t g_client_fd_key;
-static CCMD_ENTRY g_cmd_entry[MAX_CMD_NUMBER + 1];
+static std::unordered_map<std::string, COMMAND_HANDLER> g_cmd_entry;
+static std::vector<COMMAND_HANDLER> g_cmd_dynamic;
 
 static void console_server_execve_command(char* cmdline);
 static int  console_server_parse_line(const char* cmdline, char** argv);
@@ -308,16 +306,10 @@ static void *consrv_work(void *argp)
 */
 BOOL console_server_register_command(const char *cmd, COMMAND_HANDLER handler)
 {
-    if (g_cmd_num >= MAX_CMD_NUMBER + 1) {
-        return FALSE;
-    }
-	if (NULL != cmd) {
-		gx_strlcpy(g_cmd_entry[g_cmd_num].cmd, cmd, GX_ARRAY_SIZE(g_cmd_entry[g_cmd_num].cmd));
-	} else {
-		*(g_cmd_entry[g_cmd_num].cmd) = '\0';
-	}
-    g_cmd_entry[g_cmd_num].cmd_handler = handler;
-	g_cmd_num ++;
+	if (cmd != nullptr)
+		g_cmd_entry.emplace(cmd, handler);
+	else
+		g_cmd_dynamic.push_back(handler);
     return TRUE;
 }
 
@@ -414,19 +406,14 @@ static void console_server_execve_command(char* cmdline)
         return; /* ignore empty lines */
     }
 	/* compare build-in command */
-	for (size_t i = 0; i < g_cmd_num; ++i) {
-        if ('\0' != *(g_cmd_entry[i].cmd) && 
-			0 == strcmp(g_cmd_entry[i].cmd, cmd)) {
-            g_cmd_entry[i].cmd_handler(argc, argv);
-            return;
-        }
-    }
-	for (size_t i = 0; i < g_cmd_num; ++i) {
-        if ('\0' == *(g_cmd_entry[i].cmd) &&
-			TRUE == g_cmd_entry[i].cmd_handler(argc, argv)) {
+	auto cmd_iter = g_cmd_entry.find(cmd);
+	if (cmd_iter != g_cmd_entry.end()) {
+		cmd_iter->second(argc, argv);
+		return;
+	}
+	for (auto h : g_cmd_dynamic)
+		if (h(argc, argv))
 			return;
-        }
-    }
 	xc_hold.unlock();
     /* 
      *  unknown command, use the default unknown command handler, always at 
