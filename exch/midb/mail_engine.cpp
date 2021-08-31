@@ -286,8 +286,11 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 		snprintf(temp_path, 256, "%s/eml/%s",
 			common_util_get_maildir(), mid_string);
 		fd = open(temp_path, O_RDONLY);
-		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
-		    !S_ISREG(node_stat.st_mode))
+		if (fd.get() < 0 || fstat(fd.get(), &node_stat) < 0) {
+			fprintf(stderr, "%s: %s: %s\n", __func__, temp_path, strerror(errno));
+			return 0;
+		}
+		if (!S_ISREG(node_stat.st_mode))
 			return 0;
 		pbuff = me_alloc<char>(node_stat.st_size);
 		if (NULL == pbuff) {
