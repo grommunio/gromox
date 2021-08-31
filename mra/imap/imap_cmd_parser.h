@@ -51,4 +51,4 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext);
 int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext);
 int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext);
 int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext);
-extern int imap_cmd_parser_dval(int argc, char **argv, IMAP_CONTEXT *, int res);
+extern int imap_cmd_parser_dval(int argc, char **argv, IMAP_CONTEXT *, unsigned int res);
