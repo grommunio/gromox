@@ -358,6 +358,9 @@ int main(int argc, const char **argv)
 		}
 	}
 
+	str_value = config_file_get_value(pconfig, "midb_cmd_debug");
+	auto cmd_debug = str_value != nullptr ? strtoul(str_value, nullptr, 0) : 0;
+
 	service_init({service_path, config_path, data_path, state_dir,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		parse_bool(config_file_get_value(g_config_file, "service_plugin_ignore_errors")),
@@ -371,7 +374,7 @@ int main(int argc, const char **argv)
 	mail_engine_init(charset, tmzone, org_name, table_size,
 		b_async, b_wal, mmap_size, cache_interval, mime_num);
 
-	cmd_parser_init(threads_num, SOCKET_TIMEOUT);
+	cmd_parser_init(threads_num, SOCKET_TIMEOUT, cmd_debug);
 	auto cleanup_2 = make_scope_exit(cmd_parser_free);
 
 	console_server_init(console_ip, console_port);

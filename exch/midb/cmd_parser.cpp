@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <atomic>
+#include <climits>
 #include <condition_variable>
 #include <mutex>
 #include <string>
@@ -36,16 +37,18 @@ static std::condition_variable g_waken_cond;
 static DOUBLE_LIST g_connection_list;
 static DOUBLE_LIST g_connection_list1;
 static std::unordered_map<std::string, MIDB_CMD_HANDLER> g_cmd_entry;
+static unsigned int g_cmd_debug;
 
 static void *midcp_thrwork(void *);
 static int cmd_parser_generate_args(char* cmd_line, int cmd_len, char** argv);
 
 static int cmd_parser_ping(int argc, char **argv, int sockd);
 
-void cmd_parser_init(size_t threads_num, int timeout)
+void cmd_parser_init(size_t threads_num, int timeout, unsigned int debug)
 {
 	g_threads_num = threads_num;
 	g_timeout_interval = timeout;
+	g_cmd_debug = debug;
 	double_list_init(&g_connection_list);
 	double_list_init(&g_connection_list1);
 }
@@ -160,6 +163,41 @@ void cmd_parser_register_command(const char *command, MIDB_CMD_HANDLER handler)
 	g_cmd_entry.emplace(command, handler);
 }
 
+static thread_local int dbg_current_argc;
+static thread_local char **dbg_current_argv;
+
+static void cmd_dump_argv(int argc, char **argv)
+{
+	fprintf(stderr, "<");
+	for (int i = 0; i < argc; ++i)
+		fprintf(stderr, " %s", argv[i]);
+	fprintf(stderr, "\n");
+}
+
+static void cmd_write_x(unsigned int level, int fd, const char *buf, size_t z)
+{
+	::write(fd, buf, z);
+	if (g_cmd_debug < level)
+		return;
+	if (dbg_current_argv != nullptr) {
+		cmd_dump_argv(dbg_current_argc, dbg_current_argv);
+		dbg_current_argv = nullptr;
+	}
+	if (z >= 1 && buf[z-1] == '\n')
+		--z;
+	if (z >= 1 && buf[z-1] == '\r')
+		--z;
+	if (z > INT_MAX)
+		z = INT_MAX;
+	fprintf(stderr, "> %.*s\n", static_cast<int>(z), buf);
+} 
+
+void cmd_write(int fd, const void *vbuf, size_t z)
+{
+	/* Note: cmd_write is also only called for successful responses */
+	cmd_write_x(2, fd, static_cast<const char *>(vbuf), z);
+}
+
 static std::pair<bool, int> midcp_exec1(int argc, char **argv, CONNECTION *conn)
 {
 	if (g_notify_stop)
@@ -169,21 +207,23 @@ static std::pair<bool, int> midcp_exec1(int argc, char **argv, CONNECTION *conn)
 		return {false, 0};
 	if (!common_util_build_environment(argv[1]))
 		return {false, 0};
-	auto result = cmd_iter->second(argc, argv, conn->sockd);
+	auto err = cmd_iter->second(argc, argv, conn->sockd);
 	common_util_free_environment();
-	if (result == 0)
+	if (err == 0)
 		return {true, 0};
-	return {false, result};
+	return {false, err};
 }
 
 static void midcp_exec(int argc, char **argv, CONNECTION *conn)
 {
+	dbg_current_argc = argc;
+	dbg_current_argv = argv;
 	auto [replied, result] = midcp_exec1(argc, argv, conn);
 	if (replied)
 		return;
 	char rsp[20];
 	auto len = snprintf(rsp, arsizeof(rsp), "FALSE %d\r\n", result);
-	write(conn->sockd, rsp, len);
+	cmd_write_x(1, conn->sockd, rsp, len);
 }
 
 static void *midcp_thrwork(void *param)
