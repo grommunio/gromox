@@ -4020,10 +4020,13 @@ int imap_cmd_parser_dval(int argc, char **argv, IMAP_CONTEXT *ctx, int ret)
 		code = 1907;
 	auto str = resource_get_imap_code(code, 1, &len);
 	char buff[1024];
+	const char *tag = nullptr;
+	if (ret & DISPATCH_TAG)
+		tag = *ctx->tag_string != '\0' ? ctx->tag_string : "BUG";
+	else
+		tag = argc > 0 ? argv[0] : "*";
 	len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
-	      (ret & DISPATCH_TAG) ? ctx->tag_string :
-	      argc > 0 ? argv[0] : "*", str,
-	      estr != nullptr ? estr : "");
+	      tag, str, estr != nullptr ? estr : "");
 	imap_parser_safe_write(ctx, buff, len);
 	return ret & DISPATCH_ACTMASK;
 }
