@@ -244,32 +244,32 @@ static void *midcp_thrwork(void *param)
 		}
 		offset += read_len;
 		for (i=0; i<offset-1; i++) {
-			if ('\r' == buffer[i] && '\n' == buffer[i + 1]) {
-				if (4 == i && 0 == strncasecmp(buffer, "QUIT", 4)) {
-					write(pconnection->sockd, "BYE\r\n", 5);
-					co_hold.lock();
-					double_list_remove(&g_connection_list, &pconnection->node);
-					co_hold.unlock();
-					close(pconnection->sockd);
-					free(pconnection);
-					goto NEXT_LOOP;
-				}
-
-				argc = cmd_parser_generate_args(buffer, i, argv);
-				if(argc < 2) {
-					write(pconnection->sockd, "FALSE 1\r\n", 9);
-					offset -= i + 2;
-					if (offset >= 0)
-						memmove(buffer, buffer + i + 2, offset);
-					break;	
-				}
-				
-				HX_strupper(argv[0]);
-				midcp_exec(argc, argv, pconnection);
-				offset -= i + 2;
-				memmove(buffer, buffer + i + 2, offset);
-				break;	
+			if (buffer[i] != '\r' || buffer[i+1] != '\n')
+				continue;
+			if (4 == i && 0 == strncasecmp(buffer, "QUIT", 4)) {
+				write(pconnection->sockd, "BYE\r\n", 5);
+				co_hold.lock();
+				double_list_remove(&g_connection_list, &pconnection->node);
+				co_hold.unlock();
+				close(pconnection->sockd);
+				free(pconnection);
+				goto NEXT_LOOP;
 			}
+
+			argc = cmd_parser_generate_args(buffer, i, argv);
+			if (argc < 2) {
+				write(pconnection->sockd, "FALSE 1\r\n", 9);
+				offset -= i + 2;
+				if (offset >= 0)
+					memmove(buffer, buffer + i + 2, offset);
+				break;
+			}
+
+			HX_strupper(argv[0]);
+			midcp_exec(argc, argv, pconnection);
+			offset -= i + 2;
+			memmove(buffer, buffer + i + 2, offset);
+			break;
 		}
 
 		if (CONN_BUFFLEN == offset) {
