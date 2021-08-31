@@ -635,17 +635,15 @@ static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist)
 			length ++;
 			if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 				goto DELETE_ERROR;
-			{
-				if (0 == strncmp(buff, "TRUE", 4)) {
-					length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-DELE %s %s", path, folder);
-				} else if (0 == strncmp(buff, "FALSE ", 6)) {
-					std::unique_lock sv_hold(g_server_lock);
-					double_list_append_as_tail(&pback->psvr->conn_list,
-						&pback->node);
-					return MIDB_RESULT_ERROR;	
-				} else {
-					goto DELETE_ERROR;
-				}
+			if (0 == strncmp(buff, "TRUE", 4)) {
+				length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-DELE %s %s", path, folder);
+			} else if (0 == strncmp(buff, "FALSE ", 6)) {
+				std::unique_lock sv_hold(g_server_lock);
+				double_list_append_as_tail(&pback->psvr->conn_list,
+					&pback->node);
+				return MIDB_RESULT_ERROR;
+			} else {
+				goto DELETE_ERROR;
 			}
 		}
 	}
@@ -657,20 +655,18 @@ static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist)
 		length ++;
 		if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 			goto DELETE_ERROR;
-		{
-			if (0 == strncmp(buff, "TRUE", 4)) {
-				std::unique_lock sv_hold(g_server_lock);
-				double_list_append_as_tail(&pback->psvr->conn_list,
-					&pback->node);
-				return MIDB_RESULT_OK;
-			} else if (0 == strncmp(buff, "FALSE ", 6)) {
-				std::unique_lock sv_hold(g_server_lock);
-				double_list_append_as_tail(&pback->psvr->conn_list,
-					&pback->node);
-				return MIDB_RESULT_ERROR;	
-			} else {
-				goto DELETE_ERROR;
-			}
+		if (0 == strncmp(buff, "TRUE", 4)) {
+			std::unique_lock sv_hold(g_server_lock);
+			double_list_append_as_tail(&pback->psvr->conn_list,
+				&pback->node);
+			return MIDB_RESULT_OK;
+		} else if (0 == strncmp(buff, "FALSE ", 6)) {
+			std::unique_lock sv_hold(g_server_lock);
+			double_list_append_as_tail(&pback->psvr->conn_list,
+				&pback->node);
+			return MIDB_RESULT_ERROR;
+		} else {
+			goto DELETE_ERROR;
 		}
 	}
 
@@ -715,37 +711,34 @@ static int imap_search(const char *path, const char *folder,
 	
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 		goto RDWR_ERROR;
-	{
-		if (0 == strncmp(buff, "TRUE", 4)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list,
-				&pback->node);
-			sv_hold.unlock();
-			length = strlen(buff + 4);
-			if (0 == length) {
-				*plen = 0;
-				return MIDB_RESULT_OK;
-			}
-			/* trim the first space */
-			length --;
-			if (length > *plen) {
-				length = *plen;
-			} else {
-				*plen = length;
-			}
-			/* ignore the first space */
-			memcpy(ret_buff, buff + 4 + 1, length);
+	if (0 == strncmp(buff, "TRUE", 4)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list,
+			&pback->node);
+		sv_hold.unlock();
+		length = strlen(buff + 4);
+		if (0 == length) {
+			*plen = 0;
 			return MIDB_RESULT_OK;
-		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			*perrno = atoi(buff + 6);
-			return MIDB_RESULT_ERROR;
-		} else {
-			goto RDWR_ERROR;
 		}
+		/* trim the first space */
+		length--;
+		if (length > *plen) {
+			length = *plen;
+		} else {
+			*plen = length;
+		}
+		/* ignore the first space */
+		memcpy(ret_buff, buff + 4 + 1, length);
+		return MIDB_RESULT_OK;
+	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
+		*perrno = atoi(buff + 6);
+		return MIDB_RESULT_ERROR;
+	} else {
+		goto RDWR_ERROR;
 	}
-
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
@@ -788,37 +781,34 @@ static int imap_search_uid(const char *path, const char *folder,
 	
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 		goto RDWR_ERROR;
-	{
-		if (0 == strncmp(buff, "TRUE", 4)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list,
-				&pback->node);
-			sv_hold.unlock();
-			length = strlen(buff + 4);
-			if (0 == length) {
-				*plen = 0;
-				return MIDB_RESULT_OK;
-			}
-			/* trim the first space */
-			length --;
-			if (length > *plen) {
-				length = *plen;
-			} else {
-				*plen = length;
-			}
-			/* ignore the first space */
-			memcpy(ret_buff, buff + 4 + 1, length);
+	if (0 == strncmp(buff, "TRUE", 4)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list,
+			&pback->node);
+		sv_hold.unlock();
+		length = strlen(buff + 4);
+		if (0 == length) {
+			*plen = 0;
 			return MIDB_RESULT_OK;
-		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			*perrno = atoi(buff + 6);
-			return MIDB_RESULT_ERROR;
-		} else {
-			goto RDWR_ERROR;
 		}
+		/* trim the first space */
+		length--;
+		if (length > *plen) {
+			length = *plen;
+		} else {
+			*plen = length;
+		}
+		/* ignore the first space */
+		memcpy(ret_buff, buff + 4 + 1, length);
+		return MIDB_RESULT_OK;
+	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
+		*perrno = atoi(buff + 6);
+		return MIDB_RESULT_ERROR;
+	} else {
+		goto RDWR_ERROR;
 	}
-
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
@@ -841,22 +831,19 @@ static int get_mail_id(const char *path, const char *folder,
 				path, folder, mid_string);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 		goto RDWR_ERROR;
-	{
-		if (0 == strncmp(buff, "TRUE", 4)) {
-			*pid = atoi(buff + 5) + 1;
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list,
-				&pback->node);
-			return MIDB_RESULT_OK;
-		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			return MIDB_RESULT_ERROR;
-		} else {
-			goto RDWR_ERROR;
-		}
+	if (0 == strncmp(buff, "TRUE", 4)) {
+		*pid = atoi(buff + 5) + 1;
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list,
+			&pback->node);
+		return MIDB_RESULT_OK;
+	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
+		return MIDB_RESULT_ERROR;
+	} else {
+		goto RDWR_ERROR;
 	}
-
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
@@ -879,22 +866,19 @@ static int get_mail_uid(const char *path, const char *folder,
 				path, folder, mid_string);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 		goto RDWR_ERROR;
-	{
-		if (0 == strncmp(buff, "TRUE", 4)) {
-			*puid = atoi(buff + 5);
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list,
-				&pback->node);
-			return MIDB_RESULT_OK;
-		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			return MIDB_RESULT_ERROR;
-		} else {
-			goto RDWR_ERROR;
-		}
+	if (0 == strncmp(buff, "TRUE", 4)) {
+		*puid = atoi(buff + 5);
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list,
+			&pback->node);
+		return MIDB_RESULT_OK;
+	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
+		return MIDB_RESULT_ERROR;
+	} else {
+		goto RDWR_ERROR;
 	}
-
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
@@ -920,49 +904,46 @@ static int summary_folder(const char *path, const char *folder, int *pexists,
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-FDDT %s %s UID ASC\r\n", path, folder);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 		goto RDWR_ERROR;
-	{
-		if (0 == strncmp(buff, "TRUE", 4)) {
-			if (6 != sscanf(buff, "TRUE %d %d %d %lu %u %d", &exists,
-				&recent, &unseen, &uidvalid, &uidnext, &first_unseen)) {
-				*perrno = -1;
-				std::unique_lock sv_hold(g_server_lock);
-				double_list_append_as_tail(&pback->psvr->conn_list,
-					&pback->node);
-				return MIDB_RESULT_ERROR;
-			}
-			if (NULL != pexists) {
-				*pexists = exists;
-			}
-			if (NULL != precent) {
-				*precent = recent;
-			}
-			if (NULL != punseen) {
-				*punseen = unseen;
-			}
-			if (NULL != puidvalid) {
-				*puidvalid = uidvalid;
-			}
-			if (NULL != puidnext) {
-				*puidnext = uidnext;
-			}
-			if (NULL != pfirst_unseen) {
-				*pfirst_unseen = first_unseen + 1;
-			}
-			
+	if (0 == strncmp(buff, "TRUE", 4)) {
+		if (6 != sscanf(buff, "TRUE %d %d %d %lu %u %d", &exists,
+		    &recent, &unseen, &uidvalid, &uidnext, &first_unseen)) {
+			*perrno = -1;
 			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list,
 				&pback->node);
-			return MIDB_RESULT_OK;
-		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			*perrno = atoi(buff + 6);
 			return MIDB_RESULT_ERROR;
-		} else {
-			goto RDWR_ERROR;
 		}
-	}
+		if (NULL != pexists) {
+			*pexists = exists;
+		}
+		if (NULL != precent) {
+			*precent = recent;
+		}
+		if (NULL != punseen) {
+			*punseen = unseen;
+		}
+		if (NULL != puidvalid) {
+			*puidvalid = uidvalid;
+		}
+		if (NULL != puidnext) {
+			*puidnext = uidnext;
+		}
+		if (NULL != pfirst_unseen) {
+			*pfirst_unseen = first_unseen + 1;
+		}
 
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list,
+			&pback->node);
+		return MIDB_RESULT_OK;
+	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
+		*perrno = atoi(buff + 6);
+		return MIDB_RESULT_ERROR;
+	} else {
+		goto RDWR_ERROR;
+	}
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
@@ -982,22 +963,19 @@ static int make_folder(const char *path, const char *folder, int *perrno)
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-MAKF %s %s\r\n", path, folder);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 		goto RDWR_ERROR;
-	{
-		if (0 == strncmp(buff, "TRUE", 4)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list,
-				&pback->node);
-			return MIDB_RESULT_OK;
-		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			*perrno = atoi(buff + 6);
-			return MIDB_RESULT_ERROR;
-		} else {
-			goto RDWR_ERROR;
-		}
+	if (0 == strncmp(buff, "TRUE", 4)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list,
+			&pback->node);
+		return MIDB_RESULT_OK;
+	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
+		*perrno = atoi(buff + 6);
+		return MIDB_RESULT_ERROR;
+	} else {
+		goto RDWR_ERROR;
 	}
-
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
@@ -1017,22 +995,19 @@ static int remove_folder(const char *path, const char *folder, int *perrno)
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-REMF %s %s\r\n", path, folder);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 		goto RDWR_ERROR;
-	{
-		if (0 == strncmp(buff, "TRUE", 4)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list,
-				&pback->node);
-			return MIDB_RESULT_OK;
-		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			*perrno = atoi(buff + 6);
-			return MIDB_RESULT_ERROR;
-		} else {
-			goto RDWR_ERROR;
-		}
+	if (0 == strncmp(buff, "TRUE", 4)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list,
+			&pback->node);
+		return MIDB_RESULT_OK;
+	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
+		*perrno = atoi(buff + 6);
+		return MIDB_RESULT_ERROR;
+	} else {
+		goto RDWR_ERROR;
 	}
-
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
@@ -1052,22 +1027,19 @@ static int ping_mailbox(const char *path, int *perrno)
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-PING %s\r\n", path);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 		goto RDWR_ERROR;
-	{
-		if (0 == strncmp(buff, "TRUE", 4)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list,
-				&pback->node);
-			return MIDB_RESULT_OK;
-		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			*perrno = atoi(buff + 6);
-			return MIDB_RESULT_ERROR;
-		} else {
-			goto RDWR_ERROR;
-		}
+	if (0 == strncmp(buff, "TRUE", 4)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list,
+			&pback->node);
+		return MIDB_RESULT_OK;
+	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
+		*perrno = atoi(buff + 6);
+		return MIDB_RESULT_ERROR;
+	} else {
+		goto RDWR_ERROR;
 	}
-
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
@@ -1089,22 +1061,19 @@ static int rename_folder(const char *path, const char *src_name,
 				src_name, dst_name);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 		goto RDWR_ERROR;
-	{
-		if (0 == strncmp(buff, "TRUE", 4)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list,
-				&pback->node);
-			return MIDB_RESULT_OK;
-		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			*perrno = atoi(buff + 6);
-			return MIDB_RESULT_ERROR;
-		} else {
-			goto RDWR_ERROR;
-		}
+	if (0 == strncmp(buff, "TRUE", 4)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list,
+			&pback->node);
+		return MIDB_RESULT_OK;
+	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
+		*perrno = atoi(buff + 6);
+		return MIDB_RESULT_ERROR;
+	} else {
+		goto RDWR_ERROR;
 	}
-
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
@@ -1124,22 +1093,19 @@ static int subscribe_folder(const char *path, const char *folder, int *perrno)
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-SUBF %s %s\r\n", path, folder);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 		goto RDWR_ERROR;
-	{
-		if (0 == strncmp(buff, "TRUE", 4)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list,
-				&pback->node);
-			return MIDB_RESULT_OK;
-		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			*perrno = atoi(buff + 6);
-			return MIDB_RESULT_ERROR;
-		} else {
-			goto RDWR_ERROR;
-		}
+	if (0 == strncmp(buff, "TRUE", 4)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list,
+			&pback->node);
+		return MIDB_RESULT_OK;
+	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
+		*perrno = atoi(buff + 6);
+		return MIDB_RESULT_ERROR;
+	} else {
+		goto RDWR_ERROR;
 	}
-
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
@@ -1159,22 +1125,19 @@ static int unsubscribe_folder(const char *path, const char *folder, int *perrno)
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-UNSF %s %s\r\n", path, folder);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 		goto RDWR_ERROR;
-	{
-		if (0 == strncmp(buff, "TRUE", 4)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list,
-				&pback->node);
-			return MIDB_RESULT_OK;
-		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			*perrno = atoi(buff + 6);
-			return MIDB_RESULT_ERROR;
-		} else {
-			goto RDWR_ERROR;
-		}
+	if (0 == strncmp(buff, "TRUE", 4)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list,
+			&pback->node);
+		return MIDB_RESULT_OK;
+	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
+		*perrno = atoi(buff + 6);
+		return MIDB_RESULT_ERROR;
+	} else {
+		goto RDWR_ERROR;
 	}
-
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
@@ -1442,22 +1405,19 @@ static int insert_mail(const char *path, const char *folder,
 				path, folder, file_name, flags_string, time_stamp);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 		goto RDWR_ERROR;
-	{
-		if (0 == strncmp(buff, "TRUE", 4)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list,
-				&pback->node);
-			return MIDB_RESULT_OK;
-		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			*perrno = atoi(buff + 6);
-			return MIDB_RESULT_ERROR;	
-		} else {
-			goto RDWR_ERROR;
-		}
+	if (0 == strncmp(buff, "TRUE", 4)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list,
+			&pback->node);
+		return MIDB_RESULT_OK;
+	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
+		*perrno = atoi(buff + 6);
+		return MIDB_RESULT_ERROR;
+	} else {
+		goto RDWR_ERROR;
 	}
-
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
@@ -1500,18 +1460,16 @@ static int remove_mail(const char *path, const char *folder,
 			length ++;
 			if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 				goto RDWR_ERROR;
-			{
-				if (0 == strncmp(buff, "TRUE", 4)) {
-					length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-DELE %s %s", path, folder);
-				} else if (0 == strncmp(buff, "FALSE ", 6)) {
-					std::unique_lock sv_hold(g_server_lock);
-					double_list_append_as_tail(&pback->psvr->conn_list,
-						&pback->node);
-					*perrno = atoi(buff + 6);
-					return MIDB_RESULT_ERROR;	
-				} else {
-					goto RDWR_ERROR;
-				}
+			if (0 == strncmp(buff, "TRUE", 4)) {
+				length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-DELE %s %s", path, folder);
+			} else if (0 == strncmp(buff, "FALSE ", 6)) {
+				std::unique_lock sv_hold(g_server_lock);
+				double_list_append_as_tail(&pback->psvr->conn_list,
+					&pback->node);
+				*perrno = atoi(buff + 6);
+				return MIDB_RESULT_ERROR;
+			} else {
+				goto RDWR_ERROR;
 			}
 		}
 	}
@@ -1523,21 +1481,19 @@ static int remove_mail(const char *path, const char *folder,
 		length ++;
 		if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 			goto RDWR_ERROR;
-		{
-			if (0 == strncmp(buff, "TRUE", 4)) {
-				std::unique_lock sv_hold(g_server_lock);
-				double_list_append_as_tail(&pback->psvr->conn_list,
-					&pback->node);
-				return MIDB_RESULT_OK;
-			} else if (0 == strncmp(buff, "FALSE ", 6)) {
-				std::unique_lock sv_hold(g_server_lock);
-				double_list_append_as_tail(&pback->psvr->conn_list,
-					&pback->node);
-				*perrno = atoi(buff + 6);
-				return MIDB_RESULT_ERROR;	
-			} else {
-				goto RDWR_ERROR;
-			}
+		if (0 == strncmp(buff, "TRUE", 4)) {
+			std::unique_lock sv_hold(g_server_lock);
+			double_list_append_as_tail(&pback->psvr->conn_list,
+				&pback->node);
+			return MIDB_RESULT_OK;
+		} else if (0 == strncmp(buff, "FALSE ", 6)) {
+			std::unique_lock sv_hold(g_server_lock);
+			double_list_append_as_tail(&pback->psvr->conn_list,
+				&pback->node);
+			*perrno = atoi(buff + 6);
+			return MIDB_RESULT_ERROR;
+		} else {
+			goto RDWR_ERROR;
 		}
 	}
 
@@ -2943,22 +2899,19 @@ static int set_mail_flags(const char *path, const char *folder,
 				path, folder, mid_string, flags_string);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 		goto RDWR_ERROR;
-	{
-		if (0 == strncmp(buff, "TRUE", 4)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list,
-				&pback->node);
-			return MIDB_RESULT_OK;
-		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			*perrno = atoi(buff + 6);
-			return MIDB_RESULT_ERROR;	
-		} else {
-			goto RDWR_ERROR;
-		}
+	if (0 == strncmp(buff, "TRUE", 4)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list,
+			&pback->node);
+		return MIDB_RESULT_OK;
+	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
+		*perrno = atoi(buff + 6);
+		return MIDB_RESULT_ERROR;
+	} else {
+		goto RDWR_ERROR;
 	}
-
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
@@ -3016,22 +2969,19 @@ static int unset_mail_flags(const char *path, const char *folder,
 				path, folder, mid_string, flags_string);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 		goto RDWR_ERROR;
-	{
-		if (0 == strncmp(buff, "TRUE", 4)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list,
-				&pback->node);
-			return MIDB_RESULT_OK;
-		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			*perrno = atoi(buff + 6);
-			return MIDB_RESULT_ERROR;	
-		} else {
-			goto RDWR_ERROR;
-		}
+	if (0 == strncmp(buff, "TRUE", 4)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list,
+			&pback->node);
+		return MIDB_RESULT_OK;
+	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
+		*perrno = atoi(buff + 6);
+		return MIDB_RESULT_ERROR;
+	} else {
+		goto RDWR_ERROR;
 	}
-
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
@@ -3053,43 +3003,40 @@ static int get_mail_flags(const char *path, const char *folder,
 				path, folder, mid_string);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 		goto RDWR_ERROR;
-	{
-		if (0 == strncmp(buff, "TRUE", 4)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list,
-				&pback->node);
-			sv_hold.unlock();
-			*pflag_bits = 0;
-			if (NULL != strchr(buff + 5, 'A')) {
-				*pflag_bits |= FLAG_ANSWERED;
-			}
-			if (NULL != strchr(buff + 5, 'U')) {
-				*pflag_bits |= FLAG_DRAFT;
-			}
-			if (NULL != strchr(buff + 5, 'F')) {
-				*pflag_bits |= FLAG_FLAGGED;
-			}
-			if (NULL != strchr(buff + 5, 'D')) {
-				*pflag_bits |= FLAG_DELETED;
-			}
-			if (NULL != strchr(buff + 5, 'S')) {
-				*pflag_bits |= FLAG_SEEN;
-			}
-			if (NULL != strchr(buff + 5, 'R')) {
-				*pflag_bits |= FLAG_RECENT;
-			}
-			return MIDB_RESULT_OK;
-		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			sv_hold.unlock();
-			*perrno = atoi(buff + 6);
-			return MIDB_RESULT_ERROR;	
-		} else {
-			goto RDWR_ERROR;
+	if (0 == strncmp(buff, "TRUE", 4)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list,
+			&pback->node);
+		sv_hold.unlock();
+		*pflag_bits = 0;
+		if (NULL != strchr(buff + 5, 'A')) {
+			*pflag_bits |= FLAG_ANSWERED;
 		}
+		if (NULL != strchr(buff + 5, 'U')) {
+			*pflag_bits |= FLAG_DRAFT;
+		}
+		if (NULL != strchr(buff + 5, 'F')) {
+			*pflag_bits |= FLAG_FLAGGED;
+		}
+		if (NULL != strchr(buff + 5, 'D')) {
+			*pflag_bits |= FLAG_DELETED;
+		}
+		if (NULL != strchr(buff + 5, 'S')) {
+			*pflag_bits |= FLAG_SEEN;
+		}
+		if (NULL != strchr(buff + 5, 'R')) {
+			*pflag_bits |= FLAG_RECENT;
+		}
+		return MIDB_RESULT_OK;
+	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
+		sv_hold.unlock();
+		*perrno = atoi(buff + 6);
+		return MIDB_RESULT_ERROR;
+	} else {
+		goto RDWR_ERROR;
 	}
-
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
@@ -3113,25 +3060,22 @@ static int copy_mail(const char *path, const char *src_folder,
 				path, src_folder, mid_string, dst_folder);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 		goto RDWR_ERROR;
-	{
-		if (0 == strncmp(buff, "TRUE", 4)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list,
-				&pback->node);
-			sv_hold.unlock();
-			strcpy(dst_mid, buff + 5);
-			return MIDB_RESULT_OK;
-		} else if (0 == strncmp(buff, "FALSE ", 6)) {
-			std::unique_lock sv_hold(g_server_lock);
-			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-			sv_hold.unlock();
-			*perrno = atoi(buff + 6);
-			return MIDB_RESULT_ERROR;	
-		} else {
-			goto RDWR_ERROR;
-		}
+	if (0 == strncmp(buff, "TRUE", 4)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list,
+			&pback->node);
+		sv_hold.unlock();
+		strcpy(dst_mid, buff + 5);
+		return MIDB_RESULT_OK;
+	} else if (0 == strncmp(buff, "FALSE ", 6)) {
+		std::unique_lock sv_hold(g_server_lock);
+		double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
+		sv_hold.unlock();
+		*perrno = atoi(buff + 6);
+		return MIDB_RESULT_ERROR;
+	} else {
+		goto RDWR_ERROR;
 	}
-
  RDWR_ERROR:
 	close(pback->sockd);
 	pback->sockd = -1;
