@@ -2190,3 +2190,11 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 	}
 	return TRUE;
 }
+
+void ab_tree_invalidate_cache()
+{
+	printf("[zcore]: Invalidating AB caches\n");
+	std::unique_lock bl_hold(g_base_lock);
+	for (auto &kvpair : g_base_hash)
+		kvpair.second.load_time = 0;
+}

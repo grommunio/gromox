@@ -551,6 +551,7 @@ int main(int argc, const char **argv)
 		if (g_hup_signalled.exchange(false)) {
 			zcore_reload_config(nullptr);
 			service_reload_all();
+			ab_tree_invalidate_cache();
 		}
 	}
 	return 0;

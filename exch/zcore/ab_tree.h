@@ -83,3 +83,4 @@ BOOL ab_tree_resolvename(AB_BASE *pbase, uint32_t codepage,
 	char *pstr, SINGLE_LIST *presult_list);
 BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 	uint32_t codepage, const RESTRICTION *pfilter, LONG_ARRAY *pminids);
+extern void ab_tree_invalidate_cache();
