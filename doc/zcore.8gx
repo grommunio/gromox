@@ -1,6 +1,6 @@
 .TH zcore 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-zcore \(em Protocol handler for Z-MAPI
+zcore \(em Bridge for PHP-MAPI requests
 .SH Synopsis
 \fBzcore\fP [\fB\-c\fP \fIconfig\fP]
 .SH Description
