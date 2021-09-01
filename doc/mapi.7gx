@@ -1,0 +1,54 @@
+.TH mapi 7 "" "Gromox" "Gromox developer reference"
+.SH Name
+mapi \(em Definition for "Messaging Application Programming Interface"
+.SH Definition
+MAPI (Messaging API) can have many different meanings. As abstracta:
+.IP \(bu 4
+The concept of the hierarchial organization into \fBcontainers\fP,
+\fBtables\fP, \fBcontents\fP and \fBproperties\fP. Typical containers are
+\fBstores\fP and \fBfolders\fP, typical contents are \fBmessages\fP,
+\fBrecipients\fP, \fBattachments\fP.
+.IP \(bu 4
+More concrete variations, such as the set of "well-known" properties like, for
+example, subject, modification date, body, etc., and the semantics expected of
+them.
+.IP \(bu 4
+Optionally, the profile configuration structure present in some MAPI client
+implementations, comprised of \fBprofiles\fP, \fBproviders\fP, \fBservices\fP,
+\fBprofile sections\fP, \fBsessions\fP and their associated properties. A
+server generally does not know or need to know about these.
+.IP \(bu 4
+A specification of types and functions to make use of any of these concepts in
+a programming language.
+.PP
+As an implementation or part thereof:
+.IP \(bu 4
+(Seemingly the most common meaning of "MAPI"!) The MSMAPI interface for
+programming in C and/or C++ that comes with the Windows operating system/Office
+package, with types like "IMAPIFolder" and "IMessage", functions like
+"MAPILogonEx" or "IMessage::GetProperties", and identifiers like PR_SUBJECT.
+.IP \(bu 4
+The Office VBA interface for programming in VisualBasic, with types like
+"Outlook.MailItem", object properties like "MailItem.Subject".
+.IP \(bu 4
+The wire protocols used for communication with Exchange Server. This has
+received unfortunate terms like "MAPI/RPC" or "MAPI protocol". Specifically,
+this includes the independently specified parts of: the Remote Operations
+(ROP/OXCROPS) protocol, the EMSMDB v1 protocol, the NSPI protocol, the MAPI
+Extensions For HTTP protocol (MAPI-over-HTTP, MAPIHTTP), and their particular
+format of serialized representations of MAPI objects that each peer may have.
+Note that MAPIHTTP is not in any way "more MAPI" than RPC-over-HTTP (aka RPCH)
+already was: both MAPIHTTP and RPCH wrap OXCROPS.
+.SH Gromox implementation
+Gromox does not offer an MSMAPI-style programming API for the C or C++ language
+environments; the types and functions that are exposed in .h/.hpp files are
+intended for its own use only and are not considered public let alone constant
+over time.
+.PP
+Gromox offers interfacing at the network level, e.g. via
+exchange_emsmdb(4gx)/http(8gx) for the Exchange protocol formats, or via
+exmdb_provider(4gx) and zcore(8gx) using its own wire formats.
+.PP
+Gromox offers a somewhat MSMAPI-resembling interface for programming in PHP.
+This is a set of 119 freestanding functions that implement the concepts of
+stores, folders, messages, etc.
