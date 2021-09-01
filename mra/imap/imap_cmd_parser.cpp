@@ -1695,7 +1695,7 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1906;
 	}
 	default: {
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	strcpy(pcontext->selected_folder, temp_name);
@@ -1765,7 +1765,7 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1906;
 	}
 	default: {
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	strcpy(pcontext->selected_folder, temp_name);
@@ -1844,7 +1844,7 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	default: {
 		mem_file_free(&temp_file);
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	mem_file_writeline(&temp_file, "inbox");
@@ -1889,7 +1889,7 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 				}
 				default: {
 					mem_file_free(&temp_file);
-					return errnum | DISPATCH_MIDB;
+					return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 				}
 				}
 			}
@@ -1934,7 +1934,7 @@ int imap_cmd_parser_delete(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1906;
 	}
 	default: {
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
@@ -1988,7 +1988,7 @@ int imap_cmd_parser_rename(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1906;
 	}
 	default: {
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
@@ -2022,7 +2022,7 @@ int imap_cmd_parser_subscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1906;
 	}
 	default: {
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
@@ -2055,7 +2055,7 @@ int imap_cmd_parser_unsubscribe(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1906;
 	}
 	default: {
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
@@ -2114,7 +2114,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 		default: {
 			mem_file_free(&temp_file);
-			return errnum | DISPATCH_MIDB;
+			return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 		}
 		}
 		mem_file_writeline(&temp_file, "inbox");
@@ -2240,7 +2240,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	default: {
 		mem_file_free(&temp_file);
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
@@ -2356,7 +2356,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	default: {
 		mem_file_free(&temp_file);
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
@@ -2444,7 +2444,7 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1906;
 	}
 	default: {
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	/* IMAP_CODE_2170014: OK STATUS completed */
@@ -2613,7 +2613,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1906;
 	}
 	default: {
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	imap_parser_touch_modify(NULL, pcontext->username,
@@ -2890,7 +2890,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	}
 	default: {
 		pcontext->mid.clear();
-		return errnum | DISPATCH_MIDB | DISPATCH_TAG;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB | DISPATCH_TAG;
 	}
 	}
 	imap_parser_touch_modify(NULL, pcontext->username,
@@ -2980,7 +2980,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	default: {
 		xarray_free(&xarray);
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	auto num = xarray_get_capacity(&xarray);
@@ -3040,7 +3040,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	default: {
 		xarray_free(&xarray);
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 }
@@ -3086,7 +3086,7 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1906;
 	}
 	default: {
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	buff_len += 9;
@@ -3155,7 +3155,7 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	default: {
 		xarray_free(&xarray);
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	stream_clear(&pcontext->stream);
@@ -3259,7 +3259,7 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	default: {
 		xarray_free(&xarray);
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	num = xarray_get_capacity(&xarray);
@@ -3319,7 +3319,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	default: {
 		xarray_free(&xarray);
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	if (system_services_summary_folder(pcontext->maildir,
@@ -3438,7 +3438,7 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1906;
 	}
 	default: {
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	buff_len += 9;
@@ -3519,7 +3519,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	default: {
 		xarray_free(&xarray);
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	stream_clear(&pcontext->stream);
@@ -3625,7 +3625,7 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	default: {
 		xarray_free(&xarray);
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	num = xarray_get_capacity(&xarray);
@@ -3684,7 +3684,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	default: {
 		xarray_free(&xarray);
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	if (system_services_summary_folder(pcontext->maildir,
@@ -3806,7 +3806,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	default: {
 		xarray_free(&xarray);
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	auto num = xarray_get_capacity(&xarray);
@@ -3877,7 +3877,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	default: {
 		xarray_free(&xarray);
-		return errnum | DISPATCH_MIDB;
+		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 }
@@ -4009,7 +4009,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
  * (imap_cmd_parser.h), "unpacks" it, possibly sends a response line to the
  * client before yielding the unpacked dispatch action.
  */
-int imap_cmd_parser_dval(int argc, char **argv, IMAP_CONTEXT *ctx, int ret)
+int imap_cmd_parser_dval(int argc, char **argv, IMAP_CONTEXT *ctx, unsigned int ret)
 {
 	auto code = ret & DISPATCH_VALMASK;
 	if (code == 0)
@@ -4020,10 +4020,13 @@ int imap_cmd_parser_dval(int argc, char **argv, IMAP_CONTEXT *ctx, int ret)
 		code = 1907;
 	auto str = resource_get_imap_code(code, 1, &len);
 	char buff[1024];
+	const char *tag = nullptr;
+	if (ret & DISPATCH_TAG)
+		tag = *ctx->tag_string != '\0' ? ctx->tag_string : "BUG";
+	else
+		tag = argc > 0 ? argv[0] : "*";
 	len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
-	      (ret & DISPATCH_TAG) ? ctx->tag_string :
-	      argc > 0 ? argv[0] : "*", str,
-	      estr != nullptr ? estr : "");
+	      tag, str, estr != nullptr ? estr : "");
 	imap_parser_safe_write(ctx, buff, len);
 	return ret & DISPATCH_ACTMASK;
 }
