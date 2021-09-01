@@ -1,3 +1,33 @@
+1.2 (2021-09-01)
+================
+
+Fixes:
+
+* zcore: repair wrong (parent_)entryid being passed to syncers
+* lib: unbreak save/restore of inbox rules from zcore
+* http: fix a hang during Outlook's autodiscovery due to incorrect
+  HTTP request-body processing
+* kdb2mt: implement documented SRCPASS environment variable
+* kdb2mt: reduce a false condition in checking for attachment existence
+  (reduces PK-1012)
+* kdb2mt: recognize fixated namedprops in the range 0x8000..0x84FF
+  (appointment data, contact data)
+
+Enhancements:
+
+* kdb2mt: new ``-v`` option to show progress for large folders
+* kdb2mt: implement support for embedded messages (reducing PK-1012)
+* kdb2mt: support reading gzip attachments
+* kdb2mt: make ``--src-mbox`` option more useful by ignoring orphan stores when
+  resolving. (Orphan stores can still be extracted with ``--src-guid``.)
+* kdb2mt: make ``-s`` (splice) actually effective, by looking for the needed
+  PR_IPM_SUBTREE property in the proper MAPI object.
+* kdb2mt: added more folder mappings for splice mode (appointments, contacts,
+  journal, notes, tasks, drafts) so that e.g. Drafts does get copied to Drafts,
+  rather than making a new "Drafts" folder.
+* kdb2mt: skip search folders on extraction (these are empty anyway)
+
+
 1.1 (2021-08-17)
 ================
 
