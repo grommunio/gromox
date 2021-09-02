@@ -20,8 +20,10 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <libHX/ctype_helper.h>
+#include <libHX/io.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
+#include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
@@ -434,6 +436,38 @@ void rfc1123_dstring(char *buf, size_t z, time_t ts)
 	struct tm tm;
 	gmtime_r(&ts, &tm);
 	strftime(buf, z, "%a, %d %b %Y %T GMT", &tm);
+}
+
+/**
+ * Upon setuid, tasks are restricted in their dumping (cf. linux/kernel/cred.c
+ * in commit_creds, calling set_dumpable). To restore the dump flag, one could
+ * use prctl, but re-executing the process has the benefit that the application
+ * completely re-runs as unprivileged user from the start and can catch e.g.
+ * file access errors that would occur before gx_reexec, and we can be sure
+ * that privileged informationed does not escape into a dump.
+ */
+int gx_reexec(const char *const *argv)
+{
+	auto s = getenv("GX_REEXEC_DONE");
+	if (s != nullptr || argv == nullptr) {
+		chdir("/");
+		unsetenv("GX_REEXEC_DONE");
+		return 0;
+	}
+	setenv("GX_REEXEC_DONE", "1", true);
+
+	hxmc_t *resolved = nullptr;
+	auto ret = HX_readlink(&resolved, "/proc/self/exe");
+	if (ret < 0) {
+		fprintf(stderr, "reexec: readlink: %s", strerror(-ret));
+		return ret;
+	}
+	fprintf(stderr, "Reexecing %s\n", resolved);
+	execv(resolved, const_cast<char **>(argv));
+	int saved_errno = errno;
+	perror("execv");
+	HXmc_free(resolved);
+	return -saved_errno;
 }
 
 }

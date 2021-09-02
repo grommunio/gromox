@@ -52,5 +52,6 @@ extern GX_EXPORT std::shared_ptr<CONFIG_FILE> config_file_prg(const char *priori
 namespace gromox {
 
 extern void config_file_apply(CONFIG_FILE &, const cfg_directive *);
+extern GX_EXPORT int switch_user_exec(const CONFIG_FILE &, const char **argv);
 
 }

@@ -31,7 +31,6 @@
 #include <gromox/console_server.hpp>
 #include "system_services.h"
 #include "blocks_allocator.h"
-#include <pwd.h>
 #include <cstdio>
 #include <unistd.h>
 #include <csignal>
@@ -88,7 +87,6 @@ int main(int argc, const char **argv) try
 	struct rlimit rl;
 	char temp_buff[256];
 	int retcode = EXIT_FAILURE;
-	struct passwd *puser_pass;
 	char host_name[256], *ptoken;
 	const char *dns_name, *dns_domain, *netbios_name;
 	
@@ -348,22 +346,9 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
 		return EXIT_FAILURE;
 	}
-	auto user_name = g_config_file->get_value("running_identity");
-	if (user_name != nullptr && *user_name != '\0') {
-		puser_pass = getpwnam(user_name);
-		if (puser_pass == nullptr) {
-			printf("[system]: no such user \"%s\"\n", user_name);
-			return EXIT_FAILURE;
-		}
-		if (setgid(puser_pass->pw_gid) != 0) {
-			printf("[system]: can not run group of \"%s\"\n", user_name);
-			return EXIT_FAILURE;
-		}
-		if (setuid(puser_pass->pw_uid) != 0) {
-			printf("[system]: can not run as \"%s\"\n", user_name);
-			return EXIT_FAILURE;
-		}
-	}
+	auto ret = switch_user_exec(*g_config_file, argv);
+	if (ret < 0)
+		return EXIT_FAILURE;
 	if (0 != service_run()) { 
 		printf("---------------------------- service plugins end"
 		   "----------------------------\n");

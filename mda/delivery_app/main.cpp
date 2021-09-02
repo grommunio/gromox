@@ -22,7 +22,6 @@
 #include <csignal>
 #include <unistd.h>
 #include <cstdio>
-#include <pwd.h>
 
 using namespace gromox;
 
@@ -61,7 +60,6 @@ int main(int argc, const char **argv) try
 { 
 	int retcode = EXIT_FAILURE;
 	char temp_buff[256];
-    struct passwd *puser_pass;
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv,
@@ -182,24 +180,6 @@ int main(int argc, const char **argv) try
 	printf("[console_server]: console server address is [%s]:%hu\n",
 	       *console_server_ip == '\0' ? "*" : console_server_ip, console_server_port);
 	
-	auto user_name = g_config_file->get_value("running_identity");
-	if (*user_name != '\0') {
-        puser_pass = getpwnam(user_name);
-        if (NULL == puser_pass) {
-			printf("[system]: no such user \"%s\"\n", user_name);
-			return EXIT_FAILURE;
-        }
-        
-        if (0 != setgid(puser_pass->pw_gid)) {
-			printf("[system]: can not run group of \"%s\"\n", user_name);
-			return EXIT_FAILURE;
-        }
-        if (0 != setuid(puser_pass->pw_uid)) {
-			printf("[system]: can not run as \"%s\"\n", user_name);
-			return EXIT_FAILURE;
-        }
-    }
-
 	service_init({g_config_file->get_value("service_plugin_path"),
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
@@ -213,6 +193,9 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
 		return EXIT_FAILURE;
 	}
+	auto ret = switch_user_exec(*g_config_file, argv);
+	if (ret < 0)
+		return EXIT_FAILURE;
     if (0 != service_run()) { 
 		printf("---------------------------- service plugins end"
 		   "----------------------------\n");

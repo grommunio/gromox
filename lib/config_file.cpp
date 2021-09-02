@@ -11,6 +11,7 @@
 #include <memory>
 #include <stdexcept>
 #include <libHX/defs.h>
+#include <libHX/proc.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -402,6 +403,35 @@ void config_file_apply(CONFIG_FILE &cfg, const cfg_directive *d)
 {
 	for (; d->key != nullptr; ++d)
 		config_file_apply_1(cfg, *d);
+}
+
+int switch_user_exec(const CONFIG_FILE &cf, const char **argv)
+{
+	auto user = cf.get_value("running_identity");
+	if (user == nullptr)
+		user = "gromox";
+	switch (HXproc_switch_user(user, nullptr)) {
+	case HXPROC_SU_NOOP:
+		return 0;
+	case HXPROC_SU_SUCCESS:
+		return gx_reexec(argv);
+	case HXPROC_USER_NOT_FOUND:
+		fprintf(stderr, "No such user \"%s\": %s\n", user, strerror(errno));
+		break;
+	case HXPROC_GROUP_NOT_FOUND:
+		fprintf(stderr, "Group lookup failed/Can't happen\n");
+		break;
+	case HXPROC_SETUID_FAILED:
+		fprintf(stderr, "setuid to \"%s\" failed: %s\n", user, strerror(errno));
+		break;
+	case HXPROC_SETGID_FAILED:
+		fprintf(stderr, "setgid to groupof(\"%s\") failed: %s\n", user, strerror(errno));
+		break;
+	case HXPROC_INITGROUPS_FAILED:
+		fprintf(stderr, "initgroups for \"%s\" failed: %s\n", user, strerror(errno));
+		break;
+	}
+	return -errno;
 }
 
 }

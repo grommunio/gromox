@@ -24,7 +24,6 @@
 #include "system_services.h"
 #include <gromox/util.hpp>
 #include <gromox/lib_buffer.hpp>
-#include <pwd.h>
 #include <cstdio>
 #include <unistd.h>
 #include <csignal>
@@ -64,7 +63,6 @@ int main(int argc, const char **argv) try
 { 
 	int retcode = EXIT_FAILURE;
 	struct rlimit rl;
-	struct passwd *puser_pass;
 	char temp_buff[256];
 	smtp_param scfg;
 
@@ -297,23 +295,6 @@ int main(int argc, const char **argv) try
 		else
 			printf("[system]: set file limitation to %zu\n", static_cast<size_t>(rl.rlim_cur));
 	}
-	auto user_name = g_config_file->get_value("running_identity");
-	if (*user_name != '\0') {
-		puser_pass = getpwnam(user_name);
-		if (NULL == puser_pass) {
-			printf("[system]: no such user \"%s\"\n", user_name);
-			return EXIT_FAILURE;
-		}
-		
-		if (0 != setgid(puser_pass->pw_gid)) {
-			printf("[system]: can not run group of \"%s\"\n", user_name);
-			return EXIT_FAILURE;
-		}
-		if (0 != setuid(puser_pass->pw_uid)) {
-			printf("[system]: can not run as \"%s\"\n", user_name);
-			return EXIT_FAILURE;
-		}
-	}
 	service_init({g_config_file->get_value("service_plugin_path"),
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
@@ -327,6 +308,9 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
 		return EXIT_FAILURE;
 	}
+	auto ret = switch_user_exec(*g_config_file, argv);
+	if (ret < 0)
+		return EXIT_FAILURE;
 	if (0 != service_run()) { 
 		printf("---------------------------- service plugins end"
 		   "----------------------------\n");
