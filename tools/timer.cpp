@@ -207,22 +207,22 @@ int main(int argc, const char **argv)
 		return 2;
 
 	char config_dir[256];
-	auto str_value = config_file_get_value(pconfig, "config_file_path");
+	auto str_value = pconfig->get_value("config_file_path");
 	gx_strlcpy(config_dir, str_value != nullptr ? str_value :
 	           PKGSYSCONFDIR "/timer:" PKGSYSCONFDIR, GX_ARRAY_SIZE(config_dir));
-	str_value = config_file_get_value(pconfig, "timer_state_path");
+	str_value = pconfig->get_value("timer_state_path");
 	gx_strlcpy(g_list_path, str_value != nullptr ? str_value :
 	           PKGSTATEDIR "/timer.txt", sizeof(g_list_path));
 	printf("[system]: list path is %s\n", g_list_path);
 
-	str_value = config_file_get_value(pconfig, "TIMER_LISTEN_IP");
+	str_value = pconfig->get_value("TIMER_LISTEN_IP");
 	if (NULL == str_value) {
 		gx_strlcpy(listen_ip, "::1", GX_ARRAY_SIZE(listen_ip));
 	} else {
 		gx_strlcpy(listen_ip, str_value, sizeof(listen_ip));
 	}
 
-	str_value = config_file_get_value(pconfig, "TIMER_LISTEN_PORT");
+	str_value = pconfig->get_value("TIMER_LISTEN_PORT");
 	if (NULL == str_value) {
 		listen_port = 6666;
 	} else {
@@ -233,7 +233,7 @@ int main(int argc, const char **argv)
 	printf("[system]: listen address is [%s]:%d\n",
 	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
-	str_value = config_file_get_value(pconfig, "TIMER_THREADS_NUM");
+	str_value = pconfig->get_value("TIMER_THREADS_NUM");
 	if (NULL == str_value) {
 		g_threads_num = 50;
 	} else {

@@ -146,14 +146,14 @@ int main(int argc, const char **argv)
 		return 2;
 
 	char config_dir[256];
-	auto str_value = config_file_get_value(pconfig, "config_file_path");
+	auto str_value = pconfig->get_value("config_file_path");
 	gx_strlcpy(config_dir, str_value != nullptr ? str_value :
 	           PKGSYSCONFDIR "/event:" PKGSYSCONFDIR, GX_ARRAY_SIZE(config_dir));
-	str_value = config_file_get_value(pconfig, "EVENT_LISTEN_IP");
+	str_value = pconfig->get_value("EVENT_LISTEN_IP");
 	gx_strlcpy(listen_ip, str_value != nullptr ? str_value : "::1",
 	           GX_ARRAY_SIZE(listen_ip));
 
-	str_value = config_file_get_value(pconfig, "EVENT_LISTEN_PORT");
+	str_value = pconfig->get_value("EVENT_LISTEN_PORT");
 	if (NULL == str_value) {
 		listen_port = 33333;
 	} else {
@@ -164,7 +164,7 @@ int main(int argc, const char **argv)
 	printf("[system]: listen address is [%s]:%d\n",
 	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
-	str_value = config_file_get_value(pconfig, "EVENT_THREADS_NUM");
+	str_value = pconfig->get_value("EVENT_THREADS_NUM");
 	if (NULL == str_value) {
 		g_threads_num = 50;
 	} else {

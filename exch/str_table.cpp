@@ -393,18 +393,18 @@ static BOOL svc_str_table(int reason, void **ppdata)
 			       tmp_path, strerror(errno));
 			return false;
 		}
-		auto str_value = config_file_get_value(pfile, "QUERY_SERVICE_NAME");
+		auto str_value = pfile->get_value("QUERY_SERVICE_NAME");
 		std::string query_name = str_value != nullptr ? str_value : file_name + "_query"s;
-		str_value = config_file_get_value(pfile, "ADD_SERVICE_NAME");
+		str_value = pfile->get_value("ADD_SERVICE_NAME");
 		std::string add_name = str_value != nullptr ? str_value : file_name + "_add"s;
-		str_value = config_file_get_value(pfile, "REMOVE_SERVICE_NAME");
+		str_value = pfile->get_value("REMOVE_SERVICE_NAME");
 		std::string remove_name = str_value != nullptr ? str_value : file_name + "_remove"s;
-		str_value = config_file_get_value(pfile, "GROWING_NUM");
+		str_value = pfile->get_value("GROWING_NUM");
 		growing_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 100;
 		if (growing_num <= 0)
 			growing_num = 100;
 		printf("[%s]: table growing number is %d\n", file_name, growing_num);
-		str_value = config_file_get_value(pfile, "IS_CASE_SENSITIVE");
+		str_value = pfile->get_value("IS_CASE_SENSITIVE");
 		if (str_value == nullptr) {
 			case_sensitive = FALSE;
 			printf("[%s]: case-insensitive\n", file_name);

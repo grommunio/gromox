@@ -579,14 +579,14 @@ static MYSQL *sql_login()
 		fprintf(stderr, "exm: No mysql_adaptor.cfg: %s\n", strerror(errno));
 		return nullptr;
 	}
-	auto sql_host = config_file_get_value(cfg, "mysql_host");
-	auto v = config_file_get_value(cfg, "mysql_port");
+	auto sql_host = cfg->get_value("mysql_host");
+	auto v = cfg->get_value("mysql_port");
 	auto sql_port = v != nullptr ? strtoul(v, nullptr, 0) : 0;
-	auto sql_user = config_file_get_value(cfg, "mysql_username");
+	auto sql_user = cfg->get_value("mysql_username");
 	if (sql_user == nullptr)
 		sql_user = "root";
-	auto sql_pass = config_file_get_value(cfg, "mysql_password");
-	auto sql_dbname = config_file_get_value(cfg, "mysql_dbname");
+	auto sql_pass = cfg->get_value("mysql_password");
+	auto sql_dbname = cfg->get_value("mysql_dbname");
 	if (sql_dbname == nullptr)
 		sql_dbname = "email";
 	auto conn = mysql_init(nullptr);

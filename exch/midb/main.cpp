@@ -109,15 +109,15 @@ int main(int argc, const char **argv)
 	if (pconfig == nullptr)
 		return 2;
 
-	auto str_value = config_file_get_value(pconfig, "SERVICE_PLUGIN_PATH");
+	auto str_value = pconfig->get_value("SERVICE_PLUGIN_PATH");
 	if (NULL == str_value) {
 		strcpy(service_path, PKGLIBDIR);
-		config_file_set_value(pconfig, "SERVICE_PLUGIN_PATH", service_path);
+		pconfig->set_value("SERVICE_PLUGIN_PATH", service_path);
 	} else {
 		gx_strlcpy(service_path, str_value, GX_ARRAY_SIZE(service_path));
 	}
 	printf("[system]: service plugin path is %s\n", service_path);
-	str_value = config_file_get_value(pconfig, "SERVICE_PLUGIN_LIST");
+	str_value = pconfig->get_value("SERVICE_PLUGIN_LIST");
 	const char *const *service_plugin_list = NULL;
 	if (str_value != NULL) {
 		service_plugin_list = const_cast<const char * const *>(read_file_by_line(str_value));
@@ -127,16 +127,16 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	str_value = config_file_get_value(pconfig, "CONFIG_FILE_PATH");
+	str_value = pconfig->get_value("CONFIG_FILE_PATH");
 	if (NULL == str_value) {
 		strcpy(config_path, PKGSYSCONFDIR "/midb:" PKGSYSCONFDIR);
-		config_file_set_value(pconfig, "config_file_path", config_path);
+		pconfig->set_value("config_file_path", config_path);
 	} else {
 		gx_strlcpy(config_path, str_value, GX_ARRAY_SIZE(config_path));
 	}
 	printf("[system]: config path is %s\n", config_path);
 	
-	str_value = config_file_get_value(pconfig, "DATA_FILE_PATH");
+	str_value = pconfig->get_value("DATA_FILE_PATH");
 	if (NULL == str_value) {
 		strcpy(data_path, PKGDATADIR "/midb:" PKGDATADIR);
 	} else {
@@ -144,145 +144,144 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: data path is %s\n", data_path);
 	
-	str_value = config_file_get_value(pconfig, "STATE_PATH");
+	str_value = pconfig->get_value("STATE_PATH");
 	gx_strlcpy(state_dir, str_value != nullptr ? str_value : PKGSTATEDIR, sizeof(state_dir));
 	printf("[system]: state path is %s\n", state_dir);
 	
-	str_value = config_file_get_value(pconfig, "RPC_PROXY_CONNECTION_NUM");
+	str_value = pconfig->get_value("RPC_PROXY_CONNECTION_NUM");
 	if (NULL == str_value) {
 		proxy_num = 10;
-		config_file_set_value(pconfig, "RPC_PROXY_CONNECTION_NUM", "10");
+		pconfig->set_value("RPC_PROXY_CONNECTION_NUM", "10");
 	} else {
 		proxy_num = atoi(str_value);
 		if (proxy_num <= 0 || proxy_num > 200) {
-			config_file_set_value(pconfig, "RPC_PROXY_CONNECTION_NUM", "10");
+			pconfig->set_value("RPC_PROXY_CONNECTION_NUM", "10");
 			proxy_num = 10;
 		}
 	}
 	printf("[system]: exmdb proxy connection number is %d\n", proxy_num);
 	
-	str_value = config_file_get_value(pconfig, "NOTIFY_STUB_THREADS_NUM");
+	str_value = pconfig->get_value("NOTIFY_STUB_THREADS_NUM");
 	if (NULL == str_value) {
 		stub_num = 10;
-		config_file_set_value(pconfig, "NOTIFY_STUB_THREADS_NUM", "10");
+		pconfig->set_value("NOTIFY_STUB_THREADS_NUM", "10");
 	} else {
 		stub_num = atoi(str_value);
 		if (stub_num <= 0 || stub_num > 200) {
 			stub_num = 10;
-			config_file_set_value(pconfig, "NOTIFY_STUB_THREADS_NUM", "10");
+			pconfig->set_value("NOTIFY_STUB_THREADS_NUM", "10");
 		}
 	}
 	printf("[system]: exmdb notify stub threads number is %d\n", stub_num);
 	
-	str_value = config_file_get_value(pconfig, "MIDB_LISTEN_IP");
+	str_value = pconfig->get_value("MIDB_LISTEN_IP");
 	gx_strlcpy(listen_ip, str_value != nullptr ? nullptr : "::1",
 	           GX_ARRAY_SIZE(listen_ip));
-	str_value = config_file_get_value(pconfig, "MIDB_LISTEN_PORT");
+	str_value = pconfig->get_value("MIDB_LISTEN_PORT");
 	if (NULL == str_value) {
 		listen_port = 5555;
-		config_file_set_value(pconfig, "MIDB_LISTEN_PORT", "5555");
+		pconfig->set_value("MIDB_LISTEN_PORT", "5555");
 	} else {
 		listen_port = atoi(str_value);
 		if (listen_port <= 0) {
 			listen_port = 5555;
-			config_file_set_value(pconfig, "MIDB_LISTEN_PORT", "5555");
+			pconfig->set_value("MIDB_LISTEN_PORT", "5555");
 		}
 	}
 	printf("[system]: listen address is [%s]:%d\n",
 	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
-	str_value = config_file_get_value(pconfig, "MIDB_THREADS_NUM");
+	str_value = pconfig->get_value("MIDB_THREADS_NUM");
 	if (NULL == str_value) {
 		threads_num = 100;
-		config_file_set_value(pconfig, "MIDB_THREADS_NUM", "100");
+		pconfig->set_value("MIDB_THREADS_NUM", "100");
 	} else {
 		threads_num = atoi(str_value);
 		if (threads_num < 20) {
 			threads_num = 20;
-			config_file_set_value(pconfig, "MIDB_THREADS_NUM", "20");
+			pconfig->set_value("MIDB_THREADS_NUM", "20");
 		} else if (threads_num > 1000) {
 			threads_num = 1000;
-			config_file_set_value(pconfig, "MIDB_THREADS_NUM", "1000");
+			pconfig->set_value("MIDB_THREADS_NUM", "1000");
 		}
 	}
 	printf("[system]: connection threads number is %d\n", threads_num);
 
 	size_t table_size;
-	str_value = config_file_get_value(pconfig, "MIDB_TABLE_SIZE");
+	str_value = pconfig->get_value("MIDB_TABLE_SIZE");
 	if (NULL == str_value) {
 		table_size = 5000;
-		config_file_set_value(pconfig, "MIDB_TABLE_SIZE", "5000");
+		pconfig->set_value("MIDB_TABLE_SIZE", "5000");
 	} else {
 		table_size = atoi(str_value);
 		if (table_size < 100) {
 			table_size = 100;
-			config_file_set_value(pconfig, "MIDB_TABLE_SIZE", "100");
+			pconfig->set_value("MIDB_TABLE_SIZE", "100");
 		} else if (table_size > 50000) {
 			table_size = 50000;
-			config_file_set_value(pconfig, "MIDB_TABLE_SIZE", "50000");
+			pconfig->set_value("MIDB_TABLE_SIZE", "50000");
 		}
 	}
 	printf("[system]: hash table size is %zu\n", table_size);
 
-	str_value = config_file_get_value(pconfig, "MIDB_CACHE_INTERVAL");
+	str_value = pconfig->get_value("MIDB_CACHE_INTERVAL");
 	if (NULL == str_value) {
 		cache_interval = 60 * 30;
-		config_file_set_value(pconfig, "MIDB_CACHE_INTERVAL", "30minutes");
+		pconfig->set_value("MIDB_CACHE_INTERVAL", "30minutes");
 	} else {
 		cache_interval = atoitvl(str_value);
 		if (cache_interval < 60 || cache_interval > 1800) {
 			cache_interval = 600;
-			config_file_set_value(pconfig, "MIDB_CACHE_INTERVAL", "10minutes");
+			pconfig->set_value("MIDB_CACHE_INTERVAL", "10minutes");
 		}
 	}
 	itvltoa(cache_interval, temp_buff);
 	printf("[system]: cache interval is %s\n", temp_buff);
 	
-	str_value = config_file_get_value(pconfig, "MIDB_MIME_NUMBER");
+	str_value = pconfig->get_value("MIDB_MIME_NUMBER");
 	if (NULL == str_value) {
 		mime_num = 4096;
-		config_file_set_value(pconfig, "MIDB_MIME_NUMBER", "4096");
+		pconfig->set_value("MIDB_MIME_NUMBER", "4096");
 	} else {
 		mime_num = atoi(str_value);
 		if (mime_num < 1024) {
 			mime_num = 4096;
-			config_file_set_value(pconfig, "MIDB_MIME_NUMBER", "4096");
+			pconfig->set_value("MIDB_MIME_NUMBER", "4096");
 		}
 	}
 	printf("[system]: mime number is %d\n", mime_num);
 	
-	
-	str_value = config_file_get_value(pconfig, "X500_ORG_NAME");
+	str_value = pconfig->get_value("X500_ORG_NAME");
 	if (NULL == str_value) {
 		gx_strlcpy(org_name, "Gromox default", sizeof(org_name));
-		config_file_set_value(pconfig, "X500_ORG_NAME", org_name);
+		pconfig->set_value("X500_ORG_NAME", org_name);
 	} else {
 		gx_strlcpy(org_name, str_value, GX_ARRAY_SIZE(org_name));
 	}
 	printf("[system]: x500 org name is \"%s\"\n", org_name);
 	
-	str_value = config_file_get_value(pconfig, "DEFAULT_CHARSET");
+	str_value = pconfig->get_value("DEFAULT_CHARSET");
 	if (NULL == str_value) {
 		strcpy(charset, "windows-1252");
-		config_file_set_value(pconfig, "DEFAULT_CHARSET", charset);
+		pconfig->set_value("DEFAULT_CHARSET", charset);
 	} else {
 		gx_strlcpy(charset, str_value, GX_ARRAY_SIZE(charset));
 	}
 	printf("[system]: default charset is \"%s\"\n", charset);
 
-	str_value = config_file_get_value(pconfig, "DEFAULT_TIMEZONE");
+	str_value = pconfig->get_value("DEFAULT_TIMEZONE");
 	if (NULL == str_value) {
 		strcpy(tmzone, "Asia/Shanghai");
-		config_file_set_value(pconfig, "DEFAULT_TIMEZONE", tmzone);
+		pconfig->set_value("DEFAULT_TIMEZONE", tmzone);
 	} else {
 		gx_strlcpy(tmzone, str_value, arsizeof(tmzone));
 	}
 	printf("[system]: default timezone is \"%s\"\n", tmzone);
 	
-	str_value = config_file_get_value(pconfig, "SQLITE_SYNCHRONOUS");
+	str_value = pconfig->get_value("SQLITE_SYNCHRONOUS");
 	if (NULL == str_value) {
 		b_async = FALSE;
-		config_file_set_value(pconfig, "SQLITE_SYNCHRONOUS", "OFF");
+		pconfig->set_value("SQLITE_SYNCHRONOUS", "OFF");
 	} else {
 		if (0 == strcasecmp(str_value, "OFF") ||
 			0 == strcasecmp(str_value, "FALSE")) {
@@ -297,10 +296,10 @@ int main(int argc, const char **argv)
 		printf("[system]: sqlite synchronous PRAGMA is ON\n");
 	}
 	
-	str_value = config_file_get_value(pconfig, "SQLITE_WAL_MODE");
+	str_value = pconfig->get_value("SQLITE_WAL_MODE");
 	if (NULL == str_value) {
 		b_wal = TRUE;
-		config_file_set_value(pconfig, "SQLITE_WAL_MODE", "ON");
+		pconfig->set_value("SQLITE_WAL_MODE", "ON");
 	} else {
 		if (0 == strcasecmp(str_value, "OFF") ||
 			0 == strcasecmp(str_value, "FALSE")) {
@@ -314,7 +313,7 @@ int main(int argc, const char **argv)
 	} else {
 		printf("[system]: sqlite journal mode is WAL\n");
 	}
-	str_value = config_file_get_value(pconfig, "SQLITE_MMAP_SIZE");
+	str_value = pconfig->get_value("SQLITE_MMAP_SIZE");
 	if (NULL != str_value) {
 		mmap_size = atobyte(str_value);
 	} else {
@@ -326,18 +325,18 @@ int main(int argc, const char **argv)
 		bytetoa(mmap_size, temp_buff);
 		printf("[system]: sqlite mmap_size is %s\n", temp_buff);
 	}
-	str_value = config_file_get_value(pconfig, "CONSOLE_SERVER_IP");
+	str_value = pconfig->get_value("CONSOLE_SERVER_IP");
 	gx_strlcpy(console_ip, str_value != nullptr ? str_value : "::1",
 	           GX_ARRAY_SIZE(console_ip));
-	str_value = config_file_get_value(pconfig, "CONSOLE_SERVER_PORT");
+	str_value = pconfig->get_value("CONSOLE_SERVER_PORT");
 	if (NULL == str_value) {
 		console_port = 9900;
-		config_file_set_value(pconfig, "CONSOLE_SERVER_PORT", "9900");
+		pconfig->set_value("CONSOLE_SERVER_PORT", "9900");
 	} else {
 		console_port = atoi(str_value);
 		if (console_port <= 0) {
 			console_port = 9900;
-			config_file_set_value(pconfig, "CONSOLE_SERVER_PORT", "9900");
+			pconfig->set_value("CONSOLE_SERVER_PORT", "9900");
 		}
 	}
 	printf("[system]: console server address is [%s]:%d\n",
@@ -358,12 +357,12 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	str_value = config_file_get_value(pconfig, "midb_cmd_debug");
+	str_value = pconfig->get_value("midb_cmd_debug");
 	auto cmd_debug = str_value != nullptr ? strtoul(str_value, nullptr, 0) : 0;
 
 	service_init({service_path, config_path, data_path, state_dir,
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
-		parse_bool(config_file_get_value(g_config_file, "service_plugin_ignore_errors")),
+		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
 		threads_num});
 	common_util_init();
 	auto cl_0a = make_scope_exit([&]() { common_util_free(); });

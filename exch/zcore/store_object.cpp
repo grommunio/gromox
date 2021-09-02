@@ -689,7 +689,7 @@ static void* store_object_get_oof_property(
 		if (NULL == pconfig) {
 			*(uint32_t*)pvalue = 0;
 		} else {
-			str_value = config_file_get_value(pconfig, "OOF_STATE");
+			str_value = pconfig->get_value("OOF_STATE");
 			if (NULL == str_value) {
 				*(uint32_t*)pvalue = 0;
 			} else {
@@ -781,8 +781,7 @@ static void* store_object_get_oof_property(
 		if (NULL == pvalue) {
 			return NULL;
 		}
-		str_value = config_file_get_value(pconfig,
-		            proptag == PR_EC_OUTOFOFFICE_FROM ? "START_TIME" : "END_TIME");
+		str_value = pconfig->get_value(proptag == PR_EC_OUTOFOFFICE_FROM ? "START_TIME" : "END_TIME");
 		if (NULL == str_value) {
 			return NULL;
 		}
@@ -796,8 +795,7 @@ static void* store_object_get_oof_property(
 		if (NULL == pconfig) {
 			return deconst(&fake_false);
 		}
-		str_value = config_file_get_value(pconfig,
-		            proptag == PR_EC_ALLOW_EXTERNAL ?
+		str_value = pconfig->get_value(proptag == PR_EC_ALLOW_EXTERNAL ?
 		            "ALLOW_EXTERNAL_OOF" : "EXTERNAL_AUDIENCE");
 		pvalue = str_value == nullptr || atoi(str_value) == 0 ?
 		         deconst(&fake_false) : deconst(&fake_true);
@@ -1314,19 +1312,16 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		}
 		switch (*(uint32_t*)pvalue) {
 		case 1:
-			config_file_set_value(pconfig, "OOF_STATE", "1");
+			pconfig->set_value("OOF_STATE", "1");
 			break;
 		case 2:
-			config_file_set_value(pconfig, "OOF_STATE", "2");
+			pconfig->set_value("OOF_STATE", "2");
 			break;
 		default:
-			config_file_set_value(pconfig, "OOF_STATE", "0");
+			pconfig->set_value("OOF_STATE", "0");
 			break;
 		}
-		if (FALSE == config_file_save(pconfig)) {
-			return FALSE;
-		}
-		return TRUE;
+		return pconfig->save();
 	}
 	case PR_EC_OUTOFOFFICE_FROM:
 	case PR_EC_OUTOFOFFICE_UNTIL: {
@@ -1335,12 +1330,9 @@ static BOOL store_object_set_oof_property(const char *maildir,
 			return FALSE;
 		}
 		sprintf(temp_buff, "%lu", rop_util_nttime_to_unix(*(uint64_t*)pvalue));
-		config_file_set_value(pconfig, proptag == PR_EC_OUTOFOFFICE_FROM ?
+		pconfig->set_value(proptag == PR_EC_OUTOFOFFICE_FROM ?
 		                      "START_TIME" : "END_TIME", temp_buff);
-		if (FALSE == config_file_save(pconfig)) {
-			return FALSE;
-		}
-		return TRUE;
+		return pconfig->save();
 	}
 	case PR_EC_OUTOFOFFICE_MSG:
 	case PR_EC_EXTERNAL_REPLY: {
@@ -1452,13 +1444,10 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		if (NULL == pconfig) {
 			return FALSE;
 		}
-		config_file_set_value(pconfig, proptag == PR_EC_ALLOW_EXTERNAL ?
+		pconfig->set_value(proptag == PR_EC_ALLOW_EXTERNAL ?
 		                      "ALLOW_EXTERNAL_OOF" : "EXTERNAL_AUDIENCE",
 		                      *static_cast<const uint8_t *>(pvalue) == 0 ? "0" : "1");
-		if (FALSE == config_file_save(pconfig)) {
-			return FALSE;
-		}
-		return TRUE;
+		return pconfig->save();
 	}
 	}
 	return FALSE;

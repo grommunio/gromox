@@ -160,18 +160,18 @@ static BOOL svc_ip6_filter(int reason, void **data)
 		       filename.c_str(), strerror(errno));
 		return false;
 	}
-	auto strv = config_file_get_value(pfile, "audit_max_num");
+	auto strv = pfile->get_value("audit_max_num");
 	g_audit_max = strv != nullptr ? strtoul(strv, nullptr, 0) : 0;
-	strv = config_file_get_value(pfile, "audit_interval");
+	strv = pfile->get_value("audit_interval");
 	g_audit_intvl = std::chrono::seconds(strv != nullptr ? atoitvl(strv) : 60);
-	strv = config_file_get_value(pfile, "audit_times");
+	strv = pfile->get_value("audit_times");
 	g_max_within_interval = strv != nullptr ? strtoul(strv, nullptr, 0) : 10;
-	strv = config_file_get_value(pfile, "temp_list_size");
+	strv = pfile->get_value("temp_list_size");
 	g_templist_maxsize = strv != nullptr ? strtoul(strv, nullptr, 0) : 0;
-	const char *judge_name = config_file_get_value(pfile, "judge_service_name");
+	auto judge_name = pfile->get_value("judge_service_name");
 	if (judge_name == nullptr)
 		judge_name = "ip_filter_judge";
-	const char *add_name = config_file_get_value(pfile, "add_service_name");
+	auto add_name = pfile->get_value("add_service_name");
 	if (add_name == nullptr)
 		add_name = "ip_filter_add";
 	char temp_buff[64];

@@ -224,7 +224,7 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 			return FALSE;
 		}
 		
-		auto str_value = config_file_get_value(pconfig, "CONNECTION_NUM");
+		auto str_value = pconfig->get_value("CONNECTION_NUM");
 		if (NULL == str_value) {
 			g_conn_num = 5;
 		} else {
@@ -234,7 +234,7 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 		}
 		printf("[midb_agent]: midb connection number is %d\n", g_conn_num);
 		
-		str_value = config_file_get_value(pconfig, "CONTEXT_AVERAGE_MEM");
+		str_value = pconfig->get_value("CONTEXT_AVERAGE_MEM");
 		g_file_ratio = str_value == nullptr ? 1024 : strtoul(str_value, nullptr, 0);
 		if (g_file_ratio > 0) {
 			printf("[midb_agent]: context average number is %d\n", g_file_ratio);

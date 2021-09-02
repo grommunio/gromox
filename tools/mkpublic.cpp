@@ -249,7 +249,7 @@ int main(int argc, const char **argv)
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
 		return 2;
-	auto str_value = config_file_get_value(pconfig, "PUBLIC_STORE_RATIO");
+	auto str_value = pconfig->get_value("PUBLIC_STORE_RATIO");
 	if (NULL == str_value) {
 		store_ratio = 10;
 	} else {
@@ -258,14 +258,14 @@ int main(int argc, const char **argv)
 			store_ratio = 10;
 		}
 	}
-	str_value = config_file_get_value(pconfig, "MYSQL_HOST");
+	str_value = pconfig->get_value("MYSQL_HOST");
 	if (NULL == str_value) {
 		strcpy(mysql_host, "localhost");
 	} else {
 		gx_strlcpy(mysql_host, str_value, GX_ARRAY_SIZE(mysql_host));
 	}
 	
-	str_value = config_file_get_value(pconfig, "MYSQL_PORT");
+	str_value = pconfig->get_value("MYSQL_PORT");
 	if (NULL == str_value) {
 		mysql_port = 3306;
 	} else {
@@ -275,17 +275,17 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	str_value = config_file_get_value(pconfig, "MYSQL_USERNAME");
+	str_value = pconfig->get_value("MYSQL_USERNAME");
 	gx_strlcpy(mysql_user, str_value != nullptr ? str_value : "root", GX_ARRAY_SIZE(mysql_user));
-	auto mysql_passwd = config_file_get_value(pconfig, "MYSQL_PASSWORD");
-	str_value = config_file_get_value(pconfig, "MYSQL_DBNAME");
+	auto mysql_passwd = pconfig->get_value("MYSQL_PASSWORD");
+	str_value = pconfig->get_value("MYSQL_DBNAME");
 	if (NULL == str_value) {
 		strcpy(db_name, "email");
 	} else {
 		gx_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
 	}
 	const char *datadir = opt_datadir != nullptr ? opt_datadir :
-	                      config_file_get_value(pconfig, "data_file_path");
+	                      pconfig->get_value("data_file_path");
 	if (datadir == nullptr)
 		datadir = PKGDATADIR;
 	

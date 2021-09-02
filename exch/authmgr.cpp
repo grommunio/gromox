@@ -77,7 +77,7 @@ static bool authmgr_reload()
 		return false;
 	}
 
-	auto val = config_file_get_value(pfile, "auth_backend_selection");
+	auto val = pfile->get_value("auth_backend_selection");
 	if (val == nullptr)
 		/* nothing */;
 	else if (strcmp(val, "deny_all") == 0)

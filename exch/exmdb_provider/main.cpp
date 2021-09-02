@@ -80,7 +80,7 @@ static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig)
 		       strerror(errno));
 		return false;
 	}
-	auto v = config_file_get_value(pconfig, "exrpc_debug");
+	auto v = pconfig->get_value("exrpc_debug");
 	g_exrpc_debug = v != nullptr ? strtoul(v, nullptr, 0) : 0;
 	return true;
 }
@@ -123,22 +123,22 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 			return FALSE;
 		}
 		
-		auto str_value = config_file_get_value(pconfig, "SEPARATOR_FOR_BOUNCE");
+		auto str_value = pconfig->get_value("SEPARATOR_FOR_BOUNCE");
 		gx_strlcpy(separator, str_value == nullptr ? ";" : str_value, GX_ARRAY_SIZE(separator));
-		str_value = config_file_get_value(pconfig, "X500_ORG_NAME");
+		str_value = pconfig->get_value("X500_ORG_NAME");
 		gx_strlcpy(org_name, str_value == nullptr || *str_value == '\0' ?
 			"Gromox default" : str_value, GX_ARRAY_SIZE(org_name));
 		printf("[exmdb_provider]: x500 org name is \"%s\"\n", org_name);
 		
-		str_value = config_file_get_value(pconfig, "LISTEN_IP");
+		str_value = pconfig->get_value("LISTEN_IP");
 		gx_strlcpy(listen_ip, str_value != nullptr ? str_value : "::1",
 		           GX_ARRAY_SIZE(listen_ip));
-		str_value = config_file_get_value(pconfig, "LISTEN_PORT");
+		str_value = pconfig->get_value("LISTEN_PORT");
 		listen_port = str_value != nullptr ? strtoul(str_value, nullptr, 0) : 5000;
 		printf("[exmdb_provider]: listen address is [%s]:%d\n",
 		       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 		
-		str_value = config_file_get_value(pconfig, "RPC_PROXY_CONNECTION_NUM");
+		str_value = pconfig->get_value("RPC_PROXY_CONNECTION_NUM");
 		if (NULL == str_value) {
 			connection_num = 10;
 		} else {
@@ -150,7 +150,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		printf("[exmdb_provider]: exmdb rpc proxy "
 			"connection number is %d\n", connection_num);
 			
-		str_value = config_file_get_value(pconfig, "NOTIFY_STUB_THREADS_NUM");
+		str_value = pconfig->get_value("NOTIFY_STUB_THREADS_NUM");
 		if (NULL == str_value) {
 			threads_num = 4;
 		} else {
@@ -162,18 +162,18 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		printf("[exmdb_provider]: exmdb notify stub "
 			"threads number is %d\n", threads_num);
 		
-		str_value = config_file_get_value(pconfig, "MAX_RPC_STUB_THREADS");
+		str_value = pconfig->get_value("MAX_RPC_STUB_THREADS");
 		size_t max_threads = str_value != nullptr ? strtoull(str_value, nullptr, 0) : SIZE_MAX;
-		str_value = config_file_get_value(pconfig, "MAX_ROUTER_CONNECTIONS");
+		str_value = pconfig->get_value("MAX_ROUTER_CONNECTIONS");
 		size_t max_routers = str_value != nullptr ? strtoull(str_value, nullptr, 0) : SIZE_MAX;
 		
-		str_value = config_file_get_value(pconfig, "TABLE_SIZE");
+		str_value = pconfig->get_value("TABLE_SIZE");
 		table_size = str_value != nullptr ? strtol(str_value, nullptr, 0) : 5000;
 		if (table_size < 100)
 			table_size = 100;
 		printf("[exmdb_provider]: db hash table size is %d\n", table_size);
 		
-		str_value = config_file_get_value(pconfig, "CACHE_INTERVAL");
+		str_value = pconfig->get_value("CACHE_INTERVAL");
 		if (NULL == str_value) {
 			cache_interval = 7200;
 		} else {
@@ -184,37 +184,37 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		itvltoa(cache_interval, temp_buff);
 		printf("[exmdb_provider]: cache interval is %s\n", temp_buff);
 		
-		str_value = config_file_get_value(pconfig, "MAX_STORE_MESSAGE_COUNT");
+		str_value = pconfig->get_value("MAX_STORE_MESSAGE_COUNT");
 		int max_msg_count = str_value == nullptr ? 200000 : atoi(str_value);
 		printf("[exmdb_provider]: maximum message "
 			"count per store is %d\n", max_msg_count);
 		
-		str_value = config_file_get_value(pconfig, "MAX_RULE_NUMBER");
+		str_value = pconfig->get_value("MAX_RULE_NUMBER");
 		max_rule = str_value != nullptr ? strtol(str_value, nullptr, 0) : 1000;
 		if (max_rule <= 0 || max_rule > 2000)
 			max_rule = 1000;
 		printf("[exmdb_provider]: maximum rule "
 			"number per folder is %d\n", max_rule);
 		
-		str_value = config_file_get_value(pconfig, "MAX_EXT_RULE_NUMBER");
+		str_value = pconfig->get_value("MAX_EXT_RULE_NUMBER");
 		max_ext_rule = str_value != nullptr ? strtol(str_value, nullptr, 0) : 20;
 		if (max_ext_rule <= 0 || max_ext_rule > 100)
 			max_ext_rule = 20;
 		printf("[exmdb_provider]: maximum ext rule "
 			"number per folder is %d\n", max_ext_rule);
 		
-		str_value = config_file_get_value(pconfig, "SQLITE_SYNCHRONOUS");
+		str_value = pconfig->get_value("SQLITE_SYNCHRONOUS");
 		b_async = str_value == nullptr || strcasecmp(str_value, "OFF") == 0 ||
 		          strcasecmp(str_value, "FALSE") == 0 ? false : TRUE;
 		printf("[exmdb_provider]: sqlite synchronous PRAGMA is %s\n", b_async ? "ON" : "OFF");
 		
-		str_value = config_file_get_value(pconfig, "SQLITE_WAL_MODE");
+		str_value = pconfig->get_value("SQLITE_WAL_MODE");
 		b_wal = str_value == nullptr ? TRUE :
 		        strcasecmp(str_value, "OFF") == 0 ||
 		        strcasecmp(str_value, "FALSE") == 0 ? false : TRUE;
 		printf("[exmdb_provider]: sqlite journal mode is %s\n", b_wal ? "WAL" : "DELETE");
 		
-		str_value = config_file_get_value(pconfig, "SQLITE_MMAP_SIZE");
+		str_value = pconfig->get_value("SQLITE_MMAP_SIZE");
 		uint64_t mmap_size = str_value != nullptr ? atobyte(str_value) : 0;
 		if (0 == mmap_size) {
 			printf("[exmdb_provider]: sqlite mmap_size is disabled\n");
@@ -223,7 +223,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 			printf("[exmdb_provider]: sqlite mmap_size is %s\n", temp_buff);
 		}
 		
-		str_value = config_file_get_value(pconfig, "POPULATING_THREADS_NUM");
+		str_value = pconfig->get_value("POPULATING_THREADS_NUM");
 		populating_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 4;
 		if (populating_num <= 0 || populating_num > 50)
 			populating_num = 10;

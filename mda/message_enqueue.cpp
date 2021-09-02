@@ -424,7 +424,7 @@ static BOOL flh_message_enqueue(int reason, void** ppdata)
 				temp_path, strerror(errno));
 			return false;
 		}
-		queue_path = config_file_get_value(pfile, "ENQUEUE_PATH");
+		queue_path = pfile->get_value("ENQUEUE_PATH");
 		if (queue_path == nullptr)
 			queue_path = PKGSTATEQUEUEDIR;
 		printf("[message_enqueue]: enqueue path is %s\n", queue_path);

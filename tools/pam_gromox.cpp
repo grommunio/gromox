@@ -84,18 +84,18 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	if (authtok_v != nullptr) {
 		authtok.reset(strdup(static_cast<const char *>(authtok_v)));
 	} else {
-		ret = read_password(pamh, config_file_get_value(cfg, "pam_prompt"), &unique_tie(authtok));
+		ret = read_password(pamh, cfg->get_value("pam_prompt"), &unique_tie(authtok));
 		if (ret != PAM_SUCCESS)
 			return ret;
 	}
 
-	const char *svc_plugin_path = config_file_get_value(cfg, "service_plugin_path");
+	auto svc_plugin_path = cfg->get_value("service_plugin_path");
 	if (svc_plugin_path == nullptr)
 		svc_plugin_path = PKGLIBDIR;
 	struct strvecfree { void operator()(char **s) { HX_zvecfree(s); } };
 	std::unique_ptr<char *[], strvecfree> pluglistbuf;
 	const char *const *svc_plugin_list = nullptr;
-	auto val = config_file_get_value(cfg, "service_plugin_list");
+	auto val = cfg->get_value("service_plugin_list");
 	if (val == nullptr) {
 		svc_plugin_list = g_dfl_svc_plugins;
 	} else {
@@ -105,8 +105,8 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		svc_plugin_list = pluglistbuf.get();
 	}
 
-	bool svcplug_ignerr = parse_bool(config_file_get_value(cfg, "service_plugin_ignore_errors"));
-	const char *config_dir = val = config_file_get_value(cfg, "config_file_path");
+	bool svcplug_ignerr = parse_bool(cfg->get_value("service_plugin_ignore_errors"));
+	auto config_dir = val = cfg->get_value("config_file_path");
 	if (val == nullptr)
 		config_dir = PKGSYSCONFDIR "/pam:" PKGSYSCONFDIR;
 

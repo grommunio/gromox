@@ -70,9 +70,9 @@ static BOOL svc_logger(int reason, void **data)
 		return TRUE;
 	LINK_API(data);
 	auto cfg = config_file_initd("log_plugin.cfg", get_config_path());
-	auto sv = config_file_get_value(cfg, "log_level");
+	auto sv = cfg->get_value("log_level");
 	g_max_loglevel = sv != nullptr ? strtoul(sv, nullptr, 0) : 4;
-	sv = config_file_get_value(cfg, "log_file_name");
+	sv = cfg->get_value("log_file_name");
 	if (sv != nullptr && *sv != '\0') {
 		g_log_filename = sv;
 		xlog_open();

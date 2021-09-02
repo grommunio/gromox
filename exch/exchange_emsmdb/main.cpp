@@ -68,7 +68,7 @@ static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig)
 		       strerror(errno));
 		return false;
 	}
-	auto v = config_file_get_value(pconfig, "rop_debug");
+	auto v = pconfig->get_value("rop_debug");
 	g_rop_debug = v != nullptr ? strtoul(v, nullptr, 0) : 0;
 	return true;
 }
@@ -114,20 +114,20 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 			       cfg_path.c_str(), strerror(errno));
 			return FALSE;
 		}
-		auto str_value = config_file_get_value(pfile, "SEPARATOR_FOR_BOUNCE");
+		auto str_value = pfile->get_value("SEPARATOR_FOR_BOUNCE");
 		gx_strlcpy(separator, str_value == nullptr ? " " : str_value, GX_ARRAY_SIZE(separator));
 
-		str_value = config_file_get_value(pfile, "X500_ORG_NAME");
+		str_value = pfile->get_value("X500_ORG_NAME");
 		gx_strlcpy(org_name, str_value == nullptr || *str_value == '\0' ?
 			"Gromox default" : str_value, GX_ARRAY_SIZE(org_name));
 		printf("[exchange_emsmdb]: x500 org name is \"%s\"\n", org_name);
-		str_value = config_file_get_value(pfile, "AVERAGE_HANDLES");
+		str_value = pfile->get_value("AVERAGE_HANDLES");
 		average_handles = str_value != nullptr ? strtol(str_value, nullptr, 0) : 1000;
 		if (average_handles < 100)
 			average_handles = 100;
 		printf("[exchange_emsmdb]: average handles number "
 			"per context is %d\n", average_handles);
-		str_value = config_file_get_value(pfile, "AVERAGE_MEM");
+		str_value = pfile->get_value("AVERAGE_MEM");
 		if (NULL == str_value) {
 			average_blocks = 16;
 		} else {
@@ -138,17 +138,17 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		}
 		printf("[exchange_emsmdb]: average memory per"
 				" context is %d*256\n", average_blocks);
-		str_value = config_file_get_value(pfile, "MAX_RCPT_NUM");
+		str_value = pfile->get_value("MAX_RCPT_NUM");
 		max_rcpt = str_value != nullptr ? strtol(str_value, nullptr, 0) : 256;
 		if (max_rcpt <= 0)
 			max_rcpt = 256;
 		printf("[exchange_emsmdb]: maximum rcpt number is %d\n", max_rcpt);
-		str_value = config_file_get_value(pfile, "MAX_MAIL_NUM");
+		str_value = pfile->get_value("MAX_MAIL_NUM");
 		max_mail = str_value != nullptr ? strtol(str_value, nullptr, 0) : 1000000;
 		if (max_mail <= 0)
 			max_mail = 1000000;
 		printf("[exchange_emsmdb]: maximum mail number is %d\n", max_mail);
-		str_value = config_file_get_value(pfile, "MAIL_MAX_LENGTH");
+		str_value = pfile->get_value("MAIL_MAX_LENGTH");
 		if (NULL == str_value) {
 			max_length = 64*1024*1024;
 		} else {
@@ -158,7 +158,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		}
 		bytetoa(max_length, size_buff);
 		printf("[exchange_emsmdb]: maximum mail length is %s\n", size_buff);
-		str_value = config_file_get_value(pfile, "MAX_EXT_RULE_LENGTH");
+		str_value = pfile->get_value("MAX_EXT_RULE_LENGTH");
 		if (NULL == str_value) {
 			max_rule_len = 510*1024;
 		} else {
@@ -168,26 +168,26 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		}
 		bytetoa(max_rule_len, size_buff);
 		printf("[exchange_emsmdb]: maximum extended rule length is %s\n", size_buff);
-		str_value = config_file_get_value(pfile, "MAILBOX_PING_INTERVAL");
+		str_value = pfile->get_value("MAILBOX_PING_INTERVAL");
 		ping_interval = str_value != nullptr ? strtol(str_value, nullptr, 0) : 300;
 		if (ping_interval > 3600 || ping_interval < 60)
 			ping_interval = 300;
 		itvltoa(ping_interval, temp_buff);
 		printf("[exchange_emsmdb]: mailbox ping interval is %s\n",
 			temp_buff);
-		str_value = config_file_get_value(pfile, "SMTP_SERVER_IP");
+		str_value = pfile->get_value("SMTP_SERVER_IP");
 		gx_strlcpy(smtp_ip, str_value != nullptr ? str_value : "::1",
 		           GX_ARRAY_SIZE(smtp_ip));
-		str_value = config_file_get_value(pfile, "SMTP_SERVER_PORT");
+		str_value = pfile->get_value("SMTP_SERVER_PORT");
 		smtp_port = str_value != nullptr ? strtoul(str_value, nullptr, 0) : 25;
 		if (smtp_port == 0)
 			smtp_port = 25;
 		printf("[exchange_emsmdb]: smtp server is [%s]:%hu\n", smtp_ip, smtp_port);
-		str_value = config_file_get_value(pfile, "SUBMIT_COMMAND");
+		str_value = pfile->get_value("SUBMIT_COMMAND");
 		gx_strlcpy(submit_command, str_value != nullptr ? str_value :
 			"/usr/bin/php " PKGDATADIR "/sa/submit.php", GX_ARRAY_SIZE(submit_command));
 
-		str_value = config_file_get_value(pfile, "ASYNC_THREADS_NUM");
+		str_value = pfile->get_value("ASYNC_THREADS_NUM");
 		async_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 4;
 		if (async_num <= 0 || async_num > 20)
 			async_num = 4;

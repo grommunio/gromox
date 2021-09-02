@@ -75,7 +75,7 @@ static BOOL svc_ip6_container(int reason, void **data)
 		       filename.c_str(), strerror(errno));
 		return false;
 	}
-	auto strv = config_file_get_value(pfile, "CONNECTION_MAX_NUM");
+	auto strv = pfile->get_value("CONNECTION_MAX_NUM");
 	g_max_num = strv != nullptr ? strtoul(strv, nullptr, 0) : 200;
 	printf("[ip6_container]: maximum number of connections per client is %u\n", g_max_num);
 

@@ -177,12 +177,13 @@ CONFIG_FILE::~CONFIG_FILE()
  *	@return
  *		the value that mapped the specified key
  */
-const char *config_file_get_value(std::shared_ptr<CONFIG_FILE> cfg_file, const char *key)
+const char *CONFIG_FILE::get_value(const char *key) const
 {
+	auto cfg_file = this;
 	size_t i, len;
 
 #ifdef _DEBUG_UMTA
-	if (NULL == cfg_file || NULL == key) {
+	if (key == nullptr) {
 		debug_info("[config_file]: config_file_get_value: invalid param");
 		return NULL;
 	}
@@ -259,13 +260,13 @@ static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg, char *line
 	return;
 }
 
-BOOL config_file_set_value(std::shared_ptr<CONFIG_FILE> cfg_file,
-    const char *key, const char *value)
+BOOL CONFIG_FILE::set_value(const char *key, const char *value)
 {
+	auto cfg_file = this;
 	size_t index, i, len;   
 
 #ifdef _DEBUG_UMTA
-	if (NULL == cfg_file || NULL == key || NULL == value) {
+	if (key == nullptr || value == nullptr) {
 		debug_info("[config_file]: config_file_set_value: invalid param");
 		return FALSE;
 	}
@@ -309,8 +310,9 @@ BOOL config_file_set_value(std::shared_ptr<CONFIG_FILE> cfg_file,
 	return TRUE;
 }
 
-BOOL config_file_save(std::shared_ptr<CONFIG_FILE> cfg)
+BOOL CONFIG_FILE::save()
 {
+	auto cfg = this;
 	auto tbl = cfg->config_table;
 	if (std::none_of(&tbl[0], &tbl[cfg->num_entries],
 	    [&](const CONFIG_ENTRY &x) { return x.is_touched; }))
@@ -323,28 +325,27 @@ BOOL config_file_save(std::shared_ptr<CONFIG_FILE> cfg)
 	return TRUE;
 }
 
-BOOL config_file_get_int(std::shared_ptr<CONFIG_FILE> cf, const char *key, int *value)
+BOOL CONFIG_FILE::get_int(const char *key, int *value) const
 {
-	const char *v = config_file_get_value(cf, key);
+	auto v = get_value(key);
 	if (v == nullptr)
 		return FALSE;
 	*value = atoi(v);
 	return TRUE;
 }
 
-BOOL config_file_get_uint(std::shared_ptr<CONFIG_FILE> cf, const char *key,
-    unsigned int *value)
+BOOL CONFIG_FILE::get_uint(const char *key, unsigned int *value) const
 {
-	const char *v = config_file_get_value(cf, key);
+	auto v = get_value(key);
 	if (v == nullptr)
 		return FALSE;
 	*value = strtoul(v, nullptr, 0);
 	return TRUE;
 }
 
-BOOL config_file_set_int(std::shared_ptr<CONFIG_FILE> cf, const char *key, int value)
+BOOL CONFIG_FILE::set_int(const char *key, int value)
 {
 	char buf[HXSIZEOF_Z32];
 	snprintf(buf, arsizeof(buf), "%d", value);
-	return config_file_set_value(cf, key, buf);
+	return set_value(key, buf);
 }

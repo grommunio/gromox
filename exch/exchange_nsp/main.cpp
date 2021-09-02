@@ -75,17 +75,17 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 			       temp_path, strerror(errno));
 			return FALSE;
 		}
-		org_name = config_file_get_value(pfile, "X500_ORG_NAME");
+		org_name = pfile->get_value("X500_ORG_NAME");
 		if (NULL == org_name) {
 			org_name = "Gromox default";
 		}
 		printf("[exchange_nsp]: x500 org name is \"%s\"\n", org_name);
-		auto str_value = config_file_get_value(pfile, "HASH_TABLE_SIZE");
+		auto str_value = pfile->get_value("HASH_TABLE_SIZE");
 		table_size = str_value != nullptr ? strtol(str_value, nullptr, 0) : 3000;
 		if (table_size <= 0)
 			table_size = 3000;
 		printf("[exchange_nsp]: hash table size is %d\n", table_size);
-		str_value = config_file_get_value(pfile, "CACHE_INTERVAL");
+		str_value = pfile->get_value("CACHE_INTERVAL");
 		if (NULL == str_value) {
 			cache_interval = 300;
 		} else {
@@ -96,12 +96,12 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 		itvltoa(cache_interval, temp_buff);
 		printf("[exchange_nsp]: address book tree item"
 				" cache interval is %s\n", temp_buff);
-		str_value = config_file_get_value(pfile, "MAX_ITEM_NUM");
+		str_value = pfile->get_value("MAX_ITEM_NUM");
 		max_item_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 100000;
 		if (max_item_num <= 0)
 			max_item_num = 100000;
 		printf("[exchange_nsp]: maximum item number is %d\n", max_item_num);
-		str_value = config_file_get_value(pfile, "SESSION_CHECK");
+		str_value = pfile->get_value("SESSION_CHECK");
 		b_check = str_value != nullptr && (strcasecmp(str_value, "on") == 0 ||
 		          strcasecmp(str_value, "true") == 0);
 		if (b_check)

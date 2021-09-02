@@ -50,7 +50,7 @@ int main(int argc, const char **argv)
 		auto http_config = config_file_prg(nullptr, "http.cfg");
 		if (http_config == nullptr)
 			return EXIT_FAILURE;
-		const char *http_cfgdir = config_file_get_value(http_config, "CONFIG_FILE_PATH");
+		auto http_cfgdir = http_config->get_value("CONFIG_FILE_PATH");
 		if (http_cfgdir == nullptr)
 			http_cfgdir = PKGSYSCONFDIR "/http:" PKGSYSCONFDIR;
 		pconfig = config_file_initd("mysql_adaptor.cfg", http_cfgdir);
@@ -69,16 +69,16 @@ int main(int argc, const char **argv)
 	std::unique_ptr<MYSQL, db_deleter> pmysql(mysql_init(nullptr));
 	if (pmysql == nullptr)
 		abort();
-	auto mysql_host = config_file_get_value(pconfig, "mysql_host");
-	const char *mysql_user = config_file_get_value(pconfig, "mysql_username");
+	auto mysql_host = pconfig->get_value("mysql_host");
+	auto mysql_user = pconfig->get_value("mysql_username");
 	if (mysql_user == nullptr)
 		/* keep aligned with mysql_adaptor/main.cpp */
 		mysql_user = "root";
-	auto mysql_pass = config_file_get_value(pconfig, "mysql_password");
-	const char *mysql_dbname = config_file_get_value(pconfig, "mysql_dbname");
+	auto mysql_pass = pconfig->get_value("mysql_password");
+	auto mysql_dbname = pconfig->get_value("mysql_dbname");
 	if (mysql_dbname == nullptr)
 		mysql_dbname = "email";
-	auto str = config_file_get_value(pconfig, "mysql_port");
+	auto str = pconfig->get_value("mysql_port");
 	auto mysql_port = str != nullptr ? strtoul(str, nullptr, 0) : 0;
 
 	if (mysql_real_connect(pmysql.get(), mysql_host, mysql_user, mysql_pass,

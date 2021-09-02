@@ -69,7 +69,7 @@ void auto_response_reply(const char *user_home,
 	if (NULL == pconfig) {
 		return;
 	}
-	auto str_value = config_file_get_value(pconfig, "OOF_STATE");
+	auto str_value = pconfig->get_value("OOF_STATE");
 	if (NULL == str_value) {
 		return;
 	}
@@ -79,11 +79,11 @@ void auto_response_reply(const char *user_home,
 	}
 	time(&cur_time);
 	if (2 == reply_state) {
-		str_value = config_file_get_value(pconfig, "START_TIME");
+		str_value = pconfig->get_value("START_TIME");
 		if (NULL != str_value && atoll(str_value) > cur_time) {
 			return;
 		}
-		str_value = config_file_get_value(pconfig, "END_TIME");
+		str_value = pconfig->get_value("END_TIME");
 		if (NULL != str_value && cur_time > atoll(str_value)) {
 			return;
 		}
@@ -91,11 +91,11 @@ void auto_response_reply(const char *user_home,
 	if (TRUE == b_internal) {
 		snprintf(template_path, 256, "%s/config/internal-reply", user_home);
 	} else {
-		str_value = config_file_get_value(pconfig, "ALLOW_EXTERNAL_OOF");
+		str_value = pconfig->get_value("ALLOW_EXTERNAL_OOF");
 		if (NULL == str_value || 0 == atoi(str_value)) {
 			return;
 		}
-		str_value = config_file_get_value(pconfig, "EXTERNAL_AUDIENCE");
+		str_value = pconfig->get_value("EXTERNAL_AUDIENCE");
 		if (NULL != str_value && 0 != atoi(str_value)) {
 			if (EXMDB_RESULT_OK != exmdb_client_check_contact_address(
 				user_home, rcpt, &b_found) || FALSE == b_found) {

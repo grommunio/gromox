@@ -185,28 +185,28 @@ static bool ldap_adaptor_load() try
 		return false;
 	}
 
-	auto val = config_file_get_value(pfile, "data_connections");
+	auto val = pfile->get_value("data_connections");
 	if (val != nullptr) {
 		g_dataconn_num = strtoul(val, nullptr, 0);
 		if (g_dataconn_num == 0)
 			g_dataconn_num = 1;
 	}
 
-	val = config_file_get_value(pfile, "ldap_host");
+	val = pfile->get_value("ldap_host");
 	g_ldap_host = val != nullptr ? val : "";
-	g_use_tls = parse_bool(config_file_get_value(pfile, "ldap_start_tls"));
+	g_use_tls = parse_bool(pfile->get_value("ldap_start_tls"));
 
-	val = config_file_get_value(pfile, "ldap_bind_user");
+	val = pfile->get_value("ldap_bind_user");
 	if (val != nullptr)
 		g_bind_user = val;
-	val = config_file_get_value(pfile, "ldap_bind_pass");
+	val = pfile->get_value("ldap_bind_pass");
 	if (val != nullptr)
 		g_bind_pass = val;
 
-	val = config_file_get_value(pfile, "ldap_mail_attr");
+	val = pfile->get_value("ldap_mail_attr");
 	g_mail_attr = val != nullptr ? val : "mail";
 
-	val = config_file_get_value(pfile, "ldap_search_base");
+	val = pfile->get_value("ldap_search_base");
 	g_search_base = val != nullptr ? val : "";
 	printf("[ldap_adaptor]: hosts <%s>%s, base <%s>, #conn=%d, mailattr=%s\n",
 	       g_ldap_host.c_str(), g_use_tls ? " +TLS" : "",

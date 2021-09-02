@@ -45,7 +45,7 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 			       file_name, config_path, strerror(errno));
 			return FALSE;
 		}
-		auto str_value = config_file_get_value(pfile, "IS_CASE_SENSITIVE");
+		auto str_value = pfile->get_value("IS_CASE_SENSITIVE");
 		if (NULL == str_value) {
 			case_sensitive = FALSE;
 			printf("[%s]: case-insensitive\n", file_name);
@@ -61,12 +61,12 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 				printf("[%s]: case-insensitive\n", file_name);
 			}
 		}				
-		str_value = config_file_get_value(pfile, "AUDIT_MAX_NUM");
+		str_value = pfile->get_value("AUDIT_MAX_NUM");
 		audit_max = str_value != nullptr ? strtol(str_value, nullptr, 0) : 0;
 		if (audit_max < 0)
 			audit_max = 0;
 		printf("[%s]: audit capacity is %d\n", file_name, audit_max);	
-		str_value = config_file_get_value(pfile, "AUDIT_INTERVAL");
+		str_value = pfile->get_value("AUDIT_INTERVAL");
 		if (NULL == str_value) {
 			audit_interval = 60;
 		} else {
@@ -76,28 +76,28 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 		}
 		itvltoa(audit_interval, temp_buff);
 		printf("[%s]: audit interval is %s\n", file_name, temp_buff);
-		str_value = config_file_get_value(pfile, "AUDIT_TIMES");
+		str_value = pfile->get_value("AUDIT_TIMES");
 		audit_times = str_value != nullptr ? strtol(str_value, nullptr, 0) : 10;
 		if (audit_times <= 0)
 			audit_times = 10;
 		printf("[%s]: audit times is %d\n", file_name, audit_times);
-		str_value = config_file_get_value(pfile, "TEMP_LIST_SIZE");
+		str_value = pfile->get_value("TEMP_LIST_SIZE");
 		temp_list_size = str_value != nullptr ? strtol(str_value, nullptr, 0) : 0;
 		if (temp_list_size < 0)
 			temp_list_size = 0;
 		printf("[%s]: temporary list capacity is %d\n", file_name,
 			temp_list_size);
-		str_value = config_file_get_value(pfile, "GREY_GROWING_NUM");
+		str_value = pfile->get_value("GREY_GROWING_NUM");
 		growing_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 0;
 		if (growing_num < 0)
 			growing_num = 0;
 		printf("[%s]: grey list growing number is %d\n", file_name,
 			growing_num);
-		str_value = config_file_get_value(pfile, "JUDGE_SERVICE_NAME");
+		str_value = pfile->get_value("JUDGE_SERVICE_NAME");
 		std::string judge_name = str_value != nullptr ? str_value : file_name + "_judge"s;
-		str_value = config_file_get_value(pfile, "ADD_SERVICE_NAME");
+		str_value = pfile->get_value("ADD_SERVICE_NAME");
 		std::string add_name = str_value != nullptr ? str_value : file_name + "_add"s;
-		str_value = config_file_get_value(pfile, "QUERY_SERVICE_NAME");
+		str_value = pfile->get_value("QUERY_SERVICE_NAME");
 		std::string query_name = str_value != nullptr ? str_value : file_name + "_query"s;
 		snprintf(list_path, GX_ARRAY_SIZE(list_path), "%s.txt", file_name);
 		str_filter_init(file_name, case_sensitive, audit_max,

@@ -224,7 +224,7 @@ int main(int argc, const char **argv)
 	}
 
 	const char *datadir = opt_datadir != nullptr ? opt_datadir :
-	                      config_file_get_value(pconfig, "data_file_path");
+	                      pconfig->get_value("data_file_path");
 	if (datadir == nullptr)
 		datadir = PKGDATADIR;
 

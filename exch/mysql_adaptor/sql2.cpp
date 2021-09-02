@@ -363,24 +363,24 @@ bool mysql_adaptor_reload_config(const char *path,
 		       strerror(errno));
 		return false;
 	}
-	auto v = config_file_get_value(pfile, "connection_num");
+	auto v = pfile->get_value("connection_num");
 	par.conn_num = v != nullptr ? strtoul(v, nullptr, 0) : 8;
-	v = config_file_get_value(pfile, "mysql_host");
+	v = pfile->get_value("mysql_host");
 	par.host = v != nullptr ? v : "";
-	v = config_file_get_value(pfile, "mysql_port");
+	v = pfile->get_value("mysql_port");
 	par.port = v != nullptr ? strtoul(v, nullptr, 0) : 3306;
-	v = config_file_get_value(pfile, "mysql_username");
+	v = pfile->get_value("mysql_username");
 	par.user = v != nullptr ? v : "root";
-	v = config_file_get_value(pfile, "mysql_password");
+	v = pfile->get_value("mysql_password");
 	par.pass = v != nullptr ? v : "";
-	v = config_file_get_value(pfile, "mysql_dbname");
+	v = pfile->get_value("mysql_dbname");
 	par.dbname = v != nullptr ? v : "email";
-	v = config_file_get_value(pfile, "mysql_rdwr_timeout");
+	v = pfile->get_value("mysql_rdwr_timeout");
 	par.timeout = v != nullptr ? strtoul(v, nullptr, 0) : 0;
 	printf("[mysql_adaptor]: host [%s]:%d, #conn=%d timeout=%d, db=%s\n",
 	       par.host.size() == 0 ? "*" : par.host.c_str(), par.port,
 	       par.conn_num, par.timeout, par.dbname.c_str());
-	v = config_file_get_value(pfile, "schema_upgrades");
+	v = pfile->get_value("schema_upgrades");
 	par.schema_upgrade = S_SKIP;
 	if (v != nullptr && strncmp(v, "host:", 5) == 0 &&
 	    prog_id != nullptr && strcmp(prog_id, "http") == 0 &&
@@ -392,7 +392,7 @@ bool mysql_adaptor_reload_config(const char *path,
 		par.schema_upgrade = S_AUTOUP;
 	}
 
-	v = config_file_get_value(pfile, "enable_firsttime_password");
+	v = pfile->get_value("enable_firsttime_password");
 	par.enable_firsttimepw = v != nullptr && strcmp(v, "yes") == 0;
 	mysql_adaptor_init(std::move(par));
 	return true;

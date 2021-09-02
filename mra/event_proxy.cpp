@@ -82,7 +82,7 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 			return FALSE;
 		}
 
-		auto str_value = config_file_get_value(pfile, "CONNECTION_NUM");
+		auto str_value = pfile->get_value("CONNECTION_NUM");
 		if (NULL == str_value) {
 			conn_num = 8;
 		} else {
@@ -92,10 +92,10 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 		}
 		printf("[event_proxy]: event connection number is %d\n", conn_num);
 
-		str_value = config_file_get_value(pfile, "EVENT_HOST");
+		str_value = pfile->get_value("EVENT_HOST");
 		gx_strlcpy(g_event_ip, str_value != nullptr ? str_value : "::1",
 		           GX_ARRAY_SIZE(g_event_ip));
-		str_value = config_file_get_value(pfile, "EVENT_PORT");
+		str_value = pfile->get_value("EVENT_PORT");
 		if (NULL == str_value) {
 			g_event_port = 33333;
 		} else {
