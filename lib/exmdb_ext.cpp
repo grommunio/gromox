@@ -5914,12 +5914,10 @@ BOOL exmdb_client_read_socket(int fd, BINARY *bin, long timeout_ms)
 	pfd.events = POLLIN | POLLPRI;
 
 	while (true) {
-		if (timeout_ms >= 0) {
-			if (poll(&pfd, 1, timeout_ms) != 1) {
-				exmdb_rpc_free(bin->pb);
-				bin->pb = nullptr;
-				return false;
-			}
+		if (timeout_ms >= 0 && poll(&pfd, 1, timeout_ms) != 1) {
+			exmdb_rpc_free(bin->pb);
+			bin->pb = nullptr;
+			return false;
 		}
 
 		if (bin->cb == 0) {
