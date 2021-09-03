@@ -44,6 +44,12 @@ union UPV {
 	BINARY bin;
 };
 
+enum {
+	/* KC does not have MSGFLAG_READ really */
+	KC_MSGFLAG_EVERREAD = 1U << 1,
+	KC_MSGFLAG_DELETED = 1U << 10,
+};
+
 enum propcol {
 	PCOL_TAG, PCOL_TYPE, PCOL_ULONG, PCOL_STRING, PCOL_BINARY, PCOL_DOUBLE,
 	PCOL_LONGINT, PCOL_HI, PCOL_LO,
@@ -488,20 +494,27 @@ std::unique_ptr<kdb_item> driver::get_root_folder()
 
 std::unique_ptr<kdb_item> kdb_item::load_hid_base(driver &drv, uint32_t hid)
 {
-	char qstr[92];
-	snprintf(qstr, arsizeof(qstr), "SELECT id, type FROM hierarchy WHERE (id=%u OR parent=%u) AND (flags&2)=0", hid, hid);
+	char qstr[84];
+	snprintf(qstr, arsizeof(qstr), "SELECT id, type, flags FROM hierarchy WHERE (id=%u OR parent=%u)", hid, hid);
 	auto res = drv.query(qstr);
 	auto yi = std::make_unique<kdb_item>(drv);
 	DB_ROW row;
 	while ((row = res.fetch_row()) != nullptr) {
 		auto xid   = strtoul(row[0], nullptr, 0);
 		auto xtype = strtoul(row[1], nullptr, 0);
+		auto xflag = strtoul(row[2], nullptr, 0);
 		if (xid == hid) {
 			/* Own existence validated */
 			yi->m_hid = xid;
 			yi->m_mapitype = static_cast<enum mapi_object_type>(xtype);
 			continue;
 		}
+		if (xtype == MAPI_FOLDER && xflag == FOLDER_SEARCH)
+			/* Skip over search folders */
+			continue;
+		if (xtype == MAPI_MESSAGE && (xflag & KC_MSGFLAG_DELETED))
+			/* Skip over softdeletes */
+			continue;
 		yi->m_sub_hids.push_back({xid, xtype});
 	}
 	/*
