@@ -75,6 +75,20 @@ struct GX_EXPORT ICAL : public ICAL_COMPONENT {
 };
 
 struct ICAL_TIME {
+	int twcompare(const ICAL_TIME &other) const;
+	inline bool operator<(const ICAL_TIME &o) const { return twcompare(o) < 0; }
+	inline bool operator<=(const ICAL_TIME &o) const { return twcompare(o) <= 0; }
+	inline bool operator>(const ICAL_TIME &o) const { return twcompare(o) > 0; }
+	inline bool operator>=(const ICAL_TIME &o) const { return twcompare(o) >= 0; }
+	void add_year(int ys);
+	void add_month(int ms);
+	void add_day(int ds);
+	void subtract_day(int ds);
+	void add_hour(int);
+	void add_minute(int);
+	void add_second(int);
+	int delta_day(ICAL_TIME) const;
+
 	int year;
 	int month;
 	int day;
@@ -140,15 +154,6 @@ extern GX_EXPORT bool ical_parse_duration(const char *str_duration, long *psecon
 extern GX_EXPORT bool ical_itime_to_utc(std::shared_ptr<ICAL_COMPONENT>, ICAL_TIME, time_t *);
 extern GX_EXPORT bool ical_datetime_to_utc(std::shared_ptr<ICAL_COMPONENT>, const char *datetime, time_t *);
 extern GX_EXPORT bool ical_utc_to_datetime(std::shared_ptr<ICAL_COMPONENT>, time_t utc_time, ICAL_TIME *);
-int ical_cmp_time(ICAL_TIME itime1, ICAL_TIME itime2);
-void ical_add_year(ICAL_TIME *pitime, int years);
-void ical_add_month(ICAL_TIME *pitime, int months);
-void ical_add_day(ICAL_TIME *pitime, int days);
-void ical_subtract_day(ICAL_TIME *pitime, int days);
-int ical_delta_day(ICAL_TIME itime1, ICAL_TIME itime2);
-void ical_add_hour(ICAL_TIME *pitime, int hours);
-void ical_add_minute(ICAL_TIME *pitime, int minutes);
-void ical_add_second(ICAL_TIME *pitime, int seconds);
 extern GX_EXPORT bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT>, time_t start, const ical_vlist *value_list, ICAL_RRULE *);
 extern GX_EXPORT bool ical_rrule_iterate(ICAL_RRULE *);
 int ical_rrule_weekstart(ICAL_RRULE *pirrule);

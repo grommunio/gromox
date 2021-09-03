@@ -890,8 +890,9 @@ bool ical_parse_datetime(const char *str_datetime, bool *b_utc, ICAL_TIME *pitim
 	return true;
 }
 
-int ical_cmp_time(ICAL_TIME itime1, ICAL_TIME itime2)
+int ICAL_TIME::twcompare(const ICAL_TIME &itime2) const
 {
+	const ICAL_TIME &itime1 = *this;
 	if (itime1.year > itime2.year) {
 		return 1;
 	} else if (itime1.year < itime2.year) {
@@ -1109,8 +1110,9 @@ static int ical_get_negative_weekofyear(int year, int month,
 	return weeknumber - yearweeks - 1;
 }
 
-void ical_add_year(ICAL_TIME *pitime, int years)
+void ICAL_TIME::add_year(int years)
 {
+	auto pitime = this;
 	pitime->year += years;
 	if (0 == years % 4) {
 		return;
@@ -1120,8 +1122,9 @@ void ical_add_year(ICAL_TIME *pitime, int years)
 	}
 }
 
-void ical_add_month(ICAL_TIME *pitime, int months)
+void ICAL_TIME::add_month(int months)
 {
+	auto pitime = this;
 	int monthdays;
 	
 	pitime->year += months/12;
@@ -1136,8 +1139,9 @@ void ical_add_month(ICAL_TIME *pitime, int months)
 	}
 }
 
-void ical_add_day(ICAL_TIME *pitime, int days)
+void ICAL_TIME::add_day(int days)
 {
+	auto pitime = this;
 	int yearday;
 	
 	yearday = ical_get_dayofyear(pitime->year,
@@ -1166,8 +1170,9 @@ void ical_add_day(ICAL_TIME *pitime, int days)
 	ical_get_itime_from_yearday(pitime->year, yearday, pitime);
 }
 
-void ical_subtract_day(ICAL_TIME *pitime, int days)
+void ICAL_TIME::subtract_day(int days)
 {
+	auto pitime = this;
 	int yearday;
 	
 	yearday = ical_get_dayofyear(pitime->year,
@@ -1186,15 +1191,15 @@ void ical_subtract_day(ICAL_TIME *pitime, int days)
 	ical_get_itime_from_yearday(pitime->year, yearday, pitime);
 }
 
-int ical_delta_day(ICAL_TIME itime1, ICAL_TIME itime2)
+int ICAL_TIME::delta_day(ICAL_TIME itime2) const
 {
+	const ICAL_TIME &itime1 = *this;
 	int yearday;
 	int monthdays;
 	int delta_days;
 	
-	if (ical_cmp_time(itime1, itime2) < 0) {
-		return ical_delta_day(itime2, itime1);
-	}
+	if (itime1 < itime2)
+		return itime2.delta_day(itime1);
 	delta_days = 0;
 	while (itime2.year != itime1.year) {
 		yearday = ical_get_dayofyear(itime2.year, itime2.month, itime2.day); 
@@ -1216,38 +1221,41 @@ int ical_delta_day(ICAL_TIME itime1, ICAL_TIME itime2)
 	return delta_days;
 }
 
-void ical_add_hour(ICAL_TIME *pitime, int hours)
+void ICAL_TIME::add_hour(int hours)
 {
+	auto pitime = this;
 	if (hours > 23) {
-		ical_add_day(pitime, hours/24);
+		add_day(hours / 24);
 	}
 	pitime->hour += hours%24;
 	if (pitime->hour > 23) {
-		ical_add_day(pitime, 1);
+		add_day(1);
 		pitime->hour -= 24;
 	}
 }
 
-void ical_add_minute(ICAL_TIME *pitime, int minutes)
+void ICAL_TIME::add_minute(int minutes)
 {
+	auto pitime = this;
 	if (minutes > 59) {
-		ical_add_hour(pitime, minutes/60);
+		add_hour(minutes / 60);
 	}
 	pitime->minute += minutes%60;
 	if (pitime->minute > 59) {
-		ical_add_hour(pitime, 1);
+		add_hour(1);
 		pitime->minute -= 60;
 	}
 }
 
-void ical_add_second(ICAL_TIME *pitime, int seconds)
+void ICAL_TIME::add_second(int seconds)
 {
+	auto pitime = this;
 	if (seconds > 59) {
-		ical_add_minute(pitime, seconds/60);
+		add_minute(seconds / 60);
 	}
 	pitime->second += seconds%60;
 	if (pitime->second > 59) {
-		ical_add_minute(pitime, 1);
+		add_minute(1);
 		pitime->second -= 60;
 	}
 }
@@ -1466,9 +1474,8 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 		}
 		if (!ical_parse_datetime(pvalue, &b_utc, &itime1) || b_utc)
 			return NULL;
-		if (ical_cmp_time(itime, itime1) < 0) {
+		if (itime < itime1)
 			continue;
-		}
 		piline = pcomponent->get_line("RRULE");
 		if (NULL == piline) {
 			goto FOUND_COMPONENT;
@@ -1508,9 +1515,8 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 			itime2.second = tmp_tm.tm_sec;
 			itime2.leap_second = 0;
 		}
-		if (ical_cmp_time(itime, itime2) > 0) {
+		if (itime > itime2)
 			continue;
-		}
  FOUND_COMPONENT:
 		piline = pcomponent->get_line("TZOFFSETTO");
 		if (NULL == piline) {
@@ -1641,21 +1647,12 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 		itime.year != itime_daylight.year) {
 		return NULL;
 	}
-	if (ical_cmp_time(itime_standard, itime_daylight) >= 0) {
-		if (ical_cmp_time(itime, itime_daylight) < 0 ||
-			ical_cmp_time(itime, itime_standard) >= 0) {
-			return standard_offset;
-		} else {
-			return daylight_offset;
-		}
-	} else {
-		if (ical_cmp_time(itime, itime_standard) < 0 ||
-			ical_cmp_time(itime, itime_daylight) >= 0) {
-			return daylight_offset;
-		} else {
-			return standard_offset;
-		}
-	}
+	if (itime_standard >= itime_daylight)
+		return itime < itime_daylight || itime >= itime_standard ?
+		       standard_offset : daylight_offset;
+
+	return itime < itime_standard || itime >= itime_daylight ?
+	       daylight_offset : standard_offset;
 }
 
 bool ical_itime_to_utc(std::shared_ptr<ICAL_COMPONENT> ptz_component,
@@ -1871,9 +1868,8 @@ static int ical_hint_rrule(ICAL_RRULE *pirrule, ICAL_TIME itime)
 		dayofweek = ical_get_dayofweek(itime.year,
 						itime.month, itime.day);
 		if (ICAL_FREQUENCY_WEEK == pirrule->frequency) {
-			weekorder = ical_delta_day(itime, pirrule->base_itime)/7 + 1;
-			nweekorder = -(ical_delta_day(itime,
-				pirrule->next_base_itime) - 1)/7 - 1;
+			weekorder = itime.delta_day(pirrule->base_itime) / 7 + 1;
+			nweekorder = -(itime.delta_day(pirrule->next_base_itime) - 1) / 7 - 1;
 		} else {
 			if (ICAL_FREQUENCY_MONTH == pirrule->frequency ||
 			    pirrule->by_mask[RRULE_BY_MONTH]) {
@@ -1919,48 +1915,48 @@ static ICAL_TIME ical_next_rrule_itime(ICAL_RRULE *pirrule,
 	if (0 == hint_result) {
 		switch (pirrule->real_frequency) {
 		case ICAL_FREQUENCY_YEAR:
-			ical_add_year(&itime, pirrule->interval);
+			itime.add_year(pirrule->interval);
 			break;
 		case ICAL_FREQUENCY_MONTH:
 			if (pirrule->real_frequency == pirrule->frequency) {
-				ical_add_month(&itime, pirrule->interval);
+				itime.add_month(pirrule->interval);
 			} else {
-				ical_add_month(&itime, 1);
+				itime.add_month(1);
 			}
 			break;
 		case ICAL_FREQUENCY_WEEK:
 			if (pirrule->real_frequency == pirrule->frequency) {
-				ical_add_day(&itime, 7*pirrule->interval);
+				itime.add_day(7 * pirrule->interval);
 			} else {
-				ical_add_day(&itime, 7);
+				itime.add_day(7);
 			}
 			break;
 		case ICAL_FREQUENCY_DAY:
 			if (pirrule->real_frequency == pirrule->frequency) {
-				ical_add_day(&itime, pirrule->interval);
+				itime.add_day(pirrule->interval);
 			} else {
-				ical_add_day(&itime, 1);
+				itime.add_day(1);
 			}
 			break;
 		case ICAL_FREQUENCY_HOUR:
 			if (pirrule->real_frequency == pirrule->frequency) {
-				ical_add_hour(&itime, pirrule->interval);
+				itime.add_hour(pirrule->interval);
 			} else {
-				ical_add_hour(&itime, 1);
+				itime.add_hour(1);
 			}
 			break;
 		case ICAL_FREQUENCY_MINUTE:
 			if (pirrule->real_frequency == pirrule->frequency) {
-				ical_add_minute(&itime, pirrule->interval);
+				itime.add_minute(pirrule->interval);
 			} else {
-				ical_add_minute(&itime, 1);
+				itime.add_minute(1);
 			}
 			break;
 		case ICAL_FREQUENCY_SECOND:
 			if (pirrule->real_frequency == pirrule->frequency) {
-				ical_add_second(&itime, pirrule->interval);
+				itime.add_second(pirrule->interval);
 			} else {
-				ical_add_second(&itime, 1);
+				itime.add_second(1);
 			}
 			break;
 		}
@@ -1973,7 +1969,7 @@ static ICAL_TIME ical_next_rrule_itime(ICAL_RRULE *pirrule,
 		case RRULE_BY_MONTH:
 			dayofweek = ical_get_dayofweek(itime.year,
 							itime.month, itime.day);
-			ical_add_month(&itime, 1);
+			itime.add_month(1);
 			if (pirrule->by_mask[RRULE_BY_WEEKNO])
 				itime.day = ical_get_dayofmonth(itime.year,
 								itime.month, 1, dayofweek);
@@ -1989,18 +1985,16 @@ static ICAL_TIME ical_next_rrule_itime(ICAL_RRULE *pirrule,
 				itime.second = 0;
 			break;
 		case RRULE_BY_WEEKNO:
-			ical_add_day(&itime, 7);
+			itime.add_day(7);
 			if (pirrule->by_mask[RRULE_BY_YEARDAY] ||
 			    pirrule->by_mask[RRULE_BY_MONTHDAY] ||
 			    pirrule->by_mask[RRULE_BY_DAY]) {
 				dayofweek = ical_get_dayofweek(itime.year,
 								itime.month, itime.day);
 				if (dayofweek >= pirrule->weekstart) {
-					ical_subtract_day(&itime,
-						dayofweek - pirrule->weekstart);
+					itime.subtract_day(dayofweek - pirrule->weekstart);
 				} else {
-					ical_subtract_day(&itime, 7 +
-						dayofweek - pirrule->weekstart);
+					itime.subtract_day(7 + dayofweek - pirrule->weekstart);
 				}
 			}
 			if (pirrule->by_mask[RRULE_BY_HOUR])
@@ -2013,7 +2007,7 @@ static ICAL_TIME ical_next_rrule_itime(ICAL_RRULE *pirrule,
 		case RRULE_BY_YEARDAY:
 		case RRULE_BY_MONTHDAY:
 		case RRULE_BY_DAY:
-			ical_add_day(&itime, 1);
+			itime.add_day(1);
 			if (pirrule->by_mask[RRULE_BY_HOUR])
 				itime.hour = 0;
 			if (pirrule->by_mask[RRULE_BY_MINUTE])
@@ -2022,19 +2016,19 @@ static ICAL_TIME ical_next_rrule_itime(ICAL_RRULE *pirrule,
 				itime.second = 0;
 			break;
 		case RRULE_BY_HOUR:
-			ical_add_hour(&itime, 1);
+			itime.add_hour(1);
 			if (pirrule->by_mask[RRULE_BY_MINUTE])
 				itime.minute = 0;
 			if (pirrule->by_mask[RRULE_BY_SECOND])
 				itime.second = 0;
 			break;
 		case RRULE_BY_MINUTE:
-			ical_add_minute(&itime, 1);
+			itime.add_minute(1);
 			if (pirrule->by_mask[RRULE_BY_SECOND])
 				itime.second = 0;
 			break;
 		case RRULE_BY_SECOND:
-			ical_add_second(&itime, 1);
+			itime.add_second(1);
 			break;
 		}
 		break;
@@ -2043,63 +2037,63 @@ static ICAL_TIME ical_next_rrule_itime(ICAL_RRULE *pirrule,
 		case RRULE_BY_YEARDAY:
 		case RRULE_BY_MONTHDAY:
 		case RRULE_BY_DAY:
-			ical_add_day(&itime, 1);
+			itime.add_day(1);
 			break;
 		case RRULE_BY_HOUR:
-			ical_add_hour(&itime, 1);
+			itime.add_hour(1);
 			break;
 		case RRULE_BY_MINUTE:
-			ical_add_minute(&itime, 1);
+			itime.add_minute(1);
 			break;
 		case RRULE_BY_SECOND:
-			ical_add_second(&itime, 1);
+			itime.add_second(1);
 			break;
 		default:
-			ical_add_day(&itime, 7);
+			itime.add_day(7);
 			break;
 		}
 		break;
 	case ICAL_FREQUENCY_DAY:
 		switch (hint_result) {
 		case RRULE_BY_HOUR:
-			ical_add_hour(&itime, 1);
+			itime.add_hour(1);
 			break;
 		case RRULE_BY_MINUTE:
-			ical_add_minute(&itime, 1);
+			itime.add_minute(1);
 			break;
 		case RRULE_BY_SECOND:
-			ical_add_second(&itime, 1);
+			itime.add_second(1);
 			break;
 		default:
-			ical_add_day(&itime, 1);
+			itime.add_day(1);
 			break;
 		}
 		break;
 	case ICAL_FREQUENCY_HOUR:
 		switch (hint_result) {
 		case RRULE_BY_MINUTE:
-			ical_add_minute(&itime, 1);
+			itime.add_minute(1);
 			break;
 		case RRULE_BY_SECOND:
-			ical_add_second(&itime, 1);
+			itime.add_second(1);
 			break;
 		default:
-			ical_add_hour(&itime, 1);
+			itime.add_hour(1);
 			break;
 		}
 		break;
 	case ICAL_FREQUENCY_MINUTE:
 		switch (hint_result) {
 		case RRULE_BY_SECOND:
-			ical_add_second(&itime, 1);
+			itime.add_second(1);
 			break;
 		default:
-			ical_add_minute(&itime, 1);
+			itime.add_minute(1);
 			break;
 		}
 		break;
 	case ICAL_FREQUENCY_SECOND:
-		ical_add_second(&itime, 1);
+		itime.add_second(1);
 		break;
 	}
 	switch (pirrule->frequency) {
@@ -2114,9 +2108,8 @@ static ICAL_TIME ical_next_rrule_itime(ICAL_RRULE *pirrule,
 		}
 		break;
 	case ICAL_FREQUENCY_WEEK:
-		if (ical_delta_day(itime, pirrule->base_itime) >= 7) {
+		if (itime.delta_day(pirrule->base_itime) >= 7)
 			itime = pirrule->next_base_itime;
-		}
 		break;
 	case ICAL_FREQUENCY_DAY:
 		if (itime.day > pirrule->base_itime.day) {
@@ -2150,7 +2143,7 @@ static void ical_calculate_setpos(ICAL_RRULE *pirrule)
 	pirrule->cur_setpos = 0;
 	pirrule->setpos_count = 0;
 	itime = pirrule->base_itime;
-	while (ical_cmp_time(pirrule->next_base_itime, itime) > 0) {
+	while (pirrule->next_base_itime > itime) {
 		hint_result = ical_hint_rrule(pirrule, itime);
 		if (0 == hint_result) {
 			pirrule->setpos_count ++;
@@ -2164,25 +2157,25 @@ static void ical_next_rrule_base_itime(ICAL_RRULE *pirrule)
 	pirrule->next_base_itime = pirrule->base_itime;
 	switch (pirrule->frequency) {
 	case ICAL_FREQUENCY_YEAR:
-		ical_add_year(&pirrule->next_base_itime, pirrule->interval);
+		pirrule->next_base_itime.add_year(pirrule->interval);
 		break;
 	case ICAL_FREQUENCY_MONTH:
-		ical_add_month(&pirrule->next_base_itime, pirrule->interval);
+		pirrule->next_base_itime.add_month(pirrule->interval);
 		break;
 	case ICAL_FREQUENCY_WEEK:
-		ical_add_day(&pirrule->next_base_itime, 7*pirrule->interval);
+		pirrule->next_base_itime.add_day(7 * pirrule->interval);
 		break;
 	case ICAL_FREQUENCY_DAY:
-		ical_add_day(&pirrule->next_base_itime, pirrule->interval);
+		pirrule->next_base_itime.add_day(pirrule->interval);
 		break;
 	case ICAL_FREQUENCY_HOUR:
-		ical_add_hour(&pirrule->next_base_itime, pirrule->interval);
+		pirrule->next_base_itime.add_hour(pirrule->interval);
 		break;
 	case ICAL_FREQUENCY_MINUTE:
-		ical_add_minute(&pirrule->next_base_itime, pirrule->interval);
+		pirrule->next_base_itime.add_minute(pirrule->interval);
 		break;
 	case ICAL_FREQUENCY_SECOND:
-		ical_add_second(&pirrule->next_base_itime, pirrule->interval);
+		pirrule->next_base_itime.add_second(pirrule->interval);
 		break;
 	}
 }
@@ -2580,11 +2573,9 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			dayofweek = ical_get_dayofweek(itime.year,
 								itime.month, itime.day);
 			if (dayofweek >= pirrule->weekstart) {
-				ical_subtract_day(&itime,
-					dayofweek - pirrule->weekstart);
+				itime.subtract_day(dayofweek - pirrule->weekstart);
 			} else {
-				ical_subtract_day(&itime, 7 +
-					dayofweek - pirrule->weekstart);
+				itime.subtract_day(7 + dayofweek - pirrule->weekstart);
 			}
 		}
 		if (NULL != pbyhour_list) {
@@ -2637,9 +2628,8 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	ical_next_rrule_base_itime(pirrule);
 	if (pirrule->by_mask[RRULE_BY_SETPOS])
 		ical_calculate_setpos(pirrule);
-	while (ical_cmp_time(itime, pirrule->next_base_itime) < 0) {
-		if (pirrule->b_until &&
-		    ical_cmp_time(itime, pirrule->until_itime) > 0)
+	while (itime < pirrule->next_base_itime) {
+		if (pirrule->b_until && itime > pirrule->until_itime)
 			return false;
 		hint_result = ical_hint_rrule(pirrule, itime);
 		if (0 == hint_result) {
@@ -2651,7 +2641,7 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 					continue;
 				}
 			}
-			cmp_result = ical_cmp_time(itime, pirrule->instance_itime);
+			cmp_result = itime.twcompare(pirrule->instance_itime);
 			if (cmp_result < 0) {
 				itime = ical_next_rrule_itime(pirrule, hint_result, itime);
 				continue;
@@ -2696,8 +2686,7 @@ bool ical_rrule_iterate(ICAL_RRULE *pirrule)
 	}
 	if (pirrule->b_start_exceptional) {
 		itime = pirrule->real_start_itime;
-		if (pirrule->b_until &&
-		    ical_cmp_time(itime, pirrule->until_itime) > 0)
+		if (pirrule->b_until && itime > pirrule->until_itime)
 			return false;
 		pirrule->b_start_exceptional = false;
 		pirrule->current_instance ++;
@@ -2710,10 +2699,9 @@ bool ical_rrule_iterate(ICAL_RRULE *pirrule)
 	itime = pirrule->instance_itime;
 	while (true) {
 		itime = ical_next_rrule_itime(pirrule, hint_result, itime);
-		if (pirrule->b_until &&
-		    ical_cmp_time(itime, pirrule->until_itime) > 0)
+		if (pirrule->b_until && itime > pirrule->until_itime)
 			return false;
-		if (ical_cmp_time(itime, pirrule->next_base_itime) >= 0) {
+		if (itime >= pirrule->next_base_itime) {
 			pirrule->base_itime = pirrule->next_base_itime;
 			itime = pirrule->next_base_itime;
 			ical_next_rrule_base_itime(pirrule);

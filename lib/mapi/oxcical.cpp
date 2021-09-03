@@ -527,8 +527,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		itime1.year = 1601;
 		itime1.month = 1;
 		itime1.day = 1;
-		papprecurr->recurrencepattern.firstdatetime =
-					ical_delta_day(itime, itime1)*1440;
+		papprecurr->recurrencepattern.firstdatetime = itime.delta_day(itime1) * 1440;
 		if (ical_rrule_check_bymask(&irrule, RRULE_BY_DAY) &&
 		    ical_rrule_check_bymask(&irrule, RRULE_BY_SETPOS)) {
 			patterntype = PATTERNTYPE_MONTHNTH;
@@ -617,8 +616,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		itime1.year = 1601;
 		itime1.month = 1;
 		itime1.day = 1;
-		papprecurr->recurrencepattern.firstdatetime =
-					ical_delta_day(itime, itime1)*1440;
+		papprecurr->recurrencepattern.firstdatetime = itime.delta_day(itime1) * 1440;
 		if (ical_rrule_check_bymask(&irrule, RRULE_BY_DAY) &&
 		    ical_rrule_check_bymask(&irrule, RRULE_BY_SETPOS) &&
 		    ical_rrule_check_bymask(&irrule, RRULE_BY_MONTH)) {
@@ -2601,7 +2599,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 				end_itime.minute = 0;
 				end_itime.second = 0;
 				end_itime.leap_second = 0;
-				ical_add_day(&end_itime, 1);
+				end_itime.add_day(1);
 			}
 			ical_itime_to_utc(ptz_component, end_itime, &end_time);
 		} else {
@@ -2613,7 +2611,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			b_utc_end = b_utc_start;
 			end_itime = start_itime;
 			end_time = start_time + duration;
-			ical_add_second(&end_itime, duration);
+			end_itime.add_second(duration);
 		}
 	}
 	
@@ -2641,9 +2639,8 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			0 == start_itime.hour && 0 == start_itime.minute &&
 			0 == start_itime.second && 0 == end_itime.hour &&
 			0 == end_itime.minute && 0 == end_itime.second &&
-			1 == ical_delta_day(end_itime, start_itime)) {
+		    end_itime.delta_day(start_itime) == 1)
 			b_allday = TRUE;
-		}
 	}
 	
 	if (TRUE == b_allday) {
