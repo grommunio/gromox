@@ -74,6 +74,7 @@ struct driver final {
 	MYSQL *m_conn = nullptr;
 	uint32_t m_user_id = 0, m_store_hid = 0, m_root_hid = 0;
 	gi_folder_map_t m_folder_map;
+	unsigned int schema_vers = 0;
 };
 
 struct kdb_item final {
@@ -307,10 +308,29 @@ kdb_open_by_guid_1(std::unique_ptr<driver> &&drv, const char *guid)
 {
 	if (hex2bin(guid).size() != 16)
 		throw YError("PK-1011: invalid GUID passed");
+
 	char qstr[96];
+	DB_RESULT res;
+	DB_ROW row;
+	snprintf(qstr, arsizeof(qstr), "SELECT MAX(databaserevision) FROM versions");
+	try {
+		res = drv->query(qstr);
+		row = res.fetch_row();
+		if (row == nullptr || row[0] == nullptr)
+			throw YError("PK-1002: Database has no version information and is too old");
+	} catch (const YError &e) {
+		fprintf(stderr, "PK-1003: Database has no version information and is too old.\n");
+		throw;
+	}
+	drv->schema_vers = strtoul(row[0], nullptr, 0);
+	if (drv->schema_vers < 61)
+		throw YError("PK-1004: Database schema n%u is not supported.\n", drv->schema_vers);
+	fprintf(stderr, "Database schema n%u\n", drv->schema_vers);
+
+	/* user_id available from n61 */
 	snprintf(qstr, arsizeof(qstr), "SELECT hierarchy_id, user_id FROM stores WHERE guid=0x%.32s", guid);
-	auto res = drv->query(qstr);
-	auto row = res.fetch_row();
+	res = drv->query(qstr);
+	row = res.fetch_row();
 	if (row == nullptr || row[0] == nullptr || row[1] == nullptr)
 		throw YError("PK-1014: no store by that GUID");
 	drv->m_user_id = strtoul(row[1], nullptr, 0);
@@ -747,17 +767,19 @@ static void do_attach_byval(driver &drv, unsigned int depth, unsigned int hid,
     TPROPVAL_ARRAY *props)
 {
 	char qstr[96];
-	snprintf(qstr, arsizeof(qstr), "SELECT filename, instanceid FROM singleinstances WHERE hierarchyid=%u LIMIT 1", hid);
+	snprintf(qstr, arsizeof(qstr), drv.schema_vers >= 71 ?
+	         "SELECT instanceid, filename FROM singleinstances WHERE hierarchyid=%u LIMIT 1" :
+	         "SELECT instanceid FROM singleinstances WHERE hierarchyid=%u LIMIT 1", hid);
 	auto res = drv.query(qstr);
 	auto row = res.fetch_row();
-	if (row == nullptr || row[1] == nullptr) {
+	if (row == nullptr || row[0] == nullptr) {
 		fprintf(stderr, "PK-1012: attachment %u is missing from \"singleinstances\" table and is lost\n", hid);
 		return;
 	}
 	std::string filename;
-	auto siid = strtoul(row[1], nullptr, 0);
-	if (row[0] != nullptr && row[0][0] != '\0')
-		filename = g_atxdir + "/"s + row[0] + "/content";
+	auto siid = strtoul(row[0], nullptr, 0);
+	if (drv.schema_vers >= 71 && row[1] != nullptr && row[1][0] != '\0')
+		filename = g_atxdir + "/"s + row[1] + "/content";
 	else
 		filename = g_atxdir + "/"s + std::to_string(siid % g_level1_fan) +
 		           "/" + std::to_string(siid / g_level1_fan % g_level2_fan) +
