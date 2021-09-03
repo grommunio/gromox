@@ -14,7 +14,8 @@ the gromox-mt2exm(8gx) program. Optionally, kdb2mt can print a summary of the
 hierarchy during extraction.
 .PP
 The SQL server that carries the Kopano database for the home server of the user
-must be active.
+must be active. Databases with a schema version \fBn71\fP or newer (KC
+8.6.82+) are supported.
 .PP
 The kopano\-server(8) process need not be running.
 .PP
