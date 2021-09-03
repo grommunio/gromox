@@ -2192,13 +2192,11 @@ static int exmdb_ext_pull_get_content_sync_request(
 		ppayload->get_content_sync.pseen =
 			idset_init(FALSE, REPL_TYPE_ID);
 		if (NULL == ppayload->get_content_sync.pseen) {
-			status = EXT_ERR_ALLOC;
-			return gcsr_failure(status, ppayload);
+			return gcsr_failure(EXT_ERR_ALLOC, ppayload);
 		}
 		if (FALSE == idset_deserialize(
 			ppayload->get_content_sync.pseen, &tmp_bin)) {
-			status = EXT_ERR_FORMAT;
-			return gcsr_failure(status, ppayload);
+			return gcsr_failure(EXT_ERR_FORMAT, ppayload);
 		}
 	}
 	status = pext->g_uint8(&tmp_byte);
@@ -2213,13 +2211,11 @@ static int exmdb_ext_pull_get_content_sync_request(
 		ppayload->get_content_sync.pseen_fai =
 			idset_init(FALSE, REPL_TYPE_ID);
 		if (NULL == ppayload->get_content_sync.pseen_fai) {
-			status = EXT_ERR_ALLOC;
-			return gcsr_failure(status, ppayload);
+			return gcsr_failure(EXT_ERR_ALLOC, ppayload);
 		}
 		if (FALSE == idset_deserialize(
 			ppayload->get_content_sync.pseen_fai, &tmp_bin)) {
-			status = EXT_ERR_FORMAT;
-			return gcsr_failure(status, ppayload);
+			return gcsr_failure(EXT_ERR_FORMAT, ppayload);
 		}
 	}
 	status = pext->g_uint8(&tmp_byte);
@@ -2234,13 +2230,11 @@ static int exmdb_ext_pull_get_content_sync_request(
 		ppayload->get_content_sync.pread =
 			idset_init(FALSE, REPL_TYPE_ID);
 		if (NULL == ppayload->get_content_sync.pread) {
-			status = EXT_ERR_ALLOC;
-			return gcsr_failure(status, ppayload);
+			return gcsr_failure(EXT_ERR_ALLOC, ppayload);
 		}
 		if (FALSE == idset_deserialize(
 			ppayload->get_content_sync.pread, &tmp_bin)) {
-			status = EXT_ERR_FORMAT;
-			return gcsr_failure(status, ppayload);
+			return gcsr_failure(EXT_ERR_FORMAT, ppayload);
 		}
 	}
 	status = pext->g_uint32(&ppayload->get_content_sync.cpid);
@@ -2254,8 +2248,7 @@ static int exmdb_ext_pull_get_content_sync_request(
 	if (0 != tmp_byte) {
 		ppayload->get_content_sync.prestriction = cu_alloc<RESTRICTION>();
 		if (NULL == ppayload->get_content_sync.prestriction) {
-			status = EXT_ERR_ALLOC;
-			return gcsr_failure(status, ppayload);
+			return gcsr_failure(EXT_ERR_ALLOC, ppayload);
 		}
 		status = pext->g_restriction(ppayload->get_content_sync.prestriction);
 		if (EXT_ERR_SUCCESS != status) {
