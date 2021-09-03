@@ -347,7 +347,7 @@ kdb_open_by_guid(const char *guid, const sql_login_param &sqp)
 		throw std::bad_alloc();
 	mysql_options(drv->m_conn, MYSQL_SET_CHARSET_NAME, "utf8mb4");
 	if (mysql_real_connect(drv->m_conn, snul(sqp.host), sqp.user.c_str(),
-	    sqp.pass.c_str(), sqp.dbname.c_str(), 0, nullptr, 0) == nullptr)
+	    sqp.pass.c_str(), sqp.dbname.c_str(), sqp.port, nullptr, 0) == nullptr)
 		throw YError("PK-1018: mysql_connect %s@%s: %s",
 		      sqp.user.c_str(), sqp.host.c_str(), mysql_error(drv->m_conn));
 	return kdb_open_by_guid_1(std::move(drv), guid);
@@ -379,7 +379,7 @@ kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
 		throw std::bad_alloc();
 	mysql_options(drv->m_conn, MYSQL_SET_CHARSET_NAME, "utf8mb4");
 	if (mysql_real_connect(drv->m_conn, snul(sqp.host), sqp.user.c_str(),
-	    sqp.pass.c_str(), sqp.dbname.c_str(), 0, nullptr, 0) == nullptr)
+	    sqp.pass.c_str(), sqp.dbname.c_str(), sqp.port, nullptr, 0) == nullptr)
 		throw YError("PK-1019: mysql_connect %s@%s: %s",
 		      sqp.user.c_str(), sqp.host.c_str(), mysql_error(drv->m_conn));
 
