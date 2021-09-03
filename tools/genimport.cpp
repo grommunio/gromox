@@ -219,6 +219,7 @@ void gi_dump_folder_map(const gi_folder_map_t &map)
 	if (!g_show_props)
 		return;
 	fprintf(stderr, "Folder map (%zu entries):\n", map.size());
+	fprintf(stderr, "\t# HierID (hex) -> Target name\n");
 	for (const auto &[nid, tgt] : map)
 		fprintf(stderr, "\t%xh -> %s%s\n", nid, tgt.create_name.c_str(),
 		        tgt.create ? " (create)" : "");
@@ -229,6 +230,7 @@ void gi_dump_name_map(const gi_name_map &map)
 	if (!g_show_props)
 		return;
 	fprintf(stderr, "Named properties (%zu entries):\n", map.size());
+	fprintf(stderr, "\t# PROPID (hex) <-> MAPINAMEID definition:\n");
 	for (const auto &[propid, propname] : map) {
 		if (propname.kind == MNID_ID)
 			fprintf(stderr, "\t%08xh <-> {MNID_ID, %s, %xh}\n",
