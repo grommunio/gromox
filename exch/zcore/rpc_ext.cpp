@@ -21,47 +21,41 @@ static BOOL rpc_ext_pull_propval(
 	switch (type) {
 	case PT_SHORT:
 		*ppval = pext->anew<uint16_t>();
-		if (NULL == *ppval) {
+		if (*ppval == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_uint16(static_cast<uint16_t *>(*ppval)));
 		return TRUE;
 	case PT_LONG:
 	case PT_ERROR:
 		*ppval = pext->anew<uint32_t>();
-		if (NULL == *ppval) {
+		if (*ppval == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_uint32(static_cast<uint32_t *>(*ppval)));
 		return TRUE;
 	case PT_FLOAT:
 		*ppval = pext->anew<float>();
-		if (NULL == *ppval) {
+		if (*ppval == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_float(static_cast<float *>(*ppval)));
 		return TRUE;
 	case PT_DOUBLE:
 	case PT_APPTIME:
 		*ppval = pext->anew<double>();
-		if (NULL == *ppval) {
+		if (*ppval == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_double(static_cast<double *>(*ppval)));
 		return TRUE;
 	case PT_BOOLEAN:
 		*ppval = pext->anew<uint8_t>();
-		if (NULL == *ppval) {
+		if (*ppval == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_uint8(static_cast<uint8_t *>(*ppval)));
 		return TRUE;
 	case PT_I8:
 	case PT_SYSTIME:
 		*ppval = pext->anew<uint64_t>();
-		if (NULL == *ppval) {
+		if (*ppval == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_uint64(static_cast<uint64_t *>(*ppval)));
 		return TRUE;
 	case PT_STRING8:
@@ -72,79 +66,68 @@ static BOOL rpc_ext_pull_propval(
 		return TRUE;
 	case PT_CLSID:
 		*ppval = pext->anew<GUID>();
-		if (NULL == *ppval) {
+		if (*ppval == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_guid(static_cast<GUID *>(*ppval)));
 		return TRUE;
 	case PT_SRESTRICT:
 		*ppval = pext->anew<RESTRICTION>();
-		if (NULL == *ppval) {
+		if (*ppval == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_restriction(static_cast<RESTRICTION *>(*ppval)));
 		return TRUE;
 	case PT_ACTIONS:
 		*ppval = pext->anew<RULE_ACTIONS>();
-		if (NULL == *ppval) {
+		if (*ppval == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_rule_actions(static_cast<RULE_ACTIONS *>(*ppval)));
 		return TRUE;
 	case PT_BINARY:
 		*ppval = pext->anew<BINARY>();
-		if (NULL == *ppval) {
+		if (*ppval == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_bin(static_cast<BINARY *>(*ppval)));
 		return TRUE;
 	case PT_MV_SHORT:
 		*ppval = pext->anew<SHORT_ARRAY>();
-		if (NULL == *ppval) {
+		if (*ppval == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_uint16_a(static_cast<SHORT_ARRAY *>(*ppval)));
 		return TRUE;
 	case PT_MV_LONG:
 		*ppval = pext->anew<LONG_ARRAY>();
-		if (NULL == *ppval) {
+		if (*ppval == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_uint32_a(static_cast<LONG_ARRAY *>(*ppval)));
 		return TRUE;
 	case PT_MV_I8:
 		*ppval = pext->anew<LONGLONG_ARRAY>();
-		if (NULL == *ppval) {
+		if (*ppval == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_uint64_a(static_cast<LONGLONG_ARRAY *>(*ppval)));
 		return TRUE;
 	case PT_MV_STRING8:
 		*ppval = pext->anew<STRING_ARRAY>();
-		if (NULL == *ppval) {
+		if (*ppval == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_str_a(static_cast<STRING_ARRAY *>(*ppval)));
 		return TRUE;
 	case PT_MV_UNICODE:
 		*ppval = pext->anew<STRING_ARRAY>();
-		if (NULL == *ppval) {
+		if (*ppval == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_wstr_a(static_cast<STRING_ARRAY *>(*ppval)));
 		return TRUE;
 	case PT_MV_CLSID:
 		*ppval = pext->anew<GUID_ARRAY>();
-		if (NULL == *ppval) {
+		if (*ppval == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_guid_a(static_cast<GUID_ARRAY *>(*ppval)));
 		return TRUE;
 	case PT_MV_BINARY:
 		*ppval = pext->anew<BINARY_ARRAY>();
-		if (NULL == *ppval) {
+		if (*ppval == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_bin_a(static_cast<BINARY_ARRAY *>(*ppval)));
 		return TRUE;
 	default:
@@ -162,8 +145,6 @@ static BOOL rpc_ext_pull_tagged_propval(
 static BOOL rpc_ext_pull_tpropval_array(
 	EXT_PULL *pext, TPROPVAL_ARRAY *r)
 {
-	int i;
-	
 	QRF(pext->g_uint16(&r->count));
 	if (0 == r->count) {
 		r->ppropval = NULL;
@@ -174,10 +155,9 @@ static BOOL rpc_ext_pull_tpropval_array(
 		r->count = 0;
 		return FALSE;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!rpc_ext_pull_tagged_propval(pext, &r->ppropval[i]))
 			return FALSE;
-	}
 	return TRUE;
 }
 
@@ -191,8 +171,6 @@ static BOOL rpc_ext_pull_rule_data(
 static BOOL rpc_ext_pull_rule_list(
 	EXT_PULL *pext, RULE_LIST *r)
 {
-	int i;
-	
 	QRF(pext->g_uint16(&r->count));
 	if (0 == r->count) {
 		r->prule = NULL;
@@ -203,10 +181,9 @@ static BOOL rpc_ext_pull_rule_list(
 		r->count = 0;
 		return FALSE;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!rpc_ext_pull_rule_data(pext, &r->prule[i]))
 			return FALSE;
-	}
 	return TRUE;
 }
 
@@ -222,18 +199,15 @@ static BOOL rpc_ext_pull_permission_row(
 static BOOL rpc_ext_pull_permission_set(
 	EXT_PULL *pext, PERMISSION_SET *r)
 {
-	int i;
-	
 	QRF(pext->g_uint16(&r->count));
 	r->prows = pext->anew<PERMISSION_ROW>(r->count);
 	if (NULL == r->prows) {
 		r->count = 0;
 		return FALSE;
 	}
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!rpc_ext_pull_permission_row(pext, &r->prows[i]))
 			return FALSE;
-	}
 	return TRUE;
 }
 
@@ -346,13 +320,10 @@ static BOOL rpc_ext_push_tagged_propval(
 static BOOL rpc_ext_push_tpropval_array(
 	EXT_PUSH *pext, const TPROPVAL_ARRAY *r)
 {
-	int i;
-	
 	QRF(pext->p_uint16(r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!rpc_ext_push_tagged_propval(pext, &r->ppropval[i]))
 			return FALSE;
-	}
 	return TRUE;
 }
 
@@ -361,10 +332,8 @@ static BOOL rpc_ext_push_tarray_set(
 {
 	QRF(pext->p_uint32(r->count));
 	for (size_t i = 0; i < r->count; ++i)
-		if (FALSE == rpc_ext_push_tpropval_array(
-			pext, r->pparray[i])) {
+		if (!rpc_ext_push_tpropval_array(pext, r->pparray[i]))
 			return FALSE;
-		}
 	return TRUE;
 }
 
@@ -380,13 +349,10 @@ static BOOL rpc_ext_push_permission_row(
 static BOOL rpc_ext_push_permission_set(
 	EXT_PUSH *pext, const PERMISSION_SET *r)
 {
-	int i;
-	
 	QRF(pext->p_uint16(r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!rpc_ext_push_permission_row(pext, &r->prows[i]))
 			return FALSE;
-	}
 	return TRUE;
 }
 
@@ -480,13 +446,10 @@ static BOOL rpc_ext_push_znotification(
 static BOOL rpc_ext_push_znotification_array(
 	EXT_PUSH *pext, const ZNOTIFICATION_ARRAY *r)
 {
-	int i;
-	
 	QRF(pext->p_uint16(r->count));
-	for (i=0; i<r->count; i++) {
+	for (size_t i = 0; i < r->count; ++i)
 		if (!rpc_ext_push_znotification(pext, r->ppnotification[i]))
 			return FALSE;
-	}
 	return TRUE;
 }
 
@@ -497,11 +460,10 @@ static BOOL rpc_ext_pull_logon_request(
 	
 	QRF(pext->g_str(&ppayload->logon.username));
 	QRF(pext->g_uint8(&tmp_byte));
-	if (0 == tmp_byte) {
+	if (tmp_byte == 0)
 		ppayload->logon.password = NULL;
-	} else {
+	else
 		QRF(pext->g_str(&ppayload->logon.password));
-	}
 	QRF(pext->g_uint32(&ppayload->logon.flags));
 	return TRUE;
 }
@@ -601,9 +563,8 @@ static BOOL rpc_ext_pull_resolvename_request(
 {
 	QRF(pext->g_guid(&ppayload->resolvename.hsession));
 	ppayload->resolvename.pcond_set = pext->anew<TARRAY_SET>();
-	if (NULL == ppayload->resolvename.pcond_set) {
+	if (ppayload->resolvename.pcond_set == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_tarray_set(ppayload->resolvename.pcond_set));
 	return TRUE;
 }
@@ -636,9 +597,8 @@ static BOOL rpc_ext_pull_modifypermissions_request(
 	QRF(pext->g_guid(&ppayload->modifypermissions.hsession));
 	QRF(pext->g_uint32(&ppayload->modifypermissions.hfolder));
 	ppayload->modifypermissions.pset = pext->anew<PERMISSION_SET>();
-	if (NULL == ppayload->modifypermissions.pset) {
+	if (ppayload->modifypermissions.pset == nullptr)
 		return FALSE;
-	}
 	return rpc_ext_pull_permission_set(pext,
 			ppayload->modifypermissions.pset);
 }
@@ -650,9 +610,8 @@ static BOOL rpc_ext_pull_modifyrules_request(
 	QRF(pext->g_uint32(&ppayload->modifyrules.hfolder));
 	QRF(pext->g_uint32(&ppayload->modifyrules.flags));
 	ppayload->modifyrules.plist = pext->anew<RULE_LIST>();
-	if (NULL == ppayload->modifyrules.plist) {
+	if (ppayload->modifyrules.plist == nullptr)
 		return FALSE;
-	}
 	return rpc_ext_pull_rule_list(pext,
 			ppayload->modifyrules.plist);
 }
@@ -711,9 +670,8 @@ static BOOL rpc_ext_pull_openpropfilesec_request(
 		ppayload->openpropfilesec.puid = NULL;
 	} else {
 		ppayload->openpropfilesec.puid = pext->anew<FLATUID>();
-		if (NULL == ppayload->openpropfilesec.puid) {
+		if (ppayload->openpropfilesec.puid == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_bytes(const_cast<FLATUID *>(ppayload->openpropfilesec.puid), sizeof(FLATUID)));
 	}
 	return TRUE;
@@ -810,9 +768,8 @@ static BOOL rpc_ext_pull_deletemessages_request(
 	QRF(pext->g_guid(&ppayload->deletemessages.hsession));
 	QRF(pext->g_uint32(&ppayload->deletemessages.hfolder));
 	ppayload->deletemessages.pentryids = pext->anew<BINARY_ARRAY>();
-	if (NULL == ppayload->deletemessages.pentryids) {
+	if (ppayload->deletemessages.pentryids == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_bin_a(ppayload->deletemessages.pentryids));
 	QRF(pext->g_uint32(&ppayload->deletemessages.flags));
 	return TRUE;
@@ -825,9 +782,8 @@ static BOOL rpc_ext_pull_copymessages_request(
 	QRF(pext->g_uint32(&ppayload->copymessages.hsrcfolder));
 	QRF(pext->g_uint32(&ppayload->copymessages.hdstfolder));
 	ppayload->copymessages.pentryids = pext->anew<BINARY_ARRAY>();
-	if (NULL == ppayload->copymessages.pentryids) {
+	if (ppayload->copymessages.pentryids == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_bin_a(ppayload->copymessages.pentryids));
 	QRF(pext->g_uint32(&ppayload->copymessages.flags));
 	return TRUE;
@@ -839,9 +795,8 @@ static BOOL rpc_ext_pull_setreadflags_request(
 	QRF(pext->g_guid(&ppayload->setreadflags.hsession));
 	QRF(pext->g_uint32(&ppayload->setreadflags.hfolder));
 	ppayload->setreadflags.pentryids = pext->anew<BINARY_ARRAY>();
-	if (NULL == ppayload->setreadflags.pentryids) {
+	if (ppayload->setreadflags.pentryids == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_bin_a(ppayload->setreadflags.pentryids));
 	QRF(pext->g_uint32(&ppayload->setreadflags.flags));
 	return TRUE;
@@ -895,11 +850,10 @@ static BOOL rpc_ext_pull_copyfolder_request(
 	QRF(pext->g_bin(&ppayload->copyfolder.entryid));
 	QRF(pext->g_uint32(&ppayload->copyfolder.hdst_folder));
 	QRF(pext->g_uint8(&tmp_byte));
-	if (0 == tmp_byte) {
+	if (tmp_byte == 0)
 		ppayload->copyfolder.new_name = NULL;
-	} else {
+	else
 		QRF(pext->g_str(&ppayload->copyfolder.new_name));
-	}
 	QRF(pext->g_uint32(&ppayload->copyfolder.flags));
 	return TRUE;
 }
@@ -931,9 +885,8 @@ static BOOL rpc_ext_pull_entryidfromsourcekey_request(
 		ppayload->entryidfromsourcekey.pmessage_key = NULL;
 	} else {
 		ppayload->entryidfromsourcekey.pmessage_key = pext->anew<BINARY>();
-		if (NULL == ppayload->entryidfromsourcekey.pmessage_key) {
+		if (ppayload->entryidfromsourcekey.pmessage_key == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_bin(ppayload->entryidfromsourcekey.pmessage_key));
 	}
 	return TRUE;
@@ -958,9 +911,8 @@ static BOOL rpc_ext_pull_storeadvise_request(
 		ppayload->storeadvise.pentryid = NULL;
 	} else {
 		ppayload->storeadvise.pentryid = pext->anew<BINARY>();
-		if (NULL == ppayload->storeadvise.pentryid) {
+		if (ppayload->storeadvise.pentryid == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_bin(ppayload->storeadvise.pentryid));
 	}
 	QRF(pext->g_uint32(&ppayload->storeadvise.event_mask));
@@ -989,9 +941,8 @@ static BOOL rpc_ext_pull_notifdequeue_request(
 	int i;
 	
 	ppayload->notifdequeue.psink = pext->anew<NOTIF_SINK>();
-	if (NULL == ppayload->notifdequeue.psink) {
+	if (ppayload->notifdequeue.psink == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_guid(&ppayload->notifdequeue.psink->hsession));
 	QRF(pext->g_uint16(&ppayload->notifdequeue.psink->count));
 	ppayload->notifdequeue.psink->padvise = pext->anew<ADVISE_INFO>(ppayload->notifdequeue.psink->count);
@@ -1028,9 +979,8 @@ static BOOL rpc_ext_pull_queryrows_request(
 		ppayload->queryrows.prestriction = NULL;
 	} else {
 		ppayload->queryrows.prestriction = pext->anew<RESTRICTION>();
-		if (NULL == ppayload->queryrows.prestriction) {
+		if (ppayload->queryrows.prestriction == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_restriction(ppayload->queryrows.prestriction));
 	}
 	QRF(pext->g_uint8(&tmp_byte));
@@ -1038,9 +988,8 @@ static BOOL rpc_ext_pull_queryrows_request(
 		ppayload->queryrows.pproptags = NULL;
 	} else {
 		ppayload->queryrows.pproptags = pext->anew<PROPTAG_ARRAY>();
-		if (NULL == ppayload->queryrows.pproptags) {
+		if (ppayload->queryrows.pproptags == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_proptag_a(ppayload->queryrows.pproptags));
 	}
 	return TRUE;
@@ -1059,9 +1008,8 @@ static BOOL rpc_ext_pull_setcolumns_request(
 	QRF(pext->g_guid(&ppayload->setcolumns.hsession));
 	QRF(pext->g_uint32(&ppayload->setcolumns.htable));
 	ppayload->setcolumns.pproptags = pext->anew<PROPTAG_ARRAY>();
-	if (NULL == ppayload->setcolumns.pproptags) {
+	if (ppayload->setcolumns.pproptags == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_proptag_a(ppayload->setcolumns.pproptags));
 	QRF(pext->g_uint32(&ppayload->setcolumns.flags));
 	return TRUE;
@@ -1090,9 +1038,8 @@ static BOOL rpc_ext_pull_sorttable_request(
 	QRF(pext->g_guid(&ppayload->sorttable.hsession));
 	QRF(pext->g_uint32(&ppayload->sorttable.htable));
 	ppayload->sorttable.psortset = pext->anew<SORTORDER_SET>();
-	if (NULL == ppayload->sorttable.psortset) {
+	if (ppayload->sorttable.psortset == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_sortorder_set(ppayload->sorttable.psortset));
 	return TRUE;
 }
@@ -1118,9 +1065,8 @@ static BOOL rpc_ext_pull_restricttable_request(
 	QRF(pext->g_guid(&ppayload->restricttable.hsession));
 	QRF(pext->g_uint32(&ppayload->restricttable.htable));
 	ppayload->restricttable.prestriction = pext->anew<RESTRICTION>();
-	if (NULL == ppayload->restricttable.prestriction) {
+	if (ppayload->restricttable.prestriction == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_restriction(ppayload->restricttable.prestriction));
 	QRF(pext->g_uint32(&ppayload->restricttable.flags));
 	return TRUE;
@@ -1133,9 +1079,8 @@ static BOOL rpc_ext_pull_findrow_request(
 	QRF(pext->g_uint32(&ppayload->findrow.htable));
 	QRF(pext->g_uint32(&ppayload->findrow.bookmark));
 	ppayload->findrow.prestriction = pext->anew<RESTRICTION>();
-	if (NULL == ppayload->findrow.prestriction) {
+	if (ppayload->findrow.prestriction == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_restriction(ppayload->findrow.prestriction));
 	QRF(pext->g_uint32(&ppayload->findrow.flags));
 	return TRUE;
@@ -1180,11 +1125,10 @@ static BOOL rpc_ext_pull_getreceivefolder_request(
 	QRF(pext->g_guid(&ppayload->getreceivefolder.hsession));
 	QRF(pext->g_uint32(&ppayload->getreceivefolder.hstore));
 	QRF(pext->g_uint8(&tmp_byte));
-	if (0 == tmp_byte) {
+	if (tmp_byte == 0)
 		ppayload->getreceivefolder.pstrclass = NULL;
-	} else {
+	else
 		QRF(pext->g_str(&ppayload->getreceivefolder.pstrclass));
-	}
 	return TRUE;
 }
 
@@ -1202,9 +1146,8 @@ static BOOL rpc_ext_pull_modifyrecipients_request(
 	QRF(pext->g_uint32(&ppayload->modifyrecipients.hmessage));
 	QRF(pext->g_uint32(&ppayload->modifyrecipients.flags));
 	ppayload->modifyrecipients.prcpt_list = pext->anew<TARRAY_SET>();
-	if (NULL == ppayload->modifyrecipients.prcpt_list) {
+	if (ppayload->modifyrecipients.prcpt_list == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_tarray_set(ppayload->modifyrecipients.prcpt_list));
 	return TRUE;
 }
@@ -1278,9 +1221,8 @@ static BOOL rpc_ext_pull_setpropvals_request(
 	QRF(pext->g_guid(&ppayload->setpropvals.hsession));
 	QRF(pext->g_uint32(&ppayload->setpropvals.hobject));
 	ppayload->setpropvals.ppropvals = pext->anew<TPROPVAL_ARRAY>();
-	if (NULL == ppayload->setpropvals.ppropvals) {
+	if (ppayload->setpropvals.ppropvals == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_tpropval_a(ppayload->setpropvals.ppropvals));
 	return TRUE;
 }
@@ -1297,9 +1239,8 @@ static BOOL rpc_ext_pull_getpropvals_request(
 		ppayload->getpropvals.pproptags = NULL;
 	} else {
 		ppayload->getpropvals.pproptags = pext->anew<PROPTAG_ARRAY>();
-		if (NULL == ppayload->getpropvals.pproptags) {
+		if (ppayload->getpropvals.pproptags == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_proptag_a(ppayload->getpropvals.pproptags));
 	}
 	return TRUE;
@@ -1318,9 +1259,8 @@ static BOOL rpc_ext_pull_deletepropvals_request(
 	QRF(pext->g_guid(&ppayload->deletepropvals.hsession));
 	QRF(pext->g_uint32(&ppayload->deletepropvals.hobject));
 	ppayload->deletepropvals.pproptags = cu_alloc<PROPTAG_ARRAY>();
-	if (NULL == ppayload->deletepropvals.pproptags) {
+	if (ppayload->deletepropvals.pproptags == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_proptag_a(ppayload->deletepropvals.pproptags));
 	return TRUE;
 }
@@ -1356,9 +1296,8 @@ static BOOL rpc_ext_pull_getnamedpropids_request(
 	QRF(pext->g_guid(&ppayload->getnamedpropids.hsession));
 	QRF(pext->g_uint32(&ppayload->getnamedpropids.hstore));
 	ppayload->getnamedpropids.ppropnames = pext->anew<PROPNAME_ARRAY>();
-	if (NULL == ppayload->getnamedpropids.ppropnames) {
+	if (ppayload->getnamedpropids.ppropnames == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_propname_a(ppayload->getnamedpropids.ppropnames));
 	return TRUE;
 }
@@ -1376,9 +1315,8 @@ static BOOL rpc_ext_pull_getpropnames_request(
 	QRF(pext->g_guid(&ppayload->getpropnames.hsession));
 	QRF(pext->g_uint32(&ppayload->getpropnames.hstore));
 	ppayload->getpropnames.ppropids = pext->anew<PROPID_ARRAY>();
-	if (NULL == ppayload->getpropnames.ppropids) {
+	if (ppayload->getpropnames.ppropids == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_propid_a(ppayload->getpropnames.ppropids));
 	return TRUE;
 }
@@ -1396,9 +1334,8 @@ static BOOL rpc_ext_pull_copyto_request(
 	QRF(pext->g_guid(&ppayload->copyto.hsession));
 	QRF(pext->g_uint32(&ppayload->copyto.hsrcobject));
 	ppayload->copyto.pexclude_proptags = pext->anew<PROPTAG_ARRAY>();
-	if (NULL == ppayload->copyto.pexclude_proptags) {
+	if (ppayload->copyto.pexclude_proptags == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_proptag_a(ppayload->copyto.pexclude_proptags));
 	QRF(pext->g_uint32(&ppayload->copyto.hdstobject));
 	QRF(pext->g_uint32(&ppayload->copyto.flags));
@@ -1452,18 +1389,16 @@ static BOOL rpc_ext_pull_configsync_request(
 	QRF(pext->g_uint32(&ppayload->configsync.hctx));
 	QRF(pext->g_uint32(&ppayload->configsync.flags));
 	ppayload->configsync.pstate = pext->anew<BINARY>();
-	if (NULL == ppayload->configsync.pstate) {
+	if (ppayload->configsync.pstate == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_bin(ppayload->configsync.pstate));
 	QRF(pext->g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
 		ppayload->configsync.prestriction = NULL;
 	} else {
 		ppayload->configsync.prestriction = pext->anew<RESTRICTION>();
-		if (NULL == ppayload->configsync.prestriction) {
+		if (ppayload->configsync.prestriction == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_restriction(ppayload->configsync.prestriction));
 	}
 	return TRUE;
@@ -1591,9 +1526,8 @@ static BOOL rpc_ext_pull_configimport_request(
 	QRF(pext->g_uint32(&ppayload->configimport.hctx));
 	QRF(pext->g_uint8(&ppayload->configimport.sync_type));
 	ppayload->configimport.pstate = pext->anew<BINARY>();
-	if (NULL == ppayload->configimport.pstate) {
+	if (ppayload->configimport.pstate == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_bin(ppayload->configimport.pstate));
 	return TRUE;
 }
@@ -1622,9 +1556,8 @@ static BOOL rpc_ext_pull_importmessage_request(
 	if (pext->g_uint32(&ppayload->importmessage.flags) != EXT_ERR_SUCCESS)
 		return FALSE;
 	ppayload->importmessage.pproplist = pext->anew<TPROPVAL_ARRAY>();
-	if (NULL == ppayload->importmessage.pproplist) {
+	if (ppayload->importmessage.pproplist == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_tpropval_a(ppayload->importmessage.pproplist));
 	return TRUE;
 }
@@ -1643,9 +1576,8 @@ static BOOL rpc_ext_pull_importfolder_request(
 	if (pext->g_uint32(&ppayload->importfolder.hctx) != EXT_ERR_SUCCESS)
 		return FALSE;
 	ppayload->importfolder.pproplist = pext->anew<TPROPVAL_ARRAY>();
-	if (NULL == ppayload->importfolder.pproplist) {
+	if (ppayload->importfolder.pproplist == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_tpropval_a(ppayload->importfolder.pproplist));
 	return TRUE;
 }
@@ -1659,9 +1591,8 @@ static BOOL rpc_ext_pull_importdeletion_request(
 	if (pext->g_uint32(&ppayload->importdeletion.flags) != EXT_ERR_SUCCESS)
 		return FALSE;
 	ppayload->importdeletion.pbins = pext->anew<BINARY_ARRAY>();
-	if (NULL == ppayload->importdeletion.pbins) {
+	if (ppayload->importdeletion.pbins == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_bin_a(ppayload->importdeletion.pbins));
 	return TRUE;
 }
@@ -1672,9 +1603,8 @@ static BOOL rpc_ext_pull_importreadstates_request(
 	QRF(pext->g_guid(&ppayload->importreadstates.hsession));
 	QRF(pext->g_uint32(&ppayload->importreadstates.hctx));
 	ppayload->importreadstates.pstates = pext->anew<STATE_ARRAY>();
-	if (NULL == ppayload->importreadstates.pstates) {
+	if (ppayload->importreadstates.pstates == nullptr)
 		return FALSE;
-	}
 	return rpc_ext_pull_state_array(pext,
 		ppayload->importreadstates.pstates);
 }
@@ -1710,18 +1640,16 @@ static BOOL rpc_ext_pull_setsearchcriteria_request(
 	QRF(pext->g_uint32(&ppayload->setsearchcriteria.hfolder));
 	QRF(pext->g_uint32(&ppayload->setsearchcriteria.flags));
 	ppayload->setsearchcriteria.pfolder_array = pext->anew<BINARY_ARRAY>();
-	if (NULL == ppayload->setsearchcriteria.pfolder_array) {
+	if (ppayload->setsearchcriteria.pfolder_array == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_bin_a(ppayload->setsearchcriteria.pfolder_array));
 	QRF(pext->g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
 		ppayload->setsearchcriteria.prestriction = NULL;
 	} else {
 		ppayload->setsearchcriteria.prestriction = pext->anew<RESTRICTION>();
-		if (NULL == ppayload->setsearchcriteria.prestriction) {
+		if (ppayload->setsearchcriteria.prestriction == nullptr)
 			return FALSE;
-		}
 		QRF(pext->g_restriction(ppayload->setsearchcriteria.prestriction));
 	}
 	return TRUE;
@@ -1749,9 +1677,8 @@ static BOOL rpc_ext_pull_rfc822tomessage_request(
 	if (pext->g_uint32(&ppayload->rfc822tomessage.hmessage) != EXT_ERR_SUCCESS)
 		return FALSE;
 	ppayload->rfc822tomessage.peml_bin = pext->anew<BINARY>();
-	if (NULL == ppayload->rfc822tomessage.peml_bin) {
+	if (ppayload->rfc822tomessage.peml_bin == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_bin(ppayload->rfc822tomessage.peml_bin));
 	return TRUE;
 }
@@ -1778,9 +1705,8 @@ static BOOL rpc_ext_pull_icaltomessage_request(
 	if (pext->g_uint32(&ppayload->icaltomessage.hmessage) != EXT_ERR_SUCCESS)
 		return FALSE;
 	ppayload->icaltomessage.pical_bin = pext->anew<BINARY>();
-	if (NULL == ppayload->icaltomessage.pical_bin) {
+	if (ppayload->icaltomessage.pical_bin == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_bin(ppayload->icaltomessage.pical_bin));
 	return TRUE;
 }
@@ -1807,9 +1733,8 @@ static BOOL rpc_ext_pull_vcftomessage_request(
 	if (pext->g_uint32(&ppayload->vcftomessage.hmessage) != EXT_ERR_SUCCESS)
 		return FALSE;
 	ppayload->vcftomessage.pvcf_bin = pext->anew<BINARY>();
-	if (NULL == ppayload->vcftomessage.pvcf_bin) {
+	if (ppayload->vcftomessage.pvcf_bin == nullptr)
 		return FALSE;
-	}
 	QRF(pext->g_bin(ppayload->vcftomessage.pvcf_bin));
 	return TRUE;
 }
