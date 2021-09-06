@@ -95,7 +95,8 @@ int main(int argc, const char **argv) try
 	exmdb_rpc_free = [](void *) {};
 	exmdb_rpc_exec = exmdb_client_do_rpc;
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt(g_options_table, &argc, &argv,
+	    HXOPT_USAGEONERR | HXOPT_KEEP_ARGV) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	if (opt_show_version) {
 		printf("version: %s\n", PROJECT_VERSION);

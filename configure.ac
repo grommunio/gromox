@@ -67,7 +67,7 @@ AC_ARG_WITH([unitdir],
 AC_SUBST([unitdir])
 
 PKG_PROG_PKG_CONFIG
-PKG_CHECK_MODULES([HX], [libHX >= 1.10])
+PKG_CHECK_MODULES([HX], [libHX >= 3.27])
 PKG_CHECK_MODULES([crypto], [libcrypto])
 PKG_CHECK_MODULES([gumbo], [gumbo])
 PKG_CHECK_MODULES([jsoncpp], [jsoncpp >= 1.4.0], [], [

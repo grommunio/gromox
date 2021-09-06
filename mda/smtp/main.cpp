@@ -69,7 +69,8 @@ int main(int argc, const char **argv) try
 	smtp_param scfg;
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
+	if (HX_getopt(g_options_table, &argc, &argv,
+	    HXOPT_USAGEONERR | HXOPT_KEEP_ARGV) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	struct sigaction sact{};
 	sigemptyset(&sact.sa_mask);
