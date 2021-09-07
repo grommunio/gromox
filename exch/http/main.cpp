@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
 #include <atomic>
+#include <cassert>
 #include <cerrno>
 #include <cstring>
 #include <memory>
@@ -84,29 +85,11 @@ static void term_handler(int signo);
 int main(int argc, const char **argv)
 {
 	struct rlimit rl;
-	const char *str_val;
 	char temp_buff[256];
-	uint64_t hpm_max_size;
-	size_t max_request_mem;
-	int retcode = EXIT_FAILURE, block_interval_auth;
-	int console_server_port;
-	uint64_t hpm_cache_size;
-	int fastcgi_exec_timeout;
-	uint64_t fastcgi_max_size;
+	int retcode = EXIT_FAILURE;
 	struct passwd *puser_pass;
-	uint64_t fastcgi_cache_size;
-	const char *hpm_plugin_path;
 	char host_name[256], *ptoken;
-	const char *proc_plugin_path;
-	const char *service_plugin_path;
-	unsigned int context_num, context_aver_mem;
-	int http_auth_times, http_conn_timeout;
-	const char *console_server_ip, *user_name;
-	int listen_port, listen_ssl_port, mss_size;
 	const char *dns_name, *dns_domain, *netbios_name;
-	unsigned int thread_init_num, thread_charge_num;
-	int http_support_ssl;
-	const char *certificate_path, *cb_passwd, *private_key_path;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
@@ -130,26 +113,41 @@ int main(int argc, const char **argv)
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
 
-	if (!resource_get_integer("LISTEN_PORT", &listen_port)) {
-		listen_port = 80; 
-		resource_set_integer("LISTEN_PORT", listen_port);
-	}
-	printf("[system]: system listening port %d\n", listen_port);
+	static const cfg_directive cfg_default_values[] = {
+		{"block_interval_auths", "1min", CFG_TIME},
+		{"config_file_path", PKGSYSCONFDIR "/http:" PKGSYSCONFDIR},
+		{"console_server_ip", "::1"},
+		{"context_average_mem", "256K", CFG_SIZE},
+		{"context_num", "400", CFG_SIZE},
+		{"data_file_path", PKGDATADIR "/http:" PKGDATADIR},
+		{"fastcgi_cache_size", "256K", CFG_SIZE},
+		{"fastcgi_exec_timeout", "10min", CFG_TIME},
+		{"fastcgi_max_size", "4M", CFG_SIZE},
+		{"hpm_cache_size", "512K", CFG_SIZE},
+		{"hpm_max_size", "4M", CFG_SIZE},
+		{"hpm_plugin_ignore_errors", "false", CFG_BOOL},
+		{"hpm_plugin_path", PKGLIBDIR},
+		{"http_auth_times", "10", CFG_SIZE},
+		{"http_conn_timeout", "3min", CFG_TIME},
+		{"http_support_ssl", "false", CFG_BOOL},
+		{"listen_port", "80"},
+		{"listen_ssl_port", "0"},
+		{"proc_plugin_ignore_errors", "false", CFG_BOOL},
+		{"proc_plugin_path", PKGLIBDIR},
+		{"request_max_mem", "4M", CFG_SIZE},
+		{"running_identity", "gromox"},
+		{"service_plugin_ignore_errors", "false", CFG_BOOL},
+		{"service_plugin_path", PKGLIBDIR},
+		{"state_path", PKGSTATEDIR},
+		{"tcp_max_segment", "0", CFG_SIZE},
+		{"thread_charge_num", "20", CFG_SIZE},
+		{"thread_init_num", "5", CFG_SIZE},
+		{"user_default_lang", "en"},
+		{},
+	};
+	config_file_apply(*g_config_file, cfg_default_values);
 
-	if (!resource_get_integer("LISTEN_SSL_PORT", &listen_ssl_port))
-		listen_ssl_port = 0;
-	
-	if (!resource_get_integer("TCP_MAX_SEGMENT", &mss_size)) {
-		mss_size = 0;
-	} else {
-		printf("[system]: maximum TCP segment size is %d\n", mss_size);
-	}
-
-	str_val = resource_get_string("user_default_lang");
-	if (str_val == nullptr)
-		resource_set_string("user_default_lang", "en");
-
-	str_val = resource_get_string("HOST_ID");
+	auto str_val = resource_get_string("HOST_ID");
 	if (str_val == NULL) {
 		memset(temp_buff, 0, arsizeof(temp_buff));
 		gethostname(temp_buff, arsizeof(temp_buff));
@@ -181,25 +179,9 @@ int main(int argc, const char **argv)
 		*ptoken = '\0';
 		dns_domain = ptoken + 1;
 	}
-	
-	user_name = resource_get_string("RUNNING_IDENTITY");
-	if (user_name == NULL)
-		user_name = "gromox";
-	if (*user_name == '\0')
-		printf("[system]: running identity will not be changed\n");
-	else
-		printf("[system]: running identity of process will be %s\n", user_name);
 
-	if (!resource_get_uint("CONTEXT_NUM", &context_num)) {
-		context_num = 400;
-		resource_set_integer("CONTEXT_NUM", context_num);
-	}
-	printf("[system]: total contexts number is %d\n", context_num);
-
-	if (!resource_get_uint("THREAD_CHARGE_NUM", &thread_charge_num)) {
-		thread_charge_num = 20;
-		resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
-	} else {
+	unsigned int thread_charge_num = 20;
+	if (g_config_file->get_uint("thread_charge_num", &thread_charge_num)) {
 		if (thread_charge_num < 4) {
 			thread_charge_num = 40;
 			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
@@ -207,14 +189,13 @@ int main(int argc, const char **argv)
 			thread_charge_num = ((int)(thread_charge_num / 4)) * 4;
 			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 		}
-	}
 	printf("[system]: one thread is in charge of %d contexts\n",
 		thread_charge_num);
-	
-	if (!resource_get_uint("THREAD_INIT_NUM", &thread_init_num)) {
-		thread_init_num = 5;
-		resource_set_integer("THREAD_INIT_NUM", thread_init_num);
 	}
+
+	unsigned int context_num = 400, thread_init_num = 5, context_aver_mem = 4;
+	g_config_file->get_uint("context_num", &context_num);
+	g_config_file->get_uint("thread_init_num", &thread_init_num);
 	if (thread_init_num * thread_charge_num > context_num) {
 		thread_init_num = context_num / thread_charge_num;
 		if (0 == thread_init_num) {
@@ -229,10 +210,7 @@ int main(int argc, const char **argv)
 		thread_init_num);
 
 	str_val = resource_get_string("CONTEXT_AVERAGE_MEM");
-	if (str_val == NULL) {
-		context_aver_mem = 4;
-		resource_set_string("CONTEXT_AVERAGE_MEM", "256K");
-	} else {
+	if (str_val != nullptr) {
 		context_aver_mem = atobyte(str_val)/(64*1024);
 		if (context_aver_mem <= 2) {
 			context_aver_mem = 4;
@@ -242,11 +220,9 @@ int main(int argc, const char **argv)
 	bytetoa(context_aver_mem*64*1024, temp_buff);
 	printf("[http]: context average memory is %s\n", temp_buff);
 	
+	int http_conn_timeout = 180;
 	str_val = resource_get_string("HTTP_CONN_TIMEOUT");
-	if (str_val == NULL) {
-		http_conn_timeout = 180;
-		resource_set_string("HTTP_CONN_TIMEOUT", "3minutes");
-	} else {
+	if (str_val != nullptr) {
 		http_conn_timeout = atoitvl(str_val);
 		if (http_conn_timeout < 30) {
 			http_conn_timeout = 180;
@@ -256,10 +232,8 @@ int main(int argc, const char **argv)
 	itvltoa(http_conn_timeout, temp_buff);
 	printf("[http]: http socket read write time out is %s\n", temp_buff);
  
-	if (!resource_get_integer("HTTP_AUTH_TIMES", &http_auth_times)) {
-		http_auth_times = 10;
-		resource_set_integer("HTTP_AUTH_TIMES", http_auth_times);
-	} else {
+	int http_auth_times = 3;
+	if (g_config_file->get_int("http_auth_times", &http_auth_times)) {
 		if (http_auth_times <= 0) {
 			http_auth_times = 3;
 			resource_set_integer("HTTP_AUTH_TIMES", http_auth_times);
@@ -268,11 +242,9 @@ int main(int argc, const char **argv)
 	printf("[http]: maximum authentification failure times is %d\n", 
 			http_auth_times);
 
+	int block_interval_auth = 60;
 	str_val = resource_get_string("BLOCK_INTERVAL_AUTHS");
-	if (str_val == NULL) {
-		block_interval_auth = 60;
-		resource_set_string("BLOCK_INTERVAL_AUTHS", "1 minute");
-	} else {
+	if (str_val != nullptr) {
 		block_interval_auth = atoitvl(str_val);
 		if (block_interval_auth <= 0) {
 			block_interval_auth = 60;
@@ -283,26 +255,13 @@ int main(int argc, const char **argv)
 	printf("[http]: block client %s when authentification failure times "
 			"is exceeded\n", temp_buff);
 	
-	str_val = resource_get_string("HTTP_SUPPORT_SSL");
-	if (str_val == NULL) {
-		http_support_ssl = FALSE;
-		resource_set_string("HTTP_SUPPORT_SSL", "FALSE");
-	} else {
-		if (0 == strcasecmp(str_val, "FALSE")) {
-			http_support_ssl = FALSE;
-		} else if (0 == strcasecmp(str_val, "TRUE")) {
-			http_support_ssl = TRUE;
-		} else {
-			http_support_ssl = FALSE;
-			resource_set_string("HTTP_SUPPORT_SSL", "FALSE");
-		}
-	}
-	certificate_path = resource_get_string("HTTP_CERTIFICATE_PATH");
-	cb_passwd = resource_get_string("HTTP_CERTIFICATE_PASSWD");
-	private_key_path = resource_get_string("HTTP_PRIVATE_KEY_PATH");
-	if (TRUE == http_support_ssl) {
+	auto http_support_ssl = parse_bool(g_config_file->get_value("http_support_ssl"));
+	auto certificate_path = g_config_file->get_value("http_certificate_path");
+	auto cb_passwd = g_config_file->get_value("http_certificate_passwd");
+	auto private_key_path = g_config_file->get_value("http_private_key_path");
+	if (http_support_ssl) {
 		if (NULL == certificate_path || NULL == private_key_path) {
-			http_support_ssl = FALSE;
+			http_support_ssl = false;
 			printf("[http]: turn off TLS support because certificate or "
 				"private key path is empty\n");
 		} else {
@@ -312,19 +271,17 @@ int main(int argc, const char **argv)
 		printf("[http]: http doesn't support TLS mode\n");
 	}
 
-	if (FALSE == http_support_ssl && listen_ssl_port > 0) {
+	int listen_ssl_port = 0;
+	resource_get_integer("listen_ssl_port", &listen_ssl_port);
+	if (!http_support_ssl && listen_ssl_port > 0)
 		listen_ssl_port = 0;
-	}
-
 	if (listen_ssl_port > 0) {
 		printf("[system]: system SSL listening port %d\n", listen_ssl_port);
 	}
 	
+	size_t max_request_mem = 4U << 20;
 	str_val = resource_get_string("REQUEST_MAX_MEM");
-	if (str_val == NULL) {
-		max_request_mem = 4 << 20;
-		resource_set_string("REQUEST_MAX_MEM", "4M");
-	} else {
+	if (str_val != nullptr) {
 		max_request_mem = atobyte(str_val);
 		if (max_request_mem < 1024*1024) {
 			max_request_mem = 1024*1024;
@@ -334,17 +291,7 @@ int main(int argc, const char **argv)
 	bytetoa(max_request_mem, temp_buff);
 	printf("[pdu_processor]: maximum request memory is %s\n", temp_buff);
 
-	proc_plugin_path = resource_get_string("PROC_PLUGIN_PATH");
-	if (proc_plugin_path == NULL) {
-		proc_plugin_path = PKGLIBDIR;
-		resource_set_string("PROC_PLUGIN_PATH", proc_plugin_path);
-	}
-	const char *str_value = resource_get_string("PROC_PLUGIN_IGNORE_ERRORS");
-	bool procplug_ignerr = parse_bool(str_value);
-	resource_set_string("PROC_PLUGIN_IGNORE_ERRORS", procplug_ignerr ? "true" : "false");
-
-	printf("[pdu_processor]: proc plugins path is %s\n", proc_plugin_path);
-	str_value = resource_get_string("SERVICE_PLUGIN_LIST");
+	auto str_value = g_config_file->get_value("service_plugin_list");
 	const char *const *proc_plugin_list = NULL;
 	if (str_value != NULL) {
 		proc_plugin_list = const_cast<const char * const *>(read_file_by_line(str_value));
@@ -353,16 +300,7 @@ int main(int argc, const char **argv)
 			return EXIT_FAILURE;
 		}
 	}
-	str_value = resource_get_string("SERVICE_PLUGIN_IGNORE_ERRORS");
-	bool svcplug_ignerr = parse_bool(str_value);
-	resource_set_string("SERVICE_PLUGIN_IGNORE_ERRORS", svcplug_ignerr ? "true" : "false");
 	
-	hpm_plugin_path = resource_get_string("HPM_PLUGIN_PATH");
-	if (hpm_plugin_path == NULL) {
-		hpm_plugin_path = PKGLIBDIR;
-		resource_set_string("HPM_PLUGIN_PATH", hpm_plugin_path);
-	}
-	printf("[hpm_processor]: hpm plugins path is %s\n", hpm_plugin_path);
 	str_value = resource_get_string("HPM_PLUGIN_LIST");
 	const char *const *hpm_plugin_list = NULL;
 	if (str_value != NULL) {
@@ -372,15 +310,10 @@ int main(int argc, const char **argv)
 			return EXIT_FAILURE;
 		}
 	}
-	str_value = resource_get_string("HPM_PLUGIN_IGNORE_ERRORS");
-	bool hpmplug_ignerr = parse_bool(str_value);
-	resource_set_string("HPM_PLUGIN_IGNORE_ERRORS", hpmplug_ignerr ? "true" : "false");
 	
+	uint64_t hpm_cache_size = 256U << 10;
 	str_val = resource_get_string("HPM_CACHE_SIZE");
-	if (str_val == NULL) {
-		hpm_cache_size = 512 << 10;
-		resource_set_string("HPM_CACHE_SIZE", "512K");
-	} else {
+	if (str_val != nullptr) {
 		hpm_cache_size = atobyte(str_val);
 		if (hpm_cache_size < 64*1024) {
 			hpm_cache_size = 256*1024;
@@ -390,11 +323,9 @@ int main(int argc, const char **argv)
 	bytetoa(hpm_cache_size, temp_buff);
 	printf("[hpm_processor]: fastcgi cache size is %s\n", temp_buff);
 	
+	uint64_t hpm_max_size = 4U << 20;
 	str_val = resource_get_string("HPM_MAX_SIZE");
-	if (str_val == NULL) {
-		hpm_max_size = 4 << 20;
-		resource_set_string("HPM_MAX_SIZE", "4M");
-	} else {
+	if (str_val != nullptr) {
 		hpm_max_size = atobyte(str_val);
 		if (hpm_max_size < 64*1024) {
 			hpm_max_size = 1024*1024;
@@ -404,12 +335,6 @@ int main(int argc, const char **argv)
 	bytetoa(hpm_max_size, temp_buff);
 	printf("[hpm_processor]: hpm maximum size is %s\n", temp_buff);
 
-	service_plugin_path = resource_get_string("SERVICE_PLUGIN_PATH");
-	if (service_plugin_path == NULL) {
-		service_plugin_path = PKGLIBDIR;
-		resource_set_string("SERVICE_PLUGIN_PATH", service_plugin_path);
-	}
-	printf("[service]: service plugins path is %s\n", service_plugin_path);
 	str_value = resource_get_string("SERVICE_PLUGIN_LIST");
 	const char *const *service_plugin_list = NULL;
 	if (str_value != NULL) {
@@ -420,33 +345,8 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	const char *config_dir = str_val = resource_get_string("CONFIG_FILE_PATH");
-	if (str_val == NULL) {
-		config_dir = str_val = PKGSYSCONFDIR "/http:" PKGSYSCONFDIR;
-		resource_set_string("CONFIG_FILE_PATH", str_val);
-	}
-	printf("[system]: config files path is %s\n", str_val);
-	
-	const char *data_dir = str_val = resource_get_string("DATA_FILE_PATH");
-	if (str_val == NULL) {
-		data_dir = str_val = PKGDATADIR "/http:" PKGDATADIR;
-		resource_set_string("DATA_FILE_PATH", str_val);
-	}
-
-	const char *state_dir = str_val = resource_get_string("STATE_PATH");
-	if (str_val == nullptr) {
-		state_dir = PKGSTATEDIR;
-		resource_set_string("STATE_PATH", state_dir);
-	}
-
-	printf("[system]: data files path is %s\n", data_dir);
-	printf("[system]: state path is %s\n", state_dir);
-	
-	console_server_ip = resource_get_string("CONSOLE_SERVER_IP");
-	if (console_server_ip == NULL) {
-		console_server_ip = "::1";
-		resource_set_string("CONSOLE_SERVER_IP", console_server_ip);
-	}
+	auto console_server_ip = g_config_file->get_value("console_server_ip");
+	int console_server_port = 8899;
 	if (!resource_get_integer("CONSOLE_SERVER_PORT", &console_server_port)) {
 		console_server_port = 8899; 
 		resource_set_integer("CONSOLE_SERVER_PORT", console_server_port);
@@ -454,11 +354,9 @@ int main(int argc, const char **argv)
 	printf("[console_server]: console server address is [%s]:%d\n",
 	       *console_server_ip == '\0' ? "*" : console_server_ip, console_server_port);
 	
+	uint64_t fastcgi_cache_size = 256U << 10;
 	str_val = resource_get_string("FASTCGI_CACHE_SIZE");
-	if (str_val == NULL) {
-		fastcgi_cache_size = 256*1024;
-		resource_set_string("FASTCGI_CACHE_SIZE", "256K");
-	} else {
+	if (str_val != nullptr) {
 		fastcgi_cache_size = atobyte(str_val);
 		if (fastcgi_cache_size < 64*1024) {
 			fastcgi_cache_size = 256*1024;
@@ -468,11 +366,9 @@ int main(int argc, const char **argv)
 	bytetoa(fastcgi_cache_size, temp_buff);
 	printf("[mod_fastcgi]: fastcgi cache size is %s\n", temp_buff);
 	
+	uint64_t fastcgi_max_size = 4U << 20;
 	str_val = resource_get_string("FASTCGI_MAX_SIZE");
-	if (str_val == NULL) {
-		fastcgi_max_size = 4 << 20;
-		resource_set_string("FASTCGI_MAX_SIZE", "4M");
-	} else {
+	if (str_val != nullptr) {
 		fastcgi_max_size = atobyte(str_val);
 		if (fastcgi_max_size < 64*1024) {
 			fastcgi_max_size = 1024*1024;
@@ -482,11 +378,9 @@ int main(int argc, const char **argv)
 	bytetoa(fastcgi_max_size, temp_buff);
 	printf("[mod_fastcgi]: fastcgi maximum size is %s\n", temp_buff);
 	
+	int fastcgi_exec_timeout = 600;
 	str_val = resource_get_string("FASTCGI_EXEC_TIMEOUT");
-	if (str_val == NULL) {
-		fastcgi_exec_timeout = 600;
-		resource_set_string("FASTCGI_EXEC_TIMEOUT", "10minutes");
-	} else {
+	if (str_val != NULL) {
 		fastcgi_exec_timeout = atoitvl(str_val);
 		if (fastcgi_exec_timeout < 60) {
 			fastcgi_exec_timeout = 600;
@@ -495,6 +389,9 @@ int main(int argc, const char **argv)
 	}
 	itvltoa(fastcgi_exec_timeout, temp_buff);
 	printf("[http]: fastcgi excution time out is %s\n", temp_buff);
+	int listen_port = 0, mss_size = 0;
+	g_config_file->get_int("listen_port", &listen_port);
+	g_config_file->get_int("tcp_max_segment", &mss_size);
 	listener_init(listen_port, listen_ssl_port, mss_size);
 																			
 	if (0 != listener_run()) {
@@ -517,7 +414,8 @@ int main(int argc, const char **argv)
 		}
 		printf("[system]: set file limitation to %d\n", 5*context_num + 256);
 	}
-	if (*user_name != '\0') {
+	auto user_name = g_config_file->get_value("running_identity");
+	if (user_name != nullptr && *user_name != '\0') {
 		puser_pass = getpwnam(user_name);
 		if (NULL == puser_pass) {
 			printf("[system]: no such user \"%s\"\n", user_name);
@@ -533,9 +431,13 @@ int main(int argc, const char **argv)
 			return EXIT_FAILURE;
 		}
 	}
-	service_init({service_plugin_path, config_dir, data_dir, state_dir,
+	service_init({g_config_file->get_value("service_plugin_path"),
+		g_config_file->get_value("config_file_path"),
+		g_config_file->get_value("data_file_path"),
+		g_config_file->get_value("state_path"),
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
-		svcplug_ignerr, context_num, "http"});
+		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
+		context_num, "http"});
 	if (!service_register_service("ndr_stack_alloc",
 	    reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc),
 	    typeid(*pdu_processor_ndr_stack_alloc))) {
@@ -572,9 +474,10 @@ int main(int argc, const char **argv)
 	auto cleanup_10 = make_scope_exit(blocks_allocator_stop);
 
 	pdu_processor_init(context_num, PDU_PROCESSOR_RATIO, netbios_name,
-		dns_name, dns_domain, TRUE, max_request_mem, proc_plugin_path,
+		dns_name, dns_domain, TRUE, max_request_mem,
+		g_config_file->get_value("proc_plugin_path"),
 		proc_plugin_list != NULL ? proc_plugin_list : g_dfl_proc_plugins,
-		procplug_ignerr);
+		parse_bool(g_config_file->get_value("proc_plugin_ignore_errors")));
 	printf("---------------------------- proc plugins begin "
 		   "----------------------------\n");
 	if (0 != pdu_processor_run()) {
@@ -589,9 +492,10 @@ int main(int argc, const char **argv)
 	auto cleanup_11 = make_scope_exit(pdu_processor_free);
 	auto cleanup_12 = make_scope_exit(pdu_processor_stop);
 
-	hpm_processor_init(context_num, hpm_plugin_path,
+	hpm_processor_init(context_num, g_config_file->get_value("hpm_plugin_path"),
 		hpm_plugin_list != NULL ? hpm_plugin_list : g_dfl_hpm_plugins,
-		hpm_cache_size, hpm_max_size, hpmplug_ignerr);
+		hpm_cache_size, hpm_max_size,
+		parse_bool(g_config_file->get_value("hpm_plugin_ignore_errors")));
 	printf("---------------------------- hpm plugins begin "
 		   "----------------------------\n");
 	if (0 != hpm_processor_run()) {
@@ -628,7 +532,7 @@ int main(int argc, const char **argv)
 	auto cleanup_20 = make_scope_exit(mod_cache_stop);
 
 	http_parser_init(context_num, http_conn_timeout,
-		http_auth_times, block_interval_auth, http_support_ssl,
+		http_auth_times, block_interval_auth, http_support_ssl ? TRUE : false,
 		certificate_path, cb_passwd, private_key_path);  
  
 	if (0 != http_parser_run()) { 
