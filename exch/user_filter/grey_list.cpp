@@ -16,6 +16,8 @@
 #include <fcntl.h>
 #include <cstdio>
 
+using namespace gromox;
+
 DECLARE_API(extern);
 
 namespace {

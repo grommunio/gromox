@@ -35,6 +35,8 @@
 
 #define DEF_MODE				S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
+using namespace gromox;
+
 static char g_org_name[256];
 static pthread_key_t g_alloc_key;
 static STR_HASH_TABLE *g_str_hash;

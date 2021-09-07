@@ -24,7 +24,6 @@ void swap_string(char *dest, const char *src);
 char* search_string(const char *haystack, const char *needle, 
     size_t haystacklen);
 char* itvltoa(long interval, char *string);
-long atoitvl(const char *string);
 char* bytetoa(uint64_t byte, char *string);
 uint64_t atobyte(const char *string);
 extern GX_EXPORT const char *crypt_wrapper(const char *);
@@ -52,3 +51,9 @@ extern GX_EXPORT std::string bin2hex(const void *, size_t);
 template<typename T> std::string bin2hex(const T &x) { return bin2hex(&x, sizeof(x)); }
 extern GX_EXPORT std::string hex2bin(const char *);
 extern GX_EXPORT void rfc1123_dstring(char *, size_t, time_t = 0);
+
+namespace gromox {
+
+extern GX_EXPORT long atoitvl(const char *);
+
+}

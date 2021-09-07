@@ -14,6 +14,8 @@
 #include <cstring>
 #include <cstdio>
 
+using namespace gromox;
+
 enum {
 	nspiBind = 0,
 	nspiUnbind = 1,

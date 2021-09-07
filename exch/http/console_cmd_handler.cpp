@@ -22,6 +22,8 @@
 #define PLUG_BUFFER_SIZE        4096*4
 #define TALK_BUFFER_LEN         65536
 
+using namespace gromox;
+
 static char g_plugname_buffer[PLUG_BUFFER_SIZE + 2];
 static int g_plugname_buffer_size;
 

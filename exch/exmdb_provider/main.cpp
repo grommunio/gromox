@@ -20,6 +20,7 @@
 #include <cstdio>
 
 using namespace std::string_literals;
+using namespace gromox;
 
 DECLARE_API();
 

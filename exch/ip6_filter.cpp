@@ -17,6 +17,7 @@
 #include <gromox/util.hpp>
 
 using namespace std::string_literals;
+using namespace gromox;
 using time_point = std::chrono::time_point<std::chrono::steady_clock>;
 using duration = decltype(time_point() - time_point());
 

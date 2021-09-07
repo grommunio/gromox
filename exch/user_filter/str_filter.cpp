@@ -20,6 +20,8 @@
 #include <cstdarg>
 #include <cstring>
 
+using namespace gromox;
+
 enum{
 	STR_FILTER_TEMP_DENY,
 	STR_FILTER_GREY_ALLOW,

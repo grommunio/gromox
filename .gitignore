@@ -53,4 +53,8 @@ Makefile.in
 /tests/bodyconv
 /tests/cryptest
 /tests/icalparse
+/tests/utiltest
 /tests/zendfake
+/tests/*.log
+/tests/*.trs
+/test-suite.log

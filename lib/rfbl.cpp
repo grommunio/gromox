@@ -17,6 +17,7 @@
 #include <spawn.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/scope.hpp>
@@ -318,6 +319,56 @@ std::string resource_parse_stcode_line(const char *src)
 	out.append(ptr);
 	out.append("\r\n", 2);
 	return out;
+}
+
+static const struct {
+	const char *suffix;
+	unsigned int len, mult;
+} time_suffix[] = {
+	{"seconds", 7, 1},
+	{"second", 6, 1},
+	{"sec", 3, 1},
+	{"s", 1, 1},
+	{"minutes", 7, 60},
+	{"minute", 6, 60},
+	{"min", 3, 60},
+	{"m", 1, 60},
+	{"hours", 5, 3600},
+	{"hour", 4, 3600},
+	{"h", 1, 3600},
+	{"days", 4, 86400},
+	{"day", 3, 86400},
+	{"d", 1, 86400},
+};
+
+long atoitvl(const char *s)
+{
+	long result = 0;
+	do {
+		while (HX_isspace(*s))
+			++s;
+		if (*s == '\0')
+			break;
+		unsigned int mult = 0;
+		char *end;
+		auto v = strtoul(s, &end, 10);
+		if (s == end)
+			return -1;
+		s = end;
+		while (HX_isspace(*s))
+			++s;
+		for (const auto &e : time_suffix) {
+			if (strncmp(s, e.suffix, e.len) == 0) {
+				mult = e.mult;
+				s += e.len;
+				break;
+			}
+		}
+		if (mult == 0)
+			return -1;
+		result += v * mult;
+	} while (true);
+	return result;
 }
 
 }

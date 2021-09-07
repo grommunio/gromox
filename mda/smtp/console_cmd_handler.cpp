@@ -18,6 +18,8 @@
 #define PLUG_BUFFER_SIZE        4096*4
 #define TALK_BUFFER_LEN         65536
 
+using namespace gromox;
+
 static char g_server_help[] =
 	"250 SMTP DAEMON server help information:\r\n"
 	"\treturn-code    --return code operating\r\n"
