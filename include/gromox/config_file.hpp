@@ -8,6 +8,17 @@
 #define resource_get_uint(k, vp) g_config_file->get_uint((k), (vp))
 #define resource_set_integer(k, v) g_config_file->set_int((k), (v))
 
+enum cfg_flags {
+	CFG_BOOL = 1U << 0,
+	CFG_SIZE = 1U << 1,
+	CFG_TIME = 1U << 2,
+};
+
+struct cfg_directive {
+	const char *key = nullptr, *deflt = nullptr;
+	unsigned int flags = 0;
+};
+
 struct CONFIG_ENTRY {
     char keyname[256];
     char value[256];
@@ -32,3 +43,9 @@ struct GX_EXPORT CONFIG_FILE {
 extern GX_EXPORT std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename);
 extern GX_EXPORT std::shared_ptr<CONFIG_FILE> config_file_initd(const char *basename, const char *searchdirs = nullptr);
 extern GX_EXPORT std::shared_ptr<CONFIG_FILE> config_file_prg(const char *priority_location, const char *fallback_location_basename);
+
+namespace gromox {
+
+extern void config_file_apply(CONFIG_FILE &, const cfg_directive *);
+
+}

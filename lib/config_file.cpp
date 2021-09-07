@@ -349,3 +349,38 @@ BOOL CONFIG_FILE::set_int(const char *key, int value)
 	snprintf(buf, arsizeof(buf), "%d", value);
 	return set_value(key, buf);
 }
+
+namespace gromox {
+
+static void config_file_apply_1(CONFIG_FILE &cfg, const cfg_directive &d)
+{
+	auto v = cfg.get_value(d.key);
+	if (v == nullptr)
+		v = d.deflt;
+	if (d.flags & CFG_BOOL) {
+		cfg.set_value(d.key, parse_bool(v) ? "TRUE" : "FALSE");
+		return;
+	}
+	if (d.flags & CFG_TIME) {
+		char out[HXSIZEOF_Z64];
+		snprintf(out, arsizeof(out), "%ld", atoitvl(v));
+		cfg.set_value(d.key, out);
+		return;
+	}
+	if (d.flags & CFG_SIZE) {
+		char out[HXSIZEOF_Z64];
+		snprintf(out, arsizeof(out), "%llu",
+			 static_cast<unsigned long long>(atobyte(v)));
+		cfg.set_value(d.key, out);
+		return;
+	}
+	cfg.set_value(d.key, v);
+}
+
+void config_file_apply(CONFIG_FILE &cfg, const cfg_directive *d)
+{
+	for (; d->key != nullptr; ++d)
+		config_file_apply_1(cfg, *d);
+}
+
+}
