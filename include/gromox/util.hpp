@@ -46,14 +46,14 @@ int uudecode(const char *in, size_t inlen, int *pmode,
 int uuencode(int mode, const char *file_name, const char *in,
 	size_t inlen, char *out, size_t outmax, size_t *outlen);
 extern void debug_info(const char *format, ...);
-extern bool parse_bool(const char *s);
-extern GX_EXPORT std::string bin2hex(const void *, size_t);
-template<typename T> std::string bin2hex(const T &x) { return bin2hex(&x, sizeof(x)); }
-extern GX_EXPORT std::string hex2bin(const char *);
-extern GX_EXPORT void rfc1123_dstring(char *, size_t, time_t = 0);
 
 namespace gromox {
 
 extern GX_EXPORT long atoitvl(const char *);
+extern GX_EXPORT bool parse_bool(const char *s);
+extern GX_EXPORT std::string bin2hex(const void *, size_t);
+template<typename T> std::string bin2hex(const T &x) { return bin2hex(&x, sizeof(x)); }
+extern GX_EXPORT std::string hex2bin(const char *);
+extern GX_EXPORT void rfc1123_dstring(char *, size_t, time_t = 0);
 
 }

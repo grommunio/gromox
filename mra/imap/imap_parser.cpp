@@ -53,6 +53,7 @@
 #define SELECT_INTERVAL			20*60
 
 using namespace std::string_literals;
+using namespace gromox;
 
 static void *imps_thrwork(void *);
 static void *imps_scanwork(void *);
