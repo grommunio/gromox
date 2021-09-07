@@ -64,25 +64,9 @@ static void term_handler(int signo)
 
 int main(int argc, const char **argv)
 {
-	BOOL b_wal;
-	BOOL b_async;
-	int stub_num;
-	int mime_num;
-	int proxy_num;
-	int listen_port;
-	unsigned int threads_num;
 	struct rlimit rl;
-	char charset[32], tmzone[64];
-	int console_port;
-	char org_name[256];
-	int cache_interval;
 	char temp_buff[45];
-	char listen_ip[40], console_ip[40];
-	uint64_t mmap_size;
-	char data_path[256], state_dir[256];
 	std::shared_ptr<CONFIG_FILE> pconfig;
-	char config_path[256];
-	char service_path[256];
 	
 	exmdb_rpc_alloc = common_util_alloc;
 	exmdb_rpc_free = [](void *) {};
@@ -109,15 +93,31 @@ int main(int argc, const char **argv)
 	if (pconfig == nullptr)
 		return 2;
 
-	auto str_value = pconfig->get_value("SERVICE_PLUGIN_PATH");
-	if (NULL == str_value) {
-		strcpy(service_path, PKGLIBDIR);
-		pconfig->set_value("SERVICE_PLUGIN_PATH", service_path);
-	} else {
-		gx_strlcpy(service_path, str_value, GX_ARRAY_SIZE(service_path));
-	}
-	printf("[system]: service plugin path is %s\n", service_path);
-	str_value = pconfig->get_value("SERVICE_PLUGIN_LIST");
+	static constexpr cfg_directive cfg_default_values[] = {
+		{"config_file_path", PKGSYSCONFDIR "/midb:" PKGSYSCONFDIR},
+		{"console_server_ip", "::1"},
+		{"console_server_port", "9900"},
+		{"data_path", PKGDATADIR "/midb:" PKGDATADIR},
+		{"default_charset", "windows-1252"},
+		{"default_timezone", "Asia/Shanghai"},
+		{"midb_cache_interval", "30min", CFG_TIME},
+		{"midb_listen_ip", "::1"},
+		{"midb_listen_port", "5555"},
+		{"midb_mime_number", "4096", CFG_SIZE},
+		{"midb_table_size", "5000", CFG_SIZE},
+		{"midb_threads_num", "100", CFG_SIZE},
+		{"notify_stub_threads_num", "10", CFG_SIZE},
+		{"rpc_proxy_connection_num", "10", CFG_SIZE},
+		{"service_plugin_path", PKGLIBDIR},
+		{"sqlite_mmap_size", "0", CFG_SIZE},
+		{"sqlite_synchronous", "off", CFG_BOOL},
+		{"sqlite_wal_mode", "true", CFG_BOOL},
+		{"state_path", PKGSTATEDIR},
+		{"x500_org_name", "Gromox default"},
+		{},
+	};
+	config_file_apply(*g_config_file, cfg_default_values);
+	auto str_value = pconfig->get_value("SERVICE_PLUGIN_LIST");
 	const char *const *service_plugin_list = NULL;
 	if (str_value != NULL) {
 		service_plugin_list = const_cast<const char * const *>(read_file_by_line(str_value));
@@ -127,32 +127,9 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	str_value = pconfig->get_value("CONFIG_FILE_PATH");
-	if (NULL == str_value) {
-		strcpy(config_path, PKGSYSCONFDIR "/midb:" PKGSYSCONFDIR);
-		pconfig->set_value("config_file_path", config_path);
-	} else {
-		gx_strlcpy(config_path, str_value, GX_ARRAY_SIZE(config_path));
-	}
-	printf("[system]: config path is %s\n", config_path);
-	
-	str_value = pconfig->get_value("DATA_FILE_PATH");
-	if (NULL == str_value) {
-		strcpy(data_path, PKGDATADIR "/midb:" PKGDATADIR);
-	} else {
-		gx_strlcpy(data_path, str_value, GX_ARRAY_SIZE(data_path));
-	}
-	printf("[system]: data path is %s\n", data_path);
-	
-	str_value = pconfig->get_value("STATE_PATH");
-	gx_strlcpy(state_dir, str_value != nullptr ? str_value : PKGSTATEDIR, sizeof(state_dir));
-	printf("[system]: state path is %s\n", state_dir);
-	
+	int proxy_num = 10;
 	str_value = pconfig->get_value("RPC_PROXY_CONNECTION_NUM");
-	if (NULL == str_value) {
-		proxy_num = 10;
-		pconfig->set_value("RPC_PROXY_CONNECTION_NUM", "10");
-	} else {
+	if (str_value != nullptr) {
 		proxy_num = atoi(str_value);
 		if (proxy_num <= 0 || proxy_num > 200) {
 			pconfig->set_value("RPC_PROXY_CONNECTION_NUM", "10");
@@ -161,11 +138,9 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: exmdb proxy connection number is %d\n", proxy_num);
 	
+	int stub_num = 10;
 	str_value = pconfig->get_value("NOTIFY_STUB_THREADS_NUM");
-	if (NULL == str_value) {
-		stub_num = 10;
-		pconfig->set_value("NOTIFY_STUB_THREADS_NUM", "10");
-	} else {
+	if (str_value != nullptr) {
 		stub_num = atoi(str_value);
 		if (stub_num <= 0 || stub_num > 200) {
 			stub_num = 10;
@@ -174,29 +149,13 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: exmdb notify stub threads number is %d\n", stub_num);
 	
-	str_value = pconfig->get_value("MIDB_LISTEN_IP");
-	gx_strlcpy(listen_ip, str_value != nullptr ? nullptr : "::1",
-	           GX_ARRAY_SIZE(listen_ip));
-	str_value = pconfig->get_value("MIDB_LISTEN_PORT");
-	if (NULL == str_value) {
-		listen_port = 5555;
-		pconfig->set_value("MIDB_LISTEN_PORT", "5555");
-	} else {
-		listen_port = atoi(str_value);
-		if (listen_port <= 0) {
-			listen_port = 5555;
-			pconfig->set_value("MIDB_LISTEN_PORT", "5555");
-		}
-	}
+	auto listen_ip = pconfig->get_value("midb_listen_ip");
+	int listen_port = strtoul(pconfig->get_value("midb_listen_port"), nullptr, 0);
 	printf("[system]: listen address is [%s]:%d\n",
 	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
-	str_value = pconfig->get_value("MIDB_THREADS_NUM");
-	if (NULL == str_value) {
-		threads_num = 100;
-		pconfig->set_value("MIDB_THREADS_NUM", "100");
-	} else {
-		threads_num = atoi(str_value);
+	unsigned int threads_num = 0;
+	if (pconfig->get_uint("midb_threads_num", &threads_num)) {
 		if (threads_num < 20) {
 			threads_num = 20;
 			pconfig->set_value("MIDB_THREADS_NUM", "20");
@@ -207,12 +166,9 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: connection threads number is %d\n", threads_num);
 
-	size_t table_size;
+	size_t table_size = 0;
 	str_value = pconfig->get_value("MIDB_TABLE_SIZE");
-	if (NULL == str_value) {
-		table_size = 5000;
-		pconfig->set_value("MIDB_TABLE_SIZE", "5000");
-	} else {
+	if (str_value != nullptr) {
 		table_size = atoi(str_value);
 		if (table_size < 100) {
 			table_size = 100;
@@ -224,11 +180,9 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: hash table size is %zu\n", table_size);
 
+	int cache_interval = 1800;
 	str_value = pconfig->get_value("MIDB_CACHE_INTERVAL");
-	if (NULL == str_value) {
-		cache_interval = 60 * 30;
-		pconfig->set_value("MIDB_CACHE_INTERVAL", "30minutes");
-	} else {
+	if (str_value != nullptr) {
 		cache_interval = atoitvl(str_value);
 		if (cache_interval < 60 || cache_interval > 1800) {
 			cache_interval = 600;
@@ -238,11 +192,9 @@ int main(int argc, const char **argv)
 	itvltoa(cache_interval, temp_buff);
 	printf("[system]: cache interval is %s\n", temp_buff);
 	
+	int mime_num = 4096;
 	str_value = pconfig->get_value("MIDB_MIME_NUMBER");
-	if (NULL == str_value) {
-		mime_num = 4096;
-		pconfig->set_value("MIDB_MIME_NUMBER", "4096");
-	} else {
+	if (str_value != nullptr) {
 		mime_num = atoi(str_value);
 		if (mime_num < 1024) {
 			mime_num = 4096;
@@ -251,73 +203,10 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: mime number is %d\n", mime_num);
 	
-	str_value = pconfig->get_value("X500_ORG_NAME");
-	if (NULL == str_value) {
-		gx_strlcpy(org_name, "Gromox default", sizeof(org_name));
-		pconfig->set_value("X500_ORG_NAME", org_name);
-	} else {
-		gx_strlcpy(org_name, str_value, GX_ARRAY_SIZE(org_name));
-	}
-	printf("[system]: x500 org name is \"%s\"\n", org_name);
-	
-	str_value = pconfig->get_value("DEFAULT_CHARSET");
-	if (NULL == str_value) {
-		strcpy(charset, "windows-1252");
-		pconfig->set_value("DEFAULT_CHARSET", charset);
-	} else {
-		gx_strlcpy(charset, str_value, GX_ARRAY_SIZE(charset));
-	}
-	printf("[system]: default charset is \"%s\"\n", charset);
-
-	str_value = pconfig->get_value("DEFAULT_TIMEZONE");
-	if (NULL == str_value) {
-		strcpy(tmzone, "Asia/Shanghai");
-		pconfig->set_value("DEFAULT_TIMEZONE", tmzone);
-	} else {
-		gx_strlcpy(tmzone, str_value, arsizeof(tmzone));
-	}
-	printf("[system]: default timezone is \"%s\"\n", tmzone);
-	
-	str_value = pconfig->get_value("SQLITE_SYNCHRONOUS");
-	if (NULL == str_value) {
-		b_async = FALSE;
-		pconfig->set_value("SQLITE_SYNCHRONOUS", "OFF");
-	} else {
-		if (0 == strcasecmp(str_value, "OFF") ||
-			0 == strcasecmp(str_value, "FALSE")) {
-			b_async = FALSE;
-		} else {
-			b_async = TRUE;
-		}
-	}
-	if (FALSE == b_async) {
-		printf("[system]: sqlite synchronous PRAGMA is OFF\n");
-	} else {
-		printf("[system]: sqlite synchronous PRAGMA is ON\n");
-	}
-	
-	str_value = pconfig->get_value("SQLITE_WAL_MODE");
-	if (NULL == str_value) {
-		b_wal = TRUE;
-		pconfig->set_value("SQLITE_WAL_MODE", "ON");
-	} else {
-		if (0 == strcasecmp(str_value, "OFF") ||
-			0 == strcasecmp(str_value, "FALSE")) {
-			b_wal = FALSE;	
-		} else {
-			b_wal = TRUE;
-		}
-	}
-	if (FALSE == b_wal) {
-		printf("[system]: sqlite journal mode is DELETE\n");
-	} else {
-		printf("[system]: sqlite journal mode is WAL\n");
-	}
+	uint64_t mmap_size = 0;
 	str_value = pconfig->get_value("SQLITE_MMAP_SIZE");
 	if (NULL != str_value) {
 		mmap_size = atobyte(str_value);
-	} else {
-		mmap_size = 0;
 	}
 	if (0 == mmap_size) {
 		printf("[system]: sqlite mmap_size is disabled\n");
@@ -325,14 +214,10 @@ int main(int argc, const char **argv)
 		bytetoa(mmap_size, temp_buff);
 		printf("[system]: sqlite mmap_size is %s\n", temp_buff);
 	}
-	str_value = pconfig->get_value("CONSOLE_SERVER_IP");
-	gx_strlcpy(console_ip, str_value != nullptr ? str_value : "::1",
-	           GX_ARRAY_SIZE(console_ip));
+	auto console_ip = pconfig->get_value("console_server_ip");
+	int console_port = 9000;
 	str_value = pconfig->get_value("CONSOLE_SERVER_PORT");
-	if (NULL == str_value) {
-		console_port = 9900;
-		pconfig->set_value("CONSOLE_SERVER_PORT", "9900");
-	} else {
+	if (str_value != nullptr) {
 		console_port = atoi(str_value);
 		if (console_port <= 0) {
 			console_port = 9900;
@@ -360,7 +245,10 @@ int main(int argc, const char **argv)
 	str_value = pconfig->get_value("midb_cmd_debug");
 	auto cmd_debug = str_value != nullptr ? strtoul(str_value, nullptr, 0) : 0;
 
-	service_init({service_path, config_path, data_path, state_dir,
+	service_init({g_config_file->get_value("service_plugin_path"),
+		g_config_file->get_value("config_file_path"),
+		g_config_file->get_value("data_path"),
+		g_config_file->get_value("state_path"),
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
 		threads_num});
@@ -370,8 +258,12 @@ int main(int argc, const char **argv)
 	exmdb_client_init(proxy_num, stub_num);
 	listener_init(listen_ip, listen_port);
 	auto cl_0b = make_scope_exit([&]() { listener_free(); });
-	mail_engine_init(charset, tmzone, org_name, table_size,
-		b_async, b_wal, mmap_size, cache_interval, mime_num);
+	mail_engine_init(g_config_file->get_value("default_charset"),
+		g_config_file->get_value("default_timezone"),
+		g_config_file->get_value("x500_org_name"), table_size,
+		parse_bool(g_config_file->get_value("sqlite_synchronous")) ? TRUE : false,
+		parse_bool(g_config_file->get_value("sqlite_wal_mode")) ? TRUE : false,
+		mmap_size, cache_interval, mime_num);
 
 	cmd_parser_init(threads_num, SOCKET_TIMEOUT, cmd_debug);
 	auto cleanup_2 = make_scope_exit(cmd_parser_free);
@@ -392,7 +284,7 @@ int main(int argc, const char **argv)
 		return 4;
 	}
 	auto cl_1 = make_scope_exit(system_services_stop);
-	if (listener_run(config_path) != 0) {
+	if (listener_run(g_config_file->get_value("config_file_path")) != 0) {
 		printf("[system]: failed to run tcp listener\n");
 		return 6;
 	}
@@ -407,7 +299,7 @@ int main(int argc, const char **argv)
 		return 8;
 	}
 	auto cl_5 = make_scope_exit(mail_engine_stop);
-	if (exmdb_client_run(config_path) != 0) {
+	if (exmdb_client_run(g_config_file->get_value("config_file_path")) != 0) {
 		printf("[system]: failed to run exmdb client\n");
 		return 9;
 	}
