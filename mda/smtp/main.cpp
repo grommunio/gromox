@@ -62,15 +62,9 @@ static void term_handler(int signo);
 
 int main(int argc, const char **argv)
 { 
-	int retcode = EXIT_FAILURE, listen_port, listen_ssl_port;
-	size_t context_aver_mem;
-	unsigned int thread_init_num, thread_charge_num;
-	const char *service_plugin_path; 
-	const char *console_server_ip, *flusher_plugin_path, *user_name;
-	int console_server_port; 
+	int retcode = EXIT_FAILURE;
 	struct rlimit rl;
 	struct passwd *puser_pass;
-	const char *str_val;
 	char temp_buff[256];
 	smtp_param scfg;
 
@@ -96,22 +90,44 @@ int main(int argc, const char **argv)
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
 
+	static constexpr cfg_directive cfg_default_values[] = {
+		{"block_interval_auths", "1min", CFG_TIME},
+		{"block_interval_session", "1min", CFG_TIME},
+		{"command_protocol", "both"},
+		{"config_file_path", PKGSYSCONFDIR "/smtp:" PKGSYSCONFDIR},
+		{"console_server_ip", "::1"},
+		{"console_server_port", "5566"},
+		{"context_average_mem", "256K", CFG_SIZE},
+		{"context_max_mem", "2M", CFG_SIZE},
+		{"data_file_path", PKGDATADIR "/smtp:" PKGDATADIR},
+		{"domain_list_valid", "false", CFG_BOOL},
+		{"flusher_plugin_path", PKGLIBDIR "/libgxf_message_enqueue.so"},
+		{"listen_port", "25"},
+		{"listen_ssl_port", "0"},
+		{"mail_max_length", "64M", CFG_SIZE},
+		{"running_identity", "gromox"},
+		{"service_plugin_ignore_errors", "false", CFG_BOOL},
+		{"service_plugin_path", PKGLIBDIR},
+		{"smtp_auth_times", "3", CFG_SIZE},
+		{"smtp_conn_timeout", "3min", CFG_TIME},
+		{"smtp_force_starttls", "false", CFG_BOOL},
+		{"smtp_max_mail_num", "100", CFG_SIZE},
+		{"smtp_need_auth", "false", CFG_BOOL},
+		{"smtp_support_pipeline", "true", CFG_BOOL},
+		{"smtp_support_starttls", "false", CFG_BOOL},
+		{"state_path", PKGSTATEDIR},
+		{"thread_charge_num", "400", CFG_SIZE},
+		{},
+	};
+	config_file_apply(*g_config_file, cfg_default_values);
+
 	if (0 != resource_run()) { 
 		printf("[system]: Failed to load resource\n");
 		return EXIT_FAILURE;
 	}
 	auto cleanup_2 = make_scope_exit(resource_stop);
-	
-	if (!resource_get_integer("LISTEN_PORT", &listen_port)) {
-		listen_port = 25; 
-		resource_set_integer("LISTEN_PORT", listen_port);
-	}
-	printf("[system]: system listening port %d\n", listen_port);
 
-	if (!resource_get_integer("LISTEN_SSL_PORT", &listen_ssl_port))
-		listen_ssl_port = 0;
-
-	str_val = resource_get_string("HOST_ID");
+	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {
 		memset(temp_buff, 0, arsizeof(temp_buff));
 		gethostname(temp_buff, arsizeof(temp_buff));
@@ -133,24 +149,9 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: default domain is %s\n", str_val);
 	
-	user_name = resource_get_string("RUNNING_IDENTITY");
-	if (user_name == NULL)
-		user_name = "gromox";
-	if (*user_name == '\0')
-		printf("[system]: running identity will not be changed\n");
-	else
-		printf("[system]: running identity of process will be %s\n", user_name);
-
-	if (!resource_get_uint("CONTEXT_NUM", &scfg.context_num)) {
-		scfg.context_num = 400;
-		resource_set_integer("CONTEXT_NUM", scfg.context_num);
-	}
-	printf("[system]: total contexts number is %d\n", scfg.context_num);
-
-	if (!resource_get_uint("THREAD_CHARGE_NUM", &thread_charge_num)) {
-		thread_charge_num = 20;
-		resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
-	} else {
+	g_config_file->get_uint("context_num", &scfg.context_num);
+	unsigned int thread_charge_num = 20;
+	if (g_config_file->get_uint("thread_charge_num", &thread_charge_num)) {
 		if (thread_charge_num < 4) {
 			thread_charge_num = 20;	
 			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
@@ -162,10 +163,8 @@ int main(int argc, const char **argv)
 	printf("[system]: one thread is in charge of %d contexts\n",
 		thread_charge_num);
 	
-	if (!resource_get_uint("THREAD_INIT_NUM", &thread_init_num)) {
-		thread_init_num = 5;
-		resource_set_integer("THREAD_INIT_NUM", thread_init_num);
-	}
+	unsigned int thread_init_num = 5;
+	g_config_file->get_uint("thread_init_num", &thread_init_num);
 	if (thread_init_num * thread_charge_num > scfg.context_num) {
 		thread_init_num = scfg.context_num / thread_charge_num;
 		if (0 == thread_init_num) {
@@ -179,11 +178,9 @@ int main(int argc, const char **argv)
 	printf("[system]: threads pool initial threads number is %d\n",
 		thread_init_num);
 
+	size_t context_aver_mem = 256U << 10;
 	str_val = resource_get_string("CONTEXT_AVERAGE_MEM");
-	if (str_val == NULL) {
-		context_aver_mem = 4;
-		resource_set_string("CONTEXT_AVERAGE_MEM", "256K");
-	} else {
+	if (str_val != nullptr) {
 		context_aver_mem = atobyte(str_val)/(64*1024);
 		if (context_aver_mem <= 1) {
 			context_aver_mem = 4;
@@ -194,12 +191,8 @@ int main(int argc, const char **argv)
 	printf("[smtp]: context average memory is %s\n", temp_buff);
  
 	str_val = resource_get_string("CONTEXT_MAX_MEM");
-	if (str_val == NULL) {
-		scfg.flushing_size = 32;
-		resource_set_string("CONTEXT_MAX_MEM", "2M");
-	} else {
+	if (str_val != nullptr)
 		scfg.flushing_size = atobyte(str_val) / 64 / 1024;
-	}
 	if (scfg.flushing_size < context_aver_mem) {
 		scfg.flushing_size = context_aver_mem;
 		bytetoa(scfg.flushing_size * 64 * 1024, temp_buff);
@@ -209,28 +202,9 @@ int main(int argc, const char **argv)
 	bytetoa(scfg.flushing_size, temp_buff);
 	printf("[smtp]: context maximum memory is %s\n", temp_buff);
  
-	str_val = resource_get_string("DOMAIN_LIST_VALID");
-	if (str_val == NULL) {
-		resource_set_string("DOMAIN_LIST_VALID", "FALSE");
-		scfg.domainlist_valid = false;
-	} else {
-		if (0 == strcasecmp(str_val, "FALSE")) {
-			scfg.domainlist_valid = false;
-		} else if (0 == strcasecmp(str_val, "TRUE")) {
-			scfg.domainlist_valid = TRUE;
-		} else {
-			resource_set_string("DOMAIN_LIST_VALID", "FALSE");
-			scfg.domainlist_valid = false;
-		}
-	}
-	printf("[system]: domain list in system is %svalid\n",
-	       scfg.domainlist_valid ? "" : "in");
-	
+	scfg.domainlist_valid = parse_bool(g_config_file->get_value("domain_list_valid")) ? TRUE : false;
 	str_val = resource_get_string("SMTP_CONN_TIMEOUT");
-	if (str_val == NULL) {
-		scfg.timeout = 180;
-		resource_set_string("SMTP_CONN_TIMEOUT", "3minutes");
-	} else {
+	if (str_val != nullptr) {
 		scfg.timeout = atoitvl(str_val);
 		if (scfg.timeout <= 0) {
 			scfg.timeout = 180;
@@ -239,39 +213,9 @@ int main(int argc, const char **argv)
 	}
 	itvltoa(scfg.timeout, temp_buff);
 	printf("[smtp]: smtp socket read write time out is %s\n", temp_buff);
- 
-	str_val = resource_get_string("SMTP_SUPPORT_PIPELINE");
-	if (str_val == NULL) {
-		scfg.support_pipeline = TRUE;
-		resource_set_string("SMTP_SUPPORT_PIPELINE", "true");
-	} else {
-		if (0 == strcasecmp(str_val, "FALSE")) {
-			scfg.support_pipeline = false;
-		} else if (0 == strcasecmp(str_val, "TRUE")) {
-			scfg.support_pipeline = TRUE;
-		} else {
-			scfg.support_pipeline = false;
-			resource_set_string("SMTP_SUPPORT_PIPELINE", "FALSE");
-		}
-	}
-	printf("[smtp]: ESMTP pipeline mode support is %s\n",
-	       scfg.support_pipeline ? "ON" : "OFF");
 
-	str_val = resource_get_string("SMTP_SUPPORT_STARTTLS");
-	if (str_val == NULL) {
-		scfg.support_starttls = false;
-		resource_set_string("SMTP_SUPPORT_STARTTLS", "FALSE");
-	} else {
-		if (0 == strcasecmp(str_val, "FALSE")) {
-			scfg.support_starttls = false;
-		} else if (0 == strcasecmp(str_val, "TRUE")) {
-			scfg.support_starttls = TRUE;
-		} else {
-			scfg.support_starttls = false;
-			resource_set_string("SMTP_SUPPORT_STARTTLS", "FALSE");
-		}
-	}
-
+	scfg.support_pipeline = parse_bool(g_config_file->get_value("smtp_support_pipeline"));
+	scfg.support_starttls = parse_bool(g_config_file->get_value("smtp_support_starttls")) ? TRUE : false;
 	str_val = resource_get_string("SMTP_CERTIFICATE_PATH");
 	if (str_val != nullptr)
 		scfg.cert_path = str_val;
@@ -293,49 +237,22 @@ int main(int argc, const char **argv)
 		printf("[smtp]: smtp doesn't support esmtp TLS mode\n");
 	}
 
-	str_val = resource_get_string("SMTP_FORCE_STARTTLS");
-	if (str_val == NULL) {
-		scfg.force_starttls = false;
-		resource_set_string("SMTP_FORCE_STARTTLS", "FALSE");
-	} else {
-		if (0 == strcasecmp(str_val, "FALSE")) {
-			scfg.force_starttls = false;
-		} else if (0 == strcasecmp(str_val, "TRUE")) {
-			scfg.force_starttls = TRUE;
-		} else {
-			scfg.force_starttls = false;
-			resource_set_string("SMTP_FORCE_STARTTLS", "FALSE");
-		}
-	}
-	
+	scfg.force_starttls = parse_bool(g_config_file->get_value("smtp_force_starttls"));
 	if (scfg.support_starttls && scfg.force_starttls)
 		printf("[smtp]: smtp MUST running in TLS mode\n");
+	int listen_port = 25, listen_ssl_port = 0;
+	g_config_file->get_int("listen_port", &listen_port);
+	g_config_file->get_int("listen_ssl_port", &listen_ssl_port);
 	if (!scfg.support_starttls && listen_ssl_port > 0)
 		listen_ssl_port = 0;
 	if (listen_ssl_port > 0) {
 		printf("[system]: system SSL listening port %d\n", listen_ssl_port);
 	}
 
-	str_val = resource_get_string("SMTP_NEED_AUTH");
-	if (str_val == NULL) {
-		scfg.need_auth = false;
-		resource_set_string("SMTP_NEED_AUTH", "FALSE");
-	} else {
-		if (0 == strcasecmp(str_val, "FALSE")) {
-			scfg.need_auth = false;
-		} else if (0 == strcasecmp(str_val, "TRUE")) {
-			scfg.need_auth = TRUE;
-		} else {
-			scfg.need_auth = false;
-			resource_set_string("SMTP_NEED_AUTH", "FALSE");
-		}
-	}
+	scfg.need_auth = parse_bool(g_config_file->get_value("smtp_need_auth")) ? TRUE : false;
 	printf("[smtp]: auth_needed is %s\n", scfg.need_auth ? "ON" : "OFF");
 
-	if (!resource_get_integer("SMTP_AUTH_TIMES", &scfg.auth_times)) {
-		scfg.auth_times = 3;
-		resource_set_integer("SMTP_AUTH_TIMES", scfg.auth_times);
-	} else {
+	if (resource_get_integer("SMTP_AUTH_TIMES", &scfg.auth_times)) {
 		if (scfg.auth_times <= 0) {
 			scfg.auth_times = 3;
 			resource_set_integer("SMTP_AUTH_TIMES", scfg.auth_times);
@@ -345,10 +262,7 @@ int main(int argc, const char **argv)
 	       scfg.auth_times);
 
 	str_val = resource_get_string("BLOCK_INTERVAL_AUTHS");
-	if (str_val == NULL) {
-		scfg.blktime_auths = 60;
-		resource_set_string("BLOCK_INTERVAL_AUTHS", "1 minute");
-	} else {
+	if (str_val != nullptr) {
 		scfg.blktime_auths = atoitvl(str_val);
 		if (scfg.blktime_auths <= 0) {
 			scfg.blktime_auths = 60;
@@ -360,10 +274,7 @@ int main(int argc, const char **argv)
 			"is exceeded\n", temp_buff);
 
 	str_val = resource_get_string("MAIL_MAX_LENGTH");
-	if (str_val == NULL) {
-		scfg.max_mail_length = 64ULL * 1024 * 1024;
-		resource_set_string("MAIL_MAX_LENGTH", "64M");
-	} else {
+	if (str_val != nullptr) {
 		scfg.max_mail_length = atobyte(str_val);
 		if (scfg.max_mail_length <= 0) {
 			scfg.max_mail_length = 64ULL * 1024 * 1024;
@@ -373,18 +284,9 @@ int main(int argc, const char **argv)
 	bytetoa(scfg.max_mail_length, temp_buff);
 	printf("[smtp]: maximum mail length is %s\n", temp_buff);
 
-	if (!resource_get_integer("SMTP_MAX_MAIL_NUM", &scfg.max_mail_sessions)) {
-		scfg.max_mail_sessions = 100;
-		resource_set_integer("SMTP_MAX_MAIL_NUM", scfg.max_mail_sessions);
-	}
-	printf("[smtp]: maximum mails number for one session is %d\n",
-	       scfg.max_mail_sessions);
-	 
+	g_config_file->get_int("smtp_max_mail_num", &scfg.max_mail_sessions);
 	str_val = resource_get_string("BLOCK_INTERVAL_SESSIONS");
-	if (str_val == NULL) {
-		scfg.blktime_sessions = 60;
-		resource_set_string("BLOCK_INTERVAL_SESSIONS", "1minute");
-	} else {
+	if (str_val != nullptr) {
 		scfg.blktime_sessions = atoitvl(str_val);
 		if (scfg.blktime_sessions <= 0) {
 			scfg.blktime_sessions = 60;
@@ -395,12 +297,6 @@ int main(int argc, const char **argv)
 	printf("[smtp]: block remote side %s when mails number is exceed for one "
 			"session\n", temp_buff);
 	
-	service_plugin_path = resource_get_string("SERVICE_PLUGIN_PATH");
-	if (service_plugin_path == NULL) {
-		service_plugin_path = PKGLIBDIR;
-		resource_set_string("SERVICE_PLUGIN_PATH", service_plugin_path);
-	}
-	printf("[service]: service plugins path is %s\n", service_plugin_path);
 	const char *str_value = resource_get_string("SERVICE_PLUGIN_LIST");
 	const char *const *service_plugin_list = NULL;
 	if (str_value != NULL) {
@@ -410,42 +306,9 @@ int main(int argc, const char **argv)
 			return EXIT_FAILURE;
 		}
 	}
-	str_value = resource_get_string("SERVICE_PLUGIN_IGNORE_ERRORS");
-	bool svcplug_ignerr = parse_bool(str_value);
-	resource_set_string("SERVICE_PLUGIN_IGNORE_ERRORS", svcplug_ignerr ? "true" : "false");
-
-	flusher_plugin_path = resource_get_string("FLUSHER_PLUGIN_PATH");
-	if (flusher_plugin_path == NULL) {
-		flusher_plugin_path = PKGLIBDIR "/libgxf_message_enqueue.so";
-		resource_set_string("FLUSHER_PLUGIN_PATH", flusher_plugin_path);
-	}
-	printf("[flusher]: flusher plugin path %s\n", flusher_plugin_path);
-
-	const char *config_dir = str_val = resource_get_string("CONFIG_FILE_PATH");
-	if (str_val == NULL) {
-		config_dir = str_val = PKGSYSCONFDIR "/smtp:" PKGSYSCONFDIR;
-		resource_set_string("CONFIG_FILE_PATH", str_val);
-	}
-	printf("[system]: config files path is %s\n", str_val);
-	
-	const char *data_dir = str_val = resource_get_string("DATA_FILE_PATH");
-	if (str_val == NULL) {
-		data_dir = str_val = PKGDATADIR "/smtp:" PKGDATADIR;
-		resource_set_string("DATA_FILE_PATH", str_val);
-	}
-	printf("[system]: data files path is %s\n", str_val);
-	
-	const char *state_dir = str_val = resource_get_string("STATE_PATH");
-	if (str_val == nullptr) {
-		state_dir = PKGSTATEDIR;
-		resource_set_string("STATE_PATH", state_dir);
-	}
-	printf("[system]: state path is %s\n", state_dir);
 
 	str_val = resource_get_string("command_protocol");
-	if (str_val == nullptr)
-		scfg.cmd_prot = HT_LMTP | HT_SMTP;
-	else if (strcasecmp(str_val, "both") == 0)
+	if (strcasecmp(str_val, "both") == 0)
 		scfg.cmd_prot = HT_LMTP | HT_SMTP;
 	else if (strcasecmp(str_val, "lmtp") == 0)
 		scfg.cmd_prot = HT_LMTP;
@@ -454,15 +317,9 @@ int main(int argc, const char **argv)
 	else
 		scfg.cmd_prot = 0;
 
-	console_server_ip = resource_get_string("CONSOLE_SERVER_IP");
-	if (console_server_ip == NULL) {
-		console_server_ip = "::1";
-		resource_set_string("CONSOLE_SERVER_IP", console_server_ip);
-	}
-	if (!resource_get_integer("CONSOLE_SERVER_PORT", &console_server_port)) {
-		console_server_port = 5566; 
-		resource_set_integer("CONSOLE_SERVER_PORT", console_server_port);
-	}
+	auto console_server_ip = g_config_file->get_value("console_server_ip");
+	int console_server_port = 5566;
+	g_config_file->get_int("console_server_port", &console_server_port);
 	printf("[console_server]: console server is address [%s]:%d\n",
 	       *console_server_ip == '\0' ? "*" : console_server_ip, console_server_port);
 	listener_init(listen_port, listen_ssl_port);
@@ -487,6 +344,7 @@ int main(int argc, const char **argv)
 		}
 		printf("[system]: set file limitation to %d\n", scfg.context_num + 128);
 	}
+	auto user_name = g_config_file->get_value("running_identity");
 	if (*user_name != '\0') {
 		puser_pass = getpwnam(user_name);
 		if (NULL == puser_pass) {
@@ -503,9 +361,13 @@ int main(int argc, const char **argv)
 			return EXIT_FAILURE;
 		}
 	}
-	service_init({service_plugin_path, config_dir, data_dir, state_dir,
+	service_init({g_config_file->get_value("service_plugin_path"),
+		g_config_file->get_value("config_file_path"),
+		g_config_file->get_value("data_file_path"),
+		g_config_file->get_value("state_path"),
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
-		svcplug_ignerr, scfg.context_num});
+		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
+		scfg.context_num});
 	printf("--------------------------- service plugins begin"
 		   "---------------------------\n");
 	if (0 != service_run()) { 
@@ -561,7 +423,7 @@ int main(int argc, const char **argv)
 	auto cleanup_17 = make_scope_exit(contexts_pool_free);
 	auto cleanup_18 = make_scope_exit(contexts_pool_stop);
 
-	flusher_init(flusher_plugin_path, scfg.context_num);
+	flusher_init(g_config_file->get_value("flusher_plugin_path"), scfg.context_num);
 	if (0 != flusher_run()) {
 		printf("[system]: failed to run flusher\n");
 		return EXIT_FAILURE;
