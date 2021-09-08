@@ -932,14 +932,13 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 		}
 		tmp_proptags.count = 2;
 		tmp_proptags.pproptag = proptag_buff;
-		proptag_buff[0] = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
+		proptag_buff[0] = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 		proptag_buff[1] = PR_READ;
 		if (!exmdb_client_get_message_properties(plogon->get_dir(),
 		    nullptr, 0, pmessage_ids->pll[i], &tmp_proptags, &tmp_propvals))
 			return ecError;
 		pbrief = NULL;
-		pvalue = common_util_get_propvals(&tmp_propvals,
-				PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED);
+		pvalue = common_util_get_propvals(&tmp_propvals, PR_NON_RECEIPT_NOTIFICATION_REQUESTED);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			pvalue = common_util_get_propvals(&tmp_propvals, PR_READ);
 			if (pvalue == nullptr ||

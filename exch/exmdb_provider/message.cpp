@@ -1848,7 +1848,7 @@ static BOOL message_rectify_message(const char *account,
 	for (i=0; i<pmsgctnt->proplist.count; i++) {
 		switch (pmsgctnt->proplist.ppropval[i].proptag) {
 		case PROP_TAG_MID:
-		case PROP_TAG_ASSOCIATED:
+		case PR_ASSOCIATED:
 		case PROP_TAG_CHANGENUMBER:
 		case PROP_TAG_MESSAGESTATUS:
 			continue;
@@ -2196,8 +2196,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	original_size = 0;
 	message_size = common_util_calculate_message_size(pmsgctnt);
 	if (FALSE == b_embedded) {
-		pvalue = common_util_get_propvals(
-			pproplist, PROP_TAG_ASSOCIATED);
+		pvalue = common_util_get_propvals(pproplist, PR_ASSOCIATED);
 		is_associated = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? 0 : 1;
 		if (TRUE == exmdb_server_check_private()) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT is_search FROM "
@@ -3081,8 +3080,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 			return TRUE;
 		}
 	}
-	pvalue = common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_ASSOCIATED);
+	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
 	if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
 		*pb_result = FALSE;
 		return TRUE;
@@ -3160,8 +3158,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 			NULL, content_type, tmp_buff)) {
 			return FALSE;
 		}
-		common_util_remove_propvals(
-			&pmsgctnt->proplist, PROP_TAG_ASSOCIATED);
+		common_util_remove_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
 		common_util_remove_propvals(
 			&pmsgctnt->proplist, PROP_TAG_MID);
 		common_util_remove_propvals(&pmsgctnt->proplist, PR_BODY);
@@ -4050,7 +4047,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					PR_DISPLAY_CC, PR_DISPLAY_CC_A,
 					PR_DISPLAY_BCC, PR_DISPLAY_BCC_A,
 					PROP_TAG_MID, PR_MESSAGE_SIZE,
-					PROP_TAG_ASSOCIATED, PROP_TAG_CHANGENUMBER,
+					PR_ASSOCIATED, PROP_TAG_CHANGENUMBER,
 					PR_CHANGE_KEY, PR_READ,
 					PROP_TAG_HASATTACHMENTS,
 					PR_PREDECESSOR_CHANGE_LIST,
@@ -4466,7 +4463,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 					PR_DISPLAY_CC, PR_DISPLAY_CC_A,
 					PR_DISPLAY_BCC, PR_DISPLAY_BCC_A,
 					PROP_TAG_MID, PR_MESSAGE_SIZE,
-					PROP_TAG_ASSOCIATED, PROP_TAG_CHANGENUMBER,
+					PR_ASSOCIATED, PROP_TAG_CHANGENUMBER,
 					PR_CHANGE_KEY, PR_READ,
 					PROP_TAG_HASATTACHMENTS,
 					PR_PREDECESSOR_CHANGE_LIST,

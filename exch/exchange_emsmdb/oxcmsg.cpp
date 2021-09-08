@@ -641,7 +641,7 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 			if (MSG_READ_FLAG_DEFAULT == read_flag) {
 				if (!exmdb_client_get_message_property(plogon->get_dir(),
 				    username, 0, message_id,
-				    PROP_TAG_READRECEIPTREQUESTED, &pvalue))
+				    PR_READ_RECEIPT_REQUESTED, &pvalue))
 					return FALSE;
 				if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 					b_notify = TRUE;
@@ -660,7 +660,7 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 		break;
 	case MSG_READ_FLAG_GENERATE_RECEIPT_ONLY:
 		if (!exmdb_client_get_message_property(plogon->get_dir(),
-		    username, 0, message_id, PROP_TAG_READRECEIPTREQUESTED,
+		    username, 0, message_id, PR_READ_RECEIPT_REQUESTED,
 		    &pvalue))
 			return FALSE;
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
@@ -674,18 +674,18 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 		if ((read_flag & MSG_READ_FLAG_CLEAR_NOTIFY_READ) &&
 		    exmdb_client_get_message_property(plogon->get_dir(),
 		    username, 0, message_id,
-		    PROP_TAG_READRECEIPTREQUESTED, &pvalue) &&
+		    PR_READ_RECEIPT_REQUESTED, &pvalue) &&
 		    pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 &&
 		    !exmdb_client_remove_message_property(plogon->get_dir(),
-		     pinfo->cpid, message_id, PROP_TAG_READRECEIPTREQUESTED))
+		    pinfo->cpid, message_id, PR_READ_RECEIPT_REQUESTED))
 			return FALSE;
 		if ((read_flag & MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD) &&
 		    exmdb_client_get_message_property(plogon->get_dir(),
 		    username, 0, message_id,
-		    PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED, &pvalue) &&
+		    PR_NON_RECEIPT_NOTIFICATION_REQUESTED, &pvalue) &&
 		    pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 &&
 		    !exmdb_client_remove_message_property(plogon->get_dir(),
-		    pinfo->cpid, message_id, PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED))
+		    pinfo->cpid, message_id, PR_NON_RECEIPT_NOTIFICATION_REQUESTED))
 			return FALSE;
 		if (!exmdb_client_mark_modified(plogon->get_dir(), message_id))
 			return FALSE;	
@@ -708,9 +708,9 @@ static BOOL oxcmsg_setreadflag(LOGON_OBJECT *plogon,
 		}
 		propvals.count = 2;
 		propvals.ppropval = propval_buff;
-		propval_buff[0].proptag = PROP_TAG_READRECEIPTREQUESTED;
+		propval_buff[0].proptag = PR_READ_RECEIPT_REQUESTED;
 		propval_buff[0].pvalue = deconst(&fake_false);
-		propval_buff[1].proptag = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
+		propval_buff[1].proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 		propval_buff[1].pvalue = deconst(&fake_false);
 		exmdb_client_set_message_properties(plogon->get_dir(), username,
 			0, message_id, &propvals, &problems);

@@ -457,7 +457,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 		message_content_set_attachments_internal(
 					pctx->pmsgctnt, pattachments);
 		pproplist = message_content_get_proplist(pctx->pmsgctnt);
-		propval.proptag = PROP_TAG_ASSOCIATED;
+		propval.proptag = PR_ASSOCIATED;
 		uint8_t tmp_byte = marker == STARTFAIMSG;
 		propval.pvalue = &tmp_byte;
 		if (!tpropval_array_set_propval(pproplist, &propval))

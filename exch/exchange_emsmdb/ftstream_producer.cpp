@@ -676,7 +676,7 @@ BOOL ftstream_producer::write_messagecontent(BOOL b_delprop,
 
 BOOL ftstream_producer::write_message(const MESSAGE_CONTENT *pmessage)
 {
-	auto pbool = static_cast<uint8_t *>(common_util_get_propvals(&pmessage->proplist, PROP_TAG_ASSOCIATED));
+	auto pbool = static_cast<uint8_t *>(common_util_get_propvals(&pmessage->proplist, PR_ASSOCIATED));
 	uint32_t marker = pbool == nullptr || *pbool == 0 ? STARTMESSAGE : STARTFAIMSG;
 	if (!write_uint32(marker))
 		return FALSE;

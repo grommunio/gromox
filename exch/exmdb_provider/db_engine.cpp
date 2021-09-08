@@ -1470,10 +1470,9 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 	DB_NOTIFY_CONTENT_TABLE_ROW_ADDED *padded_row = nullptr, *padded_row1 = nullptr;
 	
 	pread_byte = NULL;
-	if (FALSE == common_util_get_property(MESSAGE_PROPERTIES_TABLE,
-		message_id, 0, pdb->psqlite, PROP_TAG_ASSOCIATED, &pvalue)) {
+	if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE, message_id, 0,
+	    pdb->psqlite, PR_ASSOCIATED, &pvalue))
 		return;	
-	}
 	bool b_optimize = false;
 	auto cl_0 = make_scope_exit([&]() {
 		if (b_optimize)

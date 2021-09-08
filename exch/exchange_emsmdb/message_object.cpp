@@ -301,7 +301,7 @@ BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t new_cpid)
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
 	
-	propvals.ppropval[propvals.count].proptag = PROP_TAG_ASSOCIATED;
+	propvals.ppropval[propvals.count].proptag = PR_ASSOCIATED;
 	pvalue = cu_alloc<uint8_t>();
 	if (NULL == pvalue) {
 		return FALSE;
@@ -430,7 +430,7 @@ gxerr_t MESSAGE_OBJECT::save()
 	if (!exmdb_client_allocate_cn(pmessage->plogon->get_dir(), &pmessage->change_num))
 		return GXERR_CALL_FAILED;
 	if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
-	    pmessage->instance_id, PROP_TAG_ASSOCIATED, &pvalue))
+	    pmessage->instance_id, PR_ASSOCIATED, &pvalue))
 		return GXERR_CALL_FAILED;
 
 	BOOL b_fai = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? false : TRUE;
@@ -989,7 +989,7 @@ BOOL MESSAGE_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		switch (tmp_proptags.pproptag[i]) {
 		case PROP_TAG_MID:
 		case PR_SUBJECT:
-		case PROP_TAG_ASSOCIATED:
+		case PR_ASSOCIATED:
 		case PROP_TAG_CHANGENUMBER:
 		case PR_SUBJECT_PREFIX:
 		case PR_NORMALIZED_SUBJECT:
@@ -1034,7 +1034,7 @@ BOOL MESSAGE_OBJECT::check_readonly_property(uint32_t proptag) const
 	switch (proptag) {
 	case PR_ACCESS:
 	case PR_ACCESS_LEVEL:
-	case PROP_TAG_ASSOCIATED:
+	case PR_ASSOCIATED:
 	case PROP_TAG_CHANGENUMBER:
 	case PROP_TAG_CONVERSATIONID:
 	case PROP_TAG_CREATORNAME:
@@ -1320,7 +1320,7 @@ static BOOL message_object_set_properties_internal(MESSAGE_OBJECT *pmessage,
 			} else if (PROP_TAG_EXTENDEDRULEMESSAGECONDITION
 				==  ppropvals->ppropval[i].proptag) {
 				if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
-				    pmessage->instance_id, PROP_TAG_ASSOCIATED, &pvalue))
+				    pmessage->instance_id, PR_ASSOCIATED, &pvalue))
 					return FALSE;	
 				if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
 					pproblems->pproblem[pproblems->count].index = i;
@@ -1345,10 +1345,9 @@ static BOOL message_object_set_properties_internal(MESSAGE_OBJECT *pmessage,
 				tmp_propvals1.ppropval = propval_buff;
 				propval_buff[0].proptag = PR_READ;
 				propval_buff[0].pvalue = &tmp_bytes[0];
-				propval_buff[1].proptag = PROP_TAG_READRECEIPTREQUESTED;
+				propval_buff[1].proptag = PR_READ_RECEIPT_REQUESTED;
 				propval_buff[1].pvalue = &tmp_bytes[1];
-				propval_buff[2].proptag =
-					PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
+				propval_buff[2].proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 				propval_buff[2].pvalue = &tmp_bytes[2];
 				tmp_bytes[0] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_READ);
 				tmp_bytes[1] = !!(*static_cast<uint32_t *>(ppropvals->ppropval[i].pvalue) & MSGFLAG_RN_PENDING);
@@ -1617,7 +1616,7 @@ BOOL MESSAGE_OBJECT::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 			if (MSG_READ_FLAG_DEFAULT == read_flag) {
 				if (!exmdb_client_get_instance_property(
 				    pmessage->plogon->get_dir(), pmessage->instance_id,
-				    PROP_TAG_READRECEIPTREQUESTED, &pvalue))
+				    PR_READ_RECEIPT_REQUESTED, &pvalue))
 					return FALSE;
 				if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 					b_notify = TRUE;
@@ -1636,7 +1635,7 @@ BOOL MESSAGE_OBJECT::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		break;
 	case MSG_READ_FLAG_GENERATE_RECEIPT_ONLY:
 		if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
-		    pmessage->instance_id, PROP_TAG_READRECEIPTREQUESTED, &pvalue))
+		    pmessage->instance_id, PR_READ_RECEIPT_REQUESTED, &pvalue))
 			return FALSE;
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			b_notify = TRUE;
@@ -1648,28 +1647,28 @@ BOOL MESSAGE_OBJECT::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD:
 		if (read_flag & MSG_READ_FLAG_CLEAR_NOTIFY_READ) {
 			if (!exmdb_client_remove_instance_property(pmessage->plogon->get_dir(),
-			    pmessage->instance_id, PROP_TAG_READRECEIPTREQUESTED, &result))
+			    pmessage->instance_id, PR_READ_RECEIPT_REQUESTED, &result))
 				return FALSE;	
 			if (exmdb_client_get_message_property(pmessage->plogon->get_dir(),
 			    username, 0, pmessage->message_id,
-			    PROP_TAG_READRECEIPTREQUESTED, &pvalue) &&
+			    PR_READ_RECEIPT_REQUESTED, &pvalue) &&
 			    pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 &&
 			    !exmdb_client_remove_message_property(pmessage->plogon->get_dir(),
-			    pmessage->cpid, pmessage->message_id, PROP_TAG_READRECEIPTREQUESTED))
+			    pmessage->cpid, pmessage->message_id, PR_READ_RECEIPT_REQUESTED))
 				return FALSE;
 		}
 		if (read_flag & MSG_READ_FLAG_CLEAR_NOTIFY_UNREAD) {
 			if (!exmdb_client_remove_instance_property(pmessage->plogon->get_dir(),
-			    pmessage->instance_id, PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED,
+			    pmessage->instance_id, PR_NON_RECEIPT_NOTIFICATION_REQUESTED,
 			    &result))
 				return FALSE;	
 			if (exmdb_client_get_message_property(pmessage->plogon->get_dir(),
 			    username, 0, pmessage->message_id,
-			    PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED, &pvalue) &&
+			    PR_NON_RECEIPT_NOTIFICATION_REQUESTED, &pvalue) &&
 			    pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 &&
 			    !exmdb_client_remove_message_property(pmessage->plogon->get_dir(),
 			    pmessage->cpid, pmessage->message_id,
-			    PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED))
+			    PR_NON_RECEIPT_NOTIFICATION_REQUESTED))
 					return FALSE;	
 		}
 		if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
@@ -1714,9 +1713,9 @@ BOOL MESSAGE_OBJECT::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		}
 		propvals.count = 2;
 		propvals.ppropval = propval_buff;
-		propval_buff[0].proptag = PROP_TAG_READRECEIPTREQUESTED;
+		propval_buff[0].proptag = PR_READ_RECEIPT_REQUESTED;
 		propval_buff[0].pvalue  = deconst(&fake_false);
-		propval_buff[1].proptag = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
+		propval_buff[1].proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 		propval_buff[1].pvalue  = deconst(&fake_false);
 		exmdb_client_set_instance_properties(pmessage->plogon->get_dir(),
 			pmessage->instance_id, &propvals, &problems);

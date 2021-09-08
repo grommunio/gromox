@@ -776,18 +776,15 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	pchgheader->count ++;
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_PREDECESSOR_CHANGE_LIST);
 	
-	pvalue = common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_ASSOCIATED);
+	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
 	pprogmsg->b_fai = *static_cast<uint8_t *>(pvalue) == 0 ? false : TRUE;
-	pchgheader->ppropval[pchgheader->count].proptag =
-										PROP_TAG_ASSOCIATED;
+	pchgheader->ppropval[pchgheader->count].proptag = PR_ASSOCIATED;
 	pchgheader->ppropval[pchgheader->count].pvalue = pvalue;
 	pchgheader->count ++;
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_ASSOCIATED);
+	common_util_remove_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
 	
 	if (SYNC_EXTRA_FLAG_EID & extra_flags) {
 		pvalue = common_util_get_propvals(
@@ -1170,12 +1167,12 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 			common_util_remove_propvals(
 				&pembedded->proplist, PROP_TAG_MESSAGESTATUS);
 			pvalue = common_util_get_propvals(&pembedded->proplist, PR_MESSAGE_FLAGS);
-			tmp_propval.proptag = PROP_TAG_READRECEIPTREQUESTED;
+			tmp_propval.proptag = PR_READ_RECEIPT_REQUESTED;
 			tmp_propval.pvalue = pvalue != nullptr &&
 			                     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_RN_PENDING) ?
 			                     deconst(&fake_true) : deconst(&fake_false);
 			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
-			tmp_propval.proptag = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
+			tmp_propval.proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 			tmp_propval.pvalue = pvalue != nullptr &&
 			                     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_NRN_PENDING) ?
 			                     deconst(&fake_true) : deconst(&fake_false);
@@ -1303,12 +1300,12 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 		common_util_remove_propvals(
 			&pmsgctnt->proplist, PROP_TAG_MESSAGESTATUS);
 		pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_MESSAGE_FLAGS);
-		tmp_propval.proptag = PROP_TAG_READRECEIPTREQUESTED;
+		tmp_propval.proptag = PR_READ_RECEIPT_REQUESTED;
 		tmp_propval.pvalue = pvalue != nullptr &&
 		                     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_RN_PENDING) ?
 		                     deconst(&fake_true) : deconst(&fake_false);
 		common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
-		tmp_propval.proptag = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
+		tmp_propval.proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 		tmp_propval.pvalue = pvalue != nullptr &&
 		                     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_NRN_PENDING) ?
 		                     deconst(&fake_true) : deconst(&fake_false);

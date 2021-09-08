@@ -3344,7 +3344,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		int_hash_free(phash);
 		tmp_proptags[pproptags->count++] = PROP_TAG_MID;
 		tmp_proptags[pproptags->count++] = PR_MESSAGE_SIZE;
-		tmp_proptags[pproptags->count++] = PROP_TAG_ASSOCIATED;
+		tmp_proptags[pproptags->count++] = PR_ASSOCIATED;
 		tmp_proptags[pproptags->count++] = PROP_TAG_CHANGENUMBER;
 		tmp_proptags[pproptags->count++] = PR_READ;
 		tmp_proptags[pproptags->count++] = PROP_TAG_HASATTACHMENTS;

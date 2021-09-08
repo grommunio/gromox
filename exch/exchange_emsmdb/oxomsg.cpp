@@ -252,11 +252,10 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_ASSOCIATED;
+	proptag_buff[0] = PR_ASSOCIATED;
 	if (!pmessage->get_properties(0, &tmp_proptags, &tmp_propvals))
 		return ecError;
-	auto pvalue = common_util_get_propvals(
-		&tmp_propvals, PROP_TAG_ASSOCIATED);
+	auto pvalue = common_util_get_propvals(&tmp_propvals, PR_ASSOCIATED);
 	/* FAI message cannot be sent */
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		return ecAccessDenied;

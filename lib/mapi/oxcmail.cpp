@@ -1527,12 +1527,12 @@ static BOOL oxcmail_enum_mail_head(
 		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "Disposition-Notification-To")) {
-		propval.proptag = PROP_TAG_READRECEIPTREQUESTED;
+		propval.proptag = PR_READ_RECEIPT_REQUESTED;
 		propval.pvalue = &tmp_byte;
 		tmp_byte = 1;
 		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
-		propval.proptag =  PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
+		propval.proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 		propval.pvalue = &tmp_byte;
 		tmp_byte = 1;
 		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
@@ -5345,8 +5345,7 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	pvalue = tpropval_array_get_propval(&pmsg->proplist,
-						PROP_TAG_READRECEIPTREQUESTED);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_READ_RECEIPT_REQUESTED);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		if (TRUE == oxcmail_export_address(pmsg, alloc,
 			PROP_TAG_READRECEIPTNAME,

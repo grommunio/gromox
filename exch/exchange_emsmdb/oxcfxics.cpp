@@ -43,7 +43,7 @@ static EID_ARRAY* oxcfxics_load_folder_messages(
 	restriction.rt = RES_PROPERTY;
 	restriction.pres = &res_prop;
 	res_prop.relop = RELOP_EQ;
-	res_prop.proptag = PROP_TAG_ASSOCIATED;
+	res_prop.proptag = PR_ASSOCIATED;
 	res_prop.propval.proptag = res_prop.proptag;
 	res_prop.propval.pvalue = &tmp_associated;
 	if (!exmdb_client_load_content_table(plogon->get_dir(), 0, folder_id,
@@ -994,7 +994,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	}
 	if (TRUE == b_exist) {
 		if (!exmdb_client_get_message_property(plogon->get_dir(),
-		    nullptr, 0, message_id, PROP_TAG_ASSOCIATED, &pvalue))
+		    nullptr, 0, message_id, PR_ASSOCIATED, &pvalue))
 			return ecError;
 		if (IMPORT_FLAG_ASSOCIATED & import_flags) {
 			if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
@@ -1126,13 +1126,12 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 		}
 		tmp_proptags.count = 2;
 		tmp_proptags.pproptag = proptag_buff;
-		proptag_buff[0] = PROP_TAG_ASSOCIATED;
+		proptag_buff[0] = PR_ASSOCIATED;
 		proptag_buff[1] = PR_READ;
 		if (!exmdb_client_get_message_properties(plogon->get_dir(),
 		    nullptr, 0, message_id, &tmp_proptags, &tmp_propvals))
 			return ecError;
-		pvalue = common_util_get_propvals(
-			&tmp_propvals, PROP_TAG_ASSOCIATED);
+		pvalue = common_util_get_propvals(&tmp_propvals, PR_ASSOCIATED);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			continue;
 		}
@@ -1683,7 +1682,7 @@ uint32_t rop_syncimportmessagemove(
 			return ecAccessDenied;
 	}
 	if (!exmdb_client_get_message_property(plogon->get_dir(), nullptr, 0,
-	    src_mid, PROP_TAG_ASSOCIATED, &pvalue))
+	    src_mid, PR_ASSOCIATED, &pvalue))
 		return ecError;
 	if (NULL == pvalue) {
 		return ecNotFound;

@@ -1825,14 +1825,13 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 		}
 		tmp_proptags.count = 2;
 		tmp_proptags.pproptag = proptag_buff;
-		proptag_buff[0] = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
+		proptag_buff[0] = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 		proptag_buff[1] = PR_READ;
 		if (!exmdb_client::get_message_properties(pstore->get_dir(),
 		    nullptr, 0, ids.pids[i], &tmp_proptags, &tmp_propvals))
 			return ecError;
 		pbrief = NULL;
-		pvalue = common_util_get_propvals(&tmp_propvals,
-				PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED);
+		pvalue = common_util_get_propvals(&tmp_propvals, PR_NON_RECEIPT_NOTIFICATION_REQUESTED);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			pvalue = common_util_get_propvals(&tmp_propvals, PR_READ);
 			if ((pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0) &&
@@ -2075,7 +2074,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 				b_changed = TRUE;
 				if (!exmdb_client_get_message_property(pstore->get_dir(),
 				    username, 0, message_id,
-				    PROP_TAG_READRECEIPTREQUESTED, &pvalue))
+				    PR_READ_RECEIPT_REQUESTED, &pvalue))
 					return ecError;
 				if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0)
 					b_notify = TRUE;
@@ -2093,11 +2092,9 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 					NOTIFY_RECEIPT_READ, pbrief);
 			propvals.count = 2;
 			propvals.ppropval = propval_buff;
-			propval_buff[0].proptag =
-				PROP_TAG_READRECEIPTREQUESTED;
+			propval_buff[0].proptag = PR_READ_RECEIPT_REQUESTED;
 			propval_buff[0].pvalue = deconst(&fake_false);
-			propval_buff[1].proptag =
-				PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
+			propval_buff[1].proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 			propval_buff[1].pvalue = deconst(&fake_false);
 			exmdb_client::set_message_properties(pstore->get_dir(), username,
 				0, message_id, &propvals, &problems);
@@ -3465,11 +3462,10 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	}
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_ASSOCIATED;
+	proptag_buff[0] = PR_ASSOCIATED;
 	if (!pmessage->get_properties(&tmp_proptags, &tmp_propvals))
 		return ecError;
-	pvalue = common_util_get_propvals(
-		&tmp_propvals, PROP_TAG_ASSOCIATED);
+	pvalue = common_util_get_propvals(&tmp_propvals, PR_ASSOCIATED);
 	/* FAI message cannot be sent */
 	if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0)
 		return ecAccessDenied;
@@ -4455,12 +4451,11 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	BOOL b_exist;
 	BOOL b_owner;
 	BINARY *pbin;
-	void *pvalue;
 	uint8_t mapi_type;
 	uint64_t message_id;
 	uint32_t permission = rightsNone, tag_access = 0;
 	
-	pvalue = common_util_get_propvals(pproplist, PROP_TAG_ASSOCIATED);
+	auto pvalue = common_util_get_propvals(pproplist, PR_ASSOCIATED);
 	if (NULL != pvalue) {
 		b_fai = *static_cast<uint8_t *>(pvalue) == 0 ? TRUE : false;
 	} else {
@@ -4542,7 +4537,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	}
 	if (FALSE == b_new) {
 		if (!exmdb_client_get_message_property(pstore->get_dir(),
-		    nullptr, 0, message_id, PROP_TAG_ASSOCIATED, &pvalue))
+		    nullptr, 0, message_id, PR_ASSOCIATED, &pvalue))
 			return ecError;
 		if (TRUE == b_fai) {
 			if (pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0)
@@ -5012,13 +5007,12 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 		}
 		tmp_proptags.count = 2;
 		tmp_proptags.pproptag = proptag_buff;
-		proptag_buff[0] = PROP_TAG_ASSOCIATED;
+		proptag_buff[0] = PR_ASSOCIATED;
 		proptag_buff[1] = PR_READ;
 		if (!exmdb_client::get_message_properties(pstore->get_dir(),
 		    nullptr, 0, message_id, &tmp_proptags, &tmp_propvals))
 			return ecError;
-		pvalue = common_util_get_propvals(
-			&tmp_propvals, PROP_TAG_ASSOCIATED);
+		pvalue = common_util_get_propvals(&tmp_propvals, PR_ASSOCIATED);
 		if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0)
 			continue;
 		pvalue = common_util_get_propvals(&tmp_propvals, PR_READ);

@@ -1123,7 +1123,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 	for (i=0; i<pmsgctnt->proplist.count; i++) {
 		proptag = pmsgctnt->proplist.ppropval[i].proptag;
 		switch (proptag) {
-		case PROP_TAG_ASSOCIATED:
+		case PR_ASSOCIATED:
 			if (TRUE == pinstance->b_new) {
 				break;
 			}
@@ -1976,18 +1976,15 @@ static uint32_t instance_get_message_flags(MESSAGE_CONTENT *pmsgctnt)
 		0 != pmsgctnt->children.pattachments->count) {
 		message_flags |= MSGFLAG_HASATTACH;
 	}
-	pvalue = tpropval_array_get_propval(
-		pproplist, PROP_TAG_ASSOCIATED);
+	pvalue = tpropval_array_get_propval(pproplist, PR_ASSOCIATED);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		message_flags |= MSGFLAG_ASSOCIATED;
 	}
-	pvalue = tpropval_array_get_propval(
-		pproplist, PROP_TAG_READRECEIPTREQUESTED);
+	pvalue = tpropval_array_get_propval(pproplist, PR_READ_RECEIPT_REQUESTED);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		message_flags |= MSGFLAG_RN_PENDING;
 	}
-	pvalue = tpropval_array_get_propval(pproplist,
-		PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED);
+	pvalue = tpropval_array_get_propval(pproplist, PR_NON_RECEIPT_NOTIFICATION_REQUESTED);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		message_flags |= MSGFLAG_NRN_PENDING;
 	}
@@ -2592,7 +2589,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 		pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 		for (i=0; i<pproperties->count; i++) {
 			switch (pproperties->ppropval[i].proptag) {
-			case PROP_TAG_ASSOCIATED:
+			case PR_ASSOCIATED:
 				if (TRUE == pinstance->b_new) {
 					break;
 				}
@@ -2655,7 +2652,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					}
 				}
 				if (message_flags & MSGFLAG_ASSOCIATED) {
-					propval.proptag = PROP_TAG_ASSOCIATED;
+					propval.proptag = PR_ASSOCIATED;
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
 					if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
@@ -2663,7 +2660,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					}	
 				}
 				if (message_flags & MSGFLAG_RN_PENDING) {
-					propval.proptag = PROP_TAG_READRECEIPTREQUESTED;
+					propval.proptag = PR_READ_RECEIPT_REQUESTED;
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
 					if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
@@ -2671,7 +2668,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					}	
 				}
 				if (message_flags & MSGFLAG_NRN_PENDING) {
-					propval.proptag = PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED;
+					propval.proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
 					if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {

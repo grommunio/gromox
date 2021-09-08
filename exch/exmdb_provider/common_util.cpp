@@ -672,7 +672,7 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 		        "message_properties WHERE message_id=%llu", LLU(id));
 		proptags[i++] = PROP_TAG_MID;
 		proptags[i++] = PR_MESSAGE_SIZE;
-		proptags[i++] = PROP_TAG_ASSOCIATED;
+		proptags[i++] = PR_ASSOCIATED;
 		proptags[i++] = PROP_TAG_CHANGENUMBER;
 		proptags[i++] = PR_READ;
 		proptags[i++] = PROP_TAG_HASATTACHMENTS;
@@ -1450,7 +1450,7 @@ BOOL common_util_get_message_flags(sqlite3 *psqlite,
 		}
 		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, message_id);
-		sqlite3_bind_int64(pstmt, 2, PROP_TAG_READRECEIPTREQUESTED);
+		sqlite3_bind_int64(pstmt, 2, PR_READ_RECEIPT_REQUESTED);
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
 			if (0 != sqlite3_column_int64(pstmt, 0)) {
 				message_flags |= MSGFLAG_RN_PENDING;
@@ -1458,8 +1458,7 @@ BOOL common_util_get_message_flags(sqlite3 *psqlite,
 		}
 		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, message_id);
-		sqlite3_bind_int64(pstmt, 2,
-			PROP_TAG_NONRECEIPTNOTIFICATIONREQUESTED);
+		sqlite3_bind_int64(pstmt, 2, PR_NON_RECEIPT_NOTIFICATION_REQUESTED);
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
 			if (0 != sqlite3_column_int64(pstmt, 0)) {
 				message_flags |= MSGFLAG_NRN_PENDING;
@@ -2054,7 +2053,7 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 			return GP_ERR;
 		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_message_size(db, id);
 		return GP_ADV;
-	case PROP_TAG_ASSOCIATED:
+	case PR_ASSOCIATED:
 		pv.pvalue = cu_alloc<uint8_t>();
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
@@ -3137,7 +3136,7 @@ BOOL common_util_set_properties(int table_type,
 			case PROP_TAG_HASNAMEDPROPERTIES:
 			case PROP_TAG_MID:
 			case PR_MESSAGE_SIZE:
-			case PROP_TAG_ASSOCIATED:
+			case PR_ASSOCIATED:
 			case PROP_TAG_HASATTACHMENTS:
 			case PR_DISPLAY_TO:
 			case PR_DISPLAY_CC:
@@ -5846,12 +5845,12 @@ uint32_t common_util_calculate_message_size(
 	TAGGED_PROPVAL *ppropval;
 	ATTACHMENT_CONTENT *pattachment;
 	
-	/* PROP_TAG_ASSOCIATED, PROP_TAG_MID, PROP_TAG_CHANGENUMBER */
+	/* PR_ASSOCIATED, PROP_TAG_MID, PROP_TAG_CHANGENUMBER */
 	message_size = sizeof(uint8_t) + 2*sizeof(uint64_t);
 	for (size_t i = 0; i < pmsgctnt->proplist.count; ++i) {
 		ppropval = pmsgctnt->proplist.ppropval + i;
 		switch (ppropval->proptag) {
-		case PROP_TAG_ASSOCIATED:
+		case PR_ASSOCIATED:
 		case PROP_TAG_MID:
 		case PROP_TAG_CHANGENUMBER:
 			continue;
