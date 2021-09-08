@@ -248,13 +248,12 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
 
 static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt)
 {
-	if (g_show_tree) {
+	if (g_show_tree)
 		printf("exm: Message %lxh (parent=%llxh)\n",
 			static_cast<unsigned long>(obd.nid),
 			static_cast<unsigned long long>(obd.parent.folder_id));
-		if (g_show_props)
-			gi_dump_msgctnt(0, ctnt);
-	}
+	if (g_show_tree && g_show_props)
+		gi_dump_msgctnt(0, ctnt);
 	auto folder_it = g_folder_map.find(obd.parent.folder_id);
 	if (folder_it == g_folder_map.end()) {
 		fprintf(stderr, "PF-1123: unknown parent folder %llxh\n",
@@ -263,6 +262,11 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt)
 	}
 	exm_adjust_staticprops(ctnt.proplist);
 	exm_adjust_namedprops(ctnt.proplist);
+	if (g_show_tree && g_show_props) {
+		tree(0);
+		tlog("adjusted properties:\n");
+		gi_dump_msgctnt(0, ctnt);
+	}
 	return exm_create_msg(folder_it->second.fid_to, &ctnt);
 }
 
