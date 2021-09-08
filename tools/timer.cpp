@@ -73,7 +73,7 @@ static std::atomic<bool> g_notify_stop{false};
 static size_t g_threads_num;
 static int g_last_tid;
 static int g_list_fd = -1;
-static char g_list_path[256];
+static std::string g_list_path;
 static std::vector<std::string> g_acl_list;
 static std::list<CONNECTION_NODE> g_connection_list, g_connection_list1;
 static std::list<TIMER> g_exec_list;
@@ -119,9 +119,9 @@ CONNECTION_NODE::~CONNECTION_NODE()
 static void save_timers(time_t &last_cltime, const time_t &cur_time)
 {
 	close(g_list_fd);
-	auto pfile = list_file_initd(g_list_path, "/", "%d%l%s:512");
+	auto pfile = list_file_initd(g_list_path.c_str(), "/", "%d%l%s:512");
 	if (pfile == nullptr) {
-		g_list_fd = open(g_list_path, O_APPEND|O_WRONLY);
+		g_list_fd = open(g_list_path.c_str(), O_APPEND | O_WRONLY);
 		return;
 	}
 	auto item_num = pfile->get_size();
@@ -139,9 +139,8 @@ static void save_timers(time_t &last_cltime, const time_t &cur_time)
 			}
 		}
 	}
-	char temp_path[256];
-	snprintf(temp_path, arsizeof(temp_path), "%s.tmp", g_list_path);
-	auto temp_fd = open(temp_path, O_CREAT | O_TRUNC | O_WRONLY, DEF_MODE);
+	auto temp_path = g_list_path + ".tmp";
+	auto temp_fd = open(temp_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, DEF_MODE);
 	if (temp_fd >= 0) {
 		for (size_t i = 0; i < item_num; ++i) {
 			if (pitem[i].exectime == 0)
@@ -156,13 +155,15 @@ static void save_timers(time_t &last_cltime, const time_t &cur_time)
 			write(temp_fd, temp_line, temp_len);
 		}
 		close(temp_fd);
-		if (remove(g_list_path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1403: remove %s: %s\n", g_list_path, strerror(errno));
-		if (rename(temp_path, g_list_path) < 0)
-			fprintf(stderr, "E-1404: rename %s %s: %s\n", temp_path, g_list_path, strerror(errno));
+		if (remove(g_list_path.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1403: remove %s: %s\n",
+			        g_list_path.c_str(), strerror(errno));
+		if (rename(temp_path.c_str(), g_list_path.c_str()) < 0)
+			fprintf(stderr, "E-1404: rename %s %s: %s\n",
+			        temp_path.c_str(), g_list_path.c_str(), strerror(errno));
 	}
 	last_cltime = cur_time;
-	g_list_fd = open(g_list_path, O_APPEND | O_WRONLY);
+	g_list_fd = open(g_list_path.c_str(), O_APPEND | O_WRONLY);
 }
 
 static TIMER *put_timer(TIMER &&ptimer)
@@ -181,12 +182,10 @@ static TIMER *put_timer(TIMER &&ptimer)
 
 int main(int argc, const char **argv)
 {
-	int listen_port;
 	time_t cur_time;
 	time_t last_cltime;
 	pthread_t thr_accept_id{};
 	std::vector<pthread_t> thr_ids;
-	char listen_ip[40];
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
@@ -206,37 +205,30 @@ int main(int argc, const char **argv)
 	if (pconfig == nullptr)
 		return 2;
 
-	char config_dir[256];
-	auto str_value = pconfig->get_value("config_file_path");
-	gx_strlcpy(config_dir, str_value != nullptr ? str_value :
-	           PKGSYSCONFDIR "/timer:" PKGSYSCONFDIR, GX_ARRAY_SIZE(config_dir));
-	str_value = pconfig->get_value("timer_state_path");
-	gx_strlcpy(g_list_path, str_value != nullptr ? str_value :
-	           PKGSTATEDIR "/timer.txt", sizeof(g_list_path));
-	printf("[system]: list path is %s\n", g_list_path);
+	static constexpr cfg_directive cfg_default_values[] = {
+		{"config_file_path", PKGSYSCONFDIR "/timer:" PKGSYSCONFDIR},
+		{"timer_listen_ip", "::1"},
+		{"timer_listen_port", "6666"},
+		{"timer_state_path", PKGSTATEDIR "/timer.txt"},
+		{"timer_threads_num", "50", CFG_SIZE},
+		{},
+	};
+	config_file_apply(*pconfig, cfg_default_values);
 
-	str_value = pconfig->get_value("TIMER_LISTEN_IP");
-	if (NULL == str_value) {
-		gx_strlcpy(listen_ip, "::1", GX_ARRAY_SIZE(listen_ip));
-	} else {
-		gx_strlcpy(listen_ip, str_value, sizeof(listen_ip));
-	}
-
-	str_value = pconfig->get_value("TIMER_LISTEN_PORT");
-	if (NULL == str_value) {
-		listen_port = 6666;
-	} else {
+	g_list_path = pconfig->get_value("timer_state_path");
+	int listen_port = 6666;
+	auto str_value = pconfig->get_value("timer_listen_port");
+	if (str_value != nullptr) {
 		listen_port = atoi(str_value);
 		if (listen_port <= 0)
 			listen_port = 6666;
 	}
+	auto listen_ip = pconfig->get_value("timer_listen_ip");
 	printf("[system]: listen address is [%s]:%d\n",
 	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
 	str_value = pconfig->get_value("TIMER_THREADS_NUM");
-	if (NULL == str_value) {
-		g_threads_num = 50;
-	} else {
+	if (str_value != nullptr) {
 		g_threads_num = atoi(str_value);
 		if (g_threads_num < 5)
 			g_threads_num = 5;
@@ -247,10 +239,10 @@ int main(int argc, const char **argv)
 	printf("[system]: processing threads number is %zu\n", g_threads_num);
 	g_threads_num ++;
 
-	auto pfile = list_file_initd(g_list_path, "/", "%d%l%s:512");
+	auto pfile = list_file_initd(g_list_path.c_str(), "/", "%d%l%s:512");
 	if (NULL == pfile) {
 		printf("[system]: Failed to read timers from %s: %s\n",
-			g_list_path, strerror(errno));
+		       g_list_path.c_str(), strerror(errno));
 		return 3;
 	}
 
@@ -294,9 +286,9 @@ int main(int argc, const char **argv)
 		return 4;
 	}
 	auto cl_0 = make_scope_exit([&]() { close(sockd); });
-	g_list_fd = open(g_list_path, O_CREAT | O_APPEND | O_WRONLY, S_IRUSR | S_IWUSR);
+	g_list_fd = open(g_list_path.c_str(), O_CREAT | O_APPEND | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (g_list_fd < 0) {
-		printf("[system]: Failed to open %s: %s\n", g_list_path, strerror(errno));
+		printf("[system]: Failed to open %s: %s\n", g_list_path.c_str(), strerror(errno));
 		close(sockd);
 		return 7;
 	}
@@ -329,7 +321,8 @@ int main(int argc, const char **argv)
 		return 8;
 	}
 
-	auto ret = list_file_read_fixedstrings("timer_acl.txt", config_dir, g_acl_list);
+	auto ret = list_file_read_fixedstrings("timer_acl.txt",
+	           pconfig->get_value("config_file_path"), g_acl_list);
 	if (ret == -ENOENT) {
 		printf("[system]: defaulting to implicit access ACL containing ::1.\n");
 		g_acl_list = {"::1"};
