@@ -102,6 +102,11 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 		tlog("%llu/%llxh", v, v);
 		break;
 	}
+	case PT_CURRENCY: {
+		unsigned long long v = *static_cast<uint64_t *>(tp.pvalue);
+		tlog("%llu.%04llu", v / 1000, v % 1000);
+		break;
+	}
 	case PT_BOOLEAN:
 		tlog("%u", *static_cast<uint8_t *>(tp.pvalue));
 		break;
