@@ -41,13 +41,6 @@ static void term_handler(int signo);
 
 int main(int argc, const char **argv)
 {
-	char log_path[256], state_dir[256], unchkusr_path[256];
-	char mysql_host[256];
-	std::string domainlist_path, aliasaddress_path, console_path;
-	int mysql_port;
-	char mysql_user[256];
-	char db_name[256];
-
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
@@ -60,57 +53,31 @@ int main(int argc, const char **argv)
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
 		return 1;
-	auto str_value = pconfig->get_value("STATE_PATH");
-	if (NULL == str_value) {
-		gx_strlcpy(state_dir, PKGSTATEDIR, sizeof(state_dir));
-	} else {
-		gx_strlcpy(state_dir, str_value, sizeof(state_dir));
-	}
-	printf("[system]: state path is %s\n", state_dir);
-	domainlist_path = state_dir + "/domain_list.txt"s;
-	aliasaddress_path = state_dir + "/alias_addresses.txt"s;
-	console_path = state_dir + "/console_table.txt"s;
 
-	str_value = pconfig->get_value("LOG_FILE_PATH");
-	if (NULL == str_value) {
-		gx_strlcpy(log_path, PKGLOGDIR "/sa.log", sizeof(log_path));
-	} else {
-		gx_strlcpy(log_path, str_value, GX_ARRAY_SIZE(log_path));
-	}
-	printf("[system]: log path is %s\n", log_path);
+	static constexpr cfg_directive cfg_default_values[] = {
+		{"log_file_path", PKGLOGDIR "/sa.log"},
+		{"mysql_dbname", "email"},
+		{"mysql_host", "localhost"},
+		{"mysql_port", "3306"},
+		{"mysql_username", "root"},
+		{"state_path", PKGSTATEDIR},
+		{},
+	};
+	config_file_apply(*pconfig, cfg_default_values);
 
-	str_value = pconfig->get_value("MYSQL_HOST");
-	if (NULL == str_value) {
-		strcpy(mysql_host, "localhost");
-	} else {
-		gx_strlcpy(mysql_host, str_value, GX_ARRAY_SIZE(mysql_host));
-	}
+	auto state_dir = pconfig->get_value("state_path");
+	auto domainlist_path = state_dir + "/domain_list.txt"s;
+	auto aliasaddress_path = state_dir + "/alias_addresses.txt"s;
+	auto console_path = state_dir + "/console_table.txt"s;
 
-	str_value = pconfig->get_value("MYSQL_PORT");
-	if (NULL == str_value) {
-		mysql_port = 3306;
-	} else {
-		mysql_port = atoi(str_value);
-		if (mysql_port <= 0)
-			mysql_port = 3306;
-	}
-	printf("[system]: mysql host is [%s]:%d\n", mysql_host, mysql_port);
-
-	str_value = pconfig->get_value("MYSQL_USERNAME");
-	gx_strlcpy(mysql_user, str_value != nullptr ? str_value : "root", GX_ARRAY_SIZE(mysql_user));
-	auto mysql_passwd = pconfig->get_value("MYSQL_PASSWORD");
-	str_value = pconfig->get_value("MYSQL_DBNAME");
-	if (NULL == str_value) {
-		strcpy(db_name, "email");
-	} else {
-		gx_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
-	}
-	printf("[system]: mysql database name is %s\n", db_name);
-	system_log_init(log_path);
+	system_log_init(pconfig->get_value("log_file_path"));
 	auto cl_0 = make_scope_exit(system_log_free);
 	gateway_control_init(console_path.c_str());
-	data_source_init(mysql_host, mysql_port, mysql_user, mysql_passwd, db_name);
-	engine_init(domainlist_path.c_str(), aliasaddress_path.c_str(), unchkusr_path);
+	data_source_init(pconfig->get_value("mysql_host"),
+		strtol(pconfig->get_value("mysql_port"), nullptr, 0),
+		pconfig->get_value("mysql_username"), pconfig->get_value("mysql_passwd"),
+		pconfig->get_value("mysql_dbname"));
+	engine_init(domainlist_path.c_str(), aliasaddress_path.c_str(), "");
 	if (0 != system_log_run()) {
 		printf("[system]: failed to run system log\n");
 		return 3;
