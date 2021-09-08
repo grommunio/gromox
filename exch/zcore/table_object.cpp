@@ -140,7 +140,7 @@ static BOOL table_object_get_store_table_all_proptags(
 	static const uint32_t proptag_buff[] = {
 		PR_MDB_PROVIDER,
 		PR_MESSAGE_SIZE,
-		PROP_TAG_ASSOCMESSAGESIZE,
+		PR_ASSOC_MESSAGE_SIZE,
 		PR_NORMAL_MESSAGE_SIZE,
 		PR_EMS_AB_DISPLAY_NAME_PRINTABLE,
 		PROP_TAG_DEFAULTSTORE,

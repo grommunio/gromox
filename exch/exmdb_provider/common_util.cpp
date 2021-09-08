@@ -651,10 +651,10 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 	case FOLDER_PROPERTIES_TABLE:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
 		        "folder_properties WHERE folder_id=%llu", LLU(id));
-		proptags[i++] = PROP_TAG_ASSOCIATEDCONTENTCOUNT;
+		proptags[i++] = PR_ASSOC_CONTENT_COUNT;
 		proptags[i++] = PROP_TAG_CONTENTCOUNT;
 		proptags[i++] = PR_MESSAGE_SIZE_EXTENDED;
-		proptags[i++] = PROP_TAG_ASSOCMESSAGESIZEEXTENDED;
+		proptags[i++] = PR_ASSOC_MESSAGE_SIZE_EXTENDED;
 		proptags[i++] = PROP_TAG_NORMALMESSAGESIZEEXTENDED;
 		proptags[i++] = PROP_TAG_FOLDERCHILDCOUNT;
 		proptags[i++] = PR_FOLDER_TYPE;
@@ -1870,7 +1870,7 @@ static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
 			return GP_ERR;
 		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_store_message_count(db, false);
 		return GP_ADV;
-	case PROP_TAG_ASSOCIATEDCONTENTCOUNT:
+	case PR_ASSOC_CONTENT_COUNT:
 		pv.pvalue = cu_alloc<uint32_t>();
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
@@ -1944,7 +1944,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 			return GP_ERR;
 		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_folder_count(db, id, false);
 		return GP_ADV;
-	case PROP_TAG_ASSOCIATEDCONTENTCOUNT:
+	case PR_ASSOC_CONTENT_COUNT:
 		pv.pvalue = cu_alloc<uint32_t>();
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
@@ -1981,7 +1981,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 			return GP_ERR;
 		*static_cast<uint64_t *>(pv.pvalue) = common_util_get_folder_message_size(db, id, TRUE, TRUE);
 		return GP_ADV;
-	case PROP_TAG_ASSOCMESSAGESIZEEXTENDED:
+	case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
 		pv.pvalue = cu_alloc<uint64_t>();
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
@@ -3052,12 +3052,12 @@ BOOL common_util_set_properties(int table_type,
 			case PR_MESSAGE_SIZE:
 			case PROP_TAG_CONTENTCOUNT:
 			case PR_STORE_RECORD_KEY:
-			case PROP_TAG_ASSOCMESSAGESIZE:
+			case PR_ASSOC_MESSAGE_SIZE:
 			case PR_NORMAL_MESSAGE_SIZE:
 			case PR_MESSAGE_SIZE_EXTENDED:
 			case PROP_TAG_INTERNETARTICLENUMBER:
-			case PROP_TAG_ASSOCIATEDCONTENTCOUNT:
-			case PROP_TAG_ASSOCMESSAGESIZEEXTENDED:
+			case PR_ASSOC_CONTENT_COUNT:
+			case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
 			case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
@@ -3075,7 +3075,7 @@ BOOL common_util_set_properties(int table_type,
 			case PROP_TAG_FOLDERFLAGS:
 			case PROP_TAG_SUBFOLDERS:
 			case PROP_TAG_CONTENTCOUNT:
-			case PROP_TAG_ASSOCIATEDCONTENTCOUNT:
+			case PR_ASSOC_CONTENT_COUNT:
 			case PROP_TAG_FOLDERCHILDCOUNT:
 			case PROP_TAG_CONTENTUNREADCOUNT:
 			case PR_FOLDER_TYPE:
@@ -3083,7 +3083,7 @@ BOOL common_util_set_properties(int table_type,
 			case PROP_TAG_FOLDERPATHNAME:
 			case PR_PARENT_SOURCE_KEY:
 			case PR_MESSAGE_SIZE_EXTENDED:
-			case PROP_TAG_ASSOCMESSAGESIZEEXTENDED:
+			case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
 			case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
@@ -3566,8 +3566,8 @@ BOOL common_util_remove_properties(int table_type, uint64_t id,
 		case STORE_PROPERTIES_TABLE:
 			switch (pproptags->pproptag[i]) {
 			case PR_MESSAGE_SIZE_EXTENDED:
-			case PROP_TAG_ASSOCIATEDCONTENTCOUNT:
-			case PROP_TAG_ASSOCMESSAGESIZEEXTENDED:
+			case PR_ASSOC_CONTENT_COUNT:
+			case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
 			case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
 				continue;
 			}
@@ -5394,7 +5394,7 @@ BOOL common_util_increase_store_size(sqlite3 *psqlite,
 	if (0 != fai_size) {
 		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, fai_size);
-		sqlite3_bind_int64(pstmt, 2, PROP_TAG_ASSOCMESSAGESIZEEXTENDED);
+		sqlite3_bind_int64(pstmt, 2, PR_ASSOC_MESSAGE_SIZE_EXTENDED);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			return FALSE;
 		}
@@ -5428,7 +5428,7 @@ BOOL common_util_decrease_store_size(sqlite3 *psqlite,
 	if (0 != fai_size) {
 		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, fai_size);
-		sqlite3_bind_int64(pstmt, 2, PROP_TAG_ASSOCMESSAGESIZEEXTENDED);
+		sqlite3_bind_int64(pstmt, 2, PR_ASSOC_MESSAGE_SIZE_EXTENDED);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			return FALSE;
 		}

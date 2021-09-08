@@ -710,7 +710,7 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PROP_TAG_ASSOCMESSAGESIZEEXTENDED);
+	sqlite3_bind_int64(pstmt, 1, PR_ASSOC_MESSAGE_SIZE_EXTENDED);
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");

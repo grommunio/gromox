@@ -519,9 +519,7 @@ BOOL LOGON_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	pproptags->pproptag[pproptags->count] =
 			PROP_TAG_EXTENDEDRULESIZELIMIT;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-				PROP_TAG_ASSOCMESSAGESIZE;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_ASSOC_MESSAGE_SIZE;
 	pproptags->pproptag[pproptags->count] = PR_MESSAGE_SIZE;
 	pproptags->count ++;
 	pproptags->pproptag[pproptags->count++] = PR_NORMAL_MESSAGE_SIZE;
@@ -529,9 +527,7 @@ BOOL LOGON_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	pproptags->pproptag[pproptags->count] =
 					PROP_TAG_CONTENTCOUNT;
 	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-			PROP_TAG_ASSOCIATEDCONTENTCOUNT;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_ASSOC_CONTENT_COUNT;
 	pproptags->pproptag[pproptags->count++] = PR_TEST_LINE_SPEED;
 	return TRUE;
 }
@@ -566,8 +562,8 @@ static BOOL lo_check_readonly_property(const LOGON_OBJECT *plogon, uint32_t prop
 	case PROP_TAG_MAILBOXOWNERNAME_STRING8:
 	case PR_MESSAGE_SIZE:
 	case PR_MESSAGE_SIZE_EXTENDED:
-	case PROP_TAG_ASSOCMESSAGESIZE:
-	case PROP_TAG_ASSOCMESSAGESIZEEXTENDED:
+	case PR_ASSOC_MESSAGE_SIZE:
+	case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
 	case PR_NORMAL_MESSAGE_SIZE:
 	case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
 	case PR_OBJECT_TYPE:
@@ -616,16 +612,14 @@ static BOOL logon_object_get_calculated_property(
 			return FALSE;	
 		**reinterpret_cast<uint32_t **>(ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
-	case PROP_TAG_ASSOCMESSAGESIZE:
+	case PR_ASSOC_MESSAGE_SIZE:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (FALSE == exmdb_client_get_store_property(
-			plogon->dir, 0, PROP_TAG_ASSOCMESSAGESIZEEXTENDED,
-			&pvalue) || NULL == pvalue) {
+		if (!exmdb_client_get_store_property(plogon->dir, 0,
+		    PR_ASSOC_MESSAGE_SIZE_EXTENDED, &pvalue) || pvalue == nullptr)
 			return FALSE;	
-		}
 		**reinterpret_cast<uint32_t **>(ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
 	case PR_NORMAL_MESSAGE_SIZE:
