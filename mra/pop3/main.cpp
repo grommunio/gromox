@@ -58,21 +58,8 @@ static void term_handler(int signo);
 int main(int argc, const char **argv)
 { 
 	int retcode = EXIT_FAILURE;
-	unsigned int context_num, context_aver_units;
-	size_t context_max_mem;
-	size_t context_aver_mem;
-	int listen_port, listen_ssl_port;
-	int pop3_auth_times, pop3_conn_timeout;
-	unsigned int thread_init_num, thread_charge_num;
-	int pop3_support_stls, pop3_force_stls;
-	const char *service_plugin_path, *cdn_cache_path; 
-	const char *console_server_ip, *user_name;
-	const char *certificate_path, *cb_passwd, *private_key_path;
-	int block_interval_auth;
-	int console_server_port; 
 	struct rlimit rl;
 	struct passwd *puser_pass;
-	const char *str_val;
 	char temp_buff[256];
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -97,16 +84,34 @@ int main(int argc, const char **argv)
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
 
-	if (!resource_get_integer("LISTEN_PORT", &listen_port)) {
-		listen_port = 110; 
-		resource_set_integer("LISTEN_PORT", listen_port);
-	}
-	printf("[system]: system listening port %d\n", listen_port);
+	static constexpr cfg_directive cfg_default_values[] = {
+		{"block_interval_auths", "1min", CFG_TIME},
+		{"cdn_cache_path", "/cdn"},
+		{"config_file_path", PKGSYSCONFDIR "/pop3:" PKGSYSCONFDIR},
+		{"console_server_ip", "::1"},
+		{"console_server_port", "7788"},
+		{"context_average_mem", "512K", CFG_SIZE},
+		{"context_average_units", "5000", CFG_SIZE},
+		{"context_max_mem", "2M", CFG_SIZE},
+		{"context_num", "400", CFG_SIZE},
+		{"data_file_path", PKGDATADIR "/pop3:" PKGDATADIR},
+		{"listen_port", "110"},
+		{"listen_ssl_port", "0"},
+		{"pop3_auth_times", "10", CFG_SIZE},
+		{"pop3_conn_timeout", "3min", CFG_TIME},
+		{"pop3_force_stls", "false", CFG_BOOL},
+		{"pop3_support_stls", "false", CFG_BOOL},
+		{"running_identity", "gromox"},
+		{"service_plugin_ignore_errors", "false", CFG_BOOL},
+		{"service_plugin_path", PKGLIBDIR},
+		{"state_path", PKGSTATEDIR},
+		{"thread_charge_num", "20", CFG_SIZE},
+		{"thread_init_num", "5", CFG_SIZE},
+		{},
+	};
+	config_file_apply(*g_config_file, cfg_default_values);
 
-	if (!resource_get_integer("LISTEN_SSL_PORT", &listen_ssl_port))
-		listen_ssl_port = 0;
-
-	str_val = resource_get_string("HOST_ID");
+	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {
 		memset(temp_buff, 0, arsizeof(temp_buff));
 		gethostname(temp_buff, arsizeof(temp_buff));
@@ -127,25 +132,10 @@ int main(int argc, const char **argv)
 			"will be used as default domain\n");
 	}
 	printf("[system]: default domain is %s\n", str_val);
-	
-	user_name = resource_get_string("RUNNING_IDENTITY");
-	if (user_name == nullptr)
-		user_name = "gromox";
-	if (*user_name == '\0')
-		printf("[system]: running identity will not be changed\n");
-	else
-		printf("[system]: running identity of process will be %s\n", user_name);
 
-	if (!resource_get_uint("CONTEXT_NUM", &context_num)) {
-		context_num = 400;
-		resource_set_integer("CONTEXT_NUM", context_num);
-	}
-	printf("[system]: total contexts number is %d\n", context_num);
-
-	if (!resource_get_uint("THREAD_CHARGE_NUM", &thread_charge_num)) {
-		thread_charge_num = 20;
-		resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
-	} else {
+	unsigned int context_num = 400, thread_charge_num = 20;
+	g_config_file->get_uint("context_num", &context_num);
+	if (g_config_file->get_uint("thread_charge_num", &thread_charge_num)) {
 		if (thread_charge_num < 4) {
 			thread_charge_num = 20;
 			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
@@ -156,11 +146,9 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: one thread is in charge of %d contexts\n",
 		thread_charge_num);
-	
-	if (!resource_get_uint("THREAD_INIT_NUM", &thread_init_num)) {
-		thread_init_num = 5;
-		resource_set_integer("THREAD_INIT_NUM", thread_init_num);
-	}
+
+	unsigned int thread_init_num = 5;
+	g_config_file->get_uint("thread_init_num", &thread_init_num);
 	if (thread_init_num * thread_charge_num > context_num) {
 		thread_init_num = context_num / thread_charge_num;
 		if (0 == thread_init_num) {
@@ -174,11 +162,9 @@ int main(int argc, const char **argv)
 	printf("[system]: threads pool initial threads number is %d\n",
 		thread_init_num);
 
+	unsigned int context_aver_mem = 8;
 	str_val = resource_get_string("CONTEXT_AVERAGE_MEM");
-	if (str_val == NULL) {
-		context_aver_mem = 8;
-		resource_set_string("CONTEXT_AVERAGE_MEM", "512K");
-	} else {
+	if (str_val != nullptr) {
 		context_aver_mem = atobyte(str_val)/(64*1024);
 		if (context_aver_mem <= 1) {
 			context_aver_mem = 4;
@@ -188,13 +174,10 @@ int main(int argc, const char **argv)
 	bytetoa(context_aver_mem*64*1024, temp_buff);
 	printf("[pop3]: context average memory is %s\n", temp_buff);
  
+	size_t context_max_mem = 2U << 20;
 	str_val = resource_get_string("CONTEXT_MAX_MEM");
-	if (str_val == NULL) {
-		context_max_mem = 32; 
-		resource_set_string("CONTEXT_MAX_MEM", "2M");
-	} else {
+	if (str_val != nullptr)
 		context_max_mem = atobyte(str_val)/(64*1024); 
-	}
 	if (context_max_mem < context_aver_mem) {
 		context_max_mem = context_aver_mem;
 		bytetoa(context_max_mem*64*1024, temp_buff);
@@ -204,10 +187,8 @@ int main(int argc, const char **argv)
 	bytetoa(context_max_mem, temp_buff);
 	printf("[pop3]: context maximum memory is %s\n", temp_buff);
 
-	if (!resource_get_uint("CONTEXT_AVERAGE_UNITS", &context_aver_units)) {
-		context_aver_units = 5000;
-		resource_set_integer("CONTEXT_AVERAGE_UNITS", context_aver_units);
-	} else {
+	unsigned int context_aver_units = 5000;
+	if (g_config_file->get_uint("context_average_units", &context_aver_units)) {
 		if (context_aver_units < 256) {
 			context_aver_units = 256;
 			resource_set_integer("CONTEXT_AVERAGE_UNITS", context_aver_units);
@@ -215,11 +196,9 @@ int main(int argc, const char **argv)
 	}
 	printf("[pop3]: context average units number is %d\n", context_aver_units);
 	
+	int pop3_conn_timeout = 180;
 	str_val = resource_get_string("POP3_CONN_TIMEOUT");
-	if (str_val == NULL) {
-		pop3_conn_timeout = 180;
-		resource_set_string("POP3_CONN_TIMEOUT", "3minutes");
-	} else {
+	if (str_val != nullptr) {
 		pop3_conn_timeout = atoitvl(str_val);
 		if (pop3_conn_timeout <= 0) {
 			pop3_conn_timeout = 180;
@@ -229,10 +208,8 @@ int main(int argc, const char **argv)
 	itvltoa(pop3_conn_timeout, temp_buff);
 	printf("[pop3]: pop3 socket read write time out is %s\n", temp_buff);
  
-	if (!resource_get_integer("POP3_AUTH_TIMES", &pop3_auth_times)) {
-		pop3_auth_times = 10;
-		resource_set_integer("POP3_AUTH_TIMES", pop3_auth_times);
-	} else {
+	int pop3_auth_times = 10;
+	if (g_config_file->get_int("pop3_auth_times", &pop3_auth_times)) {
 		if (pop3_auth_times <= 0) {
 			pop3_auth_times = 10;
 			resource_set_integer("POP3_AUTH_TIMES", pop3_auth_times);
@@ -241,11 +218,9 @@ int main(int argc, const char **argv)
 	printf("[pop3]: maximum authentification failure times is %d\n", 
 			pop3_auth_times);
 
+	int block_interval_auth = 60;
 	str_val = resource_get_string("BLOCK_INTERVAL_AUTHS");
-	if (str_val == NULL) {
-		block_interval_auth = 60;
-		resource_set_string("BLOCK_INTERVAL_AUTHS", "1 minute");
-	} else {
+	if (str_val != nullptr) {
 		block_interval_auth = atoitvl(str_val);
 		if (block_interval_auth <= 0) {
 			block_interval_auth = 60;
@@ -256,26 +231,13 @@ int main(int argc, const char **argv)
 	printf("[pop3]: block client %s when authentification failure times "
 			"is exceeded\n", temp_buff);
 
-	str_val = resource_get_string("POP3_SUPPORT_STLS");
-	if (str_val == NULL) {
-		pop3_support_stls = FALSE;
-		resource_set_string("POP3_SUPPORT_STLS", "FALSE");
-	} else {
-		if (0 == strcasecmp(str_val, "FALSE")) {
-			pop3_support_stls = FALSE;
-		} else if (0 == strcasecmp(str_val, "TRUE")) {
-			pop3_support_stls = TRUE;
-		} else {
-			pop3_support_stls = FALSE;
-			resource_set_string("POP3_SUPPORT_STLS", "FALSE");
-		}
-	}
-	certificate_path = resource_get_string("POP3_CERTIFICATE_PATH");
-	cb_passwd = resource_get_string("POP3_CERTIFICATE_PASSWD");
-	private_key_path = resource_get_string("POP3_PRIVATE_KEY_PATH");
-	if (TRUE == pop3_support_stls) {
+	auto pop3_support_stls = parse_bool(g_config_file->get_value("pop3_support_stls"));
+	auto certificate_path = g_config_file->get_value("pop3_certificate_path");
+	auto cb_passwd = g_config_file->get_value("pop3_certificate_passwd");
+	auto private_key_path = g_config_file->get_value("pop3_private_key_path");
+	if (pop3_support_stls) {
 		if (NULL == certificate_path || NULL == private_key_path) {
-			pop3_support_stls = FALSE;
+			pop3_support_stls = false;
 			printf("[pop3]: turn off TLS support because certificate or "
 				"private key path is empty\n");
 		} else {
@@ -285,46 +247,17 @@ int main(int argc, const char **argv)
 		printf("[pop3]: pop3 doesn't support TLS mode\n");
 	}
 	
-	str_val = resource_get_string("POP3_FORCE_STLS");
-	if (str_val == NULL) {
-		pop3_force_stls = FALSE;
-		resource_set_string("POP3_FORCE_STLS", "FALSE");
-	} else {
-		if (0 == strcasecmp(str_val, "FALSE")) {
-			pop3_force_stls = FALSE;
-		} else if (0 == strcasecmp(str_val, "TRUE")) {
-			pop3_force_stls = TRUE;
-		} else {
-			pop3_force_stls = FALSE;
-			resource_set_string("POP3_FORCE_STLS", "FALSE");
-		}
-	}
-	
-	if (TRUE == pop3_support_stls && TRUE == pop3_force_stls) {
+	auto pop3_force_stls = parse_bool(g_config_file->get_value("pop3_force_stls"));
+	if (pop3_support_stls && pop3_force_stls)
 		printf("[pop3]: pop3 MUST running in TLS mode\n");
-	}
-
-	if (FALSE == pop3_support_stls && listen_ssl_port > 0) {
+	int listen_ssl_port = 0;
+	g_config_file->get_int("listen_ssl_port", &listen_ssl_port);
+	if (!pop3_support_stls && listen_ssl_port > 0)
 		listen_ssl_port = 0;
-	}
-
 	if (listen_ssl_port > 0) {
 		printf("[system]: system SSL listening port %d\n", listen_ssl_port);
 	}
 
-	cdn_cache_path = resource_get_string("CDN_CACHE_PATH");
-	if (cdn_cache_path == NULL) {
-		cdn_cache_path = "/cdn";
-		resource_set_string("CDN_CACHE_PATH", cdn_cache_path);
-	}
-	printf("[system]: cdn cache path is %s\n", cdn_cache_path);
-
-	service_plugin_path = resource_get_string("SERVICE_PLUGIN_PATH");
-	if (service_plugin_path == NULL) {
-		service_plugin_path = PKGLIBDIR;
-		resource_set_string("SERVICE_PLUGIN_PATH", service_plugin_path);
-	}
-	printf("[service]: service plugins path is %s\n", service_plugin_path);
 	const char *str_value = resource_get_string("SERVICE_PLUGIN_LIST");
 	const char *const *service_plugin_list = NULL;
 	if (str_value != NULL) {
@@ -334,40 +267,10 @@ int main(int argc, const char **argv)
 			return EXIT_FAILURE;
 		}
 	}
-	str_value = resource_get_string("SERVICE_PLUGIN_IGNORE_ERRORS");
-	bool svcplug_ignerr = parse_bool(str_value);
-	resource_set_string("SERVICE_PLUGIN_IGNORE_ERRORS", svcplug_ignerr ? "true" : "false");
 
-	const char *config_dir = str_val = resource_get_string("CONFIG_FILE_PATH");
-	if (str_val == NULL) {
-		config_dir = str_val = PKGSYSCONFDIR "/pop3:" PKGSYSCONFDIR;
-		resource_set_string("CONFIG_FILE_PATH", str_val);
-	}
-	printf("[system]: config files path is %s\n", str_val);
-	
-	const char *data_dir = str_val = resource_get_string("DATA_FILE_PATH");
-	if (str_val == NULL) {
-		data_dir = str_val = PKGDATADIR "/pop3:" PKGDATADIR;
-		resource_set_string("DATA_FILE_PATH", str_val);
-	}
-	printf("[system]: data files path is %s\n", str_val);
-	
-	const char *state_dir = str_val = resource_get_string("STATE_PATH");
-	if (str_val == nullptr) {
-		state_dir = PKGSTATEDIR;
-		resource_set_string("STATE_PATH", state_dir);
-	}
-	printf("[system]: state path is %s\n", state_dir);
-
-	console_server_ip = resource_get_string("CONSOLE_SERVER_IP");
-	if (console_server_ip == NULL) {
-		console_server_ip = "::1";
-		resource_set_string("CONSOLE_SERVER_IP", console_server_ip);
-	}
-	if (!resource_get_integer("CONSOLE_SERVER_PORT", &console_server_port)) {
-		console_server_port = 7788; 
-		resource_set_integer("CONSOLE_SERVER_PORT", console_server_port);
-	}
+	auto console_server_ip = g_config_file->get_value("console_server_ip");
+	int console_server_port = 0;
+	g_config_file->get_int("console_server_port", &console_server_port);
 	printf("[console_server]: console server address is [%s]:%d\n",
 	       *console_server_ip == '\0' ? "*" : console_server_ip, console_server_port);
 
@@ -376,6 +279,8 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 	auto cleanup_2 = make_scope_exit(resource_stop);
+	int listen_port = 110;
+	g_config_file->get_int("listen_port", &listen_port);
 	listener_init(listen_port, listen_ssl_port);
 																			
 	if (0 != listener_run()) {
@@ -398,6 +303,7 @@ int main(int argc, const char **argv)
 		}
 		printf("[system]: set file limitation to %d\n", 2*context_num + 128);
 	}
+	auto user_name = g_config_file->get_value("running_identity");
 	if (*user_name != '\0') {
 		puser_pass = getpwnam(user_name);
 		if (NULL == puser_pass) {
@@ -414,9 +320,13 @@ int main(int argc, const char **argv)
 			return EXIT_FAILURE;
 		}
 	}
-	service_init({service_plugin_path, config_dir, data_dir, state_dir,
+	service_init({g_config_file->get_value("service_plugin_path"),
+		g_config_file->get_value("config_file_path"),
+		g_config_file->get_value("data_file_path"),
+		g_config_file->get_value("state_path"),
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
-		svcplug_ignerr, context_num});
+		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
+		context_num});
 	printf("--------------------------- service plugins begin"
 		   "---------------------------\n");
 	if (0 != service_run()) { 
@@ -448,7 +358,7 @@ int main(int argc, const char **argv)
 	pop3_parser_init(context_num, context_max_mem, pop3_conn_timeout,
 		pop3_auth_times, block_interval_auth, pop3_support_stls,
 		pop3_force_stls, certificate_path, cb_passwd,
-		private_key_path, cdn_cache_path);  
+		private_key_path, g_config_file->get_value("cdn_cache_path"));
  
 	if (0 != pop3_parser_run()) { 
 		printf("[system]: failed to run pop3 parser\n");
