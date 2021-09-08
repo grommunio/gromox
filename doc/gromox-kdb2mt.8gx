@@ -74,7 +74,7 @@ kopano-server.cfg, call kdb2mt with the L1 and L2 options.
 Extract just the object with the given hierarchy id. This option may be
 specified multiple times. In the output stream, the objects will have an
 unspecified location given as their parent folder. (mt2exm will use the
-inbox.)
+drafts folder because it is expectedly less crowded than one's inbox.)
 .SH Environment variables
 .TP
 \fBSRCPASS\fP
