@@ -103,6 +103,37 @@ static void exm_read_base_maps()
 	gi_dump_name_map(g_src_name_map);
 }
 
+static void exm_adjust_staticprops(TPROPVAL_ARRAY &props)
+{
+	/*
+	 * The WRITE_MESSAGE RPC applies certain constraints (cf.
+	 * exmdb_provider:common_util_set_properties). Apply substitutions that
+	 * exmdb_server_set_instance_properties would do.
+	 */
+	auto mfp = static_cast<uint32_t *>(tpropval_array_get_propval(&props, PR_MESSAGE_FLAGS));
+	uint32_t mf = mfp != nullptr ? *mfp : 0;
+	uint8_t a_one = 1;
+	TAGGED_PROPVAL tp;
+	tp.pvalue = &a_one;
+
+	if (mf & MSGFLAG_READ) {
+		tp.proptag = PR_READ;
+		tpropval_array_set_propval(&props, &tp);
+	}
+	if (mf & MSGFLAG_ASSOCIATED) {
+		tp.proptag = PR_ASSOCIATED;
+		tpropval_array_set_propval(&props, &tp);
+	}
+	if (mf & MSGFLAG_RN_PENDING) {
+		tp.proptag = PR_READ_RECEIPT_REQUESTED;
+		tpropval_array_set_propval(&props, &tp);
+	}
+	if (mf & MSGFLAG_NRN_PENDING) {
+		tp.proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
+		tpropval_array_set_propval(&props, &tp);
+	}
+}
+
 static void exm_adjust_namedprops(TPROPVAL_ARRAY &props)
 {
 	for (size_t i = 0; i < props.count; ++i) {
@@ -230,6 +261,7 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt)
 		        static_cast<unsigned long long>(obd.parent.folder_id));
 		return 0;
 	}
+	exm_adjust_staticprops(ctnt.proplist);
 	exm_adjust_namedprops(ctnt.proplist);
 	return exm_create_msg(folder_it->second.fid_to, &ctnt);
 }
