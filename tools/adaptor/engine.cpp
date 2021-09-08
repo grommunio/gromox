@@ -25,16 +25,13 @@ static std::atomic<bool> g_notify_stop{false};
 static pthread_t g_thread_id1;
 static char g_domainlist_path[256];
 static char g_aliasaddress_path[256];
-static char g_unchkusr_path[256];
 
 static void *adap_thrwork(void *);
 
-void engine_init(const char *domainlist_path,
-    const char *aliasaddress_path, const char *unchkusr_path)
+void engine_init(const char *domainlist_path, const char *aliasaddress_path)
 {
 	gx_strlcpy(g_domainlist_path, domainlist_path, GX_ARRAY_SIZE(g_domainlist_path));
 	gx_strlcpy(g_aliasaddress_path, aliasaddress_path, GX_ARRAY_SIZE(g_aliasaddress_path));
-	gx_strlcpy(g_unchkusr_path, unchkusr_path, GX_ARRAY_SIZE(g_unchkusr_path));
 }
 
 

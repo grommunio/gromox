@@ -77,7 +77,7 @@ int main(int argc, const char **argv)
 		strtol(pconfig->get_value("mysql_port"), nullptr, 0),
 		pconfig->get_value("mysql_username"), pconfig->get_value("mysql_passwd"),
 		pconfig->get_value("mysql_dbname"));
-	engine_init(domainlist_path.c_str(), aliasaddress_path.c_str(), "");
+	engine_init(domainlist_path.c_str(), aliasaddress_path.c_str());
 	if (0 != system_log_run()) {
 		printf("[system]: failed to run system log\n");
 		return 3;
