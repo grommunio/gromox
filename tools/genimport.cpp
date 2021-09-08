@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <memory>
 #include <mysql.h>
 #include <string>
@@ -119,6 +120,16 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 			tlog("%cstr(%zu)=\"%s\"", u, z, s);
 		else
 			tlog("%cstr(%zu)", u, z);
+		break;
+	}
+	case PT_SYSTIME: {
+		unsigned long long v = *static_cast<uint64_t *>(tp.pvalue);
+		time_t ut = rop_util_nttime_to_unix(v);
+		char buf[80]{};
+		auto tm = localtime(&ut);
+		if (tm != nullptr)
+			strftime(buf, arsizeof(buf), "%FT%T", tm);
+		tlog("%s (raw %llxh)", buf, v);
 		break;
 	}
 	case PT_BINARY: {
