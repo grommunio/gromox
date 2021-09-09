@@ -115,22 +115,16 @@ static void exm_adjust_staticprops(TPROPVAL_ARRAY &props)
 	uint8_t a_one = 1;
 	TAGGED_PROPVAL tp;
 	tp.pvalue = &a_one;
-
-	if (mf & MSGFLAG_READ) {
-		tp.proptag = PR_READ;
-		tpropval_array_set_propval(&props, &tp);
-	}
-	if (mf & MSGFLAG_ASSOCIATED) {
-		tp.proptag = PR_ASSOCIATED;
-		tpropval_array_set_propval(&props, &tp);
-	}
-	if (mf & MSGFLAG_RN_PENDING) {
-		tp.proptag = PR_READ_RECEIPT_REQUESTED;
-		tpropval_array_set_propval(&props, &tp);
-	}
-	if (mf & MSGFLAG_NRN_PENDING) {
-		tp.proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
-		tpropval_array_set_propval(&props, &tp);
+	static constexpr std::pair<unsigned int, unsigned int> xmap[] = {
+		{MSGFLAG_READ, PR_READ},
+		{MSGFLAG_ASSOCIATED, PR_ASSOCIATED},
+		{MSGFLAG_RN_PENDING, PR_READ_RECEIPT_REQUESTED},
+		{MSGFLAG_NRN_PENDING, PR_NON_RECEIPT_NOTIFICATION_REQUESTED},
+	};
+	for (const auto &e : xmap) {
+		tp.proptag = e.second;
+		if (mf & e.first && !tpropval_array_set_propval(&props, &tp))
+			throw std::bad_alloc();
 	}
 }
 
