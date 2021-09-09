@@ -407,9 +407,9 @@ static int ftstream_parser_read_element(
 		goto CONTINUE_WAITING;
 	}
 	ppropval->proptag = PROP_TAG(proptype, propid);
-	if (proptype & 0x8000) {
+	if (proptype & FXICS_CODEPAGE_FLAG) {
 		/* codepage string */
-		codepage = proptype & 0x7FFF;
+		codepage = proptype & ~FXICS_CODEPAGE_FLAG;
 		if (1200 == codepage) {
 			ppropval->proptag = CHANGE_PROP_TYPE(ppropval->proptag, PT_UNICODE);
 			ppropval->pvalue = ftstream_parser_read_wstring(
@@ -852,8 +852,8 @@ gxerr_t FTSTREAM_PARSER::process(RECORD_MARKER record_marker,
 				break;
 			}
 			proptype = PROP_TYPE(propval.proptag);
-			if (proptype & 0x8000) {
-				codepage = proptype & 0x7FFF;
+			if (proptype & FXICS_CODEPAGE_FLAG) {
+				codepage = proptype & ~FXICS_CODEPAGE_FLAG;
 				len = 2 * strlen(static_cast<char *>(propval.pvalue)) + 2;
 				pvalue = common_util_alloc(len);
 				if (pvalue == nullptr || common_util_mb_to_utf8(codepage,

@@ -423,9 +423,9 @@ static BOOL ftstream_producer_write_propvalue(
 					if (NULL == pinfo) {
 						return FALSE;
 					}
-					write_type = 0x8000 | (uint16_t)pinfo->cpid;
+					write_type = FXICS_CODEPAGE_FLAG | (uint16_t)pinfo->cpid;
 				} else {
-					write_type = 0x8000 | 1200;
+					write_type = FXICS_CODEPAGE_FLAG | 1200;
 				}
 			} else if (STRING_OPTION_NONE == pstream->string_option) {
 				if (proptype == PT_UNICODE) {
