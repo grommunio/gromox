@@ -350,7 +350,6 @@ static int connect_exmdb(const char *dir)
 	int process_id;
 	BINARY tmp_bin;
 	char remote_id[128];
-	char tmp_buff[1024];
 	uint8_t response_code;
 	CONNECT_REQUEST request;
 	
@@ -386,7 +385,6 @@ static int connect_exmdb(const char *dir)
 		close(sockd);
 		return -1;
 	}
-	tmp_bin.pv = tmp_buff;
 	if (!cl_rd_sock(sockd, &tmp_bin)) {
 		close(sockd);
 		return -1;
