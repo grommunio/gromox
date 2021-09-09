@@ -336,11 +336,10 @@ static PROPERTY_NAME* ftstream_parser_read_property_name(
 	return NULL;
 }
 
-static int ftstream_parser_read_element(
-	FTSTREAM_PARSER *pstream, uint32_t *pmarker,
-	TAGGED_PROPVAL *ppropval)
+static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
+    uint32_t &marker, TAGGED_PROPVAL &propval)
 {
-	auto &propval = *ppropval;
+	auto pstream = &stream;
 	uint32_t count;
 	BOOL b_continue;
 	uint32_t atom_element = 0;
@@ -379,10 +378,10 @@ static int ftstream_parser_read_element(
 	case INCRSYNCMESSAGE:
 	case INCRSYNCGROUPINFO:
 	case FXERRORINFO:
-		*pmarker = atom_element;
+		marker = atom_element;
 		return FTSTREAM_PARSER_READ_OK;
 	}
-	*pmarker = 0;
+	marker = 0;
 	uint16_t proptype = PROP_TYPE(atom_element);
 	uint16_t propid = PROP_ID(atom_element);
 	/* META_TAG_IDSETGIVEN, MS-OXCFXICS 3.2.5.2.1 */
@@ -402,19 +401,17 @@ static int ftstream_parser_read_element(
 	if (pstream->st_size == pstream->offset) {
 		goto CONTINUE_WAITING;
 	}
-	ppropval->proptag = PROP_TAG(proptype, propid);
+	propval.proptag = PROP_TAG(proptype, propid);
 	if (proptype & FXICS_CODEPAGE_FLAG) {
 		/* codepage string */
 		auto codepage = proptype & ~FXICS_CODEPAGE_FLAG;
 		if (1200 == codepage) {
-			ppropval->proptag = CHANGE_PROP_TYPE(ppropval->proptag, PT_UNICODE);
-			ppropval->pvalue = ftstream_parser_read_wstring(
-										pstream, &b_continue);
+			propval.proptag = CHANGE_PROP_TYPE(propval.proptag, PT_UNICODE);
+			propval.pvalue = ftstream_parser_read_wstring(pstream, &b_continue);
 		} else {
-			ppropval->pvalue = ftstream_parser_read_string(
-										pstream, &b_continue);
+			propval.pvalue = ftstream_parser_read_string(pstream, &b_continue);
 		}
-		if (NULL == ppropval->pvalue) {
+		if (propval.pvalue == nullptr) {
 			if (b_continue)
 				goto CONTINUE_WAITING;
 			return FTSTREAM_PARSER_READ_FAIL;
@@ -481,18 +478,16 @@ static int ftstream_parser_read_element(
 		return ftstream_parser_read_uint64(pstream, v) ? FTSTREAM_PARSER_READ_OK : FTSTREAM_PARSER_READ_FAIL;
 	}
 	case PT_STRING8:
-		ppropval->pvalue = ftstream_parser_read_string(
-								pstream, &b_continue);
-		if (NULL == ppropval->pvalue) {
+		propval.pvalue = ftstream_parser_read_string(pstream, &b_continue);
+		if (propval.pvalue == nullptr) {
 			if (b_continue)
 				goto CONTINUE_WAITING;
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
 		return FTSTREAM_PARSER_READ_OK;
 	case PT_UNICODE:
-		ppropval->pvalue = ftstream_parser_read_wstring(
-								pstream, &b_continue);
-		if (NULL == ppropval->pvalue) {
+		propval.pvalue = ftstream_parser_read_wstring(pstream, &b_continue);
+		if (propval.pvalue == nullptr) {
 			if (b_continue)
 				goto CONTINUE_WAITING;
 			return FTSTREAM_PARSER_READ_FAIL;
@@ -530,7 +525,7 @@ static int ftstream_parser_read_element(
 	}
 	case PT_MV_SHORT: {
 		auto sa = cu_alloc<SHORT_ARRAY>();
-		ppropval->pvalue = sa;
+		propval.pvalue = sa;
 		if (sa == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
 		if (FALSE == ftstream_parser_read_uint32(
@@ -560,7 +555,7 @@ static int ftstream_parser_read_element(
 	}
 	case PT_MV_LONG: {
 		auto la = cu_alloc<LONG_ARRAY>();
-		ppropval->pvalue = la;
+		propval.pvalue = la;
 		if (la == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
 		if (FALSE == ftstream_parser_read_uint32(
@@ -590,7 +585,7 @@ static int ftstream_parser_read_element(
 	}
 	case PT_MV_I8: {
 		auto la = cu_alloc<LONGLONG_ARRAY>();
-		ppropval->pvalue = la;
+		propval.pvalue = la;
 		if (la == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
 		if (FALSE == ftstream_parser_read_uint32(
@@ -620,7 +615,7 @@ static int ftstream_parser_read_element(
 	}
 	case PT_MV_STRING8: {
 		auto sa = cu_alloc<STRING_ARRAY>();
-		ppropval->pvalue = sa;
+		propval.pvalue = sa;
 		if (sa == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
 		if (FALSE == ftstream_parser_read_uint32(
@@ -659,7 +654,7 @@ static int ftstream_parser_read_element(
 	}
 	case PT_MV_UNICODE: {
 		auto sa = cu_alloc<STRING_ARRAY>();
-		ppropval->pvalue = sa;
+		propval.pvalue = sa;
 		if (sa == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
 		if (FALSE == ftstream_parser_read_uint32(
@@ -698,7 +693,7 @@ static int ftstream_parser_read_element(
 	}
 	case PT_MV_CLSID: {
 		auto ga = cu_alloc<GUID_ARRAY>();
-		ppropval->pvalue = ga;
+		propval.pvalue = ga;
 		if (ga == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
 		if (FALSE == ftstream_parser_read_uint32(
@@ -727,7 +722,7 @@ static int ftstream_parser_read_element(
 	}
 	case PT_MV_BINARY: {
 		auto ba = cu_alloc<BINARY_ARRAY>();
-		ppropval->pvalue = ba;
+		propval.pvalue = ba;
 		if (ba == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
 		if (FALSE == ftstream_parser_read_uint32(
@@ -821,13 +816,12 @@ gxerr_t FTSTREAM_PARSER::process(RECORD_MARKER record_marker,
 {
 	auto pstream = this;
 	uint32_t marker;
-	TAGGED_PROPVAL propval;
+	TAGGED_PROPVAL propval{};
 	
 	lseek(pstream->fd, 0, SEEK_SET);
 	pstream->offset = 0;
 	while (TRUE) {
-		switch (ftstream_parser_read_element(
-			pstream, &marker, &propval)) {
+		switch (ftstream_parser_read_element(*this, marker, propval)) {
 		case FTSTREAM_PARSER_READ_OK: {
 			if (0 != marker) {
 				gxerr_t err = record_marker(static_cast<FASTUPCTX_OBJECT *>(pparam), marker);
