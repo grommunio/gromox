@@ -469,7 +469,6 @@ int exmdb_client_delivery_message(const char *dir,
 {
 	BINARY tmp_bin;
 	uint32_t result;
-	uint8_t tmp_buff[1024];
 	DELIVERY_MESSAGE_REQUEST request;
 	
 	request.dir = dir;
@@ -491,15 +490,14 @@ int exmdb_client_delivery_message(const char *dir,
 		return EXMDB_RDWR_ERROR;
 	}
 	free(tmp_bin.pb);
-	tmp_bin.pb = tmp_buff;
 	if (!cl_rd_sock(pconn->sockd, &tmp_bin))
 		return EXMDB_RDWR_ERROR;
 	time(&pconn->last_time);
 	pconn.reset();
 	if (5 + sizeof(uint32_t) != tmp_bin.cb ||
-	    tmp_buff[0] != exmdb_response::SUCCESS)
+	    tmp_bin.pb[0] != exmdb_response::SUCCESS)
 		return EXMDB_RUNTIME_ERROR;
-	memcpy(&result, &tmp_buff[5], sizeof(result));
+	memcpy(&result, &tmp_bin.pb[5], sizeof(result));
 	result = le32_to_cpu(result);
 	if (0 == result) {
 		return EXMDB_RESULT_OK;
@@ -514,7 +512,6 @@ int exmdb_client_check_contact_address(const char *dir,
 	const char *paddress, BOOL *pb_found)
 {
 	BINARY tmp_bin;
-	uint8_t tmp_buff[1024];
 	CHECK_CONTACT_ADDRESS_REQUEST request;
 	
 	request.dir = dir;
@@ -532,13 +529,12 @@ int exmdb_client_check_contact_address(const char *dir,
 		return EXMDB_RDWR_ERROR;
 	}
 	free(tmp_bin.pb);
-	tmp_bin.pb = tmp_buff;
 	if (!cl_rd_sock(pconn->sockd, &tmp_bin))
 		return EXMDB_RDWR_ERROR;
 	time(&pconn->last_time);
 	pconn.reset();
 	if (5 + sizeof(uint8_t) != tmp_bin.cb ||
-	    tmp_buff[0] != exmdb_response::SUCCESS)
+	    tmp_bin.pb[0] != exmdb_response::SUCCESS)
 		return EXMDB_RUNTIME_ERROR;
 	if (0 == tmp_bin.pb[5]) {
 		*pb_found = FALSE;
