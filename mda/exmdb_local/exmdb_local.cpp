@@ -514,7 +514,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 			fprintf(stderr, "W-1388: remove %s: %s\n",
 			        eml_path.c_str(), strerror(errno));
 		exmdb_local_log_info(pcontext, address, LV_ERR, "fail "
-			"to convert rtf822 into MAPI message object");
+			"to convert rfc5322 into MAPI message object");
 		return DELIVERY_OPERATION_ERROR;
 	}
 	alloc_context_free(&alloc_ctx);
