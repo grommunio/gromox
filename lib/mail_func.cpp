@@ -697,7 +697,7 @@ size_t parse_mime_field(char *in_buff, size_t buff_len, MIME_FIELD *pmime_field)
 		return 0;
 	}
 	dest_ptr = (char*)&pmime_field->field_value;
-	while (TRUE) {
+	while (true) {
 		meet_slash = FALSE;
 		while (i < buff_len && *tmp_ptr != '\r' && *tmp_ptr != '\n') {
 			if (tmp_ptr[0] == '\\' && (tmp_ptr[1] == '\r' || tmp_ptr[1] == '\n')) {

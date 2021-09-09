@@ -960,7 +960,7 @@ static int htp_delegate_cache(HTTP_CONTEXT *pcontext)
 
 static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 {
-	while (TRUE) {
+	while (true) {
 		stream_try_mark_line(&pcontext->stream_in);
 		switch (stream_has_newline(&pcontext->stream_in)) {
 		case STREAM_LINE_FAIL:

@@ -243,7 +243,7 @@ static void *consrv_work(void *argp)
     pthread_detach(pthread_self()); /* detach itself */
 	reply_len = sprintf(reply_buff, "%s%s", WELCOME_STRING, PROMPT_SRING);
 	write(client_fd, reply_buff, reply_len);
-    while (TRUE) {
+	while (true) {
         read_len = read(client_fd, cmd + offset, MAXLINE - offset);
         if (read_len <= 0) {
 			write(client_fd, TIMEOUT_STRING, sizeof(TIMEOUT_STRING) - 1);

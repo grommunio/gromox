@@ -265,7 +265,7 @@ static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
 	DOUBLE_LIST_NODE *pnode;
 	ASYNC_NODE *pasync_node;
 	
-	while (TRUE) {
+	while (true) {
 		std::unique_lock as_hold(g_async_lock);
 		pnode = double_list_pop_front(&pcontext->async_list);
 		if (NULL == pnode) {
@@ -462,8 +462,7 @@ void pdu_processor_destroy(PDU_PROCESSOR *pprocessor)
 	DCERPC_CONTEXT *pcontext;
 	DCERPC_AUTH_CONTEXT *pauth_ctx;
 	
-	
-	while (TRUE) {
+	while (true) {
 		std::unique_lock as_hold(g_async_lock);
 		if (pprocessor->async_num <= 0) {
 			pprocessor->async_num = -1;

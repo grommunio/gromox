@@ -2797,7 +2797,7 @@ uint32_t zarafa_server_queryrows(
 			prowset->pparray = cu_alloc<TPROPVAL_ARRAY *>(row_num);
 			if (prowset->pparray == nullptr)
 				return ecError;
-			while (TRUE) {
+			while (true) {
 				if (!ptable->match_row(TRUE, prestriction, &position))
 					return ecError;
 				if (position < 0) {

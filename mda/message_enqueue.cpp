@@ -284,7 +284,7 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 		fp = (FILE*)pentity->pflusher->flush_ptr;
 	}
 	/* write stream into mess file */
-	while (TRUE) {
+	while (true) {
 		size = MAX_LINE_LENGTH;
 		copy_result = stream_copyline(pentity->pstream, tmp_buff, &size);
 		if (STREAM_COPY_OK != copy_result &&

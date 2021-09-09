@@ -620,7 +620,7 @@ void mem_file_clear(MEM_FILE *pfile)
 	if (1 == double_list_get_nodes_num(&pfile->list)) {
 		goto CLEAR_RETRUN;
 	}
-	while (TRUE) {
+	while (true) {
 		if (pnode != phead) {
 			double_list_remove(&pfile->list, pnode);
 		} else {

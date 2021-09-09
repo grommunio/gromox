@@ -834,7 +834,7 @@ static char* common_util_calculate_folder_path(
 	len = 0;
 	tmp_fid = folder_id;
 	b_private = exmdb_server_check_private();
-	while (TRUE) {
+	while (true) {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT propval FROM"
 				" folder_properties WHERE proptag=%u AND "
 		        "folder_id=%llu", PR_DISPLAY_NAME, LLU(tmp_fid));
@@ -5780,7 +5780,7 @@ BOOL common_util_indexing_sub_contents(
 {
 	uint64_t row_id;
 	
-	while (TRUE) {
+	while (true) {
 		(*pidx) ++;
 		row_id = sqlite3_column_int64(pstmt, 0);
 		sqlite3_bind_int64(pstmt1, 1, *pidx);

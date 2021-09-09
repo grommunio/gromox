@@ -157,7 +157,7 @@ static HANDLE_DATA* emsmdb_interface_get_handle_data(CXH *pcxh)
 		return NULL;
 	}
 	guid_to_string(&pcxh->guid, guid_string, sizeof(guid_string));
-	while (TRUE) {
+	while (true) {
 		std::unique_lock gl_hold(g_lock);
 		phandle = static_cast<HANDLE_DATA *>(str_hash_query(g_handle_hash, guid_string));
 		if (NULL == phandle) {
@@ -188,7 +188,7 @@ static HANDLE_DATA* emsmdb_interface_get_handle_notify_list(CXH *pcxh)
 		return NULL;
 	}
 	guid_to_string(&pcxh->guid, guid_string, sizeof(guid_string));
-	while (TRUE) {
+	while (true) {
 		std::unique_lock gl_hold(g_lock);
 		phandle = static_cast<HANDLE_DATA *>(str_hash_query(g_handle_hash, guid_string));
 		if (NULL == phandle) {
@@ -329,7 +329,7 @@ static void emsmdb_interface_remove_handle(CXH *pcxh)
 	}
 	guid_to_string(&pcxh->guid, guid_string, sizeof(guid_string));
 	std::unique_lock gl_hold(g_lock);
-	while (TRUE) {
+	while (true) {
 		phandle = static_cast<HANDLE_DATA *>(str_hash_query(g_handle_hash, guid_string));
 		if (NULL == phandle) {
 			return;
@@ -783,7 +783,7 @@ DOUBLE_LIST* emsmdb_interface_get_notify_list()
 	if (NULL == phandle) {
 		return NULL;
 	}
-	while (TRUE) {
+	while (true) {
 		std::unique_lock gl_hold(g_lock);
 		if (TRUE == phandle->b_occupied) {
 			gl_hold.unlock();

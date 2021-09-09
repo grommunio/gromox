@@ -4025,7 +4025,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		sqlite3_bind_int64(pstmt1, 1, depth);
 		row_id = sqlite3_column_int64(pstmt, 0);
 		i = depth;
-		while (TRUE) {
+		while (true) {
 			sqlite3_bind_int64(pstmt3, 1, row_id);
 			type = ptnode->psorts->psort[i].type;
 			if ((type & MVI_FLAG) == MVI_FLAG)

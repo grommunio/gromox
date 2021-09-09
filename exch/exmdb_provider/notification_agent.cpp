@@ -95,7 +95,7 @@ void notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter
 			}
 			continue;
 		}
-		while (TRUE) {
+		while (true) {
 			pdnode = (DATAGRAM_NODE*)pnode->pdata;
 			if (pdnode->data_bin.cb != write(prouter->sockd,
 				pdnode->data_bin.pb, pdnode->data_bin.cb) ||

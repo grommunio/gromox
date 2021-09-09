@@ -642,7 +642,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 		{sp--;TREE=trees[sp];NODE=nodes[sp];CONJUNCTION=conjunctions[sp];RESULT=results[sp];}
 
 /* begin of recursion procedure */
-	while (TRUE) {
+	while (true) {
  PROC_BEGIN:
 	b_result = TRUE;
 	b_loaded = FALSE;
@@ -2398,7 +2398,7 @@ static uint64_t mail_engine_get_top_folder_id(
 {
 	uint64_t parent_fid;
 	
-	while (TRUE) {
+	while (true) {
 		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, folder_id);
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {

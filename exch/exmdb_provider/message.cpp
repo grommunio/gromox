@@ -2443,7 +2443,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		if (pstmt2 == nullptr) {
 			return FALSE;
 		}
-		while (TRUE) {
+		while (true) {
 			sqlite3_bind_int64(pstmt1, 1, parent_id);
 			if (SQLITE_ROW != sqlite3_step(pstmt1)) {
 				*pmessage_id = 0;

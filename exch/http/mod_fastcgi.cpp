@@ -855,7 +855,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 		}
 	} else {
 		lseek(phttp->pfast_context->cache_fd, 0, SEEK_SET);
-		while (TRUE) {
+		while (true) {
 			auto tmp_len = read(phttp->pfast_context->cache_fd,
 				tmp_buff, sizeof(tmp_buff));
 			if (tmp_len < 0) {
@@ -1063,7 +1063,7 @@ static BOOL mod_fastcgi_safe_read(FASTCGI_CONTEXT *pfast_context,
 	struct pollfd pfd_read;
 	
 	offset = 0;
-	while (TRUE) {
+	while (true) {
 		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = pfast_context->cli_sockd;
 		pfd_read.events = POLLIN|POLLPRI;
@@ -1126,7 +1126,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 		return FALSE;	
 	}
 	response_offset = 0;
-	while (TRUE) {
+	while (true) {
 		if (FALSE == mod_fastcgi_safe_read(
 			phttp->pfast_context, header_buff, 8)) {
 			http_parser_log_info(phttp, 6, "fail to read"

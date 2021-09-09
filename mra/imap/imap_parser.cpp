@@ -1157,7 +1157,7 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 	char *last_line;
 	char *ptr, *ptr1;
 	
-	while (TRUE) {
+	while (true) {
 		line_length = MAX_LINE_LENGTH - pcontext->write_length;
 		if (line_length < 64) {
 			return IMAP_RETRIEVE_OK;

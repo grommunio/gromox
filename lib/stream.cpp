@@ -198,7 +198,7 @@ void stream_clear(STREAM *pstream)
 	if (1 == double_list_get_nodes_num(&pstream->list)) {
 		goto CLEAR_RETRUN;
 	}
-	while (TRUE){
+	while (true) {
 		if (pnode != phead) {
 			double_list_remove(&pstream->list, pnode);
 		} else {

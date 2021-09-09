@@ -1592,7 +1592,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 		return NULL;
 	}
 	message_content_set_attachments_internal(pmsg, pattachments);
-	while (TRUE) {
+	while (true) {
 		if (TRUE == b_props && attribute.attr_id !=
 			ATTRIBUTE_ID_ATTACHRENDDATA) {
 			debug_info("[tnef]: attAttachment should be "

@@ -486,7 +486,7 @@ static void *tmr_thrwork(void *param)
 	auto pconnection = std::prev(g_connection_list.end());
 	co_hold.unlock();
 
-	while (TRUE) {
+	while (true) {
 		if (!read_mark(&*pconnection)) {
 			co_hold.lock();
 			g_connection_list.erase(pconnection);
@@ -578,7 +578,7 @@ static BOOL read_mark(CONNECTION_NODE *pconnection)
 	int i, read_len;
 	struct timeval tv;
 
-	while (TRUE) {
+	while (true) {
 		tv.tv_usec = 0;
 		tv.tv_sec = SOCKET_TIMEOUT;
 		FD_ZERO(&myset);

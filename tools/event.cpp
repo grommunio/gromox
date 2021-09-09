@@ -411,7 +411,7 @@ static void *ev_enqwork(void *param)
 	g_enqueue_list.splice(g_enqueue_list.end(), g_enqueue_list1, eq_node);
 	eq_hold.unlock();
 	
-	while (TRUE) {
+	while (true) {
 		if (FALSE == read_mark(penqueue)) {
 			eq_hold.lock();
 			g_enqueue_list.erase(eq_node);
@@ -709,7 +709,7 @@ static BOOL read_response(int sockd)
 	struct timeval tv;
 
 	offset = 0;
-	while (TRUE) {
+	while (true) {
 		tv.tv_usec = 0;
 		tv.tv_sec = SOCKET_TIMEOUT;
 		FD_ZERO(&myset);
@@ -743,7 +743,7 @@ static BOOL read_mark(ENQUEUE_NODE *penqueue)
 	int i, read_len;
 	struct timeval tv;
 
-	while (TRUE) {
+	while (true) {
 		tv.tv_usec = 0;
 		tv.tv_sec = SOCKET_TIMEOUT;
 		FD_ZERO(&myset);

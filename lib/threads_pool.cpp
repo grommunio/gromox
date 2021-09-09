@@ -121,7 +121,7 @@ void threads_pool_stop()
 	g_notify_stop = true;
 	pthread_kill(g_scan_id, SIGALRM);
 	pthread_join(g_scan_id, NULL);
-	while (TRUE) {
+	while (true) {
 		/* get a thread from list */
 		std::unique_lock tpd_hold(g_threads_pool_data_lock);
 		pnode = double_list_get_head(&g_threads_data_list);

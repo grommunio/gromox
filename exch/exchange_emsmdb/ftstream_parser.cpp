@@ -158,7 +158,7 @@ static char* ftstream_parser_read_naked_wstring(
 	uint32_t offset;
 	
 	offset = 0;
-	while (TRUE) {
+	while (true) {
 		if (2 != read(pstream->fd, buff + offset, 2)) {
 			return NULL;
 		}
@@ -820,7 +820,7 @@ gxerr_t FTSTREAM_PARSER::process(RECORD_MARKER record_marker,
 	
 	lseek(pstream->fd, 0, SEEK_SET);
 	pstream->offset = 0;
-	while (TRUE) {
+	while (true) {
 		switch (ftstream_parser_read_element(*this, marker, propval)) {
 		case FTSTREAM_PARSER_READ_OK: {
 			if (0 != marker) {

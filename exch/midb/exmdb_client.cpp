@@ -277,7 +277,7 @@ static void *midcl_thrwork(void *pparam)
 			continue;
 		}
 		buff_len = 0;
-		while (TRUE) {
+		while (true) {
 			tv_msec = SOCKET_TIMEOUT * 1000;
 			pfd_read.fd = pagent->sockd;
 			pfd_read.events = POLLIN|POLLPRI;

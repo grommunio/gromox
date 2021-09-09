@@ -627,7 +627,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 	if (FALSE == b_notify || TRUE == b_icsup) {
 		goto MAKE_RPC_EXT;
 	}
-	while (TRUE) {
+	while (true) {
 		pnotify_list = emsmdb_interface_get_notify_list();
 		if (NULL == pnotify_list) {
 			return ecRpcFailed;

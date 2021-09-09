@@ -703,7 +703,7 @@ static void *zcrp_thrwork(void *param)
 		close(clifd);
 		goto NEXT_CLIFD;
 	}
-	while (TRUE) {
+	while (true) {
 		if (1 != poll(&fdpoll, 1, tv_msec)) {
 			close(clifd);
 			free(pbuff);

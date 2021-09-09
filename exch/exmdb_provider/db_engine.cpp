@@ -2025,7 +2025,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					return;
 				}
 				parent_id = 0;
-				while (TRUE) {
+				while (true) {
 					sqlite3_bind_int64(pstmt3, 1, row_id);
 					if (SQLITE_ROW != sqlite3_step(pstmt3)) {
 						sqlite3_exec(pdb->tables.psqlite,
@@ -2702,7 +2702,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 			}
 			depth = 1;
 			folder_id1 = parent_id;
-			while (TRUE) {
+			while (true) {
 				sqlite3_bind_int64(pstmt, 1, folder_id1);
 				if (SQLITE_ROW != sqlite3_step(pstmt)) {
 					depth = 0;
@@ -2725,7 +2725,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 				continue;
 			idx = 0;
 			folder_id1 = parent_id;
-			while (TRUE) {
+			while (true) {
 				sqlite3_bind_int64(pstmt1, 1, folder_id1);
 				if (SQLITE_ROW == sqlite3_step(pstmt1)) {
 					idx = sqlite3_column_int64(pstmt1, 0);

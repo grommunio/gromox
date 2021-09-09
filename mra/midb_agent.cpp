@@ -472,7 +472,7 @@ static int list_mail(const char *path, const char *folder,
 	offset = 0;
 	lines = -1;
 	b_fail = FALSE;
-	while (TRUE) {
+	while (true) {
 		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
@@ -1173,7 +1173,7 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 	count = 0;
 	offset = 0;
 	lines = -1;
-	while (TRUE) {
+	while (true) {
 		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
@@ -1296,7 +1296,7 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 	count = 0;
 	offset = 0;
 	lines = -1;
-	while (TRUE) {
+	while (true) {
 		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
@@ -1539,7 +1539,7 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 	offset = 0;
 	lines = -1;
 	b_format_error = FALSE;
-	while (TRUE) {
+	while (true) {
 		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
@@ -1710,7 +1710,7 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 	offset = 0;
 	lines = -1;
 	b_format_error = FALSE;
-	while (TRUE) {
+	while (true) {
 		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
@@ -1866,7 +1866,7 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 	offset = 0;
 	lines = -1;
 	b_format_error = FALSE;
-	while (TRUE) {
+	while (true) {
 		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
@@ -2084,7 +2084,7 @@ static int fetch_simple(const char *path, const char *folder,
 		offset = 0;
 		lines = -1;
 		b_format_error = FALSE;
-		while (TRUE) {
+		while (true) {
 			tv_msec = SOCKET_TIMEOUT * 1000;
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
@@ -2282,7 +2282,7 @@ static int fetch_detail(const char *path, const char *folder,
 		offset = 0;
 		lines = -1;
 		b_format_error = FALSE;
-		while (TRUE) {
+		while (true) {
 			tv_msec = SOCKET_TIMEOUT * 1000;
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
@@ -2486,7 +2486,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 		offset = 0;
 		lines = -1;
 		b_format_error = FALSE;
-		while (TRUE) {
+		while (true) {
 			tv_msec = SOCKET_TIMEOUT * 1000;
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
@@ -2680,7 +2680,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 		offset = 0;
 		lines = -1;
 		b_format_error = FALSE;
-		while (TRUE) {
+		while (true) {
 			tv_msec = SOCKET_TIMEOUT * 1000;
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
@@ -3093,7 +3093,7 @@ static BOOL read_line(int sockd, char *buff, int length)
 	struct pollfd pfd_read;
 
 	offset = 0;
-	while (TRUE) {
+	while (true) {
 		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = sockd;
 		pfd_read.events = POLLIN|POLLPRI;
@@ -3136,7 +3136,7 @@ static BOOL check_full(const char *path)
 	}
 
 	offset = 0;
-	while (TRUE) {
+	while (true) {
 		tv.tv_usec = 0;
 		tv.tv_sec = SOCKET_TIMEOUT;
 		FD_ZERO(&myset);

@@ -1605,7 +1605,7 @@ int uuencode(int mode, const char *file_name, const char *in,
 		offset = 0;
 	}
 	ptr = in;
-	while (TRUE) {
+	while (true) {
 		/* 1 (up to) 45 character line */
 		if (in + inlen - ptr >= 45) {
 			n = 45;
