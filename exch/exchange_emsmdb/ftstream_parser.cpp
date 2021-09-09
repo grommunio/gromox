@@ -343,15 +343,10 @@ static int ftstream_parser_read_element(
 	auto &propval = *ppropval;
 	uint32_t count;
 	BOOL b_continue;
-	uint16_t propid;
-	uint16_t proptype;
-	uint16_t codepage;
-	uint16_t fake_byte;
-	uint32_t atom_element;
-	uint32_t origin_offset;
+	uint32_t atom_element = 0;
 	PROPERTY_NAME *ppropname;
 	
-	origin_offset = pstream->offset;
+	uint32_t origin_offset = pstream->offset;
 	if (origin_offset == pstream->st_size) {
 		return FTSTREAM_PARSER_READ_CONTINUE;
 	}
@@ -388,8 +383,8 @@ static int ftstream_parser_read_element(
 		return FTSTREAM_PARSER_READ_OK;
 	}
 	*pmarker = 0;
-	proptype = PROP_TYPE(atom_element);
-	propid = PROP_ID(atom_element);
+	uint16_t proptype = PROP_TYPE(atom_element);
+	uint16_t propid = PROP_ID(atom_element);
 	/* META_TAG_IDSETGIVEN, MS-OXCFXICS 3.2.5.2.1 */
 	if (META_TAG_IDSETGIVEN == atom_element) {
 		proptype = PT_BINARY;
@@ -410,7 +405,7 @@ static int ftstream_parser_read_element(
 	ppropval->proptag = PROP_TAG(proptype, propid);
 	if (proptype & FXICS_CODEPAGE_FLAG) {
 		/* codepage string */
-		codepage = proptype & ~FXICS_CODEPAGE_FLAG;
+		auto codepage = proptype & ~FXICS_CODEPAGE_FLAG;
 		if (1200 == codepage) {
 			ppropval->proptag = CHANGE_PROP_TYPE(ppropval->proptag, PT_UNICODE);
 			ppropval->pvalue = ftstream_parser_read_wstring(
@@ -468,6 +463,7 @@ static int ftstream_parser_read_element(
 		if (v == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
 		propval.pvalue = v;
+		uint16_t fake_byte = 0;
 		if (FALSE == ftstream_parser_read_uint16(
 			pstream, &fake_byte)) {
 			return FTSTREAM_PARSER_READ_FAIL;	
@@ -793,9 +789,6 @@ BOOL FTSTREAM_PARSER::write_buffer(const BINARY *ptransfer_data)
 static BOOL ftstream_parser_truncate_fd(
 	FTSTREAM_PARSER *pstream)
 {
-	ssize_t len;
-	char buff[0x10000];
-	
 	if (0 == pstream->offset) {
 		return TRUE;
 	}
@@ -808,7 +801,8 @@ static BOOL ftstream_parser_truncate_fd(
 	}
 	if (lseek(pstream->fd, pstream->offset, SEEK_SET) < 0)
 		fprintf(stderr, "W-1425: lseek: %s\n", strerror(errno));
-	len = read(pstream->fd, buff, sizeof(buff));
+	char buff[0x10000];
+	auto len = read(pstream->fd, buff, sizeof(buff));
 	if (len <= 0) {
 		return FALSE;
 	}
@@ -826,11 +820,7 @@ gxerr_t FTSTREAM_PARSER::process(RECORD_MARKER record_marker,
     RECORD_PROPVAL record_propval, void *pparam)
 {
 	auto pstream = this;
-	int len;
-	void *pvalue;
 	uint32_t marker;
-	uint16_t proptype;
-	uint16_t codepage;
 	TAGGED_PROPVAL propval;
 	
 	lseek(pstream->fd, 0, SEEK_SET);
@@ -845,11 +835,11 @@ gxerr_t FTSTREAM_PARSER::process(RECORD_MARKER record_marker,
 					return err;
 				break;
 			}
-			proptype = PROP_TYPE(propval.proptag);
+			auto proptype = PROP_TYPE(propval.proptag);
 			if (proptype & FXICS_CODEPAGE_FLAG) {
-				codepage = proptype & ~FXICS_CODEPAGE_FLAG;
-				len = 2 * strlen(static_cast<char *>(propval.pvalue)) + 2;
-				pvalue = common_util_alloc(len);
+				auto codepage = proptype & ~FXICS_CODEPAGE_FLAG;
+				auto len = 2 * strlen(static_cast<char *>(propval.pvalue)) + 2;
+				auto pvalue = common_util_alloc(len);
 				if (pvalue == nullptr || common_util_mb_to_utf8(codepage,
 				    static_cast<char *>(propval.pvalue),
 				    static_cast<char *>(pvalue), len) <= 0) {
@@ -875,9 +865,7 @@ gxerr_t FTSTREAM_PARSER::process(RECORD_MARKER record_marker,
 
 std::unique_ptr<FTSTREAM_PARSER> ftstream_parser_create(LOGON_OBJECT *plogon) try
 {
-	int stream_id;
-	
-	stream_id = common_util_get_ftstream_id();
+	auto stream_id = common_util_get_ftstream_id();
 	auto rpc_info = get_rpc_info();
 	auto path = rpc_info.maildir + "/tmp/faststream"s;
 	if (mkdir(path.c_str(), 0777) < 0 && errno != EEXIST) {
