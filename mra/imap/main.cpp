@@ -139,7 +139,7 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: default domain is %s\n", str_val);
 	
-	unsigned int context_num = 0, thread_charge_num = 0;
+	unsigned int context_num = 400, thread_charge_num = 20;
 	resource_get_uint("CONTEXT_NUM", &context_num);
 	if (resource_get_uint("THREAD_CHARGE_NUM", &thread_charge_num)) {
 		if (thread_charge_num < 4) {
@@ -153,7 +153,7 @@ int main(int argc, const char **argv)
 	printf("[system]: one thread is in charge of %d contexts\n",
 		thread_charge_num);
 	
-	unsigned int thread_init_num = 0;
+	unsigned int thread_init_num = 5;
 	g_config_file->get_uint("THREAD_INIT_NUM", &thread_init_num);
 	if (thread_init_num * thread_charge_num > context_num) {
 		thread_init_num = context_num / thread_charge_num;
