@@ -1300,7 +1300,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		return false;
 	}
 	/* Ensure file exists for config_file_prg */
-	auto fd = open(autoreply_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0666);
+	auto fd = open(autoreply_path.c_str(), O_CREAT | O_WRONLY, 0666);
 	if (fd < 0)
 		return false;
 	close(fd);
