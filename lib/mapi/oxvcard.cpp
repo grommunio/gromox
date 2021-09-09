@@ -812,9 +812,8 @@ MESSAGE_CONTENT* oxvcard_import(
 	for (i=0; i<pmsg->proplist.count; i++) {
 		proptag = pmsg->proplist.ppropval[i].proptag;
 		propid = PROP_ID(proptag);
-		if (propid & 0x8000) {
+		if (is_nameprop_id(propid))
 			break;
-		}
 	}
 	if (i >= pmsg->proplist.count) {
 		return pmsg;
@@ -825,9 +824,8 @@ MESSAGE_CONTENT* oxvcard_import(
 	for (i=0; i<pmsg->proplist.count; i++) {
 		proptag = pmsg->proplist.ppropval[i].proptag;
 		propid = PROP_ID(proptag);
-		if (0 == (propid & 0x8000)) {
+		if (!is_nameprop_id(propid))
 			continue;
-		}
 		proptag = propids.ppropid[propid - 0x8000];
 		pmsg->proplist.ppropval[i].proptag =
 			PROP_TAG(PROP_TYPE(pmsg->proplist.ppropval[i].proptag), proptag);

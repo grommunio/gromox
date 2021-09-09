@@ -393,7 +393,9 @@ static int ftstream_parser_read_element(
 	if (META_TAG_IDSETGIVEN == atom_element) {
 		proptype = PT_BINARY;
 	}
-	if (propid & 0x8000) {
+	if (propid == PROP_ID_INVALID)
+		fprintf(stderr, "W-1272: ftstream with PROP_ID_INVALID seen\n");
+	if (is_nameprop_id(propid)) {
 		ppropname = ftstream_parser_read_property_name(pstream);
 		if (NULL == ppropname) {
 			return FTSTREAM_PARSER_READ_FAIL;

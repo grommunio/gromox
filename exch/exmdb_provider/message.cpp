@@ -2680,9 +2680,8 @@ static BOOL message_get_real_propid(sqlite3 *psqlite,
 	
 	uint16_t propid = PROP_ID(*pproptag);
 	*pb_replaced = FALSE;
-	if (0 == (propid & 0x8000)) {
+	if (!is_nameprop_id(propid))
 		return TRUE;
-	}
 	for (i=0; i<ppropname_info->count; i++) {
 		if (propid == ppropname_info->ppropid[i]) {
 			break;

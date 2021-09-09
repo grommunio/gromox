@@ -1977,9 +1977,8 @@ static void oxcical_replace_propid(TPROPVAL_ARRAY *pproplist,
 	for (i=0; i<pproplist->count; i++) {
 		proptag = pproplist->ppropval[i].proptag;
 		propid = PROP_ID(proptag);
-		if (0 == (propid & 0x8000)) {
+		if (!is_nameprop_id(propid))
 			continue;
-		}
 		auto it = phash.find(propid);
 		if (it == phash.cend() || it->second == 0) {
 			tpropval_array_remove_propval(pproplist, proptag);

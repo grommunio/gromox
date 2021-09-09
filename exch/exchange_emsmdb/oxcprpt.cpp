@@ -540,7 +540,7 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 	}
 	for (i=0; i<proptags.count; i++) {
 		propid = PROP_ID(proptags.pproptag[i]);
-		if (!(propid & 0x8000))
+		if (!is_nameprop_id(propid))
 			continue;
 		propids.ppropid[propids.count] = propid;
 		propids.count++;

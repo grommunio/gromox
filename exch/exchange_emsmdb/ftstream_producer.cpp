@@ -350,7 +350,9 @@ static BOOL ftstream_producer_write_propdef(
 		pstream, &tmp_val, sizeof(uint16_t))) {
 		return FALSE;
 	}
-	if (0 == (propid & 0x8000)) {
+	if (propid == PROP_ID_INVALID)
+		fprintf(stderr, "W-1271: ftstream with PROP_ID_INVALID seen\n");
+	if (!is_nameprop_id(propid)) {
 		ftstream_producer_try_recode_nbp(pstream);
 		return TRUE;
 	}
@@ -737,7 +739,7 @@ static BOOL ftstream_producer_write_groupinfo(
 			propid = PROP_ID(pginfo->pgroups[i].pproptag[j]);
 			if (ext_push.p_uint32(pginfo->pgroups[i].pproptag[j]) != EXT_ERR_SUCCESS)
 				return FALSE;
-			if (!(propid & 0x8000))
+			if (!is_nameprop_id(propid))
 				continue;
 			if (!pstream->plogon->get_named_propname(propid, &propname))
 				return FALSE;

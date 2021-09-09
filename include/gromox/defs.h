@@ -126,3 +126,5 @@ template<typename T, typename U> constexpr auto strange_roundup(T x, U y) -> dec
 #else
 #define gx_strlcpy(dst, src, dsize) HX_strlcpy((dst), (src), (dsize))
 #endif
+
+static inline constexpr bool is_nameprop_id(unsigned int i) { return i >= 0x8000 && i <= 0xFFFE; }
