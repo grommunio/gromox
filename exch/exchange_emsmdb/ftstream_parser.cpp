@@ -340,6 +340,7 @@ static int ftstream_parser_read_element(
 	FTSTREAM_PARSER *pstream, uint32_t *pmarker,
 	TAGGED_PROPVAL *ppropval)
 {
+	auto &propval = *ppropval;
 	uint32_t count;
 	BOOL b_continue;
 	uint16_t propid;
@@ -426,67 +427,63 @@ static int ftstream_parser_read_element(
 		return FTSTREAM_PARSER_READ_OK;
 	}
 	switch (proptype) {
-	case PT_SHORT:
-		ppropval->pvalue = cu_alloc<uint16_t>();
-		if (NULL == ppropval->pvalue) {
+	case PT_SHORT: {
+		auto v = cu_alloc<uint16_t>();
+		if (v == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
-		if (!ftstream_parser_read_uint16(pstream, static_cast<uint16_t *>(ppropval->pvalue)))
-			return FTSTREAM_PARSER_READ_FAIL;
-		return FTSTREAM_PARSER_READ_OK;
+		propval.pvalue = v;
+		return ftstream_parser_read_uint16(pstream, v) ? FTSTREAM_PARSER_READ_OK : FTSTREAM_PARSER_READ_FAIL;
+	}
 	case PT_ERROR:
-	case PT_LONG:
-		ppropval->pvalue = cu_alloc<uint32_t>();
-		if (NULL == ppropval->pvalue) {
+	case PT_LONG: {
+		auto v = cu_alloc<uint32_t>();
+		if (v == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
-		if (!ftstream_parser_read_uint32(pstream, static_cast<uint32_t *>(ppropval->pvalue)))
-			return FTSTREAM_PARSER_READ_FAIL;	
-		return FTSTREAM_PARSER_READ_OK;
-	case PT_FLOAT:
-		ppropval->pvalue = cu_alloc<float>();
-		if (NULL == ppropval->pvalue) {
+		propval.pvalue = v;
+		return ftstream_parser_read_uint32(pstream, v) ? FTSTREAM_PARSER_READ_OK : FTSTREAM_PARSER_READ_FAIL;
+	}
+	case PT_FLOAT: {
+		auto v = cu_alloc<float>();
+		if (v == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
-		if (sizeof(float) != read(pstream->fd,
-			ppropval->pvalue, sizeof(float))) {
+		propval.pvalue = v;
+		if (read(pstream->fd, v, sizeof(*v)) != sizeof(*v))
 			return FTSTREAM_PARSER_READ_FAIL;	
-		}
-		pstream->offset += sizeof(float);
+		pstream->offset += sizeof(*v);
 		return FTSTREAM_PARSER_READ_OK;
+	}
 	case PT_DOUBLE:
-	case PT_APPTIME:
-		ppropval->pvalue = cu_alloc<double>();
-		if (NULL == ppropval->pvalue) {
+	case PT_APPTIME: {
+		auto v = cu_alloc<double>();
+		if (v == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
-		if (sizeof(double) != read(pstream->fd,
-			ppropval->pvalue, sizeof(double))) {
+		propval.pvalue = v;
+		if (read(pstream->fd, v, sizeof(*v)) != sizeof(*v))
 			return FTSTREAM_PARSER_READ_FAIL;	
-		}
-		pstream->offset += sizeof(double);
+		pstream->offset += sizeof(*v);
 		return FTSTREAM_PARSER_READ_OK;
-	case PT_BOOLEAN:
-		ppropval->pvalue = cu_alloc<uint8_t>();
-		if (NULL == ppropval->pvalue) {
+	}
+	case PT_BOOLEAN: {
+		auto v = cu_alloc<uint8_t>();
+		if (v == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
+		propval.pvalue = v;
 		if (FALSE == ftstream_parser_read_uint16(
 			pstream, &fake_byte)) {
 			return FTSTREAM_PARSER_READ_FAIL;	
 		}
-		*(uint8_t*)ppropval->pvalue = fake_byte;
+		*v = fake_byte;
 		return FTSTREAM_PARSER_READ_OK;
+	}
 	case PT_CURRENCY:
 	case PT_I8:
-	case PT_SYSTIME:
-		ppropval->pvalue = cu_alloc<uint64_t>();
-		if (NULL == ppropval->pvalue) {
+	case PT_SYSTIME: {
+		auto v = cu_alloc<uint64_t>();
+		if (v == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
-		if (!ftstream_parser_read_uint64(pstream, static_cast<uint64_t *>(ppropval->pvalue)))
-			return FTSTREAM_PARSER_READ_FAIL;	
-		return FTSTREAM_PARSER_READ_OK;
+		propval.pvalue = v;
+		return ftstream_parser_read_uint64(pstream, v) ? FTSTREAM_PARSER_READ_OK : FTSTREAM_PARSER_READ_FAIL;
+	}
 	case PT_STRING8:
 		ppropval->pvalue = ftstream_parser_read_string(
 								pstream, &b_continue);
@@ -505,39 +502,36 @@ static int ftstream_parser_read_element(
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
 		return FTSTREAM_PARSER_READ_OK;
-	case PT_CLSID:
-		ppropval->pvalue = cu_alloc<GUID>();
-		if (NULL == ppropval->pvalue) {
+	case PT_CLSID: {
+		auto v = cu_alloc<GUID>();
+		if (v == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
-		if (!ftstream_parser_read_guid(pstream, static_cast<GUID *>(ppropval->pvalue)))
+		propval.pvalue = v;
+		return ftstream_parser_read_guid(pstream, v) ? FTSTREAM_PARSER_READ_OK : FTSTREAM_PARSER_READ_FAIL;
+	}
+	case PT_SVREID: {
+		auto v = cu_alloc<SVREID>();
+		if (v == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		return FTSTREAM_PARSER_READ_OK;
-	case PT_SVREID:
-		ppropval->pvalue = cu_alloc<SVREID>();
-		if (NULL == ppropval->pvalue) {
-			return FTSTREAM_PARSER_READ_FAIL;
-		}
-		if (!ftstream_parser_read_svreid(pstream,
-		    static_cast<SVREID *>(ppropval->pvalue), &b_continue)) {
-			if (b_continue)
-				goto CONTINUE_WAITING;
-			return FTSTREAM_PARSER_READ_FAIL;
-		}
-		return FTSTREAM_PARSER_READ_OK;
+		propval.pvalue = v;
+		if (ftstream_parser_read_svreid(pstream, v, &b_continue))
+			return FTSTREAM_PARSER_READ_OK;
+		if (b_continue)
+			goto CONTINUE_WAITING;
+		return FTSTREAM_PARSER_READ_FAIL;
+	}
 	case PT_OBJECT:
-	case PT_BINARY:
-		ppropval->pvalue = cu_alloc<BINARY>();
-		if (NULL == ppropval->pvalue) {
+	case PT_BINARY: {
+		auto v = cu_alloc<BINARY>();
+		if (v == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
-		if (!ftstream_parser_read_binary(pstream,
-		    static_cast<BINARY *>(ppropval->pvalue), &b_continue)) {
-			if (b_continue)
-				goto CONTINUE_WAITING;
-			return FTSTREAM_PARSER_READ_FAIL;
-		}
-		return FTSTREAM_PARSER_READ_OK;
+		propval.pvalue = v;
+		if (ftstream_parser_read_binary(pstream, v, &b_continue))
+			return FTSTREAM_PARSER_READ_OK;
+		if (b_continue)
+			goto CONTINUE_WAITING;
+		return FTSTREAM_PARSER_READ_FAIL;
+	}
 	case PT_MV_SHORT: {
 		auto sa = cu_alloc<SHORT_ARRAY>();
 		ppropval->pvalue = sa;
