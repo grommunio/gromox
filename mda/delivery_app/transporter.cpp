@@ -566,7 +566,7 @@ static void *dxp_thrwork(void *arg)
 			if (!mail_retrieve(pcontext->pmail,
 			    static_cast<char *>(pmessage->mail_begin),
 			    pmessage->mail_length)) {
-				system_services_log_info(6, "QID %d: Failed to "
+				system_services_log_info(LV_DEBUG, "QID %d: Failed to "
 					"load into mail object", pmessage->flush_ID);
 				message_dequeue_save(pmessage);
 				message_dequeue_put(pmessage);
@@ -589,7 +589,7 @@ static void *dxp_thrwork(void *arg)
 		pthr_data->last_thrower = NULL;
 		pass_result = transporter_pass_mpc_hooks(pcontext, pthr_data);
 		if (FALSE == pass_result) {
-			transporter_log_info(pcontext, 6, "Message cannot be processed by "
+			transporter_log_info(pcontext, LV_DEBUG, "Message cannot be processed by "
 				"any hook registered in MPC");
 			if (FALSE == b_self) {
 				message_dequeue_save(pmessage);
@@ -1070,7 +1070,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 	pass_result = transporter_pass_mpc_hooks(pcontext, pthr_data);
 	if (FALSE == pass_result) {
 		ret_val = FALSE;
-		transporter_log_info(pcontext, 6, "Message cannot be processed by any "
+		transporter_log_info(pcontext, LV_DEBUG, "Message cannot be processed by any "
 			"hook registered in MPC");
 	} else {
 		ret_val = TRUE;

@@ -101,6 +101,15 @@ enum ec_error_t {
 	ecInvalidParam = 0x80070057, /* MAPI_E_INVALID_PARAMETER */
 };
 
+enum gx_loglevel {
+	LV_CRIT = 1,
+	LV_ERR = 2,
+	LV_WARN = 3,
+	LV_NOTICE = 4,
+	LV_INFO = 5,
+	LV_DEBUG = 6,
+};
+
 enum {
 	ULCLPART_SIZE = 65, /* localpart(64) plus \0 */
 	UDOM_SIZE = 256, /* domain(255) plus \0 */

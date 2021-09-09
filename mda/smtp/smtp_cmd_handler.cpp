@@ -250,7 +250,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 				} else {
 					write(pcontext->connection.sockd, reason, string_length);
 				}
-                smtp_parser_log_info(pcontext, 6, "Closed session because"
+                smtp_parser_log_info(pcontext, LV_DEBUG, "Closed session because"
                              " RCPT address is not in our system and ipaddr is not"
                              " in our relay list either");
                 return DISPATCH_SHOULD_CLOSE;
@@ -273,7 +273,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 				} else {
 					write(pcontext->connection.sockd, reason, string_length);
 				}
-				system_services_log_info(4, "remote=%s from=%s to=%s  RCPT address is invalid",
+				system_services_log_info(LV_NOTICE, "remote=%s from=%s to=%s  RCPT address is invalid",
 					pcontext->connection.client_ip,
 					pcontext->mail.envelope.from, buff);
                 return DISPATCH_CONTINUE;		
@@ -291,7 +291,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 				} else {
 					write(pcontext->connection.sockd, reason, string_length);
 				}
-				system_services_log_info(4, "remote=%s from=%s to=%s  Mailbox is full",
+				system_services_log_info(LV_NOTICE, "remote=%s from=%s to=%s  Mailbox is full",
 					pcontext->connection.client_ip,
 					pcontext->mail.envelope.from, buff);
 				return DISPATCH_CONTINUE;		
@@ -368,7 +368,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
                 pbuff2 = stream_getbuffer_for_writing(&stream, &size2);
                 if (NULL == pbuff2) {
                     stream_free(&stream);
-		            smtp_parser_log_info(pcontext, 4, "out of memory");
+		            smtp_parser_log_info(pcontext, LV_NOTICE, "out of memory");
                     return 416 | DISPATCH_SHOULD_CLOSE;
                 }
                 size2_used = size - size_copied;

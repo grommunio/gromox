@@ -1590,7 +1590,7 @@ static void log_err(const char *format, ...)
 	vsnprintf(log_buf, sizeof(log_buf) - 1, format, ap);
 	va_end(ap);
 	log_buf[sizeof(log_buf) - 1] = '\0';
-	system_services_log_info(3, "user=%s  %s", pinfo->get_username(), log_buf);
+	system_services_log_info(LV_ERR, "user=%s  %s", pinfo->get_username(), log_buf);
 }
 
 static BOOL common_util_send_mail(MAIL *pmail,

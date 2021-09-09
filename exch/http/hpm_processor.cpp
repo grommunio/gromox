@@ -499,7 +499,7 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 			} else {
 				if (tmp_len >= 32) {
 					phpm_ctx->b_preproc = FALSE;
-					http_parser_log_info(phttp, 6, "length of "
+					http_parser_log_info(phttp, LV_DEBUG, "length of "
 						"content-length is too long for hpm_processor");
 					return FALSE;
 				}
@@ -512,7 +512,7 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 			}
 			if (content_length > g_max_size) {
 				phpm_ctx->b_preproc = FALSE;
-				http_parser_log_info(phttp, 6, "content-length"
+				http_parser_log_info(phttp, LV_DEBUG, "content-length"
 					" is too long for hpm_processor");
 				return FALSE;
 			}
@@ -605,7 +605,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 				tmp_len = size;
 			}
 			if (tmp_len != write(phpm_ctx->cache_fd, pbuff, tmp_len)) {
-				http_parser_log_info(phttp, 6, "fail to"
+				http_parser_log_info(phttp, LV_DEBUG, "fail to"
 					" write cache file for hpm_processor");
 				return FALSE;
 			}
@@ -630,7 +630,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 			ptoken = static_cast<char *>(memmem(tmp_buff, size, "\r\n", 2));
 			if (NULL == ptoken) {
 				if (1024 == size) {
-					http_parser_log_info(phttp, 6, "fail to "
+					http_parser_log_info(phttp, LV_DEBUG, "fail to "
 						"parse chunked block for hpm_processor");
 					return FALSE;
 				}
@@ -639,7 +639,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 			*ptoken = '\0';
 			phpm_ctx->chunk_size = strtol(tmp_buff, NULL, 16);
 			if (0 == phpm_ctx->chunk_size) {
-				http_parser_log_info(phttp, 6, "fail to "
+				http_parser_log_info(phttp, LV_DEBUG, "fail to "
 					"parse chunked block for hpm_processor");
 				return FALSE;
 			}
@@ -652,7 +652,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 		    reinterpret_cast<unsigned int *>(&size))) != nullptr) {
 			if (phpm_ctx->chunk_size >= size + phpm_ctx->chunk_offset) {
 				if (size != write(phpm_ctx->cache_fd, pbuff, size)) {
-					http_parser_log_info(phttp, 6, "fail to "
+					http_parser_log_info(phttp, LV_DEBUG, "fail to "
 						"write cache file for hpm_processor");
 					return FALSE;
 				}
@@ -661,7 +661,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 			} else {
 				tmp_len = phpm_ctx->chunk_size - phpm_ctx->chunk_offset;
 				if (tmp_len != write(phpm_ctx->cache_fd, pbuff, tmp_len)) {
-					http_parser_log_info(phttp, 6, "fail to"
+					http_parser_log_info(phttp, LV_DEBUG, "fail to"
 						" write cache file for hpm_processor");
 					return FALSE;
 				}
@@ -671,7 +671,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 				phpm_ctx->chunk_offset = phpm_ctx->chunk_size;
 			}
 			if (phpm_ctx->cache_size > g_max_size) {
-				http_parser_log_info(phttp, 6, "chunked content"
+				http_parser_log_info(phttp, LV_DEBUG, "chunked content"
 						" length is too long for hpm_processor");
 				return FALSE;
 			}
