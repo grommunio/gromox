@@ -300,7 +300,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		} else {
 			write(pcontext->connection.sockd, smtp_reply_str, string_length);
 		}
-		smtp_parser_log_info(pcontext, 8, "flushing queue temporary fail");
+		smtp_parser_log_info(pcontext, LV_ERR, "flushing queue temporary fail");
 		smtp_parser_reset_context_session(pcontext);
 		return PROCESS_CONTINUE;
 	} else if (FLUSH_PERMANENT_FAIL == pcontext->flusher.flush_result) {
@@ -311,7 +311,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		} else {
 			write(pcontext->connection.sockd, smtp_reply_str, string_length);
 		}
-		smtp_parser_log_info(pcontext, 8, "flushing queue permanent failure");
+		smtp_parser_log_info(pcontext, LV_ERR, "flushing queue permanent failure");
 		if (NULL != pcontext->connection.ssl) {
 			SSL_shutdown(pcontext->connection.ssl);
 			SSL_free(pcontext->connection.ssl);
@@ -332,7 +332,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 				/* 452 Temporary internal failure - failed to initialize TLS */
 				auto smtp_reply_str = resource_get_smtp_code(418, 1, &string_length);
 				write(pcontext->connection.sockd, smtp_reply_str, string_length);
-				smtp_parser_log_info(pcontext, 8, "out of SSL object");
+				smtp_parser_log_info(pcontext, LV_ERR, "out of SSL object");
 				SLEEP_BEFORE_CLOSE;
 				close(pcontext->connection.sockd);
 				if (system_services_container_remove_ip != nullptr)
@@ -389,7 +389,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		} else {
 	       write(pcontext->connection.sockd, smtp_reply_str, string_length);
 		}
-		smtp_parser_log_info(pcontext, 8, "out of memory");
+		smtp_parser_log_info(pcontext, LV_ERR, "out of memory");
 		if (0 != pcontext->flusher.flush_ID) {
 			flusher_cancel(pcontext);
 		}
@@ -607,7 +607,7 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 		} else {
 			write(pcontext->connection.sockd, smtp_reply_str, string_length);
 		}
-		smtp_parser_log_info(pcontext, 8, "close session because of exceeding "
+		smtp_parser_log_info(pcontext, LV_NOTICE, "close session because of exceeding "
 				 "maximum size of message");
 		if (0 != pcontext->flusher.flush_ID) {
 			flusher_cancel(pcontext);
@@ -825,7 +825,7 @@ static int smtp_parser_dispatch_cmd2(const char *cmd_line, int line_length,
 		if (system_services_add_ip_into_temp_list != nullptr)
 			system_services_add_ip_into_temp_list(pcontext->connection.client_ip,
 				g_param.blktime_sessions);
-		smtp_parser_log_info(pcontext, 8, "add %s into temporary list because"
+		smtp_parser_log_info(pcontext, LV_NOTICE, "added %s into temporary list because"
 							" it exceeds the maximum mail number on session",
 							pcontext->connection.client_ip);
 		return DISPATCH_SHOULD_CLOSE; 

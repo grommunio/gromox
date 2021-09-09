@@ -1548,7 +1548,7 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 	HX_strltrim(pcontext->username);
 	if (system_services_judge_user != nullptr &&
 	    !system_services_judge_user(pcontext->username)) {
-		imap_parser_log_info(pcontext, 8, "user %s is "
+		imap_parser_log_info(pcontext, LV_NOTICE, "user %s is "
 			"denied by user filter", pcontext->username);
 		return 1901 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
     }
@@ -1561,10 +1561,10 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 			gx_strlcpy(pcontext->lang, resource_get_string("DEFAULT_LANG"), GX_ARRAY_SIZE(pcontext->lang));
 		}
 		pcontext->proto_stat = PROTO_STAT_AUTH;
-		imap_parser_log_info(pcontext, 8, "login success");
+		imap_parser_log_info(pcontext, LV_DEBUG, "login success");
 		return 1705 | DISPATCH_TAG;
 	}
-	imap_parser_log_info(pcontext, 8, "login fail");
+	imap_parser_log_info(pcontext, LV_WARN, "login fail");
 	pcontext->auth_times ++;
 	if (pcontext->auth_times >= imap_parser_get_param(MAX_AUTH_TIMES)) {
 		if (system_services_add_user_into_temp_list != nullptr)
@@ -1609,7 +1609,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	HX_strltrim(pcontext->username);
 	if (system_services_judge_user != nullptr &&
 	    !system_services_judge_user(pcontext->username)) {
-		imap_parser_log_info(pcontext, 8, "user %s is "
+		imap_parser_log_info(pcontext, LV_WARN, "user %s is "
 			"denied by user filter", pcontext->username);
 		return 1901 | DISPATCH_SHOULD_CLOSE;
     }
@@ -1624,10 +1624,10 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			gx_strlcpy(pcontext->lang, resource_get_string("DEFAULT_LANG"), GX_ARRAY_SIZE(pcontext->lang));
 		}
 		pcontext->proto_stat = PROTO_STAT_AUTH;
-		imap_parser_log_info(pcontext, 8, "login success");
+		imap_parser_log_info(pcontext, LV_DEBUG, "login success");
 		return 1705;
 	}
-	imap_parser_log_info(pcontext, 8, "login fail");
+	imap_parser_log_info(pcontext, LV_WARN, "login fail");
 	pcontext->auth_times++;
 	if (pcontext->auth_times >= imap_parser_get_param(MAX_AUTH_TIMES)) {
 		if (system_services_add_user_into_temp_list != nullptr)
@@ -2604,7 +2604,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	switch (system_services_insert_mail(pcontext->maildir,
 	        temp_name, mid_string.c_str(), flag_buff, tmp_time, &errnum)) {
 	case MIDB_RESULT_OK:
-		imap_parser_log_info(pcontext, 8, "message %s is appended OK", eml_path.c_str());
+		imap_parser_log_info(pcontext, LV_DEBUG, "message %s is appended OK", eml_path.c_str());
 		break;
 	case MIDB_NO_SERVER: {
 		return 1905;
@@ -2878,7 +2878,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	        pcontext->mid.c_str(), flag_buff, tmp_time, &errnum)) {
 	case MIDB_RESULT_OK:
 		pcontext->mid.clear();
-		imap_parser_log_info(pcontext, 8, "message %s is appended OK", eml_path.c_str());
+		imap_parser_log_info(pcontext, LV_DEBUG, "message %s is appended OK", eml_path.c_str());
 		break;
 	case MIDB_NO_SERVER: {
 		pcontext->mid.clear();
@@ -3006,7 +3006,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			}
 			auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
 			remove(eml_path.c_str());
-			imap_parser_log_info(pcontext, 8, "message %s has been deleted", eml_path.c_str());
+			imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"* %d EXPUNGE\r\n", pitem->id - del_num);
 			stream_write(&pcontext->stream, buff, string_length);
@@ -3843,7 +3843,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			}
 			auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
 			remove(eml_path.c_str());
-			imap_parser_log_info(pcontext, 8, "message %s has been deleted", eml_path.c_str());
+			imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
 			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
 				"* %d EXPUNGE\r\n", pitem->id - del_num);
 			stream_write(&pcontext->stream, buff, string_length);
@@ -3962,7 +3962,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 			}
 			auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
 			remove(eml_path.c_str());
-			imap_parser_log_info(pcontext, 8, "message %s has been deleted", eml_path.c_str());
+			imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
 			b_deleted = TRUE;
 		} catch (const std::bad_alloc &) {
 			fprintf(stderr, "E-1457: ENOMEM\n");

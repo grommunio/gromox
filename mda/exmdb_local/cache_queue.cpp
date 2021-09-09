@@ -411,11 +411,11 @@ static void *mdl_thrwork(void *arg)
 				pcontext->pcontrol->from, "none@none")) {
 				pbounce_context = get_context();
 				if (NULL == pbounce_context) {
-					exmdb_local_log_info(pcontext, ptr, 8, "fail to get one "
+					exmdb_local_log_info(pcontext, ptr, LV_ERR, "fail to get one "
 						"context for bounce mail");
 				} else {
 					if (FALSE == bounce_audit_check(temp_rcpt)) {
-						exmdb_local_log_info(pcontext, ptr, 8, "will not "
+						exmdb_local_log_info(pcontext, ptr, LV_ERR, "will not "
 							"produce bounce message, because of too many "
 							"mails to %s", temp_rcpt);
 						put_context(pbounce_context);

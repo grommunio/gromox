@@ -96,7 +96,7 @@ static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 	
 	if (strchr(pcontext->pcontrol->from, '@') != nullptr &&
 	    address_table_query(pcontext->pcontrol->from, mainname)) {
-		alias_log_info(pcontext, 8, "replace alias from-address "
+		alias_log_info(pcontext, LV_DEBUG, "replace alias from-address "
 				"from %s to %s", pcontext->pcontrol->from, mainname);
 		gx_strlcpy(pcontext->pcontrol->from, mainname, GX_ARRAY_SIZE(pcontext->pcontrol->from));
 	}
@@ -105,7 +105,7 @@ static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 	while (MEM_END_OF_FILE != mem_file_readline(&rcpt_file, rcpt_to, arsizeof(rcpt_to))) {
 		if (strchr(rcpt_to, '@') != nullptr &&
 		    address_table_query(rcpt_to, mainname)) {
-			alias_log_info(pcontext, 8, "replace alias rcpt-address "
+			alias_log_info(pcontext, LV_DEBUG, "replace alias rcpt-address "
 					"from %s to %s", rcpt_to, mainname);
 			strcpy(rcpt_to, mainname);
 			b_replaced = TRUE;

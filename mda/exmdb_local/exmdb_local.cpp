@@ -199,11 +199,11 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 					0 != strcasecmp(pcontext->pcontrol->from, "none@none")) {
 					pbounce_context = get_context();
 					if (NULL == pbounce_context) {
-						exmdb_local_log_info(pcontext, rcpt_buff, 8,
+						exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
 							"fail to get bounce context");
 					} else {
 						if (FALSE == bounce_audit_check(rcpt_buff)) {
-							exmdb_local_log_info(pcontext, rcpt_buff, 8,
+							exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
 								"will not produce bounce message, "
 								"because of too many mails to %s", rcpt_buff);
 							put_context(pbounce_context);
@@ -229,11 +229,11 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 					0 != strcasecmp(pcontext->pcontrol->from, "none@none")) {
 					pbounce_context = get_context();
 					if (NULL == pbounce_context) {
-						exmdb_local_log_info(pcontext, rcpt_buff, 8,
+						exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
 							"fail to get bounce context");
 					} else {
 						if (FALSE == bounce_audit_check(rcpt_buff)) {
-							exmdb_local_log_info(pcontext, rcpt_buff, 8,
+							exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
 								"will not produce bounce message, "
 								"because of too many mails to %s", rcpt_buff);
 							put_context(pbounce_context);
@@ -258,11 +258,11 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 					0 != strcasecmp(pcontext->pcontrol->from, "none@none")) {
 					pbounce_context = get_context();
 					if (NULL == pbounce_context) {
-						exmdb_local_log_info(pcontext, rcpt_buff, 8,
+						exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
 							"fail to get bounce context");
 					} else {
 						if (FALSE == bounce_audit_check(rcpt_buff)) {
-							exmdb_local_log_info(pcontext, rcpt_buff, 8,
+							exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
 								"will not produce bounce message, "
 								"because of too many mails to %s", rcpt_buff);
 							put_context(pbounce_context);
@@ -288,11 +288,11 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 					0 != strcasecmp(pcontext->pcontrol->from, "none@none")) {
 					pbounce_context = get_context();
 					if (NULL == pbounce_context) {
-						exmdb_local_log_info(pcontext, rcpt_buff, 8,
+						exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
 							"fail to get bounce context");
 					} else {
 						if (FALSE == bounce_audit_check(rcpt_buff)) {
-							exmdb_local_log_info(pcontext, rcpt_buff, 8,
+							exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
 								"will not produce bounce message, "
 								"because of too many mails to %s", rcpt_buff);
 							put_context(pbounce_context);
@@ -317,11 +317,11 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 				time(&current_time);
 				cache_ID = cache_queue_put(pcontext, rcpt_buff, current_time);
 				if (cache_ID >= 0) {
-					exmdb_local_log_info(pcontext, rcpt_buff, 8,
+					exmdb_local_log_info(pcontext, rcpt_buff, LV_INFO,
 						"message is put into cache queue with cache ID %d and "
 						"wait to be delivered next time", cache_ID);
 				} else {
-					exmdb_local_log_info(pcontext, rcpt_buff, 8,
+					exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
 						"failed to put message into cache queue");
 				}
 				break;
@@ -404,7 +404,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	MESSAGE_CONTEXT *pcontext1;
 
 	if (!exmdb_local_get_user_info(address, home_dir, lang, tmzone)) {
-		exmdb_local_log_info(pcontext, address, 8, "fail"
+		exmdb_local_log_info(pcontext, address, LV_ERR, "fail"
 			"to get user information from data source!");
 		return DELIVERY_OPERATION_FAILURE;
 	}
@@ -414,7 +414,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		strcpy(charset, g_default_charset);
 	}
 	if ('\0' == home_dir[0]) {
-		exmdb_local_log_info(pcontext, address, 8,
+		exmdb_local_log_info(pcontext, address, LV_ERR,
 			"there's no user in mail system");
 		return DELIVERY_NO_USER;
 	}
@@ -460,7 +460,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 			put_context(pcontext1);
 		}
 		exmdb_local_log_info(pcontext, address,
-			8, "fail to creating mail file in"
+			LV_ERR, "fail to creating mail file in"
 			" directory %s/eml", home_dir);
 		return DELIVERY_OPERATION_FAILURE;
 	}
@@ -474,7 +474,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 			put_context(pcontext1);
 		}
 		exmdb_local_log_info(pcontext, address,
-			8, "fail to write mail file in"
+			LV_ERR, "fail to write mail file in"
 			" directory %s/eml", home_dir);
 		return DELIVERY_OPERATION_FAILURE;
 	}
@@ -491,7 +491,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		if (NULL != pcontext1) {
 			put_context(pcontext1);
 		}
-		exmdb_local_log_info(pcontext, address, 8,
+		exmdb_local_log_info(pcontext, address, LV_ERR,
 			"permanent failure getting mail digest");
 		return DELIVERY_OPERATION_ERROR;
 	}
@@ -513,7 +513,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1388: remove %s: %s\n",
 			        eml_path.c_str(), strerror(errno));
-		exmdb_local_log_info(pcontext, address, 8, "fail "
+		exmdb_local_log_info(pcontext, address, LV_ERR, "fail "
 			"to convert rtf822 into MAPI message object");
 		return DELIVERY_OPERATION_ERROR;
 	}
@@ -560,7 +560,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	message_content_free(pmsg);
 	switch (result) {
 	case EXMDB_RESULT_OK:
-		exmdb_local_log_info(pcontext, address, 8,
+		exmdb_local_log_info(pcontext, address, LV_DEBUG,
 			"message %s was delivered OK", eml_path.c_str());
 		if (TRUE == pcontext->pcontrol->need_bounce &&
 			0 != strcmp(pcontext->pcontrol->from, "none@none") &&
@@ -572,30 +572,30 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		}
 		return DELIVERY_OPERATION_OK;
 	case EXMDB_RUNTIME_ERROR:
-		exmdb_local_log_info(pcontext, address, 8,
+		exmdb_local_log_info(pcontext, address, LV_ERR,
 			"rpc run-time error when delivering "
 			"message into directory %s!", home_dir);
 		return DELIVERY_OPERATION_FAILURE;
 	case EXMDB_NO_SERVER:
-		exmdb_local_log_info(pcontext, address, 8,
+		exmdb_local_log_info(pcontext, address, LV_ERR,
 			"missing exmdb server connection when "
 			"delivering message into directory %s!",
 			home_dir);
 		return DELIVERY_OPERATION_FAILURE;
 	case EXMDB_RDWR_ERROR:
-		exmdb_local_log_info(pcontext, address, 8,
+		exmdb_local_log_info(pcontext, address, LV_ERR,
 			"read write error with exmdb server when"
 			" delivering message into directory %s!",
 			home_dir);
 		return DELIVERY_OPERATION_FAILURE;
 	case EXMDB_RESULT_ERROR:
-		exmdb_local_log_info(pcontext, address, 8,
+		exmdb_local_log_info(pcontext, address, LV_ERR,
 			"error result returned when delivering "
 			"message into directory %s!", home_dir);
 		return DELIVERY_OPERATION_FAILURE;
 	case EXMDB_MAILBOX_FULL:
 		exmdb_local_log_info(pcontext, address,
-			8, "user's mailbox is full");
+			LV_NOTICE, "user's mailbox is full");
 		return DELIVERY_MAILBOX_FULL;
 	}
 	return DELIVERY_OPERATION_FAILURE;
