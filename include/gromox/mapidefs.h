@@ -671,6 +671,35 @@ enum {
 	            frightsCreateSubfolder | frightsOwner | frightsVisible,
 };
 
+enum { /* for PR_STORE_SUPPORT_MASK and PR_STORE_STATE */
+	STORE_ENTRYID_UNIQUE    = 1U << 0,
+	STORE_READONLY          = 1U << 1,
+	STORE_SEARCH_OK         = 1U << 2,
+	STORE_MODIFY_OK         = 1U << 3,
+	STORE_CREATE_OK         = 1U << 4,
+	STORE_ATTACH_OK         = 1U << 5,
+	STORE_OLE_OK            = 1U << 6,
+	STORE_SUBMIT_OK         = 1U << 7,
+	STORE_NOTIFY_OK         = 1U << 8,
+	STORE_MV_PROPS_OK       = 1U << 9,
+	STORE_CATEGORIZE_OK     = 1U << 10,
+	STORE_RTF_OK            = 1U << 11,
+	STORE_RESTRICTION_OK    = 1U << 12,
+	STORE_SORT_OK           = 1U << 13,
+	STORE_PUBLIC_FOLDERS    = 1U << 14,
+	STORE_UNCOMPRESSED_RTF  = 1U << 15,
+	STORE_HTML_OK           = 1U << 16,
+	STORE_ANSI_OK           = 1U << 17,
+	STORE_UNICODE_OK        = 1U << 18,
+	STORE_LOCALSTORE        = 1U << 19,
+	STORE_ITEMPROC          = 1U << 21,
+	STORE_PUSHER_OK         = 1U << 23,
+	STORE_HAS_SEARCHES      = 1U << 24,
+	STORE_FULLTEXT_QUERY_OK = 1U << 25,
+	STORE_FILTER_SEARCH_OK  = 1U << 26,
+	STORE_RULES_OK          = 1U << 28,
+};
+
 enum zics_type {
 	ICS_TYPE_CONTENTS = 1,
 	ICS_TYPE_HIERARCHY = 2,
@@ -721,9 +750,11 @@ enum {
 	FL_SUBSTRING,
 	FL_PREFIX,
 
-	FL_IGNORECASE = 1 << 16,
-	FL_IGNORENONSPACE = 1 << 17,
-	FL_LOOSE = 1 << 18,
+	FL_PREFIX_ON_ANY_WORD = 1U << 4, /* split value and attempt match on each word */
+	FL_PHRASE_MATCH       = 1U << 5, /* match exact words and in order only */
+	FL_IGNORECASE         = 1U << 16,
+	FL_IGNORENONSPACE     = 1U << 17,
+	FL_LOOSE              = 1U << 18,
 };
 
 enum {

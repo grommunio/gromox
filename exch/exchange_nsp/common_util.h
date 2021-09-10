@@ -41,15 +41,6 @@
 #define SORT_TYPE_DISPLAYNAME_RO		0x000003E8
 #define SORT_TYPE_DISPLAYNAME_W			0x000003E9
 
-/* for restriction content */
-#define FL_FULLSTRING					0x000000
-#define FL_SUBSTRING					0x000100
-#define FL_PREFIX						0x000200
-
-#define FL_IGNORECASE					0x01
-#define FL_IGNORENONSPACE				0x02
-#define FL_LOOSE						0x04
-
 #define EPOCH_DIFF 						11644473600LL
 
 extern const uint8_t *common_util_get_nspi_guid();
