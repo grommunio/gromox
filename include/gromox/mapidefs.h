@@ -45,7 +45,7 @@ enum {
 	PT_SYSTIME = 0x0040, /* VT_FILETIME */
 	PT_CLSID = 0x0048, /* VT_CLSID */
 	PT_SVREID = 0x00FB, /* MS-OXCDATA extension */
-	PT_SRESTRICT = 0x00FD, /* edkmdb.h extension */
+	PT_SRESTRICTION = 0x00FD, /* edkmdb.h extension */
 	PT_ACTIONS = 0x00FE, /* edkmdb.h extension */
 	PT_BINARY = 0x0102,
 	PT_MV_SHORT = 0x1002, /* PT_MV_I2 */

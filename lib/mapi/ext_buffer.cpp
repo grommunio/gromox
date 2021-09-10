@@ -915,7 +915,7 @@ int EXT_PULL::g_propval(uint16_t type, void **ppval)
 		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
 		return pext->g_guid(static_cast<GUID *>(*ppval));
-	case PT_SRESTRICT:
+	case PT_SRESTRICTION:
 		*ppval = pext->anew<RESTRICTION>();
 		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
@@ -2763,7 +2763,7 @@ int EXT_PUSH::p_propval(uint16_t type, const void *pval)
 		return pext->p_guid(static_cast<const GUID *>(pval));
 	case PT_SVREID:
 		return pext->p_svreid(static_cast<const SVREID *>(pval));
-	case PT_SRESTRICT:
+	case PT_SRESTRICTION:
 		return pext->p_restriction(static_cast<const RESTRICTION *>(pval));
 	case PT_ACTIONS:
 		return pext->p_rule_actions(static_cast<const RULE_ACTIONS *>(pval));

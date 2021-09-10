@@ -80,7 +80,7 @@ uint32_t rop_setcolumns(uint8_t table_flags,
 		case PT_SYSTIME:
 		case PT_CLSID:
 		case PT_SVREID:
-		case PT_SRESTRICT:
+		case PT_SRESTRICTION:
 		case PT_ACTIONS:
 		case PT_BINARY:
 		case PT_MV_SHORT:
@@ -197,7 +197,7 @@ uint32_t rop_sorttable(uint8_t table_flags,
 		case PT_SYSTIME:
 		case PT_CLSID:
 		case PT_SVREID:
-		case PT_SRESTRICT:
+		case PT_SRESTRICTION:
 		case PT_ACTIONS:
 		case PT_BINARY:
 		case PT_MV_SHORT:

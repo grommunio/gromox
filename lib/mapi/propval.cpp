@@ -123,7 +123,7 @@ void* propval_dup(uint16_t type, void *pvi)
 		}
 		return preturn;
 	}
-	case PT_SRESTRICT:
+	case PT_SRESTRICTION:
 		return restriction_dup(static_cast<RESTRICTION *>(pvi));
 	case PT_ACTIONS:
 		return rule_actions_dup(static_cast<RULE_ACTIONS *>(pvi));
@@ -315,7 +315,7 @@ void propval_free(uint16_t type, void *pvalue)
 	case PT_SYSTIME:
 	case PT_CLSID:
 		break;
-	case PT_SRESTRICT:
+	case PT_SRESTRICTION:
 		restriction_free(static_cast<RESTRICTION *>(pvalue));
 		return;
 	case PT_ACTIONS:
@@ -410,7 +410,7 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 			return ((SVREID*)pvalue)->pbin->cb + 1;
 		}
 		return 21;
-	case PT_SRESTRICT:
+	case PT_SRESTRICTION:
 		return restriction_size(static_cast<RESTRICTION *>(pvalue));
 	case PT_ACTIONS:
 		return rule_actions_size(static_cast<RULE_ACTIONS *>(pvalue));

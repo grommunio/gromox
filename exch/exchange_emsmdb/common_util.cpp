@@ -1496,7 +1496,7 @@ BOOL common_util_convert_tagged_propval(
 			common_util_convert_proptag(TRUE, &ppropval->proptag);
 			break;
 		}
-		case PT_SRESTRICT:
+		case PT_SRESTRICTION:
 			if (!common_util_convert_restriction(TRUE,
 			    static_cast<RESTRICTION *>(ppropval->pvalue)))
 				return FALSE;	
@@ -1537,7 +1537,7 @@ BOOL common_util_convert_tagged_propval(
 			common_util_convert_proptag(FALSE, &ppropval->proptag);
 			break;
 		}
-		case PT_SRESTRICT:
+		case PT_SRESTRICTION:
 			if (!common_util_convert_restriction(FALSE,
 			    static_cast<RESTRICTION *>(ppropval->pvalue)))
 				return FALSE;	

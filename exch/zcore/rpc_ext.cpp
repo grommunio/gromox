@@ -70,7 +70,7 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;
 		QRF(pext->g_guid(static_cast<GUID *>(*ppval)));
 		return TRUE;
-	case PT_SRESTRICT:
+	case PT_SRESTRICTION:
 		*ppval = pext->anew<RESTRICTION>();
 		if (*ppval == nullptr)
 			return FALSE;
@@ -275,7 +275,7 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 	case PT_CLSID:
 		QRF(pext->p_guid(static_cast<const GUID *>(pval)));
 		return TRUE;
-	case PT_SRESTRICT:
+	case PT_SRESTRICTION:
 		QRF(pext->p_restriction(static_cast<const RESTRICTION *>(pval)));
 		return TRUE;
 	case PT_ACTIONS:

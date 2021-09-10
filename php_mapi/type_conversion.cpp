@@ -656,7 +656,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		} ZEND_HASH_FOREACH_END();
 		break;
 	}
-	case PT_SRESTRICT:
+	case PT_SRESTRICTION:
 		pvalue = emalloc(sizeof(RESTRICTION));
 		if (NULL == pvalue) {
 			return NULL;
@@ -1376,7 +1376,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 			}
 			add_assoc_zval(pzret, proptag_string, &pzactarray);
 			break;
-		case PT_SRESTRICT:
+		case PT_SRESTRICTION:
 			if (!restriction_to_php(static_cast<RESTRICTION *>(ppropval->pvalue), &pzactval))
 				return 0;
 			add_assoc_zval(pzret, proptag_string, &pzactval);
