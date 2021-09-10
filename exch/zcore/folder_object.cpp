@@ -954,15 +954,13 @@ BOOL FOLDER_OBJECT::updaterules(uint32_t flags, const RULE_LIST *plist)
 			return FALSE;	
 		}
 		pprovider = static_cast<char *>(common_util_get_propvals(
-				&plist->prule[i].propvals,
-		            PROP_TAG_RULEPROVIDER));
+		            &plist->prule[i].propvals, PR_RULE_PROVIDER));
 		if (NULL == pprovider || 0 != strcasecmp(
 			pprovider, "Schedule+ EMS Interface")) {
 			continue;	
 		}
 		auto act = static_cast<RULE_ACTIONS *>(common_util_get_propvals(
-					&plist->prule[i].propvals,
-		           PROP_TAG_RULEACTIONS));
+		           &plist->prule[i].propvals, PR_RULE_ACTIONS));
 		if (act != nullptr) {
 			b_delegate = TRUE;
 			pactions = act;

@@ -3634,46 +3634,46 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 	char sql_string[128];
 	
 	switch (proptag) {
-	case PROP_TAG_RULEID:
+	case PR_RULE_ID:
 		*ppvalue = cu_alloc<uint64_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		*(uint64_t*)(*ppvalue) = rop_util_make_eid_ex(1, rule_id);
 		return TRUE;
-	case PROP_TAG_RULESEQUENCE:
+	case PR_RULE_SEQUENCE:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT sequence"
 		          " FROM rules WHERE rule_id=%llu", LLU(rule_id));
 		break;
-	case PROP_TAG_RULESTATE:
+	case PR_RULE_STATE:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT state "
 		          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
 		break;
-	case PROP_TAG_RULENAME:
+	case PR_RULE_NAME:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT name "
 		          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
 		break;
-	case PROP_TAG_RULEPROVIDER:
+	case PR_RULE_PROVIDER:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT provider"
 		          " FROM rules WHERE rule_id=%llu", LLU(rule_id));
 		break;
-	case PROP_TAG_RULELEVEL:
+	case PR_RULE_LEVEL:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT level "
 		          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
 		break;
-	case PROP_TAG_RULEUSERFLAGS:
+	case PR_RULE_USER_FLAGS:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT user_flags "
 		          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
 		break;
-	case PROP_TAG_RULEPROVIDERDATA:
+	case PR_RULE_PROVIDER_DATA:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT provider_data"
 		          " FROM rules WHERE rule_id=%llu", LLU(rule_id));
 		break;
-	case PROP_TAG_RULECONDITION:
+	case PR_RULE_CONDITION:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT condition "
 		          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
 		break;
-	case PROP_TAG_RULEACTIONS:
+	case PR_RULE_ACTIONS:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT actions "
 		          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
 		break;
@@ -3690,24 +3690,24 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 		return TRUE;
 	}
 	switch (proptag) {
-	case PROP_TAG_RULESEQUENCE:
-	case PROP_TAG_RULESTATE:
-	case PROP_TAG_RULELEVEL:
-	case PROP_TAG_RULEUSERFLAGS:
+	case PR_RULE_SEQUENCE:
+	case PR_RULE_STATE:
+	case PR_RULE_LEVEL:
+	case PR_RULE_USER_FLAGS:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		*(uint32_t*)(*ppvalue) = sqlite3_column_int64(pstmt, 0);
 		break;
-	case PROP_TAG_RULENAME:
-	case PROP_TAG_RULEPROVIDER:
+	case PR_RULE_NAME:
+	case PR_RULE_PROVIDER:
 		*ppvalue = common_util_dup(S2A(sqlite3_column_text(pstmt, 0)));
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		break;
-	case PROP_TAG_RULEPROVIDERDATA: {
+	case PR_RULE_PROVIDER_DATA: {
 		*ppvalue = cu_alloc<BINARY>();
 		if (NULL == *ppvalue) {
 			return FALSE;
@@ -3721,7 +3721,7 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 		memcpy(bv->pv, sqlite3_column_blob(pstmt, 0), bv->cb);
 		break;
 	}
-	case PROP_TAG_RULECONDITION:
+	case PR_RULE_CONDITION:
 		*ppvalue = cu_alloc<RESTRICTION>();
 		if (NULL == *ppvalue) {
 			return FALSE;
@@ -3733,7 +3733,7 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 			return TRUE;
 		}
 		break;
-	case PROP_TAG_RULEACTIONS:
+	case PR_RULE_ACTIONS:
 		*ppvalue = cu_alloc<RULE_ACTIONS>();
 		if (NULL == *ppvalue) {
 			return FALSE;

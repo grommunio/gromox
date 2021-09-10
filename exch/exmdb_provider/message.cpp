@@ -2603,11 +2603,9 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof,
 		if (pvalue != nullptr && strcasecmp(static_cast<char *>(pvalue),
 		    "IPM.ExtendedRule.Message") != 0)
 			continue;
-		if (FALSE == common_util_get_property(
-			MESSAGE_PROPERTIES_TABLE, message_id, 0,
-			psqlite, PROP_TAG_RULEMESSAGESTATE, &pvalue)) {
+		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+		    message_id, 0, psqlite, PR_RULE_MSG_STATE, &pvalue))
 			return FALSE;
-		}
 		if (NULL == pvalue) {
 			continue;
 		}
@@ -2625,22 +2623,16 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof,
 		} else {
 			continue;
 		}
-		if (FALSE == common_util_get_property(
-			MESSAGE_PROPERTIES_TABLE, message_id, 0,
-			psqlite, PROP_TAG_RULEMESSAGESEQUENCE,
-			&pvalue)) {
+		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+		    message_id, 0, psqlite, PR_RULE_MSG_SEQUENCE, &pvalue))
 			return FALSE;
-		}
 		if (NULL == pvalue) {
 			continue;
 		}
 		sequence = *(uint32_t*)pvalue;
-		if (FALSE == common_util_get_property(
-			MESSAGE_PROPERTIES_TABLE, message_id, 0,
-			psqlite, PROP_TAG_RULEMESSAGEPROVIDER,
-			&pvalue)) {
+		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+		    message_id, 0, psqlite, PR_RULE_MSG_PROVIDER, &pvalue))
 			return FALSE;
-		}
 		if (NULL == pvalue) {
 			continue;
 		}
@@ -2872,13 +2864,13 @@ static BOOL message_make_deferred_error_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_RULEACTIONTYPE;
+	propval.proptag = PR_RULE_ACTION_TYPE;
 	propval.pvalue = &action_type;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_RULEACTIONNUMBER;
+	propval.proptag = PR_RULE_ACTION_NUMBER;
 	propval.pvalue = &block_index;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
@@ -2906,14 +2898,14 @@ static BOOL message_make_deferred_error_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_RULEPROVIDER;
+	propval.proptag = PR_RULE_PROVIDER;
 	propval.pvalue = deconst(provider);
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	tmp_eid = rop_util_make_eid_ex(1, rule_id);
-	propval.proptag = PROP_TAG_RULEID;
+	propval.proptag = PR_RULE_ID;
 	propval.pvalue = &tmp_eid;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
@@ -2959,18 +2951,16 @@ static BOOL message_disable_rule(sqlite3 *psqlite,
 	} else {
 		if (FALSE == common_util_get_property(
 			MESSAGE_PROPERTIES_TABLE, id, 0, psqlite,
-			PROP_TAG_RULEMESSAGESTATE, &pvalue) ||
+			PR_RULE_MSG_STATE, &pvalue) ||
 			NULL == pvalue) {
 			return FALSE;
 		}
 		*(uint32_t*)pvalue |= RULE_STATE_ERROR;
-		propval.proptag = PROP_TAG_RULEMESSAGESTATE;
+		propval.proptag = PR_RULE_MSG_STATE;
 		propval.pvalue = pvalue;
-		if (FALSE == common_util_set_property(
-			MESSAGE_PROPERTIES_TABLE, id, 0,
-			psqlite, &propval, &b_result)) {
+		if (!common_util_set_property(MESSAGE_PROPERTIES_TABLE, id, 0,
+		    psqlite, &propval, &b_result))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
@@ -3578,7 +3568,7 @@ static BOOL message_make_deferred_action_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_RULEFOLDERFID;
+	propval.proptag = PR_RULE_FOLDER_FID;
 	propval.pvalue = &tmp_eid;
 	tmp_eid = rop_util_make_eid_ex(1, folder_id);
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
@@ -3596,7 +3586,7 @@ static BOOL message_make_deferred_action_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_RULEPROVIDER;
+	propval.proptag = PR_RULE_PROVIDER;
 	propval.pvalue = deconst(provider);
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
@@ -3643,7 +3633,7 @@ static BOOL message_make_deferred_action_message(
 	}
 	tmp_bin.pv = tmp_ids;
 	tmp_bin.cb = sizeof(uint64_t)*id_count;
-	propval.proptag = PROP_TAG_RULEIDS;
+	propval.proptag = PR_RULE_IDS;
 	propval.pvalue = &tmp_bin;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
@@ -4685,10 +4675,9 @@ static BOOL message_rule_new_message(BOOL b_oof,
 			continue;
 		}
 		void *pvalue = nullptr;
-		if (FALSE == common_util_get_rule_property(prnode->id,
-			psqlite, PROP_TAG_RULECONDITION, &pvalue)) {
+		if (!common_util_get_rule_property(prnode->id, psqlite,
+		    PR_RULE_CONDITION, &pvalue))
 			return FALSE;
-		}
 		if (pvalue == nullptr || !common_util_evaluate_message_restriction(psqlite,
 		    0, message_id, static_cast<RESTRICTION *>(pvalue)))
 			continue;
@@ -4696,10 +4685,9 @@ static BOOL message_rule_new_message(BOOL b_oof,
 			b_exit = TRUE;
 		}
 		RULE_ACTIONS *pactions = nullptr;
-		if (FALSE == common_util_get_rule_property(prnode->id,
-			psqlite, PROP_TAG_RULEACTIONS, (void**)&pactions)) {
+		if (!common_util_get_rule_property(prnode->id, psqlite,
+		    PR_RULE_ACTIONS, reinterpret_cast<void **>(&pactions)))
 			return FALSE;
-		}
 		if (NULL == pactions) {
 			continue;
 		}

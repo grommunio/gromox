@@ -2317,11 +2317,10 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			count = 0;
 			for (i=0; i<pproptags->count; i++) {
 				proptag = pproptags->pproptag[i];
-				if (PROP_TAG_RULENAME_STRING8 == proptag) {
-					proptag = PROP_TAG_RULENAME;
-				} else if (PROP_TAG_RULEPROVIDER_STRING8 == proptag) {
-					proptag = PROP_TAG_RULEPROVIDER;
-				}
+				if (proptag == PR_RULE_NAME_A)
+					proptag = PR_RULE_NAME;
+				else if (proptag == PR_RULE_PROVIDER_A)
+					proptag = PR_RULE_PROVIDER;
 				if (FALSE == common_util_get_rule_property(
 					rule_id, pdb->psqlite, proptag, &pvalue)) {
 					return FALSE;
@@ -2331,14 +2330,13 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 				}
 				pset->pparray[pset->count]->ppropval[count].proptag =
 													pproptags->pproptag[i];
-				if (PROP_TAG_RULENAME_STRING8 == pproptags->pproptag[i] ||
-					PROP_TAG_RULEPROVIDER_STRING8 == pproptags->pproptag[i]) {
+				if (pproptags->pproptag[i] == PR_RULE_NAME_A ||
+				    pproptags->pproptag[i] == PR_RULE_PROVIDER_A)
 					pset->pparray[pset->count]->ppropval[count].pvalue =
 						common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
-				} else {
+				else
 					pset->pparray[pset->count]->ppropval[count].pvalue =
 																	pvalue;
-				}
 				count ++;
 			}
 			pset->pparray[pset->count]->count = count;
@@ -2839,11 +2837,10 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 				count = 0;
 				for (i=0; i<pproptags->count; i++) {
 					proptag = pproptags->pproptag[i];
-					if (PROP_TAG_RULENAME_STRING8 == proptag) {
-						proptag = PROP_TAG_RULENAME;
-					} else if (PROP_TAG_RULEPROVIDER_STRING8 == proptag) {
-						proptag = PROP_TAG_RULEPROVIDER;
-					}
+					if (proptag == PR_RULE_NAME_A)
+						proptag = PR_RULE_NAME;
+					else if (proptag == PR_RULE_PROVIDER_A)
+						proptag = PR_RULE_PROVIDER;
 					if (FALSE == common_util_get_rule_property(
 						rule_id, pdb->psqlite, proptag, &pvalue)) {
 						return FALSE;
@@ -2852,13 +2849,12 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 						continue;
 					}
 					ppropvals->ppropval[count].proptag = pproptags->pproptag[i];
-					if (PROP_TAG_RULENAME_STRING8 == pproptags->pproptag[i] ||
-						PROP_TAG_RULEPROVIDER_STRING8 == pproptags->pproptag[i]) {
+					if (pproptags->pproptag[i] == PR_RULE_NAME_A ||
+					    pproptags->pproptag[i] == PR_RULE_PROVIDER_A)
 						ppropvals->ppropval[count].pvalue =
 							common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
-					} else {
+					else
 						ppropvals->ppropval[count].pvalue = pvalue;
-					}
 					count ++;
 				}
 				ppropvals->count = count;
@@ -3384,16 +3380,16 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		if (NULL == pproptags->pproptag) {
 			return FALSE;
 		}
-		pproptags->pproptag[0] = PROP_TAG_RULEID;
-		pproptags->pproptag[1] = PROP_TAG_RULESEQUENCE;
-		pproptags->pproptag[2] = PROP_TAG_RULESTATE;
-		pproptags->pproptag[3] = PROP_TAG_RULENAME;
-		pproptags->pproptag[4] = PROP_TAG_RULEPROVIDER;
-		pproptags->pproptag[5] = PROP_TAG_RULELEVEL;
-		pproptags->pproptag[6] = PROP_TAG_RULEUSERFLAGS;
-		pproptags->pproptag[7] = PROP_TAG_RULEPROVIDERDATA;
-		pproptags->pproptag[8] = PROP_TAG_RULECONDITION;
-		pproptags->pproptag[9] = PROP_TAG_RULEACTIONS;
+		pproptags->pproptag[0] = PR_RULE_ID;
+		pproptags->pproptag[1] = PR_RULE_SEQUENCE;
+		pproptags->pproptag[2] = PR_RULE_STATE;
+		pproptags->pproptag[3] = PR_RULE_NAME;
+		pproptags->pproptag[4] = PR_RULE_PROVIDER;
+		pproptags->pproptag[5] = PR_RULE_LEVEL;
+		pproptags->pproptag[6] = PR_RULE_USER_FLAGS;
+		pproptags->pproptag[7] = PR_RULE_PROVIDER_DATA;
+		pproptags->pproptag[8] = PR_RULE_CONDITION;
+		pproptags->pproptag[9] = PR_RULE_ACTIONS;
 		return TRUE;
 	}
 	return FALSE;
