@@ -9,7 +9,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/tpropval_array.hpp>
 
-class YError : public std::exception {
+class YError final : public std::exception {
 	public:
 	YError(const std::string &);
 	YError(std::string &&);
