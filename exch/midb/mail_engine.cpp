@@ -5388,7 +5388,7 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 	sprintf(temp_path, "%s/exmdb/midb.sqlite3", argv[1]);
 	auto ret = sqlite3_open_v2(temp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 	if (ret != SQLITE_OK) {
-		fprintf(stderr, "E-1440: sqlite3_open %s: %s\n", temp_path, sqlite3_errstr(ret));
+		fprintf(stderr, "E-1505: sqlite3_open %s: %s\n", temp_path, sqlite3_errstr(ret));
 		mail_engine_ct_destroy(ptree);
 		return MIDB_E_HASHTABLE_FULL;
 	}

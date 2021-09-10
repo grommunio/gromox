@@ -1,0 +1,2 @@
+#!/bin/sh
+git grep -Pho '\b[A-Z]-\d{4}' | cut -b 3- |sort | uniq -c | sort -g
