@@ -297,12 +297,12 @@ int main(int argc, const char **argv)
 	}
 	auto cleanup_2 = make_scope_exit(resource_stop);
 	listener_init(listen_port, listen_ssl_port);
+	auto cleanup_3 = make_scope_exit(listener_free);
 																			
 	if (0 != listener_run()) {
 		printf("[system]: fail to start listener\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_3 = make_scope_exit(listener_free);
 	auto cleanup_4 = make_scope_exit(listener_stop);
 
 	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
