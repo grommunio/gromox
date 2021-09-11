@@ -24,6 +24,8 @@ using namespace gromox;
 
 DECLARE_API();
 
+static std::shared_ptr<CONFIG_FILE> g_config_during_init;
+
 /*
  *	console talk for exchange_emsmdb plugin
  *	@param
@@ -100,14 +102,13 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 	int cache_interval;
 	int connection_num;
 	int populating_num;
-	char listen_ip[40];
 	char org_name[256];
 
 	switch(reason) {
 	case PLUGIN_RELOAD:
 		exmdb_provider_reload(nullptr);
 		return TRUE;
-	case PLUGIN_INIT: {
+	case PLUGIN_EARLY_INIT: {
 		LINK_API(ppdata);
 		exmdb_rpc_alloc = common_util_alloc;
 		exmdb_rpc_free = [](void *) {};
@@ -117,27 +118,41 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		if (pos != cfg_path.npos)
 			cfg_path.erase(pos);
 		cfg_path += ".cfg";
-		auto pconfig = config_file_initd(cfg_path.c_str(), get_config_path());
+		auto pconfig = g_config_during_init = config_file_initd(cfg_path.c_str(), get_config_path());
 		if (NULL == pconfig) {
 			printf("[exmdb_provider]: config_file_initd %s: %s\n",
 			       cfg_path.c_str(), strerror(errno));
 			return FALSE;
 		}
-		
+
+		auto str_value = pconfig->get_value("listen_ip");
+		if (str_value == nullptr)
+			pconfig->set_value("listen_ip", "::1");
+		auto listen_ip = pconfig->get_value("listen_ip");
+		str_value = pconfig->get_value("LISTEN_PORT");
+		if (str_value == nullptr) {
+			str_value = "5000";
+			pconfig->set_value("listen_port", str_value);
+		}
+		listen_port = strtoul(str_value, nullptr, 0);
+		printf("[exmdb_provider]: listen address is [%s]:%d\n",
+		       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
+
+		exmdb_listener_init(listen_ip, listen_port);
+		if (exmdb_listener_run(get_config_path()) != 0) {
+			printf("[exmdb_provider]: failed to run exmdb listener\n");
+			return FALSE;
+		}
+		return TRUE;
+	}
+	case PLUGIN_INIT: {
+		auto pconfig = std::move(g_config_during_init);
 		auto str_value = pconfig->get_value("SEPARATOR_FOR_BOUNCE");
 		gx_strlcpy(separator, str_value == nullptr ? ";" : str_value, GX_ARRAY_SIZE(separator));
 		str_value = pconfig->get_value("X500_ORG_NAME");
 		gx_strlcpy(org_name, str_value == nullptr || *str_value == '\0' ?
 			"Gromox default" : str_value, GX_ARRAY_SIZE(org_name));
 		printf("[exmdb_provider]: x500 org name is \"%s\"\n", org_name);
-		
-		str_value = pconfig->get_value("LISTEN_IP");
-		gx_strlcpy(listen_ip, str_value != nullptr ? str_value : "::1",
-		           GX_ARRAY_SIZE(listen_ip));
-		str_value = pconfig->get_value("LISTEN_PORT");
-		listen_port = str_value != nullptr ? strtoul(str_value, nullptr, 0) : 5000;
-		printf("[exmdb_provider]: listen address is [%s]:%d\n",
-		       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 		
 		str_value = pconfig->get_value("RPC_PROXY_CONNECTION_NUM");
 		if (NULL == str_value) {
@@ -238,12 +253,12 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		db_engine_init(table_size, cache_interval,
 			b_async, b_wal, mmap_size, populating_num);
 		exmdb_server_init();
+		auto listen_port = strtoul(pconfig->get_value("listen_port"), nullptr, 0);
 		if (0 == listen_port) {
 			exmdb_parser_init(0, 0);
 		} else {
 			exmdb_parser_init(max_threads, max_routers);
 		}
-		exmdb_listener_init(listen_ip, listen_port);
 		exmdb_client_init(connection_num, threads_num);
 		
 		if (bounce_producer_run(get_data_path()) != 0) {
@@ -270,16 +285,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		}
 		if (exmdb_parser_run(get_config_path()) != 0) {
 			printf("[exmdb_provider]: failed to run exmdb parser\n");
-			exmdb_server_stop();
-			db_engine_stop();
-			exmdb_server_free();
-			db_engine_free();
-			common_util_free();
-			return FALSE;
-		}
-		if (exmdb_listener_run(get_config_path()) != 0) {
-			printf("[exmdb_provider]: failed to run exmdb listener\n");
-			exmdb_parser_stop();
 			exmdb_server_stop();
 			db_engine_stop();
 			exmdb_server_free();
