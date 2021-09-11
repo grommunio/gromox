@@ -90,9 +90,9 @@ int main(int argc, const char **argv)
 		{"config_file_path", PKGSYSCONFDIR "/delivery:" PKGSYSCONFDIR},
 		{"console_server_ip", "::1"},
 		{"console_server_port", "6677"},
-		{"context_average_mime", "8", CFG_SIZE},
+		{"context_average_mime", "8", CFG_SIZE, "1"},
 		{"data_file_path", PKGDATADIR "/delivery:" PKGDATADIR},
-		{"dequeue_maximum_mem", "1G", CFG_SIZE},
+		{"dequeue_maximum_mem", "1G", CFG_SIZE, "1"},
 		{"dequeue_path", PKGSTATEQUEUEDIR},
 		{"domain_list_valid", "true", CFG_BOOL},
 		{"mpc_plugin_ignore_errors", "false", CFG_BOOL},
@@ -100,7 +100,7 @@ int main(int argc, const char **argv)
 		{"running_identity", "gromox"},
 		{"service_plugin_path", PKGLIBDIR},
 		{"state_path", PKGSTATEDIR},
-		{"work_threads_min", "16", CFG_SIZE},
+		{"work_threads_min", "16", CFG_SIZE, "1"},
 		{},
 	};
 	config_file_apply(*g_config_file, cfg_default_values);
@@ -128,12 +128,7 @@ int main(int argc, const char **argv)
 	printf("[system]: default domain is %s\n", str_val);
 
 	unsigned int threads_min = 16, threads_max = 32;
-	if (g_config_file->get_uint("work_threads_min", &threads_min)) {
-		if (threads_min <= 0) {
-			threads_min = 16;
-			resource_set_integer("WORK_THREADS_MIN", threads_min);
-		}
-	}
+	g_config_file->get_uint("work_threads_min", &threads_min);
     printf("[system]: minimum working threads number is %d\n", threads_min);
 
 	if (!resource_get_uint("WORK_THREADS_MAX", &threads_max)) {
@@ -160,24 +155,14 @@ int main(int argc, const char **argv)
     printf("[system]: free contexts number is %d\n", free_contexts);
     
 	unsigned int mime_ratio = 8;
-	if (g_config_file->get_uint("context_average_mime", &mime_ratio)) {
-		if (mime_ratio <= 0) {
-			mime_ratio = 8; 
-			resource_set_integer("CONTEXT_AVERAGE_MIME", mime_ratio);
-		}
-    }
+	g_config_file->get_uint("context_average_mime", &mime_ratio);
 	printf("[system]: average mimes number for one context is %d\n",
 		mime_ratio);
 
 	size_t max_mem = 1U << 30;
 	str_val = resource_get_string("DEQUEUE_MAXIMUM_MEM");
-	if (str_val != nullptr) {
+	if (str_val != nullptr)
 		max_mem = atobyte(str_val);
-		if (max_mem <= 0) {
-			max_mem = 128*1024*1024; 
-			resource_set_string("DEQUEUE_MAXIMUM_MEM", "128M");
-		}
-	}
 	bytetoa(max_mem, temp_buff);
     printf("[message_dequeue]: maximum allocated memory is %s\n", temp_buff);
     

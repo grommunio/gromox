@@ -210,7 +210,7 @@ int main(int argc, const char **argv)
 		{"timer_listen_ip", "::1"},
 		{"timer_listen_port", "6666"},
 		{"timer_state_path", PKGSTATEDIR "/timer.txt"},
-		{"timer_threads_num", "50", CFG_SIZE},
+		{"timer_threads_num", "50", CFG_SIZE, "5", "50"},
 		{},
 	};
 	config_file_apply(*pconfig, cfg_default_values);
@@ -230,10 +230,6 @@ int main(int argc, const char **argv)
 	str_value = pconfig->get_value("TIMER_THREADS_NUM");
 	if (str_value != nullptr) {
 		g_threads_num = atoi(str_value);
-		if (g_threads_num < 5)
-			g_threads_num = 5;
-		if (g_threads_num > 50)
-			g_threads_num = 50;
 	}
 
 	printf("[system]: processing threads number is %zu\n", g_threads_num);

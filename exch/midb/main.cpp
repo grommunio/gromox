@@ -100,14 +100,14 @@ int main(int argc, const char **argv)
 		{"data_path", PKGDATADIR "/midb:" PKGDATADIR},
 		{"default_charset", "windows-1252"},
 		{"default_timezone", "Asia/Shanghai"},
-		{"midb_cache_interval", "30min", CFG_TIME},
+		{"midb_cache_interval", "30min", CFG_TIME, "1min", "30min"},
 		{"midb_listen_ip", "::1"},
 		{"midb_listen_port", "5555"},
-		{"midb_mime_number", "4096", CFG_SIZE},
-		{"midb_table_size", "5000", CFG_SIZE},
-		{"midb_threads_num", "100", CFG_SIZE},
-		{"notify_stub_threads_num", "10", CFG_SIZE},
-		{"rpc_proxy_connection_num", "10", CFG_SIZE},
+		{"midb_mime_number", "4096", CFG_SIZE, "1024"},
+		{"midb_table_size", "5000", CFG_SIZE, "100", "50000"},
+		{"midb_threads_num", "100", CFG_SIZE, "20", "1000"},
+		{"notify_stub_threads_num", "10", CFG_SIZE, "1", "200"},
+		{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "200"},
 		{"service_plugin_path", PKGLIBDIR},
 		{"sqlite_mmap_size", "0", CFG_SIZE},
 		{"sqlite_synchronous", "off", CFG_BOOL},
@@ -129,24 +129,14 @@ int main(int argc, const char **argv)
 
 	int proxy_num = 10;
 	str_value = pconfig->get_value("RPC_PROXY_CONNECTION_NUM");
-	if (str_value != nullptr) {
+	if (str_value != nullptr)
 		proxy_num = atoi(str_value);
-		if (proxy_num <= 0 || proxy_num > 200) {
-			pconfig->set_value("RPC_PROXY_CONNECTION_NUM", "10");
-			proxy_num = 10;
-		}
-	}
 	printf("[system]: exmdb proxy connection number is %d\n", proxy_num);
 	
 	int stub_num = 10;
 	str_value = pconfig->get_value("NOTIFY_STUB_THREADS_NUM");
-	if (str_value != nullptr) {
+	if (str_value != nullptr)
 		stub_num = atoi(str_value);
-		if (stub_num <= 0 || stub_num > 200) {
-			stub_num = 10;
-			pconfig->set_value("NOTIFY_STUB_THREADS_NUM", "10");
-		}
-	}
 	printf("[system]: exmdb notify stub threads number is %d\n", stub_num);
 	
 	auto listen_ip = pconfig->get_value("midb_listen_ip");
@@ -155,52 +145,26 @@ int main(int argc, const char **argv)
 	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
 	unsigned int threads_num = 0;
-	if (pconfig->get_uint("midb_threads_num", &threads_num)) {
-		if (threads_num < 20) {
-			threads_num = 20;
-			pconfig->set_value("MIDB_THREADS_NUM", "20");
-		} else if (threads_num > 1000) {
-			threads_num = 1000;
-			pconfig->set_value("MIDB_THREADS_NUM", "1000");
-		}
-	}
+	pconfig->get_uint("midb_threads_num", &threads_num);
 	printf("[system]: connection threads number is %d\n", threads_num);
 
 	size_t table_size = 0;
 	str_value = pconfig->get_value("MIDB_TABLE_SIZE");
-	if (str_value != nullptr) {
+	if (str_value != nullptr)
 		table_size = atoi(str_value);
-		if (table_size < 100) {
-			table_size = 100;
-			pconfig->set_value("MIDB_TABLE_SIZE", "100");
-		} else if (table_size > 50000) {
-			table_size = 50000;
-			pconfig->set_value("MIDB_TABLE_SIZE", "50000");
-		}
-	}
 	printf("[system]: hash table size is %zu\n", table_size);
 
 	int cache_interval = 1800;
 	str_value = pconfig->get_value("MIDB_CACHE_INTERVAL");
-	if (str_value != nullptr) {
+	if (str_value != nullptr)
 		cache_interval = atoitvl(str_value);
-		if (cache_interval < 60 || cache_interval > 1800) {
-			cache_interval = 600;
-			pconfig->set_value("MIDB_CACHE_INTERVAL", "10minutes");
-		}
-	}
 	itvltoa(cache_interval, temp_buff);
 	printf("[system]: cache interval is %s\n", temp_buff);
 	
 	int mime_num = 4096;
 	str_value = pconfig->get_value("MIDB_MIME_NUMBER");
-	if (str_value != nullptr) {
+	if (str_value != nullptr)
 		mime_num = atoi(str_value);
-		if (mime_num < 1024) {
-			mime_num = 4096;
-			pconfig->set_value("MIDB_MIME_NUMBER", "4096");
-		}
-	}
 	printf("[system]: mime number is %d\n", mime_num);
 	
 	uint64_t mmap_size = 0;

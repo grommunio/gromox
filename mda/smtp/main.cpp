@@ -91,32 +91,32 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 
 	static constexpr cfg_directive cfg_default_values[] = {
-		{"block_interval_auths", "1min", CFG_TIME},
-		{"block_interval_session", "1min", CFG_TIME},
+		{"block_interval_auths", "1min", CFG_TIME, "1s"},
+		{"block_interval_session", "1min", CFG_TIME, "1s"},
 		{"command_protocol", "both"},
 		{"config_file_path", PKGSYSCONFDIR "/smtp:" PKGSYSCONFDIR},
 		{"console_server_ip", "::1"},
 		{"console_server_port", "5566"},
-		{"context_average_mem", "256K", CFG_SIZE},
+		{"context_average_mem", "256K", CFG_SIZE, "64K"},
 		{"context_max_mem", "2M", CFG_SIZE},
 		{"data_file_path", PKGDATADIR "/smtp:" PKGDATADIR},
 		{"domain_list_valid", "false", CFG_BOOL},
 		{"flusher_plugin_path", PKGLIBDIR "/libgxf_message_enqueue.so"},
 		{"listen_port", "25"},
 		{"listen_ssl_port", "0"},
-		{"mail_max_length", "64M", CFG_SIZE},
+		{"mail_max_length", "64M", CFG_SIZE, "1"},
 		{"running_identity", "gromox"},
 		{"service_plugin_ignore_errors", "false", CFG_BOOL},
 		{"service_plugin_path", PKGLIBDIR},
-		{"smtp_auth_times", "3", CFG_SIZE},
-		{"smtp_conn_timeout", "3min", CFG_TIME},
+		{"smtp_auth_times", "3", CFG_SIZE, "1"},
+		{"smtp_conn_timeout", "3min", CFG_TIME, "1s"},
 		{"smtp_force_starttls", "false", CFG_BOOL},
 		{"smtp_max_mail_num", "100", CFG_SIZE},
 		{"smtp_need_auth", "false", CFG_BOOL},
 		{"smtp_support_pipeline", "true", CFG_BOOL},
 		{"smtp_support_starttls", "false", CFG_BOOL},
 		{"state_path", PKGSTATEDIR},
-		{"thread_charge_num", "400", CFG_SIZE},
+		{"thread_charge_num", "400", CFG_SIZE, "4"},
 		{},
 	};
 	config_file_apply(*g_config_file, cfg_default_values);
@@ -152,10 +152,7 @@ int main(int argc, const char **argv)
 	g_config_file->get_uint("context_num", &scfg.context_num);
 	unsigned int thread_charge_num = 20;
 	if (g_config_file->get_uint("thread_charge_num", &thread_charge_num)) {
-		if (thread_charge_num < 4) {
-			thread_charge_num = 20;	
-			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
-		} else if (thread_charge_num % 4 != 0) {
+		if (thread_charge_num % 4 != 0) {
 			thread_charge_num = ((int)(thread_charge_num / 4)) * 4;
 			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 		}
@@ -182,10 +179,6 @@ int main(int argc, const char **argv)
 	str_val = resource_get_string("CONTEXT_AVERAGE_MEM");
 	if (str_val != nullptr) {
 		context_aver_mem = atobyte(str_val)/(64*1024);
-		if (context_aver_mem <= 1) {
-			context_aver_mem = 4;
-			resource_set_string("CONTEXT_AVERAGE_MEM", "256K");
-		}
 	}
 	bytetoa(context_aver_mem*64*1024, temp_buff);
 	printf("[smtp]: context average memory is %s\n", temp_buff);
@@ -206,10 +199,6 @@ int main(int argc, const char **argv)
 	str_val = resource_get_string("SMTP_CONN_TIMEOUT");
 	if (str_val != nullptr) {
 		scfg.timeout = atoitvl(str_val);
-		if (scfg.timeout <= 0) {
-			scfg.timeout = 180;
-			resource_set_string("SMTP_CONN_TIMEOUT", "3minutes");
-		}
 	}
 	itvltoa(scfg.timeout, temp_buff);
 	printf("[smtp]: smtp socket read write time out is %s\n", temp_buff);
@@ -252,22 +241,13 @@ int main(int argc, const char **argv)
 	scfg.need_auth = parse_bool(g_config_file->get_value("smtp_need_auth")) ? TRUE : false;
 	printf("[smtp]: auth_needed is %s\n", scfg.need_auth ? "ON" : "OFF");
 
-	if (resource_get_integer("SMTP_AUTH_TIMES", &scfg.auth_times)) {
-		if (scfg.auth_times <= 0) {
-			scfg.auth_times = 3;
-			resource_set_integer("SMTP_AUTH_TIMES", scfg.auth_times);
-		}
-	}
+	resource_get_integer("SMTP_AUTH_TIMES", &scfg.auth_times);
 	printf("[smtp]: maximum authentification failure times is %d\n", 
 	       scfg.auth_times);
 
 	str_val = resource_get_string("BLOCK_INTERVAL_AUTHS");
 	if (str_val != nullptr) {
 		scfg.blktime_auths = atoitvl(str_val);
-		if (scfg.blktime_auths <= 0) {
-			scfg.blktime_auths = 60;
-			resource_set_string("BLOCK_INTERVAL_AUTHS", "1 minute");
-		}
 	}
 	itvltoa(scfg.blktime_auths, temp_buff);
 	printf("[smtp]: block client %s when authentification failure times "
@@ -276,10 +256,6 @@ int main(int argc, const char **argv)
 	str_val = resource_get_string("MAIL_MAX_LENGTH");
 	if (str_val != nullptr) {
 		scfg.max_mail_length = atobyte(str_val);
-		if (scfg.max_mail_length <= 0) {
-			scfg.max_mail_length = 64ULL * 1024 * 1024;
-			resource_set_string("MAIL_MAX_LENGTH", "64M");
-		}
 	}
 	bytetoa(scfg.max_mail_length, temp_buff);
 	printf("[smtp]: maximum mail length is %s\n", temp_buff);
@@ -288,10 +264,6 @@ int main(int argc, const char **argv)
 	str_val = resource_get_string("BLOCK_INTERVAL_SESSIONS");
 	if (str_val != nullptr) {
 		scfg.blktime_sessions = atoitvl(str_val);
-		if (scfg.blktime_sessions <= 0) {
-			scfg.blktime_sessions = 60;
-			resource_set_string("BLOCK_INTERVAL_SESSIONS", "1minute");
-		}
 	}
 	itvltoa(scfg.blktime_sessions, temp_buff);
 	printf("[smtp]: block remote side %s when mails number is exceed for one "

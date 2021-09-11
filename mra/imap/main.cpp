@@ -86,19 +86,19 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 
 	static constexpr cfg_directive cfg_default_values[] = {
-		{"block_interval_auths", "1min", CFG_TIME},
+		{"block_interval_auths", "1min", CFG_TIME, "1s"},
 		{"config_file_path", PKGSYSCONFDIR "/imap:" PKGSYSCONFDIR},
 		{"console_server_ip", "::1"},
 		{"console_server_port", "4455"},
-		{"context_average_mem", "128K", CFG_SIZE},
-		{"context_average_mitem", "512", CFG_SIZE},
+		{"context_average_mem", "128K", CFG_SIZE, "128K"},
+		{"context_average_mitem", "512", CFG_SIZE, "128"},
 		{"context_max_mem", "2M", CFG_SIZE},
 		{"context_num", "400", CFG_SIZE},
 		{"data_file_path", PKGDATADIR "/imap:" PKGDATADIR},
 		{"default_lang", "en"},
-		{"imap_auth_times", "10", CFG_SIZE},
-		{"imap_autologout_time", "30min", CFG_TIME},
-		{"imap_conn_timeout", "3min", CFG_TIME},
+		{"imap_auth_times", "10", CFG_SIZE, "1"},
+		{"imap_autologout_time", "30min", CFG_TIME, "1s"},
+		{"imap_conn_timeout", "3min", CFG_TIME, "1s"},
 		{"imap_force_starttls", "false", CFG_BOOL},
 		{"imap_support_starttls", "false", CFG_BOOL},
 		{"listen_port", "143"},
@@ -107,7 +107,7 @@ int main(int argc, const char **argv)
 		{"service_plugin_ignore_errors", "false", CFG_BOOL},
 		{"service_plugin_path", PKGLIBDIR},
 		{"state_path", PKGSTATEDIR},
-		{"thread_charge_num", "20", CFG_SIZE},
+		{"thread_charge_num", "20", CFG_SIZE, "4"},
 		{"thread_init_num", "5", CFG_SIZE},
 		{},
 	};
@@ -142,10 +142,7 @@ int main(int argc, const char **argv)
 	unsigned int context_num = 400, thread_charge_num = 20;
 	resource_get_uint("CONTEXT_NUM", &context_num);
 	if (resource_get_uint("THREAD_CHARGE_NUM", &thread_charge_num)) {
-		if (thread_charge_num < 4) {
-			thread_charge_num = 20;
-			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
-		} else if (thread_charge_num % 4 != 0) {
+		if (thread_charge_num % 4 != 0) {
 			thread_charge_num = ((int)(thread_charge_num / 4)) * 4;
 			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 		}
@@ -172,10 +169,6 @@ int main(int argc, const char **argv)
 	str_val = resource_get_string("CONTEXT_AVERAGE_MEM");
 	if (str_val != nullptr) {
 		context_aver_mem = atobyte(str_val)/(64*1024);
-		if (context_aver_mem <= 1) {
-			context_aver_mem = 2;
-			resource_set_string("CONTEXT_AVERAGE_MEM", "128K");
-		}
 	}
 	bytetoa(context_aver_mem*64*1024, temp_buff);
 	printf("[imap]: context average memory is %s\n", temp_buff);
@@ -197,20 +190,12 @@ int main(int argc, const char **argv)
 	str_val = resource_get_string("CONTEXT_AVERAGE_MITEM");
 	if (str_val != nullptr)
 		context_aver_mitem = atoi(str_val); 
-	if (context_aver_mitem < 128) {
-		context_aver_mitem = 128;
-		resource_set_string("CONTEXT_AVERAGE_MITEM", "128");
-	} 
 	printf("[imap]: context average mitem number is %d\n", context_aver_mitem);
 	
 	long imap_conn_timeout = 180;
 	str_val = resource_get_string("IMAP_CONN_TIMEOUT");
 	if (str_val != nullptr) {
 		imap_conn_timeout = atoitvl(str_val);
-		if (imap_conn_timeout <= 0) {
-			imap_conn_timeout = 180;
-			resource_set_string("IMAP_CONN_TIMEOUT", "3minutes");
-		}
 	}
 	itvltoa(imap_conn_timeout, temp_buff);
 	printf("[imap]: imap socket read write time out is %s\n", temp_buff);
@@ -219,21 +204,12 @@ int main(int argc, const char **argv)
 	str_val = resource_get_string("IMAP_AUTOLOGOUT_TIME");
 	if (str_val != nullptr) {
 		autologout_time = atoitvl(str_val);
-		if (autologout_time <= 0) {
-			autologout_time = 1800;
-			resource_set_string("IMAP_AUTOLOGOUT_TIME", "30minutes");
-		}
 	}
 	itvltoa(autologout_time, temp_buff);
 	printf("[imap]: imap session autologout time is %s\n", temp_buff);
  
 	int imap_auth_times = 10;
-	if (g_config_file->get_int("imap_auth_times", &imap_auth_times)) {
-		if (imap_auth_times <= 0) {
-			imap_auth_times = 10;
-			resource_set_integer("IMAP_AUTH_TIMES", imap_auth_times);
-		}
-	}
+	g_config_file->get_int("imap_auth_times", &imap_auth_times);
 	printf("[imap]: maximum authentification failure times is %d\n", 
 			imap_auth_times);
 
@@ -241,10 +217,6 @@ int main(int argc, const char **argv)
 	str_val = resource_get_string("BLOCK_INTERVAL_AUTHS");
 	if (str_val != nullptr) {
 		block_interval_auth = atoitvl(str_val);
-		if (block_interval_auth <= 0) {
-			block_interval_auth = 60;
-			resource_set_string("BLOCK_INTERVAL_AUTHS", "1 minute");
-		}
 	}
 	itvltoa(block_interval_auth, temp_buff);
 	printf("[imap]: block client %s when authentification failure times "

@@ -17,6 +17,7 @@ enum cfg_flags {
 struct cfg_directive {
 	const char *key = nullptr, *deflt = nullptr;
 	unsigned int flags = 0;
+	const char *min = nullptr, *max = nullptr;
 };
 
 struct CONFIG_ENTRY {

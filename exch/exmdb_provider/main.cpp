@@ -27,22 +27,22 @@ DECLARE_API();
 static std::shared_ptr<CONFIG_FILE> g_config_during_init;
 
 static constexpr cfg_directive cfg_default_values[] = {
-	{"cache_interval", "2h", CFG_TIME},
+	{"cache_interval", "2h", CFG_TIME, "1s"},
 	{"listen_ip", "::1"},
 	{"listen_port", "5000"},
-	{"max_ext_rule_number", "20", CFG_SIZE},
+	{"max_ext_rule_number", "20", CFG_SIZE, "1", "100"},
 	{"max_router_connections", "4095M", CFG_SIZE},
 	{"max_rpc_stub_threads", "4095M", CFG_SIZE},
-	{"max_rule_number", "1000", CFG_SIZE},
+	{"max_rule_number", "1000", CFG_SIZE, "1", "2000"},
 	{"max_store_message_count", "200000", CFG_SIZE},
-	{"notify_stub_threads_num", "4", CFG_SIZE},
-	{"populating_threads_num", "50", CFG_SIZE},
-	{"rpc_proxy_connection_num", "10", CFG_SIZE},
+	{"notify_stub_threads_num", "4", CFG_SIZE, "0"},
+	{"populating_threads_num", "50", CFG_SIZE, "1", "50"},
+	{"rpc_proxy_connection_num", "10", CFG_SIZE, "0"},
 	{"separator_for_bounce", ";"},
 	{"sqlite_mmap_size", "0", CFG_SIZE},
 	{"sqlite_synchronous", "false", CFG_BOOL},
 	{"sqlite_wal_mode", "false", CFG_BOOL},
-	{"table_size", "5000", CFG_SIZE},
+	{"table_size", "5000", CFG_SIZE, "100"},
 	{"x500_org_name", "Gromox default"},
 	{},
 };
@@ -160,14 +160,10 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		printf("[exmdb_provider]: x500 org name is \"%s\"\n", org_name);
 		
 		int connection_num = atobyte(pconfig->get_value("rpc_proxy_connection_num"));
-		if (connection_num < 0)
-			connection_num = 0;
 		printf("[exmdb_provider]: exmdb rpc proxy "
 			"connection number is %d\n", connection_num);
 			
 		int threads_num = atobyte(pconfig->get_value("notify_stub_threads_num"));
-		if (threads_num < 0)
-			threads_num = 0;
 		printf("[exmdb_provider]: exmdb notify stub "
 			"threads number is %d\n", threads_num);
 		
@@ -175,13 +171,9 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		size_t max_routers = atobyte(pconfig->get_value("max_router_connections"));
 		
 		int table_size = atobyte(pconfig->get_value("table_size"));
-		if (table_size < 100)
-			table_size = 100;
 		printf("[exmdb_provider]: db hash table size is %d\n", table_size);
 		
 		int cache_interval = atobyte(pconfig->get_value("cache_interval"));
-		if (cache_interval < 1)
-			cache_interval = 1800;
 		itvltoa(cache_interval, temp_buff);
 		printf("[exmdb_provider]: cache interval is %s\n", temp_buff);
 		
@@ -190,14 +182,10 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 			"count per store is %d\n", max_msg_count);
 		
 		int max_rule = atobyte(pconfig->get_value("max_rule_number"));
-		if (max_rule <= 0 || max_rule > 2000)
-			max_rule = 1000;
 		printf("[exmdb_provider]: maximum rule "
 			"number per folder is %d\n", max_rule);
 		
 		int max_ext_rule = atobyte(pconfig->get_value("max_ext_rule_number"));
-		if (max_ext_rule <= 0 || max_ext_rule > 100)
-			max_ext_rule = 20;
 		printf("[exmdb_provider]: maximum ext rule "
 			"number per folder is %d\n", max_ext_rule);
 		
@@ -216,8 +204,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		}
 		
 		int populating_num = atobyte(pconfig->get_value("populating_threads_num"));
-		if (populating_num <= 0 || populating_num > 50)
-			populating_num = 10;
 		printf("[exmdb_provider]: populating threads"
 				" number is %d\n", populating_num);
 		if (!exmdb_provider_reload(pconfig))

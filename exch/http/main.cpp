@@ -114,33 +114,33 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 
 	static const cfg_directive cfg_default_values[] = {
-		{"block_interval_auths", "1min", CFG_TIME},
+		{"block_interval_auths", "1min", CFG_TIME, "1s"},
 		{"config_file_path", PKGSYSCONFDIR "/http:" PKGSYSCONFDIR},
 		{"console_server_ip", "::1"},
-		{"context_average_mem", "256K", CFG_SIZE},
+		{"context_average_mem", "256K", CFG_SIZE, "192K"},
 		{"context_num", "400", CFG_SIZE},
 		{"data_file_path", PKGDATADIR "/http:" PKGDATADIR},
-		{"fastcgi_cache_size", "256K", CFG_SIZE},
-		{"fastcgi_exec_timeout", "10min", CFG_TIME},
-		{"fastcgi_max_size", "4M", CFG_SIZE},
-		{"hpm_cache_size", "512K", CFG_SIZE},
-		{"hpm_max_size", "4M", CFG_SIZE},
+		{"fastcgi_cache_size", "256K", CFG_SIZE, "64K"},
+		{"fastcgi_exec_timeout", "10min", CFG_TIME, "1min"},
+		{"fastcgi_max_size", "4M", CFG_SIZE, "64K"},
+		{"hpm_cache_size", "512K", CFG_SIZE, "64K"},
+		{"hpm_max_size", "4M", CFG_SIZE, "64K"},
 		{"hpm_plugin_ignore_errors", "false", CFG_BOOL},
 		{"hpm_plugin_path", PKGLIBDIR},
-		{"http_auth_times", "10", CFG_SIZE},
-		{"http_conn_timeout", "3min", CFG_TIME},
+		{"http_auth_times", "10", CFG_SIZE, "1"},
+		{"http_conn_timeout", "3min", CFG_TIME, "30s"},
 		{"http_support_ssl", "false", CFG_BOOL},
 		{"listen_port", "80"},
 		{"listen_ssl_port", "0"},
 		{"proc_plugin_ignore_errors", "false", CFG_BOOL},
 		{"proc_plugin_path", PKGLIBDIR},
-		{"request_max_mem", "4M", CFG_SIZE},
+		{"request_max_mem", "4M", CFG_SIZE, "1M"},
 		{"running_identity", "gromox"},
 		{"service_plugin_ignore_errors", "false", CFG_BOOL},
 		{"service_plugin_path", PKGLIBDIR},
 		{"state_path", PKGSTATEDIR},
 		{"tcp_max_segment", "0", CFG_SIZE},
-		{"thread_charge_num", "20", CFG_SIZE},
+		{"thread_charge_num", "20", CFG_SIZE, "4"},
 		{"thread_init_num", "5", CFG_SIZE},
 		{"user_default_lang", "en"},
 		{},
@@ -182,10 +182,7 @@ int main(int argc, const char **argv)
 
 	unsigned int thread_charge_num = 20;
 	if (g_config_file->get_uint("thread_charge_num", &thread_charge_num)) {
-		if (thread_charge_num < 4) {
-			thread_charge_num = 40;
-			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
-		} else if (thread_charge_num % 4 != 0) {
+		if (thread_charge_num % 4 != 0) {
 			thread_charge_num = ((int)(thread_charge_num / 4)) * 4;
 			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 		}
@@ -210,47 +207,27 @@ int main(int argc, const char **argv)
 		thread_init_num);
 
 	str_val = resource_get_string("CONTEXT_AVERAGE_MEM");
-	if (str_val != nullptr) {
+	if (str_val != nullptr)
 		context_aver_mem = atobyte(str_val)/(64*1024);
-		if (context_aver_mem <= 2) {
-			context_aver_mem = 4;
-			resource_set_string("CONTEXT_AVERAGE_MEM", "256K");
-		}
-	}
 	bytetoa(context_aver_mem*64*1024, temp_buff);
 	printf("[http]: context average memory is %s\n", temp_buff);
 	
 	int http_conn_timeout = 180;
 	str_val = resource_get_string("HTTP_CONN_TIMEOUT");
-	if (str_val != nullptr) {
+	if (str_val != nullptr)
 		http_conn_timeout = atoitvl(str_val);
-		if (http_conn_timeout < 30) {
-			http_conn_timeout = 180;
-			resource_set_string("HTTP_CONN_TIMEOUT", "3minutes");
-		}
-	}
 	itvltoa(http_conn_timeout, temp_buff);
 	printf("[http]: http socket read write time out is %s\n", temp_buff);
  
 	int http_auth_times = 3;
-	if (g_config_file->get_int("http_auth_times", &http_auth_times)) {
-		if (http_auth_times <= 0) {
-			http_auth_times = 3;
-			resource_set_integer("HTTP_AUTH_TIMES", http_auth_times);
-		}
-	}
+	g_config_file->get_int("http_auth_times", &http_auth_times);
 	printf("[http]: maximum authentification failure times is %d\n", 
 			http_auth_times);
 
 	int block_interval_auth = 60;
 	str_val = resource_get_string("BLOCK_INTERVAL_AUTHS");
-	if (str_val != nullptr) {
+	if (str_val != nullptr)
 		block_interval_auth = atoitvl(str_val);
-		if (block_interval_auth <= 0) {
-			block_interval_auth = 60;
-			resource_set_string("BLOCK_INTERVAL_AUTHS", "1 minute");
-		}
-	}
 	itvltoa(block_interval_auth, temp_buff);
 	printf("[http]: block client %s when authentification failure times "
 			"is exceeded\n", temp_buff);
@@ -281,13 +258,8 @@ int main(int argc, const char **argv)
 	
 	size_t max_request_mem = 4U << 20;
 	str_val = resource_get_string("REQUEST_MAX_MEM");
-	if (str_val != nullptr) {
+	if (str_val != nullptr)
 		max_request_mem = atobyte(str_val);
-		if (max_request_mem < 1024*1024) {
-			max_request_mem = 1024*1024;
-			resource_set_string("REQUEST_MAX_MEM", "1M");
-		}
-	}
 	bytetoa(max_request_mem, temp_buff);
 	printf("[pdu_processor]: maximum request memory is %s\n", temp_buff);
 
@@ -313,25 +285,15 @@ int main(int argc, const char **argv)
 	
 	uint64_t hpm_cache_size = 256U << 10;
 	str_val = resource_get_string("HPM_CACHE_SIZE");
-	if (str_val != nullptr) {
+	if (str_val != nullptr)
 		hpm_cache_size = atobyte(str_val);
-		if (hpm_cache_size < 64*1024) {
-			hpm_cache_size = 256*1024;
-			resource_set_string("HPM_CACHE_SIZE", "256K");
-		}
-	}
 	bytetoa(hpm_cache_size, temp_buff);
 	printf("[hpm_processor]: fastcgi cache size is %s\n", temp_buff);
 	
 	uint64_t hpm_max_size = 4U << 20;
 	str_val = resource_get_string("HPM_MAX_SIZE");
-	if (str_val != nullptr) {
+	if (str_val != nullptr)
 		hpm_max_size = atobyte(str_val);
-		if (hpm_max_size < 64*1024) {
-			hpm_max_size = 1024*1024;
-			resource_set_string("HPM_MAX_SIZE", "1M");
-		}
-	}
 	bytetoa(hpm_max_size, temp_buff);
 	printf("[hpm_processor]: hpm maximum size is %s\n", temp_buff);
 
@@ -347,46 +309,28 @@ int main(int argc, const char **argv)
 
 	auto console_server_ip = g_config_file->get_value("console_server_ip");
 	int console_server_port = 8899;
-	if (!resource_get_integer("CONSOLE_SERVER_PORT", &console_server_port)) {
-		console_server_port = 8899; 
-		resource_set_integer("CONSOLE_SERVER_PORT", console_server_port);
-	}
+	resource_get_integer("CONSOLE_SERVER_PORT", &console_server_port);
 	printf("[console_server]: console server address is [%s]:%d\n",
 	       *console_server_ip == '\0' ? "*" : console_server_ip, console_server_port);
 	
 	uint64_t fastcgi_cache_size = 256U << 10;
 	str_val = resource_get_string("FASTCGI_CACHE_SIZE");
-	if (str_val != nullptr) {
+	if (str_val != nullptr)
 		fastcgi_cache_size = atobyte(str_val);
-		if (fastcgi_cache_size < 64*1024) {
-			fastcgi_cache_size = 256*1024;
-			resource_set_string("FASTCGI_CACHE_SIZE", "256K");
-		}
-	}
 	bytetoa(fastcgi_cache_size, temp_buff);
 	printf("[mod_fastcgi]: fastcgi cache size is %s\n", temp_buff);
 	
 	uint64_t fastcgi_max_size = 4U << 20;
 	str_val = resource_get_string("FASTCGI_MAX_SIZE");
-	if (str_val != nullptr) {
+	if (str_val != nullptr)
 		fastcgi_max_size = atobyte(str_val);
-		if (fastcgi_max_size < 64*1024) {
-			fastcgi_max_size = 1024*1024;
-			resource_set_string("FASTCGI_MAX_SIZE", "1M");
-		}
-	}
 	bytetoa(fastcgi_max_size, temp_buff);
 	printf("[mod_fastcgi]: fastcgi maximum size is %s\n", temp_buff);
 	
 	int fastcgi_exec_timeout = 600;
 	str_val = resource_get_string("FASTCGI_EXEC_TIMEOUT");
-	if (str_val != NULL) {
+	if (str_val != nullptr)
 		fastcgi_exec_timeout = atoitvl(str_val);
-		if (fastcgi_exec_timeout < 60) {
-			fastcgi_exec_timeout = 600;
-			resource_set_string("FASTCGI_EXEC_TIMEOUT", "10minutes");
-		}
-	}
 	itvltoa(fastcgi_exec_timeout, temp_buff);
 	printf("[http]: fastcgi excution time out is %s\n", temp_buff);
 	int listen_port = 0, mss_size = 0;

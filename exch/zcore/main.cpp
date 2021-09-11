@@ -116,9 +116,9 @@ int main(int argc, const char **argv)
 		return 2;
 
 	static constexpr cfg_directive cfg_default_values[] = {
-		{"address_cache_interval", "5min", CFG_TIME},
-		{"address_item_num", "100000", CFG_SIZE},
-		{"address_table_size", "3000", CFG_SIZE},
+		{"address_cache_interval", "5min", CFG_TIME, "1min", "1day"},
+		{"address_item_num", "100000", CFG_SIZE, "1"},
+		{"address_table_size", "3000", CFG_SIZE, "1"},
 		{"config_file_path", PKGSYSCONFDIR "/zcore:" PKGSYSCONFDIR},
 		{"console_server_ip", "::1"},
 		{"console_server_port", "3344"},
@@ -126,24 +126,24 @@ int main(int argc, const char **argv)
 		{"default_charset", "windows-1252"},
 		{"default_timezone", "Asia/Shanghai"},
 		{"freebusy_tool_path", PKGLIBEXECDIR "/freebusy"},
-		{"mailbox_ping_interval", "5min", CFG_TIME},
-		{"max_ext_rule_length", "510K", CFG_SIZE},
-		{"max_mail_length", "64M", CFG_SIZE},
-		{"max_mail_num", "1000000", CFG_SIZE},
-		{"max_rcpt_num", "256", CFG_SIZE},
-		{"notify_stub_threads_num", "10", CFG_SIZE},
-		{"rpc_proxy_connection_num", "10", CFG_SIZE},
+		{"mailbox_ping_interval", "5min", CFG_TIME, "1min", "1h"},
+		{"max_ext_rule_length", "510K", CFG_SIZE, "1"},
+		{"max_mail_length", "64M", CFG_SIZE, "1"},
+		{"max_mail_num", "1000000", CFG_SIZE, "1"},
+		{"max_rcpt_num", "256", CFG_SIZE, "1"},
+		{"notify_stub_threads_num", "10", CFG_SIZE, "1", "100"},
+		{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "100"},
 		{"separator_for_bounce", ";"},
 		{"service_plugin_path", PKGLIBDIR},
 		{"smtp_server_ip", "::1"},
 		{"smtp_server_port", "25"},
 		{"state_path", PKGSTATEDIR},
 		{"submit_command", "/usr/bin/php " PKGDATADIR "/sa/submit.php"},
-		{"user_cache_interval", "1h", CFG_TIME},
-		{"user_table_size", "5000", CFG_SIZE},
+		{"user_cache_interval", "1h", CFG_TIME, "1min", "1day"},
+		{"user_table_size", "5000", CFG_SIZE, "100", "50000"},
 		{"x500_org_name", "Gromox default"},
-		{"zarafa_mime_number", "4096", CFG_SIZE},
-		{"zarafa_threads_num", "100", CFG_SIZE},
+		{"zarafa_mime_number", "4096", CFG_SIZE, "1024"},
+		{"zarafa_threads_num", "100", CFG_SIZE, "20", "1000"},
 		{"zcore_listen", PKGRUNDIR "/zcore.sock"},
 		{},
 	};
@@ -174,16 +174,8 @@ int main(int argc, const char **argv)
 	auto cl_0c = make_scope_exit([&]() { msgchg_grouping_free(); });
 	unsigned int threads_num = 100;
 	str_value = pconfig->get_value("ZARAFA_THREADS_NUM");
-	if (str_value != nullptr) {
+	if (str_value != nullptr)
 		threads_num = atoi(str_value);
-		if (threads_num < 20) {
-			threads_num = 20;
-			pconfig->set_value("ZARAFA_THREADS_NUM", "20");
-		} else if (threads_num > 1000) {
-			threads_num = 1000;
-			pconfig->set_value("ZARAFA_THREADS_NUM", "1000");
-		}
-	}
 	printf("[system]: connection threads number is %d\n", threads_num);
 
 	service_init({g_config_file->get_value("service_plugin_path"),
@@ -196,37 +188,22 @@ int main(int argc, const char **argv)
 	
 	unsigned int table_size = 3000;
 	str_value = pconfig->get_value("ADDRESS_TABLE_SIZE");
-	if (str_value != nullptr) {
+	if (str_value != nullptr)
 		table_size = atoi(str_value);
-		if (table_size <= 0) {
-			table_size = 3000;
-			pconfig->set_value("ADDRESS_TABLE_SIZE", "3000");
-		}
-	}
 	printf("[system]: address table size is %d\n", table_size);
 
 	int cache_interval = 300;
 	str_value = pconfig->get_value("ADDRESS_CACHE_INTERVAL");
-	if (str_value != nullptr) {
+	if (str_value != nullptr)
 		cache_interval = atoitvl(str_value);
-		if (cache_interval > 24*3600 || cache_interval < 60) {
-			cache_interval = 300;
-			pconfig->set_value("ADDRESS_CACHE_INTERVAL", "5minutes");
-		}
-	}
 	itvltoa(cache_interval, temp_buff);
 	printf("[system]: address book tree item"
 		" cache interval is %s\n", temp_buff);
 
 	int max_item_num = 100000;
 	str_value = pconfig->get_value("ADDRESS_ITEM_NUM");
-	if (str_value != nullptr) {
+	if (str_value != nullptr)
 		max_item_num = atoi(str_value);
-		if (max_item_num <= 0) {
-			max_item_num = 100000;
-			pconfig->set_value("ADDRESS_ITEM_NUM", "100000");
-		}
-	}
 	printf("[system]: maximum item number is %d\n", max_item_num);
 	
 	ab_tree_init(g_config_file->get_value("x500_org_name"), table_size, cache_interval, max_item_num);
@@ -234,58 +211,33 @@ int main(int argc, const char **argv)
 
 	int mime_num = 4096;
 	str_value = pconfig->get_value("ZARAFA_MIME_NUMBER");
-	if (str_value != nullptr) {
+	if (str_value != nullptr)
 		mime_num = atoi(str_value);
-		if (mime_num < 1024) {
-			mime_num = 4096;
-			pconfig->set_value("ZARAFA_MIME_NUMBER", "4096");
-		}
-	}
 	printf("[system]: mime number is %d\n", mime_num);
 	
 	int max_rcpt = 256;
 	str_value = pconfig->get_value("MAX_RCPT_NUM");
-	if (str_value != NULL) {
+	if (str_value != nullptr)
 		max_rcpt = atoi(str_value);
-		if (max_rcpt <= 0) {
-			max_rcpt = 256;
-			pconfig->set_value("MAX_RCPT_NUM", "256");
-		}
-	}
 	printf("[system]: maximum rcpt number is %d\n", max_rcpt);
 	
 	int max_mail = 1000000;
 	str_value = pconfig->get_value("MAX_MAIL_NUM");
-	if (str_value != nullptr) {
+	if (str_value != nullptr)
 		max_mail = atoi(str_value);
-		if (max_mail <= 0) {
-			max_mail = 1000000;
-			pconfig->set_value("MAX_MAIL_NUM", "1000000");
-		}
-	}
 	printf("[system]: maximum mail number is %d\n", max_mail);
 	
 	int max_length = 64U << 20;
 	str_value = pconfig->get_value("MAIL_MAX_LENGTH");
-	if (str_value != nullptr) {
+	if (str_value != nullptr)
 		max_length = atobyte(str_value);
-		if (max_length <= 0) {
-			max_length = 64*1024*1024;
-			pconfig->set_value("MAIL_MAX_LENGTH", "64M");
-		}
-	}
 	bytetoa(max_length, temp_buff);
 	printf("[system]: maximum mail length is %s\n", temp_buff);
 	
 	int max_rule_len = 510U << 10;
 	str_value = pconfig->get_value("MAX_EXT_RULE_LENGTH");
-	if (str_value != nullptr) {
+	if (str_value != nullptr)
 		max_rule_len = atobyte(str_value);
-		if (max_rule_len <= 0) {
-			max_rule_len = 510*1024;
-			pconfig->set_value("MAX_EXT_RULE_LENGTH", "510K");
-		}
-	}
 	bytetoa(max_rule_len, temp_buff);
 	printf("[system]: maximum extended rule length is %s\n", temp_buff);
 	
@@ -312,61 +264,33 @@ int main(int argc, const char **argv)
 	
 	int proxy_num = 10;
 	str_value = pconfig->get_value("RPC_PROXY_CONNECTION_NUM");
-	if (str_value != nullptr) {
+	if (str_value != nullptr)
 		proxy_num = atoi(str_value);
-		if (proxy_num <= 0 || proxy_num > 100) {
-			pconfig->set_value("RPC_PROXY_CONNECTION_NUM", "10");
-			proxy_num = 10;
-		}
-	}
 	printf("[system]: exmdb proxy connection number is %d\n", proxy_num);
 	
 	int stub_num = 10;
 	str_value = pconfig->get_value("NOTIFY_STUB_THREADS_NUM");
-	if (str_value != nullptr) {
+	if (str_value != nullptr)
 		stub_num = atoi(str_value);
-		if (stub_num <= 0 || stub_num > 100) {
-			stub_num = 10;
-			pconfig->set_value("NOTIFY_STUB_THREADS_NUM", "10");
-		}
-	}
 	printf("[system]: exmdb notify stub threads number is %d\n", stub_num);
 	
 	exmdb_client_init(proxy_num, stub_num);
 	rpc_parser_init(threads_num);
 	str_value = pconfig->get_value("USER_TABLE_SIZE");
-	if (str_value != nullptr) {
+	if (str_value != nullptr)
 		table_size = atoi(str_value);
-		if (table_size < 100) {
-			table_size = 100;
-			pconfig->set_value("USER_TABLE_SIZE", "100");
-		} else if (table_size > 50000) {
-			table_size = 50000;
-			pconfig->set_value("USER_TABLE_SIZE", "50000");
-		}
-	}
 	printf("[system]: hash table size is %d\n", table_size);
 
 	str_value = pconfig->get_value("USER_CACHE_INTERVAL");
-	if (str_value != nullptr) {
+	if (str_value != nullptr)
 		cache_interval = atoitvl(str_value);
-		if (cache_interval < 60 || cache_interval > 24*3600) {
-			cache_interval = 3600;
-			pconfig->set_value("USER_CACHE_INTERVAL", "1hour");
-		}
-	}
 	itvltoa(cache_interval, temp_buff);
 	printf("[system]: cache interval is %s\n", temp_buff);
 	
 	int ping_interval = 300;
 	str_value = pconfig->get_value("MAILBOX_PING_INTERVAL");
-	if (str_value != nullptr) {
+	if (str_value != nullptr)
 		ping_interval = atoitvl(str_value);
-		if (ping_interval > 3600 || ping_interval < 60) {
-			ping_interval = 300;
-			pconfig->set_value("MAILBOX_PING_INTERVAL", "5minutes");
-		}
-	}
 	itvltoa(ping_interval, temp_buff);
 	printf("[system]: mailbox ping interval is %s\n", temp_buff);
 	

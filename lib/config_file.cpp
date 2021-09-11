@@ -354,27 +354,36 @@ namespace gromox {
 
 static void config_file_apply_1(CONFIG_FILE &cfg, const cfg_directive &d)
 {
-	auto v = cfg.get_value(d.key);
-	if (v == nullptr)
-		v = d.deflt;
+	auto sv = cfg.get_value(d.key);
+	if (sv == nullptr)
+		sv = d.deflt;
 	if (d.flags & CFG_BOOL) {
-		cfg.set_value(d.key, parse_bool(v) ? "TRUE" : "FALSE");
+		cfg.set_value(d.key, parse_bool(sv) ? "TRUE" : "FALSE");
 		return;
 	}
 	if (d.flags & CFG_TIME) {
+		auto nv = atoitvl(sv);
+		if (d.min != nullptr)
+			nv = std::max(nv, atoitvl(d.min));
+		if (d.max != nullptr)
+			nv = std::min(nv, atoitvl(d.max));
 		char out[HXSIZEOF_Z64];
-		snprintf(out, arsizeof(out), "%ld", atoitvl(v));
+		snprintf(out, arsizeof(out), "%ld", nv);
 		cfg.set_value(d.key, out);
 		return;
 	}
 	if (d.flags & CFG_SIZE) {
+		auto nv = atobyte(sv);
+		if (d.min != nullptr)
+			nv = std::max(nv, atobyte(d.min));
+		if (d.max != nullptr)
+			nv = std::min(nv, atobyte(d.max));
 		char out[HXSIZEOF_Z64];
-		snprintf(out, arsizeof(out), "%llu",
-			 static_cast<unsigned long long>(atobyte(v)));
+		snprintf(out, arsizeof(out), "%llu", static_cast<unsigned long long>(nv));
 		cfg.set_value(d.key, out);
 		return;
 	}
-	cfg.set_value(d.key, v);
+	cfg.set_value(d.key, sv);
 }
 
 void config_file_apply(CONFIG_FILE &cfg, const cfg_directive *d)
