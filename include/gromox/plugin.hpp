@@ -12,6 +12,7 @@ enum{
     PLUGIN_THREAD_CREATE,
 	PLUGIN_THREAD_DESTROY,
 	PLUGIN_RELOAD,
+	PLUGIN_EARLY_INIT,
 };
 
 /* enumeration for the return value of xxx_load_library */

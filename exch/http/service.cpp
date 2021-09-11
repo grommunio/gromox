@@ -93,14 +93,43 @@ void service_init(const struct service_init_param &parm)
 	double_list_init(&g_system_image.list_service);
 }
 
-int service_run()
+static void *const server_funcs[] = {(void *)service_query_service};
+
+int service_run_early()
 {
 	for (const char *const *i = g_plugin_names; *i != NULL; ++i) {
 		int ret = service_load_library(*i);
-		if (!g_ign_loaderr && ret != PLUGIN_LOAD_OK) {
-			service_stop();
-			return -1;
+		if (ret == PLUGIN_LOAD_OK &&
+		    g_cur_plug->lib_main(PLUGIN_EARLY_INIT, const_cast<void **>(server_funcs))) {
+			g_cur_plug = nullptr;
+			continue;
 		}
+		g_list_plug.pop_back();
+		g_cur_plug = nullptr;
+		if (g_ign_loaderr)
+			continue;
+		service_stop();
+		return PLUGIN_FAIL_EXECUTEMAIN;
+	}
+	return 0;
+}
+
+int service_run()
+{
+	for (auto it = g_list_plug.begin(); it != g_list_plug.end(); ) {
+		g_cur_plug = &*it;
+		if (g_cur_plug->lib_main(PLUGIN_INIT, const_cast<void **>(server_funcs))) {
+			g_cur_plug->completed_init = true;
+			g_cur_plug = nullptr;
+			++it;
+			continue;
+		}
+		it = g_list_plug.erase(it);
+		g_cur_plug = nullptr;
+		if (g_ign_loaderr)
+			continue;
+		service_stop();
+		return PLUGIN_FAIL_EXECUTEMAIN;
 	}
 	return 0;
 }
@@ -128,7 +157,6 @@ void service_stop()
  */
 int service_load_library(const char *path)
 {
-	static void *const server_funcs[] = {(void *)service_query_service};
 	const char *fake_path = path;
 
 	/* check whether the library is already loaded */
@@ -163,17 +191,6 @@ int service_load_library(const char *path)
 	 *  whith the paramter PLUGIN_INIT
 	 */
 	g_cur_plug = &g_list_plug.back();
-	/* invoke the plugin's main function with the parameter of PLUGIN_INIT */
-	if (!g_cur_plug->lib_main(PLUGIN_INIT, const_cast<void **>(server_funcs))) {
-		printf("[service]: error executing the plugin's init function "
-				"in %s\n", fake_path);
-		printf("[service]: the plugin %s is not loaded\n", fake_path);
-		g_list_plug.pop_back();
-		g_cur_plug = NULL;
-		return PLUGIN_FAIL_EXECUTEMAIN;
-	}
-	g_cur_plug->completed_init = true;
-	g_cur_plug = NULL;
 	return PLUGIN_LOAD_OK;
 }
 

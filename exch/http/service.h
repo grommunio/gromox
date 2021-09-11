@@ -13,6 +13,7 @@ struct service_init_param {
 };
 
 extern void service_init(const struct service_init_param &);
+extern int service_run_early();
 extern int service_run();
 extern void service_stop();
 int service_load_library(const char *path);

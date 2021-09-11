@@ -274,6 +274,10 @@ int main(int argc, const char **argv)
 	console_server_register_command("help", cmd_handler_help);
 	console_server_register_command(nullptr, cmd_handler_service_plugins);
 
+	if (service_run_early() != 0) {
+		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
+		return 3;
+	}
 	if (0 != service_run()) {
 		printf("[system]: failed to run service\n");
 		return 3;
