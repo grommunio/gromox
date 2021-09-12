@@ -101,6 +101,7 @@ int main(int argc, const char **argv)
 		{"default_charset", "windows-1252"},
 		{"default_timezone", "Asia/Shanghai"},
 		{"midb_cache_interval", "30min", CFG_TIME, "1min", "30min"},
+		{"midb_cmd_debug", "0"},
 		{"midb_listen_ip", "::1"},
 		{"midb_listen_port", "5555"},
 		{"midb_mime_number", "4096", CFG_SIZE, "1024"},
@@ -127,51 +128,31 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	int proxy_num = 10;
-	str_value = pconfig->get_value("RPC_PROXY_CONNECTION_NUM");
-	if (str_value != nullptr)
-		proxy_num = atoi(str_value);
+	int proxy_num = pconfig->get_ll("rpc_proxy_connection_num");
 	printf("[system]: exmdb proxy connection number is %d\n", proxy_num);
 	
-	int stub_num = 10;
-	str_value = pconfig->get_value("NOTIFY_STUB_THREADS_NUM");
-	if (str_value != nullptr)
-		stub_num = atoi(str_value);
+	int stub_num = pconfig->get_ll("notify_stub_threads_num");
 	printf("[system]: exmdb notify stub threads number is %d\n", stub_num);
 	
 	auto listen_ip = pconfig->get_value("midb_listen_ip");
-	int listen_port = strtoul(pconfig->get_value("midb_listen_port"), nullptr, 0);
-	printf("[system]: listen address is [%s]:%d\n",
+	uint16_t listen_port = pconfig->get_ll("midb_listen_port");
+	printf("[system]: listen address is [%s]:%hu\n",
 	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
-	unsigned int threads_num = 0;
-	pconfig->get_uint("midb_threads_num", &threads_num);
+	unsigned int threads_num = pconfig->get_ll("midb_threads_num");
 	printf("[system]: connection threads number is %d\n", threads_num);
 
-	size_t table_size = 0;
-	str_value = pconfig->get_value("MIDB_TABLE_SIZE");
-	if (str_value != nullptr)
-		table_size = atoi(str_value);
+	size_t table_size = pconfig->get_ll("midb_table_size");
 	printf("[system]: hash table size is %zu\n", table_size);
 
-	int cache_interval = 1800;
-	str_value = pconfig->get_value("MIDB_CACHE_INTERVAL");
-	if (str_value != nullptr)
-		cache_interval = atoitvl(str_value);
+	int cache_interval = pconfig->get_ll("midb_cache_interval");
 	itvltoa(cache_interval, temp_buff);
 	printf("[system]: cache interval is %s\n", temp_buff);
 	
-	int mime_num = 4096;
-	str_value = pconfig->get_value("MIDB_MIME_NUMBER");
-	if (str_value != nullptr)
-		mime_num = atoi(str_value);
+	int mime_num = pconfig->get_ll("midb_mime_number");
 	printf("[system]: mime number is %d\n", mime_num);
 	
-	uint64_t mmap_size = 0;
-	str_value = pconfig->get_value("SQLITE_MMAP_SIZE");
-	if (NULL != str_value) {
-		mmap_size = atobyte(str_value);
-	}
+	uint64_t mmap_size = pconfig->get_ll("sqlite_mmap_size");
 	if (0 == mmap_size) {
 		printf("[system]: sqlite mmap_size is disabled\n");
 	} else {
@@ -179,16 +160,8 @@ int main(int argc, const char **argv)
 		printf("[system]: sqlite mmap_size is %s\n", temp_buff);
 	}
 	auto console_ip = pconfig->get_value("console_server_ip");
-	int console_port = 9000;
-	str_value = pconfig->get_value("CONSOLE_SERVER_PORT");
-	if (str_value != nullptr) {
-		console_port = atoi(str_value);
-		if (console_port <= 0) {
-			console_port = 9900;
-			pconfig->set_value("CONSOLE_SERVER_PORT", "9900");
-		}
-	}
-	printf("[system]: console server address is [%s]:%d\n",
+	uint16_t console_port = pconfig->get_ll("console_server_port");
+	printf("[system]: console server address is [%s]:%hu\n",
 	       *console_ip == '\0' ? "*" : console_ip, console_port);
 	
 	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
@@ -206,9 +179,7 @@ int main(int argc, const char **argv)
 		}
 	}
 
-	str_value = pconfig->get_value("midb_cmd_debug");
-	auto cmd_debug = str_value != nullptr ? strtoul(str_value, nullptr, 0) : 0;
-
+	unsigned int cmd_debug = pconfig->get_ll("midb_cmd_debug");
 	service_init({g_config_file->get_value("service_plugin_path"),
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_path"),
