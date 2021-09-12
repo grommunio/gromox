@@ -175,17 +175,11 @@ int main(int argc, const char **argv)
 	printf("[system]: threads pool initial threads number is %d\n",
 		thread_init_num);
 
-	size_t context_aver_mem = 256U << 10;
-	str_val = resource_get_string("CONTEXT_AVERAGE_MEM");
-	if (str_val != nullptr) {
-		context_aver_mem = atobyte(str_val)/(64*1024);
-	}
+	size_t context_aver_mem = g_config_file->get_ll("context_average_mem") / (64 * 1024);
 	bytetoa(context_aver_mem*64*1024, temp_buff);
 	printf("[smtp]: context average memory is %s\n", temp_buff);
  
-	str_val = resource_get_string("CONTEXT_MAX_MEM");
-	if (str_val != nullptr)
-		scfg.flushing_size = atobyte(str_val) / 64 / 1024;
+	scfg.flushing_size = g_config_file->get_ll("context_max_mem") / (64 * 1024);
 	if (scfg.flushing_size < context_aver_mem) {
 		scfg.flushing_size = context_aver_mem;
 		bytetoa(scfg.flushing_size * 64 * 1024, temp_buff);
@@ -196,10 +190,7 @@ int main(int argc, const char **argv)
 	printf("[smtp]: context maximum memory is %s\n", temp_buff);
  
 	scfg.domainlist_valid = parse_bool(g_config_file->get_value("domain_list_valid")) ? TRUE : false;
-	str_val = resource_get_string("SMTP_CONN_TIMEOUT");
-	if (str_val != nullptr) {
-		scfg.timeout = atoitvl(str_val);
-	}
+	scfg.timeout = g_config_file->get_ll("smtp_conn_timeout");
 	itvltoa(scfg.timeout, temp_buff);
 	printf("[smtp]: smtp socket read write time out is %s\n", temp_buff);
 
@@ -229,42 +220,32 @@ int main(int argc, const char **argv)
 	scfg.force_starttls = parse_bool(g_config_file->get_value("smtp_force_starttls"));
 	if (scfg.support_starttls && scfg.force_starttls)
 		printf("[smtp]: smtp MUST running in TLS mode\n");
-	int listen_port = 25, listen_ssl_port = 0;
-	g_config_file->get_int("listen_port", &listen_port);
-	g_config_file->get_int("listen_ssl_port", &listen_ssl_port);
+	uint16_t listen_port = g_config_file->get_ll("listen_port");
+	uint16_t listen_ssl_port = g_config_file->get_ll("listen_ssl_port");
 	if (!scfg.support_starttls && listen_ssl_port > 0)
 		listen_ssl_port = 0;
 	if (listen_ssl_port > 0) {
-		printf("[system]: system SSL listening port %d\n", listen_ssl_port);
+		printf("[system]: system SSL listening port %hu\n", listen_ssl_port);
 	}
 
 	scfg.need_auth = parse_bool(g_config_file->get_value("smtp_need_auth")) ? TRUE : false;
 	printf("[smtp]: auth_needed is %s\n", scfg.need_auth ? "ON" : "OFF");
 
-	resource_get_integer("SMTP_AUTH_TIMES", &scfg.auth_times);
+	scfg.auth_times = g_config_file->get_ll("smtp_auth_times");
 	printf("[smtp]: maximum authentification failure times is %d\n", 
 	       scfg.auth_times);
 
-	str_val = resource_get_string("BLOCK_INTERVAL_AUTHS");
-	if (str_val != nullptr) {
-		scfg.blktime_auths = atoitvl(str_val);
-	}
+	scfg.blktime_auths = g_config_file->get_ll("block_interval_auths");
 	itvltoa(scfg.blktime_auths, temp_buff);
 	printf("[smtp]: block client %s when authentification failure times "
 			"is exceeded\n", temp_buff);
 
-	str_val = resource_get_string("MAIL_MAX_LENGTH");
-	if (str_val != nullptr) {
-		scfg.max_mail_length = atobyte(str_val);
-	}
+	scfg.max_mail_length = g_config_file->get_ll("mail_max_length");
 	bytetoa(scfg.max_mail_length, temp_buff);
 	printf("[smtp]: maximum mail length is %s\n", temp_buff);
 
-	g_config_file->get_int("smtp_max_mail_num", &scfg.max_mail_sessions);
-	str_val = resource_get_string("BLOCK_INTERVAL_SESSIONS");
-	if (str_val != nullptr) {
-		scfg.blktime_sessions = atoitvl(str_val);
-	}
+	scfg.max_mail_sessions = g_config_file->get_ll("smtp_max_mail_num");
+	scfg.blktime_sessions = g_config_file->get_ll("block_interval_session");
 	itvltoa(scfg.blktime_sessions, temp_buff);
 	printf("[smtp]: block remote side %s when mails number is exceed for one "
 			"session\n", temp_buff);
@@ -290,9 +271,8 @@ int main(int argc, const char **argv)
 		scfg.cmd_prot = 0;
 
 	auto console_server_ip = g_config_file->get_value("console_server_ip");
-	int console_server_port = 5566;
-	g_config_file->get_int("console_server_port", &console_server_port);
-	printf("[console_server]: console server is address [%s]:%d\n",
+	uint16_t console_server_port = g_config_file->get_ll("console_server_port");
+	printf("[console_server]: console server is address [%s]:%hu\n",
 	       *console_server_ip == '\0' ? "*" : console_server_ip, console_server_port);
 	listener_init(listen_port, listen_ssl_port);
 	auto cleanup_3 = make_scope_exit(listener_free);
