@@ -172,10 +172,7 @@ int main(int argc, const char **argv)
 	
 	msgchg_grouping_init(g_config_file->get_value("data_file_path"));
 	auto cl_0c = make_scope_exit([&]() { msgchg_grouping_free(); });
-	unsigned int threads_num = 100;
-	str_value = pconfig->get_value("ZARAFA_THREADS_NUM");
-	if (str_value != nullptr)
-		threads_num = atoi(str_value);
+	unsigned int threads_num = pconfig->get_ll("zarafa_threads_num");
 	printf("[system]: connection threads number is %d\n", threads_num);
 
 	service_init({g_config_file->get_value("service_plugin_path"),
@@ -186,70 +183,38 @@ int main(int argc, const char **argv)
 		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
 		threads_num});
 	
-	unsigned int table_size = 3000;
-	str_value = pconfig->get_value("ADDRESS_TABLE_SIZE");
-	if (str_value != nullptr)
-		table_size = atoi(str_value);
+	unsigned int table_size = pconfig->get_ll("address_table_size");
 	printf("[system]: address table size is %d\n", table_size);
 
-	int cache_interval = 300;
-	str_value = pconfig->get_value("ADDRESS_CACHE_INTERVAL");
-	if (str_value != nullptr)
-		cache_interval = atoitvl(str_value);
+	int cache_interval = pconfig->get_ll("address_cache_interval");
 	itvltoa(cache_interval, temp_buff);
 	printf("[system]: address book tree item"
 		" cache interval is %s\n", temp_buff);
 
-	int max_item_num = 100000;
-	str_value = pconfig->get_value("ADDRESS_ITEM_NUM");
-	if (str_value != nullptr)
-		max_item_num = atoi(str_value);
+	int max_item_num = pconfig->get_ll("address_item_num");
 	printf("[system]: maximum item number is %d\n", max_item_num);
 	
 	ab_tree_init(g_config_file->get_value("x500_org_name"), table_size, cache_interval, max_item_num);
 	bounce_producer_init(g_config_file->get_value("separator_for_bounce"));
 
-	int mime_num = 4096;
-	str_value = pconfig->get_value("ZARAFA_MIME_NUMBER");
-	if (str_value != nullptr)
-		mime_num = atoi(str_value);
+	int mime_num = pconfig->get_ll("zarafa_mime_number");
 	printf("[system]: mime number is %d\n", mime_num);
 	
-	int max_rcpt = 256;
-	str_value = pconfig->get_value("MAX_RCPT_NUM");
-	if (str_value != nullptr)
-		max_rcpt = atoi(str_value);
+	int max_rcpt = pconfig->get_ll("max_rcpt_num");
 	printf("[system]: maximum rcpt number is %d\n", max_rcpt);
 	
-	int max_mail = 1000000;
-	str_value = pconfig->get_value("MAX_MAIL_NUM");
-	if (str_value != nullptr)
-		max_mail = atoi(str_value);
+	int max_mail = pconfig->get_ll("max_mail_num");
 	printf("[system]: maximum mail number is %d\n", max_mail);
 	
-	int max_length = 64U << 20;
-	str_value = pconfig->get_value("MAIL_MAX_LENGTH");
-	if (str_value != nullptr)
-		max_length = atobyte(str_value);
+	int max_length = pconfig->get_ll("mail_max_length");
 	bytetoa(max_length, temp_buff);
 	printf("[system]: maximum mail length is %s\n", temp_buff);
 	
-	int max_rule_len = 510U << 10;
-	str_value = pconfig->get_value("MAX_EXT_RULE_LENGTH");
-	if (str_value != nullptr)
-		max_rule_len = atobyte(str_value);
+	int max_rule_len = pconfig->get_ll("max_ext_rule_length");
 	bytetoa(max_rule_len, temp_buff);
 	printf("[system]: maximum extended rule length is %s\n", temp_buff);
 	
-	uint16_t smtp_port = 25;
-	str_value = pconfig->get_value("SMTP_SERVER_PORT");
-	if (str_value != nullptr) {
-		smtp_port = atoi(str_value);
-		if (smtp_port <= 0) {
-			smtp_port = 25;
-			pconfig->set_value("SMTP_SERVER_PORT", "25");
-		}
-	}
+	uint16_t smtp_port = pconfig->get_ll("smtp_server_port");
 	printf("[system]: smtp server is [%s]:%hu\n",
 	       g_config_file->get_value("smtp_server_ip"), smtp_port);
 	
@@ -262,35 +227,22 @@ int main(int argc, const char **argv)
 		g_config_file->get_value("submit_command"));
 	auto cl_0b = make_scope_exit([&]() { common_util_free(); });
 	
-	int proxy_num = 10;
-	str_value = pconfig->get_value("RPC_PROXY_CONNECTION_NUM");
-	if (str_value != nullptr)
-		proxy_num = atoi(str_value);
+	int proxy_num = pconfig->get_ll("rpc_proxy_connection_num");
 	printf("[system]: exmdb proxy connection number is %d\n", proxy_num);
 	
-	int stub_num = 10;
-	str_value = pconfig->get_value("NOTIFY_STUB_THREADS_NUM");
-	if (str_value != nullptr)
-		stub_num = atoi(str_value);
+	int stub_num = pconfig->get_ll("notify_stub_threads_num");
 	printf("[system]: exmdb notify stub threads number is %d\n", stub_num);
 	
 	exmdb_client_init(proxy_num, stub_num);
 	rpc_parser_init(threads_num);
-	str_value = pconfig->get_value("USER_TABLE_SIZE");
-	if (str_value != nullptr)
-		table_size = atoi(str_value);
+	table_size = pconfig->get_ll("user_table_size");
 	printf("[system]: hash table size is %d\n", table_size);
 
-	str_value = pconfig->get_value("USER_CACHE_INTERVAL");
-	if (str_value != nullptr)
-		cache_interval = atoitvl(str_value);
+	cache_interval = pconfig->get_ll("user_cache_interval");
 	itvltoa(cache_interval, temp_buff);
 	printf("[system]: cache interval is %s\n", temp_buff);
 	
-	int ping_interval = 300;
-	str_value = pconfig->get_value("MAILBOX_PING_INTERVAL");
-	if (str_value != nullptr)
-		ping_interval = atoitvl(str_value);
+	int ping_interval = pconfig->get_ll("mailbox_ping_interval");
 	itvltoa(ping_interval, temp_buff);
 	printf("[system]: mailbox ping interval is %s\n", temp_buff);
 	
@@ -298,16 +250,8 @@ int main(int argc, const char **argv)
 	auto cleanup_2 = make_scope_exit(zarafa_server_free);
 	
 	auto console_ip = pconfig->get_value("console_server_ip");
-	int console_port = 3344;
-	str_value = pconfig->get_value("CONSOLE_SERVER_PORT");
-	if (str_value != nullptr) {
-		console_port = atoi(str_value);
-		if (console_port <= 0) {
-			console_port = 3344;
-			pconfig->set_value("CONSOLE_SERVER_PORT", "3344");
-		}
-	}
-	printf("[system]: console server address is [%s]:%d\n",
+	uint16_t console_port = pconfig->get_ll("console_server_port");
+	printf("[system]: console server address is [%s]:%hu\n",
 	       *console_ip == '\0' ? "*" : console_ip, console_port);
 	console_server_init(console_ip, console_port);
 	console_server_register_command("zcore", cmd_handler_zcore_control);
