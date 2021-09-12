@@ -216,22 +216,12 @@ int main(int argc, const char **argv)
 	config_file_apply(*pconfig, cfg_default_values);
 
 	g_list_path = pconfig->get_value("timer_state_path");
-	int listen_port = 6666;
-	auto str_value = pconfig->get_value("timer_listen_port");
-	if (str_value != nullptr) {
-		listen_port = atoi(str_value);
-		if (listen_port <= 0)
-			listen_port = 6666;
-	}
+	uint16_t listen_port = pconfig->get_ll("timer_listen_port");
 	auto listen_ip = pconfig->get_value("timer_listen_ip");
-	printf("[system]: listen address is [%s]:%d\n",
+	printf("[system]: listen address is [%s]:%hu\n",
 	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
-	str_value = pconfig->get_value("TIMER_THREADS_NUM");
-	if (str_value != nullptr) {
-		g_threads_num = atoi(str_value);
-	}
-
+	g_threads_num = pconfig->get_ll("timer_threads_num");
 	printf("[system]: processing threads number is %zu\n", g_threads_num);
 	g_threads_num ++;
 

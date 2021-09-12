@@ -6,6 +6,7 @@
 #include <atomic>
 #include <cerrno>
 #include <condition_variable>
+#include <cstdint>
 #include <cstring>
 #include <list>
 #include <memory>
@@ -123,7 +124,6 @@ DEQUEUE_NODE::~DEQUEUE_NODE()
 
 int main(int argc, const char **argv)
 {
-	int listen_port;
 	pthread_attr_t thr_attr;
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -154,20 +154,11 @@ int main(int argc, const char **argv)
 	config_file_apply(*pconfig, cfg_default_values);
 
 	auto listen_ip = pconfig->get_value("event_listen_ip");
-	auto str_value = pconfig->get_value("event_listen_port");
-	if (NULL == str_value) {
-		listen_port = 33333;
-	} else {
-		listen_port = atoi(str_value);
-		if (listen_port <= 0)
-			listen_port = 33333;
-	}
-	printf("[system]: listen address is [%s]:%d\n",
+	uint16_t listen_port = pconfig->get_ll("event_listen_port");
+	printf("[system]: listen address is [%s]:%hu\n",
 	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
-	str_value = pconfig->get_value("EVENT_THREADS_NUM");
-	if (str_value != nullptr)
-		g_threads_num = strtoul(str_value, nullptr, 0);
+	g_threads_num = pconfig->get_ll("event_threads_num");
 	printf("[system]: threads number is 2*%d\n", g_threads_num);
 	
 	g_threads_num ++;
