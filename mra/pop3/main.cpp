@@ -133,19 +133,16 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: default domain is %s\n", str_val);
 
-	unsigned int context_num = 400, thread_charge_num = 20;
-	g_config_file->get_uint("context_num", &context_num);
-	if (g_config_file->get_uint("thread_charge_num", &thread_charge_num)) {
-		if (thread_charge_num % 4 != 0) {
-			thread_charge_num = ((int)(thread_charge_num / 4)) * 4;
-			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
-		}
+	unsigned int context_num = g_config_file->get_ll("context_num");
+	unsigned int thread_charge_num = g_config_file->get_ll("thread_charge_num");
+	if (thread_charge_num % 4 != 0) {
+		thread_charge_num = thread_charge_num / 4 * 4;
+		resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
 	}
 	printf("[system]: one thread is in charge of %d contexts\n",
 		thread_charge_num);
 
-	unsigned int thread_init_num = 5;
-	g_config_file->get_uint("thread_init_num", &thread_init_num);
+	unsigned int thread_init_num = g_config_file->get_ll("thread_init_num");
 	if (thread_init_num * thread_charge_num > context_num) {
 		thread_init_num = context_num / thread_charge_num;
 		if (0 == thread_init_num) {
@@ -159,18 +156,11 @@ int main(int argc, const char **argv)
 	printf("[system]: threads pool initial threads number is %d\n",
 		thread_init_num);
 
-	unsigned int context_aver_mem = 8;
-	str_val = resource_get_string("CONTEXT_AVERAGE_MEM");
-	if (str_val != nullptr) {
-		context_aver_mem = atobyte(str_val)/(64*1024);
-	}
+	unsigned int context_aver_mem = g_config_file->get_ll("context_average_mem") / (64 * 1024);
 	bytetoa(context_aver_mem*64*1024, temp_buff);
 	printf("[pop3]: context average memory is %s\n", temp_buff);
  
-	size_t context_max_mem = 2U << 20;
-	str_val = resource_get_string("CONTEXT_MAX_MEM");
-	if (str_val != nullptr)
-		context_max_mem = atobyte(str_val)/(64*1024); 
+	size_t context_max_mem = g_config_file->get_ll("context_max_mem") / (64 * 1024);
 	if (context_max_mem < context_aver_mem) {
 		context_max_mem = context_aver_mem;
 		bytetoa(context_max_mem*64*1024, temp_buff);
@@ -180,28 +170,18 @@ int main(int argc, const char **argv)
 	bytetoa(context_max_mem, temp_buff);
 	printf("[pop3]: context maximum memory is %s\n", temp_buff);
 
-	unsigned int context_aver_units = 5000;
-	g_config_file->get_uint("context_average_units", &context_aver_units);
+	unsigned int context_aver_units = g_config_file->get_ll("context_average_units");
 	printf("[pop3]: context average units number is %d\n", context_aver_units);
 	
-	int pop3_conn_timeout = 180;
-	str_val = resource_get_string("POP3_CONN_TIMEOUT");
-	if (str_val != nullptr) {
-		pop3_conn_timeout = atoitvl(str_val);
-	}
+	int pop3_conn_timeout = g_config_file->get_ll("pop3_conn_timeout");
 	itvltoa(pop3_conn_timeout, temp_buff);
 	printf("[pop3]: pop3 socket read write time out is %s\n", temp_buff);
  
-	int pop3_auth_times = 10;
-	g_config_file->get_int("pop3_auth_times", &pop3_auth_times);
+	int pop3_auth_times = g_config_file->get_ll("pop3_auth_times");
 	printf("[pop3]: maximum authentification failure times is %d\n", 
 			pop3_auth_times);
 
-	int block_interval_auth = 60;
-	str_val = resource_get_string("BLOCK_INTERVAL_AUTHS");
-	if (str_val != nullptr) {
-		block_interval_auth = atoitvl(str_val);
-	}
+	int block_interval_auth = g_config_file->get_ll("block_interval_auths");
 	itvltoa(block_interval_auth, temp_buff);
 	printf("[pop3]: block client %s when authentification failure times "
 			"is exceeded\n", temp_buff);
