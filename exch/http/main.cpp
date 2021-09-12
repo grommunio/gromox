@@ -180,19 +180,16 @@ int main(int argc, const char **argv)
 		dns_domain = ptoken + 1;
 	}
 
-	unsigned int thread_charge_num = 20;
-	if (g_config_file->get_uint("thread_charge_num", &thread_charge_num)) {
-		if (thread_charge_num % 4 != 0) {
-			thread_charge_num = ((int)(thread_charge_num / 4)) * 4;
-			resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
-		}
+	unsigned int thread_charge_num = g_config_file->get_ll("thread_charge_num");
+	if (thread_charge_num % 4 != 0) {
+		thread_charge_num = thread_charge_num / 4 * 4;
+		resource_set_integer("THREAD_CHARGE_NUM", thread_charge_num);
+	}
 	printf("[system]: one thread is in charge of %d contexts\n",
 		thread_charge_num);
-	}
 
-	unsigned int context_num = 400, thread_init_num = 5, context_aver_mem = 4;
-	g_config_file->get_uint("context_num", &context_num);
-	g_config_file->get_uint("thread_init_num", &thread_init_num);
+	unsigned int context_num = g_config_file->get_ll("context_num");
+	unsigned int thread_init_num = g_config_file->get_ll("thread_init_num");
 	if (thread_init_num * thread_charge_num > context_num) {
 		thread_init_num = context_num / thread_charge_num;
 		if (0 == thread_init_num) {
@@ -206,28 +203,19 @@ int main(int argc, const char **argv)
 	printf("[system]: threads pool initial threads number is %d\n",
 		thread_init_num);
 
-	str_val = resource_get_string("CONTEXT_AVERAGE_MEM");
-	if (str_val != nullptr)
-		context_aver_mem = atobyte(str_val)/(64*1024);
+	unsigned int context_aver_mem = g_config_file->get_ll("context_average_mem") / (64 * 1024);
 	bytetoa(context_aver_mem*64*1024, temp_buff);
 	printf("[http]: context average memory is %s\n", temp_buff);
 	
-	int http_conn_timeout = 180;
-	str_val = resource_get_string("HTTP_CONN_TIMEOUT");
-	if (str_val != nullptr)
-		http_conn_timeout = atoitvl(str_val);
+	int http_conn_timeout = g_config_file->get_ll("http_conn_timeout");
 	itvltoa(http_conn_timeout, temp_buff);
 	printf("[http]: http socket read write time out is %s\n", temp_buff);
  
-	int http_auth_times = 3;
-	g_config_file->get_int("http_auth_times", &http_auth_times);
+	int http_auth_times = g_config_file->get_ll("http_auth_times");
 	printf("[http]: maximum authentification failure times is %d\n", 
 			http_auth_times);
 
-	int block_interval_auth = 60;
-	str_val = resource_get_string("BLOCK_INTERVAL_AUTHS");
-	if (str_val != nullptr)
-		block_interval_auth = atoitvl(str_val);
+	int block_interval_auth = g_config_file->get_ll("block_interval_auths");
 	itvltoa(block_interval_auth, temp_buff);
 	printf("[http]: block client %s when authentification failure times "
 			"is exceeded\n", temp_buff);
@@ -248,18 +236,14 @@ int main(int argc, const char **argv)
 		printf("[http]: http doesn't support TLS mode\n");
 	}
 
-	int listen_ssl_port = 0;
-	resource_get_integer("listen_ssl_port", &listen_ssl_port);
+	uint16_t listen_ssl_port = g_config_file->get_ll("listen_ssl_port");
 	if (!http_support_ssl && listen_ssl_port > 0)
 		listen_ssl_port = 0;
 	if (listen_ssl_port > 0) {
-		printf("[system]: system SSL listening port %d\n", listen_ssl_port);
+		printf("[system]: system SSL listening port %hu\n", listen_ssl_port);
 	}
 	
-	size_t max_request_mem = 4U << 20;
-	str_val = resource_get_string("REQUEST_MAX_MEM");
-	if (str_val != nullptr)
-		max_request_mem = atobyte(str_val);
+	size_t max_request_mem = g_config_file->get_ll("request_max_mem");
 	bytetoa(max_request_mem, temp_buff);
 	printf("[pdu_processor]: maximum request memory is %s\n", temp_buff);
 
@@ -283,17 +267,11 @@ int main(int argc, const char **argv)
 		}
 	}
 	
-	uint64_t hpm_cache_size = 256U << 10;
-	str_val = resource_get_string("HPM_CACHE_SIZE");
-	if (str_val != nullptr)
-		hpm_cache_size = atobyte(str_val);
+	uint64_t hpm_cache_size = g_config_file->get_ll("hpm_cache_size");
 	bytetoa(hpm_cache_size, temp_buff);
 	printf("[hpm_processor]: fastcgi cache size is %s\n", temp_buff);
 	
-	uint64_t hpm_max_size = 4U << 20;
-	str_val = resource_get_string("HPM_MAX_SIZE");
-	if (str_val != nullptr)
-		hpm_max_size = atobyte(str_val);
+	uint64_t hpm_max_size = g_config_file->get_ll("hpm_max_size");
 	bytetoa(hpm_max_size, temp_buff);
 	printf("[hpm_processor]: hpm maximum size is %s\n", temp_buff);
 
@@ -308,34 +286,23 @@ int main(int argc, const char **argv)
 	}
 
 	auto console_server_ip = g_config_file->get_value("console_server_ip");
-	int console_server_port = 8899;
-	resource_get_integer("CONSOLE_SERVER_PORT", &console_server_port);
-	printf("[console_server]: console server address is [%s]:%d\n",
+	uint16_t console_server_port = g_config_file->get_ll("console_server_port");
+	printf("[console_server]: console server address is [%s]:%hu\n",
 	       *console_server_ip == '\0' ? "*" : console_server_ip, console_server_port);
 	
-	uint64_t fastcgi_cache_size = 256U << 10;
-	str_val = resource_get_string("FASTCGI_CACHE_SIZE");
-	if (str_val != nullptr)
-		fastcgi_cache_size = atobyte(str_val);
+	uint64_t fastcgi_cache_size = g_config_file->get_ll("fastcgi_cache_size");
 	bytetoa(fastcgi_cache_size, temp_buff);
 	printf("[mod_fastcgi]: fastcgi cache size is %s\n", temp_buff);
 	
-	uint64_t fastcgi_max_size = 4U << 20;
-	str_val = resource_get_string("FASTCGI_MAX_SIZE");
-	if (str_val != nullptr)
-		fastcgi_max_size = atobyte(str_val);
+	uint64_t fastcgi_max_size = g_config_file->get_ll("fastcgi_max_size");
 	bytetoa(fastcgi_max_size, temp_buff);
 	printf("[mod_fastcgi]: fastcgi maximum size is %s\n", temp_buff);
 	
-	int fastcgi_exec_timeout = 600;
-	str_val = resource_get_string("FASTCGI_EXEC_TIMEOUT");
-	if (str_val != nullptr)
-		fastcgi_exec_timeout = atoitvl(str_val);
+	int fastcgi_exec_timeout = g_config_file->get_ll("fastcgi_exec_timeout");
 	itvltoa(fastcgi_exec_timeout, temp_buff);
 	printf("[http]: fastcgi excution time out is %s\n", temp_buff);
-	int listen_port = 0, mss_size = 0;
-	g_config_file->get_int("listen_port", &listen_port);
-	g_config_file->get_int("tcp_max_segment", &mss_size);
+	uint16_t listen_port = g_config_file->get_ll("listen_port");
+	unsigned int mss_size = g_config_file->get_ll("tcp_max_segment");
 	listener_init(listen_port, listen_ssl_port, mss_size);
 	auto cleanup_3 = make_scope_exit(listener_free);
 																			
