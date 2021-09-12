@@ -127,14 +127,11 @@ int main(int argc, const char **argv)
 	}
 	printf("[system]: default domain is %s\n", str_val);
 
-	unsigned int threads_min = 16, threads_max = 32;
-	g_config_file->get_uint("work_threads_min", &threads_min);
+	unsigned int threads_min = g_config_file->get_ll("work_threads_min");
+	unsigned int threads_max = 2 * threads_min;
     printf("[system]: minimum working threads number is %d\n", threads_min);
 
-	if (!resource_get_uint("WORK_THREADS_MAX", &threads_max)) {
-        threads_max = threads_min * 2; 
-		resource_set_integer("WORK_THREADS_MAX", threads_max);
-    } else {
+	if (resource_get_uint("WORK_THREADS_MAX", &threads_max)) {
 		if (threads_max <= threads_min) {
 			threads_max = threads_min + 1;
 			resource_set_integer("WORK_THREADS_MAX", threads_max);
@@ -143,10 +140,7 @@ int main(int argc, const char **argv)
     printf("[system]: maximum working threads number is %d\n", threads_max);
 
 	unsigned int free_contexts = threads_max;
-	if (!resource_get_uint("FREE_CONTEXT_NUM", &free_contexts)) {
-        free_contexts = threads_max; 
-		resource_set_integer("FREE_CONTEXT_NUM", free_contexts);
-    } else {
+	if (resource_get_uint("FREE_CONTEXT_NUM", &free_contexts)) {
 		if (free_contexts < threads_max) {
 			free_contexts = threads_max; 
 			resource_set_integer("FREE_CONTEXT_NUM", free_contexts);
@@ -154,15 +148,11 @@ int main(int argc, const char **argv)
 	}
     printf("[system]: free contexts number is %d\n", free_contexts);
     
-	unsigned int mime_ratio = 8;
-	g_config_file->get_uint("context_average_mime", &mime_ratio);
+	unsigned int mime_ratio = g_config_file->get_ll("context_average_mime");
 	printf("[system]: average mimes number for one context is %d\n",
 		mime_ratio);
 
-	size_t max_mem = 1U << 30;
-	str_val = resource_get_string("DEQUEUE_MAXIMUM_MEM");
-	if (str_val != nullptr)
-		max_mem = atobyte(str_val);
+	size_t max_mem = g_config_file->get_ll("dequeue_maximum_mem");
 	bytetoa(max_mem, temp_buff);
     printf("[message_dequeue]: maximum allocated memory is %s\n", temp_buff);
     
@@ -187,9 +177,8 @@ int main(int argc, const char **argv)
 	}
 
 	auto console_server_ip = g_config_file->get_value("console_server_ip");
-	int console_server_port = 6677;
-	g_config_file->get_int("console_server_port", &console_server_port);
-	printf("[console_server]: console server address is [%s]:%d\n",
+	uint16_t console_server_port = g_config_file->get_ll("console_server_port");
+	printf("[console_server]: console server address is [%s]:%hu\n",
 	       *console_server_ip == '\0' ? "*" : console_server_ip, console_server_port);
 	
 	auto user_name = g_config_file->get_value("running_identity");
