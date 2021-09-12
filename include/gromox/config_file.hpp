@@ -33,6 +33,7 @@ struct GX_EXPORT CONFIG_FILE {
 	GX_EXPORT BOOL save();
 	GX_EXPORT BOOL get_int(const char *key, int *) const;
 	GX_EXPORT BOOL get_uint(const char *key, unsigned int *) const;
+	GX_EXPORT unsigned long long get_ll(const char *key) const;
 	GX_EXPORT BOOL set_int(const char *key, int);
 
     CONFIG_ENTRY *config_table;

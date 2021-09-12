@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <memory>
+#include <stdexcept>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -27,6 +28,7 @@
 #define MAX_LINE_LEN		1024
 #define EXT_ENTRY_NUM		64
 
+using namespace std::string_literals;
 using namespace gromox;
 
 static void config_file_parse_line(std::shared_ptr<CONFIG_FILE> &cfg, char *line);
@@ -341,6 +343,14 @@ BOOL CONFIG_FILE::get_uint(const char *key, unsigned int *value) const
 		return FALSE;
 	*value = strtoul(v, nullptr, 0);
 	return TRUE;
+}
+
+unsigned long long CONFIG_FILE::get_ll(const char *key) const
+{
+	auto sv = get_value(key);
+	if (sv == nullptr)
+		throw std::runtime_error("config key "s + key + " not initialized");
+	return strtoull(sv, nullptr, 0);
 }
 
 BOOL CONFIG_FILE::set_int(const char *key, int value)
