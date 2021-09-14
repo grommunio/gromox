@@ -171,11 +171,10 @@ int main(int argc, const char **argv)
 			rl.rlim_max < 5*table_size) {
 			rl.rlim_cur = 5*table_size;
 			rl.rlim_max = 5*table_size;
-			if (0 != setrlimit(RLIMIT_NOFILE, &rl)) {
+			if (setrlimit(RLIMIT_NOFILE, &rl) != 0)
 				printf("[system]: fail to set file limitation\n");
-			} else {
-				printf("[system]: set file limitation to %zu\n", 5 * table_size);
-			}
+			else
+				printf("[system]: set file limitation to %zu\n", static_cast<size_t>(rl.rlim_cur));
 		}
 	}
 

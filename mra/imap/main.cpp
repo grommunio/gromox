@@ -259,10 +259,10 @@ int main(int argc, const char **argv)
 		rl.rlim_max < 2*context_num + 128) {
 		rl.rlim_cur = 2*context_num + 128;
 		rl.rlim_max = 2*context_num + 128;
-		if (0 != setrlimit(RLIMIT_NOFILE, &rl)) {
+		if (setrlimit(RLIMIT_NOFILE, &rl) != 0)
 			printf("[system]: fail to set file limitation\n");
-		}
-		printf("[system]: set file limitation to %d\n", 2*context_num + 128);
+		else
+			printf("[system]: set file limitation to %zu\n", static_cast<size_t>(rl.rlim_cur));
 	}
 	auto user_name = g_config_file->get_value("running_identity");
 	if (*user_name != '\0') {
