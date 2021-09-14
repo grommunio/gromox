@@ -358,7 +358,7 @@ int main(int argc, const char **argv)
 	}
 	printf("--------------------------- service plugins begin"
 		   "---------------------------\n");
-	if (service_run_early()) {
+	if (service_run_early() != 0) {
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
 		return EXIT_FAILURE;
 	}

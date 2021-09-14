@@ -322,6 +322,10 @@ int main(int argc, const char **argv)
 		scfg.context_num});
 	printf("--------------------------- service plugins begin"
 		   "---------------------------\n");
+	if (service_run_early() != 0) {
+		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
+		return EXIT_FAILURE;
+	}
 	if (0 != service_run()) { 
 		printf("---------------------------- service plugins end"
 		   "----------------------------\n");
