@@ -72,7 +72,7 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 		snprintf(config_path, GX_ARRAY_SIZE(config_path), "%s.cfg", file_name);
 		auto pfile = config_file_initd(config_path, get_config_path());
 		if (NULL == pfile) {
-			printf("[event_proxy]: config_file_initd %s: %s\n",
+			printf("[event_stub]: config_file_initd %s: %s\n",
 			       config_path, strerror(errno));
 			return FALSE;
 		}
@@ -85,7 +85,7 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 			if (conn_num < 0)
 				conn_num = 8;
 		}
-		printf("[event_proxy]: event connection number is %d\n", conn_num);
+		printf("[event_stub]: event connection number is %d\n", conn_num);
 
 		str_value = pfile->get_value("EVENT_HOST");
 		gx_strlcpy(g_event_ip, str_value != nullptr ? str_value : "::1",
@@ -98,7 +98,7 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 			if (g_event_port == 0)
 				g_event_port = 33333;
 		}
-		printf("[event_proxy]: event address is [%s]:%hu\n",
+		printf("[event_stub]: event address is [%s]:%hu\n",
 		       *g_event_ip == '\0' ? "*" : g_event_ip, g_event_port);
 
 		g_notify_stop = false;
@@ -133,12 +133,12 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 				free(pback);
 			}
 			double_list_free(&g_back_list);
-			printf("[event_proxy]: failed to create stub thread: %s\n", strerror(ret));
+			printf("[event_stub]: failed to create stub thread: %s\n", strerror(ret));
 			return FALSE;
 		}
 
 		if (!register_service("install_event_stub", install_event_stub))
-			printf("[event_proxy]: failed to register install_event_stub\n");
+			printf("[event_stub]: failed to register install_event_stub\n");
 		return TRUE;
 	}
 	case PLUGIN_FREE:
