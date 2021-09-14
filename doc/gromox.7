@@ -167,8 +167,9 @@ mapi(4gx) \(em PHP module providing MAPI functions
 .IP \(bu 4
 *:24 \(em delivery-queue(8gx) LMTP/SMTP service (when Postfix is on 25)
 .IP \(bu 4
-*:25 \(em delivery-queue(8gx) LMTP/SMTP service (developer setup without
-Postfix)
+:*25 \(em Normally, your own MTA (postfix(1), exim(8), whatever the case may
+be). delivery-queue(8gx) will only be on 25 in developer setups that wish to
+cut and skip Postfix/etc. to get a simpler test setup.
 .IP \(bu 4
 *:80 \(em http(8gx) HTTP service
 .IP \(bu 4
