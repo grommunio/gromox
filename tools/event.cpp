@@ -124,7 +124,6 @@ DEQUEUE_NODE::~DEQUEUE_NODE()
 int main(int argc, const char **argv)
 {
 	int listen_port;
-	char listen_ip[40];
 	pthread_attr_t thr_attr;
 
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -145,15 +144,17 @@ int main(int argc, const char **argv)
 	if (pconfig == nullptr)
 		return 2;
 
-	char config_dir[256];
-	auto str_value = pconfig->get_value("config_file_path");
-	gx_strlcpy(config_dir, str_value != nullptr ? str_value :
-	           PKGSYSCONFDIR "/event:" PKGSYSCONFDIR, GX_ARRAY_SIZE(config_dir));
-	str_value = pconfig->get_value("EVENT_LISTEN_IP");
-	gx_strlcpy(listen_ip, str_value != nullptr ? str_value : "::1",
-	           GX_ARRAY_SIZE(listen_ip));
+	static constexpr cfg_directive cfg_default_values[] = {
+		{"config_file_path", PKGSYSCONFDIR "/event:" PKGSYSCONFDIR},
+		{"event_listen_ip", "::1"},
+		{"event_listen_port", "33333"},
+		{"event_threads_num", "50", CFG_SIZE, "1", "1000"},
+		{},
+	};
+	config_file_apply(*pconfig, cfg_default_values);
 
-	str_value = pconfig->get_value("EVENT_LISTEN_PORT");
+	auto listen_ip = pconfig->get_value("event_listen_ip");
+	auto str_value = pconfig->get_value("event_listen_port");
 	if (NULL == str_value) {
 		listen_port = 33333;
 	} else {
@@ -165,16 +166,8 @@ int main(int argc, const char **argv)
 	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
 	str_value = pconfig->get_value("EVENT_THREADS_NUM");
-	if (NULL == str_value) {
-		g_threads_num = 50;
-	} else {
+	if (str_value != nullptr)
 		g_threads_num = strtoul(str_value, nullptr, 0);
-		if (g_threads_num < 1)
-			g_threads_num = 1;
-		if (g_threads_num > 1000)
-			g_threads_num = 1000;
-	}
-
 	printf("[system]: threads number is 2*%d\n", g_threads_num);
 	
 	g_threads_num ++;
@@ -241,7 +234,8 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 
-	auto ret = list_file_read_fixedstrings("event_acl.txt", config_dir, g_acl_list);
+	auto ret = list_file_read_fixedstrings("event_acl.txt",
+	           pconfig->get_value("config_file_path"), g_acl_list);
 	if (ret == -ENOENT) {
 		printf("[system]: defaulting to implicit access ACL containing ::1.\n");
 		g_acl_list = {"::1"};
