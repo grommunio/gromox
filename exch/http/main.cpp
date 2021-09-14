@@ -117,6 +117,7 @@ int main(int argc, const char **argv)
 		{"block_interval_auths", "1min", CFG_TIME, "1s"},
 		{"config_file_path", PKGSYSCONFDIR "/http:" PKGSYSCONFDIR},
 		{"console_server_ip", "::1"},
+		{"console_server_port", "8899"},
 		{"context_average_mem", "256K", CFG_SIZE, "192K"},
 		{"context_num", "400", CFG_SIZE},
 		{"data_file_path", PKGDATADIR "/http:" PKGDATADIR},

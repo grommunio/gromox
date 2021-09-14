@@ -28,6 +28,7 @@ static std::shared_ptr<CONFIG_FILE> g_config_during_init;
 
 static constexpr cfg_directive cfg_default_values[] = {
 	{"cache_interval", "2h", CFG_TIME, "1s"},
+	{"exrpc_debug", "0"},
 	{"listen_ip", "::1"},
 	{"listen_port", "5000"},
 	{"max_ext_rule_number", "20", CFG_SIZE, "1", "100"},
