@@ -495,6 +495,7 @@ enum {
 };
 
 enum display_type {
+	/* Not all of these are represented in PR_DISPLAY_TYPE_EX (since there is just room for one byte) */
 	DT_MAILUSER = 0,
 	DT_DISTLIST = 1,
 	DT_FORUM = 2,
@@ -517,7 +518,13 @@ enum display_type {
 	DT_FOLDER = 1 << 24,
 	DT_FOLDER_LINK = 1 << 25,
 	DT_FOLDER_SPECIAL = 1 << 26,
-	DTE_FLAG_ACL_CAPABLE = 1U << 30,
+};
+
+enum {
+	DTE_FLAG_ACL_CAPABLE  = 1U << 30,
+	DTE_FLAG_REMOTE_VALID = 1U << 31,
+	DTE_MASK_REMOTE       = 0xFF00U,
+	DTE_MASK_LOCAL        = 0xFFU,
 };
 
 enum {
@@ -693,6 +700,7 @@ enum { /* for PR_STORE_SUPPORT_MASK and PR_STORE_STATE */
 	STORE_UNICODE_OK        = 1U << 18,
 	STORE_LOCALSTORE        = 1U << 19,
 	STORE_ITEMPROC          = 1U << 21,
+	// ??                   = 1U << 22, /* Exch 2019 does present this */
 	STORE_PUSHER_OK         = 1U << 23,
 	STORE_HAS_SEARCHES      = 1U << 24,
 	STORE_FULLTEXT_QUERY_OK = 1U << 25,
