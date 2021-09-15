@@ -226,7 +226,6 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	int user_id;
 	int domain_id;
 	char *pdomain;
-	int address_type;
 	char tmp_name[UADDR_SIZE];
 	char hex_string[16];
 	char hex_string2[16];
@@ -238,6 +237,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	}
 	*pdomain = '\0';
 	pdomain ++;
+	enum address_type address_type = ADDRESS_TYPE_NORMAL;
 	if (FALSE == common_util_get_user_ids(username,
 		&user_id, &domain_id, &address_type)) {
 		return FALSE;

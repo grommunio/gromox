@@ -186,12 +186,11 @@ BOOL oxcmail_init_library(const char *org_name,
 }
 
 static BOOL oxcmail_username_to_essdn(const char *username,
-	char *pessdn, int *paddress_type)
+    char *pessdn, enum address_type *paddress_type)
 {
 	int user_id;
 	int domain_id;
 	char *pdomain;
-	int address_type;
 	char tmp_name[UADDR_SIZE];
 	char hex_string[16];
 	char hex_string2[16];
@@ -203,6 +202,7 @@ static BOOL oxcmail_username_to_essdn(const char *username,
 	}
 	*pdomain = '\0';
 	pdomain ++;
+	enum address_type address_type = ADDRESS_TYPE_NORMAL;
 	if (FALSE == oxcmail_get_user_ids(username,
 		&user_id, &domain_id, &address_type)) {
 		return FALSE;
@@ -328,14 +328,14 @@ static BOOL oxcmail_essdn_to_entryid(const char *pessdn, BINARY *pbin)
 }
 
 static BOOL oxcmail_username_to_entryid(const char *username,
-	const char *pdisplay_name, BINARY *pbin, int *paddress_type)
+    const char *pdisplay_name, BINARY *pbin, enum address_type *paddress_type)
 {
 	char x500dn[1024];
 
 	if (FALSE == oxcmail_username_to_essdn(
 		username, x500dn, paddress_type)) {
 		if (NULL != paddress_type) {
-			*paddress_type = 0;
+			*paddress_type = ADDRESS_TYPE_NORMAL;
 		}
 		return oxcmail_username_to_oneoff(
 			username, pdisplay_name, pbin);
@@ -490,7 +490,6 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	int tmp_len;
 	BINARY tmp_bin;
 	char essdn[1024];
-	int address_type;
 	uint8_t tmp_byte;
 	uint32_t tmp_int32;
 	char username[UADDR_SIZE], display_name[UADDR_SIZE];
@@ -564,6 +563,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	    oxcmail_check_ascii(paddr->local_part) &&
 	    oxcmail_check_ascii(paddr->domain)) {
 		snprintf(username, GX_ARRAY_SIZE(username), "%s@%s", paddr->local_part, paddr->domain);
+		enum address_type address_type = ADDRESS_TYPE_NORMAL;
 		if (FALSE == oxcmail_username_to_essdn(
 			username, essdn, &address_type)) {
 			essdn[0] = '\0';
@@ -3349,7 +3349,6 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 	char *ptoken1;
 	char *ptoken2;
 	BINARY tmp_bin;
-	int address_type;
 	char essdn[1280];
 	uint32_t tmp_int32;
 	char tmp_buff[1280];
@@ -3439,6 +3438,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 				return false;
 		}
 	}
+	enum address_type address_type = ADDRESS_TYPE_NORMAL;
 	if (FALSE == oxcmail_username_to_essdn(
 		f_info.final_recipient, essdn, &address_type)) {
 		essdn[0] = '\0';

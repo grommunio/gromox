@@ -857,7 +857,6 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 	USERNAME_TO_ENTRYID username_to_entryid, MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
-	int address_type;
 	uint8_t tmp_byte;
 	const char *prole;
 	const char *prsvp;
@@ -935,6 +934,7 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 			return FALSE;
 		tmp_bin.pb = tmp_buff;
 		tmp_bin.cb = 0;
+		enum address_type address_type;
 		if (FALSE == username_to_entryid(paddress,
 			pdisplay_name, &tmp_bin, &address_type)) {
 			return FALSE;

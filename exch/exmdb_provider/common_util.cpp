@@ -93,8 +93,7 @@ E(get_handle)
 #undef E
 
 static BOOL (*common_util_get_username_from_id)(int id, char *username, size_t);
-static BOOL (*common_util_get_user_ids)(const char *username,
-	int *puser_id, int *pdomain_id, int *paddress_type);
+static BOOL (*common_util_get_user_ids)(const char *username, int *user_id, int *domain_id, enum address_type *);
 static BOOL common_util_evaluate_subobject_restriction(
 	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
 	uint32_t proptag, const RESTRICTION *pres);
@@ -181,7 +180,6 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	int user_id;
 	int domain_id;
 	char *pdomain;
-	int address_type;
 	char tmp_name[UADDR_SIZE];
 	char hex_string[16];
 	char hex_string2[16];
@@ -193,6 +191,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	}
 	*pdomain = '\0';
 	pdomain ++;
+	enum address_type address_type = ADDRESS_TYPE_NORMAL;
 	if (FALSE == common_util_get_user_ids(username,
 		&user_id, &domain_id, &address_type)) {
 		return FALSE;

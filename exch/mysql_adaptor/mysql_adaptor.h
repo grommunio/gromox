@@ -79,8 +79,7 @@ BOOL mysql_adaptor_get_domainname_from_id(int domain_id, char *domainname);
 extern BOOL mysql_adaptor_get_homedir(const char *domainname, char *homedir);
 BOOL mysql_adaptor_get_homedir_by_id(int domain_id, char *homedir);
 BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, int *pdomain_id);
-BOOL mysql_adaptor_get_user_ids(const char *username,
-	int *puser_id, int *pdomain_id, int *paddress_type);
+extern BOOL mysql_adaptor_get_user_ids(const char *username, int *user_id, int *domain_id, enum address_type *);
 BOOL mysql_adaptor_get_domain_ids(const char *domainname,
 	int *pdomain_id, int *porg_id);
 BOOL mysql_adaptor_get_mlist_ids(int user_id,

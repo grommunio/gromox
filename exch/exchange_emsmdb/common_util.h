@@ -129,8 +129,7 @@ extern BOOL (*common_util_get_timezone)(
 extern BOOL (*common_util_get_username_from_id)(int id, char *username, size_t);
 extern BOOL (*common_util_get_id_from_username)(
 	const char *username, int *puser_id);
-extern BOOL (*common_util_get_user_ids)(const char *username,
-	int *puser_id, int *pdomain_id, int *paddress_type);
+extern BOOL (*common_util_get_user_ids)(const char *username, int *user_id, int *domain_id, enum address_type *);
 extern BOOL (*common_util_get_domain_ids)(const char *domainname,
 	int *pdomain_id, int *porg_id);
 extern BOOL (*common_util_check_same_org)(int domain_id1, int domain_id2);

@@ -476,7 +476,6 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	int user_id;
 	int domain_id;
 	char *pdomain;
-	int address_type;
 	char tmp_name[UADDR_SIZE];
 	char hex_string[16];
 	char hex_string2[16];
@@ -488,6 +487,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	}
 	*pdomain = '\0';
 	pdomain ++;
+	enum address_type address_type = ADDRESS_TYPE_NORMAL;
 	if (FALSE == system_services_get_user_ids(username,
 		&user_id, &domain_id, &address_type)) {
 		return FALSE;
@@ -1081,19 +1081,19 @@ BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin)
 }
 
 static BOOL common_util_username_to_entryid(const char *username,
-	const char *pdisplay_name, BINARY *pbin, int *paddress_type)
+    const char *pdisplay_name, BINARY *pbin, enum address_type *paddress_type)
 {
 	int status;
 	int user_id;
 	int domain_id;
 	char *pdomain;
-	int address_type;
 	char x500dn[1024];
 	EXT_PUSH ext_push;
 	char tmp_name[UADDR_SIZE];
 	char hex_string[16];
 	char hex_string2[16];
 	ONEOFF_ENTRYID oneoff_entry;
+	enum address_type address_type = ADDRESS_TYPE_NORMAL;
 	
 	if (TRUE == system_services_get_user_ids(username,
 		&user_id, &domain_id, &address_type)) {
@@ -1141,7 +1141,7 @@ static BOOL common_util_username_to_entryid(const char *username,
 	}
 	pbin->cb = ext_push.m_offset;
 	if (NULL != paddress_type) {
-		*paddress_type = 0;
+		*paddress_type = ADDRESS_TYPE_NORMAL;
 	}
 	return TRUE;
 }

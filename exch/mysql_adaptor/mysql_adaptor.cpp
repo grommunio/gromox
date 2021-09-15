@@ -673,8 +673,8 @@ BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, int *pdomain_id)
 	return TRUE;
 }
 
-BOOL mysql_adaptor_get_user_ids(const char *username,
-	int *puser_id, int *pdomain_id, int *paddress_type)
+BOOL mysql_adaptor_get_user_ids(const char *username, int *puser_id,
+    int *pdomain_id, enum address_type *paddress_type)
 {
 	char temp_name[UADDR_SIZE*2];
 	char sql_string[1024];
@@ -694,7 +694,7 @@ BOOL mysql_adaptor_get_user_ids(const char *username,
 	auto myrow = pmyres.fetch_row();
 	*puser_id = atoi(myrow[0]);
 	*pdomain_id = atoi(myrow[1]);
-	*paddress_type = atoi(myrow[2]);
+	*paddress_type = static_cast<enum address_type>(strtoul(myrow[2], nullptr, 0));
 	if (ADDRESS_TYPE_NORMAL == *paddress_type) {
 		switch (atoi(myrow[3])) {
 		case SUB_TYPE_ROOM:
