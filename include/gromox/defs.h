@@ -37,6 +37,14 @@ template<typename T, size_t N> constexpr inline size_t arsizeof(T (&)[N]) { retu
 #	define be64_to_cpu(x) __builtin_bswap64(x)
 #endif
 
+enum address_type {
+	ADDRESS_TYPE_NORMAL = 0,
+	ADDRESS_TYPE_MLIST,
+	ADDRESS_TYPE_VIRTUAL,
+	ADDRESS_TYPE_ROOM, /* not in DB, just in mysql_adaptor */
+	ADDRESS_TYPE_EQUIPMENT, /* not in DB, just in mysql_adaptor */
+};
+
 typedef enum {
 	GXERR_SUCCESS = 0,
 	GXERR_CALL_FAILED,

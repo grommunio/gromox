@@ -6,15 +6,6 @@
 #include "mysql_adaptor.h"
 
 enum {
-	ADDRESS_TYPE_NORMAL = 0,
-	ADDRESS_TYPE_ALIAS, /* historic; no longer used in DB schema */
-	ADDRESS_TYPE_MLIST,
-	ADDRESS_TYPE_VIRTUAL,
-	ADDRESS_TYPE_ROOM, /* not in DB, just in mysql_adaptor */
-	ADDRESS_TYPE_EQUIPMENT, /* not in DB, just in mysql_adaptor */
-};
-
-enum {
 	/* For ADDRESS_TYPE_NORMAL */
 	SUB_TYPE_USER = 0,
 	SUB_TYPE_ROOM,

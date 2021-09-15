@@ -32,13 +32,6 @@
 #include "../mysql_adaptor/mysql_adaptor.h"
 #include "common_util.h"
 #include "nsp_types.h"
-#define ADDRESS_TYPE_NORMAL					0
-#define ADDRESS_TYPE_ALIAS 1 /* historic; no longer used in db schema */
-#define ADDRESS_TYPE_MLIST					2
-/* composed value, not in database, means ADDRESS_TYPE_NORMAL and SUB_TYPE_ROOM */
-#define ADDRESS_TYPE_ROOM					4
-/* composed value, not in database, means ADDRESS_TYPE_NORMAL and SUB_TYPE_EQUIPMENT */
-#define ADDRESS_TYPE_EQUIPMENT				5
 
 #define BASE_STATUS_CONSTRUCTING			0
 #define BASE_STATUS_LIVING					1

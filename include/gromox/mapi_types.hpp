@@ -843,11 +843,6 @@ using INDEX_ARRAY = PROPTAG_ARRAY;
 #define MESSAGE_FORMAT_HTML_ONLY					0x00080000
 #define MESSAGE_FORMAT_PLAIN_ONLY					0x00000000
 
-#define DB_ADDRESS_TYPE_NORMAL						0
-#define DB_ADDRESS_TYPE_ALIAS 1 /* historic; no longer used in db schema */
-#define DB_ADDRESS_TYPE_MLIST						2
-#define DB_ADDRESS_TYPE_VIRTUAL						3
-
 #define MAX_ATTACHMENT_NUM							200
 
 struct EXTENDED_ERROR {
@@ -1210,15 +1205,6 @@ struct DB_NOTIFY_CONTENT_TABLE_ROW_DELETED {
 
 #define ALLOCATED_EID_RANGE							0x10000
 #define CHANGE_NUMBER_BEGIN							0x800000000000LL
-
-#define ADDRESS_TYPE_NORMAL							0
-#define ADDRESS_TYPE_ALIAS 1 /* historic; no longer used in db schema */
-#define ADDRESS_TYPE_MLIST							2
-#define ADDRESS_TYPE_VIRTUAL						3
-/* composed value, not in database, means ADDRESS_TYPE_NORMAL and SUB_TYPE_ROOM */
-#define ADDRESS_TYPE_ROOM							4
-/* composed value, not in database, means ADDRESS_TYPE_NORMAL and SUB_TYPE_EQUIPMENT */
-#define ADDRESS_TYPE_EQUIPMENT						5
 
 typedef BOOL (*GET_PROPIDS)(const PROPNAME_ARRAY*, PROPID_ARRAY*);
 /* if it returns TRUE, PROPERTY_NAME must be available */
