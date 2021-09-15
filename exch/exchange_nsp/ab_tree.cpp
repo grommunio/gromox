@@ -44,11 +44,6 @@
 #define BASE_STATUS_LIVING					1
 #define BASE_STATUS_DESTRUCTING				2
 
-#define MLIST_TYPE_NORMAL 					0
-#define MLIST_TYPE_GROUP					1
-#define MLIST_TYPE_DOMAIN					2
-#define MLIST_TYPE_CLASS					3
-
 #define MINID_TYPE_ADDRESS					0x0
 #define MINID_TYPE_DOMAIN					0x4
 #define MINID_TYPE_GROUP					0x5

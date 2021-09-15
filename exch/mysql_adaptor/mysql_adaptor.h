@@ -4,6 +4,13 @@
 #include <vector>
 #include <gromox/common_types.hpp>
 
+enum mlist_type {
+	MLIST_TYPE_NORMAL = 0,
+	MLIST_TYPE_GROUP,
+	MLIST_TYPE_DOMAIN,
+	MLIST_TYPE_CLASS,
+};
+
 enum {
 	USER_PRIVILEGE_POP3_IMAP = 1 << 0,
 	USER_PRIVILEGE_SMTP = 1 << 1,
@@ -26,8 +33,14 @@ struct sql_domain {
 	std::string name, title, address;
 };
 
+/**
+ * @list_type:	%MLIST_TYPE_* value; only interpret field when
+ * 		addr_type==ADDRESS_TYPE_MLIST.
+ */
 struct sql_user {
-	int addr_type = 0, id = 0, list_type = 0, list_priv = 0;
+	int addr_type = 0, id = 0;
+	enum mlist_type list_type = MLIST_TYPE_NORMAL;
+	int list_priv = 0;
 	std::string username, maildir;
 	std::vector<std::string> aliases; /* email addresses */
 	std::map<unsigned int, std::string> propvals;

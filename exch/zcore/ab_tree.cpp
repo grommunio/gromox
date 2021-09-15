@@ -49,11 +49,6 @@
 #define BASE_STATUS_LIVING					1
 #define BASE_STATUS_DESTRUCTING				2
 
-#define MLIST_TYPE_NORMAL 					0
-#define MLIST_TYPE_GROUP					1
-#define MLIST_TYPE_DOMAIN					2
-#define MLIST_TYPE_CLASS					3
-
 /* 0x00 ~ 0x10 minid reserved by nspi */
 #define MINID_TYPE_RESERVED					7
 

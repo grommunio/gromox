@@ -230,7 +230,7 @@ static int userlist_parse(sqlconn &conn, const char *query,
 		u.propvals = propmap_extract(pmap, u.id);
 		u.maildir = row[4];
 		if (adrtype == ADDRESS_TYPE_MLIST) {
-			u.list_type = strtoul(z_null(row[5]), nullptr, 0);
+			u.list_type = static_cast<enum mlist_type>(strtoul(z_null(row[5]), nullptr, 0));
 			u.list_priv = strtoul(z_null(row[6]), nullptr, 0);
 			/* no overwrite of propval is intended */
 			if (u.list_type == MLIST_TYPE_CLASS && row[7] != nullptr)

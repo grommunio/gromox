@@ -21,13 +21,6 @@ enum {
 	SUB_TYPE_EQUIPMENT,
 };
 
-enum {
-	MLIST_TYPE_NORMAL = 0,
-	MLIST_TYPE_GROUP,
-	MLIST_TYPE_DOMAIN,
-	MLIST_TYPE_CLASS,
-};
-
 struct icasecmp {
 	inline bool operator()(const std::string &a, const std::string &b) const {
 		return strcasecmp(a.c_str(), b.c_str()) == 0;
