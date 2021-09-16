@@ -332,16 +332,13 @@ static BOOL oxcmail_username_to_entryid(const char *username,
 {
 	char x500dn[1024];
 
-	if (FALSE == oxcmail_username_to_essdn(
-		username, x500dn, paddress_type)) {
-		if (NULL != paddress_type) {
-			*paddress_type = ADDRESS_TYPE_NORMAL;
-		}
-		return oxcmail_username_to_oneoff(
-			username, pdisplay_name, pbin);
-	} else {
+	if (oxcmail_username_to_essdn(username, x500dn, paddress_type))
 		return oxcmail_essdn_to_entryid(x500dn, pbin);
+	if (NULL != paddress_type) {
+		*paddress_type = ADDRESS_TYPE_NORMAL;
 	}
+	return oxcmail_username_to_oneoff(
+	       username, pdisplay_name, pbin);
 }
 
 static bool oxcmail_check_ascii(const char *pstring)
