@@ -694,15 +694,17 @@ BOOL mysql_adaptor_get_user_ids(const char *username, int *puser_id,
 	auto myrow = pmyres.fetch_row();
 	*puser_id = atoi(myrow[0]);
 	*pdomain_id = atoi(myrow[1]);
-	*paddress_type = static_cast<enum address_type>(strtoul(myrow[2], nullptr, 0));
-	if (ADDRESS_TYPE_NORMAL == *paddress_type) {
-		switch (atoi(myrow[3])) {
-		case SUB_TYPE_ROOM:
-			*paddress_type = ADDRESS_TYPE_ROOM;
-			break;
-		case SUB_TYPE_EQUIPMENT:
-			*paddress_type = ADDRESS_TYPE_EQUIPMENT;
-			break;
+	if (paddress_type != nullptr) {
+		*paddress_type = static_cast<enum address_type>(strtoul(myrow[2], nullptr, 0));
+		if (ADDRESS_TYPE_NORMAL == *paddress_type) {
+			switch (atoi(myrow[3])) {
+			case SUB_TYPE_ROOM:
+				*paddress_type = ADDRESS_TYPE_ROOM;
+				break;
+			case SUB_TYPE_EQUIPMENT:
+				*paddress_type = ADDRESS_TYPE_EQUIPMENT;
+				break;
+			}
 		}
 	}
 	return TRUE;

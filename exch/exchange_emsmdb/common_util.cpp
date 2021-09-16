@@ -237,11 +237,8 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	}
 	*pdomain = '\0';
 	pdomain ++;
-	enum address_type address_type = ADDRESS_TYPE_NORMAL;
-	if (FALSE == common_util_get_user_ids(username,
-		&user_id, &domain_id, &address_type)) {
+	if (!common_util_get_user_ids(username, &user_id, &domain_id, nullptr))
 		return FALSE;
-	}
 	encode_hex_int(user_id, hex_string);
 	encode_hex_int(domain_id, hex_string2);
 	snprintf(pessdn, dnmax, "/o=%s/ou=Exchange Administrative Group "
