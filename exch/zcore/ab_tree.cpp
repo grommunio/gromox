@@ -306,11 +306,11 @@ static BOOL ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode)
 
 static BOOL ab_tree_load_user(AB_NODE *pabnode, sql_user &&usr, AB_BASE *pbase)
 {
-	switch (usr.addr_type) {
-	case ADDRESS_TYPE_ROOM:
+	switch (usr.dtypx) {
+	case DT_ROOM:
 		pabnode->node_type = NODE_TYPE_ROOM;
 		break;
-	case ADDRESS_TYPE_EQUIPMENT:
+	case DT_EQUIPMENT:
 		pabnode->node_type = NODE_TYPE_EQUIPMENT;
 		break;
 	default:
@@ -398,7 +398,7 @@ static BOOL ab_tree_load_class(
 		if (NULL == pabnode) {
 			goto LOAD_FAIL;
 		}
-		if (usr.addr_type == ADDRESS_TYPE_MLIST) {
+		if (usr.dtypx == DT_DISTLIST) {
 			if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
 				ab_tree_put_abnode(pabnode);
 				goto LOAD_FAIL;
@@ -537,7 +537,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 			if (NULL == pabnode) {
 				goto LOAD_FAIL;
 			}
-			if (usr.addr_type == ADDRESS_TYPE_MLIST) {
+			if (usr.dtypx == DT_DISTLIST) {
 				if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
 					ab_tree_put_abnode(pabnode);
 					goto LOAD_FAIL;
@@ -585,7 +585,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		if (NULL == pabnode) {
 			goto LOAD_FAIL;
 		}
-		if (usr.addr_type == ADDRESS_TYPE_MLIST) {
+		if (usr.dtypx == DT_DISTLIST) {
 			if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
 				ab_tree_put_abnode(pabnode);
 				goto LOAD_FAIL;

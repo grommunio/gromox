@@ -30,6 +30,7 @@
 #define MLIST_RESULT_PRIVIL_DOMAIN		2
 #define MLIST_RESULT_PRIVIL_INTERNAL	3
 #define MLIST_RESULT_PRIVIL_SPECIFIED	4
+#define JOIN_WITH_DISPLAYTYPE "LEFT JOIN user_properties AS dt ON u.id=dt.user_id AND dt.proptag=956628995" /* PR_DISPLAY_TYPE_EX */
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -54,14 +55,15 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
     char *maildir, char *lang, char *reason, int length, unsigned int mode,
     char *encrypt_passwd, size_t encrypt_size, uint8_t *externid_present) try
 {
-	int temp_type;
 	int temp_status;
 	char temp_name[UADDR_SIZE*2];
 
 	mysql_adaptor_encode_squote(username, temp_name);
-	auto qstr = "SELECT password, address_type, address_status, "
-	            "privilege_bits, maildir, lang, externid "
-	            "FROM users WHERE username='"s + temp_name + "'";
+	auto qstr =
+		"SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
+		"u.privilege_bits, u.maildir, u.lang, u.externid "
+		"FROM users AS u " JOIN_WITH_DISPLAYTYPE
+		" WHERE u.username='"s + temp_name + "' LIMIT 2";
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn.res.query(qstr.c_str()))
 		return false;
@@ -76,8 +78,10 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 	}
 	
 	auto myrow = pmyres.fetch_row();
-	temp_type = atoi(myrow[1]);
-	if (temp_type != ADDRESS_TYPE_NORMAL) {
+	auto dtypx = DT_MAILUSER;
+	if (myrow[1] != nullptr)
+		dtypx = static_cast<enum display_type>(strtoul(myrow[1], nullptr, 0));
+	if (dtypx != DT_MAILUSER) {
 		snprintf(reason, length, "\"%s\" is not a real user; "
 			"correct the account name and retry.", username);
 		return FALSE;
@@ -231,7 +235,6 @@ BOOL mysql_adaptor_login2(const char *username, const char *password,
 BOOL mysql_adaptor_setpasswd(const char *username,
 	const char *password, const char *new_password) try
 {
-	int temp_type;
 	int temp_status;
 	const char *pdomain;
 	char *pat;
@@ -240,9 +243,10 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	char virtual_address[UADDR_SIZE];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
-	auto qstr = "SELECT password, address_type, address_status, "
-	            "privilege_bits FROM users WHERE username='"s +
-	            temp_name + "'";
+	auto qstr =
+		"SELECT u.password, dt.propval_str AS dtypx, u.address_status, "
+		"u.privilege_bits FROM users AS u " JOIN_WITH_DISPLAYTYPE
+		" WHERE u.username='"s + temp_name + "' LIMIT 2";
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn.res.query(qstr.c_str()))
 		return false;
@@ -252,10 +256,11 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	if (pmyres.num_rows() != 1)
 		return FALSE;
 	auto myrow = pmyres.fetch_row();
-	temp_type = atoi(myrow[1]);
-	if (temp_type != ADDRESS_TYPE_NORMAL) {
+	auto dtypx = DT_MAILUSER;
+	if (myrow[1] != nullptr)
+		dtypx = static_cast<enum display_type>(strtoul(myrow[1], nullptr, 0));
+	if (dtypx != DT_MAILUSER)
 		return FALSE;
-	}
 	temp_status = atoi(myrow[2]);
 	if (0 != temp_status) {
 		return FALSE;
@@ -389,9 +394,9 @@ BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, int *puser_id) try
 	char temp_dir[512];
 	
 	mysql_adaptor_encode_squote(maildir, temp_dir);
-	std::string fq_string;
-	auto qstr = "SELECT id FROM users WHERE maildir='"s + temp_dir +
-		    "' AND address_type=0";
+	auto qstr =
+		"SELECT u.id FROM users AS u " JOIN_WITH_DISPLAYTYPE
+		" WHERE u.maildir='"s + temp_dir + "' AND dt.propval_str=0 LIMIT 2";
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn.res.query(qstr.c_str()))
 		return false;
@@ -412,16 +417,16 @@ BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, int *puser_id) try
 BOOL mysql_adaptor_get_user_displayname(const char *username,
     char *pdisplayname) try
 {
-	int address_type;
 	char temp_name[UADDR_SIZE*2];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
 	auto qstr =
-	         "SELECT u2.propval_str AS real_name, "
-	         "u3.propval_str AS nickname, u.address_type FROM users AS u "
-	         "LEFT JOIN user_properties AS u2 ON u.id=u2.user_id AND u2.proptag=805371935 "
-	         "LEFT JOIN user_properties AS u3 ON u.id=u3.user_id AND u3.proptag=978255903 "
-	         "WHERE u.username='"s + temp_name + "'";
+		"SELECT u2.propval_str AS real_name, "
+		"u3.propval_str AS nickname, dt.propval_str AS dtypx FROM users AS u "
+		JOIN_WITH_DISPLAYTYPE " "
+		"LEFT JOIN user_properties AS u2 ON u.id=u2.user_id AND u2.proptag=805371935 " /* PR_DISPLAY_NAME */
+		"LEFT JOIN user_properties AS u3 ON u.id=u3.user_id AND u3.proptag=978255903 " /* PR_NICKNAME */
+		"WHERE u.username='"s + temp_name + "' LIMIT 2";
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn.res.query(qstr.c_str()))
 		return false;
@@ -432,9 +437,11 @@ BOOL mysql_adaptor_get_user_displayname(const char *username,
 	if (pmyres.num_rows() != 1)
 		return FALSE;
 	auto myrow = pmyres.fetch_row();
-	address_type = atoi(myrow[2]);
+	auto dtypx = DT_MAILUSER;
+	if (myrow[2] != nullptr)
+		dtypx = static_cast<enum display_type>(strtoul(myrow[2], nullptr, 0));
 	strcpy(pdisplayname,
-	       address_type == ADDRESS_TYPE_MLIST ? username :
+	       dtypx == DT_DISTLIST ? username :
 	       myrow[0] != nullptr && *myrow[0] != '\0' ? myrow[0] :
 	       myrow[1] != nullptr && *myrow[1] != '\0' ? myrow[1] :
 	       username);
@@ -692,13 +699,15 @@ BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, int *pdomain_id) try
 }
 
 BOOL mysql_adaptor_get_user_ids(const char *username, int *puser_id,
-    int *pdomain_id, enum address_type *paddress_type) try
+    int *pdomain_id, enum display_type *dtypx) try
 {
 	char temp_name[UADDR_SIZE*2];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
-	auto qstr = "SELECT id, domain_id, address_type, sub_type "
-	            "FROM users WHERE username='"s + temp_name + "'";
+	auto qstr =
+		"SELECT u.id, u.domain_id, dt.propval_str AS dtypx"
+		"FROM users AS u " JOIN_WITH_DISPLAYTYPE
+		" WHERE u.username='"s + temp_name + "' LIMIT 2";
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn.res.query(qstr.c_str()))
 		return false;
@@ -711,18 +720,10 @@ BOOL mysql_adaptor_get_user_ids(const char *username, int *puser_id,
 	auto myrow = pmyres.fetch_row();
 	*puser_id = atoi(myrow[0]);
 	*pdomain_id = atoi(myrow[1]);
-	if (paddress_type != nullptr) {
-		*paddress_type = static_cast<enum address_type>(strtoul(myrow[2], nullptr, 0));
-		if (ADDRESS_TYPE_NORMAL == *paddress_type) {
-			switch (atoi(myrow[3])) {
-			case SUB_TYPE_ROOM:
-				*paddress_type = ADDRESS_TYPE_ROOM;
-				break;
-			case SUB_TYPE_EQUIPMENT:
-				*paddress_type = ADDRESS_TYPE_EQUIPMENT;
-				break;
-			}
-		}
+	if (dtypx != nullptr) {
+		*dtypx = DT_MAILUSER;
+		if (myrow[2] != nullptr)
+			*dtypx = static_cast<enum display_type>(strtoul(myrow[2], nullptr, 0));
 	}
 	return TRUE;
 } catch (const std::exception &e) {
@@ -758,7 +759,9 @@ BOOL mysql_adaptor_get_domain_ids(const char *domainname, int *pdomain_id,
 BOOL mysql_adaptor_get_mlist_ids(int user_id, int *pgroup_id,
     int *pdomain_id) try
 {
-	auto qstr = "SELECT address_type, domain_id, group_id FROM users WHERE id=" + std::to_string(user_id);
+	auto qstr = "SELECT dt.propval_str AS dtypx, u.domain_id, u.group_id "
+	            "FROM users AS u " JOIN_WITH_DISPLAYTYPE
+	            " WHERE id=" + std::to_string(user_id);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn.res.query(qstr.c_str()))
 		return false;
@@ -769,10 +772,9 @@ BOOL mysql_adaptor_get_mlist_ids(int user_id, int *pgroup_id,
 	if (pmyres.num_rows() != 1)
 		return FALSE;
 	auto myrow = pmyres.fetch_row();
-	if (myrow == nullptr || strtol(myrow[0], nullptr, 0) != ADDRESS_TYPE_MLIST) {
+	if (myrow == nullptr || myrow[0] == nullptr ||
+	    static_cast<enum display_type>(strtoul(myrow[0], nullptr, 0)) != DT_DISTLIST)
 		return FALSE;
-	}
-	
 	*pdomain_id = atoi(myrow[1]);
 	*pgroup_id = atoi(myrow[2]);
 	return TRUE;
@@ -1287,7 +1289,6 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		}
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
-
 	case MLIST_TYPE_GROUP:
 		switch (privilege) {
 		case MLIST_PRIVILEGE_ALL:
@@ -1341,8 +1342,8 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		}
 		myrow = pmyres.fetch_row();
 		group_id = atoi(myrow[0]);
-		qstr = "SELECT username, address_type, sub_type FROM users "
-		       "WHERE group_id=" + std::to_string(group_id);
+		qstr = "SELECT u.username, dt.propval_str AS dtypx FROM users AS u "
+		       JOIN_WITH_DISPLAYTYPE " WHERE u.group_id=" + std::to_string(group_id);
 		if (!conn.res.query(qstr.c_str()))
 			return false;
 		pmyres = mysql_store_result(conn.res.get());
@@ -1352,9 +1353,10 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		if (TRUE == b_chkintl) {
 			for (i = 0; i < rows; i++) {
 				myrow = pmyres.fetch_row();
-				if (ADDRESS_TYPE_NORMAL == atoi(myrow[1])
-					&& SUB_TYPE_USER == atoi(myrow[2]) &&
-					0 == strcasecmp(myrow[0], from)) {
+				auto dtypx = DT_MAILUSER;
+				if (myrow[1] != nullptr)
+					dtypx = static_cast<enum display_type>(strtoul(myrow[1], nullptr, 0));
+				if (dtypx == DT_MAILUSER && strcasecmp(myrow[0], from) == 0) {
 					b_chkintl = FALSE;
 					break;
 				}
@@ -1368,10 +1370,11 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		mysql_data_seek(pmyres.get(), 0);
 		for (i = 0; i < rows; i++) {
 			myrow = pmyres.fetch_row();
-			if (ADDRESS_TYPE_NORMAL == atoi(myrow[1])
-				&& SUB_TYPE_USER == atoi(myrow[2])) {
+			auto dtypx = DT_MAILUSER;
+			if (myrow[1] != nullptr)
+				dtypx = static_cast<enum display_type>(strtoul(myrow[1], nullptr, 0));
+			if (dtypx == DT_MAILUSER)
 				pfile.push_back(myrow[0]);
-			}
 		}
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
@@ -1429,8 +1432,8 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		}
 		myrow = pmyres.fetch_row();
 		domain_id = atoi(myrow[0]);
-		qstr = "SELECT username, address_type, sub_type FROM users "
-		       "WHERE domain_id=" + std::to_string(domain_id);
+		qstr = "SELECT u.username, dt.propval_str AS dtypx FROM users AS u "
+		       JOIN_WITH_DISPLAYTYPE " WHERE u.domain_id=" + std::to_string(domain_id);
 		if (!conn.res.query(qstr.c_str()))
 			return false;
 		pmyres = mysql_store_result(conn.res.get());
@@ -1440,9 +1443,10 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		if (TRUE == b_chkintl) {
 			for (i = 0; i < rows; i++) {
 				myrow = pmyres.fetch_row();
-				if (ADDRESS_TYPE_NORMAL == atoi(myrow[1])
-					&& SUB_TYPE_USER == atoi(myrow[2]) &&
-					0 == strcasecmp(myrow[0], from)) {
+				auto dtypx = DT_MAILUSER;
+				if (myrow[1] != nullptr)
+					dtypx = static_cast<enum display_type>(strtoul(myrow[1], nullptr, 0));
+				if (dtypx == DT_MAILUSER && strcasecmp(myrow[0], from) == 0) {
 					b_chkintl = FALSE;
 					break;
 				}
@@ -1456,10 +1460,11 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		mysql_data_seek(pmyres.get(), 0);
 		for (i = 0; i < rows; i++) {
 			myrow = pmyres.fetch_row();
-			if (ADDRESS_TYPE_NORMAL == atoi(myrow[1])
-				&& SUB_TYPE_USER == atoi(myrow[2])) {
+			auto dtypx = DT_MAILUSER;
+			if (myrow[1] != nullptr)
+				dtypx = static_cast<enum display_type>(strtoul(myrow[1], nullptr, 0));
+			if (dtypx == DT_MAILUSER)
 				pfile.push_back(myrow[0]);
-			}
 		}
 		*presult = MLIST_RESULT_OK;
 		return TRUE;

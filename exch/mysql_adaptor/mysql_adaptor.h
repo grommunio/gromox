@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <gromox/common_types.hpp>
+#include <gromox/mapidefs.h>
 
 enum mlist_type {
 	MLIST_TYPE_NORMAL = 0,
@@ -34,11 +35,13 @@ struct sql_domain {
 };
 
 /**
+ * @dtex:	%DT_* type as specified for PR_DISPLAY_TYPE_EX.
  * @list_type:	%MLIST_TYPE_* value; only interpret field when
  * 		addr_type==ADDRESS_TYPE_MLIST.
  */
 struct sql_user {
-	int addr_type = 0, id = 0;
+	enum display_type dtypx = DT_MAILUSER;
+	int id = 0;
 	enum mlist_type list_type = MLIST_TYPE_NORMAL;
 	int list_priv = 0;
 	std::string username, maildir;
@@ -79,7 +82,7 @@ BOOL mysql_adaptor_get_domainname_from_id(int domain_id, char *domainname);
 extern BOOL mysql_adaptor_get_homedir(const char *domainname, char *homedir);
 BOOL mysql_adaptor_get_homedir_by_id(int domain_id, char *homedir);
 BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, int *pdomain_id);
-extern BOOL mysql_adaptor_get_user_ids(const char *username, int *user_id, int *domain_id, enum address_type *);
+extern BOOL mysql_adaptor_get_user_ids(const char *username, int *user_id, int *domain_id, enum display_type *);
 BOOL mysql_adaptor_get_domain_ids(const char *domainname,
 	int *pdomain_id, int *porg_id);
 BOOL mysql_adaptor_get_mlist_ids(int user_id,

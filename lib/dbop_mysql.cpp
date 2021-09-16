@@ -638,6 +638,11 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{79, "ALTER TABLE `domains` ADD COLUMN `chat_id` varchar(26)"},
 	{80, "ALTER TABLE `user_properties` ADD COLUMN `order_id` int(10) unsigned DEFAULT 1 AFTER `proptag`"},
 	{81, "ALTER TABLE `user_properties` DROP PRIMARY KEY, ADD PRIMARY KEY (`user_id`, `proptag`, `order_id`)"},
+	/* Upgrade addr_type to PR_DISPLAY_TYPE_EX=DT_xxx */
+	{82, "INSERT IGNORE INTO user_properties (user_id, proptag, propval_str) SELECT u.id AS user_id, 956628995 AS proptag, 0 AS propval_str FROM users AS u WHERE u.address_type=0 AND u.sub_type=0"},
+	{83, "INSERT IGNORE INTO user_properties (user_id, proptag, propval_str) SELECT u.id AS user_id, 956628995 AS proptag, 7 AS propval_str FROM users AS u WHERE u.address_type=0 AND u.sub_type=1"},
+	{84, "INSERT IGNORE INTO user_properties (user_id, proptag, propval_str) SELECT u.id AS user_id, 956628995 AS proptag, 8 AS propval_str FROM users AS u WHERE u.address_type=0 AND u.sub_type=2"},
+	{85, "INSERT IGNORE INTO user_properties (user_id, proptag, propval_str) SELECT u.id AS user_id, 956628995 AS proptag, 1 AS propval_str FROM users AS u WHERE u.address_type=2"},
 	{0, nullptr},
 };
 

@@ -68,7 +68,7 @@ static const char* (*exmdb_local_cpid_to_charset)(uint32_t);
 static const char* (*exmdb_local_mime_to_extension)(const char*);
 
 static const char* (*exmdb_local_extension_to_mime)(const char*);
-static BOOL (*exmdb_local_get_user_ids)(const char *, int *, int *, enum address_type *);
+static BOOL (*exmdb_local_get_user_ids)(const char *, int *, int *, enum display_type *);
 static BOOL (*exmdb_local_get_username)(int, char *, size_t);
 
 static int exmdb_local_sequence_ID()

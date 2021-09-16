@@ -1078,7 +1078,7 @@ BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin)
 }
 
 static BOOL common_util_username_to_entryid(const char *username,
-    const char *pdisplay_name, BINARY *pbin, enum address_type *paddress_type)
+    const char *pdisplay_name, BINARY *pbin, enum display_type *dtpp)
 {
 	int status;
 	int user_id;
@@ -1090,10 +1090,9 @@ static BOOL common_util_username_to_entryid(const char *username,
 	char hex_string[16];
 	char hex_string2[16];
 	ONEOFF_ENTRYID oneoff_entry;
-	enum address_type address_type = ADDRESS_TYPE_NORMAL;
+	auto dtypx = DT_MAILUSER;
 	
-	if (TRUE == system_services_get_user_ids(username,
-		&user_id, &domain_id, &address_type)) {
+	if (system_services_get_user_ids(username, &user_id, &domain_id, &dtypx)) {
 		gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 		pdomain = strchr(tmp_name, '@');
 		if (NULL == pdomain) {
@@ -1109,9 +1108,8 @@ static BOOL common_util_username_to_entryid(const char *username,
 		if (FALSE == common_util_essdn_to_entryid(x500dn, pbin)) {
 			return FALSE;
 		}
-		if (NULL != paddress_type) {
-			*paddress_type = address_type;
-		}
+		if (dtpp != nullptr)
+			*dtpp = dtypx;
 		return TRUE;
 	}
 	pbin->pv = common_util_alloc(1280);
@@ -1137,9 +1135,8 @@ static BOOL common_util_username_to_entryid(const char *username,
 		return FALSE;
 	}
 	pbin->cb = ext_push.m_offset;
-	if (NULL != paddress_type) {
-		*paddress_type = ADDRESS_TYPE_NORMAL;
-	}
+	if (dtpp != nullptr)
+		*dtpp = DT_MAILUSER;
 	return TRUE;
 }
 

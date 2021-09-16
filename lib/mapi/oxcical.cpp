@@ -934,11 +934,9 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 			return FALSE;
 		tmp_bin.pb = tmp_buff;
 		tmp_bin.cb = 0;
-		enum address_type address_type;
-		if (FALSE == username_to_entryid(paddress,
-			pdisplay_name, &tmp_bin, &address_type)) {
+		auto dtypx = DT_MAILUSER;
+		if (!username_to_entryid(paddress, pdisplay_name, &tmp_bin, &dtypx))
 			return FALSE;
-		}
 		propval.proptag = PR_ENTRYID;
 		propval.pvalue = &tmp_bin;
 		if (!tpropval_array_set_propval(pproplist, &propval))
@@ -977,15 +975,12 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 			return FALSE;
 		propval.proptag = PR_OBJECT_TYPE;
 		propval.pvalue = &tmp_int32;
-		tmp_int32 = address_type == ADDRESS_TYPE_MLIST ? MAPI_DISTLIST : MAPI_MAILUSER;
+		tmp_int32 = dtypx == DT_DISTLIST ? MAPI_DISTLIST : MAPI_MAILUSER;
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
 		propval.proptag = PR_DISPLAY_TYPE;
 		propval.pvalue = &tmp_int32;
-		tmp_int32 = address_type == ADDRESS_TYPE_MLIST ? DT_DISTLIST :
-		            address_type == ADDRESS_TYPE_ROOM ? DT_ROOM :
-		            address_type == ADDRESS_TYPE_EQUIPMENT ? DT_EQUIPMENT :
-		            DT_MAILUSER;
+		tmp_int32 = static_cast<uint32_t>(dtypx);
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
 		tmp_byte = 1;

@@ -93,7 +93,7 @@ E(get_handle)
 #undef E
 
 static BOOL (*common_util_get_username_from_id)(int id, char *username, size_t);
-static BOOL (*common_util_get_user_ids)(const char *username, int *user_id, int *domain_id, enum address_type *);
+static BOOL (*common_util_get_user_ids)(const char *username, int *user_id, int *domain_id, enum display_type *);
 static BOOL common_util_evaluate_subobject_restriction(
 	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
 	uint32_t proptag, const RESTRICTION *pres);

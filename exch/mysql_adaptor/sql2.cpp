@@ -215,21 +215,16 @@ static int userlist_parse(sqlconn &conn, const char *query,
 
 	for (size_t i = 0; i < result.num_rows(); ++i) {
 		auto row = result.fetch_row();
-		auto adrtype = strtoul(row[2], nullptr, 0);
-		auto subtype = strtoul(row[3], nullptr, 0);
-		if (adrtype == ADDRESS_TYPE_NORMAL && subtype == SUB_TYPE_ROOM)
-			adrtype = ADDRESS_TYPE_ROOM;
-		else if (adrtype == ADDRESS_TYPE_NORMAL && subtype == SUB_TYPE_EQUIPMENT)
-			adrtype = ADDRESS_TYPE_EQUIPMENT;
-
 		sql_user u;
-		u.addr_type = adrtype;
+		u.dtypx = DT_MAILUSER;
+		if (row[2] != nullptr)
+			u.dtypx = static_cast<enum display_type>(strtoul(row[2], nullptr, 0));
 		u.id = strtoul(row[0], nullptr, 0);
 		u.username = row[1];
 		u.aliases = aliasmap_extract(amap, row[1]);
 		u.propvals = propmap_extract(pmap, u.id);
 		u.maildir = row[4];
-		if (adrtype == ADDRESS_TYPE_MLIST) {
+		if (u.dtypx == DT_DISTLIST) {
 			u.list_type = static_cast<enum mlist_type>(strtoul(z_null(row[5]), nullptr, 0));
 			u.list_priv = strtoul(z_null(row[6]), nullptr, 0);
 			/* no overwrite of propval is intended */
@@ -245,7 +240,7 @@ static int userlist_parse(sqlconn &conn, const char *query,
 
 int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) try
 {
-	char query[360];
+	char query[427];
 
 	auto conn = g_sqlconn_pool.get_wait();
 	if (conn.res == nullptr)
@@ -266,10 +261,11 @@ int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) tr
 	propmap_load(conn.res, query, pmap);
 
 	snprintf(query, GX_ARRAY_SIZE(query),
-	         "SELECT u.id, u.username, u.address_type, u.sub_type, "
+	         "SELECT u.id, u.username, up.propval_str AS dtypx, 9999, "
 	         "u.maildir, z.list_type, z.list_privilege, "
 	         "cl.classname, gr.title FROM users AS u "
 	         "INNER JOIN members AS m ON m.class_id=%d AND m.username=u.username "
+	         "LEFT JOIN user_properties AS up ON u.id=up.user_id AND up.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
 	         "LEFT JOIN mlists AS z ON u.username=z.listname "
 	         "LEFT JOIN classes AS cl ON u.username=cl.listname "
 	         "LEFT JOIN groups AS gr ON u.username=gr.groupname", class_id);
@@ -281,7 +277,7 @@ int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) tr
 
 int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) try
 {
-	char query[328];
+	char query[397];
 
 	auto conn = g_sqlconn_pool.get_wait();
 	if (conn.res == nullptr)
@@ -300,9 +296,10 @@ int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) 
 	propmap_load(conn.res, query, pmap);
 
 	snprintf(query, GX_ARRAY_SIZE(query),
-	         "SELECT u.id, u.username, u.address_type, u.sub_type, "
+	         "SELECT u.id, u.username, up.propval_str AS dtypx, 9998, "
 	         "u.maildir, z.list_type, z.list_privilege, "
 	         "cl.classname, gr.title FROM users AS u "
+	         "LEFT JOIN user_properties AS up ON u.id=up.user_id AND up.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
 	         "LEFT JOIN mlists AS z ON u.username=z.listname "
 	         "LEFT JOIN classes AS cl ON u.username=cl.listname "
 	         "LEFT JOIN groups AS gr ON u.username=gr.groupname "
@@ -315,7 +312,7 @@ int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) 
 
 int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) try
 {
-	char query[388];
+	char query[457];
 
 	auto conn = g_sqlconn_pool.get_wait();
 	if (conn.res == nullptr)
@@ -339,9 +336,10 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) tr
 	propmap_load(conn.res, query, pmap);
 
 	snprintf(query, GX_ARRAY_SIZE(query),
-	         "SELECT u.id, u.username, u.address_type, u.sub_type, "
+	         "SELECT u.id, u.username, up.propval_str AS dtypx, 9997, "
 	         "u.maildir, z.list_type, z.list_privilege, "
 	         "cl.classname, gr.title FROM users AS u "
+	         "LEFT JOIN user_properties AS up ON u.id=up.user_id AND up.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
 	         "LEFT JOIN mlists AS z ON u.username=z.listname "
 	         "LEFT JOIN classes AS cl ON u.username=cl.listname "
 	         "LEFT JOIN groups AS gr ON u.username=gr.groupname "

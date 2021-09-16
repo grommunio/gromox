@@ -14,7 +14,7 @@ BOOL (*system_services_set_timezone)(const char*, const char *);
 decltype(system_services_get_username_from_id) system_services_get_username_from_id;
 BOOL (*system_services_get_id_from_username)(const char*, int*);
 BOOL (*system_services_get_domain_ids)(const char *, int*, int*);
-BOOL (*system_services_get_user_ids)(const char *, int *, int *, enum address_type *);
+BOOL (*system_services_get_user_ids)(const char *, int *, int *, enum display_type *);
 BOOL (*system_services_lang_to_charset)(const char*, char*);
 const char* (*system_services_cpid_to_charset)(uint32_t);
 uint32_t (*system_services_charset_to_cpid)(const char*);

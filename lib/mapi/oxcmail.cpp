@@ -186,7 +186,7 @@ BOOL oxcmail_init_library(const char *org_name,
 }
 
 static BOOL oxcmail_username_to_essdn(const char *username,
-    char *pessdn, enum address_type *paddress_type)
+    char *pessdn, enum display_type *dtpp)
 {
 	int user_id;
 	int domain_id;
@@ -202,9 +202,8 @@ static BOOL oxcmail_username_to_essdn(const char *username,
 	}
 	*pdomain = '\0';
 	pdomain ++;
-	enum address_type address_type = ADDRESS_TYPE_NORMAL;
-	if (FALSE == oxcmail_get_user_ids(username,
-		&user_id, &domain_id, &address_type)) {
+	enum display_type dtypx = DT_MAILUSER;
+	if (!oxcmail_get_user_ids(username, &user_id, &domain_id, &dtypx)) {
 		return FALSE;
 	}
 	encode_hex_int(user_id, hex_string);
@@ -213,9 +212,8 @@ static BOOL oxcmail_username_to_essdn(const char *username,
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
 		g_oxcmail_org_name, hex_string2, hex_string, tmp_name);
 	HX_strupper(pessdn);
-	if (NULL != paddress_type) {
-		*paddress_type = address_type;
-	}
+	if (dtpp != nullptr)
+		*dtpp = dtypx;
 	return TRUE;
 }
 
@@ -328,15 +326,14 @@ static BOOL oxcmail_essdn_to_entryid(const char *pessdn, BINARY *pbin)
 }
 
 static BOOL oxcmail_username_to_entryid(const char *username,
-    const char *pdisplay_name, BINARY *pbin, enum address_type *paddress_type)
+    const char *pdisplay_name, BINARY *pbin, enum display_type *dtpp)
 {
 	char x500dn[1024];
 
-	if (oxcmail_username_to_essdn(username, x500dn, paddress_type))
+	if (oxcmail_username_to_essdn(username, x500dn, dtpp))
 		return oxcmail_essdn_to_entryid(x500dn, pbin);
-	if (NULL != paddress_type) {
-		*paddress_type = ADDRESS_TYPE_NORMAL;
-	}
+	if (dtpp != nullptr)
+		*dtpp = DT_MAILUSER;
 	return oxcmail_username_to_oneoff(
 	       username, pdisplay_name, pbin);
 }
@@ -560,11 +557,10 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	    oxcmail_check_ascii(paddr->local_part) &&
 	    oxcmail_check_ascii(paddr->domain)) {
 		snprintf(username, GX_ARRAY_SIZE(username), "%s@%s", paddr->local_part, paddr->domain);
-		enum address_type address_type = ADDRESS_TYPE_NORMAL;
-		if (FALSE == oxcmail_username_to_essdn(
-			username, essdn, &address_type)) {
+		auto dtypx = DT_MAILUSER;
+		if (!oxcmail_username_to_essdn(username, essdn, &dtypx)) {
 			essdn[0] = '\0';
-			address_type = ADDRESS_TYPE_NORMAL;
+			dtypx = DT_MAILUSER;
 			tmp_bin.cb = snprintf(tmp_buff, arsizeof(tmp_buff), "SMTP:%s", username) + 1;
 			HX_strupper(tmp_buff);
 			propval.proptag = PROP_TAG_ADDRESSTYPE;
@@ -621,15 +617,12 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 			return FALSE;
 		propval.proptag = PR_OBJECT_TYPE;
 		propval.pvalue = &tmp_int32;
-		tmp_int32 = address_type == ADDRESS_TYPE_MLIST ? MAPI_DISTLIST : MAPI_MAILUSER;
+		tmp_int32 = dtypx == DT_DISTLIST ? MAPI_DISTLIST : MAPI_MAILUSER;
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
 		propval.proptag = PR_DISPLAY_TYPE;
 		propval.pvalue = &tmp_int32;
-		tmp_int32 = address_type == ADDRESS_TYPE_MLIST ? DT_DISTLIST :
-		            address_type == ADDRESS_TYPE_ROOM ? DT_ROOM :
-		            address_type == ADDRESS_TYPE_EQUIPMENT ? DT_EQUIPMENT :
-		            DT_MAILUSER;
+		tmp_int32 = static_cast<uint32_t>(dtypx);
 		if (!tpropval_array_set_propval(pproplist, &propval))
 			return FALSE;
 		propval.proptag = PROP_TAG_RECIPIENTFLAGS;
@@ -3431,11 +3424,10 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 				return false;
 		}
 	}
-	enum address_type address_type = ADDRESS_TYPE_NORMAL;
-	if (FALSE == oxcmail_username_to_essdn(
-		f_info.final_recipient, essdn, &address_type)) {
+	auto dtypx = DT_MAILUSER;
+	if (!oxcmail_username_to_essdn(f_info.final_recipient, essdn, &dtypx)) {
 		essdn[0] = '\0';
-		address_type = ADDRESS_TYPE_NORMAL;
+		dtypx = DT_MAILUSER;
 		tmp_bin.cb = snprintf(tmp_buff, arsizeof(tmp_buff), "SMTP:%s",
 					f_info.final_recipient) + 1;
 		HX_strupper(tmp_buff);
@@ -3493,25 +3485,12 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 		return false;
 	propval.proptag = PR_OBJECT_TYPE;
 	propval.pvalue = &tmp_int32;
-	tmp_int32 = address_type == ADDRESS_TYPE_MLIST ? MAPI_DISTLIST : MAPI_MAILUSER;
+	tmp_int32 = dtypx == DT_DISTLIST ? MAPI_DISTLIST : MAPI_MAILUSER;
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return false;
 	propval.proptag = PR_DISPLAY_TYPE;
 	propval.pvalue = &tmp_int32;
-	switch (address_type) {
-	case ADDRESS_TYPE_MLIST:
-		tmp_int32 = DT_DISTLIST;
-		break;
-	case ADDRESS_TYPE_ROOM:
-		tmp_int32 = DT_ROOM;
-		break;
-	case ADDRESS_TYPE_EQUIPMENT:
-		tmp_int32 = DT_EQUIPMENT;
-		break;
-	default:
-		tmp_int32 = DT_MAILUSER;
-		break;
-	}
+	tmp_int32 = static_cast<uint32_t>(dtypx);
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return false;
 	propval.proptag = PROP_TAG_RECIPIENTFLAGS;

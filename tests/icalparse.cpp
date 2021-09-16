@@ -18,7 +18,7 @@ static BOOL get_propids(const PROPNAME_ARRAY *pn, PROPID_ARRAY *id)
 }
 
 static BOOL un_to_eid(const char *username, const char *dispname, BINARY *bv,
-    enum address_type *adrtype)
+    enum display_type *)
 {
 	bv->pc = strdup(username);
 	bv->cb = strlen(username);
