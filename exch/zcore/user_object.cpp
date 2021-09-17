@@ -47,7 +47,7 @@ BOOL USER_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
 	char username[UADDR_SIZE];
 	char tmp_buff[1024];
 	SIMPLE_TREE_NODE *pnode;
-	static const uint32_t fake_type = OBJECT_USER;
+	static const uint32_t fake_type = MAPI_MAILUSER;
 	
 	auto pbase = ab_tree_get_base(puser->base_id);
 	if (pbase == nullptr)

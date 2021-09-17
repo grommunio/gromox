@@ -514,7 +514,7 @@ static BOOL folder_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*(uint32_t*)(*ppvalue) = OBJECT_FOLDER;
+		*static_cast<uint32_t *>(*ppvalue) = MAPI_FOLDER;
 		return TRUE;
 	}
 	return FALSE;

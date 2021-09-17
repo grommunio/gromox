@@ -411,7 +411,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		auto nt = static_cast<DB_NOTIFY_FOLDER_CREATED *>(pdb_notify->pdata);
 		folder_id = common_util_convert_notification_folder_id(nt->folder_id);
 		parent_id = common_util_convert_notification_folder_id(nt->parent_id);
-		pobj_notify->object_type = OBJECT_FOLDER;
+		pobj_notify->object_type = MAPI_FOLDER;
 		pbin = common_util_to_folder_entryid(pstore, folder_id);
 		if (pbin == nullptr)
 			return;
@@ -432,7 +432,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		auto nt = static_cast<DB_NOTIFY_MESSAGE_CREATED *>(pdb_notify->pdata);
 		folder_id = common_util_convert_notification_folder_id(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
-		pobj_notify->object_type = OBJECT_MESSAGE;
+		pobj_notify->object_type = MAPI_MESSAGE;
 		pbin = common_util_to_message_entryid(
 				pstore, folder_id, message_id);
 		pobj_notify->pentryid = pbin;
@@ -452,7 +452,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		auto nt = static_cast<DB_NOTIFY_FOLDER_DELETED *>(pdb_notify->pdata);
 		folder_id = common_util_convert_notification_folder_id(nt->folder_id);
 		parent_id = common_util_convert_notification_folder_id(nt->parent_id);
-		pobj_notify->object_type = OBJECT_FOLDER;
+		pobj_notify->object_type = MAPI_FOLDER;
 		pbin = common_util_to_folder_entryid(pstore, folder_id);
 		if (pbin == nullptr)
 			return;
@@ -473,7 +473,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		auto nt = static_cast<DB_NOTIFY_MESSAGE_DELETED *>(pdb_notify->pdata);
 		folder_id = common_util_convert_notification_folder_id(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
-		pobj_notify->object_type = OBJECT_MESSAGE;
+		pobj_notify->object_type = MAPI_MESSAGE;
 		pbin = common_util_to_message_entryid(
 				pstore, folder_id, message_id);
 		if (pbin == nullptr)
@@ -494,7 +494,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		pnotification->pnotification_data = pobj_notify;
 		auto nt = static_cast<DB_NOTIFY_FOLDER_MODIFIED *>(pdb_notify->pdata);
 		folder_id = common_util_convert_notification_folder_id(nt->folder_id);
-		pobj_notify->object_type = OBJECT_FOLDER;
+		pobj_notify->object_type = MAPI_FOLDER;
 		pbin = common_util_to_folder_entryid(pstore, folder_id);
 		if (pbin == nullptr)
 			return;
@@ -511,7 +511,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		auto nt = static_cast<DB_NOTIFY_MESSAGE_MODIFIED *>(pdb_notify->pdata);
 		folder_id = common_util_convert_notification_folder_id(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
-		pobj_notify->object_type = OBJECT_MESSAGE;
+		pobj_notify->object_type = MAPI_MESSAGE;
 		pbin = common_util_to_message_entryid(
 				pstore, folder_id, message_id);
 		if (pbin == nullptr)
@@ -537,7 +537,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		parent_id = common_util_convert_notification_folder_id(nt->parent_id);
 		old_eid = common_util_convert_notification_folder_id(nt->old_folder_id);
 		old_parentid = common_util_convert_notification_folder_id(nt->old_parent_id);
-		pobj_notify->object_type = OBJECT_FOLDER;
+		pobj_notify->object_type = MAPI_FOLDER;
 		pbin = common_util_to_folder_entryid(pstore, folder_id);
 		if (pbin == nullptr)
 			return;
@@ -570,7 +570,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		old_eid = rop_util_make_eid_ex(1, nt->old_message_id);
 		folder_id = common_util_convert_notification_folder_id(nt->folder_id);
 		message_id = rop_util_make_eid_ex(1, nt->message_id);
-		pobj_notify->object_type = OBJECT_MESSAGE;
+		pobj_notify->object_type = MAPI_MESSAGE;
 		pbin = common_util_to_message_entryid(
 				pstore, folder_id, message_id);
 		if (pbin == nullptr)
@@ -602,7 +602,7 @@ static void zarafa_server_notification_proc(const char *dir,
 		pnotification->pnotification_data = pobj_notify;
 		auto nt = static_cast<DB_NOTIFY_SEARCH_COMPLETED *>(pdb_notify->pdata);
 		folder_id = common_util_convert_notification_folder_id(nt->folder_id);
-		pobj_notify->object_type = OBJECT_FOLDER;
+		pobj_notify->object_type = MAPI_FOLDER;
 		pbin = common_util_to_folder_entryid(pstore, folder_id);
 		if (pbin == nullptr)
 			return;
@@ -2762,10 +2762,10 @@ uint32_t zarafa_server_queryrows(
 	TARRAY_SET tmp_set;
 	uint32_t *pobject_type = nullptr;
 	TAGGED_PROPVAL *ppropvals;
-	static const uint32_t object_type_store = OBJECT_STORE;
-	static const uint32_t object_type_folder = OBJECT_FOLDER;
-	static const uint32_t object_type_message = OBJECT_MESSAGE;
-	static const uint32_t object_type_attachment = OBJECT_ATTACHMENT;
+	static const uint32_t object_type_store = MAPI_STORE;
+	static const uint32_t object_type_folder = MAPI_FOLDER;
+	static const uint32_t object_type_message = MAPI_MESSAGE;
+	static const uint32_t object_type_attachment = MAPI_ATTACH;
 	
 	if (count > 0x7FFFFFFF) {
 		count = 0x7FFFFFFF;

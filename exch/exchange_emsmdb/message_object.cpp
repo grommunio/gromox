@@ -1106,7 +1106,7 @@ static BOOL message_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*(uint32_t*)(*ppvalue) = OBJECT_MESSAGE;
+		*static_cast<uint32_t *>(*ppvalue) = MAPI_MESSAGE;
 		return TRUE;
 	case PR_PARENT_ENTRYID:
 		if (0 == pmessage->message_id) {

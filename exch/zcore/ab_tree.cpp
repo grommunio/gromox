@@ -1597,15 +1597,10 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		if (node_type > 0x80) {
-			*(uint32_t*)pvalue = OBJECT_ABCONTAINER;
-		} else if (NODE_TYPE_MLIST == node_type) {
-			*(uint32_t*)pvalue = OBJECT_DLIST;
-		} else if (NODE_TYPE_FOLDER == node_type) {
-			*(uint32_t*)pvalue = OBJECT_FOLDER;
-		} else {
-			*(uint32_t*)pvalue = OBJECT_USER;
-		}
+		*static_cast<uint32_t *>(pvalue) =
+			node_type > 0x80 ? MAPI_ABCONT :
+			node_type == NODE_TYPE_MLIST ? MAPI_DISTLIST :
+			node_type == NODE_TYPE_FOLDER ? MAPI_FOLDER : MAPI_MAILUSER;
 		*ppvalue = pvalue;
 		return TRUE;
 	case PR_DISPLAY_TYPE:

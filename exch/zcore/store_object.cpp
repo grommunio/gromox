@@ -1004,7 +1004,7 @@ static BOOL store_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*(uint32_t*)(*ppvalue) = OBJECT_STORE;
+		*static_cast<uint32_t *>(*ppvalue) = MAPI_STORE;
 		return TRUE;
 	case PR_PROVIDER_DISPLAY:
 		*ppvalue = deconst("Exchange Message Store");

@@ -570,7 +570,7 @@ BOOL CONTAINER_OBJECT::load_user_table(const RESTRICTION *prestriction)
 			}
 			propval.proptag = PR_OBJECT_TYPE;
 			propval.pvalue = &tmp_int;
-			tmp_int = OBJECT_USER;
+			tmp_int = MAPI_MAILUSER;
 			if (!tpropval_array_set_propval(ppropvals, &propval)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;

@@ -283,7 +283,7 @@ static BOOL attachment_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*(uint32_t*)(*ppvalue) = OBJECT_ATTACHMENT;
+		*static_cast<uint32_t *>(*ppvalue) = MAPI_ATTACH;
 		return TRUE;
 	case PR_STORE_RECORD_KEY:
 		*ppvalue = common_util_guid_to_binary(pattachment->pparent->plogon->mailbox_guid);
