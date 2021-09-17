@@ -35,6 +35,27 @@
 using namespace std::string_literals;
 using namespace gromox;
 
+enum {
+	/* Reason codes (users.address_status) for forbidden login */
+	AF_USER_NORMAL      = 0x00,
+	AF_USER_SUSPENDED   = 0x01,
+	AF_USER_OUTOFDATE   = 0x02,
+	AF_USER_DELETED     = 0x03,
+	AF_USER__MASK       = 0x03,
+
+	AF_GROUP_NORMAL     = 0x00,
+	AF_GROUP_SUSPENDED  = 0x10,
+	AF_GROUP_OUTOFDATE  = 0x20,
+	AF_GROUP_DELETED    = 0x30,
+	AF_GROUP__MASK      = 0x30,
+
+	AF_DOMAIN_NORMAL    = 0x00,
+	AF_DOMAIN_SUSPENDED = 0x40,
+	AF_DOMAIN_OUTOFDATE = 0x80,
+	AF_DOMAIN_DELETED   = 0xC0,
+	AF_DOMAIN__MASK     = 0xC0,
+};
+
 static std::mutex g_crypt_lock;
 
 static void mysql_adaptor_encode_squote(const char *in, char *out);
@@ -88,13 +109,13 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 	}
 	temp_status = atoi(myrow[2]);
 	if (0 != temp_status) {
-		if (0 != (temp_status&0x30)) {
+		if (temp_status & AF_DOMAIN__MASK) {
 			snprintf(reason, length, "domain of user \"%s\" is disabled!",
 				username);
-		} else if (0 != (temp_status&0xC)) {
+		} else if (temp_status & AF_GROUP__MASK) {
 			snprintf(reason, length, "group of user \"%s\" is disabled!",
 				username);
-		} else {
+		} else if (temp_status & AF_USER__MASK) {
 			snprintf(reason, length, "user \"%s\" is disabled!", username);
 		}
 		return FALSE;
@@ -706,7 +727,7 @@ BOOL mysql_adaptor_get_user_ids(const char *username, int *puser_id,
 	mysql_adaptor_encode_squote(username, temp_name);
 	auto qstr =
 		"SELECT u.id, u.domain_id, dt.propval_str AS dtypx"
-		"FROM users AS u " JOIN_WITH_DISPLAYTYPE
+		" FROM users AS u " JOIN_WITH_DISPLAYTYPE
 		" WHERE u.username='"s + temp_name + "' LIMIT 2";
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn.res.query(qstr.c_str()))
