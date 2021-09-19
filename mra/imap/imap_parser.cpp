@@ -389,7 +389,7 @@ static int ps_end_processing(IMAP_CONTEXT *, const char * = nullptr, ssize_t = 0
 
 static int ps_stat_autologout(IMAP_CONTEXT *pcontext)
 {
-	imap_parser_log_info(pcontext, 8, "auto logout");
+	imap_parser_log_info(pcontext, LV_DEBUG, "auto logout");
 	/* IMAP_CODE_2160004: BYE Disconnected by autologout */
 	size_t string_length = 0;
 	auto imap_reply_str = resource_get_imap_code(1604, 1, &string_length);
@@ -398,7 +398,7 @@ static int ps_stat_autologout(IMAP_CONTEXT *pcontext)
 
 static int ps_stat_disconnected(IMAP_CONTEXT *pcontext)
 {
-	imap_parser_log_info(pcontext, 8, "connection lost");
+	imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 	return ps_end_processing(pcontext);
 }
 
@@ -411,7 +411,7 @@ static int ps_stat_stls(IMAP_CONTEXT *pcontext)
 			size_t string_length = 0;
 			auto imap_reply_str = resource_get_imap_code(1814, 1, &string_length);
 			write(pcontext->connection.sockd, imap_reply_str, string_length);
-			imap_parser_log_info(pcontext, 8, "out of SSL object");
+			imap_parser_log_info(pcontext, LV_WARN, "out of memory for TLS object");
 			SLEEP_BEFORE_CLOSE;
 			close(pcontext->connection.sockd);
 			if (system_services_container_remove_ip != nullptr)
@@ -451,7 +451,7 @@ static int ps_stat_stls(IMAP_CONTEXT *pcontext)
 		auto imap_reply_str = resource_get_imap_code(1811, 1, &string_length);
 		write(pcontext->connection.sockd, "* ", 2);
 		write(pcontext->connection.sockd, imap_reply_str, string_length);
-		imap_parser_log_info(pcontext, 0, "time out");
+		imap_parser_log_info(pcontext, LV_DEBUG, "time out");
 		SLEEP_BEFORE_CLOSE;
 	}
 	SSL_free(pcontext->connection.ssl);
@@ -498,11 +498,11 @@ static int ps_stat_rdcmd(IMAP_CONTEXT *pcontext)
 	struct timeval current_time;
 	gettimeofday(&current_time, NULL);
 	if (0 == read_len) {
-		imap_parser_log_info(pcontext, 8, "connection lost");
+		imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return ps_end_processing(pcontext);
 	} else if (read_len < 0) {
 		if (EAGAIN != errno) {
-			imap_parser_log_info(pcontext, 8, "connection lost");
+			imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 			return ps_end_processing(pcontext);
 		}
 		/* check if context is timed out */
@@ -588,7 +588,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 		temp_len = 64 * 1024 - (ptr + 3 - pcontext->read_buffer) -
 		           pcontext->command_len - 2;
 		if (temp_len <= 0 || temp_len >= 64 * 1024) {
-			imap_parser_log_info(pcontext, 8, "fatal error in command buffer length");
+			imap_parser_log_info(pcontext, LV_WARN, "error in command buffer length");
 			/* IMAP_CODE_2180017: BAD literal size too large */
 			size_t string_length = 0;
 			auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
@@ -621,7 +621,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 			case DISPATCH_CONTINUE: {
 				pcontext->current_len = pcontext->read_buffer + pcontext->read_offset - (ptr + 3);
 				if (pcontext->current_len < 0) {
-					imap_parser_log_info(pcontext, 8, "fatal error in read buffer length");
+					imap_parser_log_info(pcontext, LV_WARN, "error in read buffer length");
 					/* IMAP_CODE_2180017: BAD literal size too large */
 					size_t string_length = 0;
 					auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
@@ -689,7 +689,7 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 			continue;
 		}
 		if (i >= 64 * 1024 || pcontext->command_len + i >= 64 * 1024) {
-			imap_parser_log_info(pcontext, 8, "fatal error in command buffer length");
+			imap_parser_log_info(pcontext, LV_WARN, "error in command buffer length");
 			/* IMAP_CODE_2180017: BAD literal size too large */
 			size_t string_length = 0;
 			auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
@@ -851,7 +851,7 @@ static int ps_stat_appending(IMAP_CONTEXT *pcontext)
 	unsigned int len = STREAM_BLOCK_SIZE;
 	auto pbuff = static_cast<char *>(stream_getbuffer_for_writing(&pcontext->stream, &len));
 	if (NULL == pbuff) {
-		imap_parser_log_info(pcontext, 8, "out of memory");
+		imap_parser_log_info(pcontext, LV_WARN, "out of memory");
 		/* IMAP_CODE_2180009: BAD internal error: fail to get stream buffer */
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1809, 1, &string_length);
@@ -866,11 +866,11 @@ static int ps_stat_appending(IMAP_CONTEXT *pcontext)
 	struct timeval current_time;
 	gettimeofday(&current_time, NULL);
 	if (0 == read_len) {
-		imap_parser_log_info(pcontext, 8, "connection lost");
+		imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return ps_end_processing(pcontext);
 	} else if (read_len < 0) {
 		if (EAGAIN != errno) {
-			imap_parser_log_info(pcontext, 8, "connection lost");
+			imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 			return ps_end_processing(pcontext);
 		}
 		/* check if context is timed out */
@@ -900,7 +900,7 @@ static int ps_stat_appending(IMAP_CONTEXT *pcontext)
 	if (total_len >= g_cache_size ||
 	    pcontext->literal_len == pcontext->current_len) {
 		if (STREAM_DUMP_OK != stream_dump(&pcontext->stream, pcontext->message_fd)) {
-			imap_parser_log_info(pcontext, 0, "fail to flush mail from memory into file");
+			imap_parser_log_info(pcontext, LV_WARN, "failed to flush mail from memory into file");
 			/* IMAP_CODE_2180010: BAD internal error: fail to dump stream object */
 			size_t string_length = 0;
 			auto imap_reply_str = resource_get_imap_code(1810, 1, &string_length);
@@ -936,11 +936,11 @@ static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
 	gettimeofday(&current_time, NULL);
 
 	if (0 == written_len) {
-		imap_parser_log_info(pcontext, 0, "connection lost");
+		imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return ps_end_processing(pcontext);
 	} else if (written_len < 0) {
 		if (EAGAIN != errno) {
-			imap_parser_log_info(pcontext, 0, "connection lost");
+			imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 			return ps_end_processing(pcontext);
 		}
 		/* check if context is timed out */
@@ -948,7 +948,7 @@ static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
 		    pcontext->connection.last_timestamp) < g_timeout) {
 			return PROCESS_POLLING_WRONLY;
 		}
-		imap_parser_log_info(pcontext, 0, "time out");
+		imap_parser_log_info(pcontext, LV_DEBUG, "time out");
 		/* IMAP_CODE_2180011: BAD time out */
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1811, 1, &string_length);
@@ -988,7 +988,7 @@ static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
 	}
 	auto read_len = read(pcontext->message_fd, pcontext->write_buff, len);
 	if (read_len != len) {
-		imap_parser_log_info(pcontext, 8, "fail to read message file");
+		imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
 		/* IMAP_CODE_2180012: * BAD internal error: fail to read file */
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1812, 1, &string_length);
@@ -1035,11 +1035,11 @@ static int ps_stat_wrlst(IMAP_CONTEXT *pcontext)
 	gettimeofday(&current_time, NULL);
 
 	if (0 == written_len) {
-		imap_parser_log_info(pcontext, 0, "connection lost");
+		imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return ps_end_processing(pcontext);
 	} else if (written_len < 0) {
 		if (EAGAIN != errno) {
-			imap_parser_log_info(pcontext, 0, "connection lost");
+			imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 			return ps_end_processing(pcontext);
 		}
 		/* check if context is timed out */
@@ -1047,7 +1047,7 @@ static int ps_stat_wrlst(IMAP_CONTEXT *pcontext)
 		    pcontext->connection.last_timestamp) < g_timeout) {
 			return PROCESS_POLLING_WRONLY;
 		}
-		imap_parser_log_info(pcontext, 0, "time out");
+		imap_parser_log_info(pcontext, LV_DEBUG, "time out");
 		/* IMAP_CODE_2180011: BAD time out */
 		size_t string_length = 0;
 		auto imap_reply_str = resource_get_imap_code(1811, 1, &string_length);
@@ -1204,7 +1204,7 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 						read_len = read(pcontext->message_fd, pcontext->write_buff +
 									pcontext->write_length, len);
 						if (read_len != len) {
-							imap_parser_log_info(pcontext, 8, "fail to read message file");
+							imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
 							close(pcontext->message_fd);
 							pcontext->message_fd = -1;
 							return IMAP_RETRIEVE_ERROR;
@@ -1250,7 +1250,7 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 						read_len = read(pcontext->message_fd, pcontext->write_buff +
 									pcontext->write_length, len);
 						if (read_len != len) {
-							imap_parser_log_info(pcontext, 8, "fail to read message file");
+							imap_parser_log_info(pcontext, LV_WARN, "failed to read message file");
 							close(pcontext->message_fd);
 							pcontext->message_fd = -1;
 							return IMAP_RETRIEVE_ERROR;

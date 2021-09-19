@@ -245,7 +245,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			} else {
 				write(pcontext->connection.sockd, reply_buf, string_length);
 			}
-			smtp_parser_log_info(pcontext, 0, "return OK, queue-id:%d",
+			smtp_parser_log_info(pcontext, LV_NOTICE, "return OK, queue-id:%d",
 							pcontext->flusher.flush_ID);
 			smtp_parser_reset_context_session(pcontext);
 			if (TRUE == pcontext->is_splitted) {
@@ -355,7 +355,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 				/* 451 Timeout */
 				auto smtp_reply_str = resource_get_smtp_code(412, 1, &string_length);
 				write(pcontext->connection.sockd, smtp_reply_str, string_length);
-				smtp_parser_log_info(pcontext, 0, "time out");
+				smtp_parser_log_info(pcontext, LV_DEBUG, "time out");
 				SLEEP_BEFORE_CLOSE;
 			}
 			SSL_free(pcontext->connection.ssl);
@@ -421,7 +421,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			SSL_free(pcontext->connection.ssl);
 			pcontext->connection.ssl = NULL;
 		}
-		smtp_parser_log_info(pcontext, 0, "connection lost");
+		smtp_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		close(pcontext->connection.sockd);
 		if (system_services_container_remove_ip != nullptr)
 			system_services_container_remove_ip(pcontext->connection.client_ip);
@@ -444,7 +444,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			} else {
 				write(pcontext->connection.sockd, smtp_reply_str, string_length);
 			}
-			smtp_parser_log_info(pcontext, 0, "time out");
+			smtp_parser_log_info(pcontext, LV_DEBUG, "time out");
 			if (0 != pcontext->flusher.flush_ID) {
 				flusher_cancel(pcontext);
 			}
@@ -475,7 +475,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			} else {
 				write(pcontext->connection.sockd, smtp_reply_str, string_length);
 			}
-			smtp_parser_log_info(pcontext, 0, "envelope line too long");
+			smtp_parser_log_info(pcontext, LV_DEBUG, "envelope line too long");
 			if (NULL != pcontext->connection.ssl) {
 				SSL_shutdown(pcontext->connection.ssl);
 				SSL_free(pcontext->connection.ssl);

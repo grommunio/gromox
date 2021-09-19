@@ -125,7 +125,7 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 			} else {
 				write(pcontext->connection.sockd, buff, string_length);
 			}
-			pop3_parser_log_info(pcontext, 8, "user %s is denied by user filter",
+			pop3_parser_log_info(pcontext, LV_WARN, "user %s is denied by user filter",
 					pcontext->username);
 			return DISPATCH_SHOULD_CLOSE;
 		}
@@ -174,25 +174,25 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 			break;
 		case MIDB_NO_SERVER:
 			/* write back nothing and close the connection */
-			pop3_parser_log_info(pcontext, 8, "lack of midb connection");
+			pop3_parser_log_info(pcontext, LV_WARN, "lack of midb connections");
 			return DISPATCH_SHOULD_CLOSE;
 		case MIDB_RDWR_ERROR:
 			/* write back nothing and close the connection */
-			pop3_parser_log_info(pcontext, 8, "read write error with midb server");
+			pop3_parser_log_info(pcontext, LV_WARN, "read write error with midb server");
 			return DISPATCH_SHOULD_CLOSE;
 		case MIDB_RESULT_ERROR:
 			/* write back nothing and close the connection */
-			pop3_parser_log_info(pcontext, 8, "midb return error result");
+			pop3_parser_log_info(pcontext, LV_WARN, "midb returned error result");
 			return DISPATCH_SHOULD_CLOSE;
 		}
 		if (pcontext->total_mail < 0 ||
 		    pcontext->array.size() != static_cast<size_t>(pcontext->total_mail))
 			return 1722;
 		pcontext->is_login = TRUE;
-		pop3_parser_log_info(pcontext, 8, "login success");
+		pop3_parser_log_info(pcontext, LV_DEBUG, "login success");
 		return 1700;
 	} else {
-		pop3_parser_log_info(pcontext, 8, "login failed: %s", reason);
+		pop3_parser_log_info(pcontext, LV_WARN, "login failed: %s", reason);
 		pcontext->auth_times ++;
 		if (pcontext->auth_times >= pop3_parser_get_param(MAX_AUTH_TIMES)) {
 			if (system_services_add_user_into_temp_list != nullptr)
@@ -264,7 +264,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 		pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(&pcontext->stream, &tmp_len));
 		pcontext->write_length = tmp_len;
 		if (NULL == pcontext->write_buff) {
-			pop3_parser_log_info(pcontext, 8, "fatal error on stream object!");
+			pop3_parser_log_info(pcontext, LV_WARN, "error on stream object");
 			return 1718;
 		}
 		return DISPATCH_LIST;
@@ -328,7 +328,7 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 		                       &pcontext->stream, &tmp_len));
 		pcontext->write_length = tmp_len;
 		if (NULL == pcontext->write_buff) {
-			pop3_parser_log_info(pcontext, 8, "fatal error on stream object!");
+			pop3_parser_log_info(pcontext, LV_WARN, "error on stream object");
 			return 1718;
 		}
 		return DISPATCH_LIST;
@@ -392,7 +392,9 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 			fprintf(stderr, "E-1469: ENOMEM\n");
 		}
 		if (-1 == pcontext->message_fd) {
-			pop3_parser_log_info(pcontext, 8, "failed to open message %s: %s", eml_path.c_str(), strerror(errno));
+			pop3_parser_log_info(pcontext, LV_WARN,
+				"failed to open message %s: %s",
+				eml_path.c_str(), strerror(errno));
 			return 1709;
 		}
 		stream_clear(&pcontext->stream);
@@ -401,7 +403,8 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 			stream_clear(&pcontext->stream);
 			return 1719;
 		}
-		pop3_parser_log_info(pcontext, 8, "message %s is going to be retrieved", eml_path.c_str());
+		pop3_parser_log_info(pcontext, LV_DEBUG,
+			"message %s is going to be retrieved", eml_path.c_str());
 		return DISPATCH_DATA;
 	}
 	return 1707;
@@ -522,13 +525,11 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 				return 1716 | DISPATCH_SHOULD_CLOSE;
 			}
 			case MIDB_RDWR_ERROR: {
-				pop3_parser_log_info(pcontext, 8, "fail to read/write with "
-					"midb server!");
+				pop3_parser_log_info(pcontext, LV_WARN, "failed RW I/O with midb server");
 				return 1721 | DISPATCH_SHOULD_CLOSE;
 			}
 			case MIDB_RESULT_ERROR: {
-				pop3_parser_log_info(pcontext, 8, "fail to execute delete "
-					"command with midb server!");
+				pop3_parser_log_info(pcontext, LV_WARN, "failed to execute delete command on midb server!");
 				return 1722 | DISPATCH_SHOULD_CLOSE;
 			}
 			}
@@ -540,7 +541,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 				auto punit = static_cast<MSG_UNIT *>(pnode->pdata);
 				auto eml_path = std::string(pcontext->maildir) + "/eml/" + punit->file_name;
 				if (remove(eml_path.c_str()) == 0)
-					pop3_parser_log_info(pcontext, 8, "message %s has been deleted",
+					pop3_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted",
 						eml_path.c_str());
 			} catch (const std::bad_alloc &) {
 				fprintf(stderr, "E-1471: ENOMEM\n");

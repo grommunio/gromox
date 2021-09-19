@@ -226,7 +226,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 			if (NULL == pcontext->connection.ssl) {
 				auto pop3_reply_str = resource_get_pop3_code(1723, 1, &string_length);
 				write(pcontext->connection.sockd, pop3_reply_str, string_length);
-				pop3_parser_log_info(pcontext, 8, "out of SSL object");
+				pop3_parser_log_info(pcontext, LV_WARN, "out of memory for TLS object");
 				SLEEP_BEFORE_CLOSE;
 				close(pcontext->connection.sockd);
 				if (system_services_container_remove_ip != nullptr)
@@ -248,7 +248,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 				}
 				auto pop3_reply_str = resource_get_pop3_code(1701, 1, &string_length);
 				write(pcontext->connection.sockd, pop3_reply_str, string_length);
-				pop3_parser_log_info(pcontext, 0, "time out");
+				pop3_parser_log_info(pcontext, LV_DEBUG, "time out");
 				SLEEP_BEFORE_CLOSE;
 			}
 			SSL_free(pcontext->connection.ssl);
@@ -286,17 +286,17 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		gettimeofday(&current_time, NULL);
 			
 		if (0 == written_len) {
-			pop3_parser_log_info(pcontext, 0, "connection lost");
+			pop3_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 			goto END_TRANSPORT;
 		} else if (written_len < 0) {
 			if (EAGAIN != errno) {
-				pop3_parser_log_info(pcontext, 0, "connection lost");
+				pop3_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 				goto END_TRANSPORT;
 			}
 			/* check if context is timed out */
 			if (CALCULATE_INTERVAL(current_time,
 				pcontext->connection.last_timestamp) >= g_timeout) {
-				pop3_parser_log_info(pcontext, 0, "time out");
+				pop3_parser_log_info(pcontext, LV_DEBUG, "time out");
 				goto END_TRANSPORT;
 			} else {
 				return PROCESS_POLLING_WRONLY;
@@ -340,17 +340,17 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		gettimeofday(&current_time, NULL);
 			
 		if (0 == written_len) {
-			pop3_parser_log_info(pcontext, 0, "connection lost");
+			pop3_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 			goto END_TRANSPORT;
 		} else if (written_len < 0) {
 			if (EAGAIN != errno) {
-				pop3_parser_log_info(pcontext, 0, "connection lost");
+				pop3_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 				goto END_TRANSPORT;
 			}
 			/* check if context is timed out */
 			if (CALCULATE_INTERVAL(current_time,
 				pcontext->connection.last_timestamp) >= g_timeout) {
-				pop3_parser_log_info(pcontext, 0, "time out");
+				pop3_parser_log_info(pcontext, LV_DEBUG, "time out");
 				goto END_TRANSPORT;
 			} else {
 				return PROCESS_POLLING_WRONLY;
@@ -391,7 +391,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 			SSL_free(pcontext->connection.ssl);
 			pcontext->connection.ssl = NULL;
 		}
-		pop3_parser_log_info(pcontext, 0, "connection lost");
+		pop3_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		close(pcontext->connection.sockd);
 		if (system_services_container_remove_ip != nullptr)
 			system_services_container_remove_ip(pcontext->connection.client_ip);
@@ -410,7 +410,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 			} else {
 				write(pcontext->connection.sockd, pop3_reply_str, string_length);
 			}
-			pop3_parser_log_info(pcontext, 0, "time out");
+			pop3_parser_log_info(pcontext, LV_DEBUG, "time out");
 			if (NULL != pcontext->connection.ssl) {
 				SSL_shutdown(pcontext->connection.ssl);
 				SSL_free(pcontext->connection.ssl);
@@ -532,13 +532,13 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 		size = STREAM_BLOCK_SIZE;
 		void *pbuff = stream_getbuffer_for_writing(&temp_stream, &size);
 		if (NULL == pbuff) {
-			pop3_parser_log_info(pcontext, 8, "out of memory"); 
+			pop3_parser_log_info(pcontext, LV_WARN, "out of memory");
 			stream_free(&temp_stream);
 			return POP3_RETRIEVE_ERROR;
 		}
 		read_len = read(pcontext->message_fd, pbuff, size);
 		if (read_len < 0) {
-			pop3_parser_log_info(pcontext, 8, "fail to read message file");
+			pop3_parser_log_info(pcontext, LV_WARN, "failed to read message file");
 			stream_free(&temp_stream);
 			return POP3_RETRIEVE_ERROR;
 		} else if (0 == read_len) {
@@ -606,7 +606,7 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 	                       &pcontext->stream, &tmp_len));
 	pcontext->write_length = tmp_len;
 	if (NULL == pcontext->write_buff) {
-		pop3_parser_log_info(pcontext, 8, "fatal error on stream object!");
+		pop3_parser_log_info(pcontext, LV_WARN, "error on stream object");
 		stream_clear(&pcontext->stream);
 		return POP3_RETRIEVE_ERROR;
 	}
