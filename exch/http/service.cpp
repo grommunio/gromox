@@ -22,12 +22,12 @@
 using namespace std::string_literals;
 
 namespace {
+
 struct REFERENCE_NODE {
 	DOUBLE_LIST_NODE	node;
 	char				module_name[256];
 	int					ref_count;
 };
-}
 
 struct SVC_PLUG_ENTITY {
 	SVC_PLUG_ENTITY();
@@ -44,7 +44,6 @@ struct SVC_PLUG_ENTITY {
 	bool completed_init = false;
 };
 
-namespace {
 struct SERVICE_ENTRY {
 	DOUBLE_LIST_NODE	node_service;
 	DOUBLE_LIST_NODE	node_lib;
@@ -54,8 +53,10 @@ struct SERVICE_ENTRY {
 	const std::type_info *type_info;
 	DOUBLE_LIST			list_reference;
 };
+
 }
 
+static int service_load_library(const char *);
 static void *service_query_service(const char *service, const std::type_info &);
 static BOOL service_register_talk(TALK_MAIN talk);
 static const char *service_get_plugin_name();
@@ -155,7 +156,7 @@ void service_stop()
  *      PLUGIN_FAIL_ALLOCNODE       fail to allocate memory for a node
  *      PLUGIN_FAIL_EXECUTEMAIN     error executing the plugin's init function
  */
-int service_load_library(const char *path)
+static int service_load_library(const char *path)
 {
 	const char *fake_path = path;
 
