@@ -33,6 +33,7 @@
 #define MAX_DIGLEN		256*1024
 
 using namespace std::string_literals;
+using namespace gromox;
 
 namespace {
 
@@ -1536,8 +1537,6 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 {
 	size_t temp_len;
 	char reason[256];
-	size_t string_length = 0, string_length1 = 0;
-	char buff[64*1024];
 	char temp_password[256];
 	
 	pcontext->proto_stat = PROTO_STAT_NOAUTH;
@@ -1564,7 +1563,7 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 		imap_parser_log_info(pcontext, LV_DEBUG, "login success");
 		return 1705 | DISPATCH_TAG;
 	}
-	imap_parser_log_info(pcontext, LV_WARN, "login fail");
+	imap_parser_log_info(pcontext, LV_WARN, "PASSWORD2 failed: %s", reason);
 	pcontext->auth_times ++;
 	if (pcontext->auth_times >= imap_parser_get_param(MAX_AUTH_TIMES)) {
 		if (system_services_add_user_into_temp_list != nullptr)
@@ -1572,13 +1571,7 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 				imap_parser_get_param(BLOCK_AUTH_FAIL));
 		return 1903 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
 	}
-	/* IMAP_CODE_2190004: NO login auth fail, */
-	auto imap_reply_str = resource_get_imap_code(1904, 1, &string_length);
-	auto imap_reply_str1 = resource_get_imap_code(1904, 2, &string_length1);
-	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s%s",
-	                pcontext->tag_string, imap_reply_str, reason, imap_reply_str1);
-	imap_parser_safe_write(pcontext, buff, string_length);
-	return DISPATCH_CONTINUE;
+	return 1904 | DISPATCH_CONTINUE | DISPATCH_TAG;
 }
 
 int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *ctx)
@@ -1590,8 +1583,6 @@ int imap_cmd_parser_password(int argc, char **argv, IMAP_CONTEXT *ctx)
 int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	char reason[256];
-	size_t string_length = 0, string_length1 = 0;
-	char buff[64*1024];
 	char temp_password[256];
     
 	if (TRUE == imap_parser_get_param(IMAP_SUPPORT_STARTTLS) &&
@@ -1627,7 +1618,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_log_info(pcontext, LV_DEBUG, "login success");
 		return 1705;
 	}
-	imap_parser_log_info(pcontext, LV_WARN, "login fail");
+	imap_parser_log_info(pcontext, LV_WARN, "LOGIN failed: %s", reason);
 	pcontext->auth_times++;
 	if (pcontext->auth_times >= imap_parser_get_param(MAX_AUTH_TIMES)) {
 		if (system_services_add_user_into_temp_list != nullptr)
@@ -1635,14 +1626,8 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 				imap_parser_get_param(BLOCK_AUTH_FAIL));
 		return 1903 | DISPATCH_SHOULD_CLOSE;
 	}
-
-	/* IMAP_CODE_2190004: NO login auth fail, */
-	auto imap_reply_str = resource_get_imap_code(1904, 1, &string_length);
-	auto imap_reply_str1 = resource_get_imap_code(1904, 2, &string_length1);
-	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s%s", argv[0],
-	                imap_reply_str, reason, imap_reply_str1);
-	imap_parser_safe_write(pcontext, buff, string_length);
-	return DISPATCH_CONTINUE;
+	gx_strlcpy(pcontext->tag_string, argv[0], arsizeof(pcontext->tag_string));
+	return 1904 | DISPATCH_CONTINUE | DISPATCH_TAG;
 }
 
 int imap_cmd_parser_idle(int argc, char **argv, IMAP_CONTEXT *pcontext)

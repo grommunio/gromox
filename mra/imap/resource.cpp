@@ -103,7 +103,7 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{1901, "NO access denied by user filter"},
 	{1902, "NO cannot get mailbox location from database"},
 	{1903, "NO too many failures, user will be blocked for a while"},
-	{1904, "NO login auth fail, <reason>"},
+	{1904, "NO Wrong username or password, or administratively blocked"},
 	{1905, "NO server internal error, missing MIDB connection"},
 	{1906, "NO server internal error, fail to communicate with MIDB"},
 	{1907, "NO server internal error, <reason>"},
