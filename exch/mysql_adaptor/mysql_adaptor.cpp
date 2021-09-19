@@ -93,8 +93,7 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 		return false;
 	conn.finish();
 	if (pmyres.num_rows() != 1) {
-		snprintf(reason, length, "user \"%s\" does not exist; check if "
-			"it is properly composed", username);
+		snprintf(reason, length, "user \"%s\" does not exist", username);
 		return FALSE;
 	}
 	
@@ -103,8 +102,7 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 	if (myrow[1] != nullptr)
 		dtypx = static_cast<enum display_type>(strtoul(myrow[1], nullptr, 0));
 	if (dtypx != DT_MAILUSER) {
-		snprintf(reason, length, "\"%s\" is not a real user; "
-			"correct the account name and retry.", username);
+		snprintf(reason, length, "\"%s\" is not a real user", username);
 		return FALSE;
 	}
 	temp_status = atoi(myrow[2]);
@@ -122,11 +120,11 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 	}
 
 	if (mode == USER_PRIVILEGE_POP3_IMAP && !(strtoul(myrow[3], nullptr, 0) & USER_PRIVILEGE_POP3_IMAP)) {
-		strncpy(reason, "you are not authorized to download email through the POP3 or IMAP server", length);
+		snprintf(reason, length, "\"%s\" is not authorized to use the POP3/IMAP services", username);
 		return false;
 	}
 	if (mode == USER_PRIVILEGE_SMTP && !(strtoul(myrow[3], nullptr, 0) & USER_PRIVILEGE_SMTP)) {
-		strncpy(reason, "you are not authorized to download email through the SMTP server", length);
+		snprintf(reason, length, "\"%s\" is not authorized to use the SMTP service", username);
 		return false;
 	}
 

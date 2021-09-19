@@ -733,8 +733,10 @@ uint32_t zarafa_server_logon(const char *username,
 		return ecUnknownUser;
 	pdomain ++;
 	if (password != nullptr && !system_services_auth_login(username,
-	    password, maildir, lang, reason, arsizeof(reason)))
+	    password, maildir, lang, reason, arsizeof(reason))) {
+		fprintf(stderr, "auth rejected: %s\n", reason);
 		return ecLoginFailure;
+	}
 	gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 	HX_strlower(tmp_name);
 	std::unique_lock tl_hold(g_table_lock);
