@@ -41,7 +41,8 @@ enum {
 	AF_USER_SUSPENDED   = 0x01,
 	AF_USER_OUTOFDATE   = 0x02,
 	AF_USER_DELETED     = 0x03,
-	AF_USER__MASK       = 0x03,
+	AF_USER_SHAREDMBOX  = 0x04,
+	AF_USER__MASK       = 0x07,
 
 	AF_GROUP_NORMAL     = 0x00,
 	AF_GROUP_SUSPENDED  = 0x10,
@@ -107,13 +108,16 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 	}
 	temp_status = atoi(myrow[2]);
 	if (0 != temp_status) {
+		auto uval = temp_status & AF_USER__MASK;
 		if (temp_status & AF_DOMAIN__MASK) {
 			snprintf(reason, length, "domain of user \"%s\" is disabled!",
 				username);
 		} else if (temp_status & AF_GROUP__MASK) {
 			snprintf(reason, length, "group of user \"%s\" is disabled!",
 				username);
-		} else if (temp_status & AF_USER__MASK) {
+		} else if (uval == AF_USER_SHAREDMBOX) {
+			snprintf(reason, length, "\"%s\" is a shared mailbox with no login", username);
+		} else if (uval != 0) {
 			snprintf(reason, length, "user \"%s\" is disabled!", username);
 		}
 		return FALSE;
