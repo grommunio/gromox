@@ -57,7 +57,7 @@ typedef void (*STOP_FUNC)();
 
 static void term_handler(int signo);
 
-int main(int argc, const char **argv)
+int main(int argc, const char **argv) try
 { 
 	int retcode = EXIT_FAILURE;
 	char temp_buff[256];
@@ -279,7 +279,9 @@ int main(int argc, const char **argv)
 			service_reload_all();
     }
 	return retcode;
-} 
+} catch (const cfg_error &) {
+	return EXIT_FAILURE;
+}
 
 static void term_handler(int signo)
 {

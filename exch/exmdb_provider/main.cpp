@@ -108,11 +108,15 @@ static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig)
 		       strerror(errno));
 		return false;
 	}
-	g_exrpc_debug = pconfig->get_ll("exrpc_debug");
+	try {
+		g_exrpc_debug = pconfig->get_ll("exrpc_debug");
+	} catch (const cfg_error &) {
+		return false;
+	}
 	return true;
 }
 
-static BOOL svc_exmdb_provider(int reason, void **ppdata)
+static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 {
 	char temp_buff[64];
 
@@ -299,5 +303,8 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata)
 		return TRUE;
 	}
 	return TRUE;
+} catch (const cfg_error &) {
+	return false;
 }
+
 SVC_ENTRY(svc_exmdb_provider);

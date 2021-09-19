@@ -60,7 +60,7 @@ typedef void (*STOP_FUNC)();
 
 static void term_handler(int signo);
 
-int main(int argc, const char **argv)
+int main(int argc, const char **argv) try
 { 
 	int retcode = EXIT_FAILURE;
 	struct rlimit rl;
@@ -424,7 +424,9 @@ int main(int argc, const char **argv)
 	}
 	listener_stop_accept();
 	return retcode;
-} 
+} catch (const cfg_error &) {
+	return EXIT_FAILURE;
+}
 
 static void term_handler(int signo)
 {

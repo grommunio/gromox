@@ -348,8 +348,10 @@ BOOL CONFIG_FILE::get_uint(const char *key, unsigned int *value) const
 unsigned long long CONFIG_FILE::get_ll(const char *key) const
 {
 	auto sv = get_value(key);
-	if (sv == nullptr)
-		throw std::runtime_error("config key "s + key + " not initialized");
+	if (sv == nullptr) {
+		fprintf(stderr, "*** config key \"%s\" has no default and was not set either", key);
+		throw cfg_error();
+	}
 	return strtoull(sv, nullptr, 0);
 }
 

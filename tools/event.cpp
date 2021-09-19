@@ -7,6 +7,7 @@
 #include <cerrno>
 #include <condition_variable>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <list>
 #include <memory>
@@ -122,7 +123,7 @@ DEQUEUE_NODE::~DEQUEUE_NODE()
 	fifo_free(&fifo);
 }
 
-int main(int argc, const char **argv)
+int main(int argc, const char **argv) try
 {
 	pthread_attr_t thr_attr;
 
@@ -273,6 +274,8 @@ int main(int argc, const char **argv)
 		sleep(1);
 	}
 	return 0;
+} catch (const cfg_error &) {
+	return EXIT_FAILURE;
 }
 
 static void *ev_scanwork(void *param)

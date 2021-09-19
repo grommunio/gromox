@@ -1,4 +1,5 @@
 #pragma once
+#include <exception>
 #include <memory>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
@@ -41,6 +42,8 @@ struct GX_EXPORT CONFIG_FILE {
 	size_t total_entries;
 	char file_name[256];
 };
+
+struct cfg_error : public std::exception {};
 
 extern GX_EXPORT std::shared_ptr<CONFIG_FILE> config_file_init(const char *filename);
 extern GX_EXPORT std::shared_ptr<CONFIG_FILE> config_file_initd(const char *basename, const char *searchdirs = nullptr);

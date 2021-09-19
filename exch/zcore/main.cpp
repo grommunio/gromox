@@ -7,6 +7,7 @@
 #include <atomic>
 #include <cerrno>
 #include <cstdint>
+#include <cstdlib>
 #include <memory>
 #include <libHX/option.h>
 #include <libHX/string.h>
@@ -83,7 +84,7 @@ static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 	return true;
 }
 
-int main(int argc, const char **argv)
+int main(int argc, const char **argv) try
 {
 	const char *str_value;
 	char temp_buff[45];
@@ -333,4 +334,6 @@ int main(int argc, const char **argv)
 		}
 	}
 	return 0;
+} catch (const cfg_error &) {
+	return EXIT_FAILURE;
 }

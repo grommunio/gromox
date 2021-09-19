@@ -4,6 +4,7 @@
 #endif
 #include <atomic>
 #include <cerrno>
+#include <cstdlib>
 #include <memory>
 #include <libHX/option.h>
 #include <libHX/string.h>
@@ -62,7 +63,7 @@ static void term_handler(int signo)
 	g_notify_stop = true;
 }
 
-int main(int argc, const char **argv)
+int main(int argc, const char **argv) try
 {
 	struct rlimit rl;
 	char temp_buff[45];
@@ -263,4 +264,6 @@ int main(int argc, const char **argv)
 			service_reload_all();
 	}
 	return 0;
+} catch (const cfg_error &) {
+	return EXIT_FAILURE;
 }
