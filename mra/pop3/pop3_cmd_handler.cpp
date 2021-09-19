@@ -136,9 +136,7 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
     POP3_CONTEXT *pcontext)
 {
-	size_t string_length = 0;
 	char reason[256];
-	char temp_buff[1024];
 	char temp_password[256];
     
 	if (line_length <= 5 || line_length > 255 + 1 + 4) {
@@ -194,7 +192,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 		pop3_parser_log_info(pcontext, 8, "login success");
 		return 1700;
 	} else {
-		pop3_parser_log_info(pcontext, 8, "login fail");
+		pop3_parser_log_info(pcontext, 8, "login failed: %s", reason);
 		pcontext->auth_times ++;
 		if (pcontext->auth_times >= pop3_parser_get_param(MAX_AUTH_TIMES)) {
 			if (system_services_add_user_into_temp_list != nullptr)
@@ -202,16 +200,7 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
 					pop3_parser_get_param(BLOCK_AUTH_FAIL));
 			return 1706 | DISPATCH_SHOULD_CLOSE;
 		}
-		string_length = sprintf(temp_buff, "%s%s%s",
-		                resource_get_pop3_code(1714, 1, &string_length),
-		                reason,
-		                resource_get_pop3_code(1714, 2, &string_length));
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, temp_buff, string_length);
-		} else {
-			write(pcontext->connection.sockd, temp_buff, string_length);
-		}
-		return DISPATCH_CONTINUE;
+		return 1714 | DISPATCH_CONTINUE;
 	}
 
 }

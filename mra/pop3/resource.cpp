@@ -34,7 +34,7 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{1711, "+OK <host> pop service ready"},
 	{1712, "-ERR access denied by ipaddr filter for <ip>"},
 	{1713, "-ERR <host> pop service unavailable"},
-	{1714, "-ERR login auth fail, because: <reason>"},
+	{1714, "-ERR Wrong username or password, or administratively blocked"},
 	{1715, "-ERR cannot get mailbox location from database"},
 	{1716, "-ERR failed to open/read inbox index"},
 	{1717, "-ERR access denied by user filter for <user>"},
