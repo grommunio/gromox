@@ -23,11 +23,11 @@ my_CXXFLAGS="-Wall -Wmissing-declarations"
 AC_MSG_CHECKING([available C++ standard])
 cxxmode=""
 for i in "c++17"; do
-	CXXFLAGS="$CXXFLAGS_system -std=$i"
+	CXXFLAGS="$saved_CXXFLAGS -std=$i"
 	AC_COMPILE_IFELSE([AC_LANG_SOURCE([])], [cxxmode="$i"])
 	AS_IF([test -n "$cxxmode"], [break])
 done
-CXXFLAGS="$CXXFLAGS_system"
+CXXFLAGS="$saved_CXXFLAGS"
 AS_IF([test -n "$cxxmode"], [
 	my_CXXFLAGS="$my_CXXFLAGS -std=$cxxmode"
 	AC_MSG_RESULT([$cxxmode])
