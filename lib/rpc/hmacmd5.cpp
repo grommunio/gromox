@@ -1,40 +1,48 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
+// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
-#include <gromox/hmacmd5.hpp>
 #include <cstring>
+#include <memory>
+#include <gromox/hmacmd5.hpp>
+
+using namespace gromox;
 
 /* the microsoft version of hmac_md5 initialisation */
-void hmacmd5_init(HMACMD5_CTX *ctx, const void *key, int key_len)
+HMACMD5_CTX::HMACMD5_CTX(const void *key, size_t key_len) :
+	osslctx(EVP_MD_CTX_new())
 {
-	int i;
-	
-	if (key_len > 64) {
+	if (osslctx == nullptr)
+		return;
+	if (key_len > 64)
 		key_len = 64;
-	}
-	memset(&ctx->k_ipad, 0, sizeof(ctx->k_ipad));
-	memset(&ctx->k_opad, 0, sizeof(ctx->k_opad));
-	memcpy( ctx->k_ipad, key, key_len);
-	memcpy( ctx->k_opad, key, key_len);
+	memcpy(k_ipad, key, key_len);
+	memcpy(k_opad, key, key_len);
 	/* XOR key with ipad and opad values */
-	for (i=0; i<64; i++) {
-		ctx->k_ipad[i] ^= 0x36;
-		ctx->k_opad[i] ^= 0x5c;
+	for (size_t i = 0; i < 64; ++i) {
+		k_ipad[i] ^= 0x36;
+		k_opad[i] ^= 0x5c;
 	}
-	MD5_Init(&ctx->ctx);
-	MD5_Update(&ctx->ctx, ctx->k_ipad, 64);  
+	if (EVP_DigestInit(osslctx.get(), EVP_md5()) <= 0 ||
+	    EVP_DigestUpdate(osslctx.get(), k_ipad, 64) <= 0)
+		return;
+	valid_flag = true;
 }
 
-void hmacmd5_update(HMACMD5_CTX *ctx, const void *text, int text_len)
+bool HMACMD5_CTX::update(const void *text, size_t text_len)
 {
-	MD5_Update(&ctx->ctx, text, text_len);
+	return EVP_DigestUpdate(osslctx.get(), text, text_len) > 0;
 }
 
-void hmacmd5_final(HMACMD5_CTX *ctx, void *digest)
+bool HMACMD5_CTX::finish(void *digest)
 {
-	MD5_CTX ctx_o;
-
-	MD5_Final(static_cast<uint8_t *>(digest), &ctx->ctx);
-	MD5_Init(&ctx_o);
-	MD5_Update(&ctx_o, ctx->k_opad, 64);   
-	MD5_Update(&ctx_o, digest, 16); 
-	MD5_Final(static_cast<uint8_t *>(digest), &ctx_o);
+	decltype(osslctx) ctx_o(EVP_MD_CTX_new());
+	if (ctx_o == nullptr ||
+	    EVP_DigestFinal(osslctx.get(), static_cast<uint8_t *>(digest), nullptr) <= 0 ||
+	    EVP_DigestInit(ctx_o.get(), EVP_md5()) <= 0 ||
+	    EVP_DigestUpdate(ctx_o.get(), k_opad, 64) <= 0 ||
+	    EVP_DigestUpdate(ctx_o.get(), digest, 16) <= 0 ||
+	    EVP_DigestFinal(ctx_o.get(), static_cast<uint8_t *>(digest), nullptr) <= 0)
+		return false;
+	return true;
 }

@@ -61,7 +61,7 @@ extern int ab_tree_run();
 extern void ab_tree_stop();
 extern AB_BASE_REF ab_tree_get_base(int base_id);
 uint32_t ab_tree_get_leaves_num(SIMPLE_TREE_NODE *pnode);
-void ab_tree_node_to_guid(SIMPLE_TREE_NODE *pnode, GUID *pguid);
+extern bool ab_tree_node_to_guid(SIMPLE_TREE_NODE *, GUID *) __attribute__((warn_unused_result));
 BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length);
 SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn);
 SIMPLE_TREE_NODE* ab_tree_uid_to_node(AB_BASE *pbase, int user_id);

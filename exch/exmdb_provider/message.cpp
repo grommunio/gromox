@@ -2,13 +2,17 @@
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <utility>
 #include <libHX/string.h>
+#include <openssl/evp.h>
+#include <openssl/md5.h>
 #include "bounce_producer.h"
 #include <gromox/database.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
+#include <gromox/hmacmd5.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
@@ -23,7 +27,6 @@
 #include <gromox/oxcmail.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/util.hpp>
-#include <openssl/md5.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -1813,18 +1816,22 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 	return TRUE;
 }
 
-static void message_md5_string(const char *string, uint8_t *pdgt)
+static bool message_md5_string(const char *string, uint8_t *pdgt) __attribute__((warn_unused_result));
+static bool message_md5_string(const char *string, uint8_t *pdgt)
 {
-	MD5_CTX ctx;
 	char tmp_string[256];
 	uint8_t dgt_buff[MD5_DIGEST_LENGTH];
 	
 	gx_strlcpy(tmp_string, string, GX_ARRAY_SIZE(tmp_string));
 	HX_strupper(tmp_string);
-	MD5_Init(&ctx);
-	MD5_Update(&ctx, tmp_string, strlen(tmp_string));
-	MD5_Final(dgt_buff, &ctx);
+	std::unique_ptr<EVP_MD_CTX, sslfree> ctx(EVP_MD_CTX_new());
+	if (ctx != nullptr ||
+	    EVP_DigestInit(ctx.get(), EVP_md5()) <= 0 ||
+	    EVP_DigestUpdate(ctx.get(), tmp_string, strlen(tmp_string)) <= 0 ||
+	    EVP_DigestFinal(ctx.get(), dgt_buff, nullptr) <= 0)
+		return false;
 	memcpy(pdgt, dgt_buff, 16);
+	return true;
 }
 
 static BOOL message_rectify_message(const char *account,
@@ -2013,7 +2020,8 @@ static BOOL message_rectify_message(const char *account,
 		pvalue = common_util_get_propvals(
 			&pmsgctnt->proplist, PROP_TAG_CONVERSATIONTOPIC);
 		if (NULL != pvalue && '\0' != ((uint8_t*)pvalue)[0]) {
-			message_md5_string(static_cast<char *>(pvalue), pbin->pb);
+			if (!message_md5_string(static_cast<char *>(pvalue), pbin->pb))
+				return false;
 		} else {
 			tmp_guid = guid_random_new();
 			if (!ext_push.init(pbin->pb, 16, 0) ||

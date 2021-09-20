@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <atomic>
 #include <cstdint>
+#include <memory>
 #include <mutex>
 #include <new>
 #include <string>
@@ -28,7 +29,9 @@
 #include <pthread.h> 
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <openssl/evp.h>
 #include <openssl/md5.h>
+#include <gromox/hmacmd5.hpp>
 #include "../mysql_adaptor/mysql_adaptor.h"
 #include "common_util.h"
 #include "nsp_types.h"
@@ -965,24 +968,28 @@ static BOOL ab_tree_node_to_path(SIMPLE_TREE_NODE *pnode,
 }
 
 
-static void ab_tree_md5_path(const char *path, uint64_t *pdgt)
+static bool ab_tree_md5_path(const char *path, uint64_t *pdgt) __attribute__((warn_unused_result));
+static bool ab_tree_md5_path(const char *path, uint64_t *pdgt)
 {
 	int i;
 	uint64_t b;
-	MD5_CTX ctx;
 	uint8_t dgt_buff[MD5_DIGEST_LENGTH];
-	
-	MD5_Init(&ctx);
-	MD5_Update(&ctx, path, strlen(path));
-	MD5_Final(dgt_buff, &ctx);
+	std::unique_ptr<EVP_MD_CTX, sslfree> ctx(EVP_MD_CTX_new());
+
+	if (ctx == nullptr ||
+	    EVP_DigestInit(ctx.get(), EVP_md5()) <= 0 ||
+	    EVP_DigestUpdate(ctx.get(), path, strlen(path)) <= 0 ||
+	    EVP_DigestFinal(ctx.get(), dgt_buff, nullptr) <= 0)
+		return false;
 	*pdgt = 0;
 	for (i=0; i<16; i+=2) {
 		b = dgt_buff[i];
 		*pdgt |= (b << 4*i);
 	}
+	return true;
 }
 
-void ab_tree_node_to_guid(SIMPLE_TREE_NODE *pnode, GUID *pguid)
+bool ab_tree_node_to_guid(SIMPLE_TREE_NODE *pnode, GUID *pguid)
 {
 	uint64_t dgt;
 	uint32_t tmp_id;
@@ -1013,7 +1020,8 @@ void ab_tree_node_to_guid(SIMPLE_TREE_NODE *pnode, GUID *pguid)
 	memset(temp_path, 0, sizeof(temp_path));
 	ab_tree_node_to_path((SIMPLE_TREE_NODE*)
 		pabnode, temp_path, sizeof(temp_path));
-	ab_tree_md5_path(temp_path, &dgt);
+	if (!ab_tree_md5_path(temp_path, &dgt))
+		return false;
 	pguid->node[0] = dgt & 0xFF;
 	pguid->node[1] = (dgt & 0xFF00) >> 8;
 	pguid->node[2] = (dgt & 0xFF0000) >> 16;
@@ -1022,6 +1030,7 @@ void ab_tree_node_to_guid(SIMPLE_TREE_NODE *pnode, GUID *pguid)
 	pguid->node[5] = (dgt & 0xFF0000000000ULL) >> 40;
 	pguid->clock_seq[0] = (dgt & 0xFF000000000000ULL) >> 48;
 	pguid->clock_seq[1] = (dgt & 0xFF00000000000000ULL) >> 56;
+	return true;
 }
 
 BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)

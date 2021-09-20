@@ -107,7 +107,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		return ecSuccess;
 	case PR_EMS_AB_OBJECT_GUID:
-		ab_tree_node_to_guid(pnode, &temp_guid);
+		if (!ab_tree_node_to_guid(pnode, &temp_guid))
+			return ecMAPIOOM;
 		if (NULL == pbuff) {
 			pprop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, 16);
 			if (pprop->value.bin.pv == nullptr)
@@ -2357,7 +2358,8 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 	if (NULL == ppermeid) {
 		return ecMAPIOOM;
 	}
-	ab_tree_node_to_guid(pnode, &tmp_guid);
+	if (!ab_tree_node_to_guid(pnode, &tmp_guid))
+		return ecMAPIOOM;
 	if (FALSE == common_util_set_permanententryid(
 		DT_CONTAINER, &tmp_guid, NULL, ppermeid)) {
 		return ecMAPIOOM;

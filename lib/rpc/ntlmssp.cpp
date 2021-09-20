@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <cstdint>
+#include <memory>
 #include <libHX/string.h>
 #include <gromox/arcfour.hpp>
 #include <gromox/defs.h>
@@ -14,7 +15,8 @@
 #include <cstdarg>
 #include <cstring>
 #include <cstdlib>
-#include <openssl/md4.h>  
+#include <openssl/evp.h>
+#include <openssl/md4.h>
 #include <openssl/md5.h>
 
 #define MSVAVEOL					0
@@ -35,6 +37,8 @@
 #define CLI_SEAL		"session key to client-to-server sealing key magic constant"
 #define SRV_SIGN		"session key to server-to-client signing key magic constant"
 #define SRV_SEAL		"session key to server-to-client sealing key magic constant"
+
+using namespace gromox;
 
 enum {
 	NTLMSSP_WINDOWS_MAJOR_VERSION_5 = 0x05,
@@ -145,15 +149,19 @@ static void ntlmssp_lm_session_key(const uint8_t lm_hash[16],
 	memcpy(session_key, p24, 16);
 }
 
-static void ntlmssp_calc_ntlm2_key(uint8_t subkey[16],
+static bool ntlmssp_calc_ntlm2_key(uint8_t subkey[MD5_DIGEST_LENGTH], DATA_BLOB session_key, const char *constant) __attribute__((warn_unused_result));
+static bool ntlmssp_calc_ntlm2_key(uint8_t subkey[MD5_DIGEST_LENGTH],
 	DATA_BLOB session_key, const char *constant)
 {
-	MD5_CTX md5_ctx;
-	
-	MD5_Init(&md5_ctx);
-	MD5_Update(&md5_ctx, session_key.data, session_key.length);
-	MD5_Update(&md5_ctx, constant, strlen(constant) + 1);
-	MD5_Final(subkey, &md5_ctx);
+	std::unique_ptr<EVP_MD_CTX, sslfree> ctx(EVP_MD_CTX_new());
+	if (ctx == nullptr ||
+	    EVP_DigestInit(ctx.get(), EVP_md5()) <= 0)
+		return false;
+	if (EVP_DigestUpdate(ctx.get(), session_key.data, session_key.length) <= 0 ||
+	    EVP_DigestUpdate(ctx.get(), constant, strlen(constant) + 1) <= 0 ||
+	    EVP_DigestFinal(ctx.get(), subkey, nullptr) <= 0)
+		return false;
+	return true;
 }
 
 static int ntlmssp_utf8_to_utf16le(const char *src, void *dst, size_t len)
@@ -196,24 +204,29 @@ static bool ntlmssp_utf16le_to_utf8(const void *src, size_t src_len,
 	}
 }
 
-static void ntlmssp_md4hash(const char *passwd, void *p16v)
+static bool ntlmssp_md4hash(const char *passwd, void *p16v) __attribute__((warn_unused_result));
+static bool ntlmssp_md4hash(const char *passwd, void *p16v)
 {
 	auto p16 = static_cast<uint8_t *>(p16v);
 	int passwd_len;
-	MD4_CTX md4_ctx;
 	char upasswd[256];
 
-	memset(p16, 0, 16);
+	memset(p16, 0, MD4_DIGEST_LENGTH);
 	passwd_len = ntlmssp_utf8_to_utf16le(passwd, upasswd, sizeof(upasswd));
 	if (passwd_len < 0) {
-		return;
+		return false;
 	}
-	MD4_Init(&md4_ctx);
-	MD4_Update(&md4_ctx, upasswd, passwd_len);
-	MD4_Final(p16, &md4_ctx);
+	std::unique_ptr<EVP_MD_CTX, sslfree> ctx(EVP_MD_CTX_new());
+	if (ctx == nullptr ||
+	    EVP_DigestInit(ctx.get(), EVP_md4()) <= 0 ||
+	    EVP_DigestUpdate(ctx.get(), upasswd, passwd_len) <= 0 ||
+	    EVP_DigestFinal(ctx.get(), p16, nullptr) <= 0)
+		return false;
+	return true;
 }
 
-static void ntlmssp_deshash(const char *passwd, uint8_t p16[16])
+static bool ntlmssp_deshash(const char *passwd, uint8_t p16[16]) __attribute__((warn_unused_result));
+static bool ntlmssp_deshash(const char *passwd, uint8_t p16[16])
 {
 	int len;
 	char tmpbuf[14];
@@ -228,9 +241,8 @@ static void ntlmssp_deshash(const char *passwd, uint8_t p16[16])
 	HX_strupper(tmpbuf);
 	/* Only the first 14 chars are considered */
 	E_P16(tmpbuf, p16);  /* ntlmdes.h */
+	return true;
 }
-
-
 
 /*
   format specifiers are:
@@ -830,7 +842,6 @@ static bool ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
 static bool ntlmssp_server_preauth(NTLMSSP_CTX *pntlmssp,
 	NTLMSSP_SERVER_AUTH_STATE *pauth, const DATA_BLOB request)
 {
-	MD5_CTX md5_ctx;
 	const char *parse_string;
 	char client_netbios_name[1024];
 	uint8_t session_nonce_hash[16];
@@ -896,9 +907,12 @@ static bool ntlmssp_server_preauth(NTLMSSP_CTX *pntlmssp,
 			memcpy(pauth->session_nonce, pntlmssp->internal_chal.data, 8);
 			memcpy(pauth->session_nonce + 8, pntlmssp->lm_resp.data, 8);
 
-			MD5_Init(&md5_ctx);
-			MD5_Update(&md5_ctx, pauth->session_nonce, 16);
-			MD5_Final(session_nonce_hash, &md5_ctx);
+			std::unique_ptr<EVP_MD_CTX, sslfree> ctx(EVP_MD_CTX_new());
+			if (ctx == nullptr ||
+			    EVP_DigestInit(ctx.get(), EVP_md5()) <= 0 ||
+			    EVP_DigestUpdate(ctx.get(), pauth->session_nonce, 16) <= 0 ||
+			    EVP_DigestFinal(ctx.get(), session_nonce_hash, nullptr) <= 0)
+				return false;
 
 			/* LM response is no longer useful */
 			pntlmssp->lm_resp.length = 0;
@@ -920,7 +934,6 @@ static bool ntlmssp_check_ntlm1(const DATA_BLOB *pnt_response,
 	/* Finish the encryption of part_passwd. */
 	uint8_t p21[21];
 	uint8_t p24[24];
-	MD4_CTX md4_ctx;
 	
 	if (psec_blob->length != 8) {
 		debug_info("[ntlmssp]: incorrect challenge size (%lu) in check_ntlm1", 
@@ -940,9 +953,12 @@ static bool ntlmssp_check_ntlm1(const DATA_BLOB *pnt_response,
 	
 	if (0 == memcmp(p24, pnt_response->data, 24)) {
 		if (puser_key != NULL) {
-			MD4_Init(&md4_ctx);
-			MD4_Update(&md4_ctx, (void*)part_passwd, 16);
-			MD4_Final(puser_key->data, &md4_ctx);
+			std::unique_ptr<EVP_MD_CTX, sslfree> ctx(EVP_MD_CTX_new());
+			if (ctx == nullptr ||
+			    EVP_DigestInit(ctx.get(), EVP_md4()) <= 0 ||
+			    EVP_DigestUpdate(ctx.get(), part_passwd, 16) <= 0 ||
+			    EVP_DigestFinal(ctx.get(), puser_key->data, nullptr) <= 0)
+				return false;
 			puser_key->length = 16;
 		}
 		return true;
@@ -960,7 +976,6 @@ static bool ntlmssp_check_ntlm2(const DATA_BLOB *pntv2_response,
 	char user_in[256];
 	char tmp_user[UADDR_SIZE];
 	char domain_in[256];
-	HMACMD5_CTX hmac_ctx;
 	DATA_BLOB client_key;
 	uint8_t value_from_encryption[16];
 
@@ -985,21 +1000,27 @@ static bool ntlmssp_check_ntlm2(const DATA_BLOB *pntv2_response,
 	if (user_len < 0 || domain_len < 0) {
 		return false;
 	}
-	
-	hmacmd5_init(&hmac_ctx, part_passwd, 16);  
-	hmacmd5_update(&hmac_ctx, user_in, user_len);
-	hmacmd5_update(&hmac_ctx, domain_in, domain_len);
-	hmacmd5_final(&hmac_ctx, kr);  
-	
-	hmacmd5_init(&hmac_ctx, kr, 16);
-	hmacmd5_update(&hmac_ctx, psec_blob->data, psec_blob->length);
-	hmacmd5_update(&hmac_ctx, client_key.data, client_key.length);
-	hmacmd5_final(&hmac_ctx, value_from_encryption);
+
+	HMACMD5_CTX hmac_ctx(part_passwd, 16);
+	if (!hmac_ctx.is_valid() ||
+	    !hmac_ctx.update(user_in, user_len) ||
+	    !hmac_ctx.update(domain_in, domain_len) ||
+	    !hmac_ctx.finish(kr))
+		return false;
+
+	hmac_ctx = HMACMD5_CTX(kr, 16);
+	if (!hmac_ctx.is_valid() ||
+	    !hmac_ctx.update(psec_blob->data, psec_blob->length) ||
+	    !hmac_ctx.update(client_key.data, client_key.length) ||
+	    !hmac_ctx.finish(value_from_encryption))
+		return false;
 
 	if (0 == memcmp(value_from_encryption, pntv2_response->data, 16)) {
-		hmacmd5_init(&hmac_ctx, kr, 16);
-		hmacmd5_update(&hmac_ctx, value_from_encryption, 16);
-		hmacmd5_final(&hmac_ctx, puser_key->data);
+		hmac_ctx = HMACMD5_CTX(kr, 16);
+		if (!hmac_ctx.is_valid() ||
+		    !hmac_ctx.update(value_from_encryption, 16) ||
+		    !hmac_ctx.finish(puser_key->data))
+			return false;
 		puser_key->length = 16;
 		return true;
 	}
@@ -1017,7 +1038,6 @@ static bool ntlmssp_sess_key_ntlm2(const DATA_BLOB *pntv2_response,
 	char tmp_user[UADDR_SIZE];
 	char domain_in[256];
 	DATA_BLOB client_key;
-	HMACMD5_CTX hmac_ctx;
 	uint8_t value_from_encryption[16];
 	
 
@@ -1045,20 +1065,26 @@ static bool ntlmssp_sess_key_ntlm2(const DATA_BLOB *pntv2_response,
 	if (user_len < 0 || domain_len < 0) {
 		return false;
 	}
-	
-	hmacmd5_init(&hmac_ctx, part_passwd, 16);  
-	hmacmd5_update(&hmac_ctx, user_in, user_len);
-	hmacmd5_update(&hmac_ctx, domain_in, domain_len);
-	hmacmd5_final(&hmac_ctx, kr);  
-	
-	hmacmd5_init(&hmac_ctx, kr, 16);  
-	hmacmd5_update(&hmac_ctx, psec_blob->data, psec_blob->length);
-	hmacmd5_update(&hmac_ctx, client_key.data, client_key.length);
-	hmacmd5_final(&hmac_ctx, value_from_encryption);
-	
-	hmacmd5_init(&hmac_ctx, kr, 16);  
-	hmacmd5_update(&hmac_ctx, value_from_encryption, 16);
-	hmacmd5_final(&hmac_ctx, puser_key->data);  
+
+	HMACMD5_CTX hmac_ctx(part_passwd, 16);
+	if (!hmac_ctx.is_valid() ||
+	    !hmac_ctx.update(user_in, user_len) ||
+	    !hmac_ctx.update(domain_in, domain_len) ||
+	    !hmac_ctx.finish(kr))
+		return false;
+
+	hmac_ctx = HMACMD5_CTX(kr, 16);
+	if (!hmac_ctx.is_valid() ||
+	    !hmac_ctx.update(psec_blob->data, psec_blob->length) ||
+	    !hmac_ctx.update(client_key.data, client_key.length) ||
+	    !hmac_ctx.finish(value_from_encryption))
+		return false;
+
+	hmac_ctx = HMACMD5_CTX(kr, 16);
+	if (!hmac_ctx.is_valid() ||
+	    !hmac_ctx.update(value_from_encryption, 16) ||
+	    !hmac_ctx.finish(puser_key->data))
+		return false;
 	puser_key->length = 16;
 	return true;
 }
@@ -1081,8 +1107,9 @@ static bool ntlmssp_server_chkpasswd(NTLMSSP_CTX *pntlmssp,
 	gx_strlcpy(upper_domain, pntlmssp->domain, GX_ARRAY_SIZE(upper_domain));
 	HX_strupper(upper_domain);
 	uint8_t nt_p16[16]{}, p16[16]{};
-	ntlmssp_md4hash(plain_passwd, nt_p16);
-	ntlmssp_deshash(plain_passwd, p16);
+	if (!ntlmssp_md4hash(plain_passwd, nt_p16) ||
+	    !ntlmssp_deshash(plain_passwd, p16))
+		return false;
 	
 	if (pnt_response->length != 0 && pnt_response->length < 24) {
 		debug_info("[ntlmssp]: invalid NT password length (%u) for user %s "
@@ -1247,12 +1274,13 @@ static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
 		}
 		
 		/* SEND: sign key */
-		ntlmssp_calc_ntlm2_key(pntlmssp->crypt.ntlm2.sending.sign_key,
-				pntlmssp->session_key, send_sign_const);
+		if (!ntlmssp_calc_ntlm2_key(pntlmssp->crypt.ntlm2.sending.sign_key,
+		    pntlmssp->session_key, send_sign_const))
+			return false;
 		
 		/* SEND: seal ARCFOUR pad */
-		ntlmssp_calc_ntlm2_key(send_seal_buff, weak_key, send_seal_const);
-
+		if (!ntlmssp_calc_ntlm2_key(send_seal_buff, weak_key, send_seal_const))
+			return false;
 		arcfour_init(&pntlmssp->crypt.ntlm2.sending.seal_state,
 			     &send_seal_blob);
 
@@ -1260,11 +1288,13 @@ static bool ntlmssp_sign_init(NTLMSSP_CTX *pntlmssp)
 		pntlmssp->crypt.ntlm2.sending.seq_num = 0;
 
 		/* RECV: sign key */
-		ntlmssp_calc_ntlm2_key(pntlmssp->crypt.ntlm2.receiving.sign_key,
-				pntlmssp->session_key, recv_sign_const);
+		if (!ntlmssp_calc_ntlm2_key(pntlmssp->crypt.ntlm2.receiving.sign_key,
+		    pntlmssp->session_key, recv_sign_const))
+			return false;
 
 		/* RECV: seal ARCFOUR pad */
-		ntlmssp_calc_ntlm2_key(recv_seal_buff, weak_key, recv_seal_const);
+		if (!ntlmssp_calc_ntlm2_key(recv_seal_buff, weak_key, recv_seal_const))
+			return false;
 
 		arcfour_init(&pntlmssp->crypt.ntlm2.receiving.seal_state,
 			     &recv_seal_blob);
@@ -1315,7 +1345,6 @@ static bool ntlmssp_server_postauth(NTLMSSP_CTX *pntlmssp,
 {
 	DATA_BLOB *plm_key;
 	DATA_BLOB *puser_key;
-	HMACMD5_CTX hmac_ctx;
 	DATA_BLOB session_key;
 	uint8_t session_key_buff[32];
 	static constexpr uint8_t zeros[24]{};
@@ -1328,10 +1357,11 @@ static bool ntlmssp_server_postauth(NTLMSSP_CTX *pntlmssp,
 	/* Handle the different session key derivation for NTLM2 */
 	if (pauth->doing_ntlm2) {
 		if (16 == puser_key->length) {
-			hmacmd5_init(&hmac_ctx, puser_key->data, 16);
-			hmacmd5_update(&hmac_ctx, pauth->session_nonce,
-				sizeof(pauth->session_nonce));
-			hmacmd5_final(&hmac_ctx, session_key.data);
+			HMACMD5_CTX hmac_ctx(puser_key->data, 16);
+			if (!hmac_ctx.is_valid() ||
+			    !hmac_ctx.update(pauth->session_nonce, sizeof(pauth->session_nonce)) ||
+			    !hmac_ctx.finish(session_key.data))
+				return false;
 			session_key.length = 16;
 		} else {
 			session_key.length = 0;
@@ -1498,30 +1528,31 @@ static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
 	uint32_t crc;
 	uint8_t digest[16];
 	uint8_t seq_num[4];
-	HMACMD5_CTX hmac_ctx;
 	
 	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
+		HMACMD5_CTX hmac_ctx;
 		uint32_t enc4;
+
 		switch (direction) {
 		case NTLMSSP_DIRECTION_SEND:
 			enc4 = cpu_to_le32(pntlmssp->crypt.ntlm2.sending.seq_num);
 			memcpy(seq_num, &enc4, sizeof(enc4));
 			pntlmssp->crypt.ntlm2.sending.seq_num ++;
-			hmacmd5_init(&hmac_ctx,
-				pntlmssp->crypt.ntlm2.sending.sign_key, 16);  
+			hmac_ctx = HMACMD5_CTX(pntlmssp->crypt.ntlm2.sending.sign_key, 16);
 			break;
 		case NTLMSSP_DIRECTION_RECEIVE:
 			enc4 = cpu_to_le32(pntlmssp->crypt.ntlm2.receiving.seq_num);
 			memcpy(seq_num, &enc4, sizeof(enc4));
 			pntlmssp->crypt.ntlm2.receiving.seq_num ++;
-			hmacmd5_init(&hmac_ctx,
-				pntlmssp->crypt.ntlm2.receiving.sign_key, 16);
+			hmac_ctx = HMACMD5_CTX(pntlmssp->crypt.ntlm2.receiving.sign_key, 16);
 			break;
 		}
 
-		hmacmd5_update(&hmac_ctx, seq_num, sizeof(seq_num));
-		hmacmd5_update(&hmac_ctx, pwhole_pdu, pdu_length);
-		hmacmd5_final(&hmac_ctx, digest);
+		if (!hmac_ctx.is_valid() ||
+		    !hmac_ctx.update(seq_num, sizeof(seq_num)) ||
+		    !hmac_ctx.update(pwhole_pdu, pdu_length) ||
+		    !hmac_ctx.finish(digest))
+			return false;
 
 		if (encrypt_sig && (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH)) {
 			switch (direction) {

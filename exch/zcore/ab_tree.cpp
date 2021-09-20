@@ -33,7 +33,9 @@
 #include <pthread.h> 
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <openssl/evp.h>
 #include <openssl/md5.h>
+#include <gromox/hmacmd5.hpp>
 #include "../mysql_adaptor/mysql_adaptor.h"
 
 #define EPOCH_DIFF 							11644473600LL
@@ -914,22 +916,24 @@ static BOOL ab_tree_node_to_path(SIMPLE_TREE_NODE *pnode,
 	return TRUE;
 }
 
-
-static void ab_tree_md5_path(const char *path, uint64_t *pdgt)
+static bool ab_tree_md5_path(const char *path, uint64_t *pdgt) __attribute__((warn_unused_result));
+static bool ab_tree_md5_path(const char *path, uint64_t *pdgt)
 {
 	int i;
 	uint64_t b;
-	MD5_CTX ctx;
 	uint8_t dgt_buff[MD5_DIGEST_LENGTH];
-	
-	MD5_Init(&ctx);
-	MD5_Update(&ctx, path, strlen(path));
-	MD5_Final(dgt_buff, &ctx);
+	std::unique_ptr<EVP_MD_CTX, sslfree> ctx(EVP_MD_CTX_new());
+	if (ctx == nullptr ||
+	    EVP_DigestInit(ctx.get(), EVP_md5()) <= 0 ||
+	    EVP_DigestUpdate(ctx.get(), path, strlen(path)) <= 0 ||
+	    EVP_DigestFinal(ctx.get(), dgt_buff, nullptr) <= 0)
+		return false;
 	*pdgt = 0;
 	for (i=0; i<16; i+=2) {
 		b = dgt_buff[i];
 		*pdgt |= (b << 4*i);
 	}
+	return true;
 }
 
 static void ab_tree_enum_guid(SIMPLE_TREE_NODE *pnode, void *pparam)
@@ -951,7 +955,8 @@ static void ab_tree_enum_guid(SIMPLE_TREE_NODE *pnode, void *pparam)
 		return;
 	}
 	ab_tree_node_to_path(pnode, temp_path, sizeof(temp_path));
-	ab_tree_md5_path(temp_path, &dgt);
+	if (!ab_tree_md5_path(temp_path, &dgt))
+		return;
 	if (dgt == penum->dgt) {
 		penum->pabnode = pabnode;
 	}
@@ -998,7 +1003,8 @@ SIMPLE_TREE_NODE* ab_tree_guid_to_node(
 	return (SIMPLE_TREE_NODE*)tmp_enum.pabnode;
 }
 
-static void ab_tree_node_to_guid(SIMPLE_TREE_NODE *pnode, GUID *pguid)
+static bool ab_tree_node_to_guid(SIMPLE_TREE_NODE *pnode, GUID *pguid) __attribute__((warn_unused_result));
+static bool ab_tree_node_to_guid(SIMPLE_TREE_NODE *pnode, GUID *pguid)
 {
 	uint64_t dgt;
 	uint32_t tmp_id;
@@ -1029,7 +1035,8 @@ static void ab_tree_node_to_guid(SIMPLE_TREE_NODE *pnode, GUID *pguid)
 	memset(temp_path, 0, sizeof(temp_path));
 	ab_tree_node_to_path((SIMPLE_TREE_NODE*)
 		pabnode, temp_path, sizeof(temp_path));
-	ab_tree_md5_path(temp_path, &dgt);
+	if (!ab_tree_md5_path(temp_path, &dgt))
+		return false;
 	pguid->node[0] = dgt & 0xFF;
 	pguid->node[1] = (dgt & 0xFF00) >> 8;
 	pguid->node[2] = (dgt & 0xFF0000) >> 16;
@@ -1038,6 +1045,7 @@ static void ab_tree_node_to_guid(SIMPLE_TREE_NODE *pnode, GUID *pguid)
 	pguid->node[5] = (dgt & 0xFF0000000000ULL) >> 40;
 	pguid->clock_seq[0] = (dgt & 0xFF000000000000ULL) >> 48;
 	pguid->clock_seq[1] = (dgt & 0xFF00000000000000ULL) >> 56;
+	return true;
 }
 
 static BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
@@ -1069,7 +1077,8 @@ static BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 	case NODE_TYPE_DOMAIN:
 	case NODE_TYPE_GROUP:
 	case NODE_TYPE_CLASS:
-		ab_tree_node_to_guid(pnode, &guid);
+		if (!ab_tree_node_to_guid(pnode, &guid))
+			return false;
 		snprintf(pbuff, 128,
 			"/guid=%08X%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X",
 			guid.time_low, guid.time_mid,
@@ -1550,7 +1559,8 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	case PR_EMS_AB_OBJECT_GUID:
-		ab_tree_node_to_guid(pnode, &temp_guid);
+		if (!ab_tree_node_to_guid(pnode, &temp_guid))
+			return false;
 		pvalue = common_util_guid_to_binary(temp_guid);
 		if (NULL == pvalue) {
 			return FALSE;

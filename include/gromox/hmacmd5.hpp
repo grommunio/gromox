@@ -1,13 +1,25 @@
 #pragma once
 #include <cstdint>
-#include <openssl/md5.h>
+#include <memory>
+#include <openssl/evp.h>
 
-struct HMACMD5_CTX {
-	MD5_CTX ctx;
-	uint8_t k_ipad[65];    
-	uint8_t k_opad[65];
+namespace gromox {
+
+struct sslfree {
+	void operator()(EVP_MD_CTX *x) { EVP_MD_CTX_free(x); }
 };
 
-extern void hmacmd5_init(HMACMD5_CTX *ctx, const void *key, int key_len);
-extern void hmacmd5_update(HMACMD5_CTX *ctx, const void *text, int text_len);
-extern void hmacmd5_final(HMACMD5_CTX *ctx, void *digest);
+struct HMACMD5_CTX {
+	HMACMD5_CTX() = default;
+	HMACMD5_CTX(const void *key, size_t len);
+	bool update(const void *text, size_t len);
+	bool finish(void *output);
+	bool is_valid() const { return valid_flag; }
+
+	protected:
+	std::unique_ptr<EVP_MD_CTX, sslfree> osslctx;
+	uint8_t k_ipad[65]{}, k_opad[65]{};
+	bool valid_flag = false;
+};
+
+}
