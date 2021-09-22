@@ -9,7 +9,6 @@
 #include <gromox/crc32.hpp>
 #include <gromox/hmacmd5.hpp>
 #include <gromox/ntlmssp.hpp>
-#include <gromox/ntlmdes.hpp>
 #include <cstdio>
 #include <iconv.h>
 #include <cstdarg>
@@ -131,22 +130,69 @@ struct NTLMSSP_VERSION {
 
 }
 
-static void ntlmssp_lm_session_key(const uint8_t lm_hash[16],
+static void str_to_key(const uint8_t *s, uint8_t *k)
+{
+	k[0] = s[0] >> 1;
+	k[1] = ((s[0] & 0x01) << 6) | (s[1] >> 2);
+	k[2] = ((s[1] & 0x03) << 5) | (s[2] >> 3);
+	k[3] = ((s[2] & 0x07) << 4) | (s[3] >> 4);
+	k[4] = ((s[3] & 0x0F) << 3) | (s[4] >> 5);
+	k[5] = ((s[4] & 0x1F) << 2) | (s[5] >> 6);
+	k[6] = ((s[5] & 0x3F) << 1) | (s[6] >> 7);
+	k[7] = s[6] & 0x7F;
+	for (size_t i = 0; i < 8; ++i)
+		k[i] <<= 1;
+}
+
+static bool des_crypt56(uint8_t out[8], const uint8_t in[8], const uint8_t key[7]) __attribute__((warn_unused_result));
+static bool des_crypt56(uint8_t out[8], const uint8_t in[8], const uint8_t key[7])
+{
+	uint8_t dummy_pad[8];
+	int dummy_n;
+	auto cipher = EVP_get_cipherbynid(NID_des_ecb);
+	if (cipher == nullptr)
+		return false;
+	std::unique_ptr<EVP_CIPHER_CTX, sslfree> ctx(EVP_CIPHER_CTX_new());
+	if (ctx == nullptr)
+		return false;
+	if (EVP_CIPHER_CTX_set_padding(ctx.get(), 0) <= 0)
+		return false;
+	static constexpr uint8_t iv[16]{};
+	uint8_t derived_key[8];
+	str_to_key(key, derived_key);
+	if (EVP_CipherInit_ex(ctx.get(), cipher, nullptr, derived_key, iv, 1) <= 0 ||
+	    EVP_CipherUpdate(ctx.get(), out, &dummy_n, in, 8) <= 0 ||
+	    EVP_CipherFinal(ctx.get(), dummy_pad, &dummy_n) <= 0)
+		return false;
+	return true;
+}
+
+static bool E_P16(const uint8_t *p14, uint8_t *p16) __attribute__((warn_unused_result));
+static bool E_P16(const uint8_t *p14, uint8_t *p16)
+{
+	const uint8_t sp8[] = {0x4b, 0x47, 0x53, 0x21, 0x40, 0x23, 0x24, 0x25}; // KGS!@#$%
+	return des_crypt56(p16, sp8, p14) && des_crypt56(p16 + 8, sp8, p14 + 7);
+}
+
+static bool E_P24(const uint8_t *p21, const uint8_t *c8, uint8_t *p24) __attribute__((warn_unused_result));
+static bool E_P24(const uint8_t *p21, const uint8_t *c8, uint8_t *p24)
+{
+	return des_crypt56(p24, c8, p21) && des_crypt56(p24 + 8, c8, p21 + 7) &&
+	       des_crypt56(p24 + 16, c8, p21 + 14);
+}
+
+static bool ntlmssp_lm_session_key(const uint8_t lm_hash[16],
 	const uint8_t lm_resp[24], uint8_t session_key[16])
 {
 	/* calculate the LM session key (effective length 40 bits,
 	   but changes with each session) */
-	uint8_t p24[24];
 	uint8_t partial_lm_hash[14];
 
 	
 	memcpy(partial_lm_hash, lm_hash, 8);
 	memset(partial_lm_hash + 8, 0xbd, 6);
-	
-	des_crypt56(p24,   lm_resp, partial_lm_hash, 1);
-	des_crypt56(p24 + 8, lm_resp, partial_lm_hash + 7, 1);
-
-	memcpy(session_key, p24, 16);
+	return des_crypt56(session_key, lm_resp, partial_lm_hash) &&
+	       des_crypt56(session_key + 8, lm_resp, partial_lm_hash + 7);
 }
 
 static bool ntlmssp_calc_ntlm2_key(uint8_t subkey[MD5_DIGEST_LENGTH], DATA_BLOB session_key, const char *constant) __attribute__((warn_unused_result));
@@ -240,8 +286,7 @@ static bool ntlmssp_deshash(const char *passwd, uint8_t p16[16])
 	}
 	HX_strupper(tmpbuf);
 	/* Only the first 14 chars are considered */
-	E_P16(tmpbuf, p16);  /* ntlmdes.h */
-	return true;
+	return E_P16(reinterpret_cast<uint8_t *>(tmpbuf), p16);
 }
 
 /*
@@ -949,7 +994,8 @@ static bool ntlmssp_check_ntlm1(const DATA_BLOB *pnt_response,
 
 	memset(p21, 0, sizeof(p21));
 	memcpy(p21, part_passwd, 16);
-	E_P24(p21, psec_blob->data, p24);
+	if (!E_P24(p21, psec_blob->data, p24))
+		return false;
 	
 	if (0 == memcmp(p24, pnt_response->data, 24)) {
 		if (puser_key != NULL) {

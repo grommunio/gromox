@@ -6,6 +6,7 @@
 namespace gromox {
 
 struct sslfree {
+	void operator()(EVP_CIPHER_CTX *x) { EVP_CIPHER_CTX_free(x); }
 	void operator()(EVP_MD_CTX *x) { EVP_MD_CTX_free(x); }
 };
 
