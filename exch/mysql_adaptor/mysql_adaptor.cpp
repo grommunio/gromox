@@ -148,14 +148,6 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 static BOOL firsttime_password(const char *username, const char *password,
     char *encrypt_passwd, size_t encrypt_size, char *reason, int length) try
 {
-	const char *pdomain;
-	pdomain = strchr(username, '@');
-	if (NULL == pdomain) {
-		strncpy(reason, "domain name should be included!", length);
-		return FALSE;
-	}
-	pdomain++;
-
 	std::unique_lock cr_hold(g_crypt_lock);
 	gx_strlcpy(encrypt_passwd, crypt_wrapper(password), encrypt_size);
 	cr_hold.unlock();
@@ -167,61 +159,6 @@ static BOOL firsttime_password(const char *username, const char *password,
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn.res.query(qstr.c_str()))
 		return false;
-
-	qstr = "SELECT aliasname FROM aliases WHERE mainname='"s + temp_name + "'";
-	if (!conn.res.query(qstr.c_str()))
-		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
-	if (pmyres == nullptr)
-		return false;
-
-	mysql_adaptor_encode_squote(pdomain, temp_name);
-	qstr = "SELECT aliasname FROM aliases WHERE mainname='"s + temp_name + "'";
-	if (!conn.res.query(qstr.c_str()))
-		return false;
-	DB_RESULT pmyres1 = mysql_store_result(conn.res.get());
-	if (pmyres1 == nullptr)
-		return false;
-
-	size_t k, rows = pmyres.num_rows(), rows1 = pmyres1.num_rows();
-	for (k = 0; k < rows1; k++) {
-		char virtual_address[UADDR_SIZE];
-		char *pat;
-
-		auto myrow1 = pmyres1.fetch_row();
-		gx_strlcpy(virtual_address, username, GX_ARRAY_SIZE(virtual_address));
-		pat = strchr(virtual_address, '@') + 1;
-		strcpy(pat, myrow1[0]);
-		mysql_adaptor_encode_squote(virtual_address, temp_name);
-		qstr = "UPDATE users SET password='"s + encrypt_passwd +
-		       "' WHERE username='" + temp_name + "'";
-		if (conn.res.query(qstr.c_str()) != 0)
-		        /* ignore - logmsg already emitted */;
-	}
-
-	size_t j;
-	for (j = 0; j < rows; j++) {
-		auto myrow = pmyres.fetch_row();
-		mysql_adaptor_encode_squote(myrow[0], temp_name);
-		qstr = "UPDATE users SET password='"s + encrypt_passwd +
-		       "' WHERE username='" + temp_name + "'";
-		if (!conn.res.query(qstr.c_str()))
-			continue;
-		mysql_data_seek(pmyres1.get(), 0);
-		for (k = 0; k < rows1; k++) {
-			char virtual_address[UADDR_SIZE], *pat;
-
-			auto myrow1 = pmyres1.fetch_row();
-			gx_strlcpy(virtual_address, myrow[0], GX_ARRAY_SIZE(virtual_address));
-			pat = strchr(virtual_address, '@') + 1;
-			strcpy(pat, myrow1[0]);
-			mysql_adaptor_encode_squote(virtual_address, temp_name);
-			qstr = "UPDATE users SET password='"s + encrypt_passwd +
-			       "' WHERE username='" + temp_name + "'";
-			if (conn.res.query(qstr.c_str()) != 0)
-				/* ignore - logmsg already emitted */;
-		}
-	}
 	return TRUE;
 } catch (const std::exception &e) {
 	printf("E-%u: %s\n", 1702, e.what());
@@ -259,11 +196,8 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 	const char *password, const char *new_password) try
 {
 	int temp_status;
-	const char *pdomain;
-	char *pat;
 	char temp_name[UADDR_SIZE*2];
 	char encrypt_passwd[40];
-	char virtual_address[UADDR_SIZE];
 	
 	mysql_adaptor_encode_squote(username, temp_name);
 	auto qstr =
@@ -301,67 +235,12 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 		password, encrypt_passwd), encrypt_passwd)) {
 		return FALSE;
 	}
-	cr_hold.unlock();
-	pdomain = strchr(username, '@');
-	if (NULL == pdomain) {
-		return FALSE;
-	}
-	pdomain ++;
-
-	cr_hold.lock();
 	gx_strlcpy(encrypt_passwd, crypt_wrapper(new_password), arsizeof(encrypt_passwd));
 	cr_hold.unlock();
 	qstr = "UPDATE users SET password='"s + encrypt_passwd +
 	       "' WHERE username='" + temp_name + "'";
 	if (!conn.res.query(qstr.c_str()))
 		return false;
-
-	qstr = "SELECT aliasname FROM aliases WHERE mainname='"s + temp_name + "'";
-	if (!conn.res.query(qstr.c_str()))
-		return false;
-	pmyres = mysql_store_result(conn.res.get());
-	if (pmyres == nullptr)
-		return false;
-
-	mysql_adaptor_encode_squote(pdomain, temp_name);
-	qstr = "SELECT aliasname FROM aliases WHERE mainname='"s + temp_name + "'";
-	if (!conn.res.query(qstr.c_str()))
-		return false;
-	DB_RESULT pmyres1 = mysql_store_result(conn.res.get());
-	if (pmyres1 == nullptr)
-		return false;
-	size_t rows = pmyres.num_rows(), rows1 = pmyres1.num_rows();
-	for (size_t k = 0; k < rows1; ++k) {
-		auto myrow1 = pmyres1.fetch_row();
-		gx_strlcpy(virtual_address, username, GX_ARRAY_SIZE(virtual_address));
-		pat = strchr(virtual_address, '@') + 1;
-		strcpy(pat, myrow1[0]);
-		mysql_adaptor_encode_squote(virtual_address, temp_name);
-		qstr = "UPDATE users SET password='"s + encrypt_passwd +
-		       "' WHERE username='" + temp_name + "'";
-		if (conn.res.query(qstr.c_str()) != 0)
-			/* ignore - logmsg already emitted */;
-	}
-	for (size_t j = 0; j < rows; ++j) {
-		myrow = pmyres.fetch_row();
-		mysql_adaptor_encode_squote(myrow[0], temp_name);
-		qstr = "UPDATE users SET password='"s + encrypt_passwd +
-		       "' WHERE username='" + temp_name + "'";
-		if (!conn.res.query(qstr.c_str()))
-			continue;
-		mysql_data_seek(pmyres1.get(), 0);
-		for (size_t k = 0; k < rows1; ++k) {
-			auto myrow1 = pmyres1.fetch_row();
-			gx_strlcpy(virtual_address, myrow[0], GX_ARRAY_SIZE(virtual_address));
-			pat = strchr(virtual_address, '@') + 1;
-			strcpy(pat, myrow1[0]);
-			mysql_adaptor_encode_squote(virtual_address, temp_name);
-			qstr = "UPDATE users SET password='"s + encrypt_passwd +
-			       "' WHERE username='" + temp_name + "'";
-			if (conn.res.query(qstr.c_str()) != 0)
-				/* ignore - logmsg already emitted */;
-		}
-	}
 	return TRUE;
 } catch (const std::exception &e) {
 	printf("E-%u: %s\n", 1703, e.what());
