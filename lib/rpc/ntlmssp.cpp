@@ -144,7 +144,6 @@ static void str_to_key(const uint8_t *s, uint8_t *k)
 		k[i] <<= 1;
 }
 
-static bool des_crypt56(uint8_t out[8], const uint8_t in[8], const uint8_t key[7]) __attribute__((warn_unused_result));
 static bool des_crypt56(uint8_t out[8], const uint8_t in[8], const uint8_t key[7])
 {
 	uint8_t dummy_pad[8];
@@ -167,14 +166,12 @@ static bool des_crypt56(uint8_t out[8], const uint8_t in[8], const uint8_t key[7
 	return true;
 }
 
-static bool E_P16(const uint8_t *p14, uint8_t *p16) __attribute__((warn_unused_result));
 static bool E_P16(const uint8_t *p14, uint8_t *p16)
 {
 	const uint8_t sp8[] = {0x4b, 0x47, 0x53, 0x21, 0x40, 0x23, 0x24, 0x25}; // KGS!@#$%
 	return des_crypt56(p16, sp8, p14) && des_crypt56(p16 + 8, sp8, p14 + 7);
 }
 
-static bool E_P24(const uint8_t *p21, const uint8_t *c8, uint8_t *p24) __attribute__((warn_unused_result));
 static bool E_P24(const uint8_t *p21, const uint8_t *c8, uint8_t *p24)
 {
 	return des_crypt56(p24, c8, p21) && des_crypt56(p24 + 8, c8, p21 + 7) &&
@@ -195,7 +192,6 @@ static bool ntlmssp_lm_session_key(const uint8_t lm_hash[16],
 	       des_crypt56(session_key + 8, lm_resp, partial_lm_hash + 7);
 }
 
-static bool ntlmssp_calc_ntlm2_key(uint8_t subkey[MD5_DIGEST_LENGTH], DATA_BLOB session_key, const char *constant) __attribute__((warn_unused_result));
 static bool ntlmssp_calc_ntlm2_key(uint8_t subkey[MD5_DIGEST_LENGTH],
 	DATA_BLOB session_key, const char *constant)
 {
@@ -250,7 +246,6 @@ static bool ntlmssp_utf16le_to_utf8(const void *src, size_t src_len,
 	}
 }
 
-static bool ntlmssp_md4hash(const char *passwd, void *p16v) __attribute__((warn_unused_result));
 static bool ntlmssp_md4hash(const char *passwd, void *p16v)
 {
 	auto p16 = static_cast<uint8_t *>(p16v);
@@ -271,7 +266,6 @@ static bool ntlmssp_md4hash(const char *passwd, void *p16v)
 	return true;
 }
 
-static bool ntlmssp_deshash(const char *passwd, uint8_t p16[16]) __attribute__((warn_unused_result));
 static bool ntlmssp_deshash(const char *passwd, uint8_t p16[16])
 {
 	int len;
