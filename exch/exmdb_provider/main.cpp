@@ -142,7 +142,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		}
 
 		config_file_apply(*pconfig, cfg_default_values);
-			pconfig->set_value("listen_ip", "::1");
 		auto listen_ip = pconfig->get_value("listen_ip");
 		uint16_t listen_port = pconfig->get_ll("listen_port");
 		printf("[exmdb_provider]: listen address is [%s]:%hu\n",
