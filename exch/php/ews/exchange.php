@@ -498,6 +498,9 @@ $server->setClass('ExchangeWebServices');
 $server->addFunction(SOAP_FUNCTIONS_ALL);
 
 ob_start();
+# If a client requests a function we do not know (e.g. GetAppManifests
+# is one), this will throw an exception and the entire HTTP request dies
+# with 5xx.
 $server->handle();
 ob_end_clean();
 
