@@ -713,7 +713,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 			pcontext->bytes_rw = 0;
 			pcontext->b_close = TRUE;
 			pcontext->sched_stat = SCHED_STAT_WRREP;
-			http_parser_log_info(pcontext, LV_DEBUG, "can not get maildir");
+			http_parser_log_info(pcontext, LV_ERR, "maildir for \"%s\" absent: %s", pcontext->username, reason);
 			return X_LOOP;
 		}
 
@@ -727,7 +727,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 	}
 
 	pcontext->b_authed = FALSE;
-	http_parser_log_info(pcontext, LV_DEBUG, "login fail");
+	http_parser_log_info(pcontext, LV_ERR, "login failed: \"%s\": %s", pcontext->username, reason);
 	pcontext->auth_times ++;
 	if (system_services_add_user_into_temp_list != nullptr &&
 	    pcontext->auth_times >= g_max_auth_times)
