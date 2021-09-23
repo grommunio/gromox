@@ -75,7 +75,7 @@ int main(int argc, const char **argv)
 	gateway_control_init(console_path.c_str());
 	data_source_init(pconfig->get_value("mysql_host"),
 		strtol(pconfig->get_value("mysql_port"), nullptr, 0),
-		pconfig->get_value("mysql_username"), pconfig->get_value("mysql_passwd"),
+		pconfig->get_value("mysql_username"), pconfig->get_value("mysql_password"),
 		pconfig->get_value("mysql_dbname"));
 	engine_init(domainlist_path.c_str(), aliasaddress_path.c_str());
 	if (0 != system_log_run()) {
