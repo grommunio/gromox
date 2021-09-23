@@ -252,13 +252,13 @@ int main(int argc, const char **argv)
 		return 3;
 	}
 	
-	snprintf(tmp_sql, arsizeof(tmp_sql), "SELECT max_size, maildir, lang,"
-		"address_type, address_status, id FROM users "
-		"WHERE username='%s'", argv[1]);
-	
-	if (0 != mysql_query(pmysql, tmp_sql) ||
+	auto qstr = "SELECT u.max_size, u.maildir, u.lang, up.propval_str AS dtypx, u.address_status, u.id "
+	            "FROM users AS u "
+	            "LEFT JOIN user_properties AS up ON u.id=up.user_id AND up.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
+	            "WHERE u.username='"s + argv[1] + "'";
+	if (mysql_query(pmysql, qstr.c_str()) != 0 ||
 		NULL == (pmyres = mysql_store_result(pmysql))) {
-		printf("fail to query database\n");
+		printf("Query failed: %s: %s\n", qstr.c_str(), mysql_error(pmysql));
 		mysql_close(pmysql);
 		return 3;
 	}
@@ -272,9 +272,12 @@ int main(int argc, const char **argv)
 	}
 
 	myrow = mysql_fetch_row(pmyres);
-	auto address_type = strtoul(myrow[3], nullptr, 0);
-	if (address_type != 0) {
-		printf("Error: Address type is not \"normal\"(0) but %lu\n", address_type);
+	auto dtypx = DT_MAILUSER;
+	if (myrow[3] != nullptr)
+		dtypx = static_cast<enum display_type>(strtoul(myrow[3], nullptr, 0));
+	if (dtypx != DT_MAILUSER && dtypx != DT_ROOM && dtypx != DT_EQUIPMENT) {
+		printf("Refusing to create a private store for mailing lists, groups and aliases. "
+		       "(PR_DISPLAY_TYPE=%xh)\n", dtypx);
 		mysql_free_result(pmyres);
 		mysql_close(pmysql);
 		return 4;

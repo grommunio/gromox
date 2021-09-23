@@ -463,9 +463,7 @@ static const char tbl_users_top[] =
 "  `lang` varchar(32) NOT NULL DEFAULT '',"
 "  `timezone` varchar(64) NOT NULL DEFAULT '',"
 "  `privilege_bits` int(10) unsigned NOT NULL,"
-"  `sub_type` tinyint(4) NOT NULL DEFAULT 0,"
 "  `address_status` tinyint(4) NOT NULL DEFAULT 0,"
-"  `address_type` tinyint(4) NOT NULL DEFAULT 0,"
 "  `externid` varbinary(64) DEFAULT NULL,"
 "  `sync_policy` text CHARACTER SET ascii DEFAULT NULL,"
 "  `chat_id` varchar(26) DEFAULT NULL,"
@@ -643,6 +641,8 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{83, "INSERT IGNORE INTO user_properties (user_id, proptag, propval_str) SELECT u.id AS user_id, 956628995 AS proptag, 7 AS propval_str FROM users AS u WHERE u.address_type=0 AND u.sub_type=1"},
 	{84, "INSERT IGNORE INTO user_properties (user_id, proptag, propval_str) SELECT u.id AS user_id, 956628995 AS proptag, 8 AS propval_str FROM users AS u WHERE u.address_type=0 AND u.sub_type=2"},
 	{85, "INSERT IGNORE INTO user_properties (user_id, proptag, propval_str) SELECT u.id AS user_id, 956628995 AS proptag, 1 AS propval_str FROM users AS u WHERE u.address_type=2"},
+	{86, "ALTER TABLE users DROP COLUMN sub_type"},
+	{87, "ALTER TABLE users DROP COLUMN address_type"},
 	{0, nullptr},
 };
 
