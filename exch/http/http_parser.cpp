@@ -743,11 +743,11 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 		"Keep-Alive: timeout=%d\r\n"
 		"Connection: close\r\n"
 		"Content-Type: text/plain; charset=ascii\r\n"
-		"Content-Length: %zu\r\n"
+		"Content-Length: 2\r\n"
 		"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
-		"\r\n%s\r\n", dstring,
+		"\r\n\r\n", dstring,
 		resource_get_string("HOST_ID"),
-		g_timeout, strlen(reason) + 2, reason);
+		g_timeout);
 	stream_write(&pcontext->stream_out,
 		response_buff, response_len);
 	pcontext->total_length = response_len;
