@@ -62,6 +62,13 @@ Runtime desirables
 Minimal configuration
 =====================
 
+IPv6
+----
+
+The IPv6 kernel module needs to be available/enabled and the ::1 address must
+exist on the loopback device.
+
+
 SQL database
 ------------
 
