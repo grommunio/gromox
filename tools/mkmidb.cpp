@@ -132,7 +132,7 @@ int main(int argc, const char **argv)
 	}
 
 	auto address_status = strtoul(myrow[1], nullptr, 0);
-	if (address_status != AF_USER_NORMAL)
+	if (address_status != AF_USER_NORMAL && address_status != AF_USER_SHAREDMBOX)
 		printf("Warning: Address status is not \"alive\"(0) but %lu\n", address_status);
 	gx_strlcpy(dir, myrow[2], GX_ARRAY_SIZE(dir));
 	mysql_free_result(pmyres);
