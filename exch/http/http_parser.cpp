@@ -86,7 +86,7 @@ static BOOL g_support_ssl;
 static SSL_CTX *g_ssl_ctx;
 static int g_max_auth_times;
 static int g_block_auth_fail;
-static unsigned int g_timeout;
+static unsigned int g_timeout, g_http_debug;
 static pthread_key_t g_context_key;
 static LIB_BUFFER *g_file_allocator;
 static std::vector<HTTP_CONTEXT> g_context_list;
@@ -105,7 +105,7 @@ static void http_parser_request_clear(HTTP_REQUEST *prequest);
 void http_parser_init(size_t context_num, unsigned int timeout,
 	int max_auth_times, int block_auth_fail, BOOL support_ssl,
 	const char *certificate_path, const char *cb_passwd,
-	const char *key_path)
+	const char *key_path, unsigned int xdebug)
 {
     g_context_num           = context_num;
     g_timeout               = timeout;
@@ -113,6 +113,7 @@ void http_parser_init(size_t context_num, unsigned int timeout,
 	g_block_auth_fail       = block_auth_fail;
 	g_support_ssl           = support_ssl;
 	g_async_stop = false;
+	g_http_debug = xdebug;
 	
 	if (TRUE == support_ssl) {
 		gx_strlcpy(g_certificate_path, certificate_path, GX_ARRAY_SIZE(g_certificate_path));
@@ -1078,6 +1079,10 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 		http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return X_RUNOFF;
 	} else if (actual_read > 0) {
+		if (g_http_debug)
+			fprintf(stderr, "<< ctx %p recv %zd\n%.*s\n<<-END\n",
+			        pcontext, actual_read, (int)actual_read,
+			        static_cast<const char *>(pbuff));
 		pcontext->connection.last_timestamp = current_time;
 		stream_forward_writing_ptr(&pcontext->stream_in, actual_read);
 		return htparse_rdhead_st(pcontext, actual_read);
@@ -1235,6 +1240,10 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 			written_len = pchannel_out->available_window;
 		}
 	}
+	if (g_http_debug)
+		fprintf(stderr, ">> ctx %p send %zd\n%.*s\n>>-EOP\n", pcontext,
+		        written_len, (int)written_len,
+		        static_cast<const char *>(pcontext->write_buff));
 	if (NULL != pcontext->connection.ssl) {
 		written_len = SSL_write(pcontext->connection.ssl,
 			      reinterpret_cast<char *>(pcontext->write_buff) + pcontext->write_offset,

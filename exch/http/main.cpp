@@ -131,6 +131,7 @@ int main(int argc, const char **argv) try
 		{"hpm_plugin_path", PKGLIBDIR},
 		{"http_auth_times", "10", CFG_SIZE, "1"},
 		{"http_conn_timeout", "3min", CFG_TIME, "30s"},
+		{"http_debug", "0"},
 		{"http_support_ssl", "false", CFG_BOOL},
 		{"listen_port", "80"},
 		{"listen_ssl_port", "0"},
@@ -450,7 +451,8 @@ int main(int argc, const char **argv) try
 
 	http_parser_init(context_num, http_conn_timeout,
 		http_auth_times, block_interval_auth, http_support_ssl ? TRUE : false,
-		certificate_path, cb_passwd, private_key_path);  
+		certificate_path, cb_passwd, private_key_path,
+		g_config_file->get_ll("http_debug"));
  
 	if (0 != http_parser_run()) { 
 		printf("[system]: failed to run http parser\n");

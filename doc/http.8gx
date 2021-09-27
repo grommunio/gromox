@@ -149,6 +149,11 @@ If a HTTP connection stalls for the given period, the connection is terminated.
 .br
 Default: \fI3 minutes\fP
 .TP
+\fBhttp_debug\fP
+If set to \fB1\fP, prints all incoming and outgoing HTTP traffic to stderr.
+.br
+Default: \fI0\fP
+.TP
 \fBhttp_private_key_path\fP
 Filesystem path to the key file needed to unlock the TLS certificate.
 .br
