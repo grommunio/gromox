@@ -605,7 +605,7 @@ BOOL STORE_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		pproptags->pproptag[pproptags->count++] = PR_IPM_SENTMAIL_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_IPM_WASTEBASKET_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_SCHEDULE_FOLDER_ENTRYID;
-		pproptags->pproptag[pproptags->count++] = PR_OOF_STATE;
+		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE;
 		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_MSG;
 		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_SUBJECT;
 		pproptags->pproptag[pproptags->count++] = PR_EC_OUTOFOFFICE_FROM;
@@ -679,7 +679,7 @@ static void* store_object_get_oof_property(
 	static constexpr uint8_t fake_false = false;
 	
 	switch (proptag) {
-	case PR_OOF_STATE: {
+	case PR_EC_OUTOFOFFICE: {
 		pvalue = cu_alloc<uint32_t>();
 		if (NULL == pvalue) {
 			return NULL;
@@ -1164,7 +1164,7 @@ static BOOL store_object_get_calculated_property(
 	case PROP_TAG_ECSERVERVERSION:
 		*ppvalue = deconst(PROJECT_VERSION);
 		return TRUE;
-	case PR_OOF_STATE:
+	case PR_EC_OUTOFOFFICE:
 	case PR_EC_OUTOFOFFICE_MSG:
 	case PR_EC_OUTOFOFFICE_SUBJECT:
 	case PR_EC_OUTOFOFFICE_FROM:
@@ -1305,7 +1305,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		return false;
 	close(fd);
 	switch (proptag) {
-	case PR_OOF_STATE: {
+	case PR_EC_OUTOFOFFICE: {
 		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str());
 		if (NULL == pconfig) {
 			return FALSE;
@@ -1566,7 +1566,7 @@ BOOL STORE_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals)
 			continue;
 		}
 		switch (ppropvals->ppropval[i].proptag) {
-		case PR_OOF_STATE:
+		case PR_EC_OUTOFOFFICE:
 		case PR_EC_OUTOFOFFICE_FROM:
 		case PR_EC_OUTOFOFFICE_UNTIL:
 		case PR_EC_OUTOFOFFICE_MSG:
