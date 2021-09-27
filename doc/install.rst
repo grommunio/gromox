@@ -148,10 +148,11 @@ SMTP
 ----
 
 exchange_emsmdb.cfg and zcore.cfg implicitly default to using localhost:25 as
-outgoing SMTP. gromox-delivery-queue listens on port 25 by default, but it is
-only the local delivery agent (LDA), so such setup would only allow to send
-mail locally. To enable Internet mail or to add spam filtration, you will have
-reconfigure gromox-delivery-queue to listen on port 24 rather than 25, and
+outgoing SMTP. At the same time, gromox-delivery-queue listens on port 25 by
+default, but it is only the local delivery agent (LDA). Therefore, running with
+implied defaults only gets you a system that can send mail to itself. To enable
+Internet mail or to add spam filtration, you will have reconfigure
+gromox-delivery-queue (edit smtp.cfg) to listen on port 24 rather than 25, and
 install a full MTA like Postfix with configuration directives similar to::
 
 	virtual_mailbox_domains = mydomain.de myotherdomain.com
