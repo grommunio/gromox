@@ -613,11 +613,12 @@ int main(int argc, const char **argv)
 	
 	i = 0;
 	for (const auto &name : namedprop_list) {
-		propid = 0x8001 + i;
+		propid = 0x8001 + i++;
 		sqlite3_bind_int64(pstmt, 1, propid);
 		sqlite3_bind_text(pstmt, 2, name.c_str(), -1, SQLITE_STATIC);
-		if (sqlite3_step(pstmt) != SQLITE_DONE) {
-			printf("fail to step sql inserting\n");
+		auto ret = sqlite3_step(pstmt);
+		if (ret != SQLITE_DONE) {
+			printf("sqlite3_step on namedprop \"%s\": %s\n", name.c_str(), sqlite3_errstr(ret));
 			return 9;
 		}
 		sqlite3_reset(pstmt);
