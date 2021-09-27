@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <mysql.h>
+#include "exch/mysql_adaptor/mysql_adaptor.h"
 #define LLU(x) static_cast<unsigned long long>(x)
 
 using namespace std::string_literals;
@@ -321,17 +322,17 @@ int main(int argc, const char **argv)
 	}
 
 	myrow = mysql_fetch_row(pmyres);
-	
-	if (0 != atoi(myrow[2])) {
-		printf("domain type is not normal\n");
+	auto domain_type = strtoul(myrow[2], nullptr, 0);
+	if (domain_type != 0) {
+		printf("Error: Domain type is not \"normal\"(0) but %lu\n", domain_type);
 		mysql_free_result(pmyres);
 		mysql_close(pmysql);
 		return 4;
 	}
 	
-	if (0 != atoi(myrow[3])) {
-		printf("warning: domain status is not alive!\n");
-	}
+	auto domain_status = strtoul(myrow[3], nullptr, 0);
+	if (domain_status != AF_DOMAIN_NORMAL)
+		printf("Warning: Domain status is not \"alive\"(0) but %lu\n", domain_status);
 	
 	max_size = atoll(myrow[0])*1024/store_ratio;
 	if (max_size > 0x7FFFFFFF) {

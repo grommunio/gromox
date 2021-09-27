@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <mysql.h>
+#include "exch/mysql_adaptor/mysql_adaptor.h"
 #define LLU(x) static_cast<unsigned long long>(x)
 
 using namespace std::string_literals;
@@ -487,17 +488,17 @@ int main(int argc, const char **argv)
 	}
 
 	myrow = mysql_fetch_row(pmyres);
-	
-	if (0 != atoi(myrow[3])) {
-		printf("address type is not normal\n");
+	auto address_type = strtoul(myrow[3], nullptr, 0);
+	if (address_type != 0) {
+		printf("Error: Address type is not \"normal\"(0) but %lu\n", address_type);
 		mysql_free_result(pmyres);
 		mysql_close(pmysql);
 		return 4;
 	}
 	
-	if (0 != atoi(myrow[4])) {
-		printf("warning: address status is not alive!\n");
-	}
+	auto address_status = strtoul(myrow[4], nullptr, 0);
+	if (address_status != AF_USER_NORMAL)
+		printf("Warning: Address status is not \"alive\"(0) but %lu\n", address_status);
 	
 	max_size = atoi(myrow[0])*1024;
 	gx_strlcpy(dir, myrow[1], GX_ARRAY_SIZE(dir));
