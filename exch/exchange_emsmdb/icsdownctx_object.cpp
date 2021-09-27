@@ -354,16 +354,15 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 	for (size_t i = 0; i < fldchgs.count; ++i) {
 		static constexpr uint32_t tags[] = {
 			PROP_TAG_FOLDERPATHNAME, PR_NORMAL_MESSAGE_SIZE,
-			PROP_TAG_NORMALMESSAGESIZEEXTENDED, PR_MESSAGE_SIZE_EXTENDED,
+			PR_NORMAL_MESSAGE_SIZE_EXTENDED, PR_MESSAGE_SIZE_EXTENDED,
 			PR_ASSOC_MESSAGE_SIZE, PR_ASSOC_MESSAGE_SIZE_EXTENDED,
 			PROP_TAG_FOLDERCHILDCOUNT, PR_DELETED_FOLDER_COUNT,
 			PROP_TAG_ARTICLENUMBERNEXT, PROP_TAG_FOLDERFLAGS,
 		};
 		for (auto t : tags)
 			common_util_remove_propvals(&fldchgs.pfldchgs[i], t);
-		if (NULL == common_util_get_propvals(
-			fldchgs.pfldchgs + i, PROP_TAG_ATTRIBUTEHIDDEN)) {
-			tmp_propval.proptag = PROP_TAG_ATTRIBUTEHIDDEN;
+		if (common_util_get_propvals(&fldchgs.pfldchgs[i], PR_ATTR_HIDDEN) == nullptr) {
+			tmp_propval.proptag = PR_ATTR_HIDDEN;
 			tmp_propval.pvalue = deconst(&fake_byte);
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		}

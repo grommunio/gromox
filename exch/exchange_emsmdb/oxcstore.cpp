@@ -81,7 +81,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	proptags.count = 2;
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PR_STORE_RECORD_KEY;
-	proptag_buff[1] = PROP_TAG_OUTOFOFFICESTATE;
+	proptag_buff[1] = PR_OOF_STATE;
 	if (FALSE == exmdb_client_get_store_properties(
 		maildir, 0, &proptags, &propvals)) {
 		return ecError;
@@ -91,7 +91,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		return ecError;
 	}
 	*pmailbox_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
-	pvalue = common_util_get_propvals(&propvals, PROP_TAG_OUTOFOFFICESTATE);
+	pvalue = common_util_get_propvals(&propvals, PR_OOF_STATE);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		*presponse_flags |= RESPONSE_FLAG_OOF;
 	}

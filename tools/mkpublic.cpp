@@ -114,13 +114,13 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PROP_TAG_HIERARCHYCHANGENUMBER);
+	sqlite3_bind_int64(pstmt, 1, PR_HIERARCHY_CHANGE_NUM);
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PROP_TAG_INTERNETARTICLENUMBER);
+	sqlite3_bind_int64(pstmt, 1, PR_INTERNET_ARTICLE_NUMBER);
 	sqlite3_bind_int64(pstmt, 2, art_num);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
@@ -138,14 +138,14 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PROP_TAG_COMMENT);
+	sqlite3_bind_int64(pstmt, 1, PR_COMMENT);
 	sqlite3_bind_text(pstmt, 2, "", -1, SQLITE_STATIC);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	if (NULL != pcontainer_class) {
-		sqlite3_bind_int64(pstmt, 1, PROP_TAG_CONTAINERCLASS);
+		sqlite3_bind_int64(pstmt, 1, PR_CONTAINER_CLASS);
 		sqlite3_bind_text(pstmt, 2, pcontainer_class, -1, SQLITE_STATIC);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			return FALSE;
@@ -166,7 +166,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PROP_TAG_LOCALCOMMITTIMEMAX);
+	sqlite3_bind_int64(pstmt, 1, PR_LOCAL_COMMIT_TIME_MAX);
 	sqlite3_bind_int64(pstmt, 2, nt_time);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
@@ -441,21 +441,21 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PROP_TAG_PROHIBITRECEIVEQUOTA);
+	sqlite3_bind_int64(pstmt, 1, PR_PROHIBIT_RECEIVE_QUOTA);
 	sqlite3_bind_int64(pstmt, 2, max_size);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		return 9;
 	}
 	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PROP_TAG_PROHIBITSENDQUOTA);
+	sqlite3_bind_int64(pstmt, 1, PR_PROHIBIT_SEND_QUOTA);
 	sqlite3_bind_int64(pstmt, 2, max_size);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		return 9;
 	}
 	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PROP_TAG_STORAGEQUOTALIMIT);
+	sqlite3_bind_int64(pstmt, 1, PR_STORAGE_QUOTA_LIMIT);
 	sqlite3_bind_int64(pstmt, 2, max_size);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
@@ -476,7 +476,7 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PROP_TAG_NORMALMESSAGESIZEEXTENDED);
+	sqlite3_bind_int64(pstmt, 1, PR_NORMAL_MESSAGE_SIZE_EXTENDED);
 	sqlite3_bind_int64(pstmt, 2, 0);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");

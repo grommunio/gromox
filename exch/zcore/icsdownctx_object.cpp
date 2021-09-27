@@ -380,8 +380,8 @@ BOOL ICSDOWNCTX_OBJECT::sync_folder_change(BOOL *pb_found,
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_PARENTFOLDERID;
 	proptag_buff[1] = PR_DISPLAY_NAME;
-	proptag_buff[2] = PROP_TAG_CONTAINERCLASS;
-	proptag_buff[3] = PROP_TAG_ATTRIBUTEHIDDEN;
+	proptag_buff[2] = PR_CONTAINER_CLASS;
+	proptag_buff[3] = PR_ATTR_HIDDEN;
 	proptag_buff[4] = PROP_TAG_EXTENDEDFOLDERFLAGS;
 	proptag_buff[5] = PROP_TAG_CHANGENUMBER;
 	if (!exmdb_client::get_folder_properties(pctx->pstore->get_dir(), 0,
@@ -421,18 +421,14 @@ BOOL ICSDOWNCTX_OBJECT::sync_folder_change(BOOL *pb_found,
 		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;
 	}
-	pproplist->ppropval[pproplist->count].proptag =
-							PROP_TAG_CONTAINERCLASS;
-	pvalue = common_util_get_propvals(
-		&tmp_propvals, PROP_TAG_CONTAINERCLASS);
+	pproplist->ppropval[pproplist->count].proptag = PR_CONTAINER_CLASS;
+	pvalue = common_util_get_propvals(&tmp_propvals, PR_CONTAINER_CLASS);
 	if (NULL != pvalue) {
 		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;
 	}
-	pproplist->ppropval[pproplist->count].proptag =
-							PROP_TAG_ATTRIBUTEHIDDEN;
-	pvalue = common_util_get_propvals(
-		&tmp_propvals, PROP_TAG_ATTRIBUTEHIDDEN);
+	pproplist->ppropval[pproplist->count].proptag = PR_ATTR_HIDDEN;
+	pvalue = common_util_get_propvals(&tmp_propvals, PR_ATTR_HIDDEN);
 	if (NULL != pvalue) {
 		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;

@@ -2415,7 +2415,6 @@ static uint64_t mail_engine_get_top_folder_id(
 static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 {
 	BOOL b_new;
-	const void *pvalue;
 	const char *dir;
 	TARRAY_SET rows;
 	sqlite3 *psqlite;
@@ -2442,10 +2441,10 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_FOLDERID;
 	proptag_buff[1] = PROP_TAG_PARENTFOLDERID;
-	proptag_buff[2] = PROP_TAG_ATTRIBUTEHIDDEN;
-	proptag_buff[3] = PROP_TAG_CONTAINERCLASS;
+	proptag_buff[2] = PR_ATTR_HIDDEN;
+	proptag_buff[3] = PR_CONTAINER_CLASS;
 	proptag_buff[4] = PR_DISPLAY_NAME;
-	proptag_buff[5] = PROP_TAG_LOCALCOMMITTIMEMAX;
+	proptag_buff[5] = PR_LOCAL_COMMIT_TIME_MAX;
 	if (!exmdb_client::query_table(dir, NULL,
 		0, table_id, &proptags, 0, row_count, &rows)) {
 		exmdb_client::unload_table(dir, table_id);
@@ -2475,13 +2474,11 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 		return FALSE;
 	}
 	for (size_t i = 0; i < rows.count; ++i) {
-		pvalue = common_util_get_propvals(
-			rows.pparray[i], PROP_TAG_ATTRIBUTEHIDDEN);
+		const void *pvalue = common_util_get_propvals(rows.pparray[i], PR_ATTR_HIDDEN);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			continue;
 		}
-		pvalue = common_util_get_propvals(
-			rows.pparray[i], PROP_TAG_CONTAINERCLASS);
+		pvalue = common_util_get_propvals(rows.pparray[i], PR_CONTAINER_CLASS);
 		if (pvalue == nullptr || strcasecmp(static_cast<const char *>(pvalue), "IPF.Note") != 0)
 			continue;
 		sqlite3_reset(pstmt);
@@ -2522,8 +2519,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 			break;
 		}
 		sqlite3_bind_text(pstmt, 3, static_cast<const char *>(pvalue), -1, SQLITE_STATIC);
-		pvalue = common_util_get_propvals(rows.pparray[i],
-							PROP_TAG_LOCALCOMMITTIMEMAX);
+		pvalue = common_util_get_propvals(rows.pparray[i], PR_LOCAL_COMMIT_TIME_MAX);
 		if (NULL == pvalue) {
 			sqlite3_bind_int64(pstmt, 4, 0);
 		} else {
@@ -2935,9 +2931,7 @@ static void *midbme_scanwork(void *param)
 	
 static int mail_engine_mckfl(int argc, char **argv, int sockd)
 {
-	uint32_t *pmax;
 	uint64_t quota;
-	uint64_t *ptotal;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	uint32_t tmp_proptags[2];
@@ -2947,14 +2941,14 @@ static int mail_engine_mckfl(int argc, char **argv, int sockd)
 	}
 	proptags.count = 2;
 	proptags.pproptag = tmp_proptags;
-	tmp_proptags[0] = PROP_TAG_PROHIBITRECEIVEQUOTA;
+	tmp_proptags[0] = PR_PROHIBIT_RECEIVE_QUOTA;
 	tmp_proptags[1] = PR_MESSAGE_SIZE_EXTENDED;
 	if (!exmdb_client::get_store_properties(
 		argv[1], 0, &proptags, &propvals)) {
 		return MIDB_E_NO_MEMORY;
 	}
-	ptotal = static_cast<uint64_t *>(common_util_get_propvals(&propvals, PR_MESSAGE_SIZE_EXTENDED));
-	pmax   = static_cast<uint32_t *>(common_util_get_propvals(&propvals, PROP_TAG_PROHIBITRECEIVEQUOTA));
+	auto ptotal = static_cast<uint64_t *>(common_util_get_propvals(&propvals, PR_MESSAGE_SIZE_EXTENDED));
+	auto pmax   = static_cast<uint32_t *>(common_util_get_propvals(&propvals, PR_PROHIBIT_RECEIVE_QUOTA));
 	if (NULL != ptotal && NULL != pmax) {
 		quota = *pmax;
 		quota *= 1024;
@@ -5556,7 +5550,6 @@ static BOOL mail_engine_add_notification_folder(
 {
 	BOOL b_wait;
 	int tmp_len;
-	void *pvalue;
 	uint64_t commit_max;
 	char sql_string[1280];
 	char decoded_name[512];
@@ -5596,9 +5589,9 @@ static BOOL mail_engine_add_notification_folder(
 	proptags.count = 4;
 	proptags.pproptag = tmp_proptags;
 	tmp_proptags[0] = PR_DISPLAY_NAME;
-	tmp_proptags[1] = PROP_TAG_LOCALCOMMITTIMEMAX;
-	tmp_proptags[2] = PROP_TAG_CONTAINERCLASS;
-	tmp_proptags[3] = PROP_TAG_ATTRIBUTEHIDDEN;
+	tmp_proptags[1] = PR_LOCAL_COMMIT_TIME_MAX;
+	tmp_proptags[2] = PR_CONTAINER_CLASS;
+	tmp_proptags[3] = PR_ATTR_HIDDEN;
 	b_wait = FALSE;
  REQUERY_FOLDER:
 	if (!exmdb_client::get_folder_properties(
@@ -5607,15 +5600,13 @@ static BOOL mail_engine_add_notification_folder(
 		&proptags, &propvals)) {
 		return FALSE;		
 	}
-	pvalue = common_util_get_propvals(
-		&propvals, PROP_TAG_ATTRIBUTEHIDDEN);
+	auto pvalue = common_util_get_propvals(&propvals, PR_ATTR_HIDDEN);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		return FALSE;
 	}
-	pvalue = common_util_get_propvals(
-		&propvals, PROP_TAG_CONTAINERCLASS);
+	pvalue = common_util_get_propvals(&propvals, PR_CONTAINER_CLASS);
 	if (NULL == pvalue && FALSE == b_wait) {
-		/* outlook will set the PROP_TAG_CONTAINERCLASS
+		/* outlook will set the PR_CONTAINER_CLASS
 			after RopCreateFolder, so try to wait! */
 		sleep(1);
 		b_wait = TRUE;
@@ -5626,8 +5617,7 @@ static BOOL mail_engine_add_notification_folder(
 	}
 	if (strcasecmp(static_cast<char *>(pvalue), "IPF.Note") != 0)
 		return FALSE;
-	pvalue = common_util_get_propvals(&propvals,
-					PROP_TAG_LOCALCOMMITTIMEMAX);
+	pvalue = common_util_get_propvals(&propvals, PR_LOCAL_COMMIT_TIME_MAX);
 	if (NULL == pvalue) {
 		commit_max = 0;
 	} else {

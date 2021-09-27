@@ -1664,7 +1664,6 @@ uint32_t zarafa_server_loadruletable(GUID hsession,
 uint32_t zarafa_server_createmessage(GUID hsession,
 	uint32_t hfolder, uint32_t flags, uint32_t *phobject)
 {
-	void *pvalue;
 	uint8_t mapi_type;
 	uint32_t tag_access;
 	uint32_t permission;
@@ -1702,12 +1701,12 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	tmp_proptags.count = 4;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PR_MESSAGE_SIZE_EXTENDED;
-	proptag_buff[1] = PROP_TAG_STORAGEQUOTALIMIT;
+	proptag_buff[1] = PR_STORAGE_QUOTA_LIMIT;
 	proptag_buff[2] = PR_ASSOC_CONTENT_COUNT;
 	proptag_buff[3] = PROP_TAG_CONTENTCOUNT;
 	if (!pstore->get_properties(&tmp_proptags, &tmp_propvals))
 		return ecError;
-	pvalue = common_util_get_propvals(&tmp_propvals, PROP_TAG_STORAGEQUOTALIMIT);
+	auto pvalue = common_util_get_propvals(&tmp_propvals, PR_STORAGE_QUOTA_LIMIT);
 	int64_t max_quota = pvalue == nullptr ? -1 : static_cast<int64_t>(*static_cast<uint32_t *>(pvalue)) * 1024;
 	pvalue = common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE_EXTENDED);
 	uint64_t total_size = pvalue == nullptr ? 0 : *static_cast<uint64_t *>(pvalue);
@@ -2172,7 +2171,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		propval_buff[1].pvalue = &tmp_type;
 		propval_buff[2].proptag = PR_DISPLAY_NAME;
 		propval_buff[2].pvalue = deconst(folder_name);
-		propval_buff[3].proptag = PROP_TAG_COMMENT;
+		propval_buff[3].proptag = PR_COMMENT;
 		propval_buff[3].pvalue = deconst(folder_comment);
 		propval_buff[4].proptag = PR_CREATION_TIME;
 		propval_buff[4].pvalue = &last_time;
@@ -3488,12 +3487,12 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	tmp_proptags.count = 3;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PR_MAX_SUBMIT_MESSAGE_SIZE;
-	proptag_buff[1] = PROP_TAG_PROHIBITSENDQUOTA;
+	proptag_buff[1] = PR_PROHIBIT_SEND_QUOTA;
 	proptag_buff[2] = PR_MESSAGE_SIZE_EXTENDED;
 	if (!pstore->get_properties(&tmp_proptags, &tmp_propvals))
 		return ecError;
 
-	auto sendquota = static_cast<uint32_t *>(common_util_get_propvals(&tmp_propvals, PROP_TAG_PROHIBITSENDQUOTA));
+	auto sendquota = static_cast<uint32_t *>(common_util_get_propvals(&tmp_propvals, PR_PROHIBIT_SEND_QUOTA));
 	auto storesize = static_cast<uint64_t *>(common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE_EXTENDED));
 	/* Sendquota is in KiB, storesize in bytes */
 	if (sendquota != nullptr && storesize != nullptr &&

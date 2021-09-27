@@ -104,17 +104,17 @@ BOOL FOLDER_OBJECT::check_readonly_property(uint32_t proptag)
 	case PROP_TAG_FOLDERID:
 	case PR_FOLDER_TYPE:
 	case PROP_TAG_HASRULES:
-	case PROP_TAG_HIERARCHYCHANGENUMBER:
+	case PR_HIERARCHY_CHANGE_NUM:
 	case PROP_TAG_HIERREV:
-	case PROP_TAG_INTERNETARTICLENUMBER:
+	case PR_INTERNET_ARTICLE_NUMBER:
 	case PROP_TAG_LOCALCOMMITTIME:
-	case PROP_TAG_LOCALCOMMITTIMEMAX:
+	case PR_LOCAL_COMMIT_TIME_MAX:
 	case PR_MESSAGE_SIZE:
 	case PR_MESSAGE_SIZE_EXTENDED:
 	case PR_ASSOC_MESSAGE_SIZE:
 	case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
 	case PR_NORMAL_MESSAGE_SIZE:
-	case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
+	case PR_NORMAL_MESSAGE_SIZE_EXTENDED:
 	case PR_PARENT_ENTRYID:
 	case PROP_TAG_PARENTFOLDERID:
 	case PR_STORE_RECORD_KEY:
@@ -194,7 +194,7 @@ static BOOL folder_object_get_calculated_property(
 		if (*outvalue == nullptr)
 			return FALSE;
 		if (!exmdb_client_get_folder_property(pfolder->plogon->get_dir(),
-		    0, pfolder->folder_id, PROP_TAG_NORMALMESSAGESIZEEXTENDED,
+		    0, pfolder->folder_id, PR_NORMAL_MESSAGE_SIZE_EXTENDED,
 		    &pvalue) || pvalue == nullptr)
 			return FALSE;	
 		*static_cast<uint32_t *>(*outvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));

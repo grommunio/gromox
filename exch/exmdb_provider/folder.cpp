@@ -666,25 +666,25 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	if (FALSE == common_util_allocate_folder_art(pdb->psqlite, &art)) {
 		return FALSE;
 	}
-	tmp_propval.proptag = PROP_TAG_INTERNETARTICLENUMBER;
+	tmp_propval.proptag = PR_INTERNET_ARTICLE_NUMBER;
 	tmp_propval.pvalue = &art;
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		folder_id, 0, pdb->psqlite, &tmp_propval, &b_result);
 	nt_time = rop_util_current_nttime();
-	tmp_propval.proptag = PROP_TAG_LOCALCOMMITTIMEMAX;
+	tmp_propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	tmp_propval.pvalue = &nt_time;
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		parent_id, 0, pdb->psqlite, &tmp_propval, &b_result);
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		folder_id, 0, pdb->psqlite, &tmp_propval, &b_result);
 	hcn = 0;
-	tmp_propval.proptag = PROP_TAG_HIERARCHYCHANGENUMBER;
+	tmp_propval.proptag = PR_HIERARCHY_CHANGE_NUM;
 	tmp_propval.pvalue = &hcn;
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		folder_id, 0, pdb->psqlite, &tmp_propval, &b_result);
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET"
 		" propval=propval+1 WHERE folder_id=%llu AND "
-		"proptag=%u", LLU(parent_id), PROP_TAG_HIERARCHYCHANGENUMBER);
+		"proptag=%u", LLU(parent_id), PR_HIERARCHY_CHANGE_NUM);
 	sqlite3_exec(pdb->psqlite, sql_string, NULL, NULL, NULL);
 	tmp_propval.proptag = PROP_TAG_HIERREV;
 	tmp_propval.pvalue = &nt_time;
@@ -1268,7 +1268,7 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET"
 		" propval=propval+1 WHERE folder_id=%llu AND "
-		"proptag=%u", LLU(parent_id), PROP_TAG_HIERARCHYCHANGENUMBER);
+		 "proptag=%u", LLU(parent_id), PR_HIERARCHY_CHANGE_NUM);
 	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 		sql_string, NULL, NULL, NULL)) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
@@ -1289,7 +1289,7 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 0, PROP_TAG_LOCALCOMMITTIMEMAX);
+	sqlite3_bind_int64(pstmt, 0, PR_LOCAL_COMMIT_TIME_MAX);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		pstmt.finalize();
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
@@ -1350,7 +1350,7 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 		}
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=propval+1 WHERE folder_id=%llu AND "
-			"proptag=%u", LLU(fid_val), PROP_TAG_HIERARCHYCHANGENUMBER);
+		         "proptag=%u", LLU(fid_val), PR_HIERARCHY_CHANGE_NUM);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
@@ -1369,7 +1369,7 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=%llu WHERE folder_id=%llu AND proptag=%u",
 			LLU(rop_util_current_nttime()), LLU(fid_val),
-			PROP_TAG_LOCALCOMMITTIMEMAX);
+		         PR_LOCAL_COMMIT_TIME_MAX);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
@@ -1475,7 +1475,7 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 1, art);
-	sqlite3_bind_int64(pstmt, 2, PROP_TAG_INTERNETARTICLENUMBER);
+	sqlite3_bind_int64(pstmt, 2, PR_INTERNET_ARTICLE_NUMBER);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
 	}
@@ -1493,13 +1493,13 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, nt_time);
-	sqlite3_bind_int64(pstmt, 2, PROP_TAG_LOCALCOMMITTIMEMAX);
+	sqlite3_bind_int64(pstmt, 2, PR_LOCAL_COMMIT_TIME_MAX);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, 0);
-	sqlite3_bind_int64(pstmt, 2, PROP_TAG_HIERARCHYCHANGENUMBER);
+	sqlite3_bind_int64(pstmt, 2, PR_HIERARCHY_CHANGE_NUM);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
 	}
@@ -1573,7 +1573,7 @@ static BOOL folder_copy_search_folder(db_item_ptr &pdb,
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 1, art);
-	sqlite3_bind_int64(pstmt, 2, PROP_TAG_INTERNETARTICLENUMBER);
+	sqlite3_bind_int64(pstmt, 2, PR_INTERNET_ARTICLE_NUMBER);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
 	}
@@ -1585,13 +1585,13 @@ static BOOL folder_copy_search_folder(db_item_ptr &pdb,
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, nt_time);
-	sqlite3_bind_int64(pstmt, 2, PROP_TAG_LOCALCOMMITTIMEMAX);
+	sqlite3_bind_int64(pstmt, 2, PR_LOCAL_COMMIT_TIME_MAX);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 1, 0);
-	sqlite3_bind_int64(pstmt, 2, PROP_TAG_HIERARCHYCHANGENUMBER);
+	sqlite3_bind_int64(pstmt, 2, PR_HIERARCHY_CHANGE_NUM);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
 	}
@@ -1962,7 +1962,7 @@ BOOL exmdb_server_copy_folder_internal(const char *dir,
 	if (folder_count > 0) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=propval+1 WHERE folder_id=%llu AND "
-			"proptag=%u", LLU(dst_val), PROP_TAG_HIERARCHYCHANGENUMBER);
+		         "proptag=%u", LLU(dst_val), PR_HIERARCHY_CHANGE_NUM);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
@@ -1981,7 +1981,7 @@ BOOL exmdb_server_copy_folder_internal(const char *dir,
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=%llu WHERE folder_id=%llu AND proptag=%u",
 			LLU(rop_util_current_nttime()), LLU(dst_val),
-			PROP_TAG_LOCALCOMMITTIMEMAX);
+		         PR_LOCAL_COMMIT_TIME_MAX);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
@@ -2042,7 +2042,7 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (TRUE == b_copy &&
-	    cu_check_msgsize_overflow(pdb->psqlite, PROP_TAG_STORAGEQUOTALIMIT) &&
+	    cu_check_msgsize_overflow(pdb->psqlite, PR_STORAGE_QUOTA_LIMIT) &&
 		TRUE == common_util_check_msgcnt_overflow(pdb->psqlite)) {
 		*pb_partial = TRUE;
 		return TRUE;		
@@ -2092,7 +2092,7 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 		nt_time = rop_util_current_nttime();
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=%llu WHERE folder_id=%llu AND proptag=%u",
-			LLU(nt_time), LLU(parent_val), PROP_TAG_LOCALCOMMITTIMEMAX);
+		         LLU(nt_time), LLU(parent_val), PR_LOCAL_COMMIT_TIME_MAX);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
@@ -2108,7 +2108,7 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 		}
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=propval+1 WHERE folder_id=%llu AND "
-			"proptag=%u", LLU(parent_val), PROP_TAG_HIERARCHYCHANGENUMBER);
+		         "proptag=%u", LLU(parent_val), PR_HIERARCHY_CHANGE_NUM);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
@@ -2179,7 +2179,7 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 	nt_time = rop_util_current_nttime();
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 		"propval=%llu WHERE folder_id=%llu AND proptag=%u",
-		LLU(nt_time), LLU(dst_val), PROP_TAG_LOCALCOMMITTIMEMAX);
+	         LLU(nt_time), LLU(dst_val), PR_LOCAL_COMMIT_TIME_MAX);
 	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 		sql_string, NULL, NULL, NULL)) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
@@ -2187,7 +2187,7 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 		"propval=propval+1 WHERE folder_id=%llu AND "
-		"proptag=%u", LLU(dst_val), PROP_TAG_HIERARCHYCHANGENUMBER);
+	         "proptag=%u", LLU(dst_val), PR_HIERARCHY_CHANGE_NUM);
 	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 		sql_string, NULL, NULL, NULL)) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);

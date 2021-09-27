@@ -211,7 +211,6 @@ uint32_t rop_fasttransferdestconfigure(
 	void *plogmap, uint8_t logon_id,
 	uint32_t hin, uint32_t *phout)
 {
-	void *pvalue;
 	void *pobject;
 	int object_type;
 	int root_element;
@@ -269,12 +268,12 @@ uint32_t rop_fasttransferdestconfigure(
 		tmp_proptags.count = 4;
 		tmp_proptags.pproptag = proptag_buff;
 		proptag_buff[0] = PR_MESSAGE_SIZE_EXTENDED;
-		proptag_buff[1] = PROP_TAG_STORAGEQUOTALIMIT;
+		proptag_buff[1] = PR_STORAGE_QUOTA_LIMIT;
 		proptag_buff[2] = PR_ASSOC_CONTENT_COUNT;
 		proptag_buff[3] = PROP_TAG_CONTENTCOUNT;
 		if (!plogon->get_properties(&tmp_proptags, &tmp_propvals))
 			return ecError;
-		pvalue = common_util_get_propvals(&tmp_propvals, PROP_TAG_STORAGEQUOTALIMIT);
+		auto pvalue = common_util_get_propvals(&tmp_propvals, PR_STORAGE_QUOTA_LIMIT);
 		uint64_t max_quota = ULLONG_MAX;
 		if (pvalue != nullptr) {
 			max_quota = *static_cast<uint32_t *>(pvalue);

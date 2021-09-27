@@ -642,7 +642,7 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 	switch (table_type) {
 	case STORE_PROPERTIES_TABLE:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM store_properties");
-		proptags[i++] = PROP_TAG_INTERNETARTICLENUMBER;
+		proptags[i++] = PR_INTERNET_ARTICLE_NUMBER;
 		break;
 	case FOLDER_PROPERTIES_TABLE:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
@@ -651,7 +651,7 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 		proptags[i++] = PROP_TAG_CONTENTCOUNT;
 		proptags[i++] = PR_MESSAGE_SIZE_EXTENDED;
 		proptags[i++] = PR_ASSOC_MESSAGE_SIZE_EXTENDED;
-		proptags[i++] = PROP_TAG_NORMALMESSAGESIZEEXTENDED;
+		proptags[i++] = PR_NORMAL_MESSAGE_SIZE_EXTENDED;
 		proptags[i++] = PROP_TAG_FOLDERCHILDCOUNT;
 		proptags[i++] = PR_FOLDER_TYPE;
 		proptags[i++] = PROP_TAG_CONTENTUNREADCOUNT;
@@ -1872,7 +1872,7 @@ static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
 			return GP_ERR;
 		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_store_message_count(db, TRUE);
 		return GP_ADV;
-	case PROP_TAG_INTERNETARTICLENUMBER:
+	case PR_INTERNET_ARTICLE_NUMBER:
 		pv.pvalue = cu_alloc<uint32_t>();
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
@@ -1983,7 +1983,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 			return GP_ERR;
 		*static_cast<uint64_t *>(pv.pvalue) = common_util_get_folder_message_size(db, id, false, TRUE);
 		return GP_ADV;
-	case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
+	case PR_NORMAL_MESSAGE_SIZE_EXTENDED:
 		pv.pvalue = cu_alloc<uint64_t>();
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
@@ -3051,10 +3051,10 @@ BOOL common_util_set_properties(int table_type,
 			case PR_ASSOC_MESSAGE_SIZE:
 			case PR_NORMAL_MESSAGE_SIZE:
 			case PR_MESSAGE_SIZE_EXTENDED:
-			case PROP_TAG_INTERNETARTICLENUMBER:
+			case PR_INTERNET_ARTICLE_NUMBER:
 			case PR_ASSOC_CONTENT_COUNT:
 			case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
-			case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
+			case PR_NORMAL_MESSAGE_SIZE_EXTENDED:
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 								ppropvals->ppropval[i].proptag;
@@ -3080,7 +3080,7 @@ BOOL common_util_set_properties(int table_type,
 			case PR_PARENT_SOURCE_KEY:
 			case PR_MESSAGE_SIZE_EXTENDED:
 			case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
-			case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
+			case PR_NORMAL_MESSAGE_SIZE_EXTENDED:
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 								ppropvals->ppropval[i].proptag;
@@ -3564,7 +3564,7 @@ BOOL common_util_remove_properties(int table_type, uint64_t id,
 			case PR_MESSAGE_SIZE_EXTENDED:
 			case PR_ASSOC_CONTENT_COUNT:
 			case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
-			case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
+			case PR_NORMAL_MESSAGE_SIZE_EXTENDED:
 				continue;
 			}
 			break;
@@ -5167,7 +5167,7 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 		if (NULL == propval_buff[1].pvalue) {
 			return FALSE;
 		}
-		propval_buff[2].proptag = PROP_TAG_INTERNETARTICLENUMBER;
+		propval_buff[2].proptag = PR_INTERNET_ARTICLE_NUMBER;
 		propval_buff[2].pvalue = pvalue;
 		nt_time = rop_util_current_nttime();
 		propval_buff[3].proptag = PR_LAST_MODIFICATION_TIME;
@@ -5382,7 +5382,7 @@ BOOL common_util_increase_store_size(sqlite3 *psqlite,
 	if (0 != normal_size) {
 		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, normal_size);
-		sqlite3_bind_int64(pstmt, 2, PROP_TAG_NORMALMESSAGESIZEEXTENDED);
+		sqlite3_bind_int64(pstmt, 2, PR_NORMAL_MESSAGE_SIZE_EXTENDED);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			return FALSE;
 		}
@@ -5416,7 +5416,7 @@ BOOL common_util_decrease_store_size(sqlite3 *psqlite,
 	if (0 != normal_size) {
 		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, normal_size);
-		sqlite3_bind_int64(pstmt, 2, PROP_TAG_NORMALMESSAGESIZEEXTENDED);
+		sqlite3_bind_int64(pstmt, 2, PR_NORMAL_MESSAGE_SIZE_EXTENDED);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			return FALSE;
 		}

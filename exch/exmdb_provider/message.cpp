@@ -104,7 +104,7 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (FALSE == b_move &&
-	    cu_check_msgsize_overflow(pdb->psqlite, PROP_TAG_STORAGEQUOTALIMIT) &&
+	    cu_check_msgsize_overflow(pdb->psqlite, PR_STORAGE_QUOTA_LIMIT) &&
 		TRUE == common_util_check_msgcnt_overflow(pdb->psqlite)) {
 		*pb_result = FALSE;
 		return TRUE;		
@@ -248,7 +248,7 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 			return FALSE;
 		}
 		nt_time = rop_util_current_nttime();
-		tmp_propvals[3].proptag = PROP_TAG_LOCALCOMMITTIMEMAX;
+		tmp_propvals[3].proptag = PR_LOCAL_COMMIT_TIME_MAX;
 		tmp_propvals[3].pvalue = &nt_time;
 		tmp_propvals[4].proptag = PR_LAST_MODIFICATION_TIME;
 		tmp_propvals[4].pvalue = &nt_time;
@@ -256,7 +256,7 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 			parent_fid, 0, pdb->psqlite, &propvals, &problems);
 		common_util_increase_deleted_count(pdb->psqlite, parent_fid, 1);
 	}
-	tmp_propval.proptag = PROP_TAG_LOCALCOMMITTIMEMAX;
+	tmp_propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	tmp_propval.pvalue = &nt_time;
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		fid_val, 0, pdb->psqlite, &tmp_propval, &b_result);
@@ -495,7 +495,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 			return FALSE;
 		}
 		nt_time = rop_util_current_nttime();
-		tmp_propvals[3].proptag = PROP_TAG_LOCALCOMMITTIMEMAX;
+		tmp_propvals[3].proptag = PR_LOCAL_COMMIT_TIME_MAX;
 		tmp_propvals[3].pvalue = &nt_time;
 		tmp_propvals[4].proptag = PR_LAST_MODIFICATION_TIME;
 		tmp_propvals[4].pvalue = &nt_time;
@@ -504,7 +504,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		common_util_increase_deleted_count(
 			pdb->psqlite, parent_fid, del_count);
 	}
-	tmp_propval.proptag = PROP_TAG_LOCALCOMMITTIMEMAX;
+	tmp_propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	tmp_propval.pvalue = &nt_time;
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		dst_val, 0, pdb->psqlite, &tmp_propval, &b_result);
@@ -755,7 +755,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 		return FALSE;
 	}
 	nt_time = rop_util_current_nttime();
-	tmp_propvals[3].proptag = PROP_TAG_LOCALCOMMITTIMEMAX;
+	tmp_propvals[3].proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	tmp_propvals[3].pvalue = &nt_time;
 	tmp_propvals[4].proptag = PR_LAST_MODIFICATION_TIME;
 	tmp_propvals[4].pvalue = &nt_time;
@@ -1075,7 +1075,7 @@ BOOL exmdb_server_set_message_properties(const char *dir,
 		return FALSE;
 	}
 	nt_time = rop_util_current_nttime();
-	tmp_propval.proptag = PROP_TAG_LOCALCOMMITTIMEMAX;
+	tmp_propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	tmp_propval.pvalue = &nt_time;
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		fid_val, 0, pdb->psqlite, &tmp_propval, &b_result);
@@ -1115,7 +1115,7 @@ BOOL exmdb_server_remove_message_properties(
 		return FALSE;
 	}
 	nt_time = rop_util_current_nttime();
-	tmp_propval.proptag = PROP_TAG_LOCALCOMMITTIMEMAX;
+	tmp_propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	tmp_propval.pvalue = &nt_time;
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		fid_val, 0, pdb->psqlite, &tmp_propval, &b_result);
@@ -1185,7 +1185,7 @@ BOOL exmdb_server_set_message_read_state(const char *dir,
 		return FALSE;
 	}
 	nt_time = rop_util_current_nttime();
-	tmp_propval.proptag = PROP_TAG_LOCALCOMMITTIMEMAX;
+	tmp_propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	tmp_propval.pvalue = &nt_time;
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		fid_val, 0, pdb->psqlite, &tmp_propval, &b_result);
@@ -2369,7 +2369,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			parent_id, 0, psqlite, &tmp_propval, &b_result)) {
 			return FALSE;	
 		}
-		tmp_propval.proptag = PROP_TAG_INTERNETARTICLENUMBER;
+		tmp_propval.proptag = PR_INTERNET_ARTICLE_NUMBER;
 		tmp_propval.pvalue = pvalue;
 		if (FALSE == common_util_set_property(MESSAGE_PROPERTIES_TABLE,
 			*pmessage_id, 0, psqlite, &tmp_propval, &b_result)) {
@@ -2506,7 +2506,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		return TRUE;
 	}
 	nt_time = rop_util_current_nttime();
-	tmp_propval.proptag = PROP_TAG_LOCALCOMMITTIMEMAX;
+	tmp_propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	tmp_propval.pvalue = &nt_time;
 	return common_util_set_property(FOLDER_PROPERTIES_TABLE,
 			parent_id, 0, psqlite, &tmp_propval, &b_result);
@@ -2925,7 +2925,7 @@ static BOOL message_make_deferred_error_message(
 		return FALSE;
 	}
 	message_content_free(pmsg);
-	propval.proptag = PROP_TAG_LOCALCOMMITTIMEMAX;
+	propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	propval.pvalue = &nt_time;
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		PRIVATE_FID_DEFERRED_ACTION, 0, psqlite,
@@ -3653,7 +3653,7 @@ static BOOL message_make_deferred_action_message(
 		return FALSE;
 	}
 	message_content_free(pmsg);
-	propval.proptag = PROP_TAG_LOCALCOMMITTIMEMAX;
+	propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	propval.pvalue = &nt_time;
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		PRIVATE_FID_DEFERRED_ACTION, 0, psqlite,
@@ -3785,7 +3785,7 @@ static bool op_move_std(BOOL b_oof, const char *from_address,
 	}
 	auto nt_time = rop_util_current_nttime();
 	TAGGED_PROPVAL propval;
-	propval.proptag = PROP_TAG_LOCALCOMMITTIMEMAX;
+	propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	propval.pvalue = &nt_time;
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		dst_fid, 0, psqlite, &propval, &b_result);
@@ -4273,7 +4273,7 @@ static bool opx_move(BOOL b_oof, const char *from_address,
 	}
 	auto nt_time = rop_util_current_nttime();
 	TAGGED_PROPVAL propval;
-	propval.proptag = PROP_TAG_LOCALCOMMITTIMEMAX;
+	propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	propval.pvalue = &nt_time;
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		dst_fid, 0, psqlite, &propval, &b_result);
@@ -4829,16 +4829,15 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (cu_check_msgsize_overflow(pdb->psqlite, PROP_TAG_PROHIBITRECEIVEQUOTA) ||
+	if (cu_check_msgsize_overflow(pdb->psqlite, PR_PROHIBIT_RECEIVE_QUOTA) ||
 		TRUE == common_util_check_msgcnt_overflow(pdb->psqlite)) {
 		*presult = 1;
 		return TRUE;
 	}
 	if (TRUE == exmdb_server_check_private()) {
-		if (FALSE == common_util_get_property(STORE_PROPERTIES_TABLE,
-			0, 0, pdb->psqlite, PROP_TAG_OUTOFOFFICESTATE, &pvalue)) {
+		if (!common_util_get_property(STORE_PROPERTIES_TABLE, 0, 0,
+		    pdb->psqlite, PR_OOF_STATE, &pvalue))
 			return FALSE;
-		}
 		b_oof = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? false : TRUE;
 		fid_val = PRIVATE_FID_INBOX;
 	} else {
@@ -5018,7 +5017,7 @@ BOOL exmdb_server_write_message(const char *dir, const char *account,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (cu_check_msgsize_overflow(pdb->psqlite, PROP_TAG_STORAGEQUOTALIMIT) ||
+	if (cu_check_msgsize_overflow(pdb->psqlite, PR_STORAGE_QUOTA_LIMIT) ||
 		TRUE == common_util_check_msgcnt_overflow(pdb->psqlite)) {
 		*pe_result = GXERR_OVER_QUOTA;
 		return TRUE;	

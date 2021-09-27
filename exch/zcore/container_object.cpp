@@ -325,7 +325,7 @@ BOOL CONTAINER_OBJECT::load_user_table(const RESTRICTION *prestriction)
 			PROP_TAG_PRIMARYTELEPHONENUMBER,
 			PROP_TAG_MOBILETELEPHONENUMBER,
 			PROP_TAG_HOMEADDRESSSTREET,
-			PROP_TAG_COMMENT,
+			PR_COMMENT,
 			PROP_TAG_COMPANYNAME,
 			PROP_TAG_DEPARTMENTNAME,
 			PROP_TAG_OFFICELOCATION,
@@ -405,9 +405,7 @@ BOOL CONTAINER_OBJECT::load_user_table(const RESTRICTION *prestriction)
 		proptags.pproptag[proptags.count] =
 				PROP_TAG_HOMEADDRESSSTREET;
 		proptags.count ++;
-		proptags.pproptag[proptags.count] =
-						PROP_TAG_COMMENT;
-		proptags.count ++;
+		proptags.pproptag[proptags.count++] = PR_COMMENT;
 		proptags.pproptag[proptags.count] =
 						PROP_TAG_COMPANYNAME;
 		proptags.count ++;
@@ -830,10 +828,10 @@ static const PROPTAG_ARRAY* container_object_get_folder_proptags()
 					PROP_TAG_FOLDERID,
 					PROP_TAG_SUBFOLDERS,
 					PR_DISPLAY_NAME,
-					PROP_TAG_CONTAINERCLASS,
+					PR_CONTAINER_CLASS,
 					PROP_TAG_FOLDERPATHNAME,
 					PROP_TAG_PARENTFOLDERID,
-					PROP_TAG_ATTRIBUTEHIDDEN};
+					PR_ATTR_HIDDEN};
 	static const PROPTAG_ARRAY proptags = {.count = 7, .pproptag = (uint32_t *)proptag_buff};
 	return &proptags;
 }
@@ -953,7 +951,6 @@ static BOOL container_object_query_folder_hierarchy(
 	uint64_t folder_id, const PROPTAG_ARRAY *pproptags,
 	BOOL b_depth, TARRAY_SET *pset)
 {
-	void *pvalue;
 	uint32_t row_num;
 	uint32_t table_id;
 	TARRAY_SET tmp_set;
@@ -971,13 +968,11 @@ static BOOL container_object_query_folder_hierarchy(
 		return FALSE;
 	exmdb_client::unload_table(pinfo->get_maildir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
-		pvalue = common_util_get_propvals(
-			tmp_set.pparray[i], PROP_TAG_ATTRIBUTEHIDDEN);
+		auto pvalue = common_util_get_propvals(tmp_set.pparray[i], PR_ATTR_HIDDEN);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			continue;
 		}
-		pvalue = common_util_get_propvals(
-			tmp_set.pparray[i], PROP_TAG_CONTAINERCLASS);
+		pvalue = common_util_get_propvals(tmp_set.pparray[i], PR_CONTAINER_CLASS);
 		if (pvalue == nullptr || strcasecmp(static_cast<char *>(pvalue), "IPF.Contact") != 0)
 			continue;
 		auto count = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
@@ -1187,7 +1182,7 @@ void container_object_get_user_table_all_proptags(
 		PROP_TAG_PRIMARYTELEPHONENUMBER,
 		PROP_TAG_MOBILETELEPHONENUMBER,
 		PROP_TAG_HOMEADDRESSSTREET,
-		PROP_TAG_COMMENT,
+		PR_COMMENT,
 		PROP_TAG_COMPANYNAME,
 		PROP_TAG_DEPARTMENTNAME,
 		PROP_TAG_OFFICELOCATION,

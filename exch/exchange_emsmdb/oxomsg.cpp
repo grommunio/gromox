@@ -278,12 +278,12 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	tmp_proptags.count = 3;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PR_MAX_SUBMIT_MESSAGE_SIZE;
-	proptag_buff[1] = PROP_TAG_PROHIBITSENDQUOTA;
+	proptag_buff[1] = PR_PROHIBIT_SEND_QUOTA;
 	proptag_buff[2] = PR_MESSAGE_SIZE_EXTENDED;
 	if (!plogon->get_properties(&tmp_proptags, &tmp_propvals))
 		return ecError;
 
-	auto sendquota = static_cast<uint32_t *>(common_util_get_propvals(&tmp_propvals, PROP_TAG_PROHIBITSENDQUOTA));
+	auto sendquota = static_cast<uint32_t *>(common_util_get_propvals(&tmp_propvals, PR_PROHIBIT_SEND_QUOTA));
 	auto storesize = static_cast<uint64_t *>(common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE_EXTENDED));
 	/* Sendquota is in KiB, storesize in bytes */
 	if (sendquota != nullptr && storesize != nullptr &&

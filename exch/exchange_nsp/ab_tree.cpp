@@ -1333,7 +1333,7 @@ void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type, char *value, size_
 	case USER_MAIL_ADDRESS: gx_strlcpy(value, u->username.c_str(), vsize); return;
 	case USER_REAL_NAME: tag = PR_DISPLAY_NAME; break;
 	case USER_JOB_TITLE: tag = PROP_TAG_TITLE; break;
-	case USER_COMMENT: tag = PROP_TAG_COMMENT; break;
+	case USER_COMMENT: tag = PR_COMMENT; break;
 	case USER_MOBILE_TEL: tag = PROP_TAG_MOBILETELEPHONENUMBER; break;
 	case USER_BUSINESS_TEL: tag = PROP_TAG_PRIMARYTELEPHONENUMBER; break;
 	case USER_NICK_NAME: tag = PROP_TAG_NICKNAME; break;

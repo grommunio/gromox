@@ -554,7 +554,7 @@ static BOOL lo_check_readonly_property(const LOGON_OBJECT *plogon, uint32_t prop
 	case PR_EMAIL_ADDRESS:
 	case PR_EMAIL_ADDRESS_A:
 	case PROP_TAG_EXTENDEDRULESIZELIMIT:
-	case PROP_TAG_INTERNETARTICLENUMBER:
+	case PR_INTERNET_ARTICLE_NUMBER:
 	case PR_LOCALE_ID:
 	case PR_MAX_SUBMIT_MESSAGE_SIZE:
 	case PR_MAILBOX_OWNER_ENTRYID:
@@ -565,15 +565,15 @@ static BOOL lo_check_readonly_property(const LOGON_OBJECT *plogon, uint32_t prop
 	case PR_ASSOC_MESSAGE_SIZE:
 	case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
 	case PR_NORMAL_MESSAGE_SIZE:
-	case PROP_TAG_NORMALMESSAGESIZEEXTENDED:
+	case PR_NORMAL_MESSAGE_SIZE_EXTENDED:
 	case PR_OBJECT_TYPE:
-	case PROP_TAG_OUTOFOFFICESTATE:
-	case PROP_TAG_PROHIBITRECEIVEQUOTA:
-	case PROP_TAG_PROHIBITSENDQUOTA:
+	case PR_OOF_STATE:
+	case PR_PROHIBIT_RECEIVE_QUOTA:
+	case PR_PROHIBIT_SEND_QUOTA:
 	case PR_RECORD_KEY:
 	case PROP_TAG_SEARCHKEY:
 	case PROP_TAG_SORTLOCALEID:
-	case PROP_TAG_STORAGEQUOTALIMIT:
+	case PR_STORAGE_QUOTA_LIMIT:
 	case PR_STORE_ENTRYID:
 	case PR_STORE_OFFLINE:
 	case PR_MDB_PROVIDER:
@@ -627,11 +627,10 @@ static BOOL logon_object_get_calculated_property(
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (FALSE == exmdb_client_get_store_property(
-			plogon->dir, 0, PROP_TAG_NORMALMESSAGESIZEEXTENDED,
-			&pvalue) || NULL == pvalue) {
+		if (!exmdb_client_get_store_property(plogon->dir, 0,
+		    PR_NORMAL_MESSAGE_SIZE_EXTENDED, &pvalue) ||
+		    pvalue == nullptr)
 			return FALSE;	
-		}
 		**reinterpret_cast<uint32_t **>(ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:

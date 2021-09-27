@@ -938,10 +938,9 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 				PROP_TAG_LOCALCOMMITTIME == proptags.pproptag[j] ||
 			    proptags.pproptag[j] == PR_DELETED_COUNT_TOTAL ||
 			    proptags.pproptag[j] == PR_NORMAL_MESSAGE_SIZE ||
-				PROP_TAG_LOCALCOMMITTIMEMAX == proptags.pproptag[j] ||
-				PROP_TAG_HIERARCHYCHANGENUMBER == proptags.pproptag[j]) {
+			    proptags.pproptag[j] == PR_LOCAL_COMMIT_TIME_MAX ||
+			    proptags.pproptag[j] == PR_HIERARCHY_CHANGE_NUM)
 				continue;
-			}
 			tmp_proptags[count] = proptags.pproptag[j];
 			count ++;
 		}
