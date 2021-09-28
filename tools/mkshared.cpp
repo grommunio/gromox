@@ -11,8 +11,11 @@
 #include <unistd.h>
 #include <utility>
 #include <sys/stat.h>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/pcl.hpp>
 #include <gromox/proptags.hpp>
+#include <gromox/rop_util.hpp>
 #include "mkshared.hpp"
 
 void adjust_rights(int fd)
@@ -92,12 +95,13 @@ bool add_folderprop_sv(sqlite3_stmt *stmt, const char *dispname,
 	return true;
 }
 
-bool add_folderprop_tv(sqlite3_stmt *stmt, uint64_t nt_time)
+bool add_folderprop_tv(sqlite3_stmt *stmt)
 {
 	static constexpr uint32_t tags[] = {
 		PR_CREATION_TIME, PR_LAST_MODIFICATION_TIME, PROP_TAG_HIERREV,
 		PR_LOCAL_COMMIT_TIME_MAX,
 	};
+	uint64_t nt_time = rop_util_unix_to_nttime(time(nullptr));
 	for (const auto proptag : tags) {
 		sqlite3_bind_int64(stmt, 1, proptag);
 		sqlite3_bind_int64(stmt, 2, nt_time);
@@ -105,5 +109,45 @@ bool add_folderprop_tv(sqlite3_stmt *stmt, uint64_t nt_time)
 			return false;
 		sqlite3_reset(stmt);
 	}
+	return true;
+}
+
+bool add_changenum(sqlite3_stmt *stmt, uint64_t user_id, uint64_t change_num)
+{
+	SIZED_XID xid;
+	xid.size = 22;
+	xid.xid.guid = rop_util_make_user_guid(user_id);
+	rop_util_value_to_gc(change_num, xid.xid.local_id);
+
+	uint8_t tmp_buff[24];
+	EXT_PUSH ext_push;
+	if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
+	    ext_push.p_xid(22, &xid.xid) != EXT_ERR_SUCCESS)
+		return false;
+	sqlite3_bind_int64(stmt, 1, PR_CHANGE_KEY);
+	sqlite3_bind_blob(stmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
+	if (sqlite3_step(stmt) != SQLITE_DONE)
+		return false;
+	sqlite3_reset(stmt);
+	auto ppcl = pcl_init();
+	if (ppcl == nullptr)
+		return FALSE;
+	if (!pcl_append(ppcl, &xid)) {
+		pcl_free(ppcl);
+		return false;
+	}
+	auto pbin = pcl_serialize(ppcl);
+	if (pbin == nullptr) {
+		pcl_free(ppcl);
+		return false;
+	}
+	pcl_free(ppcl);
+	sqlite3_bind_int64(stmt, 1, PR_PREDECESSOR_CHANGE_LIST);
+	sqlite3_bind_blob(stmt, 2, pbin->pb, pbin->cb, SQLITE_STATIC);
+	if (sqlite3_step(stmt) != SQLITE_DONE) {
+		rop_util_free_binary(pbin);
+		return false;
+	}
+	rop_util_free_binary(pbin);
 	return true;
 }

@@ -72,16 +72,11 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	const char *pdisplayname, const char *pcontainer_class,
 	BOOL b_hidden)
 {
-	PCL *ppcl;
-	BINARY *pbin;
-	SIZED_XID xid;
 	uint64_t cur_eid;
 	uint64_t max_eid;
 	uint32_t art_num;
-	EXT_PUSH ext_push;
 	uint64_t change_num;
 	char sql_string[256];
-	uint8_t tmp_buff[24];
 	
 	cur_eid = g_last_eid + 1;
 	g_last_eid += ALLOCATED_EID_RANGE;
@@ -123,8 +118,9 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 		return FALSE;
 	if (!add_folderprop_iv(pstmt, art_num, true) ||
 	    !add_folderprop_sv(pstmt, pdisplayname, pcontainer_class) ||
-	    !add_folderprop_tv(pstmt, rop_util_unix_to_nttime(time(nullptr))))
-		return true;
+	    !add_folderprop_tv(pstmt) ||
+	    !add_changenum(pstmt, user_id, change_num))
+		return false;
 	if (TRUE == b_hidden) {
 		sqlite3_bind_int64(pstmt, 1, PR_ATTR_HIDDEN);
 		sqlite3_bind_int64(pstmt, 2, 1);
@@ -133,40 +129,6 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 		}
 		sqlite3_reset(pstmt);
 	}
-
-	xid.size = 22;
-	xid.xid.guid = rop_util_make_user_guid(user_id);
-	rop_util_value_to_gc(change_num, xid.xid.local_id);
-	if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
-	    ext_push.p_xid(22, &xid.xid) != EXT_ERR_SUCCESS)
-		return false;
-	sqlite3_bind_int64(pstmt, 1, PR_CHANGE_KEY);
-	sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
-	sqlite3_reset(pstmt);
-	ppcl = pcl_init();
-	if (NULL == ppcl) {
-		return FALSE;
-	}
-	if (FALSE == pcl_append(ppcl, &xid)) {
-		pcl_free(ppcl);
-		return FALSE;
-	}
-	pbin = pcl_serialize(ppcl);
-	if (NULL == pbin) {
-		pcl_free(ppcl);
-		return FALSE;
-	}
-	pcl_free(ppcl);
-	sqlite3_bind_int64(pstmt, 1, PR_PREDECESSOR_CHANGE_LIST);
-	sqlite3_bind_blob(pstmt, 2, pbin->pb, pbin->cb, SQLITE_STATIC);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		rop_util_free_binary(pbin);
-		return FALSE;
-	}
-	rop_util_free_binary(pbin);
 	return TRUE;
 }
 
@@ -174,14 +136,9 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 	uint64_t folder_id, uint64_t parent_id, int user_id,
 	const char *pdisplayname, const char *pcontainer_class)
 {
-	PCL *ppcl;
-	BINARY *pbin;
-	SIZED_XID xid;
 	uint32_t art_num;
-	EXT_PUSH ext_push;
 	uint64_t change_num;
 	char sql_string[256];
-	uint8_t tmp_buff[24];
 	
 	g_last_cn ++;
 	change_num = g_last_cn;
@@ -211,41 +168,9 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 		return FALSE;
 	if (!add_folderprop_iv(pstmt, art_num, false) ||
 	    !add_folderprop_sv(pstmt, pdisplayname, pcontainer_class) ||
-	    !add_folderprop_tv(pstmt, rop_util_unix_to_nttime(time(nullptr))))
+	    !add_folderprop_tv(pstmt) ||
+	    !add_changenum(pstmt, user_id, change_num))
 		return false;
-	xid.size = 22;
-	xid.xid.guid = rop_util_make_user_guid(user_id);
-	rop_util_value_to_gc(change_num, xid.xid.local_id);
-	if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
-	    ext_push.p_xid(22, &xid.xid) != EXT_ERR_SUCCESS)
-		return false;
-	sqlite3_bind_int64(pstmt, 1, PR_CHANGE_KEY);
-	sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
-	sqlite3_reset(pstmt);
-	ppcl = pcl_init();
-	if (NULL == ppcl) {
-		return FALSE;
-	}
-	if (FALSE == pcl_append(ppcl, &xid)) {
-		pcl_free(ppcl);
-		return FALSE;
-	}
-	pbin = pcl_serialize(ppcl);
-	if (NULL == pbin) {
-		pcl_free(ppcl);
-		return FALSE;
-	}
-	pcl_free(ppcl);
-	sqlite3_bind_int64(pstmt, 1, PR_PREDECESSOR_CHANGE_LIST);
-	sqlite3_bind_blob(pstmt, 2, pbin->pb, pbin->cb, SQLITE_STATIC);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		rop_util_free_binary(pbin);
-		return FALSE;
-	}
-	rop_util_free_binary(pbin);
 	return TRUE;
 }
 
