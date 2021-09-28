@@ -21,6 +21,7 @@
 #include <sys/types.h>
 #include <mysql.h>
 #include "exch/mysql_adaptor/mysql_adaptor.h"
+#include "mkshared.hpp"
 #define CONFIG_ID_USERNAME				1
 
 using namespace std::string_literals;
@@ -150,6 +151,7 @@ int main(int argc, const char **argv)
 	 */
 	auto tfd = open(temp_path.c_str(), O_RDWR | O_CREAT | O_EXCL, 0600);
 	if (tfd >= 0) {
+		adjust_rights(tfd);
 		close(tfd);
 	} else if (errno == EEXIST) {
 		printf("can not create store database, %s already exists\n", temp_path.c_str());
@@ -173,8 +175,6 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
-	if (chmod(temp_path.c_str(), 0666) < 0)
-		fprintf(stderr, "W-1349: chmod %s: %s\n", temp_path.c_str(), strerror(errno));
 	/* begin the transaction */
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	

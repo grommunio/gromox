@@ -26,6 +26,7 @@
 #include <sys/types.h>
 #include <sys/select.h>
 #include <sys/socket.h>
+#include "mkshared.hpp"
 #define SOCKET_TIMEOUT								60
 
 using namespace gromox;
@@ -254,8 +255,7 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
-	if (chmod(temp_path1, 0666) < 0)
-		fprintf(stderr, "W-1397: chmod %s: %s\n", temp_path1, strerror(errno));
+	adjust_rights(temp_path1);
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	if (sqlite3_exec(psqlite, sql_string.c_str(), nullptr, nullptr,
 	    &err_msg) != SQLITE_OK) {
