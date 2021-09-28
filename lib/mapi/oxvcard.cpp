@@ -988,10 +988,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 				continue;
 			}
 			photo_type = pvalue;
-			pvalue = static_cast<char *>(tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_DATA_BIN));
-			if (NULL == pvalue) {
+			auto bv = static_cast<BINARY *>(tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_DATA_BIN));
+			if (bv == nullptr)
 				continue;
-			}
 			pvline = vcard_new_line("PHOTO");
 			if (NULL == pvline) {
 				goto EXPORT_FAILURE;
@@ -1019,10 +1018,8 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 				goto EXPORT_FAILURE;
 			}
 			vcard_append_value(pvline, pvvalue);
-			if (0 != encode64(((BINARY*)pvalue)->pb, ((BINARY*)pvalue)->cb,
-				tmp_buff, VCARD_MAX_BUFFER_LEN - 1, &out_len)) {
+			if (encode64(bv->pb, bv->cb, tmp_buff, VCARD_MAX_BUFFER_LEN - 1, &out_len) != 0)
 				goto EXPORT_FAILURE;
-			}
 			tmp_buff[out_len] = '\0';
 			if (FALSE == vcard_append_subval(pvvalue, tmp_buff)) {
 				goto EXPORT_FAILURE;

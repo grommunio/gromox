@@ -340,7 +340,7 @@ static uint32_t movecopy_action_size(const MOVECOPY_ACTION *r)
 	if (0 == r->same_store) {
 		size += sizeof(uint16_t) + 21;
 	} else {
-		size += sizeof(uint16_t) + ((BINARY*)r->pfolder_eid)->cb;
+		size += sizeof(uint16_t) + static_cast<BINARY *>(r->pfolder_eid)->cb;
 	}
 	return size;
 }

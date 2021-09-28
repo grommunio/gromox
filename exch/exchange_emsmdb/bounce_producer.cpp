@@ -505,11 +505,9 @@ BOOL bounce_producer_make(const char *username,
 	mime_set_content_param(pmime, "report-type", "disposition-notification");
 	auto pvalue = common_util_get_propvals(&pbrief->proplist, PROP_TAG_CONVERSATIONINDEX);
 	if (NULL != pvalue) {
-		if (0 == encode64(((BINARY*)pvalue)->pb,
-			((BINARY*)pvalue)->cb, tmp_buff,
-			sizeof(tmp_buff), &out_len)) {
+		auto bv = static_cast<const BINARY *>(pvalue);
+		if (encode64(bv->pb, bv->cb, tmp_buff, arsizeof(tmp_buff), &out_len) == 0)
 			mime_set_field(pmime, "Thread-Index", tmp_buff);
-		}
 	}
 	std::string t_addr;
 	try {
@@ -586,8 +584,8 @@ BOOL bounce_producer_make(const char *username,
 	}
 	pvalue = common_util_get_propvals(&pbrief->proplist, PR_PARENT_KEY);
 	if (NULL != pvalue) {
-		encode64(((BINARY*)pvalue)->pb, ((BINARY*)pvalue)->cb,
-			tmp_buff, sizeof(tmp_buff), &out_len);
+		auto bv = static_cast<const BINARY *>(pvalue);
+		encode64(bv->pb, bv->cb, tmp_buff, arsizeof(tmp_buff), &out_len);
 		dsn_append_field(pdsn_fields,
 			"X-MSExch-Correlation-Key", tmp_buff);
 	}

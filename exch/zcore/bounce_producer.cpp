@@ -598,8 +598,8 @@ BOOL bounce_producer_make(const char *username,
 	}
 	pvalue = common_util_get_propvals(&pbrief->proplist, PR_PARENT_KEY);
 	if (NULL != pvalue) {
-		encode64(((BINARY*)pvalue)->pb, ((BINARY*)pvalue)->cb,
-			tmp_buff, sizeof(tmp_buff), &out_len);
+		auto bv = static_cast<BINARY *>(pvalue);
+		encode64(bv->pb, bv->cb, tmp_buff, arsizeof(tmp_buff), &out_len);
 		dsn_append_field(pdsn_fields,
 			"X-MSExch-Correlation-Key", tmp_buff);
 	}

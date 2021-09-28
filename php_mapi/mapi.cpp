@@ -2850,11 +2850,12 @@ ZEND_FUNCTION(mapi_openpropertytostream)
 		THROW_EXCEPTION;
 	}
 	if (NULL != pvalue) {
-		if (PROP_TYPE(proptag) == PT_BINARY)
-			stream_object_write(pstream,
-				((BINARY*)pvalue)->pb, ((BINARY*)pvalue)->cb);
-		else
+		if (PROP_TYPE(proptag) == PT_BINARY) {
+			auto bv = static_cast<BINARY *>(pvalue);
+			stream_object_write(pstream, bv->pb, bv->cb);
+		} else {
 			stream_object_write(pstream, pvalue, strlen(static_cast<const char *>(pvalue)));
+		}
 		stream_object_seek(pstream, STREAM_SEEK_SET, 0);
 	}
 	ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);
@@ -3417,13 +3418,13 @@ ZEND_FUNCTION(mapi_openproperty)
 				pstream, probject->hsession,
 				probject->hobject, proptag);
 			if (NULL != pvalue) {
-				if (PROP_TYPE(proptag) == PT_BINARY)
-					stream_object_write(pstream,
-						((BINARY*)pvalue)->pb,
-						((BINARY*)pvalue)->cb);
-				else
+				if (PROP_TYPE(proptag) == PT_BINARY) {
+					auto bv = static_cast<BINARY *>(pvalue);
+					stream_object_write(pstream, bv->pb, bv->cb);
+				} else {
 					stream_object_write(pstream,
 						pvalue, strlen(static_cast<const char *>(pvalue)));
+				}
 				stream_object_seek(pstream, STREAM_SEEK_SET, 0);
 			}
 			ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);

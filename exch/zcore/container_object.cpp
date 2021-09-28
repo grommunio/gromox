@@ -608,14 +608,15 @@ BOOL container_object_fetch_special_property(
 	ADDRESSBOOK_ENTRYID ab_entryid;
 	
 	switch (proptag) {
-	case PROP_TAG_ABPROVIDERID:
-		*ppvalue = cu_alloc<BINARY>();
-		if (NULL == *ppvalue) {
+	case PROP_TAG_ABPROVIDERID: {
+		auto bv = cu_alloc<BINARY>();
+		if (bv == nullptr)
 			return FALSE;
-		}
-		((BINARY*)*ppvalue)->cb = 16;
-		static_cast<BINARY *>(*ppvalue)->pb = deconst(common_util_get_muidecsab());
+		*ppvalue = bv;
+		bv->cb = 16;
+		bv->pb = deconst(common_util_get_muidecsab());
 		return TRUE;
+	}
 	case PR_ENTRYID: {
 		pvalue = cu_alloc<BINARY>();
 		if (NULL == pvalue) {
@@ -724,16 +725,15 @@ static BOOL container_object_fetch_folder_properties(
 		pout_propvals->ppropval[pout_propvals->count].proptag =
 										pproptags->pproptag[i];
 		switch (pproptags->pproptag[i]) {
-		case PROP_TAG_ABPROVIDERID:
-			pvalue = cu_alloc<BINARY>();
-			if (NULL == pvalue) {
+		case PROP_TAG_ABPROVIDERID: {
+			auto bv = cu_alloc<BINARY>();
+			if (bv == nullptr)
 				return FALSE;
-			}
-			((BINARY*)pvalue)->cb = 16;
-			static_cast<BINARY *>(pvalue)->pb = deconst(common_util_get_muidzcsab());
-			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
-			pout_propvals->count ++;
+			pout_propvals->ppropval[pout_propvals->count++].pvalue = bv;
+			bv->cb = 16;
+			bv->pb = deconst(common_util_get_muidzcsab());
 			break;
+		}
 		case PR_ENTRYID:
 		case PR_PARENT_ENTRYID: {
 			auto pinfo = zarafa_server_get_info();

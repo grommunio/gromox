@@ -81,6 +81,8 @@
 #define FMS_LOCAL								0x02
 #define FMS_HASATTACH							0x80
 
+using namespace gromox;
+
 namespace {
 struct TNEF_ATTRIBUTE {
 	uint8_t lvl;
@@ -2454,10 +2456,9 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	/* ATTRIBUTE_ID_MESSAGEID */
 	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SEARCHKEY);
 	if (NULL != pvalue) {
-		if (FALSE == encode_hex_binary(((BINARY*)pvalue)->pb,
-			((BINARY*)pvalue)->cb, tmp_buff, sizeof(tmp_buff))) {
+		auto bv = static_cast<BINARY *>(pvalue);
+		if (!encode_hex_binary(bv->pb, bv->cb, tmp_buff, arsizeof(tmp_buff)))
 			return FALSE;
-		}
 		attribute.attr_id = ATTRIBUTE_ID_MESSAGEID;
 		attribute.lvl = LVL_MESSAGE;
 		attribute.pvalue = tmp_buff;
@@ -2803,13 +2804,10 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		} else {
 			tmp_rend.attach_position = *(uint32_t*)pvalue;
 		}
-		pvalue = tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_ATTACHENCODING);
-		if (NULL != pvalue && 9 == ((BINARY*)pvalue)->cb &&
-			0 == memcmp(((BINARY*)pvalue)->pb, MACBINARY_ENCODING, 9)) {
-			tmp_rend.data_flags = FILE_DATA_MACBINARY;
-		} else {
-			tmp_rend.data_flags = FILE_DATA_DEFAULT;
-		}
+		auto bv = static_cast<BINARY *>(tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_ATTACHENCODING));
+		tmp_rend.data_flags = bv != nullptr && bv->cb == 9 &&
+		                      memcmp(bv->pb, MACBINARY_ENCODING, 9) == 0 ?
+		                      FILE_DATA_MACBINARY : FILE_DATA_DEFAULT;
 		tmp_rend.render_width = 32;
 		tmp_rend.render_height = 32;
 		attribute.attr_id = ATTRIBUTE_ID_ATTACHRENDDATA;

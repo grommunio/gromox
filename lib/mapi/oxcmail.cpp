@@ -7118,8 +7118,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 		    *static_cast<uint32_t *>(pvalue) == ATTACH_BY_VALUE &&
 			(pvalue = tpropval_array_get_propval(
 			&pattachment->proplist, PROP_TAG_ATTACHENCODING)) &&
-			9 == ((BINARY*)pvalue)->cb && 0 == memcmp(
-			((BINARY*)pvalue)->pb, MACBINARY_ENCODING, 9)) {
+		    static_cast<BINARY *>(pvalue)->cb == 9 &&
+		    memcmp(static_cast<BINARY *>(pvalue)->pb, MACBINARY_ENCODING, 9) == 0) {
 			if (TRUE == oxcmail_export_appledouble(pmail,
 				b_inline, pattachment, &mime_skeleton,
 				alloc, get_propids, pmime)) {

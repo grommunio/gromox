@@ -1503,14 +1503,15 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 	node_type = ab_tree_get_node_type(pnode);
 	/* Properties that need to be force-generated */
 	switch (proptag) {
-	case PROP_TAG_ABPROVIDERID:
-		*ppvalue = cu_alloc<BINARY>();
-		if (NULL == *ppvalue) {
+	case PROP_TAG_ABPROVIDERID: {
+		auto bv = cu_alloc<BINARY>();
+		if (bv == nullptr)
 			return FALSE;
-		}
-		((BINARY*)*ppvalue)->cb = 16;
-		static_cast<BINARY *>(*ppvalue)->pb = deconst(common_util_get_muidecsab());
+		*ppvalue = bv;
+		bv->cb = 16;
+		bv->pb = deconst(common_util_get_muidecsab());
 		return TRUE;
+	}
 	case PROP_TAG_CONTAINERFLAGS:
 		if (node_type < 0x80) {
 			return TRUE;
@@ -1638,15 +1639,15 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			DT_MAILUSER | DTE_FLAG_ACL_CAPABLE;
 		*ppvalue = pvalue;
 		return TRUE;
-	case PR_MAPPING_SIGNATURE:
-		pvalue = cu_alloc<BINARY>();
-		if (NULL == pvalue) {
+	case PR_MAPPING_SIGNATURE: {
+		auto bv = cu_alloc<BINARY>();
+		if (bv == nullptr)
 			return FALSE;
-		}
-		((BINARY*)pvalue)->cb = 16;
-		static_cast<BINARY *>(pvalue)->pb = deconst(g_guid_nspi);
-		*ppvalue = pvalue;
+		*ppvalue = bv;
+		bv->cb = 16;
+		bv->pb = deconst(g_guid_nspi);
 		return TRUE;
+	}
 	case PR_PARENT_ENTRYID:
 		pnode = simple_tree_node_get_parent(pnode);
 		if (NULL == pnode) {

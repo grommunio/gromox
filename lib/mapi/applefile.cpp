@@ -279,14 +279,15 @@ static int applefile_pull_entry(EXT_PULL *pext,
 		}
 		memset(*ppentry, 0, sizeof(ASAFPDIRID));
 		return applefile_pull_asafpdirid(pext, static_cast<ASAFPDIRID *>(*ppentry));
-	default:
-		*ppentry = pext->anew<BINARY>();
-		if (NULL == *ppentry) {
+	default: {
+		auto bv = pext->anew<BINARY>();
+		if (bv == nullptr)
 			return EXT_ERR_ALLOC;
-		}
-		((BINARY*)*ppentry)->cb = entry_length;
-		static_cast<BINARY *>(*ppentry)->pb = deconst(&ext.m_udata[ext.m_offset]);
+		*ppentry = bv;
+		bv->cb = entry_length;
+		bv->pb = deconst(&ext.m_udata[ext.m_offset]);
 		return pext->advance(entry_length);
+	}
 	}
 	
 }

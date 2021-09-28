@@ -3089,7 +3089,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	}
 	pvalue = common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_REPLYTEMPLATEID);
-	if (NULL == pvalue || 16 != ((BINARY*)pvalue)->cb) {
+	if (pvalue == nullptr || static_cast<BINARY *>(pvalue)->cb != 16) {
 		*pb_result = FALSE;
 		return TRUE;
 	}

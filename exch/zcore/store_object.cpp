@@ -827,17 +827,17 @@ static BOOL store_object_get_calculated_property(
 	};
 	
 	switch (proptag) {
-	case PR_MDB_PROVIDER:
-		*ppvalue = cu_alloc<BINARY>();
-		if (NULL == *ppvalue) {
+	case PR_MDB_PROVIDER: {
+		auto bv = cu_alloc<BINARY>();
+		if (bv == nullptr)
 			return FALSE;
-		}
-		((BINARY*)*ppvalue)->cb = 16;
-		static_cast<BINARY *>(*ppvalue)->pb = deconst(
-			!pstore->b_private ? public_uid :
+		*ppvalue = bv;
+		bv->cb = 16;
+		bv->pb = deconst(!pstore->b_private ? public_uid :
 			pstore->check_owner_mode() ?
 			private_uid : share_uid);
 		return TRUE;
+	}
 	case PR_DISPLAY_NAME:
 		*ppvalue = common_util_alloc(256);
 		if (NULL == *ppvalue) {
@@ -1599,8 +1599,8 @@ BOOL STORE_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals)
 				fprintf(stderr, "E-1494: ENOMEM\n");
 			}
 			if (-1 != fd) {
-				write(fd, ((BINARY *)ppropvals->ppropval[i].pvalue)->pb,
-					((BINARY *)ppropvals->ppropval[i].pvalue)->cb);
+				auto bv = static_cast<BINARY *>(ppropvals->ppropval[i].pvalue);
+				write(fd, bv->pb, bv->cb);
 				close(fd);
 			}
 			break;

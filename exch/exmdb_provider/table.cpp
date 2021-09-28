@@ -953,7 +953,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			}
 		} else if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) {
 			if (TRUE == b_conversation) {
-				encode_hex_binary(((BINARY *)pres->propval.pvalue)->pb,
+				encode_hex_binary(static_cast<BINARY *>(pres->propval.pvalue)->pb,
 					16, tmp_string, sizeof(tmp_string));
 				snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
 				        "FROM message_properties WHERE proptag=%u AND"
@@ -985,7 +985,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		            !!(table_flags & TABLE_FLAG_SOFTDELETES),
 		            !!(table_flags & TABLE_FLAG_ASSOCIATED));
 	} else if (b_conversation) {
-		encode_hex_binary(((BINARY *)pres->propval.pvalue)->pb,
+		encode_hex_binary(static_cast<BINARY *>(pres->propval.pvalue)->pb,
 			16, tmp_string, sizeof(tmp_string));
 		gx_snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
 		            "SELECT message_properties.message_id "
@@ -2076,9 +2076,8 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 						table_truncate_string(cpid, static_cast<char *>(pvalue));
 						break;
 					case PT_BINARY:
-						if (((BINARY*)pvalue)->cb > 510) {
-							((BINARY*)pvalue)->cb = 510;
-						}
+						if (static_cast<BINARY *>(pvalue)->cb > 510)
+							static_cast<BINARY *>(pvalue)->cb = 510;
 						break;
 					}
 				}
@@ -2193,9 +2192,8 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 					table_truncate_string(cpid, static_cast<char *>(pvalue));
 					break;
 				case PT_BINARY:
-					if (((BINARY*)pvalue)->cb > 510) {
-						((BINARY*)pvalue)->cb = 510;
-					}
+					if (static_cast<BINARY *>(pvalue)->cb > 510)
+						static_cast<BINARY *>(pvalue)->cb = 510;
 					break;
 				}
 				pset->pparray[pset->count]->ppropval[count].proptag =
@@ -2683,9 +2681,8 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 							table_truncate_string(cpid, static_cast<char *>(pvalue));
 							break;
 						case PT_BINARY:
-							if (((BINARY*)pvalue)->cb > 510) {
-								((BINARY*)pvalue)->cb = 510;
-							}
+							if (static_cast<BINARY *>(pvalue)->cb > 510)
+								static_cast<BINARY *>(pvalue)->cb = 510;
 							break;
 						}
 					}
@@ -2794,9 +2791,8 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 						table_truncate_string(cpid, static_cast<char *>(pvalue));
 						break;
 					case PT_BINARY:
-						if (((BINARY*)pvalue)->cb > 510) {
-							((BINARY*)pvalue)->cb = 510;
-						}
+						if (static_cast<BINARY *>(pvalue)->cb > 510)
+							static_cast<BINARY *>(pvalue)->cb = 510;
 						break;
 					}
 					ppropvals->ppropval[count].proptag = pproptags->pproptag[i];
@@ -3028,9 +3024,8 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 					table_truncate_string(cpid, static_cast<char *>(pvalue));
 					break;
 				case PT_BINARY:
-					if (((BINARY*)pvalue)->cb > 510) {
-						((BINARY*)pvalue)->cb = 510;
-					}
+					if (static_cast<BINARY *>(pvalue)->cb > 510)
+						static_cast<BINARY *>(pvalue)->cb = 510;
 					break;
 				}
 			}
@@ -3113,9 +3108,8 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 				table_truncate_string(cpid, static_cast<char *>(pvalue));
 				break;
 			case PT_BINARY:
-				if (((BINARY*)pvalue)->cb > 510) {
-					((BINARY*)pvalue)->cb = 510;
-				}
+				if (static_cast<BINARY *>(pvalue)->cb > 510)
+					static_cast<BINARY *>(pvalue)->cb = 510;
 				break;
 			}
 			ppropvals->ppropval[count].proptag = pproptags->pproptag[i];

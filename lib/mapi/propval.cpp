@@ -329,7 +329,7 @@ void propval_free(uint16_t type, void *pvalue)
 		break;
 	case PT_BINARY:
 	case PT_OBJECT:
-		free(((BINARY*)pvalue)->pb);
+		free(static_cast<BINARY *>(pvalue)->pb);
 		break;
 	case PT_MV_SHORT:
 		free(((SHORT_ARRAY*)pvalue)->ps);
@@ -394,7 +394,7 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 		return sizeof(uint8_t);
 	case PT_OBJECT:
 	case PT_BINARY:
-		return ((BINARY*)pvalue)->cb;
+		return static_cast<BINARY *>(pvalue)->cb;
 	case PT_CURRENCY:
 	case PT_I8:
 	case PT_SYSTIME:

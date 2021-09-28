@@ -1067,9 +1067,8 @@ static BOOL message_object_set_properties_internal(
 					problems.count ++;
 					continue;
 				}
-				if (((BINARY*)ppropvals->ppropval[i].pvalue)->cb
-					> common_util_get_param(
-					COMMON_UTIL_MAX_EXTRULE_LENGTH)) {
+				if (static_cast<BINARY *>(ppropvals->ppropval[i].pvalue)->cb >
+				    common_util_get_param(COMMON_UTIL_MAX_EXTRULE_LENGTH)) {
 					problems.pproblem[problems.count].index = i;
 					problems.count ++;
 					continue;

@@ -1444,8 +1444,7 @@ uint32_t zarafa_server_getabgal(GUID hsession, BINARY *pentryid)
 		return ecError;
 	if (pvalue == nullptr)
 		return ecNotFound;
-	pentryid->cb = ((BINARY*)pvalue)->cb;
-	pentryid->pb = ((BINARY*)pvalue)->pb;
+	*pentryid = *static_cast<BINARY *>(pvalue);
 	return ecSuccess;
 }
 
@@ -4625,7 +4624,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 	auto pstore = pctx->get_store();
 	if (pctx->get_type() != SYNC_TYPE_HIERARCHY)
 		return ecNotSupported;
-	if (0 == ((BINARY*)pproplist->ppropval[0].pvalue)->cb) {
+	if (static_cast<BINARY *>(pproplist->ppropval[0].pvalue)->cb == 0) {
 		parent_id1 = pctx->get_parent_folder_id();
 		if (!exmdb_client::check_folder_id(pstore->get_dir(),
 		    parent_id1, &b_exist))
