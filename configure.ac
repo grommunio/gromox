@@ -105,6 +105,17 @@ AC_DEFUN([MYSQL_WITH_MYSQL_CONFIG],[
 	AC_MSG_RESULT([$mysql_LIBS])
 ])
 MYSQL_WITH_MYSQL_CONFIG
+
+unitdir=$("$PKG_CONFIG" systemd --variable systemd_system_unit_dir 2>/dev/null)
+sysusersdir=$("$PKG_CONFIG" systemd --variable sysusersdir 2>/dev/null)
+tmpfilesdir=$("$PKG_CONFIG" systemd --variable tmpfilesdir 2>/dev/null)
+AS_IF([test -z "$unitdir"], [unitdir='${prefix}/lib/systemd/system'])
+AS_IF([test -z "$sysusersdir"], [sysusersdir='${prefix}/lib/sysusers.d'])
+AS_IF([test -z "$tmpfilesdir"], [tmpfilesdir='${prefix}/lib/tmpfiles.d'])
+AC_SUBST([unitdir])
+AC_SUBST([sysusersdir])
+AC_SUBST([tmpfilesdir])
+
 AC_ARG_WITH([php], [
 		AS_HELP_STRING([--with-php=/usr/bin/php-config], [Enable building PHP modules])
 		AS_HELP_STRING([--without-php], [Disable building PHP modules])

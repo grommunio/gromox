@@ -24,6 +24,8 @@ phpini_DATA = php_mapi/mapi.ini
 phplibdir = ${PHP_EXTENSION_DIR}
 phplib_LTLIBRARIES = mapi.la
 endif
+sysusers_DATA = system/sysusers-gromox.conf
+tmpfiles_DATA = system/tmpfiles-gromox.conf
 unit_DATA = system/gromox-adaptor.service system/gromox-delivery.service system/gromox-delivery-queue.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-midb.service system/gromox-pop3.service system/gromox-timer.service system/gromox-zcore.service
 
 mta_system = delivery delivery-queue
