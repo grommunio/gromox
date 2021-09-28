@@ -1629,8 +1629,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 						pvconnection->pcontext_out->pchannel)->pdu_list);
 					pvconnection->pcontext_out->sched_stat =
 						SCHED_STAT_WRREP;
-					contexts_pool_signal((SCHEDULE_CONTEXT*)
-						pvconnection->pcontext_out);
+					contexts_pool_signal(pvconnection->pcontext_out);
 				}
 			}
 		}
@@ -1732,8 +1731,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 			pcall, &((RPC_OUT_CHANNEL*)
 			pvconnection->pcontext_out->pchannel)->pdu_list);
 		pvconnection->pcontext_out->sched_stat = SCHED_STAT_WRREP;
-		contexts_pool_signal((SCHEDULE_CONTEXT*)
-					pvconnection->pcontext_out);
+		contexts_pool_signal(pvconnection->pcontext_out);
 		pvconnection.put();
 		pdu_processor_free_call(pcall);
 		return PROCESS_CONTINUE;
@@ -1996,7 +1994,7 @@ void http_parser_vconnection_async_reply(const char *host,
 			pvconnection->pcontext_out->pchannel)->pdu_list);
 	}
 	pvconnection->pcontext_out->sched_stat = SCHED_STAT_WRREP;
-	contexts_pool_signal((SCHEDULE_CONTEXT*)pvconnection->pcontext_out);
+	contexts_pool_signal(pvconnection->pcontext_out);
 }
 
 int http_parser_get_param(int param)
@@ -2251,8 +2249,7 @@ BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext)
 		} else {
 			pvconnection->pcontext_in = pcontext;
 			if (NULL != pvconnection->pcontext_out) {
-				contexts_pool_signal((SCHEDULE_CONTEXT*)
-							pvconnection->pcontext_out);
+				contexts_pool_signal(pvconnection->pcontext_out);
 			}
 		}
 	}
@@ -2279,7 +2276,7 @@ void http_parser_set_outchannel_flowcontrol(HTTP_CONTEXT *pcontext,
 	if (bytes_received + available_window > pchannel_out->bytes_sent) {
 		pchannel_out->available_window = bytes_received
 			+ available_window - pchannel_out->bytes_sent;
-		contexts_pool_signal((SCHEDULE_CONTEXT*)pvconnection->pcontext_out);
+		contexts_pool_signal(pvconnection->pcontext_out);
 	} else {
 		pchannel_out->available_window = 0;
 	}
@@ -2348,8 +2345,7 @@ BOOL http_parser_recycle_outchannel(
 			pdu_processor_output_pdu(pcall, &((RPC_OUT_CHANNEL*)
 				pvconnection->pcontext_out->pchannel)->pdu_list);
 			pvconnection->pcontext_out->sched_stat = SCHED_STAT_WRREP;
-			contexts_pool_signal((SCHEDULE_CONTEXT*)
-						pvconnection->pcontext_out);
+			contexts_pool_signal(pvconnection->pcontext_out);
 			((RPC_OUT_CHANNEL*)pcontext->pchannel)->client_keepalive =
 				((RPC_OUT_CHANNEL*)
 				pvconnection->pcontext_out->pchannel)->client_keepalive;
@@ -2422,12 +2418,10 @@ BOOL http_parser_activate_outrecycling(
 			pdu_processor_output_pdu(
 				pchannel_out->pcall, &pchannel_out->pdu_list);
 			pvconnection->pcontext_out->sched_stat = SCHED_STAT_WRREP;
-			contexts_pool_signal((SCHEDULE_CONTEXT*)
-						pvconnection->pcontext_out);
+			contexts_pool_signal(pvconnection->pcontext_out);
 			pvconnection->pcontext_out = pvconnection->pcontext_outsucc;
 			pvconnection->pcontext_outsucc = NULL;
-			contexts_pool_signal((SCHEDULE_CONTEXT*)
-						pvconnection->pcontext_out);
+			contexts_pool_signal(pvconnection->pcontext_out);
 			return TRUE;
 		}
 	}

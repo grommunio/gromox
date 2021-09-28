@@ -242,7 +242,7 @@ static void hpm_processor_wakeup_context(unsigned int context_id)
 		return;
 	}
 	phttp->sched_stat = SCHED_STAT_WRREP;
-	contexts_pool_signal((SCHEDULE_CONTEXT*)phttp);
+	contexts_pool_signal(phttp);
 }
 
 static void hpm_processor_activate_context(unsigned int context_id)

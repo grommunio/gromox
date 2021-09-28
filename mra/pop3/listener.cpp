@@ -182,7 +182,7 @@ static void *p3ls_thrwork(void *arg)
 			close(sockd2);
 			continue;        
 		}
-		((SCHEDULE_CONTEXT*)pcontext)->type = CONTEXT_CONSTRUCTING;
+		pcontext->type = CONTEXT_CONSTRUCTING;
 		/* pass the client ipaddr into the ipaddr filter */
 		if (system_services_judge_ip != nullptr &&
 		    !system_services_judge_ip(client_hostip)) {
@@ -196,8 +196,7 @@ static void *p3ls_thrwork(void *arg)
 				client_hostip);
 			close(sockd2);
 			/* release the context */
-			contexts_pool_put_context((SCHEDULE_CONTEXT*)pcontext,
-									  CONTEXT_FREE);
+			contexts_pool_put_context(pcontext, CONTEXT_FREE);
 			continue;
 		}
 		/* pass the client ipaddr into the ipaddr container */
@@ -213,8 +212,7 @@ static void *p3ls_thrwork(void *arg)
 				"ipaddr container", client_hostip);
 			close(sockd2);
 			/* release the context */
-			contexts_pool_put_context((SCHEDULE_CONTEXT*)pcontext,
-									  CONTEXT_FREE);
+			contexts_pool_put_context(pcontext, CONTEXT_FREE);
 			continue;
 		}
 
@@ -236,8 +234,8 @@ static void *p3ls_thrwork(void *arg)
 		valid the context and wake up one thread if there're some threads 
 		block on the condition variable 
 		*/
-		((SCHEDULE_CONTEXT*)pcontext)->polling_mask = POLLING_READ;
-		contexts_pool_put_context((SCHEDULE_CONTEXT*)pcontext, CONTEXT_POLLING);
+		pcontext->polling_mask = POLLING_READ;
+		contexts_pool_put_context(pcontext, CONTEXT_POLLING);
 	}
 	return nullptr;
 }
@@ -311,7 +309,7 @@ static void *p3ls_thrworkssl(void *arg)
 			close(sockd2);
 			continue;        
 		}
-		((SCHEDULE_CONTEXT*)pcontext)->type = CONTEXT_CONSTRUCTING;
+		pcontext->type = CONTEXT_CONSTRUCTING;
 		/* pass the client ipaddr into the ipaddr filter */
 		if (system_services_judge_ip != nullptr &&
 		    !system_services_judge_ip(client_hostip)) {
@@ -325,8 +323,7 @@ static void *p3ls_thrworkssl(void *arg)
 				client_hostip);
 			close(sockd2);
 			/* release the context */
-			contexts_pool_put_context((SCHEDULE_CONTEXT*)pcontext,
-									  CONTEXT_FREE);
+			contexts_pool_put_context(pcontext, CONTEXT_FREE);
 			continue;
 		}
 		/* pass the client ipaddr into the ipaddr container */
@@ -342,8 +339,7 @@ static void *p3ls_thrworkssl(void *arg)
 				"ipaddr container", client_hostip);
 			close(sockd2);
 			/* release the context */
-			contexts_pool_put_context((SCHEDULE_CONTEXT*)pcontext,
-									  CONTEXT_FREE);
+			contexts_pool_put_context(pcontext, CONTEXT_FREE);
 			continue;
 		}
 
@@ -359,8 +355,8 @@ static void *p3ls_thrworkssl(void *arg)
 		valid the context and wake up one thread if there're some threads 
 		block on the condition variable 
 		*/
-		((SCHEDULE_CONTEXT*)pcontext)->polling_mask = POLLING_READ;
-		contexts_pool_put_context((SCHEDULE_CONTEXT*)pcontext, CONTEXT_POLLING);
+		pcontext->polling_mask = POLLING_READ;
+		contexts_pool_put_context(pcontext, CONTEXT_POLLING);
 	}
 	return nullptr;
 }

@@ -1753,8 +1753,7 @@ static void *imps_thrwork(void *argp)
 					pcontext->b_modify = FALSE;
 					hl_hold.unlock();
 					pcontext->sched_stat = SCHED_STAT_NOTIFYING;
-					contexts_pool_wakeup_context(
-						(SCHEDULE_CONTEXT*)pcontext, CONTEXT_TURNING);
+					contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
 					if (pnode == ptail) {
 						break;
 					} else {
@@ -1764,15 +1763,13 @@ static void *imps_thrwork(void *argp)
 			}
 			peek_len = recv(pcontext->connection.sockd, &tmp_buff, 1, MSG_PEEK);
 			if (1 == peek_len) {
-				contexts_pool_wakeup_context(
-					(SCHEDULE_CONTEXT*)pcontext, CONTEXT_TURNING);
+				contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
 			} else if (peek_len < 0) {
 				gettimeofday(&current_time, NULL);
 				if (CALCULATE_INTERVAL(current_time,
 					pcontext->connection.last_timestamp) >= g_autologout_time) {
 					pcontext->sched_stat = SCHED_STAT_AUTOLOGOUT;
-					contexts_pool_wakeup_context(
-						(SCHEDULE_CONTEXT*)pcontext, CONTEXT_TURNING);
+					contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
 				} else {
 					ll_hold.lock();
 					double_list_append_as_tail(&g_sleeping_list, pnode);
@@ -1780,8 +1777,7 @@ static void *imps_thrwork(void *argp)
 				}
 			} else {
 				pcontext->sched_stat = SCHED_STAT_DISCONNECTED;
-				contexts_pool_wakeup_context(
-					(SCHEDULE_CONTEXT*)pcontext, CONTEXT_TURNING);
+				contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
 			}
 		} while (pnode != ptail);
 		usleep(100000);
