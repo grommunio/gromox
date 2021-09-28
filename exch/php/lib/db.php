@@ -67,6 +67,7 @@ function get_user_info_by_name($email_address)
 	$results = $db_conn->query($sql_string);
 	if (!$results)
 		_log_db("failed to query database: " . $db_conn->error);
+	$data_array["real_name"] = "";
 	while (($row = $results->fetch_row())) {
 		if ($row[0] == 805371935)
 			$data_array["real_name"] = $row[1];
