@@ -23,6 +23,7 @@
 #include <cstdlib>
 #include <iconv.h>
 #include <cstdio>
+#include "exmdb_parser.h"
 #define LLU(x) static_cast<unsigned long long>(x)
 
 using namespace gromox;
@@ -934,7 +935,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			return false;
 	}
 	if (TRUE == exmdb_server_check_private()) {
-		if (table_flags & TABLE_FLAG_SOFTDELETES) {
+		if ((table_flags & TABLE_FLAG_SOFTDELETES) ||
+		    (!g_enable_dam && fid_val == PRIVATE_FID_DEFERRED_ACTION)) {
 			strcpy(sql_string, "SELECT message_id FROM messages WHERE 0");
 		} else if (table_flags & TABLE_FLAG_ASSOCIATED) {
 			if (FALSE == b_search) {

@@ -33,6 +33,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <cstdio>
+#include "exmdb_parser.h"
 #define UI(x) static_cast<unsigned int>(x)
 #define LLU(x) static_cast<unsigned long long>(x)
 
@@ -2826,6 +2827,8 @@ static BOOL message_make_deferred_error_message(
 	uint32_t action_type, uint32_t block_index,
 	const char *provider, DOUBLE_LIST *pmsg_list)
 {
+	if (!g_enable_dam)
+		return TRUE;
 	BOOL b_result;
 	uint64_t tmp_eid;
 	uint64_t mid_val;
@@ -3496,6 +3499,8 @@ static BOOL message_make_deferred_action_message(
 	const char *provider, DOUBLE_LIST *pdam_list,
 	DOUBLE_LIST *pmsg_list)
 {
+	if (!g_enable_dam)
+		return TRUE;
 	int i;
 	int id_count;
 	SVREID svreid;
@@ -3674,6 +3679,8 @@ static BOOL message_make_deferred_action_messages(
 	uint64_t folder_id, uint64_t message_id,
 	DOUBLE_LIST *pdam_list, DOUBLE_LIST *pmsg_list)
 {
+	if (!g_enable_dam)
+		return TRUE;
 	DAM_NODE *pdnode;
 	DOUBLE_LIST tmp_list;
 	const char *provider;

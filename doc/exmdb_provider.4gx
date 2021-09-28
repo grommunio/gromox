@@ -11,6 +11,19 @@ network protocol on port 5000.
 \fBcache_interval\fP
 Default: \fI2 hours\fP
 .TP
+\fBenable_dam\fP
+When set to \fBon\fP, inbox rule processing is allowed to create Deferred
+Action Messages (DAM). Furthermore, the "Deferred Actions" folder will have its
+contents shown. / Conversely, if this directive is \fBoff\fP, no DAMs will be
+created, and the DAM folder in inboxes is presented as empty to clients (even
+if it has content from earlier).
+.br
+Outlook's DAM handling is poor and if you experience a crash with a primary
+mailbox that is in non-cached/online mode a few seconds after Outlook has
+opened it, turn this option off for mitigation.
+.br
+Default: \fIon\fP
+.TP
 \fBexrpc_debug\fP
 Log every incoming exmdb network RPC and the return code of the operation in a
 minimal fashion to stderr. Level 1 emits RPCs with a failure return code, level

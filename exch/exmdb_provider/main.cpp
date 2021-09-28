@@ -29,6 +29,7 @@ static std::shared_ptr<CONFIG_FILE> g_config_during_init;
 static constexpr cfg_directive cfg_default_values[] = {
 	{"cache_interval", "2h", CFG_TIME, "1s"},
 	{"exrpc_debug", "0"},
+	{"enable_dam", "1", CFG_BOOL},
 	{"listen_ip", "::1"},
 	{"listen_port", "5000"},
 	{"max_ext_rule_number", "20", CFG_SIZE, "1", "100"},
@@ -110,6 +111,7 @@ static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig)
 	}
 	try {
 		g_exrpc_debug = pconfig->get_ll("exrpc_debug");
+		g_enable_dam = pconfig->get_ll("enable_dam");
 	} catch (const cfg_error &) {
 		return false;
 	}
