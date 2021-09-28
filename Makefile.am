@@ -85,8 +85,7 @@ noinst_DATA += \
 	libgxs_user_filter.ldd
 agent_service_progs = freebusy rtf2html
 system_admin_progs = adaptor event timer
-system_admin_tools = mkmidb mkprivate mkpublic rebuild
-sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-mailq gromox-kdb2mt gromox-mt2exm
+sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-mailq gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm gromox-rebuild
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
 endif
@@ -258,20 +257,20 @@ gromox_abktconv_LDADD = ${HX_LIBS} libgromox_cplus.la
 gromox_dbop_SOURCES = lib/dbop_mysql.cpp tools/dbop_main.cpp
 gromox_dbop_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_dbop.la
 gromox_mailq_SOURCES = tools/mailq.cpp
-mkmidb_SOURCES = tools/mkmidb.cpp
-mkmidb_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la
-mkprivate_SOURCES = tools/mkprivate.cpp
-mkprivate_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
-mkpublic_SOURCES = tools/mkpublic.cpp
-mkpublic_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
+gromox_mkmidb_SOURCES = tools/mkmidb.cpp
+gromox_mkmidb_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la
+gromox_mkprivate_SOURCES = tools/mkprivate.cpp
+gromox_mkprivate_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
+gromox_mkpublic_SOURCES = tools/mkpublic.cpp
+gromox_mkpublic_LDADD = ${HX_LIBS} ${mysql_LIBS} ${ssl_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 gromox_kdb2mt_SOURCES = tools/genimport.cpp tools/kdb2mt.cpp
 gromox_kdb2mt_LDADD = ${HX_LIBS} ${mysql_LIBS} ${pff_LIBS} ${zlib_LIBS} libgromox_common.la libgromox_exrpc.la libgromox_mapi.la
 gromox_mt2exm_SOURCES = tools/genimport.cpp tools/mt2exm.cpp
 gromox_mt2exm_LDADD = ${HX_LIBS} ${mysql_LIBS} libgromox_common.la libgromox_cplus.la libgromox_exrpc.la libgromox_mapi.la
 gromox_pff2mt_SOURCES = tools/genimport.cpp tools/pff2mt.cpp
 gromox_pff2mt_LDADD = ${HX_LIBS} ${mysql_LIBS} ${pff_LIBS} libgromox_common.la libgromox_cplus.la libgromox_exrpc.la libgromox_mapi.la
-rebuild_SOURCES = tools/rebuild.cpp
-rebuild_LDADD = ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
+gromox_rebuild_SOURCES = tools/rebuild.cpp
+gromox_rebuild_LDADD = ${HX_LIBS} ${sqlite_LIBS} libgromox_common.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
 timer_SOURCES = tools/timer.cpp
 timer_LDADD = -lpthread ${HX_LIBS} libgromox_common.la
 
@@ -309,16 +308,16 @@ man_MANS = \
 	doc/freebusy.8gx doc/gromox.7 doc/gromox-abktconv.8gx \
 	doc/gromox-abktpull.8gx doc/gromox-dbop.8gx \
 	doc/gromox-kdb2mt.8gx doc/gromox-mailq.8gx \
-	doc/gromox-mt2exm.8gx doc/http.8gx \
+	doc/gromox-mkmidb.8gx doc/gromox-mkprivate.8gx doc/gromox-mkpublic.8gx \
+	doc/gromox-mt2exm.8gx doc/gromox-rebuild.8gx doc/http.8gx \
 	doc/imap.8gx doc/ip6_container.4gx doc/ldap_adaptor.4gx \
 	doc/logthru.4gx \
 	doc/mapi.4gx doc/mapi.7gx \
 	doc/message_enqueue.4gx doc/midb.8gx doc/midb_agent.4gx \
 	doc/mh_emsmdb.4gx doc/mh_nsp.4gx \
-	doc/mkmidb.8gx doc/mkprivate.8gx doc/mkpublic.8gx \
 	doc/mod_cache.4gx doc/mod_fastcgi.4gx doc/mod_rewrite.4gx \
 	doc/mysql_adaptor.4gx \
-	doc/pam_gromox.8gx doc/pop3.8gx doc/rebuild.8gx \
+	doc/pam_gromox.8gx doc/pop3.8gx \
 	doc/rtf2html.1gx doc/sa.cfg.5gx \
 	doc/str_table.4gx doc/textmaps.4gx doc/user_filter.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx

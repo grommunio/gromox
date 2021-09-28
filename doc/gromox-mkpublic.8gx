@@ -1,8 +1,8 @@
-.TH mkpublic 8gx "" "Gromox" "Gromox admin reference"
+.TH gromox\-mkpublic 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-mkpublic \(em Tool for creating a blank public store
+gromox\-mkpublic \(em Tool for creating a blank public store
 .SH Synopsis
-\fBmkpublic\fP [\fB\-c\fP \fIconfig\fP] [\fB\-d\fP \fIdata_path\fP]
+\fBgromox\-mkpublic\fP [\fB\-c\fP \fIconfig\fP] [\fB\-d\fP \fIdata_path\fP]
 \fIdomainname\fP
 .SH Options
 .TP
@@ -29,4 +29,4 @@ of a public store.
 .SH Config file directives
 The config file is shared with other programs. See \fBsa.cfg\fP(5gx).
 .SH See also
-\fBgromox\fP(7), \fBsa.cfg\fP(5gx)
+\fBgromox\fP(7), \fBgromox\-mkprivate\fP(8gx), \fBsa.cfg\fP(5gx)

@@ -1,8 +1,9 @@
-.TH mkmidb 8gx "" "Gromox" "Gromox admin reference"
+.TH gromox\-mkmidb 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-mkmidb \(em Tool for creating a blank message index database
+gromox\-mkmidb \(em Tool for creating a blank message index database
 .SH Synopsis
-\fBmkmidb\fP [\fB\-c\fP \fIconfig\fP] [\fB\-d\fP \fIdatapath\fP] \fIusername\fP
+\fBgromox\-mkmidb\fP [\fB\-c\fP \fIconfig\fP] [\fB\-d\fP \fIdatapath\fP]
+\fIusername\fP
 .SH Options
 .TP
 \fB\-c\fP \fIconfig\fP
