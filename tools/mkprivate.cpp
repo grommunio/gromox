@@ -67,11 +67,6 @@ static const struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static constexpr uint32_t folderprop_timevals[] = {
-	PR_CREATION_TIME, PR_LAST_MODIFICATION_TIME, PROP_TAG_HIERREV,
-	PR_LOCAL_COMMIT_TIME_MAX,
-};
-
 static BOOL create_generic_folder(sqlite3 *psqlite,
 	uint64_t folder_id, uint64_t parent_id, int user_id,
 	const char *pdisplayname, const char *pcontainer_class,
@@ -80,7 +75,6 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	PCL *ppcl;
 	BINARY *pbin;
 	SIZED_XID xid;
-	time_t cur_time;
 	uint64_t cur_eid;
 	uint64_t max_eid;
 	uint32_t art_num;
@@ -127,52 +121,16 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	const std::pair<uint32_t, uint32_t> folderprop_iv[] = {
-		{PR_DELETED_COUNT_TOTAL, 0},
-		{PR_DELETED_FOLDER_COUNT, 0},
-		{PR_HIERARCHY_CHANGE_NUM, 0},
-		{PR_INTERNET_ARTICLE_NUMBER, art_num},
-		{PROP_TAG_ARTICLENUMBERNEXT, 1},
-	};
-	for (const auto &v : folderprop_iv) {
-		sqlite3_bind_int64(pstmt, 1, v.first);
-		sqlite3_bind_int64(pstmt, 2, v.second);
-		if (sqlite3_step(pstmt) != SQLITE_DONE)
-			return false;
-		sqlite3_reset(pstmt);
-	}
-	const std::pair<uint32_t, const char *> folderprop_sv[] =
-		{{PR_DISPLAY_NAME, pdisplayname}, {PR_COMMENT, ""}};
-	for (const auto &v : folderprop_sv) {
-		sqlite3_bind_int64(pstmt, 1, v.first);
-		sqlite3_bind_text(pstmt, 2, v.second, -1, SQLITE_STATIC);
-		if (sqlite3_step(pstmt) != SQLITE_DONE)
-			return false;
-		sqlite3_reset(pstmt);
-	}
-	if (NULL != pcontainer_class) {
-		sqlite3_bind_int64(pstmt, 1, PR_CONTAINER_CLASS);
-		sqlite3_bind_text(pstmt, 2, pcontainer_class, -1, SQLITE_STATIC);
-		if (SQLITE_DONE != sqlite3_step(pstmt)) {
-			return FALSE;
-		}
-		sqlite3_reset(pstmt);
-	}
+	if (!add_folderprop_iv(pstmt, art_num, true) ||
+	    !add_folderprop_sv(pstmt, pdisplayname, pcontainer_class) ||
+	    !add_folderprop_tv(pstmt, rop_util_unix_to_nttime(time(nullptr))))
+		return true;
 	if (TRUE == b_hidden) {
 		sqlite3_bind_int64(pstmt, 1, PR_ATTR_HIDDEN);
 		sqlite3_bind_int64(pstmt, 2, 1);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			return FALSE;
 		}
-		sqlite3_reset(pstmt);
-	}
-	time(&cur_time);
-	uint64_t nt_time = rop_util_unix_to_nttime(cur_time);
-	for (const auto proptag : folderprop_timevals) {
-		sqlite3_bind_int64(pstmt, 1, proptag);
-		sqlite3_bind_int64(pstmt, 2, nt_time);
-		if (sqlite3_step(pstmt) != SQLITE_DONE)
-			return false;
 		sqlite3_reset(pstmt);
 	}
 
@@ -219,7 +177,6 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 	PCL *ppcl;
 	BINARY *pbin;
 	SIZED_XID xid;
-	time_t cur_time;
 	uint32_t art_num;
 	EXT_PUSH ext_push;
 	uint64_t change_num;
@@ -252,47 +209,10 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	const std::pair<uint32_t, uint32_t> folderprop_iv[] = {
-		{PR_DELETED_COUNT_TOTAL, 0},
-		{PR_DELETED_FOLDER_COUNT, 0},
-		{PR_HIERARCHY_CHANGE_NUM, 0},
-		{PR_INTERNET_ARTICLE_NUMBER, art_num},
-	};
-	for (const auto &v : folderprop_iv) {
-		sqlite3_bind_int64(pstmt, 1, v.first);
-		sqlite3_bind_int64(pstmt, 2, v.second);
-		if (sqlite3_step(pstmt) != SQLITE_DONE)
-			return false;
-		sqlite3_reset(pstmt);
-	}
-	const std::pair<uint32_t, const char *> folderprop_sv[] =
-		{{PR_DISPLAY_NAME, pdisplayname}, {PR_COMMENT, ""}};
-	for (const auto &v : folderprop_sv) {
-		sqlite3_bind_int64(pstmt, 1, v.first);
-		sqlite3_bind_text(pstmt, 2, v.second, -1, SQLITE_STATIC);
-		if (sqlite3_step(pstmt) != SQLITE_DONE)
-			return false;
-		sqlite3_reset(pstmt);
-	}
-	if (NULL != pcontainer_class) {
-		sqlite3_bind_int64(pstmt, 1, PR_CONTAINER_CLASS);
-		sqlite3_bind_text(pstmt, 2, pcontainer_class, -1, SQLITE_STATIC);
-		if (SQLITE_DONE != sqlite3_step(pstmt)) {
-			return FALSE;
-		}
-		sqlite3_reset(pstmt);
-	}
-	sqlite3_reset(pstmt);
-	time(&cur_time);
-	uint64_t nt_time = rop_util_unix_to_nttime(cur_time);
-	for (const auto proptag : folderprop_timevals) {
-		sqlite3_bind_int64(pstmt, 1, proptag);
-		sqlite3_bind_int64(pstmt, 2, nt_time);
-		if (sqlite3_step(pstmt) != SQLITE_DONE)
-			return false;
-		sqlite3_reset(pstmt);
-	}
-
+	if (!add_folderprop_iv(pstmt, art_num, false) ||
+	    !add_folderprop_sv(pstmt, pdisplayname, pcontainer_class) ||
+	    !add_folderprop_tv(pstmt, rop_util_unix_to_nttime(time(nullptr))))
+		return false;
 	xid.size = 22;
 	xid.xid.guid = rop_util_make_user_guid(user_id);
 	rop_util_value_to_gc(change_num, xid.xid.local_id);
