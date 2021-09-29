@@ -1,3 +1,27 @@
+1.3 (2021-09-29)
+================
+
+Fixes:
+
+* kdb2mt: put FAI messages in the right place & transfer read flag
+* zcore: stop accidental truncation of autoreply.cfg
+* mda_local: fix an uninitialized buffer read that caused OOF
+  replies not to be generated
+* exmdb_provider: cure bug that prevented deletion of mails in Public Folders
+
+Changes:
+
+* delivery & imap: the log priority of some messages has been raised
+  to more sensible levels.
+* mkprivate, mkpublic, mkmidb: install tools to sbindir
+* autodiscover: support users without a PR_DISPLAY_NAME
+
+Enhancements:
+
+* http: add config directive "http_debug"
+* exmdb_provider: add a config directive "enable_dam"
+
+
 1.2 (2021-09-01)
 ================
 
