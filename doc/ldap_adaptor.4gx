@@ -2,26 +2,30 @@
 .SH Name
 ldap_adaptor \(em LDAP connector for authentication
 .SH Description
-ldap_adaptor is a service plugin that facilitates querying an LDAP directory
-server.
+ldap_adaptor is a service plugin for Gromox that facilitates the use of an LDAP
+server for authentication purposes. Since the authoritative user database is in
+MySQL, LDAP is only used to perform authentication (Bind operations), and
+metadata searches that lead up to such Binds, i.e. looking for the LDAP object
+that has a particular "mail" attribute.
 .SH Configuration file directives
 .TP
 \fBauth_connections\fP
-Maximum number of LDAP connections to utilize for authentication requests.
-(Authentication cannot be run on the metadata connections.) This parameter
-has fixed value and is currently not settable.
+The maximum number of LDAP connections that may be used for authentication
+requests. (Authentication cannot be run on the metadata connections, and so
+this consistutes a separate set of connections.) This parameter has fixed value
+and is currently not settable.
 .br
 Default: (same as data_connections)
 .TP
 \fBdata_connections\fP
-Number of LDAP connections to keep active to the server for metadata lookup.
+The number of LDAP connections that will be kept active to the LDAP server for
+the purpose of metadata searches.
 .br
 Default: \fI4\fP
 .TP
 \fBldap_bind_user\fP
-Specifies the default bind DN to use when performing general LDAP operations,
-i.e. searches. The bind DN must be specified as a Distinguished Name in LDAP
-format.
+An LDAP binddn to use for metadata searches. You cannot use SASL
+mechanisms/SASL users at this time.
 .br
 Default: (unset)
 .TP
@@ -43,7 +47,7 @@ Default: \fImail\fP
 Default: (libldap default)
 .TP
 \fBldap_start_tls\fP
-Enable TLS on ldap:// connections.
+Use the STARTTLS mechanism on LDAP connections.
 .br
 Default: \fIoff\fP
 .SH See also
