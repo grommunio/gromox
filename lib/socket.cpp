@@ -14,6 +14,7 @@
 #ifdef __linux__
 #	include <linux/rtnetlink.h>
 #endif
+#include <libHX/socket.h>
 #include <gromox/defs.h>
 #include <gromox/socket.h>
 #include <gromox/tie.hpp>
@@ -164,6 +165,9 @@ int gx_inet_listen(const char *host, uint16_t port)
 		return EHOSTUNREACH;
 	int saved_errno = 0, fd = -1;
 	for (auto r = aires.get(); r != nullptr; r = r->ai_next) {
+		fd = HX_socket_from_env(r, nullptr);
+		if (fd >= 0)
+			return fd;
 		fd = socket(r->ai_family, r->ai_socktype, r->ai_protocol);
 		if (fd < 0) {
 			saved_errno = errno;
