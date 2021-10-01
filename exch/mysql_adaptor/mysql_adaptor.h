@@ -12,19 +12,16 @@ enum {
 	AF_USER_OUTOFDATE   = 0x02,
 	AF_USER_DELETED     = 0x03,
 	AF_USER_SHAREDMBOX  = 0x04,
-	AF_USER__MASK       = 0x07,
+	AF_USER__MASK       = 0x0F,
 
-	AF_GROUP_NORMAL     = 0x00,
-	AF_GROUP_SUSPENDED  = 0x10,
-	AF_GROUP_OUTOFDATE  = 0x20,
-	AF_GROUP_DELETED    = 0x30,
-	AF_GROUP__MASK      = 0x30,
-
+	// historically: groups with AF_GROUP__MASK = 0xC0, with statuses NORMAL..DELETED
 	AF_DOMAIN_NORMAL    = 0x00,
-	AF_DOMAIN_SUSPENDED = 0x40,
-	AF_DOMAIN_OUTOFDATE = 0x80,
-	AF_DOMAIN_DELETED   = 0xC0,
-	AF_DOMAIN__MASK     = 0xC0,
+	AF_DOMAIN_SUSPENDED = 0x10,
+	AF_DOMAIN_OUTOFDATE = 0x20,
+	AF_DOMAIN_DELETED   = 0x30,
+	AF_DOMAIN__MASK     = 0x30,
+
+	/* note: users.address_status is a tinyint(4), so only 7 "usable" bits */
 };
 
 enum mlist_type {

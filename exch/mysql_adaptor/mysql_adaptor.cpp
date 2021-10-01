@@ -90,9 +90,6 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 		if (temp_status & AF_DOMAIN__MASK) {
 			snprintf(reason, length, "domain of user \"%s\" is disabled!",
 				username);
-		} else if (temp_status & AF_GROUP__MASK) {
-			snprintf(reason, length, "group of user \"%s\" is disabled!",
-				username);
 		} else if (uval == AF_USER_SHAREDMBOX) {
 			snprintf(reason, length, "\"%s\" is a shared mailbox with no login", username);
 		} else if (uval != 0) {
