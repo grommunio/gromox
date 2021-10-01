@@ -455,6 +455,7 @@ static const char tbl_users_top[] =
 "CREATE TABLE `users` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
+"  `primary_email` varchar(320) CHARACTER SET ascii,"
 "  `password` varchar(136) CHARACTER SET ascii NOT NULL DEFAULT '',"
 "  `domain_id` int(10) unsigned NOT NULL,"
 "  `group_id` int(10) unsigned NOT NULL,"
@@ -643,6 +644,9 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{85, "INSERT IGNORE INTO user_properties (user_id, proptag, propval_str) SELECT u.id AS user_id, 956628995 AS proptag, 1 AS propval_str FROM users AS u WHERE u.address_type=2"},
 	{86, "ALTER TABLE users DROP COLUMN sub_type"},
 	{87, "ALTER TABLE users DROP COLUMN address_type"},
+	{88, "ALTER TABLE `users` ADD COLUMN `primary_email` varchar(320) CHARACTER SET ascii AFTER `username`"},
+	{89, "ALTER TABLE `users` ADD CONSTRAINT UNIQUE `primary_email` (`primary_email`)"},
+	{90, "UPDATE `users` SET `primary_email`=`username`"},
 	{0, nullptr},
 };
 
