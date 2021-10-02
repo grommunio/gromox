@@ -275,7 +275,6 @@ int main(int argc, const char **argv) try
 	g_list_fd = open(g_list_path.c_str(), O_CREAT | O_APPEND | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (g_list_fd < 0) {
 		printf("[system]: Failed to open %s: %s\n", g_list_path.c_str(), strerror(errno));
-		close(sockd);
 		return 7;
 	}
 	auto cl_1 = make_scope_exit([&]() { close(g_list_fd); });
