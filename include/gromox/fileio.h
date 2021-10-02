@@ -58,8 +58,6 @@ extern GX_EXPORT ssize_t feed_w3m(const void *in, size_t insize, std::string &ou
 extern GX_EXPORT std::vector<std::string> gx_split(const std::string_view &, char sep);
 extern GX_EXPORT DIR_mp opendir_sd(const char *, const char *);
 extern GX_EXPORT std::unique_ptr<FILE, file_deleter> fopen_sd(const char *, const char *);
-extern GX_EXPORT std::string slurp_file(FILE *);
-extern GX_EXPORT std::string slurp_file(const char *filename);
 extern GX_EXPORT std::string resource_parse_stcode_line(const char *);
 extern GX_EXPORT void startup_banner(const char *);
 extern GX_EXPORT void gx_reexec_finish();

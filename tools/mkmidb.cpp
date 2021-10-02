@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <memory>
 #include <string>
+#include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/database.h>
@@ -167,7 +169,7 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "fopen_sd sqlite3_midb.txt: %s\n", strerror(errno));
 		return 7;
 	}
-	auto sql_string = slurp_file(filp.get());
+	std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_fd(fileno(filp.get()), nullptr));
 	if (SQLITE_OK != sqlite3_initialize()) {
 		printf("Failed to initialize sqlite engine\n");
 		return 9;
@@ -182,11 +184,12 @@ int main(int argc, const char **argv)
 	/* begin the transaction */
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	
-	if (sqlite3_exec(psqlite, sql_string.c_str(), nullptr, nullptr,
+	if (sqlite3_exec(psqlite, slurp_data.get(), nullptr, nullptr,
 	    &err_msg) != SQLITE_OK) {
 		printf("fail to execute table creation sql, error: %s\n", err_msg);
 		return 9;
 	}
+	slurp_data.reset();
 	
 	const char *csql_string = "INSERT INTO configurations VALUES (?, ?)";
 	auto pstmt = gx_sql_prep(psqlite, csql_string);

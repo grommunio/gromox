@@ -2,6 +2,8 @@
 #include <cstring>
 #include <string>
 #include <cstdlib>
+#include <unistd.h>
+#include <libHX/io.h>
 #include <gromox/fileio.h>
 #include <gromox/ical.hpp>
 #include <gromox/mapi_types.hpp>
@@ -27,13 +29,17 @@ static BOOL un_to_eid(const char *username, const char *dispname, BINARY *bv,
 
 int main(int argc, const char **argv)
 {
-	auto data = slurp_file(argc >= 2 ? argv[1] : nullptr);
+	std::unique_ptr<char[], stdlib_delete> data;
+	if (argc >= 2)
+		data.reset(HX_slurp_file(argv[1], nullptr));
+	else
+		data.reset(HX_slurp_fd(STDIN_FILENO, nullptr));
 	ICAL ical;
 	if (ical_init(&ical) < 0) {
 		printf("BAD ical_init\n");
 		return EXIT_FAILURE;
 	}
-	if (!ical_retrieve(&ical, data.data()))
+	if (!ical_retrieve(&ical, data.get()))
 		printf("BAD retrieve\n");
 	auto msg = oxcical_import("UTC", &ical, malloc, get_propids, un_to_eid);
 	if (msg == nullptr)

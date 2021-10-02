@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <memory>
 #include <string>
 #include <vector>
+#include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/database.h>
@@ -254,13 +256,20 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "fopen_sd sqlite3_common.txt: %s\n", strerror(errno));
 		return 7;
 	}
-	auto sql_string = slurp_file(filp.get());
+	std::string sql_string;
+	size_t slurp_len = 0;
+	std::unique_ptr<char[], stdlib_delete> slurp_data(HX_slurp_fd(fileno(filp.get()), &slurp_len));
+	if (slurp_data != nullptr)
+		sql_string.append(slurp_data.get(), slurp_len);
 	filp = fopen_sd("sqlite3_public.txt", datadir);
 	if (filp == nullptr) {
 		fprintf(stderr, "fopen_sd sqlite3_public.txt: %s\n", strerror(errno));
 		return 7;
 	}
-	sql_string += slurp_file(filp.get());
+	slurp_data.reset(HX_slurp_fd(fileno(filp.get()), &slurp_len));
+	if (slurp_data != nullptr)
+		sql_string.append(slurp_data.get(), slurp_len);
+	slurp_data.reset();
 	filp.reset();
 	if (SQLITE_OK != sqlite3_initialize()) {
 		printf("Failed to initialize sqlite engine\n");
