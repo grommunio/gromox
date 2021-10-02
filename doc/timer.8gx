@@ -36,6 +36,12 @@ configuration files, especially those used by plugin instances.
 .br
 Default: \fI/etc/gromox/timer:/etc/gromox\fP
 .TP
+\fBrunning_identity\fP
+An unprivileged user account to switch the process to after startup.
+To inhibit the switch, assign the empty value.
+.br
+Default: \fIgromox\fP
+.TP
 \fBtimer_listen_ip\fP
 An IPv6 address (or v4-mapped address) for exposing the timer service on.
 .br

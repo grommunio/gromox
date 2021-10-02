@@ -228,6 +228,9 @@ int main(int argc, const char **argv) try
 		return 4;
 	}
 	auto cl_0 = make_scope_exit([&]() { close(sockd); });
+	auto ret = switch_user_exec(*pconfig, argv);
+	if (ret < 0)
+		return 4;
 
 	auto pfile = list_file_initd(g_list_path.c_str(), "/", "%d%l%s:512");
 	if (NULL == pfile) {
@@ -280,7 +283,7 @@ int main(int argc, const char **argv) try
 	thr_ids.reserve(g_threads_num);
 	for (size_t i = 0; i < g_threads_num; ++i) {
 		pthread_t tid;
-		auto ret = pthread_create(&tid, nullptr, tmr_thrwork, nullptr);
+		ret = pthread_create(&tid, nullptr, tmr_thrwork, nullptr);
 		if (ret != 0) {
 			printf("[system]: failed to create pool thread: %s\n", strerror(ret));
 			break;
@@ -304,7 +307,7 @@ int main(int argc, const char **argv) try
 		return 8;
 	}
 
-	auto ret = list_file_read_fixedstrings("timer_acl.txt",
+	ret = list_file_read_fixedstrings("timer_acl.txt",
 	           pconfig->get_value("config_file_path"), g_acl_list);
 	if (ret == -ENOENT) {
 		printf("[system]: defaulting to implicit access ACL containing ::1.\n");
