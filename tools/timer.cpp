@@ -225,6 +225,13 @@ int main(int argc, const char **argv) try
 	printf("[system]: processing threads number is %zu\n", g_threads_num);
 	g_threads_num ++;
 
+	auto sockd = gx_inet_listen(listen_ip, listen_port);
+	if (sockd < 0) {
+		printf("[system]: failed to create listen socket: %s\n", strerror(-sockd));
+		return 4;
+	}
+	auto cl_0 = make_scope_exit([&]() { close(sockd); });
+
 	auto pfile = list_file_initd(g_list_path.c_str(), "/", "%d%l%s:512");
 	if (NULL == pfile) {
 		printf("[system]: Failed to read timers from %s: %s\n",
@@ -266,12 +273,6 @@ int main(int argc, const char **argv) try
 	}
 	pfile.reset();
 
-	auto sockd = gx_inet_listen(listen_ip, listen_port);
-	if (sockd < 0) {
-		printf("[system]: failed to create listen socket: %s\n", strerror(-sockd));
-		return 4;
-	}
-	auto cl_0 = make_scope_exit([&]() { close(sockd); });
 	g_list_fd = open(g_list_path.c_str(), O_CREAT | O_APPEND | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (g_list_fd < 0) {
 		printf("[system]: Failed to open %s: %s\n", g_list_path.c_str(), strerror(errno));
