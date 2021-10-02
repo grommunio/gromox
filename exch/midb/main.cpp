@@ -213,6 +213,11 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
 		return 3;
 	}
+	if (listener_run(g_config_file->get_value("config_file_path")) != 0) {
+		printf("[system]: failed to run tcp listener\n");
+		return 6;
+	}
+	auto cl_3 = make_scope_exit(listener_stop);
 	if (0 != service_run()) {
 		printf("[system]: failed to run service\n");
 		return 3;
@@ -223,11 +228,6 @@ int main(int argc, const char **argv) try
 		return 4;
 	}
 	auto cl_1 = make_scope_exit(system_services_stop);
-	if (listener_run(g_config_file->get_value("config_file_path")) != 0) {
-		printf("[system]: failed to run tcp listener\n");
-		return 6;
-	}
-	auto cl_3 = make_scope_exit(listener_stop);
 	if (0 != cmd_parser_run()) {
 		printf("[system]: failed to run command parser\n");
 		return 7;
