@@ -734,8 +734,7 @@ static void npg_ent(gi_name_map &map, libpff_record_entry_t *rent)
 		return;
 	if (libpff_name_to_id_map_entry_get_type(nti_entry.get(), &nti_type, nullptr) < 1)
 		return;
-	struct stdlib_free { void operator()(void *x) { free(x); } };
-	std::unique_ptr<char[], stdlib_free> pnstr;
+	std::unique_ptr<char[], stdlib_delete> pnstr;
 	PROPERTY_NAME pn_req{};
 	if (libpff_name_to_id_map_entry_get_guid(nti_entry.get(),
 	    reinterpret_cast<uint8_t *>(&pn_req.guid), sizeof(pn_req.guid), nullptr) < 1)

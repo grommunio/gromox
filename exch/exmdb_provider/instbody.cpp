@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <cstdint>
 #include <memory>
+#include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/scope.hpp>
 #include <gromox/tie.hpp>
@@ -17,8 +18,8 @@
 using namespace gromox;
 
 namespace {
-struct instbody_free {
-	void operator()(void *x) { free(x); }
+struct instbody_delete : public stdlib_delete {
+	using stdlib_delete::operator();
 	void operator()(BINARY *x) {
 		if (x == nullptr)
 			return;
@@ -73,7 +74,7 @@ static int instance_conv_htmlfromhigher(MESSAGE_CONTENT *mc, BINARY *&bin)
 	auto ret = instance_get_rtf(mc, bin);
 	if (ret <= 0)
 		return ret;
-	std::unique_ptr<char, instbody_free> outbuf;
+	std::unique_ptr<char[], instbody_delete> outbuf;
 	size_t outlen = 0;
 	auto at = attachment_list_init();
 	auto at_clean = make_scope_exit([&]() { attachment_list_free(at); });
@@ -129,7 +130,7 @@ static int instance_conv_htmlfromlower(MESSAGE_CONTENT *mc,
 	}
 	if (ret <= 0)
 		return ret;
-	std::unique_ptr<char, instbody_free> htmlout(plain_to_html(bin->pc));
+	std::unique_ptr<char[], instbody_delete> htmlout(plain_to_html(bin->pc));
 	if (htmlout == nullptr)
 		return -1;
 	bin->cb = strlen(htmlout.get());
@@ -145,11 +146,11 @@ static int instance_conv_rtfcpfromlower(MESSAGE_CONTENT *mc, unsigned int cpid, 
 	auto ret = instance_conv_htmlfromlower(mc, cpid, bin);
 	if (ret <= 0)
 		return ret;
-	std::unique_ptr<char, instbody_free> rtfout;
+	std::unique_ptr<char[], instbody_delete> rtfout;
 	size_t rtflen = 0;
 	if (!html_to_rtf(bin->pc, bin->cb, cpid, &unique_tie(rtfout), &rtflen))
 		return -1;
-	std::unique_ptr<BINARY, instbody_free> rtfcpbin(rtfcp_compress(rtfout.get(), rtflen));
+	std::unique_ptr<BINARY, instbody_delete> rtfcpbin(rtfcp_compress(rtfout.get(), rtflen));
 	if (rtfcpbin == nullptr)
 		return -1;
 	bin->cb = rtfcpbin->cb;

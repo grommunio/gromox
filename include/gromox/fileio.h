@@ -2,6 +2,7 @@
 #include <cstdarg>
 #include <cstddef>
 #include <cstdio>
+#include <cstdlib>
 #include <dirent.h>
 #include <memory>
 #include <string>
@@ -22,6 +23,10 @@ namespace gromox {
 struct file_deleter {
 	void operator()(DIR *d) { closedir(d); }
 	void operator()(FILE *f) { fclose(f); }
+};
+
+struct stdlib_delete {
+	void operator()(void *x) { free(x); }
 };
 
 struct DIR_mp {
