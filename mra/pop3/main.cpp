@@ -64,6 +64,7 @@ int main(int argc, const char **argv) try
 	if (HX_getopt(g_options_table, &argc, &argv,
 	    HXOPT_USAGEONERR | HXOPT_KEEP_ARGV) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	startup_banner("gromox-pop3");
 	struct sigaction sact{};
 	sigemptyset(&sact.sa_mask);
 	sact.sa_handler = [](int) {};

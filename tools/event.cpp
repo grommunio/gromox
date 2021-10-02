@@ -1,7 +1,4 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#ifdef HAVE_CONFIG_H
-#	include "config.h"
-#endif
 #include <algorithm>
 #include <cerrno>
 #include <condition_variable>
@@ -131,10 +128,9 @@ int main(int argc, const char **argv) try
 	if (HX_getopt(g_options_table, &argc, &argv,
 	    HXOPT_USAGEONERR | HXOPT_KEEP_ARGV) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	if (opt_show_version) {
-		printf("version: %s\n", PROJECT_VERSION);
-		return 0;
-	}
+	startup_banner("gromox-event");
+	if (opt_show_version)
+		return EXIT_SUCCESS;
 	struct sigaction sact{};
 	sigemptyset(&sact.sa_mask);
 	sact.sa_handler = SIG_IGN;

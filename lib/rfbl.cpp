@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
 #define _GNU_SOURCE 1 /* unistd.h:environ */
 #include <list>
 #include <memory>
@@ -436,6 +439,12 @@ void rfc1123_dstring(char *buf, size_t z, time_t ts)
 	struct tm tm;
 	gmtime_r(&ts, &tm);
 	strftime(buf, z, "%a, %d %b %Y %T GMT", &tm);
+}
+
+void startup_banner(const char *prog)
+{
+	fprintf(stderr, "\n%s %s (pid %ld uid %ld)\n\n", prog, PACKAGE_VERSION,
+	        static_cast<long>(getpid()), static_cast<long>(getuid()));
 }
 
 /**

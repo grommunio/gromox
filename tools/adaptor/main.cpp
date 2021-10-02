@@ -1,7 +1,4 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#ifdef HAVE_CONFIG_H
-#	include "config.h"
-#endif
 #include <cerrno>
 #include <string>
 #include <unistd.h>
@@ -9,6 +6,7 @@
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
@@ -45,10 +43,9 @@ int main(int argc, const char **argv)
 	if (HX_getopt(g_options_table, &argc, &argv,
 	    HXOPT_USAGEONERR | HXOPT_KEEP_ARGV) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
-	if (opt_show_version) {
-		printf("version: %s\n", PROJECT_VERSION);
-		return 0;
-	}
+	startup_banner("gromox-adaptor");
+	if (opt_show_version)
+		return EXIT_SUCCESS;
 	auto pconfig = config_file_prg(opt_config_file, "adaptor.cfg");
 	if (opt_config_file != nullptr && pconfig == nullptr)
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
