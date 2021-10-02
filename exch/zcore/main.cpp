@@ -261,6 +261,11 @@ int main(int argc, const char **argv) try
 	console_server_register_command(nullptr, cmd_handler_service_plugins);
 
 	listener_init();
+	if (listener_run(g_config_file->get_value("zcore_listen")) != 0) {
+		printf("[system]: failed to run listener\n");
+		return 13;
+	}
+	auto cl_10 = make_scope_exit(listener_stop);
 
 	if (service_run_early() != 0) {
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
@@ -315,11 +320,6 @@ int main(int argc, const char **argv) try
 		return 12;
 	}
 	auto cl_9 = make_scope_exit(console_server_stop);
-	if (listener_run(g_config_file->get_value("zcore_listen")) != 0) {
-		printf("[system]: failed to run listener\n");
-		return 13;
-	}
-	auto cl_10 = make_scope_exit(listener_stop);
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGINT, &sact, nullptr);
