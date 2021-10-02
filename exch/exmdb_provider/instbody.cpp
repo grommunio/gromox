@@ -20,7 +20,7 @@ using namespace gromox;
 namespace {
 struct instbody_delete : public stdlib_delete {
 	using stdlib_delete::operator();
-	void operator()(BINARY *x) {
+	inline void operator()(BINARY *x) const {
 		if (x == nullptr)
 			return;
 		free(x->pv);

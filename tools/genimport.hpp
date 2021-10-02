@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include <gromox/element_data.hpp>
+#include <gromox/fileio.h>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/tpropval_array.hpp>
@@ -20,13 +21,13 @@ class YError final : public std::exception {
 	std::string m_str;
 };
 
-struct gi_delete {
-	void operator()(ATTACHMENT_CONTENT *x) const { attachment_content_free(x); }
-	void operator()(BINARY *x) const { rop_util_free_binary(x); }
-	void operator()(MESSAGE_CONTENT *x) const { message_content_free(x); }
-	void operator()(PCL *x) const { pcl_free(x); }
-	void operator()(TPROPVAL_ARRAY *x) const { tpropval_array_free(x); }
-	void operator()(void *x) const { free(x); }
+struct gi_delete : public gromox::stdlib_delete {
+	using gromox::stdlib_delete::operator();
+	inline void operator()(ATTACHMENT_CONTENT *x) const { attachment_content_free(x); }
+	inline void operator()(BINARY *x) const { rop_util_free_binary(x); }
+	inline void operator()(MESSAGE_CONTENT *x) const { message_content_free(x); }
+	inline void operator()(PCL *x) const { pcl_free(x); }
+	inline void operator()(TPROPVAL_ARRAY *x) const { tpropval_array_free(x); }
 };
 
 struct gi_name_map : public std::unordered_map<uint32_t, PROPERTY_NAME> {

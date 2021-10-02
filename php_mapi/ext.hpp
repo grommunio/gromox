@@ -11,8 +11,7 @@
 #include <memory>
 
 struct zstr_delete {
-	public:
-	void operator()(zend_string *s) { zend_string_release(s); };
+	inline void operator()(zend_string *s) const { zend_string_release(s); };
 };
 
 using zstrplus = std::unique_ptr<zend_string, zstr_delete>;

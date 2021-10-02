@@ -36,7 +36,7 @@ using namespace gromox;
 
 namespace {
 struct msg_delete {
-	void operator()(MESSAGE_CONTENT *msg) { message_content_free(msg); }
+	inline void operator()(MESSAGE_CONTENT *msg) const { message_content_free(msg); }
 };
 }
 

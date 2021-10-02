@@ -21,12 +21,12 @@ extern char **read_file_by_line(const char *file);
 namespace gromox {
 
 struct file_deleter {
-	void operator()(DIR *d) { closedir(d); }
-	void operator()(FILE *f) { fclose(f); }
+	inline void operator()(DIR *d) const { closedir(d); }
+	inline void operator()(FILE *f) const { fclose(f); }
 };
 
 struct stdlib_delete {
-	void operator()(void *x) { free(x); }
+	inline void operator()(void *x) const { free(x); }
 };
 
 struct DIR_mp {
