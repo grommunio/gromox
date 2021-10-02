@@ -328,23 +328,6 @@ int main(int argc, const char **argv) try
 		else
 			printf("[system]: set file limitation to %zu\n", static_cast<size_t>(rl.rlim_cur));
 	}
-	auto user_name = g_config_file->get_value("running_identity");
-	if (user_name != nullptr && *user_name != '\0') {
-		puser_pass = getpwnam(user_name);
-		if (NULL == puser_pass) {
-			printf("[system]: no such user \"%s\"\n", user_name);
-			return EXIT_FAILURE;
-		}
-		
-		if (0 != setgid(puser_pass->pw_gid)) {
-			printf("[system]: can not run group of \"%s\"\n", user_name);
-			return EXIT_FAILURE;
-		}
-		if (0 != setuid(puser_pass->pw_uid)) {
-			printf("[system]: can not run as \"%s\"\n", user_name);
-			return EXIT_FAILURE;
-		}
-	}
 	service_init({g_config_file->get_value("service_plugin_path"),
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
@@ -363,6 +346,22 @@ int main(int argc, const char **argv) try
 	if (service_run_early() != 0) {
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
 		return EXIT_FAILURE;
+	}
+	auto user_name = g_config_file->get_value("running_identity");
+	if (user_name != nullptr && *user_name != '\0') {
+		puser_pass = getpwnam(user_name);
+		if (puser_pass == nullptr) {
+			printf("[system]: no such user \"%s\"\n", user_name);
+			return EXIT_FAILURE;
+		}
+		if (setgid(puser_pass->pw_gid) != 0) {
+			printf("[system]: can not run group of \"%s\"\n", user_name);
+			return EXIT_FAILURE;
+		}
+		if (setuid(puser_pass->pw_uid) != 0) {
+			printf("[system]: can not run as \"%s\"\n", user_name);
+			return EXIT_FAILURE;
+		}
 	}
 	if (0 != service_run()) { 
 		printf("---------------------------- service plugins end"
