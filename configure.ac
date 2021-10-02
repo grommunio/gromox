@@ -134,8 +134,6 @@ AM_CONDITIONAL([HAVE_PHP], [test "$with_php" != no])
 
 AC_SUBST([my_CFLAGS])
 AC_SUBST([my_CXXFLAGS])
-AH_TEMPLATE([PROJECT_VERSION], [])
-AC_DEFINE([PROJECT_VERSION], [PACKAGE_VERSION]) dnl for now
 
 AS_IF([test -z "$cxxmode"], [AC_MSG_RESULT([*** No usable -std= argument was detected for this C++ compiler.])])
 AC_LANG_POP([C++])

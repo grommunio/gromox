@@ -55,7 +55,7 @@ int main(int argc, const char **argv)
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	if (opt_show_version) {
-		printf("version: %s\n", PROJECT_VERSION);
+		printf("version: %s\n", PACKAGE_VERSION);
 		return 0;
 	}
 	offset = 0;

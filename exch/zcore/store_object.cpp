@@ -1162,7 +1162,7 @@ static BOOL store_object_get_calculated_property(
 		}
 		return TRUE;
 	case PROP_TAG_ECSERVERVERSION:
-		*ppvalue = deconst(PROJECT_VERSION);
+		*ppvalue = deconst(PACKAGE_VERSION);
 		return TRUE;
 	case PR_EC_OUTOFOFFICE:
 	case PR_EC_OUTOFOFFICE_MSG:

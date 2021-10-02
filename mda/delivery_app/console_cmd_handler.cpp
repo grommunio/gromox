@@ -122,8 +122,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 
     if (2 == argc && 0 == strcmp(argv[1], "version")) {
         console_server_reply_to_client("250 DELIVERY APP information:\r\n"
-			"\tversion                     %s",
-			PROJECT_VERSION);
+			"\tversion                     %s", PACKAGE_VERSION);
             return TRUE;
     }
     console_server_reply_to_client("550 invalid argument %s", argv[1]);

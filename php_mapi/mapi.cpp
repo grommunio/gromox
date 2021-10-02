@@ -253,7 +253,7 @@ zend_module_entry mapi_module_entry = {
     PHP_RINIT(mapi),
 	PHP_RSHUTDOWN(mapi),
     PHP_MINFO(mapi),
-	PROJECT_VERSION,
+	PACKAGE_VERSION,
     STANDARD_MODULE_PROPERTIES
 };
 
