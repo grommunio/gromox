@@ -161,6 +161,13 @@ int main(int argc, const char **argv) try
 
 	g_threads_num = pconfig->get_ll("event_threads_num");
 	printf("[system]: threads number is 2*%d\n", g_threads_num);
+
+	auto sockd = gx_inet_listen(listen_ip, listen_port);
+	if (sockd < 0) {
+		printf("[system]: failed to create listen socket: %s\n", strerror(-sockd));
+		return 5;
+	}
+	auto cl_2 = make_scope_exit([&]() { close(sockd); });
 	
 	g_threads_num ++;
 	g_fifo_alloc = fifo_allocator_init(sizeof(MEM_FILE),
@@ -177,12 +184,6 @@ int main(int argc, const char **argv) try
 		return 4;
 	}
 	auto cl_1 = make_scope_exit([&]() { lib_buffer_free(g_file_alloc); });
-	auto sockd = gx_inet_listen(listen_ip, listen_port);
-	if (sockd < 0) {
-		printf("[system]: failed to create listen socket: %s\n", strerror(-sockd));
-		return 5;
-	}
-	auto cl_2 = make_scope_exit([&]() { close(sockd); });
 	g_dequeue_list1.reserve(g_threads_num);
 	pthread_attr_init(&thr_attr);
 	auto cl_3 = make_scope_exit([&]() { pthread_attr_destroy(&thr_attr); });
