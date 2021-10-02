@@ -165,6 +165,9 @@ int main(int argc, const char **argv) try
 		return 5;
 	}
 	auto cl_2 = make_scope_exit([&]() { close(sockd); });
+	auto ret = switch_user_exec(*pconfig, argv);
+	if (ret < 0)
+		return 7;
 	
 	g_threads_num ++;
 	g_fifo_alloc = fifo_allocator_init(sizeof(MEM_FILE),
@@ -199,7 +202,7 @@ int main(int argc, const char **argv) try
 	size_t i;
 	for (i=0; i<g_threads_num; i++) {
 		pthread_t tid;
-		auto ret = pthread_create(&tid, &thr_attr, ev_enqwork, nullptr);
+		ret = pthread_create(&tid, &thr_attr, ev_enqwork, nullptr);
 		if (ret != 0) {
 			printf("[system]: failed to create enqueue pool thread: %s\n", strerror(ret));
 			break;
@@ -224,7 +227,7 @@ int main(int argc, const char **argv) try
 		return 9;
 	}
 
-	auto ret = list_file_read_fixedstrings("event_acl.txt",
+	ret = list_file_read_fixedstrings("event_acl.txt",
 	           pconfig->get_value("config_file_path"), g_acl_list);
 	if (ret == -ENOENT) {
 		printf("[system]: defaulting to implicit access ACL containing ::1.\n");

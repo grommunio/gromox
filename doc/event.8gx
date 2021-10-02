@@ -48,6 +48,12 @@ Default: \fI33333\fP
 The minimum number of client processing threads to keep around.
 .br
 Default: \fI50\fP
+.TP
+\fBrunning_identity\fP
+An unprivileged user account to switch the process to after startup.
+To inhibit the switch, assign the empty value.
+.br
+Default: \fIgromox\fP
 .SH Event protocol
 The event service is exposed as a line-based text protocol. Upon connection,
 the event server gratitiously writes "OK" and will wait for commands. Each
