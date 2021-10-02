@@ -120,9 +120,9 @@ gx_inet_lookup(const char *host, uint16_t port, unsigned int xflags)
 int gx_inet_connect(const char *host, uint16_t port, unsigned int oflags)
 {
 	auto aires = gx_inet_lookup(host, port, AI_ADDRCONFIG);
-	int saved_errno = EHOSTUNREACH, fd = -1;
+	int saved_errno = EHOSTUNREACH;
 	for (auto r = aires.get(); r != nullptr; r = r->ai_next) {
-		fd = socket(r->ai_family, r->ai_socktype, r->ai_protocol);
+		int fd = socket(r->ai_family, r->ai_socktype, r->ai_protocol);
 		if (fd < 0) {
 			if (saved_errno == 0)
 				saved_errno = errno;
@@ -136,21 +136,17 @@ int gx_inet_connect(const char *host, uint16_t port, unsigned int oflags)
 			if (fcntl(fd, F_SETFL, flags) != 0) {
 				saved_errno = errno;
 				close(fd);
-				fd = -1;
 				continue;
 			}
 		}
 		auto ret = connect(fd, r->ai_addr, r->ai_addrlen);
-		if (ret != 0) {
-			if ((errno == EWOULDBLOCK || errno == EINPROGRESS) &&
-			    (oflags & O_NONBLOCK))
-				break;
-			saved_errno = errno;
-			close(fd);
-			fd = -1;
-			continue;
-		}
-		return fd;
+		if (ret == 0)
+			return fd;
+		if ((errno == EWOULDBLOCK || errno == EINPROGRESS) &&
+		    (oflags & O_NONBLOCK))
+			return fd;
+		saved_errno = errno;
+		close(fd);
 	}
 	return -(errno = saved_errno);
 }
@@ -158,9 +154,9 @@ int gx_inet_connect(const char *host, uint16_t port, unsigned int oflags)
 int gx_inet_listen(const char *host, uint16_t port)
 {
 	auto aires = gx_inet_lookup(host, port, AI_PASSIVE);
-	int saved_errno = EHOSTUNREACH, fd = -1;
+	int saved_errno = EHOSTUNREACH;
 	for (auto r = aires.get(); r != nullptr; r = r->ai_next) {
-		fd = HX_socket_from_env(r, nullptr);
+		int fd = HX_socket_from_env(r, nullptr);
 		if (fd >= 0)
 			return fd;
 		fd = socket(r->ai_family, r->ai_socktype, r->ai_protocol);
@@ -176,14 +172,12 @@ int gx_inet_listen(const char *host, uint16_t port)
 		if (ret != 0) {
 			saved_errno = errno;
 			close(fd);
-			fd = -1;
 			break;
 		}
 		ret = listen(fd, SOMAXCONN);
 		if (ret != 0) {
 			saved_errno = errno;
 			close(fd);
-			fd = -1;
 			break;
 		}
 		return fd;
