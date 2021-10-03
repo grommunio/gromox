@@ -121,7 +121,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	if (!add_folderprop_iv(pstmt, art_num, true) ||
 	    !add_folderprop_sv(pstmt, pdisplayname, pcontainer_class) ||
 	    !add_folderprop_tv(pstmt) ||
-	    !add_changenum(pstmt, user_id, change_num))
+	    !add_changenum(pstmt, CN_USER, user_id, change_num))
 		return false;
 	if (TRUE == b_hidden) {
 		sqlite3_bind_int64(pstmt, 1, PR_ATTR_HIDDEN);
@@ -171,7 +171,7 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 	if (!add_folderprop_iv(pstmt, art_num, false) ||
 	    !add_folderprop_sv(pstmt, pdisplayname, pcontainer_class) ||
 	    !add_folderprop_tv(pstmt) ||
-	    !add_changenum(pstmt, user_id, change_num))
+	    !add_changenum(pstmt, CN_USER, user_id, change_num))
 		return false;
 	return TRUE;
 }

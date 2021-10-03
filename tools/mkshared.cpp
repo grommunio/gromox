@@ -112,11 +112,13 @@ bool add_folderprop_tv(sqlite3_stmt *stmt)
 	return true;
 }
 
-bool add_changenum(sqlite3_stmt *stmt, uint64_t user_id, uint64_t change_num)
+bool add_changenum(sqlite3_stmt *stmt, enum cnguid_type cng, uint64_t user_id,
+    uint64_t change_num)
 {
 	SIZED_XID xid;
 	xid.size = 22;
-	xid.xid.guid = rop_util_make_user_guid(user_id);
+	xid.xid.guid = cng == CN_DOMAIN ? rop_util_make_domain_guid(user_id) :
+	               rop_util_make_user_guid(user_id);
 	rop_util_value_to_gc(change_num, xid.xid.local_id);
 
 	uint8_t tmp_buff[24];

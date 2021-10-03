@@ -100,7 +100,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	if (!add_folderprop_iv(pstmt, art_num, true) ||
 	    !add_folderprop_sv(pstmt, pdisplayname, pcontainer_class) ||
 	    !add_folderprop_tv(pstmt) ||
-	    !add_changenum(pstmt, domain_id, change_num))
+	    !add_changenum(pstmt, CN_DOMAIN, domain_id, change_num))
 		return false;
 	return TRUE;
 }
