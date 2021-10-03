@@ -51,8 +51,7 @@ BOOL FOLDER_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	pproptags->pproptag[pproptags->count++] = PR_PARENT_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_PARENT_SOURCE_KEY;
 	if (common_util_index_proptags(&tmp_proptags, PR_SOURCE_KEY) < 0) {
-		pproptags->pproptag[pproptags->count] = PR_SOURCE_KEY;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PR_SOURCE_KEY;
 	}
 	if (pfolder->plogon->check_private()) {
 		if (pfolder->folder_id == rop_util_make_eid_ex(
@@ -537,9 +536,7 @@ BOOL FOLDER_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
 			}
 			ppropvals->count ++;
 		} else {
-			tmp_proptags.pproptag[tmp_proptags.count] =
-											pproptags->pproptag[i];
-			tmp_proptags.count ++;
+			tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
 		}
 	}
 	if (0 == tmp_proptags.count) {
@@ -605,13 +602,11 @@ BOOL FOLDER_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals,
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 								ppropvals->ppropval[i].proptag;
-			pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-			pproblems->count ++;
+			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 		} else {
 			tmp_propvals.ppropval[tmp_propvals.count] =
 								ppropvals->ppropval[i];
-			poriginal_indices[tmp_propvals.count] = i;
-			tmp_propvals.count ++;
+			poriginal_indices[tmp_propvals.count++] = i;
 		}
 	}
 	if (0 == tmp_propvals.count) {
@@ -621,8 +616,7 @@ BOOL FOLDER_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals,
 		return FALSE;
 	tmp_propvals.ppropval[tmp_propvals.count].proptag =
 											PROP_TAG_CHANGENUMBER;
-	tmp_propvals.ppropval[tmp_propvals.count].pvalue = &change_num;
-	tmp_propvals.count ++;
+	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &change_num;
 	
 	if (!exmdb_client_get_folder_property(pfolder->plogon->get_dir(),
 	    0, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
@@ -641,14 +635,11 @@ BOOL FOLDER_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	}
 	last_time = rop_util_current_nttime();
 	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_CHANGE_KEY;
-	tmp_propvals.ppropval[tmp_propvals.count].pvalue = pbin_changekey;
-	tmp_propvals.count ++;
+	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_changekey;
 	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_PREDECESSOR_CHANGE_LIST;
-	tmp_propvals.ppropval[tmp_propvals.count].pvalue = pbin_pcl;
-	tmp_propvals.count ++;
+	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_pcl;
 	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
-	tmp_propvals.ppropval[tmp_propvals.count].pvalue = &last_time;
-	tmp_propvals.count ++;
+	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &last_time;
 	
 	if (!exmdb_client_set_folder_properties(pfolder->plogon->get_dir(),
 	    pinfo->cpid, pfolder->folder_id, &tmp_propvals, &tmp_problems))
@@ -698,12 +689,9 @@ BOOL FOLDER_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags,
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 									pproptags->pproptag[i];
-			pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-			pproblems->count ++;
+			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 		} else {
-			tmp_proptags.pproptag[tmp_proptags.count] =
-									pproptags->pproptag[i];
-			tmp_proptags.count ++;
+			tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
 		}
 	}
 	if (0 == tmp_proptags.count) {

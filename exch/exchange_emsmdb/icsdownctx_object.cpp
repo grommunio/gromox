@@ -746,8 +746,7 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 		return FALSE;
 	}
 	pchgheader->ppropval[pchgheader->count].proptag = PR_SOURCE_KEY;
-	pchgheader->ppropval[pchgheader->count].pvalue = pvalue;
-	pchgheader->count ++;
+	pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_SOURCE_KEY);
 	
 	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_LAST_MODIFICATION_TIME);
@@ -755,24 +754,21 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 		return FALSE;
 	}
 	pchgheader->ppropval[pchgheader->count].proptag = PR_LAST_MODIFICATION_TIME;
-	pchgheader->ppropval[pchgheader->count].pvalue = pvalue;
-	pchgheader->count ++;
+	pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
 	
 	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_CHANGE_KEY);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
 	pchgheader->ppropval[pchgheader->count].proptag = PR_CHANGE_KEY;
-	pchgheader->ppropval[pchgheader->count].pvalue = pvalue;
-	pchgheader->count ++;
+	pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
 	
 	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_PREDECESSOR_CHANGE_LIST);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
 	pchgheader->ppropval[pchgheader->count].proptag = PR_PREDECESSOR_CHANGE_LIST;
-	pchgheader->ppropval[pchgheader->count].pvalue = pvalue;
-	pchgheader->count ++;
+	pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_PREDECESSOR_CHANGE_LIST);
 	
 	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
@@ -781,8 +777,7 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	}
 	pprogmsg->b_fai = *static_cast<uint8_t *>(pvalue) == 0 ? false : TRUE;
 	pchgheader->ppropval[pchgheader->count].proptag = PR_ASSOCIATED;
-	pchgheader->ppropval[pchgheader->count].pvalue = pvalue;
-	pchgheader->count ++;
+	pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
 	
 	if (SYNC_EXTRA_FLAG_EID & extra_flags) {
@@ -793,8 +788,7 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 		}
 		pchgheader->ppropval[pchgheader->count].proptag =
 												PROP_TAG_MID;
-		pchgheader->ppropval[pchgheader->count].pvalue = pvalue;
-		pchgheader->count ++;
+		pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
 	}
 	common_util_remove_propvals(
 			&pmsgctnt->proplist, PROP_TAG_MID);
@@ -806,8 +800,7 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	pprogmsg->message_size = *(uint32_t*)pvalue;
 	if (SYNC_EXTRA_FLAG_MESSAGESIZE & extra_flags) {
 		pchgheader->ppropval[pchgheader->count].proptag = PR_MESSAGE_SIZE;
-		pchgheader->ppropval[pchgheader->count].pvalue = pvalue;
-		pchgheader->count ++;
+		pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
 	}
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_MESSAGE_SIZE);
 	
@@ -819,8 +812,7 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 		}
 		pchgheader->ppropval[pchgheader->count].proptag =
 										PROP_TAG_CHANGENUMBER;
-		pchgheader->ppropval[pchgheader->count].pvalue = pvalue;
-		pchgheader->count ++;
+		pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
 	}
 	common_util_remove_propvals(
 		&pmsgctnt->proplist, PROP_TAG_CHANGENUMBER);
@@ -924,14 +916,12 @@ static BOOL icsdownctx_object_get_changepartial(
 			switch (proptag) {
 			case PR_MESSAGE_RECIPIENTS:
 				pmsg->pchanges[i].proplist.ppropval[count].proptag = PR_MESSAGE_RECIPIENTS;
-				pmsg->pchanges[i].proplist.ppropval[count].pvalue = deconst(&fake_bin);
-				count ++;
+				pmsg->pchanges[i].proplist.ppropval[count++].pvalue = deconst(&fake_bin);
 				pmsg->children.prcpts = pmsgctnt->children.prcpts;
 				break;
 			case PR_MESSAGE_ATTACHMENTS:
 				pmsg->pchanges[i].proplist.ppropval[count].proptag = PR_MESSAGE_ATTACHMENTS;
-				pmsg->pchanges[i].proplist.ppropval[count].pvalue = deconst(&fake_bin);
-				count ++;
+				pmsg->pchanges[i].proplist.ppropval[count++].pvalue = deconst(&fake_bin);
 				pmsg->children.pattachments =
 					pmsgctnt->children.pattachments;
 				break;
@@ -940,9 +930,7 @@ static BOOL icsdownctx_object_get_changepartial(
 				if (NULL != pvalue) {
 					pmsg->pchanges[i].proplist.ppropval[
 								count].proptag = proptag;
-					pmsg->pchanges[i].proplist.ppropval[
-								count].pvalue = pvalue;
-					count ++;
+					pmsg->pchanges[i].proplist.ppropval[count++].pvalue = pvalue;
 				}
 				break;
 			}
@@ -961,14 +949,12 @@ static BOOL icsdownctx_object_get_changepartial(
 		switch (proptag) {
 		case PR_MESSAGE_RECIPIENTS:
 			pmsg->pchanges[i].proplist.ppropval[count].proptag = PR_MESSAGE_RECIPIENTS;
-			pmsg->pchanges[i].proplist.ppropval[count].pvalue = deconst(&fake_bin);
-			count ++;
+			pmsg->pchanges[i].proplist.ppropval[count++].pvalue = deconst(&fake_bin);
 			pmsg->children.prcpts = pmsgctnt->children.prcpts;
 			break;
 		case PR_MESSAGE_ATTACHMENTS:
 			pmsg->pchanges[i].proplist.ppropval[count].proptag = PR_MESSAGE_ATTACHMENTS;
-			pmsg->pchanges[i].proplist.ppropval[count].pvalue = deconst(&fake_bin);
-			count ++;
+			pmsg->pchanges[i].proplist.ppropval[count++].pvalue = deconst(&fake_bin);
 			pmsg->children.pattachments =
 				pmsgctnt->children.pattachments;
 			break;
@@ -977,9 +963,7 @@ static BOOL icsdownctx_object_get_changepartial(
 			if (NULL != pvalue) {
 				pmsg->pchanges[i].proplist.ppropval[
 							count].proptag = proptag;
-				pmsg->pchanges[i].proplist.ppropval[
-							count].pvalue = pvalue;
-				count ++;
+				pmsg->pchanges[i].proplist.ppropval[count++].pvalue = pvalue;
 			}
 			break;
 		}
@@ -1350,8 +1334,7 @@ static BOOL icsdownctx_object_write_deletions(ICSDOWNCTX_OBJECT *pctx)
 		}
 		proplist.ppropval[proplist.count].proptag =
 								META_TAG_IDSETDELETED;
-		proplist.ppropval[proplist.count].pvalue = pbin1;
-		proplist.count ++;
+		proplist.ppropval[proplist.count++].pvalue = pbin1;
 	}
 	if (0 == (SYNC_FLAG_IGNORENOLONGERINSCOPE & pctx->sync_flags)
 		&& pctx->pnolonger_messages->count > 0) {
@@ -1382,8 +1365,7 @@ static BOOL icsdownctx_object_write_deletions(ICSDOWNCTX_OBJECT *pctx)
 		}
 		proplist.ppropval[proplist.count].proptag =
 						META_TAG_IDSETNOLONGERINSCOPE;
-		proplist.ppropval[proplist.count].pvalue = pbin2;
-		proplist.count ++;
+		proplist.ppropval[proplist.count++].pvalue = pbin2;
 	}
 	if (0 == proplist.count) {
 		return TRUE;
@@ -1439,8 +1421,7 @@ static BOOL icsdownctx_object_write_readstate_changes(
 		}
 		proplist.ppropval[proplist.count].proptag =
 								META_TAG_IDSETREAD;
-		proplist.ppropval[proplist.count].pvalue = pbin1;
-		proplist.count ++;
+		proplist.ppropval[proplist.count++].pvalue = pbin1;
 	}
 	if (pctx->punread_messags->count > 0) {
 		pidset = idset_init(TRUE, REPL_TYPE_ID);
@@ -1470,8 +1451,7 @@ static BOOL icsdownctx_object_write_readstate_changes(
 		}
 		proplist.ppropval[proplist.count].proptag =
 								META_TAG_IDSETUNREAD;
-		proplist.ppropval[proplist.count].pvalue = pbin2;
-		proplist.count ++;
+		proplist.ppropval[proplist.count++].pvalue = pbin2;
 	}
 	if (0 == proplist.count) {
 		return TRUE;

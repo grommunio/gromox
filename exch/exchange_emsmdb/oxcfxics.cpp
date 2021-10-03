@@ -1319,16 +1319,12 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		tmp_propvals.ppropval[6].pvalue = &change_num;
 		tmp_propvals.count = 7;
 		for (i=0; i<ppropvals->count; i++) {
-			tmp_propvals.ppropval[tmp_propvals.count] =
-								ppropvals->ppropval[i];
-			tmp_propvals.count ++;
+			tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
 		}
 		if (common_util_get_propvals(&tmp_propvals, PR_FOLDER_TYPE) == nullptr) {
 			tmp_type = FOLDER_GENERIC;
 			tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_FOLDER_TYPE;
-			tmp_propvals.ppropval[tmp_propvals.count].pvalue =
-													&tmp_type;
-			tmp_propvals.count ++;
+			tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &tmp_type;
 		}
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (!exmdb_client_create_folder_by_properties(plogon->get_dir(),
@@ -1410,9 +1406,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	tmp_propvals.ppropval[4].pvalue = &change_num;
 	tmp_propvals.count = 5;
 	for (i=0; i<ppropvals->count; i++) {
-		tmp_propvals.ppropval[tmp_propvals.count] =
-							ppropvals->ppropval[i];
-		tmp_propvals.count ++;
+		tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client_set_folder_properties(plogon->get_dir(),
@@ -1554,8 +1548,7 @@ uint32_t rop_syncimportdeletes(
 			}
 		}
 		if (SYNC_TYPE_CONTENTS == sync_type) {
-			message_ids.pids[message_ids.count] = eid;
-			message_ids.count ++;
+			message_ids.pids[message_ids.count++] = eid;
 		} else {
 			if (plogon->check_private()) {
 				if (!exmdb_client_get_folder_property(plogon->get_dir(),

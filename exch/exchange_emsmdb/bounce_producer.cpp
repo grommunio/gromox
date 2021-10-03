@@ -531,8 +531,7 @@ BOOL bounce_producer_make(const char *username,
 	if (NULL != pvalue) {
 		out_len = strlen(mime_to);
 		if (0 != out_len) {
-			mime_to[out_len] = ' ';
-			out_len ++;
+			mime_to[out_len++] = ' ';
 		}
 		snprintf(mime_to + out_len, sizeof(mime_to) - out_len, "<%s>",
 		         static_cast<const char *>(pvalue));

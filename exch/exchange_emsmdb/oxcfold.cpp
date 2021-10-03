@@ -947,8 +947,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 			     pinfo->cpid, pmessage_ids->pll[i], &pbrief))
 				return ecError;
 		}
-		ids.pids[ids.count] = pmessage_ids->pll[i];
-		ids.count ++;
+		ids.pids[ids.count++] = pmessage_ids->pll[i];
 		if (NULL != pbrief) {
 			common_util_notify_receipt(plogon->get_dir(),
 				NOTIFY_RECEIPT_NON_READ, pbrief);

@@ -235,8 +235,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	if (NULL == pdomain) {
 		return FALSE;
 	}
-	*pdomain = '\0';
-	pdomain ++;
+	*pdomain++ = '\0';
 	if (!common_util_get_user_ids(username, &user_id, &domain_id, nullptr))
 		return FALSE;
 	encode_hex_int(user_id, hex_string);
@@ -917,8 +916,7 @@ void common_util_set_propvals(TPROPVAL_ARRAY *parray,
 			return;
 		}
 	}
-	parray->ppropval[parray->count] = *ppropval;
-	parray->count ++;
+	parray->ppropval[parray->count++] = *ppropval;
 }
 
 void common_util_remove_propvals(
@@ -1015,9 +1013,7 @@ PROPTAG_ARRAY* common_util_trim_proptags(const PROPTAG_ARRAY *pproptags)
 	for (i=0; i<pproptags->count; i++) {
 		if (PROP_TYPE(pproptags->pproptag[i]) == PT_OBJECT)
 			continue;
-		ptmp_proptags->pproptag[ptmp_proptags->count] = 
-									pproptags->pproptag[i];
-		ptmp_proptags->count ++;
+		ptmp_proptags->pproptag[ptmp_proptags->count++] = pproptags->pproptag[i];
 	}
 	return ptmp_proptags;
 }
@@ -2118,9 +2114,8 @@ BOOL common_util_send_message(LOGON_OBJECT *plogon,
 		memcpy(ppropval, pmsgctnt->proplist.ppropval,
 			sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 		ppropval[pmsgctnt->proplist.count].proptag = PR_INTERNET_CPID;
-		ppropval[pmsgctnt->proplist.count].pvalue = &cpid;
+		ppropval[pmsgctnt->proplist.count++].pvalue = &cpid;
 		pmsgctnt->proplist.ppropval = ppropval;
-		pmsgctnt->proplist.count ++;
 	}
 	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_MESSAGE_FLAGS);
 	if (NULL == pvalue) {
@@ -2439,12 +2434,8 @@ const char* common_util_get_submit_command()
 
 uint32_t common_util_get_ftstream_id()
 {
-	uint32_t last_id;
-	
 	std::lock_guard id_hold(g_id_lock);
-	last_id = g_faststream_id;
-	g_faststream_id ++;
-	return last_id;
+	return g_faststream_id++;
 }
 
 MIME_POOL* common_util_get_mime_pool()

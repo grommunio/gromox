@@ -542,8 +542,7 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 		propid = PROP_ID(proptags.pproptag[i]);
 		if (!is_nameprop_id(propid))
 			continue;
-		propids.ppropid[propids.count] = propid;
-		propids.count++;
+		propids.ppropid[propids.count++] = propid;
 	}
 	if (0 == propids.count) {
 		ppropidnames->count = 0;
@@ -578,9 +577,7 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 			continue;
 		ppropidnames->ppropid[ppropidnames->count] =
 										propids.ppropid[i];
-		ppropidnames->ppropname[ppropidnames->count] =
-								ppropidnames->ppropname[i];
-		ppropidnames->count ++;
+		ppropidnames->ppropname[ppropidnames->count++] = ppropidnames->ppropname[i];
 	}
 	return ecSuccess;
 }
@@ -664,8 +661,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 										pproptags->pproptag[i];
-				pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-				pproblems->count ++;
+				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				continue;
 			}
 			if ((copy_flags & COPY_FLAG_NOOVERWRITE) &&
@@ -675,8 +671,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 			}
 			proptags.pproptag[proptags.count] = 
 							pproptags->pproptag[i];
-			poriginal_indices[proptags.count] = i;
-			proptags.count ++;
+			poriginal_indices[proptags.count++] = i;
 		}
 		if (!fldsrc->get_properties(&proptags, &propvals))
 			return ecError;
@@ -687,8 +682,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 										poriginal_indices[i];
 				pproblems->pproblem[pproblems->count].proptag = 
 										pproptags->pproptag[i];
-				pproblems->pproblem[pproblems->count].err = ecNotFound;
-				pproblems->count ++;
+				pproblems->pproblem[pproblems->count++].err = ecNotFound;
 			}
 		}
 		if (!flddst->set_properties(&propvals, &tmp_problems))
@@ -725,8 +719,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 				if (FALSE == b_result) {
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag = PR_MESSAGE_ATTACHMENTS;
-					pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-					pproblems->count ++;
+					pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				}
 				continue;
 			} else if (pproptags->pproptag[i] == PR_MESSAGE_RECIPIENTS) {
@@ -735,8 +728,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 				if (FALSE == b_result) {
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag = PR_MESSAGE_RECIPIENTS;
-					pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-					pproblems->count ++;
+					pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				}
 				continue;
 			}
@@ -744,8 +736,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 										pproptags->pproptag[i];
-				pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-				pproblems->count ++;
+				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				continue;
 			}
 			if ((copy_flags & COPY_FLAG_NOOVERWRITE) &&
@@ -755,8 +746,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 			}
 			proptags.pproptag[proptags.count] = 
 							pproptags->pproptag[i];
-			poriginal_indices[proptags.count] = i;
-			proptags.count ++;
+			poriginal_indices[proptags.count++] = i;
 		}
 		if (!msgsrc->get_properties(0, &proptags, &propvals))
 			return ecError;
@@ -767,8 +757,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 										poriginal_indices[i];
 				pproblems->pproblem[pproblems->count].proptag = 
 										pproptags->pproptag[i];
-				pproblems->pproblem[pproblems->count].err = ecNotFound;
-				pproblems->count ++;
+				pproblems->pproblem[pproblems->count++].err = ecNotFound;
 			}
 		}
 		if (!msgdst->set_properties(&propvals, &tmp_problems))
@@ -801,8 +790,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 										pproptags->pproptag[i];
-				pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-				pproblems->count ++;
+				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				continue;
 			}
 			if ((copy_flags & COPY_FLAG_NOOVERWRITE) &&
@@ -812,8 +800,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 			}
 			proptags.pproptag[proptags.count] = 
 							pproptags->pproptag[i];
-			poriginal_indices[proptags.count] = i;
-			proptags.count ++;
+			poriginal_indices[proptags.count++] = i;
 		}
 		if (!atsrc->get_properties(0, &proptags, &propvals))
 			return ecError;
@@ -824,8 +811,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 										poriginal_indices[i];
 				pproblems->pproblem[pproblems->count].proptag = 
 										pproptags->pproptag[i];
-				pproblems->pproblem[pproblems->count].err = ecNotFound;
-				pproblems->count ++;
+				pproblems->pproblem[pproblems->count++].err = ecNotFound;
 			}
 		}
 		if (!atdst->set_properties(&propvals, &tmp_problems))
@@ -956,9 +942,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 				&proptags1, proptags.pproptag[i]) >= 0) {
 				continue;
 			}
-			tmp_proptags.pproptag[tmp_proptags.count] = 
-									proptags.pproptag[i];
-			tmp_proptags.count ++;
+			tmp_proptags.pproptag[tmp_proptags.count++] = proptags.pproptag[i];
 		}
 		if (!fldsrc->get_properties(&tmp_proptags, &propvals))
 			return ecError;

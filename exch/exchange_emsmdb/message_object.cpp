@@ -57,9 +57,7 @@ static BOOL message_object_get_recipient_all_proptags(
 		case PROP_TAG_TRANSMITTABLEDISPLAYNAME_STRING8:
 			continue;
 		default:
-			pproptags->pproptag[pproptags->count] =
-							tmp_proptags.pproptag[i];
-			pproptags->count ++;
+			pproptags->pproptag[pproptags->count++] = tmp_proptags.pproptag[i];
 			break;
 		}
 	}
@@ -245,8 +243,7 @@ BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t new_cpid)
 		return FALSE;
 	}
 	*static_cast<uint32_t *>(pvalue) = new_cpid;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_IMPORTANCE;
 	pvalue = cu_alloc<uint32_t>();
@@ -254,12 +251,10 @@ BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t new_cpid)
 		return FALSE;
 	}
 	*(uint32_t*)pvalue = 1;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	
 	propvals.ppropval[propvals.count].proptag = PR_DEF_POST_MSGCLASS;
-	propvals.ppropval[propvals.count].pvalue  = deconst("IPM.Note");
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue  = deconst("IPM.Note");
 	
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_SENSITIVITY;
 	pvalue = cu_alloc<uint32_t>();
@@ -267,20 +262,16 @@ BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t new_cpid)
 		return FALSE;
 	}
 	*(uint32_t*)pvalue = 0;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_ORIGINALDISPLAYBCC;
-	propvals.ppropval[propvals.count].pvalue  = deconst("");
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue  = deconst("");
 	
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_ORIGINALDISPLAYCC;
-	propvals.ppropval[propvals.count].pvalue  = deconst("");
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue  = deconst("");
 	
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_ORIGINALDISPLAYTO;
-	propvals.ppropval[propvals.count].pvalue  = deconst("");
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue  = deconst("");
 	
 	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_FLAGS;
 	pvalue = cu_alloc<uint32_t>();
@@ -288,8 +279,7 @@ BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t new_cpid)
 		return FALSE;
 	}
 	*static_cast<uint32_t *>(pvalue) = MSGFLAG_UNSENT | MSGFLAG_UNMODIFIED;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	
 	propvals.ppropval[propvals.count].proptag = PR_READ;
 	pvalue = cu_alloc<uint8_t>();
@@ -297,8 +287,7 @@ BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t new_cpid)
 		return FALSE;
 	}
 	*(uint8_t*)pvalue = 0;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	
 	propvals.ppropval[propvals.count].proptag = PR_ASSOCIATED;
 	pvalue = cu_alloc<uint8_t>();
@@ -306,8 +295,7 @@ BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t new_cpid)
 		return FALSE;
 	}
 	*static_cast<uint8_t *>(pvalue) = !!b_fai;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_TRUSTSENDER;
 	pvalue = cu_alloc<uint32_t>();
@@ -315,8 +303,7 @@ BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t new_cpid)
 		return FALSE;
 	}
 	*(uint32_t*)pvalue = 1;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	
 	propvals.ppropval[propvals.count].proptag = PR_CREATION_TIME;
 	pvalue = cu_alloc<uint64_t>();
@@ -324,8 +311,7 @@ BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t new_cpid)
 		return FALSE;
 	}
 	*(uint64_t*)pvalue = rop_util_current_nttime();
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_SEARCHKEY;
 	pvalue = cu_alloc<BINARY>();
@@ -337,8 +323,7 @@ BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t new_cpid)
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	
 	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_LOCALE_ID;
 	pvalue = cu_alloc<uint32_t>();
@@ -349,11 +334,9 @@ BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t new_cpid)
 	if (0 == *(uint32_t*)pvalue) {
 		*(uint32_t*)pvalue = 0x0409;
 	}
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	propvals.ppropval[propvals.count].proptag = PR_LOCALE_ID;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_CREATORNAME;
 	pvalue = common_util_alloc(1024);
@@ -363,16 +346,14 @@ BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t new_cpid)
 	if (!common_util_get_user_displayname(rpc_info.username,
 	    static_cast<char *>(pvalue)) || *static_cast<char *>(pvalue) == '\0')
 		strcpy(static_cast<char *>(pvalue), rpc_info.username);
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_CREATORENTRYID;
 	pvalue = common_util_username_to_addressbook_entryid(rpc_info.username);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	propvals.ppropval[propvals.count].pvalue = pvalue;	
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	
 	tmp_guid = guid_random_new();
 	if (!ext_push.init(id_string, 256, 0) ||
@@ -383,8 +364,7 @@ BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t new_cpid)
 	memmove(id_string + 1, id_string + 16, 32);
 	snprintf(id_string + 33, 128, "@%s>", get_host_ID());
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_INTERNETMESSAGEID;
-	propvals.ppropval[propvals.count].pvalue = id_string;
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue = id_string;
 	
 	if (!exmdb_client_set_instance_properties(pmessage->plogon->get_dir(),
 	    pmessage->instance_id, &propvals, &problems))
@@ -527,14 +507,12 @@ gxerr_t MESSAGE_OBJECT::save()
 		return GXERR_CALL_FAILED;
 	}
 	*(uint64_t*)pvalue = rop_util_current_nttime();
-	tmp_propvals.ppropval[tmp_propvals.count].pvalue = pvalue;
-	tmp_propvals.count ++;
+	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pvalue;
 	
 	if (!proptag_array_check(pmessage->pchanged_proptags,
 	    PR_LAST_MODIFICATION_TIME)) {
 		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
-		tmp_propvals.ppropval[tmp_propvals.count].pvalue = pvalue;
-		tmp_propvals.count ++;
+		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pvalue;
 	}
 	
 	if (!proptag_array_check(pmessage->pchanged_proptags,
@@ -548,8 +526,7 @@ gxerr_t MESSAGE_OBJECT::save()
 		if (!common_util_get_user_displayname(rpc_info.username,
 		    static_cast<char *>(pvalue)) || *static_cast<char *>(pvalue) == '\0')
 			strcpy(static_cast<char *>(pvalue), rpc_info.username);
-		tmp_propvals.ppropval[tmp_propvals.count].pvalue = pvalue;
-		tmp_propvals.count ++;
+		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pvalue;
 	}
 	
 	tmp_propvals.ppropval[tmp_propvals.count].proptag =
@@ -558,8 +535,7 @@ gxerr_t MESSAGE_OBJECT::save()
 	if (NULL == pvalue) {
 		return GXERR_CALL_FAILED;
 	}
-	tmp_propvals.ppropval[tmp_propvals.count].pvalue = pvalue;	
-	tmp_propvals.count ++;
+	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pvalue;
 	
 	if (0 != pmessage->message_id && NULL == pmessage->pstate) {
 		tmp_xid.guid = pmessage->plogon->guid();
@@ -569,16 +545,14 @@ gxerr_t MESSAGE_OBJECT::save()
 		if (NULL == pbin_changekey) {
 			return GXERR_CALL_FAILED;
 		}
-		tmp_propvals.ppropval[tmp_propvals.count].pvalue = pbin_changekey;
-		tmp_propvals.count ++;
+		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_changekey;
 		
 		pbin_pcl = common_util_pcl_append(pbin_pcl, pbin_changekey);
 		if (NULL == pbin_pcl) {
 			return GXERR_CALL_FAILED;
 		}
 		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_PREDECESSOR_CHANGE_LIST;
-		tmp_propvals.ppropval[tmp_propvals.count].pvalue = pbin_pcl;	
-		tmp_propvals.count ++;
+		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_pcl;
 	}
 	
 	if (FALSE == message_object_set_properties_internal(
@@ -994,9 +968,7 @@ BOOL MESSAGE_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		case PR_NORMALIZED_SUBJECT:
 			continue;
 		default:
-			pproptags->pproptag[pproptags->count] =
-							tmp_proptags.pproptag[i];
-			pproptags->count ++;
+			pproptags->pproptag[pproptags->count++] = tmp_proptags.pproptag[i];
 			break;
 		}
 	}
@@ -1004,20 +976,16 @@ BOOL MESSAGE_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		pnode=double_list_get_after(&pmessage->stream_list, pnode)) {
 		auto proptag = static_cast<STREAM_OBJECT *>(pnode->pdata)->get_proptag();
 		if (common_util_index_proptags(pproptags, proptag) < 0) {
-			pproptags->pproptag[pproptags->count] = proptag;
-			pproptags->count ++;
+			pproptags->pproptag[pproptags->count++] = proptag;
 		}
 	}
 	pproptags->pproptag[pproptags->count++] = PR_ACCESS;
 	pproptags->pproptag[pproptags->count++] = PR_ACCESS_LEVEL;
-	pproptags->pproptag[pproptags->count] = PROP_TAG_FOLDERID;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PROP_TAG_FOLDERID;
 	pproptags->pproptag[pproptags->count++] = PR_PARENT_SOURCE_KEY;
 	if (pmessage->pembedding == nullptr &&
-	    common_util_index_proptags(pproptags, PR_SOURCE_KEY) < 0) {
-		pproptags->pproptag[pproptags->count] = PR_SOURCE_KEY;
-		pproptags->count ++;
-	}
+	    common_util_index_proptags(pproptags, PR_SOURCE_KEY) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_SOURCE_KEY;
 	if (common_util_index_proptags(pproptags, PR_MESSAGE_LOCALE_ID) < 0)
 		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_LOCALE_ID;
 	if (common_util_index_proptags(pproptags, PR_MESSAGE_CODEPAGE) < 0)
@@ -1211,8 +1179,7 @@ BOOL MESSAGE_OBJECT::get_properties(uint32_t size_limit,
 			ppropvals->count ++;
 			continue;
 		}	
-		tmp_proptags.pproptag[tmp_proptags.count] = pproptags->pproptag[i];
-		tmp_proptags.count ++;
+		tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
 	}
 	if (0 == tmp_proptags.count) {
 		return TRUE;
@@ -1313,8 +1280,7 @@ static BOOL message_object_set_properties_internal(MESSAGE_OBJECT *pmessage,
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 								ppropvals->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-				pproblems->count ++;
+				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				continue;
 			} else if (PROP_TAG_EXTENDEDRULEMESSAGECONDITION
 				==  ppropvals->ppropval[i].proptag) {
@@ -1325,8 +1291,7 @@ static BOOL message_object_set_properties_internal(MESSAGE_OBJECT *pmessage,
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-					pproblems->count ++;
+					pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 					continue;
 				}
 				if (static_cast<BINARY *>(ppropvals->ppropval[i].pvalue)->cb >
@@ -1334,8 +1299,7 @@ static BOOL message_object_set_properties_internal(MESSAGE_OBJECT *pmessage,
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count].err = ecMAPIOOM;
-					pproblems->count ++;
+					pproblems->pproblem[pproblems->count++].err = ecMAPIOOM;
 					continue;
 				}
 			} else if (ppropvals->ppropval[i].proptag == PR_MESSAGE_FLAGS) {
@@ -1359,8 +1323,7 @@ static BOOL message_object_set_properties_internal(MESSAGE_OBJECT *pmessage,
 		}
 		tmp_propvals.ppropval[tmp_propvals.count] =
 							ppropvals->ppropval[i];
-		poriginal_indices[tmp_propvals.count] = i;
-		tmp_propvals.count ++;
+		poriginal_indices[tmp_propvals.count++] = i;
 	}
 	if (0 == tmp_propvals.count) {
 		return TRUE;
@@ -1445,14 +1408,12 @@ BOOL MESSAGE_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags,
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 									pproptags->pproptag[i];
-			pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-			pproblems->count ++;
+			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 			continue;
 		}
 		tmp_proptags.pproptag[tmp_proptags.count] =
 								pproptags->pproptag[i];
-		poriginal_indices[tmp_proptags.count] = i;
-		tmp_proptags.count ++;
+		poriginal_indices[tmp_proptags.count++] = i;
 	}
 	if (0 == tmp_proptags.count) {
 		return TRUE;

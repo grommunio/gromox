@@ -253,16 +253,14 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 					"\"%s\" format error\n", pline);
 				return NULL;
 			}
-			*ptoken = '\0';
-			ptoken ++;
+			*ptoken++ = '\0';
 			ptoken1 = strchr(ptoken, ',');
 			if (NULL == ptoken1) {
 				printf("[exchange_emsmdb]: format"
 					" error in \"%s\"\n", ptoken);
 				return NULL;
 			}
-			*ptoken1 = '\0';
-			ptoken1 ++;
+			*ptoken1++ = '\0';
 			if (0 != strncasecmp(ptoken1, "TYPE=0x", 7)) {
 				printf("[exchange_emsmdb]: format"
 					" error in \"%s\"\n", ptoken1);

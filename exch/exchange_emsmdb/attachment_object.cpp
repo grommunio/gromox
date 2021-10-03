@@ -61,16 +61,13 @@ BOOL ATTACHMENT_OBJECT::init_attachment()
 	}
 	
 	propvals.ppropval[propvals.count].proptag = PR_ATTACH_NUM;
-	propvals.ppropval[propvals.count].pvalue = &pattachment->attachment_num;
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue = &pattachment->attachment_num;
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_RENDERINGPOSITION;
 	propvals.ppropval[propvals.count].pvalue = cu_alloc<uint32_t>();
 	if (NULL == propvals.ppropval[propvals.count].pvalue) {
 		return FALSE;
 	}
-	*(uint32_t*)propvals.ppropval[propvals.count].pvalue = 0xFFFFFFFF;
-	propvals.count ++;
+	*static_cast<uint32_t *>(propvals.ppropval[propvals.count++].pvalue) = 0xFFFFFFFF;
 	
 	pvalue = cu_alloc<uint64_t>();
 	if (NULL == pvalue) {
@@ -79,11 +76,9 @@ BOOL ATTACHMENT_OBJECT::init_attachment()
 	*(uint64_t*)pvalue = rop_util_current_nttime();
 	
 	propvals.ppropval[propvals.count].proptag = PR_CREATION_TIME;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	propvals.ppropval[propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	return exmdb_client_set_instance_properties(pattachment->pparent->plogon->get_dir(),
 	       pattachment->instance_id, &propvals, &problems);
 }
@@ -215,8 +210,7 @@ BOOL ATTACHMENT_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	if (!exmdb_client_get_instance_all_proptags(pattachment->pparent->plogon->get_dir(),
 	    pattachment->instance_id, &tmp_proptags))
 		return FALSE;	
-	nodes_num = double_list_get_nodes_num(&pattachment->stream_list);
-	nodes_num ++;
+	nodes_num = double_list_get_nodes_num(&pattachment->stream_list) + 1;
 	pproptags->count = tmp_proptags.count;
 	pproptags->pproptag = cu_alloc<uint32_t>(tmp_proptags.count + nodes_num);
 	if (NULL == pproptags->pproptag) {
@@ -228,8 +222,7 @@ BOOL ATTACHMENT_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		pnode=double_list_get_after(&pattachment->stream_list, pnode)) {
 		auto proptag = static_cast<STREAM_OBJECT *>(pnode->pdata)->get_proptag();
 		if (common_util_index_proptags(pproptags, proptag) < 0) {
-			pproptags->pproptag[pproptags->count] = proptag;
-			pproptags->count ++;
+			pproptags->pproptag[pproptags->count++] = proptag;
 		}
 	}
 	pproptags->pproptag[pproptags->count++] = PR_ACCESS_LEVEL;
@@ -348,8 +341,7 @@ BOOL ATTACHMENT_OBJECT::get_properties(uint32_t size_limit,
 			ppropvals->count ++;
 			continue;
 		}
-		tmp_proptags.pproptag[tmp_proptags.count] = pproptags->pproptag[i];
-		tmp_proptags.count ++;
+		tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
 	}
 	if (0 == tmp_proptags.count) {
 		return TRUE;
@@ -410,14 +402,12 @@ BOOL ATTACHMENT_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals,
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 							ppropvals->ppropval[i].proptag;
-			pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-			pproblems->count ++;
+			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 			continue;
 		}
 		tmp_propvals.ppropval[tmp_propvals.count] =
 								ppropvals->ppropval[i];
-		poriginal_indices[tmp_propvals.count] = i;
-		tmp_propvals.count ++;
+		poriginal_indices[tmp_propvals.count++] = i;
 	}
 	if (0 == tmp_propvals.count) {
 		return TRUE;
@@ -483,14 +473,12 @@ BOOL ATTACHMENT_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags,
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 									pproptags->pproptag[i];
-			pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-			pproblems->count ++;
+			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 			continue;
 		}
 		tmp_proptags.pproptag[tmp_proptags.count] =
 								pproptags->pproptag[i];
-		poriginal_indices[tmp_proptags.count] = i;
-		tmp_proptags.count ++;
+		poriginal_indices[tmp_proptags.count++] = i;
 	}
 	if (0 == tmp_proptags.count) {
 		return TRUE;

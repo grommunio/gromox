@@ -826,8 +826,7 @@ BOOL emsmdb_interface_alloc_hanlde_number(uint32_t *pnum)
 	if (NULL == phandle) {
 		return FALSE;
 	}
-	*pnum = phandle->last_handle;
-	phandle->last_handle ++;
+	*pnum = phandle->last_handle++;
 	return TRUE;
 }
 

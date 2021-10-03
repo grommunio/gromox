@@ -298,8 +298,7 @@ BOOL TABLE_OBJECT::create_bookmark(uint32_t *pindex)
 		return FALSE;
 	}
 	pbookmark->node.pdata = pbookmark;
-	pbookmark->index = ptable->bookmark_index;
-	ptable->bookmark_index ++;
+	pbookmark->index = ptable->bookmark_index++;
 	pbookmark->inst_id = inst_id;
 	pbookmark->row_type = row_type;
 	pbookmark->inst_num = inst_num;
@@ -488,8 +487,7 @@ BOOL TABLE_OBJECT::restore_state(uint32_t state_id, uint32_t *pindex)
 		return FALSE;
 	if (position < 0) {
 		/* assign an invalid bookmark index */
-		*pindex = ptable->bookmark_index;
-		ptable->bookmark_index ++;
+		*pindex = ptable->bookmark_index++;
 		return TRUE;
 	}
 	m_position = position;

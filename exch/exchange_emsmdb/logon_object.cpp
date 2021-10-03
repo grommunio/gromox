@@ -275,9 +275,7 @@ BOOL LOGON_OBJECT::get_named_propnames(const PROPID_ARRAY *ppropids,
 			pindex_map[i] = i;
 			ppropnames->ppropname[i] = *pname;
 		} else {
-			tmp_propids.ppropid[tmp_propids.count] =
-								ppropids->ppropid[i];
-			tmp_propids.count ++;
+			tmp_propids.ppropid[tmp_propids.count++] = ppropids->ppropid[i];
 			pindex_map[i] = -tmp_propids.count;
 		}
 	}
@@ -405,9 +403,7 @@ BOOL LOGON_OBJECT::get_named_propids(BOOL b_create,
 			pindex_map[i] = i;
 			ppropids->ppropid[i] = *pid;
 		} else {
-			tmp_propnames.ppropname[tmp_propnames.count] =
-									ppropnames->ppropname[i];
-			tmp_propnames.count ++;
+			tmp_propnames.ppropname[tmp_propnames.count++] = ppropnames->ppropname[i];
 			pindex_map[i] = -tmp_propnames.count;
 		}
 	}
@@ -491,20 +487,13 @@ BOOL LOGON_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 				sizeof(uint32_t)*tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
 	if (plogon->check_private()) {
-		pproptags->pproptag[pproptags->count] =
-					PR_MAILBOX_OWNER_NAME;
-		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-					PR_MAILBOX_OWNER_ENTRYID;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PR_MAILBOX_OWNER_NAME;
+		pproptags->pproptag[pproptags->count++] = PR_MAILBOX_OWNER_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_MAX_SUBMIT_MESSAGE_SIZE;
-		pproptags->pproptag[pproptags->count] = PR_EMAIL_ADDRESS;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PR_EMAIL_ADDRESS;
 		pproptags->pproptag[pproptags->count++] = PR_EMS_AB_DISPLAY_NAME_PRINTABLE;
 	} else {
-		pproptags->pproptag[pproptags->count] =
-						PROP_TAG_HIERARCHYSERVER;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PROP_TAG_HIERARCHYSERVER;
 		/* TODO: For PR_EMAIL_ADDRESS,
 		check if mail address of public folder exists. */
 	}
@@ -516,17 +505,12 @@ BOOL LOGON_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	pproptags->pproptag[pproptags->count++] = PR_DELETED_MSG_COUNT;
 	pproptags->pproptag[pproptags->count++] = PR_DELETED_NORMAL_MESSAGE_SIZE;
 	pproptags->pproptag[pproptags->count++] = PR_DELETED_NORMAL_MESSAGE_SIZE_EXTENDED;
-	pproptags->pproptag[pproptags->count] =
-			PROP_TAG_EXTENDEDRULESIZELIMIT;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PROP_TAG_EXTENDEDRULESIZELIMIT;
 	pproptags->pproptag[pproptags->count++] = PR_ASSOC_MESSAGE_SIZE;
-	pproptags->pproptag[pproptags->count] = PR_MESSAGE_SIZE;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_MESSAGE_SIZE;
 	pproptags->pproptag[pproptags->count++] = PR_NORMAL_MESSAGE_SIZE;
 	pproptags->pproptag[pproptags->count++] = PR_USER_ENTRYID;
-	pproptags->pproptag[pproptags->count] =
-					PROP_TAG_CONTENTCOUNT;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PROP_TAG_CONTENTCOUNT;
 	pproptags->pproptag[pproptags->count++] = PR_ASSOC_CONTENT_COUNT;
 	pproptags->pproptag[pproptags->count++] = PR_TEST_LINE_SPEED;
 	return TRUE;
@@ -832,9 +816,7 @@ BOOL LOGON_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
 			}
 			ppropvals->count ++;
 		} else {
-			tmp_proptags.pproptag[tmp_proptags.count] =
-											pproptags->pproptag[i];
-			tmp_proptags.count ++;
+			tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
 		}
 	}
 	if (0 == tmp_proptags.count) {
@@ -886,13 +868,11 @@ BOOL LOGON_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals,
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 							ppropvals->ppropval[i].proptag;
-			pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-			pproblems->count ++;
+			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 		} else {
 			tmp_propvals.ppropval[tmp_propvals.count] =
 									ppropvals->ppropval[i];
-			poriginal_indices[tmp_propvals.count] = i;
-			tmp_propvals.count ++;
+			poriginal_indices[tmp_propvals.count++] = i;
 		}
 	}
 	if (0 == tmp_propvals.count) {
@@ -940,12 +920,9 @@ BOOL LOGON_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags,
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 									pproptags->pproptag[i];
-			pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-			pproblems->count ++;
+			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 		} else {
-			tmp_proptags.pproptag[tmp_proptags.count] =
-									pproptags->pproptag[i];
-			tmp_proptags.count ++;
+			tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
 		}
 	}
 	if (0 == tmp_proptags.count) {
