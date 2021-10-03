@@ -98,7 +98,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		case PR_SUBJECT:
 		case PR_SUBJECT_A:
 		case PR_MESSAGE_SIZE:
-		case PROP_TAG_HASATTACHMENTS:
+		case PR_HASATTACH:
 			continue;
 		case PR_BODY:
 		case PR_BODY_A:
@@ -269,7 +269,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			message_content_free(pmsgctnt);
 			return FALSE;
 		}
-		propval.proptag = PROP_TAG_ATTACHNUMBER;
+		propval.proptag = PR_ATTACH_NUM;
 		propval.pvalue = plast_id;
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 			message_content_free(pmsgctnt);
@@ -462,7 +462,6 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 {
 	uint64_t mid_val;
 	uint64_t message_id;
-	uint32_t *pattach_id;
 	TAGGED_PROPVAL propval;
 	DOUBLE_LIST_NODE *pnode;
 	INSTANCE_NODE *pinstance;
@@ -547,8 +546,8 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 		0 != pmsgctnt->children.pattachments->count) {
 		pattachment = pmsgctnt->children.pattachments->pplist[
 					pmsgctnt->children.pattachments->count - 1];
-		pattach_id = static_cast<uint32_t *>(tpropval_array_get_propval(
-			&pattachment->proplist, PROP_TAG_ATTACHNUMBER));
+		auto pattach_id = static_cast<uint32_t *>(tpropval_array_get_propval(
+		                  &pattachment->proplist, PR_ATTACH_NUM));
 		if (NULL != pattach_id) {
 			pinstance->last_id = *pattach_id;
 			pinstance->last_id ++;
@@ -600,7 +599,6 @@ BOOL exmdb_server_reload_message_instance(
 {
 	void *pvalue;
 	uint32_t last_id;
-	uint32_t *pattach_id;
 	MESSAGE_CONTENT *pmsgctnt;
 	ATTACHMENT_CONTENT *pattachment;
 	
@@ -653,8 +651,8 @@ BOOL exmdb_server_reload_message_instance(
 			0 != pmsgctnt->children.pattachments->count) {
 			pattachment = pmsgctnt->children.pattachments->pplist[
 						pmsgctnt->children.pattachments->count - 1];
-			pattach_id = static_cast<uint32_t *>(tpropval_array_get_propval(
-				&pattachment->proplist, PROP_TAG_ATTACHNUMBER));
+			auto pattach_id = static_cast<uint32_t *>(tpropval_array_get_propval(
+			                  &pattachment->proplist, PR_ATTACH_NUM));
 			if (NULL != pattach_id && pinstance->last_id <= *pattach_id) {
 				pinstance->last_id = *pattach_id;
 				pinstance->last_id ++;
@@ -1059,7 +1057,7 @@ static BOOL instance_identify_attachments(ATTACHMENT_LIST *pattachments)
 	TAGGED_PROPVAL propval;
 	
 	for (i=0; i<pattachments->count; i++) {
-		propval.proptag = PROP_TAG_ATTACHNUMBER;
+		propval.proptag = PR_ATTACH_NUM;
 		propval.pvalue = &i;
 		if (!tpropval_array_set_propval(&pattachments->pplist[i]->proplist, &propval))
 			return FALSE;	
@@ -1135,7 +1133,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 		case PROP_TAG_INSTANCESVREID:
 		case PROP_TAG_HASNAMEDPROPERTIES:
 		case PR_MESSAGE_SIZE:
-		case PROP_TAG_HASATTACHMENTS:
+		case PR_HASATTACH:
 		case PR_DISPLAY_TO:
 		case PR_DISPLAY_CC:
 		case PR_DISPLAY_BCC:
@@ -1263,7 +1261,6 @@ BOOL exmdb_server_load_attachment_instance(const char *dir,
 	uint32_t *pinstance_id)
 {
 	int i;
-	void *pvalue;
 	DOUBLE_LIST_NODE *pnode;
 	MESSAGE_CONTENT *pmsgctnt;
 	ATTACHMENT_CONTENT *pattachment = nullptr;
@@ -1286,8 +1283,7 @@ BOOL exmdb_server_load_attachment_instance(const char *dir,
 	}
 	for (i=0; i<pmsgctnt->children.pattachments->count; i++) {
 		pattachment = pmsgctnt->children.pattachments->pplist[i];
-		pvalue = tpropval_array_get_propval(
-			&pattachment->proplist, PROP_TAG_ATTACHNUMBER);
+		auto pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_NUM);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -1386,7 +1382,7 @@ BOOL exmdb_server_create_attachment_instance(const char *dir,
 	}
 	*pattachment_num = pinstance1->last_id;
 	pinstance1->last_id ++;
-	propval.proptag = PROP_TAG_ATTACHNUMBER;
+	propval.proptag = PR_ATTACH_NUM;
 	propval.pvalue = pattachment_num;
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		attachment_content_free(pattachment);
@@ -1516,7 +1512,6 @@ BOOL exmdb_server_delete_message_instance_attachment(
 	uint32_t attachment_num)
 {
 	int i;
-	void *pvalue;
 	MESSAGE_CONTENT *pmsgctnt;
 	ATTACHMENT_CONTENT *pattachment;
 	
@@ -1533,8 +1528,7 @@ BOOL exmdb_server_delete_message_instance_attachment(
 	}
 	for (i=0; i<pmsgctnt->children.pattachments->count; i++) {
 		pattachment = pmsgctnt->children.pattachments->pplist[i];
-		pvalue = tpropval_array_get_propval(
-			&pattachment->proplist, PROP_TAG_ATTACHNUMBER);
+		auto pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_NUM);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -1558,7 +1552,6 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
     const char *account, gxerr_t *pe_result)
 {
 	int i;
-	void *pvalue;
 	BINARY *pbin;
 	uint32_t *pcpid;
 	uint64_t folder_id;
@@ -1609,8 +1602,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 					return FALSE;
 				}
 			}
-			pvalue = tpropval_array_get_propval(
-				&pattachment->proplist, PROP_TAG_ATTACHNUMBER);
+			auto pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_NUM);
 			if (NULL == pvalue) {
 				attachment_content_free(pattachment);
 				return FALSE;
@@ -1619,7 +1611,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 			for (i=0; i<pmsgctnt->children.pattachments->count; i++) {
 				pvalue = tpropval_array_get_propval(
 					&pmsgctnt->children.pattachments->pplist[i]->proplist,
-					PROP_TAG_ATTACHNUMBER);
+				         PR_ATTACH_NUM);
 				if (NULL == pvalue) {
 					attachment_content_free(pattachment);
 					return FALSE;
@@ -1658,7 +1650,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 			if (ret == 65001 || *pcpid == 65001) {
 				propval.pvalue = plainbuf.data();
 			} else {
-				pvalue = common_util_convert_copy(TRUE, *pcpid, plainbuf.c_str());
+				auto pvalue = common_util_convert_copy(TRUE, *pcpid, plainbuf.c_str());
 				if (pvalue == nullptr)
 					return false;
 				propval.pvalue = pvalue;
@@ -1691,7 +1683,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 	       PROP_TAG_SENTREPRESENTINGENTRYID));
 	if (NULL != pbin && NULL == tpropval_array_get_propval(
 		&pmsgctnt->proplist, PROP_TAG_SENTREPRESENTINGEMAILADDRESS)) {
-		pvalue = tpropval_array_get_propval(&pmsgctnt->proplist,
+		auto pvalue = tpropval_array_get_propval(&pmsgctnt->proplist,
 						PROP_TAG_SENTREPRESENTINGADDRESSTYPE);
 		if (NULL == pvalue) {
 			if (common_util_parse_addressbook_entryid(pbin,
@@ -1728,7 +1720,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 	       &pmsgctnt->proplist, PROP_TAG_SENDERENTRYID));
 	if (NULL != pbin && NULL == tpropval_array_get_propval(
 		&pmsgctnt->proplist, PROP_TAG_SENDEREMAILADDRESS)) {
-		pvalue = tpropval_array_get_propval(
+		auto pvalue = tpropval_array_get_propval(
 			&pmsgctnt->proplist, PROP_TAG_SENDERADDRESSTYPE);
 		if (NULL == pvalue) {
 			if (common_util_parse_addressbook_entryid(pbin,
@@ -1858,8 +1850,7 @@ BOOL exmdb_server_get_instance_all_proptags(
 		pproptags->count ++;
 		pproptags->pproptag[pproptags->count] = PR_MESSAGE_SIZE;
 		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] = PROP_TAG_HASATTACHMENTS;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PR_HASATTACH;
 		pproptags->pproptag[pproptags->count++] = PR_DISPLAY_TO;
 		pproptags->pproptag[pproptags->count++] = PR_DISPLAY_CC;
 		pproptags->pproptag[pproptags->count++] = PR_DISPLAY_BCC;
@@ -1889,8 +1880,7 @@ BOOL exmdb_server_get_instance_all_proptags(
 			}
 		}
 		pproptags->count = pattachment->proplist.count;
-		pproptags->pproptag[pproptags->count] = PROP_TAG_ATTACHSIZE;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PR_ATTACH_SIZE;
 	}
 	return TRUE;
 }
@@ -2152,7 +2142,7 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 				continue;
 			}
 			break;
-		case PROP_TAG_ATTACHSIZE:
+		case PR_ATTACH_SIZE:
 			vc.proptag = pproptags->pproptag[i];
 			length = common_util_calculate_attachment_size(pattachment);
 			pvalue = cu_alloc<uint32_t>();
@@ -2526,7 +2516,7 @@ BOOL exmdb_server_get_instance_properties(
 			vc.pvalue = pvalue;
 			ppropvals->count ++;
 			continue;
-		case PROP_TAG_HASATTACHMENTS:
+		case PR_HASATTACH:
 			vc.proptag = pproptags->pproptag[i];
 			pvalue = cu_alloc<uint8_t>();
 			if (NULL == pvalue) {
@@ -2605,7 +2595,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 			case PROP_TAG_INSTANCESVREID:
 			case PROP_TAG_HASNAMEDPROPERTIES:
 			case PR_MESSAGE_SIZE:
-			case PROP_TAG_HASATTACHMENTS:
+			case PR_HASATTACH:
 			case PR_DISPLAY_TO:
 			case PR_DISPLAY_CC:
 			case PR_DISPLAY_BCC:
@@ -2792,7 +2782,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 			switch (pproperties->ppropval[i].proptag) {
 			case ID_TAG_ATTACHDATABINARY:
 			case ID_TAG_ATTACHDATAOBJECT:
-			case PROP_TAG_ATTACHNUMBER:
+			case PR_ATTACH_NUM:
 			case PR_RECORD_KEY:
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =

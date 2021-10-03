@@ -671,7 +671,7 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 		proptags[i++] = PR_ASSOCIATED;
 		proptags[i++] = PROP_TAG_CHANGENUMBER;
 		proptags[i++] = PR_READ;
-		proptags[i++] = PROP_TAG_HASATTACHMENTS;
+		proptags[i++] = PR_HASATTACH;
 		proptags[i++] = PR_MESSAGE_FLAGS;
 		proptags[i++] = PR_DISPLAY_TO;
 		proptags[i++] = PR_DISPLAY_CC;
@@ -2073,7 +2073,7 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 			return GP_ERR;
 		*static_cast<uint8_t *>(pv.pvalue) = !!common_util_check_message_named_properties(db, id);
 		return GP_ADV;
-	case PROP_TAG_HASATTACHMENTS:
+	case PR_HASATTACH:
 		pv.pvalue = cu_alloc<uint8_t>();
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
@@ -3133,7 +3133,7 @@ BOOL common_util_set_properties(int table_type,
 			case PROP_TAG_MID:
 			case PR_MESSAGE_SIZE:
 			case PR_ASSOCIATED:
-			case PROP_TAG_HASATTACHMENTS:
+			case PR_HASATTACH:
 			case PR_DISPLAY_TO:
 			case PR_DISPLAY_CC:
 			case PR_DISPLAY_BCC:
@@ -3273,7 +3273,7 @@ BOOL common_util_set_properties(int table_type,
 		case ATTACHMENT_PROPERTIES_TABLE:
 			switch (ppropvals->ppropval[i].proptag) {
 			case PR_RECORD_KEY:
-			case PROP_TAG_ATTACHNUMBER:
+			case PR_ATTACH_NUM:
 				continue;
 			case ID_TAG_ATTACHDATABINARY:
 				if (NULL == common_util_get_tls_var()) {
@@ -5899,7 +5899,7 @@ uint32_t common_util_calculate_message_size(
 			for (size_t j = 0; j < pattachment->proplist.count; ++j) {
 				ppropval = pattachment->proplist.ppropval + j;
 				switch (ppropval->proptag) {
-				case PROP_TAG_ATTACHNUMBER:
+				case PR_ATTACH_NUM:
 					continue;
 				case ID_TAG_ATTACHDATABINARY:
 				case ID_TAG_ATTACHDATAOBJECT:
@@ -5930,7 +5930,7 @@ uint32_t common_util_calculate_attachment_size(
 	for (i=0; i<pattachment->proplist.count; i++) {
 		ppropval = pattachment->proplist.ppropval + i;
 		switch (ppropval->proptag) {
-		case PROP_TAG_ATTACHNUMBER:
+		case PR_ATTACH_NUM:
 			continue;
 		case ID_TAG_ATTACHDATABINARY:
 		case ID_TAG_ATTACHDATAOBJECT:

@@ -22,7 +22,6 @@ std::unique_ptr<STREAM_OBJECT> stream_object_create(void *pparent, int object_ty
 {
 	int buff_len;
 	int utf16_len;
-	uint32_t *psize;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	uint32_t proptag_buff[2];
@@ -41,33 +40,34 @@ std::unique_ptr<STREAM_OBJECT> stream_object_create(void *pparent, int object_ty
 	pstream->max_length = max_length;
 	pstream->b_touched = FALSE;
 	switch (object_type) {
-	case OBJECT_TYPE_MESSAGE:
+	case OBJECT_TYPE_MESSAGE: {
 		proptags.count = 2;
 		proptags.pproptag = proptag_buff;
 		proptag_buff[0] = proptag;
 		proptag_buff[1] = PR_MESSAGE_SIZE;
 		if (!static_cast<MESSAGE_OBJECT *>(pparent)->get_properties(0, &proptags, &propvals))
 			return NULL;
-		psize = static_cast<uint32_t *>(common_util_get_propvals(&propvals, PR_MESSAGE_SIZE));
+		auto psize = static_cast<uint32_t *>(common_util_get_propvals(&propvals, PR_MESSAGE_SIZE));
 		if (NULL != psize && *psize >= common_util_get_param(
 			COMMON_UTIL_MAX_MAIL_LENGTH)) {
 			return NULL;
 		}
 		break;
-	case OBJECT_TYPE_ATTACHMENT:
+	}
+	case OBJECT_TYPE_ATTACHMENT: {
 		proptags.count = 2;
 		proptags.pproptag = proptag_buff;
 		proptag_buff[0] = proptag;
-		proptag_buff[1] = PROP_TAG_ATTACHSIZE;
+		proptag_buff[1] = PR_ATTACH_SIZE;
 		if (!static_cast<ATTACHMENT_OBJECT *>(pparent)->get_properties(0, &proptags, &propvals))
 			return NULL;
-		psize = static_cast<uint32_t *>(common_util_get_propvals(
-		        &propvals, PROP_TAG_ATTACHSIZE));
+		auto psize = static_cast<uint32_t *>(common_util_get_propvals(&propvals, PR_ATTACH_SIZE));
 		if (NULL != psize && *psize >= common_util_get_param(
 			COMMON_UTIL_MAX_MAIL_LENGTH)) {
 			return NULL;
 		}
 		break;
+	}
 	case OBJECT_TYPE_FOLDER:
 		proptags.count = 1;
 		proptags.pproptag = &proptag;

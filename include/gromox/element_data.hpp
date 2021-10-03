@@ -58,7 +58,7 @@ struct MESSAGE_CONTENT {
 };
 
 struct ATTACHMENT_CONTENT {
-	TPROPVAL_ARRAY proplist; /* PROP_TAG_ATTACHNUMBER must be the first */
+	TPROPVAL_ARRAY proplist; /* PR_ATTACH_NUM must be the first */
 	MESSAGE_CONTENT *pembedded;
 };
 

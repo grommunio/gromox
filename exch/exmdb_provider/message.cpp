@@ -1714,7 +1714,7 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 		case PR_DISPLAY_CC_A:
 		case PR_DISPLAY_BCC:
 		case PR_DISPLAY_BCC_A:
-		case PROP_TAG_HASATTACHMENTS:
+		case PR_HASATTACH:
 			continue;
 		}
 		proptag_buff[proptags.count] = tmp_proptags.pproptag[i];
@@ -1776,20 +1776,19 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 		proptags.pproptag = proptag_buff;
 		memcpy(proptag_buff, tmp_proptags.pproptag,
 			sizeof(uint32_t)*tmp_proptags.count);
-		proptag_buff[proptags.count] = PROP_TAG_ATTACHNUMBER;
-		proptags.count ++;
+		proptag_buff[proptags.count++] = PR_ATTACH_NUM;
 		if (FALSE == common_util_get_properties(
 			ATTACHMENT_PROPERTIES_TABLE, attachment_id, cpid,
 			psqlite, &proptags, &pattachment->proplist)) {
 			return FALSE;
 		}
-		/* PROP_TAG_ATTACHNUMBER MUST be the first */
+		/* PR_ATTACH_NUM MUST be the first */
 		memmove(pattachment->proplist.ppropval + 1,
 			pattachment->proplist.ppropval, sizeof(
 			TAGGED_PROPVAL)*pattachment->proplist.count);
 		ppropval = pattachment->proplist.ppropval;
 		pattachment->proplist.count ++;
-		ppropval->proptag = PROP_TAG_ATTACHNUMBER;
+		ppropval->proptag = PR_ATTACH_NUM;
 		ppropval->pvalue = cu_alloc<uint32_t>();
 		if (NULL == ppropval->pvalue) {
 			return FALSE;
@@ -3966,8 +3965,7 @@ static bool op_delegate(const char *from_address, const char *account,
 		PR_DISPLAY_BCC, PR_DISPLAY_BCC_A,
 		PROP_TAG_MID, PR_MESSAGE_SIZE,
 		PR_ASSOCIATED, PROP_TAG_CHANGENUMBER,
-		PR_CHANGE_KEY, PR_READ,
-		PROP_TAG_HASATTACHMENTS,
+		PR_CHANGE_KEY, PR_READ, PR_HASATTACH,
 		PR_PREDECESSOR_CHANGE_LIST,
 		PROP_TAG_MESSAGETOME, PROP_TAG_MESSAGECCME
 	};
@@ -4402,8 +4400,7 @@ static bool opx_delegate(const char *from_address, const char *account,
 		PR_DISPLAY_BCC, PR_DISPLAY_BCC_A,
 		PROP_TAG_MID, PR_MESSAGE_SIZE,
 		PR_ASSOCIATED, PROP_TAG_CHANGENUMBER,
-		PR_CHANGE_KEY, PR_READ,
-		PROP_TAG_HASATTACHMENTS,
+		PR_CHANGE_KEY, PR_READ, PR_HASATTACH,
 		PR_PREDECESSOR_CHANGE_LIST,
 		PROP_TAG_MESSAGETOME, PROP_TAG_MESSAGECCME,
 	};

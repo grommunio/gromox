@@ -3157,13 +3157,13 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 				free(tmp_bin.pv);
 				return -EINVAL;
 			}
-			propval.proptag = PROP_TAG_ATTACHMIMETAG;
+			propval.proptag = PR_ATTACH_MIME_TAG;
 			propval.pvalue = deconst(img_ctype);
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				free(tmp_bin.pv);
 				return -EINVAL;
 			}
-			propval.proptag = PROP_TAG_ATTACHCONTENTID;
+			propval.proptag = PR_ATTACH_CONTENT_ID;
 			propval.pvalue = cid_name;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				free(tmp_bin.pv);
@@ -3181,7 +3181,7 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 				free(tmp_bin.pv);
 				return -EINVAL;
 			}
-			propval.proptag = PROP_TAG_ATTACHFLAGS;
+			propval.proptag = PR_ATTACH_FLAGS;
 			propval.pvalue = &tmp_int32;
 			tmp_int32 = ATTACH_FLAG_RENDEREDINBODY;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {

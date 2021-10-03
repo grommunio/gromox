@@ -56,8 +56,7 @@ BOOL ATTACHMENT_OBJECT::init_attachment()
 		return FALSE;
 	}
 	
-	propvals.ppropval[propvals.count].proptag =
-							PROP_TAG_ATTACHNUMBER;
+	propvals.ppropval[propvals.count].proptag = PR_ATTACH_NUM;
 	propvals.ppropval[propvals.count].pvalue =
 					&pattachment->attachment_num;
 	propvals.count ++;
@@ -165,7 +164,7 @@ static BOOL aobj_check_readonly_property(const ATTACHMENT_OBJECT *pattachment,
 	case PR_STORE_ENTRYID:
 	case PR_STORE_RECORD_KEY:
 		return TRUE;
-	case PROP_TAG_ATTACHSIZE:
+	case PR_ATTACH_SIZE:
 	case PR_CREATION_TIME:
 	case PR_LAST_MODIFICATION_TIME:
 		if (pattachment->b_new)
@@ -342,7 +341,7 @@ BOOL ATTACHMENT_OBJECT::copy_properties(ATTACHMENT_OBJECT *pattachment_src,
 	if (!exmdb_client::read_attachment_instance(pattachment_src->pparent->pstore->get_dir(),
 	    pattachment_src->instance_id, &attctnt))
 		return FALSE;
-	common_util_remove_propvals(&attctnt.proplist, PROP_TAG_ATTACHNUMBER);
+	common_util_remove_propvals(&attctnt.proplist, PR_ATTACH_NUM);
 	i = 0;
 	while (i < attctnt.proplist.count) {
 		if (common_util_index_proptags(pexcluded_proptags,

@@ -327,7 +327,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			propval.pvalue = tmp_buff;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				goto IMPORT_FAILURE;
-			propval.proptag = PROP_TAG_ATTACHMENTCONTACTPHOTO;
+			propval.proptag = PR_ATTACHMENT_CONTACTPHOTO;
 			propval.pvalue = &tmp_byte;
 			tmp_byte = 1;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
@@ -971,7 +971,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		}
 	}
 	
-	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_ATTACHMENTCONTACTPHOTO));
+	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PR_ATTACHMENT_CONTACTPHOTO));
 	if (pvalue != nullptr && *reinterpret_cast<const uint8_t *>(pvalue) != 0 &&
 		NULL != pmsg->children.pattachments) {
 		for (size_t i = 0; i < pmsg->children.pattachments->count; ++i) {

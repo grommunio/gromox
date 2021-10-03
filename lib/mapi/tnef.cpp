@@ -1675,7 +1675,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			}
 			break;
 		case ATTRIBUTE_ID_ATTACHMETAFILE:
-			propval.proptag = PROP_TAG_ATTACHRENDERING;
+			propval.proptag = PR_ATTACH_RENDERING;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				str_hash_free(phash);
@@ -1702,7 +1702,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			}
 			break;
 		case ATTRIBUTE_ID_ATTACHTRANSPORTFILENAME:
-			propval.proptag = PROP_TAG_ATTACHTRANSPORTNAME_STRING8;
+			propval.proptag = PR_ATTACH_TRANSPORT_NAME_A;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				str_hash_free(phash);
@@ -1726,7 +1726,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			}
 			if (ATTACH_TYPE_OLE == ((REND_DATA*)
 				attribute.pvalue)->attach_type) {
-				propval.proptag = PROP_TAG_ATTACHTAG;
+				propval.proptag = PR_ATTACH_TAG;
 				propval.pvalue = &tmp_bin;
 				tmp_bin.cb = 11;
 				tmp_bin.pb = OLE_TAG;
@@ -1738,7 +1738,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			}
 			if (FILE_DATA_MACBINARY == ((REND_DATA*)
 				attribute.pvalue)->attach_type) {
-				propval.proptag = PROP_TAG_ATTACHENCODING;
+				propval.proptag = PR_ATTACH_ENCODING;
 				propval.pvalue = &tmp_bin;
 				tmp_bin.cb = 9;
 				tmp_bin.pb = MACBINARY_ENCODING;
@@ -2796,7 +2796,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		} else {
 			tmp_rend.attach_position = *(uint32_t*)pvalue;
 		}
-		auto bv = static_cast<BINARY *>(tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_ATTACHENCODING));
+		auto bv = static_cast<BINARY *>(tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_ENCODING));
 		tmp_rend.data_flags = bv != nullptr && bv->cb == 9 &&
 		                      memcmp(bv->pb, MACBINARY_ENCODING, 9) == 0 ?
 		                      FILE_DATA_MACBINARY : FILE_DATA_DEFAULT;
@@ -2849,7 +2849,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			}
 		}
 		/* ATTRIBUTE_ID_ATTACHMETAFILE */
-		pvalue = tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_ATTACHRENDERING);
+		pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_RENDERING);
 		if (NULL != pvalue) {
 			attribute.attr_id = ATTRIBUTE_ID_ATTACHMETAFILE;
 			attribute.lvl = LVL_ATTACHMENT;
@@ -2858,10 +2858,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 				pext, &attribute, alloc, get_propname)) {
 				return FALSE;
 			}
-			tmp_proptags.pproptag[tmp_proptags.count] =
-								PROP_TAG_ATTACHRENDERING;
-			tmp_proptags.count ++;
-			
+			tmp_proptags.pproptag[tmp_proptags.count++] = PR_ATTACH_RENDERING;
 		}
 		/* ATTRIBUTE_ID_ATTACHCREATEDATE */
 		pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_CREATION_TIME);
@@ -2890,7 +2887,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			tmp_proptags.count ++;
 		}
 		/* ATTRIBUTE_ID_ATTACHTRANSPORTFILENAME */
-		pvalue = tpropval_array_get_propval(&pattachment->proplist, PROP_TAG_ATTACHTRANSPORTNAME_STRING8);
+		pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_TRANSPORT_NAME_A);
 		if (NULL != pvalue) {
 			attribute.attr_id = ATTRIBUTE_ID_ATTACHTRANSPORTFILENAME;
 			attribute.lvl = LVL_ATTACHMENT;
@@ -2899,9 +2896,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 				pext, &attribute, alloc, get_propname)) {
 				return FALSE;
 			}
-			tmp_proptags.pproptag[tmp_proptags.count] =
-					PROP_TAG_ATTACHTRANSPORTNAME_STRING8;
-			tmp_proptags.count ++;
+			tmp_proptags.pproptag[tmp_proptags.count++] = PR_ATTACH_TRANSPORT_NAME_A;
 		}
 		/* ATTRIBUTE_ID_ATTACHMENT */
 		if (0 == pattachment->proplist.count) {

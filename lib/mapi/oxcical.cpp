@@ -2063,33 +2063,33 @@ static BOOL oxcical_parse_exceptional_attachment(ATTACHMENT_CONTENT *pattachment
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	propval.proptag = PROP_TAG_ATTACHENCODING;
+	propval.proptag = PR_ATTACH_ENCODING;
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = 0;
 	tmp_bin.pb = NULL;
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	propval.proptag = PROP_TAG_ATTACHMENTFLAGS;
+	propval.proptag = PR_ATTACHMENT_FLAGS;
 	propval.pvalue = &tmp_int32;
 	tmp_int32 = 0x00000002;
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	propval.proptag = PROP_TAG_ATTACHMENTLINKID;
+	propval.proptag = PR_ATTACHMENT_LINKID;
 	propval.pvalue = &tmp_int32;
 	tmp_int32 = 0x00000000;
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	propval.proptag = PROP_TAG_ATTACHFLAGS;
+	propval.proptag = PR_ATTACH_FLAGS;
 	propval.pvalue = &tmp_int32;
 	tmp_int32 = 0x00000000;
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	propval.proptag = PROP_TAG_ATTACHMENTHIDDEN;
+	propval.proptag = PR_ATTACHMENT_HIDDEN;
 	propval.pvalue = &tmp_byte;
 	tmp_byte = 1;
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
-	propval.proptag = PROP_TAG_ATTACHMENTCONTACTPHOTO;
+	propval.proptag = PR_ATTACHMENT_CONTACTPHOTO;
 	propval.pvalue = &tmp_byte;
 	tmp_byte = 0;
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
@@ -2142,7 +2142,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			propval.pvalue = &tmp_bin;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			propval.proptag = PROP_TAG_ATTACHENCODING;
+			propval.proptag = PR_ATTACH_ENCODING;
 			propval.pvalue = &tmp_bin;
 			tmp_bin.cb = 0;
 			tmp_bin.pb = NULL;
@@ -2169,27 +2169,27 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			tmp_int32 = ATTACH_BY_VALUE;
 			pvalue1 = piline->get_first_paramval("FMTYPE");
 			if (NULL != pvalue1) {
-				propval.proptag = PROP_TAG_ATTACHMIMETAG;
+				propval.proptag = PR_ATTACH_MIME_TAG;
 				propval.pvalue = deconst(pvalue1);
 				if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 					return FALSE;
 			}
-			propval.proptag = PROP_TAG_ATTACHFLAGS;
+			propval.proptag = PR_ATTACH_FLAGS;
 			propval.pvalue = &tmp_int32;
 			tmp_int32 = 0;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			propval.proptag = PROP_TAG_ATTACHMENTLINKID;
+			propval.proptag = PR_ATTACHMENT_LINKID;
 			propval.pvalue = &tmp_int32;
 			tmp_int32 = 0;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			propval.proptag = PROP_TAG_ATTACHMENTCONTACTPHOTO;
+			propval.proptag = PR_ATTACHMENT_CONTACTPHOTO;
 			propval.pvalue = &tmp_byte;
 			tmp_byte = 0;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			propval.proptag = PROP_TAG_ATTACHMENTCONTACTPHOTO;
+			propval.proptag = PR_ATTACHMENT_CONTACTPHOTO;
 			propval.pvalue = &tmp_byte;
 			tmp_byte = 0;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
@@ -2254,7 +2254,7 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 		if (NULL != tmp_bin.pb) {
 			free(tmp_bin.pb);
 		}
-		propval.proptag = PROP_TAG_ATTACHENCODING;
+		propval.proptag = PR_ATTACH_ENCODING;
 		propval.pvalue = &tmp_bin;
 		tmp_bin.cb = 0;
 		tmp_bin.pb = NULL;
@@ -2288,27 +2288,27 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 		tmp_int32 = ATTACH_BY_VALUE;
 		pvalue1 = piline->get_first_paramval("FMTYPE");
 		if (NULL != pvalue1) {
-			propval.proptag = PROP_TAG_ATTACHMIMETAG;
+			propval.proptag = PR_ATTACH_MIME_TAG;
 			propval.pvalue = deconst(pvalue1);
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
 		}
-		propval.proptag = PROP_TAG_ATTACHFLAGS;
+		propval.proptag = PR_ATTACH_FLAGS;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = 0;
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		propval.proptag = PROP_TAG_ATTACHMENTLINKID;
+		propval.proptag = PR_ATTACHMENT_LINKID;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = 0;
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		propval.proptag = PROP_TAG_ATTACHMENTCONTACTPHOTO;
+		propval.proptag = PR_ATTACHMENT_CONTACTPHOTO;
 		propval.pvalue = &tmp_byte;
 		tmp_byte = 0;
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
-		propval.proptag = PROP_TAG_ATTACHMENTCONTACTPHOTO;
+		propval.proptag = PR_ATTACHMENT_CONTACTPHOTO;
 		propval.pvalue = &tmp_byte;
 		tmp_byte = 0;
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
