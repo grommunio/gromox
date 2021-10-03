@@ -3710,7 +3710,7 @@ static BOOL message_make_deferred_action_messages(const char *username,
 	return TRUE;
 }
 
-static bool op_move_std(BOOL b_oof, const char *from_address,
+static bool op_move_same(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
     DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block, size_t rule_idx,
@@ -3828,7 +3828,10 @@ static bool op_move_std(BOOL b_oof, const char *from_address,
 	return true;
 }
 
-static bool op_move_same(uint64_t folder_id, uint64_t message_id,
+/**
+ * Have the message moved to another store by the client.
+ */
+static bool op_move_across(uint64_t folder_id, uint64_t message_id,
     RULE_NODE *prnode, const ACTION_BLOCK &block,
     std::list<DAM_NODE> &dam_list) try
 {
@@ -4063,10 +4066,10 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 	case OP_COPY: {
 		auto pmovecopy = static_cast<MOVECOPY_ACTION *>(block.pdata);
 		auto ret = pmovecopy->same_store ?
-		           op_move_same(folder_id, message_id, prnode, block, dam_list) :
-		           op_move_std(b_oof, from_address, account, cpid,
+		           op_move_same(b_oof, from_address, account, cpid,
 		           psqlite, folder_id, message_id, pdigest, pfolder_list,
-		           pmsg_list, block, rule_idx, prnode, b_del);
+		           pmsg_list, block, rule_idx, prnode, b_del) :
+		           op_move_across(folder_id, message_id, prnode, block, dam_list);
 		if (!ret)
 			return false;
 		break;
