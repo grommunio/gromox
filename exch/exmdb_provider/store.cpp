@@ -70,9 +70,7 @@ BOOL exmdb_server_get_all_named_propids(
 	}
 	ppropids->count = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		ppropids->ppropid[ppropids->count] =
-				sqlite3_column_int64(pstmt, 0);
-		ppropids->count ++;
+		ppropids->ppropid[ppropids->count++] = sqlite3_column_int64(pstmt, 0);
 	}
 	return TRUE;
 }

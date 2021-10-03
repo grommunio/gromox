@@ -766,16 +766,13 @@ static BOOL instance_read_attachment(
 			} else {
 				pattachment->proplist.ppropval[pattachment->proplist.count].proptag = PR_ATTACH_DATA_OBJ;
 			}
-			pattachment->proplist.ppropval[
-				pattachment->proplist.count].pvalue = pbin;
+			pattachment->proplist.ppropval[pattachment->proplist.count++].pvalue = pbin;
 			break;
 		default:
-			pattachment->proplist.ppropval[
-				pattachment->proplist.count] =
+			pattachment->proplist.ppropval[pattachment->proplist.count++] =
 				pattachment1->proplist.ppropval[i];
 			break;
 		}
-		pattachment->proplist.count ++;
 	}
 	if (NULL != pattachment1->pembedded) {
 		pattachment->pembedded = cu_alloc<MESSAGE_CONTENT>();
@@ -979,9 +976,7 @@ static BOOL instance_read_message(
 			}
 			pproplist->count = 0;
 			for (size_t j = 0; j < pproplist1->count; ++j) {
-				pproplist->ppropval[pproplist->count] =
-								pproplist1->ppropval[j];
-				pproplist->count ++;
+				pproplist->ppropval[pproplist->count++] = pproplist1->ppropval[j];
 			}
 		}
 	}
@@ -1142,8 +1137,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 		case PR_DISPLAY_BCC_A:
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag = proptag;
-			pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-			pproblems->count ++;
+			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 			continue;
 		default:
 			break;
@@ -1217,8 +1211,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 		case PR_PREDECESSOR_CHANGE_LIST:
 			continue;
 		}
-		pproptags->pproptag[pproptags->count] = proptag;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = proptag;
 	}
 	if (NULL != pmsgctnt->children.prcpts) {
 		if (TRUE == b_force || NULL == ((MESSAGE_CONTENT*)
@@ -1380,8 +1373,7 @@ BOOL exmdb_server_create_attachment_instance(const char *dir,
 		free(pinstance);
 		return FALSE;
 	}
-	*pattachment_num = pinstance1->last_id;
-	pinstance1->last_id ++;
+	*pattachment_num = pinstance1->last_id++;
 	propval.proptag = PR_ATTACH_NUM;
 	propval.pvalue = pattachment_num;
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
@@ -1444,8 +1436,7 @@ BOOL exmdb_server_write_attachment_instance(const char *dir,
 		case PR_RECORD_KEY:
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag = proptag;
-			pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-			pproblems->count ++;
+			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 			continue;
 		}
 		if (FALSE == b_force) {
@@ -1845,10 +1836,8 @@ BOOL exmdb_server_get_instance_all_proptags(
 			}
 		}
 		pproptags->count = pmsgctnt->proplist.count;
-		pproptags->pproptag[pproptags->count] = PROP_TAG_CODEPAGEID;
-		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] = PR_MESSAGE_SIZE;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PROP_TAG_CODEPAGEID;
+		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_SIZE;
 		pproptags->pproptag[pproptags->count++] = PR_HASATTACH;
 		pproptags->pproptag[pproptags->count++] = PR_DISPLAY_TO;
 		pproptags->pproptag[pproptags->count++] = PR_DISPLAY_CC;
@@ -2606,8 +2595,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 								pproperties->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-				pproblems->count ++;
+				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				continue;
 			case PR_READ:
 				if (0 != *(uint8_t*)pproperties->ppropval[i].pvalue) {
@@ -2627,8 +2615,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									pproperties->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-					pproblems->count ++;
+					pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 					continue;
 				}
 				message_flags = *(uint32_t*)pproperties->ppropval[i].pvalue;
@@ -2786,8 +2773,7 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 								pproperties->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-				pproblems->count ++;
+				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				continue;
 			case PR_ATTACH_DATA_BIN:
 				tpropval_array_remove_propval(

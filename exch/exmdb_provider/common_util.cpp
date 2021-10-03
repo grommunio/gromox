@@ -109,8 +109,7 @@ void common_util_set_propvals(TPROPVAL_ARRAY *parray,
 			return;
 		}
 	}
-	parray->ppropval[parray->count] = *ppropval;
-	parray->count ++;
+	parray->ppropval[parray->count++] = *ppropval;
 }
 
 void common_util_remove_propvals(
@@ -189,8 +188,7 @@ BOOL common_util_username_to_essdn(const char *username, char *pessdn, size_t dn
 	if (NULL == pdomain) {
 		return FALSE;
 	}
-	*pdomain = '\0';
-	pdomain ++;
+	*pdomain++ = '\0';
 	if (!common_util_get_user_ids(username, &user_id, &domain_id, nullptr))
 		return FALSE;
 	encode_hex_int(user_id, hex_string);
@@ -3037,8 +3035,7 @@ BOOL common_util_set_properties(int table_type,
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 							ppropvals->ppropval[i].proptag;
-			pproblems->pproblem[pproblems->count].err = ecError;
-			pproblems->count ++;
+			pproblems->pproblem[pproblems->count++].err = ecError;
 			continue;
 		}
 		switch (table_type) {
@@ -3058,8 +3055,7 @@ BOOL common_util_set_properties(int table_type,
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 								ppropvals->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-				pproblems->count ++;
+				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				continue;
 			}
 			break;
@@ -3084,8 +3080,7 @@ BOOL common_util_set_properties(int table_type,
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 								ppropvals->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-				pproblems->count ++;
+				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				continue;
 			case PROP_TAG_CHANGENUMBER:
 				common_util_set_folder_changenum(psqlite, id,
@@ -3115,8 +3110,7 @@ BOOL common_util_set_properties(int table_type,
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count].err = ecDuplicateName;
-					pproblems->count ++;
+					pproblems->pproblem[pproblems->count++].err = ecDuplicateName;
 					continue;
 				}
 				break;
@@ -3144,8 +3138,7 @@ BOOL common_util_set_properties(int table_type,
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 								ppropvals->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count].err = ecAccessDenied;
-				pproblems->count ++;
+				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				continue;
 			case PROP_TAG_CHANGENUMBER:
 				common_util_set_message_changenum(psqlite, id,
@@ -3196,8 +3189,7 @@ BOOL common_util_set_properties(int table_type,
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count].err = ecError;
-					pproblems->count ++;
+					pproblems->pproblem[pproblems->count++].err = ecError;
 				}
 				continue;
 			case ID_TAG_HTML:
@@ -3227,8 +3219,7 @@ BOOL common_util_set_properties(int table_type,
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count].err = ecError;
-					pproblems->count ++;
+					pproblems->pproblem[pproblems->count++].err = ecError;
 				}
 				continue;
 			case ID_TAG_TRANSPORTMESSAGEHEADERS:
@@ -3258,8 +3249,7 @@ BOOL common_util_set_properties(int table_type,
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count].err = ecError;
-					pproblems->count ++;
+					pproblems->pproblem[pproblems->count++].err = ecError;
 				}
 				continue;
 			}
@@ -3300,8 +3290,7 @@ BOOL common_util_set_properties(int table_type,
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count].err = ecError;
-					pproblems->count ++;
+					pproblems->pproblem[pproblems->count++].err = ecError;
 				}
 				continue;
 			}
@@ -3497,8 +3486,7 @@ BOOL common_util_set_properties(int table_type,
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 							ppropvals->ppropval[i].proptag;
-			pproblems->pproblem[pproblems->count].err = ecNotSupported;
-			pproblems->count ++;
+			pproblems->pproblem[pproblems->count++].err = ecNotSupported;
 			sqlite3_reset(pstmt);
 			continue;
 		}
@@ -3507,8 +3495,7 @@ BOOL common_util_set_properties(int table_type,
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 							ppropvals->ppropval[i].proptag;
-			pproblems->pproblem[pproblems->count].err = ecError;
-			pproblems->count ++;
+			pproblems->pproblem[pproblems->count++].err = ecError;
 		}
 	}
 	return TRUE;
@@ -4245,8 +4232,7 @@ BOOL common_util_load_search_scopes(sqlite3 *psqlite,
 		return FALSE;
 	i = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		pfolder_ids->pll[i] = sqlite3_column_int64(pstmt, 0);
-		i ++;
+		pfolder_ids->pll[i++] = sqlite3_column_int64(pstmt, 0);
 	}
 	return TRUE;
 }
@@ -5298,8 +5284,7 @@ BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 		if (NULL == ptoken) {
 			goto NOT_FOUND_PROPNAME;
 		}
-		*ptoken = '\0';
-		ptoken ++;
+		*ptoken++ = '\0';
 		if (FALSE == guid_from_string(
 			&ppropnames->ppropname[i].guid, temp_name + 5)) {
 			goto NOT_FOUND_PROPNAME;

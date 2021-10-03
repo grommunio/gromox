@@ -564,13 +564,9 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			return FALSE;
 		}
 		mid_val = sqlite3_column_int64(pstmt, 0);
-		pchg_mids->pids[pchg_mids->count] =
-			rop_util_make_eid_ex(1, mid_val);
-		pchg_mids->count ++;
+		pchg_mids->pids[pchg_mids->count++] = rop_util_make_eid_ex(1, mid_val);
 		if (TRUE == ics_hint_idset_cache(&cache, mid_val)) {
-			pupdated_mids->pids[pupdated_mids->count] =
-						rop_util_make_eid_ex(1, mid_val);
-			pupdated_mids->count ++;
+			pupdated_mids->pids[pupdated_mids->count++] = rop_util_make_eid_ex(1, mid_val);
 		}
 	}
 	pstmt.finalize();
@@ -660,9 +656,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
 			mid_val = sqlite3_column_int64(pstmt, 0);
-			pgiven_mids->pids[pgiven_mids->count] =
-					rop_util_make_eid_ex(1, mid_val);
-			pgiven_mids->count ++;
+			pgiven_mids->pids[pgiven_mids->count++] = rop_util_make_eid_ex(1, mid_val);
 		}
 		pstmt.finalize();
 	}
@@ -697,13 +691,9 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
 			mid_val = sqlite3_column_int64(pstmt, 0);
 			if (0 == sqlite3_column_int64(pstmt, 1)) {
-				punread_mids->pids[punread_mids->count] =
-						rop_util_make_eid_ex(1, mid_val);
-				punread_mids->count ++;
+				punread_mids->pids[punread_mids->count++] = rop_util_make_eid_ex(1, mid_val);
 			} else {
-				pread_mids->pids[pread_mids->count] =
-					rop_util_make_eid_ex(1, mid_val);
-				pread_mids->count ++;
+				pread_mids->pids[pread_mids->count++] = rop_util_make_eid_ex(1, mid_val);
 			}
 		}
 		pstmt.finalize();
@@ -742,8 +732,7 @@ static void ics_enum_hierarchy_replist(
 	REPLID_ARRAY *preplids, uint16_t replid)
 {
 	if (preplids->count < 1024) {
-		preplids->replids[preplids->count] = replid;
-		preplids->count ++;
+		preplids->replids[preplids->count++] = replid;
 	}
 }
 
@@ -941,11 +930,9 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 			    proptags.pproptag[j] == PR_LOCAL_COMMIT_TIME_MAX ||
 			    proptags.pproptag[j] == PR_HIERARCHY_CHANGE_NUM)
 				continue;
-			tmp_proptags[count] = proptags.pproptag[j];
-			count ++;
+			tmp_proptags[count++] = proptags.pproptag[j];
 		}
-		tmp_proptags[count] = PROP_TAG_PARENTFOLDERID;
-		count ++;
+		tmp_proptags[count++] = PROP_TAG_PARENTFOLDERID;
 		proptags.count = count;
 		proptags.pproptag = tmp_proptags;
 		if (FALSE == common_util_get_properties(
@@ -981,14 +968,13 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
 			fid_val = sqlite3_column_int64(pstmt, 0);
 			if (0 == (fid_val & 0xFF00000000000000ULL)) {
-				pgiven_fids->pids[pgiven_fids->count] =
+				pgiven_fids->pids[pgiven_fids->count++] =
 						rop_util_make_eid_ex(1, fid_val);
 			} else {
-				pgiven_fids->pids[pgiven_fids->count] =
+				pgiven_fids->pids[pgiven_fids->count++] =
 					rop_util_make_eid_ex(fid_val >> 48,
 					fid_val & 0x00FFFFFFFFFFFFFFULL);
 			}
-			pgiven_fids->count ++;
 		}
 		pstmt.finalize();
 	}

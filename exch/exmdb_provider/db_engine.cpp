@@ -569,8 +569,7 @@ static ID_ARRAYS* db_engine_classify_id_array(DOUBLE_LIST *plist)
 		for (pnode1=double_list_get_head(&psubnode->list); NULL!=pnode1;
 			pnode1=double_list_get_after(&psubnode->list, pnode1)) {
 			pidnode = (ID_NODE*)pnode1->pdata;
-			parrays->parray[i].pl[j] = pidnode->id;
-			j ++;
+			parrays->parray[i].pl[j++] = pidnode->id;
 		}
 		i ++;
 	}
@@ -718,8 +717,7 @@ static void *mdpeng_thrwork(void *param)
 								ptable = (TABLE_NODE*)pnode->pdata;
 								if (TABLE_TYPE_CONTENT == ptable->type &&
 									psearch->folder_id == ptable->folder_id) {
-									ptable_ids[table_num] = ptable->table_id;
-									table_num ++;
+									ptable_ids[table_num++] = ptable->table_id;
 								}
 							}
 						}
@@ -5071,8 +5069,7 @@ void db_engine_commit_batch_mode(db_item_ptr &&pdb)
 		ptable = (TABLE_NODE*)pnode->pdata;
 		if (TRUE == ptable->b_hint) {
 			if (NULL != ptable_ids) {
-				ptable_ids[table_num] = ptable->table_id;
-				table_num ++;
+				ptable_ids[table_num++] = ptable->table_id;
 			}
 			ptable->b_hint = FALSE;
 		}

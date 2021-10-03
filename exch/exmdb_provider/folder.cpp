@@ -195,8 +195,7 @@ BOOL exmdb_server_get_folder_class_table(
 		}
 		*(uint64_t*)ppropvals->ppropval[2].pvalue =
 					sqlite3_column_int64(pstmt, 2);
-		ptable->pparray[ptable->count] = ppropvals;
-		ptable->count ++;
+		ptable->pparray[ptable->count++] = ppropvals;
 	}
 	return TRUE;
 }

@@ -880,8 +880,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			           GX_ARRAY_SIZE(sql_string) - sql_len,
 						", inst_num INTEGER");
 		}
-		sql_string[sql_len] = ')';
-		sql_len ++;
+		sql_string[sql_len++] = ')';
 		sql_string[sql_len] = '\0';
 		if (SQLITE_OK != sqlite3_exec(psqlite,
 			sql_string, NULL, NULL, NULL)) {
@@ -920,8 +919,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			sql_len += gx_snprintf(sql_string + sql_len,
 			           GX_ARRAY_SIZE(sql_string) - sql_len, ", ?");
 		}
-		sql_string[sql_len] = ')';
-		sql_len ++;
+		sql_string[sql_len++] = ')';
 		sql_string[sql_len] = '\0';
 		pstmt1 = gx_sql_prep(psqlite, sql_string);
 		if (pstmt1 == nullptr)
@@ -2083,11 +2081,9 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 				}
 				pset->pparray[pset->count]->ppropval[count].proptag =
 													pproptags->pproptag[i];
-				pset->pparray[pset->count]->ppropval[count].pvalue = pvalue;
-				count ++;
+				pset->pparray[pset->count]->ppropval[count++].pvalue = pvalue;
 			}
-			pset->pparray[pset->count]->count = count;
-			pset->count ++;
+			pset->pparray[pset->count++]->count = count;
 		}
 		pstmt.finalize();
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
@@ -2198,11 +2194,9 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 				}
 				pset->pparray[pset->count]->ppropval[count].proptag =
 													pproptags->pproptag[i];
-				pset->pparray[pset->count]->ppropval[count].pvalue = pvalue;
-				count ++;
+				pset->pparray[pset->count]->ppropval[count++].pvalue = pvalue;
 			}
-			pset->pparray[pset->count]->count = count;
-			pset->count ++;
+			pset->pparray[pset->count++]->count = count;
 		}
 		pstmt.finalize();
 		pstmt1.finalize();
@@ -2266,16 +2260,13 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 				pset->pparray[pset->count]->ppropval[count].proptag =
 													pproptags->pproptag[i];
 				if (PROP_TAG_MEMBERNAME_STRING8 == pproptags->pproptag[i]) {
-					pset->pparray[pset->count]->ppropval[count].pvalue =
+					pset->pparray[pset->count]->ppropval[count++].pvalue =
 						common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
 				} else {
-					pset->pparray[pset->count]->ppropval[count].pvalue =
-																	pvalue;
+					pset->pparray[pset->count]->ppropval[count++].pvalue = pvalue;
 				}
-				count ++;
 			}
-			pset->pparray[pset->count]->count = count;
-			pset->count ++;
+			pset->pparray[pset->count++]->count = count;
 		}
 		break;
 	}
@@ -2332,15 +2323,12 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 													pproptags->pproptag[i];
 				if (pproptags->pproptag[i] == PR_RULE_NAME_A ||
 				    pproptags->pproptag[i] == PR_RULE_PROVIDER_A)
-					pset->pparray[pset->count]->ppropval[count].pvalue =
+					pset->pparray[pset->count]->ppropval[count++].pvalue =
 						common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
 				else
-					pset->pparray[pset->count]->ppropval[count].pvalue =
-																	pvalue;
-				count ++;
+					pset->pparray[pset->count]->ppropval[count++].pvalue = pvalue;
 			}
-			pset->pparray[pset->count]->count = count;
-			pset->count ++;
+			pset->pparray[pset->count++]->count = count;
 		}
 		break;
 	}
@@ -2687,8 +2675,7 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 						}
 					}
 					ppropvals->ppropval[count].proptag = pproptags->pproptag[i];
-					ppropvals->ppropval[count].pvalue = pvalue;
-					count ++;
+					ppropvals->ppropval[count++].pvalue = pvalue;
 				}
 				ppropvals->count = count;
 				break;
@@ -2796,8 +2783,7 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 						break;
 					}
 					ppropvals->ppropval[count].proptag = pproptags->pproptag[i];
-					ppropvals->ppropval[count].pvalue = pvalue;
-					count ++;
+					ppropvals->ppropval[count++].pvalue = pvalue;
 				}
 				ppropvals->count = count;
 				break;
@@ -2849,11 +2835,10 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 					ppropvals->ppropval[count].proptag = pproptags->pproptag[i];
 					if (pproptags->pproptag[i] == PR_RULE_NAME_A ||
 					    pproptags->pproptag[i] == PR_RULE_PROVIDER_A)
-						ppropvals->ppropval[count].pvalue =
+						ppropvals->ppropval[count++].pvalue =
 							common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
 					else
-						ppropvals->ppropval[count].pvalue = pvalue;
-					count ++;
+						ppropvals->ppropval[count++].pvalue = pvalue;
 				}
 				ppropvals->count = count;
 				break;
@@ -3030,8 +3015,7 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 				}
 			}
 			ppropvals->ppropval[count].proptag = pproptags->pproptag[i];
-			ppropvals->ppropval[count].pvalue = pvalue;
-			count ++;
+			ppropvals->ppropval[count++].pvalue = pvalue;
 		}
 		ppropvals->count = count;
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
@@ -3113,8 +3097,7 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 				break;
 			}
 			ppropvals->ppropval[count].proptag = pproptags->pproptag[i];
-			ppropvals->ppropval[count].pvalue = pvalue;
-			count ++;
+			ppropvals->ppropval[count++].pvalue = pvalue;
 		}
 		ppropvals->count = count;
 		pstmt.finalize();
@@ -3268,8 +3251,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		 for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
 			int_hash_iter_forward(iter)) {
 			int_hash_iter_get_value(iter, reinterpret_cast<int *>(&proptag));
-			tmp_proptags[pproptags->count] = proptag;
-			pproptags->count ++;
+			tmp_proptags[pproptags->count++] = proptag;
 		}
 		int_hash_iter_free(iter);
 		int_hash_free(phash);
@@ -3329,8 +3311,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		 for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
 			int_hash_iter_forward(iter)) {
 			int_hash_iter_get_value(iter, reinterpret_cast<int *>(&proptag));
-			tmp_proptags[pproptags->count] = proptag;
-			pproptags->count ++;
+			tmp_proptags[pproptags->count++] = proptag;
 		}
 		int_hash_iter_free(iter);
 		int_hash_free(phash);
@@ -3928,8 +3909,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			return FALSE;
 		}
 	}
-	sql_string[sql_len] = ')';
-	sql_len ++;
+	sql_string[sql_len++] = ')';
 	sql_string[sql_len] = '\0';
 	if (SQLITE_OK != sqlite3_exec(psqlite,
 		sql_string, NULL, NULL, NULL)) {
@@ -3951,8 +3931,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		sql_len += gx_snprintf(sql_string + sql_len,
 		           GX_ARRAY_SIZE(sql_string) - sql_len, ", ?");
 	}
-	sql_string[sql_len] = ')';
-	sql_len ++;
+	sql_string[sql_len++] = ')';
 	sql_string[sql_len] = '\0';
 	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr) {
