@@ -180,7 +180,7 @@ static void *mdpcl_scanwork(void *pparam)
 		std::unique_lock sv_hold(g_server_lock);
 		time(&now_time);
 		for (auto &srv : g_server_list) {
-			auto tail = &*srv.conn_list.rbegin();
+			auto tail = srv.conn_list.size() > 0 ? &srv.conn_list.back() : nullptr;
 			while (srv.conn_list.size() > 0) {
 				auto pconn = &srv.conn_list.front();
 				if (now_time - pconn->last_time >= SOCKET_TIMEOUT - 3)
