@@ -111,7 +111,7 @@ static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig)
 	}
 	try {
 		g_exrpc_debug = pconfig->get_ll("exrpc_debug");
-		g_enable_dam = pconfig->get_ll("enable_dam");
+		g_enable_dam = parse_bool(pconfig->get_value("enable_dam"));
 	} catch (const cfg_error &) {
 		return false;
 	}
