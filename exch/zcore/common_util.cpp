@@ -259,7 +259,7 @@ gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	tmp_level = -1;
 	propval_buff[4].proptag = PROP_TAG_SENDERSMTPADDRESS;
 	propval_buff[4].pvalue = deconst(account);
-	propval_buff[5].proptag = PROP_TAG_SENDERADDRESSTYPE;
+	propval_buff[5].proptag = PR_SENDER_ADDRTYPE;
 	propval_buff[5].pvalue  = deconst("EX");
 	if (!common_util_username_to_essdn(account, essdn_buff, GX_ARRAY_SIZE(essdn_buff)))
 		return GXERR_CALL_FAILED;
@@ -273,13 +273,13 @@ gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
 	}
 	search_bin.cb = gx_snprintf(search_buff, GX_ARRAY_SIZE(search_buff), "EX:%s", essdn_buff) + 1;
 	search_bin.pv = search_buff;
-	propval_buff[6].proptag = PROP_TAG_SENDEREMAILADDRESS;
+	propval_buff[6].proptag = PR_SENDER_EMAIL_ADDRESS;
 	propval_buff[6].pvalue = essdn_buff;
-	propval_buff[7].proptag = PROP_TAG_SENDERNAME;
+	propval_buff[7].proptag = PR_SENDER_NAME;
 	propval_buff[7].pvalue = tmp_display;
-	propval_buff[8].proptag = PROP_TAG_SENDERENTRYID;
+	propval_buff[8].proptag = PR_SENDER_ENTRYID;
 	propval_buff[8].pvalue = pentryid;
-	propval_buff[9].proptag = PROP_TAG_SENDERSEARCHKEY;
+	propval_buff[9].proptag = PR_SENDER_SEARCH_KEY;
 	propval_buff[9].pvalue = &search_bin;
 	if (0 != strcasecmp(account, representing_username)) {
 		if (!common_util_username_to_essdn(representing_username,

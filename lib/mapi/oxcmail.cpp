@@ -1464,17 +1464,11 @@ static BOOL oxcmail_enum_mail_head(
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "Sender")) {
 		parse_mime_addr(&email_addr, field);
-		if (FALSE == oxcmail_parse_address(
-			penum_param->charset,
-			&email_addr, PROP_TAG_SENDERNAME,
-			PROP_TAG_SENDERADDRESSTYPE,
-			PROP_TAG_SENDEREMAILADDRESS,
-			PROP_TAG_SENDERSMTPADDRESS,
-			PROP_TAG_SENDERSEARCHKEY,
-			PROP_TAG_SENDERENTRYID,
-			&penum_param->pmsg->proplist)) {
+		if (!oxcmail_parse_address(penum_param->charset, &email_addr,
+		    PR_SENDER_NAME, PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS,
+		    PROP_TAG_SENDERSMTPADDRESS, PR_SENDER_SEARCH_KEY,
+		    PR_SENDER_ENTRYID, &penum_param->pmsg->proplist))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "Reply-To")) {
 		if (FALSE == oxcmail_parse_reply_to(
 			penum_param->charset, field,
@@ -1793,7 +1787,7 @@ static BOOL oxcmail_enum_mail_head(
 			tmp_int32 = 0;
 		}
 		if (0 != tmp_int32) {
-			propval.proptag = PROP_TAG_SENDERIDSTATUS;
+			propval.proptag = PR_SENDER_ID_STATUS;
 			propval.pvalue = &tmp_int32;
 			if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 				return FALSE;
@@ -4126,26 +4120,26 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		return NULL;
 	}
 	if (NULL == tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_SENDERNAME) &&
+		&pmsg->proplist, PR_SENDER_NAME) &&
 		NULL == tpropval_array_get_propval(
 		&pmsg->proplist, PROP_TAG_SENDERSMTPADDRESS)) {
-		if (!oxcmail_try_assign_propval(&pmsg->proplist, PROP_TAG_SENDERNAME, PR_SENT_REPRESENTING_NAME) ||
+		if (!oxcmail_try_assign_propval(&pmsg->proplist, PR_SENDER_NAME, PR_SENT_REPRESENTING_NAME) ||
 		    !oxcmail_try_assign_propval(&pmsg->proplist, PROP_TAG_SENDERSMTPADDRESS, PR_SENT_REPRESENTING_SMTP_ADDRESS) ||
-		    !oxcmail_try_assign_propval(&pmsg->proplist, PROP_TAG_SENDERADDRESSTYPE, PR_SENT_REPRESENTING_ADDRTYPE) ||
-		    !oxcmail_try_assign_propval(&pmsg->proplist, PROP_TAG_SENDEREMAILADDRESS, PR_SENT_REPRESENTING_EMAIL_ADDRESS) ||
-		    !oxcmail_try_assign_propval(&pmsg->proplist, PROP_TAG_SENDERSEARCHKEY, PR_SENT_REPRESENTING_SEARCH_KEY) ||
-		    !oxcmail_try_assign_propval(&pmsg->proplist, PROP_TAG_SENDERENTRYID, PR_SENT_REPRESENTING_ENTRYID)) {
+		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENDER_ADDRTYPE, PR_SENT_REPRESENTING_ADDRTYPE) ||
+		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENDER_EMAIL_ADDRESS, PR_SENT_REPRESENTING_EMAIL_ADDRESS) ||
+		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENDER_SEARCH_KEY, PR_SENT_REPRESENTING_SEARCH_KEY) ||
+		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENDER_ENTRYID, PR_SENT_REPRESENTING_ENTRYID)) {
 			message_content_free(pmsg);
 			return NULL;
 		}
 	} else if (tpropval_array_get_propval(&pmsg->proplist, PR_SENT_REPRESENTING_NAME) == nullptr &&
 	    tpropval_array_get_propval(&pmsg->proplist, PR_SENT_REPRESENTING_SMTP_ADDRESS) == nullptr) {
-		if (!oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_NAME, PROP_TAG_SENDERNAME) ||
+		if (!oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_NAME, PR_SENDER_NAME) ||
 		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_SMTP_ADDRESS, PROP_TAG_SENDERSMTPADDRESS) ||
-		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_ADDRTYPE, PROP_TAG_SENDERADDRESSTYPE) ||
-		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PROP_TAG_SENDEREMAILADDRESS) ||
-		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_SEARCH_KEY, PROP_TAG_SENDERSEARCHKEY) ||
-		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_ENTRYID, PROP_TAG_SENDERENTRYID)) {
+		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_ADDRTYPE, PR_SENDER_ADDRTYPE) ||
+		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENDER_EMAIL_ADDRESS) ||
+		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_SEARCH_KEY, PR_SENDER_SEARCH_KEY) ||
+		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_ENTRYID, PR_SENDER_ENTRYID)) {
 			message_content_free(pmsg);
 			return NULL;
 		}	
@@ -5168,12 +5162,9 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 	               PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (NULL != pvalue && NULL != pvalue1) {
 		if (strcasecmp(static_cast<char *>(pvalue), static_cast<char *>(pvalue1)) != 0) {
-			oxcmail_export_address(pmsg, alloc,
-				PROP_TAG_SENDERNAME,
-				PROP_TAG_SENDERADDRESSTYPE,
-				PROP_TAG_SENDEREMAILADDRESS,
-				PROP_TAG_SENDERSMTPADDRESS,
-				PROP_TAG_SENDERENTRYID,
+			oxcmail_export_address(pmsg, alloc, PR_SENDER_NAME,
+				PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS,
+				PROP_TAG_SENDERSMTPADDRESS, PR_SENDER_ENTRYID,
 				pskeleton->charset, tmp_field,
 				GX_ARRAY_SIZE(tmp_field));
 			if (FALSE == mime_set_field(phead,
@@ -5183,24 +5174,24 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 		}
 	} else {
 		pvalue = tpropval_array_get_propval(&pmsg->proplist,
-								PROP_TAG_SENDERADDRESSTYPE);
+		         PR_SENDER_ADDRTYPE);
 		pvalue1 = tpropval_array_get_propval(&pmsg->proplist,
 		          PR_SENT_REPRESENTING_ADDRTYPE);
 		if (NULL != pvalue && NULL != pvalue1 &&
 		    strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0 &&
 		    strcasecmp(static_cast<char *>(pvalue1), "SMTP") == 0) {
 			pvalue = tpropval_array_get_propval(&pmsg->proplist,
-									PROP_TAG_SENDEREMAILADDRESS);
+			         PR_SENDER_EMAIL_ADDRESS);
 			pvalue1 = tpropval_array_get_propval(&pmsg->proplist,
 			          PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 			if (NULL != pvalue && NULL != pvalue1) {
 				if (strcasecmp(static_cast<char *>(pvalue), static_cast<char *>(pvalue1)) != 0) {
 					oxcmail_export_address(pmsg, alloc,
-						PROP_TAG_SENDERNAME,
-						PROP_TAG_SENDERADDRESSTYPE,
-						PROP_TAG_SENDEREMAILADDRESS,
+						PR_SENDER_NAME,
+						PR_SENDER_ADDRTYPE,
+						PR_SENDER_EMAIL_ADDRESS,
 						PROP_TAG_SENDERSMTPADDRESS,
-						PROP_TAG_SENDERENTRYID,
+						PR_SENDER_ENTRYID,
 						pskeleton->charset, tmp_field,
 						GX_ARRAY_SIZE(tmp_field));
 					if (FALSE == mime_set_field(phead,
@@ -5220,12 +5211,9 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 			return FALSE;
 		}
 	} else {
-		if (TRUE == oxcmail_export_address(pmsg, alloc,
-			PROP_TAG_SENDERNAME,
-			PROP_TAG_SENDERADDRESSTYPE,
-			PROP_TAG_SENDEREMAILADDRESS,
-			PROP_TAG_SENDERSMTPADDRESS,
-			PROP_TAG_SENDERENTRYID,
+		if (oxcmail_export_address(pmsg, alloc, PR_SENDER_NAME,
+		    PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS,
+		    PROP_TAG_SENDERSMTPADDRESS, PR_SENDER_ENTRYID,
 		    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field))) {
 			if (FALSE == mime_set_field(phead,
 				"Sender", tmp_field)) {
@@ -5244,12 +5232,9 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 			PROP_TAG_READRECEIPTENTRYID,
 		    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field)) ||
 
-			TRUE == oxcmail_export_address(pmsg, alloc,
-			PROP_TAG_SENDERNAME,
-			PROP_TAG_SENDERADDRESSTYPE,
-			PROP_TAG_SENDEREMAILADDRESS,
-			PROP_TAG_SENDERSMTPADDRESS,
-			PROP_TAG_SENDERENTRYID,
+		    oxcmail_export_address(pmsg, alloc, PR_SENDER_NAME,
+		    PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS,
+		    PROP_TAG_SENDERSMTPADDRESS, PR_SENDER_ENTRYID,
 		    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field)) ||
 
 		    oxcmail_export_address(pmsg, alloc, PR_SENT_REPRESENTING_NAME,
@@ -5775,8 +5760,7 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_SENDERIDSTATUS);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_SENDER_ID_STATUS);
 	if (NULL != pvalue) {
 		switch (*(uint32_t*)pvalue) {
 		case 1:
@@ -6121,16 +6105,14 @@ static BOOL oxcmail_export_mdn(MESSAGE_CONTENT *pmsg,
 	pvalue = tpropval_array_get_propval(
 		&pmsg->proplist, PROP_TAG_SENDERSMTPADDRESS);
 	pdisplay_name = static_cast<char *>(tpropval_array_get_propval(
-	                &pmsg->proplist, PROP_TAG_SENDERNAME));
+	                &pmsg->proplist, PR_SENDER_NAME));
 	if (NULL != pvalue) {
 		gx_strlcpy(tmp_address, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_address));
 	} else {
-		pvalue = tpropval_array_get_propval(
-			&pmsg->proplist, PROP_TAG_SENDERADDRESSTYPE);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_SENDER_ADDRTYPE);
 		if (pvalue != nullptr &&
 		    strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-			pvalue = tpropval_array_get_propval(
-				&pmsg->proplist, PROP_TAG_SENDEREMAILADDRESS);
+			pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_SENDER_EMAIL_ADDRESS);
 			if (NULL != pvalue) {
 				gx_strlcpy(tmp_address, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_address));
 			}

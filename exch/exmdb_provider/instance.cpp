@@ -1717,20 +1717,19 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 		}
 	}
 	pbin = static_cast<BINARY *>(tpropval_array_get_propval(
-	       &pmsgctnt->proplist, PROP_TAG_SENDERENTRYID));
-	if (NULL != pbin && NULL == tpropval_array_get_propval(
-		&pmsgctnt->proplist, PROP_TAG_SENDEREMAILADDRESS)) {
-		auto pvalue = tpropval_array_get_propval(
-			&pmsgctnt->proplist, PROP_TAG_SENDERADDRESSTYPE);
+	       &pmsgctnt->proplist, PR_SENDER_ENTRYID));
+	if (pbin != nullptr && tpropval_array_get_propval(&pmsgctnt->proplist,
+	    PR_SENDER_EMAIL_ADDRESS) == nullptr) {
+		auto pvalue = tpropval_array_get_propval(&pmsgctnt->proplist, PR_SENDER_ADDRTYPE);
 		if (NULL == pvalue) {
 			if (common_util_parse_addressbook_entryid(pbin,
 			    address_type, GX_ARRAY_SIZE(address_type),
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
-				propval.proptag = PROP_TAG_SENDERADDRESSTYPE;
+				propval.proptag = PR_SENDER_ADDRTYPE;
 				propval.pvalue = address_type;
 				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
 					return FALSE;
-				propval.proptag = PROP_TAG_SENDEREMAILADDRESS;
+				propval.proptag = PR_SENDER_EMAIL_ADDRESS;
 				propval.pvalue = tmp_buff;
 				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
 					return FALSE;
@@ -1738,7 +1737,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 		} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
 			if (common_util_addressbook_entryid_to_essdn(pbin,
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
-				propval.proptag = PROP_TAG_SENDEREMAILADDRESS;
+				propval.proptag = PR_SENDER_EMAIL_ADDRESS;
 				propval.pvalue = tmp_buff;
 				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
 					return FALSE;
@@ -1746,7 +1745,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
 			if (common_util_addressbook_entryid_to_username(pbin,
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
-				propval.proptag = PROP_TAG_SENDEREMAILADDRESS;
+				propval.proptag = PR_SENDER_EMAIL_ADDRESS;
 				propval.pvalue = tmp_buff;
 				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
 					return FALSE;

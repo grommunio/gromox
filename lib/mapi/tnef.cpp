@@ -1325,9 +1325,9 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			break;
 		case ATTRIBUTE_ID_FROM:
 			if (!tnef_set_attribute_address(&pmsg->proplist,
-			    PROP_TAG_SENDERNAME_STRING8,
-			    PROP_TAG_SENDERADDRESSTYPE_STRING8,
-			    PROP_TAG_SENDEREMAILADDRESS_STRING8,
+			    PR_SENDER_NAME_A,
+			    PR_SENDER_ADDRTYPE_A,
+			    PR_SENDER_EMAIL_ADDRESS_A,
 			    static_cast<ATTR_ADDR *>(attribute.pvalue))) {
 				str_hash_free(phash);
 				message_content_free(pmsg);
@@ -2364,9 +2364,9 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	tmp_proptags.count ++;
 	/* ATTRIBUTE_ID_FROM */
 	if (TRUE == b_embedded) {
-		pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENDERNAME_STRING8);
-		auto pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENDERADDRESSTYPE_STRING8);
-		auto pvalue2 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENDEREMAILADDRESS_STRING8);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_SENDER_NAME_A);
+		auto pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PR_SENDER_ADDRTYPE_A);
+		auto pvalue2 = tpropval_array_get_propval(&pmsg->proplist, PR_SENDER_EMAIL_ADDRESS_A);
 		if (NULL != pvalue && NULL != pvalue1 && NULL != pvalue2) {
 			attribute.attr_id = ATTRIBUTE_ID_FROM;
 			attribute.lvl = LVL_MESSAGE;

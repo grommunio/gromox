@@ -1519,7 +1519,7 @@ static BOOL oxcical_parse_organizer(std::shared_ptr<ICAL_LINE> piline,
 		propval.pvalue = deconst(pdisplay_name);
 		if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 			return FALSE;
-		propval.proptag = PROP_TAG_SENDERNAME;
+		propval.proptag = PR_SENDER_NAME;
 		propval.pvalue = deconst(pdisplay_name);
 		if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 			return FALSE;
@@ -1549,11 +1549,11 @@ static BOOL oxcical_parse_organizer(std::shared_ptr<ICAL_LINE> piline,
 	propval.pvalue = &tmp_bin;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	propval.proptag = PROP_TAG_SENDERADDRESSTYPE;
+	propval.proptag = PR_SENDER_ADDRTYPE;
 	propval.pvalue  = deconst("SMTP");
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	propval.proptag = PROP_TAG_SENDEREMAILADDRESS;
+	propval.proptag = PR_SENDER_EMAIL_ADDRESS;
 	propval.pvalue = deconst(paddress);
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
@@ -1561,7 +1561,7 @@ static BOOL oxcical_parse_organizer(std::shared_ptr<ICAL_LINE> piline,
 	propval.pvalue = deconst(paddress);
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	propval.proptag = PROP_TAG_SENDERENTRYID;
+	propval.proptag = PR_SENDER_ENTRYID;
 	propval.pvalue = &tmp_bin;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;

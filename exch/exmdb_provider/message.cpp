@@ -1836,7 +1836,6 @@ static BOOL message_rectify_message(const char *account,
 	const MESSAGE_CONTENT *pmsgctnt, MESSAGE_CONTENT *pmsgctnt1)
 {
 	int i;
-	void *pvalue;
 	BINARY *pbin;
 	BINARY *pbin1;
 	GUID tmp_guid;
@@ -1933,7 +1932,7 @@ static BOOL message_rectify_message(const char *account,
 		else
 			++pc;
 		strncpy(cid_string + 33, pc, 128);
-		pvalue = common_util_dup(cid_string);
+		auto pvalue = common_util_dup(cid_string);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -1944,8 +1943,7 @@ static BOOL message_rectify_message(const char *account,
 	}
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_CREATORNAME)) {
-		pvalue = common_util_get_propvals(
-			&pmsgctnt->proplist, PROP_TAG_SENDERNAME);
+		auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_SENDER_NAME);
 		if (NULL == pvalue) {
 			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
 			         PR_SENT_REPRESENTING_NAME);
@@ -1959,8 +1957,7 @@ static BOOL message_rectify_message(const char *account,
 	}
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_CREATORENTRYID)) {
-		pvalue = common_util_get_propvals(
-			&pmsgctnt->proplist, PROP_TAG_SENDERENTRYID);
+		auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_SENDER_ENTRYID);
 		if (NULL == pvalue) {
 			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
 			         PR_SENT_REPRESENTING_ENTRYID);
@@ -1974,8 +1971,7 @@ static BOOL message_rectify_message(const char *account,
 	}
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_LASTMODIFIERNAME)) {
-		pvalue = common_util_get_propvals(
-			&pmsgctnt->proplist, PROP_TAG_SENDERNAME);
+		auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_SENDER_NAME);
 		if (NULL == pvalue) {
 			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
 			         PR_SENT_REPRESENTING_NAME);
@@ -1989,8 +1985,7 @@ static BOOL message_rectify_message(const char *account,
 	}
 	if (NULL == common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_LASTMODIFIERENTRYID)) {
-		pvalue = common_util_get_propvals(
-			&pmsgctnt->proplist, PROP_TAG_SENDERENTRYID);
+		auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_SENDER_ENTRYID);
 		if (NULL == pvalue) {
 			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
 			         PR_SENT_REPRESENTING_ENTRYID);
@@ -2015,8 +2010,8 @@ static BOOL message_rectify_message(const char *account,
 		pbin->pv = common_util_alloc(16);
 		if (pbin->pv == nullptr)
 			return FALSE;
-		pvalue = common_util_get_propvals(
-			&pmsgctnt->proplist, PROP_TAG_CONVERSATIONTOPIC);
+		auto pvalue = common_util_get_propvals(&pmsgctnt->proplist,
+		              PROP_TAG_CONVERSATIONTOPIC);
 		if (NULL != pvalue && '\0' != ((uint8_t*)pvalue)[0]) {
 			if (!message_md5_string(static_cast<char *>(pvalue), pbin->pb))
 				return false;
@@ -2058,8 +2053,8 @@ static BOOL message_rectify_message(const char *account,
 		pmsgctnt1->proplist.count ++;
 		++vc;
 	}
-	pvalue = common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_CONVERSATIONTOPIC);
+	auto pvalue = common_util_get_propvals(&pmsgctnt->proplist,
+	              PROP_TAG_CONVERSATIONTOPIC);
 	if (NULL == pvalue) {
 		pvalue = common_util_get_propvals(&pmsgctnt->proplist,
 						PROP_TAG_CONVERSATIONTOPIC_STRING8);

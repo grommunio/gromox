@@ -53,7 +53,7 @@ static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	propval_buff[3].pvalue = &pinfo->lcid_string;
 	propval_buff[4].proptag = PROP_TAG_SENDERSMTPADDRESS;
 	propval_buff[4].pvalue = (void*)account;
-	propval_buff[5].proptag = PROP_TAG_SENDERADDRESSTYPE;
+	propval_buff[5].proptag = PR_SENDER_ADDRTYPE;
 	propval_buff[5].pvalue  = deconst("EX");
 	if (!common_util_username_to_essdn(account, essdn_buff, GX_ARRAY_SIZE(essdn_buff)))
 		return GXERR_CALL_FAILED;
@@ -66,13 +66,13 @@ static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	}
 	search_bin.cb = gx_snprintf(search_buff, GX_ARRAY_SIZE(search_buff), "EX:%s", essdn_buff) + 1;
 	search_bin.pv = search_buff;
-	propval_buff[6].proptag = PROP_TAG_SENDEREMAILADDRESS;
+	propval_buff[6].proptag = PR_SENDER_EMAIL_ADDRESS;
 	propval_buff[6].pvalue = essdn_buff;
-	propval_buff[7].proptag = PROP_TAG_SENDERNAME;
+	propval_buff[7].proptag = PR_SENDER_NAME;
 	propval_buff[7].pvalue = tmp_display;
-	propval_buff[8].proptag = PROP_TAG_SENDERENTRYID;
+	propval_buff[8].proptag = PR_SENDER_ENTRYID;
 	propval_buff[8].pvalue = pentryid;
-	propval_buff[9].proptag = PROP_TAG_SENDERSEARCHKEY;
+	propval_buff[9].proptag = PR_SENDER_SEARCH_KEY;
 	propval_buff[9].pvalue = &search_bin;
 	if (0 != strcasecmp(account, representing_username)) {
 		if (!common_util_username_to_essdn(representing_username,
@@ -638,9 +638,9 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 	if (NULL != *pppropvals) {
 		proptags.count = 7;
 		proptags.pproptag = proptag_buff;
-		proptag_buff[0] = PROP_TAG_SENDERNAME;
-		proptag_buff[1] = PROP_TAG_SENDERENTRYID;	
-		proptag_buff[2] = PROP_TAG_SENDERSEARCHKEY;
+		proptag_buff[0] = PR_SENDER_NAME;
+		proptag_buff[1] = PR_SENDER_ENTRYID;	
+		proptag_buff[2] = PR_SENDER_SEARCH_KEY;
 		proptag_buff[3] = PR_SENT_REPRESENTING_NAME;
 		proptag_buff[4] = PR_SENT_REPRESENTING_ENTRYID;
 		proptag_buff[5] = PR_SENT_REPRESENTING_SEARCH_KEY;
