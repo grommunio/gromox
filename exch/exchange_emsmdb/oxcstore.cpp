@@ -10,6 +10,7 @@
 #include "logon_object.h"
 #include "rop_processor.h"
 
+using namespace gromox;
 
 uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
     uint32_t store_stat, char *pessdn, size_t dnmax, uint64_t *pfolder_id,
@@ -335,9 +336,9 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows,
 	int object_type;
 	PROPTAG_ARRAY columns;
 	TARRAY_SET class_table;
-	uint32_t proptags[3] = {PROP_TAG_FOLDERID, PROP_TAG_MESSAGECLASS_STRING8, PR_LAST_MODIFICATION_TIME};
+	uint32_t proptags[] = {PROP_TAG_FOLDERID, PR_MESSAGE_CLASS_A, PR_LAST_MODIFICATION_TIME};
 	
-	columns.count = 3;
+	columns.count = arsizeof(proptags);
 	columns.pproptag = proptags;
 	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {

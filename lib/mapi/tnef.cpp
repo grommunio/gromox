@@ -1315,7 +1315,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			}
 			break;
 		case ATTRIBUTE_ID_ORIGNINALMESSAGECLASS:
-			propval.proptag = PROP_TAG_ORIGINALMESSAGECLASS_STRING8;
+			propval.proptag = PR_ORIG_MESSAGE_CLASS_A;
 			propval.pvalue = deconst(tnef_to_msgclass(static_cast<char *>(attribute.pvalue)));
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 				str_hash_free(phash);
@@ -1383,7 +1383,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 		}
 		case ATTRIBUTE_ID_MESSAGECLASS:
 			message_class = tnef_to_msgclass(static_cast<char *>(attribute.pvalue));
-			propval.proptag = PROP_TAG_MESSAGECLASS_STRING8;
+			propval.proptag = PR_MESSAGE_CLASS_A;
 			propval.pvalue = (char*)message_class;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 				str_hash_free(phash);
@@ -2386,11 +2386,11 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		}
 	}
 	/* ATTRIBUTE_ID_MESSAGECLASS */
-	message_class = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_MESSAGECLASS_STRING8));
+	message_class = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_CLASS_A));
 	if (NULL == message_class) {
-		message_class = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_MESSAGECLASS));
+		message_class = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_CLASS));
 		if (NULL == message_class) {
-			debug_info("[tnef]: cannot find PROP_TAG_MESSAGECLASS");
+			debug_info("[tnef]: cannot find PR_MESSAGE_CLASS");
 			return FALSE;
 		}
 	}
@@ -2401,14 +2401,10 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		pext, &attribute, alloc, get_propname)) {
 		return FALSE;
 	}
-	tmp_proptags.pproptag[tmp_proptags.count] =
-				PROP_TAG_MESSAGECLASS_STRING8;
-	tmp_proptags.count ++;
-	tmp_proptags.pproptag[tmp_proptags.count] =
-						PROP_TAG_MESSAGECLASS;
-	tmp_proptags.count ++;
+	tmp_proptags.pproptag[tmp_proptags.count++] = PR_MESSAGE_CLASS_A;
+	tmp_proptags.pproptag[tmp_proptags.count++] = PR_MESSAGE_CLASS;
 	/* ATTRIBUTE_ID_ORIGNINALMESSAGECLASS */
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_ORIGINALMESSAGECLASS_STRING8);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_ORIG_MESSAGE_CLASS_A);
 	if (NULL != pvalue) {
 		attribute.attr_id = ATTRIBUTE_ID_ORIGNINALMESSAGECLASS;
 		attribute.lvl = LVL_MESSAGE;
@@ -2417,12 +2413,8 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			pext, &attribute, alloc, get_propname)) {
 			return FALSE;
 		}
-		tmp_proptags.pproptag[tmp_proptags.count] =
-			PROP_TAG_ORIGINALMESSAGECLASS_STRING8;
-		tmp_proptags.count ++;
-		tmp_proptags.pproptag[tmp_proptags.count] =
-					PROP_TAG_ORIGINALMESSAGECLASS;
-		tmp_proptags.count ++;
+		tmp_proptags.pproptag[tmp_proptags.count++] = PR_ORIG_MESSAGE_CLASS_A;
+		tmp_proptags.pproptag[tmp_proptags.count++] = PR_ORIG_MESSAGE_CLASS;
 	}
 	/* ATTRIBUTE_ID_SUBJECT */
 	if (FALSE == b_embedded) {
@@ -2724,7 +2716,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			continue;
 		tnef_proplist.ppropval[tnef_proplist.count].propid =
 			PROP_ID(pmsg->proplist.ppropval[i].proptag);
-		if (PROP_TAG_MESSAGECLASS == pmsg->proplist.ppropval[i].proptag) {
+		if (pmsg->proplist.ppropval[i].proptag == PR_MESSAGE_CLASS) {
 			tnef_proplist.ppropval[tnef_proplist.count].proptype = PT_STRING8;
 		} else {
 			if (PROP_TAG_TNEFCORRELATIONKEY ==

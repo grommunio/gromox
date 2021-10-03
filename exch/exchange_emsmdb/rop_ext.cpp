@@ -11,6 +11,8 @@
 #include "rop_ext.h"
 #define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
 
+using namespace gromox;
+
 static int rop_ext_push_logon_time(EXT_PUSH *pext, const LOGON_TIME *r)
 {
 	TRY(pext->p_uint8(r->second));
@@ -157,9 +159,9 @@ static int rop_ext_push_getreceivefoldertable_response(
 	EXT_PUSH *pext, GETRECEIVEFOLDERTABLE_RESPONSE *r)
 {
 	PROPTAG_ARRAY columns;
-	uint32_t proptags[3] = {PROP_TAG_FOLDERID, PROP_TAG_MESSAGECLASS_STRING8, PR_LAST_MODIFICATION_TIME};
+	uint32_t proptags[] = {PROP_TAG_FOLDERID, PR_MESSAGE_CLASS_A, PR_LAST_MODIFICATION_TIME};
 	
-	columns.count = 3;
+	columns.count = arsizeof(proptags);
 	columns.pproptag = proptags;
 	TRY(pext->p_uint32(r->rows.count));
 	for (size_t i = 0; i < r->rows.count; ++i)

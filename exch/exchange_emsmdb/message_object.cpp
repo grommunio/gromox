@@ -257,8 +257,7 @@ BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t new_cpid)
 	propvals.ppropval[propvals.count].pvalue = pvalue;
 	propvals.count ++;
 	
-	propvals.ppropval[propvals.count].proptag =
-						PROP_TAG_DEFAULTPOSTMESSAGECLASS;
+	propvals.ppropval[propvals.count].proptag = PR_DEF_POST_MSGCLASS;
 	propvals.ppropval[propvals.count].pvalue  = deconst("IPM.Note");
 	propvals.count ++;
 	

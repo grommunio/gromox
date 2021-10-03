@@ -182,7 +182,7 @@ BOOL exmdb_server_get_folder_class_table(
 		}
 		*(uint64_t*)ppropvals->ppropval[0].pvalue =
 			rop_util_make_eid_ex(1, sqlite3_column_int64(pstmt, 1));
-		ppropvals->ppropval[1].proptag = PROP_TAG_MESSAGECLASS_STRING8;
+		ppropvals->ppropval[1].proptag = PR_MESSAGE_CLASS_A;
 		ppropvals->ppropval[1].pvalue =
 			common_util_dup(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0)));
 		if (NULL == ppropvals->ppropval[1].pvalue) {

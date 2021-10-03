@@ -184,7 +184,7 @@ MESSAGE_CONTENT* oxvcard_import(
 	if (NULL == pmsg) {
 		return NULL;
 	}
-	propval.proptag = PROP_TAG_MESSAGECLASS;
+	propval.proptag = PR_MESSAGE_CLASS;
 	propval.pvalue  = deconst("IPM.Contact");
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		goto IMPORT_FAILURE;

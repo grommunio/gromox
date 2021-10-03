@@ -1138,7 +1138,7 @@ static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
 	TAGGED_PROPVAL propval;
 	TAGGED_PROPVAL propval1;
 	
-	propval.proptag = PROP_TAG_MESSAGECLASS;
+	propval.proptag = PR_MESSAGE_CLASS;
 	if (0 == strcasecmp(field, "fax")) {
 		pmime = mail_get_head(pmail);
 		if (0 != strcasecmp("multipart/mixed",
@@ -1765,8 +1765,8 @@ static BOOL oxcmail_enum_mail_head(
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "X-Payload-Class")) {
 		propval.proptag = oxcmail_check_ascii(field) ?
-		                  PROP_TAG_ATTACHPAYLOADCLASS :
-		                  PROP_TAG_ATTACHPAYLOADCLASS_STRING8;
+		                  PR_ATTACH_PAYLOAD_CLASS :
+		                  PR_ATTACH_PAYLOAD_CLASS_A;
 		propval.pvalue = field;
 		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
@@ -3762,7 +3762,7 @@ static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 		strcpy(tmp_buff, "REPORT.IPM.Note.NDR");
 		break;
 	}
-	propval.proptag = PROP_TAG_MESSAGECLASS;
+	propval.proptag = PR_MESSAGE_CLASS;
 	propval.pvalue = tmp_buff;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		dsn_free(&dsn);
@@ -3821,7 +3821,7 @@ static bool oxcmail_enum_mdn(const char *tag,
 		} else {
 			return true;
 		}
-		propval.proptag = PROP_TAG_MESSAGECLASS;
+		propval.proptag = PR_MESSAGE_CLASS;
 		propval.pvalue = tmp_buff;
 		if (!tpropval_array_set_propval(&mcparam->proplist, &propval))
 			return false;
@@ -4098,7 +4098,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		return NULL;
 	}
 	/* set default message class */
-	propval.proptag = PROP_TAG_MESSAGECLASS;
+	propval.proptag = PR_MESSAGE_CLASS;
 	propval.pvalue  = deconst("IPM.Note");
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
@@ -4345,7 +4345,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		}
 	} else if (0 == strcasecmp("multipart/signed",
 		mime_get_content_type(phead))) {
-		propval.proptag = PROP_TAG_MESSAGECLASS;
+		propval.proptag = PR_MESSAGE_CLASS;
 		propval.pvalue  = deconst("IPM.Note.SMIME.MultipartSigned");
 		if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 			message_content_free(pmsg);
@@ -4356,7 +4356,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		mime_get_content_type(phead)) ||
 		0 == strcasecmp("application/x-pkcs7-mime",
 		mime_get_content_type(phead))) {
-		propval.proptag = PROP_TAG_MESSAGECLASS;
+		propval.proptag = PR_MESSAGE_CLASS;
 		propval.pvalue  = deconst("IPM.Note.SMIME");
 		if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 			message_content_free(pmsg);
@@ -4558,8 +4558,8 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		return NULL;
 	}
 	if (NULL != mime_enum.pcalendar) {
-		if (NULL == tpropval_array_get_propval(
-			&pmsg1->proplist, PROP_TAG_MESSAGECLASS)) {
+		if (tpropval_array_get_propval(&pmsg1->proplist,
+		    PR_MESSAGE_CLASS) == nullptr) {
 			/* multiple calendar objects in attachment list */
 			if (NULL != pmsg1->children.pattachments) {
 				if (FALSE == oxcmail_merge_message_attachments(
@@ -5058,10 +5058,10 @@ static BOOL oxcmail_load_mime_skeleton(
 	memset(pskeleton, 0, sizeof(MIME_SKELETON));
 	pskeleton->charset = pcharset;
 	pskeleton->pmessage_class = static_cast<char *>(tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_MESSAGECLASS));
+	                            &pmsg->proplist, PR_MESSAGE_CLASS));
 	if (NULL == pskeleton->pmessage_class) {
 		pskeleton->pmessage_class = static_cast<char *>(tpropval_array_get_propval(
-			&pmsg->proplist, PROP_TAG_MESSAGECLASS_STRING8));
+		                            &pmsg->proplist, PR_MESSAGE_CLASS_A));
 	}
 	if (NULL == pskeleton->pmessage_class) {
 		debug_info("[oxcmail]: missing message class for exporting");
@@ -6413,7 +6413,6 @@ static BOOL oxcmail_export_attachment(
 	char *pbuff;
 	int tmp_len;
 	VCARD vcard;
-	void *pvalue;
 	BOOL b_vcard;
 	size_t offset;
 	time_t tmp_time;
@@ -6429,9 +6428,7 @@ static BOOL oxcmail_export_attachment(
 	
 	b_vcard = FALSE;
 	if (NULL != pattachment->pembedded) {
-		pvalue = tpropval_array_get_propval(
-			&pattachment->pembedded->proplist,
-			PROP_TAG_MESSAGECLASS);
+		auto pvalue = tpropval_array_get_propval(&pattachment->pembedded->proplist, PR_MESSAGE_CLASS);
 		if (pvalue != nullptr &&
 		    strcasecmp(static_cast<char *>(pvalue), "IPM.Contact") == 0)
 			b_vcard = TRUE;
@@ -6448,8 +6445,7 @@ static BOOL oxcmail_export_attachment(
 			             &pattachment->proplist, PR_ATTACH_FILENAME));
 		}
 		if (NULL == pcontent_type) {
-			pvalue = tpropval_array_get_propval(
-			         &pattachment->proplist, PR_ATTACH_EXTENSION);
+			auto pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_EXTENSION);
 			if (NULL != pvalue) {
 				pcontent_type = oxcmail_extension_to_mime(static_cast<char *>(pvalue) + 1);
 			}
@@ -6502,7 +6498,7 @@ static BOOL oxcmail_export_attachment(
 		}
 	}
 	
-	pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_DISPLAY_NAME);
+	auto pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_DISPLAY_NAME);
 	if (NULL != pvalue) {
 		tmp_len = oxcmail_encode_mime_string(pskeleton->charset,
 		          static_cast<char *>(pvalue), tmp_field, 1024);
@@ -7088,9 +7084,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 	for (i=0; i<pmsg->children.pattachments->count; i++) {
 		pattachment = pmsg->children.pattachments->pplist[i];
 		if (NULL != pattachment->pembedded) {
-			pvalue = tpropval_array_get_propval(
-				&pattachment->pembedded->proplist,
-				PROP_TAG_MESSAGECLASS);
+			pvalue = tpropval_array_get_propval(&pattachment->pembedded->proplist, PR_MESSAGE_CLASS);
 			if (pvalue != nullptr && strcasecmp(static_cast<char *>(pvalue),
 			    "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}") == 0)
 				continue;

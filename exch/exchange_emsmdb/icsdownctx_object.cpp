@@ -1028,7 +1028,7 @@ static void icsdownctx_object_trim_report_recipients(
 	ATTACHMENT_CONTENT *pattachment;
 	
 	auto pvalue = static_cast<const char *>(common_util_get_propvals(
-	              &pmsgctnt->proplist, PROP_TAG_MESSAGECLASS));
+	              &pmsgctnt->proplist, PR_MESSAGE_CLASS));
 	if (NULL != pvalue && 0 == strncasecmp(
 		pvalue, "REPORT.IPM.Note.", 16)) {
 		pmsgctnt->children.prcpts = NULL;

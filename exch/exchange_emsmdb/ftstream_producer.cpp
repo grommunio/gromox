@@ -394,9 +394,8 @@ static BOOL ftstream_producer_write_propvalue(
 	/* ignore PT_SVREID */
 	if (proptype == PT_SVREID)
 		return TRUE;
-	if (PROP_TAG_MESSAGECLASS == ppropval->proptag) {
+	if (ppropval->proptag == PR_MESSAGE_CLASS)
 		proptype = PT_STRING8;
-	}
 	write_type = proptype;
 	/* META_TAG_IDSETGIVEN, MS-OXCFXICS 3.2.5.2.1 */
 	if (0x4017 == propid) {

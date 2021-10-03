@@ -384,14 +384,13 @@ static void zarafa_server_notification_proc(const char *dir,
 		pnew_mail->parentid = *pbin;
 		proptags.count = 2;
 		proptags.pproptag = proptag_buff;
-		proptag_buff[0] = PROP_TAG_MESSAGECLASS;
+		proptag_buff[0] = PR_MESSAGE_CLASS;
 		proptag_buff[1] = PR_MESSAGE_FLAGS;
 		if (!exmdb_client::get_message_properties(dir,
 			NULL, 0, message_id, &proptags, &propvals)) {
 			return;
 		}
-		pvalue = common_util_get_propvals(
-			&propvals, PROP_TAG_MESSAGECLASS);
+		pvalue = common_util_get_propvals(&propvals, PR_MESSAGE_CLASS);
 		if (pvalue == nullptr)
 			return;
 		pnew_mail->message_class = static_cast<char *>(pvalue);

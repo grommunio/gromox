@@ -2602,11 +2602,9 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof,
 			break;
 		}
 		message_id = sqlite3_column_int64(pstmt, 0);
-		if (FALSE == common_util_get_property(
-			MESSAGE_PROPERTIES_TABLE, message_id, 0,
-			psqlite, PROP_TAG_MESSAGECLASS, &pvalue)) {
+		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+		    message_id, 0, psqlite, PR_MESSAGE_CLASS, &pvalue))
 			return FALSE;
-		}
 		if (pvalue != nullptr && strcasecmp(static_cast<char *>(pvalue),
 		    "IPM.ExtendedRule.Message") != 0)
 			continue;
@@ -2867,7 +2865,7 @@ static BOOL message_make_deferred_error_message(
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_MESSAGECLASS;
+	propval.proptag = PR_MESSAGE_CLASS;
 	propval.pvalue  = deconst("IPC.Microsoft Exchange 4.0.Deferred Error");
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);
@@ -3061,8 +3059,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		*pb_result = FALSE;
 		return TRUE;
 	}
-	pvalue = common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_MESSAGECLASS);
+	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_MESSAGE_CLASS);
 	if (NULL == pvalue) {
 		*pb_result = FALSE;
 		return TRUE;
@@ -3541,7 +3538,7 @@ static BOOL message_make_deferred_action_message(const char *username,
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_MESSAGECLASS;
+	propval.proptag = PR_MESSAGE_CLASS;
 	propval.pvalue  = deconst("IPC.Microsoft Exchange 4.0.Deferred Action");
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 		message_content_free(pmsg);

@@ -870,10 +870,10 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 	const char *pdisplay_name;
 	
 	auto pmessage_class = static_cast<char *>(tpropval_array_get_propval(
-	                      &pmsg->proplist, PROP_TAG_MESSAGECLASS));
+	                      &pmsg->proplist, PR_MESSAGE_CLASS));
 	if (NULL == pmessage_class) {
 		pmessage_class = static_cast<char *>(tpropval_array_get_propval(
-		                 &pmsg->proplist, PROP_TAG_MESSAGECLASS_STRING8));
+		                 &pmsg->proplist, PR_MESSAGE_CLASS_A));
 	}
 	/* ignore ATTENDEE when METHOD is "PUBLIC" */
 	if (NULL == pmessage_class || 0 == strcasecmp(
@@ -1489,18 +1489,15 @@ static BOOL oxcical_parse_location(std::shared_ptr<ICAL_LINE> piline,
 static BOOL oxcical_parse_organizer(std::shared_ptr<ICAL_LINE> piline,
 	USERNAME_TO_ENTRYID username_to_entryid, MESSAGE_CONTENT *pmsg)
 {
-	void *pvalue;
 	BINARY tmp_bin;
 	uint8_t tmp_buff[1024];
 	const char *paddress;
 	TAGGED_PROPVAL propval;
 	const char *pdisplay_name;
 	
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_MESSAGECLASS);
+	auto pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_CLASS);
 	if (NULL == pvalue) {
-		pvalue = tpropval_array_get_propval(
-			&pmsg->proplist, PROP_TAG_MESSAGECLASS_STRING8);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_CLASS_A);
 	}
 	if (NULL == pvalue) {
 		return FALSE;
@@ -2914,7 +2911,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 				return FALSE;
 			}
 			attachment_content_set_embedded_internal(pattachment, pembedded);
-			propval.proptag = PROP_TAG_MESSAGECLASS;
+			propval.proptag = PR_MESSAGE_CLASS;
 			propval.pvalue  = deconst("IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}");
 			if (!tpropval_array_set_propval(&pembedded->proplist, &propval)) {
 				return FALSE;
@@ -3100,7 +3097,7 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
 			return FALSE;
 		}
 		attachment_content_set_embedded_internal(pattachment, pembedded);
-		propval.proptag = PROP_TAG_MESSAGECLASS;
+		propval.proptag = PR_MESSAGE_CLASS;
 		propval.pvalue  = deconst("IPM.Appointment");
 		if (!tpropval_array_set_propval(&pembedded->proplist, &propval))
 			return FALSE;
@@ -3220,7 +3217,7 @@ MESSAGE_CONTENT* oxcical_import(
 	if (!oxcical_classify_calendar(deconst(pical), events_list) ||
 	    events_list.size() == 0)
 		goto IMPORT_FAILURE;
-	propval.proptag = PROP_TAG_MESSAGECLASS;
+	propval.proptag = PR_MESSAGE_CLASS;
 	piline = const_cast<ICAL *>(pical)->get_line("METHOD");
 	propval.pvalue = deconst("IPM.Appointment");
 	if (NULL != piline) {
@@ -3661,7 +3658,6 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 	MESSAGE_CONTENT *pmsg)
 {
 	BOOL b_rsvp;
-	void *pvalue;
 	std::shared_ptr<ICAL_LINE> piline;
 	char username[UADDR_SIZE];
 	char tmp_value[334];
@@ -3671,11 +3667,9 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 	if (NULL == pmsg->children.prcpts) {
 		return TRUE;
 	}
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_MESSAGECLASS);
+	auto pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_CLASS);
 	if (NULL == pvalue) {
-		pvalue = tpropval_array_get_propval(
-			&pmsg->proplist, PROP_TAG_MESSAGECLASS_STRING8);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_CLASS_A);
 	}
 	if (NULL == pvalue) {
 		return FALSE;
@@ -4556,11 +4550,9 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		planguage = lcid_to_ltag(*(uint32_t*)pvalue);
 	}
 	
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_MESSAGECLASS);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_CLASS);
 	if (NULL == pvalue) {
-		pvalue = tpropval_array_get_propval(
-			&pmsg->proplist, PROP_TAG_MESSAGECLASS_STRING8);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_CLASS_A);
 	}
 	if (NULL == pvalue) {
 		return FALSE;
@@ -5550,13 +5542,9 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				continue;
 			}
 			pembedded = pmsg->children.pattachments->pplist[i]->pembedded;
-			pvalue = tpropval_array_get_propval(
-							&pembedded->proplist,
-							PROP_TAG_MESSAGECLASS);
+			pvalue = tpropval_array_get_propval(&pembedded->proplist, PR_MESSAGE_CLASS);
 			if (NULL == pvalue) {
-				pvalue = tpropval_array_get_propval(
-							&pembedded->proplist,
-							PROP_TAG_MESSAGECLASS_STRING8);
+				pvalue = tpropval_array_get_propval(&pembedded->proplist, PR_MESSAGE_CLASS_A);
 			}
 			if (pvalue == nullptr || strcasecmp(static_cast<char *>(pvalue),
 			    "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}"))

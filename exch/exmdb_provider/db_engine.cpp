@@ -2477,12 +2477,10 @@ void db_engine_notify_new_mail(db_item_ptr &pdb,
 		    &pvalue) || pvalue == nullptr)
 			return;
 		pnew_mail->message_flags = *(uint32_t*)pvalue;
-		if (FALSE == common_util_get_property(
-			MESSAGE_PROPERTIES_TABLE, message_id,
-			0, pdb->psqlite, PROP_TAG_MESSAGECLASS,
-			&pvalue) || NULL == pvalue) {
+		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+		    message_id, 0, pdb->psqlite, PR_MESSAGE_CLASS, &pvalue) ||
+		    pvalue == nullptr)
 			return;
-		}
 		pnew_mail->pmessage_class = static_cast<char *>(pvalue);
 		parrays = db_engine_classify_id_array(&tmp_list);
 		if (NULL == parrays) {
