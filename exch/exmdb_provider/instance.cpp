@@ -1552,7 +1552,6 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
     const char *account, gxerr_t *pe_result)
 {
 	int i;
-	BINARY *pbin;
 	uint32_t *pcpid;
 	uint64_t folder_id;
 	char tmp_buff[1024];
@@ -1637,8 +1636,8 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 	}
 	if ((pinstance->change_mask & CHANGE_MASK_HTML) &&
 		0 == (pinstance->change_mask & CHANGE_MASK_BODY)) {
-		pbin = static_cast<BINARY *>(tpropval_array_get_propval(
-		       &static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, PROP_TAG_HTML));
+		auto pbin = static_cast<BINARY *>(tpropval_array_get_propval(
+		            &static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, PROP_TAG_HTML));
 		pcpid = static_cast<uint32_t *>(tpropval_array_get_propval(
 		        &static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, PR_INTERNET_CPID));
 		if (NULL != pbin && NULL != pcpid) {
@@ -1679,21 +1678,22 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 		return FALSE;	
 	}
 	std::unique_ptr<MESSAGE_CONTENT, msg_delete> upmsgctnt(pmsgctnt);
-	pbin = static_cast<BINARY *>(tpropval_array_get_propval(&pmsgctnt->proplist,
-	       PROP_TAG_SENTREPRESENTINGENTRYID));
-	if (NULL != pbin && NULL == tpropval_array_get_propval(
-		&pmsgctnt->proplist, PROP_TAG_SENTREPRESENTINGEMAILADDRESS)) {
+	auto pbin = static_cast<BINARY *>(tpropval_array_get_propval(&pmsgctnt->proplist,
+	            PR_SENT_REPRESENTING_ENTRYID));
+	if (pbin != nullptr &&
+	    tpropval_array_get_propval(&pmsgctnt->proplist,
+	    PR_SENT_REPRESENTING_EMAIL_ADDRESS) == nullptr) {
 		auto pvalue = tpropval_array_get_propval(&pmsgctnt->proplist,
-						PROP_TAG_SENTREPRESENTINGADDRESSTYPE);
+		              PR_SENT_REPRESENTING_ADDRTYPE);
 		if (NULL == pvalue) {
 			if (common_util_parse_addressbook_entryid(pbin,
 			    address_type, GX_ARRAY_SIZE(address_type),
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
-				propval.proptag = PROP_TAG_SENTREPRESENTINGADDRESSTYPE;
+				propval.proptag = PR_SENT_REPRESENTING_ADDRTYPE;
 				propval.pvalue = address_type;
 				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
 					return FALSE;
-				propval.proptag = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
+				propval.proptag = PR_SENT_REPRESENTING_EMAIL_ADDRESS;
 				propval.pvalue = tmp_buff;
 				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
 					return FALSE;
@@ -1701,7 +1701,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 		} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
 			if (common_util_addressbook_entryid_to_essdn(pbin,
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
-				propval.proptag = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
+				propval.proptag = PR_SENT_REPRESENTING_EMAIL_ADDRESS;
 				propval.pvalue = tmp_buff;
 				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
 					return FALSE;
@@ -1709,7 +1709,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
 			if (common_util_addressbook_entryid_to_username(pbin,
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
-				propval.proptag = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
+				propval.proptag = PR_SENT_REPRESENTING_EMAIL_ADDRESS;
 				propval.pvalue = tmp_buff;
 				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
 					return FALSE;

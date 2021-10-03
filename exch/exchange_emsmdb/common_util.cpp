@@ -1692,7 +1692,7 @@ void common_util_notify_receipt(const char *username,
 	DOUBLE_LIST rcpt_list;
 	
 	node.pdata = common_util_get_propvals(&pbrief->proplist,
-					PROP_TAG_SENTREPRESENTINGSMTPADDRESS);
+	             PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (NULL == node.pdata) {
 		return;
 	}

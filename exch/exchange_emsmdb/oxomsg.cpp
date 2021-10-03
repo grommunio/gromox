@@ -93,17 +93,17 @@ static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	}
 	search_bin1.cb = gx_snprintf(search_buff1, GX_ARRAY_SIZE(search_buff1), "EX:%s", essdn_buff1) + 1;
 	search_bin1.pv = search_buff1;
-	propval_buff[10].proptag = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
+	propval_buff[10].proptag = PR_SENT_REPRESENTING_SMTP_ADDRESS;
 	propval_buff[10].pvalue = (void*)representing_username;
-	propval_buff[11].proptag = PROP_TAG_SENTREPRESENTINGADDRESSTYPE;
+	propval_buff[11].proptag = PR_SENT_REPRESENTING_ADDRTYPE;
 	propval_buff[11].pvalue  = deconst("EX");
-	propval_buff[12].proptag = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
+	propval_buff[12].proptag = PR_SENT_REPRESENTING_EMAIL_ADDRESS;
 	propval_buff[12].pvalue = essdn_buff1;
-	propval_buff[13].proptag = PROP_TAG_SENTREPRESENTINGNAME;
+	propval_buff[13].proptag = PR_SENT_REPRESENTING_NAME;
 	propval_buff[13].pvalue = tmp_display1;
-	propval_buff[14].proptag = PROP_TAG_SENTREPRESENTINGENTRYID;
+	propval_buff[14].proptag = PR_SENT_REPRESENTING_ENTRYID;
 	propval_buff[14].pvalue = pentryid;
-	propval_buff[15].proptag = PROP_TAG_SENTREPRESENTINGSEARCHKEY;
+	propval_buff[15].proptag = PR_SENT_REPRESENTING_SEARCH_KEY;
 	propval_buff[15].pvalue = &search_bin1;
 	if (!pmessage->set_properties(&tmp_propvals, &tmp_problems))
 		return GXERR_CALL_FAILED;
@@ -118,10 +118,10 @@ static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size
 	
 	tmp_proptags.count = 4;
 	tmp_proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_SENTREPRESENTINGADDRESSTYPE;
-	proptag_buff[1] = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
-	proptag_buff[2] = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
-	proptag_buff[3] = PROP_TAG_SENTREPRESENTINGENTRYID;
+	proptag_buff[0] = PR_SENT_REPRESENTING_ADDRTYPE;
+	proptag_buff[1] = PR_SENT_REPRESENTING_EMAIL_ADDRESS;
+	proptag_buff[2] = PR_SENT_REPRESENTING_SMTP_ADDRESS;
+	proptag_buff[3] = PR_SENT_REPRESENTING_ENTRYID;
 	if (!pmessage->get_properties(0, &tmp_proptags, &tmp_propvals))
 		return FALSE;	
 	if (0 == tmp_propvals.count) {
@@ -129,18 +129,18 @@ static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size
 		return TRUE;
 	}
 	auto pvalue = common_util_get_propvals(&tmp_propvals,
-				PROP_TAG_SENTREPRESENTINGADDRESSTYPE);
+	              PR_SENT_REPRESENTING_ADDRTYPE);
 	if (NULL != pvalue) {
 		if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
 			pvalue = common_util_get_propvals(&tmp_propvals,
-						PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
+			         PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 			if (NULL != pvalue) {
 				return common_util_essdn_to_username(static_cast<char *>(pvalue),
 				       username, ulen);
 			}
 		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
 			pvalue = common_util_get_propvals(&tmp_propvals,
-						PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
+			         PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 			if (NULL != pvalue) {
 				gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
 				return TRUE;
@@ -148,13 +148,12 @@ static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size
 		}
 	}
 	pvalue = common_util_get_propvals(&tmp_propvals,
-				PROP_TAG_SENTREPRESENTINGSMTPADDRESS);
+	         PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (NULL != pvalue) {
 		gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
 		return TRUE;
 	}
-	pvalue = common_util_get_propvals(&tmp_propvals,
-					PROP_TAG_SENTREPRESENTINGENTRYID);
+	pvalue = common_util_get_propvals(&tmp_propvals, PR_SENT_REPRESENTING_ENTRYID);
 	if (NULL != pvalue) {
 		return common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
 		       username, ulen);
@@ -642,9 +641,9 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 		proptag_buff[0] = PROP_TAG_SENDERNAME;
 		proptag_buff[1] = PROP_TAG_SENDERENTRYID;	
 		proptag_buff[2] = PROP_TAG_SENDERSEARCHKEY;
-		proptag_buff[3] = PROP_TAG_SENTREPRESENTINGNAME;
-		proptag_buff[4] = PROP_TAG_SENTREPRESENTINGENTRYID;
-		proptag_buff[5] = PROP_TAG_SENTREPRESENTINGSEARCHKEY;
+		proptag_buff[3] = PR_SENT_REPRESENTING_NAME;
+		proptag_buff[4] = PR_SENT_REPRESENTING_ENTRYID;
+		proptag_buff[5] = PR_SENT_REPRESENTING_SEARCH_KEY;
 		proptag_buff[6] = PROP_TAG_PROVIDERSUBMITTIME;
 		if (!pmessage->get_properties(0, &proptags, *pppropvals))
 			*pppropvals = NULL;

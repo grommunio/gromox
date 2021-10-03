@@ -1259,9 +1259,9 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			break;
 		case ATTRIBUTE_ID_SENTFOR:
 			if (!tnef_set_attribute_address(&pmsg->proplist,
-			    PROP_TAG_SENTREPRESENTINGNAME_STRING8,
-			    PROP_TAG_SENTREPRESENTINGADDRESSTYPE_STRING8,
-			    PROP_TAG_SENTREPRESENTINGEMAILADDRESS_STRING8,
+			    PR_SENT_REPRESENTING_NAME_A,
+			    PR_SENT_REPRESENTING_ADDRTYPE_A,
+			    PR_SENT_REPRESENTING_EMAIL_ADDRESS_A,
 			    static_cast<ATTR_ADDR *>(attribute.pvalue))) {
 				str_hash_free(phash);
 				message_content_free(pmsg);
@@ -1269,7 +1269,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			}
 			break;
 		case ATTRIBUTE_ID_DELEGATE:
-			propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGENTRYID;
+			propval.proptag = PR_RCVD_REPRESENTING_ENTRYID;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 				str_hash_free(phash);
@@ -1557,10 +1557,10 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			"IPM.Schedule.Meeting.Request") ||
 			0 == strcasecmp(message_class,
 			"IPM.Schedule.Meeting.Canceled")) {
-			if (FALSE == tnef_set_attribute_address(&pmsg->proplist,
-				PROP_TAG_SENTREPRESENTINGNAME_STRING8,
-				PROP_TAG_SENTREPRESENTINGADDRESSTYPE_STRING8,
-				PROP_TAG_SENTREPRESENTINGEMAILADDRESS_STRING8, powner)) {
+			if (!tnef_set_attribute_address(&pmsg->proplist,
+			    PR_SENT_REPRESENTING_NAME_A,
+			    PR_SENT_REPRESENTING_ADDRTYPE_A,
+			    PR_SENT_REPRESENTING_EMAIL_ADDRESS_A, powner)) {
 				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
@@ -1571,10 +1571,10 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			"IPM.Schedule.Meeting.Resp.Neg") ||
 			0 == strcasecmp(message_class,
 			"IPM.Schedule.Meeting.Resp.Tent")) {
-			if (FALSE == tnef_set_attribute_address(&pmsg->proplist,
-				PROP_TAG_RECEIVEDREPRESENTINGNAME_STRING8,
-				PROP_TAG_RECEIVEDREPRESENTINGADDRESSTYPE_STRING8,
-				PROP_TAG_RECEIVEDREPRESENTINGEMAILADDRESS_STRING8, powner)) {
+			if (!tnef_set_attribute_address(&pmsg->proplist,
+			    PR_RCVD_REPRESENTING_NAME_A,
+			    PR_RCVD_REPRESENTING_ADDRTYPE_A,
+			    PR_RCVD_REPRESENTING_EMAIL_ADDRESS_A, powner)) {
 				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
@@ -2274,8 +2274,6 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	GET_PROPNAME get_propname)
 {
 	BOOL b_key;
-	void *pvalue1;
-	void *pvalue2;
 	BINARY tmp_bin;
 	BINARY key_bin;
 	uint8_t tmp_byte;
@@ -2344,7 +2342,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			tmp_byte |= FMS_READ;
 		}
 		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_CREATION_TIME);
-		pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PR_LAST_MODIFICATION_TIME);
+		auto pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PR_LAST_MODIFICATION_TIME);
 		if (NULL != pvalue && NULL != pvalue1 &&
 			*(uint64_t*)pvalue1 > *(uint64_t*)pvalue) {
 			tmp_byte |= FMS_MODIFIED;
@@ -2367,8 +2365,8 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	/* ATTRIBUTE_ID_FROM */
 	if (TRUE == b_embedded) {
 		pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENDERNAME_STRING8);
-		pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENDERADDRESSTYPE_STRING8);
-		pvalue2 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENDEREMAILADDRESS_STRING8);
+		auto pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENDERADDRESSTYPE_STRING8);
+		auto pvalue2 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENDEREMAILADDRESS_STRING8);
 		if (NULL != pvalue && NULL != pvalue1 && NULL != pvalue2) {
 			attribute.attr_id = ATTRIBUTE_ID_FROM;
 			attribute.lvl = LVL_MESSAGE;
@@ -2467,9 +2465,9 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		"IPM.Schedule.Meeting.Request") ||
 		0 == strcasecmp(message_class,
 		"IPM.Schedule.Meeting.Canceled")) {
-		pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENTREPRESENTINGNAME_STRING8);
-		pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENTREPRESENTINGADDRESSTYPE_STRING8);
-		pvalue2 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENTREPRESENTINGEMAILADDRESS_STRING8);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_SENT_REPRESENTING_NAME_A);
+		auto pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PR_SENT_REPRESENTING_ADDRTYPE_A);
+		auto pvalue2 = tpropval_array_get_propval(&pmsg->proplist, PR_SENT_REPRESENTING_EMAIL_ADDRESS_A);
 		if (NULL != pvalue && NULL != pvalue1 && NULL != pvalue2) {
 			attribute.attr_id = ATTRIBUTE_ID_OWNER;
 			attribute.lvl = LVL_MESSAGE;
@@ -2491,9 +2489,9 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		"IPM.Schedule.Meeting.Resp.Neg") ||
 		0 == strcasecmp(message_class,
 		"IPM.Schedule.Meeting.Resp.Tent")) {
-		pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_RECEIVEDREPRESENTINGNAME_STRING8);
-		pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_RECEIVEDREPRESENTINGADDRESSTYPE_STRING8);
-		pvalue2 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_RECEIVEDREPRESENTINGEMAILADDRESS_STRING8);
+		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_RCVD_REPRESENTING_NAME_A);
+		auto pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PR_RCVD_REPRESENTING_ADDRTYPE_A);
+		auto pvalue2 = tpropval_array_get_propval(&pmsg->proplist, PR_RCVD_REPRESENTING_EMAIL_ADDRESS_A);
 		if (NULL != pvalue && NULL != pvalue1 && NULL != pvalue2) {
 			attribute.attr_id = ATTRIBUTE_ID_OWNER;
 			attribute.lvl = LVL_MESSAGE;
@@ -2511,9 +2509,9 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		}
 	}
 	/* ATTRIBUTE_ID_SENTFOR */
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENTREPRESENTINGNAME_STRING8);
-	pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENTREPRESENTINGADDRESSTYPE_STRING8);
-	pvalue2 = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENTREPRESENTINGEMAILADDRESS_STRING8);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_SENT_REPRESENTING_NAME_A);
+	auto pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PR_SENT_REPRESENTING_ADDRTYPE_A);
+	auto pvalue2 = tpropval_array_get_propval(&pmsg->proplist, PR_SENT_REPRESENTING_EMAIL_ADDRESS_A);
 	if (NULL != pvalue && NULL != pvalue1 && NULL != pvalue2) {
 		attribute.attr_id = ATTRIBUTE_ID_SENTFOR;
 		attribute.lvl = LVL_MESSAGE;
@@ -2530,7 +2528,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		/* keep these properties for attMsgProps */
 	}
 	/* ATTRIBUTE_ID_DELEGATE */
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_RECEIVEDREPRESENTINGENTRYID);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_RCVD_REPRESENTING_ENTRYID);
 	if (NULL != pvalue) {
 		attribute.attr_id = ATTRIBUTE_ID_DELEGATE;
 		attribute.lvl = LVL_MESSAGE;
@@ -2539,9 +2537,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			pext, &attribute, alloc, get_propname)) {
 			return FALSE;
 		}
-		tmp_proptags.pproptag[tmp_proptags.count] =
-			PROP_TAG_RECEIVEDREPRESENTINGENTRYID;
-		tmp_proptags.count ++;
+		tmp_proptags.pproptag[tmp_proptags.count++] = PR_RCVD_REPRESENTING_ENTRYID;
 	}
 	/* ATTRIBUTE_ID_DATESTART */
 	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_STARTDATE);

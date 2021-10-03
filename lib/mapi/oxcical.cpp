@@ -1515,7 +1515,7 @@ static BOOL oxcical_parse_organizer(std::shared_ptr<ICAL_LINE> piline,
 	}
 	pdisplay_name = piline->get_first_paramval("CN");
 	if (NULL != pdisplay_name) {
-		propval.proptag = PROP_TAG_SENTREPRESENTINGNAME;
+		propval.proptag = PR_SENT_REPRESENTING_NAME;
 		propval.pvalue = deconst(pdisplay_name);
 		if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 			return FALSE;
@@ -1533,19 +1533,19 @@ static BOOL oxcical_parse_organizer(std::shared_ptr<ICAL_LINE> piline,
 		pdisplay_name, &tmp_bin, NULL)) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_SENTREPRESENTINGADDRESSTYPE;
+	propval.proptag = PR_SENT_REPRESENTING_ADDRTYPE;
 	propval.pvalue  = deconst("SMTP");
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	propval.proptag = PROP_TAG_SENTREPRESENTINGEMAILADDRESS;
+	propval.proptag = PR_SENT_REPRESENTING_EMAIL_ADDRESS;
 	propval.pvalue = deconst(paddress);
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	propval.proptag = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
+	propval.proptag = PR_SENT_REPRESENTING_SMTP_ADDRESS;
 	propval.pvalue = deconst(paddress);
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
-	propval.proptag = PROP_TAG_SENTREPRESENTINGENTRYID;
+	propval.proptag = PR_SENT_REPRESENTING_ENTRYID;
 	propval.pvalue = &tmp_bin;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
@@ -3681,7 +3681,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 	    strcasecmp(static_cast<char *>(pvalue), "IPM.Schedule.Meeting.Resp.Tent") == 0 ||
 	    strcasecmp(static_cast<char *>(pvalue), "IPM.Schedule.Meeting.Resp.Neg") == 0) {
 		pvalue = tpropval_array_get_propval(&pmsg->proplist,
-					PROP_TAG_SENTREPRESENTINGSMTPADDRESS);
+		         PR_SENT_REPRESENTING_SMTP_ADDRESS);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -4827,17 +4827,17 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	if (0 == strcmp(method, "REQUEST") ||
 		0 == strcmp(method, "CANCEL")) {
 		pvalue = tpropval_array_get_propval(&pmsg->proplist,
-					PROP_TAG_SENTREPRESENTINGSMTPADDRESS);
+		         PR_SENT_REPRESENTING_SMTP_ADDRESS);
 		if (NULL != pvalue) {
 			pvalue = tpropval_array_get_propval(&pmsg->proplist,
-						PROP_TAG_SENTREPRESENTINGADDRESSTYPE);
+			         PR_SENT_REPRESENTING_ADDRTYPE);
 			if (pvalue != NULL) {
 				if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
 					pvalue = tpropval_array_get_propval(&pmsg->proplist,
-								PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
+					         PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 				} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
 					pvalue = tpropval_array_get_propval(&pmsg->proplist,
-								PROP_TAG_SENTREPRESENTINGEMAILADDRESS);
+					         PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 					if (NULL != pvalue) {
 						pvalue = !essdn_to_username(static_cast<char *>(pvalue), tmp_buff, GX_ARRAY_SIZE(tmp_buff)) ?
 						         nullptr : tmp_buff;
@@ -4857,7 +4857,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (pcomponent->append_line(piline) < 0)
 				return false;
 			pvalue = tpropval_array_get_propval(&pmsg->proplist,
-							PROP_TAG_SENTREPRESENTINGNAME);
+			         PR_SENT_REPRESENTING_NAME);
 			if (NULL != pvalue) {
 				piparam = ical_new_param("CN");
 				if (NULL == piparam) {

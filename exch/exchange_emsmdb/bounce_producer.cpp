@@ -351,7 +351,6 @@ static BOOL bounce_producer_make_content(const char *username,
 	int prev_pos;
 	time_t tmp_time;
 	char charset[32];
-	const char *from;
 	char date_buff[128];
 	struct tm time_buff;
 	const char *pcharset;
@@ -365,8 +364,8 @@ static BOOL bounce_producer_make_content(const char *username,
 	auto pvalue = common_util_get_propvals(&pbrief->proplist, PROP_TAG_CLIENTSUBMITTIME);
 	tmp_time = pvalue == nullptr ? time(nullptr) :
 	           rop_util_nttime_to_unix(*static_cast<uint64_t *>(pvalue));
-	from = static_cast<char *>(common_util_get_propvals(&pbrief->proplist,
-	       PROP_TAG_SENTREPRESENTINGSMTPADDRESS));
+	auto from = static_cast<const char *>(common_util_get_propvals(&pbrief->proplist,
+	            PR_SENT_REPRESENTING_SMTP_ADDRESS));
 	if (NULL == from) {
 		from = "none@none";
 	}
@@ -518,8 +517,7 @@ BOOL bounce_producer_make(const char *username,
 		fprintf(stderr, "E-1481: ENOMEM\n");
 		return false;
 	}
-	pvalue = common_util_get_propvals(&pbrief->proplist,
-						PROP_TAG_SENTREPRESENTINGNAME);
+	pvalue = common_util_get_propvals(&pbrief->proplist, PR_SENT_REPRESENTING_NAME);
 	if (NULL != pvalue && '\0' != ((char*)pvalue)[0]) {
 		memcpy(mime_to, "\"=?utf-8?b?", 11);
 		encode64(pvalue, strlen(static_cast<char *>(pvalue)), mime_to + 11,
@@ -529,7 +527,7 @@ BOOL bounce_producer_make(const char *username,
 		mime_to[0] = '\0';
 	}
 	pvalue = common_util_get_propvals(&pbrief->proplist,
-				PROP_TAG_SENTREPRESENTINGSMTPADDRESS);
+	         PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (NULL != pvalue) {
 		out_len = strlen(mime_to);
 		if (0 != out_len) {

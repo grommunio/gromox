@@ -880,8 +880,8 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 	proptags.count = 9;
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PR_SUBJECT;
-	proptag_buff[1] = PROP_TAG_SENTREPRESENTINGNAME;
-	proptag_buff[2] = PROP_TAG_SENTREPRESENTINGSMTPADDRESS;
+	proptag_buff[1] = PR_SENT_REPRESENTING_NAME;
+	proptag_buff[2] = PR_SENT_REPRESENTING_SMTP_ADDRESS;
 	proptag_buff[3] = PROP_TAG_CLIENTSUBMITTIME;
 	proptag_buff[4] = PR_MESSAGE_SIZE;
 	proptag_buff[5] = PR_INTERNET_CPID;
@@ -1947,8 +1947,8 @@ static BOOL message_rectify_message(const char *account,
 		pvalue = common_util_get_propvals(
 			&pmsgctnt->proplist, PROP_TAG_SENDERNAME);
 		if (NULL == pvalue) {
-			pvalue = common_util_get_propvals(
-				&pmsgctnt->proplist, PROP_TAG_SENTREPRESENTINGNAME);
+			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
+			         PR_SENT_REPRESENTING_NAME);
 		}
 		if (NULL != pvalue) {
 			vc->proptag = PROP_TAG_CREATORNAME;
@@ -1962,8 +1962,8 @@ static BOOL message_rectify_message(const char *account,
 		pvalue = common_util_get_propvals(
 			&pmsgctnt->proplist, PROP_TAG_SENDERENTRYID);
 		if (NULL == pvalue) {
-			pvalue = common_util_get_propvals(
-				&pmsgctnt->proplist, PROP_TAG_SENTREPRESENTINGENTRYID);
+			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
+			         PR_SENT_REPRESENTING_ENTRYID);
 		}
 		if (NULL != pvalue) {
 			vc->proptag = PROP_TAG_CREATORENTRYID;
@@ -1977,8 +1977,8 @@ static BOOL message_rectify_message(const char *account,
 		pvalue = common_util_get_propvals(
 			&pmsgctnt->proplist, PROP_TAG_SENDERNAME);
 		if (NULL == pvalue) {
-			pvalue = common_util_get_propvals(
-				&pmsgctnt->proplist, PROP_TAG_SENTREPRESENTINGNAME);
+			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
+			         PR_SENT_REPRESENTING_NAME);
 		}
 		if (NULL != pvalue) {
 			vc->proptag = PROP_TAG_LASTMODIFIERNAME;
@@ -1992,8 +1992,8 @@ static BOOL message_rectify_message(const char *account,
 		pvalue = common_util_get_propvals(
 			&pmsgctnt->proplist, PROP_TAG_SENDERENTRYID);
 		if (NULL == pvalue) {
-			pvalue = common_util_get_propvals(
-				&pmsgctnt->proplist, PROP_TAG_SENTREPRESENTINGENTRYID);
+			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
+			         PR_SENT_REPRESENTING_ENTRYID);
 		}
 		if (NULL != pvalue) {
 			vc->proptag = PROP_TAG_LASTMODIFIERENTRYID;
@@ -3117,11 +3117,9 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 			return FALSE;
 		}
 		(*prcpts->pparray)->ppropval[0].proptag = PR_SMTP_ADDRESS;
-		if (FALSE == common_util_get_property(
-			MESSAGE_PROPERTIES_TABLE, message_id, 0, psqlite,
-			PROP_TAG_SENTREPRESENTINGSMTPADDRESS, &pvalue)) {
+		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE, message_id,
+		    0, psqlite, PR_SENT_REPRESENTING_SMTP_ADDRESS, &pvalue))
 			return FALSE;
-		}
 		(*prcpts->pparray)->ppropval[0].pvalue = pvalue == nullptr ?
 			deconst(from_address) : pvalue;
 		(*prcpts->pparray)->ppropval[1].proptag =
@@ -3132,12 +3130,9 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		}
 		*(uint32_t*)pvalue = RECIPIENT_TYPE_TO;
 		(*prcpts->pparray)->ppropval[1].pvalue = pvalue; 
-		if (FALSE == common_util_get_property(
-			MESSAGE_PROPERTIES_TABLE, message_id, 0,
-			psqlite, PROP_TAG_SENTREPRESENTINGNAME,
-			&pvalue)) {
+		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE, message_id,
+		    0, psqlite, PR_SENT_REPRESENTING_NAME, &pvalue))
 			return FALSE;
-		}
 		if (NULL == pvalue) {
 			(*prcpts->pparray)->count = 2;
 		} else {
@@ -3243,11 +3238,9 @@ static BOOL message_bounce_message(const char *from_address,
 		return FALSE;
 	}
 	double_list_append_as_tail(&tmp_list, pnode);
-	if (FALSE == common_util_get_property(
-		MESSAGE_PROPERTIES_TABLE, message_id, 0, psqlite,
-		PROP_TAG_SENTREPRESENTINGSMTPADDRESS, &pvalue)) {
+	if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE, message_id, 0,
+	    psqlite, PR_SENT_REPRESENTING_SMTP_ADDRESS, &pvalue))
 		return FALSE;
-	}
 	pnode->pdata = pvalue == nullptr ? deconst(from_address) : pvalue;
 	mail_init(&imail, common_util_get_mime_pool());
 	if (FALSE == bounce_producer_make(from_address,
@@ -3971,8 +3964,8 @@ static bool op_delegate(const char *from_address, const char *account,
 	};
 	for (auto t : tags)
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
-	if (NULL == common_util_get_propvals(&pmsgctnt->proplist,
-	    PROP_TAG_RECEIVEDREPRESENTINGENTRYID)) {
+	if (common_util_get_propvals(&pmsgctnt->proplist,
+	    PR_RCVD_REPRESENTING_ENTRYID) == nullptr) {
 		char essdn_buff[1280];
 		memcpy(essdn_buff, "EX:", 3);
 		if (!common_util_username_to_essdn(account,
@@ -3984,20 +3977,19 @@ static bool op_delegate(const char *from_address, const char *account,
 			return FALSE;
 		}
 		TAGGED_PROPVAL propval;
-		propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGENTRYID;
+		propval.proptag = PR_RCVD_REPRESENTING_ENTRYID;
 		propval.pvalue = pvalue;
 		common_util_set_propvals(&pmsgctnt->proplist, &propval);
-		propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGADDRESSTYPE;
+		propval.proptag = PR_RCVD_REPRESENTING_ADDRTYPE;
 		propval.pvalue  = deconst("EX");
 		common_util_set_propvals(&pmsgctnt->proplist, &propval);
-		propval.proptag =
-			PROP_TAG_RECEIVEDREPRESENTINGEMAILADDRESS;
+		propval.proptag = PR_RCVD_REPRESENTING_EMAIL_ADDRESS;
 		propval.pvalue = essdn_buff + 3;
 		common_util_set_propvals(&pmsgctnt->proplist, &propval);
 		char display_name[1024];
 		if (TRUE == common_util_get_user_displayname(
 		    account, display_name)) {
-			propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGNAME;
+			propval.proptag = PR_RCVD_REPRESENTING_NAME;
 			propval.pvalue = display_name;
 			common_util_set_propvals(
 				&pmsgctnt->proplist, &propval);
@@ -4005,7 +3997,7 @@ static bool op_delegate(const char *from_address, const char *account,
 		BINARY searchkey_bin;
 		searchkey_bin.cb = strlen(essdn_buff) + 1;
 		searchkey_bin.pv = essdn_buff;
-		propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGSEARCHKEY;
+		propval.proptag = PR_RCVD_REPRESENTING_SEARCH_KEY;
 		propval.pvalue = &searchkey_bin;
 		common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	}
@@ -4406,8 +4398,8 @@ static bool opx_delegate(const char *from_address, const char *account,
 	};
 	for (auto t : tags)
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
-	if (NULL == common_util_get_propvals(&pmsgctnt->proplist,
-	    PROP_TAG_RECEIVEDREPRESENTINGENTRYID)) {
+	if (common_util_get_propvals(&pmsgctnt->proplist,
+	    PR_RCVD_REPRESENTING_ENTRYID) == nullptr) {
 		char essdn_buff[1280];
 		memcpy(essdn_buff, "EX:", 3);
 		if (!common_util_username_to_essdn(account,
@@ -4418,20 +4410,19 @@ static bool opx_delegate(const char *from_address, const char *account,
 			return FALSE;
 		}
 		TAGGED_PROPVAL propval;
-		propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGENTRYID;
+		propval.proptag = PR_RCVD_REPRESENTING_ENTRYID;
 		propval.pvalue = pvalue;
 		common_util_set_propvals(&pmsgctnt->proplist, &propval);
-		propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGADDRESSTYPE;
+		propval.proptag = PR_RCVD_REPRESENTING_ADDRTYPE;
 		propval.pvalue  = deconst("EX");
 		common_util_set_propvals(&pmsgctnt->proplist, &propval);
-		propval.proptag =
-			PROP_TAG_RECEIVEDREPRESENTINGEMAILADDRESS;
+		propval.proptag = PR_RCVD_REPRESENTING_EMAIL_ADDRESS;
 		propval.pvalue = essdn_buff + 3;
 		common_util_set_propvals(&pmsgctnt->proplist, &propval);
 		char display_name[1024];
 		if (TRUE == common_util_get_user_displayname(
 		    account, display_name)) {
-			propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGNAME;
+			propval.proptag = PR_RCVD_REPRESENTING_NAME;
 			propval.pvalue = display_name;
 			common_util_set_propvals(
 				&pmsgctnt->proplist, &propval);
@@ -4439,7 +4430,7 @@ static bool opx_delegate(const char *from_address, const char *account,
 		BINARY searchkey_bin;
 		searchkey_bin.cb = strlen(essdn_buff) + 1;
 		searchkey_bin.pv = essdn_buff;
-		propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGSEARCHKEY;
+		propval.proptag = PR_RCVD_REPRESENTING_SEARCH_KEY;
 		propval.pvalue = &searchkey_bin;
 		common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	}
@@ -4876,23 +4867,23 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		propval.proptag = PROP_TAG_RECEIVEDBYSEARCHKEY;
 		propval.pvalue = &searchkey_bin;
 		common_util_set_propvals(&tmp_msg.proplist, &propval);
-		if (NULL == common_util_get_propvals(&pmsg->proplist,
-			PROP_TAG_RECEIVEDREPRESENTINGENTRYID)) {
-			propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGENTRYID;
+		if (common_util_get_propvals(&pmsg->proplist,
+		    PR_RCVD_REPRESENTING_ENTRYID) == nullptr) {
+			propval.proptag = PR_RCVD_REPRESENTING_ENTRYID;
 			propval.pvalue = pentryid;
 			common_util_set_propvals(&tmp_msg.proplist, &propval);	
-			propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGADDRESSTYPE;
+			propval.proptag = PR_RCVD_REPRESENTING_ADDRTYPE;
 			propval.pvalue  = deconst("EX");
 			common_util_set_propvals(&tmp_msg.proplist, &propval);
-			propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGEMAILADDRESS;
+			propval.proptag = PR_RCVD_REPRESENTING_EMAIL_ADDRESS;
 			propval.pvalue = essdn_buff + 3;
 			common_util_set_propvals(&tmp_msg.proplist, &propval);
 			if ('\0' != display_name[0]) {
-				propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGNAME;
+				propval.proptag = PR_RCVD_REPRESENTING_NAME;
 				propval.pvalue = display_name;
 				common_util_set_propvals(&tmp_msg.proplist, &propval);
 			}
-			propval.proptag = PROP_TAG_RECEIVEDREPRESENTINGSEARCHKEY;
+			propval.proptag = PR_RCVD_REPRESENTING_SEARCH_KEY;
 			propval.pvalue = &searchkey_bin;
 			common_util_set_propvals(&tmp_msg.proplist, &propval);
 		}
