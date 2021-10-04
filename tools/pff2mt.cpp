@@ -265,17 +265,25 @@ static bool tpropval_subject_handler(const uint8_t *buf, TPROPVAL_ARRAY *ar, TAG
 static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *ar)
 {
 	libpff_multi_value_ptr mv;
-	libpff_error_ptr err;
+	libpff_error_ptr err, e2, e3;
 	unsigned int etype = 0, vtype = 0;
 	size_t dsize = 0;
 	int mvnum = 0;
 
-	if (libpff_record_entry_get_entry_type(rent, &etype, &unique_tie(err)) < 1)
-		throw az_error("PF-1030", err);
-	if (libpff_record_entry_get_value_type(rent, &vtype, &~unique_tie(err)) < 1)
-		throw az_error("PF-1031", err);
-	if (libpff_record_entry_get_data_size(rent, &dsize, &~unique_tie(err)) < 1)
-		throw az_error("PF-1032", err);
+	auto r1 = libpff_record_entry_get_entry_type(rent, &etype, &unique_tie(err));
+	auto r2 = libpff_record_entry_get_value_type(rent, &vtype, &unique_tie(e2));
+	auto r3 = libpff_record_entry_get_data_size(rent, &dsize, &unique_tie(e3));
+	if (r1 < 0)
+		throw az_error("PF-1061", err);
+	if (r2 < 0)
+		throw az_error("PF-1062", e2);
+	if (r3 < 0)
+		throw az_error("PF-1063", e3);
+	if (r1 == 0 || r2 == 0 || r3 == 0) {
+		if (g_show_props)
+			fprintf(stderr, "PF-1064: Encountered PFF record entry with no proptag\n");
+		return;
+	}
 
 	TAGGED_PROPVAL pv;
 	pv.proptag = PROP_TAG(vtype, etype);
