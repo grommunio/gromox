@@ -1079,8 +1079,7 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 			  "FROM folders WHERE parent_id=%llu", LLU(fid_val));
 	} else {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id,"
-					" is_deleted FROM folders WHERE "
-					"parent_fid=%llu", LLU(fid_val));
+		         " is_deleted FROM folders WHERE parent_id=%llu", LLU(fid_val));
 	}
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr)
