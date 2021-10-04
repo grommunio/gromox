@@ -78,7 +78,7 @@ using propname_array_ptr = std::unique_ptr<PROPNAME_ARRAY, gi_delete>;
 using tpropval_array_ptr = std::unique_ptr<TPROPVAL_ARRAY, gi_delete>;
 
 extern const char *g_storedir;
-extern unsigned int g_show_tree, g_show_props, g_wet_run;
+extern unsigned int g_show_tree, g_show_props, g_wet_run, g_public_folder;
 
 extern void tree(unsigned int d);
 extern void tlog(const char *f, ...);
@@ -93,4 +93,5 @@ extern void gi_name_map_write(const gi_name_map &);
 extern uint16_t gi_resolve_namedprop(const PROPERTY_NAME *);
 extern int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl, uint64_t *new_fld_id);
 extern int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *);
-extern int gi_setup(const char *dstmbox);
+extern void gi_setup_early(const char *dstmbox);
+extern int gi_setup();

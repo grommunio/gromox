@@ -62,6 +62,31 @@ static ssize_t fullread(int fd, void *vbuf, size_t size)
 	return read_total;
 }
 
+static void filter_folder_map(gi_folder_map_t &fmap)
+{
+	if (!g_public_folder) {
+		g_folder_map.emplace(~0ULL, tgt_folder{false, PRIVATE_FID_DRAFT, ""});
+		for (auto &p : fmap)
+			p.second.fid_to = rop_util_make_eid_ex(1, p.second.fid_to);
+		return;
+	}
+	g_folder_map.emplace(~0ULL, tgt_folder{false, PUBLIC_FID_IPMSUBTREE, ""});
+	for (auto i = fmap.begin(); i != fmap.end(); ) {
+		auto &e = i->second;
+		if (e.fid_to == 0 || !e.create) {
+			++i;
+		} else if (e.fid_to == PRIVATE_FID_ROOT) {
+			e.fid_to = rop_util_make_eid_ex(1, PUBLIC_FID_ROOT);
+			++i;
+		} else if (e.fid_to == PRIVATE_FID_IPMSUBTREE) {
+			e.fid_to = rop_util_make_eid_ex(1, PUBLIC_FID_IPMSUBTREE);
+			++i;
+		} else {
+			i = fmap.erase(i);
+		}
+	}
+}
+
 static void exm_read_base_maps()
 {
 	errno = 0;
@@ -87,13 +112,10 @@ static void exm_read_base_maps()
 	if (ret < 0 || static_cast<size_t>(ret) != xsize)
 		throw YError("PG-1002: %s", strerror(errno));
 	gi_folder_map_read(buf.get(), xsize, g_folder_map);
-	g_folder_map.emplace(~0ULL, tgt_folder{false, PRIVATE_FID_DRAFT, ""});
 	gi_dump_folder_map(g_folder_map);
-	for (auto &p : g_folder_map) {
-		if (p.second.fid_to == 0)
-			continue;
-		p.second.fid_to = rop_util_make_eid_ex(1, p.second.fid_to);
-	}
+	filter_folder_map(g_folder_map);
+	fprintf(stderr, "Folder map adjusted (for a %s store):\n", g_public_folder ? "public" : "private");
+	gi_dump_folder_map(g_folder_map);
 
 	errno = 0;
 	ret = fullread(STDIN_FILENO, &xsize, sizeof(xsize));
@@ -321,8 +343,9 @@ int main(int argc, const char **argv) try
 		return EXIT_FAILURE;
 	}
 
+	gi_setup_early(g_username);
 	exm_read_base_maps();
-	if (gi_setup(g_username) != EXIT_SUCCESS)
+	if (gi_setup() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
 	while (true) {
 		uint64_t xsize = 0;

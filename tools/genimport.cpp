@@ -32,6 +32,7 @@
 #include <gromox/util.hpp>
 #include "genimport.hpp"
 
+using namespace std::string_literals;
 using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
 
@@ -40,7 +41,7 @@ static int g_socket = -1;
 static unsigned int g_user_id;
 static std::string g_storedir_s;
 const char *g_storedir;
-unsigned int g_show_tree, g_show_props, g_wet_run = 1;
+unsigned int g_show_tree, g_show_props, g_wet_run = 1, g_public_folder;
 
 YError::YError(const std::string &s) : m_str(s)
 {}
@@ -425,7 +426,7 @@ static int exm_connect(const char *dir)
 	rq.call_id = exmdb_callid::CONNECT;
 	rq.payload.connect.prefix    = deconst(xn->prefix.c_str());
 	rq.payload.connect.remote_id = rid;
-	rq.payload.connect.b_private = TRUE;
+	rq.payload.connect.b_private = g_public_folder ? false : TRUE;
 	BINARY tb{};
 	if (exmdb_ext_push_request(&rq, &tb) != EXT_ERR_SUCCESS ||
 	    !exmdb_client_write_socket(fd.get(), &tb)) {
@@ -465,7 +466,9 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
 	char tmp_buff[22];
 	BINARY bxid;
 	zxid.size = 22;
-	zxid.xid.guid = rop_util_make_user_guid(g_user_id);
+	zxid.xid.guid = g_public_folder ?
+	                rop_util_make_domain_guid(g_user_id) :
+	                rop_util_make_user_guid(g_user_id);
 	rop_util_value_to_gc(change_num, zxid.xid.local_id);
 	EXT_PUSH ep;
 	if (!ep.init(tmp_buff, arsizeof(tmp_buff), 0) ||
@@ -540,7 +543,9 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 	char tmp_buff[22];
 	BINARY bxid;
 	zxid.size = 22;
-	zxid.xid.guid = rop_util_make_user_guid(g_user_id);
+	zxid.xid.guid = g_public_folder ?
+	                rop_util_make_domain_guid(g_user_id) :
+	                rop_util_make_user_guid(g_user_id);
 	rop_util_value_to_gc(change_num, zxid.xid.local_id);
 	EXT_PUSH ep;
 	if (!ep.init(tmp_buff, arsizeof(tmp_buff), 0) ||
@@ -630,11 +635,12 @@ static MYSQL *sql_login()
 	return nullptr;
 }
 
-static int sql_meta(MYSQL *sqh, const char *username, unsigned int *user_id,
-    std::string &storedir) try
+static int sql_meta(MYSQL *sqh, const char *username, bool is_domain,
+    unsigned int *user_id, std::string &storedir) try
 {
-	auto query = "SELECT id, maildir FROM users WHERE username='" +
-	             sql_escape(sqh, username) + "'";
+	auto query = is_domain ?
+		("SELECT `id`, `homedir` FROM `domains` WHERE `domainname`='"s + sql_escape(sqh, username) + "'") :
+		("SELECT `id`, `maildir` FROM `users` WHERE `username`='"s + sql_escape(sqh, username) + "'");
 	if (mysql_real_query(sqh, query.c_str(), query.size()) != 0) {
 		fprintf(stderr, "exm: mysql_query: %s\n", mysql_error(sqh));
 		return -EINVAL;
@@ -654,21 +660,32 @@ static int sql_meta(MYSQL *sqh, const char *username, unsigned int *user_id,
 	return -ENOMEM;
 }
 
-int gi_setup(const char *username)
+void gi_setup_early(const char *username)
+{
+	if (*username == '@') {
+		g_public_folder = true;
+		++username;
+	}
+	g_dstuser = username;
+}
+
+int gi_setup()
 {
 	auto sqh = sql_login();
 	if (sqh == nullptr)
 		return EXIT_FAILURE;
-	auto ret = sql_meta(sqh, username, &g_user_id, g_storedir_s);
+	auto ret = sql_meta(sqh, g_dstuser.c_str(), g_public_folder,
+	           &g_user_id, g_storedir_s);
 	mysql_close(sqh);
 	if (ret == -ENOENT) {
-		fprintf(stderr, "exm: No such user \"%s\"\n", username);
+		fprintf(stderr, "exm: No such %s \"%s\"\n",
+		        g_public_folder ? "domain" : "username", g_dstuser.c_str());
 		return EXIT_FAILURE;
 	} else if (ret < 0) {
-		fprintf(stderr, "exm: sql_meta(\"%s\"): %s\n", username, strerror(-ret));
+		fprintf(stderr, "exm: sql_meta(\"%s\"): %s\n",
+		        g_dstuser.c_str(), strerror(-ret));
 		return EXIT_FAILURE;
 	}
-	g_dstuser = username;
 	g_storedir = g_storedir_s.c_str();
 	g_socket = exm_connect(g_storedir);
 	if (g_socket < 0)
