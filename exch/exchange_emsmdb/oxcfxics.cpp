@@ -1169,7 +1169,6 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	BOOL b_guest;
 	BOOL b_found;
 	void *pvalue;
-	int domain_id;
 	BOOL b_partial;
 	uint32_t result;
 	int object_type;
@@ -1263,7 +1262,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	} else {
 		auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
 		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
-			domain_id = rop_util_make_domain_id(tmp_xid.guid);
+			auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
 			if (-1 == domain_id) {
 				return ecInvalidParam;
 			}
@@ -1433,7 +1432,6 @@ uint32_t rop_syncimportdeletes(
 	BOOL b_found;
 	uint64_t eid;
 	BOOL b_owner;
-	int domain_id;
 	BOOL b_result;
 	BOOL b_partial;
 	int object_type;
@@ -1512,7 +1510,7 @@ uint32_t rop_syncimportdeletes(
 			} else {
 				auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
 				if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
-					domain_id = rop_util_make_domain_id(tmp_xid.guid);
+					auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
 					if (-1 == domain_id) {
 						return ecInvalidParam;
 					}

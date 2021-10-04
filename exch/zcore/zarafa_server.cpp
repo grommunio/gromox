@@ -2503,7 +2503,6 @@ uint32_t zarafa_server_entryidfromsourcekey(
 	XID tmp_xid;
 	BOOL b_found;
 	BINARY *pbin;
-	int domain_id;
 	uint16_t replid;
 	uint8_t mapi_type;
 	uint64_t folder_id;
@@ -2532,7 +2531,7 @@ uint32_t zarafa_server_entryidfromsourcekey(
 		}
 		folder_id = rop_util_make_eid(1, tmp_xid.local_id);
 	} else {
-		domain_id = rop_util_make_domain_id(tmp_xid.guid);
+		auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
 		if (-1 == domain_id) {
 			return ecInvalidParam;
 		}
@@ -2563,7 +2562,7 @@ uint32_t zarafa_server_entryidfromsourcekey(
 			}
 			message_id = rop_util_make_eid(1, tmp_xid.local_id);
 		} else {
-			domain_id = rop_util_make_domain_id(tmp_xid.guid);
+			auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
 			if (-1 == domain_id) {
 				return ecInvalidParam;
 			}
@@ -4574,7 +4573,6 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 	BOOL b_guest;
 	BOOL b_found;
 	void *pvalue;
-	int domain_id;
 	BOOL b_partial;
 	uint64_t nttime;
 	uint16_t replid;
@@ -4673,7 +4671,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 	} else {
 		auto tmp_guid = rop_util_make_domain_guid(pstore->account_id);
 		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
-			domain_id = rop_util_make_domain_id(tmp_xid.guid);
+			auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
 			if (-1 == domain_id) {
 				return ecInvalidParam;
 			}
@@ -4817,7 +4815,6 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 	BOOL b_found;
 	uint64_t eid;
 	BOOL b_owner;
-	int domain_id;
 	BOOL b_result;
 	BOOL b_partial;
 	uint16_t replid;
@@ -4880,7 +4877,7 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 		} else {
 			auto tmp_guid = rop_util_make_domain_guid(pstore->account_id);
 			if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
-				domain_id = rop_util_make_domain_id(tmp_xid.guid);
+				auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
 				if (-1 == domain_id) {
 					return ecInvalidParam;
 				}

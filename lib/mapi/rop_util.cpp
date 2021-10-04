@@ -154,7 +154,7 @@ GUID rop_util_make_domain_guid(int domain_id)
 	return guid;
 }
 
-int rop_util_make_user_id(GUID guid)
+int rop_util_get_user_id(GUID guid)
 {
 	if (guid.time_mid != 0x18a5 ||
 		guid.time_hi_and_version != 0x6f7b ||
@@ -171,7 +171,7 @@ int rop_util_make_user_id(GUID guid)
 	return guid.time_low;
 }
 
-int rop_util_make_domain_id(GUID guid)
+int rop_util_get_domain_id(GUID guid)
 {
 	if (guid.time_mid != 0x0afb ||
 		guid.time_hi_and_version != 0x7df6 ||

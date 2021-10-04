@@ -1169,8 +1169,7 @@ BOOL common_util_from_folder_entryid(BINARY bin,
 	switch (tmp_entryid.folder_type) {
 	case EITLT_PRIVATE_FOLDER:
 		*pb_private = TRUE;
-		*pdb_id = rop_util_make_user_id(
-			tmp_entryid.database_guid);
+		*pdb_id = rop_util_get_user_id(tmp_entryid.database_guid);
 		if (-1 == *pdb_id) {
 			return FALSE;
 		}
@@ -1179,8 +1178,7 @@ BOOL common_util_from_folder_entryid(BINARY bin,
 		return TRUE;
 	case EITLT_PUBLIC_FOLDER: {
 		*pb_private = FALSE;
-		*pdb_id = rop_util_make_domain_id(
-				tmp_entryid.database_guid);
+		*pdb_id = rop_util_get_domain_id(tmp_entryid.database_guid);
 		if (*pdb_id > 0) {
 			*pfolder_id = rop_util_make_eid(1,
 					tmp_entryid.global_counter);
@@ -1220,8 +1218,7 @@ BOOL common_util_from_message_entryid(BINARY bin, BOOL *pb_private,
 	switch (tmp_entryid.message_type) {
 	case EITLT_PRIVATE_MESSAGE:
 		*pb_private = TRUE;
-		*pdb_id = rop_util_make_user_id(
-			tmp_entryid.folder_database_guid);
+		*pdb_id = rop_util_get_user_id(tmp_entryid.folder_database_guid);
 		if (-1 == *pdb_id) {
 			return FALSE;
 		}
@@ -1232,8 +1229,7 @@ BOOL common_util_from_message_entryid(BINARY bin, BOOL *pb_private,
 		return TRUE;
 	case EITLT_PUBLIC_MESSAGE: {
 		*pb_private = FALSE;
-		*pdb_id = rop_util_make_domain_id(
-			tmp_entryid.folder_database_guid);
+		*pdb_id = rop_util_get_domain_id(tmp_entryid.folder_database_guid);
 		if (*pdb_id > 0) {
 			*pfolder_id = rop_util_make_eid(1,
 				tmp_entryid.folder_global_counter);

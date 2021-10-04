@@ -381,7 +381,6 @@ uint32_t rop_getowningservers(
 {
 	GUID guid;
 	BOOL b_found;
-	int domain_id;
 	int object_type;
 	uint16_t replid;
 	
@@ -408,7 +407,7 @@ uint32_t rop_getowningservers(
 		if (FALSE == b_found) {
 			return ecNotFound;
 		}
-		domain_id = rop_util_make_domain_id(guid);
+		auto domain_id = rop_util_get_domain_id(guid);
 		if (-1 == domain_id) {
 			return ecNotFound;
 		}
@@ -501,7 +500,6 @@ uint32_t rop_idfromlongtermid(
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_found;
-	int domain_id;
 	int object_type;
 	uint16_t replid;
 	
@@ -519,7 +517,7 @@ uint32_t rop_idfromlongtermid(
 		}
 		*pid = rop_util_make_eid(1, plong_term_id->global_counter);
 	} else {
-		domain_id = rop_util_make_domain_id(plong_term_id->guid);
+		auto domain_id = rop_util_get_domain_id(plong_term_id->guid);
 		if (-1 == domain_id) {
 			return ecInvalidParam;
 		}
