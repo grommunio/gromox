@@ -434,50 +434,50 @@ void driver::fmap_setup_splice()
 	m_folder_map.clear();
 	auto store = get_store_item();
 	auto root = get_root_folder();
-	m_folder_map.emplace(root->m_hid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_ROOT), "FID_ROOT"});
+	m_folder_map.emplace(root->m_hid, tgt_folder{false, PRIVATE_FID_ROOT, "FID_ROOT"});
 	auto nid = hid_from_mst(*store, PR_IPM_SUBTREE_ENTRYID);
 	if (nid != 0)
-		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE), "FID_IPMSUBTREE"});
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_IPMSUBTREE, "FID_IPMSUBTREE"});
 	nid = hid_from_mst(*store, PR_IPM_OUTBOX_ENTRYID);
 	if (nid != 0)
-		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_OUTBOX), "FID_OUTBOX"});
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_OUTBOX, "FID_OUTBOX"});
 	nid = hid_from_mst(*store, PR_IPM_WASTEBASKET_ENTRYID);
 	if (nid != 0)
-		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_DELETED_ITEMS), "FID_DELETED_ITEMS"});
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_DELETED_ITEMS, "FID_DELETED_ITEMS"});
 	nid = hid_from_mst(*store, PR_IPM_SENTMAIL_ENTRYID);
 	if (nid != 0)
-		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS), "FID_SENT_ITEMS"});
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_SENT_ITEMS, "FID_SENT_ITEMS"});
 	nid = hid_from_mst(*store, PR_COMMON_VIEWS_ENTRYID);
 	if (nid != 0)
-		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_COMMON_VIEWS), "FID_COMMON_VIEWS"});
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_COMMON_VIEWS, "FID_COMMON_VIEWS"});
 	nid = hid_from_mst(*store, PR_VIEWS_ENTRYID);
 	if (nid != 0)
-		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_VIEWS), "FID_VIEWS"});
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_VIEWS, "FID_VIEWS"});
 	nid = hid_from_mst(*store, PR_FINDER_ENTRYID);
 	if (nid != 0)
-		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_FINDER), "FID_FINDER"});
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_FINDER, "FID_FINDER"});
 	nid = hid_from_mst(*store, PR_SCHEDULE_FOLDER_ENTRYID);
 	if (nid != 0)
-		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_SCHEDULE), "FID_SCHEDULE"});
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_SCHEDULE, "FID_SCHEDULE"});
 
 	nid = hid_from_mst(*root, PR_IPM_APPOINTMENT_ENTRYID);
 	if (nid != 0)
-		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR), "FID_CALENDAR"});
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_CALENDAR, "FID_CALENDAR"});
 	nid = hid_from_mst(*root, PR_IPM_CONTACT_ENTRYID);
 	if (nid != 0)
-		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS), "FID_CONTACTS"});
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_CONTACTS, "FID_CONTACTS"});
 	nid = hid_from_mst(*root, PR_IPM_JOURNAL_ENTRYID);
 	if (nid != 0)
-		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_JOURNAL), "FID_JOURNAL"});
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_JOURNAL, "FID_JOURNAL"});
 	nid = hid_from_mst(*root, PR_IPM_NOTE_ENTRYID);
 	if (nid != 0)
-		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_NOTES), "FID_NOTES"});
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_NOTES, "FID_NOTES"});
 	nid = hid_from_mst(*root, PR_IPM_TASK_ENTRYID);
 	if (nid != 0)
-		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_TASKS), "FID_TASKS"});
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_TASKS, "FID_TASKS"});
 	nid = hid_from_mst(*root, PR_IPM_DRAFTS_ENTRYID);
 	if (nid != 0)
-		m_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT), "FID_DRAFTS"});
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_DRAFT, "FID_DRAFTS"});
 }
 
 void driver::fmap_setup_standard(const char *title)
@@ -488,8 +488,7 @@ void driver::fmap_setup_standard(const char *title)
 	strftime(timebuf, arsizeof(timebuf), " @%FT%T", tm);
 	m_folder_map.clear();
 	auto root = get_root_folder();
-	m_folder_map.emplace(root->m_hid, tgt_folder{true,
-		rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
+	m_folder_map.emplace(root->m_hid, tgt_folder{true, PRIVATE_FID_IPMSUBTREE,
 		"Import of "s + title + timebuf});
 }
 

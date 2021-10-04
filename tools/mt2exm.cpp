@@ -87,8 +87,13 @@ static void exm_read_base_maps()
 	if (ret < 0 || static_cast<size_t>(ret) != xsize)
 		throw YError("PG-1002: %s", strerror(errno));
 	gi_folder_map_read(buf.get(), xsize, g_folder_map);
-	g_folder_map.emplace(~0ULL, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_DRAFT), ""});
+	g_folder_map.emplace(~0ULL, tgt_folder{false, PRIVATE_FID_DRAFT, ""});
 	gi_dump_folder_map(g_folder_map);
+	for (auto &p : g_folder_map) {
+		if (p.second.fid_to == 0)
+			continue;
+		p.second.fid_to = rop_util_make_eid_ex(1, p.second.fid_to);
+	}
 
 	errno = 0;
 	ret = fullread(STDIN_FILENO, &xsize, sizeof(xsize));

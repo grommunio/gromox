@@ -244,8 +244,9 @@ void gi_dump_folder_map(const gi_folder_map_t &map)
 	fprintf(stderr, "Folder map (%zu entries):\n", map.size());
 	fprintf(stderr, "\t# HierID (hex) -> Target name\n");
 	for (const auto &[nid, tgt] : map)
-		fprintf(stderr, "\t%xh -> %s%s\n", nid, tgt.create_name.c_str(),
-		        tgt.create ? " (create)" : "");
+		fprintf(stderr, "\t%xh -> %s (%s %llxh)\n", nid, tgt.create_name.c_str(),
+		        tgt.create ? "create under" : "splice into",
+		        static_cast<unsigned long long>(tgt.fid_to));
 }
 
 void gi_dump_name_map(const gi_name_map &map)

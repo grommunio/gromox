@@ -686,22 +686,22 @@ static void az_lookup_specials(libpff_file_t *file)
 		return;
 	auto nid = az_nid_from_mst(mst.get(), PR_IPM_SUBTREE_ENTRYID);
 	if (nid != 0)
-		g_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE), "FID_IPMSUBTREE"});
+		g_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_IPMSUBTREE, "FID_IPMSUBTREE"});
 	nid = az_nid_from_mst(mst.get(), PR_IPM_OUTBOX_ENTRYID);
 	if (nid != 0)
-		g_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_OUTBOX), "FID_OUTBOX"});
+		g_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_OUTBOX, "FID_OUTBOX"});
 	nid = az_nid_from_mst(mst.get(), PR_IPM_WASTEBASKET_ENTRYID);
 	if (nid != 0)
-		g_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_DELETED_ITEMS), "FID_DELETED_ITEMS"});
+		g_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_DELETED_ITEMS, "FID_DELETED_ITEMS"});
 	nid = az_nid_from_mst(mst.get(), PR_IPM_SENTMAIL_ENTRYID);
 	if (nid != 0)
-		g_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_SENT_ITEMS), "FID_SENT_ITEMS"});
+		g_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_SENT_ITEMS, "FID_SENT_ITEMS"});
 	nid = az_nid_from_mst(mst.get(), PR_COMMON_VIEWS_ENTRYID);
 	if (nid != 0)
-		g_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_COMMON_VIEWS), "FID_COMMON_VIEWS"});
+		g_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_COMMON_VIEWS, "FID_COMMON_VIEWS"});
 	nid = az_nid_from_mst(mst.get(), PR_FINDER_ENTRYID);
 	if (nid != 0)
-		g_folder_map.emplace(nid, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_FINDER), "FID_FINDER"});
+		g_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_FINDER, "FID_FINDER"});
 }
 
 static void az_fmap_standard(libpff_file_t *file, const char *filename)
@@ -710,13 +710,13 @@ static void az_fmap_standard(libpff_file_t *file, const char *filename)
 	time_t now = time(nullptr);
 	auto tm = localtime(&now);
 	strftime(timebuf, arsizeof(timebuf), " @%FT%T", tm);
-	g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{true, rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
+	g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{true, PRIVATE_FID_IPMSUBTREE,
 		"Import of "s + HX_basename(filename) + timebuf});
 }
 
 static void az_fmap_splice(libpff_file_t *file)
 {
-	g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{false, rop_util_make_eid_ex(1, PRIVATE_FID_ROOT), "FID_ROOT"});
+	g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{false, PRIVATE_FID_ROOT, "FID_ROOT"});
 	az_lookup_specials(file);
 }
 
