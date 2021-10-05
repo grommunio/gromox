@@ -25,22 +25,9 @@ static void  mail_enum_text_mime_charset(
 
 static void mail_enum_html_charset(MIME *pmime, char *email_charset);
 
-/*
- *	@param
- *		pmail [in]			indicate the mail object
- *		pmime_pool [in]		indicate the allocator for mime object
- */
-void mail_init(MAIL *pmail, MIME_POOL *pmime_pool)
+MAIL::MAIL(MIME_POOL *p) : pmime_pool(p)
 {
-#ifdef _DEBUG_UMTA
-	if (NULL == pmail && NULL == pmime_pool) {
-		debug_info("[mail]: NULL pointer in mail_init");
-		return;
-	}
-#endif
-	simple_tree_init(&pmail->tree);
-	pmail->pmime_pool = pmime_pool;
-	pmail->buffer = NULL;
+	simple_tree_init(&tree);
 }
 
 void mail_clear(MAIL *pmail)
@@ -361,18 +348,22 @@ ssize_t mail_get_length(MAIL *pmail)
 	return mime_get_length((MIME*)(pnode->pdata));
 }
 
-void mail_free(MAIL *pmail)
+MAIL::~MAIL()
 {
-#ifdef _DEBUG_UMTA
-	if (NULL == pmail) {
-		debug_info("[mail]: NULL pointer in mail_free");
-		return;
-	}
-#endif
-	mail_clear(pmail);
-	simple_tree_free(&pmail->tree);
-	pmail->pmime_pool = NULL;
-	pmail->buffer = NULL;
+	mail_clear(this);
+	simple_tree_free(&tree);
+}
+
+MAIL &MAIL::operator=(MAIL &&o)
+{
+	mail_clear(this);
+	simple_tree_free(&tree);
+	tree = o.tree;
+	o.tree = {};
+	pmime_pool = o.pmime_pool;
+	buffer = o.buffer;
+	o.buffer = nullptr;
+	return *this;
 }
 
 /*

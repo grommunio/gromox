@@ -272,13 +272,13 @@ int transporter_run()
     }
 	for (size_t i = 0; i < g_threads_max; ++i) {
 		mem_file_init(&g_data_ptr[i].fake_context.mail_control.f_rcpt_to, g_file_allocator);
-		mail_init(&g_data_ptr[i].fake_context.mail, g_mime_pool);
+		g_data_ptr[i].fake_context.mail = MAIL(g_mime_pool);
 		g_data_ptr[i].fake_context.context.pmail = &g_data_ptr[i].fake_context.mail;
 		g_data_ptr[i].fake_context.context.pcontrol = &g_data_ptr[i].fake_context.mail_control;
 	}
 	for (size_t i = 0; i < g_free_num; ++i) {
 		mem_file_init(&g_free_ptr[i].mail_control.f_rcpt_to, g_file_allocator);
-		mail_init(&g_free_ptr[i].mail, g_mime_pool);
+		g_free_ptr[i].mail = MAIL(g_mime_pool);
 		g_free_ptr[i].context.pmail = &g_free_ptr[i].mail;
 		g_free_ptr[i].context.pcontrol = &g_free_ptr[i].mail_control;
 	}
@@ -396,10 +396,6 @@ void transporter_stop()
 	pthread_kill(g_scan_id, SIGALRM);
 	pthread_join(g_scan_id, nullptr);
 	transporter_collect_hooks();
-	for (size_t i = 0; i < g_threads_max; ++i)
-		mail_free(&g_data_ptr[i].fake_context.mail);
-	for (size_t i = 0; i < g_free_num; ++i)
-		mail_free(&g_free_ptr[i].mail);
 	transporter_collect_resource();
 }
 

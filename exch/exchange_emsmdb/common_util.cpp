@@ -1626,7 +1626,6 @@ BOOL common_util_convert_rule_actions(BOOL to_unicode, RULE_ACTIONS *pactions)
 void common_util_notify_receipt(const char *username,
 	int type, MESSAGE_CONTENT *pbrief)
 {
-	MAIL imail;
 	DOUBLE_LIST_NODE node;
 	DOUBLE_LIST rcpt_list;
 	
@@ -1637,15 +1636,11 @@ void common_util_notify_receipt(const char *username,
 	}
 	double_list_init(&rcpt_list);
 	double_list_append_as_tail(&rcpt_list, &node);
-	mail_init(&imail, g_mime_pool);
+	MAIL imail(g_mime_pool);
 	int bounce_type = type == NOTIFY_RECEIPT_READ ? BOUNCE_NOTIFY_READ : BOUNCE_NOTIFY_NON_READ;
-	if (FALSE == bounce_producer_make(username,
-		pbrief, bounce_type, &imail)) {
-		mail_free(&imail);
+	if (!bounce_producer_make(username, pbrief, bounce_type, &imail))
 		return;
-	}
 	common_util_send_mail(&imail, username, &rcpt_list);
-	mail_free(&imail);
 }
 
 BOOL common_util_save_message_ics(logon_object *plogon,
@@ -2171,11 +2166,10 @@ BOOL common_util_send_message(logon_object *plogon,
 		return FALSE;	
 	}
 	if (!common_util_send_mail(&imail, plogon->get_account(), &temp_list)) {
-		mail_free(&imail);
 		log_err("W-1280: Failed to send mid:0x%llx via SMTP", LLU(message_id));
 		return FALSE;
 	}
-	mail_free(&imail);
+	mail_clear(&imail);
 	
 	pvalue = common_util_get_propvals(&pmsgctnt->proplist,
 							PROP_TAG_DELETEAFTERSUBMIT);

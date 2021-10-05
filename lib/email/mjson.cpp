@@ -1940,7 +1940,6 @@ BOOL mjson_rfc822_check(MJSON *pjson)
 static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 {
 	int fd;
-	MAIL imail;
 	size_t length1;
 	MJSON temp_mjson;
 	char msg_path[256];
@@ -2017,9 +2016,8 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		pbuff = std::move(pbuff1);
 	}
 	
-	mail_init(&imail, pbuild->ppool);
+	MAIL imail(pbuild->ppool);
 	if (!mail_retrieve(&imail, pbuff.get(), length)) {
-		mail_free(&imail);
 		pbuild->build_result = FALSE;
 		return;
 	} else {
@@ -2032,7 +2030,6 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		
 		fd = open(msg_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 		if (-1 == fd) {
-			mail_free(&imail);
 			pbuild->build_result = FALSE;
 			return;
 		}
@@ -2040,7 +2037,6 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 			close(fd);
 			if (remove(msg_path) < 0 && errno != ENOENT)
 				fprintf(stderr, "W-1372: remove %s: %s\n", msg_path, strerror(errno));
-			mail_free(&imail);
 			pbuild->build_result = FALSE;
 			return;
 		}
@@ -2054,7 +2050,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		}
 		result = mail_get_digest(&imail, &mess_len, digest_buff + digest_len,
 					MAX_DIGLEN - digest_len - 1);
-		mail_free(&imail);
+		mail_clear(&imail);
 		pbuff.reset();
 		if (result <= 0) {
 			if (remove(msg_path) < 0 && errno != ENOENT)

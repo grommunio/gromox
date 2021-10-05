@@ -1790,7 +1790,6 @@ static BOOL common_util_get_propname(
 BOOL common_util_send_message(store_object *pstore,
 	uint64_t message_id, BOOL b_submit)
 {
-	MAIL imail;
 	void *pvalue;
 	BOOL b_result;
 	BOOL b_delete;
@@ -1926,16 +1925,15 @@ BOOL common_util_send_message(store_object *pstore,
 		}
 		common_util_set_dir(pstore->get_dir());
 		/* try to avoid TNEF message */
+		MAIL imail;
 		if (FALSE == oxcmail_export(pmsgctnt, FALSE,
 			body_type, g_mime_pool, &imail, common_util_alloc,
 			common_util_get_propids, common_util_get_propname)) {
 			return FALSE;	
 		}
 		if (!common_util_send_mail(&imail, pstore->get_account(), &temp_list)) {
-			mail_free(&imail);
 			return FALSE;
 		}
-		mail_free(&imail);
 	}
 	pvalue = common_util_get_propvals(
 		&pmsgctnt->proplist, PROP_TAG_DELETEAFTERSUBMIT);
@@ -1978,7 +1976,6 @@ BOOL common_util_send_message(store_object *pstore,
 void common_util_notify_receipt(const char *username,
 	int type, MESSAGE_CONTENT *pbrief)
 {
-	MAIL imail;
 	DOUBLE_LIST_NODE node;
 	DOUBLE_LIST rcpt_list;
 	
@@ -1989,15 +1986,13 @@ void common_util_notify_receipt(const char *username,
 	}
 	double_list_init(&rcpt_list);
 	double_list_append_as_tail(&rcpt_list, &node);
-	mail_init(&imail, g_mime_pool);
+	MAIL imail(g_mime_pool);
 	int bounce_type = type == NOTIFY_RECEIPT_READ ? BOUNCE_NOTIFY_READ : BOUNCE_NOTIFY_NON_READ;
 	if (FALSE == bounce_producer_make(username,
 		pbrief, bounce_type, &imail)) {
-		mail_free(&imail);
 		return;
 	}
 	common_util_send_mail(&imail, username, &rcpt_list);
-	mail_free(&imail);
 }
 
 static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
@@ -2510,7 +2505,6 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 {
 	int size;
 	void *ptr;
-	MAIL imail;
 	void *pvalue;
 	int body_type;
 	STREAM tmp_stream;
@@ -2559,6 +2553,7 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 	}
 	common_util_set_dir(pstore->get_dir());
 	/* try to avoid TNEF message */
+	MAIL imail;
 	if (FALSE == oxcmail_export(pmsgctnt, FALSE,
 		body_type, g_mime_pool, &imail, common_util_alloc,
 		common_util_get_propids, common_util_get_propname)) {
@@ -2566,23 +2561,20 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 	}
 	auto mail_len = mail_get_length(&imail);
 	if (mail_len < 0) {
-		mail_free(&imail);
 		return false;
 	}
 	pallocator = lib_buffer_init(STREAM_ALLOC_SIZE,
 			mail_len / STREAM_BLOCK_SIZE + 1, FALSE);
 	if (NULL == pallocator) {
-		mail_free(&imail);
 		return FALSE;
 	}
 	stream_init(&tmp_stream, pallocator);
 	if (FALSE == mail_serialize(&imail, &tmp_stream)) {
 		stream_free(&tmp_stream);
 		lib_buffer_free(pallocator);
-		mail_free(&imail);
 		return FALSE;
 	}
-	mail_free(&imail);
+	mail_clear(&imail);
 	peml_bin->pv = common_util_alloc(mail_len + 128);
 	if (peml_bin->pv == nullptr) {
 		stream_free(&tmp_stream);
@@ -2606,13 +2598,11 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 MESSAGE_CONTENT *common_util_rfc822_to_message(store_object *pstore,
     const BINARY *peml_bin)
 {
-	MAIL imail;
 	char charset[32], tmzone[64];
 	
 	auto pinfo = zarafa_server_get_info();
-	mail_init(&imail, g_mime_pool);
+	MAIL imail(g_mime_pool);
 	if (!mail_retrieve(&imail, peml_bin->pc, peml_bin->cb)) {
-		mail_free(&imail);
 		return NULL;
 	}
 	if (!system_services_lang_to_charset(pinfo->get_lang(), charset) ||
@@ -2624,7 +2614,6 @@ MESSAGE_CONTENT *common_util_rfc822_to_message(store_object *pstore,
 	common_util_set_dir(pstore->get_dir());
 	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
 	                common_util_alloc, common_util_get_propids_create);
-	mail_free(&imail);
 	return pmsgctnt;
 }
 

@@ -2960,7 +2960,6 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	uint32_t action_flavor, uint32_t template_message_id,
 	GUID template_guid, BOOL *pb_result)
 {
-	MAIL imail;
 	MIME *pmime;
 	void *pvalue;
 	GUID tmp_guid;
@@ -3122,6 +3121,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		}
 	}
 	common_util_set_tls_var(psqlite);
+	MAIL imail;
 	if (FALSE == oxcmail_export(pmsgctnt, FALSE,
 		OXCMAIL_BODY_PLAIN_AND_HTML, common_util_get_mime_pool(),
 		&imail, common_util_alloc, message_get_propids,
@@ -3132,7 +3132,6 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	common_util_set_tls_var(NULL);
 	pmime = mail_get_head(&imail);
 	if (NULL == pmime) {
-		mail_free(&imail);
 		return FALSE;
 	}
 	mime_set_field(pmime, "X-Auto-Response-Suppress", "All");
@@ -3141,11 +3140,9 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	double_list_init(&tmp_list);
 	if (FALSE == common_util_recipients_to_list(
 		pmsgctnt->children.prcpts, &tmp_list)) {
-		mail_free(&imail);
 		return FALSE;
 	}
 	common_util_send_mail(&imail, tmp_buff, &tmp_list);
-	mail_free(&imail);
 	*pb_result = TRUE;
 	return TRUE;
 }
@@ -3154,7 +3151,6 @@ static BOOL message_bounce_message(const char *from_address,
 	const char *account, sqlite3 *psqlite,
 	uint64_t message_id, uint32_t bounce_code)
 {
-	MAIL imail;
 	void *pvalue;
 	int bounce_type;
 	char tmp_buff[256];
@@ -3188,18 +3184,17 @@ static BOOL message_bounce_message(const char *from_address,
 	    psqlite, PR_SENT_REPRESENTING_SMTP_ADDRESS, &pvalue))
 		return FALSE;
 	pnode->pdata = pvalue == nullptr ? deconst(from_address) : pvalue;
-	mail_init(&imail, common_util_get_mime_pool());
+
+	MAIL imail(common_util_get_mime_pool());
 	if (FALSE == bounce_producer_make(from_address,
 		account, psqlite, message_id, bounce_type,
 		&imail)) {
-		mail_free(&imail);
 		return FALSE;
 	}
 	const char *pvalue2 = strchr(account, '@');
 	snprintf(tmp_buff, sizeof(tmp_buff), "postmaster@%s",
 	         pvalue2 == nullptr ? "system.mail" : pvalue2 + 1);
 	common_util_send_mail(&imail, tmp_buff, &tmp_list);
-	mail_free(&imail);
 	return TRUE;
 }
 
@@ -3255,8 +3250,6 @@ static BOOL message_forward_message(const char *from_address,
 	int i;
 	int num;
 	int offset;
-	MAIL imail;
-	MAIL imail1;
 	MIME *pmime;
 	void *pvalue;
 	int body_type;
@@ -3287,6 +3280,7 @@ static BOOL message_forward_message(const char *from_address,
 			return FALSE;
 	}
 	std::unique_ptr<char[], stdlib_delete> pbuff;
+	MAIL imail;
 	if (NULL != pdigest) {
 		get_digest(pdigest, "file", mid_string, arsizeof(mid_string));
 		snprintf(tmp_path, arsizeof(tmp_path), "%s/eml/%s",
@@ -3300,12 +3294,11 @@ static BOOL message_forward_message(const char *from_address,
 		}
 		if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 			return FALSE;
-		mail_init(&imail, common_util_get_mime_pool());
+		imail = MAIL(common_util_get_mime_pool());
 		if (!mail_retrieve(&imail, pbuff.get(), node_stat.st_size))
 			return FALSE;
 		pmime = mail_get_head(&imail);
 		if (NULL == pmime) {
-			mail_free(&imail);
 			return FALSE;
 		}
 		num = mime_get_field_num(pmime, "Delivered-To");
@@ -3313,7 +3306,6 @@ static BOOL message_forward_message(const char *from_address,
 			if (TRUE == mime_search_field(pmime,
 				"Delivered-To", i, tmp_buff, 256)) {
 				if (0 == strcasecmp(tmp_buff, username)) {
-					mail_free(&imail);
 					return TRUE;
 				}
 			}
@@ -3348,10 +3340,9 @@ static BOOL message_forward_message(const char *from_address,
 		common_util_set_tls_var(NULL);
 	}
 	if (action_flavor & ACTION_FLAVOR_AT) {
-		mail_init(&imail1, common_util_get_mime_pool());
+		MAIL imail1(common_util_get_mime_pool());
 		pmime = mail_add_head(&imail1);
 		if (NULL == pmime) {
-			mail_free(&imail);
 			return FALSE;
 		}
 		mime_set_content_type(pmime, "message/rfc822");
@@ -3388,11 +3379,9 @@ static BOOL message_forward_message(const char *from_address,
 			snprintf(tmp_buff, arsizeof(tmp_buff), "forwarder@%s", pdomain);
 		}
 		common_util_send_mail(&imail1, tmp_buff, &rcpt_list);
-		mail_free(&imail1);
 	} else {
 		pmime = mail_get_head(&imail);
 		if (NULL == pmime) {
-			mail_free(&imail);
 			return FALSE;
 		}
 		for (pnode=double_list_get_head(&rcpt_list); NULL!=pnode;
@@ -3406,7 +3395,6 @@ static BOOL message_forward_message(const char *from_address,
 		}
 		common_util_send_mail(&imail, tmp_buff, &rcpt_list);
 	}
-	mail_free(&imail);
 	return TRUE;
 }
 

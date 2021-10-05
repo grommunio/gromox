@@ -297,18 +297,14 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 		if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 			return 0;
 		fd.close();
-		mail_init(&imail, g_mime_pool);
-		if (!mail_retrieve(&imail, pbuff.get(), node_stat.st_size)) {
-			mail_free(&imail);
+		MAIL imail(g_mime_pool);
+		if (!mail_retrieve(&imail, pbuff.get(), node_stat.st_size))
 			return 0;
-		}
 		tmp_len = sprintf(digest_buff, "{\"file\":\"\",");
 		if (mail_get_digest(&imail, &size, digest_buff + tmp_len,
-			MAX_DIGLEN - tmp_len - 1) <= 0) {
-			mail_free(&imail);
+		    MAX_DIGLEN - tmp_len - 1) <= 0)
 			return 0;
-		}
-		mail_free(&imail);
+		mail_clear(&imail);
 		pbuff.reset();
 		tmp_len = strlen(digest_buff);
 		memcpy(digest_buff + tmp_len, "}", 2);
@@ -1965,7 +1961,6 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 	uint32_t *puidnext, uint64_t message_id, const char *mid_string,
 	uint32_t message_flags, uint64_t received_time, uint64_t mod_time)
 {
-	MAIL imail;
 	size_t size;
 	int tmp_len;
 	char from[UADDR_SIZE], rcpt[UADDR_SIZE];
@@ -2004,6 +1999,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 			common_util_switch_allocator();
 			return;
 		}
+		MAIL imail;
 		if (FALSE == oxcmail_export(pmsgctnt, FALSE,
 			OXCMAIL_BODY_PLAIN_AND_HTML, g_mime_pool, &imail,
 			common_util_alloc, common_util_get_propids,
@@ -2015,10 +2011,8 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 		common_util_switch_allocator();
 		tmp_len = sprintf(temp_buff, "{\"file\":\"\",");
 		if (mail_get_digest(&imail, &size, temp_buff + tmp_len,
-			MAX_DIGLEN - tmp_len - 1) <= 0) {
-			mail_free(&imail);
+		    MAX_DIGLEN - tmp_len - 1) <= 0)
 			return;
-		}
 		tmp_len = strlen(temp_buff);
 		memcpy(temp_buff + tmp_len, "}", 2);
 		tmp_len ++;
@@ -2027,26 +2021,17 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 		mid_string = mid_string1;
 		sprintf(temp_path, "%s/ext/%s", dir, mid_string1);
 		wrapfd fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
-		if (fd.get() < 0) {
-			mail_free(&imail);
+		if (fd.get() < 0)
 			return;
-		}
-		if (write(fd.get(), temp_buff, tmp_len) != tmp_len) {
-			mail_free(&imail);
+		if (write(fd.get(), temp_buff, tmp_len) != tmp_len)
 			return;
-		}
 		fd.close();
 		sprintf(temp_path1, "%s/eml/%s", dir, mid_string1);
 		fd = open(temp_path1, O_CREAT|O_TRUNC|O_WRONLY, 0666);
-		if (fd.get() < 0) {
-			mail_free(&imail);
+		if (fd.get() < 0)
 			return;
-		}
-		if (!mail_to_file(&imail, fd.get())) {
-			mail_free(&imail);
+		if (!mail_to_file(&imail, fd.get()))
 			return;
-		}
-		mail_free(&imail);
 	}
 	(*puidnext) ++;
 	b_unsent = !!(message_flags & MSGFLAG_UNSENT);
@@ -3211,7 +3196,6 @@ static int mail_engine_muidl(int argc, char **argv, int sockd)
 
 static int mail_engine_minst(int argc, char **argv, int sockd)
 {
-	MAIL imail;
 	int tmp_len;
 	int user_id;
 	char lang[32];
@@ -3260,15 +3244,14 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 		return MIDB_E_NO_MEMORY;
 	fd.close();
-	mail_init(&imail, g_mime_pool);
+
+	MAIL imail(g_mime_pool);
 	if (!mail_retrieve(&imail, pbuff.get(), node_stat.st_size)) {
-		mail_free(&imail);
 		return MIDB_E_NO_MEMORY;
 	}
 	tmp_len = sprintf(temp_buff, "{\"file\":\"\",");
 	if (mail_get_digest(&imail, &mess_len, temp_buff + tmp_len,
 		MAX_DIGLEN - tmp_len - 1) <= 0) {
-		mail_free(&imail);
 		return MIDB_E_NO_MEMORY;
 	}
 	tmp_len = strlen(temp_buff);
@@ -3278,25 +3261,21 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	sprintf(temp_path, "%s/ext/%s", argv[1], argv[3]);
 	fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 	if (fd.get() < 0) {
-		mail_free(&imail);
 		return MIDB_E_NO_MEMORY;
 	}
 	write(fd.get(), temp_buff, tmp_len);
 	fd.close();
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr) {
-		mail_free(&imail);
 		return MIDB_E_HASHTABLE_FULL;
 	}
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (0 == folder_id) {
 		pidb.reset();
-		mail_free(&imail);
 		return MIDB_E_NO_FOLDER;
 	}
 	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id)) {
 		pidb.reset();
-		mail_free(&imail);
 		return MIDB_E_NO_MEMORY;
 	}
 	if (!system_services_get_user_lang(pidb->username.c_str(), lang) ||
@@ -3310,7 +3289,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		strcpy(tmzone, g_default_timezone);
 	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
 	                common_util_alloc, common_util_get_propids_create);
-	mail_free(&imail);
+	mail_clear(&imail);
 	pbuff.reset();
 	if (NULL == pmsgctnt) {
 		return MIDB_E_NO_MEMORY;
@@ -3476,7 +3455,6 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 
 static int mail_engine_mcopy(int argc, char **argv, int sockd)
 {
-	MAIL imail;
 	int user_id;
 	char lang[32];
 	uint32_t cpid;
@@ -3516,26 +3494,23 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 		return MIDB_E_NO_MEMORY;
 	fd.close();
-	mail_init(&imail, g_mime_pool);
+
+	MAIL imail(g_mime_pool);
 	if (!mail_retrieve(&imail, pbuff.get(), node_stat.st_size)) {
-		mail_free(&imail);
 		return MIDB_E_NO_MEMORY;
 	}
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr) {
-		mail_free(&imail);
 		return MIDB_E_HASHTABLE_FULL;
 	}
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (0 == folder_id) {
 		pidb.reset();
-		mail_free(&imail);
 		return MIDB_E_NO_FOLDER;
 	}
 	auto folder_id1 = mail_engine_get_folder_id(pidb.get(), argv[4]);
 	if (0 == folder_id1) {
 		pidb.reset();
-		mail_free(&imail);
 		return MIDB_E_NO_FOLDER;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id, mod_time, "
@@ -3545,7 +3520,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		pidb.reset();
-		mail_free(&imail);
 		return MIDB_E_NO_MEMORY;
 	}
 	sqlite3_bind_text(pstmt, 1, argv[3], -1, SQLITE_STATIC);
@@ -3553,7 +3527,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	    gx_sql_col_uint64(pstmt, 12) != folder_id) {
 		pstmt.finalize();
 		pidb.reset();
-		mail_free(&imail);
 		return MIDB_E_NO_MESSAGE;
 	}
 	b_read = 0;
@@ -3585,7 +3558,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	pstmt.finalize();
 	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id)) {
 		pidb.reset();
-		mail_free(&imail);
 		return MIDB_E_NO_MEMORY;
 	}
 	if (!system_services_get_user_lang(pidb->username.c_str(), lang) ||
@@ -3599,11 +3571,12 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		strcpy(tmzone, g_default_timezone);
 	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
 	                common_util_alloc, common_util_get_propids_create);
-	mail_free(&imail);
+	mail_clear(&imail);
 	pbuff.reset();
 	if (NULL == pmsgctnt) {
 		return MIDB_E_NO_MEMORY;
 	}
+
 	propval.proptag = PROP_TAG_MESSAGEDELIVERYTIME;
 	propval.pvalue = &nt_time;
 	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))

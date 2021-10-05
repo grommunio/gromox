@@ -11,13 +11,18 @@
 
 using MAIL_MIME_ENUM = void (*)(MIME *, void*);
 
-struct MAIL {
-	SIMPLE_TREE tree;
-	MIME_POOL  *pmime_pool;
-	char *buffer;
+struct GX_EXPORT MAIL {
+	MAIL() = default;
+	MAIL(MIME_POOL *);
+	MAIL(MAIL &&) = delete;
+	~MAIL();
+	MAIL &operator=(MAIL &&);
+
+	SIMPLE_TREE tree{};
+	MIME_POOL *pmime_pool = nullptr;
+	char *buffer = nullptr;
 };
 
-void mail_init(MAIL *pmail, MIME_POOL *pmime_pool);
 void mail_clear(MAIL *pmail);
 BOOL mail_retrieve(MAIL *pmail, char *in_buff, size_t length);
 BOOL mail_serialize(MAIL *pmail, STREAM *pstream);
@@ -26,7 +31,6 @@ BOOL mail_to_ssl(MAIL *pmail, SSL *ssl);
 BOOL mail_check_dot(MAIL *pmail);
 BOOL mail_transfer_dot(MAIL *pmail_src, MAIL *pmail_dst);
 extern GX_EXPORT ssize_t mail_get_length(MAIL *);
-void mail_free(MAIL *pmail);
 MIME* mail_add_head(MAIL *pmail);
 MIME* mail_get_head(MAIL *pmail);
 BOOL mail_get_charset(MAIL *pmail, char *charset);

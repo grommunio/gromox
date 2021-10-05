@@ -2557,7 +2557,6 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 
 static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 {
-	MAIL mail;
 	VCARD vcard;
 	MIME *pmime1;
 	BOOL b_unifn;
@@ -2918,7 +2917,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			pmime_enum->b_result = FALSE;
 			return;
 		}
-		mail_init(&mail, pmime_enum->pmime_pool);
+		MAIL mail(pmime_enum->pmime_pool);
 		if (mail_retrieve(&mail, pcontent.get(), content_len)) {
 			tpropval_array_remove_propval(&pattachment->proplist, PR_ATTACH_LONG_FILENAME);
 			tpropval_array_remove_propval(&pattachment->proplist, PR_ATTACH_LONG_FILENAME_A);
@@ -2932,7 +2931,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 						propval.proptag = PR_DISPLAY_NAME;
 						propval.pvalue = file_name;
 						if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
-							mail_free(&mail);
 							pmime_enum->b_result = FALSE;
 							return;
 						}
@@ -2943,7 +2941,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			propval.pvalue = &tmp_int32;
 			tmp_int32 = ATTACH_EMBEDDED_MSG;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
-				mail_free(&mail);
 				pmime_enum->b_result = FALSE;
 				return;
 			}
@@ -2951,15 +2948,12 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 				pmime_enum->str_zone, &mail,
 				pmime_enum->alloc, pmime_enum->get_propids);
 			if (NULL == pmsg) {
-				mail_free(&mail);
 				pmime_enum->b_result = FALSE;
 				return;
 			}
-			mail_free(&mail);
 			attachment_content_set_embedded_internal(pattachment, pmsg);
 			return;
 		}
-		mail_free(&mail);
 	}
 	if (TRUE == b_filename && 0 == strcasecmp(
 		"message/external-body", mime_get_content_type(pmime)) &&
@@ -6315,7 +6309,6 @@ static BOOL oxcmail_export_attachment(
 	MIME_POOL *ppool, MIME *pmime)
 {
 	void *ptr;
-	MAIL imail;
 	BOOL b_tnef;
 	int tmp_len;
 	VCARD vcard;
@@ -6490,30 +6483,26 @@ static BOOL oxcmail_export_attachment(
 		} else {
 			b_tnef = FALSE;
 		}
+		MAIL imail;
 		if (FALSE == oxcmail_export(pattachment->pembedded,
 			b_tnef, pskeleton->body_type, ppool, &imail,
 			alloc, get_propids, get_propname)) {
 			return FALSE;
 		}
 		auto mail_len = mail_get_length(&imail);
-		if (mail_len < 0) {
-			mail_free(&imail);
+		if (mail_len < 0)
 			return false;
-		}
 		pallocator = lib_buffer_init(STREAM_ALLOC_SIZE,
 				mail_len / STREAM_BLOCK_SIZE + 1, FALSE);
-		if (NULL == pallocator) {
-			mail_free(&imail);
+		if (pallocator == nullptr)
 			return FALSE;
-		}
 		stream_init(&tmp_stream, pallocator);
 		if (FALSE == mail_serialize(&imail, &tmp_stream)) {
 			stream_free(&tmp_stream);
 			lib_buffer_free(pallocator);
-			mail_free(&imail);
 			return FALSE;
 		}
-		mail_free(&imail);
+		mail_clear(&imail);
 		std::unique_ptr<char[], stdlib_delete> pbuff(static_cast<char *>(malloc(mail_len + 128)));
 		if (NULL == pbuff) {
 			stream_free(&tmp_stream);
@@ -6540,10 +6529,9 @@ static BOOL oxcmail_export_attachment(
 	return TRUE;
 }
 
-BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
-	BOOL b_tnef, int body_type, MIME_POOL *ppool,
-	MAIL *pmail, EXT_BUFFER_ALLOC alloc,
-	GET_PROPIDS get_propids, GET_PROPNAME get_propname)
+BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
+    MIME_POOL *ppool, MAIL *pmail, EXT_BUFFER_ALLOC alloc,
+    GET_PROPIDS get_propids, GET_PROPNAME get_propname)
 {
 	int i;
 	ICAL ical;
@@ -6563,8 +6551,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 	MIME_SKELETON mime_skeleton;
 	ATTACHMENT_CONTENT *pattachment;
 	
-	
-	mail_init(pmail, ppool);
+	*pmail = MAIL(ppool);
 	auto pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_INTERNET_CPID);
 	if (NULL == pvalue || 1200 == *(uint32_t*)pvalue) {
 		pcharset = "utf-8";
@@ -6575,10 +6562,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	if (!oxcmail_load_mime_skeleton(pmsg, pcharset, b_tnef,
-	    body_type, &mime_skeleton)) {
-		mail_free(pmail);
+	    body_type, &mime_skeleton))
 		return FALSE;
-	}
 	phead = mail_add_head(pmail);
 	if (NULL == phead) {
 		goto EXPORT_FAILURE;
@@ -6988,6 +6973,5 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 	return TRUE;
  EXPORT_FAILURE:
 	oxcmail_free_mime_skeleton(&mime_skeleton);
-	mail_free(pmail);
 	return FALSE;
 }

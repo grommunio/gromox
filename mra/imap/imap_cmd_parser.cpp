@@ -2476,7 +2476,6 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	unsigned int uid;
 	int errnum, i;
-	MAIL imail;
 	BOOL b_seen;
 	BOOL b_draft;
 	unsigned long uidvalid;
@@ -2540,10 +2539,9 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			}
 		}
 	}
-	mail_init(&imail, imap_parser_get_mpool());
+	MAIL imail(imap_parser_get_mpool());
 	if (FALSE == mail_retrieve(&imail,
 		argv[argc - 1], strlen(argv[argc - 1]))) {
-		mail_free(&imail);
 		return 1908;
 	}
 	strcpy(flag_buff, "(");
@@ -2575,7 +2573,6 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		fprintf(stderr, "E-1456: ENOMEM\n");
 	}
 	if (-1 == fd || FALSE == mail_to_file(&imail, fd)) {
-		mail_free(&imail);
 		if (-1 != fd) {
 			close(fd);
 			if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
@@ -2585,7 +2582,8 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1909;
 	}
 	close(fd);
-	mail_free(&imail);
+	mail_clear(&imail);
+
 	switch (system_services_insert_mail(pcontext->maildir,
 	        temp_name, mid_string.c_str(), flag_buff, tmp_time, &errnum)) {
 	case MIDB_RESULT_OK:
@@ -2729,7 +2727,6 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	int i;
 	unsigned int uid;
 	int errnum;
-	MAIL imail;
 	int tmp_len;
 	BOOL b_seen;
 	BOOL b_draft;
@@ -2779,9 +2776,9 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	close(pcontext->message_fd);
 	pcontext->message_fd = -1;
 	memcpy(&tmp_len, pbuff.get(), sizeof(tmp_len));
-	mail_init(&imail, imap_parser_get_mpool());
+	MAIL imail(imap_parser_get_mpool());
 	if (!mail_retrieve(&imail, pbuff.get() + tmp_len, node_stat.st_size - tmp_len)) {
-		mail_free(&imail);
+		mail_clear(&imail);
 		pbuff.reset();
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1344: remove %s: %s\n",
@@ -2834,7 +2831,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		fprintf(stderr, "E-1460: ENOMEM\n");
 	}
 	if (-1 == fd || FALSE == mail_to_file(&imail, fd)) {
-		mail_free(&imail);
+		mail_clear(&imail);
 		pbuff.reset();
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1345: remove %s: %s\n",
@@ -2850,7 +2847,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		return 1909;
 	}
 	close(fd);
-	mail_free(&imail);
+	mail_clear(&imail);
 	pbuff.reset();
 	if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
 		fprintf(stderr, "W-1336: remove %s: %s\n",
