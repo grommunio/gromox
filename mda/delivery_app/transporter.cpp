@@ -2,6 +2,7 @@
 #include <condition_variable>
 #include <csignal>
 #include <cstring>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <typeinfo>
@@ -37,17 +38,15 @@ using namespace gromox;
 namespace {
 
 struct CONTROL_INFO {
-    int         queue_ID;
-    int         bound_type;
-	BOOL		is_spam;
-    BOOL        need_bounce;
-	char from[UADDR_SIZE];
-    MEM_FILE    f_rcpt_to;
+	int queue_ID = 0, bound_type = 0;
+	BOOL is_spam = false, need_bounce = false;
+	char from[UADDR_SIZE]{};
+	MEM_FILE f_rcpt_to{};
 };
 
 struct MESSAGE_CONTEXT {
-    CONTROL_INFO *pcontrol;
-    MAIL         *pmail;
+	CONTROL_INFO *pcontrol = nullptr;
+	MAIL *pmail = nullptr;
 };
 
 }
@@ -85,26 +84,26 @@ struct SERVICE_NODE {
 };
 
 struct FIXED_CONTEXT {
-	CONTROL_INFO	mail_control;
-    MAIL			mail;             /* mail object */
-	MESSAGE_CONTEXT context;
+	CONTROL_INFO mail_control{};
+	MAIL mail{};
+	MESSAGE_CONTEXT context{};
 };
 
 struct FREE_CONTEXT {
-	SINGLE_LIST_NODE	node;
-	CONTROL_INFO		mail_control;
-	MAIL				mail;
-	MESSAGE_CONTEXT		context;
+	SINGLE_LIST_NODE node{};
+	CONTROL_INFO mail_control{};
+	MAIL mail{};
+	MESSAGE_CONTEXT context{};
 };
 
 struct CIRCLE_NODE {
-	DOUBLE_LIST_NODE	node;
-	HOOK_FUNCTION		hook_addr;
+	DOUBLE_LIST_NODE node{};
+	HOOK_FUNCTION hook_addr = nullptr;
 };
 
 struct ANTI_LOOP {
-	DOUBLE_LIST		free_list;
-	DOUBLE_LIST		throwed_list;
+	ANTI_LOOP();
+	DOUBLE_LIST free_list{}, throwed_list{};
 };
 
 struct THREAD_DATA {
@@ -140,10 +139,10 @@ static pthread_key_t	 g_tls_key;
 static pthread_t		 g_scan_id;
 static LIB_BUFFER		 *g_file_allocator;
 static MIME_POOL		 *g_mime_pool;
-static THREAD_DATA		 *g_data_ptr;
-static FREE_CONTEXT		 *g_free_ptr;
+static std::unique_ptr<THREAD_DATA[]> g_data_ptr;
+static std::unique_ptr<FREE_CONTEXT[]> g_free_ptr;
 static HOOK_PLUG_ENTITY *g_cur_lib;
-static CIRCLE_NODE		 *g_circles_ptr;
+static std::unique_ptr<CIRCLE_NODE[]> g_circles_ptr;
 static bool g_ign_loaderr;
 
 static void transporter_collect_resource();
@@ -174,6 +173,12 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext);
 static void transporter_enqueue_context(MESSAGE_CONTEXT *pcontext);
 static MESSAGE_CONTEXT *transporter_dequeue_context();
 static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level, const char *format, ...);
+
+ANTI_LOOP::ANTI_LOOP()
+{
+	double_list_init(&free_list);
+	double_list_init(&throwed_list);
+}
 
 /*
  *	transporter's initial function
@@ -213,49 +218,40 @@ void transporter_init(const char *path, const char *const *names,
  */
 int transporter_run()
 {
-	size_t size;
 	pthread_attr_t attr;
-	FREE_CONTEXT *pcontext;
-	ANTI_LOOP *panti;
-	CIRCLE_NODE *pcircle;
 	
-	size = sizeof(CIRCLE_NODE)*g_threads_max*MAX_THROWING_NUM;
-	g_circles_ptr = (CIRCLE_NODE*)malloc(size);
-	if (NULL == g_circles_ptr) {
+	try {
+		g_circles_ptr = std::make_unique<CIRCLE_NODE[]>(g_threads_max * MAX_THROWING_NUM);
+	} catch (const std::bad_alloc &) {
 		printf("[transporter]: Failed to allocate memory for circle list\n");
         return -1;
 	}
-	memset(g_circles_ptr, 0, size);
-	size = sizeof(THREAD_DATA)*g_threads_max;
-	g_data_ptr = (THREAD_DATA*)malloc(size);
-	if (NULL == g_data_ptr) {
+	try {
+		g_data_ptr = std::make_unique<THREAD_DATA[]>(g_threads_max);
+	} catch (const std::bad_alloc &) {
 		printf("[transporter]: Failed to allocate memory for threads data\n");
 		transporter_collect_resource();
 		return -2;
 	}
-	memset(g_data_ptr, 0, size);
 	for (size_t i = 0; i < g_threads_max; ++i) {
-		g_data_ptr[i].node.pdata = g_data_ptr + i;
-		panti = &g_data_ptr[i].anti_loop;
-		double_list_init(&panti->free_list);
-		double_list_init(&panti->throwed_list);
+		g_data_ptr[i].node.pdata = &g_data_ptr[i];
+		auto panti = &g_data_ptr[i].anti_loop;
 		for (size_t j = 0; j < MAX_THROWING_NUM; ++j) {
-			pcircle = g_circles_ptr + i*MAX_THROWING_NUM + j;
+			auto pcircle = &g_circles_ptr[i*MAX_THROWING_NUM+j];
 			pcircle->node.pdata = pcircle;
 			double_list_append_as_tail(&panti->free_list, &pcircle->node);
 		}
 	}
-	
-	size = sizeof(FREE_CONTEXT)*g_free_num;
-	g_free_ptr = (FREE_CONTEXT*)malloc(size);
-	if (NULL == g_free_ptr) {
+
+	try {
+		g_free_ptr = std::make_unique<FREE_CONTEXT[]>(g_free_num);
+	} catch (const std::bad_alloc &) {
 		transporter_collect_resource();
 		printf("[transporter]: Failed to allocate memory for free list\n");
         return -3;
 	}
-	memset(g_free_ptr, 0, size);
 	for (size_t i = 0; i < g_free_num; ++i) {
-		pcontext = g_free_ptr + i;
+		auto pcontext = &g_free_ptr[i];
 		pcontext->node.pdata = pcontext;
 		single_list_append_as_tail(&g_free_list, &pcontext->node);
 	}
@@ -376,18 +372,9 @@ static void transporter_collect_resource()
         mime_pool_free(g_mime_pool);
         g_mime_pool = NULL;
     }
-    if (NULL != g_data_ptr) {
-        free(g_data_ptr);
-        g_data_ptr = NULL;
-    }
-	if (NULL != g_free_ptr) {
-		free(g_free_ptr);
-		g_free_ptr = NULL;
-	}
-	if (NULL != g_circles_ptr) {
-		free(g_circles_ptr);
-		g_circles_ptr = NULL;
-	}
+	g_data_ptr.reset();
+	g_free_ptr.reset();
+	g_circles_ptr.reset();
 }
 
 void transporter_stop()
@@ -977,8 +964,8 @@ static void transporter_enqueue_context(MESSAGE_CONTEXT *pcontext)
 {
 	SINGLE_LIST_NODE *pnode;
 
-	if ((char*)pcontext < (char*)g_free_ptr ||
-		(char*)pcontext > (char*)(g_free_ptr + g_free_num)) {
+	if (reinterpret_cast<uintptr_t>(pcontext) < reinterpret_cast<uintptr_t>(g_free_ptr.get()) ||
+	    reinterpret_cast<uintptr_t>(pcontext) > reinterpret_cast<uintptr_t>(g_free_ptr.get() + g_free_num)) {
 		printf("[transporter]: invalid context pointer is detected when some "
 				"plugin try to enqueue message context\n");
 		return;
@@ -1026,8 +1013,8 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 	CIRCLE_NODE *pcircle;
 	HOOK_FUNCTION last_thrower, last_hook;
 
-	if ((char*)pcontext < (char*)g_free_ptr ||
-		(char*)pcontext > (char*)(g_free_ptr + g_free_num)) {
+	if (reinterpret_cast<uintptr_t>(pcontext) < reinterpret_cast<uintptr_t>(g_free_ptr.get()) ||
+	    reinterpret_cast<uintptr_t>(pcontext) > reinterpret_cast<uintptr_t>(g_free_ptr.get() + g_free_num)) {
 		printf("[transporter]: invalid context pointer is detected when some "
 				"plugin try to throw message context\n");
 		return FALSE;
