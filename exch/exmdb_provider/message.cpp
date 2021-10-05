@@ -2497,11 +2497,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 static BOOL message_load_folder_rules(BOOL b_oof,
 	sqlite3 *psqlite, uint64_t folder_id, DOUBLE_LIST *plist)
 {
-	void *pvalue;
-	uint32_t state;
-	RULE_NODE *prnode;
 	char sql_string[256];
-	DOUBLE_LIST_NODE *pnode;
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT state, rule_id,"
 					" sequence, provider FROM rules WHERE"
@@ -2510,7 +2506,7 @@ static BOOL message_load_folder_rules(BOOL b_oof,
 	if (pstmt == nullptr)
 		return FALSE;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		state = sqlite3_column_int64(pstmt, 0);
+		uint32_t state = sqlite3_column_int64(pstmt, 0);
 		if ((state & RULE_STATE_PARSE_ERROR)
 			|| (state & RULE_STATE_ERROR)) {
 			continue;
@@ -2524,7 +2520,7 @@ static BOOL message_load_folder_rules(BOOL b_oof,
 		} else {
 			continue;
 		}
-		prnode = cu_alloc<RULE_NODE>();
+		auto prnode = cu_alloc<RULE_NODE>();
 		if (NULL == prnode) {
 			return FALSE;
 		}
@@ -2532,14 +2528,15 @@ static BOOL message_load_folder_rules(BOOL b_oof,
 		prnode->state = state;
 		prnode->id = sqlite3_column_int64(pstmt, 1);
 		prnode->sequence = sqlite3_column_int64(pstmt, 2);
-		pvalue = (void*)sqlite3_column_text(pstmt, 3);
+		auto pvalue = reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 3));
 		if (NULL == pvalue) {
 			continue;
 		}
-		prnode->provider = common_util_dup(static_cast<char *>(pvalue));
+		prnode->provider = common_util_dup(pvalue);
 		if (NULL == prnode->provider) {
 			return FALSE;
 		}
+		DOUBLE_LIST_NODE *pnode;
 		for (pnode=double_list_get_head(plist); NULL!=pnode;
 			pnode=double_list_get_after(plist, pnode)) {
 			if (((RULE_NODE*)pnode->pdata)->sequence >= prnode->sequence) {
@@ -2557,13 +2554,7 @@ static BOOL message_load_folder_rules(BOOL b_oof,
 static BOOL message_load_folder_ext_rules(BOOL b_oof,
 	sqlite3 *psqlite, uint64_t folder_id, DOUBLE_LIST *plist)
 {
-	void *pvalue;
-	uint32_t state;
-	uint32_t sequence;
-	RULE_NODE *prnode;
-	uint64_t message_id;
 	char sql_string[256];
-	DOUBLE_LIST_NODE *pnode;
 	
 	if (TRUE == exmdb_server_check_private()) {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
@@ -2582,7 +2573,8 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof,
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		if (++count > MAX_FAI_COUNT)
 			break;
-		message_id = sqlite3_column_int64(pstmt, 0);
+		uint64_t message_id = sqlite3_column_int64(pstmt, 0);
+		void *pvalue = nullptr;
 		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
 		    message_id, 0, psqlite, PR_MESSAGE_CLASS, &pvalue))
 			return FALSE;
@@ -2595,7 +2587,7 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof,
 		if (NULL == pvalue) {
 			continue;
 		}
-		state = *(uint32_t*)pvalue;
+		auto state = *static_cast<uint32_t *>(pvalue);
 		if ((state & RULE_STATE_PARSE_ERROR)
 			|| (state & RULE_STATE_ERROR)) {
 			continue;
@@ -2615,14 +2607,14 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof,
 		if (NULL == pvalue) {
 			continue;
 		}
-		sequence = *(uint32_t*)pvalue;
+		auto sequence = *static_cast<uint32_t *>(pvalue);
 		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
 		    message_id, 0, psqlite, PR_RULE_MSG_PROVIDER, &pvalue))
 			return FALSE;
 		if (NULL == pvalue) {
 			continue;
 		}
-		prnode = cu_alloc<RULE_NODE>();
+		auto prnode = cu_alloc<RULE_NODE>();
 		if (NULL == prnode) {
 			return FALSE;
 		}
@@ -2631,6 +2623,7 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof,
 		prnode->id = message_id;
 		prnode->sequence = sequence;
 		prnode->provider = static_cast<char *>(pvalue);
+		DOUBLE_LIST_NODE *pnode;
 		for (pnode=double_list_get_head(plist); NULL!=pnode;
 			pnode=double_list_get_after(plist, pnode)) {
 			if (((RULE_NODE*)pnode->pdata)->sequence >= prnode->sequence) {
