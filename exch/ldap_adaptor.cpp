@@ -137,10 +137,9 @@ static auto gx_auto_retry(F &&func, ldap_ptr &ld, Args &&...args) ->
 
 BOOL ldap_adaptor_login2(const char *username, const char *password)
 {
-	struct stdlib_free { void operator()(void *p) { free(p); } };
 	auto tok = g_conn_pool.get_wait();
 	ldap_msg msg;
-	std::unique_ptr<char, stdlib_free> freeme;
+	std::unique_ptr<char[], stdlib_delete> freeme;
 	auto quoted = HX_strquote(username, HXQUOTE_LDAPRDN, &unique_tie(freeme));
 	auto filter = g_mail_attr + "="s + quoted;
 	auto ret = gx_auto_retry(ldap_search_ext_s, tok.res.meta,

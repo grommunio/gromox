@@ -25,10 +25,6 @@ struct file_deleter {
 	inline void operator()(FILE *f) const { fclose(f); }
 };
 
-struct stdlib_delete {
-	inline void operator()(void *x) const { free(x); }
-};
-
 struct DIR_mp {
 	std::string m_path;
 	std::unique_ptr<DIR, file_deleter> m_dir;

@@ -79,8 +79,7 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	ret = pam_get_item(pamh, PAM_AUTHTOK, &authtok_v);
 	if (ret != PAM_SUCCESS)
 		return PAM_AUTH_ERR;
-	struct stdlib_free { void operator()(void *p) { free(p); } };
-	std::unique_ptr<char, stdlib_free> authtok;
+	std::unique_ptr<char[], stdlib_delete> authtok;
 	if (authtok_v != nullptr) {
 		authtok.reset(strdup(static_cast<const char *>(authtok_v)));
 	} else {

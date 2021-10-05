@@ -18,12 +18,6 @@
 
 using namespace gromox;
 
-namespace {
-
-struct stdlib_free { void operator()(void *x) { free(x); } };
-
-}
-
 static void help()
 {
 	std::cout << "Usage: bodyconv {texttohtml|htmltortf|rtfcptortf|rtftohtml|htmltotext}" << std::endl;
@@ -49,7 +43,7 @@ int main(int argc, const char **argv)
 	while ((have_read = read(STDIN_FILENO, buf, sizeof(buf))) > 0)
 		all += std::string_view(buf, have_read);
 	if (strcmp(argv[1], "texttohtml") == 0) {
-		std::unique_ptr<char, stdlib_free> out(plain_to_html(all.c_str()));
+		std::unique_ptr<char[], stdlib_delete> out(plain_to_html(all.c_str()));
 		if (out != nullptr)
 			std::cout << out.get() << std::endl;
 	} else if (strcmp(argv[1], "htmltotext") == 0) {
@@ -57,14 +51,14 @@ int main(int argc, const char **argv)
 		if (html_to_plain(all.c_str(), all.size(), out) >= 0)
 			std::cout << out << std::endl;
 	} else if (strcmp(argv[1], "htmltortf") == 0) {
-		std::unique_ptr<char, stdlib_free> out;
+		std::unique_ptr<char[], stdlib_delete> out;
 		size_t outlen = 0;
 		if (html_to_rtf(all.c_str(), all.size(), 65001, &unique_tie(out), &outlen))
 			std::cout << std::string_view(out.get(), outlen) << std::endl;
 	} else if (strcmp(argv[1], "rtftohtml") == 0) {
 		auto at = attachment_list_init();
 		size_t outlen = 0;
-		std::unique_ptr<char, stdlib_free> out;
+		std::unique_ptr<char[], stdlib_delete> out;
 		if (rtf_to_html(all.c_str(), all.size(), "utf-8", &unique_tie(out), &outlen, at))
 			std::cout << std::string_view(out.get(), outlen) << std::endl;
 	} else if (strcmp(argv[1], "rtfcptortf") == 0) {

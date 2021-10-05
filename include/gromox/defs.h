@@ -2,6 +2,7 @@
 #include <endian.h>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 template<typename T, size_t N> constexpr inline size_t GX_ARRAY_SIZE(T (&)[N]) { return N; }
 namespace gromox {
 template<typename T, size_t N> constexpr inline size_t arsizeof(T (&)[N]) { return N; }
@@ -137,3 +138,11 @@ template<typename T, typename U> constexpr auto strange_roundup(T x, U y) -> dec
 #endif
 
 static inline constexpr bool is_nameprop_id(unsigned int i) { return i >= 0x8000 && i <= 0xFFFE; }
+
+namespace gromox {
+
+struct stdlib_delete {
+	inline void operator()(void *x) const { free(x); }
+};
+
+}
