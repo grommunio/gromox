@@ -55,7 +55,7 @@ struct RULE_NODE {
 
 struct DAM_NODE {
 	uint64_t rule_id = 0, folder_id = 0, message_id = 0;
-	char *provider = nullptr;
+	const char *provider = nullptr;
 	const ACTION_BLOCK *pblock = nullptr;
 };
 
@@ -3674,7 +3674,7 @@ static bool op_move_same(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
     DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block, size_t rule_idx,
-    RULE_NODE *prnode, BOOL &b_del)
+    const RULE_NODE *prnode, BOOL &b_del)
 {
 	auto pmovecopy = static_cast<MOVECOPY_ACTION *>(block.pdata);
 	auto dst_fid = rop_util_get_gc_value(static_cast<SVREID *>(
@@ -3792,7 +3792,7 @@ static bool op_move_same(BOOL b_oof, const char *from_address,
  * Have the message moved to another store by the client.
  */
 static bool op_move_across(uint64_t folder_id, uint64_t message_id,
-    RULE_NODE *prnode, const ACTION_BLOCK &block,
+    const RULE_NODE *prnode, const ACTION_BLOCK &block,
     std::list<DAM_NODE> &dam_list) try
 {
 	if (FALSE == exmdb_server_check_private()) {
@@ -3813,7 +3813,7 @@ static bool op_move_across(uint64_t folder_id, uint64_t message_id,
 static bool op_reply(const char *from_address, const char *account,
     sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
     DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block, size_t rule_idx,
-    RULE_NODE *prnode)
+    const RULE_NODE *prnode)
 {
 	auto preply = static_cast<REPLY_ACTION *>(block.pdata);
 	BOOL b_result = false;
@@ -3840,7 +3840,7 @@ static bool op_reply(const char *from_address, const char *account,
 }
 
 static bool op_defer(uint64_t folder_id, uint64_t message_id,
-    const ACTION_BLOCK &block, RULE_NODE *prnode,
+    const ACTION_BLOCK &block, const RULE_NODE *prnode,
     std::list<DAM_NODE> &dam_list) try
 {
 	if (FALSE == exmdb_server_check_private()) {
@@ -3861,7 +3861,7 @@ static bool op_defer(uint64_t folder_id, uint64_t message_id,
 static bool op_forward(const char *from_address, const char *account,
     uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
     const char *pdigest, DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block,
-    size_t rule_idx, RULE_NODE *prnode)
+    size_t rule_idx, const RULE_NODE *prnode)
 {
 	if (FALSE == exmdb_server_check_private()) {
 		return true;
@@ -3891,7 +3891,7 @@ static bool op_forward(const char *from_address, const char *account,
 static bool op_delegate(const char *from_address, const char *account,
     uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
     const char *pdigest, DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block,
-    size_t rule_idx, RULE_NODE *prnode)
+    size_t rule_idx, const RULE_NODE *prnode)
 {
 	auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
 	if (FALSE == exmdb_server_check_private() ||
@@ -4016,7 +4016,7 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
     DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block, size_t rule_idx,
-    RULE_NODE *prnode, BOOL &b_del, std::list<DAM_NODE> &dam_list)
+    const RULE_NODE *prnode, BOOL &b_del, std::list<DAM_NODE> &dam_list)
 {
 	static const uint8_t fake_true = 1;
 	switch (block.type) {
@@ -4100,7 +4100,7 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 }
 
 static bool opx_move_private(const char *account, sqlite3 *psqlite,
-    RULE_NODE *prnode, const EXT_MOVECOPY_ACTION *pextmvcp)
+    const RULE_NODE *prnode, const EXT_MOVECOPY_ACTION *pextmvcp)
 {
 	if (EITLT_PRIVATE_FOLDER !=
 	    pextmvcp->folder_eid.folder_type) {
@@ -4128,7 +4128,7 @@ static bool opx_move_private(const char *account, sqlite3 *psqlite,
 }
 
 static bool opx_move_public(const char *account, sqlite3 *psqlite,
-    RULE_NODE *prnode, const EXT_MOVECOPY_ACTION *pextmvcp)
+    const RULE_NODE *prnode, const EXT_MOVECOPY_ACTION *pextmvcp)
 {
 	if (EITLT_PUBLIC_FOLDER !=
 	    pextmvcp->folder_eid.folder_type) {
@@ -4161,8 +4161,8 @@ static bool opx_move_public(const char *account, sqlite3 *psqlite,
 static bool opx_move(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
-    DOUBLE_LIST *pmsg_list, const EXT_ACTION_BLOCK &block, RULE_NODE *prnode,
-    BOOL &b_del)
+    DOUBLE_LIST *pmsg_list, const EXT_ACTION_BLOCK &block,
+    const RULE_NODE *prnode, BOOL &b_del)
 {
 	auto pextmvcp = static_cast<EXT_MOVECOPY_ACTION *>(block.pdata);
 	auto ret = exmdb_server_check_private() ?
@@ -4275,7 +4275,7 @@ static bool opx_move(BOOL b_oof, const char *from_address,
 
 static bool opx_reply(const char *from_address, const char *account,
     sqlite3 *psqlite, uint64_t message_id, const EXT_ACTION_BLOCK &block,
-    RULE_NODE *prnode)
+    const RULE_NODE *prnode)
 {
 	auto pextreply = static_cast<EXT_REPLY_ACTION *>(block.pdata);
 	if (TRUE == exmdb_server_check_private()) {
@@ -4331,7 +4331,7 @@ static bool opx_reply(const char *from_address, const char *account,
 
 static bool opx_delegate(const char *from_address, const char *account,
     uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id, uint64_t message_id,
-    const char *pdigest, const EXT_ACTION_BLOCK &block, RULE_NODE *prnode)
+    const char *pdigest, const EXT_ACTION_BLOCK &block, const RULE_NODE *prnode)
 {
 	auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
 	if (FALSE == exmdb_server_check_private() ||
@@ -4449,7 +4449,7 @@ static bool opx_switcheroo(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
     DOUBLE_LIST *pmsg_list, const EXT_ACTION_BLOCK &block,
-    size_t rule_idx, RULE_NODE *prnode, BOOL &b_del)
+    size_t rule_idx, const RULE_NODE *prnode, BOOL &b_del)
 {
 	static constexpr uint8_t fake_true = 1;
 	switch (block.type) {
@@ -4538,9 +4538,8 @@ static bool opx_switcheroo(BOOL b_oof, const char *from_address,
 static bool opx_process(BOOL b_oof, const char *from_address,
     const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
     uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
-    DOUBLE_LIST *pmsg_list, DOUBLE_LIST_NODE *pnode, BOOL &b_del, BOOL &b_exit)
+    DOUBLE_LIST *pmsg_list, const RULE_NODE *prnode, BOOL &b_del, BOOL &b_exit)
 {
-	auto prnode = static_cast<RULE_NODE *>(pnode->pdata);
 	if (TRUE == b_exit && 0 == (prnode->state
 	    & RULE_STATE_ONLY_WHEN_OOF)) {
 		return true;
@@ -4657,7 +4656,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 	     pnode = double_list_get_after(&ext_rule_list, pnode))
 		if (!opx_process(b_oof, from_address, account, cpid, psqlite,
 		    folder_id, message_id, pdigest, pfolder_list, pmsg_list,
-		    pnode, b_del, b_exit))
+		    static_cast<RULE_NODE *>(pnode->pdata), b_del, b_exit))
 			return false;
 
 	if (TRUE == b_del) {
