@@ -1043,7 +1043,6 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 	if (NULL == pcircle) {
 		printf("[transporter]: exceed the maximum depth that one thread "
 			"can throw\n");
-		double_list_insert_as_head(&pthr_data->anti_loop.free_list, &pcircle->node);
 		transporter_put_context(pcontext);
         return FALSE;
 	}
