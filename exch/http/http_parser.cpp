@@ -1704,8 +1704,8 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 		}
 		if (TRUE == ((RPC_OUT_CHANNEL*)
 		    pvconnection->pcontext_out->pchannel)->b_obsolete) {
-			pdu_processor_output_pdu(pcall,
-				&((RPC_IN_CHANNEL*)pcontext->pchannel)->pdu_list);
+			auto chan = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
+			pdu_processor_output_pdu(pcall, &chan->pdu_list);
 			pvconnection.put();
 			pdu_processor_free_call(pcall);
 			return PROCESS_CONTINUE;
@@ -1968,8 +1968,8 @@ void http_parser_vconnection_async_reply(const char *host,
 	if (TRUE == ((RPC_OUT_CHANNEL*)
 		pvconnection->pcontext_out->pchannel)->b_obsolete) {
 		if (NULL != pvconnection->pcontext_in) {
-			pdu_processor_output_pdu(pcall, &((RPC_IN_CHANNEL*)
-				pvconnection->pcontext_in->pchannel)->pdu_list);
+			auto chan = static_cast<RPC_IN_CHANNEL *>(pvconnection->pcontext_in->pchannel);
+			pdu_processor_output_pdu(pcall, &chan->pdu_list);
 			return;
 		}
 	} else {
@@ -2179,8 +2179,8 @@ BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext)
 	const char *conn_cookie;
 	
 	if (CHANNEL_TYPE_IN == pcontext->channel_type) {
-		conn_cookie = ((RPC_IN_CHANNEL*)
-			pcontext->pchannel)->connection_cookie;
+		auto chan = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
+		conn_cookie = chan->connection_cookie;
 	} else if (CHANNEL_TYPE_OUT == pcontext->channel_type) {
 		conn_cookie = ((RPC_OUT_CHANNEL*)
 			pcontext->pchannel)->connection_cookie;
@@ -2247,9 +2247,9 @@ void http_parser_set_outchannel_flowcontrol(HTTP_CONTEXT *pcontext,
 	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
 		return;
 	}
-	auto pvconnection = http_parser_get_vconnection(
-		pcontext->host, pcontext->port, ((RPC_IN_CHANNEL*)
-		pcontext->pchannel)->connection_cookie);
+	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
+	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	                    pcontext->port, hch->connection_cookie);
 	if (pvconnection == nullptr)
 		return;
 	if (NULL == pvconnection->pcontext_out) {
@@ -2271,29 +2271,19 @@ BOOL http_parser_recycle_inchannel(
 	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
 		return FALSE;
 	}
-	auto pvconnection = http_parser_get_vconnection(
-		pcontext->host, pcontext->port, ((RPC_IN_CHANNEL*)
-		pcontext->pchannel)->connection_cookie);
+	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
+	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	                    pcontext->port, hch->connection_cookie);
 	
 	if (pvconnection != nullptr) {
 		if (NULL != pvconnection->pcontext_in &&
-			0 == strcmp(predecessor_cookie, ((RPC_IN_CHANNEL*)
-			pvconnection->pcontext_in->pchannel)->channel_cookie)) {
-			((RPC_IN_CHANNEL*)pcontext->pchannel)->life_time =
-				((RPC_IN_CHANNEL*)
-				pvconnection->pcontext_in->pchannel)->life_time;
-			((RPC_IN_CHANNEL*)pcontext->pchannel)->client_keepalive =
-				((RPC_IN_CHANNEL*)
-				pvconnection->pcontext_in->pchannel)->client_keepalive;
-			((RPC_IN_CHANNEL*)pcontext->pchannel)->available_window =
-				((RPC_IN_CHANNEL*)
-				pvconnection->pcontext_in->pchannel)->available_window;
-			((RPC_IN_CHANNEL*)pcontext->pchannel)->bytes_received =
-				((RPC_IN_CHANNEL*)
-				pvconnection->pcontext_in->pchannel)->bytes_received;
-			strcpy(((RPC_IN_CHANNEL*)pcontext->pchannel)->assoc_group_id,
-				((RPC_IN_CHANNEL*)
-				pvconnection->pcontext_in->pchannel)->assoc_group_id);
+		    strcmp(predecessor_cookie, static_cast<RPC_IN_CHANNEL *>(pvconnection->pcontext_in->pchannel)->channel_cookie) == 0) {
+			auto ich = static_cast<RPC_IN_CHANNEL *>(pvconnection->pcontext_in->pchannel);
+			hch->life_time = ich->life_time;
+			hch->client_keepalive = ich->client_keepalive;
+			hch->available_window = ich->available_window;
+			hch->bytes_received = ich->bytes_received;
+			strcpy(hch->assoc_group_id, ich->assoc_group_id);
 			pvconnection->pcontext_insucc = pcontext;
 			return TRUE;
 		}
@@ -2348,25 +2338,21 @@ BOOL http_parser_recycle_outchannel(
 BOOL http_parser_activate_inrecycling(
 	HTTP_CONTEXT *pcontext, const char *successor_cookie)
 {
-	RPC_IN_CHANNEL *pchannel_in;
-	
 	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
 		return FALSE;
 	}
-	auto pvconnection = http_parser_get_vconnection(
-		pcontext->host, pcontext->port, ((RPC_IN_CHANNEL*)
-		pcontext->pchannel)->connection_cookie);
+	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
+	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	                    pcontext->port, hch->connection_cookie);
 	if (pvconnection != nullptr) {
 		if (pcontext == pvconnection->pcontext_insucc &&
-			0 == strcmp(successor_cookie, ((RPC_IN_CHANNEL*)
-			pvconnection->pcontext_insucc->pchannel)->channel_cookie)) {
+		    strcmp(successor_cookie, static_cast<RPC_IN_CHANNEL *>(pvconnection->pcontext_insucc->pchannel)->channel_cookie) == 0) {
 			if (NULL != pvconnection->pcontext_in) {
-				pchannel_in = static_cast<RPC_IN_CHANNEL *>(pvconnection->pcontext_in->pchannel);
+				auto pchannel_in = static_cast<RPC_IN_CHANNEL *>(pvconnection->pcontext_in->pchannel);
 				pchannel_in->channel_stat = CHANNEL_STAT_RECYCLED;
 			}
 			pvconnection->pcontext_in = pcontext;
-			((RPC_IN_CHANNEL*)pcontext->pchannel)->channel_stat =
-												CHANNEL_STAT_OPENED;
+			hch->channel_stat = CHANNEL_STAT_OPENED;
 			pvconnection->pcontext_insucc = NULL;
 			return TRUE;
 		}
@@ -2382,8 +2368,9 @@ BOOL http_parser_activate_outrecycling(
 	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
 		return FALSE;
 	}
-	auto pvconnection = http_parser_get_vconnection(pcontext->host, pcontext->port,
-		((RPC_IN_CHANNEL*)pcontext->pchannel)->connection_cookie);
+	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
+	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	                    pcontext->port, hch->connection_cookie);
 	if (pvconnection != nullptr) {
 		if (pcontext == pvconnection->pcontext_in &&
 			NULL != pvconnection->pcontext_out &&
@@ -2413,15 +2400,14 @@ BOOL http_parser_activate_outrecycling(
 
 void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, uint32_t keepalive)
 {
-	RPC_IN_CHANNEL *pchannel_in;
 	RPC_OUT_CHANNEL *pchannel_out;
 	
-	auto pvconnection = http_parser_get_vconnection(
-		pcontext->host, pcontext->port, ((RPC_IN_CHANNEL*)
-		pcontext->pchannel)->connection_cookie);
+	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
+	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	                    pcontext->port, hch->connection_cookie);
 	if (pvconnection != nullptr) {
 		if (pcontext == pvconnection->pcontext_in) {
-			pchannel_in = (RPC_IN_CHANNEL*)pcontext->pchannel;
+			auto pchannel_in = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
 			pchannel_in->client_keepalive = keepalive;
 			if (NULL != pvconnection->pcontext_out) {
 				pchannel_out = (RPC_OUT_CHANNEL*)
