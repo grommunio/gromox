@@ -1171,19 +1171,18 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 	pcontext->write_offset = 0;
 	unsigned int tmp_len;
 	if (CHANNEL_TYPE_OUT == pcontext->channel_type &&
-	    CHANNEL_STAT_OPENED == ((RPC_OUT_CHANNEL*)
-	    pcontext->pchannel)->channel_stat) {
+	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == CHANNEL_STAT_OPENED) {
 		/* stream_out is shared resource of vconnection,
 			lock it first before operating */
-		auto pvconnection = http_parser_get_vconnection(
-			pcontext->host, pcontext->port,
-			((RPC_OUT_CHANNEL*)pcontext->pchannel)->connection_cookie);
+		auto chan = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
+		auto pvconnection = http_parser_get_vconnection(pcontext->host,
+		                    pcontext->port, chan->connection_cookie);
 		if (pvconnection == nullptr) {
 			http_parser_log_info(pcontext, LV_DEBUG,
 				"virtual connection error in hash table");
 			return X_RUNOFF;
 		}
-		auto pnode = double_list_get_head(&static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->pdu_list);
+		auto pnode = double_list_get_head(&chan->pdu_list);
 		if (NULL == pnode) {
 			pvconnection.put();
 			pcontext->sched_stat = SCHED_STAT_WAIT;
@@ -1213,8 +1212,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 
 	ssize_t written_len = pcontext->write_length - pcontext->write_offset;
 	if (CHANNEL_TYPE_OUT == pcontext->channel_type &&
-	    CHANNEL_STAT_OPENED == ((RPC_OUT_CHANNEL*)
-	    pcontext->pchannel)->channel_stat) {
+	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == CHANNEL_STAT_OPENED) {
 		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
 		if (pchannel_out->available_window < 1024) {
 			return PROCESS_IDLE;
@@ -1260,8 +1258,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 	pcontext->write_offset += written_len;
 	pcontext->bytes_rw += written_len;
 	if (CHANNEL_TYPE_OUT == pcontext->channel_type &&
-	    CHANNEL_STAT_OPENED == ((RPC_OUT_CHANNEL*)
-	    pcontext->pchannel)->channel_stat) {
+	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == CHANNEL_STAT_OPENED) {
 		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
 		auto pvconnection = http_parser_get_vconnection(pcontext->host,
 				pcontext->port, pchannel_out->connection_cookie);
@@ -1279,13 +1276,12 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 	pcontext->write_buff = NULL;
 	pcontext->write_length = 0;
 	if (CHANNEL_TYPE_OUT == pcontext->channel_type &&
-	    CHANNEL_STAT_OPENED == ((RPC_OUT_CHANNEL*)
-	    pcontext->pchannel)->channel_stat) {
+	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == CHANNEL_STAT_OPENED) {
 		/* stream_out is shared resource of vconnection,
 			lock it first before operating */
-		auto pvconnection = http_parser_get_vconnection(
-			pcontext->host, pcontext->port,
-			((RPC_OUT_CHANNEL*)pcontext->pchannel)->connection_cookie);
+		auto hch = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
+		auto pvconnection = http_parser_get_vconnection(pcontext->host,
+		                    pcontext->port, hch->connection_cookie);
 		if (pvconnection == nullptr) {
 			http_parser_log_info(pcontext, LV_DEBUG,
 				"virtual connection error in hash table");
@@ -1296,23 +1292,17 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 			free(((BLOB_NODE*)pnode->pdata)->blob.data);
 			pdu_processor_free_blob(static_cast<BLOB_NODE *>(pnode->pdata));
 		}
-		pnode = double_list_get_head(
-			&((RPC_OUT_CHANNEL*)pcontext->pchannel)->pdu_list);
+		pnode = double_list_get_head(&hch->pdu_list);
 		if (pnode != nullptr) {
 			pcontext->write_buff = static_cast<BLOB_NODE *>(pnode->pdata)->blob.data;
 			pcontext->write_length = static_cast<BLOB_NODE *>(pnode->pdata)->blob.length;
 		} else if (pcontext->total_length > 0 &&
-		    pcontext->total_length - pcontext->bytes_rw <=
-		    MAX_RECLYING_REMAINING && FALSE ==
-		    ((RPC_OUT_CHANNEL *)pcontext->pchannel)->b_obsolete) {
+		    pcontext->total_length - pcontext->bytes_rw <= MAX_RECLYING_REMAINING &&
+		    !hch->b_obsolete) {
 			/* begin of out channel recycling */
-			if (TRUE == pdu_processor_rts_outr2_a2(
-			    ((RPC_OUT_CHANNEL*)pcontext->pchannel)->pcall)) {
-				pdu_processor_output_pdu(
-					((RPC_OUT_CHANNEL*)pcontext->pchannel)->pcall,
-					&((RPC_OUT_CHANNEL*)pcontext->pchannel)->pdu_list);
-				((RPC_OUT_CHANNEL*)
-				pcontext->pchannel)->b_obsolete = TRUE;
+			if (pdu_processor_rts_outr2_a2(hch->pcall)) {
+				pdu_processor_output_pdu(hch->pcall, &hch->pdu_list);
+				hch->b_obsolete = TRUE;
 			}
 		} else {
 			pcontext->sched_stat = SCHED_STAT_WAIT;
@@ -1326,11 +1316,9 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 	if (pcontext->write_buff != nullptr) {
 		return PROCESS_CONTINUE;
 	}
-	if (CHANNEL_TYPE_OUT == pcontext->channel_type
-	    && (CHANNEL_STAT_WAITINCHANNEL ==
-	    ((RPC_OUT_CHANNEL*)pcontext->pchannel)->channel_stat
-	    || CHANNEL_STAT_WAITRECYCLED ==
-	    ((RPC_OUT_CHANNEL*)pcontext->pchannel)->channel_stat)) {
+	if (CHANNEL_TYPE_OUT == pcontext->channel_type &&
+	    (static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == CHANNEL_STAT_WAITINCHANNEL ||
+	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == CHANNEL_STAT_WAITRECYCLED)) {
 		/* to wait in channel for completing
 			out channel handshaking */
 		pcontext->sched_stat = SCHED_STAT_WAIT;
@@ -1596,11 +1584,11 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 				 static_cast<char *>(pbuff), frag_length, &pcall);
 			pchannel_in->available_window -= frag_length;
 			pchannel_in->bytes_received += frag_length;
-			if (NULL != pcall && NULL != pvconnection->pcontext_out
-			    && pchannel_in->available_window <((RPC_OUT_CHANNEL*)
-			    pvconnection->pcontext_out->pchannel)->window_size/2) {
-				pchannel_in->available_window = ((RPC_OUT_CHANNEL*)
-					pvconnection->pcontext_out->pchannel)->window_size;
+			if (pcall != nullptr &&
+			    pvconnection->pcontext_out != nullptr &&
+			    pchannel_in->available_window < static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_out->pchannel)->window_size / 2) {
+				auto och = static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_out->pchannel);
+				pchannel_in->available_window = och->window_size;
 				pdu_processor_rts_flowcontrolack_withdestination(
 					pcall, pchannel_in->bytes_received,
 					pchannel_in->available_window,
@@ -1608,8 +1596,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 				/* if it is a fragment pdu, we must
 					make the flowcontrol output */
 				if (PDU_PROCESSOR_INPUT == result) {
-					pdu_processor_output_pdu(pcall, &((RPC_OUT_CHANNEL*)
-						pvconnection->pcontext_out->pchannel)->pdu_list);
+					pdu_processor_output_pdu(pcall, &och->pdu_list);
 					pvconnection->pcontext_out->sched_stat =
 						SCHED_STAT_WRREP;
 					contexts_pool_signal(pvconnection->pcontext_out);
@@ -1702,17 +1689,15 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 				"missing out channel in virtual connection");
 			return X_RUNOFF;
 		}
-		if (TRUE == ((RPC_OUT_CHANNEL*)
-		    pvconnection->pcontext_out->pchannel)->b_obsolete) {
-			auto chan = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
-			pdu_processor_output_pdu(pcall, &chan->pdu_list);
+		auto och = static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_out->pchannel);
+		if (och->b_obsolete) {
+			auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
+			pdu_processor_output_pdu(pcall, &hch->pdu_list);
 			pvconnection.put();
 			pdu_processor_free_call(pcall);
 			return PROCESS_CONTINUE;
 		}
-		pdu_processor_output_pdu(
-			pcall, &((RPC_OUT_CHANNEL*)
-			pvconnection->pcontext_out->pchannel)->pdu_list);
+		pdu_processor_output_pdu(pcall, &och->pdu_list);
 		pvconnection->pcontext_out->sched_stat = SCHED_STAT_WRREP;
 		contexts_pool_signal(pvconnection->pcontext_out);
 		pvconnection.put();
@@ -1837,9 +1822,9 @@ static int htparse_wait(HTTP_CONTEXT *pcontext)
 	}
 	/* stream_out is shared resource of vconnection,
 		lock it first before operating */
-	auto pvconnection = http_parser_get_vconnection(
-		pcontext->host, pcontext->port, ((RPC_OUT_CHANNEL*)
-		pcontext->pchannel)->connection_cookie);
+	auto hch = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
+	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	                    pcontext->port, hch->connection_cookie);
 	pdu_processor_output_pdu(
 		pchannel_out->pcall, &pchannel_out->pdu_list);
 	pcontext->sched_stat = SCHED_STAT_WRREP;
@@ -1965,16 +1950,15 @@ void http_parser_vconnection_async_reply(const char *host,
 	if (NULL == pvconnection->pcontext_out) {
 		return;
 	}
-	if (TRUE == ((RPC_OUT_CHANNEL*)
-		pvconnection->pcontext_out->pchannel)->b_obsolete) {
+	auto och = static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_out->pchannel);
+	if (och->b_obsolete) {
 		if (NULL != pvconnection->pcontext_in) {
-			auto chan = static_cast<RPC_IN_CHANNEL *>(pvconnection->pcontext_in->pchannel);
-			pdu_processor_output_pdu(pcall, &chan->pdu_list);
+			auto ich = static_cast<RPC_IN_CHANNEL *>(pvconnection->pcontext_in->pchannel);
+			pdu_processor_output_pdu(pcall, &ich->pdu_list);
 			return;
 		}
 	} else {
-		pdu_processor_output_pdu(pcall, &((RPC_OUT_CHANNEL*)
-			pvconnection->pcontext_out->pchannel)->pdu_list);
+		pdu_processor_output_pdu(pcall, &och->pdu_list);
 	}
 	pvconnection->pcontext_out->sched_stat = SCHED_STAT_WRREP;
 	contexts_pool_signal(pvconnection->pcontext_out);
@@ -2182,8 +2166,8 @@ BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext)
 		auto chan = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
 		conn_cookie = chan->connection_cookie;
 	} else if (CHANNEL_TYPE_OUT == pcontext->channel_type) {
-		conn_cookie = ((RPC_OUT_CHANNEL*)
-			pcontext->pchannel)->connection_cookie;
+		auto chan = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
+		conn_cookie = chan->connection_cookie;
 	} else {
 		return FALSE;
 	}
@@ -2242,8 +2226,6 @@ BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext)
 void http_parser_set_outchannel_flowcontrol(HTTP_CONTEXT *pcontext,
 	uint32_t bytes_received, uint32_t available_window)
 {
-	RPC_OUT_CHANNEL *pchannel_out;
-	
 	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
 		return;
 	}
@@ -2255,7 +2237,7 @@ void http_parser_set_outchannel_flowcontrol(HTTP_CONTEXT *pcontext,
 	if (NULL == pvconnection->pcontext_out) {
 		return;
 	}
-	pchannel_out = (RPC_OUT_CHANNEL*)pvconnection->pcontext_out->pchannel;
+	auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_out->pchannel);
 	if (bytes_received + available_window > pchannel_out->bytes_sent) {
 		pchannel_out->available_window = bytes_received
 			+ available_window - pchannel_out->bytes_sent;
@@ -2294,40 +2276,28 @@ BOOL http_parser_recycle_inchannel(
 BOOL http_parser_recycle_outchannel(
 	HTTP_CONTEXT *pcontext, char *predecessor_cookie)
 {
-	DCERPC_CALL *pcall;
-	
 	if (CHANNEL_TYPE_OUT != pcontext->channel_type) {
 		return FALSE;
 	}
-	auto pvconnection = http_parser_get_vconnection(
-		pcontext->host, pcontext->port, ((RPC_OUT_CHANNEL*)
-		pcontext->pchannel)->connection_cookie);
+	auto hch = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
+	auto pvconnection = http_parser_get_vconnection(pcontext->host,
+	                    pcontext->port, hch->connection_cookie);
 	if (pvconnection != nullptr) {
 		if (NULL != pvconnection->pcontext_out &&
-			0 == strcmp(predecessor_cookie, ((RPC_OUT_CHANNEL*)
-			pvconnection->pcontext_out->pchannel)->channel_cookie)) {
-			if (FALSE == ((RPC_OUT_CHANNEL*)
-				pvconnection->pcontext_out->pchannel)->b_obsolete) {
+		    strcmp(predecessor_cookie, static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_out->pchannel)->channel_cookie) == 0) {
+			auto och = static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_out->pchannel);
+			if (!och->b_obsolete)
 				return FALSE;
-			}
-			pcall = ((RPC_OUT_CHANNEL*)
-				pvconnection->pcontext_out->pchannel)->pcall;
+			auto pcall = och->pcall;
 			if (FALSE == pdu_processor_rts_outr2_a6(pcall)) {
 				return FALSE;
 			}
-			pdu_processor_output_pdu(pcall, &((RPC_OUT_CHANNEL*)
-				pvconnection->pcontext_out->pchannel)->pdu_list);
+			pdu_processor_output_pdu(pcall, &och->pdu_list);
 			pvconnection->pcontext_out->sched_stat = SCHED_STAT_WRREP;
 			contexts_pool_signal(pvconnection->pcontext_out);
-			((RPC_OUT_CHANNEL*)pcontext->pchannel)->client_keepalive =
-				((RPC_OUT_CHANNEL*)
-				pvconnection->pcontext_out->pchannel)->client_keepalive;
-			((RPC_OUT_CHANNEL*)pcontext->pchannel)->available_window =
-				((RPC_OUT_CHANNEL*)
-				pvconnection->pcontext_out->pchannel)->window_size;
-			((RPC_OUT_CHANNEL*)pcontext->pchannel)->window_size =
-				((RPC_OUT_CHANNEL*)
-				pvconnection->pcontext_out->pchannel)->window_size;
+			hch->client_keepalive = och->client_keepalive;
+			hch->available_window = och->window_size;
+			hch->window_size = och->window_size;
 			pvconnection->pcontext_outsucc = pcontext;
 			return TRUE;
 		}
@@ -2363,8 +2333,6 @@ BOOL http_parser_activate_inrecycling(
 BOOL http_parser_activate_outrecycling(
 	HTTP_CONTEXT *pcontext, const char *successor_cookie)
 {
-	RPC_OUT_CHANNEL *pchannel_out;
-	
 	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
 		return FALSE;
 	}
@@ -2375,10 +2343,8 @@ BOOL http_parser_activate_outrecycling(
 		if (pcontext == pvconnection->pcontext_in &&
 			NULL != pvconnection->pcontext_out &&
 			NULL != pvconnection->pcontext_outsucc &&
-			0 == strcmp(successor_cookie, ((RPC_OUT_CHANNEL*)
-			pvconnection->pcontext_outsucc->pchannel)->channel_cookie)) {
-			pchannel_out = (RPC_OUT_CHANNEL*)
-				pvconnection->pcontext_out->pchannel;
+		    strcmp(successor_cookie, static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_outsucc->pchannel)->channel_cookie) == 0) {
+			auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_out->pchannel);
 			if (FALSE == pdu_processor_rts_outr2_b3(pchannel_out->pcall)) {
 				pvconnection.put();
 				http_parser_log_info(pcontext, LV_DEBUG,
@@ -2400,8 +2366,6 @@ BOOL http_parser_activate_outrecycling(
 
 void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, uint32_t keepalive)
 {
-	RPC_OUT_CHANNEL *pchannel_out;
-	
 	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
 	auto pvconnection = http_parser_get_vconnection(pcontext->host,
 	                    pcontext->port, hch->connection_cookie);
@@ -2410,8 +2374,7 @@ void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, uint32_t keepalive)
 			auto pchannel_in = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
 			pchannel_in->client_keepalive = keepalive;
 			if (NULL != pvconnection->pcontext_out) {
-				pchannel_out = (RPC_OUT_CHANNEL*)
-					pvconnection->pcontext_out->pchannel;
+				auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_out->pchannel);
 				pchannel_out->client_keepalive = keepalive;
 			}
 		}
