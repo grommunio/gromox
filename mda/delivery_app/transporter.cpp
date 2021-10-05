@@ -8,6 +8,7 @@
 #include <typeinfo>
 #include <unistd.h>
 #include <vector>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
@@ -939,8 +940,6 @@ static MESSAGE_CONTEXT* transporter_get_context()
  */
 static void transporter_put_context(MESSAGE_CONTEXT *pcontext)
 {
-	SINGLE_LIST_NODE *pnode;
-
 	/* reset the context object */
 	mem_file_clear(&pcontext->pcontrol->f_rcpt_to);
 	pcontext->pcontrol->queue_ID = 0;
@@ -949,8 +948,7 @@ static void transporter_put_context(MESSAGE_CONTEXT *pcontext)
 	pcontext->pcontrol->need_bounce = FALSE;
 	pcontext->pcontrol->from[0] = '\0';
 	mail_clear(pcontext->pmail);	
-	pnode = (SINGLE_LIST_NODE*)((char*)pcontext -
-				(long)(&((FREE_CONTEXT*)0)->context));
+	auto pnode = &containerof(pcontext, FREE_CONTEXT, context)->node;
 	std::lock_guard ctx_hold(g_context_lock);
     single_list_append_as_tail(&g_free_list, pnode);
 }
@@ -962,16 +960,13 @@ static void transporter_put_context(MESSAGE_CONTEXT *pcontext)
  */
 static void transporter_enqueue_context(MESSAGE_CONTEXT *pcontext)
 {
-	SINGLE_LIST_NODE *pnode;
-
 	if (reinterpret_cast<uintptr_t>(pcontext) < reinterpret_cast<uintptr_t>(g_free_ptr.get()) ||
 	    reinterpret_cast<uintptr_t>(pcontext) > reinterpret_cast<uintptr_t>(g_free_ptr.get() + g_free_num)) {
 		printf("[transporter]: invalid context pointer is detected when some "
 				"plugin try to enqueue message context\n");
 		return;
 	}
-	pnode = (SINGLE_LIST_NODE*)((char*)pcontext -
-				(long)(&((FREE_CONTEXT*)0)->context));
+	auto pnode = &containerof(pcontext, FREE_CONTEXT, context)->node;
 	std::unique_lock q_hold(g_queue_lock);
     single_list_append_as_tail(&g_queue_list, pnode);
 	q_hold.unlock();

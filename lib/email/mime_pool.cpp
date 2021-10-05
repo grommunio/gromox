@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <libHX/defs.h>
 #include <gromox/util.hpp>
 #include <gromox/mime_pool.hpp>
 
@@ -126,7 +127,6 @@ MIME* mime_pool_get(MIME_POOL *pmime_pool)
  */
 void mime_pool_put(MIME *pmime)
 {
-	MIME_POOL_NODE *pmime_node;
 	MIME_POOL *pmime_pool;
 
 #ifdef _DEBUG_UMTA
@@ -135,9 +135,7 @@ void mime_pool_put(MIME *pmime)
 		return;
 	}
 #endif
-
-	pmime_node = (MIME_POOL_NODE*)((char*)pmime - 
-					(long)(&((MIME_POOL_NODE*)0)->mime));
+	auto pmime_node = containerof(pmime, MIME_POOL_NODE, mime);
 	pmime_pool = (MIME_POOL*)pmime_node->pool;
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime_pool) {
