@@ -3259,7 +3259,6 @@ static BOOL message_forward_message(const char *from_address,
 	int offset;
 	MAIL imail;
 	MAIL imail1;
-	char *pbuff;
 	MIME *pmime;
 	void *pvalue;
 	int body_type;
@@ -3289,6 +3288,7 @@ static BOOL message_forward_message(const char *from_address,
 		    static_cast<EXT_RECIPIENT_BLOCK *>(pblock), &rcpt_list))
 			return FALSE;
 	}
+	std::unique_ptr<char[], stdlib_delete> pbuff;
 	if (NULL != pdigest) {
 		get_digest(pdigest, "file", mid_string, arsizeof(mid_string));
 		snprintf(tmp_path, arsizeof(tmp_path), "%s/eml/%s",
@@ -3296,23 +3296,18 @@ static BOOL message_forward_message(const char *from_address,
 		wrapfd fd = open(tmp_path, O_RDONLY);
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 			return false;
-		pbuff = me_alloc<char>(node_stat.st_size);
+		pbuff.reset(me_alloc<char>(node_stat.st_size));
 		if (NULL == pbuff) {
 			return FALSE;
 		}
-		if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size) {
-			free(pbuff);
+		if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 			return FALSE;
-		}
 		mail_init(&imail, common_util_get_mime_pool());
-		if (FALSE == mail_retrieve(&imail, pbuff, node_stat.st_size)) {
-			free(pbuff);
+		if (!mail_retrieve(&imail, pbuff.get(), node_stat.st_size))
 			return FALSE;
-		}
 		pmime = mail_get_head(&imail);
 		if (NULL == pmime) {
 			mail_free(&imail);
-			free(pbuff);
 			return FALSE;
 		}
 		num = mime_get_field_num(pmime, "Delivered-To");
@@ -3321,13 +3316,11 @@ static BOOL message_forward_message(const char *from_address,
 				"Delivered-To", i, tmp_buff, 256)) {
 				if (0 == strcasecmp(tmp_buff, username)) {
 					mail_free(&imail);
-					free(pbuff);
 					return TRUE;
 				}
 			}
 		}
 	} else {
-		pbuff = NULL;
 		if (FALSE == message_read_message(psqlite, cpid,
 			message_id, &pmsgctnt) || NULL == pmsgctnt) {
 			return FALSE;
@@ -3361,9 +3354,6 @@ static BOOL message_forward_message(const char *from_address,
 		pmime = mail_add_head(&imail1);
 		if (NULL == pmime) {
 			mail_free(&imail);
-			if (NULL != pbuff) {
-				free(pbuff);
-			}
 			return FALSE;
 		}
 		mime_set_content_type(pmime, "message/rfc822");
@@ -3405,9 +3395,6 @@ static BOOL message_forward_message(const char *from_address,
 		pmime = mail_get_head(&imail);
 		if (NULL == pmime) {
 			mail_free(&imail);
-			if (NULL != pbuff) {
-				free(pbuff);
-			}
 			return FALSE;
 		}
 		for (pnode=double_list_get_head(&rcpt_list); NULL!=pnode;
@@ -3422,9 +3409,6 @@ static BOOL message_forward_message(const char *from_address,
 		common_util_send_mail(&imail, tmp_buff, &rcpt_list);
 	}
 	mail_free(&imail);
-	if (NULL != pbuff) {
-		free(pbuff);
-	}
 	return TRUE;
 }
 

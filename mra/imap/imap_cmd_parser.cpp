@@ -2763,12 +2763,10 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		return 1909 | DISPATCH_TAG;
 	}
 	lseek(pcontext->message_fd, 0, SEEK_SET);
-	auto pbuff = static_cast<char *>(malloc(((node_stat.st_size - 1) / (64 * 1024) + 1) * 64 * 1024));
-	if (NULL == pbuff || node_stat.st_size != read(
-		pcontext->message_fd, pbuff, node_stat.st_size)) {
-		if (NULL != pbuff) {
-			free(pbuff);
-		}
+	std::unique_ptr<char[], stdlib_delete> pbuff(static_cast<char *>(malloc(((node_stat.st_size - 1) / (64 * 1024) + 1) * 64 * 1024)));
+	if (pbuff == nullptr || read(pcontext->message_fd, pbuff.get(),
+	    node_stat.st_size) != node_stat.st_size) {
+		pbuff.reset();
 		close(pcontext->message_fd);
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1343: remove %s: %s\n",
@@ -2780,12 +2778,11 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	}
 	close(pcontext->message_fd);
 	pcontext->message_fd = -1;
-	tmp_len = *(int*)pbuff;
+	memcpy(&tmp_len, pbuff.get(), sizeof(tmp_len));
 	mail_init(&imail, imap_parser_get_mpool());
-	if (FALSE == mail_retrieve(&imail, pbuff + tmp_len,
-		node_stat.st_size - tmp_len)) {
+	if (!mail_retrieve(&imail, pbuff.get() + tmp_len, node_stat.st_size - tmp_len)) {
 		mail_free(&imail);
-		free(pbuff);
+		pbuff.reset();
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1344: remove %s: %s\n",
 				pcontext->file_path.c_str(), strerror(errno));
@@ -2793,7 +2790,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		pcontext->file_path.clear();
 		return 1909;
 	}
-	str_name = pbuff + sizeof(int);
+	str_name = pbuff.get() + sizeof(int);
 	name_len = strlen(str_name);
 	str_flags = str_name + name_len + 1;
 	flags_len = strlen(str_flags);
@@ -2838,7 +2835,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	}
 	if (-1 == fd || FALSE == mail_to_file(&imail, fd)) {
 		mail_free(&imail);
-		free(pbuff);
+		pbuff.reset();
 		if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1345: remove %s: %s\n",
 				pcontext->file_path.c_str(), strerror(errno));
@@ -2854,7 +2851,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	}
 	close(fd);
 	mail_free(&imail);
-	free(pbuff);
+	pbuff.reset();
 	if (remove(pcontext->file_path.c_str()) < 0 && errno != ENOENT)
 		fprintf(stderr, "W-1336: remove %s: %s\n",
 			pcontext->file_path.c_str(), strerror(errno));

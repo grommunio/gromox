@@ -270,7 +270,6 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 	MAIL imail;
 	size_t size;
 	int tmp_len;
-	char *pbuff;
 	char *ptoken;
 	const char *pext;
 	uint64_t folder_id;
@@ -292,30 +291,26 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 		}
 		if (!S_ISREG(node_stat.st_mode))
 			return 0;
-		pbuff = me_alloc<char>(node_stat.st_size);
+		std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(node_stat.st_size));
 		if (NULL == pbuff) {
 			return 0;
 		}
-		if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size) {
-			free(pbuff);
+		if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 			return 0;
-		}
 		fd.close();
 		mail_init(&imail, g_mime_pool);
-		if (FALSE == mail_retrieve(&imail, pbuff, node_stat.st_size)) {
+		if (!mail_retrieve(&imail, pbuff.get(), node_stat.st_size)) {
 			mail_free(&imail);
-			free(pbuff);
 			return 0;
 		}
 		tmp_len = sprintf(digest_buff, "{\"file\":\"\",");
 		if (mail_get_digest(&imail, &size, digest_buff + tmp_len,
 			MAX_DIGLEN - tmp_len - 1) <= 0) {
 			mail_free(&imail);
-			free(pbuff);
 			return 0;
 		}
 		mail_free(&imail);
-		free(pbuff);
+		pbuff.reset();
 		tmp_len = strlen(digest_buff);
 		memcpy(digest_buff + tmp_len, "}", 2);
 		tmp_len ++;
@@ -3263,26 +3258,22 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		return MIDB_E_NO_MEMORY;
 	if (fstat(fd.get(), &node_stat) != 0 || !S_ISREG(node_stat.st_mode))
 		return MIDB_E_PARAMETER_ERROR;
-	auto pbuff = me_alloc<char>(node_stat.st_size);
+	std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(node_stat.st_size));
 	if (NULL == pbuff) {
 		return MIDB_E_NO_MEMORY;
 	}
-	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size) {
-		free(pbuff);
+	if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 		return MIDB_E_NO_MEMORY;
-	}
 	fd.close();
 	mail_init(&imail, g_mime_pool);
-	if (FALSE == mail_retrieve(&imail, pbuff, node_stat.st_size)) {
+	if (!mail_retrieve(&imail, pbuff.get(), node_stat.st_size)) {
 		mail_free(&imail);
-		free(pbuff);
 		return MIDB_E_NO_MEMORY;
 	}
 	tmp_len = sprintf(temp_buff, "{\"file\":\"\",");
 	if (mail_get_digest(&imail, &mess_len, temp_buff + tmp_len,
 		MAX_DIGLEN - tmp_len - 1) <= 0) {
 		mail_free(&imail);
-		free(pbuff);
 		return MIDB_E_NO_MEMORY;
 	}
 	tmp_len = strlen(temp_buff);
@@ -3293,7 +3284,6 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 	if (fd.get() < 0) {
 		mail_free(&imail);
-		free(pbuff);
 		return MIDB_E_NO_MEMORY;
 	}
 	write(fd.get(), temp_buff, tmp_len);
@@ -3301,20 +3291,17 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr) {
 		mail_free(&imail);
-		free(pbuff);
 		return MIDB_E_HASHTABLE_FULL;
 	}
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (0 == folder_id) {
 		pidb.reset();
 		mail_free(&imail);
-		free(pbuff);
 		return MIDB_E_NO_FOLDER;
 	}
 	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id)) {
 		pidb.reset();
 		mail_free(&imail);
-		free(pbuff);
 		return MIDB_E_NO_MEMORY;
 	}
 	if (!system_services_get_user_lang(pidb->username.c_str(), lang) ||
@@ -3329,7 +3316,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
 	                common_util_alloc, common_util_get_propids_create);
 	mail_free(&imail);
-	free(pbuff);
+	pbuff.reset();
 	if (NULL == pmsgctnt) {
 		return MIDB_E_NO_MEMORY;
 	}
@@ -3531,39 +3518,33 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		return MIDB_E_NO_MEMORY;
 	if (fstat(fd.get(), &node_stat) != 0 || !S_ISREG(node_stat.st_mode))
 		return MIDB_E_PARAMETER_ERROR;
-	auto pbuff = me_alloc<char>(node_stat.st_size);
+	std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(node_stat.st_size));
 	if (NULL == pbuff) {
 		return MIDB_E_NO_MEMORY;
 	}
-	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size) {
-		free(pbuff);
+	if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 		return MIDB_E_NO_MEMORY;
-	}
 	fd.close();
 	mail_init(&imail, g_mime_pool);
-	if (FALSE == mail_retrieve(&imail, pbuff, node_stat.st_size)) {
+	if (!mail_retrieve(&imail, pbuff.get(), node_stat.st_size)) {
 		mail_free(&imail);
-		free(pbuff);
 		return MIDB_E_NO_MEMORY;
 	}
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr) {
 		mail_free(&imail);
-		free(pbuff);
 		return MIDB_E_HASHTABLE_FULL;
 	}
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (0 == folder_id) {
 		pidb.reset();
 		mail_free(&imail);
-		free(pbuff);
 		return MIDB_E_NO_FOLDER;
 	}
 	auto folder_id1 = mail_engine_get_folder_id(pidb.get(), argv[4]);
 	if (0 == folder_id1) {
 		pidb.reset();
 		mail_free(&imail);
-		free(pbuff);
 		return MIDB_E_NO_FOLDER;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id, mod_time, "
@@ -3574,7 +3555,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	if (pstmt == nullptr) {
 		pidb.reset();
 		mail_free(&imail);
-		free(pbuff);
 		return MIDB_E_NO_MEMORY;
 	}
 	sqlite3_bind_text(pstmt, 1, argv[3], -1, SQLITE_STATIC);
@@ -3583,7 +3563,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		pstmt.finalize();
 		pidb.reset();
 		mail_free(&imail);
-		free(pbuff);
 		return MIDB_E_NO_MESSAGE;
 	}
 	b_read = 0;
@@ -3616,7 +3595,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id)) {
 		pidb.reset();
 		mail_free(&imail);
-		free(pbuff);
 		return MIDB_E_NO_MEMORY;
 	}
 	if (!system_services_get_user_lang(pidb->username.c_str(), lang) ||
@@ -3631,7 +3609,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
 	                common_util_alloc, common_util_get_propids_create);
 	mail_free(&imail);
-	free(pbuff);
+	pbuff.reset();
 	if (NULL == pmsgctnt) {
 		return MIDB_E_NO_MEMORY;
 	}

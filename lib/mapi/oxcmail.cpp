@@ -2566,7 +2566,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	char *ptoken;
 	BOOL b_inline;
 	BINARY tmp_bin;
-	char *pcontent;
 	BOOL b_filename;
 	time_t tmp_time;
 	const char *pext;
@@ -2855,33 +2854,27 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		}
 		size_t content_len = rdlength;
 		if (content_len < VCARD_MAX_BUFFER_LEN) {
-			pcontent = static_cast<char *>(malloc(3 * content_len + 2));
+			std::unique_ptr<char[], stdlib_delete> pcontent(static_cast<char *>(malloc(3 * content_len + 2)));
 			if (NULL == pcontent) {
 				pmime_enum->b_result = FALSE;
 				return;
 			}
-			if (FALSE == mime_read_content(pmime, pcontent, &content_len)) {
-				free(pcontent);
+			if (!mime_read_content(pmime, pcontent.get(), &content_len)) {
 				pmime_enum->b_result = FALSE;
 				return;
 			}
 			pcontent[content_len] = '\0';
 			if (FALSE == oxcmail_get_content_param(
 				pmime, "charset", mime_charset, 32)) {
-				gx_strlcpy(mime_charset, !utf8_check(pcontent) ?
+				gx_strlcpy(mime_charset, !utf8_check(pcontent.get()) ?
 					pmime_enum->charset : "utf-8", GX_ARRAY_SIZE(mime_charset));
 			}
-			if (TRUE == string_to_utf8(
-				mime_charset, pcontent,
-				pcontent + content_len + 1)) {
-				if (FALSE == utf8_check(pcontent + content_len + 1)) {
-					utf8_filter(pcontent + content_len + 1);
-				}
+			if (string_to_utf8(mime_charset, pcontent.get(), pcontent.get() + content_len + 1)) {
+				if (!utf8_check(pcontent.get() + content_len + 1))
+					utf8_filter(pcontent.get() + content_len + 1);
 				vcard_init(&vcard);
-				if (TRUE == vcard_retrieve(&vcard,
-					pcontent + content_len + 1) &&
-					NULL != (pmsg = oxvcard_import(
-					&vcard, pmime_enum->get_propids))) {
+				if (vcard_retrieve(&vcard, pcontent.get() + content_len + 1) &&
+				    (pmsg = oxvcard_import(&vcard, pmime_enum->get_propids)) != nullptr) {
 					attachment_content_set_embedded_internal(pattachment, pmsg);
 					propval.proptag = PR_ATTACH_METHOD;
 					propval.pvalue = &tmp_int32;
@@ -2889,7 +2882,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 					if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 						pmime_enum->b_result = FALSE;
 					vcard_free(&vcard);
-					free(pcontent);
 					return;
 				}
 				vcard_free(&vcard);
@@ -2897,17 +2889,15 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			tmp_int32 = ATTACH_EMBEDDED_MSG;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				pmime_enum->b_result = FALSE;
-				free(pcontent);
 				return;
 			}
 			propval.proptag = PR_ATTACH_DATA_BIN;
 			propval.pvalue = &tmp_bin;
 			tmp_bin.cb = content_len;
-			tmp_bin.pc = pcontent;
+			tmp_bin.pc = pcontent.get();
 			pmime_enum->b_result = tpropval_array_set_propval(
 			                       &pattachment->proplist, &propval) ?
 			                       TRUE : false;
-			free(pcontent);
 			return;
 		}
 	}
@@ -2920,18 +2910,17 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			return;
 		}
 		size_t content_len = rdlength;
-		pcontent = static_cast<char *>(malloc(content_len));
+		std::unique_ptr<char[], stdlib_delete> pcontent(static_cast<char *>(malloc(content_len)));
 		if (NULL == pcontent) {
 			pmime_enum->b_result = FALSE;
 			return;
 		}
-		if (FALSE == mime_read_content(pmime, pcontent, &content_len)) {
-			free(pcontent);
+		if (!mime_read_content(pmime, pcontent.get(), &content_len)) {
 			pmime_enum->b_result = FALSE;
 			return;
 		}
 		mail_init(&mail, pmime_enum->pmime_pool);
-		if (TRUE == mail_retrieve(&mail, pcontent, content_len)) {
+		if (mail_retrieve(&mail, pcontent.get(), content_len)) {
 			tpropval_array_remove_propval(&pattachment->proplist, PR_ATTACH_LONG_FILENAME);
 			tpropval_array_remove_propval(&pattachment->proplist, PR_ATTACH_LONG_FILENAME_A);
 			tpropval_array_remove_propval(&pattachment->proplist, PR_ATTACH_EXTENSION);
@@ -2945,7 +2934,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 						propval.pvalue = file_name;
 						if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 							mail_free(&mail);
-							free(pcontent);
 							pmime_enum->b_result = FALSE;
 							return;
 						}
@@ -2957,7 +2945,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			tmp_int32 = ATTACH_EMBEDDED_MSG;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				mail_free(&mail);
-				free(pcontent);
 				pmime_enum->b_result = FALSE;
 				return;
 			}
@@ -2966,17 +2953,14 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 				pmime_enum->alloc, pmime_enum->get_propids);
 			if (NULL == pmsg) {
 				mail_free(&mail);
-				free(pcontent);
 				pmime_enum->b_result = FALSE;
 				return;
 			}
 			mail_free(&mail);
-			free(pcontent);
 			attachment_content_set_embedded_internal(pattachment, pmsg);
 			return;
 		}
 		mail_free(&mail);
-		free(pcontent);
 	}
 	if (TRUE == b_filename && 0 == strcasecmp(
 		"message/external-body", mime_get_content_type(pmime)) &&
@@ -3059,23 +3043,21 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		return;
 	}
 	size_t content_len = rdlength;
-	pcontent = static_cast<char *>(malloc(content_len));
+	std::unique_ptr<char[], stdlib_delete> pcontent(static_cast<char *>(malloc(content_len)));
 	if (NULL == pcontent) {
 		pmime_enum->b_result = FALSE;
 		return;
 	}
-	if (FALSE == mime_read_content(pmime, pcontent, &content_len)) {
-		free(pcontent);
+	if (!mime_read_content(pmime, pcontent.get(), &content_len)) {
 		pmime_enum->b_result = FALSE;
 		return;
 	}
 	propval.proptag = PR_ATTACH_DATA_BIN;
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = content_len;
-	tmp_bin.pc = pcontent;
+	tmp_bin.pc = pcontent.get();
 	pmime_enum->b_result = tpropval_array_set_propval(
 	                       &pattachment->proplist, &propval) ? TRUE : false;
-	free(pcontent);
 }
 
 static MESSAGE_CONTENT* oxcmail_parse_tnef(MIME *pmime,
@@ -6340,7 +6322,6 @@ static BOOL oxcmail_export_attachment(
 	void *ptr;
 	MAIL imail;
 	BOOL b_tnef;
-	char *pbuff;
 	int tmp_len;
 	VCARD vcard;
 	BOOL b_vcard;
@@ -6499,30 +6480,21 @@ static BOOL oxcmail_export_attachment(
 	}
 	
 	if (TRUE == b_vcard) {
-		pbuff = NULL;
 		if (TRUE == oxvcard_export(
 			pattachment->pembedded,
 			&vcard, get_propids)) {
-			pbuff = static_cast<char *>(malloc(VCARD_MAX_BUFFER_LEN));
+			std::unique_ptr<char[], stdlib_delete> pbuff(static_cast<char *>(malloc(VCARD_MAX_BUFFER_LEN)));
 			if (NULL != pbuff) {
-				if (TRUE == vcard_serialize(&vcard,
-					pbuff, VCARD_MAX_BUFFER_LEN)) {
-					if (FALSE == mime_write_content(
-						pmime, pbuff, strlen(pbuff),
-						MIME_ENCODING_BASE64)) {
-						free(pbuff);
+				if (vcard_serialize(&vcard, pbuff.get(), VCARD_MAX_BUFFER_LEN)) {
+					if (!mime_write_content(pmime, pbuff.get(), strlen(pbuff.get()), MIME_ENCODING_BASE64)) {
 						vcard_free(&vcard);
 						return FALSE;
 					}
-					free(pbuff);
 					vcard_free(&vcard);
 					return TRUE;
 				}
 			}
 			vcard_free(&vcard);
-		}
-		if (NULL != pbuff) {
-			free(pbuff);
 		}
 	}
 	
@@ -6556,7 +6528,7 @@ static BOOL oxcmail_export_attachment(
 			return FALSE;
 		}
 		mail_free(&imail);
-		pbuff = static_cast<char *>(malloc(mail_len + 128));
+		std::unique_ptr<char[], stdlib_delete> pbuff(static_cast<char *>(malloc(mail_len + 128)));
 		if (NULL == pbuff) {
 			stream_free(&tmp_stream);
 			lib_buffer_free(pallocator);
@@ -6566,19 +6538,13 @@ static BOOL oxcmail_export_attachment(
 		offset = 0;
 		unsigned int size = STREAM_BLOCK_SIZE;
 		while ((ptr = stream_getbuffer_for_reading(&tmp_stream, &size)) != NULL) {
-			memcpy(pbuff + offset, ptr, size);
+			memcpy(pbuff.get() + offset, ptr, size);
 			offset += size;
 			size = STREAM_BLOCK_SIZE;
 		}
 		stream_free(&tmp_stream);
 		lib_buffer_free(pallocator);
-		if (FALSE == mime_write_content(pmime,
-			pbuff, mail_len, MIME_ENCODING_NONE)) {
-			free(pbuff);
-			return FALSE;
-		}
-		free(pbuff);
-		return TRUE;
+		return mime_write_content(pmime, pbuff.get(), mail_len, MIME_ENCODING_NONE);
 	}
 	pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_DATA_BIN);
 	auto bv = static_cast<BINARY *>(pvalue);
@@ -6595,7 +6561,6 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 {
 	int i;
 	ICAL ical;
-	char *pbuff;
 	MIME *phead;
 	MIME *phtml;
 	MIME *pmime;
@@ -6842,14 +6807,13 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 				goto EXPORT_FAILURE;
 			}
 		} else {
-			pbuff = static_cast<char *>(malloc(4 * strlen(mime_skeleton.pplain)));
+			std::unique_ptr<char[], stdlib_delete> pbuff(static_cast<char *>(malloc(4 * strlen(mime_skeleton.pplain))));
 			if (NULL == pbuff) {
 				goto EXPORT_FAILURE;
 			}
-			if (FALSE == string_from_utf8(
-				mime_skeleton.charset,
-				mime_skeleton.pplain, pbuff)) {
-				free(pbuff);
+			if (!string_from_utf8(mime_skeleton.charset,
+			    mime_skeleton.pplain, pbuff.get())) {
+				pbuff.reset();
 				if (FALSE == mime_write_content(
 					pplain, mime_skeleton.pplain,
 					strlen(mime_skeleton.pplain),
@@ -6858,13 +6822,9 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 				}
 				strcpy(tmp_charset, "\"utf-8\"");
 			} else {
-				if (FALSE == mime_write_content(
-					pplain, pbuff, strlen(pbuff),
-					MIME_ENCODING_BASE64)) {
-					free(pbuff);
+				if (!mime_write_content(pplain, pbuff.get(),
+				    strlen(pbuff.get()), MIME_ENCODING_BASE64))
 					goto EXPORT_FAILURE;
-				}
-				free(pbuff);
 				snprintf(tmp_charset, arsizeof(tmp_charset), "\"%s\"", mime_skeleton.charset);
 			}
 			if (FALSE == mime_set_content_param(

@@ -21,6 +21,8 @@
 
 #define DEF_MODE			S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
+using namespace gromox;
+
 enum {
 	RETRIEVE_NONE,
 	RETRIEVE_TAG_FINDING,
@@ -1939,7 +1941,6 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 	int fd;
 	MAIL imail;
 	size_t length1;
-	char *pbuff1;
 	MJSON temp_mjson;
 	char msg_path[256];
 	char dgt_path[256];
@@ -1971,7 +1972,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 	}
 	
 	auto length = mjson_get_mime_length(pmime, MJSON_MIME_CONTENT);
-	auto pbuff = static_cast<char *>(malloc(strange_roundup(length - 1, 64 * 1024)));
+	std::unique_ptr<char[], stdlib_delete> pbuff(static_cast<char *>(malloc(strange_roundup(length - 1, 64 * 1024))));
 	if (NULL == pbuff) {
 		close(fd);
 		pbuild->build_result = FALSE;
@@ -1980,53 +1981,44 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 	
 	if (lseek(fd, mjson_get_mime_offset(pmime, MJSON_MIME_CONTENT), SEEK_SET) < 0)
 		fprintf(stderr, "E-1430: lseek: %s\n", strerror(errno));
-	auto rdlen = read(fd, pbuff, length);
+	auto rdlen = read(fd, pbuff.get(), length);
 	if (rdlen < 0 || static_cast<size_t>(rdlen) != length) {
 		close(fd);
-		free(pbuff);
 		pbuild->build_result = FALSE;
 		return;
 	}
 	close(fd);
 	
 	if (0 == strcasecmp(pmime->encoding, "base64")) {
-		pbuff1 = static_cast<char *>(malloc(strange_roundup(length - 1, 64 * 1024)));
+		std::unique_ptr<char[], stdlib_delete> pbuff1(static_cast<char *>(malloc(strange_roundup(length - 1, 64 * 1024))));
 		if (NULL == pbuff1) {
-			free(pbuff);
 			pbuild->build_result = FALSE;
 			return;
 		}
-		if (0 != decode64_ex(pbuff, length, pbuff1, length, &length1)) {
-			free(pbuff);
-			free(pbuff1);
+		if (decode64_ex(pbuff.get(), length, pbuff1.get(), length, &length1) != 0) {
 			pbuild->build_result = FALSE;
 			return;
 		}
-		free(pbuff);
-		pbuff = pbuff1;
+		pbuff = std::move(pbuff1);
 		length = length1;
 	} else if (0 == strcasecmp(pmime->encoding, "quoted-printable")) {
-		pbuff1 = static_cast<char *>(malloc(strange_roundup(length - 1, 64 * 1024)));
+		std::unique_ptr<char[], stdlib_delete> pbuff1(static_cast<char *>(malloc(strange_roundup(length - 1, 64 * 1024))));
 		if (NULL == pbuff1) {
-			free(pbuff);
 			pbuild->build_result = FALSE;
 			return;
 		}
-		auto qdlen = qp_decode_ex(pbuff1, length, pbuff, length);
-		free(pbuff);
+		auto qdlen = qp_decode_ex(pbuff1.get(), length, pbuff.get(), length);
 		if (qdlen < 0) {
 			pbuild->build_result = false;
 			return;
 		}
 		length = qdlen;
-		pbuff = pbuff1;
+		pbuff = std::move(pbuff1);
 	}
 	
 	mail_init(&imail, pbuild->ppool);
-	
-	if (FALSE == mail_retrieve(&imail, pbuff, length)) {
+	if (!mail_retrieve(&imail, pbuff.get(), length)) {
 		mail_free(&imail);
-		free(pbuff);
 		pbuild->build_result = FALSE;
 		return;
 	} else {
@@ -2040,7 +2032,6 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		fd = open(msg_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 		if (-1 == fd) {
 			mail_free(&imail);
-			free(pbuff);
 			pbuild->build_result = FALSE;
 			return;
 		}
@@ -2049,7 +2040,6 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 			if (remove(msg_path) < 0 && errno != ENOENT)
 				fprintf(stderr, "W-1372: remove %s: %s\n", msg_path, strerror(errno));
 			mail_free(&imail);
-			free(pbuff);
 			pbuild->build_result = FALSE;
 			return;
 		}
@@ -2064,7 +2054,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		result = mail_get_digest(&imail, &mess_len, digest_buff + digest_len,
 					MAX_DIGLEN - digest_len - 1);
 		mail_free(&imail);
-		free(pbuff);
+		pbuff.reset();
 		if (result <= 0) {
 			if (remove(msg_path) < 0 && errno != ENOENT)
 				fprintf(stderr, "W-1373: remove %s: %s\n", msg_path, strerror(errno));
