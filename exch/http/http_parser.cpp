@@ -453,7 +453,6 @@ static int http_end(HTTP_CONTEXT *ctx)
 		mod_cache_put_context(ctx);
 
 	if (ctx->pchannel != nullptr) {
-		DOUBLE_LIST_NODE *pnode;
 		if (ctx->channel_type == CHANNEL_TYPE_IN) {
 			auto chan = static_cast<RPC_IN_CHANNEL *>(ctx->pchannel);
 			auto conn = http_parser_get_vconnection(ctx->host,
@@ -463,11 +462,7 @@ static int http_end(HTTP_CONTEXT *ctx)
 					conn->pcontext_in = nullptr;
 				conn.put();
 			}
-			while ((pnode = double_list_pop_front(&chan->pdu_list)) != nullptr) {
-				free(static_cast<BLOB_NODE *>(pnode->pdata)->blob.data);
-				pdu_processor_free_blob(static_cast<BLOB_NODE *>(pnode->pdata));
-			}
-			double_list_free(&chan->pdu_list);
+			chan->~RPC_IN_CHANNEL();
 			lib_buffer_put(g_inchannel_allocator, ctx->pchannel);
 		} else {
 			auto chan = static_cast<RPC_OUT_CHANNEL *>(ctx->pchannel);
@@ -478,15 +473,7 @@ static int http_end(HTTP_CONTEXT *ctx)
 					conn->pcontext_out = nullptr;
 				conn.put();
 			}
-			if (chan->pcall != nullptr) {
-				pdu_processor_free_call(chan->pcall);
-				chan->pcall = nullptr;
-			}
-			while ((pnode = double_list_pop_front(&chan->pdu_list)) != nullptr) {
-				free(static_cast<BLOB_NODE *>(pnode->pdata)->blob.data);
-				pdu_processor_free_blob(static_cast<BLOB_NODE *>(pnode->pdata));
-			}
-			double_list_free(&chan->pdu_list);
+			chan->~RPC_OUT_CHANNEL();
 			lib_buffer_put(g_outchannel_allocator, ctx->pchannel);
 		}
 		ctx->pchannel = nullptr;
@@ -855,9 +842,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, const STREAM &stream_1)
 				http_5xx(pcontext, "Resources exhausted", 503);
 				return X_LOOP;
 			}
-			memset(pcontext->pchannel, 0, sizeof(RPC_IN_CHANNEL));
-			double_list_init(&((RPC_IN_CHANNEL*)
-				pcontext->pchannel)->pdu_list);
+			new(pcontext->pchannel) RPC_IN_CHANNEL;
 		} else {
 			pcontext->channel_type = CHANNEL_TYPE_OUT;
 			pcontext->pchannel =
@@ -866,9 +851,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, const STREAM &stream_1)
 				http_5xx(pcontext, "Resources exhausted", 503);
 				return X_LOOP;
 			}
-			memset(pcontext->pchannel, 0, sizeof(RPC_OUT_CHANNEL));
-			double_list_init(&((RPC_OUT_CHANNEL*)
-				pcontext->pchannel)->pdu_list);
+			new(pcontext->pchannel) RPC_OUT_CHANNEL;
 		}
 	}
 	pcontext->bytes_rw = stream_get_total_length(&stream_1);
@@ -2447,4 +2430,42 @@ void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, uint32_t keepalive)
 			}
 		}
 	}
+}
+
+RPC_IN_CHANNEL::RPC_IN_CHANNEL()
+{
+	double_list_init(&pdu_list);
+}
+
+RPC_IN_CHANNEL::~RPC_IN_CHANNEL()
+{
+	DOUBLE_LIST_NODE *pnode;
+
+	while ((pnode = double_list_pop_front(&pdu_list)) != nullptr) {
+		auto bnode = static_cast<BLOB_NODE *>(pnode->pdata);
+		free(bnode->blob.data);
+		pdu_processor_free_blob(bnode);
+	}
+	double_list_free(&pdu_list);
+}
+
+RPC_OUT_CHANNEL::RPC_OUT_CHANNEL()
+{
+	double_list_init(&pdu_list);
+}
+
+RPC_OUT_CHANNEL::~RPC_OUT_CHANNEL()
+{
+	DOUBLE_LIST_NODE *pnode;
+
+	if (pcall != nullptr) {
+		pdu_processor_free_call(pcall);
+		pcall = nullptr;
+	}
+	while ((pnode = double_list_pop_front(&pdu_list)) != nullptr) {
+		auto bnode = static_cast<BLOB_NODE *>(pnode->pdata);
+		free(bnode->blob.data);
+		pdu_processor_free_blob(bnode);
+	}
+	double_list_free(&pdu_list);
 }

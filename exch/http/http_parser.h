@@ -95,30 +95,32 @@ struct HTTP_CONTEXT final : public SCHEDULE_CONTEXT {
 };
 
 struct RPC_IN_CHANNEL {
-	uint16_t			frag_length;			/* indicating in coming PDU length */
-	char				channel_cookie[64];
-	char				connection_cookie[64];
-	uint32_t			life_time;
-	uint32_t			client_keepalive;
-	uint32_t			available_window;
-	uint32_t			bytes_received;
-	char				assoc_group_id[64];
-	DOUBLE_LIST			pdu_list;
-	int					channel_stat;
+	RPC_IN_CHANNEL();
+	~RPC_IN_CHANNEL();
+
+	uint16_t frag_length = 0; /* indicating in coming PDU length */
+	char channel_cookie[64]{}, connection_cookie[64]{};
+	uint32_t life_time = 0, client_keepalive = 0, available_window = 0;
+	uint32_t bytes_received = 0;
+	char assoc_group_id[64]{};
+	DOUBLE_LIST pdu_list{};
+	int channel_stat = 0;
 };
 
 struct RPC_OUT_CHANNEL {
-	uint16_t			frag_length;
-	char				channel_cookie[64];
-	char				connection_cookie[64];
-	BOOL				b_obsolete;			/* out channel is obsolte, wait for new out channel */
-	uint32_t			client_keepalive;	/* get from in channel */
-	std::atomic<uint32_t> available_window;
-	uint32_t			window_size;
-	uint32_t			bytes_sent;	/* length of sent data including RPC and RTS PDU, chunk data */
-	DCERPC_CALL			*pcall;		/* first output pcall of PDU by out channel itself */
-	DOUBLE_LIST			pdu_list;
-	int					channel_stat;
+	RPC_OUT_CHANNEL();
+	~RPC_OUT_CHANNEL();
+
+	uint16_t frag_length = 0;
+	char channel_cookie[64]{}, connection_cookie[64]{};
+	BOOL b_obsolete = false; /* out channel is obsolte, wait for new out channel */
+	uint32_t client_keepalive = 0; /* get from in channel */
+	std::atomic<uint32_t> available_window{0};
+	uint32_t window_size = 0;
+	uint32_t bytes_sent = 0; /* length of sent data including RPC and RTS PDU, chunk data */
+	DCERPC_CALL *pcall = nullptr; /* first output pcall of PDU by out channel itself */
+	DOUBLE_LIST pdu_list{};
+	int channel_stat = 0;
 };
 
 extern void http_parser_init(size_t context_num, unsigned int timeout, int max_auth_times, int block_auth_fail, BOOL support_ssl, const char *certificate_path, const char *cb_passwd, const char *key_path, unsigned int xdebug);
