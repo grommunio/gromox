@@ -3953,8 +3953,8 @@ static bool op_delegate(const char *from_address, const char *account,
 			continue;
 		char tmp_buff[MAX_DIGLEN];
 		strcpy(tmp_buff, pdigest);
-		auto mid_string1 = "\"" + mid_string + "\"";
-		set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string1.c_str());
+		auto mid_string2 = "\"" + mid_string + "\"";
+		set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string2.c_str());
 		const char *pdigest1 = tmp_buff;
 		uint32_t result = 0;
 		if (!exmdb_client_relay_delivery(maildir,
@@ -4386,8 +4386,8 @@ static bool opx_delegate(const char *from_address, const char *account,
 			continue;
 		char tmp_buff[MAX_DIGLEN];
 		strcpy(tmp_buff, pdigest);
-		auto mid_string1 = "\"" + mid_string + "\"";
-		set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string1.c_str());
+		auto mid_string2 = "\"" + mid_string + "\"";
+		set_digest(tmp_buff, MAX_DIGLEN, "file", mid_string2.c_str());
 		const char *pdigest1 = tmp_buff;
 		uint32_t result = 0;
 		if (!exmdb_client_relay_delivery(maildir,
