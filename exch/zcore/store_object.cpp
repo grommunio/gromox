@@ -1300,10 +1300,10 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		return false;
 	}
 	/* Ensure file exists for config_file_prg */
-	auto fd = open(autoreply_path.c_str(), O_CREAT | O_WRONLY, 0666);
-	if (fd < 0)
+	auto fdtest = open(autoreply_path.c_str(), O_CREAT | O_WRONLY, 0666);
+	if (fdtest < 0)
 		return false;
-	close(fd);
+	close(fdtest);
 	switch (proptag) {
 	case PR_EC_OUTOFOFFICE: {
 		auto pconfig = config_file_prg(nullptr, autoreply_path.c_str());
