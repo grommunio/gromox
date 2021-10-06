@@ -839,7 +839,7 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code)
 	pkt.payload.fault.context_id = 0;
 	pkt.payload.fault.cancel_count = 0;
 	pkt.payload.fault.status = fault_code;
-	pkt.payload.fault.pad.data = const_cast<uint8_t *>(zeros);
+	pkt.payload.fault.pad.data = deconst(zeros);
 	pkt.payload.fault.pad.length = sizeof(zeros);
 
 	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));

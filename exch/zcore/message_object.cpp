@@ -1152,8 +1152,8 @@ BOOL MESSAGE_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals)
 		}
 		if (NULL != pnormalized_subject) {
 			if ('\0' == pnormalized_subject[0] && '\0' != psubject[0]) {
-				common_util_remove_propvals(const_cast<TPROPVAL_ARRAY *>(ppropvals), PR_NORMALIZED_SUBJECT);
-				common_util_remove_propvals(const_cast<TPROPVAL_ARRAY *>(ppropvals), PR_NORMALIZED_SUBJECT_A);
+				common_util_remove_propvals(deconst(ppropvals), PR_NORMALIZED_SUBJECT);
+				common_util_remove_propvals(deconst(ppropvals), PR_NORMALIZED_SUBJECT_A);
 			}
 		}
 	}

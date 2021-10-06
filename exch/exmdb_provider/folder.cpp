@@ -507,7 +507,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		default:
 			return TRUE;
 		}
-		common_util_remove_propvals(const_cast<TPROPVAL_ARRAY *>(pproperties), PR_FOLDER_TYPE);
+		common_util_remove_propvals(deconst(pproperties), PR_FOLDER_TYPE);
 	}
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -2402,7 +2402,7 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 		}
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0), common_util_alloc, 0);
-		if (ext_pull.g_restriction(const_cast<RESTRICTION *>(prestriction)) != EXT_ERR_SUCCESS) {
+		if (ext_pull.g_restriction(deconst(prestriction)) != EXT_ERR_SUCCESS) {
 			pstmt.finalize();
 			goto CRITERIA_FAILURE;
 		}

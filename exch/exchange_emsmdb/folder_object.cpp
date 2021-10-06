@@ -153,7 +153,7 @@ static BOOL folder_object_get_calculated_property(
 	static constexpr uint8_t bin_buff[22]{};
 	static constexpr uint32_t fake_del = 0;
 	PERSISTDATA_ARRAY persistdatas;
-	static constexpr BINARY fake_bin = {sizeof(bin_buff), {const_cast<uint8_t *>(bin_buff)}};
+	static constexpr BINARY fake_bin = {gromox::arsizeof(bin_buff), {deconst(bin_buff)}};
 	
 	switch (proptag) {
 	case PROP_TAG_CONTENTUNREADCOUNT:

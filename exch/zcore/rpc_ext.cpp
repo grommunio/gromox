@@ -672,7 +672,7 @@ static BOOL rpc_ext_pull_openpropfilesec_request(
 		ppayload->openpropfilesec.puid = pext->anew<FLATUID>();
 		if (ppayload->openpropfilesec.puid == nullptr)
 			return FALSE;
-		QRF(pext->g_bytes(const_cast<FLATUID *>(ppayload->openpropfilesec.puid), sizeof(FLATUID)));
+		QRF(pext->g_bytes(deconst(ppayload->openpropfilesec.puid), sizeof(FLATUID)));
 	}
 	return TRUE;
 }

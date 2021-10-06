@@ -582,7 +582,7 @@ static BOOL logon_object_get_calculated_property(
 	char temp_buff[1024];
 	static constexpr uint64_t tmp_ll = 0;
 	static constexpr uint8_t test_buff[256]{};
-	static constexpr BINARY test_bin = {sizeof(test_buff), {const_cast<uint8_t *>(test_buff)}};
+	static constexpr BINARY test_bin = {arsizeof(test_buff), {deconst(test_buff)}};
 	
 	switch (proptag) {
 	case PR_MESSAGE_SIZE:

@@ -10,7 +10,7 @@ extern GX_EXPORT bool tpropval_array_init_internal(TPROPVAL_ARRAY *);
 void tpropval_array_free_internal(TPROPVAL_ARRAY *parray);
 extern GX_EXPORT bool tpropval_array_set_propval(TPROPVAL_ARRAY *, const TAGGED_PROPVAL *);
 static inline bool tpropval_array_set_propval(TPROPVAL_ARRAY *a, uint32_t tag, const void *d) {
-	TAGGED_PROPVAL v{tag, const_cast<void *>(d)};
+	TAGGED_PROPVAL v{tag, deconst(d)};
 	return tpropval_array_set_propval(a, &v);
 }
 void tpropval_array_remove_propval(TPROPVAL_ARRAY *parray, uint32_t proptag);
