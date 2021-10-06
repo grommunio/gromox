@@ -3110,10 +3110,9 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
 	return TRUE;
 }
 
-static BOOL oxcical_classify_calendar(ICAL *pical,
+static BOOL oxcical_classify_calendar(const ICAL *pical,
     std::list<std::shared_ptr<UID_EVENTS>> &pevent_uid_list)
 {
-	
 	for (auto pcomponent : pical->component_list) {
 		if (strcasecmp(pcomponent->m_name.c_str(), "VEVENT") != 0)
 			continue;
@@ -3214,7 +3213,7 @@ MESSAGE_CONTENT* oxcical_import(
 	}
 	auto piline = const_cast<ICAL *>(pical)->get_line("X-MICROSOFT-CALSCALE");
 	calendartype = oxcical_get_calendartype(piline);
-	if (!oxcical_classify_calendar(deconst(pical), events_list) ||
+	if (!oxcical_classify_calendar(pical, events_list) ||
 	    events_list.size() == 0)
 		goto IMPORT_FAILURE;
 	propval.proptag = PR_MESSAGE_CLASS;
@@ -3652,10 +3651,8 @@ static BOOL oxcical_get_smtp_address(TPROPVAL_ARRAY *prcpt,
 }
 
 static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> pevent_component,
-	ENTRYID_TO_USERNAME entryid_to_username,
-	ESSDN_TO_USERNAME essdn_to_username,
-	EXT_BUFFER_ALLOC alloc, const char *partstat,
-	MESSAGE_CONTENT *pmsg)
+    ENTRYID_TO_USERNAME entryid_to_username, ESSDN_TO_USERNAME essdn_to_username,
+    EXT_BUFFER_ALLOC alloc, const char *partstat, const MESSAGE_CONTENT *pmsg)
 {
 	BOOL b_rsvp;
 	std::shared_ptr<ICAL_LINE> piline;
@@ -4503,7 +4500,7 @@ static bool busystatus_to_line(uint32_t status, const char *key,
 }
 
 static BOOL oxcical_export_internal(const char *method, const char *tzid,
-    std::shared_ptr<ICAL_COMPONENT> ptz_component, MESSAGE_CONTENT *pmsg,
+    std::shared_ptr<ICAL_COMPONENT> ptz_component, const MESSAGE_CONTENT *pmsg,
     ICAL *pical, ENTRYID_TO_USERNAME entryid_to_username,
 	ESSDN_TO_USERNAME essdn_to_username,
 	LCID_TO_LTAG lcid_to_ltag, EXT_BUFFER_ALLOC alloc,
@@ -4872,7 +4869,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	}
 	
 	if (!oxcical_export_recipient_table(pcomponent, entryid_to_username,
-	    essdn_to_username, alloc, partstat, static_cast<MESSAGE_CONTENT *>(pmsg)))
+	    essdn_to_username, alloc, partstat, pmsg))
 		return FALSE;
 	
 	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_BODY);
@@ -5623,7 +5620,7 @@ BOOL oxcical_export(const MESSAGE_CONTENT *pmsg, ICAL *pical,
 	ESSDN_TO_USERNAME essdn_to_username,
 	LCID_TO_LTAG lcid_to_ltag)
 {
-	return oxcical_export_internal(nullptr, nullptr, nullptr, deconst(pmsg),
+	return oxcical_export_internal(nullptr, nullptr, nullptr, pmsg,
 	       pical, entryid_to_username, essdn_to_username, lcid_to_ltag,
 	       alloc, get_propids);
 }
