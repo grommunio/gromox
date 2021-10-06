@@ -4699,8 +4699,8 @@ static size_t oxcmail_encode_mime_string(const char *charset,
 	}
 }
 
-static BOOL oxcmail_get_smtp_address(TPROPVAL_ARRAY *pproplist,
-	EXT_BUFFER_ALLOC alloc, uint32_t proptag1, uint32_t proptag2,
+static BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY *pproplist,
+    EXT_BUFFER_ALLOC alloc, uint32_t proptag1, uint32_t proptag2,
     uint32_t proptag3, uint32_t proptag4, char *username, size_t ulen)
 {
 	void *pvalue;
@@ -4796,7 +4796,7 @@ static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
 	return TRUE;
 }
 
-static BOOL oxcmail_export_reply_to(MESSAGE_CONTENT *pmsg,
+static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 	const char *charset, EXT_BUFFER_ALLOC alloc, char *field)
 {
 	EXT_PULL ext_pull;
@@ -4863,7 +4863,7 @@ static BOOL oxcmail_export_reply_to(MESSAGE_CONTENT *pmsg,
 	return TRUE;
 }
 
-static BOOL oxcmail_export_address(MESSAGE_CONTENT *pmsg,
+static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
 	EXT_BUFFER_ALLOC alloc, uint32_t proptag1, uint32_t proptag2,
 	uint32_t proptag3, uint32_t proptag4, uint32_t proptag5,
     const char *charset, char *field, size_t fdsize)
@@ -4984,9 +4984,8 @@ static int oxcmail_get_mail_type(const char *pmessage_class)
 	return MAIL_TYPE_TNEF;
 }
 
-static BOOL oxcmail_load_mime_skeleton(
-	MESSAGE_CONTENT *pmsg, const char *pcharset,
-	BOOL b_tnef, int body_type, MIME_SKELETON *pskeleton)
+static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
+    const char *pcharset, BOOL b_tnef, int body_type, MIME_SKELETON *pskeleton)
 {
 	int i;
 	char *pbuff;
@@ -5112,7 +5111,7 @@ static void oxcmail_free_mime_skeleton(MIME_SKELETON *pskeleton)
 	}
 }
 
-static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
+static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	MIME_SKELETON *pskeleton, EXT_BUFFER_ALLOC alloc,
 	GET_PROPIDS get_propids, GET_PROPNAME get_propname,
 	MIME *phead)
@@ -5909,7 +5908,7 @@ static BOOL oxcmail_export_mail_head(MESSAGE_CONTENT *pmsg,
 	return TRUE;
 }
 
-static BOOL oxcmail_export_dsn(MESSAGE_CONTENT *pmsg,
+static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 	const char *charset, const char *pmessage_class,
 	EXT_BUFFER_ALLOC alloc, char *pdsn_content,
 	int max_length)
@@ -6068,7 +6067,7 @@ static BOOL oxcmail_export_dsn(MESSAGE_CONTENT *pmsg,
 	return TRUE;
 }
 
-static BOOL oxcmail_export_mdn(MESSAGE_CONTENT *pmsg,
+static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg,
 	const char *charset, const char *pmessage_class,
 	EXT_BUFFER_ALLOC alloc, char *pmdn_content,
 	int max_length)
@@ -6587,7 +6586,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 			pcharset = "utf-8";
 		}
 	}
-	if (!oxcmail_load_mime_skeleton(deconst(pmsg), pcharset, b_tnef,
+	if (!oxcmail_load_mime_skeleton(pmsg, pcharset, b_tnef,
 	    body_type, &mime_skeleton)) {
 		mail_free(pmail);
 		return FALSE;
@@ -6734,7 +6733,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 		break;
 	}
 	
-	if (!oxcmail_export_mail_head(deconst(pmsg), &mime_skeleton, alloc,
+	if (!oxcmail_export_mail_head(pmsg, &mime_skeleton, alloc,
 	    get_propids, get_propname, phead))
 		goto EXPORT_FAILURE;
 	
@@ -6909,7 +6908,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 			"message/delivery-status")) {
 			goto EXPORT_FAILURE;
 		}
-		if (!oxcmail_export_dsn(deconst(pmsg), mime_skeleton.charset,
+		if (!oxcmail_export_dsn(pmsg, mime_skeleton.charset,
 		    mime_skeleton.pmessage_class, alloc, tmp_buff, sizeof(tmp_buff)))
 			goto EXPORT_FAILURE;
 		if (FALSE == mime_write_content(pmime, tmp_buff,
@@ -6927,7 +6926,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 			"message/disposition-notification")) {
 			goto EXPORT_FAILURE;
 		}
-		if (!oxcmail_export_mdn(deconst(pmsg), mime_skeleton.charset,
+		if (!oxcmail_export_mdn(pmsg, mime_skeleton.charset,
 		    mime_skeleton.pmessage_class, alloc, tmp_buff,
 		    arsizeof(tmp_buff)))
 			goto EXPORT_FAILURE;
