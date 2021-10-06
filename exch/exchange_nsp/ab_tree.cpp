@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
@@ -66,7 +67,9 @@ using namespace gromox;
 namespace {
 
 struct AB_NODE {
-	SIMPLE_TREE_NODE node;
+	union {
+		SIMPLE_TREE_NODE node, stree;
+	};
 	uint8_t node_type;
 	uint32_t minid;
 	void *d_info;
@@ -194,9 +197,10 @@ SIMPLE_TREE_NODE* ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid)
 	std::lock_guard rhold(g_remote_lock);
 	for (psnode=single_list_get_head(&pbase->remote_list); NULL!=psnode;
 		psnode=single_list_get_after(&pbase->remote_list, psnode)) {
-		if (minid == ((AB_NODE*)psnode->pdata)->minid) {
-			return static_cast<SIMPLE_TREE_NODE *>(psnode->pdata);
-		}
+		auto stn = static_cast<SIMPLE_TREE_NODE *>(psnode->pdata);
+		auto xab = containerof(stn, AB_NODE, stree);
+		if (xab->minid == minid)
+			return stn;
 	}
 	return NULL;
 }
@@ -273,7 +277,9 @@ void AB_BASE::unload()
 	while ((pnode = single_list_pop_front(&pbase->gal_list)) != nullptr)
 		ab_tree_put_snode(pnode);
 	while ((pnode = single_list_pop_front(&pbase->remote_list)) != nullptr) {
-		ab_tree_put_abnode(static_cast<AB_NODE *>(pnode->pdata));
+		auto stn = static_cast<SIMPLE_TREE_NODE *>(pnode->pdata);
+		auto xab = containerof(stn, AB_NODE, stree);
+		ab_tree_put_abnode(xab);
 		ab_tree_put_snode(pnode);
 	}
 	if (NULL != pbase->phash) {
@@ -351,13 +357,10 @@ static BOOL ab_tree_load_user(AB_NODE *pabnode,
 	}
 	pabnode->id = usr.id;
 	pabnode->minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, usr.id);
-	((SIMPLE_TREE_NODE*)pabnode)->pdata = int_hash_query(
-							pbase->phash, pabnode->minid);
-	if (NULL == ((SIMPLE_TREE_NODE*)pabnode)->pdata) {
-		if (FALSE == ab_tree_cache_node(pbase, pabnode)) {
-			return FALSE;
-		}
-	}
+	pabnode->stree.pdata = int_hash_query(pbase->phash, pabnode->minid);
+	if (pabnode->stree.pdata == nullptr &&
+	    !ab_tree_cache_node(pbase, pabnode))
+		return FALSE;
 	pabnode->d_info = new(std::nothrow) sql_user(std::move(usr));
 	if (pabnode->d_info == nullptr)
 		return false;
@@ -370,13 +373,10 @@ static BOOL ab_tree_load_mlist(AB_NODE *pabnode,
 	pabnode->node_type = NODE_TYPE_MLIST;
 	pabnode->id = usr.id;
 	pabnode->minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, usr.id);
-	((SIMPLE_TREE_NODE*)pabnode)->pdata = int_hash_query(
-							pbase->phash, pabnode->minid);
-	if (NULL == ((SIMPLE_TREE_NODE*)pabnode)->pdata) {
-		if (FALSE == ab_tree_cache_node(pbase, pabnode)) {
-			return FALSE;
-		}
-	}
+	pabnode->stree.pdata = int_hash_query(pbase->phash, pabnode->minid);
+	if (pabnode->stree.pdata == nullptr &&
+	    !ab_tree_cache_node(pbase, pabnode))
+		return FALSE;
 	pabnode->d_info = new(std::nothrow) sql_user(std::move(usr));
 	if (pabnode->d_info == nullptr)
 		return false;
@@ -475,7 +475,9 @@ static BOOL ab_tree_load_class(
  LOAD_FAIL:
 	for (i-=1; i>=0; i--) {
 		free(parray[i].string);
-		ab_tree_put_abnode((AB_NODE*)parray[i].pnode);
+		auto stn = static_cast<SIMPLE_TREE_NODE *>(parray[i].pnode);
+		pabnode = containerof(stn, AB_NODE, stree);
+		ab_tree_put_abnode(pabnode);
 	}
 	free(parray);
 	return FALSE;
@@ -665,7 +667,9 @@ static BOOL ab_tree_load_tree(int domain_id,
  LOAD_FAIL:
 	for (i-=1; i>=0; i--) {
 		free(parray[i].string);
-		ab_tree_put_abnode((AB_NODE*)parray[i].pnode);
+		auto stn = static_cast<SIMPLE_TREE_NODE *>(parray[i].pnode);
+		pabnode = containerof(stn, AB_NODE, stree);
+		ab_tree_put_abnode(pabnode);
 	}
 	free(parray);
 	return FALSE;
@@ -873,7 +877,9 @@ static void *nspab_scanwork(void *param)
 		while ((pnode = single_list_pop_front(&pbase->gal_list)) != nullptr)
 			ab_tree_put_snode(pnode);
 		while ((pnode = single_list_pop_front(&pbase->remote_list)) != nullptr) {
-			ab_tree_put_abnode(static_cast<AB_NODE *>(pnode->pdata));
+			auto stn = static_cast<SIMPLE_TREE_NODE *>(pnode->pdata);
+			auto xab = containerof(stn, AB_NODE, stree);
+			ab_tree_put_abnode(xab);
 			ab_tree_put_snode(pnode);
 		}
 		if (NULL != pbase->phash) {
@@ -899,10 +905,9 @@ static int ab_tree_node_to_rpath(SIMPLE_TREE_NODE *pnode,
 	char *pbuff, int length)
 {
 	int len;
-	AB_NODE *pabnode;
 	char temp_buff[1024];
+	auto pabnode = containerof(pnode, AB_NODE, stree);
 	
-	pabnode = (AB_NODE*)pnode;
 	switch (pabnode->node_type) {
 	case NODE_TYPE_DOMAIN:
 		len = sprintf(temp_buff, "d%d", pabnode->id);
@@ -941,14 +946,13 @@ static BOOL ab_tree_node_to_path(SIMPLE_TREE_NODE *pnode,
 	int len;
 	int offset;
 	AB_BASE_REF pbase;
-	SIMPLE_TREE_NODE **ppnode;
+	auto xab = containerof(pnode, AB_NODE, stree);
 	
-	if (NODE_TYPE_REMOTE == ((AB_NODE*)pnode)->node_type) {
-		pbase = ab_tree_get_base(-reinterpret_cast<AB_NODE *>(pnode)->id);
+	if (xab->node_type == NODE_TYPE_REMOTE) {
+		pbase = ab_tree_get_base(-xab->id);
 		if (pbase == nullptr)
 			return FALSE;
-		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash,
-		         reinterpret_cast<AB_NODE *>(pnode)->minid));
+		auto ppnode = static_cast<SIMPLE_TREE_NODE **>(int_hash_query(pbase->phash, xab->minid));
 		if (NULL == ppnode) {
 			return FALSE;
 		}
@@ -993,12 +997,11 @@ bool ab_tree_node_to_guid(SIMPLE_TREE_NODE *pnode, GUID *pguid)
 {
 	uint64_t dgt;
 	uint32_t tmp_id;
-	AB_NODE *pabnode;
 	char temp_path[512];
 	SIMPLE_TREE_NODE *proot;
 	SIMPLE_TREE_NODE *pnode1;
+	auto pabnode = containerof(pnode, AB_NODE, stree);
 	
-	pabnode = (AB_NODE*)pnode;
 	if (pabnode->node_type < 0x80 && NULL != pnode->pdata) {
 		return ab_tree_node_to_guid(static_cast<SIMPLE_TREE_NODE *>(pnode->pdata), pguid);
 	}
@@ -1013,13 +1016,13 @@ bool ab_tree_node_to_guid(SIMPLE_TREE_NODE *pnode, GUID *pguid)
 		proot = pnode;
 		while ((pnode1 = simple_tree_node_get_parent(proot)) != NULL)
 			proot = pnode1;
-		pguid->time_low |= ((AB_NODE*)proot)->id;
+		auto abroot = containerof(proot, AB_NODE, stree);
+		pguid->time_low |= abroot->id;
 		pguid->time_hi_and_version = (pabnode->id & 0xFFFF0000) >> 16;
 		pguid->time_mid = pabnode->id & 0xFFFF;
 	}
 	memset(temp_path, 0, sizeof(temp_path));
-	ab_tree_node_to_path((SIMPLE_TREE_NODE*)
-		pabnode, temp_path, sizeof(temp_path));
+	ab_tree_node_to_path(&pabnode->stree, temp_path, arsizeof(temp_path));
 	if (!ab_tree_md5_path(temp_path, &dgt))
 		return false;
 	pguid->node[0] = dgt & 0xFF;
@@ -1039,23 +1042,21 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 	char *ptoken;
 	int domain_id;
 	AB_BASE_REF pbase;
-	AB_NODE *pabnode;
 	char cusername[UADDR_SIZE];
 	char hex_string[32];
 	char hex_string1[32];
-	SIMPLE_TREE_NODE **ppnode;
+	auto pabnode = containerof(pnode, AB_NODE, stree);
 	
-	pabnode = (AB_NODE*)pnode;
 	if (NODE_TYPE_REMOTE == pabnode->node_type) {
 		pbase = ab_tree_get_base(-pabnode->id);
 		if (pbase == nullptr)
 			return FALSE;
-		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash, pabnode->minid));
+		auto ppnode = static_cast<SIMPLE_TREE_NODE **>(int_hash_query(pbase->phash, pabnode->minid));
 		if (NULL == ppnode) {
 			return FALSE;
 		}
-		pabnode = (AB_NODE*)*ppnode;
 		pnode = *ppnode;
+		pabnode = containerof(pnode, AB_NODE, stree);
 	}
 	switch (pabnode->node_type) {
 	case NODE_TYPE_PERSON:
@@ -1068,7 +1069,7 @@ BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 			*ptoken = '\0';
 		}
 		while ((pnode = simple_tree_node_get_parent(pnode)) != NULL)
-			pabnode = (AB_NODE*)pnode;
+			pabnode = containerof(pnode, AB_NODE, stree);
 		if (pabnode->node_type != NODE_TYPE_DOMAIN) {
 			return FALSE;
 		}
@@ -1149,9 +1150,10 @@ SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	std::unique_lock rhold(g_remote_lock);
 	for (psnode=single_list_get_head(&pbase->remote_list); NULL!=psnode;
 		psnode=single_list_get_after(&pbase->remote_list, psnode)) {
-		if (minid == ((AB_NODE*)psnode->pdata)->minid) {
-			return static_cast<SIMPLE_TREE_NODE *>(psnode->pdata);
-		}
+		auto stn = static_cast<SIMPLE_TREE_NODE *>(psnode->pdata);
+		auto xab = containerof(stn, AB_NODE, stree);
+		if (xab->minid == minid)
+			return stn;
 	}
 	rhold.unlock();
 	for (psnode=single_list_get_head(&pbase->list); NULL!=psnode;
@@ -1177,11 +1179,12 @@ SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 		return NULL;
 	}
 	psnode->pdata = pabnode;
-	((SIMPLE_TREE_NODE*)pabnode)->pdata = NULL;
+	pabnode->stree.pdata = nullptr;
 	pabnode->node_type = NODE_TYPE_REMOTE;
-	pabnode->minid = ((AB_NODE*)*ppnode)->minid;
+	auto xab = containerof(*ppnode, AB_NODE, stree);
+	pabnode->minid = xab->minid;
 	pabnode->id = domain_id;
-	pabnode->d_info = new(std::nothrow) sql_domain(*static_cast<sql_domain *>(reinterpret_cast<AB_NODE *>(*ppnode)->d_info));
+	pabnode->d_info = new(std::nothrow) sql_domain(*static_cast<sql_domain *>(xab->d_info));
 	if (pabnode->d_info == nullptr) {
 		ab_tree_put_abnode(pabnode);
 		ab_tree_put_snode(psnode);
@@ -1207,27 +1210,24 @@ SIMPLE_TREE_NODE* ab_tree_uid_to_node(AB_BASE *pbase, int user_id)
 
 uint32_t ab_tree_get_node_minid(SIMPLE_TREE_NODE *pnode)
 {
-	return ((AB_NODE*)pnode)->minid;
+	auto xab = containerof(pnode, AB_NODE, stree);
+	return xab->minid;
 }
 
 uint8_t ab_tree_get_node_type(SIMPLE_TREE_NODE *pnode)
 {
-	AB_NODE *pabnode;
-	uint8_t node_type;
-	SIMPLE_TREE_NODE **ppnode;
-	
-	pabnode = (AB_NODE*)pnode;
+	auto pabnode = containerof(pnode, AB_NODE, stree);
 	if (pabnode->node_type != NODE_TYPE_REMOTE)
 		return pabnode->node_type;
 	auto pbase = ab_tree_get_base(-pabnode->id);
 	if (pbase == nullptr)
 		return NODE_TYPE_REMOTE;
-	ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash, pabnode->minid));
+	auto ppnode = static_cast<SIMPLE_TREE_NODE **>(int_hash_query(pbase->phash, pabnode->minid));
 	if (NULL == ppnode) {
 		return NODE_TYPE_REMOTE;
 	}
-	node_type = ((AB_NODE*)*ppnode)->node_type;
-	return node_type;
+	pabnode = containerof(*ppnode, AB_NODE, stree);
+	return pabnode->node_type;
 }
 
 void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode, uint32_t codepage,
@@ -1309,7 +1309,7 @@ void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode, uint32_t codepage,
 std::vector<std::string> ab_tree_get_object_aliases(SIMPLE_TREE_NODE *pnode, unsigned int type)
 {
 	std::vector<std::string> alist;
-	auto pabnode = reinterpret_cast<AB_NODE *>(pnode);
+	auto pabnode = containerof(pnode, AB_NODE, stree);
 	for (const auto &a : static_cast<sql_user *>(pabnode->d_info)->aliases)
 		alist.push_back(a);
 	return alist;
@@ -1382,7 +1382,8 @@ void ab_tree_get_server_dn(SIMPLE_TREE_NODE *pnode, char *dn, int length)
 	char username[UADDR_SIZE];
 	char hex_string[32];
 	
-	if (reinterpret_cast<AB_NODE *>(pnode)->node_type >= 0x80)
+	auto xab = containerof(pnode, AB_NODE, stree);
+	if (xab->node_type >= 0x80)
 		return;
 	memset(username, 0, sizeof(username));
 	ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
@@ -1393,12 +1394,10 @@ void ab_tree_get_server_dn(SIMPLE_TREE_NODE *pnode, char *dn, int length)
 	} else {
 		ptoken = username;
 	}
-	if (NODE_TYPE_REMOTE == ((AB_NODE *)pnode)->node_type) {
-		encode_hex_int(ab_tree_get_minid_value(
-			((AB_NODE *)pnode)->minid), hex_string);
-	} else {
-		encode_hex_int(((AB_NODE *)pnode)->id, hex_string);
-	}
+	if (xab->node_type == NODE_TYPE_REMOTE)
+		encode_hex_int(ab_tree_get_minid_value(xab->minid), hex_string);
+	else
+		encode_hex_int(xab->id, hex_string);
 	snprintf(dn, length, "/o=%s/ou=Exchange Administrative "
 	         "Group (FYDIBOHF23SPDLT)/cn=Configuration/cn=Servers"
 	         "/cn=%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x"
@@ -1413,10 +1412,8 @@ void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
 	char *str_name, char *str_address)
 {
 	AB_BASE_REF pbase;
-	AB_NODE *pabnode;
-	SIMPLE_TREE_NODE **ppnode;
+	auto pabnode = containerof(pnode, AB_NODE, stree);
 	
-	pabnode = (AB_NODE*)pnode;
 	if (NODE_TYPE_REMOTE == pabnode->node_type) {
 		pbase = ab_tree_get_base(-pabnode->id);
 		if (pbase == nullptr) {
@@ -1424,17 +1421,17 @@ void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
 			str_address[0] = '\0';
 			return;
 		}
-		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash, pabnode->minid));
+		auto ppnode = static_cast<SIMPLE_TREE_NODE **>(int_hash_query(pbase->phash, pabnode->minid));
 		if (NULL == ppnode) {
 			str_name[0] = '\0';
 			str_address[0] = '\0';
 			return;
 		}
 		pnode = *ppnode;
-		pabnode = (AB_NODE*)*ppnode;
+		pabnode = containerof(pnode, AB_NODE, stree);
 	}
 	while ((pnode = simple_tree_node_get_parent(pnode)) != NULL)
-		pabnode = (AB_NODE*)pnode;
+		pabnode = containerof(pnode, AB_NODE, stree);
 	auto obj = static_cast<sql_domain *>(pabnode->d_info);
 	if (str_name != nullptr)
 		strcpy(str_name, obj->title.c_str());
@@ -1445,16 +1442,15 @@ void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
 void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode, char *str_name)
 {
 	AB_BASE_REF pbase;
-	AB_NODE *pabnode;
-	SIMPLE_TREE_NODE **ppnode;
+	auto pabnode = containerof(pnode, AB_NODE, stree);
 	
-	if (NODE_TYPE_REMOTE == ((AB_NODE*)pnode)->node_type) {
-		pbase = ab_tree_get_base(-reinterpret_cast<AB_NODE *>(pnode)->id);
+	if (pabnode->node_type == NODE_TYPE_REMOTE) {
+		pbase = ab_tree_get_base(-pabnode->id);
 		if (pbase == nullptr) {
 			str_name[0] = '\0';
 			return;
 		}
-		ppnode = static_cast<decltype(ppnode)>(int_hash_query(pbase->phash, reinterpret_cast<AB_NODE *>(pnode)->minid));
+		auto ppnode = static_cast<SIMPLE_TREE_NODE **>(int_hash_query(pbase->phash, pabnode->minid));
 		if (NULL == ppnode) {
 			str_name[0] = '\0';
 			return;
@@ -1462,7 +1458,7 @@ void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode, char *str_name)
 		pnode = *ppnode;
 	}
 	do {
-		pabnode = (AB_NODE*)pnode;
+		pabnode = containerof(pnode, AB_NODE, stree);
 		if (NODE_TYPE_GROUP == pabnode->node_type) {
 			break;
 		}
@@ -1491,7 +1487,8 @@ ec_error_t ab_tree_fetchprop(SIMPLE_TREE_NODE *node, unsigned int codepage,
 	if (node_type != NODE_TYPE_PERSON && node_type != NODE_TYPE_ROOM &&
 	    node_type != NODE_TYPE_EQUIPMENT && node_type != NODE_TYPE_MLIST)
 		return ecNotFound;
-	const auto &obj = *static_cast<sql_user *>(reinterpret_cast<AB_NODE *>(node)->d_info);
+	auto xab = containerof(node, AB_NODE, stree);
+	const auto &obj = *static_cast<sql_user *>(xab->d_info);
 	auto it = obj.propvals.find(proptag);
 	if (it == obj.propvals.cend())
 		return ecNotFound;
