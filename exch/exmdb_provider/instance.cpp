@@ -386,8 +386,9 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 		}
 		propval.proptag = PROP_TAG_MID;
 		propval.pvalue = &message_id;
-		if (!tpropval_array_set_propval(&static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, &propval)) {
-			message_content_free(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent));
+		auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
+		if (!tpropval_array_set_propval(&ict->proplist, &propval)) {
+			message_content_free(ict);
 			if (NULL != pinstance->username) {
 				free(pinstance->username);
 			}
@@ -397,8 +398,8 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 		propval.proptag = PROP_TAG_MESSAGESTATUS;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = 0;
-		if (!tpropval_array_set_propval(&static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, &propval)) {
-			message_content_free(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent));
+		if (!tpropval_array_set_propval(&ict->proplist, &propval)) {
+			message_content_free(ict);
 			if (pinstance->username != nullptr)
 				free(pinstance->username);
 			free(pinstance);
@@ -517,8 +518,9 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 		}
 		propval.proptag = PROP_TAG_MID;
 		propval.pvalue = &message_id;
-		if (!tpropval_array_set_propval(&static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, &propval)) {
-			message_content_free(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent));
+		auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
+		if (!tpropval_array_set_propval(&ict->proplist, &propval)) {
+			message_content_free(ict);
 			if (NULL != pinstance->username) {
 				free(pinstance->username);
 			}
@@ -586,9 +588,10 @@ BOOL exmdb_server_get_embedded_cn(const char *dir, uint32_t instance_id,
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
 		return FALSE;
 	}
+	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	*ppcn = pinstance->parent_id == 0 ? nullptr :
 	        static_cast<uint64_t *>(tpropval_array_get_propval(
-	        &static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, PROP_TAG_CHANGENUMBER));
+	        &ict->proplist, PROP_TAG_CHANGENUMBER));
 	return TRUE;
 }
 
@@ -611,8 +614,9 @@ BOOL exmdb_server_reload_message_instance(
 		*pb_result = FALSE;
 		return TRUE;
 	}
+	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	if (0 == pinstance->parent_id) {
-		auto pvalue = tpropval_array_get_propval(&static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, PROP_TAG_MID);
+		auto pvalue = tpropval_array_get_propval(&ict->proplist, PROP_TAG_MID);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -656,7 +660,7 @@ BOOL exmdb_server_reload_message_instance(
 			}
 		}
 	}
-	message_content_free(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent));
+	message_content_free(ict);
 	pinstance->pcontent = pmsgctnt;
 	*pb_result = TRUE;
 	return TRUE;
@@ -672,7 +676,8 @@ BOOL exmdb_server_clear_message_instance(
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
 		return FALSE;
 	}
-	auto pvalue = tpropval_array_get_propval(&static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, PROP_TAG_MID);
+	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
+	auto pvalue = tpropval_array_get_propval(&ict->proplist, PROP_TAG_MID);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -687,7 +692,7 @@ BOOL exmdb_server_clear_message_instance(
 		message_content_free(pmsgctnt);
 		return FALSE;
 	}
-	message_content_free(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent));
+	message_content_free(ict);
 	pinstance->pcontent = pmsgctnt;
 	return TRUE;
 }
@@ -1104,7 +1109,8 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 	if (NULL == pproptags->pproptag) {
 		return FALSE;
 	}
-	auto pproplist = &static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist;
+	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
+	auto pproplist = &ict->proplist;
 	for (i=0; i<pmsgctnt->proplist.count; i++) {
 		proptag = pmsgctnt->proplist.ppropval[i].proptag;
 		switch (proptag) {
@@ -1206,7 +1212,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 		pproptags->pproptag[pproptags->count++] = proptag;
 	}
 	if (NULL != pmsgctnt->children.prcpts) {
-		if (b_force || static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->children.prcpts == nullptr) {
+		if (b_force || ict->children.prcpts == nullptr) {
 			prcpts = tarray_set_dup(pmsgctnt->children.prcpts);
 			if (NULL == prcpts) {
 				return FALSE;
@@ -1215,13 +1221,12 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 				tarray_set_free(prcpts);
 				return FALSE;
 			}
-			message_content_set_rcpts_internal(
-				static_cast<MESSAGE_CONTENT *>(pinstance->pcontent), prcpts);
+			message_content_set_rcpts_internal(ict, prcpts);
 			pproptags->pproptag[pproptags->count++] = PR_MESSAGE_RECIPIENTS;
 		}
 	}
 	if (NULL != pmsgctnt->children.pattachments) {
-		if (b_force || static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->children.pattachments == nullptr) {
+		if (b_force || ict->children.pattachments == nullptr) {
 			pattachments = attachment_list_dup(
 				pmsgctnt->children.pattachments);
 			if (NULL == pattachments) {
@@ -1231,8 +1236,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 				attachment_list_free(pattachments);
 				return FALSE;
 			}
-			message_content_set_attachments_internal(
-				static_cast<MESSAGE_CONTENT *>(pinstance->pcontent), pattachments);
+			message_content_set_attachments_internal(ict, pattachments);
 			pproptags->pproptag[pproptags->count++] = PR_MESSAGE_ATTACHMENTS;
 		}
 	}
@@ -1529,7 +1533,6 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
     const char *account, gxerr_t *pe_result)
 {
 	int i;
-	uint32_t *pcpid;
 	uint64_t folder_id;
 	char tmp_buff[1024];
 	char address_type[16];
@@ -1609,12 +1612,11 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 		*pe_result = GXERR_SUCCESS;
 		return TRUE;
 	}
+	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	if ((pinstance->change_mask & CHANGE_MASK_HTML) &&
 		0 == (pinstance->change_mask & CHANGE_MASK_BODY)) {
-		auto pbin = static_cast<BINARY *>(tpropval_array_get_propval(
-		            &static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, PROP_TAG_HTML));
-		pcpid = static_cast<uint32_t *>(tpropval_array_get_propval(
-		        &static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, PR_INTERNET_CPID));
+		auto pbin = static_cast<BINARY *>(tpropval_array_get_propval(&ict->proplist, PROP_TAG_HTML));
+		auto pcpid = static_cast<uint32_t *>(tpropval_array_get_propval(&ict->proplist, PR_INTERNET_CPID));
 		if (NULL != pbin && NULL != pcpid) {
 			std::string plainbuf;
 			auto ret = html_to_plain(pbin->pc, pbin->cb, plainbuf);
@@ -1629,7 +1631,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 					return false;
 				propval.pvalue = pvalue;
 			}
-			if (!tpropval_array_set_propval(&static_cast<MESSAGE_CONTENT *>(pinstance->pcontent)->proplist, &propval))
+			if (!tpropval_array_set_propval(&ict->proplist, &propval))
 				return false;
 		}
 	}
@@ -1640,7 +1642,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 			INSTANCE_TYPE_ATTACHMENT != pinstance1->type) {
 			return FALSE;
 		}
-		auto pmsgctnt = message_content_dup(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent));
+		auto pmsgctnt = message_content_dup(ict);
 		if (NULL == pmsgctnt) {
 			return FALSE;
 		}
@@ -1648,7 +1650,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 		*pe_result = GXERR_SUCCESS;
 		return TRUE;
 	}
-	auto pmsgctnt = message_content_dup(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent));
+	auto pmsgctnt = message_content_dup(ict);
 	if (NULL == pmsgctnt) {
 		return FALSE;	
 	}
