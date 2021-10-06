@@ -3761,9 +3761,8 @@ static bool oxcmail_enum_mdn(const char *tag,
 		}
 	} else if (0 == strcasecmp(tag, "Final-Recipient")) {
 		if (0 == strncasecmp(value, "rfc822;", 7)) {
-			if (NULL == tpropval_array_get_propval(
-				&((MESSAGE_CONTENT*)pparam)->proplist,
-				PROP_TAG_ORIGINALDISPLAYTO)) {
+			if (tpropval_array_get_propval(&static_cast<MESSAGE_CONTENT *>(pparam)->proplist,
+			    PROP_TAG_ORIGINALDISPLAYTO) == nullptr) {
 				propval.proptag = PROP_TAG_ORIGINALDISPLAYTO;
 				propval.pvalue = (char*)value + 7;
 				return tpropval_array_set_propval(&mcparam->proplist, &propval);
@@ -6579,7 +6578,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 	
 	
 	mail_init(pmail, ppool);
-	auto pvalue = tpropval_array_get_propval(const_cast<TPROPVAL_ARRAY *>(&pmsg->proplist), PR_INTERNET_CPID);
+	auto pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_INTERNET_CPID);
 	if (NULL == pvalue || 1200 == *(uint32_t*)pvalue) {
 		pcharset = "utf-8";
 	} else {
@@ -6588,9 +6587,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 			pcharset = "utf-8";
 		}
 	}
-	if (FALSE == oxcmail_load_mime_skeleton(
-		(MESSAGE_CONTENT*)pmsg, pcharset, b_tnef,
-		body_type, &mime_skeleton)) {
+	if (!oxcmail_load_mime_skeleton(deconst(pmsg), pcharset, b_tnef,
+	    body_type, &mime_skeleton)) {
 		mail_free(pmail);
 		return FALSE;
 	}
@@ -6736,11 +6734,9 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 		break;
 	}
 	
-	if (FALSE == oxcmail_export_mail_head(
-		(MESSAGE_CONTENT*)pmsg, &mime_skeleton,
-		alloc, get_propids, get_propname, phead)) {
+	if (!oxcmail_export_mail_head(deconst(pmsg), &mime_skeleton, alloc,
+	    get_propids, get_propname, phead))
 		goto EXPORT_FAILURE;
-	}
 	
 	if (MAIL_TYPE_ENCRYPTED == mime_skeleton.mail_type) {
 		if (FALSE == mime_set_content_type(
@@ -6913,11 +6909,9 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 			"message/delivery-status")) {
 			goto EXPORT_FAILURE;
 		}
-		if (FALSE == oxcmail_export_dsn((MESSAGE_CONTENT*)pmsg,
-			mime_skeleton.charset, mime_skeleton.pmessage_class,
-			alloc, tmp_buff, sizeof(tmp_buff))) {
+		if (!oxcmail_export_dsn(deconst(pmsg), mime_skeleton.charset,
+		    mime_skeleton.pmessage_class, alloc, tmp_buff, sizeof(tmp_buff)))
 			goto EXPORT_FAILURE;
-		}
 		if (FALSE == mime_write_content(pmime, tmp_buff,
 			strlen(tmp_buff), MIME_ENCODING_NONE)) {
 			goto EXPORT_FAILURE;
@@ -6933,11 +6927,10 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
 			"message/disposition-notification")) {
 			goto EXPORT_FAILURE;
 		}
-		if (FALSE == oxcmail_export_mdn((MESSAGE_CONTENT*)pmsg,
-			mime_skeleton.charset, mime_skeleton.pmessage_class,
-			alloc, tmp_buff, sizeof(tmp_buff))) {
+		if (!oxcmail_export_mdn(deconst(pmsg), mime_skeleton.charset,
+		    mime_skeleton.pmessage_class, alloc, tmp_buff,
+		    arsizeof(tmp_buff)))
 			goto EXPORT_FAILURE;
-		}
 		if (FALSE == mime_write_content(pmime, tmp_buff,
 			strlen(tmp_buff), MIME_ENCODING_NONE)) {
 			goto EXPORT_FAILURE;

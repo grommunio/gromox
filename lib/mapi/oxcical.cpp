@@ -4871,12 +4871,9 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 	
-	if (FALSE == oxcical_export_recipient_table(
-		pcomponent, entryid_to_username,
-		essdn_to_username, alloc, partstat,
-		(MESSAGE_CONTENT*)pmsg)) {
+	if (!oxcical_export_recipient_table(pcomponent, entryid_to_username,
+	    essdn_to_username, alloc, partstat, static_cast<MESSAGE_CONTENT *>(pmsg)))
 		return FALSE;
-	}
 	
 	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_BODY);
 	if (NULL != pvalue) {
@@ -5626,9 +5623,8 @@ BOOL oxcical_export(const MESSAGE_CONTENT *pmsg, ICAL *pical,
 	ESSDN_TO_USERNAME essdn_to_username,
 	LCID_TO_LTAG lcid_to_ltag)
 {
-	return oxcical_export_internal(NULL, NULL,
-			NULL, (MESSAGE_CONTENT*)pmsg, pical,
-			entryid_to_username, essdn_to_username,
-			lcid_to_ltag, alloc, get_propids);
+	return oxcical_export_internal(nullptr, nullptr, nullptr, deconst(pmsg),
+	       pical, entryid_to_username, essdn_to_username, lcid_to_ltag,
+	       alloc, get_propids);
 }
 
