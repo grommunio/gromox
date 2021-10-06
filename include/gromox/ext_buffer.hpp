@@ -47,7 +47,7 @@ struct RPC_HEADER_EXT {
 };
 
 struct ADDRESSBOOK_ENTRYID;
-struct APPOINTMENTRECURRENCEPATTERN;
+struct APPOINTMENT_RECUR_PAT;
 struct EID_ARRAY;
 struct EXT_RULE_ACTIONS;
 struct FLAGGED_PROPVAL;
@@ -145,7 +145,7 @@ struct EXT_PULL {
 	int g_systime(SYSTEMTIME *);
 	int g_tzstruct(TIMEZONESTRUCT *);
 	int g_tzdef(TIMEZONEDEFINITION *);
-	int g_apptrecpat(APPOINTMENTRECURRENCEPATTERN *);
+	int g_apptrecpat(APPOINTMENT_RECUR_PAT *);
 	int g_goid(GLOBALOBJECTID *);
 	int g_msgctnt(MESSAGE_CONTENT *);
 
@@ -231,7 +231,7 @@ struct EXT_PUSH {
 	int p_systime(const SYSTEMTIME *);
 	int p_tzstruct(const TIMEZONESTRUCT *);
 	int p_tzdef(const TIMEZONEDEFINITION *);
-	int p_apptrecpat(const APPOINTMENTRECURRENCEPATTERN *);
+	int p_apptrecpat(const APPOINTMENT_RECUR_PAT *);
 	int p_goid(const GLOBALOBJECTID *);
 	int p_msgctnt(const MESSAGE_CONTENT *);
 	int p_rpchdr(const RPC_HEADER_EXT *);

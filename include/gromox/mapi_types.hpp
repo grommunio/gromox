@@ -675,13 +675,16 @@ struct TIMEZONEDEFINITION {
 #define PATTERNTYPE_HJMONTHNTH						0x000B
 #define PATTERNTYPE_HJMONTHEND						0x000C
 
-#define WEEKRECURRENCEPATTERN_SU					0x00000001
-#define WEEKRECURRENCEPATTERN_M						0x00000002
-#define WEEKRECURRENCEPATTERN_TU					0x00000004
-#define WEEKRECURRENCEPATTERN_W						0x00000008
-#define WEEKRECURRENCEPATTERN_TH					0x00000010
-#define WEEKRECURRENCEPATTERN_F						0x00000020
-#define WEEKRECURRENCEPATTERN_SA					0x00000040
+namespace week_recur_bit {
+static constexpr unsigned int
+	sun = 1U << 0,
+	mon = 1U << 1,
+	tue = 1U << 2,
+	wed = 1U << 3,
+	thu = 1U << 4,
+	fri = 1U << 5,
+	sat = 1U << 6;
+}
 
 #define RECURRENCENUM_FIRST							0x00000001
 #define RECURRENCENUM_SECOND						0x00000002
@@ -689,15 +692,11 @@ struct TIMEZONEDEFINITION {
 #define RECURRENCENUM_FOURTH						0x00000004
 #define RECURRENCENUM_LAST							0x00000005
 
-struct PATTERNTYPESPECIFIC_MONTHNTH {
-	uint32_t weekrecurrence;
-	uint32_t recurrencenum;
-};
-
-union PATTERNTYPESPECIFIC {
-	uint32_t weekrecurrence;
-	uint32_t dayofmonth;
-	PATTERNTYPESPECIFIC_MONTHNTH monthnth;
+union PATTERNTYPE_SPECIFIC {
+	uint32_t weekrecur, dayofmonth;
+	struct {
+		uint32_t weekrecur, recurnum;
+	} monthnth;
 };
 
 #define ENDTYPE_AFTER_DATE							0x00002021
@@ -715,7 +714,7 @@ union PATTERNTYPESPECIFIC {
 
 #define ENDDATE_MISSING								0x5AE980DF	
 
-struct RECURRENCEPATTERN {
+struct RECURRENCE_PATTERN {
 	uint16_t readerversion; /* 0x3004 */
 	uint16_t writerversion; /* 0x3004 */
 	uint16_t recurfrequency;
@@ -724,7 +723,7 @@ struct RECURRENCEPATTERN {
 	uint32_t firstdatetime;
 	uint32_t period;
 	uint32_t slidingflag; /* only for scheduling tasks, otherwise 0 */
-	PATTERNTYPESPECIFIC patterntypespecific;
+	PATTERNTYPE_SPECIFIC pts;
 	uint32_t endtype;
 	uint32_t occurrencecount;
 	uint32_t firstdow;
@@ -793,8 +792,8 @@ struct EXTENDEDEXCEPTION {
 	uint8_t *preservedblockee2;
 };
 
-struct APPOINTMENTRECURRENCEPATTERN {
-	RECURRENCEPATTERN recurrencepattern;
+struct APPOINTMENT_RECUR_PAT {
+	RECURRENCE_PATTERN recur_pat;
 	uint32_t readerversion2; /* 0x00003006 */
 	uint32_t writerversion2; /* SHOULD be 0x00003009, can be 0x00003008 */
 	uint32_t starttimeoffset;

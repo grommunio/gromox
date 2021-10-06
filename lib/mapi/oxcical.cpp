@@ -325,7 +325,7 @@ static BOOL oxcical_timezonestruct_to_binary(
 /* ptz_component can be NULL, represents UTC */
 static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
     std::shared_ptr<ICAL_LINE> piline, uint16_t calendartype, time_t start_time,
-	uint32_t duration_minutes, APPOINTMENTRECURRENCEPATTERN *papprecurr)
+    uint32_t duration_minutes, APPOINTMENT_RECUR_PAT *apr)
 {
 	int tmp_int;
 	time_t tmp_time;
@@ -364,28 +364,25 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			return FALSE;
 	itime_base = ical_rrule_base_itime(&irrule);
 	itime_first = ical_rrule_instance_itime(&irrule);
-	papprecurr->readerversion2 = 0x00003006;
-	papprecurr->writerversion2 = 0x00003009;
-	papprecurr->recurrencepattern.readerversion = 0x3004;
-	papprecurr->recurrencepattern.writerversion = 0x3004;
-	papprecurr->recurrencepattern.slidingflag = 0x00000000;
-	papprecurr->recurrencepattern.firstdow =
-						ical_rrule_weekstart(&irrule);
+	apr->readerversion2 = 0x3006;
+	apr->writerversion2 = 0x3009;
+	apr->recur_pat.readerversion = 0x3004;
+	apr->recur_pat.writerversion = 0x3004;
+	apr->recur_pat.slidingflag = 0;
+	apr->recur_pat.firstdow = ical_rrule_weekstart(&irrule);
 	itime = ical_rrule_instance_itime(&irrule);
-	papprecurr->starttimeoffset = 60*itime.hour + itime.minute;
-	papprecurr->endtimeoffset =
-		papprecurr->starttimeoffset + duration_minutes;
+	apr->starttimeoffset = 60 * itime.hour + itime.minute;
+	apr->endtimeoffset = apr->starttimeoffset + duration_minutes;
 	itime.hour = 0;
 	itime.minute = 0;
 	itime.second = 0;
 	ical_itime_to_utc(ptz_component, itime, &tmp_time);
-	papprecurr->recurrencepattern.startdate =
-			rop_util_unix_to_nttime(tmp_time)/600000000;
+	apr->recur_pat.startdate = rop_util_unix_to_nttime(tmp_time) / 600000000;
 	if (ical_rrule_endless(&irrule)) {
  SET_INFINITE:
-		papprecurr->recurrencepattern.endtype = ENDTYPE_NEVER_END;
-		papprecurr->recurrencepattern.occurrencecount = 0x0000000A;
-		papprecurr->recurrencepattern.enddate = ENDDATE_MISSING;
+		apr->recur_pat.endtype = ENDTYPE_NEVER_END;
+		apr->recur_pat.occurrencecount = 10;
+		apr->recur_pat.enddate = ENDDATE_MISSING;
 	} else {
 		itime = ical_rrule_instance_itime(&irrule);
 		while (ical_rrule_iterate(&irrule)) {
@@ -402,18 +399,14 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			itime = itime1;
 		}
 		if (0 != ical_rrule_total_count(&irrule)) {
-			papprecurr->recurrencepattern.endtype =
-						ENDTYPE_AFTER_N_OCCURRENCES;
-			papprecurr->recurrencepattern.occurrencecount =
-							ical_rrule_total_count(&irrule);
+			apr->recur_pat.endtype = ENDTYPE_AFTER_N_OCCURRENCES;
+			apr->recur_pat.occurrencecount = ical_rrule_total_count(&irrule);
 		} else {
-			papprecurr->recurrencepattern.endtype =
-								ENDTYPE_AFTER_DATE;
-			papprecurr->recurrencepattern.occurrencecount =
-								ical_rrule_sequence(&irrule);
+			apr->recur_pat.endtype = ENDTYPE_AFTER_DATE;
+			apr->recur_pat.occurrencecount = ical_rrule_sequence(&irrule);
 		}
 		if (b_exceptional)
-			papprecurr->recurrencepattern.occurrencecount --;
+			--apr->recur_pat.occurrencecount;
 		pitime = ical_rrule_until_itime(&irrule);
 		if (NULL != pitime) {
 			itime = *pitime;
@@ -424,8 +417,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		itime.minute = 0;
 		itime.second = 0;
 		ical_itime_to_utc(ptz_component, itime, &tmp_time);
-		papprecurr->recurrencepattern.enddate =
-			rop_util_unix_to_nttime(tmp_time)/600000000;
+		apr->recur_pat.enddate = rop_util_unix_to_nttime(tmp_time) / 600000000;
 	}
 	switch (ical_rrule_frequency(&irrule)) {
 	case ICAL_FREQUENCY_SECOND:
@@ -437,85 +429,67 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		    piline->get_subval_list("BYMONTH") != nullptr ||
 		    piline->get_subval_list("BYSETPOS") != nullptr)
 			return FALSE;
-		papprecurr->recurrencepattern.recurfrequency =
-									RECURFREQUENCY_DAILY;
+		apr->recur_pat.recurfrequency = RECURFREQUENCY_DAILY;
 		if (ical_rrule_interval(&irrule) > 999) {
 			return FALSE;
 		}
-		papprecurr->recurrencepattern.period =
-				ical_rrule_interval(&irrule)*1440;
-		papprecurr->recurrencepattern.firstdatetime =
-			papprecurr->recurrencepattern.startdate %
-			papprecurr->recurrencepattern.period;
+		apr->recur_pat.period = ical_rrule_interval(&irrule) * 1440;
+		apr->recur_pat.firstdatetime = apr->recur_pat.startdate % apr->recur_pat.period;
 		patterntype = PATTERNTYPE_DAY;
 		break;
 	case ICAL_FREQUENCY_WEEK:
 		if (piline->get_subval_list("BYMONTH") != nullptr ||
 		    piline->get_subval_list("BYSETPOS") != nullptr)
 			return FALSE;
-		papprecurr->recurrencepattern.recurfrequency =
-								RECURFREQUENCY_WEEKLY;
+		apr->recur_pat.recurfrequency = RECURFREQUENCY_WEEKLY;
 		if (ical_rrule_interval(&irrule) > 99) {
 			return FALSE;
 		}
-		papprecurr->recurrencepattern.period =
-					ical_rrule_interval(&irrule);
+		apr->recur_pat.period = ical_rrule_interval(&irrule);
 		itime = itime_base;
 		itime.hour = 0;
 		itime.minute = 0;
 		itime.second = 0;
 		itime.leap_second = 0;
 		ical_itime_to_utc(NULL, itime, &tmp_time);
-		papprecurr->recurrencepattern.firstdatetime =
+		apr->recur_pat.firstdatetime =
 			(rop_util_unix_to_nttime(tmp_time)/600000000)%
 			(10080*ical_rrule_interval(&irrule));
 		patterntype = PATTERNTYPE_WEEK;
 		if (ical_rrule_check_bymask(&irrule, RRULE_BY_DAY)) {
 			psubval_list = piline->get_subval_list("BYDAY");
-			papprecurr->recurrencepattern.
-				patterntypespecific.weekrecurrence = 0;
+			apr->recur_pat.pts.weekrecur = 0;
 			for (const auto &pnv2 : *psubval_list) {
 				auto wd = pnv2.has_value() ? pnv2->c_str() : "";
 				if (strcasecmp(wd, "SU") == 0) {
-					papprecurr->recurrencepattern.
-						patterntypespecific.weekrecurrence |= 0x00000001;
+					apr->recur_pat.pts.weekrecur |= week_recur_bit::sun;
 				} else if (strcasecmp(wd, "MO") == 0) {
-					papprecurr->recurrencepattern.
-						patterntypespecific.weekrecurrence |= 0x00000002;
+					apr->recur_pat.pts.weekrecur |= week_recur_bit::mon;
 				} else if (strcasecmp(wd, "TU") == 0) {
-					papprecurr->recurrencepattern.
-						patterntypespecific.weekrecurrence |= 0x00000004;
+					apr->recur_pat.pts.weekrecur |= week_recur_bit::tue;
 				} else if (strcasecmp(wd, "WE") == 0) {
-					papprecurr->recurrencepattern.
-						patterntypespecific.weekrecurrence |= 0x00000008;
+					apr->recur_pat.pts.weekrecur |= week_recur_bit::wed;
 				} else if (strcasecmp(wd, "TH") == 0) {
-					papprecurr->recurrencepattern.
-						patterntypespecific.weekrecurrence |= 0x00000010;
+					apr->recur_pat.pts.weekrecur |= week_recur_bit::thu;
 				} else if (strcasecmp(wd, "FR") == 0) {
-					papprecurr->recurrencepattern.
-						patterntypespecific.weekrecurrence |= 0x00000020;
+					apr->recur_pat.pts.weekrecur |= week_recur_bit::fri;
 				} else if (strcasecmp(wd, "SA") == 0) {
-					papprecurr->recurrencepattern.
-						patterntypespecific.weekrecurrence |= 0x00000040;
+					apr->recur_pat.pts.weekrecur |= week_recur_bit::sat;
 				}
 			}
 		} else {
 			ical_utc_to_datetime(ptz_component, start_time, &itime);
-			papprecurr->recurrencepattern.
-				patterntypespecific.weekrecurrence = ((uint32_t)1) <<
-				ical_get_dayofweek(itime.year, itime.month, itime.day);
+			apr->recur_pat.pts.weekrecur = 1U << ical_get_dayofweek(itime.year, itime.month, itime.day);
 		}
 		break;
 	case ICAL_FREQUENCY_MONTH:
 		if (piline->get_subval_list("BYMONTH") != nullptr)
 			return FALSE;
-		papprecurr->recurrencepattern.recurfrequency =
-								RECURFREQUENCY_MONTHLY;
+		apr->recur_pat.recurfrequency = RECURFREQUENCY_MONTHLY;
 		if (ical_rrule_interval(&irrule) > 99) {
 			return FALSE;
 		}
-		papprecurr->recurrencepattern.period =
-					ical_rrule_interval(&irrule);
+		apr->recur_pat.period = ical_rrule_interval(&irrule);
 		memset(&itime, 0, sizeof(ICAL_TIME));
 		itime.year = 1601;
 		itime.month = ((itime_base.year - 1601)*12 + itime_base.month - 1)
@@ -527,43 +501,28 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		itime1.year = 1601;
 		itime1.month = 1;
 		itime1.day = 1;
-		papprecurr->recurrencepattern.firstdatetime = itime.delta_day(itime1) * 1440;
+		apr->recur_pat.firstdatetime = itime.delta_day(itime1) * 1440;
 		if (ical_rrule_check_bymask(&irrule, RRULE_BY_DAY) &&
 		    ical_rrule_check_bymask(&irrule, RRULE_BY_SETPOS)) {
 			patterntype = PATTERNTYPE_MONTHNTH;
 			psubval_list = piline->get_subval_list("BYDAY");
-			papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence = 0;
+			apr->recur_pat.pts.monthnth.weekrecur = 0;
 			for (const auto &pnv2 : *psubval_list) {
 				auto wd = pnv2.has_value() ? pnv2->c_str() : "";
 				if (strcasecmp(wd, "SU") == 0) {
-					papprecurr->recurrencepattern.
-								patterntypespecific.monthnth.
-								weekrecurrence |= 0x00000001;
+					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::sun;
 				} else if (strcasecmp(wd, "MO") == 0) {
-					papprecurr->recurrencepattern.
-								patterntypespecific.monthnth.
-								weekrecurrence |= 0x00000002;
+					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::mon;
 				} else if (strcasecmp(wd, "TU") == 0) {
-					papprecurr->recurrencepattern.
-								patterntypespecific.monthnth.
-								weekrecurrence |= 0x00000004;
+					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::tue;
 				} else if (strcasecmp(wd, "WE") == 0) {
-					papprecurr->recurrencepattern.
-								patterntypespecific.monthnth.
-								weekrecurrence |= 0x00000008;
+					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::wed;
 				} else if (strcasecmp(wd, "TH") == 0) {
-					papprecurr->recurrencepattern.
-								patterntypespecific.monthnth.
-								weekrecurrence |= 0x00000010;
+					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::thu;
 				} else if (strcasecmp(wd, "FR") == 0) {
-					papprecurr->recurrencepattern.
-								patterntypespecific.monthnth.
-								weekrecurrence |= 0x00000020;
+					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::fri;
 				} else if (strcasecmp(wd, "SA") == 0) {
-					papprecurr->recurrencepattern.
-								patterntypespecific.monthnth.
-								weekrecurrence |= 0x00000040;
+					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::sat;
 				}
 			}
 			pvalue = piline->get_first_subvalue_by_name("BYSETPOS");
@@ -573,8 +532,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			} else if (-1 == tmp_int) {
 				tmp_int = 5;
 			}
-			papprecurr->recurrencepattern.patterntypespecific.
-							monthnth.recurrencenum = tmp_int;
+			apr->recur_pat.pts.monthnth.recurnum = tmp_int;
 		} else {
 			if (ical_rrule_check_bymask(&irrule, RRULE_BY_DAY) ||
 			    ical_rrule_check_bymask(&irrule, RRULE_BY_SETPOS))
@@ -592,19 +550,15 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 					tmp_int = 31;
 				}
 			}
-			papprecurr->recurrencepattern.
-				patterntypespecific.dayofmonth = tmp_int;
+			apr->recur_pat.pts.dayofmonth = tmp_int;
 		}
 		break;
 	case ICAL_FREQUENCY_YEAR:
-		papprecurr->recurrencepattern.recurfrequency =
-								RECURFREQUENCY_YEARLY;
+		apr->recur_pat.recurfrequency = RECURFREQUENCY_YEARLY;
 		if (ical_rrule_interval(&irrule) > 8) {
 			return FALSE;
 		}
-		papprecurr->recurrencepattern.period =
-				12*ical_rrule_interval(&irrule);
-				
+		apr->recur_pat.period = 12 * ical_rrule_interval(&irrule);
 		memset(&itime, 0, sizeof(ICAL_TIME));
 		itime.year = 1601;
 		itime.month = (itime_first.month - 1)
@@ -616,7 +570,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		itime1.year = 1601;
 		itime1.month = 1;
 		itime1.day = 1;
-		papprecurr->recurrencepattern.firstdatetime = itime.delta_day(itime1) * 1440;
+		apr->recur_pat.firstdatetime = itime.delta_day(itime1) * 1440;
 		if (ical_rrule_check_bymask(&irrule, RRULE_BY_DAY) &&
 		    ical_rrule_check_bymask(&irrule, RRULE_BY_SETPOS) &&
 		    ical_rrule_check_bymask(&irrule, RRULE_BY_MONTH)) {
@@ -624,38 +578,23 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				return FALSE;
 			patterntype = PATTERNTYPE_MONTHNTH;
 			psubval_list = piline->get_subval_list("BYDAY");
-			papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence = 0;
+			apr->recur_pat.pts.monthnth.weekrecur = 0;
 			for (const auto &pnv2 : *psubval_list) {
 				auto wd = pnv2.has_value() ? pnv2->c_str() : "";
 				if (strcasecmp(wd, "SU") == 0) {
-					papprecurr->recurrencepattern.
-						patterntypespecific.monthnth.
-						weekrecurrence |= 0x00000001;
+					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::sun;
 				} else if (strcasecmp(wd, "MO") == 0) {
-					papprecurr->recurrencepattern.
-						patterntypespecific.monthnth.
-						weekrecurrence |= 0x00000002;
+					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::mon;
 				} else if (strcasecmp(wd, "TU") == 0) {
-					papprecurr->recurrencepattern.
-						patterntypespecific.monthnth.
-						weekrecurrence |= 0x00000004;
+					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::tue;
 				} else if (strcasecmp(wd, "WE") == 0) {
-					papprecurr->recurrencepattern.
-						patterntypespecific.monthnth.
-						weekrecurrence |= 0x00000008;
+					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::wed;
 				} else if (strcasecmp(wd, "TH") == 0) {
-					papprecurr->recurrencepattern.
-						patterntypespecific.monthnth.
-						weekrecurrence |= 0x00000010;
+					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::thu;
 				} else if (strcasecmp(wd, "FR") == 0) {
-					papprecurr->recurrencepattern.
-						patterntypespecific.monthnth.
-						weekrecurrence |= 0x00000020;
+					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::fri;
 				} else if (strcasecmp(wd, "SA") == 0) {
-					papprecurr->recurrencepattern.
-						patterntypespecific.monthnth.
-						weekrecurrence |= 0x00000040;
+					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::sat;
 				}
 			}
 			pvalue = piline->get_first_subvalue_by_name("BYSETPOS");
@@ -665,8 +604,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			} else if (-1 == tmp_int) {
 				tmp_int = 5;
 			}
-			papprecurr->recurrencepattern.patterntypespecific.
-							monthnth.recurrencenum = tmp_int;
+			apr->recur_pat.pts.monthnth.recurnum = tmp_int;
 		} else {
 			if (ical_rrule_check_bymask(&irrule, RRULE_BY_DAY) ||
 			    ical_rrule_check_bymask(&irrule, RRULE_BY_SETPOS))
@@ -684,8 +622,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 					tmp_int = 31;
 				}
 			}
-			papprecurr->recurrencepattern.
-				patterntypespecific.dayofmonth = tmp_int;
+			apr->recur_pat.pts.dayofmonth = tmp_int;
 		}
 		break;
 	}
@@ -698,8 +635,8 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			calendartype = CAL_DEFAULT;
 		}
 	}
-	papprecurr->recurrencepattern.patterntype = patterntype;
-	papprecurr->recurrencepattern.calendartype = calendartype;
+	apr->recur_pat.patterntype = patterntype;
+	apr->recur_pat.calendartype = calendartype;
 	return TRUE;
 }
 
@@ -1879,7 +1816,7 @@ static int oxcical_cmp_date(const void *pdate1, const void *pdate2)
 	return a == b ? 0 : a < b ? -1 : 1;
 }
 
-static BOOL oxcical_parse_appointment_recurrence(APPOINTMENTRECURRENCEPATTERN *papprecurr,
+static BOOL oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
@@ -1889,7 +1826,7 @@ static BOOL oxcical_parse_appointment_recurrence(APPOINTMENTRECURRENCEPATTERN *p
 	TAGGED_PROPVAL propval;
 	
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
-	    ext_push.p_apptrecpat(papprecurr) != EXT_ERR_SUCCESS)
+	    ext_push.p_apptrecpat(apr) != EXT_ERR_SUCCESS)
 		return FALSE;
 	tmp_bin.cb = ext_push.m_offset;
 	tmp_bin.pb = ext_push.m_udata;
@@ -1904,13 +1841,10 @@ static BOOL oxcical_parse_appointment_recurrence(APPOINTMENTRECURRENCEPATTERN *p
 		return FALSE;
 	}
 	(*plast_propid) ++;
-	if (ENDTYPE_NEVER_END == papprecurr->recurrencepattern.endtype ||
-		ENDTYPE_NEVER_END1 == papprecurr->recurrencepattern.endtype) {
-		/* 31 August 4500, 11:59 P.M */
-		nt_time = 1525076159;
-	} else {
-		nt_time = papprecurr->recurrencepattern.enddate;
-	}
+	nt_time = apr->recur_pat.endtype == ENDTYPE_NEVER_END ||
+	          apr->recur_pat.endtype == ENDTYPE_NEVER_END1 ?
+	          1525076159 : /* 31 August 4500, 11:59 P.M */
+	          apr->recur_pat.enddate;
 	nt_time *= 600000000;
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
 	propname.kind = MNID_ID;
@@ -1922,7 +1856,7 @@ static BOOL oxcical_parse_appointment_recurrence(APPOINTMENTRECURRENCEPATTERN *p
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
 	(*plast_propid) ++;
-	nt_time = papprecurr->recurrencepattern.startdate;
+	nt_time = apr->recur_pat.startdate;
 	nt_time *= 600000000;
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
 	propname.kind = MNID_ID;
@@ -2417,7 +2351,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	EXCEPTIONINFO exceptions[1024];
 	ATTACHMENT_CONTENT *pattachment = nullptr;
 	EXTENDEDEXCEPTION ext_exceptions[1024];
-	APPOINTMENTRECURRENCEPATTERN apprecurr;
+	APPOINTMENT_RECUR_PAT apr;
 	
 	if (pevent_list.size() == 1) {
 		pmain_event = pevent_list.front();
@@ -2837,43 +2771,33 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 				return FALSE;
 			}
 		}
-		memset(&apprecurr, 0, sizeof(APPOINTMENTRECURRENCEPATTERN));
-		apprecurr.recurrencepattern.deletedinstancecount = 0;
-		apprecurr.recurrencepattern.pdeletedinstancedates = deleted_dates;
-		apprecurr.recurrencepattern.modifiedinstancecount = 0;
-		apprecurr.recurrencepattern.pmodifiedinstancedates = modified_dates;
-		apprecurr.exceptioncount = 0;
-		apprecurr.pexceptioninfo = exceptions;
-		apprecurr.pextendedexception = ext_exceptions;
-		if (FALSE == oxcical_parse_rrule(ptz_component, piline,
-			calendartype, start_time, 60*tmp_int32, &apprecurr)) {
+		memset(&apr, 0, sizeof(apr));
+		apr.recur_pat.deletedinstancecount = 0;
+		apr.recur_pat.pdeletedinstancedates = deleted_dates;
+		apr.recur_pat.modifiedinstancecount = 0;
+		apr.recur_pat.pmodifiedinstancedates = modified_dates;
+		apr.exceptioncount = 0;
+		apr.pexceptioninfo = exceptions;
+		apr.pextendedexception = ext_exceptions;
+		if (!oxcical_parse_rrule(ptz_component, piline, calendartype,
+		    start_time, 60 * tmp_int32, &apr))
 			return FALSE;
-		}
 		piline = pmain_event->get_line("EXDATE");
 		if (NULL == piline) {
 			piline = pmain_event->get_line("X-MICROSOFT-EXDATE");
 		}
-		if (NULL != piline) {
-			if (FALSE == oxcical_parse_dates(ptz_component, piline,
-				&apprecurr.recurrencepattern.deletedinstancecount,
-				deleted_dates)) {
-				return FALSE;
-			}
-		}
+		if (piline != nullptr && !oxcical_parse_dates(ptz_component,
+		    piline, &apr.recur_pat.deletedinstancecount, deleted_dates))
+			return false;
 		piline = pmain_event->get_line("RDATE");
 		if (NULL != piline) {
-			if (FALSE == oxcical_parse_dates(ptz_component, piline,
-				&apprecurr.recurrencepattern.modifiedinstancecount,
-				modified_dates)) {
+			if (!oxcical_parse_dates(ptz_component, piline,
+			    &apr.recur_pat.modifiedinstancecount, modified_dates))
 				return FALSE;
-			}
-			if (apprecurr.recurrencepattern.modifiedinstancecount <
-				apprecurr.recurrencepattern.deletedinstancecount) {
+			if (apr.recur_pat.modifiedinstancecount < apr.recur_pat.deletedinstancecount)
 				return FALSE;
-			}
-			apprecurr.exceptioncount =
-				apprecurr.recurrencepattern.modifiedinstancecount;
-			for (size_t i = 0; i < apprecurr.exceptioncount; ++i) {
+			apr.exceptioncount = apr.recur_pat.modifiedinstancecount;
+			for (size_t i = 0; i < apr.exceptioncount; ++i) {
 				memset(exceptions + i, 0, sizeof(EXCEPTIONINFO));
 				memset(ext_exceptions + i, 0, sizeof(EXTENDEDEXCEPTION));
 				exceptions[i].startdatetime = modified_dates[i];
@@ -2884,7 +2808,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 				ext_exceptions[i].changehighlight.size = sizeof(uint32_t);
 			}
 		} else {
-			apprecurr.exceptioncount = 0;
+			apr.exceptioncount = 0;
 		}
 		
 		if (pevent_list.size() > 1) {
@@ -2926,11 +2850,9 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			if (!oxcical_import_internal(str_zone, method, false,
 			    calendartype, pical, tmp_list, alloc, get_propids,
 			    username_to_entryid, pembedded, &start_itime,
-			    &end_itime, exceptions + apprecurr.exceptioncount,
-			    ext_exceptions + apprecurr.exceptioncount)) {
+			    &end_itime, exceptions + apr.exceptioncount,
+			    ext_exceptions + apr.exceptioncount))
 				return FALSE;
-			}
-			
 			if (!oxcical_parse_exceptional_attachment(pattachment,
 			    event, start_itime, end_itime, pmsg)) {
 				return FALSE;
@@ -2943,54 +2865,38 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			}
 			tmp_int32 = rop_util_unix_to_nttime(tmp_time)/600000000;
 			size_t i;
-			for (i=0; i<apprecurr.recurrencepattern.
-				deletedinstancecount; i++) {
+			for (i = 0; i < apr.recur_pat.deletedinstancecount; ++i) {
 				if (tmp_int32 == deleted_dates[i]) {
 					break;
 				}
 			}
-			if (i < apprecurr.recurrencepattern.deletedinstancecount) {
+			if (i < apr.recur_pat.deletedinstancecount)
 				continue;
-			}
-			deleted_dates[apprecurr.recurrencepattern.
-					deletedinstancecount] = tmp_int32;
-			apprecurr.recurrencepattern.deletedinstancecount ++;
-			if (apprecurr.recurrencepattern.deletedinstancecount >= 1024) {
+			deleted_dates[apr.recur_pat.deletedinstancecount] = tmp_int32;
+			++apr.recur_pat.deletedinstancecount;
+			if (apr.recur_pat.deletedinstancecount >= 1024)
 				return FALSE;
-			}
-			exceptions[apprecurr.exceptioncount
-				].originalstartdate = tmp_int32;
-			ext_exceptions[apprecurr.exceptioncount
-					].originalstartdate = tmp_int32;
+			exceptions[apr.exceptioncount].originalstartdate = tmp_int32;
+			ext_exceptions[apr.exceptioncount].originalstartdate = tmp_int32;
 			ical_itime_to_utc(NULL, start_itime, &tmp_time);
 			tmp_int32 = rop_util_unix_to_nttime(tmp_time)/600000000;
-			modified_dates[apprecurr.recurrencepattern.
-					modifiedinstancecount] = tmp_int32; 
-			apprecurr.recurrencepattern.modifiedinstancecount ++;
-			exceptions[apprecurr.exceptioncount
-					].startdatetime = tmp_int32;
-			ext_exceptions[apprecurr.exceptioncount
-						].startdatetime = tmp_int32;
+			modified_dates[apr.recur_pat.modifiedinstancecount] = tmp_int32; 
+			++apr.recur_pat.modifiedinstancecount;
+			exceptions[apr.exceptioncount].startdatetime = tmp_int32;
+			ext_exceptions[apr.exceptioncount].startdatetime = tmp_int32;
 			ical_itime_to_utc(NULL, end_itime, &tmp_time);
 			tmp_int32 = rop_util_unix_to_nttime(tmp_time)/600000000;
-			exceptions[apprecurr.exceptioncount
-					].enddatetime = tmp_int32;
-			ext_exceptions[apprecurr.exceptioncount
-						].enddatetime = tmp_int32;
-			apprecurr.exceptioncount ++;
+			exceptions[apr.exceptioncount].enddatetime = tmp_int32;
+			ext_exceptions[apr.exceptioncount].enddatetime = tmp_int32;
+			++apr.exceptioncount;
 		}
-		qsort(deleted_dates, apprecurr.recurrencepattern.
-			deletedinstancecount, sizeof(uint32_t), oxcical_cmp_date);
-		qsort(modified_dates, apprecurr.recurrencepattern.
-			modifiedinstancecount, sizeof(uint32_t), oxcical_cmp_date);
-		qsort(exceptions, apprecurr.exceptioncount,
-			sizeof(EXCEPTIONINFO), oxcical_cmp_exception);
-		qsort(ext_exceptions, apprecurr.exceptioncount,
-			sizeof(EXTENDEDEXCEPTION), oxcical_cmp_ext_exception);
-		if (FALSE == oxcical_parse_appointment_recurrence(
-			&apprecurr, phash, &last_propid, pmsg)) {
+		qsort(deleted_dates, apr.recur_pat.deletedinstancecount, sizeof(uint32_t), oxcical_cmp_date);
+		qsort(modified_dates, apr.recur_pat.modifiedinstancecount, sizeof(uint32_t), oxcical_cmp_date);
+		qsort(exceptions, apr.exceptioncount, sizeof(EXCEPTIONINFO), oxcical_cmp_exception);
+		qsort(ext_exceptions, apr.exceptioncount, sizeof(EXTENDEDEXCEPTION), oxcical_cmp_ext_exception);
+		if (!oxcical_parse_appointment_recurrence(&apr, phash,
+		    &last_propid, pmsg))
 			return FALSE;
-		}
 	}
 	
 	size_t tmp_count = 0;
@@ -3800,7 +3706,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 }
 
 static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
-    std::shared_ptr<ICAL_COMPONENT> pcomponent, APPOINTMENTRECURRENCEPATTERN *papprecurr)
+    std::shared_ptr<ICAL_COMPONENT> pcomponent, APPOINTMENT_RECUR_PAT *apr)
 {
 	ICAL_TIME itime;
 	time_t unix_time;
@@ -3810,9 +3716,9 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	char tmp_buff[1024];
 	
 	str_tag = NULL;
-	switch (papprecurr->recurrencepattern.calendartype) {
+	switch (apr->recur_pat.calendartype) {
 	case CAL_DEFAULT:
-		switch (papprecurr->recurrencepattern.patterntype) {
+		switch (apr->recur_pat.patterntype) {
 		case PATTERNTYPE_HJMONTH:
 		case PATTERNTYPE_HJMONTHNTH:
 			str_tag = "X-MICROSOFT-RRULE";
@@ -3856,7 +3762,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	}
 	if (pcomponent->append_line(piline) < 0)
 		return false;
-	switch (papprecurr->recurrencepattern.patterntype) {
+	switch (apr->recur_pat.patterntype) {
 	case PATTERNTYPE_DAY:
 		pivalue = ical_new_value("FREQ");
 		if (NULL == pivalue) {
@@ -3866,8 +3772,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			return false;
 		if (!pivalue->append_subval("DAILY"))
 			return FALSE;
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-			papprecurr->recurrencepattern.period/1440);
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period / 1440);
 		pivalue = ical_new_value("INTERVAL");
 		if (NULL == pivalue) {
 			return FALSE;
@@ -3886,8 +3791,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			return false;
 		if (!pivalue->append_subval("WEEKLY"))
 			return FALSE;
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-			papprecurr->recurrencepattern.period);
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
 		pivalue = ical_new_value("INTERVAL");
 		if (NULL == pivalue) {
 			return FALSE;
@@ -3902,48 +3806,27 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
-		if (WEEKRECURRENCEPATTERN_SU&
-			papprecurr->recurrencepattern.
-			patterntypespecific.weekrecurrence) {
-			if (!pivalue->append_subval("SU"))
-				return FALSE;
-		}
-		if (WEEKRECURRENCEPATTERN_M&
-			papprecurr->recurrencepattern.
-			patterntypespecific.weekrecurrence) {
-			if (!pivalue->append_subval("MO"))
-				return FALSE;
-		}
-		if (WEEKRECURRENCEPATTERN_TU&
-			papprecurr->recurrencepattern.
-			patterntypespecific.weekrecurrence) {
-			if (!pivalue->append_subval("TU"))
-				return FALSE;
-		}
-		if (WEEKRECURRENCEPATTERN_W&
-			papprecurr->recurrencepattern.
-			patterntypespecific.weekrecurrence) {
-			if (!pivalue->append_subval("WE"))
-				return FALSE;
-		}
-		if (WEEKRECURRENCEPATTERN_TH&
-			papprecurr->recurrencepattern.
-			patterntypespecific.weekrecurrence) {
-			if (!pivalue->append_subval("TH"))
-				return FALSE;
-		}
-		if (WEEKRECURRENCEPATTERN_F&
-			papprecurr->recurrencepattern.
-			patterntypespecific.weekrecurrence) {
-			if (!pivalue->append_subval("FR"))
-				return FALSE;
-		}
-		if (WEEKRECURRENCEPATTERN_SA&
-			papprecurr->recurrencepattern.
-			patterntypespecific.weekrecurrence) {
-			if (!pivalue->append_subval("SA"))
-				return FALSE;
-		}
+		if (apr->recur_pat.pts.weekrecur & week_recur_bit::sun &&
+		    !pivalue->append_subval("SU"))
+			return false;
+		if (apr->recur_pat.pts.weekrecur & week_recur_bit::mon &&
+		    !pivalue->append_subval("MO"))
+			return false;
+		if (apr->recur_pat.pts.weekrecur & week_recur_bit::tue &&
+		    !pivalue->append_subval("TU"))
+			return false;
+		if (apr->recur_pat.pts.weekrecur & week_recur_bit::wed &&
+		    !pivalue->append_subval("WE"))
+			return false;
+		if (apr->recur_pat.pts.weekrecur & week_recur_bit::thu &&
+		    !pivalue->append_subval("TH"))
+			return false;
+		if (apr->recur_pat.pts.weekrecur & week_recur_bit::fri &&
+		    !pivalue->append_subval("FR"))
+			return false;
+		if (apr->recur_pat.pts.weekrecur & week_recur_bit::sat &&
+		    !pivalue->append_subval("SA"))
+			return false;
 		break;
 	case PATTERNTYPE_MONTH:
 	case PATTERNTYPE_HJMONTH:
@@ -3953,11 +3836,10 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
-		if (0 != papprecurr->recurrencepattern.period%12) {
+		if (apr->recur_pat.period % 12 != 0) {
 			if (!pivalue->append_subval("MONTHLY"))
 				return FALSE;
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-				papprecurr->recurrencepattern.period);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
 			pivalue = ical_new_value("INTERVAL");
 			if (NULL == pivalue) {
 				return FALSE;
@@ -3972,21 +3854,16 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			if (31 == papprecurr->recurrencepattern.
-				patterntypespecific.dayofmonth) {
+			if (apr->recur_pat.pts.dayofmonth == 31)
 				strcpy(tmp_buff, "-1");
-			} else {
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-					papprecurr->recurrencepattern.
-					patterntypespecific.dayofmonth);
-			}
+			else
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.dayofmonth);
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 		} else {
 			if (!pivalue->append_subval("YEARLY"))
 				return FALSE;
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-				papprecurr->recurrencepattern.period/12);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period / 12);
 			pivalue = ical_new_value("INTERVAL");
 			if (NULL == pivalue) {
 				return FALSE;
@@ -4001,14 +3878,10 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			if (31 == papprecurr->recurrencepattern.
-				patterntypespecific.dayofmonth) {
+			if (apr->recur_pat.pts.dayofmonth == 31)
 				strcpy(tmp_buff, "-1");
-			} else {
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-					papprecurr->recurrencepattern.
-					patterntypespecific.dayofmonth);
-			}
+			else
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.dayofmonth);
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYMONTH");
@@ -4017,9 +3890,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			ical_get_itime_from_yearday(1601, 
-				papprecurr->recurrencepattern.firstdatetime/
-				1440 + 1, &itime);
+			ical_get_itime_from_yearday(1601, apr->recur_pat.firstdatetime / 1440 + 1, &itime);
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", itime.month);
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
@@ -4033,11 +3904,10 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
-		if (0 != papprecurr->recurrencepattern.period%12) {
+		if (apr->recur_pat.period % 12 != 0) {
 			if (!pivalue->append_subval("MONTHLY"))
 				return FALSE;
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-				papprecurr->recurrencepattern.period);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
 			pivalue = ical_new_value("INTERVAL");
 			if (NULL == pivalue) {
 				return FALSE;
@@ -4052,62 +3922,43 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			if (WEEKRECURRENCEPATTERN_SU&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("SU"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_M&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("MO"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_TU&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("TU"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_W&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("WE"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_TH&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("TH"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_F&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("FR"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_SA&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("SA"))
-					return FALSE;
-			}
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::sun &&
+			    !pivalue->append_subval("SU"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::mon &&
+			    !pivalue->append_subval("MO"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::tue &&
+			    !pivalue->append_subval("TU"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::wed &&
+			    !pivalue->append_subval("WE"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::thu &&
+			    !pivalue->append_subval("TH"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::fri &&
+			    !pivalue->append_subval("FR"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::sat &&
+			    !pivalue->append_subval("SA"))
+				return false;
 			pivalue = ical_new_value("BYSETPOS");
 			if (NULL == pivalue) {
 				return FALSE;
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			if (5 == papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.recurrencenum) {
+			if (apr->recur_pat.pts.monthnth.recurnum == 5)
 				strcpy(tmp_buff, "-1");
-			} else {
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-					papprecurr->recurrencepattern.
-					patterntypespecific.monthnth.recurrencenum);
-			}
+			else
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.monthnth.recurnum);
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 		} else {
 			if (!pivalue->append_subval("YEARLY"))
 				return FALSE;
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-				papprecurr->recurrencepattern.period/12);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period / 12);
 			pivalue = ical_new_value("INTERVAL");
 			if (NULL == pivalue) {
 				return FALSE;
@@ -4122,55 +3973,37 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			if (WEEKRECURRENCEPATTERN_SU&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("SU"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_M&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("MO"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_TU&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("TU"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_W&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("WE"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_TH&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("TH"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_F&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("FR"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_SA&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("SA"))
-					return FALSE;
-			}
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::sun &&
+			    !pivalue->append_subval("SU"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::mon &&
+			    !pivalue->append_subval("MO"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::tue &&
+			    !pivalue->append_subval("TU"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::wed &&
+			    !pivalue->append_subval("WE"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::thu &&
+			    !pivalue->append_subval("TH"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::fri &&
+			    !pivalue->append_subval("FR"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::sat &&
+			    !pivalue->append_subval("SA"))
+				return false;
 			pivalue = ical_new_value("BYSETPOS");
 			if (NULL == pivalue) {
 				return FALSE;
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			if (5 == papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.recurrencenum) {
+			if (apr->recur_pat.pts.monthnth.recurnum == 5)
 				strcpy(tmp_buff, "-1");
-			} else {
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-					papprecurr->recurrencepattern.
-					patterntypespecific.monthnth.recurrencenum);
-			}
+			else
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.monthnth.recurnum);
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYMONTH");
@@ -4179,8 +4012,7 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-				papprecurr->recurrencepattern.firstdatetime);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.firstdatetime);
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 		}
@@ -4189,9 +4021,9 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		return FALSE;
 	}
 	if (ENDTYPE_AFTER_N_OCCURRENCES ==
-		papprecurr->recurrencepattern.endtype) {
+		apr->recur_pat.endtype) {
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-			papprecurr->recurrencepattern.occurrencecount);
+			apr->recur_pat.occurrencecount);
 		pivalue = ical_new_value("COUNT");
 		if (NULL == pivalue) {
 			return FALSE;
@@ -4201,9 +4033,9 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (!pivalue->append_subval(tmp_buff))
 			return FALSE;
 	} else if (ENDTYPE_AFTER_DATE ==
-		papprecurr->recurrencepattern.endtype) {
-		nt_time = papprecurr->recurrencepattern.enddate
-						+ papprecurr->starttimeoffset;
+		apr->recur_pat.endtype) {
+		nt_time = apr->recur_pat.enddate
+						+ apr->starttimeoffset;
 		nt_time *= 600000000;
 		unix_time = rop_util_nttime_to_unix(nt_time);
 		ical_utc_to_datetime(NULL, unix_time, &itime);
@@ -4222,14 +4054,14 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (!pivalue->append_subval(tmp_buff))
 			return FALSE;
 	}
-	if (PATTERNTYPE_WEEK == papprecurr->recurrencepattern.patterntype) {
+	if (PATTERNTYPE_WEEK == apr->recur_pat.patterntype) {
 		pivalue = ical_new_value("WKST");
 		if (NULL == pivalue) {
 			return FALSE;
 		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
-		switch (papprecurr->recurrencepattern.firstdow) {
+		switch (apr->recur_pat.firstdow) {
 		case 0:
 			if (!pivalue->append_subval("SU"))
 				return FALSE;
@@ -4265,17 +4097,16 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	return TRUE;
 }
 
-static BOOL oxcical_check_exdate(
-	APPOINTMENTRECURRENCEPATTERN *papprecurr)
+static BOOL oxcical_check_exdate(APPOINTMENT_RECUR_PAT *apr)
 {
 	BOOL b_found;
 	size_t count = 0;
-	for (size_t i = 0; i < papprecurr->recurrencepattern.deletedinstancecount; ++i) {
+	for (size_t i = 0; i < apr->recur_pat.deletedinstancecount; ++i) {
 		b_found = FALSE;
-		for (size_t j = 0; j < papprecurr->exceptioncount; ++j) {
-			if (papprecurr->recurrencepattern.pdeletedinstancedates[i]
-				== papprecurr->pexceptioninfo[j].originalstartdate &&
-				0 != papprecurr->pexceptioninfo[j].overrideflags) {
+		for (size_t j = 0; j < apr->exceptioncount; ++j) {
+			if (apr->recur_pat.pdeletedinstancedates[i]
+				== apr->pexceptioninfo[j].originalstartdate &&
+				0 != apr->pexceptioninfo[j].overrideflags) {
 				b_found = TRUE;
 				break;
 			}
@@ -4291,8 +4122,7 @@ static BOOL oxcical_check_exdate(
 }
 
 static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
-    std::shared_ptr<ICAL_COMPONENT> pcomponent,
-	APPOINTMENTRECURRENCEPATTERN *papprecurr)
+    std::shared_ptr<ICAL_COMPONENT> pcomponent, APPOINTMENT_RECUR_PAT *apr)
 {
 	BOOL b_found;
 	time_t tmp_time;
@@ -4302,11 +4132,11 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 	std::shared_ptr<ICAL_PARAM> piparam;
 	char tmp_buff[1024];
 	
-	if (papprecurr->recurrencepattern.calendartype != CAL_DEFAULT ||
+	if (apr->recur_pat.calendartype != CAL_DEFAULT ||
 		PATTERNTYPE_HJMONTH ==
-		papprecurr->recurrencepattern.patterntype ||
+		apr->recur_pat.patterntype ||
 		PATTERNTYPE_HJMONTHNTH ==
-		papprecurr->recurrencepattern.patterntype) {
+		apr->recur_pat.patterntype) {
 		piline = ical_new_line("X-MICROSOFT-EXDATE");
 	} else {
 		piline = ical_new_line("EXDATE");
@@ -4343,12 +4173,12 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 				return FALSE;
 		}
 	}
-	for (size_t i = 0; i < papprecurr->recurrencepattern.deletedinstancecount; ++i) {
+	for (size_t i = 0; i < apr->recur_pat.deletedinstancecount; ++i) {
 		b_found = FALSE;
-		for (size_t j = 0; j < papprecurr->exceptioncount; ++j) {
-			if (papprecurr->recurrencepattern.pdeletedinstancedates[i]
-				== papprecurr->pexceptioninfo[j].originalstartdate &&
-				0 != papprecurr->pexceptioninfo[j].overrideflags) {
+		for (size_t j = 0; j < apr->exceptioncount; ++j) {
+			if (apr->recur_pat.pdeletedinstancedates[i]
+				== apr->pexceptioninfo[j].originalstartdate &&
+				0 != apr->pexceptioninfo[j].overrideflags) {
 				b_found = TRUE;
 				break;
 			}
@@ -4356,8 +4186,8 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 		if (TRUE == b_found) {
 			continue;
 		}
-		tmp_int64 = (papprecurr->recurrencepattern.pdeletedinstancedates[i]
-								+ papprecurr->starttimeoffset) *600000000;
+		tmp_int64 = (apr->recur_pat.pdeletedinstancedates[i]
+								+ apr->starttimeoffset) *600000000;
 		tmp_time = rop_util_nttime_to_unix(tmp_int64);
 		ical_utc_to_datetime(NULL, tmp_time, &itime);
 		if (TRUE == b_date) {
@@ -4380,18 +4210,17 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 	return TRUE;
 }
 
-static BOOL oxcical_check_rdate(
-	APPOINTMENTRECURRENCEPATTERN *papprecurr)
+static BOOL oxcical_check_rdate(APPOINTMENT_RECUR_PAT *apr)
 {
 	size_t count = 0;
 	BOOL b_found;
 	
-	for (size_t i = 0; i < papprecurr->recurrencepattern.modifiedinstancecount; ++i) {
+	for (size_t i = 0; i < apr->recur_pat.modifiedinstancecount; ++i) {
 		b_found = FALSE;
-		for (size_t j = 0; j < papprecurr->exceptioncount; ++j) {
-			if (papprecurr->recurrencepattern.pmodifiedinstancedates[i]
-				== papprecurr->pexceptioninfo[j].startdatetime &&
-				0 != papprecurr->pexceptioninfo[j].overrideflags) {
+		for (size_t j = 0; j < apr->exceptioncount; ++j) {
+			if (apr->recur_pat.pmodifiedinstancedates[i]
+				== apr->pexceptioninfo[j].startdatetime &&
+				0 != apr->pexceptioninfo[j].overrideflags) {
 				b_found = TRUE;
 				break;
 			}
@@ -4407,8 +4236,7 @@ static BOOL oxcical_check_rdate(
 }
 
 static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
-     std::shared_ptr<ICAL_COMPONENT> pcomponent,
-	APPOINTMENTRECURRENCEPATTERN *papprecurr)
+     std::shared_ptr<ICAL_COMPONENT> pcomponent, APPOINTMENT_RECUR_PAT *apr)
 {
 	BOOL b_found;
 	time_t tmp_time;
@@ -4450,12 +4278,12 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 				return FALSE;
 		}
 	}
-	for (size_t i = 0; i < papprecurr->recurrencepattern.deletedinstancecount; ++i) {
+	for (size_t i = 0; i < apr->recur_pat.deletedinstancecount; ++i) {
 		b_found = FALSE;
-		for (size_t j = 0; j < papprecurr->exceptioncount; ++j) {
-			if (papprecurr->recurrencepattern.pmodifiedinstancedates[i]
-				== papprecurr->pexceptioninfo[j].startdatetime &&
-				0 != papprecurr->pexceptioninfo[j].overrideflags) {
+		for (size_t j = 0; j < apr->exceptioncount; ++j) {
+			if (apr->recur_pat.pmodifiedinstancedates[i]
+				== apr->pexceptioninfo[j].startdatetime &&
+				0 != apr->pexceptioninfo[j].overrideflags) {
 				b_found = TRUE;
 				break;
 			}
@@ -4463,8 +4291,7 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 		if (TRUE == b_found) {
 			continue;
 		}
-		tmp_int64 = papprecurr->recurrencepattern.
-				pmodifiedinstancedates[i]*600000000;
+		tmp_int64 = apr->recur_pat.pmodifiedinstancedates[i] * 600000000;
 		tmp_time = rop_util_nttime_to_unix(tmp_int64);
 		ical_utc_to_datetime(NULL, tmp_time, &itime);
 		if (TRUE == b_date) {
@@ -4535,8 +4362,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	MESSAGE_CONTENT *pembedded;
 	GLOBALOBJECTID globalobjectid;
 	TIMEZONEDEFINITION tz_definition;
-	APPOINTMENTRECURRENCEPATTERN apprecurr;
-	
+	APPOINTMENT_RECUR_PAT apprecurr;
 	
 	propnames.count = 1;
 	propnames.ppropname = &propname;
@@ -4683,13 +4509,13 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	if (TRUE == b_recurrence) {
 		auto it = std::lower_bound(cal_scale_names, std::end(cal_scale_names),
-		          apprecurr.recurrencepattern.calendartype,
+		          apprecurr.recur_pat.calendartype,
 		          [&](const auto &p, unsigned int v) { return p.first < v; });
 		str_value = it != std::end(cal_scale_names) ? it->second : nullptr;
 		if (PATTERNTYPE_HJMONTH ==
-			apprecurr.recurrencepattern.patterntype ||
+			apprecurr.recur_pat.patterntype ||
 			PATTERNTYPE_HJMONTHNTH ==
-			apprecurr.recurrencepattern.patterntype) {
+			apprecurr.recur_pat.patterntype) {
 			str_value = "Hijri";
 		}
 		if (NULL != str_value) {

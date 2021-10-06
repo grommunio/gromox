@@ -1738,14 +1738,14 @@ int EXT_PULL::g_tzdef(TIMEZONEDEFINITION *r)
 }
 
 static int ext_buffer_pull_patterntypespecific(EXT_PULL *pext,
-	uint16_t patterntype, PATTERNTYPESPECIFIC *r)
+    uint16_t patterntype, PATTERNTYPE_SPECIFIC *r)
 {
 	switch (patterntype) {
 	case PATTERNTYPE_DAY:
 		/* do nothing */
 		return EXT_ERR_SUCCESS;
 	case PATTERNTYPE_WEEK:
-		return pext->g_uint32(&r->weekrecurrence);
+		return pext->g_uint32(&r->weekrecur);
 	case PATTERNTYPE_MONTH:
 	case PATTERNTYPE_MONTHEND:
 	case PATTERNTYPE_HJMONTH:
@@ -1753,15 +1753,14 @@ static int ext_buffer_pull_patterntypespecific(EXT_PULL *pext,
 		return pext->g_uint32(&r->dayofmonth);
 	case PATTERNTYPE_MONTHNTH:
 	case PATTERNTYPE_HJMONTHNTH:
-		TRY(pext->g_uint32(&r->monthnth.weekrecurrence));
-		return pext->g_uint32(&r->monthnth.recurrencenum);
+		TRY(pext->g_uint32(&r->monthnth.weekrecur));
+		return pext->g_uint32(&r->monthnth.recurnum);
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
 }
 
-static int ext_buffer_pull_recurrencepattern(
-	EXT_PULL *pext, RECURRENCEPATTERN *r)
+static int ext_buffer_pull_recurrencepattern(EXT_PULL *pext, RECURRENCE_PATTERN *r)
 {
 	TRY(pext->g_uint16(&r->readerversion));
 	TRY(pext->g_uint16(&r->writerversion));
@@ -1771,7 +1770,7 @@ static int ext_buffer_pull_recurrencepattern(
 	TRY(pext->g_uint32(&r->firstdatetime));
 	TRY(pext->g_uint32(&r->period));
 	TRY(pext->g_uint32(&r->slidingflag));
-	TRY(ext_buffer_pull_patterntypespecific(pext, r->patterntype, &r->patterntypespecific));
+	TRY(ext_buffer_pull_patterntypespecific(pext, r->patterntype, &r->pts));
 	TRY(pext->g_uint32(&r->endtype));
 	TRY(pext->g_uint32(&r->occurrencecount));
 	TRY(pext->g_uint32(&r->firstdow));
@@ -1953,11 +1952,11 @@ static int ext_buffer_pull_extendedexception(
 	return EXT_ERR_SUCCESS;
 }
 
-int EXT_PULL::g_apptrecpat(APPOINTMENTRECURRENCEPATTERN *r)
+int EXT_PULL::g_apptrecpat(APPOINTMENT_RECUR_PAT *r)
 {
 	auto pext = this;
 	
-	TRY(ext_buffer_pull_recurrencepattern(pext, &r->recurrencepattern));
+	TRY(ext_buffer_pull_recurrencepattern(this, &r->recur_pat));
 	TRY(pext->g_uint32(&r->readerversion2));
 	TRY(pext->g_uint32(&r->writerversion2));
 	TRY(pext->g_uint32(&r->starttimeoffset));
@@ -3318,15 +3317,16 @@ int EXT_PUSH::p_tzdef(const TIMEZONEDEFINITION *r)
 		TRY(ext_buffer_push_tzrule(pext, r->prules + i));
 	return EXT_ERR_SUCCESS;
 }
+
 static int ext_buffer_push_patterntypespecific(EXT_PUSH *pext,
-	uint16_t patterntype, const PATTERNTYPESPECIFIC *r)
+    uint16_t patterntype, const PATTERNTYPE_SPECIFIC *r)
 {
 	switch (patterntype) {
 	case PATTERNTYPE_DAY:
 		/* do nothing */
 		return EXT_ERR_SUCCESS;
 	case PATTERNTYPE_WEEK:
-		return pext->p_uint32(r->weekrecurrence);
+		return pext->p_uint32(r->weekrecur);
 	case PATTERNTYPE_MONTH:
 	case PATTERNTYPE_MONTHEND:
 	case PATTERNTYPE_HJMONTH:
@@ -3334,15 +3334,14 @@ static int ext_buffer_push_patterntypespecific(EXT_PUSH *pext,
 		return pext->p_uint32(r->dayofmonth);
 	case PATTERNTYPE_MONTHNTH:
 	case PATTERNTYPE_HJMONTHNTH:
-		TRY(pext->p_uint32(r->monthnth.weekrecurrence));
-		return pext->p_uint32(r->monthnth.recurrencenum);
+		TRY(pext->p_uint32(r->monthnth.weekrecur));
+		return pext->p_uint32(r->monthnth.recurnum);
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
 }
 
-static int ext_buffer_push_recurrencepattern(
-	EXT_PUSH *pext, const RECURRENCEPATTERN *r)
+static int ext_buffer_push_recurrencepattern(EXT_PUSH *pext, const RECURRENCE_PATTERN *r)
 {
 	TRY(pext->p_uint16(r->readerversion));
 	TRY(pext->p_uint16(r->writerversion));
@@ -3352,7 +3351,7 @@ static int ext_buffer_push_recurrencepattern(
 	TRY(pext->p_uint32(r->firstdatetime));
 	TRY(pext->p_uint32(r->period));
 	TRY(pext->p_uint32(r->slidingflag));
-	TRY(ext_buffer_push_patterntypespecific(pext, r->patterntype, &r->patterntypespecific));
+	TRY(ext_buffer_push_patterntypespecific(pext, r->patterntype, &r->pts));
 	TRY(pext->p_uint32(r->endtype));
 	TRY(pext->p_uint32(r->occurrencecount));
 	TRY(pext->p_uint32(r->firstdow));
@@ -3473,11 +3472,11 @@ static int ext_buffer_push_extendedexception(
 	return EXT_ERR_SUCCESS;
 }
 
-int EXT_PUSH::p_apptrecpat(const APPOINTMENTRECURRENCEPATTERN *r)
+int EXT_PUSH::p_apptrecpat(const APPOINTMENT_RECUR_PAT *r)
 {
 	auto pext = this;
 	
-	TRY(ext_buffer_push_recurrencepattern(pext, &r->recurrencepattern));
+	TRY(ext_buffer_push_recurrencepattern(pext, &r->recur_pat));
 	TRY(pext->p_uint32(r->readerversion2));
 	TRY(pext->p_uint32(r->writerversion2));
 	TRY(pext->p_uint32(r->starttimeoffset));

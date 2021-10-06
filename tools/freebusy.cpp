@@ -726,7 +726,7 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 }
 
 static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
-	time_t whole_start_time, const APPOINTMENTRECURRENCEPATTERN *papprecurr,
+    time_t whole_start_time, const APPOINTMENT_RECUR_PAT *apr,
 	ICAL_RRULE *pirrule)
 {
 	ICAL_TIME itime;
@@ -739,7 +739,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 	if (NULL == piline) {
 		return FALSE;
 	}
-	switch (papprecurr->recurrencepattern.patterntype) {
+	switch (apr->recur_pat.patterntype) {
 	case PATTERNTYPE_DAY:
 		pivalue = ical_new_value("FREQ");
 		if (NULL == pivalue) {
@@ -749,8 +749,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			return false;
 		if (!pivalue->append_subval("DAILY"))
 			return FALSE;
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-			papprecurr->recurrencepattern.period/1440);
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period/1440);
 		pivalue = ical_new_value("INTERVAL");
 		if (NULL == pivalue) {
 			return FALSE;
@@ -769,8 +768,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			return false;
 		if (!pivalue->append_subval("WEEKLY"))
 			return FALSE;
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-			papprecurr->recurrencepattern.period);
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
 		pivalue = ical_new_value("INTERVAL");
 		if (NULL == pivalue) {
 			return FALSE;
@@ -785,48 +783,27 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
-		if (WEEKRECURRENCEPATTERN_SU&
-			papprecurr->recurrencepattern.
-			patterntypespecific.weekrecurrence) {
-			if (!pivalue->append_subval("SU"))
-				return FALSE;
-		}
-		if (WEEKRECURRENCEPATTERN_M&
-			papprecurr->recurrencepattern.
-			patterntypespecific.weekrecurrence) {
-			if (!pivalue->append_subval("MO"))
-				return FALSE;
-		}
-		if (WEEKRECURRENCEPATTERN_TU&
-			papprecurr->recurrencepattern.
-			patterntypespecific.weekrecurrence) {
-			if (!pivalue->append_subval("TU"))
-				return FALSE;
-		}
-		if (WEEKRECURRENCEPATTERN_W&
-			papprecurr->recurrencepattern.
-			patterntypespecific.weekrecurrence) {
-			if (!pivalue->append_subval("WE"))
-				return FALSE;
-		}
-		if (WEEKRECURRENCEPATTERN_TH&
-			papprecurr->recurrencepattern.
-			patterntypespecific.weekrecurrence) {
-			if (!pivalue->append_subval("TH"))
-				return FALSE;
-		}
-		if (WEEKRECURRENCEPATTERN_F&
-			papprecurr->recurrencepattern.
-			patterntypespecific.weekrecurrence) {
-			if (!pivalue->append_subval("FR"))
-				return FALSE;
-		}
-		if (WEEKRECURRENCEPATTERN_SA&
-			papprecurr->recurrencepattern.
-			patterntypespecific.weekrecurrence) {
-			if (!pivalue->append_subval("SA"))
-				return FALSE;
-		}
+		if (apr->recur_pat.pts.weekrecur & week_recur_bit::sun &&
+		    !pivalue->append_subval("SU"))
+			return false;
+		if (apr->recur_pat.pts.weekrecur & week_recur_bit::mon &&
+		    !pivalue->append_subval("MO"))
+			return false;
+		if (apr->recur_pat.pts.weekrecur & week_recur_bit::tue &&
+		    !pivalue->append_subval("TU"))
+			return false;
+		if (apr->recur_pat.pts.weekrecur & week_recur_bit::wed &&
+		    !pivalue->append_subval("WE"))
+			return false;
+		if (apr->recur_pat.pts.weekrecur & week_recur_bit::thu &&
+		    !pivalue->append_subval("TH"))
+			return false;
+		if (apr->recur_pat.pts.weekrecur & week_recur_bit::fri &&
+		    !pivalue->append_subval("FR"))
+			return false;
+		if (apr->recur_pat.pts.weekrecur & week_recur_bit::sat &&
+		    !pivalue->append_subval("SA"))
+			return false;
 		break;
 	case PATTERNTYPE_MONTH:
 	case PATTERNTYPE_HJMONTH:
@@ -836,11 +813,11 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
-		if (0 != papprecurr->recurrencepattern.period%12) {
+		/* XXX: This looks an awful lot like oxcical.cpp */
+		if (apr->recur_pat.period % 12 != 0) {
 			if (!pivalue->append_subval("MONTHLY"))
 				return FALSE;
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-				papprecurr->recurrencepattern.period);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
 			pivalue = ical_new_value("INTERVAL");
 			if (NULL == pivalue) {
 				return FALSE;
@@ -855,21 +832,16 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			if (31 == papprecurr->recurrencepattern.
-				patterntypespecific.dayofmonth) {
+			if (apr->recur_pat.pts.dayofmonth == 31)
 				strcpy(tmp_buff, "-1");
-			} else {
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-					papprecurr->recurrencepattern.
-					patterntypespecific.dayofmonth);
-			}
+			else
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.dayofmonth);
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 		} else {
 			if (!pivalue->append_subval("YEARLY"))
 				return FALSE;
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-				papprecurr->recurrencepattern.period/12);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period/12);
 			pivalue = ical_new_value("INTERVAL");
 			if (NULL == pivalue) {
 				return FALSE;
@@ -884,14 +856,10 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			if (31 == papprecurr->recurrencepattern.
-				patterntypespecific.dayofmonth) {
+			if (apr->recur_pat.pts.dayofmonth == 31)
 				strcpy(tmp_buff, "-1");
-			} else {
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-					papprecurr->recurrencepattern.
-					patterntypespecific.dayofmonth);
-			}
+			else
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.dayofmonth);
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYMONTH");
@@ -900,9 +868,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			ical_get_itime_from_yearday(1601, 
-				papprecurr->recurrencepattern.firstdatetime/
-				1440 + 1, &itime);
+			ical_get_itime_from_yearday(1601, apr->recur_pat.firstdatetime / 1440 + 1, &itime);
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", itime.month);
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
@@ -916,11 +882,10 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
-		if (0 != papprecurr->recurrencepattern.period%12) {
+		if (apr->recur_pat.period % 12 != 0) {
 			if (!pivalue->append_subval("MONTHLY"))
 				return FALSE;
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-				papprecurr->recurrencepattern.period);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
 			pivalue = ical_new_value("INTERVAL");
 			if (NULL == pivalue) {
 				return FALSE;
@@ -935,62 +900,43 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			if (WEEKRECURRENCEPATTERN_SU&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("SU"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_M&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("MO"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_TU&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("TU"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_W&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("WE"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_TH&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("TH"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_F&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("FR"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_SA&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("SA"))
-					return FALSE;
-			}
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::sun &&
+			    !pivalue->append_subval("SU"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::mon &&
+			    !pivalue->append_subval("MO"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::tue &&
+			    !pivalue->append_subval("TU"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::wed &&
+			    !pivalue->append_subval("WE"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::thu &&
+			    !pivalue->append_subval("TH"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::fri &&
+			    !pivalue->append_subval("FR"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::sat &&
+			    !pivalue->append_subval("SA"))
+				return false;
 			pivalue = ical_new_value("BYSETPOS");
 			if (NULL == pivalue) {
 				return FALSE;
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			if (5 == papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.recurrencenum) {
+			if (apr->recur_pat.pts.monthnth.recurnum == 5)
 				strcpy(tmp_buff, "-1");
-			} else {
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-					papprecurr->recurrencepattern.
-					patterntypespecific.monthnth.recurrencenum);
-			}
+			else
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.monthnth.recurnum);
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 		} else {
 			if (!pivalue->append_subval("YEARLY"))
 				return FALSE;
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-				papprecurr->recurrencepattern.period/12);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period / 12);
 			pivalue = ical_new_value("INTERVAL");
 			if (NULL == pivalue) {
 				return FALSE;
@@ -1005,55 +951,37 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			if (WEEKRECURRENCEPATTERN_SU&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("SU"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_M&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("MO"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_TU&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("TU"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_W&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("WE"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_TH&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("TH"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_F&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("FR"))
-					return FALSE;
-			}
-			if (WEEKRECURRENCEPATTERN_SA&papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.weekrecurrence) {
-				if (!pivalue->append_subval("SA"))
-					return FALSE;
-			}
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::sun &&
+			    !pivalue->append_subval("SU"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::mon &&
+			    !pivalue->append_subval("MO"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::tue &&
+			    !pivalue->append_subval("TU"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::wed &&
+			    !pivalue->append_subval("WE"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::thu &&
+			    !pivalue->append_subval("TH"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::fri &&
+			    !pivalue->append_subval("FR"))
+				return false;
+			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::sat &&
+			    !pivalue->append_subval("SA"))
+				return false;
 			pivalue = ical_new_value("BYSETPOS");
 			if (NULL == pivalue) {
 				return FALSE;
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			if (5 == papprecurr->recurrencepattern.
-				patterntypespecific.monthnth.recurrencenum) {
+			if (apr->recur_pat.pts.monthnth.recurnum == 5)
 				strcpy(tmp_buff, "-1");
-			} else {
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-					papprecurr->recurrencepattern.
-					patterntypespecific.monthnth.recurrencenum);
-			}
+			else
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.pts.monthnth.recurnum);
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYMONTH");
@@ -1062,8 +990,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-				papprecurr->recurrencepattern.firstdatetime);
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.firstdatetime);
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 		}
@@ -1071,10 +998,8 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 	default:
 		return FALSE;
 	}
-	if (ENDTYPE_AFTER_N_OCCURRENCES ==
-		papprecurr->recurrencepattern.endtype) {
-		snprintf(tmp_buff, arsizeof(tmp_buff), "%u",
-			papprecurr->recurrencepattern.occurrencecount);
+	if (apr->recur_pat.endtype == ENDTYPE_AFTER_N_OCCURRENCES) {
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.occurrencecount);
 		pivalue = ical_new_value("COUNT");
 		if (NULL == pivalue) {
 			return FALSE;
@@ -1083,10 +1008,8 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			return false;
 		if (!pivalue->append_subval(tmp_buff))
 			return FALSE;
-	} else if (ENDTYPE_AFTER_DATE ==
-		papprecurr->recurrencepattern.endtype) {
-		nt_time = papprecurr->recurrencepattern.enddate
-						+ papprecurr->starttimeoffset;
+	} else if (apr->recur_pat.endtype == ENDTYPE_AFTER_DATE) {
+		nt_time = apr->recur_pat.enddate + apr->starttimeoffset;
 		nt_time *= 600000000;
 		unix_time = rop_util_nttime_to_unix(nt_time);
 		ical_utc_to_datetime(ptz_component, unix_time, &itime);
@@ -1102,14 +1025,14 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		if (!pivalue->append_subval(tmp_buff))
 			return FALSE;
 	}
-	if (PATTERNTYPE_WEEK == papprecurr->recurrencepattern.patterntype) {
+	if (apr->recur_pat.patterntype == PATTERNTYPE_WEEK) {
 		pivalue = ical_new_value("WKST");
 		if (NULL == pivalue) {
 			return FALSE;
 		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
-		switch (papprecurr->recurrencepattern.firstdow) {
+		switch (apr->recur_pat.firstdow) {
 		case 0:
 			if (!pivalue->append_subval("SU"))
 				return FALSE;
@@ -1148,7 +1071,7 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 }
 
 static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
-	time_t whole_start_time, const APPOINTMENTRECURRENCEPATTERN *papprecurr,
+    time_t whole_start_time, const APPOINTMENT_RECUR_PAT *apr,
 	time_t start_time, time_t end_time, DOUBLE_LIST *plist)
 {
 	int i;
@@ -1159,11 +1082,9 @@ static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	ICAL_RRULE irrule;
 	EVENT_NODE *pevnode;
 	
-	if (FALSE == recurrencepattern_to_rrule(
-		ptz_component, whole_start_time,
-		papprecurr, &irrule)) {
+	if (!recurrencepattern_to_rrule(ptz_component, whole_start_time,
+	    apr, &irrule))
 		return FALSE;	
-	}
 	double_list_init(plist);
 	do {
 		itime = ical_rrule_instance_itime(&irrule);
@@ -1172,21 +1093,19 @@ static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			continue;
 		}
 		ical_itime_to_utc(NULL, itime, &tmp_time1);
-		for (i=0; i<papprecurr->exceptioncount; i++) {
-			nt_time = papprecurr->pexceptioninfo[i].originalstartdate;
+		for (i = 0; i < apr->exceptioncount; ++i) {
+			nt_time = apr->pexceptioninfo[i].originalstartdate;
 			nt_time *= 600000000;
 			if (tmp_time1 == rop_util_nttime_to_unix(nt_time)) {
 				break;
 			}
 		}
-		if (i < papprecurr->exceptioncount) {
+		if (i < apr->exceptioncount)
 			continue;
-		}
 		pevnode = static_cast<EVENT_NODE *>(malloc(sizeof(EVENT_NODE)));
 		pevnode->node.pdata = pevnode;
 		pevnode->start_time = tmp_time;
-		pevnode->end_time = tmp_time + (papprecurr->endtimeoffset
-								- papprecurr->starttimeoffset)*60;
+		pevnode->end_time = tmp_time + (apr->endtimeoffset - apr->starttimeoffset) * 60;
 		pevnode->pexception = NULL;
 		pevnode->pex_exception = NULL;
 		double_list_append_as_tail(plist, &pevnode->node);
@@ -1194,8 +1113,8 @@ static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			break;
 		}
 	} while (ical_rrule_iterate(&irrule));
-	for (i=0; i<papprecurr->exceptioncount; i++) {
-		nt_time = papprecurr->pexceptioninfo[i].startdatetime;
+	for (i = 0; i < apr->exceptioncount; ++i) {
+		nt_time = apr->pexceptioninfo[i].startdatetime;
 		nt_time *= 600000000;
 		tmp_time = rop_util_nttime_to_unix(nt_time);
 		ical_utc_to_datetime(NULL, tmp_time, &itime);
@@ -1204,14 +1123,14 @@ static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			pevnode = static_cast<EVENT_NODE *>(malloc(sizeof(EVENT_NODE)));
 			pevnode->node.pdata = pevnode;
 			pevnode->start_time = tmp_time;
-			nt_time = papprecurr->pexceptioninfo[i].enddatetime;
+			nt_time = apr->pexceptioninfo[i].enddatetime;
 			nt_time *= 600000000;
 			tmp_time = rop_util_nttime_to_unix(nt_time);
 			ical_utc_to_datetime(NULL, tmp_time, &itime);
 			ical_itime_to_utc(ptz_component, itime, &tmp_time);
 			pevnode->end_time = tmp_time;
-			pevnode->pexception = papprecurr->pexceptioninfo + i;
-			pevnode->pex_exception = papprecurr->pextendedexception + i;
+			pevnode->pexception = apr->pexceptioninfo + i;
+			pevnode->pex_exception = apr->pextendedexception + i;
 			double_list_append_as_tail(plist, &pevnode->node);
 		}
 	}
@@ -1391,8 +1310,7 @@ static BOOL get_freebusy(const char *dir)
 	uint32_t pidlidappointmentendwhole;
 	uint32_t pidlidappointmentstateflags;
 	uint32_t pidlidappointmentstartwhole;
-	APPOINTMENTRECURRENCEPATTERN apprecurr;
-	
+	APPOINTMENT_RECUR_PAT apprecurr;
 	
 	start_nttime = rop_util_unix_to_nttime(g_start_time);
 	end_nttime = rop_util_unix_to_nttime(g_end_time);
