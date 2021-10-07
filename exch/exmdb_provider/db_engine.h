@@ -83,14 +83,6 @@ struct INSTANCE_NODE {
 	void *pcontent;
 };
 
-/* memory database for holding rop table objects instance */
-struct MEMORY_TABLES {
-	uint32_t last_id = 0;
-	BOOL b_batch = false;/* message database is in batch-mode */
-	DOUBLE_LIST table_list{};
-	sqlite3 *psqlite = nullptr;
-};
-
 struct DB_ITEM {
 	~DB_ITEM();
 	/* client reference count, item can be flushed into file system only count is 0 */
@@ -101,7 +93,14 @@ struct DB_ITEM {
 	DOUBLE_LIST dynamic_list{};	/* dynamic search list */
 	DOUBLE_LIST nsub_list{};
 	DOUBLE_LIST instance_list{};
-	MEMORY_TABLES tables{};
+
+	/* memory database for holding rop table objects instance */
+	struct {
+		uint32_t last_id = 0;
+		BOOL b_batch = false; /* message database is in batch-mode */
+		DOUBLE_LIST table_list{};
+		sqlite3 *psqlite = nullptr;
+	} tables;
 };
 
 extern void db_engine_init(size_t table_size, int cache_interval, BOOL async, BOOL wal, uint64_t mmap_size, int threads_num);
