@@ -8,8 +8,9 @@
 #include <gromox/database_mysql.hpp>
 #include <gromox/dbop.h>
 /*
- * Note to self: New tables need not just an edit of @tbl_upgrade_list, but
- * also @tbl_init_top!
+ * Notes:
+ *  - In case of new tables, edit ``tbl_init_top`` as well
+ *    and run ``gromox-dbop -C``.
  */
 using namespace gromox;
 
@@ -474,7 +475,7 @@ static const char tbl_users_top[] =
 "  UNIQUE KEY `group_id_2` (`group_id`,`username`),"
 "  KEY `group_id` (`group_id`),"
 "  KEY `domain_id` (`domain_id`),"
-"  KEY `maildir` (`maildir`,`address_type`)"
+"  KEY `maildir` (`maildir`)"
 ") DEFAULT CHARSET=utf8mb4";
 
 static const char tbl_uprops_top[] =
