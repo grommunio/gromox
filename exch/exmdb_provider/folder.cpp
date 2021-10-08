@@ -2524,23 +2524,22 @@ BOOL exmdb_server_empty_folder_permission(
 	return TRUE;
 }
 
-static bool ufp_add(const PERMISSION_DATA *prow, size_t i, db_item_ptr &pdb,
+static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
     bool b_freebusy, uint64_t fid_val, sqlite3_stmt *pstmt)
 {
-	auto pvalue = common_util_get_propvals(&prow[i].propvals, PR_ENTRYID);
+	auto pvalue = common_util_get_propvals(&propvals, PR_ENTRYID);
 	char username[UADDR_SIZE];
 	if (NULL != pvalue) {
 		if (!common_util_addressbook_entryid_to_username(static_cast<BINARY *>(pvalue), username, GX_ARRAY_SIZE(username)))
 			return true;
 	} else {
-		pvalue = common_util_get_propvals(&prow[i].propvals, PR_SMTP_ADDRESS);
+		pvalue = common_util_get_propvals(&propvals, PR_SMTP_ADDRESS);
 		if (NULL == pvalue) {
 			return true;
 		}
 		gx_strlcpy(username, static_cast<char *>(pvalue), GX_ARRAY_SIZE(username));
 	}
-	pvalue = common_util_get_propvals(
-		&prow[i].propvals, PROP_TAG_MEMBERRIGHTS);
+	pvalue = common_util_get_propvals(&propvals, PROP_TAG_MEMBERRIGHTS);
 	if (NULL == pvalue) {
 		return true;
 	}
@@ -2576,11 +2575,10 @@ static bool ufp_add(const PERMISSION_DATA *prow, size_t i, db_item_ptr &pdb,
 	return true;
 }
 
-static bool ufp_modify(const PERMISSION_DATA *prow, size_t i, db_item_ptr &pdb,
+static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
     bool b_freebusy, uint64_t fid_val)
 {
-	auto pvalue = common_util_get_propvals(
-		&prow[i].propvals, PROP_TAG_MEMBERID);
+	auto pvalue = common_util_get_propvals(&propvals, PROP_TAG_MEMBERID);
 	if (NULL == pvalue) {
 		return true;
 	}
@@ -2674,8 +2672,7 @@ static bool ufp_modify(const PERMISSION_DATA *prow, size_t i, db_item_ptr &pdb,
 	    gx_sql_col_uint64(pstmt1, 0) != fid_val)
 		return true;
 	pstmt1.finalize();
-	pvalue = common_util_get_propvals(
-		&prow[i].propvals, PROP_TAG_MEMBERRIGHTS);
+	pvalue = common_util_get_propvals(&propvals, PROP_TAG_MEMBERRIGHTS);
 	if (NULL == pvalue) {
 		return true;
 	}
@@ -2702,11 +2699,10 @@ static bool ufp_modify(const PERMISSION_DATA *prow, size_t i, db_item_ptr &pdb,
 	return true;
 }
 
-static bool ufp_remove(const PERMISSION_DATA *prow, size_t i, db_item_ptr &pdb,
+static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
     uint64_t fid_val)
 {
-	auto pvalue = common_util_get_propvals(
-		&prow[i].propvals, PROP_TAG_MEMBERID);
+	auto pvalue = common_util_get_propvals(&propvals, PROP_TAG_MEMBERID);
 	if (NULL == pvalue) {
 		return true;
 	}
@@ -2767,13 +2763,13 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 		bool ret = true;
 		switch (prow[i].flags) {
 		case ROW_ADD:
-			ret = ufp_add(prow, i, pdb, b_freebusy, fid_val, pstmt);
+			ret = ufp_add(prow[i].propvals, pdb, b_freebusy, fid_val, pstmt);
 			break;
 		case ROW_MODIFY:
-			ret = ufp_modify(prow, i, pdb, b_freebusy, fid_val);
+			ret = ufp_modify(prow[i].propvals, pdb, b_freebusy, fid_val);
 			break;
 		case ROW_REMOVE:
-			ret = ufp_remove(prow, i, pdb, fid_val);
+			ret = ufp_remove(prow[i].propvals, pdb, fid_val);
 			break;
 		}
 		if (!ret)
