@@ -1,5 +1,6 @@
 #pragma once
 #include <condition_variable>
+#include <list>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -26,7 +27,7 @@ class EXMDB_CONNECTION : public std::enable_shared_from_this<EXMDB_CONNECTION> {
 };
 
 struct ROUTER_CONNECTION {
-	ROUTER_CONNECTION();
+	ROUTER_CONNECTION() = default;
 	ROUTER_CONNECTION(ROUTER_CONNECTION &&) = delete;
 	~ROUTER_CONNECTION();
 	void operator=(ROUTER_CONNECTION &&) = delete;
@@ -38,7 +39,7 @@ struct ROUTER_CONNECTION {
 	time_t last_time = 0;
 	std::mutex lock, cond_mutex;
 	std::condition_variable waken_cond;
-	DOUBLE_LIST datagram_list{};
+	std::list<BINARY> datagram_list; /* manual (de)allocation of .pb */
 };
 
 int exmdb_parser_get_param(int param);

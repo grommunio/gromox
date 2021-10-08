@@ -45,15 +45,12 @@ EXMDB_CONNECTION::~EXMDB_CONNECTION()
 		close(sockd);
 }
 
-ROUTER_CONNECTION::ROUTER_CONNECTION()
-{
-	double_list_init(&datagram_list);
-}
-
 ROUTER_CONNECTION::~ROUTER_CONNECTION()
 {
 	if (sockd >= 0)
 		close(sockd);
+	for (auto &&bin : datagram_list)
+		free(bin.pb);
 }
 
 int exmdb_parser_get_param(int param)

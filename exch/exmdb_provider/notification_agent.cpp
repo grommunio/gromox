@@ -14,18 +14,9 @@
 #include <ctime>
 #include <poll.h>
 
-namespace {
-struct DATAGRAM_NODE {
-	DOUBLE_LIST_NODE node;
-	BINARY data_bin;
-};
-}
-
 void notification_agent_backward_notify(
 	const char *remote_id, DB_NOTIFY_DATAGRAM *pnotify)
 {
-	DATAGRAM_NODE *pdnode;
-	
 	if (NULL == remote_id) {
 		for (size_t i = 0; i < pnotify->id_array.count; ++i)
 			exmdb_server_event_proc(pnotify->dir, pnotify->b_table,
@@ -36,21 +27,18 @@ void notification_agent_backward_notify(
 	if (NULL == prouter) {
 		return;
 	}
-	pdnode = me_alloc<DATAGRAM_NODE>();
-	if (NULL == pdnode) {
+	BINARY bin{};
+	if (exmdb_ext_push_db_notify(pnotify, &bin) != EXT_ERR_SUCCESS) {
 		exmdb_parser_put_router(std::move(prouter));
-		return;
-	}
-	pdnode->node.pdata = pdnode;
-	if (EXT_ERR_SUCCESS != exmdb_ext_push_db_notify(
-		pnotify, &pdnode->data_bin)) {
-		exmdb_parser_put_router(std::move(prouter));
-		free(pdnode);
 		return;	
 	}
-	std::unique_lock rt_hold(prouter->lock);
-	double_list_append_as_tail(&prouter->datagram_list, &pdnode->node);
-	rt_hold.unlock();
+	try {
+		std::unique_lock rt_hold(prouter->lock);
+		prouter->datagram_list.push_back(bin);
+	} catch (...) {
+		free(bin.pb);
+		return;
+	}
 	prouter->waken_cond.notify_one();
 	exmdb_parser_put_router(std::move(prouter));
 }
@@ -74,19 +62,24 @@ static BOOL notification_agent_read_response(std::shared_ptr<ROUTER_CONNECTION> 
 void notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter)
 {
 	uint32_t ping_buff;
-	DATAGRAM_NODE *pdnode;
-	DOUBLE_LIST_NODE *pnode;
 	
 	while (!prouter->b_stop) {
+		BINARY dg;
 		std::unique_lock cn_hold(prouter->cond_mutex);
 		static_assert(SOCKET_TIMEOUT >= 3, "integer underflow");
 		prouter->waken_cond.wait_for(cn_hold, std::chrono::seconds(SOCKET_TIMEOUT - 3));
 		cn_hold.unlock();
 
 		std::unique_lock rt_hold(prouter->lock);
-		pnode = double_list_pop_front(&prouter->datagram_list);
+		if (prouter->datagram_list.size() > 0) {
+			dg = prouter->datagram_list.front();
+			prouter->datagram_list.pop_front();
+		} else {
+			dg.cb = 0;
+			dg.pb = nullptr;
+		}
 		rt_hold.unlock();
-		if (NULL == pnode) {
+		if (dg.pb == nullptr) {
 			ping_buff = 0;
 			if (sizeof(uint32_t) != write(prouter->sockd,
 				&ping_buff, sizeof(uint32_t)) || FALSE ==
@@ -95,21 +88,19 @@ void notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter
 			}
 			continue;
 		}
-		while (true) {
-			pdnode = (DATAGRAM_NODE*)pnode->pdata;
-			if (pdnode->data_bin.cb != write(prouter->sockd,
-				pdnode->data_bin.pb, pdnode->data_bin.cb) ||
-				FALSE == notification_agent_read_response(prouter)) {
-				free(pdnode->data_bin.pb);
-				free(pdnode);
+		while (dg.pb != nullptr) {
+			auto bytes_written = write(prouter->sockd, dg.pb, dg.cb);
+			free(dg.pb);
+			if (bytes_written != dg.cb ||
+			    !notification_agent_read_response(prouter))
 				goto EXIT_THREAD;
-			}
-			free(pdnode->data_bin.pb);
-			free(pdnode);
 			std::lock_guard rt_lock(prouter->lock);
-			pnode = double_list_pop_front(&prouter->datagram_list);
-			if (NULL == pnode) {
-				break;
+			if (prouter->datagram_list.size() > 0) {
+				dg = prouter->datagram_list.front();
+				prouter->datagram_list.pop_front();
+			} else {
+				dg.cb = 0;
+				dg.pb = nullptr;
 			}
 		}
 	}
@@ -119,11 +110,8 @@ void notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter
 	}
 	close(prouter->sockd);
 	prouter->sockd = -1;
-	while ((pnode = double_list_pop_front(&prouter->datagram_list)) != nullptr) {
-		pdnode = (DATAGRAM_NODE*)pnode->pdata;
-		free(pdnode->data_bin.pb);
-		free(pdnode);
-	}
-	double_list_free(&prouter->datagram_list);
+	for (auto &&bin : prouter->datagram_list)
+		free(bin.pb);
+	prouter->datagram_list.clear();
 	pthread_exit(nullptr);
 }
