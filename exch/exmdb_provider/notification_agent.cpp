@@ -14,8 +14,8 @@
 #include <ctime>
 #include <poll.h>
 
-void notification_agent_backward_notify(
-	const char *remote_id, DB_NOTIFY_DATAGRAM *pnotify)
+void notification_agent_backward_notify(const char *remote_id,
+    const DB_NOTIFY_DATAGRAM *pnotify)
 {
 	if (NULL == remote_id) {
 		for (size_t i = 0; i < pnotify->id_array.count; ++i)

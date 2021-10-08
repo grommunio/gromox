@@ -1150,7 +1150,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		break;
 	case DB_NOTIFY_TYPE_HIERARCHY_TABLE_ROW_MODIFIED:
 		if (emsmdb_interface_merge_hierarchy_row_modified(
-		    static_cast<DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED *>(pdb_notify->pdata),
+		    static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED *>(pdb_notify->pdata),
 		    obj_handle, logon_id, &phandle->notify_list)) {
 			b_processing = phandle->b_processing;
 			if (FALSE == b_processing) {
@@ -1166,7 +1166,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		break;
 	case DB_NOTIFY_TYPE_MESSAGE_MODIFIED:
 		if (emsmdb_interface_merge_message_modified(
-		    static_cast<DB_NOTIFY_MESSAGE_MODIFIED *>(pdb_notify->pdata),
+		    static_cast<const DB_NOTIFY_MESSAGE_MODIFIED *>(pdb_notify->pdata),
 		    obj_handle, logon_id, &phandle->notify_list)) {
 			emsmdb_interface_put_handle_notify_list(phandle);
 			return;
@@ -1174,7 +1174,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		break;
 	case DB_NOTIFY_TYPE_FOLDER_MODIFIED:
 		if (emsmdb_interface_merge_folder_modified(
-		    static_cast<DB_NOTIFY_FOLDER_MODIFIED *>(pdb_notify->pdata),
+		    static_cast<const DB_NOTIFY_FOLDER_MODIFIED *>(pdb_notify->pdata),
 		    obj_handle, logon_id, &phandle->notify_list)) {
 			emsmdb_interface_put_handle_notify_list(phandle);
 			return;
