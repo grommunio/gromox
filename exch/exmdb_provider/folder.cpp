@@ -2578,12 +2578,13 @@ static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
     bool b_freebusy, uint64_t fid_val)
 {
+	static constexpr uint64_t DEFAULT = 0, ANONYMOUS = UINT64_MAX;
 	auto pvalue = common_util_get_propvals(&propvals, PROP_TAG_MEMBERID);
 	if (NULL == pvalue) {
 		return true;
 	}
 	auto member_id = *static_cast<uint64_t *>(pvalue);
-	if (0 == member_id) {
+	if (member_id == DEFAULT || member_id == ANONYMOUS) {
 		char sql_string[128];
 		snprintf(sql_string, arsizeof(sql_string), "SELECT member_id "
 			"FROM permissions WHERE folder_id=%llu AND "
@@ -2591,12 +2592,12 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 		auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt1 == nullptr)
 			return false;
-		sqlite3_bind_text(pstmt1, 1, "default", -1, SQLITE_STATIC);
+		sqlite3_bind_text(pstmt1, 1, member_id == DEFAULT ? "default" : "", -1, SQLITE_STATIC);
 		if (SQLITE_ROW != sqlite3_step(pstmt1)) {
 			pstmt1.finalize();
 			snprintf(sql_string, arsizeof(sql_string), "SELECT config_value "
 				"FROM configurations WHERE config_id=%d",
-				CONFIG_ID_DEFAULT_PERMISSION);
+				member_id == DEFAULT ? CONFIG_ID_DEFAULT_PERMISSION : CONFIG_ID_ANONYMOUS_PERMISSION);
 			pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 			if (pstmt1 == nullptr)
 				return false;
@@ -2612,45 +2613,6 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 			if (pstmt1 == nullptr)
 				return false;
 			sqlite3_bind_text(pstmt1, 1, "default", -1, SQLITE_STATIC);
-			sqlite3_bind_int64(pstmt1, 2, permission);
-			if (SQLITE_DONE != sqlite3_step(pstmt1)) {
-				pstmt1.finalize();
-				return false;
-			}
-			member_id = sqlite3_last_insert_rowid(pdb->psqlite);
-		} else {
-			member_id = sqlite3_column_int64(pstmt1, 0);
-		}
-		pstmt1.finalize();
-	} else if (member_id == 0xFFFFFFFFFFFFFFFF) {
-		char sql_string[128];
-		snprintf(sql_string, arsizeof(sql_string), "SELECT member_id "
-			"FROM permissions WHERE folder_id=%llu AND "
-			"username=?", LLU(fid_val));
-		auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
-		if (pstmt1 == nullptr)
-			return false;
-		sqlite3_bind_text(pstmt1, 1, "", -1, SQLITE_STATIC);
-		if (SQLITE_ROW != sqlite3_step(pstmt1)) {
-			pstmt1.finalize();
-			snprintf(sql_string, arsizeof(sql_string), "SELECT config_value "
-				"FROM configurations WHERE config_id=%d",
-				CONFIG_ID_ANONYMOUS_PERMISSION);
-			pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
-			if (pstmt1 == nullptr)
-				return false;
-			uint32_t permission = rightsNone;
-			if (SQLITE_ROW == sqlite3_step(pstmt1)) {
-				permission = sqlite3_column_int64(pstmt1, 0);
-			}
-			pstmt1.finalize();
-			snprintf(sql_string, arsizeof(sql_string), "INSERT INTO permissions"
-						" (folder_id, username, permission) VALUES"
-						" (%llu, ?, ?)", LLU(fid_val));
-			pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
-			if (pstmt1 == nullptr)
-				return false;
-			sqlite3_bind_text(pstmt1, 1, "", -1, SQLITE_STATIC);
 			sqlite3_bind_int64(pstmt1, 2, permission);
 			if (SQLITE_DONE != sqlite3_step(pstmt1)) {
 				pstmt1.finalize();
