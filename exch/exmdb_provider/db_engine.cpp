@@ -574,26 +574,26 @@ static void db_engine_notify_search_completion(db_item_ptr &pdb, uint64_t folder
 			return;
 		}
 	}
-	if (tmp_list.size() > 0) {
-		datagram.dir = deconst(dir);
-		datagram.b_table = FALSE;
-		datagram.db_notify.type =
-			DB_NOTIFY_TYPE_SEARCH_COMPLETED;
-		psearch_completed = cu_alloc<DB_NOTIFY_SEARCH_COMPLETED>();
-		if (NULL == psearch_completed) {
-			return;
-		}
-		datagram.db_notify.pdata = psearch_completed;
-		psearch_completed->folder_id = folder_id;
-		auto parrays = db_engine_classify_id_array(std::move(tmp_list));
-		if (NULL == parrays) {
-			return;
-		}
-		for (i=0; i<parrays->count; i++) {
-			datagram.id_array = parrays->parray[i];
-			notification_agent_backward_notify(
-				parrays->remote_ids[i], &datagram);
-		}
+	if (tmp_list.size() == 0)
+		return;
+	datagram.dir = deconst(dir);
+	datagram.b_table = FALSE;
+	datagram.db_notify.type =
+		DB_NOTIFY_TYPE_SEARCH_COMPLETED;
+	psearch_completed = cu_alloc<DB_NOTIFY_SEARCH_COMPLETED>();
+	if (NULL == psearch_completed) {
+		return;
+	}
+	datagram.db_notify.pdata = psearch_completed;
+	psearch_completed->folder_id = folder_id;
+	auto parrays = db_engine_classify_id_array(std::move(tmp_list));
+	if (NULL == parrays) {
+		return;
+	}
+	for (i = 0; i < parrays->count; i++) {
+		datagram.id_array = parrays->parray[i];
+		notification_agent_backward_notify(
+			parrays->remote_ids[i], &datagram);
 	}
 }
 
@@ -2347,33 +2347,32 @@ void db_engine_transport_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 			return;
 		}
 	}
-	if (tmp_list.size() > 0) {
-		datagram.dir = deconst(dir);
-		datagram.b_table = FALSE;
-		datagram.db_notify.type =
-			DB_NOTIFY_TYPE_NEW_MAIL;
-		pnew_mail = cu_alloc<DB_NOTIFY_NEW_MAIL>();
-		if (NULL == pnew_mail) {
-			return;
-		}
-		datagram.db_notify.pdata = pnew_mail;
-		pnew_mail->folder_id = folder_id;
-		pnew_mail->message_id = message_id;
-		pnew_mail->message_flags = message_flags;
-		pnew_mail->pmessage_class = pstr_class;
-		auto parrays = db_engine_classify_id_array(std::move(tmp_list));
-		if (NULL == parrays) {
-			return;
-		}
-		for (i=0; i<parrays->count; i++) {
-			datagram.id_array = parrays->parray[i];
-			notification_agent_backward_notify(
-				parrays->remote_ids[i], &datagram);
-		}
+	if (tmp_list.size() == 0)
+		return;
+	datagram.dir = deconst(dir);
+	datagram.b_table = FALSE;
+	datagram.db_notify.type =
+		DB_NOTIFY_TYPE_NEW_MAIL;
+	pnew_mail = cu_alloc<DB_NOTIFY_NEW_MAIL>();
+	if (NULL == pnew_mail) {
+		return;
+	}
+	datagram.db_notify.pdata = pnew_mail;
+	pnew_mail->folder_id = folder_id;
+	pnew_mail->message_id = message_id;
+	pnew_mail->message_flags = message_flags;
+	pnew_mail->pmessage_class = pstr_class;
+	auto parrays = db_engine_classify_id_array(std::move(tmp_list));
+	if (NULL == parrays) {
+		return;
+	}
+	for (i = 0; i < parrays->count; i++) {
+		datagram.id_array = parrays->parray[i];
+		notification_agent_backward_notify(
+			parrays->remote_ids[i], &datagram);
 	}
 }
 	
-
 void db_engine_notify_new_mail(db_item_ptr &pdb,
 	uint64_t folder_id, uint64_t message_id)
 {
