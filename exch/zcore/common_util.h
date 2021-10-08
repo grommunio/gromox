@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <cstdlib>
+#include <type_traits>
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
 #include "store_object.h"
@@ -154,8 +155,16 @@ BOOL common_util_exmdb_locinfo_from_string(
 extern BOOL common_util_build_environment();
 extern void common_util_free_environment();
 void* common_util_alloc(size_t size);
-template<typename T> T *cu_alloc() { return static_cast<T *>(common_util_alloc(sizeof(T))); }
-template<typename T> T *cu_alloc(size_t elem) { return static_cast<T *>(common_util_alloc(sizeof(T) * elem)); }
+template<typename T> T *cu_alloc()
+{
+	static_assert(std::is_trivially_destructible_v<T>);
+	return static_cast<T *>(common_util_alloc(sizeof(T)));
+}
+template<typename T> T *cu_alloc(size_t elem)
+{
+	static_assert(std::is_trivially_destructible_v<T>);
+	return static_cast<T *>(common_util_alloc(sizeof(T) * elem));
+}
 template<typename T> T *me_alloc() { return static_cast<T *>(malloc(sizeof(T))); }
 template<typename T> T *me_alloc(size_t elem) { return static_cast<T *>(malloc(sizeof(T) * elem)); }
 void common_util_set_clifd(int clifd);

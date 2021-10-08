@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <string>
+#include <type_traits>
 #include <gromox/defs.h>
 #include <gromox/mail.hpp>
 #include <gromox/common_types.hpp>
@@ -81,8 +82,16 @@ void common_util_set_tls_var(const void *pvar);
 extern const void *common_util_get_tls_var();
 extern int common_util_sequence_ID();
 void* common_util_alloc(size_t size);
-template<typename T> T *cu_alloc() { return static_cast<T *>(common_util_alloc(sizeof(T))); }
-template<typename T> T *cu_alloc(size_t elem) { return static_cast<T *>(common_util_alloc(sizeof(T) * elem)); }
+template<typename T> T *cu_alloc()
+{
+	static_assert(std::is_trivially_destructible_v<T>);
+	return static_cast<T *>(common_util_alloc(sizeof(T)));
+}
+template<typename T> T *cu_alloc(size_t elem)
+{
+	static_assert(std::is_trivially_destructible_v<T>);
+	return static_cast<T *>(common_util_alloc(sizeof(T) * elem));
+}
 template<typename T> T *me_alloc() { return static_cast<T *>(malloc(sizeof(T))); }
 template<typename T> T *me_alloc(size_t elem) { return static_cast<T *>(malloc(sizeof(T) * elem)); }
 char* common_util_dup(const char *pstr);

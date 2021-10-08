@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <poll.h>
+#include <type_traits>
 #include <unistd.h>
 #include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
@@ -21,8 +22,16 @@ void *(*exmdb_rpc_alloc)(size_t) = malloc;
 void (*exmdb_rpc_free)(void *) = free;
 BOOL (*exmdb_rpc_exec)(const char *, const EXMDB_REQUEST *, EXMDB_RESPONSE *) =
 	[](const char *, const EXMDB_REQUEST *, EXMDB_RESPONSE *) -> BOOL { return false; };
-template<typename T> T *cu_alloc() { return static_cast<T *>(exmdb_rpc_alloc(sizeof(T))); }
-template<typename T> T *cu_alloc(size_t elem) { return static_cast<T *>(exmdb_rpc_alloc(sizeof(T) * elem)); }
+template<typename T> T *cu_alloc()
+{
+	static_assert(std::is_trivially_destructible_v<T>);
+	return static_cast<T *>(exmdb_rpc_alloc(sizeof(T)));
+}
+template<typename T> T *cu_alloc(size_t elem)
+{
+	static_assert(std::is_trivially_destructible_v<T>);
+	return static_cast<T *>(exmdb_rpc_alloc(sizeof(T) * elem));
+}
 
 static int exmdb_ext_pull_connect_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
