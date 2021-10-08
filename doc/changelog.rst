@@ -1,3 +1,24 @@
+1.4 (2021-10-08)
+================
+
+Fixes:
+
+* exmdb_provider: repair an erroneously inverted condition for
+  OP_MOVE Deferred Action Message generation.
+  If Outlook crashes, you should clear the "Deferred Action"
+  folder with MFCMAPI once.
+* exmdb_provider: Deletion of folders within a public mailbox
+  used to be ineffective, which was fixed.
+
+Enhancements:
+
+* Daemons support now socket activation.
+* The event(8gx) and timer(8gx) daemons now run unprivileged.
+* gromox-pff2mt now skips over unrecognizable MAPI properties
+  rather than exiting.
+* gromox-mt2exm now supports storing to public mailboxes.
+
+
 1.3 (2021-09-29)
 ================
 
