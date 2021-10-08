@@ -2530,13 +2530,8 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 	uint16_t count, const PERMISSION_DATA *prow)
 {
 	int i;
-	void *pvalue;
 	uint64_t fid_val;
-	uint64_t member_id;
-	char username[UADDR_SIZE];
-	uint32_t permission = rightsNone;
 	xstmt pstmt;
-	char sql_string[128];
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -2545,25 +2540,28 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 	pstmt = NULL;
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	for (i=0; i<count; i++) {
+		bool ret = true;
 		switch (prow[i].flags) {
 		case ROW_ADD:
-			pvalue = common_util_get_propvals(&prow[i].propvals, PR_ENTRYID);
+			ret = [](const PERMISSION_DATA *prow, size_t i, db_item_ptr &pdb, bool b_freebusy, uint64_t fid_val, sqlite3_stmt *pstmt) -> bool {
+			auto pvalue = common_util_get_propvals(&prow[i].propvals, PR_ENTRYID);
+			char username[UADDR_SIZE];
 			if (NULL != pvalue) {
 				if (!common_util_addressbook_entryid_to_username(static_cast<BINARY *>(pvalue), username, GX_ARRAY_SIZE(username)))
-					continue;
+					return true;
 			} else {
 				pvalue = common_util_get_propvals(&prow[i].propvals, PR_SMTP_ADDRESS);
 				if (NULL == pvalue) {
-					continue;
+					return true;
 				}
 				gx_strlcpy(username, static_cast<char *>(pvalue), GX_ARRAY_SIZE(username));
 			}
 			pvalue = common_util_get_propvals(
 				&prow[i].propvals, PROP_TAG_MEMBERRIGHTS);
 			if (NULL == pvalue) {
-				continue;
+				return true;
 			}
-			permission = *(uint32_t*)pvalue;
+			auto permission = *static_cast<uint32_t *>(pvalue);
 			if (permission & frightsReadAny)
 				permission |= frightsVisible;
 			if (permission & frightsOwner)
@@ -2578,34 +2576,39 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 				permission &= ~(frightsFreeBusySimple | frightsFreeBusyDetailed);
 			}
 			if (NULL == pstmt) {
+				char sql_string[128];
 				snprintf(sql_string, arsizeof(sql_string), "INSERT INTO permissions"
 							" (folder_id, username, permission) VALUES"
 							" (%llu, ?, ?)", LLU(fid_val));
 				pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 				if (pstmt == nullptr)
-					goto PERMISSION_FAILURE;
+					return false;
 			}
 			sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
 			sqlite3_bind_int64(pstmt, 2, permission);
 			if (SQLITE_DONE != sqlite3_step(pstmt)) {
-				goto PERMISSION_FAILURE;
+				return false;
 			}
 			sqlite3_reset(pstmt);
+			return true;
+			}(prow, i, pdb, b_freebusy, fid_val, pstmt);
 			break;
-		case ROW_MODIFY: {
-			pvalue = common_util_get_propvals(
+		case ROW_MODIFY:
+			ret = [](const PERMISSION_DATA *prow, size_t i, db_item_ptr &pdb, bool b_freebusy, uint64_t fid_val) -> bool {
+			auto pvalue = common_util_get_propvals(
 				&prow[i].propvals, PROP_TAG_MEMBERID);
 			if (NULL == pvalue) {
-				continue;
+				return true;
 			}
-			member_id = *(uint64_t*)pvalue;
+			auto member_id = *static_cast<uint64_t *>(pvalue);
 			if (0 == member_id) {
+				char sql_string[128];
 				snprintf(sql_string, arsizeof(sql_string), "SELECT member_id "
 					"FROM permissions WHERE folder_id=%llu AND "
 					"username=?", LLU(fid_val));
 				auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 				if (pstmt1 == nullptr)
-					goto PERMISSION_FAILURE;
+					return false;
 				sqlite3_bind_text(pstmt1, 1, "default", -1, SQLITE_STATIC);
 				if (SQLITE_ROW != sqlite3_step(pstmt1)) {
 					pstmt1.finalize();
@@ -2614,7 +2617,8 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 						CONFIG_ID_DEFAULT_PERMISSION);
 					pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 					if (pstmt1 == nullptr)
-						goto PERMISSION_FAILURE;
+						return false;
+					uint32_t permission = rightsNone;
 					if (SQLITE_ROW == sqlite3_step(pstmt1)) {
 						permission = sqlite3_column_int64(pstmt1, 0);
 					}
@@ -2624,12 +2628,12 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 								" (%llu, ?, ?)", LLU(fid_val));
 					pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 					if (pstmt1 == nullptr)
-						goto PERMISSION_FAILURE;
+						return false;
 					sqlite3_bind_text(pstmt1, 1, "default", -1, SQLITE_STATIC);
 					sqlite3_bind_int64(pstmt1, 2, permission);
 					if (SQLITE_DONE != sqlite3_step(pstmt1)) {
 						pstmt1.finalize();
-						goto PERMISSION_FAILURE;
+						return false;
 					}
 					member_id = sqlite3_last_insert_rowid(pdb->psqlite);
 				} else {
@@ -2637,12 +2641,13 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 				}
 				pstmt1.finalize();
 			} else if (member_id == 0xFFFFFFFFFFFFFFFF) {
+				char sql_string[128];
 				snprintf(sql_string, arsizeof(sql_string), "SELECT member_id "
 					"FROM permissions WHERE folder_id=%llu AND "
 					"username=?", LLU(fid_val));
 				auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 				if (pstmt1 == nullptr)
-					goto PERMISSION_FAILURE;
+					return false;
 				sqlite3_bind_text(pstmt1, 1, "", -1, SQLITE_STATIC);
 				if (SQLITE_ROW != sqlite3_step(pstmt1)) {
 					pstmt1.finalize();
@@ -2651,7 +2656,8 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 						CONFIG_ID_ANONYMOUS_PERMISSION);
 					pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 					if (pstmt1 == nullptr)
-						goto PERMISSION_FAILURE;
+						return false;
+					uint32_t permission = rightsNone;
 					if (SQLITE_ROW == sqlite3_step(pstmt1)) {
 						permission = sqlite3_column_int64(pstmt1, 0);
 					}
@@ -2661,12 +2667,12 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 								" (%llu, ?, ?)", LLU(fid_val));
 					pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 					if (pstmt1 == nullptr)
-						goto PERMISSION_FAILURE;
+						return false;
 					sqlite3_bind_text(pstmt1, 1, "", -1, SQLITE_STATIC);
 					sqlite3_bind_int64(pstmt1, 2, permission);
 					if (SQLITE_DONE != sqlite3_step(pstmt1)) {
 						pstmt1.finalize();
-						goto PERMISSION_FAILURE;
+						return false;
 					}
 					member_id = sqlite3_last_insert_rowid(pdb->psqlite);
 				} else {
@@ -2674,21 +2680,22 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 				}
 				pstmt1.finalize();
 			}
+			char sql_string[128];
 			snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM"
 			          " permissions WHERE member_id=%llu", LLU(member_id));
 			auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 			if (pstmt1 == nullptr)
-				goto PERMISSION_FAILURE;
+				return false;
 			if (sqlite3_step(pstmt1) != SQLITE_ROW ||
 			    gx_sql_col_uint64(pstmt1, 0) != fid_val)
-				continue;
+				return true;
 			pstmt1.finalize();
 			pvalue = common_util_get_propvals(
 				&prow[i].propvals, PROP_TAG_MEMBERRIGHTS);
 			if (NULL == pvalue) {
-				continue;
+				return true;
 			}
-			permission = *(uint32_t*)pvalue;
+			auto permission = *static_cast<uint32_t *>(pvalue);
 			if (permission & frightsReadAny)
 				permission |= frightsVisible;
 			if (permission & frightsOwner)
@@ -2706,50 +2713,59 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 			        " WHERE member_id=%llu", permission, LLU(member_id));
 			if (SQLITE_OK!= sqlite3_exec(pdb->psqlite,
 				sql_string, NULL, NULL, NULL)) {
-				goto PERMISSION_FAILURE;
+				return false;
 			}
+			return true;
+			}(prow, i, pdb, b_freebusy, fid_val);
 			break;
-		}
 		case ROW_REMOVE:
-			pvalue = common_util_get_propvals(
+			ret = [](const PERMISSION_DATA *prow, size_t i, db_item_ptr &pdb, uint64_t fid_val) -> bool {
+			auto pvalue = common_util_get_propvals(
 				&prow[i].propvals, PROP_TAG_MEMBERID);
 			if (NULL == pvalue) {
-				continue;
+				return true;
 			}
-			member_id = *(uint64_t*)pvalue;
+			auto member_id = *static_cast<uint64_t *>(pvalue);
 			if (0 == member_id) {
+				char sql_string[128];
 				snprintf(sql_string, arsizeof(sql_string), "DELETE FROM permissions WHERE "
 				        "folder_id=%llu and username=\"default\"", LLU(fid_val));
 				if (SQLITE_OK!= sqlite3_exec(pdb->psqlite,
 					sql_string, NULL, NULL, NULL)) {
-					goto PERMISSION_FAILURE;
+					return false;
 				}
 			} else if (member_id == 0xFFFFFFFFFFFFFFFF) {
+				char sql_string[128];
 				snprintf(sql_string, arsizeof(sql_string), "DELETE FROM permissions WHERE "
 				        "folder_id=%llu and username=\"\"", LLU(fid_val));
 				if (SQLITE_OK!= sqlite3_exec(pdb->psqlite,
 					sql_string, NULL, NULL, NULL)) {
-					goto PERMISSION_FAILURE;
+					return false;
 				}
 			} else {
+				char sql_string[128];
 				snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM"
 				          " permissions WHERE member_id=%llu", LLU(member_id));
 				auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 				if (pstmt1 == nullptr)
-					goto PERMISSION_FAILURE;
+					return false;
 				if (sqlite3_step(pstmt1) != SQLITE_ROW ||
 				    gx_sql_col_uint64(pstmt1, 0) != fid_val)
-					continue;
+					return true;
 				pstmt1.finalize();
 				snprintf(sql_string, arsizeof(sql_string), "DELETE FROM permissions"
 				        " WHERE member_id=%llu", LLU(member_id));
 				if (SQLITE_OK!= sqlite3_exec(pdb->psqlite,
 					sql_string, NULL, NULL, NULL)) {
-					goto PERMISSION_FAILURE;
+					return false;
 				}
 			}
+			return true;
+			}(prow, i, pdb, fid_val);
 			break;
 		}
+		if (!ret)
+			goto PERMISSION_FAILURE;
 	}
 	pstmt.finalize();
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
