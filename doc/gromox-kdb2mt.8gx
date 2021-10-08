@@ -4,8 +4,8 @@
 .SH Synopsis
 \fBgromox\-kdb2mt\fP [\fB\-pstv\fP] [\fB\-\-src\-host\fP \fIsqlhost\fP]
 [\fB\-\-src\-user\fP \fIsqluser\fP] [\fB\-\-src-port\fP \fIsqlport\fP]
-\fB\-\-src\-at\fP \fIdir\fP {\fB\-\-src\-guid\fP
-\fImboxguid\fP|\fB\-\-src\-mbox\fP \fIusername\fP} [...]
+[\fB\-\-src\-db\fP \fIdbname\fP] \fB\-\-src\-at\fP \fIdir\fP
+{\fB\-\-src\-guid\fP \fImboxguid\fP|\fB\-\-src\-mbox\fP \fIusername\fP} [...]
 .SH Description
 gromox\-kdb2mt reads one store from a Zarafa/Kopano SQL database and, for
 attachments, the associated filesystem. The data is then re-exported in a
@@ -53,6 +53,11 @@ Default: (MySQL default; automatic)
 Username for the source SQL connection.
 .br
 Default: \fIroot\fP
+.TP
+\fB\-\-src\-db\fP \fIdbname\fP
+Database name.
+.br
+Default: \fIkopano\fP
 .TP
 \fB\-\-src\-at\fP \fIdirectory\fP
 Required specification to the /var/lib/kopano/attachments directory mounted
