@@ -751,6 +751,13 @@ enum {
 	            frightsCreateSubfolder | frightsOwner | frightsVisible,
 };
 
+enum { /* ROWENTRY::ulRowFlags bits */
+	ROW_ADD    = 1U << 0,
+	ROW_MODIFY = 1U << 1,
+	ROW_REMOVE = 1U << 2,
+	ROW_EMPTY  = ROW_ADD | ROW_REMOVE,
+};
+
 enum { /* for PR_STORE_SUPPORT_MASK and PR_STORE_STATE */
 	STORE_ENTRYID_UNIQUE    = 1U << 0,
 	STORE_READONLY          = 1U << 1,
@@ -840,12 +847,6 @@ enum {
 
 enum {
 	MAXIMUM_SORT_COUNT = 8,
-};
-
-enum {
-	RULE_DATA_FLAG_ADD_ROW = 1U << 0,
-	RULE_DATA_FLAG_MODIFY_ROW = 1U << 1,
-	RULE_DATA_FLAG_REMOVE_ROW = 1U << 2,
 };
 
 enum zaccess_type {

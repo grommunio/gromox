@@ -267,7 +267,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 			}
 			tmp_id = 1;
 			permission = rightsGromox7;
-			permission_row.flags = PERMISSION_DATA_FLAG_ADD_ROW;
+			permission_row.flags = ROW_ADD;
 			permission_row.propvals.count = 3;
 			permission_row.propvals.ppropval = propval_buff;
 			propval_buff[0].proptag = PR_ENTRYID;

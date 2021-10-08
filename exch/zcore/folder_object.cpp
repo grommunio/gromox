@@ -809,7 +809,7 @@ BOOL FOLDER_OBJECT::set_permissions(const PERMISSION_SET *pperm_set)
 				if (NULL == pmember_id) {
 					continue;
 				}
-				pperm_data[count].flags = PERMISSION_DATA_FLAG_MODIFY_ROW;
+				pperm_data[count].flags = ROW_MODIFY;
 				pperm_data[count].propvals.count = 2;
 				pperm_data[count].propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(2);
 				if (NULL == pperm_data[i].propvals.ppropval) {
@@ -828,7 +828,7 @@ BOOL FOLDER_OBJECT::set_permissions(const PERMISSION_SET *pperm_set)
 			}
 		}
 		if (pperm_set->prows[i].flags & RIGHT_NEW) {
-			pperm_data[count].flags = PERMISSION_DATA_FLAG_ADD_ROW;
+			pperm_data[count].flags = ROW_ADD;
 			pperm_data[count].propvals.count = 2;
 			pperm_data[count].propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(2);
 			if (NULL == pperm_data[i].propvals.ppropval) {
@@ -862,7 +862,7 @@ BOOL FOLDER_OBJECT::set_permissions(const PERMISSION_SET *pperm_set)
 			if (NULL == pmember_id) {
 				continue;
 			}
-			pperm_data[count].flags = PERMISSION_DATA_FLAG_REMOVE_ROW;
+			pperm_data[count].flags = ROW_REMOVE;
 			pperm_data[count].propvals.count = 1;
 			pperm_data[count].propvals.ppropval = cu_alloc<TAGGED_PROPVAL>();
 			if (NULL == pperm_data[i].propvals.ppropval) {

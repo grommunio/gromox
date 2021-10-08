@@ -49,9 +49,8 @@ uint32_t rop_modifyrules(uint8_t flags,
 	}
 	if (MODIFY_RULES_FLAG_REPLACE & flags) {
 		for (i=0; i<count; i++) {
-			if (prow[i].flags != RULE_DATA_FLAG_ADD_ROW) {
+			if (prow[i].flags != ROW_ADD)
 				return ecInvalidParam;
-			}
 		}
 		if (!exmdb_client_empty_folder_rule(plogon->get_dir(),
 		    pfolder->folder_id))

@@ -2546,7 +2546,7 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	for (i=0; i<count; i++) {
 		switch (prow[i].flags) {
-		case PERMISSION_DATA_FLAG_ADD_ROW:
+		case ROW_ADD:
 			pvalue = common_util_get_propvals(&prow[i].propvals, PR_ENTRYID);
 			if (NULL != pvalue) {
 				if (!common_util_addressbook_entryid_to_username(static_cast<BINARY *>(pvalue), username, GX_ARRAY_SIZE(username)))
@@ -2592,7 +2592,7 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 			}
 			sqlite3_reset(pstmt);
 			break;
-		case PERMISSION_DATA_FLAG_MODIFY_ROW: {
+		case ROW_MODIFY: {
 			pvalue = common_util_get_propvals(
 				&prow[i].propvals, PROP_TAG_MEMBERID);
 			if (NULL == pvalue) {
@@ -2710,7 +2710,7 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 			}
 			break;
 		}
-		case PERMISSION_DATA_FLAG_REMOVE_ROW:
+		case ROW_REMOVE:
 			pvalue = common_util_get_propvals(
 				&prow[i].propvals, PROP_TAG_MEMBERID);
 			if (NULL == pvalue) {
@@ -2814,7 +2814,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	for (i=0; i<count; i++) {
 		switch (prow[i].flags) {
-		case RULE_DATA_FLAG_ADD_ROW: {
+		case ROW_ADD: {
 			if (rule_count >= common_util_get_param(
 				COMMON_UTIL_MAX_RULE_NUMBER)) {
 				*pb_exceed = TRUE;
@@ -2907,7 +2907,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			sqlite3_reset(pstmt);
 			break;
 		}
-		case RULE_DATA_FLAG_MODIFY_ROW: {
+		case ROW_MODIFY: {
 			pvalue = common_util_get_propvals(&prow[i].propvals, PR_RULE_ID);
 			if (NULL == pvalue) {
 				continue;
@@ -3032,7 +3032,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			}
 			break;
 		}
-		case RULE_DATA_FLAG_REMOVE_ROW: {
+		case ROW_REMOVE: {
 			pvalue = common_util_get_propvals(&prow[i].propvals, PR_RULE_ID);
 			if (NULL == pvalue) {
 				continue;

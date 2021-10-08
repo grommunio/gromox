@@ -1426,9 +1426,8 @@ uint32_t zarafa_server_modifyrules(GUID hsession,
 		return ecNotSupported;
 	if (MODIFY_RULES_FLAG_REPLACE & flags) {
 		for (i=0; i<plist->count; i++) {
-			if (plist->prule[i].flags != RULE_DATA_FLAG_ADD_ROW) {
+			if (plist->prule[i].flags != ROW_ADD)
 				return ecInvalidParam;
-			}
 		}
 	}
 	return pfolder->updaterules(flags, plist) ? ecSuccess : ecError;
@@ -2196,7 +2195,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 				return ecError;
 			tmp_id = 1;
 			permission = rightsGromox7;
-			permission_row.flags = PERMISSION_DATA_FLAG_ADD_ROW;
+			permission_row.flags = ROW_ADD;
 			permission_row.propvals.count = 3;
 			permission_row.propvals.ppropval = propval_buff;
 			propval_buff[0].proptag = PR_ENTRYID;
