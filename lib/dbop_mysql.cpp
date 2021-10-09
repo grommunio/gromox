@@ -247,6 +247,15 @@ static const char tbl_orgs_0[] =
 "  PRIMARY KEY (`id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
+static const char tbl_scndstore_91[] =
+"CREATE TABLE `secondary_store_hints` ("
+"  `primary` int(10) unsigned NOT NULL,"
+"  `secondary` int(10) unsigned NOT NULL,"
+"  PRIMARY KEY (`primary`,`secondary`),"
+"  CONSTRAINT `users_ibfk_1` FOREIGN KEY (`primary`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,"
+"  CONSTRAINT `users_ibfk_2` FOREIGN KEY (`secondary`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+") DEFAULT CHARSET=utf8mb4";
+
 static const char tbl_specifieds_0[] =
 "CREATE TABLE `specifieds` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
@@ -509,6 +518,7 @@ static const struct tbl_init tbl_init_top[] = {
 	{"admin_user_role_relation", tbl_admuserrole_43},
 	{"classes", tbl_classes_top},
 	{"fetchmail", tbl_fetchmail_75},
+	{"secondary_store_hints", tbl_scndstore_91},
 	{nullptr},
 };
 
@@ -648,6 +658,7 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{88, "ALTER TABLE `users` ADD COLUMN `primary_email` varchar(320) CHARACTER SET ascii AFTER `username`"},
 	{89, "ALTER TABLE `users` ADD CONSTRAINT UNIQUE `primary_email` (`primary_email`)"},
 	{90, "UPDATE `users` SET `primary_email`=`username`"},
+	{91, tbl_scndstore_91},
 	{0, nullptr},
 };
 
