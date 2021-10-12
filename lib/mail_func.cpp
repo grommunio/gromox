@@ -848,10 +848,10 @@ void parse_mime_encode_string(char *in_buff, long ibuff_len,
  *		val_len			length of value buffer
  *		pfile [in,out]	mem file to retrieving the parsing result of params
  */
-void parse_field_value(char *in_buff, long buff_len, char *value, long val_len,
-	MEM_FILE *pfile)
+void parse_field_value(const char *in_buff, long buff_len, char *value,
+    long val_len, MEM_FILE *pfile)
 {
-	char *ptr, *prev_section, *ptr_equal;
+	const char *ptr, *prev_section, *ptr_equal;
 	int distance;
 	int paratag_len = 0;
 	int paraval_len = 0;
@@ -860,7 +860,7 @@ void parse_field_value(char *in_buff, long buff_len, char *value, long val_len,
 
 	ptr = in_buff;
 	prev_section = NULL;
-	while ((ptr = static_cast<char *>(memchr(ptr, ';', buff_len - (ptr - in_buff)))) != nullptr) {
+	while ((ptr = static_cast<const char *>(memchr(ptr, ';', buff_len - (ptr - in_buff)))) != nullptr) {
 		if (NULL == prev_section) {
 			distance = ptr - in_buff;
 			paratag_len = (val_len - 1 > distance)?distance:(val_len - 1);
@@ -869,7 +869,7 @@ void parse_field_value(char *in_buff, long buff_len, char *value, long val_len,
 			HX_strrtrim(value);
 			HX_strltrim(value);
 		} else {
-			ptr_equal = static_cast<char *>(memchr(prev_section, '=', (ptr - prev_section)));
+			ptr_equal = static_cast<const char *>(memchr(prev_section, '=', ptr - prev_section));
 			if (NULL == ptr_equal) {
 				paratag_len = ptr - prev_section;
 				memcpy(param_tag, prev_section, paratag_len);
@@ -890,9 +890,9 @@ void parse_field_value(char *in_buff, long buff_len, char *value, long val_len,
 			paratag_len = strlen(param_tag);
 			paraval_len = strlen(param_value);
 			if (0 != paratag_len || 0 != paraval_len) {
-				mem_file_write(pfile, (char*)&paratag_len, sizeof(int));
+				mem_file_write(pfile, &paratag_len, sizeof(int));
 				mem_file_write(pfile, param_tag, paratag_len);
-				mem_file_write(pfile, (char*)&paraval_len, sizeof(int));
+				mem_file_write(pfile, &paraval_len, sizeof(int));
 				mem_file_write(pfile, param_value, paraval_len);
 			}
 		}
@@ -908,7 +908,7 @@ void parse_field_value(char *in_buff, long buff_len, char *value, long val_len,
 		HX_strrtrim(value);
 		HX_strltrim(value);
 	} else {
-		ptr_equal = static_cast<char *>(memchr(prev_section, '=', (ptr - prev_section)));
+		ptr_equal = static_cast<const char *>(memchr(prev_section, '=', ptr - prev_section));
 		if (NULL == ptr_equal) {
 			paratag_len = ptr - prev_section;
 			memcpy(param_tag, prev_section, paratag_len);
@@ -929,9 +929,9 @@ void parse_field_value(char *in_buff, long buff_len, char *value, long val_len,
 		paratag_len = strlen(param_tag);
 		paraval_len = strlen(param_value);
 		if (0 != paratag_len || 0 != paraval_len) {
-			mem_file_write(pfile, (char*)&paratag_len, sizeof(int));
+			mem_file_write(pfile, &paratag_len, sizeof(int));
 			mem_file_write(pfile, param_tag, paratag_len);
-			mem_file_write(pfile, (char*)&paraval_len, sizeof(int));
+			mem_file_write(pfile, &paraval_len, sizeof(int));
 			mem_file_write(pfile, param_value, paraval_len);
 		}
 	}
