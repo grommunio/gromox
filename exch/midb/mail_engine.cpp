@@ -234,7 +234,6 @@ static char* mail_engine_ct_to_utf8(const char *charset, const char *string)
 {
 	int length;
 	iconv_t conv_id;
-	char *pin, *pout;
 	size_t in_len, out_len;
 
 	if (0 == strcasecmp(charset, "UTF-8") ||
@@ -251,8 +250,8 @@ static char* mail_engine_ct_to_utf8(const char *charset, const char *string)
 		free(ret_string);
 		return NULL;
 	}
-	pin = (char*)string;
-	pout = ret_string;
+	auto pin = deconst(string);
+	auto pout = ret_string;
 	in_len = length;
 	out_len = 2*length;
 	if (iconv(conv_id, &pin, &in_len, &pout, &out_len) == static_cast<size_t>(-1)) {
@@ -383,7 +382,6 @@ static char* mail_engine_ct_decode_mime(
 	int offset;
 	int last_pos, begin_pos, end_pos;
 	ENCODE_STRING encode_string;
-	char *in_buff, *out_buff;
 	char *tmp_string;
 	char temp_buff[1024];
 
@@ -392,9 +390,8 @@ static char* mail_engine_ct_decode_mime(
 	if (NULL == ret_string) {
 		return NULL;
 	}
-	
-	in_buff = (char*)mime_string;
-	out_buff = ret_string;
+	auto in_buff = deconst(mime_string);
+	auto out_buff = ret_string;
 	offset = 0;
 	begin_pos = -1;
 	end_pos = -1;

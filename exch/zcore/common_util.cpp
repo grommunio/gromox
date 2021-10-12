@@ -1119,7 +1119,7 @@ static BOOL common_util_username_to_entryid(const char *username,
 	oneoff_entry.pdisplay_name = pdisplay_name != nullptr && *pdisplay_name != '\0' ?
 	                             deconst(pdisplay_name) : deconst(username);
 	oneoff_entry.paddress_type = deconst("SMTP");
-	oneoff_entry.pmail_address = (char*)username;
+	oneoff_entry.pmail_address = deconst(username);
 	if (!ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16))
 		return false;
 	status = ext_push.p_oneoff_eid(&oneoff_entry);

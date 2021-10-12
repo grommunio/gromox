@@ -54,7 +54,6 @@ int common_util_from_utf8(uint32_t codepage,
 	size_t in_len;
 	size_t out_len;
 	iconv_t conv_id;
-	char *pin, *pout;
 	const char *charset;
 	
 	charset = cpid_to_charset(codepage);
@@ -62,8 +61,8 @@ int common_util_from_utf8(uint32_t codepage,
 		return -1;
 	}
 	conv_id = iconv_open(charset, "UTF-8");
-	pin = (char*)src;
-	pout = dst;
+	auto pin = deconst(src);
+	auto pout = dst;
 	in_len = strlen(src) + 1;
 	memset(dst, 0, len);
 	out_len = len;
@@ -81,7 +80,6 @@ int common_util_to_utf8(uint32_t codepage,
 {
 	size_t in_len;
 	size_t out_len;
-	char *pin, *pout;
 	iconv_t conv_id;
 	const char *charset;
 	
@@ -90,8 +88,8 @@ int common_util_to_utf8(uint32_t codepage,
 		return -1;
 	}
 	conv_id = iconv_open("UTF-8", charset);
-	pin = (char*)src;
-	pout = dst;
+	auto pin = deconst(src);
+	auto pout = dst;
 	in_len = strlen(src) + 1;
 	memset(dst, 0, len);
 	out_len = len;

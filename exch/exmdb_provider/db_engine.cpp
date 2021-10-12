@@ -612,7 +612,7 @@ static void db_engine_notify_search_completion(db_item_ptr &pdb, uint64_t folder
 		}
 	}
 	if (double_list_get_nodes_num(&tmp_list) > 0) {
-		datagram.dir = (char*)dir;
+		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_SEARCH_COMPLETED;
@@ -1506,7 +1506,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			continue;
 		}
 		if (NULL == padded_row) {
-			datagram.dir = (char*)exmdb_server_get_dir();
+			datagram.dir = deconst(exmdb_server_get_dir());
 			datagram.b_table = TRUE;
 			datagram.id_array.count = 1;
 			padded_row = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_ADDED>(2);
@@ -1516,7 +1516,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			padded_row->row_folder_id = folder_id;
 			padded_row->row_message_id = message_id;
 			datagram.db_notify.pdata = padded_row;
-			datagram1.dir = (char*)exmdb_server_get_dir();
+			datagram1.dir = deconst(exmdb_server_get_dir());
 			datagram1.b_table = TRUE;
 			datagram1.id_array.count = 1;
 			padded_row1 = padded_row + 1;
@@ -2395,7 +2395,7 @@ void db_engine_transport_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 		}
 	}
 	if (double_list_get_nodes_num(&tmp_list) > 0) {
-		datagram.dir = (char*)dir;
+		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_NEW_MAIL;
@@ -2459,7 +2459,7 @@ void db_engine_notify_new_mail(db_item_ptr &pdb,
 		}
 	}
 	if (double_list_get_nodes_num(&tmp_list) > 0) {
-		datagram.dir = (char*)dir;
+		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_NEW_MAIL;
@@ -2534,7 +2534,7 @@ void db_engine_notify_message_creation(db_item_ptr &pdb,
 		}
 	}
 	if (double_list_get_nodes_num(&tmp_list) > 0) {
-		datagram.dir = (char*)dir;
+		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_MESSAGE_CREATED;
@@ -2605,7 +2605,7 @@ void db_engine_notify_link_creation(db_item_ptr &pdb,
 		}
 	}
 	if (double_list_get_nodes_num(&tmp_list) > 0) {
-		datagram.dir = (char*)dir;
+		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_LINK_CREATED;
@@ -2674,7 +2674,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 			continue;
 		}
 		if (NULL == padded_row) {
-			datagram.dir = (char*)exmdb_server_get_dir();
+			datagram.dir = deconst(exmdb_server_get_dir());
 			datagram.b_table = TRUE;
 			datagram.id_array.count = 1;
 			datagram.db_notify.type =
@@ -2849,7 +2849,7 @@ void db_engine_notify_folder_creation(db_item_ptr &pdb,
 		}
 	}
 	if (double_list_get_nodes_num(&tmp_list) > 0) {
-		datagram.dir = (char*)dir;
+		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_FOLDER_CREATED;
@@ -2999,7 +2999,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			continue;
 		}
 		if (NULL == pdeleted_row) {
-			datagram.dir = (char*)exmdb_server_get_dir();
+			datagram.dir = deconst(exmdb_server_get_dir());
 			datagram.b_table = TRUE;
 			datagram.id_array.count = 1;
 			pdeleted_row = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_DELETED>();
@@ -3011,7 +3011,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			if (NULL == pmodified_row) {
 				return;
 			}
-			datagram1.dir = (char*)exmdb_server_get_dir();
+			datagram1.dir = deconst(exmdb_server_get_dir());
 			datagram1.b_table = TRUE;
 			datagram1.id_array.count = 1;
 			pmodified_row->row_folder_id = folder_id;
@@ -3545,7 +3545,7 @@ void db_engine_notify_message_deletion(db_item_ptr &pdb,
 		}
 	}
 	if (double_list_get_nodes_num(&tmp_list) > 0) {
-		datagram.dir = (char*)dir;
+		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_MESSAGE_DELETED;
@@ -3615,7 +3615,7 @@ void db_engine_notify_link_deletion(db_item_ptr &pdb,
 		}
 	}
 	if (double_list_get_nodes_num(&tmp_list) > 0) {
-		datagram.dir = (char*)dir;
+		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_LINK_DELETED;
@@ -3710,7 +3710,7 @@ static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
 			}
 		}
 		if (NULL == pdeleted_row) {
-			datagram.dir = (char*)exmdb_server_get_dir();
+			datagram.dir = deconst(exmdb_server_get_dir());
 			datagram.b_table = TRUE;
 			datagram.id_array.count = 1;
 			datagram.db_notify.type =
@@ -3765,7 +3765,7 @@ void db_engine_notify_folder_deletion(db_item_ptr &pdb,
 		}
 	}
 	if (double_list_get_nodes_num(&tmp_list) > 0) {
-		datagram.dir = (char*)dir;
+		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_FOLDER_DELETED;
@@ -3844,7 +3844,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			continue;
 		pstmt.finalize();
 		if (NULL == pmodified_row) {
-			datagram.dir = (char*)exmdb_server_get_dir();
+			datagram.dir = deconst(exmdb_server_get_dir());
 			datagram.b_table = TRUE;
 			datagram.id_array.count = 1;
 			pmodified_row = cu_alloc<DB_NOTIFY_CONTENT_TABLE_ROW_MODIFIED>();
@@ -4567,7 +4567,7 @@ void db_engine_notify_message_modification(db_item_ptr &pdb,
 		}
 	}
 	if (double_list_get_nodes_num(&tmp_list) > 0) {
-		datagram.dir = (char*)dir;
+		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_MESSAGE_MODIFIED;
@@ -4644,7 +4644,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 				TRUE == common_util_evaluate_folder_restriction(
 				pdb->psqlite, folder_id, ptable->prestriction)) {
 				if (NULL == padded_row) {
-					datagram2.dir = (char*)exmdb_server_get_dir();
+					datagram2.dir = deconst(exmdb_server_get_dir());
 					datagram2.b_table = TRUE;
 					datagram2.id_array.count = 1;
 					datagram2.db_notify.type =
@@ -4726,7 +4726,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 				}
 			}
 			if (NULL == pdeleted_row) {
-				datagram1.dir = (char*)exmdb_server_get_dir();
+				datagram1.dir = deconst(exmdb_server_get_dir());
 				datagram1.b_table = TRUE;
 				datagram1.id_array.count = 1;
 				datagram1.db_notify.type =
@@ -4754,7 +4754,7 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 			}
 		}
 		if (NULL == pmodified_row) {
-			datagram.dir = (char*)exmdb_server_get_dir();
+			datagram.dir = deconst(exmdb_server_get_dir());
 			datagram.b_table = TRUE;
 			datagram.id_array.count = 1;
 			datagram.db_notify.type =
@@ -4821,7 +4821,7 @@ void db_engine_notify_folder_modification(db_item_ptr &pdb,
 		}
 	}
 	if (double_list_get_nodes_num(&tmp_list) > 0) {
-		datagram.dir = (char*)dir;
+		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_FOLDER_MODIFIED;
@@ -4892,7 +4892,7 @@ void db_engine_notify_message_movecopy(db_item_ptr &pdb,
 		}
 	}
 	if (double_list_get_nodes_num(&tmp_list) > 0) {
-		datagram.dir = (char*)dir;
+		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		if (TRUE == b_copy) {
 			datagram.db_notify.type =
@@ -4979,7 +4979,7 @@ void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
 		}
 	}
 	if (double_list_get_nodes_num(&tmp_list) > 0) {
-		datagram.dir = (char*)dir;
+		datagram.dir = deconst(dir);
 		datagram.b_table = FALSE;
 		if (TRUE == b_copy) {
 			datagram.db_notify.type =
@@ -5037,7 +5037,7 @@ void db_engine_notify_content_table_reload(db_item_ptr &pdb, uint32_t table_id)
 		return;
 	}
 	ptable = (TABLE_NODE*)pnode->pdata;
-	datagram.dir = (char*)exmdb_server_get_dir();
+	datagram.dir = deconst(exmdb_server_get_dir());
 	datagram.db_notify.type = !ptable->b_search ?
 		DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED :
 		DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED;

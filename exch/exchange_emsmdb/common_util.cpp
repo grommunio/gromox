@@ -104,7 +104,6 @@ int common_util_mb_from_utf8(uint32_t cpid,
 {
 	size_t in_len;
 	size_t out_len;
-	char *pin, *pout;
 	iconv_t conv_id;
 	const char *charset;
 	char temp_charset[256];
@@ -116,8 +115,8 @@ int common_util_mb_from_utf8(uint32_t cpid,
 	sprintf(temp_charset, "%s//IGNORE",
 		replace_iconv_charset(charset));
 	conv_id = iconv_open(temp_charset, "UTF-8");
-	pin = (char*)src;
-	pout = dst;
+	auto pin = deconst(src);
+	auto pout = dst;
 	in_len = strlen(src) + 1;
 	memset(dst, 0, len);
 	out_len = len;
@@ -131,7 +130,6 @@ int common_util_mb_to_utf8(uint32_t cpid,
 {
 	size_t in_len;
 	size_t out_len;
-	char *pin, *pout;
 	iconv_t conv_id;
 	const char *charset;
 	
@@ -141,8 +139,8 @@ int common_util_mb_to_utf8(uint32_t cpid,
 	}
 	conv_id = iconv_open("UTF-8//IGNORE",
 		replace_iconv_charset(charset));
-	pin = (char*)src;
-	pout = dst;
+	auto pin = deconst(src);
+	auto pout = dst;
 	in_len = strlen(src) + 1;
 	memset(dst, 0, len);
 	out_len = len;

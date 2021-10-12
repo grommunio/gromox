@@ -300,7 +300,6 @@ char* common_util_convert_copy(BOOL to_utf8,
 	size_t in_len;
 	size_t out_len;
 	iconv_t conv_id;
-	char *pin, *pout;
 	const char *charset;
 	char temp_charset[256];
 	
@@ -326,8 +325,8 @@ char* common_util_convert_copy(BOOL to_utf8,
 			conv_id = iconv_open("windows-1252//IGNORE", "UTF-8");
 		}
 	}
-	pin = (char*)pstring;
-	pout = pstr_out;
+	auto pin = deconst(pstring);
+	auto pout = pstr_out;
 	memset(pstr_out, 0, out_len);
 	iconv(conv_id, &pin, &in_len, &pout, &out_len);
 	iconv_close(conv_id);
