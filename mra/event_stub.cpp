@@ -37,7 +37,7 @@ struct BACK_CONN {
 
 }
 
-typedef void (*EVENT_STUB_FUNC)(char *);
+using EVENT_STUB_FUNC = void (*)(char *);
 
 static gromox::atomic_bool g_notify_stop{false};
 static char g_event_ip[40];

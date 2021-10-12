@@ -24,7 +24,7 @@ enum{
 	THREAD_DESTROY
 };
 
-typedef int (*THREADS_EVENT_PROC)(int);
+using THREADS_EVENT_PROC = int (*)(int);
 
 extern GX_EXPORT void threads_pool_init(unsigned int init_pool_num, int (*process_func)(SCHEDULE_CONTEXT *));
 extern int threads_pool_run();

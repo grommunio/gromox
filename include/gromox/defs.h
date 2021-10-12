@@ -38,11 +38,11 @@ template<typename T, size_t N> constexpr inline size_t arsizeof(T (&)[N]) { retu
 #	define be64_to_cpu(x) __builtin_bswap64(x)
 #endif
 
-typedef enum {
+enum gxerr_t {
 	GXERR_SUCCESS = 0,
 	GXERR_CALL_FAILED,
 	GXERR_OVER_QUOTA,
-} gxerr_t;
+};
 
 enum ec_error_t {
 	ecSuccess = 0,

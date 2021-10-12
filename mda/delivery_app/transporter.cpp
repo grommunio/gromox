@@ -52,7 +52,7 @@ struct MESSAGE_CONTEXT {
 
 }
 
-typedef BOOL (*HOOK_FUNCTION)(MESSAGE_CONTEXT*);
+using HOOK_FUNCTION = BOOL (*)(MESSAGE_CONTEXT *);
 
 namespace {
 

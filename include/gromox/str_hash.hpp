@@ -3,7 +3,7 @@
 #include <gromox/double_list.hpp>
 #define MAX_KEY_LENGTH      512
 
-typedef size_t (*PSTR_HASH_FUNC)(const char* key);
+using PSTR_HASH_FUNC = size_t (*)(const char *key);
 
 struct STR_HASH_ITEM {
     char        key[MAX_KEY_LENGTH];

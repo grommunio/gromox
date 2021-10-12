@@ -40,7 +40,7 @@ struct NTLMSSP_SESSION_INFO {
 
 struct NTLMSSP_CTX;
 
-typedef bool (*NTLMSSP_GET_PASSWORD)(const char *, char *);
+using NTLMSSP_GET_PASSWORD = bool (*)(const char *, char *);
 
 extern GX_EXPORT NTLMSSP_CTX *ntlmssp_init(const char *netbios_name, const char *dns_name, const char *dns_domain, bool b_lm_key, uint32_t net_flags, NTLMSSP_GET_PASSWORD);
 extern GX_EXPORT bool ntlmssp_update(NTLMSSP_CTX *, DATA_BLOB *);

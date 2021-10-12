@@ -844,11 +844,9 @@ struct EXTENDED_ERROR {
 #define	REPL_TYPE_ID								0
 #define REPL_TYPE_GUID								1
 
-typedef BOOL (*REPLICA_MAPPING)(BOOL, void*, uint16_t*, GUID*);
-
-typedef void (*REPLIST_ENUM)(void*, uint16_t);
-
-typedef void (*REPLICA_ENUM)(void*, uint64_t);
+using REPLICA_MAPPING = BOOL (*)(BOOL, void *, uint16_t *, GUID *);
+using REPLIST_ENUM = void (*)(void *, uint16_t);
+using REPLICA_ENUM = void (*)(void *, uint64_t);
 
 struct IDSET {
 	void *pparam;
@@ -864,7 +862,7 @@ struct IDSET {
 #define PCL_INCLUDED											0x2
 #define PCL_IDENTICAL											0x3
 
-typedef DOUBLE_LIST PCL;
+using PCL = DOUBLE_LIST;
 
 #define DB_NOTIFY_TYPE_NEW_MAIL									0x01
 #define DB_NOTIFY_TYPE_FOLDER_CREATED							0x02
@@ -1192,17 +1190,17 @@ struct DB_NOTIFY_CONTENT_TABLE_ROW_DELETED {
 #define ALLOCATED_EID_RANGE							0x10000
 #define CHANGE_NUMBER_BEGIN							0x800000000000LL
 
-typedef BOOL (*GET_PROPIDS)(const PROPNAME_ARRAY*, PROPID_ARRAY*);
+using GET_PROPIDS = BOOL (*)(const PROPNAME_ARRAY *, PROPID_ARRAY *);
 /* if it returns TRUE, PROPERTY_NAME must be available */
-typedef BOOL (*GET_PROPNAME)(uint16_t, PROPERTY_NAME**);
-typedef uint32_t (*LTAG_TO_LCID)(const char*);
-typedef const char* (*LCID_TO_LTAG)(uint32_t);
-typedef uint32_t (*CHARSET_TO_CPID)(const char*);
-typedef const char* (*CPID_TO_CHARSET)(uint32_t);
-typedef const char* (*MIME_TO_EXTENSION)(const char*);
-typedef const char* (*EXTENSION_TO_MIME)(const char*);
-typedef BOOL (*GET_USER_IDS)(const char *, int *, int *, enum display_type *);
+using GET_PROPNAME = BOOL (*)(uint16_t, PROPERTY_NAME **);
+using LTAG_TO_LCID = uint32_t (*)(const char *);
+using LCID_TO_LTAG = const char *(*)(uint32_t);
+using CHARSET_TO_CPID = uint32_t (*)(const char *);
+using CPID_TO_CHARSET = const char *(*)(uint32_t);
+using MIME_TO_EXTENSION = const char *(*)(const char *);
+using EXTENSION_TO_MIME = const char *(*)(const char *);
+using GET_USER_IDS = BOOL (*)(const char *, int *, int *, enum display_type *);
 using GET_USERNAME = BOOL (*)(int, char *, size_t);
-typedef BOOL (*USERNAME_TO_ENTRYID)(const char *, const char *, BINARY *, enum display_type *);
+using USERNAME_TO_ENTRYID = BOOL (*)(const char *, const char *, BINARY *, enum display_type *);
 using ENTRYID_TO_USERNAME = BOOL (*)(const BINARY *, void *(*)(size_t), char *, size_t);
 using ESSDN_TO_USERNAME = BOOL (*)(const char *, char *, size_t);

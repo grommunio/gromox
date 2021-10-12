@@ -6,8 +6,8 @@
 #include "logon_object.h"
 
 struct FASTUPCTX_OBJECT;
-typedef gxerr_t (*RECORD_MARKER)(FASTUPCTX_OBJECT *, uint32_t);
-typedef gxerr_t (*RECORD_PROPVAL)(FASTUPCTX_OBJECT *, const TAGGED_PROPVAL *);
+using RECORD_MARKER = gxerr_t (*)(FASTUPCTX_OBJECT *, uint32_t);
+using RECORD_PROPVAL = gxerr_t (*)(FASTUPCTX_OBJECT *, const TAGGED_PROPVAL *);
 
 struct FTSTREAM_PARSER {
 	~FTSTREAM_PARSER();

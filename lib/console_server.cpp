@@ -42,7 +42,7 @@
 #define EXCEED_STRING		"550 connection limit exceed!\r\n"
 #define STOP_STRING "service is going to shut down...\r\n"
 
-typedef struct sockaddr     SA;
+using SA = struct sockaddr;
 
 namespace {
 

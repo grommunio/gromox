@@ -15,8 +15,8 @@ struct EMSMDB_INFO {
 	int upctx_ref;
 };
 
-typedef CONTEXT_HANDLE CXH;
-typedef CONTEXT_HANDLE ACXH;
+using CXH = CONTEXT_HANDLE;
+using ACXH = CONTEXT_HANDLE;
 
 extern const char* (*emsmdb_interface_cpid_to_charset)(uint32_t cpid);
 extern void emsmdb_interface_init();

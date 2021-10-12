@@ -27,7 +27,7 @@ struct MESSAGE_CONTEXT {
 	MAIL         *pmail;
 };
 
-typedef BOOL (*HOOK_FUNCTION)(MESSAGE_CONTEXT*);
+using HOOK_FUNCTION = BOOL (*)(MESSAGE_CONTEXT *);
 
 #define DECLARE_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \

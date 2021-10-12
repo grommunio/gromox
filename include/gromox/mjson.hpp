@@ -54,7 +54,7 @@ struct MJSON {
 	size_t       size;
 };
 
-typedef void (*MJSON_MIME_ENUM)(MJSON_MIME*, void*);
+using MJSON_MIME_ENUM = void (*)(MJSON_MIME *, void *);
 
 enum {
 	MJSON_FLAG_READ,

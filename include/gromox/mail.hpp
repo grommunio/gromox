@@ -9,7 +9,7 @@
 #define MIME_ADD_FIRST		SIMPLE_TREE_ADD_FIRST
 #define	MIME_ADD_LAST		SIMPLE_TREE_ADD_LAST
 
-typedef void (*MAIL_MIME_ENUM)(MIME*, void*);
+using MAIL_MIME_ENUM = void (*)(MIME *, void*);
 
 struct MAIL {
 	SIMPLE_TREE tree;

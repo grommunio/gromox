@@ -64,7 +64,7 @@ struct FLUSH_ENTITY final {
 	SMTP_CONTEXT *pcontext = nullptr;
 };
 
-typedef void (*CANCEL_FUNCTION)(FLUSH_ENTITY *);
+using CANCEL_FUNCTION = void (*)(FLUSH_ENTITY *);
 
 #define DECLARE_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \

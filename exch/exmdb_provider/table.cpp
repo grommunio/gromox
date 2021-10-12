@@ -59,7 +59,7 @@ struct HIERARCHY_ROW_PARAM {
 
 }
 
-typedef BOOL (*TABLE_GET_ROW_PROPERTY)(void*, uint32_t, void **);
+using TABLE_GET_ROW_PROPERTY = BOOL (*)(void *, uint32_t, void **);
 
 static BOOL table_sum_table_count(db_item_ptr &pdb,
 	uint32_t table_id, uint32_t *prows)

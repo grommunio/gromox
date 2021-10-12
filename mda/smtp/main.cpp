@@ -55,8 +55,6 @@ static const char *const g_dfl_svc_plugins[] = {
 	NULL,
 };
 
-typedef void (*STOP_FUNC)();
-
 static void term_handler(int signo);
 
 int main(int argc, const char **argv) try

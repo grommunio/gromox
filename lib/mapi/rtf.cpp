@@ -268,7 +268,7 @@ enum {
 	CMD_RESULT_HYPERLINKED
 };
 
-typedef int (*CMD_PROC_FUNC)(RTF_READER *, SIMPLE_TREE_NODE *, int, bool, int);
+using CMD_PROC_FUNC = int (*)(RTF_READER *, SIMPLE_TREE_NODE *, int, bool, int);
 
 namespace {
 struct MAP_ITEM {

@@ -40,5 +40,5 @@ enum{
     PLUGIN_TALK_OK = 0,
 };
 
-typedef BOOL (*PLUGIN_MAIN)(int, void**);
-typedef void (*TALK_MAIN)(int, char**, char*, int);
+using PLUGIN_MAIN = BOOL (*)(int, void **);
+using TALK_MAIN = void (*)(int, char **, char *, int);

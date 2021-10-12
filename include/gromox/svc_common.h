@@ -6,7 +6,7 @@
 #define NDR_STACK_IN				0
 #define NDR_STACK_OUT				1
 
-typedef void (*TALK_MAIN)(int, char**, char*, int);
+using TALK_MAIN = void (*)(int, char **, char *, int);
 
 #define	DECLARE_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \

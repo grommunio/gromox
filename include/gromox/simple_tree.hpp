@@ -20,9 +20,9 @@ struct SIMPLE_TREE {
 	size_t	nodes_num;
 };
 
-typedef void (*SIMPLE_TREE_ENUM)(SIMPLE_TREE_NODE*, void*);
-typedef void (*SIMPLE_TREE_DELETE)(SIMPLE_TREE_NODE*);
-typedef SIMPLE_TREE_NODE* (*SIMPLE_TREE_DUPLICATE)(SIMPLE_TREE_NODE*, void*);
+using SIMPLE_TREE_ENUM = void (*)(SIMPLE_TREE_NODE *, void *);
+using SIMPLE_TREE_DELETE = void (*)(SIMPLE_TREE_NODE *);
+using SIMPLE_TREE_DUPLICATE = SIMPLE_TREE_NODE *(*)(SIMPLE_TREE_NODE *, void *);
 
 void simple_tree_init(SIMPLE_TREE *ptree);
 SIMPLE_TREE_NODE* simple_tree_get_root(SIMPLE_TREE *ptree);

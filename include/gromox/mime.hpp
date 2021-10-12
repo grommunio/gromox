@@ -19,7 +19,7 @@ enum{
 	MIME_ENCODING_UNKNOWN
 };
 
-typedef BOOL (*MIME_FIELD_ENUM)(const char*, char*, void*);
+using MIME_FIELD_ENUM = BOOL (*)(const char *, char *, void *);
 
 struct MIME {
 	SIMPLE_TREE_NODE node;

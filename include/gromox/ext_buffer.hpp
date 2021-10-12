@@ -24,7 +24,7 @@ enum {
 	EXT_FLAG_ZCORE = 1U << 4,
 };
 
-typedef void* (*EXT_BUFFER_ALLOC)(size_t);
+using EXT_BUFFER_ALLOC = void *(*)(size_t);
 
 struct EXT_BUFFER_MGT {
 	void *(*alloc)(size_t);

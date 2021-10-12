@@ -4,8 +4,8 @@
 #include <gromox/double_list.hpp>
 #define DSN_FIELDS			DOUBLE_LIST
 
-typedef bool (*RCPTS_FIELDS_ENUM)(DSN_FIELDS *, void *);
-typedef bool (*DSN_FIELDS_ENUM)(const char *, const char *, void *);
+using RCPTS_FIELDS_ENUM = bool (*)(DSN_FIELDS *, void *);
+using DSN_FIELDS_ENUM = bool (*)(const char *, const char *, void *);
 
 struct DSN {
 	DSN_FIELDS message_fields;

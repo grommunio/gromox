@@ -15,7 +15,7 @@ struct DIR_TREE {
 	LIB_BUFFER  *ppool;
 };
 
-typedef void (*DIR_TREE_ENUM)(DIR_NODE*, void*);
+using DIR_TREE_ENUM = void (*)(DIR_NODE *, void*);
 
 LIB_BUFFER* dir_tree_allocator_init(size_t max_size, BOOL thread_safe);
 void dir_tree_allocator_free(LIB_BUFFER *pallocator);
