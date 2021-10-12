@@ -14,10 +14,9 @@
 static uint8_t rop_util_is_little_endian()
 {
 	int x;
-	char *py;
 	
 	x = 1;
-	py = (char*)&x;
+	auto py = reinterpret_cast<const char *>(&x);
 	return *py;
 }
 

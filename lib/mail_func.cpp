@@ -662,16 +662,13 @@ void parse_mime_addr(EMAIL_ADDR *e_addr, const char *email)
 size_t parse_mime_field(char *in_buff, size_t buff_len, MIME_FIELD *pmime_field)
 {
 	BOOL meet_slash;
-	char *tmp_ptr = NULL;
-	char *dest_ptr = NULL;
-	
 	
 	if (buff_len > MIME_FIELD_LEN) {
 		buff_len = MIME_FIELD_LEN;
 	}
 	/* parse the first line the get the field name and part of value*/
-	tmp_ptr = in_buff;
-	dest_ptr = (char*)&pmime_field->field_name;
+	auto tmp_ptr = in_buff;
+	char *dest_ptr = pmime_field->field_name;
 
 	size_t i = 0, value_length = 0;
 	while (*tmp_ptr != ':' && i < buff_len &&
@@ -696,7 +693,7 @@ size_t parse_mime_field(char *in_buff, size_t buff_len, MIME_FIELD *pmime_field)
 	if (i == buff_len) {
 		return 0;
 	}
-	dest_ptr = (char*)&pmime_field->field_value;
+	dest_ptr = pmime_field->field_value;
 	while (true) {
 		meet_slash = FALSE;
 		while (i < buff_len && *tmp_ptr != '\r' && *tmp_ptr != '\n') {

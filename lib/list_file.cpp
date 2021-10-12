@@ -108,7 +108,6 @@ LIST_FILE::~LIST_FILE()
 
 static BOOL list_file_analyse_format(LIST_FILE *list_file, const char* format)
 {
-	char *ptr, *temp_ptr;
 	int i, num = 0, distance;
 	char temp_buf[64];
 	
@@ -118,7 +117,7 @@ static BOOL list_file_analyse_format(LIST_FILE *list_file, const char* format)
 		return FALSE;
 	}
 #endif
-	ptr = (char*) format;
+	auto ptr = format;
 	while ('\0' != *ptr) {
 		if ('%' == *ptr) {
 			ptr++;
@@ -144,7 +143,7 @@ static BOOL list_file_analyse_format(LIST_FILE *list_file, const char* format)
 					return FALSE;
 				}
 				ptr ++;
-				temp_ptr = strchr(ptr, '%');
+				auto temp_ptr = strchr(ptr, '%');
 				if (NULL == temp_ptr) {
 					gx_strlcpy(temp_buf, ptr, GX_ARRAY_SIZE(temp_buf));
 					/* make the while loop exit */
