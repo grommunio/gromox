@@ -1384,7 +1384,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 		case ATTRIBUTE_ID_MESSAGECLASS:
 			message_class = tnef_to_msgclass(static_cast<char *>(attribute.pvalue));
 			propval.proptag = PR_MESSAGE_CLASS_A;
-			propval.pvalue = (char*)message_class;
+			propval.pvalue = deconst(message_class);
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 				str_hash_free(phash);
 				message_content_free(pmsg);

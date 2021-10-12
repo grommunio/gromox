@@ -287,12 +287,12 @@ static BOOL oxcmail_username_to_oneoff(const char *username,
 	tmp_entry.version = 0;
 	tmp_entry.ctrl_flags = CTRL_FLAG_NORICH | CTRL_FLAG_UNICODE;
 	if (NULL != pdisplay_name && '\0' != pdisplay_name[0]) {
-		tmp_entry.pdisplay_name = (char*)pdisplay_name;
+		tmp_entry.pdisplay_name = deconst(pdisplay_name);
 	} else {
-		tmp_entry.pdisplay_name = (char*)username;
+		tmp_entry.pdisplay_name = deconst(username);
 	}
 	tmp_entry.paddress_type = deconst("SMTP");
-	tmp_entry.pmail_address = (char*)username;
+	tmp_entry.pmail_address = deconst(username);
 	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16))
 		return false;
 	status = ext_push.p_oneoff_eid(&tmp_entry);
@@ -317,7 +317,7 @@ static BOOL oxcmail_essdn_to_entryid(const char *pessdn, BINARY *pbin)
 							tmp_entryid.provider_uid);
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
-	tmp_entryid.px500dn = (char*)pessdn;
+	tmp_entryid.px500dn = deconst(pessdn);
 	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16) ||
 	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
 		return false;
@@ -3755,7 +3755,7 @@ static bool oxcmail_enum_mdn(const char *tag,
 	if (0 == strcasecmp(tag, "Original-Recipient")) {
 		if (0 == strncasecmp(value, "rfc822;", 7)) {
 			propval.proptag = PROP_TAG_ORIGINALDISPLAYTO;
-			propval.pvalue = (char*)value + 7;
+			propval.pvalue = deconst(value + 7);
 			if (!tpropval_array_set_propval(&mcparam->proplist, &propval))
 				return false;
 		}
@@ -3764,7 +3764,7 @@ static bool oxcmail_enum_mdn(const char *tag,
 			if (tpropval_array_get_propval(&static_cast<MESSAGE_CONTENT *>(pparam)->proplist,
 			    PROP_TAG_ORIGINALDISPLAYTO) == nullptr) {
 				propval.proptag = PROP_TAG_ORIGINALDISPLAYTO;
-				propval.pvalue = (char*)value + 7;
+				propval.pvalue = deconst(value + 7);
 				return tpropval_array_set_propval(&mcparam->proplist, &propval);
 			}
 		}
@@ -3795,7 +3795,7 @@ static bool oxcmail_enum_mdn(const char *tag,
 		if (!tpropval_array_set_propval(&mcparam->proplist, &propval))
 			return false;
 		propval.proptag = PROP_TAG_REPORTTEXT;
-		propval.pvalue = (char*)value;
+		propval.pvalue = deconst(value);
 		return tpropval_array_set_propval(&mcparam->proplist, &propval);
 	} else if (0 == strcasecmp(tag, "X-MSExch-Correlation-Key")) {
 		len = strlen(value);
@@ -3808,11 +3808,11 @@ static bool oxcmail_enum_mdn(const char *tag,
 		}
 	} else if (0 == strcasecmp(tag, "Original-Message-ID")) {
 		propval.proptag = PROP_TAG_ORIGINALMESSAGEID;
-		propval.pvalue = (char*)value;
+		propval.pvalue = deconst(value);
 		if (!tpropval_array_set_propval(&mcparam->proplist, &propval))
 			return false;
 		propval.proptag = PROP_TAG_INTERNETREFERENCES;
-		propval.pvalue = (char*)value;
+		propval.pvalue = deconst(value);
 		return tpropval_array_set_propval(&mcparam->proplist, &propval);
 	} else if (0 == strcasecmp(tag, "X-Display-Name")) {
 		if (TRUE == mime_string_to_utf8("utf-8", value, tmp_buff)) {
@@ -3820,7 +3820,7 @@ static bool oxcmail_enum_mdn(const char *tag,
 			propval.pvalue = tmp_buff;
 		} else {
 			propval.proptag = PR_DISPLAY_NAME_A;
-			propval.pvalue = (char*)value;
+			propval.pvalue = deconst(value);
 		}
 		return tpropval_array_set_propval(&mcparam->proplist, &propval);
 	}

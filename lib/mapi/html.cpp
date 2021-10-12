@@ -303,10 +303,9 @@ static uint32_t html_utf8_to_wchar(const char *src, int length)
 	size_t len;
 	size_t in_len;
 	uint32_t wchar;
-	char *pin, *pout;
 	
-	pin = (char*)src;
-	pout = (char*)&wchar;
+	auto pin = deconst(src);
+	auto pout = reinterpret_cast<char *>(&wchar);
 	in_len = length;
 	len = sizeof(uint16_t);
 	return iconv(g_conv_id, &pin, &in_len, &pout, &len) == static_cast<size_t>(-1) ||
@@ -1377,7 +1376,6 @@ static void html_string_to_utf8(uint32_t cpid,
 	const char *src, char *dst, size_t len)
 {
 	size_t in_len;
-	char *pin, *pout;
 	iconv_t conv_id;
 	const char *charset;
 	
@@ -1387,8 +1385,8 @@ static void html_string_to_utf8(uint32_t cpid,
 	}
 	conv_id = iconv_open("UTF-8//IGNORE",
 		replace_iconv_charset(charset));
-	pin = (char*)src;
-	pout = dst;
+	auto pin = deconst(src);
+	auto pout = dst;
 	in_len = strlen(src);
 	memset(dst, 0, len);
 	iconv(conv_id, &pin, &in_len, &pout, &len);	

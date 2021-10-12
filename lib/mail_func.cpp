@@ -1425,7 +1425,6 @@ BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)
 static BOOL encode_strings_to_utf8(
 	const char *mime_string, char *out_string)
 {
-	char *in_buff;
 	int i, buff_len;
 	char last_charset[32];
 	ENCODE_STRING encode_string;
@@ -1434,7 +1433,7 @@ static BOOL encode_strings_to_utf8(
 	size_t buff_offset, decode_len, tmp_len;
 		
 	buff_len = strlen(mime_string);
-	in_buff = (char*)mime_string;
+	auto in_buff = deconst(mime_string);
 	begin_pos = -1;
 	end_pos = -1;
 	last_pos = 0;
@@ -1498,14 +1497,13 @@ BOOL mime_string_to_utf8(const char *charset,
 	const char *mime_string, char *out_string)
 {
 	size_t i;
-	char *in_buff, *out_buff;
 	ENCODE_STRING encode_string;
 	char temp_buff[MIME_FIELD_LEN];
 	ssize_t begin_pos = -1, end_pos = -1;
 	size_t offset, decode_len, tmp_len, last_pos = 0;
 	auto buff_len = strlen(mime_string);
-	in_buff = (char*)mime_string;
-	out_buff = out_string;
+	auto in_buff = deconst(mime_string);
+	auto out_buff = out_string;
 	offset = 0;
 
 	for (i = 0; buff_len > 0 && i < buff_len - 1 && offset < 2 * buff_len + 1; ++i) {
