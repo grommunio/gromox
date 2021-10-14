@@ -50,5 +50,11 @@ Default: (libldap default)
 Use the STARTTLS mechanism on LDAP connections.
 .br
 Default: \fIoff\fP
+.br
+Take note that libldap may reject self-signed certificates from the LDAP
+server. This may be worked around with the "TLS_REQCERT allow" directive in
+ldap.conf. See the ldap.conf(5) manpage for details. However, by its
+description, TLS_REQCERT will also make encryption optional, which means
+becoming the victim of a downgrade attack is a possibility.
 .SH See also
 \fBgromox\fP(7), \fBauthmgr\fP(4gx)
