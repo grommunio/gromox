@@ -69,18 +69,18 @@ static void *adap_thrwork(void *param)
 	char temp_line[1024];
 	char temp_path[256];
 
-	while (!g_notify_stop) {
+	for (; !g_notify_stop; sleep(30)) {
 		fprintf(stderr, "[engine]: starting data collection\n");
 		std::vector<DOMAIN_ITEM> domain_list;
 		std::vector<ALIAS_ITEM> alias_map;
 	
 		if (!data_source_get_domain_list(domain_list)) {
-			goto NEXT_LOOP;
+			continue;
 		}
 		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s.tmp", g_domainlist_path);
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 		if (-1 == fd) {
-			goto NEXT_LOOP;
+			continue;
 		}
 	
 		for (const auto &e : domain_list) {
@@ -98,13 +98,13 @@ static void *adap_thrwork(void *param)
 				NOTIFY_SMTP|NOTIFY_DELIVERY);
 		}
 		if (!data_source_get_alias_list(alias_map)) {
-			goto NEXT_LOOP;
+			continue;
 		}
 		
 		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s.tmp", g_aliasaddress_path);
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
 		if (-1 == fd) {
-			goto NEXT_LOOP;
+			continue;
 		}
 		
 		for (const auto &e : alias_map) {
@@ -122,8 +122,6 @@ static void *adap_thrwork(void *param)
 			gateway_control_notify("libgxm_alias_translator.so reload addresses",
 				NOTIFY_DELIVERY);
 		}
- NEXT_LOOP:
-		sleep(30);
 	}
 	return NULL;
 }
