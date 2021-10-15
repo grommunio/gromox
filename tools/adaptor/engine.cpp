@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <csignal>
 #include <cstdlib>
+#include <string>
 #include <gromox/atomic.hpp>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
@@ -19,6 +20,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+using namespace std::string_literals;
 using namespace gromox;
 
 static gromox::atomic_bool g_notify_stop{false};
@@ -67,18 +69,23 @@ static void *adap_thrwork(void *param)
 	int fd, len;
 	char temp_domain[257];
 	char temp_line[1024];
-	char temp_path[256];
 
 	for (; !g_notify_stop; sleep(30)) {
 		fprintf(stderr, "[engine]: starting data collection\n");
 		std::vector<DOMAIN_ITEM> domain_list;
 		std::vector<ALIAS_ITEM> alias_map;
+		std::string temp_path;
 	
 		if (!data_source_get_domain_list(domain_list)) {
 			continue;
 		}
-		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s.tmp", g_domainlist_path);
-		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
+		try {
+			temp_path = g_domainlist_path + ".tmp"s;
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1523: ENOMEM\n");
+			continue;
+		}
+		fd = open(temp_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, DEF_MODE);
 		if (-1 == fd) {
 			continue;
 		}
@@ -90,10 +97,10 @@ static void *adap_thrwork(void *param)
 		}
 		close(fd);
 
-		if (0 != file_operation_compare(temp_path, g_domainlist_path)) {
-			if (rename(temp_path, g_domainlist_path) < 0)
+		if ( file_operation_compare(temp_path.c_str(), g_domainlist_path) != 0) {
+			if (rename(temp_path.c_str(), g_domainlist_path) < 0)
 				fprintf(stderr, "E-1402: rename %s %s: %s\n",
-				        temp_path, g_domainlist_path, strerror(errno));
+				        temp_path.c_str(), g_domainlist_path, strerror(errno));
 			gateway_control_notify("libgxs_domain_list.so reload",
 				NOTIFY_SMTP|NOTIFY_DELIVERY);
 		}
@@ -101,8 +108,13 @@ static void *adap_thrwork(void *param)
 			continue;
 		}
 		
-		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s.tmp", g_aliasaddress_path);
-		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, DEF_MODE);
+		try {
+			temp_path = g_aliasaddress_path + ".tmp"s;
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1524: ENOMEM\n");
+			continue;
+		}
+		fd = open(temp_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, DEF_MODE);
 		if (-1 == fd) {
 			continue;
 		}
@@ -114,11 +126,10 @@ static void *adap_thrwork(void *param)
 				write(fd, temp_line, len);
 		}
 		close(fd);
-
-		if (0 != file_operation_compare(temp_path, g_aliasaddress_path)) {
-			if (rename(temp_path, g_aliasaddress_path) < 0)
+		if (file_operation_compare(temp_path.c_str(), g_aliasaddress_path) != 0) {
+			if (rename(temp_path.c_str(), g_aliasaddress_path) < 0)
 				fprintf(stderr, "E-1423: rename %s %s: %s\n",
-				        temp_path, g_aliasaddress_path, strerror(errno));
+				        temp_path.c_str(), g_aliasaddress_path, strerror(errno));
 			gateway_control_notify("libgxm_alias_translator.so reload addresses",
 				NOTIFY_DELIVERY);
 		}
