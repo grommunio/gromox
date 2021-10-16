@@ -10,15 +10,15 @@
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/dsn.hpp>
 #include <gromox/fileio.h>
 #include "bounce_producer.h"
 #include "system_services.h"
 #include "common_util.h"
 #include <gromox/mail_func.hpp>
-#include <gromox/timezone.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
-#include <gromox/dsn.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -45,6 +45,7 @@ enum{
 };
 
 namespace {
+
 struct FORMAT_DATA {
 	int	position;
 	int tag;
@@ -89,8 +90,8 @@ static TAG_ITEM g_tags[] = {
 	{"<length>", 8}
 };
 
-static BOOL bounce_producer_check_subdir(const char *basedir, const char *dir_name);
-static void bounce_producer_load_subdir(const char *basedir, const char *dir_name, std::vector<RESOURCE_NODE> &);
+static BOOL bounce_producer_check_subdir(const std::string &basedir, const char *dir_name);
+static void bounce_producer_load_subdir(const std::string &basedir, const char *dir_name, std::vector<RESOURCE_NODE> &);
 
 void bounce_producer_init(const char* separator)
 {
@@ -126,9 +127,9 @@ static BOOL bounce_producer_refresh(const char *data_path) try
 		if (strcmp(direntp->d_name, ".") == 0 ||
 		    strcmp(direntp->d_name, "..") == 0)
 			continue;
-		if (!bounce_producer_check_subdir(dinfo.m_path.c_str(), direntp->d_name))
+		if (!bounce_producer_check_subdir(dinfo.m_path, direntp->d_name))
 			continue;
-		bounce_producer_load_subdir(dinfo.m_path.c_str(), direntp->d_name, resource_list);
+		bounce_producer_load_subdir(dinfo.m_path, direntp->d_name, resource_list);
 	}
 
 	auto pdefault = std::find_if(resource_list.begin(), resource_list.end(),
@@ -147,11 +148,13 @@ static BOOL bounce_producer_refresh(const char *data_path) try
 	return false;
 }
 
-static BOOL bounce_producer_check_subdir(const char *basedir, const char *dir_name)
+static BOOL bounce_producer_check_subdir(const std::string &basedir,
+    const char *dir_name)
 {
 	struct dirent *sub_direntp;
 	struct stat node_stat;
-	auto dir_buf = basedir + "/"s + dir_name;
+
+	auto dir_buf = basedir + "/" + dir_name;
 	auto sub_dirp = opendir_sd(dir_buf.c_str(), nullptr);
 	if (sub_dirp.m_dir == nullptr)
 		return FALSE;
@@ -160,7 +163,7 @@ static BOOL bounce_producer_check_subdir(const char *basedir, const char *dir_na
 		if (strcmp(sub_direntp->d_name, ".") == 0 ||
 		    strcmp(sub_direntp->d_name, "..") == 0)
 			continue;
-		auto sub_buf = dir_buf + "/"s + sub_direntp->d_name;
+		auto sub_buf = dir_buf + "/" + sub_direntp->d_name;
 		if (stat(sub_buf.c_str(), &node_stat) != 0 ||
 		    !S_ISREG(node_stat.st_mode))
 			continue;
@@ -175,8 +178,8 @@ static BOOL bounce_producer_check_subdir(const char *basedir, const char *dir_na
 	return item_num == BOUNCE_TOTAL_NUM ? TRUE : false;
 }
 
-static void bounce_producer_load_subdir(const char *basedir,
-    const char *dir_name, std::vector<RESOURCE_NODE> &plist) try
+static void bounce_producer_load_subdir(const std::string &basedir,
+    const char *dir_name, std::vector<RESOURCE_NODE> &plist)
 {
 	struct dirent *sub_direntp;
 	struct stat node_stat;
@@ -192,7 +195,7 @@ static void bounce_producer_load_subdir(const char *basedir,
 			presource->format[i][j].tag = j;
 		}
 	}
-	auto dir_buf = basedir + "/"s + dir_name;
+	auto dir_buf = basedir + "/" + dir_name;
 	auto sub_dirp = opendir_sd(dir_buf.c_str(), nullptr);
 	if (sub_dirp.m_dir != nullptr) while ((sub_direntp = readdir(sub_dirp.m_dir.get())) != nullptr) {
 		if (strcmp(sub_direntp->d_name, ".") == 0 ||
@@ -207,7 +210,7 @@ static void bounce_producer_load_subdir(const char *basedir,
 		if (BOUNCE_TOTAL_NUM == i) {
 			continue;
 		}
-		auto sub_buf = dir_buf + "/"s + sub_direntp->d_name;
+		auto sub_buf = dir_buf + "/" + sub_direntp->d_name;
 		wrapfd fd = open(sub_buf.c_str(), O_RDONLY);
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
 		    !S_ISREG(node_stat.st_mode))
@@ -244,7 +247,7 @@ static void bounce_producer_load_subdir(const char *basedir,
 				}
 			} else {
 				printf("[exmdb_provider]: bounce mail %s format error\n",
-					sub_buf.c_str());
+				       sub_buf.c_str());
 				return;
 			}
 		}
@@ -286,8 +289,6 @@ static void bounce_producer_load_subdir(const char *basedir,
 	}
 	gx_strlcpy(presource->charset, dir_name, GX_ARRAY_SIZE(presource->charset));
 	plist.push_back(std::move(rnode));
-} catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1492: ENOMEM\n");
 }
 
 static int bounce_producer_get_mail_parts(
@@ -296,13 +297,12 @@ static int bounce_producer_get_mail_parts(
 	int i;
 	int offset;
 	int tmp_len;
-	void *pvalue;
 	BOOL b_first;
 	
 	offset = 0;
 	b_first = FALSE;
 	for (i=0; i<pattachments->count; i++) {
-		pvalue = common_util_get_propvals(&pattachments->pplist[i]->proplist, PR_ATTACH_LONG_FILENAME);
+		auto pvalue = common_util_get_propvals(&pattachments->pplist[i]->proplist, PR_ATTACH_LONG_FILENAME);
 		if (NULL == pvalue) {
 			continue;
 		}
@@ -323,12 +323,12 @@ static int bounce_producer_get_mail_parts(
 static int bounce_producer_get_rcpts(
 	TARRAY_SET *prcpts, char *rcpts)
 {
-	void *pvalue;
-	BOOL b_first;
 	size_t offset = 0;
+	BOOL b_first;
+
 	b_first = FALSE;
 	for (size_t i = 0; i < prcpts->count; ++i) {
-		pvalue = common_util_get_propvals(prcpts->pparray[i], PR_SMTP_ADDRESS);
+		auto pvalue = common_util_get_propvals(prcpts->pparray[i], PR_SMTP_ADDRESS);
 		if (NULL == pvalue) {
 			continue;
 		}
@@ -351,7 +351,6 @@ static BOOL bounce_producer_make_content(const char *username,
 	char *content_type, char *pcontent)
 {
 	char *ptr;
-	void *pvalue;
 	int prev_pos;
 	time_t tmp_time;
 	char charset[32];
@@ -365,13 +364,9 @@ static BOOL bounce_producer_make_content(const char *username,
 	ptr = pcontent;
 	charset[0] = '\0';
 	time_zone[0] = '\0';
-	pvalue = common_util_get_propvals(
-		&pbrief->proplist, PROP_TAG_CLIENTSUBMITTIME);
-	if (NULL == pvalue) {
-		time(&tmp_time);
-	} else {
-		tmp_time = rop_util_nttime_to_unix(*(uint64_t*)pvalue);
-	}
+	auto pvalue = common_util_get_propvals(&pbrief->proplist, PROP_TAG_CLIENTSUBMITTIME);
+	tmp_time = pvalue == nullptr ? time(nullptr) :
+	           rop_util_nttime_to_unix(*static_cast<uint64_t *>(pvalue));
 	auto from = static_cast<const char *>(common_util_get_propvals(&pbrief->proplist,
 	            PR_SENT_REPRESENTING_SMTP_ADDRESS));
 	if (NULL == from) {
@@ -406,11 +401,7 @@ static BOOL bounce_producer_make_content(const char *username,
 			strcpy(charset, "ascii");
 		} else {
 			pcharset = system_services_cpid_to_charset(*(uint32_t*)pvalue);
-			if (NULL == pcharset) {
-				strcpy(charset, "ascii");
-			} else {
-				gx_strlcpy(charset, pcharset, GX_ARRAY_SIZE(charset));
-			}
+			gx_strlcpy(charset, pcharset != nullptr ? pcharset : "ascii", arsizeof(charset));
 		}
 	}
 	std::shared_lock rd_hold(g_list_lock);
@@ -482,7 +473,6 @@ BOOL bounce_producer_make(const char *username,
 	DSN dsn;
 	MIME *pmime;
 	MIME *phead;
-	void *pvalue;
 	size_t out_len;
 	time_t cur_time;
 	char mime_to[1024];
@@ -515,12 +505,12 @@ BOOL bounce_producer_make(const char *username,
 	pmime = phead;
 	mime_set_content_type(pmime, "multipart/report");
 	mime_set_content_param(pmime, "report-type", "disposition-notification");
-	pvalue = common_util_get_propvals(
-		&pbrief->proplist, PROP_TAG_CONVERSATIONINDEX);
-	if (pvalue != nullptr && encode64(static_cast<BINARY *>(pvalue)->pb,
-	    static_cast<BINARY *>(pvalue)->cb, tmp_buff, sizeof(tmp_buff),
-	    &out_len) == 0)
-		mime_set_field(pmime, "Thread-Index", tmp_buff);
+	auto pvalue = common_util_get_propvals(&pbrief->proplist, PROP_TAG_CONVERSATIONINDEX);
+	if (pvalue != nullptr) {
+		auto bv = static_cast<const BINARY *>(pvalue);
+		if (encode64(bv->pb, bv->cb, tmp_buff, sizeof(tmp_buff), &out_len) == 0)
+			mime_set_field(pmime, "Thread-Index", tmp_buff);
+	}
 	std::string t_addr;
 	try {
 		t_addr = "\""s + mime_from + "\" <" + username + ">";
@@ -544,8 +534,7 @@ BOOL bounce_producer_make(const char *username,
 	if (NULL != pvalue) {
 		out_len = strlen(mime_to);
 		if (0 != out_len) {
-			mime_to[out_len] = ' ';
-			out_len ++;
+			mime_to[out_len++] = ' ';
 		}
 		snprintf(mime_to + out_len, sizeof(mime_to) - out_len, "<%s>",
 		         static_cast<const char *>(pvalue));
@@ -596,7 +585,7 @@ BOOL bounce_producer_make(const char *username,
 	}
 	pvalue = common_util_get_propvals(&pbrief->proplist, PR_PARENT_KEY);
 	if (NULL != pvalue) {
-		auto bv = static_cast<BINARY *>(pvalue);
+		auto bv = static_cast<const BINARY *>(pvalue);
 		encode64(bv->pb, bv->cb, tmp_buff, arsizeof(tmp_buff), &out_len);
 		dsn_append_field(pdsn_fields,
 			"X-MSExch-Correlation-Key", tmp_buff);

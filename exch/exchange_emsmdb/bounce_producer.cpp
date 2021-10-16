@@ -88,8 +88,8 @@ static TAG_ITEM g_tags[] = {
 	{"<length>", 8}
 };
 
-static BOOL bounce_producer_check_subdir(const char *basedir, const char *dir_name);
-static void bounce_producer_load_subdir(const char *basedir, const char *dir_name, std::vector<RESOURCE_NODE> &);
+static BOOL bounce_producer_check_subdir(const std::string &basedir, const char *dir_name);
+static void bounce_producer_load_subdir(const std::string &basedir, const char *dir_name, std::vector<RESOURCE_NODE> &);
 
 void bounce_producer_init(const char* separator)
 {
@@ -125,9 +125,9 @@ BOOL bounce_producer_refresh(const char *data_path) try
 		if (strcmp(direntp->d_name, ".") == 0 ||
 		    strcmp(direntp->d_name, "..") == 0)
 			continue;
-		if (!bounce_producer_check_subdir(dinfo.m_path.c_str(), direntp->d_name))
+		if (!bounce_producer_check_subdir(dinfo.m_path, direntp->d_name))
 			continue;
-		bounce_producer_load_subdir(dinfo.m_path.c_str(), direntp->d_name, resource_list);
+		bounce_producer_load_subdir(dinfo.m_path, direntp->d_name, resource_list);
 	}
 
 	auto pdefault = std::find_if(resource_list.begin(), resource_list.end(),
@@ -146,13 +146,13 @@ BOOL bounce_producer_refresh(const char *data_path) try
 	return false;
 }
 
-static BOOL bounce_producer_check_subdir(const char *basedir,
+static BOOL bounce_producer_check_subdir(const std::string &basedir,
     const char *dir_name)
 {
 	struct dirent *sub_direntp;
 	struct stat node_stat;
 
-	auto dir_buf = basedir + "/"s + dir_name;
+	auto dir_buf = basedir + "/" + dir_name;
 	auto sub_dirp = opendir_sd(dir_buf.c_str(), nullptr);
 	if (sub_dirp.m_dir == nullptr)
 		return FALSE;
@@ -176,7 +176,7 @@ static BOOL bounce_producer_check_subdir(const char *basedir,
 	return item_num == BOUNCE_TOTAL_NUM ? TRUE : false;
 }
 
-static void bounce_producer_load_subdir(const char *basedir,
+static void bounce_producer_load_subdir(const std::string &basedir,
     const char *dir_name, std::vector<RESOURCE_NODE> &plist)
 {
 	struct dirent *sub_direntp;
@@ -193,7 +193,7 @@ static void bounce_producer_load_subdir(const char *basedir,
 			presource->format[i][j].tag = j;
 		}
 	}
-	auto dir_buf = basedir + "/"s + dir_name;
+	auto dir_buf = basedir + "/" + dir_name;
 	auto sub_dirp = opendir_sd(dir_buf.c_str(), nullptr);
 	if (sub_dirp.m_dir != nullptr) while ((sub_direntp = readdir(sub_dirp.m_dir.get())) != nullptr) {
 		if (strcmp(sub_direntp->d_name, ".") == 0 ||
@@ -503,7 +503,7 @@ BOOL bounce_producer_make(const char *username,
 	mime_set_content_type(pmime, "multipart/report");
 	mime_set_content_param(pmime, "report-type", "disposition-notification");
 	auto pvalue = common_util_get_propvals(&pbrief->proplist, PROP_TAG_CONVERSATIONINDEX);
-	if (NULL != pvalue) {
+	if (pvalue != nullptr) {
 		auto bv = static_cast<const BINARY *>(pvalue);
 		if (encode64(bv->pb, bv->cb, tmp_buff, arsizeof(tmp_buff), &out_len) == 0)
 			mime_set_field(pmime, "Thread-Index", tmp_buff);
