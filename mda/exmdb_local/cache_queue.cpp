@@ -27,6 +27,7 @@
 #define MAX_CIRCLE_NUMBER   0x7FFFFFFF
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
+using namespace std::string_literals;
 using namespace gromox;
 
 static char g_path[256];
@@ -118,11 +119,16 @@ void cache_queue_free()
 int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	time_t original_time)
 {
-	char file_name[256];
+	std::string file_name;
 
 	auto mess_id = cache_queue_increase_mess_ID();
-	snprintf(file_name, GX_ARRAY_SIZE(file_name), "%s/%d", g_path, mess_id);
-	wrapfd fd = open(file_name, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
+	try {
+		file_name = g_path + "/"s + std::to_string(mess_id);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1531: ENOMEM\n");
+		return -1;
+	}
+	wrapfd fd = open(file_name.c_str(), O_WRONLY | O_CREAT | O_TRUNC, DEF_MODE);
 	if (fd.get() < 0)
 		return -1;
 	/* write 0 at the begin of file to indicate message is now being writing */
@@ -130,8 +136,9 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	if (write(fd.get(), &times, sizeof(int)) != sizeof(int) ||
 	    write(fd.get(), &original_time, sizeof(time_t)) != sizeof(time_t)) {
 		fd.close();
-		if (remove(file_name) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1353: remove %s: %s\n", file_name, strerror(errno));
+		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1353: remove %s: %s\n",
+			        file_name.c_str(), strerror(errno));
         return -1;
 	}
 	/* at the begin of file, write the length of message */
@@ -139,15 +146,17 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	if (len < 0) {
 		printf("[exmdb_local]: fail to get mail length\n");
 		fd.close();
-		if (remove(file_name) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1354: remove %s: %s\n", file_name, strerror(errno));
+		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1354: remove %s: %s\n",
+			        file_name.c_str(), strerror(errno));
         return -1;
 	}
 	static_assert(sizeof(len) == sizeof(int32_t));
 	if (write(fd.get(), &len, sizeof(len)) != sizeof(len)) {
 		fd.close();
-		if (remove(file_name) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1355: remove %s: %s\n", file_name, strerror(errno));
+		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1355: remove %s: %s\n",
+			        file_name.c_str(), strerror(errno));
         return -1;
 	}
 	if (!mail_to_file(pcontext->pmail, fd.get()) ||
@@ -156,18 +165,19 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	    write(fd.get(), &pcontext->pcontrol->is_spam, sizeof(BOOL)) != sizeof(BOOL) ||
 	    write(fd.get(), &pcontext->pcontrol->need_bounce, sizeof(BOOL)) != sizeof(BOOL)) {
 		fd.close();
-		if (remove(file_name) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1356: remove %s: %s\n", file_name, strerror(errno));
+		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1356: remove %s: %s\n",
+			        file_name.c_str(), strerror(errno));
         return -1;
     }
 	/* write envelope from */
-	auto temp_len = strlen(pcontext->pcontrol->from);
-    temp_len ++;
+	auto temp_len = strlen(pcontext->pcontrol->from) + 1;
 	auto wrret = write(fd.get(), pcontext->pcontrol->from, temp_len);
 	if (wrret < 0 || static_cast<size_t>(wrret) != temp_len) {
 		fd.close();
-		if (remove(file_name) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1357: remove %s: %s\n", file_name, strerror(errno));
+		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1357: remove %s: %s\n",
+			        file_name.c_str(), strerror(errno));
         return -1;
     }
 	/* write envelope rcpt */
@@ -175,23 +185,26 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	wrret = write(fd.get(), rcpt_to, temp_len);
 	if (wrret < 0 || static_cast<size_t>(wrret) != temp_len) {
 		fd.close();
-		if (remove(file_name) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1358: remove %s: %s\n", file_name, strerror(errno));
+		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1358: remove %s: %s\n",
+			        file_name.c_str(), strerror(errno));
 		return -1;
     }
     /* last null character for indicating end of rcpt to array */
 	if (write(fd.get(), "", 1) != 1) {
 		fd.close();
-		if (remove(file_name) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1359: remove %s: %s\n", file_name, strerror(errno));
+		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1359: remove %s: %s\n",
+			        file_name.c_str(), strerror(errno));
         return -1;
 	}
 	lseek(fd.get(), 0, SEEK_SET);
 	times = 1;
 	if (write(fd.get(), &times, sizeof(int)) != sizeof(int)) {
 		fd.close();
-		if (remove(file_name) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1360: remove %s: %s\n", file_name, strerror(errno));
+		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1360: remove %s: %s\n",
+			        file_name.c_str(), strerror(errno));
         return -1;
 	}
 	return mess_id;

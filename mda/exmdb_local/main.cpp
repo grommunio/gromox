@@ -3,6 +3,7 @@
 #include <cstring>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/hook_common.h>
 #include <gromox/config_file.hpp>
 #include "exmdb_local.h"
@@ -25,13 +26,11 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 	char org_name[256];
 	char separator[16];
 	char temp_buff[45];
-	char tmp_path[256];
 	int cache_interval;
 	int retrying_times;
 	int alarm_interval;
 	int times, interval;
-	char file_name[256];
-	char cache_path[256], *psearch;
+	char cache_path[256];
 	int response_capacity;
 	int response_interval;
 	 
@@ -39,16 +38,20 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
     switch (reason) {
 	case PLUGIN_INIT: {
 		LINK_API(ppdata);
-		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
-		psearch = strrchr(file_name, '.');
-		if (NULL != psearch) {
-			*psearch = '\0';
+		std::string plugname, filename;
+		try {
+			plugname = get_plugin_name();
+			auto pos = plugname.find('.');
+			if (pos != plugname.npos)
+				plugname.erase(pos);
+			filename = plugname + ".cfg";
+		} catch (...) {
+			return false;
 		}
-		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s.cfg", file_name);
-		auto pfile = config_file_initd(tmp_path, get_config_path());
+		auto pfile = config_file_initd(filename.c_str(), get_config_path());
 		if (NULL == pfile) {
 			printf("[exmdb_local]: config_file_initd %s: %s\n",
-			       tmp_path, strerror(errno));
+			       filename.c_str(), strerror(errno));
 			return FALSE;
 		}
 

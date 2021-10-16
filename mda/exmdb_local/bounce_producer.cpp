@@ -141,7 +141,7 @@ int bounce_producer_run()
  *		TRUE				OK
  *		FALSE				fail
  */
-BOOL bounce_producer_refresh()
+BOOL bounce_producer_refresh() try
 {
     struct dirent *direntp;
 	std::vector<RESOURCE_NODE> resource_list;
@@ -174,6 +174,9 @@ BOOL bounce_producer_refresh()
 	g_default_resource = &*pdefault;
 	std::swap(g_resource_list, resource_list);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1527: ENOMEM\n");
+	return false;
 }
 
 /*
@@ -184,29 +187,26 @@ BOOL bounce_producer_refresh()
  *		TRUE					OK
  *		FALSE					illegal
  */
-static BOOL bounce_producer_check_subdir(const std::string &basedir, const char *dir_name)
+static BOOL bounce_producer_check_subdir(const std::string &basedir,
+    const char *dir_name)
 {
     struct dirent *sub_direntp;
 	struct stat node_stat;
-	char dir_buff[256], sub_buff[256];
-	int i, item_num;
 
-	snprintf(dir_buff, GX_ARRAY_SIZE(dir_buff), "%s/%s", basedir.c_str(), dir_name);
-	auto sub_dirp = opendir_sd(dir_buff, nullptr);
+	auto dir_buf = basedir + "/" + dir_name;
+	auto sub_dirp = opendir_sd(dir_buf.c_str(), nullptr);
 	if (sub_dirp.m_dir == nullptr)
 		return FALSE;	
-    item_num = 0;
+	size_t item_num = 0;
 	while ((sub_direntp = readdir(sub_dirp.m_dir.get())) != nullptr) {
 		if (strcmp(sub_direntp->d_name, ".") == 0 ||
 		    strcmp(sub_direntp->d_name, "..") == 0)
 			continue;
-		snprintf(sub_buff, GX_ARRAY_SIZE(sub_buff), "%s/%s",
-		         dir_buff, sub_direntp->d_name);
-        if (0 != stat(sub_buff, &node_stat) ||
-            0 == S_ISREG(node_stat.st_mode)) {
-            continue;
-        }
-        for (i=0; i<BOUNCE_TOTAL_NUM; i++) {
+		auto sub_buf = dir_buf + "/" + sub_direntp->d_name;
+		if (stat(sub_buf.c_str(), &node_stat) != 0 ||
+		    !S_ISREG(node_stat.st_mode))
+			continue;
+		for (size_t i = 0; i < BOUNCE_TOTAL_NUM; ++i) {
             if (0 == strcmp(g_resource_table[i], sub_direntp->d_name) &&
 				node_stat.st_size < 64*1024) {
                 item_num ++;
@@ -228,7 +228,6 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 {
     struct dirent *sub_direntp;
 	struct stat node_stat;
-    char dir_buff[256], sub_buff[256];
 	int i, j, k, until_tag;
 	FORMAT_DATA temp;
 	MIME_FIELD mime_field;
@@ -241,8 +240,8 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 			presource->format[i][j].tag = j;
 		}
 	}
-	snprintf(dir_buff, GX_ARRAY_SIZE(dir_buff), "%s/%s", basedir.c_str(), dir_name);
-	auto sub_dirp = opendir_sd(dir_buff, nullptr);
+	auto dir_buf = basedir + "/" + dir_name;
+	auto sub_dirp = opendir_sd(dir_buf.c_str(), nullptr);
 	if (sub_dirp.m_dir != nullptr) while ((sub_direntp = readdir(sub_dirp.m_dir.get())) != nullptr) {
 		if (strcmp(sub_direntp->d_name, ".") == 0 ||
 		    strcmp(sub_direntp->d_name, "..") == 0)
@@ -256,9 +255,8 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 		if (BOUNCE_TOTAL_NUM == i) {
 			continue;
 		}
-		snprintf(sub_buff, GX_ARRAY_SIZE(sub_buff), "%s/%s",
-		         dir_buff, sub_direntp->d_name);
-		wrapfd fd = open(sub_buff, O_RDONLY);
+		auto sub_buf = dir_buf + "/" + sub_direntp->d_name;
+		wrapfd fd = open(sub_buf.c_str(), O_RDONLY);
 		if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
 		    !S_ISREG(node_stat.st_mode))
 			continue;
@@ -303,7 +301,7 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 				}
 			} else {
 				printf("[exmdb_local]: bounce mail %s format error\n",
-					sub_buff);
+					sub_buf.c_str());
 				return;
 			}
 		}
@@ -326,7 +324,7 @@ static void bounce_producer_load_subdir(const std::string &basedir,
 		for (j=TAG_BEGIN+1; j<until_tag; j++) {
 			if (-1 == presource->format[i][j].position) {
 				printf("[exmdb_local]: format error in %s, lack of "
-						"tag %s\n", sub_buff, g_tags[j-1].name);
+				       "tag %s\n", sub_buf.c_str(), g_tags[j-1].name);
 				return;
 			}
 		}
