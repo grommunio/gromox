@@ -204,7 +204,6 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
  */
 static int cache_queue_retrieve_mess_ID()
 {
-	DIR *dirp;
     struct dirent *direntp;
     int max_ID = 0, temp_ID;
 
@@ -212,8 +211,8 @@ static int cache_queue_retrieve_mess_ID()
     read every file under directory and retrieve the maximum number and
     return it
     */
-    dirp = opendir(g_path);
-    while ((direntp = readdir(dirp)) != NULL) {
+	auto dirp = opendir_sd(g_path, nullptr);
+	if (dirp.m_dir != nullptr) while ((direntp = readdir(dirp.m_dir.get())) != nullptr) {
 		if (strcmp(direntp->d_name, ".") == 0 ||
 		    strcmp(direntp->d_name, "..") == 0)
 			continue;
@@ -222,7 +221,6 @@ static int cache_queue_retrieve_mess_ID()
             max_ID = temp_ID;
         }
     }
-    closedir(dirp);
     return max_ID;
 }
 
@@ -246,7 +244,6 @@ static int cache_queue_increase_mess_ID()
 
 static void *mdl_thrwork(void *arg)
 {
-	DIR *dirp;
 	int i, times, size, bounce_type = 0, scan_interval, mess_len;
 	time_t scan_begin, scan_end, original_time;
     struct dirent *direntp;
@@ -260,8 +257,8 @@ static void *mdl_thrwork(void *arg)
 		printf("[exmdb_local]: fail to get context in cache queue thread\n");
 		return nullptr;
 	}
-	dirp = opendir(g_path);
-	if (NULL == dirp) {
+	auto dirp = opendir_sd(g_path, nullptr);
+	if (dirp.m_dir == nullptr) {
 		printf("[exmdb_local]: failed to open cache directory %s: %s\n",
 			g_path, strerror(errno));
 		return nullptr;
@@ -274,9 +271,9 @@ static void *mdl_thrwork(void *arg)
 			sleep(1);
 			continue;
 		}
-		seekdir(dirp, 0);
+		seekdir(dirp.m_dir.get(), 0);
 		time(&scan_begin);
-    	while ((direntp = readdir(dirp)) != NULL) {
+		while ((direntp = readdir(dirp.m_dir.get())) != nullptr) {
 			if (g_notify_stop)
 				break;
 			if (strcmp(direntp->d_name, ".") == 0 ||
@@ -430,7 +427,6 @@ static void *mdl_thrwork(void *arg)
 		}
 		i = 0;
 	}
-	closedir(dirp);
 	return NULL;
 }
 
