@@ -144,7 +144,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
         return -1;
 	}
 	static_assert(sizeof(len) == sizeof(int32_t));
-	if (write(fd, &len, sizeof(len)) == sizeof(len)) {
+	if (write(fd, &len, sizeof(len)) != sizeof(len)) {
 		close(fd);
 		if (remove(file_name) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1355: remove %s: %s\n", file_name, strerror(errno));
