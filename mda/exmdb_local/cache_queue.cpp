@@ -10,6 +10,7 @@
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include "cache_queue.h"
 #include "exmdb_local.h"
 #include "net_failure.h"
@@ -25,6 +26,8 @@
 #include <cstdio>
 #define MAX_CIRCLE_NUMBER   0x7FFFFFFF
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
+
+using namespace gromox;
 
 static char g_path[256];
 static int g_mess_id;
@@ -115,21 +118,18 @@ void cache_queue_free()
 int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	time_t original_time)
 {
-	int mess_id, temp_len;
 	char file_name[256];
-	int fd, times;
 
-	mess_id = cache_queue_increase_mess_ID();
+	auto mess_id = cache_queue_increase_mess_ID();
 	snprintf(file_name, GX_ARRAY_SIZE(file_name), "%s/%d", g_path, mess_id);
-	fd = open(file_name, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
-	if (-1 == fd) {
+	wrapfd fd = open(file_name, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
+	if (fd.get() < 0)
 		return -1;
-	}
 	/* write 0 at the begin of file to indicate message is now being writing */
-	times = 0;
-	if (sizeof(int) != write(fd, &times, sizeof(int)) ||
-		sizeof(time_t) != write(fd, &original_time, sizeof(time_t))) {
-		close(fd);
+	int times = 0;
+	if (write(fd.get(), &times, sizeof(int)) != sizeof(int) ||
+	    write(fd.get(), &original_time, sizeof(time_t)) != sizeof(time_t)) {
+		fd.close();
 		if (remove(file_name) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1353: remove %s: %s\n", file_name, strerror(errno));
         return -1;
@@ -138,62 +138,62 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	int32_t len = std::max(mail_get_length(pcontext->pmail), static_cast<ssize_t>(INT32_MAX));
 	if (len < 0) {
 		printf("[exmdb_local]: fail to get mail length\n");
-		close(fd);
+		fd.close();
 		if (remove(file_name) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1354: remove %s: %s\n", file_name, strerror(errno));
         return -1;
 	}
 	static_assert(sizeof(len) == sizeof(int32_t));
-	if (write(fd, &len, sizeof(len)) != sizeof(len)) {
-		close(fd);
+	if (write(fd.get(), &len, sizeof(len)) != sizeof(len)) {
+		fd.close();
 		if (remove(file_name) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1355: remove %s: %s\n", file_name, strerror(errno));
         return -1;
 	}
-	if (FALSE == mail_to_file(pcontext->pmail, fd) ||
-		sizeof(int) != write(fd, &pcontext->pcontrol->queue_ID, sizeof(int)) ||
-		sizeof(int) != write(fd, &pcontext->pcontrol->bound_type, sizeof(int))||
-		sizeof(BOOL) != write(fd, &pcontext->pcontrol->is_spam, sizeof(BOOL))||
-		sizeof(BOOL) != write(fd, &pcontext->pcontrol->need_bounce,
-		sizeof(BOOL))) {
-        close(fd);
+	if (!mail_to_file(pcontext->pmail, fd.get()) ||
+	    write(fd.get(), &pcontext->pcontrol->queue_ID, sizeof(int)) != sizeof(int) ||
+	    write(fd.get(), &pcontext->pcontrol->bound_type, sizeof(int)) != sizeof(int) ||
+	    write(fd.get(), &pcontext->pcontrol->is_spam, sizeof(BOOL)) != sizeof(BOOL) ||
+	    write(fd.get(), &pcontext->pcontrol->need_bounce, sizeof(BOOL)) != sizeof(BOOL)) {
+		fd.close();
 		if (remove(file_name) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1356: remove %s: %s\n", file_name, strerror(errno));
         return -1;
     }
 	/* write envelope from */
-    temp_len = strlen(pcontext->pcontrol->from);
+	auto temp_len = strlen(pcontext->pcontrol->from);
     temp_len ++;
-    if (temp_len != write(fd, pcontext->pcontrol->from, temp_len)) {
-        close(fd);
+	auto wrret = write(fd.get(), pcontext->pcontrol->from, temp_len);
+	if (wrret < 0 || static_cast<size_t>(wrret) != temp_len) {
+		fd.close();
 		if (remove(file_name) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1357: remove %s: %s\n", file_name, strerror(errno));
         return -1;
     }
 	/* write envelope rcpt */
 	temp_len = strlen(rcpt_to) + 1;
-	if (temp_len != write(fd, rcpt_to, temp_len)) {
-		close(fd);
+	wrret = write(fd.get(), rcpt_to, temp_len);
+	if (wrret < 0 || static_cast<size_t>(wrret) != temp_len) {
+		fd.close();
 		if (remove(file_name) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1358: remove %s: %s\n", file_name, strerror(errno));
 		return -1;
     }
     /* last null character for indicating end of rcpt to array */
-    if (1 != write(fd, "", 1)) {
-		close(fd);
+	if (write(fd.get(), "", 1) != 1) {
+		fd.close();
 		if (remove(file_name) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1359: remove %s: %s\n", file_name, strerror(errno));
         return -1;
 	}
-	lseek(fd, 0, SEEK_SET);
+	lseek(fd.get(), 0, SEEK_SET);
 	times = 1;
-	if (sizeof(int) != write(fd, &times, sizeof(int))) {
-		close(fd);
+	if (write(fd.get(), &times, sizeof(int)) != sizeof(int)) {
+		fd.close();
 		if (remove(file_name) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1360: remove %s: %s\n", file_name, strerror(errno));
         return -1;
 	}
-	close(fd);
 	return mess_id;
 }
 
@@ -283,34 +283,26 @@ static void *mdl_thrwork(void *arg)
 			    strcmp(direntp->d_name, "..") == 0)
 				continue;
 			std::string temp_path;
-			int fd = -1;
 			try {
 				temp_path = std::string(g_path) + "/" + direntp->d_name;
-				fd = open(temp_path.c_str(), O_RDWR);
 			} catch (const std::bad_alloc &) {
 				fprintf(stderr, "E-1475: ENOMEM\n");
 			}
-			if (-1 == fd) {
+			wrapfd fd = open(temp_path.c_str(), O_RDWR);
+			if (fd.get() < 0)
 				continue;
-			}
 			struct stat node_stat;
-			if (fstat(fd, &node_stat) != 0 || !S_ISREG(node_stat.st_mode)) {
-				close(fd);
+			if (fstat(fd.get(), &node_stat) != 0 || !S_ISREG(node_stat.st_mode))
 				continue;
-			}
-			if (sizeof(int) != read(fd, &times, sizeof(int))) {
-				close(fd);
+			if (read(fd.get(), &times, sizeof(int)) != sizeof(int))
 				continue;
-			}
 			if (0 == times) {
-				close(fd);
                 continue;
 			}
-			if (sizeof(time_t) != read(fd, &original_time, sizeof(time_t)) ||
-				sizeof(int) != read(fd, &mess_len, sizeof(int))) {
+			if (read(fd.get(), &original_time, sizeof(time_t)) != sizeof(time_t) ||
+			    read(fd.get(), &mess_len, sizeof(int)) != sizeof(int)) {
 				printf("[exmdb_local]: fail to read information from %s "
 					"in timer queue\n", direntp->d_name);
-				close(fd);
 				continue;
 			}
 			size = node_stat.st_size - sizeof(time_t) - 2*sizeof(int);
@@ -318,21 +310,18 @@ static void *mdl_thrwork(void *arg)
 			if (NULL == pbuff) {
 				printf("[exmdb_local]: Failed to allocate memory for %s "
 					"in timer queue thread\n", direntp->d_name);
-				close(fd);
 				continue;
 			}
-			if (size != read(fd, pbuff, size)) {
+			if (read(fd.get(), pbuff, size) != size) {
 				free(pbuff);
 				printf("[exmdb_local]: fail to read information from %s "
 					"in timer queue\n", direntp->d_name);
-				close(fd);
 				continue;
 			}
 			if (FALSE == mail_retrieve(pcontext->pmail, pbuff, mess_len)) {
 				free(pbuff);
 				printf("[exmdb_local]: fail to retrieve message %s in "
 					"cache queue into mail object\n", direntp->d_name);
-				close(fd);
 				continue;
 			}
 			ptr = pbuff + mess_len;
@@ -394,14 +383,13 @@ static void *mdl_thrwork(void *arg)
 			}
 			if (FALSE == need_remove) {
 				/* rewrite type and until time */
-				lseek(fd, 0, SEEK_SET);
+				lseek(fd.get(), 0, SEEK_SET);
 				times ++;
-				if (sizeof(int) != write(fd, &times, sizeof(int))) {
+				if (write(fd.get(), &times, sizeof(int)) != sizeof(int))
 					printf("[exmdb_local]: error while updating "
 						"times\n");
-				}
 			}
-			close(fd);
+			fd.close();
 			if (need_remove && remove(temp_path.c_str()) < 0 && errno != ENOENT)
 				fprintf(stderr, "W-1432: remove %s: %s\n",
 				        temp_path.c_str(), strerror(errno));
