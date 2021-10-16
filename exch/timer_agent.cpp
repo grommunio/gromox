@@ -4,6 +4,7 @@
 #include <csignal>
 #include <cstdint>
 #include <mutex>
+#include <string>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
@@ -61,8 +62,6 @@ static BOOL svc_timer_agent(int reason, void **ppdata)
 	int i, conn_num;
     BACK_CONN *pback;
     DOUBLE_LIST_NODE *pnode;
-	char file_name[256];
-	char config_path[256], *psearch;
 	
 	switch(reason) {
 	case PLUGIN_INIT: {
@@ -70,16 +69,15 @@ static BOOL svc_timer_agent(int reason, void **ppdata)
 		g_notify_stop = true;
 		double_list_init(&g_back_list);
 		double_list_init(&g_lost_list);
-		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
-		psearch = strrchr(file_name, '.');
-		if (NULL != psearch) {
-			*psearch = '\0';
-		}
-		snprintf(config_path, GX_ARRAY_SIZE(config_path), "%s.cfg", file_name);
-		auto pfile = config_file_initd(config_path, get_config_path());
+		std::string plugname = get_plugin_name();
+		auto pos = plugname.find('.');
+		if (pos != plugname.npos)
+			plugname.erase(pos);
+		auto cfg_path = plugname + ".cfg";
+		auto pfile = config_file_initd(cfg_path.c_str(), get_config_path());
 		if (NULL == pfile) {
 			printf("[timer_agent]: config_file_initd %s: %s\n",
-			       config_path, strerror(errno));
+			       cfg_path.c_str(), strerror(errno));
 			return FALSE;
 		}
 

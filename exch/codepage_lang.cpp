@@ -2,6 +2,7 @@
 #define DECLARE_API_STATIC
 #include <cerrno>
 #include <shared_mutex>
+#include <string>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -12,6 +13,7 @@
 #include <cstdlib>
 #include <cstring>
 
+using namespace std::string_literals;
 using namespace gromox;
 
 enum {
@@ -289,17 +291,15 @@ static BOOL codepage_lang_get_lang(uint32_t codepage, const char *tag,
 
 static BOOL svc_codepage_lang(int reason, void **ppdata)
 {
-	char *psearch, tmp_path[256], file_name[256];
-
 	switch (reason) {
-	case PLUGIN_INIT:
+	case PLUGIN_INIT: {
 		LINK_API(ppdata);
-		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
-		psearch = strrchr(file_name, '.');
-		if (psearch != nullptr)
-			*psearch = '\0';
-		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s.txt", file_name);
-		if (codepage_lang_run(tmp_path, get_data_path()) != 0) {
+		std::string plugname = get_plugin_name();
+		auto pos = plugname.find('.');
+		if (pos != plugname.npos)
+			plugname.erase(pos);
+		auto txt_path = plugname + ".txt"s;
+		if (codepage_lang_run(txt_path.c_str(), get_data_path()) != 0) {
 			printf("[codepage_lang]: failed to run the module\n");
 			return false;
 		}
@@ -308,6 +308,7 @@ static BOOL svc_codepage_lang(int reason, void **ppdata)
 			return false;
 		}
 		return TRUE;
+	}
 	case PLUGIN_FREE:
 		codepage_lang_stop();
 		return TRUE;

@@ -371,74 +371,73 @@ static void str_table_echo(const char *format, ...)
 
 static BOOL svc_str_table(int reason, void **ppdata)
 {
-	char file_name[256], tmp_path[256], *psearch;
 	BOOL case_sensitive;
 	int growing_num;
 
 	switch (reason) {
 	case PLUGIN_INIT: {
 		LINK_API(ppdata);
-		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
-		psearch = strrchr(file_name, '.');
-		if (psearch != nullptr)
-			*psearch = '\0';
+		std::string plugname = get_plugin_name();
+		auto pos = plugname.find('.');
+		if (pos != plugname.npos)
+			plugname.erase(pos);
+		auto cfg_path = plugname + ".cfg"s;
 		if (!register_talk(str_table_console_talk)) {
-			printf("[%s]: failed to register console talk\n", file_name);
+			printf("[%s]: failed to register console talk\n", plugname.c_str());
 			return false;
 		}
-		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s.cfg", file_name);
-		auto pfile = config_file_initd(tmp_path, get_config_path());
+		auto pfile = config_file_initd(cfg_path.c_str(), get_config_path());
 		if (pfile == nullptr) {
-			printf("[%s]: config_file_initd %s: %s\n", file_name,
-			       tmp_path, strerror(errno));
+			printf("[%s]: config_file_initd %s: %s\n", plugname.c_str(),
+			       cfg_path.c_str(), strerror(errno));
 			return false;
 		}
 		auto str_value = pfile->get_value("QUERY_SERVICE_NAME");
-		std::string query_name = str_value != nullptr ? str_value : file_name + "_query"s;
+		std::string query_name = str_value != nullptr ? str_value : plugname + "_query"s;
 		str_value = pfile->get_value("ADD_SERVICE_NAME");
-		std::string add_name = str_value != nullptr ? str_value : file_name + "_add"s;
+		std::string add_name = str_value != nullptr ? str_value : plugname + "_add"s;
 		str_value = pfile->get_value("REMOVE_SERVICE_NAME");
-		std::string remove_name = str_value != nullptr ? str_value : file_name + "_remove"s;
+		std::string remove_name = str_value != nullptr ? str_value : plugname + "_remove"s;
 		str_value = pfile->get_value("GROWING_NUM");
 		growing_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 100;
 		if (growing_num <= 0)
 			growing_num = 100;
-		printf("[%s]: table growing number is %d\n", file_name, growing_num);
+		printf("[%s]: table growing number is %d\n", plugname.c_str(), growing_num);
 		str_value = pfile->get_value("IS_CASE_SENSITIVE");
 		if (str_value == nullptr) {
 			case_sensitive = FALSE;
-			printf("[%s]: case-insensitive\n", file_name);
+			printf("[%s]: case-insensitive\n", plugname.c_str());
 		} else {
 			if (strcasecmp(str_value, "FALSE") == 0) {
 				case_sensitive = FALSE;
-				printf("[%s]: case-insensitive\n", file_name);
+				printf("[%s]: case-insensitive\n", plugname.c_str());
 			} else if (strcasecmp(str_value, "TRUE") == 0) {
 				case_sensitive = TRUE;
-				printf("[%s]: case-sensitive\n", file_name);
+				printf("[%s]: case-sensitive\n", plugname.c_str());
 			} else {
 				case_sensitive = FALSE;
-				printf("[%s]: case-insensitive\n", file_name);
+				printf("[%s]: case-insensitive\n", plugname.c_str());
 			}
 		}
-		snprintf(tmp_path, GX_ARRAY_SIZE(tmp_path), "%s.txt", file_name);
-		str_table_init(file_name, case_sensitive, tmp_path, growing_num);
+		cfg_path = plugname + ".txt"s;
+		str_table_init(plugname.c_str(), case_sensitive, cfg_path.c_str(), growing_num);
 		if (str_table_run() != 0) {
-			printf("[%s]: failed to run the module\n", file_name);
+			printf("[%s]: failed to run the module\n", plugname.c_str());
 			return FALSE;
 		}
 		if (query_name.size() > 0 && !register_service(query_name.c_str(), str_table_query)) {
 			printf("[%s]: failed to register \"%s\" service\n",
-			       file_name, query_name.c_str());
+			       plugname.c_str(), query_name.c_str());
 			return false;
 		}
 		if (add_name.size() > 0 && !register_service(add_name.c_str(), str_table_add)) {
 			printf("[%s]: failed to register \"%s\" service\n",
-			       file_name, add_name.c_str());
+			       plugname.c_str(), add_name.c_str());
 			return false;
 		}
 		if (remove_name.size() > 0 && !register_service(remove_name.c_str(), str_table_remove)) {
 			printf("[%s]: failed to register \"%s\" service\n",
-			       file_name, remove_name.c_str());
+			       plugname.c_str(), remove_name.c_str());
 			return false;
 		}
 		return TRUE;

@@ -30,6 +30,7 @@
 #include <fcntl.h>
 #include "../mysql_adaptor/mysql_adaptor.h"
 
+using namespace std::string_literals;
 using namespace gromox;
 
 namespace {
@@ -1557,7 +1558,6 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	char maildir[256];
 	uint32_t *pproptag;
 	NSP_PROPROW *prow;
-	char temp_path[256];
 	char temp_buff[1024];
 	SINGLE_LIST *pgal_list;
 	PROPERTY_VALUE prop_val;
@@ -1628,9 +1628,15 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			result = ecError;
 			goto EXIT_GET_MATCHES;
 		}
-		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
-		         "%s/config/delegates.txt", maildir);
-		auto pfile = list_file_initd(temp_path, nullptr, dlgitem_format);
+		std::string dlg_path;
+		try {
+			dlg_path = maildir + "/config/delegates.txt"s;
+		} catch (const std::bad_alloc &) {
+			result = ecMAPIOOM;
+			fprintf(stderr, "E-1525: ENOMEM\n");
+			goto EXIT_GET_MATCHES;
+		}
+		auto pfile = list_file_initd(dlg_path.c_str(), nullptr, dlgitem_format);
 		if (NULL == pfile) {
 			result = ecSuccess;
 			goto EXIT_GET_MATCHES;
@@ -2513,6 +2519,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		0 != guid_compare(&pbase->guid, &handle.guid))) {
 		return ecError;
 	}
+	std::string dlg_path;
 	double_list_init(&tmp_list);
 	ptnode = ab_tree_minid_to_node(pbase.get(), mid);
 	if (NULL == ptnode) {
@@ -2537,8 +2544,14 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		result = ecError;
 		goto EXIT_MOD_LINKATT;
 	}
-	snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s/config/delegates.txt", maildir);
-	pfile = list_file_initd(temp_path, nullptr, dlgitem_format);
+	try {
+		dlg_path = maildir + "/config/delegates.txt"s;
+	} catch (const std::bad_alloc &) {
+		result = ecMAPIOOM;
+		fprintf(stderr, "E-1526: ENOMEM\n");
+		goto EXIT_MOD_LINKATT;
+	}
+	pfile = list_file_initd(dlg_path.c_str(), nullptr, dlgitem_format);
 	if (NULL != pfile) {
 		item_num = pfile->get_size();
 		auto pitem = static_cast<const dlgitem *>(pfile->get_list());

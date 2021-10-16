@@ -44,6 +44,7 @@
 
 #define OUT_CHANNEL_MAX_LENGTH						0x40000000
 
+using namespace std::string_literals;
 using namespace gromox;
 
 namespace {
@@ -2180,13 +2181,13 @@ BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext)
 			http_parser_log_info(pcontext, LV_DEBUG, "W-1293: vconn hash full");
 			return false;
 		}
-		char hash_key[256];
-		snprintf(hash_key, GX_ARRAY_SIZE(hash_key), "%s:%hu:%s",
-			conn_cookie, pcontext->port, pcontext->host);
-		HX_strlower(hash_key);
-		decltype(g_vconnection_hash.try_emplace(hash_key)) xp;
+		decltype(g_vconnection_hash.try_emplace(""s)) xp;
 		try {
-			xp = g_vconnection_hash.try_emplace(hash_key);
+			auto hash_key = conn_cookie + ":"s +
+			                std::to_string(pcontext->port) + ":" +
+			                pcontext->host;
+			HX_strlower(hash_key.data());
+			xp = g_vconnection_hash.try_emplace(std::move(hash_key));
 		} catch (const std::bad_alloc &) {
 			http_parser_log_info(pcontext, LV_DEBUG, "W-1292: Out of memory\n");
 			return false;

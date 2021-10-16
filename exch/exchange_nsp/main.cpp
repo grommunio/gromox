@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <string>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/guid.hpp>
@@ -56,8 +57,6 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 	void *pendpoint2;
 	int cache_interval;
 	char temp_buff[45];
-	char file_name[256];
-	char temp_path[256], *psearch;
 	DCERPC_INTERFACE interface;
 	
 	/* path contains the config files directory */
@@ -65,16 +64,15 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 	case PLUGIN_INIT: {
 		LINK_API(ppdata);
 		/* get the plugin name from system api */
-		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
-		psearch = strrchr(file_name, '.');
-		if (NULL != psearch) {
-			*psearch = '\0';
-		}
-		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s.cfg", file_name);
-		auto pfile = config_file_initd(temp_path, get_config_path());
+		std::string plugname = get_plugin_name();
+		auto pos = plugname.find('.');
+		if (pos != plugname.npos)
+			plugname.erase(pos);
+		auto cfg_path = plugname + ".cfg";
+		auto pfile = config_file_initd(cfg_path.c_str(), get_config_path());
 		if (NULL == pfile) {
 			printf("[exchange_nsp]: config_file_initd %s: %s\n",
-			       temp_path, strerror(errno));
+			       cfg_path.c_str(), strerror(errno));
 			return FALSE;
 		}
 		org_name = pfile->get_value("X500_ORG_NAME");
