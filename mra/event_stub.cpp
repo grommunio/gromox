@@ -54,8 +54,6 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 {
 	int i, conn_num;
     BACK_CONN *pback;
-	char file_name[256];
-	char config_path[256], *psearch;
 	DOUBLE_LIST_NODE *pnode;
 	
 	switch(reason) {
@@ -64,16 +62,20 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 		g_notify_stop = true;
 		g_event_stub_func = NULL;
 		double_list_init(&g_back_list);
-		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
-		psearch = strrchr(file_name, '.');
-		if (NULL != psearch) {
-			*psearch = '\0';
+		std::string plugname, filename;
+		try {
+			plugname = get_plugin_name();
+			auto pos = plugname.find('.');
+			if (pos != plugname.npos)
+				plugname.erase(pos);
+			filename = plugname + ".cfg";
+		} catch (...) {
+			return false;
 		}
-		snprintf(config_path, GX_ARRAY_SIZE(config_path), "%s.cfg", file_name);
-		auto pfile = config_file_initd(config_path, get_config_path());
+		auto pfile = config_file_initd(filename.c_str(), get_config_path());
 		if (NULL == pfile) {
 			printf("[event_stub]: config_file_initd %s: %s\n",
-			       config_path, strerror(errno));
+			       filename.c_str(), strerror(errno));
 			return FALSE;
 		}
 

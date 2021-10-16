@@ -200,9 +200,6 @@ static bool list_file_read_midb(const char *filename)
 
 static BOOL svc_midb_agent(int reason, void **ppdata)
 {
-	char *psearch;
-	char file_name[256];
-	char config_path[256];
     DOUBLE_LIST_NODE *pnode;
 
 	switch(reason) {
@@ -211,16 +208,20 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 		g_notify_stop = true;
 		double_list_init(&g_server_list);
 		double_list_init(&g_lost_list);
-		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
-		psearch = strrchr(file_name, '.');
-		if (NULL != psearch) {
-			*psearch = '\0';
+		std::string plugname, filename;
+		try {
+			plugname = get_plugin_name();
+			auto pos = plugname.find('.');
+			if (pos != plugname.npos)
+				plugname.erase(pos);
+			filename = plugname + ".cfg";
+		} catch (...) {
+			return false;
 		}
-		snprintf(config_path, GX_ARRAY_SIZE(config_path), "%s.cfg", file_name);
-		auto pconfig = config_file_initd(config_path, get_config_path());
+		auto pconfig = config_file_initd(filename.c_str(), get_config_path());
 		if (NULL == pconfig) {
 			printf("[midb_agent]: config_file_initd %s: %s\n",
-			       config_path, strerror(errno));
+			       filename.c_str(), strerror(errno));
 			return FALSE;
 		}
 		
