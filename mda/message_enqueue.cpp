@@ -12,11 +12,13 @@
 #include <csignal>
 #include <cstdio>
 #include <cstring>
+#include <string>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/flusher_common.h>
 #include <gromox/paths.h>
 #include <gromox/util.hpp>
@@ -33,6 +35,7 @@
 #define TOKEN_MESSAGE_QUEUE     1
 #define MAX_LINE_LENGTH			64*1024
 
+using namespace std::string_literals;
 using namespace gromox;
 
 enum {
@@ -127,17 +130,16 @@ static int message_enqueue_run()
  *  @param
  *      pentity [in]     indicate the mail object for cancelling
  */
-static void message_enqueue_cancel(FLUSH_ENTITY *pentity)
+static void message_enqueue_cancel(FLUSH_ENTITY *pentity) try
 {
-    char file_name[256];
-    
+	auto file_name = g_path + "/mess/"s + std::to_string(pentity->pflusher->flush_ID);
     fclose((FILE*)pentity->pflusher->flush_ptr);
     pentity->pflusher->flush_ptr = NULL;
-	snprintf(file_name, GX_ARRAY_SIZE(file_name), "%s/mess/%d",
-	         g_path, pentity->pflusher->flush_ID);
-	if (remove(file_name) < 0 && errno != ENOENT)
-		fprintf(stderr, "W-1399: remove %s: %s\n", file_name, strerror(errno));
+	if (remove(file_name.c_str()) < 0 && errno != ENOENT)
+		fprintf(stderr, "W-1399: remove %s: %s\n", file_name.c_str(), strerror(errno));
     pentity->pflusher->flush_ID = 0;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1528: ENOMEM\n");
 }
 
 static int message_enqueue_stop()
@@ -170,9 +172,8 @@ static void message_enqueue_free()
  *      TRUE                OK
  *      FALSE               fail
  */
-static BOOL message_enqueue_check()
+static BOOL message_enqueue_check() try
 {
-    char    name[256];
     struct  stat node_stat;
 
     /* check if the directory exists and is a real directory */
@@ -184,25 +185,28 @@ static BOOL message_enqueue_check()
         printf("[message_enqueue]: %s is not a directory\n", g_path);
         return FALSE;
     }
-	snprintf(name, GX_ARRAY_SIZE(name), "%s/mess", g_path);
-    if (0 != stat(name, &node_stat)) {
-        printf("[message_enqueue]: cannot find directory %s\n", name);
+	auto name = g_path + "/mess"s;
+	if (stat(name.c_str(), &node_stat) != 0) {
+		printf("[message_enqueue]: cannot find directory %s\n", name.c_str());
         return FALSE;
     }
     if (0 == S_ISDIR(node_stat.st_mode)) {
-        printf("[message_enqueue]: %s is not a directory\n", name);
+		printf("[message_enqueue]: %s is not a directory\n", name.c_str());
 		return FALSE;
     }
-	snprintf(name, GX_ARRAY_SIZE(name), "%s/save", g_path);
-    if (0 != stat(name, &node_stat)) {
-        printf("[message_enqueue]: cannot find directory %s\n", name);
+	name = g_path + "/save"s;
+	if (stat(name.c_str(), &node_stat) != 0) {
+		printf("[message_enqueue]: cannot find directory %s\n", name.c_str());
         return FALSE;
     }
     if (0 == S_ISDIR(node_stat.st_mode)) {
-        printf("[message_enqueue]: %s is not a directory\n", name);
+		printf("[message_enqueue]: %s is not a directory\n", name.c_str());
 		return FALSE;
     }
     return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1530: ENOMEM\n");
+	return false;
 }
 
 static void *meq_thrwork(void *arg)
@@ -234,7 +238,7 @@ static void *meq_thrwork(void *arg)
 
 BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 {
-	char name[256];
+	std::string name;
     char time_buff[128];
 	char tmp_buff[MAX_LINE_LENGTH + 2];
     time_t cur_time;
@@ -244,10 +248,14 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 	int j, tmp_len, smtp_type, copy_result;
 	unsigned int size;
 
+	try {
+		name = g_path + "/mess/"s + std::to_string(pentity->pflusher->flush_ID);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1529: ENOMEM\n");
+		return false;
+	}
 	if (NULL == pentity->pflusher->flush_ptr) {
-		snprintf(name, GX_ARRAY_SIZE(name), "%s/mess/%d",
-		         g_path, pentity->pflusher->flush_ID);
-        fp = fopen(name, "w");
+		fp = fopen(name.c_str(), "w");
         /* check if the file is created successfully */
         if (NULL == fp) {
             return FALSE;
@@ -354,10 +362,8 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
  REMOVE_MESS:
 	fclose(fp);
     pentity->pflusher->flush_ptr = NULL;
-	snprintf(name, GX_ARRAY_SIZE(name), "%s/mess/%d", g_path,
-	         pentity->pflusher->flush_ID);
-	if (remove(name) < 0 && errno != ENOENT)
-		fprintf(stderr, "W-1424: remove %s: %s\n", name, strerror(errno));
+	if (remove(name.c_str()) < 0 && errno != ENOENT)
+		fprintf(stderr, "W-1424: remove %s: %s\n", name.c_str(), strerror(errno));
 	return FALSE;
 }
 
@@ -366,26 +372,23 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
  *    @return
  *        >=0        the maximum ID used in queue
  */
-static int message_enqueue_retrieve_max_ID()
+static int message_enqueue_retrieve_max_ID() try
 {
-    DIR *dirp;
     struct dirent *direntp;
-    char   temp_path[256];
 	int fd, size, max_ID, temp_ID;
 
 	max_ID = 0;
 	/* get maximum flushID in mess */
-	snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s/mess", g_path);
-    dirp = opendir(temp_path);
-    while ((direntp = readdir(dirp)) != NULL) {
+	auto temp_path = g_path + "/mess"s;
+	auto dirp = opendir_sd(temp_path.c_str(), nullptr);
+	if (dirp.m_dir != nullptr) while ((direntp = readdir(dirp.m_dir.get())) != nullptr) {
 		if (strcmp(direntp->d_name, ".") == 0 ||
 		    strcmp(direntp->d_name, "..") == 0)
 			continue;
     	temp_ID = atoi(direntp->d_name);
         if (temp_ID > max_ID) {
-			snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s/mess/%s",
-			         g_path, direntp->d_name);
-			fd = open(temp_path, O_RDONLY);
+			temp_path = g_path + "/mess/"s + direntp->d_name;
+			fd = open(temp_path.c_str(), O_RDONLY);
 			if (-1 == fd) {
 				continue;
 			}
@@ -396,32 +399,37 @@ static int message_enqueue_retrieve_max_ID()
 			close(fd);
 			if (size != 0)
 				max_ID = temp_ID;
-			else if (remove(temp_path) < 0 && errno != ENOENT)
-				fprintf(stderr, "W-1421: remove %s: %s\n", temp_path, strerror(errno));
+			else if (remove(temp_path.c_str()) < 0 && errno != ENOENT)
+				fprintf(stderr, "W-1421: remove %s: %s\n", temp_path.c_str(), strerror(errno));
         } 
     }
-    closedir(dirp);
     return max_ID;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1532: ENOMEM\n");
+	return 0;
 }
 
 static BOOL flh_message_enqueue(int reason, void** ppdata)
 {
 	const char *queue_path;
-	char *psearch;
-	char file_name[256], temp_path[256];
 
 	switch (reason) {
 	case PLUGIN_INIT: {
 		LINK_API(ppdata);
-		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
-		psearch = strrchr(file_name, '.');
-		if (psearch != nullptr)
-			*psearch = '\0';
-		snprintf(temp_path, GX_ARRAY_SIZE(temp_path), "%s.cfg", file_name);
-		auto pfile = config_file_initd(temp_path, get_config_path());
+		std::string plugname, filename;
+		try {
+			plugname = get_plugin_name();
+			auto pos = plugname.find('.');
+			if (pos != plugname.npos)
+				plugname.erase(pos);
+			filename = plugname + ".cfg";
+		} catch (...) {
+			return false;
+		}
+		auto pfile = config_file_initd(filename.c_str(), get_config_path());
 		if (pfile == nullptr) {
 			printf("[message_enqueue]: config_file_initd %s: %s\n",
-				temp_path, strerror(errno));
+			       filename.c_str(), strerror(errno));
 			return false;
 		}
 		queue_path = pfile->get_value("ENQUEUE_PATH");
