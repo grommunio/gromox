@@ -114,13 +114,11 @@ int main(int argc, const char **argv)
 	char dir[256];
 	GUID tmp_guid;
 	int mysql_port;
-	int store_ratio;
 	uint16_t propid;
 	MYSQL_ROW myrow;
 	uint64_t nt_time;
 	sqlite3 *psqlite;
 	char db_name[256];
-	uint64_t max_size;
 	MYSQL_RES *pmyres;
 	char tmp_buff[256];
 	char mysql_host[256];
@@ -139,16 +137,7 @@ int main(int argc, const char **argv)
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
 		return 2;
-	auto str_value = pconfig->get_value("PUBLIC_STORE_RATIO");
-	if (NULL == str_value) {
-		store_ratio = 10;
-	} else {
-		store_ratio = atoi(str_value);
-		if (store_ratio <= 0 || store_ratio >= 1000) {
-			store_ratio = 10;
-		}
-	}
-	str_value = pconfig->get_value("MYSQL_HOST");
+	auto str_value = pconfig->get_value("MYSQL_HOST");
 	if (NULL == str_value) {
 		strcpy(mysql_host, "localhost");
 	} else {
@@ -192,7 +181,7 @@ int main(int argc, const char **argv)
 		return 3;
 	}
 	
-	sprintf(mysql_string, "SELECT max_size, homedir, domain_type, "
+	sprintf(mysql_string, "SELECT 0, homedir, domain_type, "
 		"domain_status, id FROM domains WHERE domainname='%s'", argv[1]);
 	
 	if (0 != mysql_query(pmysql, mysql_string) ||
@@ -223,10 +212,6 @@ int main(int argc, const char **argv)
 	if (domain_status != AF_DOMAIN_NORMAL)
 		printf("Warning: Domain status is not \"alive\"(0) but %lu\n", domain_status);
 	
-	max_size = atoll(myrow[0])*1024/store_ratio;
-	if (max_size > 0x7FFFFFFF) {
-		max_size = 0x7FFFFFFF;
-	}
 	gx_strlcpy(dir, myrow[1], GX_ARRAY_SIZE(dir));
 	domain_id = atoi(myrow[4]);
 	mysql_free_result(pmyres);
@@ -331,27 +316,6 @@ int main(int argc, const char **argv)
 	nt_time = rop_util_unix_to_nttime(time(NULL));
 	sqlite3_bind_int64(pstmt, 1, PR_CREATION_TIME);
 	sqlite3_bind_int64(pstmt, 2, nt_time);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return 9;
-	}
-	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PR_PROHIBIT_RECEIVE_QUOTA);
-	sqlite3_bind_int64(pstmt, 2, max_size);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return 9;
-	}
-	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PR_PROHIBIT_SEND_QUOTA);
-	sqlite3_bind_int64(pstmt, 2, max_size);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return 9;
-	}
-	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PR_STORAGE_QUOTA_LIMIT);
-	sqlite3_bind_int64(pstmt, 2, max_size);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		return 9;

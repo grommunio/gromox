@@ -67,9 +67,6 @@ Default: \fIroot\fP
 .br
 Default: \fItrue\fP
 .TP
-\fBpublic_store_ratio\fP
-Default: \fI10\fP
-.TP
 \fBtoken_file_path\fP
 Default: \fI/run/gromox/sa\fP
 .TP
