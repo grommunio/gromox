@@ -28,7 +28,7 @@ struct MESSAGE_OBJECT {
 	PROPTAG_ARRAY *get_rcpt_columns() const { return precipient_columns; }
 	BOOL read_recipients(uint32_t row_id, uint16_t need_count, TARRAY_SET *);
 	BOOL get_recipient_num(uint16_t *);
-	BOOL set_rcpts(TARRAY_SET *);
+	BOOL set_rcpts(const TARRAY_SET *);
 	BOOL empty_rcpts();
 	BOOL get_attachments_num(uint16_t *);
 	BOOL delete_attachment(uint32_t attachment_num);

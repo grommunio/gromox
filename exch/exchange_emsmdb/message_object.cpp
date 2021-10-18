@@ -769,7 +769,7 @@ BOOL MESSAGE_OBJECT::empty_rcpts()
 	return TRUE;
 }
 
-BOOL MESSAGE_OBJECT::set_rcpts(TARRAY_SET *pset)
+BOOL MESSAGE_OBJECT::set_rcpts(const TARRAY_SET *pset)
 {
 	auto pmessage = this;
 	if (!exmdb_client_update_message_instance_rcpts(pmessage->plogon->get_dir(),
