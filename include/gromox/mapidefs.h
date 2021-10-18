@@ -591,9 +591,7 @@ enum display_type {
 	DT_FOLDER = 1 << 24,
 	DT_FOLDER_LINK = 1 << 25,
 	DT_FOLDER_SPECIAL = 1 << 26,
-};
 
-enum {
 	DTE_FLAG_ACL_CAPABLE  = 1U << 30,
 	DTE_FLAG_REMOTE_VALID = 1U << 31,
 	DTE_MASK_REMOTE       = 0xFF00U,
