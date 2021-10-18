@@ -1098,7 +1098,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			return ecAccessDenied;
 		}
 		BOOL b_writable = !(tag_access & TAG_ACCESS_MODIFY) ? false : TRUE;
-		auto pmessage = message_object_create(pstore, false,
+		auto pmessage = message_object::create(pstore, false,
 		                pinfo->cpid, message_id, &folder_id, tag_access,
 		                b_writable, nullptr);
 		if (pmessage == nullptr)
@@ -1161,8 +1161,8 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 					tag_access |= TAG_ACCESS_HIERARCHY;
 			}
 		}
-		auto pfolder = folder_object_create(pstore,
-			folder_id, folder_type, tag_access);
+		auto pfolder = folder_object::create(pstore, folder_id,
+		               folder_type, tag_access);
 		if (pfolder == nullptr)
 			return ecError;
 		*phobject = pinfo->ptree->add_object_handle(hobject, ZMG_FOLDER, pfolder.get());
@@ -1199,7 +1199,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	if (0 == entryid.cb) {
 		container_id.abtree_id.base_id = base_id;
 		container_id.abtree_id.minid = 0xFFFFFFFF;
-		contobj = container_object_create(CONTAINER_TYPE_ABTREE, container_id);
+		contobj = container_object::create(CONTAINER_TYPE_ABTREE, container_id);
 		if (contobj == nullptr)
 			return ecError;
 		*pmapi_type = ZMG_ABCONT;
@@ -1280,7 +1280,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			container_id.abtree_id.base_id = base_id;
 			container_id.abtree_id.minid = minid;
 		}
-		contobj = container_object_create(type, container_id);
+		contobj = container_object::create(type, container_id);
 		pobject = contobj.get();
 		if (pobject == nullptr)
 			return ecError;
@@ -1297,7 +1297,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			base_id = -domain_id;
 		}
 		minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, user_id);
-		userobj = user_object_create(base_id, minid);
+		userobj = user_object::create(base_id, minid);
 		pobject = userobj.get();
 		if (userobj == nullptr)
 			return ecError;
@@ -1461,7 +1461,7 @@ uint32_t zarafa_server_loadstoretable(
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	auto ptable = table_object_create(nullptr, nullptr, STORE_TABLE, 0);
+	auto ptable = table_object::create(nullptr, nullptr, STORE_TABLE, 0);
 	if (ptable == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(ROOT_HANDLE, ZMG_TABLE, ptable.get());
@@ -1556,12 +1556,10 @@ uint32_t zarafa_server_loadhierarchytable(GUID hsession,
 	switch (mapi_type) {
 	case ZMG_FOLDER:
 		pstore = static_cast<FOLDER_OBJECT *>(pobject)->pstore;
-		ptable = table_object_create(pstore,
-			pobject, HIERARCHY_TABLE, flags);
+		ptable = table_object::create(pstore, pobject, HIERARCHY_TABLE, flags);
 		break;
 	case ZMG_ABCONT:
-		ptable = table_object_create(NULL,
-			pobject, CONTAINER_TABLE, flags);
+		ptable = table_object::create(nullptr, pobject, CONTAINER_TABLE, flags);
 		break;
 	default:
 		return ecNotSupported;
@@ -1600,13 +1598,11 @@ uint32_t zarafa_server_loadcontenttable(GUID hsession,
 			if (!(permission & (frightsReadAny | frightsOwner)))
 				return ecNotFound;
 		}
-		ptable = table_object_create(folder->pstore,
-		         pobject, CONTENT_TABLE, flags);
+		ptable = table_object::create(folder->pstore, pobject, CONTENT_TABLE, flags);
 		break;
 	}
 	case ZMG_ABCONT:
-		ptable = table_object_create(NULL,
-				pobject, USER_TABLE, 0);
+		ptable = table_object::create(nullptr, pobject, USER_TABLE, 0);
 		break;
 	default:
 		return ecNotSupported;
@@ -1633,8 +1629,7 @@ uint32_t zarafa_server_loadrecipienttable(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
-	auto ptable = table_object_create(pmessage->get_store(),
-	              pmessage, RECIPIENT_TABLE, 0);
+	auto ptable = table_object::create(pmessage->get_store(), pmessage, RECIPIENT_TABLE, 0);
 	if (ptable == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hmessage, ZMG_TABLE, ptable.get());
@@ -1657,7 +1652,7 @@ uint32_t zarafa_server_loadruletable(GUID hsession,
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	auto folder_id = pfolder->folder_id;
-	auto ptable = table_object_create(pfolder->pstore, &folder_id, RULE_TABLE, 0);
+	auto ptable = table_object::create(pfolder->pstore, &folder_id, RULE_TABLE, 0);
 	if (ptable == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hfolder, ZMG_TABLE, ptable.get());
@@ -1732,7 +1727,7 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	if (!exmdb_client::allocate_message_id(pstore->get_dir(),
 	    folder_id, &message_id))
 		return ecError;
-	auto pmessage = message_object_create(pstore, TRUE,
+	auto pmessage = message_object::create(pstore, TRUE,
 			pinfo->cpid, message_id, &folder_id,
 			tag_access, TRUE, NULL);
 	if (pmessage == nullptr)
@@ -2221,8 +2216,8 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 	tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
 				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
 				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
-	auto pfolder = folder_object_create(pstore,
-		folder_id, folder_type, tag_access);
+	auto pfolder = folder_object::create(pstore, folder_id,
+	               folder_type, tag_access);
 	if (pfolder == nullptr)
 		return ecError;
 	if (folder_type == FOLDER_SEARCH) {
@@ -3622,7 +3617,7 @@ uint32_t zarafa_server_loadattachmenttable(GUID hsession,
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
 	auto pstore = pmessage->get_store();
-	auto ptable = table_object_create(pstore, pmessage, ATTACHMENT_TABLE, 0);
+	auto ptable = table_object::create(pstore, pmessage, ATTACHMENT_TABLE, 0);
 	if (ptable == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hmessage, ZMG_TABLE, ptable.get());
@@ -3644,7 +3639,7 @@ uint32_t zarafa_server_openattachment(GUID hsession,
 		return ecNullObject;
 	if (mapi_type != ZMG_MESSAGE)
 		return ecNotSupported;
-	auto pattachment = attachment_object_create(pmessage, attach_id);
+	auto pattachment = attachment_object::create(pmessage, attach_id);
 	if (pattachment == nullptr)
 		return ecError;
 	if (pattachment->get_instance_id() == 0)
@@ -3670,8 +3665,7 @@ uint32_t zarafa_server_createattachment(GUID hsession,
 		return ecNotSupported;
 	if (!pmessage->check_writable())
 		return ecAccessDenied;
-	auto pattachment = attachment_object_create(
-		pmessage, ATTACHMENT_NUM_INVALID);
+	auto pattachment = attachment_object::create(pmessage, ATTACHMENT_NUM_INVALID);
 	if (pattachment == nullptr)
 		return ecError;
 	if (pattachment->get_attachment_num() == ATTACHMENT_NUM_INVALID)
@@ -3968,9 +3962,8 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 	auto tag_access = pattachment->get_tag_access();
 	if ((flags & FLAG_CREATE) && !b_writable)
 		return ecAccessDenied;
-	auto pmessage = message_object_create(pstore,
-		FALSE, pinfo->cpid, 0, pattachment,
-		tag_access, b_writable, NULL);
+	auto pmessage = message_object::create(pstore, false, pinfo->cpid, 0,
+	                pattachment, tag_access, b_writable, nullptr);
 	if (pmessage == nullptr)
 		return ecError;
 	if (pmessage->get_instance_id() == 0) {
@@ -3979,9 +3972,8 @@ uint32_t zarafa_server_openembedded(GUID hsession,
 		}
 		if (!b_writable)
 			return ecAccessDenied;
-		pmessage = message_object_create(pstore, TRUE,
-			pinfo->cpid, 0, pattachment, tag_access,
-			TRUE, NULL);
+		pmessage = message_object::create(pstore, TRUE, pinfo->cpid, 0,
+		           pattachment, tag_access, TRUE, nullptr);
 		if (pmessage == nullptr)
 			return ecError;
 		if (!pmessage->init_message(false, pinfo->cpid))
@@ -4213,7 +4205,7 @@ uint32_t zarafa_server_hierarchysync(GUID hsession,
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
 	if (hstore == INVALID_HANDLE)
 		return ecNullObject;
-	auto pctx = icsdownctx_object_create(pfolder, SYNC_TYPE_HIERARCHY);
+	auto pctx = icsdownctx_object::create(pfolder, SYNC_TYPE_HIERARCHY);
 	if (pctx == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hstore, ZMG_ICSDOWNCTX, pctx.get());
@@ -4239,7 +4231,7 @@ uint32_t zarafa_server_contentsync(GUID hsession,
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
 	if (hstore == INVALID_HANDLE)
 		return ecNullObject;
-	auto pctx = icsdownctx_object_create(pfolder, SYNC_TYPE_CONTENTS);
+	auto pctx = icsdownctx_object::create(pfolder, SYNC_TYPE_CONTENTS);
 	if (pctx == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hstore, ZMG_ICSDOWNCTX, pctx.get());
@@ -4377,7 +4369,7 @@ uint32_t zarafa_server_hierarchyimport(GUID hsession,
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
 	if (hstore == INVALID_HANDLE)
 		return ecNullObject;
-	auto pctx = icsupctx_object_create(pfolder, SYNC_TYPE_HIERARCHY);
+	auto pctx = icsupctx_object::create(pfolder, SYNC_TYPE_HIERARCHY);
 	if (pctx == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hstore, ZMG_ICSUPCTX, pctx.get());
@@ -4403,7 +4395,7 @@ uint32_t zarafa_server_contentimport(GUID hsession,
 	auto hstore = pinfo->ptree->get_store_handle(pstore->b_private, pstore->account_id);
 	if (hstore == INVALID_HANDLE)
 		return ecNullObject;
-	auto pctx = icsupctx_object_create(pfolder, SYNC_TYPE_CONTENTS);
+	auto pctx = icsupctx_object::create(pfolder, SYNC_TYPE_CONTENTS);
 	if (pctx == nullptr)
 		return ecError;
 	*phobject = pinfo->ptree->add_object_handle(hstore, ZMG_ICSUPCTX, pctx.get());
@@ -4555,9 +4547,9 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 		    folder_id, &message_id))
 			return ecError;
 	}
-	auto pmessage = message_object_create(pstore, b_new,
-		pinfo->cpid, message_id, &folder_id, tag_access,
-		OPEN_MODE_FLAG_READWRITE, pctx->pstate);
+	auto pmessage = message_object::create(pstore, b_new, pinfo->cpid,
+	                message_id, &folder_id, tag_access,
+	                OPEN_MODE_FLAG_READWRITE, pctx->pstate);
 	if (pmessage == nullptr)
 		return ecError;
 	if (b_new && !pmessage->init_message(b_fai, pinfo->cpid))

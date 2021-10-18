@@ -19,7 +19,12 @@ union CONTAINER_ID {
 };
 
 struct CONTAINER_OBJECT {
+	protected:
+	CONTAINER_OBJECT() = default;
+
+	public:
 	~CONTAINER_OBJECT() { clear(); }
+	static std::unique_ptr<CONTAINER_OBJECT> create(uint8_t type, CONTAINER_ID);
 	BOOL fetch_special_property(uint8_t special_type, uint32_t proptag, void **out);
 	void clear();
 	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
@@ -36,10 +41,10 @@ struct CONTAINER_OBJECT {
 		LONG_ARRAY *pminid_array;
 	} contents{};
 };
+using container_object = CONTAINER_OBJECT;
 
 BOOL container_object_fetch_special_property(
 	uint8_t special_type, uint32_t proptag, void **ppvalue);
-extern std::unique_ptr<CONTAINER_OBJECT> container_object_create(uint8_t type, CONTAINER_ID);
 void container_object_get_container_table_all_proptags(
 	PROPTAG_ARRAY *pproptags);
 void container_object_get_user_table_all_proptags(

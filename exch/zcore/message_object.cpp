@@ -36,7 +36,7 @@ BOOL MESSAGE_OBJECT::get_recipient_all_proptags(PROPTAG_ARRAY *pproptags)
 	       pmessage->pstore->get_dir(), pmessage->instance_id, pproptags);
 }
 
-std::unique_ptr<MESSAGE_OBJECT> message_object_create(STORE_OBJECT *pstore,
+std::unique_ptr<message_object> message_object::create(store_object *pstore,
 	BOOL b_new, uint32_t cpid, uint64_t message_id,
 	void *pparent, uint32_t tag_access, BOOL b_writable,
 	ICS_STATE *pstate)
@@ -44,7 +44,7 @@ std::unique_ptr<MESSAGE_OBJECT> message_object_create(STORE_OBJECT *pstore,
 	uint64_t *pchange_num;
 	std::unique_ptr<MESSAGE_OBJECT> pmessage;
 	try {
-		pmessage = std::make_unique<MESSAGE_OBJECT>();
+		pmessage.reset(new message_object);
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}

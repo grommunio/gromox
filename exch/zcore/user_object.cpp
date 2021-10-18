@@ -8,11 +8,11 @@
 #include "ab_tree.h"
 #include <cstdio>
 
-std::unique_ptr<USER_OBJECT> user_object_create(int base_id, uint32_t minid)
+std::unique_ptr<user_object> user_object::create(int base_id, uint32_t minid)
 {
 	std::unique_ptr<USER_OBJECT> puser;
 	try {
-		puser = std::make_unique<USER_OBJECT>();
+		puser.reset(new user_object);
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}

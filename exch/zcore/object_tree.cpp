@@ -480,7 +480,7 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 		pdomain ++;
 		gx_strlcpy(account, pdomain, GX_ARRAY_SIZE(account));
 	}
-	auto pstore = store_object_create(b_private, account_id, account, dir);
+	auto pstore = store_object::create(b_private, account_id, account, dir);
 	if (NULL == pstore) {
 		return INVALID_HANDLE;
 	}

@@ -26,12 +26,12 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-std::unique_ptr<FOLDER_OBJECT> folder_object_create(STORE_OBJECT *pstore,
+std::unique_ptr<folder_object> folder_object::create(store_object *pstore,
 	uint64_t folder_id, uint8_t type, uint32_t tag_access)
 {
 	std::unique_ptr<FOLDER_OBJECT> pfolder;
 	try {
-		pfolder = std::make_unique<FOLDER_OBJECT>();
+		pfolder.reset(new folder_object);
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}

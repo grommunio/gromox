@@ -6,6 +6,11 @@
 struct STORE_OBJECT;
 
 struct FOLDER_OBJECT {
+	protected:
+	FOLDER_OBJECT() = default;
+
+	public:
+	static std::unique_ptr<FOLDER_OBJECT> create(STORE_OBJECT *, uint64_t folder_id, uint8_t type, uint32_t tag_access);
 	BOOL get_all_proptags(PROPTAG_ARRAY *);
 	BOOL check_readonly_property(uint32_t proptag) const;
 	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
@@ -20,5 +25,4 @@ struct FOLDER_OBJECT {
 	uint8_t type = 0;
 	uint32_t tag_access = 0;
 };
-
-extern std::unique_ptr<FOLDER_OBJECT> folder_object_create(STORE_OBJECT *, uint64_t folder_id, uint8_t type, uint32_t tag_access);
+using folder_object = FOLDER_OBJECT;

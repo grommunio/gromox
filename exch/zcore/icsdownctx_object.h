@@ -8,7 +8,12 @@ struct ICS_STATE;
 struct STORE_OBJECT;
 
 struct ICSDOWNCTX_OBJECT final {
+	protected:
+	ICSDOWNCTX_OBJECT() = default;
+
+	public:
 	~ICSDOWNCTX_OBJECT();
+	static std::unique_ptr<ICSDOWNCTX_OBJECT> create(FOLDER_OBJECT *, uint8_t sync_type);
 	uint8_t get_type() const { return sync_type; }
 	BOOL make_content(const BINARY *state, const RESTRICTION *, uint16_t sync_flags, BOOL *changed, uint32_t *msg_count);
 	BOOL make_hierarchy(const BINARY *state, uint16_t sync_flags, BOOL *changed, uint32_t *fld_count);
@@ -30,5 +35,4 @@ struct ICSDOWNCTX_OBJECT final {
 	EID_ARRAY *punread_messags = nullptr;
 	uint32_t eid_pos = 0;
 };
-
-extern std::unique_ptr<ICSDOWNCTX_OBJECT> icsdownctx_object_create(FOLDER_OBJECT *, uint8_t sync_type);
+using icsdownctx_object = ICSDOWNCTX_OBJECT;

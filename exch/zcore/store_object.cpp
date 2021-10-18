@@ -157,7 +157,7 @@ static BOOL store_object_cache_propname(STORE_OBJECT *pstore,
 	return TRUE;
 }
 
-std::unique_ptr<STORE_OBJECT> store_object_create(BOOL b_private,
+std::unique_ptr<store_object> store_object::create(BOOL b_private,
 	int account_id, const char *account, const char *dir)
 {
 	void *pvalue;
@@ -179,7 +179,7 @@ std::unique_ptr<STORE_OBJECT> store_object_create(BOOL b_private,
 	}
 	std::unique_ptr<STORE_OBJECT> pstore;
 	try {
-		pstore = std::make_unique<STORE_OBJECT>();
+		pstore.reset(new store_object);
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}

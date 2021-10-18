@@ -18,12 +18,12 @@
 #include "ics_state.h"
 #include "store_object.h"
 
-std::unique_ptr<ICSDOWNCTX_OBJECT> icsdownctx_object_create(
-	FOLDER_OBJECT *pfolder, uint8_t sync_type)
+std::unique_ptr<icsdownctx_object>
+icsdownctx_object::create(folder_object *pfolder, uint8_t sync_type)
 {
 	std::unique_ptr<ICSDOWNCTX_OBJECT> pctx;
 	try {
-		pctx = std::make_unique<ICSDOWNCTX_OBJECT>();
+		pctx.reset(new icsdownctx_object);
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}

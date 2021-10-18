@@ -700,12 +700,12 @@ uint32_t TABLE_OBJECT::get_total()
 	return total_rows;
 }
 
-std::unique_ptr<TABLE_OBJECT> table_object_create(STORE_OBJECT *pstore,
+std::unique_ptr<table_object> table_object::create(store_object *pstore,
 	void *pparent_obj, uint8_t table_type, uint32_t table_flags)
 {
 	std::unique_ptr<TABLE_OBJECT> ptable;
 	try {
-		ptable = std::make_unique<TABLE_OBJECT>();
+		ptable.reset(new table_object);
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}

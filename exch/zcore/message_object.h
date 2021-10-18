@@ -12,7 +12,12 @@ struct MESSAGE_CONTENT;
 struct STORE_OBJECT;
 
 struct MESSAGE_OBJECT {
+	protected:
+	MESSAGE_OBJECT() = default;
+
+	public:
 	~MESSAGE_OBJECT();
+	static std::unique_ptr<MESSAGE_OBJECT> create(STORE_OBJECT *, BOOL b_new, uint32_t cpid, uint64_t message_id, void *parent, uint32_t tag_access, BOOL b_writable, ICS_STATE *);
 	uint32_t get_instance_id() const { return instance_id; }
 	BOOL check_orignal_touched(BOOL *touched);
 	BOOL check_importing() const { return message_id != 0 && pstate != nullptr ? TRUE : false; }
@@ -51,5 +56,4 @@ struct MESSAGE_OBJECT {
 	ICS_STATE *pstate = nullptr;
 	PROPTAG_ARRAY *pchanged_proptags = nullptr, *premoved_proptags = nullptr;
 };
-
-extern std::unique_ptr<MESSAGE_OBJECT> message_object_create(STORE_OBJECT *, BOOL b_new, uint32_t cpid, uint64_t message_id, void *parent, uint32_t tag_access, BOOL b_writable, ICS_STATE *);
+using message_object = MESSAGE_OBJECT;

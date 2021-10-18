@@ -21,12 +21,12 @@
 #include <gromox/propval.hpp>
 #include <cstdio>
 
-std::unique_ptr<CONTAINER_OBJECT> container_object_create(
-	uint8_t type, CONTAINER_ID id)
+std::unique_ptr<container_object>
+container_object::create(uint8_t type, CONTAINER_ID id)
 {
 	std::unique_ptr<CONTAINER_OBJECT> pcontainer;
 	try {
-		pcontainer = std::make_unique<CONTAINER_OBJECT>();
+		pcontainer.reset(new container_object);
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}

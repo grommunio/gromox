@@ -17,7 +17,12 @@ enum zcore_table_type {
 struct STORE_OBJECT;
 
 struct TABLE_OBJECT {
+	protected:
+	TABLE_OBJECT() = default;
+
+	public:
 	~TABLE_OBJECT();
+	static std::unique_ptr<TABLE_OBJECT> create(STORE_OBJECT *, void *parent, uint8_t table_type, uint32_t table_flags);
 	const PROPTAG_ARRAY *get_columns() const { return pcolumns; }
 	BOOL set_columns(const PROPTAG_ARRAY *);
 	BOOL set_sorts(const SORTORDER_SET *);
@@ -49,5 +54,4 @@ struct TABLE_OBJECT {
 	uint32_t position = 0, table_id = 0, bookmark_index = 0;
 	DOUBLE_LIST bookmark_list{};
 };
-
-extern std::unique_ptr<TABLE_OBJECT> table_object_create(STORE_OBJECT *, void *parent, uint8_t table_type, uint32_t table_flags);
+using table_object = TABLE_OBJECT;
