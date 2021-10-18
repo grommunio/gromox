@@ -1282,17 +1282,16 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 	RECIPIENT_ROW *prow, const PROPTAG_ARRAY *pcolumns,
 	TPROPVAL_ARRAY *ppropvals)
 {
-	uint8_t fake_true = 1;
-	uint8_t fake_false = 0;
+	static constexpr uint8_t persist_true = true, persist_false = false;
 	TAGGED_PROPVAL propval;
 	PROPTAG_ARRAY tmp_columns;
 	BOOL b_unicode = (prow->flags & RECIPIENT_ROW_FLAG_UNICODE) ? TRUE : false;
 	
 	propval.proptag = PROP_TAG_RESPONSIBILITY;
-	propval.pvalue = (prow->flags & RECIPIENT_ROW_FLAG_RESPONSIBLE) ? &fake_true : &fake_false;
+	propval.pvalue = deconst((prow->flags & RECIPIENT_ROW_FLAG_RESPONSIBLE) ? &persist_true : &persist_false);
 	common_util_set_propvals(ppropvals, &propval);
 	propval.proptag = PROP_TAG_SENDRICHINFO;
-	propval.pvalue = (prow->flags & RECIPIENT_ROW_FLAG_NONRICH) ? &fake_true : &fake_false;
+	propval.pvalue = deconst((prow->flags & RECIPIENT_ROW_FLAG_NONRICH) ? &persist_true : &persist_false);
 	common_util_set_propvals(ppropvals, &propval);
 	if (NULL != prow->ptransmittable_name) {
 		propval.proptag = PROP_TAG_TRANSMITTABLEDISPLAYNAME;

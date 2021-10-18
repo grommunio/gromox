@@ -3243,6 +3243,7 @@ uint32_t zarafa_server_getreceivefolder(GUID hsession,
 uint32_t zarafa_server_modifyrecipients(GUID hsession,
 	uint32_t hmessage, uint32_t flags, const TARRAY_SET *prcpt_list)
 {
+	static constexpr uint8_t persist_true = true, persist_false = false;
 	BOOL b_found;
 	BINARY *pbin;
 	uint32_t *prowid;
@@ -3253,8 +3254,6 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 	uint8_t tmp_uid[16];
 	uint32_t last_rowid;
 	TPROPVAL_ARRAY *prcpt;
-	uint8_t fake_true = 1;
-	uint8_t fake_false = 0;
 	uint8_t provider_uid[16];
 	TAGGED_PROPVAL *ppropval;
 	TAGGED_PROPVAL tmp_propval;
@@ -3407,7 +3406,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 					return ecError;
 				common_util_set_propvals(prcpt, &tmp_propval);
 				tmp_propval.proptag = PROP_TAG_SENDRICHINFO;
-				tmp_propval.pvalue = (oneoff_entry.ctrl_flags & CTRL_FLAG_NORICH) ? &fake_false : &fake_true;
+				tmp_propval.pvalue = deconst((oneoff_entry.ctrl_flags & CTRL_FLAG_NORICH) ? &persist_false : &persist_true);
 				common_util_set_propvals(prcpt, &tmp_propval);
 			}
 		}
