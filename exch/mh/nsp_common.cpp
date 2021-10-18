@@ -1,3 +1,4 @@
+#include <cstring>
 #include <gromox/hpm_common.h>
 #include "nsp_common.hpp"
 

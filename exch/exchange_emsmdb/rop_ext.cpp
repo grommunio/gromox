@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <cstring>
 #include <gromox/defs.h>
 #include "emsmdb_interface.h"
 #include "rop_processor.h"

@@ -3,6 +3,7 @@
  *	  mem file is actually like the file in disk, but mem file get blocks form
  *	  memory, it is virtual file. Caution: Not thread-safe.
  */
+#include <cstring>
 #include <gromox/mem_file.hpp>
 #include <gromox/util.hpp>
 

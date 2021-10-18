@@ -5,6 +5,7 @@
  *	memory every time you call deque, unless the fifo is empty.
  *
  */
+#include <cstring>
 #include <gromox/fifo.hpp>
 #include <gromox/util.hpp>
 

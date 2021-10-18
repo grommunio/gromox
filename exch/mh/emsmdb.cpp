@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <algorithm>
 #include <csignal>
+#include <cstring>
 #include <ctime>
 #include <memory>
 #include <mutex>

@@ -2,6 +2,7 @@
 /* 
  *	  stream is specified for smtp protocol
  */
+#include <cstring>
 #include <gromox/common_types.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>

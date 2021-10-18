@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <climits>
 #include <cstdint>
+#include <cstring>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "rops.h"

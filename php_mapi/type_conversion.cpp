@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <libHX/defs.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
