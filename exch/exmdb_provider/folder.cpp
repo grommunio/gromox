@@ -2525,7 +2525,7 @@ BOOL exmdb_server_empty_folder_permission(
 }
 
 static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
-    bool b_freebusy, uint64_t fid_val, sqlite3_stmt *pstmt)
+    bool b_freebusy, uint64_t fid_val, xstmt &pstmt)
 {
 	auto pvalue = common_util_get_propvals(&propvals, PR_ENTRYID);
 	char username[UADDR_SIZE];
