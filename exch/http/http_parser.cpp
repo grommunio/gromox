@@ -1194,11 +1194,12 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 	} else {
 		tmp_len = STREAM_BLOCK_SIZE;
 		pcontext->write_buff = stream_getbuffer_for_reading(&pcontext->stream_out, &tmp_len);
+		// if write_buff is nullptr, then tmp_len was set to 0
 	}
 
 	/* if context is set to write response state, there's
-		always data in stream_out. so we did not check
-		wether pcontext->write_buff pointer is NULL */
+	 * always data in stream_out. so we did not check
+	 * whether pcontext->write_buff pointer is NULL. */
 	pcontext->write_length = tmp_len;
 	return X_RUNOFF;
 }
@@ -1211,7 +1212,9 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 			return ret;
 	}
 
-	ssize_t written_len = pcontext->write_length - pcontext->write_offset;
+	ssize_t written_len = pcontext->write_length - pcontext->write_offset; /*int-int*/
+	if (written_len < 0)
+		fprintf(stderr, "W-1533: wl=%zd. report me.\n", written_len);
 	if (CHANNEL_TYPE_OUT == pcontext->channel_type &&
 	    static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel)->channel_stat == CHANNEL_STAT_OPENED) {
 		auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
@@ -1222,19 +1225,23 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 			written_len = pchannel_out->available_window;
 		}
 	}
-	if (g_http_debug)
+	if (pcontext->write_buff == nullptr && written_len > 0)
+		fprintf(stderr, "W-1534: wl=%zd. report me.\n", written_len);
+	if (g_http_debug) {
+		auto s = static_cast<const char *>(pcontext->write_buff);
 		fprintf(stderr, ">> ctx %p send %zd\n%.*s\n>>-EOP\n", pcontext,
-		        written_len, (int)written_len,
-		        static_cast<const char *>(pcontext->write_buff));
-	if (NULL != pcontext->connection.ssl) {
+		        written_len, (int)written_len, s != nullptr ? s : "");
+	}
+	if (pcontext->write_buff == nullptr)
+		written_len = 0;
+	else if (pcontext->connection.ssl != nullptr)
 		written_len = SSL_write(pcontext->connection.ssl,
 			      reinterpret_cast<char *>(pcontext->write_buff) + pcontext->write_offset,
 			written_len);
-	} else {
+	else if (pcontext->write_buff != nullptr)
 		written_len = write(pcontext->connection.sockd,
 			      reinterpret_cast<char *>(pcontext->write_buff) + pcontext->write_offset,
 			written_len);
-	}
 
 	struct timeval current_time;
 	gettimeofday(&current_time, NULL);
