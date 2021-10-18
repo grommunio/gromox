@@ -378,7 +378,7 @@ static void *mdpeng_scanwork(void *param)
 		std::erase_if(g_hash_table, [=](const auto &it) { return remove_from_hash(it, now_time); });
 #else
 		for (auto it = g_hash_table.begin(); it != g_hash_table.end(); ) {
-			if (remove_from_hash(it, now_time))
+			if (remove_from_hash(*it, now_time))
 				it = g_hash_table.erase(it);
 			else
 				++it;
