@@ -573,7 +573,7 @@ gxerr_t MESSAGE_OBJECT::save()
 	gxerr_t e_result = GXERR_CALL_FAILED;
 	if (!exmdb_client_flush_instance(pmessage->plogon->get_dir(),
 	    pmessage->instance_id, pmessage->plogon->get_account(),
-	    &e_result) || e_result != GXERR_CALL_FAILED)
+	    &e_result) || e_result != GXERR_SUCCESS)
 		return e_result;
 	auto is_new = pmessage->b_new;
 	pmessage->b_new = FALSE;
