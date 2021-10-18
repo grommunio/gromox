@@ -82,7 +82,7 @@ static uint32_t message_object_rectify_proptag(uint32_t proptag)
 	return proptag;
 }
 
-std::unique_ptr<MESSAGE_OBJECT> message_object_create(LOGON_OBJECT *plogon,
+std::unique_ptr<message_object> message_object::create(logon_object *plogon,
 	BOOL b_new, uint32_t cpid, uint64_t message_id, void *pparent,
 	uint32_t tag_access, uint8_t open_flags, ICS_STATE *pstate)
 {
@@ -91,7 +91,7 @@ std::unique_ptr<MESSAGE_OBJECT> message_object_create(LOGON_OBJECT *plogon,
 	std::unique_ptr<MESSAGE_OBJECT> pmessage;
 	
 	try {
-		pmessage = std::make_unique<MESSAGE_OBJECT>();
+		pmessage.reset(new message_object);
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}

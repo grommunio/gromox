@@ -28,12 +28,12 @@ ICS_STATE::~ICS_STATE()
 	}
 }
 
-std::unique_ptr<ICS_STATE> ics_state_create(LOGON_OBJECT *plogon, int type)
+std::unique_ptr<ics_state> ics_state::create(LOGON_OBJECT *plogon, int type)
 {
 	std::unique_ptr<ICS_STATE> pstate;
 	BINARY tmp_bin;
 	try {
-		pstate = std::make_unique<ICS_STATE>();
+		pstate.reset(new ics_state);
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}

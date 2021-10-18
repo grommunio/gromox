@@ -91,7 +91,7 @@ uint32_t rop_getpermissionstable(uint8_t flags,
 		if (!(permission & (frightsOwner | frightsVisible)))
 			return ecAccessDenied;
 	}
-	auto ptable = table_object_create(plogon, pfolder, flags,
+	auto ptable = table_object::create(plogon, pfolder, flags,
 	              ropGetPermissionsTable, logon_id);
 	if (NULL == ptable) {
 		return ecMAPIOOM;

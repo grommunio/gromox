@@ -6,18 +6,17 @@
 #include <gromox/idset.hpp>
 #include <cstdlib>
 
-std::unique_ptr<ICSUPCTX_OBJECT> icsupctx_object_create(
-	LOGON_OBJECT *plogon, FOLDER_OBJECT *pfolder,
-	uint8_t sync_type)
+std::unique_ptr<icsupctx_object> icsupctx_object::create(LOGON_OBJECT *plogon,
+    FOLDER_OBJECT *pfolder, uint8_t sync_type)
 {
 	int state_type = sync_type == SYNC_TYPE_CONTENTS ? ICS_STATE_CONTENTS_UP : ICS_STATE_HIERARCHY_UP;
 	std::unique_ptr<ICSUPCTX_OBJECT> pctx;
 	try {
-		pctx = std::make_unique<ICSUPCTX_OBJECT>();
+		pctx.reset(new icsupctx_object);
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
-	pctx->pstate = ics_state_create(plogon, state_type);
+	pctx->pstate = ics_state::create(plogon, state_type);
 	if (NULL == pctx->pstate) {
 		return NULL;
 	}

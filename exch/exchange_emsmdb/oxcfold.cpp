@@ -118,8 +118,7 @@ uint32_t rop_openfolder(uint64_t folder_id,
 	    PROP_TAG_HASRULES, &pvalue))
 		return ecError;
 	*phas_rules = pvalue == nullptr ? 0 : *static_cast<uint8_t *>(pvalue);
-	auto pfolder = folder_object_create(plogon,
-			folder_id, type, tag_access);
+	auto pfolder = folder_object::create(plogon, folder_id, type, tag_access);
 	if (NULL == pfolder) {
 		return ecMAPIOOM;
 	}
@@ -286,8 +285,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
 				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
 				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
-	auto pfolder = folder_object_create(plogon,
-		folder_id, folder_type, tag_access);
+	auto pfolder = folder_object::create(plogon, folder_id, folder_type, tag_access);
 	if (NULL == pfolder) {
 		return ecMAPIOOM;
 	}
@@ -1010,7 +1008,7 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 	if (!exmdb_client_sum_hierarchy(plogon->get_dir(), pfolder->folder_id,
 	    username, b_depth, prow_count))
 		return ecError;
-	auto ptable = table_object_create(plogon, pfolder, table_flags,
+	auto ptable = table_object::create(plogon, pfolder, table_flags,
 	              ropGetHierarchyTable, logon_id);
 	if (NULL == ptable) {
 		return ecMAPIOOM;
@@ -1084,7 +1082,7 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 	} else {
 		*prow_count = 1; /* arbitrary value */
 	}
-	auto ptable = table_object_create(plogon, pfolder, table_flags,
+	auto ptable = table_object::create(plogon, pfolder, table_flags,
 	              ropGetContentsTable, logon_id);
 	if (NULL == ptable) {
 		return ecMAPIOOM;

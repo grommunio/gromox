@@ -21,7 +21,12 @@ struct PROGRESS_INFORMATION;
 struct PROGRESS_MESSAGE;
 
 struct FTSTREAM_PRODUCER {
+	protected:
+	FTSTREAM_PRODUCER() = default;
+
+	public:
 	~FTSTREAM_PRODUCER();
+	static std::unique_ptr<FTSTREAM_PRODUCER> create(LOGON_OBJECT *, uint8_t string_option);
 	inline int total_length() const { return offset; }
 	BOOL read_buffer(void *buf, uint16_t *len, BOOL *last);
 	BOOL write_uint32(uint32_t);
@@ -49,5 +54,3 @@ struct FTSTREAM_PRODUCER {
 	BOOL b_read = false;
 };
 using ftstream_producer = FTSTREAM_PRODUCER;
-
-extern std::unique_ptr<FTSTREAM_PRODUCER> ftstream_producer_create(LOGON_OBJECT *, uint8_t string_option);

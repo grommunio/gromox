@@ -34,12 +34,12 @@ struct MARKER_NODE {
 
 }
 
-std::unique_ptr<FASTUPCTX_OBJECT> fastupctx_object_create(
-	LOGON_OBJECT *plogon, void *pobject, int root_element)
+std::unique_ptr<fastupctx_object> fastupctx_object::create(logon_object *plogon,
+    void *pobject, int root_element)
 {
 	std::unique_ptr<FASTUPCTX_OBJECT> pctx;
 	try {
-		pctx = std::make_unique<FASTUPCTX_OBJECT>();
+		pctx.reset(new fastupctx_object);
 	} catch (const std::bad_alloc &) {
 		fprintf(stderr, "E-1451: ENOMEM\n");
 		return NULL;
@@ -47,7 +47,7 @@ std::unique_ptr<FASTUPCTX_OBJECT> fastupctx_object_create(
 	pctx->pobject = pobject;
 	pctx->b_ended = FALSE;
 	pctx->root_element = root_element;
-	pctx->pstream = ftstream_parser_create(plogon);
+	pctx->pstream = ftstream_parser::create(plogon);
 	if (NULL == pctx->pstream) {
 		return NULL;
 	}

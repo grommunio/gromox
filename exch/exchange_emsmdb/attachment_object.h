@@ -10,7 +10,12 @@ struct STREAM_OBJECT;
 /* MESSAGE_OBJECT and ATTACHMENT_OBJECT are friend classes,
 	so they can operate internal variables of each other */
 struct ATTACHMENT_OBJECT {
+	protected:
+	ATTACHMENT_OBJECT() = default;
+
+	public:
 	~ATTACHMENT_OBJECT();
+	static std::unique_ptr<ATTACHMENT_OBJECT> create(MESSAGE_OBJECT *parent, uint32_t at_num, uint8_t open_flags);
 	uint32_t get_instance_id() const { return instance_id; }
 	BOOL init_attachment();
 	uint32_t get_attachment_num() const { return attachment_num; }
@@ -35,5 +40,4 @@ struct ATTACHMENT_OBJECT {
 	uint8_t open_flags = 0;
 	DOUBLE_LIST stream_list{};
 };
-
-extern std::unique_ptr<ATTACHMENT_OBJECT> attachment_object_create(MESSAGE_OBJECT *parent, uint32_t at_num, uint8_t open_flags);
+using attachment_object = ATTACHMENT_OBJECT;

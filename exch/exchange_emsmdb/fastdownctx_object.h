@@ -11,7 +11,12 @@ struct LOGON_OBJECT;
 struct MESSAGE_CONTENT;
 
 struct FASTDOWNCTX_OBJECT final {
+	protected:
+	FASTDOWNCTX_OBJECT() = default;
+
+	public:
 	~FASTDOWNCTX_OBJECT();
+	static std::unique_ptr<FASTDOWNCTX_OBJECT> create(LOGON_OBJECT *, uint8_t string_option);
 	/* make_xxx function can be invoked only once on the object */
 	BOOL make_messagecontent(MESSAGE_CONTENT *);
 	BOOL make_attachmentcontent(ATTACHMENT_CONTENT *);
@@ -28,5 +33,4 @@ struct FASTDOWNCTX_OBJECT final {
 	DOUBLE_LIST flow_list{};
 	uint32_t total_steps = 0, progress_steps = 0;
 };
-
-extern std::unique_ptr<FASTDOWNCTX_OBJECT> fastdownctx_object_create(LOGON_OBJECT *, uint8_t string_option);
+using fastdownctx_object = FASTDOWNCTX_OBJECT;

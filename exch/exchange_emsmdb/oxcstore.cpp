@@ -137,8 +137,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	*pgwart_time = rop_util_unix_to_nttime(cur_time);
 	
 	*pstore_stat = 0;
-	
-	auto plogon = logon_object_create(logon_flags, open_flags, logon_mode,
+	auto plogon = logon_object::create(logon_flags, open_flags, logon_mode,
 	              user_id, username, maildir, *pmailbox_guid);
 	if (NULL == plogon) {
 		return ecMAPIOOM;
@@ -239,7 +238,7 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 		return ecError;
 	}
 	mailbox_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
-	auto plogon = logon_object_create(logon_flags, open_flags,
+	auto plogon = logon_object::create(logon_flags, open_flags,
 	              LOGON_MODE_GUEST, domain_id, pdomain, homedir, mailbox_guid);
 	if (NULL == plogon) {
 		return ecMAPIOOM;

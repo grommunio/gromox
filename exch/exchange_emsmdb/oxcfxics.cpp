@@ -296,7 +296,7 @@ uint32_t rop_fasttransferdestconfigure(
 			return ecQuotaExceeded;
 		}
 	}
-	auto pctx = fastupctx_object_create(plogon, pobject, root_element);
+	auto pctx = fastupctx_object::create(plogon, pobject, root_element);
 	if (NULL == pctx) {
 		return ecError;
 	}
@@ -436,7 +436,7 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags,
 	if (NULL == pfldctnt) {
 		return ecError;
 	}
-	auto pctx = fastdownctx_object_create(plogon, send_options & 0x0F);
+	auto pctx = fastdownctx_object::create(plogon, send_options & 0x0F);
 	if (NULL == pctx) {
 		return ecError;
 	}
@@ -513,7 +513,7 @@ uint32_t rop_fasttransfersourcecopymessages(
 		return ecMAPIOOM;
 	}
 	BOOL b_chginfo = (flags & FAST_COPY_MESSAGE_FLAG_SENDENTRYID) ? TRUE : false;
-	auto pctx = fastdownctx_object_create(plogon, send_options & 0x0F);
+	auto pctx = fastdownctx_object::create(plogon, send_options & 0x0F);
 	if (NULL == pctx) {
 		eid_array_free(pmids);
 		return ecError;
@@ -575,7 +575,7 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		OBJECT_TYPE_ATTACHMENT != object_type) {
 		return ecNotSupported;
 	}
-	auto pctx = fastdownctx_object_create(plogon, send_options & 0x0F);
+	auto pctx = fastdownctx_object::create(plogon, send_options & 0x0F);
 	if (NULL == pctx) {
 		return ecError;
 	}
@@ -718,7 +718,7 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		OBJECT_TYPE_ATTACHMENT != object_type) {
 		return ecNotSupported;
 	}
-	auto pctx = fastdownctx_object_create(plogon, send_options & 0x0F);
+	auto pctx = fastdownctx_object::create(plogon, send_options & 0x0F);
 	if (NULL == pctx) {
 		return ecError;
 	}
@@ -885,9 +885,8 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 			return ecError;
 		}
 	}
-	auto pctx = icsdownctx_object_create(plogon, pfolder,
-			sync_type, send_options, sync_flags,
-			pres, extra_flags, pproptags);
+	auto pctx = icsdownctx_object::create(plogon, pfolder, sync_type,
+	            send_options, sync_flags, pres, extra_flags, pproptags);
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, OBJECT_TYPE_ICSDOWNCTX, pctx.get());
 	if (hnd < 0) {
@@ -1009,9 +1008,9 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 		b_new = TRUE;
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	auto pmessage = message_object_create(plogon, b_new,
-		pinfo->cpid, message_id, &folder_id, tag_access,
-		OPEN_MODE_FLAG_READWRITE, pctx->pstate.get());
+	auto pmessage = message_object::create(plogon, b_new, pinfo->cpid,
+	                message_id, &folder_id, tag_access,
+	                OPEN_MODE_FLAG_READWRITE, pctx->pstate.get());
 	if (NULL == pmessage) {
 		return ecError;
 	}
@@ -1730,7 +1729,7 @@ uint32_t rop_syncopencollector(uint8_t is_content_collector,
 		return ecNotSupported;
 	}
 	uint8_t sync_type = is_content_collector == 0 ? SYNC_TYPE_HIERARCHY : SYNC_TYPE_CONTENTS;
-	auto pctx = icsupctx_object_create(plogon, pfolder, sync_type);
+	auto pctx = icsupctx_object::create(plogon, pfolder, sync_type);
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, OBJECT_TYPE_ICSUPCTX, pctx.get());
 	if (hnd < 0) {
@@ -1767,7 +1766,7 @@ uint32_t rop_syncgettransferstate(void *plogmap,
 	if (NULL == pstate) {
 		return ecError;
 	}
-	auto pctx = fastdownctx_object_create(plogon, 0);
+	auto pctx = fastdownctx_object::create(plogon, 0);
 	if (NULL == pctx) {
 		return ecError;
 	}

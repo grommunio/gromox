@@ -9,7 +9,12 @@ struct ICS_STATE;
 struct LOGON_OBJECT;
 
 struct ICSUPCTX_OBJECT final {
+	protected:
+	ICSUPCTX_OBJECT() = default;
+
+	public:
 	~ICSUPCTX_OBJECT();
+	static std::unique_ptr<ICSUPCTX_OBJECT> create(LOGON_OBJECT *, FOLDER_OBJECT *, uint8_t sync_type);
 	uint8_t get_sync_type() const { return sync_type; }
 	FOLDER_OBJECT *get_parent_object() const { return pfolder; }
 	BOOL begin_state_stream(uint32_t state_property);
@@ -26,5 +31,4 @@ struct ICSUPCTX_OBJECT final {
 	BOOL b_started = false;
 	uint8_t sync_type = 0;
 };
-
-extern std::unique_ptr<ICSUPCTX_OBJECT> icsupctx_object_create(LOGON_OBJECT *, FOLDER_OBJECT *, uint8_t sync_type);
+using icsupctx_object = ICSUPCTX_OBJECT;

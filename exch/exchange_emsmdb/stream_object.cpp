@@ -17,8 +17,8 @@
 #include <cstring>
 #define STREAM_INIT_BUFFER_LENGTH						4096
 
-std::unique_ptr<STREAM_OBJECT> stream_object_create(void *pparent, int object_type,
-	uint32_t open_flags, uint32_t proptag, uint32_t max_length)
+std::unique_ptr<stream_object> stream_object::create(void *pparent,
+    int object_type, uint32_t open_flags, uint32_t proptag, uint32_t max_length)
 {
 	int buff_len;
 	int utf16_len;
@@ -28,7 +28,7 @@ std::unique_ptr<STREAM_OBJECT> stream_object_create(void *pparent, int object_ty
 	std::unique_ptr<STREAM_OBJECT> pstream;
 
 	try {
-		pstream = std::make_unique<STREAM_OBJECT>();
+		pstream.reset(new stream_object);
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}

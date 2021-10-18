@@ -12,7 +12,12 @@ enum {
 };
 
 struct ICS_STATE {
+	protected:
+	ICS_STATE() = default;
+
+	public:
 	~ICS_STATE();
+	static std::unique_ptr<ICS_STATE> create(LOGON_OBJECT *, int type);
 	BOOL append_idset(uint32_t state_property, IDSET *);
 	TPROPVAL_ARRAY *serialize();
 
@@ -20,5 +25,4 @@ struct ICS_STATE {
 	IDSET *pgiven = nullptr, *pseen = nullptr, *pseen_fai = nullptr;
 	IDSET *pread = nullptr;
 };
-
-std::unique_ptr<ICS_STATE> ics_state_create(LOGON_OBJECT *, int type);
+using ics_state = ICS_STATE;

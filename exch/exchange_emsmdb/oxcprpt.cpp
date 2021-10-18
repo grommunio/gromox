@@ -1077,7 +1077,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 	default:
 		return ecNotSupported;
 	}
-	auto pstream = stream_object_create(pobject, object_type, flags,
+	auto pstream = stream_object::create(pobject, object_type, flags,
 	               proptag, max_length);
 	if (NULL == pstream) {
 		return ecError;

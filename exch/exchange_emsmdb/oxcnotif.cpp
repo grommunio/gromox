@@ -37,7 +37,7 @@ uint32_t rop_registernotification(
 		folder_id = 0;
 		message_id = 0;
 	}
-	auto psub = subscription_object_create(plogon, logon_id,
+	auto psub = subscription_object::create(plogon, logon_id,
 	            notification_types, b_whole, folder_id, message_id);
 	if (NULL == psub) {
 		return ecMAPIOOM;

@@ -13,7 +13,12 @@ struct LOGON_OBJECT;
 struct STREAM_OBJECT;
 
 struct MESSAGE_OBJECT {
+	protected:
+	MESSAGE_OBJECT() = default;
+
+	public:
 	~MESSAGE_OBJECT();
+	static std::unique_ptr<MESSAGE_OBJECT> create(LOGON_OBJECT *, BOOL b_new, uint32_t cpid, uint64_t message_id, void *parent, uint32_t tag_access, uint8_t open_flags, ICS_STATE *);
 	uint32_t get_instance_id() const { return instance_id; }
 	BOOL check_orignal_touched(BOOL *touched);
 	BOOL check_importing() const;
@@ -61,5 +66,4 @@ struct MESSAGE_OBJECT {
 	PROPTAG_ARRAY *pchanged_proptags = nullptr, *premoved_proptags = nullptr;
 	DOUBLE_LIST stream_list{};
 };
-
-extern std::unique_ptr<MESSAGE_OBJECT> message_object_create(LOGON_OBJECT *, BOOL b_new, uint32_t cpid, uint64_t message_id, void *parent, uint32_t tag_access, uint8_t open_flags, ICS_STATE *);
+using message_object = MESSAGE_OBJECT;

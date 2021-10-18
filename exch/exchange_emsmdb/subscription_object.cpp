@@ -7,14 +7,14 @@
 #include "subscription_object.h"
 #include "exmdb_client.h"
 
-std::unique_ptr<SUBSCRIPTION_OBJECT> subscription_object_create(
-	LOGON_OBJECT *plogon, uint8_t logon_id,
-	uint16_t notification_types, BOOL b_whole,
-	uint64_t folder_id, uint64_t message_id)
+std::unique_ptr<subscription_object>
+subscription_object::create(logon_object *plogon, uint8_t logon_id,
+    uint16_t notification_types, BOOL b_whole, uint64_t folder_id,
+    uint64_t message_id)
 {
 	std::unique_ptr<SUBSCRIPTION_OBJECT> psub;
 	try {
-		psub = std::make_unique<SUBSCRIPTION_OBJECT>();
+		psub.reset(new subscription_object);
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}

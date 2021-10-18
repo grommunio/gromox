@@ -7,7 +7,12 @@
 struct LOGON_OBJECT;
 
 struct TABLE_OBJECT {
+	protected:
+	TABLE_OBJECT() = default;
+
+	public:
 	~TABLE_OBJECT();
+	static std::unique_ptr<TABLE_OBJECT> create(LOGON_OBJECT *, void *parent, uint8_t table_flags, uint8_t rop_id, uint8_t logon_id);
 	const PROPTAG_ARRAY *get_columns() const { return m_columns; }
 	BOOL set_columns(const PROPTAG_ARRAY *);
 	const SORTORDER_SET *get_sorts() const { return m_sorts; }
@@ -49,5 +54,4 @@ struct TABLE_OBJECT {
 	uint32_t m_position = 0, m_table_id = 0, bookmark_index = 0;
 	DOUBLE_LIST bookmark_list{};
 };
-
-extern std::unique_ptr<TABLE_OBJECT> table_object_create(LOGON_OBJECT *, void *parent, uint8_t table_flags, uint8_t rop_id, uint8_t logon_id);
+using table_object = TABLE_OBJECT;

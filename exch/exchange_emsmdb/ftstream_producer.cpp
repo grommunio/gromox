@@ -951,8 +951,8 @@ BOOL ftstream_producer::write_hierarchysync(
 	return TRUE;
 }
 
-std::unique_ptr<FTSTREAM_PRODUCER>
-ftstream_producer_create(LOGON_OBJECT *plogon, uint8_t string_option) try
+std::unique_ptr<ftstream_producer>
+ftstream_producer::create(logon_object *plogon, uint8_t string_option) try
 {
 	int stream_id;
 	
@@ -968,7 +968,7 @@ ftstream_producer_create(LOGON_OBJECT *plogon, uint8_t string_option) try
 		fprintf(stderr, "E-1341: mkdir %s: %s\n", path.c_str(), strerror(errno));
 		return nullptr;
 	}
-	auto pstream = std::make_unique<FTSTREAM_PRODUCER>();
+	std::unique_ptr<ftstream_producer> pstream(new ftstream_producer);
 	pstream->path = path + "/"s + std::to_string(stream_id) + "." + get_host_ID();
 	pstream->fd = -1;
 	pstream->offset = 0;

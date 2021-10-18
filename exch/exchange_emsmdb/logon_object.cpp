@@ -142,13 +142,13 @@ static BOOL logon_object_cache_propname(LOGON_OBJECT *plogon,
 	return TRUE;
 }
 
-std::unique_ptr<LOGON_OBJECT> logon_object_create(uint8_t logon_flags,
+std::unique_ptr<logon_object> logon_object::create(uint8_t logon_flags,
 	uint32_t open_flags, int logon_mode, int account_id,
 	const char *account, const char *dir, GUID mailbox_guid)
 {
 	std::unique_ptr<LOGON_OBJECT> plogon;
 	try {
-		plogon = std::make_unique<LOGON_OBJECT>();
+		plogon.reset(new logon_object);
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}

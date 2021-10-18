@@ -454,18 +454,17 @@ BOOL FASTDOWNCTX_OBJECT::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
 	return TRUE;
 }
 
-std::unique_ptr<FASTDOWNCTX_OBJECT> fastdownctx_object_create(
-	LOGON_OBJECT *plogon, uint8_t string_option)
+std::unique_ptr<fastdownctx_object>
+fastdownctx_object::create(logon_object *plogon, uint8_t string_option)
 {
 	std::unique_ptr<FASTDOWNCTX_OBJECT> pctx;
 	try {
-		pctx = std::make_unique<FASTDOWNCTX_OBJECT>();
+		pctx.reset(new fastdownctx_object);
 	} catch (const std::bad_alloc &) {
 		fprintf(stderr, "E-1453: ENOMEM\n");
 		return NULL;
 	}
-	pctx->pstream = ftstream_producer_create(
-						plogon, string_option);
+	pctx->pstream = ftstream_producer::create(plogon, string_option);
 	if (NULL == pctx->pstream) {
 		return NULL;
 	}

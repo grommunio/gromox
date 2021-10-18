@@ -17,12 +17,12 @@
 #include <cstdlib>
 #include <cstring>
 
-std::unique_ptr<FOLDER_OBJECT> folder_object_create(LOGON_OBJECT *plogon,
+std::unique_ptr<folder_object> folder_object::create(logon_object *plogon,
 	uint64_t folder_id, uint8_t type, uint32_t tag_access)
 {
 	std::unique_ptr<FOLDER_OBJECT> pfolder;
 	try {
-		pfolder = std::make_unique<FOLDER_OBJECT>();
+		pfolder.reset(new folder_object);
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}

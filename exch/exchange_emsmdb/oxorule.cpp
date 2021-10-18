@@ -92,7 +92,7 @@ uint32_t rop_getrulestable(uint8_t flags,
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	auto ptable = table_object_create(plogon, pfolder,
+	auto ptable = table_object::create(plogon, pfolder,
 	              flags, ropGetRulesTable, logon_id);
 	if (NULL == ptable) {
 		return ecMAPIOOM;

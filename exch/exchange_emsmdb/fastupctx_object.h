@@ -14,7 +14,12 @@ struct LOGON_OBJECT;
 struct MESSAGE_CONTENT;
 
 struct FASTUPCTX_OBJECT final {
+	protected:
+	FASTUPCTX_OBJECT() = default;
+
+	public:
 	~FASTUPCTX_OBJECT();
+	static std::unique_ptr<FASTUPCTX_OBJECT> create(LOGON_OBJECT *, void *pobject, int root_element);
 	gxerr_t write_buffer(const BINARY *transfer_data);
 
 	std::unique_ptr<FTSTREAM_PARSER> pstream;
@@ -25,5 +30,4 @@ struct FASTUPCTX_OBJECT final {
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
 	DOUBLE_LIST marker_stack{};
 };
-
-extern std::unique_ptr<FASTUPCTX_OBJECT> fastupctx_object_create(LOGON_OBJECT *, void *pobject, int root_element);
+using fastupctx_object = FASTUPCTX_OBJECT;

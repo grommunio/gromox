@@ -248,13 +248,13 @@ uint32_t TABLE_OBJECT::get_total() const
 	return total_rows;
 }
 
-std::unique_ptr<TABLE_OBJECT> table_object_create(LOGON_OBJECT *plogon,
+std::unique_ptr<TABLE_OBJECT> table_object::create(LOGON_OBJECT *plogon,
 	void *pparent_obj, uint8_t table_flags,
 	uint8_t rop_id, uint8_t logon_id)
 {
 	std::unique_ptr<TABLE_OBJECT> ptable;
 	try {
-		ptable = std::make_unique<TABLE_OBJECT>();
+		ptable.reset(new table_object);
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
@@ -284,7 +284,7 @@ TABLE_OBJECT::~TABLE_OBJECT()
 	double_list_free(&ptable->bookmark_list);
 }
 
-BOOL TABLE_OBJECT::create_bookmark(uint32_t *pindex)
+BOOL table_object::create_bookmark(uint32_t *pindex)
 {
 	auto ptable = this;
 	uint64_t inst_id;

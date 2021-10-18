@@ -61,7 +61,7 @@ static BOOL icsdownctx_object_record_flow_node(
 	return TRUE;
 }
 
-std::unique_ptr<ICSDOWNCTX_OBJECT> icsdownctx_object_create(LOGON_OBJECT *plogon,
+std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogon,
 	FOLDER_OBJECT *pfolder, uint8_t sync_type, uint8_t send_options,
 	uint16_t sync_flags, const RESTRICTION *prestriction,
 	uint32_t extra_flags, const PROPTAG_ARRAY *pproptags)
@@ -69,12 +69,12 @@ std::unique_ptr<ICSDOWNCTX_OBJECT> icsdownctx_object_create(LOGON_OBJECT *plogon
 	int state_type = sync_type == SYNC_TYPE_CONTENTS ? ICS_STATE_CONTENTS_DOWN : ICS_STATE_HIERARCHY_DOWN;
 	std::unique_ptr<ICSDOWNCTX_OBJECT> pctx;
 	try {
-		pctx = std::make_unique<ICSDOWNCTX_OBJECT>();
+		pctx.reset(new icsdownctx_object);
 	} catch (const std::bad_alloc &) {
 		fprintf(stderr, "E-1454: ENOMEM\n");
 		return NULL;
 	}
-	pctx->pstate = ics_state_create(plogon, state_type);
+	pctx->pstate = ics_state::create(plogon, state_type);
 	if (NULL == pctx->pstate) {
 		return NULL;
 	}
@@ -95,8 +95,7 @@ std::unique_ptr<ICSDOWNCTX_OBJECT> icsdownctx_object_create(LOGON_OBJECT *plogon
 	} else {
 		pctx->prestriction = NULL;
 	}
-	pctx->pstream = ftstream_producer_create(
-				plogon, send_options & 0x0F);
+	pctx->pstream = ftstream_producer::create(plogon, send_options & 0x0F);
 	if (NULL == pctx->pstream) {
 		return NULL;
 	}

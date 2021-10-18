@@ -117,9 +117,8 @@ uint32_t rop_openmessage(uint16_t cpid,
 		}
 	}
 	
-	auto pmessage = message_object_create(plogon, false,
-				cpid, message_id, &folder_id,
-				tag_access, open_mode_flags, NULL);
+	auto pmessage = message_object::create(plogon, false, cpid, message_id,
+	                &folder_id, tag_access, open_mode_flags, nullptr);
 	if (NULL == pmessage) {
 		return ecMAPIOOM;
 	}
@@ -263,9 +262,9 @@ uint32_t rop_createmessage(uint16_t cpid,
 	if (!exmdb_client_allocate_message_id(plogon->get_dir(),
 	    folder_id, *ppmessage_id))
 		return ecError;
-	auto pmessage = message_object_create(plogon, TRUE, cpid,
-				**ppmessage_id, &folder_id, tag_access,
-				OPEN_MODE_FLAG_READWRITE, NULL);
+	auto pmessage = message_object::create(plogon, TRUE, cpid,
+	                **ppmessage_id, &folder_id, tag_access,
+	                OPEN_MODE_FLAG_READWRITE, nullptr);
 	if (NULL == pmessage) {
 		return ecMAPIOOM;
 	}
@@ -804,8 +803,7 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 			}
 		}
 	}
-	auto pattachment = attachment_object_create(
-			pmessage, attachment_id, flags);
+	auto pattachment = attachment_object::create(pmessage, attachment_id, flags);
 	if (NULL == pattachment) {
 		return ecError;
 	}
@@ -842,7 +840,7 @@ uint32_t rop_createattachment(uint32_t *pattachment_id,
 	if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 		return ecAccessDenied;
 	}
-	auto pattachment = attachment_object_create(pmessage,
+	auto pattachment = attachment_object::create(pmessage,
 		ATTACHMENT_NUM_INVALID, OPEN_MODE_FLAG_READWRITE);
 	if (NULL == pattachment) {
 		return ecError;
@@ -970,9 +968,8 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 		((OPEN_EMBEDDED_FLAG_READWRITE & open_embedded_flags))) {
 		return ecAccessDenied;
 	}	
-	auto pmessage = message_object_create(plogon, false,
-				cpid, 0, pattachment, tag_access,
-				open_embedded_flags, NULL);
+	auto pmessage = message_object::create(plogon, false, cpid, 0,
+	                pattachment, tag_access, open_embedded_flags, nullptr);
 	if (NULL == pmessage) {
 		return ecError;
 	}
@@ -983,9 +980,9 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
 		}
-		pmessage = message_object_create(plogon, TRUE,
-					cpid, 0, pattachment, tag_access,
-					OPEN_MODE_FLAG_READWRITE, NULL);
+		pmessage = message_object::create(plogon, TRUE, cpid, 0,
+		           pattachment, tag_access, OPEN_MODE_FLAG_READWRITE,
+		           nullptr);
 		if (NULL == pmessage) {
 			return ecError;
 		}
@@ -1095,7 +1092,7 @@ uint32_t rop_getattachmenttable(uint8_t table_flags,
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
 	}
-	auto ptable = table_object_create(plogon, pmessage, table_flags,
+	auto ptable = table_object::create(plogon, pmessage, table_flags,
 	              ropGetAttachmentTable, logon_id);
 	if (NULL == ptable) {
 		return ecMAPIOOM;

@@ -857,7 +857,7 @@ gxerr_t FTSTREAM_PARSER::process(RECORD_MARKER record_marker,
 	}
 }
 
-std::unique_ptr<FTSTREAM_PARSER> ftstream_parser_create(LOGON_OBJECT *plogon) try
+std::unique_ptr<ftstream_parser> ftstream_parser::create(LOGON_OBJECT *plogon) try
 {
 	auto stream_id = common_util_get_ftstream_id();
 	auto rpc_info = get_rpc_info();
@@ -866,7 +866,7 @@ std::unique_ptr<FTSTREAM_PARSER> ftstream_parser_create(LOGON_OBJECT *plogon) tr
 		fprintf(stderr, "E-1428: mkdir %s: %s\n", path.c_str(), strerror(errno));
 		return nullptr;
 	}
-	auto pstream = std::make_unique<FTSTREAM_PARSER>();
+	std::unique_ptr<ftstream_parser> pstream(new ftstream_parser);
 	pstream->offset = 0;
 	pstream->st_size = 0;
 	pstream->path = std::move(path) + "/" + std::to_string(stream_id) + "." + get_host_ID();

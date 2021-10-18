@@ -11,7 +11,12 @@ struct ICS_STATE;
 struct LOGON_OBJECT;
 
 struct ICSDOWNCTX_OBJECT final {
+	protected:
+	ICSDOWNCTX_OBJECT() = default;
+
+	public:
 	~ICSDOWNCTX_OBJECT();
+	static std::unique_ptr<ICSDOWNCTX_OBJECT> create(LOGON_OBJECT *, FOLDER_OBJECT *, uint8_t sync_type, uint8_t send_options, uint16_t sync_flags, const RESTRICTION *, uint32_t extra_flags, const PROPTAG_ARRAY *);
 	BOOL begin_state_stream(uint32_t state_property);
 	BOOL continue_state_stream(const BINARY *stream_data);
 	BOOL end_state_stream();
@@ -42,5 +47,4 @@ struct ICSDOWNCTX_OBJECT final {
 	uint64_t ratio = 0;
 	PROPERTY_GROUPINFO fake_gpinfo{};
 };
-
-extern std::unique_ptr<ICSDOWNCTX_OBJECT> icsdownctx_object_create(LOGON_OBJECT *, FOLDER_OBJECT *, uint8_t sync_type, uint8_t send_options, uint16_t sync_flags, const RESTRICTION *, uint32_t extra_flags, const PROPTAG_ARRAY *);
+using icsdownctx_object = ICSDOWNCTX_OBJECT;

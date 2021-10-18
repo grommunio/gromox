@@ -14,12 +14,12 @@
 #include <cstdlib>
 #include <cstring>
 
-std::unique_ptr<ATTACHMENT_OBJECT> attachment_object_create(MESSAGE_OBJECT *pparent,
+std::unique_ptr<attachment_object> attachment_object::create(message_object *pparent,
 	uint32_t attachment_num, uint8_t open_flags)
 {
 	std::unique_ptr<ATTACHMENT_OBJECT> pattachment;
 	try {
-		pattachment = std::make_unique<ATTACHMENT_OBJECT>();
+		pattachment.reset(new attachment_object);
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
