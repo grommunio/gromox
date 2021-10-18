@@ -36,8 +36,7 @@ static int g_max_within_interval;    /*  max times within the interval  */
 static std::mutex g_audit_mutex_lock;
 static BOOL g_case_sensitive;
 
-
-static int audit_filter_collect_entry(struct timeval *current_time);
+static size_t audit_filter_collect_entry(const struct timeval *);
 
 /*
  *  initialize the audit filter
@@ -200,9 +199,15 @@ BOOL audit_filter_query(const char *str)
  *  @return
  *      the number of entries collected
  */
-static int audit_filter_collect_entry(struct timeval *current_time)
+static size_t audit_filter_collect_entry(const struct timeval *current_time)
 {
-    int num_of_collect  = 0;
+#if __cplusplus >= 202000L
+	return std::erase_if(g_audit_hash, [=](const auto &it) {
+		auto &sa = it.second;
+		return CALCULATE_INTERVAL(*current_time, sa.last_time_stamp) >= g_audit_interval;
+	});
+#else
+	size_t num_of_collect = 0;
 
 	for (auto iter = g_audit_hash.begin(); iter != g_audit_hash.end(); ) {
 		auto iter_audit = &iter->second;
@@ -215,6 +220,7 @@ static int audit_filter_collect_entry(struct timeval *current_time)
 		}
     }
     return num_of_collect;
+#endif
 }
 
 /*

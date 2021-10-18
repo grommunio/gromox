@@ -345,6 +345,19 @@ DB_ITEM::~DB_ITEM()
 	}
 }
 
+static bool remove_from_hash(const decltype(g_hash_table)::value_type &it, time_t now)
+{
+	auto &pdb = it.second;
+	if (double_list_get_nodes_num(&pdb.tables.table_list) > 0)
+		/* emsmdb still references in-memory tables */
+		return false;
+	if (pdb.reference == 0 && pdb.psqlite == nullptr)
+		return true;
+	if (pdb.reference != 0 || now - pdb.last_time <= g_cache_interval)
+		return false;
+	return true;
+}
+
 static void *mdpeng_scanwork(void *param)
 {
 	int count;
@@ -360,24 +373,17 @@ static void *mdpeng_scanwork(void *param)
 		count = 0;
 		std::lock_guard hhold(g_hash_lock);
 		time(&now_time);
+
+#if __cplusplus >= 202000L
+		std::erase_if(g_hash_table, [=](const auto &it) { return remove_from_hash(it, now_time); });
+#else
 		for (auto it = g_hash_table.begin(); it != g_hash_table.end(); ) {
-			auto pdb = &it->second;
-			if (double_list_get_nodes_num(&pdb->tables.table_list) > 0) {
-				/* emsmdb still references in-memory tables */
-				++it;
-				continue;
-			}
-			if (0 == pdb->reference && NULL == pdb->psqlite) {
+			if (remove_from_hash(it, now_time))
 				it = g_hash_table.erase(it);
-				continue;
-			}
-			if (0 != pdb->reference || now_time - 
-				pdb->last_time <= g_cache_interval) {
+			else
 				++it;
-				continue;
-			}
-			it = g_hash_table.erase(it);
 		}
+#endif
 	}
 	std::lock_guard hhold(g_hash_lock);
 	g_hash_table.clear();

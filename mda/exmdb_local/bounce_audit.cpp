@@ -19,7 +19,7 @@ static int g_audit_interval;
 static std::mutex g_audit_mutex_lock;
 static STR_HASH_TABLE *g_audit_hash;
 
-static int bounce_audit_collect_entry(time_t current_time);
+static size_t bounce_audit_collect_entry(time_t);
 
 void bounce_audit_init(int audit_num, int audit_interval) 
 {
@@ -106,10 +106,10 @@ BOOL bounce_audit_check(const char *audit_string)
     return TRUE;
 }
 
-static int bounce_audit_collect_entry(time_t current_time)
+static size_t bounce_audit_collect_entry(time_t current_time)
 {
     STR_HASH_ITER    *iter = NULL;
-    int num_of_collect  = 0;
+	size_t num_of_collect = 0;
 
     iter = str_hash_iter_init(g_audit_hash); 
     for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);

@@ -6,7 +6,7 @@ distribution. If you choose to build from source nevertheless, a number of
 dependencies are needed:
 
 * autotools
-* C++17 compiler
+* C++17/C++20 compiler
 * gumbo-parser
 * jsoncpp
 * libHX

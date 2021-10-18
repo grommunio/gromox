@@ -22,7 +22,7 @@ my_CFLAGS="-Wall -Wmissing-declarations -Wwrite-strings"
 my_CXXFLAGS="-Wall -Wmissing-declarations"
 AC_MSG_CHECKING([available C++ standard])
 cxxmode=""
-for i in "c++17"; do
+for i in "c++20" "c++17"; do
 	CXXFLAGS="$saved_CXXFLAGS -std=$i"
 	AC_COMPILE_IFELSE([AC_LANG_SOURCE([])], [cxxmode="$i"])
 	AS_IF([test -n "$cxxmode"], [break])
