@@ -874,7 +874,6 @@ BOOL common_util_check_msgcnt_overflow(sqlite3 *psqlite)
 
 BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag)
 {
-	uint64_t quota;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	uint32_t proptag_buff[2];
@@ -888,15 +887,9 @@ BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag)
 		return FALSE;
 	}
 	auto ptotal = static_cast<uint64_t *>(common_util_get_propvals(&propvals, PR_MESSAGE_SIZE_EXTENDED));
-	auto pvalue = static_cast<uint32_t *>(common_util_get_propvals(&propvals, qtag));
-	if (NULL != ptotal && NULL != pvalue) {
-		quota = *(uint32_t*)pvalue;
-		quota *= 1024;
-		if (*ptotal >= quota) {
-			return TRUE;
-		}
-	}
-	return FALSE;
+	auto qv_kb = static_cast<uint32_t *>(common_util_get_propvals(&propvals, qtag));
+	return ptotal != nullptr && qv_kb != nullptr &&
+	       *ptotal >= static_cast<uint64_t>(*qv_kb) * 1024;
 }
 
 static uint32_t common_util_get_store_message_count(
