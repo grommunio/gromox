@@ -189,7 +189,6 @@ int main(int argc, const char **argv)
 	MYSQL_ROW myrow;
 	uint64_t nt_time;
 	sqlite3 *psqlite;
-	uint64_t max_size;
 	char db_name[256];
 	MYSQL_RES *pmyres;
 	char tmp_buff[256];
@@ -254,7 +253,7 @@ int main(int argc, const char **argv)
 		return 3;
 	}
 	
-	auto qstr = "SELECT u.max_size, u.maildir, u.lang, up.propval_str AS dtypx, u.address_status, u.id "
+	auto qstr = "SELECT 0, u.maildir, u.lang, up.propval_str AS dtypx, u.address_status, u.id "
 	            "FROM users AS u "
 	            "LEFT JOIN user_properties AS up ON u.id=up.user_id AND up.proptag=956628995 " /* PR_DISPLAY_TYPE_EX */
 	            "WHERE u.username='"s + argv[1] + "'";
@@ -289,7 +288,6 @@ int main(int argc, const char **argv)
 	if (address_status != AF_USER_NORMAL && address_status != AF_USER_SHAREDMBOX)
 		printf("Warning: Address status is not \"alive\"(0) but %lu\n", address_status);
 	
-	max_size = atoi(myrow[0])*1024;
 	gx_strlcpy(dir, myrow[1], GX_ARRAY_SIZE(dir));
 	gx_strlcpy(lang, myrow[2], GX_ARRAY_SIZE(lang));
 	user_id = atoi(myrow[5]);
@@ -467,27 +465,6 @@ int main(int argc, const char **argv)
 	}
 	sqlite3_bind_int64(pstmt, 1, PR_CREATION_TIME);
 	sqlite3_bind_int64(pstmt, 2, nt_time);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return 9;
-	}
-	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PR_PROHIBIT_RECEIVE_QUOTA);
-	sqlite3_bind_int64(pstmt, 2, max_size);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return 9;
-	}
-	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PR_PROHIBIT_SEND_QUOTA);
-	sqlite3_bind_int64(pstmt, 2, max_size);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return 9;
-	}
-	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PR_STORAGE_QUOTA_LIMIT);
-	sqlite3_bind_int64(pstmt, 2, max_size);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		return 9;
