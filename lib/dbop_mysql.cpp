@@ -299,6 +299,29 @@ static const char tbl_users_0[] =
 "  KEY `maildir` (`maildir`,`address_type`)"
 ") DEFAULT CHARSET=utf8mb4";
 
+static const char tbl_userdev_92[] =
+"CREATE TABLE `user_devices` ("
+"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+"  `user_id` int(10) unsigned NOT NULL,"
+"  `device_id` varchar(64) NOT NULL,"
+"  `status` int(10) unsigned NOT NULL DEFAULT 0,"
+"  PRIMARY KEY (`id`),"
+"  UNIQUE KEY `user_device` (`user_id`,`device_id`),"
+"  CONSTRAINT `user_devices_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
+static const char tbl_userdevhist_93[] =
+"CREATE TABLE `user_device_history` ("
+"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+"  `user_device_id` int(10) unsigned NOT NULL,"
+"  `time` timestamp NOT NULL DEFAULT current_timestamp(),"
+"  `remote_ip` varchar(64) NOT NULL,"
+"  `status` int(10) unsigned NOT NULL,"
+"  PRIMARY KEY (`id`),"
+"  KEY `user_device_history_ibfk_1` (`user_device_id`),"
+"  CONSTRAINT `user_device_history_ibfk_1` FOREIGN KEY (`user_device_id`) REFERENCES `user_devices` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
+") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
 static const struct tbl_init tbl_init_0[] = {
 	{"aliases", tbl_alias_0},
 	{"associations", tbl_assoc_0},
@@ -519,6 +542,8 @@ static const struct tbl_init tbl_init_top[] = {
 	{"classes", tbl_classes_top},
 	{"fetchmail", tbl_fetchmail_75},
 	{"secondary_store_hints", tbl_scndstore_91},
+	{"user_devices", tbl_userdev_92},
+	{"user_device_history", tbl_userdevhist_93},
 	{nullptr},
 };
 
@@ -659,6 +684,8 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{89, "ALTER TABLE `users` ADD CONSTRAINT UNIQUE `primary_email` (`primary_email`)"},
 	{90, "UPDATE `users` SET `primary_email`=`username`"},
 	{91, tbl_scndstore_91},
+	{92, tbl_userdev_92},
+	{93, tbl_userdevhist_93},
 	{0, nullptr},
 };
 
