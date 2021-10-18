@@ -1815,7 +1815,7 @@ static bool message_md5_string(const char *string, uint8_t *pdgt)
 	gx_strlcpy(tmp_string, string, GX_ARRAY_SIZE(tmp_string));
 	HX_strupper(tmp_string);
 	std::unique_ptr<EVP_MD_CTX, sslfree> ctx(EVP_MD_CTX_new());
-	if (ctx != nullptr ||
+	if (ctx == nullptr ||
 	    EVP_DigestInit(ctx.get(), EVP_md5()) <= 0 ||
 	    EVP_DigestUpdate(ctx.get(), tmp_string, strlen(tmp_string)) <= 0 ||
 	    EVP_DigestFinal(ctx.get(), dgt_buff, nullptr) <= 0)
