@@ -287,7 +287,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run common util\n");
 		return 5;
 	}
-	auto cl_2 = make_scope_exit(common_util_stop);
 	if (bounce_producer_run(g_config_file->get_value("data_file_path")) != 0) {
 		printf("[system]: failed to run bounce producer\n");
 		return 6;

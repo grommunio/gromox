@@ -10,12 +10,14 @@
 #include <fstream>
 #include <mutex>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/common_types.hpp>
 #include <gromox/fileio.h>
+#include <gromox/mapi_types.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/textmaps.hpp>
@@ -42,9 +44,11 @@ using namespace gromox;
 using int_to_str_t = std::unordered_map<unsigned int, std::string>;
 using str_to_int_t = std::unordered_map<std::string, unsigned int, icasehash, icasecmp>;
 using str_to_str_t = std::unordered_map<std::string, std::string, icasehash, icasecmp>;
+using folder_name_map_t = std::unordered_map<std::string, std::unordered_map<unsigned int, std::string>>;
 static int_to_str_t g_cpid2name_map, g_lcid2tag_map;
 static str_to_int_t g_cpname2id_map, g_lctag2id_map;
 static str_to_str_t g_ext2mime_map, g_mime2ext_map, g_lang2cset_map, g_ignore_map;
+static folder_name_map_t folder_name_map;
 static std::once_flag g_textmaps_done;
 
 static void xmap_read(const char *file, const char *dirs,
@@ -110,6 +114,41 @@ static void smap_read(const char *file, const char *dirs,
 
 namespace gromox {
 
+static void folder_namedb_read(const char *file, const char *dirs, folder_name_map_t &fm)
+{
+	auto filp = fopen_sd(file, dirs);
+	if (filp == nullptr) {
+		fprintf(stderr, "[textmaps]: fopen_sd %s: %s\n", file, strerror(errno));
+		return;
+	}
+	hxmc_t *line = nullptr;
+	auto cl_0 = make_scope_exit([&]() { HXmc_free(line); });
+	folder_name_map_t::mapped_type *current_locale = nullptr;
+	while (HX_getl(&line, filp.get()) != nullptr) {
+		HX_chomp(line);
+		if (*line == '\0')
+			continue;
+		if (*line == '[') { // ]
+			auto value = strchr(line + 1, ']');
+			if (value == nullptr)
+				continue;
+			*value = '\0';
+			current_locale = &fm[line+1];
+			continue;
+		} else if (current_locale == nullptr) {
+			continue;
+		}
+		char *value = strchr(line, '=');
+		if (value == nullptr)
+			continue;
+		*value++ = '\0';
+		auto id = strtoul(line, nullptr, 16);
+		if (id < 0)
+			continue;
+		current_locale->emplace(id, value);
+	}
+}
+
 bool verify_cpid(uint32_t id)
 {
 	return g_cpid2name_map.find(id) != g_cpid2name_map.cend() &&
@@ -159,6 +198,64 @@ const char *lang_to_charset(const char *s)
 	return i != g_lang2cset_map.cend() ? i->second.c_str() : nullptr;
 }
 
+/**
+ * @xpg_loc:	XPG-style locale string (e.g. "es_CA.UTF-8@valencia")
+ *
+ * Returns the closest language match for the folder_lang table.
+ */
+const char *folder_namedb_resolve(const char *xpg_loc) try
+{
+	std::string rloc = xpg_loc;
+	/* Always ignore .encoding part */
+	auto pos = rloc.find_first_of('.');
+	if (pos != rloc.npos)
+		rloc.erase(pos, rloc.find_first_of('@', pos));
+	auto iter = folder_name_map.find(rloc);
+	if (iter != folder_name_map.end())
+		return iter->first.c_str();
+	/* Try without @variant part */
+	pos = rloc.find_first_of('@');
+	if (pos != rloc.npos)
+		rloc.erase(pos);
+	iter = folder_name_map.find(rloc);
+	if (iter != folder_name_map.end())
+		return iter->first.c_str();
+	/* Try without _territory part */
+	pos = rloc.find_first_of('_');
+	if (pos != rloc.npos)
+		rloc.erase(pos);
+	iter = folder_name_map.find(rloc);
+	if (iter != folder_name_map.end())
+		return iter->first.c_str();
+	return nullptr;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1560: ENOMEM\n");
+	return nullptr;
+}
+
+/**
+ * @locale:	Language string matching those found in data/folder_lang.txt.
+ * 		Use e.g. common_util_i18n_to_lang to convert from XPG locale strings.
+ * @tid:	Text id in data/folder_lang.txt; coincides with PRIVATE_FID_*
+ * 		most of the time.
+ */
+const char *folder_namedb_get(const char *locale, unsigned int tid)
+{
+	auto loc_it = folder_name_map.find(locale);
+	if (loc_it != folder_name_map.end()) {
+		auto id_it = loc_it->second.find(tid);
+		if (id_it != loc_it->second.end())
+			return id_it->second.c_str();
+	}
+	auto en = folder_name_map.find("en");
+	if (en == folder_name_map.end())
+		return "FLG-ERR-1";
+	auto id_it = en->second.find(tid);
+	if (id_it == en->second.end())
+		return "FLG-ERR-2";
+	return id_it->second.c_str();
+}
+
 void textmaps_init(const char *datapath)
 {
 	std::call_once(g_textmaps_done, [=]() {
@@ -174,6 +271,8 @@ void textmaps_init(const char *datapath)
 		smap_read("mime_extension.txt", datapath, g_ext2mime_map, g_mime2ext_map);
 		fprintf(stderr, "[textmaps]: mime_extension: %zu exts, %zu mimetypes\n",
 		        g_ext2mime_map.size(), g_mime2ext_map.size());
+		folder_namedb_read("folder_names.txt", datapath, folder_name_map);
+		fprintf(stderr, "[textmaps]: %zu translations in folder namedb\n", folder_name_map.size());
 	});
 }
 

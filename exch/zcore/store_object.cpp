@@ -22,6 +22,7 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/str_hash.hpp>
+#include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
 #include <cstdio>
@@ -1464,29 +1465,26 @@ static void set_store_lang(store_object *store, const char *locale)
 	 */
 	if (!store->b_private)
 		return;
-	auto lang = common_util_i18n_to_lang(locale);
+	auto lang = folder_namedb_resolve(locale);
 	if (lang == nullptr) {
 		fprintf(stderr, "W-1506: %s requested to set folder names to %s, but this language is unknown.\n",
 		        store->account, locale);
 	} else {
-		char *fnam[RES_TOTAL_NUM];
-		common_util_get_folder_lang(lang, fnam);
-		store_object_set_folder_name(store, PRIVATE_FID_IPMSUBTREE, fnam[RES_ID_IPM]);
-		store_object_set_folder_name(store, PRIVATE_FID_INBOX, fnam[RES_ID_INBOX]);
-		store_object_set_folder_name(store, PRIVATE_FID_DRAFT, fnam[RES_ID_DRAFT]);
-		store_object_set_folder_name(store, PRIVATE_FID_OUTBOX, fnam[RES_ID_OUTBOX]);
-		store_object_set_folder_name(store, PRIVATE_FID_SENT_ITEMS, fnam[RES_ID_SENT]);
-		store_object_set_folder_name(store, PRIVATE_FID_DELETED_ITEMS, fnam[RES_ID_DELETED]);
-		store_object_set_folder_name(store, PRIVATE_FID_CONTACTS, fnam[RES_ID_CONTACTS]);
-		store_object_set_folder_name(store, PRIVATE_FID_CALENDAR, fnam[RES_ID_CALENDAR]);
-		store_object_set_folder_name(store, PRIVATE_FID_JOURNAL, fnam[RES_ID_JOURNAL]);
-		store_object_set_folder_name(store, PRIVATE_FID_NOTES, fnam[RES_ID_NOTES]);
-		store_object_set_folder_name(store, PRIVATE_FID_TASKS, fnam[RES_ID_TASKS]);
-		store_object_set_folder_name(store, PRIVATE_FID_JUNK, fnam[RES_ID_JUNK]);
-		store_object_set_folder_name(store, PRIVATE_FID_SYNC_ISSUES, fnam[RES_ID_SYNC]);
-		store_object_set_folder_name(store, PRIVATE_FID_CONFLICTS, fnam[RES_ID_CONFLICT]);
-		store_object_set_folder_name(store, PRIVATE_FID_LOCAL_FAILURES, fnam[RES_ID_LOCAL]);
-		store_object_set_folder_name(store, PRIVATE_FID_SERVER_FAILURES, fnam[RES_ID_SERVER]);
+		static constexpr unsigned int fids[] = {
+			PRIVATE_FID_IPMSUBTREE, PRIVATE_FID_SENT_ITEMS,
+			PRIVATE_FID_DELETED_ITEMS, PRIVATE_FID_OUTBOX,
+			PRIVATE_FID_INBOX, PRIVATE_FID_DRAFT,
+			PRIVATE_FID_CALENDAR, PRIVATE_FID_JOURNAL,
+			PRIVATE_FID_NOTES, PRIVATE_FID_TASKS,
+			PRIVATE_FID_CONTACTS, PRIVATE_FID_JUNK,
+			PRIVATE_FID_SYNC_ISSUES, PRIVATE_FID_CONFLICTS,
+			PRIVATE_FID_LOCAL_FAILURES, PRIVATE_FID_SERVER_FAILURES,
+		};
+		for (auto fid_val : fids) {
+			auto name = folder_namedb_get(lang, fid_val);
+			if (name != nullptr)
+				store_object_set_folder_name(store, fid_val, name);
+		}
 	}
 
 	char mloc[32];

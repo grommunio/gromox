@@ -1,0 +1,341 @@
+[cs]
+09=Top of Information Store
+0a=Odeslané Položky
+0b=Odstraněné položky
+0c=K Odeslání
+0d=Doručená pošta
+0e=Pracovní Verze
+0f=Kalendář
+10=Žurnál
+11=Poznámky
+12=Úkoly
+13=Kontakty
+17=Nevyžádaných e-mailů
+19=Problémy se synchronizací
+1a=Konflikty
+1b=Místní selhání
+1c=Selhání serveru
+
+[da]
+09=Top of Information Store
+0a=Sendte elementer
+0b=Slettede elementer
+0c=Udbakke
+0d=Indbakke
+0e=Kladder
+0f=Kalender
+10=Journal
+11=Noter
+12=Opgaver
+13=Kontakter
+17=Uønsket post
+19=Problemer med synkronisering
+1a=Konflikter
+1b=Lokalake fiaskoer
+1c=Serverfejl
+
+[de]
+09=Top of Information Store
+0a=Gesendete Elemente
+0b=Gelöschte Elemente
+0c=Postausgang
+0d=Posteingang
+0e=Entwürfe
+0f=Kalender
+10=Journal
+11=Notizen
+12=Aufgaben
+13=Kontakte
+17=Junk-E-mail
+19=Sync Issues
+1a=Konflikte
+1b=Local Failures
+1c=Server Failures
+
+[en]
+09=Top of Information Store
+0a=Sent Items
+0b=Deleted Items
+0c=Outbox
+0d=Inbox
+0e=Drafts
+0f=Calendar
+10=Journal
+11=Notes
+12=Tasks
+13=Contacts
+17=Junk E-mail
+19=Sync Issues
+1a=Conflicts
+1b=Local Failures
+1c=Server Failures
+
+[es]
+09=Top of Information Store
+0a=Correos enviados
+0b=Elementos eliminados
+0c=Bandeja de salida
+0d=Bandeja de entrada
+0e=Borradores
+0f=Calendario
+10=Diario
+11=Notas
+12=Tareas
+13=Contactos
+17=Papelera de reciclaje
+19=Problemas de sincronización
+1a=Conflictos
+1b=Fallos locales
+1c=Fallos del servidor
+
+[fi]
+09=Top of Information Store
+0a=Lähetetyt
+0b=Roskakori
+0c=Lähtevät
+0d=Saapuneet viestit
+0e=Luonnokset
+0f=Kalenteri
+10=Päivyri
+11=Merkinnät
+12=Tehtävät
+13=Yhteystiedot
+17=Roskaposti
+19=Synkronointiongelmat
+1a=Konflikteja
+1b=Paikalliset epäonnistumiset
+1c=Palvelinvirheet
+
+[fr]
+09=Top of Information Store
+0a=Éléments envoyés
+0b=Supprimer les éléments
+0c=Boîte d'envoi
+0d=Boîte de réception
+0e=Brouillons
+0f=Agenda
+10=Journal
+11=Notes
+12=Tâches
+13=Contacts
+17=Spam
+19=Problèmes de synchro
+1a=Conflits
+1b=Pannes locales
+1c=Pannes du serveur
+
+[hu]
+09=Top of Information Store
+0a=Elküldött üzenetek
+0b=Törölt elemek
+0c=Kimenő üzenetek
+0d=Beérkezett üzenetek
+0e=Vázlatok
+0f=Naptár
+10=Napló
+11=Jegyzet
+12=Feladatok
+13=Kapcsolatok
+17=Levélszemét
+19=Szinkronizálási problémák
+1a=Konfliktusok
+1b=Helyi kudarcok
+1c=Szerver hibák
+
+[it]
+09=Top of Information Store
+0a=Posta inviata
+0b=Posta eliminata
+0c=Posta in uscita
+0d=Posta in arrivo
+0e=Bozze
+0f=Calendario
+10=Diario
+11=Note
+12=Attività
+13=Contatti
+17=Posta indesiderata
+19=Problemi di sincronizzazione
+1a=Conflitti
+1b=Fallimenti locali
+1c=Errori del server
+
+[ja]
+09=インフォメーションストアのトップ
+0a=送信済みアイテム
+0b=削除済みアイテム
+0c=送信トレイ
+0d=受信トレイ
+0e=下書き
+0f=カレンダー
+10=日記
+11=ノート
+12=タスク
+13=連絡先
+17=迷惑メール
+19=同期の問題
+1a=衝突
+1b=ローカル障害
+1c=サーバー障害
+
+[nb]
+09=Top of Information Store
+0a=Sendte elementer
+0b=Slettede elementer
+0c=Utboks
+0d=Innboks
+0e=Kladd
+0f=Kalender
+10=Journal
+11=Notater
+12=Oppgaver
+13=Kontakter
+17=Søppelpost
+19=Problemer med synkronisering
+1a=Konflikter
+1b=Lokale feil
+1c=Serverfeil
+
+[nl]
+09=Top of Information Store
+0a=Verzonden Items
+0b=Verwijderde items
+0c=Postvak Uit
+0d=Postvak In
+0e=Concepten
+0f=Agenda
+10=Logboek
+11=Notities
+12=Taken
+13=Contactpersonen
+17=Ongewenste Email
+19=Synchronisatieproblemen
+1a=Conflicten
+1b=Lokale storingen
+1c=Serverstoringen
+
+[pl]
+09=Top of Information Store
+0a=Wiadomości wysłane
+0b=Usunięte obiekty
+0c=Skrzynka nadawcza
+0d=Skrzynka odbiorcza
+0e=Robocze
+0f=Kalendarz
+10=Dziennik
+11=Notatki
+12=Zadania
+13=Kontakty
+17=Niechciana poczta
+19=Problemy z synchronizacją
+1a=Konflikty
+1b=Lokalne awarie
+1c=Awarie serwera
+
+[pt_BR]
+09=Top of Information Store
+0a=Itens enviados
+0b=Itens Eliminados
+0c=Caixa de fora
+0d=Caixa de Entrada
+0e=Rascunhos
+0f=Calendário
+10=Diário
+11=Notas
+12=Tarefas
+13=Contactos
+17=Lixo Eletrônico
+19=Problemas de sincronização
+1a=Conflitos
+1b=Falhas locais
+1c=Falhas de servidor
+
+[ru]
+09=Top of Information Store
+0a=Отправленные
+0b=Удаленные
+0c=Исходящие
+0d=Входящие
+0e=Черновики
+0f=Календари
+10=Журнал
+11=Заметки
+12=Задачи
+13=Контакты
+17=Нежелательная почта
+19=Проблемы с синхронизацией
+1a=Конфликты
+1b=Локальные сбои
+1c=Сбои сервера
+
+[sl]
+09=Top of Information Store
+0a=Poslani predmeti
+0b=Izbrisani predmeti
+0c=Poslano
+0d=Prejeto
+0e=Osnutki
+0f=Koledar
+10=Dnevnik
+11=Zapiski
+12=Naloge
+13=Kontakti
+17=Nezaželjena pošta
+19=Težave s sinhronizacijo
+1a=Konflikti
+1b=Lokalne okvare
+1c=Napake strežnika
+
+[tr]
+09=Top of Information Store
+0a=Gönderilen Öğeler
+0b=Silinen Öğeler
+0c=Giden Kutusu
+0d=Gelen Kutusu
+0e=Taslaklar
+0f=Takvim
+10=Günlük
+11=Notlar
+12=Görevler
+13=Kişiler
+17=Istenmeyen E-posta
+19=Senkronizasyon sorunları
+1a=Çatışmalar
+1b=Yerel hatalar
+1c=Sunucu hataları
+
+[zh_CN]
+09=信息存储顶部
+0a=已发送邮件
+0b=已删除邮件
+0c=发件箱
+0d=收件箱
+0e=草稿
+0f=日历
+10=日记
+11=便签
+12=任务
+13=联系人
+17=垃圾邮件
+19=同步问题
+1a=冲突
+1b=本地故障
+1c=服务器故障
+
+[zh_TW]
+09=資訊存儲頂部
+0a=已發送郵件
+0b=已刪除郵件
+0c=發件箱
+0d=收件箱
+0e=草稿
+0f=日曆
+10=日記
+11=便箋
+12=任務
+13=聯絡人
+17=垃圾郵件
+19=同步問題
+1a=衝突
+1b=本地故障
+1c=伺服器故障

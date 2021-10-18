@@ -91,7 +91,6 @@ static char g_default_charset[32];
 static char g_submit_command[1024];
 static unsigned int g_max_mail_len;
 static unsigned int g_max_rule_len;
-static std::unique_ptr<LIST_FILE> g_langmap_list, g_folderlang_list;
 
 BOOL common_util_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
@@ -595,26 +594,7 @@ int common_util_run(const char *data_path)
 		printf("[common_util]: Failed to init oxcmail library\n");
 		return -2;
 	}
-	g_langmap_list = list_file_initd("langmap.txt", data_path, "%s:32%s:32");
-	if (g_langmap_list == nullptr || g_langmap_list->get_size() == 0) {
-		printf("[common_util]: list_file_initd langmap.txt: %s\n", strerror(errno));
-		return -3;
-	}
-	
-	g_folderlang_list = list_file_initd("folder_lang.txt", data_path,
-		"%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s"
-		":64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64");
-	if (NULL == g_folderlang_list) {
-		printf("[common_util]: list_file_initd folder_lang.txt: %s\n", strerror(errno));
-		return -4;
-	}
 	return 0;
-}
-
-void common_util_stop()
-{
-	g_langmap_list.reset();
-	g_folderlang_list.reset();
 }
 
 void common_util_free()
@@ -2727,18 +2707,6 @@ uint64_t common_util_convert_notification_folder_id(uint64_t folder_id)
 	return rop_util_make_eid_ex(folder_id >> 48, folder_id & 0x00FFFFFFFFFFFFFFULL);
 }
 
-const char* common_util_i18n_to_lang(const char *i18n)
-{
-	auto pitem = static_cast<LANGMAP_ITEM *>(g_langmap_list->get_list());
-	auto num = g_langmap_list->get_size();
-	for (decltype(num) i = 0; i < num; ++i) {
-		if (0 == strcasecmp(pitem[i].i18n, i18n)) {
-			return pitem[i].lang;
-		}
-	}
-	return nullptr;
-}
-
 const char* common_util_get_default_timezone()
 {
 	return g_default_zone;
@@ -2747,38 +2715,4 @@ const char* common_util_get_default_timezone()
 const char* common_util_get_submit_command()
 {
 	return g_submit_command;
-}
-
-void common_util_get_folder_lang(const char *lang, char **ppfolder_lang)
-{
-	size_t i;
-	
-	auto line_num = g_folderlang_list->get_size();
-	auto pline = static_cast<char *>(g_folderlang_list->get_list());
-	for (i=0; i<line_num; i++) {
-		if (0 != strcasecmp(pline + 1088*i, lang)) {
-			continue;
-		}
-		for (size_t j = 0; j < RES_TOTAL_NUM; ++j)
-			ppfolder_lang[j] = pline + 1088*i + 64*(j + 1);
-		break;
-	}
-	if (i >= line_num) {
-		ppfolder_lang[RES_ID_IPM]      = deconst("Top of Information Store");
-		ppfolder_lang[RES_ID_INBOX]    = deconst("Inbox");
-		ppfolder_lang[RES_ID_DRAFT]    = deconst("Drafts");
-		ppfolder_lang[RES_ID_OUTBOX]   = deconst("Outbox");
-		ppfolder_lang[RES_ID_SENT]     = deconst("Sent Items");
-		ppfolder_lang[RES_ID_DELETED]  = deconst("Deleted Items");
-		ppfolder_lang[RES_ID_CONTACTS] = deconst("Contacts");
-		ppfolder_lang[RES_ID_CALENDAR] = deconst("Calendar");
-		ppfolder_lang[RES_ID_JOURNAL]  = deconst("Journal");
-		ppfolder_lang[RES_ID_NOTES]    = deconst("Notes");
-		ppfolder_lang[RES_ID_TASKS]    = deconst("Tasks");
-		ppfolder_lang[RES_ID_JUNK]     = deconst("Junk E-mail");
-		ppfolder_lang[RES_ID_SYNC]     = deconst("Sync Issues");
-		ppfolder_lang[RES_ID_CONFLICT] = deconst("Conflicts");
-		ppfolder_lang[RES_ID_LOCAL]    = deconst("Local Failures");
-		ppfolder_lang[RES_ID_SERVER]   = deconst("Server Failures");
-	}
 }

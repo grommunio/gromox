@@ -19,6 +19,7 @@
 #include <gromox/guid.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/textmaps.hpp>
 #include <ctime>
 #include <cstdio>
 #include <fcntl.h>
@@ -61,6 +62,7 @@ static uint32_t g_last_art;
 static uint64_t g_last_cn = CHANGE_NUMBER_BEGIN;
 static uint64_t g_last_eid = ALLOCATED_EID_RANGE;
 static char *opt_config_file, *opt_datadir;
+static const char *g_lang;
 
 static const struct HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
@@ -69,11 +71,11 @@ static const struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static BOOL create_generic_folder(sqlite3 *psqlite,
-	uint64_t folder_id, uint64_t parent_id, int user_id,
-	const char *pdisplayname, const char *pcontainer_class,
-	BOOL b_hidden)
+static BOOL create_generic_folder(sqlite3 *psqlite, uint64_t folder_id,
+    uint64_t parent_id, int user_id, const char *pcontainer_class = nullptr,
+    BOOL b_hidden = false)
 {
+	auto pdisplayname = folder_namedb_get(g_lang, folder_id);
 	uint64_t cur_eid;
 	uint64_t max_eid;
 	uint32_t art_num;
@@ -134,10 +136,10 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	return TRUE;
 }
 
-static BOOL create_search_folder(sqlite3 *psqlite,
-	uint64_t folder_id, uint64_t parent_id, int user_id,
-	const char *pdisplayname, const char *pcontainer_class)
+static BOOL create_search_folder(sqlite3 *psqlite, uint64_t folder_id,
+    uint64_t parent_id, int user_id, const char *pcontainer_class)
 {
+	auto pdisplayname = folder_namedb_get(g_lang, folder_id);
 	uint32_t art_num;
 	uint64_t change_num;
 	char sql_string[256];
@@ -194,7 +196,6 @@ int main(int argc, const char **argv)
 	char tmp_sql[1024];
 	char mysql_host[256];
 	char mysql_user[256];
-	static char folder_lang[RES_TOTAL_NUM][64];
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
@@ -239,6 +240,7 @@ int main(int argc, const char **argv)
 	if (datadir == nullptr)
 		datadir = PKGDATADIR;
 	
+	textmaps_init(datadir);
 	if (NULL == (pmysql = mysql_init(NULL))) {
 		printf("Failed to init mysql object\n");
 		return 3;
@@ -288,48 +290,13 @@ int main(int argc, const char **argv)
 		printf("Warning: Address status is not \"alive\"(0) but %lu\n", address_status);
 	
 	gx_strlcpy(dir, myrow[1], GX_ARRAY_SIZE(dir));
-	gx_strlcpy(lang, myrow[2], GX_ARRAY_SIZE(lang));
+	gx_strlcpy(lang, myrow[2], arsizeof(lang));
+	g_lang = folder_namedb_resolve(lang);
+	if (g_lang == nullptr)
+		g_lang = "en";
 	int user_id = strtol(myrow[5], nullptr, 0);
 	mysql_free_result(pmyres);
 	mysql_close(pmysql);
-	
-	auto pfile = list_file_initd("folder_lang.txt", datadir,
-		"%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s"
-		":64%s:64%s:64%s:64%s:64%s:64%s:64%s:64%s:64");
-	if (NULL == pfile) {
-		printf("list_file_initd folder_lang.txt: %s\n", strerror(errno));
-		return 7;
-	}
-	auto line_num = pfile->get_size();
-	auto pline = static_cast<char *>(pfile->get_list());
-	size_t i;
-	for (i = 0; i < line_num; ++i) {
-		if (0 != strcasecmp(pline + 1088*i, lang)) {
-			continue;
-		}
-		for (size_t j = 0; j < RES_TOTAL_NUM; ++j)
-			gx_strlcpy(folder_lang[j], pline + 1088 * i + 64 * (j + 1), GX_ARRAY_SIZE(folder_lang[j]));
-		break;
-	}
-	pfile.reset();
-	if (i >= line_num) {
-		strcpy(folder_lang[RES_ID_IPM], "Top of Information Store");
-		strcpy(folder_lang[RES_ID_INBOX], "Inbox");
-		strcpy(folder_lang[RES_ID_DRAFT], "Drafts");
-		strcpy(folder_lang[RES_ID_OUTBOX], "Outbox");
-		strcpy(folder_lang[RES_ID_SENT], "Sent Items");
-		strcpy(folder_lang[RES_ID_DELETED], "Deleted Items");
-		strcpy(folder_lang[RES_ID_CONTACTS], "Contacts");
-		strcpy(folder_lang[RES_ID_CALENDAR], "Calendar");
-		strcpy(folder_lang[RES_ID_JOURNAL], "Journal");
-		strcpy(folder_lang[RES_ID_NOTES], "Notes");
-		strcpy(folder_lang[RES_ID_TASKS], "Tasks");
-		strcpy(folder_lang[RES_ID_JUNK], "Junk E-mail");
-		strcpy(folder_lang[RES_ID_SYNC], "Sync Issues");
-		strcpy(folder_lang[RES_ID_CONFLICT], "Conflicts");
-		strcpy(folder_lang[RES_ID_LOCAL], "Local Failures");
-		strcpy(folder_lang[RES_ID_SERVER], "Server Failures");
-	}
 	
 	auto temp_path = dir + "/exmdb"s;
 	if (mkdir(temp_path.c_str(), 0777) && errno != EEXIST) {
@@ -402,7 +369,7 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	
-	i = 0;
+	size_t i = 0;
 	for (const auto &name : namedprop_list) {
 		propid = 0x8001 + i++;
 		sqlite3_bind_int64(pstmt, 1, propid);
@@ -496,55 +463,47 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	pstmt.finalize();
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_ROOT,
-		0, user_id, "Root Container", NULL, FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_ROOT, 0, user_id)) {
 		printf("fail to create \"root container\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_IPMSUBTREE,
-		PRIVATE_FID_ROOT, user_id, folder_lang[RES_ID_IPM], NULL, FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_IPMSUBTREE,
+	    PRIVATE_FID_ROOT, user_id)) {
 		printf("fail to create \"ipmsubtree\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_INBOX,
-		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_INBOX],
-		"IPF.Note", FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_INBOX,
+	    PRIVATE_FID_IPMSUBTREE, user_id, "IPF.Note")) {
 		printf("fail to create \"inbox\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_DRAFT,
-		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_DRAFT],
-		"IPF.Note", FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_DRAFT,
+	    PRIVATE_FID_IPMSUBTREE, user_id, "IPF.Note")) {
 		printf("fail to create \"draft\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_OUTBOX,
-		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_OUTBOX],
-		"IPF.Note", FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_OUTBOX,
+	    PRIVATE_FID_IPMSUBTREE, user_id, "IPF.Note")) {
 		printf("fail to create \"outbox\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_SENT_ITEMS,
-		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_SENT],
-		"IPF.Note", FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_SENT_ITEMS,
+	    PRIVATE_FID_IPMSUBTREE, user_id, "IPF.Note")) {
 		printf("fail to create \"sent\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_DELETED_ITEMS,
-		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_DELETED],
-		"IPF.Note", FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_DELETED_ITEMS,
+	    PRIVATE_FID_IPMSUBTREE, user_id, "IPF.Note")) {
 		printf("fail to create \"deleted\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_CONTACTS,
-		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_CONTACTS],
-		"IPF.Contact", FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_CONTACTS,
+	    PRIVATE_FID_IPMSUBTREE, user_id, "IPF.Contact")) {
 		printf("fail to create \"contacts\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_CALENDAR,
-		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_CALENDAR],
-		"IPF.Appointment", FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_CALENDAR,
+	    PRIVATE_FID_IPMSUBTREE, user_id, "IPF.Appointment")) {
 		printf("fail to create \"calendar\" folder\n");
 		return 10;
 	}
@@ -552,115 +511,103 @@ int main(int argc, const char **argv)
 		"username, permission) VALUES (%u, 'default', %u)",
 	        PRIVATE_FID_CALENDAR, frightsFreeBusySimple);
 	sqlite3_exec(psqlite, tmp_sql, NULL, NULL, NULL);
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_JOURNAL,
-		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_JOURNAL],
-		"IPF.Journal", FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_JOURNAL,
+	    PRIVATE_FID_IPMSUBTREE, user_id, "IPF.Journal")) {
 		printf("fail to create \"journal\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_NOTES,
-		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_NOTES],
-		"IPF.StickyNote", FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_NOTES,
+	    PRIVATE_FID_IPMSUBTREE, user_id, "IPF.StickyNote")) {
 		printf("fail to create \"notes\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_TASKS,
-		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_TASKS],
-		"IPF.Task", FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_TASKS,
+	    PRIVATE_FID_IPMSUBTREE, user_id, "IPF.Task")) {
 		printf("fail to create \"tasks\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_QUICKCONTACTS,
-		PRIVATE_FID_CONTACTS, user_id, "Quick Contacts",
-		"IPF.Contact.MOC.QuickContacts", TRUE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_QUICKCONTACTS,
+	    PRIVATE_FID_CONTACTS, user_id, "IPF.Contact.MOC.QuickContacts", TRUE)) {
 		printf("fail to create \"quick contacts\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_IMCONTACTLIST,
-		PRIVATE_FID_CONTACTS, user_id, "IM Contacts List",
-		"IPF.Contact.MOC.ImContactList", TRUE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_IMCONTACTLIST,
+	    PRIVATE_FID_CONTACTS, user_id, "IPF.Contact.MOC.ImContactList", TRUE)) {
 		printf("fail to create \"im contacts list\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_GALCONTACTS,
-		PRIVATE_FID_CONTACTS, user_id, "GAL Contacts",
-		"IPF.Contact.GalContacts", TRUE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_GALCONTACTS,
+	    PRIVATE_FID_CONTACTS, user_id, "IPF.Contact.GalContacts", TRUE)) {
 		printf("fail to create \"contacts\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_JUNK,
-		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_JUNK],
-		"IPF.Note", FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_JUNK,
+	    PRIVATE_FID_IPMSUBTREE, user_id, "IPF.Note")) {
 		printf("fail to create \"junk\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite,
-		PRIVATE_FID_CONVERSATION_ACTION_SETTINGS, PRIVATE_FID_IPMSUBTREE,
-		user_id, "Conversation Action Settings", "IPF.Configuration", TRUE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS,
+	    PRIVATE_FID_IPMSUBTREE, user_id, "IPF.Configuration", TRUE)) {
 		printf("fail to create \"conversation action settings\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_DEFERRED_ACTION,
-		PRIVATE_FID_ROOT, user_id, "Deferred Action", NULL, FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_DEFERRED_ACTION,
+	    PRIVATE_FID_ROOT, user_id)) {
 		printf("fail to create \"deferred action\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_search_folder(psqlite, PRIVATE_FID_SPOOLER_QUEUE,
-		PRIVATE_FID_ROOT, user_id, "Spooler Queue", "IPF.Note")) {
+	if (!create_search_folder(psqlite, PRIVATE_FID_SPOOLER_QUEUE,
+	    PRIVATE_FID_ROOT, user_id, "IPF.Note")) {
 		printf("fail to create \"spooler queue\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_COMMON_VIEWS,
-		PRIVATE_FID_ROOT, user_id, "Common Views", NULL, FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_COMMON_VIEWS,
+	    PRIVATE_FID_ROOT, user_id)) {
 		printf("fail to create \"common views\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_SCHEDULE,
-		PRIVATE_FID_ROOT, user_id, "Schedule", NULL, FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_SCHEDULE,
+	    PRIVATE_FID_ROOT, user_id)) {
 		printf("fail to create \"schedule\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_FINDER,
-		PRIVATE_FID_ROOT, user_id, "Finder", NULL, FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_FINDER,
+	    PRIVATE_FID_ROOT, user_id)) {
 		printf("fail to create \"finder\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_VIEWS,
-		PRIVATE_FID_ROOT, user_id, "Views", NULL, FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_VIEWS,
+	    PRIVATE_FID_ROOT, user_id)) {
 		printf("fail to create \"views\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_SHORTCUTS,
-		PRIVATE_FID_ROOT, user_id, "Shortcuts", NULL, FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_SHORTCUTS,
+	    PRIVATE_FID_ROOT, user_id)) {
 		printf("fail to create \"shortcuts\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_SYNC_ISSUES,
-		PRIVATE_FID_IPMSUBTREE, user_id, folder_lang[RES_ID_SYNC],
-		"IPF.Note", FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_SYNC_ISSUES,
+	    PRIVATE_FID_IPMSUBTREE, user_id, "IPF.Note")) {
 		printf("fail to create \"sync issues\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_CONFLICTS,
-		PRIVATE_FID_SYNC_ISSUES, user_id, folder_lang[RES_ID_CONFLICT],
-		"IPF.Note", FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_CONFLICTS,
+	    PRIVATE_FID_SYNC_ISSUES, user_id, "IPF.Note")) {
 		printf("fail to create \"conflicts\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite,
-		PRIVATE_FID_LOCAL_FAILURES, PRIVATE_FID_SYNC_ISSUES,
-		user_id, folder_lang[RES_ID_LOCAL], "IPF.Note", FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_LOCAL_FAILURES,
+	    PRIVATE_FID_SYNC_ISSUES, user_id, "IPF.Note")) {
 		printf("fail to create \"local failures\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite,
-		PRIVATE_FID_SERVER_FAILURES, PRIVATE_FID_SYNC_ISSUES,
-		user_id, folder_lang[RES_ID_SERVER], "IPF.Note", FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_SERVER_FAILURES,
+	    PRIVATE_FID_SYNC_ISSUES, user_id, "IPF.Note")) {
 		printf("fail to create \"server failures\" folder\n");
 		return 10;
 	}
-	if (FALSE == create_generic_folder(psqlite, PRIVATE_FID_LOCAL_FREEBUSY,
-		PRIVATE_FID_ROOT, user_id, "Freebusy Data", NULL, FALSE)) {
+	if (!create_generic_folder(psqlite, PRIVATE_FID_LOCAL_FREEBUSY,
+	    PRIVATE_FID_ROOT, user_id)) {
 		printf("fail to create \"freebusy data\" folder\n");
 		return 10;
 	}

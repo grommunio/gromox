@@ -13,6 +13,9 @@ character set IDs or locale IDs.
 .IP \(bu 4
 \fIdata_file_path\fP/cpid.txt: mapping between character set IDs and names
 .IP \(bu 4
+\fIdata_file_path\fP/folder_lang.txt: Translations for essential folders in a
+message store.
+.IP \(bu 4
 \fIdata_file_path\fP/lang_charset.txt: mapping from language code to character
 set
 .IP \(bu 4
