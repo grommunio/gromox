@@ -7,6 +7,7 @@
 #include <gromox/sortorder_set.hpp>
 #include "folder_object.h"
 #include <gromox/proptag_array.hpp>
+#include "rop_ids.h"
 #include "rop_processor.h"
 #include "message_object.h"
 #include "processor_types.h"

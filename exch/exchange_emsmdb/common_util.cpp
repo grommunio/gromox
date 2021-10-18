@@ -22,6 +22,7 @@
 #include <gromox/proptag_array.hpp>
 #include "bounce_producer.h"
 #include "emsmdb_interface.h"
+#include "logon_object.h"
 #include <ctime>
 #include <cerrno>
 #include <cstdio>

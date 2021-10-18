@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/element_data.hpp>
 #include <gromox/mapidefs.h>
 #include "msgchg_grouping.h"
 #include <gromox/double_list.hpp>

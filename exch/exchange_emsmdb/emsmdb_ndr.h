@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
-#include "emsmdb_interface.h"
+#include <gromox/rpc_types.hpp>
+#include <gromox/proc_common.h>
+#include <gromox/ndr_stack.hpp>
 
 struct ECDODISCONNECT_IN {
 	CXH cxh;

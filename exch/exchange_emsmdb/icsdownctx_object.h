@@ -1,11 +1,14 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <gromox/element_data.hpp>
 #include <gromox/mem_file.hpp>
-#include "ics_state.h"
 #include <gromox/mapi_types.hpp>
-#include "folder_object.h"
-#include "ftstream_producer.h"
+
+struct FOLDER_OBJECT;
+struct FTSTREAM_PRODUCER;
+struct ICS_STATE;
+struct LOGON_OBJECT;
 
 struct ICSDOWNCTX_OBJECT final {
 	~ICSDOWNCTX_OBJECT();

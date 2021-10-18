@@ -10,6 +10,7 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/lzxpress.hpp>
 #include "rop_ext.h"
+#include "rop_ids.h"
 #define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
 
 using namespace gromox;

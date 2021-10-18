@@ -1,13 +1,17 @@
 #pragma once
 #include <memory>
 #include <gromox/defs.h>
-#include "ftstream_parser.h"
-#include <gromox/element_data.hpp>
+#include <gromox/mapi_types.hpp>
+
 #define ROOT_ELEMENT_FOLDERCONTENT			1
 #define ROOT_ELEMENT_MESSAGECONTENT			2
 #define ROOT_ELEMENT_ATTACHMENTCONTENT		3
 #define ROOT_ELEMENT_MESSAGELIST			4
 #define ROOT_ELEMENT_TOPFOLDER				5
+
+struct FTSTREAM_PARSER;
+struct LOGON_OBJECT;
+struct MESSAGE_CONTENT;
 
 struct FASTUPCTX_OBJECT final {
 	~FASTUPCTX_OBJECT();

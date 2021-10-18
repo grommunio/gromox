@@ -2,9 +2,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <type_traits>
-#include "logon_object.h"
 #include <gromox/mapi_types.hpp>
-#include <gromox/mail.hpp>
 #define NOTIFY_RECEIPT_READ							1
 #define NOTIFY_RECEIPT_NON_READ						2
 #define MAX_HANDLES_ON_CONTEXT						10
@@ -16,6 +14,12 @@ enum {
 	COMMON_UTIL_MAX_MAIL_LENGTH,
 	COMMON_UTIL_MAX_EXTRULE_LENGTH
 };
+
+struct LIB_BUFFER;
+struct LOGON_OBJECT;
+struct MAIL;
+struct MESSAGE_CONTENT;
+struct MIME_POOL;
 
 void* common_util_alloc(size_t size);
 template<typename T> T *cu_alloc()

@@ -1,8 +1,10 @@
 #pragma once
 #include <cstdint>
 #include <memory>
-#include "emsmdb_interface.h"
-#include "logon_object.h"
+#include <gromox/mapi_types.hpp>
+#include <gromox/rpc_types.hpp>
+
+struct LOGON_OBJECT;
 
 struct SUBSCRIPTION_OBJECT {
 	~SUBSCRIPTION_OBJECT();

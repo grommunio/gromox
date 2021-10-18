@@ -6,6 +6,9 @@
 #include <gromox/tpropval_array.hpp>
 #include <gromox/proptag_array.hpp>
 #include "exmdb_client.h"
+#include "folder_object.h"
+#include "ftstream_producer.h"
+#include "logon_object.h"
 #include <gromox/proc_common.h>
 #include "common_util.h"
 #include <gromox/restriction.hpp>

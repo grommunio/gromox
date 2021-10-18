@@ -8,6 +8,7 @@
 #include "emsmdb_interface.h"
 #include "common_util.h"
 #include <gromox/ext_buffer.hpp>
+#include <gromox/proc_common.h>
 #include <gromox/util.hpp>
 #include <sys/stat.h>
 #include <cstring>
@@ -15,6 +16,7 @@
 #include <cstdlib>
 #include <fcntl.h>
 #include <cstdio>
+#include "logon_object.h"
 
 using namespace std::string_literals;
 

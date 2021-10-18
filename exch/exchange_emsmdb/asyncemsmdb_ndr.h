@@ -1,6 +1,9 @@
 #pragma once
-#include "emsmdb_interface.h"
-#include <gromox/proc_common.h>
+#include <cstdint>
+#include <gromox/rpc_types.hpp>
+
+struct NDR_PULL;
+struct NDR_PUSH;
 
 struct ECDOASYNCWAITEX_IN {
 	ACXH acxh;

@@ -5,6 +5,9 @@
 #include "emsmdb_interface.h"
 #include <gromox/tpropval_array.hpp>
 #include "exmdb_client.h"
+#include "ftstream_producer.h"
+#include "ics_state.h"
+#include "logon_object.h"
 #include "common_util.h"
 #include <gromox/proc_common.h>
 #include <gromox/eid_array.hpp>

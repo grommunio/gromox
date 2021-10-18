@@ -1,7 +1,9 @@
 #pragma once
 #include <cstdint>
 #include <gromox/mapi_types.hpp>
-#include "processor_types.h"
+
+struct DB_NOTIFY;
+struct NOTIFY_RESPONSE;
 
 NOTIFY_RESPONSE* notify_response_init(uint32_t handle, uint8_t logon_id);
 void notify_response_free(NOTIFY_RESPONSE *pnotify);

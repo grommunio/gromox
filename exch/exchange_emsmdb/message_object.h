@@ -2,15 +2,15 @@
 #include <cstdint>
 #include <memory>
 #include <gromox/defs.h>
-#include "ics_state.h"
 #include <gromox/mapi_types.hpp>
 #include <gromox/double_list.hpp>
-#include "logon_object.h"
-#include "stream_object.h"
 
 /* MESSAGE_OBJECT and ATTACHMENT_OBJECT are friend classes,
 	so they can operate internal variables of each other */
 struct ATTACHMENT_OBJECT;
+struct ICS_STATE;
+struct LOGON_OBJECT;
+struct STREAM_OBJECT;
 
 struct MESSAGE_OBJECT {
 	~MESSAGE_OBJECT();

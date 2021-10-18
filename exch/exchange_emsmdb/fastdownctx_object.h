@@ -1,8 +1,14 @@
 #pragma once
 #include <cstdint>
 #include <memory>
-#include "ftstream_producer.h"
-#include "ics_state.h"
+#include <gromox/mapi_types.hpp>
+
+struct ATTACHMENT_CONTENT;
+struct FOLDER_CONTENT;
+struct FTSTREAM_PRODUCER;
+struct ICS_STATE;
+struct LOGON_OBJECT;
+struct MESSAGE_CONTENT;
 
 struct FASTDOWNCTX_OBJECT final {
 	~FASTDOWNCTX_OBJECT();

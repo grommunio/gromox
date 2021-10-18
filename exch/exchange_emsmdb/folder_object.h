@@ -2,7 +2,8 @@
 #include <cstdint>
 #include <memory>
 #include <gromox/mapi_types.hpp>
-#include "logon_object.h"
+
+struct LOGON_OBJECT;
 
 struct FOLDER_OBJECT {
 	BOOL get_all_proptags(PROPTAG_ARRAY *);

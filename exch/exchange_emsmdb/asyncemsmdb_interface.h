@@ -1,5 +1,9 @@
 #pragma once
-#include "asyncemsmdb_ndr.h"
+#include <cstdint>
+#include <gromox/rpc_types.hpp>
+
+struct ECDOASYNCWAITEX_IN;
+struct ECDOASYNCWAITEX_OUT;
 
 extern void asyncemsmdb_interface_register_active(void *);
 void asyncemsmdb_interface_init(int threads_num);

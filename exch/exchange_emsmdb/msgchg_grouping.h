@@ -1,7 +1,9 @@
 #pragma once
 #include <cstdint>
-#include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
+
+struct PROPERTY_GROUPINFO;
+struct PROPERTY_NAME;
 
 void msgchg_grouping_init(const char *path);
 extern int msgchg_grouping_run();

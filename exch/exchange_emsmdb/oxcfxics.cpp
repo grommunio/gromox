@@ -18,6 +18,7 @@
 #include <gromox/tpropval_array.hpp>
 #include "message_object.h"
 #include "icsupctx_object.h"
+#include "ics_state.h"
 #include "emsmdb_interface.h"
 #include "fastupctx_object.h"
 #include "icsdownctx_object.h"

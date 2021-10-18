@@ -5,6 +5,9 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
+#include <gromox/int_hash.hpp>
+#include <gromox/proc_common.h>
+#include <gromox/str_hash.hpp>
 #include "emsmdb_interface.h"
 #include "msgchg_grouping.h"
 #include "logon_object.h"

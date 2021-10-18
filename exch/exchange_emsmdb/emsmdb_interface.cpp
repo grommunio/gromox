@@ -6,8 +6,11 @@
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include "asyncemsmdb_interface.h"
+#include "aux_types.h"
 #include "emsmdb_interface.h"
 #include "notify_response.h"
+#include "processor_types.h"
+#include "rop_ids.h"
 #include "rop_processor.h"
 #include <gromox/proc_common.h>
 #include "common_util.h"

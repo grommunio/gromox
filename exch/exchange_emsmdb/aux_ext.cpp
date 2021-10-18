@@ -4,6 +4,7 @@
 #include <gromox/proc_common.h>
 #include "common_util.h"
 #include "aux_ext.h"
+#include "aux_types.h"
 #include <cstring>
 #define AUX_ALIGN_SIZE									4
 #define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)

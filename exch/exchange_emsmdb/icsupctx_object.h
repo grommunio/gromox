@@ -1,10 +1,12 @@
 #pragma once
 #include <cstdint>
 #include <memory>
-#include "folder_object.h"
 #include <gromox/mapi_types.hpp>
-#include "ics_state.h"
 #include <gromox/mem_file.hpp>
+
+struct FOLDER_OBJECT;
+struct ICS_STATE;
+struct LOGON_OBJECT;
 
 struct ICSUPCTX_OBJECT final {
 	~ICSUPCTX_OBJECT();

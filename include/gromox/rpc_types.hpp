@@ -11,3 +11,6 @@ struct SYNTAX_ID {
 	GUID uuid;
 	uint32_t version;
 };
+
+using CXH = CONTEXT_HANDLE;
+using ACXH = CONTEXT_HANDLE;

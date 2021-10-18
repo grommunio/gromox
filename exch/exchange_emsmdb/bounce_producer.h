@@ -1,6 +1,8 @@
 #pragma once
 #include <gromox/mail.hpp>
-#include <gromox/element_data.hpp>
+
+struct MAIL;
+struct MESSAGE_CONTENT;
 
 enum{
 	BOUNCE_NOTIFY_READ,

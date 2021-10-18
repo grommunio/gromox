@@ -2,7 +2,10 @@
 #include <cstdint>
 #include <memory>
 #include <gromox/defs.h>
+#include <gromox/mapi_types.hpp>
 #include "message_object.h"
+
+struct STREAM_OBJECT;
 
 /* MESSAGE_OBJECT and ATTACHMENT_OBJECT are friend classes,
 	so they can operate internal variables of each other */

@@ -6,10 +6,12 @@
 #include <gromox/rop_util.hpp>
 #include "common_util.h"
 #include <gromox/proc_common.h>
+#include "emsmdb_interface.h"
 #include "exmdb_client.h"
 #include "logon_object.h"
 #include "table_object.h"
 #include "folder_object.h"
+#include "rop_ids.h"
 #include "rop_processor.h"
 #include "processor_types.h"
 

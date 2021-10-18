@@ -7,6 +7,8 @@
 #include <gromox/proptag_array.hpp>
 #include "exmdb_client.h"
 #include "logon_object.h"
+#include "message_object.h"
+#include "stream_object.h"
 #include "common_util.h"
 #include <gromox/rop_util.hpp>
 #include <cstdlib>

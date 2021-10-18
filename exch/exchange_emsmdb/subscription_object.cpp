@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <memory>
 #include "common_util.h"
+#include "emsmdb_interface.h"
+#include "logon_object.h"
 #include "subscription_object.h"
 #include "exmdb_client.h"
 

@@ -8,6 +8,7 @@
 #include "common_util.h"
 #include "exmdb_client.h"
 #include "table_object.h"
+#include "rop_ids.h"
 #include "rop_processor.h"
 #include "processor_types.h"
 #include "emsmdb_interface.h"

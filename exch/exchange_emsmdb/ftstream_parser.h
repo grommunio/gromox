@@ -3,9 +3,9 @@
 #include <string>
 #include <gromox/defs.h>
 #include <gromox/mapi_types.hpp>
-#include "logon_object.h"
 
 struct FASTUPCTX_OBJECT;
+struct LOGON_OBJECT;
 using RECORD_MARKER = gxerr_t (*)(FASTUPCTX_OBJECT *, uint32_t);
 using RECORD_PROPVAL = gxerr_t (*)(FASTUPCTX_OBJECT *, const TAGGED_PROPVAL *);
 

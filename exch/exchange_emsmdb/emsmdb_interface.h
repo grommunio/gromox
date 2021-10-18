@@ -1,9 +1,7 @@
 #pragma once
 #include <cstdint>
-#include <gromox/common_types.hpp>
-#include <gromox/proc_common.h>
 #include <gromox/mapi_types.hpp>
-#include <gromox/ndr_stack.hpp>
+#include <gromox/rpc_types.hpp>
 
 struct EMSMDB_INFO {
 	uint32_t cpid;
@@ -14,9 +12,6 @@ struct EMSMDB_INFO {
 	void *plogmap;
 	int upctx_ref;
 };
-
-using CXH = CONTEXT_HANDLE;
-using ACXH = CONTEXT_HANDLE;
 
 extern const char* (*emsmdb_interface_cpid_to_charset)(uint32_t cpid);
 extern void emsmdb_interface_init();

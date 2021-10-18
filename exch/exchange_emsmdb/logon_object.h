@@ -3,11 +3,12 @@
 #include <memory>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
-#include <gromox/str_hash.hpp>
-#include <gromox/int_hash.hpp>
 #define LOGON_MODE_OWNER				0
 #define LOGON_MODE_DELEGATE				1
 #define LOGON_MODE_GUEST				2
+
+struct INT_HASH_TABLE;
+struct STR_HASH_TABLE;
 
 struct LOGON_OBJECT {
 	~LOGON_OBJECT();

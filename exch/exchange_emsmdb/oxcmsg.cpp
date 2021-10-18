@@ -14,6 +14,7 @@
 #include "rop_processor.h"
 #include "message_object.h"
 #include "processor_types.h"
+#include "rop_ids.h"
 #include "emsmdb_interface.h"
 #include "attachment_object.h"
 

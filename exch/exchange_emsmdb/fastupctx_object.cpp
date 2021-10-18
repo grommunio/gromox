@@ -5,9 +5,12 @@
 #include <memory>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
+#include <gromox/proc_common.h>
 #include "attachment_object.h"
 #include "fastupctx_object.h"
+#include "ftstream_parser.h"
 #include "emsmdb_interface.h"
+#include "logon_object.h"
 #include "message_object.h"
 #include <gromox/tpropval_array.hpp>
 #include "folder_object.h"

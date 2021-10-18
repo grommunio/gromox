@@ -1,7 +1,6 @@
 #pragma once
 #include <cstdint>
 #include <gromox/mapi_types.hpp>
-#include "rop_ids.h"
 
 struct LOGON_REQUEST {
 	uint8_t logon_flags;

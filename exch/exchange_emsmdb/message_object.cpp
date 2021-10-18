@@ -8,7 +8,9 @@
 #include "message_object.h"
 #include <gromox/tpropval_array.hpp>
 #include <gromox/proptag_array.hpp>
+#include "ics_state.h"
 #include "logon_object.h"
+#include "stream_object.h"
 #include "exmdb_client.h"
 #include "common_util.h"
 #include <gromox/proc_common.h>

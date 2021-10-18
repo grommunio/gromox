@@ -8,6 +8,7 @@
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include "asyncemsmdb_interface.h"
+#include "asyncemsmdb_ndr.h"
 #include "emsmdb_interface.h"
 #include <gromox/proc_common.h>
 #include "common_util.h"

@@ -7,6 +7,7 @@
 #include "common_util.h"
 #include <gromox/ext_buffer.hpp>
 #include "rops.h"
+#include "rop_ids.h"
 #include <gromox/util.hpp>
 
 unsigned int g_rop_debug;

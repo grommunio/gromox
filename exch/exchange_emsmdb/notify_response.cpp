@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <cstring>
 #include "common_util.h"
+#include "processor_types.h"
 
 namespace {
 

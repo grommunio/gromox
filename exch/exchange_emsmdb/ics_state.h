@@ -1,7 +1,8 @@
 #pragma once
 #include <memory>
 #include <gromox/mapi_types.hpp>
-#include "logon_object.h"
+
+struct LOGON_OBJECT;
 
 enum {
 	ICS_STATE_CONTENTS_DOWN,

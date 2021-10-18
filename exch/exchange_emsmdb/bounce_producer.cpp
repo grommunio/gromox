@@ -12,6 +12,7 @@
 #include <gromox/defs.h>
 #include "bounce_producer.h"
 #include <gromox/dsn.hpp>
+#include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
 #include <gromox/proc_common.h>
 #include "common_util.h"

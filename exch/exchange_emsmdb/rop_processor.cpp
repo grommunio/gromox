@@ -29,6 +29,7 @@
 #include <gromox/str_hash.hpp>
 #include <gromox/int_hash.hpp>
 #include "rop_ext.h"
+#include "rop_ids.h"
 #include <gromox/util.hpp>
 #include <pthread.h>
 #include <unistd.h>

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <gromox/ndr.hpp>
 #include "asyncemsmdb_ndr.h"
 
 int asyncemsmdb_ndr_pull_ecdoasyncwaitex(NDR_PULL *pndr,

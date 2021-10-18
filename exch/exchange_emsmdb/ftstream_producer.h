@@ -4,7 +4,6 @@
 #include <string>
 #include <gromox/mapi_types.hpp>
 #include <gromox/double_list.hpp>
-#include "logon_object.h"
 #include <sys/types.h>
 #define FTSTREAM_PRODUCER_POINT_LENGTH			1024
 #define FTSTREAM_PRODUCER_BUFFER_LENGTH			4*1024*1024
@@ -12,6 +11,14 @@
 #define STRING_OPTION_UNICODE					0x01
 #define STRING_OPTION_CPID						0x02
 #define STRING_OPTION_FORCE_UNICODE				0x08
+
+struct ATTACHMENT_CONTENT;
+struct FOLDER_CHANGES;
+struct LOGON_OBJECT;
+struct MESSAGE_CONTENT;
+struct MSGCHG_PARTIAL;
+struct PROGRESS_INFORMATION;
+struct PROGRESS_MESSAGE;
 
 struct FTSTREAM_PRODUCER {
 	~FTSTREAM_PRODUCER();
