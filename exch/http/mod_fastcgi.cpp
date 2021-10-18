@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
+#include <atomic>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -105,7 +106,7 @@ static uint64_t g_max_size;
 static uint64_t g_cache_size;
 static std::vector<FASTCGI_NODE> g_fastcgi_list;
 static FASTCGI_CONTEXT *g_context_list;
-static volatile int g_unavailable_times;
+static std::atomic<int> g_unavailable_times;
 
 static const FASTCGI_NODE *mod_fastcgi_find_backend(const char *domain,
     const char *uri_path, const char *file_name, const char *suffix,
