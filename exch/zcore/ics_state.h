@@ -1,7 +1,6 @@
 #pragma once
 #include <cstdint>
 #include <gromox/mapi_types.hpp>
-#include "store_object.h"
 
 struct ICS_STATE {
 	int type;

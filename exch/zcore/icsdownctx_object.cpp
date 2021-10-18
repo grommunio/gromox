@@ -14,6 +14,9 @@
 #include <cstdlib>
 #include <cstring>
 #include "common_util.h"
+#include "folder_object.h"
+#include "ics_state.h"
+#include "store_object.h"
 
 std::unique_ptr<ICSDOWNCTX_OBJECT> icsdownctx_object_create(
 	FOLDER_OBJECT *pfolder, uint8_t sync_type)

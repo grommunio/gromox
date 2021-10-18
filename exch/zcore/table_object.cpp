@@ -16,6 +16,7 @@
 #include "zarafa_server.h"
 #include "message_object.h"
 #include "container_object.h"
+#include "store_object.h"
 #include <gromox/propval.hpp>
 #include <cstdlib>
 #include <cstring>

@@ -15,10 +15,12 @@
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
+#include <gromox/int_hash.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/str_hash.hpp>
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
 #include <cstdio>

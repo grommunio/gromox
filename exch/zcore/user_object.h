@@ -1,7 +1,6 @@
 #pragma once
 #include <cstdint>
 #include <memory>
-#include <gromox/mail_func.hpp>
 #include <gromox/mapi_types.hpp>
 
 struct USER_OBJECT {

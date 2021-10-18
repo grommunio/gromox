@@ -38,6 +38,9 @@
 #include "icsdownctx_object.h"
 #include "attachment_object.h"
 #include "exmdb_client.h"
+#include "ics_state.h"
+#include "object_tree.h"
+#include "store_object.h"
 #include <gromox/idset.hpp>
 #include <sys/socket.h>
 #include <cstdio>

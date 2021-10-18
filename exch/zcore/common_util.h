@@ -3,9 +3,7 @@
 #include <cstdlib>
 #include <type_traits>
 #include <gromox/defs.h>
-#include <gromox/common_types.hpp>
-#include "store_object.h"
-#include "message_object.h"
+#include <gromox/mapi_types.hpp>
 #define SOCKET_TIMEOUT								60
 
 /* defined by zarafa */
@@ -108,6 +106,10 @@ enum {
 	RES_ID_SERVER,
 	RES_TOTAL_NUM
 };
+
+struct MESSAGE_CONTENT;
+struct MESSAGE_OBJECT;
+struct STORE_OBJECT;
 
 extern void common_util_init(const char *org_name, const char *hostname, const char *default_charset, const char *default_zone, int mime_num, int max_rcpt, int max_msg, unsigned int max_mail_len, unsigned int max_rule_len, const char *smtp_ip, uint16_t smtp_port, const char *freebusy_path, const char *submit_cmd);
 extern int common_util_run(const char *data_path);

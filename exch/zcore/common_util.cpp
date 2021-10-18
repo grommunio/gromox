@@ -34,6 +34,7 @@
 #include "zarafa_server.h"
 #include <gromox/alloc_context.hpp>
 #include "bounce_producer.h"
+#include "store_object.h"
 #include "system_services.h"
 #include <sys/socket.h>
 #include <sys/types.h>

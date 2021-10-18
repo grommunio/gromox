@@ -11,11 +11,14 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/dsn.hpp>
+#include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
 #include "bounce_producer.h"
 #include "system_services.h"
 #include "common_util.h"
+#include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
+#include <gromox/mime.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>

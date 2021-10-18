@@ -4,7 +4,6 @@
 #include <unordered_map>
 #include <gromox/tpropval_array.hpp>
 #include <gromox/simple_tree.hpp>
-#include <gromox/int_hash.hpp>
 #define ROOT_HANDLE						0
 #define INVALID_HANDLE					0xFFFFFFFF
 

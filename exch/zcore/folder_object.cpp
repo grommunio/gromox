@@ -13,6 +13,7 @@
 #include "zarafa_server.h"
 #include "common_util.h"
 #include "exmdb_client.h"
+#include "store_object.h"
 #include <gromox/ext_buffer.hpp>
 #include <gromox/rop_util.hpp>
 #include <cstdio>

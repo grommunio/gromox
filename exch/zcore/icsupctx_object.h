@@ -1,8 +1,11 @@
 #pragma once
 #include <cstdint>
-#include "folder_object.h"
+#include <memory>
 #include <gromox/mapi_types.hpp>
-#include "ics_state.h"
+
+struct FOLDER_OBJECT;
+struct ICS_STATE;
+struct STORE_OBJECT;
 
 struct ICSUPCTX_OBJECT final {
 	BOOL upload_state(const BINARY *state);

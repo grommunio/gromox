@@ -6,8 +6,6 @@
 #include <string>
 #include <unordered_map>
 #include <gromox/mapi_types.hpp>
-#include "common_util.h"
-#include "object_tree.h"
 #include <pthread.h>
 #include <ctime>
 
@@ -15,6 +13,8 @@ enum {
 	USER_TABLE_SIZE,
 	USER_TABLE_USED
 };
+
+struct OBJECT_TREE;
 
 struct USER_INFO {
 	USER_INFO();

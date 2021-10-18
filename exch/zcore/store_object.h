@@ -2,8 +2,9 @@
 #include <memory>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
-#include <gromox/str_hash.hpp>
-#include <gromox/int_hash.hpp>
+
+struct INT_HASH_TABLE;
+struct STR_HASH_TABLE;
 
 struct STORE_OBJECT {
 	~STORE_OBJECT();
@@ -36,7 +37,5 @@ struct STORE_OBJECT {
 	STR_HASH_TABLE *ppropname_hash = nullptr;
 	DOUBLE_LIST group_list{};
 };
-
-struct PERMISSION_SET;
 
 extern std::unique_ptr<STORE_OBJECT> store_object_create(BOOL b_private, int account_id, const char *account, const char *dir);

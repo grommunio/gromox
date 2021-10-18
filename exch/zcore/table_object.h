@@ -1,7 +1,6 @@
 #pragma once
 #include <cstdint>
 #include <memory>
-#include "store_object.h"
 #include <gromox/mapi_types.hpp>
 
 enum zcore_table_type {
@@ -14,6 +13,8 @@ enum zcore_table_type {
 	CONTAINER_TABLE = 7,
 	USER_TABLE = 8,
 };
+
+struct STORE_OBJECT;
 
 struct TABLE_OBJECT {
 	~TABLE_OBJECT();
