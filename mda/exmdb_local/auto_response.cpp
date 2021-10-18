@@ -18,6 +18,8 @@
 #include <cstdio>
 #include <ctime>
 
+using namespace gromox;
+
 void auto_response_reply(const char *user_home,
 	const char *from, const char *rcpt)
 {
@@ -34,7 +36,7 @@ void auto_response_reply(const char *user_home,
 	char date_buff[128];
 	char temp_path[256];
 	uint8_t reply_state;
-	char audit_buff[256];
+	char audit_buff[UADDR_SIZE+2];
 	MIME_FIELD mime_field;
 	struct stat node_stat;
 	char content_type[256];
@@ -104,7 +106,7 @@ void auto_response_reply(const char *user_home,
 		}
 		snprintf(template_path, 256, "%s/config/external-reply", user_home);
 	}
-	snprintf(audit_buff, 256, "%s:%s", from, rcpt);
+	snprintf(audit_buff, arsizeof(audit_buff), "%s:%s", from, rcpt);
 	if (FALSE == bounce_audit_check(audit_buff)) {
 		return;
 	}
