@@ -40,6 +40,7 @@ REWRITE_NODE::REWRITE_NODE(REWRITE_NODE &&o) :
 	if (reg_set)
 		regfree(&search_pattern);
 	memcpy(&search_pattern, &o.search_pattern, sizeof(search_pattern));
+	reg_set = o.reg_set;
 	o.reg_set = false;
 }
 
