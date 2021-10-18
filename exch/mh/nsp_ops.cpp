@@ -3,7 +3,6 @@
 #include <gromox/mapi_types.hpp>
 #include "nsp_ops.hpp"
 #define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
-static constexpr bool NSP_MODE = true;
 
 static int nsp_ext_g_tpropval_a(nsp_ext_pull &ext, LTPROPVAL_ARRAY *proplist)
 {
