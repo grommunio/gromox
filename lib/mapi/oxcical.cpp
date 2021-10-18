@@ -4125,10 +4125,8 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
     std::shared_ptr<ICAL_COMPONENT> pcomponent, APPOINTMENT_RECUR_PAT *apr)
 {
 	BOOL b_found;
-	time_t tmp_time;
 	ICAL_TIME itime;
 	std::shared_ptr<ICAL_LINE> piline;
-	uint64_t tmp_int64;
 	std::shared_ptr<ICAL_PARAM> piparam;
 	char tmp_buff[1024];
 	
@@ -4186,10 +4184,8 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 		if (TRUE == b_found) {
 			continue;
 		}
-		tmp_int64 = (apr->recur_pat.pdeletedinstancedates[i]
-								+ apr->starttimeoffset) *600000000;
-		tmp_time = rop_util_nttime_to_unix(tmp_int64);
-		ical_utc_to_datetime(NULL, tmp_time, &itime);
+		auto tmp_int64 = (apr->recur_pat.pdeletedinstancedates[i] + apr->starttimeoffset) * 600000000ULL;
+		ical_utc_to_datetime(nullptr, rop_util_nttime_to_unix(tmp_int64), &itime);
 		if (TRUE == b_date) {
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
 				itime.year, itime.month, itime.day);
@@ -4239,9 +4235,7 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
      std::shared_ptr<ICAL_COMPONENT> pcomponent, APPOINTMENT_RECUR_PAT *apr)
 {
 	BOOL b_found;
-	time_t tmp_time;
 	ICAL_TIME itime;
-	uint64_t tmp_int64;
 	std::shared_ptr<ICAL_PARAM> piparam;
 	char tmp_buff[1024];
 	
@@ -4291,9 +4285,8 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 		if (TRUE == b_found) {
 			continue;
 		}
-		tmp_int64 = apr->recur_pat.pmodifiedinstancedates[i] * 600000000;
-		tmp_time = rop_util_nttime_to_unix(tmp_int64);
-		ical_utc_to_datetime(NULL, tmp_time, &itime);
+		auto tmp_int64 = apr->recur_pat.pmodifiedinstancedates[i] * 600000000ULL;
+		ical_utc_to_datetime(nullptr, rop_util_nttime_to_unix(tmp_int64), &itime);
 		if (TRUE == b_date) {
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
 				itime.year, itime.month, itime.day);
