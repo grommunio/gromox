@@ -157,10 +157,6 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 			printf("[exmdb_local]: failed to run bounce producer\n");
 			return FALSE;
 		}
-		if (0 != bounce_audit_run()) {
-			printf("[exmdb_local]: failed to run bounce audit\n");
-			return FALSE;
-		}
 		if (0 != cache_queue_run()) {
 			printf("[exmdb_local]: failed to run cache queue\n");
 			return FALSE;
@@ -184,7 +180,6 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		exmdb_client_stop();
 		cache_queue_stop();
 		cache_queue_free();
-		bounce_audit_stop();
 		net_failure_free();
         return TRUE;
     }
