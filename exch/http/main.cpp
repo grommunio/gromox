@@ -7,6 +7,7 @@
 #include <cstring>
 #include <memory>
 #include <typeinfo>
+#include <libHX/misc.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
@@ -252,9 +253,14 @@ int main(int argc, const char **argv) try
 	printf("[pdu_processor]: maximum request memory is %s\n", temp_buff);
 
 	auto str_value = g_config_file->get_value("service_plugin_list");
-	const char *const *proc_plugin_list = NULL;
+	char **proc_plugin_list = nullptr, **hpm_plugin_list = nullptr, **service_plugin_list = nullptr;
+	auto cl_0 = make_scope_exit([&]() {
+		HX_zvecfree(service_plugin_list);
+		HX_zvecfree(hpm_plugin_list);
+		HX_zvecfree(proc_plugin_list);
+	});
 	if (str_value != NULL) {
-		proc_plugin_list = const_cast<const char * const *>(read_file_by_line(str_value));
+		proc_plugin_list = read_file_by_line(str_value);
 		if (proc_plugin_list == NULL) {
 			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
 			return EXIT_FAILURE;
@@ -262,9 +268,8 @@ int main(int argc, const char **argv) try
 	}
 	
 	str_value = resource_get_string("HPM_PLUGIN_LIST");
-	const char *const *hpm_plugin_list = NULL;
 	if (str_value != NULL) {
-		hpm_plugin_list = const_cast<const char * const *>(read_file_by_line(str_value));
+		hpm_plugin_list = read_file_by_line(str_value);
 		if (hpm_plugin_list == NULL) {
 			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
 			return EXIT_FAILURE;
@@ -280,9 +285,8 @@ int main(int argc, const char **argv) try
 	printf("[hpm_processor]: hpm maximum size is %s\n", temp_buff);
 
 	str_value = resource_get_string("SERVICE_PLUGIN_LIST");
-	const char *const *service_plugin_list = NULL;
 	if (str_value != NULL) {
-		service_plugin_list = const_cast<const char * const *>(read_file_by_line(str_value));
+		service_plugin_list = read_file_by_line(str_value);
 		if (service_plugin_list == NULL) {
 			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
 			return EXIT_FAILURE;

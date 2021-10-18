@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <memory>
+#include <libHX/misc.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
@@ -156,9 +157,10 @@ int main(int argc, const char **argv) try
 	printf("[system]: hostname is %s\n", host_name);
 	
 	str_value = pconfig->get_value("SERVICE_PLUGIN_LIST");
-	const char *const *service_plugin_list = NULL;
+	char **service_plugin_list = nullptr;
+	auto cl_0d = make_scope_exit([&]() { HX_zvecfree(service_plugin_list); });
 	if (str_value != NULL) {
-		service_plugin_list = deconst(read_file_by_line(str_value));
+		service_plugin_list = read_file_by_line(str_value);
 		if (service_plugin_list == NULL) {
 			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
 			return 2;

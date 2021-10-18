@@ -46,7 +46,7 @@ char **read_file_by_line(const char *file)
 
 	hxmc_t *line = nullptr;
 	try {
-		std::list<std::unique_ptr<char[]>> dq;
+		std::list<std::unique_ptr<char[], stdlib_delete>> dq;
 		while (HX_getl(&line, fp.get()) != nullptr) {
 			HX_chomp(line);
 			decltype(dq)::value_type s(strdup(line));
@@ -56,11 +56,13 @@ char **read_file_by_line(const char *file)
 		}
 		HXmc_free(line);
 		line = nullptr;
-		auto ret = std::make_unique<char *[]>(dq.size() + 1);
+		auto ret = static_cast<char **>(malloc(sizeof(char *) * (dq.size() + 1)));
+		if (ret == nullptr)
+			return ret;
 		size_t i = 0;
 		for (auto &e : dq)
 			ret[i++] = e.release();
-		return ret.release();
+		return ret;
 	} catch (const std::bad_alloc &) {
 		errno = ENOMEM;
 		return nullptr;

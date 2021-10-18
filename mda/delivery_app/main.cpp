@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <libHX/misc.h>
 #include <libHX/option.h>
 #include <gromox/atomic.hpp>
 #include <gromox/fileio.h>
@@ -155,9 +156,10 @@ int main(int argc, const char **argv) try
     printf("[message_dequeue]: maximum allocated memory is %s\n", temp_buff);
     
 	const char *str_value = resource_get_string("MPC_PLUGIN_LIST");
-	const char *const *mpc_plugin_list = NULL;
+	char **mpc_plugin_list = nullptr;
+	auto cl_0 = make_scope_exit([&]() { HX_zvecfree(mpc_plugin_list); });
 	if (str_value != NULL) {
-		mpc_plugin_list = const_cast<const char * const *>(read_file_by_line(str_value));
+		mpc_plugin_list = read_file_by_line(str_value);
 		if (mpc_plugin_list == NULL) {
 			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
 			return EXIT_FAILURE;

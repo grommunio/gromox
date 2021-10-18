@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <memory>
+#include <libHX/misc.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
@@ -117,9 +118,10 @@ int main(int argc, const char **argv) try
 	};
 	config_file_apply(*g_config_file, cfg_default_values);
 	auto str_value = pconfig->get_value("SERVICE_PLUGIN_LIST");
-	const char *const *service_plugin_list = NULL;
+	char **service_plugin_list = nullptr;
+	auto cl_0c = make_scope_exit([&]() { HX_zvecfree(service_plugin_list); });
 	if (str_value != NULL) {
-		service_plugin_list = const_cast<const char * const *>(read_file_by_line(str_value));
+		service_plugin_list = read_file_by_line(str_value);
 		if (service_plugin_list == NULL) {
 			printf("read_file_by_line %s: %s\n", str_value, strerror(errno));
 			return 2;
