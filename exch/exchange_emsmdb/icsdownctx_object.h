@@ -5,18 +5,18 @@
 #include <gromox/mem_file.hpp>
 #include <gromox/mapi_types.hpp>
 
-struct FOLDER_OBJECT;
+struct folder_object;
 struct FTSTREAM_PRODUCER;
 struct ICS_STATE;
-struct LOGON_OBJECT;
+struct logon_object;
 
-struct ICSDOWNCTX_OBJECT final {
+struct icsdownctx_object final {
 	protected:
-	ICSDOWNCTX_OBJECT() = default;
+	icsdownctx_object() = default;
 
 	public:
-	~ICSDOWNCTX_OBJECT();
-	static std::unique_ptr<ICSDOWNCTX_OBJECT> create(LOGON_OBJECT *, FOLDER_OBJECT *, uint8_t sync_type, uint8_t send_options, uint16_t sync_flags, const RESTRICTION *, uint32_t extra_flags, const PROPTAG_ARRAY *);
+	~icsdownctx_object();
+	static std::unique_ptr<icsdownctx_object> create(logon_object *, folder_object *, uint8_t sync_type, uint8_t send_options, uint16_t sync_flags, const RESTRICTION *, uint32_t extra_flags, const PROPTAG_ARRAY *);
 	BOOL begin_state_stream(uint32_t state_property);
 	BOOL continue_state_stream(const BINARY *stream_data);
 	BOOL end_state_stream();
@@ -27,7 +27,7 @@ struct ICSDOWNCTX_OBJECT final {
 
 	std::unique_ptr<FTSTREAM_PRODUCER> pstream;
 	uint8_t sync_type = 0;
-	FOLDER_OBJECT *pfolder = nullptr;
+	folder_object *pfolder = nullptr;
 	std::unique_ptr<ICS_STATE> pstate; /* public member */
 	uint32_t state_property = 0;
 	MEM_FILE f_state_stream{};
@@ -47,4 +47,3 @@ struct ICSDOWNCTX_OBJECT final {
 	uint64_t ratio = 0;
 	PROPERTY_GROUPINFO fake_gpinfo{};
 };
-using icsdownctx_object = ICSDOWNCTX_OBJECT;

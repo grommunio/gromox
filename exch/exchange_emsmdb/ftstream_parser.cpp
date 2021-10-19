@@ -824,7 +824,7 @@ gxerr_t FTSTREAM_PARSER::process(RECORD_MARKER record_marker,
 		switch (ftstream_parser_read_element(*this, marker, propval)) {
 		case FTSTREAM_PARSER_READ_OK: {
 			if (0 != marker) {
-				gxerr_t err = record_marker(static_cast<FASTUPCTX_OBJECT *>(pparam), marker);
+				gxerr_t err = record_marker(static_cast<fastupctx_object *>(pparam), marker);
 				if (err != GXERR_SUCCESS)
 					return err;
 				break;
@@ -843,7 +843,7 @@ gxerr_t FTSTREAM_PARSER::process(RECORD_MARKER record_marker,
 					propval.pvalue = pvalue;
 				}
 			}
-			gxerr_t err = record_propval(static_cast<FASTUPCTX_OBJECT *>(pparam), &propval);
+			gxerr_t err = record_propval(static_cast<fastupctx_object *>(pparam), &propval);
 			if (err != GXERR_SUCCESS)
 				return err;
 			break;
@@ -857,7 +857,7 @@ gxerr_t FTSTREAM_PARSER::process(RECORD_MARKER record_marker,
 	}
 }
 
-std::unique_ptr<ftstream_parser> ftstream_parser::create(LOGON_OBJECT *plogon) try
+std::unique_ptr<ftstream_parser> ftstream_parser::create(logon_object *plogon) try
 {
 	auto stream_id = common_util_get_ftstream_id();
 	auto rpc_info = get_rpc_info();

@@ -31,8 +31,7 @@ struct BOOKMARK_NODE {
 
 }
 
-static void table_object_set_table_id(
-	TABLE_OBJECT *ptable, uint32_t table_id)
+static void table_object_set_table_id(table_object *ptable, uint32_t table_id)
 {
 	auto dir = ptable->plogon->get_dir();
 	if (ptable->m_table_id != 0) {
@@ -51,7 +50,7 @@ static void table_object_set_table_id(
 	ptable->m_table_id = table_id;
 }
 
-BOOL TABLE_OBJECT::check_loaded()
+BOOL table_object::check_loaded()
 {
 	auto ptable = this;
 	if (ptable->rop_id == ropGetAttachmentTable)
@@ -59,7 +58,7 @@ BOOL TABLE_OBJECT::check_loaded()
 	return m_table_id == 0 ? false : TRUE;
 }
 
-BOOL TABLE_OBJECT::check_to_load()
+BOOL table_object::check_to_load()
 {
 	auto ptable = this;
 	uint32_t row_num;
@@ -76,7 +75,7 @@ BOOL TABLE_OBJECT::check_to_load()
 		auto username = ptable->plogon->logon_mode == LOGON_MODE_OWNER ?
 		                nullptr : rpc_info.username;
 		if (!exmdb_client_load_hierarchy_table(ptable->plogon->get_dir(),
-		    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
+		    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 		    username, ptable->table_flags, m_restriction,
 		    &table_id, &row_num))
 			return FALSE;
@@ -95,7 +94,7 @@ BOOL TABLE_OBJECT::check_to_load()
 			} else {
 				if (!exmdb_client_check_folder_permission(
 				    ptable->plogon->get_dir(),
-				    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
+				    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 				    rpc_info.username, &permission))
 					return FALSE;	
 				if (!(permission & (frightsReadAny | frightsOwner)))
@@ -103,7 +102,7 @@ BOOL TABLE_OBJECT::check_to_load()
 			}
 		}
 		if (!exmdb_client_load_content_table(ptable->plogon->get_dir(),
-		    pinfo->cpid, static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
+		    pinfo->cpid, static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 		    username, ptable->table_flags, m_restriction,
 		    m_sorts, &table_id, &row_num))
 			return FALSE;
@@ -111,13 +110,13 @@ BOOL TABLE_OBJECT::check_to_load()
 	}
 	case ropGetPermissionsTable:
 		if (!exmdb_client_load_permission_table(ptable->plogon->get_dir(),
-		    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
+		    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 		    ptable->table_flags, &table_id, &row_num))
 			return FALSE;
 		break;
 	case ropGetRulesTable:
 		if (!exmdb_client_load_rule_table(ptable->plogon->get_dir(),
-		    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
+		    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 		    ptable->table_flags, m_restriction, &table_id, &row_num))
 			return FALSE;
 		break;
@@ -129,12 +128,12 @@ BOOL TABLE_OBJECT::check_to_load()
 	return TRUE;
 }
 
-void TABLE_OBJECT::unload()
+void table_object::unload()
 {
 	table_object_set_table_id(this, 0);
 }
 
-BOOL TABLE_OBJECT::query_rows(BOOL b_forward, uint16_t row_count, TARRAY_SET *pset)
+BOOL table_object::query_rows(BOOL b_forward, uint16_t row_count, TARRAY_SET *pset)
 {
 	auto ptable = this;
 	DCERPC_INFO rpc_info;
@@ -156,7 +155,7 @@ BOOL TABLE_OBJECT::query_rows(BOOL b_forward, uint16_t row_count, TARRAY_SET *ps
 	}
 	int32_t row_needed = b_forward ? row_count : -row_count; /* XXX */
 	if (ptable->rop_id == ropGetAttachmentTable) {
-		return static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj)->query_attachment_table(
+		return static_cast<message_object *>(ptable->pparent_obj)->query_attachment_table(
 		       m_columns, m_position, row_needed, pset);
 	}
 	if (!ptable->plogon->check_private()) {
@@ -170,7 +169,7 @@ BOOL TABLE_OBJECT::query_rows(BOOL b_forward, uint16_t row_count, TARRAY_SET *ps
 	       m_position, row_needed, pset);
 }
 
-void TABLE_OBJECT::seek_current(BOOL b_forward, uint16_t row_count)
+void table_object::seek_current(BOOL b_forward, uint16_t row_count)
 {
 	auto ptable = this;
 	
@@ -188,7 +187,7 @@ void TABLE_OBJECT::seek_current(BOOL b_forward, uint16_t row_count)
 	}
 }
 
-BOOL TABLE_OBJECT::set_columns(const PROPTAG_ARRAY *pcolumns)
+BOOL table_object::set_columns(const PROPTAG_ARRAY *pcolumns)
 {
 	if (m_columns != nullptr)
 		proptag_array_free(m_columns);
@@ -200,7 +199,7 @@ BOOL TABLE_OBJECT::set_columns(const PROPTAG_ARRAY *pcolumns)
 	return m_columns != nullptr ? TRUE : false;
 }
 
-BOOL TABLE_OBJECT::set_sorts(const SORTORDER_SET *psorts)
+BOOL table_object::set_sorts(const SORTORDER_SET *psorts)
 {
 	if (m_sorts != nullptr)
 		sortorder_set_free(m_sorts);
@@ -212,7 +211,7 @@ BOOL TABLE_OBJECT::set_sorts(const SORTORDER_SET *psorts)
 	return m_sorts != nullptr ? TRUE : false;
 }
 
-BOOL TABLE_OBJECT::set_restriction(const RESTRICTION *prestriction)
+BOOL table_object::set_restriction(const RESTRICTION *prestriction)
 {
 	if (m_restriction != nullptr)
 		restriction_free(m_restriction);
@@ -224,7 +223,7 @@ BOOL TABLE_OBJECT::set_restriction(const RESTRICTION *prestriction)
 	return m_restriction != nullptr ? TRUE : false;
 }
 
-void TABLE_OBJECT::set_position(uint32_t position)
+void table_object::set_position(uint32_t position)
 {
 	auto ptable = this;
 	auto total_rows = ptable->get_total();
@@ -234,7 +233,7 @@ void TABLE_OBJECT::set_position(uint32_t position)
 	m_position = position;
 }
 
-uint32_t TABLE_OBJECT::get_total() const
+uint32_t table_object::get_total() const
 {
 	auto ptable = this;
 	uint16_t num;
@@ -242,7 +241,7 @@ uint32_t TABLE_OBJECT::get_total() const
 	
 	if (ptable->rop_id == ropGetAttachmentTable) {
 		num = 0;
-		static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj)->get_attachments_num(&num);
+		static_cast<message_object *>(ptable->pparent_obj)->get_attachments_num(&num);
 		return num;
 	}
 	exmdb_client_sum_table(ptable->plogon->get_dir(),
@@ -250,11 +249,11 @@ uint32_t TABLE_OBJECT::get_total() const
 	return total_rows;
 }
 
-std::unique_ptr<TABLE_OBJECT> table_object::create(LOGON_OBJECT *plogon,
+std::unique_ptr<table_object> table_object::create(logon_object *plogon,
 	void *pparent_obj, uint8_t table_flags,
 	uint8_t rop_id, uint8_t logon_id)
 {
-	std::unique_ptr<TABLE_OBJECT> ptable;
+	std::unique_ptr<table_object> ptable;
 	try {
 		ptable.reset(new table_object);
 	} catch (const std::bad_alloc &) {
@@ -279,7 +278,7 @@ std::unique_ptr<TABLE_OBJECT> table_object::create(LOGON_OBJECT *plogon,
 	return ptable;
 }
 
-TABLE_OBJECT::~TABLE_OBJECT()
+table_object::~table_object()
 {
 	auto ptable = this;
 	ptable->reset();
@@ -311,7 +310,7 @@ BOOL table_object::create_bookmark(uint32_t *pindex)
 	return TRUE;
 }
 
-BOOL TABLE_OBJECT::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
+BOOL table_object::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 {
 	auto ptable = this;
 	uint64_t inst_id;
@@ -353,7 +352,7 @@ BOOL TABLE_OBJECT::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 	return TRUE;
 }
 
-void TABLE_OBJECT::remove_bookmark(uint32_t index)
+void table_object::remove_bookmark(uint32_t index)
 {
 	auto ptable = this;
 	DOUBLE_LIST_NODE *pnode;
@@ -368,7 +367,7 @@ void TABLE_OBJECT::remove_bookmark(uint32_t index)
 	}
 }
 
-void TABLE_OBJECT::clear_bookmarks()
+void table_object::clear_bookmarks()
 {
 	DOUBLE_LIST_NODE *pnode;
 	
@@ -376,7 +375,7 @@ void TABLE_OBJECT::clear_bookmarks()
 		free(pnode->pdata);
 }
 
-void TABLE_OBJECT::reset()
+void table_object::reset()
 {
 	auto ptable = this;
 	if (m_columns != nullptr) {
@@ -396,17 +395,17 @@ void TABLE_OBJECT::reset()
 	ptable->clear_bookmarks();
 }
 
-BOOL TABLE_OBJECT::get_all_columns(PROPTAG_ARRAY *pcolumns)
+BOOL table_object::get_all_columns(PROPTAG_ARRAY *pcolumns)
 {
 	auto ptable = this;
 	if (ptable->rop_id == ropGetAttachmentTable)
-		return static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj)->
+		return static_cast<message_object *>(ptable->pparent_obj)->
 		       get_attachment_table_all_proptags(pcolumns);
 	return exmdb_client_get_table_all_proptags(ptable->plogon->get_dir(),
 	       m_table_id, pcolumns);
 }
 
-BOOL TABLE_OBJECT::match_row(BOOL b_forward, const RESTRICTION *pres,
+BOOL table_object::match_row(BOOL b_forward, const RESTRICTION *pres,
 	int32_t *pposition, TPROPVAL_ARRAY *ppropvals)
 {
 	auto ptable = this;
@@ -427,7 +426,7 @@ BOOL TABLE_OBJECT::match_row(BOOL b_forward, const RESTRICTION *pres,
 	       pres, m_columns, pposition, ppropvals);
 }
 
-BOOL TABLE_OBJECT::read_row(uint64_t inst_id, uint32_t inst_num,
+BOOL table_object::read_row(uint64_t inst_id, uint32_t inst_num,
 	TPROPVAL_ARRAY *ppropvals)
 {
 	auto ptable = this;
@@ -448,28 +447,28 @@ BOOL TABLE_OBJECT::read_row(uint64_t inst_id, uint32_t inst_num,
 	       inst_id, inst_num, ppropvals);
 }
 
-BOOL TABLE_OBJECT::expand(uint64_t inst_id, BOOL *pb_found, int32_t *pposition,
+BOOL table_object::expand(uint64_t inst_id, BOOL *pb_found, int32_t *pposition,
     uint32_t *prow_count)
 {
 	return exmdb_client_expand_table(plogon->get_dir(),
 	       m_table_id, inst_id, pb_found, pposition, prow_count);
 }
 
-BOOL TABLE_OBJECT::collapse(uint64_t inst_id, BOOL *pb_found,
+BOOL table_object::collapse(uint64_t inst_id, BOOL *pb_found,
     int32_t *pposition, uint32_t *prow_count)
 {
 	return exmdb_client_collapse_table(plogon->get_dir(),
 	       m_table_id, inst_id, pb_found, pposition, prow_count);
 }
 
-BOOL TABLE_OBJECT::store_state(uint64_t inst_id, uint32_t inst_num,
+BOOL table_object::store_state(uint64_t inst_id, uint32_t inst_num,
     uint32_t *pstate_id)
 {
 	return exmdb_client_store_table_state(plogon->get_dir(),
 	       m_table_id, inst_id, inst_num, pstate_id);
 }
 
-BOOL TABLE_OBJECT::restore_state(uint32_t state_id, uint32_t *pindex)
+BOOL table_object::restore_state(uint32_t state_id, uint32_t *pindex)
 {
 	int32_t position;
 	uint64_t inst_id;

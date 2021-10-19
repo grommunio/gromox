@@ -14,7 +14,7 @@
 
 struct ATTACHMENT_CONTENT;
 struct FOLDER_CHANGES;
-struct LOGON_OBJECT;
+struct logon_object;
 struct MESSAGE_CONTENT;
 struct MSGCHG_PARTIAL;
 struct PROGRESS_INFORMATION;
@@ -26,7 +26,7 @@ struct FTSTREAM_PRODUCER {
 
 	public:
 	~FTSTREAM_PRODUCER();
-	static std::unique_ptr<FTSTREAM_PRODUCER> create(LOGON_OBJECT *, uint8_t string_option);
+	static std::unique_ptr<FTSTREAM_PRODUCER> create(logon_object *, uint8_t string_option);
 	inline int total_length() const { return offset; }
 	BOOL read_buffer(void *buf, uint16_t *len, BOOL *last);
 	BOOL write_uint32(uint32_t);
@@ -49,7 +49,7 @@ struct FTSTREAM_PRODUCER {
 	uint8_t buffer[FTSTREAM_PRODUCER_BUFFER_LENGTH]{};
 	uint32_t buffer_offset = 0, read_offset = 0;
 	uint8_t string_option = 0;
-	LOGON_OBJECT *plogon = nullptr; /* plogon is a protected member */
+	logon_object *plogon = nullptr; /* plogon is a protected member */
 	DOUBLE_LIST bp_list{};
 	BOOL b_read = false;
 };

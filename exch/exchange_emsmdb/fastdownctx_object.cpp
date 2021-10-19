@@ -201,7 +201,7 @@ static BOOL fastdownctx_object_record_subfolder(
 	return TRUE;
 }
 
-BOOL FASTDOWNCTX_OBJECT::make_messagecontent(MESSAGE_CONTENT *pmsgctnt)
+BOOL fastdownctx_object::make_messagecontent(MESSAGE_CONTENT *pmsgctnt)
 {
 	auto pctx = this;
 	if (!pctx->pstream->write_messagecontent(false, pmsgctnt))
@@ -211,7 +211,7 @@ BOOL FASTDOWNCTX_OBJECT::make_messagecontent(MESSAGE_CONTENT *pmsgctnt)
 	return TRUE;
 }
 
-BOOL FASTDOWNCTX_OBJECT::make_attachmentcontent(ATTACHMENT_CONTENT *pattachment)
+BOOL fastdownctx_object::make_attachmentcontent(ATTACHMENT_CONTENT *pattachment)
 {
 	auto pctx = this;
 	if (!pctx->pstream->write_attachmentcontent(false, pattachment))
@@ -221,7 +221,7 @@ BOOL FASTDOWNCTX_OBJECT::make_attachmentcontent(ATTACHMENT_CONTENT *pattachment)
 	return TRUE;
 }
 
-BOOL FASTDOWNCTX_OBJECT::make_state(ICS_STATE *pstate)
+BOOL fastdownctx_object::make_state(ICS_STATE *pstate)
 {
 	auto pproplist = pstate->serialize();
 	if (NULL == pproplist) {
@@ -238,7 +238,7 @@ BOOL FASTDOWNCTX_OBJECT::make_state(ICS_STATE *pstate)
 	return TRUE;
 }
 
-BOOL FASTDOWNCTX_OBJECT::make_foldercontent(BOOL b_subfolders,
+BOOL fastdownctx_object::make_foldercontent(BOOL b_subfolders,
     std::unique_ptr<FOLDER_CONTENT> &&fc)
 {
 	auto pctx = this;
@@ -277,7 +277,7 @@ BOOL FASTDOWNCTX_OBJECT::make_foldercontent(BOOL b_subfolders,
 	return TRUE;
 }
 	
-BOOL FASTDOWNCTX_OBJECT::make_topfolder(std::unique_ptr<FOLDER_CONTENT> &&fc)
+BOOL fastdownctx_object::make_topfolder(std::unique_ptr<FOLDER_CONTENT> &&fc)
 {
 	auto pctx = this;
 	DOUBLE_LIST_NODE *pnode;
@@ -305,7 +305,7 @@ BOOL FASTDOWNCTX_OBJECT::make_topfolder(std::unique_ptr<FOLDER_CONTENT> &&fc)
 	return TRUE;
 }
 
-BOOL FASTDOWNCTX_OBJECT::make_messagelist(BOOL chginfo, EID_ARRAY *msglst)
+BOOL fastdownctx_object::make_messagelist(BOOL chginfo, EID_ARRAY *msglst)
 {
 	auto pctx = this;
 	DOUBLE_LIST_NODE *pnode;
@@ -326,9 +326,8 @@ BOOL FASTDOWNCTX_OBJECT::make_messagelist(BOOL chginfo, EID_ARRAY *msglst)
 	return TRUE;
 }
 
-static BOOL fastdownctx_object_get_buffer_internal(
-	FASTDOWNCTX_OBJECT *pctx, void *pbuff,
-	uint16_t *plen, BOOL *pb_last)
+static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
+    void *pbuff, uint16_t *plen, BOOL *pb_last)
 {
 	BOOL b_last;
 	uint16_t len;
@@ -436,7 +435,7 @@ static BOOL fastdownctx_object_get_buffer_internal(
 	return TRUE;
 }
 
-BOOL FASTDOWNCTX_OBJECT::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
+BOOL fastdownctx_object::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
 	uint16_t *pprogress, uint16_t *ptotal)
 {
 	auto pctx = this;
@@ -459,7 +458,7 @@ BOOL FASTDOWNCTX_OBJECT::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
 std::unique_ptr<fastdownctx_object>
 fastdownctx_object::create(logon_object *plogon, uint8_t string_option)
 {
-	std::unique_ptr<FASTDOWNCTX_OBJECT> pctx;
+	std::unique_ptr<fastdownctx_object> pctx;
 	try {
 		pctx.reset(new fastdownctx_object);
 	} catch (const std::bad_alloc &) {
@@ -475,7 +474,7 @@ fastdownctx_object::create(logon_object *plogon, uint8_t string_option)
 	return pctx;
 }
 
-FASTDOWNCTX_OBJECT::~FASTDOWNCTX_OBJECT()
+fastdownctx_object::~fastdownctx_object()
 {
 	auto pctx = this;
 	DOUBLE_LIST_NODE *pnode;

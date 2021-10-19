@@ -3,23 +3,22 @@
 #include <memory>
 #include <gromox/mapi_types.hpp>
 
-struct LOGON_OBJECT;
+struct logon_object;
 
-struct FOLDER_OBJECT {
+struct folder_object {
 	protected:
-	FOLDER_OBJECT() = default;
+	folder_object() = default;
 
 	public:
-	static std::unique_ptr<FOLDER_OBJECT> create(LOGON_OBJECT *, uint64_t folder_id, uint8_t type, uint32_t tag_access);
+	static std::unique_ptr<folder_object> create(logon_object *, uint64_t folder_id, uint8_t type, uint32_t tag_access);
 	BOOL get_all_proptags(PROPTAG_ARRAY *);
 	BOOL check_readonly_property(uint32_t proptag);
 	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
 	BOOL set_properties(const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
 	BOOL remove_properties(const PROPTAG_ARRAY *, PROBLEM_ARRAY *);
 
-	LOGON_OBJECT *plogon = nullptr;
+	logon_object *plogon = nullptr;
 	uint64_t folder_id = 0;
 	uint8_t type = 0;
 	uint32_t tag_access = 0;
 };
-using folder_object = FOLDER_OBJECT;

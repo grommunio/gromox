@@ -17,7 +17,7 @@
 std::unique_ptr<attachment_object> attachment_object::create(message_object *pparent,
 	uint32_t attachment_num, uint8_t open_flags)
 {
-	std::unique_ptr<ATTACHMENT_OBJECT> pattachment;
+	std::unique_ptr<attachment_object> pattachment;
 	try {
 		pattachment.reset(new attachment_object);
 	} catch (const std::bad_alloc &) {
@@ -45,7 +45,7 @@ std::unique_ptr<attachment_object> attachment_object::create(message_object *ppa
 	return pattachment;
 }
 
-BOOL ATTACHMENT_OBJECT::init_attachment()
+BOOL attachment_object::init_attachment()
 {
 	auto pattachment = this;
 	void *pvalue;
@@ -85,7 +85,7 @@ BOOL ATTACHMENT_OBJECT::init_attachment()
 	       pattachment->instance_id, &propvals, &problems);
 }
 
-ATTACHMENT_OBJECT::~ATTACHMENT_OBJECT()
+attachment_object::~attachment_object()
 {
 	auto pattachment = this;
 	DOUBLE_LIST_NODE *pnode;
@@ -99,12 +99,12 @@ ATTACHMENT_OBJECT::~ATTACHMENT_OBJECT()
 	double_list_free(&pattachment->stream_list);
 }
 
-void ATTACHMENT_OBJECT::set_open_flags(uint8_t f)
+void attachment_object::set_open_flags(uint8_t f)
 {
 	open_flags = f;
 }
 
-gxerr_t ATTACHMENT_OBJECT::save()
+gxerr_t attachment_object::save()
 {
 	auto pattachment = this;
 	uint64_t nt_time;
@@ -135,7 +135,7 @@ gxerr_t ATTACHMENT_OBJECT::save()
 	return GXERR_SUCCESS;
 }
 
-BOOL ATTACHMENT_OBJECT::append_stream_object(STREAM_OBJECT *pstream)
+BOOL attachment_object::append_stream_object(stream_object *pstream)
 {
 	auto pattachment = this;
 	DOUBLE_LIST_NODE *pnode;
@@ -157,7 +157,7 @@ BOOL ATTACHMENT_OBJECT::append_stream_object(STREAM_OBJECT *pstream)
 }
 
 /* cablled when stream object is released */
-BOOL ATTACHMENT_OBJECT::commit_stream_object(STREAM_OBJECT *pstream)
+BOOL attachment_object::commit_stream_object(stream_object *pstream)
 {
 	auto pattachment = this;
 	uint32_t result;
@@ -179,16 +179,15 @@ BOOL ATTACHMENT_OBJECT::commit_stream_object(STREAM_OBJECT *pstream)
 	return TRUE;
 }
 
-BOOL ATTACHMENT_OBJECT::flush_streams()
+BOOL attachment_object::flush_streams()
 {
 	auto pattachment = this;
 	uint32_t result;
-	STREAM_OBJECT *pstream;
 	DOUBLE_LIST_NODE *pnode;
 	TAGGED_PROPVAL tmp_propval;
 	
 	while ((pnode = double_list_pop_front(&pattachment->stream_list)) != nullptr) {
-		pstream = static_cast<STREAM_OBJECT *>(pnode->pdata);
+		auto pstream = static_cast<stream_object *>(pnode->pdata);
 		tmp_propval.proptag = pstream->get_proptag();
 		tmp_propval.pvalue = pstream->get_content();
 		if (!exmdb_client_set_instance_property(pattachment->pparent->plogon->get_dir(),
@@ -202,7 +201,7 @@ BOOL ATTACHMENT_OBJECT::flush_streams()
 	
 }
 
-BOOL ATTACHMENT_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
+BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pattachment = this;
 	int nodes_num;
@@ -222,7 +221,7 @@ BOOL ATTACHMENT_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 				sizeof(uint32_t)*tmp_proptags.count);
 	for (pnode=double_list_get_head(&pattachment->stream_list); NULL!=pnode;
 		pnode=double_list_get_after(&pattachment->stream_list, pnode)) {
-		auto proptag = static_cast<STREAM_OBJECT *>(pnode->pdata)->get_proptag();
+		auto proptag = static_cast<stream_object *>(pnode->pdata)->get_proptag();
 		if (common_util_index_proptags(pproptags, proptag) < 0) {
 			pproptags->pproptag[pproptags->count++] = proptag;
 		}
@@ -231,7 +230,7 @@ BOOL ATTACHMENT_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-BOOL ATTACHMENT_OBJECT::check_readonly_property(uint32_t proptag) const
+BOOL attachment_object::check_readonly_property(uint32_t proptag) const
 {
 	auto pattachment = this;
 	if (PROP_TYPE(proptag) == PT_OBJECT && proptag != PR_ATTACH_DATA_OBJ)
@@ -257,7 +256,7 @@ BOOL ATTACHMENT_OBJECT::check_readonly_property(uint32_t proptag) const
 }
 
 static BOOL attachment_object_get_calculated_property(
-	ATTACHMENT_OBJECT *pattachment, uint32_t proptag, void **ppvalue)
+	attachment_object *pattachment, uint32_t proptag, void **ppvalue)
 {
 	
 	switch (proptag) {
@@ -288,20 +287,20 @@ static BOOL attachment_object_get_calculated_property(
 }
 
 static void* attachment_object_get_stream_property_value(
-	ATTACHMENT_OBJECT *pattachment, uint32_t proptag)
+    attachment_object *pattachment, uint32_t proptag)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (pnode=double_list_get_head(&pattachment->stream_list); NULL!=pnode;
 		pnode=double_list_get_after(&pattachment->stream_list, pnode)) {
-		auto so = static_cast<STREAM_OBJECT *>(pnode->pdata);
+		auto so = static_cast<stream_object *>(pnode->pdata);
 		if (so->get_proptag() == proptag)
 			return so->get_content();
 	}
 	return NULL;
 }
 
-BOOL ATTACHMENT_OBJECT::get_properties(uint32_t size_limit,
+BOOL attachment_object::get_properties(uint32_t size_limit,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	auto pattachment = this;
@@ -362,19 +361,19 @@ BOOL ATTACHMENT_OBJECT::get_properties(uint32_t size_limit,
 }
 
 static BOOL attachment_object_check_stream_property(
-	ATTACHMENT_OBJECT *pattachment, uint32_t proptag)
+    attachment_object *pattachment, uint32_t proptag)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (pnode=double_list_get_head(&pattachment->stream_list); NULL!=pnode;
 		pnode=double_list_get_after(&pattachment->stream_list, pnode)) {
-		if (static_cast<STREAM_OBJECT *>(pnode->pdata)->get_proptag() == proptag)
+		if (static_cast<stream_object *>(pnode->pdata)->get_proptag() == proptag)
 			return TRUE;
 	}
 	return FALSE;
 }
 
-BOOL ATTACHMENT_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals,
+BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
     PROBLEM_ARRAY *pproblems)
 {
 	auto pattachment = this;
@@ -445,7 +444,7 @@ BOOL ATTACHMENT_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	return TRUE;
 }
 
-BOOL ATTACHMENT_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags,
+BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
     PROBLEM_ARRAY *pproblems)
 {
 	auto pattachment = this;
@@ -516,7 +515,7 @@ BOOL ATTACHMENT_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags,
 	return TRUE;
 }
 
-BOOL ATTACHMENT_OBJECT::copy_properties(ATTACHMENT_OBJECT *pattachment_src,
+BOOL attachment_object::copy_properties(attachment_object *pattachment_src,
 	const PROPTAG_ARRAY *pexcluded_proptags, BOOL b_force,
 	BOOL *pb_cycle, PROBLEM_ARRAY *pproblems)
 {

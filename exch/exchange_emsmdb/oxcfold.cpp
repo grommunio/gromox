@@ -167,7 +167,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	default:
 		return ecInvalidParam;
 	}
-	auto pparent = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
+	auto pparent = static_cast<folder_object *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == pparent) {
 		return ecNullObject;
 	}
@@ -316,7 +316,7 @@ uint32_t rop_deletefolder(uint8_t flags,
 	const char *username;
 	
 	*ppartial_completion = 1;
-	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	auto pfolder = static_cast<folder_object *>(rop_processor_get_object(plogmap,
 	               logon_id, hin, &object_type));
 	if (NULL == pfolder) {
 		return ecNullObject;
@@ -414,7 +414,7 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 	}
 	if (!plogon->check_private())
 		return ecNotSupported;
-	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
+	auto pfolder = static_cast<folder_object *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
@@ -488,7 +488,7 @@ uint32_t rop_getsearchcriteria(uint8_t use_unicode,
 	}
 	if (!plogon->check_private())
 		return ecNotSupported;
-	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	auto pfolder = static_cast<folder_object *>(rop_processor_get_object(plogmap,
 	               logon_id, hin, &object_type));
 	if (NULL == pfolder || OBJECT_TYPE_FOLDER != object_type) {
 		return ecNullObject;
@@ -530,7 +530,7 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 		return ecSuccess;
 	}
 	*ppartial_completion = 1;
-	auto psrc_folder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	auto psrc_folder = static_cast<folder_object *>(rop_processor_get_object(plogmap,
 	                   logon_id, hsrc, &object_type));
 	if (NULL == psrc_folder) {
 		return ecNullObject;
@@ -538,7 +538,7 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	auto pdst_folder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	auto pdst_folder = static_cast<folder_object *>(rop_processor_get_object(plogmap,
 	                   logon_id, hdst, &object_type));
 	if (NULL == pdst_folder) {
 		return ecNullObject;
@@ -598,7 +598,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	TAGGED_PROPVAL propval_buff[4];
 	
 	*ppartial_completion = 1;
-	auto psrc_parent = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	auto psrc_parent = static_cast<folder_object *>(rop_processor_get_object(plogmap,
 	                   logon_id, hsrc, &object_type));
 	if (NULL == psrc_parent) {
 		return ecNullObject;
@@ -606,7 +606,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	auto pdst_folder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	auto pdst_folder = static_cast<folder_object *>(rop_processor_get_object(plogmap,
 	                   logon_id, hdst, &object_type));
 	if (NULL == pdst_folder) {
 		return ecNullObject;
@@ -718,7 +718,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 	uint32_t permission;
 	
 	*ppartial_completion = 1;
-	auto psrc_parent = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	auto psrc_parent = static_cast<folder_object *>(rop_processor_get_object(plogmap,
 	                   logon_id, hsrc, &object_type));
 	if (NULL == psrc_parent) {
 		return ecNullObject;
@@ -726,7 +726,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous,
 	if (OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;
 	}
-	auto pdst_folder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	auto pdst_folder = static_cast<folder_object *>(rop_processor_get_object(plogmap,
 	                   logon_id, hdst, &object_type));
 	if (NULL == pdst_folder) {
 		return ecNullObject;
@@ -803,7 +803,7 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard,
 	const char *username;
 	
 	*ppartial_completion = 1;
-	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	auto pfolder = static_cast<folder_object *>(rop_processor_get_object(plogmap,
 	               logon_id, hin, &object_type));
 	if (NULL == pfolder) {
 		return ecNullObject;
@@ -881,7 +881,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard,
 	
 	*ppartial_completion = 1;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
+	auto pfolder = static_cast<folder_object *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
@@ -995,7 +995,7 @@ uint32_t rop_gethierarchytable(uint8_t table_flags,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
+	auto pfolder = static_cast<folder_object *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
@@ -1037,7 +1037,7 @@ uint32_t rop_getcontentstable(uint8_t table_flags,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
+	auto pfolder = static_cast<folder_object *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}

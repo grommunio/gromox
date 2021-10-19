@@ -2,7 +2,7 @@
 #include <memory>
 #include <gromox/mapi_types.hpp>
 
-struct LOGON_OBJECT;
+struct logon_object;
 
 enum {
 	ICS_STATE_CONTENTS_DOWN,
@@ -17,7 +17,7 @@ struct ICS_STATE {
 
 	public:
 	~ICS_STATE();
-	static std::unique_ptr<ICS_STATE> create(LOGON_OBJECT *, int type);
+	static std::unique_ptr<ICS_STATE> create(logon_object *, int type);
 	BOOL append_idset(uint32_t state_property, IDSET *);
 	TPROPVAL_ARRAY *serialize();
 

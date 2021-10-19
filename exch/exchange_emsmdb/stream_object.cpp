@@ -25,7 +25,7 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	uint32_t proptag_buff[2];
-	std::unique_ptr<STREAM_OBJECT> pstream;
+	std::unique_ptr<stream_object> pstream;
 
 	try {
 		pstream.reset(new stream_object);
@@ -45,7 +45,7 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 		proptags.pproptag = proptag_buff;
 		proptag_buff[0] = proptag;
 		proptag_buff[1] = PR_MESSAGE_SIZE;
-		if (!static_cast<MESSAGE_OBJECT *>(pparent)->get_properties(0, &proptags, &propvals))
+		if (!static_cast<message_object *>(pparent)->get_properties(0, &proptags, &propvals))
 			return NULL;
 		auto psize = static_cast<uint32_t *>(common_util_get_propvals(&propvals, PR_MESSAGE_SIZE));
 		if (NULL != psize && *psize >= common_util_get_param(
@@ -59,7 +59,7 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 		proptags.pproptag = proptag_buff;
 		proptag_buff[0] = proptag;
 		proptag_buff[1] = PR_ATTACH_SIZE;
-		if (!static_cast<ATTACHMENT_OBJECT *>(pparent)->get_properties(0, &proptags, &propvals))
+		if (!static_cast<attachment_object *>(pparent)->get_properties(0, &proptags, &propvals))
 			return NULL;
 		auto psize = static_cast<uint32_t *>(common_util_get_propvals(&propvals, PR_ATTACH_SIZE));
 		if (NULL != psize && *psize >= common_util_get_param(
@@ -71,7 +71,7 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 	case OBJECT_TYPE_FOLDER:
 		proptags.count = 1;
 		proptags.pproptag = &proptag;
-		if (!static_cast<FOLDER_OBJECT *>(pparent)->get_properties(&proptags, &propvals))
+		if (!static_cast<folder_object *>(pparent)->get_properties(&proptags, &propvals))
 			return NULL;
 		break;
 	default:
@@ -136,7 +136,7 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 	}
 }
 
-uint32_t STREAM_OBJECT::read(void *pbuff, uint32_t buf_len)
+uint32_t stream_object::read(void *pbuff, uint32_t buf_len)
 {
 	auto pstream = this;
 	if (pstream->content_bin.cb <= pstream->seek_ptr) {
@@ -148,7 +148,7 @@ uint32_t STREAM_OBJECT::read(void *pbuff, uint32_t buf_len)
 	return length;
 }
 
-uint16_t STREAM_OBJECT::write(void *pbuff, uint16_t buf_len)
+uint16_t stream_object::write(void *pbuff, uint16_t buf_len)
 {
 	auto pstream = this;
 	if (OPENSTREAM_FLAG_READONLY == pstream->open_flags) {
@@ -165,10 +165,10 @@ uint16_t STREAM_OBJECT::write(void *pbuff, uint16_t buf_len)
 	if (newpos > pstream->content_bin.cb && !set_length(newpos))
 		return 0;
 	if (OBJECT_TYPE_ATTACHMENT == pstream->object_type) {
-		if (!static_cast<ATTACHMENT_OBJECT *>(pstream->pparent)->append_stream_object(pstream))
+		if (!static_cast<attachment_object *>(pstream->pparent)->append_stream_object(pstream))
 			return 0;	
 	} else if (OBJECT_TYPE_MESSAGE == pstream->object_type) {
-		if (!static_cast<MESSAGE_OBJECT *>(pstream->pparent)->append_stream_object(pstream))
+		if (!static_cast<message_object *>(pstream->pparent)->append_stream_object(pstream))
 			return 0;	
 	}
 	memcpy(pstream->content_bin.pb +
@@ -178,7 +178,7 @@ uint16_t STREAM_OBJECT::write(void *pbuff, uint16_t buf_len)
 	return buf_len;
 }
 
-void *STREAM_OBJECT::get_content()
+void *stream_object::get_content()
 {
 	auto pstream = this;
 	void *pcontent;
@@ -203,7 +203,7 @@ void *STREAM_OBJECT::get_content()
 	return NULL;
 }
 
-BOOL STREAM_OBJECT::set_length(uint32_t length)
+BOOL stream_object::set_length(uint32_t length)
 {
 	auto pstream = this;
 	void *pdata;
@@ -232,7 +232,7 @@ BOOL STREAM_OBJECT::set_length(uint32_t length)
 	return TRUE;
 }
 
-BOOL STREAM_OBJECT::seek(uint8_t opt, int64_t offset)
+BOOL stream_object::seek(uint8_t opt, int64_t offset)
 {	
 	auto pstream = this;
 	uint64_t origin;
@@ -252,7 +252,7 @@ BOOL STREAM_OBJECT::seek(uint8_t opt, int64_t offset)
 	return TRUE;
 }
 
-BOOL STREAM_OBJECT::copy(STREAM_OBJECT *pstream_src, uint32_t *plength)
+BOOL stream_object::copy(stream_object *pstream_src, uint32_t *plength)
 {
 	auto pstream_dst = this;
 	if (pstream_src->seek_ptr >=
@@ -289,7 +289,7 @@ BOOL STREAM_OBJECT::copy(STREAM_OBJECT *pstream_src, uint32_t *plength)
 	return TRUE;
 }
 
-BOOL STREAM_OBJECT::commit()
+BOOL stream_object::commit()
 {
 	auto pstream = this;
 	TAGGED_PROPVAL propval;
@@ -312,14 +312,14 @@ BOOL STREAM_OBJECT::commit()
 	if (NULL == propval.pvalue) {
 		return FALSE;
 	}
-	if (!static_cast<FOLDER_OBJECT *>(pstream->pparent)->set_properties(&propvals, &problems) ||
+	if (!static_cast<folder_object *>(pstream->pparent)->set_properties(&propvals, &problems) ||
 	    problems.count > 0)
 		return FALSE;
 	pstream->b_touched = FALSE;
 	return TRUE;
 }
 
-STREAM_OBJECT::~STREAM_OBJECT()
+stream_object::~stream_object()
 {
 	auto pstream = this;
 	if (NULL == pstream->content_bin.pb) {
@@ -333,12 +333,12 @@ STREAM_OBJECT::~STREAM_OBJECT()
 		break;
 	case OBJECT_TYPE_ATTACHMENT:
 		if (TRUE == pstream->b_touched) {
-			static_cast<ATTACHMENT_OBJECT *>(pstream->pparent)->commit_stream_object(pstream);
+			static_cast<attachment_object *>(pstream->pparent)->commit_stream_object(pstream);
 		}
 		break;
 	case OBJECT_TYPE_MESSAGE:
 		if (TRUE == pstream->b_touched) {
-			static_cast<MESSAGE_OBJECT *>(pstream->pparent)->commit_stream_object(pstream);
+			static_cast<message_object *>(pstream->pparent)->commit_stream_object(pstream);
 		}
 		break;
 	}

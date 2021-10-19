@@ -262,7 +262,7 @@ uint32_t rop_getreceivefolder(const char *pstr_class,
 	if (FALSE == common_util_check_message_class(pstr_class)) {
 		return ecInvalidParam;
 	}
-	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
+	auto plogon = static_cast<logon_object *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -299,7 +299,7 @@ uint32_t rop_setreceivefolder(uint64_t folder_id,
 		0 == strcasecmp(pstr_class, "REPORT.IPM")) {
 		return ecAccessDenied;
 	}
-	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
+	auto plogon = static_cast<logon_object *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -339,7 +339,7 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows,
 	
 	columns.count = arsizeof(proptags);
 	columns.pproptag = proptags;
-	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
+	auto plogon = static_cast<logon_object *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -384,7 +384,7 @@ uint32_t rop_getowningservers(
 	int object_type;
 	uint16_t replid;
 	
-	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
+	auto plogon = static_cast<logon_object *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -433,7 +433,7 @@ uint32_t rop_publicfolderisghosted(
 	int object_type;
 	uint16_t replid;
 	
-	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
+	auto plogon = static_cast<logon_object *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -465,7 +465,7 @@ uint32_t rop_longtermidfromid(uint64_t id,
 	uint16_t replid;
 	int object_type;
 	
-	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
+	auto plogon = static_cast<logon_object *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -503,7 +503,7 @@ uint32_t rop_idfromlongtermid(
 	int object_type;
 	uint16_t replid;
 	
-	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
+	auto plogon = static_cast<logon_object *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -544,7 +544,7 @@ uint32_t rop_getperuserlongtermids(const GUID *pguid,
 {
 	int object_type;
 	
-	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
+	auto plogon = static_cast<logon_object *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -564,7 +564,7 @@ uint32_t rop_getperuserguid(
 {
 	int object_type;
 	
-	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
+	auto plogon = static_cast<logon_object *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -585,7 +585,7 @@ uint32_t rop_readperuserinformation(
 {
 	int object_type;
 	
-	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
+	auto plogon = static_cast<logon_object *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
@@ -606,7 +606,7 @@ uint32_t rop_writeperuserinformation(
 {
 	int object_type;
 	
-	auto plogon = static_cast<LOGON_OBJECT *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
+	auto plogon = static_cast<logon_object *>(rop_processor_get_object(plogmap, logon_id, hin, &object_type));
 	if (NULL == plogon) {
 		return ecNullObject;
 	}

@@ -99,37 +99,37 @@ static void rop_processor_free_object(void *pobject, int type)
 {
 	switch (type) {
 	case OBJECT_TYPE_LOGON:
-		delete static_cast<LOGON_OBJECT *>(pobject);
+		delete static_cast<logon_object *>(pobject);
 		break;
 	case OBJECT_TYPE_FOLDER:
-		delete static_cast<FOLDER_OBJECT *>(pobject);
+		delete static_cast<folder_object *>(pobject);
 		break;
 	case OBJECT_TYPE_MESSAGE:
-		delete static_cast<MESSAGE_OBJECT *>(pobject);
+		delete static_cast<message_object *>(pobject);
 		break;
 	case OBJECT_TYPE_ATTACHMENT:
-		delete static_cast<ATTACHMENT_OBJECT *>(pobject);
+		delete static_cast<attachment_object *>(pobject);
 		break;
 	case OBJECT_TYPE_TABLE:
-		delete static_cast<TABLE_OBJECT *>(pobject);
+		delete static_cast<table_object *>(pobject);
 		break;
 	case OBJECT_TYPE_STREAM:
-		delete static_cast<STREAM_OBJECT *>(pobject);
+		delete static_cast<stream_object *>(pobject);
 		break;
 	case OBJECT_TYPE_FASTDOWNCTX:
-		delete static_cast<FASTDOWNCTX_OBJECT *>(pobject);
+		delete static_cast<fastdownctx_object *>(pobject);
 		break;
 	case OBJECT_TYPE_FASTUPCTX:
-		delete static_cast<FASTUPCTX_OBJECT *>(pobject);
+		delete static_cast<fastupctx_object *>(pobject);
 		break;
 	case OBJECT_TYPE_ICSDOWNCTX:
-		delete static_cast<ICSDOWNCTX_OBJECT *>(pobject);
+		delete static_cast<icsdownctx_object *>(pobject);
 		break;
 	case OBJECT_TYPE_ICSUPCTX:
-		delete static_cast<ICSUPCTX_OBJECT *>(pobject);
+		delete static_cast<icsupctx_object *>(pobject);
 		break;
 	case OBJECT_TYPE_SUBSCRIPTION:
-		delete static_cast<SUBSCRIPTION_OBJECT *>(pobject);
+		delete static_cast<subscription_object *>(pobject);
 		break;
 	}
 }
@@ -161,11 +161,11 @@ static void rop_processor_release_objnode(
 		pobject = ((OBJECT_NODE*)proot->pdata)->pobject;
 		std::lock_guard hl_hold(g_hash_lock);
 		pref = static_cast<uint32_t *>(str_hash_query(g_logon_hash,
-		       static_cast<LOGON_OBJECT *>(pobject)->get_dir()));
+		       static_cast<logon_object *>(pobject)->get_dir()));
 		if (pref != nullptr) {
 			(*pref) --;
 			if (0 == *pref) {
-				str_hash_remove(g_logon_hash, static_cast<LOGON_OBJECT *>(pobject)->get_dir());
+				str_hash_remove(g_logon_hash, static_cast<logon_object *>(pobject)->get_dir());
 			}
 		}
 		b_root = TRUE;
@@ -211,7 +211,7 @@ void rop_processor_release_logmap(void *plogmap)
 }
 
 int rop_processor_create_logon_item(void *plogmap,
-	uint8_t logon_id, LOGON_OBJECT *plogon)
+    uint8_t logon_id, logon_object *plogon)
 {
 	int handle;
 	uint32_t *pref;
@@ -374,7 +374,7 @@ void rop_processor_release_object_handle(void *plogmap,
 	}
 }
 
-LOGON_OBJECT* rop_processor_get_logon_object(void *plogmap, uint8_t logon_id)
+logon_object *rop_processor_get_logon_object(void *plogmap, uint8_t logon_id)
 {
 	LOGON_ITEM *plogitem;
 	SIMPLE_TREE_NODE *proot;
@@ -387,7 +387,7 @@ LOGON_OBJECT* rop_processor_get_logon_object(void *plogmap, uint8_t logon_id)
 	if (NULL == proot) {
 		return nullptr;
 	}
-	return static_cast<LOGON_OBJECT *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
+	return static_cast<logon_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 }
 
 static void *emsrop_scanwork(void *param)
@@ -649,7 +649,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 				*pnotify->notification_data.ptable_event ||
 				TABLE_EVENT_ROW_MODIFIED ==
 				*pnotify->notification_data.ptable_event)) {
-				auto tbl = static_cast<TABLE_OBJECT *>(pobject);
+				auto tbl = static_cast<table_object *>(pobject);
 				auto pcolumns = tbl->get_columns();
 				if (!ext_push1.init(ext_buff1, sizeof(ext_buff1), EXT_FLAG_UTF16))
 					goto NEXT_NOTIFY;

@@ -32,7 +32,7 @@ uint32_t rop_modifyrules(uint8_t flags,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	auto pfolder = static_cast<folder_object *>(rop_processor_get_object(plogmap,
 	               logon_id, hin, &object_type));
 	if (NULL == pfolder) {
 		return ecNullObject;
@@ -84,7 +84,7 @@ uint32_t rop_getrulestable(uint8_t flags,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	auto pfolder = static_cast<FOLDER_OBJECT *>(rop_processor_get_object(plogmap,
+	auto pfolder = static_cast<folder_object *>(rop_processor_get_object(plogmap,
 	               logon_id, hin, &object_type));
 	if (NULL == pfolder) {
 		return ecNullObject;

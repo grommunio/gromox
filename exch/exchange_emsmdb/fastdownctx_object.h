@@ -7,16 +7,16 @@ struct ATTACHMENT_CONTENT;
 struct FOLDER_CONTENT;
 struct FTSTREAM_PRODUCER;
 struct ICS_STATE;
-struct LOGON_OBJECT;
+struct logon_object;
 struct MESSAGE_CONTENT;
 
-struct FASTDOWNCTX_OBJECT final {
+struct fastdownctx_object final {
 	protected:
-	FASTDOWNCTX_OBJECT() = default;
+	fastdownctx_object() = default;
 
 	public:
-	~FASTDOWNCTX_OBJECT();
-	static std::unique_ptr<FASTDOWNCTX_OBJECT> create(LOGON_OBJECT *, uint8_t string_option);
+	~fastdownctx_object();
+	static std::unique_ptr<fastdownctx_object> create(logon_object *, uint8_t string_option);
 	/* make_xxx function can be invoked only once on the object */
 	BOOL make_messagecontent(MESSAGE_CONTENT *);
 	BOOL make_attachmentcontent(ATTACHMENT_CONTENT *);
@@ -33,4 +33,3 @@ struct FASTDOWNCTX_OBJECT final {
 	DOUBLE_LIST flow_list{};
 	uint32_t total_steps = 0, progress_steps = 0;
 };
-using fastdownctx_object = FASTDOWNCTX_OBJECT;

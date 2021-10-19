@@ -63,12 +63,12 @@ static BOOL icsdownctx_object_record_flow_node(
 }
 
 std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogon,
-	FOLDER_OBJECT *pfolder, uint8_t sync_type, uint8_t send_options,
+    folder_object *pfolder, uint8_t sync_type, uint8_t send_options,
 	uint16_t sync_flags, const RESTRICTION *prestriction,
 	uint32_t extra_flags, const PROPTAG_ARRAY *pproptags)
 {
 	int state_type = sync_type == SYNC_TYPE_CONTENTS ? ICS_STATE_CONTENTS_DOWN : ICS_STATE_HIERARCHY_DOWN;
-	std::unique_ptr<ICSDOWNCTX_OBJECT> pctx;
+	std::unique_ptr<icsdownctx_object> pctx;
 	try {
 		pctx.reset(new icsdownctx_object);
 	} catch (const std::bad_alloc &) {
@@ -113,7 +113,7 @@ std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogo
 	return pctx;
 }
 
-static BOOL icsdownctx_object_make_content(ICSDOWNCTX_OBJECT *pctx)
+static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 {
 	uint32_t count_fai;
 	uint64_t total_fai;
@@ -310,7 +310,7 @@ static void icsdownctx_object_adjust_fldchgs(FOLDER_CHANGES *pfldchgs,
 	}
 }
 
-static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
+static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 {
 	BINARY *pbin = nullptr;
 	IDSET *pidset;
@@ -716,7 +716,7 @@ static BOOL icsdownctx_object_make_hierarchy(ICSDOWNCTX_OBJECT *pctx)
 	return TRUE;
 }
 
-BOOL ICSDOWNCTX_OBJECT::make_sync()
+BOOL icsdownctx_object::make_sync()
 {
 	auto pctx = this;
 	if (TRUE == pctx->b_started) {
@@ -860,9 +860,8 @@ static void icsdownctx_object_adjust_msgctnt(MESSAGE_CONTENT *pmsgctnt,
 	}
 }
 
-static BOOL icsdownctx_object_get_changepartial(
-	ICSDOWNCTX_OBJECT *pctx, MESSAGE_CONTENT *pmsgctnt,
-	uint32_t group_id, const INDEX_ARRAY *pindices,
+static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
+    MESSAGE_CONTENT *pmsgctnt, uint32_t group_id, const INDEX_ARRAY *pindices,
 	const PROPTAG_ARRAY *pproptags, MSGCHG_PARTIAL *pmsg)
 {
 	int i, j;
@@ -1032,7 +1031,7 @@ static void icsdownctx_object_trim_report_recipients(
 	}
 }
 
-static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
+static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	uint64_t message_id, BOOL b_downloaded, int *ppartial_count)
 {
 	int i;
@@ -1306,7 +1305,7 @@ static BOOL icsdownctx_object_write_message_change(ICSDOWNCTX_OBJECT *pctx,
 }
 
 /* only be called under content sync */
-static BOOL icsdownctx_object_write_deletions(ICSDOWNCTX_OBJECT *pctx)
+static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 {
 	BINARY *pbin1;
 	BINARY *pbin2;
@@ -1392,8 +1391,7 @@ static BOOL icsdownctx_object_write_deletions(ICSDOWNCTX_OBJECT *pctx)
 }
 
 /* only be called under content sync */
-static BOOL icsdownctx_object_write_readstate_changes(
-	ICSDOWNCTX_OBJECT *pctx)
+static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 {
 	BINARY *pbin1;
 	BINARY *pbin2;
@@ -1478,7 +1476,7 @@ static BOOL icsdownctx_object_write_readstate_changes(
 }
 
 /* only be called under content sync */
-static BOOL icsdownctx_object_write_state(ICSDOWNCTX_OBJECT *pctx)
+static BOOL icsdownctx_object_write_state(icsdownctx_object *pctx)
 {
 	idset_clear(pctx->pstate->pseen);
 	if (pctx->sync_flags & SYNC_FLAG_NORMAL) {
@@ -1527,9 +1525,8 @@ static BOOL icsdownctx_object_write_state(ICSDOWNCTX_OBJECT *pctx)
 	return TRUE;
 }
 
-static BOOL icsdownctx_object_get_buffer_internal(
-	ICSDOWNCTX_OBJECT *pctx, void *pbuff,
-	uint16_t *plen, BOOL *pb_last)
+static BOOL icsdownctx_object_get_buffer_internal(icsdownctx_object *pctx,
+    void *pbuff, uint16_t *plen, BOOL *pb_last)
 {
 	BOOL b_last;
 	uint16_t len;
@@ -1626,7 +1623,7 @@ static BOOL icsdownctx_object_get_buffer_internal(
 	return TRUE;
 }
 
-BOOL ICSDOWNCTX_OBJECT::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
+BOOL icsdownctx_object::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
 	uint16_t *pprogress, uint16_t *ptotal)
 {
 	auto pctx = this;
@@ -1645,7 +1642,7 @@ BOOL ICSDOWNCTX_OBJECT::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
 	return TRUE;
 }
 
-ICSDOWNCTX_OBJECT::~ICSDOWNCTX_OBJECT()
+icsdownctx_object::~icsdownctx_object()
 {
 	auto pctx = this;
 	DOUBLE_LIST_NODE *pnode;
@@ -1683,7 +1680,7 @@ ICSDOWNCTX_OBJECT::~ICSDOWNCTX_OBJECT()
 	}
 }
 
-BOOL ICSDOWNCTX_OBJECT::begin_state_stream(uint32_t new_state_prop)
+BOOL icsdownctx_object::begin_state_stream(uint32_t new_state_prop)
 {
 	auto pctx = this;
 	if (TRUE == pctx->b_started) {
@@ -1711,7 +1708,7 @@ BOOL ICSDOWNCTX_OBJECT::begin_state_stream(uint32_t new_state_prop)
 	return TRUE;
 }
 
-BOOL ICSDOWNCTX_OBJECT::continue_state_stream(const BINARY *pstream_data)
+BOOL icsdownctx_object::continue_state_stream(const BINARY *pstream_data)
 {
 	auto pctx = this;
 	if (TRUE == pctx->b_started) {
@@ -1727,7 +1724,7 @@ BOOL ICSDOWNCTX_OBJECT::continue_state_stream(const BINARY *pstream_data)
 	return TRUE;
 }
 
-BOOL ICSDOWNCTX_OBJECT::end_state_stream()
+BOOL icsdownctx_object::end_state_stream()
 {
 	auto pctx = this;
 	IDSET *pset;

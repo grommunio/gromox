@@ -119,7 +119,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 	}
 	switch (object_type) {
 	case OBJECT_TYPE_LOGON: {
-		if (!static_cast<LOGON_OBJECT *>(pobject)->get_properties(ptmp_proptags, &propvals))
+		if (!static_cast<logon_object *>(pobject)->get_properties(ptmp_proptags, &propvals))
 			return ecError;
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (NULL == pinfo) {
@@ -129,7 +129,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 		break;
 	}
 	case OBJECT_TYPE_FOLDER: {
-		if (!static_cast<FOLDER_OBJECT *>(pobject)->get_properties(ptmp_proptags, &propvals))
+		if (!static_cast<folder_object *>(pobject)->get_properties(ptmp_proptags, &propvals))
 			return ecError;
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		if (NULL == pinfo) {
@@ -139,14 +139,14 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 		break;
 	}
 	case OBJECT_TYPE_MESSAGE: {
-		auto msg = static_cast<MESSAGE_OBJECT *>(pobject);
+		auto msg = static_cast<message_object *>(pobject);
 		if (!msg->get_properties(0, ptmp_proptags, &propvals))
 			return ecError;
 		cpid = msg->get_cpid();
 		break;
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
-		auto atx = static_cast<ATTACHMENT_OBJECT *>(pobject);
+		auto atx = static_cast<attachment_object *>(pobject);
 		if (!atx->get_properties(0, ptmp_proptags, &propvals))
 			return ecError;
 		cpid = atx->get_cpid();
@@ -217,7 +217,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 	}
 	switch (object_type) {
 	case OBJECT_TYPE_LOGON: {
-		auto xlog = static_cast<LOGON_OBJECT *>(pobject);
+		auto xlog = static_cast<logon_object *>(pobject);
 		if (!xlog->get_all_proptags(&proptags))
 			return ecError;
 		ptmp_proptags = common_util_trim_proptags(&proptags);
@@ -245,7 +245,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 		break;
 	}
 	case OBJECT_TYPE_FOLDER: {
-		auto fld = static_cast<FOLDER_OBJECT *>(pobject);
+		auto fld = static_cast<folder_object *>(pobject);
 		if (!fld->get_all_proptags(&proptags))
 			return ecError;
 		ptmp_proptags = common_util_trim_proptags(&proptags);
@@ -273,7 +273,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 		break;
 	}
 	case OBJECT_TYPE_MESSAGE: {
-		auto msg = static_cast<MESSAGE_OBJECT *>(pobject);
+		auto msg = static_cast<message_object *>(pobject);
 		if (!msg->get_all_proptags(&proptags))
 			return ecError;
 		ptmp_proptags = common_util_trim_proptags(&proptags);
@@ -286,7 +286,7 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 		break;
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
-		auto atx = static_cast<ATTACHMENT_OBJECT *>(pobject);
+		auto atx = static_cast<attachment_object *>(pobject);
 		if (!atx->get_all_proptags(&proptags))
 			return ecError;
 		ptmp_proptags = common_util_trim_proptags(&proptags);
@@ -324,19 +324,19 @@ uint32_t rop_getpropertieslist(PROPTAG_ARRAY *pproptags,
 	}
 	switch (object_type) {
 	case OBJECT_TYPE_LOGON:
-		if (!static_cast<LOGON_OBJECT *>(pobject)->get_all_proptags(pproptags))
+		if (!static_cast<logon_object *>(pobject)->get_all_proptags(pproptags))
 			return ecError;
 		return ecSuccess;
 	case OBJECT_TYPE_FOLDER:
-		if (!static_cast<FOLDER_OBJECT *>(pobject)->get_all_proptags(pproptags))
+		if (!static_cast<folder_object *>(pobject)->get_all_proptags(pproptags))
 			return ecError;
 		return ecSuccess;
 	case OBJECT_TYPE_MESSAGE:
-		if (!static_cast<MESSAGE_OBJECT *>(pobject)->get_all_proptags(pproptags))
+		if (!static_cast<message_object *>(pobject)->get_all_proptags(pproptags))
 			return ecError;
 		return ecSuccess;
 	case OBJECT_TYPE_ATTACHMENT:
-		if (!static_cast<ATTACHMENT_OBJECT *>(pobject)->get_all_proptags(pproptags))
+		if (!static_cast<attachment_object *>(pobject)->get_all_proptags(pproptags))
 			return ecError;
 		return ecSuccess;
 	default:
@@ -365,11 +365,11 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 	case OBJECT_TYPE_LOGON:
 		if (plogon->logon_mode == LOGON_MODE_GUEST)
 			return ecAccessDenied;
-		if (!static_cast<LOGON_OBJECT *>(pobject)->set_properties(ppropvals, pproblems))
+		if (!static_cast<logon_object *>(pobject)->set_properties(ppropvals, pproblems))
 			return ecError;
 		return ecSuccess;
 	case OBJECT_TYPE_FOLDER: {
-		auto fld = static_cast<FOLDER_OBJECT *>(pobject);
+		auto fld = static_cast<folder_object *>(pobject);
 		auto rpc_info = get_rpc_info();
 		if (plogon->logon_mode != LOGON_MODE_OWNER) {
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
@@ -383,7 +383,7 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 		return ecSuccess;
 	}
 	case OBJECT_TYPE_MESSAGE: {
-		auto msg = static_cast<MESSAGE_OBJECT *>(pobject);
+		auto msg = static_cast<message_object *>(pobject);
 		auto tag_access = msg->get_tag_access();
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
@@ -393,7 +393,7 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 		return ecSuccess;
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
-		auto atx = static_cast<ATTACHMENT_OBJECT *>(pobject);
+		auto atx = static_cast<attachment_object *>(pobject);
 		auto tag_access = atx->get_tag_access();
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
@@ -436,11 +436,11 @@ uint32_t rop_deleteproperties(
 	case OBJECT_TYPE_LOGON:
 		if (plogon->logon_mode == LOGON_MODE_GUEST)
 			return ecAccessDenied;
-		if (!static_cast<LOGON_OBJECT *>(pobject)->remove_properties(pproptags, pproblems))
+		if (!static_cast<logon_object *>(pobject)->remove_properties(pproptags, pproblems))
 			return ecError;
 		return ecSuccess;
 	case OBJECT_TYPE_FOLDER: {
-		auto fld = static_cast<FOLDER_OBJECT *>(pobject);
+		auto fld = static_cast<folder_object *>(pobject);
 		auto rpc_info = get_rpc_info();
 		if (plogon->logon_mode != LOGON_MODE_OWNER) {
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
@@ -454,7 +454,7 @@ uint32_t rop_deleteproperties(
 		return ecSuccess;
 	}
 	case OBJECT_TYPE_MESSAGE: {
-		auto msg = static_cast<MESSAGE_OBJECT *>(pobject);
+		auto msg = static_cast<message_object *>(pobject);
 		auto tag_access = msg->get_tag_access();
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
@@ -464,7 +464,7 @@ uint32_t rop_deleteproperties(
 		return ecSuccess;
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
-		auto atx = static_cast<ATTACHMENT_OBJECT *>(pobject);
+		auto atx = static_cast<attachment_object *>(pobject);
 		auto tag_access = atx->get_tag_access();
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
@@ -516,19 +516,19 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 	}
 	switch (object_type) {
 	case OBJECT_TYPE_LOGON:
-		if (!static_cast<LOGON_OBJECT *>(pobject)->get_all_proptags(&proptags))
+		if (!static_cast<logon_object *>(pobject)->get_all_proptags(&proptags))
 			return ecError;
 		break;
 	case OBJECT_TYPE_FOLDER:
-		if (!static_cast<FOLDER_OBJECT *>(pobject)->get_all_proptags(&proptags))
+		if (!static_cast<folder_object *>(pobject)->get_all_proptags(&proptags))
 			return ecError;
 		break;
 	case OBJECT_TYPE_MESSAGE:
-		if (!static_cast<MESSAGE_OBJECT *>(pobject)->get_all_proptags(&proptags))
+		if (!static_cast<message_object *>(pobject)->get_all_proptags(&proptags))
 			return ecError;
 		break;
 	case OBJECT_TYPE_ATTACHMENT:
-		if (!static_cast<ATTACHMENT_OBJECT *>(pobject)->get_all_proptags(&proptags))
+		if (!static_cast<attachment_object *>(pobject)->get_all_proptags(&proptags))
 			return ecError;
 		break;
 	default:
@@ -643,8 +643,8 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 	}
 	switch (object_type) {
 	case OBJECT_TYPE_FOLDER: {
-		auto fldsrc = static_cast<FOLDER_OBJECT *>(pobject);
-		auto flddst = static_cast<FOLDER_OBJECT *>(pobject_dst);
+		auto fldsrc = static_cast<folder_object *>(pobject);
+		auto flddst = static_cast<folder_object *>(pobject_dst);
 		auto rpc_info = get_rpc_info();
 		if (plogon->logon_mode != LOGON_MODE_OWNER) {
 			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
@@ -701,8 +701,8 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 		return ecSuccess;
 	}
 	case OBJECT_TYPE_MESSAGE: {
-		auto msgsrc = static_cast<MESSAGE_OBJECT *>(pobject);
-		auto msgdst = static_cast<MESSAGE_OBJECT* >(pobject_dst);
+		auto msgsrc = static_cast<message_object *>(pobject);
+		auto msgdst = static_cast<message_object* >(pobject_dst);
 		auto tag_access = msgdst->get_tag_access();
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
@@ -776,8 +776,8 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 		return ecSuccess;
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
-		auto atsrc = static_cast<ATTACHMENT_OBJECT *>(pobject);
-		auto atdst = static_cast<ATTACHMENT_OBJECT *>(pobject_dst);
+		auto atsrc = static_cast<attachment_object *>(pobject);
+		auto atdst = static_cast<attachment_object *>(pobject_dst);
 		auto tag_access = atdst->get_tag_access();
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
@@ -885,8 +885,8 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 	BOOL b_force = (copy_flags & COPY_FLAG_NOOVERWRITE) ? false : TRUE;
 	switch (object_type) {
 	case OBJECT_TYPE_FOLDER: {
-		auto fldsrc = static_cast<FOLDER_OBJECT *>(pobject);
-		auto flddst = static_cast<FOLDER_OBJECT *>(pobject_dst);
+		auto fldsrc = static_cast<folder_object *>(pobject);
+		auto flddst = static_cast<folder_object *>(pobject_dst);
 		/* MS-OXCPRPT 3.2.5.8, public folder not supported */
 		if (!plogon->check_private())
 			return ecNotSupported;
@@ -968,12 +968,12 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 		return ecSuccess;
 	}
 	case OBJECT_TYPE_MESSAGE: {
-		auto msgdst = static_cast<MESSAGE_OBJECT *>(pobject_dst);
+		auto msgdst = static_cast<message_object *>(pobject_dst);
 		auto tag_access = msgdst->get_tag_access();
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
 		}
-		if (!msgdst->copy_to(static_cast<MESSAGE_OBJECT *>(pobject),
+		if (!msgdst->copy_to(static_cast<message_object *>(pobject),
 		    pexcluded_proptags, b_force, &b_cycle, pproblems))
 			return ecError;
 		if (TRUE == b_cycle) {
@@ -982,12 +982,12 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 		return ecSuccess;
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
-		auto atdst = static_cast<ATTACHMENT_OBJECT *>(pobject_dst);
+		auto atdst = static_cast<attachment_object *>(pobject_dst);
 		auto tag_access = atdst->get_tag_access();
 		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 			return ecAccessDenied;
 		}
-		if (!atdst->copy_properties(static_cast<ATTACHMENT_OBJECT *>(pobject),
+		if (!atdst->copy_properties(static_cast<attachment_object *>(pobject),
 		    pexcluded_proptags, b_force, &b_cycle, pproblems))
 			return ecError;
 		if (TRUE == b_cycle) {
@@ -1041,7 +1041,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 			auto rpc_info = get_rpc_info();
 			if (plogon->logon_mode != LOGON_MODE_OWNER) {
 				if (!exmdb_client_check_folder_permission(plogon->get_dir(),
-				    static_cast<FOLDER_OBJECT *>(pobject)->folder_id,
+				    static_cast<folder_object *>(pobject)->folder_id,
 				    rpc_info.username, &permission))
 					return ecError;
 				if (!(permission & frightsOwner))
@@ -1066,8 +1066,8 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 		}
 		if (TRUE == b_write) {
 			auto tag_access = object_type == OBJECT_TYPE_MESSAGE ?
-				static_cast<MESSAGE_OBJECT *>(pobject)->get_tag_access() :
-				static_cast<ATTACHMENT_OBJECT *>(pobject)->get_tag_access();
+				static_cast<message_object *>(pobject)->get_tag_access() :
+				static_cast<attachment_object *>(pobject)->get_tag_access();
 			if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
 				return ecAccessDenied;
 			}
@@ -1104,7 +1104,7 @@ uint32_t rop_readstream(uint16_t byte_count,
 	uint32_t buffer_size;
 	int32_t object_type;
 	
-	auto pstream = static_cast<STREAM_OBJECT *>(rop_processor_get_object(plogmap,
+	auto pstream = static_cast<stream_object *>(rop_processor_get_object(plogmap,
 	               logon_id, hin, &object_type));
 	if (NULL == pstream) {
 		return ecNullObject;
@@ -1142,7 +1142,7 @@ uint32_t rop_writestream(const BINARY *pdata_bin,
 {
 	int32_t object_type;
 	
-	auto pstream = static_cast<STREAM_OBJECT *>(rop_processor_get_object(plogmap,
+	auto pstream = static_cast<stream_object *>(rop_processor_get_object(plogmap,
 	               logon_id, hin, &object_type));
 	if (NULL == pstream) {
 		return ecNullObject;
@@ -1173,7 +1173,7 @@ uint32_t rop_commitstream(void *plogmap,
 {
 	int object_type;
 	
-	auto pstream = static_cast<STREAM_OBJECT *>(rop_processor_get_object(plogmap,
+	auto pstream = static_cast<stream_object *>(rop_processor_get_object(plogmap,
 	               logon_id, hin, &object_type));
 	if (NULL == pstream) {
 		return ecNullObject;
@@ -1199,7 +1199,7 @@ uint32_t rop_getstreamsize(uint32_t *pstream_size,
 {
 	int object_type;
 	
-	auto pstream = static_cast<STREAM_OBJECT *>(rop_processor_get_object(plogmap,
+	auto pstream = static_cast<stream_object *>(rop_processor_get_object(plogmap,
 	               logon_id, hin, &object_type));
 	if (NULL == pstream) {
 		return ecNullObject;
@@ -1219,7 +1219,7 @@ uint32_t rop_setstreamsize(uint64_t stream_size,
 	if (stream_size > static_cast<uint64_t>(INT32_MAX) + 1)
 		/* That weird +1 is specified in MS-OXCPRPT §2.2.19 and §2.2.20 */
 		return ecInvalidParam;
-	auto pstream = static_cast<STREAM_OBJECT *>(rop_processor_get_object(plogmap,
+	auto pstream = static_cast<stream_object *>(rop_processor_get_object(plogmap,
 	               logon_id, hin, &object_type));
 	if (NULL == pstream) {
 		return ecNullObject;
@@ -1252,7 +1252,7 @@ uint32_t rop_seekstream(uint8_t seek_pos,
 		return StreamSeekError;
 	if (offset > 0 && static_cast<uint64_t>(offset) > static_cast<uint64_t>(INT32_MAX) + 1)
 		return StreamSeekError;
-	auto pstream = static_cast<STREAM_OBJECT *>(rop_processor_get_object(plogmap,
+	auto pstream = static_cast<stream_object *>(rop_processor_get_object(plogmap,
 	               logon_id, hin, &object_type));
 	if (NULL == pstream) {
 		return ecNullObject;
@@ -1274,7 +1274,7 @@ uint32_t rop_copytostream(uint64_t byte_count,
 	int object_type;
 	uint32_t length;
 	
-	auto psrc_stream = static_cast<STREAM_OBJECT *>(rop_processor_get_object(plogmap,
+	auto psrc_stream = static_cast<stream_object *>(rop_processor_get_object(plogmap,
 	                   logon_id, hsrc, &object_type));
 	if (NULL == psrc_stream) {
 		return ecNullObject;
@@ -1282,7 +1282,7 @@ uint32_t rop_copytostream(uint64_t byte_count,
 	if (OBJECT_TYPE_STREAM != object_type) {
 		return ecNotSupported;
 	}
-	auto pdst_stream = static_cast<STREAM_OBJECT *>(rop_processor_get_object(plogmap,
+	auto pdst_stream = static_cast<stream_object *>(rop_processor_get_object(plogmap,
 	                   logon_id, hdst, &object_type));
 	if (pdst_stream == nullptr)
 		return ecDstNullObject;

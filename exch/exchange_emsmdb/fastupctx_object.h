@@ -10,16 +10,16 @@
 #define ROOT_ELEMENT_TOPFOLDER				5
 
 struct FTSTREAM_PARSER;
-struct LOGON_OBJECT;
+struct logon_object;
 struct MESSAGE_CONTENT;
 
-struct FASTUPCTX_OBJECT final {
+struct fastupctx_object final {
 	protected:
-	FASTUPCTX_OBJECT() = default;
+	fastupctx_object() = default;
 
 	public:
-	~FASTUPCTX_OBJECT();
-	static std::unique_ptr<FASTUPCTX_OBJECT> create(LOGON_OBJECT *, void *pobject, int root_element);
+	~fastupctx_object();
+	static std::unique_ptr<fastupctx_object> create(logon_object *, void *pobject, int root_element);
 	gxerr_t write_buffer(const BINARY *transfer_data);
 
 	std::unique_ptr<FTSTREAM_PARSER> pstream;
@@ -30,4 +30,3 @@ struct FASTUPCTX_OBJECT final {
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
 	DOUBLE_LIST marker_stack{};
 };
-using fastupctx_object = FASTUPCTX_OBJECT;

@@ -24,11 +24,10 @@
 #include <cstdlib>
 #include <cstring>
 
-static BOOL message_object_set_properties_internal(MESSAGE_OBJECT *pmessage,
-	BOOL b_check, const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems);
+static BOOL message_object_set_properties_internal(message_object *, BOOL check, const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
 
-static BOOL message_object_get_recipient_all_proptags(
-	MESSAGE_OBJECT *pmessage, PROPTAG_ARRAY *pproptags)
+static BOOL message_object_get_recipient_all_proptags(message_object *pmessage,
+    PROPTAG_ARRAY *pproptags)
 {
 	int i;
 	PROPTAG_ARRAY tmp_proptags;
@@ -88,7 +87,7 @@ std::unique_ptr<message_object> message_object::create(logon_object *plogon,
 {
 	uint64_t *pchange_num;
 	PROPTAG_ARRAY tmp_columns;
-	std::unique_ptr<MESSAGE_OBJECT> pmessage;
+	std::unique_ptr<message_object> pmessage;
 	
 	try {
 		pmessage.reset(new message_object);
@@ -104,9 +103,9 @@ std::unique_ptr<message_object> message_object::create(logon_object *plogon,
 	pmessage->pstate = pstate;
 	double_list_init(&pmessage->stream_list);
 	if (0 == message_id) {
-		pmessage->pembedding = static_cast<ATTACHMENT_OBJECT *>(pparent);
+		pmessage->pembedding = static_cast<attachment_object *>(pparent);
 		if (!exmdb_client_load_embedded_instance(plogon->get_dir(),
-		    b_new, static_cast<ATTACHMENT_OBJECT *>(pparent)->instance_id,
+		    b_new, static_cast<attachment_object *>(pparent)->instance_id,
 		    &pmessage->instance_id))
 			return NULL;
 		/* cannot find embedded message in attachment, return
@@ -159,7 +158,7 @@ std::unique_ptr<message_object> message_object::create(logon_object *plogon,
 	return pmessage;
 }
 
-BOOL MESSAGE_OBJECT::check_importing() const
+BOOL message_object::check_importing() const
 {
 	auto pmessage = this;
 	if (0 != pmessage->message_id && NULL != pmessage->pstate) {
@@ -168,7 +167,7 @@ BOOL MESSAGE_OBJECT::check_importing() const
 	return FALSE;
 }
 
-BOOL MESSAGE_OBJECT::check_orignal_touched(BOOL *pb_touched)
+BOOL message_object::check_orignal_touched(BOOL *pb_touched)
 {
 	auto pmessage = this;
 	uint64_t *pchange_num;
@@ -192,7 +191,7 @@ BOOL MESSAGE_OBJECT::check_orignal_touched(BOOL *pb_touched)
 	return TRUE;
 }
 
-MESSAGE_OBJECT::~MESSAGE_OBJECT()
+message_object::~message_object()
 {
 	auto pmessage = this;
 	DOUBLE_LIST_NODE *pnode;
@@ -215,7 +214,7 @@ MESSAGE_OBJECT::~MESSAGE_OBJECT()
 	double_list_free(&pmessage->stream_list);
 }
 
-BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t new_cpid)
+BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 {
 	auto pmessage = this;
 	GUID tmp_guid;
@@ -375,12 +374,12 @@ BOOL MESSAGE_OBJECT::init_message(BOOL b_fai, uint32_t new_cpid)
 	return TRUE;
 }
 
-void MESSAGE_OBJECT::set_open_flags(uint8_t f)
+void message_object::set_open_flags(uint8_t f)
 {
 	open_flags = f;
 }
 
-gxerr_t MESSAGE_OBJECT::save()
+gxerr_t message_object::save()
 {
 	auto pmessage = this;
 	int i;
@@ -698,7 +697,7 @@ gxerr_t MESSAGE_OBJECT::save()
 	return GXERR_SUCCESS;
 }
 
-BOOL MESSAGE_OBJECT::reload()
+BOOL message_object::reload()
 {
 	auto pmessage = this;
 	BOOL b_result;
@@ -743,21 +742,21 @@ BOOL MESSAGE_OBJECT::reload()
 	return TRUE;
 }
 
-BOOL MESSAGE_OBJECT::read_recipients(uint32_t row_id, uint16_t need_count, TARRAY_SET *pset)
+BOOL message_object::read_recipients(uint32_t row_id, uint16_t need_count, TARRAY_SET *pset)
 {
 	auto pmessage = this;
 	return exmdb_client_get_message_instance_rcpts(pmessage->plogon->get_dir(),
 	       pmessage->instance_id, row_id, need_count, pset);
 }
 
-BOOL MESSAGE_OBJECT::get_recipient_num(uint16_t *pnum)
+BOOL message_object::get_recipient_num(uint16_t *pnum)
 {
 	auto pmessage = this;
 	return exmdb_client_get_message_instance_rcpts_num(pmessage->plogon->get_dir(),
 	       pmessage->instance_id, pnum);
 }
 
-BOOL MESSAGE_OBJECT::empty_rcpts()
+BOOL message_object::empty_rcpts()
 {
 	auto pmessage = this;
 	if (!exmdb_client_empty_message_instance_rcpts(pmessage->plogon->get_dir(),
@@ -771,7 +770,7 @@ BOOL MESSAGE_OBJECT::empty_rcpts()
 	return TRUE;
 }
 
-BOOL MESSAGE_OBJECT::set_rcpts(const TARRAY_SET *pset)
+BOOL message_object::set_rcpts(const TARRAY_SET *pset)
 {
 	auto pmessage = this;
 	if (!exmdb_client_update_message_instance_rcpts(pmessage->plogon->get_dir(),
@@ -808,14 +807,14 @@ BOOL MESSAGE_OBJECT::set_rcpts(const TARRAY_SET *pset)
 	return TRUE;
 }
 
-BOOL MESSAGE_OBJECT::get_attachments_num(uint16_t *pnum)
+BOOL message_object::get_attachments_num(uint16_t *pnum)
 {
 	auto pmessage = this;
 	return exmdb_client_get_message_instance_attachments_num(
 	       pmessage->plogon->get_dir(), pmessage->instance_id, pnum);
 }
 
-BOOL MESSAGE_OBJECT::delete_attachment(uint32_t attachment_num)
+BOOL message_object::delete_attachment(uint32_t attachment_num)
 {
 	auto pmessage = this;
 	if (!exmdb_client_delete_message_instance_attachment(
@@ -829,14 +828,14 @@ BOOL MESSAGE_OBJECT::delete_attachment(uint32_t attachment_num)
 	return TRUE;
 }
 
-BOOL MESSAGE_OBJECT::get_attachment_table_all_proptags(PROPTAG_ARRAY *pproptags)
+BOOL message_object::get_attachment_table_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pmessage = this;
 	return exmdb_client_get_message_instance_attachment_table_all_proptags(
 	       pmessage->plogon->get_dir(), pmessage->instance_id, pproptags);
 }
 
-BOOL MESSAGE_OBJECT::query_attachment_table(const PROPTAG_ARRAY *pproptags,
+BOOL message_object::query_attachment_table(const PROPTAG_ARRAY *pproptags,
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
 {
 	auto pmessage = this;
@@ -845,7 +844,7 @@ BOOL MESSAGE_OBJECT::query_attachment_table(const PROPTAG_ARRAY *pproptags,
 	       start_pos, row_needed, pset);
 }
 
-BOOL MESSAGE_OBJECT::append_stream_object(STREAM_OBJECT *pstream)
+BOOL message_object::append_stream_object(stream_object *pstream)
 {
 	auto pmessage = this;
 	DOUBLE_LIST_NODE *pnode;
@@ -874,7 +873,7 @@ BOOL MESSAGE_OBJECT::append_stream_object(STREAM_OBJECT *pstream)
 }
 
 /* called when stream object is released */
-BOOL MESSAGE_OBJECT::commit_stream_object(STREAM_OBJECT *pstream)
+BOOL message_object::commit_stream_object(stream_object *pstream)
 {
 	auto pmessage = this;
 	uint32_t result;
@@ -897,16 +896,15 @@ BOOL MESSAGE_OBJECT::commit_stream_object(STREAM_OBJECT *pstream)
 	return TRUE;
 }
 
-BOOL MESSAGE_OBJECT::flush_streams()
+BOOL message_object::flush_streams()
 {
 	auto pmessage = this;
 	uint32_t result;
-	STREAM_OBJECT *pstream;
 	DOUBLE_LIST_NODE *pnode;
 	TAGGED_PROPVAL tmp_propval;
 	
 	while ((pnode = double_list_pop_front(&pmessage->stream_list)) != nullptr) {
-		pstream = static_cast<STREAM_OBJECT *>(pnode->pdata);
+		auto pstream = static_cast<stream_object *>(pnode->pdata);
 		tmp_propval.proptag = pstream->get_proptag();
 		tmp_propval.pvalue = pstream->get_content();
 		if (!exmdb_client_set_instance_property(pmessage->plogon->get_dir(),
@@ -919,7 +917,7 @@ BOOL MESSAGE_OBJECT::flush_streams()
 	return TRUE;
 }
 
-BOOL MESSAGE_OBJECT::clear_unsent()
+BOOL message_object::clear_unsent()
 {
 	auto pmessage = this;
 	uint32_t result;
@@ -942,7 +940,7 @@ BOOL MESSAGE_OBJECT::clear_unsent()
 	       pmessage->instance_id, &tmp_propval, &result);
 }
 
-BOOL MESSAGE_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
+BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pmessage = this;
 	int i;
@@ -976,7 +974,7 @@ BOOL MESSAGE_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	}
 	for (pnode=double_list_get_head(&pmessage->stream_list); NULL!=pnode;
 		pnode=double_list_get_after(&pmessage->stream_list, pnode)) {
-		auto proptag = static_cast<STREAM_OBJECT *>(pnode->pdata)->get_proptag();
+		auto proptag = static_cast<stream_object *>(pnode->pdata)->get_proptag();
 		if (common_util_index_proptags(pproptags, proptag) < 0) {
 			pproptags->pproptag[pproptags->count++] = proptag;
 		}
@@ -995,7 +993,7 @@ BOOL MESSAGE_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-BOOL MESSAGE_OBJECT::check_readonly_property(uint32_t proptag) const
+BOOL message_object::check_readonly_property(uint32_t proptag) const
 {
 	auto pmessage = this;
 	if (PROP_TYPE(proptag) == PT_OBJECT)
@@ -1048,8 +1046,8 @@ BOOL MESSAGE_OBJECT::check_readonly_property(uint32_t proptag) const
 	return FALSE;
 }
 
-static BOOL message_object_get_calculated_property(
-	MESSAGE_OBJECT *pmessage, uint32_t proptag, void **ppvalue)
+static BOOL message_object_get_calculated_property(message_object *pmessage,
+    uint32_t proptag, void **ppvalue)
 {	
 	switch (proptag) {
 	case PR_ACCESS:
@@ -1124,21 +1122,21 @@ static BOOL message_object_get_calculated_property(
 	return FALSE;
 }
 
-static void* message_object_get_stream_property_value(
-	MESSAGE_OBJECT *pmessage, uint32_t proptag)
+static void* message_object_get_stream_property_value(message_object *pmessage,
+    uint32_t proptag)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (pnode=double_list_get_head(&pmessage->stream_list); NULL!=pnode;
 		pnode=double_list_get_after(&pmessage->stream_list, pnode)) {
-		auto so = static_cast<STREAM_OBJECT *>(pnode->pdata);
+		auto so = static_cast<stream_object *>(pnode->pdata);
 		if (so->get_proptag() == proptag)
 			return so->get_content();
 	}
 	return NULL;
 }
 
-BOOL MESSAGE_OBJECT::get_properties(uint32_t size_limit,
+BOOL message_object::get_properties(uint32_t size_limit,
     const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
 	auto pmessage = this;
@@ -1229,20 +1227,20 @@ BOOL MESSAGE_OBJECT::get_properties(uint32_t size_limit,
 	return TRUE;	
 }
 
-static BOOL message_object_check_stream_property(
-	MESSAGE_OBJECT *pmessage, uint32_t proptag)
+static BOOL message_object_check_stream_property(message_object *pmessage,
+    uint32_t proptag)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (pnode=double_list_get_head(&pmessage->stream_list); NULL!=pnode;
 		pnode=double_list_get_after(&pmessage->stream_list, pnode)) {
-		if (static_cast<STREAM_OBJECT *>(pnode->pdata)->get_proptag() == proptag)
+		if (static_cast<stream_object *>(pnode->pdata)->get_proptag() == proptag)
 			return TRUE;
 	}
 	return FALSE;
 }
 
-static BOOL message_object_set_properties_internal(MESSAGE_OBJECT *pmessage,
+static BOOL message_object_set_properties_internal(message_object *pmessage,
 	BOOL b_check, const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems)
 {
 	int i, j;
@@ -1367,7 +1365,7 @@ static BOOL message_object_set_properties_internal(MESSAGE_OBJECT *pmessage,
 	return TRUE;
 }
 
-BOOL MESSAGE_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals,
+BOOL message_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
     PROBLEM_ARRAY *pproblems)
 {
 	auto pmessage = this;
@@ -1375,7 +1373,7 @@ BOOL MESSAGE_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals,
 			pmessage, TRUE, ppropvals, pproblems);
 }
 
-BOOL MESSAGE_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags,
+BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
     PROBLEM_ARRAY *pproblems)
 {
 	auto pmessage = this;
@@ -1457,7 +1455,7 @@ BOOL MESSAGE_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags,
 	return TRUE;
 }
 
-BOOL MESSAGE_OBJECT::copy_to(MESSAGE_OBJECT *pmessage_src,
+BOOL message_object::copy_to(message_object *pmessage_src,
      const PROPTAG_ARRAY *pexcluded_proptags, BOOL b_force, BOOL *pb_cycle,
      PROBLEM_ARRAY *pproblems)
 {
@@ -1520,7 +1518,7 @@ BOOL MESSAGE_OBJECT::copy_to(MESSAGE_OBJECT *pmessage_src,
 	return TRUE;
 }
 
-BOOL MESSAGE_OBJECT::copy_rcpts(MESSAGE_OBJECT *pmessage_src,
+BOOL message_object::copy_rcpts(message_object *pmessage_src,
     BOOL b_force, BOOL *pb_result)
 {
 	auto pmessage = this;
@@ -1533,7 +1531,7 @@ BOOL MESSAGE_OBJECT::copy_rcpts(MESSAGE_OBJECT *pmessage_src,
 	return TRUE;
 }
 	
-BOOL MESSAGE_OBJECT::copy_attachments(MESSAGE_OBJECT *pmessage_src,
+BOOL message_object::copy_attachments(message_object *pmessage_src,
     BOOL b_force, BOOL *pb_result)
 {
 	auto pmessage = this;
@@ -1546,7 +1544,7 @@ BOOL MESSAGE_OBJECT::copy_attachments(MESSAGE_OBJECT *pmessage_src,
 	return TRUE;
 }
 
-BOOL MESSAGE_OBJECT::set_readflag(uint8_t read_flag, BOOL *pb_changed)
+BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 {
 	auto pmessage = this;
 	void *pvalue;

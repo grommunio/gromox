@@ -5,13 +5,13 @@
 
 #define MAX_LENGTH_FOR_FOLDER						64*1024
 
-struct STREAM_OBJECT {
+struct stream_object {
 	protected:
-	STREAM_OBJECT() = default;
+	stream_object() = default;
 
 	public:
-	~STREAM_OBJECT();
-	static std::unique_ptr<STREAM_OBJECT> create(void *parent, int object_type, uint32_t open_flags, uint32_t proptag, uint32_t max_length);
+	~stream_object();
+	static std::unique_ptr<stream_object> create(void *parent, int object_type, uint32_t open_flags, uint32_t proptag, uint32_t max_length);
 	BOOL check() const { return content_bin.pb != nullptr ? TRUE : false; }
 	uint32_t get_max_length() const { return max_length; }
 	uint32_t read(void *buf, uint32_t len);
@@ -24,7 +24,7 @@ struct STREAM_OBJECT {
 	BOOL set_length(uint32_t len);
 	BOOL seek(uint8_t opt, int64_t offset);
 	uint32_t get_seek_position() const { return seek_ptr; }
-	BOOL copy(STREAM_OBJECT *src, uint32_t *len);
+	BOOL copy(stream_object *src, uint32_t *len);
 	BOOL commit();
 
 	void *pparent = nullptr;
@@ -35,4 +35,3 @@ struct STREAM_OBJECT {
 	BOOL b_touched = false;
 	uint32_t max_length = 0;
 };
-using stream_object = STREAM_OBJECT;

@@ -20,7 +20,7 @@
 std::unique_ptr<folder_object> folder_object::create(logon_object *plogon,
 	uint64_t folder_id, uint8_t type, uint32_t tag_access)
 {
-	std::unique_ptr<FOLDER_OBJECT> pfolder;
+	std::unique_ptr<folder_object> pfolder;
 	try {
 		pfolder.reset(new folder_object);
 	} catch (const std::bad_alloc &) {
@@ -33,7 +33,7 @@ std::unique_ptr<folder_object> folder_object::create(logon_object *plogon,
 	return pfolder;
 }
 
-BOOL FOLDER_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
+BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pfolder = this;
 	PROPTAG_ARRAY tmp_proptags;
@@ -82,7 +82,7 @@ BOOL FOLDER_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-BOOL FOLDER_OBJECT::check_readonly_property(uint32_t proptag)
+BOOL folder_object::check_readonly_property(uint32_t proptag)
 {
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
@@ -144,8 +144,8 @@ BOOL FOLDER_OBJECT::check_readonly_property(uint32_t proptag)
 	return FALSE;
 }
 
-static BOOL folder_object_get_calculated_property(
-	FOLDER_OBJECT *pfolder, uint32_t proptag, void **outvalue)
+static BOOL folder_object_get_calculated_property(folder_object *pfolder,
+    uint32_t proptag, void **outvalue)
 {
 	BINARY *pbin;
 	void *pvalue;
@@ -501,7 +501,7 @@ static BOOL folder_object_get_calculated_property(
 	return FALSE;
 }
 
-BOOL FOLDER_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
+BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
@@ -565,7 +565,7 @@ BOOL FOLDER_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
 	return TRUE;	
 }
 
-BOOL FOLDER_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals,
+BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
     PROBLEM_ARRAY *pproblems)
 {
 	int i;
@@ -661,7 +661,7 @@ BOOL FOLDER_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	return TRUE;
 }
 
-BOOL FOLDER_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags,
+BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags,
     PROBLEM_ARRAY *pproblems)
 {
 	int i;

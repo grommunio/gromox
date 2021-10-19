@@ -381,8 +381,7 @@ BINARY* common_util_public_to_addressbook_entryid(const char *domainname)
 	return pbin;
 }
 
-BINARY* common_util_to_folder_entryid(
-	LOGON_OBJECT *plogon, uint64_t folder_id)
+BINARY *common_util_to_folder_entryid(logon_object *plogon, uint64_t folder_id)
 {
 	BOOL b_found;
 	BINARY tmp_bin;
@@ -428,8 +427,7 @@ BINARY* common_util_to_folder_entryid(
 	return pbin;
 }
 
-BINARY* common_util_calculate_folder_sourcekey(
-	LOGON_OBJECT *plogon, uint64_t folder_id)
+BINARY *common_util_calculate_folder_sourcekey(logon_object *plogon, uint64_t folder_id)
 {
 	BOOL b_found;
 	uint16_t replid;
@@ -467,7 +465,7 @@ BINARY* common_util_calculate_folder_sourcekey(
 	return pbin;
 }
 
-BINARY* common_util_to_message_entryid(LOGON_OBJECT *plogon,
+BINARY *common_util_to_message_entryid(logon_object *plogon,
 	uint64_t folder_id, uint64_t message_id)
 {
 	BOOL b_found;
@@ -518,8 +516,7 @@ BINARY* common_util_to_message_entryid(LOGON_OBJECT *plogon,
 	return pbin;
 }
 
-BINARY* common_util_calculate_message_sourcekey(
-	LOGON_OBJECT *plogon, uint64_t message_id)
+BINARY *common_util_calculate_message_sourcekey(logon_object *plogon, uint64_t message_id)
 {
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
@@ -541,7 +538,7 @@ BINARY* common_util_calculate_message_sourcekey(
 	return pbin;
 }
 
-BOOL common_util_from_folder_entryid(LOGON_OBJECT *plogon,
+BOOL common_util_from_folder_entryid(logon_object *plogon,
 	BINARY *pbin, uint64_t *pfolder_id)
 {
 	BOOL b_found;
@@ -588,7 +585,7 @@ BOOL common_util_from_folder_entryid(LOGON_OBJECT *plogon,
 	}
 }
 
-BOOL common_util_from_message_entryid(LOGON_OBJECT *plogon,
+BOOL common_util_from_message_entryid(logon_object *plogon,
 	BINARY *pbin, uint64_t *pfolder_id, uint64_t *pmessage_id)
 {
 	BOOL b_found;
@@ -868,9 +865,8 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 	void *pparam, uint16_t *preplid, GUID *pguid)
 {
 	BOOL b_found;
-	LOGON_OBJECT *plogon;
-	
-	plogon = *(LOGON_OBJECT**)pparam;
+	auto plogon = *static_cast<logon_object **>(pparam);
+
 	if (TRUE == to_guid) {
 		if (plogon->check_private()) {
 			if (1 != *preplid) {
@@ -1703,7 +1699,7 @@ void common_util_notify_receipt(const char *username,
 	mail_free(&imail);
 }
 
-BOOL common_util_save_message_ics(LOGON_OBJECT *plogon,
+BOOL common_util_save_message_ics(logon_object *plogon,
 	uint64_t message_id, PROPTAG_ARRAY *pchanged_proptags)
 {
 	int i;
@@ -2068,7 +2064,7 @@ static BOOL common_util_get_propname(
 	return TRUE;
 }
 
-BOOL common_util_send_message(LOGON_OBJECT *plogon,
+BOOL common_util_send_message(logon_object *plogon,
 	uint64_t message_id, BOOL b_submit)
 {
 	MAIL imail;

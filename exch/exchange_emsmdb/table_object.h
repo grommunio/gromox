@@ -4,15 +4,15 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/rpc_types.hpp>
 
-struct LOGON_OBJECT;
+struct logon_object;
 
-struct TABLE_OBJECT {
+struct table_object {
 	protected:
-	TABLE_OBJECT() = default;
+	table_object() = default;
 
 	public:
-	~TABLE_OBJECT();
-	static std::unique_ptr<TABLE_OBJECT> create(LOGON_OBJECT *, void *parent, uint8_t table_flags, uint8_t rop_id, uint8_t logon_id);
+	~table_object();
+	static std::unique_ptr<table_object> create(logon_object *, void *parent, uint8_t table_flags, uint8_t rop_id, uint8_t logon_id);
 	const PROPTAG_ARRAY *get_columns() const { return m_columns; }
 	BOOL set_columns(const PROPTAG_ARRAY *);
 	const SORTORDER_SET *get_sorts() const { return m_sorts; }
@@ -41,7 +41,7 @@ struct TABLE_OBJECT {
 	BOOL store_state(uint64_t inst_id, uint32_t inst_num, uint32_t *state_id);
 	BOOL restore_state(uint32_t state_id, uint32_t *index);
 
-	LOGON_OBJECT *plogon = nullptr;
+	logon_object *plogon = nullptr;
 	CXH cxh{};
 	void *plogmap = nullptr;
 	uint8_t logon_id = 0;
@@ -54,4 +54,3 @@ struct TABLE_OBJECT {
 	uint32_t m_position = 0, m_table_id = 0, bookmark_index = 0;
 	DOUBLE_LIST bookmark_list{};
 };
-using table_object = TABLE_OBJECT;

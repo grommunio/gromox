@@ -16,7 +16,7 @@ enum {
 };
 
 struct LIB_BUFFER;
-struct LOGON_OBJECT;
+struct logon_object;
 struct MAIL;
 struct MESSAGE_CONTENT;
 struct MIME_POOL;
@@ -51,18 +51,12 @@ extern BOOL common_util_entryid_to_username(const BINARY *, char *username, size
 void common_util_get_domain_server(const char *account_name, char *pserver);
 BINARY* common_util_username_to_addressbook_entryid(const char *username);
 BINARY* common_util_public_to_addressbook_entryid(const char *domainname);
-BINARY* common_util_to_folder_entryid(
-	LOGON_OBJECT *plogon, uint64_t folder_id);
-BINARY* common_util_calculate_folder_sourcekey(
-	LOGON_OBJECT *plogon, uint64_t folder_id);
-BINARY* common_util_to_message_entryid(LOGON_OBJECT *plogon,
-	uint64_t folder_id, uint64_t message_id);
-BOOL common_util_from_folder_entryid(LOGON_OBJECT *plogon,
-	BINARY *pbin, uint64_t *pfolder_id);
-BOOL common_util_from_message_entryid(LOGON_OBJECT *plogon,
-	BINARY *pbin, uint64_t *pfolder_id, uint64_t *pmessage_id);
-BINARY* common_util_calculate_message_sourcekey(
-	LOGON_OBJECT *plogon, uint64_t message_id);
+extern BINARY *common_util_to_folder_entryid(logon_object *, uint64_t folder_id);
+extern BINARY *common_util_calculate_folder_sourcekey(logon_object *, uint64_t folder_id);
+extern BINARY *common_util_to_message_entryid(logon_object *, uint64_t folder_id, uint64_t msg_id);
+extern BOOL common_util_from_folder_entryid(logon_object *, BINARY *, uint64_t *folder_id);
+extern BOOL common_util_from_message_entryid(logon_object *, BINARY *, uint64_t *folder_id, uint64_t *msg_id);
+extern BINARY *common_util_calculate_message_sourcekey(logon_object *, uint64_t msg_id);
 BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid);
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
 BINARY* common_util_guid_to_binary(GUID guid);
@@ -120,12 +114,10 @@ BOOL common_util_convert_restriction(BOOL to_unicode, RESTRICTION *pres);
 BOOL common_util_convert_rule_actions(BOOL to_unicode, RULE_ACTIONS *pactions);
 void common_util_notify_receipt(const char *username,
 	int type, MESSAGE_CONTENT *pbrief);
-BOOL common_util_save_message_ics(LOGON_OBJECT *plogon,
-	uint64_t message_id, PROPTAG_ARRAY *pchanged_proptags);
+extern BOOL common_util_save_message_ics(logon_object *plogon, uint64_t msg_id, PROPTAG_ARRAY *changed_tags);
 BOOL common_util_send_mail(MAIL *pmail,
 	const char *sender, DOUBLE_LIST *prcpt_list);
-BOOL common_util_send_message(LOGON_OBJECT *plogon,
-	uint64_t message_id, BOOL b_submit);
+extern BOOL common_util_send_message(logon_object *, uint64_t msg_id, BOOL submit);
 
 extern BOOL (*common_util_get_maildir)(
 	const char *username, char *maildir);

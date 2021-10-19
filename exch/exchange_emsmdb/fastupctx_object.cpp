@@ -38,7 +38,7 @@ struct MARKER_NODE {
 std::unique_ptr<fastupctx_object> fastupctx_object::create(logon_object *plogon,
     void *pobject, int root_element)
 {
-	std::unique_ptr<FASTUPCTX_OBJECT> pctx;
+	std::unique_ptr<fastupctx_object> pctx;
 	try {
 		pctx.reset(new fastupctx_object);
 	} catch (const std::bad_alloc &) {
@@ -73,7 +73,7 @@ std::unique_ptr<fastupctx_object> fastupctx_object::create(logon_object *plogon,
 	return pctx;
 }
 
-FASTUPCTX_OBJECT::~FASTUPCTX_OBJECT()
+fastupctx_object::~fastupctx_object()
 {
 	auto pctx = this;
 	DOUBLE_LIST_NODE *pnode;
@@ -89,8 +89,7 @@ FASTUPCTX_OBJECT::~FASTUPCTX_OBJECT()
 	double_list_free(&pctx->marker_stack);
 }
 
-static uint64_t fastupctx_object_get_last_folder(
-	FASTUPCTX_OBJECT *pctx)
+static uint64_t fastupctx_object_get_last_folder(fastupctx_object *pctx)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
@@ -100,11 +99,10 @@ static uint64_t fastupctx_object_get_last_folder(
 			return ((MARKER_NODE*)pnode->pdata)->data.folder_id;
 		}
 	}
-	return static_cast<FOLDER_OBJECT *>(pctx->pobject)->folder_id;
+	return static_cast<folder_object *>(pctx->pobject)->folder_id;
 }
 
-static uint32_t fastupctx_object_get_last_attachment_instance(
-	FASTUPCTX_OBJECT *pctx)
+static uint32_t fastupctx_object_get_last_attachment_instance(fastupctx_object *pctx)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
@@ -114,11 +112,10 @@ static uint32_t fastupctx_object_get_last_attachment_instance(
 			return ((MARKER_NODE*)pnode->pdata)->data.instance_id;
 		}
 	}
-	return static_cast<ATTACHMENT_OBJECT *>(pctx->pobject)->get_instance_id();
+	return static_cast<attachment_object *>(pctx->pobject)->get_instance_id();
 }
 
-static uint32_t fastupctx_object_get_last_message_instance(
-	FASTUPCTX_OBJECT *pctx)
+static uint32_t fastupctx_object_get_last_message_instance(fastupctx_object *pctx)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
@@ -128,12 +125,11 @@ static uint32_t fastupctx_object_get_last_message_instance(
 			return ((MARKER_NODE*)pnode->pdata)->data.instance_id;
 		}
 	}
-	return static_cast<MESSAGE_OBJECT *>(pctx->pobject)->get_instance_id();
+	return static_cast<message_object *>(pctx->pobject)->get_instance_id();
 }
 
-static BOOL fastupctx_object_create_folder(
-	FASTUPCTX_OBJECT *pctx, uint64_t parent_id,
-	TPROPVAL_ARRAY *pproplist, uint64_t *pfolder_id)
+static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
+    uint64_t parent_id, TPROPVAL_ARRAY *pproplist, uint64_t *pfolder_id)
 {
 	XID tmp_xid;
 	BINARY *pbin;
@@ -226,9 +222,8 @@ static BOOL fastupctx_object_create_folder(
 	return TRUE;
 }
 
-static BOOL fastupctx_object_empty_folder(
-	FASTUPCTX_OBJECT *pctx, uint64_t folder_id,
-	BOOL b_normal, BOOL b_fai, BOOL b_sub)
+static BOOL fastupctx_object_empty_folder(fastupctx_object *pctx,
+    uint64_t folder_id, BOOL b_normal, BOOL b_fai, BOOL b_sub)
 {
 	BOOL b_partial;
 	const char *username;
@@ -252,7 +247,7 @@ static BOOL fastupctx_object_empty_folder(
 }
 
 static gxerr_t
-fastupctx_object_write_message(FASTUPCTX_OBJECT *pctx, uint64_t folder_id)
+fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 {
 	XID tmp_xid;
 	BINARY *pbin;
@@ -305,7 +300,7 @@ fastupctx_object_write_message(FASTUPCTX_OBJECT *pctx, uint64_t folder_id)
 	return GXERR_SUCCESS;
 }
 
-static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
+static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
     uint32_t marker)
 {
 	uint32_t tmp_id;
@@ -336,7 +331,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 		}
 		pnode1 = double_list_get_before(&pctx->marker_stack, pnode);
 		uint64_t parent_id = pnode1 == nullptr ?
-		                     static_cast<FOLDER_OBJECT *>(pctx->pobject)->folder_id :
+		                     static_cast<folder_object *>(pctx->pobject)->folder_id :
 		                     static_cast<MARKER_NODE *>(pnode1->pdata)->data.folder_id;
 		if (FALSE == fastupctx_object_create_folder(pctx,
 			parent_id, pctx->pproplist, &folder_id)) {
@@ -352,7 +347,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 			break;
 		}
 		if (pctx->pproplist->count > 0) {
-			if (!static_cast<FOLDER_OBJECT *>(pctx->pobject)->set_properties(pctx->pproplist, &tmp_problems))
+			if (!static_cast<folder_object *>(pctx->pobject)->set_properties(pctx->pproplist, &tmp_problems))
 				return GXERR_CALL_FAILED;
 		}
 		tpropval_array_free(pctx->pproplist);
@@ -364,7 +359,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 				break;
 			}
 			if (pctx->pproplist->count > 0) {
-				if (!static_cast<FOLDER_OBJECT *>(pctx->pobject)->set_properties(pctx->pproplist, &tmp_problems))
+				if (!static_cast<folder_object *>(pctx->pobject)->set_properties(pctx->pproplist, &tmp_problems))
 					return GXERR_CALL_FAILED;
 			}
 			tpropval_array_free(pctx->pproplist);
@@ -734,8 +729,7 @@ static gxerr_t fastupctx_object_record_marker(FASTUPCTX_OBJECT *pctx,
 	return GXERR_SUCCESS;
 }
 
-static BOOL fastupctx_object_del_props(
-	FASTUPCTX_OBJECT *pctx, uint32_t marker)
+static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 {
 	int instance_id;
 	DOUBLE_LIST_NODE *pnode;
@@ -820,7 +814,7 @@ static BOOL fastupctx_object_del_props(
 		}
 		if (0 == last_marker) {
 			if (!fastupctx_object_empty_folder(pctx,
-			    static_cast<FOLDER_OBJECT *>(pctx->pobject)->folder_id,
+			    static_cast<folder_object *>(pctx->pobject)->folder_id,
 			    TRUE, FALSE, FALSE))
 				return FALSE;	
 		}
@@ -832,7 +826,7 @@ static BOOL fastupctx_object_del_props(
 		}
 		if (0 == last_marker) {
 			if (fastupctx_object_empty_folder(pctx,
-			    static_cast<FOLDER_OBJECT *>(pctx->pobject)->folder_id,
+			    static_cast<folder_object *>(pctx->pobject)->folder_id,
 			    FALSE, TRUE, FALSE))
 				return FALSE;	
 		}
@@ -844,7 +838,7 @@ static BOOL fastupctx_object_del_props(
 		}
 		if (0 == last_marker) {
 			if (!fastupctx_object_empty_folder(pctx,
-			    static_cast<FOLDER_OBJECT *>(pctx->pobject)->folder_id,
+			    static_cast<folder_object *>(pctx->pobject)->folder_id,
 			    FALSE, FALSE, TRUE))
 				return FALSE;	
 		}
@@ -853,7 +847,7 @@ static BOOL fastupctx_object_del_props(
 	return TRUE;
 }
 
-static gxerr_t fastupctx_object_record_propval(FASTUPCTX_OBJECT *pctx,
+static gxerr_t fastupctx_object_record_propval(fastupctx_object *pctx,
     const TAGGED_PROPVAL *ppropval)
 {
 	uint32_t b_result;
@@ -910,12 +904,12 @@ static gxerr_t fastupctx_object_record_propval(FASTUPCTX_OBJECT *pctx,
 			       GXERR_SUCCESS : GXERR_CALL_FAILED;
 		case ROOT_ELEMENT_MESSAGECONTENT:
 			return exmdb_client_set_instance_property(pctx->pstream->plogon->get_dir(),
-			       static_cast<MESSAGE_OBJECT *>(pctx->pobject)->get_instance_id(),
+			       static_cast<message_object *>(pctx->pobject)->get_instance_id(),
 					ppropval, &b_result) == TRUE ?
 					GXERR_SUCCESS : GXERR_CALL_FAILED;
 		case ROOT_ELEMENT_ATTACHMENTCONTENT:
 			return exmdb_client_set_instance_property(pctx->pstream->plogon->get_dir(),
-			       static_cast<ATTACHMENT_OBJECT *>(pctx->pobject)->get_instance_id(),
+			       static_cast<attachment_object *>(pctx->pobject)->get_instance_id(),
 					ppropval, &b_result) == TRUE ?
 					GXERR_SUCCESS : GXERR_CALL_FAILED;
 		case ROOT_ELEMENT_MESSAGELIST:
@@ -965,7 +959,7 @@ static gxerr_t fastupctx_object_record_propval(FASTUPCTX_OBJECT *pctx,
 	}
 }
 
-gxerr_t FASTUPCTX_OBJECT::write_buffer(const BINARY *ptransfer_data)
+gxerr_t fastupctx_object::write_buffer(const BINARY *ptransfer_data)
 {
 	auto pctx = this;
 	/* check if the fast stream is marked as ended */

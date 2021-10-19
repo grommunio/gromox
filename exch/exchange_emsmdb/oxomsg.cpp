@@ -17,7 +17,7 @@
 
 using namespace std::string_literals;
 
-static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
+static gxerr_t oxomsg_rectify_message(message_object *pmessage,
     const char *representing_username)
 {
 	BINARY *pentryid;
@@ -110,7 +110,7 @@ static gxerr_t oxomsg_rectify_message(MESSAGE_OBJECT *pmessage,
 	return pmessage->save();
 }
 
-static BOOL oxomsg_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size_t ulen)
+static BOOL oxomsg_check_delegate(message_object *pmessage, char *username, size_t ulen)
 {
 	uint32_t proptag_buff[4];
 	PROPTAG_ARRAY tmp_proptags;
@@ -227,7 +227,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	if (plogon->logon_mode == LOGON_MODE_GUEST)
 		return ecAccessDenied;
 
-	auto pmessage = static_cast<MESSAGE_OBJECT *>(rop_processor_get_object(plogmap,
+	auto pmessage = static_cast<message_object *>(rop_processor_get_object(plogmap,
 	                logon_id, hin, &object_type));
 	if (NULL == pmessage) {
 		return ecNullObject;
@@ -604,7 +604,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 		return ecNotSupported;
 	if (plogon->logon_mode == LOGON_MODE_GUEST)
 		return ecAccessDenied;
-	auto pmessage = static_cast<MESSAGE_OBJECT *>(rop_processor_get_object(plogmap,
+	auto pmessage = static_cast<message_object *>(rop_processor_get_object(plogmap,
 	                logon_id, hin, &object_type));
 	if (NULL == pmessage) {
 		return ecNullObject;

@@ -12,7 +12,7 @@ subscription_object::create(logon_object *plogon, uint8_t logon_id,
     uint16_t notification_types, BOOL b_whole, uint64_t folder_id,
     uint64_t message_id)
 {
-	std::unique_ptr<SUBSCRIPTION_OBJECT> psub;
+	std::unique_ptr<subscription_object> psub;
 	try {
 		psub.reset(new subscription_object);
 	} catch (const std::bad_alloc &) {
@@ -29,7 +29,7 @@ subscription_object::create(logon_object *plogon, uint8_t logon_id,
 	return psub;
 }
 
-void SUBSCRIPTION_OBJECT::set_handle(uint32_t h)
+void subscription_object::set_handle(uint32_t h)
 {
 	auto psub = this;
 	psub->handle = h;
@@ -37,7 +37,7 @@ void SUBSCRIPTION_OBJECT::set_handle(uint32_t h)
 		psub->sub_id, psub->handle, psub->logon_id, &psub->cxh.guid);
 }
 
-SUBSCRIPTION_OBJECT::~SUBSCRIPTION_OBJECT()
+subscription_object::~subscription_object()
 {	
 	auto psub = this;
 	exmdb_client_unsubscribe_notification(psub->plogon->get_dir(), psub->sub_id);

@@ -10,13 +10,13 @@
 struct INT_HASH_TABLE;
 struct STR_HASH_TABLE;
 
-struct LOGON_OBJECT {
+struct logon_object {
 	protected:
-	LOGON_OBJECT() = default;
+	logon_object() = default;
 
 	public:
-	~LOGON_OBJECT();
-	static std::unique_ptr<LOGON_OBJECT> create(uint8_t logon_flags, uint32_t open_flags, int logon_mode, int account_id, const char *account, const char *dir, GUID mailbox_guid);
+	~logon_object();
+	static std::unique_ptr<logon_object> create(uint8_t logon_flags, uint32_t open_flags, int logon_mode, int account_id, const char *account, const char *dir, GUID mailbox_guid);
 	BOOL check_private() const;
 	GUID guid() const;
 	const char *get_account() const { return account; }
@@ -49,4 +49,3 @@ struct LOGON_OBJECT {
 	STR_HASH_TABLE *ppropname_hash = nullptr;
 	DOUBLE_LIST group_list{};
 };
-using logon_object = LOGON_OBJECT;

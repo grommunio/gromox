@@ -29,7 +29,7 @@ ICS_STATE::~ICS_STATE()
 	}
 }
 
-std::unique_ptr<ics_state> ics_state::create(LOGON_OBJECT *plogon, int type)
+std::unique_ptr<ics_state> ics_state::create(logon_object *plogon, int type)
 {
 	std::unique_ptr<ICS_STATE> pstate;
 	BINARY tmp_bin;
