@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cstring>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <json/reader.h>
 #include <libHX/io.h>
