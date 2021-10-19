@@ -227,8 +227,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 	if (plogon->logon_mode == LOGON_MODE_GUEST)
 		return ecAccessDenied;
 
-	auto pmessage = static_cast<message_object *>(rop_processor_get_object(plogmap,
-	                logon_id, hin, &object_type));
+	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pmessage) {
 		return ecNullObject;
 	}
@@ -604,8 +603,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 		return ecNotSupported;
 	if (plogon->logon_mode == LOGON_MODE_GUEST)
 		return ecAccessDenied;
-	auto pmessage = static_cast<message_object *>(rop_processor_get_object(plogmap,
-	                logon_id, hin, &object_type));
+	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pmessage) {
 		return ecNullObject;
 	}

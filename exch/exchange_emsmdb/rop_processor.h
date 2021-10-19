@@ -28,6 +28,9 @@ int rop_processor_add_object_handle(void *plogmap, uint8_t logon_id,
 	int parent_handle, int type, void *pobject);
 void* rop_processor_get_object(void *plogmap,
 	uint8_t logon_id, uint32_t obj_handle, int *ptype);
+template<typename T> T *rop_proc_get_obj(void *l, uint8_t id, uint32_t oh, int *ty) {
+	return static_cast<T *>(rop_processor_get_object(l, id, oh, ty));
+}
 void rop_processor_release_object_handle(void *plogmap,
 	uint8_t logon_id, uint32_t obj_handle);
 extern logon_object *rop_processor_get_logon_object(void *logmap, uint8_t logon_id);

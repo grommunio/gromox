@@ -1104,8 +1104,7 @@ uint32_t rop_readstream(uint16_t byte_count,
 	uint32_t buffer_size;
 	int32_t object_type;
 	
-	auto pstream = static_cast<stream_object *>(rop_processor_get_object(plogmap,
-	               logon_id, hin, &object_type));
+	auto pstream = rop_proc_get_obj<stream_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pstream) {
 		return ecNullObject;
 	}
@@ -1142,8 +1141,7 @@ uint32_t rop_writestream(const BINARY *pdata_bin,
 {
 	int32_t object_type;
 	
-	auto pstream = static_cast<stream_object *>(rop_processor_get_object(plogmap,
-	               logon_id, hin, &object_type));
+	auto pstream = rop_proc_get_obj<stream_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pstream) {
 		return ecNullObject;
 	}
@@ -1173,8 +1171,7 @@ uint32_t rop_commitstream(void *plogmap,
 {
 	int object_type;
 	
-	auto pstream = static_cast<stream_object *>(rop_processor_get_object(plogmap,
-	               logon_id, hin, &object_type));
+	auto pstream = rop_proc_get_obj<stream_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pstream) {
 		return ecNullObject;
 	}
@@ -1199,8 +1196,7 @@ uint32_t rop_getstreamsize(uint32_t *pstream_size,
 {
 	int object_type;
 	
-	auto pstream = static_cast<stream_object *>(rop_processor_get_object(plogmap,
-	               logon_id, hin, &object_type));
+	auto pstream = rop_proc_get_obj<stream_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pstream) {
 		return ecNullObject;
 	}
@@ -1219,8 +1215,7 @@ uint32_t rop_setstreamsize(uint64_t stream_size,
 	if (stream_size > static_cast<uint64_t>(INT32_MAX) + 1)
 		/* That weird +1 is specified in MS-OXCPRPT §2.2.19 and §2.2.20 */
 		return ecInvalidParam;
-	auto pstream = static_cast<stream_object *>(rop_processor_get_object(plogmap,
-	               logon_id, hin, &object_type));
+	auto pstream = rop_proc_get_obj<stream_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pstream) {
 		return ecNullObject;
 	}
@@ -1252,8 +1247,7 @@ uint32_t rop_seekstream(uint8_t seek_pos,
 		return StreamSeekError;
 	if (offset > 0 && static_cast<uint64_t>(offset) > static_cast<uint64_t>(INT32_MAX) + 1)
 		return StreamSeekError;
-	auto pstream = static_cast<stream_object *>(rop_processor_get_object(plogmap,
-	               logon_id, hin, &object_type));
+	auto pstream = rop_proc_get_obj<stream_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pstream) {
 		return ecNullObject;
 	}
@@ -1274,16 +1268,14 @@ uint32_t rop_copytostream(uint64_t byte_count,
 	int object_type;
 	uint32_t length;
 	
-	auto psrc_stream = static_cast<stream_object *>(rop_processor_get_object(plogmap,
-	                   logon_id, hsrc, &object_type));
+	auto psrc_stream = rop_proc_get_obj<stream_object>(plogmap, logon_id, hsrc, &object_type);
 	if (NULL == psrc_stream) {
 		return ecNullObject;
 	}
 	if (OBJECT_TYPE_STREAM != object_type) {
 		return ecNotSupported;
 	}
-	auto pdst_stream = static_cast<stream_object *>(rop_processor_get_object(plogmap,
-	                   logon_id, hdst, &object_type));
+	auto pdst_stream = rop_proc_get_obj<stream_object>(plogmap, logon_id, hdst, &object_type);
 	if (pdst_stream == nullptr)
 		return ecDstNullObject;
 	if (pdst_stream->get_open_flags() == OPENSTREAM_FLAG_READONLY)

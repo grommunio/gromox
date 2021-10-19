@@ -294,8 +294,7 @@ uint32_t rop_savechangesmessage(uint8_t save_flags,
 	save_flags &= SAVE_FLAG_KEEPOPENREADONLY |
 					SAVE_FLAG_KEEPOPENREADWRITE |
 					SAVE_FLAG_FORCESAVE;
-	auto pmessage = static_cast<message_object *>(rop_processor_get_object(plogmap,
-	                logon_id, hin, &object_type));
+	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pmessage) {
 		return ecNullObject;
 	}
@@ -345,9 +344,7 @@ uint32_t rop_removeallrecipients(uint32_t reserved,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	
-	auto pmessage = static_cast<message_object *>(rop_processor_get_object(plogmap,
-	                logon_id, hin, &object_type));
+	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pmessage) {
 		return ecNullObject;
 	}
@@ -384,8 +381,7 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags,
 			return ecInvalidParam;
 		}
 	}
-	auto pmessage = static_cast<message_object *>(rop_processor_get_object(plogmap,
-	                logon_id, hin, &object_type));
+	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pmessage) {
 		return ecNullObject;
 	}
@@ -437,8 +433,7 @@ uint32_t rop_readrecipients(uint32_t row_id,
 	TARRAY_SET tmp_set;
 	READRECIPIENT_ROW tmp_row;
 	
-	auto pmessage = static_cast<message_object *>(rop_processor_get_object(plogmap,
-	                logon_id, hin, &object_type));
+	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pmessage) {
 		return ecNullObject;
 	}
@@ -481,8 +476,7 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 	TPROPVAL_ARRAY propvals;
 	uint32_t proptag_buff[3];
 	
-	auto pmessage = static_cast<message_object *>(rop_processor_get_object(plogmap,
-	                logon_id, hin, &object_type));
+	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pmessage) {
 		return ecNullObject;
 	}
@@ -762,8 +756,7 @@ uint32_t rop_setmessagereadflag(uint8_t read_flags,
 		plogmap, logon_id, hresponse, &object_type)) {
 		return ecNullObject;
 	}
-	auto pmessage = static_cast<message_object *>(rop_processor_get_object(plogmap,
-	                logon_id, hin, &object_type));
+	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pmessage) {
 		return ecNullObject;
 	}
@@ -785,8 +778,7 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	auto pmessage = static_cast<message_object *>(rop_processor_get_object(
-	                plogmap, logon_id, hin, &object_type));
+	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pmessage) {
 		return ecNullObject;
 	}
@@ -828,8 +820,7 @@ uint32_t rop_createattachment(uint32_t *pattachment_id,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	auto pmessage = static_cast<message_object *>(rop_processor_get_object(
-	                plogmap, logon_id, hin, &object_type));
+	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pmessage) {
 		return ecNullObject;
 	}
@@ -865,8 +856,7 @@ uint32_t rop_deleteattachment(uint32_t attachment_id,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
-	auto pmessage = static_cast<message_object *>(rop_processor_get_object(plogmap,
-	                logon_id, hin, &object_type));
+	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pmessage) {
 		return ecNullObject;
 	}
@@ -897,8 +887,7 @@ uint32_t rop_savechangesattachment(uint8_t save_flags,
 	if (OBJECT_TYPE_MESSAGE != object_type) {
 		return ecNotSupported;
 	}
-	auto pattachment = static_cast<attachment_object *>(rop_processor_get_object(plogmap,
-	                   logon_id, hin, &object_type));
+	auto pattachment = rop_proc_get_obj<attachment_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pattachment) {
 		return ecNullObject;
 	}
@@ -955,8 +944,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	auto pattachment = static_cast<attachment_object *>(rop_processor_get_object(plogmap,
-	                   logon_id, hin, &object_type));
+	auto pattachment = rop_proc_get_obj<attachment_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pattachment) {
 		return ecNullObject;
 	}
@@ -1084,8 +1072,7 @@ uint32_t rop_getattachmenttable(uint8_t table_flags,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	auto pmessage = static_cast<message_object *>(rop_processor_get_object(plogmap,
-	                logon_id, hin, &object_type));
+	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pmessage) {
 		return ecNullObject;
 	}

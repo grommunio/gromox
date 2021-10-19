@@ -417,8 +417,7 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	auto pfolder = static_cast<folder_object *>(rop_processor_get_object(plogmap,
-	               logon_id, hin, &object_type));
+	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
@@ -478,8 +477,7 @@ uint32_t rop_fasttransfersourcecopymessages(
 	if (NULL == plogon) {
 		return ecError;
 	}
-	auto pfolder = static_cast<folder_object *>(rop_processor_get_object(plogmap,
-	               logon_id, hin, &object_type));
+	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
@@ -863,8 +861,7 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	auto pfolder = static_cast<folder_object *>(rop_processor_get_object(plogmap,
-	               logon_id, hin, &object_type));
+	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
@@ -927,8 +924,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	auto pctx = static_cast<icsupctx_object *>(rop_processor_get_object(plogmap,
-	            logon_id, hin, &object_type));
+	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pctx) {
 		return ecNullObject;
 	}
@@ -1081,8 +1077,7 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	auto pctx = static_cast<icsupctx_object *>(rop_processor_get_object(plogmap,
-	            logon_id, hin, &object_type));
+	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pctx) {
 		return ecNullObject;
 	}
@@ -1195,8 +1190,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	auto pctx = static_cast<icsupctx_object *>(rop_processor_get_object(plogmap,
-	            logon_id, hin, &object_type));
+	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pctx) {
 		return ecNullObject;
 	}
@@ -1440,8 +1434,7 @@ uint32_t rop_syncimportdeletes(
 	if (NULL == plogon) {
 		return ecError;
 	}
-	auto pctx = static_cast<icsupctx_object *>(rop_processor_get_object(plogmap,
-	            logon_id, hin, &object_type));
+	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pctx) {
 		return ecNullObject;
 	}
@@ -1610,8 +1603,7 @@ uint32_t rop_syncimportmessagemove(
 	if (NULL == plogon) {
 		return ecError;
 	}
-	auto pctx = static_cast<icsupctx_object *>(rop_processor_get_object(plogmap,
-	            logon_id, hin, &object_type));
+	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pctx) {
 		return ecNullObject;
 	}
@@ -1719,8 +1711,7 @@ uint32_t rop_syncopencollector(uint8_t is_content_collector,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	auto pfolder = static_cast<folder_object *>(rop_processor_get_object(plogmap,
-	               logon_id, hin, &object_type));
+	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
@@ -1863,9 +1854,7 @@ uint32_t rop_getlocalreplicaids(uint32_t count,
 {
 	int object_type;
 	uint64_t begin_eid;
-	
-	auto plogon = static_cast<logon_object *>(rop_processor_get_object(plogmap,
-	              logon_id, hin, &object_type));
+	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == plogon) {
 		return ecNullObject;
 	}

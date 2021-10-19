@@ -26,8 +26,7 @@ uint32_t rop_modifypermissions(uint8_t flags,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	auto pfolder = static_cast<folder_object *>(rop_processor_get_object(plogmap,
-	               logon_id, hin, &object_type));
+	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
@@ -75,8 +74,7 @@ uint32_t rop_getpermissionstable(uint8_t flags,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	auto pfolder = static_cast<folder_object *>(rop_processor_get_object(plogmap,
-	               logon_id, hin, &object_type));
+	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
