@@ -4,6 +4,7 @@
 #include <climits>
 #include <cstdint>
 #include <cstdio>
+#include <memory>
 #include <gromox/mapidefs.h>
 #include <gromox/tarray_set.hpp>
 #include "object_tree.h"

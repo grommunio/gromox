@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
 #include <cassert>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>

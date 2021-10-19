@@ -4,6 +4,7 @@
 #endif
 #include <cctype>
 #include <cstdint>
+#include <memory>
 #include <libHX/string.h>
 #include "msgchg_grouping.h"
 #include "system_services.h"

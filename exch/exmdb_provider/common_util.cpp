@@ -5,6 +5,7 @@
 #include <cerrno>
 #include <climits>
 #include <cstdint>
+#include <memory>
 #include <new>
 #include <string>
 #include <libHX/string.h>

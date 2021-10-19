@@ -5,6 +5,7 @@
 #include <cerrno>
 #include <climits>
 #include <csignal>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>

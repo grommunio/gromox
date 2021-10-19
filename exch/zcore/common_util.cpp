@@ -6,6 +6,7 @@
 #endif
 #include <cerrno>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <unistd.h>
 #include <libHX/ctype_helper.h>

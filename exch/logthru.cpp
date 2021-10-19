@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <memory>
 #include <shared_mutex>
 #include <string>
 #include <gromox/config_file.hpp>

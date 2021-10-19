@@ -8,6 +8,7 @@
 #	include "config.h"
 #endif
 #include <cerrno>
+#include <memory>
 #include <string>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>

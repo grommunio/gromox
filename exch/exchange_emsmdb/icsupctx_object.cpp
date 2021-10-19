@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <memory>
 #include "icsupctx_object.h"
 #include "ics_state.h"
 #include "common_util.h"

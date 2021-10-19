@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <gromox/database.h>
 #include <gromox/fileio.h>

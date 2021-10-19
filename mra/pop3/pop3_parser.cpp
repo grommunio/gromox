@@ -3,6 +3,7 @@
  * commands and then do the corresponding action. 
  */ 
 #include <cerrno>
+#include <memory>
 #include <mutex>
 #include <unistd.h>
 #include <vector>

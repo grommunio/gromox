@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <gromox/element_data.hpp>

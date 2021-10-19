@@ -6,6 +6,7 @@
  */ 
 #include <cassert>
 #include <cerrno>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <unordered_map>
