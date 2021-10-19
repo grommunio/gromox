@@ -24,10 +24,8 @@ uint32_t rop_registernotification(
 	if (NULL == plogon) {
 		return ecNullObject;
 	}
-	if (NULL == rop_processor_get_object(
-		plogmap, logon_id, hin, &object_type)) {
+	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
 		return ecNullObject;
-	}
 	if (0 == want_whole_store) {
 		b_whole = FALSE;
 		folder_id = *pfolder_id;

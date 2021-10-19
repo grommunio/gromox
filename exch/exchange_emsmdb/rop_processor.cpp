@@ -516,7 +516,6 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 	int status;
 	int rop_num;
 	BOOL b_icsup;
-	void *pobject;
 	BINARY tmp_bin;
 	uint32_t result;
 	uint32_t tmp_len;
@@ -528,7 +527,6 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 	TPROPVAL_ARRAY propvals;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
-	NOTIFY_RESPONSE *pnotify;
 	EMSMDB_INFO *pemsmdb_info;
 	DOUBLE_LIST *pnotify_list;
 	PENDING_RESPONSE tmp_pending;
@@ -639,9 +637,8 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 			break;
 		}
 		uint32_t last_offset = ext_push.m_offset;
-		pnotify = static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
-		pobject = rop_processor_get_object(pemsmdb_info->plogmap,
-					pnotify->logon_id, pnotify->handle, &type);
+		auto pnotify = static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
+		auto pobject = rop_processor_get_object(pemsmdb_info->plogmap, pnotify->logon_id, pnotify->handle, &type);
 		if (NULL != pobject) {
 			if (OBJECT_TYPE_TABLE == type &&
 				NULL != pnotify->notification_data.ptable_event &&

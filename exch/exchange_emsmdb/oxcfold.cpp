@@ -35,10 +35,8 @@ uint32_t rop_openfolder(uint64_t folder_id,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	if (NULL == rop_processor_get_object(plogmap,
-		logon_id, hin, &object_type)) {
+	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
 		return ecNullObject;
-	}
 	if (OBJECT_TYPE_LOGON != object_type &&
 		OBJECT_TYPE_FOLDER != object_type) {
 		return ecNotSupported;

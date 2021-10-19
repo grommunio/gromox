@@ -32,10 +32,8 @@ uint32_t rop_getpropertyidsfromnames(uint8_t flags,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	if (NULL == rop_processor_get_object(
-		plogmap, logon_id, hin, &object_type)) {
+	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
 		return ecNullObject;
-	}
 	switch (object_type) {
 	case OBJECT_TYPE_LOGON:
 	case OBJECT_TYPE_FOLDER:
@@ -73,10 +71,8 @@ uint32_t rop_getnamesfrompropertyids(
 	if (NULL == plogon) {
 		return ecError;
 	}
-	if (NULL == rop_processor_get_object(
-		plogmap, logon_id, hin, &object_type)) {
+	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
 		return ecNullObject;
-	}
 	switch (object_type) {
 	case OBJECT_TYPE_LOGON:
 	case OBJECT_TYPE_FOLDER:
@@ -97,7 +93,6 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 {
 	int i;
 	uint32_t cpid;
-	void *pobject;
 	int object_type;
 	uint32_t tmp_size;
 	uint16_t proptype;
@@ -107,8 +102,7 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit,
 	
 	/* we ignore the size_limit as
 		mentioned in MS-OXCPRPT 3.2.5.1 */
-	pobject = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pobject) {
 		return ecNullObject;
 	}
@@ -204,14 +198,12 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 {
 	int i;
 	uint32_t cpid;
-	void *pobject;
 	BOOL b_unicode = false;
 	int object_type;
 	PROPTAG_ARRAY proptags;
 	PROPTAG_ARRAY *ptmp_proptags;
 	
-	pobject = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pobject) {
 		return ecNullObject;
 	}
@@ -314,11 +306,8 @@ uint32_t rop_getpropertiesall(uint16_t size_limit,
 uint32_t rop_getpropertieslist(PROPTAG_ARRAY *pproptags,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	void *pobject;
 	int object_type;
-	
-	pobject = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pobject) {
 		return ecNullObject;
 	}
@@ -348,7 +337,6 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 	PROBLEM_ARRAY *pproblems, void *plogmap,
 	uint8_t logon_id, uint32_t hin)
 {
-	void *pobject;
 	int object_type;
 	uint32_t permission;
 	
@@ -356,8 +344,7 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	pobject = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pobject) {
 		return ecNullObject;
 	}
@@ -419,7 +406,6 @@ uint32_t rop_deleteproperties(
 	const PROPTAG_ARRAY *pproptags, PROBLEM_ARRAY *pproblems,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	void *pobject;
 	int object_type;
 	uint32_t permission;
 	
@@ -427,8 +413,7 @@ uint32_t rop_deleteproperties(
 	if (NULL == plogon) {
 		return ecError;
 	}
-	pobject = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pobject) {
 		return ecNullObject;
 	}
@@ -491,7 +476,6 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int i;
-	void *pobject;
 	int object_type;
 	uint16_t propid;
 	PROPID_ARRAY propids;
@@ -502,8 +486,7 @@ uint32_t rop_querynamedproperties(uint8_t query_flags,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	pobject = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pobject) {
 		return ecNullObject;
 	}
@@ -592,9 +575,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 	BOOL b_force;
 	int dst_type;
 	BOOL b_result;
-	void *pobject;
 	int object_type;
-	void *pobject_dst;
 	uint32_t permission;
 	PROPTAG_ARRAY proptags;
 	PROPTAG_ARRAY proptags1;
@@ -610,13 +591,11 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	pobject = rop_processor_get_object(plogmap,
-				logon_id, hsrc, &object_type);
+	auto pobject = rop_processor_get_object(plogmap, logon_id, hsrc, &object_type);
 	if (NULL == pobject) {
 		return ecNullObject;
 	}
-	pobject_dst = rop_processor_get_object(
-		plogmap, logon_id, hdst, &dst_type);
+	auto pobject_dst = rop_processor_get_object(plogmap, logon_id, hdst, &dst_type);
 	if (NULL == pobject_dst) {
 		return ecDstNullObject;
 	}
@@ -845,10 +824,8 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 	BOOL b_cycle;
 	int dst_type;
 	BOOL b_collid;
-	void *pobject;
 	BOOL b_partial;
 	int object_type;
-	void *pobject_dst;
 	uint32_t permission;
 	const char *username;
 	PROPTAG_ARRAY proptags;
@@ -865,13 +842,11 @@ uint32_t rop_copyto(uint8_t want_asynchronous,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	pobject = rop_processor_get_object(plogmap,
-				logon_id, hsrc, &object_type);
+	auto pobject = rop_processor_get_object(plogmap, logon_id, hsrc, &object_type);
 	if (NULL == pobject) {
 		return ecNullObject;
 	}
-	pobject_dst = rop_processor_get_object(
-		plogmap, logon_id, hdst, &dst_type);
+	auto pobject_dst = rop_processor_get_object(plogmap, logon_id, hdst, &dst_type);
 	if (NULL == pobject_dst) {
 		return ecDstNullObject;
 	}
@@ -1012,7 +987,6 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 	uint32_t *pstream_size, void *plogmap,
 	uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	void *pobject;
 	int object_type;
 	uint32_t max_length;
 	uint32_t permission;
@@ -1025,8 +999,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	pobject = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pobject) {
 		return ecNullObject;
 	}

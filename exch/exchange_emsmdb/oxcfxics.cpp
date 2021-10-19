@@ -211,7 +211,6 @@ uint32_t rop_fasttransferdestconfigure(
 	void *plogmap, uint8_t logon_id,
 	uint32_t hin, uint32_t *phout)
 {
-	void *pobject;
 	int object_type;
 	int root_element;
 	uint32_t proptag_buff[4];
@@ -225,8 +224,7 @@ uint32_t rop_fasttransferdestconfigure(
 	if (NULL == plogon) {
 		return ecError;
 	}
-	pobject = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pobject) {
 		return ecNullObject;
 	}
@@ -315,7 +313,6 @@ uint32_t rop_fasttransferdestputbuffer(
 	uint8_t *preserved, uint16_t *pused_size, void *plogmap,
 	uint8_t logon_id, uint32_t hin)
 {
-	void *pobject;
 	int object_type;
 	
 	*ptransfer_status = 0;
@@ -323,8 +320,7 @@ uint32_t rop_fasttransferdestputbuffer(
 	*ptotal_step_count = 1;
 	*preserved = 0;
 	*pused_size = 0;
-	pobject = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pobject) {
 		return ecNullObject;
 	}
@@ -345,7 +341,6 @@ uint32_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_last;
-	void *pobject;
 	int object_type;
 	uint16_t max_rop;
 	
@@ -354,8 +349,7 @@ uint32_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 	*ptotal_step_count = 1;
 	*preserved = 0;
 	ptransfer_data->cb = 0;
-	pobject = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pobject) {
 		return ecNullObject;
 	}
@@ -538,7 +532,6 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 	BOOL b_sub;
 	BOOL b_fai;
 	BOOL b_normal;
-	void *pobject;
 	int object_type;
 	MESSAGE_CONTENT msgctnt;
 	ATTACHMENT_CONTENT attctnt;
@@ -562,8 +555,7 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	pobject = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pobject) {
 		return ecNullObject;
 	}
@@ -681,7 +673,6 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 	BOOL b_sub;
 	BOOL b_fai;
 	BOOL b_normal;
-	void *pobject;
 	int object_type;
 	MESSAGE_CONTENT msgctnt;
 	ATTACHMENT_CONTENT attctnt;
@@ -705,8 +696,7 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	pobject = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pobject) {
 		return ecNullObject;
 	}
@@ -1733,7 +1723,6 @@ uint32_t rop_syncopencollector(uint8_t is_content_collector,
 uint32_t rop_syncgettransferstate(void *plogmap,
 	uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
-	void *pobject;
 	int object_type;
 	ICS_STATE *pstate;
 
@@ -1741,8 +1730,7 @@ uint32_t rop_syncgettransferstate(void *plogmap,
 	if (NULL == plogon) {
 		return ecError;
 	}
-	pobject = rop_processor_get_object(plogmap,
-					logon_id, hin, &object_type);
+	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pobject) {
 		return ecNullObject;
 	}
@@ -1775,11 +1763,8 @@ uint32_t rop_syncgettransferstate(void *plogmap,
 uint32_t rop_syncuploadstatestreambegin(uint32_t proptag_state,
 	uint32_t buffer_size, void *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	void *pctx;
 	int object_type;
-	
-	pctx = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pctx = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pctx) {
 		return ecNullObject;
 	}
@@ -1798,11 +1783,8 @@ uint32_t rop_syncuploadstatestreambegin(uint32_t proptag_state,
 uint32_t rop_syncuploadstatestreamcontinue(const BINARY *pstream_data,
 	void *plogmap, uint8_t logon_id, uint32_t hin)
 {
-	void *pctx;
 	int object_type;
-	
-	pctx = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pctx = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pctx) {
 		return ecNullObject;
 	}
@@ -1821,11 +1803,8 @@ uint32_t rop_syncuploadstatestreamcontinue(const BINARY *pstream_data,
 uint32_t rop_syncuploadstatestreamend(void *plogmap,
 	uint8_t logon_id, uint32_t hin)
 {
-	void *pctx;
 	int object_type;
-	
-	pctx = rop_processor_get_object(plogmap,
-				logon_id, hin, &object_type);
+	auto pctx = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
 	if (NULL == pctx) {
 		return ecNullObject;
 	}
