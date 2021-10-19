@@ -7,6 +7,7 @@
 #include <cerrno>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>

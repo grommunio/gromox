@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <utility>
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
