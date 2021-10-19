@@ -18,6 +18,7 @@ extern uint32_t zarafa_client_getpropval(GUID hsession, uint32_t hobject, uint32
 
 #define IDLOUT
 #define ZCIDL(n, p) extern uint32_t zarafa_client_ ## n p;
+/* When calling these functions, none of the IDLOUT parameters may be NULL */
 ZCIDL(logon, (const char *username, const char *password, uint32_t flags, IDLOUT GUID *hsession))
 ZCIDL(uinfo, (const char *username, IDLOUT BINARY *entryid, char **pdisplay_name, char **px500dn, uint32_t *privilege_bits))
 ZCIDL(unloadobject, (GUID hsession, uint32_t hobject))

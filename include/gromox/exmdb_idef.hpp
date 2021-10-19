@@ -1,3 +1,4 @@
+/* When calling these functions, none of the IDLOUT parameters may be NULL */
 EXMIDL(ping_store, (const char *dir))
 EXMIDL(get_all_named_propids, (const char *dir, IDLOUT PROPID_ARRAY *propids))
 EXMIDL(get_named_propids, (const char *dir, BOOL b_create, const PROPNAME_ARRAY *ppropnames, IDLOUT PROPID_ARRAY *propids))
