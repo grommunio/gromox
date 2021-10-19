@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <cstdint>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <libHX/string.h>

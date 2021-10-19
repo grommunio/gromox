@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <list>
+#include <memory>
 #include <new>
 #include <optional>
 #include <string>

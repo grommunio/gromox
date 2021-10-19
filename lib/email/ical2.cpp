@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <cstring>
+#include <memory>
 #include <optional>
 #include <string>
 #include <gromox/ical.hpp>
