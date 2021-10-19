@@ -38,7 +38,7 @@ using namespace gromox;
 
 namespace {
 
-struct ROOT_OBJECT {
+struct root_object {
 	BOOL b_touched;
 	char *maildir;
 	TPROPVAL_ARRAY *pprivate_proplist;
@@ -54,7 +54,7 @@ struct OBJECT_NODE {
 	void *pobject;
 };
 
-static ROOT_OBJECT* object_tree_init_root(const char *maildir)
+static root_object *object_tree_init_root(const char *maildir)
 {
 	EXT_PULL ext_pull;
 	char tmp_path[256];
@@ -62,7 +62,7 @@ static ROOT_OBJECT* object_tree_init_root(const char *maildir)
 	struct stat node_stat;
 	TPROPVAL_ARRAY propvals;
 	
-	auto prootobj = me_alloc<ROOT_OBJECT>();
+	auto prootobj = me_alloc<root_object>();
 	if (NULL == prootobj) {
 		return NULL;
 	}
@@ -134,7 +134,7 @@ static ROOT_OBJECT* object_tree_init_root(const char *maildir)
 	return prootobj;
 }
 
-static void object_tree_free_root(ROOT_OBJECT *prootobj)
+static void object_tree_free_root(root_object *prootobj)
 {
 	int fd;
 	EXT_PUSH ext_push;
@@ -173,39 +173,39 @@ static void object_tree_free_object(void *pobject, uint8_t type)
 {
 	switch (type) {
 	case ZMG_ROOT:
-		object_tree_free_root(static_cast<ROOT_OBJECT *>(pobject));
+		object_tree_free_root(static_cast<root_object *>(pobject));
 		break;
 	case ZMG_TABLE:
-		delete static_cast<TABLE_OBJECT *>(pobject);
+		delete static_cast<table_object *>(pobject);
 		break;
 	case ZMG_MESSAGE:
-		delete static_cast<MESSAGE_OBJECT *>(pobject);
+		delete static_cast<message_object *>(pobject);
 		break;
 	case ZMG_ATTACH:
-		delete static_cast<ATTACHMENT_OBJECT *>(pobject);
+		delete static_cast<attachment_object *>(pobject);
 		break;
 	case ZMG_ABCONT:
-		delete static_cast<CONTAINER_OBJECT *>(pobject);
+		delete static_cast<container_object *>(pobject);
 		break;
 	case ZMG_FOLDER:
-		delete static_cast<FOLDER_OBJECT *>(pobject);
+		delete static_cast<folder_object *>(pobject);
 		break;
 	case ZMG_STORE:
-		delete static_cast<STORE_OBJECT *>(pobject);
+		delete static_cast<store_object *>(pobject);
 		break;
 	case ZMG_MAILUSER:
 	case ZMG_DISTLIST:
-		delete static_cast<USER_OBJECT *>(pobject);
+		delete static_cast<user_object *>(pobject);
 		break;
 	case ZMG_PROFPROPERTY:
 		/* do not free TPROPVAL_ARRAY,
 		it's an element of pprof_set */
 		break;
 	case ZMG_ICSDOWNCTX:
-		delete static_cast<ICSDOWNCTX_OBJECT *>(pobject);
+		delete static_cast<icsdownctx_object *>(pobject);
 		break;
 	case ZMG_ICSUPCTX:
-		delete static_cast<ICSUPCTX_OBJECT *>(pobject);
+		delete static_cast<icsupctx_object *>(pobject);
 		break;
 	}
 }
@@ -288,7 +288,7 @@ uint32_t OBJECT_TREE::add_object_handle(int parent_handle, int type, void *pobje
 
 std::unique_ptr<OBJECT_TREE> object_tree_create(const char *maildir)
 {
-	ROOT_OBJECT *prootobj;
+	root_object *prootobj;
 	std::unique_ptr<OBJECT_TREE> pobjtree;
 	try {
 		pobjtree = std::make_unique<OBJECT_TREE>();
@@ -337,14 +337,11 @@ void OBJECT_TREE::release_object_handle(uint32_t obj_handle)
 void *OBJECT_TREE::get_zstore_propval(uint32_t proptag)
 {
 	auto pobjtree = this;
-	ROOT_OBJECT *prootobj;
-	SIMPLE_TREE_NODE *proot;
-	
-	proot = simple_tree_get_root(&pobjtree->tree);
+	auto proot = simple_tree_get_root(&pobjtree->tree);
 	if (NULL == proot) {
 		return NULL;
 	}
-	prootobj = static_cast<ROOT_OBJECT *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
+	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	return tpropval_array_get_propval(
 		prootobj->pprivate_proplist, proptag);
 }
@@ -352,14 +349,11 @@ void *OBJECT_TREE::get_zstore_propval(uint32_t proptag)
 BOOL OBJECT_TREE::set_zstore_propval(const TAGGED_PROPVAL *ppropval)
 {
 	auto pobjtree = this;
-	ROOT_OBJECT *prootobj;
-	SIMPLE_TREE_NODE *proot;
-	
-	proot = simple_tree_get_root(&pobjtree->tree);
+	auto proot = simple_tree_get_root(&pobjtree->tree);
 	if (NULL == proot) {
 		return FALSE;
 	}
-	prootobj = static_cast<ROOT_OBJECT *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
+	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
 	return tpropval_array_set_propval(prootobj->pprivate_proplist, ppropval) ?
 	       TRUE : false;
@@ -368,14 +362,11 @@ BOOL OBJECT_TREE::set_zstore_propval(const TAGGED_PROPVAL *ppropval)
 void OBJECT_TREE::remove_zstore_propval(uint32_t proptag)
 {
 	auto pobjtree = this;
-	ROOT_OBJECT *prootobj;
-	SIMPLE_TREE_NODE *proot;
-	
-	proot = simple_tree_get_root(&pobjtree->tree);
+	auto proot = simple_tree_get_root(&pobjtree->tree);
 	if (NULL == proot) {
 		return;
 	}
-	prootobj = static_cast<ROOT_OBJECT *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
+	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
 	tpropval_array_remove_propval(
 		prootobj->pprivate_proplist, proptag);
@@ -384,19 +375,13 @@ void OBJECT_TREE::remove_zstore_propval(uint32_t proptag)
 TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)
 {
 	auto pobjtree = this;
-	GUID *pguid;
-	ROOT_OBJECT *prootobj;
-	TAGGED_PROPVAL propval;
-	SIMPLE_TREE_NODE *proot;
-	TPROPVAL_ARRAY *pproplist;
-	
-	proot = simple_tree_get_root(&pobjtree->tree);
+	auto proot = simple_tree_get_root(&pobjtree->tree);
 	if (NULL == proot) {
 		return NULL;
 	}
-	prootobj = static_cast<ROOT_OBJECT *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
+	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	for (size_t i = 0; i < prootobj->pprof_set->count; ++i) {
-		pguid = static_cast<GUID *>(tpropval_array_get_propval(
+		auto pguid = static_cast<GUID *>(tpropval_array_get_propval(
 			prootobj->pprof_set->pparray[i],
 			PROP_TAG_PROPFILESECLSID));
 		if (NULL == pguid) {
@@ -406,10 +391,11 @@ TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)
 			return prootobj->pprof_set->pparray[i];
 		}
 	}
-	pproplist = tpropval_array_init();
+	auto pproplist = tpropval_array_init();
 	if (NULL == pproplist) {
 		return NULL;
 	}
+	TAGGED_PROPVAL propval;
 	propval.proptag = PROP_TAG_PROPFILESECLSID;
 	propval.pvalue = &sec_guid;
 	if (!tpropval_array_set_propval(pproplist, &propval) || 
@@ -423,14 +409,11 @@ TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)
 void OBJECT_TREE::touch_profile_sec()
 {
 	auto pobjtree = this;
-	ROOT_OBJECT *prootobj;
-	SIMPLE_TREE_NODE *proot;
-	
-	proot = simple_tree_get_root(&pobjtree->tree);
+	auto proot = simple_tree_get_root(&pobjtree->tree);
 	if (NULL == proot) {
 		return;
 	}
-	prootobj = static_cast<ROOT_OBJECT *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
+	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
 }
 
@@ -451,8 +434,8 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 		do {
 			pobjnode = (OBJECT_NODE*)pnode->pdata;
 			if (pobjnode->type == ZMG_STORE &&
-			    static_cast<STORE_OBJECT *>(pobjnode->pobject)->b_private == b_private &&
-			    static_cast<STORE_OBJECT *>(pobjnode->pobject)->account_id == account_id)
+			    static_cast<store_object *>(pobjnode->pobject)->b_private == b_private &&
+			    static_cast<store_object *>(pobjnode->pobject)->account_id == account_id)
 				return pobjnode->handle;	
 		} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
 	}

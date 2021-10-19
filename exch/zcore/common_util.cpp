@@ -141,7 +141,7 @@ BOOL common_util_check_message_class(const char *str_class)
 	return TRUE;
 }
 
-BOOL common_util_check_delegate(MESSAGE_OBJECT *pmessage, char *username, size_t ulen)
+BOOL common_util_check_delegate(message_object *pmessage, char *username, size_t ulen)
 {
 	uint32_t proptag_buff[4];
 	PROPTAG_ARRAY tmp_proptags;
@@ -227,7 +227,7 @@ BOOL common_util_check_delegate_permission_ex(
 	return common_util_check_delegate_permission(account, maildir);
 }
 
-gxerr_t common_util_rectify_message(MESSAGE_OBJECT *pmessage,
+gxerr_t common_util_rectify_message(message_object *pmessage,
     const char *representing_username)
 {
 	BINARY *pentryid;
@@ -1254,8 +1254,7 @@ BOOL common_util_from_message_entryid(BINARY bin, BOOL *pb_private,
 	}
 }
 
-BINARY* common_util_to_folder_entryid(
-	STORE_OBJECT *pstore, uint64_t folder_id)
+BINARY *common_util_to_folder_entryid(store_object *pstore, uint64_t folder_id)
 {
 	BOOL b_found;
 	BINARY tmp_bin;
@@ -1300,8 +1299,8 @@ BINARY* common_util_to_folder_entryid(
 	return pbin;
 }
 
-BINARY* common_util_calculate_folder_sourcekey(
-	STORE_OBJECT *pstore, uint64_t folder_id)
+BINARY *common_util_calculate_folder_sourcekey(store_object *pstore,
+    uint64_t folder_id)
 {
 	BOOL b_found;
 	uint16_t replid;
@@ -1338,7 +1337,7 @@ BINARY* common_util_calculate_folder_sourcekey(
 	return pbin;
 }
 
-BINARY* common_util_to_message_entryid(STORE_OBJECT *pstore,
+BINARY *common_util_to_message_entryid(store_object *pstore,
 	uint64_t folder_id, uint64_t message_id)
 {
 	BOOL b_found;
@@ -1388,8 +1387,8 @@ BINARY* common_util_to_message_entryid(STORE_OBJECT *pstore,
 	return pbin;
 }
 
-BINARY* common_util_calculate_message_sourcekey(
-	STORE_OBJECT *pstore, uint64_t message_id)
+BINARY *common_util_calculate_message_sourcekey(store_object *pstore,
+    uint64_t message_id)
 {
 	EXT_PUSH ext_push;
 	LONG_TERM_ID longid;
@@ -1802,7 +1801,7 @@ static BOOL common_util_get_propname(
 	return TRUE;
 }
 
-BOOL common_util_send_message(STORE_OBJECT *pstore,
+BOOL common_util_send_message(store_object *pstore,
 	uint64_t message_id, BOOL b_submit)
 {
 	MAIL imail;
@@ -2117,7 +2116,7 @@ BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 	return TRUE;
 }
 
-BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
+BINARY *common_util_to_store_entryid(store_object *pstore)
 {
 	EXT_PUSH ext_push;
 	char tmp_buff[1024];
@@ -2164,8 +2163,8 @@ BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore)
 	return pbin;
 }
 
-static ZMOVECOPY_ACTION* common_util_convert_to_zmovecopy(
-	STORE_OBJECT *pstore, MOVECOPY_ACTION *pmovecopy)
+static ZMOVECOPY_ACTION *common_util_convert_to_zmovecopy(store_object *pstore,
+    MOVECOPY_ACTION *pmovecopy)
 {
 	BINARY *pbin;
 	EXT_PUSH ext_push;
@@ -2198,8 +2197,8 @@ static ZMOVECOPY_ACTION* common_util_convert_to_zmovecopy(
 	return pmovecopy1;
 }
 
-static ZREPLY_ACTION* common_util_convert_to_zreply(
-	STORE_OBJECT *pstore, REPLY_ACTION *preply)
+static ZREPLY_ACTION *common_util_convert_to_zreply(store_object *pstore,
+    REPLY_ACTION *preply)
 {
 	auto preply1 = cu_alloc<ZREPLY_ACTION>();
 	if (NULL == preply1) {
@@ -2212,8 +2211,7 @@ static ZREPLY_ACTION* common_util_convert_to_zreply(
 	return preply1;
 }
 
-BOOL common_util_convert_to_zrule_data(
-	STORE_OBJECT *pstore, TPROPVAL_ARRAY *ppropvals)
+BOOL common_util_convert_to_zrule_data(store_object *pstore, TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
 	
@@ -2245,8 +2243,8 @@ BOOL common_util_convert_to_zrule_data(
 	return TRUE;
 }
 
-gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
-    uint64_t message_id, STORE_OBJECT *pstore1, uint64_t folder_id1)
+gxerr_t common_util_remote_copy_message(store_object *pstore,
+    uint64_t message_id, store_object *pstore1, uint64_t folder_id1)
 {
 	XID tmp_xid;
 	BINARY *pbin;
@@ -2305,8 +2303,7 @@ gxerr_t common_util_remote_copy_message(STORE_OBJECT *pstore,
 	return GXERR_SUCCESS;
 }
 
-static BOOL common_util_create_folder(
-	STORE_OBJECT *pstore, uint64_t parent_id,
+static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 	TPROPVAL_ARRAY *pproplist, uint64_t *pfolder_id)
 {
 	XID tmp_xid;
@@ -2393,9 +2390,8 @@ static BOOL common_util_create_folder(
 	return TRUE;
 }
 
-static EID_ARRAY* common_util_load_folder_messages(
-	STORE_OBJECT *pstore, uint64_t folder_id,
-	const char *username)
+static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
+    uint64_t folder_id, const char *username)
 {
 	uint64_t *pmid;
 	uint32_t table_id;
@@ -2437,8 +2433,8 @@ static EID_ARRAY* common_util_load_folder_messages(
 	return pmessage_ids;
 }
 
-gxerr_t common_util_remote_copy_folder(STORE_OBJECT *pstore, uint64_t folder_id,
-    STORE_OBJECT *pstore1, uint64_t folder_id1, const char *new_name)
+gxerr_t common_util_remote_copy_folder(store_object *pstore, uint64_t folder_id,
+    store_object *pstore1, uint64_t folder_id1, const char *new_name)
 {
 	uint64_t new_fid;
 	uint32_t table_id;
@@ -2531,7 +2527,7 @@ const uint8_t *common_util_get_muidzcsab()
 	return MUIDZCSAB;
 }
 
-BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
+BOOL common_util_message_to_rfc822(store_object *pstore,
 	uint64_t message_id, BINARY *peml_bin)
 {
 	int size;
@@ -2629,8 +2625,8 @@ BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
 	return TRUE;
 }
 
-MESSAGE_CONTENT* common_util_rfc822_to_message(
-	STORE_OBJECT *pstore, const BINARY *peml_bin)
+MESSAGE_CONTENT *common_util_rfc822_to_message(store_object *pstore,
+    const BINARY *peml_bin)
 {
 	MAIL imail;
 	char charset[32], tmzone[64];
@@ -2654,7 +2650,7 @@ MESSAGE_CONTENT* common_util_rfc822_to_message(
 	return pmsgctnt;
 }
 
-BOOL common_util_message_to_ical(STORE_OBJECT *pstore,
+BOOL common_util_message_to_ical(store_object *pstore,
 	uint64_t message_id, BINARY *pical_bin)
 {
 	ICAL ical;
@@ -2683,8 +2679,8 @@ BOOL common_util_message_to_ical(STORE_OBJECT *pstore,
 	return pical_bin->pc != nullptr ? TRUE : FALSE;
 }
 
-MESSAGE_CONTENT* common_util_ical_to_message(
-	STORE_OBJECT *pstore, const BINARY *pical_bin)
+MESSAGE_CONTENT *common_util_ical_to_message(store_object *pstore,
+    const BINARY *pical_bin)
 {
 	ICAL ical;
 	char tmzone[64];
@@ -2708,7 +2704,7 @@ MESSAGE_CONTENT* common_util_ical_to_message(
 	       common_util_get_propids_create, common_util_username_to_entryid);
 }
 
-BOOL common_util_message_to_vcf(MESSAGE_OBJECT *pmessage, BINARY *pvcf_bin)
+BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 {
 	auto pstore = pmessage->get_store();
 	auto message_id = pmessage->get_id();
@@ -2741,8 +2737,8 @@ BOOL common_util_message_to_vcf(MESSAGE_OBJECT *pmessage, BINARY *pvcf_bin)
 	return TRUE;
 }
 	
-MESSAGE_CONTENT* common_util_vcf_to_message(
-	STORE_OBJECT *pstore, const BINARY *pvcf_bin)
+MESSAGE_CONTENT *common_util_vcf_to_message(store_object *pstore,
+    const BINARY *pvcf_bin)
 {
 	VCARD vcard;
 	MESSAGE_CONTENT *pmsgctnt;

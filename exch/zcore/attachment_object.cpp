@@ -13,7 +13,7 @@
 
 std::unique_ptr<attachment_object> attachment_object::create(message_object *pparent, uint32_t attachment_num)
 {
-	std::unique_ptr<ATTACHMENT_OBJECT> pattachment;
+	std::unique_ptr<attachment_object> pattachment;
 	try {
 		pattachment.reset(new attachment_object);
 	} catch (const std::bad_alloc &) {
@@ -40,7 +40,7 @@ std::unique_ptr<attachment_object> attachment_object::create(message_object *ppa
 	return pattachment;
 }
 
-BOOL ATTACHMENT_OBJECT::init_attachment()
+BOOL attachment_object::init_attachment()
 {
 	auto pattachment = this;
 	void *pvalue;
@@ -87,7 +87,7 @@ BOOL ATTACHMENT_OBJECT::init_attachment()
 	       pattachment->instance_id, &propvals, &problems);
 }
 
-ATTACHMENT_OBJECT::~ATTACHMENT_OBJECT()
+attachment_object::~attachment_object()
 {
 	auto pattachment = this;
 	if (0 != pattachment->instance_id) {
@@ -96,7 +96,7 @@ ATTACHMENT_OBJECT::~ATTACHMENT_OBJECT()
 	}
 }
 
-gxerr_t ATTACHMENT_OBJECT::save()
+gxerr_t attachment_object::save()
 {
 	auto pattachment = this;
 	uint64_t nt_time;
@@ -125,7 +125,7 @@ gxerr_t ATTACHMENT_OBJECT::save()
 	return GXERR_SUCCESS;
 }
 
-BOOL ATTACHMENT_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
+BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pattachment = this;
 	PROPTAG_ARRAY tmp_proptags;
@@ -149,7 +149,7 @@ BOOL ATTACHMENT_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-static BOOL aobj_check_readonly_property(const ATTACHMENT_OBJECT *pattachment,
+static BOOL aobj_check_readonly_property(const attachment_object *pattachment,
     uint32_t proptag)
 {
 	if (PROP_TYPE(proptag) == PT_OBJECT && proptag != PR_ATTACH_DATA_OBJ)
@@ -173,9 +173,8 @@ static BOOL aobj_check_readonly_property(const ATTACHMENT_OBJECT *pattachment,
 	return FALSE;
 }
 
-static BOOL attachment_object_get_calculated_property(
-	ATTACHMENT_OBJECT *pattachment, uint32_t proptag,
-	void **ppvalue)
+static BOOL attachment_object_get_calculated_property(attachment_object *pattachment,
+     uint32_t proptag, void **ppvalue)
 {
 	switch (proptag) {
 	case PR_ACCESS:
@@ -210,7 +209,7 @@ static BOOL attachment_object_get_calculated_property(
 	return FALSE;
 }
 
-BOOL ATTACHMENT_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
+BOOL attachment_object::get_properties(const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	auto pattachment = this;
@@ -260,7 +259,7 @@ BOOL ATTACHMENT_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
 	return TRUE;	
 }
 
-BOOL ATTACHMENT_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals)
+BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 {
 	auto pattachment = this;
 	int i;
@@ -292,7 +291,7 @@ BOOL ATTACHMENT_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	return TRUE;
 }
 
-BOOL ATTACHMENT_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags)
+BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 {
 	auto pattachment = this;
 	int i;
@@ -324,7 +323,7 @@ BOOL ATTACHMENT_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-BOOL ATTACHMENT_OBJECT::copy_properties(ATTACHMENT_OBJECT *pattachment_src,
+BOOL attachment_object::copy_properties(attachment_object *pattachment_src,
 	const PROPTAG_ARRAY *pexcluded_proptags, BOOL b_force, BOOL *pb_cycle)
 {
 	auto pattachment = this;

@@ -11,7 +11,7 @@
 std::unique_ptr<icsupctx_object>
 icsupctx_object::create(folder_object *pfolder, uint8_t sync_type)
 {
-	std::unique_ptr<ICSUPCTX_OBJECT> pctx;
+	std::unique_ptr<icsupctx_object> pctx;
 	try {
 		pctx.reset(new icsupctx_object);
 	} catch (const std::bad_alloc &) {
@@ -27,12 +27,12 @@ icsupctx_object::create(folder_object *pfolder, uint8_t sync_type)
 	return pctx;
 }
 
-BOOL ICSUPCTX_OBJECT::upload_state(const BINARY *out)
+BOOL icsupctx_object::upload_state(const BINARY *out)
 {
 	return ics_state_deserialize(pstate, out);
 }
 
-BINARY *ICSUPCTX_OBJECT::get_state()
+BINARY *icsupctx_object::get_state()
 {
 	return ics_state_serialize(pstate);
 }

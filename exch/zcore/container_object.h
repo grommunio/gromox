@@ -18,13 +18,13 @@ union CONTAINER_ID {
 	} abtree_id;
 };
 
-struct CONTAINER_OBJECT {
+struct container_object {
 	protected:
-	CONTAINER_OBJECT() = default;
+	container_object() = default;
 
 	public:
-	~CONTAINER_OBJECT() { clear(); }
-	static std::unique_ptr<CONTAINER_OBJECT> create(uint8_t type, CONTAINER_ID);
+	~container_object() { clear(); }
+	static std::unique_ptr<container_object> create(uint8_t type, CONTAINER_ID);
 	BOOL fetch_special_property(uint8_t special_type, uint32_t proptag, void **out);
 	void clear();
 	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
@@ -41,7 +41,6 @@ struct CONTAINER_OBJECT {
 		LONG_ARRAY *pminid_array;
 	} contents{};
 };
-using container_object = CONTAINER_OBJECT;
 
 BOOL container_object_fetch_special_property(
 	uint8_t special_type, uint32_t proptag, void **ppvalue);

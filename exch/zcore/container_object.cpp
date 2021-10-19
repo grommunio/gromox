@@ -24,7 +24,7 @@
 std::unique_ptr<container_object>
 container_object::create(uint8_t type, CONTAINER_ID id)
 {
-	std::unique_ptr<CONTAINER_OBJECT> pcontainer;
+	std::unique_ptr<container_object> pcontainer;
 	try {
 		pcontainer.reset(new container_object);
 	} catch (const std::bad_alloc &) {
@@ -35,7 +35,7 @@ container_object::create(uint8_t type, CONTAINER_ID id)
 	return pcontainer;
 }
 
-void CONTAINER_OBJECT::clear()
+void container_object::clear()
 {
 	auto pcontainer = this;
 	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
@@ -192,7 +192,7 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 	
 	auto pinfo = zarafa_server_get_info();
 	auto handle = pinfo->ptree->get_store_handle(TRUE, pinfo->user_id);
-	auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(handle, &mapi_type);
+	auto pstore = pinfo->ptree->get_object<store_object>(handle, &mapi_type);
 	if (pstore == nullptr || mapi_type != ZMG_STORE)
 		return FALSE;
 	propnames.count = 9;
@@ -299,7 +299,7 @@ static BINARY* container_object_message_to_addressbook_entryid(
 	return pbin;
 }
 
-BOOL CONTAINER_OBJECT::load_user_table(const RESTRICTION *prestriction)
+BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 {
 	auto pcontainer = this;
 	void *pvalue;
@@ -433,7 +433,7 @@ BOOL CONTAINER_OBJECT::load_user_table(const RESTRICTION *prestriction)
 			return FALSE;
 		}
 		auto handle = pinfo->ptree->get_store_handle(TRUE, pinfo->user_id);
-		auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(handle, &mapi_type);
+		auto pstore = pinfo->ptree->get_object<store_object>(handle, &mapi_type);
 		if (pstore == nullptr || mapi_type != ZMG_STORE)
 			return FALSE;
 	} else {
@@ -840,7 +840,7 @@ static const PROPTAG_ARRAY* container_object_get_folder_proptags()
 	return &proptags;
 }
 
-BOOL CONTAINER_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
+BOOL container_object::get_properties(const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	auto pcontainer = this;
@@ -877,7 +877,7 @@ BOOL CONTAINER_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
 	}
 }
 
-BOOL CONTAINER_OBJECT::get_container_table_num(BOOL b_depth, uint32_t *pnum)
+BOOL container_object::get_container_table_num(BOOL b_depth, uint32_t *pnum)
 {
 	auto pcontainer = this;
 	TARRAY_SET tmp_set;
@@ -1003,7 +1003,7 @@ static BOOL container_object_query_folder_hierarchy(
 	return TRUE;
 }
 
-BOOL CONTAINER_OBJECT::query_container_table(const PROPTAG_ARRAY *pproptags,
+BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 	BOOL b_depth, uint32_t start_pos, int32_t row_needed,
 	TARRAY_SET *pset)
 {
@@ -1130,7 +1130,7 @@ BOOL CONTAINER_OBJECT::query_container_table(const PROPTAG_ARRAY *pproptags,
 	return TRUE;
 }
 
-BOOL CONTAINER_OBJECT::get_user_table_num(uint32_t *pnum)
+BOOL container_object::get_user_table_num(uint32_t *pnum)
 {
 	auto pcontainer = this;
 	SIMPLE_TREE_NODE *pnode;
@@ -1216,7 +1216,7 @@ void container_object_get_user_table_all_proptags(
 	pproptags->pproptag = deconst(proptag_buff);
 }
 
-BOOL CONTAINER_OBJECT::query_user_table(const PROPTAG_ARRAY *pproptags,
+BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 	uint32_t start_pos, int32_t row_needed, TARRAY_SET *pset)
 {
 	auto pcontainer = this;

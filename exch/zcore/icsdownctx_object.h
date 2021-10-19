@@ -3,17 +3,17 @@
 #include <memory>
 #include <gromox/mapi_types.hpp>
 
-struct FOLDER_OBJECT;
+struct folder_object;
 struct ICS_STATE;
-struct STORE_OBJECT;
+struct store_object;
 
-struct ICSDOWNCTX_OBJECT final {
+struct icsdownctx_object final {
 	protected:
-	ICSDOWNCTX_OBJECT() = default;
+	icsdownctx_object() = default;
 
 	public:
-	~ICSDOWNCTX_OBJECT();
-	static std::unique_ptr<ICSDOWNCTX_OBJECT> create(FOLDER_OBJECT *, uint8_t sync_type);
+	~icsdownctx_object();
+	static std::unique_ptr<icsdownctx_object> create(folder_object *, uint8_t sync_type);
 	uint8_t get_type() const { return sync_type; }
 	BOOL make_content(const BINARY *state, const RESTRICTION *, uint16_t sync_flags, BOOL *changed, uint32_t *msg_count);
 	BOOL make_hierarchy(const BINARY *state, uint16_t sync_flags, BOOL *changed, uint32_t *fld_count);
@@ -24,7 +24,7 @@ struct ICSDOWNCTX_OBJECT final {
 	BOOL sync_readstates(STATE_ARRAY *);
 
 	uint8_t sync_type = 0;
-	STORE_OBJECT *pstore = nullptr;
+	store_object *pstore = nullptr;
 	uint64_t folder_id = 0;
 	ICS_STATE *pstate = nullptr;
 	BOOL b_started = false;
@@ -35,4 +35,3 @@ struct ICSDOWNCTX_OBJECT final {
 	EID_ARRAY *punread_messags = nullptr;
 	uint32_t eid_pos = 0;
 };
-using icsdownctx_object = ICSDOWNCTX_OBJECT;

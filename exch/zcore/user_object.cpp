@@ -10,7 +10,7 @@
 
 std::unique_ptr<user_object> user_object::create(int base_id, uint32_t minid)
 {
-	std::unique_ptr<USER_OBJECT> puser;
+	std::unique_ptr<user_object> puser;
 	try {
 		puser.reset(new user_object);
 	} catch (const std::bad_alloc &) {
@@ -21,7 +21,7 @@ std::unique_ptr<user_object> user_object::create(int base_id, uint32_t minid)
 	return puser;
 }
 
-BOOL USER_OBJECT::check_valid()
+BOOL user_object::check_valid()
 {
 	auto puser = this;
 	char username[UADDR_SIZE];
@@ -40,7 +40,7 @@ BOOL USER_OBJECT::check_valid()
 	return TRUE;
 }
 
-BOOL USER_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
+BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	auto puser = this;

@@ -108,8 +108,8 @@ enum {
 };
 
 struct MESSAGE_CONTENT;
-struct MESSAGE_OBJECT;
-struct STORE_OBJECT;
+struct message_object;
+struct store_object;
 
 extern void common_util_init(const char *org_name, const char *hostname, const char *default_charset, const char *default_zone, int mime_num, int max_rcpt, int max_msg, unsigned int max_mail_len, unsigned int max_rule_len, const char *smtp_ip, uint16_t smtp_port, const char *freebusy_path, const char *submit_cmd);
 extern int common_util_run(const char *data_path);
@@ -122,12 +122,12 @@ BOOL common_util_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
 	const SORTORDER_SET *psort_criteria);
 BOOL common_util_check_message_class(const char *str_class);
-extern BOOL common_util_check_delegate(MESSAGE_OBJECT *, char *username, size_t);
+extern BOOL common_util_check_delegate(message_object *, char *username, size_t);
 BOOL common_util_check_delegate_permission(
 	const char *account, const char *maildir);
 BOOL common_util_check_delegate_permission_ex(
 	const char *account, const char *account_representing);
-extern gxerr_t common_util_rectify_message(MESSAGE_OBJECT *, const char *representing_username);
+extern gxerr_t common_util_rectify_message(message_object *, const char *representing_username);
 void common_util_set_propvals(TPROPVAL_ARRAY *parray,
 	const TAGGED_PROPVAL *ppropval);
 void common_util_remove_propvals(
@@ -182,15 +182,11 @@ BOOL common_util_from_folder_entryid(BINARY bin,
 	BOOL *pb_private, int *pdb_id, uint64_t *pfolder_id);
 BOOL common_util_from_message_entryid(BINARY bin, BOOL *pb_private,
 	int *pdb_id, uint64_t *pfolder_id, uint64_t *pmessage_id);
-BINARY* common_util_to_store_entryid(STORE_OBJECT *pstore);
-BINARY* common_util_to_folder_entryid(
-	STORE_OBJECT *pstore, uint64_t folder_id);
-BINARY* common_util_calculate_folder_sourcekey(
-	STORE_OBJECT *pstore, uint64_t folder_id);
-BINARY* common_util_to_message_entryid(STORE_OBJECT *pstore,
-	uint64_t folder_id, uint64_t message_id);
-BINARY* common_util_calculate_message_sourcekey(
-	STORE_OBJECT *pstore, uint64_t message_id);
+extern BINARY *common_util_to_store_entryid(store_object *);
+extern BINARY *common_util_to_folder_entryid(store_object *, uint64_t folder_id);
+extern BINARY *common_util_calculate_folder_sourcekey(store_object *, uint64_t folder_id);
+extern BINARY *common_util_to_message_entryid(store_object *, uint64_t folder_id, uint64_t msg_id);
+extern BINARY *common_util_calculate_message_sourcekey(store_object *, uint64_t msg_id);
 BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid);
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
 BINARY* common_util_guid_to_binary(GUID guid);
@@ -200,25 +196,19 @@ void common_util_notify_receipt(const char *username,
 	int type, MESSAGE_CONTENT *pbrief);
 BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals);
 BOOL common_util_load_file(const char *path, BINARY *pbin);
-BOOL common_util_convert_to_zrule_data(STORE_OBJECT *, TPROPVAL_ARRAY *);
-extern gxerr_t common_util_remote_copy_message(STORE_OBJECT *s0, uint64_t message_id, STORE_OBJECT *s1, uint64_t folder_id1);
-extern gxerr_t common_util_remote_copy_folder(STORE_OBJECT *s0, uint64_t folder_id, STORE_OBJECT *s1, uint64_t folder_id1, const char *new_name);
+extern BOOL common_util_convert_to_zrule_data(store_object *, TPROPVAL_ARRAY *);
+extern gxerr_t common_util_remote_copy_message(store_object *s0, uint64_t message_id, store_object *s1, uint64_t folder_id1);
+extern gxerr_t common_util_remote_copy_folder(store_object *s0, uint64_t folder_id, store_object *s1, uint64_t folder_id1, const char *new_name);
 extern const uint8_t *common_util_get_muidecsab();
 extern const uint8_t *common_util_get_muidzcsab();
 uint64_t common_util_convert_notification_folder_id(uint64_t folder_id);
-BOOL common_util_send_message(STORE_OBJECT *pstore,
-	uint64_t message_id, BOOL b_submit);
-BOOL common_util_message_to_rfc822(STORE_OBJECT *pstore,
-	uint64_t message_id, BINARY *peml_bin);
-MESSAGE_CONTENT* common_util_rfc822_to_message(
-	STORE_OBJECT *pstore, const BINARY *peml_bin);
-BOOL common_util_message_to_ical(STORE_OBJECT *pstore,
-	uint64_t message_id, BINARY *pical_bin);
-MESSAGE_CONTENT* common_util_ical_to_message(
-	STORE_OBJECT *pstore, const BINARY *pical_bin);
-extern BOOL common_util_message_to_vcf(MESSAGE_OBJECT *, BINARY *vcfout);
-MESSAGE_CONTENT* common_util_vcf_to_message(
-	STORE_OBJECT *pstore, const BINARY *pvcf_bin);
+extern BOOL common_util_send_message(store_object *, uint64_t msg_id, BOOL submit);
+extern BOOL common_util_message_to_rfc822(store_object *, uint64_t msg_id, BINARY *eml);
+extern MESSAGE_CONTENT *common_util_rfc822_to_message(store_object *, const BINARY *eml);
+extern BOOL common_util_message_to_ical(store_object *, uint64_t msg_id, BINARY *ical);
+extern MESSAGE_CONTENT *common_util_ical_to_message(store_object *, const BINARY *ical);
+extern BOOL common_util_message_to_vcf(message_object *, BINARY *vcfout);
+extern MESSAGE_CONTENT *common_util_vcf_to_message(store_object *, const BINARY *vcf);
 const char* common_util_i18n_to_lang(const char *i18n);
 extern const char *common_util_get_default_timezone();
 extern const char *common_util_get_submit_command();

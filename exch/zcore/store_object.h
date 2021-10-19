@@ -6,13 +6,13 @@
 struct INT_HASH_TABLE;
 struct STR_HASH_TABLE;
 
-struct STORE_OBJECT {
+struct store_object {
 	protected:
-	STORE_OBJECT() = default;
+	store_object() = default;
 
 	public:
-	~STORE_OBJECT();
-	static std::unique_ptr<STORE_OBJECT> create(BOOL b_private, int account_id, const char *account, const char *dir);
+	~store_object();
+	static std::unique_ptr<store_object> create(BOOL b_private, int account_id, const char *account, const char *dir);
 	GUID guid() const;
 	BOOL check_owner_mode() const;
 	const char *get_account() const { return account; }
@@ -42,4 +42,3 @@ struct STORE_OBJECT {
 	STR_HASH_TABLE *ppropname_hash = nullptr;
 	DOUBLE_LIST group_list{};
 };
-using store_object = STORE_OBJECT;

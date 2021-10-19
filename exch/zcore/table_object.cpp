@@ -34,10 +34,9 @@ struct BOOKMARK_NODE {
 };
 }
 
-static void table_object_reset(TABLE_OBJECT *);
+static void table_object_reset(table_object *);
 
-static void table_object_set_table_id(
-	TABLE_OBJECT *ptable, uint32_t table_id)
+static void table_object_set_table_id(table_object *ptable, uint32_t table_id)
 {
 	if (0 != ptable->table_id) {
 		exmdb_client::unload_table(ptable->pstore->get_dir(), ptable->table_id);
@@ -45,7 +44,7 @@ static void table_object_set_table_id(
 	ptable->table_id = table_id;
 }
 
-BOOL TABLE_OBJECT::check_to_load()
+BOOL table_object::check_to_load()
 {
 	auto ptable = this;
 	uint32_t row_num, permission, new_table_id, new_table_flags;
@@ -56,7 +55,7 @@ BOOL TABLE_OBJECT::check_to_load()
 		STORE_TABLE == ptable->table_type) {
 		return TRUE;
 	} else if (USER_TABLE == ptable->table_type) {
-		auto ct = static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj);
+		auto ct = static_cast<container_object *>(ptable->pparent_obj);
 		return ct->load_user_table(ptable->prestriction);
 	}
 	if (0 != ptable->table_id) {
@@ -75,7 +74,7 @@ BOOL TABLE_OBJECT::check_to_load()
 			new_table_flags |= TABLE_FLAG_DEPTH;
 		}
 		if (!exmdb_client::load_hierarchy_table(ptable->pstore->get_dir(),
-		    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
+		    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 		    username, new_table_flags, ptable->prestriction,
 		    &new_table_id, &row_num))
 			return FALSE;
@@ -89,7 +88,7 @@ BOOL TABLE_OBJECT::check_to_load()
 				username = pinfo->get_username();
 			} else {
 				if (!exmdb_client::check_folder_permission(ptable->pstore->get_dir(),
-				    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
+				    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 				    pinfo->get_username(), &permission))
 					return FALSE;	
 				if (!(permission & (frightsReadAny | frightsOwner)))
@@ -104,7 +103,7 @@ BOOL TABLE_OBJECT::check_to_load()
 			new_table_flags |= TABLE_FLAG_ASSOCIATED;
 		}
 		if (!exmdb_client::load_content_table(ptable->pstore->get_dir(), pinfo->cpid,
-		    static_cast<FOLDER_OBJECT *>(ptable->pparent_obj)->folder_id,
+		    static_cast<folder_object *>(ptable->pparent_obj)->folder_id,
 		    username, new_table_flags, ptable->prestriction,
 		    ptable->psorts, &new_table_id, &row_num))
 			return FALSE;
@@ -124,11 +123,11 @@ BOOL TABLE_OBJECT::check_to_load()
 	return TRUE;
 }
 
-void TABLE_OBJECT::unload()
+void table_object::unload()
 {
 	auto ptable = this;
 	if (USER_TABLE == ptable->table_type) {
-		static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj)->clear();
+		static_cast<container_object *>(ptable->pparent_obj)->clear();
 	} else {
 		table_object_set_table_id(ptable, 0);
 	}
@@ -196,14 +195,14 @@ static BOOL table_object_get_store_table_all_proptags(
 	return TRUE;
 }
 
-static BOOL table_object_get_all_columns(TABLE_OBJECT *ptable,
+static BOOL table_object_get_all_columns(table_object *ptable,
 	PROPTAG_ARRAY *pcolumns)
 {
 	if (ATTACHMENT_TABLE == ptable->table_type) {
-		auto msg = static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj);
+		auto msg = static_cast<message_object *>(ptable->pparent_obj);
 		return msg->get_attachment_table_all_proptags(pcolumns);
 	} else if (RECIPIENT_TABLE == ptable->table_type) {
-		auto msg = static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj);
+		auto msg = static_cast<message_object *>(ptable->pparent_obj);
 		return msg->get_recipient_all_proptags(pcolumns);
 	} else if (CONTAINER_TABLE == ptable->table_type) {
 		container_object_get_container_table_all_proptags(pcolumns);
@@ -218,8 +217,8 @@ static BOOL table_object_get_all_columns(TABLE_OBJECT *ptable,
 	       ptable->table_id, pcolumns);
 }
 
-static uint32_t table_object_get_folder_tag_access(
-	STORE_OBJECT *pstore, uint64_t folder_id, const char *username)
+static uint32_t table_object_get_folder_tag_access(store_object *pstore,
+    uint64_t folder_id, const char *username)
 {
 	uint32_t tag_access;
 	uint32_t permission;
@@ -248,8 +247,8 @@ static uint32_t table_object_get_folder_tag_access(
 	return tag_access;
 }
 
-static uint32_t table_object_get_folder_permission_rights(
-	STORE_OBJECT *pstore, uint64_t folder_id, const char *username)
+static uint32_t table_object_get_folder_permission_rights(store_object *pstore,
+    uint64_t folder_id, const char *username)
 {
 	uint32_t permission;
 	
@@ -263,12 +262,12 @@ static uint32_t table_object_get_folder_permission_rights(
 	return permission;
 }
 
-static BOOL rcpttable_query_rows(const TABLE_OBJECT *ptable,
+static BOOL rcpttable_query_rows(const table_object *ptable,
     const PROPTAG_ARRAY *pcolumns, TARRAY_SET *pset, uint32_t row_needed)
 {
 	TARRAY_SET rcpt_set;
 
-	if (!static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj)->
+	if (!static_cast<message_object *>(ptable->pparent_obj)->
 	    read_recipients(0, 0xFFFF, &rcpt_set))
 		return FALSE;
 	uint32_t end_pos = ptable->position + row_needed > rcpt_set.count ?
@@ -316,7 +315,7 @@ static BOOL rcpttable_query_rows(const TABLE_OBJECT *ptable,
 	return TRUE;
 }
 
-static BOOL storetbl_query_rows(const TABLE_OBJECT *ptable,
+static BOOL storetbl_query_rows(const table_object *ptable,
     const PROPTAG_ARRAY *pcolumns, TARRAY_SET *pset, const USER_INFO *pinfo,
     uint32_t row_needed)
 {
@@ -338,7 +337,7 @@ static BOOL storetbl_query_rows(const TABLE_OBJECT *ptable,
 			pinfo->ptree->get_store_handle(TRUE, pinfo->user_id) :
 			pinfo->ptree->get_store_handle(false, pinfo->domain_id);
 		uint8_t mapi_type = 0;
-		auto pstore = pinfo->ptree->get_object<STORE_OBJECT>(handle, &mapi_type);
+		auto pstore = pinfo->ptree->get_object<store_object>(handle, &mapi_type);
 		if (pstore == nullptr || mapi_type != ZMG_STORE)
 			return FALSE;
 		if (!pstore->get_properties(pcolumns, pset->pparray[pset->count]))
@@ -348,7 +347,7 @@ static BOOL storetbl_query_rows(const TABLE_OBJECT *ptable,
 	return TRUE;
 }
 
-static bool conttbl_q0(const TABLE_OBJECT *ptable, TARRAY_SET &temp_set)
+static bool conttbl_q0(const table_object *ptable, TARRAY_SET &temp_set)
 {
 	for (size_t i = 0; i < temp_set.count; ++i) {
 		for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
@@ -366,7 +365,7 @@ static bool conttbl_q0(const TABLE_OBJECT *ptable, TARRAY_SET &temp_set)
 	return true;
 }
 
-static bool hiertbl_q0(const TABLE_OBJECT *ptable, TARRAY_SET &temp_set)
+static bool hiertbl_q0(const table_object *ptable, TARRAY_SET &temp_set)
 {
 	for (size_t i = 0; i < temp_set.count; ++i) {
 		for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
@@ -384,7 +383,7 @@ static bool hiertbl_q0(const TABLE_OBJECT *ptable, TARRAY_SET &temp_set)
 	return true;
 }
 
-static bool hiertbl_q1(const TABLE_OBJECT *ptable, const USER_INFO *pinfo,
+static bool hiertbl_q1(const table_object *ptable, const USER_INFO *pinfo,
     TARRAY_SET &temp_set)
 {
 	for (size_t i = 0; i < temp_set.count; ++i) {
@@ -406,7 +405,7 @@ static bool hiertbl_q1(const TABLE_OBJECT *ptable, const USER_INFO *pinfo,
 	return true;
 }
 
-static bool hiertbl_q2(const TABLE_OBJECT *ptable, const USER_INFO *pinfo,
+static bool hiertbl_q2(const table_object *ptable, const USER_INFO *pinfo,
     TARRAY_SET &temp_set)
 {
 	for (size_t i = 0; i < temp_set.count; ++i) {
@@ -428,7 +427,7 @@ static bool hiertbl_q2(const TABLE_OBJECT *ptable, const USER_INFO *pinfo,
 	return true;
 }
 
-static BOOL hierconttbl_query_rows(const TABLE_OBJECT *ptable,
+static BOOL hierconttbl_query_rows(const table_object *ptable,
     const PROPTAG_ARRAY *pcolumns, PROPTAG_ARRAY &tmp_columns,
     const USER_INFO *pinfo, uint32_t row_needed, TARRAY_SET *pset)
 {
@@ -517,7 +516,7 @@ static BOOL hierconttbl_query_rows(const TABLE_OBJECT *ptable,
 	return TRUE;
 }
 
-BOOL TABLE_OBJECT::query_rows(const PROPTAG_ARRAY *cols,
+BOOL table_object::query_rows(const PROPTAG_ARRAY *cols,
     uint32_t row_count, TARRAY_SET *pset)
 {
 	auto ptable = this;
@@ -549,17 +548,17 @@ BOOL TABLE_OBJECT::query_rows(const PROPTAG_ARRAY *cols,
 		row_count = INT32_MAX;
 
 	if (ATTACHMENT_TABLE == ptable->table_type) {
-		auto msg = static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj);
+		auto msg = static_cast<message_object *>(ptable->pparent_obj);
 		return msg->query_attachment_table(cols, ptable->position, row_count, pset);
 	} else if (RECIPIENT_TABLE == ptable->table_type) {
 		return rcpttable_query_rows(ptable, cols, pset, row_count);
 	} else if (CONTAINER_TABLE == ptable->table_type) {
-		auto ct = static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj);
+		auto ct = static_cast<container_object *>(ptable->pparent_obj);
 		return ct->query_container_table(cols,
 		       (ptable->table_flags & FLAG_CONVENIENT_DEPTH) ? TRUE : false,
 		       ptable->position, row_count, pset);
 	} else if (USER_TABLE == ptable->table_type) {
-		auto ct = static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj);
+		auto ct = static_cast<container_object *>(ptable->pparent_obj);
 		return ct->query_user_table(cols, ptable->position, row_count, pset);
 	} else if (RULE_TABLE == ptable->table_type) {
 		if (!exmdb_client::query_table(ptable->pstore->get_dir(),
@@ -586,7 +585,7 @@ BOOL TABLE_OBJECT::query_rows(const PROPTAG_ARRAY *cols,
 	       cols, ptable->position, row_count, pset);
 }
 
-void TABLE_OBJECT::seek_current(BOOL b_forward, uint32_t row_count)
+void table_object::seek_current(BOOL b_forward, uint32_t row_count)
 {
 	auto ptable = this;
 	uint32_t total_rows;
@@ -606,7 +605,7 @@ void TABLE_OBJECT::seek_current(BOOL b_forward, uint32_t row_count)
 	ptable->position -= row_count;
 }
 
-BOOL TABLE_OBJECT::set_columns(const PROPTAG_ARRAY *cols)
+BOOL table_object::set_columns(const PROPTAG_ARRAY *cols)
 {
 	auto ptable = this;
 	if (NULL != ptable->pcolumns) {
@@ -623,7 +622,7 @@ BOOL TABLE_OBJECT::set_columns(const PROPTAG_ARRAY *cols)
 	return TRUE;
 }
 
-BOOL TABLE_OBJECT::set_sorts(const SORTORDER_SET *so)
+BOOL table_object::set_sorts(const SORTORDER_SET *so)
 {
 	auto ptable = this;
 	if (NULL != ptable->psorts) {
@@ -640,7 +639,7 @@ BOOL TABLE_OBJECT::set_sorts(const SORTORDER_SET *so)
 	return TRUE;
 }
 
-BOOL TABLE_OBJECT::set_restriction(const RESTRICTION *res)
+BOOL table_object::set_restriction(const RESTRICTION *res)
 {
 	auto ptable = this;
 	if (NULL != ptable->prestriction) {
@@ -657,7 +656,7 @@ BOOL TABLE_OBJECT::set_restriction(const RESTRICTION *res)
 	return TRUE;
 }
 
-void TABLE_OBJECT::set_position(uint32_t pos)
+void table_object::set_position(uint32_t pos)
 {
 	auto ptable = this;
 	auto total_rows = get_total();
@@ -666,7 +665,7 @@ void TABLE_OBJECT::set_position(uint32_t pos)
 	ptable->position = pos;
 }
 
-uint32_t TABLE_OBJECT::get_total()
+uint32_t table_object::get_total()
 {
 	auto ptable = this;
 	uint16_t num;
@@ -675,22 +674,22 @@ uint32_t TABLE_OBJECT::get_total()
 	
 	if (ATTACHMENT_TABLE == ptable->table_type) {
 		num = 0;
-		auto msg = static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj);
+		auto msg = static_cast<message_object *>(ptable->pparent_obj);
 		msg->get_attachments_num(&num);
 		return num;
 	} else if (RECIPIENT_TABLE == ptable->table_type) {
 		num = 0;
-		auto msg = static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj);
+		auto msg = static_cast<message_object *>(ptable->pparent_obj);
 		msg->get_recipient_num(&num);
 		return num;
 	} else if (CONTAINER_TABLE == ptable->table_type) {
 		num1 = 0;
-		auto ct = static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj);
+		auto ct = static_cast<container_object *>(ptable->pparent_obj);
 		ct->get_container_table_num((ptable->table_flags & FLAG_CONVENIENT_DEPTH) ? TRUE : false, &num1);
 		return num1;
 	} else if (USER_TABLE == ptable->table_type) {
 		num1 = 0;
-		auto ct = static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj);
+		auto ct = static_cast<container_object *>(ptable->pparent_obj);
 		ct->get_user_table_num(&num1);
 		return num1;
 	} else if (STORE_TABLE == ptable->table_type) {
@@ -704,7 +703,7 @@ uint32_t TABLE_OBJECT::get_total()
 std::unique_ptr<table_object> table_object::create(store_object *pstore,
 	void *pparent_obj, uint8_t table_type, uint32_t table_flags)
 {
-	std::unique_ptr<TABLE_OBJECT> ptable;
+	std::unique_ptr<table_object> ptable;
 	try {
 		ptable.reset(new table_object);
 	} catch (const std::bad_alloc &) {
@@ -732,7 +731,7 @@ std::unique_ptr<table_object> table_object::create(store_object *pstore,
 	return ptable;
 }
 
-TABLE_OBJECT::~TABLE_OBJECT()
+table_object::~table_object()
 {
 	auto ptable = this;
 	table_object_reset(ptable);
@@ -742,7 +741,7 @@ TABLE_OBJECT::~TABLE_OBJECT()
 	}
 }
 
-BOOL TABLE_OBJECT::create_bookmark(uint32_t *pindex)
+BOOL table_object::create_bookmark(uint32_t *pindex)
 {
 	auto ptable = this;
 	uint64_t inst_id;
@@ -771,7 +770,7 @@ BOOL TABLE_OBJECT::create_bookmark(uint32_t *pindex)
 	return TRUE;
 }
 
-BOOL TABLE_OBJECT::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
+BOOL table_object::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 {
 	auto ptable = this;
 	uint64_t inst_id;
@@ -815,7 +814,7 @@ BOOL TABLE_OBJECT::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 	return TRUE;
 }
 
-void TABLE_OBJECT::remove_bookmark(uint32_t index)
+void table_object::remove_bookmark(uint32_t index)
 {
 	auto ptable = this;
 	DOUBLE_LIST_NODE *pnode;
@@ -830,7 +829,7 @@ void TABLE_OBJECT::remove_bookmark(uint32_t index)
 	}
 }
 
-void TABLE_OBJECT::clear_bookmarks()
+void table_object::clear_bookmarks()
 {
 	auto ptable = this;
 	DOUBLE_LIST_NODE *pnode;
@@ -839,7 +838,7 @@ void TABLE_OBJECT::clear_bookmarks()
 		free(pnode->pdata);
 }
 
-static void table_object_reset(TABLE_OBJECT *ptable)
+static void table_object_reset(table_object *ptable)
 {
 	if (NULL != ptable->pcolumns) {
 		proptag_array_free(ptable->pcolumns);
@@ -1011,7 +1010,7 @@ static BOOL table_object_evaluate_restriction(
 	return FALSE;
 }
 
-BOOL TABLE_OBJECT::filter_rows(uint32_t count, const RESTRICTION *pres,
+BOOL table_object::filter_rows(uint32_t count, const RESTRICTION *pres,
 	const PROPTAG_ARRAY *cols, TARRAY_SET *pset)
 {
 	auto ptable = this;
@@ -1022,7 +1021,7 @@ BOOL TABLE_OBJECT::filter_rows(uint32_t count, const RESTRICTION *pres,
 	
 	switch (ptable->table_type) {
 	case ATTACHMENT_TABLE: {
-		auto msg = static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj);
+		auto msg = static_cast<message_object *>(ptable->pparent_obj);
 		if (!msg->get_attachment_table_all_proptags(&proptags))
 			return FALSE;	
 		tmp_proptag = PR_ATTACH_DATA_BIN;
@@ -1034,13 +1033,13 @@ BOOL TABLE_OBJECT::filter_rows(uint32_t count, const RESTRICTION *pres,
 		break;
 	}
 	case RECIPIENT_TABLE:
-		if (!static_cast<MESSAGE_OBJECT *>(ptable->pparent_obj)->
+		if (!static_cast<message_object *>(ptable->pparent_obj)->
 		    read_recipients(0, 0xFFFF, &tmp_set))
 			return FALSE;	
 		break;
 	case USER_TABLE:
 		container_object_get_user_table_all_proptags(&proptags);
-		if (!static_cast<CONTAINER_OBJECT *>(ptable->pparent_obj)->
+		if (!static_cast<container_object *>(ptable->pparent_obj)->
 		    query_user_table(&proptags, ptable->position, 0x7FFFFFFF, &tmp_set))
 			return FALSE;	
 		break;
@@ -1063,7 +1062,7 @@ BOOL TABLE_OBJECT::filter_rows(uint32_t count, const RESTRICTION *pres,
 	return TRUE;
 }
 
-BOOL TABLE_OBJECT::match_row(BOOL b_forward, const RESTRICTION *pres,
+BOOL table_object::match_row(BOOL b_forward, const RESTRICTION *pres,
 	int32_t *pposition)
 {
 	auto ptable = this;

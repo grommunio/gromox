@@ -29,7 +29,7 @@ using namespace gromox;
 std::unique_ptr<folder_object> folder_object::create(store_object *pstore,
 	uint64_t folder_id, uint8_t type, uint32_t tag_access)
 {
-	std::unique_ptr<FOLDER_OBJECT> pfolder;
+	std::unique_ptr<folder_object> pfolder;
 	try {
 		pfolder.reset(new folder_object);
 	} catch (const std::bad_alloc &) {
@@ -42,7 +42,7 @@ std::unique_ptr<folder_object> folder_object::create(store_object *pstore,
 	return pfolder;
 }
 
-BOOL FOLDER_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
+BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pfolder = this;
 	PROPTAG_ARRAY tmp_proptags;
@@ -98,7 +98,7 @@ BOOL FOLDER_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-BOOL FOLDER_OBJECT::check_readonly_property(uint32_t proptag) const
+BOOL folder_object::check_readonly_property(uint32_t proptag) const
 {
 	auto pfolder = this;
 	if (PROP_TYPE(proptag) == PT_OBJECT)
@@ -162,8 +162,8 @@ BOOL FOLDER_OBJECT::check_readonly_property(uint32_t proptag) const
 	return FALSE;
 }
 
-static BOOL folder_object_get_calculated_property(
-	FOLDER_OBJECT *pfolder, uint32_t proptag, void **ppvalue)
+static BOOL folder_object_get_calculated_property(folder_object *pfolder,
+    uint32_t proptag, void **ppvalue)
 {
 	BINARY *pbin;
 	void *pvalue;
@@ -521,7 +521,7 @@ static BOOL folder_object_get_calculated_property(
 	return FALSE;
 }
 
-BOOL FOLDER_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
+BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
@@ -572,7 +572,7 @@ BOOL FOLDER_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
 	return TRUE;	
 }
 
-BOOL FOLDER_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals)
+BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 {
 	XID tmp_xid;
 	uint16_t count;
@@ -636,7 +636,7 @@ BOOL FOLDER_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	return TRUE;
 }
 
-BOOL FOLDER_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags)
+BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 {
 	int i;
 	XID tmp_xid;
@@ -701,7 +701,7 @@ BOOL FOLDER_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-BOOL FOLDER_OBJECT::get_permissions(PERMISSION_SET *pperm_set)
+BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 {
 	uint32_t row_num;
 	uint32_t *prights;
@@ -757,7 +757,7 @@ BOOL FOLDER_OBJECT::get_permissions(PERMISSION_SET *pperm_set)
 	return TRUE;
 }
 
-BOOL FOLDER_OBJECT::set_permissions(const PERMISSION_SET *pperm_set)
+BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 {
 	BINARY *pentryid;
 	uint32_t row_num;
@@ -936,7 +936,7 @@ static BOOL folder_object_flush_delegates(int fd,
 }
 
 
-BOOL FOLDER_OBJECT::updaterules(uint32_t flags, const RULE_LIST *plist)
+BOOL folder_object::updaterules(uint32_t flags, const RULE_LIST *plist)
 {
 	int i;
 	BOOL b_exceed;

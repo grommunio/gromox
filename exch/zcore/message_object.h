@@ -4,27 +4,27 @@
 #include <gromox/defs.h>
 #include <gromox/mapi_types.hpp>
 
-/* MESSAGE_OBJECT and ATTACHMENT_OBJECT are friend classes,
+/* message_object and attachment_object are friend classes,
 	so they can operate internal variables of each other */
-struct ATTACHMENT_OBJECT;
+struct attachment_object;
 struct ICS_STATE;
 struct MESSAGE_CONTENT;
-struct STORE_OBJECT;
+struct store_object;
 
-struct MESSAGE_OBJECT {
+struct message_object {
 	protected:
-	MESSAGE_OBJECT() = default;
+	message_object() = default;
 
 	public:
-	~MESSAGE_OBJECT();
-	static std::unique_ptr<MESSAGE_OBJECT> create(STORE_OBJECT *, BOOL b_new, uint32_t cpid, uint64_t message_id, void *parent, uint32_t tag_access, BOOL b_writable, ICS_STATE *);
+	~message_object();
+	static std::unique_ptr<message_object> create(store_object *, BOOL b_new, uint32_t cpid, uint64_t message_id, void *parent, uint32_t tag_access, BOOL b_writable, ICS_STATE *);
 	uint32_t get_instance_id() const { return instance_id; }
 	BOOL check_orignal_touched(BOOL *touched);
 	BOOL check_importing() const { return message_id != 0 && pstate != nullptr ? TRUE : false; }
 	BOOL check_writable() const { return b_writable; }
 	BOOL init_message(BOOL fai, uint32_t cpid);
 	uint64_t get_id() const { return message_id; }
-	STORE_OBJECT *get_store() const { return pstore; }
+	store_object *get_store() const { return pstore; }
 	gxerr_t save();
 	BOOL reload();
 	BOOL write_message(const MESSAGE_CONTENT *);
@@ -43,17 +43,16 @@ struct MESSAGE_OBJECT {
 	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
 	BOOL set_properties(const TPROPVAL_ARRAY *);
 	BOOL remove_properties(const PROPTAG_ARRAY *);
-	BOOL copy_to(MESSAGE_OBJECT *src, const PROPTAG_ARRAY *exclprop, BOOL force, BOOL *cycle);
+	BOOL copy_to(message_object *src, const PROPTAG_ARRAY *exclprop, BOOL force, BOOL *cycle);
 	BOOL set_readflag(uint8_t read_flag, BOOL *changed);
 
-	STORE_OBJECT *pstore = nullptr;
+	store_object *pstore = nullptr;
 	BOOL b_new = false, b_writable = false, b_touched = false;
 	uint32_t cpid = 0;
 	uint64_t change_num = 0, message_id = 0, folder_id = 0;
 	uint32_t instance_id = 0;
-	ATTACHMENT_OBJECT *pembedding = nullptr;
+	attachment_object *pembedding = nullptr;
 	uint32_t tag_access = 0;
 	ICS_STATE *pstate = nullptr;
 	PROPTAG_ARRAY *pchanged_proptags = nullptr, *premoved_proptags = nullptr;
 };
-using message_object = MESSAGE_OBJECT;

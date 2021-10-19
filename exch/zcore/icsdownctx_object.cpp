@@ -21,7 +21,7 @@
 std::unique_ptr<icsdownctx_object>
 icsdownctx_object::create(folder_object *pfolder, uint8_t sync_type)
 {
-	std::unique_ptr<ICSDOWNCTX_OBJECT> pctx;
+	std::unique_ptr<icsdownctx_object> pctx;
 	try {
 		pctx.reset(new icsdownctx_object);
 	} catch (const std::bad_alloc &) {
@@ -46,7 +46,7 @@ icsdownctx_object::create(folder_object *pfolder, uint8_t sync_type)
 	return pctx;
 }
 
-BOOL ICSDOWNCTX_OBJECT::make_content(const BINARY *pstate_bin,
+BOOL icsdownctx_object::make_content(const BINARY *pstate_bin,
     const RESTRICTION *prestriction, uint16_t sync_flags,
     BOOL *pb_changed, uint32_t *pmsg_count)
 {
@@ -154,7 +154,7 @@ BOOL ICSDOWNCTX_OBJECT::make_content(const BINARY *pstate_bin,
 	return TRUE;
 }
 
-BOOL ICSDOWNCTX_OBJECT::make_hierarchy(const BINARY *state,
+BOOL icsdownctx_object::make_hierarchy(const BINARY *state,
     uint16_t sync_flags, BOOL *pb_changed, uint32_t *pfld_count)
 {
 	auto pctx = this;
@@ -215,7 +215,7 @@ BOOL ICSDOWNCTX_OBJECT::make_hierarchy(const BINARY *state,
 	return TRUE;
 }
 
-BINARY *ICSDOWNCTX_OBJECT::get_state()
+BINARY *icsdownctx_object::get_state()
 {
 	auto pctx = this;
 	if (NULL != pctx->pgiven_eids && NULL != pctx->pchg_eids
@@ -253,7 +253,7 @@ BINARY *ICSDOWNCTX_OBJECT::get_state()
 	return ics_state_serialize(pctx->pstate);
 }
 
-ICSDOWNCTX_OBJECT::~ICSDOWNCTX_OBJECT()
+icsdownctx_object::~icsdownctx_object()
 {
 	auto pctx = this;
 	if (NULL != pctx->pgiven_eids) {
@@ -282,7 +282,7 @@ ICSDOWNCTX_OBJECT::~ICSDOWNCTX_OBJECT()
 	}
 }
 
-BOOL ICSDOWNCTX_OBJECT::sync_message_change(BOOL *pb_found, BOOL *pb_new,
+BOOL icsdownctx_object::sync_message_change(BOOL *pb_found, BOOL *pb_new,
     TPROPVAL_ARRAY *pproplist)
 {
 	auto pctx = this;
@@ -339,7 +339,7 @@ BOOL ICSDOWNCTX_OBJECT::sync_message_change(BOOL *pb_found, BOOL *pb_new,
 	return TRUE;
 }
 
-BOOL ICSDOWNCTX_OBJECT::sync_folder_change(BOOL *pb_found,
+BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
     TPROPVAL_ARRAY *pproplist)
 {
 	auto pctx = this;
@@ -454,7 +454,7 @@ BOOL ICSDOWNCTX_OBJECT::sync_folder_change(BOOL *pb_found,
 	return TRUE;
 }
 
-BOOL ICSDOWNCTX_OBJECT::sync_deletions(uint32_t flags, BINARY_ARRAY *pbins)
+BOOL icsdownctx_object::sync_deletions(uint32_t flags, BINARY_ARRAY *pbins)
 {
 	auto pctx = this;
 	BINARY *pbin;
@@ -529,7 +529,7 @@ BOOL ICSDOWNCTX_OBJECT::sync_deletions(uint32_t flags, BINARY_ARRAY *pbins)
 	return TRUE;
 }
 
-BOOL ICSDOWNCTX_OBJECT::sync_readstates(STATE_ARRAY *pstates)
+BOOL icsdownctx_object::sync_readstates(STATE_ARRAY *pstates)
 {
 	auto pctx = this;
 	BINARY *pbin;

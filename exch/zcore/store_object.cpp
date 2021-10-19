@@ -43,7 +43,7 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-static BOOL store_object_enlarge_propid_hash(STORE_OBJECT *pstore)
+static BOOL store_object_enlarge_propid_hash(store_object *pstore)
 {
 	int tmp_id;
 	void *ptmp_value;
@@ -65,7 +65,7 @@ static BOOL store_object_enlarge_propid_hash(STORE_OBJECT *pstore)
 	return TRUE;
 }
 
-static BOOL store_object_enlarge_propname_hash(STORE_OBJECT *pstore)
+static BOOL store_object_enlarge_propname_hash(store_object *pstore)
 {
 	void *ptmp_value;
 	STR_HASH_ITER *iter;
@@ -89,7 +89,7 @@ static BOOL store_object_enlarge_propname_hash(STORE_OBJECT *pstore)
 	return TRUE;
 }
 
-static BOOL store_object_cache_propname(STORE_OBJECT *pstore,
+static BOOL store_object_cache_propname(store_object *pstore,
 	uint16_t propid, const PROPERTY_NAME *ppropname)
 {
 	char tmp_guid[64];
@@ -178,7 +178,7 @@ std::unique_ptr<store_object> store_object::create(BOOL b_private,
 	if (NULL == pvalue) {
 		return NULL;
 	}
-	std::unique_ptr<STORE_OBJECT> pstore;
+	std::unique_ptr<store_object> pstore;
 	try {
 		pstore.reset(new store_object);
 	} catch (const std::bad_alloc &) {
@@ -196,7 +196,7 @@ std::unique_ptr<store_object> store_object::create(BOOL b_private,
 	return pstore;
 }
 
-STORE_OBJECT::~STORE_OBJECT()
+store_object::~store_object()
 {
 	INT_HASH_ITER *piter;
 	DOUBLE_LIST_NODE *pnode;
@@ -229,13 +229,13 @@ STORE_OBJECT::~STORE_OBJECT()
 	}
 }
 
-GUID STORE_OBJECT::guid() const
+GUID store_object::guid() const
 {
 	return b_private ? rop_util_make_user_guid(account_id) :
 	       rop_util_make_domain_guid(account_id);
 }
 
-BOOL STORE_OBJECT::check_owner_mode() const
+BOOL store_object::check_owner_mode() const
 {
 	auto pstore = this;
 	if (!pstore->b_private)
@@ -265,7 +265,7 @@ BOOL STORE_OBJECT::check_owner_mode() const
 	return TRUE;
 }
 
-BOOL STORE_OBJECT::get_named_propnames(const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
+BOOL store_object::get_named_propnames(const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
 {
 	int i;
 	PROPERTY_NAME *pname;
@@ -331,7 +331,7 @@ BOOL STORE_OBJECT::get_named_propnames(const PROPID_ARRAY *ppropids, PROPNAME_AR
 	return TRUE;
 }
 
-static BOOL store_object_get_named_propid(STORE_OBJECT *pstore,
+static BOOL store_object_get_named_propid(store_object *pstore,
 	BOOL b_create, const PROPERTY_NAME *ppropname,
 	uint16_t *ppropid)
 {
@@ -376,7 +376,7 @@ static BOOL store_object_get_named_propid(STORE_OBJECT *pstore,
 	return TRUE;
 }
 
-BOOL STORE_OBJECT::get_named_propids(BOOL b_create,
+BOOL store_object::get_named_propids(BOOL b_create,
     const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids)
 {
 	int i;
@@ -463,10 +463,10 @@ BOOL STORE_OBJECT::get_named_propids(BOOL b_create,
 
 static BOOL gnpwrap(void *store, BOOL create, const PROPERTY_NAME *pn, uint16_t *pid)
 {
-	return store_object_get_named_propid(static_cast<STORE_OBJECT *>(store), create, pn, pid);
+	return store_object_get_named_propid(static_cast<store_object *>(store), create, pn, pid);
 }
 
-PROPERTY_GROUPINFO *STORE_OBJECT::get_last_property_groupinfo()
+PROPERTY_GROUPINFO *store_object::get_last_property_groupinfo()
 {
 	auto pstore = this;
 	if (m_gpinfo == nullptr)
@@ -475,7 +475,7 @@ PROPERTY_GROUPINFO *STORE_OBJECT::get_last_property_groupinfo()
 	return m_gpinfo;
 }
 
-PROPERTY_GROUPINFO *STORE_OBJECT::get_property_groupinfo(uint32_t group_id)
+PROPERTY_GROUPINFO *store_object::get_property_groupinfo(uint32_t group_id)
 {
 	auto pstore = this;
 	
@@ -503,8 +503,7 @@ PROPERTY_GROUPINFO *STORE_OBJECT::get_property_groupinfo(uint32_t group_id)
 	return pgpinfo;
 }
 
-static BOOL store_object_check_readonly_property(
-	STORE_OBJECT *pstore, uint32_t proptag)
+static BOOL store_object_check_readonly_property(store_object *pstore, uint32_t proptag)
 {
 	if (PROP_TYPE(proptag) == PT_OBJECT)
 		return TRUE;
@@ -574,7 +573,7 @@ static BOOL store_object_check_readonly_property(
 	return FALSE;
 }
 
-BOOL STORE_OBJECT::get_all_proptags(PROPTAG_ARRAY *pproptags)
+BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 {
 	auto pstore = this;
 	PROPTAG_ARRAY tmp_proptags;
@@ -808,8 +807,8 @@ static void* store_object_get_oof_property(
 	return NULL;
 }
 
-static BOOL store_object_get_calculated_property(
-	STORE_OBJECT *pstore, uint32_t proptag, void **ppvalue)
+static BOOL store_object_get_calculated_property(store_object *pstore,
+    uint32_t proptag, void **ppvalue)
 {
 	int i;
 	int temp_len;
@@ -1212,7 +1211,7 @@ static BOOL store_object_get_calculated_property(
 	return FALSE;
 }
 
-BOOL STORE_OBJECT::get_properties(const PROPTAG_ARRAY *pproptags,
+BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
@@ -1456,7 +1455,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	return FALSE;
 }
 
-static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
+static BOOL store_object_set_folder_name(store_object *pstore,
 	uint64_t fid_val, const char *pdisplayname)
 {
 	XID tmp_xid;
@@ -1510,7 +1509,7 @@ static BOOL store_object_set_folder_name(STORE_OBJECT *pstore,
 /**
  * @locale:	input string like "en_US.UTF-8"
  */
-static void set_store_lang(STORE_OBJECT *store, const char *locale)
+static void set_store_lang(store_object *store, const char *locale)
 {
 	/*
 	 * If Offline Mode happens to write this prop even though it is
@@ -1554,7 +1553,7 @@ static void set_store_lang(STORE_OBJECT *store, const char *locale)
 	system_services_set_user_lang(store->account, mloc);
 }
 
-BOOL STORE_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals)
+BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
 	auto pinfo = zarafa_server_get_info();
@@ -1617,7 +1616,7 @@ BOOL STORE_OBJECT::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	return TRUE;
 }
 
-BOOL STORE_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags)
+BOOL store_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 {
 	auto pstore = this;
 	int i;
@@ -1636,9 +1635,8 @@ BOOL STORE_OBJECT::remove_properties(const PROPTAG_ARRAY *pproptags)
 	return TRUE;
 }
 
-static BOOL store_object_get_folder_permissions(
-	STORE_OBJECT *pstore, uint64_t folder_id,
-	PERMISSION_SET *pperm_set)
+static BOOL store_object_get_folder_permissions(store_object *pstore,
+    uint64_t folder_id, PERMISSION_SET *pperm_set)
 {
 	BINARY *pentryid;
 	uint32_t row_num;
@@ -1712,7 +1710,7 @@ static BOOL store_object_get_folder_permissions(
 	return TRUE;
 }
 
-BOOL STORE_OBJECT::get_permissions(PERMISSION_SET *pperm_set)
+BOOL store_object::get_permissions(PERMISSION_SET *pperm_set)
 {
 	auto pstore = this;
 	uint32_t row_num;
