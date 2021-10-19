@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <memory>
+#include <utility>
 #include "fastdownctx_object.h"
 #include "emsmdb_interface.h"
 #include <gromox/tpropval_array.hpp>

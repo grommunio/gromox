@@ -6,6 +6,7 @@
 #include <memory>
 #include <mutex>
 #include <unistd.h>
+#include <utility>
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>

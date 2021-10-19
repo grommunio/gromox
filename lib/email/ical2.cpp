@@ -7,6 +7,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <gromox/ical.hpp>
 
 bool ICAL_VALUE::append_subval(const char *subval)

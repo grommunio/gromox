@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <deque>
 #include <mutex>
+#include <utility>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>

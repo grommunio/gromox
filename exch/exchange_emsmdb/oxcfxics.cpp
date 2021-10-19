@@ -2,6 +2,7 @@
 #include <climits>
 #include <cstdint>
 #include <memory>
+#include <utility>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "rops.h"

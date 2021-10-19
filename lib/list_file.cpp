@@ -4,6 +4,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <memory>
+#include <utility>
 #include <libHX/string.h>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>

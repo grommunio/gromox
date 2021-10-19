@@ -2,6 +2,7 @@
 #include <cerrno>
 #include <memory>
 #include <string>
+#include <utility>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>

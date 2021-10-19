@@ -12,6 +12,7 @@
 #include <memory>
 #include <string>
 #include <unistd.h>
+#include <utility>
 #include <libpff.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
