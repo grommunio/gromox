@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <cstdio>
 #include <memory>
 #include <gromox/restriction.hpp>
 #include <gromox/proc_common.h>

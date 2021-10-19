@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <cstdio>
 #include <memory>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
