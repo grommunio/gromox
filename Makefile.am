@@ -8,7 +8,7 @@ AM_CXXFLAGS = ${my_CXXFLAGS}
 lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la
 noinst_LTLIBRARIES = libphp_mapi.la
 noinst_DATA = libgromox_common.ldd libgromox_cplus.ldd libgromox_dbop.ldd libgromox_email.ldd libgromox_epoll.ldd libgromox_exrpc.la libgromox_mapi.ldd libgromox_rpc.ldd
-pkglibexec_PROGRAMS = ${mta_system} ${mra_system} ${exchange_progs} ${agent_service_progs} ${system_admin_progs} ${system_admin_tools}
+pkglibexec_PROGRAMS = adaptor delivery delivery-queue event freebusy http imap midb pop3 rtf2html timer zcore
 pkglib_LTLIBRARIES = libmapi4zf.la ${mta_plugins} ${mra_plugins} ${exchange_plugins}
 default_sym = ${srcdir}/default.sym
 default_SYFLAGS = -Wl,--version-script=${default_sym}
@@ -28,7 +28,6 @@ sysusers_DATA = system/sysusers-gromox.conf
 tmpfiles_DATA = system/tmpfiles-gromox.conf
 unit_DATA = system/gromox-adaptor.service system/gromox-delivery.service system/gromox-delivery-queue.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-midb.service system/gromox-pop3.service system/gromox-timer.service system/gromox-zcore.service
 
-mta_system = delivery delivery-queue
 mta_plugins = \
 	libgxf_message_enqueue.la \
 	libgxm_alias_translator.la \
@@ -41,7 +40,6 @@ noinst_DATA += \
 	libgxm_exmdb_local.ldd \
 	libgxm_mlist_expand.ldd \
 	libgxs_domain_list.ldd
-mra_system = pop3 imap
 mra_plugins = \
 	libgxs_event_proxy.la \
 	libgxs_event_stub.la \
@@ -50,7 +48,6 @@ noinst_DATA += \
 	libgxs_event_proxy.ldd \
 	libgxs_event_stub.ldd \
 	libgxs_midb_agent.ldd
-exchange_progs = http midb zcore
 exchange_plugins = \
 	libgxs_codepage_lang.la \
 	libgxs_exmdb_provider.la \
@@ -85,8 +82,6 @@ noinst_DATA += \
 	libgxs_mysql_adaptor.ldd \
 	libgxs_textmaps.ldd \
 	libgxs_user_filter.ldd
-agent_service_progs = freebusy rtf2html
-system_admin_progs = adaptor event timer
 sbin_PROGRAMS = gromox-abktconv gromox-dbop gromox-mailq gromox-mkmidb gromox-mkprivate gromox-mkpublic gromox-kdb2mt gromox-mt2exm gromox-rebuild
 if HAVE_PFF
 sbin_PROGRAMS += gromox-pff2mt
