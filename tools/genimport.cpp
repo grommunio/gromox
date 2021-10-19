@@ -454,14 +454,9 @@ static int exm_connect(const char *dir)
 	return -1;
 }
 
-int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
-    uint64_t *new_fld_id)
+int exm_set_change_keys(TPROPVAL_ARRAY *props, uint64_t change_num)
 {
-	uint64_t change_num = 0;
-	if (!exmdb_client::allocate_cn(g_storedir, &change_num)) {
-		fprintf(stderr, "exm: allocate_cn(fld) RPC failed\n");
-		return -EIO;
-	}
+	/* Set the change key and initial PCL for the object */
 	SIZED_XID zxid;
 	char tmp_buff[22];
 	BINARY bxid;
@@ -492,15 +487,30 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
 		fprintf(stderr, "exm: pcl_serialize: ENOMEM\n");
 		return -ENOMEM;
 	}
+	if (!tpropval_array_set_propval(props, PROP_TAG_CHANGENUMBER, &change_num) ||
+	    !tpropval_array_set_propval(props, PR_CHANGE_KEY, &bxid) ||
+	    !tpropval_array_set_propval(props, PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) {
+		fprintf(stderr, "%s: ENOMEM\n", __func__);
+		return -ENOMEM;
+	}
+	return 0;
+}
+
+int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
+    uint64_t *new_fld_id)
+{
+	uint64_t change_num = 0;
+	if (!exmdb_client::allocate_cn(g_storedir, &change_num)) {
+		fprintf(stderr, "exm: allocate_cn(fld) RPC failed\n");
+		return -EIO;
+	}
 	if (tpropval_array_get_propval(props, PR_LAST_MODIFICATION_TIME) == nullptr) {
 		auto last_time = rop_util_current_nttime();
 		if (!tpropval_array_set_propval(props, PR_LAST_MODIFICATION_TIME, &last_time))
 			return -ENOMEM;
 	}
 	if (!tpropval_array_set_propval(props, PROP_TAG_PARENTFOLDERID, &parent_fld) ||
-	    !tpropval_array_set_propval(props, PROP_TAG_CHANGENUMBER, &change_num) ||
-	    !tpropval_array_set_propval(props, PR_CHANGE_KEY, &bxid) ||
-	    !tpropval_array_set_propval(props, PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) {
+	    !exm_set_change_keys(props, change_num)) {
 		fprintf(stderr, "exm: tpropval: ENOMEM\n");
 		return -ENOMEM;
 	}

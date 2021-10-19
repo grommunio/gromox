@@ -92,6 +92,7 @@ extern void gi_folder_map_write(const gi_folder_map_t &);
 extern void gi_name_map_read(const void *, size_t, gi_name_map &);
 extern void gi_name_map_write(const gi_name_map &);
 extern uint16_t gi_resolve_namedprop(const PROPERTY_NAME *);
+extern int exm_set_change_keys(TPROPVAL_ARRAY *props, uint64_t cn);
 extern int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl, uint64_t *new_fld_id);
 extern int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *);
 extern void gi_setup_early(const char *dstmbox);
