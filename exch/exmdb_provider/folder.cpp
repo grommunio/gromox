@@ -746,8 +746,7 @@ BOOL exmdb_server_get_folder_properties(
 	return TRUE;
 }
 
-/* no PROPERTY_PROBLEM for PROP_TAG_CHANGENUMBER
-	and PROP_TAG_CHANGKEY */
+/* no PROPERTY_PROBLEM for PROP_TAG_CHANGENUMBER and PR_CHANGE_KEY */
 BOOL exmdb_server_set_folder_properties(
 	const char *dir, uint32_t cpid, uint64_t folder_id,
 	const TPROPVAL_ARRAY *pproperties,
