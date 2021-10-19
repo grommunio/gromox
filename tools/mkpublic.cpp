@@ -181,7 +181,7 @@ int main(int argc, const char **argv)
 		return 3;
 	}
 	
-	sprintf(mysql_string, "SELECT 0, homedir, domain_type, "
+	snprintf(mysql_string, arsizeof(mysql_string), "SELECT 0, homedir, 0, "
 		"domain_status, id FROM domains WHERE domainname='%s'", argv[1]);
 	
 	if (0 != mysql_query(pmysql, mysql_string) ||
@@ -200,14 +200,6 @@ int main(int argc, const char **argv)
 	}
 
 	myrow = mysql_fetch_row(pmyres);
-	auto domain_type = strtoul(myrow[2], nullptr, 0);
-	if (domain_type != 0) {
-		printf("Error: Domain type is not \"normal\"(0) but %lu\n", domain_type);
-		mysql_free_result(pmyres);
-		mysql_close(pmysql);
-		return 4;
-	}
-	
 	auto domain_status = strtoul(myrow[3], nullptr, 0);
 	if (domain_status != AF_DOMAIN_NORMAL)
 		printf("Warning: Domain status is not \"alive\"(0) but %lu\n", domain_status);
