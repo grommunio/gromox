@@ -53,10 +53,10 @@ static const char *flusher_get_data_path();
 static const char *flusher_get_state_path();
 static BOOL flusher_is_domainlist_valid();
 static int flusher_increase_max_ID();
-static BOOL flusher_set_flush_ID(int ID);
+static void flusher_set_flush_ID(int);
 	
 static FLH_PLUG_ENTITY *g_flusher_plug;
-static BOOL g_can_register;
+static bool g_can_register;
 static size_t g_max_queue_len;
 static std::mutex g_flush_mutex, g_flush_id_mutex;
 static std::list<FLUSH_ENTITY> g_flush_queue;
@@ -172,9 +172,9 @@ static BOOL flusher_load_plugin()
 	static void *const server_funcs[] = {reinterpret_cast<void *>(flusher_queryservice)};
 	BOOL    main_result;
 	
-	g_can_register = TRUE;
+	g_can_register = true;
 	main_result = FLH_LibMain(PLUGIN_INIT, const_cast<void **>(server_funcs));
-	g_can_register = FALSE;
+	g_can_register = false;
 	if (FALSE == main_result) {
 		printf("[flusher]: fail to execute init in flusher plugin\n");
 		return FALSE;
@@ -230,14 +230,10 @@ static int flusher_increase_max_ID()
 	return current_id;
 }
 
-static BOOL flusher_set_flush_ID(int ID)
+static void flusher_set_flush_ID(int ID)
 {
-	if (TRUE == g_can_register) {
+	if (g_can_register)
 		g_current_ID = ID;
-		return TRUE;
-	} else {
-		return FALSE;
-	}
 }
 
 static void *flusher_queryservice(const char *service, const std::type_info &ti)
@@ -330,9 +326,8 @@ static int flusher_get_queue_length()
 
 static BOOL flusher_register_cancel(CANCEL_FUNCTION cancel_func)
 {
-	if (FALSE == g_can_register || NULL != g_flusher_plug->flush_cancel) {
+	if (!g_can_register || g_flusher_plug->flush_cancel != nullptr)
 		return FALSE;
-	}
 	g_flusher_plug->flush_cancel = cancel_func;
 	return TRUE;
 }
