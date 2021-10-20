@@ -316,7 +316,6 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 	size_t string_length = 0;
     const char* smtp_reply_str;
     STREAM stream;
-	unsigned int size, size2, size2_used;
 
     if (T_RCPT_CMD != pcontext->last_cmd) {
         /* 503 bad sequence of command, RCPT first */
@@ -335,7 +334,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
     /* 354 Start mail input; end with <CRLF>.<CRLF> */
 	smtp_reply_str = resource_get_smtp_code(303, 1, &string_length);
     pcontext->last_cmd = T_DATA_CMD;
-    size = STREAM_BLOCK_SIZE;
+	unsigned int size = STREAM_BLOCK_SIZE;
 	void *pbuff = stream_getbuffer_for_reading(&pcontext->stream, &size);
     if (NULL == pbuff) {
 		/* clear stream, all envelope imformation is recorded in mail.envelope */
@@ -346,47 +345,46 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 			write(pcontext->connection.sockd, smtp_reply_str, string_length);
 		}
         return DISPATCH_CONTINUE;
-    } else {
-        /* fill the new stream the data after "data" command */
-        stream_init(&stream, blocks_allocator_get_allocator());
-        size2 = STREAM_BLOCK_SIZE;
-		void *pbuff2 = stream_getbuffer_for_writing(&stream, &size2);
-        /*
-         * do not need to check the pbuff pointer because it will never
-         * be NULL because of stream's characteristic
-         */
-        size2_used = 0;
-        do{
-            if (size <= size2 - size2_used) {
-                memcpy(pbuff2, pbuff, size);
-                size2_used += size;
-            } else {
-                auto size_copied = size2 - size2_used;
-				memcpy(static_cast<char *>(pbuff2) + size2_used, pbuff, size_copied);
-                size2 = STREAM_BLOCK_SIZE;
-                stream_forward_writing_ptr(&stream, STREAM_BLOCK_SIZE);
-                pbuff2 = stream_getbuffer_for_writing(&stream, &size2);
-                if (NULL == pbuff2) {
-                    stream_free(&stream);
-		            smtp_parser_log_info(pcontext, LV_NOTICE, "out of memory");
-                    return 416 | DISPATCH_SHOULD_CLOSE;
-                }
-                size2_used = size - size_copied;
-				memcpy(pbuff2, static_cast<char *>(pbuff) + size_copied, size2_used);
-            }
-            size = STREAM_BLOCK_SIZE;
-            pbuff = stream_getbuffer_for_reading(&pcontext->stream, &size);
-        } while (NULL != pbuff);
-        stream_forward_writing_ptr(&stream, size2_used);
-        stream_free(&pcontext->stream);
-        pcontext->stream = stream;
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
-		} else {
-			write(pcontext->connection.sockd, smtp_reply_str, string_length);
-		}
-        return DISPATCH_BREAK;
     }
+	/* fill the new stream the data after "data" command */
+	stream_init(&stream, blocks_allocator_get_allocator());
+	unsigned int size2 = STREAM_BLOCK_SIZE;
+	void *pbuff2 = stream_getbuffer_for_writing(&stream, &size2);
+	/*
+	 * do not need to check the pbuff pointer because it will never
+	 * be NULL because of stream's characteristic
+	 */
+	unsigned int size2_used = 0;
+	do{
+		if (size <= size2 - size2_used) {
+			memcpy(pbuff2, pbuff, size);
+			size2_used += size;
+		} else {
+			auto size_copied = size2 - size2_used;
+			memcpy(static_cast<char *>(pbuff2) + size2_used, pbuff, size_copied);
+			size2 = STREAM_BLOCK_SIZE;
+			stream_forward_writing_ptr(&stream, STREAM_BLOCK_SIZE);
+			pbuff2 = stream_getbuffer_for_writing(&stream, &size2);
+			if (NULL == pbuff2) {
+				stream_free(&stream);
+				smtp_parser_log_info(pcontext, LV_NOTICE, "out of memory");
+				return 416 | DISPATCH_SHOULD_CLOSE;
+			}
+			size2_used = size - size_copied;
+			memcpy(pbuff2, static_cast<char *>(pbuff) + size_copied, size2_used);
+		}
+		size = STREAM_BLOCK_SIZE;
+		pbuff = stream_getbuffer_for_reading(&pcontext->stream, &size);
+	} while (NULL != pbuff);
+	stream_forward_writing_ptr(&stream, size2_used);
+	stream_free(&pcontext->stream);
+	pcontext->stream = stream;
+	if (NULL != pcontext->connection.ssl) {
+		SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
+	} else {
+		write(pcontext->connection.sockd, smtp_reply_str, string_length);
+	}
+	return DISPATCH_BREAK;
 }    
 
 int smtp_cmd_handler_quit(const char* cmd_line, int line_length,
