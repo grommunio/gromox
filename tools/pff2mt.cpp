@@ -16,6 +16,7 @@
 #include <libpff.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/tarray_set.hpp>
@@ -679,12 +680,10 @@ static uint32_t az_nid_from_mst(libpff_item_t *item, uint32_t proptag)
 	if (az_item_get_propv(item, proptag, &~unique_tie(rent)) < 1)
 		return 0;
 	char eid[24];
-	uint32_t nid;
 	if (libpff_record_entry_get_data(rent.get(),
 	    reinterpret_cast<uint8_t *>(eid), arsizeof(eid), nullptr) < 1)
 		return 0;
-	memcpy(&nid, &eid[20], sizeof(nid));
-	return le32_to_cpu(nid);
+	return le32p_to_cpu(&eid[20]);
 }
 
 static void az_lookup_specials(libpff_file_t *file)

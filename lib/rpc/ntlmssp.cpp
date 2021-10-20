@@ -4,6 +4,7 @@
 #include <libHX/string.h>
 #include <gromox/arcfour.hpp>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/ndr.hpp>
 #include <gromox/util.hpp>
 #include <gromox/crc32.hpp>
@@ -394,20 +395,16 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 
 	va_start(ap, format);
 	for (i=0; format[i]; i++) {
-		uint16_t enc2;
-		uint32_t enc4;
 		switch (format[i]) {
 		case 'U':
 		case 'A':
 		case 'B':
 			length = blobs[i].length;
-			enc2 = cpu_to_le16(length);
-			memcpy(&pblob->data[head_ofs], &enc2, sizeof(enc2));
+			cpu_to_le16p(&pblob->data[head_ofs], length);
 			head_ofs += 2;
-			memcpy(&pblob->data[head_ofs], &enc2, sizeof(enc2));
+			cpu_to_le16p(&pblob->data[head_ofs], length);
 			head_ofs += 2;
-			enc4 = cpu_to_le32(data_ofs);
-			memcpy(&pblob->data[head_ofs], &enc4, sizeof(enc4));
+			cpu_to_le32p(&pblob->data[head_ofs], data_ofs);
 			head_ofs += 4;
 			if (NULL != blobs[i].data && length > 0) {
 				/* don't follow null blobs... */
@@ -416,19 +413,16 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 			data_ofs += length;
 			break;
 		case 'a':
-			enc2 = cpu_to_le16(intargs[i]);
-			memcpy(&pblob->data[data_ofs], &enc2, sizeof(enc2));
+			cpu_to_le16p(&pblob->data[data_ofs], intargs[i]);
 			data_ofs += 2;
 			length = blobs[i].length;
-			enc2 = cpu_to_le16(length);
-			memcpy(&pblob->data[data_ofs], &enc2, sizeof(enc2));
+			cpu_to_le16p(&pblob->data[data_ofs], length);
 			data_ofs += 2;
 			memcpy(pblob->data + data_ofs, blobs[i].data, length);
 			data_ofs += length;
 			break;
 		case 'd':
-			enc4 = cpu_to_le32(intargs[i]);
-			memcpy(&pblob->data[head_ofs], &enc4, sizeof(enc4));
+			cpu_to_le32p(&pblob->data[head_ofs], intargs[i]);
 			head_ofs += 4;
 			break;
 		case 'b':
@@ -481,22 +475,17 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 	head_ofs = 0;
 	va_start(ap, format);
 	for (i=0; format[i]; i++) {
-		uint16_t enc2;
-		uint32_t enc4;
 		switch (format[i]) {
 		case 'U':
 			if (head_ofs + 8 > blob.length) {
 				va_end(ap);
 				return false;
 			}
-			memcpy(&enc2, &blob.data[head_ofs], sizeof(enc2));
-			len1 = le16_to_cpu(enc2);
+			len1 = le16p_to_cpu(&blob.data[head_ofs]);
 			head_ofs += 2;
-			memcpy(&enc2, &blob.data[head_ofs], sizeof(enc2));
-			len2 = le16_to_cpu(enc2);
+			len2 = le16p_to_cpu(&blob.data[head_ofs]);
 			head_ofs += 2;
-			memcpy(&enc4, &blob.data[head_ofs], sizeof(enc4));
-			ptr_ofs = le32_to_cpu(enc4);
+			ptr_ofs = le32p_to_cpu(&blob.data[head_ofs]);
 			head_ofs += 4;
 
 			ps = va_arg(ap, char*);
@@ -535,14 +524,11 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 				va_end(ap);
 				return false;
 			}
-			memcpy(&enc2, &blob.data[head_ofs], sizeof(enc2));
-			len1 = le16_to_cpu(enc2);
+			len1 = le16p_to_cpu(&blob.data[head_ofs]);
 			head_ofs += 2;
-			memcpy(&enc2, &blob.data[head_ofs], sizeof(enc2));
-			len2 = le16_to_cpu(enc2);
+			len2 = le16p_to_cpu(&blob.data[head_ofs]);
 			head_ofs += 2;
-			memcpy(&enc4, &blob.data[head_ofs], sizeof(enc4));
-			ptr_ofs = le32_to_cpu(enc4);
+			ptr_ofs = le32p_to_cpu(&blob.data[head_ofs]);
 			head_ofs += 4;
 
 			ps = va_arg(ap, char*);
@@ -575,14 +561,11 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 				va_end(ap);
 				return false;
 			}
-			memcpy(&enc2, &blob.data[head_ofs], sizeof(enc2));
-			len1 = le16_to_cpu(enc2);
+			len1 = le16p_to_cpu(&blob.data[head_ofs]);
 			head_ofs += 2;
-			memcpy(&enc2, &blob.data[head_ofs], sizeof(enc2));
-			len2 = le16_to_cpu(enc2);
+			len2 = le16p_to_cpu(&blob.data[head_ofs]);
 			head_ofs += 2;
-			memcpy(&enc4, &blob.data[head_ofs], sizeof(enc4));
-			ptr_ofs = le32_to_cpu(enc4);
+			ptr_ofs = le32p_to_cpu(&blob.data[head_ofs]);
 			head_ofs += 4;
 
 			pblob = (DATA_BLOB*)va_arg(ap, void*);
@@ -629,8 +612,7 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 				va_end(ap);
 				return false;
 			}
-			memcpy(v, &blob.data[head_ofs], sizeof(*v));
-			*v = le32_to_cpu(*v);
+			*v = le32p_to_cpu(&blob.data[head_ofs]);
 			head_ofs += 4;
 			break;
 		case 'C':
@@ -1571,18 +1553,15 @@ static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
 	
 	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		HMACMD5_CTX hmac_ctx;
-		uint32_t enc4;
 
 		switch (direction) {
 		case NTLMSSP_DIRECTION_SEND:
-			enc4 = cpu_to_le32(pntlmssp->crypt.ntlm2.sending.seq_num);
-			memcpy(seq_num, &enc4, sizeof(enc4));
+			cpu_to_le32p(seq_num, pntlmssp->crypt.ntlm2.sending.seq_num);
 			pntlmssp->crypt.ntlm2.sending.seq_num ++;
 			hmac_ctx = HMACMD5_CTX(pntlmssp->crypt.ntlm2.sending.sign_key, 16);
 			break;
 		case NTLMSSP_DIRECTION_RECEIVE:
-			enc4 = cpu_to_le32(pntlmssp->crypt.ntlm2.receiving.seq_num);
-			memcpy(seq_num, &enc4, sizeof(enc4));
+			cpu_to_le32p(seq_num, pntlmssp->crypt.ntlm2.receiving.seq_num);
 			pntlmssp->crypt.ntlm2.receiving.seq_num ++;
 			hmac_ctx = HMACMD5_CTX(pntlmssp->crypt.ntlm2.receiving.sign_key, 16);
 			break;
@@ -1607,8 +1586,7 @@ static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
 			}
 		}
 
-		enc4 = cpu_to_le32(NTLMSSP_SIGN_VERSION);
-		memcpy(&psig->data[0], &enc4, sizeof(enc4));
+		cpu_to_le32p(&psig->data[0], NTLMSSP_SIGN_VERSION);
 		memcpy(psig->data + 4, digest, 8);
 		memcpy(psig->data + 12, seq_num, 4);
 		psig->length = NTLMSSP_SIG_SIZE;

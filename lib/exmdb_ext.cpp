@@ -7,6 +7,7 @@
 #include <type_traits>
 #include <unistd.h>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/scope.hpp>
@@ -5940,8 +5941,7 @@ BOOL exmdb_client_read_socket(int fd, BINARY *bin, long timeout_ms)
 				*bin->pb = resp_buff[0];
 				return TRUE;
 			} else if (read_len == 5) {
-				memcpy(&bin->cb, resp_buff + 1, sizeof(uint32_t));
-				bin->cb = le32_to_cpu(bin->cb) + 5;
+				bin->cb = le32p_to_cpu(resp_buff + 1) + 5;
 				bin->pb = static_cast<uint8_t *>(exmdb_rpc_alloc(bin->cb));
 				if (bin->pb == nullptr) {
 					bin->cb = 0;

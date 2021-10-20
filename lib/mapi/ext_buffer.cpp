@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -56,8 +57,7 @@ int EXT_PULL::g_uint16(uint16_t *v)
 	if (m_data_size < sizeof(uint16_t) ||
 	    m_offset + sizeof(uint16_t) > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	memcpy(v, &m_udata[m_offset], sizeof(*v));
-	*v = le16_to_cpu(*v);
+	*v = le16p_to_cpu(&m_udata[m_offset]);
 	m_offset += sizeof(uint16_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -67,8 +67,7 @@ int EXT_PULL::g_uint32(uint32_t *v)
 	if (m_data_size < sizeof(uint32_t) ||
 	    m_offset + sizeof(uint32_t) > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	memcpy(v, &m_udata[m_offset], sizeof(*v));
-	*v = le32_to_cpu(*v);
+	*v = le32p_to_cpu(&m_udata[m_offset]);
 	m_offset += sizeof(uint32_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -78,8 +77,7 @@ int EXT_PULL::g_uint64(uint64_t *v)
 	if (m_data_size < sizeof(uint64_t) ||
 	    m_offset + sizeof(uint64_t) > m_data_size)
 		return EXT_ERR_BUFSIZE;
-	memcpy(v, &m_udata[m_offset], sizeof(*v));
-	*v = le64_to_cpu(*v);
+	*v = le64p_to_cpu(&m_udata[m_offset]);
 	m_offset += sizeof(uint64_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -2170,8 +2168,7 @@ int EXT_PUSH::p_uint16(uint16_t v)
 	auto pext = this;
 	if (!pext->check_ovf(sizeof(uint16_t)))
 		return EXT_ERR_BUFSIZE;
-	v = cpu_to_le16(v);
-	memcpy(&m_udata[m_offset], &v, sizeof(v));
+	cpu_to_le16p(&m_udata[m_offset], v);
 	m_offset += sizeof(uint16_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -2181,8 +2178,7 @@ int EXT_PUSH::p_uint32(uint32_t v)
 	auto pext = this;
 	if (!pext->check_ovf(sizeof(uint32_t)))
 		return EXT_ERR_BUFSIZE;
-	v = cpu_to_le32(v);
-	memcpy(&m_udata[m_offset], &v, sizeof(v));
+	cpu_to_le32p(&m_udata[m_offset], v);
 	m_offset += sizeof(uint32_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -2192,8 +2188,7 @@ int EXT_PUSH::p_uint64(uint64_t v)
 	auto pext = this;
 	if (!pext->check_ovf(sizeof(uint64_t)))
 		return EXT_ERR_BUFSIZE;
-	v = cpu_to_le64(v);
-	memcpy(&m_udata[m_offset], &v, sizeof(v));
+	cpu_to_le64p(&m_udata[m_offset], v);
 	m_offset += sizeof(uint64_t);
 	return EXT_ERR_SUCCESS;
 }

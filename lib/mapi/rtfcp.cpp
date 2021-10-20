@@ -4,6 +4,7 @@
 #include <climits>
 #include <cstdint>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <cstring>
 #include <cstdlib>
@@ -80,15 +81,10 @@ static void rtfcp_init_output_state(OUTPUT_STATE *pstate,
 static bool rtfcp_verify_header(uint8_t *header_data,
 	uint32_t in_size, COMPRESS_HEADER *pheader)
 {
-	uint32_t enc4;
-	memcpy(&enc4, &header_data[0], sizeof(enc4));
-	pheader->size = le32_to_cpu(enc4);
-	memcpy(&enc4, &header_data[4], sizeof(enc4));
-	pheader->rawsize = le32_to_cpu(enc4);
-	memcpy(&enc4, &header_data[8], sizeof(enc4));
-	pheader->magic = le32_to_cpu(enc4);
-	memcpy(&enc4, &header_data[12], sizeof(enc4));
-	pheader->crc = le32_to_cpu(enc4);
+	pheader->size = le32p_to_cpu(&header_data[0]);
+	pheader->rawsize = le32p_to_cpu(&header_data[4]);
+	pheader->magic = le32p_to_cpu(&header_data[8]);
+	pheader->crc = le32p_to_cpu(&header_data[12]);
 	if (pheader->size != in_size - 4) {
 		return false;
 	}

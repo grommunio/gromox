@@ -9,6 +9,7 @@
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/paths.h>
 #include "pdu_processor.h"
 #include "hpm_processor.h"
@@ -515,16 +516,20 @@ void pdu_processor_destroy(PDU_PROCESSOR *pprocessor)
 
 static void pdu_processor_set_frag_length(DATA_BLOB *pblob, uint16_t v)
 {
-	v = (pblob->data[DCERPC_DREP_OFFSET] & DCERPC_DREP_LE) ?
-	    cpu_to_le16(v) : cpu_to_be16(v);
-	memcpy(&pblob->data[DCERPC_FRAG_LEN_OFFSET], &v, sizeof(v));
+	auto r = &pblob->data[DCERPC_FRAG_LEN_OFFSET];
+	if (pblob->data[DCERPC_DREP_OFFSET] & DCERPC_DREP_LE)
+		cpu_to_le16p(r, v);
+	else
+		cpu_to_be16p(r, v);
 }
 
 static void pdu_processor_set_auth_length(DATA_BLOB *pblob, uint16_t v)
 {
-	v = (pblob->data[DCERPC_DREP_OFFSET] & DCERPC_DREP_LE) ?
-	    cpu_to_le16(v) : cpu_to_be16(v);
-	memcpy(&pblob->data[DCERPC_AUTH_LEN_OFFSET], &v, sizeof(v));
+	auto r = &pblob->data[DCERPC_AUTH_LEN_OFFSET];
+	if (pblob->data[DCERPC_DREP_OFFSET] & DCERPC_DREP_LE)
+		cpu_to_le16p(r, v);
+	else
+		cpu_to_be16p(r, v);
 }
 
 void pdu_processor_output_stream(DCERPC_CALL *pcall, STREAM *pstream)

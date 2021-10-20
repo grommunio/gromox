@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/util.hpp>
 #include <gromox/binhex.hpp>
 #include <cstring>
@@ -245,8 +246,7 @@ static bool binhex_read_crc(READ_STAT *pstat)
 	check = binhex_crc(g_zero, 2, pstat->crc);
 	if (!binhex_read_buffer(pstat, tmp_buff, 2))
 		return false;
-	memcpy(&pstat->crc, tmp_buff, sizeof(uint16_t));
-	pstat->crc = be16_to_cpu(pstat->crc);
+	pstat->crc = be16p_to_cpu(tmp_buff);
 	if (pstat->crc != check) {
 		debug_info("[binhex]: CRC checksum error");
 	}
@@ -275,19 +275,16 @@ bool binhex_deserialize(BINHEX *pbinhex, void *pbuff, uint32_t length)
 		return false;
 	if (!binhex_read_buffer(&read_stat, tmp_buff, 2))
 		return false;
-	memcpy(&pbinhex->flags, tmp_buff, sizeof(uint16_t));
-	pbinhex->flags = be16_to_cpu(pbinhex->flags);
+	pbinhex->flags = be16p_to_cpu(tmp_buff);
 	if (!binhex_read_buffer(&read_stat, tmp_buff, 4))
 		return false;
-	memcpy(&pbinhex->data_len, tmp_buff, sizeof(uint32_t));
-	pbinhex->data_len = be32_to_cpu(pbinhex->data_len);
+	pbinhex->data_len = be32p_to_cpu(tmp_buff);
 	if (pbinhex->data_len >= length) {
 		return false;
 	}
 	if (!binhex_read_buffer(&read_stat, tmp_buff, 4))
 		return false;
-	memcpy(&pbinhex->res_len, tmp_buff, sizeof(uint32_t));
-	pbinhex->res_len = be32_to_cpu(pbinhex->res_len);
+	pbinhex->res_len = be32p_to_cpu(tmp_buff);
 	if (pbinhex->res_len >= length) {
 		return false;
 	}

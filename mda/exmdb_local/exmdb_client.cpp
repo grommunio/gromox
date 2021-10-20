@@ -12,6 +12,7 @@
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include "exmdb_client.h"
 #include <gromox/exmdb_rpc.hpp>
@@ -497,8 +498,7 @@ int exmdb_client_delivery_message(const char *dir,
 	if (5 + sizeof(uint32_t) != tmp_bin.cb ||
 	    tmp_bin.pb[0] != exmdb_response::SUCCESS)
 		return EXMDB_RUNTIME_ERROR;
-	memcpy(&result, &tmp_bin.pb[5], sizeof(result));
-	result = le32_to_cpu(result);
+	result = le32p_to_cpu(&tmp_bin.pb[5]);
 	if (0 == result) {
 		return EXMDB_RESULT_OK;
 	} else if (1 == result) {

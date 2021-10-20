@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <gromox/endian.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/rop_util.hpp>
@@ -218,13 +219,9 @@ uint64_t rop_util_current_nttime()
 GUID rop_util_binary_to_guid(const BINARY *pbin)
 {
 	GUID guid;
-	
-	memcpy(&guid.time_low, &pbin->pb[0], sizeof(uint32_t));
-	guid.time_low = le32_to_cpu(guid.time_low);
-	memcpy(&guid.time_mid, &pbin->pb[4], sizeof(uint16_t));
-	guid.time_mid = le16_to_cpu(guid.time_mid);
-	memcpy(&guid.time_hi_and_version, &pbin->pb[6], sizeof(uint16_t));
-	guid.time_hi_and_version = le16_to_cpu(guid.time_hi_and_version);
+	guid.time_low = le32p_to_cpu(&pbin->pb[0]);
+	guid.time_mid = le16p_to_cpu(&pbin->pb[4]);
+	guid.time_hi_and_version = le16p_to_cpu(&pbin->pb[6]);
 	memcpy(guid.clock_seq, pbin->pb + 8, 2);
 	memcpy(guid.node, pbin->pb + 10, 6);
 	return guid;
@@ -232,14 +229,11 @@ GUID rop_util_binary_to_guid(const BINARY *pbin)
 
 void rop_util_guid_to_binary(GUID guid, BINARY *pbin)
 {
-	uint32_t enc4 = cpu_to_le32(guid.time_low);
-	memcpy(&pbin->pb[pbin->cb], &enc4, sizeof(enc4));
+	cpu_to_le32p(&pbin->pb[pbin->cb], guid.time_low);
 	pbin->cb += sizeof(uint32_t);
-	uint16_t enc2 = cpu_to_le16(guid.time_mid);
-	memcpy(&pbin->pb[pbin->cb], &enc2, sizeof(enc2));
+	cpu_to_le16p(&pbin->pb[pbin->cb], guid.time_mid);
 	pbin->cb += sizeof(uint16_t);
-	enc2 = cpu_to_le16(guid.time_hi_and_version);
-	memcpy(&pbin->pb[pbin->cb], &enc2, sizeof(enc2));
+	cpu_to_le16p(&pbin->pb[pbin->cb], guid.time_hi_and_version);
 	pbin->cb += sizeof(uint16_t);
 	memcpy(pbin->pb + pbin->cb, guid.clock_seq, 2);
 	pbin->cb += 2;

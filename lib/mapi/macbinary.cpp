@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <libHX/string.h>
+#include <gromox/endian.hpp>
 #include <gromox/macbinary.hpp>
 #include <gromox/util.hpp>
 #include <cstring>
@@ -153,8 +154,7 @@ static int macbinary_push_uint16(EXT_PUSH *pext, uint16_t v)
 	auto &ext = *pext;
 	if (!pext->check_ovf(sizeof(uint16_t)))
 		return EXT_ERR_BUFSIZE;
-	v = cpu_to_be16(v);
-	memcpy(&ext.m_udata[ext.m_offset], &v, sizeof(v));
+	cpu_to_be16p(&ext.m_udata[ext.m_offset], v);
 	ext.m_offset += sizeof(uint16_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -164,8 +164,7 @@ static int macbinary_push_uint32(EXT_PUSH *pext, uint32_t v)
 	auto &ext = *pext;
 	if (!pext->check_ovf(sizeof(uint32_t)))
 		return EXT_ERR_BUFSIZE;
-	v = cpu_to_be32(v);
-	memcpy(&ext.m_udata[ext.m_offset], &v, sizeof(v));
+	cpu_to_be32p(&ext.m_udata[ext.m_offset], v);
 	ext.m_offset += sizeof(uint32_t);
 	return EXT_ERR_SUCCESS;
 }

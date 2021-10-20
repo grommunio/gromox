@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <gromox/applefile.hpp>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <cstring>
 #define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 #define applefile_push_int16(e, v) applefile_push_uint16((e), (v))
@@ -16,8 +17,7 @@ static int applefile_pull_uint16(EXT_PULL *pext, uint16_t *v)
 	if (ext.m_data_size < sizeof(uint16_t) ||
 	    ext.m_offset + sizeof(uint16_t) > ext.m_data_size)
 		return EXT_ERR_BUFSIZE;
-	memcpy(v, &ext.m_udata[ext.m_offset], sizeof(*v));
-	*v = be16_to_cpu(*v);
+	*v = be16p_to_cpu(&ext.m_udata[ext.m_offset]);
 	ext.m_offset += sizeof(uint16_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -28,8 +28,7 @@ static int applefile_pull_uint32(EXT_PULL *pext, uint32_t *v)
 	if (ext.m_data_size < sizeof(uint32_t) ||
 	    ext.m_offset + sizeof(uint32_t) > ext.m_data_size)
 		return EXT_ERR_BUFSIZE;
-	memcpy(v, &ext.m_udata[ext.m_offset], sizeof(*v));
-	*v = be32_to_cpu(*v);
+	*v = be32p_to_cpu(&ext.m_udata[ext.m_offset]);
 	ext.m_offset += sizeof(uint32_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -297,8 +296,7 @@ static int applefile_push_uint16(EXT_PUSH *pext, uint16_t v)
 	auto &ext = *pext;
 	if (!pext->check_ovf(sizeof(uint16_t)))
 		return EXT_ERR_BUFSIZE;
-	v = cpu_to_be16(v);
-	memcpy(&ext.m_udata[ext.m_offset], &v, sizeof(v));
+	cpu_to_be16p(&ext.m_udata[ext.m_offset], v);
 	ext.m_offset += sizeof(uint16_t);
 	return EXT_ERR_SUCCESS;
 }
@@ -308,8 +306,7 @@ static int applefile_push_uint32(EXT_PUSH *pext, uint32_t v)
 	auto &ext = *pext;
 	if (!pext->check_ovf(sizeof(uint32_t)))
 		return EXT_ERR_BUFSIZE;
-	v = cpu_to_be32(v);
-	memcpy(&ext.m_udata[ext.m_offset], &v, sizeof(v));
+	cpu_to_be32p(&ext.m_udata[ext.m_offset], v);
 	ext.m_offset += sizeof(uint32_t);
 	return EXT_ERR_SUCCESS;
 }

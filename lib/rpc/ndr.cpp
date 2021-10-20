@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/ndr.hpp>
 #include <cstdlib>
 #include <cstring>
@@ -160,8 +161,8 @@ int ndr_pull_uint16(NDR_PULL *pndr, uint16_t *v)
 	if (pndr->data_size < 2 || pndr->offset + 2 > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
 	}
-	memcpy(v, &pndr->data[pndr->offset], sizeof(*v));
-	*v = NDR_BE(pndr) ? be16_to_cpu(*v) : le16_to_cpu(*v);
+	auto r = &pndr->data[pndr->offset];
+	*v = NDR_BE(pndr) ? be16p_to_cpu(r) : le16p_to_cpu(r);
 	pndr->offset += 2;
 	return NDR_ERR_SUCCESS;
 }
@@ -177,8 +178,8 @@ int ndr_pull_uint32(NDR_PULL *pndr, uint32_t *v)
 	if (pndr->data_size < 4 || pndr->offset + 4 > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
 	}
-	memcpy(v, &pndr->data[pndr->offset], sizeof(*v));
-	*v = NDR_BE(pndr) ? be32_to_cpu(*v) : le32_to_cpu(*v);
+	auto r = &pndr->data[pndr->offset];
+	*v = NDR_BE(pndr) ? be32p_to_cpu(r) : le32p_to_cpu(r);
 	pndr->offset += 4;
 	return NDR_ERR_SUCCESS;
 }
@@ -189,8 +190,8 @@ int ndr_pull_uint64(NDR_PULL *pndr, uint64_t *v)
 	if (pndr->data_size < 8 || pndr->offset + 8 > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
 	}
-	memcpy(v, &pndr->data[pndr->offset], sizeof(*v));
-	*v = NDR_BE(pndr) ? be64_to_cpu(*v) : le64_to_cpu(*v);
+	auto r = &pndr->data[pndr->offset];
+	*v = NDR_BE(pndr) ? be64p_to_cpu(r) : le64p_to_cpu(r);
 	pndr->offset += 8;
 	return NDR_ERR_SUCCESS;
 }
@@ -448,8 +449,8 @@ int ndr_push_uint16(NDR_PUSH *pndr, uint16_t v)
 	TRY(ndr_push_align(pndr, 2));
 	if (!ndr_push_check_overflow(pndr, 2))
 		return NDR_ERR_BUFSIZE;
-	v = NDR_BE(pndr) ? cpu_to_be16(v) : cpu_to_le16(v);
-	memcpy(&pndr->data[pndr->offset], &v, sizeof(v));
+	auto r = &pndr->data[pndr->offset];
+	NDR_BE(pndr) ? cpu_to_be16p(r, v) : cpu_to_le16p(r, v);
 	pndr->offset += 2;
 	return NDR_ERR_SUCCESS;
 }
@@ -459,8 +460,8 @@ int ndr_push_uint32(NDR_PUSH *pndr, uint32_t v)
 	TRY(ndr_push_align(pndr, 4));
 	if (!ndr_push_check_overflow(pndr, 4))
 		return NDR_ERR_BUFSIZE;
-	v = NDR_BE(pndr) ? cpu_to_be32(v) : cpu_to_le32(v);
-	memcpy(&pndr->data[pndr->offset], &v, sizeof(v));
+	auto r = &pndr->data[pndr->offset];
+	NDR_BE(pndr) ? cpu_to_be32p(r, v) : cpu_to_le32p(r, v);
 	pndr->offset += 4;
 	return NDR_ERR_SUCCESS;
 }
@@ -471,8 +472,8 @@ int ndr_push_uint64(NDR_PUSH *pndr, uint64_t v)
 	TRY(ndr_push_align(pndr, 8));
 	if (!ndr_push_check_overflow(pndr, 8))
 		return NDR_ERR_BUFSIZE;
-	v = NDR_BE(pndr) ? cpu_to_be64(v) : cpu_to_le64(v);
-	memcpy(&pndr->data[pndr->offset], &v, sizeof(v));
+	auto r = &pndr->data[pndr->offset];
+	NDR_BE(pndr) ? cpu_to_be64p(r, v) : cpu_to_le64p(r, v);
 	pndr->offset += 8;
 	return NDR_ERR_SUCCESS;
 }

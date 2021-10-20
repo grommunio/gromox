@@ -15,6 +15,7 @@
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
 #include "pdu_ndr.h"
@@ -1549,9 +1550,9 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 	if (0 == frag_length) {
 		static_assert(std::is_same_v<decltype(frag_length), uint16_t>, "");
 		auto pbd = static_cast<uint8_t *>(pbuff);
-		memcpy(&frag_length, &pbd[DCERPC_FRAG_LEN_OFFSET], sizeof(uint16_t));
+		auto pfrag = &pbd[DCERPC_FRAG_LEN_OFFSET];
 		frag_length = (pbd[DCERPC_DREP_OFFSET] & DCERPC_DREP_LE) ?
-			      le16_to_cpu(frag_length) : be16_to_cpu(frag_length);
+			      le16p_to_cpu(pfrag) : be16p_to_cpu(pfrag);
 		if (CHANNEL_TYPE_IN == pcontext->channel_type) {
 			pchannel_in->frag_length = frag_length;
 		} else {

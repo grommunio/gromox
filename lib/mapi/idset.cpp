@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <gromox/endian.hpp>
 #include <gromox/util.hpp>
 #include <gromox/idset.hpp>
 #include <gromox/rop_util.hpp>
@@ -894,14 +895,11 @@ static uint32_t idset_decoding_globset(
 static void idset_read_guid(const void *pv, uint32_t offset, GUID *pguid)
 {
 	auto pb = static_cast<const uint8_t *>(pv);
-	memcpy(&pguid->time_low, &pb[offset], sizeof(uint32_t));
-	pguid->time_low = le32_to_cpu(pguid->time_low);
+	pguid->time_low = le32p_to_cpu(&pb[offset]);
 	offset += sizeof(uint32_t);
-	memcpy(&pguid->time_mid, &pb[offset], sizeof(uint16_t));
-	pguid->time_mid = le16_to_cpu(pguid->time_mid);
+	pguid->time_mid = le16p_to_cpu(&pb[offset]);
 	offset += sizeof(uint16_t);
-	memcpy(&pguid->time_hi_and_version, &pb[offset], sizeof(uint16_t));
-	pguid->time_hi_and_version = le16_to_cpu(pguid->time_hi_and_version);
+	pguid->time_hi_and_version = le16p_to_cpu(&pb[offset]);
 	offset += sizeof(uint16_t);
 	memcpy(pguid->clock_seq, pb + offset, 2);
 	offset += 2;
@@ -929,9 +927,7 @@ BOOL idset_deserialize(IDSET *pset, const BINARY *pbin)
 				return FALSE;
 			}
 			preplid_node->node.pdata = preplid_node;
-			uint16_t enc2;
-			memcpy(&enc2, &pbin->pb[offset], sizeof(enc2));
-			preplid_node->replid = le16_to_cpu(enc2);
+			preplid_node->replid = le16p_to_cpu(&pbin->pb[offset]);
 			offset += sizeof(uint16_t);
 			plist = &preplid_node->range_list;
 			pnode = &preplid_node->node;
