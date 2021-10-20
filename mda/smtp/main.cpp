@@ -100,7 +100,6 @@ int main(int argc, const char **argv) try
 		{"context_max_mem", "2M", CFG_SIZE},
 		{"data_file_path", PKGDATADIR "/smtp:" PKGDATADIR},
 		{"domain_list_valid", "false", CFG_BOOL},
-		{"flusher_plugin_path", "libgxf_message_enqueue.so"},
 		{"listen_port", "25"},
 		{"listen_ssl_port", "0"},
 		{"mail_max_length", "64M", CFG_SIZE, "1"},
@@ -365,7 +364,7 @@ int main(int argc, const char **argv) try
 	auto cleanup_17 = make_scope_exit(contexts_pool_free);
 	auto cleanup_18 = make_scope_exit(contexts_pool_stop);
 
-	flusher_init(g_config_file->get_value("flusher_plugin_path"), scfg.context_num);
+	flusher_init(scfg.context_num);
 	if (0 != flusher_run()) {
 		printf("[system]: failed to run flusher\n");
 		return EXIT_FAILURE;

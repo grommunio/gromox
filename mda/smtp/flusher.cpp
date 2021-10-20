@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <list>
 #include <mutex>
-#include <typeinfo>
 #include <utility>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -11,7 +11,6 @@
 #include "resource.h"
 #include <gromox/util.hpp>
 #include <sys/types.h>
-#include <dlfcn.h>
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -28,8 +27,6 @@ struct SERVICE_NODE {
 };
 
 struct FLH_PLUG_ENTITY {
-	void*           handle;
-	PLUGIN_MAIN     appmain;
 	CANCEL_FUNCTION flush_cancel;
 	SINGLE_LIST			list_reference;
 	char			file_name[256];
@@ -39,8 +36,7 @@ struct FLH_PLUG_ENTITY {
 
 }
 
-static BOOL flusher_load_plugin(char* path);
-static BOOL flusher_unload_plugin();
+static BOOL flusher_load_plugin();
 static void *flusher_queryservice(const char *service, const std::type_info &);
 static int flusher_get_queue_length();
 static const char *flusher_get_host_ID();
@@ -67,16 +63,15 @@ static std::list<FLUSH_ENTITY> g_flush_queue;
 static unsigned int    g_current_ID;
 
 
-void flusher_init(const char* path, size_t queue_len)
+void flusher_init(size_t queue_len)
 {
+	static constexpr char path[] = "libgxf_message_enqueue.so";
 	g_flusher_plug = static_cast<FLH_PLUG_ENTITY *>(malloc(sizeof(FLH_PLUG_ENTITY)));
 	if (NULL == g_flusher_plug) {
 		return;
 	}
-	g_flusher_plug->appmain      = NULL;
-	g_flusher_plug->handle       = NULL;
 	g_flusher_plug->flush_cancel = NULL;
-	gx_strlcpy(g_flusher_plug->path, path, GX_ARRAY_SIZE(g_flusher_plug->path));
+	gx_strlcpy(g_flusher_plug->path, path, gromox::arsizeof(g_flusher_plug->path));
 	auto pname = strrchr(path, '/');
 	gx_strlcpy(g_flusher_plug->file_name, pname != nullptr ? pname + 1 : path,
 		GX_ARRAY_SIZE(g_flusher_plug->file_name));
@@ -98,20 +93,13 @@ int flusher_run()
 		printf("[flusher]: Failed to allocate memory for FLUSHER\n");
 		return -3;
 	}
-	if (FALSE == flusher_load_plugin(g_flusher_plug->path)) {
+	if (!flusher_load_plugin())
 		return -2;
-	}
-	
 	if (g_current_ID < 0) {
 		printf("[flusher]: flush ID error, should be larger than 0\n");
 		return -4;
 	}
 	return 0;
-}
-
-void flusher_stop()
-{
-	flusher_unload_plugin();
 }
 
 /*
@@ -179,56 +167,34 @@ void flusher_cancel(SMTP_CONTEXT *pcontext)
 	g_flusher_plug->flush_cancel(&entity);
 }
 
-static BOOL flusher_load_plugin(char* path)
+static BOOL flusher_load_plugin()
 {
 	static void *const server_funcs[] = {reinterpret_cast<void *>(flusher_queryservice)};
-	PLUGIN_MAIN appmain     = NULL;
-	void    *phandle        = NULL;
 	BOOL    main_result;
 	
-	if (NULL == (phandle = dlopen(path, RTLD_LAZY))) {
-		printf("[flusher]: Failed to load flusher plugin %s: %s\n",
-			 path, dlerror());
-		return FALSE;
-	}
-	appmain = reinterpret_cast<decltype(appmain)>(dlsym(phandle, "FLH_LibMain"));
-	if (NULL == appmain) {
-		printf("[flusher]: fail to find FLH_LibMain in %s\n", path);
-		dlclose(phandle);
-		return FALSE;
-	}
-
-	g_flusher_plug->appmain = appmain;
-	g_flusher_plug->handle  = phandle;
 	g_can_register = TRUE;
-	main_result = appmain(PLUGIN_INIT, const_cast<void **>(server_funcs));
+	main_result = FLH_LibMain(PLUGIN_INIT, const_cast<void **>(server_funcs));
 	g_can_register = FALSE;
 	if (FALSE == main_result) {
 		printf("[flusher]: fail to execute init in flusher plugin\n");
-		dlclose(phandle);
-		g_flusher_plug->appmain = NULL;
-		g_flusher_plug->handle = NULL;
 		return FALSE;
 	}
 	g_flusher_plug->completed_init = true;
 	return TRUE;
 }
 
-
-static BOOL flusher_unload_plugin()
+void flusher_stop()
 {
 	SINGLE_LIST_NODE *pnode;
 	
-	if (NULL == g_flusher_plug || NULL == g_flusher_plug->appmain) {
-		return FALSE;
-	}
-	if (g_flusher_plug->completed_init && !g_flusher_plug->appmain(PLUGIN_FREE, NULL)) {
+	if (NULL == g_flusher_plug)
+		return;
+	if (g_flusher_plug->completed_init && !FLH_LibMain(PLUGIN_FREE, nullptr)) {
 		printf("[flusher]: error executing Flusher_LibMain with "
 			   "FLUSHER_LIB_FREE in plugin %s\n", g_flusher_plug->path);
-		return FALSE;
+		return;
 	}
 	printf("[flusher]: unloading %s\n", g_flusher_plug->path);
-	dlclose(g_flusher_plug->handle);
 	/* free the service reference of the plugin */
 	if (0 != single_list_get_nodes_num(&g_flusher_plug->list_reference)) {
 		for (pnode=single_list_get_head(&g_flusher_plug->list_reference); NULL!=pnode;
@@ -243,7 +209,6 @@ static BOOL flusher_unload_plugin()
 			pnode = NULL;
 		}
 	}
-	return TRUE;
 }
 
 /*

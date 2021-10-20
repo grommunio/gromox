@@ -8,7 +8,7 @@ enum {
     FLUSHER_MODE_GATEWAY    
 };
 
-void flusher_init(const char* path, size_t queue_len);
+extern void flusher_init(size_t queue_len);
 extern void flusher_free();
 extern int flusher_run();
 extern void flusher_stop();

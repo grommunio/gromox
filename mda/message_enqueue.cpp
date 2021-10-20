@@ -7,12 +7,13 @@
  *  mail into file. after mail is saved, system will send a message to
  *  message queue to indicate there's a new mail arrived!
  */
-#define DECLARE_API_STATIC
 #include <cerrno>
 #include <csignal>
 #include <cstdio>
 #include <cstring>
+#include <list>
 #include <string>
+#include <typeinfo>
 #include <utility>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
@@ -22,6 +23,8 @@
 #include <gromox/fileio.h>
 #include <gromox/flusher_common.h>
 #include <gromox/paths.h>
+#include <gromox/plugin.hpp>
+#include <gromox/stream.hpp>
 #include <gromox/util.hpp>
 #include <sys/types.h>
 #include <sys/ipc.h>
@@ -70,6 +73,27 @@ static gromox::atomic_bool g_notify_stop{false};
 static int			g_last_flush_ID;
 static int			g_enqueued_num;
 static int			g_last_pos;
+
+static void *(*query_serviceF)(const char *, const std::type_info &);
+static int (*get_queue_length)();
+static void (*log_info)(unsigned int, const char *, ...);
+static BOOL (*feedback_entity)(std::list<FLUSH_ENTITY> &&);
+static BOOL (*register_cancel)(CANCEL_FUNCTION);
+static std::list<FLUSH_ENTITY> (*get_from_queue)();
+static const char *(*get_host_ID)();
+static const char *(*get_plugin_name)();
+static const char *(*get_config_path)();
+static const char *(*get_data_path)();
+static const char *(*get_state_path)();
+static int (*get_extra_num)(int);
+static const char *(*get_extra_tag)(int, int);
+static const char *(*get_extra_value)(int, int);
+static BOOL (*set_flush_ID)(int);
+static int (*inc_flush_ID)();
+static BOOL (*check_domain)(const char *);
+static BOOL (*is_domainlist_valid)();
+#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(decltype(*(f))))))
+#define query_service1(n) query_service2(#n, n)
 
 /*
  *    @param
@@ -416,7 +440,24 @@ static BOOL flh_message_enqueue(int reason, void** ppdata)
 
 	switch (reason) {
 	case PLUGIN_INIT: {
-		LINK_API(ppdata);
+		query_serviceF = reinterpret_cast<decltype(query_serviceF)>(ppdata[0]);
+		query_service1(get_queue_length);
+		query_service1(feedback_entity);
+		query_service1(register_cancel);
+		query_service1(get_from_queue);
+		query_service1(get_host_ID);
+		query_service1(log_info);
+		query_service1(set_flush_ID);
+		query_service1(get_plugin_name);
+		query_service1(get_config_path);
+		query_service1(get_data_path);
+		query_service1(get_state_path);
+		query_service1(inc_flush_ID);
+		query_service1(get_extra_num);
+		query_service1(get_extra_tag);
+		query_service1(get_extra_value);
+		query_service2("domain_list_query", check_domain);
+		query_service1(is_domainlist_valid);
 		std::string plugname, filename;
 		try {
 			plugname = get_plugin_name();
@@ -458,4 +499,4 @@ static BOOL flh_message_enqueue(int reason, void** ppdata)
 	}
 	return TRUE;
 }
-FLH_ENTRY(flh_message_enqueue);
+BOOL FLH_LibMain(int r, void **p) { return flh_message_enqueue((r), (p)); }

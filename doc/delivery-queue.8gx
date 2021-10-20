@@ -66,12 +66,6 @@ Default: (system domainname)
 \fBdomain_list_valid\fP
 Default: \fIfalse\fP if server mode is 0 (incoming), \fItrue\fP otherwise
 .TP
-\fBflusher_plugin_path\fP
-Filename of a flusher plugin to load and use. (Only one can be in use at any
-time.)
-.br
-Default: \fIlibgxf_message_enqueue.so\fP
-.TP
 \fBhost_id\fP
 Default: (system hostname)
 .TP
@@ -184,5 +178,4 @@ textual descriptions.
 .IP \(bu 4
 /usr/lib/gromox/libgxs_*.so: service plugins
 .SH See also
-\fBgromox\fP(7), \fBdelivery\fP(8gx), \fBmessage_enqueue\fP(4gx),
-\fBmidb_agent\fP(4gx)
+\fBgromox\fP(7), \fBdelivery\fP(8gx), \fBmidb_agent\fP(4gx)

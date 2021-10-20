@@ -1,12 +1,8 @@
 #pragma once
-#include <list>
-#include <typeinfo>
 #include <sys/time.h>
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
 #include <gromox/mem_file.hpp>
-#include <gromox/plugin.hpp>
-#include <gromox/stream.hpp>
 
 enum {
 	FLUSH_WHOLE_MAIL = 0,
@@ -24,6 +20,8 @@ enum {
 	HT_LMTP = 1 << 0,
 	HT_SMTP = 1 << 1,
 };
+
+struct STREAM;
 
 struct ENVELOPE_INFO_BASE {
 	char parsed_domain[UDOM_SIZE]; /* parsed domain according connection*/
@@ -65,54 +63,6 @@ struct FLUSH_ENTITY final {
 };
 
 using CANCEL_FUNCTION = void (*)(FLUSH_ENTITY *);
-
-#define DECLARE_API(x) \
-	x void *(*query_serviceF)(const char *, const std::type_info &); \
-	x int (*get_queue_length)(); \
-	x void (*log_info)(unsigned int, const char *, ...); \
-	x BOOL (*feedback_entity)(std::list<FLUSH_ENTITY> &&); \
-	x BOOL (*register_cancel)(CANCEL_FUNCTION); \
-	x std::list<FLUSH_ENTITY> (*get_from_queue)(); \
-	x const char *(*get_host_ID)(); \
-	x const char *(*get_plugin_name)(); \
-	x const char *(*get_config_path)(); \
-	x const char *(*get_data_path)(); \
-	x const char *(*get_state_path)(); \
-	x int (*get_extra_num)(int); \
-	x const char *(*get_extra_tag)(int, int); \
-	x const char *(*get_extra_value)(int, int); \
-	x BOOL (*set_flush_ID)(int); \
-	x int (*inc_flush_ID)(); \
-	x BOOL (*check_domain)(const char *); \
-	x BOOL (*is_domainlist_valid)();
-#define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(decltype(*(f))))))
-#define query_service1(n) query_service2(#n, n)
-#ifdef DECLARE_API_STATIC
-DECLARE_API(static);
-#else
-DECLARE_API(extern);
-#endif
-
-#define LINK_API(param) \
-	query_serviceF = reinterpret_cast<decltype(query_serviceF)>(param[0]); \
-	query_service1(get_queue_length); \
-	query_service1(feedback_entity); \
-	query_service1(register_cancel); \
-	query_service1(get_from_queue); \
-	query_service1(get_host_ID); \
-	query_service1(log_info); \
-	query_service1(set_flush_ID); \
-	query_service1(get_plugin_name); \
-	query_service1(get_config_path); \
-	query_service1(get_data_path); \
-	query_service1(get_state_path); \
-	query_service1(inc_flush_ID); \
-	query_service1(get_extra_num); \
-	query_service1(get_extra_tag); \
-	query_service1(get_extra_value); \
-	query_service2("domain_list_query", check_domain); \
-	query_service1(is_domainlist_valid);
-#define FLH_ENTRY(s) BOOL FLH_LibMain(int r, void **p) { return (s)((r), (p)); }
 
 extern "C" { /* dlsym */
 extern GX_EXPORT BOOL FLH_LibMain(int reason, void **ptrs);
