@@ -23,9 +23,13 @@ static uint8_t rop_util_is_little_endian()
 
 uint16_t rop_util_get_replid(uint64_t eid)
 {
+	/* replid is kept in host-endian, see rop_util_make_eid for detail */
 	return eid & 0xFFFF;
 }
 
+/**
+ * The reverse of rop_util_make_eid, see there for details.
+ */
 uint64_t rop_util_get_gc_value(uint64_t eid)
 {
 	uint64_t value;
@@ -46,6 +50,9 @@ uint64_t rop_util_get_gc_value(uint64_t eid)
 	return value;
 }
 
+/**
+ * Extract the GC portion of a value produced by rop_util_make_eid.
+ */
 void rop_util_get_gc_array(uint64_t eid, uint8_t gc[6])
 {
 	if (rop_util_is_little_endian()) {
@@ -55,6 +62,15 @@ void rop_util_get_gc_array(uint64_t eid, uint8_t gc[6])
 	}
 }
 
+/**
+ * @value:	One of the following:
+ * 		* Gromox-level change number like 0x800000000005, 0x800000000006, ...,
+ * 		* Gromox-level folder identifier like 0xd (inbox), ...,
+ * 		* Gromox-level message identifier
+ * @gc:		Low 48 bits of @value, encoded as a 48-bit big-endian integer.
+ * 		(pursuant to the requirements of OXCFXICS §3.1.5.3 “increase
+ * 		with time, when compared byte to byte”, which means MSB)
+ */
 void rop_util_value_to_gc(uint64_t value, uint8_t gc[6])
 {
 	auto v = reinterpret_cast<const uint8_t *>(&value);
@@ -70,6 +86,10 @@ void rop_util_value_to_gc(uint64_t value, uint8_t gc[6])
 	}
 }
 
+/**
+ * @gc:		48-bit big-endian encoded integer
+ * Decodes the integer and returns it.
+ */
 uint64_t rop_util_gc_to_value(uint8_t gc[6])
 {
 	uint64_t value;
@@ -90,9 +110,27 @@ uint64_t rop_util_gc_to_value(uint8_t gc[6])
 		memcpy(v + 2, gc, 6);
 	}
 	return value;
-	
 }
 
+/**
+ * @replid:	replica id as per OXCFXICS
+ * @gc:		Gromox-level folder/message id/CN encoded as 48-bit big-endian
+ *
+ * Produces an Exchange-level folder/message identifier (OXCDATA §2.2.1.2) —
+ * later visible in e.g. PR_RECORD_KEY (see also
+ * mapi_types.hpp:FOLDER_ENTRYID), which contains the 48-bit big-endian gc
+ * _before_ the 16-bit replid.
+ *
+ * MFCMAPI does not treat PR_RECORD_KEY's gc part in any way (leaves it as
+ * bytes), and does the same to replid. It is not clear if replid should be
+ * big-endian. However, given the replid is replaced by a replguid in
+ * message_object.cpp:common_util_to_folder_entryid and zeroed, it probably
+ * does not matter which way.
+ *
+ * The return value is mixed endianess and mildly useless when printed as a
+ * number. Consumers such as message_object.cpp:common_util_to_folder_entryid
+ * just deconstruct it again for PR_RECORD_KEY.
+ */
 uint64_t rop_util_make_eid(uint16_t replid, const uint8_t gc[6])
 {
 	uint64_t eid;
