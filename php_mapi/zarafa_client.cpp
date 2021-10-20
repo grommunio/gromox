@@ -3,7 +3,7 @@
 // This file is part of Gromox.
 #include "php.h"
 #include <libHX/string.h>
-#include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/paths.h>
 #include <gromox/zcore_rpc.hpp>
 #include "ext.hpp"
@@ -66,7 +66,7 @@ static zend_bool zarafa_client_read_socket(int sockd, BINARY *pbin)
 				*(uint8_t*)pbin->pb = resp_buff[0];
 				return 1;
 			} else if (5 == read_len) {
-				pbin->cb = *(uint32_t*)(resp_buff + 1) + 5;
+				pbin->cb = le32p_to_cpu(resp_buff + 1) + 5;
 				pbin->pb = sta_malloc<uint8_t>(pbin->cb);
 				if (NULL == pbin->pb) {
 					pbin->cb = 0;

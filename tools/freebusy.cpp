@@ -6,7 +6,7 @@
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
-#include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/scope.hpp>
@@ -263,7 +263,7 @@ static BOOL exmdb_client_check_folder_permission(int sockd,
 	    !cl_rd_sock(sockd, &tmp_bin) ||
 	    tmp_bin.cb != 9 || tmp_bin.pb[0] != exmdb_response::SUCCESS)
 		return FALSE;
-	*ppermission = *(uint32_t*)(tmp_bin.pb + 5);
+	*ppermission = le32p_to_cpu(tmp_bin.pb + 5);
 	return TRUE;
 }
 
@@ -288,8 +288,8 @@ static BOOL exmdb_client_load_content_table(int sockd, const char *dir,
 	    !cl_rd_sock(sockd, &tmp_bin) ||
 	    tmp_bin.cb != 13 || tmp_bin.pb[0] != exmdb_response::SUCCESS)
 		return FALSE;
-	*ptable_id = *(uint32_t*)(tmp_bin.pb + 5);
-	*prow_count = *(uint32_t*)(tmp_bin.pb + 9);
+	*ptable_id = le32p_to_cpu(tmp_bin.pb + 5);
+	*prow_count = le32p_to_cpu(tmp_bin.pb + 9);
 	return TRUE;
 }
 

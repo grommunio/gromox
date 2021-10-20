@@ -13,6 +13,7 @@
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include "imap_cmd_parser.h"
 #include "system_services.h"
@@ -2711,7 +2712,7 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pc
 	}
 	buff[len] = '\0';
 	len ++;
-	*(int*)buff = len;
+	cpu_to_le32p(buff, len);
 	write(fd, buff, len);
 	pcontext->message_fd = fd;
 	gx_strlcpy(pcontext->tag_string, argv[0], GX_ARRAY_SIZE(pcontext->tag_string));

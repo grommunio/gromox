@@ -10,6 +10,7 @@
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include "cache_queue.h"
 #include "exmdb_local.h"
@@ -335,13 +336,13 @@ static void *mdl_thrwork(void *arg)
 				continue;
 			}
 			ptr = pbuff + mess_len;
-			pcontext->pcontrol->queue_ID = *(int*)ptr;
+			pcontext->pcontrol->queue_ID = le32p_to_cpu(ptr);
 			ptr += sizeof(int);
-			pcontext->pcontrol->bound_type = *(int*)ptr;
+			pcontext->pcontrol->bound_type = le32p_to_cpu(ptr);
 			ptr += sizeof(int);
-			pcontext->pcontrol->is_spam = *(BOOL*)ptr;
+			pcontext->pcontrol->is_spam = le32p_to_cpu(ptr);
 			ptr += sizeof(BOOL);
-			pcontext->pcontrol->need_bounce = *(BOOL*)ptr;
+			pcontext->pcontrol->need_bounce = le32p_to_cpu(ptr);
 			ptr += sizeof(BOOL);
 			gx_strlcpy(pcontext->pcontrol->from, ptr, GX_ARRAY_SIZE(pcontext->pcontrol->from));
 			gx_strlcpy(temp_from, ptr, GX_ARRAY_SIZE(temp_from));

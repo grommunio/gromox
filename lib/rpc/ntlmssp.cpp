@@ -510,7 +510,7 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 				}
 				if (len1 > 0) {
 					if (!ntlmssp_utf16le_to_utf8(blob.data + ptr_ofs,
-					    len1, ps, *reinterpret_cast<int *>(ps))) {
+					    len1, ps, le32p_to_cpu(ps))) {
 						va_end(ap);
 						return false;
 					}
@@ -888,10 +888,9 @@ static bool ntlmssp_server_preauth(NTLMSSP_CTX *pntlmssp,
 	pauth->encrypted_session_key.data = pauth->encrypted_session_key_buff;
 	pauth->encrypted_session_key.length =
 							sizeof(pauth->encrypted_session_key_buff);
-	
-	*(int*)pntlmssp->domain = sizeof(pntlmssp->domain);
-	*(int*)pntlmssp->user = sizeof(pntlmssp->user);
-	*(int*)client_netbios_name = sizeof(client_netbios_name);
+	cpu_to_le32p(pntlmssp->domain, sizeof(pntlmssp->domain));
+	cpu_to_le32p(pntlmssp->user, sizeof(pntlmssp->user));
+	cpu_to_le32p(client_netbios_name, sizeof(client_netbios_name));
 
 	/* now the NTLMSSP encoded auth hashes */
 	if (!ntlmssp_parse_packet(request, parse_string, "NTLMSSP",
@@ -906,9 +905,9 @@ static bool ntlmssp_server_preauth(NTLMSSP_CTX *pntlmssp,
 		pauth->encrypted_session_key.length = 0;
 		auth_flags = 0;
 		
-		*(int*)pntlmssp->domain = sizeof(pntlmssp->domain);
-		*(int*)pntlmssp->user = sizeof(pntlmssp->user);
-		*(int*)client_netbios_name = sizeof(client_netbios_name);
+		cpu_to_le32p(pntlmssp->domain, sizeof(pntlmssp->domain));
+		cpu_to_le32p(pntlmssp->user, sizeof(pntlmssp->user));
+		cpu_to_le32p(client_netbios_name, sizeof(client_netbios_name));
 		pntlmssp->lm_resp.length = sizeof(pntlmssp->lm_resp_buff);
 		pntlmssp->nt_resp.length = sizeof(pntlmssp->nt_resp_buff);
 		/* now the NTLMSSP encoded auth hashes */

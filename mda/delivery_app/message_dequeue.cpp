@@ -16,7 +16,7 @@
 #include <string>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
-#include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include "message_dequeue.h"
 #include "system_services.h"
@@ -408,7 +408,7 @@ static void message_dequeue_load_from_mess(int mess)
         return;
 	}
 	/* check if it is an incomplete message */
-	if (0 == *(int*)ptr) {
+	if (le32p_to_cpu(ptr) == 0) {
 		message_dequeue_put_to_free(pmessage);
 		free(ptr);
 		return;	
