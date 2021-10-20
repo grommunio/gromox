@@ -100,7 +100,7 @@ int main(int argc, const char **argv) try
 		{"context_max_mem", "2M", CFG_SIZE},
 		{"data_file_path", PKGDATADIR "/smtp:" PKGDATADIR},
 		{"domain_list_valid", "false", CFG_BOOL},
-		{"flusher_plugin_path", PKGLIBDIR "/libgxf_message_enqueue.so"},
+		{"flusher_plugin_path", "libgxf_message_enqueue.so"},
 		{"listen_port", "25"},
 		{"listen_ssl_port", "0"},
 		{"mail_max_length", "64M", CFG_SIZE, "1"},
