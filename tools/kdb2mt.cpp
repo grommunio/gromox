@@ -19,6 +19,7 @@
 #include <libHX/option.h>
 #include <gromox/database_mysql.hpp>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/scope.hpp>

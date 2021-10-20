@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <utility>
 #include <libHX/option.h>
+#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/tie.hpp>

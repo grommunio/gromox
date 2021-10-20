@@ -1,5 +1,4 @@
 #pragma once
-#include <endian.h>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -8,35 +7,6 @@ namespace gromox {
 template<typename T, size_t N> constexpr inline size_t arsizeof(T (&)[N]) { return N; }
 }
 #define GX_EXPORT __attribute__((visibility("default")))
-
-#if (defined(__BYTE_ORDER) && __BYTE_ORDER == __BIG_ENDIAN) || \
-    (defined(_BYTE_ORDER) && _BYTE_ORDER == _BIG_ENDIAN)
-#	define cpu_to_le16(x) __builtin_bswap16(x)
-#	define cpu_to_le32(x) __builtin_bswap32(x)
-#	define cpu_to_le64(x) __builtin_bswap64(x)
-#	define cpu_to_be16(x) ((uint16_t)(x))
-#	define cpu_to_be32(x) ((uint32_t)(x))
-#	define cpu_to_be64(x) ((uint64_t)(x))
-#	define le16_to_cpu(x) __builtin_bswap16(x)
-#	define le32_to_cpu(x) __builtin_bswap32(x)
-#	define le64_to_cpu(x) __builtin_bswap64(x)
-#	define be16_to_cpu(x) static_cast<uint16_t>(x)
-#	define be32_to_cpu(x) static_cast<uint32_t>(x)
-#	define be64_to_cpu(x) static_cast<uint64_t>(x)
-#else
-#	define cpu_to_le16(x) (x)
-#	define cpu_to_le32(x) (x)
-#	define cpu_to_le64(x) (x)
-#	define cpu_to_be16(x) __builtin_bswap16(x)
-#	define cpu_to_be32(x) __builtin_bswap32(x)
-#	define cpu_to_be64(x) __builtin_bswap64(x)
-#	define le16_to_cpu(x) (x)
-#	define le32_to_cpu(x) (x)
-#	define le64_to_cpu(x) (x)
-#	define be16_to_cpu(x) __builtin_bswap16(x)
-#	define be32_to_cpu(x) __builtin_bswap32(x)
-#	define be64_to_cpu(x) __builtin_bswap64(x)
-#endif
 
 enum gxerr_t {
 	GXERR_SUCCESS = 0,

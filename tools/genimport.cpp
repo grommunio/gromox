@@ -18,6 +18,7 @@
 #include <vector>
 #include <gromox/config_file.hpp>
 #include <gromox/database_mysql.hpp>
+#include <gromox/endian.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>

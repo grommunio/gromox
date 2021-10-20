@@ -7,6 +7,7 @@
 #include "ftstream_parser.h"
 #include "rop_processor.h"
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include "common_util.h"

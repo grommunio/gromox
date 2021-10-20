@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 
 namespace gromox {
