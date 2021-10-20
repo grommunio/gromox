@@ -89,7 +89,6 @@ static int (*get_extra_num)(int);
 static const char *(*get_extra_tag)(int, int);
 static const char *(*get_extra_value)(int, int);
 static BOOL (*set_flush_ID)(int);
-static int (*inc_flush_ID)();
 static BOOL (*check_domain)(const char *);
 static BOOL (*is_domainlist_valid)();
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(decltype(*(f))))))
@@ -175,11 +174,6 @@ static int message_enqueue_stop()
 		pthread_join(g_flushing_thread, NULL);
 	}
     return 0;
-}
-
-static int message_enqueue_retrieve_flush_ID()
-{
-	return g_last_flush_ID;
 }
 
 static void message_enqueue_free()
@@ -452,7 +446,6 @@ static BOOL flh_message_enqueue(int reason, void** ppdata)
 		query_service1(get_config_path);
 		query_service1(get_data_path);
 		query_service1(get_state_path);
-		query_service1(inc_flush_ID);
 		query_service1(get_extra_num);
 		query_service1(get_extra_tag);
 		query_service1(get_extra_value);
@@ -488,7 +481,7 @@ static BOOL flh_message_enqueue(int reason, void** ppdata)
 			printf("[message_enqueue]: failed to register cancel flushing\n");
 			return false;
 		}
-		set_flush_ID(message_enqueue_retrieve_flush_ID());
+		set_flush_ID(g_last_flush_ID);
 		return TRUE;
 	}
 	case PLUGIN_FREE:

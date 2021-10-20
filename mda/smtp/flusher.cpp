@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <atomic>
 #include <list>
 #include <mutex>
 #include <utility>
@@ -58,10 +59,9 @@ static void flusher_set_flush_ID(int);
 static FLH_PLUG_ENTITY *g_flusher_plug;
 static bool g_can_register;
 static size_t g_max_queue_len;
-static std::mutex g_flush_mutex, g_flush_id_mutex;
+static std::mutex g_flush_mutex;
 static std::list<FLUSH_ENTITY> g_flush_queue;
-static unsigned int    g_current_ID;
-
+static std::atomic<int> g_current_ID;
 
 void flusher_init(size_t queue_len)
 {
@@ -172,7 +172,7 @@ static BOOL flusher_load_plugin()
 	static void *const server_funcs[] = {reinterpret_cast<void *>(flusher_queryservice)};
 	BOOL    main_result;
 	
-	g_can_register = true;
+	g_can_register = true; /* so message_enqueue can set g_current_ID at start */
 	main_result = FLH_LibMain(PLUGIN_INIT, const_cast<void **>(server_funcs));
 	g_can_register = false;
 	if (FALSE == main_result) {
@@ -211,27 +211,23 @@ void flusher_stop()
 	}
 }
 
-/*
- *  increase the g_current_ID by one, if it exceeds MAX_CIRCLE_NUMBER then
- *  reset it to 1
- *  @return
- *		the increased number
- */
 static int flusher_increase_max_ID()
 {
-	int     current_id;
-	std::unique_lock fl_hold(g_flush_id_mutex);
-	if (MAX_CIRCLE_NUMBER == g_current_ID) {
-		g_current_ID = 1;
-	} else {
-		g_current_ID ++;
-	}
-	current_id  = g_current_ID;
-	return current_id;
+	int current, next;
+	do {
+		current = g_current_ID.load();
+		next = current >= INT32_MAX ? 1 : current + 1;
+	} while (!g_current_ID.compare_exchange_strong(current, next));
+	return next;
 }
 
 static void flusher_set_flush_ID(int ID)
 {
+	/*
+	 * FLH can dictate the starting value at PLUGIN_INIT;
+	 * at other times, flusher.cpp is the one telling FLH what IDs to use
+	 * (via flusher.cpp setting pcontext->flusher.flush_ID).
+	 */
 	if (g_can_register)
 		g_current_ID = ID;
 }
@@ -256,7 +252,6 @@ static void *flusher_queryservice(const char *service, const std::type_info &ti)
 	E("get_extra_tag", flusher_get_extra_tag);
 	E("get_extra_value", flusher_get_extra_value);
 	E("set_flush_ID", flusher_set_flush_ID);
-	E("inc_flush_ID", flusher_increase_max_ID);
 	E("get_plugin_name", flusher_get_plugin_name);
 	E("get_config_path", flusher_get_config_path);
 	E("get_data_path", flusher_get_data_path);
