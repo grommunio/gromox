@@ -27,7 +27,6 @@ struct gi_delete : public gromox::stdlib_delete {
 	inline void operator()(ATTACHMENT_CONTENT *x) const { attachment_content_free(x); }
 	inline void operator()(BINARY *x) const { rop_util_free_binary(x); }
 	inline void operator()(MESSAGE_CONTENT *x) const { message_content_free(x); }
-	inline void operator()(PCL *x) const { pcl_free(x); }
 	inline void operator()(TPROPVAL_ARRAY *x) const { tpropval_array_free(x); }
 };
 

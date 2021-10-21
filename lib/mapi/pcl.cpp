@@ -51,24 +51,19 @@ static void pcl_push_sized_xid(BINARY *pbin, const SIZED_XID *pxid)
 	pcl_push_xid(pbin, pxid->size, &pxid->xid);
 }
 
-PCL* pcl_init()
+PCL::~PCL()
 {
-	auto ppcl = static_cast<PCL *>(malloc(sizeof(PCL)));
-	if (NULL == ppcl) {
-		return NULL;
-	}
-	double_list_init(&ppcl->xl);
-	return ppcl;
+	clear();
 }
 
-void pcl_free(PCL *ppcl)
+void PCL::clear()
 {
+	auto ppcl = this;
 	DOUBLE_LIST_NODE *pnode;
 	
 	while ((pnode = double_list_pop_front(&ppcl->xl)) != nullptr)
 		free(pnode->pdata);
 	double_list_free(&ppcl->xl);
-	free(ppcl);
 }
 
 static uint64_t pcl_convert_local_id(const SIZED_XID *pxid)
@@ -84,8 +79,9 @@ static uint64_t pcl_convert_local_id(const SIZED_XID *pxid)
 	return ret_val;
 }
 
-bool pcl_append(PCL *ppcl, const SIZED_XID &zxid)
+bool PCL::append(const SIZED_XID &zxid)
 {
+	auto ppcl = this;
 	auto *pxid = &zxid;
 	int cmp_ret;
 	XID_NODE *pxnode;
@@ -126,17 +122,20 @@ bool pcl_append(PCL *ppcl, const SIZED_XID &zxid)
 	return true;
 }
 
-bool pcl_merge(PCL *ppcl1, const PCL *ppcl2)
+bool PCL::merge(const PCL &their_list)
 {
+	auto ppcl1 = this;
+	auto ppcl2 = &their_list;
 	for (auto pnode = double_list_get_head(&ppcl2->xl); pnode != nullptr;
 	     pnode = double_list_get_after(&ppcl2->xl, pnode))
-		if (!pcl_append(ppcl1, static_cast<const XID_NODE *>(pnode->pdata)->xid))
+		if (!ppcl1->append(static_cast<const XID_NODE *>(pnode->pdata)->xid))
 			return false;
 	return true;
 }
 
-BINARY *pcl_serialize(const PCL *ppcl)
+BINARY *PCL::serialize() const
 {
+	auto ppcl = this;
 	BINARY tmp_bin;
 	uint8_t buff[0x8000];
 	
@@ -169,15 +168,16 @@ BINARY *pcl_serialize(const PCL *ppcl)
 	return pbin;
 }
 
-bool pcl_deserialize(PCL *ppcl, const BINARY *pbin)
+bool PCL::deserialize(const BINARY *pbin)
 {
+	auto ppcl = this;
 	SIZED_XID xid;
 	uint16_t offset;
 	uint16_t offset1;
 	
 	offset = 0;
 	while ((offset1 = pcl_pull_sized_xid(pbin, offset, &xid)) != 0) {
-		if (!pcl_append(ppcl, xid))
+		if (!ppcl->append(xid))
 			return false;
 		offset += offset1;
 		if (pbin->cb == offset) {
@@ -211,8 +211,10 @@ static bool pcl_check_included(const PCL *ppcl, const SIZED_XID *pxid)
 	return false;
 }
 
-uint32_t pcl_compare(const PCL *ppcl1, const PCL *ppcl2)
+uint32_t PCL::compare(const PCL &their_list) const
 {
+	auto ppcl1 = this;
+	auto ppcl2 = &their_list;
 	const DOUBLE_LIST_NODE *pnode;
 	int ret_val = PCL_CONFLICT;
 	for (pnode = double_list_get_head(&ppcl1->xl); pnode != nullptr;

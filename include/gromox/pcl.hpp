@@ -11,14 +11,15 @@ enum {
 	PCL_IDENTICAL = PCL_INCLUDE | PCL_INCLUDED,
 };
 
-struct PCL {
+struct GX_EXPORT PCL {
+	PCL() { double_list_init(&xl); }
+	~PCL();
+	bool append(const SIZED_XID &);
+	bool merge(const PCL &);
+	BINARY *serialize() const;
+	bool deserialize(const BINARY *);
+	uint32_t compare(const PCL &) const;
+	void clear();
+
 	DOUBLE_LIST xl;
 };
-
-extern PCL *pcl_init();
-void pcl_free(PCL *ppcl);
-extern GX_EXPORT bool pcl_append(PCL *, const SIZED_XID &);
-extern GX_EXPORT bool pcl_merge(PCL *ppcl1, const PCL *ppcl2);
-extern GX_EXPORT BINARY *pcl_serialize(const PCL *);
-extern GX_EXPORT bool pcl_deserialize(PCL *ppcl, const BINARY *pbin);
-uint32_t pcl_compare(const PCL *ppcl1, const PCL *ppcl2);

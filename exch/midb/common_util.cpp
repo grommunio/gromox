@@ -168,33 +168,22 @@ static BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key)
 {
-	PCL *ppcl;
 	SIZED_XID xid;
-	BINARY *ptmp_bin;
-
 	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
-	ppcl = pcl_init();
-	if (NULL == ppcl) {
-			return NULL;
-	}
-	if (pbin_pcl != nullptr && !pcl_deserialize(ppcl, pbin_pcl)) {
-		pcl_free(ppcl);
+	PCL ppcl;
+	if (pbin_pcl != nullptr && !ppcl.deserialize(pbin_pcl))
 		return nullptr;
-	}
 	xid.size = pchange_key->cb;
 	if (FALSE == common_util_binary_to_xid(pchange_key, &xid.xid)) {
-		pcl_free(ppcl);
 		return NULL;
 	}
-	if (!pcl_append(ppcl, xid)) {
-		pcl_free(ppcl);
+	if (!ppcl.append(xid))
 		return NULL;
-	}
-	ptmp_bin = pcl_serialize(ppcl);
-	pcl_free(ppcl);
+	auto ptmp_bin = ppcl.serialize();
+	ppcl.clear();
 	if (NULL == ptmp_bin) {
 		return NULL;
 	}
@@ -212,7 +201,6 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 BOOL common_util_create_folder(const char *dir, int user_id,
 	uint64_t parent_id, const char *folder_name, uint64_t *pfolder_id)
 {
-	PCL *ppcl;
 	BINARY *pbin;
 	BINARY tmp_bin;
 	EXT_PUSH ext_push;
@@ -251,20 +239,14 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	tmp_bin.cb = ext_push.m_offset;
 	propval_buff[7].proptag = PR_CHANGE_KEY;
 	propval_buff[7].pvalue = &tmp_bin;
-	ppcl = pcl_init();
-	if (NULL == ppcl) {
+	PCL ppcl;
+	if (!ppcl.append(xid))
 		return FALSE;
-	}
-	if (!pcl_append(ppcl, xid)) {
-		pcl_free(ppcl);
-		return FALSE;
-	}
-	pbin = pcl_serialize(ppcl);
+	pbin = ppcl.serialize();
 	if (NULL == pbin) {
-		pcl_free(ppcl);
 		return FALSE;
 	}
-	pcl_free(ppcl);
+	ppcl.clear();
 	propval_buff[8].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval_buff[8].pvalue = pbin;
 	if (!exmdb_client::create_folder_by_properties(

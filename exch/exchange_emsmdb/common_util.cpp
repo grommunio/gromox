@@ -687,60 +687,32 @@ BINARY* common_util_guid_to_binary(GUID guid)
 BOOL common_util_pcl_compare(const BINARY *pbin_pcl1,
 	const BINARY *pbin_pcl2, uint32_t *presult)
 {
-	PCL *ppcl1;
-	PCL *ppcl2;
-	
-	ppcl1 = pcl_init();
-	if (NULL == ppcl1) {
+	PCL a, b;
+	if (!a.deserialize(pbin_pcl1) || !b.deserialize(pbin_pcl2))
 		return FALSE;
-	}
-	ppcl2 = pcl_init();
-	if (NULL == ppcl2) {
-		pcl_free(ppcl1);
-		return FALSE;
-	}
-	if (!pcl_deserialize(ppcl1, pbin_pcl1) ||
-	    !pcl_deserialize(ppcl2, pbin_pcl2)) {
-		pcl_free(ppcl1);
-		pcl_free(ppcl2);
-		return FALSE;
-	}
-	*presult = pcl_compare(ppcl1, ppcl2);
-	pcl_free(ppcl1);
-	pcl_free(ppcl2);
+	*presult = a.compare(b);
 	return TRUE;
 }
 
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key)
 {
-	PCL *ppcl;
 	SIZED_XID xid;
-	BINARY *ptmp_bin;
-	
 	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
-	ppcl = pcl_init();
-	if (NULL == ppcl) {
-		return NULL;
-	}
-	if (pbin_pcl != nullptr && !pcl_deserialize(ppcl, pbin_pcl)) {
-		pcl_free(ppcl);
+	PCL ppcl;
+	if (pbin_pcl != nullptr && !ppcl.deserialize(pbin_pcl))
 		return nullptr;
-	}
 	xid.size = pchange_key->cb;
 	if (FALSE == common_util_binary_to_xid(pchange_key, &xid.xid)) {
-		pcl_free(ppcl);
 		return NULL;
 	}
-	if (!pcl_append(ppcl, xid)) {
-		pcl_free(ppcl);
+	if (!ppcl.append(xid))
 		return NULL;
-	}
-	ptmp_bin = pcl_serialize(ppcl);
-	pcl_free(ppcl);
+	auto ptmp_bin = ppcl.serialize();
+	ppcl.clear();
 	if (NULL == ptmp_bin) {
 		return NULL;
 	}
@@ -758,40 +730,21 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 BINARY* common_util_pcl_merge(const BINARY *pbin_pcl1,
 	const BINARY *pbin_pcl2)
 {
-	PCL *ppcl1;
-	PCL *ppcl2;
-	BINARY *ptmp_bin;
-	
 	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
-	ppcl1 = pcl_init();
-	if (NULL == ppcl1) {
+	PCL ppcl1;
+	if (!ppcl1.deserialize(pbin_pcl1))
 		return NULL;
-	}
-	if (!pcl_deserialize(ppcl1, pbin_pcl1)) {
-		pcl_free(ppcl1);
+	PCL ppcl2;
+	if (!ppcl2.deserialize(pbin_pcl2))
 		return NULL;
-	}
-	ppcl2 = pcl_init();
-	if (NULL == ppcl2) {
-		pcl_free(ppcl1);
+	if (!ppcl1.merge(ppcl2))
 		return NULL;
-	}
-	if (!pcl_deserialize(ppcl2, pbin_pcl2)) {
-		pcl_free(ppcl1);
-		pcl_free(ppcl2);
-		return NULL;
-	}
-	if (!pcl_merge(ppcl1, ppcl2)) {
-		pcl_free(ppcl1);
-		pcl_free(ppcl2);
-		return NULL;
-	}
-	ptmp_bin = pcl_serialize(ppcl1);
-	pcl_free(ppcl1);
-	pcl_free(ppcl2);
+	auto ptmp_bin = ppcl1.serialize();
+	ppcl1.clear();
+	ppcl2.clear();
 	if (NULL == ptmp_bin) {
 		return NULL;
 	}

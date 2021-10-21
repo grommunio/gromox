@@ -1454,33 +1454,22 @@ BINARY* common_util_guid_to_binary(GUID guid)
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key)
 {
-	PCL *ppcl;
 	SIZED_XID xid;
-	BINARY *ptmp_bin;
-	
 	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
-	ppcl = pcl_init();
-	if (NULL == ppcl) {
-		return NULL;
-	}
-	if (pbin_pcl != nullptr && !pcl_deserialize(ppcl, pbin_pcl)) {
-		pcl_free(ppcl);
+	PCL ppcl;
+	if (pbin_pcl != nullptr && !ppcl.deserialize(pbin_pcl))
 		return nullptr;
-	}
 	xid.size = pchange_key->cb;
 	if (FALSE == common_util_binary_to_xid(pchange_key, &xid.xid)) {
-		pcl_free(ppcl);
 		return NULL;
 	}
-	if (!pcl_append(ppcl, xid)) {
-		pcl_free(ppcl);
+	if (!ppcl.append(xid))
 		return NULL;
-	}
-	ptmp_bin = pcl_serialize(ppcl);
-	pcl_free(ppcl);
+	auto ptmp_bin = ppcl.serialize();
+	ppcl.clear();
 	if (NULL == ptmp_bin) {
 		return NULL;
 	}

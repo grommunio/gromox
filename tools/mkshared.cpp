@@ -128,19 +128,14 @@ bool add_changenum(sqlite3_stmt *stmt, enum cnguid_type cng, uint64_t user_id,
 	if (sqlite3_step(stmt) != SQLITE_DONE)
 		return false;
 	sqlite3_reset(stmt);
-	auto ppcl = pcl_init();
-	if (ppcl == nullptr)
-		return FALSE;
-	if (!pcl_append(ppcl, xid)) {
-		pcl_free(ppcl);
+	PCL ppcl;
+	if (!ppcl.append(xid))
 		return false;
-	}
-	auto pbin = pcl_serialize(ppcl);
+	auto pbin = ppcl.serialize();
 	if (pbin == nullptr) {
-		pcl_free(ppcl);
 		return false;
 	}
-	pcl_free(ppcl);
+	ppcl.clear();
 	sqlite3_bind_int64(stmt, 1, PR_PREDECESSOR_CHANGE_LIST);
 	sqlite3_bind_blob(stmt, 2, pbin->pb, pbin->cb, SQLITE_STATIC);
 	if (sqlite3_step(stmt) != SQLITE_DONE) {

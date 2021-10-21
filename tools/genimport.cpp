@@ -470,16 +470,12 @@ int exm_set_change_keys(TPROPVAL_ARRAY *props, uint64_t change_num)
 	}
 	bxid.pv = tmp_buff;
 	bxid.cb = ep.m_offset;
-	std::unique_ptr<PCL, gi_delete> pcl(pcl_init());
-	if (pcl == nullptr) {
-		fprintf(stderr, "exm: pcl_init: ENOMEM\n");
-		return -ENOMEM;
-	}
-	if (!pcl_append(pcl.get(), zxid)) {
+	PCL pcl;
+	if (!pcl.append(zxid)) {
 		fprintf(stderr, "exm: pcl_append: ENOMEM\n");
 		return -ENOMEM;
 	}
-	std::unique_ptr<BINARY, gi_delete> pclbin(pcl_serialize(pcl.get()));
+	std::unique_ptr<BINARY, gi_delete> pclbin(pcl.serialize());
 	if (pclbin == nullptr){
 		fprintf(stderr, "exm: pcl_serialize: ENOMEM\n");
 		return -ENOMEM;
@@ -558,16 +554,12 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 	}
 	bxid.pv = tmp_buff;
 	bxid.cb = ep.m_offset;
-	std::unique_ptr<PCL, gi_delete> pcl(pcl_init());
-	if (pcl == nullptr) {
-		fprintf(stderr, "exm: pcl_init: ENOMEM\n");
-		return -ENOMEM;
-	}
-	if (!pcl_append(pcl.get(), zxid)) {
+	PCL pcl;
+	if (!pcl.append(zxid)) {
 		fprintf(stderr, "exm: pcl_append: ENOMEM\n");
 		return -ENOMEM;
 	}
-	std::unique_ptr<BINARY, gi_delete> pclbin(pcl_serialize(pcl.get()));
+	std::unique_ptr<BINARY, gi_delete> pclbin(pcl.serialize());
 	if (pclbin == nullptr){
 		fprintf(stderr, "exm: pcl_serialize: ENOMEM\n");
 		return -ENOMEM;

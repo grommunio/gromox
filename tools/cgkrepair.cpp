@@ -52,12 +52,7 @@ static inline bool change_key_gc_ok(const BINARY &b)
 
 static inline int pcl_ok(const BINARY *b)
 {
-	if (b == nullptr)
-		return true;
-	std::unique_ptr<PCL, gi_delete> pcl(pcl_init());
-	if (pcl == nullptr)
-		return -ENOMEM;
-	return pcl_deserialize(pcl.get(), b);
+	return b != nullptr ? PCL().deserialize(b) : true;
 }
 
 static int repair_folder(uint64_t fid)
