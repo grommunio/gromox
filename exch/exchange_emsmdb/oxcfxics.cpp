@@ -1474,33 +1474,31 @@ uint32_t rop_syncimportdeletes(
 				return ecInvalidParam;
 			}
 			eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
+		} else if (sync_type == SYNC_TYPE_CONTENTS) {
+			auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
+			if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
+				return ecInvalidParam;
+			}
+			eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		} else {
-			if (SYNC_TYPE_CONTENTS == sync_type) {
-				auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
-				if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
+			auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
+			if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
+				auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
+				if (-1 == domain_id) {
 					return ecInvalidParam;
 				}
-				eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
-			} else {
-				auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
-				if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
-					auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
-					if (-1 == domain_id) {
-						return ecInvalidParam;
-					}
-					if (!common_util_check_same_org(domain_id,
-					    plogon->account_id))
-						return ecInvalidParam;
-					if (!exmdb_client_get_mapping_replid(plogon->get_dir(),
-					    tmp_xid.guid, &b_found, &replid))
-						return ecError;
-					if (FALSE == b_found) {
-						return ecInvalidParam;
-					}
-					eid = rop_util_make_eid(replid, tmp_xid.local_to_gc());
-				} else {
-					eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
+				if (!common_util_check_same_org(domain_id,
+				    plogon->account_id))
+					return ecInvalidParam;
+				if (!exmdb_client_get_mapping_replid(plogon->get_dir(),
+				    tmp_xid.guid, &b_found, &replid))
+					return ecError;
+				if (FALSE == b_found) {
+					return ecInvalidParam;
 				}
+				eid = rop_util_make_eid(replid, tmp_xid.local_to_gc());
+			} else {
+				eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
 			}
 		}
 		if (SYNC_TYPE_CONTENTS == sync_type) {
