@@ -35,21 +35,21 @@ static uint8_t pcl_pull_sized_xid(const BINARY *pbin,
 	if (pxid->size < 17 || pxid->size > 24 ||
 	    offset + 1U + pxid->size > pbin->cb)
 		return 0;
-	pcl_pull_xid(pbin, offset + 1, pxid->size, &pxid->xid);
+	pcl_pull_xid(pbin, offset + 1, pxid->size, pxid);
 	return pxid->size + 1;
 }
 
 static void pcl_push_sized_xid(BINARY &bin, const SIZED_XID &xid)
 {
 	bin.pb[bin.cb++] = xid.size;
-	pcl_push_xid(bin, xid.size, xid.xid);
+	pcl_push_xid(bin, xid.size, xid);
 }
 
 static uint64_t pcl_convert_local_id(const SIZED_XID &xid)
 {
 	uint64_t ret_val = 0;
 	for (uint8_t i = 0; i < xid.size - 16; ++i)
-		ret_val |= static_cast<uint64_t>(xid.xid.local_id[i]) <<
+		ret_val |= static_cast<uint64_t>(xid.local_id[i]) <<
 		           (xid.size - 16 - 1 - i) * 8;
 	return ret_val;
 }
@@ -57,14 +57,14 @@ static uint64_t pcl_convert_local_id(const SIZED_XID &xid)
 bool PCL::append(const SIZED_XID &zxid) try
 {
 	for (auto node = begin(); node != end(); ++node) {
-		auto cmp_ret = memcmp(&node->xid.guid, &zxid.xid.guid, sizeof(GUID));
+		auto cmp_ret = memcmp(&node->guid, &zxid.guid, sizeof(GUID));
 		if (cmp_ret < 0) {
 			continue;
 		} else if (0 == cmp_ret) {
 			if (node->size != zxid.size)
 				return false;
 			if (pcl_convert_local_id(zxid) > pcl_convert_local_id(*node))
-				memcpy(node->xid.local_id, zxid.xid.local_id,
+				memcpy(node->local_id, zxid.local_id,
 				       zxid.size - sizeof(GUID));
 			return true;
 		}
@@ -140,7 +140,7 @@ bool PCL::deserialize(const BINARY *pbin)
 static bool pcl_check_included(const PCL &pcl, const SIZED_XID &xid)
 {
 	for (const auto &node : pcl) {
-		auto cmp_ret = memcmp(&node.xid.guid, &xid.xid.guid, sizeof(GUID));
+		auto cmp_ret = memcmp(&node.guid, &xid.guid, sizeof(GUID));
 		if (cmp_ret < 0) {
 			continue;
 		} else if (cmp_ret > 0) {

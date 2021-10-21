@@ -367,7 +367,7 @@ void rop_util_free_binary(BINARY *pbin)
 	free(pbin);
 }
 
-XID::XID(GUID g, uint64_t change_num) : guid(g)
+XID::XID(GUID g, uint64_t change_num) : guid(g), size(22)
 {
 	rop_util_get_gc_array(change_num, local_id);
 }

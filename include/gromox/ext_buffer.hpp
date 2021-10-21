@@ -67,7 +67,6 @@ struct PROBLEM_ARRAY;
 struct PROPERTY_ROW;
 struct READRECIPIENT_ROW;
 struct RECIPIENT_ROW;
-struct SIZED_XID;
 struct STORE_ENTRYID;
 struct SYSTEMTIME;
 struct TIMEZONEDEFINITION;
@@ -75,6 +74,7 @@ struct TIMEZONESTRUCT;
 struct TYPED_PROPVAL;
 struct TYPED_STRING;
 struct XID;
+using SIZED_XID = XID;
 
 struct EXT_PULL {
 	EXT_BUFFER_ALLOC m_alloc{};

@@ -1463,9 +1463,8 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	if (pbin_pcl != nullptr && !ppcl.deserialize(pbin_pcl))
 		return nullptr;
 	xid.size = pchange_key->cb;
-	if (FALSE == common_util_binary_to_xid(pchange_key, &xid.xid)) {
+	if (!common_util_binary_to_xid(pchange_key, &xid))
 		return NULL;
-	}
 	if (!ppcl.append(xid))
 		return NULL;
 	auto ptmp_bin = ppcl.serialize();

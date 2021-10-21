@@ -2157,15 +2157,15 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 					account, &tmp_int)) {
 					return FALSE;
 				}
-				tmp_xid.xid.guid = rop_util_make_user_guid(tmp_int);
+				tmp_xid.guid = rop_util_make_user_guid(tmp_int);
 			} else {
 				if (FALSE == common_util_get_domain_ids(
 					account, &tmp_int, &tmp_int1)) {
 					return FALSE;
 				}
-				tmp_xid.xid.guid = rop_util_make_domain_guid(tmp_int);
+				tmp_xid.guid = rop_util_make_domain_guid(tmp_int);
 			}
-			rop_util_value_to_gc(change_num, tmp_xid.xid.local_id);
+			rop_util_value_to_gc(change_num, tmp_xid.local_id);
 			tmp_xid.size = 22;
 			pvalue = cu_xid_to_bin(std::move(tmp_xid));
 			if (NULL == pvalue) {

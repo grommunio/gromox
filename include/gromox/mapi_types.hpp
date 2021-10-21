@@ -179,15 +179,10 @@ struct XID {
 
 	GUID guid;
 	uint8_t local_id[8];
-};
-
-struct SIZED_XID {
-	SIZED_XID() = default;
-	SIZED_XID(GUID g, uint64_t cn) : xid(g, cn), size(22) {}
-
-	XID xid;
 	uint8_t size;
 };
+
+using SIZED_XID = XID;
 
 #define STRING_TYPE_NONE							0x0
 #define STRING_TYPE_EMPTY							0x1

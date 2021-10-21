@@ -2923,8 +2923,8 @@ int EXT_PUSH::p_xid(const SIZED_XID &xid)
 {
 	if (xid.size < 17 || xid.size > 24)
 		return EXT_ERR_FORMAT;
-	TRY(p_guid(&xid.xid.guid));
-	return p_bytes(xid.xid.local_id, xid.size - 16);
+	TRY(p_guid(&xid.guid));
+	return p_bytes(xid.local_id, xid.size - 16);
 }
 
 int EXT_PUSH::p_folder_eid(const FOLDER_ENTRYID *r)
