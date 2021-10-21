@@ -84,7 +84,7 @@ static uint64_t pcl_convert_local_id(const SIZED_XID *pxid)
 	return ret_val;
 }
 
-BOOL pcl_append(PCL *ppcl, const SIZED_XID &zxid)
+bool pcl_append(PCL *ppcl, const SIZED_XID &zxid)
 {
 	auto *pxid = &zxid;
 	int cmp_ret;
@@ -99,41 +99,41 @@ BOOL pcl_append(PCL *ppcl, const SIZED_XID &zxid)
 			continue;
 		} else if (0 == cmp_ret) {
 			if (pxid->size != pxnode->xid.size) {
-				return FALSE;
+				return false;
 			}
 			if (pcl_convert_local_id(pxid) >
 				pcl_convert_local_id(&pxnode->xid)) {
 				memcpy(pxnode->xid.xid.local_id,
 					pxid->xid.local_id, pxid->size - sizeof(GUID));
 			}
-			return TRUE;
+			return true;
 		}
 		pxnode = static_cast<XID_NODE *>(malloc(sizeof(XID_NODE)));
 		if (NULL == pxnode) {
-			return FALSE;
+			return false;
 		}
 		pxnode->node.pdata = pxnode;
 		memcpy(&pxnode->xid, pxid, sizeof(SIZED_XID));
 		double_list_insert_before(ppcl, pnode, &pxnode->node);
-		return TRUE;
+		return true;
 	}
 	pxnode = static_cast<XID_NODE *>(malloc(sizeof(XID_NODE)));
 	if (NULL == pxnode) {
-		return FALSE;
+		return false;
 	}
 	pxnode->node.pdata = pxnode;
 	memcpy(&pxnode->xid, pxid, sizeof(SIZED_XID));
 	double_list_append_as_tail(ppcl, &pxnode->node);
-	return TRUE;
+	return true;
 }
 
-BOOL pcl_merge(PCL *ppcl1, const PCL *ppcl2)
+bool pcl_merge(PCL *ppcl1, const PCL *ppcl2)
 {
 	for (auto pnode = double_list_get_head(ppcl2); pnode != nullptr;
 	     pnode = double_list_get_after(ppcl2, pnode))
 		if (!pcl_append(ppcl1, static_cast<const XID_NODE *>(pnode->pdata)->xid))
-			return FALSE;
-	return TRUE;
+			return false;
+	return true;
 }
 
 BINARY *pcl_serialize(const PCL *ppcl)
@@ -170,7 +170,7 @@ BINARY *pcl_serialize(const PCL *ppcl)
 	return pbin;
 }
 
-BOOL pcl_deserialize(PCL *ppcl, const BINARY *pbin)
+bool pcl_deserialize(PCL *ppcl, const BINARY *pbin)
 {
 	SIZED_XID xid;
 	uint16_t offset;
@@ -179,16 +179,16 @@ BOOL pcl_deserialize(PCL *ppcl, const BINARY *pbin)
 	offset = 0;
 	while ((offset1 = pcl_pull_sized_xid(pbin, offset, &xid)) != 0) {
 		if (!pcl_append(ppcl, xid))
-			return FALSE;
+			return false;
 		offset += offset1;
 		if (pbin->cb == offset) {
-			return TRUE;
+			return true;
 		}
 	}
-	return FALSE;
+	return false;
 }
 
-static BOOL pcl_check_included(const PCL *ppcl, const SIZED_XID *pxid)
+static bool pcl_check_included(const PCL *ppcl, const SIZED_XID *pxid)
 {
 	int cmp_ret;
 	
@@ -199,17 +199,17 @@ static BOOL pcl_check_included(const PCL *ppcl, const SIZED_XID *pxid)
 		if (cmp_ret < 0) {
 			continue;
 		} else if (cmp_ret > 0) {
-			return FALSE;
+			return false;
 		}
 		if (pxid->size != pxnode->xid.size) {
-			return FALSE;
+			return false;
 		}
 		if (pcl_convert_local_id(&pxnode->xid) >=
 			pcl_convert_local_id(pxid)) {
-			return TRUE;
+			return true;
 		}
 	}
-	return FALSE;
+	return false;
 }
 
 uint32_t pcl_compare(const PCL *ppcl1, const PCL *ppcl2)

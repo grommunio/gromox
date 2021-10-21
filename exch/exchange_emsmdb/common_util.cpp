@@ -699,8 +699,8 @@ BOOL common_util_pcl_compare(const BINARY *pbin_pcl1,
 		pcl_free(ppcl1);
 		return FALSE;
 	}
-	if (FALSE == pcl_deserialize(ppcl1, pbin_pcl1) ||
-		FALSE == pcl_deserialize(ppcl2, pbin_pcl2)) {
+	if (!pcl_deserialize(ppcl1, pbin_pcl1) ||
+	    !pcl_deserialize(ppcl2, pbin_pcl2)) {
 		pcl_free(ppcl1);
 		pcl_free(ppcl2);
 		return FALSE;
@@ -726,11 +726,9 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	if (NULL == ppcl) {
 		return NULL;
 	}
-	if (NULL != pbin_pcl) {
-		if (FALSE == pcl_deserialize(ppcl, pbin_pcl)) {
-			pcl_free(ppcl);
-			return NULL;
-		}
+	if (pbin_pcl != nullptr && !pcl_deserialize(ppcl, pbin_pcl)) {
+		pcl_free(ppcl);
+		return nullptr;
 	}
 	xid.size = pchange_key->cb;
 	if (FALSE == common_util_binary_to_xid(pchange_key, &xid.xid)) {
@@ -772,7 +770,7 @@ BINARY* common_util_pcl_merge(const BINARY *pbin_pcl1,
 	if (NULL == ppcl1) {
 		return NULL;
 	}
-	if (FALSE == pcl_deserialize(ppcl1, pbin_pcl1)) {
+	if (!pcl_deserialize(ppcl1, pbin_pcl1)) {
 		pcl_free(ppcl1);
 		return NULL;
 	}
@@ -781,12 +779,12 @@ BINARY* common_util_pcl_merge(const BINARY *pbin_pcl1,
 		pcl_free(ppcl1);
 		return NULL;
 	}
-	if (FALSE == pcl_deserialize(ppcl2, pbin_pcl2)) {
+	if (!pcl_deserialize(ppcl2, pbin_pcl2)) {
 		pcl_free(ppcl1);
 		pcl_free(ppcl2);
 		return NULL;
 	}
-	if (FALSE == pcl_merge(ppcl1, ppcl2)) {
+	if (!pcl_merge(ppcl1, ppcl2)) {
 		pcl_free(ppcl1);
 		pcl_free(ppcl2);
 		return NULL;

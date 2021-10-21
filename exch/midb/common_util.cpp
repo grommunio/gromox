@@ -180,11 +180,9 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	if (NULL == ppcl) {
 			return NULL;
 	}
-	if (NULL != pbin_pcl) {
-		if (FALSE == pcl_deserialize(ppcl, pbin_pcl)) {
-			pcl_free(ppcl);
-			return NULL;
-		}
+	if (pbin_pcl != nullptr && !pcl_deserialize(ppcl, pbin_pcl)) {
+		pcl_free(ppcl);
+		return nullptr;
 	}
 	xid.size = pchange_key->cb;
 	if (FALSE == common_util_binary_to_xid(pchange_key, &xid.xid)) {
