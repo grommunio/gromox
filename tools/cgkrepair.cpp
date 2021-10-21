@@ -50,12 +50,14 @@ static inline bool change_key_gc_ok(const BINARY &b)
 	return b.pb[16] & 0x80U;
 }
 
-static inline int pcl_ok(const BINARY &b)
+static inline int pcl_ok(const BINARY *b)
 {
+	if (b == nullptr)
+		return true;
 	std::unique_ptr<PCL, gi_delete> pcl(pcl_init());
 	if (pcl == nullptr)
 		return -ENOMEM;
-	return !!pcl_deserialize(pcl.get(), &b);
+	return !!pcl_deserialize(pcl.get(), b);
 }
 
 static int repair_folder(uint64_t fid)
@@ -113,9 +115,11 @@ static int repair_mbox()
 			continue;
 		auto ckey = static_cast<const BINARY *>(tpropval_array_get_propval(tset.pparray[i], PR_CHANGE_KEY));
 		auto pcl  = static_cast<const BINARY *>(tpropval_array_get_propval(tset.pparray[i], PR_PREDECESSOR_CHANGE_LIST));
+		if (ckey == nullptr)
+			continue;
 		auto k1   = change_key_size_ok(*ckey);
 		auto k2   = change_key_gc_ok(*ckey);
-		auto k3   = pcl_ok(*pcl);
+		auto k3   = pcl_ok(pcl);
 		if (k3 < 0)
 			return k3;
 
