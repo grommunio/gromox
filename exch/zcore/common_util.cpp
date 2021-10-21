@@ -1410,7 +1410,7 @@ BINARY *common_util_calculate_message_sourcekey(store_object *pstore,
 	return pbin;
 }
 
-BINARY *cu_xid_to_bin(const SIZED_XID &xid)
+BINARY *cu_xid_to_bin(const XID &xid)
 {
 	EXT_PUSH ext_push;
 	
@@ -1454,7 +1454,6 @@ BINARY* common_util_guid_to_binary(GUID guid)
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key)
 {
-	SIZED_XID xid;
 	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
@@ -1462,6 +1461,7 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	PCL ppcl;
 	if (pbin_pcl != nullptr && !ppcl.deserialize(pbin_pcl))
 		return nullptr;
+	XID xid;
 	xid.size = pchange_key->cb;
 	if (!common_util_binary_to_xid(pchange_key, &xid))
 		return NULL;

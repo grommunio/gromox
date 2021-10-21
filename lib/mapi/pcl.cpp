@@ -25,8 +25,7 @@ static void pcl_push_xid(BINARY &bin, uint8_t size, const XID &xid)
 	bin.cb += size - 16;
 }
 
-static uint8_t pcl_pull_sized_xid(const BINARY *pbin,
-	uint16_t offset, SIZED_XID *pxid)
+static uint8_t pcl_pull_sized_xid(const BINARY *pbin, uint16_t offset, XID *pxid)
 {	
 	if (pbin->cb <= offset) {
 		return 0;
@@ -39,13 +38,13 @@ static uint8_t pcl_pull_sized_xid(const BINARY *pbin,
 	return pxid->size + 1;
 }
 
-static void pcl_push_sized_xid(BINARY &bin, const SIZED_XID &xid)
+static void pcl_push_sized_xid(BINARY &bin, const XID &xid)
 {
 	bin.pb[bin.cb++] = xid.size;
 	pcl_push_xid(bin, xid.size, xid);
 }
 
-static uint64_t pcl_convert_local_id(const SIZED_XID &xid)
+static uint64_t pcl_convert_local_id(const XID &xid)
 {
 	uint64_t ret_val = 0;
 	for (uint8_t i = 0; i < xid.size - 16; ++i)
@@ -54,7 +53,7 @@ static uint64_t pcl_convert_local_id(const SIZED_XID &xid)
 	return ret_val;
 }
 
-bool PCL::append(const SIZED_XID &zxid) try
+bool PCL::append(const XID &zxid) try
 {
 	for (auto node = begin(); node != end(); ++node) {
 		auto cmp_ret = memcmp(&node->guid, &zxid.guid, sizeof(GUID));
@@ -121,7 +120,7 @@ BINARY *PCL::serialize() const
 bool PCL::deserialize(const BINARY *pbin)
 {
 	auto ppcl = this;
-	SIZED_XID xid;
+	XID xid;
 	uint16_t offset;
 	uint16_t offset1;
 	
@@ -137,7 +136,7 @@ bool PCL::deserialize(const BINARY *pbin)
 	return false;
 }
 
-static bool pcl_check_included(const PCL &pcl, const SIZED_XID &xid)
+static bool pcl_check_included(const PCL &pcl, const XID &xid)
 {
 	for (const auto &node : pcl) {
 		auto cmp_ret = memcmp(&node.guid, &xid.guid, sizeof(GUID));
@@ -159,10 +158,10 @@ uint32_t PCL::compare(const PCL &their_list) const
 	int ret_val = PCL_CONFLICT;
 
 	if (std::all_of(cbegin(), cend(),
-	    [&](const SIZED_XID &our_node) { return pcl_check_included(their_list, our_node); }))
+	    [&](const XID &our_node) { return pcl_check_included(their_list, our_node); }))
 		ret_val |= PCL_INCLUDED;
 	if (std::all_of(their_list.cbegin(), their_list.cend(),
-	    [&](const SIZED_XID &their_node) { return pcl_check_included(*this, their_node); }))
+	    [&](const XID &their_node) { return pcl_check_included(*this, their_node); }))
 		ret_val |= PCL_INCLUDE;
 	return ret_val;
 }

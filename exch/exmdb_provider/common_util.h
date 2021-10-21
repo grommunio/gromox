@@ -199,7 +199,7 @@ BOOL common_util_decrease_store_size(sqlite3 *psqlite,
 	uint64_t normal_size, uint64_t fai_size);
 BOOL common_util_recipients_to_list(
 	TARRAY_SET *prcpts, DOUBLE_LIST *plist);
-extern BINARY *cu_xid_to_bin(const SIZED_XID &);
+extern BINARY *cu_xid_to_bin(const XID &);
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key);

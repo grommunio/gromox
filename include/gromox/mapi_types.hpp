@@ -182,8 +182,6 @@ struct XID {
 	uint8_t size;
 };
 
-using SIZED_XID = XID;
-
 #define STRING_TYPE_NONE							0x0
 #define STRING_TYPE_EMPTY							0x1
 #define STRING_TYPE_STRING8							0x2

@@ -5466,7 +5466,7 @@ BOOL common_util_recipients_to_list(
 	return TRUE;
 }
 
-BINARY *cu_xid_to_bin(const SIZED_XID &xid)
+BINARY *cu_xid_to_bin(const XID &xid)
 {
 	EXT_PUSH ext_push;
 	
@@ -5496,8 +5496,6 @@ BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key)
 {
-	SIZED_XID xid;
-	
 	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
@@ -5505,6 +5503,7 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	PCL ppcl;
 	if (pbin_pcl != nullptr && !ppcl.deserialize(pbin_pcl))
 		return nullptr;
+	XID xid;
 	xid.size = pchange_key->cb;
 	if (!common_util_binary_to_xid(pchange_key, &xid))
 		return NULL;

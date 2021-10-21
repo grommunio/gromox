@@ -138,7 +138,7 @@ void* common_util_get_propvals(const TPROPVAL_ARRAY *parray, uint32_t proptag)
 	return NULL;
 }
 
-BINARY *cu_xid_to_bin(const SIZED_XID &xid)
+BINARY *cu_xid_to_bin(const XID &xid)
 {
 	EXT_PUSH ext_push;
 
@@ -168,7 +168,6 @@ static BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid)
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key)
 {
-	SIZED_XID xid;
 	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
@@ -176,6 +175,7 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	PCL ppcl;
 	if (pbin_pcl != nullptr && !ppcl.deserialize(pbin_pcl))
 		return nullptr;
+	XID xid;
 	xid.size = pchange_key->cb;
 	if (!common_util_binary_to_xid(pchange_key, &xid))
 		return NULL;
@@ -230,7 +230,7 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	propval_buff[5].pvalue = &last_time;
 	propval_buff[6].proptag = PROP_TAG_CHANGENUMBER;
 	propval_buff[6].pvalue = &change_num;
-	SIZED_XID xid{rop_util_make_user_guid(user_id), change_num};
+	XID xid{rop_util_make_user_guid(user_id), change_num};
 	if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
 	    ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
 		return false;

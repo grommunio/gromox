@@ -74,7 +74,6 @@ struct TIMEZONESTRUCT;
 struct TYPED_PROPVAL;
 struct TYPED_STRING;
 struct XID;
-using SIZED_XID = XID;
 
 struct EXT_PULL {
 	EXT_BUFFER_ALLOC m_alloc{};
@@ -214,7 +213,7 @@ struct EXT_PUSH {
 	int p_tpropval_a(const LTPROPVAL_ARRAY *);
 	int p_tarray_set(const TARRAY_SET *);
 	int p_problem_a(const PROBLEM_ARRAY *);
-	int p_xid(const SIZED_XID &);
+	int p_xid(const XID &);
 	int p_folder_eid(const FOLDER_ENTRYID *);
 	int p_msg_eid(const MESSAGE_ENTRYID *);
 	int p_sortorder(const SORT_ORDER *);

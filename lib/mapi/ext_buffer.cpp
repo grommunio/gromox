@@ -2919,7 +2919,7 @@ int EXT_PUSH::p_problem_a(const PROBLEM_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
-int EXT_PUSH::p_xid(const SIZED_XID &xid)
+int EXT_PUSH::p_xid(const XID &xid)
 {
 	if (xid.size < 17 || xid.size > 24)
 		return EXT_ERR_FORMAT;

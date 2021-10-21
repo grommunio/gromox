@@ -2151,7 +2151,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			return FALSE;
 		}
 		if (FALSE == b_embedded && FALSE == b_cn) {
-			SIZED_XID tmp_xid;
+			XID tmp_xid;
 			if (TRUE == exmdb_server_check_private()) {
 				if (FALSE == common_util_get_id_from_username(
 					account, &tmp_int)) {
