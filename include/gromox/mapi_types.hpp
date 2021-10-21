@@ -174,6 +174,9 @@ struct LONG_TERM_ID_RANGE {
 };
 
 struct XID {
+	XID() = default;
+	XID(GUID, uint64_t);
+
 	GUID guid;
 	uint8_t local_id[8];
 };

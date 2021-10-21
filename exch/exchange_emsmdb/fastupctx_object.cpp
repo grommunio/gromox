@@ -131,7 +131,6 @@ static uint32_t fastupctx_object_get_last_message_instance(fastupctx_object *pct
 static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
     uint64_t parent_id, TPROPVAL_ARRAY *pproplist, uint64_t *pfolder_id)
 {
-	XID tmp_xid;
 	uint64_t tmp_id;
 	BINARY *pentryid;
 	uint32_t tmp_type;
@@ -175,9 +174,7 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 	propval.pvalue = &change_num;
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
-	tmp_xid.guid = pctx->pstream->plogon->guid();
-	rop_util_get_gc_array(change_num, tmp_xid.local_id);
-	auto pbin = cu_xid_to_bin(22, tmp_xid);
+	auto pbin = cu_xid_to_bin(22, {pctx->pstream->plogon->guid(), change_num});
 	if (NULL == pbin) {
 		return FALSE;
 	}
@@ -248,7 +245,6 @@ static BOOL fastupctx_object_empty_folder(fastupctx_object *pctx,
 static gxerr_t
 fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 {
-	XID tmp_xid;
 	uint64_t change_num;
 	TAGGED_PROPVAL propval;
 	TPROPVAL_ARRAY *pproplist;
@@ -270,9 +266,7 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 	propval.pvalue = &change_num;
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return GXERR_CALL_FAILED;
-	tmp_xid.guid = pctx->pstream->plogon->guid();
-	rop_util_get_gc_array(change_num, tmp_xid.local_id);
-	auto pbin = cu_xid_to_bin(22, tmp_xid);
+	auto pbin = cu_xid_to_bin(22, {pctx->pstream->plogon->guid(), change_num});
 	if (NULL == pbin) {
 		return GXERR_CALL_FAILED;
 	}

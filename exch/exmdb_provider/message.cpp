@@ -79,7 +79,6 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 	uint64_t dst_fid, uint64_t dst_id, BOOL b_move,
 	BOOL *pb_result)
 {
-	XID tmp_xid;
 	void *pvalue;
 	BOOL b_result;
 	BOOL b_update;
@@ -225,12 +224,12 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 		tmp_cn = rop_util_make_eid_ex(1, change_num);
 		tmp_propvals[0].proptag = PROP_TAG_CHANGENUMBER;
 		tmp_propvals[0].pvalue = &tmp_cn;
-		tmp_xid.guid = exmdb_server_check_private() ?
-		               rop_util_make_user_guid(account_id) :
-		               rop_util_make_domain_guid(account_id);
-		rop_util_value_to_gc(change_num, tmp_xid.local_id);
 		tmp_propvals[1].proptag = PR_CHANGE_KEY;
-		tmp_propvals[1].pvalue = cu_xid_to_bin(22, tmp_xid);
+		tmp_propvals[1].pvalue = cu_xid_to_bin(22, {
+			exmdb_server_check_private() ?
+				rop_util_make_user_guid(account_id) :
+				rop_util_make_domain_guid(account_id),
+			change_num});
 		if (tmp_propvals[1].pvalue == nullptr ||
 		    !common_util_get_property(FOLDER_PROPERTIES_TABLE,
 		     parent_fid, 0, pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST,
@@ -268,7 +267,6 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 	const char *username, uint64_t src_fid, uint64_t dst_fid,
 	BOOL b_copy, const EID_ARRAY *pmessage_ids, BOOL *pb_partial)
 {
-	XID tmp_xid;
 	void *pvalue;
 	BOOL b_check;
 	BOOL b_owner;
@@ -472,12 +470,12 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		tmp_cn = rop_util_make_eid_ex(1, change_num);
 		tmp_propvals[0].proptag = PROP_TAG_CHANGENUMBER;
 		tmp_propvals[0].pvalue = &tmp_cn;
-		tmp_xid.guid = exmdb_server_check_private() ?
-		               rop_util_make_user_guid(account_id) :
-		               rop_util_make_domain_guid(account_id);
-		rop_util_value_to_gc(change_num, tmp_xid.local_id);
 		tmp_propvals[1].proptag = PR_CHANGE_KEY;
-		tmp_propvals[1].pvalue = cu_xid_to_bin(22, tmp_xid);
+		tmp_propvals[1].pvalue = cu_xid_to_bin(22, {
+			exmdb_server_check_private() ?
+				rop_util_make_user_guid(account_id) :
+				rop_util_make_domain_guid(account_id),
+			change_num});
 		if (tmp_propvals[1].pvalue == nullptr ||
 		    !common_util_get_property(FOLDER_PROPERTIES_TABLE,
 		    parent_fid, 0, pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST,
@@ -529,7 +527,6 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	uint64_t folder_id, const EID_ARRAY *pmessage_ids,
 	BOOL b_hard, BOOL *pb_partial)
 {
-	XID tmp_xid;
 	void *pvalue;
 	BOOL b_check;
 	BOOL b_owner;
@@ -733,12 +730,12 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	tmp_cn = rop_util_make_eid_ex(1, change_num);
 	tmp_propvals[0].proptag = PROP_TAG_CHANGENUMBER;
 	tmp_propvals[0].pvalue = &tmp_cn;
-	tmp_xid.guid = exmdb_server_check_private() ?
-	               rop_util_make_user_guid(account_id) :
-	               rop_util_make_domain_guid(account_id);
-	rop_util_value_to_gc(change_num, tmp_xid.local_id);
 	tmp_propvals[1].proptag = PR_CHANGE_KEY;
-	tmp_propvals[1].pvalue = cu_xid_to_bin(22, tmp_xid);
+	tmp_propvals[1].pvalue = cu_xid_to_bin(22, {
+		exmdb_server_check_private() ?
+			rop_util_make_user_guid(account_id) :
+			rop_util_make_domain_guid(account_id),
+		change_num});
 	if (tmp_propvals[1].pvalue == nullptr ||
 	    !common_util_get_property(FOLDER_PROPERTIES_TABLE, src_val, 0,
 	    pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST, &pvalue)) {

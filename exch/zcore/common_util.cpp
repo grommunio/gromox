@@ -2246,7 +2246,6 @@ BOOL common_util_convert_to_zrule_data(store_object *pstore, TPROPVAL_ARRAY *ppr
 gxerr_t common_util_remote_copy_message(store_object *pstore,
     uint64_t message_id, store_object *pstore1, uint64_t folder_id1)
 {
-	XID tmp_xid;
 	BINARY *pbin1;
 	uint64_t change_num;
 	TAGGED_PROPVAL propval;
@@ -2277,9 +2276,7 @@ gxerr_t common_util_remote_copy_message(store_object *pstore,
 	propval.proptag = PROP_TAG_CHANGENUMBER;
 	propval.pvalue = &change_num;
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
-	tmp_xid.guid = pstore->guid();
-	rop_util_get_gc_array(change_num, tmp_xid.local_id);
-	auto pbin = cu_xid_to_bin(22, tmp_xid);
+	auto pbin = cu_xid_to_bin(22, {pstore->guid(), change_num});
 	if (NULL == pbin) {
 		return GXERR_CALL_FAILED;
 	}
@@ -2305,7 +2302,6 @@ gxerr_t common_util_remote_copy_message(store_object *pstore,
 static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 	TPROPVAL_ARRAY *pproplist, uint64_t *pfolder_id)
 {
-	XID tmp_xid;
 	BINARY *pbin1;
 	uint64_t tmp_id;
 	BINARY *pentryid;
@@ -2347,9 +2343,7 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 	propval.proptag = PROP_TAG_CHANGENUMBER;
 	propval.pvalue = &change_num;
 	common_util_set_propvals(pproplist, &propval);
-	tmp_xid.guid = pstore->guid();
-	rop_util_get_gc_array(change_num, tmp_xid.local_id);
-	auto pbin = cu_xid_to_bin(22, tmp_xid);
+	auto pbin = cu_xid_to_bin(22, {pstore->guid(), change_num});
 	if (NULL == pbin) {
 		return FALSE;
 	}

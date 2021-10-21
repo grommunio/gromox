@@ -1703,7 +1703,6 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 	uint64_t message_id, PROPTAG_ARRAY *pchanged_proptags)
 {
 	int i;
-	XID tmp_xid;
 	uint32_t tmp_index;
 	uint32_t *pgroup_id;
 	uint64_t change_num;
@@ -1716,14 +1715,12 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 	
 	if (!exmdb_client_allocate_cn(plogon->get_dir(), &change_num))
 		return FALSE;	
-	tmp_xid.guid = plogon->guid();
-	rop_util_get_gc_array(change_num, tmp_xid.local_id);
 	tmp_propvals.count = 2;
 	tmp_propvals.ppropval = propval_buff;
 	propval_buff[0].proptag = PROP_TAG_CHANGENUMBER;
 	propval_buff[0].pvalue = &change_num;
 	propval_buff[1].proptag = PR_CHANGE_KEY;
-	propval_buff[1].pvalue = cu_xid_to_bin(22, tmp_xid);
+	propval_buff[1].pvalue = cu_xid_to_bin(22, {plogon->guid(), change_num});
 	if (NULL == propval_buff[1].pvalue) {
 		return FALSE;
 	}

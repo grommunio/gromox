@@ -5100,7 +5100,6 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 	uint64_t message_id, uint64_t folder_id, uint64_t *pdst_mid,
 	BOOL *pb_result, uint32_t *pmessage_size)
 {
-	XID tmp_xid;
 	void *pvalue;
 	uint32_t next;
 	BOOL b_result;
@@ -5132,12 +5131,12 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 			folder_id, 0, psqlite, &tmp_propval, &b_result)) {
 			return FALSE;	
 		}
-		tmp_xid.guid = exmdb_server_check_private() ?
-		               rop_util_make_user_guid(account_id) :
-		               rop_util_make_domain_guid(account_id);
-		rop_util_value_to_gc(change_num, tmp_xid.local_id);
 		propval_buff[0].proptag = PR_CHANGE_KEY;
-		propval_buff[0].pvalue = cu_xid_to_bin(22, tmp_xid);
+		propval_buff[0].pvalue = cu_xid_to_bin(22, {
+			exmdb_server_check_private() ?
+				rop_util_make_user_guid(account_id) :
+				rop_util_make_domain_guid(account_id),
+			change_num});
 		if (NULL == propval_buff[0].pvalue) {
 			return FALSE;
 		}

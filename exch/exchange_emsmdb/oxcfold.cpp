@@ -139,7 +139,6 @@ uint32_t rop_createfolder(uint8_t folder_type,
 	GHOST_SERVER **ppghost, void *plogmap,
 	uint8_t logon_id,  uint32_t hin, uint32_t *phout)
 {
-	XID tmp_xid;
 	void *pvalue;
 	uint64_t tmp_id;
 	int object_type;
@@ -238,10 +237,8 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		propval_buff[5].pvalue = &last_time;
 		propval_buff[6].proptag = PROP_TAG_CHANGENUMBER;
 		propval_buff[6].pvalue = &change_num;
-		tmp_xid.guid = plogon->guid();
-		rop_util_get_gc_array(change_num, tmp_xid.local_id);
 		propval_buff[7].proptag = PR_CHANGE_KEY;
-		propval_buff[7].pvalue = cu_xid_to_bin(22, tmp_xid);
+		propval_buff[7].pvalue = cu_xid_to_bin(22, {plogon->guid(), change_num});
 		if (NULL == propval_buff[7].pvalue) {
 			return ecMAPIOOM;
 		}
@@ -575,7 +572,6 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	uint8_t *ppartial_completion, void *plogmap,
 	uint8_t logon_id, uint32_t hsrc, uint32_t hdst)
 {
-	XID tmp_xid;
 	BOOL b_exist;
 	BOOL b_cycle;
 	BOOL b_guest;
@@ -658,9 +654,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	    reinterpret_cast<void **>(&pbin_pcl)) ||
 	    pbin_pcl == nullptr)
 		return ecError;
-	tmp_xid.guid = plogon->guid();
-	rop_util_get_gc_array(change_num, tmp_xid.local_id);
-	auto pbin_changekey = cu_xid_to_bin(22, tmp_xid);
+	auto pbin_changekey = cu_xid_to_bin(22, {plogon->guid(), change_num});
 	if (NULL == pbin_changekey) {
 		return ecError;
 	}

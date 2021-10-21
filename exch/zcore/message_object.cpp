@@ -326,7 +326,6 @@ gxerr_t message_object::save()
 {
 	auto pmessage = this;
 	int i;
-	XID tmp_xid;
 	void *pvalue;
 	uint32_t result;
 	BINARY *pbin_pcl;
@@ -409,10 +408,8 @@ gxerr_t message_object::save()
 			return GXERR_CALL_FAILED;
 		if (!pmessage->b_new && pbin_pcl == nullptr)
 			return GXERR_CALL_FAILED;
-		tmp_xid.guid = pmessage->pstore->guid();
-		rop_util_get_gc_array(pmessage->change_num, tmp_xid.local_id);
 		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_CHANGE_KEY;
-		auto pbin_changekey = cu_xid_to_bin(22, tmp_xid);
+		auto pbin_changekey = cu_xid_to_bin(22, {pmessage->pstore->guid(), pmessage->change_num});
 		if (NULL == pbin_changekey) {
 			return GXERR_CALL_FAILED;
 		}

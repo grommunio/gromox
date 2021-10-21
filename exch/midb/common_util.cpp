@@ -247,8 +247,7 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	propval_buff[6].proptag = PROP_TAG_CHANGENUMBER;
 	propval_buff[6].pvalue = &change_num;
 	xid.size = 22;
-	xid.xid.guid = rop_util_make_user_guid(user_id);
-	rop_util_value_to_gc(change_num, xid.xid.local_id);
+	xid.xid = {rop_util_make_user_guid(user_id), change_num};
 	if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
 	    ext_push.p_xid(22, xid.xid) != EXT_ERR_SUCCESS)
 		return false;

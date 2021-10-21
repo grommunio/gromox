@@ -2112,7 +2112,6 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 	const char *folder_name, const char *folder_comment,
 	uint32_t flags, uint32_t *phobject)
 {
-	XID tmp_xid;
 	void *pvalue;
 	uint64_t tmp_id;
 	uint32_t tmp_type;
@@ -2183,10 +2182,8 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		propval_buff[5].pvalue = &last_time;
 		propval_buff[6].proptag = PROP_TAG_CHANGENUMBER;
 		propval_buff[6].pvalue = &change_num;
-		tmp_xid.guid = pstore->guid();
-		rop_util_get_gc_array(change_num, tmp_xid.local_id);
 		propval_buff[7].proptag = PR_CHANGE_KEY;
-		propval_buff[7].pvalue = cu_xid_to_bin(22, tmp_xid);
+		propval_buff[7].pvalue = cu_xid_to_bin(22, {pstore->guid(), change_num});
 		if (propval_buff[7].pvalue == nullptr)
 			return ecError;
 		propval_buff[8].proptag = PR_PREDECESSOR_CHANGE_LIST;

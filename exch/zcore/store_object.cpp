@@ -1458,7 +1458,6 @@ static BOOL store_object_set_oof_property(const char *maildir,
 static BOOL store_object_set_folder_name(store_object *pstore,
 	uint64_t fid_val, const char *pdisplayname)
 {
-	XID tmp_xid;
 	BINARY *pbin_pcl;
 	uint64_t folder_id;
 	uint64_t last_time;
@@ -1483,9 +1482,7 @@ static BOOL store_object_set_folder_name(store_object *pstore,
 	    PR_PREDECESSOR_CHANGE_LIST, reinterpret_cast<void **>(&pbin_pcl)) ||
 	    pbin_pcl == nullptr)
 		return FALSE;
-	tmp_xid.guid = rop_util_make_user_guid(pstore->account_id);
-	rop_util_get_gc_array(change_num, tmp_xid.local_id);
-	auto pbin_changekey = cu_xid_to_bin(22, tmp_xid);
+	auto pbin_changekey = cu_xid_to_bin(22, {rop_util_make_user_guid(pstore->account_id), change_num});
 	if (NULL == pbin_changekey) {
 		return FALSE;
 	}
