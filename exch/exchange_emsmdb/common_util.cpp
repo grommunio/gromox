@@ -740,11 +740,10 @@ BINARY* common_util_pcl_merge(const BINARY *pbin_pcl1,
 	PCL ppcl2;
 	if (!ppcl2.deserialize(pbin_pcl2))
 		return NULL;
-	if (!ppcl1.merge(ppcl2))
+	if (!ppcl1.merge(std::move(ppcl2)))
 		return NULL;
 	auto ptmp_bin = ppcl1.serialize();
 	ppcl1.clear();
-	ppcl2.clear();
 	if (NULL == ptmp_bin) {
 		return NULL;
 	}
