@@ -604,7 +604,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	    reinterpret_cast<void **>(&pbin_pcl)) ||
 	    pbin_pcl == nullptr)
 		return FALSE;
-	auto pbin_changekey = cu_xid_to_bin(22, {pfolder->pstore->guid(), change_num});
+	auto pbin_changekey = cu_xid_to_bin({pfolder->pstore->guid(), change_num});
 	if (NULL == pbin_changekey) {
 		return FALSE;
 	}
@@ -673,7 +673,7 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 		return FALSE;
 	propval_buff[0].proptag = PROP_TAG_CHANGENUMBER;
 	propval_buff[0].pvalue = &change_num;
-	auto pbin_changekey = cu_xid_to_bin(22, {pfolder->pstore->guid(), change_num});
+	auto pbin_changekey = cu_xid_to_bin({pfolder->pstore->guid(), change_num});
 	if (NULL == pbin_changekey) {
 		return FALSE;
 	}

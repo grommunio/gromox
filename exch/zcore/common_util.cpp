@@ -1410,7 +1410,7 @@ BINARY *common_util_calculate_message_sourcekey(store_object *pstore,
 	return pbin;
 }
 
-BINARY *cu_xid_to_bin(uint8_t size, const XID &xid)
+BINARY *cu_xid_to_bin(const SIZED_XID &xid)
 {
 	EXT_PUSH ext_push;
 	
@@ -1420,7 +1420,7 @@ BINARY *cu_xid_to_bin(uint8_t size, const XID &xid)
 	}
 	pbin->pv = common_util_alloc(24);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
-	    ext_push.p_xid(size, xid) != EXT_ERR_SUCCESS)
+	    ext_push.p_xid(xid.size, xid.xid) != EXT_ERR_SUCCESS)
 		return NULL;
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -2276,7 +2276,7 @@ gxerr_t common_util_remote_copy_message(store_object *pstore,
 	propval.proptag = PROP_TAG_CHANGENUMBER;
 	propval.pvalue = &change_num;
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
-	auto pbin = cu_xid_to_bin(22, {pstore->guid(), change_num});
+	auto pbin = cu_xid_to_bin({pstore->guid(), change_num});
 	if (NULL == pbin) {
 		return GXERR_CALL_FAILED;
 	}
@@ -2343,7 +2343,7 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 	propval.proptag = PROP_TAG_CHANGENUMBER;
 	propval.pvalue = &change_num;
 	common_util_set_propvals(pproplist, &propval);
-	auto pbin = cu_xid_to_bin(22, {pstore->guid(), change_num});
+	auto pbin = cu_xid_to_bin({pstore->guid(), change_num});
 	if (NULL == pbin) {
 		return FALSE;
 	}

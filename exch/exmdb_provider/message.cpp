@@ -225,7 +225,7 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 		tmp_propvals[0].proptag = PROP_TAG_CHANGENUMBER;
 		tmp_propvals[0].pvalue = &tmp_cn;
 		tmp_propvals[1].proptag = PR_CHANGE_KEY;
-		tmp_propvals[1].pvalue = cu_xid_to_bin(22, {
+		tmp_propvals[1].pvalue = cu_xid_to_bin({
 			exmdb_server_check_private() ?
 				rop_util_make_user_guid(account_id) :
 				rop_util_make_domain_guid(account_id),
@@ -471,7 +471,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		tmp_propvals[0].proptag = PROP_TAG_CHANGENUMBER;
 		tmp_propvals[0].pvalue = &tmp_cn;
 		tmp_propvals[1].proptag = PR_CHANGE_KEY;
-		tmp_propvals[1].pvalue = cu_xid_to_bin(22, {
+		tmp_propvals[1].pvalue = cu_xid_to_bin({
 			exmdb_server_check_private() ?
 				rop_util_make_user_guid(account_id) :
 				rop_util_make_domain_guid(account_id),
@@ -731,7 +731,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	tmp_propvals[0].proptag = PROP_TAG_CHANGENUMBER;
 	tmp_propvals[0].pvalue = &tmp_cn;
 	tmp_propvals[1].proptag = PR_CHANGE_KEY;
-	tmp_propvals[1].pvalue = cu_xid_to_bin(22, {
+	tmp_propvals[1].pvalue = cu_xid_to_bin({
 		exmdb_server_check_private() ?
 			rop_util_make_user_guid(account_id) :
 			rop_util_make_domain_guid(account_id),
@@ -2114,7 +2114,6 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	uint64_t *pmessage_id)
 {
 	BOOL b_cn;
-	XID tmp_xid;
 	int tmp_int, tmp_int1, is_associated = 0;
 	void *pvalue;
 	BOOL b_exist;
@@ -2152,21 +2151,23 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			return FALSE;
 		}
 		if (FALSE == b_embedded && FALSE == b_cn) {
+			SIZED_XID tmp_xid;
 			if (TRUE == exmdb_server_check_private()) {
 				if (FALSE == common_util_get_id_from_username(
 					account, &tmp_int)) {
 					return FALSE;
 				}
-				tmp_xid.guid = rop_util_make_user_guid(tmp_int);
+				tmp_xid.xid.guid = rop_util_make_user_guid(tmp_int);
 			} else {
 				if (FALSE == common_util_get_domain_ids(
 					account, &tmp_int, &tmp_int1)) {
 					return FALSE;
 				}
-				tmp_xid.guid = rop_util_make_domain_guid(tmp_int);
+				tmp_xid.xid.guid = rop_util_make_domain_guid(tmp_int);
 			}
-			rop_util_value_to_gc(change_num, tmp_xid.local_id);
-			pvalue = cu_xid_to_bin(22, tmp_xid);
+			rop_util_value_to_gc(change_num, tmp_xid.xid.local_id);
+			tmp_xid.size = 22;
+			pvalue = cu_xid_to_bin(std::move(tmp_xid));
 			if (NULL == pvalue) {
 				return FALSE;
 			}

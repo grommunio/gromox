@@ -182,8 +182,11 @@ struct XID {
 };
 
 struct SIZED_XID {
-	uint8_t size;
+	SIZED_XID() = default;
+	SIZED_XID(GUID g, uint64_t cn) : xid(g, cn), size(22) {}
+
 	XID xid;
+	uint8_t size;
 };
 
 #define STRING_TYPE_NONE							0x0

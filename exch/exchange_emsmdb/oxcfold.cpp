@@ -238,7 +238,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		propval_buff[6].proptag = PROP_TAG_CHANGENUMBER;
 		propval_buff[6].pvalue = &change_num;
 		propval_buff[7].proptag = PR_CHANGE_KEY;
-		propval_buff[7].pvalue = cu_xid_to_bin(22, {plogon->guid(), change_num});
+		propval_buff[7].pvalue = cu_xid_to_bin({plogon->guid(), change_num});
 		if (NULL == propval_buff[7].pvalue) {
 			return ecMAPIOOM;
 		}
@@ -654,7 +654,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	    reinterpret_cast<void **>(&pbin_pcl)) ||
 	    pbin_pcl == nullptr)
 		return ecError;
-	auto pbin_changekey = cu_xid_to_bin(22, {plogon->guid(), change_num});
+	auto pbin_changekey = cu_xid_to_bin({plogon->guid(), change_num});
 	if (NULL == pbin_changekey) {
 		return ecError;
 	}

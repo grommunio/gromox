@@ -1482,7 +1482,7 @@ static BOOL store_object_set_folder_name(store_object *pstore,
 	    PR_PREDECESSOR_CHANGE_LIST, reinterpret_cast<void **>(&pbin_pcl)) ||
 	    pbin_pcl == nullptr)
 		return FALSE;
-	auto pbin_changekey = cu_xid_to_bin(22, {rop_util_make_user_guid(pstore->account_id), change_num});
+	auto pbin_changekey = cu_xid_to_bin({rop_util_make_user_guid(pstore->account_id), change_num});
 	if (NULL == pbin_changekey) {
 		return FALSE;
 	}

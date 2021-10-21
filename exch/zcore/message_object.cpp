@@ -409,7 +409,7 @@ gxerr_t message_object::save()
 		if (!pmessage->b_new && pbin_pcl == nullptr)
 			return GXERR_CALL_FAILED;
 		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_CHANGE_KEY;
-		auto pbin_changekey = cu_xid_to_bin(22, {pmessage->pstore->guid(), pmessage->change_num});
+		auto pbin_changekey = cu_xid_to_bin({pmessage->pstore->guid(), pmessage->change_num});
 		if (NULL == pbin_changekey) {
 			return GXERR_CALL_FAILED;
 		}

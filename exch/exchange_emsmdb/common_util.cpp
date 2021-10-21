@@ -643,7 +643,7 @@ BOOL common_util_from_message_entryid(logon_object *plogon,
 	
 }
 
-BINARY *cu_xid_to_bin(uint8_t size, const XID &xid)
+BINARY *cu_xid_to_bin(const SIZED_XID &xid)
 {
 	EXT_PUSH ext_push;
 	
@@ -653,7 +653,7 @@ BINARY *cu_xid_to_bin(uint8_t size, const XID &xid)
 	}
 	pbin->pv = common_util_alloc(24);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
-	    ext_push.p_xid(size, xid) != EXT_ERR_SUCCESS)
+	    ext_push.p_xid(xid.size, xid.xid) != EXT_ERR_SUCCESS)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -1720,7 +1720,7 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 	propval_buff[0].proptag = PROP_TAG_CHANGENUMBER;
 	propval_buff[0].pvalue = &change_num;
 	propval_buff[1].proptag = PR_CHANGE_KEY;
-	propval_buff[1].pvalue = cu_xid_to_bin(22, {plogon->guid(), change_num});
+	propval_buff[1].pvalue = cu_xid_to_bin({plogon->guid(), change_num});
 	if (NULL == propval_buff[1].pvalue) {
 		return FALSE;
 	}

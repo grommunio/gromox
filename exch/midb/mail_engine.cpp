@@ -3388,7 +3388,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
-	auto pbin = cu_xid_to_bin(22, {rop_util_make_user_guid(user_id), change_num});
+	auto pbin = cu_xid_to_bin({rop_util_make_user_guid(user_id), change_num});
 	if (NULL == pbin) {
 		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
@@ -3681,7 +3681,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
-	auto pbin = cu_xid_to_bin(22, {rop_util_make_user_guid(user_id), change_num});
+	auto pbin = cu_xid_to_bin({rop_util_make_user_guid(user_id), change_num});
 	if (NULL == pbin) {
 		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
@@ -3851,7 +3851,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	propvals.ppropval = propval_buff;
 	propval_buff[0].proptag = PROP_TAG_CHANGENUMBER;
 	propval_buff[0].pvalue = &change_num;
-	auto pbin = cu_xid_to_bin(22, {rop_util_make_user_guid(user_id), change_num});
+	auto pbin = cu_xid_to_bin({rop_util_make_user_guid(user_id), change_num});
 	if (NULL == pbin) {
 		return MIDB_E_NO_MEMORY;
 	}

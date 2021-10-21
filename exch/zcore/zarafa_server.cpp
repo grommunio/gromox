@@ -2183,7 +2183,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		propval_buff[6].proptag = PROP_TAG_CHANGENUMBER;
 		propval_buff[6].pvalue = &change_num;
 		propval_buff[7].proptag = PR_CHANGE_KEY;
-		propval_buff[7].pvalue = cu_xid_to_bin(22, {pstore->guid(), change_num});
+		propval_buff[7].pvalue = cu_xid_to_bin({pstore->guid(), change_num});
 		if (propval_buff[7].pvalue == nullptr)
 			return ecError;
 		propval_buff[8].proptag = PR_PREDECESSOR_CHANGE_LIST;

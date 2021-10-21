@@ -31,7 +31,7 @@ extern const char* common_util_get_maildir();
 char* common_util_dup(const char *pstr);
 void* common_util_get_propvals(
 	const TPROPVAL_ARRAY *parray, uint32_t proptag);
-extern BINARY *cu_xid_to_bin(uint8_t size, const XID &);
+extern BINARY *cu_xid_to_bin(const SIZED_XID &);
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key);
 BOOL common_util_create_folder(const char *dir, int user_id,
