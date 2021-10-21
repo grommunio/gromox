@@ -516,25 +516,25 @@ uint32_t rop_idfromlongtermid(
 			return ecInvalidParam;
 		}
 		*pid = rop_util_make_eid(1, plong_term_id->global_counter);
-	} else {
-		auto domain_id = rop_util_get_domain_id(plong_term_id->guid);
-		if (-1 == domain_id) {
-			return ecInvalidParam;
-		}
-		if (domain_id == plogon->account_id) {
-			replid = 1;
-		} else {
-			if (!common_util_check_same_org(domain_id, plogon->account_id))
-				return ecInvalidParam;
-			if (!exmdb_client_get_mapping_replid(plogon->get_dir(),
-			    plong_term_id->guid, &b_found, &replid))
-				return ecError;
-			if (FALSE == b_found) {
-				return ecNotFound;
-			}
-		}
-		*pid = rop_util_make_eid(replid, plong_term_id->global_counter);
+		return ecSuccess;
 	}
+	auto domain_id = rop_util_get_domain_id(plong_term_id->guid);
+	if (-1 == domain_id) {
+		return ecInvalidParam;
+	}
+	if (domain_id == plogon->account_id) {
+		replid = 1;
+	} else {
+		if (!common_util_check_same_org(domain_id, plogon->account_id))
+			return ecInvalidParam;
+		if (!exmdb_client_get_mapping_replid(plogon->get_dir(),
+		    plong_term_id->guid, &b_found, &replid))
+			return ecError;
+		if (FALSE == b_found) {
+			return ecNotFound;
+		}
+	}
+	*pid = rop_util_make_eid(replid, plong_term_id->global_counter);
 	return ecSuccess;
 }
 
