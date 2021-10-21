@@ -191,7 +191,7 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 		pcl_free(ppcl);
 		return NULL;
 	}
-	if (FALSE == pcl_append(ppcl, &xid)) {
+	if (!pcl_append(ppcl, xid)) {
 		pcl_free(ppcl);
 		return NULL;
 	}
@@ -257,7 +257,7 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	if (NULL == ppcl) {
 		return FALSE;
 	}
-	if (FALSE == pcl_append(ppcl, &xid)) {
+	if (!pcl_append(ppcl, xid)) {
 		pcl_free(ppcl);
 		return FALSE;
 	}

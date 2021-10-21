@@ -84,8 +84,9 @@ static uint64_t pcl_convert_local_id(const SIZED_XID *pxid)
 	return ret_val;
 }
 
-BOOL pcl_append(PCL *ppcl, const SIZED_XID *pxid)
+BOOL pcl_append(PCL *ppcl, const SIZED_XID &zxid)
 {
+	auto *pxid = &zxid;
 	int cmp_ret;
 	XID_NODE *pxnode;
 	DOUBLE_LIST_NODE *pnode;
@@ -128,15 +129,12 @@ BOOL pcl_append(PCL *ppcl, const SIZED_XID *pxid)
 
 BOOL pcl_merge(PCL *ppcl1, const PCL *ppcl2)
 {
-	XID_NODE *pxnode;
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (pnode=double_list_get_head((DOUBLE_LIST*)ppcl2); NULL!=pnode;
 		pnode=double_list_get_after((DOUBLE_LIST*)ppcl2, pnode)) {
-		pxnode = (XID_NODE*)pnode->pdata;
-		if (FALSE == pcl_append(ppcl1, &pxnode->xid)) {
+		if (!pcl_append(ppcl1, static_cast<XID_NODE *>(pnode->pdata)->xid))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
@@ -185,9 +183,8 @@ BOOL pcl_deserialize(PCL *ppcl, const BINARY *pbin)
 	
 	offset = 0;
 	while ((offset1 = pcl_pull_sized_xid(pbin, offset, &xid)) != 0) {
-		if (FALSE == pcl_append(ppcl, &xid)) {
+		if (!pcl_append(ppcl, xid))
 			return FALSE;
-		}
 		offset += offset1;
 		if (pbin->cb == offset) {
 			return TRUE;

@@ -131,7 +131,7 @@ bool add_changenum(sqlite3_stmt *stmt, enum cnguid_type cng, uint64_t user_id,
 	auto ppcl = pcl_init();
 	if (ppcl == nullptr)
 		return FALSE;
-	if (!pcl_append(ppcl, &xid)) {
+	if (!pcl_append(ppcl, xid)) {
 		pcl_free(ppcl);
 		return false;
 	}

@@ -475,7 +475,7 @@ int exm_set_change_keys(TPROPVAL_ARRAY *props, uint64_t change_num)
 		fprintf(stderr, "exm: pcl_init: ENOMEM\n");
 		return -ENOMEM;
 	}
-	if (!pcl_append(pcl.get(), &zxid)) {
+	if (!pcl_append(pcl.get(), zxid)) {
 		fprintf(stderr, "exm: pcl_append: ENOMEM\n");
 		return -ENOMEM;
 	}
@@ -563,7 +563,7 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 		fprintf(stderr, "exm: pcl_init: ENOMEM\n");
 		return -ENOMEM;
 	}
-	if (!pcl_append(pcl.get(), &zxid)) {
+	if (!pcl_append(pcl.get(), zxid)) {
 		fprintf(stderr, "exm: pcl_append: ENOMEM\n");
 		return -ENOMEM;
 	}

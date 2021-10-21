@@ -1477,7 +1477,7 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 		pcl_free(ppcl);
 		return NULL;
 	}
-	if (FALSE == pcl_append(ppcl, &xid)) {
+	if (!pcl_append(ppcl, xid)) {
 		pcl_free(ppcl);
 		return NULL;
 	}
