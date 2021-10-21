@@ -6380,29 +6380,27 @@ static BOOL oxcmail_export_attachment(
 				}
 			}
 		}
-	} else {
-		if (TRUE == b_vcard) {
+	} else if (b_vcard) {
+		pfile_name = static_cast<char *>(tpropval_array_get_propval(
+			     &pattachment->proplist, PR_ATTACH_LONG_FILENAME));
+		if (NULL == pfile_name) {
 			pfile_name = static_cast<char *>(tpropval_array_get_propval(
-			             &pattachment->proplist, PR_ATTACH_LONG_FILENAME));
-			if (NULL == pfile_name) {
-				pfile_name = static_cast<char *>(tpropval_array_get_propval(
-				             &pattachment->proplist, PR_ATTACH_FILENAME));
-			}
-			if (FALSE == mime_set_content_type(
-				pmime, "text/directory")) {
-				return FALSE;
-			}
-			if (FALSE == mime_set_content_param(
-				pmime, "charset", "\"utf-8\"") ||
-				FALSE == mime_set_content_param(
-				pmime, "profile", "vCard")) {
-				return FALSE;
-			}
-		} else {
-			if (FALSE == mime_set_content_type(
-				pmime, "message/rfc822")) {
-				return FALSE;
-			}
+				     &pattachment->proplist, PR_ATTACH_FILENAME));
+		}
+		if (FALSE == mime_set_content_type(
+			pmime, "text/directory")) {
+			return FALSE;
+		}
+		if (FALSE == mime_set_content_param(
+			pmime, "charset", "\"utf-8\"") ||
+			FALSE == mime_set_content_param(
+			pmime, "profile", "vCard")) {
+			return FALSE;
+		}
+	} else {
+		if (FALSE == mime_set_content_type(
+			pmime, "message/rfc822")) {
+			return FALSE;
 		}
 	}
 	
@@ -6468,33 +6466,26 @@ static BOOL oxcmail_export_attachment(
 		}
 	}
 	pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_CONTENT_LOCATION);
-	if (NULL != pvalue) {
-		if (!mime_set_field(pmime, "Content-Location", static_cast<char *>(pvalue)))
-			return FALSE;
-	}
+	if (pvalue != nullptr && !mime_set_field(pmime, "Content-Location",
+	    static_cast<char *>(pvalue)))
+		return FALSE;
 	pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_CONTENT_BASE);
-	if (NULL != pvalue) {
-		if (!mime_set_field(pmime, "Content-Base", static_cast<char *>(pvalue)))
-			return FALSE;
-	}
+	if (pvalue != nullptr && !mime_set_field(pmime, "Content-Base",
+	    static_cast<char *>(pvalue)))
+		return FALSE;
 	
-	if (TRUE == b_vcard) {
-		if (TRUE == oxvcard_export(
-			pattachment->pembedded,
-			&vcard, get_propids)) {
-			std::unique_ptr<char[], stdlib_delete> pbuff(static_cast<char *>(malloc(VCARD_MAX_BUFFER_LEN)));
-			if (NULL != pbuff) {
-				if (vcard_serialize(&vcard, pbuff.get(), VCARD_MAX_BUFFER_LEN)) {
-					if (!mime_write_content(pmime, pbuff.get(), strlen(pbuff.get()), MIME_ENCODING_BASE64)) {
-						vcard_free(&vcard);
-						return FALSE;
-					}
-					vcard_free(&vcard);
-					return TRUE;
-				}
+	if (b_vcard && oxvcard_export(pattachment->pembedded, &vcard, get_propids)) {
+		std::unique_ptr<char[], stdlib_delete> pbuff(static_cast<char *>(malloc(VCARD_MAX_BUFFER_LEN)));
+		if (pbuff != nullptr && vcard_serialize(&vcard, pbuff.get(),
+		    VCARD_MAX_BUFFER_LEN)) {
+			if (!mime_write_content(pmime, pbuff.get(), strlen(pbuff.get()), MIME_ENCODING_BASE64)) {
+				vcard_free(&vcard);
+				return FALSE;
 			}
 			vcard_free(&vcard);
+			return TRUE;
 		}
+		vcard_free(&vcard);
 	}
 	
 	if (NULL != pattachment->pembedded) {
