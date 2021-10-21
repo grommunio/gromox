@@ -488,12 +488,12 @@ static BOOL idset_encode_end_command(BINARY *pbin)
 	return idset_write_to_binary(pbin, &command, sizeof(uint8_t));
 }
 
-static void idset_statck_init(DOUBLE_LIST *pstack)
+static void idset_stack_init(DOUBLE_LIST *pstack)
 {
 	double_list_init(pstack);
 }
 
-static void idset_statck_free(DOUBLE_LIST *pstack)
+static void idset_stack_free(DOUBLE_LIST *pstack)
 {
 	STACK_NODE *pstack_node;
 	DOUBLE_LIST_NODE *pnode;
@@ -506,7 +506,7 @@ static void idset_statck_free(DOUBLE_LIST *pstack)
 	double_list_free(pstack);
 }
 
-static BOOL idset_statck_push(DOUBLE_LIST *pstack,
+static BOOL idset_stack_push(DOUBLE_LIST *pstack,
 	uint8_t common_length, uint8_t *pcommon_bytes)
 {
 	auto pstack_node = static_cast<STACK_NODE *>(malloc(sizeof(STACK_NODE)));
@@ -525,7 +525,7 @@ static BOOL idset_statck_push(DOUBLE_LIST *pstack,
 	return TRUE;
 }	
 
-static void idset_statck_pop(DOUBLE_LIST *pstack)
+static void idset_stack_pop(DOUBLE_LIST *pstack)
 {
 	auto pnode = double_list_pop_back(pstack);
 	if (NULL == pnode) {
@@ -535,7 +535,7 @@ static void idset_statck_pop(DOUBLE_LIST *pstack)
 	free(pnode->pdata);
 }
 
-static uint8_t idset_statck_get_common_bytes(
+static uint8_t idset_stack_get_common_bytes(
 	DOUBLE_LIST *pstack, uint8_t common_bytes[6])
 {
 	uint8_t common_length;
@@ -748,16 +748,16 @@ static uint32_t idset_decoding_globset(
 	uint8_t stack_length;
 	RANGE_NODE *prange_node;
 	uint8_t common_bytes[6];
-	DOUBLE_LIST bytes_statck;
+	DOUBLE_LIST bytes_stack;
 	
 	offset = 0;
-	idset_statck_init(&bytes_statck);
+	idset_stack_init(&bytes_stack);
 	while (offset < pbin->cb) {
 		command = pbin->pb[offset];
 		offset ++;
 		switch (command) {
 		case 0x0: /* end */
-			idset_statck_free(&bytes_statck);
+			idset_stack_free(&bytes_stack);
 			return offset;
 		case 0x1:
 		case 0x2:
@@ -767,13 +767,13 @@ static uint32_t idset_decoding_globset(
 		case 0x6: /* push */
 			memcpy(common_bytes, pbin->pb + offset, command);
 			offset += command;
-			idset_statck_push(&bytes_statck, command, common_bytes);
-			stack_length = idset_statck_get_common_bytes(
-							&bytes_statck, common_bytes);
+			idset_stack_push(&bytes_stack, command, common_bytes);
+			stack_length = idset_stack_get_common_bytes(
+							&bytes_stack, common_bytes);
 			if (6 == stack_length) {
 				prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 				if (NULL == prange_node) {
-					idset_statck_free(&bytes_statck);
+					idset_stack_free(&bytes_stack);
 					return 0;
 				}
 				prange_node->node.pdata = prange_node;
@@ -782,11 +782,11 @@ static uint32_t idset_decoding_globset(
 				double_list_append_as_tail(pglobset, &prange_node->node);
 				/* MS-OXCFXICS 3.1.5.4.3.1.1 */
 				/* pop the stack without pop command */
-				idset_statck_pop(&bytes_statck);
+				idset_stack_pop(&bytes_stack);
 			} else if (stack_length > 6) {
 				debug_info("[idset]: length of common bytes in"
 					" stack is too long when deserializing");
-				idset_statck_free(&bytes_statck);
+				idset_stack_free(&bytes_stack);
 				return 0;
 			}
 			break;
@@ -795,18 +795,18 @@ static uint32_t idset_decoding_globset(
 			offset ++;
 			bitmask = pbin->pb[offset];
 			offset ++;
-			stack_length = idset_statck_get_common_bytes(
-							&bytes_statck, common_bytes);
+			stack_length = idset_stack_get_common_bytes(
+							&bytes_stack, common_bytes);
 			if (5 != stack_length) {
 				debug_info("[idset]: bitmask command error when "
 					"deserializing, length of common bytes in "
 					"stack should be 5");
-				idset_statck_free(&bytes_statck);
+				idset_stack_free(&bytes_stack);
 				return 0;
 			}
 			prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 			if (NULL == prange_node) {
-				idset_statck_free(&bytes_statck);
+				idset_stack_free(&bytes_stack);
 				return 0;
 			}
 			prange_node->node.pdata = prange_node;
@@ -819,7 +819,7 @@ static uint32_t idset_decoding_globset(
 					if (NULL == prange_node) {
 						prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 						if (NULL == prange_node) {
-							idset_statck_free(&bytes_statck);
+							idset_stack_free(&bytes_stack);
 							return 0;
 						}
 						prange_node->node.pdata = prange_node;
@@ -841,22 +841,22 @@ static uint32_t idset_decoding_globset(
 			}
 			break;
 		case 0x50: /* pop */
-			idset_statck_pop(&bytes_statck);
+			idset_stack_pop(&bytes_stack);
 			break;
 		case 0x52: /* range */
 			prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 			if (NULL == prange_node) {
-				idset_statck_free(&bytes_statck);
+				idset_stack_free(&bytes_stack);
 				return 0;
 			}
 			prange_node->node.pdata = prange_node;
-			stack_length = idset_statck_get_common_bytes(
-							&bytes_statck, common_bytes);
+			stack_length = idset_stack_get_common_bytes(
+							&bytes_stack, common_bytes);
 			if (stack_length > 5) {
 				debug_info("[idset]: range command error when "
 					"deserializing, length of common bytes in "
 					"stack should be less than 5");
-				idset_statck_free(&bytes_statck);
+				idset_stack_free(&bytes_stack);
 				return 0;
 			}
 			memcpy(common_bytes + stack_length,
@@ -871,7 +871,7 @@ static uint32_t idset_decoding_globset(
 			break;
 		}
 	}
-	idset_statck_free(&bytes_statck);
+	idset_stack_free(&bytes_stack);
 	return 0;
 }
 
