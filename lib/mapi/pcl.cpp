@@ -129,28 +129,23 @@ BOOL pcl_append(PCL *ppcl, const SIZED_XID &zxid)
 
 BOOL pcl_merge(PCL *ppcl1, const PCL *ppcl2)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head((DOUBLE_LIST*)ppcl2); NULL!=pnode;
-		pnode=double_list_get_after((DOUBLE_LIST*)ppcl2, pnode)) {
-		if (!pcl_append(ppcl1, static_cast<XID_NODE *>(pnode->pdata)->xid))
+	for (auto pnode = double_list_get_head(ppcl2); pnode != nullptr;
+	     pnode = double_list_get_after(ppcl2, pnode))
+		if (!pcl_append(ppcl1, static_cast<const XID_NODE *>(pnode->pdata)->xid))
 			return FALSE;
-	}
 	return TRUE;
 }
 
-BINARY* pcl_serialize(PCL *ppcl)
+BINARY *pcl_serialize(const PCL *ppcl)
 {
 	BINARY tmp_bin;
-	SIZED_XID *pxid;
 	uint8_t buff[0x8000];
-	DOUBLE_LIST_NODE *pnode;
 	
 	tmp_bin.cb = 0;
 	tmp_bin.pb = buff;
-	for (pnode=double_list_get_head(ppcl); NULL!=pnode;
-		pnode=double_list_get_after(ppcl, pnode)) {
-		pxid = &((XID_NODE*)pnode->pdata)->xid;
+	for (auto pnode = double_list_get_head(ppcl); pnode != nullptr;
+	     pnode = double_list_get_after(ppcl, pnode)) {
+		auto pxid = &static_cast<const XID_NODE *>(pnode->pdata)->xid;
 		if (pxid->size < 17 || pxid->size > 24 ||
 			sizeof(buff) < tmp_bin.cb + pxid->size) {
 			return NULL;
@@ -193,15 +188,13 @@ BOOL pcl_deserialize(PCL *ppcl, const BINARY *pbin)
 	return FALSE;
 }
 
-static BOOL pcl_check_included(const PCL *ppcl, SIZED_XID *pxid)
+static BOOL pcl_check_included(const PCL *ppcl, const SIZED_XID *pxid)
 {
 	int cmp_ret;
-	XID_NODE *pxnode;
-	DOUBLE_LIST_NODE *pnode;
 	
-	for (pnode=double_list_get_head((DOUBLE_LIST*)ppcl); NULL!=pnode;
-		pnode=double_list_get_after((DOUBLE_LIST*)ppcl, pnode)) {
-		pxnode = (XID_NODE*)pnode->pdata;
+	for (auto pnode = double_list_get_head(ppcl); pnode != nullptr;
+	     pnode = double_list_get_after(ppcl, pnode)) {
+		auto pxnode = static_cast<const XID_NODE *>(pnode->pdata);
 		cmp_ret = memcmp(&pxnode->xid.xid.guid, &pxid->xid.guid, sizeof(GUID));
 		if (cmp_ret < 0) {
 			continue;
@@ -221,26 +214,20 @@ static BOOL pcl_check_included(const PCL *ppcl, SIZED_XID *pxid)
 
 uint32_t pcl_compare(const PCL *ppcl1, const PCL *ppcl2)
 {
-	int ret_val;
-	DOUBLE_LIST_NODE *pnode;
-	
-	ret_val = PCL_CONFLICT;
-	for (pnode=double_list_get_head((DOUBLE_LIST*)ppcl1); NULL!=pnode;
-		pnode=double_list_get_after((DOUBLE_LIST*)ppcl1, pnode)) {
-		if (FALSE == pcl_check_included(ppcl2,
-			&((XID_NODE*)pnode->pdata)->xid)) {
+	const DOUBLE_LIST_NODE *pnode;
+	int ret_val = PCL_CONFLICT;
+	for (pnode = double_list_get_head(ppcl1); pnode != nullptr;
+	     pnode = double_list_get_after(ppcl1, pnode))
+		if (!pcl_check_included(ppcl2,
+		    &static_cast<const XID_NODE *>(pnode->pdata)->xid))
 			break;
-		}
-	}
 	if (NULL == pnode) {
 		ret_val |= PCL_INCLUDED;
 	}
-	for (pnode=double_list_get_head((DOUBLE_LIST*)ppcl2); NULL!=pnode;
-		pnode=double_list_get_after((DOUBLE_LIST*)ppcl2, pnode)) {
-		if (FALSE == pcl_check_included(ppcl1,
-			&((XID_NODE*)pnode->pdata)->xid)) {
+	for (pnode = double_list_get_head(ppcl2); pnode != nullptr;
+	     pnode = double_list_get_after(ppcl2, pnode))
+		if (!pcl_check_included(ppcl1,
+		    &static_cast<const XID_NODE *>(pnode->pdata)->xid))
 			return ret_val;
-		}
-	}
 	return ret_val | PCL_INCLUDE;
 }
