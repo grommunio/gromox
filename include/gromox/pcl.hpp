@@ -1,7 +1,19 @@
 #pragma once
 #include <cstdint>
 #include <gromox/defs.h>
+#include <gromox/double_list.hpp>
 #include <gromox/mapi_types.hpp>		
+
+enum {
+	PCL_CONFLICT = 0,
+	PCL_INCLUDE = 1U << 0,
+	PCL_INCLUDED = 1U << 1,
+	PCL_IDENTICAL = PCL_INCLUDE | PCL_INCLUDED,
+};
+
+struct PCL {
+	DOUBLE_LIST xl;
+};
 
 extern PCL *pcl_init();
 void pcl_free(PCL *ppcl);

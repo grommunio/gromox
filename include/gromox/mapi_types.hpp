@@ -863,13 +863,6 @@ struct IDSET {
 	DOUBLE_LIST repl_list;
 };
 
-#define PCL_CONFLICT											0x0
-#define PCL_INCLUDE												0x1
-#define PCL_INCLUDED											0x2
-#define PCL_IDENTICAL											0x3
-
-using PCL = DOUBLE_LIST;
-
 #define DB_NOTIFY_TYPE_NEW_MAIL									0x01
 #define DB_NOTIFY_TYPE_FOLDER_CREATED							0x02
 #define DB_NOTIFY_TYPE_MESSAGE_CREATED							0x03

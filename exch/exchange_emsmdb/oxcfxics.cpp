@@ -8,6 +8,7 @@
 #include "rops.h"
 #include <gromox/guid.hpp>
 #include <gromox/idset.hpp>
+#include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/eid_array.hpp>
 #include "common_util.h"
