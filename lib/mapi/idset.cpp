@@ -556,17 +556,13 @@ static uint8_t idset_statck_get_common_bytes(
 static BOOL idset_encoding_globset(BINARY *pbin, DOUBLE_LIST *pglobset)
 {
 	int i;
-	uint64_t low_value;
-	uint64_t high_value;
 	uint8_t stack_length;
-	RANGE_NODE *prange_node;
-	DOUBLE_LIST_NODE *pnode;
 	uint8_t common_bytes[6];
 	uint8_t common_bytes1[6];
 	
 	if (1 == double_list_get_nodes_num(pglobset)) {
-		pnode = double_list_get_head(pglobset);
-		prange_node = (RANGE_NODE*)pnode->pdata;
+		auto pnode = double_list_get_head(pglobset);
+		auto prange_node = static_cast<RANGE_NODE *>(pnode->pdata);
 		rop_util_value_to_gc(prange_node->low_value, common_bytes);
 		if (prange_node->high_value == prange_node->low_value) {
 			if (FALSE == idset_encoding_push_command(
@@ -581,63 +577,50 @@ static BOOL idset_encoding_globset(BINARY *pbin, DOUBLE_LIST *pglobset)
 			}
 		}
 		return idset_encode_end_command(pbin);
-	} else {
-		pnode = double_list_get_head(pglobset);
-		low_value = ((RANGE_NODE*)pnode)->low_value;
-		pnode = double_list_get_tail(pglobset);
-		high_value = ((RANGE_NODE*)pnode)->high_value;
-		rop_util_value_to_gc(low_value, common_bytes);
-		rop_util_value_to_gc(high_value, common_bytes1);
-		for (stack_length=0; stack_length<6; stack_length++) {
-			if (common_bytes[stack_length] != common_bytes1[stack_length]) {
-				break;
-			}
-		}
-		if (0 != stack_length) {
-			if (FALSE == idset_encoding_push_command(
-				pbin, stack_length, common_bytes)) {
-				return FALSE;
-			}
+	}
+	auto pnode = double_list_get_head(pglobset);
+	auto low_value = reinterpret_cast<RANGE_NODE *>(pnode)->low_value;
+	pnode = double_list_get_tail(pglobset);
+	auto high_value = reinterpret_cast<RANGE_NODE *>(pnode)->high_value;
+	rop_util_value_to_gc(low_value, common_bytes);
+	rop_util_value_to_gc(high_value, common_bytes1);
+	for (stack_length=0; stack_length<6; stack_length++) {
+		if (common_bytes[stack_length] != common_bytes1[stack_length]) {
+			break;
 		}
 	}
+	if (stack_length != 0 &&
+	    !idset_encoding_push_command(pbin, stack_length, common_bytes))
+		return FALSE;
 	for (pnode=double_list_get_head(pglobset); NULL!=pnode;
 		pnode=double_list_get_after(pglobset, pnode)) {
-		prange_node = (RANGE_NODE*)pnode->pdata;
+		auto prange_node = static_cast<RANGE_NODE *>(pnode->pdata);
 		rop_util_value_to_gc(prange_node->low_value, common_bytes);
 		if (prange_node->high_value == prange_node->low_value) {
 			if (FALSE == idset_encoding_push_command(pbin,
 				6 - stack_length, common_bytes + stack_length)) {
 				return FALSE;
 			}
-		} else {
-			rop_util_value_to_gc(prange_node->high_value, common_bytes1);
-			for (i=stack_length; i<6; i++) {
-				if (common_bytes[i] != common_bytes1[i]) {
-					break;
-				}
-			}
-			if (stack_length != i) {
-				if (FALSE == idset_encoding_push_command(pbin,
-					i - stack_length, common_bytes + stack_length)) {
-					return FALSE;
-				}
-			}
-			if (FALSE == idset_encode_range_command(pbin, 6 - i,
-				common_bytes + i, common_bytes1 + i)) {
-				return FALSE;
-			}
-			if (stack_length != i) {
-				if (FALSE == idset_encoding_pop_command(pbin)) {
-					return FALSE;
-				}
+			continue;
+		}
+		rop_util_value_to_gc(prange_node->high_value, common_bytes1);
+		for (i=stack_length; i<6; i++) {
+			if (common_bytes[i] != common_bytes1[i]) {
+				break;
 			}
 		}
-	}
-	if (0 != stack_length) {
-		if (FALSE == idset_encoding_pop_command(pbin)) {
+		if (stack_length != i && !idset_encoding_push_command(pbin,
+		    i - stack_length, common_bytes + stack_length))
+			return FALSE;
+		if (FALSE == idset_encode_range_command(pbin, 6 - i,
+			common_bytes + i, common_bytes1 + i)) {
 			return FALSE;
 		}
+		if (stack_length != i && !idset_encoding_pop_command(pbin))
+			return FALSE;
 	}
+	if (stack_length != 0 && !idset_encoding_pop_command(pbin))
+		return FALSE;
 	return idset_encode_end_command(pbin);
 }
 
