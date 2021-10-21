@@ -458,12 +458,10 @@ static int exm_connect(const char *dir)
 int exm_set_change_keys(TPROPVAL_ARRAY *props, uint64_t change_num)
 {
 	/* Set the change key and initial PCL for the object */
-	SIZED_XID zxid;
+	SIZED_XID zxid{g_public_folder ? rop_util_make_domain_guid(g_user_id) :
+	           rop_util_make_user_guid(g_user_id), change_num};
 	char tmp_buff[22];
 	BINARY bxid;
-	zxid.size = 22;
-	zxid.xid = {g_public_folder ? rop_util_make_domain_guid(g_user_id) :
-	           rop_util_make_user_guid(g_user_id), change_num};
 	EXT_PUSH ep;
 	if (!ep.init(tmp_buff, arsizeof(tmp_buff), 0) ||
 	    ep.p_xid(zxid) != EXT_ERR_SUCCESS) {
@@ -548,12 +546,10 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 		return -EIO;
 	}
 
-	SIZED_XID zxid;
+	SIZED_XID zxid{g_public_folder ? rop_util_make_domain_guid(g_user_id) :
+	           rop_util_make_user_guid(g_user_id), change_num};
 	char tmp_buff[22];
 	BINARY bxid;
-	zxid.size = 22;
-	zxid.xid = {g_public_folder ? rop_util_make_domain_guid(g_user_id) :
-	           rop_util_make_user_guid(g_user_id), change_num};
 	EXT_PUSH ep;
 	if (!ep.init(tmp_buff, arsizeof(tmp_buff), 0) ||
 	    ep.p_xid(zxid) != EXT_ERR_SUCCESS) {

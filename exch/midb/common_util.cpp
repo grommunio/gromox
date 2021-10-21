@@ -216,7 +216,6 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 {
 	PCL *ppcl;
 	BINARY *pbin;
-	SIZED_XID xid;
 	BINARY tmp_bin;
 	EXT_PUSH ext_push;
 	uint64_t last_time;
@@ -246,8 +245,7 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	propval_buff[5].pvalue = &last_time;
 	propval_buff[6].proptag = PROP_TAG_CHANGENUMBER;
 	propval_buff[6].pvalue = &change_num;
-	xid.size = 22;
-	xid.xid = {rop_util_make_user_guid(user_id), change_num};
+	SIZED_XID xid{rop_util_make_user_guid(user_id), change_num};
 	if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
 	    ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
 		return false;
