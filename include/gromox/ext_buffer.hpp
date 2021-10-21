@@ -67,6 +67,7 @@ struct PROBLEM_ARRAY;
 struct PROPERTY_ROW;
 struct READRECIPIENT_ROW;
 struct RECIPIENT_ROW;
+struct SIZED_XID;
 struct STORE_ENTRYID;
 struct SYSTEMTIME;
 struct TIMEZONEDEFINITION;
@@ -213,7 +214,7 @@ struct EXT_PUSH {
 	int p_tpropval_a(const LTPROPVAL_ARRAY *);
 	int p_tarray_set(const TARRAY_SET *);
 	int p_problem_a(const PROBLEM_ARRAY *);
-	int p_xid(uint8_t, const XID &);
+	int p_xid(const SIZED_XID &);
 	int p_folder_eid(const FOLDER_ENTRYID *);
 	int p_msg_eid(const MESSAGE_ENTRYID *);
 	int p_sortorder(const SORT_ORDER *);

@@ -5476,7 +5476,7 @@ BINARY *cu_xid_to_bin(const SIZED_XID &xid)
 	}
 	pbin->pv = common_util_alloc(24);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
-	    ext_push.p_xid(xid.size, xid.xid) != EXT_ERR_SUCCESS)
+	    ext_push.p_xid(xid) != EXT_ERR_SUCCESS)
 		return NULL;
 	pbin->cb = ext_push.m_offset;
 	return pbin;
