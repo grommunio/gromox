@@ -3215,7 +3215,6 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	XID tmp_xid;
 	int tmp_len;
 	int user_id;
-	BINARY *pbin;
 	char lang[32];
 	uint32_t cpid;
 	uint8_t b_read;
@@ -3392,7 +3391,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	}
 	tmp_xid.guid = rop_util_make_user_guid(user_id);
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
-	pbin = common_util_xid_to_binary(22, &tmp_xid);
+	auto pbin = cu_xid_to_bin(22, tmp_xid);
 	if (NULL == pbin) {
 		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
@@ -3483,7 +3482,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	MAIL imail;
 	XID tmp_xid;
 	int user_id;
-	BINARY *pbin;
 	char lang[32];
 	uint32_t cpid;
 	int flags_len;
@@ -3689,7 +3687,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	}
 	tmp_xid.guid = rop_util_make_user_guid(user_id);
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
-	pbin = common_util_xid_to_binary(22, &tmp_xid);
+	auto pbin = cu_xid_to_bin(22, tmp_xid);
 	if (NULL == pbin) {
 		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
@@ -3735,7 +3733,6 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	int user_id;
 	XID tmp_xid;
 	BOOL b_exist;
-	BINARY *pbin;
 	char *ptoken;
 	BINARY *pbin1;
 	char *ptoken1;
@@ -3863,7 +3860,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	propval_buff[0].pvalue = &change_num;
 	tmp_xid.guid = rop_util_make_user_guid(user_id);
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
-	pbin = common_util_xid_to_binary(22, &tmp_xid);
+	auto pbin = cu_xid_to_bin(22, tmp_xid);
 	if (NULL == pbin) {
 		return MIDB_E_NO_MEMORY;
 	}

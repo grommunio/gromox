@@ -2919,13 +2919,12 @@ int EXT_PUSH::p_problem_a(const PROBLEM_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
-int EXT_PUSH::p_xid(uint8_t size, const XID *pxid)
+int EXT_PUSH::p_xid(uint8_t size, const XID &xid)
 {
-	auto pext = this;
 	if (size < 17 || size > 24)
 		return EXT_ERR_FORMAT;
-	TRY(pext->p_guid(&pxid->guid));
-	return pext->p_bytes(pxid->local_id, size - 16);
+	TRY(p_guid(&xid.guid));
+	return p_bytes(xid.local_id, size - 16);
 }
 
 int EXT_PUSH::p_folder_eid(const FOLDER_ENTRYID *r)

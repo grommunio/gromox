@@ -241,7 +241,7 @@ uint32_t rop_createfolder(uint8_t folder_type,
 		tmp_xid.guid = plogon->guid();
 		rop_util_get_gc_array(change_num, tmp_xid.local_id);
 		propval_buff[7].proptag = PR_CHANGE_KEY;
-		propval_buff[7].pvalue = common_util_xid_to_binary(22, &tmp_xid);
+		propval_buff[7].pvalue = cu_xid_to_bin(22, tmp_xid);
 		if (NULL == propval_buff[7].pvalue) {
 			return ecMAPIOOM;
 		}
@@ -586,7 +586,6 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 	char new_name[128];
 	uint32_t permission;
 	uint64_t change_num;
-	BINARY *pbin_changekey;
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
 	TAGGED_PROPVAL propval_buff[4];
@@ -661,7 +660,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous,
 		return ecError;
 	tmp_xid.guid = plogon->guid();
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
-	pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
+	auto pbin_changekey = cu_xid_to_bin(22, tmp_xid);
 	if (NULL == pbin_changekey) {
 		return ecError;
 	}

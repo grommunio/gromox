@@ -468,7 +468,7 @@ int exm_set_change_keys(TPROPVAL_ARRAY *props, uint64_t change_num)
 	rop_util_get_gc_array(change_num, zxid.xid.local_id);
 	EXT_PUSH ep;
 	if (!ep.init(tmp_buff, arsizeof(tmp_buff), 0) ||
-	    ep.p_xid(22, &zxid.xid) != EXT_ERR_SUCCESS) {
+	    ep.p_xid(22, zxid.xid) != EXT_ERR_SUCCESS) {
 		fprintf(stderr, "exm: ext_push: ENOMEM\n");
 		return -ENOMEM;
 	}
@@ -560,7 +560,7 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 	rop_util_value_to_gc(change_num, zxid.xid.local_id);
 	EXT_PUSH ep;
 	if (!ep.init(tmp_buff, arsizeof(tmp_buff), 0) ||
-	    ep.p_xid(22, &zxid.xid) != EXT_ERR_SUCCESS) {
+	    ep.p_xid(22, zxid.xid) != EXT_ERR_SUCCESS) {
 		fprintf(stderr, "exm: ext_push: ENOMEM\n");
 		return -ENOMEM;
 	}

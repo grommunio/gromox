@@ -57,7 +57,7 @@ extern BINARY *common_util_to_message_entryid(logon_object *, uint64_t folder_id
 extern BOOL common_util_from_folder_entryid(logon_object *, BINARY *, uint64_t *folder_id);
 extern BOOL common_util_from_message_entryid(logon_object *, BINARY *, uint64_t *folder_id, uint64_t *msg_id);
 extern BINARY *common_util_calculate_message_sourcekey(logon_object *, uint64_t msg_id);
-BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid);
+extern BINARY *cu_xid_to_bin(uint8_t size, const XID &);
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
 BINARY* common_util_guid_to_binary(GUID guid);
 BOOL common_util_pcl_compare(const BINARY *pbin_pcl1,

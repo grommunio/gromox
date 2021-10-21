@@ -1410,7 +1410,7 @@ BINARY *common_util_calculate_message_sourcekey(store_object *pstore,
 	return pbin;
 }
 
-BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid)
+BINARY *cu_xid_to_bin(uint8_t size, const XID &xid)
 {
 	EXT_PUSH ext_push;
 	
@@ -1420,7 +1420,7 @@ BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid)
 	}
 	pbin->pv = common_util_alloc(24);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
-	    ext_push.p_xid(size, pxid) != EXT_ERR_SUCCESS)
+	    ext_push.p_xid(size, xid) != EXT_ERR_SUCCESS)
 		return NULL;
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -2247,7 +2247,6 @@ gxerr_t common_util_remote_copy_message(store_object *pstore,
     uint64_t message_id, store_object *pstore1, uint64_t folder_id1)
 {
 	XID tmp_xid;
-	BINARY *pbin;
 	BINARY *pbin1;
 	uint64_t change_num;
 	TAGGED_PROPVAL propval;
@@ -2280,7 +2279,7 @@ gxerr_t common_util_remote_copy_message(store_object *pstore,
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	tmp_xid.guid = pstore->guid();
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
-	pbin = common_util_xid_to_binary(22, &tmp_xid);
+	auto pbin = cu_xid_to_bin(22, tmp_xid);
 	if (NULL == pbin) {
 		return GXERR_CALL_FAILED;
 	}
@@ -2307,7 +2306,6 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 	TPROPVAL_ARRAY *pproplist, uint64_t *pfolder_id)
 {
 	XID tmp_xid;
-	BINARY *pbin;
 	BINARY *pbin1;
 	uint64_t tmp_id;
 	BINARY *pentryid;
@@ -2351,7 +2349,7 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 	common_util_set_propvals(pproplist, &propval);
 	tmp_xid.guid = pstore->guid();
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
-	pbin = common_util_xid_to_binary(22, &tmp_xid);
+	auto pbin = cu_xid_to_bin(22, tmp_xid);
 	if (NULL == pbin) {
 		return FALSE;
 	}

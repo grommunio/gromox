@@ -392,7 +392,6 @@ gxerr_t message_object::save()
 	uint32_t *pgroup_id;
 	uint32_t tmp_status;
 	INDEX_ARRAY *pindices;
-	BINARY *pbin_changekey;
 	INDEX_ARRAY tmp_indices;
 	MESSAGE_CONTENT *pmsgctnt;
 	PROBLEM_ARRAY tmp_problems;
@@ -542,7 +541,7 @@ gxerr_t message_object::save()
 		tmp_xid.guid = pmessage->plogon->guid();
 		rop_util_get_gc_array(pmessage->change_num, tmp_xid.local_id);
 		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_CHANGE_KEY;
-		pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
+		auto pbin_changekey = cu_xid_to_bin(22, tmp_xid);
 		if (NULL == pbin_changekey) {
 			return GXERR_CALL_FAILED;
 		}

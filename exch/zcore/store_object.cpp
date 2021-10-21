@@ -1463,7 +1463,6 @@ static BOOL store_object_set_folder_name(store_object *pstore,
 	uint64_t folder_id;
 	uint64_t last_time;
 	uint64_t change_num;
-	BINARY *pbin_changekey;
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
 	TAGGED_PROPVAL propval_buff[5];
@@ -1486,7 +1485,7 @@ static BOOL store_object_set_folder_name(store_object *pstore,
 		return FALSE;
 	tmp_xid.guid = rop_util_make_user_guid(pstore->account_id);
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
-	pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
+	auto pbin_changekey = cu_xid_to_bin(22, tmp_xid);
 	if (NULL == pbin_changekey) {
 		return FALSE;
 	}

@@ -230,7 +230,7 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 		               rop_util_make_domain_guid(account_id);
 		rop_util_value_to_gc(change_num, tmp_xid.local_id);
 		tmp_propvals[1].proptag = PR_CHANGE_KEY;
-		tmp_propvals[1].pvalue = common_util_xid_to_binary(22, &tmp_xid);
+		tmp_propvals[1].pvalue = cu_xid_to_bin(22, tmp_xid);
 		if (tmp_propvals[1].pvalue == nullptr ||
 		    !common_util_get_property(FOLDER_PROPERTIES_TABLE,
 		     parent_fid, 0, pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST,
@@ -477,7 +477,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		               rop_util_make_domain_guid(account_id);
 		rop_util_value_to_gc(change_num, tmp_xid.local_id);
 		tmp_propvals[1].proptag = PR_CHANGE_KEY;
-		tmp_propvals[1].pvalue = common_util_xid_to_binary(22, &tmp_xid);
+		tmp_propvals[1].pvalue = cu_xid_to_bin(22, tmp_xid);
 		if (tmp_propvals[1].pvalue == nullptr ||
 		    !common_util_get_property(FOLDER_PROPERTIES_TABLE,
 		    parent_fid, 0, pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST,
@@ -738,7 +738,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	               rop_util_make_domain_guid(account_id);
 	rop_util_value_to_gc(change_num, tmp_xid.local_id);
 	tmp_propvals[1].proptag = PR_CHANGE_KEY;
-	tmp_propvals[1].pvalue = common_util_xid_to_binary(22, &tmp_xid);
+	tmp_propvals[1].pvalue = cu_xid_to_bin(22, tmp_xid);
 	if (tmp_propvals[1].pvalue == nullptr ||
 	    !common_util_get_property(FOLDER_PROPERTIES_TABLE, src_val, 0,
 	    pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST, &pvalue)) {
@@ -2169,7 +2169,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 				tmp_xid.guid = rop_util_make_domain_guid(tmp_int);
 			}
 			rop_util_value_to_gc(change_num, tmp_xid.local_id);
-			pvalue = common_util_xid_to_binary(22, &tmp_xid);
+			pvalue = cu_xid_to_bin(22, tmp_xid);
 			if (NULL == pvalue) {
 				return FALSE;
 			}

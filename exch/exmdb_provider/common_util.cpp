@@ -5137,7 +5137,7 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 		               rop_util_make_domain_guid(account_id);
 		rop_util_value_to_gc(change_num, tmp_xid.local_id);
 		propval_buff[0].proptag = PR_CHANGE_KEY;
-		propval_buff[0].pvalue = common_util_xid_to_binary(22, &tmp_xid);
+		propval_buff[0].pvalue = cu_xid_to_bin(22, tmp_xid);
 		if (NULL == propval_buff[0].pvalue) {
 			return FALSE;
 		}
@@ -5467,7 +5467,7 @@ BOOL common_util_recipients_to_list(
 	return TRUE;
 }
 
-BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid)
+BINARY *cu_xid_to_bin(uint8_t size, const XID &xid)
 {
 	EXT_PUSH ext_push;
 	
@@ -5477,7 +5477,7 @@ BINARY* common_util_xid_to_binary(uint8_t size, const XID *pxid)
 	}
 	pbin->pv = common_util_alloc(24);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 24, 0) ||
-	    ext_push.p_xid(size, pxid) != EXT_ERR_SUCCESS)
+	    ext_push.p_xid(size, xid) != EXT_ERR_SUCCESS)
 		return NULL;
 	pbin->cb = ext_push.m_offset;
 	return pbin;

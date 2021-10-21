@@ -2186,7 +2186,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		tmp_xid.guid = pstore->guid();
 		rop_util_get_gc_array(change_num, tmp_xid.local_id);
 		propval_buff[7].proptag = PR_CHANGE_KEY;
-		propval_buff[7].pvalue = common_util_xid_to_binary(22, &tmp_xid);
+		propval_buff[7].pvalue = cu_xid_to_bin(22, tmp_xid);
 		if (propval_buff[7].pvalue == nullptr)
 			return ecError;
 		propval_buff[8].proptag = PR_PREDECESSOR_CHANGE_LIST;

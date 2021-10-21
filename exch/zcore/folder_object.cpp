@@ -579,7 +579,6 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	BINARY *pbin_pcl;
 	uint64_t last_time;
 	uint64_t change_num;
-	BINARY *pbin_changekey;
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -608,7 +607,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 		return FALSE;
 	tmp_xid.guid = pfolder->pstore->guid();
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
-	pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
+	auto pbin_changekey = cu_xid_to_bin(22, tmp_xid);
 	if (NULL == pbin_changekey) {
 		return FALSE;
 	}
@@ -643,7 +642,6 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	BINARY *pbin_pcl;
 	uint64_t last_time;
 	uint64_t change_num;
-	BINARY *pbin_changekey;
 	PROBLEM_ARRAY tmp_problems;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
@@ -681,7 +679,7 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	propval_buff[0].pvalue = &change_num;
 	tmp_xid.guid = pfolder->pstore->guid();
 	rop_util_get_gc_array(change_num, tmp_xid.local_id);
-	pbin_changekey = common_util_xid_to_binary(22, &tmp_xid);
+	auto pbin_changekey = cu_xid_to_bin(22, tmp_xid);
 	if (NULL == pbin_changekey) {
 		return FALSE;
 	}
