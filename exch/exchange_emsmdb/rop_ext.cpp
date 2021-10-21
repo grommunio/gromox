@@ -1795,7 +1795,7 @@ static int rop_ext_push_getlocalreplicaids_response(
 	EXT_PUSH *pext, const GETLOCALREPLICAIDS_RESPONSE *r)
 {
 	TRY(pext->p_guid(&r->guid));
-	return pext->p_bytes(r->global_count, 6);
+	return pext->p_bytes(r->global_count.ab, 6);
 }
 
 static int rop_ext_pull_registernotification_request(

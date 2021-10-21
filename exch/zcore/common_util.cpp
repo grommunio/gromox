@@ -1284,7 +1284,7 @@ BINARY *common_util_to_folder_entryid(store_object *pstore, uint64_t folder_id)
 		}
 		tmp_entryid.folder_type = EITLT_PUBLIC_FOLDER;
 	}
-	rop_util_get_gc_array(folder_id, tmp_entryid.global_counter);
+	tmp_entryid.global_counter = rop_util_get_gc_array(folder_id);
 	tmp_entryid.pad[0] = 0;
 	tmp_entryid.pad[1] = 0;
 	auto pbin = cu_alloc<BINARY>();
@@ -1329,10 +1329,10 @@ BINARY *common_util_calculate_folder_sourcekey(store_object *pstore,
 				return NULL;
 		}	
 	}
-	rop_util_get_gc_array(folder_id, longid.global_counter);
+	longid.global_counter = rop_util_get_gc_array(folder_id);
 	if (!ext_push.init(pbin->pv, 22, 0) ||
 	    ext_push.p_guid(&longid.guid) != EXT_ERR_SUCCESS ||
-	    ext_push.p_bytes(longid.global_counter, 6) != EXT_ERR_SUCCESS)
+	    ext_push.p_bytes(longid.global_counter.ab, 6) != EXT_ERR_SUCCESS)
 		return NULL;
 	return pbin;
 }
@@ -1369,8 +1369,8 @@ BINARY *common_util_to_message_entryid(store_object *pstore,
 		tmp_entryid.message_type = EITLT_PUBLIC_MESSAGE;
 	}
 	tmp_entryid.message_database_guid = tmp_entryid.folder_database_guid;
-	rop_util_get_gc_array(folder_id, tmp_entryid.folder_global_counter);
-	rop_util_get_gc_array(message_id, tmp_entryid.message_global_counter);
+	tmp_entryid.folder_global_counter = rop_util_get_gc_array(folder_id);
+	tmp_entryid.message_global_counter = rop_util_get_gc_array(message_id);
 	tmp_entryid.pad1[0] = 0;
 	tmp_entryid.pad1[1] = 0;
 	tmp_entryid.pad2[0] = 0;
@@ -1402,10 +1402,10 @@ BINARY *common_util_calculate_message_sourcekey(store_object *pstore,
 	if (pbin->pv == nullptr)
 		return NULL;
 	longid.guid = pstore->guid();
-	rop_util_get_gc_array(message_id, longid.global_counter);
+	longid.global_counter = rop_util_get_gc_array(message_id);
 	if (!ext_push.init(pbin->pv, 22, 0) ||
 	    ext_push.p_guid(&longid.guid) != EXT_ERR_SUCCESS ||
-	    ext_push.p_bytes(longid.global_counter, 6) != EXT_ERR_SUCCESS)
+	    ext_push.p_bytes(longid.global_counter.ab, 6) != EXT_ERR_SUCCESS)
 		return NULL;
 	return pbin;
 }

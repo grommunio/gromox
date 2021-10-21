@@ -31,11 +31,11 @@ enum {
 };
 
 uint16_t rop_util_get_replid(uint64_t eid);
-uint64_t rop_util_get_gc_value(uint64_t eid);
-void rop_util_get_gc_array(uint64_t eid, uint8_t gc[6]);
-void rop_util_value_to_gc(uint64_t value, uint8_t gc[6]);
-uint64_t rop_util_gc_to_value(uint8_t gc[6]);
-uint64_t rop_util_make_eid(uint16_t replid, const uint8_t gc[6]);
+extern uint64_t rop_util_get_gc_value(uint64_t eid);
+extern GLOBCNT rop_util_get_gc_array(uint64_t eid);
+extern GLOBCNT rop_util_value_to_gc(uint64_t value);
+extern uint64_t rop_util_gc_to_value(GLOBCNT);
+extern uint64_t rop_util_make_eid(uint16_t replid, GLOBCNT);
 uint64_t rop_util_make_eid_ex(uint16_t replid, uint64_t value);
 GUID rop_util_make_user_guid(int user_id);
 GUID rop_util_make_domain_guid(int domain_id);

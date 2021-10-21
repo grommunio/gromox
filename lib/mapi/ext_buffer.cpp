@@ -987,7 +987,7 @@ int EXT_PULL::g_longterm(LONG_TERM_ID *r)
 {
 	auto pext = this;
 	TRY(pext->g_guid(&r->guid));
-	TRY(pext->g_bytes(r->global_counter, 6));
+	TRY(g_bytes(r->global_counter.ab, 6));
 	return pext->g_uint16(&r->padding);
 }
 
@@ -1192,7 +1192,7 @@ int EXT_PULL::g_folder_eid(FOLDER_ENTRYID *r)
 	TRY(pext->g_bytes(r->provider_uid, 16));
 	TRY(pext->g_uint16(&r->folder_type));
 	TRY(pext->g_guid(&r->database_guid));
-	TRY(pext->g_bytes(r->global_counter, 6));
+	TRY(g_bytes(r->global_counter.ab, 6));
 	return pext->g_bytes(r->pad, 2);
 }
 
@@ -1219,10 +1219,10 @@ int EXT_PULL::g_msg_eid(MESSAGE_ENTRYID *r)
 	TRY(pext->g_bytes(r->provider_uid, 16));
 	TRY(pext->g_uint16(&r->message_type));
 	TRY(pext->g_guid(&r->folder_database_guid));
-	TRY(pext->g_bytes(r->folder_global_counter, 6));
+	TRY(g_bytes(r->folder_global_counter.ab, 6));
 	TRY(pext->g_bytes(r->pad1, 2));
 	TRY(pext->g_guid(&r->message_database_guid));
-	TRY(pext->g_bytes(r->message_global_counter, 6));
+	TRY(g_bytes(r->message_global_counter.ab, 6));
 	return pext->g_bytes(r->pad2, 2);
 }
 
@@ -2801,7 +2801,7 @@ int EXT_PUSH::p_longterm(const LONG_TERM_ID *r)
 {
 	auto pext = this;
 	TRY(pext->p_guid(&r->guid));
-	TRY(pext->p_bytes(r->global_counter, 6));
+	TRY(p_bytes(r->global_counter.ab, 6));
 	return pext->p_uint16(r->padding);
 }
 
@@ -2934,7 +2934,7 @@ int EXT_PUSH::p_folder_eid(const FOLDER_ENTRYID *r)
 	TRY(pext->p_bytes(r->provider_uid, 16));
 	TRY(pext->p_uint16(r->folder_type));
 	TRY(pext->p_guid(&r->database_guid));
-	TRY(pext->p_bytes(r->global_counter, 6));
+	TRY(p_bytes(r->global_counter.ab, 6));
 	return pext->p_bytes(r->pad, 2);
 }
 
@@ -2945,10 +2945,10 @@ int EXT_PUSH::p_msg_eid(const MESSAGE_ENTRYID *r)
 	TRY(pext->p_bytes(r->provider_uid, 16));
 	TRY(pext->p_uint16(r->message_type));
 	TRY(pext->p_guid(&r->folder_database_guid));
-	TRY(pext->p_bytes(r->folder_global_counter, 6));
+	TRY(p_bytes(r->folder_global_counter.ab, 6));
 	TRY(pext->p_bytes(r->pad1, 2));
 	TRY(pext->p_guid(&r->message_database_guid));
-	TRY(pext->p_bytes(r->message_global_counter, 6));
+	TRY(p_bytes(r->message_global_counter.ab, 6));
 	return pext->p_bytes(r->pad2, 2);
 }
 

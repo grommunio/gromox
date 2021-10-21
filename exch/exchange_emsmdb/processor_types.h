@@ -1002,7 +1002,7 @@ struct GETLOCALREPLICAIDS_REQUEST {
 
 struct GETLOCALREPLICAIDS_RESPONSE {
 	GUID guid;
-	uint8_t global_count[6];
+	GLOBCNT global_count;
 };
 
 struct REGISTERNOTIFICATION_REQUEST {

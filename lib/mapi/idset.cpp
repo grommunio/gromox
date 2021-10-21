@@ -442,7 +442,7 @@ static BOOL idset_write_to_binary(BINARY *pbin, const void *pb, uint8_t len)
 }
 
 static BOOL idset_encoding_push_command(BINARY *pbin,
-	uint8_t length, uint8_t *pcommon_bytes)
+    uint8_t length, const uint8_t *pcommon_bytes)
 {
 	if (length > 6) {
 		return FALSE;
@@ -462,8 +462,8 @@ static BOOL idset_encoding_pop_command(BINARY *pbin)
 }
 
 
-static BOOL idset_encode_range_command(BINARY *pbin,
-	uint8_t length, uint8_t *plow_bytes, uint8_t *phigh_bytes)
+static BOOL idset_encode_range_command(BINARY *pbin, uint8_t length,
+    const uint8_t *plow_bytes, const uint8_t *phigh_bytes)
 {
 	uint8_t command;
 	
@@ -535,8 +535,7 @@ static void idset_stack_pop(DOUBLE_LIST *pstack)
 	free(pnode->pdata);
 }
 
-static uint8_t idset_stack_get_common_bytes(
-	DOUBLE_LIST *pstack, uint8_t common_bytes[6])
+static uint8_t idset_stack_get_common_bytes(DOUBLE_LIST *pstack, GLOBCNT &common_bytes)
 {
 	uint8_t common_length;
 	DOUBLE_LIST_NODE *pnode;
@@ -546,7 +545,7 @@ static uint8_t idset_stack_get_common_bytes(
 	for (pnode=double_list_get_head(pstack); NULL!=pnode;
 		pnode=double_list_get_after(pstack, pnode)) {
 		pstack_node = (STACK_NODE*)pnode->pdata;
-		memcpy(common_bytes + common_length,
+		memcpy(&common_bytes.ab[common_length],
 			pstack_node->pcommon_bytes, pstack_node->common_length);
 		common_length += pstack_node->common_length;
 	}
@@ -557,24 +556,19 @@ static BOOL idset_encoding_globset(BINARY *pbin, DOUBLE_LIST *pglobset)
 {
 	int i;
 	uint8_t stack_length;
-	uint8_t common_bytes[6];
-	uint8_t common_bytes1[6];
 	
 	if (1 == double_list_get_nodes_num(pglobset)) {
 		auto pnode = double_list_get_head(pglobset);
 		auto prange_node = static_cast<RANGE_NODE *>(pnode->pdata);
-		rop_util_value_to_gc(prange_node->low_value, common_bytes);
+		auto common_bytes = rop_util_value_to_gc(prange_node->low_value);
 		if (prange_node->high_value == prange_node->low_value) {
-			if (FALSE == idset_encoding_push_command(
-				pbin, 6, common_bytes)) {
+			if (!idset_encoding_push_command(pbin, 6, common_bytes.ab))
 				return FALSE;
-			}
 		} else {
-			rop_util_value_to_gc(prange_node->high_value, common_bytes1);
-			if (FALSE == idset_encode_range_command(
-				pbin, 6, common_bytes, common_bytes1)) {
+			auto common_bytes1 = rop_util_value_to_gc(prange_node->high_value);
+			if (!idset_encode_range_command(pbin, 6,
+			    common_bytes.ab, common_bytes1.ab))
 				return FALSE;
-			}
 		}
 		return idset_encode_end_command(pbin);
 	}
@@ -582,40 +576,36 @@ static BOOL idset_encoding_globset(BINARY *pbin, DOUBLE_LIST *pglobset)
 	auto low_value = reinterpret_cast<RANGE_NODE *>(pnode)->low_value;
 	pnode = double_list_get_tail(pglobset);
 	auto high_value = reinterpret_cast<RANGE_NODE *>(pnode)->high_value;
-	rop_util_value_to_gc(low_value, common_bytes);
-	rop_util_value_to_gc(high_value, common_bytes1);
+	auto common_bytes = rop_util_value_to_gc(low_value);
+	auto common_bytes1 = rop_util_value_to_gc(high_value);
 	for (stack_length=0; stack_length<6; stack_length++) {
-		if (common_bytes[stack_length] != common_bytes1[stack_length]) {
+		if (common_bytes.ab[stack_length] != common_bytes1.ab[stack_length])
 			break;
-		}
 	}
 	if (stack_length != 0 &&
-	    !idset_encoding_push_command(pbin, stack_length, common_bytes))
+	    !idset_encoding_push_command(pbin, stack_length, common_bytes.ab))
 		return FALSE;
 	for (pnode=double_list_get_head(pglobset); NULL!=pnode;
 		pnode=double_list_get_after(pglobset, pnode)) {
 		auto prange_node = static_cast<RANGE_NODE *>(pnode->pdata);
-		rop_util_value_to_gc(prange_node->low_value, common_bytes);
+		common_bytes = rop_util_value_to_gc(prange_node->low_value);
 		if (prange_node->high_value == prange_node->low_value) {
-			if (FALSE == idset_encoding_push_command(pbin,
-				6 - stack_length, common_bytes + stack_length)) {
+			if (!idset_encoding_push_command(pbin,
+			    6 - stack_length, &common_bytes.ab[stack_length]))
 				return FALSE;
-			}
 			continue;
 		}
-		rop_util_value_to_gc(prange_node->high_value, common_bytes1);
+		common_bytes1 = rop_util_value_to_gc(prange_node->high_value);
 		for (i=stack_length; i<6; i++) {
-			if (common_bytes[i] != common_bytes1[i]) {
+			if (common_bytes.ab[i] != common_bytes1.ab[i])
 				break;
-			}
 		}
 		if (stack_length != i && !idset_encoding_push_command(pbin,
-		    i - stack_length, common_bytes + stack_length))
+		    i - stack_length, &common_bytes.ab[stack_length]))
 			return FALSE;
-		if (FALSE == idset_encode_range_command(pbin, 6 - i,
-			common_bytes + i, common_bytes1 + i)) {
+		if (!idset_encode_range_command(pbin, 6 - i,
+		    &common_bytes.ab[i], &common_bytes1.ab[i]))
 			return FALSE;
-		}
 		if (stack_length != i && !idset_encoding_pop_command(pbin))
 			return FALSE;
 	}
@@ -747,7 +737,7 @@ static uint32_t idset_decoding_globset(
 	uint8_t start_value;
 	uint8_t stack_length;
 	RANGE_NODE *prange_node;
-	uint8_t common_bytes[6];
+	GLOBCNT common_bytes;
 	DOUBLE_LIST bytes_stack;
 	
 	offset = 0;
@@ -765,9 +755,9 @@ static uint32_t idset_decoding_globset(
 		case 0x4:
 		case 0x5:
 		case 0x6: /* push */
-			memcpy(common_bytes, pbin->pb + offset, command);
+			memcpy(common_bytes.ab, &pbin->pb[offset], command);
 			offset += command;
-			idset_stack_push(&bytes_stack, command, common_bytes);
+			idset_stack_push(&bytes_stack, command, common_bytes.ab);
 			stack_length = idset_stack_get_common_bytes(
 							&bytes_stack, common_bytes);
 			if (6 == stack_length) {
@@ -810,7 +800,7 @@ static uint32_t idset_decoding_globset(
 				return 0;
 			}
 			prange_node->node.pdata = prange_node;
-			common_bytes[5] = start_value;
+			common_bytes.ab[5] = start_value;
 			low_value = rop_util_gc_to_value(common_bytes);
 			prange_node->low_value = low_value;
 			prange_node->high_value = low_value;
@@ -859,11 +849,11 @@ static uint32_t idset_decoding_globset(
 				idset_stack_free(&bytes_stack);
 				return 0;
 			}
-			memcpy(common_bytes + stack_length,
+			memcpy(&common_bytes.ab[stack_length],
 				pbin->pb + offset, 6 - stack_length);
 			offset += 6 - stack_length;
 			prange_node->low_value = rop_util_gc_to_value(common_bytes);
-			memcpy(common_bytes + stack_length,
+			memcpy(&common_bytes.ab[stack_length],
 				pbin->pb + offset, 6 - stack_length);
 			offset += 6 - stack_length;
 			prange_node->high_value = rop_util_gc_to_value(common_bytes);

@@ -2531,7 +2531,7 @@ uint32_t zarafa_server_entryidfromsourcekey(
 		if (0 != memcmp(&tmp_guid, &tmp_xid.guid, sizeof(GUID))) {
 			return ecInvalidParam;
 		}
-		folder_id = rop_util_make_eid(1, tmp_xid.local_id);
+		folder_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 	} else {
 		auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
 		if (-1 == domain_id) {
@@ -2550,7 +2550,7 @@ uint32_t zarafa_server_entryidfromsourcekey(
 			if (!b_found)
 				return ecNotFound;
 		}
-		folder_id = rop_util_make_eid(replid, tmp_xid.local_id);
+		folder_id = rop_util_make_eid(replid, tmp_xid.local_to_gc());
 	}
 	if (NULL != pmessage_key) {
 		if (FALSE == common_util_binary_to_xid(
@@ -2562,7 +2562,7 @@ uint32_t zarafa_server_entryidfromsourcekey(
 			if (0 != memcmp(&tmp_guid, &tmp_xid.guid, sizeof(GUID))) {
 				return ecInvalidParam;
 			}
-			message_id = rop_util_make_eid(1, tmp_xid.local_id);
+			message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		} else {
 			auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
 			if (-1 == domain_id) {
@@ -2570,7 +2570,7 @@ uint32_t zarafa_server_entryidfromsourcekey(
 			}
 			if (domain_id != pstore->account_id)
 				return ecInvalidParam;
-			message_id = rop_util_make_eid(1, tmp_xid.local_id);
+			message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		}
 		pbin = common_util_to_message_entryid(
 				pstore, folder_id, message_id);
@@ -4491,7 +4491,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 			return ecInvalidParam;
 		}
-		message_id = rop_util_make_eid(1, tmp_xid.local_id);
+		message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		if (!exmdb_client::check_message(pstore->get_dir(), folder_id,
 		    message_id, &b_exist))
 			return ecError;
@@ -4646,7 +4646,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 				return ecAccessDenied;
 			}
 		}
-		parent_id1 = rop_util_make_eid(1, tmp_xid.local_id);
+		parent_id1 = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		if (!exmdb_client_get_folder_property(pstore->get_dir(), 0,
 		    parent_id1, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
@@ -4665,7 +4665,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 			return ecInvalidParam;
 		}
-		folder_id = rop_util_make_eid(1, tmp_xid.local_id);
+		folder_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 	} else {
 		auto tmp_guid = rop_util_make_domain_guid(pstore->account_id);
 		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
@@ -4680,9 +4680,9 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 				return ecError;
 			if (!b_found)
 				return ecInvalidParam;
-			folder_id = rop_util_make_eid(replid, tmp_xid.local_id);
+			folder_id = rop_util_make_eid(replid, tmp_xid.local_to_gc());
 		} else {
-			folder_id = rop_util_make_eid(1, tmp_xid.local_id);
+			folder_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		}
 	}
 	if (!exmdb_client::check_folder_id(pstore->get_dir(), folder_id, &b_exist))
@@ -4865,13 +4865,13 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 			if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 				return ecInvalidParam;
 			}
-			eid = rop_util_make_eid(1, tmp_xid.local_id);
+			eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		} else if (sync_type == SYNC_TYPE_CONTENTS) {
 			auto tmp_guid = rop_util_make_domain_guid(pstore->account_id);
 			if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 				return ecInvalidParam;
 			}
-			eid = rop_util_make_eid(1, tmp_xid.local_id);
+			eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		} else {
 			auto tmp_guid = rop_util_make_domain_guid(pstore->account_id);
 			if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
@@ -4887,9 +4887,9 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 					return ecError;
 				if (!b_found)
 					return ecInvalidParam;
-				eid = rop_util_make_eid(replid, tmp_xid.local_id);
+				eid = rop_util_make_eid(replid, tmp_xid.local_to_gc());
 			} else {
-				eid = rop_util_make_eid(1, tmp_xid.local_id);
+				eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
 			}
 		}
 		if (SYNC_TYPE_CONTENTS == sync_type) {
@@ -4955,7 +4955,6 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 	uint64_t read_cn;
 	uint8_t mapi_type;
 	uint64_t folder_id;
-	uint64_t message_id;
 	uint32_t permission;
 	uint32_t proptag_buff[2];
 	PROPTAG_ARRAY tmp_proptags;
@@ -4990,7 +4989,7 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 			continue;
 		}
-		message_id = rop_util_make_eid(1, tmp_xid.local_id);
+		auto message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		bool mark_as_read = pstates->pstate[i].message_flags & MSGFLAG_READ;
 		if (NULL != username) {
 			if (!exmdb_client_check_message_owner(pstore->get_dir(),

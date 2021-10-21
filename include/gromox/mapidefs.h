@@ -897,6 +897,10 @@ struct FLATUID_ARRAY {
 	FLATUID **ppguid;
 };
 
+struct GLOBCNT {
+	uint8_t ab[6];
+};
+
 struct GUID {
 	uint32_t time_low;
 	uint16_t time_mid;

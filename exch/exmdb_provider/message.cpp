@@ -2165,7 +2165,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 				}
 				tmp_xid.guid = rop_util_make_domain_guid(tmp_int);
 			}
-			rop_util_value_to_gc(change_num, tmp_xid.local_id);
+			memcpy(tmp_xid.local_id, rop_util_value_to_gc(change_num).ab, 6);
 			tmp_xid.size = 22;
 			pvalue = cu_xid_to_bin(std::move(tmp_xid));
 			if (NULL == pvalue) {

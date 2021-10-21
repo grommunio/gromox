@@ -396,9 +396,7 @@ uint32_t rop_syncuploadstatestreamend(void *plogmap,
 uint32_t rop_setlocalreplicamidsetdeleted(uint32_t count,
 	const LONG_TERM_ID_RANGE *prange, void *plogmap,
 	uint8_t logon_id, uint32_t hin);
-uint32_t rop_getlocalreplicaids(uint32_t count,
-	GUID *pguid, uint8_t *pglobal_count,
-	void *plogmap, uint8_t logon_id, uint32_t hin);
+extern uint32_t rop_getlocalreplicaids(uint32_t count, GUID *, GLOBCNT *, void *logmap, uint8_t logon_id, uint32_t hin);
 uint32_t rop_registernotification(
 	uint8_t notification_types, uint8_t reserved,
 	uint8_t want_whole_store, const uint64_t *pfolder_id,

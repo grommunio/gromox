@@ -491,7 +491,7 @@ uint32_t rop_longtermidfromid(uint64_t id,
 			}
 		}	
 	}
-	rop_util_get_gc_array(id, plong_term_id->global_counter);
+	plong_term_id->global_counter = rop_util_get_gc_array(id);
 	return ecSuccess;
 }	
 

@@ -1244,7 +1244,7 @@ static BINARY* common_util_to_folder_entryid(
 		}
 		tmp_entryid.folder_type = EITLT_PUBLIC_FOLDER;
 	}
-	rop_util_value_to_gc(folder_id, tmp_entryid.global_counter);
+	tmp_entryid.global_counter = rop_util_value_to_gc(folder_id);
 	tmp_entryid.pad[0] = 0;
 	tmp_entryid.pad[1] = 0;
 	auto pbin = cu_alloc<BINARY>();
@@ -1294,8 +1294,8 @@ static BINARY* common_util_to_message_entryid(
 		tmp_entryid.message_type = EITLT_PUBLIC_MESSAGE;
 	}
 	tmp_entryid.message_database_guid = tmp_entryid.folder_database_guid;
-	rop_util_value_to_gc(folder_id, tmp_entryid.folder_global_counter);
-	rop_util_value_to_gc(message_id, tmp_entryid.message_global_counter);
+	tmp_entryid.folder_global_counter = rop_util_value_to_gc(folder_id);
+	tmp_entryid.message_global_counter = rop_util_value_to_gc(message_id);
 	tmp_entryid.pad1[0] = 0;
 	tmp_entryid.pad1[1] = 0;
 	tmp_entryid.pad2[0] = 0;
@@ -3980,7 +3980,7 @@ BINARY* common_util_to_private_folder_entryid(
 	}
 	tmp_entryid.database_guid = rop_util_make_user_guid(user_id);
 	tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
-	rop_util_get_gc_array(folder_id, tmp_entryid.global_counter);
+	tmp_entryid.global_counter = rop_util_get_gc_array(folder_id);
 	tmp_entryid.pad[0] = 0;
 	tmp_entryid.pad[1] = 0;
 	pbin = cu_alloc<BINARY>();
@@ -4017,8 +4017,8 @@ BINARY* common_util_to_private_message_entryid(
 	tmp_entryid.folder_database_guid = rop_util_make_user_guid(user_id);
 	tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;
 	tmp_entryid.message_database_guid = tmp_entryid.folder_database_guid;
-	rop_util_get_gc_array(folder_id, tmp_entryid.folder_global_counter);
-	rop_util_get_gc_array(message_id, tmp_entryid.message_global_counter);
+	tmp_entryid.folder_global_counter = rop_util_get_gc_array(folder_id);
+	tmp_entryid.message_global_counter = rop_util_get_gc_array(message_id);
 	tmp_entryid.pad1[0] = 0;
 	tmp_entryid.pad1[1] = 0;
 	tmp_entryid.pad2[0] = 0;

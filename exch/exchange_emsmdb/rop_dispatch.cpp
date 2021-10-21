@@ -1672,7 +1672,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		auto rq = static_cast<GETLOCALREPLICAIDS_REQUEST *>(prequest->ppayload);
 		auto rsp = static_cast<GETLOCALREPLICAIDS_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_getlocalreplicaids(
-			rq->count, &rsp->guid, rsp->global_count,
+			rq->count, &rsp->guid, &rsp->global_count,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}

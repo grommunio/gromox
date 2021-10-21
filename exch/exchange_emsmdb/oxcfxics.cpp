@@ -135,8 +135,7 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 		    &b_found, &long_term_id.guid) || !b_found) {
 			return NULL;
 		}
-		rop_util_get_gc_array(folder_id,
-			long_term_id.global_counter);
+		long_term_id.global_counter = rop_util_get_gc_array(folder_id);
 		common_util_domain_to_essdn(plogon->get_account(),
 			tmp_essdn, GX_ARRAY_SIZE(tmp_essdn));
 		pbin = common_util_to_folder_replica(
@@ -895,7 +894,6 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	void *pvalue;
 	uint32_t result;
 	int object_type;
-	uint64_t message_id;
 	uint32_t permission = rightsNone, tag_access = 0, tmp_proptag;
 	PROPTAG_ARRAY proptags;
 	PROBLEM_ARRAY tmp_problems;
@@ -937,7 +935,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 		return ecInvalidParam;
 	}
-	message_id = rop_util_make_eid(1, tmp_xid.local_id);
+	auto message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 	if (!exmdb_client_check_message(plogon->get_dir(), folder_id,
 	    message_id, &b_exist))
 		return ecError;
@@ -1057,7 +1055,6 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 	int object_type;
 	uint64_t read_cn;
 	uint64_t folder_id;
-	uint64_t message_id;
 	uint32_t permission;
 	const char *username;
 	uint32_t proptag_buff[2];
@@ -1098,7 +1095,7 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 			continue;
 		}
-		message_id = rop_util_make_eid(1, tmp_xid.local_id);
+		auto message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		if (NULL != username) {
 			if (!exmdb_client_check_message_owner(plogon->get_dir(),
 			    message_id, username, &b_owner))
@@ -1220,7 +1217,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 				return ecAccessDenied;
 			}
 		}
-		parent_id1 = rop_util_make_eid(1, tmp_xid.local_id);
+		parent_id1 = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		if (!exmdb_client_get_folder_property(plogon->get_dir(), 0,
 		    parent_id1, PR_FOLDER_TYPE, &pvalue))
 			return ecError;
@@ -1242,7 +1239,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 			return ecInvalidParam;
 		}
-		folder_id = rop_util_make_eid(1, tmp_xid.local_id);
+		folder_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 	} else {
 		auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
 		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
@@ -1258,9 +1255,9 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			if (FALSE == b_found) {
 				return ecInvalidParam;
 			}
-			folder_id = rop_util_make_eid(replid, tmp_xid.local_id);
+			folder_id = rop_util_make_eid(replid, tmp_xid.local_to_gc());
 		} else {
-			folder_id = rop_util_make_eid(1, tmp_xid.local_id);
+			folder_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		}
 	}
 	if (!exmdb_client_check_folder_id(plogon->get_dir(), folder_id, &b_exist))
@@ -1476,14 +1473,14 @@ uint32_t rop_syncimportdeletes(
 			if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 				return ecInvalidParam;
 			}
-			eid = rop_util_make_eid(1, tmp_xid.local_id);
+			eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		} else {
 			if (SYNC_TYPE_CONTENTS == sync_type) {
 				auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
 				if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
 					return ecInvalidParam;
 				}
-				eid = rop_util_make_eid(1, tmp_xid.local_id);
+				eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
 			} else {
 				auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
 				if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
@@ -1500,9 +1497,9 @@ uint32_t rop_syncimportdeletes(
 					if (FALSE == b_found) {
 						return ecInvalidParam;
 					}
-					eid = rop_util_make_eid(replid, tmp_xid.local_id);
+					eid = rop_util_make_eid(replid, tmp_xid.local_to_gc());
 				} else {
-					eid = rop_util_make_eid(1, tmp_xid.local_id);
+					eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
 				}
 			}
 		}
@@ -1576,9 +1573,6 @@ uint32_t rop_syncimportmessagemove(
 	BOOL b_result;
 	uint32_t result;
 	int object_type;
-	uint64_t src_fid;
-	uint64_t src_mid;
-	uint64_t dst_mid;
 	uint32_t permission;
 	TAGGED_PROPVAL tmp_propval;
 	
@@ -1620,9 +1614,9 @@ uint32_t rop_syncimportmessagemove(
 		0 != guid_compare(&tmp_guid, &xid_dst.guid)) {
 		return ecInvalidParam;
 	}
-	src_fid = rop_util_make_eid(1, xid_fsrc.local_id);
-	src_mid = rop_util_make_eid(1, xid_src.local_id);
-	dst_mid = rop_util_make_eid(1, xid_dst.local_id);
+	auto src_fid = rop_util_make_eid(1, xid_fsrc.local_to_gc());
+	auto src_mid = rop_util_make_eid(1, xid_src.local_to_gc());
+	auto dst_mid = rop_util_make_eid(1, xid_dst.local_to_gc());
 	if (!exmdb_client_check_message(plogon->get_dir(),
 	    src_fid, src_mid, &b_exist))
 		return ecError;
@@ -1828,9 +1822,8 @@ uint32_t rop_setlocalreplicamidsetdeleted(uint32_t count,
 	return ecSuccess;
 }
 
-uint32_t rop_getlocalreplicaids(uint32_t count,
-	GUID *pguid, uint8_t *pglobal_count,
-	void *plogmap, uint8_t logon_id, uint32_t hin)
+uint32_t rop_getlocalreplicaids(uint32_t count, GUID *pguid,
+    GLOBCNT *pglobal_count, void *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
 	uint64_t begin_eid;
@@ -1848,6 +1841,6 @@ uint32_t rop_getlocalreplicaids(uint32_t count,
 		return ecError;
 	}
 	*pguid = plogon->guid();
-	rop_util_get_gc_array(begin_eid, pglobal_count);
+	*pglobal_count = rop_util_get_gc_array(begin_eid);
 	return ecSuccess;
 }

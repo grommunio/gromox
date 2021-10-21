@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <cstring>
 #include <gromox/proptags.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
@@ -40,7 +41,7 @@ struct FOLDER_ENTRYID {
 	uint8_t provider_uid[16];
 	uint16_t folder_type;
 	GUID database_guid;
-	uint8_t global_counter[6];
+	GLOBCNT global_counter;
 	uint8_t pad[2];
 };
 
@@ -49,10 +50,10 @@ struct MESSAGE_ENTRYID {
 	uint8_t provider_uid[16];
 	uint16_t message_type;
 	GUID folder_database_guid;
-	uint8_t folder_global_counter[6];
+	GLOBCNT folder_global_counter;
 	uint8_t pad1[2];
 	GUID message_database_guid;
-	uint8_t message_global_counter[6];
+	GLOBCNT message_global_counter;
 	uint8_t pad2[2];
 };
 
@@ -159,7 +160,7 @@ struct TYPED_PROPVAL {
 
 struct LONG_TERM_ID {
 	GUID guid;
-	uint8_t global_counter[6];
+	GLOBCNT global_counter;
 	uint16_t padding;
 };
 
@@ -176,6 +177,7 @@ struct LONG_TERM_ID_RANGE {
 struct XID {
 	XID() = default;
 	XID(GUID, uint64_t);
+	GLOBCNT local_to_gc() const { GLOBCNT r; memcpy(r.ab, local_id, 6); return r; }
 
 	GUID guid;
 	uint8_t local_id[8];
