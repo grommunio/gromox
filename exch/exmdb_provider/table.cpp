@@ -3189,7 +3189,6 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 	TABLE_NODE *ptnode;
 	INT_HASH_ITER *iter;
 	char sql_string[256];
-	INT_HASH_TABLE *phash;
 	DOUBLE_LIST_NODE *pnode;
 	uint32_t tmp_proptags[0x1000];
 	
@@ -3210,7 +3209,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 	ptnode = (TABLE_NODE*)pnode->pdata;
 	switch (ptnode->type) {
 	case TABLE_TYPE_HIERARCHY: {
-		phash = int_hash_init(0x1000, sizeof(int));
+		auto phash = int_hash_init(0x1000, sizeof(int));
 		if (NULL == phash) {
 			return FALSE;
 		}
@@ -3218,14 +3217,12 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 			"folder_id FROM t%u", ptnode->table_id);
 		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt == nullptr) {
-			int_hash_free(phash);
 			return FALSE;
 		}
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag "
 			"FROM folder_properties WHERE folder_id=?");
 		auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt1 == nullptr) {
-			int_hash_free(phash);
 			return FALSE;
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -3233,18 +3230,16 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 				sqlite3_column_int64(pstmt, 0));
 			while (SQLITE_ROW == sqlite3_step(pstmt1)) {
 				proptag = sqlite3_column_int64(pstmt1, 0);
-				if (NULL != int_hash_query(phash, proptag)) {
+				if (int_hash_query(phash.get(), proptag) != nullptr)
 					continue;	
-				}
-				int_hash_add(phash, proptag, &proptag);
+				int_hash_add(phash.get(), proptag, &proptag);
 			}
 			sqlite3_reset(pstmt1);
 		}
 		pstmt.finalize();
 		pstmt1.finalize();
-		iter = int_hash_iter_init(phash);
+		iter = int_hash_iter_init(phash.get());
 		if (NULL == iter) {
-			int_hash_free(phash);
 			return FALSE;
 		}
 		pproptags->count = 0;
@@ -3254,7 +3249,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 			tmp_proptags[pproptags->count++] = proptag;
 		}
 		int_hash_iter_free(iter);
-		int_hash_free(phash);
+		phash.reset();
 		tmp_proptags[pproptags->count++] = PROP_TAG_DEPTH;
 		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
 		if (NULL == pproptags->pproptag) {
@@ -3266,7 +3261,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		return TRUE;
 	}
 	case TABLE_TYPE_CONTENT:	 {
-		phash = int_hash_init(0x1000, sizeof(int));
+		auto phash = int_hash_init(0x1000, sizeof(int));
 		if (NULL == phash) {
 			return FALSE;
 		}
@@ -3274,14 +3269,12 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 				" row_type FROM t%u", ptnode->table_id);
 		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt == nullptr) {
-			int_hash_free(phash);
 			return FALSE;
 		}
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag "
 			"FROM message_properties WHERE message_id=?");
 		auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt1 == nullptr) {
-			int_hash_free(phash);
 			return FALSE;
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -3293,18 +3286,16 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 				sqlite3_column_int64(pstmt, 0));
 			while (SQLITE_ROW == sqlite3_step(pstmt1)) {
 				proptag = sqlite3_column_int64(pstmt1, 0);
-				if (NULL != int_hash_query(phash, proptag)) {
+				if (int_hash_query(phash.get(), proptag) != nullptr)
 					continue;	
-				}
-				int_hash_add(phash, proptag, &proptag);
+				int_hash_add(phash.get(), proptag, &proptag);
 			}
 			sqlite3_reset(pstmt1);
 		}
 		pstmt.finalize();
 		pstmt1.finalize();
-		iter = int_hash_iter_init(phash);
+		iter = int_hash_iter_init(phash.get());
 		if (NULL == iter) {
-			int_hash_free(phash);
 			return FALSE;
 		}
 		pproptags->count = 0;
@@ -3314,7 +3305,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 			tmp_proptags[pproptags->count++] = proptag;
 		}
 		int_hash_iter_free(iter);
-		int_hash_free(phash);
+		phash.reset();
 		tmp_proptags[pproptags->count++] = PROP_TAG_MID;
 		tmp_proptags[pproptags->count++] = PR_MESSAGE_SIZE;
 		tmp_proptags[pproptags->count++] = PR_ASSOCIATED;

@@ -137,9 +137,7 @@ int STR_HASH_TABLE::add(const char *key, const void *value)
 	if (ptbl->item_num >= ptbl->capacity) {
 		return -2;
 	}
-	
 	list_node = lib_buffer_get(ptbl->buf_pool);
-
 	if (NULL == list_node) {
 		debug_info("[str_hash]: str_hash_add, lib_buffer_get fail");
 		return -3;

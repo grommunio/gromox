@@ -2,6 +2,7 @@
 #include <csignal>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <mutex>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
@@ -49,7 +50,7 @@
 namespace {
 
 struct LOGON_ITEM {
-	INT_HASH_TABLE *phash;
+	std::unique_ptr<INT_HASH_TABLE> phash;
 	SIMPLE_TREE tree;
 };
 
@@ -92,7 +93,7 @@ static void rop_processor_enum_objnode(SIMPLE_TREE_NODE *pnode,
 	
 	plogitem = (LOGON_ITEM*)pparam;
 	pobjnode = (OBJECT_NODE*)pnode->pdata;
-	int_hash_remove(plogitem->phash, pobjnode->handle);
+	int_hash_remove(plogitem->phash.get(), pobjnode->handle);
 }
 
 static void rop_processor_free_object(void *pobject, int type)
@@ -176,8 +177,7 @@ static void rop_processor_release_objnode(
 		&pobjnode->node, rop_processor_free_objnode);
 	if (TRUE == b_root) {
 		simple_tree_free(&plogitem->tree);
-		int_hash_free(plogitem->phash);
-		plogitem->phash = NULL;
+		plogitem->phash.reset();
 		lib_buffer_put(g_logitem_allocator, plogitem);
 	}
 }
@@ -253,7 +253,6 @@ int rop_processor_add_object_handle(void *plogmap, uint8_t logon_id,
 	int parent_handle, int type, void *pobject)
 {
 	int tmp_handle;
-	INT_HASH_ITER *iter;
 	LOGON_ITEM *plogitem;
 	OBJECT_NODE *pobjnode;
 	OBJECT_NODE *ptmphanle;
@@ -273,7 +272,7 @@ int rop_processor_add_object_handle(void *plogmap, uint8_t logon_id,
 		}
 		ppparent = NULL;
 	} else if (parent_handle >= 0 && parent_handle < 0x7FFFFFFF) {
-		ppparent = static_cast<OBJECT_NODE **>(int_hash_query(plogitem->phash, parent_handle));
+		ppparent = static_cast<OBJECT_NODE **>(int_hash_query(plogitem->phash.get(), parent_handle));
 		if (NULL == ppparent) {
 			return -5;
 		}
@@ -291,23 +290,22 @@ int rop_processor_add_object_handle(void *plogmap, uint8_t logon_id,
 	pobjnode->node.pdata = pobjnode;
 	pobjnode->type = type;
 	pobjnode->pobject = pobject;
-	if (1 != int_hash_add(plogitem->phash, pobjnode->handle, &pobjnode)) {
-		INT_HASH_TABLE *phash = int_hash_init(plogitem->phash->capacity +
+	if (int_hash_add(plogitem->phash.get(), pobjnode->handle, &pobjnode) != 1) {
+		auto phash = int_hash_init(plogitem->phash->capacity +
 		                        HGROWING_SIZE, sizeof(OBJECT_NODE *));
 		if (NULL == phash) {
 			lib_buffer_put(g_handle_allocator, pobjnode);
 			return -8;
 		}
-		iter = int_hash_iter_init(plogitem->phash);
+		auto iter = int_hash_iter_init(plogitem->phash.get());
 		for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
 			int_hash_iter_forward(iter)) {
 			ptmphanle = static_cast<OBJECT_NODE *>(int_hash_iter_get_value(iter, &tmp_handle));
-			int_hash_add(phash, tmp_handle, ptmphanle);
+			int_hash_add(phash.get(), tmp_handle, ptmphanle);
 		}
 		int_hash_iter_free(iter);
-		int_hash_free(plogitem->phash);
-		plogitem->phash = phash;
-		int_hash_add(plogitem->phash, pobjnode->handle, &pobjnode);
+		plogitem->phash = std::move(phash);
+		int_hash_add(plogitem->phash.get(), pobjnode->handle, &pobjnode);
 	}
 	if (NULL == ppparent) {
 		simple_tree_set_root(&plogitem->tree, &pobjnode->node);
@@ -326,7 +324,6 @@ void* rop_processor_get_object(void *plogmap,
 	uint8_t logon_id, uint32_t obj_handle, int *ptype)
 {
 	LOGON_ITEM *plogitem;
-	OBJECT_NODE **ppobjnode;
 	
 	if (obj_handle >= 0x7FFFFFFF) {
 		return NULL;
@@ -335,7 +332,7 @@ void* rop_processor_get_object(void *plogmap,
 	if (NULL == plogitem) {
 		return NULL;
 	}
-	ppobjnode = static_cast<OBJECT_NODE **>(int_hash_query(plogitem->phash, obj_handle));
+	auto ppobjnode = static_cast<OBJECT_NODE **>(int_hash_query(plogitem->phash.get(), obj_handle));
 	if (NULL == ppobjnode) {
 		return NULL;
 	}
@@ -347,7 +344,6 @@ void rop_processor_release_object_handle(void *plogmap,
 	uint8_t logon_id, uint32_t obj_handle)
 {
 	LOGON_ITEM *plogitem;
-	OBJECT_NODE **ppobjnode;
 	EMSMDB_INFO *pemsmdb_info;
 	
 	if (obj_handle >= 0x7FFFFFFF) {
@@ -357,7 +353,7 @@ void rop_processor_release_object_handle(void *plogmap,
 	if (NULL == plogitem) {
 		return;
 	}
-	ppobjnode = static_cast<OBJECT_NODE **>(int_hash_query(plogitem->phash, obj_handle));
+	auto ppobjnode = static_cast<OBJECT_NODE **>(int_hash_query(plogitem->phash.get(), obj_handle));
 	if (NULL == ppobjnode) {
 		return;
 	}

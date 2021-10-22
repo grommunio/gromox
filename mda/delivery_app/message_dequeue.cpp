@@ -58,7 +58,7 @@ static size_t			g_max_memory;   /* maximum allocated memory for mess*/
 static size_t			g_current_mem;  /*current allocated memory */
 static MESSAGE			*g_message_ptr;
 static SINGLE_LIST				g_used_list;
-static INT_HASH_TABLE	*g_mess_hash;
+static std::unique_ptr<INT_HASH_TABLE> g_mess_hash;
 static SINGLE_LIST				g_free_list;
 static std::mutex g_hash_mutex, g_used_mutex, g_free_mutex, g_mess_mutex;
 static pthread_t		g_thread_id;
@@ -143,10 +143,7 @@ static void message_dequeue_collect_resource()
 		free(g_message_ptr);
 		g_message_ptr = NULL;	
 	}
-	if (NULL != g_mess_hash) {
-		int_hash_free(g_mess_hash);
-		g_mess_hash = NULL;
-	}
+	g_mess_hash.reset();
 }
 
 int message_dequeue_run()
@@ -242,7 +239,7 @@ void message_dequeue_put(MESSAGE *pmessage) try
 	if (remove(name.c_str()) < 0 && errno != ENOENT)
 		fprintf(stderr, "W-1352: remove %s: %s\n", name.c_str(), strerror(errno));
 	std::unique_lock h(g_hash_mutex);
-	int_hash_remove(g_mess_hash, pmessage->message_data);
+	int_hash_remove(g_mess_hash.get(), pmessage->message_data);
 	h.unlock();
 	message_dequeue_put_to_free(pmessage);
 	g_dequeued_num ++;
@@ -370,12 +367,11 @@ static void message_dequeue_put_to_used(MESSAGE *pmessage)
 static void message_dequeue_load_from_mess(int mess)
 {
 	struct stat node_stat;
-	MESSAGE *pmessage;
 	char *ptr;
 	size_t size;
 
 	std::unique_lock h(g_hash_mutex);
-    pmessage = (MESSAGE*)int_hash_query(g_mess_hash, mess);
+	auto pmessage = static_cast<MESSAGE *>(int_hash_query(g_mess_hash.get(), mess));
 	h.unlock();
 	if (NULL != pmessage) {
 		return;
@@ -416,7 +412,7 @@ static void message_dequeue_load_from_mess(int mess)
 	message_dequeue_retrieve_to_message(pmessage, ptr);
 	message_dequeue_put_to_used(pmessage);
 	h.lock();
-	int_hash_add(g_mess_hash, mess, pmessage);
+	int_hash_add(g_mess_hash.get(), mess, pmessage);
 }
 
 static void *mdq_thrwork(void *arg)

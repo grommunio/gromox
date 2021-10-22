@@ -46,7 +46,7 @@ struct logon_object {
 	char dir[256]{};
 	GUID mailbox_guid{};
 	PROPERTY_GROUPINFO *m_gpinfo = nullptr;
-	INT_HASH_TABLE *ppropid_hash = nullptr;
+	std::unique_ptr<INT_HASH_TABLE> ppropid_hash;
 	std::unique_ptr<STR_HASH_TABLE> ppropname_hash;
 	DOUBLE_LIST group_list{};
 };

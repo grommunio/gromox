@@ -95,7 +95,7 @@ static std::list<PROC_PLUGIN> g_plugin_list;
 static std::mutex g_list_lock, g_async_lock;
 static DOUBLE_LIST g_endpoint_list;
 static bool g_ign_loaderr;
-static INT_HASH_TABLE *g_async_hash;
+static std::unique_ptr<INT_HASH_TABLE> g_async_hash;
 static LIB_BUFFER *g_call_allocator;
 static DOUBLE_LIST g_processor_list;
 static LIB_BUFFER *g_auth_allocator;
@@ -274,7 +274,7 @@ static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
 			break;
 		}
 		pasync_node = (ASYNC_NODE*)pnode->pdata;
-		int_hash_remove(g_async_hash, pasync_node->async_id);
+		int_hash_remove(g_async_hash.get(), pasync_node->async_id);
 		as_hold.unlock();
 		if (NULL != pcontext->pinterface->reclaim) {
 			pcontext->pinterface->reclaim(pasync_node->async_id);
@@ -361,11 +361,7 @@ void pdu_processor_stop()
 		lib_buffer_free(g_processor_allocator);
 		g_processor_allocator = NULL;
 	}
-	if (NULL != g_async_hash) {
-		int_hash_free(g_async_hash);
-		g_async_hash = NULL;
-	}
-	
+	g_async_hash.reset();
 	pthread_key_delete(g_call_key);
 	pthread_key_delete(g_stack_key);
 }
@@ -1889,7 +1885,7 @@ static uint32_t pdu_processor_apply_async_id()
 		g_last_async_id = 0;
 	}
 	pfake_async = NULL;
-	if (1 != int_hash_add(g_async_hash, async_id, &pfake_async)) {
+	if (int_hash_add(g_async_hash.get(), async_id, &pfake_async) != 1) {
 		as_hold.unlock();
 		lib_buffer_put(g_async_allocator, pasync_node);
 		return 0;
@@ -1905,14 +1901,13 @@ static void pdu_processor_activate_async_id(uint32_t async_id)
 	DCERPC_CALL *pcall;
 	DOUBLE_LIST_NODE *pnode;
 	ASYNC_NODE *pasync_node;
-	ASYNC_NODE **ppasync_node;
 	
 	pcall = pdu_processor_get_call();
 	if (NULL == pcall) {
 		return;
 	}
 	std::lock_guard as_hold(g_async_lock);
-	ppasync_node = static_cast<ASYNC_NODE **>(int_hash_query(g_async_hash, async_id));
+	auto ppasync_node = static_cast<ASYNC_NODE **>(int_hash_query(g_async_hash.get(), async_id));
 	if (NULL == ppasync_node || NULL != *ppasync_node) {
 		return;
 	}
@@ -1931,14 +1926,13 @@ static void pdu_processor_cancel_async_id(uint32_t async_id)
 	DCERPC_CALL *pcall;
 	DOUBLE_LIST_NODE *pnode;
 	ASYNC_NODE *pasync_node;
-	ASYNC_NODE **ppasync_node;
 	
 	pcall = pdu_processor_get_call();
 	if (NULL == pcall) {
 		return;
 	}
 	std::unique_lock as_hold(g_async_lock);
-	ppasync_node = static_cast<ASYNC_NODE **>(int_hash_query(g_async_hash, async_id));
+	auto ppasync_node = static_cast<ASYNC_NODE **>(int_hash_query(g_async_hash.get(), async_id));
 	if (NULL == ppasync_node || NULL != *ppasync_node) {
 		return;
 	}
@@ -1946,7 +1940,7 @@ static void pdu_processor_cancel_async_id(uint32_t async_id)
 		pnode=double_list_get_after(&pcall->pcontext->async_list, pnode)) {
 		pasync_node = (ASYNC_NODE*)pnode->pdata;
 		if (pasync_node->async_id == async_id) {
-			int_hash_remove(g_async_hash, async_id);
+			int_hash_remove(g_async_hash.get(), async_id);
 			double_list_remove(&pcall->pcontext->async_list, pnode);
 			break;
 		}
@@ -1962,11 +1956,10 @@ static void pdu_processor_cancel_async_id(uint32_t async_id)
 static BOOL pdu_processor_rpc_build_environment(int async_id)
 {
 	ASYNC_NODE *pasync_node;
-	ASYNC_NODE **ppasync_node;
 	
  BUILD_BEGIN:
 	std::unique_lock as_hold(g_async_lock);
-	ppasync_node = static_cast<ASYNC_NODE **>(int_hash_query(g_async_hash, async_id));
+	auto ppasync_node = static_cast<ASYNC_NODE **>(int_hash_query(g_async_hash.get(), async_id));
 	if (NULL == ppasync_node) {
 		return FALSE;
 	} else if (NULL == *ppasync_node) {
@@ -1977,7 +1970,7 @@ static BOOL pdu_processor_rpc_build_environment(int async_id)
 	pasync_node = *ppasync_node;
 	/* remove from async hash table to forbidden
 		cancel pdu while async replying */
-	int_hash_remove(g_async_hash, async_id);
+	int_hash_remove(g_async_hash.get(), async_id);
 	as_hold.unlock();
 	pthread_setspecific(g_call_key,
 			(const void*)pasync_node->pcall);
@@ -2150,7 +2143,7 @@ static void pdu_processor_process_cancel(DCERPC_CALL *pcall)
 	DOUBLE_LIST *plist;
 	DOUBLE_LIST_NODE *pnode, *pnode1 = nullptr;
 	DCERPC_CONTEXT *pcontext = nullptr;
-	ASYNC_NODE *pasync_node = nullptr, **ppasync_node;
+	ASYNC_NODE *pasync_node = nullptr;
 	
 	async_id = 0;
 	b_cancel = FALSE;
@@ -2170,10 +2163,10 @@ static void pdu_processor_process_cancel(DCERPC_CALL *pcall)
 		}
 	}
 	if (0 != async_id) {
-		ppasync_node = static_cast<ASYNC_NODE **>(int_hash_query(g_async_hash, async_id));
+		auto ppasync_node = static_cast<ASYNC_NODE **>(int_hash_query(g_async_hash.get(), async_id));
 		if (NULL != ppasync_node && NULL != *ppasync_node) {
 			b_cancel = TRUE;
-			int_hash_remove(g_async_hash, async_id);
+			int_hash_remove(g_async_hash.get(), async_id);
 			double_list_remove(&pcontext->async_list, pnode1);
 		}
 	}

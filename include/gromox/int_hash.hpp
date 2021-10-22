@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <gromox/lib_buffer.hpp>
 #include <gromox/double_list.hpp>
 
@@ -9,14 +10,16 @@ struct INT_HASH_ITEM {
     DOUBLE_LIST_NODE iter_node;
 };
 
-struct INT_HASH_TABLE {
-    size_t      capacity;
-    size_t      entry_num;
-    size_t      data_size;
-    size_t      item_num;
-    DOUBLE_LIST iter_list;
-    DOUBLE_LIST*    hash_map;
-    LIB_BUFFER* buf_pool;
+struct GX_EXPORT INT_HASH_TABLE {
+	INT_HASH_TABLE(size_t max_items, size_t item_size);
+	INT_HASH_TABLE(INT_HASH_TABLE &&) = delete;
+	~INT_HASH_TABLE();
+	void operator=(INT_HASH_TABLE &&) = delete;
+
+	size_t capacity = 0, entry_num = 0, data_size = 0, item_num = 0;
+	DOUBLE_LIST iter_list{};
+	std::unique_ptr<DOUBLE_LIST[]> hash_map;
+	LIB_BUFFER *buf_pool = nullptr;
 };
 
 struct INT_HASH_ITER {
@@ -31,9 +34,7 @@ struct INT_HASH_ITER {
  return a int, if the fun is NULL then a default hash function will
  be used
  */
-extern INT_HASH_TABLE *int_hash_init(size_t max_items, size_t item_size);
-/* free the specified hash table */
-void int_hash_free(INT_HASH_TABLE* ptbl);
+extern GX_EXPORT std::unique_ptr<INT_HASH_TABLE> int_hash_init(size_t max_items, size_t item_size);
 /* add the key and value into the specified hash table */
 int int_hash_add(INT_HASH_TABLE* ptbl, int key, void *value);
 /* query if the key is exist in the hash table */

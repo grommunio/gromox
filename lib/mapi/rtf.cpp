@@ -247,7 +247,7 @@ struct RTF_READER {
 	char default_encoding[32] = "windows-1252", current_encoding[32]{};
 	char html_charset[32]{};
 	int default_font_number = 0;
-	INT_HASH_TABLE *pfont_hash = nullptr;
+	std::unique_ptr<INT_HASH_TABLE> pfont_hash;
 	DOUBLE_LIST attr_stack_list{};
 	EXT_PULL ext_pull{};
 	EXT_PUSH ext_push{};
@@ -500,7 +500,7 @@ static const FONTENTRY *rtf_lookup_font(RTF_READER *preader, int num)
 	if (num < 0) {
 		return &fake_entries[-num-1];
 	}
-	return static_cast<FONTENTRY *>(int_hash_query(preader->pfont_hash, num));
+	return static_cast<FONTENTRY *>(int_hash_query(preader->pfont_hash.get(), num));
 }
 
 static bool rtf_add_to_collection(DOUBLE_LIST *plist, int nr, const char *text)
@@ -598,7 +598,7 @@ RTF_READER::~RTF_READER()
 	SIMPLE_TREE_NODE *proot;
 	ATTRSTACK_NODE *pattrstack;
 	
-	int_hash_free(preader->pfont_hash);
+	preader->pfont_hash.reset();
 	while ((pnode = double_list_pop_front(&preader->attr_stack_list)) != nullptr) {
 		pattrstack = (ATTRSTACK_NODE*)pnode->pdata;
 		free(pattrstack);
@@ -1656,7 +1656,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 			*ptoken = '\0';
 		}
 		gx_strlcpy(tmp_entry.name, name, GX_ARRAY_SIZE(tmp_entry.name));
-		int_hash_add(preader->pfont_hash, num, &tmp_entry);
+		int_hash_add(preader->pfont_hash.get(), num, &tmp_entry);
 	} while ((pword = simple_tree_node_get_sibling(pword)) != nullptr);
 	if ('\0' == preader->default_encoding[0]) {
 		strcpy(preader->default_encoding, "windows-1252");

@@ -1188,7 +1188,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	uint16_t last_propid;
 	PROPID_ARRAY propids;
 	PROPID_ARRAY propids1;
-	INT_HASH_TABLE *phash1;
 	TAGGED_PROPVAL propval;
 	PROPNAME_ARRAY propnames;
 	TNEF_ATTRIBUTE attribute;
@@ -1693,23 +1692,23 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	if (FALSE == get_propids(&propnames, &propids1)) {
 		return NULL;
 	}
-	phash1 = int_hash_init(0x1000, sizeof(uint16_t));
+	auto phash1 = int_hash_init(0x1000, sizeof(uint16_t));
 	if (NULL == phash1) {
 		return NULL;
 	}
 	for (size_t i = 0; i < propids.count; ++i)
-		int_hash_add(phash1, propids.ppropid[i], propids1.ppropid + i);
-	tnef_replace_propid(&pmsg->proplist, phash1);
+		int_hash_add(phash1.get(), propids.ppropid[i], propids1.ppropid + i);
+	tnef_replace_propid(&pmsg->proplist, phash1.get());
 	if (NULL != pmsg->children.prcpts) {
 		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i)
-			tnef_replace_propid(pmsg->children.prcpts->pparray[i], phash1);
+			tnef_replace_propid(pmsg->children.prcpts->pparray[i], phash1.get());
 	}
 	if (NULL != pmsg->children.pattachments) {
 		for (size_t i = 0; i < pmsg->children.pattachments->count; ++i)
 			tnef_replace_propid(
-				&pmsg->children.pattachments->pplist[i]->proplist, phash1);
+				&pmsg->children.pattachments->pplist[i]->proplist, phash1.get());
 	}
-	int_hash_free(phash1);
+	phash1.reset();
 	
 	if (tpropval_array_get_propval(&pmsg->proplist, PR_INTERNET_CPID) == nullptr) {
 		propval.proptag = PR_INTERNET_CPID;
