@@ -751,7 +751,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 	return X_LOOP;
 }
 
-static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, const STREAM &stream_1)
+static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 {
 	auto tmp_len = mem_file_get_total_length(
 	               &pcontext->request.f_request_uri);
@@ -860,7 +860,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, const STREAM &stream_1)
 			new(pcontext->pchannel) RPC_OUT_CHANNEL;
 		}
 	}
-	pcontext->bytes_rw = stream_get_total_length(&stream_1);
+	pcontext->bytes_rw = stream_1_written;
 	pcontext->sched_stat = SCHED_STAT_RDBODY;
 	return X_LOOP;
 }
@@ -991,6 +991,7 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 		}
 		stream_free(&pcontext->stream_in);
 		pcontext->stream_in = stream_1;
+		auto stream_1_written = stream_get_total_length(&pcontext->stream_in);
 
 		char tmp_buff[2048], tmp_buff1[1024];
 		size_t decode_len = 0;
@@ -1011,7 +1012,7 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 
 		if (0 == strcasecmp(pcontext->request.method, "RPC_IN_DATA") ||
 		    0 == strcasecmp(pcontext->request.method, "RPC_OUT_DATA")) {
-			return htp_delegate_rpc(pcontext, stream_1);
+			return htp_delegate_rpc(pcontext, stream_1_written);
 		}
 		/* try to make hpm_processor take over the request */
 		if (TRUE == hpm_processor_get_context(pcontext)) {
