@@ -9,6 +9,7 @@
 #include <memory>
 #include <mutex>
 #include <unordered_map>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -18,12 +19,12 @@
 #include <gromox/paths.h>
 #include <gromox/socket.h>
 #include <gromox/util.hpp>
-#include <gromox/fifo.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/double_list.hpp>
+#include <gromox/single_list.hpp>
 #include <ctime>
 #include <cstdio>
 #include <unistd.h>
@@ -51,6 +52,19 @@
 using namespace gromox;
 
 namespace {
+
+#define EXTRA_FIFOITEM_SIZE sizeof(SINGLE_LIST)
+struct FIFO {
+	FIFO() = default;
+	FIFO(LIB_BUFFER *, size_t data_size, size_t max_size);
+	BOOL enqueue(void *);
+	void *get_front();
+	void dequeue();
+
+	LIB_BUFFER *mbuf_pool = nullptr;
+	SINGLE_LIST mlist{};
+	size_t data_size = 0, cur_size = 0, max_size = 0;
+};
 
 struct ENQUEUE_NODE {
 	~ENQUEUE_NODE() { if (sockd >= 0) close(sockd); }
@@ -112,6 +126,68 @@ static BOOL read_response(int sockd);
 static BOOL read_mark(ENQUEUE_NODE *penqueue);
 
 static void term_handler(int signo);
+
+static inline LIB_BUFFER *fifo_allocator_init(size_t data_size,
+    size_t max_size, BOOL thread_safe)
+{
+	return lib_buffer_init(data_size + EXTRA_FIFOITEM_SIZE,
+	       max_size, thread_safe);
+}
+
+/**
+ * A FIFO implemented using a singly-linked list. The core is maintained
+ * outside the FIFO, but the FIFO will give back a node-sized memory every time
+ * you call deque, unless the FIFO is empty.
+ */
+FIFO::FIFO(LIB_BUFFER *pbuf_pool, size_t ds, size_t ms) :
+	mbuf_pool(pbuf_pool), data_size(ds), max_size(ms)
+{
+	if (pbuf_pool == nullptr)
+		throw std::invalid_argument("FIFO with no LIB_BUFFER");
+	single_list_init(&mlist);
+}
+
+/* Returns TRUE on success, or FALSE if the FIFO is full. */
+BOOL FIFO::enqueue(void *pdata)
+{
+#ifdef _DEBUG_UMTA
+	if (pdata == nullptr)
+		debug_info("[fifo]: fifo_enqueue, param nullptr");
+#endif
+	if (cur_size >= max_size)
+		return false;
+	auto node = static_cast<SINGLE_LIST_NODE *>(lib_buffer_get(mbuf_pool));
+	node->pdata = reinterpret_cast<char *>(node) + sizeof(SINGLE_LIST_NODE);
+	memcpy(node->pdata, pdata, data_size);
+	single_list_append_as_tail(&mlist, node);
+	++cur_size;
+	return TRUE;
+}
+
+/**
+ * Dequeues the top item from the specified FIFO, and gives back the data size
+ * of memory to the outside allocator
+ */
+void FIFO::dequeue()
+{
+	if (cur_size <= 0)
+		return;
+	auto node = single_list_pop_front(&mlist);
+	lib_buffer_put(mbuf_pool, node);
+	--cur_size;
+}
+
+/**
+ * Returns a pointer to the data at the front of the specified FIFO, or nullptr
+ * if the FIFO is empty.
+ */
+void *FIFO::get_front()
+{
+	if (cur_size <= 0)
+		return nullptr;
+	auto node = single_list_get_head(&mlist);
+	return node != nullptr ? node->pdata : nullptr;
+}
 
 DEQUEUE_NODE::~DEQUEUE_NODE()
 {
