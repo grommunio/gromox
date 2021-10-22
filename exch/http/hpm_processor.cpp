@@ -24,6 +24,7 @@
 #include <fcntl.h>
 
 using namespace std::string_literals;
+using namespace gromox;
 
 enum {
 	RESP_FAIL,

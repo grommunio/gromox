@@ -287,7 +287,7 @@ BOOL rop_util_get_common_pset(unsigned int pset_type, GUID *pguid)
 		guid_from_string(&guids[PSETID_KCARCHIVE], "72e98ebc-57d2-4ab5-b0aad50a7b531cb9");
 		b_parsed = TRUE;
 	}
-	if (pset_type >= GX_ARRAY_SIZE(guids))
+	if (pset_type >= gromox::arsizeof(guids))
 		return FALSE;
 	*pguid = guids[pset_type];
 	return TRUE;

@@ -19,6 +19,8 @@
 #define FLUSHER_VERSION     0x00000001
 #define MAX_CIRCLE_NUMBER   0x7FFFFFFF
 
+using namespace gromox;
+
 namespace {
 
 struct SERVICE_NODE {
@@ -71,7 +73,7 @@ void flusher_init(size_t queue_len)
 		return;
 	}
 	g_flusher_plug->flush_cancel = NULL;
-	gx_strlcpy(g_flusher_plug->path, path, gromox::arsizeof(g_flusher_plug->path));
+	gx_strlcpy(g_flusher_plug->path, path, GX_ARRAY_SIZE(g_flusher_plug->path));
 	auto pname = strrchr(path, '/');
 	gx_strlcpy(g_flusher_plug->file_name, pname != nullptr ? pname + 1 : path,
 		GX_ARRAY_SIZE(g_flusher_plug->file_name));

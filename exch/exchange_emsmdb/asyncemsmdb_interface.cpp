@@ -24,6 +24,8 @@
 
 #define FLAG_NOTIFICATION_PENDING				0x00000001
 
+using namespace gromox;
+
 namespace {
 
 struct ASYNC_WAIT {

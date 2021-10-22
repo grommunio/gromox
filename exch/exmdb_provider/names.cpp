@@ -5,6 +5,8 @@
 #include <gromox/exmdb_rpc.hpp>
 #include "common_util.h"
 
+using namespace gromox;
+
 #define EXP(s) exmdb_callid::s
 #define E(s) #s
 static constexpr const char *exmdb_rpc_names[] = {

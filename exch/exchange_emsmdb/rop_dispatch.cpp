@@ -11,6 +11,8 @@
 #include "rop_ids.h"
 #include <gromox/util.hpp>
 
+using namespace gromox;
+
 unsigned int g_rop_debug;
 
 int rop_dispatch(ROP_REQUEST *prequest,

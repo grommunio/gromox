@@ -29,6 +29,8 @@
 #include <pthread.h>
 #include <cstring>
 
+using namespace gromox;
+
 static void *htls_thrwork(void *);
 static void *htls_thrworkssl(void *);
 

@@ -61,7 +61,7 @@ int listener_run(const char *CS_PATH)
 	/* Fill in socket address structure */
 	memset(&unix_addr, 0, sizeof (unix_addr));
 	unix_addr.sun_family = AF_UNIX;
-	gx_strlcpy(unix_addr.sun_path, CS_PATH, GX_ARRAY_SIZE(unix_addr.sun_path));
+	gx_strlcpy(unix_addr.sun_path, CS_PATH, gromox::arsizeof(unix_addr.sun_path));
 	len = sizeof(unix_addr.sun_family) + strlen(unix_addr.sun_path);
 	/* Bind the name to the descriptor */
 	if (bind(g_listen_sockd, (struct sockaddr*)&unix_addr, len) < 0) {

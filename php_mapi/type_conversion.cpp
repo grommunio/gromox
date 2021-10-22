@@ -11,6 +11,8 @@
 #include "ext.hpp"
 #define TIME_FIXUP_CONSTANT_INT				11644473600LL
 
+using namespace gromox;
+
 uint64_t unix_to_nttime(time_t unix_time)
 {
 	uint64_t nt_time; 

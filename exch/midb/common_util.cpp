@@ -15,6 +15,8 @@
 #include <cstring>
 #include <cstdlib>
 
+using namespace gromox;
+
 namespace {
 struct COMMAND_CONTEXT {
 	ALLOC_CONTEXT alloc_ctx;

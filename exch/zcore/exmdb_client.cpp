@@ -666,7 +666,7 @@ BOOL exmdb_client_check_message_owner(const char *dir,
 		return TRUE;
 	}
 	if (!common_util_essdn_to_username(ab_entryid.px500dn,
-	    tmp_name, GX_ARRAY_SIZE(tmp_name))) {
+	    tmp_name, gromox::arsizeof(tmp_name))) {
 		*pb_owner = false;
 		return TRUE;
 	}

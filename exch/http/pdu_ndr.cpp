@@ -11,6 +11,8 @@
 #define TRY(expr) do { int klfdv = (expr); if (klfdv != NDR_ERR_SUCCESS) return klfdv; } while (false)
 #define IPV6_BYTES		16
 
+using namespace gromox;
+
 static int pdu_ndr_pull_dcerpc_object(NDR_PULL *pndr, DCERPC_OBJECT *r)
 {
 	TRY(ndr_pull_union_align(pndr, 4));

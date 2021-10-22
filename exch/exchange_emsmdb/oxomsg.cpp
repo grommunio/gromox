@@ -16,6 +16,7 @@
 #include <cstdio>
 
 using namespace std::string_literals;
+using namespace gromox;
 
 static gxerr_t oxomsg_rectify_message(message_object *pmessage,
     const char *representing_username)

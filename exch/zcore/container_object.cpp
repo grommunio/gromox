@@ -21,6 +21,8 @@
 #include <gromox/propval.hpp>
 #include <cstdio>
 
+using namespace gromox;
+
 std::unique_ptr<container_object>
 container_object::create(uint8_t type, CONTAINER_ID id)
 {

@@ -35,6 +35,8 @@
 
 #define BOUNDARY_STRING				"00000000000000000001"
 
+using namespace gromox;
+
 namespace {
 struct CACHE_ITEM {
 	DOUBLE_LIST_NODE node;

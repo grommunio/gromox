@@ -5,6 +5,8 @@
 #include <gromox/zcore_rpc.hpp>
 #include "common_util.h"
 
+using namespace gromox;
+
 #define EXP(s) zcore_callid::s
 #define E(s) #s
 static constexpr const char *zcore_rpc_names[] = {

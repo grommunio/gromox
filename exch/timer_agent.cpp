@@ -31,6 +31,8 @@
 
 #define MAX_CMD_LENGTH			64*1024
 
+using namespace gromox;
+
 namespace {
 
 struct BACK_CONN {

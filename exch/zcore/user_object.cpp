@@ -8,6 +8,8 @@
 #include "ab_tree.h"
 #include <cstdio>
 
+using namespace gromox;
+
 std::unique_ptr<user_object> user_object::create(int base_id, uint32_t minid)
 {
 	std::unique_ptr<user_object> puser;

@@ -30,6 +30,8 @@
 #include <pthread.h>
 #include <cstring>
 
+using namespace gromox;
+
 static void *smls_thrwork(void *);
 static void *smls_thrworkssl(void *);
 

@@ -28,6 +28,7 @@
 #include "rop_dispatch.h"
 
 using namespace std::string_literals;
+using namespace gromox;
 
 enum {
 	ecDoDisconnect = 1,

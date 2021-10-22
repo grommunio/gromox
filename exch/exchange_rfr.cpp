@@ -12,6 +12,8 @@
 #include <cstdio>
 #define TRY(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return v; } while (false)
 
+using namespace gromox;
+
 enum {
 	RfrGetNewDSA = 0,
 	RfrGetFQDNFromServerDN = 1,

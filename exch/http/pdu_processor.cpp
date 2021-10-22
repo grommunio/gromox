@@ -43,6 +43,7 @@
 #define NDR_STACK_OUT					1
 
 using namespace std::string_literals;
+using namespace gromox;
 
 namespace {
 

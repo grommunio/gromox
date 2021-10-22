@@ -110,7 +110,7 @@ BOOL cmd_handler_service_plugins(int argc, char** argv)
 		service_console_talk(argc, argv, buf, TALK_BUFFER_LEN)) {
 		if (strlen(buf) == 0) {
 			gx_strlcpy(buf, "550 service plugin console talk is error "
-					"implemented", GX_ARRAY_SIZE(buf));
+					"implemented", gromox::arsizeof(buf));
 		}
 		console_server_reply_to_client("%s", buf);
 		return TRUE;

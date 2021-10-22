@@ -21,6 +21,7 @@
 #define DEF_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
 
 using namespace std::string_literals;
+using namespace gromox;
 
 enum{
 	STR_TABLE_REFRESH_OK,

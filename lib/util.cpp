@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 
+using namespace gromox;
 
 static int utf8_byte_num(unsigned char ch)
 {

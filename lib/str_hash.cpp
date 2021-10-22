@@ -175,7 +175,7 @@ int str_hash_add(STR_HASH_TABLE *ptbl, const char *key, const void *value)
 	item->map_index = index;
 	item->list_node.pdata	= item;
 	item->iter_node.pdata	= item;
-	gx_strlcpy(item->key, key, GX_ARRAY_SIZE(item->key));
+	gx_strlcpy(item->key, key, gromox::arsizeof(item->key));
 	memcpy(reinterpret_cast<char *>(list_node) + strhashitem_al, value, ptbl->data_size);
 	dlist	= (DOUBLE_LIST*)&(ptbl->hash_map[index]);
 

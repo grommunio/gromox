@@ -71,7 +71,7 @@ const char *mapi_strerror(unsigned int e)
 	E(ecInvalidParam, "An invalid parameter was passed to a function or remote procedure call")
 	}
 	thread_local char xbuf[32];
-	snprintf(xbuf, GX_ARRAY_SIZE(xbuf), "Unknown error %xh", e);
+	snprintf(xbuf, gromox::arsizeof(xbuf), "Unknown error %xh", e);
 	return xbuf;
 #undef E
 }

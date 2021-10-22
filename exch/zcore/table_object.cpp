@@ -182,7 +182,7 @@ static BOOL table_object_get_store_table_all_proptags(
 					tmp_proptags2.pproptag[i];
 		pproptags->count ++;
 	}
-	for (size_t i = 0; i < GX_ARRAY_SIZE(proptag_buff); ++i) {
+	for (size_t i = 0; i < gromox::arsizeof(proptag_buff); ++i) {
 		if (common_util_index_proptags(&tmp_proptags1,
 			proptag_buff[i]) >= 0 ||
 			common_util_index_proptags(&tmp_proptags2,

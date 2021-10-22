@@ -10,6 +10,8 @@
 #include <gromox/vcard.hpp>
 #define MAX_LINE							73
 
+using namespace gromox;
+
 namespace {
 
 struct LINE_ITEM {
