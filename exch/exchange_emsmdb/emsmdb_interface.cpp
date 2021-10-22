@@ -105,7 +105,7 @@ BOOL emsmdb_interface_check_acxh(ACXH *pacxh,
 	}
 	guid_to_string(&pacxh->guid, guid_string, sizeof(guid_string));
 	std::lock_guard gl_hold(g_lock);
-	auto phandle = static_cast<HANDLE_DATA *>(g_handle_hash->query(guid_string));
+	auto phandle = g_handle_hash->query<HANDLE_DATA>(guid_string);
 	if (NULL != phandle) {
 		if (TRUE == b_touch) {
 			time(&phandle->last_time);
@@ -127,7 +127,7 @@ BOOL emsmdb_interface_check_notify(ACXH *pacxh)
 	}
 	guid_to_string(&pacxh->guid, guid_string, sizeof(guid_string));
 	std::lock_guard gl_hold(g_lock);
-	auto phandle = static_cast<HANDLE_DATA *>(g_handle_hash->query(guid_string));
+	auto phandle = g_handle_hash->query<HANDLE_DATA>(guid_string);
 	if (NULL != phandle) {
 		if (double_list_get_nodes_num(&phandle->notify_list) > 0) {
 			return TRUE;
@@ -146,7 +146,7 @@ void emsmdb_interface_touch_handle(CXH *pcxh)
 	}
 	guid_to_string(&pcxh->guid, guid_string, sizeof(guid_string));
 	std::lock_guard gl_hold(g_lock);
-	auto phandle = static_cast<HANDLE_DATA *>(g_handle_hash->query(guid_string));
+	auto phandle = g_handle_hash->query<HANDLE_DATA>(guid_string);
 	if (NULL != phandle) {
 		time(&phandle->last_time);
 	}
@@ -162,7 +162,7 @@ static HANDLE_DATA* emsmdb_interface_get_handle_data(CXH *pcxh)
 	guid_to_string(&pcxh->guid, guid_string, sizeof(guid_string));
 	while (true) {
 		std::unique_lock gl_hold(g_lock);
-		auto phandle = static_cast<HANDLE_DATA *>(g_handle_hash->query(guid_string));
+		auto phandle = g_handle_hash->query<HANDLE_DATA>(guid_string);
 		if (NULL == phandle) {
 			return NULL;
 		}
@@ -192,7 +192,7 @@ static HANDLE_DATA* emsmdb_interface_get_handle_notify_list(CXH *pcxh)
 	guid_to_string(&pcxh->guid, guid_string, sizeof(guid_string));
 	while (true) {
 		std::unique_lock gl_hold(g_lock);
-		auto phandle = static_cast<HANDLE_DATA *>(g_handle_hash->query(guid_string));
+		auto phandle = g_handle_hash->query<HANDLE_DATA>(guid_string);
 		if (NULL == phandle) {
 			return NULL;
 		}
@@ -261,7 +261,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	std::unique_lock gl_hold(g_lock);
 	if (g_handle_hash->add(guid_string, &temp_handle) != 1)
 		return FALSE;
-	auto phandle = static_cast<HANDLE_DATA *>(g_handle_hash->query(guid_string));
+	auto phandle = g_handle_hash->query<HANDLE_DATA>(guid_string);
 	if (phandle == nullptr)
 		/* Should never occur; the value was recently added successfully. */
 		return false;
@@ -275,7 +275,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	}
 	phandle->info.plogmap = plogmap;
 	
-	auto plist = static_cast<DOUBLE_LIST *>(g_user_hash->query(temp_handle.username));
+	auto plist = g_user_hash->query<DOUBLE_LIST>(temp_handle.username);
 	if (NULL == plist) {
 		if (g_user_hash->add(temp_handle.username, &tmp_list) != 1) {
 			g_handle_hash->remove(guid_string);
@@ -283,7 +283,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 			rop_processor_release_logmap(plogmap);
 			return FALSE;
 		}
-		plist = static_cast<DOUBLE_LIST *>(g_user_hash->query(temp_handle.username));
+		plist = g_user_hash->query<DOUBLE_LIST>(temp_handle.username);
 		if (plist == nullptr)
 			/* Should never occur; the value was recently added successfully. */
 			return false;
@@ -327,7 +327,7 @@ static void emsmdb_interface_remove_handle(CXH *pcxh)
 	guid_to_string(&pcxh->guid, guid_string, sizeof(guid_string));
 	std::unique_lock gl_hold(g_lock);
 	while (true) {
-		phandle = static_cast<HANDLE_DATA *>(g_handle_hash->query(guid_string));
+		phandle = g_handle_hash->query<HANDLE_DATA>(guid_string);
 		if (NULL == phandle) {
 			return;
 		}
@@ -344,7 +344,7 @@ static void emsmdb_interface_remove_handle(CXH *pcxh)
 			break;
 		}
 	}
-	auto plist = static_cast<DOUBLE_LIST *>(g_user_hash->query(phandle->username));
+	auto plist = g_user_hash->query<DOUBLE_LIST>(phandle->username);
 	if (NULL != plist) {
 		double_list_remove(plist, &phandle->node);
 		if (0 == double_list_get_nodes_num(plist)) {

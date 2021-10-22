@@ -125,7 +125,7 @@ static BOOL logon_object_cache_propname(logon_object *plogon,
 		}
 	}
 	HX_strlower(tmp_string);
-	if (plogon->ppropname_hash->query(tmp_string) == nullptr &&
+	if (plogon->ppropname_hash->query1(tmp_string) == nullptr &&
 	    plogon->ppropname_hash->add(tmp_string, &propid) != 1)
 		if (!logon_object_enlarge_propname_hash(plogon) ||
 		    plogon->ppropname_hash->add(tmp_string, &propid) != 1)
@@ -317,7 +317,7 @@ BOOL logon_object::get_named_propid(BOOL b_create,
 	}
 	auto plogon = this;
 	if (NULL != plogon->ppropname_hash) {
-		auto pid = static_cast<uint16_t *>(plogon->ppropname_hash->query(tmp_string));
+		auto pid = plogon->ppropname_hash->query<uint16_t>(tmp_string);
 		if (NULL != pid) {
 			*ppropid = *pid;
 			return TRUE;
@@ -388,7 +388,7 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 			continue;
 		}
 		auto pid = plogon->ppropname_hash == nullptr ? nullptr :
-		           static_cast<uint16_t *>(plogon->ppropname_hash->query(tmp_string));
+		           plogon->ppropname_hash->query<uint16_t>(tmp_string);
 		if (NULL != pid) {
 			pindex_map[i] = i;
 			ppropids->ppropid[i] = *pid;

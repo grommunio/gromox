@@ -768,7 +768,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		pcontext->until = node_stat.st_size;
 	}
 	std::unique_lock hhold(g_hash_lock);
-	auto ppitem = static_cast<CACHE_ITEM **>(g_cache_hash->query(tmp_path));
+	auto ppitem = g_cache_hash->query<CACHE_ITEM *>(tmp_path);
 	if (NULL != ppitem) {
 		pitem = *ppitem;
 		if (pitem->ino != node_stat.st_ino ||
@@ -836,7 +836,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	}
 	close(fd);
 	hhold.lock();
-	ppitem = static_cast<CACHE_ITEM **>(g_cache_hash->query(tmp_path));
+	ppitem = g_cache_hash->query<CACHE_ITEM *>(tmp_path);
 	if (NULL == ppitem) {
 		if (g_cache_hash->add(tmp_path, &pitem) != 1) {
 			if (FALSE == mod_cache_enlarge_hash()) {

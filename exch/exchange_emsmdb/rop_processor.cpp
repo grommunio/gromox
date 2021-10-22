@@ -159,7 +159,7 @@ static void rop_processor_release_objnode(
 		proot = simple_tree_get_root(&plogitem->tree);
 		pobject = ((OBJECT_NODE*)proot->pdata)->pobject;
 		std::lock_guard hl_hold(g_hash_lock);
-		auto pref = static_cast<uint32_t *>(g_logon_hash->query(static_cast<logon_object *>(pobject)->get_dir()));
+		auto pref = g_logon_hash->query<uint32_t>(static_cast<logon_object *>(pobject)->get_dir());
 		if (pref != nullptr) {
 			(*pref) --;
 			if (0 == *pref) {
@@ -239,7 +239,7 @@ int rop_processor_create_logon_item(void *plogmap,
 		return -3;
 	}
 	std::lock_guard hl_hold(g_hash_lock);
-	auto pref = static_cast<uint32_t *>(g_logon_hash->query(plogon->get_dir()));
+	auto pref = g_logon_hash->query<uint32_t>(plogon->get_dir());
 	if (NULL == pref) {
 		tmp_ref = 1;
 		g_logon_hash->add(plogon->get_dir(), &tmp_ref);

@@ -89,7 +89,7 @@ static BOOL str_table_query(const char* str)
 		HX_strlower(temp_string);
 	}
 	std::shared_lock rd_hold(g_refresh_lock);
-	return g_string_list_table->query(temp_string) != nullptr ? TRUE : false;
+	return g_string_list_table->query1(temp_string) != nullptr ? TRUE : false;
 }
 
 /*
@@ -170,7 +170,7 @@ static BOOL str_table_add(const char* str)
 
 	std::lock_guard wr_hold(g_refresh_lock);
 	/* check first if the string is already in the table */
-	if (g_string_list_table->query(temp_string) != nullptr)
+	if (g_string_list_table->query1(temp_string) != nullptr)
 		return TRUE;
 	fd = open(g_list_path, O_APPEND|O_WRONLY);
 	if (-1 == fd) {
@@ -226,7 +226,7 @@ static BOOL str_table_remove(const char* str)
 
 	std::lock_guard wr_hold(g_refresh_lock);
 	/* check first if the string is in hash table */
-	if (g_string_list_table->query(temp_string) == nullptr)
+	if (g_string_list_table->query1(temp_string) == nullptr)
 		return TRUE;
 	if (g_string_list_table->remove(temp_string) != 1)
 		return FALSE;

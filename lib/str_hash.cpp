@@ -197,7 +197,7 @@ int STR_HASH_TABLE::add(const char *key, const void *value)
  *	@return 
  *		the value that map the key, NULL if some error occurs
  */
-void *STR_HASH_TABLE::query(const char *key) const
+void *STR_HASH_TABLE::query1(const char *key) const
 {
 	auto ptbl = this;
 	DOUBLE_LIST_NODE* next	= NULL;

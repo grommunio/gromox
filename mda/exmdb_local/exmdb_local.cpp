@@ -360,7 +360,7 @@ static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
 				tmp_guid, ppropnames->ppropname[i].pname);
 
 		HX_strlower(tmp_string);
-		auto ppropid = static_cast<uint16_t *>(g_str_hash->query(tmp_string));
+		auto ppropid = g_str_hash->query<uint16_t>(tmp_string);
 		if (NULL == ppropid) {
 			ppropids->ppropid[i] = 0;
 		} else {

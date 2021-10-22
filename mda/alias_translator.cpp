@@ -170,7 +170,7 @@ BOOL address_table_query(const char *aliasname, char *mainname)
 	HX_strlower(temp_string);
 	
 	std::shared_lock rd_hold(g_address_lock);
-	auto presult = static_cast<char *>(g_address_hash->query(temp_string));
+	auto presult = g_address_hash->query<char>(temp_string);
 	if (NULL != presult) {
 		strcpy(mainname, presult);
 	}

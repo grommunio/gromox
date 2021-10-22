@@ -103,7 +103,7 @@ BOOL temp_list_remove_string(const char *str)
 	}
 
 	std::lock_guard sm_hold(g_string_mutex_lock);
-	if (g_string_hash->query(temp_string) == nullptr)
+	if (g_string_hash->query1(temp_string) == nullptr)
 		return TRUE;
 	return g_string_hash->remove(temp_string) == 1 ? TRUE : false;
 }
@@ -132,7 +132,7 @@ BOOL temp_list_query(const char *str)
 	}
 
 	std::lock_guard sm_hold(g_string_mutex_lock);
-	auto pwhen = static_cast<time_t *>(g_string_hash->query(temp_string));
+	auto pwhen = g_string_hash->query<time_t>(temp_string);
 	if (NULL == pwhen) {
 		return FALSE; /* not found */
 	}
@@ -197,7 +197,7 @@ BOOL temp_list_echo(const char *str, time_t *puntil)
 	std::lock_guard sm_hold(g_string_mutex_lock);
 	/* first remove the overdue items */
 	temp_list_collect_string_entry();
-	auto pwhen = static_cast<time_t *>(g_string_hash->query(temp_string));
+	auto pwhen = g_string_hash->query<time_t>(temp_string);
 	if (NULL == pwhen) {
 		return FALSE;
 	}

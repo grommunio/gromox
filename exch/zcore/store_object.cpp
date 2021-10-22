@@ -143,7 +143,7 @@ static BOOL store_object_cache_propname(store_object *pstore,
 		}
 	}
 	HX_strlower(tmp_string);
-	if (pstore->ppropname_hash->query(tmp_string) == nullptr &&
+	if (pstore->ppropname_hash->query1(tmp_string) == nullptr &&
 	    pstore->ppropname_hash->add(tmp_string, &propid) != 1)
 		if (!store_object_enlarge_propname_hash(pstore) ||
 		    pstore->ppropname_hash->add(tmp_string, &propid) != 1)
@@ -347,7 +347,7 @@ static BOOL store_object_get_named_propid(store_object *pstore,
 		return TRUE;
 	}
 	if (NULL != pstore->ppropname_hash) {
-		auto pid = static_cast<uint16_t *>(pstore->ppropname_hash->query(tmp_string));
+		auto pid = pstore->ppropname_hash->query<uint16_t>(tmp_string);
 		if (NULL != pid) {
 			*ppropid = *pid;
 			return TRUE;
@@ -418,7 +418,7 @@ BOOL store_object::get_named_propids(BOOL b_create,
 			continue;
 		}
 		auto pid = pstore->ppropname_hash == nullptr ? nullptr :
-		           static_cast<uint16_t *>(pstore->ppropname_hash->query(tmp_string));
+		           pstore->ppropname_hash->query<uint16_t>(tmp_string);
 		if (NULL != pid) {
 			pindex_map[i] = i;
 			ppropids->ppropid[i] = *pid;
