@@ -70,7 +70,6 @@ int str_filter_run()
     }
     if (0 != temp_list_run()) {
 		str_filter_echo("failed to run temporary list");
-        grey_list_stop();
         audit_filter_stop();
         return -3;
     }
@@ -80,7 +79,6 @@ int str_filter_run()
 
 void str_filter_stop() 
 {
-    grey_list_stop();
     audit_filter_stop();
     temp_list_stop();
 }

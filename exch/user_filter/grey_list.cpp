@@ -3,13 +3,15 @@
 #include <cstring>
 #include <mutex>
 #include <shared_mutex>
+#include <string>
 #include <unistd.h>
+#include <unordered_map>
+#include <utility>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include "str_filter.h"
 #include "grey_list.h"
 #include <gromox/list_file.hpp>
-#include <gromox/str_hash.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #include <sys/time.h>
@@ -23,10 +25,8 @@ DECLARE_API(extern);
 namespace {
 
 struct GREY_LIST_ENTRY {
-	int				current_times;
-	int				allowed_times;
-	int				interval;
-	struct timeval	last_access;
+	int current_times = 0, allowed_times = 0, interval = 0;
+	struct timeval last_access{};
 };
 
 struct LIST_ITEM {
@@ -39,7 +39,7 @@ struct LIST_ITEM {
 
 static void grey_list_flush();
 
-static STR_HASH_TABLE *g_grey_table;
+static std::unordered_map<std::string, GREY_LIST_ENTRY> g_grey_table;
 static std::shared_mutex g_refresh_lock;
 static char g_list_path[256]; 
 static BOOL g_case_sensitive;
@@ -71,15 +71,6 @@ int grey_list_run()
 
 }
 
-void grey_list_stop()
-{
-    if (NULL != g_grey_table) {
-        str_hash_free(g_grey_table);
-        g_grey_table = NULL;
-    }
-}
-
-
 /*  query the grey list for the specified string. 
  *  @param  
  *		str [in]				string
@@ -107,10 +98,10 @@ int grey_list_query(const char *str, BOOL b_count)
 	}
 
 	std::shared_lock rd_hold(g_refresh_lock);
-	auto pentry = static_cast<GREY_LIST_ENTRY *>(str_hash_query(g_grey_table, temp_string));
-    if (NULL == pentry) {
-        return GREY_LIST_NOT_FOUND; /* not in grey list */
-    }
+	auto iter = g_grey_table.find(temp_string);
+	if (iter == g_grey_table.end())
+		return GREY_LIST_NOT_FOUND; /* not in grey list */
+	auto pentry = &iter->second;
     if (0 == pentry->allowed_times) {
         return GREY_LIST_DENY; /* deny it */
     }
@@ -166,12 +157,13 @@ BOOL grey_list_echo(const char *str, int *ptimes, int *pinterval)
 
 	std::shared_lock rd_hold(g_refresh_lock);
 	gettimeofday(&current_time, NULL);
-	auto pentry = static_cast<GREY_LIST_ENTRY *>(str_hash_query(g_grey_table, temp_string));
-    if (NULL == pentry) {
+	auto iter = as_const(g_grey_table).find(temp_string);
+	if (iter == g_grey_table.end()) {
 		*ptimes = 0;
 		*pinterval = 0;
         return FALSE; /* not in grey list */
     }
+	auto pentry = &iter->second;
     if (0 == pentry->allowed_times) {
 		*ptimes = 0;
 		*pinterval = 0;
@@ -204,8 +196,6 @@ BOOL grey_list_echo(const char *str, int *ptimes, int *pinterval)
  */
 int grey_list_refresh()
 {
-    STR_HASH_TABLE *phash;
-    GREY_LIST_ENTRY entry;
     struct timeval current_time;
 
 	if (0 == g_growing_num) {
@@ -219,31 +209,22 @@ int grey_list_refresh()
 	}
 	auto pitem = static_cast<LIST_ITEM *>(plist_file->get_list());
 	auto list_len = plist_file->get_size();
-	auto hash_cap = list_len + g_growing_num;
-    phash = str_hash_init(hash_cap, sizeof(GREY_LIST_ENTRY), NULL);
-    if (NULL == phash) {
-		str_filter_echo("Failed to allocate hash map for grey list");
-        return GREY_REFRESH_HASH_FAIL;
-    }
-    memset(&entry, 0, sizeof(GREY_LIST_ENTRY));
+	decltype(g_grey_table) phash;
+
     gettimeofday(&current_time, NULL);
-    entry.last_access   = current_time;
-    entry.current_times = 0;
-	for (decltype(list_len) i = 0; i < list_len; ++i, ++pitem) {
-        entry.allowed_times = pitem->allow_times;
-        entry.interval = atoitvl(pitem->interval);
+	for (decltype(list_len) i = 0; i < list_len; ++i, ++pitem) try {
 		if (FALSE == g_case_sensitive) {
 			HX_strlower(pitem->string);
 		}
-        str_hash_add(phash, pitem->string, &entry);
-    }
+		phash.emplace(pitem->string, GREY_LIST_ENTRY{0, pitem->allow_times,
+			static_cast<int>(atoitvl(pitem->interval)), current_time});
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1537: ENOMEM\n");
+		return false;
+	}
 
 	std::lock_guard wr_hold(g_refresh_lock);
-    if (NULL != g_grey_table) {
-        str_hash_free(g_grey_table);
-    }
-    g_grey_table = phash;
-	g_hash_cap = hash_cap;
+	g_grey_table = std::move(phash);
     return GREY_REFRESH_OK;
 }
 
@@ -262,11 +243,7 @@ BOOL grey_list_add_string(const char* str, int times, int interval)
 	struct timeval current_time;
 	char temp_string[256];
 	char file_item[576];
-	int i, j, hash_cap;
-	int fd, string_len;
-	STR_HASH_ITER *iter;
-	STR_HASH_TABLE *phash;
-	GREY_LIST_ENTRY entry;
+	int i, j, fd, string_len;
 
 	if (NULL == str) {
 		return FALSE;
@@ -296,8 +273,9 @@ BOOL grey_list_add_string(const char* str, int times, int interval)
 	string_len ++;
 	/* check first if the string is already in the table */
 	std::lock_guard wr_hold(g_refresh_lock);
-	auto pentry = static_cast<GREY_LIST_ENTRY *>(str_hash_query(g_grey_table, temp_string));
-	if (NULL != pentry) {
+	auto iter = g_grey_table.find(temp_string);
+	if (iter != g_grey_table.end()) {
+		auto pentry = &iter->second;
 		pentry->allowed_times = times;
 		pentry->interval = interval;
 		grey_list_flush();
@@ -312,34 +290,15 @@ BOOL grey_list_add_string(const char* str, int times, int interval)
 		return FALSE;
 	}
 	close(fd);
-	memset(&entry, 0, sizeof(GREY_LIST_ENTRY));
+
 	gettimeofday(&current_time, NULL);
-	entry.last_access = current_time;
-	entry.current_times = 0;
-	entry.allowed_times = times;
-	entry.interval = interval;
-	if (str_hash_add(g_grey_table, temp_string, &entry) > 0) {
-		return TRUE;
-	}
-	hash_cap = g_hash_cap + g_growing_num;
-	phash = str_hash_init(hash_cap, sizeof(int), NULL);
-	if (NULL == phash) {
+	try {
+		return g_grey_table.emplace(temp_string, GREY_LIST_ENTRY{0,
+		       times, interval, current_time}).second ? TRUE : false;
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1538: ENOMEM\n");
 		return FALSE;
 	}
-	iter = str_hash_iter_init(g_grey_table);
-	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
-		str_hash_iter_forward(iter)) {
-		pentry = static_cast<GREY_LIST_ENTRY *>(str_hash_iter_get_value(iter, file_item));
-		str_hash_add(phash, file_item, pentry);
-	}
-	str_hash_iter_free(iter);
-	str_hash_free(g_grey_table);
-	g_grey_table = phash;
-	g_hash_cap = hash_cap;
-	if (str_hash_add(g_grey_table, temp_string, &entry) > 0) {
-		return TRUE;
-	}
-	return FALSE;
 }
 
 /*
@@ -367,13 +326,8 @@ BOOL grey_list_remove_string(const char* str)
 	}
 	/* check first if the string is in hash table */
 	std::lock_guard wr_hold(g_refresh_lock);
-	auto pentry = static_cast<GREY_LIST_ENTRY *>(str_hash_query(g_grey_table, temp_string));
-	if (NULL == pentry) {
+	if (g_grey_table.erase(temp_string) == 0)
 		return TRUE;
-	}
-	if (1 != str_hash_remove(g_grey_table, temp_string)) {
-		return FALSE;
-	}
 	grey_list_flush();
 	return TRUE;
 }
@@ -381,10 +335,8 @@ BOOL grey_list_remove_string(const char* str)
 static void grey_list_flush()
 {
 	int i, j, fd;
-	int string_len;
 	char temp_string[256];
 	char file_item[576];
-	STR_HASH_ITER *iter;
 	
 	if (0 == g_growing_num) {
 		return;
@@ -393,12 +345,11 @@ static void grey_list_flush()
 	if (-1 == fd) {
 		return;
 	}
-	iter = str_hash_iter_init(g_grey_table);
-	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
-		str_hash_iter_forward(iter)) {
-		auto pentry = static_cast<GREY_LIST_ENTRY *>(str_hash_iter_get_value(iter, temp_string));
-		string_len = strlen(temp_string);
-		for (i=0, j=0; i<string_len; i++, j++) {
+	for (const auto &[key, entry] : g_grey_table) {
+		auto pentry = &entry;
+		HX_strlcpy(temp_string, key.c_str(), arsizeof(temp_string));
+		int string_len = key.size();
+		for (i = 0, j = 0; i < string_len; ++i, ++j) {
 			if (' ' == temp_string[i] || '\\' == temp_string[i] ||
 				'\t' == temp_string[i] || '#' == temp_string[i]) {
 				file_item[j] = '\\';
@@ -415,16 +366,13 @@ static void grey_list_flush()
 		string_len ++;
 		write(fd, file_item, string_len);
 	}
-	str_hash_iter_free(iter);
 	close(fd);
-
 }
 
 BOOL grey_list_dump(const char *path)
 {
 	int fd, len;
 	char temp_string[512];
-	STR_HASH_ITER *iter;
 	struct tm time_buff;
 	struct timeval current_times;
 	
@@ -441,13 +389,12 @@ BOOL grey_list_dump(const char *path)
 
 	std::unique_lock wr_hold(g_refresh_lock);
 	gettimeofday(&current_times, NULL);
-	iter = str_hash_iter_init(g_grey_table);
-	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
-		str_hash_iter_forward(iter)) {
-		auto pentry = static_cast<GREY_LIST_ENTRY *>(str_hash_iter_get_value(iter, temp_string));
+	for (const auto &[key, entry] : g_grey_table) {
+		auto pentry = &entry;
 		if (0 == pentry->allowed_times || 0 == pentry->interval) {
 			continue;
 		}
+		HX_strlcpy(temp_string, key.c_str(), arsizeof(temp_string));
 		if (CALCULATE_INTERVAL(current_times, pentry->last_access) <=
 			pentry->interval && pentry->current_times > pentry->allowed_times) {
 			len = strlen(temp_string);
@@ -465,9 +412,7 @@ BOOL grey_list_dump(const char *path)
 			write(fd, temp_string, len);
 		}
 	}
-	str_hash_iter_free(iter);
 	wr_hold.unlock();
 	close(fd);
 	return TRUE;
 }
-
