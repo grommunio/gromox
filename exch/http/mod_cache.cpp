@@ -95,7 +95,7 @@ static void *mod_cache_scanwork(void *pparam)
 			continue;
 		}
 		std::lock_guard hhold(g_hash_lock);
-		auto iter = str_hash_iter_init(g_cache_hash.get());
+		auto iter = g_cache_hash->make_iter();
 		for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
 			ppitem = static_cast<CACHE_ITEM **>(str_hash_iter_get_value(iter, tmp_key));
@@ -125,16 +125,16 @@ static BOOL mod_cache_enlarge_hash()
 	void *ptmp_value;
 	char tmp_key[1024];
 	
-	auto phash = str_hash_init(g_cache_hash->capacity + 
+	auto phash = STR_HASH_TABLE::create(g_cache_hash->capacity +
 		HASH_GROWING_NUM, sizeof(CACHE_ITEM*), NULL);
 	if (NULL == phash) {
 		return FALSE;
 	}
-	auto iter = str_hash_iter_init(g_cache_hash.get());
+	auto iter = g_cache_hash->make_iter();
 	for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
 		ptmp_value = str_hash_iter_get_value(iter, tmp_key);
-		str_hash_add(phash.get(), tmp_key, ptmp_value);
+		phash->add(tmp_key, ptmp_value);
 	}
 	str_hash_iter_free(iter);
 	g_cache_hash = std::move(phash);
@@ -201,8 +201,7 @@ int mod_cache_run()
 		return -2;
 	}
 	memset(g_context_list, 0, sizeof(CACHE_CONTEXT)*g_context_num);
-	g_cache_hash = str_hash_init(HASH_GROWING_NUM,
-						sizeof(CACHE_ITEM*), NULL);
+	g_cache_hash = STR_HASH_TABLE::create(HASH_GROWING_NUM, sizeof(CACHE_ITEM *), nullptr);
 	if (NULL == g_cache_hash) {
 		printf("[mod_cache]: Failed to init cache hash table\n");
 		return -3;
@@ -235,7 +234,7 @@ void mod_cache_stop()
 		g_context_list = NULL;
 	}
 	if (NULL != g_cache_hash) {
-		auto iter = str_hash_iter_init(g_cache_hash.get());
+		auto iter = g_cache_hash->make_iter();
 		for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
 			ppitem = static_cast<CACHE_ITEM **>(str_hash_iter_get_value(iter, nullptr));
@@ -769,13 +768,13 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		pcontext->until = node_stat.st_size;
 	}
 	std::unique_lock hhold(g_hash_lock);
-	auto ppitem = static_cast<CACHE_ITEM **>(str_hash_query(g_cache_hash.get(), tmp_path));
+	auto ppitem = static_cast<CACHE_ITEM **>(g_cache_hash->query(tmp_path));
 	if (NULL != ppitem) {
 		pitem = *ppitem;
 		if (pitem->ino != node_stat.st_ino ||
 			pitem->blob.length != node_stat.st_size ||
 			pitem->mtime != node_stat.st_mtime) {
-			str_hash_remove(g_cache_hash.get(), tmp_path);
+			g_cache_hash->remove(tmp_path);
 			if (pitem->reference > 0) {
 				pitem->b_expired = TRUE;
 				pitem->node.pdata = pitem;
@@ -837,13 +836,13 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	}
 	close(fd);
 	hhold.lock();
-	ppitem = static_cast<CACHE_ITEM **>(str_hash_query(g_cache_hash.get(), tmp_path));
+	ppitem = static_cast<CACHE_ITEM **>(g_cache_hash->query(tmp_path));
 	if (NULL == ppitem) {
-		if (str_hash_add(g_cache_hash.get(), tmp_path, &pitem) != 1) {
+		if (g_cache_hash->add(tmp_path, &pitem) != 1) {
 			if (FALSE == mod_cache_enlarge_hash()) {
 				goto INVALIDATE_ITEM;
 			}
-			str_hash_add(g_cache_hash.get(), tmp_path, &pitem);
+			g_cache_hash->add(tmp_path, &pitem);
 		}
 		pitem->b_expired = FALSE;
 		pcontext->pitem = pitem;

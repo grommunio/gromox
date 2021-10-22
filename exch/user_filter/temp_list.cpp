@@ -31,7 +31,7 @@ int temp_list_run()
 		g_string_hash = NULL;
 		return 0;
 	}
-	g_string_hash = str_hash_init(g_size, sizeof(time_t), NULL);
+	g_string_hash = STR_HASH_TABLE::create(g_size, sizeof(time_t), nullptr);
 	if (NULL == g_string_hash) {
 		return -1;
 	}
@@ -73,12 +73,12 @@ BOOL temp_list_add_string(const char *str, int interval)
 	std::lock_guard sm_hold(g_string_mutex_lock);
 	time(&current_time);
 	when = current_time + interval;
-	if (str_hash_add(g_string_hash.get(), temp_string, &when) > 0)
+	if (g_string_hash->add(temp_string, &when) > 0)
 		return TRUE;
 	if (0 == temp_list_collect_string_entry()) {
 		return FALSE;
 	}
-	return str_hash_add(g_string_hash.get(), temp_string, &when) > 0 ? TRUE : false;
+	return g_string_hash->add(temp_string, &when) > 0 ? TRUE : false;
 }
 
 /*
@@ -103,9 +103,9 @@ BOOL temp_list_remove_string(const char *str)
 	}
 
 	std::lock_guard sm_hold(g_string_mutex_lock);
-	if (str_hash_query(g_string_hash.get(), temp_string) == nullptr)
+	if (g_string_hash->query(temp_string) == nullptr)
 		return TRUE;
-	return str_hash_remove(g_string_hash.get(), temp_string) == 1 ? TRUE : false;
+	return g_string_hash->remove(temp_string) == 1 ? TRUE : false;
 }
 
 /*
@@ -132,7 +132,7 @@ BOOL temp_list_query(const char *str)
 	}
 
 	std::lock_guard sm_hold(g_string_mutex_lock);
-	auto pwhen = static_cast<time_t *>(str_hash_query(g_string_hash.get(), temp_string));
+	auto pwhen = static_cast<time_t *>(g_string_hash->query(temp_string));
 	if (NULL == pwhen) {
 		return FALSE; /* not found */
 	}
@@ -141,7 +141,7 @@ BOOL temp_list_query(const char *str)
 	if (current_time <= *pwhen) {
 		return TRUE; /* found, in temp list */
 	}
-	str_hash_remove(g_string_hash.get(), temp_string);
+	g_string_hash->remove(temp_string);
 	return FALSE; /* is overdue */
 }
 
@@ -159,7 +159,7 @@ static int temp_list_collect_string_entry()
 
 	time(&current_time);
 	collected_num = 0;
-	auto iter = str_hash_iter_init(g_string_hash.get()); 
+	auto iter = g_string_hash->make_iter();
 	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
 		pwhen = (time_t*)str_hash_iter_get_value(iter, NULL);
@@ -197,7 +197,7 @@ BOOL temp_list_echo(const char *str, time_t *puntil)
 	std::lock_guard sm_hold(g_string_mutex_lock);
 	/* first remove the overdue items */
 	temp_list_collect_string_entry();
-	auto pwhen = static_cast<time_t *>(str_hash_query(g_string_hash.get(), temp_string));
+	auto pwhen = static_cast<time_t *>(g_string_hash->query(temp_string));
 	if (NULL == pwhen) {
 		return FALSE;
 	}
@@ -222,7 +222,7 @@ BOOL temp_list_dump(const char *path)
 
 	std::unique_lock sm_hold(g_string_mutex_lock);
 	time(&current_time);
-	auto iter = str_hash_iter_init(g_string_hash.get()); 
+	auto iter = g_string_hash->make_iter();
 	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
 		auto pwhen = static_cast<time_t *>(str_hash_iter_get_value(iter, temp_string));

@@ -170,7 +170,7 @@ BOOL address_table_query(const char *aliasname, char *mainname)
 	HX_strlower(temp_string);
 	
 	std::shared_lock rd_hold(g_address_lock);
-	auto presult = static_cast<char *>(str_hash_query(g_address_hash.get(), temp_string));
+	auto presult = static_cast<char *>(g_address_hash->query(temp_string));
 	if (NULL != presult) {
 		strcpy(mainname, presult);
 	}
@@ -192,14 +192,14 @@ static int address_table_refresh()
 	}
 	auto pitem = static_cast<struct addritem *>(plist_file->get_list());
 	auto list_len = plist_file->get_size();
-	auto phash = str_hash_init(list_len + 1, UADDR_SIZE, nullptr);
+	auto phash = STR_HASH_TABLE::create(list_len + 1, UADDR_SIZE, nullptr);
 	if (NULL == phash) {
 		printf("[alias_translator]: Failed to allocate address hash map\n");
 		return REFRESH_HASH_FAIL;
 	}
 	for (decltype(list_len) i = 0; i < list_len; ++i) {
 		HX_strlower(pitem[i].a);
-		str_hash_add(phash.get(), pitem[i].a, pitem[i].b);
+		phash->add(pitem[i].a, pitem[i].b);
     }
 	std::lock_guard wr_hold(g_address_lock);
 	g_address_hash = std::move(phash);

@@ -159,13 +159,11 @@ static void rop_processor_release_objnode(
 		proot = simple_tree_get_root(&plogitem->tree);
 		pobject = ((OBJECT_NODE*)proot->pdata)->pobject;
 		std::lock_guard hl_hold(g_hash_lock);
-		auto pref = static_cast<uint32_t *>(str_hash_query(g_logon_hash.get(),
-		            static_cast<logon_object *>(pobject)->get_dir()));
+		auto pref = static_cast<uint32_t *>(g_logon_hash->query(static_cast<logon_object *>(pobject)->get_dir()));
 		if (pref != nullptr) {
 			(*pref) --;
 			if (0 == *pref) {
-				str_hash_remove(g_logon_hash.get(),
-					static_cast<logon_object *>(pobject)->get_dir());
+				g_logon_hash->remove(static_cast<logon_object *>(pobject)->get_dir());
 			}
 		}
 		b_root = TRUE;
@@ -241,10 +239,10 @@ int rop_processor_create_logon_item(void *plogmap,
 		return -3;
 	}
 	std::lock_guard hl_hold(g_hash_lock);
-	auto pref = static_cast<uint32_t *>(str_hash_query(g_logon_hash.get(), plogon->get_dir()));
+	auto pref = static_cast<uint32_t *>(g_logon_hash->query(plogon->get_dir()));
 	if (NULL == pref) {
 		tmp_ref = 1;
-		str_hash_add(g_logon_hash.get(), plogon->get_dir(), &tmp_ref);
+		g_logon_hash->add(plogon->get_dir(), &tmp_ref);
 	} else {
 		(*pref) ++;
 	}
@@ -408,7 +406,7 @@ static void *emsrop_scanwork(void *param)
 			count = 0;
 		}
 		std::unique_lock hl_hold(g_hash_lock);
-		auto iter = str_hash_iter_init(g_logon_hash.get());
+		auto iter = g_logon_hash->make_iter();
 		for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
 			str_hash_iter_get_value(iter, tmp_dir);
@@ -464,8 +462,7 @@ int rop_processor_run()
 		printf("[exchange_emsmdb]: Failed to init object handle allocator\n");
 		return -3;
 	}
-	g_logon_hash = str_hash_init(get_context_num()*256,
-								sizeof(uint32_t), NULL);
+	g_logon_hash = STR_HASH_TABLE::create(get_context_num() * 256, sizeof(uint32_t), nullptr);
 	if (NULL == g_logon_hash) {
 		printf("[exchange_emsmdb]: Failed to init logon hash\n");
 		return -4;

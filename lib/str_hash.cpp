@@ -87,8 +87,8 @@ STR_HASH_TABLE::~STR_HASH_TABLE()
 	}
 }
 
-std::unique_ptr<STR_HASH_TABLE> str_hash_init(size_t max_items, size_t item_size,
-    PSTR_HASH_FUNC func) try
+std::unique_ptr<STR_HASH_TABLE> STR_HASH_TABLE::create(size_t max_items,
+    size_t item_size, PSTR_HASH_FUNC func) try
 {
 	return std::make_unique<STR_HASH_TABLE>(max_items, item_size, func);
 } catch (const std::bad_alloc &) {
@@ -118,8 +118,9 @@ std::unique_ptr<STR_HASH_TABLE> str_hash_init(size_t max_items, size_t item_size
  *		-3	memory alloc fail
  *		-4	the key already exist	
  */
-int str_hash_add(STR_HASH_TABLE *ptbl, const char *key, const void *value)
+int STR_HASH_TABLE::add(const char *key, const void *value)
 {
+	auto ptbl = this;
 	DOUBLE_LIST_NODE* next	= NULL;
 	DOUBLE_LIST*	dlist	= NULL;
 	
@@ -196,8 +197,9 @@ int str_hash_add(STR_HASH_TABLE *ptbl, const char *key, const void *value)
  *	@return 
  *		the value that map the key, NULL if some error occurs
  */
-void* str_hash_query(STR_HASH_TABLE* ptbl, const char *key)
+void *STR_HASH_TABLE::query(const char *key) const
 {
+	auto ptbl = this;
 	DOUBLE_LIST_NODE* next	= NULL;
 	size_t	index = -1;
 	
@@ -243,8 +245,9 @@ void* str_hash_query(STR_HASH_TABLE* ptbl, const char *key)
  *		-1		invalid parameter
  *		-2		the key does not exist
  */
-int str_hash_remove(STR_HASH_TABLE* ptbl, const char *key)
+int STR_HASH_TABLE::remove(const char *key)
 {
+	auto ptbl = this;
 	DOUBLE_LIST_NODE* next	= NULL;
 	size_t index = -1;
 	
@@ -293,14 +296,8 @@ int str_hash_remove(STR_HASH_TABLE* ptbl, const char *key)
  *	@return		
  *		pointer to the hash iterator object, NULL if error occurs
  */
-STR_HASH_ITER* str_hash_iter_init(STR_HASH_TABLE* ptbl)
+STR_HASH_ITER *STR_HASH_TABLE::make_iter()
 {
-#ifdef _DEBUG_UMTA
-	if (NULL == ptbl) {
-		debug_info("[str_hash]: str_hash_iter_init, param NULL");
-		return NULL;
-	}
-#endif
 	auto iter = static_cast<STR_HASH_ITER *>(malloc(sizeof(STR_HASH_ITER)));
 	if (iter == nullptr) {
 		debug_info("[str_hash]: can not alloc hash iter");
@@ -309,8 +306,7 @@ STR_HASH_ITER* str_hash_iter_init(STR_HASH_TABLE* ptbl)
 	
 	iter->cur_node		= NULL;
 	iter->iter_curr_pos = 0;
-	iter->ptable		= ptbl;
-	
+	iter->ptable = this;
 	return iter;
 }
 

@@ -89,7 +89,7 @@ static BOOL str_table_query(const char* str)
 		HX_strlower(temp_string);
 	}
 	std::shared_lock rd_hold(g_refresh_lock);
-	return str_hash_query(g_string_list_table.get(), temp_string) != nullptr ? TRUE : false;
+	return g_string_list_table->query(temp_string) != nullptr ? TRUE : false;
 }
 
 /*
@@ -113,7 +113,7 @@ static int str_table_refresh()
 	auto pitem = static_cast<srcitem *>(plist_file->get_list());
 	auto list_len = plist_file->get_size();
 	auto hash_cap = list_len + g_growing_num;
-	auto phash = str_hash_init(hash_cap, sizeof(int), nullptr);
+	auto phash = STR_HASH_TABLE::create(hash_cap, sizeof(int), nullptr);
 	if (NULL == phash) {
 		str_table_echo("Failed to allocate hash map");
 		return STR_TABLE_REFRESH_HASH_FAIL;
@@ -122,7 +122,7 @@ static int str_table_refresh()
 		if (FALSE == g_case_sensitive) {
 			HX_strlower(pitem[i].s);
 		}
-		str_hash_add(phash.get(), pitem[i].s, &i);
+		phash->add(pitem[i].s, &i);
     }
 	
 	std::lock_guard wr_hold(g_refresh_lock);
@@ -170,7 +170,7 @@ static BOOL str_table_add(const char* str)
 
 	std::lock_guard wr_hold(g_refresh_lock);
 	/* check first if the string is already in the table */
-	if (str_hash_query(g_string_list_table.get(), temp_string) != nullptr)
+	if (g_string_list_table->query(temp_string) != nullptr)
 		return TRUE;
 	fd = open(g_list_path, O_APPEND|O_WRONLY);
 	if (-1 == fd) {
@@ -181,24 +181,23 @@ static BOOL str_table_add(const char* str)
 		return FALSE;
 	}
 	close(fd);
-	if (str_hash_add(g_string_list_table.get(), temp_string, &dummy_val) > 0)
+	if (g_string_list_table->add(temp_string, &dummy_val) > 0)
 		return TRUE;
 	hash_cap = g_hash_cap + g_growing_num;
-	auto phash = str_hash_init(hash_cap, sizeof(int), NULL);
+	auto phash = STR_HASH_TABLE::create(hash_cap, sizeof(int), nullptr);
 	if (NULL == phash) {
 		return FALSE;
 	}
-	auto iter = str_hash_iter_init(g_string_list_table.get());
+	auto iter = g_string_list_table->make_iter();
 	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
 		str_hash_iter_get_value(iter, file_item);
-		str_hash_add(phash.get(), file_item, &dummy_val);
+		phash->add(file_item, &dummy_val);
 	}
 	str_hash_iter_free(iter);
 	g_string_list_table = std::move(phash);
 	g_hash_cap = hash_cap;
-	return str_hash_add(g_string_list_table.get(), temp_string,
-	       &dummy_val) > 0 ? TRUE : false;
+	return g_string_list_table->add(temp_string, &dummy_val) > 0 ? TRUE : false;
 }
 
 /*
@@ -227,15 +226,15 @@ static BOOL str_table_remove(const char* str)
 
 	std::lock_guard wr_hold(g_refresh_lock);
 	/* check first if the string is in hash table */
-	if (str_hash_query(g_string_list_table.get(), temp_string) == nullptr)
+	if (g_string_list_table->query(temp_string) == nullptr)
 		return TRUE;
-	if (str_hash_remove(g_string_list_table.get(), temp_string) != 1)
+	if (g_string_list_table->remove(temp_string) != 1)
 		return FALSE;
 	fd = open(g_list_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 	if (-1 == fd) {
 		return FALSE;
 	}
-	auto iter = str_hash_iter_init(g_string_list_table.get());
+	auto iter = g_string_list_table->make_iter();
 	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
 		str_hash_iter_get_value(iter, temp_string);

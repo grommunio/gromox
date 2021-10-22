@@ -136,7 +136,7 @@ int exmdb_local_run()
 	}
 	auto num = plist->get_size();
 	auto pitem = static_cast<srcitem *>(plist->get_list());
-	g_str_hash = str_hash_init(num + 1, sizeof(uint16_t), NULL);
+	g_str_hash = STR_HASH_TABLE::create(num + 1, sizeof(uint16_t), nullptr);
 	if (NULL == g_str_hash) {
 		printf("[exmdb_local]: Failed to init hash table\n");
 		return -4;
@@ -145,7 +145,7 @@ int exmdb_local_run()
 	for (decltype(num) i = 0; i < num; ++i) {
 		gx_strlcpy(temp_line, pitem[i].s, sizeof(temp_line));
 		HX_strlower(temp_line);
-		str_hash_add(g_str_hash.get(), temp_line, &last_propid);
+		g_str_hash->add(temp_line, &last_propid);
 		last_propid ++;
 	}
 	return 0;
@@ -360,7 +360,7 @@ static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
 				tmp_guid, ppropnames->ppropname[i].pname);
 
 		HX_strlower(tmp_string);
-		auto ppropid = static_cast<uint16_t *>(str_hash_query(g_str_hash.get(), tmp_string));
+		auto ppropid = static_cast<uint16_t *>(g_str_hash->query(tmp_string));
 		if (NULL == ppropid) {
 			ppropids->ppropid[i] = 0;
 		} else {
