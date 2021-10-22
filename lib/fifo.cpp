@@ -6,6 +6,7 @@
  *
  */
 #include <cstring>
+#include <stdexcept>
 #include <gromox/fifo.hpp>
 #include <gromox/util.hpp>
 
@@ -44,41 +45,12 @@ void fifo_allocator_free(LIB_BUFFER* pallocator)
  *		data_size			the size of the data in every fifo node
  *		max_size			the max capacity of the fifo
  */
-void fifo_init(FIFO* pfifo, LIB_BUFFER* pbuf_pool, 
-	size_t data_size, size_t max_size)
+FIFO::FIFO(LIB_BUFFER *pbuf_pool, size_t ds, size_t ms) :
+	mbuf_pool(pbuf_pool), data_size(ds), max_size(ms)
 {
-#ifdef _DEBUG_UMTA
-	if (NULL == pfifo || NULL == pbuf_pool) {
-		debug_info("[fifo]: fifo_init param NULL");
-		return;
-	}
-#endif
-	single_list_init(&(pfifo->mlist));
-	
-	pfifo->mbuf_pool   = pbuf_pool;
-	pfifo->cur_size	   = 0;
-	pfifo->data_size   = data_size;
-	pfifo->max_size	   = max_size;
-}
-
-/*
- *	free the specified fifo
- *
- *	@param
- *		pfifo [in]	   the fifo object to free
- */
-
-void fifo_free(FIFO* pfifo)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pfifo) {
-		debug_info("[fifo]: fifo_free, param NULL");
-		return;
-	}
-#endif
-	if (NULL == pfifo) {
-		return;
-	}
+	if (pbuf_pool == nullptr)
+		throw std::invalid_argument("FIFO with no LIB_BUFFER");
+	single_list_init(&mlist);
 }
 
 /*

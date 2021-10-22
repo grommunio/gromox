@@ -117,7 +117,6 @@ DEQUEUE_NODE::~DEQUEUE_NODE()
 {
 	if (sockd >= 0)
 		close(sockd);
-	fifo_free(&fifo);
 }
 
 int main(int argc, const char **argv) try
@@ -421,8 +420,7 @@ static void *ev_enqwork(void *param)
 				continue;
 			}
 			strncpy(pdequeue->res_id, penqueue->line + 7, 128);
-			fifo_init(&pdequeue->fifo, g_fifo_alloc, sizeof(MEM_FILE),
-				FIFO_AVERAGE_LENGTH);
+			pdequeue->fifo = FIFO(g_fifo_alloc, sizeof(MEM_FILE), FIFO_AVERAGE_LENGTH);
 			std::unique_lock hl_hold(g_host_lock);
 			auto host_it = std::find_if(g_host_list.begin(), g_host_list.end(),
 			               [&](const HOST_NODE &h) { return strcmp(h.res_id, penqueue->line + 7) == 0; });
