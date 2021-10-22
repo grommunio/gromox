@@ -540,7 +540,7 @@ BOOL common_util_exmdb_locinfo_from_string(
 	}
 	memcpy(tmp_buff, loc_string + 2, tmp_len);
 	tmp_buff[tmp_len] = '\0';
-	*pdb_id = atoi(tmp_buff);
+	*pdb_id = strtol(tmp_buff, nullptr, 0);
 	if (0 == *pdb_id) {
 		return FALSE;
 	}

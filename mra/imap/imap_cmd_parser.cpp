@@ -125,14 +125,14 @@ static BOOL imap_cmd_parser_parse_sequence(DOUBLE_LIST *plist,
 					if (0 == strcmp(last_colon + 1, "*")) {
 						nodes[j].min = -1;
 					} else {
-						nodes[j].min = atoi(last_colon + 1);
+						nodes[j].min = strtol(last_colon + 1, nullptr, 0);
 						if (nodes[j].min <= 0) {
 							double_list_free(plist);
 							return FALSE;
 						}
 					}
 				} else {
-					nodes[j].min = atoi(last_break);
+					nodes[j].min = strtol(last_break, nullptr, 0);
 					if (nodes[j].min <= 0) {
 						double_list_free(plist);
 						return FALSE;
@@ -140,7 +140,7 @@ static BOOL imap_cmd_parser_parse_sequence(DOUBLE_LIST *plist,
 					if (0 == strcmp(last_colon + 1, "*")) {
 						nodes[j].max = -1;
 					} else {
-						nodes[j].max = atoi(last_colon + 1);
+						nodes[j].max = strtol(last_colon + 1, nullptr, 0);
 						if (nodes[j].max <= 0) {
 							double_list_free(plist);
 							return FALSE;
@@ -150,7 +150,7 @@ static BOOL imap_cmd_parser_parse_sequence(DOUBLE_LIST *plist,
 				last_colon = NULL;
 			} else {
 				if ('*' == *last_break ||
-					(nodes[j].min = atoi(last_break)) <= 0) {
+				    (nodes[j].min = strtol(last_break, nullptr, 0)) <= 0) {
 					double_list_free(plist);
 					return FALSE;
 				}
@@ -1133,8 +1133,6 @@ static void imap_cmd_parser_store_flags(const char *cmd, const char *mid,
 
 static BOOL imap_cmd_parser_convert_imaptime(const char *str_time, time_t *ptime)
 {
-	int hour;
-	int minute;
 	int factor;
 	time_t tmp_time;
 	char tmp_buff[3];
@@ -1161,14 +1159,14 @@ static BOOL imap_cmd_parser_convert_imaptime(const char *str_time, time_t *ptime
 	tmp_buff[0] = str_zone[1];
 	tmp_buff[1] = str_zone[2];
 	tmp_buff[2] = '\0';
-	hour = atoi(tmp_buff);
+	int hour = strtol(tmp_buff, nullptr, 0);
 	if (hour < 0 || hour > 23) {
 		return FALSE;
 	}
 	tmp_buff[0] = str_zone[3];
 	tmp_buff[1] = str_zone[4];
 	tmp_buff[2] = '\0';
-	minute = atoi(tmp_buff);
+	int minute = strtol(tmp_buff, nullptr, 0);
 	if (minute < 0 || minute > 59) {
 		return FALSE;
 	}

@@ -1642,7 +1642,7 @@ static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string)
 					if (0 == strcmp(last_colon + 1, "*")) {
 						pseq->min = -1;
 					} else {
-						pseq->min = atoi(last_colon + 1);
+						pseq->min = strtol(last_colon + 1, nullptr, 0);
 						if (pseq->min <= 0) {
 							free(pseq);
 							mail_engine_ct_free_sequence(plist);
@@ -1650,7 +1650,7 @@ static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string)
 						}
 					}
 				} else {
-					pseq->min = atoi(last_break);
+					pseq->min = strtol(last_break, nullptr, 0);
 					if (pseq->min <= 0) {
 						free(pseq);
 						mail_engine_ct_free_sequence(plist);
@@ -1659,7 +1659,7 @@ static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string)
 					if (0 == strcmp(last_colon + 1, "*")) {
 						pseq->max = -1;
 					} else {
-						pseq->max = atoi(last_colon + 1);
+						pseq->max = strtol(last_colon + 1, nullptr, 0);
 						if (pseq->max <= 0) {
 							free(pseq);
 							mail_engine_ct_free_sequence(plist);
@@ -1669,8 +1669,8 @@ static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string)
 				}
 				last_colon = NULL;
 			} else {
-				if ('*' == *last_break ||
-					(pseq->min = atoi(last_break)) <= 0) {
+				if (*last_break == '*' ||
+				    (pseq->min = strtol(last_break, nullptr, 0)) <= 0) {
 					free(pseq);
 					mail_engine_ct_free_sequence(plist);
 					return NULL;
@@ -3052,8 +3052,8 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 		return MIDB_E_PARAMETER_ERROR;
 	}
 	if (7 == argc) {
-		offset = atoi(argv[5]);
-		length = atoi(argv[6]);
+		offset = strtol(argv[5], nullptr, 0);
+		length = strtol(argv[6], nullptr, 0);
 		if (length < 0) {
 			length = 0;
 		}
@@ -4350,8 +4350,8 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 		return MIDB_E_PARAMETER_ERROR;
 	}
 	if (7 == argc) {
-		offset = atoi(argv[5]);
-		length = atoi(argv[6]);
+		offset = strtol(argv[5], nullptr, 0);
+		length = strtol(argv[6], nullptr, 0);
 		if (length < 0) {
 			length = 0;
 		}
@@ -4483,8 +4483,6 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 
 static int mail_engine_psimu(int argc, char **argv, int sockd)
 {
-	int last;
-	int first;
 	BOOL b_asc;
 	int buff_len;
 	int temp_len;
@@ -4528,8 +4526,7 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	} else {
 		return MIDB_E_PARAMETER_ERROR;
 	}
-	first = atoi(argv[5]);
-	last = atoi(argv[6]);
+	int first = strtol(argv[5], nullptr, 0), last = strtol(argv[6], nullptr, 0);
 	if (first < 1 && first != -1)
 		return MIDB_E_PARAMETER_ERROR;
 	if (last < 1 && last != -1)
@@ -4793,8 +4790,6 @@ static int mail_engine_pdell(int argc, char **argv, int sockd)
 
 static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 {
-	int last;
-	int first;
 	BOOL b_asc;
 	int temp_len, total_mail = 0;
 	int sort_field;
@@ -4835,8 +4830,7 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 	} else {
 		return MIDB_E_PARAMETER_ERROR;
 	}
-	first = atoi(argv[5]);
-	last = atoi(argv[6]);
+	int first = strtol(argv[5], nullptr, 0), last = strtol(argv[6], nullptr, 0);
 	if (first < 1 && first != -1)
 		return MIDB_E_PARAMETER_ERROR;
 	if (last < 1 && last != -1)

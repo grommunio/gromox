@@ -73,7 +73,7 @@ int main(int argc, const char **argv)
 	if (NULL == str_value) {
 		mysql_port = 3306;
 	} else {
-		mysql_port = atoi(str_value);
+		mysql_port = strtol(str_value, nullptr, 0);
 		if (mysql_port <= 0) {
 			mysql_port = 3306;
 		}

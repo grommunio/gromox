@@ -592,7 +592,7 @@ int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length)
 	if (FALSE == mime_get_field(pmime, "X-Priority", mime_priority, 32)) {
 		priority = 3;
 	} else {
-		priority = atoi(mime_priority);
+		priority = strtol(mime_priority, nullptr, 0);
 		if (priority <= 0 || priority > 5) {
 			priority = 3;
 		}

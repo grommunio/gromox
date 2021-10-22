@@ -5286,7 +5286,7 @@ BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 		}
 		if (0 == strncasecmp(ptoken, "LID=", 4)) {
 			ppropnames->ppropname[i].kind = MNID_ID;
-			ppropnames->ppropname[i].lid = atoi(ptoken + 4);
+			ppropnames->ppropname[i].lid = strtol(ptoken + 4, nullptr, 0);
 			if (ppropnames->ppropname[i].lid == 0)
 				goto NOT_FOUND_PROPNAME;
 			ppropnames->ppropname[i].pname = NULL;

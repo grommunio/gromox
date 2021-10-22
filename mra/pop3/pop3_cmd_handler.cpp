@@ -278,7 +278,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 		return 1708;
 	}
 	
-	auto n = atoi(temp_command + 5);
+	int n = strtol(temp_command + 5, nullptr, 0);
 	if (n > 0 && static_cast<size_t>(n) <= pcontext->array.size()) {
 		auto punit = sa_get_item(pcontext->array, n - 1);
 		string_length = sprintf(temp_buff, "+OK %d %s\r\n", n,
@@ -342,7 +342,7 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 		return 1708;
 	}
 	
-	auto n = atoi(temp_command + 5);
+	int n = strtol(temp_command + 5, nullptr, 0);
 	if (n > 0 && static_cast<size_t>(n) <= pcontext->array.size()) {
 		auto punit = sa_get_item(pcontext->array, n - 1);
 		string_length = sprintf(temp_buff, "+OK %d %ld\r\n", n, punit->size);	
@@ -359,7 +359,6 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 	POP3_CONTEXT *pcontext)
 {
-	int n;
 	char temp_command[256];
 	
 	memcpy(temp_command, cmd_line, line_length);
@@ -378,7 +377,7 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 		return 1708;
 	}
 	
-	n = atoi(temp_command + 5);
+	int n = strtol(temp_command + 5, nullptr, 0);
 	pcontext->cur_line = -1;
 	pcontext->until_line = 0x7FFFFFFF;
 	if (n > 0 && static_cast<size_t>(n) <= pcontext->array.size()) {
@@ -413,7 +412,6 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 	POP3_CONTEXT *pcontext)
 {
-	int n;
 	char temp_command[256];
 	
 	memcpy(temp_command, cmd_line, line_length);
@@ -432,7 +430,7 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 		return 1708;
 	}
 	
-	n = atoi(temp_command + 5);
+	int n = strtol(temp_command + 5, nullptr, 0);
 	if (n > 0 && static_cast<size_t>(n) <= pcontext->array.size()) {
 		auto punit = sa_get_item(pcontext->array, n - 1);
 		if (FALSE == punit->b_deleted) {
@@ -473,12 +471,12 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 	HX_strltrim(temp_buff);
 	ptoken = strchr(temp_buff, ' ');
 	if (NULL == ptoken) {
-		n = atoi(temp_buff);
+		n = strtol(temp_buff, nullptr, 0);
 		pcontext->until_line = 0x7FFFFFFF;
 	} else {
 		*ptoken = '\0';
-		n = atoi(temp_buff);
-		pcontext->until_line = atoi(ptoken + 1);
+		n = strtol(temp_buff, nullptr, 0);
+		pcontext->until_line = strtol(ptoken + 1, nullptr, 0);
 	}
 	pcontext->cur_line = -1;
 	if (n > 0 && static_cast<size_t>(n) <= pcontext->array.size()) {

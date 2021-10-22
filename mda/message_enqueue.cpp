@@ -394,7 +394,7 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 static int message_enqueue_retrieve_max_ID() try
 {
     struct dirent *direntp;
-	int fd, size, max_ID, temp_ID;
+	int fd, size, max_ID;
 
 	max_ID = 0;
 	/* get maximum flushID in mess */
@@ -404,7 +404,7 @@ static int message_enqueue_retrieve_max_ID() try
 		if (strcmp(direntp->d_name, ".") == 0 ||
 		    strcmp(direntp->d_name, "..") == 0)
 			continue;
-    	temp_ID = atoi(direntp->d_name);
+		int temp_ID = strtol(direntp->d_name, nullptr, 0);
         if (temp_ID > max_ID) {
 			temp_path = g_path + "/mess/"s + direntp->d_name;
 			fd = open(temp_path.c_str(), O_RDONLY);

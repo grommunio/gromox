@@ -638,8 +638,6 @@ void exmdb_local_console_talk(int argc,
 	char str_interval[64];
 	char str_response[64];
 	char *ptr, tmp_ip[40];
-	int scan_interval, retrying_times;
-	int times, interval, alarm_interval;
 	char help_string[] = "250 exmdb local help information:\r\n"
 							 "\t%s status\r\n"
 							 "\t    --print the running information\r\n"
@@ -727,8 +725,8 @@ void exmdb_local_console_talk(int argc,
 			return;
 		}
 		*ptr = '\0';
-		times = atoi(argv[3]);
-		interval = atoitvl(ptr + 1);
+		int times = strtol(argv[3], nullptr, 0);
+		int interval = atoitvl(ptr + 1);
 		if (times <=0 || interval <=0) {
 			snprintf(result, length, "550 times and interval should larger "
 				"than 0");
@@ -741,7 +739,7 @@ void exmdb_local_console_talk(int argc,
 	}
 	if (4 == argc && 0 == strcmp("set", argv[1]) &&
 		0 == strcmp("alarm-interval", argv[2])) {
-		alarm_interval = atoitvl(argv[3]);
+		int alarm_interval = atoitvl(argv[3]);
 		if (alarm_interval <= 0) {
 			snprintf(result, length, "550 invalid alram-interval %s", argv[3]);
 			return;
@@ -752,7 +750,7 @@ void exmdb_local_console_talk(int argc,
 	}
 	if (4 == argc && 0 == strcmp("set", argv[1]) &&
 		0 == strcmp("retrying-times", argv[2])) {
-		retrying_times = atoi(argv[3]);
+		int retrying_times = strtol(argv[3], nullptr, 0);
 		if (retrying_times <= 0) {
 			snprintf(result, length, "550 invalid retrying-times %s", argv[3]);
 			return;
@@ -763,7 +761,7 @@ void exmdb_local_console_talk(int argc,
 	}
 	if (4 == argc && 0 == strcmp("set", argv[1]) &&
 		0 == strcmp("cache-scan", argv[2])) {
-		scan_interval = atoitvl(argv[3]);
+		int scan_interval = atoitvl(argv[3]);
 		if (scan_interval <=0 ) {
 			snprintf(result, length, "550 invalid cache-scan %s", argv[3]);
 			return;

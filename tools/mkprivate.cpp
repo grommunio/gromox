@@ -178,7 +178,6 @@ static BOOL create_search_folder(sqlite3 *psqlite,
 
 int main(int argc, const char **argv)
 {
-	int user_id;
 	char *err_msg;
 	char lang[32];
 	MYSQL *pmysql;
@@ -220,7 +219,7 @@ int main(int argc, const char **argv)
 	if (NULL == str_value) {
 		mysql_port = 3306;
 	} else {
-		mysql_port = atoi(str_value);
+		mysql_port = strtol(str_value, nullptr, 0);
 		if (mysql_port <= 0) {
 			mysql_port = 3306;
 		}
@@ -290,8 +289,7 @@ int main(int argc, const char **argv)
 	
 	gx_strlcpy(dir, myrow[1], GX_ARRAY_SIZE(dir));
 	gx_strlcpy(lang, myrow[2], GX_ARRAY_SIZE(lang));
-	user_id = atoi(myrow[5]);
-	
+	int user_id = strtol(myrow[5], nullptr, 0);
 	mysql_free_result(pmyres);
 	mysql_close(pmysql);
 	

@@ -88,7 +88,7 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 		if (NULL == str_value) {
 			conn_num = 8;
 		} else {
-			conn_num = atoi(str_value);
+			conn_num = strtol(str_value, nullptr, 0);
 			if (conn_num < 0)
 				conn_num = 8;
 		}

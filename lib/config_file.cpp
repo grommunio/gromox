@@ -333,7 +333,7 @@ BOOL CONFIG_FILE::get_int(const char *key, int *value) const
 	auto v = get_value(key);
 	if (v == nullptr)
 		return FALSE;
-	*value = atoi(v);
+	*value = strtol(v, nullptr, 0);
 	return TRUE;
 }
 

@@ -55,7 +55,6 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
     char *maildir, char *lang, char *reason, int length, unsigned int mode,
     char *encrypt_passwd, size_t encrypt_size, uint8_t *externid_present) try
 {
-	int temp_status;
 	char temp_name[UADDR_SIZE*2];
 
 	mysql_adaptor_encode_squote(username, temp_name);
@@ -84,7 +83,7 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 		snprintf(reason, length, "\"%s\" is not a real user", username);
 		return FALSE;
 	}
-	temp_status = atoi(myrow[2]);
+	int temp_status = strtol(myrow[2], nullptr, 0);
 	if (0 != temp_status) {
 		auto uval = temp_status & AF_USER__MASK;
 		if (temp_status & AF_DOMAIN__MASK) {
@@ -170,7 +169,6 @@ BOOL mysql_adaptor_login2(const char *username, const char *password,
 BOOL mysql_adaptor_setpasswd(const char *username,
 	const char *password, const char *new_password) try
 {
-	int temp_status;
 	char temp_name[UADDR_SIZE*2];
 	char encrypt_passwd[40];
 	
@@ -193,14 +191,12 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 		dtypx = static_cast<enum display_type>(strtoul(myrow[1], nullptr, 0));
 	if (dtypx != DT_MAILUSER)
 		return FALSE;
-	temp_status = atoi(myrow[2]);
+	int temp_status = strtol(myrow[2], nullptr, 0);
 	if (0 != temp_status) {
 		return FALSE;
 	}
-	
-	if (0 == (atoi(myrow[3])&USER_PRIVILEGE_CHGPASSWD)) {
+	if (!(strtol(myrow[3], nullptr, 0) & USER_PRIVILEGE_CHGPASSWD))
 		return FALSE;
-	}
 
 	strncpy(encrypt_passwd, myrow[0], sizeof(encrypt_passwd));
 	encrypt_passwd[sizeof(encrypt_passwd) - 1] = '\0';
@@ -259,7 +255,7 @@ BOOL mysql_adaptor_get_id_from_username(const char *username, int *puser_id) try
 	if (pmyres.num_rows() != 1)
 		return FALSE;
 	auto myrow = pmyres.fetch_row();
-	*puser_id = atoi(myrow[0]);
+	*puser_id = strtol(myrow[0], nullptr, 0);
 	return TRUE;
 } catch (const std::exception &e) {
 	printf("E-%u: %s\n", 1705, e.what());
@@ -284,7 +280,7 @@ BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, int *puser_id) try
 	if (pmyres.num_rows() != 1)
 		return FALSE;
 	auto myrow = pmyres.fetch_row();
-	*puser_id = atoi(myrow[0]);
+	*puser_id = strtol(myrow[0], nullptr, 0);
 	return TRUE;
 } catch (const std::exception &e) {
 	printf("E-%u: %s\n", 1706, e.what());
@@ -345,7 +341,7 @@ BOOL mysql_adaptor_get_user_privilege_bits(const char *username,
 	if (pmyres.num_rows() != 1)
 		return FALSE;
 	auto myrow = pmyres.fetch_row();
-	*pprivilege_bits = atoi(myrow[0]);
+	*pprivilege_bits = strtol(myrow[0], nullptr, 0);
 	return TRUE;
 } catch (const std::exception &e) {
 	printf("E-%u: %s\n", 1708, e.what());
@@ -397,7 +393,6 @@ BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang) try
 static BOOL mysql_adaptor_expand_hierarchy(MYSQL *pmysql,
     std::vector<int> &seen, int class_id) try
 {
-	int child_id;
 	auto qstr = "SELECT child_id FROM hierarchy WHERE class_id=" + std::to_string(class_id);
 	auto conn = g_sqlconn_pool.get_wait();
 	if (!conn.res.query(qstr.c_str()))
@@ -410,7 +405,7 @@ static BOOL mysql_adaptor_expand_hierarchy(MYSQL *pmysql,
 	size_t i, rows = pmyres.num_rows();
 	for (i = 0; i < rows; i++) {
 		auto myrow = pmyres.fetch_row();
-		child_id = atoi(myrow[0]);
+		int child_id = strtol(myrow[0], nullptr, 0);
 		if (std::find(seen.cbegin(), seen.cend(), child_id) != seen.cend())
 			continue;
 		seen.push_back(child_id);
@@ -568,7 +563,7 @@ BOOL mysql_adaptor_get_id_from_homedir(const char *homedir, int *pdomain_id) try
 	if (pmyres.num_rows() != 1)
 		return FALSE;
 	auto myrow = pmyres.fetch_row();
-	*pdomain_id = atoi(myrow[0]);
+	*pdomain_id = strtol(myrow[0], nullptr, 0);
 	return TRUE;
 } catch (const std::exception &e) {
 	printf("E-%u: %s\n", 1718, e.what());
@@ -595,8 +590,8 @@ BOOL mysql_adaptor_get_user_ids(const char *username, int *puser_id,
 	if (pmyres.num_rows() != 1)
 		return FALSE;	
 	auto myrow = pmyres.fetch_row();
-	*puser_id = atoi(myrow[0]);
-	*pdomain_id = atoi(myrow[1]);
+	*puser_id = strtol(myrow[0], nullptr, 0);
+	*pdomain_id = strtol(myrow[1], nullptr, 0);
 	if (dtypx != nullptr) {
 		*dtypx = DT_MAILUSER;
 		if (myrow[2] != nullptr)
@@ -625,8 +620,8 @@ BOOL mysql_adaptor_get_domain_ids(const char *domainname, int *pdomain_id,
 	if (pmyres.num_rows() != 1)
 		return FALSE;
 	auto myrow = pmyres.fetch_row();
-	*pdomain_id = atoi(myrow[0]);
-	*porg_id = atoi(myrow[1]);
+	*pdomain_id = strtol(myrow[0], nullptr, 0);
+	*porg_id = strtol(myrow[1], nullptr, 0);
 	return TRUE;
 } catch (const std::exception &e) {
 	printf("E-%u: %s\n", 1720, e.what());
@@ -652,8 +647,8 @@ BOOL mysql_adaptor_get_mlist_ids(int user_id, int *pgroup_id,
 	if (myrow == nullptr || myrow[0] == nullptr ||
 	    static_cast<enum display_type>(strtoul(myrow[0], nullptr, 0)) != DT_DISTLIST)
 		return FALSE;
-	*pdomain_id = atoi(myrow[1]);
-	*pgroup_id = atoi(myrow[2]);
+	*pdomain_id = strtol(myrow[1], nullptr, 0);
+	*pgroup_id = strtol(myrow[2], nullptr, 0);
 	return TRUE;
 } catch (const std::exception &e) {
 	printf("E-%u: %s\n", 1721, e.what());
@@ -709,9 +704,6 @@ BOOL mysql_adaptor_get_domain_info(int domain_id, sql_domain &dinfo) try
 
 BOOL mysql_adaptor_check_same_org(int domain_id1, int domain_id2) try
 {
-	int org_id1;
-	int org_id2;
-
 	auto qstr = "SELECT org_id FROM domains WHERE id=" + std::to_string(domain_id1) +
 	            " OR id=" + std::to_string(domain_id2);
 	auto conn = g_sqlconn_pool.get_wait();
@@ -724,9 +716,9 @@ BOOL mysql_adaptor_check_same_org(int domain_id1, int domain_id2) try
 	if (pmyres.num_rows() != 2)
 		return FALSE;
 	auto myrow = pmyres.fetch_row();
-	org_id1 = atoi(myrow[0]);
+	int org_id1 = strtol(myrow[0], nullptr, 0);
 	myrow = pmyres.fetch_row();
-	org_id2 = atoi(myrow[0]);
+	int org_id2 = strtol(myrow[0], nullptr, 0);
 	if (0 == org_id1 || 0 == org_id2 || org_id1 != org_id2) {
 		return FALSE;
 	}
@@ -819,8 +811,6 @@ BOOL mysql_adaptor_get_sub_classes(int class_id, std::vector<sql_class> &pfile) 
 static BOOL mysql_adaptor_hierarchy_include(sqlconn &conn,
     const char *account, int class_id) try
 {
-	int child_id;
-	
 	auto qstr = "SELECT username FROM members WHERE class_id="s +
 	            std::to_string(class_id) + " AND username='" + account + "'";
 	if (!conn.query(qstr.c_str()))
@@ -840,7 +830,7 @@ static BOOL mysql_adaptor_hierarchy_include(sqlconn &conn,
 	size_t i, rows = pmyres.num_rows();
 	for (i=0; i<rows; i++) {
 		auto myrow = pmyres.fetch_row();
-		child_id = atoi(myrow[0]);
+		int child_id = strtol(myrow[0], nullptr, 0);
 		if (mysql_adaptor_hierarchy_include(conn, account, child_id))
 			return TRUE;
 	}
@@ -853,11 +843,7 @@ static BOOL mysql_adaptor_hierarchy_include(sqlconn &conn,
 BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
     const char *account) try
 {
-	int group_id;
-	int class_id;
-	int domain_id;
 	BOOL b_result;
-	int id, type;
 	char temp_name[UADDR_SIZE*2];
 	char *pencode_domain;
 	char temp_account[512];
@@ -878,11 +864,9 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		return false;
 	if (pmyres.num_rows() != 1)
 		return FALSE;
+
 	auto myrow = pmyres.fetch_row();
-	
-	id = atoi(myrow[0]);
-	type = atoi(myrow[1]);
-	
+	int id = strtol(myrow[0], nullptr, 0), type = strtol(myrow[1], nullptr, 0);
 	b_result = FALSE;
 	switch (type) {
 	case MLIST_TYPE_NORMAL:
@@ -896,7 +880,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		if (pmyres.num_rows() > 0)
 			b_result = TRUE;
 		return b_result;
-	case MLIST_TYPE_GROUP:
+	case MLIST_TYPE_GROUP: {
 		qstr = "SELECT id FROM groups WHERE groupname='"s + temp_name + "'";
 		if (!conn.res.query(qstr.c_str()))
 			return false;
@@ -906,8 +890,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		if (pmyres.num_rows() != 1)
 			return FALSE;
 		myrow = pmyres.fetch_row();
-		group_id = atoi(myrow[0]);
-		
+		int group_id = strtol(myrow[0], nullptr, 0);
 		qstr = "SELECT username FROM users WHERE group_id=" + std::to_string(group_id) +
 		       " AND username='" + temp_account + "'";
 		if (!conn.res.query(qstr.c_str()))
@@ -918,7 +901,8 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		if (pmyres.num_rows() > 0)
 			b_result = TRUE;
 		return b_result;
-	case MLIST_TYPE_DOMAIN:
+	}
+	case MLIST_TYPE_DOMAIN: {
 		qstr = "SELECT id FROM domains WHERE domainname='"s + pencode_domain + "'";
 		if (!conn.res.query(qstr.c_str()))
 			return false;
@@ -928,8 +912,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		if (pmyres.num_rows() != 1)
 			return FALSE;
 		myrow = pmyres.fetch_row();
-		domain_id = atoi(myrow[0]);
-		
+		int domain_id = strtol(myrow[0], nullptr, 0);
 		qstr = "SELECT username FROM users WHERE domain_id=" + std::to_string(domain_id) +
 		       " AND username='" + temp_account + "'";
 		if (!conn.res.query(qstr.c_str()))
@@ -940,7 +923,8 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		if (pmyres.num_rows() > 0)
 			b_result = TRUE;
 		return b_result;
-	case MLIST_TYPE_CLASS:
+	}
+	case MLIST_TYPE_CLASS: {
 		qstr = "SELECT id FROM classes WHERE listname='"s + temp_name + "'";
 		if (!conn.res.query(qstr.c_str()))
 			return false;
@@ -950,9 +934,10 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 		if (pmyres.num_rows() != 1)
 			return FALSE;		
 		myrow = pmyres.fetch_row();
-		class_id = atoi(myrow[0]);
+		int class_id = strtol(myrow[0], nullptr, 0);
 		b_result = mysql_adaptor_hierarchy_include(conn.res, temp_account, class_id);
 		return b_result;
+	}
 	default:
 		return FALSE;
 	}
@@ -979,8 +964,6 @@ static void mysql_adaptor_encode_squote(const char *in, char *out)
 BOOL mysql_adaptor_check_same_org2(const char *domainname1,
     const char *domainname2) try
 {
-	int org_id1;
-	int org_id2;
 	char temp_name1[UDOM_SIZE*2], temp_name2[UDOM_SIZE*2];
 
 	mysql_adaptor_encode_squote(domainname1, temp_name1);
@@ -997,9 +980,9 @@ BOOL mysql_adaptor_check_same_org2(const char *domainname1,
 	if (pmyres.num_rows() != 2)
 		return FALSE;
 	auto myrow = pmyres.fetch_row();
-	org_id1 = atoi(myrow[0]);
+	int org_id1 = strtol(myrow[0], nullptr, 0);
 	myrow = pmyres.fetch_row();
-	org_id2 = atoi(myrow[0]);
+	int org_id2 = strtol(myrow[0], nullptr, 0);
 	if (0 == org_id1 || 0 == org_id2 || org_id1 != org_id2) {
 		return FALSE;
 	}
@@ -1035,17 +1018,9 @@ BOOL mysql_adaptor_check_user(const char *username, char *path) try
 		return false;
 	} else {
 		auto myrow = pmyres.fetch_row();
-		if (0 != atoi(myrow[0])) {
-			if (NULL != path) {
-				strcpy(path, myrow[1]);
-			}
-			return FALSE;
-		} else {
-			if (NULL != path) {
-				strcpy(path, myrow[1]);
-			}
-			return TRUE;
-		}
+		if (path != nullptr)
+			strcpy(path, myrow[1]);
+		return strtol(myrow[0], nullptr, 0) == 0 ? TRUE : false;
 	}
 } catch (const std::exception &e) {
 	printf("E-%u: %s\n", 1731, e.what());
@@ -1055,10 +1030,7 @@ BOOL mysql_adaptor_check_user(const char *username, char *path) try
 BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
     int *presult, std::vector<std::string> &pfile) try
 {
-	int i, id, rows;
-	int type, privilege;
-	int group_id;
-	int domain_id;
+	int i, rows;
 	BOOL b_chkintl;
 	char *pencode_domain;
 	char temp_name[UADDR_SIZE*2];
@@ -1092,9 +1064,9 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		return TRUE;
 	}
 	auto myrow = pmyres.fetch_row();
-	id = atoi(myrow[0]);
-	type = atoi(myrow[1]);
-	privilege = atoi(myrow[2]);
+	int id = strtol(myrow[0], nullptr, 0);
+	int type = strtol(myrow[1], nullptr, 0);
+	int privilege = strtol(myrow[2], nullptr, 0);
 
 	switch (type) {
 	case MLIST_TYPE_NORMAL:
@@ -1166,7 +1138,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		}
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
-	case MLIST_TYPE_GROUP:
+	case MLIST_TYPE_GROUP: {
 		switch (privilege) {
 		case MLIST_PRIVILEGE_ALL:
 		case MLIST_PRIVILEGE_OUTGOING:
@@ -1218,7 +1190,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 			return TRUE;
 		}
 		myrow = pmyres.fetch_row();
-		group_id = atoi(myrow[0]);
+		int group_id = strtol(myrow[0], nullptr, 0);
 		qstr = "SELECT u.username, dt.propval_str AS dtypx FROM users AS u "
 		       JOIN_WITH_DISPLAYTYPE " WHERE u.group_id=" + std::to_string(group_id);
 		if (!conn.res.query(qstr.c_str()))
@@ -1255,8 +1227,8 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		}
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
-
-	case MLIST_TYPE_DOMAIN:
+	}
+	case MLIST_TYPE_DOMAIN: {
 		switch (privilege) {
 		case MLIST_PRIVILEGE_ALL:
 		case MLIST_PRIVILEGE_OUTGOING:
@@ -1308,7 +1280,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 			return TRUE;
 		}
 		myrow = pmyres.fetch_row();
-		domain_id = atoi(myrow[0]);
+		int domain_id = strtol(myrow[0], nullptr, 0);
 		qstr = "SELECT u.username, dt.propval_str AS dtypx FROM users AS u "
 		       JOIN_WITH_DISPLAYTYPE " WHERE u.domain_id=" + std::to_string(domain_id);
 		if (!conn.res.query(qstr.c_str()))
@@ -1345,7 +1317,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		}
 		*presult = MLIST_RESULT_OK;
 		return TRUE;
-
+	}
 	case MLIST_TYPE_CLASS: {
 		switch (privilege) {
 		case MLIST_PRIVILEGE_ALL:
@@ -1465,7 +1437,7 @@ BOOL mysql_adaptor_get_user_info(const char *username,
 		maildir[0] = '\0';
 	} else {
 		auto myrow = pmyres.fetch_row();
-		if (0 == atoi(myrow[1])) {
+		if (strtol(myrow[1], nullptr, 0) == 0) {
 			strcpy(maildir, myrow[0]);
 			strcpy(lang, myrow[2]);
 			strcpy(zone, myrow[3]);

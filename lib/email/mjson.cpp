@@ -805,7 +805,7 @@ static BOOL mjson_record_value(MJSON *pjson, char *tag,
 		if (0 == pjson->uid && length < 16) {
 			memcpy(temp_buff, value, length);
 			temp_buff[length] = '\0';
-			pjson->uid = atoi(temp_buff);
+			pjson->uid = strtol(temp_buff, nullptr, 0);
 		}
 	} else if (0 == strcasecmp(tag, "msgid")) {
 		if ('\0' == pjson->msgid[0] && length <= sizeof(pjson->msgid)) {
@@ -1018,7 +1018,6 @@ static BOOL mjson_parse_array(MJSON *pjson, char *value, int length, int type)
 
 static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 {
-	int offset;
 	int rstat, j, last_pos = 0;
 	size_t temp_len;
 	BOOL b_digit;
@@ -1195,7 +1194,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 		for (size_t i = 0; i <= temp_len; ++i) {
 			if ('.' == temp_buff[i] || '\0' == temp_buff[i]) {
 				temp_buff[i] = '\0';
-				offset = atoi(temp_buff + last_pos);
+				int offset = strtol(temp_buff + last_pos, nullptr, 0);
 				pnode = simple_tree_node_get_child(&pmime->node);
 				if (NULL == pnode) {
 					pnode = &pmime->node;

@@ -108,7 +108,6 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 int main(int argc, const char **argv)
 {
 	int i;
-	int domain_id;
 	char *err_msg;
 	MYSQL *pmysql;
 	char dir[256];
@@ -148,7 +147,7 @@ int main(int argc, const char **argv)
 	if (NULL == str_value) {
 		mysql_port = 3306;
 	} else {
-		mysql_port = atoi(str_value);
+		mysql_port = strtol(str_value, nullptr, 0);
 		if (mysql_port <= 0) {
 			mysql_port = 3306;
 		}
@@ -205,7 +204,7 @@ int main(int argc, const char **argv)
 		printf("Warning: Domain status is not \"alive\"(0) but %lu\n", domain_status);
 	
 	gx_strlcpy(dir, myrow[1], GX_ARRAY_SIZE(dir));
-	domain_id = atoi(myrow[4]);
+	int domain_id = strtol(myrow[4], nullptr, 0);
 	mysql_free_result(pmyres);
 	mysql_close(pmysql);
 	

@@ -258,7 +258,7 @@ static int add_timer(const char *command, int interval)
 	double_list_append_as_tail(&g_back_list, &pback->node);
 	bk_hold.unlock();
 	if (0 == strncasecmp(temp_buff, "TRUE ", 5)) {
-		return atoi(temp_buff + 5);
+		return strtol(temp_buff + 5, nullptr, 0);
 	}
 	return 0;
 }

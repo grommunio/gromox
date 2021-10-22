@@ -122,7 +122,7 @@ static BOOL oxcical_parse_vtsubcomponent(std::shared_ptr<ICAL_COMPONENT> psub_co
 		if (NULL == pvalue2) {
 			pdate->month = itime.month;
 		} else {
-			pdate->month = atoi(pvalue2);
+			pdate->month = strtol(pvalue2, nullptr, 0);
 			if (pdate->month < 1 || pdate->month > 12) {
 				return FALSE;
 			}
@@ -142,7 +142,7 @@ static BOOL oxcical_parse_vtsubcomponent(std::shared_ptr<ICAL_COMPONENT> psub_co
 		} else {
 			pdate->year = 1;
 			pdate->dayofweek = 0;
-			pdate->day = atoi(pvalue1);
+			pdate->day = strtol(pvalue1, nullptr, 0);
 			if (abs(pdate->day) < 1 || abs(pdate->day) > 31) {
 				return FALSE;
 			}
@@ -328,7 +328,6 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
     std::shared_ptr<ICAL_LINE> piline, uint16_t calendartype, time_t start_time,
     uint32_t duration_minutes, APPOINTMENT_RECUR_PAT *apr)
 {
-	int tmp_int;
 	time_t tmp_time;
 	ICAL_TIME itime;
 	ICAL_TIME itime1;
@@ -353,9 +352,8 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (psubval_list->size() > 1)
 			return FALSE;
 		pvalue = piline->get_first_subvalue_by_name("BYSECOND");
-		if (NULL != pvalue && atoi(pvalue) != start_time%60) {
+		if (pvalue != nullptr && strtol(pvalue, nullptr, 0) != start_time % 60)
 			return FALSE;
-		}
 	}
 	if (!ical_parse_rrule(ptz_component, start_time, &piline->value_list, &irrule))
 		return FALSE;
@@ -527,7 +525,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				}
 			}
 			pvalue = piline->get_first_subvalue_by_name("BYSETPOS");
-			tmp_int = atoi(pvalue);
+			int tmp_int = strtol(pvalue, nullptr, 0);
 			if (tmp_int > 4 || tmp_int < -1) {
 				return FALSE;
 			} else if (-1 == tmp_int) {
@@ -538,13 +536,14 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (ical_rrule_check_bymask(&irrule, RRULE_BY_DAY) ||
 			    ical_rrule_check_bymask(&irrule, RRULE_BY_SETPOS))
 				return FALSE;
+			int tmp_int;
 			patterntype = PATTERNTYPE_MONTH;
 			pvalue = piline->get_first_subvalue_by_name("BYMONTHDAY");
 			if (NULL == pvalue) {
 				ical_utc_to_datetime(ptz_component, start_time, &itime);
 				tmp_int = itime.day;
 			} else {
-				tmp_int = atoi(pvalue);
+				tmp_int = strtol(pvalue, nullptr, 0);
 				if (tmp_int < -1) {
 					return FALSE;
 				} else if (-1 == tmp_int) {
@@ -599,7 +598,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				}
 			}
 			pvalue = piline->get_first_subvalue_by_name("BYSETPOS");
-			tmp_int = atoi(pvalue);
+			int tmp_int = strtol(pvalue, nullptr, 0);
 			if (tmp_int > 4 || tmp_int < -1) {
 				return FALSE;
 			} else if (-1 == tmp_int) {
@@ -610,13 +609,14 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			if (ical_rrule_check_bymask(&irrule, RRULE_BY_DAY) ||
 			    ical_rrule_check_bymask(&irrule, RRULE_BY_SETPOS))
 				return FALSE;
+			int tmp_int;
 			patterntype = PATTERNTYPE_MONTH;
 			pvalue = piline->get_first_subvalue_by_name("BYMONTHDAY");
 			if (NULL == pvalue) {
 				ical_utc_to_datetime(ptz_component, start_time, &itime);
 				tmp_int = itime.day;
 			} else {
-				tmp_int = atoi(pvalue);
+				tmp_int = strtol(pvalue, nullptr, 0);
 				if (tmp_int < -1) {
 					return FALSE;
 				} else if (-1 == tmp_int) {
@@ -1509,7 +1509,6 @@ static BOOL oxcical_parse_organizer(std::shared_ptr<ICAL_LINE> piline,
 static BOOL oxcical_parse_sequence(std::shared_ptr<ICAL_LINE> piline,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
-	uint32_t tmp_int32;
 	const char *pvalue;
 	PROPERTY_NAME propname;
 	TAGGED_PROPVAL propval;
@@ -1518,7 +1517,7 @@ static BOOL oxcical_parse_sequence(std::shared_ptr<ICAL_LINE> piline,
 	if (NULL == pvalue) {
 		return TRUE;
 	}
-	tmp_int32 = atoi(pvalue);
+	uint32_t tmp_int32 = strtol(pvalue, nullptr, 0);
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
 	propname.kind = MNID_ID;
 	propname.lid = PidLidAppointmentSequence;
@@ -1733,7 +1732,6 @@ static BOOL oxcical_parse_summary(
 static BOOL oxcical_parse_ownerapptid(std::shared_ptr<ICAL_LINE> piline,
     MESSAGE_CONTENT *pmsg)
 {
-	uint32_t tmp_int32;
 	const char *pvalue;
 	TAGGED_PROPVAL propval;
 	
@@ -1741,7 +1739,7 @@ static BOOL oxcical_parse_ownerapptid(std::shared_ptr<ICAL_LINE> piline,
 	if (NULL == pvalue) {
 		return TRUE;
 	}
-	tmp_int32 = atoi(pvalue);
+	uint32_t tmp_int32 = strtol(pvalue, nullptr, 0);
 	propval.proptag = PROP_TAG_OWNERAPPOINTMENTID;
 	propval.pvalue = &tmp_int32;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
@@ -2634,7 +2632,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	if (NULL != piline) {
 		pvalue = piline->get_first_subvalue();
 		if (NULL != pvalue) {
-			tmp_int32 = atoi(pvalue);
+			tmp_int32 = strtol(pvalue, nullptr, 0);
 			if (0 == tmp_int32 || 1 == tmp_int32 || 2 == tmp_int32) {
 				propval.proptag = PROP_TAG_IMPORTANCE;
 				propval.pvalue = &tmp_int32;
@@ -2650,7 +2648,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			if (NULL != pvalue) {
 				propval.proptag = PROP_TAG_IMPORTANCE;
 				propval.pvalue = &tmp_int32;
-				switch (atoi(pvalue)) {
+				switch (strtol(pvalue, nullptr, 0)) {
 				case 1:
 				case 2:
 				case 3:

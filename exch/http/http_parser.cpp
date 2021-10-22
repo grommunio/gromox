@@ -797,7 +797,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, const STREAM &stream_1)
 	}
 	ptoken1++;
 	gx_strlcpy(pcontext->host, ptoken, GX_ARRAY_SIZE(pcontext->host));
-	pcontext->port = atoi(ptoken1);
+	pcontext->port = strtol(ptoken1, nullptr, 0);
 
 	if (FALSE == pcontext->b_authed) {
 		char dstring[128], response_buff[1024];

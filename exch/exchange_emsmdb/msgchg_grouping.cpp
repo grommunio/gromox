@@ -199,7 +199,7 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 	msg_group_node *pgp_node = nullptr;
 	for (decltype(line_num) i = 0; i < line_num; ++i) {
 		if (0 == strncasecmp(pline, "index:", 6)) {
-			index = atoi(pline + 6);
+			index = strtol(pline + 6, nullptr, 0);
 			if (index < 0) {
 				printf("[exchange_emsmdb]: index %d "
 					"error in %s\n", index, file_path.c_str());
@@ -298,7 +298,7 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 			}
 			if (0 == strncasecmp(ptoken, "LID=", 4)) {
 				ptag_node->ppropname->kind = MNID_ID;
-				ptag_node->ppropname->lid = atoi(ptoken + 4);
+				ptag_node->ppropname->lid = strtol(ptoken + 4, nullptr, 0);
 				if (ptag_node->ppropname->lid == 0) {
 					free(ptag_node->ppropname);
 					free(ptag_node);

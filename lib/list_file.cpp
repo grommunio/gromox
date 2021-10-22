@@ -7,7 +7,7 @@
 #include <utility>
 #include <libHX/string.h>
 #include <gromox/common_types.hpp>
-#include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/paths.h>
 #include <gromox/util.hpp>
@@ -160,7 +160,7 @@ static BOOL list_file_analyse_format(LIST_FILE *list_file, const char* format)
 							"number after \":\"\n");
 					return FALSE;
 				}
-				list_file->type_size[num] = atoi(temp_buf);
+				list_file->type_size[num] = strtol(temp_buf, nullptr, 0);
 				if (list_file->type_size[num] <= 0) {
 					printf("[list_file]: invalid format, length follows "
 							"should be larger than 0\n");
@@ -288,7 +288,7 @@ static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line)
 				ptr ++;
 			}
 			temp_buf[j] = '\0';
-			*((int*)pfile) = atoi(temp_buf);
+			cpu_to_le32p(pfile, strtol(temp_buf, nullptr, 0));
 			pfile += sizeof(int);
 			if ('\0' == *ptr || '#' == *ptr || '\r' == *ptr || '\n' == *ptr) {
 				b_terminate = TRUE;

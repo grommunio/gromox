@@ -149,7 +149,7 @@ zend_bool php_to_sortorder_set(zval *pzval, SORTORDER_SET *pset)
 	zval *entry;
 	size_t i = 0;
 	ZEND_HASH_FOREACH_KEY_VAL(ptarget_hash, idx, key, entry) {
-		uint32_t proptag = phptag_to_proptag(key != nullptr ? atoi(key->val) : idx);
+		uint32_t proptag = phptag_to_proptag(key != nullptr ? strtol(key->val, nullptr, 0) : idx);
 		pset->psort[i].propid = PROP_ID(proptag);
 		pset->psort[i].type = PROP_TYPE(proptag);
 		pset->psort[i].table_sort = zval_get_long(entry);

@@ -425,7 +425,6 @@ static void *mdq_thrwork(void *arg)
 	size_t size;
     DIR *dirp;
     struct dirent *direntp;
-	int len, mess;
 
 	while ((dirp = opendir(g_path_mess.c_str())) == nullptr) {
 		printf("[message_dequeue]: failed to open directory %s: %s\n",
@@ -469,7 +468,7 @@ static void *mdq_thrwork(void *arg)
 			if (-1 == mess_fd) {
 				continue;
 			}
-			len = read(mess_fd, &size, sizeof(size_t));
+			ssize_t len = read(mess_fd, &size, sizeof(size_t));
 			close(mess_fd);
 			if (len != sizeof(size_t)) {
 				continue;
@@ -477,8 +476,7 @@ static void *mdq_thrwork(void *arg)
 			if (0 == size) {
 				continue;
 			}
-			mess = atoi(direntp->d_name);
-			message_dequeue_load_from_mess(mess);
+			message_dequeue_load_from_mess(strtol(direntp->d_name, nullptr, 0));
 		}
 	}
 	closedir(dirp);

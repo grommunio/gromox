@@ -454,7 +454,7 @@ static int rtf_parse_control(const char *string,
 	}
 	if (*string != '-' && !HX_isdigit(*string))
         return -1;
-    *pnum = atoi(string);
+	*pnum = strtol(string, nullptr, 0);
     return 1;
 }
 
@@ -1292,7 +1292,7 @@ static char* rtf_read_element(RTF_READER *preader)
 		rtf_ungetchar(preader, ch);
 	input_str[ix] = '\0';
 	if (strncmp(input_str, "\\bin", 4) == 0 && HX_isdigit(input_str[4]))
-		preader->ext_pull.advance(atoi(input_str + 4));
+		preader->ext_pull.advance(strtol(input_str + 4, nullptr, 0));
 	return input_str;
 }
 
@@ -1703,19 +1703,19 @@ static bool rtf_word_output_date(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 			string ++;
 			if (0 == strncmp(string, "yr", 2)
 			    && HX_isdigit(string[2])) {
-				year = atoi(string + 2);
+				year = strtol(string + 2, nullptr, 0);
 			} else if (0 == strncmp(string, "mo", 2)
 			    && HX_isdigit(string[2])) {
-				month = atoi(string + 2);
+				month = strtol(string + 2, nullptr, 0);
 			} else if (0 == strncmp(string, "dy", 2)
 			    && HX_isdigit(string[2])) {
-				day = atoi(string + 2);
+				day = strtol(string + 2, nullptr, 0);
 			} else if (0 == strncmp(string, "min", 3)
 			    && HX_isdigit(string[3])) {
-				minute = atoi(string + 3);
+				minute = strtol(string + 3, nullptr, 0);
 			} else if (0 == strncmp(string, "hr", 2)
 			    && HX_isdigit(string[2])) {
-				hour = atoi(string + 2);
+				hour = strtol(string + 2, nullptr, 0);
 			}
 		}
 	} while ((pword = simple_tree_node_get_sibling(pword)) != nullptr);

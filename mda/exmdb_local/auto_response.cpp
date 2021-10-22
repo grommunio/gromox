@@ -36,7 +36,6 @@ void auto_response_reply(const char *user_home,
 	char buff[64*1024];
 	char date_buff[128];
 	char temp_path[256];
-	uint8_t reply_state;
 	char audit_buff[UADDR_SIZE+2];
 	MIME_FIELD mime_field;
 	struct stat node_stat;
@@ -76,7 +75,7 @@ void auto_response_reply(const char *user_home,
 	if (NULL == str_value) {
 		return;
 	}
-	reply_state = atoi(str_value);
+	uint8_t reply_state = strtol(str_value, nullptr, 0);
 	if (1 != reply_state && 2 != reply_state) {
 		return;
 	}
@@ -95,11 +94,10 @@ void auto_response_reply(const char *user_home,
 		snprintf(template_path, 256, "%s/config/internal-reply", user_home);
 	} else {
 		str_value = pconfig->get_value("ALLOW_EXTERNAL_OOF");
-		if (NULL == str_value || 0 == atoi(str_value)) {
+		if (str_value == nullptr || strtol(str_value, nullptr, 0) == 0)
 			return;
-		}
 		str_value = pconfig->get_value("EXTERNAL_AUDIENCE");
-		if (NULL != str_value && 0 != atoi(str_value)) {
+		if (str_value != nullptr && strtol(str_value, nullptr, 0) != 0) {
 			if (EXMDB_RESULT_OK != exmdb_client_check_contact_address(
 				user_home, rcpt, &b_found) || FALSE == b_found) {
 				return;	

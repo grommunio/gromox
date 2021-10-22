@@ -585,7 +585,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 		char temp_buff[4096];
 		memcpy(temp_buff, pcontext->read_buffer + i + 1, temp_len);
 		temp_buff[temp_len] = '\0';
-		pcontext->literal_len = atoi(temp_buff);
+		pcontext->literal_len = strtol(temp_buff, nullptr, 0);
 		temp_len = 64 * 1024 - (ptr + 3 - pcontext->read_buffer) -
 		           pcontext->command_len - 2;
 		if (temp_len <= 0 || temp_len >= 64 * 1024) {

@@ -190,8 +190,6 @@ BOOL str_filter_add_string_into_temp_list(const char *str, int interval)
  */
 void str_filter_console_talk(int argc, char **argv, char *result, int length)
 {
-	int audit_times, audit_interval, audit_capability;
-	int grey_times, grey_interval;
 	int temp_interval, offset;
 	time_t first_access, last_access;
 	time_t until_time;
@@ -265,9 +263,9 @@ void str_filter_console_talk(int argc, char **argv, char *result, int length)
 	}
 	if (0 == strcmp("audit", argv[1])) {
 		if (3 == argc && 0 == strcmp("info", argv[2])) {
-			audit_times      = audit_filter_get_param(AUDIT_TIMES);
-			audit_interval   = audit_filter_get_param(AUDIT_INTERVAL);
-			audit_capability = audit_filter_get_param(AUDIT_CAPABILITY);
+			int audit_times      = audit_filter_get_param(AUDIT_TIMES);
+			int audit_interval   = audit_filter_get_param(AUDIT_INTERVAL);
+			int audit_capability = audit_filter_get_param(AUDIT_CAPABILITY);
 			offset = gx_snprintf(result, length,
 					"250 %s audit information:\r\n"
 			        "\ttable capacity    %d\r\n"
@@ -296,8 +294,8 @@ void str_filter_console_talk(int argc, char **argv, char *result, int length)
 				return;
 			}
 			*pslash = '\0';
-			audit_times = atoi(argv[3]);
-			audit_interval = atoitvl(pslash + 1);
+			int audit_times = strtol(argv[3], nullptr, 0);
+			int audit_interval = atoitvl(pslash + 1);
 			if (audit_interval <= 0) {
 				snprintf(result, length,"550 %s is illegal", pslash + 1);
 			}
@@ -307,6 +305,7 @@ void str_filter_console_talk(int argc, char **argv, char *result, int length)
 			return;
 		}
 		if (4 == argc && 0 == strcmp("echo", argv[2])) {
+			int audit_times;
 			if (FALSE == audit_filter_echo(argv[3], &first_access,
 				&last_access, &audit_times)) {
 				snprintf(result, length, "550 %s is not in audit", argv[3]);	
@@ -352,8 +351,8 @@ void str_filter_console_talk(int argc, char **argv, char *result, int length)
 						"times/interval", argv[4]);
 				return;
 			}
-			grey_times    = atoi(argv[4]);
-			grey_interval = atoitvl(pslash + 1);
+			int grey_times    = strtol(argv[4], nullptr, 0);
+			int grey_interval = atoitvl(pslash + 1);
 			if (grey_interval < 0) {
 				snprintf(result, length,"550 %s is illegal", pslash + 1);
 			}
@@ -378,6 +377,7 @@ void str_filter_console_talk(int argc, char **argv, char *result, int length)
 			return;
 		}
 		if (4 == argc && 0 == strcmp("echo", argv[2])) {
+			int grey_times, grey_interval;
 			if (FALSE == grey_list_echo(argv[3], &grey_times, &grey_interval)) {
 				if (0 == grey_times && 0 == grey_interval) {
 					snprintf(result, length, "550 %s is not found in grey list",

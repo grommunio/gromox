@@ -219,7 +219,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 static int cache_queue_retrieve_mess_ID()
 {
     struct dirent *direntp;
-    int max_ID = 0, temp_ID;
+	int max_ID = 0;
 
     /*
     read every file under directory and retrieve the maximum number and
@@ -230,10 +230,7 @@ static int cache_queue_retrieve_mess_ID()
 		if (strcmp(direntp->d_name, ".") == 0 ||
 		    strcmp(direntp->d_name, "..") == 0)
 			continue;
-    	temp_ID = atoi(direntp->d_name);
-        if (temp_ID > max_ID) {
-            max_ID = temp_ID;
-        }
+		max_ID = std::max(max_ID, static_cast<int>(strtol(direntp->d_name, nullptr, 0)));
     }
     return max_ID;
 }

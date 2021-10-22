@@ -491,7 +491,6 @@ static void html_trim_style_value(char *value)
 static int html_convert_color(const char *value)
 {
 	int color;
-	int tmp_val;
 	const char *ptr;
 	const char *ptr1;
 	char color_string[128], tmp_buff[8];
@@ -512,7 +511,7 @@ static int html_convert_color(const char *value)
 			return -1;
 		memcpy(tmp_buff, ptr, ptr1 - ptr);
 		tmp_buff[ptr1 - ptr] = '\0';
-		tmp_val = atoi(tmp_buff);
+		int tmp_val = strtol(tmp_buff, nullptr, 0);
 		if (tmp_val < 0 || tmp_val > 255) {
 			return -1;
 		}
@@ -523,7 +522,7 @@ static int html_convert_color(const char *value)
 			return -1;
 		memcpy(tmp_buff, ptr, ptr1 - ptr);
 		tmp_buff[ptr1 - ptr] = '\0';
-		tmp_val = atoi(tmp_buff);
+		tmp_val = strtol(tmp_buff, nullptr, 0);
 		if (tmp_val < 0 || tmp_val > 255) {
 			return -1;
 		}
@@ -534,7 +533,7 @@ static int html_convert_color(const char *value)
 			return -1;
 		memcpy(tmp_buff, ptr, ptr1 - ptr);
 		tmp_buff[ptr1 - ptr] = '\0';
-		tmp_val = atoi(tmp_buff);
+		tmp_val = strtol(tmp_buff, nullptr, 0);
 		if (tmp_val < 0 || tmp_val > 255) {
 			return -1;
 		}
@@ -608,39 +607,35 @@ static BOOL html_write_style(RTF_WRITER *pwriter, GumboElement *pelement)
 		} else {
 			unit_point = FALSE;
 		}
-		if (FALSE == html_write_style_font_size(
-			pwriter, atoi(value), unit_point)) {
+		if (!html_write_style_font_size(pwriter,
+		    strtol(value, nullptr, 0), unit_point))
 			return FALSE;	
-		}
 	}
 	if (TRUE == html_match_style(pattribute->value,
 		"line-height", value, sizeof(value))) {
 		value_len = strlen(value);
 		if (0 == strcasecmp(value + value_len - 2, "px")) {
-			if (FALSE == html_write_style_line_height(
-				pwriter, atoi(value))) {
+			if (!html_write_style_line_height(pwriter,
+			    strtol(value, nullptr, 0)))
 				return FALSE;	
-			}
 		}
 	}
 	if (TRUE == html_match_style(pattribute->value,
 		"margin-top", value, sizeof(value))) {
 		value_len = strlen(value);
 		if (0 == strcasecmp(value + value_len - 2, "px")) {
-			if (FALSE == html_write_style_margin_top(
-				pwriter, atoi(value))) {
+			if (!html_write_style_margin_top(pwriter,
+			    strtol(value, nullptr, 0)))
 				return FALSE;	
-			}
 		}
 	}
 	if (TRUE == html_match_style(pattribute->value,
 		"text-indent", value, sizeof(value))) {
 		value_len = strlen(value);
 		if (0 == strcasecmp(value + value_len - 2, "px")) {
-			if (FALSE == html_write_style_text_indent(
-				pwriter, atoi(value))) {
+			if (!html_write_style_text_indent(pwriter,
+			    strtol(value, nullptr, 0)))
 				return FALSE;
-			}
 		}
 	}
 	if (TRUE == html_match_style(pattribute->value,
@@ -1249,11 +1244,9 @@ static BOOL html_enum_write(RTF_WRITER *pwriter, GumboNode *pnode)
 			pattribute = gumbo_get_attribute(
 				&pnode->v.element.attributes, "size");
 			if (NULL != pattribute) {
-				if (FALSE == html_write_style_font_size(
-					pwriter, atoi(pattribute->value)*3 + 8,
-					FALSE)) {
+				if (!html_write_style_font_size(pwriter,
+				    strtol(pattribute->value, nullptr, 0) * 3 + 8, false))
 					return FALSE;	
-				}
 			}
 			if (FALSE == html_write_children(pwriter, pnode)) {
 				return FALSE;

@@ -1707,7 +1707,6 @@ int main(int argc, const char **argv)
 {
 	char *line;
 	size_t len;
-	int dir_num;
 	char *ptoken;
 	char *ptoken1;
 	const char *pdir;
@@ -1842,12 +1841,12 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "fail to get \"dtldayofweek\" from stdin\n");
 		exit(11);
 	}
-	tzstruct.bias = atoi(pbias);
-	tzstruct.standardbias = atoi(pstdbias);
-	tzstruct.daylightbias = atoi(pdtlbias);
-	tzstruct.standarddate.year = pstdyear == nullptr ? 0 : atoi(pstdyear);
+	tzstruct.bias = strtol(pbias, nullptr, 0);
+	tzstruct.standardbias = strtol(pstdbias, nullptr, 0);
+	tzstruct.daylightbias = strtol(pdtlbias, nullptr, 0);
+	tzstruct.standarddate.year = pstdyear == nullptr ? 0 : strtol(pstdyear, nullptr, 0);
 	tzstruct.standardyear = tzstruct.standarddate.year;
-	tzstruct.standarddate.month = atoi(pstdmonth);
+	tzstruct.standarddate.month = strtol(pstdmonth, nullptr, 0);
 	if (0 == strcasecmp(pstddayofweek, "Sunday")) {
 		tzstruct.standarddate.dayofweek = 0;
 	} else if (0 == strcasecmp(pstddayofweek, "Monday")) {
@@ -1863,7 +1862,7 @@ int main(int argc, const char **argv)
 	} else if (0 == strcasecmp(pstddayofweek, "Saturday")) {
 		tzstruct.standarddate.dayofweek = 6;
 	}
-	tzstruct.standarddate.day = atoi(pstddayorder);
+	tzstruct.standarddate.day = strtol(pstddayorder, nullptr, 0);
 	gx_strlcpy(tmp_buff, pstdtime, GX_ARRAY_SIZE(tmp_buff));
 	ptoken = strchr(tmp_buff, ':');
 	if (NULL == ptoken) {
@@ -1879,12 +1878,12 @@ int main(int argc, const char **argv)
 	}
 	*ptoken1 = '\0';
 	ptoken1 ++;
-	tzstruct.standarddate.hour = atoi(tmp_buff);
-	tzstruct.standarddate.minute = atoi(ptoken);
-	tzstruct.standarddate.second = atoi(ptoken1);
-	tzstruct.daylightdate.year = pdtlyear == nullptr ? 0 : atoi(pdtlyear);
+	tzstruct.standarddate.hour = strtol(tmp_buff, nullptr, 0);
+	tzstruct.standarddate.minute = strtol(ptoken, nullptr, 0);
+	tzstruct.standarddate.second = strtol(ptoken1, nullptr, 0);
+	tzstruct.daylightdate.year = pdtlyear == nullptr ? 0 : strtol(pdtlyear, nullptr, 0);
 	tzstruct.daylightyear = tzstruct.daylightdate.year;
-	tzstruct.daylightdate.month = atoi(pdtlmonth);
+	tzstruct.daylightdate.month = strtol(pdtlmonth, nullptr, 0);
 	if (0 == strcasecmp(pdtldayofweek, "Sunday")) {
 		tzstruct.daylightdate.dayofweek = 0;
 	} else if (0 == strcasecmp(pdtldayofweek, "Monday")) {
@@ -1900,7 +1899,7 @@ int main(int argc, const char **argv)
 	} else if (0 == strcasecmp(pdtldayofweek, "Saturday")) {
 		tzstruct.daylightdate.dayofweek = 6;
 	}
-	tzstruct.daylightdate.day = atoi(pdtldayorder);
+	tzstruct.daylightdate.day = strtol(pdtldayorder, nullptr, 0);
 	gx_strlcpy(tmp_buff, pdtltime, GX_ARRAY_SIZE(tmp_buff));
 	ptoken = strchr(tmp_buff, ':');
 	if (NULL == ptoken) {
@@ -1916,9 +1915,9 @@ int main(int argc, const char **argv)
 	}
 	*ptoken1 = '\0';
 	ptoken1 ++;
-	tzstruct.daylightdate.hour = atoi(tmp_buff);
-	tzstruct.daylightdate.minute = atoi(ptoken);
-	tzstruct.daylightdate.second = atoi(ptoken1);
+	tzstruct.daylightdate.hour = strtol(tmp_buff, nullptr, 0);
+	tzstruct.daylightdate.minute = strtol(ptoken, nullptr, 0);
+	tzstruct.daylightdate.second = strtol(ptoken1, nullptr, 0);
 	g_tz_component = tzstruct_to_vtimezone(
 				1600, "timezone", &tzstruct);
 	if (NULL == g_tz_component) {
@@ -1933,7 +1932,7 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "fail to get \"dirs\" from stdin\n");
 		exit(15);
 	}
-	dir_num = atoi(pdirs);
+	int dir_num = strtol(pdirs, nullptr, 0);
 	for (decltype(dir_num) i = 0; i < dir_num; ++i) {
 		snprintf(tmp_buff, arsizeof(tmp_buff), "dir%d", i);
 		pdir = cookie_parser_get(pparser, tmp_buff);

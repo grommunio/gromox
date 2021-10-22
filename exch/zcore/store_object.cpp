@@ -682,24 +682,18 @@ static void* store_object_get_oof_property(
 	
 	switch (proptag) {
 	case PR_EC_OUTOFOFFICE: {
-		pvalue = cu_alloc<uint32_t>();
-		if (NULL == pvalue) {
+		auto oofstate = cu_alloc<uint32_t>();
+		if (oofstate == nullptr)
 			return NULL;
-		}
+		pvalue = oofstate;
 		sprintf(temp_path, "%s/config/autoreply.cfg", maildir);
 		auto pconfig = config_file_prg(nullptr, temp_path);
 		if (NULL == pconfig) {
-			*(uint32_t*)pvalue = 0;
+			*oofstate = 0;
 		} else {
 			str_value = pconfig->get_value("OOF_STATE");
-			if (NULL == str_value) {
-				*(uint32_t*)pvalue = 0;
-			} else {
-				*(uint32_t*)pvalue = atoi(str_value);
-				if (*(uint32_t*)pvalue > 2) {
-					*(uint32_t*)pvalue = 0;
-				}
-			}
+			*oofstate = str_value == nullptr ? 0 :
+			            std::max(static_cast<int>(strtol(str_value, nullptr, 0)), 0);
 		}
 		return pvalue;
 	}
@@ -799,7 +793,7 @@ static void* store_object_get_oof_property(
 		}
 		str_value = pconfig->get_value(proptag == PR_EC_ALLOW_EXTERNAL ?
 		            "ALLOW_EXTERNAL_OOF" : "EXTERNAL_AUDIENCE");
-		pvalue = str_value == nullptr || atoi(str_value) == 0 ?
+		pvalue = str_value == nullptr || strtol(str_value, nullptr, 0) == 0 ?
 		         deconst(&fake_false) : deconst(&fake_true);
 		return pvalue;
 	}

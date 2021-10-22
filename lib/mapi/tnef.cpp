@@ -974,7 +974,7 @@ static BOOL tnef_convert_to_propname(char *tag_string,
 	if (0 == strncmp(ptr, "lid:", 4)) {
 		ppropname->kind = MNID_ID;
 		ppropname->pname = NULL;
-		ppropname->lid = atoi(ptr + 4);
+		ppropname->lid = strtol(ptr + 4, nullptr, 0);
 		return TRUE;
 	} else if (0 == strncmp(ptr, "name:", 5)) {
 		ppropname->kind = MNID_STRING;

@@ -1794,7 +1794,7 @@ static BOOL oxcmail_enum_mail_head(
 				return FALSE;
 		}
 	} else if (0 == strcasecmp(tag, "X-MS-Exchange-Organization-SCL")) {
-		tmp_int32 = atoi(field);
+		tmp_int32 = strtol(field, nullptr, 0);
 		propval.proptag = PROP_TAG_CONTENTFILTERSPAMCONFIDENCELEVEL;
 		propval.pvalue = &tmp_int32;
 		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
@@ -1870,13 +1870,13 @@ static BOOL oxcmail_enum_mail_head(
 	} else if (0 == strcasecmp(tag, "X-VoiceMessageDuration")) {
 		propval.proptag = PROP_TAG_VOICEMESSAGEDURATION;
 		propval.pvalue = &tmp_int32;
-		tmp_int32 = atoi(field);
+		tmp_int32 = strtol(field, nullptr, 0);
 		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "X-FaxNumverOfPages")) {
 		propval.proptag = PROP_TAG_FAXNUMBEROFPAGES;
 		propval.pvalue = &tmp_int32;
-		tmp_int32 = atoi(field);
+		tmp_int32 = strtol(field, nullptr, 0);
 		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "Content-ID")) {
@@ -3300,8 +3300,6 @@ static bool oxcmail_enum_dsn_rcpt_field(const char *tag,
 static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 {
 	int kind;
-	int detail;
-	int subject;
 	int tmp_len;
 	char *ptoken1;
 	char *ptoken2;
@@ -3359,7 +3357,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 	if (tmp_len < 1 || tmp_len > 3) {
 		return true;
 	}
-	subject = atoi(ptoken1);
+	int subject = strtol(ptoken1, nullptr, 0);
 	if (subject > 9 || subject < 0) {
 		subject = 0;
 	}
@@ -3368,7 +3366,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 	if (tmp_len < 1 || tmp_len > 3) {
 		return true;
 	}
-	detail = atoi(ptoken2);
+	int detail = strtol(ptoken2, nullptr, 0);
 	if (detail > 9 || detail < 0) {
 		detail = 0;
 	}

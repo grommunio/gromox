@@ -126,7 +126,8 @@ BOOL cmd_handler_pop3_control(int argc, char** argv)
 		return TRUE;                           
 	}
 	if (0 == strcmp(argv[2], "auth-times")) {
-		if ((value = atoi(argv[3])) <= 0) {
+		value = strtol(argv[3], nullptr, 0);
+		if (value <= 0) {
 			console_server_reply_to_client("550 invalid auth-times %s",
 				argv[3]);
 			return TRUE;

@@ -455,9 +455,7 @@ static void execute_timer(TIMER *ptimer)
 
 static void *tmr_thrwork(void *param)
 {
-	int t_id;
 	int temp_len;
-	int exec_interval;
 	char *pspace, temp_line[1024];
 	
  NEXT_LOOP:
@@ -484,7 +482,7 @@ static void *tmr_thrwork(void *param)
 		}
 
 		if (0 == strncasecmp(pconnection->line, "CANCEL ", 7)) {
-			t_id = atoi(pconnection->line + 7);
+			int t_id = strtol(pconnection->line + 7, nullptr, 0);
 			if (t_id <= 0) {
 				write(pconnection->sockd, "FALSE 1\r\n", 9);	
 				continue;
@@ -516,7 +514,7 @@ static void *tmr_thrwork(void *param)
 			*pspace = '\0';
 			pspace ++;
 
-			exec_interval = atoi(pconnection->line + 4);
+			int exec_interval = strtol(pconnection->line + 4, nullptr, 0);
 			if (exec_interval <= 0 || strlen(pspace) >= COMMAND_LENGTH) {
 				write(pconnection->sockd, "FALSE 2\r\n", 9);
 				continue;

@@ -152,30 +152,26 @@ const char *extract_ip(const char *buff_in, char *buff_out)
 		len = pos[0] - begin_pos;
 		memcpy(temp_buff, buff_in + begin_pos, len);
 		temp_buff[len] = '\0';
-		if (atoi(temp_buff) > 255) {
+		if (strtol(temp_buff, nullptr, 0) > 255)
 			return nullptr;
-		}
 
 		len = pos[1] - (pos[0] + 1);
 		memcpy(temp_buff, buff_in + pos[0] + 1, len);
 		temp_buff[len] = '\0';
-		if (atoi(temp_buff) > 255) {
+		if (strtol(temp_buff, nullptr, 0) > 255)
 			return nullptr;
-		}
 
 		len = pos[2] - (pos[1] + 1);
 		memcpy(temp_buff, buff_in + pos[1] + 1, len);
 		temp_buff[len] = '\0';
-		if (atoi(temp_buff) > 255) {
+		if (strtol(temp_buff, nullptr, 0) > 255)
 			return nullptr;
-		}
 
 		len = end_pos - pos[2];
 		memcpy(temp_buff, buff_in + pos[2] + 1, len);
 		temp_buff[len] = '\0';
-		if (atoi(temp_buff) > 255) {
+		if (strtol(temp_buff, nullptr, 0) > 255)
 			return nullptr;
-		}
 
 		strncpy(buff_out, buff_in + begin_pos, end_pos - begin_pos + 1);
 		buff_out[end_pos - begin_pos + 1] = '\0';
@@ -1186,7 +1182,7 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 {
 	int argc;
 	char *ptr;
-	int length, b_count = 0, s_count = 0;
+	int b_count = 0, s_count = 0;
 	BOOL is_quoted;
 	char *last_space;
 	char *last_square;
@@ -1208,7 +1204,7 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 			last_brace = static_cast<char *>(memchr(ptr + 1, '}', 16));
 			if (last_brace != nullptr) {
 				*last_brace = '\0';
-				length = atoi(ptr + 1);
+				int length = strtol(ptr + 1, nullptr, 0);
 				memmove(ptr, last_brace + 1, cmdline + cmdlen - 1 - last_brace);
 				cmdlen -= last_brace + 1 - ptr;
 				ptr += length;
@@ -1345,7 +1341,7 @@ BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)
 		tmp_buff[0] = str_zone[1];
 		tmp_buff[1] = str_zone[2];
 		tmp_buff[2] = '\0';
-		hour = atoi(tmp_buff);
+		hour = strtol(tmp_buff, nullptr, 0);
 		if (hour < 0 || hour > 23) {
 			return FALSE;
 		}
@@ -1353,7 +1349,7 @@ BOOL parse_rfc822_timestamp(const char *str_time, time_t *ptime)
 		tmp_buff[0] = str_zone[3];
 		tmp_buff[1] = str_zone[4];
 		tmp_buff[2] = '\0';
-		minute = atoi(tmp_buff);
+		minute = strtol(tmp_buff, nullptr, 0);
 		if (minute < 0 || minute > 59) {
 			return FALSE;
 		}

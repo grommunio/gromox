@@ -799,8 +799,6 @@ std::shared_ptr<ICAL_LINE> ical_new_simple_line(const char *name, const char *va
 
 bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute)
 {
-	int hour;
-	int minute;
 	int factor;
 	char tmp_buff[8];
 	char str_zone[16];
@@ -821,7 +819,7 @@ bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute)
 	tmp_buff[0] = str_zone[1];
 	tmp_buff[1] = str_zone[2];
 	tmp_buff[2] = '\0';
-	hour = atoi(tmp_buff);
+	int hour = strtol(tmp_buff, nullptr, 0);
 	if (hour < 0 || hour > 23) {
 		return false;
 	}
@@ -829,7 +827,7 @@ bool ical_parse_utc_offset(const char *str_offset, int *phour, int *pminute)
 	tmp_buff[0] = str_zone[3];
 	tmp_buff[1] = str_zone[4];
 	tmp_buff[2] = '\0';
-	minute = atoi(tmp_buff);
+	int minute = strtol(tmp_buff, nullptr, 0);
 	if (minute < 0 || minute > 59) {
 		return false;
 	}
@@ -1293,7 +1291,7 @@ bool ical_parse_byday(const char *str_byday, int *pdayofweek, int *pweekorder)
 		pbegin ++;
 		tmp_num[2] = '\0';
 	}
-	*pweekorder = atoi(tmp_num);
+	*pweekorder = strtol(tmp_num, nullptr, 0);
 	if (*pweekorder < 1 || *pweekorder > 53) {
 		return false;
 	}
@@ -1364,7 +1362,7 @@ bool ical_parse_duration(const char *str_duration, long *pseconds)
 				return false;
 			}
 			*ptoken1 = '\0';
-			week = atoi(ptoken);
+			week = strtol(ptoken, nullptr, 0);
 			ptoken = ptoken1 + 1;
 			break;
 		case 'D':
@@ -1372,7 +1370,7 @@ bool ical_parse_duration(const char *str_duration, long *pseconds)
 				return false;
 			}
 			*ptoken1 = '\0';
-			day = atoi(ptoken);
+			day = strtol(ptoken, nullptr, 0);
 			ptoken = ptoken1 + 1;
 			break;
 		case 'T':
@@ -1387,7 +1385,7 @@ bool ical_parse_duration(const char *str_duration, long *pseconds)
 				return false;
 			}
 			*ptoken1 = '\0';
-			hour = atoi(ptoken);
+			hour = strtol(ptoken, nullptr, 0);
 			ptoken = ptoken1 + 1;
 			break;
 		case 'M':
@@ -1395,7 +1393,7 @@ bool ical_parse_duration(const char *str_duration, long *pseconds)
 				return false;
 			}
 			*ptoken1 = '\0';
-			minute = atoi(ptoken);
+			minute = strtol(ptoken, nullptr, 0);
 			ptoken = ptoken1 + 1;
 			break;
 		case 'S':
@@ -1403,7 +1401,7 @@ bool ical_parse_duration(const char *str_duration, long *pseconds)
 				return false;
 			}
 			*ptoken1 = '\0';
-			second = atoi(ptoken);
+			second = strtol(ptoken, nullptr, 0);
 			ptoken = ptoken1 + 1;
 			break;
 		default:
@@ -1552,7 +1550,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 			if (NULL == pvalue2) {
 				month = itime1.month;
 			} else {
-				month = atoi(pvalue2);
+				month = strtol(pvalue2, nullptr, 0);
 				if (month < 1 || month > 12) {
 					return NULL;
 				}
@@ -1573,7 +1571,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 				dayofmonth = ical_get_dayofmonth(itime.year,
 						itime.month, weekorder, dayofweek);
 			} else {
-				dayofmonth = atoi(pvalue1);
+				dayofmonth = strtol(pvalue1, nullptr, 0);
 				if (abs(dayofmonth) < 1 || abs(dayofmonth) > 31) {
 					return NULL;
 				}
@@ -1589,7 +1587,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 			if (NULL == pvalue) {
 				hour = itime1.hour;
 			} else {
-				hour = atoi(pvalue);
+				hour = strtol(pvalue, nullptr, 0);
 				if (hour < 0 || hour > 23) {
 					return NULL;
 				}
@@ -1598,7 +1596,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 			if (NULL == pvalue) {
 				minute = itime1.minute;
 			} else {
-				minute = atoi(pvalue);
+				minute = strtol(pvalue, nullptr, 0);
 				if (minute < 0 || minute > 59) {
 					return NULL;
 				}
@@ -1607,7 +1605,7 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 			if (NULL == pvalue) {
 				second = itime1.second;
 			} else {
-				second = atoi(pvalue);
+				second = strtol(pvalue, nullptr, 0);
 				if (second < 0 || second > 59) {
 					return NULL;
 				}
@@ -2225,7 +2223,7 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	if (NULL == pvalue) {
 		pirrule->interval = 1;
 	} else {
-		pirrule->interval = atoi(pvalue);
+		pirrule->interval = strtol(pvalue, nullptr, 0);
 		if (pirrule->interval <= 0) {
 			return false;
 		}
@@ -2235,7 +2233,7 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	if (NULL == pvalue) {
 		pirrule->total_count = 0;
 	} else {
-		pirrule->total_count = atoi(pvalue);
+		pirrule->total_count = strtol(pvalue, nullptr, 0);
 		if (pirrule->total_count <= 0) {
 			return false;
 		}
