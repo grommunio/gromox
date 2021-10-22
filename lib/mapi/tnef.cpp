@@ -1127,6 +1127,29 @@ static bool rec_namedprop(STR_HASH_TABLE *map, uint16_t &last_propid, TNEF_PROPV
 	return true;
 }
 
+enum { X_ERROR = -1, X_RUNOFF, X_CONTINUE, };
+
+static MESSAGE_CONTENT *tnef_deserialize_internal(const void *, uint32_t, BOOL, EXT_BUFFER_ALLOC, GET_PROPIDS, USERNAME_TO_ENTRYID);
+
+static int rec_ptobj(EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
+    USERNAME_TO_ENTRYID u2e, ATTACHMENT_CONTENT *atc, TNEF_PROPVAL *tnef_pv)
+{
+	if (tnef_pv->proptype != PT_OBJECT)
+		return X_RUNOFF;
+	auto bv = static_cast<BINARY *>(tnef_pv->pvalue);
+	if (memcmp(IID_IMessage, bv->pb, 16) == 0) {
+		auto emb = tnef_deserialize_internal(bv->pb + 16, bv->cb - 16,
+		           TRUE, alloc, get_propids, u2e);
+		if (emb == nullptr)
+			return X_ERROR;
+		attachment_content_set_embedded_internal(atc, emb);
+	} else {
+		bv->cb -= 16;
+		memmove(bv->pb, bv->pb + 16, bv->cb);
+	}
+	return X_CONTINUE;
+}
+
 static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	uint32_t length, BOOL b_embedded, EXT_BUFFER_ALLOC alloc,
 	GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid)
@@ -1157,7 +1180,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	TNEF_ATTRIBUTE attribute;
 	const char *message_class;
 	TPROPVAL_ARRAY *pproplist;
-	MESSAGE_CONTENT *pembedded;
 	TNEF_PROPLIST *ptnef_proplist;
 	ATTACHMENT_LIST *pattachments;
 	ATTACHMENT_CONTENT *pattachment = nullptr;
@@ -1604,23 +1626,14 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 					message_content_free(pmsg);
 					return nullptr;
 				}
-				if (ptnef_propval->proptype == PT_OBJECT) {
-					auto bv = static_cast<BINARY *>(ptnef_propval->pvalue);
-					if (memcmp(IID_IMessage, bv->pb, 16) == 0) {
-						pembedded = tnef_deserialize_internal(
-							bv->pb + 16, bv->cb - 16,
-							TRUE, alloc, get_propids, username_to_entryid);
-						if (NULL == pembedded) {
-							str_hash_free(phash);
-							message_content_free(pmsg);
-							return NULL;
-						}
-						attachment_content_set_embedded_internal(pattachment, pembedded);
-					} else {
-						bv->cb -= 16;
-						memmove(bv->pb, bv->pb + 16, bv->cb);
-					}
+				auto r = rec_ptobj(alloc, get_propids, username_to_entryid,
+				         pattachment, ptnef_propval);
+				if (r == X_CONTINUE)
 					continue;
+				if (r == X_ERROR) {
+					str_hash_free(phash);
+					message_content_free(pmsg);
+					return nullptr;
 				}
 				propval.proptag = PROP_TAG(ptnef_propval->proptype, ptnef_propval->propid);
 				propval.pvalue = ptnef_propval->pvalue;
