@@ -6,6 +6,9 @@
 struct GX_EXPORT FIFO {
 	FIFO() = default;
 	FIFO(LIB_BUFFER *, size_t data_size, size_t max_size);
+	BOOL enqueue(void *);
+	void *get_front();
+	void dequeue();
 
 	LIB_BUFFER *mbuf_pool = nullptr;
 	SINGLE_LIST mlist{};
@@ -14,6 +17,3 @@ struct GX_EXPORT FIFO {
 
 LIB_BUFFER* fifo_allocator_init(size_t data_size, size_t max_size, BOOL thread_safe);
 void fifo_allocator_free(LIB_BUFFER* pallocator);
-BOOL fifo_enqueue(FIFO* pfifo, void* pdata);
-void* fifo_get_front(FIFO* pfifo);
-void fifo_dequeue(FIFO* pfifo);

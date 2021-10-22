@@ -65,12 +65,12 @@ FIFO::FIFO(LIB_BUFFER *pbuf_pool, size_t ds, size_t ms) :
  *		TRUE		success
  *		FALSE		the fifo is full
  */
-BOOL fifo_enqueue(FIFO* pfifo, void* pdata)
+BOOL FIFO::enqueue(void *pdata)
 {
+	auto pfifo = this;
 #ifdef _DEBUG_UMTA
-	if (NULL == pfifo || NULL == pdata) {
+	if (pdata == nullptr)
 		debug_info("[fifo]: fifo_enqueue, param NULL");
-	}
 #endif
 	
 	if (pfifo->cur_size >= pfifo->max_size) {
@@ -92,16 +92,10 @@ BOOL fifo_enqueue(FIFO* pfifo, void* pdata)
  *	@param	
  *		pfifo [in]	   the specified fifo object
  */
-void fifo_dequeue(FIFO* pfifo)
+void FIFO::dequeue()
 {
+	auto pfifo = this;
 	SINGLE_LIST_NODE   *node = NULL;
-
-#ifdef _DEBUG_UMTA
-	if (NULL == pfifo) {
-		debug_info("[fifo]: fifo_dequeue, param NULL");
-		return;
-	}
-#endif
 	if (pfifo->cur_size <= 0) {
 		return;
 	}
@@ -123,16 +117,10 @@ void fifo_dequeue(FIFO* pfifo)
  *		front of the fifo
  *		NULL if the pfifo is NULL or the fifo is empty
  */
-void* fifo_get_front(FIFO* pfifo)
+void *FIFO::get_front()
 {
+	auto pfifo = this;
 	SINGLE_LIST_NODE   *node = NULL;
-
-#ifdef _DEBUG_UMTA
-	if (NULL == pfifo) {
-		debug_info("[fifo]: fifo_get_front, param NULL");
-		return NULL;
-	}
-#endif
 	if (pfifo->cur_size <= 0) {
 		return NULL;
 	}

@@ -570,7 +570,7 @@ static void *ev_enqwork(void *param)
 					mem_file_write(&temp_file, penqueue->line,
 						strlen(penqueue->line));
 					std::unique_lock dl_hold(pdequeue->lock);
-					b_result = fifo_enqueue(&pdequeue->fifo, &temp_file);
+					b_result = pdequeue->fifo.enqueue(&temp_file);
 					dl_hold.unlock();
 					if (FALSE == b_result) {
 						mem_file_free(&temp_file);
@@ -590,7 +590,6 @@ static void *ev_enqwork(void *param)
 
 static void *ev_deqwork(void *param)
 {
-	MEM_FILE *pfile;
 	time_t cur_time;
 	time_t last_time;
 	MEM_FILE temp_file;
@@ -624,10 +623,10 @@ static void *ev_deqwork(void *param)
 		if (g_notify_stop)
 			break;
 		dq_hold.lock();
-		pfile = static_cast<MEM_FILE *>(fifo_get_front(&pdequeue->fifo));
+		auto pfile = static_cast<MEM_FILE *>(pdequeue->fifo.get_front());
 		if (NULL != pfile) {
 			temp_file = *pfile;
-			fifo_dequeue(&pdequeue->fifo);
+			pdequeue->fifo.dequeue();
 		}
 		dq_hold.unlock();
 		time(&cur_time);
@@ -643,9 +642,9 @@ static void *ev_deqwork(void *param)
 					hl_hold.unlock();
 					close(pdequeue->sockd);
 					pdequeue->sockd = -1;
-					while ((pfile = static_cast<MEM_FILE *>(fifo_get_front(&pdequeue->fifo))) != nullptr) {
+					while ((pfile = static_cast<MEM_FILE *>(pdequeue->fifo.get_front())) != nullptr) {
 						mem_file_free(pfile);
-						fifo_dequeue(&pdequeue->fifo);
+						pdequeue->fifo.dequeue();
 					}
 					goto NEXT_LOOP;
 				}
@@ -672,9 +671,9 @@ static void *ev_deqwork(void *param)
 			hl_hold.unlock();
 			close(pdequeue->sockd);
 			pdequeue->sockd = -1;
-			while ((pfile = static_cast<MEM_FILE *>(fifo_get_front(&pdequeue->fifo))) != nullptr) {
+			while ((pfile = static_cast<MEM_FILE *>(pdequeue->fifo.get_front())) != nullptr) {
 				mem_file_free(pfile);
-				fifo_dequeue(&pdequeue->fifo);
+				pdequeue->fifo.dequeue();
 			}
 			goto NEXT_LOOP;
 		}
