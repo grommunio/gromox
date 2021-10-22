@@ -16,4 +16,3 @@ struct GX_EXPORT FIFO {
 };
 
 LIB_BUFFER* fifo_allocator_init(size_t data_size, size_t max_size, BOOL thread_safe);
-void fifo_allocator_free(LIB_BUFFER* pallocator);

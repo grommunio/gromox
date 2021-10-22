@@ -175,7 +175,7 @@ int main(int argc, const char **argv) try
 		printf("[system]: Failed to init queue allocator\n");
 		return 3;
 	}
-	auto cl_0 = make_scope_exit([&]() { fifo_allocator_free(g_fifo_alloc); });
+	auto cl_0 = make_scope_exit([&]() { lib_buffer_free(g_fifo_alloc); });
 	g_file_alloc = lib_buffer_init(FILE_ALLOC_SIZE,
 					g_threads_num*FIFO_AVERAGE_LENGTH, TRUE);
 	if (NULL == g_file_alloc) {

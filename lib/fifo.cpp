@@ -26,16 +26,6 @@ LIB_BUFFER* fifo_allocator_init(size_t data_size, size_t max_size, BOOL thread_s
 }
 
 /*
- *	destroy the allocator
- *	@param
- *		pallocator	  pointer to the allocator object
- */												
-void fifo_allocator_free(LIB_BUFFER* pallocator)
-{
-	lib_buffer_free(pallocator);
-}
-
-/*
  *	init a fifo with the specified size of data and max capacity.
  *
  *	@param
