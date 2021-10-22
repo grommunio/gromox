@@ -57,21 +57,17 @@ FIFO::FIFO(LIB_BUFFER *pbuf_pool, size_t ds, size_t ms) :
  */
 BOOL FIFO::enqueue(void *pdata)
 {
-	auto pfifo = this;
 #ifdef _DEBUG_UMTA
 	if (pdata == nullptr)
 		debug_info("[fifo]: fifo_enqueue, param NULL");
 #endif
-	
-	if (pfifo->cur_size >= pfifo->max_size) {
+	if (cur_size >= max_size)
 		return FALSE;
-	}
-	auto node = static_cast<SINGLE_LIST_NODE *>(lib_buffer_get(pfifo->mbuf_pool));
+	auto node = static_cast<SINGLE_LIST_NODE *>(lib_buffer_get(mbuf_pool));
 	node->pdata = (char*)node + sizeof(SINGLE_LIST_NODE);
-	memcpy(node->pdata, pdata, pfifo->data_size);
-
-	single_list_append_as_tail(&pfifo->mlist, node);
-	pfifo->cur_size += 1;
+	memcpy(node->pdata, pdata, data_size);
+	single_list_append_as_tail(&mlist, node);
+	++cur_size;
 	return TRUE;
 }
 
@@ -84,15 +80,11 @@ BOOL FIFO::enqueue(void *pdata)
  */
 void FIFO::dequeue()
 {
-	auto pfifo = this;
-	SINGLE_LIST_NODE   *node = NULL;
-	if (pfifo->cur_size <= 0) {
+	if (cur_size <= 0)
 		return;
-	}
-	node = single_list_pop_front(&pfifo->mlist);
-	lib_buffer_put(pfifo->mbuf_pool, node);
-	pfifo->cur_size -= 1;
-	return;
+	auto node = single_list_pop_front(&mlist);
+	lib_buffer_put(mbuf_pool, node);
+	--cur_size;
 }
 
 /*
@@ -109,12 +101,8 @@ void FIFO::dequeue()
  */
 void *FIFO::get_front()
 {
-	auto pfifo = this;
-	SINGLE_LIST_NODE   *node = NULL;
-	if (pfifo->cur_size <= 0) {
+	if (cur_size <= 0)
 		return NULL;
-	}
-
-	node = single_list_get_head(&pfifo->mlist);
+	auto node = single_list_get_head(&mlist);
 	return node != nullptr ? node->pdata : nullptr;
 }
