@@ -349,18 +349,21 @@ static BOOL http_parser_request_head(MEM_FILE *pfile_others,
 	return FALSE;
 }
 
-static int http_parser_reconstruct_stream(
-	STREAM *pstream_src, STREAM *pstream_dst)
+static int http_parser_reconstruct_stream(STREAM &stream_src)
 {
 	int size;
 	int size1;
 	int size1_used;
+	STREAM stream_dst;
+	auto pstream_src = &stream_src, pstream_dst = &stream_dst;
 	
 	stream_init(pstream_dst, blocks_allocator_get_allocator());
 	size = STREAM_BLOCK_SIZE;
 	auto pbuff = stream_getbuffer_for_reading(pstream_src,
 	             reinterpret_cast<unsigned int *>(&size));
 	if (NULL == pbuff) {
+		stream_free(&stream_src);
+		stream_src = std::move(stream_dst);
 		return 0;
 	}
 	size1 = STREAM_BLOCK_SIZE;
@@ -394,7 +397,10 @@ static int http_parser_reconstruct_stream(
 		        reinterpret_cast<unsigned int *>(&size));
 	} while (NULL != pbuff);
 	stream_forward_writing_ptr(pstream_dst, size1_used);
-	return stream_get_total_length(pstream_dst);
+	auto tl = stream_get_total_length(pstream_dst);
+	stream_free(&stream_src);
+	stream_src = std::move(stream_dst);
+	return tl;
 }
 
 static void http_4xx(HTTP_CONTEXT *ctx, const char *msg = "Bad Request",
@@ -884,14 +890,11 @@ static int htp_delegate_hpm(HTTP_CONTEXT *pcontext)
 		return X_LOOP;
 	}
 	pcontext->sched_stat = SCHED_STAT_WRREP;
-	STREAM stream_2;
-	if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_2) < 0) {
+	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		http_parser_log_info(pcontext, LV_DEBUG, "out of memory");
 		http_5xx(pcontext, "Resources exhausted", 503);
 		return X_LOOP;
 	}
-	stream_free(&pcontext->stream_in);
-	pcontext->stream_in = std::move(stream_2);
 	if (stream_get_total_length(&pcontext->stream_out) == 0) {
 		return X_LOOP;
 	}
@@ -920,14 +923,11 @@ static int htp_delegate_fcgi(HTTP_CONTEXT *pcontext)
 		return X_LOOP;
 	}
 	pcontext->sched_stat = SCHED_STAT_WRREP;
-	STREAM stream_3;
-	if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_3) < 0) {
+	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		http_parser_log_info(pcontext, LV_DEBUG, "out of memory");
 		http_5xx(pcontext, "Resources exhausted", 503);
 		return X_LOOP;
 	}
-	stream_free(&pcontext->stream_in);
-	pcontext->stream_in = std::move(stream_3);
 	return X_LOOP;
 }
 
@@ -937,14 +937,11 @@ static int htp_delegate_cache(HTTP_CONTEXT *pcontext)
 	pcontext->bytes_rw = 0;
 	pcontext->total_length = 0;
 	pcontext->sched_stat = SCHED_STAT_WRREP;
-	STREAM stream_4;
-	if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_4) < 0) {
+	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		http_parser_log_info(pcontext, LV_DEBUG, "out of memory");
 		http_5xx(pcontext, "Resources exhausted", 503);
 		return X_LOOP;
 	}
-	stream_free(&pcontext->stream_in);
-	pcontext->stream_in = std::move(stream_4);
 	return X_LOOP;
 }
 
@@ -983,14 +980,11 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 		}
 
 		/* meet the end of request header */
-		STREAM stream_1;
-		if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_1) < 0) {
+		if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 			http_parser_log_info(pcontext, LV_DEBUG, "out of memory");
 			http_5xx(pcontext, "Resources exhausted", 503);
 			return X_LOOP;
 		}
-		stream_free(&pcontext->stream_in);
-		pcontext->stream_in = stream_1;
 		auto stream_1_written = stream_get_total_length(&pcontext->stream_in);
 
 		char tmp_buff[2048], tmp_buff1[1024];
@@ -1387,14 +1381,11 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 				return X_LOOP;
 			}
 			pcontext->sched_stat = SCHED_STAT_WRREP;
-			STREAM stream_5;
-			if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_5) < 0) {
+			if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 				http_parser_log_info(pcontext, LV_DEBUG, "out of memory");
 				http_5xx(pcontext, "Resources exhausted", 503);
 				return X_LOOP;
 			}
-			stream_free(&pcontext->stream_in);
-			pcontext->stream_in = std::move(stream_5);
 			if (0 != stream_get_total_length(
 			    &pcontext->stream_out)) {
 				unsigned int tmp_len = STREAM_BLOCK_SIZE;
@@ -1415,14 +1406,11 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 				return X_LOOP;
 			}
 			pcontext->sched_stat = SCHED_STAT_WRREP;
-			STREAM stream_6;
-			if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_6) < 0) {
+			if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 				http_parser_log_info(pcontext, LV_DEBUG, "out of memory");
 				http_5xx(pcontext, "Resources exhausted", 503);
 				return X_LOOP;
 			}
-			stream_free(&pcontext->stream_in);
-			pcontext->stream_in = std::move(stream_6);
 			return PROCESS_CONTINUE;
 		}
 		pcontext->bytes_rw += actual_read;
@@ -1474,15 +1462,11 @@ static int htparse_rdbody_nochan(HTTP_CONTEXT *pcontext)
 	pcontext->total_length = response_len;
 	pcontext->bytes_rw = 0;
 	pcontext->sched_stat = SCHED_STAT_WRREP;
-
-	STREAM stream_7;
-	if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_7) < 0) {
+	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		http_parser_log_info(pcontext, LV_DEBUG, "out of memory");
 		http_5xx(pcontext, "Resources exhausted", 503);
 		return X_LOOP;
 	}
-	stream_free(&pcontext->stream_in);
-	pcontext->stream_in = std::move(stream_7);
 	return PROCESS_CONTINUE;
 }
 
@@ -1625,15 +1609,11 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 	} else {
 		pchannel_out->frag_length = 0;
 	}
-
-	STREAM stream_8;
-	if (http_parser_reconstruct_stream(&pcontext->stream_in, &stream_8) < 0) {
+	if (http_parser_reconstruct_stream(pcontext->stream_in) < 0) {
 		http_parser_log_info(pcontext, LV_DEBUG, "out of memory");
 		http_5xx(pcontext, "Resources exhausted", 503);
 		return X_LOOP;
 	}
-	stream_free(&pcontext->stream_in);
-	pcontext->stream_in = std::move(stream_8);
 
 	switch (result) {
 	case PDU_PROCESSOR_ERROR:
