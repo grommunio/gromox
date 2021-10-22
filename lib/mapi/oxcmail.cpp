@@ -1548,8 +1548,6 @@ static BOOL oxcmail_enum_mail_head(
 		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "Sensitivity")) {
-		propval.proptag = PROP_TAG_SENSITIVITY;
-		propval.pvalue = &tmp_int32;
 		if (0 == strcasecmp(field, "Normal")) {
 			tmp_int32 = 0;
 		} else if (0 == strcasecmp(field, "Personal")) {
