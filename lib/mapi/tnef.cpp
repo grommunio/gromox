@@ -1110,6 +1110,23 @@ static void tnef_message_to_unicode(
 	}
 }
 
+static bool rec_namedprop(STR_HASH_TABLE *map, uint16_t &last_propid, TNEF_PROPVAL *tnef_pv)
+{
+	if (tnef_pv->ppropname == nullptr)
+		return true;
+	char ts[256];
+	tnef_convert_from_propname(tnef_pv->ppropname, ts);
+	auto pid = static_cast<uint16_t *>(str_hash_query(map, ts));
+	if (pid != nullptr) {
+		tnef_pv->propid = *pid;
+		return true;
+	}
+	if (str_hash_add(map, ts, &last_propid) != 1)
+		return false;
+	tnef_pv->propid = last_propid++;
+	return true;
+}
+
 static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	uint32_t length, BOOL b_embedded, EXT_BUFFER_ALLOC alloc,
 	GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid)
@@ -1120,7 +1137,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	BINARY tmp_bin;
 	uint8_t cur_lvl;
 	uint8_t tmp_byte;
-	uint16_t *ppropid;
 	ATTR_ADDR *powner;
 	EXT_PULL ext_pull;
 	uint16_t tmp_int16;
@@ -1142,7 +1158,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	const char *message_class;
 	TPROPVAL_ARRAY *pproplist;
 	MESSAGE_CONTENT *pembedded;
-	TNEF_PROPVAL *ptnef_propval;
 	TNEF_PROPLIST *ptnef_proplist;
 	ATTACHMENT_LIST *pattachments;
 	ATTACHMENT_CONTENT *pattachment = nullptr;
@@ -1225,24 +1240,11 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			auto tf = static_cast<TNEF_PROPLIST *>(attribute.pvalue);
 			auto count = tf->count;
 			for (size_t i = 0; i < count; ++i) {
-				ptnef_propval = &tf->ppropval[i];
-				if (NULL != ptnef_propval->ppropname) {
-					tnef_convert_from_propname(
-						ptnef_propval->ppropname,
-						tmp_string);
-					ppropid = static_cast<uint16_t *>(str_hash_query(phash, tmp_string));
-					if (NULL == ppropid) {
-						if (1 != str_hash_add(phash,
-							tmp_string, &last_propid)) {
-							str_hash_free(phash);
-							message_content_free(pmsg);
-							return NULL;
-						}
-						ptnef_propval->propid = last_propid;
-						last_propid ++;
-					} else {
-						ptnef_propval->propid = *ppropid;
-					}
+				auto ptnef_propval = &tf->ppropval[i];
+				if (!rec_namedprop(phash, last_propid, ptnef_propval)) {
+					str_hash_free(phash);
+					message_content_free(pmsg);
+					return nullptr;
 				}
 				propval.proptag = PROP_TAG(ptnef_propval->proptype, ptnef_propval->propid);
 				propval.pvalue = ptnef_propval->pvalue;
@@ -1489,24 +1491,11 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 					return NULL;
 				}
 				for (size_t j = 0; j < ptnef_proplist->count; ++j) {
-					ptnef_propval = ptnef_proplist->ppropval + j;
-					if (NULL != ptnef_propval->ppropname) {
-						tnef_convert_from_propname(
-							ptnef_propval->ppropname,
-							tmp_string);
-						ppropid = static_cast<uint16_t *>(str_hash_query(phash, tmp_string));
-						if (NULL == ppropid) {
-							if (1 != str_hash_add(phash,
-								tmp_string, &last_propid)) {
-								str_hash_free(phash);
-								message_content_free(pmsg);
-								return NULL;
-							}
-							ptnef_propval->propid = last_propid;
-							last_propid ++;
-						} else {
-							ptnef_propval->propid = *ppropid;
-						}
+					auto ptnef_propval = ptnef_proplist->ppropval + j;
+					if (!rec_namedprop(phash, last_propid, ptnef_propval)) {
+						str_hash_free(phash);
+						message_content_free(pmsg);
+						return nullptr;
 					}
 					propval.proptag = PROP_TAG(ptnef_propval->proptype, ptnef_propval->propid);
 					propval.pvalue = ptnef_propval->pvalue;
@@ -1609,24 +1598,11 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			auto tf = static_cast<TNEF_PROPLIST *>(attribute.pvalue);
 			auto count = tf->count;
 			for (size_t i = 0; i < count; ++i) {
-				ptnef_propval = &tf->ppropval[i];
-				if (NULL != ptnef_propval->ppropname) {
-					tnef_convert_from_propname(
-						ptnef_propval->ppropname,
-						tmp_string);
-					ppropid = static_cast<uint16_t *>(str_hash_query(phash, tmp_string));
-					if (NULL == ppropid) {
-						if (1 != str_hash_add(phash,
-							tmp_string, &last_propid)) {
-							str_hash_free(phash);
-							message_content_free(pmsg);
-							return NULL;
-						}
-						ptnef_propval->propid = last_propid;
-						last_propid ++;
-					} else {
-						ptnef_propval->propid = *ppropid;
-					}
+				auto ptnef_propval = &tf->ppropval[i];
+				if (!rec_namedprop(phash, last_propid, ptnef_propval)) {
+					str_hash_free(phash);
+					message_content_free(pmsg);
+					return nullptr;
 				}
 				if (ptnef_propval->proptype == PT_OBJECT) {
 					auto bv = static_cast<BINARY *>(ptnef_propval->pvalue);
@@ -1789,7 +1765,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	iter = str_hash_iter_init(phash);
 	for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
-		ppropid = static_cast<uint16_t *>(str_hash_iter_get_value(iter, tmp_string));
+		auto ppropid = static_cast<uint16_t *>(str_hash_iter_get_value(iter, tmp_string));
 		propids.ppropid[propids.count] = *ppropid;
 		if (FALSE == tnef_convert_to_propname(tmp_string,
 			propnames.ppropname + propnames.count, alloc)) {
