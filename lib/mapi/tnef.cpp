@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <cstring>
+#include <string>
+#include <unordered_map>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -8,7 +10,6 @@
 #include <gromox/proptag_array.hpp>
 #include <gromox/tarray_set.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/str_hash.hpp>
 #include <gromox/int_hash.hpp>
 #include <gromox/propval.hpp>
 #include <gromox/tnef.hpp>
@@ -83,6 +84,7 @@
 #define FMS_HASATTACH							0x80
 
 using namespace gromox;
+using propmap_t = std::unordered_map<std::string, uint16_t>;
 
 namespace {
 struct TNEF_ATTRIBUTE {
@@ -956,9 +958,17 @@ static void tnef_convert_from_propname(const PROPERTY_NAME *ppropname,
 	HX_strlower(tag_string);
 }
 
-static BOOL tnef_convert_to_propname(char *tag_string,
+static BOOL tnef_convert_to_propname(const std::string &input_tag,
 	PROPERTY_NAME *ppropname, EXT_BUFFER_ALLOC alloc)
 {
+	std::string working_tag;
+	try {
+		working_tag = input_tag;
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1544: ENOMEM\n");
+		return false;
+	}
+	char *tag_string = working_tag.data();
 	int len;
 	char *ptr;
 	
@@ -1110,19 +1120,26 @@ static void tnef_message_to_unicode(
 	}
 }
 
-static bool rec_namedprop(STR_HASH_TABLE *map, uint16_t &last_propid, TNEF_PROPVAL *tnef_pv)
+static bool rec_namedprop(propmap_t &map, uint16_t &last_propid, TNEF_PROPVAL *tnef_pv)
 {
 	if (tnef_pv->ppropname == nullptr)
 		return true;
 	char ts[256];
 	tnef_convert_from_propname(tnef_pv->ppropname, ts);
-	auto pid = static_cast<uint16_t *>(str_hash_query(map, ts));
-	if (pid != nullptr) {
-		tnef_pv->propid = *pid;
+	auto iter = as_const(map).find(ts);
+	if (iter != map.end()) {
+		tnef_pv->propid = iter->second;
 		return true;
-	}
-	if (str_hash_add(map, ts, &last_propid) != 1)
+	} else if (map.size() >= 0x1000) {
+		fprintf(stderr, "W-1544: TNEF namedpropmap full\n");
 		return false;
+	}
+	try {
+		map.emplace(ts, last_propid);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "W-1545: ENOMEM\n");
+		return false;
+	}
 	tnef_pv->propid = last_propid++;
 	return true;
 }
@@ -1166,13 +1183,10 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	uint32_t tmp_int32;
 	TARRAY_SET *prcpts;
 	char *pdisplay_name;
-	STR_HASH_ITER *iter;
 	uint8_t tmp_buff[1280];
-	char tmp_string[256];
 	uint16_t last_propid;
 	PROPID_ARRAY propids;
 	PROPID_ARRAY propids1;
-	STR_HASH_TABLE *phash;
 	MESSAGE_CONTENT *pmsg;
 	INT_HASH_TABLE *phash1;
 	TAGGED_PROPVAL propval;
@@ -1223,16 +1237,11 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 		return NULL;
 	}
 	last_propid = 0x8000;
-	phash = str_hash_init(0x1000, sizeof(uint16_t), NULL);
-	if (NULL == phash) {
-		message_content_free(pmsg);
-		return NULL;
-	}
+	propmap_t phash;
 	do {
 		if (EXT_ERR_SUCCESS != tnef_pull_attribute(
 			&ext_pull, &attribute)) {
 			if (0 == pmsg->proplist.count) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1245,7 +1254,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			} else {
 				debug_info("[tnef]: attachment should "
 					"begin with attAttachRendData");
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1253,7 +1261,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 		if (TRUE == b_props) {
 			debug_info("[tnef]: attMsgProps should be "
 				"the last attribute in message level");
-			str_hash_free(phash);
 			message_content_free(pmsg);
 			return NULL;
 		}
@@ -1264,14 +1271,12 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			for (size_t i = 0; i < count; ++i) {
 				auto ptnef_propval = &tf->ppropval[i];
 				if (!rec_namedprop(phash, last_propid, ptnef_propval)) {
-					str_hash_free(phash);
 					message_content_free(pmsg);
 					return nullptr;
 				}
 				propval.proptag = PROP_TAG(ptnef_propval->proptype, ptnef_propval->propid);
 				propval.pvalue = ptnef_propval->pvalue;
 				if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-					str_hash_free(phash);
 					message_content_free(pmsg);
 					return NULL;
 				}
@@ -1288,7 +1293,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			    PR_SENT_REPRESENTING_ADDRTYPE_A,
 			    PR_SENT_REPRESENTING_EMAIL_ADDRESS_A,
 			    static_cast<ATTR_ADDR *>(attribute.pvalue))) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1297,7 +1301,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			propval.proptag = PR_RCVD_REPRESENTING_ENTRYID;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1306,7 +1309,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			propval.proptag = PROP_TAG_STARTDATE;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1315,7 +1317,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			propval.proptag = PROP_TAG_ENDDATE;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1324,7 +1325,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			propval.proptag = PROP_TAG_OWNERAPPOINTMENTID;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1334,7 +1334,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			propval.proptag = PROP_TAG_RESPONSEREQUESTED;
 			propval.pvalue = &tmp_byte;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1343,7 +1342,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			propval.proptag = PR_ORIG_MESSAGE_CLASS_A;
 			propval.pvalue = deconst(tnef_to_msgclass(static_cast<char *>(attribute.pvalue)));
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1354,7 +1352,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			    PR_SENDER_ADDRTYPE_A,
 			    PR_SENDER_EMAIL_ADDRESS_A,
 			    static_cast<ATTR_ADDR *>(attribute.pvalue))) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1363,7 +1360,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			propval.proptag = PR_SUBJECT_A;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1372,7 +1368,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			propval.proptag = PROP_TAG_CLIENTSUBMITTIME;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1381,7 +1376,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			propval.proptag = PROP_TAG_MESSAGEDELIVERYTIME;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1398,7 +1392,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 					propval.proptag = PR_MESSAGE_FLAGS;
 					propval.pvalue = &tmp_int32;
 					if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-						str_hash_free(phash);
 						message_content_free(pmsg);
 						return NULL;
 					}
@@ -1411,7 +1404,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			propval.proptag = PR_MESSAGE_CLASS_A;
 			propval.pvalue = deconst(message_class);
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1422,19 +1414,16 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			if (tmp_bin.cb > 0) { 
 				tmp_bin.pv = alloc(tmp_bin.cb);
 				if (tmp_bin.pv == nullptr) {
-					str_hash_free(phash);
 					message_content_free(pmsg);
 					return NULL;
 				}
 				if (!decode_hex_binary(static_cast<char *>(attribute.pvalue),
 				    tmp_bin.pv, tmp_bin.cb)) {
-					str_hash_free(phash);
 					message_content_free(pmsg);
 					return NULL;
 				}
 				propval.pvalue = &tmp_bin;
 				if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-					str_hash_free(phash);
 					message_content_free(pmsg);
 					return NULL;
 				}
@@ -1444,7 +1433,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			propval.proptag = PR_BODY_A;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1463,13 +1451,11 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				break;
 			default:
 				debug_info("[tnef]: attPriority error");
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
 			propval.pvalue = &tmp_int32;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1478,7 +1464,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			propval.proptag = PR_LAST_MODIFICATION_TIME;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1486,13 +1471,11 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 		case ATTRIBUTE_ID_RECIPTABLE: {
 			if (NULL != pmsg->children.prcpts) {
 				debug_info("[tnef]: idRecipTable already met");
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
 			prcpts = tarray_set_init();
 			if (NULL == prcpts) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1502,27 +1485,23 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				ptnef_proplist = tf->pplist[i];
 				pproplist = tpropval_array_init();
 				if (NULL == pproplist) {
-					str_hash_free(phash);
 					message_content_free(pmsg);
 					return NULL;
 				}
 				if (!tarray_set_append_internal(prcpts, pproplist)) {
 					tpropval_array_free(pproplist);
-					str_hash_free(phash);
 					message_content_free(pmsg);
 					return NULL;
 				}
 				for (size_t j = 0; j < ptnef_proplist->count; ++j) {
 					auto ptnef_propval = ptnef_proplist->ppropval + j;
 					if (!rec_namedprop(phash, last_propid, ptnef_propval)) {
-						str_hash_free(phash);
 						message_content_free(pmsg);
 						return nullptr;
 					}
 					propval.proptag = PROP_TAG(ptnef_propval->proptype, ptnef_propval->propid);
 					propval.pvalue = ptnef_propval->pvalue;
 					if (!tpropval_array_set_propval(pproplist, &propval)) {
-						str_hash_free(phash);
 						message_content_free(pmsg);
 						return NULL;
 					}
@@ -1537,14 +1516,12 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 					tmp_bin.pb = tmp_buff;
 					if (FALSE == username_to_entryid(psmtp,
 						pdisplay_name, &tmp_bin, NULL)) {
-						str_hash_free(phash);
 						message_content_free(pmsg);
 						return NULL;
 					}
 					propval.proptag = PR_ENTRYID;
 					propval.pvalue = &tmp_bin;
 					if (!tpropval_array_set_propval(pproplist, &propval)) {
-						str_hash_free(phash);
 						message_content_free(pmsg);
 						return NULL;
 					}
@@ -1558,7 +1535,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			break;
 		default:
 			debug_info("[tnef]: illegal attribute ID %x", attribute.attr_id);
-			str_hash_free(phash);
 			message_content_free(pmsg);
 			return NULL;
 		}
@@ -1573,7 +1549,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			    PR_SENT_REPRESENTING_NAME_A,
 			    PR_SENT_REPRESENTING_ADDRTYPE_A,
 			    PR_SENT_REPRESENTING_EMAIL_ADDRESS_A, powner)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1587,7 +1562,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			    PR_RCVD_REPRESENTING_NAME_A,
 			    PR_RCVD_REPRESENTING_ADDRTYPE_A,
 			    PR_RCVD_REPRESENTING_EMAIL_ADDRESS_A, powner)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1601,7 +1575,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	
 	pattachments = attachment_list_init();
 	if (NULL == pattachments) {
-		str_hash_free(phash);
 		message_content_free(pmsg);
 		return NULL;
 	}
@@ -1611,7 +1584,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			ATTRIBUTE_ID_ATTACHRENDDATA) {
 			debug_info("[tnef]: attAttachment should be "
 				"the last attribute in attachment level");
-			str_hash_free(phash);
 			message_content_free(pmsg);
 			return NULL;
 		}
@@ -1622,7 +1594,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			for (size_t i = 0; i < count; ++i) {
 				auto ptnef_propval = &tf->ppropval[i];
 				if (!rec_namedprop(phash, last_propid, ptnef_propval)) {
-					str_hash_free(phash);
 					message_content_free(pmsg);
 					return nullptr;
 				}
@@ -1631,14 +1602,12 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				if (r == X_CONTINUE)
 					continue;
 				if (r == X_ERROR) {
-					str_hash_free(phash);
 					message_content_free(pmsg);
 					return nullptr;
 				}
 				propval.proptag = PROP_TAG(ptnef_propval->proptype, ptnef_propval->propid);
 				propval.pvalue = ptnef_propval->pvalue;
 				if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
-					str_hash_free(phash);
 					message_content_free(pmsg);
 					return NULL;
 				}
@@ -1650,7 +1619,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			propval.proptag = PR_ATTACH_DATA_BIN;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1659,7 +1627,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			propval.proptag = PR_ATTACH_LONG_FILENAME_A;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1668,7 +1635,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			propval.proptag = PR_ATTACH_RENDERING;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1677,7 +1643,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			propval.proptag = PR_CREATION_TIME;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1686,7 +1651,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			propval.proptag = PR_LAST_MODIFICATION_TIME;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1695,7 +1659,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			propval.proptag = PR_ATTACH_TRANSPORT_NAME_A;
 			propval.pvalue = attribute.pvalue;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1703,14 +1666,12 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 		case ATTRIBUTE_ID_ATTACHRENDDATA:
 			pattachment = attachment_content_init();
 			if (NULL == pattachment) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
 			if (FALSE == attachment_list_append_internal(
 				pattachments, pattachment)) {
 				attachment_content_free(pattachment);
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1721,7 +1682,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				tmp_bin.cb = 11;
 				tmp_bin.pb = OLE_TAG;
 				if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
-					str_hash_free(phash);
 					message_content_free(pmsg);
 					return NULL;
 				}
@@ -1733,7 +1693,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				tmp_bin.cb = 9;
 				tmp_bin.pb = MACBINARY_ENCODING;
 				if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
-					str_hash_free(phash);
 					message_content_free(pmsg);
 					return NULL;
 				}
@@ -1741,7 +1700,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			propval.proptag = PROP_TAG_RENDERINGPOSITION;
 			propval.pvalue = &((REND_DATA*)attribute.pvalue)->attach_position;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1753,7 +1711,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 		if (EXT_ERR_SUCCESS != tnef_pull_attribute(
 			&ext_pull, &attribute)) {
 			if (0 == pmsg->proplist.count) {
-				str_hash_free(phash);
 				message_content_free(pmsg);
 				return NULL;
 			}
@@ -1762,36 +1719,28 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	}
  FETCH_PROPNAME:
 	propids.count = 0;
-	propids.ppropid = static_cast<uint16_t *>(alloc(sizeof(uint16_t) * phash->item_num));
+	propids.ppropid = static_cast<uint16_t *>(alloc(sizeof(uint16_t) * phash.size()));
 	if (NULL == propids.ppropid) {
-		str_hash_free(phash);
 		message_content_free(pmsg);
 		return NULL;
 	}
 	propnames.count = 0;
-	propnames.ppropname = static_cast<PROPERTY_NAME *>(alloc(sizeof(PROPERTY_NAME) * phash->item_num));
+	propnames.ppropname = static_cast<PROPERTY_NAME *>(alloc(sizeof(PROPERTY_NAME) * phash.size()));
 	if (NULL == propnames.ppropname) {
-		str_hash_free(phash);
 		message_content_free(pmsg);
 		return NULL;
 	}
-	iter = str_hash_iter_init(phash);
-	for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
-		str_hash_iter_forward(iter)) {
-		auto ppropid = static_cast<uint16_t *>(str_hash_iter_get_value(iter, tmp_string));
-		propids.ppropid[propids.count] = *ppropid;
-		if (FALSE == tnef_convert_to_propname(tmp_string,
-			propnames.ppropname + propnames.count, alloc)) {
-			str_hash_iter_free(iter);
-			str_hash_free(phash);
+	for (const auto &[name, propid] : phash) {
+		propids.ppropid[propids.count] = propid;
+		if (!tnef_convert_to_propname(name,
+		    propnames.ppropname + propnames.count, alloc)) {
 			message_content_free(pmsg);
 			return NULL;
 		}
 		propids.count ++;
 		propnames.count ++;
 	}
-	str_hash_iter_free(iter);
-	str_hash_free(phash);
+	phash.clear();
 	
 	if (FALSE == get_propids(&propnames, &propids1)) {
 		message_content_free(pmsg);
