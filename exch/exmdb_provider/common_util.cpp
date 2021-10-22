@@ -3743,6 +3743,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		          " permissions WHERE member_id=%llu", LLU(member_id));
 		break;
 	case PROP_TAG_MEMBERNAME:
+	case PR_SMTP_ADDRESS:
 		if (0 == member_id) {
 			*ppvalue = deconst("default");
 			return TRUE;
@@ -3823,6 +3824,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		*ppvalue = common_util_username_to_addressbook_entryid(pusername);
 		break;
 	case PROP_TAG_MEMBERNAME:
+	case PR_SMTP_ADDRESS:
 		pusername = S2A(sqlite3_column_text(pstmt, 0));
 		if ('\0' == pusername[0]) {
 			*ppvalue = deconst("default");
@@ -3831,8 +3833,9 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 			*ppvalue = deconst("anonymous");
 			return TRUE;
 		}
-		*ppvalue = common_util_dup(!common_util_get_user_displayname(pusername, display_name) ||
-		           display_name[0] == '\0' ? pusername : display_name);
+		*ppvalue = common_util_dup(proptag == PR_SMTP_ADDRESS ||
+		           !common_util_get_user_displayname(pusername, display_name) || display_name[0] == '\0'?
+		               pusername : display_name);
 		if (NULL == *ppvalue) {
 			*ppvalue = NULL;
 			return FALSE;
