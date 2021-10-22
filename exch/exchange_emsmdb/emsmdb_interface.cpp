@@ -2,6 +2,9 @@
 #include <csignal>
 #include <cstdint>
 #include <mutex>
+#include <string>
+#include <unordered_map>
+#include <utility>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
@@ -68,9 +71,9 @@ struct HANDLE_DATA {
 };
 
 struct NOTIFY_ITEM {
-	uint32_t handle;
-	uint8_t logon_id;
-	GUID guid;
+	uint32_t handle = 0;
+	uint8_t logon_id = 0;
+	GUID guid{};
 };
 
 }
@@ -83,7 +86,8 @@ static gromox::atomic_bool g_notify_stop{true};
 static pthread_key_t g_handle_key;
 static STR_HASH_TABLE *g_user_hash;
 static STR_HASH_TABLE *g_handle_hash;
-static STR_HASH_TABLE *g_notify_hash;
+static std::unordered_map<std::string, NOTIFY_ITEM> g_notify_hash;
+static size_t g_notify_hash_max;
 
 static void *emsi_scanwork(void *);
 
@@ -392,12 +396,7 @@ int emsmdb_interface_run()
 		printf("[exchange_emsmdb]: Failed to init user hash table\n");
 		return -2;
 	}
-	g_notify_hash = str_hash_init(AVERAGE_NOTIFY_NUM
-			*context_num, sizeof(NOTIFY_ITEM), NULL);
-	if (NULL == g_notify_hash) {
-		printf("[exchange_emsmdb]: Failed to init notify hash map\n");
-		return -3;
-	}
+	g_notify_hash_max = AVERAGE_NOTIFY_NUM * context_num;
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, emsi_scanwork, nullptr);
 	if (ret != 0) {
@@ -416,10 +415,7 @@ void emsmdb_interface_stop()
 		pthread_kill(g_scan_id, SIGALRM);
 		pthread_join(g_scan_id, NULL);
 	}
-	if (NULL != g_notify_hash) {
-		str_hash_free(g_notify_hash);
-		g_notify_hash = NULL;
-	}
+	g_notify_hash.clear();
 	if (NULL != g_user_hash) {
 		str_hash_free(g_user_hash);
 		g_user_hash = NULL;
@@ -905,21 +901,24 @@ void emsmdb_interface_add_table_notify(const char *dir,
 	tmp_notify.guid = *pguid;
 	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u:%s", table_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
-	str_hash_add(g_notify_hash, tag_buff, &tmp_notify);
+	try {
+		if (g_notify_hash.size() < g_notify_hash_max)
+			g_notify_hash.emplace(tag_buff, std::move(tmp_notify));
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "W-1541: ENOMEM\n");
+	}
 }
 
 static BOOL emsmdb_interface_get_table_notify(const char *dir,
 	uint32_t table_id, uint32_t *phandle, uint8_t *plogon_id, GUID *pguid)
 {
 	char tag_buff[TAG_SIZE];
-	NOTIFY_ITEM *pnotify;
-	
 	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u:%s", table_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
-	pnotify = static_cast<NOTIFY_ITEM *>(str_hash_query(g_notify_hash, tag_buff));
-	if (NULL == pnotify) {
+	auto iter = as_const(g_notify_hash).find(tag_buff);
+	if (iter == g_notify_hash.cend())
 		return FALSE;
-	}
+	auto pnotify = &iter->second;
 	*phandle = pnotify->handle;
 	*plogon_id = pnotify->logon_id;
 	*pguid = pnotify->guid;
@@ -933,7 +932,7 @@ void emsmdb_interface_remove_table_notify(
 	
 	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u:%s", table_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
-	str_hash_remove(g_notify_hash, tag_buff);
+	g_notify_hash.erase(tag_buff);
 }
 
 void emsmdb_interface_add_subscription_notify(const char *dir,
@@ -949,7 +948,12 @@ void emsmdb_interface_add_subscription_notify(const char *dir,
 	
 	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u|%s", sub_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
-	str_hash_add(g_notify_hash, tag_buff, &tmp_notify);
+	try {
+		if (g_notify_hash.size() < g_notify_hash_max)
+			g_notify_hash.emplace(tag_buff, std::move(tmp_notify));
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "W-1542: ENOMEM\n");
+	}
 }
 
 static BOOL emsmdb_interface_get_subscription_notify(
@@ -957,14 +961,12 @@ static BOOL emsmdb_interface_get_subscription_notify(
 	uint8_t *plogon_id, GUID *pguid)
 {
 	char tag_buff[TAG_SIZE];
-	NOTIFY_ITEM *pnotify;
-	
 	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u|%s", sub_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
-	pnotify = static_cast<NOTIFY_ITEM *>(str_hash_query(g_notify_hash, tag_buff));
-	if (NULL == pnotify) {
+	auto iter = as_const(g_notify_hash).find(tag_buff);
+	if (iter == g_notify_hash.cend())
 		return FALSE;
-	}
+	auto pnotify = &iter->second;
 	*phandle = pnotify->handle;
 	*plogon_id = pnotify->logon_id;
 	*pguid = pnotify->guid;
@@ -978,7 +980,7 @@ void emsmdb_interface_remove_subscription_notify(
 	
 	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u|%s", sub_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
-	str_hash_remove(g_notify_hash, tag_buff);
+	g_notify_hash.erase(tag_buff);
 }
 
 static BOOL emsmdb_interface_merge_content_row_deleted(
