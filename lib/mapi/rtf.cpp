@@ -2,6 +2,8 @@
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <string>
+#include <unordered_map>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -270,14 +272,7 @@ enum {
 
 using CMD_PROC_FUNC = int (*)(RTF_READER *, SIMPLE_TREE_NODE *, int, bool, int);
 
-namespace {
-struct MAP_ITEM {
-	const char *tag;
-	CMD_PROC_FUNC func;
-};
-}
-
-static STR_HASH_TABLE *g_cmd_hash;
+static std::unordered_map<std::string_view, CMD_PROC_FUNC> g_cmd_hash;
 static const char* (*rtf_cpid_to_charset)(uint32_t cpid);
 static bool rtf_starting_body(RTF_READER *preader);
 static bool rtf_starting_text(RTF_READER *preader);
@@ -311,13 +306,10 @@ static int rtf_decode_hex_char(const char *in)
 	return retval;
 }
 
-static CMD_PROC_FUNC rtf_find_cmd_function(const char *cmd)
+static inline CMD_PROC_FUNC rtf_find_cmd_function(const char *cmd)
 {
-	auto pfunc = static_cast<CMD_PROC_FUNC *>(str_hash_query(g_cmd_hash, cmd));
-	if (NULL == pfunc) {
-		return NULL;
-	}
-	return *pfunc;
+	auto i = g_cmd_hash.find(cmd);
+	return i != g_cmd_hash.cend() ? i->second : nullptr;
 }
 
 static bool rtf_iconv_open(RTF_READER *preader, const char *fromcode)
@@ -3305,7 +3297,7 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 
 bool rtf_init_library(CPID_TO_CHARSET cpid_to_charset)
 {
-	static const MAP_ITEM cmd_map[] ={
+	static constexpr std::pair<const char *, CMD_PROC_FUNC> cmd_map[] = {
 		{"*",				rtf_cmd_maybe_ignore},
 		{"-",				rtf_cmd_optional_hyphen},
 		{"_",				rtf_cmd_soft_hyphen},
@@ -3413,16 +3405,14 @@ bool rtf_init_library(CPID_TO_CHARSET cpid_to_charset)
 		{"wmetafile",		rtf_cmd_wmetafile},
 		{"xe",				rtf_cmd_xe}};
 	
-	if (NULL != g_cmd_hash) {
+	if (g_cmd_hash.size() > 0)
 		return true;
-	}
 	rtf_cpid_to_charset = cpid_to_charset;
-	g_cmd_hash = str_hash_init(sizeof(cmd_map)/sizeof(MAP_ITEM) + 1,
-									sizeof(CMD_PROC_FUNC), NULL);
-	if (NULL == g_cmd_hash) {
+	try {
+		g_cmd_hash.insert(cbegin(cmd_map), cend(cmd_map));
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1543: ENOMEM\n");
 		return false;
 	}
-	for (size_t i = 0; i < GX_ARRAY_SIZE(cmd_map); ++i)
-		str_hash_add(g_cmd_hash, cmd_map[i].tag, &cmd_map[i].func);
 	return true;
 }
