@@ -3,12 +3,12 @@
 #include <memory>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
+#include <gromox/str_hash.hpp>
 #define LOGON_MODE_OWNER				0
 #define LOGON_MODE_DELEGATE				1
 #define LOGON_MODE_GUEST				2
 
 struct INT_HASH_TABLE;
-struct STR_HASH_TABLE;
 
 struct logon_object {
 	protected:
@@ -46,6 +46,6 @@ struct logon_object {
 	GUID mailbox_guid{};
 	PROPERTY_GROUPINFO *m_gpinfo = nullptr;
 	INT_HASH_TABLE *ppropid_hash = nullptr;
-	STR_HASH_TABLE *ppropname_hash = nullptr;
+	std::unique_ptr<STR_HASH_TABLE> ppropname_hash;
 	DOUBLE_LIST group_list{};
 };

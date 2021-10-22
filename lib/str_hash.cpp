@@ -3,6 +3,8 @@
  * A simple string hash table data structure
  */
 #include <cstddef>
+#include <memory>
+#include <stdexcept>
 #include <libHX/string.h>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
@@ -39,89 +41,63 @@ static size_t DJBHash(const char* str)
  *	@return		
  *		a pointer that point to the hash table object
  */
-STR_HASH_TABLE* str_hash_init(size_t max_items, size_t item_size, PSTR_HASH_FUNC fun)
+STR_HASH_TABLE::STR_HASH_TABLE(size_t max_items, size_t item_size, PSTR_HASH_FUNC fun)
 {
-	DOUBLE_LIST* p_map = NULL;
 	size_t	i = 0;
 
-	if (max_items <= 0 || item_size <= 0) {
-		debug_info("[str_hash]: str_hash_init, parameter is invalid");
-		return NULL;
-	}
-	auto table = static_cast<STR_HASH_TABLE *>(malloc(sizeof(STR_HASH_TABLE)));
-	if (NULL == table) {
-		debug_info("[str_hash]: can not alloc hash table");
-		return NULL;
-	}
+	if (max_items <= 0 || item_size <= 0)
+		throw std::invalid_argument("[str_hash]: str_hash_init, parameter is invalid");
+	auto table = this;
 	table->entry_num = 8 * max_items;	/* we always allocate eight times 
 										   entries of the max items */
-	p_map = (DOUBLE_LIST*)malloc(sizeof(DOUBLE_LIST) * table->entry_num);
-	
-	if (NULL == p_map) {
-		debug_info("[str_hash]: can not alloc hash map");
-		free(table);
-		return NULL;
-	}
-	memset(p_map, 0, sizeof(DOUBLE_LIST) * table->entry_num);
-
+	hash_map = std::make_unique<DOUBLE_LIST[]>(table->entry_num);
+	memset(hash_map.get(), 0, sizeof(DOUBLE_LIST) * table->entry_num);
 	double_list_init(&(table->iter_list));
 	for (i = 0; i < table->entry_num; i++) {
-		double_list_init(&(p_map[i]));
+		double_list_init(&hash_map[i]);
 	}
 
 	table->buf_pool = lib_buffer_init(strhashitem_al + item_size, max_items, false);
 	if (NULL == table->buf_pool) {
-		debug_info("[str_hash]: str_hash_init, lib_buffer_init fail");
-		free(table);
-		free(p_map);
-		return NULL;
-
+		throw std::bad_alloc();
 	}
 	if (NULL == fun) {
 		table->hash_func = DJBHash;
 	} else {
 		table->hash_func = fun;
 	}
-	table->hash_map		= p_map;
 	table->capacity		= max_items;
 	table->data_size	= item_size;
 	table->item_num		= 0;
-	
-	return table;
 }
 
-
-/*
- *	release the specified hash table
- *
- *	@param	
- *		ptbl [in]	pointer to the hash table 
- */
-void str_hash_free(STR_HASH_TABLE* ptbl)
+STR_HASH_TABLE::~STR_HASH_TABLE()
 {
+	auto ptbl = this;
 	size_t	i = 0;
-
-#ifdef _DEBUG_UMTA
-	if (NULL == ptbl) {
-		debug_info("[str_hash]: str_hash_free, param NULL");
-		return;
-	}
-#endif
 	double_list_free(&(ptbl->iter_list));
 	if (NULL != ptbl->hash_map) {
 		for (i = 0; i < ptbl->entry_num; i++) {
 			double_list_free(&(ptbl->hash_map[i]));
 		}
-		free(ptbl->hash_map);
 	}
 
 	if (NULL != ptbl->buf_pool) {
 		lib_buffer_free(ptbl->buf_pool);
 	}
-
-	free(ptbl);
 }
 
+std::unique_ptr<STR_HASH_TABLE> str_hash_init(size_t max_items, size_t item_size,
+    PSTR_HASH_FUNC func) try
+{
+	return std::make_unique<STR_HASH_TABLE>(max_items, item_size, func);
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1537: ENOMEM\n");
+	return nullptr;
+} catch (const std::invalid_argument &e) {
+	fprintf(stderr, "E-1538: %s\n", e.what());
+	return nullptr;
+}
 
 /*
  *	add the key and value into the hash table. user will not maintain
@@ -480,7 +456,6 @@ int str_hash_iter_forward(STR_HASH_ITER *piter)
  */
 int str_hash_iter_remove(STR_HASH_ITER *piter)
 {
-	DOUBLE_LIST* hash_map	= NULL;
 	DOUBLE_LIST_NODE* node	= NULL;
 	STR_HASH_ITEM* list_item= NULL;
 
@@ -490,8 +465,7 @@ int str_hash_iter_remove(STR_HASH_ITER *piter)
 		return -1;
 	}
 #endif
-	hash_map = piter->ptable->hash_map;
-
+	auto &hash_map = piter->ptable->hash_map;
 	if (piter->ptable->item_num < 1) {
 		return -2;
 	}

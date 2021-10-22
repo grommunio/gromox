@@ -2,9 +2,9 @@
 #include <memory>
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
+#include <gromox/str_hash.hpp>
 
 struct INT_HASH_TABLE;
-struct STR_HASH_TABLE;
 
 struct store_object {
 	protected:
@@ -39,6 +39,6 @@ struct store_object {
 	GUID mailbox_guid{};
 	PROPERTY_GROUPINFO *m_gpinfo = nullptr;
 	INT_HASH_TABLE *ppropid_hash = nullptr;
-	STR_HASH_TABLE *ppropname_hash = nullptr;
+	std::unique_ptr<STR_HASH_TABLE> ppropname_hash = nullptr;
 	DOUBLE_LIST group_list{};
 };

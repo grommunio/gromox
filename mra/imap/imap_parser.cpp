@@ -88,7 +88,7 @@ static LIB_BUFFER *g_alloc_mjson;
 static LIB_BUFFER *g_alloc_xarray;
 static LIB_BUFFER *g_alloc_dir;
 static MIME_POOL *g_mime_pool;
-static STR_HASH_TABLE *g_select_hash;
+static std::unique_ptr<STR_HASH_TABLE> g_select_hash;
 static std::mutex g_hash_lock, g_list_lock;
 static DOUBLE_LIST g_sleeping_list;
 static BOOL g_support_starttls;
@@ -336,12 +336,7 @@ void imap_parser_stop()
 		lib_buffer_free(g_alloc_mjson);
 		g_alloc_mjson = NULL;
 	}
-
-	if (NULL != g_select_hash) {
-		str_hash_free(g_select_hash);
-		g_select_hash = NULL;
-	}
-
+	g_select_hash.reset();
 	if (TRUE == g_support_starttls && NULL != g_ssl_ctx) {
 		SSL_CTX_free(g_ssl_ctx);
 		g_ssl_ctx = NULL;
@@ -1289,7 +1284,7 @@ void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *fold
 	gx_strlcpy(buff, username, GX_ARRAY_SIZE(buff));
 	HX_strlower(buff);
 	std::unique_lock hl_hold(g_hash_lock);
-	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash, buff));
+	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash.get(), buff));
 	if (NULL == plist) {
 		return;
 	}
@@ -1314,7 +1309,7 @@ static void imap_parser_event_touch(char *username, char *folder)
 	gx_strlcpy(temp_string, username, GX_ARRAY_SIZE(temp_string));
 	HX_strlower(temp_string);
 	std::unique_lock hl_hold(g_hash_lock);
-	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash, temp_string));
+	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash.get(), temp_string));
 	if (NULL == plist) {
 		return;
 	}
@@ -1336,7 +1331,7 @@ void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string)
 	gx_strlcpy(buff, pcontext->username, GX_ARRAY_SIZE(buff));
 	HX_strlower(buff);
 	std::unique_lock hl_hold(g_hash_lock);
-	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash, buff));
+	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash.get(), buff));
 	if (NULL == plist) {
 		return;
 	}
@@ -1368,7 +1363,7 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 	gx_strlcpy(temp_string, username, GX_ARRAY_SIZE(temp_string));
 	HX_strlower(temp_string);
 	std::unique_lock hl_hold(g_hash_lock);
-	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash, temp_string));
+	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash.get(), temp_string));
 	if (NULL == plist) {
 		return;
 	}
@@ -1828,17 +1823,17 @@ static void imap_parser_event_proc(char *event)
 void imap_parser_add_select(IMAP_CONTEXT *pcontext)
 {
 	char temp_string[UADDR_SIZE];
-	DOUBLE_LIST *plist, temp_list;
+	DOUBLE_LIST temp_list;
 	
 	gx_strlcpy(temp_string, pcontext->username, GX_ARRAY_SIZE(temp_string));
 	HX_strlower(temp_string);
 	time(&pcontext->selected_time);
 	std::unique_lock hl_hold(g_hash_lock);
-	plist = (DOUBLE_LIST*)str_hash_query(g_select_hash, temp_string);
+	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash.get(), temp_string));
 	if (NULL == plist) {
 		double_list_init(&temp_list);
-		if (1 == str_hash_add(g_select_hash, temp_string, &temp_list)) {
-			plist = (DOUBLE_LIST*)str_hash_query(g_select_hash, temp_string);
+		if (str_hash_add(g_select_hash.get(), temp_string, &temp_list) == 1) {
+			plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash.get(), temp_string));
 			if (NULL != plist) {
 				double_list_append_as_tail(plist, &pcontext->hash_node);
 			}
@@ -1853,7 +1848,6 @@ void imap_parser_add_select(IMAP_CONTEXT *pcontext)
 void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 {
 	BOOL should_remove;
-	DOUBLE_LIST *plist;
 	char temp_string[UADDR_SIZE];
 	DOUBLE_LIST_NODE *pnode;
 	IMAP_CONTEXT *pcontext1;
@@ -1863,11 +1857,11 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 	gx_strlcpy(temp_string, pcontext->username, GX_ARRAY_SIZE(temp_string));
 	HX_strlower(temp_string);
 	std::unique_lock hl_hold(g_hash_lock);
-	plist = (DOUBLE_LIST*)str_hash_query(g_select_hash, temp_string);
+	auto plist = static_cast<DOUBLE_LIST *>(str_hash_query(g_select_hash.get(), temp_string));
 	if (NULL != plist) {
 		double_list_remove(plist, &pcontext->hash_node);
 		if (0 == double_list_get_nodes_num(plist)) {
-			str_hash_remove(g_select_hash, temp_string);
+			str_hash_remove(g_select_hash.get(), temp_string);
 		}
 		pcontext->b_modify = FALSE;
 		mem_file_clear(&pcontext->f_flags);
@@ -1896,7 +1890,6 @@ static void *imps_scanwork(void *argp)
 	char username[UADDR_SIZE];
 	MEM_FILE temp_file;
 	DOUBLE_LIST *plist;
-	STR_HASH_ITER *iter;
 	IMAP_CONTEXT *pcontext;
 	DOUBLE_LIST_NODE *pnode;
 	
@@ -1912,7 +1905,7 @@ static void *imps_scanwork(void *argp)
 		mem_file_init(&temp_file, g_alloc_file);
 		std::unique_lock hl_hold(g_hash_lock);
 		time(&cur_time);
-		iter = str_hash_iter_init(g_select_hash);
+		auto iter = str_hash_iter_init(g_select_hash.get());
 		for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
 			plist = (DOUBLE_LIST*)str_hash_iter_get_value(iter, username);

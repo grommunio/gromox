@@ -67,7 +67,7 @@ static pthread_t g_scan_id;
 static int g_average_handles;
 static gromox::atomic_bool g_notify_stop{true};
 static std::mutex g_hash_lock;
-static STR_HASH_TABLE *g_logon_hash;
+static std::unique_ptr<STR_HASH_TABLE> g_logon_hash;
 static LIB_BUFFER *g_logmap_allocator;
 static LIB_BUFFER *g_handle_allocator;
 static LIB_BUFFER *g_logitem_allocator;
@@ -150,7 +150,6 @@ static void rop_processor_release_objnode(
 {
 	BOOL b_root;
 	void *pobject;
-	uint32_t *pref;
 	SIMPLE_TREE_NODE *proot;
 	
 	/* root is the logon object, free logon object
@@ -160,12 +159,13 @@ static void rop_processor_release_objnode(
 		proot = simple_tree_get_root(&plogitem->tree);
 		pobject = ((OBJECT_NODE*)proot->pdata)->pobject;
 		std::lock_guard hl_hold(g_hash_lock);
-		pref = static_cast<uint32_t *>(str_hash_query(g_logon_hash,
-		       static_cast<logon_object *>(pobject)->get_dir()));
+		auto pref = static_cast<uint32_t *>(str_hash_query(g_logon_hash.get(),
+		            static_cast<logon_object *>(pobject)->get_dir()));
 		if (pref != nullptr) {
 			(*pref) --;
 			if (0 == *pref) {
-				str_hash_remove(g_logon_hash, static_cast<logon_object *>(pobject)->get_dir());
+				str_hash_remove(g_logon_hash.get(),
+					static_cast<logon_object *>(pobject)->get_dir());
 			}
 		}
 		b_root = TRUE;
@@ -214,7 +214,6 @@ int rop_processor_create_logon_item(void *plogmap,
     uint8_t logon_id, logon_object *plogon)
 {
 	int handle;
-	uint32_t *pref;
 	uint32_t tmp_ref;
 	LOGON_ITEM *plogitem;
 	
@@ -242,10 +241,10 @@ int rop_processor_create_logon_item(void *plogmap,
 		return -3;
 	}
 	std::lock_guard hl_hold(g_hash_lock);
-	pref = static_cast<uint32_t *>(str_hash_query(g_logon_hash, plogon->get_dir()));
+	auto pref = static_cast<uint32_t *>(str_hash_query(g_logon_hash.get(), plogon->get_dir()));
 	if (NULL == pref) {
 		tmp_ref = 1;
-		str_hash_add(g_logon_hash, plogon->get_dir(), &tmp_ref);
+		str_hash_add(g_logon_hash.get(), plogon->get_dir(), &tmp_ref);
 	} else {
 		(*pref) ++;
 	}
@@ -394,7 +393,6 @@ static void *emsrop_scanwork(void *param)
 {
 	int count;
 	char tmp_dir[256];
-	STR_HASH_ITER *iter;
 	DOUBLE_LIST temp_list;
 	DOUBLE_LIST_NODE *pnode;
 	
@@ -410,7 +408,7 @@ static void *emsrop_scanwork(void *param)
 			count = 0;
 		}
 		std::unique_lock hl_hold(g_hash_lock);
-		iter = str_hash_iter_init(g_logon_hash);
+		auto iter = str_hash_iter_init(g_logon_hash.get());
 		for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
 			str_hash_iter_get_value(iter, tmp_dir);
@@ -503,9 +501,7 @@ void rop_processor_stop()
 		lib_buffer_free(g_handle_allocator);
 		g_handle_allocator = NULL;
 	}
-	if (NULL != g_logon_hash) {
-		str_hash_free(g_logon_hash);
-	}
+	g_logon_hash.reset();
 }
 
 static int rop_processor_execute_and_push(uint8_t *pbuff,

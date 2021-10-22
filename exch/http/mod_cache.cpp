@@ -75,7 +75,7 @@ static pthread_t g_scan_tid;
 static DOUBLE_LIST g_item_list;
 static std::mutex g_hash_lock;
 static std::vector<DIRECTORY_NODE> g_directory_list;
-static STR_HASH_TABLE *g_cache_hash;
+static std::unique_ptr<STR_HASH_TABLE> g_cache_hash;
 static CACHE_CONTEXT *g_context_list;
 
 
@@ -85,7 +85,6 @@ static void *mod_cache_scanwork(void *pparam)
 	char tmp_key[1024];
 	CACHE_ITEM *pitem;
 	CACHE_ITEM **ppitem;
-	STR_HASH_ITER *iter;
 	struct stat node_stat;
 	
 	count = 0;
@@ -96,7 +95,7 @@ static void *mod_cache_scanwork(void *pparam)
 			continue;
 		}
 		std::lock_guard hhold(g_hash_lock);
-		iter = str_hash_iter_init(g_cache_hash);
+		auto iter = str_hash_iter_init(g_cache_hash.get());
 		for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
 			ppitem = static_cast<CACHE_ITEM **>(str_hash_iter_get_value(iter, tmp_key));
@@ -125,23 +124,20 @@ static BOOL mod_cache_enlarge_hash()
 {
 	void *ptmp_value;
 	char tmp_key[1024];
-	STR_HASH_ITER *iter;
-	STR_HASH_TABLE *phash;
 	
-	phash = str_hash_init(g_cache_hash->capacity + 
+	auto phash = str_hash_init(g_cache_hash->capacity + 
 		HASH_GROWING_NUM, sizeof(CACHE_ITEM*), NULL);
 	if (NULL == phash) {
 		return FALSE;
 	}
-	iter = str_hash_iter_init(g_cache_hash);
+	auto iter = str_hash_iter_init(g_cache_hash.get());
 	for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
 		ptmp_value = str_hash_iter_get_value(iter, tmp_key);
-		str_hash_add(phash, tmp_key, ptmp_value);
+		str_hash_add(phash.get(), tmp_key, ptmp_value);
 	}
 	str_hash_iter_free(iter);
-	str_hash_free(g_cache_hash);
-	g_cache_hash = phash;
+	g_cache_hash = std::move(phash);
 	return TRUE;
 }
 
@@ -226,7 +222,6 @@ void mod_cache_stop()
 {
 	CACHE_ITEM *pitem;
 	CACHE_ITEM **ppitem;
-	STR_HASH_ITER *iter;
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (!g_notify_stop) {
@@ -240,7 +235,7 @@ void mod_cache_stop()
 		g_context_list = NULL;
 	}
 	if (NULL != g_cache_hash) {
-		iter = str_hash_iter_init(g_cache_hash);
+		auto iter = str_hash_iter_init(g_cache_hash.get());
 		for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
 			ppitem = static_cast<CACHE_ITEM **>(str_hash_iter_get_value(iter, nullptr));
@@ -248,8 +243,7 @@ void mod_cache_stop()
 			free(*ppitem);
 		}
 		str_hash_iter_free(iter);
-		str_hash_free(g_cache_hash);
-		g_cache_hash = NULL;
+		g_cache_hash.reset();
 	}
 	while ((pnode = double_list_pop_front(&g_item_list)) != nullptr) {
 		pitem = (CACHE_ITEM*)pnode->pdata;
@@ -649,7 +643,6 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	char domain[256];
 	CACHE_ITEM *pitem;
 	char tmp_path[512];
-	CACHE_ITEM **ppitem;
 	char tmp_buff[8192];
 	struct stat node_stat;
 	char request_uri[8192];
@@ -776,13 +769,13 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		pcontext->until = node_stat.st_size;
 	}
 	std::unique_lock hhold(g_hash_lock);
-	ppitem = static_cast<CACHE_ITEM **>(str_hash_query(g_cache_hash, tmp_path));
+	auto ppitem = static_cast<CACHE_ITEM **>(str_hash_query(g_cache_hash.get(), tmp_path));
 	if (NULL != ppitem) {
 		pitem = *ppitem;
 		if (pitem->ino != node_stat.st_ino ||
 			pitem->blob.length != node_stat.st_size ||
 			pitem->mtime != node_stat.st_mtime) {
-			str_hash_remove(g_cache_hash, tmp_path);
+			str_hash_remove(g_cache_hash.get(), tmp_path);
 			if (pitem->reference > 0) {
 				pitem->b_expired = TRUE;
 				pitem->node.pdata = pitem;
@@ -844,13 +837,13 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	}
 	close(fd);
 	hhold.lock();
-	ppitem = static_cast<CACHE_ITEM **>(str_hash_query(g_cache_hash, tmp_path));
+	ppitem = static_cast<CACHE_ITEM **>(str_hash_query(g_cache_hash.get(), tmp_path));
 	if (NULL == ppitem) {
-		if (1 != str_hash_add(g_cache_hash, tmp_path, &pitem)) {
+		if (str_hash_add(g_cache_hash.get(), tmp_path, &pitem) != 1) {
 			if (FALSE == mod_cache_enlarge_hash()) {
 				goto INVALIDATE_ITEM;
 			}
-			str_hash_add(g_cache_hash, tmp_path, &pitem);
+			str_hash_add(g_cache_hash.get(), tmp_path, &pitem);
 		}
 		pitem->b_expired = FALSE;
 		pcontext->pitem = pitem;

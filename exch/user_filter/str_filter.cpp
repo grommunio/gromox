@@ -80,9 +80,7 @@ int str_filter_run()
 void str_filter_stop() 
 {
     audit_filter_stop();
-    temp_list_stop();
 }
-
 
 /*
  *  judge if string can pass

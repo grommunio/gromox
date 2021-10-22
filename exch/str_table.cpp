@@ -8,6 +8,7 @@
 #include <string>
 #include <fcntl.h>
 #include <unistd.h>
+#include <utility>
 #include <libHX/string.h>
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
@@ -32,7 +33,7 @@ enum{
 static void str_table_echo(const char *, ...);
 static int str_table_refresh();
 
-static STR_HASH_TABLE *g_string_list_table;
+static std::unique_ptr<STR_HASH_TABLE> g_string_list_table;
 static std::shared_mutex g_refresh_lock;
 static char g_list_path[256];
 static BOOL g_case_sensitive;
@@ -65,14 +66,6 @@ static int str_table_run()
     return 0;
 }
 
-static void str_table_stop()
-{
-    if (NULL != g_string_list_table) {
-        str_hash_free(g_string_list_table);
-        g_string_list_table = NULL;
-    }
-}
-
 /*
  *  check if the specified string is in the table
  *
@@ -96,10 +89,7 @@ static BOOL str_table_query(const char* str)
 		HX_strlower(temp_string);
 	}
 	std::shared_lock rd_hold(g_refresh_lock);
-    if (NULL != str_hash_query(g_string_list_table, temp_string)) {
-        return TRUE;
-    }
-    return FALSE;
+	return str_hash_query(g_string_list_table.get(), temp_string) != nullptr ? TRUE : false;
 }
 
 /*
@@ -113,8 +103,6 @@ static BOOL str_table_query(const char* str)
  */
 static int str_table_refresh()
 {
-    STR_HASH_TABLE *phash = NULL;
-	
     /* initialize the list filter */
 	struct srcitem { char s[256]; };
 	auto plist_file = list_file_initd(g_list_path, std::string(get_state_path() + ":"s + get_config_path()).c_str(), "%s:256");
@@ -125,8 +113,7 @@ static int str_table_refresh()
 	auto pitem = static_cast<srcitem *>(plist_file->get_list());
 	auto list_len = plist_file->get_size();
 	auto hash_cap = list_len + g_growing_num;
-	
-    phash = str_hash_init(hash_cap, sizeof(int), NULL);
+	auto phash = str_hash_init(hash_cap, sizeof(int), nullptr);
 	if (NULL == phash) {
 		str_table_echo("Failed to allocate hash map");
 		return STR_TABLE_REFRESH_HASH_FAIL;
@@ -135,14 +122,11 @@ static int str_table_refresh()
 		if (FALSE == g_case_sensitive) {
 			HX_strlower(pitem[i].s);
 		}
-		str_hash_add(phash, pitem[i].s, &i);
+		str_hash_add(phash.get(), pitem[i].s, &i);
     }
 	
 	std::lock_guard wr_hold(g_refresh_lock);
-	if (NULL != g_string_list_table) {
-		str_hash_free(g_string_list_table);
-	}
-    g_string_list_table = phash;
+	g_string_list_table = std::move(phash);
 	g_hash_cap = hash_cap;
     return STR_TABLE_REFRESH_OK;
 }
@@ -162,8 +146,6 @@ static BOOL str_table_add(const char* str)
 	int dummy_val = 0;
 	int i, j, hash_cap;
 	int fd, string_len;
-	STR_HASH_ITER *iter;
-	STR_HASH_TABLE *phash;
 
 	if (NULL == str) {
 		return FALSE;
@@ -188,9 +170,8 @@ static BOOL str_table_add(const char* str)
 
 	std::lock_guard wr_hold(g_refresh_lock);
 	/* check first if the string is already in the table */
-	if (NULL != str_hash_query(g_string_list_table, temp_string)) {
+	if (str_hash_query(g_string_list_table.get(), temp_string) != nullptr)
 		return TRUE;
-	}
 	fd = open(g_list_path, O_APPEND|O_WRONLY);
 	if (-1 == fd) {
 		return FALSE;
@@ -200,28 +181,24 @@ static BOOL str_table_add(const char* str)
 		return FALSE;
 	}
 	close(fd);
-	if (str_hash_add(g_string_list_table, temp_string, &dummy_val) > 0) {
+	if (str_hash_add(g_string_list_table.get(), temp_string, &dummy_val) > 0)
 		return TRUE;
-	}
 	hash_cap = g_hash_cap + g_growing_num;
-	phash = str_hash_init(hash_cap, sizeof(int), NULL);
+	auto phash = str_hash_init(hash_cap, sizeof(int), NULL);
 	if (NULL == phash) {
 		return FALSE;
 	}
-	iter = str_hash_iter_init(g_string_list_table);
+	auto iter = str_hash_iter_init(g_string_list_table.get());
 	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
 		str_hash_iter_get_value(iter, file_item);
-		str_hash_add(phash, file_item, &dummy_val);
+		str_hash_add(phash.get(), file_item, &dummy_val);
 	}
 	str_hash_iter_free(iter);
-	str_hash_free(g_string_list_table);
-	g_string_list_table = phash;
+	g_string_list_table = std::move(phash);
 	g_hash_cap = hash_cap;
-	if (str_hash_add(g_string_list_table, temp_string, &dummy_val) > 0) {
-		return TRUE;
-	}
-	return FALSE;
+	return str_hash_add(g_string_list_table.get(), temp_string,
+	       &dummy_val) > 0 ? TRUE : false;
 }
 
 /*
@@ -238,7 +215,6 @@ static BOOL str_table_remove(const char* str)
 	int fd, string_len;
 	char temp_string[256];
 	char file_item[512];
-	STR_HASH_ITER *iter;
 	
 	if (NULL == str) {
 		return FALSE;
@@ -251,17 +227,15 @@ static BOOL str_table_remove(const char* str)
 
 	std::lock_guard wr_hold(g_refresh_lock);
 	/* check first if the string is in hash table */
-	if (NULL == str_hash_query(g_string_list_table, temp_string)) {
+	if (str_hash_query(g_string_list_table.get(), temp_string) == nullptr)
 		return TRUE;
-	}
-	if (1 != str_hash_remove(g_string_list_table, temp_string)) {
+	if (str_hash_remove(g_string_list_table.get(), temp_string) != 1)
 		return FALSE;
-	}
 	fd = open(g_list_path, O_WRONLY|O_CREAT|O_TRUNC, DEF_MODE);
 	if (-1 == fd) {
 		return FALSE;
 	}
-	iter = str_hash_iter_init(g_string_list_table);
+	auto iter = str_hash_iter_init(g_string_list_table.get());
 	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
 		str_hash_iter_get_value(iter, temp_string);
@@ -444,7 +418,6 @@ static BOOL svc_str_table(int reason, void **ppdata)
 		return TRUE;
 	}
 	case PLUGIN_FREE:
-		str_table_stop();
 		str_table_free();
 		return TRUE;
 	case PLUGIN_RELOAD:

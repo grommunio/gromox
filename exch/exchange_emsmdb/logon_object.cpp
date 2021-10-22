@@ -50,24 +50,21 @@ static BOOL logon_object_enlarge_propid_hash(logon_object *plogon)
 static BOOL logon_object_enlarge_propname_hash(logon_object *plogon)
 {
 	void *ptmp_value;
-	STR_HASH_ITER *iter;
 	char tmp_string[256];
-	STR_HASH_TABLE *phash;
 	
-	phash = str_hash_init(plogon->ppropname_hash->capacity
+	auto phash = str_hash_init(plogon->ppropname_hash->capacity
 				+ HGROWING_SIZE, sizeof(uint16_t), NULL);
 	if (NULL == phash) {
 		return FALSE;
 	}
-	iter = str_hash_iter_init(plogon->ppropname_hash);
+	auto iter = str_hash_iter_init(plogon->ppropname_hash.get());
 	for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
 		ptmp_value = str_hash_iter_get_value(iter, tmp_string);
-		str_hash_add(phash, tmp_string, ptmp_value);
+		str_hash_add(phash.get(), tmp_string, ptmp_value);
 	}
 	str_hash_iter_free(iter);
-	str_hash_free(plogon->ppropname_hash);
-	plogon->ppropname_hash = phash;
+	plogon->ppropname_hash = std::move(phash);
 	return TRUE;
 }
 
@@ -129,15 +126,11 @@ static BOOL logon_object_cache_propname(logon_object *plogon,
 		}
 	}
 	HX_strlower(tmp_string);
-	if (NULL == str_hash_query(plogon->ppropname_hash, tmp_string)) {
-		if (1 != str_hash_add(plogon->ppropname_hash, tmp_string, &propid)) {
-			if (FALSE == logon_object_enlarge_propname_hash(plogon)
-				|| 1 != str_hash_add(plogon->ppropname_hash,
-				tmp_string, &propid)) {
-				return FALSE;
-			}
-		}
-	}
+	if (str_hash_query(plogon->ppropname_hash.get(), tmp_string) == nullptr &&
+	    str_hash_add(plogon->ppropname_hash.get(), tmp_string, &propid) != 1)
+		if (!logon_object_enlarge_propname_hash(plogon) ||
+		    str_hash_add(plogon->ppropname_hash.get(), tmp_string, &propid) != 1)
+			return FALSE;
 	return TRUE;
 }
 
@@ -193,9 +186,7 @@ logon_object::~logon_object()
 		int_hash_iter_free(piter);
 		int_hash_free(plogon->ppropid_hash);
 	}
-	if (NULL != plogon->ppropname_hash) {
-		str_hash_free(plogon->ppropname_hash);
-	}
+	plogon->ppropname_hash.reset();
 }
 
 BOOL logon_object::check_private() const
@@ -304,7 +295,6 @@ BOOL logon_object::get_named_propid(BOOL b_create,
     const PROPERTY_NAME *ppropname, uint16_t *ppropid)
 {
 	GUID guid;
-	uint16_t *pid;
 	char tmp_guid[64];
 	char tmp_string[256];
 	
@@ -328,7 +318,7 @@ BOOL logon_object::get_named_propid(BOOL b_create,
 	}
 	auto plogon = this;
 	if (NULL != plogon->ppropname_hash) {
-		pid = static_cast<uint16_t *>(str_hash_query(plogon->ppropname_hash, tmp_string));
+		auto pid = static_cast<uint16_t *>(str_hash_query(plogon->ppropname_hash.get(), tmp_string));
 		if (NULL != pid) {
 			*ppropid = *pid;
 			return TRUE;
@@ -350,7 +340,6 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 {
 	int i;
 	GUID guid;
-	uint16_t *pid;
 	char tmp_guid[64];
 	char tmp_string[256];
 	PROPID_ARRAY tmp_propids;
@@ -399,8 +388,8 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 			pindex_map[i] = i;
 			continue;
 		}
-		pid = plogon->ppropname_hash == nullptr ? nullptr :
-		      static_cast<uint16_t *>(str_hash_query(plogon->ppropname_hash, tmp_string));
+		auto pid = plogon->ppropname_hash == nullptr ? nullptr :
+		           static_cast<uint16_t *>(str_hash_query(plogon->ppropname_hash.get(), tmp_string));
 		if (NULL != pid) {
 			pindex_map[i] = i;
 			ppropids->ppropid[i] = *pid;

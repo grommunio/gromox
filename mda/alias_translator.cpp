@@ -3,6 +3,7 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
+#include <memory>
 #include <shared_mutex>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -33,7 +34,7 @@ struct addritem {
 
 }
 
-static STR_HASH_TABLE *g_address_hash;
+static std::unique_ptr<STR_HASH_TABLE> g_address_hash;
 static std::shared_mutex g_address_lock;
 static char g_address_path[256];
 
@@ -66,10 +67,6 @@ static BOOL hook_alias_translator(int reason, void **ppdata)
 		printf("[alias_translator]: plugin is loaded into system\n");
         return TRUE;
     case PLUGIN_FREE:
-		if (NULL != g_address_hash) {
-			str_hash_free(g_address_hash);
-			g_address_hash = NULL;
-		}
         return TRUE;
 	case PLUGIN_RELOAD:
 		address_table_refresh();
@@ -173,7 +170,7 @@ BOOL address_table_query(const char *aliasname, char *mainname)
 	HX_strlower(temp_string);
 	
 	std::shared_lock rd_hold(g_address_lock);
-	auto presult = static_cast<char *>(str_hash_query(g_address_hash, temp_string));
+	auto presult = static_cast<char *>(str_hash_query(g_address_hash.get(), temp_string));
 	if (NULL != presult) {
 		strcpy(mainname, presult);
 	}
@@ -186,8 +183,6 @@ BOOL address_table_query(const char *aliasname, char *mainname)
 	
 static int address_table_refresh()
 {
-    STR_HASH_TABLE *phash = NULL;
-	
     /* initialize the list filter */
 	auto plist_file = list_file_initd(g_address_path, "/", "%s:324%s:324");
 	if (NULL == plist_file) {
@@ -197,20 +192,17 @@ static int address_table_refresh()
 	}
 	auto pitem = static_cast<struct addritem *>(plist_file->get_list());
 	auto list_len = plist_file->get_size();
-	phash = str_hash_init(list_len + 1, UADDR_SIZE, nullptr);
+	auto phash = str_hash_init(list_len + 1, UADDR_SIZE, nullptr);
 	if (NULL == phash) {
 		printf("[alias_translator]: Failed to allocate address hash map\n");
 		return REFRESH_HASH_FAIL;
 	}
 	for (decltype(list_len) i = 0; i < list_len; ++i) {
 		HX_strlower(pitem[i].a);
-		str_hash_add(phash, pitem[i].a, pitem[i].b);
+		str_hash_add(phash.get(), pitem[i].a, pitem[i].b);
     }
 	std::lock_guard wr_hold(g_address_lock);
-	if (NULL != g_address_hash) {
-		str_hash_free(g_address_hash);
-	}
-    g_address_hash = phash;
+	g_address_hash = std::move(phash);
     return REFRESH_OK;
 }
 
@@ -257,4 +249,3 @@ static void console_talk(int argc, char **argv, char *result, int length)
 	snprintf(result, length, "550 invalid argument %s", argv[1]);
 	return;
 }
-

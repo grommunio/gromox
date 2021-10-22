@@ -39,7 +39,7 @@ using namespace gromox;
 
 static char g_org_name[256];
 static pthread_key_t g_alloc_key;
-static STR_HASH_TABLE *g_str_hash;
+static std::unique_ptr<STR_HASH_TABLE> g_str_hash;
 static char g_default_charset[32];
 static char g_default_timezone[64];
 static std::atomic<int> g_sequence_id{0};
@@ -145,18 +145,10 @@ int exmdb_local_run()
 	for (decltype(num) i = 0; i < num; ++i) {
 		gx_strlcpy(temp_line, pitem[i].s, sizeof(temp_line));
 		HX_strlower(temp_line);
-		str_hash_add(g_str_hash, temp_line, &last_propid);
+		str_hash_add(g_str_hash.get(), temp_line, &last_propid);
 		last_propid ++;
 	}
 	return 0;
-}
-
-void exmdb_local_stop()
-{
-	if (NULL != g_str_hash) {
-		str_hash_free(g_str_hash);
-		g_str_hash = NULL;
-	}
 }
 
 void exmdb_local_free()
@@ -353,7 +345,6 @@ static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
     PROPID_ARRAY *ppropids)
 {
 	int i;
-	uint16_t *ppropid;
 	char tmp_guid[64];
 	char tmp_string[256];
 	
@@ -369,7 +360,7 @@ static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
 				tmp_guid, ppropnames->ppropname[i].pname);
 
 		HX_strlower(tmp_string);
-		ppropid = static_cast<uint16_t *>(str_hash_query(g_str_hash, tmp_string));
+		auto ppropid = static_cast<uint16_t *>(str_hash_query(g_str_hash.get(), tmp_string));
 		if (NULL == ppropid) {
 			ppropids->ppropid[i] = 0;
 		} else {

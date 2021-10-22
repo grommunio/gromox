@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <gromox/lib_buffer.hpp>
 #include <gromox/double_list.hpp>
 #define MAX_KEY_LENGTH      512
@@ -12,15 +13,15 @@ struct STR_HASH_ITEM {
     DOUBLE_LIST_NODE iter_node;
 };
 
-struct STR_HASH_TABLE {
-    size_t      capacity;
-    size_t      entry_num;
-    size_t      data_size;
-    size_t      item_num;
-    DOUBLE_LIST iter_list;
-    DOUBLE_LIST*    hash_map;
-    LIB_BUFFER* buf_pool;
-    PSTR_HASH_FUNC  hash_func;
+struct GX_EXPORT STR_HASH_TABLE {
+	STR_HASH_TABLE(size_t max_items, size_t item_size, PSTR_HASH_FUNC);
+	~STR_HASH_TABLE();
+
+	size_t capacity = 0, entry_num = 0, data_size = 0, item_num = 0;
+	DOUBLE_LIST iter_list{};
+	std::unique_ptr<DOUBLE_LIST[]> hash_map;
+	LIB_BUFFER *buf_pool = nullptr;
+	PSTR_HASH_FUNC hash_func;
 };
 
 struct STR_HASH_ITER {
@@ -35,9 +36,7 @@ struct STR_HASH_ITER {
  return a int, if the fun is NULL then a default hash function will
  be used
  */
-STR_HASH_TABLE* str_hash_init(size_t max_items, size_t item_size, PSTR_HASH_FUNC fun);
-/* free the specified hash table */
-void str_hash_free(STR_HASH_TABLE* ptbl);
+extern GX_EXPORT std::unique_ptr<STR_HASH_TABLE> str_hash_init(size_t max_items, size_t item_size, PSTR_HASH_FUNC);
 /* add the key and value into the specified hash table */
 extern int str_hash_add(STR_HASH_TABLE *ptbl, const char *key, const void *value);
 /* query if the key is exist in the hash table */

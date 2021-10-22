@@ -70,22 +70,20 @@ static BOOL store_object_enlarge_propname_hash(store_object *pstore)
 	void *ptmp_value;
 	STR_HASH_ITER *iter;
 	char tmp_string[256];
-	STR_HASH_TABLE *phash;
 	
-	phash = str_hash_init(pstore->ppropname_hash->capacity
+	auto phash = str_hash_init(pstore->ppropname_hash->capacity
 				+ HGROWING_SIZE, sizeof(uint16_t), NULL);
 	if (NULL == phash) {
 		return FALSE;
 	}
-	iter = str_hash_iter_init(pstore->ppropname_hash);
+	iter = str_hash_iter_init(pstore->ppropname_hash.get());
 	for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
 		ptmp_value = str_hash_iter_get_value(iter, tmp_string);
-		str_hash_add(phash, tmp_string, ptmp_value);
+		str_hash_add(phash.get(), tmp_string, ptmp_value);
 	}
 	str_hash_iter_free(iter);
-	str_hash_free(pstore->ppropname_hash);
-	pstore->ppropname_hash = phash;
+	pstore->ppropname_hash = std::move(phash);
 	return TRUE;
 }
 
@@ -146,15 +144,11 @@ static BOOL store_object_cache_propname(store_object *pstore,
 		}
 	}
 	HX_strlower(tmp_string);
-	if (NULL == str_hash_query(pstore->ppropname_hash, tmp_string)) {
-		if (1 != str_hash_add(pstore->ppropname_hash, tmp_string, &propid)) {
-			if (FALSE == store_object_enlarge_propname_hash(pstore)
-				|| 1 != str_hash_add(pstore->ppropname_hash,
-				tmp_string, &propid)) {
-				return FALSE;
-			}
-		}
-	}
+	if (str_hash_query(pstore->ppropname_hash.get(), tmp_string) == nullptr &&
+	    str_hash_add(pstore->ppropname_hash.get(), tmp_string, &propid) != 1)
+		if (!store_object_enlarge_propname_hash(pstore) ||
+		    str_hash_add(pstore->ppropname_hash.get(), tmp_string, &propid) != 1)
+			return FALSE;
 	return TRUE;
 }
 
@@ -191,7 +185,6 @@ std::unique_ptr<store_object> store_object::create(BOOL b_private,
 	pstore->mailbox_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
 	pstore->m_gpinfo = nullptr;
 	pstore->ppropid_hash = NULL;
-	pstore->ppropname_hash = NULL;
 	double_list_init(&pstore->group_list);
 	return pstore;
 }
@@ -223,9 +216,6 @@ store_object::~store_object()
 		}
 		int_hash_iter_free(piter);
 		int_hash_free(pstore->ppropid_hash);
-	}
-	if (NULL != pstore->ppropname_hash) {
-		str_hash_free(pstore->ppropname_hash);
 	}
 }
 
@@ -336,7 +326,6 @@ static BOOL store_object_get_named_propid(store_object *pstore,
 	uint16_t *ppropid)
 {
 	GUID guid;
-	uint16_t *pid;
 	char tmp_guid[64];
 	char tmp_string[256];
 	
@@ -359,7 +348,7 @@ static BOOL store_object_get_named_propid(store_object *pstore,
 		return TRUE;
 	}
 	if (NULL != pstore->ppropname_hash) {
-		pid = static_cast<uint16_t *>(str_hash_query(pstore->ppropname_hash, tmp_string));
+		auto pid = static_cast<uint16_t *>(str_hash_query(pstore->ppropname_hash.get(), tmp_string));
 		if (NULL != pid) {
 			*ppropid = *pid;
 			return TRUE;
@@ -381,7 +370,6 @@ BOOL store_object::get_named_propids(BOOL b_create,
 {
 	int i;
 	GUID guid;
-	uint16_t *pid;
 	char tmp_guid[64];
 	char tmp_string[256];
 	PROPID_ARRAY tmp_propids;
@@ -430,8 +418,8 @@ BOOL store_object::get_named_propids(BOOL b_create,
 			pindex_map[i] = i;
 			continue;
 		}
-		pid = pstore->ppropname_hash == nullptr ? nullptr :
-		      static_cast<uint16_t *>(str_hash_query(pstore->ppropname_hash, tmp_string));
+		auto pid = pstore->ppropname_hash == nullptr ? nullptr :
+		           static_cast<uint16_t *>(str_hash_query(pstore->ppropname_hash.get(), tmp_string));
 		if (NULL != pid) {
 			pindex_map[i] = i;
 			ppropids->ppropid[i] = *pid;
