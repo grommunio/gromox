@@ -12,10 +12,13 @@
 #include <gromox/util.hpp>
 #include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
+#include <gromox/scope.hpp>
 #include <cstring>
 #include <cstdlib>
 #include <unistd.h>
 #include <cstdio>
+
+using namespace gromox;
 
 static BOOL mime_parse_multiple(MIME *pmime);
 
@@ -1220,6 +1223,7 @@ static BOOL mime_read_mutlipart_content(MIME *pmime,
 		*plength = 0;
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
 	stream_init(&tmp_stream, pallocator);
 	if (NULL == pmime->first_boundary) {
 		stream_write(&tmp_stream,
@@ -1239,7 +1243,6 @@ static BOOL mime_read_mutlipart_content(MIME *pmime,
 		pmime_child = (MIME*)pnode->pdata;
 		if (FALSE == mime_serialize(pmime_child, &tmp_stream)) {
 			stream_free(&tmp_stream);
-			lib_buffer_free(pallocator);
 			return FALSE;
 		}
 		pnode = simple_tree_node_get_sibling(pnode);
@@ -1273,7 +1276,6 @@ static BOOL mime_read_mutlipart_content(MIME *pmime,
 		buff_size = STREAM_BLOCK_SIZE;
 	}
 	stream_free(&tmp_stream);
-	lib_buffer_free(pallocator);
 	*plength = offset;
 	return TRUE;
 }
@@ -1447,10 +1449,10 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 			*plength = 0;
 			return FALSE;
 		}
+		auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
 		stream_init(&tmp_stream, pallocator);
 		if (!reinterpret_cast<MAIL *>(pmime->content_begin)->serialize(&tmp_stream)) {
 			stream_free(&tmp_stream);
-			lib_buffer_free(pallocator);
 			*plength = 0;
 			return FALSE;
 		}
@@ -1462,7 +1464,6 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 			buff_size = STREAM_BLOCK_SIZE;
 		}
 		stream_free(&tmp_stream);
-		lib_buffer_free(pallocator);
 		*plength = offset;
 		return TRUE;
 	}

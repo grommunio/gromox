@@ -7,8 +7,11 @@
 #include <gromox/util.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mime_pool.hpp>
+#include <gromox/scope.hpp>
 #include <cstring>
 #include <cstdio>
+
+using namespace gromox;
 
 enum {
 	TAG_SIGNED,
@@ -883,17 +886,16 @@ BOOL MAIL::dup(MAIL *pmail_dst)
 		debug_info("[mail]: Failed to init lib buffer in mail_dup");
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
 	stream_init(&tmp_stream, pallocator);
 	if (!pmail_src->serialize(&tmp_stream)) {
 		stream_free(&tmp_stream);
-		lib_buffer_free(pallocator);
 		return FALSE;
 	}
 	auto pbuff = static_cast<char *>(malloc(strange_roundup(mail_len - 1, 64 * 1024)));
 	if (NULL == pbuff) {
 		debug_info("[mail]: Failed to allocate memory in mail_dup");
 		stream_free(&tmp_stream);
-		lib_buffer_free(pallocator);
 		return FALSE;
 	}
 			
@@ -905,7 +907,6 @@ BOOL MAIL::dup(MAIL *pmail_dst)
 		size = STREAM_BLOCK_SIZE;
 	}
 	stream_free(&tmp_stream);
-	lib_buffer_free(pallocator);
 	if (!pmail_dst->retrieve(pbuff, offset)) {
 		free(pbuff);
 		return FALSE;
@@ -945,17 +946,16 @@ BOOL MAIL::transfer_dot(MAIL *pmail_dst)
 		debug_info("[mail]: Failed to init lib buffer in mail_dup");
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
 	stream_init(&tmp_stream, pallocator);
 	if (!pmail_src->serialize(&tmp_stream)) {
 		stream_free(&tmp_stream);
-		lib_buffer_free(pallocator);
 		return FALSE;
 	}
 	pbuff = static_cast<char *>(malloc(((mail_len - 1) / (64 * 1024) + 1) * 64 * 1024));
 	if (NULL == pbuff) {
 		debug_info("[mail]: Failed to allocate memory in mail_dup");
 		stream_free(&tmp_stream);
-		lib_buffer_free(pallocator);
 		return FALSE;
 	}
 	
@@ -976,7 +976,6 @@ BOOL MAIL::transfer_dot(MAIL *pmail_dst)
 	}
 	
 	stream_free(&tmp_stream);
-	lib_buffer_free(pallocator);
 	if (!pmail_dst->retrieve(pbuff,  offset)) {
 		free(pbuff);
 		return FALSE;

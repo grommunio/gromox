@@ -28,6 +28,7 @@
 #include <gromox/oxcical.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/tarray_set.hpp>
 #include <gromox/ext_buffer.hpp>
@@ -6490,17 +6491,16 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 				mail_len / STREAM_BLOCK_SIZE + 1, FALSE);
 		if (pallocator == nullptr)
 			return FALSE;
+		auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
 		stream_init(&tmp_stream, pallocator);
 		if (!imail.serialize(&tmp_stream)) {
 			stream_free(&tmp_stream);
-			lib_buffer_free(pallocator);
 			return FALSE;
 		}
 		imail.clear();
 		std::unique_ptr<char[], stdlib_delete> pbuff(static_cast<char *>(malloc(mail_len + 128)));
 		if (NULL == pbuff) {
 			stream_free(&tmp_stream);
-			lib_buffer_free(pallocator);
 			return FALSE;
 		}
 				
@@ -6512,7 +6512,6 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 			size = STREAM_BLOCK_SIZE;
 		}
 		stream_free(&tmp_stream);
-		lib_buffer_free(pallocator);
 		return mime_write_content(pmime, pbuff.get(), mail_len, MIME_ENCODING_NONE);
 	}
 	pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_DATA_BIN);
