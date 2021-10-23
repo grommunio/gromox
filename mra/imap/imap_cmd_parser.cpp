@@ -789,9 +789,8 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			fprintf(stderr, "E-1464: ENOMEM\n");
 		}
 		if (eml_path.size() == 0 ||
-		    !mjson_retrieve(&mjson, buff, len, eml_path.c_str())) {
+		    !mjson.retrieve(buff, len, eml_path.c_str()))
 			return;
-		}
 	}
 	buff_len = 0;
 	buff_len += gx_snprintf(buff + buff_len, GX_ARRAY_SIZE(buff) - buff_len,
@@ -831,8 +830,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				}
 			} else {
  FETCH_BODY_SIMPLE:
-				auto len = mjson_fetch_structure(&mjson,
-					resource_get_default_charset(pcontext->lang),
+				auto len = mjson.fetch_structure(resource_get_default_charset(pcontext->lang),
 					FALSE, buff + buff_len, MAX_DIGLEN - buff_len);
 				if (-1 == len) {
 					buff_len += gx_snprintf(buff + buff_len,
@@ -866,8 +864,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				}
 			} else {
  FETCH_BODYSTRUCTURE_SIMPLE:
-				auto len = mjson_fetch_structure(&mjson,
-					resource_get_default_charset(pcontext->lang),
+				auto len = mjson.fetch_structure(resource_get_default_charset(pcontext->lang),
 					TRUE, buff + buff_len, MAX_DIGLEN - buff_len);
 				if (-1 == len) {
 					buff_len += gx_snprintf(buff + buff_len,
@@ -879,8 +876,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		} else if (strcasecmp(kw, "ENVELOPE") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
 			            GX_ARRAY_SIZE(buff) - buff_len, "ENVELOPE ");
-			auto len = mjson_fetch_envelope(&mjson,
-				resource_get_default_charset(pcontext->lang),
+			auto len = mjson.fetch_envelope(resource_get_default_charset(pcontext->lang),
 				buff + buff_len, MAX_DIGLEN - buff_len);
 			if (-1 == len) {
 				buff_len += gx_snprintf(buff + buff_len,

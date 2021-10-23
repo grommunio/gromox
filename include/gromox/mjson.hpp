@@ -33,6 +33,10 @@ struct GX_EXPORT MJSON {
 	~MJSON();
 	void operator=(MJSON &&) = delete;
 
+	void clear();
+	BOOL retrieve(char *digest_buf, int len, const char *path);
+	int fetch_structure(const char *charset, BOOL ext, char *buf, int len);
+	int fetch_envelope(const char *charset, char *buf, int len);
 	const char *get_mail_filename() const { return filename; }
 	const char *get_mail_received() const { return received; }
 	const char *get_mail_messageid() const { return msgid; }
@@ -71,13 +75,6 @@ enum {
 
 LIB_BUFFER* mjson_allocator_init(size_t max_size, BOOL thread_safe);
 void mjson_allocator_free(LIB_BUFFER *pallocator);
-void mjson_clear(MJSON *pjson);
-BOOL mjson_retrieve(MJSON *pjson, char *digest_buff,
-	int length, const char *path);
-int mjson_fetch_structure(MJSON *pjson, const char *charset,
-	BOOL b_ext, char *buff, int length);
-int mjson_fetch_envelope(MJSON *pjson, const char *charset,
-	char *buff, int length);
 BOOL mjson_rfc822_check(MJSON *pjson);
 extern GX_EXPORT BOOL mjson_rfc822_build(MJSON *, std::shared_ptr<MIME_POOL>, const char *storage_path);
 BOOL mjson_rfc822_get(MJSON *pjson_base, MJSON *pjson,

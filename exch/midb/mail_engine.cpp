@@ -692,8 +692,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				MJSON temp_mjson(g_alloc_mjson);
 				snprintf(temp_buff, 256, "%s/eml",
 						common_util_get_maildir());
-				if (TRUE == mjson_retrieve(&temp_mjson,
-					digest_buff, strlen(digest_buff), temp_buff)) {
+				if (temp_mjson.retrieve(digest_buff, strlen(digest_buff), temp_buff)) {
 					keyword_enum.pjson = &temp_mjson;
 					keyword_enum.b_result = FALSE;
 					keyword_enum.charset = charset;
@@ -1023,8 +1022,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				MJSON temp_mjson(g_alloc_mjson);
 				snprintf(temp_buff, 256, "%s/eml",
 						common_util_get_maildir());
-				if (TRUE == mjson_retrieve(&temp_mjson,
-					digest_buff, strlen(digest_buff), temp_buff)) {
+				if (temp_mjson.retrieve(digest_buff, strlen(digest_buff), temp_buff)) {
 					keyword_enum.pjson = &temp_mjson;
 					keyword_enum.b_result = FALSE;
 					keyword_enum.charset = charset;

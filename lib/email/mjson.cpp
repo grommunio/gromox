@@ -133,18 +133,10 @@ MJSON::MJSON(LIB_BUFFER *p) : ppool(p)
  *	@param
  *		pjson [in]			indicate the mail object
  */
-void mjson_clear(MJSON *pjson)
+void MJSON::clear()
 {
-	SIMPLE_TREE_NODE *pnode;
-
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_clear");
-		return;
-	}
-#endif
-
-	pnode = simple_tree_get_root(&pjson->tree);
+	auto pjson = this;
+	auto pnode = simple_tree_get_root(&pjson->tree);
 	if (NULL != pnode) {
 		simple_tree_destroy_node(&pjson->tree, pnode, mjson_enum_delete);
 	}
@@ -190,7 +182,7 @@ static void mjson_enum_delete(SIMPLE_TREE_NODE *pnode)
 
 MJSON::~MJSON()
 {
-	mjson_clear(this);
+	clear();
 	simple_tree_free(&tree);
 }
 
@@ -205,9 +197,10 @@ MJSON::~MJSON()
  *                          or seek file discritor in
  *                          message, path cannot be NULL.
  */
-BOOL mjson_retrieve(MJSON *pjson, char *digest_buff,
+BOOL MJSON::retrieve(char *digest_buff,
 	int length, const char *path)
 {
+	auto pjson = this;
 	int bcount = 0, scount = 0;
 	BOOL b_none, b_quota = false;
 	int i, rstat;
@@ -217,16 +210,14 @@ BOOL mjson_retrieve(MJSON *pjson, char *digest_buff,
 	SIMPLE_TREE_NODE *pnode;
 	
 #ifdef _DEBUG_UMTA
-	if (NULL == pjson || NULL == digest_buff) {
+	if (digest_buff == nullptr) {
 		debug_info("[mail]: NULL pointer in mjson_retrieve");
 		return FALSE;
 	}
 #endif
 	
 	last_pos = 0;
-	
-	mjson_clear(pjson);
-	
+	clear();
 	rstat = RETRIEVE_NONE;
     for (i=0; i<length; i++) {
 		switch (rstat) {
@@ -1149,15 +1140,15 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 	}	
 } 
 
-int mjson_fetch_structure(MJSON *pjson, const char *charset,
-	BOOL b_ext, char *buff, int length)
+int MJSON::fetch_structure(const char *charset, BOOL b_ext, char *buff, int length)
 {
+	auto pjson = this;
 	int ret_len;
 	MJSON_MIME *pmime;
 	SIMPLE_TREE_NODE *pnode;
 
 #ifdef _DEBUG_UMTA
-	if (NULL == pjson || NULL == buff) {
+	if (buff == nullptr) {
 		debug_info("[mail]: NULL pointer in mjson_fetch_structure");
 		return -1;
 	}
@@ -1374,16 +1365,14 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			
 			close(fd);
 			MJSON temp_mjson(pmime->ppool);
-			if (FALSE == mjson_retrieve(&temp_mjson,
-				digest_buff, node_stat.st_size, storage_path)) {
+			if (!temp_mjson.retrieve(digest_buff, node_stat.st_size, storage_path)) {
 				free(digest_buff);
 				goto RFC822_FAILURE;
 			}
 			free(digest_buff);
 			
 			buff[offset] = ' ';
-			
-			envl_len = mjson_fetch_envelope(&temp_mjson, charset,
+			envl_len = temp_mjson.fetch_envelope(charset,
 						buff + offset + 1, length - offset - 1);
 			if (-1 == envl_len) {
 				goto RFC822_FAILURE;
@@ -1568,9 +1557,9 @@ static int mjson_convert_address(char *address, const char *charset,
 	return offset;
 }
 
-int mjson_fetch_envelope(MJSON *pjson, const char *charset,
-	char *buff, int length)
+int MJSON::fetch_envelope(const char *charset, char *buff, int length)
 {
+	auto pjson = this;
 	int offset;
 	int i, len;
 	int ret_len;
@@ -1977,8 +1966,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		}
 		close(fd);
 		
-		if (FALSE == mjson_retrieve(&temp_mjson,
-			digest_buff, digest_len, pbuild->storage_path)) {
+		if (!temp_mjson.retrieve(digest_buff, digest_len, pbuild->storage_path)) {
 			if (remove(dgt_path) < 0 && errno != ENOENT)
 				fprintf(stderr, "W-1377: remove %s: %s\n", dgt_path, strerror(errno));
 			if (remove(msg_path) < 0 && errno != ENOENT)
@@ -2089,11 +2077,11 @@ BOOL mjson_rfc822_get(MJSON *pjson_base, MJSON *pjson,
 				return FALSE;
 			}
 			close(fd);
-			mjson_clear(pjson);
+			pjson->clear();
 			snprintf(temp_path, 256, "%s/%s", storage_path,
 				pjson_base->filename);
-			if (FALSE == mjson_retrieve(pjson, digest_buff,
-				node_stat.st_size, temp_path)) {
+			if (!pjson->retrieve(digest_buff, node_stat.st_size, temp_path)) {
+				/* was never implemented */
 			}
 			strcpy(mime_id, pdot + 1);
 			return TRUE;
