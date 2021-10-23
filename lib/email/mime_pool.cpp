@@ -11,23 +11,13 @@
  *	@return
  *		mime pool object
  */
-MIME_POOL* mime_pool_init(size_t number, int ratio, BOOL thread_safe)
+MIME_POOL::MIME_POOL(size_t number, int ratio, BOOL ts) :
+	thread_safe(ts), pbegin(std::make_unique<MIME_POOL_NODE[]>(number))
 {
+	auto pmime_pool = this;
 	size_t i;
 	MIME_POOL_NODE *ptemp_mime;
 
-	auto pmime_pool = static_cast<MIME_POOL *>(malloc(sizeof(MIME_POOL)));
-	if (NULL == pmime_pool) {
-		debug_info("[mime_pool]: Failed to allocate MIME pool memory");
-		return NULL;
-	}
-	pmime_pool->pbegin = static_cast<MIME_POOL_NODE *>(malloc(sizeof(MIME_POOL_NODE) * number));
-	if (NULL == pmime_pool->pbegin) {
-		debug_info("[mime_pool]: Failed to allocate MIME list");
-		free(pmime_pool->pbegin);
-		free(pmime_pool);
-		return NULL;
-	}
 	if (ratio < 4) {
 		ratio = 4;
 	} else if (ratio > 256) {
@@ -36,59 +26,47 @@ MIME_POOL* mime_pool_init(size_t number, int ratio, BOOL thread_safe)
 	pmime_pool->allocator = lib_buffer_init(FILE_ALLOC_SIZE,
 							number*ratio, thread_safe);
 	if (NULL == pmime_pool->allocator) {
-		debug_info("[mime_pool]: Failed to init file allocator");
-		free(pmime_pool->pbegin);
-		free(pmime_pool);
-		return NULL;
+		throw std::bad_alloc();
 	}
 	single_list_init(&pmime_pool->free_list);
 	for (i=0; i<number; i++) {
-		ptemp_mime = pmime_pool->pbegin + i;
+		ptemp_mime = &pmime_pool->pbegin[i];
 		ptemp_mime->node.pdata = ptemp_mime;
 		ptemp_mime->pool = pmime_pool;
 		mime_init(&ptemp_mime->mime, pmime_pool->allocator);
 		single_list_append_as_tail(&pmime_pool->free_list, &ptemp_mime->node);
 	}
-	if (TRUE == thread_safe) {
-		pthread_mutex_init(&pmime_pool->mutex, NULL);
-	}
-	pmime_pool->thread_safe = thread_safe;
 	pmime_pool->number = number;
-	return pmime_pool;
 }
 
-void mime_pool_free(MIME_POOL *pmime_pool)
+MIME_POOL::~MIME_POOL()
 {
+	auto pmime_pool = this;
 	size_t i;
 	MIME_POOL_NODE *pmime_node;
-
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime_pool) {
-		debug_info("[mime_pool]: NULL pointer in mime_pool_free");
-		return;
-	}
-#endif
 
 	if (pmime_pool->number != single_list_get_nodes_num(&pmime_pool->free_list)) {
 		debug_info("[mime_pool]: there's still some mimes unfree");
 	}
-	if (TRUE == pmime_pool->thread_safe) {
-    	pthread_mutex_destroy(&pmime_pool->mutex);
-    }
 	pmime_pool->number = 0;
 	if (NULL != pmime_pool->pbegin) {
 		for (i=0; i<pmime_pool->number; i++) {
-			pmime_node = pmime_pool->pbegin + i;
+			pmime_node = &pmime_pool->pbegin[i];
 			mime_free(&pmime_node->mime);
 		}
-		free(pmime_pool->pbegin);
-		pmime_pool->pbegin = NULL;
 	}
 	if (NULL != pmime_pool->allocator) {
 		lib_buffer_free(pmime_pool->allocator);
-		pmime_pool->allocator = NULL;
 	}
-    free(pmime_pool);
+}
+
+std::unique_ptr<MIME_POOL>
+mime_pool_init(size_t number, int ratio, BOOL thread_safe) try
+{
+	return std::make_unique<MIME_POOL>(number, ratio, thread_safe);
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1546: ENOMEM\n");
+	return nullptr;
 }
 
 /*
@@ -110,11 +88,11 @@ MIME* mime_pool_get(MIME_POOL *pmime_pool)
 #endif
 
 	if (TRUE == pmime_pool->thread_safe) {
-		pthread_mutex_lock(&pmime_pool->mutex);
+		pmime_pool->mutex.lock();
 	}
 	pnode = single_list_pop_front(&pmime_pool->free_list);
 	if (TRUE == pmime_pool->thread_safe) {
-		pthread_mutex_unlock(&pmime_pool->mutex);
+		pmime_pool->mutex.unlock();
 	}
 	if (NULL != pnode) {
 		return &((MIME_POOL_NODE*)(pnode->pdata))->mime;
@@ -144,11 +122,11 @@ void mime_pool_put(MIME *pmime)
 	}
 #endif
 	if (TRUE == pmime_pool->thread_safe) {
-        pthread_mutex_lock(&pmime_pool->mutex);
+		pmime_pool->mutex.lock();
     }
     single_list_append_as_tail(&pmime_pool->free_list, &pmime_node->node);
     if (TRUE == pmime_pool->thread_safe) {
-        pthread_mutex_unlock(&pmime_pool->mutex);
+		pmime_pool->mutex.unlock();
     }
     return;
 }

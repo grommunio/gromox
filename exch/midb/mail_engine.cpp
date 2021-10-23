@@ -209,7 +209,7 @@ static uint64_t g_mmap_size;
 static pthread_t g_scan_tid;
 static int g_cache_interval;          /* maximum living interval in table */
 static char g_org_name[256];
-static MIME_POOL *g_mime_pool;
+static std::unique_ptr<MIME_POOL> g_mime_pool;
 static LIB_BUFFER *g_alloc_mjson;      /* mjson allocator */
 static char g_default_charset[32];
 static char g_default_timezone[64];
@@ -297,7 +297,7 @@ static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 		if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 			return 0;
 		fd.close();
-		MAIL imail(g_mime_pool);
+		MAIL imail(g_mime_pool.get());
 		if (!imail.retrieve(pbuff.get(), node_stat.st_size))
 			return 0;
 		tmp_len = sprintf(digest_buff, "{\"file\":\"\",");
@@ -2000,10 +2000,9 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 			return;
 		}
 		MAIL imail;
-		if (FALSE == oxcmail_export(pmsgctnt, FALSE,
-			OXCMAIL_BODY_PLAIN_AND_HTML, g_mime_pool, &imail,
-			common_util_alloc, common_util_get_propids,
-			common_util_get_propname)) {
+		if (!oxcmail_export(pmsgctnt, false, OXCMAIL_BODY_PLAIN_AND_HTML,
+		    g_mime_pool.get(), &imail, common_util_alloc,
+		    common_util_get_propids, common_util_get_propname)) {
 			common_util_switch_allocator();
 			return;
 		}
@@ -3245,7 +3244,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		return MIDB_E_NO_MEMORY;
 	fd.close();
 
-	MAIL imail(g_mime_pool);
+	MAIL imail(g_mime_pool.get());
 	if (!imail.retrieve(pbuff.get(), node_stat.st_size))
 		return MIDB_E_NO_MEMORY;
 	tmp_len = sprintf(temp_buff, "{\"file\":\"\",");
@@ -3492,7 +3491,7 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		return MIDB_E_NO_MEMORY;
 	fd.close();
 
-	MAIL imail(g_mime_pool);
+	MAIL imail(g_mime_pool.get());
 	if (!imail.retrieve(pbuff.get(), node_stat.st_size))
 		return MIDB_E_NO_MEMORY;
 	auto pidb = mail_engine_get_idb(argv[1]);
@@ -6009,14 +6008,12 @@ int mail_engine_run()
 	}
 	g_alloc_mjson = mjson_allocator_init(g_table_size*10, TRUE);
 	if (NULL == g_alloc_mjson) {
-		mime_pool_free(g_mime_pool);
 		printf("[mail_engine]: Failed to init buffer pool for mjson\n");
 		return -4;
 	}
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_tid, nullptr, midbme_scanwork, nullptr);
 	if (ret != 0) {
-		mime_pool_free(g_mime_pool);
 		lib_buffer_free(g_alloc_mjson);
 		printf("[mail_engine]: failed to create scan thread: %s\n", strerror(ret));
 		return -5;
@@ -6058,7 +6055,7 @@ void mail_engine_stop()
 	pthread_kill(g_scan_tid, SIGALRM);
 	pthread_join(g_scan_tid, NULL);
 	g_hash_table.clear();
-	mime_pool_free(g_mime_pool);
+	g_mime_pool.reset();
 	lib_buffer_free(g_alloc_mjson);
 }
 

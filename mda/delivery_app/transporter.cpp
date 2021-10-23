@@ -139,7 +139,7 @@ static std::condition_variable g_waken_cond;
 static pthread_key_t	 g_tls_key;
 static pthread_t		 g_scan_id;
 static LIB_BUFFER		 *g_file_allocator;
-static MIME_POOL		 *g_mime_pool;
+static std::unique_ptr<MIME_POOL> g_mime_pool;
 static std::unique_ptr<THREAD_DATA[]> g_data_ptr;
 static std::unique_ptr<FREE_CONTEXT[]> g_free_ptr;
 static HOOK_PLUG_ENTITY *g_cur_lib;
@@ -272,13 +272,13 @@ int transporter_run()
     }
 	for (size_t i = 0; i < g_threads_max; ++i) {
 		mem_file_init(&g_data_ptr[i].fake_context.mail_control.f_rcpt_to, g_file_allocator);
-		g_data_ptr[i].fake_context.mail = MAIL(g_mime_pool);
+		g_data_ptr[i].fake_context.mail = MAIL(g_mime_pool.get());
 		g_data_ptr[i].fake_context.context.pmail = &g_data_ptr[i].fake_context.mail;
 		g_data_ptr[i].fake_context.context.pcontrol = &g_data_ptr[i].fake_context.mail_control;
 	}
 	for (size_t i = 0; i < g_free_num; ++i) {
 		mem_file_init(&g_free_ptr[i].mail_control.f_rcpt_to, g_file_allocator);
-		g_free_ptr[i].mail = MAIL(g_mime_pool);
+		g_free_ptr[i].mail = MAIL(g_mime_pool.get());
 		g_free_ptr[i].context.pmail = &g_free_ptr[i].mail;
 		g_free_ptr[i].context.pcontrol = &g_free_ptr[i].mail_control;
 	}
@@ -369,10 +369,7 @@ static void transporter_collect_resource()
 		lib_buffer_free(g_file_allocator);
 		g_file_allocator = NULL;
 	}	
-    if (NULL != g_mime_pool) {
-        mime_pool_free(g_mime_pool);
-        g_mime_pool = NULL;
-    }
+	g_mime_pool.reset();
 	g_data_ptr.reset();
 	g_free_ptr.reset();
 	g_circles_ptr.reset();

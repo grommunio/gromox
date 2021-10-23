@@ -87,7 +87,7 @@ static LIB_BUFFER *g_alloc_file;
 static LIB_BUFFER *g_alloc_mjson;
 static LIB_BUFFER *g_alloc_xarray;
 static LIB_BUFFER *g_alloc_dir;
-static MIME_POOL *g_mime_pool;
+static std::unique_ptr<MIME_POOL> g_mime_pool;
 static std::unique_ptr<STR_HASH_TABLE> g_select_hash;
 static std::mutex g_hash_lock, g_list_lock;
 static DOUBLE_LIST g_sleeping_list;
@@ -318,11 +318,7 @@ void imap_parser_stop()
 		lib_buffer_free(g_alloc_file);
 		g_alloc_file = NULL;
 	}
-	
-	if (NULL != g_mime_pool) {
-		mime_pool_free(g_mime_pool);
-		g_mime_pool = NULL;
-	}
+	g_mime_pool.reset();
 	if (NULL != g_alloc_xarray) {
 		xarray_allocator_free(g_alloc_xarray);
 		g_alloc_xarray = NULL;
@@ -1941,7 +1937,7 @@ LIB_BUFFER* imap_parser_get_allocator()
 
 MIME_POOL* imap_parser_get_mpool()
 {
-	return g_mime_pool;
+	return g_mime_pool.get();
 }
 
 LIB_BUFFER* imap_parser_get_jpool()
