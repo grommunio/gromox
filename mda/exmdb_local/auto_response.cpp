@@ -81,13 +81,11 @@ void auto_response_reply(const char *user_home,
 	time(&cur_time);
 	if (2 == reply_state) {
 		str_value = pconfig->get_value("START_TIME");
-		if (NULL != str_value && atoll(str_value) > cur_time) {
+		if (str_value != nullptr && strtoll(str_value, nullptr, 0) > cur_time)
 			return;
-		}
 		str_value = pconfig->get_value("END_TIME");
-		if (NULL != str_value && cur_time > atoll(str_value)) {
+		if (str_value != nullptr && cur_time > strtoll(str_value, nullptr, 0))
 			return;
-		}
 	}
 	if (TRUE == b_internal) {
 		snprintf(template_path, 256, "%s/config/internal-reply", user_home);

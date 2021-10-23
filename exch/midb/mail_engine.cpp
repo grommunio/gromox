@@ -1537,7 +1537,7 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 				mail_engine_ct_destroy_internal(plist);
 				return NULL;
 			}
-			ptree_node->pstatment = (void*)atol(argv[i]);
+			ptree_node->pstatment = reinterpret_cast<void *>(strtol(argv[i], nullptr, 0));
 		} else if (0 == strcasecmp(argv[i], "UID")) {
 			ptree_node->condition = CONDITION_UID;
 			i ++;
@@ -1954,7 +1954,7 @@ static void mail_engine_extract_digest_fields(const char *digest,
 	}
 	*psize = 0;
 	if (get_digest(digest, "size", temp_buff, arsizeof(temp_buff)))
-		*psize = atol(temp_buff);
+		*psize = strtoull(temp_buff, nullptr, 0);
 }
 
 static void mail_engine_insert_message(sqlite3_stmt *pstmt,
@@ -3201,7 +3201,6 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	uint32_t cpid;
 	uint8_t b_read;
 	size_t mess_len;
-	uint64_t nt_time;
 	char charset[32], tmzone[64];
 	uint8_t b_unsent;
 	uint32_t tmp_flags;
@@ -3290,7 +3289,7 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	if (NULL == pmsgctnt) {
 		return MIDB_E_NO_MEMORY;
 	}
-	nt_time = rop_util_unix_to_nttime(atol(argv[5]));
+	auto nt_time = rop_util_unix_to_nttime(strtol(argv[5], nullptr, 0));
 	propval.proptag = PROP_TAG_MESSAGEDELIVERYTIME;
 	propval.pvalue = &nt_time;
 	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {

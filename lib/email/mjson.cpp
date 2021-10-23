@@ -934,7 +934,7 @@ static BOOL mjson_record_value(MJSON *pjson, char *tag,
 		if (0 == pjson->size && length <= 16) {
 			memcpy(temp_buff, value, length);
 			temp_buff[length] = '\0';
-			pjson->size = atol(temp_buff);
+			pjson->size = strtoull(temp_buff, nullptr, 0);
 		}
 	}
 	return TRUE;
@@ -1123,15 +1123,15 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 				} else if (0 == strcasecmp(temp_tag, "head") && temp_len < 16) {
 					memcpy(temp_buff, value + last_pos, temp_len);
 					temp_buff[temp_len] = '\0';
-					temp_mime.head = atol(temp_buff);
+					temp_mime.head = strtoull(temp_buff, nullptr, 0);
 				} else if (0 == strcasecmp(temp_tag, "begin")) {
 					memcpy(temp_buff, value + last_pos, temp_len);
 					temp_buff[temp_len] = '\0';
-					temp_mime.begin = atol(temp_buff);
+					temp_mime.begin = strtoull(temp_buff, nullptr, 0);
 				} else if (0 == strcasecmp(temp_tag, "length")) {
 					memcpy(temp_buff, value + last_pos, temp_len);
 					temp_buff[temp_len] = '\0';
-					temp_mime.length = atol(temp_buff);
+					temp_mime.length = strtoull(temp_buff, nullptr, 0);
 				}
 				if (TRUE == b_digit && ',' == value[i]) {
 					rstat = RETRIEVE_TAG_FINDING;

@@ -490,7 +490,7 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		mem_file_read(&phttp->request.f_content_length, tmp_buff, tmp_len);
 		tmp_buff[tmp_len] = '\0';
-		content_length = atoll(tmp_buff);
+		content_length = strtoull(tmp_buff, nullptr, 0);
 	}
 	if (content_length > g_max_size) {
 		http_parser_log_info(phttp, LV_DEBUG, "content-length"

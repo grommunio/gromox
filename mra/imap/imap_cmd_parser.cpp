@@ -899,7 +899,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		} else if (strcasecmp(kw, "INTERNALDATE") == 0) {
 			if (FALSE == parse_rfc822_timestamp(
 				mjson_get_mail_received(&mjson), &tmp_time)) {
-				tmp_time = atol(mjson_get_mail_filename(&mjson));
+				tmp_time = strtol(mjson_get_mail_filename(&mjson), nullptr, 0);
 			}
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
 			localtime_r(&tmp_time, &tmp_tm);
@@ -968,10 +968,10 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			offset = 0;
 			length = -1;
 			if (pend[1] == '<') {
-				offset = atol(pend + 2);
+				offset = strtol(pend + 2, nullptr, 0);
 				pdot = strchr(pend + 2, '.');
 				if (NULL != pdot) {
-					length = atol(pdot + 1);
+					length = strtol(pdot + 1, nullptr, 0);
 					/* trim the length information for response tag */
 					pdot[0] = '>';
 					pdot[1] = '\0';

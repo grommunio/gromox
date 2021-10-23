@@ -768,7 +768,7 @@ static void* store_object_get_oof_property(
 		if (NULL == str_value) {
 			return NULL;
 		}
-		*(uint64_t*)pvalue = rop_util_unix_to_nttime(atoll(str_value));
+		*static_cast<uint64_t *>(pvalue) = rop_util_unix_to_nttime(strtoll(str_value, nullptr, 0));
 		return pvalue;
 	}
 	case PR_EC_ALLOW_EXTERNAL:

@@ -1826,17 +1826,17 @@ static void rtf_process_color_table(
 			break;
 		}
 		if (strncmp("\\red", static_cast<char *>(pword->pdata), 4) == 0) {
-			r = atoi(static_cast<char *>(pword->pdata) + 4);
+			r = strtol(static_cast<char *>(pword->pdata) + 4, nullptr, 0);
 			while (r > 255) {
 				r >>= 8;
 			}
 		} else if (strncmp("\\green", static_cast<char *>(pword->pdata), 6) == 0) {
-			g = atoi(static_cast<char *>(pword->pdata) + 6);
+			g = strtol(static_cast<char *>(pword->pdata) + 6, nullptr, 0);
 			while (g > 255) {
 				g >>= 8;
 			}
 		} else if (strncmp("\\blue", static_cast<char *>(pword->pdata), 5) == 0) {
-			b = atoi(static_cast<char *>(pword->pdata) + 5);
+			b = strtol(static_cast<char *>(pword->pdata) + 5, nullptr, 0);
 			while (b > 255) {
 				b >>= 8;
 			}
@@ -1908,7 +1908,6 @@ static int rtf_cmd_fs(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
 static int rtf_cmd_field(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	int ch;
 	int tmp_len;
 	char tmp_buff[1024];
 	bool b_endnotecitations = false;
@@ -1941,7 +1940,7 @@ static int rtf_cmd_field(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
 					    strcmp(static_cast<char *>(pword4->pdata), " ") == 0)
 						pword4 = simple_tree_node_get_sibling(pword4);
 					if (NULL != pword4 && NULL != pword4->pdata) {
-						ch = atoi(static_cast<char *>(pword4->pdata));
+						int ch = strtol(static_cast<char *>(pword4->pdata), nullptr, 0);
 						if (!rtf_attrstack_push_express(preader,
 						    ATTR_FONTFACE, -7))
 							return CMD_RESULT_ERROR;

@@ -1765,8 +1765,8 @@ int main(int argc, const char **argv)
 		exit(5);
 	}
 	if (NULL == strchr(pstarttime, 'T') && NULL == strchr(pendtime, 'T')) {
-		g_start_time = atol(pstarttime);
-		g_end_time = atol(pendtime);
+		g_start_time = strtol(pstarttime, nullptr, 0);
+		g_end_time = strtol(pendtime, nullptr, 0);
 		g_tz_component = NULL;
 		goto GET_FREEBUSY_DATA;
 	}

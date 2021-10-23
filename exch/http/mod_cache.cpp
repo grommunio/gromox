@@ -543,8 +543,6 @@ static BOOL mod_cache_parse_range_value(char *value,
 	char *ptoken;
 	char *ptoken1;
 	int range_num;
-	long last_bpos;
-	long first_bpos;
 	char *plast_token;
 	RANGE ranges[1024];
 	
@@ -590,11 +588,11 @@ static BOOL mod_cache_parse_range_value(char *value,
 		}
 		*ptoken1 = '\0';
 		ptoken1 ++;
-		first_bpos = atol(plast_token);
+		auto first_bpos = strtol(plast_token, nullptr, 0);
 		if (first_bpos >= size) {
 			return FALSE;
 		}
-		last_bpos = atol(ptoken1);
+		auto last_bpos = strtol(ptoken1, nullptr, 0);
 		if (0 == last_bpos) {
 			last_bpos = size - 1;
 		}
@@ -660,9 +658,8 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		mem_file_read(&phttp->request.f_content_length, tmp_buff, tmp_len);
 		tmp_buff[tmp_len] = '\0';
-		if (0 != atoll(tmp_buff)) {
+		if (strtoll(tmp_buff, nullptr, 0) != 0)
 			return FALSE;
-		}
 	}
 	tmp_len = mem_file_get_total_length(&phttp->request.f_host);
 	if (tmp_len >= sizeof(domain)) {

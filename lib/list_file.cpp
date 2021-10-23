@@ -265,7 +265,10 @@ static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line)
 				ptr ++;
 			}
 			temp_buf[j] = '\0';
-			*((long*)pfile) = atol(temp_buf);
+			if (sizeof(long) == sizeof(int64_t))
+				cpu_to_le64p(pfile, strtoll(temp_buf, nullptr, 0));
+			else
+				cpu_to_le32p(pfile, strtoll(temp_buf, nullptr, 0));
 			pfile += sizeof(long);
 			if ('\0' == *ptr || '#' == *ptr || '\r' == *ptr || '\n' == *ptr) {
 				b_terminate = TRUE;
@@ -288,7 +291,10 @@ static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line)
 				ptr ++;
 			}
 			temp_buf[j] = '\0';
-			cpu_to_le32p(pfile, strtol(temp_buf, nullptr, 0));
+			if (sizeof(int) == sizeof(int32_t))
+				cpu_to_le32p(pfile, strtol(temp_buf, nullptr, 0));
+			else
+				cpu_to_le16p(pfile, strtol(temp_buf, nullptr, 0));
 			pfile += sizeof(int);
 			if ('\0' == *ptr || '#' == *ptr || '\r' == *ptr || '\n' == *ptr) {
 				b_terminate = TRUE;

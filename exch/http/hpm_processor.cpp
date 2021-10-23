@@ -509,7 +509,7 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 				mem_file_read(&phttp->request.f_content_length,
 					tmp_buff, tmp_len);
 				tmp_buff[tmp_len] = '\0';
-				content_length = atoll(tmp_buff);
+				content_length = strtoull(tmp_buff, nullptr, 0);
 			}
 			if (content_length > g_max_size) {
 				phpm_ctx->b_preproc = FALSE;

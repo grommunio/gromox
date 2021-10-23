@@ -833,7 +833,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, const STREAM &stream_1)
 		http_4xx(pcontext);
 		return X_LOOP;
 	}
-	pcontext->total_length = atoll(tmp_buff);
+	pcontext->total_length = strtoull(tmp_buff, nullptr, 0);
 
 	/* ECHO request 0x0 ~ 0x10, MS-RPCH 2.1.2.15 */
 	if (pcontext->total_length > 0x10) {

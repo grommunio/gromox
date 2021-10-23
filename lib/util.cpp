@@ -697,21 +697,21 @@ uint64_t atobyte(const char *string)
 	unit = temp_buff[last_pos];
 	if ('B' == unit) {
 		temp_buff[last_pos] = '\0';
-		return atoll(temp_buff);
+		return strtoll(temp_buff, nullptr, 0);
 	} else if ('K' == unit || 'k' == unit) {
 		temp_buff[last_pos] = '\0';
-		return atoll(temp_buff)*1024;
+		return strtoll(temp_buff, nullptr, 0) * 1024;
 	} else if ('M' == unit || 'm' == unit) {
 		temp_buff[last_pos] = '\0';
-		return atoll(temp_buff)*1024*1024;
+		return strtoll(temp_buff, nullptr, 0) * 1024 * 1024;
 	} else if ('G' == unit || 'g' == unit) {
 		temp_buff[last_pos] = '\0';
-		return atoll(temp_buff)*1024*1024*1024;
+		return strtoll(temp_buff, nullptr, 0) * 1024 * 1024 * 1024;
 	} else if ('T' == unit || 't' == unit) {
 		temp_buff[last_pos] = '\0';
-		return atoll(temp_buff)*0x10000000000LL;
+		return strtoll(temp_buff, nullptr, 0) * 0x10000000000LL;
 	}
-	return atoll(temp_buff);
+	return strtoll(temp_buff, nullptr, 0);
 }
 
 static char crypt_salt[65]=
