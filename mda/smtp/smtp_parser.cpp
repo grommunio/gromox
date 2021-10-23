@@ -66,7 +66,7 @@ static BOOL smtp_parser_pass_statistic(SMTP_CONTEXT *pcontext,
 static void smtp_parser_reset_stream_reading(SMTP_CONTEXT *pcontext);
 
 static int g_ssl_port;
-static std::vector<SMTP_CONTEXT> g_context_list;
+static std::unique_ptr<SMTP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static int g_block_ID;
 static SSL_CTX *g_ssl_ctx;
@@ -156,7 +156,7 @@ int smtp_parser_run()
 #endif
 	}
 	try {
-		g_context_list.resize(g_param.context_num);
+		g_context_list = std::make_unique<SMTP_CONTEXT[]>(g_param.context_num);
 		g_context_list2.resize(g_param.context_num);
 		for (size_t i = 0; i < g_param.context_num; ++i) {
 			g_context_list[i].context_id = i;
@@ -174,7 +174,7 @@ int smtp_parser_run()
 void smtp_parser_stop()
 {
 	g_context_list2.clear();
-	g_context_list.clear();
+	g_context_list.reset();
 	if (g_param.support_starttls && g_ssl_ctx != nullptr) {
 		SSL_CTX_free(g_ssl_ctx);
 		g_ssl_ctx = NULL;

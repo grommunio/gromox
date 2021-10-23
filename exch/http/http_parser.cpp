@@ -92,7 +92,7 @@ static int g_block_auth_fail;
 static unsigned int g_timeout, g_http_debug;
 static pthread_key_t g_context_key;
 static LIB_BUFFER *g_file_allocator;
-static std::vector<HTTP_CONTEXT> g_context_list;
+static std::unique_ptr<HTTP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static char g_certificate_path[256];
 static char g_private_key_path[256];
@@ -206,7 +206,7 @@ int http_parser_run()
 		return -6;
 	}
 	try {
-		g_context_list.resize(g_context_num);
+		g_context_list = std::make_unique<HTTP_CONTEXT[]>(g_context_num);
 		g_context_list2.resize(g_context_num);
 		for (size_t i = 0; i < g_context_num; ++i) {
 			g_context_list[i].context_id = i;
@@ -240,7 +240,7 @@ void http_parser_stop()
 		g_outchannel_allocator = NULL;
 	}
 	g_context_list2.clear();
-	g_context_list.clear();
+	g_context_list.reset();
 	g_vconnection_hash.clear();
 	if (NULL != g_file_allocator) {
 		lib_buffer_free(g_file_allocator);
@@ -2145,7 +2145,7 @@ HTTP_CONTEXT* http_parser_get_context()
 void http_parser_set_context(int context_id)
 {
 	if (context_id < 0 ||
-	    static_cast<size_t>(context_id) >= g_context_list.size())
+	    static_cast<size_t>(context_id) >= g_context_num)
 		pthread_setspecific(g_context_key, nullptr);
 	else
 		pthread_setspecific(g_context_key, &g_context_list[context_id]);

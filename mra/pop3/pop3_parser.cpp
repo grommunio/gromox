@@ -46,7 +46,7 @@ static unsigned int g_timeout;
 static int g_max_auth_times;
 static int g_block_auth_fail;
 static int g_ssl_port;
-static std::vector<POP3_CONTEXT> g_context_list;
+static std::unique_ptr<POP3_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static BOOL g_support_stls;
 static BOOL g_force_stls;
@@ -154,7 +154,7 @@ int pop3_parser_run()
 	}
 
 	try {
-		g_context_list.resize(g_context_num);
+		g_context_list = std::make_unique<POP3_CONTEXT[]>(g_context_num);
 		g_context_list2.resize(g_context_num);
 		for (size_t i = 0; i < g_context_num; ++i) {
 			g_context_list[i].context_id = i;
@@ -172,7 +172,7 @@ int pop3_parser_run()
 void pop3_parser_stop()
 {
 	g_context_list2.clear();
-	g_context_list.clear();
+	g_context_list.reset();
 	if (TRUE == g_support_stls && NULL != g_ssl_ctx) {
 		SSL_CTX_free(g_ssl_ctx);
 		g_ssl_ctx = NULL;

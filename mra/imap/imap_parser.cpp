@@ -81,7 +81,7 @@ static int g_ssl_port;
 static pthread_t g_thr_id;
 static pthread_t g_scan_id;
 static gromox::atomic_bool g_notify_stop{false};
-static std::vector<IMAP_CONTEXT> g_context_list;
+static std::unique_ptr<IMAP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static LIB_BUFFER *g_alloc_file;
 static LIB_BUFFER *g_alloc_mjson;
@@ -266,7 +266,7 @@ int imap_parser_run()
 	}
 	
 	try {
-		g_context_list.resize(g_context_num);
+		g_context_list = std::make_unique<IMAP_CONTEXT[]>(g_context_num);
 		g_context_list2.resize(g_context_num);
 		for (size_t i = 0; i < g_context_num; ++i) {
 			g_context_list[i].context_id = i;
@@ -313,7 +313,7 @@ void imap_parser_stop()
 	}
 	
 	g_context_list2.clear();
-	g_context_list.clear();
+	g_context_list.reset();
 	if (NULL != g_alloc_file) {
 		lib_buffer_free(g_alloc_file);
 		g_alloc_file = NULL;
