@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <memory>
+#include <utility>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/mail.hpp>
 #include <gromox/util.hpp>
 #include <gromox/mail_func.hpp>
+#include <gromox/mime_pool.hpp>
 #include <cstring>
 #include <cstdio>
 
@@ -25,7 +28,7 @@ static void  mail_enum_text_mime_charset(
 
 static void mail_enum_html_charset(MIME *pmime, char *email_charset);
 
-MAIL::MAIL(MIME_POOL *p) : pmime_pool(p)
+MAIL::MAIL(std::shared_ptr<MIME_POOL> p) : pmime_pool(std::move(p))
 {
 	simple_tree_init(&tree);
 }

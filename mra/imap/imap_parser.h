@@ -1,5 +1,6 @@
 #pragma once
 #include <ctime>
+#include <memory>
 #include <string>
 #include <sys/time.h>
 #include <openssl/ssl.h>
@@ -131,7 +132,7 @@ void imap_parser_add_select(IMAP_CONTEXT *pcontext);
 void imap_parser_remove_select(IMAP_CONTEXT *pcontext);
 void imap_parser_safe_write(IMAP_CONTEXT *pcontext, const void *pbuff, size_t count);
 extern LIB_BUFFER *imap_parser_get_allocator();
-extern MIME_POOL *imap_parser_get_mpool();
+extern std::shared_ptr<MIME_POOL> imap_parser_get_mpool();
 /* get allocator for mjson mime */
 extern LIB_BUFFER *imap_parser_get_jpool();
 extern LIB_BUFFER *imap_parser_get_xpool();

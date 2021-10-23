@@ -17,7 +17,7 @@ struct GX_EXPORT MIME_POOL {
 	~MIME_POOL();
 	void operator=(MIME_POOL &&) = delete;
 
-	static std::unique_ptr<MIME_POOL> create(size_t number, int ratio, BOOL thread_safe);
+	static std::shared_ptr<MIME_POOL> create(size_t number, int ratio, BOOL thread_safe);
 	MIME *get_mime();
 	static void put_mime(MIME *);
 

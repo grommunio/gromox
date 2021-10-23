@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <cstdlib>
+#include <memory>
 #include <type_traits>
 #include <gromox/mapi_types.hpp>
 #define NOTIFY_RECEIPT_READ							1
@@ -162,4 +163,4 @@ unsigned int common_util_get_param(int param);
 void common_util_set_param(int param, unsigned int value);
 extern const char *common_util_get_submit_command();
 extern uint32_t common_util_get_ftstream_id();
-extern MIME_POOL *common_util_get_mime_pool();
+extern std::shared_ptr<MIME_POOL> common_util_get_mime_pool();

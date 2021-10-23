@@ -60,7 +60,7 @@ MIME_POOL::~MIME_POOL()
 	}
 }
 
-std::unique_ptr<MIME_POOL>
+std::shared_ptr<MIME_POOL>
 MIME_POOL::create(size_t number, int ratio, BOOL thread_safe) try
 {
 	return std::make_unique<MIME_POOL>(number, ratio, thread_safe);

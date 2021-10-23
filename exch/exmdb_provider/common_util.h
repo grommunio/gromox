@@ -61,7 +61,7 @@ extern BOOL (*common_util_get_id_from_homedir)(
 	const char *homedir, int *pdomain_id);
 extern BOOL (*common_util_send_mail)(MAIL *pmail,
 	const char *sender, DOUBLE_LIST *prcpt_list);
-extern MIME_POOL *(*common_util_get_mime_pool)();
+extern std::shared_ptr<MIME_POOL> (*common_util_get_mime_pool)();
 extern void (*common_util_log_info)(unsigned int level, const char *format, ...) __attribute__((format(printf, 2, 3)));
 extern const GUID *(*common_util_get_handle)();
 

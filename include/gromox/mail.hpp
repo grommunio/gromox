@@ -1,8 +1,8 @@
 #pragma once
+#include <memory>
 #include <gromox/defs.h>
 #include <gromox/mime.hpp>
 #include <gromox/stream.hpp>
-#include <gromox/mime_pool.hpp>
 #include <gromox/simple_tree.hpp>
 #define	MIME_INSERT_BEFORE	SIMPLE_TREE_INSERT_BEFORE
 #define MIME_INSERT_AFTER	SIMPLE_TREE_INSERT_AFTER
@@ -11,9 +11,10 @@
 
 using MAIL_MIME_ENUM = void (*)(MIME *, void*);
 
+struct MIME_POOL;
 struct GX_EXPORT MAIL {
 	MAIL() = default;
-	MAIL(MIME_POOL *);
+	MAIL(std::shared_ptr<MIME_POOL>);
 	MAIL(MAIL &&) = delete;
 	~MAIL();
 	MAIL &operator=(MAIL &&);
@@ -35,6 +36,6 @@ struct GX_EXPORT MAIL {
 	BOOL dup(MAIL *dst);
 
 	SIMPLE_TREE tree{};
-	MIME_POOL *pmime_pool = nullptr;
+	std::shared_ptr<MIME_POOL> pmime_pool;
 	char *buffer = nullptr;
 };

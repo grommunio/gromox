@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <gromox/simple_tree.hpp>
 #include <gromox/lib_buffer.hpp>
 #include <gromox/mime_pool.hpp>
@@ -82,8 +83,7 @@ int mjson_fetch_structure(MJSON *pjson, const char *charset,
 int mjson_fetch_envelope(MJSON *pjson, const char *charset,
 	char *buff, int length);
 BOOL mjson_rfc822_check(MJSON *pjson);
-BOOL mjson_rfc822_build(MJSON *pjson, MIME_POOL *ppool,
-	const char *storage_path);
+extern GX_EXPORT BOOL mjson_rfc822_build(MJSON *, std::shared_ptr<MIME_POOL>, const char *storage_path);
 BOOL mjson_rfc822_get(MJSON *pjson_base, MJSON *pjson,
 	const char *storage_path, const char *id, char *mjson_id, char *mime_id);
 int mjson_rfc822_fetch(MJSON *pjson, const char *storage_path,

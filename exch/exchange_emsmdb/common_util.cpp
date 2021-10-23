@@ -9,6 +9,7 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
+#include <gromox/mime_pool.hpp>
 #include <gromox/socket.h>
 #include <gromox/pcl.hpp>
 #include <gromox/util.hpp>
@@ -56,7 +57,7 @@ static int g_max_message;
 static char g_smtp_ip[40], g_emsmdb_org_name[256];
 static int g_faststream_id;
 static int g_average_blocks;
-static std::unique_ptr<MIME_POOL> g_mime_pool;
+static std::shared_ptr<MIME_POOL> g_mime_pool;
 static pthread_key_t g_dir_key;
 static std::mutex g_id_lock;
 static char g_submit_command[1024];
@@ -1636,7 +1637,7 @@ void common_util_notify_receipt(const char *username,
 	}
 	double_list_init(&rcpt_list);
 	double_list_append_as_tail(&rcpt_list, &node);
-	MAIL imail(g_mime_pool.get());
+	MAIL imail(g_mime_pool);
 	int bounce_type = type == NOTIFY_RECEIPT_READ ? BOUNCE_NOTIFY_READ : BOUNCE_NOTIFY_NON_READ;
 	if (!bounce_producer_make(username, pbrief, bounce_type, &imail))
 		return;
@@ -2159,9 +2160,8 @@ BOOL common_util_send_message(logon_object *plogon,
 	}
 	common_util_set_dir(plogon->get_dir());
 	/* try to avoid TNEF message */
-	if (!oxcmail_export(pmsgctnt, false, body_type, g_mime_pool.get(),
-	    &imail, common_util_alloc, common_util_get_propids,
-	    common_util_get_propname)) {
+	if (!oxcmail_export(pmsgctnt, false, body_type, g_mime_pool, &imail,
+	    common_util_alloc, common_util_get_propids, common_util_get_propname)) {
 		log_err("W-1281: Failed to export to RFC5322 mail while sending mid:0x%llx", LLU(message_id));
 		return FALSE;	
 	}
@@ -2369,9 +2369,9 @@ uint32_t common_util_get_ftstream_id()
 	return g_faststream_id++;
 }
 
-MIME_POOL* common_util_get_mime_pool()
+std::shared_ptr<MIME_POOL> common_util_get_mime_pool()
 {
-	return g_mime_pool.get();
+	return g_mime_pool;
 }
 
 static void log_err(const char *format, ...)

@@ -58,6 +58,8 @@ namespace {
 
 struct FIELD_ENUM_PARAM {
 	FIELD_ENUM_PARAM(namemap &r) : phash(r) {}
+	FIELD_ENUM_PARAM(FIELD_ENUM_PARAM &&) = delete;
+	void operator=(FIELD_ENUM_PARAM &&) = delete;
 
 	EXT_BUFFER_ALLOC alloc{};
 	MESSAGE_CONTENT *pmsg = nullptr;
@@ -70,13 +72,15 @@ struct FIELD_ENUM_PARAM {
 
 struct MIME_ENUM_PARAM {
 	MIME_ENUM_PARAM(namemap &r) : phash(r) {}
+	MIME_ENUM_PARAM(MIME_ENUM_PARAM &&) = delete;
+	void operator=(MIME_ENUM_PARAM &&) = delete;
 
 	BOOL b_result = false;
 	int attach_id = 0;
 	const char *charset = nullptr, *str_zone = nullptr;
 	GET_PROPIDS get_propids{};
 	EXT_BUFFER_ALLOC alloc{};
-	MIME_POOL *pmime_pool = nullptr;
+	std::shared_ptr<MIME_POOL> pmime_pool;
 	MESSAGE_CONTENT *pmsg = nullptr;
 	namemap phash;
 	uint16_t last_propid = 0;
@@ -6293,11 +6297,10 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 			macbin.header.data_len, MIME_ENCODING_BASE64);
 }
 
-static BOOL oxcmail_export_attachment(
-	ATTACHMENT_CONTENT *pattachment, BOOL b_inline,
-	MIME_SKELETON *pskeleton, EXT_BUFFER_ALLOC alloc,
-	GET_PROPIDS get_propids, GET_PROPNAME get_propname,
-	MIME_POOL *ppool, MIME *pmime)
+static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
+    BOOL b_inline, MIME_SKELETON *pskeleton, EXT_BUFFER_ALLOC alloc,
+    GET_PROPIDS get_propids, GET_PROPNAME get_propname,
+    std::shared_ptr<MIME_POOL> ppool, MIME *pmime)
 {
 	void *ptr;
 	BOOL b_tnef;
@@ -6521,7 +6524,7 @@ static BOOL oxcmail_export_attachment(
 }
 
 BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
-    MIME_POOL *ppool, MAIL *pmail, EXT_BUFFER_ALLOC alloc,
+    std::shared_ptr<MIME_POOL> ppool, MAIL *pmail, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, GET_PROPNAME get_propname)
 {
 	int i;

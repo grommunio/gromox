@@ -8,6 +8,7 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mail.hpp>
+#include <gromox/mime_pool.hpp>
 #include <gromox/util.hpp>
 #include <gromox/mjson.hpp>
 #include <gromox/mail_func.hpp>
@@ -64,12 +65,11 @@ struct ENUM_PARAM {
 };
 
 struct BUILD_PARAM {
-	const char *filename;
-	const char *msg_path;
-	const char *storage_path;
-	int depth;
-	MIME_POOL *ppool;
-	BOOL build_result;
+	const char *filename = nullptr, *msg_path = nullptr;
+	const char *storage_path = nullptr;
+	int depth = 0;
+	std::shared_ptr<MIME_POOL> ppool;
+	BOOL build_result = false;
 };
 
 }
@@ -1945,7 +1945,6 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 	char msg_path[256];
 	char dgt_path[256];
 	char temp_path[256];
-	BUILD_PARAM build_param;
 	
 	if (FALSE == pbuild->build_result || pbuild->depth > MAX_RFC822_DEPTH ||
 		0 != strcasecmp(pmime->ctype, "message/rfc822")) {
@@ -2095,7 +2094,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 	
 	if (pbuild->depth < MAX_RFC822_DEPTH &&
 		TRUE == mjson_rfc822_check(&temp_mjson)) {
-		
+		BUILD_PARAM build_param;
 		build_param.filename = temp_mjson.filename;
 		build_param.msg_path = temp_mjson.path;
 		build_param.storage_path = pbuild->storage_path;
@@ -2118,11 +2117,10 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 	return;
 }
 
-BOOL mjson_rfc822_build(MJSON *pjson, MIME_POOL *ppool,
+BOOL mjson_rfc822_build(MJSON *pjson, std::shared_ptr<MIME_POOL> ppool,
 	const char *storage_path)
 {
 	char temp_path[256];
-	BUILD_PARAM build_param;
 	
 	if (FALSE == mjson_rfc822_check(pjson)) {
 		return FALSE;
@@ -2137,6 +2135,7 @@ BOOL mjson_rfc822_build(MJSON *pjson, MIME_POOL *ppool,
 		fprintf(stderr, "E-1433: mkdir %s: %s\n", temp_path, strerror(errno));
 		return FALSE;
 	}
+	BUILD_PARAM build_param;
 	build_param.filename = pjson->filename;
 	build_param.msg_path = pjson->path;
 	build_param.storage_path = temp_path;

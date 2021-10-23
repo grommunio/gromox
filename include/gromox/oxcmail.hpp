@@ -1,10 +1,13 @@
 #pragma once
+#include <memory>
 #include <gromox/element_data.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail.hpp>
 #define OXCMAIL_BODY_PLAIN_ONLY				1
 #define OXCMAIL_BODY_HTML_ONLY				2
 #define OXCMAIL_BODY_PLAIN_AND_HTML			3
+
+struct MIME_POOL;
 
 BOOL oxcmail_init_library(const char *org_name,
 	GET_USER_IDS get_user_ids, GET_USERNAME get_username,
@@ -15,7 +18,4 @@ BOOL oxcmail_init_library(const char *org_name,
 MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	const char *str_zone, MAIL *pmail,
 	EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids);
-BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg,
-	BOOL b_tnef, int body_type, MIME_POOL *ppool,
-	MAIL *pmail, EXT_BUFFER_ALLOC alloc,
-	GET_PROPIDS get_propids, GET_PROPNAME get_propname);
+extern GX_EXPORT BOOL oxcmail_export(const MESSAGE_CONTENT *, BOOL tnef, int body_type, std::shared_ptr<MIME_POOL>, MAIL *, EXT_BUFFER_ALLOC, GET_PROPIDS, GET_PROPNAME);
