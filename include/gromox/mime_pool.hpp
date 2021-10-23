@@ -5,10 +5,11 @@
 #include <gromox/lib_buffer.hpp>
 #include <gromox/mime.hpp>
 
+struct MIME_POOL;
 struct MIME_POOL_NODE {
 	SINGLE_LIST_NODE	node;
 	MIME				mime;
-	void*				pool;
+	MIME_POOL *pool;
 };
 
 struct GX_EXPORT MIME_POOL {
@@ -24,6 +25,6 @@ struct GX_EXPORT MIME_POOL {
 	SINGLE_LIST free_list{};
 	std::mutex mutex;
 	std::unique_ptr<MIME_POOL_NODE[]> pbegin;
-	size_t number;
+	size_t number = 0;
 	LIB_BUFFER *allocator = nullptr;
 };

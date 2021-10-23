@@ -17,8 +17,6 @@ MIME_POOL::MIME_POOL(size_t number, int ratio) :
 	pbegin(std::make_unique<MIME_POOL_NODE[]>(number))
 {
 	auto pmime_pool = this;
-	size_t i;
-	MIME_POOL_NODE *ptemp_mime;
 
 	if (ratio < 4) {
 		ratio = 4;
@@ -30,8 +28,8 @@ MIME_POOL::MIME_POOL(size_t number, int ratio) :
 		throw std::bad_alloc();
 	}
 	single_list_init(&pmime_pool->free_list);
-	for (i=0; i<number; i++) {
-		ptemp_mime = &pmime_pool->pbegin[i];
+	for (size_t i = 0; i < number; ++i) {
+		auto ptemp_mime = &pmime_pool->pbegin[i];
 		ptemp_mime->node.pdata = ptemp_mime;
 		ptemp_mime->pool = pmime_pool;
 		mime_init(&ptemp_mime->mime, pmime_pool->allocator);
@@ -43,18 +41,13 @@ MIME_POOL::MIME_POOL(size_t number, int ratio) :
 MIME_POOL::~MIME_POOL()
 {
 	auto pmime_pool = this;
-	size_t i;
-	MIME_POOL_NODE *pmime_node;
-
 	if (pmime_pool->number != single_list_get_nodes_num(&pmime_pool->free_list)) {
 		debug_info("[mime_pool]: there's still some mimes unfree");
 	}
 	pmime_pool->number = 0;
 	if (NULL != pmime_pool->pbegin) {
-		for (i=0; i<pmime_pool->number; i++) {
-			pmime_node = &pmime_pool->pbegin[i];
-			mime_free(&pmime_node->mime);
-		}
+		for (size_t i = 0; i < pmime_pool->number; ++i)
+			mime_free(&pmime_pool->pbegin[i].mime);
 	}
 	if (NULL != pmime_pool->allocator) {
 		lib_buffer_free(pmime_pool->allocator);
@@ -81,7 +74,7 @@ MIME *MIME_POOL::get_mime()
 	std::lock_guard lk(mutex);
 	auto pnode = single_list_pop_front(&free_list);
 	if (NULL != pnode) {
-		return &((MIME_POOL_NODE*)(pnode->pdata))->mime;
+		return &static_cast<MIME_POOL_NODE *>(pnode->pdata)->mime;
 	}
 	return NULL;
 }
@@ -91,8 +84,6 @@ MIME *MIME_POOL::get_mime()
  */
 void MIME_POOL::put_mime(MIME *pmime)
 {
-	MIME_POOL *pmime_pool;
-
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime) {
 		debug_info("[mime_pool]: NULL pointer in mime_pool_put");
@@ -100,7 +91,7 @@ void MIME_POOL::put_mime(MIME *pmime)
 	}
 #endif
 	auto pmime_node = containerof(pmime, MIME_POOL_NODE, mime);
-	pmime_pool = (MIME_POOL*)pmime_node->pool;
+	auto pmime_pool = pmime_node->pool;
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime_pool) {
 		debug_info("[mime_pool]: fatal error in mime_pool_put");
