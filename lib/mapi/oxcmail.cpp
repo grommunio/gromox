@@ -1131,7 +1131,6 @@ static BOOL oxcmail_parse_response_suppress(
 static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
     uint16_t *plast_propid, namemap &phash, TPROPVAL_ARRAY *pproplist)
 {
-	MIME *pmime;
 	char *ptoken;
 	GUID tmp_guid;
 	char tmp_class[1024];
@@ -1141,7 +1140,7 @@ static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
 	
 	propval.proptag = PR_MESSAGE_CLASS;
 	if (0 == strcasecmp(field, "fax")) {
-		pmime = mail_get_head(pmail);
+		auto pmime = pmail->get_head();
 		if (0 != strcasecmp("multipart/mixed",
 			mime_get_content_type(pmime))) {
 			return TRUE;
@@ -1166,7 +1165,7 @@ static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
 	} else if (0 == strcasecmp(field, "fax-ca")) {
 		propval.pvalue = deconst("IPM.Note.Microsoft.Fax.CA");
 	} else if (0 == strcasecmp(field, "missedcall")) {
-		pmime = mail_get_head(pmail);
+		auto pmime = pmail->get_head();
 		if (0 != strcasecmp("audio/gsm", mime_get_content_type(pmime)) &&
 			0 != strcasecmp("audio/mp3", mime_get_content_type(pmime)) &&
 			0 != strcasecmp("audio/wav", mime_get_content_type(pmime)) &&
@@ -1175,7 +1174,7 @@ static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
 		}
 		propval.pvalue = deconst("IPM.Note.Microsoft.Missed.Voice");
 	} else if (0 == strcasecmp(field, "voice-uc")) {
-		pmime = mail_get_head(pmail);
+		auto pmime = pmail->get_head();
 		if (0 != strcasecmp("audio/gsm", mime_get_content_type(pmime)) &&
 			0 != strcasecmp("audio/mp3", mime_get_content_type(pmime)) &&
 			0 != strcasecmp("audio/wav", mime_get_content_type(pmime)) &&
@@ -1184,7 +1183,7 @@ static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
 		}
 		propval.pvalue = deconst("IPM.Note.Microsoft.Conversation.Voice");
 	} else if (0 == strcasecmp(field, "voice-ca")) {
-		pmime = mail_get_head(pmail);
+		auto pmime = pmail->get_head();
 		if (0 != strcasecmp("audio/gsm", mime_get_content_type(pmime)) &&
 			0 != strcasecmp("audio/mp3", mime_get_content_type(pmime)) &&
 			0 != strcasecmp("audio/wav", mime_get_content_type(pmime)) &&
@@ -1193,7 +1192,7 @@ static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
 		}
 		propval.pvalue = deconst("IPM.Note.Microsoft.Voicemail.UM.CA");
 	} else if (0 == strcasecmp(field, "voice")) {
-		pmime = mail_get_head(pmail);
+		auto pmime = pmail->get_head();
 		if (0 != strcasecmp("audio/gsm", mime_get_content_type(pmime)) &&
 			0 != strcasecmp("audio/mp3", mime_get_content_type(pmime)) &&
 			0 != strcasecmp("audio/wav", mime_get_content_type(pmime)) &&
@@ -2918,14 +2917,13 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			return;
 		}
 		MAIL mail(pmime_enum->pmime_pool);
-		if (mail_retrieve(&mail, pcontent.get(), content_len)) {
+		if (mail.retrieve(pcontent.get(), content_len)) {
 			tpropval_array_remove_propval(&pattachment->proplist, PR_ATTACH_LONG_FILENAME);
 			tpropval_array_remove_propval(&pattachment->proplist, PR_ATTACH_LONG_FILENAME_A);
 			tpropval_array_remove_propval(&pattachment->proplist, PR_ATTACH_EXTENSION);
 			tpropval_array_remove_propval(&pattachment->proplist, PR_ATTACH_EXTENSION_A);
 			if (FALSE == b_description) {
-				if (TRUE == mime_get_field(mail_get_head(&mail),
-					"Subject", tmp_buff, 256)) {
+				if (mime_get_field(mail.get_head(), "Subject", tmp_buff, 256)) {
 					if (TRUE == mime_string_to_utf8(
 						pmime_enum->charset, tmp_buff, file_name)) {
 						propval.proptag = PR_DISPLAY_NAME;
@@ -3641,14 +3639,13 @@ static bool oxcmail_enum_dsn_reporting_mta(const char *tag,
 static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 {
 	DSN dsn;
-	MIME *pmime;
 	void *pvalue;
 	size_t content_len;
 	DSN_ENUM_INFO dsn_info;
 	TAGGED_PROPVAL propval;
 	char tmp_buff[256*1024];
 	
-	pmime = mail_get_head(pmail);
+	auto pmime = pmail->get_head();
 	pmime = mime_get_child(pmime);
 	if (NULL == pmime) {
 		return NULL;
@@ -3821,13 +3818,12 @@ static bool oxcmail_enum_mdn(const char *tag,
 static MIME* oxcmail_parse_mdn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 {
 	DSN dsn;
-	MIME *pmime;
 	void *pvalue;
 	size_t content_len;
 	TAGGED_PROPVAL propval;
 	char tmp_buff[256*1024];
 	
-	pmime = mail_get_head(pmail);
+	auto pmime = pmail->get_head();
 	if (0 != strcasecmp("message/disposition-notification",
 		mime_get_content_type(pmime))) {
 		pmime = mime_get_child(pmime);
@@ -3907,7 +3903,6 @@ static BOOL oxcmail_parse_encrypted(MIME *phead, uint16_t *plast_propid,
 static BOOL oxcmail_parse_smime_message(
 	MAIL *pmail, MESSAGE_CONTENT *pmsg)
 {
-	MIME *phead;
 	size_t offset;
 	BINARY tmp_bin;
 	uint32_t tmp_int32;
@@ -3915,7 +3910,7 @@ static BOOL oxcmail_parse_smime_message(
 	const char *content_type;
 	ATTACHMENT_CONTENT *pattachment;
 	
-	phead = mail_get_head(pmail);
+	auto phead = pmail->get_head();
 	if (NULL == phead) {
 		return FALSE;
 	}
@@ -4025,7 +4020,6 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 {
 	int i;
 	ICAL ical;
-	MIME *phead;
 	MIME *pmime;
 	MIME *pmime1;
 	BOOL b_smime;
@@ -4070,16 +4064,15 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		return NULL;
 	}
 	message_content_set_rcpts_internal(pmsg, prcpts);
-	if (FALSE == mail_get_charset(pmail, default_charset)) {
+	if (!pmail->get_charset(default_charset))
 		gx_strlcpy(default_charset, charset, GX_ARRAY_SIZE(default_charset));
-	}
 	field_param.alloc = alloc;
 	field_param.pmail = pmail;
 	field_param.pmsg = pmsg;
 	field_param.charset = default_charset;
 	field_param.last_propid = 0x8000;
 	field_param.b_flag_del = FALSE;
-	phead = mail_get_head(pmail);
+	auto phead = pmail->get_head();
 	if (NULL == phead) {
 		message_content_free(pmsg);
 		return NULL;
@@ -4474,7 +4467,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		}
 	} else {
 		mime_enum.last_propid = field_param.last_propid;
-		mail_enum_mime(pmail, oxcmail_enum_attachment, &mime_enum);
+		pmail->enum_mime(oxcmail_enum_attachment, &mime_enum);
 		if (FALSE == mime_enum.b_result) {
 			message_content_free(pmsg);
 			if (NULL != mime_enum.pcalendar) {
@@ -6172,8 +6165,6 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 {
 	int tmp_len;
 	const void *pvalue;
-	MIME *pmime1;
-	MIME *pmime2;
 	MACBINARY macbin;
 	uint32_t proptag;
 	EXT_PULL ext_pull;
@@ -6225,7 +6216,7 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 		pmime, "multipart/appledouble")) {
 		return FALSE;
 	}
-	pmime1 = mail_add_child(pmail, pmime, MIME_ADD_LAST);
+	auto pmime1 = pmail->add_child(pmime, MIME_ADD_LAST);
 	if (NULL == pmime1) {
 		return FALSE;
 	}
@@ -6233,7 +6224,7 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 		pmime1, "application/applefile")) {
 		return FALSE;
 	}
-	pmime2 = mail_add_child(pmail, pmime, MIME_ADD_LAST);
+	auto pmime2 = pmail->add_child(pmime, MIME_ADD_LAST);
 	if (NULL == pmime2) {
 		return FALSE;
 	}
@@ -6489,7 +6480,7 @@ static BOOL oxcmail_export_attachment(
 			alloc, get_propids, get_propname)) {
 			return FALSE;
 		}
-		auto mail_len = mail_get_length(&imail);
+		auto mail_len = imail.get_length();
 		if (mail_len < 0)
 			return false;
 		pallocator = lib_buffer_init(STREAM_ALLOC_SIZE,
@@ -6497,12 +6488,12 @@ static BOOL oxcmail_export_attachment(
 		if (pallocator == nullptr)
 			return FALSE;
 		stream_init(&tmp_stream, pallocator);
-		if (FALSE == mail_serialize(&imail, &tmp_stream)) {
+		if (!imail.serialize(&tmp_stream)) {
 			stream_free(&tmp_stream);
 			lib_buffer_free(pallocator);
 			return FALSE;
 		}
-		mail_clear(&imail);
+		imail.clear();
 		std::unique_ptr<char[], stdlib_delete> pbuff(static_cast<char *>(malloc(mail_len + 128)));
 		if (NULL == pbuff) {
 			stream_free(&tmp_stream);
@@ -6535,7 +6526,6 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 {
 	int i;
 	ICAL ical;
-	MIME *phead;
 	MIME *phtml;
 	MIME *pmime;
 	MIME *pplain;
@@ -6564,7 +6554,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 	if (!oxcmail_load_mime_skeleton(pmsg, pcharset, b_tnef,
 	    body_type, &mime_skeleton))
 		return FALSE;
-	phead = mail_add_head(pmail);
+	auto phead = pmail->add_head();
 	if (NULL == phead) {
 		goto EXPORT_FAILURE;
 	}
@@ -6581,43 +6571,29 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 	case MAIL_TYPE_CALENDAR:
 		if (MAIL_TYPE_DSN == mime_skeleton.mail_type) {
 			pmixed = pmime;
-			if (FALSE == mime_set_content_type(
-				pmime, "multipart/report") ||
-				FALSE == mime_set_content_param(
-				pmime, "report-type", "delivery-status") ||
-				NULL == (pmime = mail_add_child(
-				pmail, pmime, MIME_ADD_LAST))) {
+			if (!mime_set_content_type(pmime, "multipart/report") ||
+			    !mime_set_content_param(pmime, "report-type", "delivery-status") ||
+			    (pmime = pmail->add_child(pmime, MIME_ADD_LAST)) == nullptr)
 				goto EXPORT_FAILURE;
-			}
 		} else if (MAIL_TYPE_MDN == mime_skeleton.mail_type) {
 			pmixed = pmime;
-			if (FALSE == mime_set_content_type(
-				pmime, "multipart/report") ||
-				FALSE == mime_set_content_param(pmime,
-				"report-type", "disposition-notification") ||
-				NULL == (pmime = mail_add_child(
-				pmail, pmime, MIME_ADD_LAST))) {
+			if (!mime_set_content_type(pmime, "multipart/report") ||
+			    !mime_set_content_param(pmime, "report-type", "disposition-notification") ||
+			    (pmime = pmail->add_child(pmime, MIME_ADD_LAST)) == nullptr)
 				goto EXPORT_FAILURE;
-			}
 		} else {
 			if (TRUE == mime_skeleton.b_attachment) {
 				pmixed = pmime;
-				if (FALSE == mime_set_content_type(
-					pmime, "multipart/mixed") ||
-					NULL == (pmime = mail_add_child(
-					pmail, pmime, MIME_ADD_LAST))) {
+				if (!mime_set_content_type(pmime, "multipart/mixed") ||
+				    (pmime = pmail->add_child(pmime, MIME_ADD_LAST)) == nullptr)
 					goto EXPORT_FAILURE;
-				}
 			}
 		}
 		if (TRUE == mime_skeleton.b_inline) {
 			prelated = pmime;
-			if (FALSE == mime_set_content_type(
-				pmime, "multipart/related") ||
-				NULL == (pmime = mail_add_child(
-				pmail, pmime, MIME_ADD_LAST))) {
+			if (!mime_set_content_type(pmime, "multipart/related") ||
+			    (pmime = pmail->add_child(pmime, MIME_ADD_LAST)) == nullptr)
 				goto EXPORT_FAILURE;
-			}
 		}
 		if (OXCMAIL_BODY_PLAIN_AND_HTML == mime_skeleton.body_type &&
 			NULL != mime_skeleton.pplain && NULL != mime_skeleton.phtml) {
@@ -6625,15 +6601,15 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 				pmime, "multipart/alternative")) {
 				goto EXPORT_FAILURE;
 			}
-			pplain = mail_add_child(pmail, pmime, MIME_ADD_LAST);
-			phtml = mail_add_child(pmail, pmime, MIME_ADD_LAST);
+			pplain = pmail->add_child(pmime, MIME_ADD_LAST);
+			phtml = pmail->add_child(pmime, MIME_ADD_LAST);
 			if (NULL == pplain || FALSE == mime_set_content_type(
 				pplain, "text/plain") || NULL == phtml ||
 				FALSE == mime_set_content_type(phtml, "text/html")) {
 				goto EXPORT_FAILURE;
 			}
 			if (MAIL_TYPE_CALENDAR == mime_skeleton.mail_type) {
-				pcalendar = mail_add_child(pmail, pmime, MIME_ADD_LAST);
+				pcalendar = pmail->add_child(pmime, MIME_ADD_LAST);
 				if (NULL == pcalendar || FALSE == mime_set_content_type(
 					pcalendar, "text/calendar")) {
 					goto EXPORT_FAILURE;
@@ -6653,8 +6629,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 					pmime, "multipart/alternative")) {
 					goto EXPORT_FAILURE;
 				}
-				pplain = mail_add_child(pmail, pmime, MIME_ADD_LAST);
-				pcalendar = mail_add_child(pmail, pmime, MIME_ADD_LAST);
+				pplain = pmail->add_child(pmime, MIME_ADD_LAST);
+				pcalendar = pmail->add_child(pmime, MIME_ADD_LAST);
 				if (NULL == pplain || FALSE == mime_set_content_type(
 					pplain, "text/plain") || NULL == pcalendar ||
 					FALSE == mime_set_content_type(pcalendar,
@@ -6676,8 +6652,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 					pmime, "multipart/alternative")) {
 					goto EXPORT_FAILURE;
 				}
-				phtml = mail_add_child(pmail, pmime, MIME_ADD_LAST);
-				pcalendar = mail_add_child(pmail, pmime, MIME_ADD_LAST);
+				phtml = pmail->add_child(pmime, MIME_ADD_LAST);
+				pcalendar = pmail->add_child(pmime, MIME_ADD_LAST);
 				if (NULL == phtml || FALSE == mime_set_content_type(
 					phtml, "text/html") || NULL == pcalendar ||
 					FALSE == mime_set_content_type(pcalendar,
@@ -6698,11 +6674,9 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 			pmime, "multipart/mixed")) {
 			goto EXPORT_FAILURE;
 		}
-		if (NULL == (pplain = mail_add_child(pmail, pmime,
-			MIME_ADD_LAST)) || FALSE == mime_set_content_type(
-			pplain, "text/plain")) {
+		if ((pplain = pmail->add_child(pmime, MIME_ADD_LAST)) == nullptr ||
+		    !mime_set_content_type(pplain, "text/plain"))
 			goto EXPORT_FAILURE;
-		}
 		break;
 	}
 	
@@ -6803,7 +6777,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 	}
 	
 	if (MAIL_TYPE_TNEF == mime_skeleton.mail_type) {
-		pmime = mail_add_child(pmail, pmime, MIME_ADD_LAST);
+		pmime = pmail->add_child(pmime, MIME_ADD_LAST);
 		if (NULL == pmime || FALSE == mime_set_content_type(pmime,
 			"application/ms-tnef") || NULL == (pbin =
 			tnef_serialize(pmsg, alloc, get_propname))) {
@@ -6873,7 +6847,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 	if (MAIL_TYPE_DSN == mime_skeleton.mail_type) {
 		char tmp_buff[1024*1024];
 		
-		pmime = mail_add_child(pmail, phead, MIME_ADD_LAST);
+		pmime = pmail->add_child(phead, MIME_ADD_LAST);
 		if (NULL == pmime) {
 			goto EXPORT_FAILURE;
 		}
@@ -6891,7 +6865,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 	} else if (MAIL_TYPE_MDN == mime_skeleton.mail_type) {
 		char tmp_buff[1024*1024];
 		
-		pmime = mail_add_child(pmail, phead, MIME_ADD_LAST);
+		pmime = pmail->add_child(phead, MIME_ADD_LAST);
 		if (NULL == pmime) {
 			goto EXPORT_FAILURE;
 		}
@@ -6911,7 +6885,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 	
 	if (NULL != mime_skeleton.pattachments) {
 		for (i=0; i<mime_skeleton.pattachments->count; i++) {
-			pmime = mail_add_child(pmail, prelated, MIME_ADD_LAST);
+			pmime = pmail->add_child(prelated, MIME_ADD_LAST);
 			if (NULL == pmime) {
 				goto EXPORT_FAILURE;
 			}
@@ -6942,10 +6916,10 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 		    (tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_CONTENT_ID) != nullptr ||
 		    tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_CONTENT_LOCATION) != nullptr)) {
 			b_inline = TRUE;
-			pmime = mail_add_child(pmail, prelated, MIME_ADD_LAST);
+			pmime = pmail->add_child(prelated, MIME_ADD_LAST);
 		} else {
 			b_inline = FALSE;
-			pmime = mail_add_child(pmail, pmixed, MIME_ADD_LAST);
+			pmime = pmail->add_child(pmixed, MIME_ADD_LAST);
 		}
 		if (NULL == pmime) {
 			goto EXPORT_FAILURE;

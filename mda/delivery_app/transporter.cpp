@@ -547,9 +547,7 @@ static void *dxp_thrwork(void *arg)
 		} else {
 			cannot_served_times = 0;
 			pcontext = &pthr_data->fake_context.context;
-			if (!mail_retrieve(pcontext->pmail,
-			    static_cast<char *>(pmessage->mail_begin),
-			    pmessage->mail_length)) {
+			if (!pcontext->pmail->retrieve(static_cast<char *>(pmessage->mail_begin), pmessage->mail_length)) {
 				system_services_log_info(LV_DEBUG, "QID %d: Failed to "
 					"load into mail object", pmessage->flush_ID);
 				message_dequeue_save(pmessage);
@@ -581,7 +579,7 @@ static void *dxp_thrwork(void *arg)
 		}
 		if (FALSE == b_self) {
 			mem_file_clear(&pcontext->pcontrol->f_rcpt_to);
-			mail_clear(pcontext->pmail);
+			pcontext->pmail->clear();
 			message_dequeue_put(pmessage);
 		} else {
 			transporter_put_context(pcontext);
@@ -943,7 +941,7 @@ static void transporter_put_context(MESSAGE_CONTEXT *pcontext)
 	pcontext->pcontrol->bound_type = BOUND_UNKNOWN;
 	pcontext->pcontrol->need_bounce = FALSE;
 	pcontext->pcontrol->from[0] = '\0';
-	mail_clear(pcontext->pmail);	
+	pcontext->pmail->clear();
 	auto pnode = &containerof(pcontext, FREE_CONTEXT, context)->node;
 	std::lock_guard ctx_hold(g_context_lock);
     single_list_append_as_tail(&g_free_list, pnode);

@@ -373,7 +373,6 @@ static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
 
 int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 {
-	int result;
 	MAIL *pmail;
 	int tmp_len;
 	void *pvalue;
@@ -412,11 +411,10 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		strcpy(tmzone, g_default_timezone);
 	
 	pmail = pcontext->pmail;
-	if (TRUE == mail_check_dot(pcontext->pmail)) {
+	if (pcontext->pmail->check_dot()) {
 		pcontext1 = get_context();
 		if (NULL != pcontext1) {
-			if (TRUE == mail_transfer_dot(
-				pcontext->pmail, pcontext1->pmail)) {
+			if (pcontext->pmail->transfer_dot(pcontext1->pmail)) {
 				pmail = pcontext1->pmail;
 			} else {
 				put_context(pcontext1);
@@ -455,7 +453,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		return DELIVERY_OPERATION_FAILURE;
 	}
 	
-	if (FALSE == mail_to_file(pmail, fd)) {
+	if (!pmail->to_file(fd)) {
 		close(fd);
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1386: remove %s: %s\n",
@@ -471,7 +469,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	close(fd);
 
 	tmp_len = sprintf(temp_buff, "{\"file\":\"%s\",", mid_string.c_str());
-	result = mail_get_digest(pmail, &mess_len, temp_buff + tmp_len,
+	int result = pmail->get_digest(&mess_len, temp_buff + tmp_len,
 				MAX_DIGLEN - tmp_len - 1);
 	
 	if (result <= 0) {

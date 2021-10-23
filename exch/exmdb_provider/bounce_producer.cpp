@@ -455,7 +455,6 @@ BOOL bounce_producer_make(const char *from, const char *rcpt,
 {
 	DSN dsn;
 	MIME *pmime;
-	MIME *phead;
 	time_t cur_time;
 	char subject[1024];
 	struct tm time_buff;
@@ -471,7 +470,7 @@ BOOL bounce_producer_make(const char *from, const char *rcpt,
 		subject, content_type, content_buff)) {
 		return FALSE;
 	}
-	phead = mail_add_head(pmail);
+	auto phead = pmail->add_head();
 	if (NULL == phead) {
 		return FALSE;
 	}
@@ -490,7 +489,7 @@ BOOL bounce_producer_make(const char *from, const char *rcpt,
 	strftime(date_buff, 128, "%a, %d %b %Y %H:%M:%S %z", &time_buff);
 	mime_set_field(pmime, "Date", date_buff);
 	mime_set_field(pmime, "Subject", subject);
-	pmime = mail_add_child(pmail, phead, MIME_ADD_FIRST);
+	pmime = pmail->add_child(phead, MIME_ADD_FIRST);
 	if (NULL == pmime) {
 		return FALSE;
 	}
@@ -520,7 +519,7 @@ BOOL bounce_producer_make(const char *from, const char *rcpt,
 	dsn_append_field(pdsn_fields, "Remote-MTA", tmp_buff);
 	
 	if (dsn_serialize(&dsn, content_buff, GX_ARRAY_SIZE(content_buff))) {
-		pmime = mail_add_child(pmail, phead, MIME_ADD_LAST);
+		pmime = pmail->add_child(phead, MIME_ADD_LAST);
 		if (NULL != pmime) {
 			mime_set_content_type(pmime, "message/delivery-status");
 			mime_write_content(pmime, content_buff,

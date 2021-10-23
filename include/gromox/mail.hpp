@@ -18,23 +18,23 @@ struct GX_EXPORT MAIL {
 	~MAIL();
 	MAIL &operator=(MAIL &&);
 
+	void clear();
+	BOOL retrieve(char *in_buff, size_t length);
+	BOOL serialize(STREAM *);
+	BOOL to_file(int fd);
+	BOOL to_ssl(SSL *ssl);
+	BOOL check_dot();
+	BOOL transfer_dot(MAIL *dst);
+	ssize_t get_length();
+	MIME *add_head();
+	MIME *get_head();
+	BOOL get_charset(char *out);
+	int get_digest(size_t *offset, char *buf, int len);
+	MIME *add_child(MIME *base, int opt);
+	void enum_mime(MAIL_MIME_ENUM, void *);
+	BOOL dup(MAIL *dst);
+
 	SIMPLE_TREE tree{};
 	MIME_POOL *pmime_pool = nullptr;
 	char *buffer = nullptr;
 };
-
-void mail_clear(MAIL *pmail);
-BOOL mail_retrieve(MAIL *pmail, char *in_buff, size_t length);
-BOOL mail_serialize(MAIL *pmail, STREAM *pstream);
-BOOL mail_to_file(MAIL *pmail, int fd);
-BOOL mail_to_ssl(MAIL *pmail, SSL *ssl);
-BOOL mail_check_dot(MAIL *pmail);
-BOOL mail_transfer_dot(MAIL *pmail_src, MAIL *pmail_dst);
-extern GX_EXPORT ssize_t mail_get_length(MAIL *);
-MIME* mail_add_head(MAIL *pmail);
-MIME* mail_get_head(MAIL *pmail);
-BOOL mail_get_charset(MAIL *pmail, char *charset);
-int mail_get_digest(MAIL *pmail, size_t *poffset, char *pbuff, int length);
-MIME* mail_add_child(MAIL *pmail, MIME *pmime_base, int opt);
-void mail_enum_mime(MAIL *pmail, MAIL_MIME_ENUM enum_func, void *param);
-BOOL mail_dup(MAIL *pmail_src, MAIL *pmail_dst);

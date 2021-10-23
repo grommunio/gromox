@@ -143,7 +143,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
         return -1;
 	}
 	/* at the begin of file, write the length of message */
-	int32_t len = std::max(mail_get_length(pcontext->pmail), static_cast<ssize_t>(INT32_MAX));
+	int32_t len = std::max(pcontext->pmail->get_length(), static_cast<ssize_t>(INT32_MAX));
 	if (len < 0) {
 		printf("[exmdb_local]: fail to get mail length\n");
 		fd.close();
@@ -160,7 +160,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 			        file_name.c_str(), strerror(errno));
         return -1;
 	}
-	if (!mail_to_file(pcontext->pmail, fd.get()) ||
+	if (!pcontext->pmail->to_file(fd.get()) ||
 	    write(fd.get(), &pcontext->pcontrol->queue_ID, sizeof(int)) != sizeof(int) ||
 	    write(fd.get(), &pcontext->pcontrol->bound_type, sizeof(int)) != sizeof(int) ||
 	    write(fd.get(), &pcontext->pcontrol->is_spam, sizeof(BOOL)) != sizeof(BOOL) ||
@@ -326,7 +326,7 @@ static void *mdl_thrwork(void *arg)
 					"in timer queue\n", direntp->d_name);
 				continue;
 			}
-			if (FALSE == mail_retrieve(pcontext->pmail, pbuff, mess_len)) {
+			if (!pcontext->pmail->retrieve(pbuff, mess_len)) {
 				free(pbuff);
 				printf("[exmdb_local]: fail to retrieve message %s in "
 					"cache queue into mail object\n", direntp->d_name);

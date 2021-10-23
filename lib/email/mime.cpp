@@ -1143,7 +1143,7 @@ BOOL mime_serialize(MIME *pmime, STREAM *pstream)
 				stream_write(pstream, pmime->content_begin,
 					pmime->content_length);
 			} else {
-				mail_serialize(reinterpret_cast<MAIL *>(pmime->content_begin), pstream);
+				reinterpret_cast<MAIL *>(pmime->content_begin)->serialize(pstream);
 			}
 		} else {
 			/* if there's nothing, just append an empty line */
@@ -1428,7 +1428,7 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 	
 	/* content is an email object */
 	if (0 == pmime->content_length) {
-		auto mail_len = mail_get_length(reinterpret_cast<MAIL *>(pmime->content_begin));
+		auto mail_len = reinterpret_cast<MAIL *>(pmime->content_begin)->get_length();
 		if (mail_len <= 0) {
 			debug_info("[mime]: fail to get mail"
 				" length in mime_read_content");
@@ -1448,7 +1448,7 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 			return FALSE;
 		}
 		stream_init(&tmp_stream, pallocator);
-		if (!mail_serialize(reinterpret_cast<MAIL *>(pmime->content_begin), &tmp_stream)) {
+		if (!reinterpret_cast<MAIL *>(pmime->content_begin)->serialize(&tmp_stream)) {
 			stream_free(&tmp_stream);
 			lib_buffer_free(pallocator);
 			*plength = 0;
@@ -1669,7 +1669,7 @@ BOOL mime_to_file(MIME *pmime, int fd)
 				if (wrlen < 0 || static_cast<size_t>(wrlen) != pmime->content_length)
 					return FALSE;
 			} else {
-				if (!mail_to_file(reinterpret_cast<MAIL *>(pmime->content_begin), fd))
+				if (!reinterpret_cast<MAIL *>(pmime->content_begin)->to_file(fd))
 					return FALSE;
 			}
 		} else {
@@ -1865,7 +1865,7 @@ BOOL mime_to_ssl(MIME *pmime, SSL *ssl)
 				if (wrlen < 0 || static_cast<size_t>(wrlen) != pmime->content_length)
 					return FALSE;
 			} else {
-				if (!mail_to_ssl(reinterpret_cast<MAIL *>(pmime->content_begin), ssl))
+				if (!reinterpret_cast<MAIL *>(pmime->content_begin)->to_ssl(ssl))
 					return FALSE;
 			}
 		} else {
@@ -2008,9 +2008,8 @@ BOOL mime_check_dot(MIME *pmime)
 					pmime->content_length, "\r\n..", 4))) {
 					return TRUE;
 				}
-			} else {
-				if (mail_check_dot(reinterpret_cast<MAIL *>(pmime->content_begin)))
-					return TRUE;
+			} else if (reinterpret_cast<MAIL *>(pmime->content_begin)->check_dot()) {
+				return TRUE;
 			}
 		} 
 	} else {
@@ -2113,7 +2112,7 @@ ssize_t mime_get_length(MIME *pmime)
 			if (0 != pmime->content_length) {
 				mime_len += pmime->content_length;
 			} else {
-				auto mgl = mail_get_length(reinterpret_cast<MAIL *>(pmime->content_begin));
+				auto mgl = reinterpret_cast<MAIL *>(pmime->content_begin)->get_length();
 				if (mgl < 0)
 					return -1;
 				mime_len += mgl;
@@ -2378,7 +2377,7 @@ ssize_t mime_get_mimes_digest(MIME *pmime, const char *id_string,
 				*poffset += pmime->content_length;
 				content_len = pmime->content_length;
 			} else {
-				auto mgl = mail_get_length(reinterpret_cast<MAIL *>(pmime->content_begin));
+				auto mgl = reinterpret_cast<MAIL *>(pmime->content_begin)->get_length();
 				if (mgl < 0)
 					return -1;
 				*poffset += mgl;
@@ -2594,7 +2593,7 @@ ssize_t mime_get_structure_digest(MIME *pmime, const char *id_string,
 			if (0 != pmime->content_length) {
 				*poffset += pmime->content_length;
 			} else {
-				auto mgl = mail_get_length(reinterpret_cast<MAIL *>(pmime->content_begin));
+				auto mgl = reinterpret_cast<MAIL *>(pmime->content_begin)->get_length();
 				if (mgl < 0)
 					return -1;
 				*poffset += mgl;

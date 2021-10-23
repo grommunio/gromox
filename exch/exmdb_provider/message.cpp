@@ -2960,7 +2960,6 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	uint32_t action_flavor, uint32_t template_message_id,
 	GUID template_guid, BOOL *pb_result)
 {
-	MIME *pmime;
 	void *pvalue;
 	GUID tmp_guid;
 	BINARY tmp_bin;
@@ -3130,7 +3129,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		return FALSE;
 	}
 	common_util_set_tls_var(NULL);
-	pmime = mail_get_head(&imail);
+	auto pmime = imail.get_head();
 	if (NULL == pmime) {
 		return FALSE;
 	}
@@ -3250,7 +3249,6 @@ static BOOL message_forward_message(const char *from_address,
 	int i;
 	int num;
 	int offset;
-	MIME *pmime;
 	void *pvalue;
 	int body_type;
 	const char *pdomain;
@@ -3295,9 +3293,9 @@ static BOOL message_forward_message(const char *from_address,
 		if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size)
 			return FALSE;
 		imail = MAIL(common_util_get_mime_pool());
-		if (!mail_retrieve(&imail, pbuff.get(), node_stat.st_size))
+		if (!imail.retrieve(pbuff.get(), node_stat.st_size))
 			return FALSE;
-		pmime = mail_get_head(&imail);
+		auto pmime = imail.get_head();
 		if (NULL == pmime) {
 			return FALSE;
 		}
@@ -3341,7 +3339,7 @@ static BOOL message_forward_message(const char *from_address,
 	}
 	if (action_flavor & ACTION_FLAVOR_AT) {
 		MAIL imail1(common_util_get_mime_pool());
-		pmime = mail_add_head(&imail1);
+		auto pmime = imail1.add_head();
 		if (NULL == pmime) {
 			return FALSE;
 		}
@@ -3380,7 +3378,7 @@ static BOOL message_forward_message(const char *from_address,
 		}
 		common_util_send_mail(&imail1, tmp_buff, &rcpt_list);
 	} else {
-		pmime = mail_get_head(&imail);
+		auto pmime = imail.get_head();
 		if (NULL == pmime) {
 			return FALSE;
 		}

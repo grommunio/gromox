@@ -357,7 +357,6 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	DSN dsn;
 	char *ptr;
 	MIME *pmime;
-	MIME *phead;
 	time_t cur_time;
 	char charset[32];
 	char mcharset[32];
@@ -438,7 +437,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 			ptr += len;
             break;
 		case TAG_LENGTH: {
-			auto mail_len = mail_get_length(pmail_original);
+			auto mail_len = pmail_original->get_length();
 			if (mail_len < 0) {
 				printf("[exmdb_local]: fail to get mail length\n");
 				mail_len = 0;
@@ -453,7 +452,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	len = presource->format[bounce_type][TAG_END].position - prev_pos;
 	memcpy(ptr, &presource->content[bounce_type][prev_pos], len);
 	ptr += len;
-	phead = mail_add_head(pmail);
+	auto phead = pmail->add_head();
 	if (NULL == phead) {
 		printf("[exmdb_local]: fatal error, there's no mime "
 			"in mime pool\n");
@@ -479,7 +478,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	mime_set_field(pmime, "Date", date_buff);
 	mime_set_field(pmime, "Subject", presource->subject[bounce_type]);
 	
-	pmime = mail_add_child(pmail, phead, MIME_ADD_FIRST);
+	pmime = pmail->add_child(phead, MIME_ADD_FIRST);
 	if (NULL == pmime) {
 		printf("[exmdb_local]: fatal error, there's no mime "
 			"in mime pool\n");
@@ -521,7 +520,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	snprintf(tmp_buff, 128, "dns;%s", get_host_ID());
 	dsn_append_field(pdsn_fields, "Remote-MTA", tmp_buff);
 	if (dsn_serialize(&dsn, original_ptr, 256 * 1024)) {
-		pmime = mail_add_child(pmail, phead, MIME_ADD_LAST);
+		pmime = pmail->add_child(phead, MIME_ADD_LAST);
 		if (NULL != pmime) {
 			mime_set_content_type(pmime, "message/delivery-status");
 			mime_write_content(pmime, original_ptr,
@@ -540,8 +539,7 @@ static int bounce_producer_get_mail_parts(MAIL *pmail, char *parts,
 	enum_parts.offset = 0;
 	enum_parts.charset = charset;
 	enum_parts.b_first = FALSE;
-	mail_enum_mime(pmail, (MAIL_MIME_ENUM)bounce_producer_enum_parts,
-		&enum_parts);
+	pmail->enum_mime(reinterpret_cast<MAIL_MIME_ENUM>(bounce_producer_enum_parts), &enum_parts);
 	return enum_parts.offset;
 }
 
@@ -574,11 +572,8 @@ static void bounce_producer_enum_parts(MIME *pmime, ENUM_PARTS *penum)
 static int bounce_producer_get_mail_subject(MAIL *pmail, char *subject,
 	char *charset)
 {
-	MIME *pmime;
 	char tmp_buff[1024];
-
-
-	pmime = mail_get_head(pmail);
+	auto pmime = pmail->get_head();
 	if (FALSE == mime_get_field(pmime, "Subject", tmp_buff, 1024)) {
 		*subject = '\0';
 		return 0;
@@ -604,8 +599,7 @@ static int bounce_producer_get_mail_charset(MAIL *pmail, char *charset)
 
 	enum_charset.b_found = FALSE;
 	enum_charset.charset = charset;
-	mail_enum_mime(pmail, (MAIL_MIME_ENUM)bounce_producer_enum_charset,
-		&enum_charset);
+	pmail->enum_mime(reinterpret_cast<MAIL_MIME_ENUM>(bounce_producer_enum_charset), &enum_charset);
 	if (FALSE == enum_charset.b_found) {
 		strcpy(charset, "ascii");
 	}
@@ -644,9 +638,7 @@ static void bounce_producer_enum_charset(MIME *pmime, ENUM_CHARSET *penum)
 
 static BOOL bounce_producer_get_mail_thread_index(MAIL *pmail, char *pbuff)
 {
-	MIME *phead;
-	
-	phead = mail_get_head(pmail);
+	auto phead = pmail->get_head();
 	if (NULL == phead) {
 		return FALSE;
 	}

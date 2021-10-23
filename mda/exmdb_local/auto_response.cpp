@@ -24,7 +24,6 @@ using namespace gromox;
 void auto_response_reply(const char *user_home,
 	const char *from, const char *rcpt)
 {
-	MIME *pmime;
 	BOOL b_found;
 	char *pcontent;
 	BOOL b_internal;
@@ -206,7 +205,7 @@ void auto_response_reply(const char *user_home,
 	sprintf(pcontext->pcontrol->from, "auto-reply@%s", pdomain);
 	
 	mem_file_writeline(&pcontext->pcontrol->f_rcpt_to, (char*)rcpt);
-	pmime = mail_add_head(pcontext->pmail);
+	auto pmime = pcontext->pmail->add_head();
 	if (NULL == pmime) {
 		put_context(pcontext);
 		return;

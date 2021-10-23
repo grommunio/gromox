@@ -2017,13 +2017,12 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 	}
 	
 	MAIL imail(pbuild->ppool);
-	if (!mail_retrieve(&imail, pbuff.get(), length)) {
+	if (!imail.retrieve(pbuff.get(), length)) {
 		pbuild->build_result = FALSE;
 		return;
 	} else {
 		/* for saving stacking size, so use C++
 			style of local variable declaration */
-		int result;
 		size_t mess_len;
 		int digest_len;
 		char digest_buff[MAX_DIGLEN];
@@ -2033,7 +2032,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 			pbuild->build_result = FALSE;
 			return;
 		}
-		if (FALSE == mail_to_file(&imail, fd)) {
+		if (!imail.to_file(fd)) {
 			close(fd);
 			if (remove(msg_path) < 0 && errno != ENOENT)
 				fprintf(stderr, "W-1372: remove %s: %s\n", msg_path, strerror(errno));
@@ -2048,9 +2047,9 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 			digest_len = sprintf(digest_buff, "{\"file\":\"%s.%s\",",
 							pbuild->filename, pmime->id);
 		}
-		result = mail_get_digest(&imail, &mess_len, digest_buff + digest_len,
+		int result = imail.get_digest(&mess_len, digest_buff + digest_len,
 					MAX_DIGLEN - digest_len - 1);
-		mail_clear(&imail);
+		imail.clear();
 		pbuff.reset();
 		if (result <= 0) {
 			if (remove(msg_path) < 0 && errno != ENOENT)

@@ -91,7 +91,6 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 {
 	BOOL need_alarm_one, need_alarm_two;
 	MESSAGE_CONTEXT *pcontext;
-	MIME *pmime, *pmime_child;
 	struct tm *datetime;
 	struct tm time_buff;
 	char tmp_buff[4096];
@@ -155,13 +154,13 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 	}
 	mem_file_writeline(&pcontext->pcontrol->f_rcpt_to,
 		(char *)get_admin_mailbox());
-	pmime = mail_add_head(pcontext->pmail);
+	auto pmime = pcontext->pmail->add_head();
 	if (NULL == pmime) {
 		put_context(pcontext);
 		return;
 	}
 	mime_set_content_type(pmime, "multipart/related");
-	pmime_child = mail_add_child(pcontext->pmail, pmime, MIME_ADD_LAST);
+	auto pmime_child = pcontext->pmail->add_child(pmime, MIME_ADD_LAST);
 	if (NULL == pmime_child) {
 		put_context(pcontext);
 		return;

@@ -65,13 +65,11 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 	char rcpt_to[UADDR_SIZE], delivered_to[UADDR_SIZE];
 	std::vector<std::string> temp_file1;
 	MEM_FILE temp_file2;
-	MIME *phead;
 	MESSAGE_CONTEXT *pcontext_expand;
 	MESSAGE_CONTEXT *pbounce_context;
 
 	mem_file_init(&temp_file2, pcontext->pcontrol->f_rcpt_to.allocator);
-	
-	phead = mail_get_head(pcontext->pmail);
+	auto phead = pcontext->pmail->get_head();
 	if (NULL == phead) {
 		mem_file_free(&temp_file2);
 		return FALSE;
@@ -253,7 +251,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			mem_file_writeline(&pcontext_expand->pcontrol->f_rcpt_to, recip.c_str());
 		}
 	}
-	mail_dup(pcontext->pmail, pcontext_expand->pmail);
+	pcontext->pmail->dup(pcontext_expand->pmail);
 	throw_context(pcontext_expand);
 
  EXIT_EXPAND:

@@ -1939,7 +1939,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 	}
 
 	mail_set_header(pmail, "X-Mailer", "gromox-emsmdb " PACKAGE_VERSION);
-	if (FALSE == mail_to_file(pmail, sockd) ||
+	if (!pmail->to_file(sockd) ||
 		FALSE == common_util_send_command(sockd, ".\r\n", 3)) {
 		close(sockd);
 		log_err("Sender %s: Failed to send mail content", sender);
@@ -2169,7 +2169,7 @@ BOOL common_util_send_message(logon_object *plogon,
 		log_err("W-1280: Failed to send mid:0x%llx via SMTP", LLU(message_id));
 		return FALSE;
 	}
-	mail_clear(&imail);
+	imail.clear();
 	
 	pvalue = common_util_get_propvals(&pmsgctnt->proplist,
 							PROP_TAG_DELETEAFTERSUBMIT);

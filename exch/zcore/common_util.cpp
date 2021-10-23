@@ -1715,7 +1715,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 	}
 
 	mail_set_header(pmail, "X-Mailer", "gromox-zcore " PACKAGE_VERSION);
-	if (FALSE == mail_to_file(pmail, sockd) ||
+	if (!pmail->to_file(sockd) ||
 		FALSE == common_util_send_command(sockd, ".\r\n", 3)) {
 		close(sockd);
 		log_err("Sender %s: Failed to send mail content", sender);
@@ -2559,7 +2559,7 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 		common_util_get_propids, common_util_get_propname)) {
 		return FALSE;	
 	}
-	auto mail_len = mail_get_length(&imail);
+	auto mail_len = imail.get_length();
 	if (mail_len < 0) {
 		return false;
 	}
@@ -2569,12 +2569,12 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 		return FALSE;
 	}
 	stream_init(&tmp_stream, pallocator);
-	if (FALSE == mail_serialize(&imail, &tmp_stream)) {
+	if (!imail.serialize(&tmp_stream)) {
 		stream_free(&tmp_stream);
 		lib_buffer_free(pallocator);
 		return FALSE;
 	}
-	mail_clear(&imail);
+	imail.clear();
 	peml_bin->pv = common_util_alloc(mail_len + 128);
 	if (peml_bin->pv == nullptr) {
 		stream_free(&tmp_stream);
@@ -2602,9 +2602,8 @@ MESSAGE_CONTENT *common_util_rfc822_to_message(store_object *pstore,
 	
 	auto pinfo = zarafa_server_get_info();
 	MAIL imail(g_mime_pool);
-	if (!mail_retrieve(&imail, peml_bin->pc, peml_bin->cb)) {
+	if (!imail.retrieve(peml_bin->pc, peml_bin->cb))
 		return NULL;
-	}
 	if (!system_services_lang_to_charset(pinfo->get_lang(), charset) ||
 	    charset[0] == '\0')
 		strcpy(charset, g_default_charset);
