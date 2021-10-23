@@ -129,83 +129,82 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 	}
 	hold.unlock();
 	
-	if (TRUE == need_alarm_one || TRUE == need_alarm_two) {
-		if (current_time - g_last_alarm_time < g_alarm_interval) {
-			return;
-		} else {
-			g_last_alarm_time = current_time;
-		}
-		pcontext = get_context();
-		if (NULL == pcontext) {
-			return;
-		}
-		pcontext->pcontrol->bound_type = BOUND_ALARM;
-		pcontext->pcontrol->need_bounce = FALSE;
-		auto pdomain = strchr(get_admin_mailbox(), '@');
-		if (NULL == pdomain) {
-			put_context(pcontext);
-			return;
-		}
-		if (0 == strcasecmp(pdomain, get_default_domain())) {
-			gx_strlcpy(pcontext->pcontrol->from, "local-alarm@system.mail", GX_ARRAY_SIZE(pcontext->pcontrol->from));
-		} else {
-			sprintf(pcontext->pcontrol->from, "local-alarm@%s",
-				get_default_domain());
-		}
-		mem_file_writeline(&pcontext->pcontrol->f_rcpt_to,
-			(char*)get_admin_mailbox());
-		pmime = mail_add_head(pcontext->pmail);
-		if (NULL == pmime) {
-			put_context(pcontext);
-			return;
-		}
-		mime_set_content_type(pmime, "multipart/related");
-		pmime_child = mail_add_child(pcontext->pmail, pmime, MIME_ADD_LAST);
-		if (NULL == pmime_child) {
-			put_context(pcontext);
-			return;
-		}
-		
-		mime_set_content_type(pmime_child, "text/html");
-		mime_set_content_param(pmime_child, "charset", "\"us-ascii\"");
-		
-		memcpy(tmp_buff, HTML_01, sizeof(HTML_01) - 1);
-		offset = sizeof(HTML_01) - 1;
-		
-		if (TRUE == need_alarm_one) {
-			offset += sprintf(tmp_buff + offset, "  The local delivery of %s "
-						"failed %d times in a row.\r\n"
-						"<P></P><BR><P></P><BR><P></P><BR>Alarm time: ",
-						get_host_ID(), g_times);
-		} else {
-			offset += sprintf(tmp_buff + offset, "  The local delivery of %s "
-						"failed %d times within ", get_host_ID(),
-						g_times);
-			itvltoa(g_interval, tmp_buff + offset);
-			offset += strlen(tmp_buff + offset);
-			strcpy(tmp_buff + offset, "\r\n<P></P><BR><P></P><BR><P></P><BR>Alarm time: ");
-			offset += strlen(tmp_buff + offset);
-		}
-		datetime = localtime_r(&current_time, &time_buff);
-        offset += strftime(tmp_buff + offset, 255, "%x %X", datetime);
-		tmp_buff[offset] = '\r';
-		offset ++;
-		tmp_buff[offset] = '\n';
-		offset ++;
-		memcpy(tmp_buff + offset, HTML_02, sizeof(HTML_02) - 1);
-		offset += sizeof(HTML_02) - 1;
-		mime_write_content(pmime_child, tmp_buff, offset, MIME_ENCODING_NONE);
-		mime_set_field(pmime, "Received", "from unknown (helo localhost) "
-			"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
-		mime_set_field(pmime, "From", pcontext->pcontrol->from);
-		mime_set_field(pmime, "To", get_admin_mailbox());
-		strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z",
-				localtime_r(&current_time, &time_buff));
-		mime_set_field(pmime, "Date", tmp_buff);
-		snprintf(tmp_buff, arsizeof(tmp_buff), "Local Delivery Alarm from %s", get_host_ID());
-		mime_set_field(pmime, "Subject", tmp_buff);
-		enqueue_context(pcontext);
+	if (!need_alarm_one && !need_alarm_two)
+		return;
+	if (current_time - g_last_alarm_time < g_alarm_interval) {
+		return;
+	} else {
+		g_last_alarm_time = current_time;
 	}
+	pcontext = get_context();
+	if (NULL == pcontext) {
+		return;
+	}
+	pcontext->pcontrol->bound_type = BOUND_ALARM;
+	pcontext->pcontrol->need_bounce = FALSE;
+	auto pdomain = strchr(get_admin_mailbox(), '@');
+	if (NULL == pdomain) {
+		put_context(pcontext);
+		return;
+	}
+	if (0 == strcasecmp(pdomain, get_default_domain())) {
+		gx_strlcpy(pcontext->pcontrol->from, "local-alarm@system.mail", GX_ARRAY_SIZE(pcontext->pcontrol->from));
+	} else {
+		sprintf(pcontext->pcontrol->from, "local-alarm@%s",
+		        get_default_domain());
+	}
+	mem_file_writeline(&pcontext->pcontrol->f_rcpt_to,
+		(char *)get_admin_mailbox());
+	pmime = mail_add_head(pcontext->pmail);
+	if (NULL == pmime) {
+		put_context(pcontext);
+		return;
+	}
+	mime_set_content_type(pmime, "multipart/related");
+	pmime_child = mail_add_child(pcontext->pmail, pmime, MIME_ADD_LAST);
+	if (NULL == pmime_child) {
+		put_context(pcontext);
+		return;
+	}
+
+	mime_set_content_type(pmime_child, "text/html");
+	mime_set_content_param(pmime_child, "charset", "\"us-ascii\"");
+	memcpy(tmp_buff, HTML_01, sizeof(HTML_01) - 1);
+	offset = sizeof(HTML_01) - 1;
+
+	if (TRUE == need_alarm_one) {
+		offset += sprintf(tmp_buff + offset, "  The local delivery of %s "
+		          "failed %d times in a row.\r\n"
+		          "<P></P><BR><P></P><BR><P></P><BR>Alarm time: ",
+		          get_host_ID(), g_times);
+	} else {
+		offset += sprintf(tmp_buff + offset, "  The local delivery of %s "
+		          "failed %d times within ", get_host_ID(),
+		          g_times);
+		itvltoa(g_interval, tmp_buff + offset);
+		offset += strlen(tmp_buff + offset);
+		strcpy(tmp_buff + offset, "\r\n<P></P><BR><P></P><BR><P></P><BR>Alarm time: ");
+		offset += strlen(tmp_buff + offset);
+	}
+	datetime = localtime_r(&current_time, &time_buff);
+	offset += strftime(tmp_buff + offset, 255, "%x %X", datetime);
+	tmp_buff[offset] = '\r';
+	offset++;
+	tmp_buff[offset] = '\n';
+	offset++;
+	memcpy(tmp_buff + offset, HTML_02, sizeof(HTML_02) - 1);
+	offset += sizeof(HTML_02) - 1;
+	mime_write_content(pmime_child, tmp_buff, offset, MIME_ENCODING_NONE);
+	mime_set_field(pmime, "Received", "from unknown (helo localhost) "
+		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
+	mime_set_field(pmime, "From", pcontext->pcontrol->from);
+	mime_set_field(pmime, "To", get_admin_mailbox());
+	strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z",
+	         localtime_r(&current_time, &time_buff));
+	mime_set_field(pmime, "Date", tmp_buff);
+	snprintf(tmp_buff, arsizeof(tmp_buff), "Local Delivery Alarm from %s", get_host_ID());
+	mime_set_field(pmime, "Subject", tmp_buff);
+	enqueue_context(pcontext);
 }
 
 int net_failure_get_param(int param)
