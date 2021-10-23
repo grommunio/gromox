@@ -581,13 +581,13 @@ static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
 	
 	buff_len = 0;
 	if (NULL == temp_tag) {
-		pmime = mjson_get_mime(pjson, temp_id);
+		pmime = pjson->get_mime(temp_id);
 		/* Non-[MIME-IMB] messages, and non-multipart
 		   [MIME-IMB] messages with no encapsulated
 		   message, only have a part 1
 		*/
 		if (NULL == pmime && 0 == strcmp(temp_id, "1")) {
-			pmime = mjson_get_mime(pjson, "");
+			pmime = pjson->get_mime("");
 		}
 		if (NULL != pmime) {
 			if (0 == strcmp(temp_id, "")) {
@@ -612,13 +612,13 @@ static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
 				if (NULL == storage_path) {
 					buff_len += gx_snprintf(buff + buff_len, max_len - buff_len,
 							"BODY%s {%ld}\r\n<<{file}%s|%ld|%ld\r\n", pbody,
-							length, mjson_get_mail_filename(pjson),
+					            length, pjson->get_mail_filename(),
 							temp_len + offset, length);
 				} else {
 					buff_len += gx_snprintf(buff + buff_len, max_len - buff_len,
 								"BODY%s {%ld}\r\n<<{rfc822}%s/%s|%ld|%ld\r\n",
 								pbody, length, storage_path,
-								mjson_get_mail_filename(pjson),
+					            pjson->get_mail_filename(),
 								temp_len + offset, length);
 				}
 			}
@@ -634,7 +634,7 @@ static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
 		    && 0 != strcmp(temp_id, ""))) {
 			buff_len += gx_snprintf(buff + buff_len,
 				max_len - buff_len, "BODY%s NIL", pbody);
-		} else if ((pmime = mjson_get_mime(pjson, temp_id)) != nullptr) {
+		} else if ((pmime = pjson->get_mime(temp_id)) != nullptr) {
 			if (-1 == length) {
 				length = mjson_get_mime_length(
 					 pmime, MJSON_MIME_HEAD);
@@ -653,7 +653,7 @@ static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
 					buff_len += gx_snprintf(
 						    buff + buff_len, max_len - buff_len,
 						    "BODY%s {%ld}\r\n<<{file}%s|%ld|%ld\r\n",
-						    pbody, length, mjson_get_mail_filename(pjson),
+						    pbody, length, pjson->get_mail_filename(),
 						    mjson_get_mime_offset(pmime, MJSON_MIME_HEAD)
 						    + offset, length);
 				} else {
@@ -661,7 +661,7 @@ static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
 						    buff + buff_len, max_len - buff_len,
 						    "BODY%s {%ld}\r\n<<{rfc822}%s/%s|%ld|%ld\r\n",
 						    pbody, length, storage_path,
-						    mjson_get_mail_filename(pjson),
+						    pjson->get_mail_filename(),
 						    mjson_get_mime_offset(pmime, MJSON_MIME_HEAD)
 						    + offset, length);
 				}
@@ -674,7 +674,7 @@ static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
 		if (0 != strcmp(temp_id, "")) {
 			buff_len += gx_snprintf(buff + buff_len,
 			            max_len - buff_len, "BODY%s NIL", pbody);
-		} else if ((pmime = mjson_get_mime(pjson, temp_id)) != nullptr) {
+		} else if ((pmime = pjson->get_mime(temp_id)) != nullptr) {
 			if (-1 == length) {
 				length = mjson_get_mime_length(
 					 pmime, MJSON_MIME_CONTENT);
@@ -693,7 +693,7 @@ static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
 					buff_len += gx_snprintf(
 						    buff + buff_len, max_len - buff_len,
 						    "BODY%s {%ld}\r\n<<{file}%s|%ld|%ld\r\n",
-						    pbody, length, mjson_get_mail_filename(pjson),
+						    pbody, length, pjson->get_mail_filename(),
 						    mjson_get_mime_offset(pmime, MJSON_MIME_CONTENT)
 						    + offset, length);
 				} else {
@@ -701,7 +701,7 @@ static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
 						    buff + buff_len, max_len - buff_len,
 						    "BODY%s {%ld}\r\n<<{rfc822}%s/%s|%ld|%ld\r\n",
 						    pbody, length, storage_path,
-						    mjson_get_mail_filename(pjson),
+						    pjson->get_mail_filename(),
 						    mjson_get_mime_offset(pmime, MJSON_MIME_CONTENT)
 						    + offset, length);
 				}
@@ -721,13 +721,13 @@ static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
 			temp_tag += 19;
 			b_not = TRUE;
 		}
-		pmime = mjson_get_mime(pjson, temp_id);
+		pmime = pjson->get_mime(temp_id);
 		if (NULL != pmime) {
 			std::string eml_path;
 			try {
 				eml_path = storage_path == nullptr ?
-				           std::string(pcontext->maildir) + "/eml/" + mjson_get_mail_filename(pjson) :
-				           std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + storage_path + "/" + mjson_get_mail_filename(pjson);
+				           std::string(pcontext->maildir) + "/eml/" + pjson->get_mail_filename() :
+				           std::string(pcontext->maildir) + "/tmp/imap.rfc822/" + storage_path + "/" + pjson->get_mail_filename();
 			} catch (const std::bad_alloc &) {
 				fprintf(stderr, "E-1465: ENOMEM\n");
 			}
@@ -894,10 +894,8 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			buff_len += gx_snprintf(buff + buff_len,
 			            GX_ARRAY_SIZE(buff) - buff_len, "FLAGS %s", flags_string);
 		} else if (strcasecmp(kw, "INTERNALDATE") == 0) {
-			if (FALSE == parse_rfc822_timestamp(
-				mjson_get_mail_received(&mjson), &tmp_time)) {
-				tmp_time = strtol(mjson_get_mail_filename(&mjson), nullptr, 0);
-			}
+			if (!parse_rfc822_timestamp(mjson.get_mail_received(), &tmp_time))
+				tmp_time = strtol(mjson.get_mail_filename(), nullptr, 0);
 			memset(&tmp_tm, 0, sizeof(tmp_tm));
 			localtime_r(&tmp_time, &tmp_tm);
 			buff_len += strftime(buff + buff_len, MAX_DIGLEN - buff_len,
@@ -905,9 +903,9 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		} else if (strcasecmp(kw, "RFC822") == 0) {
 			buff_len += gx_snprintf(buff + buff_len, GX_ARRAY_SIZE(buff) - buff_len,
 							"RFC822 ({%ld}\r\n<<{file}%s|0|%ld\r\n)",
-							mjson_get_mail_length(&mjson),
-							mjson_get_mail_filename(&mjson),
-							mjson_get_mail_length(&mjson));
+			            mjson.get_mail_length(),
+			            mjson.get_mail_filename(),
+			            mjson.get_mail_length());
 			if (FALSE == pcontext->b_readonly &&
 				0 == (pitem->flag_bits & FLAG_SEEN)) {
 				system_services_set_flags(pcontext->maildir,
@@ -917,12 +915,12 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				imap_parser_modify_flags(pcontext, pitem->mid);
 			}
 		} else if (strcasecmp(kw, "RFC822.HEADER") == 0) {
-			pmime = mjson_get_mime(&mjson, "");
+			pmime = mjson.get_mime("");
 			if (NULL != pmime) {
 				buff_len += gx_snprintf(buff + buff_len, GX_ARRAY_SIZE(buff) - buff_len,
 							"RFC822.HEADER ({%ld}\r\n<<{file}%s|0|%ld\r\n)",
 							mjson_get_mime_length(pmime, MJSON_MIME_HEAD),
-							mjson_get_mail_filename(&mjson),
+				            mjson.get_mail_filename(),
 							mjson_get_mime_length(pmime, MJSON_MIME_HEAD));
 			} else {
 				buff_len += gx_snprintf(buff + buff_len,
@@ -931,15 +929,15 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		} else if (strcasecmp(kw, "RFC822.SIZE") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
 			            GX_ARRAY_SIZE(buff) - buff_len,
-							"RFC822.SIZE %ld", mjson_get_mail_length(&mjson));
+			            "RFC822.SIZE %ld", mjson.get_mail_length());
 		} else if (strcasecmp(kw, "RFC822.TEXT") == 0) {
-			pmime = mjson_get_mime(&mjson, "");
+			pmime = mjson.get_mime("");
 			if (NULL != pmime) {
 				buff_len += gx_snprintf(buff + buff_len,
 				            GX_ARRAY_SIZE(buff) - buff_len,
 							"RFC822.TEXT ({%ld}\r\n<<{file}%s|%ld|%ld\r\n)",
 							mjson_get_mime_length(pmime, MJSON_MIME_CONTENT),
-							mjson_get_mail_filename(&mjson),
+				            mjson.get_mail_filename(),
 							mjson_get_mime_offset(pmime, MJSON_MIME_CONTENT),
 							mjson_get_mime_length(pmime, MJSON_MIME_CONTENT));
 			} else {
@@ -1011,7 +1009,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 						      pcontext, &temp_mjson, static_cast<char *>(pnode->pdata),
 							buff + buff_len, MAX_DIGLEN - buff_len,
 							pbody, final_id, ptr, offset, length,
-							mjson_get_mail_filename(&mjson));
+						      mjson.get_mail_filename());
 					} else {
 						len = imap_cmd_parser_print_structure(pcontext,
 						      &mjson, static_cast<char *>(pnode->pdata),

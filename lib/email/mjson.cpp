@@ -447,24 +447,6 @@ static void mjson_enum_none(SIMPLE_TREE_NODE *pnode, void *param)
 	}
 }
 
-/*
- *	get mail length from mjson object
- *	@param
- *		pjson [in]			indicate the mjson object
- */
-size_t mjson_get_mail_length(MJSON *pjson)
-{
-
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_get_mail_length");
-		return 0;
-	}
-#endif
-
-	return pjson->size;
-}
-
 void mjson_enum_mime(MJSON *pjson, MJSON_MIME_ENUM enum_func, void *param)
 {
 #ifdef _DEBUG_UMTA
@@ -475,54 +457,6 @@ void mjson_enum_mime(MJSON *pjson, MJSON_MIME_ENUM enum_func, void *param)
 #endif
     simple_tree_enum_from_node(simple_tree_get_root(&pjson->tree),
         (SIMPLE_TREE_ENUM)enum_func, param);
-}
-
-/*
- *	get mail mid name(file name) from mjson object
- *	@param
- *		pjson [in]			indicate the mjson object
- */
-const char* mjson_get_mail_filename(MJSON *pjson)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_get_mail_filename");
-		return NULL;
-	}
-#endif
-	return pjson->filename;
-}
-
-/*
- *	get mail received from mjson object
- *	@param
- *		pjson [in]			indicate the mjson object
- */
-const char* mjson_get_mail_received(MJSON *pjson)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_get_mail_received");
-		return NULL;
-	}
-#endif
-	return pjson->received;
-}
-
-/*
- *	get mail Message-Id from mjson object
- *	@param
- *		pjson [in]			indicate the mjson object
- */
-const char* mjson_get_mail_messageid(MJSON *pjson)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_get_mail_messageid");
-		return NULL;
-	}
-#endif
-	return pjson->msgid;
 }
 
 /*
@@ -685,8 +619,6 @@ size_t mjson_get_mime_offset(MJSON_MIME *pmime, int param)
  */
 int mjson_seek_fd(MJSON *pjson, const char *id, int whence)
 {
-	MJSON_MIME *pmime;
-	
 #ifdef _DEBUG_UMTA
 	if (NULL == pjson) {
 		debug_info("[mail]: NULL pointer in mjson_seek_fd");
@@ -701,8 +633,7 @@ int mjson_seek_fd(MJSON *pjson, const char *id, int whence)
 	if (MJSON_MIME_HEAD != whence && MJSON_MIME_CONTENT != whence) {
 		return -1;
 	}
-
-	pmime = mjson_get_mime(pjson, id);
+	auto pmime = pjson->get_mime(id);
 	if (NULL == pmime) {
 		return -1;
 	}
@@ -735,21 +666,10 @@ int mjson_seek_fd(MJSON *pjson, const char *id, int whence)
  *	@param
  *		pmime [in]			indicate the mime object
  */
-MJSON_MIME *mjson_get_mime(MJSON *pjson, const char *id)
+MJSON_MIME *MJSON::get_mime(const char *id)
 {
-	ENUM_PARAM enum_param;
-
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_get_mime");
-		return NULL;
-	}
-#endif
-	enum_param.id = id;
-	enum_param.pmime = NULL;
-	simple_tree_enum_from_node(simple_tree_get_root(&pjson->tree),
-	mjson_enum_id, (void*)&enum_param);
-	
+	ENUM_PARAM enum_param = {id};
+	simple_tree_enum_from_node(simple_tree_get_root(&tree), mjson_enum_id, &enum_param);
 	return enum_param.pmime;
 }
 

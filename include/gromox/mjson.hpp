@@ -33,6 +33,12 @@ struct GX_EXPORT MJSON {
 	~MJSON();
 	void operator=(MJSON &&) = delete;
 
+	const char *get_mail_filename() const { return filename; }
+	const char *get_mail_received() const { return received; }
+	const char *get_mail_messageid() const { return msgid; }
+	size_t get_mail_length() const { return size; }
+	MJSON_MIME *get_mime(const char *id);
+
 	SIMPLE_TREE tree{};
 	LIB_BUFFER *ppool = nullptr;
 	unsigned int uid = 0;
@@ -80,10 +86,7 @@ int mjson_rfc822_fetch(MJSON *pjson, const char *storage_path,
 	const char *charset, BOOL b_ext, char *buff, int length);
 int mjson_seek_fd(MJSON *pjson, const char *id, int whence);
 void mjson_enum_mime(MJSON *pjson, MJSON_MIME_ENUM enum_func, void *param);
-const char* mjson_get_mail_filename(MJSON *pjson);
-const char* mjson_get_mail_received(MJSON *pjson);
-const char* mjson_get_mail_messageid(MJSON *pjson);
-size_t mjson_get_mail_length(MJSON *pjson);
+
 int mjson_get_mime_mtype(MJSON_MIME *pmime);
 const char* mjson_get_mime_ctype(MJSON_MIME *pmime);
 const char* mjson_get_mime_charset(MJSON_MIME *pmime);
@@ -92,4 +95,3 @@ const char* mjson_get_mime_encoding(MJSON_MIME *pmime);
 const char* mjson_get_mime_id(MJSON_MIME *pmime);
 size_t mjson_get_mime_length(MJSON_MIME *pmime, int param);
 size_t mjson_get_mime_offset(MJSON_MIME *pmime, int param);
-MJSON_MIME *mjson_get_mime(MJSON *pjson, const char *id);
