@@ -2303,7 +2303,7 @@ int common_util_run()
 	} else if (mime_num > 16*1024) {
 		mime_num = 16*1024;
 	}
-	g_mime_pool = MIME_POOL::create(mime_num, 16, TRUE);
+	g_mime_pool = MIME_POOL::create(mime_num, 16);
 	if (NULL == g_mime_pool) {
 		printf("[exchange_emsmdb]: Failed to init MIME pool\n");
 		return -4;

@@ -258,7 +258,7 @@ int transporter_run()
 		single_list_append_as_tail(&g_free_list, &pcontext->node);
 	}
 
-	g_mime_pool = MIME_POOL::create(g_mime_num, FILENUM_PER_MIME, TRUE);
+	g_mime_pool = MIME_POOL::create(g_mime_num, FILENUM_PER_MIME);
 	if (NULL == g_mime_pool) {
 		transporter_collect_resource();
 		printf("[transporter]: Failed to init MIME pool\n");

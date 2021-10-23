@@ -13,16 +13,15 @@ struct MIME_POOL_NODE {
 
 struct GX_EXPORT MIME_POOL {
 	MIME_POOL(MIME_POOL &&) = delete;
-	MIME_POOL(size_t number, int ratio, BOOL thr_safe);
+	MIME_POOL(size_t number, int ratio);
 	~MIME_POOL();
 	void operator=(MIME_POOL &&) = delete;
 
-	static std::shared_ptr<MIME_POOL> create(size_t number, int ratio, BOOL thread_safe);
+	static std::shared_ptr<MIME_POOL> create(size_t number, int ratio);
 	MIME *get_mime();
 	static void put_mime(MIME *);
 
 	SINGLE_LIST free_list{};
-	BOOL thread_safe = false;
 	std::mutex mutex;
 	std::unique_ptr<MIME_POOL_NODE[]> pbegin;
 	size_t number;

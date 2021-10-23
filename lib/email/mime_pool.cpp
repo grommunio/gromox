@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <memory>
+#include <mutex>
 #include <libHX/defs.h>
 #include <gromox/util.hpp>
 #include <gromox/mime_pool.hpp>
@@ -11,8 +13,8 @@
  *	@return
  *		mime pool object
  */
-MIME_POOL::MIME_POOL(size_t number, int ratio, BOOL ts) :
-	thread_safe(ts), pbegin(std::make_unique<MIME_POOL_NODE[]>(number))
+MIME_POOL::MIME_POOL(size_t number, int ratio) :
+	pbegin(std::make_unique<MIME_POOL_NODE[]>(number))
 {
 	auto pmime_pool = this;
 	size_t i;
@@ -23,8 +25,7 @@ MIME_POOL::MIME_POOL(size_t number, int ratio, BOOL ts) :
 	} else if (ratio > 256) {
 		ratio = 256;
 	}
-	pmime_pool->allocator = lib_buffer_init(FILE_ALLOC_SIZE,
-							number*ratio, thread_safe);
+	pmime_pool->allocator = lib_buffer_init(FILE_ALLOC_SIZE, number * ratio, TRUE);
 	if (NULL == pmime_pool->allocator) {
 		throw std::bad_alloc();
 	}
@@ -60,10 +61,9 @@ MIME_POOL::~MIME_POOL()
 	}
 }
 
-std::shared_ptr<MIME_POOL>
-MIME_POOL::create(size_t number, int ratio, BOOL thread_safe) try
+std::shared_ptr<MIME_POOL> MIME_POOL::create(size_t number, int ratio) try
 {
-	return std::make_unique<MIME_POOL>(number, ratio, thread_safe);
+	return std::make_unique<MIME_POOL>(number, ratio);
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1546: ENOMEM\n");
 	return nullptr;
@@ -78,15 +78,8 @@ MIME_POOL::create(size_t number, int ratio, BOOL thread_safe) try
  */
 MIME *MIME_POOL::get_mime()
 {
-	auto pmime_pool = this;
-	SINGLE_LIST_NODE *pnode;
-	if (TRUE == pmime_pool->thread_safe) {
-		pmime_pool->mutex.lock();
-	}
-	pnode = single_list_pop_front(&pmime_pool->free_list);
-	if (TRUE == pmime_pool->thread_safe) {
-		pmime_pool->mutex.unlock();
-	}
+	std::lock_guard lk(mutex);
+	auto pnode = single_list_pop_front(&free_list);
 	if (NULL != pnode) {
 		return &((MIME_POOL_NODE*)(pnode->pdata))->mime;
 	}
@@ -114,13 +107,6 @@ void MIME_POOL::put_mime(MIME *pmime)
 		return;
 	}
 #endif
-	if (TRUE == pmime_pool->thread_safe) {
-		pmime_pool->mutex.lock();
-    }
-    single_list_append_as_tail(&pmime_pool->free_list, &pmime_node->node);
-    if (TRUE == pmime_pool->thread_safe) {
-		pmime_pool->mutex.unlock();
-    }
-    return;
+	std::lock_guard lk(pmime_pool->mutex);
+	single_list_append_as_tail(&pmime_pool->free_list, &pmime_node->node);
 }
-
