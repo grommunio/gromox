@@ -6001,7 +6001,7 @@ int mail_engine_run()
 		printf("[mail_engine]: Failed to init oxcmail library\n");
 		return -1;
 	}
-	g_mime_pool = mime_pool_init(g_mime_num, FILENUM_PER_MIME, TRUE);
+	g_mime_pool = MIME_POOL::create(g_mime_num, FILENUM_PER_MIME, TRUE);
 	if (NULL == g_mime_pool) {
 		printf("[mail_engine]: Failed to init MIME pool\n");
 		return -3;

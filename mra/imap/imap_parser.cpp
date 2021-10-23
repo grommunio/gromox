@@ -234,7 +234,7 @@ int imap_parser_run()
 	if (num > 800) {
 		num = 800;
 	}
-	g_mime_pool = mime_pool_init(num, FILENUM_PER_MIME, TRUE);
+	g_mime_pool = MIME_POOL::create(num, FILENUM_PER_MIME, TRUE);
 	if (NULL == g_mime_pool) {
 		printf("[imap_parser]: Failed to init MIME pool\n");
 		return -6;

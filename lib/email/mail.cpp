@@ -57,7 +57,6 @@ void MAIL::clear()
 BOOL MAIL::retrieve(char *in_buff, size_t length)
 {
 	auto pmail = this;
-	MIME *pmime;
 
 #ifdef _DEBUG_UMTA
 	if (in_buff == nullptr) {
@@ -66,20 +65,20 @@ BOOL MAIL::retrieve(char *in_buff, size_t length)
 	}
 #endif
 	clear();
-	pmime = mime_pool_get(pmail->pmime_pool);
+	auto pmime = pmail->pmime_pool->get_mime();
 	if (NULL == pmime) {
 		debug_info("[mail]: fail to get mime from pool");
 		return FALSE;
 	}
 	if (FALSE == mime_retrieve(NULL, pmime, in_buff, length)) {
-		mime_pool_put(pmime);
+		pmail->pmime_pool->put_mime(pmime);
 		return FALSE;
 	}
 
 	if (SINGLE_MIME != pmime->mime_type &&
 		MULTIPLE_MIME != pmime->mime_type) {
 		debug_info("[mail]: fatal error in mime_retrieve");
-		mime_pool_put(pmime);
+		pmail->pmime_pool->put_mime(pmime);
 		return FALSE;
 	}
 	simple_tree_set_root(&pmail->tree, &pmime->node);
@@ -90,13 +89,13 @@ BOOL MAIL::retrieve(char *in_buff, size_t length)
 
 	pmail->clear();
 	/* retrieve as single mail object */
-	pmime = mime_pool_get(pmail->pmime_pool);
+	pmime = pmail->pmime_pool->get_mime();
 	if (NULL == pmime) {
 		debug_info("[mail]: fail to get mime from pool");
 		return FALSE;
 	}
 	if (FALSE == mime_retrieve(NULL, pmime, in_buff, length)) {
-		mime_pool_put(pmime);
+		pmail->pmime_pool->put_mime(pmime);
 		return FALSE;
 	}
 	pmime->mime_type = SINGLE_MIME;
@@ -130,20 +129,20 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 			pmime_parent->boundary_len) == 0 &&
 			('\r' == ptr[2 + pmime_parent->boundary_len] ||
 			'-' == ptr[2 + pmime_parent->boundary_len])) {
-			pmime = mime_pool_get(pmail->pmime_pool);
+			pmime = pmail->pmime_pool->get_mime();
 			if (NULL == pmime) {
 				debug_info("[mail]: fail to get mime from pool");
 				return FALSE;
 			}
 			if (FALSE == mime_retrieve(pmime_parent,
 				pmime, ptr_last, ptr - ptr_last)) {
-				mime_pool_put(pmime);
+				pmail->pmime_pool->put_mime(pmime);
 				return FALSE;
 			}
 			if (SINGLE_MIME != pmime->mime_type &&
 				MULTIPLE_MIME != pmime->mime_type) {
 				debug_info("[mail]: fatal error in mime_retrieve_to_mime");
-				mime_pool_put(pmime);
+				pmail->pmime_pool->put_mime(pmime);
 				return FALSE;
 			}
 			if (NULL == pmime_last) {
@@ -179,20 +178,20 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		return TRUE;
 	}
 	/* some illegal multiple mimes haven't --boundary string-- */
-	pmime = mime_pool_get(pmail->pmime_pool);
+	pmime = pmail->pmime_pool->get_mime();
 	if (NULL == pmime) {
 		debug_info("[mail]: fail to get mime from pool");
 		return FALSE;
 	}
 	if (FALSE == mime_retrieve(pmime_parent,
 		pmime, ptr_last, ptr_end - ptr_last)) {
-		mime_pool_put(pmime);
+		pmail->pmime_pool->put_mime(pmime);
 		return FALSE;
 	}
 	if (SINGLE_MIME != pmime->mime_type &&
 		MULTIPLE_MIME != pmime->mime_type) {
 		debug_info("[mail]: fatal error in mime_retrieve_to_mime");
-		mime_pool_put(pmime);
+		pmail->pmime_pool->put_mime(pmime);
 		return FALSE;
 	}
 	if (NULL == pmime_last) {
@@ -349,11 +348,10 @@ MAIL &MAIL::operator=(MAIL &&o)
 MIME *MAIL::add_head()
 {
 	auto pmail = this;
-	MIME *pmime;
 	if (NULL != simple_tree_get_root(&pmail->tree)) {
 		return NULL;
 	}
-	pmime = mime_pool_get(pmail->pmime_pool);
+	auto pmime = pmail->pmime_pool->get_mime();
 	if (NULL == pmime) {
 		return NULL;
 	}
@@ -796,7 +794,6 @@ static void mail_enum_tags(SIMPLE_TREE_NODE *pnode, void *param)
 MIME *MAIL::add_child(MIME *pmime_base, int opt)
 {
 	auto pmail = this;
-	MIME *pmime;
 
 #ifdef _DEBUG_UMTA
 	if (pmime_base == nullptr) {
@@ -807,14 +804,14 @@ MIME *MAIL::add_child(MIME *pmime_base, int opt)
 	if (MULTIPLE_MIME != pmime_base->mime_type) {
 		return NULL;
 	}
-    pmime = mime_pool_get(pmail->pmime_pool);
+	auto pmime = pmail->pmime_pool->get_mime();
     if (NULL == pmime) {
         return NULL;
     }
     mime_clear(pmime);
     if (FALSE == simple_tree_add_child(&pmail->tree,
         &pmime_base->node, &pmime->node, opt)) {
-        mime_pool_put(pmime);
+		pmail->pmime_pool->put_mime(pmime);
         return NULL;
     }
     return pmime;
@@ -842,17 +839,15 @@ void MAIL::enum_mime(MAIL_MIME_ENUM enum_func, void *param)
 
 static void mail_enum_delete(SIMPLE_TREE_NODE *pnode)
 {
-	MIME *pmime;
-
 #ifdef _DEBUG_UMTA
 	if (NULL == pnode) {
 		debug_info("[mail]: NULL pointer in mail_enum_delete");
 		return;
 	}
 #endif
-	pmime = (MIME*)(pnode->pdata);
+	auto pmime = static_cast<MIME *>(pnode->pdata);
 	mime_clear(pmime);
-	mime_pool_put(pmime);
+	MIME_POOL::put_mime(pmime);
 }
 
 /*

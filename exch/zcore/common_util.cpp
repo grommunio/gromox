@@ -577,7 +577,7 @@ void common_util_init(const char *org_name, const char *hostname,
 
 int common_util_run(const char *data_path)
 {
-	g_mime_pool = mime_pool_init(g_mime_num, 16, TRUE);
+	g_mime_pool = MIME_POOL::create(g_mime_num, 16, TRUE);
 	if (NULL == g_mime_pool) {
 		printf("[common_util]: Failed to init MIME pool\n");
 		return -1;

@@ -61,7 +61,7 @@ MIME_POOL::~MIME_POOL()
 }
 
 std::unique_ptr<MIME_POOL>
-mime_pool_init(size_t number, int ratio, BOOL thread_safe) try
+MIME_POOL::create(size_t number, int ratio, BOOL thread_safe) try
 {
 	return std::make_unique<MIME_POOL>(number, ratio, thread_safe);
 } catch (const std::bad_alloc &) {
@@ -76,17 +76,10 @@ mime_pool_init(size_t number, int ratio, BOOL thread_safe) try
  *	@return
  *		mime object pointer
  */
-MIME* mime_pool_get(MIME_POOL *pmime_pool)
+MIME *MIME_POOL::get_mime()
 {
+	auto pmime_pool = this;
 	SINGLE_LIST_NODE *pnode;
-
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime_pool) {
-		debug_info("[mime_pool]: NULL pointer in mime_pool_get");
-		return NULL;
-	}
-#endif
-
 	if (TRUE == pmime_pool->thread_safe) {
 		pmime_pool->mutex.lock();
 	}
@@ -103,7 +96,7 @@ MIME* mime_pool_get(MIME_POOL *pmime_pool)
 /*
  *	release one mime object back into mime pool
  */
-void mime_pool_put(MIME *pmime)
+void MIME_POOL::put_mime(MIME *pmime)
 {
 	MIME_POOL *pmime_pool;
 
