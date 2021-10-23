@@ -83,26 +83,24 @@ BOOL MAIL::retrieve(char *in_buff, size_t length)
 		return FALSE;
 	}
 	simple_tree_set_root(&pmail->tree, &pmime->node);
-	if (MULTIPLE_MIME == pmime->mime_type) {
-		if (FALSE == mail_retrieve_to_mime(pmail, pmime,
-			pmime->first_boundary + pmime->boundary_len + 4,
-			pmime->last_boundary)) {
-			pmail->clear();
-			/* retrieve as single mail object */
-			pmime = mime_pool_get(pmail->pmime_pool);
-			if (NULL == pmime) {
-				debug_info("[mail]: fail to get mime from pool");
-				return FALSE;
-			}
-			if (FALSE == mime_retrieve(NULL, pmime, in_buff, length)) {
-				mime_pool_put(pmime);
-				return FALSE;
-			}
-			pmime->mime_type = SINGLE_MIME;
-			simple_tree_set_root(&pmail->tree, &pmime->node);   
-			return TRUE;
-		}
+	if (pmime->mime_type != MULTIPLE_MIME ||
+	    mail_retrieve_to_mime(pmail, pmime, pmime->first_boundary +
+	    pmime->boundary_len + 4, pmime->last_boundary))
+		return TRUE;
+
+	pmail->clear();
+	/* retrieve as single mail object */
+	pmime = mime_pool_get(pmail->pmime_pool);
+	if (NULL == pmime) {
+		debug_info("[mail]: fail to get mime from pool");
+		return FALSE;
 	}
+	if (FALSE == mime_retrieve(NULL, pmime, in_buff, length)) {
+		mime_pool_put(pmime);
+		return FALSE;
+	}
+	pmime->mime_type = SINGLE_MIME;
+	simple_tree_set_root(&pmail->tree, &pmime->node);
 	return TRUE;
 }
 
