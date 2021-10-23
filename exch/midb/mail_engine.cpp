@@ -465,7 +465,6 @@ static char* mail_engine_ct_decode_mime(
 
 static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, KEYWORD_ENUM *penum)
 {
-	int fd;
 	char *pbuff;
 	size_t length;
 	size_t temp_len;
@@ -485,8 +484,7 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, KEYWORD_ENUM *penum)
 		if (NULL == pbuff) {
 			return;
 		}
-		fd = mjson_seek_fd(penum->pjson,
-			mjson_get_mime_id(pmime), MJSON_MIME_CONTENT);
+		auto fd = penum->pjson->seek_fd(mjson_get_mime_id(pmime), MJSON_MIME_CONTENT);
 		if (-1 == fd) {
 			free(pbuff);
 			return;
@@ -697,8 +695,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					keyword_enum.b_result = FALSE;
 					keyword_enum.charset = charset;
 					keyword_enum.keyword = (const char*)ptree_node->pstatment;
-					mjson_enum_mime(&temp_mjson, (MJSON_MIME_ENUM)
-						mail_engine_ct_enum_mime, &keyword_enum);
+					temp_mjson.enum_mime(reinterpret_cast<MJSON_MIME_ENUM>(mail_engine_ct_enum_mime), &keyword_enum);
 					if (TRUE == keyword_enum.b_result) {
 						b_result1 = TRUE;
 					}
@@ -1027,8 +1024,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					keyword_enum.b_result = FALSE;
 					keyword_enum.charset = charset;
 					keyword_enum.keyword = (const char*)ptree_node->pstatment;
-					mjson_enum_mime(&temp_mjson, (MJSON_MIME_ENUM)
-						mail_engine_ct_enum_mime, &keyword_enum);
+					temp_mjson.enum_mime(reinterpret_cast<MJSON_MIME_ENUM>(mail_engine_ct_enum_mime), &keyword_enum);
 					if (TRUE == keyword_enum.b_result) {
 						b_result1 = TRUE;
 					}

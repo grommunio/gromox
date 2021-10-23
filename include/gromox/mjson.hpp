@@ -9,6 +9,9 @@
 
 #define MJSON_MIME_MULTIPLE		2
 
+struct MJSON_MIME;
+using MJSON_MIME_ENUM = void (*)(MJSON_MIME *, void *);
+
 struct MJSON_MIME {
 	SIMPLE_TREE_NODE node;
 	LIB_BUFFER  *ppool;
@@ -37,6 +40,12 @@ struct GX_EXPORT MJSON {
 	BOOL retrieve(char *digest_buf, int len, const char *path);
 	int fetch_structure(const char *charset, BOOL ext, char *buf, int len);
 	int fetch_envelope(const char *charset, char *buf, int len);
+	BOOL rfc822_check();
+	BOOL rfc822_build(std::shared_ptr<MIME_POOL>, const char *storage_path);
+	BOOL rfc822_get(MJSON *other_pjson, const char *storage_path, const char *id, char *mjson_id, char *mime_id);
+	int rfc822_fetch(const char *storage_path, const char *charset, BOOL ext, char *buf, int len);
+	int seek_fd(const char *id, int whence);
+	void enum_mime(MJSON_MIME_ENUM, void *);
 	const char *get_mail_filename() const { return filename; }
 	const char *get_mail_received() const { return received; }
 	const char *get_mail_messageid() const { return msgid; }
@@ -57,8 +66,6 @@ struct GX_EXPORT MJSON {
 	char notification[1024]{};
 };
 
-using MJSON_MIME_ENUM = void (*)(MJSON_MIME *, void *);
-
 enum {
 	MJSON_FLAG_READ,
 	MJSON_FLAG_REPLIED,
@@ -75,14 +82,6 @@ enum {
 
 LIB_BUFFER* mjson_allocator_init(size_t max_size, BOOL thread_safe);
 void mjson_allocator_free(LIB_BUFFER *pallocator);
-BOOL mjson_rfc822_check(MJSON *pjson);
-extern GX_EXPORT BOOL mjson_rfc822_build(MJSON *, std::shared_ptr<MIME_POOL>, const char *storage_path);
-BOOL mjson_rfc822_get(MJSON *pjson_base, MJSON *pjson,
-	const char *storage_path, const char *id, char *mjson_id, char *mime_id);
-int mjson_rfc822_fetch(MJSON *pjson, const char *storage_path,
-	const char *charset, BOOL b_ext, char *buff, int length);
-int mjson_seek_fd(MJSON *pjson, const char *id, int whence);
-void mjson_enum_mime(MJSON *pjson, MJSON_MIME_ENUM enum_func, void *param);
 
 int mjson_get_mime_mtype(MJSON_MIME *pmime);
 const char* mjson_get_mime_ctype(MJSON_MIME *pmime);

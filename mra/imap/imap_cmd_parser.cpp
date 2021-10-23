@@ -808,7 +808,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		if (strcasecmp(kw, "BODY") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
 			            GX_ARRAY_SIZE(buff) - buff_len, "BODY ");
-			if (TRUE == mjson_rfc822_check(&mjson)) {
+			if (mjson.rfc822_check()) {
 				std::string rfc_path;
 				try {
 					rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
@@ -816,8 +816,8 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					fprintf(stderr, "E-1461: ENOMEM\n");
 				}
 				if (rfc_path.size() > 0 &&
-				    mjson_rfc822_build(&mjson, imap_parser_get_mpool(), rfc_path.c_str())) {
-					auto len = mjson_rfc822_fetch(&mjson, rfc_path.c_str(),
+				    mjson.rfc822_build(imap_parser_get_mpool(), rfc_path.c_str())) {
+					auto len = mjson.rfc822_fetch(rfc_path.c_str(),
 						resource_get_default_charset(pcontext->lang),
 						FALSE, buff + buff_len, MAX_DIGLEN - buff_len);
 					if (-1 == len) {
@@ -842,7 +842,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		} else if (strcasecmp(kw, "BODYSTRUCTURE") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
 			            GX_ARRAY_SIZE(buff) - buff_len, "BODYSTRUCTURE ");
-			if (TRUE == mjson_rfc822_check(&mjson)) {
+			if (mjson.rfc822_check()) {
 				std::string rfc_path;
 				try {
 					rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
@@ -850,8 +850,8 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					fprintf(stderr, "E-1462: ENOMEM\n");
 				}
 				if (rfc_path.size() > 0 &&
-				    mjson_rfc822_build(&mjson, imap_parser_get_mpool(), rfc_path.c_str())) {
-					auto len = mjson_rfc822_fetch(&mjson, rfc_path.c_str(),
+				    mjson.rfc822_build(imap_parser_get_mpool(), rfc_path.c_str())) {
+					auto len = mjson.rfc822_fetch(rfc_path.c_str(),
 						resource_get_default_charset(pcontext->lang),
 						TRUE, buff + buff_len, MAX_DIGLEN - buff_len);
 					if (-1 == len) {
@@ -989,7 +989,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				temp_id = temp_buff;
 			}
 			if (0 != strcmp(temp_id, "") &&
-				TRUE == mjson_rfc822_check(&mjson)) {
+			    mjson.rfc822_check()) {
 				std::string rfc_path;
 				try {
 					rfc_path = std::string(pcontext->maildir) + "/tmp/imap.rfc822";
@@ -997,9 +997,9 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					fprintf(stderr, "E-1463: ENOMEM\n");
 				}
 				if (rfc_path.size() > 0 &&
-				    mjson_rfc822_build(&mjson, imap_parser_get_mpool(), rfc_path.c_str())) {
+				    mjson.rfc822_build(imap_parser_get_mpool(), rfc_path.c_str())) {
 					MJSON temp_mjson(imap_parser_get_jpool());
-					if (mjson_rfc822_get(&mjson, &temp_mjson, rfc_path.c_str(),
+					if (mjson.rfc822_get(&temp_mjson, rfc_path.c_str(),
 					    temp_id, mjson_id, final_id)) {
 						len = imap_cmd_parser_print_structure(
 						      pcontext, &temp_mjson, static_cast<char *>(pnode->pdata),

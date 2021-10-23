@@ -438,10 +438,11 @@ static void mjson_enum_none(SIMPLE_TREE_NODE *pnode, void *param)
 	}
 }
 
-void mjson_enum_mime(MJSON *pjson, MJSON_MIME_ENUM enum_func, void *param)
+void MJSON::enum_mime(MJSON_MIME_ENUM enum_func, void *param)
 {
+	auto pjson = this;
 #ifdef _DEBUG_UMTA
-    if (NULL == pjson || NULL == enum_func) {
+	if (enum_func == nullptr) {
         debug_info("[mail]: NULL pointer in mjson_enum_mime");
         return;
     }
@@ -608,15 +609,9 @@ size_t mjson_get_mime_offset(MJSON_MIME *pmime, int param)
  *		whence				MJSON_MIME_HEAD
  *							MJSON_MIME_CONTENT
  */
-int mjson_seek_fd(MJSON *pjson, const char *id, int whence)
+int MJSON::seek_fd(const char *id, int whence)
 {
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_seek_fd");
-		return -1;
-	}
-#endif
-
+	auto pjson = this;
 	if ('\0' == pjson->path[0]) {
 		return -1;
 	}
@@ -1356,8 +1351,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 				goto RFC822_FAILURE;
 			}
 			
-			if (node_stat.st_size != read(fd, digest_buff,
-				node_stat.st_size)) {
+			if (::read(fd, digest_buff, node_stat.st_size) != node_stat.st_size) {
 				free(digest_buff);
 				close(fd);
 				goto RFC822_FAILURE;
@@ -1815,12 +1809,10 @@ static void mjson_emum_rfc822(MJSON_MIME *pmime, BOOL *pb_found)
 	}
 }
 
-BOOL mjson_rfc822_check(MJSON *pjson)
+BOOL MJSON::rfc822_check()
 {
-	BOOL b_found;
-	
-	b_found = FALSE;
-	mjson_enum_mime(pjson, (MJSON_MIME_ENUM)mjson_emum_rfc822, &b_found);
+	BOOL b_found = false;
+	enum_mime(reinterpret_cast<MJSON_MIME_ENUM>(mjson_emum_rfc822), &b_found);
 	return b_found;
 }
 
@@ -1866,7 +1858,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 	
 	if (lseek(fd, mjson_get_mime_offset(pmime, MJSON_MIME_CONTENT), SEEK_SET) < 0)
 		fprintf(stderr, "E-1430: lseek: %s\n", strerror(errno));
-	auto rdlen = read(fd, pbuff.get(), length);
+	auto rdlen = ::read(fd, pbuff.get(), length);
 	if (rdlen < 0 || static_cast<size_t>(rdlen) != length) {
 		close(fd);
 		pbuild->build_result = FALSE;
@@ -1976,8 +1968,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		}
 	}
 	
-	if (pbuild->depth < MAX_RFC822_DEPTH &&
-		TRUE == mjson_rfc822_check(&temp_mjson)) {
+	if (pbuild->depth < MAX_RFC822_DEPTH && temp_mjson.rfc822_check()) {
 		BUILD_PARAM build_param;
 		build_param.filename = temp_mjson.filename;
 		build_param.msg_path = temp_mjson.path;
@@ -1986,8 +1977,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		build_param.ppool = pbuild->ppool;
 		build_param.build_result = TRUE;
 		
-		mjson_enum_mime(&temp_mjson, (MJSON_MIME_ENUM)mjson_enum_build,
-			&build_param);
+		temp_mjson.enum_mime(reinterpret_cast<MJSON_MIME_ENUM>(mjson_enum_build), &build_param);
 		if (FALSE == build_param.build_result) {
 			if (remove(dgt_path) < 0 && errno != ENOENT)
 				fprintf(stderr, "W-1379: remove %s: %s\n", dgt_path, strerror(errno));
@@ -1999,15 +1989,13 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 	return;
 }
 
-BOOL mjson_rfc822_build(MJSON *pjson, std::shared_ptr<MIME_POOL> ppool,
-	const char *storage_path)
+BOOL MJSON::rfc822_build(std::shared_ptr<MIME_POOL> ppool, const char *storage_path)
 {
+	auto pjson = this;
 	char temp_path[256];
 	
-	if (FALSE == mjson_rfc822_check(pjson)) {
+	if (!rfc822_check())
 		return FALSE;
-	}
-	
 	if ('\0' == pjson->path[0]) {
 		return FALSE;
 	}
@@ -2024,29 +2012,25 @@ BOOL mjson_rfc822_build(MJSON *pjson, std::shared_ptr<MIME_POOL> ppool,
 	build_param.depth = 1;
 	build_param.ppool = ppool;
 	build_param.build_result = TRUE;
-	
-	mjson_enum_mime(pjson, (MJSON_MIME_ENUM)mjson_enum_build,
-		&build_param);
-	
+	pjson->enum_mime(reinterpret_cast<MJSON_MIME_ENUM>(mjson_enum_build), &build_param);
 	if (FALSE == build_param.build_result) {
 		rmdir(temp_path);
 	}
 	return build_param.build_result;
 }
 
-BOOL mjson_rfc822_get(MJSON *pjson_base, MJSON *pjson,
-	const char *storage_path, const char *id, char *mjson_id, char *mime_id)
+BOOL MJSON::rfc822_get(MJSON *pjson, const char *storage_path, const char *id,
+    char *mjson_id, char *mime_id)
 {
+	auto pjson_base = this;
 	int fd;
 	char *pdot;
 	char temp_path[256];
 	struct stat node_stat;
 	char digest_buff[MAX_DIGLEN];
 
-	if (FALSE == mjson_rfc822_check(pjson_base)) {
+	if (!rfc822_check())
 		return FALSE;
-	}
-	
 	snprintf(temp_path, 256, "%s/%s", storage_path, pjson_base->filename);
 	if (0 != stat(temp_path, &node_stat) || 0 == S_ISDIR(node_stat.st_mode)) {
 		return FALSE;
@@ -2071,8 +2055,7 @@ BOOL mjson_rfc822_get(MJSON *pjson_base, MJSON *pjson,
 			close(fd);
 			return FALSE;
 		}
-			if (node_stat.st_size != read(fd, digest_buff,
-				node_stat.st_size)) {
+			if (::read(fd, digest_buff, node_stat.st_size) != node_stat.st_size) {
 				close(fd);
 				return FALSE;
 			}
@@ -2089,9 +2072,10 @@ BOOL mjson_rfc822_get(MJSON *pjson_base, MJSON *pjson,
 	return FALSE;
 }
 	
-int mjson_rfc822_fetch(MJSON *pjson, const char *storage_path,
+int MJSON::rfc822_fetch(const char *storage_path,
 	const char *charset, BOOL b_ext, char *buff, int length)
 {
+	auto pjson = this;
 	int ret_len;
 	MJSON_MIME *pmime;
 	char temp_path[256];
@@ -2100,16 +2084,13 @@ int mjson_rfc822_fetch(MJSON *pjson, const char *storage_path,
 	
 
 #ifdef _DEBUG_UMTA
-	if (NULL == pjson || NULL == storage_path || NULL == buff) {
+	if (storage_path == nullptr || buff == nullptr) {
 		debug_info("[mail]: NULL pointer in mjson_rfc822_fetch");
 		return -1;
 	}
 #endif
-
-	if (FALSE == mjson_rfc822_check(pjson)) {
+	if (!rfc822_check())
 		return FALSE;
-	}
-	
 	snprintf(temp_path, 256, "%s/%s", storage_path, pjson->filename);
 	if (0 != stat(temp_path, &node_stat) ||
 		0 == S_ISDIR(node_stat.st_mode)) {
