@@ -610,7 +610,6 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 	int conjunction;
 	time_t tmp_time;
 	size_t temp_len;
-	MJSON temp_mjson;
 	char *ret_string;
 	int results[1024];
 	char temp_buff[1024];
@@ -682,7 +681,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				}
 				break;
-			case CONDITION_BODY:
+			case CONDITION_BODY: {
 				if (FALSE == b_loaded) {
 					if (0 == mail_engine_get_digest(
 						psqlite, mid_string, digest_buff)) {
@@ -690,7 +689,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					}
 					b_loaded = TRUE;
 				}
-				mjson_init(&temp_mjson, g_alloc_mjson);
+				MJSON temp_mjson(g_alloc_mjson);
 				snprintf(temp_buff, 256, "%s/eml",
 						common_util_get_maildir());
 				if (TRUE == mjson_retrieve(&temp_mjson,
@@ -705,8 +704,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 						b_result1 = TRUE;
 					}
 				}
-				mjson_free(&temp_mjson);
 				break;
+			}
 			case CONDITION_CC:
 				if (FALSE == b_loaded) {
 					if (0 == mail_engine_get_digest(
@@ -949,7 +948,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					}
 				}
 				break;
-			case CONDITION_TEXT:
+			case CONDITION_TEXT: {
 				if (FALSE == b_loaded) {
 					if (0 == mail_engine_get_digest(
 						psqlite, mid_string, digest_buff)) {
@@ -1021,7 +1020,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				if (TRUE == b_result1) {
 					break;
 				}
-				mjson_init(&temp_mjson, g_alloc_mjson);
+				MJSON temp_mjson(g_alloc_mjson);
 				snprintf(temp_buff, 256, "%s/eml",
 						common_util_get_maildir());
 				if (TRUE == mjson_retrieve(&temp_mjson,
@@ -1036,8 +1035,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 						b_result1 = TRUE;
 					}
 				}
-				mjson_free(&temp_mjson);
 				break;
+			}
 			case CONDITION_TO:
 				if (FALSE == b_loaded) {
 					if (0 == mail_engine_get_digest(

@@ -118,18 +118,13 @@ void mjson_allocator_free(LIB_BUFFER *pallocator)
  *		pjson [in]			indicate the mjson object
  *		ppool [in]		    indicate the allocator for mime object
  */
-void mjson_init(MJSON *pjson, LIB_BUFFER *ppool)
+MJSON::MJSON(LIB_BUFFER *p) : ppool(p)
 {
 #ifdef _DEBUG_UMTA
-	if (NULL == pjson || NULL == ppool) {
-		debug_info("[mail]: NULL pointer in mjson_init");
-		return;
-	}
+	if (p == nullptr)
+		throw std::invalid_argument("[mail]: NULL pointer in mjson_init");
 #endif
-	memset(pjson, 0, sizeof(MJSON));
-	simple_tree_init(&pjson->tree);
-	pjson->message_fd = -1;
-	pjson->ppool = ppool;
+	simple_tree_init(&tree);
 }
 
 /*
@@ -193,18 +188,10 @@ static void mjson_enum_delete(SIMPLE_TREE_NODE *pnode)
 	lib_buffer_put(((MJSON_MIME*)pnode->pdata)->ppool, pnode->pdata);
 }
 
-void mjson_free(MJSON *pjson)
+MJSON::~MJSON()
 {
-#ifdef _DEBUG_UMTA
-	if (NULL == pjson) {
-		debug_info("[mail]: NULL pointer in mjson_free");
-		return;
-	}
-#endif
-
-	mjson_clear(pjson);
-	simple_tree_free(&pjson->tree);
-	pjson->ppool = NULL;
+	mjson_clear(this);
+	simple_tree_free(&tree);
 }
 
 /*
@@ -1432,7 +1419,6 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			int fd;
 			int envl_len;
 			int body_len;
-			MJSON temp_mjson;
 			char temp_path[256];
 			struct stat node_stat;
 			char *digest_buff;
@@ -1467,11 +1453,9 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			}
 			
 			close(fd);
-			
-			mjson_init(&temp_mjson, pmime->ppool);
+			MJSON temp_mjson(pmime->ppool);
 			if (FALSE == mjson_retrieve(&temp_mjson,
 				digest_buff, node_stat.st_size, storage_path)) {
-				mjson_free(&temp_mjson);
 				free(digest_buff);
 				goto RFC822_FAILURE;
 			}
@@ -1482,7 +1466,6 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			envl_len = mjson_fetch_envelope(&temp_mjson, charset,
 						buff + offset + 1, length - offset - 1);
 			if (-1 == envl_len) {
-				mjson_free(&temp_mjson);
 				goto RFC822_FAILURE;
 			}
 			
@@ -1492,15 +1475,10 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 						charset, b_ext, buff + offset + envl_len + 2,
 						length - offset - envl_len - 2);
 			if (-1 == body_len) {
-				mjson_free(&temp_mjson);
 				goto RFC822_FAILURE;
 			}
-			
-			mjson_free(&temp_mjson);
-			
 			offset += envl_len + body_len + 2;
 			goto RFC822_SUCCESS;
-			
 		}
 		
  RFC822_FAILURE:
@@ -1941,7 +1919,6 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 {
 	int fd;
 	size_t length1;
-	MJSON temp_mjson;
 	char msg_path[256];
 	char dgt_path[256];
 	char temp_path[256];
@@ -2015,6 +1992,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		pbuff = std::move(pbuff1);
 	}
 	
+	MJSON temp_mjson(pmime->ppool);
 	MAIL imail(pbuild->ppool);
 	if (!imail.retrieve(pbuff.get(), length)) {
 		pbuild->build_result = FALSE;
@@ -2079,14 +2057,12 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		}
 		close(fd);
 		
-		mjson_init(&temp_mjson, pmime->ppool);
 		if (FALSE == mjson_retrieve(&temp_mjson,
 			digest_buff, digest_len, pbuild->storage_path)) {
 			if (remove(dgt_path) < 0 && errno != ENOENT)
 				fprintf(stderr, "W-1377: remove %s: %s\n", dgt_path, strerror(errno));
 			if (remove(msg_path) < 0 && errno != ENOENT)
 				fprintf(stderr, "W-1378: remove %s: %s\n", msg_path, strerror(errno));
-			mjson_free(&temp_mjson);
 			pbuild->build_result = FALSE;
 			return;
 		}
@@ -2112,8 +2088,6 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 			pbuild->build_result = FALSE;
 		}
 	}
-	
-	mjson_free(&temp_mjson);
 	return;
 }
 

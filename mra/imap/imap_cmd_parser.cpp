@@ -759,7 +759,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 	char *pdot;
 	char *pend;
 	char *pbody;
-	MJSON mjson;
+	MJSON mjson(imap_parser_get_jpool());
 	BOOL b_first;
 	int buff_len;
 	const char *temp_id;
@@ -767,7 +767,6 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 	size_t length;
 	time_t tmp_time;
 	struct tm tmp_tm;
-	MJSON temp_mjson;
 	MJSON_MIME *pmime;
 	char mjson_id[64];
 	char final_id[64];
@@ -783,7 +782,6 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		if (MEM_END_OF_FILE == len) {
 			return;
 		}
-		mjson_init(&mjson, imap_parser_get_jpool());
 		std::string eml_path;
 		try {
 			eml_path = std::string(pcontext->maildir) + "/eml";
@@ -792,7 +790,6 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		}
 		if (eml_path.size() == 0 ||
 		    !mjson_retrieve(&mjson, buff, len, eml_path.c_str())) {
-			mjson_free(&mjson);
 			return;
 		}
 	}
@@ -1007,7 +1004,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				}
 				if (rfc_path.size() > 0 &&
 				    mjson_rfc822_build(&mjson, imap_parser_get_mpool(), rfc_path.c_str())) {
-					mjson_init(&temp_mjson, imap_parser_get_jpool());
+					MJSON temp_mjson(imap_parser_get_jpool());
 					if (mjson_rfc822_get(&mjson, &temp_mjson, rfc_path.c_str(),
 					    temp_id, mjson_id, final_id)) {
 						len = imap_cmd_parser_print_structure(
@@ -1021,7 +1018,6 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 						      buff + buff_len, MAX_DIGLEN - buff_len,
 						      pbody, temp_id, ptr, offset, length, nullptr);
 					}
-					mjson_free(&temp_mjson);
 				} else {
 					len = imap_cmd_parser_print_structure(pcontext,
 					      &mjson, static_cast<char *>(pnode->pdata),
@@ -1048,9 +1044,6 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 	}
 	buff_len += gx_snprintf(buff + buff_len, GX_ARRAY_SIZE(buff) - buff_len, ")\r\n");
 	stream_write(&pcontext->stream, buff, buff_len);
-	if (pitem->flag_bits & FLAG_LOADED) {
-		mjson_free(&mjson);
-	}
 	if (FALSE == pcontext->b_readonly && pitem->flag_bits & FLAG_RECENT) {
 		pitem->flag_bits &= ~FLAG_RECENT;
 		if (0 == (pitem->flag_bits & FLAG_SEEN)) {

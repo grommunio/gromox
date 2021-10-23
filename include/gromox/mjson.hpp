@@ -26,33 +26,25 @@ struct MJSON_MIME {
 	size_t		length;
 };
 
-struct MJSON {
-	SIMPLE_TREE tree;
-	LIB_BUFFER  *ppool;
-	unsigned int uid;
-	char         path[256];
-	int          message_fd;
-	char         filename[128];
-	char         charset[32];
-	char         msgid[1024];
-	char         from[1024];
-	char         sender[1024];
-	char         reply[1024];
-	char         to[16*1024];
-	char         cc[16*1024];
-	char         inreply[1024];
-	char         subject[1024];
-	char         received[256];
-	char         date[256];
-	char         ref[4096];
-	int          read;
-	int          replied;
-	int          forwarded;
-	int          unsent;
-	int          flag;
-	int          priority;
-	char         notification[1024];
-	size_t       size;
+struct GX_EXPORT MJSON {
+	MJSON() = default;
+	MJSON(MJSON &&) = delete;
+	MJSON(LIB_BUFFER *);
+	~MJSON();
+	void operator=(MJSON &&) = delete;
+
+	SIMPLE_TREE tree{};
+	LIB_BUFFER *ppool = nullptr;
+	unsigned int uid = 0;
+	int message_fd = -1;
+	int read = 0, replied = 0, forwarded = 0, unsent = 0;
+	int flag = 0, priority = 0;
+	size_t size = 0;
+	char path[256]{}, filename[128]{}, charset[32]{}, msgid[1024]{};
+	char from[1024]{}, sender[1024]{}, reply[1024]{};
+	char to[16*1024]{}, cc[16*1024]{}, inreply[1024]{}, subject[1024]{};
+	char received[256]{}, date[256]{}, ref[4096]{};
+	char notification[1024]{};
 };
 
 using MJSON_MIME_ENUM = void (*)(MJSON_MIME *, void *);
@@ -73,11 +65,9 @@ enum {
 
 LIB_BUFFER* mjson_allocator_init(size_t max_size, BOOL thread_safe);
 void mjson_allocator_free(LIB_BUFFER *pallocator);
-void mjson_init(MJSON *pjson, LIB_BUFFER *ppool);
 void mjson_clear(MJSON *pjson);
 BOOL mjson_retrieve(MJSON *pjson, char *digest_buff,
 	int length, const char *path);
-void mjson_free(MJSON *pjson);
 int mjson_fetch_structure(MJSON *pjson, const char *charset,
 	BOOL b_ext, char *buff, int length);
 int mjson_fetch_envelope(MJSON *pjson, const char *charset,
