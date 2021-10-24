@@ -898,7 +898,7 @@ static int ps_stat_appending(IMAP_CONTEXT *pcontext)
 			auto imap_reply_str = resource_get_imap_code(1810, 1, &string_length);
 			return ps_end_processing(pcontext, imap_reply_str, string_length);
 		}
-		stream_clear(&pcontext->stream);
+		pcontext->stream.clear();
 	}
 	if (pcontext->sched_stat != SCHED_STAT_APPENDED) {
 		return PROCESS_CONTINUE;
@@ -958,7 +958,7 @@ static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
 		pcontext->write_length = 0;
 		switch (imap_parser_wrdat_retrieve(pcontext)) {
 		case IMAP_RETRIEVE_TERM:
-			stream_clear(&pcontext->stream);
+			pcontext->stream.clear();
 			if (0 == pcontext->write_length) {
 				pcontext->sched_stat = SCHED_STAT_RDCMD;
 				return X_LITERAL_CHECKING;
@@ -1059,7 +1059,7 @@ static int ps_stat_wrlst(IMAP_CONTEXT *pcontext)
 	if (pcontext->write_buff != nullptr) {
 		return PROCESS_CONTINUE;
 	}
-	stream_clear(&pcontext->stream);
+	pcontext->stream.clear();
 	pcontext->write_length = 0;
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = SCHED_STAT_RDCMD;
@@ -1680,7 +1680,7 @@ static void imap_parser_context_clear(IMAP_CONTEXT *pcontext)
 	pcontext->literal_ptr = NULL;
 	pcontext->literal_len = 0;
 	pcontext->current_len = 0;
-	stream_clear(&pcontext->stream);
+	pcontext->stream.clear();
 	mem_file_clear(&pcontext->f_flags);
 	pcontext->auth_times = 0;
 	pcontext->username[0] = '\0';

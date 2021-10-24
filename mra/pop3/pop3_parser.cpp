@@ -315,7 +315,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		                       &pcontext->stream, &tmp_len));
 		pcontext->write_length = tmp_len;
 		if (NULL == pcontext->write_buff) {
-			stream_clear(&pcontext->stream);
+			pcontext->stream.clear();
 			switch (pop3_parser_retrieve(pcontext)) {
 			case POP3_RETRIEVE_TERM:
 				pcontext->data_stat = FALSE;
@@ -369,7 +369,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(&pcontext->stream, &tmp_len));
 		pcontext->write_length = tmp_len;
 		if (NULL == pcontext->write_buff) {
-			stream_clear(&pcontext->stream);
+			pcontext->stream.clear();
 			pcontext->write_length = 0;
 			pcontext->write_offset = 0;
 			pcontext->list_stat = FALSE;
@@ -487,7 +487,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		close(pcontext->message_fd);
 		pcontext->message_fd = -1;
 	}
-	stream_clear(&pcontext->stream);
+	pcontext->stream.clear();
 	pcontext->write_length = 0;
 	pcontext->write_offset = 0;
 	pcontext->data_stat = FALSE;
@@ -597,14 +597,14 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 		}
 		last_result = copy_result;
 	}
-	stream_clear(&temp_stream);
+	temp_stream.clear();
 	tmp_len = STREAM_BLOCK_SIZE;
 	pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(
 	                       &pcontext->stream, &tmp_len));
 	pcontext->write_length = tmp_len;
 	if (NULL == pcontext->write_buff) {
 		pop3_parser_log_info(pcontext, LV_WARN, "error on stream object");
-		stream_clear(&pcontext->stream);
+		pcontext->stream.clear();
 		return POP3_RETRIEVE_ERROR;
 	}
 	return POP3_RETRIEVE_OK;
@@ -745,7 +745,7 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
 	pcontext->message_fd = -1;
 	pcontext->array.clear();
 	single_list_init(&pcontext->list);
-	stream_clear(&pcontext->stream);
+	pcontext->stream.clear();
 	memset(pcontext->read_buffer, 0, arsizeof(pcontext->read_buffer));
 	pcontext->read_offset = 0;
 	pcontext->write_buff = NULL;

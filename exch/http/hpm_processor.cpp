@@ -671,7 +671,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 			}
 		}
 	}
-	stream_clear(&phttp->stream_in);
+	phttp->stream_in.clear();
 	return TRUE;
 }
 

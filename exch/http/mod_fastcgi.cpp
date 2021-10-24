@@ -1047,7 +1047,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 				goto CHUNK_BEGIN;	
 		}
 	}
-	stream_clear(&phttp->stream_in);
+	phttp->stream_in.clear();
 	return TRUE;
 }
 

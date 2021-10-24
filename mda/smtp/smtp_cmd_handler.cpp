@@ -337,7 +337,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 	void *pbuff = stream_getbuffer_for_reading(&pcontext->stream, &size);
     if (NULL == pbuff) {
 		/* clear stream, all envelope imformation is recorded in mail.envelope */
-        stream_clear(&pcontext->stream);
+		pcontext->stream.clear();
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
 		} else {

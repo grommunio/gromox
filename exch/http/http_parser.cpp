@@ -1095,7 +1095,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 			http_parser_request_clear(&pcontext->request);
 			hpm_processor_put_context(pcontext);
 			pcontext->sched_stat = SCHED_STAT_RDHEAD;
-			stream_clear(&pcontext->stream_out);
+			pcontext->stream_out.clear();
 			return PROCESS_CONTINUE;
 		case HPM_RETRIEVE_SOCKET: {
 			unsigned int size = STREAM_BLOCK_SIZE;
@@ -1105,8 +1105,8 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 					"connection closed by hpm");
 				return X_RUNOFF;
 			}
-			stream_clear(&pcontext->stream_in);
-			stream_clear(&pcontext->stream_out);
+			pcontext->stream_in.clear();
+			pcontext->stream_out.clear();
 			http_parser_request_clear(&pcontext->request);
 			unsigned int tmp_len = STREAM_BLOCK_SIZE;
 			pcontext->write_buff = stream_getbuffer_for_writing(&pcontext->stream_out, &tmp_len);
@@ -1134,7 +1134,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 				}
 				http_parser_request_clear(&pcontext->request);
 				pcontext->sched_stat = SCHED_STAT_RDHEAD;
-				stream_clear(&pcontext->stream_out);
+				pcontext->stream_out.clear();
 				return PROCESS_CONTINUE;
 			}
 		} else if (!mod_fastcgi_read_response(pcontext)) {
@@ -1153,7 +1153,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 			}
 			http_parser_request_clear(&pcontext->request);
 			pcontext->sched_stat = SCHED_STAT_RDHEAD;
-			stream_clear(&pcontext->stream_out);
+			pcontext->stream_out.clear();
 			return PROCESS_CONTINUE;
 		}
 	}
@@ -1322,7 +1322,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 	} else if (NULL != pcontext->pfast_context ||
 	    TRUE == hpm_processor_check_context(pcontext)
 	    || TRUE == mod_cache_check_caching(pcontext)) {
-		stream_clear(&pcontext->stream_out);
+		pcontext->stream_out.clear();
 		return PROCESS_CONTINUE;
 	} else {
 		if (TRUE == pcontext->b_close) {
@@ -1331,7 +1331,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 		http_parser_request_clear(&pcontext->request);
 		pcontext->sched_stat = SCHED_STAT_RDHEAD;
 	}
-	stream_clear(&pcontext->stream_out);
+	pcontext->stream_out.clear();
 	return PROCESS_CONTINUE;
 }
 
@@ -2013,9 +2013,8 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
 	pcontext->sched_stat = 0;
 	
 	http_parser_request_clear(&pcontext->request);
-	
-	stream_clear(&pcontext->stream_in);
-	stream_clear(&pcontext->stream_out);
+	pcontext->stream_in.clear();
+	pcontext->stream_out.clear();
 	pcontext->write_buff = NULL;
 	pcontext->write_offset = 0;
 	pcontext->write_length = 0;

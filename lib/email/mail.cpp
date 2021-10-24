@@ -903,7 +903,7 @@ BOOL MAIL::dup(MAIL *pmail_dst)
 		offset += size;
 		size = STREAM_BLOCK_SIZE;
 	}
-	stream_clear(&tmp_stream);
+	tmp_stream.clear();
 	if (!pmail_dst->retrieve(pbuff, offset)) {
 		free(pbuff);
 		return FALSE;
@@ -968,7 +968,7 @@ BOOL MAIL::transfer_dot(MAIL *pmail_dst)
 		size = STREAM_BLOCK_SIZE;
 	}
 	
-	stream_clear(&tmp_stream);
+	tmp_stream.clear();
 	if (!pmail_dst->retrieve(pbuff,  offset)) {
 		free(pbuff);
 		return FALSE;

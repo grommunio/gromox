@@ -47,9 +47,11 @@ struct STREAM {
 
 	int has_newline() const { return line_result; }
 	unsigned int readline(char **);
+	void clear();
 	void try_mark_line();
 	void try_mark_eom();
 	int has_eom();
+	void split_eom(STREAM *secondary);
 	size_t get_total_length() const { return wr_total_pos; }
 	int copyline(char *buf, unsigned int *size);
 	unsigned int peek_buffer(char *, unsigned int) const;
@@ -73,8 +75,6 @@ struct STREAM {
 	friend void stream_split_eom(STREAM *, STREAM *);
 };
 
-void stream_clear(STREAM *pstream);
-void stream_split_eom(STREAM *pstream, STREAM *pstream_second);
 extern void *stream_getbuffer_for_writing(STREAM *pstream, unsigned int *psize);
 unsigned int stream_forward_writing_ptr(STREAM *pstream, unsigned int offset);
 unsigned int stream_forward_reading_ptr(STREAM *pstream, unsigned int offset);

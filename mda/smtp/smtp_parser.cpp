@@ -257,7 +257,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			}
 			return PROCESS_CONTINUE;
 		} else {
-			stream_clear(&pcontext->stream);
+			pcontext->stream.clear();
 			size = STREAM_BLOCK_SIZE;
 			pbuff = static_cast<char *>(stream_getbuffer_for_writing(&pcontext->stream,
 			        reinterpret_cast<unsigned int *>(&size)));
@@ -558,12 +558,12 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		
 		switch (pcontext->stream.has_eom()) {
 		case STREAM_EOM_NET:
-			stream_split_eom(&pcontext->stream, NULL);
+			pcontext->stream.split_eom(nullptr);
 			pcontext->last_cmd = T_END_MAIL;
 			return smtp_parser_try_flush_mail(pcontext, TRUE);
 		case STREAM_EOM_DIRTY:
 			pcontext->stream_second.emplace(blocks_allocator_get_allocator());
-			stream_split_eom(&pcontext->stream, &*pcontext->stream_second);
+			pcontext->stream.split_eom(&*pcontext->stream_second);
 			pcontext->last_cmd = T_END_MAIL;
 			return smtp_parser_try_flush_mail(pcontext, TRUE);
 		default:
@@ -951,7 +951,7 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
 	pcontext->mail.envelope.auth_times     = 0;
 	pcontext->mail.body.mail_length        = 0;
 	pcontext->mail.body.parts_num          = 0;
-	stream_clear(&pcontext->stream);
+	pcontext->stream.clear();
 	mem_file_clear(&pcontext->block_info.f_last_blkmime);
 	strcpy(pcontext->mail.envelope.parsed_domain, "unknown");
 	memset(&pcontext->mail.envelope.hello_domain, 0, arsizeof(pcontext->mail.envelope.hello_domain));

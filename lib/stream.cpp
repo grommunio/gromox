@@ -190,13 +190,13 @@ void STREAM::try_mark_line()
  *	  @param
  *		  pstream [in]	  indicate the stream object
  */
-void stream_clear(STREAM *pstream)
+void STREAM::clear()
 {
+	auto pstream = this;
 	DOUBLE_LIST_NODE *pnode, *phead;
 #ifdef _DEBUG_UMTA
-	if (NULL == pstream || NULL == pstream->allocator) {
+	if (allocator == nullptr)
 		return;
-	}
 #endif
 	phead = double_list_get_head(&pstream->list);
 	if (phead == nullptr)
@@ -243,7 +243,7 @@ void stream_free(STREAM *pstream)
 		return;
 	}
 #endif
-	stream_clear(pstream);
+	pstream->clear();
 	phead = double_list_pop_front(&pstream->list);
 	if (phead != nullptr)
 		lib_buffer_put(pstream->allocator, phead);
@@ -1065,19 +1065,14 @@ void STREAM::try_mark_eom()
  *		  pstream_second [in, out] second part of stream if not NULL
  *
  */
-void stream_split_eom(STREAM *pstream, STREAM *pstream_second)
+void STREAM::split_eom(STREAM *pstream_second)
 {
+	auto pstream = this;
 	size_t blocks, i, fake_pos;
 	unsigned int size;
 	void *pbuff;
 	DOUBLE_LIST_NODE *pnode;
 	
-#ifdef _DEBUG_UMTA	  
-	if (NULL == pstream) {
-		debug_info("[stream]: stream_split_eom, param NULL");
-		return;
-	}
-#endif
 	if (STREAM_EOM_WAITING == pstream->eom_result) {
 		return;
 	} else if (STREAM_EOM_CRLF == pstream->eom_result) {
@@ -1104,7 +1099,7 @@ void stream_split_eom(STREAM *pstream, STREAM *pstream_second)
 		fake_stream.rd_total_pos = fake_pos;
 		fake_stream.rd_block_pos = fake_pos % STREAM_BLOCK_SIZE;
 		fake_stream.pnode_rd = pnode;
-		stream_clear(pstream_second);
+		pstream_second->clear();
 		size = STREAM_BLOCK_SIZE;
 		while ((pbuff = stream_getbuffer_for_reading(&fake_stream, &size)) != NULL) {
 			pstream_second->write(pbuff, size);

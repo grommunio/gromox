@@ -247,8 +247,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 		if (FALSE == pcontext->is_login) {
 			return 1708;
 		}
-		
-		stream_clear(&pcontext->stream);
+		pcontext->stream.clear();
 		pcontext->stream.write("+OK\r\n", 5);
 
 		auto count = pcontext->array.size();
@@ -310,9 +309,7 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 		if (FALSE == pcontext->is_login) {
 			return 1708;
 		}
-		
-		
-		stream_clear(&pcontext->stream);
+		pcontext->stream.clear();
 		pcontext->stream.write("+OK\r\n", 5);
 		
 		auto count = pcontext->array.size();
@@ -396,10 +393,10 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 				eml_path.c_str(), strerror(errno));
 			return 1709;
 		}
-		stream_clear(&pcontext->stream);
+		pcontext->stream.clear();
 		pcontext->stream.write("+OK\r\n", 5);
 		if (POP3_RETRIEVE_ERROR == pop3_parser_retrieve(pcontext)) {
-			stream_clear(&pcontext->stream);
+			pcontext->stream.clear();
 			return 1719;
 		}
 		pop3_parser_log_info(pcontext, LV_DEBUG,
@@ -491,10 +488,10 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 		if (-1 == pcontext->message_fd) {
 			return 1709;
 		}
-		stream_clear(&pcontext->stream);
+		pcontext->stream.clear();
 		pcontext->stream.write("+OK\r\n", 5);
 		if (POP3_RETRIEVE_ERROR == pop3_parser_retrieve(pcontext)) {
-			stream_clear(&pcontext->stream);
+			pcontext->stream.clear();
 			return 1719;
 		}
 		return DISPATCH_DATA;

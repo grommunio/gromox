@@ -2115,7 +2115,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 		mem_file_free(&temp_file);
 		dir_tree_free(&temp_tree);
-		stream_clear(&pcontext->stream);
+		pcontext->stream.clear();
 		if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 			imap_parser_echo_modify(pcontext, &pcontext->stream);
 		}
@@ -2162,7 +2162,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 	}
 	mem_file_free(&temp_file);
-	stream_clear(&pcontext->stream);
+	pcontext->stream.clear();
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
 	}
@@ -2263,7 +2263,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	mem_file_free(&temp_file);
 	dir_tree_free(&temp_tree);
-	stream_clear(&pcontext->stream);
+	pcontext->stream.clear();
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
 	}
@@ -2360,7 +2360,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	mem_file_free(&temp_file);
 	dir_tree_free(&temp_tree);
-	stream_clear(&pcontext->stream);
+	pcontext->stream.clear();
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
 	}
@@ -2697,7 +2697,7 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pc
 	write(fd, buff, len);
 	pcontext->message_fd = fd;
 	gx_strlcpy(pcontext->tag_string, argv[0], GX_ARRAY_SIZE(pcontext->tag_string));
-	stream_clear(&pcontext->stream);
+	pcontext->stream.clear();
 	return DISPATCH_CONTINUE;
 }
 
@@ -2961,7 +2961,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	         pcontext->selected_folder, &temp_list, &errnum);
 	switch(result) {
 	case MIDB_RESULT_OK: {
-		stream_clear(&pcontext->stream);
+		pcontext->stream.clear();
 		del_num = 0;
 		for (size_t i = 0; i < xarray_get_capacity(&xarray); ++i) try {
 			auto pitem = static_cast<MITEM *>(xarray_get_item(&xarray, i));
@@ -3058,7 +3058,7 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	buff_len ++;
 	buff[buff_len] = '\n';
 	buff_len ++;
-	stream_clear(&pcontext->stream);
+	pcontext->stream.clear();
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170019: OK SEARCH completed */
 	auto imap_reply_str = resource_get_imap_code(1719, 1, &string_length);
@@ -3122,7 +3122,7 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
-	stream_clear(&pcontext->stream);
+	pcontext->stream.clear();
 	num = xarray_get_capacity(&xarray);
 	for (i=0; i<num; i++) {
 		pitem = (MITEM*)xarray_get_item(&xarray, i);
@@ -3343,7 +3343,7 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			temp_name, &temp_list, &errnum);
 	}
 	xarray_free(&xarray);
-	stream_clear(&pcontext->stream);
+	pcontext->stream.clear();
 	if (TRUE == b_copied) {
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
 		/* IMAP_CODE_2170022: OK <COPYUID> COPY completed */
@@ -3410,7 +3410,7 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	buff_len ++;
 	buff[buff_len] = '\n';
 	buff_len ++;
-	stream_clear(&pcontext->stream);
+	pcontext->stream.clear();
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170023: OK UID SEARCH completed */
 	auto imap_reply_str = resource_get_imap_code(1723, 1, &string_length);
@@ -3486,7 +3486,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
-	stream_clear(&pcontext->stream);
+	pcontext->stream.clear();
 	num = xarray_get_capacity(&xarray);
 	for (i=0; i<num; i++) {
 		pitem = (MITEM*)xarray_get_item(&xarray, i);
@@ -3703,7 +3703,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			temp_name, &temp_list, &errnum);
 	}
 	xarray_free(&xarray);
-	stream_clear(&pcontext->stream);
+	pcontext->stream.clear();
 	if (TRUE == b_copied) {
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
 		/* IMAP_CODE_2170025: OK <COPYUID> UID COPY completed */
@@ -3796,7 +3796,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	         pcontext->selected_folder, &temp_list, &errnum);
 	switch(result) {
 	case MIDB_RESULT_OK: {
-		stream_clear(&pcontext->stream);
+		pcontext->stream.clear();
 		del_num = 0;
 		for (size_t i = 0; i < xarray_get_capacity(&xarray); ++i) try {
 			pitem = static_cast<MITEM *>(xarray_get_item(&xarray, i));

@@ -6508,7 +6508,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 			offset += size;
 			size = STREAM_BLOCK_SIZE;
 		}
-		stream_clear(&tmp_stream);
+		tmp_stream.clear();
 		return mime_write_content(pmime, pbuff.get(), mail_len, MIME_ENCODING_NONE);
 	}
 	pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_DATA_BIN);
