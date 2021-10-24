@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <ctime>
 #include <memory>
+#include <unordered_map>
 #include <gromox/simple_tree.hpp>
 #include <gromox/single_list.hpp>
 #include <gromox/mapi_types.hpp>
@@ -45,6 +46,7 @@ struct DOMAIN_NODE {
 	SIMPLE_TREE tree;
 };
 
+struct ZAB_NODE;
 struct AB_BASE {
 	AB_BASE() = default;
 	~AB_BASE() { unload(); }
@@ -55,7 +57,7 @@ struct AB_BASE {
 	time_t load_time = 0;
 	int base_id = 0;
 	SINGLE_LIST list{}, gal_list{};
-	INT_HASH_TABLE *phash = nullptr;
+	std::unordered_map<int, ZAB_NODE *> phash;
 };
 
 struct ab_tree_del {

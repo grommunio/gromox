@@ -4,6 +4,7 @@
 #include <ctime>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include <gromox/proc_common.h>
 #include <gromox/simple_tree.hpp>
@@ -37,6 +38,7 @@ struct DOMAIN_NODE {
 	SIMPLE_TREE tree;
 };
 
+struct NSAB_NODE;
 struct AB_BASE {
 	AB_BASE();
 	NOMOVE(AB_BASE);
@@ -48,7 +50,7 @@ struct AB_BASE {
 	time_t load_time = 0;
 	int base_id = 0;
 	SINGLE_LIST list, gal_list, remote_list{};
-	INT_HASH_TABLE *phash = nullptr;
+	std::unordered_map<int, NSAB_NODE *> phash;
 };
 
 struct ab_tree_del {
