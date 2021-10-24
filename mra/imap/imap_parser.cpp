@@ -16,7 +16,6 @@
 #include <gromox/util.hpp>
 #include <gromox/mjson.hpp>
 #include <gromox/str_hash.hpp>
-#include <gromox/dir_tree.hpp>
 #include "resource.h"
 #include <gromox/mime_pool.hpp>
 #include <gromox/mail_func.hpp>
@@ -36,6 +35,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <openssl/err.h>
+#include "dir_tree.hpp"
 #if (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2090000fL) || \
     (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x1010000fL)
 #	define OLD_SSL 1
@@ -249,7 +249,7 @@ int imap_parser_run()
 	if (num < 1000) {
 		num = 1000;
 	}
-	g_alloc_dir = dir_tree_allocator_init(num);
+	g_alloc_dir = lib_buffer_init(sizeof(DIR_NODE), num, TRUE);
 	if (NULL == g_alloc_dir) {
 		printf("[imap_parser]: Failed to init dir node allocator\n");
 		return -8;
@@ -324,7 +324,7 @@ void imap_parser_stop()
 		g_alloc_xarray = NULL;
 	}
 	if (NULL != g_alloc_dir) {
-		dir_tree_allocator_free(g_alloc_dir);
+		lib_buffer_free(g_alloc_dir);
 		g_alloc_dir = NULL;
 	}
 	

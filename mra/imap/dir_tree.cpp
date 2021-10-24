@@ -2,9 +2,9 @@
 #include <cstring>
 #include <libHX/string.h>
 #include <gromox/defs.h>
-#include <gromox/dir_tree.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/simple_tree.hpp>
+#include "dir_tree.hpp"
 
 static void dir_tree_enum_delete(SIMPLE_TREE_NODE *pnode)
 {
@@ -12,16 +12,6 @@ static void dir_tree_enum_delete(SIMPLE_TREE_NODE *pnode)
 
 	pdir = (DIR_NODE*)pnode->pdata;
 	lib_buffer_put(pdir->ppool, pdir);
-}
-
-LIB_BUFFER *dir_tree_allocator_init(size_t max_size)
-{
-	return lib_buffer_init(sizeof(DIR_NODE), max_size, TRUE);
-}
-
-void dir_tree_allocator_free(LIB_BUFFER *pallocator)
-{
-	lib_buffer_free(pallocator);
 }
 
 void dir_tree_init(DIR_TREE *ptree, LIB_BUFFER *pallocator)

@@ -19,7 +19,6 @@
 #include "system_services.h"
 #include <gromox/mail_func.hpp>
 #include <gromox/mem_file.hpp>
-#include <gromox/dir_tree.hpp>
 #include "resource.h"
 #include <gromox/mjson.hpp>
 #include <gromox/util.hpp>
@@ -30,8 +29,7 @@
 #include <unistd.h>
 #include <cstdio>
 #include <fcntl.h>
-
-
+#include "dir_tree.hpp"
 #define MAX_DIGLEN		256*1024
 
 using namespace std::string_literals;
