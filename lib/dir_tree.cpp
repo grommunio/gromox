@@ -14,9 +14,9 @@ static void dir_tree_enum_delete(SIMPLE_TREE_NODE *pnode)
 	lib_buffer_put(pdir->ppool, pdir);
 }
 
-LIB_BUFFER* dir_tree_allocator_init(size_t max_size, BOOL thread_safe)
+LIB_BUFFER *dir_tree_allocator_init(size_t max_size)
 {
-	return lib_buffer_init(sizeof(DIR_NODE), max_size, thread_safe);
+	return lib_buffer_init(sizeof(DIR_NODE), max_size, TRUE);
 }
 
 void dir_tree_allocator_free(LIB_BUFFER *pallocator)

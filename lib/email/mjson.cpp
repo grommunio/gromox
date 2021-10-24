@@ -103,9 +103,9 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild);
 static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
 	const char *charset, BOOL b_ext, char *buff, int length);
 
-LIB_BUFFER* mjson_allocator_init(size_t max_size, BOOL thread_safe)
+LIB_BUFFER *mjson_allocator_init(size_t max_size)
 {
-	return lib_buffer_init(sizeof(MJSON_MIME), max_size, thread_safe);
+	return lib_buffer_init(sizeof(MJSON_MIME), max_size, TRUE);
 }
 
 void mjson_allocator_free(LIB_BUFFER *pallocator)

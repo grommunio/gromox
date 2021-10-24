@@ -17,7 +17,7 @@ struct DIR_TREE {
 
 using DIR_TREE_ENUM = void (*)(DIR_NODE *, void*);
 
-LIB_BUFFER* dir_tree_allocator_init(size_t max_size, BOOL thread_safe);
+extern GX_EXPORT LIB_BUFFER *dir_tree_allocator_init(size_t max_size);
 void dir_tree_allocator_free(LIB_BUFFER *pallocator);
 void dir_tree_init(DIR_TREE *ptree, LIB_BUFFER *pallocator);
 void dir_tree_retrieve(DIR_TREE *ptree, MEM_FILE *pfile);

@@ -79,7 +79,7 @@ enum {
 	MJSON_MIME_ENTIRE
 };
 
-LIB_BUFFER* mjson_allocator_init(size_t max_size, BOOL thread_safe);
+extern GX_EXPORT LIB_BUFFER *mjson_allocator_init(size_t max_size);
 void mjson_allocator_free(LIB_BUFFER *pallocator);
 
 int mjson_get_mime_mtype(MJSON_MIME *pmime);

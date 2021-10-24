@@ -69,11 +69,9 @@ void xarray_free(XARRAY* pxarray)
  *	@return
  *		the allocator pointer, NULL if fail
  */
-LIB_BUFFER *xarray_allocator_init(size_t data_size, size_t max_size,
-    bool thread_safe)
+LIB_BUFFER *xarray_allocator_init(size_t data_size, size_t max_size)
 {
-	return lib_buffer_init(data_size + EXTRA_XARRAYNODE_SIZE, 
-	       max_size, thread_safe ? TRUE : false);
+	return lib_buffer_init(data_size + EXTRA_XARRAYNODE_SIZE, max_size, TRUE);
 }
 
 
