@@ -133,6 +133,7 @@ public:
 
 	explicit MhNspPlugin(void**);
 	~MhNspPlugin();
+	NOMOVE(MhNspPlugin);
 
 	BOOL process(int, const void*, uint64_t);
 private:

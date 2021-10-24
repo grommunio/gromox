@@ -110,6 +110,7 @@ struct MhContext
 protected:
 	MhContext(int);
 	~MhContext() = default;
+	NOMOVE(MhContext);
 
 	EXT_PUSH *epush = nullptr;
 };

@@ -6,7 +6,9 @@
 #include <gromox/fileio.h>
 
 struct LIST_FILE {
+	LIST_FILE() = default;
 	~LIST_FILE();
+	NOMOVE(LIST_FILE);
 	void *get_list() { return pfile; }
 	size_t get_size() const { return item_num; }
 

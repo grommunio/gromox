@@ -12,6 +12,7 @@ using RECORD_PROPVAL = gxerr_t (*)(fastupctx_object *, const TAGGED_PROPVAL *);
 struct FTSTREAM_PARSER {
 	protected:
 	FTSTREAM_PARSER() = default;
+	NOMOVE(FTSTREAM_PARSER);
 
 	public:
 	~FTSTREAM_PARSER();

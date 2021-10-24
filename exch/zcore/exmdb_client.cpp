@@ -51,6 +51,7 @@ struct REMOTE_CONN_floating {
 	REMOTE_CONN_floating() = default;
 	REMOTE_CONN_floating(REMOTE_CONN_floating &&);
 	~REMOTE_CONN_floating() { reset(true); }
+	void operator=(REMOTE_CONN_floating &&) = delete;
 	REMOTE_CONN *operator->() { return tmplist.size() != 0 ? &tmplist.front() : nullptr; }
 	bool operator==(std::nullptr_t) const { return tmplist.size() == 0; }
 	bool operator!=(std::nullptr_t) const { return tmplist.size() != 0; }

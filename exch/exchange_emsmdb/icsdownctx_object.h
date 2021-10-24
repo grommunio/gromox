@@ -13,6 +13,7 @@ struct logon_object;
 struct icsdownctx_object final {
 	protected:
 	icsdownctx_object() = default;
+	NOMOVE(icsdownctx_object);
 
 	public:
 	~icsdownctx_object();

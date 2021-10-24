@@ -53,9 +53,8 @@ namespace {
 
 struct NOTIFY_ITEM {
 	NOTIFY_ITEM(const GUID &session, uint32_t store);
-	NOTIFY_ITEM(NOTIFY_ITEM &&) = delete;
 	~NOTIFY_ITEM();
-	void operator=(NOTIFY_ITEM &&) = delete;
+	NOMOVE(NOTIFY_ITEM);
 
 	DOUBLE_LIST notify_list{};
 	GUID hsession{};

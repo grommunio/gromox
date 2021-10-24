@@ -139,7 +139,10 @@ struct KEYWORD_ENUM {
 };
 
 struct IDB_ITEM {
+	IDB_ITEM() = default;
 	~IDB_ITEM();
+	NOMOVE(IDB_ITEM);
+
 	sqlite3 *psqlite = nullptr;
 	/* client reference count, item can be flushed into file system only count is 0 */
 	std::string username;

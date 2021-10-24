@@ -51,7 +51,10 @@ using namespace gromox;
 
 namespace {
 struct VIRTUAL_CONNECTION {
+	VIRTUAL_CONNECTION() = default;
 	~VIRTUAL_CONNECTION();
+	NOMOVE(VIRTUAL_CONNECTION);
+
 	std::atomic<int> reference{0};
 	std::mutex lock;
 	bool locked = false;
@@ -69,13 +72,13 @@ class VCONN_REF {
 	VCONN_REF() = default;
 	explicit VCONN_REF(VIRTUAL_CONNECTION *p, decltype(g_vconnection_hash)::iterator i) :
 		pvconnection(p), m_hold(p->lock), m_iter(std::move(i)) {}
-	VCONN_REF(VCONN_REF &&) = delete;
 	~VCONN_REF() { put(); }
-	void operator=(VCONN_REF &&) = delete;
+	NOMOVE(VCONN_REF);
 	bool operator!=(std::nullptr_t) const { return pvconnection != nullptr; }
 	bool operator==(std::nullptr_t) const { return pvconnection == nullptr; }
 	void put();
 	VIRTUAL_CONNECTION *operator->() { return pvconnection; }
+
 	private:
 	VIRTUAL_CONNECTION *pvconnection = nullptr;
 	std::unique_lock<std::mutex> m_hold;

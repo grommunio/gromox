@@ -14,6 +14,7 @@ enum {
 struct ICS_STATE {
 	protected:
 	ICS_STATE() = default;
+	NOMOVE(ICS_STATE);
 
 	public:
 	~ICS_STATE();

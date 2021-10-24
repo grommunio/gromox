@@ -111,6 +111,7 @@ namespace {
 struct popen_fdset {
 	int in[2] = {-1, -1}, out[2] = {-1, -1}, err[2] = {-1, -1}, null = -1;
 
+	popen_fdset() = default;
 	~popen_fdset()
 	{
 		if (in[0] != -1) close(in[0]);
@@ -121,6 +122,7 @@ struct popen_fdset {
 		if (err[1] != -1) close(err[1]);
 		if (null != -1) close(null);
 	}
+	NOMOVE(popen_fdset);
 };
 
 }

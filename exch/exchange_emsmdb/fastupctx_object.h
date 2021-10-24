@@ -16,6 +16,7 @@ struct MESSAGE_CONTENT;
 struct fastupctx_object final {
 	protected:
 	fastupctx_object() = default;
+	NOMOVE(fastupctx_object);
 
 	public:
 	~fastupctx_object();

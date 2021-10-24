@@ -9,6 +9,7 @@ struct logon_object;
 struct subscription_object {
 	protected:
 	subscription_object() = default;
+	NOMOVE(subscription_object)
 
 	public:
 	~subscription_object();

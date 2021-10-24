@@ -7,6 +7,9 @@ template<typename T, size_t N> constexpr inline size_t arsizeof(T (&)[N]) { retu
 #define GX_ARRAY_SIZE arsizeof
 }
 #define GX_EXPORT __attribute__((visibility("default")))
+#define NOMOVE(K) \
+	K(K &&) = delete; \
+	void operator=(K &&) = delete;
 
 enum gxerr_t {
 	GXERR_SUCCESS = 0,

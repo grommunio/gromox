@@ -84,7 +84,10 @@ struct INSTANCE_NODE {
 };
 
 struct DB_ITEM {
+	DB_ITEM() = default;
 	~DB_ITEM();
+	NOMOVE(DB_ITEM);
+
 	/* client reference count, item can be flushed into file system only count is 0 */
 	std::atomic<int> reference{0};
 	time_t last_time = 0;

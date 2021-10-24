@@ -13,6 +13,7 @@ struct MESSAGE_CONTENT;
 struct fastdownctx_object final {
 	protected:
 	fastdownctx_object() = default;
+	NOMOVE(fastdownctx_object);
 
 	public:
 	~fastdownctx_object();

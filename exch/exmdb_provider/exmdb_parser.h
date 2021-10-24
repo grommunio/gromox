@@ -16,9 +16,8 @@ enum {
 class EXMDB_CONNECTION : public std::enable_shared_from_this<EXMDB_CONNECTION> {
 	public:
 	EXMDB_CONNECTION() = default;
-	EXMDB_CONNECTION(EXMDB_CONNECTION &&) = delete;
 	~EXMDB_CONNECTION();
-	void operator=(EXMDB_CONNECTION &&) = delete;
+	NOMOVE(EXMDB_CONNECTION);
 
 	gromox::atomic_bool b_stop{false};
 	pthread_t thr_id{};
@@ -28,9 +27,8 @@ class EXMDB_CONNECTION : public std::enable_shared_from_this<EXMDB_CONNECTION> {
 
 struct ROUTER_CONNECTION {
 	ROUTER_CONNECTION() = default;
-	ROUTER_CONNECTION(ROUTER_CONNECTION &&) = delete;
+	NOMOVE(ROUTER_CONNECTION);
 	~ROUTER_CONNECTION();
-	void operator=(ROUTER_CONNECTION &&) = delete;
 
 	gromox::atomic_bool b_stop{false};
 	pthread_t thr_id{};

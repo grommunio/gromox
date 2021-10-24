@@ -15,6 +15,7 @@ struct stream_object;
 struct message_object {
 	protected:
 	message_object() = default;
+	NOMOVE(message_object)
 
 	public:
 	~message_object();

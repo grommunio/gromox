@@ -28,7 +28,9 @@ struct CONFIG_ENTRY {
 };
 
 struct GX_EXPORT CONFIG_FILE {
+	CONFIG_FILE() = default;
 	~CONFIG_FILE();
+	NOMOVE(CONFIG_FILE);
 	GX_EXPORT const char *get_value(const char *key) const;
 	GX_EXPORT BOOL set_value(const char *key, const char *value);
 	GX_EXPORT BOOL save();

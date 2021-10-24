@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <gromox/common_types.hpp>
+#include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 
 #define EXT_ERR_SUCCESS						0
@@ -160,7 +161,9 @@ struct EXT_PULL {
 };
 
 struct EXT_PUSH {
+	EXT_PUSH() = default;
 	~EXT_PUSH();
+	NOMOVE(EXT_PUSH);
 	BOOL init(void *, uint32_t, uint32_t, const EXT_BUFFER_MGT * = nullptr);
 	uint8_t *release();
 	BOOL check_ovf(uint32_t);

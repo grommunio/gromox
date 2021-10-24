@@ -64,6 +64,14 @@ YError::YError(const char *fmt, ...)
 	m_str = ret >= 0 && strp != nullptr ? strp.get() : "vasprintf";
 }
 
+gi_name_map::gi_name_map(gi_name_map &&o)
+{
+	for (auto &e : *this)
+		if (e.second.kind == MNID_STRING)
+			free(e.second.pname);
+	static_cast<base_t &>(*this) = std::move(static_cast<base_t &>(o));
+}
+
 gi_name_map::~gi_name_map()
 {
 	for (auto &e : *this)

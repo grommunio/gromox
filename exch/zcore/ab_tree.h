@@ -48,6 +48,7 @@ struct DOMAIN_NODE {
 struct AB_BASE {
 	AB_BASE() = default;
 	~AB_BASE() { unload(); }
+	NOMOVE(AB_BASE);
 	void unload();
 
 	std::atomic<int> status{0}, reference{0};

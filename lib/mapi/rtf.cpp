@@ -224,7 +224,9 @@ struct FONTENTRY {
 };
 
 struct RTF_READER {
+	RTF_READER() = default;
 	~RTF_READER();
+	NOMOVE(RTF_READER);
 
 	bool is_within_table = false, b_printed_row_begin = false;
 	bool b_printed_cell_begin = false, b_printed_row_end = false;

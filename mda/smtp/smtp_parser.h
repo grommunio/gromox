@@ -137,6 +137,7 @@ struct EXT_DATA {
 struct SMTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	SMTP_CONTEXT();
 	~SMTP_CONTEXT();
+	NOMOVE(SMTP_CONTEXT);
 
 	CONNECTION connection{};
 	STREAM stream{}; /* stream accepted from smtp client */

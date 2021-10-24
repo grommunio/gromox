@@ -11,6 +11,7 @@ struct logon_object;
 struct icsupctx_object final {
 	protected:
 	icsupctx_object() = default;
+	NOMOVE(icsupctx_object);
 
 	public:
 	~icsupctx_object();

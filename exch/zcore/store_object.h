@@ -9,6 +9,7 @@ struct INT_HASH_TABLE;
 struct store_object {
 	protected:
 	store_object() = default;
+	NOMOVE(store_object);
 
 	public:
 	~store_object();

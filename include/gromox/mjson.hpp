@@ -31,10 +31,9 @@ struct MJSON_MIME {
 
 struct GX_EXPORT MJSON {
 	MJSON() = default;
-	MJSON(MJSON &&) = delete;
 	MJSON(LIB_BUFFER *);
 	~MJSON();
-	void operator=(MJSON &&) = delete;
+	NOMOVE(MJSON);
 
 	void clear();
 	BOOL retrieve(char *digest_buf, int len, const char *path);

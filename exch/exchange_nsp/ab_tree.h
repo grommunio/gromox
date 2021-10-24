@@ -39,6 +39,7 @@ struct DOMAIN_NODE {
 
 struct AB_BASE {
 	AB_BASE();
+	NOMOVE(AB_BASE);
 	~AB_BASE() { unload(); }
 	void unload();
 

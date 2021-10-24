@@ -9,6 +9,7 @@
 struct attachment_object {
 	protected:
 	attachment_object() = default;
+	NOMOVE(attachment_object);
 
 	public:
 	~attachment_object();

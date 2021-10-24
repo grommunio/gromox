@@ -13,10 +13,9 @@ struct MIME_POOL_NODE {
 };
 
 struct GX_EXPORT MIME_POOL {
-	MIME_POOL(MIME_POOL &&) = delete;
 	MIME_POOL(size_t number, int ratio);
 	~MIME_POOL();
-	void operator=(MIME_POOL &&) = delete;
+	NOMOVE(MIME_POOL);
 
 	static std::shared_ptr<MIME_POOL> create(size_t number, int ratio);
 	MIME *get_mime();

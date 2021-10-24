@@ -8,6 +8,7 @@
 struct stream_object {
 	protected:
 	stream_object() = default;
+	NOMOVE(stream_object)
 
 	public:
 	~stream_object();

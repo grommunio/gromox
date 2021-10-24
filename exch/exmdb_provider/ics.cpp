@@ -45,6 +45,8 @@ struct REPLID_NODE {
 struct IDSET_CACHE {
 	IDSET_CACHE();
 	~IDSET_CACHE();
+	NOMOVE(IDSET_CACHE);
+
 	sqlite3 *psqlite = nullptr;
 	xstmt pstmt;
 	DOUBLE_LIST range_list;

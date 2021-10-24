@@ -18,6 +18,7 @@ struct STR_HASH_ITER;
 struct GX_EXPORT STR_HASH_TABLE {
 	STR_HASH_TABLE(size_t max_items, size_t item_size, PSTR_HASH_FUNC);
 	~STR_HASH_TABLE();
+	NOMOVE(STR_HASH_TABLE);
 
 	/*
 	 * init a hash table with the specified max_items capacity and

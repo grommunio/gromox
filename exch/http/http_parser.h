@@ -74,6 +74,7 @@ enum {
 struct HTTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	HTTP_CONTEXT();
 	~HTTP_CONTEXT();
+	NOMOVE(HTTP_CONTEXT);
 
 	CONNECTION connection{};
 	HTTP_REQUEST request{};
@@ -97,6 +98,7 @@ struct HTTP_CONTEXT final : public SCHEDULE_CONTEXT {
 struct RPC_IN_CHANNEL {
 	RPC_IN_CHANNEL();
 	~RPC_IN_CHANNEL();
+	NOMOVE(RPC_IN_CHANNEL);
 
 	uint16_t frag_length = 0; /* indicating in coming PDU length */
 	char channel_cookie[64]{}, connection_cookie[64]{};
@@ -110,6 +112,7 @@ struct RPC_IN_CHANNEL {
 struct RPC_OUT_CHANNEL {
 	RPC_OUT_CHANNEL();
 	~RPC_OUT_CHANNEL();
+	NOMOVE(RPC_OUT_CHANNEL);
 
 	uint16_t frag_length = 0;
 	char channel_cookie[64]{}, connection_cookie[64]{};

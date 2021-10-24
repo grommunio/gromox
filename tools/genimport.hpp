@@ -31,8 +31,14 @@ struct gi_delete : public gromox::stdlib_delete {
 };
 
 struct gi_name_map : public std::unordered_map<uint32_t, PROPERTY_NAME> {
+	public:
 	using unordered_map::unordered_map;
+	gi_name_map(gi_name_map &&);
 	~gi_name_map();
+	void operator=(gi_name_map &&) = delete;
+
+	private:
+	using base_t = std::unordered_map<uint32_t, PROPERTY_NAME>;
 };
 
 struct parent_desc {

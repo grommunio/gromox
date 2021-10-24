@@ -23,6 +23,7 @@ struct PROGRESS_MESSAGE;
 struct FTSTREAM_PRODUCER {
 	protected:
 	FTSTREAM_PRODUCER() = default;
+	NOMOVE(FTSTREAM_PRODUCER);
 
 	public:
 	~FTSTREAM_PRODUCER();

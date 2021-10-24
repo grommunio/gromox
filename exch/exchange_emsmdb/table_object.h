@@ -9,6 +9,7 @@ struct logon_object;
 struct table_object {
 	protected:
 	table_object() = default;
+	NOMOVE(table_object)
 
 	public:
 	~table_object();

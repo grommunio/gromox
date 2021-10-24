@@ -86,6 +86,7 @@ struct MITEM {
 struct IMAP_CONTEXT final : public SCHEDULE_CONTEXT {
 	IMAP_CONTEXT();
 	~IMAP_CONTEXT();
+	NOMOVE(IMAP_CONTEXT);
 
 	CONNECTION connection{};
 	std::string mid, file_path;

@@ -38,6 +38,7 @@ struct CONNECTION {
 struct POP3_CONTEXT final : public SCHEDULE_CONTEXT {
 	POP3_CONTEXT();
 	~POP3_CONTEXT();
+	NOMOVE(POP3_CONTEXT);
 
 	CONNECTION connection{};
 	char read_buffer[1024]{};

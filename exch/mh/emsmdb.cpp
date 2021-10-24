@@ -203,6 +203,7 @@ public:
 
 	explicit MhEmsmdbPlugin(void**);
 	~MhEmsmdbPlugin();
+	NOMOVE(MhEmsmdbPlugin);
 
 	BOOL process(int, const void*, uint64_t);
 	int retr(int);

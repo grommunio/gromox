@@ -21,6 +21,7 @@ union CONTAINER_ID {
 struct container_object {
 	protected:
 	container_object() = default;
+	NOMOVE(container_object);
 
 	public:
 	~container_object() { clear(); }

@@ -60,9 +60,8 @@ struct kdb_item;
 
 struct driver final {
 	driver() = default;
-	driver(driver &&o) = delete;
 	~driver();
-	void operator=(driver &&) = delete;
+	NOMOVE(driver);
 	DB_RESULT query(const char *);
 	uint32_t hid_from_mst(kdb_item &, uint32_t);
 	std::unique_ptr<kdb_item> get_store_item();

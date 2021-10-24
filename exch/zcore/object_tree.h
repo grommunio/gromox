@@ -9,7 +9,9 @@
 
 struct OBJECT_NODE;
 struct OBJECT_TREE {
+	OBJECT_TREE() = default;
 	~OBJECT_TREE();
+	NOMOVE(OBJECT_TREE);
 	uint32_t add_object_handle(int parent_handle, int type, void *obj);
 	void *get_object1(uint32_t obj_handle, uint8_t *type);
 	template<typename T> inline T *get_object(uint32_t h, uint8_t *t)
