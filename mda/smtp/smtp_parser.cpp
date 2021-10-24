@@ -12,7 +12,6 @@
 #include <gromox/defs.h>
 #include "smtp_parser.h"
 #include "smtp_cmd_handler.h"
-#include <gromox/files_allocator.hpp>
 #include "blocks_allocator.h"
 #include <gromox/threads_pool.hpp>
 #include "system_services.h"
@@ -890,7 +889,7 @@ SMTP_CONTEXT::SMTP_CONTEXT() :
 	stream(blocks_allocator_get_allocator())
 {
 	auto pcontext = this;
-	auto palloc_file = files_allocator_get_allocator();
+	auto &palloc_file = g_files_allocator;
 	pcontext->connection.sockd = -1;
 	mem_file_init(&pcontext->block_info.f_last_blkmime, palloc_file);
 	mem_file_init(&pcontext->mail.envelope.f_rcpt_to, palloc_file);

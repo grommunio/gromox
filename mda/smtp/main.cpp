@@ -15,7 +15,6 @@
 #include "resource.h" 
 #include "flusher.h" 
 #include "smtp_parser.h" 
-#include <gromox/files_allocator.hpp>
 #include "blocks_allocator.h" 
 #include <gromox/threads_pool.hpp>
 #include "console_cmd_handler.h"
@@ -38,6 +37,7 @@ gromox::atomic_bool g_notify_stop{false};
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled{false};
+LIB_BUFFER *g_files_allocator;
 
 static struct HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
@@ -328,13 +328,13 @@ int main(int argc, const char **argv) try
 	}
 	auto cleanup_8 = make_scope_exit(system_services_stop);
 
-	files_allocator_init(scfg.context_num * 128);
-	if (0 != files_allocator_run()) { 
+	size_t fa_blocks_num = scfg.context_num * 128;
+	g_files_allocator = lib_buffer_init(FILE_ALLOC_SIZE, fa_blocks_num, TRUE);
+	if (g_files_allocator == nullptr) {
 		printf("[system]: can not run file allocator\n"); 
 		return EXIT_FAILURE;
 	}
-	auto cleanup_9 = make_scope_exit(files_allocator_free);
-	auto cleanup_10 = make_scope_exit(files_allocator_stop);
+	auto cleanup_9 = make_scope_exit([&]() { lib_buffer_free(g_files_allocator); });
 
 	blocks_allocator_init(scfg.context_num * context_aver_mem);
 	if (0 != blocks_allocator_run()) { 
