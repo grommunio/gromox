@@ -318,13 +318,10 @@ void *STREAM::get_write_buf(unsigned int *psize)
  *	  @return
  *		  offset actual made
  */
-unsigned int stream_forward_writing_ptr(STREAM *pstream, unsigned int offset)
+unsigned int STREAM::fwd_write_ptr(unsigned int offset)
 {
+	auto pstream = this;
 #ifdef _DEBUG_UMTA
-	if (NULL == pstream) {
-		debug_info("[stream]: stream_forward_writing_ptr, param NULL");
-		return 0;
-	}
 	if(offset + pstream->wr_block_pos > STREAM_BLOCK_SIZE) {
 		debug_info("[stream]: offset is larger than block size in " 
 				   "stream_forward_writing_ptr");
@@ -349,13 +346,9 @@ unsigned int stream_forward_writing_ptr(STREAM *pstream, unsigned int offset)
  *	  @return
  *		  offset actual made
  */
-unsigned int stream_backward_writing_ptr(STREAM *pstream, unsigned int offset)
+unsigned int STREAM::rewind_write_ptr(unsigned int offset)
 {
-#ifdef _DEBUG_UMTA
-	if (NULL == pstream) {
-		debug_info("[stream]: stream_backward_writing_ptr, param NULL");
-	}
-#endif
+	auto pstream = this;
 	if (offset > pstream->wr_total_pos && offset < STREAM_BLOCK_SIZE) {
 		offset = pstream->wr_total_pos;
 	} else if (offset > STREAM_BLOCK_SIZE) {
@@ -391,13 +384,9 @@ unsigned int stream_backward_writing_ptr(STREAM *pstream, unsigned int offset)
  *	  @return
  *		  offset actual made
  */
-unsigned int stream_backward_reading_ptr(STREAM *pstream, unsigned int offset)
+unsigned int STREAM::rewind_read_ptr(unsigned int offset)
 {
-#ifdef _DEBUG_UMTA
-	if (NULL == pstream) {
-		debug_info("[stream]: stream_backward_reading_ptr, param NULL");
-	}
-#endif
+	auto pstream = this;
 	if (offset > pstream->rd_total_pos && offset < STREAM_BLOCK_SIZE) {
 		offset = pstream->rd_total_pos;
 	} else if (offset > STREAM_BLOCK_SIZE) {
@@ -472,8 +461,9 @@ void *STREAM::get_read_buf(unsigned int *psize)
  *	  @param
  *		  pstream [in]	  indicate the stream object
  */
-void stream_reset_reading(STREAM *pstream)
+void STREAM::reset_reading()
 {
+	auto pstream = this;
 	pstream->pnode_rd = double_list_get_head(&pstream->list);
 	pstream->rd_block_pos = 0;
 	pstream->rd_total_pos = 0;
@@ -827,11 +817,10 @@ unsigned int STREAM::peek_buffer(char *pbuff, unsigned int size) const
  */
 int STREAM::dump(int fd)
 {
-	auto pstream = this;
 	void *pbuff;
 	unsigned int size = STREAM_BLOCK_SIZE;
 
-	stream_reset_reading(pstream);
+	reset_reading();
 	while ((pbuff = get_read_buf(&size)) != nullptr) {
 		auto wr_result = ::write(fd, pbuff, size);
 		if (size != wr_result) {
@@ -852,13 +841,9 @@ int STREAM::dump(int fd)
  *	  @return
  *		  offset actual made
  */
-unsigned int stream_forward_reading_ptr(STREAM *pstream, unsigned int offset)
+unsigned int STREAM::fwd_read_ptr(unsigned int offset)
 {
-#ifdef _DEBUG_UMTA
-	if (NULL == pstream) {
-		debug_info("[stream]: stream_forward_reading_ptr, param NULL");
-	}
-#endif
+	auto pstream = this;
 	if (offset > pstream->wr_total_pos - pstream->rd_total_pos &&
 		offset < STREAM_BLOCK_SIZE) {
 			offset = pstream->wr_total_pos - pstream->rd_total_pos;
@@ -883,7 +868,6 @@ unsigned int stream_forward_reading_ptr(STREAM *pstream, unsigned int offset)
 
 int STREAM::write(const void *pbuff, size_t size)
 {
-	auto pstream = this;
 	unsigned int buff_size, actual_size;
 	size_t offset;
 
@@ -900,7 +884,7 @@ int STREAM::write(const void *pbuff, size_t size)
 		void *pstream_buff = get_write_buf(&buff_size);
 		actual_size = (size - offset > buff_size)?buff_size:(size - offset);
 		memcpy(pstream_buff, static_cast<const char *>(pbuff) + offset, actual_size);
-		stream_forward_writing_ptr(pstream, actual_size);
+		fwd_write_ptr(actual_size);
 		offset += actual_size;
 	}
 	return STREAM_WRITE_OK;

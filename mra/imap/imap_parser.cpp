@@ -880,11 +880,11 @@ static int ps_stat_appending(IMAP_CONTEXT *pcontext)
 		ssize_t temp_len = pcontext->current_len + read_len - pcontext->literal_len;
 		memcpy(pcontext->read_buffer, pbuff + read_len - temp_len, temp_len);
 		pcontext->read_offset = temp_len;
-		stream_forward_writing_ptr(&pcontext->stream, read_len - temp_len);
+		pcontext->stream.fwd_write_ptr(read_len - temp_len);
 		pcontext->current_len = pcontext->literal_len;
 		pcontext->sched_stat = SCHED_STAT_APPENDED;
 	} else {
-		stream_forward_writing_ptr(&pcontext->stream, read_len);
+		pcontext->stream.fwd_write_ptr(read_len);
 		pcontext->current_len += read_len;
 	}
 

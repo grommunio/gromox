@@ -587,8 +587,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 				phpm_ctx->content_length) {
 				tmp_len = phpm_ctx->content_length
 							- phpm_ctx->cache_size;
-				stream_backward_reading_ptr(
-					&phttp->stream_in, size - tmp_len);
+				phttp->stream_in.rewind_read_ptr(size - tmp_len);
 				phpm_ctx->cache_size = phpm_ctx->content_length;
 			} else {
 				phpm_ctx->cache_size += size;
@@ -613,7 +612,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 				return TRUE;
 			}
 			if (0 == strncmp("0\r\n\r\n", tmp_buff, 5)) {
-				stream_forward_reading_ptr(&phttp->stream_in, 5);
+				phttp->stream_in.fwd_read_ptr(5);
 				phpm_ctx->b_end = TRUE;
 				return TRUE;
 			}
@@ -635,7 +634,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 			}
 			phpm_ctx->chunk_offset = 0;
 			tmp_len = ptoken + 2 - tmp_buff;
-			stream_forward_reading_ptr(&phttp->stream_in, tmp_len);
+			phttp->stream_in.fwd_read_ptr(tmp_len);
 		}
 		size = STREAM_BLOCK_SIZE;
 		while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
@@ -654,8 +653,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 						" write cache file for hpm_processor");
 					return FALSE;
 				}
-				stream_backward_reading_ptr(
-					&phttp->stream_in, size - tmp_len);
+				phttp->stream_in.rewind_read_ptr(size - tmp_len);
 				phpm_ctx->cache_size += tmp_len;
 				phpm_ctx->chunk_offset = phpm_ctx->chunk_size;
 			}
@@ -699,8 +697,7 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 				free(pcontent);
 				return FALSE;
 			}
-			stream_forward_reading_ptr(&phttp->stream_in,
-				phpm_ctx->content_length);
+			phttp->stream_in.fwd_read_ptr(phpm_ctx->content_length);
 		}
 	} else {
 		if (0 != fstat(phpm_ctx->cache_fd, &node_stat)) {

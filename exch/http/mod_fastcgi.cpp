@@ -826,8 +826,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 		unsigned int tmp_len = sizeof(tmp_buff);
 		while ((pbuff = phttp->stream_in.get_read_buf(&tmp_len)) != nullptr) {
 			if (tmp_len > phttp->pfast_context->content_length) {
-				stream_backward_reading_ptr(&phttp->stream_in,
-					tmp_len - phttp->pfast_context->content_length);
+				phttp->stream_in.rewind_read_ptr(tmp_len - phttp->pfast_context->content_length);
 				tmp_len = phttp->pfast_context->content_length;
 				phttp->pfast_context->content_length = 0;
 			} else{
@@ -953,8 +952,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 				phttp->pfast_context->content_length) {
 				tmp_len = phttp->pfast_context->content_length
 							- phttp->pfast_context->cache_size;
-				stream_backward_reading_ptr(
-					&phttp->stream_in, size - tmp_len);
+				phttp->stream_in.rewind_read_ptr(size - tmp_len);
 				phttp->pfast_context->cache_size =
 					phttp->pfast_context->content_length;
 			} else {
@@ -982,7 +980,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 			if (size < 5)
 				return TRUE;
 			if (0 == strncmp("0\r\n\r\n", tmp_buff, 5)) {
-				stream_forward_reading_ptr(&phttp->stream_in, 5);
+				phttp->stream_in.fwd_read_ptr(5);
 				phttp->pfast_context->b_end = TRUE;
 				return TRUE;
 			}
@@ -1005,8 +1003,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 			}
 			phttp->pfast_context->chunk_offset = 0;
 			tmp_len = ptoken + 2 - tmp_buff;
-			stream_forward_reading_ptr(
-				&phttp->stream_in, tmp_len);
+			phttp->stream_in.fwd_read_ptr(tmp_len);
 		}
 		size = STREAM_BLOCK_SIZE;
 		while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
@@ -1029,8 +1026,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 						" write cache file for mod_fastcgi");
 					return FALSE;
 				}
-				stream_backward_reading_ptr(
-					&phttp->stream_in, size - tmp_len);
+				phttp->stream_in.rewind_read_ptr(size - tmp_len);
 				phttp->pfast_context->cache_size += tmp_len;
 				phttp->pfast_context->chunk_offset =
 					phttp->pfast_context->chunk_size;

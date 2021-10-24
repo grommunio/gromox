@@ -542,7 +542,7 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 			pcontext->message_fd = -1;
 			break;
 		} else {
-			stream_forward_writing_ptr(&temp_stream, read_len);
+			temp_stream.fwd_write_ptr(read_len);
 		}
 	}
 	b_stop = FALSE;

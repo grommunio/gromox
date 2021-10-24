@@ -52,6 +52,11 @@ struct STREAM {
 	void try_mark_eom();
 	int has_eom();
 	void split_eom(STREAM *secondary);
+	unsigned int fwd_write_ptr(unsigned int offset);
+	unsigned int fwd_read_ptr(unsigned int offset);
+	unsigned int rewind_write_ptr(unsigned int offset);
+	unsigned int rewind_read_ptr(unsigned int offset);
+	void reset_reading();
 	void *get_read_buf(unsigned int *size);
 	void *get_write_buf(unsigned int *size);
 	size_t get_total_length() const { return wr_total_pos; }
@@ -77,8 +82,3 @@ struct STREAM {
 	friend void stream_split_eom(STREAM *, STREAM *);
 };
 
-unsigned int stream_forward_writing_ptr(STREAM *pstream, unsigned int offset);
-unsigned int stream_forward_reading_ptr(STREAM *pstream, unsigned int offset);
-unsigned int stream_backward_writing_ptr(STREAM *pstream, unsigned int offset);
-unsigned int stream_backward_reading_ptr(STREAM *pstream, unsigned int offset);
-void stream_reset_reading(STREAM *pstream);

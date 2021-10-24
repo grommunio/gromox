@@ -376,7 +376,7 @@ static int http_parser_reconstruct_stream(STREAM &stream_src)
 			auto size_copied = size1 - size1_used;
 			memcpy(static_cast<char *>(pbuff1) + size1_used, pbuff, size_copied);
 			size1 = STREAM_BLOCK_SIZE;
-			stream_forward_writing_ptr(pstream_dst, STREAM_BLOCK_SIZE);
+			pstream_dst->fwd_write_ptr(STREAM_BLOCK_SIZE);
 			pbuff1 = pstream_dst->get_write_buf(reinterpret_cast<unsigned int *>(&size1));
 			if (NULL == pbuff1) {
 				return -1;
@@ -387,7 +387,7 @@ static int http_parser_reconstruct_stream(STREAM &stream_src)
 		size = STREAM_BLOCK_SIZE;
 		pbuff = pstream_src->get_read_buf(reinterpret_cast<unsigned int *>(&size));
 	} while (NULL != pbuff);
-	stream_forward_writing_ptr(pstream_dst, size1_used);
+	pstream_dst->fwd_write_ptr(size1_used);
 	auto tl = pstream_dst->get_total_length();
 	stream_src = std::move(stream_dst);
 	return tl;
@@ -1053,7 +1053,7 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 			        pcontext, actual_read, (int)actual_read,
 			        static_cast<const char *>(pbuff));
 		pcontext->connection.last_timestamp = current_time;
-		stream_forward_writing_ptr(&pcontext->stream_in, actual_read);
+		pcontext->stream_in.fwd_write_ptr(actual_read);
 		return htparse_rdhead_st(pcontext, actual_read);
 	}
 	if (EAGAIN != errno) {
@@ -1350,8 +1350,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 		return X_RUNOFF;
 	} else if (actual_read > 0) {
 		pcontext->connection.last_timestamp = current_time;
-		stream_forward_writing_ptr(
-			&pcontext->stream_in, actual_read);
+		pcontext->stream_in.fwd_write_ptr(actual_read);
 		if (TRUE == hpm_processor_check_context(pcontext)) {
 			if (FALSE == hpm_processor_write_request(pcontext)) {
 				http_5xx(pcontext);
@@ -1491,7 +1490,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 				return X_RUNOFF;
 			}
 			pcontext->connection.last_timestamp = current_time;
-			stream_forward_writing_ptr(&pcontext->stream_in, actual_read);
+			pcontext->stream_in.fwd_write_ptr(actual_read);
 		} else {
 			if (EAGAIN != errno) {
 				http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
@@ -1513,7 +1512,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 		return PROCESS_POLLING_RDONLY;
 	}
 	tmp_len = tmp_len2;
-	stream_backward_reading_ptr(&pcontext->stream_in, tmp_len);
+	pcontext->stream_in.rewind_read_ptr(tmp_len);
 	if (tmp_len < DCERPC_FRAG_LEN_OFFSET + 2) {
 		return PROCESS_CONTINUE;
 	}
@@ -1586,7 +1585,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 		}
 	}
 
-	stream_forward_reading_ptr(&pcontext->stream_in, frag_length);
+	pcontext->stream_in.fwd_read_ptr(frag_length);
 	if (CHANNEL_TYPE_IN == pcontext->channel_type) {
 		pchannel_in->frag_length = 0;
 	} else {

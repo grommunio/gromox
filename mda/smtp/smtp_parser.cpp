@@ -274,19 +274,18 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 					PARSING_NEST_MIME == pcontext->block_info.state) {
 					memcpy(pbuff, pcontext->block_info.block_mime,
 						   pcontext->block_info.block_mime_len);
-					stream_forward_writing_ptr(&pcontext->stream,
-							pcontext->block_info.block_mime_len);
+					pcontext->stream.fwd_write_ptr(pcontext->block_info.block_mime_len);
 					pcontext->block_info.block_mime_len = 0;
 					pcontext->pre_rstlen = 0;
 				} else {
 					/* or, copy the last 4 bytes into the clear stream */
 					memcpy(pbuff, pcontext->last_bytes, 4);
-					stream_forward_writing_ptr(&pcontext->stream, 4);
+					pcontext->stream.fwd_write_ptr(4);
 					pcontext->pre_rstlen = 4;
 				}
 			} else if (SINGLE_PART_MAIL == pcontext->mail.head.mail_part) {
 				memcpy(pbuff, pcontext->last_bytes, 4);
-				stream_forward_writing_ptr(&pcontext->stream, 4);
+				pcontext->stream.fwd_write_ptr(4);
 				pcontext->pre_rstlen = 4;
 			}
 			pcontext->flusher.flush_result = FLUSH_NONE;
@@ -428,7 +427,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		return PROCESS_CLOSE;
 	} else if (actual_read > 0) {
 		pcontext->connection.last_timestamp = current_time;
-		stream_forward_writing_ptr(&pcontext->stream, actual_read);
+		pcontext->stream.fwd_write_ptr(actual_read);
 	} else {
 		if (EAGAIN != errno) {
 			goto LOST_READ;
@@ -518,8 +517,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 						 */
 						actual_read = STREAM_BLOCK_SIZE;
 						pbuff = static_cast<char *>(pcontext->stream.get_read_buf(reinterpret_cast<unsigned int *>(&actual_read)));
-						stream_backward_reading_ptr(&pcontext->stream, 
-								actual_read);
+						pcontext->stream.rewind_read_ptr(actual_read);
 						goto DATA_PROCESS;
 					default:
 						debug_info("[smtp_parser] :error occurs in "
@@ -648,7 +646,7 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 		return PROCESS_CLOSE;
 	}
 
-	stream_reset_reading(&pcontext->stream);
+	pcontext->stream.reset_reading();
 	/* 
 	 when block_info state is parsing block content and the possible boundary
 	 string appears in the last of stream, copy the unfinished line into 
@@ -660,10 +658,9 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 		if((PARSING_BLOCK_CONTENT != pcontext->block_info.state &&
 		   PARSING_NEST_MIME != pcontext->block_info.state) ||
 		   SINGLE_PART_MAIL == pcontext->mail.head.mail_part) {
-			stream_backward_writing_ptr(&pcontext->stream, 4);
+			pcontext->stream.rewind_write_ptr(4);
 		} else {
-			stream_backward_writing_ptr(&pcontext->stream, 
-				pcontext->block_info.block_mime_len);
+			pcontext->stream.rewind_write_ptr(pcontext->block_info.block_mime_len);
 		}
 	}    
 	flusher_put_to_queue(pcontext);
@@ -1000,8 +997,8 @@ SMTP_CONTEXT::~SMTP_CONTEXT()
  */
 static void smtp_parser_reset_stream_reading(SMTP_CONTEXT *pcontext)
 {
-	stream_reset_reading(&pcontext->stream);
-	stream_forward_reading_ptr(&pcontext->stream, pcontext->pre_rstlen);
+	pcontext->stream.reset_reading();
+	pcontext->stream.fwd_read_ptr(pcontext->pre_rstlen);
 }
 
 void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,

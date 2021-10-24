@@ -362,7 +362,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 			auto size_copied = size2 - size2_used;
 			memcpy(static_cast<char *>(pbuff2) + size2_used, pbuff, size_copied);
 			size2 = STREAM_BLOCK_SIZE;
-			stream_forward_writing_ptr(&stream, STREAM_BLOCK_SIZE);
+			stream.fwd_write_ptr(STREAM_BLOCK_SIZE);
 			pbuff2 = stream.get_write_buf(&size2);
 			if (NULL == pbuff2) {
 				smtp_parser_log_info(pcontext, LV_NOTICE, "out of memory");
@@ -374,7 +374,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 		size = STREAM_BLOCK_SIZE;
 		pbuff = pcontext->stream.get_read_buf(&size);
 	} while (NULL != pbuff);
-	stream_forward_writing_ptr(&stream, size2_used);
+	stream.fwd_write_ptr(size2_used);
 	pcontext->stream = std::move(stream);
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
