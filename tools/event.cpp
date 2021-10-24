@@ -127,13 +127,6 @@ static BOOL read_mark(ENQUEUE_NODE *penqueue);
 
 static void term_handler(int signo);
 
-static inline LIB_BUFFER *fifo_allocator_init(size_t data_size,
-    size_t max_size, BOOL thread_safe)
-{
-	return lib_buffer_init(data_size + EXTRA_FIFOITEM_SIZE,
-	       max_size, thread_safe);
-}
-
 /**
  * A FIFO implemented using a singly-linked list. The core is maintained
  * outside the FIFO, but the FIFO will give back a node-sized memory every time
@@ -245,8 +238,8 @@ int main(int argc, const char **argv) try
 		return 7;
 	
 	g_threads_num ++;
-	g_fifo_alloc = fifo_allocator_init(sizeof(MEM_FILE),
-					g_threads_num*FIFO_AVERAGE_LENGTH, TRUE);
+	g_fifo_alloc = lib_buffer_init(sizeof(MEM_FILE) + EXTRA_FIFOITEM_SIZE,
+	               g_threads_num * FIFO_AVERAGE_LENGTH, TRUE);
 	if (NULL == g_fifo_alloc) {
 		printf("[system]: Failed to init queue allocator\n");
 		return 3;
