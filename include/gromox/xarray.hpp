@@ -11,6 +11,9 @@ struct XARRAY_UNIT {
 	unsigned int        xtag;
 };
 
+/* the extra memory ocupation for xarray node */
+#define EXTRA_XARRAYNODE_SIZE sizeof(XARRAY_UNIT)
+
 struct XARRAY {
     LIB_BUFFER*  mbuf_pool;
     DOUBLE_LIST  mlist;
@@ -22,8 +25,6 @@ struct XARRAY {
 
 extern GX_EXPORT void xarray_init(XARRAY *, LIB_BUFFER *pool, size_t data_size);
 void xarray_free(XARRAY* pxarray);
-extern GX_EXPORT LIB_BUFFER *xarray_allocator_init(size_t data_size, size_t max_size);
-void xarray_allocator_free(LIB_BUFFER* buf);
 int xarray_append(XARRAY* pxarray, void* pdata, unsigned int xtag);
 extern GX_EXPORT void *xarray_get_item(XARRAY* pxarray, size_t index);
 void* xarray_get_itemx(XARRAY* pxarray, unsigned int xtag);

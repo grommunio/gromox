@@ -3,10 +3,6 @@
 #include <gromox/util.hpp>
 #include <cstring>
 
-/* the extra memory ocupation for xarray node */
-#define EXTRA_XARRAYNODE_SIZE		 sizeof(XARRAY_UNIT)
-
-
 /*
  *	init a xarray with the specified size of data and max capacity.
  *
@@ -57,38 +53,6 @@ void xarray_free(XARRAY* pxarray)
 	double_list_free(&pxarray->mlist);
 }
 
-
-/*
- *	init a memory allocator with the specified requirement for the xarray
- *
- *	@param	
- *		data_size		the xarray data size
- *		max_size		the capacity of the xarray
- *		thread_safe		is the allocator thread safe?
- *
- *	@return
- *		the allocator pointer, NULL if fail
- */
-LIB_BUFFER *xarray_allocator_init(size_t data_size, size_t max_size)
-{
-	return lib_buffer_init(data_size + EXTRA_XARRAYNODE_SIZE, max_size, TRUE);
-}
-
-
-/*
- *	free the specified xarray allocator
- *
- *	@param	
- *		buf [in]	the specified allocator
- */
-void xarray_allocator_free(LIB_BUFFER* buf)
-{
-	if (NULL == buf) {
-		return;
-	}
-
-	lib_buffer_free(buf);
-}
 /*
  *	append the data into the specified xarray
  *

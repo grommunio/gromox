@@ -239,7 +239,8 @@ int imap_parser_run()
 		printf("[imap_parser]: Failed to init MIME pool\n");
 		return -6;
 	}
-	g_alloc_xarray = xarray_allocator_init(sizeof(MITEM), g_average_num * g_context_num);
+	g_alloc_xarray = lib_buffer_init(sizeof(MITEM) + EXTRA_XARRAYNODE_SIZE,
+	                 g_average_num * g_context_num, TRUE);
 	if (NULL == g_alloc_xarray) {
 		printf("[imap_parser]: Failed to init mem file allocator\n");
 		return -7;
@@ -320,7 +321,7 @@ void imap_parser_stop()
 	}
 	g_mime_pool.reset();
 	if (NULL != g_alloc_xarray) {
-		xarray_allocator_free(g_alloc_xarray);
+		lib_buffer_free(g_alloc_xarray);
 		g_alloc_xarray = NULL;
 	}
 	if (NULL != g_alloc_dir) {
