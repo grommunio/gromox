@@ -289,23 +289,23 @@ static BOOL ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode)
 			return FALSE;
 		}
 	}
-	if (1 != int_hash_add(pbase->phash, pabnode->minid, &pabnode)) {
-		INT_HASH_TABLE *phash = int_hash_init(pbase->phash->capacity +
-		                        HGROWING_SIZE, sizeof(AB_NODE *));
-		if (NULL == phash) {
-			return FALSE;
-		}
-		iter = int_hash_iter_init(pbase->phash);
-		for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
-			int_hash_iter_forward(iter)) {
-			ptmp_value = int_hash_iter_get_value(iter, &tmp_id);
-			int_hash_add(phash, tmp_id, ptmp_value);
-		}
-		int_hash_iter_free(iter);
-		int_hash_free(pbase->phash);
-		pbase->phash = phash;
-		int_hash_add(pbase->phash, pabnode->minid, &pabnode);
+	if (int_hash_add(pbase->phash, pabnode->minid, &pabnode) == 1)
+		return TRUE;
+	INT_HASH_TABLE *phash = int_hash_init(pbase->phash->capacity +
+	                        HGROWING_SIZE, sizeof(AB_NODE *));
+	if (NULL == phash) {
+		return FALSE;
 	}
+	iter = int_hash_iter_init(pbase->phash);
+	for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
+	     int_hash_iter_forward(iter)) {
+		ptmp_value = int_hash_iter_get_value(iter, &tmp_id);
+		int_hash_add(phash, tmp_id, ptmp_value);
+	}
+	int_hash_iter_free(iter);
+	int_hash_free(pbase->phash);
+	pbase->phash = phash;
+	int_hash_add(pbase->phash, pabnode->minid, &pabnode);
 	return TRUE;
 }
 
