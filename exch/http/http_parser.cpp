@@ -392,7 +392,7 @@ static int http_parser_reconstruct_stream(STREAM &stream_src)
 		        reinterpret_cast<unsigned int *>(&size));
 	} while (NULL != pbuff);
 	stream_forward_writing_ptr(pstream_dst, size1_used);
-	auto tl = stream_get_total_length(pstream_dst);
+	auto tl = pstream_dst->get_total_length();
 	stream_src = std::move(stream_dst);
 	return tl;
 }
@@ -889,9 +889,8 @@ static int htp_delegate_hpm(HTTP_CONTEXT *pcontext)
 		http_5xx(pcontext, "Resources exhausted", 503);
 		return X_LOOP;
 	}
-	if (stream_get_total_length(&pcontext->stream_out) == 0) {
+	if (pcontext->stream_out.get_total_length() == 0)
 		return X_LOOP;
-	}
 	unsigned int tmp_len = STREAM_BLOCK_SIZE;
 	pcontext->write_buff = stream_getbuffer_for_reading(&pcontext->stream_out, &tmp_len);
 	pcontext->write_length = tmp_len;
@@ -942,8 +941,8 @@ static int htp_delegate_cache(HTTP_CONTEXT *pcontext)
 static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 {
 	while (true) {
-		stream_try_mark_line(&pcontext->stream_in);
-		switch (stream_has_newline(&pcontext->stream_in)) {
+		pcontext->stream_in.try_mark_line();
+		switch (pcontext->stream_in.has_newline()) {
 		case STREAM_LINE_FAIL:
 			http_parser_log_info(pcontext, LV_DEBUG,
 				"request header line too long");
@@ -960,7 +959,7 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 		}
 
 		char *line = nullptr;
-		auto line_length = stream_readline(&pcontext->stream_in, &line);
+		auto line_length = pcontext->stream_in.readline(&line);
 		if (0 != line_length) {
 			int ret;
 			if ('\0' == pcontext->request.method[0]) {
@@ -979,7 +978,7 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 			http_5xx(pcontext, "Resources exhausted", 503);
 			return X_LOOP;
 		}
-		auto stream_1_written = stream_get_total_length(&pcontext->stream_in);
+		auto stream_1_written = pcontext->stream_in.get_total_length();
 
 		char tmp_buff[2048], tmp_buff1[1024];
 		size_t decode_len = 0;
@@ -1133,7 +1132,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 		}
 		if (TRUE == mod_fastcgi_check_responded(pcontext)) {
 			if (!mod_fastcgi_read_response(pcontext) &&
-			    stream_get_total_length(&pcontext->stream_out) == 0) {
+			    pcontext->stream_out.get_total_length() == 0) {
 				if (TRUE == pcontext->b_close) {
 					return X_RUNOFF;
 				}
@@ -1152,7 +1151,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 			http_5xx(pcontext);
 			return X_LOOP;
 		}
-		if (0 == stream_get_total_length(&pcontext->stream_out)) {
+		if (pcontext->stream_out.get_total_length() == 0) {
 			if (TRUE == pcontext->b_close) {
 				return X_RUNOFF;
 			}
@@ -1380,8 +1379,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 				http_5xx(pcontext, "Resources exhausted", 503);
 				return X_LOOP;
 			}
-			if (0 != stream_get_total_length(
-			    &pcontext->stream_out)) {
+			if (pcontext->stream_out.get_total_length() != 0) {
 				unsigned int tmp_len = STREAM_BLOCK_SIZE;
 				pcontext->write_buff = stream_getbuffer_for_reading(&pcontext->stream_out, &tmp_len);
 				pcontext->write_length = tmp_len;
@@ -1475,7 +1473,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 	auto pchannel_out = pcontext->channel_type == CHANNEL_TYPE_OUT ? static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel) : nullptr;
 	auto frag_length = pcontext->channel_type == CHANNEL_TYPE_IN ?
 			   pchannel_in->frag_length : pchannel_out->frag_length;
-	auto tmp_len = stream_get_total_length(&pcontext->stream_in);
+	auto tmp_len = pcontext->stream_in.get_total_length();
 	if (tmp_len < DCERPC_FRAG_LEN_OFFSET + 2 ||
 	    (frag_length > 0 && tmp_len < frag_length)) {
 		unsigned int size = STREAM_BLOCK_SIZE;

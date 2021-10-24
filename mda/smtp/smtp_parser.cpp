@@ -224,7 +224,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 {
 	char *line, reply_buf[1024];
 	int actual_read, ssl_errno;
-	int size = READ_BUFFER_SIZE, line_length, len;
+	int size = READ_BUFFER_SIZE, len;
 	struct timeval current_time;
 	const char *host_ID;
 	char *pbuff = nullptr;
@@ -467,8 +467,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 	/* envelope command is met */
  CMD_PROCESS:
 	if (T_DATA_CMD != pcontext->last_cmd) {    
-		stream_try_mark_line(&pcontext->stream);
-		switch (stream_has_newline(&pcontext->stream)) {
+		pcontext->stream.try_mark_line();
+		switch (pcontext->stream.has_newline()) {
 		case STREAM_LINE_FAIL: {
 			auto smtp_reply_str = resource_get_smtp_code(525, 1, &string_length);
 			if (NULL != pcontext->connection.ssl) {
@@ -493,7 +493,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			return PROCESS_CONTINUE;
 		case STREAM_LINE_AVAILABLE:
 			do{
-				line_length = stream_readline(&pcontext->stream, &line);
+				auto line_length = pcontext->stream.readline(&line);
 				if (0 != line_length) {
 					switch (smtp_parser_dispatch_cmd(line, line_length, 
 							pcontext)) {
@@ -539,15 +539,14 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 						return PROCESS_CLOSE;
 					}
 				}
-				stream_try_mark_line(&pcontext->stream);
-			} while (STREAM_LINE_AVAILABLE == stream_has_newline(
-					 &pcontext->stream));
+				pcontext->stream.try_mark_line();
+			} while (pcontext->stream.has_newline() == STREAM_LINE_AVAILABLE);
 			return PROCESS_CONTINUE;
 		}
 	} else {
 	/* data command is met */
  DATA_PROCESS:
-		if (stream_get_total_length(&pcontext->stream) >= g_param.flushing_size)
+		if (pcontext->stream.get_total_length() >= g_param.flushing_size)
 			b_should_flush = TRUE;
 		if (actual_read >= 4) {
 			memcpy(pcontext->last_bytes, pbuff + actual_read - 4, 4);
@@ -555,9 +554,9 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			memmove(pcontext->last_bytes, pcontext->last_bytes + actual_read, 4 - actual_read);
 			memcpy(pcontext->last_bytes + 4 - actual_read, pbuff, actual_read);
 		}
-		stream_try_mark_eom(&pcontext->stream);
+		pcontext->stream.try_mark_eom();
 		
-		switch (stream_has_eom(&pcontext->stream)) {
+		switch (pcontext->stream.has_eom()) {
 		case STREAM_EOM_NET:
 			stream_split_eom(&pcontext->stream, NULL);
 			pcontext->last_cmd = T_END_MAIL;
@@ -597,8 +596,7 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 	char buff[1024];
 	size_t string_length = 0;
 	
-	pcontext->total_length += stream_get_total_length(&pcontext->stream) -
-							  pcontext->pre_rstlen;
+	pcontext->total_length += pcontext->stream.get_total_length() - pcontext->pre_rstlen;
 	if (pcontext->total_length >= g_param.max_mail_length && !is_whole) {
 		/* 552 message exceeds fixed maximum message size */
 		auto smtp_reply_str = resource_get_smtp_code(521, 1, &string_length);

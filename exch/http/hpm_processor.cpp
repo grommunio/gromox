@@ -577,20 +577,14 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 		return TRUE;
 	}
 	if (-1 == phpm_ctx->cache_fd) {
-		if (phpm_ctx->content_length <=
-			stream_get_total_length(&phttp->stream_in)) {
+		if (phpm_ctx->content_length <= phttp->stream_in.get_total_length())
 			phpm_ctx->b_end = TRUE;	
-		}
 		return TRUE;
 	}
 	if (FALSE == phpm_ctx->b_chunked) {
-		if (phpm_ctx->cache_size +
-			stream_get_total_length(&phttp->stream_in) <
-			phpm_ctx->content_length &&
-			stream_get_total_length(&phttp->stream_in) <
-			g_cache_size) {
+		if (phpm_ctx->cache_size + phttp->stream_in.get_total_length() < phpm_ctx->content_length &&
+		    phttp->stream_in.get_total_length() < g_cache_size)
 			return TRUE;	
-		}
 		size = STREAM_BLOCK_SIZE;
 		while ((pbuff = stream_getbuffer_for_reading(&phttp->stream_in,
 		    reinterpret_cast<unsigned int *>(&size))) != nullptr) {
@@ -619,7 +613,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 	} else {
  CHUNK_BEGIN:
 		if (phpm_ctx->chunk_size == phpm_ctx->chunk_offset) {
-			size = stream_peek_buffer(&phttp->stream_in, tmp_buff, 1024);
+			size = phttp->stream_in.peek_buffer(tmp_buff, 1024);
 			if (size < 5) {
 				return TRUE;
 			}
@@ -706,8 +700,7 @@ BOOL hpm_processor_proc(HTTP_CONTEXT *phttp)
 			if (NULL == pcontent) {
 				return FALSE;
 			}
-			if (stream_peek_buffer(&phttp->stream_in,
-			    static_cast<char *>(pcontent),
+			if (phttp->stream_in.peek_buffer(static_cast<char *>(pcontent),
 			    phpm_ctx->content_length) != phpm_ctx->content_length) {
 				free(pcontent);
 				return FALSE;

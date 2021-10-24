@@ -955,8 +955,7 @@ BOOL MAIL::transfer_dot(MAIL *pmail_dst)
 	
 	size_t offset = 0;
 	size = STREAM_BLOCK_SIZE;
-	while (STREAM_COPY_END != stream_copyline(&tmp_stream,
-		pbuff + offset, &size)) {
+	while (tmp_stream.copyline(pbuff + offset, &size) != STREAM_COPY_END) {
 		pbuff[offset + size] = '\r';
 		size ++;
 		pbuff[offset + size] = '\n';

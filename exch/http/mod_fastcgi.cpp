@@ -939,16 +939,13 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 	if (phttp->pfast_context->b_end)
 		return TRUE;
 	if (-1 == phttp->pfast_context->cache_fd) {
-		if (phttp->pfast_context->content_length <=
-		    stream_get_total_length(&phttp->stream_in))
+		if (phttp->pfast_context->content_length <= phttp->stream_in.get_total_length())
 			phttp->pfast_context->b_end = TRUE;	
 		return TRUE;
 	}
 	if (FALSE == phttp->pfast_context->b_chunked) {
-		if (phttp->pfast_context->cache_size +
-		    stream_get_total_length(&phttp->stream_in) <
-		    phttp->pfast_context->content_length &&
-		    stream_get_total_length(&phttp->stream_in) < g_cache_size)
+		if (phttp->pfast_context->cache_size + phttp->stream_in.get_total_length() < phttp->pfast_context->content_length &&
+		    phttp->stream_in.get_total_length() < g_cache_size)
 			return TRUE;	
 		size = STREAM_BLOCK_SIZE;
 		while ((pbuff = stream_getbuffer_for_reading(&phttp->stream_in,
@@ -982,8 +979,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
  CHUNK_BEGIN:
 		if (phttp->pfast_context->chunk_size ==
 			phttp->pfast_context->chunk_offset) {
-			size = stream_peek_buffer(&phttp->stream_in,
-										tmp_buff, 1024);
+			size = phttp->stream_in.peek_buffer(tmp_buff, 1024);
 			if (size < 5)
 				return TRUE;
 			if (0 == strncmp("0\r\n\r\n", tmp_buff, 5)) {

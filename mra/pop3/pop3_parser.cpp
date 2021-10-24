@@ -515,7 +515,6 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 {
 	unsigned int size, tmp_len, line_length;
 	int read_len;
-	int copy_result;
 	int last_result;
 	BOOL b_stop;
 	char line_buff[MAX_LINE_LENGTH + 3];
@@ -528,7 +527,7 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 	}
 
 	STREAM temp_stream(blocks_allocator_get_allocator());
-	while (stream_get_total_length(&temp_stream) < g_retrieving_size) {
+	while (temp_stream.get_total_length() < g_retrieving_size) {
 		size = STREAM_BLOCK_SIZE;
 		void *pbuff = stream_getbuffer_for_writing(&temp_stream, &size);
 		if (NULL == pbuff) {
@@ -551,7 +550,7 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 	last_result = STREAM_COPY_OK;
 	while (FALSE == b_stop) {
 		line_length = MAX_LINE_LENGTH;
-		copy_result = stream_copyline(&temp_stream, line_buff, &line_length);
+		auto copy_result = temp_stream.copyline(line_buff, &line_length);
 		switch (copy_result) {
 		case STREAM_COPY_END:
 			if (-1 == pcontext->message_fd) {

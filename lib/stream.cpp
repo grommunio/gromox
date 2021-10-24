@@ -86,27 +86,6 @@ void STREAM::xcopy(const STREAM &o)
 }
 
 /*
- *	  check if there's a new line in the stream after the read pointer
- *	  @param
- *		  pstream [in]	  indicate the stream object
- *	  @return
- *		  STREAM_LINE_FAIL		  mail envelope lines overflow the first buffer	
- *								  of stream
- *		  STREAM_LINE_AVAILABLE	  line is available
- *		  STREAM_LINE_UNAVAILABLE no line is available
- */
-int stream_has_newline(STREAM *pstream)
-{
-#ifdef _DEBUG_UMTA	  
-	if (NULL == pstream) {
-		debug_info("[stream]: stream_has_newline, param NULL");
-		return STREAM_LINE_ERROR;
-	}
-#endif
-	return pstream->line_result;
-}
-
-/*
  *	  retrieve pointer of the line following the read pointer
  *	  @param
  *		  pstream [in]	  indicate the stream object
@@ -114,20 +93,19 @@ int stream_has_newline(STREAM *pstream)
  *	  @return		  
  *		  size of line, not include the token '\r' or '\n' 
  */
-unsigned int stream_readline(STREAM *pstream,  char ** ppline)
+unsigned int STREAM::readline(char **ppline)
 {
+	auto pstream = this;
 	unsigned int distance;
 
 #ifdef _DEBUG_UMTA
-	if (NULL == pstream || NULL == ppline) {
+	if (ppline == nullptr) {
 		debug_info("[stream]: stream_readline, param NULL");
 		return 0;
 	}
 #endif
-	
-	if (STREAM_LINE_AVAILABLE != stream_has_newline(pstream)) {
+	if (has_newline() != STREAM_LINE_AVAILABLE)
 		return 0;
-	} 
 	distance = pstream->block_line_pos - pstream->rd_block_pos;
 	*ppline = (char*)pstream->pnode_rd->pdata + pstream->rd_block_pos;
 	pstream->rd_block_pos = pstream->block_line_parse;
@@ -142,20 +120,14 @@ unsigned int stream_readline(STREAM *pstream,  char ** ppline)
  *	  @param
  *		  pstream [in]	  indicate the stream object
  */
-void stream_try_mark_line(STREAM *pstream)
+void STREAM::try_mark_line()
 {
-	int i, line_result, end;
+	auto pstream = this;
+	int i, end;
 	char temp1, temp2;
 	DOUBLE_LIST_NODE *pnode;
 
-#ifdef _DEBUG_UMTA
-	if (NULL == pstream) {
-		debug_info("[stream]: stream_try_mark_line, param NULL");
-		return;
-	}
-#endif
-
-	line_result = stream_has_newline(pstream);
+	int line_result = has_newline();
 	if (STREAM_LINE_AVAILABLE == line_result ||
 		STREAM_LINE_FAIL == line_result) {
 		return;
@@ -506,18 +478,6 @@ void stream_reset_reading(STREAM *pstream)
 }
 
 /*
- *	  return the size of stream
- *	  @param
- *		  pstream	 indicate the stream object
- *	  @return
- *		  size of stream
- */
-size_t stream_get_total_length(const STREAM *pstream)
-{
-	return pstream->wr_total_pos;
-}
-
-/*
  *	copy a line from the stream into the pbuff, a line is identify by the 
  *	trailing '\r' or '\n' or '\r\n', if there is a leading '\n' at the 
  *	beginning of the stream, we will skip it.
@@ -538,15 +498,16 @@ size_t stream_get_total_length(const STREAM *pstream)
  *							the unterminated line into the pbuff
  *		STREAM_COPY_END		like EOF in ASCI-C std read or write file
  */
-int stream_copyline(STREAM *pstream, char *pbuff, unsigned int *psize)
+int STREAM::copyline(char *pbuff, unsigned int *psize)
 {
+	auto pstream = this;
 	int i, end, actual_size;
 	int buf_size, state = 0;
 	DOUBLE_LIST_NODE *pnode;
 	char tmp;
 
 #ifdef _DEBUG_UMTA
-	if (NULL == pstream || NULL == pbuff || NULL == psize) {
+	if (pbuff == nullptr || psize == nullptr) {
 		debug_info("[stream]: stream_copyline, param NULL");
 		return STREAM_COPY_ERROR;
 	}
@@ -790,13 +751,14 @@ int stream_copyline(STREAM *pstream, char *pbuff, unsigned int *psize)
  *	@return
  *		length of content retrieved
  */
-unsigned int stream_peek_buffer(const STREAM *pstream, char *pbuff, unsigned int size)
+unsigned int STREAM::peek_buffer(char *pbuff, unsigned int size) const
 {
+	auto pstream = this;
 	unsigned int tmp_size;
 	unsigned int actual_size;
 
 #ifdef _DEBUG_UMTA
-	if (NULL == pstream || NULL == pbuff) {
+	if (pbuff == nullptr) {
 		debug_info("[stream]: stream_peek_buffer, param NULL");
 		return 0;
 	}
@@ -861,8 +823,9 @@ unsigned int stream_peek_buffer(const STREAM *pstream, char *pbuff, unsigned int
  *		STREAM_DUMP_FAIL		fail
  *		STREAM_DUMP_OK			OK
  */
-int stream_dump(STREAM *pstream, int fd)
+int STREAM::dump(int fd)
 {
+	auto pstream = this;
 	void *pbuff;
 	ssize_t wr_result;
 	unsigned int size = STREAM_BLOCK_SIZE;
@@ -951,14 +914,9 @@ int stream_write(STREAM *pstream, const void *pbuff, size_t size)
  *		  STREAM_EOM_NET		  find <crlf>.<crlf> at the end of stream
  *		  STREAM_EOM_DIRTY		  find <crlf>.<crlf> within stream
  */
-int stream_has_eom(STREAM *pstream)
+int STREAM::has_eom()
 {
-#ifdef _DEBUG_UMTA	  
-	if (NULL == pstream) {
-		debug_info("[stream]: stream_has_eom, param NULL");
-		return STREAM_EOM_ERROR;
-	}
-#endif
+	auto pstream = this;
 	if (STREAM_EOM_WAITING == pstream->eom_result) {
 		return STREAM_EOM_NONE;
 	} else if (STREAM_EOM_CRLF == pstream->eom_result) {
@@ -984,8 +942,9 @@ int stream_has_eom(STREAM *pstream)
  *		  pstream [in]	  indicate the stream object
  *
  */
-void stream_try_mark_eom(STREAM *pstream)
+void STREAM::try_mark_eom()
 {
+	auto pstream = this;
 	int i, j;
 	int from_pos;
 	int until_pos;
@@ -994,13 +953,6 @@ void stream_try_mark_eom(STREAM *pstream)
 	char *pbuff, temp_buff[6];
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
-
-#ifdef _DEBUG_UMTA	  
-	if (NULL == pstream) {
-		debug_info("[stream]: stream_try_mark_eom, param NULL");
-		return;
-	}
-#endif
 	
 	if (STREAM_EOM_WAITING != pstream->eom_result) {
 		return;

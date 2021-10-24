@@ -888,10 +888,10 @@ static int ps_stat_appending(IMAP_CONTEXT *pcontext)
 		pcontext->current_len += read_len;
 	}
 
-	auto total_len = stream_get_total_length(&pcontext->stream);
+	auto total_len = pcontext->stream.get_total_length();
 	if (total_len >= g_cache_size ||
 	    pcontext->literal_len == pcontext->current_len) {
-		if (STREAM_DUMP_OK != stream_dump(&pcontext->stream, pcontext->message_fd)) {
+		if (pcontext->stream.dump(pcontext->message_fd) != STREAM_DUMP_OK) {
 			imap_parser_log_info(pcontext, LV_WARN, "failed to flush mail from memory into file");
 			/* IMAP_CODE_2180010: BAD internal error: fail to dump stream object */
 			size_t string_length = 0;
@@ -1145,7 +1145,6 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 	int len;
 	int read_len;
 	int line_length;
-	int copy_result;
 	char *last_line;
 	char *ptr, *ptr1;
 	
@@ -1156,7 +1155,7 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 		}
 		/* make room for CRLF */
 		line_length -= 2;
-		copy_result = stream_copyline(&pcontext->stream, pcontext->write_buff +
+		auto copy_result = pcontext->stream.copyline(pcontext->write_buff +
 		              pcontext->write_length, reinterpret_cast<unsigned int *>(&line_length));
 		switch (copy_result) {
 		case STREAM_COPY_END:
@@ -1268,7 +1267,6 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *pcontext)
 			return IMAP_RETRIEVE_OK;
 		}
 	}
-	
 }
 
 void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *folder)

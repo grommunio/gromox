@@ -4,6 +4,9 @@
 #define STREAM_BLOCK_SIZE    0x10000
 #define STREAM_ALLOC_SIZE    (STREAM_BLOCK_SIZE + sizeof(DOUBLE_LIST_NODE))
 
+/**
+ * %STREAM_LINE_FAIL: mail envelope lines overflow the first buffer of stream
+ */
 enum {
     STREAM_LINE_ERROR = -2, 
     STREAM_LINE_FAIL,
@@ -42,6 +45,16 @@ struct STREAM {
 	STREAM &operator=(STREAM &&);
 	~STREAM();
 
+	int has_newline() const { return line_result; }
+	unsigned int readline(char **);
+	void try_mark_line();
+	void try_mark_eom();
+	int has_eom();
+	size_t get_total_length() const { return wr_total_pos; }
+	int copyline(char *buf, unsigned int *size);
+	unsigned int peek_buffer(char *, unsigned int) const;
+	int dump(int fd);
+
 	DOUBLE_LIST_NODE *pnode_rd = nullptr, *pnode_wr = nullptr;
 	int line_result = 0, eom_result = 0;
 	size_t rd_block_pos = 0, wr_block_pos = 0;
@@ -59,12 +72,7 @@ struct STREAM {
 	friend void stream_split_eom(STREAM *, STREAM *);
 };
 
-int stream_has_newline(STREAM *pstream);
-unsigned int stream_readline(STREAM *pstream, char **ppline);
 void stream_clear(STREAM *pstream);
-void stream_try_mark_line(STREAM *pstream);
-void stream_try_mark_eom(STREAM *pstream);
-int stream_has_eom(STREAM *pstream);
 void stream_split_eom(STREAM *pstream, STREAM *pstream_second);
 extern void *stream_getbuffer_for_writing(STREAM *pstream, unsigned int *psize);
 unsigned int stream_forward_writing_ptr(STREAM *pstream, unsigned int offset);
@@ -73,8 +81,4 @@ unsigned int stream_backward_writing_ptr(STREAM *pstream, unsigned int offset);
 unsigned int stream_backward_reading_ptr(STREAM *pstream, unsigned int offset);
 extern void *stream_getbuffer_for_reading(STREAM *pstream, unsigned int *psize);
 void stream_reset_reading(STREAM *pstream);
-extern GX_EXPORT size_t stream_get_total_length(const STREAM *);
-int stream_copyline(STREAM *pstream, char *pbuff, unsigned int *size);
-extern GX_EXPORT unsigned int stream_peek_buffer(const STREAM *, char *, unsigned int);
-int stream_dump(STREAM *pstream, int fd);
 extern int stream_write(STREAM *pstream, const void *pbuff, size_t size);
