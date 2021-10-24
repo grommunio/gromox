@@ -291,11 +291,12 @@ static BOOL stream_append_node(STREAM *pstream)
  *		  psize [in,out]  for retrieving the size of buffer
  *	  @return			  address of buffer	   
  */
-void *stream_getbuffer_for_writing(STREAM *pstream, unsigned int *psize)
+void *STREAM::get_write_buf(unsigned int *psize)
 {
+	auto pstream = this;
 #ifdef _DEBUG_UMTA
-	if (NULL == pstream || NULL == psize) {
-		debug_info("[stream]: stream_getbuffer_for_writing, param NULL");
+	if (psize == nullptr) {
+		debug_info("[stream]: stream_get_wrbuf, param NULL");
 		return NULL;
 	}
 #endif
@@ -426,12 +427,13 @@ unsigned int stream_backward_reading_ptr(STREAM *pstream, unsigned int offset)
  *	  @return
  *		  the address of buffer
  */
-void *stream_getbuffer_for_reading(STREAM *pstream, unsigned int *psize)
+void *STREAM::get_read_buf(unsigned int *psize)
 {
+	auto pstream = this;
 	char *ret_ptr;
 #ifdef _DEBUG_UMTA
-	if (NULL == pstream || NULL == psize) {
-		debug_info("[stream]: stream_getbuffer_for_reading, param NULL");
+	if (psize == nullptr) {
+		debug_info("[stream]: stream_get_rdbuf, param NULL");
 		return NULL;
 	}
 #endif
@@ -830,7 +832,7 @@ int STREAM::dump(int fd)
 	unsigned int size = STREAM_BLOCK_SIZE;
 
 	stream_reset_reading(pstream);
-	while ((pbuff = stream_getbuffer_for_reading(pstream, &size))) {
+	while ((pbuff = get_read_buf(&size)) != nullptr) {
 		auto wr_result = ::write(fd, pbuff, size);
 		if (size != wr_result) {
 			return STREAM_DUMP_FAIL;
@@ -895,7 +897,7 @@ int STREAM::write(const void *pbuff, size_t size)
 	offset = 0;
 	while (offset < size) {
 		buff_size = STREAM_BLOCK_SIZE;
-		void *pstream_buff = stream_getbuffer_for_writing(pstream, &buff_size);
+		void *pstream_buff = get_write_buf(&buff_size);
 		actual_size = (size - offset > buff_size)?buff_size:(size - offset);
 		memcpy(pstream_buff, static_cast<const char *>(pbuff) + offset, actual_size);
 		stream_forward_writing_ptr(pstream, actual_size);
@@ -1101,7 +1103,7 @@ void STREAM::split_eom(STREAM *pstream_second)
 		fake_stream.pnode_rd = pnode;
 		pstream_second->clear();
 		size = STREAM_BLOCK_SIZE;
-		while ((pbuff = stream_getbuffer_for_reading(&fake_stream, &size)) != NULL) {
+		while ((pbuff = fake_stream.get_read_buf(&size)) != nullptr) {
 			pstream_second->write(pbuff, size);
 			size = STREAM_BLOCK_SIZE;
 		}

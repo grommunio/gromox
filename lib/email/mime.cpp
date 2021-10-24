@@ -1262,7 +1262,7 @@ static BOOL mime_read_mutlipart_content(MIME *pmime,
 	}
 	offset = 0;
 	buff_size = STREAM_BLOCK_SIZE;
-	while ((ptr = stream_getbuffer_for_reading(&tmp_stream, &buff_size))) {
+	while ((ptr = tmp_stream.get_read_buf(&buff_size)) != nullptr) {
 		memcpy(out_buff + offset, ptr, buff_size);
 		offset += buff_size;
 		buff_size = STREAM_BLOCK_SIZE;
@@ -1447,7 +1447,7 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 		}
 		offset = 0;
 		buff_size = STREAM_BLOCK_SIZE;
-		while ((ptr = stream_getbuffer_for_reading(&tmp_stream, &buff_size))) {
+		while ((ptr = tmp_stream.get_read_buf(&buff_size)) != nullptr) {
 			memcpy(out_buff + offset, ptr, buff_size);
 			offset += buff_size;
 			buff_size = STREAM_BLOCK_SIZE;

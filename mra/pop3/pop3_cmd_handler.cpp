@@ -260,7 +260,7 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 		pcontext->stream.write(".\r\n", 3);
 		pcontext->write_offset = 0;
 		tmp_len = MAX_LINE_LENGTH;
-		pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(&pcontext->stream, &tmp_len));
+		pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&tmp_len));
 		pcontext->write_length = tmp_len;
 		if (NULL == pcontext->write_buff) {
 			pop3_parser_log_info(pcontext, LV_WARN, "error on stream object");
@@ -321,8 +321,7 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 		pcontext->stream.write(".\r\n", 3);
 		pcontext->write_offset = 0;
 		tmp_len = MAX_LINE_LENGTH;
-		pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(
-		                       &pcontext->stream, &tmp_len));
+		pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&tmp_len));
 		pcontext->write_length = tmp_len;
 		if (NULL == pcontext->write_buff) {
 			pop3_parser_log_info(pcontext, LV_WARN, "error on stream object");

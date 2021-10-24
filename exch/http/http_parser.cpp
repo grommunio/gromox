@@ -356,15 +356,13 @@ static int http_parser_reconstruct_stream(STREAM &stream_src)
 	STREAM stream_dst(blocks_allocator_get_allocator());
 	auto pstream_src = &stream_src, pstream_dst = &stream_dst;
 	int size = STREAM_BLOCK_SIZE;
-	auto pbuff = stream_getbuffer_for_reading(pstream_src,
-	             reinterpret_cast<unsigned int *>(&size));
+	auto pbuff = pstream_src->get_read_buf(reinterpret_cast<unsigned int *>(&size));
 	if (NULL == pbuff) {
 		stream_src = std::move(stream_dst);
 		return 0;
 	}
 	size1 = STREAM_BLOCK_SIZE;
-	auto pbuff1 = stream_getbuffer_for_writing(pstream_dst,
-	              reinterpret_cast<unsigned int *>(&size1));
+	auto pbuff1 = pstream_dst->get_write_buf(reinterpret_cast<unsigned int *>(&size1));
 	/*
 	 * do not need to check the pbuff pointer because it will
 	 * never be NULL because of stream's characteristic
@@ -379,8 +377,7 @@ static int http_parser_reconstruct_stream(STREAM &stream_src)
 			memcpy(static_cast<char *>(pbuff1) + size1_used, pbuff, size_copied);
 			size1 = STREAM_BLOCK_SIZE;
 			stream_forward_writing_ptr(pstream_dst, STREAM_BLOCK_SIZE);
-			pbuff1 = stream_getbuffer_for_writing(pstream_dst,
-			         reinterpret_cast<unsigned int *>(&size1));
+			pbuff1 = pstream_dst->get_write_buf(reinterpret_cast<unsigned int *>(&size1));
 			if (NULL == pbuff1) {
 				return -1;
 			}
@@ -388,8 +385,7 @@ static int http_parser_reconstruct_stream(STREAM &stream_src)
 			memcpy(pbuff1, static_cast<char *>(pbuff) + size_copied, size1_used);
 		}
 		size = STREAM_BLOCK_SIZE;
-		pbuff = stream_getbuffer_for_reading(pstream_src,
-		        reinterpret_cast<unsigned int *>(&size));
+		pbuff = pstream_src->get_read_buf(reinterpret_cast<unsigned int *>(&size));
 	} while (NULL != pbuff);
 	stream_forward_writing_ptr(pstream_dst, size1_used);
 	auto tl = pstream_dst->get_total_length();
@@ -888,7 +884,7 @@ static int htp_delegate_hpm(HTTP_CONTEXT *pcontext)
 	if (pcontext->stream_out.get_total_length() == 0)
 		return X_LOOP;
 	unsigned int tmp_len = STREAM_BLOCK_SIZE;
-	pcontext->write_buff = stream_getbuffer_for_reading(&pcontext->stream_out, &tmp_len);
+	pcontext->write_buff = pcontext->stream_out.get_read_buf(&tmp_len);
 	pcontext->write_length = tmp_len;
 	return X_LOOP;
 }
@@ -1037,7 +1033,7 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 {
 	unsigned int size = STREAM_BLOCK_SIZE;
-	auto pbuff = stream_getbuffer_for_writing(&pcontext->stream_in, &size);
+	auto pbuff = pcontext->stream_in.get_write_buf(&size);
 	if (NULL == pbuff) {
 		http_parser_log_info(pcontext, LV_DEBUG, "out of memory");
 		http_5xx(pcontext, "Resources exhausted", 503);
@@ -1099,7 +1095,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 			return PROCESS_CONTINUE;
 		case HPM_RETRIEVE_SOCKET: {
 			unsigned int size = STREAM_BLOCK_SIZE;
-			auto pbuff = stream_getbuffer_for_reading(&pcontext->stream_in, &size);
+			auto pbuff = pcontext->stream_in.get_read_buf(&size);
 			if (pbuff != nullptr && !hpm_processor_send(pcontext, pbuff, size)) {
 				http_parser_log_info(pcontext, LV_DEBUG,
 					"connection closed by hpm");
@@ -1109,7 +1105,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 			pcontext->stream_out.clear();
 			http_parser_request_clear(&pcontext->request);
 			unsigned int tmp_len = STREAM_BLOCK_SIZE;
-			pcontext->write_buff = stream_getbuffer_for_writing(&pcontext->stream_out, &tmp_len);
+			pcontext->write_buff = pcontext->stream_out.get_write_buf(&tmp_len);
 			pcontext->write_length = 0;
 			pcontext->write_offset = 0;
 			pcontext->sched_stat = SCHED_STAT_SOCKET;
@@ -1182,7 +1178,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 		tmp_len = ((BLOB_NODE*)pnode->pdata)->blob.length;
 	} else {
 		tmp_len = STREAM_BLOCK_SIZE;
-		pcontext->write_buff = stream_getbuffer_for_reading(&pcontext->stream_out, &tmp_len);
+		pcontext->write_buff = pcontext->stream_out.get_read_buf(&tmp_len);
 		// if write_buff is nullptr, then tmp_len was set to 0
 	}
 
@@ -1308,7 +1304,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 	}
 
 	unsigned int tmp_len = STREAM_BLOCK_SIZE;
-	pcontext->write_buff = stream_getbuffer_for_reading(&pcontext->stream_out, &tmp_len);
+	pcontext->write_buff = pcontext->stream_out.get_read_buf(&tmp_len);
 	pcontext->write_length = tmp_len;
 	if (pcontext->write_buff != nullptr) {
 		return PROCESS_CONTINUE;
@@ -1338,7 +1334,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 {
 	unsigned int size = STREAM_BLOCK_SIZE;
-	auto pbuff = stream_getbuffer_for_writing(&pcontext->stream_in, &size);
+	auto pbuff = pcontext->stream_in.get_write_buf(&size);
 	if (NULL == pbuff) {
 		http_parser_log_info(pcontext, LV_DEBUG, "out of memory");
 		http_5xx(pcontext);
@@ -1377,7 +1373,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 			}
 			if (pcontext->stream_out.get_total_length() != 0) {
 				unsigned int tmp_len = STREAM_BLOCK_SIZE;
-				pcontext->write_buff = stream_getbuffer_for_reading(&pcontext->stream_out, &tmp_len);
+				pcontext->write_buff = pcontext->stream_out.get_read_buf(&tmp_len);
 				pcontext->write_length = tmp_len;
 			}
 			return PROCESS_CONTINUE;
@@ -1472,7 +1468,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 	if (tmp_len < DCERPC_FRAG_LEN_OFFSET + 2 ||
 	    (frag_length > 0 && tmp_len < frag_length)) {
 		unsigned int size = STREAM_BLOCK_SIZE;
-		auto pbuff = stream_getbuffer_for_writing(&pcontext->stream_in, &size);
+		auto pbuff = pcontext->stream_in.get_write_buf(&size);
 		if (NULL == pbuff) {
 			http_parser_log_info(pcontext, LV_DEBUG, "out of memory");
 			http_5xx(pcontext, "Resources exhausted", 503);
@@ -1512,7 +1508,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 	}
 
 	unsigned int tmp_len2 = STREAM_BLOCK_SIZE;
-	auto pbuff = stream_getbuffer_for_reading(&pcontext->stream_in, &tmp_len2);
+	auto pbuff = pcontext->stream_in.get_read_buf(&tmp_len2);
 	if (NULL == pbuff) {
 		return PROCESS_POLLING_RDONLY;
 	}

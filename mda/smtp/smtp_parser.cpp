@@ -259,8 +259,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		} else {
 			pcontext->stream.clear();
 			size = STREAM_BLOCK_SIZE;
-			pbuff = static_cast<char *>(stream_getbuffer_for_writing(&pcontext->stream,
-			        reinterpret_cast<unsigned int *>(&size)));
+			pbuff = static_cast<char *>(pcontext->stream.get_write_buf(reinterpret_cast<unsigned int *>(&size)));
 			/* 
 			 * do not need to check the pbuff pointer because it will never
 			 * be NULL because of stream's characteristic
@@ -381,8 +380,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 	}
 
 	/* read buffer from socket into stream */
-	pbuff = static_cast<char *>(stream_getbuffer_for_writing(&pcontext->stream,
-	        reinterpret_cast<unsigned int *>(&size)));
+	pbuff = static_cast<char *>(pcontext->stream.get_write_buf(reinterpret_cast<unsigned int *>(&size)));
 	if (NULL == pbuff) {
 		auto smtp_reply_str = resource_get_smtp_code(416, 1, &string_length);
 		if (NULL != pcontext->connection.ssl) {
@@ -519,8 +517,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 						 * never been changed.
 						 */
 						actual_read = STREAM_BLOCK_SIZE;
-						pbuff = static_cast<char *>(stream_getbuffer_for_reading(&pcontext->stream,
-						        reinterpret_cast<unsigned int *>(&actual_read)));
+						pbuff = static_cast<char *>(pcontext->stream.get_read_buf(reinterpret_cast<unsigned int *>(&actual_read)));
 						stream_backward_reading_ptr(&pcontext->stream, 
 								actual_read);
 						goto DATA_PROCESS;

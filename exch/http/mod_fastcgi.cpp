@@ -824,7 +824,7 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 		if (phttp->pfast_context->content_length == 0)
 			goto END_OF_STDIN;
 		unsigned int tmp_len = sizeof(tmp_buff);
-		while ((pbuff = stream_getbuffer_for_reading(&phttp->stream_in, &tmp_len)) != nullptr) {
+		while ((pbuff = phttp->stream_in.get_read_buf(&tmp_len)) != nullptr) {
 			if (tmp_len > phttp->pfast_context->content_length) {
 				stream_backward_reading_ptr(&phttp->stream_in,
 					tmp_len - phttp->pfast_context->content_length);
@@ -948,8 +948,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 		    phttp->stream_in.get_total_length() < g_cache_size)
 			return TRUE;	
 		size = STREAM_BLOCK_SIZE;
-		while ((pbuff = stream_getbuffer_for_reading(&phttp->stream_in,
-		    reinterpret_cast<unsigned int *>(&size))) != nullptr) {
+		while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
 			if (phttp->pfast_context->cache_size + size >
 				phttp->pfast_context->content_length) {
 				tmp_len = phttp->pfast_context->content_length
@@ -1010,8 +1009,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 				&phttp->stream_in, tmp_len);
 		}
 		size = STREAM_BLOCK_SIZE;
-		while ((pbuff = stream_getbuffer_for_reading(&phttp->stream_in,
-		    reinterpret_cast<unsigned int *>(&size))) != nullptr) {
+		while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
 			if (phttp->pfast_context->chunk_size >=
 				size + phttp->pfast_context->chunk_offset) {
 				if (size != write(phttp->pfast_context->cache_fd,

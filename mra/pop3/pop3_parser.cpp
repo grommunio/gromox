@@ -311,8 +311,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		}
 		pcontext->write_offset = 0;
 		tmp_len = MAX_LINE_LENGTH;
-		pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(
-		                       &pcontext->stream, &tmp_len));
+		pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&tmp_len));
 		pcontext->write_length = tmp_len;
 		if (NULL == pcontext->write_buff) {
 			pcontext->stream.clear();
@@ -366,7 +365,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 
 		pcontext->write_offset = 0;
 		tmp_len = MAX_LINE_LENGTH;
-		pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(&pcontext->stream, &tmp_len));
+		pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&tmp_len));
 		pcontext->write_length = tmp_len;
 		if (NULL == pcontext->write_buff) {
 			pcontext->stream.clear();
@@ -529,7 +528,7 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 	STREAM temp_stream(blocks_allocator_get_allocator());
 	while (temp_stream.get_total_length() < g_retrieving_size) {
 		size = STREAM_BLOCK_SIZE;
-		void *pbuff = stream_getbuffer_for_writing(&temp_stream, &size);
+		void *pbuff = temp_stream.get_write_buf(&size);
 		if (NULL == pbuff) {
 			pop3_parser_log_info(pcontext, LV_WARN, "out of memory");
 			return POP3_RETRIEVE_ERROR;
@@ -599,8 +598,7 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 	}
 	temp_stream.clear();
 	tmp_len = STREAM_BLOCK_SIZE;
-	pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(
-	                       &pcontext->stream, &tmp_len));
+	pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&tmp_len));
 	pcontext->write_length = tmp_len;
 	if (NULL == pcontext->write_buff) {
 		pop3_parser_log_info(pcontext, LV_WARN, "error on stream object");

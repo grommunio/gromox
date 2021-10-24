@@ -582,8 +582,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 		    phttp->stream_in.get_total_length() < g_cache_size)
 			return TRUE;	
 		size = STREAM_BLOCK_SIZE;
-		while ((pbuff = stream_getbuffer_for_reading(&phttp->stream_in,
-		    reinterpret_cast<unsigned int *>(&size))) != nullptr) {
+		while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
 			if (phpm_ctx->cache_size + size >
 				phpm_ctx->content_length) {
 				tmp_len = phpm_ctx->content_length
@@ -639,8 +638,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 			stream_forward_reading_ptr(&phttp->stream_in, tmp_len);
 		}
 		size = STREAM_BLOCK_SIZE;
-		while ((pbuff = stream_getbuffer_for_reading(&phttp->stream_in,
-		    reinterpret_cast<unsigned int *>(&size))) != nullptr) {
+		while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
 			if (phpm_ctx->chunk_size >= size + phpm_ctx->chunk_offset) {
 				if (size != write(phpm_ctx->cache_fd, pbuff, size)) {
 					http_parser_log_info(phttp, LV_DEBUG, "fail to "

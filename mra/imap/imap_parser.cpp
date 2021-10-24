@@ -841,7 +841,7 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 static int ps_stat_appending(IMAP_CONTEXT *pcontext)
 {
 	unsigned int len = STREAM_BLOCK_SIZE;
-	auto pbuff = static_cast<char *>(stream_getbuffer_for_writing(&pcontext->stream, &len));
+	auto pbuff = static_cast<char *>(pcontext->stream.get_write_buf(&len));
 	if (NULL == pbuff) {
 		imap_parser_log_info(pcontext, LV_WARN, "out of memory");
 		/* IMAP_CODE_2180009: BAD internal error: fail to get stream buffer */
@@ -1009,7 +1009,7 @@ static int ps_stat_wrlst(IMAP_CONTEXT *pcontext)
 {
 	if (0 == pcontext->write_length) {
 		unsigned int temp_len = MAX_LINE_LENGTH;
-		pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(&pcontext->stream, &temp_len));
+		pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&temp_len));
 		pcontext->write_length = temp_len;
 	}
 	ssize_t written_len;
@@ -1054,7 +1054,7 @@ static int ps_stat_wrlst(IMAP_CONTEXT *pcontext)
 
 	pcontext->write_offset = 0;
 	unsigned int temp_len = MAX_LINE_LENGTH;
-	pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(&pcontext->stream, &temp_len));
+	pcontext->write_buff = static_cast<char *>(pcontext->stream.get_read_buf(&temp_len));
 	pcontext->write_length = temp_len;
 	if (pcontext->write_buff != nullptr) {
 		return PROCESS_CONTINUE;

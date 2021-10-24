@@ -6503,7 +6503,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 				
 		offset = 0;
 		unsigned int size = STREAM_BLOCK_SIZE;
-		while ((ptr = stream_getbuffer_for_reading(&tmp_stream, &size)) != NULL) {
+		while ((ptr = tmp_stream.get_read_buf(&size)) != nullptr) {
 			memcpy(pbuff.get() + offset, ptr, size);
 			offset += size;
 			size = STREAM_BLOCK_SIZE;

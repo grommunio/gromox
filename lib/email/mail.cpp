@@ -898,7 +898,7 @@ BOOL MAIL::dup(MAIL *pmail_dst)
 			
 	size_t offset = 0;
 	size = STREAM_BLOCK_SIZE;
-	while ((ptr = stream_getbuffer_for_reading(&tmp_stream, &size))) {
+	while ((ptr = tmp_stream.get_read_buf(&size)) != nullptr) {
 		memcpy(pbuff + offset, ptr, size);
 		offset += size;
 		size = STREAM_BLOCK_SIZE;
