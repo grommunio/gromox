@@ -1097,10 +1097,10 @@ BOOL mime_serialize(MIME *pmime, STREAM *pstream)
 	if (FALSE == pmime->head_touched){
 		/* the original buffer contains \r\n */
 		if (pmime->head_begin + pmime->head_length + 2 == pmime->content_begin){
-			stream_write(pstream, pmime->head_begin, pmime->head_length + 2);
+			pstream->write(pmime->head_begin, pmime->head_length + 2);
 		} else {
-			stream_write(pstream, pmime->head_begin, pmime->head_length);
-			stream_write(pstream, "\r\n", 2);
+			pstream->write(pmime->head_begin, pmime->head_length);
+			pstream->write("\r\n", 2);
 		}
 	} else {	
 		mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, 0, 
@@ -1108,65 +1108,62 @@ BOOL mime_serialize(MIME *pmime, STREAM *pstream)
 		while (mem_file_read(&pmime->f_other_fields, &tag_len, sizeof(int)) != MEM_END_OF_FILE) {
 			/* xxxxx: yyyyy */
 			mem_file_read(&pmime->f_other_fields, tmp_buff, tag_len);
-			stream_write(pstream, tmp_buff, tag_len);
-			stream_write(pstream, ": ", 2);
+			pstream->write(tmp_buff, tag_len);
+			pstream->write(": ", 2);
 			mem_file_read(&pmime->f_other_fields, &val_len, sizeof(int));
 			mem_file_read(&pmime->f_other_fields, tmp_buff, val_len);
-			stream_write(pstream, tmp_buff, val_len);
+			pstream->write(tmp_buff, val_len);
 			/* \r\n */
-			stream_write(pstream, "\r\n", 2);
+			pstream->write("\r\n", 2);
 		}
 
 		/* Content-Type: xxxxx */
-		stream_write(pstream, "Content-Type: ", 14);
+		pstream->write("Content-Type: ", 14);
 		len = strlen(pmime->content_type);
-		stream_write(pstream, pmime->content_type, len);
+		pstream->write(pmime->content_type, len);
 		/* Content-Type: xxxxx;\r\n\tyyyyy=zzzzz */
 		mem_file_seek(&pmime->f_type_params, MEM_FILE_READ_PTR, 0, 
 			MEM_FILE_SEEK_BEGIN);
 		while (mem_file_read(&pmime->f_type_params, &tag_len, sizeof(int)) != MEM_END_OF_FILE) {
 			/* content-type: xxxxx"; \r\n\t"yyyyy */
-			stream_write(pstream, ";\r\n\t", 4);
+			pstream->write(";\r\n\t", 4);
 			mem_file_read(&pmime->f_type_params, tmp_buff, tag_len);
-			stream_write(pstream, tmp_buff, tag_len);
+			pstream->write(tmp_buff, tag_len);
 			mem_file_read(&pmime->f_type_params, &val_len, sizeof(int));
 			mem_file_read(&pmime->f_type_params, tmp_buff, val_len);
 			/* content_type: xxxxx; \r\n\tyyyyy=zzz */
 			if (0 != val_len) {
-				stream_write(pstream, "=", 1);
-				stream_write(pstream, tmp_buff, val_len);
+				pstream->write("=", 1);
+				pstream->write(tmp_buff, val_len);
 			}
 		}
 		/* \r\n for separate head and content */
-		stream_write(pstream, "\r\n\r\n", 4);
+		pstream->write("\r\n\r\n", 4);
 	}
 	if (SINGLE_MIME == pmime->mime_type) {
 		if (NULL != pmime->content_begin) {
 			if (0 != pmime->content_length) {
-				stream_write(pstream, pmime->content_begin,
-					pmime->content_length);
+				pstream->write(pmime->content_begin, pmime->content_length);
 			} else {
 				reinterpret_cast<MAIL *>(pmime->content_begin)->serialize(pstream);
 			}
 		} else {
 			/* if there's nothing, just append an empty line */
-			stream_write(pstream, "\r\n", 2);
+			pstream->write("\r\n", 2);
 		}
 	} else {
 		if (NULL == pmime->first_boundary) {
-			stream_write(pstream, "This is a multi-part message "
-						"in MIME format.\r\n\r\n", 48);
+			pstream->write("This is a multi-part message in MIME format.\r\n\r\n", 48);
 		} else {
-			stream_write(pstream, pmime->content_begin,
-				pmime->first_boundary - pmime->content_begin);
+			pstream->write(pmime->content_begin, pmime->first_boundary - pmime->content_begin);
 		}
 		pnode = simple_tree_node_get_child(&pmime->node);
 		has_submime = FALSE;
         while (NULL != pnode) {
 			has_submime = TRUE;
-			stream_write(pstream, "--", 2);
-			stream_write(pstream, pmime->boundary_string, pmime->boundary_len);
-			stream_write(pstream, "\r\n", 2);
+			pstream->write("--", 2);
+			pstream->write(pmime->boundary_string, pmime->boundary_len);
+			pstream->write("\r\n", 2);
 			pmime_child = (MIME*)pnode->pdata;
 			if (FALSE == mime_serialize(pmime_child, pstream)) {
 				return FALSE;
@@ -1174,22 +1171,22 @@ BOOL mime_serialize(MIME *pmime, STREAM *pstream)
 			pnode = simple_tree_node_get_sibling(pnode);
 		}
 		if (FALSE == has_submime) {
-			stream_write(pstream, "--", 2);
-			stream_write(pstream, pmime->boundary_string, pmime->boundary_len);
-			stream_write(pstream, "\r\n\r\n", 4);
+			pstream->write("--", 2);
+			pstream->write(pmime->boundary_string, pmime->boundary_len);
+			pstream->write("\r\n\r\n", 4);
 		}
-		stream_write(pstream, "--", 2);
-		stream_write(pstream, pmime->boundary_string, pmime->boundary_len);
-		stream_write(pstream, "--", 2);
+		pstream->write("--", 2);
+		pstream->write(pmime->boundary_string, pmime->boundary_len);
+		pstream->write("--", 2);
 		if (NULL == pmime->last_boundary) {
-			stream_write(pstream, "\r\n\r\n", 4);
+			pstream->write("\r\n\r\n", 4);
 		} else {
 			tmp_len = pmime->content_length -
 					(pmime->last_boundary - pmime->content_begin);
 			if (tmp_len > 0) {
-				stream_write(pstream, pmime->last_boundary, tmp_len);
+				pstream->write(pmime->last_boundary, tmp_len);
 			} else if (0 == tmp_len) {
-				stream_write(pstream, "\r\n", 2);
+				pstream->write("\r\n", 2);
 			} else {
 				debug_info("[mime]: fatal error in mime_serialize");
 			}
@@ -1225,20 +1222,17 @@ static BOOL mime_read_mutlipart_content(MIME *pmime,
 	auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
 	STREAM tmp_stream(pallocator);
 	if (NULL == pmime->first_boundary) {
-		stream_write(&tmp_stream,
-			"This is a multi-part message "
-			"in MIME format.\r\n\r\n", 48);
+		tmp_stream.write("This is a multi-part message in MIME format.\r\n\r\n", 48);
 	} else {
-		stream_write(&tmp_stream, pmime->content_begin,
-			pmime->first_boundary - pmime->content_begin);
+		tmp_stream.write(pmime->content_begin, pmime->first_boundary - pmime->content_begin);
 	}
 	pnode = simple_tree_node_get_child(&pmime->node);
 	has_submime = FALSE;
 	while (NULL != pnode) {
 		has_submime = TRUE;
-		stream_write(&tmp_stream, "--", 2);
-		stream_write(&tmp_stream, pmime->boundary_string, pmime->boundary_len);
-		stream_write(&tmp_stream, "\r\n", 2);
+		tmp_stream.write("--", 2);
+		tmp_stream.write(pmime->boundary_string, pmime->boundary_len);
+		tmp_stream.write("\r\n", 2);
 		pmime_child = (MIME*)pnode->pdata;
 		if (FALSE == mime_serialize(pmime_child, &tmp_stream)) {
 			return FALSE;
@@ -1246,22 +1240,22 @@ static BOOL mime_read_mutlipart_content(MIME *pmime,
 		pnode = simple_tree_node_get_sibling(pnode);
 	}
 	if (FALSE == has_submime) {
-		stream_write(&tmp_stream, "--", 2);
-		stream_write(&tmp_stream, pmime->boundary_string, pmime->boundary_len);
-		stream_write(&tmp_stream, "\r\n\r\n", 4);
+		tmp_stream.write("--", 2);
+		tmp_stream.write(pmime->boundary_string, pmime->boundary_len);
+		tmp_stream.write("\r\n\r\n", 4);
 	}
-	stream_write(&tmp_stream, "--", 2);
-	stream_write(&tmp_stream, pmime->boundary_string, pmime->boundary_len);
-	stream_write(&tmp_stream, "--", 2);
+	tmp_stream.write("--", 2);
+	tmp_stream.write(pmime->boundary_string, pmime->boundary_len);
+	tmp_stream.write("--", 2);
 	if (NULL == pmime->last_boundary) {
-		stream_write(&tmp_stream, "\r\n\r\n", 4);
+		tmp_stream.write("\r\n\r\n", 4);
 	} else {
 		tmp_len = pmime->content_length -
 				(pmime->last_boundary - pmime->content_begin);
 		if (tmp_len > 0) {
-			stream_write(&tmp_stream, pmime->last_boundary, tmp_len);
+			tmp_stream.write(pmime->last_boundary, tmp_len);
 		} else if (0 == tmp_len) {
-			stream_write(&tmp_stream, "\r\n", 2);
+			tmp_stream.write("\r\n", 2);
 		} else {
 			debug_info("[mime]: fatal error in mime_read_mutlipart_content");
 		}

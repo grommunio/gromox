@@ -229,11 +229,7 @@ static BOOL hpm_processor_write_response(unsigned int context_id,
 	void *response_buff, int response_len)
 {
 	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
-	if (STREAM_WRITE_OK != stream_write(&phttp->stream_out,
-		response_buff, response_len)) {
-		return FALSE;
-	}
-	return TRUE;
+	return phttp->stream_out.write(response_buff, response_len) == STREAM_WRITE_OK ? TRUE : false;
 }
 
 static void hpm_processor_wakeup_context(unsigned int context_id)

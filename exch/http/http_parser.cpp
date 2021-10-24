@@ -416,7 +416,7 @@ static void http_4xx(HTTP_CONTEXT *ctx, const char *msg = "Bad Request",
 		"Content-Length: 0\r\n"
 		"Connection: close\r\n"
 		"\r\n", code, msg, dstring, resource_get_string("HOST_ID"));
-	stream_write(&ctx->stream_out, response_buff, response_len);
+	ctx->stream_out.write(response_buff, response_len);
 	ctx->total_length = response_len;
 	ctx->bytes_rw = 0;
 	ctx->b_close = TRUE;
@@ -442,7 +442,7 @@ static void http_5xx(HTTP_CONTEXT *ctx, const char *msg = "Internal Server Error
 		"Content-Length: 0\r\n"
 		"Connection: close\r\n"
 		"\r\n", code, msg, dstring, resource_get_string("HOST_ID"));
-	stream_write(&ctx->stream_out, response_buff, response_len);
+	ctx->stream_out.write(response_buff, response_len);
 	ctx->total_length = response_len;
 	ctx->bytes_rw = 0;
 	ctx->b_close = TRUE;
@@ -671,8 +671,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 			"Content-Length: 0\r\n"
 			"Connection: close\r\n"
 			"\r\n", dstring, resource_get_string("HOST_ID"));
-		stream_write(&pcontext->stream_out,
-			response_buff, response_len);
+		pcontext->stream_out.write(response_buff, response_len);
 		pcontext->total_length = response_len;
 		pcontext->bytes_rw = 0;
 		pcontext->b_close = TRUE;
@@ -701,8 +700,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 				"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
 				"\r\n", dstring, resource_get_string("HOST_ID"),
 				g_timeout);
-			stream_write(&pcontext->stream_out,
-				response_buff, response_len);
+			pcontext->stream_out.write(response_buff, response_len);
 			pcontext->total_length = response_len;
 			pcontext->bytes_rw = 0;
 			pcontext->b_close = TRUE;
@@ -742,8 +740,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 		"\r\n\r\n", dstring,
 		resource_get_string("HOST_ID"),
 		g_timeout);
-	stream_write(&pcontext->stream_out,
-		response_buff, response_len);
+	pcontext->stream_out.write(response_buff, response_len);
 	pcontext->total_length = response_len;
 	pcontext->bytes_rw = 0;
 	pcontext->b_close = TRUE;
@@ -816,8 +813,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 			"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
 			"\r\n", dstring, resource_get_string("HOST_ID"),
 			g_timeout);
-		stream_write(&pcontext->stream_out,
-			response_buff, response_len);
+		pcontext->stream_out.write(response_buff, response_len);
 		pcontext->total_length = response_len;
 		pcontext->bytes_rw = 0;
 		pcontext->b_close = TRUE;
@@ -1028,7 +1024,7 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 					"</body>\r\n"
 					"</html>\r\n",
 					dstring, resource_get_string("HOST_ID"));
-		stream_write(&pcontext->stream_out, response_buff, response_len);
+		pcontext->stream_out.write(response_buff, response_len);
 		pcontext->total_length = response_len;
 		pcontext->bytes_rw = 0;
 		pcontext->b_close = TRUE;
@@ -1449,8 +1445,7 @@ static int htparse_rdbody_nochan(HTTP_CONTEXT *pcontext)
 		"Content-Type: application/rpc\r\n\r\n");
 	pdu_processor_rts_echo(response_buff + response_len);
 	response_len += 20;
-	stream_write(&pcontext->stream_out,
-		response_buff, response_len);
+	pcontext->stream_out.write(response_buff, response_len);
 	pcontext->total_length = response_len;
 	pcontext->bytes_rw = 0;
 	pcontext->sched_stat = SCHED_STAT_WRREP;
@@ -1638,8 +1633,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 				"Persistent-Auth: true\r\n"
 				"Content-Length: %u\r\n\r\n",
 				dstring, OUT_CHANNEL_MAX_LENGTH);
-			stream_write(&pcontext->stream_out,
-				response_buff, response_len);
+			pcontext->stream_out.write(response_buff, response_len);
 			pcontext->total_length =
 				OUT_CHANNEL_MAX_LENGTH + response_len;
 			pdu_processor_output_stream(pcall, &pcontext->stream_out);

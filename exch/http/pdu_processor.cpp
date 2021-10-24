@@ -540,7 +540,7 @@ void pdu_processor_output_stream(DCERPC_CALL *pcall, STREAM *pstream)
 	
 	while ((pnode = double_list_pop_front(&pcall->reply_list)) != nullptr) {
 		pblob_node = (BLOB_NODE*)pnode->pdata;
-		stream_write(pstream, pblob_node->blob.data, pblob_node->blob.length);
+		pstream->write(pblob_node->blob.data, pblob_node->blob.length);
 		free(pblob_node->blob.data);
 		lib_buffer_put(g_bnode_allocator, pblob_node);
 	}

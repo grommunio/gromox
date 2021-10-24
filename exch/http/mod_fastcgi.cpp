@@ -1174,7 +1174,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 						phttp->pfast_context->pfnode->sock_path.c_str());
 			if (phttp->pfast_context->b_header &&
 			    phttp->pfast_context->b_chunked)
-				stream_write(&phttp->stream_out, "0\r\n\r\n", 5);
+				phttp->stream_out.write("0\r\n\r\n", 5);
 			mod_fastcgi_put_context(phttp);
 			return FALSE;
 		case RECORD_TYPE_STDOUT:
@@ -1216,22 +1216,17 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				}
 				if (TRUE == phttp->pfast_context->b_chunked) {
 					tmp_len = snprintf(tmp_buff, arsizeof(tmp_buff), "%x\r\n", std_stream.length);
-					if (STREAM_WRITE_OK != stream_write(
-						&phttp->stream_out, tmp_buff, tmp_len) ||
-						STREAM_WRITE_OK != stream_write(
-						&phttp->stream_out, std_stream.buffer,
-						std_stream.length) ||
-						STREAM_WRITE_OK != stream_write(
-						&phttp->stream_out, "\r\n", 2)) {
+					if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK ||
+					    phttp->stream_out.write(std_stream.buffer, std_stream.length) != STREAM_WRITE_OK ||
+					    phttp->stream_out.write("\r\n", 2) != STREAM_WRITE_OK) {
 						http_parser_log_info(phttp, LV_DEBUG, "fail to write"
 								" stdin into stream in mod_fastcgi");
 						mod_fastcgi_put_context(phttp);
 						return FALSE;
 					}
 				} else {
-					if (STREAM_WRITE_OK != stream_write(
-						&phttp->stream_out, std_stream.buffer,
-						std_stream.length)) {
+					if (phttp->stream_out.write(std_stream.buffer,
+					    std_stream.length) != STREAM_WRITE_OK) {
 						http_parser_log_info(phttp, LV_DEBUG, "fail to write"
 								" stdin into stream in mod_fastcgi");
 						mod_fastcgi_put_context(phttp);
@@ -1314,8 +1309,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				          "%s\r\n", status_line,
 				          resource_get_string("HOST_ID"),
 				          dstring, response_buff);
-			if (STREAM_WRITE_OK != stream_write(
-				&phttp->stream_out, tmp_buff, tmp_len)) {
+			if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK) {
 				http_parser_log_info(phttp, LV_DEBUG, "fail to write "
 					"response header into stream in mod_fastcgi");
 				mod_fastcgi_put_context(phttp);
@@ -1328,20 +1322,16 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			if (response_offset > 0) {
 				if (TRUE == phttp->pfast_context->b_chunked) {
 					tmp_len = snprintf(tmp_buff, arsizeof(tmp_buff), "%x\r\n", response_offset);
-					if (STREAM_WRITE_OK != stream_write(
-						&phttp->stream_out, tmp_buff, tmp_len) ||
-						STREAM_WRITE_OK != stream_write(
-						&phttp->stream_out, pbody, response_offset) ||
-						STREAM_WRITE_OK != stream_write(
-						&phttp->stream_out, "\r\n", 2)) {
+					if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK ||
+					    phttp->stream_out.write(pbody, response_offset) != STREAM_WRITE_OK ||
+					    phttp->stream_out.write("\r\n", 2) != STREAM_WRITE_OK) {
 						http_parser_log_info(phttp, LV_DEBUG, "fail to write"
 								" stdin into stream in mod_fastcgi");
 						mod_fastcgi_put_context(phttp);
 						return FALSE;
 					}
 				} else {
-					if (STREAM_WRITE_OK != stream_write(
-						&phttp->stream_out, pbody, response_offset)) {
+					if (phttp->stream_out.write(pbody, response_offset) != STREAM_WRITE_OK) {
 						http_parser_log_info(phttp, LV_DEBUG, "fail to write"
 								" stdin into stream in mod_fastcgi");
 						mod_fastcgi_put_context(phttp);

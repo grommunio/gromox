@@ -54,6 +54,7 @@ struct STREAM {
 	int copyline(char *buf, unsigned int *size);
 	unsigned int peek_buffer(char *, unsigned int) const;
 	int dump(int fd);
+	int write(const void *buf, size_t);
 
 	DOUBLE_LIST_NODE *pnode_rd = nullptr, *pnode_wr = nullptr;
 	int line_result = 0, eom_result = 0;
@@ -81,4 +82,3 @@ unsigned int stream_backward_writing_ptr(STREAM *pstream, unsigned int offset);
 unsigned int stream_backward_reading_ptr(STREAM *pstream, unsigned int offset);
 extern void *stream_getbuffer_for_reading(STREAM *pstream, unsigned int *psize);
 void stream_reset_reading(STREAM *pstream);
-extern int stream_write(STREAM *pstream, const void *pbuff, size_t size);

@@ -827,13 +827,11 @@ int STREAM::dump(int fd)
 {
 	auto pstream = this;
 	void *pbuff;
-	ssize_t wr_result;
 	unsigned int size = STREAM_BLOCK_SIZE;
 
 	stream_reset_reading(pstream);
 	while ((pbuff = stream_getbuffer_for_reading(pstream, &size))) {
-		wr_result = write(fd, pbuff, size);
-
+		auto wr_result = ::write(fd, pbuff, size);
 		if (size != wr_result) {
 			return STREAM_DUMP_FAIL;
 		}
@@ -881,13 +879,14 @@ unsigned int stream_forward_reading_ptr(STREAM *pstream, unsigned int offset)
 		return offset;
 }
 
-int stream_write(STREAM *pstream, const void *pbuff, size_t size)
+int STREAM::write(const void *pbuff, size_t size)
 {
+	auto pstream = this;
 	unsigned int buff_size, actual_size;
 	size_t offset;
 
 #ifdef _DEBUG_UMTA
-	if (NULL == pstream || NULL == pbuff) {
+	if (pbuff == nullptr) {
 		debug_info("[stream]: stream_write, param NULL");
 		return STREAM_WRITE_FAIL;
 	}
@@ -1108,7 +1107,7 @@ void stream_split_eom(STREAM *pstream, STREAM *pstream_second)
 		stream_clear(pstream_second);
 		size = STREAM_BLOCK_SIZE;
 		while ((pbuff = stream_getbuffer_for_reading(&fake_stream, &size)) != NULL) {
-			stream_write(pstream_second, pbuff, size);
+			pstream_second->write(pbuff, size);
 			size = STREAM_BLOCK_SIZE;
 		}
 	

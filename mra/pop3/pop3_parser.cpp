@@ -554,14 +554,14 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 		switch (copy_result) {
 		case STREAM_COPY_END:
 			if (-1 == pcontext->message_fd) {
-				stream_write(&pcontext->stream, ".\r\n", 3);
+				pcontext->stream.write(".\r\n", 3);
 			}
 			b_stop = TRUE;
 			break;
 		case STREAM_COPY_TERM:
-			stream_write(&pcontext->stream, line_buff, line_length);
+			pcontext->stream.write(line_buff, line_length);
 			if (-1 == pcontext->message_fd) {
-				stream_write(&pcontext->stream, "\r\n.\r\n", 5);
+				pcontext->stream.write("\r\n.\r\n", 5);
 			}
 			b_stop = TRUE;
 			break;
@@ -578,11 +578,11 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 				memcpy(line_buff + line_length, "\r\n", 2);
 				line_length += 2;
 			}
-			stream_write(&pcontext->stream, line_buff, line_length);
+			pcontext->stream.write(line_buff, line_length);
 			
 			if (STREAM_COPY_OK == copy_result && pcontext->cur_line >= 0) {
 				if (pcontext->until_line == pcontext->cur_line) {
-					stream_write(&pcontext->stream, ".\r\n", 3);
+					pcontext->stream.write(".\r\n", 3);
 					if (-1 != pcontext->message_fd) {
 						close(pcontext->message_fd);
 						pcontext->message_fd = -1;

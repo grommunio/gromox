@@ -619,7 +619,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 					auto imap_reply_str = resource_get_imap_code(1817, 1, &string_length);
 					return ps_end_processing(pcontext, imap_reply_str, string_length);
 				}
-				stream_write(&pcontext->stream, ptr + 3,  pcontext->current_len);
+				pcontext->stream.write(ptr + 3, pcontext->current_len);
 				pcontext->sched_stat = SCHED_STAT_APPENDING;
 				pcontext->read_offset = 0;
 				pcontext->command_len = 0;
@@ -1405,7 +1405,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 				write(pcontext->connection.sockd, buff, tmp_len);
 			}
 		} else {
-			stream_write(pstream, buff, tmp_len);
+			pstream->write(buff, tmp_len);
 		}
 	}
 	
@@ -1473,7 +1473,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 					write(pcontext->connection.sockd, buff, tmp_len);
 				}
 			} else {
-				stream_write(pstream, buff, tmp_len);
+				pstream->write(buff, tmp_len);
 			}
 		}
 	}

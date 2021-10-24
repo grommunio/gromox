@@ -389,11 +389,7 @@ static BOOL mod_cache_response_unmodified(HTTP_CONTEXT *phttp)
 					"Server: %s\r\n"
 					"Date: %s\r\n\r\n",
 					resource_get_string("HOST_ID"), dstring);
-	if (STREAM_WRITE_OK != stream_write(&phttp->stream_out,
-		response_buff, response_len)) {
-		return FALSE;	
-	}
-	return TRUE;
+	return phttp->stream_out.write(response_buff, response_len) == STREAM_WRITE_OK ? TRUE : false;
 }
 
 static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
@@ -453,11 +449,7 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 		memcpy(response_buff + response_len, "\r\n", 2);
 		response_len += 2;
 	}
-	if (STREAM_WRITE_OK != stream_write(&phttp->stream_out,
-		response_buff, response_len)) {
-		return FALSE;	
-	}
-	return TRUE;
+	return phttp->stream_out.write(response_buff, response_len) == STREAM_WRITE_OK ? TRUE : false;
 }
 
 static uint32_t mod_cache_calculate_content_length(CACHE_CONTEXT *pcontext)
@@ -528,11 +520,7 @@ static BOOL mod_cache_response_multiple_header(HTTP_CONTEXT *phttp)
 					resource_get_string("HOST_ID"),
 					date_string, BOUNDARY_STRING,
 					content_length, modified_string, etag);
-	if (STREAM_WRITE_OK != stream_write(&phttp->stream_out,
-		response_buff, response_len)) {
-		return FALSE;	
-	}
-	return TRUE;
+	return phttp->stream_out.write(response_buff, response_len) == STREAM_WRITE_OK ? TRUE : false;
 }
 
 static BOOL mod_cache_parse_range_value(char *value,
@@ -922,8 +910,8 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 	} else {
 		tmp_len = pcontext->until - pcontext->offset;
 	}
-	if (STREAM_WRITE_OK != stream_write(&phttp->stream_out,
-		pcontext->pitem->blob.data + pcontext->offset, tmp_len)) {
+	if (phttp->stream_out.write(pcontext->pitem->blob.data +
+	    pcontext->offset, tmp_len) != STREAM_WRITE_OK) {
 		mod_cache_put_context(phttp);
 		return FALSE;
 	}
@@ -956,8 +944,7 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 				free(pcontext->prange);
 				pcontext->prange = NULL;
 			}
-			if (STREAM_WRITE_OK != stream_write(
-				&phttp->stream_out, tmp_buff, tmp_len)) {
+			if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK) {
 				mod_cache_put_context(phttp);
 				return FALSE;
 			}

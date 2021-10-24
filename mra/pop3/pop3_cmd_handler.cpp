@@ -249,16 +249,16 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 		}
 		
 		stream_clear(&pcontext->stream);
-		stream_write(&pcontext->stream, "+OK\r\n", 5);
+		pcontext->stream.write("+OK\r\n", 5);
 
 		auto count = pcontext->array.size();
 		for (size_t i = 0; i < count; ++i) {
 			auto punit = sa_get_item(pcontext->array, i);
 			string_length = sprintf(temp_buff, "%zu %s\r\n", i + 1,
 								punit->file_name);
-			stream_write(&pcontext->stream, temp_buff, string_length);
+			pcontext->stream.write(temp_buff, string_length);
 		}
-		stream_write(&pcontext->stream, ".\r\n", 3);
+		pcontext->stream.write(".\r\n", 3);
 		pcontext->write_offset = 0;
 		tmp_len = MAX_LINE_LENGTH;
 		pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(&pcontext->stream, &tmp_len));
@@ -313,15 +313,15 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 		
 		
 		stream_clear(&pcontext->stream);
-		stream_write(&pcontext->stream, "+OK\r\n", 5);
+		pcontext->stream.write("+OK\r\n", 5);
 		
 		auto count = pcontext->array.size();
 		for (size_t i = 0; i < count; ++i) {
 			auto punit = sa_get_item(pcontext->array, i);
 			string_length = sprintf(temp_buff, "%zu %ld\r\n", i + 1, punit->size);
-			stream_write(&pcontext->stream, temp_buff, string_length);
+			pcontext->stream.write(temp_buff, string_length);
 		}
-		stream_write(&pcontext->stream, ".\r\n", 3);
+		pcontext->stream.write(".\r\n", 3);
 		pcontext->write_offset = 0;
 		tmp_len = MAX_LINE_LENGTH;
 		pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(
@@ -397,7 +397,7 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 			return 1709;
 		}
 		stream_clear(&pcontext->stream);
-		stream_write(&pcontext->stream, "+OK\r\n", 5);
+		pcontext->stream.write("+OK\r\n", 5);
 		if (POP3_RETRIEVE_ERROR == pop3_parser_retrieve(pcontext)) {
 			stream_clear(&pcontext->stream);
 			return 1719;
@@ -492,7 +492,7 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 			return 1709;
 		}
 		stream_clear(&pcontext->stream);
-		stream_write(&pcontext->stream, "+OK\r\n", 5);
+		pcontext->stream.write("+OK\r\n", 5);
 		if (POP3_RETRIEVE_ERROR == pop3_parser_retrieve(pcontext)) {
 			stream_clear(&pcontext->stream);
 			return 1719;
