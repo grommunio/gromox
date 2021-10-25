@@ -29,16 +29,16 @@ static BOOL logon_object_enlarge_propid_hash(logon_object *plogon)
 {
 	int tmp_id;
 	void *ptmp_value;
-	auto phash = int_hash_init(plogon->ppropid_hash->capacity +
+	auto phash = INT_HASH_TABLE::create(plogon->ppropid_hash->capacity +
 	                        HGROWING_SIZE, sizeof(PROPERTY_NAME));
 	if (NULL == phash) {
 		return FALSE;
 	}
-	auto iter = int_hash_iter_init(plogon->ppropid_hash.get());
+	auto iter = plogon->ppropid_hash->make_iter();
 	for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
 		int_hash_iter_forward(iter)) {
 		ptmp_value = int_hash_iter_get_value(iter, &tmp_id);
-		int_hash_add(phash.get(), tmp_id, ptmp_value);
+		phash->add(tmp_id, ptmp_value);
 	}
 	int_hash_iter_free(iter);
 	plogon->ppropid_hash = std::move(phash);
@@ -74,7 +74,7 @@ static BOOL logon_object_cache_propname(logon_object *plogon,
 	PROPERTY_NAME tmp_name;
 	
 	if (NULL == plogon->ppropid_hash) {
-		plogon->ppropid_hash = int_hash_init(HGROWING_SIZE,
+		plogon->ppropid_hash = INT_HASH_TABLE::create(HGROWING_SIZE,
 		                       sizeof(PROPERTY_NAME));
 		if (NULL == plogon->ppropid_hash) {
 			return FALSE;
@@ -107,10 +107,10 @@ static BOOL logon_object_cache_propname(logon_object *plogon,
 	default:
 		return FALSE;
 	}
-	if (int_hash_query(plogon->ppropid_hash.get(), propid) == nullptr) {
-		if (int_hash_add(plogon->ppropid_hash.get(), propid, &tmp_name) != 1) {
+	if (plogon->ppropid_hash->query(propid) == nullptr) {
+		if (plogon->ppropid_hash->add(propid, &tmp_name) != 1) {
 			if (FALSE == logon_object_enlarge_propid_hash(plogon) ||
-			    int_hash_add(plogon->ppropid_hash.get(), propid, &tmp_name) != 1) {
+			    plogon->ppropid_hash->add(propid, &tmp_name) != 1) {
 				if (NULL != tmp_name.pname) {
 					free(tmp_name.pname);
 				}
@@ -169,7 +169,7 @@ logon_object::~logon_object()
 	}
 	double_list_free(&plogon->group_list);
 	if (NULL != plogon->ppropid_hash) {
-		auto piter = int_hash_iter_init(plogon->ppropid_hash.get());
+		auto piter = plogon->ppropid_hash->make_iter();
 		for (int_hash_iter_begin(piter); !int_hash_iter_done(piter);
 			int_hash_iter_forward(piter)) {
 			ppropname = static_cast<PROPERTY_NAME *>(int_hash_iter_get_value(piter, nullptr));
@@ -207,7 +207,7 @@ BOOL logon_object::get_named_propname(uint16_t propid, PROPERTY_NAME *ppropname)
 	}
 	auto plogon = this;
 	if (NULL != plogon->ppropid_hash) {
-		pname = static_cast<PROPERTY_NAME *>(int_hash_query(plogon->ppropid_hash.get(), propid));
+		pname = static_cast<PROPERTY_NAME *>(plogon->ppropid_hash->query(propid));
 		if (NULL != pname) {
 			*ppropname = *pname;
 			return TRUE;
@@ -259,7 +259,7 @@ BOOL logon_object::get_named_propnames(const PROPID_ARRAY *ppropids,
 			continue;
 		}
 		pname = plogon->ppropid_hash == nullptr ? nullptr :
-		        static_cast<PROPERTY_NAME *>(int_hash_query(plogon->ppropid_hash.get(), ppropids->ppropid[i]));
+		        static_cast<PROPERTY_NAME *>(plogon->ppropid_hash->query(ppropids->ppropid[i]));
 		if (NULL != pname) {
 			pindex_map[i] = i;
 			ppropnames->ppropname[i] = *pname;

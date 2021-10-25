@@ -3187,7 +3187,6 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 {
 	uint32_t proptag;
 	TABLE_NODE *ptnode;
-	INT_HASH_ITER *iter;
 	char sql_string[256];
 	DOUBLE_LIST_NODE *pnode;
 	uint32_t tmp_proptags[0x1000];
@@ -3209,7 +3208,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 	ptnode = (TABLE_NODE*)pnode->pdata;
 	switch (ptnode->type) {
 	case TABLE_TYPE_HIERARCHY: {
-		auto phash = int_hash_init(0x1000, sizeof(int));
+		auto phash = INT_HASH_TABLE::create(0x1000, sizeof(int));
 		if (NULL == phash) {
 			return FALSE;
 		}
@@ -3230,15 +3229,15 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 				sqlite3_column_int64(pstmt, 0));
 			while (SQLITE_ROW == sqlite3_step(pstmt1)) {
 				proptag = sqlite3_column_int64(pstmt1, 0);
-				if (int_hash_query(phash.get(), proptag) != nullptr)
+				if (phash->query(proptag) != nullptr)
 					continue;	
-				int_hash_add(phash.get(), proptag, &proptag);
+				phash->add(proptag, &proptag);
 			}
 			sqlite3_reset(pstmt1);
 		}
 		pstmt.finalize();
 		pstmt1.finalize();
-		iter = int_hash_iter_init(phash.get());
+		auto iter = phash->make_iter();
 		if (NULL == iter) {
 			return FALSE;
 		}
@@ -3261,7 +3260,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		return TRUE;
 	}
 	case TABLE_TYPE_CONTENT:	 {
-		auto phash = int_hash_init(0x1000, sizeof(int));
+		auto phash = INT_HASH_TABLE::create(0x1000, sizeof(int));
 		if (NULL == phash) {
 			return FALSE;
 		}
@@ -3286,15 +3285,15 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 				sqlite3_column_int64(pstmt, 0));
 			while (SQLITE_ROW == sqlite3_step(pstmt1)) {
 				proptag = sqlite3_column_int64(pstmt1, 0);
-				if (int_hash_query(phash.get(), proptag) != nullptr)
+				if (phash->query(proptag) != nullptr)
 					continue;	
-				int_hash_add(phash.get(), proptag, &proptag);
+				phash->add(proptag, &proptag);
 			}
 			sqlite3_reset(pstmt1);
 		}
 		pstmt.finalize();
 		pstmt1.finalize();
-		iter = int_hash_iter_init(phash.get());
+		auto iter = phash->make_iter();
 		if (NULL == iter) {
 			return FALSE;
 		}

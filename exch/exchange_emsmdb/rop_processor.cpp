@@ -93,7 +93,7 @@ static void rop_processor_enum_objnode(SIMPLE_TREE_NODE *pnode,
 	
 	plogitem = (LOGON_ITEM*)pparam;
 	pobjnode = (OBJECT_NODE*)pnode->pdata;
-	int_hash_remove(plogitem->phash.get(), pobjnode->handle);
+	plogitem->phash->remove(pobjnode->handle);
 }
 
 static void rop_processor_free_object(void *pobject, int type)
@@ -225,7 +225,7 @@ int rop_processor_create_logon_item(void *plogmap,
 	if (NULL == plogitem) {
 		return -1;
 	}
-	plogitem->phash = int_hash_init(HGROWING_SIZE, sizeof(OBJECT_NODE *));
+	plogitem->phash = INT_HASH_TABLE::create(HGROWING_SIZE, sizeof(OBJECT_NODE *));
 	if (NULL == plogitem->phash) {
 		lib_buffer_put(g_logitem_allocator, plogitem);
 		return -2;
@@ -272,7 +272,7 @@ int rop_processor_add_object_handle(void *plogmap, uint8_t logon_id,
 		}
 		ppparent = NULL;
 	} else if (parent_handle >= 0 && parent_handle < 0x7FFFFFFF) {
-		ppparent = static_cast<OBJECT_NODE **>(int_hash_query(plogitem->phash.get(), parent_handle));
+		ppparent = static_cast<OBJECT_NODE **>(plogitem->phash->query(parent_handle));
 		if (NULL == ppparent) {
 			return -5;
 		}
@@ -290,22 +290,22 @@ int rop_processor_add_object_handle(void *plogmap, uint8_t logon_id,
 	pobjnode->node.pdata = pobjnode;
 	pobjnode->type = type;
 	pobjnode->pobject = pobject;
-	if (int_hash_add(plogitem->phash.get(), pobjnode->handle, &pobjnode) != 1) {
-		auto phash = int_hash_init(plogitem->phash->capacity +
+	if (plogitem->phash->add(pobjnode->handle, &pobjnode) != 1) {
+		auto phash = INT_HASH_TABLE::create(plogitem->phash->capacity +
 		                        HGROWING_SIZE, sizeof(OBJECT_NODE *));
 		if (NULL == phash) {
 			lib_buffer_put(g_handle_allocator, pobjnode);
 			return -8;
 		}
-		auto iter = int_hash_iter_init(plogitem->phash.get());
+		auto iter = plogitem->phash->make_iter();
 		for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
 			int_hash_iter_forward(iter)) {
 			ptmphanle = static_cast<OBJECT_NODE *>(int_hash_iter_get_value(iter, &tmp_handle));
-			int_hash_add(phash.get(), tmp_handle, ptmphanle);
+			phash->add(tmp_handle, ptmphanle);
 		}
 		int_hash_iter_free(iter);
 		plogitem->phash = std::move(phash);
-		int_hash_add(plogitem->phash.get(), pobjnode->handle, &pobjnode);
+		plogitem->phash->add(pobjnode->handle, &pobjnode);
 	}
 	if (NULL == ppparent) {
 		simple_tree_set_root(&plogitem->tree, &pobjnode->node);
@@ -332,7 +332,7 @@ void* rop_processor_get_object(void *plogmap,
 	if (NULL == plogitem) {
 		return NULL;
 	}
-	auto ppobjnode = static_cast<OBJECT_NODE **>(int_hash_query(plogitem->phash.get(), obj_handle));
+	auto ppobjnode = static_cast<OBJECT_NODE **>(plogitem->phash->query(obj_handle));
 	if (NULL == ppobjnode) {
 		return NULL;
 	}
@@ -353,7 +353,7 @@ void rop_processor_release_object_handle(void *plogmap,
 	if (NULL == plogitem) {
 		return;
 	}
-	auto ppobjnode = static_cast<OBJECT_NODE **>(int_hash_query(plogitem->phash.get(), obj_handle));
+	auto ppobjnode = static_cast<OBJECT_NODE **>(plogitem->phash->query(obj_handle));
 	if (NULL == ppobjnode) {
 		return;
 	}

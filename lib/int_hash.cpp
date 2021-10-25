@@ -77,7 +77,7 @@ INT_HASH_TABLE::~INT_HASH_TABLE()
 }
 
 std::unique_ptr<INT_HASH_TABLE>
-int_hash_init(size_t max_items, size_t item_size) try
+INT_HASH_TABLE::create(size_t max_items, size_t item_size) try
 {
 	return std::make_unique<INT_HASH_TABLE>(max_items, item_size);
 } catch (const std::bad_alloc &) {
@@ -107,9 +107,9 @@ int_hash_init(size_t max_items, size_t item_size) try
  *		-3	memory alloc fail
  *		-4	the key already exist	
  */
-int int_hash_add(INT_HASH_TABLE* ptbl, int key, void *value)
+int INT_HASH_TABLE::add(int key, void *value)
 {
-
+	auto ptbl = this;
 	DOUBLE_LIST_NODE* next	= NULL;
 	DOUBLE_LIST*	dlist	= NULL;
 
@@ -117,7 +117,7 @@ int int_hash_add(INT_HASH_TABLE* ptbl, int key, void *value)
 	INT_HASH_ITEM* item = NULL;
 	size_t index = -1;
 	
-	if (NULL == ptbl || NULL == value) {
+	if (value == nullptr) {
 		debug_info("[int_hash]: int_hash_add, invalid parameter");
 		return -1;
 	}
@@ -186,18 +186,11 @@ int int_hash_add(INT_HASH_TABLE* ptbl, int key, void *value)
  *	@return 
  *		the value that map the key, NULL if some error occurs
  */
-void* int_hash_query(INT_HASH_TABLE* ptbl, int key)
+void *INT_HASH_TABLE::query(int key) const
 {
+	auto ptbl = this;
 	DOUBLE_LIST_NODE* next	= NULL;
-	size_t	index = -1;
-	
-#ifdef _DEBUG_UMTA
-	if (NULL == ptbl) {
-		debug_info("[int_hash]: int_hash_query, invalid param");
-		return NULL;
-	}
-#endif
-	index = default_int_hash_function(key) % ptbl->entry_num;
+	size_t index = default_int_hash_function(key) % ptbl->entry_num;
 	if (NULL == ptbl->hash_map[index].phead) {
 		return NULL;
 	}
@@ -232,18 +225,11 @@ void* int_hash_query(INT_HASH_TABLE* ptbl, int key)
  *		-1		invalid parameter
  *		-2		the key does not exist
  */
-int int_hash_remove(INT_HASH_TABLE* ptbl, int key)
+int INT_HASH_TABLE::remove(int key)
 {
+	auto ptbl = this;
 	DOUBLE_LIST_NODE* next	= NULL;
-	size_t index = -1;
-
-#ifdef _DEBUG_UMTA
-	if (NULL == ptbl) {
-		debug_info("[int_hash]: int_hash_remove, invalid param");
-		return -1;
-	}
-#endif
-	index = default_int_hash_function(key) % ptbl->entry_num;
+	size_t index = default_int_hash_function(key) % ptbl->entry_num;
 	if (NULL == ptbl->hash_map[index].phead) {
 		return -2;
 	}
@@ -283,14 +269,9 @@ int int_hash_remove(INT_HASH_TABLE* ptbl, int key)
  *	@return		
  *		pointer to the hash iterator object, NULL if error occurs
  */
-INT_HASH_ITER* int_hash_iter_init(INT_HASH_TABLE* ptbl)
+INT_HASH_ITER *INT_HASH_TABLE::make_iter()
 {
-#ifdef _DEBUG_UMTA
-	if (NULL == ptbl) {
-		debug_info("[int_hash]: int_hash_iter_init, invalid parameter");
-		return NULL;
-	}
-#endif
+	auto ptbl = this;
 	auto iter = static_cast<INT_HASH_ITER *>(malloc(sizeof(INT_HASH_ITER)));
 	if (iter == nullptr) {
 		debug_info("[int_hash]: can not alloc hash iter");

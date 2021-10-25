@@ -192,7 +192,7 @@ int message_dequeue_run()
         pmessage->node.pdata = pmessage;
 		single_list_append_as_tail(&g_free_list, &pmessage->node);
 	}
-	g_mess_hash = int_hash_init(2 * g_message_units + 1, sizeof(void *));
+	g_mess_hash = INT_HASH_TABLE::create(2 * g_message_units + 1, sizeof(void *));
 	if (g_mess_hash == nullptr) {
 		printf("[message_dequeue]: failed to initialize hash table\n");
 		message_dequeue_collect_resource();
@@ -239,7 +239,7 @@ void message_dequeue_put(MESSAGE *pmessage) try
 	if (remove(name.c_str()) < 0 && errno != ENOENT)
 		fprintf(stderr, "W-1352: remove %s: %s\n", name.c_str(), strerror(errno));
 	std::unique_lock h(g_hash_mutex);
-	int_hash_remove(g_mess_hash.get(), pmessage->message_data);
+	g_mess_hash->remove(pmessage->message_data);
 	h.unlock();
 	message_dequeue_put_to_free(pmessage);
 	g_dequeued_num ++;
@@ -371,7 +371,7 @@ static void message_dequeue_load_from_mess(int mess)
 	size_t size;
 
 	std::unique_lock h(g_hash_mutex);
-	auto pmessage = static_cast<MESSAGE *>(int_hash_query(g_mess_hash.get(), mess));
+	auto pmessage = static_cast<MESSAGE *>(g_mess_hash->query(mess));
 	h.unlock();
 	if (NULL != pmessage) {
 		return;
@@ -412,7 +412,7 @@ static void message_dequeue_load_from_mess(int mess)
 	message_dequeue_retrieve_to_message(pmessage, ptr);
 	message_dequeue_put_to_used(pmessage);
 	h.lock();
-	int_hash_add(g_mess_hash.get(), mess, pmessage);
+	g_mess_hash->add(mess, pmessage);
 }
 
 static void *mdq_thrwork(void *arg)

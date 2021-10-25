@@ -500,7 +500,7 @@ static const FONTENTRY *rtf_lookup_font(RTF_READER *preader, int num)
 	if (num < 0) {
 		return &fake_entries[-num-1];
 	}
-	return static_cast<FONTENTRY *>(int_hash_query(preader->pfont_hash.get(), num));
+	return static_cast<FONTENTRY *>(preader->pfont_hash->query(num));
 }
 
 static bool rtf_add_to_collection(DOUBLE_LIST *plist, int nr, const char *text)
@@ -568,7 +568,7 @@ static bool rtf_init_reader(RTF_READER *preader, const char *prtf_buff,
 {
 	double_list_init(&preader->attr_stack_list);
 	preader->ext_pull.init(prtf_buff, rtf_length, [](size_t) -> void * { return nullptr; }, 0);
-	preader->pfont_hash = int_hash_init(MAX_FONTS, sizeof(FONTENTRY));
+	preader->pfont_hash = INT_HASH_TABLE::create(MAX_FONTS, sizeof(FONTENTRY));
 	if (NULL == preader->pfont_hash) {
 		return false;
 	}
@@ -1656,7 +1656,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 			*ptoken = '\0';
 		}
 		gx_strlcpy(tmp_entry.name, name, GX_ARRAY_SIZE(tmp_entry.name));
-		int_hash_add(preader->pfont_hash.get(), num, &tmp_entry);
+		preader->pfont_hash->add(num, &tmp_entry);
 	} while ((pword = simple_tree_node_get_sibling(pword)) != nullptr);
 	if ('\0' == preader->default_encoding[0]) {
 		strcpy(preader->default_encoding, "windows-1252");

@@ -1006,14 +1006,13 @@ static void tnef_replace_propid(TPROPVAL_ARRAY *pproplist, INT_HASH_TABLE *phash
 	int i;
 	uint16_t propid;
 	uint32_t proptag;
-	uint16_t *ppropid;
 	
 	for (i=0; i<pproplist->count; i++) {
 		proptag = pproplist->ppropval[i].proptag;
 		propid = PROP_ID(proptag);
 		if (!is_nameprop_id(propid))
 			continue;
-		ppropid = static_cast<uint16_t *>(int_hash_query(phash, propid));
+		auto ppropid = static_cast<uint16_t *>(phash->query(propid));
 		if (NULL == ppropid || 0 == *ppropid) {
 			tpropval_array_remove_propval(pproplist, proptag);
 			i --;
@@ -1692,12 +1691,12 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	if (FALSE == get_propids(&propnames, &propids1)) {
 		return NULL;
 	}
-	auto phash1 = int_hash_init(0x1000, sizeof(uint16_t));
+	auto phash1 = INT_HASH_TABLE::create(0x1000, sizeof(uint16_t));
 	if (NULL == phash1) {
 		return NULL;
 	}
 	for (size_t i = 0; i < propids.count; ++i)
-		int_hash_add(phash1.get(), propids.ppropid[i], propids1.ppropid + i);
+		phash1->add(propids.ppropid[i], propids1.ppropid + i);
 	tnef_replace_propid(&pmsg->proplist, phash1.get());
 	if (NULL != pmsg->children.prcpts) {
 		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i)

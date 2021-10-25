@@ -47,16 +47,16 @@ static BOOL store_object_enlarge_propid_hash(store_object *pstore)
 {
 	int tmp_id;
 	void *ptmp_value;
-	auto phash = int_hash_init(pstore->ppropid_hash->capacity +
+	auto phash = INT_HASH_TABLE::create(pstore->ppropid_hash->capacity +
 	                        HGROWING_SIZE, sizeof(PROPERTY_NAME));
 	if (NULL == phash) {
 		return FALSE;
 	}
-	auto iter = int_hash_iter_init(pstore->ppropid_hash.get());
+	auto iter = pstore->ppropid_hash->make_iter();
 	for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
 		int_hash_iter_forward(iter)) {
 		ptmp_value = int_hash_iter_get_value(iter, &tmp_id);
-		int_hash_add(phash.get(), tmp_id, ptmp_value);
+		phash->add(tmp_id, ptmp_value);
 	}
 	int_hash_iter_free(iter);
 	pstore->ppropid_hash = std::move(phash);
@@ -92,7 +92,7 @@ static BOOL store_object_cache_propname(store_object *pstore,
 	PROPERTY_NAME tmp_name;
 	
 	if (NULL == pstore->ppropid_hash) {
-		pstore->ppropid_hash = int_hash_init(HGROWING_SIZE, sizeof(PROPERTY_NAME));
+		pstore->ppropid_hash = INT_HASH_TABLE::create(HGROWING_SIZE, sizeof(PROPERTY_NAME));
 		if (NULL == pstore->ppropid_hash) {
 			return FALSE;
 		}
@@ -125,10 +125,10 @@ static BOOL store_object_cache_propname(store_object *pstore,
 	default:
 		return FALSE;
 	}
-	if (int_hash_query(pstore->ppropid_hash.get(), propid) == nullptr) {
-		if (int_hash_add(pstore->ppropid_hash.get(), propid, &tmp_name) != 1) {
+	if (pstore->ppropid_hash->query(propid) == nullptr) {
+		if (pstore->ppropid_hash->add(propid, &tmp_name) != 1) {
 			if (FALSE == store_object_enlarge_propid_hash(pstore) ||
-			    int_hash_add(pstore->ppropid_hash.get(), propid, &tmp_name) != 1) {
+			    pstore->ppropid_hash->add(propid, &tmp_name) != 1) {
 				if (NULL != tmp_name.pname) {
 					free(tmp_name.pname);
 				}
@@ -188,7 +188,6 @@ std::unique_ptr<store_object> store_object::create(BOOL b_private,
 
 store_object::~store_object()
 {
-	INT_HASH_ITER *piter;
 	DOUBLE_LIST_NODE *pnode;
 	PROPERTY_NAME *ppropname;
 
@@ -201,7 +200,7 @@ store_object::~store_object()
 	}
 	double_list_free(&pstore->group_list);
 	if (NULL != pstore->ppropid_hash) {
-		piter = int_hash_iter_init(pstore->ppropid_hash.get());
+		auto piter = pstore->ppropid_hash->make_iter();
 		for (int_hash_iter_begin(piter); !int_hash_iter_done(piter);
 			int_hash_iter_forward(piter)) {
 			ppropname = static_cast<PROPERTY_NAME *>(int_hash_iter_get_value(piter, nullptr));
@@ -288,7 +287,7 @@ BOOL store_object::get_named_propnames(const PROPID_ARRAY *ppropids, PROPNAME_AR
 			continue;
 		}
 		pname = pstore->ppropid_hash == nullptr ? nullptr :
-		        static_cast<PROPERTY_NAME *>(int_hash_query(pstore->ppropid_hash.get(), ppropids->ppropid[i]));
+		        static_cast<PROPERTY_NAME *>(pstore->ppropid_hash->query(ppropids->ppropid[i]));
 		if (NULL != pname) {
 			pindex_map[i] = i;
 			ppropnames->ppropname[i] = *pname;

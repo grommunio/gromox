@@ -10,11 +10,25 @@ struct INT_HASH_ITEM {
     DOUBLE_LIST_NODE iter_node;
 };
 
+struct INT_HASH_ITER;
 struct GX_EXPORT INT_HASH_TABLE {
 	INT_HASH_TABLE(size_t max_items, size_t item_size);
 	INT_HASH_TABLE(INT_HASH_TABLE &&) = delete;
 	~INT_HASH_TABLE();
 	void operator=(INT_HASH_TABLE &&) = delete;
+	/* 
+	 * init a hash table with the specified max_items capacity and
+	 * item_size of data size.
+	 */
+	static std::unique_ptr<INT_HASH_TABLE> create(size_t max_items, size_t item_size);
+	/* add the key and value into the specified hash table */
+	int add(int key, void *value);
+	/* query if the key is exist in the hash table */
+	void *query(int key) const;
+	/* remove the specified key from the hash table */
+	int remove(int key);
+	/* init a hash iterator object */
+	INT_HASH_ITER *make_iter();
 
 	size_t capacity = 0, entry_num = 0, data_size = 0, item_num = 0;
 	DOUBLE_LIST iter_list{};
@@ -28,21 +42,6 @@ struct INT_HASH_ITER {
     INT_HASH_TABLE* ptable;
 };
 
-/* 
- init a hash table with the specified max_items capacity and item_size
- of data size, the fun and a hash function which takes a string and 
- return a int, if the fun is NULL then a default hash function will
- be used
- */
-extern GX_EXPORT std::unique_ptr<INT_HASH_TABLE> int_hash_init(size_t max_items, size_t item_size);
-/* add the key and value into the specified hash table */
-int int_hash_add(INT_HASH_TABLE* ptbl, int key, void *value);
-/* query if the key is exist in the hash table */
-void* int_hash_query(INT_HASH_TABLE* ptbl, int key);
-/* remove the specified key from the hash table */
-int int_hash_remove(INT_HASH_TABLE* ptbl, int key);
-/* init a hash iterator object */
-INT_HASH_ITER* int_hash_iter_init(INT_HASH_TABLE *ptbl);
 /* free a hash iterator object */
 void int_hash_iter_free(INT_HASH_ITER *piter);
 /* like C++ std list, this begin a hash iterator */
