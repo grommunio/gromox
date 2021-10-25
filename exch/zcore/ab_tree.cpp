@@ -185,8 +185,8 @@ static void ab_tree_put_abnode(AB_NODE *pabnode)
 
 SIMPLE_TREE_NODE* ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid)
 {
-	auto ppnode = static_cast<SIMPLE_TREE_NODE **>(int_hash_query(pbase->phash, minid));
-	return ppnode != nullptr ? *ppnode : nullptr;
+	auto ppnode = static_cast<AB_NODE **>(int_hash_query(pbase->phash, minid));
+	return ppnode != nullptr ? &(*ppnode)->stree : nullptr;
 }
 
 void ab_tree_init(const char *org_name, int base_size,
@@ -324,9 +324,9 @@ static BOOL ab_tree_load_user(AB_NODE *pabnode, sql_user &&usr, AB_BASE *pbase)
 	}
 	pabnode->id = usr.id;
 	pabnode->minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, usr.id);
-	pabnode->stree.pdata = int_hash_query(pbase->phash, pabnode->minid);
-	if (pabnode->stree.pdata == nullptr &&
-	    !ab_tree_cache_node(pbase, pabnode))
+	auto ppnode = static_cast<AB_NODE **>(int_hash_query(pbase->phash, pabnode->minid));
+	pabnode->stree.pdata = ppnode != nullptr ? &(*ppnode)->stree : nullptr;
+	if (pabnode->stree.pdata == nullptr && !ab_tree_cache_node(pbase, pabnode))
 		return FALSE;
 	pabnode->d_info = new(std::nothrow) sql_user(std::move(usr));
 	return pabnode->d_info != nullptr ? TRUE : false;
@@ -337,9 +337,9 @@ static BOOL ab_tree_load_mlist(AB_NODE *pabnode, sql_user &&usr, AB_BASE *pbase)
 	pabnode->node_type = NODE_TYPE_MLIST;
 	pabnode->id = usr.id;
 	pabnode->minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, usr.id);
-	pabnode->stree.pdata = int_hash_query(pbase->phash, pabnode->minid);
-	if (pabnode->stree.pdata == nullptr &&
-	    !ab_tree_cache_node(pbase, pabnode))
+	auto ppnode = static_cast<AB_NODE **>(int_hash_query(pbase->phash, pabnode->minid));
+	pabnode->stree.pdata = ppnode != nullptr ? &(*ppnode)->stree : nullptr;
+	if (pabnode->stree.pdata == nullptr && !ab_tree_cache_node(pbase, pabnode))
 		return FALSE;
 	pabnode->d_info = new(std::nothrow) sql_user(std::move(usr));
 	return pabnode->d_info != nullptr ? TRUE : false;
@@ -896,11 +896,12 @@ static BOOL ab_tree_node_to_path(SIMPLE_TREE_NODE *pnode,
 		pbase = ab_tree_get_base(-xab->id);
 		if (pbase == nullptr)
 			return FALSE;
-		auto ppnode = static_cast<SIMPLE_TREE_NODE **>(int_hash_query(pbase->phash, xab->minid));
+		auto ppnode = static_cast<AB_NODE **>(int_hash_query(pbase->phash, xab->minid));
 		if (NULL == ppnode) {
 			return FALSE;
 		}
-		pnode = *ppnode;
+		xab = *ppnode;
+		pnode = &xab->stree;
 	}
 	
 	offset = 0;
@@ -1061,12 +1062,12 @@ static BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		pbase = ab_tree_get_base(-pabnode->id);
 		if (pbase == nullptr)
 			return FALSE;
-		auto ppnode = static_cast<SIMPLE_TREE_NODE **>(int_hash_query(pbase->phash, pabnode->minid));
+		auto ppnode = static_cast<AB_NODE **>(int_hash_query(pbase->phash, pabnode->minid));
 		if (NULL == ppnode) {
 			return FALSE;
 		}
-		pnode = *ppnode;
-		pabnode = containerof(pnode, AB_NODE, stree);
+		pabnode = *ppnode;
+		pnode = &pabnode->stree;
 	}
 	switch (pabnode->node_type) {
 	case NODE_TYPE_DOMAIN:
@@ -1149,12 +1150,11 @@ uint8_t ab_tree_get_node_type(SIMPLE_TREE_NODE *pnode)
 	auto pbase = ab_tree_get_base(-pabnode->id);
 	if (pbase == nullptr)
 		return NODE_TYPE_REMOTE;
-	auto ppnode = static_cast<SIMPLE_TREE_NODE **>(int_hash_query(pbase->phash, pabnode->minid));
+	auto ppnode = static_cast<AB_NODE **>(int_hash_query(pbase->phash, pabnode->minid));
 	if (NULL == ppnode) {
 		return NODE_TYPE_REMOTE;
 	}
-	pabnode = containerof(*ppnode, AB_NODE, stree);
-	return pabnode->node_type;
+	return (*ppnode)->node_type;
 }
 
 static void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
@@ -1338,14 +1338,14 @@ static void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
 			str_address[0] = '\0';
 			return;
 		}
-		auto ppnode = static_cast<SIMPLE_TREE_NODE **>(int_hash_query(pbase->phash, pabnode->minid));
+		auto ppnode = static_cast<AB_NODE **>(int_hash_query(pbase->phash, pabnode->minid));
 		if (NULL == ppnode) {
 			str_name[0] = '\0';
 			str_address[0] = '\0';
 			return;
 		}
-		pnode = *ppnode;
-		pabnode = containerof(pnode, AB_NODE, stree);
+		pabnode = *ppnode;
+		pnode = &pabnode->stree;
 	}
 	while ((pnode = simple_tree_node_get_parent(pnode)) != NULL)
 		pabnode = containerof(pnode, AB_NODE, stree);
@@ -1367,12 +1367,13 @@ static void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode, char *str_name)
 			str_name[0] = '\0';
 			return;
 		}
-		auto ppnode = static_cast<SIMPLE_TREE_NODE **>(int_hash_query(pbase->phash, pabnode->minid));
+		auto ppnode = static_cast<AB_NODE **>(int_hash_query(pbase->phash, pabnode->minid));
 		if (NULL == ppnode) {
 			str_name[0] = '\0';
 			return;
 		}
-		pnode = *ppnode;
+		pabnode = *ppnode;
+		pnode = &pabnode->stree;
 	}
 	do {
 		pabnode = containerof(pnode, AB_NODE, stree);
