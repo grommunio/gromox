@@ -26,13 +26,13 @@ struct HPM_INTERFACE {
 };
 
 struct CONNECTION {
-	char client_ip[40];
-	int				client_port;
-	char server_ip[40];
-	int				server_port;
-	int				sockd;
-	SSL				*ssl;
-	struct timeval	last_timestamp;
+	char client_ip[40]; /* client ip address string */
+	char server_ip[40]; /* server ip address */
+	int client_port; /* value of client port */
+	int server_port; /* value of server port */
+	int sockd; /* context's socket file description */
+	SSL *ssl;
+	struct timeval last_timestamp; /* last time when system got data from */
 };
 
 struct HTTP_REQUEST {

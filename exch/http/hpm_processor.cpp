@@ -54,14 +54,6 @@ struct HPM_CONTEXT {
 	uint64_t cache_size;
 };
 
-struct HTTP_AUTH_INFO {
-	BOOL b_authed;
-	const char* username;
-	const char* password;
-	const char* maildir;
-	const char* lang;
-};
-
 }
 
 static int g_context_num;

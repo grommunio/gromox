@@ -3,24 +3,9 @@
 #include <gromox/plugin.hpp>
 #include <gromox/double_list.hpp>
 #include <gromox/common_types.hpp>
-
-#define HPM_RETRIEVE_ERROR					0
-#define HPM_RETRIEVE_WRITE					1
-#define HPM_RETRIEVE_NONE					2
-#define HPM_RETRIEVE_WAIT					3
-#define HPM_RETRIEVE_DONE					4
-#define HPM_RETRIEVE_SOCKET					5
+#include <gromox/hpm_common.h>
 
 struct HTTP_CONTEXT;
-
-struct HPM_INTERFACE {
-	BOOL (*preproc)(int);
-	BOOL (*proc)(int, const void*, uint64_t);
-	int (*retr)(int);
-	BOOL (*send)(int, const void*, int);
-	int (*receive)(int, void*, int length);
-	void (*term)(int);
-};
 
 struct HPM_PLUGIN {
 	HPM_PLUGIN();

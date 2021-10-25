@@ -5,6 +5,7 @@
 #include "mod_fastcgi.h"
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
+#include <gromox/hpm_common.h>
 #include "pdu_processor.h"
 #include <gromox/stream.hpp>
 #include <gromox/mem_file.hpp>
@@ -37,32 +38,6 @@ enum {
 	CHANNEL_STAT_WAITRECYCLED,
 	CHANNEL_STAT_OPENED,
 	CHANNEL_STAT_RECYCLED
-};
-
-struct CONNECTION {
-	char client_ip[40]; /* client ip address string */
-	int				client_port;        /* value of client port */
-	char server_ip[40]; /* server ip address */
-	int				server_port;        /* value of server port */
-	int				sockd;              /* context's socket file description */
-	SSL				*ssl;
-	struct timeval last_timestamp;     /* last time when system got data from */
-};
-
-struct HTTP_REQUEST {
-	char		method[32];
-	MEM_FILE	f_request_uri;
-	char		version[8];
-	MEM_FILE	f_host;
-	MEM_FILE    f_user_agent;
-    MEM_FILE    f_accept;
-	MEM_FILE	f_accept_language;
-	MEM_FILE	f_accept_encoding;
-	MEM_FILE	f_content_type;
-	MEM_FILE	f_content_length;
-	MEM_FILE	f_transfer_encoding;
-	MEM_FILE	f_cookie;
-    MEM_FILE    f_others;
 };
 
 enum {

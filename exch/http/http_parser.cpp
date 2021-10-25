@@ -21,6 +21,7 @@
 #include "pdu_ndr.h"
 #include "resource.h"
 #include "mod_cache.h"
+#include <gromox/hpm_common.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/lib_buffer.hpp>
 #include "mod_rewrite.h"
