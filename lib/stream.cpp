@@ -437,20 +437,20 @@ void *STREAM::get_read_buf(unsigned int *psize)
 			pstream->rd_block_pos += *psize;
 		}
 		pstream->rd_total_pos += *psize;
+		return ret_ptr;
+	}
+	if (pstream->rd_block_pos == pstream->wr_block_pos) {
+		*psize = 0;
+		return NULL;
+	} else if (pstream->wr_block_pos - pstream->rd_block_pos < *psize) {
+		*psize = pstream->wr_block_pos - pstream->rd_block_pos;
+		ret_ptr = (char*)pstream->pnode_rd->pdata + pstream->rd_block_pos;
+		pstream->rd_block_pos = pstream->wr_block_pos;
+		pstream->rd_total_pos = pstream->wr_total_pos;
 	} else {
-		if (pstream->rd_block_pos == pstream->wr_block_pos) {
-			*psize = 0;
-			return NULL;
-		} else if (pstream->wr_block_pos - pstream->rd_block_pos < *psize) {
-			*psize = pstream->wr_block_pos - pstream->rd_block_pos;
-			ret_ptr = (char*)pstream->pnode_rd->pdata + pstream->rd_block_pos;
-			pstream->rd_block_pos = pstream->wr_block_pos;
-			pstream->rd_total_pos = pstream->wr_total_pos;
-		} else {
-			ret_ptr = (char*)pstream->pnode_rd->pdata + pstream->rd_block_pos;
-			pstream->rd_block_pos += *psize;
-			pstream->rd_total_pos += *psize;
-		}
+		ret_ptr = (char*)pstream->pnode_rd->pdata + pstream->rd_block_pos;
+		pstream->rd_block_pos += *psize;
+		pstream->rd_total_pos += *psize;
 	}
 	return ret_ptr;
 }
