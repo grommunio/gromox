@@ -24,7 +24,8 @@ struct GX_EXPORT INT_HASH_TABLE {
 	/* add the key and value into the specified hash table */
 	int add(int key, void *value);
 	/* query if the key is exist in the hash table */
-	void *query(int key) const;
+	void *query1(int key) const;
+	template<typename T> T *query(int key) const { return static_cast<T *>(query1(key)); }
 	/* remove the specified key from the hash table */
 	int remove(int key);
 	/* init a hash iterator object */

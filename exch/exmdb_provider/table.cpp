@@ -3229,7 +3229,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 				sqlite3_column_int64(pstmt, 0));
 			while (SQLITE_ROW == sqlite3_step(pstmt1)) {
 				proptag = sqlite3_column_int64(pstmt1, 0);
-				if (phash->query(proptag) != nullptr)
+				if (phash->query1(proptag) != nullptr)
 					continue;	
 				phash->add(proptag, &proptag);
 			}
@@ -3285,7 +3285,7 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 				sqlite3_column_int64(pstmt, 0));
 			while (SQLITE_ROW == sqlite3_step(pstmt1)) {
 				proptag = sqlite3_column_int64(pstmt1, 0);
-				if (phash->query(proptag) != nullptr)
+				if (phash->query1(proptag) != nullptr)
 					continue;	
 				phash->add(proptag, &proptag);
 			}

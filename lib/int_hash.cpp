@@ -186,7 +186,7 @@ int INT_HASH_TABLE::add(int key, void *value)
  *	@return 
  *		the value that map the key, NULL if some error occurs
  */
-void *INT_HASH_TABLE::query(int key) const
+void *INT_HASH_TABLE::query1(int key) const
 {
 	auto ptbl = this;
 	DOUBLE_LIST_NODE* next	= NULL;

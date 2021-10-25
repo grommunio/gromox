@@ -272,7 +272,7 @@ int rop_processor_add_object_handle(void *plogmap, uint8_t logon_id,
 		}
 		ppparent = NULL;
 	} else if (parent_handle >= 0 && parent_handle < 0x7FFFFFFF) {
-		ppparent = static_cast<OBJECT_NODE **>(plogitem->phash->query(parent_handle));
+		ppparent = plogitem->phash->query<OBJECT_NODE *>(parent_handle);
 		if (NULL == ppparent) {
 			return -5;
 		}
@@ -332,7 +332,7 @@ void* rop_processor_get_object(void *plogmap,
 	if (NULL == plogitem) {
 		return NULL;
 	}
-	auto ppobjnode = static_cast<OBJECT_NODE **>(plogitem->phash->query(obj_handle));
+	auto ppobjnode = plogitem->phash->query<OBJECT_NODE *>(obj_handle);
 	if (NULL == ppobjnode) {
 		return NULL;
 	}
@@ -353,7 +353,7 @@ void rop_processor_release_object_handle(void *plogmap,
 	if (NULL == plogitem) {
 		return;
 	}
-	auto ppobjnode = static_cast<OBJECT_NODE **>(plogitem->phash->query(obj_handle));
+	auto ppobjnode = plogitem->phash->query<OBJECT_NODE *>(obj_handle);
 	if (NULL == ppobjnode) {
 		return;
 	}

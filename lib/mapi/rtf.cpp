@@ -500,7 +500,7 @@ static const FONTENTRY *rtf_lookup_font(RTF_READER *preader, int num)
 	if (num < 0) {
 		return &fake_entries[-num-1];
 	}
-	return static_cast<FONTENTRY *>(preader->pfont_hash->query(num));
+	return preader->pfont_hash->query<FONTENTRY>(num);
 }
 
 static bool rtf_add_to_collection(DOUBLE_LIST *plist, int nr, const char *text)

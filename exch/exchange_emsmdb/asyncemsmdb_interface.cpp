@@ -222,7 +222,7 @@ void asyncemsmdb_interface_reclaim(uint32_t async_id)
 	ASYNC_WAIT *pwait;
 	
 	std::unique_lock as_hold(g_async_lock);
-	auto ppwait = static_cast<ASYNC_WAIT **>(g_async_hash->query(async_id));
+	auto ppwait = g_async_hash->query<ASYNC_WAIT *>(async_id);
 	if (NULL == ppwait) {
 		return;
 	}

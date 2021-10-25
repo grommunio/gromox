@@ -125,7 +125,7 @@ static BOOL store_object_cache_propname(store_object *pstore,
 	default:
 		return FALSE;
 	}
-	if (pstore->ppropid_hash->query(propid) == nullptr) {
+	if (pstore->ppropid_hash->query1(propid) == nullptr) {
 		if (pstore->ppropid_hash->add(propid, &tmp_name) != 1) {
 			if (FALSE == store_object_enlarge_propid_hash(pstore) ||
 			    pstore->ppropid_hash->add(propid, &tmp_name) != 1) {
@@ -287,7 +287,7 @@ BOOL store_object::get_named_propnames(const PROPID_ARRAY *ppropids, PROPNAME_AR
 			continue;
 		}
 		pname = pstore->ppropid_hash == nullptr ? nullptr :
-		        static_cast<PROPERTY_NAME *>(pstore->ppropid_hash->query(ppropids->ppropid[i]));
+		        pstore->ppropid_hash->query<PROPERTY_NAME>(ppropids->ppropid[i]);
 		if (NULL != pname) {
 			pindex_map[i] = i;
 			ppropnames->ppropname[i] = *pname;

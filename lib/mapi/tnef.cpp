@@ -1012,7 +1012,7 @@ static void tnef_replace_propid(TPROPVAL_ARRAY *pproplist, INT_HASH_TABLE *phash
 		propid = PROP_ID(proptag);
 		if (!is_nameprop_id(propid))
 			continue;
-		auto ppropid = static_cast<uint16_t *>(phash->query(propid));
+		auto ppropid = phash->query<uint16_t>(propid);
 		if (NULL == ppropid || 0 == *ppropid) {
 			tpropval_array_remove_propval(pproplist, proptag);
 			i --;

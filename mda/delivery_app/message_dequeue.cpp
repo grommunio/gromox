@@ -371,7 +371,7 @@ static void message_dequeue_load_from_mess(int mess)
 	size_t size;
 
 	std::unique_lock h(g_hash_mutex);
-	auto pmessage = static_cast<MESSAGE *>(g_mess_hash->query(mess));
+	auto pmessage = g_mess_hash->query<MESSAGE>(mess);
 	h.unlock();
 	if (NULL != pmessage) {
 		return;

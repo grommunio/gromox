@@ -107,7 +107,7 @@ static BOOL logon_object_cache_propname(logon_object *plogon,
 	default:
 		return FALSE;
 	}
-	if (plogon->ppropid_hash->query(propid) == nullptr) {
+	if (plogon->ppropid_hash->query1(propid) == nullptr) {
 		if (plogon->ppropid_hash->add(propid, &tmp_name) != 1) {
 			if (FALSE == logon_object_enlarge_propid_hash(plogon) ||
 			    plogon->ppropid_hash->add(propid, &tmp_name) != 1) {
@@ -207,7 +207,7 @@ BOOL logon_object::get_named_propname(uint16_t propid, PROPERTY_NAME *ppropname)
 	}
 	auto plogon = this;
 	if (NULL != plogon->ppropid_hash) {
-		pname = static_cast<PROPERTY_NAME *>(plogon->ppropid_hash->query(propid));
+		pname = plogon->ppropid_hash->query<PROPERTY_NAME>(propid);
 		if (NULL != pname) {
 			*ppropname = *pname;
 			return TRUE;
@@ -259,7 +259,7 @@ BOOL logon_object::get_named_propnames(const PROPID_ARRAY *ppropids,
 			continue;
 		}
 		pname = plogon->ppropid_hash == nullptr ? nullptr :
-		        static_cast<PROPERTY_NAME *>(plogon->ppropid_hash->query(ppropids->ppropid[i]));
+		        plogon->ppropid_hash->query<PROPERTY_NAME>(ppropids->ppropid[i]);
 		if (NULL != pname) {
 			pindex_map[i] = i;
 			ppropnames->ppropname[i] = *pname;
