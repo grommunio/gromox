@@ -37,7 +37,8 @@ enum {
 };
 
 struct STREAM {
-	STREAM &operator=(const STREAM &) = default;
+	STREAM() = default;
+	STREAM(STREAM &&) = delete;
 	STREAM &operator=(STREAM &&);
 
 	DOUBLE_LIST_NODE *pnode_rd = nullptr, *pnode_wr = nullptr;
@@ -50,7 +51,10 @@ struct STREAM {
 	DOUBLE_LIST list{};
 
 	protected:
+	STREAM &operator=(const STREAM &);
 	void xcopy(const STREAM &);
+	bool is_clone = false;
+	friend void stream_split_eom(STREAM *, STREAM *);
 };
 
 void stream_init(STREAM *pstream, LIB_BUFFER *palloc);

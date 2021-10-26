@@ -55,6 +55,14 @@ void stream_init(STREAM *pstream, LIB_BUFFER *palloc)
 	pstream->pnode_rd = pstream->pnode_wr;
 }
 
+STREAM &STREAM::operator=(const STREAM &o)
+{
+	stream_free(this);
+	xcopy(o);
+	is_clone = true;
+	return *this;
+}
+
 STREAM &STREAM::operator=(STREAM &&o)
 {
 	stream_free(this);
