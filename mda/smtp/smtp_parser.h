@@ -140,10 +140,10 @@ struct SMTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	NOMOVE(SMTP_CONTEXT);
 
 	CONNECTION connection{};
-	STREAM stream{}; /* stream accepted from smtp client */
+	STREAM stream; /* stream accepted from smtp client */
+	STREAM stream_second; /* stream for recording splitted data */
 	BOOL is_splitted = false; /* whether stream_second has data in */
 	unsigned int command_protocol = 0;
-	STREAM stream_second{}; /* stream for recording splitted data */
 	int last_cmd = 0; /* indicate SMTP state of the connection */
 	MAIL_INFO mail{}; /* for recording the mail information */
 	FLUSH_INFO flusher{}; /* the flusher for saving mail information */

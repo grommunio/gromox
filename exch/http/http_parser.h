@@ -80,7 +80,7 @@ struct HTTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	HTTP_REQUEST request{};
 	uint64_t total_length = 0, bytes_rw = 0;
 	unsigned int sched_stat = 0;
-	STREAM stream_in{}, stream_out{};
+	STREAM stream_in, stream_out;
 	void *write_buff = nullptr;
 	int write_offset = 0, write_length = 0;
 	BOOL b_close = TRUE; /* Connection MIME Header for indicating closing */

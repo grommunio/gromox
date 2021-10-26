@@ -30,7 +30,11 @@ void stream_init(STREAM *pstream, LIB_BUFFER *palloc)
 		return;
 	}
 #endif
-	memset(pstream, 0, sizeof(STREAM));
+	pstream->wr_block_pos = pstream->wr_total_pos = 0;
+	pstream->rd_block_pos = pstream->rd_total_pos = 0;
+	pstream->last_eom_parse = 0;
+	pstream->block_line_pos = pstream->block_line_parse = 0;
+	pstream->line_result = pstream->eom_result = 0;
 	pstream->allocator = palloc;
 	double_list_init(&pstream->list);
 

@@ -47,7 +47,7 @@ struct POP3_CONTEXT final : public SCHEDULE_CONTEXT {
 	size_t write_length = 0, write_offset = 0;
 	BOOL data_stat = false, list_stat = false;
 	int until_line = 0x7FFFFFFF, cur_line = -1, message_fd = -1;
-	STREAM stream{}; /* stream accepted from pop3 client */
+	STREAM stream; /* stream accepted from pop3 client */
 	int total_mail = 0;
 	uint64_t total_size = 0;
 

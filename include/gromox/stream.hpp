@@ -37,19 +37,14 @@ enum {
 };
 
 struct STREAM {
-    DOUBLE_LIST_NODE  *pnode_rd;
-    DOUBLE_LIST_NODE  *pnode_wr;
-    int               line_result;
-	int               eom_result;
-    size_t            rd_block_pos;
-    size_t            wr_block_pos;
-    size_t            rd_total_pos;
-    size_t            wr_total_pos;
-	size_t            last_eom_parse;
-    size_t            block_line_parse;
-    size_t            block_line_pos;
-    LIB_BUFFER        *allocator;
-    DOUBLE_LIST       list;
+	DOUBLE_LIST_NODE *pnode_rd = nullptr, *pnode_wr = nullptr;
+	int line_result = 0, eom_result = 0;
+	size_t rd_block_pos = 0, wr_block_pos = 0;
+	size_t rd_total_pos = 0, wr_total_pos = 0;
+	size_t last_eom_parse = 0;
+	size_t block_line_parse = 0, block_line_pos = 0;
+	LIB_BUFFER *allocator = nullptr;
+	DOUBLE_LIST list{};
 };
 
 void stream_init(STREAM *pstream, LIB_BUFFER *palloc);

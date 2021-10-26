@@ -107,7 +107,7 @@ struct IMAP_CONTEXT final : public SCHEDULE_CONTEXT {
 	char read_buffer[64*1024]{};
 	char *literal_ptr = nullptr;
 	int literal_len = 0, current_len = 0;
-	STREAM stream{}; /* stream for writing to imap client */
+	STREAM stream; /* stream for writing to imap client */
 	int auth_times = 0;
 	char username[UADDR_SIZE]{}, maildir[256]{}, lang[32]{};
 };
