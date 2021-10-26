@@ -51,7 +51,8 @@ struct STREAM {
 	DOUBLE_LIST list{};
 
 	protected:
-	STREAM &operator=(const STREAM &);
+	STREAM(const STREAM &);
+	void operator=(const STREAM &) = delete;
 	void xcopy(const STREAM &);
 	bool is_clone = false;
 	friend void stream_split_eom(STREAM *, STREAM *);
