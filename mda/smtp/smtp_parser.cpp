@@ -250,9 +250,9 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			smtp_parser_log_info(pcontext, LV_NOTICE, "return OK, queue-id:%d",
 							pcontext->flusher.flush_ID);
 			smtp_parser_reset_context_session(pcontext);
-			if (TRUE == pcontext->is_splitted) {
-				pcontext->stream = std::move(pcontext->stream_second);
-				pcontext->is_splitted = FALSE;
+			if (pcontext->stream_second.has_value()) {
+				pcontext->stream = std::move(*pcontext->stream_second);
+				pcontext->stream_second.reset();
 				goto CMD_PROCESS;
 			}
 			return PROCESS_CONTINUE;
@@ -563,9 +563,9 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			pcontext->last_cmd = T_END_MAIL;
 			return smtp_parser_try_flush_mail(pcontext, TRUE);
 		case STREAM_EOM_DIRTY:
-			stream_init(&pcontext->stream_second, blocks_allocator_get_allocator());
-			stream_split_eom(&pcontext->stream, &pcontext->stream_second);
-			pcontext->is_splitted = TRUE;
+			pcontext->stream_second.emplace();
+			stream_init(&*pcontext->stream_second, blocks_allocator_get_allocator());
+			stream_split_eom(&pcontext->stream, &*pcontext->stream_second);
 			pcontext->last_cmd = T_END_MAIL;
 			return smtp_parser_try_flush_mail(pcontext, TRUE);
 		default:
@@ -925,10 +925,7 @@ static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext)
 	memset(&pcontext->connection, 0, sizeof(CONNECTION));
 	pcontext->connection.sockd      = -1;
 	pcontext->session_num           = 0;
-	if (TRUE == pcontext->is_splitted) {
-		stream_free(&pcontext->stream_second);
-		pcontext->is_splitted = FALSE;
-	}
+	pcontext->stream_second.reset();
 	pcontext->mail.envelope.is_login = false;
 	pcontext->mail.envelope.is_relay = false;
 	memset(&pcontext->mail.envelope.username, 0, arsizeof(pcontext->mail.envelope.username));

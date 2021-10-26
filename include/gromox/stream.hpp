@@ -63,7 +63,6 @@ void stream_init(STREAM *pstream, LIB_BUFFER *palloc);
 int stream_has_newline(STREAM *pstream);
 unsigned int stream_readline(STREAM *pstream, char **ppline);
 void stream_clear(STREAM *pstream);
-void stream_free(STREAM *pstream);
 void stream_try_mark_line(STREAM *pstream);
 void stream_try_mark_eom(STREAM *pstream);
 int stream_has_eom(STREAM *pstream);

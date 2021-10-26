@@ -1,4 +1,5 @@
 #pragma once
+#include <optional>
 #include <string>
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
@@ -141,8 +142,7 @@ struct SMTP_CONTEXT final : public SCHEDULE_CONTEXT {
 
 	CONNECTION connection{};
 	STREAM stream; /* stream accepted from smtp client */
-	STREAM stream_second; /* stream for recording splitted data */
-	BOOL is_splitted = false; /* whether stream_second has data in */
+	std::optional<STREAM> stream_second; /* stream for recording splitted data */
 	unsigned int command_protocol = 0;
 	int last_cmd = 0; /* indicate SMTP state of the connection */
 	MAIL_INFO mail{}; /* for recording the mail information */

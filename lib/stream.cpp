@@ -19,6 +19,7 @@ enum {
 	STREAM_EOM_CRORLF,
 };
 
+static void stream_free(STREAM *);
 static BOOL stream_append_node(STREAM *pstream); 
 
 void stream_init(STREAM *pstream, LIB_BUFFER *palloc)
