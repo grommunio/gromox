@@ -315,7 +315,6 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 {
 	size_t string_length = 0;
     const char* smtp_reply_str;
-    STREAM stream;
 
     if (T_RCPT_CMD != pcontext->last_cmd) {
         /* 503 bad sequence of command, RCPT first */
@@ -347,7 +346,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
         return DISPATCH_CONTINUE;
     }
 	/* fill the new stream the data after "data" command */
-	stream_init(&stream, blocks_allocator_get_allocator());
+	STREAM stream(blocks_allocator_get_allocator());
 	unsigned int size2 = STREAM_BLOCK_SIZE;
 	void *pbuff2 = stream_getbuffer_for_writing(&stream, &size2);
 	/*

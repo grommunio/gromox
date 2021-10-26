@@ -2507,7 +2507,6 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 	void *ptr;
 	void *pvalue;
 	int body_type;
-	STREAM tmp_stream;
 	LIB_BUFFER *pallocator;
 	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT *pmsgctnt;
@@ -2567,7 +2566,7 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 		return FALSE;
 	}
 	auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
-	stream_init(&tmp_stream, pallocator);
+	STREAM tmp_stream(pallocator);
 	if (!imail.serialize(&tmp_stream)) {
 		return FALSE;
 	}

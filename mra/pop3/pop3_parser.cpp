@@ -518,7 +518,6 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 	int copy_result;
 	int last_result;
 	BOOL b_stop;
-	STREAM temp_stream;
 	char line_buff[MAX_LINE_LENGTH + 3];
 	
 	pcontext->write_length = 0;
@@ -528,7 +527,7 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 		return POP3_RETRIEVE_TERM;
 	}
 
-	stream_init(&temp_stream, blocks_allocator_get_allocator());
+	STREAM temp_stream(blocks_allocator_get_allocator());
 	while (stream_get_total_length(&temp_stream) < g_retrieving_size) {
 		size = STREAM_BLOCK_SIZE;
 		void *pbuff = stream_getbuffer_for_writing(&temp_stream, &size);
@@ -729,12 +728,11 @@ static int pop3_parser_dispatch_cmd(const char *line, int len, POP3_CONTEXT *ctx
 	return ret & DISPATCH_ACTMASK;
 }
 
-POP3_CONTEXT::POP3_CONTEXT()
+POP3_CONTEXT::POP3_CONTEXT() :
+	stream(blocks_allocator_get_allocator())
 {
 	auto pcontext = this;
-	auto palloc_stream = blocks_allocator_get_allocator();
     pcontext->connection.sockd = -1;
-    stream_init(&pcontext->stream, palloc_stream);
 	single_list_init(&pcontext->list);
 }
 

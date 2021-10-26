@@ -867,7 +867,6 @@ BOOL MAIL::dup(MAIL *pmail_dst)
 	auto pmail_src = this;
 	unsigned int size;
 	void *ptr;
-	STREAM tmp_stream;
 	LIB_BUFFER *pallocator;
 	
 #ifdef _DEBUG_UMTA
@@ -887,7 +886,7 @@ BOOL MAIL::dup(MAIL *pmail_dst)
 		return FALSE;
 	}
 	auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
-	stream_init(&tmp_stream, pallocator);
+	STREAM tmp_stream(pallocator);
 	if (!pmail_src->serialize(&tmp_stream)) {
 		return FALSE;
 	}
@@ -925,7 +924,6 @@ BOOL MAIL::transfer_dot(MAIL *pmail_dst)
 	auto pmail_src = this;
 	unsigned int size;
 	char *pbuff;
-	STREAM tmp_stream;
 	LIB_BUFFER *pallocator;
 	
 #ifdef _DEBUG_UMTA
@@ -945,7 +943,7 @@ BOOL MAIL::transfer_dot(MAIL *pmail_dst)
 		return FALSE;
 	}
 	auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
-	stream_init(&tmp_stream, pallocator);
+	STREAM tmp_stream(pallocator);
 	if (!pmail_src->serialize(&tmp_stream)) {
 		return FALSE;
 	}

@@ -6312,7 +6312,6 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 	time_t tmp_time;
 	uint64_t *pctime;
 	uint64_t *pmtime;
-	STREAM tmp_stream;
 	struct tm time_buff;
 	char tmp_field[1024];
 	const char *pfile_name;
@@ -6492,7 +6491,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		if (pallocator == nullptr)
 			return FALSE;
 		auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
-		stream_init(&tmp_stream, pallocator);
+		STREAM tmp_stream(pallocator);
 		if (!imail.serialize(&tmp_stream)) {
 			return FALSE;
 		}

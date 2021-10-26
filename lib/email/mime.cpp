@@ -1205,7 +1205,6 @@ static BOOL mime_read_mutlipart_content(MIME *pmime,
 	size_t offset, tmp_len;
 	unsigned int buff_size;
 	BOOL has_submime;
-	STREAM tmp_stream;
 	MIME *pmime_child;
 	SIMPLE_TREE_NODE *pnode;
 	LIB_BUFFER *pallocator;
@@ -1224,7 +1223,7 @@ static BOOL mime_read_mutlipart_content(MIME *pmime,
 		return FALSE;
 	}
 	auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
-	stream_init(&tmp_stream, pallocator);
+	STREAM tmp_stream(pallocator);
 	if (NULL == pmime->first_boundary) {
 		stream_write(&tmp_stream,
 			"This is a multi-part message "
@@ -1395,7 +1394,6 @@ BOOL mime_read_head(MIME *pmime, char *out_buff, size_t *plength)
  */
 BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 {
-	STREAM tmp_stream;
 	void *ptr;
 	int encoding_type;
 	char encoding[256], *pbuff;
@@ -1448,7 +1446,7 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 			return FALSE;
 		}
 		auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
-		stream_init(&tmp_stream, pallocator);
+		STREAM tmp_stream(pallocator);
 		if (!reinterpret_cast<MAIL *>(pmime->content_begin)->serialize(&tmp_stream)) {
 			*plength = 0;
 			return FALSE;

@@ -22,36 +22,29 @@ enum {
 static void stream_free(STREAM *);
 static BOOL stream_append_node(STREAM *pstream); 
 
-void stream_init(STREAM *pstream, LIB_BUFFER *palloc)
+STREAM::STREAM(LIB_BUFFER *palloc) :
+	allocator(palloc)
 {
+	auto pstream = this;
 	BOOL bappend;
 #ifdef _DEBUG_UMTA
-	if (NULL == pstream || NULL == palloc) {
-		debug_info("[stream]: stream_init, param NULL");
-		return;
-	}
+	if (palloc == nullptr)
+		throw std::invalid_parameter("[stream]: stream_init, param NULL");
 #endif
-	pstream->wr_block_pos = pstream->wr_total_pos = 0;
-	pstream->rd_block_pos = pstream->rd_total_pos = 0;
-	pstream->last_eom_parse = 0;
-	pstream->block_line_pos = pstream->block_line_parse = 0;
-	pstream->line_result = pstream->eom_result = 0;
-	pstream->allocator = palloc;
 	double_list_init(&pstream->list);
 
 #ifdef _DEBUG_UMTA
 	if (lib_buffer_get_param(palloc, MEM_ITEM_SIZE) - sizeof(DOUBLE_LIST_NODE) <
 		STREAM_BLOCK_SIZE) {
-		debug_info("[stream]: item size in stream allocator is too "
+		throw std::invalid_parameter("[stream]: item size in stream allocator is too "
 					"small in stream_init");
-		return;
 	}
 #endif
 	/* allocate the first node in initialization */
 	bappend = stream_append_node(pstream);
 	if (FALSE == bappend) {
 		debug_info("[stream]: Failed to allocate first node in stream_init");
-		return;
+		throw std::bad_alloc();
 	}
 	pstream->pnode_rd = pstream->pnode_wr;
 }

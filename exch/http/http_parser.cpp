@@ -351,14 +351,11 @@ static BOOL http_parser_request_head(MEM_FILE *pfile_others,
 
 static int http_parser_reconstruct_stream(STREAM &stream_src)
 {
-	int size;
 	int size1;
 	int size1_used;
-	STREAM stream_dst;
+	STREAM stream_dst(blocks_allocator_get_allocator());
 	auto pstream_src = &stream_src, pstream_dst = &stream_dst;
-	
-	stream_init(pstream_dst, blocks_allocator_get_allocator());
-	size = STREAM_BLOCK_SIZE;
+	int size = STREAM_BLOCK_SIZE;
 	auto pbuff = stream_getbuffer_for_reading(pstream_src,
 	             reinterpret_cast<unsigned int *>(&size));
 	if (NULL == pbuff) {
@@ -1994,12 +1991,11 @@ int http_parser_set_param(int param, int value)
     return 0;
 }
 
-HTTP_CONTEXT::HTTP_CONTEXT()
+HTTP_CONTEXT::HTTP_CONTEXT() :
+	stream_in(blocks_allocator_get_allocator()),
+	stream_out(stream_in.allocator)
 {
 	auto pcontext = this;
-    LIB_BUFFER *palloc_stream;
-    
-    palloc_stream = blocks_allocator_get_allocator();
     pcontext->connection.sockd = -1;
 	mem_file_init(&pcontext->request.f_request_uri, g_file_allocator);
 	mem_file_init(&pcontext->request.f_host, g_file_allocator);
@@ -2012,8 +2008,6 @@ HTTP_CONTEXT::HTTP_CONTEXT()
 	mem_file_init(&pcontext->request.f_transfer_encoding, g_file_allocator);
 	mem_file_init(&pcontext->request.f_cookie, g_file_allocator);
 	mem_file_init(&pcontext->request.f_others, g_file_allocator);
-    stream_init(&pcontext->stream_in, palloc_stream);
-	stream_init(&pcontext->stream_out, palloc_stream);
 	pcontext->node.pdata = pcontext;
 }
 

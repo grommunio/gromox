@@ -563,8 +563,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			pcontext->last_cmd = T_END_MAIL;
 			return smtp_parser_try_flush_mail(pcontext, TRUE);
 		case STREAM_EOM_DIRTY:
-			pcontext->stream_second.emplace();
-			stream_init(&*pcontext->stream_second, blocks_allocator_get_allocator());
+			pcontext->stream_second.emplace(blocks_allocator_get_allocator());
 			stream_split_eom(&pcontext->stream, &*pcontext->stream_second);
 			pcontext->last_cmd = T_END_MAIL;
 			return smtp_parser_try_flush_mail(pcontext, TRUE);
@@ -895,13 +894,11 @@ void smtp_parser_reset_context_envelope(SMTP_CONTEXT *pcontext)
 	mem_file_clear(&pcontext->mail.envelope.f_rcpt_to);
 }
 
-SMTP_CONTEXT::SMTP_CONTEXT()
+SMTP_CONTEXT::SMTP_CONTEXT() :
+	stream(blocks_allocator_get_allocator())
 {
 	auto pcontext = this;
-	LIB_BUFFER *palloc_stream, *palloc_file;
-	
-	palloc_stream = blocks_allocator_get_allocator();
-	palloc_file = files_allocator_get_allocator();
+	auto palloc_file = files_allocator_get_allocator();
 	pcontext->connection.sockd = -1;
 	mem_file_init(&pcontext->block_info.f_last_blkmime, palloc_file);
 	mem_file_init(&pcontext->mail.envelope.f_rcpt_to, palloc_file);
@@ -914,7 +911,6 @@ SMTP_CONTEXT::SMTP_CONTEXT()
 	mem_file_init(&pcontext->mail.head.f_content_type, palloc_file);
 	mem_file_init(&pcontext->mail.head.f_others, palloc_file);
 	mem_file_init(&pcontext->mail.body.f_mail_parts, palloc_file);
-	stream_init(&pcontext->stream, palloc_stream);
 }
 
 static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext)

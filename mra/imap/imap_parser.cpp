@@ -1646,16 +1646,13 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *ctx)
 	       imap_parser_dispatch_cmd2(argc, argv, ctx));
 }
 
-IMAP_CONTEXT::IMAP_CONTEXT()
+IMAP_CONTEXT::IMAP_CONTEXT() :
+	stream(blocks_allocator_get_allocator())
 {
 	auto pcontext = this;
-    LIB_BUFFER *palloc_stream;
-    
-    palloc_stream = blocks_allocator_get_allocator();
 	pcontext->hash_node.pdata = pcontext;
 	pcontext->sleeping_node.pdata = pcontext;
     pcontext->connection.sockd = -1;
-    stream_init(&pcontext->stream, palloc_stream);
 	mem_file_init(&pcontext->f_flags, g_alloc_file);
 }
 
