@@ -13,10 +13,9 @@
 #include "rop_processor.h"
 #include "processor_types.h"
 
-
-uint32_t rop_modifypermissions(uint8_t flags,
-	uint16_t count, const PERMISSION_DATA *prow,
-	void *plogmap, uint8_t logon_id, uint32_t hin)
+uint32_t rop_modifypermissions(uint8_t flags, uint16_t count,
+    const PERMISSION_DATA *prow, LOGMAP *plogmap,
+    uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_freebusy;
 	int object_type;
@@ -64,8 +63,8 @@ uint32_t rop_modifypermissions(uint8_t flags,
 	return ecSuccess;
 }
 
-uint32_t rop_getpermissionstable(uint8_t flags,
-	void *plogmap, uint8_t logon_id, uint32_t hin, uint32_t *phout)
+uint32_t rop_getpermissionstable(uint8_t flags, LOGMAP *plogmap,
+    uint8_t logon_id, uint32_t hin, uint32_t *phout)
 {
 	int object_type;
 	uint32_t permission;

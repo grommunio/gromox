@@ -63,6 +63,10 @@ struct OBJECT_NODE {
 
 }
 
+struct LOGMAP {
+	LOGON_ITEM *p[256];
+};
+
 static int g_scan_interval;
 static pthread_t g_scan_id;
 static int g_average_handles;
@@ -73,14 +77,11 @@ static LIB_BUFFER *g_logmap_allocator;
 static LIB_BUFFER *g_handle_allocator;
 static LIB_BUFFER *g_logitem_allocator;
 
-
-void* rop_processor_create_logmap()
+LOGMAP *rop_processor_create_logmap()
 {
-	void *plogmap;
-	
-	plogmap = lib_buffer_get(g_logmap_allocator);
+	auto plogmap = static_cast<LOGMAP *>(lib_buffer_get(g_logmap_allocator));
 	if (NULL != plogmap) {
-		memset(plogmap, 0, sizeof(LOGON_ITEM*)*256);
+		memset(plogmap, 0, sizeof(LOGMAP));
 	}
 	return plogmap;
 }
@@ -195,31 +196,29 @@ static void rop_processor_release_logon_item(LOGON_ITEM *plogitem)
 	}
 }
 
-void rop_processor_release_logmap(void *plogmap)
+void rop_processor_release_logmap(LOGMAP *plogmap)
 {
 	int i;
 	
 	for (i=0; i<256; i++) {
-		if (NULL != ((LOGON_ITEM**)plogmap)[i]) {
-			rop_processor_release_logon_item(((LOGON_ITEM**)plogmap)[i]);
-			((LOGON_ITEM**)plogmap)[i] = NULL;
+		if (plogmap->p[i] != nullptr) {
+			rop_processor_release_logon_item(plogmap->p[i]);
+			plogmap->p[i] = nullptr;
 		}
 	}
 	lib_buffer_put(g_logmap_allocator, plogmap);
 }
 
-int rop_processor_create_logon_item(void *plogmap,
+int rop_processor_create_logon_item(LOGMAP *plogmap,
     uint8_t logon_id, logon_object *plogon)
 {
 	int handle;
 	uint32_t tmp_ref;
-	LOGON_ITEM *plogitem;
-	
-	plogitem = ((LOGON_ITEM**)plogmap)[logon_id];
+	auto plogitem = plogmap->p[logon_id];
 	/* MS-OXCROPS 3.1.4.2 */
 	if (NULL != plogitem) {
 		rop_processor_release_logon_item(plogitem);
-		((LOGON_ITEM**)plogmap)[logon_id] = NULL;
+		plogmap->p[logon_id] = nullptr;
 	}
 	plogitem = static_cast<LOGON_ITEM *>(lib_buffer_get(g_logitem_allocator));
 	if (NULL == plogitem) {
@@ -231,7 +230,7 @@ int rop_processor_create_logon_item(void *plogmap,
 		return -2;
 	}
 	simple_tree_init(&plogitem->tree);
-	((LOGON_ITEM**)plogmap)[logon_id] = plogitem;
+	plogmap->p[logon_id] = plogitem;
 	handle = rop_processor_add_object_handle(plogmap,
 				logon_id, -1, OBJECT_TYPE_LOGON, plogon);
 	if (handle < 0) {
@@ -249,17 +248,16 @@ int rop_processor_create_logon_item(void *plogmap,
 	return handle;
 }
 
-int rop_processor_add_object_handle(void *plogmap, uint8_t logon_id,
+int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	int parent_handle, int type, void *pobject)
 {
 	int tmp_handle;
-	LOGON_ITEM *plogitem;
 	OBJECT_NODE *pobjnode;
 	OBJECT_NODE *ptmphanle;
 	OBJECT_NODE **ppparent;
 	EMSMDB_INFO *pemsmdb_info;
 	
-	plogitem = ((LOGON_ITEM**)plogmap)[logon_id];
+	auto plogitem = plogmap->p[logon_id];
 	if (NULL == plogitem) {
 		return -1;
 	}
@@ -320,15 +318,13 @@ int rop_processor_add_object_handle(void *plogmap, uint8_t logon_id,
 	return pobjnode->handle;
 }
 
-void* rop_processor_get_object(void *plogmap,
+void *rop_processor_get_object(LOGMAP *plogmap,
 	uint8_t logon_id, uint32_t obj_handle, int *ptype)
 {
-	LOGON_ITEM *plogitem;
-	
 	if (obj_handle >= 0x7FFFFFFF) {
 		return NULL;
 	}
-	plogitem = ((LOGON_ITEM**)plogmap)[logon_id];
+	auto plogitem = plogmap->p[logon_id];
 	if (NULL == plogitem) {
 		return NULL;
 	}
@@ -340,16 +336,15 @@ void* rop_processor_get_object(void *plogmap,
 	return (*ppobjnode)->pobject;
 }
 
-void rop_processor_release_object_handle(void *plogmap,
+void rop_processor_release_object_handle(LOGMAP *plogmap,
 	uint8_t logon_id, uint32_t obj_handle)
 {
-	LOGON_ITEM *plogitem;
 	EMSMDB_INFO *pemsmdb_info;
 	
 	if (obj_handle >= 0x7FFFFFFF) {
 		return;
 	}
-	plogitem = ((LOGON_ITEM**)plogmap)[logon_id];
+	auto plogitem = plogmap->p[logon_id];
 	if (NULL == plogitem) {
 		return;
 	}
@@ -363,16 +358,14 @@ void rop_processor_release_object_handle(void *plogmap,
 	}
 	rop_processor_release_objnode(plogitem, *ppobjnode);
 	if (NULL == plogitem->phash) {
-		((LOGON_ITEM**)plogmap)[logon_id] = NULL;
+		plogmap->p[logon_id] = nullptr;
 	}
 }
 
-logon_object *rop_processor_get_logon_object(void *plogmap, uint8_t logon_id)
+logon_object *rop_processor_get_logon_object(LOGMAP *plogmap, uint8_t logon_id)
 {
-	LOGON_ITEM *plogitem;
 	SIMPLE_TREE_NODE *proot;
-	
-	plogitem = ((LOGON_ITEM**)plogmap)[logon_id];
+	auto plogitem = plogmap->p[logon_id];
 	if (NULL == plogitem) {
 		return nullptr;
 	}

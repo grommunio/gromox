@@ -8,12 +8,10 @@
 #include "rop_processor.h"
 #include "subscription_object.h"
 
-
-uint32_t rop_registernotification(
-	uint8_t notification_types, uint8_t reserved,
-	uint8_t want_whole_store, const uint64_t *pfolder_id,
-	const uint64_t *pmessage_id, void *plogmap,
-	uint8_t logon_id, uint32_t hin, uint32_t *phout)
+uint32_t rop_registernotification(uint8_t notification_types, uint8_t reserved,
+    uint8_t want_whole_store, const uint64_t *pfolder_id,
+    const uint64_t *pmessage_id, LOGMAP *plogmap, uint8_t logon_id,
+    uint32_t hin, uint32_t *phout)
 {
 	BOOL b_whole;
 	int object_type;
@@ -51,7 +49,7 @@ uint32_t rop_registernotification(
 	return ecSuccess;
 }
 
-void rop_release(void *plogmap, uint8_t logon_id, uint32_t hin)
+void rop_release(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	rop_processor_release_object_handle(plogmap, logon_id, hin);
 }

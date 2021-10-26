@@ -195,8 +195,8 @@ static BOOL oxomsg_check_permission(const char *account,
 	return false;
 }
 
-uint32_t rop_submitmessage(uint8_t submit_flags,
-	void *plogmap, uint8_t logon_id, uint32_t hin)
+uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
+    uint8_t logon_id, uint32_t hin)
 {
 	int timer_id;
 	BOOL b_marked;
@@ -414,7 +414,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags,
 }
 
 uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
-	void *plogmap, uint8_t logon_id, uint32_t hin)
+    LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_exist;
 	uint32_t *ptimer_id;
@@ -477,8 +477,8 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 	return ecSuccess;
 }
 
-uint32_t rop_getaddresstypes(STRING_ARRAY *paddress_types,
-	void *plogmap, uint8_t logon_id, uint32_t hin)
+uint32_t rop_getaddresstypes(STRING_ARRAY *paddress_types, LOGMAP *plogmap,
+    uint8_t logon_id, uint32_t hin)
 {
 	static const char *const address_types[] = {"SMTP", "EX"};
 	
@@ -493,7 +493,7 @@ uint32_t rop_getaddresstypes(STRING_ARRAY *paddress_types,
 	return ecSuccess;
 }
 
-uint32_t rop_setspooler(void *plogmap, uint8_t logon_id, uint32_t hin)
+uint32_t rop_setspooler(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -504,8 +504,8 @@ uint32_t rop_setspooler(void *plogmap, uint8_t logon_id, uint32_t hin)
 	return ecSuccess;
 }
 
-uint32_t rop_spoolerlockmessage(uint64_t message_id,
-	uint8_t lock_stat, void *plogmap, uint8_t logon_id, uint32_t hin)
+uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
+    LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_exist;
 	BOOL b_result;
@@ -586,8 +586,8 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id,
 	return ecSuccess;
 }
 
-uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
-	void *plogmap, uint8_t logon_id, uint32_t hin)
+uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
+    uint8_t logon_id, uint32_t hin)
 {
 	void *pvalue;
 	int object_type;
@@ -661,10 +661,9 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals,
 	return ecSuccess;
 }
 
-uint32_t rop_transportnewmail(uint64_t message_id,
-	uint64_t folder_id, const char *pstr_class,
-	uint32_t message_flags, void *plogmap,
-	uint8_t logon_id, uint32_t hin)
+uint32_t rop_transportnewmail(uint64_t message_id, uint64_t folder_id,
+    const char *pstr_class, uint32_t message_flags, LOGMAP *plogmap,
+    uint8_t logon_id, uint32_t hin)
 {
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -676,8 +675,8 @@ uint32_t rop_transportnewmail(uint64_t message_id,
 	return ecSuccess;
 }
 
-uint32_t rop_gettransportfolder(uint64_t *pfolder_id,
-	void *plogmap, uint8_t logon_id, uint32_t hin)
+uint32_t rop_gettransportfolder(uint64_t *pfolder_id, LOGMAP *plogmap,
+    uint8_t logon_id, uint32_t hin)
 {
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (NULL == plogon) {
@@ -689,11 +688,9 @@ uint32_t rop_gettransportfolder(uint64_t *pfolder_id,
 	return ecSuccess;
 }
 
-uint32_t rop_optionsdata(const char *paddress_type,
-	uint8_t want_win32, uint8_t *preserved,
-	BINARY *poptions_info, BINARY *phelp_file,
-	char **ppfile_name, void *plogmap,
-	uint8_t logon_id, uint32_t hin)
+uint32_t rop_optionsdata(const char *paddress_type, uint8_t want_win32,
+    uint8_t *preserved, BINARY *poptions_info, BINARY *phelp_file,
+    char **ppfile_name, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	*preserved = 1;
 	poptions_info->cb = 300;

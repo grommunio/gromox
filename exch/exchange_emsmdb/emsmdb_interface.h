@@ -3,13 +3,14 @@
 #include <gromox/mapi_types.hpp>
 #include <gromox/rpc_types.hpp>
 
+struct LOGMAP;
 struct EMSMDB_INFO {
 	uint32_t cpid;
 	uint32_t lcid_string;
 	uint32_t lcid_sort;
 	uint16_t client_version[4];
 	uint16_t client_mode;
-	void *plogmap;
+	LOGMAP *plogmap;
 	int upctx_ref;
 };
 

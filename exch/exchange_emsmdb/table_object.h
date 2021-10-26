@@ -6,6 +6,7 @@
 
 struct logon_object;
 
+struct LOGMAP;
 struct table_object {
 	protected:
 	table_object() = default;
@@ -44,7 +45,7 @@ struct table_object {
 
 	logon_object *plogon = nullptr;
 	CXH cxh{};
-	void *plogmap = nullptr;
+	LOGMAP *plogmap = nullptr;
 	uint8_t logon_id = 0;
 	uint32_t handle = 0;
 	void *pparent_obj = nullptr;

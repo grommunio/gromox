@@ -238,7 +238,6 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	uint16_t client_version[4], uint16_t client_mode, uint32_t cpid,
 	uint32_t lcid_string, uint32_t lcid_sort, uint16_t *pcxr, CXH *pcxh)
 {
-	void *plogmap;
 	DOUBLE_LIST tmp_list;
 	char guid_string[64];
 	HANDLE_DATA temp_handle;
@@ -268,7 +267,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	phandle->node.pdata = phandle;
 	
 	phandle->last_handle = 0;
-	plogmap = rop_processor_create_logmap();
+	auto plogmap = rop_processor_create_logmap();
 	if (NULL == plogmap) {
 		g_handle_hash->remove(guid_string);
 		return FALSE;
@@ -316,7 +315,6 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 
 static void emsmdb_interface_remove_handle(CXH *pcxh)
 {
-	void *plogmap;
 	char guid_string[64];
 	HANDLE_DATA *phandle;
 	DOUBLE_LIST_NODE *pnode;
@@ -352,7 +350,7 @@ static void emsmdb_interface_remove_handle(CXH *pcxh)
 			g_user_hash->remove(phandle->username);
 		}
 	}
-	plogmap = phandle->info.plogmap;
+	auto plogmap = phandle->info.plogmap;
 	while ((pnode = double_list_pop_front(&phandle->notify_list)) != nullptr) {
 		notify_response_free(static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload));
 		free(pnode->pdata);

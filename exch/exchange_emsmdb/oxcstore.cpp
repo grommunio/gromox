@@ -15,9 +15,8 @@ using namespace gromox;
 uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
     uint32_t store_stat, char *pessdn, size_t dnmax, uint64_t *pfolder_id,
     uint8_t *presponse_flags, GUID *pmailbox_guid, uint16_t *preplica_id,
-	GUID *preplica_guid, LOGON_TIME *plogon_time,
-	uint64_t *pgwart_time, uint32_t *pstore_stat,
-	void *plogmap, uint8_t logon_id, uint32_t *phout)
+    GUID *preplica_guid, LOGON_TIME *plogon_time, uint64_t *pgwart_time,
+    uint32_t *pstore_stat, LOGMAP *plogmap, uint8_t logon_id, uint32_t *phout)
 {
 	int handle;
 	int user_id;
@@ -153,9 +152,9 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 }
 	
 uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
-	uint32_t store_stat, char *pessdn, uint64_t *pfolder_id,
-	uint16_t *preplica_id, GUID *preplica_guid, GUID *pper_user_guid,
-	void *plogmap, uint8_t logon_id, uint32_t *phout)
+    uint32_t store_stat, char *pessdn, uint64_t *pfolder_id,
+    uint16_t *preplica_id, GUID *preplica_guid, GUID *pper_user_guid,
+    LOGMAP *plogmap, uint8_t logon_id, uint32_t *phout)
 {
 	int handle;
 	int org_id;
@@ -253,9 +252,8 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	return ecSuccess;
 }
 
-uint32_t rop_getreceivefolder(const char *pstr_class,
-	uint64_t *pfolder_id, char **ppstr_explicit,
-	void *plogmap, uint8_t logon_id, uint32_t hin)
+uint32_t rop_getreceivefolder(const char *pstr_class, uint64_t *pfolder_id,
+    char **ppstr_explicit, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
 	
@@ -281,9 +279,8 @@ uint32_t rop_getreceivefolder(const char *pstr_class,
 	return ecSuccess;
 }
 
-uint32_t rop_setreceivefolder(uint64_t folder_id,
-	const char *pstr_class, void *plogmap,
-	uint8_t logon_id, uint32_t hin)
+uint32_t rop_setreceivefolder(uint64_t folder_id, const char *pstr_class,
+    LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	void *pvalue;
 	BOOL b_result;
@@ -329,8 +326,8 @@ uint32_t rop_setreceivefolder(uint64_t folder_id,
 	return ecSuccess;
 }
 
-uint32_t rop_getreceivefoldertable(PROPROW_SET *prows,
-	void *plogmap, uint8_t logon_id, uint32_t hin)
+uint32_t rop_getreceivefoldertable(PROPROW_SET *prows, LOGMAP *plogmap,
+    uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
 	PROPTAG_ARRAY columns;
@@ -367,17 +364,16 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows,
 	return ecSuccess;
 }
 
-uint32_t rop_getstorestat(uint32_t *pstat,
-	void *plogmap, uint8_t logon_id, uint32_t hin)
+uint32_t rop_getstorestat(uint32_t *pstat, LOGMAP *plogmap,
+    uint8_t logon_id, uint32_t hin)
 {
 	/* just like EXCHANGE 2010 or later,
 		we do not implement this rop */
 	return NotImplemented;
 }
 
-uint32_t rop_getowningservers(
-	uint64_t folder_id, GHOST_SERVER *pghost,
-	void *plogmap, uint8_t logon_id, uint32_t hin)
+uint32_t rop_getowningservers(uint64_t folder_id, GHOST_SERVER *pghost,
+    LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	GUID guid;
 	BOOL b_found;
@@ -426,9 +422,8 @@ uint32_t rop_getowningservers(
 	return ecSuccess;
 }
 
-uint32_t rop_publicfolderisghosted(
-	uint64_t folder_id, GHOST_SERVER **ppghost,
-	void *plogmap, uint8_t logon_id, uint32_t hin)
+uint32_t rop_publicfolderisghosted(uint64_t folder_id, GHOST_SERVER **ppghost,
+    LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
 	uint16_t replid;
@@ -457,9 +452,8 @@ uint32_t rop_publicfolderisghosted(
 			*ppghost, plogmap, logon_id, hin);
 }
 
-uint32_t rop_longtermidfromid(uint64_t id,
-	LONG_TERM_ID *plong_term_id,
-	void *plogmap, uint8_t logon_id, uint32_t hin)
+uint32_t rop_longtermidfromid(uint64_t id, LONG_TERM_ID *plong_term_id,
+    LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_found;
 	uint16_t replid;
@@ -495,9 +489,8 @@ uint32_t rop_longtermidfromid(uint64_t id,
 	return ecSuccess;
 }	
 
-uint32_t rop_idfromlongtermid(
-	const LONG_TERM_ID *plong_term_id, uint64_t *pid,
-	void *plogmap, uint8_t logon_id, uint32_t hin)
+uint32_t rop_idfromlongtermid(const LONG_TERM_ID *plong_term_id, uint64_t *pid,
+    LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_found;
 	int object_type;
@@ -539,8 +532,8 @@ uint32_t rop_idfromlongtermid(
 }
 
 uint32_t rop_getperuserlongtermids(const GUID *pguid,
-	LONG_TERM_ID_ARRAY *plong_term_ids,
-	void *plogmap, uint8_t logon_id, uint32_t hin)
+    LONG_TERM_ID_ARRAY *plong_term_ids, LOGMAP *plogmap,
+    uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
 	
@@ -558,9 +551,8 @@ uint32_t rop_getperuserlongtermids(const GUID *pguid,
 	return ecNotSupported;
 }
 
-uint32_t rop_getperuserguid(
-	const LONG_TERM_ID *plong_term_id, GUID *pguid,
-	void *plogmap,uint8_t logon_id,  uint32_t hin)
+uint32_t rop_getperuserguid(const LONG_TERM_ID *plong_term_id, GUID *pguid,
+    LOGMAP *plogmap,uint8_t logon_id,  uint32_t hin)
 {
 	int object_type;
 	
@@ -576,12 +568,10 @@ uint32_t rop_getperuserguid(
 	return ecNotSupported;
 }
 
-uint32_t rop_readperuserinformation(
-	const LONG_TERM_ID *plong_folder_id,
-	uint8_t reserved, uint32_t data_offset,
-	uint16_t max_data_size, uint8_t *phas_finished,
-	BINARY *pdata, void *plogmap, uint8_t logon_id,
-	uint32_t hin)
+uint32_t rop_readperuserinformation(const LONG_TERM_ID *plong_folder_id,
+    uint8_t reserved, uint32_t data_offset, uint16_t max_data_size,
+    uint8_t *phas_finished, BINARY *pdata, LOGMAP *plogmap,
+    uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
 	
@@ -598,11 +588,9 @@ uint32_t rop_readperuserinformation(
 	return ecSuccess;
 }
 
-uint32_t rop_writeperuserinformation(
-	const LONG_TERM_ID *plong_folder_id,
-	uint8_t has_finished, uint32_t offset,
-	const BINARY *pdata, const GUID *pguid,
-	void *plogmap, uint8_t logon_id, uint32_t hin)
+uint32_t rop_writeperuserinformation(const LONG_TERM_ID *plong_folder_id,
+    uint8_t has_finished, uint32_t offset, const BINARY *pdata,
+    const GUID *pguid, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
 	
