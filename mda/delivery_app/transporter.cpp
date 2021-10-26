@@ -105,8 +105,8 @@ struct THREAD_DATA {
 
 static char				g_path[256];
 static const char *const *g_plugin_names;
-static char				g_local_path[256];
-static HOOK_FUNCTION	g_local_hook;
+static char g_local_path[256], g_remote_path[256];
+static HOOK_FUNCTION g_local_hook, g_remote_hook;
 static unsigned int g_threads_max, g_threads_min, g_mime_num, g_free_num;
 static gromox::atomic_bool g_notify_stop{false};
 static BOOL             g_domainlist_valid;
@@ -137,6 +137,7 @@ static void *dxp_scanwork(void *);
 static void *transporter_queryservice(const char *service, const std::type_info &);
 static BOOL transporter_register_hook(HOOK_FUNCTION func);
 static BOOL transporter_register_local(HOOK_FUNCTION func);
+static bool transporter_register_remote(HOOK_FUNCTION);
 static BOOL transporter_register_talk(TALK_MAIN talk);
 static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 	THREAD_DATA *pthr_data); 
@@ -180,6 +181,7 @@ void transporter_init(const char *path, const char *const *names,
 	gx_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
 	g_plugin_names = names;
 	g_local_path[0] = '\0';
+	*g_remote_path = '\0';
 	g_notify_stop = false;
 	g_threads_min = threads_min;
 	g_threads_max = threads_max;
@@ -281,6 +283,11 @@ int transporter_run()
 		transporter_collect_hooks();
 		transporter_collect_resource();
 		return -8;
+	} else if (*g_remote_path == '\0') {
+		printf("[transporter]: there's no remote hook registered in system\n");
+		transporter_collect_hooks();
+		transporter_collect_resource();
+		return -1;
 	}
 
 	for (size_t i = g_threads_min; i < g_threads_max; ++i)
@@ -458,6 +465,13 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 			if (TRUE == g_local_hook(pcontext)) {
 				return TRUE;	
 			}
+		}
+		if (pthr_data->last_thrower != g_remote_hook) {
+			mem_file_seek(&pcontext->pcontrol->f_rcpt_to, MEM_FILE_READ_PTR, 0,
+				MEM_FILE_SEEK_BEGIN);
+			pthr_data->last_hook = g_remote_hook;
+			if (g_remote_hook(pcontext))
+				return TRUE;
 		}
 		return FALSE;
 	} else {
@@ -637,7 +651,7 @@ int transporter_load_library(const char* path)
 
 	transporter_clean_up_unloading();
 	/* check whether the plugin is same as local or remote plugin */
-	if (strcmp(path, g_local_path) == 0) {
+	if (strcmp(path, g_local_path) == 0 || strcmp(path, g_remote_path) == 0) {
 		printf("[transporter]: %s is already loaded in module\n", path);
 		return PLUGIN_ALREADY_LOADED;
 	}
@@ -837,6 +851,7 @@ static void *transporter_queryservice(const char *service, const std::type_info 
 	} while (false)
 	E("register_hook", transporter_register_hook);
 	E("register_local", transporter_register_local);
+	E("register_remote", transporter_register_remote);
 	E("register_talk", transporter_register_talk);
 	E("get_host_ID", transporter_get_host_ID);
 	E("get_default_domain", transporter_get_default_domain);
@@ -1108,6 +1123,15 @@ static BOOL transporter_register_local(HOOK_FUNCTION func)
 	g_local_hook = func;
 	strcpy(g_local_path, g_cur_lib->file_name);
 	return TRUE;
+}
+
+static bool transporter_register_remote(HOOK_FUNCTION func)
+{
+	if (*g_remote_path != '\0')
+		return false;
+	g_remote_hook = func;
+	gx_strlcpy(g_remote_path, g_cur_lib->file_name, arsizeof(g_remote_path));
+	return true;
 }
 
 static BOOL transporter_register_talk(TALK_MAIN talk)

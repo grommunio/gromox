@@ -32,11 +32,13 @@ mta_plugins = \
 	libgxm_alias_translator.la \
 	libgxm_exmdb_local.la \
 	libgxm_mlist_expand.la \
+	libgxm_remote_delivery.la \
 	libgxs_domain_list.la
 noinst_DATA += \
 	libgxm_alias_translator.ldd \
 	libgxm_exmdb_local.ldd \
 	libgxm_mlist_expand.ldd \
+	libgxm_remote_delivery.ldd \
 	libgxs_domain_list.ldd
 mra_plugins = \
 	libgxs_event_proxy.la \
@@ -128,6 +130,10 @@ libgxm_mlist_expand_la_SOURCES = mda/mlist_expand/bounce_producer.cpp mda/mlist_
 libgxm_mlist_expand_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxm_mlist_expand_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la
 EXTRA_libgxm_mlist_expand_la_DEPENDENCIES = ${default_sym}
+libgxm_remote_delivery_la_SOURCES = mda/remote_delivery.cpp
+libgxm_remote_delivery_la_LDFLAGS = ${plugin_LDFLAGS}
+libgxm_remote_delivery_la_LIBADD = -lpthread libgromox_common.la libgromox_email.la
+EXTRA_libgxm_remote_delivery_la_DEPENDENCIES = ${default_sym}
 libgxs_domain_list_la_SOURCES = exch/str_table.cpp
 libgxs_domain_list_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxs_domain_list_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la

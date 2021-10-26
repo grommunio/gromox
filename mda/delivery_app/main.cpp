@@ -40,6 +40,7 @@ static const char *const g_dfl_mpc_plugins[] = {
 	"libgxm_alias_translator.so",
 	"libgxm_exmdb_local.so",
 	"libgxm_mlist_expand.so",
+	"libgxm_remote_delivery.so",
 	NULL,
 };
 
