@@ -69,8 +69,6 @@ void xarray_free(XARRAY* pxarray)
 int xarray_append(XARRAY* pxarray, void* pdata, unsigned int xtag)
 {
 	int ret_index;
-	XARRAY_UNIT *punit;
-
 #ifdef _DEBUG_UMTA
 	if (NULL == pxarray || NULL == pdata) {	   
 		debug_info("[xarray]: NULL pointer found in xarray_append");
@@ -80,8 +78,7 @@ int xarray_append(XARRAY* pxarray, void* pdata, unsigned int xtag)
 	if (0 == xtag || NULL != xarray_get_itemx(pxarray, xtag)) {
 		return -1;
 	}
-
-	punit = (XARRAY_UNIT*)lib_buffer_get(pxarray->mbuf_pool);
+	auto punit = lib_buffer_get<XARRAY_UNIT>(pxarray->mbuf_pool);
 	if (NULL == punit) {
 		return -1;
 	}

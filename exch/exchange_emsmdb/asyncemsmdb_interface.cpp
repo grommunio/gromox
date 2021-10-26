@@ -157,7 +157,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 {
 	char tmp_tag[TAG_SIZE];
 	
-	auto pwait = static_cast<ASYNC_WAIT *>(lib_buffer_get(g_wait_allocator));
+	auto pwait = lib_buffer_get<ASYNC_WAIT>(g_wait_allocator);
 	if (NULL == pwait) {
 		pout->flags_out = 0;
 		pout->result = ecRejected;

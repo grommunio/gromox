@@ -23,14 +23,13 @@ void dir_tree_init(DIR_TREE *ptree, LIB_BUFFER *pallocator)
 
 void dir_tree_retrieve(DIR_TREE *ptree, MEM_FILE *pfile)
 {
-	DIR_NODE *pdir;
 	char *ptr1, *ptr2;
 	char temp_path[4096 + 1];
 	SIMPLE_TREE_NODE *pnode, *proot, *pnode_parent;
 
 	proot = simple_tree_get_root(&ptree->tree);
 	if (NULL == proot) {
-		pdir = static_cast<DIR_NODE *>(lib_buffer_get(ptree->ppool));
+		auto pdir = lib_buffer_get<DIR_NODE>(ptree->ppool);
 		pdir->node.pdata = pdir;
 		pdir->name[0] = '\0';
 		pdir->b_loaded = TRUE;
@@ -57,7 +56,7 @@ void dir_tree_retrieve(DIR_TREE *ptree, MEM_FILE *pfile)
 			pnode = simple_tree_node_get_child(pnode);
 			if (NULL != pnode) {
 				do {
-					pdir = (DIR_NODE*)pnode->pdata;
+					auto pdir = static_cast<DIR_NODE *>(pnode->pdata);
 					if (0 == strcmp(pdir->name, ptr1)) {
 						break;
 					}
@@ -65,7 +64,7 @@ void dir_tree_retrieve(DIR_TREE *ptree, MEM_FILE *pfile)
 			}
 
 			if (NULL == pnode) {
-				pdir = static_cast<DIR_NODE *>(lib_buffer_get(ptree->ppool));
+				auto pdir = lib_buffer_get<DIR_NODE>(ptree->ppool);
 				pdir->node.pdata = pdir;
 				gx_strlcpy(pdir->name, ptr1, gromox::arsizeof(pdir->name));
 				pdir->b_loaded = FALSE;

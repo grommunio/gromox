@@ -79,7 +79,7 @@ static LIB_BUFFER *g_logitem_allocator;
 
 LOGMAP *rop_processor_create_logmap()
 {
-	auto plogmap = static_cast<LOGMAP *>(lib_buffer_get(g_logmap_allocator));
+	auto plogmap = lib_buffer_get<LOGMAP>(g_logmap_allocator);
 	if (NULL != plogmap) {
 		memset(plogmap, 0, sizeof(LOGMAP));
 	}
@@ -220,7 +220,7 @@ int rop_processor_create_logon_item(LOGMAP *plogmap,
 		rop_processor_release_logon_item(plogitem);
 		plogmap->p[logon_id] = nullptr;
 	}
-	plogitem = static_cast<LOGON_ITEM *>(lib_buffer_get(g_logitem_allocator));
+	plogitem = lib_buffer_get<LOGON_ITEM>(g_logitem_allocator);
 	if (NULL == plogitem) {
 		return -1;
 	}
@@ -252,7 +252,6 @@ int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	int parent_handle, int type, void *pobject)
 {
 	int tmp_handle;
-	OBJECT_NODE *pobjnode;
 	OBJECT_NODE *ptmphanle;
 	OBJECT_NODE **ppparent;
 	EMSMDB_INFO *pemsmdb_info;
@@ -277,7 +276,7 @@ int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	} else {
 		return -6;
 	}
-	pobjnode = static_cast<OBJECT_NODE *>(lib_buffer_get(g_handle_allocator));
+	auto pobjnode = lib_buffer_get<OBJECT_NODE>(g_handle_allocator);
 	if (NULL == pobjnode) {
 		return -7;
 	}

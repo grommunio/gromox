@@ -87,7 +87,7 @@ void lib_buffer_free(LIB_BUFFER* m_buf)
  *		the pointer to the new allocated buffer NULL if we allocate
  *		more buffers than specified in lib_buffer_init.
  */
-void* lib_buffer_get(LIB_BUFFER* m_buf)
+void *lib_buffer_get1(LIB_BUFFER *m_buf)
 {
 	void	*ret_buf	= NULL;
 	char	*phead		= NULL;

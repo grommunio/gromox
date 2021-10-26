@@ -667,14 +667,13 @@ void mem_file_free(MEM_FILE *pfile)
  */
 static DOUBLE_LIST_NODE* mem_file_append_node(MEM_FILE *pfile)
 {	 
-	DOUBLE_LIST_NODE *pnode;
 #ifdef _DEBUG_UMTA
 		if (NULL == pfile) {
 		debug_info("[mem_file]: mem_file_append_node, param NULL");
 		return NULL;
 	}
 #endif
-	pnode = (DOUBLE_LIST_NODE*) lib_buffer_get(pfile->allocator);
+	auto pnode = lib_buffer_get<DOUBLE_LIST_NODE>(pfile->allocator);
 	if (NULL == pnode) {
 		return NULL;
 	}

@@ -66,7 +66,6 @@ void threads_pool_init(unsigned int init_pool_num, int (*process_func)(SCHEDULE_
 
 int threads_pool_run()
 {
-	THR_DATA *pdata;
 	int created_thr_num;
 	pthread_attr_t attr;
 	
@@ -90,7 +89,7 @@ int threads_pool_run()
 	pthread_attr_init(&attr);
 	created_thr_num = 0;
 	for (size_t i = 0; i < g_threads_pool_min_num; ++i) {
-		pdata = (THR_DATA*)lib_buffer_get(g_threads_data_buff);
+		auto pdata = lib_buffer_get<THR_DATA>(g_threads_data_buff);
 		pdata->node.pdata = pdata;
 		pdata->id = (pthread_t)-1;
 		pdata->notify_stop = FALSE;
@@ -287,7 +286,7 @@ static void *tpol_scanwork(void *pparam)
 			if (g_threads_pool_cur_thr_num >= g_threads_pool_max_num) {
 				continue;
 			}
-			pdata = (THR_DATA*)lib_buffer_get(g_threads_data_buff);
+			pdata = lib_buffer_get<THR_DATA>(g_threads_data_buff);
 			if (NULL != pdata) {
 				pdata->node.pdata = pdata;
 				pdata->id = (pthread_t)-1;

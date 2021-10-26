@@ -64,7 +64,7 @@ void exmdb_server_build_environment(BOOL b_local,
 	BOOL b_private, const char *dir)
 {
 	common_util_build_tls();
-	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(lib_buffer_get(g_ctx_allocator));
+	auto pctx = lib_buffer_get<ENVIRONMENT_CONTEXT>(g_ctx_allocator);
 	pctx->b_local = b_local;
 	if (FALSE == b_local) {
 		alloc_context_init(&pctx->alloc_ctx);

@@ -272,7 +272,7 @@ static BOOL stream_append_node(STREAM *pstream)
 		pnode = double_list_get_after(&pstream->list,
 			pstream->pnode_wr);
 	} else {
-		pnode = (DOUBLE_LIST_NODE*)lib_buffer_get(pstream->allocator);
+		pnode = lib_buffer_get<DOUBLE_LIST_NODE>(pstream->allocator);
 		if (NULL == pnode) {
 			return FALSE;
 		}

@@ -916,7 +916,6 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 	BOOL b_digit;
 	char temp_tag[128];
 	char temp_buff[64];
-	MJSON_MIME *pmime;
 	MJSON_MIME temp_mime;
 	SIMPLE_TREE_NODE *pnode;
 	
@@ -1060,7 +1059,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 	
 	pnode = simple_tree_get_root(&pjson->tree);
 	if (NULL == pnode) {
-		pmime = (MJSON_MIME*)lib_buffer_get(pjson->ppool);
+		auto pmime = lib_buffer_get<MJSON_MIME>(pjson->ppool);
 		pmime->node.pdata = pmime;
 		pmime->ppool = pjson->ppool;
 		pmime->mime_type = MJSON_MIME_NONE;
@@ -1070,7 +1069,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 	if (NULL == pnode) {
 		return FALSE;
 	}
-	pmime = (MJSON_MIME*)pnode->pdata;
+	auto pmime = static_cast<MJSON_MIME *>(pnode->pdata);
 	
 	if ('\0' == temp_mime.id[0]) {
 		if (MJSON_MIME_NONE != pmime->mime_type) {
@@ -1091,7 +1090,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 				pnode = simple_tree_node_get_child(&pmime->node);
 				if (NULL == pnode) {
 					pnode = &pmime->node;
-					pmime = (MJSON_MIME*)lib_buffer_get(pjson->ppool);
+					pmime = lib_buffer_get<MJSON_MIME>(pjson->ppool);
 					pmime->node.pdata = pmime;
 					pmime->ppool = pjson->ppool;
 					pmime->mime_type = MJSON_MIME_NONE;
@@ -1108,7 +1107,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 					pnode = simple_tree_node_get_sibling(&pmime->node);
 					if (NULL == pnode) {
 						pnode = &pmime->node;
-						pmime = (MJSON_MIME*)lib_buffer_get(pjson->ppool);
+						pmime = lib_buffer_get<MJSON_MIME>(pjson->ppool);
 						pmime->node.pdata = pmime;
 						pmime->ppool = pjson->ppool;
 						pmime->mime_type = MJSON_MIME_NONE;

@@ -123,9 +123,6 @@ int STR_HASH_TABLE::add(const char *key, const void *value)
 	auto ptbl = this;
 	DOUBLE_LIST_NODE* next	= NULL;
 	DOUBLE_LIST*	dlist	= NULL;
-	
-	STR_HASH_ITEM* item = NULL;
-	void* list_node = NULL;
 	size_t index = -1;
 	
 #ifdef _DEBUG_UMTA 
@@ -137,16 +134,14 @@ int STR_HASH_TABLE::add(const char *key, const void *value)
 	if (ptbl->item_num >= ptbl->capacity) {
 		return -2;
 	}
-	list_node = lib_buffer_get(ptbl->buf_pool);
+	auto list_node = lib_buffer_get<STR_HASH_ITEM>(ptbl->buf_pool);
 	if (NULL == list_node) {
 		debug_info("[str_hash]: str_hash_add, lib_buffer_get fail");
 		return -3;
 	}
 
 	index = ptbl->hash_func(key) % (ptbl->entry_num);
-
-	item  = (STR_HASH_ITEM *)list_node;
-
+	auto item = list_node;
 	item->map_index = index;
 	item->list_node.pdata	= item;
 	item->iter_node.pdata	= item;

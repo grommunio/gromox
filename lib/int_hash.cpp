@@ -112,9 +112,6 @@ int INT_HASH_TABLE::add(int key, void *value)
 	auto ptbl = this;
 	DOUBLE_LIST_NODE* next	= NULL;
 	DOUBLE_LIST*	dlist	= NULL;
-
-	void* list_node = NULL;
-	INT_HASH_ITEM* item = NULL;
 	size_t index = -1;
 	
 	if (value == nullptr) {
@@ -126,16 +123,14 @@ int INT_HASH_TABLE::add(int key, void *value)
 		debug_info("[int_hash]: int_hash_add, the hash table is full");
 		return -2;
 	}
-	
-	list_node = lib_buffer_get(ptbl->buf_pool);
-
+	auto list_node = lib_buffer_get<INT_HASH_ITEM>(ptbl->buf_pool);
 	if (NULL == list_node) {
 		debug_info("[int_hash]: int_hash_add, lib_buffer_get fail");
 		return -3;
 	}
 
 	index = default_int_hash_function(key) % ptbl->entry_num;
-	item  = (INT_HASH_ITEM *)list_node;
+	auto item = list_node;
 	item->hash_key	= key;
 	item->map_index = index;
 	item->list_node.pdata = item;

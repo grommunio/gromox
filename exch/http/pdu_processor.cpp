@@ -116,7 +116,7 @@ static int pdu_processor_load_library(const char* plugin_name);
 
 static NDR_STACK_ROOT* pdu_processor_new_stack_root()
 {
-	auto pstack_root = static_cast<NDR_STACK_ROOT *>(lib_buffer_get(g_stack_allocator));
+	auto pstack_root = lib_buffer_get<NDR_STACK_ROOT>(g_stack_allocator);
 	if (NULL == pstack_root) {
 		return NULL;
 	}
@@ -427,7 +427,7 @@ PDU_PROCESSOR* pdu_processor_create(const char *host, int tcp_port)
 	DOUBLE_LIST_NODE *pnode;
 	DCERPC_ENDPOINT *pendpoint;
 	
-	auto pprocessor = static_cast<PDU_PROCESSOR *>(lib_buffer_get(g_processor_allocator));
+	auto pprocessor = lib_buffer_get<PDU_PROCESSOR>(g_processor_allocator);
 	if (NULL == pprocessor) {
 		return NULL;
 	}
@@ -844,7 +844,7 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code)
 	pkt.payload.fault.pad.data = deconst(zeros);
 	pkt.payload.fault.pad.length = sizeof(zeros);
 
-	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
+	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -869,11 +869,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 {
 	DCERPC_BIND *pbind;
 	uint32_t auth_length;
-	DCERPC_NCACN_PACKET *ppkt;
-	DCERPC_AUTH_CONTEXT *pauth_ctx;
-	
-	
-	ppkt = &pcall->pkt;
+	DCERPC_NCACN_PACKET *ppkt = &pcall->pkt;
 	pbind = &ppkt->payload.bind;
 	
 	if (double_list_get_nodes_num(&pcall->pprocessor->auth_list) >
@@ -882,7 +878,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 			" number of connection reached\n");
 		return FALSE;
 	}
-	pauth_ctx = static_cast<DCERPC_AUTH_CONTEXT *>(lib_buffer_get(g_auth_allocator));
+	auto pauth_ctx = lib_buffer_get<DCERPC_AUTH_CONTEXT>(g_auth_allocator);
 	if (NULL == pauth_ctx) {
 		return FALSE;
 	}
@@ -995,7 +991,7 @@ static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason)
 	pkt.payload.bind_nak.reject_reason = reason;
 	pkt.payload.bind_nak.num_versions = 0;
 
-	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
+	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -1027,7 +1023,6 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	uint32_t context_id;
 	uint32_t if_version;
 	uint32_t extra_flags;
-	BLOB_NODE *pblob_node;
 	DOUBLE_LIST_NODE *pnode;
 	DCERPC_NCACN_PACKET pkt;
 	DCERPC_CONTEXT *pcontext;
@@ -1113,7 +1108,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		pcontext = NULL;
 	} else {
 		/* add this context to the list of available context_ids */
-		pcontext = static_cast<DCERPC_CONTEXT *>(lib_buffer_get(g_context_allocator));
+		pcontext = lib_buffer_get<DCERPC_CONTEXT>(g_context_allocator);
 		if (NULL == pcontext) {
 			return pdu_processor_bind_nak(pcall, 0);
 		}
@@ -1256,8 +1251,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		return pdu_processor_bind_nak(pcall, 0);
 	}
 	pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
-	
-	pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
+	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
 	if (NULL == pblob_node) {
 		pdu_ndr_free_ncacnpkt(&pkt);
 		if (NULL != pcontext) {
@@ -1452,7 +1446,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 			goto ALTER_ACK;
 		}
 		/* add this context to the list of available context_ids */
-		pcontext = static_cast<DCERPC_CONTEXT *>(lib_buffer_get(g_context_allocator));
+		pcontext = lib_buffer_get<DCERPC_CONTEXT>(g_context_allocator);
 		if (NULL == pcontext) {
 			result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
 			reason = DECRPC_BIND_REASON_LOCAL_LIMIT_EXCEEDED;
@@ -1555,7 +1549,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	}
 	pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
 	
-	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
+	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
 	if (NULL == pblob_node) {
 		pdu_ndr_free_ncacnpkt(&pkt);
 		if (NULL != pcontext) {
@@ -1785,7 +1779,7 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	chunk_size -= chunk_size % 16;
 
 	do {
-		auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
+		auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
 		if (NULL == pblob_node) {
 			free(pdata);
 			return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
@@ -1840,7 +1834,6 @@ static uint32_t pdu_processor_apply_async_id()
 	int async_id;
 	DCERPC_CALL *pcall;
 	HTTP_CONTEXT *pcontext;
-	ASYNC_NODE *pasync_node;
 	ASYNC_NODE *pfake_async;
 	NDR_STACK_ROOT *pstack_root;
 	RPC_IN_CHANNEL *pchannel_in;
@@ -1866,7 +1859,7 @@ static uint32_t pdu_processor_apply_async_id()
 		return 0;
 	}
 	pchannel_in = (RPC_IN_CHANNEL*)pcontext->pchannel;
-	pasync_node = static_cast<ASYNC_NODE *>(lib_buffer_get(g_async_allocator));
+	auto pasync_node = lib_buffer_get<ASYNC_NODE>(g_async_allocator);
 	if (NULL == pasync_node) {
 		return 0;
 	}
@@ -2232,7 +2225,7 @@ BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 0;
 	pkt.payload.rts.commands = NULL;
 
-	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
+	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2534,7 +2527,7 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 {
 	DCERPC_NCACN_PACKET pkt;
 
-	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
+	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2576,7 +2569,7 @@ BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 {
 	DCERPC_NCACN_PACKET pkt;
 	
-	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
+	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2622,7 +2615,7 @@ BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 {
 	DCERPC_NCACN_PACKET pkt;
 	
-	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
+	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2663,7 +2656,7 @@ BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
 {
 	DCERPC_NCACN_PACKET pkt;
 	
-	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
+	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2704,7 +2697,7 @@ BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
 {
 	DCERPC_NCACN_PACKET pkt;
 	
-	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
+	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2747,7 +2740,7 @@ BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall)
 {
 	DCERPC_NCACN_PACKET pkt;
 	
-	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
+	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2789,7 +2782,7 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 {
 	DCERPC_NCACN_PACKET pkt;
 	
-	auto pblob_node = static_cast<BLOB_NODE *>(lib_buffer_get(g_bnode_allocator));
+	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2838,7 +2831,6 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	NDR_PULL ndr;
 	uint32_t flags;
 	BOOL b_bigendian;
-	DCERPC_CALL *pcall;
 	uint32_t keep_alive;
 	HTTP_CONTEXT *pcontext;
 	char channel_cookie[64];
@@ -2863,8 +2855,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	}
 	
 	ndr_pull_init(&ndr, (uint8_t *)pbuff, length, flags);
-	
-	pcall = (DCERPC_CALL*)lib_buffer_get(g_call_allocator);
+	auto pcall = lib_buffer_get<DCERPC_CALL>(g_call_allocator);
 	if (NULL == pcall) {
 		return PDU_PROCESSOR_ERROR;
 	}
@@ -3115,7 +3106,6 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	uint32_t flags;
 	BOOL b_bigendian;
 	DATA_BLOB tmp_blob;
-	DCERPC_CALL *pcall;
 	DCERPC_CALL *pcallx;
 	uint32_t alloc_size;
 	DCERPC_REQUEST *prequest;
@@ -3134,7 +3124,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 		flags |= NDR_FLAG_OBJECT_PRESENT;
 	ndr_pull_init(&ndr, (uint8_t *)pbuff, length, flags);
 	
-	pcall = (DCERPC_CALL*)lib_buffer_get(g_call_allocator);
+	auto pcall = lib_buffer_get<DCERPC_CALL>(g_call_allocator);
 	if (NULL == pcall) {
 		return PDU_PROCESSOR_ERROR;
 	}

@@ -149,7 +149,7 @@ BOOL FIFO::enqueue(void *pdata)
 #endif
 	if (cur_size >= max_size)
 		return false;
-	auto node = static_cast<SINGLE_LIST_NODE *>(lib_buffer_get(mbuf_pool));
+	auto node = lib_buffer_get<SINGLE_LIST_NODE>(mbuf_pool);
 	node->pdata = reinterpret_cast<char *>(node) + sizeof(SINGLE_LIST_NODE);
 	memcpy(node->pdata, pdata, data_size);
 	single_list_append_as_tail(&mlist, node);
