@@ -835,7 +835,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 	if (pcontext->total_length > 0x10) {
 		if (0 == strcmp(pcontext->request.method, "RPC_IN_DATA")) {
 			pcontext->channel_type = CHANNEL_TYPE_IN;
-			auto ch = lib_buffer_get<RPC_IN_CHANNEL>(g_inchannel_allocator);
+			auto ch = lib_buffer_get_u<RPC_IN_CHANNEL>(g_inchannel_allocator);
 			pcontext->pchannel = ch;
 			if (NULL == pcontext->pchannel) {
 				http_5xx(pcontext, "Resources exhausted", 503);
@@ -844,7 +844,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 			new(ch) RPC_IN_CHANNEL;
 		} else {
 			pcontext->channel_type = CHANNEL_TYPE_OUT;
-			auto ch = lib_buffer_get<RPC_OUT_CHANNEL>(g_outchannel_allocator);
+			auto ch = lib_buffer_get_u<RPC_OUT_CHANNEL>(g_outchannel_allocator);
 			pcontext->pchannel = ch;
 			if (NULL == pcontext->pchannel) {
 				http_5xx(pcontext, "Resources exhausted", 503);

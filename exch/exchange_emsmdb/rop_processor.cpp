@@ -220,12 +220,14 @@ int rop_processor_create_logon_item(LOGMAP *plogmap,
 		rop_processor_release_logon_item(plogitem);
 		plogmap->p[logon_id] = nullptr;
 	}
-	plogitem = lib_buffer_get<LOGON_ITEM>(g_logitem_allocator);
+	plogitem = lib_buffer_get_u<LOGON_ITEM>(g_logitem_allocator);
 	if (NULL == plogitem) {
 		return -1;
 	}
+	new(plogitem) LOGON_ITEM;
 	plogitem->phash = INT_HASH_TABLE::create(HGROWING_SIZE, sizeof(OBJECT_NODE *));
 	if (NULL == plogitem->phash) {
+		plogitem->~LOGON_ITEM();
 		lib_buffer_put(g_logitem_allocator, plogitem);
 		return -2;
 	}
@@ -234,6 +236,7 @@ int rop_processor_create_logon_item(LOGMAP *plogmap,
 	handle = rop_processor_add_object_handle(plogmap,
 				logon_id, -1, OBJECT_TYPE_LOGON, plogon);
 	if (handle < 0) {
+		plogitem->~LOGON_ITEM();
 		lib_buffer_put(g_logitem_allocator, plogitem);
 		return -3;
 	}

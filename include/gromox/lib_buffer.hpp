@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdlib>
 #include <cstring>
+#include <type_traits>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <pthread.h>
@@ -31,6 +32,11 @@ LIB_BUFFER* lib_buffer_init(size_t item_size, size_t item_num, BOOL is_thread_sa
 extern GX_EXPORT void lib_buffer_free(LIB_BUFFER *);
 extern GX_EXPORT void *lib_buffer_get1(LIB_BUFFER *);
 template<typename T> T *lib_buffer_get(LIB_BUFFER *b)
+{
+	static_assert(std::is_trivially_constructible_v<T> && std::is_trivially_destructible_v<T>);
+	return static_cast<T *>(lib_buffer_get1(b));
+}
+template<typename T> T *lib_buffer_get_u(LIB_BUFFER *b)
 {
 	return static_cast<T *>(lib_buffer_get1(b));
 }
