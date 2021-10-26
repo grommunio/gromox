@@ -19,22 +19,21 @@ struct ENVIRONMENT_CONTEXT {
 static thread_local const char *g_id_key;
 static thread_local const char *g_public_username_key;
 static thread_local ENVIRONMENT_CONTEXT *g_env_key;
-static LIB_BUFFER g_ctx_allocator;
+static alloc_limiter<ENVIRONMENT_CONTEXT> g_ctx_allocator;
 
 void (*exmdb_server_event_proc)(const char *dir,
 	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify);
 
 int exmdb_server_run()
 {
-	g_ctx_allocator = LIB_BUFFER(sizeof(ENVIRONMENT_CONTEXT),
-	                  2 * get_context_num());
+	g_ctx_allocator = alloc_limiter<ENVIRONMENT_CONTEXT>(2 * get_context_num());
 	return 0;
 }
 
 void exmdb_server_build_env(unsigned int flags, const char *dir)
 {
 	common_util_build_tls();
-	auto pctx = g_ctx_allocator->get<ENVIRONMENT_CONTEXT>();
+	auto pctx = g_ctx_allocator.get();
 	pctx->b_local = flags & EM_LOCAL;
 	if (!pctx->b_local)
 		alloc_context_init(&pctx->alloc_ctx);
@@ -52,7 +51,7 @@ void exmdb_server_free_environment()
 	if (!pctx->b_local)
 		alloc_context_free(&pctx->alloc_ctx);
 	g_env_key = nullptr;
-	g_ctx_allocator->put(pctx);
+	g_ctx_allocator.put(pctx);
 }
 
 void exmdb_server_set_remote_id(const char *remote_id)

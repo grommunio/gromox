@@ -97,9 +97,9 @@ static void mjson_enum_build(MJSON_MIME *, void *);
 static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
 	const char *charset, BOOL b_ext, char *buff, int length);
 
-LIB_BUFFER mjson_allocator_init(size_t max_size)
+alloc_limiter<MJSON_MIME> mjson_allocator_init(size_t max_size)
 {
-	return LIB_BUFFER(sizeof(MJSON_MIME), max_size);
+	return alloc_limiter<MJSON_MIME>(max_size);
 }
 
 /*
@@ -107,7 +107,7 @@ LIB_BUFFER mjson_allocator_init(size_t max_size)
  *		pjson [in]			indicate the mjson object
  *		ppool [in]		    indicate the allocator for mime object
  */
-MJSON::MJSON(LIB_BUFFER *p) : ppool(p)
+MJSON::MJSON(alloc_limiter<MJSON_MIME> *p) : ppool(p)
 {
 #ifdef _DEBUG_UMTA
 	if (p == nullptr)
@@ -166,7 +166,8 @@ static void mjson_enum_delete(SIMPLE_TREE_NODE *pnode)
 		return;
 	}
 #endif
-	static_cast<MJSON_MIME *>(pnode->pdata)->ppool->put_raw(pnode->pdata);
+	auto m = static_cast<MJSON_MIME *>(pnode->pdata);
+	m->ppool->put(m);
 }
 
 MJSON::~MJSON()
@@ -835,7 +836,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
     }
 	auto pnode = pjson->tree.get_root();
 	if (NULL == pnode) {
-		auto pmime = pjson->ppool->get<MJSON_MIME>();
+		auto pmime = pjson->ppool->get();
 		pmime->node.pdata = pmime;
 		pmime->ppool = pjson->ppool;
 		pmime->mime_type = MJSON_MIME_NONE;
@@ -866,7 +867,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 				pnode = pmime->node.get_child();
 				if (NULL == pnode) {
 					pnode = &pmime->node;
-					pmime = pjson->ppool->get<MJSON_MIME>();
+					pmime = pjson->ppool->get();
 					pmime->node.pdata = pmime;
 					pmime->ppool = pjson->ppool;
 					pmime->mime_type = MJSON_MIME_NONE;
@@ -883,7 +884,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 					pnode = pmime->node.get_sibling();
 					if (NULL == pnode) {
 						pnode = &pmime->node;
-						pmime = pjson->ppool->get<MJSON_MIME>();
+						pmime = pjson->ppool->get();
 						pmime->node.pdata = pmime;
 						pmime->ppool = pjson->ppool;
 						pmime->mime_type = MJSON_MIME_NONE;

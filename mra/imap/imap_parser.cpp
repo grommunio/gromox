@@ -79,7 +79,9 @@ static pthread_t g_scan_id;
 static gromox::atomic_bool g_notify_stop;
 static std::unique_ptr<IMAP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
-static LIB_BUFFER g_alloc_file, g_alloc_mjson, g_alloc_xarray, g_alloc_dir;
+static LIB_BUFFER g_alloc_file, g_alloc_xarray;
+static alloc_limiter<DIR_NODE> g_alloc_dir;
+static alloc_limiter<MJSON_MIME> g_alloc_mjson;
 static std::shared_ptr<MIME_POOL> g_mime_pool;
 static std::unique_ptr<STR_HASH_TABLE> g_select_hash;
 static std::mutex g_hash_lock, g_list_lock;
@@ -95,7 +97,7 @@ LIB_BUFFER* imap_parser_get_xpool()
 	return &g_alloc_xarray;
 }
 
-LIB_BUFFER* imap_parser_get_dpool()
+alloc_limiter<DIR_NODE> *imap_parser_get_dpool()
 {
 	return &g_alloc_dir;
 }
@@ -235,7 +237,7 @@ int imap_parser_run()
 	if (num < 1000) {
 		num = 1000;
 	}
-	g_alloc_dir = LIB_BUFFER(sizeof(DIR_NODE), num);
+	g_alloc_dir = alloc_limiter<DIR_NODE>(num);
 	num = 4*g_context_num;
 	if (num < 400) {
 		num = 400;
@@ -1739,7 +1741,7 @@ std::shared_ptr<MIME_POOL> imap_parser_get_mpool()
 	return g_mime_pool;
 }
 
-LIB_BUFFER* imap_parser_get_jpool()
+alloc_limiter<MJSON_MIME> *imap_parser_get_jpool()
 {
 	return &g_alloc_mjson;
 }

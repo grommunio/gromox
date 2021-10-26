@@ -15,7 +15,7 @@ using MJSON_MIME_ENUM = void (*)(MJSON_MIME *, void *);
 
 struct MJSON_MIME {
 	SIMPLE_TREE_NODE node;
-	LIB_BUFFER  *ppool;
+	alloc_limiter<MJSON_MIME> *ppool;
 	int			mime_type;
 	char        id[64];
 	char 		ctype[256];
@@ -41,7 +41,7 @@ struct MJSON_MIME {
 
 struct GX_EXPORT MJSON {
 	MJSON() = default;
-	MJSON(LIB_BUFFER *);
+	MJSON(alloc_limiter<MJSON_MIME> *);
 	~MJSON();
 	NOMOVE(MJSON);
 
@@ -62,7 +62,7 @@ struct GX_EXPORT MJSON {
 	MJSON_MIME *get_mime(const char *id);
 
 	SIMPLE_TREE tree{};
-	LIB_BUFFER *ppool = nullptr;
+	alloc_limiter<MJSON_MIME> *ppool = nullptr;
 	unsigned int uid = 0;
 	int message_fd = -1;
 	int read = 0, replied = 0, forwarded = 0, unsent = 0;
@@ -89,4 +89,4 @@ enum {
 	MJSON_MIME_ENTIRE
 };
 
-extern GX_EXPORT LIB_BUFFER mjson_allocator_init(size_t max_size);
+extern GX_EXPORT alloc_limiter<MJSON_MIME> mjson_allocator_init(size_t max_size);

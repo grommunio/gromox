@@ -100,7 +100,9 @@ static int g_block_auth_fail;
 static time_duration g_timeout;
 static unsigned int g_http_debug;
 static thread_local HTTP_CONTEXT *g_context_key;
-static LIB_BUFFER g_file_allocator, g_inchannel_allocator, g_outchannel_allocator;
+static LIB_BUFFER g_file_allocator;
+static alloc_limiter<RPC_IN_CHANNEL> g_inchannel_allocator;
+static alloc_limiter<RPC_OUT_CHANNEL> g_outchannel_allocator;
 static std::unique_ptr<HTTP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static char g_certificate_path[256];
@@ -221,8 +223,8 @@ int http_parser_run()
 		printf("[http_parser]: Failed to allocate HTTP contexts\n");
         return -8;
     }
-	g_inchannel_allocator = LIB_BUFFER(sizeof(RPC_IN_CHANNEL), g_context_num);
-	g_outchannel_allocator = LIB_BUFFER(sizeof(RPC_OUT_CHANNEL), g_context_num);
+	g_inchannel_allocator = alloc_limiter<RPC_IN_CHANNEL>(g_context_num);
+	g_outchannel_allocator = alloc_limiter<RPC_OUT_CHANNEL>(g_context_num);
     return 0;
 }
 
@@ -778,14 +780,14 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 	if (pcontext->total_length > 0x10) {
 		if (0 == strcmp(pcontext->request.method, "RPC_IN_DATA")) {
 			pcontext->channel_type = CHANNEL_TYPE_IN;
-			pcontext->pchannel = g_inchannel_allocator->get<RPC_IN_CHANNEL>();
+			pcontext->pchannel = g_inchannel_allocator->get();
 			if (NULL == pcontext->pchannel) {
 				http_5xx(pcontext, "Resources exhausted", 503);
 				return X_LOOP;
 			}
 		} else {
 			pcontext->channel_type = CHANNEL_TYPE_OUT;
-			pcontext->pchannel = g_outchannel_allocator->get<RPC_OUT_CHANNEL>();
+			pcontext->pchannel = g_outchannel_allocator->get();
 			if (NULL == pcontext->pchannel) {
 				http_5xx(pcontext, "Resources exhausted", 503);
 				return X_LOOP;

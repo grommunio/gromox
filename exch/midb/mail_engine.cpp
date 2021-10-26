@@ -187,7 +187,7 @@ static pthread_t g_scan_tid;
 static int g_cache_interval;          /* maximum living interval in table */
 static char g_org_name[256];
 static std::shared_ptr<MIME_POOL> g_mime_pool;
-static LIB_BUFFER g_alloc_mjson;
+static alloc_limiter<MJSON_MIME> g_alloc_mjson;
 static char g_default_charset[32];
 static char g_default_timezone[64];
 static std::mutex g_hash_lock;

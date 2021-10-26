@@ -56,7 +56,9 @@ static int g_average_handles;
 static gromox::atomic_bool g_notify_stop{true};
 static std::mutex g_hash_lock;
 static std::unordered_map<std::string, uint32_t> g_logon_hash;
-static LIB_BUFFER g_logmap_allocator, g_handle_allocator, g_logitem_allocator;
+static alloc_limiter<LOGMAP> g_logmap_allocator;
+static alloc_limiter<LOGON_ITEM> g_logitem_allocator;
+static alloc_limiter<OBJECT_NODE> g_handle_allocator;
 
 unsigned int emsmdb_max_obh_per_session = 500;
 unsigned int emsmdb_max_cxh_per_user = 100;
@@ -64,7 +66,7 @@ unsigned int emsmdb_max_hoc = 10;
 
 logmap_ptr rop_processor_create_logmap()
 {
-	return logmap_ptr(g_logmap_allocator->get<LOGMAP>());
+	return logmap_ptr(g_logmap_allocator.get());
 }
 
 object_node::object_node(object_node &&o) noexcept :
@@ -132,7 +134,7 @@ static void rop_processor_free_objnode(SIMPLE_TREE_NODE *pnode)
 	OBJECT_NODE *pobjnode;
 
 	pobjnode = (OBJECT_NODE*)pnode->pdata;
-	g_handle_allocator->put(pobjnode);
+	g_handle_allocator.put(pobjnode);
 }
 
 static bool rop_processor_release_objnode(
@@ -167,12 +169,12 @@ void logmap_delete::operator()(LOGON_ITEM *plogitem) const
 	if (proot == nullptr)
 		return;
 	if (rop_processor_release_objnode(plogitem, static_cast<OBJECT_NODE *>(proot->pdata)))
-		g_logitem_allocator->put(plogitem);
+		g_logitem_allocator.put(plogitem);
 }
 
 void logmap_delete::operator()(LOGMAP *plogmap) const
 {
-	g_logmap_allocator->put(plogmap);
+	g_logmap_allocator.put(plogmap);
 }
 
 int rop_processor_create_logon_item(LOGMAP *plogmap,
@@ -180,7 +182,7 @@ int rop_processor_create_logon_item(LOGMAP *plogmap,
 {
 	/* MS-OXCROPS 3.1.4.2 */
 	plogmap->p[logon_id].reset();
-	logon_item_ptr plogitem(g_logitem_allocator->get<LOGON_ITEM>());
+	logon_item_ptr plogitem(g_logitem_allocator.get());
 	if (NULL == plogitem) {
 		return -1;
 	}
@@ -227,24 +229,24 @@ int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	} else {
 		return -6;
 	}
-	auto pobjnode = g_handle_allocator->get<OBJECT_NODE>();
+	auto pobjnode = g_handle_allocator.get();
 	if (NULL == pobjnode) {
 		return -7;
 	}
 	if (!emsmdb_interface_alloc_handle_number(&pobjnode->handle)) {
-		g_handle_allocator->put(pobjnode);
+		g_handle_allocator.put(pobjnode);
 		return -8;
 	}
 	*pobjnode = std::move(in_object);
 	try {
 		auto xp = plogitem->phash.emplace(pobjnode->handle, pobjnode);
 		if (!xp.second) {
-			g_handle_allocator->put(pobjnode);
+			g_handle_allocator.put(pobjnode);
 			return -8;
 		}
 	} catch (const std::bad_alloc &) {
 		fprintf(stderr, "E-1975: ENOMEM\n");
-		g_handle_allocator->put(pobjnode);
+		g_handle_allocator.put(pobjnode);
 		return -8;
 	}
 	if (parent == nullptr)
@@ -351,11 +353,9 @@ int rop_processor_run()
 	int context_num;
 	
 	context_num = get_context_num();
-	g_logmap_allocator = LIB_BUFFER(256 * sizeof(LOGON_ITEM *),
-	                     context_num * emsmdb_max_hoc);
-	g_logitem_allocator = LIB_BUFFER(sizeof(LOGON_ITEM), 256 * context_num);
-	g_handle_allocator = LIB_BUFFER(sizeof(OBJECT_NODE),
-	                     g_average_handles * context_num);
+	g_logmap_allocator = alloc_limiter<LOGMAP>(context_num * emsmdb_max_hoc);
+	g_logitem_allocator = alloc_limiter<LOGON_ITEM>(256 * context_num);
+	g_handle_allocator = alloc_limiter<OBJECT_NODE>(g_average_handles * context_num);
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, emsrop_scanwork, nullptr);
 	if (ret != 0) {

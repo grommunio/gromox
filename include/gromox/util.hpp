@@ -49,6 +49,14 @@ struct GX_EXPORT LIB_BUFFER {
 	size_t item_size = 0, max_items = 0;
 };
 
+template<typename T> struct GX_EXPORT alloc_limiter : private LIB_BUFFER {
+	alloc_limiter() = default;
+	alloc_limiter(size_t max) : LIB_BUFFER(sizeof(T), max) {}
+	inline T *get() { return LIB_BUFFER::get<T>(); }
+	inline void put(T *x) { LIB_BUFFER::put(x); }
+	alloc_limiter<T> *operator->() { return this; }
+};
+
 BOOL utf8_check(const char *str);
 extern GX_EXPORT bool utf8_count_codepoints(const char *str, size_t *numpoints);
 extern GX_EXPORT bool utf16_count_codepoints(const char *str, size_t *numpoints);

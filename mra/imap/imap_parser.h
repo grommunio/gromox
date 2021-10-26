@@ -25,6 +25,9 @@ means mem_file is not initialized. */
 #define MIDB_NO_SERVER           1
 #define MIDB_RESULT_OK           0
 
+struct DIR_NODE;
+struct MJSON_MIME;
+
 namespace gromox {
 using time_duration = std::chrono::steady_clock::duration;
 using time_point = std::chrono::time_point<std::chrono::system_clock>;
@@ -114,9 +117,9 @@ void imap_parser_safe_write(IMAP_CONTEXT *pcontext, const void *pbuff, size_t co
 extern LIB_BUFFER *imap_parser_get_allocator();
 extern std::shared_ptr<MIME_POOL> imap_parser_get_mpool();
 /* get allocator for mjson mime */
-extern LIB_BUFFER *imap_parser_get_jpool();
+extern alloc_limiter<MJSON_MIME> *imap_parser_get_jpool();
 extern LIB_BUFFER *imap_parser_get_xpool();
-extern LIB_BUFFER *imap_parser_get_dpool();
+extern alloc_limiter<DIR_NODE> *imap_parser_get_dpool();
 extern int imap_parser_get_sequence_ID();
 extern void imap_parser_log_info(IMAP_CONTEXT *pcontext, int level, const char *format, ...);
 

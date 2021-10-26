@@ -125,9 +125,12 @@ static bool g_ign_loaderr;
 static bool support_negotiate = false; /* possibly nonfunctional */
 static std::unique_ptr<INT_HASH_TABLE> g_async_hash;
 static std::list<PDU_PROCESSOR *> g_processor_list; /* ptrs owned by VIRTUAL_CONNECTION */
-static LIB_BUFFER g_call_allocator, g_auth_allocator,
-	g_async_allocator, g_bnode_allocator, g_stack_allocator,
-	g_context_allocator;
+static alloc_limiter<DCERPC_CALL> g_call_allocator;
+static alloc_limiter<DCERPC_AUTH_CONTEXT> g_auth_allocator;
+static alloc_limiter<ASYNC_NODE> g_async_allocator;
+static alloc_limiter<BLOB_NODE> g_bnode_allocator;
+static alloc_limiter<NDR_STACK_ROOT> g_stack_allocator;
+static alloc_limiter<DCERPC_CONTEXT> g_context_allocator;
 static const char *const *g_plugin_names;
 static const SYNTAX_ID g_transfer_syntax_ndr = 
 	/* {8a885d04-1ceb-11c9-9fe8-08002b104860} */
@@ -155,7 +158,7 @@ dcerpc_call::dcerpc_call() :
 
 static NDR_STACK_ROOT* pdu_processor_new_stack_root()
 {
-	auto pstack_root = g_stack_allocator->get<NDR_STACK_ROOT>();
+	auto pstack_root = g_stack_allocator.get();
 	if (NULL == pstack_root) {
 		return NULL;
 	}
@@ -230,14 +233,13 @@ int pdu_processor_run()
 {
 	int context_num;
 	
-	g_call_allocator = LIB_BUFFER(sizeof(DCERPC_CALL),
-	                   g_connection_num * g_connection_ratio);
+	g_call_allocator = alloc_limiter<DCERPC_CALL>(g_connection_num * g_connection_ratio);
 	context_num = g_connection_num*g_connection_ratio;
-	g_context_allocator = LIB_BUFFER(sizeof(DCERPC_CONTEXT), context_num);
-	g_auth_allocator = LIB_BUFFER(sizeof(DCERPC_AUTH_CONTEXT), context_num);
-	g_bnode_allocator = LIB_BUFFER(sizeof(BLOB_NODE), g_connection_num * 32);
-	g_async_allocator = LIB_BUFFER(sizeof(ASYNC_NODE), context_num * 2);
-	g_stack_allocator = LIB_BUFFER(sizeof(NDR_STACK_ROOT), context_num * 4);
+	g_context_allocator = alloc_limiter<DCERPC_CONTEXT>(context_num);
+	g_auth_allocator = alloc_limiter<DCERPC_AUTH_CONTEXT>(context_num);
+	g_bnode_allocator = alloc_limiter<BLOB_NODE>(g_connection_num * 32);
+	g_async_allocator = alloc_limiter<ASYNC_NODE>(context_num * 2);
+	g_stack_allocator = alloc_limiter<NDR_STACK_ROOT>(context_num * 4);
 	g_async_hash = INT_HASH_TABLE::create(context_num * 2, sizeof(ASYNC_NODE *));
 	if (NULL == g_async_hash) {
 		return -8;
@@ -738,7 +740,7 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code)
 	pkt.payload.fault.pad.data = deconst(zeros);
 	pkt.payload.fault.pad.length = sizeof(zeros);
 
-	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
+	auto pblob_node = g_bnode_allocator->get();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -771,7 +773,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 			" number of connection reached\n");
 		return FALSE;
 	}
-	auto pauth_ctx = g_auth_allocator->get<DCERPC_AUTH_CONTEXT>();
+	auto pauth_ctx = g_auth_allocator->get();
 	if (NULL == pauth_ctx) {
 		return FALSE;
 	}
@@ -881,7 +883,7 @@ static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason)
 	pkt.payload.bind_nak.reject_reason = reason;
 	pkt.payload.bind_nak.num_versions = 0;
 
-	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
+	auto pblob_node = g_bnode_allocator->get();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -986,7 +988,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		pcontext = NULL;
 	} else {
 		/* add this context to the list of available context_ids */
-		pcontext = g_context_allocator->get<DCERPC_CONTEXT>();
+		pcontext = g_context_allocator->get();
 		if (NULL == pcontext) {
 			return pdu_processor_bind_nak(pcall, 0);
 		}
@@ -1114,7 +1116,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		return pdu_processor_bind_nak(pcall, 0);
 	}
 	pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
-	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
+	auto pblob_node = g_bnode_allocator->get();
 	if (NULL == pblob_node) {
 		pdu_ndr_free_ncacnpkt(&pkt);
 		if (NULL != pcontext) {
@@ -1298,7 +1300,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 			goto ALTER_ACK;
 		}
 		/* add this context to the list of available context_ids */
-		pcontext = g_context_allocator->get<DCERPC_CONTEXT>();
+		pcontext = g_context_allocator->get();
 		if (NULL == pcontext) {
 			result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
 			reason = DECRPC_BIND_REASON_LOCAL_LIMIT_EXCEEDED;
@@ -1398,7 +1400,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	}
 	pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
 	
-	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
+	auto pblob_node = g_bnode_allocator->get();
 	if (NULL == pblob_node) {
 		pdu_ndr_free_ncacnpkt(&pkt);
 		if (NULL != pcontext) {
@@ -1622,7 +1624,7 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 
 	/* Fragmentation into Transport Service Data Units (TSDU) */
 	do {
-		auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
+		auto pblob_node = g_bnode_allocator->get();
 		if (NULL == pblob_node) {
 			free(pdata);
 			return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
@@ -1700,7 +1702,7 @@ static uint32_t pdu_processor_apply_async_id()
 		return 0;
 	}
 	pchannel_in = (RPC_IN_CHANNEL*)pcontext->pchannel;
-	auto pasync_node = g_async_allocator->get<ASYNC_NODE>();
+	auto pasync_node = g_async_allocator->get();
 	if (NULL == pasync_node) {
 		return 0;
 	}
@@ -2055,7 +2057,7 @@ BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 0;
 	pkt.payload.rts.commands = NULL;
 
-	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
+	auto pblob_node = g_bnode_allocator->get();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2341,7 +2343,7 @@ static BOOL pdu_processor_retrieve_flowcontrolack_withdestination(
 
 static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 {
-	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
+	auto pblob_node = g_bnode_allocator.get();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2379,7 +2381,7 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 
 BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 {
-	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
+	auto pblob_node = g_bnode_allocator.get();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2421,7 +2423,7 @@ BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 
 static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 {
-	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
+	auto pblob_node = g_bnode_allocator.get();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2459,7 +2461,7 @@ static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 
 BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
 {
-	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
+	auto pblob_node = g_bnode_allocator.get();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2496,7 +2498,7 @@ BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
 
 BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
 {
-	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
+	auto pblob_node = g_bnode_allocator.get();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2535,7 +2537,7 @@ BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
 
 BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall)
 {
-	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
+	auto pblob_node = g_bnode_allocator.get();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2573,7 +2575,7 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 	DCERPC_CALL *pcall, uint32_t bytes_received,
 	uint32_t available_window, const char *channel_cookie)
 {
-	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
+	auto pblob_node = g_bnode_allocator.get();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2645,7 +2647,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	}
 	
 	ndr_pull_init(&ndr, (uint8_t *)pbuff, length, flags);
-	auto pcall = g_call_allocator->get<DCERPC_CALL>();
+	auto pcall = g_call_allocator->get();
 	if (NULL == pcall) {
 		return PDU_PROCESSOR_ERROR;
 	}
@@ -2903,7 +2905,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 		flags |= NDR_FLAG_OBJECT_PRESENT;
 	ndr_pull_init(&ndr, (uint8_t *)pbuff, length, flags);
 	
-	auto pcall = g_call_allocator->get<DCERPC_CALL>();
+	auto pcall = g_call_allocator->get();
 	if (NULL == pcall) {
 		return PDU_PROCESSOR_ERROR;
 	}

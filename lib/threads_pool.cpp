@@ -32,7 +32,7 @@ struct THR_DATA {
 static pthread_t g_scan_id;
 static gromox::atomic_bool g_notify_stop{true};
 static unsigned int g_threads_pool_min_num, g_threads_pool_max_num, g_threads_pool_cur_thr_num;
-static LIB_BUFFER g_threads_data_buff;
+static alloc_limiter<THR_DATA> g_threads_data_buff;
 static DOUBLE_LIST g_threads_data_list;
 static THREADS_EVENT_PROC g_threads_event_proc;
 static std::mutex g_threads_pool_data_lock, g_threads_pool_cond_mutex;
@@ -70,7 +70,7 @@ int threads_pool_run()
 	pthread_attr_t attr;
 	
 	/* g_threads_data_buff is protected by g_threads_pool_data_lock */
-	g_threads_data_buff = LIB_BUFFER(sizeof(THR_DATA), g_threads_pool_max_num);
+	g_threads_data_buff = alloc_limiter<THR_DATA>(g_threads_pool_max_num);
 	/* list is also protected by g_threads_pool_data_lock */
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, tpol_scanwork, nullptr);
@@ -82,7 +82,7 @@ int threads_pool_run()
 	pthread_attr_init(&attr);
 	created_thr_num = 0;
 	for (size_t i = 0; i < g_threads_pool_min_num; ++i) {
-		auto pdata = g_threads_data_buff->get<THR_DATA>();
+		auto pdata = g_threads_data_buff.get();
 		pdata->node.pdata = pdata;
 		pdata->id = (pthread_t)-1;
 		pdata->notify_stop = FALSE;
@@ -181,7 +181,7 @@ static void *tpol_thrwork(void *pparam)
 				    (gpr = contexts_pool_get_param(CUR_VALID_CONTEXTS)) >= 0 &&
 				    g_threads_pool_cur_thr_num * contexts_per_threads > static_cast<size_t>(gpr)) {
 					double_list_remove(&g_threads_data_list, &pdata->node);
-					g_threads_data_buff->put(pdata);
+					g_threads_data_buff.put(pdata);
 					g_threads_pool_cur_thr_num --;
 					tpd_hold.unlock();
 					if (NULL != g_threads_event_proc) {
@@ -233,7 +233,7 @@ static void *tpol_thrwork(void *pparam)
 	
 	std::unique_lock tpd_hold(g_threads_pool_data_lock);
 	double_list_remove(&g_threads_data_list, &pdata->node);
-	g_threads_data_buff->put(pdata);
+	g_threads_data_buff.put(pdata);
 	g_threads_pool_cur_thr_num --;
 	tpd_hold.unlock();
 	if (NULL != g_threads_event_proc) {
@@ -258,7 +258,6 @@ void threads_pool_wakeup_all_threads()
 
 static void *tpol_scanwork(void *pparam)
 {
-	THR_DATA *pdata;
 	int not_empty_times;
 	pthread_attr_t attr;
 	
@@ -274,7 +273,7 @@ static void *tpol_scanwork(void *pparam)
 			if (g_threads_pool_cur_thr_num >= g_threads_pool_max_num) {
 				continue;
 			}
-			pdata = g_threads_data_buff->get<THR_DATA>();
+			auto pdata = g_threads_data_buff.get();
 			if (NULL != pdata) {
 				pdata->node.pdata = pdata;
 				pdata->id = (pthread_t)-1;
@@ -284,7 +283,7 @@ static void *tpol_scanwork(void *pparam)
 				auto ret = pthread_create(&pdata->id, &attr, tpol_thrwork, pdata);
 				if (ret != 0) {
 					debug_info("[threads_pool]: W-1445: failed to increase pool threads: %s\n", strerror(ret));
-					g_threads_data_buff->put(pdata);
+					g_threads_data_buff.put(pdata);
 				} else {
 					pthread_setname_np(pdata->id, "ep_pool/+");
 					double_list_append_as_tail(
