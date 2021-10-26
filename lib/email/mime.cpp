@@ -1242,7 +1242,6 @@ static BOOL mime_read_mutlipart_content(MIME *pmime,
 		stream_write(&tmp_stream, "\r\n", 2);
 		pmime_child = (MIME*)pnode->pdata;
 		if (FALSE == mime_serialize(pmime_child, &tmp_stream)) {
-			stream_free(&tmp_stream);
 			return FALSE;
 		}
 		pnode = simple_tree_node_get_sibling(pnode);
@@ -1275,7 +1274,6 @@ static BOOL mime_read_mutlipart_content(MIME *pmime,
 		offset += buff_size;
 		buff_size = STREAM_BLOCK_SIZE;
 	}
-	stream_free(&tmp_stream);
 	*plength = offset;
 	return TRUE;
 }
@@ -1452,7 +1450,6 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 		auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
 		stream_init(&tmp_stream, pallocator);
 		if (!reinterpret_cast<MAIL *>(pmime->content_begin)->serialize(&tmp_stream)) {
-			stream_free(&tmp_stream);
 			*plength = 0;
 			return FALSE;
 		}
@@ -1463,7 +1460,6 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 			offset += buff_size;
 			buff_size = STREAM_BLOCK_SIZE;
 		}
-		stream_free(&tmp_stream);
 		*plength = offset;
 		return TRUE;
 	}

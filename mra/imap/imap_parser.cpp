@@ -1695,7 +1695,6 @@ static void imap_parser_context_clear(IMAP_CONTEXT *pcontext)
 IMAP_CONTEXT::~IMAP_CONTEXT()
 {
 	auto pcontext = this;
-	stream_free(&pcontext->stream);
 	mem_file_free(&pcontext->f_flags);
 	if (NULL != pcontext->connection.ssl) {
 		SSL_shutdown(pcontext->connection.ssl);

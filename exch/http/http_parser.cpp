@@ -385,7 +385,6 @@ static int http_parser_reconstruct_stream(STREAM &stream_src)
 			pbuff1 = stream_getbuffer_for_writing(pstream_dst,
 			         reinterpret_cast<unsigned int *>(&size1));
 			if (NULL == pbuff1) {
-				stream_free(pstream_dst);
 				return -1;
 			}
 			size1_used = size - size_copied;
@@ -2067,8 +2066,6 @@ static void http_parser_request_clear(HTTP_REQUEST *prequest)
 HTTP_CONTEXT::~HTTP_CONTEXT()
 {
 	auto pcontext = this;
-	stream_free(&pcontext->stream_in);
-	stream_free(&pcontext->stream_out);
 	mem_file_free(&pcontext->request.f_request_uri);
 	mem_file_free(&pcontext->request.f_host);
 	mem_file_free(&pcontext->request.f_user_agent);

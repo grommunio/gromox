@@ -40,6 +40,7 @@ struct STREAM {
 	STREAM() = default;
 	STREAM(STREAM &&) = delete;
 	STREAM &operator=(STREAM &&);
+	~STREAM();
 
 	DOUBLE_LIST_NODE *pnode_rd = nullptr, *pnode_wr = nullptr;
 	int line_result = 0, eom_result = 0;

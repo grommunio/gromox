@@ -6494,13 +6494,11 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
 		stream_init(&tmp_stream, pallocator);
 		if (!imail.serialize(&tmp_stream)) {
-			stream_free(&tmp_stream);
 			return FALSE;
 		}
 		imail.clear();
 		std::unique_ptr<char[], stdlib_delete> pbuff(static_cast<char *>(malloc(mail_len + 128)));
 		if (NULL == pbuff) {
-			stream_free(&tmp_stream);
 			return FALSE;
 		}
 				
@@ -6511,7 +6509,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 			offset += size;
 			size = STREAM_BLOCK_SIZE;
 		}
-		stream_free(&tmp_stream);
+		stream_clear(&tmp_stream);
 		return mime_write_content(pmime, pbuff.get(), mail_len, MIME_ENCODING_NONE);
 	}
 	pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_DATA_BIN);

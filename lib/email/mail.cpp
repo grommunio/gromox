@@ -889,13 +889,11 @@ BOOL MAIL::dup(MAIL *pmail_dst)
 	auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
 	stream_init(&tmp_stream, pallocator);
 	if (!pmail_src->serialize(&tmp_stream)) {
-		stream_free(&tmp_stream);
 		return FALSE;
 	}
 	auto pbuff = static_cast<char *>(malloc(strange_roundup(mail_len - 1, 64 * 1024)));
 	if (NULL == pbuff) {
 		debug_info("[mail]: Failed to allocate memory in mail_dup");
-		stream_free(&tmp_stream);
 		return FALSE;
 	}
 			
@@ -906,7 +904,7 @@ BOOL MAIL::dup(MAIL *pmail_dst)
 		offset += size;
 		size = STREAM_BLOCK_SIZE;
 	}
-	stream_free(&tmp_stream);
+	stream_clear(&tmp_stream);
 	if (!pmail_dst->retrieve(pbuff, offset)) {
 		free(pbuff);
 		return FALSE;
@@ -949,13 +947,11 @@ BOOL MAIL::transfer_dot(MAIL *pmail_dst)
 	auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
 	stream_init(&tmp_stream, pallocator);
 	if (!pmail_src->serialize(&tmp_stream)) {
-		stream_free(&tmp_stream);
 		return FALSE;
 	}
 	pbuff = static_cast<char *>(malloc(((mail_len - 1) / (64 * 1024) + 1) * 64 * 1024));
 	if (NULL == pbuff) {
 		debug_info("[mail]: Failed to allocate memory in mail_dup");
-		stream_free(&tmp_stream);
 		return FALSE;
 	}
 	
@@ -975,7 +971,7 @@ BOOL MAIL::transfer_dot(MAIL *pmail_dst)
 		size = STREAM_BLOCK_SIZE;
 	}
 	
-	stream_free(&tmp_stream);
+	stream_clear(&tmp_stream);
 	if (!pmail_dst->retrieve(pbuff,  offset)) {
 		free(pbuff);
 		return FALSE;

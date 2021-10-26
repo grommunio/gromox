@@ -2569,13 +2569,11 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 	auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
 	stream_init(&tmp_stream, pallocator);
 	if (!imail.serialize(&tmp_stream)) {
-		stream_free(&tmp_stream);
 		return FALSE;
 	}
 	imail.clear();
 	peml_bin->pv = common_util_alloc(mail_len + 128);
 	if (peml_bin->pv == nullptr) {
-		stream_free(&tmp_stream);
 		return FALSE;
 	}
 
@@ -2587,7 +2585,6 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 		peml_bin->cb += size;
 		size = STREAM_BLOCK_SIZE;
 	}
-	stream_free(&tmp_stream);
 	return TRUE;
 }
 

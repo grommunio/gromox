@@ -996,11 +996,6 @@ SMTP_CONTEXT::~SMTP_CONTEXT()
 	mem_file_free(&pcontext->mail.head.f_content_type);
 	mem_file_free(&pcontext->mail.head.f_others);
 	mem_file_free(&pcontext->mail.body.f_mail_parts);
-	stream_free(&pcontext->stream);
-	if (TRUE == pcontext->is_splitted) {
-		stream_free(&pcontext->stream_second);
-		pcontext->is_splitted = FALSE;
-	}
 	if (NULL != pcontext->connection.ssl) {
 		SSL_shutdown(pcontext->connection.ssl);
 		SSL_free(pcontext->connection.ssl);

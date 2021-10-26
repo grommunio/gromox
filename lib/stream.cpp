@@ -233,6 +233,8 @@ void stream_clear(STREAM *pstream)
 	}
 #endif
 	phead = double_list_get_head(&pstream->list);
+	if (phead == nullptr)
+		goto CLEAR_RETRUN;
 	pnode = double_list_get_tail(&pstream->list);
 	if (1 == double_list_get_nodes_num(&pstream->list)) {
 		goto CLEAR_RETRUN;
@@ -261,6 +263,12 @@ void stream_clear(STREAM *pstream)
 	pstream->pnode_rd			  = phead;
 }
 
+STREAM::~STREAM()
+{
+	if (!is_clone)
+		stream_free(this);
+}
+
 void stream_free(STREAM *pstream)
 {
 	DOUBLE_LIST_NODE *phead;
@@ -271,7 +279,8 @@ void stream_free(STREAM *pstream)
 #endif
 	stream_clear(pstream);
 	phead = double_list_pop_front(&pstream->list);
-	lib_buffer_put(pstream->allocator, phead);
+	if (phead != nullptr)
+		lib_buffer_put(pstream->allocator, phead);
 	pstream->allocator = NULL;
 	double_list_free(&pstream->list);
 }

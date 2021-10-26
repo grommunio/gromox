@@ -366,7 +366,6 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 			stream_forward_writing_ptr(&stream, STREAM_BLOCK_SIZE);
 			pbuff2 = stream_getbuffer_for_writing(&stream, &size2);
 			if (NULL == pbuff2) {
-				stream_free(&stream);
 				smtp_parser_log_info(pcontext, LV_NOTICE, "out of memory");
 				return 416 | DISPATCH_SHOULD_CLOSE;
 			}

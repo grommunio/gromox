@@ -534,13 +534,11 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 		void *pbuff = stream_getbuffer_for_writing(&temp_stream, &size);
 		if (NULL == pbuff) {
 			pop3_parser_log_info(pcontext, LV_WARN, "out of memory");
-			stream_free(&temp_stream);
 			return POP3_RETRIEVE_ERROR;
 		}
 		read_len = read(pcontext->message_fd, pbuff, size);
 		if (read_len < 0) {
 			pop3_parser_log_info(pcontext, LV_WARN, "failed to read message file");
-			stream_free(&temp_stream);
 			return POP3_RETRIEVE_ERROR;
 		} else if (0 == read_len) {
 			close(pcontext->message_fd);
@@ -601,7 +599,7 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 		}
 		last_result = copy_result;
 	}
-	stream_free(&temp_stream);
+	stream_clear(&temp_stream);
 	tmp_len = STREAM_BLOCK_SIZE;
 	pcontext->write_buff = static_cast<char *>(stream_getbuffer_for_reading(
 	                       &pcontext->stream, &tmp_len));
@@ -773,7 +771,6 @@ POP3_CONTEXT::~POP3_CONTEXT()
 {
 	auto pcontext = this;
 	pcontext->array.clear();
-    stream_free(&pcontext->stream);
 	if (NULL != pcontext->connection.ssl) {
 		SSL_shutdown(pcontext->connection.ssl);
 		SSL_free(pcontext->connection.ssl);
