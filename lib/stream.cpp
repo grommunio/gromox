@@ -55,7 +55,32 @@ void stream_init(STREAM *pstream, LIB_BUFFER *palloc)
 	pstream->pnode_rd = pstream->pnode_wr;
 }
 
+STREAM &STREAM::operator=(STREAM &&o)
+{
+	stream_free(this);
+	xcopy(o);
+	o.allocator = nullptr;
+	double_list_init(&o.list);
+	double_list_free(&o.list);
+	return *this;
+}
 
+void STREAM::xcopy(const STREAM &o)
+{
+	pnode_rd = o.pnode_rd;
+	pnode_wr = o.pnode_wr;
+	line_result = o.line_result;
+	eom_result = o.eom_result;
+	rd_block_pos = o.rd_block_pos;
+	wr_block_pos = o.wr_block_pos;
+	rd_total_pos = o.rd_total_pos;
+	wr_total_pos = o.wr_total_pos;
+	last_eom_parse = o.last_eom_parse;
+	block_line_parse = o.block_line_parse;
+	block_line_pos = o.block_line_pos;
+	allocator = o.allocator;
+	list = o.list;
+}
 
 /*
  *	  check if there's a new line in the stream after the read pointer

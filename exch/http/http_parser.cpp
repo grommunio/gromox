@@ -362,7 +362,6 @@ static int http_parser_reconstruct_stream(STREAM &stream_src)
 	auto pbuff = stream_getbuffer_for_reading(pstream_src,
 	             reinterpret_cast<unsigned int *>(&size));
 	if (NULL == pbuff) {
-		stream_free(&stream_src);
 		stream_src = std::move(stream_dst);
 		return 0;
 	}
@@ -398,7 +397,6 @@ static int http_parser_reconstruct_stream(STREAM &stream_src)
 	} while (NULL != pbuff);
 	stream_forward_writing_ptr(pstream_dst, size1_used);
 	auto tl = stream_get_total_length(pstream_dst);
-	stream_free(&stream_src);
 	stream_src = std::move(stream_dst);
 	return tl;
 }

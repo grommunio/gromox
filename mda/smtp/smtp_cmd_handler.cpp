@@ -377,8 +377,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 		pbuff = stream_getbuffer_for_reading(&pcontext->stream, &size);
 	} while (NULL != pbuff);
 	stream_forward_writing_ptr(&stream, size2_used);
-	stream_free(&pcontext->stream);
-	pcontext->stream = stream;
+	pcontext->stream = std::move(stream);
 	if (NULL != pcontext->connection.ssl) {
 		SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);
 	} else {

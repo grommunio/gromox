@@ -37,6 +37,9 @@ enum {
 };
 
 struct STREAM {
+	STREAM &operator=(const STREAM &) = default;
+	STREAM &operator=(STREAM &&);
+
 	DOUBLE_LIST_NODE *pnode_rd = nullptr, *pnode_wr = nullptr;
 	int line_result = 0, eom_result = 0;
 	size_t rd_block_pos = 0, wr_block_pos = 0;
@@ -45,6 +48,9 @@ struct STREAM {
 	size_t block_line_parse = 0, block_line_pos = 0;
 	LIB_BUFFER *allocator = nullptr;
 	DOUBLE_LIST list{};
+
+	protected:
+	void xcopy(const STREAM &);
 };
 
 void stream_init(STREAM *pstream, LIB_BUFFER *palloc);

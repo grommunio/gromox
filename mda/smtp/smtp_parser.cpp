@@ -251,8 +251,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 							pcontext->flusher.flush_ID);
 			smtp_parser_reset_context_session(pcontext);
 			if (TRUE == pcontext->is_splitted) {
-				stream_free(&pcontext->stream);
-				pcontext->stream = pcontext->stream_second;
+				pcontext->stream = std::move(pcontext->stream_second);
 				pcontext->is_splitted = FALSE;
 				goto CMD_PROCESS;
 			}
