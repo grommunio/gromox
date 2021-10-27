@@ -5,6 +5,7 @@
 #include "mod_fastcgi.h"
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
+#include <gromox/generic_connection.hpp>
 #include <gromox/hpm_common.h>
 #include "pdu_processor.h"
 #include <gromox/stream.hpp>
@@ -51,7 +52,7 @@ struct HTTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	~HTTP_CONTEXT();
 	NOMOVE(HTTP_CONTEXT);
 
-	CONNECTION connection{};
+	GENERIC_CONNECTION connection;
 	HTTP_REQUEST request{};
 	uint64_t total_length = 0, bytes_rw = 0;
 	unsigned int sched_stat = 0;

@@ -3,6 +3,7 @@
 #include <deque>
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
+#include <gromox/generic_connection.hpp>
 #include <gromox/msg_unit.hpp>
 #include <gromox/single_list.hpp>
 #include <gromox/stream.hpp>
@@ -25,22 +26,12 @@ enum {
 	POP3_RETRIEVE_ERROR
 };
 
-struct CONNECTION {
-	char client_ip[40]; /* client ip address string */
-    int            client_port;        /* value of client port */
-	char server_ip[40]; /* server ip address */
-    int            server_port;        /* value of server port */
-    int            sockd;              /* context's socket file description */
-	SSL            *ssl;
-    struct timeval last_timestamp;     /* last time when system got data from */
-};
-
 struct POP3_CONTEXT final : public SCHEDULE_CONTEXT {
 	POP3_CONTEXT();
 	~POP3_CONTEXT();
 	NOMOVE(POP3_CONTEXT);
 
-	CONNECTION connection{};
+	GENERIC_CONNECTION connection;
 	char read_buffer[1024]{};
 	size_t read_offset{};
 	char *write_buff = nullptr;

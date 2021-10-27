@@ -2004,7 +2004,7 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
     if (NULL == pcontext) {
         return;
     }
-    memset(&pcontext->connection, 0, sizeof(CONNECTION));
+	pcontext->connection = decltype(pcontext->connection){};
     pcontext->connection.sockd = -1;
 	pcontext->sched_stat = 0;
 	

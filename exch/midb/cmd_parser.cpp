@@ -62,7 +62,7 @@ void cmd_parser_free()
 	double_list_free(&g_connection_list1);
 }
 
-CONNECTION* cmd_parser_get_connection()
+MIDB_CONNECTION *cmd_parser_get_connection()
 {
 	std::unique_lock chold(g_connection_lock);
 	if (double_list_get_nodes_num(&g_connection_list) + 1 +
@@ -70,13 +70,13 @@ CONNECTION* cmd_parser_get_connection()
 		return NULL;
 	}
 	chold.unlock();
-	auto pconnection = me_alloc<CONNECTION>();
+	auto pconnection = me_alloc<MIDB_CONNECTION>();
 	pconnection->node.pdata = pconnection;
 
 	return pconnection;
 }
 
-void cmd_parser_put_connection(CONNECTION *pconnection)
+void cmd_parser_put_connection(MIDB_CONNECTION *pconnection)
 {	
 	std::unique_lock chold(g_connection_lock);
 	double_list_append_as_tail(&g_connection_list1, &pconnection->node);
@@ -125,14 +125,14 @@ int cmd_parser_run()
 void cmd_parser_stop()
 {
 	DOUBLE_LIST_NODE *pnode;
-	CONNECTION *pconnection;
+	MIDB_CONNECTION *pconnection = nullptr;
 
 	g_notify_stop = true;
 	g_waken_cond.notify_all();
 	std::unique_lock chold(g_connection_lock);
 	for (pnode=double_list_get_head(&g_connection_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_connection_list, pnode)) {
-		pconnection = (CONNECTION*)pnode->pdata;
+		pconnection = static_cast<MIDB_CONNECTION *>(pnode->pdata);
 		if (TRUE == pconnection->is_selecting) {
 			pthread_kill(pconnection->thr_id, SIGALRM);
 		} else {
@@ -144,7 +144,7 @@ void cmd_parser_stop()
 	for (size_t i = 0; i < g_threads_num; ++i)
 		pthread_join(g_thread_ids[i], NULL);
 	while ((pnode = double_list_pop_front(&g_connection_list)) != nullptr) {
-		pconnection = (CONNECTION*)pnode->pdata;
+		pconnection = static_cast<MIDB_CONNECTION *>(pnode->pdata);
 		if (-1 != pconnection->sockd) {
 			close(pconnection->sockd);
 		}
@@ -152,7 +152,7 @@ void cmd_parser_stop()
 	}
 
 	while ((pnode = double_list_pop_front(&g_connection_list1)) != nullptr) {
-		pconnection = (CONNECTION*)pnode->pdata;
+		pconnection = static_cast<MIDB_CONNECTION *>(pnode->pdata);
 		close(pconnection->sockd);
 		free(pconnection);
 	}
@@ -199,7 +199,7 @@ void cmd_write(int fd, const void *vbuf, size_t z)
 	cmd_write_x(2, fd, static_cast<const char *>(vbuf), z);
 }
 
-static std::pair<bool, int> midcp_exec1(int argc, char **argv, CONNECTION *conn)
+static std::pair<bool, int> midcp_exec1(int argc, char **argv, MIDB_CONNECTION *conn)
 {
 	if (g_notify_stop)
 		return {false, 0};
@@ -215,7 +215,7 @@ static std::pair<bool, int> midcp_exec1(int argc, char **argv, CONNECTION *conn)
 	return {false, err};
 }
 
-static void midcp_exec(int argc, char **argv, CONNECTION *conn)
+static void midcp_exec(int argc, char **argv, MIDB_CONNECTION *conn)
 {
 	dbg_current_argc = argc;
 	dbg_current_argv = argv;
@@ -232,7 +232,7 @@ static void *midcp_thrwork(void *param)
 	int i, argc, offset, tv_msec, read_len;
 	char *argv[MAX_ARGS];
 	struct pollfd pfd_read;
-	CONNECTION *pconnection;
+//	MIDB_CONNECTION *pconnection;
 	DOUBLE_LIST_NODE *pnode;
 	char buffer[CONN_BUFFLEN];
 
@@ -253,8 +253,7 @@ static void *midcp_thrwork(void *param)
 	if (NULL == pnode) {
 		goto NEXT_LOOP;
 	}
-	pconnection = (CONNECTION*)pnode->pdata;
-
+	auto pconnection = static_cast<MIDB_CONNECTION *>(pnode->pdata);
 	offset = 0;
 
     while (!g_notify_stop) {

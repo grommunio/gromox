@@ -162,7 +162,7 @@ static unsigned int hpm_processor_get_context_num()
 	return g_context_num;
 }
 
-static CONNECTION *hpm_processor_get_connection(unsigned int context_id)
+static GENERIC_CONNECTION *hpm_processor_get_connection(unsigned int context_id)
 {
 	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
 	return &phttp->connection;

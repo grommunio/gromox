@@ -1660,7 +1660,7 @@ static void imap_parser_context_clear(IMAP_CONTEXT *pcontext)
     if (NULL == pcontext) {
         return;
     }
-    memset(&pcontext->connection, 0, sizeof(CONNECTION));
+	pcontext->connection = decltype(pcontext->connection){};
     pcontext->connection.sockd = -1;
 	pcontext->proto_stat = 0;
 	pcontext->sched_stat = 0;

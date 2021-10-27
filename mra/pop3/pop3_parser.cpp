@@ -738,7 +738,7 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
     if (NULL == pcontext) {
         return;
     }
-    memset(&pcontext->connection, 0, sizeof(CONNECTION));
+	pcontext->connection = decltype(pcontext->connection){};
     pcontext->connection.sockd = -1;
 	pcontext->message_fd = -1;
 	pcontext->array.clear();

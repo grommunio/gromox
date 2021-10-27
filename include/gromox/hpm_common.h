@@ -3,9 +3,9 @@
 #include <typeinfo>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
+#include <gromox/generic_connection.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/plugin.hpp>
-#include <openssl/ssl.h>
 #define NDR_STACK_IN				0
 #define NDR_STACK_OUT				1
 
@@ -23,16 +23,6 @@ struct HPM_INTERFACE {
 	BOOL (*send)(int, const void*, int);
 	int (*receive)(int, void*, int length);
 	void (*term)(int);
-};
-
-struct CONNECTION {
-	char client_ip[40]; /* client ip address string */
-	char server_ip[40]; /* server ip address */
-	int client_port; /* value of client port */
-	int server_port; /* value of server port */
-	int sockd; /* context's socket file description */
-	SSL *ssl;
-	struct timeval last_timestamp; /* last time when system got data from */
 };
 
 struct HTTP_REQUEST {
@@ -63,7 +53,7 @@ struct HTTP_AUTH_INFO {
 	x void *(*query_serviceF)(const char *, const std::type_info &); \
 	x BOOL (*register_interface)(HPM_INTERFACE *); \
 	x BOOL (*register_talk)(TALK_MAIN); \
-	x CONNECTION *(*get_connection)(int); \
+	x GENERIC_CONNECTION *(*get_connection)(int); \
 	x HTTP_REQUEST *(*get_request)(int); \
 	x HTTP_AUTH_INFO (*get_auth_info)(int); \
 	x BOOL (*write_response)(int, const void *, int); \

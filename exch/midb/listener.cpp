@@ -97,7 +97,6 @@ static void *midls_thrwork(void *param)
 	int sockd;
 	socklen_t addrlen;
 	char client_hostip[40];
-	CONNECTION *pconnection;
 	struct sockaddr_storage peer_name;
 
 	while (!g_notify_stop) {
@@ -122,7 +121,7 @@ static void *midls_thrwork(void *param)
 			continue;
 		}
 
-		pconnection = cmd_parser_get_connection();
+		auto pconnection = cmd_parser_get_connection();
 		if (NULL == pconnection) {
 			write(sockd, "Maximum Connection Reached!\r\n", 29);
 			close(sockd);

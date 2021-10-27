@@ -3,9 +3,9 @@
 #include <memory>
 #include <string>
 #include <sys/time.h>
-#include <openssl/ssl.h>
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
+#include <gromox/generic_connection.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/mime_pool.hpp>
@@ -64,16 +64,6 @@ enum {
 	IMAP_RETRIEVE_ERROR
 };
 
-struct CONNECTION {
-	char client_ip[40]; /* client ip address string */
-    int            client_port;        /* value of client port */
-	char server_ip[40]; /* server ip address */
-    int            server_port;        /* value of server port */
-    int            sockd;              /* context's socket file description */
-	SSL            *ssl;
-    struct timeval last_timestamp;     /* last time when system got data from */
-};
-
 struct MITEM {
 	SINGLE_LIST_NODE node;
 	char mid[128];
@@ -88,7 +78,7 @@ struct IMAP_CONTEXT final : public SCHEDULE_CONTEXT {
 	~IMAP_CONTEXT();
 	NOMOVE(IMAP_CONTEXT);
 
-	CONNECTION connection{};
+	GENERIC_CONNECTION connection;
 	std::string mid, file_path;
 	DOUBLE_LIST_NODE hash_node{}, sleeping_node{};
 	int proto_stat = 0, sched_stat = 0;
