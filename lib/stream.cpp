@@ -366,7 +366,7 @@ unsigned int STREAM::rewind_write_ptr(unsigned int offset)
 	pstream->wr_total_pos -= offset;
 	if (pstream->wr_total_pos < pstream->rd_total_pos) {
 		pstream->rd_block_pos = pstream->wr_block_pos;
-		pstream->rd_total_pos = pstream->rd_total_pos;
+		pstream->rd_total_pos = pstream->wr_total_pos;
 		pstream->pnode_rd = pstream->pnode_wr;
 	}
 	if (pstream->block_line_parse > pstream->wr_total_pos) {
