@@ -845,25 +845,25 @@ unsigned int STREAM::fwd_read_ptr(unsigned int offset)
 {
 	auto pstream = this;
 	if (offset > pstream->wr_total_pos - pstream->rd_total_pos &&
-		offset < STREAM_BLOCK_SIZE) {
-			offset = pstream->wr_total_pos - pstream->rd_total_pos;
-		} else if (offset > STREAM_BLOCK_SIZE) {
-			offset = STREAM_BLOCK_SIZE;
-		}
-		if (offset > STREAM_BLOCK_SIZE - pstream->rd_block_pos) {
-			pstream->pnode_rd = double_list_get_after(&pstream->list,
-				pstream->pnode_rd);
-			pstream->rd_block_pos = offset - (STREAM_BLOCK_SIZE - 
-				pstream->rd_block_pos);
-		} else {
-			pstream->rd_block_pos += offset;
-		}
-		pstream->rd_total_pos += offset;
-		if (pstream->block_line_pos > pstream->rd_total_pos) {
-			pstream->block_line_parse = pstream->rd_total_pos;
-			pstream->block_line_pos = pstream->rd_total_pos;
-		}
-		return offset;
+	    offset < STREAM_BLOCK_SIZE) {
+		offset = pstream->wr_total_pos - pstream->rd_total_pos;
+	} else if (offset > STREAM_BLOCK_SIZE) {
+		offset = STREAM_BLOCK_SIZE;
+	}
+	if (offset > STREAM_BLOCK_SIZE - pstream->rd_block_pos) {
+		pstream->pnode_rd = double_list_get_after(&pstream->list,
+			pstream->pnode_rd);
+		pstream->rd_block_pos = offset - (STREAM_BLOCK_SIZE -
+			pstream->rd_block_pos);
+	} else {
+		pstream->rd_block_pos += offset;
+	}
+	pstream->rd_total_pos += offset;
+	if (pstream->block_line_pos > pstream->rd_total_pos) {
+		pstream->block_line_parse = pstream->rd_total_pos;
+		pstream->block_line_pos = pstream->rd_total_pos;
+	}
+	return offset;
 }
 
 int STREAM::write(const void *pbuff, size_t size)
