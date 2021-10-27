@@ -8,23 +8,24 @@
 #define SYS_THREAD_CREATE           2
 #define SYS_THREAD_DESTROY          3
 
-#define BOUND_IN					1    /* message smtp in */
-#define BOUND_OUT					2    /* message smtp out */
-#define BOUND_RELAY					3    /* message smtp relay */
-#define	BOUND_SELF					4    /* message creted by hook */
+enum {
+	BOUND_UNKNOWN, /* unknown message type */
+	BOUND_IN, /* message smtp in */
+	BOUND_OUT, /* message smtp out */
+	BOUND_RELAY, /* message smtp relay */
+	BOUND_SELF, /* message creted by hook larger than BOUND_SELF*/
+};
 
 struct CONTROL_INFO {
-	int         queue_ID;
-	int			bound_type;
-	BOOL        is_spam;
-	BOOL        need_bounce;
-	char from[UADDR_SIZE];
-	MEM_FILE    f_rcpt_to;
+	int queue_ID = 0, bound_type = 0;
+	BOOL is_spam = false, need_bounce = false;
+	char from[UADDR_SIZE]{};
+	MEM_FILE f_rcpt_to{};
 };
 
 struct MESSAGE_CONTEXT {
-	CONTROL_INFO *pcontrol;
-	MAIL         *pmail;
+	CONTROL_INFO *pcontrol = nullptr;
+	MAIL *pmail = nullptr;
 };
 
 using HOOK_FUNCTION = BOOL (*)(MESSAGE_CONTEXT *);

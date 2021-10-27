@@ -12,6 +12,7 @@
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
+#include <gromox/hook_common.h>
 #include <gromox/mime_pool.hpp>
 #include <gromox/paths.h>
 #include "transporter.h"
@@ -36,24 +37,6 @@
 #define THREAD_STACK_SIZE       0x400000
 
 using namespace gromox;
-
-namespace {
-
-struct CONTROL_INFO {
-	int queue_ID = 0, bound_type = 0;
-	BOOL is_spam = false, need_bounce = false;
-	char from[UADDR_SIZE]{};
-	MEM_FILE f_rcpt_to{};
-};
-
-struct MESSAGE_CONTEXT {
-	CONTROL_INFO *pcontrol = nullptr;
-	MAIL *pmail = nullptr;
-};
-
-}
-
-using HOOK_FUNCTION = BOOL (*)(MESSAGE_CONTEXT *);
 
 namespace {
 

@@ -7,14 +7,6 @@ enum{
 };
 
 enum{
-	BOUND_UNKNOWN,	/* unknown message type */
-	BOUND_IN,		/* message smtp in */
-	BOUND_OUT,		/* message smtp out */
-	BOUND_RELAY,	/* message smtp relay */
-	BOUND_SELF		/* message creted by hook larger than BOUND_SELF*/
-};
-
-enum{
 	MESSAGE_DEQUEUE_HOLDING,
 	MESSAGE_DEQUEUE_PROCESSING,
 	MESSAGE_DEQUEUE_DEQUEUED,
