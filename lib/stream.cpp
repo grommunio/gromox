@@ -2,6 +2,7 @@
 /* 
  *	  stream is specified for smtp protocol
  */
+#include <cassert>
 #include <cstring>
 #include <gromox/common_types.hpp>
 #include <gromox/stream.hpp>
@@ -387,14 +388,14 @@ unsigned int STREAM::rewind_write_ptr(unsigned int offset)
 unsigned int STREAM::rewind_read_ptr(unsigned int offset)
 {
 	auto pstream = this;
-	if (offset > pstream->rd_total_pos && offset < STREAM_BLOCK_SIZE) {
+	if (offset > pstream->rd_total_pos)
 		offset = pstream->rd_total_pos;
-	} else if (offset > STREAM_BLOCK_SIZE) {
+	if (offset > STREAM_BLOCK_SIZE)
 		offset = STREAM_BLOCK_SIZE;
-	}
 	if (offset > pstream->rd_block_pos) {
 		pstream->pnode_rd = double_list_get_before(&pstream->list,
 												   pstream->pnode_rd);
+		assert(pstream->pnode_rd != nullptr);
 		pstream->rd_block_pos = STREAM_BLOCK_SIZE - 
 								(offset - pstream->rd_block_pos);
 	} else {
