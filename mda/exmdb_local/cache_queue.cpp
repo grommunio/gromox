@@ -143,7 +143,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
         return -1;
 	}
 	/* at the begin of file, write the length of message */
-	int32_t len = std::max(pcontext->pmail->get_length(), static_cast<ssize_t>(INT32_MAX));
+	uint32_t len = std::min(pcontext->pmail->get_length(), static_cast<ssize_t>(INT32_MAX));
 	if (len < 0) {
 		printf("[exmdb_local]: fail to get mail length\n");
 		fd.close();
