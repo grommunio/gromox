@@ -746,7 +746,6 @@ int STREAM::copyline(char *pbuff, unsigned int *psize)
 unsigned int STREAM::peek_buffer(char *pbuff, unsigned int size) const
 {
 	auto pstream = this;
-	unsigned int tmp_size;
 	unsigned int actual_size;
 
 #ifdef _DEBUG_UMTA
@@ -773,37 +772,31 @@ unsigned int STREAM::peek_buffer(char *pbuff, unsigned int size) const
 		if (actual_size >= size) {
 			memcpy(pbuff, static_cast<char *>(pnode->pdata) + pstream->rd_total_pos, size);
 			return size;
-		} else {
-			memcpy(pbuff, static_cast<char *>(pnode->pdata) + pstream->rd_total_pos, actual_size);
-			return actual_size;
 		}
-	} else {
-		tmp_size = STREAM_BLOCK_SIZE - pstream->rd_block_pos;
-		 
-		if (tmp_size >= size) {
-			memcpy(pbuff, static_cast<char *>(pnode->pdata) + pstream->rd_total_pos, size);
-			return size;
-		}
-		memcpy(pbuff, static_cast<char *>(pnode->pdata) + pstream->rd_total_pos, tmp_size);
-		while ((pnode = double_list_get_after(&pstream->list,
-			pnode)) != pstream->pnode_wr) {
-			if (tmp_size + STREAM_BLOCK_SIZE >= size) {
-				memcpy(pbuff + tmp_size, pnode->pdata, size - tmp_size);
-				return size;
-			} else {
-				memcpy(pbuff + tmp_size, pnode->pdata, STREAM_BLOCK_SIZE);
-				tmp_size += STREAM_BLOCK_SIZE;
-			}
-		}
-		
-		if (tmp_size + pstream->wr_block_pos >= size) {
+		memcpy(pbuff, static_cast<char *>(pnode->pdata) + pstream->rd_total_pos, actual_size);
+		return actual_size;
+	}
+	unsigned int tmp_size = STREAM_BLOCK_SIZE - pstream->rd_block_pos;
+	if (tmp_size >= size) {
+		memcpy(pbuff, static_cast<char *>(pnode->pdata) + pstream->rd_total_pos, size);
+		return size;
+	}
+	memcpy(pbuff, static_cast<char *>(pnode->pdata) + pstream->rd_total_pos, tmp_size);
+	while ((pnode = double_list_get_after(&pstream->list,
+		pnode)) != pstream->pnode_wr) {
+		if (tmp_size + STREAM_BLOCK_SIZE >= size) {
 			memcpy(pbuff + tmp_size, pnode->pdata, size - tmp_size);
 			return size;
-		} else {
-			memcpy(pbuff + tmp_size, pnode->pdata, pstream->wr_block_pos);
-			return actual_size;
 		}
-	}	
+		memcpy(pbuff + tmp_size, pnode->pdata, STREAM_BLOCK_SIZE);
+		tmp_size += STREAM_BLOCK_SIZE;
+	}
+	if (tmp_size + pstream->wr_block_pos >= size) {
+		memcpy(pbuff + tmp_size, pnode->pdata, size - tmp_size);
+		return size;
+	}
+	memcpy(pbuff + tmp_size, pnode->pdata, pstream->wr_block_pos);
+	return actual_size;
 }
 
 /*
