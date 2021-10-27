@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <typeinfo>
-#include <gromox/defs.h>
+#include <gromox/dcerpc.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/plugin.hpp>
 #include <gromox/rpc_types.hpp>
@@ -13,40 +13,8 @@
 #define DISPATCH_SUCCESS			1
 #define DISPATCH_PENDING			2
 
-#define DCERPC_CALL_STAT_FLAG_HEADER_SIGNING		0x04
-#define DCERPC_CALL_STAT_FLAG_MULTIPLEXED			0x10
-
-struct DCERPC_INFO {
-	const char *client_ip;
-	int client_port;
-	const char *server_ip; /* http server ip */
-	int server_port;       /* http server port */
-	const char *ep_host;   /* endpoint host name */
-	int ep_port;           /* endpoint port */
-	BOOL is_login;         /* if client login */
-	const char *username;  /* username of client by http auth */
-	const char *maildir;
-	const char *lang;
-	uint32_t stat_flags;   /* state flags of rpc context */
-}; /* used for proc plugin to get dcerpc information */
-
-struct DCERPC_INTERFACE {
-	char name[128];
-	GUID uuid;
-	uint32_t version;
-	/* the ndr_pull function for the chosen interface. */
-	int (*ndr_pull)(int opnum, NDR_PULL* pndr, void **ppin);
-	/* the dispatch function for the chosen interface. */
-	int (*dispatch)(int opnum, const GUID*, uint64_t handle,
-		void *pin, void **ppout);
-	/* the ndr_push function for the chosen interface. */
-	int (*ndr_push)(int opnum, NDR_PUSH *pndr, void *pout);
-	/* free pout pointer produced by dispatch after ndr_push*/
-	void (*unbind)(uint64_t handle);
-	/* the reclaim function for the chosen interface */
-	void (*reclaim)(uint32_t async_id);
-};
-
+struct DCERPC_INFO;
+struct DCERPC_INTERFACE;
 #define DECLARE_PROC_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \
 	x BOOL (*register_serviceF)(const char *, void *, const std::type_info &); \
