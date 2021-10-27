@@ -905,20 +905,13 @@ int STREAM::has_eom()
 	if (STREAM_EOM_WAITING == pstream->eom_result) {
 		return STREAM_EOM_NONE;
 	} else if (STREAM_EOM_CRLF == pstream->eom_result) {
-		if (pstream->last_eom_parse == pstream->wr_total_pos - 3) {
-			return STREAM_EOM_NET;
-		} else {
-			return STREAM_EOM_DIRTY;
-		}
+		return pstream->last_eom_parse == pstream->wr_total_pos - 3 ?
+		       STREAM_EOM_NET : STREAM_EOM_DIRTY;
 	} else if (STREAM_EOM_CRORLF == pstream->eom_result) {
-		if (pstream->last_eom_parse == pstream->wr_total_pos - 2) {
-			return STREAM_EOM_NET;
-		} else {
-			return STREAM_EOM_DIRTY;
-		}
-	} else {
-		return STREAM_EOM_ERROR;
+		return pstream->last_eom_parse == pstream->wr_total_pos - 2 ?
+		       STREAM_EOM_NET : STREAM_EOM_DIRTY;
 	}
+	return STREAM_EOM_ERROR;
 }
 
 /*
