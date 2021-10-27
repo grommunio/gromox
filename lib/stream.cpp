@@ -585,153 +585,146 @@ int STREAM::copyline(char *pbuff, unsigned int *psize)
 			pstream->rd_total_pos += actual_size + 1;
 		}
 		return STREAM_COPY_OK;
-	} else { 
+	}
 
-		pnode = pstream->pnode_rd;
-		for (i=pstream->rd_block_pos; i<STREAM_BLOCK_SIZE; i++) {
-			tmp = *((char*)pnode->pdata + i);
-			
-			if (tmp == '\n') {
-				state = LF;
-				break;
-			}
-			if (tmp == '\r') {
-				state = CR;
-				break;
-			}
+	pnode = pstream->pnode_rd;
+	for (i = pstream->rd_block_pos; i < STREAM_BLOCK_SIZE; i++) {
+		tmp = *((char *)pnode->pdata + i);
+		if (tmp == '\n') {
+			state = LF;
+			break;
 		}
-		if (i != STREAM_BLOCK_SIZE) {
-			actual_size = i - pstream->rd_block_pos;
-			if (actual_size > buf_size) {
-				actual_size = buf_size;
-				*psize = actual_size;
-				memcpy(pbuff, (char*)pnode->pdata + pstream->rd_block_pos,
-					actual_size);
-				pbuff[actual_size] = '\0';
-				pstream->rd_block_pos += actual_size;
-				pstream->rd_total_pos += actual_size;
-				return STREAM_COPY_PART;
-			}
-
+		if (tmp == '\r') {
+			state = CR;
+			break;
+		}
+	}
+	if (i != STREAM_BLOCK_SIZE) {
+		actual_size = i - pstream->rd_block_pos;
+		if (actual_size > buf_size) {
+			actual_size = buf_size;
 			*psize = actual_size;
-			memcpy(pbuff, (char*)pnode->pdata + pstream->rd_block_pos, actual_size);
+			memcpy(pbuff, (char *)pnode->pdata + pstream->rd_block_pos,
+				actual_size);
 			pbuff[actual_size] = '\0';
-			
-			if (state == LF) {
-				pstream->rd_block_pos += actual_size + 1;
-				pstream->rd_total_pos += actual_size + 1;
-				if (pstream->rd_block_pos == STREAM_BLOCK_SIZE) {
-					pstream->pnode_rd = double_list_get_after(
-						&pstream->list, pstream->pnode_rd);
-					pstream->rd_block_pos = 0;
-				}
-				return STREAM_COPY_OK;
-			}
-			if (state == CR) {
-				if (i + 1 == STREAM_BLOCK_SIZE) {
-					pstream->pnode_rd = double_list_get_after(
-						&pstream->list, pstream->pnode_rd);
-					pstream->rd_block_pos = 0;
+			pstream->rd_block_pos += actual_size;
+			pstream->rd_total_pos += actual_size;
+			return STREAM_COPY_PART;
+		}
 
-					if (*((char*)pstream->pnode_rd->pdata) == '\n') {
-						pstream->rd_block_pos = 1;
-						pstream->rd_total_pos += actual_size + 2;
-					} else {
-						pstream->rd_total_pos += actual_size + 1;
-					}
-				} else {
-					if (*((char*)pnode->pdata + i + 1) != '\n') {
-						pstream->rd_block_pos += actual_size + 1;
-						pstream->rd_total_pos += actual_size + 1;
-					} else {
-						pstream->rd_total_pos += actual_size + 2;
-						if (i + 2 == STREAM_BLOCK_SIZE) {
-							pstream->pnode_rd = double_list_get_after(
-								&pstream->list, pstream->pnode_rd);
-							pstream->rd_block_pos = 0;
-						} else {
-							pstream->rd_block_pos += actual_size + 2;
-						}
-					}
-				}
-			}
+		*psize = actual_size;
+		memcpy(pbuff, (char *)pnode->pdata + pstream->rd_block_pos, actual_size);
+		pbuff[actual_size] = '\0';
 
+		if (state == LF) {
+			pstream->rd_block_pos += actual_size + 1;
+			pstream->rd_total_pos += actual_size + 1;
+			if (pstream->rd_block_pos == STREAM_BLOCK_SIZE) {
+				pstream->pnode_rd = double_list_get_after(
+					&pstream->list, pstream->pnode_rd);
+				pstream->rd_block_pos = 0;
+			}
 			return STREAM_COPY_OK;
-		} else { /* span two blocks */
-			actual_size = STREAM_BLOCK_SIZE - pstream->rd_block_pos;
-			pnode = double_list_get_after(&pstream->list, pstream->pnode_rd);
-			if (pnode == pstream->pnode_wr) {
-				end = pstream->wr_total_pos%STREAM_BLOCK_SIZE;
-			} else {
-				end = STREAM_BLOCK_SIZE;
-			}
-			for (i = 0; i < end; i++) {
-				tmp = *((char*)pnode->pdata + i);
-				if (tmp == '\n') {
-					state = LF;
-					break;
-				}
-				if (tmp == '\r') {
-					state = CR;
-					break;
-				}
-			}
-			actual_size += i;
-			if (actual_size > buf_size) {
-				actual_size = buf_size;
-				*psize = actual_size;
-				if (actual_size >= 0 && static_cast<size_t>(actual_size) >= STREAM_BLOCK_SIZE - pstream->rd_block_pos) {
-					i = actual_size - (STREAM_BLOCK_SIZE - 
-							pstream->rd_block_pos);
-					memcpy(pbuff, (char*)pstream->pnode_rd->pdata + 
-						pstream->rd_block_pos, STREAM_BLOCK_SIZE - 
-						pstream->rd_block_pos);
-					pstream->pnode_rd = double_list_get_after(&pstream->list,
-						pstream->pnode_rd);
-					memcpy(pbuff + STREAM_BLOCK_SIZE - pstream->rd_block_pos, 
-						(char*)pstream->pnode_rd->pdata, i);
-					pstream->rd_block_pos = i;
-					pstream->rd_total_pos += actual_size;
-				} else {
-					memcpy(pbuff, (char*)pstream->pnode_rd->pdata +
-						pstream->rd_block_pos, actual_size);
-					pstream->rd_block_pos += actual_size;
-					pstream->rd_total_pos += actual_size;
-				}
-				pbuff[actual_size] = '\0';
-				return STREAM_COPY_PART;
-			}
-		   
-			*psize = actual_size;
-			memcpy(pbuff, (char*)pstream->pnode_rd->pdata + 
-				   pstream->rd_block_pos, STREAM_BLOCK_SIZE - 
-				   pstream->rd_block_pos);
-			pstream->pnode_rd = double_list_get_after(&pstream->list, pstream->pnode_rd);
-			memcpy(pbuff + STREAM_BLOCK_SIZE - pstream->rd_block_pos, 
-				   (char*)pstream->pnode_rd->pdata, i);
-			pbuff[actual_size] = '\0';
+		}
+		if (state != CR)
+			return STREAM_COPY_OK;
+		if (i + 1 == STREAM_BLOCK_SIZE) {
+			pstream->pnode_rd = double_list_get_after(
+				&pstream->list, pstream->pnode_rd);
+			pstream->rd_block_pos = 0;
 
-			if (i == end) {
-				return STREAM_COPY_TERM;
-			}
-			
-			if (state == LF || (pstream->rd_total_pos + actual_size + 1)
-					== pstream->wr_total_pos) {
-				pstream->rd_block_pos = i + 1;
-				pstream->rd_total_pos += actual_size + 1;
-				return STREAM_COPY_OK;
-			}
-			
-			if (*((char*)pstream->pnode_rd->pdata + i + 1) == '\n') {
-				pstream->rd_block_pos = i + 2;
+			if (*((char *)pstream->pnode_rd->pdata) == '\n') {
+				pstream->rd_block_pos = 1;
 				pstream->rd_total_pos += actual_size + 2;
 			} else {
-				pstream->rd_block_pos = i + 1;
 				pstream->rd_total_pos += actual_size + 1;
 			}
-			return STREAM_COPY_OK;
-		}	
+		} else if (static_cast<char *>(pnode->pdata)[i+1] != '\n') {
+			pstream->rd_block_pos += actual_size + 1;
+			pstream->rd_total_pos += actual_size + 1;
+		} else {
+			pstream->rd_total_pos += actual_size + 2;
+			if (i + 2 == STREAM_BLOCK_SIZE) {
+				pstream->pnode_rd = double_list_get_after(
+					&pstream->list, pstream->pnode_rd);
+				pstream->rd_block_pos = 0;
+			} else {
+				pstream->rd_block_pos += actual_size + 2;
+			}
+		}
+		return STREAM_COPY_OK;
 	}
+	/* span two blocks */
+	actual_size = STREAM_BLOCK_SIZE - pstream->rd_block_pos;
+	pnode = double_list_get_after(&pstream->list, pstream->pnode_rd);
+	if (pnode == pstream->pnode_wr) {
+		end = pstream->wr_total_pos % STREAM_BLOCK_SIZE;
+	} else {
+		end = STREAM_BLOCK_SIZE;
+	}
+	for (i = 0; i < end; i++) {
+		tmp = *((char*)pnode->pdata + i);
+		if (tmp == '\n') {
+			state = LF;
+			break;
+		}
+		if (tmp == '\r') {
+			state = CR;
+			break;
+		}
+	}
+	actual_size += i;
+	if (actual_size > buf_size) {
+		actual_size = buf_size;
+		*psize = actual_size;
+		if (actual_size >= 0 && static_cast<size_t>(actual_size) >= STREAM_BLOCK_SIZE - pstream->rd_block_pos) {
+			i = actual_size - (STREAM_BLOCK_SIZE -
+					pstream->rd_block_pos);
+			memcpy(pbuff, (char *)pstream->pnode_rd->pdata +
+				pstream->rd_block_pos, STREAM_BLOCK_SIZE -
+				pstream->rd_block_pos);
+			pstream->pnode_rd = double_list_get_after(&pstream->list,
+				pstream->pnode_rd);
+			memcpy(pbuff + STREAM_BLOCK_SIZE - pstream->rd_block_pos,
+			       (char *)pstream->pnode_rd->pdata, i);
+			pstream->rd_block_pos = i;
+			pstream->rd_total_pos += actual_size;
+		} else {
+			memcpy(pbuff, (char *)pstream->pnode_rd->pdata +
+				pstream->rd_block_pos, actual_size);
+			pstream->rd_block_pos += actual_size;
+			pstream->rd_total_pos += actual_size;
+		}
+		pbuff[actual_size] = '\0';
+		return STREAM_COPY_PART;
+	}
+
+	*psize = actual_size;
+	memcpy(pbuff, (char*)pstream->pnode_rd->pdata +
+		   pstream->rd_block_pos, STREAM_BLOCK_SIZE -
+		   pstream->rd_block_pos);
+	pstream->pnode_rd = double_list_get_after(&pstream->list, pstream->pnode_rd);
+	memcpy(pbuff + STREAM_BLOCK_SIZE - pstream->rd_block_pos,
+	       (char *)pstream->pnode_rd->pdata, i);
+	pbuff[actual_size] = '\0';
+
+	if (i == end) {
+		return STREAM_COPY_TERM;
+	}
+	if (state == LF || (pstream->rd_total_pos + actual_size + 1)
+	    == pstream->wr_total_pos) {
+		pstream->rd_block_pos = i + 1;
+		pstream->rd_total_pos += actual_size + 1;
+		return STREAM_COPY_OK;
+	}
+	if (*((char *)pstream->pnode_rd->pdata + i + 1) == '\n') {
+		pstream->rd_block_pos = i + 2;
+		pstream->rd_total_pos += actual_size + 2;
+	} else {
+		pstream->rd_block_pos = i + 1;
+		pstream->rd_total_pos += actual_size + 1;
+	}
+	return STREAM_COPY_OK;
 }
 
 /*
