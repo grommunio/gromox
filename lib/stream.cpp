@@ -350,14 +350,14 @@ unsigned int STREAM::fwd_write_ptr(unsigned int offset)
 unsigned int STREAM::rewind_write_ptr(unsigned int offset)
 {
 	auto pstream = this;
-	if (offset > pstream->wr_total_pos && offset < STREAM_BLOCK_SIZE) {
+	if (offset > pstream->wr_total_pos)
 		offset = pstream->wr_total_pos;
-	} else if (offset > STREAM_BLOCK_SIZE) {
+	if (offset > STREAM_BLOCK_SIZE)
 		offset = STREAM_BLOCK_SIZE;
-	}
 	if (offset > pstream->wr_block_pos) {
 		pstream->pnode_wr = double_list_get_before(&pstream->list,
 												   pstream->pnode_wr);
+		assert(pstream->pnode_wr != nullptr);
 		pstream->wr_block_pos = STREAM_BLOCK_SIZE - 
 								(offset - pstream->wr_block_pos);
 	} else {
