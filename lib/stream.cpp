@@ -962,72 +962,72 @@ void STREAM::try_mark_eom()
 		}
 		for (j=from_pos; j>=until_pos; j--) {
 			pbuff = (char*)pnode->pdata;
-			if ('.' == pbuff[j]) {
-				if (0 == j) {
-					pnode1 = double_list_get_before(&pstream->list, pnode);
-					if (NULL == pnode1) {
-						goto NONE_EOM;
-					}
-					temp_buff[0] = ((char*)pnode1->pdata)[STREAM_BLOCK_SIZE - 2];
-					temp_buff[1] = ((char*)pnode1->pdata)[STREAM_BLOCK_SIZE - 1];
-					temp_buff[2] = '.';
-				} else if (1 == j) {
-					pnode1 = double_list_get_before(&pstream->list, pnode);
-					if (NULL == pnode1) {
-						goto NONE_EOM;
-					}
-					temp_buff[0] = ((char*)pnode1->pdata)[STREAM_BLOCK_SIZE - 1];
-					temp_buff[1] = pbuff[0];
-					temp_buff[2] = '.';
-				} else {
-					temp_buff[0] = pbuff[j - 2];
-					temp_buff[1] = pbuff[j - 1];
-					temp_buff[2] = '.';
+			if (pbuff[j] != '.')
+				continue;
+			if (0 == j) {
+				pnode1 = double_list_get_before(&pstream->list, pnode);
+				if (NULL == pnode1) {
+					goto NONE_EOM;
 				}
-				
-				if (from_pos - 1 == j) {
-					temp_buff[3] = pbuff[j + 1];
-					if (0 == i) {
+				temp_buff[0] = ((char*)pnode1->pdata)[STREAM_BLOCK_SIZE - 2];
+				temp_buff[1] = ((char*)pnode1->pdata)[STREAM_BLOCK_SIZE - 1];
+				temp_buff[2] = '.';
+			} else if (1 == j) {
+				pnode1 = double_list_get_before(&pstream->list, pnode);
+				if (NULL == pnode1) {
+					goto NONE_EOM;
+				}
+				temp_buff[0] = ((char *)pnode1->pdata)[STREAM_BLOCK_SIZE-1];
+				temp_buff[1] = pbuff[0];
+				temp_buff[2] = '.';
+			} else {
+				temp_buff[0] = pbuff[j-2];
+				temp_buff[1] = pbuff[j-1];
+				temp_buff[2] = '.';
+			}
+
+			if (from_pos - 1 == j) {
+				temp_buff[3] = pbuff[j + 1];
+				if (0 == i) {
+					temp_buff[4] = '\0';
+				} else {
+					pnode1 = double_list_get_after(&pstream->list, pnode);
+					if (NULL == pnode1) {
 						temp_buff[4] = '\0';
 					} else {
-						pnode1 = double_list_get_after(&pstream->list, pnode);
-						if (NULL == pnode1) {
-							temp_buff[4] = '\0';
-						} else {
-							temp_buff[4] = ((char*)pnode1->pdata)[0];
-						}
+						temp_buff[4] = ((char *)pnode1->pdata)[0];
 					}
-				} else if (from_pos == j) {
-					if (0 == i) {
+				}
+			} else if (from_pos == j) {
+				if (0 == i) {
+					continue;
+				} else {
+					pnode1 = double_list_get_after(&pstream->list, pnode);
+					if (NULL == pnode1) {
 						continue;
 					} else {
-						pnode1 = double_list_get_after(&pstream->list, pnode);
-						if (NULL == pnode1) {
-							continue;
-						} else {
-							temp_buff[3] = ((char*)pnode1->pdata)[0];
-							temp_buff[4] = ((char*)pnode1->pdata)[1];
-						}
+						temp_buff[3] = ((char *)pnode1->pdata)[0];
+						temp_buff[4] = ((char *)pnode1->pdata)[1];
 					}
-				} else {
-					temp_buff[3] = pbuff[j + 1];
-					temp_buff[4] = pbuff[j + 2];
 				}
-			
-				temp_buff[5] = '\0';
-				if (0 == strcmp(temp_buff, "\r\n.\r\n")) {
-					pstream->eom_result = STREAM_EOM_CRLF;
-					pstream->last_eom_parse = (pstream->wr_total_pos/
-						STREAM_BLOCK_SIZE - i) * STREAM_BLOCK_SIZE + j;
-					return;
+			} else {
+				temp_buff[3] = pbuff[j + 1];
+				temp_buff[4] = pbuff[j + 2];
+			}
 
-				} else if (0 == strcmp(temp_buff + 1, "\n.\n") ||
-					0 == strcmp(temp_buff + 1, "\r.\r")) {
-					pstream->eom_result = STREAM_EOM_CRORLF;
-					pstream->last_eom_parse = (pstream->wr_total_pos/
-						STREAM_BLOCK_SIZE - i) * STREAM_BLOCK_SIZE + j;
-					return;
-				}
+			temp_buff[5] = '\0';
+			if (0 == strcmp(temp_buff, "\r\n.\r\n")) {
+				pstream->eom_result = STREAM_EOM_CRLF;
+				pstream->last_eom_parse = (pstream->wr_total_pos /
+					STREAM_BLOCK_SIZE - i) * STREAM_BLOCK_SIZE + j;
+				return;
+
+			} else if (0 == strcmp(temp_buff + 1, "\n.\n") ||
+			     0 == strcmp(temp_buff + 1, "\r.\r")) {
+				pstream->eom_result = STREAM_EOM_CRORLF;
+				pstream->last_eom_parse = (pstream->wr_total_pos /
+					STREAM_BLOCK_SIZE - i) * STREAM_BLOCK_SIZE + j;
+				return;
 			}
 		}
 		pnode = double_list_get_before(&pstream->list, pnode);
