@@ -132,10 +132,11 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 	wrapfd fd = open(file_name.c_str(), O_WRONLY | O_CREAT | O_TRUNC, DEF_MODE);
 	if (fd.get() < 0)
 		return -1;
-	/* write 0 at the begin of file to indicate message is now being writing */
-	int times = 0;
-	if (write(fd.get(), &times, sizeof(int)) != sizeof(int) ||
-	    write(fd.get(), &original_time, sizeof(time_t)) != sizeof(time_t)) {
+	/* write 0 at the begin of file to indicate message is now being written */
+	uint32_t enc_times    = cpu_to_le32(0);
+	uint64_t enc_origtime = cpu_to_le64(original_time);
+	if (write(fd.get(), &enc_times, sizeof(enc_times)) != sizeof(enc_times) ||
+	    write(fd.get(), &enc_origtime, sizeof(enc_origtime)) != sizeof(enc_origtime)) {
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1353: remove %s: %s\n",
@@ -152,7 +153,7 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 			        file_name.c_str(), strerror(errno));
         return -1;
 	}
-	static_assert(sizeof(len) == sizeof(int32_t));
+	len = cpu_to_le32(len);
 	if (write(fd.get(), &len, sizeof(len)) != sizeof(len)) {
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
@@ -160,11 +161,15 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
 			        file_name.c_str(), strerror(errno));
         return -1;
 	}
+	uint32_t enc_qid    = cpu_to_le32(pcontext->pcontrol->queue_ID);
+	uint32_t enc_bound  = cpu_to_le32(pcontext->pcontrol->bound_type);
+	uint32_t enc_spam   = cpu_to_le32(pcontext->pcontrol->is_spam);
+	uint32_t enc_bounce = cpu_to_le32(pcontext->pcontrol->need_bounce);
 	if (!pcontext->pmail->to_file(fd.get()) ||
-	    write(fd.get(), &pcontext->pcontrol->queue_ID, sizeof(int)) != sizeof(int) ||
-	    write(fd.get(), &pcontext->pcontrol->bound_type, sizeof(int)) != sizeof(int) ||
-	    write(fd.get(), &pcontext->pcontrol->is_spam, sizeof(BOOL)) != sizeof(BOOL) ||
-	    write(fd.get(), &pcontext->pcontrol->need_bounce, sizeof(BOOL)) != sizeof(BOOL)) {
+	    write(fd.get(), &enc_qid, sizeof(enc_qid)) != sizeof(enc_qid) ||
+	    write(fd.get(), &enc_bound, sizeof(enc_bound)) != sizeof(enc_bound) ||
+	    write(fd.get(), &enc_spam, sizeof(enc_spam)) != sizeof(enc_spam) ||
+	    write(fd.get(), &enc_bounce, sizeof(enc_bounce)) != sizeof(enc_bounce)) {
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1356: remove %s: %s\n",
@@ -200,8 +205,8 @@ int cache_queue_put(MESSAGE_CONTEXT *pcontext, const char *rcpt_to,
         return -1;
 	}
 	lseek(fd.get(), 0, SEEK_SET);
-	times = 1;
-	if (write(fd.get(), &times, sizeof(int)) != sizeof(int)) {
+	enc_times = cpu_to_le32(1);
+	if (write(fd.get(), &enc_times, sizeof(enc_times)) != sizeof(enc_times)) {
 		fd.close();
 		if (remove(file_name.c_str()) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1360: remove %s: %s\n",
@@ -255,8 +260,8 @@ static int cache_queue_increase_mess_ID()
 
 static void *mdl_thrwork(void *arg)
 {
-	int i, times, size, bounce_type = 0, scan_interval, mess_len;
-	time_t scan_begin, scan_end, original_time;
+	int i, bounce_type = 0, scan_interval;
+	time_t scan_begin, scan_end;
     struct dirent *direntp;
 	char temp_from[UADDR_SIZE], temp_rcpt[UADDR_SIZE];
 	char *ptr;
@@ -300,55 +305,101 @@ static void *mdl_thrwork(void *arg)
 			if (fd.get() < 0)
 				continue;
 			struct stat node_stat;
+			uint32_t times, mess_len;
 			if (fstat(fd.get(), &node_stat) != 0 || !S_ISREG(node_stat.st_mode))
 				continue;
-			if (read(fd.get(), &times, sizeof(int)) != sizeof(int))
+			if (read(fd.get(), &times, sizeof(uint32_t)) != sizeof(uint32_t))
 				continue;
-			if (0 == times) {
-                continue;
-			}
-			if (read(fd.get(), &original_time, sizeof(time_t)) != sizeof(time_t) ||
-			    read(fd.get(), &mess_len, sizeof(int)) != sizeof(int)) {
+			times = le32_to_cpu(times);
+			if (times == 0)
+		                continue;
+			uint64_t enc_origtime;
+			if (read(fd.get(), &enc_origtime, sizeof(uint64_t)) != sizeof(uint64_t) ||
+			    read(fd.get(), &mess_len, sizeof(uint32_t)) != sizeof(uint32_t)) {
 				printf("[exmdb_local]: fail to read information from %s "
-					"in timer queue\n", direntp->d_name);
+					"in timer queue\n", temp_path.c_str());
 				continue;
 			}
-			size = node_stat.st_size - sizeof(time_t) - 2*sizeof(int);
+			time_t original_time = le64_to_cpu(enc_origtime);
+			mess_len = le32_to_cpu(mess_len);
+			size_t size = node_stat.st_size - sizeof(time_t) - 2*sizeof(int);
+			if (size < mess_len) {
+				fprintf(stderr, "W-1554: garbage in %s; review and delete\n", temp_path.c_str());
+				continue;
+			}
 			auto pbuff = static_cast<char *>(malloc(((size - 1) / (64 * 1024) + 1) * 64 * 1024));
 			if (NULL == pbuff) {
 				printf("[exmdb_local]: Failed to allocate memory for %s "
-					"in timer queue thread\n", direntp->d_name);
+					"in timer queue thread\n", temp_path.c_str());
 				continue;
 			}
-			if (read(fd.get(), pbuff, size) != size) {
+			auto rdret = read(fd.get(), pbuff, size);
+			if (rdret < 0 || static_cast<size_t>(rdret) != size) {
 				free(pbuff);
-				printf("[exmdb_local]: fail to read information from %s "
-					"in timer queue\n", direntp->d_name);
+				printf("[exmdb_local]: partial read from %s\n", temp_path.c_str());
 				continue;
 			}
 			if (!pcontext->pmail->retrieve(pbuff, mess_len)) {
 				free(pbuff);
-				printf("[exmdb_local]: fail to retrieve message %s in "
-					"cache queue into mail object\n", direntp->d_name);
+				printf("[exmdb_local]: failed to retrieve message %s in "
+				       "cache queue into mail object\n", temp_path.c_str());
 				continue;
 			}
-			ptr = pbuff + mess_len;
+			ptr = pbuff + mess_len; /* to hell with this bullcrap */
+			size -= mess_len;
+			if (size < sizeof(uint32_t)) {
+				fprintf(stderr, "W-1555: garbage in %s; review and delete\n", temp_path.c_str());
+				continue;
+			}
 			pcontext->pcontrol->queue_ID = le32p_to_cpu(ptr);
 			ptr += sizeof(int);
+			size -= sizeof(int);
+			if (size < sizeof(uint32_t)) {
+				fprintf(stderr, "W-1556: garbage in %s; review and delete\n", temp_path.c_str());
+				continue;
+			}
 			pcontext->pcontrol->bound_type = le32p_to_cpu(ptr);
 			ptr += sizeof(int);
+			size -= sizeof(int);
+			if (size < sizeof(uint32_t)) {
+				fprintf(stderr, "W-1557: garbage in %s; review and delete\n", temp_path.c_str());
+				continue;
+			}
 			pcontext->pcontrol->is_spam = le32p_to_cpu(ptr);
 			ptr += sizeof(BOOL);
+			size -= sizeof(BOOL);
+			if (size < sizeof(uint32_t)) {
+				fprintf(stderr, "W-1558: garbage in %s; review and delete\n", temp_path.c_str());
+				continue;
+			}
 			pcontext->pcontrol->need_bounce = le32p_to_cpu(ptr);
 			ptr += sizeof(BOOL);
-			gx_strlcpy(pcontext->pcontrol->from, ptr, GX_ARRAY_SIZE(pcontext->pcontrol->from));
-			gx_strlcpy(temp_from, ptr, GX_ARRAY_SIZE(temp_from));
-			ptr += strlen(pcontext->pcontrol->from) + 1;
+			size -= sizeof(BOOL);
+			if (size == 0)
+				fprintf(stderr, "W-1559: garbage in %s; review and delete\n", temp_path.c_str());
+			snprintf(pcontext->pcontrol->from, arsizeof(pcontext->pcontrol->from),
+			         "%.*s", static_cast<int>(std::min(size, static_cast<size_t>(INT32_MAX))), ptr);
+			auto zlen = strnlen(ptr, size);
+			ptr += zlen;
+			size -= zlen;
+			if (size == 0)
+				fprintf(stderr, "W-1559: garbage in %s; review and delete\n", temp_path.c_str());
+			snprintf(temp_from, arsizeof(temp_from), "%.*s",
+			         static_cast<int>(std::min(size, static_cast<size_t>(INT32_MAX))), ptr);
+			zlen = strnlen(ptr, size);
+			ptr += zlen;
+			size -= zlen;
 			mem_file_clear(&pcontext->pcontrol->f_rcpt_to);
 			mem_file_writeline(&pcontext->pcontrol->f_rcpt_to, ptr);
-			gx_strlcpy(temp_rcpt, ptr, GX_ARRAY_SIZE(temp_rcpt));
+			if (size == 0)
+				fprintf(stderr, "W-1559: garbage in %s; review and delete\n", temp_path.c_str());
+			snprintf(temp_rcpt, arsizeof(temp_rcpt), "%.*s",
+			         static_cast<int>(std::min(size, static_cast<size_t>(INT32_MAX))), ptr);
+			zlen = strnlen(ptr, size);
+			ptr += zlen;
+			size -= zlen;
 			
-			if (g_retrying_times <= times) {
+			if (static_cast<unsigned int>(g_retrying_times) <= times) {
 				need_bounce = TRUE;
 				need_remove = TRUE;
 				bounce_type = BOUNCE_OPERATION_ERROR;
@@ -392,8 +443,8 @@ static void *mdl_thrwork(void *arg)
 			if (FALSE == need_remove) {
 				/* rewrite type and until time */
 				lseek(fd.get(), 0, SEEK_SET);
-				times ++;
-				if (write(fd.get(), &times, sizeof(int)) != sizeof(int))
+				times = cpu_to_le32(times + 1);
+				if (write(fd.get(), &times, sizeof(uint32_t)) != sizeof(uint32_t))
 					printf("[exmdb_local]: error while updating "
 						"times\n");
 			}
