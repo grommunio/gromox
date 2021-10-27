@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#define DECLARE_API_STATIC
+#define DECLARE_HOOK_API_STATIC
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -51,7 +51,7 @@ static BOOL hook_alias_translator(int reason, void **ppdata)
 	/* path contains the config files directory */
     switch (reason) {
     case PLUGIN_INIT:
-		LINK_API(ppdata);
+		LINK_HOOK_API(ppdata);
 		snprintf(g_address_path, sizeof(g_address_path),
 		         "%s/alias_addresses.txt", get_state_path());
 		g_address_hash = NULL;

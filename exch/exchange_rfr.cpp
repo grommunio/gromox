@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#define DECLARE_API_STATIC
+#define DECLARE_PROC_API_STATIC
 #include <cstdint>
 #include <libHX/string.h>
 #include <gromox/defs.h>
@@ -65,7 +65,7 @@ static BOOL proc_exchange_rfr(int reason, void **ppdata)
 	/* path contains the config files directory */
 	switch (reason) {
     case PLUGIN_INIT:
-		LINK_API(ppdata);
+		LINK_PROC_API(ppdata);
 		query_service1(get_id_from_username);
 		if (NULL == get_id_from_username) {
 			printf("[exchange_rfr]: failed to get service \"get_id_from_username\"\n");

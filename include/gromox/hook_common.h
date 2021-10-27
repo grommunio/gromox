@@ -29,7 +29,7 @@ struct MESSAGE_CONTEXT {
 
 using HOOK_FUNCTION = BOOL (*)(MESSAGE_CONTEXT *);
 
-#define DECLARE_API(x) \
+#define DECLARE_HOOK_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \
 	x BOOL (*register_hook)(HOOK_FUNCTION); \
 	x BOOL (*register_local)(HOOK_FUNCTION); \
@@ -53,13 +53,13 @@ using HOOK_FUNCTION = BOOL (*)(MESSAGE_CONTEXT *);
 	x BOOL (*is_domainlist_valid)();
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
-#ifdef DECLARE_API_STATIC
-DECLARE_API(static);
+#ifdef DECLARE_HOOK_API_STATIC
+DECLARE_HOOK_API(static);
 #else
-DECLARE_API(extern);
+DECLARE_HOOK_API(extern);
 #endif
 
-#define LINK_API(param) \
+#define LINK_HOOK_API(param) \
 	query_serviceF = reinterpret_cast<decltype(query_serviceF)>(param[0]); \
 	query_service1(register_hook); \
 	query_service1(register_local); \

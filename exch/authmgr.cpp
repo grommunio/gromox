@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
-#define DECLARE_API_STATIC
+#define DECLARE_SVC_API_STATIC
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
@@ -130,7 +130,7 @@ static BOOL svc_authmgr(int reason, void **datap) try
 	}
 	if (reason != PLUGIN_INIT)
 		return TRUE;
-	LINK_API(datap);
+	LINK_SVC_API(datap);
 	return authmgr_init() ? TRUE : false;
 } catch (...) {
 	return false;

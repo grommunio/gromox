@@ -27,7 +27,7 @@
 #include <gromox/util.hpp>
 #include "mh_common.hpp"
 
-DECLARE_API();
+DECLARE_HPM_API();
 
 using namespace gromox;
 using namespace hpm_mh;
@@ -243,7 +243,7 @@ private:
  */
 MhEmsmdbPlugin::MhEmsmdbPlugin(void** ppdata)
 {
-	LINK_API(ppdata)
+	LINK_HPM_API(ppdata)
 	if (!query_service1(emsmdb_interface_connect_ex) ||
 	    !query_service1(emsmdb_interface_rpc_ext2) ||
 	    !query_service1(emsmdb_interface_disconnect) ||

@@ -45,7 +45,7 @@ static int exchange_nsp_dispatch(int opnum, const GUID *pobject,
 static int exchange_nsp_ndr_push(int opnum, NDR_PUSH *pndr, void *pout);
 static void exchange_nsp_unbind(uint64_t handle);
 
-DECLARE_API();
+DECLARE_PROC_API();
 
 static BOOL proc_exchange_nsp(int reason, void **ppdata)
 {
@@ -62,7 +62,7 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 	/* path contains the config files directory */
 	switch (reason) {
 	case PLUGIN_INIT: {
-		LINK_API(ppdata);
+		LINK_PROC_API(ppdata);
 		/* get the plugin name from system api */
 		std::string plugname = get_plugin_name();
 		auto pos = plugname.find('.');

@@ -4,7 +4,7 @@
 // groups to NSP clients, based on CPID (which is silly - the LCID should be
 // used, but clients do not pass it when reading the GAB).
 // This file is part of Gromox.
-#define DECLARE_API_STATIC
+#define DECLARE_SVC_API_STATIC
 #include <cerrno>
 #include <cstdint>
 #include <cstdio>
@@ -48,7 +48,7 @@ static BOOL svc_codepage_lang(int reason, void **data)
 {
 	if (reason != PLUGIN_INIT)
 		return TRUE;
-	LINK_API(data);
+	LINK_SVC_API(data);
 	std::string plugname = get_plugin_name();
 	auto pos = plugname.find('.');
 	if (pos != plugname.npos)

@@ -20,7 +20,7 @@
 
 using namespace gromox;
 
-DECLARE_API(extern);
+DECLARE_SVC_API(extern);
 
 namespace {
 

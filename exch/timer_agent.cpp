@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#define DECLARE_API_STATIC
+#define DECLARE_SVC_API_STATIC
 #include <cerrno>
 #include <csignal>
 #include <cstdint>
@@ -67,7 +67,7 @@ static BOOL svc_timer_agent(int reason, void **ppdata)
 	
 	switch(reason) {
 	case PLUGIN_INIT: {
-		LINK_API(ppdata);
+		LINK_SVC_API(ppdata);
 		g_notify_stop = true;
 		double_list_init(&g_back_list);
 		double_list_init(&g_lost_list);

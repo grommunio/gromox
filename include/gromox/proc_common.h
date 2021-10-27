@@ -47,7 +47,7 @@ struct DCERPC_INTERFACE {
 	void (*reclaim)(uint32_t async_id);
 };
 
-#define DECLARE_API(x) \
+#define DECLARE_PROC_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \
 	x BOOL (*register_serviceF)(const char *, void *, const std::type_info &); \
 	x void *(*register_endpoint)(const char *, int); \
@@ -75,13 +75,13 @@ struct DCERPC_INTERFACE {
 #define register_service(n, f) register_serviceF((n), reinterpret_cast<void *>(f), typeid(decltype(*(f))))
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
-#ifdef DECLARE_API_STATIC
-DECLARE_API(static);
+#ifdef DECLARE_PROC_API_STATIC
+DECLARE_PROC_API(static);
 #else
-DECLARE_API(extern);
+DECLARE_PROC_API(extern);
 #endif
 
-#define LINK_API(param) \
+#define LINK_PROC_API(param) \
 	query_serviceF = reinterpret_cast<decltype(query_serviceF)>(param[0]); \
 	query_service2("register_service", register_serviceF); \
 	query_service1(register_endpoint); \

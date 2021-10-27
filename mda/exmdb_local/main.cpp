@@ -17,7 +17,7 @@
 
 using namespace gromox;
 
-DECLARE_API();
+DECLARE_HOOK_API();
 
 static BOOL hook_exmdb_local(int reason, void **ppdata)
 {
@@ -37,7 +37,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 	/* path contains the config files directory */
     switch (reason) {
 	case PLUGIN_INIT: {
-		LINK_API(ppdata);
+		LINK_HOOK_API(ppdata);
 		std::string plugname, filename;
 		try {
 			plugname = get_plugin_name();

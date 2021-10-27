@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
-#define DECLARE_API_STATIC
+#define DECLARE_SVC_API_STATIC
 #include <cstdio>
 #include <cstring>
 #include <unistd.h>
@@ -52,7 +52,7 @@ static BOOL svc_atclient(int reason, void **data)
 {
 	if (reason != PLUGIN_INIT)
 		return TRUE;
-	LINK_API(data);
+	LINK_SVC_API(data);
 	if (!register_service("add_timer", at_add_timer) ||
 	    !register_service("cancel_timer", at_del_timer)) {
 		printf("[at_client]: failed to register timer functions\n");

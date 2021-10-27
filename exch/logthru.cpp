@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
-#define DECLARE_API_STATIC
+#define DECLARE_SVC_API_STATIC
 #include <cerrno>
 #include <cstdarg>
 #include <cstdio>
@@ -69,7 +69,7 @@ static BOOL svc_logger(int reason, void **data)
 	}
 	if (reason != PLUGIN_INIT)
 		return TRUE;
-	LINK_API(data);
+	LINK_SVC_API(data);
 	auto cfg = config_file_initd("log_plugin.cfg", get_config_path());
 	auto sv = cfg->get_value("log_level");
 	g_max_loglevel = sv != nullptr ? strtoul(sv, nullptr, 0) : 4;

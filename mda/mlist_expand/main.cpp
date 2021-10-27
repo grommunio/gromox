@@ -5,7 +5,7 @@
 #include "bounce_producer.h"
 #include "../../exch/mysql_adaptor/mysql_adaptor.h"
 
-DECLARE_API();
+DECLARE_HOOK_API();
 
 #define MLIST_RESULT_OK                 0
 #define MLIST_RESULT_NONE               1
@@ -25,7 +25,7 @@ static BOOL hook_mlist_expand(int reason, void **ppdata)
 {
     switch (reason) {
     case PLUGIN_INIT:
-		LINK_API(ppdata);
+		LINK_HOOK_API(ppdata);
 		query_service2("get_mail_list", get_mlist);
 		if (NULL == get_mlist) {
 			printf("[mlist_expand]: failed to get service \"get_mail_list\"\n");

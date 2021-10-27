@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
-#define DECLARE_API_STATIC
+#define DECLARE_SVC_API_STATIC
 #include <cstdio>
 #include <libHX/string.h>
 #include <gromox/common_types.hpp>
@@ -24,7 +24,7 @@ static BOOL svc_textmaps(int reason, void **apidata)
 #define E(s, f) register_service(s, f)
 	if (reason != PLUGIN_INIT)
 		return TRUE;
-	LINK_API(apidata);
+	LINK_SVC_API(apidata);
 	using namespace gromox;
 	textmaps_init(get_data_path());
 	if (!E("verify_cpid", verify_cpid) ||

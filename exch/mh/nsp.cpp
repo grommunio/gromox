@@ -30,7 +30,7 @@
 using namespace gromox;
 using namespace hpm_mh;
 
-DECLARE_API();
+DECLARE_HPM_API();
 
 using NspRequest = std::variant<
 	bind_request,
@@ -214,7 +214,7 @@ void* MhNspPlugin::scanWork(void* ptr)
  */
 MhNspPlugin::MhNspPlugin(void** ppdata)
 {
-	LINK_API(ppdata)
+	LINK_HPM_API(ppdata)
 	if (!query_service1(get_id_from_username))
 		throw std::runtime_error("[mh_nsp]: fail to get \"get_id_from_username\" service\n");
 	if (!query_service1(nsp_interface_bind) ||

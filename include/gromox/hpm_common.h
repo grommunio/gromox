@@ -59,7 +59,7 @@ struct HTTP_AUTH_INFO {
 	const char* lang;
 };
 
-#define DECLARE_API(x) \
+#define DECLARE_HPM_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \
 	x BOOL (*register_interface)(HPM_INTERFACE *); \
 	x BOOL (*register_talk)(TALK_MAIN); \
@@ -84,13 +84,13 @@ struct HTTP_AUTH_INFO {
 	x void (*rpc_free_environment)();
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
-#ifdef DECLARE_API_STATIC
-DECLARE_API(static);
+#ifdef DECLARE_HPM_API_STATIC
+DECLARE_HPM_API(static);
 #else
-DECLARE_API(extern);
+DECLARE_HPM_API(extern);
 #endif
 	
-#define LINK_API(param) \
+#define LINK_HPM_API(param) \
 	query_serviceF = reinterpret_cast<decltype(query_serviceF)>(param[0]); \
 	query_service1(register_interface); \
 	query_service1(register_talk); \

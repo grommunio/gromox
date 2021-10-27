@@ -5,7 +5,7 @@
 #include <cstdio>
 #include "sql2.hpp"
 
-DECLARE_API();
+DECLARE_SVC_API();
 
 static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 {
@@ -19,7 +19,7 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 	if (reason != PLUGIN_INIT)
 		return TRUE;
 
-	LINK_API(ppdata);
+	LINK_SVC_API(ppdata);
 	if (!mysql_adaptor_reload_config(get_config_path(),
 	    get_host_ID(), get_prog_id()))
 		return false;

@@ -17,7 +17,7 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-DECLARE_API();
+DECLARE_SVC_API();
 
 static BOOL svc_str_filter(int reason, void **ppdata)
 {
@@ -28,7 +28,7 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 	
 	switch(reason) {
 	case PLUGIN_INIT: {
-		LINK_API(ppdata);
+		LINK_SVC_API(ppdata);
 		std::string plugname = get_plugin_name();
 		auto pos = plugname.find('.');
 		if (pos != plugname.npos)

@@ -59,7 +59,7 @@ static int exchange_async_emsmdb_ndr_push(int opnum,
 
 static void exchange_async_emsmdb_reclaim(uint32_t async_id);
 
-DECLARE_API();
+DECLARE_PROC_API();
 
 static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig)
 {
@@ -103,7 +103,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		exch_emsmdb_reload(nullptr);
 		return TRUE;
 	case PLUGIN_INIT: {
-		LINK_API(ppdata);
+		LINK_PROC_API(ppdata);
 		gx_strlcpy(file_name, get_plugin_name(), GX_ARRAY_SIZE(file_name));
 		psearch = strrchr(file_name, '.');
 		if (NULL != psearch) {

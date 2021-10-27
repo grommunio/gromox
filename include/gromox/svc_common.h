@@ -8,7 +8,7 @@
 
 using TALK_MAIN = void (*)(int, char **, char *, int);
 
-#define	DECLARE_API(x) \
+#define	DECLARE_SVC_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \
 	x BOOL (*register_serviceF)(const char *, void *, const std::type_info &); \
 	x BOOL (*register_talk)(TALK_MAIN); \
@@ -24,13 +24,13 @@ using TALK_MAIN = void (*)(int, char **, char *, int);
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
 
-#ifdef DECLARE_API_STATIC
-DECLARE_API(static);
+#ifdef DECLARE_SVC_API_STATIC
+DECLARE_SVC_API(static);
 #else
-DECLARE_API(extern);
+DECLARE_SVC_API(extern);
 #endif
 
-#define LINK_API(param) \
+#define LINK_SVC_API(param) \
 	query_serviceF = reinterpret_cast<decltype(query_serviceF)>(param[0]); \
 	query_service2("register_service", register_serviceF); \
 	query_service1(register_talk); \

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
-#define DECLARE_API_STATIC
+#define DECLARE_SVC_API_STATIC
 #include <cerrno>
 #include <typeinfo>
 #include <cstdio>
@@ -230,7 +230,7 @@ static BOOL svc_ldap_adaptor(int reason, void **ppdata) try
 	if (reason != PLUGIN_INIT)
 		return TRUE;
 
-	LINK_API(ppdata);
+	LINK_SVC_API(ppdata);
 	if (!ldap_adaptor_load())
 		return false;
 	if (!register_service("ldap_auth_login2", ldap_adaptor_login2)) {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later WITH linking exception
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
-#define DECLARE_API_STATIC
+#define DECLARE_SVC_API_STATIC
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
@@ -58,7 +58,7 @@ static BOOL svc_ip6_container(int reason, void **data)
 	}
 	if (reason != PLUGIN_INIT)
 		return TRUE;
-	LINK_API(data);
+	LINK_SVC_API(data);
 	std::string filename;
 	try {
 		filename = get_plugin_name();

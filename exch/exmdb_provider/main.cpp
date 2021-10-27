@@ -24,7 +24,7 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-DECLARE_API();
+DECLARE_SVC_API();
 
 static std::shared_ptr<CONFIG_FILE> g_config_during_init;
 
@@ -129,7 +129,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		exmdb_provider_reload(nullptr);
 		return TRUE;
 	case PLUGIN_EARLY_INIT: {
-		LINK_API(ppdata);
+		LINK_SVC_API(ppdata);
 		exmdb_rpc_alloc = common_util_alloc;
 		exmdb_rpc_free = [](void *) {};
 		exmdb_rpc_exec = exmdb_client_do_rpc;

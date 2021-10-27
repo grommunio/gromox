@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#define DECLARE_API_STATIC
+#define DECLARE_SVC_API_STATIC
 #include <csignal>
 #include <cstdint>
 #include <libHX/string.h>
@@ -60,7 +60,7 @@ static BOOL svc_event_stub(int reason, void **ppdata)
 	
 	switch(reason) {
 	case PLUGIN_INIT: {
-		LINK_API(ppdata);
+		LINK_SVC_API(ppdata);
 		g_notify_stop = true;
 		g_event_stub_func = NULL;
 		double_list_init(&g_back_list);
