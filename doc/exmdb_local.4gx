@@ -5,8 +5,47 @@ with a C API
 .SH Description
 An LDA hook plugin for delivery(8gx) which places mail into a store by
 connecting to a exmdb_provider(4gx) service.
-.SH Config file directives
-This plugin has no directives.
+.SH Configuration file directives
+.TP
+\fBalarm_interval\fP
+Default: \fI30min\fP
+.TP
+\fBcache_scan_interval\fP
+Interval in which to scan /var/lib/gromox/queue/cache.
+.br
+Default: 3min
+.TP
+\fBdefault_charset\fP
+Default: \fIwindows-1252\fP
+.TP
+\fBdefault_timezone\fP
+Fallback timezone to use for system-generated mail.
+.br
+Default: (unspecified)
+.TP
+\fBexmdb_connection_num\fP
+Default: \fI5\fP
+.TP
+\fBfailure_times_for_alarm\fP
+Default: \fI10\fP
+.TP
+\fBinterval_for_failure_statistic\fP
+Default: \fI1hour\fP
+.TP
+\fBresponse_audit_capacity\fP
+Default: \fI1000\fP
+.TP
+\fBresponse_interval\fP
+Default: \fI3min\fP
+.TP
+\fBretrying_times\fP
+Default: \fI30\fP
+.TP
+\fBseparator_for_bounce\fP
+Default: <space>
+.TP
+\fBx500_org_name\fP
+Default: (unspecified)
 .SH Files
 .IP \(bu 4
 \fIdata_file_path\fP/propnames.txt
