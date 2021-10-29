@@ -333,7 +333,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		*outvalue = common_util_to_folder_entryid(pfolder->plogon,
 					rop_util_make_eid_ex(1, PRIVATE_FID_TASKS));
 		return TRUE;
-	case PROP_TAG_REMINDERSONLINEENTRYID:
+	case PR_REM_ONLINE_ENTRYID:
 		if (!pfolder->plogon->check_private())
 			return FALSE;
 		if (pfolder->folder_id != rop_util_make_eid_ex(1, PRIVATE_FID_ROOT)) {
@@ -341,7 +341,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		}
 		if (!exmdb_client_get_folder_property(pfolder->plogon->get_dir(),
 		    0, rop_util_make_eid_ex(1, PRIVATE_FID_INBOX),
-		    PROP_TAG_REMINDERSONLINEENTRYID, &pvalue) || pvalue == nullptr)
+		    PR_REM_ONLINE_ENTRYID, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		*outvalue = pvalue;
 		return TRUE;

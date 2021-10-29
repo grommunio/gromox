@@ -753,7 +753,7 @@ BOOL exmdb_server_set_folder_properties(
 		for (i=0; i<pproperties->count; i++) {
 			if (pproperties->ppropval[i].proptag == PR_ADDITIONAL_REN_ENTRYIDS ||
 			    pproperties->ppropval[i].proptag == PR_ADDITIONAL_REN_ENTRYIDS_EX ||
-			    pproperties->ppropval[i].proptag == PROP_TAG_REMINDERSONLINEENTRYID) {
+			    pproperties->ppropval[i].proptag == PR_REM_ONLINE_ENTRYID) {
 				if (FALSE == common_util_set_property(
 					FOLDER_PROPERTIES_TABLE, PRIVATE_FID_INBOX,
 					0, pdb->psqlite, &pproperties->ppropval[i],
