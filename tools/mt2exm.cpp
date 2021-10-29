@@ -115,7 +115,8 @@ static void exm_read_base_maps()
 	gi_folder_map_read(buf.get(), xsize, g_folder_map);
 	gi_dump_folder_map(g_folder_map);
 	filter_folder_map(g_folder_map);
-	fprintf(stderr, "Folder map adjusted (for a %s store):\n", g_public_folder ? "public" : "private");
+	if (g_show_props)
+		fprintf(stderr, "Folder map adjusted (for a %s store):\n", g_public_folder ? "public" : "private");
 	gi_dump_folder_map(g_folder_map);
 
 	errno = 0;
