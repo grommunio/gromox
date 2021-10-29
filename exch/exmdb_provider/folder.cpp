@@ -425,19 +425,6 @@ BOOL exmdb_server_get_folder_by_name(const char *dir,
 	return TRUE;
 }
 
-static bool special_name(const char *s)
-{
-	static const char *const names[] = {
-		"Inbox", "Drafts", "Outbox", "Sent Items", "Deleted Items",
-		"Contacts", "Calendar", "Journal", "Notes", "Tasks",
-		"Junk E-mail", "Sync Issues"
-	};
-	for (size_t i = 0; i < arsizeof(names); ++i)
-		if (strcasecmp(s, names[i]) == 0)
-			return true;
-	return false;
-}
-
 BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	uint32_t cpid, const TPROPVAL_ARRAY *pproperties,
 	uint64_t *pfolder_id)
@@ -481,9 +468,6 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	pname = static_cast<char *>(common_util_get_propvals(pproperties, PR_DISPLAY_NAME));
 	if (pname == nullptr)
 		return TRUE;
-	if (exmdb_server_check_private() &&
-	    parent_id == PRIVATE_FID_IPMSUBTREE && special_name(pname))
-		return TRUE;	
 	pvalue = common_util_get_propvals(pproperties, PROP_TAG_CHANGENUMBER);
 	if (pvalue == nullptr)
 		return TRUE;
@@ -551,6 +535,8 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
+
+	/* Check whether name is already assigned to any folder */
 	snprintf(sql_string, arsizeof(sql_string), "SELECT propval "
 		"FROM folder_properties WHERE folder_id=?"
 	        " AND proptag=%u", PR_DISPLAY_NAME);
@@ -569,6 +555,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	}
 	pstmt1.finalize();
 	pstmt.finalize();
+
 	if (type == FOLDER_GENERIC) {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT "
 			"max(range_end) FROM allocated_eids");
