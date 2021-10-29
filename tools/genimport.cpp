@@ -511,7 +511,7 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
 			return -ENOMEM;
 	}
 	if (!tpropval_array_set_propval(props, PROP_TAG_PARENTFOLDERID, &parent_fld) ||
-	    !exm_set_change_keys(props, change_num)) {
+	    exm_set_change_keys(props, change_num) < 0) {
 		fprintf(stderr, "exm: tpropval: ENOMEM\n");
 		return -ENOMEM;
 	}
