@@ -313,7 +313,7 @@ static int exm_packet(const void *buf, size_t bufsize)
 			throw YError("PG-1118");
 		auto ret = exm_folder(obd, props);
 		if (ret < 0)
-			throw YError("PG-1122: %s", strerror(errno));
+			throw YError("PG-1122: %s", strerror(-ret));
 		return 0;
 	} else if (obd.mapitype == MAPI_MESSAGE) {
 		MESSAGE_CONTENT ctnt{};

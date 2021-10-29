@@ -315,12 +315,12 @@ void gi_folder_map_write(const gi_folder_map_t &map)
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
 	auto ret = write(STDOUT_FILENO, &xsize, sizeof(xsize));
 	if (ret < 0)
-		throw YError("PG-1104: %s", strerror(errno));
+		throw YError("PG-1104: %s", strerror(-ret));
 	else if (ret != sizeof(xsize))
 		throw YError("PG-1105");
 	ret = write(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
 	if (ret < 0)
-		throw YError("PG-1106: %s", strerror(errno));
+		throw YError("PG-1106: %s", strerror(-ret));
 	else if (ret != ep.m_offset)
 		throw YError("PG-1107");
 }
@@ -361,12 +361,12 @@ void gi_name_map_write(const gi_name_map &map)
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
 	auto ret = write(STDOUT_FILENO, &xsize, sizeof(xsize));
 	if (ret < 0)
-		throw YError("PG-1112: %s", strerror(errno));
+		throw YError("PG-1112: %s", strerror(-ret));
 	else if (ret != sizeof(xsize))
 		throw YError("PG-1113");
 	ret = write(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
 	if (ret < 0)
-		throw YError("PG-1114: %s", strerror(errno));
+		throw YError("PG-1114: %s", strerror(-ret));
 	else if (ret != ep.m_offset)
 		throw YError("PG-1115");
 }
