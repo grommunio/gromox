@@ -497,6 +497,10 @@ int exm_set_change_keys(TPROPVAL_ARRAY *props, uint64_t change_num)
 	return 0;
 }
 
+/**
+ * @o_excl:	Enforce that we are the first to create the folder, just like
+ * 		open(2)'s %O_EXCL flag.
+ */
 int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
     uint64_t *new_fld_id)
 {

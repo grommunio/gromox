@@ -33,11 +33,13 @@ static char *g_username;
 static gi_folder_map_t g_folder_map;
 static gi_name_map g_src_name_map;
 static gi_thru_map g_thru_name_map;
-static uint8_t g_splice, ignore_mkdir_fail;
+static uint8_t g_splice;
+static unsigned int g_oexcl = 1;
 static const struct HXoption g_options_table[] = {
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},
+	{nullptr, 'x', HXTYPE_VAL, &g_oexcl, nullptr, nullptr, 0, "Disable O_EXCL like behavior for non-spliced folders"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -219,9 +221,7 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
 		    current_it->second.create_name.c_str()))
 			throw std::bad_alloc();
 		auto ret = exm_create_folder(current_it->second.fid_to,
-			   &props, true /* O_EXCL */, &new_fid);
-		if (ret < 0 && ignore_mkdir_fail)
-			return 0;
+			   &props, g_oexcl, &new_fid);
 		if (ret < 0)
 			return ret;
 		if (new_fid != 0) {
@@ -249,9 +249,7 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
 		 * Create or reuse (depending on splice) "subfolder of e.g. wastebasket".
 		 */
 		auto ret = exm_create_folder(parent_it->second.fid_to,
-			   &props, !g_splice, &new_fid);
-		if (ret < 0 && ignore_mkdir_fail)
-			return 0;
+			   &props, !g_splice && g_oexcl, &new_fid);
 		if (ret < 0)
 			return ret;
 		if (new_fid != 0) {
