@@ -63,7 +63,9 @@ struct driver final {
 	~driver();
 	NOMOVE(driver);
 	DB_RESULT query(const char *);
+	uint32_t hid_from_eid(const BINARY &);
 	uint32_t hid_from_mst(kdb_item &, uint32_t);
+	uint32_t hid_from_ren(kdb_item &, unsigned int);
 	std::unique_ptr<kdb_item> get_store_item();
 	std::unique_ptr<kdb_item> get_root_folder();
 	void fmap_setup_standard(const char *title);
@@ -413,20 +415,37 @@ DB_RESULT driver::query(const char *qstr)
 	return res;
 }
 
+uint32_t driver::hid_from_eid(const BINARY &eid)
+{
+	if (eid.cb == 0)
+		return 0;
+	char qstr[184];
+	snprintf(qstr, arsizeof(qstr), "SELECT hierarchyid FROM indexedproperties "
+		"WHERE tag=0x0FFF AND val_binary=0x%.96s LIMIT 1", bin2hex(eid.pv, eid.cb).c_str());
+	auto res = query(qstr);
+	auto row = res.fetch_row();
+	if (row == nullptr || row[0] == nullptr)
+		return 0;
+	return strtoul(row[0], nullptr, 0);
+}
+
 uint32_t driver::hid_from_mst(kdb_item &item, uint32_t proptag)
 {
 	auto props = item.get_props();
 	auto eid = static_cast<BINARY *>(tpropval_array_get_propval(props, proptag));
 	if (eid == nullptr)
 		return 0;
-	char qstr[184];
-	snprintf(qstr, arsizeof(qstr), "SELECT hierarchyid FROM indexedproperties "
-		"WHERE tag=0x0FFF AND val_binary=0x%.96s LIMIT 1", bin2hex(eid->pv, eid->cb).c_str());
-	auto res = query(qstr);
-	auto row = res.fetch_row();
-	if (row == nullptr || row[0] == nullptr)
+	return hid_from_eid(*eid);
+}
+
+uint32_t driver::hid_from_ren(kdb_item &item, unsigned int idx)
+{
+	auto props = item.get_props();
+	auto ba = static_cast<BINARY_ARRAY *>(tpropval_array_get_propval(props,
+	          PR_ADDITIONAL_REN_ENTRYIDS));
+	if (ba == nullptr || idx >= ba->count)
 		return 0;
-	return strtoul(row[0], nullptr, 0);
+	return hid_from_eid(ba->pbin[idx]);
 }
 
 void driver::fmap_setup_splice()
@@ -478,6 +497,29 @@ void driver::fmap_setup_splice()
 	nid = hid_from_mst(*root, PR_IPM_DRAFTS_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_DRAFT, "FID_DRAFTS"});
+
+	/*
+	 * This here is just for classification of sync folders.
+	 * Ignoring sync folder contents should be done elsewhere.
+	 * (If we did not classify these folders here, they would get imported
+	 * as regular folders rather than the special folder.)
+	 * Skeletor returns next week with more useful hints.
+	 */
+	nid = hid_from_ren(*root, sfConflicts);
+	if (nid != 0)
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_CONFLICTS, "FID_CONFLICTS"});
+	nid = hid_from_ren(*root, sfSyncFailures);
+	if (nid != 0)
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_SYNC_ISSUES, "FID_SYNC_ISSUES"});
+	nid = hid_from_ren(*root, sfLocalFailures);
+	if (nid != 0)
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_LOCAL_FAILURES, "FID_LOCAL_FAIL"});
+	nid = hid_from_ren(*root, sfServerFailures);
+	if (nid != 0)
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_SERVER_FAILURES, "FID_SERVER_FAIL"});
+	nid = hid_from_ren(*root, sfJunkEmail);
+	if (nid != 0)
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_JUNK, "FID_JUNK"});
 }
 
 void driver::fmap_setup_standard(const char *title)

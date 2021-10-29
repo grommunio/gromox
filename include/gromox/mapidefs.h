@@ -756,6 +756,16 @@ enum { /* ROWENTRY::ulRowFlags bits */
 	ROW_EMPTY  = ROW_ADD | ROW_REMOVE,
 };
 
+enum ren_special_folder {
+	/* index into PR_ADDITIONAL_REN_ENTRYIDS */
+	sfConflicts = 0,
+	sfSyncFailures = 1,
+	sfLocalFailures = 2,
+	sfServerFailures = 3,
+	sfJunkEmail = 4,
+	sfSpamTagDontUse = 5, /* no entryid at this index, but a 32-bit tag */
+};
+
 enum { /* for PR_STORE_SUPPORT_MASK and PR_STORE_STATE */
 	STORE_ENTRYID_UNIQUE    = 1U << 0,
 	STORE_READONLY          = 1U << 1,
