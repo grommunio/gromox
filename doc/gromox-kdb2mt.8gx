@@ -15,12 +15,14 @@ hierarchy during extraction.
 .PP
 The SQL server that carries the Zarafa/Kopano database for the home server
 of the user must be active. Databases with a schema version \fBn61\fP or
-newer (ZCP 7.0.3 and onwards, all KC) are supported.
+newer (ZCP versions 7.0.3 and onwards, and all KC versions) are supported.
 .PP
-The kopano\-server(8) process need not be running.
+The kopano\-server(8) process need not be running. LDAP need not be running.
 .PP
 The directory of Kopano attachments of the home server should be made available
 in the mount namespace whereever gromox\-kdb2mt runs.
+.PP
+No permissions are extracted.
 .SH Options
 .TP
 \fB\-p\fP
