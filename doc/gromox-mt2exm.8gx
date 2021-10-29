@@ -1,6 +1,6 @@
 .TH gromox\-mt2exm 8gx "" "Gromox" "Gromox admin reference"
 .SH Name
-gromox\-mt2exm(8gx) \(em Utility for importing various mail items
+gromox\-mt2exm \(em Utility for importing various mail items
 .SH Synopsis
 \fBgromox\-mt2exm\fP [\fB\-pt\fP] \fB-u\fP [\fIuser\fP]\fB@\fP\fIdomain.de\fP
 .SH Description
@@ -20,7 +20,7 @@ Print folder/message summary as these items are processed.
 .TP
 \fB\-u\fP [\fIuser\fP]\fB@\fIdomain.de\fP
 Target mail store which to import mails to. For the public folder of a domain,
-leave out the local part, i.e. use \fI@domain.de\fP.
+leave out the local part, i.e. use \fB@\fP\fIdomain.de\fP.
 .SH Examples
 PFF import to a private mailbox:
 .PP
