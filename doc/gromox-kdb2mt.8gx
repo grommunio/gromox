@@ -96,8 +96,7 @@ filesystem presented locally.
 sshfs root@kdb.lan:/var/lib/kopano/attachments /tmp/at
 .PP
 SRCPASS=rootpass gromox\-kdb2mt \-\-src\-sql kdb.lan \-\-src\-attach /tmp/at
-\-\-src\-mbox jdoe \-\-dst\-mbox john.doe@gromox.lan | gromox\-mt2exm
-target@domain.de
+\-\-src\-mbox jdoe | gromox\-mt2exm target@domain.de
 .PP
 Scenario 2. Gromox can be installed on the Kopano host, pulling from a
 local/remote SQL and local filesystem, while sending its export stream to
