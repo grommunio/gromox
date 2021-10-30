@@ -32,7 +32,6 @@
 #include <gromox/double_list.hpp>
 #include <gromox/single_list.hpp>
 #include "exmdb_client.h"
-#include <gromox/tpropval_array.hpp>
 #include "system_services.h"
 #include <ctime>
 #include <iconv.h>

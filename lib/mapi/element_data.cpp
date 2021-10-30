@@ -3,7 +3,6 @@
 #include <utility>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
-#include <gromox/tpropval_array.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/tarray_set.hpp>
 #include <gromox/eid_array.hpp>

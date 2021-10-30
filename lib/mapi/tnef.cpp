@@ -6,7 +6,6 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
-#include <gromox/tpropval_array.hpp>
 #include <gromox/proptag_array.hpp>
 #include <gromox/tarray_set.hpp>
 #include <gromox/rop_util.hpp>

@@ -18,7 +18,6 @@
 #include <gromox/mapidefs.h>
 #include <gromox/scope.hpp>
 #include <gromox/svc_common.h>
-#include <gromox/tpropval_array.hpp>
 #include <gromox/proptag_array.hpp>
 #include "exmdb_client.h"
 #include "exmdb_server.h"

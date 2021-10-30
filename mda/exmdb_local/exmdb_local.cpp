@@ -22,7 +22,6 @@
 #include "bounce_audit.h"
 #include "auto_response.h"
 #include <gromox/alloc_context.hpp>
-#include <gromox/tpropval_array.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <pthread.h>

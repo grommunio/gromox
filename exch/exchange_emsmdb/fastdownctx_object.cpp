@@ -5,7 +5,6 @@
 #include <utility>
 #include "fastdownctx_object.h"
 #include "emsmdb_interface.h"
-#include <gromox/tpropval_array.hpp>
 #include "exmdb_client.h"
 #include "ftstream_producer.h"
 #include "ics_state.h"

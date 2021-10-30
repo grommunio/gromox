@@ -33,7 +33,6 @@
 #include <gromox/tarray_set.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/apple_util.hpp>
-#include <gromox/tpropval_array.hpp>
 #include <unistd.h>
 #include <cstring>
 #include <cstdlib>

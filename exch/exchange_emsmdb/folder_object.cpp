@@ -6,7 +6,6 @@
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include "emsmdb_interface.h"
-#include <gromox/tpropval_array.hpp>
 #include "folder_object.h"
 #include "logon_object.h"
 #include "exmdb_client.h"

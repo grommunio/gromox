@@ -8,7 +8,6 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
-#include <gromox/tpropval_array.hpp>
 #include "folder_object.h"
 #include "zarafa_server.h"
 #include "common_util.h"

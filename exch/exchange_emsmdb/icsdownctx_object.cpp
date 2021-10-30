@@ -4,7 +4,6 @@
 #include <memory>
 #include "icsdownctx_object.h"
 #include "emsmdb_interface.h"
-#include <gromox/tpropval_array.hpp>
 #include <gromox/proptag_array.hpp>
 #include "exmdb_client.h"
 #include "folder_object.h"

@@ -6,7 +6,6 @@
 #include "attachment_object.h"
 #include "emsmdb_interface.h"
 #include "message_object.h"
-#include <gromox/tpropval_array.hpp>
 #include <gromox/proptag_array.hpp>
 #include "ics_state.h"
 #include "logon_object.h"

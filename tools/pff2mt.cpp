@@ -21,7 +21,6 @@
 #include <gromox/fileio.h>
 #include <gromox/tarray_set.hpp>
 #include <gromox/tie.hpp>
-#include <gromox/tpropval_array.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"
 

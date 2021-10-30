@@ -5,7 +5,6 @@
 #include <gromox/defs.h>
 #include <gromox/guid.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/tpropval_array.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/oxvcard.hpp>
 #include <gromox/vcard.hpp>

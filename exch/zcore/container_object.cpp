@@ -13,7 +13,6 @@
 #include <gromox/tarray_set.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/tpropval_array.hpp>
 #include "ab_tree.h"
 #include "exmdb_client.h"
 #include "store_object.h"

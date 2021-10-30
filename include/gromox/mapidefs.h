@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <gromox/defs.h>
 
 #define PROP_ID(x) ((x) >> 16)
 #define PROP_TYPE(x) ((x) & 0xFFFF)
@@ -1073,6 +1074,20 @@ struct TAGGED_PROPVAL {
 	uint32_t proptag;
 	void *pvalue;
 };
+
+struct TPROPVAL_ARRAY;
+extern GX_EXPORT TPROPVAL_ARRAY *tpropval_array_init();
+extern GX_EXPORT void tpropval_array_free(TPROPVAL_ARRAY *);
+extern GX_EXPORT bool tpropval_array_init_internal(TPROPVAL_ARRAY *);
+extern GX_EXPORT void tpropval_array_free_internal(TPROPVAL_ARRAY *);
+extern GX_EXPORT bool tpropval_array_set_propval(TPROPVAL_ARRAY *, const TAGGED_PROPVAL *);
+static inline bool tpropval_array_set_propval(TPROPVAL_ARRAY *a, uint32_t tag, const void *d) {
+	TAGGED_PROPVAL v{tag, deconst(d)};
+	return tpropval_array_set_propval(a, &v);
+}
+extern GX_EXPORT void tpropval_array_remove_propval(TPROPVAL_ARRAY *, uint32_t tag);
+extern GX_EXPORT void *tpropval_array_get_propval(const TPROPVAL_ARRAY *, uint32_t tag);
+extern GX_EXPORT TPROPVAL_ARRAY *tpropval_array_dup(TPROPVAL_ARRAY *);
 
 struct TPROPVAL_ARRAY {
 	uint16_t count;

@@ -10,7 +10,6 @@
 #include <new>
 #include <libHX/option.h>
 #include <gromox/exmdb_rpc.hpp>
-#include <gromox/tpropval_array.hpp>
 #include "genimport.hpp"
 
 namespace exmdb_client = exmdb_client_remote;

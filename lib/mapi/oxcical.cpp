@@ -10,7 +10,6 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
-#include <gromox/tpropval_array.hpp>
 #include <gromox/tarray_set.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail_func.hpp>

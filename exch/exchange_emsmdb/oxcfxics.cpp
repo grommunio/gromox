@@ -17,7 +17,6 @@
 #include "exmdb_client.h"
 #include "folder_object.h"
 #include "rop_processor.h"
-#include <gromox/tpropval_array.hpp>
 #include "message_object.h"
 #include "icsupctx_object.h"
 #include "ics_state.h"

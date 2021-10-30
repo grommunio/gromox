@@ -2,7 +2,6 @@
 #include <cstdint>
 #include <memory>
 #include "icsdownctx_object.h"
-#include <gromox/tpropval_array.hpp>
 #include <gromox/proptag_array.hpp>
 #include "zarafa_server.h"
 #include "exmdb_client.h"

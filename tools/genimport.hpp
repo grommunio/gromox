@@ -9,7 +9,6 @@
 #include <gromox/fileio.h>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/tpropval_array.hpp>
 
 class YError final : public std::exception {
 	public:

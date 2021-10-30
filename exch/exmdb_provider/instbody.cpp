@@ -14,7 +14,6 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/rtf.hpp>
 #include <gromox/rtfcp.hpp>
-#include <gromox/tpropval_array.hpp>
 
 using namespace gromox;
 

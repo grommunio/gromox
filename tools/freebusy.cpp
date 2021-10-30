@@ -12,7 +12,6 @@
 #include <gromox/scope.hpp>
 #include <gromox/socket.h>
 #include <gromox/paths.h>
-#include <gromox/tpropval_array.hpp>
 #include <gromox/double_list.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/list_file.hpp>

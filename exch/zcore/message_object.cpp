@@ -8,7 +8,6 @@
 #include "attachment_object.h"
 #include "system_services.h"
 #include "message_object.h"
-#include <gromox/tpropval_array.hpp>
 #include "zarafa_server.h"
 #include <gromox/proptag_array.hpp>
 #include "store_object.h"

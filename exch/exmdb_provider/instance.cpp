@@ -8,7 +8,6 @@
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/scope.hpp>
-#include <gromox/tpropval_array.hpp>
 #include <gromox/proptag_array.hpp>
 #include "exmdb_server.h"
 #include "common_util.h"

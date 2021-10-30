@@ -13,7 +13,6 @@
 #include "emsmdb_interface.h"
 #include "logon_object.h"
 #include "message_object.h"
-#include <gromox/tpropval_array.hpp>
 #include "folder_object.h"
 #include "exmdb_client.h"
 #include "common_util.h"
