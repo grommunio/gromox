@@ -1,3 +1,28 @@
+1.6 (2021-10-30)
+================
+
+Fixes:
+
+* delivery-queue: fix three crashes involving stream processing
+* exmdb_local: stop emitting bogus message length into temporary message files
+* exmdb_local: fix crash on read-back of temporary message files
+* mda: add a delivery mechanism for Out Of Office autoreplies
+* mt2exm: fix an inverted condition that would erroneously
+  raise error code PG-1122
+
+Enhancements:
+
+* mt2exm: add an -x option for ignoring duplicated folder creations
+* kdb2mt: the special folder for junk e-mail is now recognized
+  (relevant for when the -s command-line option is used).
+
+Changes:
+
+* delivery-queue: the flusher plugin mechanism has been dropped; the only
+  plugin there was, libgxf_message_enqueue, is now directly in the program.
+* Scope-based resource management for a number of internal library classes.
+
+
 1.5 (2021-10-21)
 ================
 
