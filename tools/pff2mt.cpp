@@ -435,8 +435,9 @@ static tpropval_array_ptr item_to_tpropval_a(libpff_item_t *item)
 		throw std::bad_alloc();
 	int nsets = 0;
 	libpff_error_ptr err;
-	if (libpff_item_get_number_of_record_sets(item, &nsets, &unique_tie(err)) < 1)
-		throw az_error("PF-1060", err);
+	if (libpff_item_get_number_of_record_sets(item, &nsets, &unique_tie(err)) < 1 ||
+	    nsets == 0)
+		return props;
 	for (int n = 0; n < nsets; ++n) {
 		libpff_record_set_ptr rset;
 		if (libpff_item_get_record_set_by_index(item, 0,
@@ -566,11 +567,11 @@ static int do_recips(unsigned int depth, const parent_desc &parent, libpff_item_
 {
 	int nsets = 0;
 	libpff_error_ptr err;
-	if (libpff_item_get_number_of_record_sets(item, &nsets, &unique_tie(err)) < 1)
-		throw az_error("PF-1050", err);
 	tpropval_array_ptr props(tpropval_array_init());
 	if (props == nullptr)
 		throw std::bad_alloc();
+	if (libpff_item_get_number_of_record_sets(item, &nsets, &unique_tie(err)) <= 1)
+		return 0;
 	for (int s = 0; s < nsets; ++s) {
 		libpff_record_set_ptr rset;
 		if (libpff_item_get_record_set_by_index(item, s, &unique_tie(rset), nullptr) < 1)
@@ -620,11 +621,28 @@ static void do_print(unsigned int depth, libpff_item_t *item)
 	libpff_item_get_number_of_entries(item, &nent, nullptr);
 	tree(depth);
 	auto sp_nid = az_special_ident(ident);
-	tlog("[id=%lxh%s%s type=%s nent=%lu nset=%d]\n",
+	tlog("[id=%lxh%s%s type=%s nset=%d]\n",
 		static_cast<unsigned long>(ident),
 		*sp_nid != '\0' ? " " : "", sp_nid,
 		az_item_type_to_str(item_type),
-		static_cast<unsigned long>(nent), nsets);
+		nsets, static_cast<unsigned long>(nent));
+}
+
+static void do_print_rset(unsigned int depth, libpff_item_t *item)
+{
+	int nsets = 0;
+	if (libpff_item_get_number_of_record_sets(item, &nsets, nullptr) <= 0)
+		return;
+	for (int s = 0; s < nsets; ++s) {
+		libpff_record_set_ptr rset;
+		if (libpff_item_get_record_set_by_index(item, s, &unique_tie(rset), nullptr) < 1)
+			throw YError("PF-1054");
+		tpropval_array_ptr props(tpropval_array_init());
+		if (props == nullptr)
+			throw std::bad_alloc();
+		recordset_to_tpropval_a(rset.get(), props.get());
+		gi_dump_tpropval_a(depth, *props);
+	}
 }
 
 static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t *item)
@@ -651,9 +669,11 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 		ret = do_recips(depth, parent, item);
 	} else if (item_type == LIBPFF_ITEM_TYPE_ATTACHMENT) {
 		ret = do_attach(depth, parent, item);
-	} else if (g_show_tree) {
+	} else if (g_show_tree && ident == 0x62b) {
 		do_print(depth++, item);
+		do_print_rset(depth, item);
 	}
+
 	if (ret != 0)
 		return ret;
 	/*
