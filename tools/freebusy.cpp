@@ -1266,9 +1266,7 @@ static BOOL get_freebusy(const char *dir)
 	int sockd;
 	void *pvalue;
 	BOOL b_first;
-	char *psubject;
 	BOOL b_private1 = false, b_meeting1;
-	char *plocation;
 	BOOL b_reminder1;
 	uint8_t tmp_true;
 	uint32_t table_id;
@@ -1572,33 +1570,26 @@ static BOOL get_freebusy(const char *dir)
 	printf("\"events\":[");
 	b_first = FALSE;
 	for (size_t i = 0; i < tmp_set.count; ++i) {
-		pvalue = tpropval_array_get_propval(
-			tmp_set.pparray[i], pidlidappointmentstartwhole);
+		pvalue = tmp_set.pparray[i]->getval(pidlidappointmentstartwhole);
 		if (NULL == pvalue) {
 			continue;
 		}
 		whole_start_time = rop_util_nttime_to_unix(*(uint64_t*)pvalue);
-		pvalue = tpropval_array_get_propval(
-			tmp_set.pparray[i], pidlidappointmentendwhole);
+		pvalue = tmp_set.pparray[i]->getval(pidlidappointmentendwhole);
 		if (NULL == pvalue) {
 			continue;
 		}
 		whole_end_time = rop_util_nttime_to_unix(*(uint64_t*)pvalue);
-		pvalue = tpropval_array_get_propval(
-			tmp_set.pparray[i], pidlidglobalobjectid);
+		pvalue = tmp_set.pparray[i]->getval(pidlidglobalobjectid);
 		if (!make_ical_uid(static_cast<BINARY *>(pvalue), uid_buff))
 			continue;
-		psubject = static_cast<char *>(tpropval_array_get_propval(tmp_set.pparray[i], PR_SUBJECT));
-		plocation = static_cast<char *>(tpropval_array_get_propval(
-		            tmp_set.pparray[i], pidlidlocation));
-		pvalue = tpropval_array_get_propval(
-			tmp_set.pparray[i], pidlidreminderset);
+		auto psubject = tmp_set.pparray[i]->get<char>(PR_SUBJECT);
+		auto plocation = tmp_set.pparray[i]->get<char>(pidlidlocation);
+		pvalue = tmp_set.pparray[i]->getval(pidlidreminderset);
 		BOOL b_reminder = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? false : TRUE;
-		pvalue = tpropval_array_get_propval(
-			tmp_set.pparray[i], pidlidprivate);
+		pvalue = tmp_set.pparray[i]->getval(pidlidprivate);
 		BOOL b_private = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? false : TRUE;
-		pvalue = tpropval_array_get_propval(
-			tmp_set.pparray[i], pidlidbusystatus);
+		pvalue = tmp_set.pparray[i]->getval(pidlidbusystatus);
 		if (NULL == pvalue) {
 			busy_type = 0;
 		} else {
@@ -1607,15 +1598,12 @@ static BOOL get_freebusy(const char *dir)
 				busy_type = 0;
 			}
 		}
-		pvalue = tpropval_array_get_propval(
-			tmp_set.pparray[i], pidlidappointmentstateflags);
+		pvalue = tmp_set.pparray[i]->getval(pidlidappointmentstateflags);
 		BOOL b_meeting = pvalue == nullptr ? false :
 		                 (*static_cast<uint32_t *>(pvalue) & 1) ? TRUE : false;
-		pvalue = tpropval_array_get_propval(
-			tmp_set.pparray[i], pidlidrecurring);
+		pvalue = tmp_set.pparray[i]->getval(pidlidrecurring);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-			pvalue = tpropval_array_get_propval(
-				tmp_set.pparray[i], pidlidtimezonestruct);
+			pvalue = tmp_set.pparray[i]->getval(pidlidtimezonestruct);
 			if (NULL == pvalue) {
 				ptz_component = NULL;
 			} else {
@@ -1629,8 +1617,7 @@ static BOOL get_freebusy(const char *dir)
 					continue;
 				}
 			}
-			pvalue = tpropval_array_get_propval(
-				tmp_set.pparray[i], pidlidappointmentrecur);
+			pvalue = tmp_set.pparray[i]->getval(pidlidappointmentrecur);
 			if (NULL == pvalue) {
 				continue;
 			}

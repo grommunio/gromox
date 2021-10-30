@@ -342,8 +342,7 @@ void *OBJECT_TREE::get_zstore_propval(uint32_t proptag)
 		return NULL;
 	}
 	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
-	return tpropval_array_get_propval(
-		prootobj->pprivate_proplist, proptag);
+	return prootobj->pprivate_proplist->getval(proptag);
 }
 
 BOOL OBJECT_TREE::set_zstore_propval(const TAGGED_PROPVAL *ppropval)
@@ -381,9 +380,7 @@ TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)
 	}
 	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	for (size_t i = 0; i < prootobj->pprof_set->count; ++i) {
-		auto pguid = static_cast<GUID *>(tpropval_array_get_propval(
-			prootobj->pprof_set->pparray[i],
-			PROP_TAG_PROPFILESECLSID));
+		auto pguid = prootobj->pprof_set->pparray[i]->get<GUID>(PROP_TAG_PROPFILESECLSID);
 		if (NULL == pguid) {
 			continue;
 		}

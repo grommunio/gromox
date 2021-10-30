@@ -109,11 +109,11 @@ static int repair_mbox()
 
 	printf("Hierarchy discovery: %u folders\n", tset.count);
 	for (size_t i = 0; i < tset.count; ++i) {
-		auto fid = static_cast<const uint64_t *>(tpropval_array_get_propval(tset.pparray[i], PROP_TAG_FOLDERID));
+		auto fid = tset.pparray[i]->get<uint64_t>(PROP_TAG_FOLDERID);
 		if (fid == nullptr)
 			continue;
-		auto ckey = static_cast<const BINARY *>(tpropval_array_get_propval(tset.pparray[i], PR_CHANGE_KEY));
-		auto pcl  = static_cast<const BINARY *>(tpropval_array_get_propval(tset.pparray[i], PR_PREDECESSOR_CHANGE_LIST));
+		auto ckey = tset.pparray[i]->get<BINARY>(PR_CHANGE_KEY);
+		auto pcl  = tset.pparray[i]->get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
 		if (ckey == nullptr)
 			continue;
 		auto k1   = change_key_size_ok(*ckey);

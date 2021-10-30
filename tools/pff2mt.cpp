@@ -454,7 +454,7 @@ static int do_folder(unsigned int depth, const parent_desc &parent,
 	if (g_show_tree) {
 		gi_dump_tpropval_a(depth, *props);
 	} else {
-		auto name = static_cast<char *>(tpropval_array_get_propval(props.get(), PR_DISPLAY_NAME));
+		auto name = props->get<char>(PR_DISPLAY_NAME);
 		if (name != nullptr)
 			fprintf(stderr, "pff: Processing \"%s\"...\n", name);
 		/*

@@ -34,7 +34,7 @@ static constexpr size_t UTF8LEN_MARKER_SIZE = sizeof(uint32_t);
 /* Get an arbitrary body, no fallbacks. */
 static int instance_get_raw(MESSAGE_CONTENT *mc, BINARY *&bin, unsigned int tag)
 {
-	auto data = tpropval_array_get_propval(&mc->proplist, tag);
+	auto data = mc->proplist.getval(tag);
 	if (data == nullptr)
 		return 0;
 	uint32_t length = 0;
@@ -100,7 +100,7 @@ static int instance_conv_textfromhigher(MESSAGE_CONTENT *mc, BINARY *&bin)
 	ret = html_to_plain(bin->pc, bin->cb, plainbuf);
 	if (ret < 0)
 		return 0;
-	auto cpraw = tpropval_array_get_propval(&mc->proplist, PR_INTERNET_CPID);
+	auto cpraw = mc->proplist.getval(PR_INTERNET_CPID);
 	uint32_t orig_cpid = cpraw != nullptr ? *static_cast<uint32_t *>(cpraw) : 65001;
 	if (ret != 65001 && orig_cpid != 65001) {
 		bin->pv = common_util_convert_copy(TRUE, orig_cpid, plainbuf.c_str());

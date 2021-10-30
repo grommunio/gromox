@@ -153,7 +153,7 @@ static void exm_adjust_staticprops(TPROPVAL_ARRAY &props)
 	 * exmdb_provider:common_util_set_properties). Apply substitutions that
 	 * exmdb_server_set_instance_properties would do.
 	 */
-	auto mfp = static_cast<uint32_t *>(tpropval_array_get_propval(&props, PR_MESSAGE_FLAGS));
+	auto mfp = props.get<uint32_t>(PR_MESSAGE_FLAGS);
 	uint32_t mf = mfp != nullptr ? *mfp : 0;
 	uint8_t a_one = 1;
 	TAGGED_PROPVAL tp;
@@ -201,12 +201,9 @@ static void exm_folder_adjust(TPROPVAL_ARRAY &props)
 	 * exmdb_server_create_folder_by_properties only takes two types,
 	 * upgrade everything else for best import.
 	 */
-	auto ftp = tpropval_array_get_propval(&props, PR_FOLDER_TYPE);
-	if (ftp != nullptr) {
-		auto &ft = *static_cast<uint32_t *>(ftp);
-		if (ft != FOLDER_GENERIC && ft != FOLDER_SEARCH)
-			ft = FOLDER_GENERIC;
-	}
+	auto ft = props.get<uint32_t>(PR_FOLDER_TYPE);
+	if (ft != nullptr && *ft != FOLDER_GENERIC && *ft != FOLDER_SEARCH)
+		*ft = FOLDER_GENERIC;
 }
 
 static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)

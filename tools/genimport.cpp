@@ -225,17 +225,17 @@ void gi_dump_tpropval_a(unsigned int depth, const TPROPVAL_ARRAY &props)
 		gi_dump_tpropval(depth + 1, props.ppropval[i]);
 	if (!g_show_props)
 		tlog("}\n");
-	auto p = static_cast<const char *>(tpropval_array_get_propval(&props, PR_DISPLAY_NAME));
+	auto p = props.get<const char>(PR_DISPLAY_NAME);
 	if (p != nullptr) {
 		tree(depth);
 		tlog("display_name=\"%s\"\n", p);
 	}
-	p = static_cast<const char *>(tpropval_array_get_propval(&props, PR_SUBJECT));
+	p = props.get<char>(PR_SUBJECT);
 	if (p != nullptr) {
 		tree(depth);
 		tlog("subject=\"%s\"\n", p);
 	}
-	p = static_cast<const char *>(tpropval_array_get_propval(&props, PR_ATTACH_LONG_FILENAME));
+	p = props.get<char>(PR_ATTACH_LONG_FILENAME);
 	if (p != nullptr) {
 		tree(depth);
 		tlog("filename=\"%s\"\n", p);
@@ -554,7 +554,7 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
 		fprintf(stderr, "exm: tpropval: ENOMEM\n");
 		return -ENOMEM;
 	}
-	auto dn = static_cast<const char *>(tpropval_array_get_propval(props, PR_DISPLAY_NAME));
+	auto dn = props->get<const char>(PR_DISPLAY_NAME);
 	if (!o_excl && dn != nullptr) {
 		if (!exmdb_client::get_folder_by_name(g_storedir,
 		    parent_fld, dn, new_fld_id)) {

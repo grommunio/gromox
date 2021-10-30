@@ -1271,12 +1271,12 @@ static BOOL oxcmail_parse_message_flag(char *field, uint16_t *plast_propid,
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return FALSE;
 	
-	pvalue = tpropval_array_get_propval(pproplist, PR_SUBJECT);
+	pvalue = pproplist->getval(PR_SUBJECT);
 	if (NULL != pvalue) {
 		b_unicode = TRUE;
 	} else {
 		b_unicode = FALSE;
-		pvalue = tpropval_array_get_propval(pproplist, PR_SUBJECT_A);
+		pvalue = pproplist->getval(PR_SUBJECT_A);
 	}
 	if (NULL != pvalue) {
 		rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
@@ -1632,9 +1632,9 @@ static BOOL oxcmail_enum_mail_head(
 			tmp_byte = '\0';
 			if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 				return FALSE;
-			pvalue = tpropval_array_get_propval(&penum_param->pmsg->proplist, PR_SUBJECT);
+			pvalue = penum_param->pmsg->proplist.getval(PR_SUBJECT);
 			if (NULL == pvalue) {
-				pvalue = tpropval_array_get_propval(&penum_param->pmsg->proplist, PR_SUBJECT_A);
+				pvalue = penum_param->pmsg->proplist.getval(PR_SUBJECT_A);
 				if (NULL != pvalue) {
 					propval.proptag = PR_NORMALIZED_SUBJECT_A;
 					propval.pvalue = pvalue;
@@ -3694,8 +3694,7 @@ static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 		dsn_free(&dsn);
 		return NULL;
 	}
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_CLIENTSUBMITTIME);
+	pvalue = pmsg->proplist.getval(PROP_TAG_CLIENTSUBMITTIME);
 	if (NULL == pvalue) {
 		dsn_info.submit_time = rop_util_unix_to_nttime(time(NULL));
 	} else {
@@ -3867,8 +3866,7 @@ static MIME* oxcmail_parse_mdn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 		return NULL;
 	}
 	dsn_free(&dsn);
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_CLIENTSUBMITTIME);
+	pvalue = pmsg->proplist.getval(PROP_TAG_CLIENTSUBMITTIME);
 	propval.proptag = PROP_TAG_ORIGINALDELIVERYTIME;
 	propval.pvalue = pvalue;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
@@ -4013,7 +4011,7 @@ static BOOL oxcmail_try_assign_propval(TPROPVAL_ARRAY *pproplist,
 	
 	if (pproplist->has(proptag1))
 		return TRUE;
-	pvalue = tpropval_array_get_propval(pproplist, proptag2);
+	pvalue = pproplist->getval(proptag2);
 	if (NULL == pvalue) {
 		return TRUE;
 	}
@@ -4138,8 +4136,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		message_content_free(pmsg);
 		return NULL;
 	}
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_CLIENTSUBMITTIME);
+	pvalue = pmsg->proplist.getval(PROP_TAG_CLIENTSUBMITTIME);
 	if (NULL == pvalue) {
 		propval.proptag = PROP_TAG_CLIENTSUBMITTIME;
 		propval.pvalue = &mime_enum.nttime_stamp;
@@ -4172,9 +4169,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		&& (pmsg1 = oxcmail_parse_tnef(phead,
 		alloc, get_propids))) {
 #ifdef VERIFY_TNEF_CORRELATOR
-		BINARY *ptnef_key = tpropval_array_get_propval(
-					&pmsg1->proplist,
-					PROP_TAG_TNEFCORRELATIONKEY);
+		auto ptnef_key = pmsg1->proplist.get<BINARY>(PROP_TAG_TNEFCORRELATIONKEY);
 		if (NULL == ptnef_key || 0 != strncmp(
 			ptnef_key->pb, tmp_buff, ptnef_key->cb)) {
 			message_content_free(pmsg1);
@@ -4238,9 +4233,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			&& (pmsg1 = oxcmail_parse_tnef(pmime1,
 			alloc, get_propids))) {
 #ifdef VERIFY_TNEF_CORRELATOR
-			ptnef_key = tpropval_array_get_propval(
-						&pmsg1->proplist,
-						PROP_TAG_TNEFCORRELATIONKEY);
+			ptnef_key = pmsg1->proplist.get<BINARY>(PROP_TAG_TNEFCORRELATIONKEY);
 			if (NULL == ptnef_key || 0 != strncmp(
 				ptnef_key->pb, tmp_buff, ptnef_key->cb)) {
 				message_content_free(pmsg1);
@@ -4512,10 +4505,9 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			/* calendar message object can not be displayed
 				correctly without PidTagRtfCompressed convert
 				PidTagHtml to PidTagRtfCompressed */
-			phtml_bin = static_cast<BINARY *>(tpropval_array_get_propval(
-			            &pmsg->proplist, PROP_TAG_HTML));
+			phtml_bin = pmsg->proplist.get<BINARY>(PROP_TAG_HTML);
 			if (NULL != phtml_bin) {
-				pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_INTERNET_CPID);
+				pvalue = pmsg->proplist.getval(PR_INTERNET_CPID);
 				if (NULL == pvalue) {
 					tmp_int32 = 65001;
 				} else {
@@ -4537,10 +4529,9 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		}
 	}
 	if (!pmsg->proplist.has(PR_BODY_W) && !pmsg->proplist.has(PR_BODY_A)) {
-		phtml_bin = static_cast<BINARY *>(tpropval_array_get_propval(
-		            &pmsg->proplist, PROP_TAG_HTML));
+		phtml_bin = pmsg->proplist.get<BINARY>(PROP_TAG_HTML);
 		if (NULL != phtml_bin) {
-			pvalue = tpropval_array_get_propval(&pmsg->proplist,  PR_INTERNET_CPID);
+			pvalue = pmsg->proplist.getval(PR_INTERNET_CPID);
 			if (NULL == pvalue) {
 				tmp_int32 = 65001;
 			} else {
@@ -4574,7 +4565,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		}
 	}
 	if (!pmsg->proplist.has(PROP_TAG_HTML)) {
-		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_BODY);
+		pvalue = pmsg->proplist.getval(PR_BODY);
 		if (NULL != pvalue) {
 			phtml_bin = static_cast<BINARY *>(alloc(sizeof(BINARY)));
 			if (NULL == phtml_bin) {
@@ -4605,9 +4596,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			if (pattachments->pplist[i]->proplist.has(PR_ATTACH_CONTENT_ID) ||
 			    pattachments->pplist[i]->proplist.has(PR_ATTACH_CONTENT_ID_A))
 				continue;	
-			pvalue = tpropval_array_get_propval(
-				&pattachments->pplist[i]->proplist,
-			         PR_ATTACHMENT_HIDDEN);
+			pvalue = pattachments->pplist[i]->proplist.getval(PR_ATTACHMENT_HIDDEN);
 			if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0)
 				continue;
 			break;
@@ -4686,23 +4675,21 @@ static BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY *pproplist,
     EXT_BUFFER_ALLOC alloc, uint32_t proptag1, uint32_t proptag2,
     uint32_t proptag3, uint32_t proptag4, char *username, size_t ulen)
 {
-	void *pvalue;
-
-	pvalue = tpropval_array_get_propval(pproplist, proptag1);
+	auto pvalue = pproplist->getval(proptag1);
 	if (NULL == pvalue) {
-		pvalue = tpropval_array_get_propval(pproplist, proptag2);
+		pvalue = pproplist->getval(proptag2);
 		if (NULL == pvalue) {
  FIND_ENTRYID:
-			pvalue = tpropval_array_get_propval(pproplist, proptag4);
+			pvalue = pproplist->getval(proptag4);
 			if (NULL == pvalue) {
 				return FALSE;
 			}
 			return oxcmail_entryid_to_username(static_cast<BINARY *>(pvalue), alloc, username, ulen);
 		} else {
 			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-				pvalue = tpropval_array_get_propval(pproplist, proptag3);
+				pvalue = pproplist->getval(proptag3);
 			} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
-				pvalue = tpropval_array_get_propval(pproplist, proptag3);
+				pvalue = pproplist->getval(proptag3);
 				if (NULL != pvalue) {
 					if (oxcmail_essdn_to_username(static_cast<char *>(pvalue), username, ulen))
 						return TRUE;	
@@ -4723,26 +4710,20 @@ static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
     uint32_t rcpt_type, EXT_BUFFER_ALLOC alloc, char *field, size_t fdsize)
 {
 	size_t offset = 0;
-	void *pvalue;
 	char username[UADDR_SIZE];
-	char *pdisplay_name;
-	TPROPVAL_ARRAY *prcpt;
 	
 	for (size_t i = 0; i < prcpts->count; ++i) {
-		prcpt = prcpts->pparray[i];
-		pvalue = tpropval_array_get_propval(
-			prcpt, PROP_TAG_RECIPIENTTYPE);
-		if (NULL == pvalue || rcpt_type != *(uint32_t*)pvalue) {
+		auto prcpt = prcpts->pparray[i];
+		auto pvalue = prcpt->get<uint32_t>(PROP_TAG_RECIPIENTTYPE);
+		if (pvalue == nullptr || *pvalue != rcpt_type)
 			continue;
-		}
 		if (0 != offset) {
 			memcpy(field + offset, ",\r\n\t", 4);
 			offset += 4;
 			if (offset >= fdsize)
 				return FALSE;
 		}
-		pdisplay_name = static_cast<char *>(tpropval_array_get_propval(
-		                prcpt, PR_DISPLAY_NAME));
+		auto pdisplay_name = prcpt->get<char>(PR_DISPLAY_NAME);
 		if (NULL != pdisplay_name) {
 			field[offset] = '"';
 			offset ++;
@@ -4783,19 +4764,16 @@ static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 	const char *charset, EXT_BUFFER_ALLOC alloc, char *field)
 {
 	EXT_PULL ext_pull;
-	STRING_ARRAY *pstrings;
 	ONEOFF_ARRAY address_array;
 	
-	auto pbin = static_cast<BINARY *>(tpropval_array_get_propval(
-	            &pmsg->proplist, PROP_TAG_REPLYRECIPIENTENTRIES));
+	auto pbin = pmsg->proplist.get<BINARY>(PROP_TAG_REPLYRECIPIENTENTRIES);
 	if (NULL == pbin) {
 		return FALSE;
 	}
 	ext_pull.init(pbin->pb, pbin->cb, alloc, 0);
 	if (ext_pull.g_oneoff_a(&address_array) != EXT_ERR_SUCCESS)
 		return FALSE;
-	pstrings = static_cast<STRING_ARRAY *>(tpropval_array_get_propval(
-	           &pmsg->proplist, PROP_TAG_REPLYRECIPIENTNAMES));
+	auto pstrings = pmsg->proplist.get<STRING_ARRAY>(PROP_TAG_REPLYRECIPIENTNAMES);
 	if (NULL != pstrings && pstrings->count !=
 		address_array.count) {
 		pstrings = NULL;
@@ -4855,7 +4833,7 @@ static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
 	char address[UADDR_SIZE];
 	
 	offset = 0;
-	auto pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, proptag1));
+	auto pvalue = pmsg->proplist.get<char>(proptag1);
 	if (NULL != pvalue) {
 		if (strlen(pvalue) >= GX_ARRAY_SIZE(address)) {
 			goto EXPORT_ADDRESS;
@@ -4976,11 +4954,9 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 	ATTACHMENT_CONTENT *pattachment;
 	memset(pskeleton, 0, sizeof(MIME_SKELETON));
 	pskeleton->charset = pcharset;
-	pskeleton->pmessage_class = static_cast<char *>(tpropval_array_get_propval(
-	                            &pmsg->proplist, PR_MESSAGE_CLASS));
+	pskeleton->pmessage_class = pmsg->proplist.get<char>(PR_MESSAGE_CLASS);
 	if (NULL == pskeleton->pmessage_class) {
-		pskeleton->pmessage_class = static_cast<char *>(tpropval_array_get_propval(
-		                            &pmsg->proplist, PR_MESSAGE_CLASS_A));
+		pskeleton->pmessage_class = pmsg->proplist.get<char>(PR_MESSAGE_CLASS_A);
 	}
 	if (NULL == pskeleton->pmessage_class) {
 		debug_info("[oxcmail]: missing message class for exporting");
@@ -4998,21 +4974,18 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 		pskeleton->mail_type = MAIL_TYPE_TNEF;
 	}
 	pskeleton->body_type = body_type;
-	pskeleton->pplain = static_cast<char *>(tpropval_array_get_propval(
-	                    &pmsg->proplist, PR_BODY));
+	pskeleton->pplain = pmsg->proplist.get<char>(PR_BODY);
 	if (MAIL_TYPE_ENCRYPTED == pskeleton->mail_type ||
 		MAIL_TYPE_ENCRYPTED == pskeleton->mail_type ||
 		MAIL_TYPE_TNEF == pskeleton->mail_type) {
 		/* do nothing */
 	} else {
-		auto pvalue = static_cast<uint32_t *>(tpropval_array_get_propval(
-		              &pmsg->proplist, PROP_TAG_NATIVEBODY));
+		auto pvalue = pmsg->proplist.get<uint32_t>(PROP_TAG_NATIVEBODY);
 		if (NULL != pvalue && NATIVE_BODY_RTF == *pvalue &&
-		    ((pvalue = static_cast<uint32_t *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_RTFINSYNC))) == nullptr ||
+		    ((pvalue = pmsg->proplist.get<uint32_t>(PROP_TAG_RTFINSYNC)) == nullptr ||
 		    *pvalue == 0)) {
  FIND_RTF:
-			prtf = static_cast<BINARY *>(tpropval_array_get_propval(
-			       &pmsg->proplist, PROP_TAG_RTFCOMPRESSED));
+			prtf = pmsg->proplist.get<BINARY>(PROP_TAG_RTFCOMPRESSED);
 			if (NULL != prtf) {
 				ssize_t unc_size = rtfcp_uncompressed_size(prtf);
 				pbuff = nullptr;
@@ -5054,8 +5027,7 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 				}
 			}
 		} else {
-			pskeleton->phtml = static_cast<BINARY *>(tpropval_array_get_propval(
-			                   &pmsg->proplist, PROP_TAG_HTML));
+			pskeleton->phtml = pmsg->proplist.get<BINARY>(PROP_TAG_HTML);
 			if (NULL == pskeleton->phtml) {
 				goto FIND_RTF;
 			}
@@ -5070,8 +5042,7 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 			pskeleton->b_attachment = TRUE;
 			continue;
 		}
-		auto pvalue = static_cast<uint32_t *>(tpropval_array_get_propval(
-		              &pattachment->proplist, PR_ATTACH_FLAGS));
+		auto pvalue = pattachment->proplist.get<uint32_t>(PR_ATTACH_FLAGS);
 		if (NULL != pvalue && (*pvalue & ATTACH_FLAG_RENDEREDINBODY)) {
 			if (pattachment->proplist.has(PR_ATTACH_CONTENT_ID) ||
 			    pattachment->proplist.has(PR_ATTACH_CONTENT_LOCATION)) {
@@ -5101,7 +5072,6 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 {
 	size_t tmp_len = 0;
 	GUID guid;
-	void *pvalue;
 	time_t tmp_time;
 	uint16_t propid;
 	uint32_t proptag;
@@ -5119,10 +5089,8 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		return FALSE;
 	}
 	
-	pvalue = tpropval_array_get_propval(&pmsg->proplist,
-							PROP_TAG_SENDERSMTPADDRESS);
-	auto pvalue1 = tpropval_array_get_propval(&pmsg->proplist,
-	               PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	auto pvalue = pmsg->proplist.getval(PROP_TAG_SENDERSMTPADDRESS);
+	auto pvalue1 = pmsg->proplist.getval(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (NULL != pvalue && NULL != pvalue1) {
 		if (strcasecmp(static_cast<char *>(pvalue), static_cast<char *>(pvalue1)) != 0) {
 			oxcmail_export_address(pmsg, alloc, PR_SENDER_NAME,
@@ -5136,17 +5104,13 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			}
 		}
 	} else {
-		pvalue = tpropval_array_get_propval(&pmsg->proplist,
-		         PR_SENDER_ADDRTYPE);
-		pvalue1 = tpropval_array_get_propval(&pmsg->proplist,
-		          PR_SENT_REPRESENTING_ADDRTYPE);
+		pvalue = pmsg->proplist.getval(PR_SENDER_ADDRTYPE);
+		pvalue1 = pmsg->proplist.getval(PR_SENT_REPRESENTING_ADDRTYPE);
 		if (NULL != pvalue && NULL != pvalue1 &&
 		    strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0 &&
 		    strcasecmp(static_cast<char *>(pvalue1), "SMTP") == 0) {
-			pvalue = tpropval_array_get_propval(&pmsg->proplist,
-			         PR_SENDER_EMAIL_ADDRESS);
-			pvalue1 = tpropval_array_get_propval(&pmsg->proplist,
-			          PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+			pvalue = pmsg->proplist.getval(PR_SENDER_EMAIL_ADDRESS);
+			pvalue1 = pmsg->proplist.getval(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 			if (NULL != pvalue && NULL != pvalue1) {
 				if (strcasecmp(static_cast<char *>(pvalue), static_cast<char *>(pvalue1)) != 0) {
 					oxcmail_export_address(pmsg, alloc,
@@ -5184,8 +5148,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			}	
 		}
 	}
-	pvalue = tpropval_array_get_propval(&pmsg->proplist,
-			PROP_TAG_ORIGINATORDELIVERYREPORTREQUESTED);
+	pvalue = pmsg->proplist.getval(PROP_TAG_ORIGINATORDELIVERYREPORTREQUESTED);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		if (TRUE == oxcmail_export_address(pmsg, alloc,
 			PROP_TAG_READRECEIPTNAME,
@@ -5211,7 +5174,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_READ_RECEIPT_REQUESTED);
+	pvalue = pmsg->proplist.getval(PR_READ_RECEIPT_REQUESTED);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		if (TRUE == oxcmail_export_address(pmsg, alloc,
 			PROP_TAG_READRECEIPTNAME,
@@ -5294,7 +5257,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		}
 		propid = propids.ppropid[0];
 		proptag = PROP_TAG(PT_UNICODE, propid);
-		pvalue = tpropval_array_get_propval(&pmsg->proplist, proptag);
+		pvalue = pmsg->proplist.getval(proptag);
 		if (NULL != pvalue) {
 			pvalue1 = strrchr(static_cast<char *>(pvalue), '.');
 			if (NULL != pvalue1) {
@@ -5308,15 +5271,13 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			}
 		}
 	}
-	pvalue = tpropval_array_get_propval(&pmsg->proplist,
-						PROP_TAG_SENDERTELEPHONENUMBER);
+	pvalue = pmsg->proplist.getval(PROP_TAG_SENDERTELEPHONENUMBER);
 	if (NULL != pvalue) {
 		if (!mime_set_field(phead, "X-CallingTelephoneNumber",
 		    static_cast<char *>(pvalue)))
 			return FALSE;
 	}
-	pvalue = tpropval_array_get_propval(&pmsg->proplist,
-						PROP_TAG_VOICEMESSAGEDURATION);
+	pvalue = pmsg->proplist.getval(PROP_TAG_VOICEMESSAGEDURATION);
 	if (NULL != pvalue) {
 		snprintf(tmp_field, arsizeof(tmp_field), "%d", *(uint32_t*)pvalue);
 		if (FALSE == mime_set_field(phead,
@@ -5324,15 +5285,13 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			return FALSE;
 		}
 	}
-	pvalue = tpropval_array_get_propval(&pmsg->proplist,
-						PROP_TAG_VOICEMESSAGESENDERNAME);
+	pvalue = pmsg->proplist.getval(PROP_TAG_VOICEMESSAGESENDERNAME);
 	if (NULL != pvalue) {
 		if (!mime_set_field(phead, "X-VoiceMessageSenderName",
 		    static_cast<char *>(pvalue)))
 			return FALSE;
 	}
-	pvalue = tpropval_array_get_propval(&pmsg->proplist,
-							PROP_TAG_FAXNUMBEROFPAGES);
+	pvalue = pmsg->proplist.getval(PROP_TAG_FAXNUMBEROFPAGES);
 	if (NULL != pvalue) {
 		snprintf(tmp_field, arsizeof(tmp_field), "%u", *(uint32_t*)pvalue);
 		if (FALSE == mime_set_field(phead,
@@ -5340,22 +5299,20 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			return FALSE;
 		}
 	}
-	pvalue = tpropval_array_get_propval(&pmsg->proplist,
-				PROP_TAG_VOICEMESSAGEATTACHMENTORDER);
+	pvalue = pmsg->proplist.getval(PROP_TAG_VOICEMESSAGEATTACHMENTORDER);
 	if (NULL != pvalue) {
 		if (!mime_set_field(phead, "X-AttachmentOrder",
 		    static_cast<char *>(pvalue)))
 			return FALSE;
 	}
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_CALLID);
+	pvalue = pmsg->proplist.getval(PROP_TAG_CALLID);
 	if (NULL != pvalue) {
 		if (!mime_set_field(phead, "X-CallID",
 		    static_cast<char *>(pvalue)))
 			return FALSE;
 	}
 	
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_IMPORTANCE);
+	pvalue = pmsg->proplist.getval(PR_IMPORTANCE);
 	if (NULL != pvalue) {
 		switch (*(uint32_t*)pvalue) {
 		case IMPORTANCE_LOW:
@@ -5379,7 +5336,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_SENSITIVITY);
+	pvalue = pmsg->proplist.getval(PR_SENSITIVITY);
 	if (NULL != pvalue) {
 		switch (*(uint32_t*)pvalue) {
 		case SENSITIVITY_NONE:
@@ -5410,8 +5367,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	pvalue = tpropval_array_get_propval(&pmsg->proplist,
-							PROP_TAG_CLIENTSUBMITTIME);
+	pvalue = pmsg->proplist.getval(PROP_TAG_CLIENTSUBMITTIME);
 	if (NULL == pvalue) {
 		time(&tmp_time);
 	} else {
@@ -5423,8 +5379,8 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		return FALSE;
 	}
 	
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_SUBJECT_PREFIX);
-	pvalue1 = tpropval_array_get_propval(&pmsg->proplist, PR_NORMALIZED_SUBJECT);
+	pvalue = pmsg->proplist.getval(PR_SUBJECT_PREFIX);
+	pvalue1 = pmsg->proplist.getval(PR_NORMALIZED_SUBJECT);
 	if (NULL != pvalue && NULL != pvalue1) {
 		snprintf(tmp_buff, MIME_FIELD_LEN, "%s%s",
 		         static_cast<const char *>(pvalue),
@@ -5437,7 +5393,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			}
 		}
 	} else {
-		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_SUBJECT);
+		pvalue = pmsg->proplist.getval(PR_SUBJECT);
 		if (pvalue != nullptr && oxcmail_encode_mime_string(pskeleton->charset,
 		    static_cast<char *>(pvalue), tmp_field, sizeof(tmp_field)) > 0) {
 			if (FALSE == mime_set_field(
@@ -5446,8 +5402,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			}
 		}
 	}
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_CONVERSATIONTOPIC);
+	pvalue = pmsg->proplist.getval(PROP_TAG_CONVERSATIONTOPIC);
 	if (NULL != pvalue) {
 		if (oxcmail_encode_mime_string(pskeleton->charset,
 		    static_cast<char *>(pvalue), tmp_field, sizeof(tmp_field)) > 0) {
@@ -5457,8 +5412,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			}
 		}
 	}
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_CONVERSATIONINDEX);
+	pvalue = pmsg->proplist.getval(PROP_TAG_CONVERSATIONINDEX);
 	if (NULL != pvalue) {
 		auto bv = static_cast<BINARY *>(pvalue);
 		if (encode64(bv->pb, bv->cb, tmp_field, 1024, &base64_len) == 0) {
@@ -5468,15 +5422,13 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			}
 		}
 	}
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_INTERNETMESSAGEID);
+	pvalue = pmsg->proplist.getval(PROP_TAG_INTERNETMESSAGEID);
 	if (NULL != pvalue) {
 		if (!mime_set_field(phead, "Message-ID",
 		    static_cast<char *>(pvalue)))
 			return FALSE;
 	}
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_INTERNETREFERENCES);
+	pvalue = pmsg->proplist.getval(PROP_TAG_INTERNETREFERENCES);
 	if (NULL != pvalue) {
 		if (FALSE == mime_set_field(phead,
 			"References", tmp_field)) {
@@ -5493,7 +5445,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	}
 	propid = propids.ppropid[0];
 	proptag = PROP_TAG(PT_MV_UNICODE, propid);
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, proptag);
+	pvalue = pmsg->proplist.getval(proptag);
 	if (NULL != pvalue) {
 		tmp_len = 0;
 		auto sa = static_cast<STRING_ARRAY *>(pvalue);
@@ -5515,35 +5467,31 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			}
 		}
 	}
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_INREPLYTOID);
+	pvalue = pmsg->proplist.getval(PROP_TAG_INREPLYTOID);
 	if (NULL != pvalue) {
 		if (!mime_set_field(phead, "In-Reply-To",
 		    static_cast<char *>(pvalue)))
 			return FALSE;
 	}
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_LISTHELP);
+	pvalue = pmsg->proplist.getval(PROP_TAG_LISTHELP);
 	if (NULL != pvalue) {
 		if (!mime_set_field(phead, "List-Help",
 		    static_cast<char *>(pvalue)))
 			return FALSE;
 	}
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_LISTSUBSCRIBE);
+	pvalue = pmsg->proplist.getval(PROP_TAG_LISTSUBSCRIBE);
 	if (NULL != pvalue) {
 		if (!mime_set_field(phead, "List-Subscribe",
 		    static_cast<char *>(pvalue)))
 			return FALSE;
 	}
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_LISTUNSUBSCRIBE);
+	pvalue = pmsg->proplist.getval(PROP_TAG_LISTUNSUBSCRIBE);
 	if (NULL != pvalue) {
 		if (!mime_set_field(phead, "List-Unsubscribe",
 		    static_cast<char *>(pvalue)))
 			return FALSE;
 	}
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_LOCALE_ID);
+	pvalue = pmsg->proplist.getval(PR_MESSAGE_LOCALE_ID);
 	if (NULL != pvalue) {
 		pvalue = deconst(oxcmail_lcid_to_ltag(*static_cast<uint32_t *>(pvalue)));
 		if (NULL != pvalue) {
@@ -5562,7 +5510,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	}
 	propid = propids.ppropid[0];
 	proptag = PROP_TAG(PT_BOOLEAN, propid);
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, proptag);
+	pvalue = pmsg->proplist.getval(proptag);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		if (FALSE == mime_set_field(phead,
 			"X-Microsoft-Classified", "true")) {
@@ -5579,7 +5527,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	}
 	propid = propids.ppropid[0];
 	proptag = PROP_TAG(PT_BOOLEAN, propid);
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, proptag);
+	pvalue = pmsg->proplist.getval(proptag);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		if (FALSE == mime_set_field(phead,
 			"X-Microsoft-ClassKeep", "true")) {
@@ -5596,7 +5544,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	}
 	propid = propids.ppropid[0];
 	proptag = PROP_TAG(PT_UNICODE, propid);
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, proptag);
+	pvalue = pmsg->proplist.getval(proptag);
 	if (NULL != pvalue) {
 		if (!mime_set_field(phead, "X-Microsoft-Classification",
 		    static_cast<char *>(pvalue)))
@@ -5612,7 +5560,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	}
 	propid = propids.ppropid[0];
 	proptag = PROP_TAG(PT_UNICODE, propid);
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, proptag);
+	pvalue = pmsg->proplist.getval(proptag);
 	if (NULL != pvalue) {
 		if (!mime_set_field(phead, "X-Microsoft-ClassDesc",
 		    static_cast<char *>(pvalue)))
@@ -5628,7 +5576,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	}
 	propid = propids.ppropid[0];
 	proptag = PROP_TAG(PT_UNICODE, propid);
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, proptag);
+	pvalue = pmsg->proplist.getval(proptag);
 	if (NULL != pvalue) {
 		if (!mime_set_field(phead, "X-Microsoft-ClassID",
 		    static_cast<char *>(pvalue)))
@@ -5645,8 +5593,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	pvalue = tpropval_array_get_propval(&pmsg->proplist,
-						PROP_TAG_AUTORESPONSESUPPRESS);
+	pvalue = pmsg->proplist.getval(PROP_TAG_AUTORESPONSESUPPRESS);
 	if (NULL != pvalue && 0 != *(uint32_t*)pvalue) {
 		if (0xFFFFFFFF == *(uint32_t*)pvalue) {
 			if (FALSE == mime_set_field(phead,
@@ -5712,8 +5659,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_AUTOFORWARDED);
+	pvalue = pmsg->proplist.getval(PROP_TAG_AUTOFORWARDED);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		if (FALSE == mime_set_field(phead,
 			"X-MS-Exchange-Organization-AutoForwarded", "true")) {
@@ -5721,7 +5667,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_SENDER_ID_STATUS);
+	pvalue = pmsg->proplist.getval(PR_SENDER_ID_STATUS);
 	if (NULL != pvalue) {
 		switch (*(uint32_t*)pvalue) {
 		case 1:
@@ -5776,16 +5722,14 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	pvalue = tpropval_array_get_propval(&pmsg->proplist,
-						PROP_TAG_PURPORTEDSENDERDOMAIN);
+	pvalue = pmsg->proplist.getval(PROP_TAG_PURPORTEDSENDERDOMAIN);
 	if (NULL != pvalue) {
 		if (!mime_set_field(phead, "X-MS-Exchange-Organization-PRD",
 		    static_cast<char *>(pvalue)))
 			return FALSE;
 	}
 	
-	pvalue = tpropval_array_get_propval(&pmsg->proplist,
-			PROP_TAG_CONTENTFILTERSPAMCONFIDENCELEVEL);
+	pvalue = pmsg->proplist.getval(PROP_TAG_CONTENTFILTERSPAMCONFIDENCELEVEL);
 	if (NULL != pvalue) {
 		snprintf(tmp_field, arsizeof(tmp_field), "%d", *(int32_t*)pvalue);
 		if (FALSE == mime_set_field(phead,
@@ -5804,13 +5748,12 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	}
 	propid = propids.ppropid[0];
 	proptag = PROP_TAG(PT_UNICODE, propid);
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, proptag);
+	pvalue = pmsg->proplist.getval(proptag);
 	if (NULL != pvalue && '\0' != *(char*)pvalue) {
 		if (!mime_set_field(phead, "X-Message-Flag",
 		    static_cast<char *>(pvalue)))
 			return FALSE;
-		pvalue = tpropval_array_get_propval(
-			&pmsg->proplist, PROP_TAG_REPLYTIME);
+		pvalue = pmsg->proplist.getval(PROP_TAG_REPLYTIME);
 		if (NULL != pvalue) {
 			tmp_time = rop_util_nttime_to_unix(*(uint64_t*)pvalue);
 			strftime(tmp_field, 128, "%a, %d %b %Y %H:%M:%S %z",
@@ -5823,11 +5766,9 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	}
 	
 	if (MAIL_TYPE_TNEF == pskeleton->mail_type) {
-		pvalue = tpropval_array_get_propval(&pmsg->proplist,
-								PROP_TAG_TNEFCORRELATIONKEY);
+		pvalue = pmsg->proplist.getval(PROP_TAG_TNEFCORRELATIONKEY);
 		if (NULL == pvalue) {
-			pvalue = tpropval_array_get_propval(
-				&pmsg->proplist, PROP_TAG_INTERNETMESSAGEID);
+			pvalue = pmsg->proplist.getval(PROP_TAG_INTERNETMESSAGEID);
 			if (NULL != pvalue) {
 				strncpy(tmp_field, static_cast<char *>(pvalue), 1024);
 			} else {
@@ -5848,8 +5789,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_BODYCONTENTID);
+	pvalue = pmsg->proplist.getval(PROP_TAG_BODYCONTENTID);
 	if (NULL != pvalue) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "<%s>",
 		         static_cast<const char *>(pvalue));
@@ -5859,8 +5799,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist,  PROP_TAG_BODYCONTENTLOCATION);
+	pvalue = pmsg->proplist.getval(PROP_TAG_BODYCONTENTLOCATION);
 	if (NULL != pvalue) {
 		if (!mime_set_field(phead, "Content-Location",
 		    static_cast<char *>(pvalue)))
@@ -5917,9 +5856,7 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 	
 	dsn_init(&dsn);
 	pdsn_fields = dsn_get_message_fileds(&dsn);
-	pvalue = tpropval_array_get_propval(
-		(TPROPVAL_ARRAY*)&pmsg->proplist,
-		PROP_TAG_REPORTINGMESSAGETRANSFERAGENT);
+	pvalue = /* (TPROPVAL_ARRAY*)& */ pmsg->proplist.getval(PROP_TAG_REPORTINGMESSAGETRANSFERAGENT);
 	if (NULL == pvalue) {
 		strcpy(tmp_buff, "dns; ");
 		gethostname(tmp_buff + 5, sizeof(tmp_buff) - 5);
@@ -5975,12 +5912,10 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 			dsn_free(&dsn);
 			return FALSE;
 		}
-		pvalue = tpropval_array_get_propval(prcpts->pparray[i],
-							PROP_TAG_NONDELIVERYREPORTDIAGCODE);
+		pvalue = prcpts->pparray[i]->getval(PROP_TAG_NONDELIVERYREPORTDIAGCODE);
 		if (NULL != pvalue) {
 			if (0xFFFFFFFF == *(uint32_t*)pvalue) {
-				pvalue = tpropval_array_get_propval(prcpts->pparray[i],
-								PROP_TAG_NONDELIVERYREPORTREASONCODE);
+				pvalue = prcpts->pparray[i]->getval(PROP_TAG_NONDELIVERYREPORTREASONCODE);
 				if (NULL != pvalue) {
 					if (*(uint32_t*)pvalue > 6) {
 						strcpy(tmp_buff, "5.4.0");
@@ -5994,8 +5929,7 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 					}
 				}
 			} else {
-				pvalue = tpropval_array_get_propval(prcpts->pparray[i],
-								PROP_TAG_NONDELIVERYREPORTREASONCODE);
+				pvalue = prcpts->pparray[i]->getval(PROP_TAG_NONDELIVERYREPORTREASONCODE);
 				if (NULL != pvalue) {
 					if (*(uint32_t*)pvalue > 48) {
 						strcpy(tmp_buff, "5.0.0");
@@ -6010,8 +5944,7 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 				}
 			}
 		}
-		pvalue = tpropval_array_get_propval(prcpts->pparray[i],
-						PROP_TAG_REMOTEMESSAGETRANSFERAGENT);
+		pvalue = prcpts->pparray[i]->getval(PROP_TAG_REMOTEMESSAGETRANSFERAGENT);
 		if (NULL != pvalue) {
 			if (!dsn_append_field(pdsn_fields, "Remote-MTA",
 			    static_cast<char *>(pvalue))) {
@@ -6019,7 +5952,7 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 				return FALSE;
 			}
 		}
-		pvalue = tpropval_array_get_propval(prcpts->pparray[i], PR_SUPPLEMENTARY_INFO);
+		pvalue = prcpts->pparray[i]->getval(PR_SUPPLEMENTARY_INFO);
 		if (NULL != pvalue) {
 			if (!dsn_append_field(pdsn_fields, "X-Supplementary-Info",
 			    static_cast<char *>(pvalue))) {
@@ -6027,7 +5960,7 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 				return FALSE;
 			}
 		}
-		pvalue = tpropval_array_get_propval(prcpts->pparray[i], PR_DISPLAY_NAME);
+		pvalue = prcpts->pparray[i]->getval(PR_DISPLAY_NAME);
 		if (NULL != pvalue) {
 			if (oxcmail_encode_mime_string(charset,
 			    static_cast<char *>(pvalue), tmp_buff, GX_ARRAY_SIZE(tmp_buff)) > 0) {
@@ -6054,25 +5987,21 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg,
 {
 	DSN dsn;
 	int tmp_len;
-	void *pvalue;
 	size_t base64_len;
 	char tmp_buff[1024];
 	char tmp_address[UADDR_SIZE];
 	DSN_FIELDS *pdsn_fields;
-	const char *pdisplay_name;
 	
 	tmp_address[0] = '\0';
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_SENDERSMTPADDRESS);
-	pdisplay_name = static_cast<char *>(tpropval_array_get_propval(
-	                &pmsg->proplist, PR_SENDER_NAME));
+	auto pvalue = pmsg->proplist.getval(PROP_TAG_SENDERSMTPADDRESS);
+	auto pdisplay_name = pmsg->proplist.get<const char>(PR_SENDER_NAME);
 	if (NULL != pvalue) {
 		gx_strlcpy(tmp_address, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_address));
 	} else {
-		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_SENDER_ADDRTYPE);
+		pvalue = pmsg->proplist.getval(PR_SENDER_ADDRTYPE);
 		if (pvalue != nullptr &&
 		    strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-			pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_SENDER_EMAIL_ADDRESS);
+			pvalue = pmsg->proplist.getval(PR_SENDER_EMAIL_ADDRESS);
 			if (NULL != pvalue) {
 				gx_strlcpy(tmp_address, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_address));
 			}
@@ -6081,19 +6010,15 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg,
 	if ('\0' != tmp_address[0]) {
 		goto EXPORT_MDN_CONTENT;
 	}
-	pvalue = tpropval_array_get_propval(&pmsg->proplist,
-	         PR_SENT_REPRESENTING_SMTP_ADDRESS);
-	pdisplay_name = static_cast<char *>(tpropval_array_get_propval(
-	                &pmsg->proplist, PR_SENT_REPRESENTING_NAME));
+	pvalue = pmsg->proplist.getval(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	pdisplay_name = pmsg->proplist.get<char>(PR_SENT_REPRESENTING_NAME);
 	if (NULL != pvalue) {
 		gx_strlcpy(tmp_address, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_address));
 	} else {
-		pvalue = tpropval_array_get_propval(&pmsg->proplist,
-		         PR_SENT_REPRESENTING_ADDRTYPE);
+		pvalue = pmsg->proplist.getval(PR_SENT_REPRESENTING_ADDRTYPE);
 		if (pvalue != nullptr &&
 		    strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-			pvalue = tpropval_array_get_propval(&pmsg->proplist,
-			         PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+			pvalue = pmsg->proplist.getval(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 			if (NULL != pvalue) {
 				gx_strlcpy(tmp_address, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_address));
 			}
@@ -6117,7 +6042,7 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg,
 		dsn_free(&dsn);
 		return FALSE;
 	}
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_PARENT_KEY);
+	pvalue = pmsg->proplist.getval(PR_PARENT_KEY);
 	if (NULL != pvalue) {
 		auto bv = static_cast<BINARY *>(pvalue);
 		if (encode64(bv->pb, bv->cb, tmp_buff, 1024, &base64_len) == 0) {
@@ -6128,8 +6053,7 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg,
 			}
 		}
 	}
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_ORIGINALMESSAGEID);
+	pvalue = pmsg->proplist.getval(PROP_TAG_ORIGINALMESSAGEID);
 	if (NULL != pvalue) {
 		if (!dsn_append_field(pdsn_fields, "Original-Message-ID",
 		    static_cast<char *>(pvalue))) {
@@ -6169,8 +6093,7 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 	PROPNAME_ARRAY propnames;
 	PROPERTY_NAME propname_buff[2];
 	
-	auto pbin = static_cast<BINARY *>(tpropval_array_get_propval(
-	            &pattachment->proplist, PR_ATTACH_DATA_BIN));
+	auto pbin = pattachment->proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
 	if (NULL == pbin) {
 		return FALSE;
 	}
@@ -6193,11 +6116,9 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 		return FALSE;
 	}
 	proptag = PROP_TAG(PT_BINARY, propids.ppropid[0]);
-	pbin = static_cast<BINARY *>(tpropval_array_get_propval(
-	       &pattachment->proplist, proptag));
+	pbin = pattachment->proplist.get<BINARY>(proptag);
 	proptag = PROP_TAG(PT_UNICODE, propids.ppropid[1]);
-	pvalue = tpropval_array_get_propval(
-		&pattachment->proplist, proptag);
+	pvalue = pattachment->proplist.getval(proptag);
 	if (NULL == pvalue) {
 		pvalue = "application/octet-stream";
 	} else {
@@ -6243,9 +6164,9 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 			return FALSE;
 		}
 	}
-	pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_LONG_FILENAME);
+	pvalue = pattachment->proplist.getval(PR_ATTACH_LONG_FILENAME);
 	if (NULL == pvalue) {
-		pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_FILENAME);
+		pvalue = pattachment->proplist.getval(PR_ATTACH_FILENAME);
 	}
 	if (NULL != pvalue) {
 		tmp_field[0] = '"';
@@ -6274,7 +6195,7 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 			return FALSE;
 		}
 	}
-	pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_DISPLAY_NAME);
+	pvalue = pattachment->proplist.getval(PR_DISPLAY_NAME);
 	if (NULL != pvalue) {
 		tmp_len = oxcmail_encode_mime_string(pskeleton->charset,
 		          static_cast<const char *>(pvalue), tmp_field, 1024);
@@ -6301,11 +6222,9 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 	BOOL b_vcard;
 	size_t offset;
 	time_t tmp_time;
-	uint64_t *pctime;
-	uint64_t *pmtime;
 	struct tm time_buff;
 	char tmp_field[1024];
-	const char *pfile_name;
+	const char *pfile_name = nullptr;
 	LIB_BUFFER *pallocator;
 	
 	b_vcard = FALSE;
@@ -6320,24 +6239,20 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		 * attachment. oxcmail will convert this to vCard 4.0 and mark
 		 * it as text/directory.
 		 */
-		auto pvalue = tpropval_array_get_propval(&pattachment->pembedded->proplist, PR_MESSAGE_CLASS);
+		auto pvalue = pattachment->pembedded->proplist.getval(PR_MESSAGE_CLASS);
 		if (pvalue != nullptr &&
 		    strcasecmp(static_cast<char *>(pvalue), "IPM.Contact") == 0)
 			b_vcard = TRUE;
 	}
 	
-	pfile_name = NULL;
 	if (NULL == pattachment->pembedded) {
-		auto pcontent_type = static_cast<const char *>(tpropval_array_get_propval(
-		                     &pattachment->proplist, PR_ATTACH_MIME_TAG));
-		pfile_name = static_cast<char *>(tpropval_array_get_propval(
-		             &pattachment->proplist, PR_ATTACH_LONG_FILENAME));
+		auto pcontent_type = pattachment->proplist.get<const char>(PR_ATTACH_MIME_TAG);
+		pfile_name = pattachment->proplist.get<char>(PR_ATTACH_LONG_FILENAME);
 		if (NULL == pfile_name) {
-			pfile_name = static_cast<char *>(tpropval_array_get_propval(
-			             &pattachment->proplist, PR_ATTACH_FILENAME));
+			pfile_name = pattachment->proplist.get<char>(PR_ATTACH_FILENAME);
 		}
 		if (NULL == pcontent_type) {
-			auto pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_EXTENSION);
+			auto pvalue = pattachment->proplist.getval(PR_ATTACH_EXTENSION);
 			if (NULL != pvalue) {
 				pcontent_type = oxcmail_extension_to_mime(static_cast<char *>(pvalue) + 1);
 			}
@@ -6365,11 +6280,9 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 			}
 		}
 	} else if (b_vcard) {
-		pfile_name = static_cast<char *>(tpropval_array_get_propval(
-			     &pattachment->proplist, PR_ATTACH_LONG_FILENAME));
+		pfile_name = pattachment->proplist.get<char>(PR_ATTACH_LONG_FILENAME);
 		if (NULL == pfile_name) {
-			pfile_name = static_cast<char *>(tpropval_array_get_propval(
-				     &pattachment->proplist, PR_ATTACH_FILENAME));
+			pfile_name = pattachment->proplist.get<char>(PR_ATTACH_FILENAME);
 		}
 		if (FALSE == mime_set_content_type(
 			pmime, "text/directory")) {
@@ -6388,7 +6301,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		}
 	}
 	
-	auto pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_DISPLAY_NAME);
+	auto pvalue = pattachment->proplist.getval(PR_DISPLAY_NAME);
 	if (NULL != pvalue) {
 		tmp_len = oxcmail_encode_mime_string(pskeleton->charset,
 		          static_cast<char *>(pvalue), tmp_field, 1024);
@@ -6400,10 +6313,8 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		}
 	}
 	
-	pctime = static_cast<uint64_t *>(tpropval_array_get_propval(
-	         &pattachment->proplist, PR_CREATION_TIME));
-	pmtime = static_cast<uint64_t *>(tpropval_array_get_propval(
-	         &pattachment->proplist, PR_LAST_MODIFICATION_TIME));
+	auto pctime = pattachment->proplist.get<uint64_t>(PR_CREATION_TIME);
+	auto pmtime = pattachment->proplist.get<uint64_t>(PR_LAST_MODIFICATION_TIME);
 	if (TRUE == b_inline) {
 		strcpy(tmp_field, "inline; ");
 		tmp_len = 8;
@@ -6440,7 +6351,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		return FALSE;
 	}
 	
-	pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_CONTENT_ID);
+	pvalue = pattachment->proplist.getval(PR_ATTACH_CONTENT_ID);
 	if (NULL != pvalue) {
 		snprintf(tmp_field, sizeof(tmp_field), "<%s>",
 		         static_cast<const char *>(pvalue));
@@ -6449,11 +6360,11 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 			return FALSE;
 		}
 	}
-	pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_CONTENT_LOCATION);
+	pvalue = pattachment->proplist.getval(PR_ATTACH_CONTENT_LOCATION);
 	if (pvalue != nullptr && !mime_set_field(pmime, "Content-Location",
 	    static_cast<char *>(pvalue)))
 		return FALSE;
-	pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_CONTENT_BASE);
+	pvalue = pattachment->proplist.getval(PR_ATTACH_CONTENT_BASE);
 	if (pvalue != nullptr && !mime_set_field(pmime, "Content-Base",
 	    static_cast<char *>(pvalue)))
 		return FALSE;
@@ -6512,7 +6423,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		tmp_stream.clear();
 		return mime_write_content(pmime, pbuff.get(), mail_len, MIME_ENCODING_NONE);
 	}
-	pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_DATA_BIN);
+	pvalue = pattachment->proplist.getval(PR_ATTACH_DATA_BIN);
 	auto bv = static_cast<BINARY *>(pvalue);
 	if (bv != nullptr && bv->cb != 0)
 		if (!mime_write_content(pmime, bv->pc, bv->cb, MIME_ENCODING_BASE64))
@@ -6530,7 +6441,6 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 	MIME *pmime;
 	MIME *pplain;
 	MIME *pmixed;
-	BINARY *pbin;
 	BOOL b_inline;
 	MIME *prelated;
 	MIME *pcalendar;
@@ -6542,7 +6452,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 	ATTACHMENT_CONTENT *pattachment;
 	
 	*pmail = MAIL(ppool);
-	auto pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_INTERNET_CPID);
+	auto pvalue = pmsg->proplist.getval(PR_INTERNET_CPID);
 	if (NULL == pvalue || 1200 == *(uint32_t*)pvalue) {
 		pcharset = "utf-8";
 	} else {
@@ -6693,9 +6603,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 			1 != pmsg->children.pattachments->count) {
 			goto EXPORT_FAILURE;
 		}
-		pbin = static_cast<BINARY *>(tpropval_array_get_propval(
-			&pmsg->children.pattachments->pplist[0]->proplist,
-		       PR_ATTACH_DATA_BIN));
+		auto pbin = pmsg->children.pattachments->pplist[0]->proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
 		if (NULL == pbin) {
 			goto EXPORT_FAILURE;
 		}
@@ -6711,9 +6619,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 			1 != pmsg->children.pattachments->count) {
 			goto EXPORT_FAILURE;
 		}
-		pbin = static_cast<BINARY *>(tpropval_array_get_propval(
-			&pmsg->children.pattachments->pplist[0]->proplist,
-		       PR_ATTACH_DATA_BIN));
+		auto pbin = pmsg->children.pattachments->pplist[0]->proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
 		if (NULL == pbin || 0 == pbin->cb) {
 			goto EXPORT_FAILURE;
 		}
@@ -6778,6 +6684,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 	
 	if (MAIL_TYPE_TNEF == mime_skeleton.mail_type) {
 		pmime = pmail->add_child(pmime, MIME_ADD_LAST);
+		BINARY *pbin = nullptr;
 		if (NULL == pmime || FALSE == mime_set_content_type(pmime,
 			"application/ms-tnef") || NULL == (pbin =
 			tnef_serialize(pmsg, alloc, get_propname))) {
@@ -6905,13 +6812,13 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 	for (i=0; i<pmsg->children.pattachments->count; i++) {
 		pattachment = pmsg->children.pattachments->pplist[i];
 		if (NULL != pattachment->pembedded) {
-			pvalue = tpropval_array_get_propval(&pattachment->pembedded->proplist, PR_MESSAGE_CLASS);
+			pvalue = pattachment->pembedded->proplist.getval(PR_MESSAGE_CLASS);
 			if (pvalue != nullptr && strcasecmp(static_cast<char *>(pvalue),
 			    "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}") == 0)
 				continue;
 		}
 		if (NULL == pattachment->pembedded &&
-		    (pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_FLAGS)) != nullptr &&
+		    (pvalue = pattachment->proplist.getval(PR_ATTACH_FLAGS)) != nullptr &&
 		    (*static_cast<uint32_t *>(pvalue) & ATTACH_FLAG_RENDEREDINBODY) &&
 		    (pattachment->proplist.has(PR_ATTACH_CONTENT_ID) ||
 		    pattachment->proplist.has(PR_ATTACH_CONTENT_LOCATION))) {
@@ -6925,10 +6832,9 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 			goto EXPORT_FAILURE;
 		}
 		if (NULL == pattachment->pembedded &&
-			(pvalue = tpropval_array_get_propval(
-		    &pattachment->proplist, PR_ATTACH_METHOD)) &&
+		    (pvalue = pattachment->proplist.getval(PR_ATTACH_METHOD)) != nullptr &&
 		    *static_cast<uint32_t *>(pvalue) == ATTACH_BY_VALUE &&
-		    (pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_ENCODING)) != nullptr &&
+		    (pvalue = pattachment->proplist.getval(PR_ATTACH_ENCODING)) != nullptr &&
 		    static_cast<BINARY *>(pvalue)->cb == 9 &&
 		    memcmp(static_cast<BINARY *>(pvalue)->pb, MACBINARY_ENCODING, 9) == 0) {
 			if (TRUE == oxcmail_export_appledouble(pmail,

@@ -460,7 +460,7 @@ uint32_t driver::hid_from_eid(const BINARY &eid)
 uint32_t driver::hid_from_mst(kdb_item &item, uint32_t proptag)
 {
 	auto props = item.get_props();
-	auto eid = static_cast<BINARY *>(tpropval_array_get_propval(props, proptag));
+	auto eid = props->get<BINARY>(proptag);
 	if (eid == nullptr)
 		return 0;
 	return hid_from_eid(*eid);
@@ -469,8 +469,7 @@ uint32_t driver::hid_from_mst(kdb_item &item, uint32_t proptag)
 uint32_t driver::hid_from_ren(kdb_item &item, unsigned int idx)
 {
 	auto props = item.get_props();
-	auto ba = static_cast<BINARY_ARRAY *>(tpropval_array_get_propval(props,
-	          PR_ADDITIONAL_REN_ENTRYIDS));
+	auto ba = props->get<BINARY_ARRAY>(PR_ADDITIONAL_REN_ENTRYIDS);
 	if (ba == nullptr || idx >= ba->count)
 		return 0;
 	return hid_from_eid(ba->pbin[idx]);
@@ -696,7 +695,7 @@ static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent,
 	if (g_show_tree) {
 		gi_dump_tpropval_a(depth, *props);
 	} else {
-		auto dn = static_cast<const char *>(tpropval_array_get_propval(props, PR_DISPLAY_NAME));
+		auto dn = props->get<const char>(PR_DISPLAY_NAME);
 		fprintf(stderr, "Processing folder \"%s\" (%zu elements)...\n",
 		        dn != nullptr ? dn : "", item.m_sub_hids.size());
 	}
@@ -868,7 +867,7 @@ static int do_attach(driver &drv, unsigned int depth, const parent_desc &parent,
 	if (atc == nullptr)
 		throw std::bad_alloc();
 	auto props = item.get_props();
-	auto mode = static_cast<uint32_t *>(tpropval_array_get_propval(props, PR_ATTACH_METHOD));
+	auto mode = props->get<uint32_t>(PR_ATTACH_METHOD);
 
 	if (mode == nullptr)
 		fprintf(stderr, "PK-1005: Attachment %u without PR_ATTACH_METHOD.\n",

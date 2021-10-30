@@ -524,15 +524,13 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		home_dir, pcontext->pcontrol->from,
 		address, 0, pmsg, temp_buff);
 	if (EXMDB_RESULT_OK == result) {
-		pvalue = tpropval_array_get_propval(&pmsg->proplist,
-							PROP_TAG_AUTORESPONSESUPPRESS);
+		pvalue = pmsg->proplist.getval(PROP_TAG_AUTORESPONSESUPPRESS);
 		if (NULL == pvalue) {
 			suppress_mask = 0;
 		} else {
 			suppress_mask = *(uint32_t*)pvalue;
 		}
-		pvalue = tpropval_array_get_propval(&pmsg->proplist,
-				PROP_TAG_ORIGINATORDELIVERYREPORTREQUESTED);
+		pvalue = pmsg->proplist.getval(PROP_TAG_ORIGINATORDELIVERYREPORTREQUESTED);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			b_bounce_delivered = TRUE;
 			if (suppress_mask & AUTO_RESPONSE_SUPPRESS_DR) {

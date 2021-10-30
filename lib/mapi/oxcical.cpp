@@ -808,11 +808,9 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 	TPROPVAL_ARRAY *pproplist;
 	const char *pdisplay_name;
 	
-	auto pmessage_class = static_cast<char *>(tpropval_array_get_propval(
-	                      &pmsg->proplist, PR_MESSAGE_CLASS));
+	auto pmessage_class = pmsg->proplist.get<char>(PR_MESSAGE_CLASS);
 	if (NULL == pmessage_class) {
-		pmessage_class = static_cast<char *>(tpropval_array_get_propval(
-		                 &pmsg->proplist, PR_MESSAGE_CLASS_A));
+		pmessage_class = pmsg->proplist.get<char>(PR_MESSAGE_CLASS_A);
 	}
 	/* ignore ATTENDEE when METHOD is "PUBLIC" */
 	if (NULL == pmessage_class || 0 == strcasecmp(
@@ -1434,15 +1432,15 @@ static BOOL oxcical_parse_organizer(std::shared_ptr<ICAL_LINE> piline,
 	TAGGED_PROPVAL propval;
 	const char *pdisplay_name;
 	
-	auto pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_CLASS);
+	auto pvalue = pmsg->proplist.get<char>(PR_MESSAGE_CLASS);
 	if (NULL == pvalue) {
-		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_CLASS_A);
+		pvalue = pmsg->proplist.get<char>(PR_MESSAGE_CLASS_A);
 	}
 	if (NULL == pvalue) {
 		return FALSE;
 	}
 	/* ignore ORGANIZER when METHOD is "REPLY" OR "COUNTER" */
-	if (strncasecmp(static_cast<char *>(pvalue), "IPM.Schedule.Meeting.Resp.", 26) == 0)
+	if (strncasecmp(pvalue, "IPM.Schedule.Meeting.Resp.", 26) == 0)
 		return TRUE;
 	paddress = piline->get_first_subvalue();
 	if (NULL != paddress) {
@@ -1978,7 +1976,7 @@ static BOOL oxcical_parse_exceptional_attachment(ATTACHMENT_CONTENT *pattachment
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
 	propval.proptag = PR_DISPLAY_NAME;
-	propval.pvalue = tpropval_array_get_propval(&pattachment->pembedded->proplist, PR_SUBJECT);
+	propval.pvalue = pattachment->pembedded->proplist.getval(PR_SUBJECT);
 	if (NULL != propval.pvalue) {
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
@@ -3520,22 +3518,21 @@ static BOOL oxcical_get_smtp_address(TPROPVAL_ARRAY *prcpt,
 	ESSDN_TO_USERNAME essdn_to_username,
     EXT_BUFFER_ALLOC alloc, char *username, size_t ulen)
 {
-	auto pvalue = tpropval_array_get_propval(prcpt, PR_SMTP_ADDRESS);
+	auto pvalue = prcpt->getval(PR_SMTP_ADDRESS);
 	if (NULL == pvalue) {
-		pvalue = tpropval_array_get_propval(
-				prcpt, PROP_TAG_ADDRESSTYPE);
+		pvalue = prcpt->getval(PROP_TAG_ADDRESSTYPE);
 		if (NULL == pvalue) {
  FIND_ENTRYID:
-			pvalue = tpropval_array_get_propval(prcpt, PR_ENTRYID);
+			pvalue = prcpt->getval(PR_ENTRYID);
 			if (NULL == pvalue) {
 				return FALSE;
 			}
 			return entryid_to_username(static_cast<BINARY *>(pvalue), alloc, username, ulen);
 		} else {
 			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-				pvalue = tpropval_array_get_propval(prcpt, PR_EMAIL_ADDRESS);
+				pvalue = prcpt->getval(PR_EMAIL_ADDRESS);
 			} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
-				pvalue = tpropval_array_get_propval(prcpt, PR_EMAIL_ADDRESS);
+				pvalue = prcpt->getval(PR_EMAIL_ADDRESS);
 				if (NULL != pvalue) {
 					if (essdn_to_username(static_cast<char *>(pvalue), username, ulen))
 						return TRUE;
@@ -3567,9 +3564,9 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 	if (NULL == pmsg->children.prcpts) {
 		return TRUE;
 	}
-	auto pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_CLASS);
+	auto pvalue = pmsg->proplist.getval(PR_MESSAGE_CLASS);
 	if (NULL == pvalue) {
-		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_CLASS_A);
+		pvalue = pmsg->proplist.getval(PR_MESSAGE_CLASS_A);
 	}
 	if (NULL == pvalue) {
 		return FALSE;
@@ -3580,8 +3577,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 	if (strcasecmp(static_cast<char *>(pvalue), "IPM.Schedule.Meeting.Resp.Pos") == 0 ||
 	    strcasecmp(static_cast<char *>(pvalue), "IPM.Schedule.Meeting.Resp.Tent") == 0 ||
 	    strcasecmp(static_cast<char *>(pvalue), "IPM.Schedule.Meeting.Resp.Neg") == 0) {
-		pvalue = tpropval_array_get_propval(&pmsg->proplist,
-		         PR_SENT_REPRESENTING_SMTP_ADDRESS);
+		pvalue = pmsg->proplist.getval(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -3608,17 +3604,14 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 			return false;
 		return pivalue->append_subval(tmp_value) ? TRUE : false;
 	}	
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_RESPONSEREQUESTED);
+	pvalue = pmsg->proplist.getval(PROP_TAG_RESPONSEREQUESTED);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		b_rsvp = TRUE;
 	} else {
 		b_rsvp = FALSE;
 	}
 	for (size_t i = 0; i < pmsg->children.prcpts->count; ++i) {
-		pvalue = tpropval_array_get_propval(
-			pmsg->children.prcpts->pparray[i],
-			PROP_TAG_RECIPIENTFLAGS);
+		pvalue = pmsg->children.prcpts->pparray[i]->getval(PROP_TAG_RECIPIENTFLAGS);
 		if (NULL == pvalue) {
 			continue;
 		}
@@ -3626,9 +3619,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 			(*(uint32_t*)pvalue) & 0x00000002) {
 			continue;
 		}
-		pvalue = tpropval_array_get_propval(
-			pmsg->children.prcpts->pparray[i],
-			PROP_TAG_RECIPIENTTYPE);
+		pvalue = pmsg->children.prcpts->pparray[i]->getval(PROP_TAG_RECIPIENTTYPE);
 		if (NULL != pvalue && 0 == *(uint32_t*)pvalue) {
 			continue;
 		}
@@ -3674,7 +3665,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 			if (!piparam->append_paramval("TRUE"))
 				return FALSE;
 		}
-		pvalue = tpropval_array_get_propval(pmsg->children.prcpts->pparray[i], PR_DISPLAY_NAME);
+		pvalue = pmsg->children.prcpts->pparray[i]->getval(PR_DISPLAY_NAME);
 		if (NULL != pvalue) {
 			piparam = ical_new_param("CN");
 			if (NULL == piparam) {
@@ -4325,7 +4316,6 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 {
 	int year;
 	GUID guid;
-	void *pvalue;
 	BOOL b_allday;
 	time_t cur_time;
 	time_t end_time;
@@ -4356,16 +4346,16 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	propnames.count = 1;
 	propnames.ppropname = &propname;
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_LOCALE_ID);
+	auto pvalue = pmsg->proplist.getval(PR_MESSAGE_LOCALE_ID);
 	if (NULL == pvalue) {
 		planguage = NULL;
 	} else {
 		planguage = lcid_to_ltag(*(uint32_t*)pvalue);
 	}
 	
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_CLASS);
+	pvalue = pmsg->proplist.getval(PR_MESSAGE_CLASS);
 	if (NULL == pvalue) {
-		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_MESSAGE_CLASS_A);
+		pvalue = pmsg->proplist.getval(PR_MESSAGE_CLASS_A);
 	}
 	if (NULL == pvalue) {
 		return FALSE;
@@ -4393,8 +4383,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				return FALSE;
 			}
 			proptag = PROP_TAG(PT_BOOLEAN, propids.ppropid[0]);
-			pvalue = tpropval_array_get_propval(
-				&pmsg->proplist, proptag);
+			pvalue = pmsg->proplist.getval(proptag);
 			if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 				b_proposal = TRUE;
 				method = "COUNTER";
@@ -4419,8 +4408,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	}
 	proptag = PROP_TAG(PT_SYSTIME, propids.ppropid[0]);
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, proptag);
+	pvalue = pmsg->proplist.getval(proptag);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -4434,8 +4422,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	}
 	proptag = PROP_TAG(PT_SYSTIME, propids.ppropid[0]);
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, proptag);
+	pvalue = pmsg->proplist.getval(proptag);
 	if (NULL != pvalue) {
 		end_time = rop_util_nttime_to_unix(*(uint64_t*)pvalue);
 	} else {
@@ -4444,8 +4431,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			return FALSE;
 		}
 		proptag = PROP_TAG(PT_LONG, propids.ppropid[0]);
-		pvalue = tpropval_array_get_propval(
-			&pmsg->proplist, proptag);
+		pvalue = pmsg->proplist.getval(proptag);
 		if (NULL == pvalue) {
 			end_time = start_time;
 		} else {
@@ -4485,8 +4471,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	}
 	proptag = PROP_TAG(PT_BINARY, propids.ppropid[0]);
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, proptag);
+	pvalue = pmsg->proplist.getval(proptag);
 	if (NULL == pvalue) {
 		b_recurrence = FALSE;
 	} else {
@@ -4532,8 +4517,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			return FALSE;
 		}
 		proptag = PROP_TAG(PT_BINARY, propids.ppropid[0]);
-		pvalue = tpropval_array_get_propval(
-			&pmsg->proplist, proptag);
+		pvalue = pmsg->proplist.getval(proptag);
 		if (NULL != pvalue) {
 			propname.kind = MNID_ID;
 			propname.lid = PidLidTimeZoneDescription;
@@ -4542,8 +4526,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				return FALSE;
 			}
 			proptag = PROP_TAG(PT_UNICODE, propids.ppropid[0]);
-			tzid = static_cast<char *>(tpropval_array_get_propval(
-			       &pmsg->proplist, proptag));
+			tzid = pmsg->proplist.get<char>(proptag);
 			if (NULL == tzid) {
 				goto EXPORT_TZDEFINITION;
 			}
@@ -4565,8 +4548,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				return FALSE;
 			}
 			proptag = PROP_TAG(PT_BINARY, propids.ppropid[0]);
-			pvalue = tpropval_array_get_propval(
-				&pmsg->proplist, proptag);
+			pvalue = pmsg->proplist.getval(proptag);
 			if (NULL != pvalue) {
 				ext_pull.init(static_cast<BINARY *>(pvalue)->pb,
 					static_cast<BINARY *>(pvalue)->cb, alloc, 0);
@@ -4589,16 +4571,14 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			return FALSE;
 		}
 		proptag = PROP_TAG(PT_BINARY, propids.ppropid[0]);
-		pvalue = tpropval_array_get_propval(
-			&pmsg->proplist, proptag);
+		pvalue = pmsg->proplist.getval(proptag);
 		if (NULL != pvalue) {
 			propname.lid = PidLidAppointmentTimeZoneDefinitionEndDisplay;
 			if (FALSE == get_propids(&propnames, &propids)) {
 				return FALSE;
 			}
 			proptag = PROP_TAG(PT_BINARY, propids.ppropid[0]);
-			pvalue = tpropval_array_get_propval(
-				&pmsg->proplist, proptag);
+			pvalue = pmsg->proplist.getval(proptag);
 		}
 		if (NULL != pvalue) {
 			ext_pull.init(static_cast<BINARY *>(pvalue)->pb,
@@ -4623,8 +4603,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	}
 	proptag = PROP_TAG(PT_BOOLEAN, propids.ppropid[0]);
-	pvalue = tpropval_array_get_propval(
-				&pmsg->proplist, proptag);
+	pvalue = pmsg->proplist.getval(proptag);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		b_allday = TRUE;
 	} else {
@@ -4639,18 +4618,14 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	if (0 == strcmp(method, "REQUEST") ||
 		0 == strcmp(method, "CANCEL")) {
-		pvalue = tpropval_array_get_propval(&pmsg->proplist,
-		         PR_SENT_REPRESENTING_SMTP_ADDRESS);
+		pvalue = pmsg->proplist.getval(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 		if (NULL != pvalue) {
-			pvalue = tpropval_array_get_propval(&pmsg->proplist,
-			         PR_SENT_REPRESENTING_ADDRTYPE);
+			pvalue = pmsg->proplist.getval(PR_SENT_REPRESENTING_ADDRTYPE);
 			if (pvalue != NULL) {
 				if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-					pvalue = tpropval_array_get_propval(&pmsg->proplist,
-					         PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+					pvalue = pmsg->proplist.getval(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 				} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
-					pvalue = tpropval_array_get_propval(&pmsg->proplist,
-					         PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+					pvalue = pmsg->proplist.getval(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 					if (NULL != pvalue) {
 						pvalue = !essdn_to_username(static_cast<char *>(pvalue), tmp_buff, GX_ARRAY_SIZE(tmp_buff)) ?
 						         nullptr : tmp_buff;
@@ -4669,8 +4644,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			}
 			if (pcomponent->append_line(piline) < 0)
 				return false;
-			pvalue = tpropval_array_get_propval(&pmsg->proplist,
-			         PR_SENT_REPRESENTING_NAME);
+			pvalue = pmsg->proplist.getval(PR_SENT_REPRESENTING_NAME);
 			if (NULL != pvalue) {
 				piparam = ical_new_param("CN");
 				if (NULL == piparam) {
@@ -4688,7 +4662,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	    essdn_to_username, alloc, partstat, pmsg))
 		return FALSE;
 	
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_BODY);
+	pvalue = pmsg->proplist.getval(PR_BODY);
 	if (NULL != pvalue) {
 		if (0 == strcmp(method, "REPLY") ||
 			0 == strcmp(method, "COUNTER")) {
@@ -4739,8 +4713,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	}
 	proptag = PROP_TAG(PT_BINARY, propids.ppropid[0]);
-	pvalue = tpropval_array_get_propval(
-				&pmsg->proplist, proptag);
+	pvalue = pmsg->proplist.getval(proptag);
 	if (NULL != pvalue) {
 		ext_pull.init(static_cast<BINARY *>(pvalue)->pb,
 			static_cast<BINARY *>(pvalue)->cb, alloc, 0);
@@ -4809,8 +4782,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	}
 	proptag_xrt = PROP_TAG(PT_SYSTIME, propids.ppropid[0]);
-	pvalue = tpropval_array_get_propval(
-			&pmsg->proplist, proptag_xrt);
+	pvalue = pmsg->proplist.getval(proptag_xrt);
 	if (NULL == pvalue) {
 		propname.kind = MNID_ID;
 		propname.lid = PidLidIsException;
@@ -4819,8 +4791,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			return FALSE;
 		}
 		proptag = PROP_TAG(PT_BOOLEAN, propids.ppropid[0]);
-		pvalue = tpropval_array_get_propval(
-					&pmsg->proplist, proptag);
+		pvalue = pmsg->proplist.getval(proptag);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			propname.kind = MNID_ID;
 			propname.lid = PidLidStartRecurrenceTime;
@@ -4829,8 +4800,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				return FALSE;
 			}
 			proptag = PROP_TAG(PT_LONG, propids.ppropid[0]);
-			pvalue = tpropval_array_get_propval(
-						&pmsg->proplist, proptag);
+			pvalue = pmsg->proplist.getval(proptag);
 			if (NULL != pvalue) {
 				itime.hour = ((*(uint32_t*)pvalue) & 0x1F000) >> 12;
 				itime.minute = ((*(uint32_t*)pvalue) & 0xFC0) >> 6;
@@ -4840,8 +4810,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 					return FALSE;
 				}
 				proptag = PROP_TAG(PT_BINARY, propids.ppropid[0]);
-				pvalue = tpropval_array_get_propval(
-							&pmsg->proplist, proptag);
+				pvalue = pmsg->proplist.getval(proptag);
 				if (NULL != pvalue) {
 					ext_pull.init(static_cast<BINARY *>(pvalue)->pb,
 						static_cast<BINARY *>(pvalue)->cb, alloc, 0);
@@ -4908,7 +4877,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 	
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_SUBJECT);
+	pvalue = pmsg->proplist.getval(PR_SUBJECT);
 	if (NULL != pvalue) {
 		piline = ical_new_simple_line("SUMMARY", static_cast<char *>(pvalue));
 		if (NULL == piline) {
@@ -5027,8 +4996,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	}
 	proptag = PROP_TAG(PT_MV_UNICODE, propids.ppropid[0]);
-	pvalue = tpropval_array_get_propval(
-				&pmsg->proplist, proptag);
+	pvalue = pmsg->proplist.getval(proptag);
 	if (NULL != pvalue) {
 		piline = ical_new_line("CATEGORIES");
 		if (NULL == piline) {
@@ -5048,7 +5016,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				return FALSE;
 	}
 	
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_SENSITIVITY);
+	pvalue = pmsg->proplist.getval(PR_SENSITIVITY);
 	if (NULL == pvalue) {
 		piline = ical_new_simple_line("CLASS", "PUBLIC");
 	} else {
@@ -5073,7 +5041,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	if (pcomponent->append_line(piline) < 0)
 		return false;
 	
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_IMPORTANCE);
+	pvalue = pmsg->proplist.getval(PR_IMPORTANCE);
 	if (NULL != pvalue) {
 		/* RFC 5545 §3.8.1.9 / MS-OXCICAL v13 §2.1.3.1.1.20.17 pg 58 */
 		switch (*(uint32_t*)pvalue) {
@@ -5102,8 +5070,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	}
 	proptag = PROP_TAG(PT_SYSTIME, propids.ppropid[0]);
-	pvalue = tpropval_array_get_propval(
-				&pmsg->proplist, proptag);
+	pvalue = pmsg->proplist.getval(proptag);
 	if (NULL != pvalue) {
 		ical_utc_to_datetime(NULL,
 			rop_util_nttime_to_unix(
@@ -5126,8 +5093,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	}
 	proptag = PROP_TAG(PT_LONG, propids.ppropid[0]);
-	auto pbusystatus = static_cast<uint32_t *>(tpropval_array_get_propval(
-	                   &pmsg->proplist, proptag));
+	auto pbusystatus = pmsg->proplist.get<uint32_t>(proptag);
 	if (NULL != pbusystatus) {
 		switch (*pbusystatus) {
 		case 0:
@@ -5159,8 +5125,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	}
 	proptag = PROP_TAG(PT_LONG, propids.ppropid[0]);
-	auto psequence = static_cast<uint32_t *>(tpropval_array_get_propval(
-	                 &pmsg->proplist, proptag));
+	auto psequence = pmsg->proplist.get<uint32_t>(proptag);
 	if (NULL != psequence) {
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", *psequence);
 		piline = ical_new_simple_line("SEQUENCE", tmp_buff);
@@ -5178,8 +5143,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	}
 	proptag = PROP_TAG(PT_UNICODE, propids.ppropid[0]);
-	pvalue = tpropval_array_get_propval(
-				&pmsg->proplist, proptag);
+	pvalue = pmsg->proplist.getval(proptag);
 	if (NULL != pvalue) {
 		piline = ical_new_simple_line("LOCATION", static_cast<char *>(pvalue));
 		if (NULL == piline) {
@@ -5194,8 +5158,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			return FALSE;
 		}
 		proptag = PROP_TAG(PT_UNICODE, propids.ppropid[0]);
-		pvalue = tpropval_array_get_propval(
-					&pmsg->proplist, proptag);
+		pvalue = pmsg->proplist.getval(proptag);
 		if (NULL != pvalue) {
 			piparam = ical_new_param("ALTREP");
 			if (NULL == piparam) {
@@ -5229,8 +5192,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			return false;
 	}
 	
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_OWNERAPPOINTMENTID);
+	pvalue = pmsg->proplist.getval(PROP_TAG_OWNERAPPOINTMENTID);
 	if (NULL != pvalue) {
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", *(uint32_t*)pvalue);
 		piline = ical_new_simple_line(
@@ -5253,8 +5215,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	}
 	proptag = PROP_TAG(PT_LONG, propids.ppropid[0]);
-	pvalue = tpropval_array_get_propval(
-				&pmsg->proplist, proptag);
+	pvalue = pmsg->proplist.getval(proptag);
 	if (pvalue != nullptr && !busystatus_to_line(*static_cast<uint32_t *>(pvalue),
 	    "X-MICROSOFT-CDO-INTENDEDSTATUS", pcomponent.get()))
 		return false;
@@ -5272,7 +5233,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	if (pcomponent->append_line(piline) < 0)
 		return false;
 	
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_IMPORTANCE);
+	pvalue = pmsg->proplist.getval(PR_IMPORTANCE);
 	if (NULL != pvalue) {
 		switch (*(uint32_t*)pvalue) {
 		case IMPORTANCE_LOW:
@@ -5327,8 +5288,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	}
 	proptag = PROP_TAG(PT_BOOLEAN, propids.ppropid[0]);
-	pvalue = tpropval_array_get_propval(
-				&pmsg->proplist, proptag);
+	pvalue = pmsg->proplist.getval(proptag);
 	if (NULL != pvalue) {
 		if (0 == *(uint8_t*)pvalue) {
 			piline = ical_new_simple_line(
@@ -5350,9 +5310,9 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				continue;
 			}
 			pembedded = pmsg->children.pattachments->pplist[i]->pembedded;
-			pvalue = tpropval_array_get_propval(&pembedded->proplist, PR_MESSAGE_CLASS);
+			pvalue = pembedded->proplist.getval(PR_MESSAGE_CLASS);
 			if (NULL == pvalue) {
-				pvalue = tpropval_array_get_propval(&pembedded->proplist, PR_MESSAGE_CLASS_A);
+				pvalue = pembedded->proplist.getval(PR_MESSAGE_CLASS_A);
 			}
 			if (pvalue == nullptr || strcasecmp(static_cast<char *>(pvalue),
 			    "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}"))
@@ -5374,8 +5334,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	}
 	proptag = PROP_TAG(PT_BOOLEAN, propids.ppropid[0]);
-	pvalue = tpropval_array_get_propval(
-				&pmsg->proplist, proptag);
+	pvalue = pmsg->proplist.getval(proptag);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		pcomponent = ical_new_component("VALARM");
 		if (NULL == pcomponent) {
@@ -5395,8 +5354,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			return FALSE;
 		}
 		proptag = PROP_TAG(PT_LONG, propids.ppropid[0]);
-		pvalue = tpropval_array_get_propval(
-					&pmsg->proplist, proptag);
+		pvalue = pmsg->proplist.getval(proptag);
 		if (NULL == pvalue || 0x5AE980E1 == *(uint32_t*)pvalue) {
 			strcpy(tmp_buff, "-PT15M");
 		} else {

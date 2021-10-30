@@ -3779,8 +3779,7 @@ uint32_t zarafa_server_getpropvals(GUID hsession,
 			for (i=0; i<pproptags->count; i++) {
 				ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-				ppropvals->ppropval[ppropvals->count].pvalue =
-					tpropval_array_get_propval(static_cast<TPROPVAL_ARRAY *>(pobject), pproptags->pproptag[i]);
+				ppropvals->ppropval[ppropvals->count].pvalue = static_cast<TPROPVAL_ARRAY *>(pobject)->getval(pproptags->pproptag[i]);
 				if (ppropvals->ppropval[ppropvals->count].pvalue != nullptr)
 					ppropvals->count ++;	
 			}
