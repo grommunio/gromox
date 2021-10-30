@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cerrno>
 #include <gromox/mapidefs.h>
 #include <gromox/util.hpp>
 #include <gromox/propval.hpp>
 #include <cstdlib>
 #include <cstring>
 
-static bool tpropval_array_append(TPROPVAL_ARRAY *parray,
-	const TAGGED_PROPVAL *ppropval)
+static bool tpropval_array_append(TPROPVAL_ARRAY *parray, uint32_t proptag,
+    const void *xpropval)
 {
 	TAGGED_PROPVAL *ppropvals;
 	
-	if (NULL == ppropval->pvalue) {
+	if (xpropval == nullptr) {
 		debug_info("[tpropval_array]: pvalue is"
 			" NULL in tpropval_array_append");
 		return true;
@@ -24,8 +25,8 @@ static bool tpropval_array_append(TPROPVAL_ARRAY *parray,
 		}
 		parray->ppropval = ppropvals;
 	}
-	parray->ppropval[parray->count].proptag = ppropval->proptag;
-	parray->ppropval[parray->count].pvalue = propval_dup(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
+	parray->ppropval[parray->count].proptag = proptag;
+	parray->ppropval[parray->count].pvalue = propval_dup(PROP_TYPE(proptag), xpropval);
 	if (NULL == parray->ppropval[parray->count].pvalue) {
 		return false;
 	}
@@ -46,26 +47,26 @@ void *TPROPVAL_ARRAY::getval(uint32_t proptag) const
 	return NULL;
 }
 
-bool tpropval_array_set_propval(TPROPVAL_ARRAY *parray,
-	const TAGGED_PROPVAL *ppropval)
+int TPROPVAL_ARRAY::set(uint32_t tag, const void *xpropval)
 {
+	auto parray = this;
 	int i;
 	void *pvalue;
 	
 	for (i=0; i<parray->count; i++) {
-		if (ppropval->proptag == parray->ppropval[i].proptag) {
+		if (parray->ppropval[i].proptag == tag) {
 			pvalue = parray->ppropval[i].pvalue;
 			parray->ppropval[i].pvalue = propval_dup(
-				PROP_TYPE(ppropval->proptag), ppropval->pvalue);
+				PROP_TYPE(tag), xpropval);
 			if (NULL == parray->ppropval[i].pvalue) {
 				parray->ppropval[i].pvalue = pvalue;
-				return false;
+				return -ENOMEM;
 			}
-			propval_free(PROP_TYPE(ppropval->proptag), pvalue);
-			return true;
+			propval_free(PROP_TYPE(tag), pvalue);
+			return 0;
 		}
 	}
-	return tpropval_array_append(parray, ppropval);
+	return tpropval_array_append(parray, tag, xpropval) ? 0 : -ENOMEM;
 }
 
 void TPROPVAL_ARRAY::erase(uint32_t proptag)
@@ -133,7 +134,8 @@ TPROPVAL_ARRAY *TPROPVAL_ARRAY::dup() const
 		return NULL;
 	}
 	for (i=0; i<parray->count; i++) {
-		if (!tpropval_array_append(parray1, &parray->ppropval[i])) {
+		if (!tpropval_array_append(parray1, parray->ppropval[i].proptag,
+		    parray->ppropval[i].pvalue)) {
 			tpropval_array_free(parray1);
 			return NULL;
 		}

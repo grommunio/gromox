@@ -1081,21 +1081,13 @@ extern GX_EXPORT TPROPVAL_ARRAY *tpropval_array_init();
 extern GX_EXPORT void tpropval_array_free(TPROPVAL_ARRAY *);
 extern GX_EXPORT bool tpropval_array_init_internal(TPROPVAL_ARRAY *);
 extern GX_EXPORT void tpropval_array_free_internal(TPROPVAL_ARRAY *);
-extern GX_EXPORT bool tpropval_array_set_propval(TPROPVAL_ARRAY *, const TAGGED_PROPVAL *);
-static inline bool tpropval_array_set_propval(TPROPVAL_ARRAY *a, uint32_t tag, const void *d) {
-	TAGGED_PROPVAL v{tag, deconst(d)};
-	return tpropval_array_set_propval(a, &v);
-}
 
 struct TPROPVAL_ARRAY {
 	inline bool has(uint32_t tag) const { return getval(tag) != nullptr; }
 	void *getval(uint32_t tag) const;
 	template<typename T> inline T *get(uint32_t tag) const { return static_cast<T *>(getval(tag)); }
-	int set(uint32_t tag, const void *d)
-	{
-		TAGGED_PROPVAL v{tag, deconst(d)};
-		return tpropval_array_set_propval(this, &v) ? 0 : -ENOMEM;
-	}
+	int set(uint32_t tag, const void *d);
+	inline int set(const TAGGED_PROPVAL &a) { return set(a.proptag, a.pvalue); }
 	void erase(uint32_t tag);
 	TPROPVAL_ARRAY *dup() const;
 

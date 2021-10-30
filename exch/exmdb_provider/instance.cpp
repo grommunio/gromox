@@ -504,7 +504,7 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 		propval.proptag = PROP_TAG_MID;
 		propval.pvalue = &message_id;
 		auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
-		if (!tpropval_array_set_propval(&ict->proplist, &propval)) {
+		if (ict->proplist.set(propval) != 0) {
 			message_content_free(ict);
 			if (NULL != pinstance->username) {
 				free(pinstance->username);
@@ -670,7 +670,7 @@ BOOL exmdb_server_clear_message_instance(
 	TAGGED_PROPVAL propval;
 	propval.proptag = PROP_TAG_MID;
 	propval.pvalue = pvalue;
-	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
+	if (pmsgctnt->proplist.set(propval) != 0) {
 		message_content_free(pmsgctnt);
 		return FALSE;
 	}
@@ -1009,7 +1009,7 @@ static BOOL instance_identify_rcpts(TARRAY_SET *prcpts)
 	for (i=0; i<prcpts->count; i++) {
 		propval.proptag = PROP_TAG_ROWID;
 		propval.pvalue = &i;
-		if (!tpropval_array_set_propval(prcpts->pparray[i], &propval))
+		if (prcpts->pparray[i]->set(propval) != 0)
 			return FALSE;
 	}
 	return TRUE;
@@ -1023,7 +1023,7 @@ static BOOL instance_identify_attachments(ATTACHMENT_LIST *pattachments)
 	for (i=0; i<pattachments->count; i++) {
 		propval.proptag = PR_ATTACH_NUM;
 		propval.pvalue = &i;
-		if (!tpropval_array_set_propval(&pattachments->pplist[i]->proplist, &propval))
+		if (pattachments->pplist[i]->proplist.set(propval) != 0)
 			return FALSE;	
 		if (NULL != pattachments->pplist[i]->pembedded) {
 			if (FALSE == instance_identify_message(
@@ -1155,9 +1155,8 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 			pproplist->erase(ID_TAG_RTFCOMPRESSED);
 			break;
 		}
-		if (!tpropval_array_set_propval(pproplist, pmsgctnt->proplist.ppropval + i)) {
+		if (pproplist->set(pmsgctnt->proplist.ppropval[i]) != 0)
 			return FALSE;
-		}
 		switch (proptag) {
 		case PR_CHANGE_KEY:
 		case PROP_TAG_CHANGENUMBER:
@@ -1322,7 +1321,7 @@ BOOL exmdb_server_create_attachment_instance(const char *dir,
 	*pattachment_num = pinstance1->last_id++;
 	propval.proptag = PR_ATTACH_NUM;
 	propval.pvalue = pattachment_num;
-	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
+	if (pattachment->proplist.set(propval) != 0) {
 		attachment_content_free(pattachment);
 		if (NULL != pinstance->username) {
 			free(pinstance->username);
@@ -1414,9 +1413,8 @@ BOOL exmdb_server_write_attachment_instance(const char *dir,
 			pproplist->erase(ID_TAG_ATTACHDATAOBJECT);
 			break;
 		}
-		if (!tpropval_array_set_propval(pproplist, pattctnt->proplist.ppropval + i)) {
+		if (pproplist->set(pattctnt->proplist.ppropval[i]) != 0)
 			return FALSE;
-		}
 	}
 	if (NULL != pattctnt->pembedded) {
 		if (FALSE == b_force || NULL == ((ATTACHMENT_CONTENT*)
@@ -1571,7 +1569,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 					return false;
 				propval.pvalue = pvalue;
 			}
-			if (!tpropval_array_set_propval(&ict->proplist, &propval))
+			if (ict->proplist.set(propval) != 0)
 				return false;
 		}
 	}
@@ -1605,11 +1603,11 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
 				propval.proptag = PR_SENT_REPRESENTING_ADDRTYPE;
 				propval.pvalue = address_type;
-				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+				if (pmsgctnt->proplist.set(propval) != 0)
 					return FALSE;
 				propval.proptag = PR_SENT_REPRESENTING_EMAIL_ADDRESS;
 				propval.pvalue = tmp_buff;
-				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+				if (pmsgctnt->proplist.set(propval) != 0)
 					return FALSE;
 			}
 		} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
@@ -1617,7 +1615,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
 				propval.proptag = PR_SENT_REPRESENTING_EMAIL_ADDRESS;
 				propval.pvalue = tmp_buff;
-				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+				if (pmsgctnt->proplist.set(propval) != 0)
 					return FALSE;
 			}
 		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
@@ -1625,7 +1623,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
 				propval.proptag = PR_SENT_REPRESENTING_EMAIL_ADDRESS;
 				propval.pvalue = tmp_buff;
-				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+				if (pmsgctnt->proplist.set(propval) != 0)
 					return FALSE;
 			}
 		}
@@ -1639,11 +1637,11 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
 				propval.proptag = PR_SENDER_ADDRTYPE;
 				propval.pvalue = address_type;
-				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+				if (pmsgctnt->proplist.set(propval) != 0)
 					return FALSE;
 				propval.proptag = PR_SENDER_EMAIL_ADDRESS;
 				propval.pvalue = tmp_buff;
-				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+				if (pmsgctnt->proplist.set(propval) != 0)
 					return FALSE;
 			}
 		} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
@@ -1651,7 +1649,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
 				propval.proptag = PR_SENDER_EMAIL_ADDRESS;
 				propval.pvalue = tmp_buff;
-				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+				if (pmsgctnt->proplist.set(propval) != 0)
 					return FALSE;
 			}
 		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
@@ -1659,7 +1657,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
 				propval.proptag = PR_SENDER_EMAIL_ADDRESS;
 				propval.pvalue = tmp_buff;
-				if(!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+				if (pmsgctnt->proplist.set(propval) != 0)
 					return FALSE;
 			}
 		}
@@ -2503,33 +2501,29 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 					propval.proptag = PR_READ;
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
-					if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
+					if (pmsgctnt->proplist.set(propval) != 0)
 						return FALSE;
-					}
 				}
 				if (message_flags & MSGFLAG_ASSOCIATED) {
 					propval.proptag = PR_ASSOCIATED;
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
-					if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
+					if (pmsgctnt->proplist.set(propval) != 0)
 						return FALSE;
-					}	
 				}
 				if (message_flags & MSGFLAG_RN_PENDING) {
 					propval.proptag = PR_READ_RECEIPT_REQUESTED;
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
-					if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
+					if (pmsgctnt->proplist.set(propval) != 0)
 						return FALSE;
-					}	
 				}
 				if (message_flags & MSGFLAG_NRN_PENDING) {
 					propval.proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
 					propval.pvalue = &tmp_byte;
 					tmp_byte = 1;
-					if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
+					if (pmsgctnt->proplist.set(propval) != 0)
 						return FALSE;
-					}	
 				}
 				message_flags &= ~(MSGFLAG_READ | MSGFLAG_UNMODIFIED |
 				                 MSGFLAG_HASATTACH | MSGFLAG_FROMME |
@@ -2553,9 +2547,8 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 						return FALSE;
 					}
 				}
-				if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
+				if (pmsgctnt->proplist.set(propval) != 0)
 					return FALSE;
-				}
 				continue;
 			case PR_BODY:
 			case PR_BODY_A:
@@ -2605,9 +2598,8 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				propval = pproperties->ppropval[i];
 				break;
 			}
-			if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
+			if (pmsgctnt->proplist.set(propval) != 0)
 				return FALSE;
-			}
 			if (propval.proptag == PR_BODY ||
 				PROP_TAG_HTML == propval.proptag ||
 				PROP_TAG_BODYHTML == propval.proptag ||
@@ -2629,9 +2621,8 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				}
 				propval.proptag = PROP_TAG_NATIVEBODY;
 				propval.pvalue = &body_type;
-				if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
+				if (pmsgctnt->proplist.set(propval) != 0)
 					return FALSE;
-				}
 			}
 		}
 	} else {
@@ -2690,9 +2681,8 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				propval = pproperties->ppropval[i];
 				break;
 			}
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
+			if (pattachment->proplist.set(propval) != 0)
 				return FALSE;
-			}
 		}
 	}
 	return TRUE;
@@ -3300,7 +3290,7 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 		propval.proptag = PROP_TAG_INCONFLICT;
 		propval.pvalue = &tmp_byte;
 		tmp_byte = 1;
-		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+		if (pattachment->proplist.set(propval) != 0)
 			/* ignore; reevaluate another time */;
 	} else {
 		if (NULL == pmsg->children.pattachments) {
@@ -3332,7 +3322,7 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 	propval.proptag = PROP_TAG_INCONFLICT;
 	propval.pvalue = &tmp_byte;
 	tmp_byte = 1;
-	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+	if (pattachment->proplist.set(propval) != 0)
 		/* ignore; reevaluate */;
 	propval.proptag = PROP_TAG_MESSAGESTATUS;
 	pvalue = pmsg->proplist.getval(PROP_TAG_MESSAGESTATUS);
@@ -3343,7 +3333,7 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 		*(uint32_t*)pvalue |= MESSAGE_STATUS_IN_CONFLICT;
 		propval.pvalue = pvalue;
 	}
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(propval) != 0)
 		/* ignore; reevaluate */;
 	return TRUE;
 }

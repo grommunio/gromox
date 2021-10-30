@@ -354,8 +354,7 @@ BOOL OBJECT_TREE::set_zstore_propval(const TAGGED_PROPVAL *ppropval)
 	}
 	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
-	return tpropval_array_set_propval(prootobj->pprivate_proplist, ppropval) ?
-	       TRUE : false;
+	return prootobj->pprivate_proplist->set(*ppropval) == 0 ? TRUE : false;
 }
 
 void OBJECT_TREE::remove_zstore_propval(uint32_t proptag)

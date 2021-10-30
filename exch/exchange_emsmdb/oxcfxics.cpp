@@ -122,10 +122,8 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 	}
 	auto pproplist = pfldctnt->get_proplist();
 	for (size_t i = 0; i < tmp_propvals.count; ++i) {
-		if (!tpropval_array_set_propval(pproplist,
-		    tmp_propvals.ppropval + i)) {
+		if (pproplist->set(tmp_propvals.ppropval[i]) != 0)
 			return NULL;
-		}
 	}
 	replid = rop_util_get_replid(folder_id);
 	if (1 != replid) {

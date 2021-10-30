@@ -182,7 +182,7 @@ static void hid_to_tpropval_1(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)
 			throw YError("PK-1007: proptype %xh not supported. Implement me!", pv.proptag);
 		}
 		pv.proptag = PROP_TAG(xtype, xtag);
-		if (!tpropval_array_set_propval(ar, &pv))
+		if (ar->set(pv) != 0)
 			throw std::bad_alloc();
 	}
 }

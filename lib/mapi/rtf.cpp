@@ -3151,38 +3151,38 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 			}
 			propval.proptag = PR_ATTACH_MIME_TAG;
 			propval.pvalue = deconst(img_ctype);
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
+			if (pattachment->proplist.set(propval) != 0) {
 				free(tmp_bin.pv);
 				return -EINVAL;
 			}
 			propval.proptag = PR_ATTACH_CONTENT_ID;
 			propval.pvalue = cid_name;
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
+			if (pattachment->proplist.set(propval) != 0) {
 				free(tmp_bin.pv);
 				return -EINVAL;
 			}
 			propval.proptag = PR_ATTACH_EXTENSION;
 			propval.pvalue = deconst(pext);
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
+			if (pattachment->proplist.set(propval) != 0) {
 				free(tmp_bin.pv);
 				return -EINVAL;
 			}
 			propval.proptag = PR_ATTACH_LONG_FILENAME;
 			propval.pvalue = picture_name;
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
+			if (pattachment->proplist.set(propval) != 0) {
 				free(tmp_bin.pv);
 				return -EINVAL;
 			}
 			propval.proptag = PR_ATTACH_FLAGS;
 			propval.pvalue = &tmp_int32;
 			tmp_int32 = ATTACH_FLAG_RENDEREDINBODY;
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
+			if (pattachment->proplist.set(propval) != 0) {
 				free(tmp_bin.pv);
 				return -EINVAL;
 			}
 			propval.proptag = PR_ATTACH_DATA_BIN;
 			propval.pvalue = &tmp_bin;
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
+			if (pattachment->proplist.set(propval) != 0) {
 				free(tmp_bin.pv);
 				return -EINVAL;
 			}

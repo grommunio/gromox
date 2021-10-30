@@ -3703,10 +3703,8 @@ uint32_t zarafa_server_setpropvals(GUID hsession,
 	switch (mapi_type) {
 	case ZMG_PROFPROPERTY:
 		for (i=0; i<ppropvals->count; i++) {
-			if (!tpropval_array_set_propval(static_cast<TPROPVAL_ARRAY *>(pobject),
-			    &ppropvals->ppropval[i])) {
+			if (static_cast<TPROPVAL_ARRAY *>(pobject)->set(ppropvals->ppropval[i]) != 0)
 				return ecError;
-			}
 		}
 		pinfo->ptree->touch_profile_sec();
 		return ecSuccess;

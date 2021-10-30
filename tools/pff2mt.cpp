@@ -251,14 +251,14 @@ static bool tpropval_subject_handler(const uint8_t *buf, TPROPVAL_ARRAY *ar, TAG
 	if (buf[0] != 0x01 || buf[1] == 0x00 || strnlen(s, buf[1]) < buf[1])
 		return false;
 	pv.pvalue = deconst(buf + buf[1] + 1);
-	if (!tpropval_array_set_propval(ar, &pv))
+	if (ar->set(pv) != 0)
 		throw std::bad_alloc();
 	if (buf[1] == 0x01)
 		return true;
 	std::string prefix(s + 2, buf[1] - 1);
 	pv.proptag = PR_SUBJECT_PREFIX;
 	pv.pvalue = deconst(prefix.c_str());
-	if (!tpropval_array_set_propval(ar, &pv))
+	if (ar->set(pv) != 0)
 		throw std::bad_alloc();
 	return true;
 }
@@ -408,7 +408,7 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 	bool done = false;
 	if (pv.proptag == PR_SUBJECT)
 		done = tpropval_subject_handler(buf.get(), ar, std::move(pv));
-	if (!done && !tpropval_array_set_propval(ar, &pv))
+	if (!done && ar->set(pv) != 0)
 		throw std::bad_alloc();
 }
 

@@ -868,7 +868,7 @@ static gxerr_t fastupctx_object_record_propval(fastupctx_object *pctx,
 	case 0:
 		switch (pctx->root_element) {
 		case ROOT_ELEMENT_FOLDERCONTENT:
-			return tpropval_array_set_propval(pctx->pproplist, ppropval) ?
+			return pctx->pproplist->set(*ppropval) == 0 ?
 			       GXERR_SUCCESS : GXERR_CALL_FAILED;
 		case ROOT_ELEMENT_MESSAGECONTENT:
 			return exmdb_client_set_instance_property(pctx->pstream->plogon->get_dir(),
@@ -887,14 +887,13 @@ static gxerr_t fastupctx_object_record_propval(fastupctx_object *pctx,
 		return GXERR_CALL_FAILED;
 	case STARTTOPFLD:
 	case STARTSUBFLD:
-		return tpropval_array_set_propval(pctx->pproplist, ppropval) ?
+		return pctx->pproplist->set(*ppropval) == 0 ?
 		       GXERR_SUCCESS : GXERR_CALL_FAILED;
 	case STARTMESSAGE:
 	case STARTFAIMSG: {
 		auto mknd = static_cast<MARKER_NODE *>(pnode->pdata);
 		auto tp = static_cast<TPROPVAL_ARRAY *>(mknd->data.pelement);
-		return tpropval_array_set_propval(tp, ppropval) ?
-				GXERR_SUCCESS : GXERR_CALL_FAILED;
+		return tp->set(*ppropval) == 0 ? GXERR_SUCCESS : GXERR_CALL_FAILED;
 	}
 	case STARTEMBED:
 	case NEWATTACH: {
@@ -906,8 +905,7 @@ static gxerr_t fastupctx_object_record_propval(fastupctx_object *pctx,
 			       mknd->data.instance_id, ppropval, &b_result) == TRUE ?
 			       GXERR_SUCCESS : GXERR_CALL_FAILED;
 		} else {
-			return tpropval_array_set_propval(tp, ppropval) ?
-					GXERR_SUCCESS : GXERR_CALL_FAILED;
+			return tp->set(*ppropval) == 0 ? GXERR_SUCCESS : GXERR_CALL_FAILED;
 		}
 	}
 	case STARTRECIP: {
@@ -915,11 +913,10 @@ static gxerr_t fastupctx_object_record_propval(fastupctx_object *pctx,
 		auto tp = static_cast<TPROPVAL_ARRAY *>(mknd->data.pelement);
 		if (ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element ||
 			ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element) {
-			return tpropval_array_set_propval(pctx->pproplist, ppropval) ?
+			return pctx->pproplist->set(*ppropval) == 0 ?
 			       GXERR_SUCCESS : GXERR_CALL_FAILED;
 		} else {
-			return tpropval_array_set_propval(tp, ppropval) ?
-			       GXERR_SUCCESS : GXERR_CALL_FAILED;
+			return tp->set(*ppropval) == 0 ? GXERR_SUCCESS : GXERR_CALL_FAILED;
 		}
 	}
 	default:

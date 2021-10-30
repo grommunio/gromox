@@ -54,8 +54,7 @@ ATTACHMENT_CONTENT* attachment_content_dup(
 		return NULL;
 	}
 	for (i=0; i<pattachment->proplist.count; i++) {
-		if (!tpropval_array_set_propval(&pattachment1->proplist,
-		    pattachment->proplist.ppropval + i)) {
+		if (pattachment1->proplist.set(pattachment->proplist.ppropval[i]) != 0) {
 			attachment_content_free(pattachment1);
 			return NULL;
 		}
@@ -328,8 +327,7 @@ MESSAGE_CONTENT *message_content_dup(const MESSAGE_CONTENT *pmsgctnt)
 		return NULL;
 	}
 	for (i=0; i<pmsgctnt->proplist.count; i++) {
-		if (!tpropval_array_set_propval(&pmsgctnt1->proplist,
-		    pmsgctnt->proplist.ppropval + i)) {
+		if (pmsgctnt1->proplist.set(pmsgctnt->proplist.ppropval[i]) != 0) {
 			message_content_free(pmsgctnt1);
 			return NULL;
 		}
