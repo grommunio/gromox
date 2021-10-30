@@ -1144,38 +1144,28 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 			switch (proptag) {
 			case PR_BODY:
 			case PR_BODY_A:	
-				if (NULL != tpropval_array_get_propval(
-					pproplist, ID_TAG_BODY) ||
-					NULL != tpropval_array_get_propval(
-					pproplist, ID_TAG_BODY_STRING8)) {
+				if (pproplist->has(ID_TAG_BODY) ||
+				    pproplist->has(ID_TAG_BODY_STRING8))
 					continue;	
-				}
 				break;
 			case PROP_TAG_HTML:
-				if (NULL != tpropval_array_get_propval(
-					pproplist, ID_TAG_HTML)) {
+				if (pproplist->has(ID_TAG_HTML))
 					continue;	
-				}
 				break;
 			case PROP_TAG_RTFCOMPRESSED:
-				if (NULL != tpropval_array_get_propval(
-					pproplist, ID_TAG_RTFCOMPRESSED)) {
+				if (pproplist->has(ID_TAG_RTFCOMPRESSED))
 					continue;	
-				}
 				break;
 			}
 			if (PROP_TYPE(proptag) == PT_STRING8) {
-				if (tpropval_array_get_propval(pproplist,
-				    CHANGE_PROP_TYPE(proptag, PT_UNICODE)) != nullptr)
+				if (pproplist->has(CHANGE_PROP_TYPE(proptag, PT_UNICODE)))
 					continue;
 			} else if (PROP_TYPE(proptag) == PT_UNICODE) {
-				if (tpropval_array_get_propval(pproplist,
-				    CHANGE_PROP_TYPE(proptag, PT_STRING8)) != nullptr)
+				if (pproplist->has(CHANGE_PROP_TYPE(proptag, PT_STRING8)))
 					continue;
 			}
-			if (NULL != tpropval_array_get_propval(pproplist, proptag)) {
+			if (pproplist->has(proptag))
 				continue;
-			}
 		}
 		switch (proptag) {
 		case PR_BODY:
@@ -1434,30 +1424,23 @@ BOOL exmdb_server_write_attachment_instance(const char *dir,
 		if (FALSE == b_force) {
 			switch (proptag) {
 			case PR_ATTACH_DATA_BIN:
-				if (NULL != tpropval_array_get_propval(
-					pproplist, ID_TAG_ATTACHDATABINARY)) {
+				if (pproplist->has(ID_TAG_ATTACHDATABINARY))
 					continue;	
-				}
 				break;
 			case PR_ATTACH_DATA_OBJ:
-				if (NULL != tpropval_array_get_propval(
-					pproplist, ID_TAG_ATTACHDATAOBJECT)) {
+				if (pproplist->has(ID_TAG_ATTACHDATAOBJECT))
 					continue;	
-				}
 				break;
 			}
 			if (PROP_TYPE(proptag) == PT_STRING8) {
-				if (tpropval_array_get_propval(pproplist,
-				    CHANGE_PROP_TYPE(proptag, PT_UNICODE)) != nullptr)
+				if (pproplist->has(CHANGE_PROP_TYPE(proptag, PT_UNICODE)))
 					continue;
 			} else if (PROP_TYPE(proptag) == PT_UNICODE) {
-				if (tpropval_array_get_propval(pproplist,
-				    CHANGE_PROP_TYPE(proptag, PT_STRING8)) != nullptr)
+				if (pproplist->has(CHANGE_PROP_TYPE(proptag, PT_STRING8)))
 					continue;
 			}
-			if (NULL != tpropval_array_get_propval(pproplist, proptag)) {
+			if (pproplist->has(proptag))
 				continue;
-			}
 		}
 		switch (proptag) {
 		case PR_ATTACH_DATA_BIN:
@@ -1658,8 +1641,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 	auto pbin = static_cast<BINARY *>(tpropval_array_get_propval(&pmsgctnt->proplist,
 	            PR_SENT_REPRESENTING_ENTRYID));
 	if (pbin != nullptr &&
-	    tpropval_array_get_propval(&pmsgctnt->proplist,
-	    PR_SENT_REPRESENTING_EMAIL_ADDRESS) == nullptr) {
+	    !pmsgctnt->proplist.has(PR_SENT_REPRESENTING_EMAIL_ADDRESS)) {
 		auto pvalue = tpropval_array_get_propval(&pmsgctnt->proplist,
 		              PR_SENT_REPRESENTING_ADDRTYPE);
 		if (NULL == pvalue) {
@@ -1695,8 +1677,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 	}
 	pbin = static_cast<BINARY *>(tpropval_array_get_propval(
 	       &pmsgctnt->proplist, PR_SENDER_ENTRYID));
-	if (pbin != nullptr && tpropval_array_get_propval(&pmsgctnt->proplist,
-	    PR_SENDER_EMAIL_ADDRESS) == nullptr) {
+	if (pbin != nullptr && !pmsgctnt->proplist.has(PR_SENDER_EMAIL_ADDRESS)) {
 		auto pvalue = tpropval_array_get_propval(&pmsgctnt->proplist, PR_SENDER_ADDRTYPE);
 		if (NULL == pvalue) {
 			if (common_util_parse_addressbook_entryid(pbin,

@@ -1626,7 +1626,7 @@ static BOOL oxcmail_enum_mail_head(
 			&penum_param->pmsg->proplist)) {
 			return FALSE;
 		}
-		if (tpropval_array_get_propval(&penum_param->pmsg->proplist, PR_SUBJECT_PREFIX) == nullptr) {
+		if (!penum_param->pmsg->proplist.has(PR_SUBJECT_PREFIX)) {
 			propval.proptag = PR_SUBJECT_PREFIX;
 			propval.pvalue = &tmp_byte;
 			tmp_byte = '\0';
@@ -2740,8 +2740,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			}
 		}
 	}
-	if (tpropval_array_get_propval(&pattachment->proplist,
-	    PR_CREATION_TIME) == nullptr) {
+	if (!pattachment->proplist.has(PR_CREATION_TIME)) {
 		propval.proptag = PR_CREATION_TIME;
 		propval.pvalue = &pmime_enum->nttime_stamp;
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
@@ -2749,8 +2748,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			return;
 		}
 	}
-	if (tpropval_array_get_propval(&pattachment->proplist,
-	    PR_LAST_MODIFICATION_TIME) == nullptr) {
+	if (!pattachment->proplist.has(PR_LAST_MODIFICATION_TIME)) {
 		propval.proptag = PR_LAST_MODIFICATION_TIME;
 		propval.pvalue = &pmime_enum->nttime_stamp;
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
@@ -3196,11 +3194,9 @@ static BOOL oxcmail_copy_message_proplist(
 	int i;
 	
 	for (i=0; i<pmsg->proplist.count; i++) {
-		if (NULL == tpropval_array_get_propval(&pmsg1->proplist,
-			pmsg->proplist.ppropval[i].proptag)) {
-			if (!tpropval_array_set_propval(&pmsg1->proplist, &pmsg->proplist.ppropval[i]))
-				return FALSE;
-		}
+		if (!pmsg1->proplist.has(pmsg->proplist.ppropval[i].proptag) &&
+		    !tpropval_array_set_propval(&pmsg1->proplist, &pmsg->proplist.ppropval[i]))
+			return FALSE;
 	}
 	return TRUE;
 }
@@ -3763,8 +3759,7 @@ static bool oxcmail_enum_mdn(const char *tag,
 		}
 	} else if (0 == strcasecmp(tag, "Final-Recipient")) {
 		if (0 == strncasecmp(value, "rfc822;", 7)) {
-			if (tpropval_array_get_propval(&static_cast<MESSAGE_CONTENT *>(pparam)->proplist,
-			    PROP_TAG_ORIGINALDISPLAYTO) == nullptr) {
+			if (!static_cast<MESSAGE_CONTENT *>(pparam)->proplist.has(PROP_TAG_ORIGINALDISPLAYTO)) {
 				propval.proptag = PROP_TAG_ORIGINALDISPLAYTO;
 				propval.pvalue = deconst(value + 7);
 				return tpropval_array_set_propval(&mcparam->proplist, &propval);
@@ -4016,9 +4011,8 @@ static BOOL oxcmail_try_assign_propval(TPROPVAL_ARRAY *pproplist,
 	void *pvalue;
 	TAGGED_PROPVAL propval;
 	
-	if (NULL != tpropval_array_get_propval(pproplist, proptag1)) {
+	if (pproplist->has(proptag1))
 		return TRUE;
-	}
 	pvalue = tpropval_array_get_propval(pproplist, proptag2);
 	if (NULL == pvalue) {
 		return TRUE;
@@ -4098,10 +4092,8 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		message_content_free(pmsg);
 		return NULL;
 	}
-	if (NULL == tpropval_array_get_propval(
-		&pmsg->proplist, PR_SENDER_NAME) &&
-		NULL == tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_SENDERSMTPADDRESS)) {
+	if (!pmsg->proplist.has(PR_SENDER_NAME) &&
+	    !pmsg->proplist.has(PROP_TAG_SENDERSMTPADDRESS)) {
 		if (!oxcmail_try_assign_propval(&pmsg->proplist, PR_SENDER_NAME, PR_SENT_REPRESENTING_NAME) ||
 		    !oxcmail_try_assign_propval(&pmsg->proplist, PROP_TAG_SENDERSMTPADDRESS, PR_SENT_REPRESENTING_SMTP_ADDRESS) ||
 		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENDER_ADDRTYPE, PR_SENT_REPRESENTING_ADDRTYPE) ||
@@ -4111,8 +4103,8 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			message_content_free(pmsg);
 			return NULL;
 		}
-	} else if (tpropval_array_get_propval(&pmsg->proplist, PR_SENT_REPRESENTING_NAME) == nullptr &&
-	    tpropval_array_get_propval(&pmsg->proplist, PR_SENT_REPRESENTING_SMTP_ADDRESS) == nullptr) {
+	} else if (!pmsg->proplist.has(PR_SENT_REPRESENTING_NAME) &&
+	    !pmsg->proplist.has(PR_SENT_REPRESENTING_SMTP_ADDRESS)) {
 		if (!oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_NAME, PR_SENDER_NAME) ||
 		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_SMTP_ADDRESS, PROP_TAG_SENDERSMTPADDRESS) ||
 		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_ADDRTYPE, PR_SENDER_ADDRTYPE) ||
@@ -4123,7 +4115,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			return NULL;
 		}	
 	}
-	if (tpropval_array_get_propval(&pmsg->proplist, PR_IMPORTANCE) == nullptr) {
+	if (!pmsg->proplist.has(PR_IMPORTANCE)) {
 		propval.proptag = PR_IMPORTANCE;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = IMPORTANCE_NORMAL;
@@ -4132,7 +4124,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			return NULL;
 		}
 	}
-	if (tpropval_array_get_propval(&pmsg->proplist, PR_SENSITIVITY) == nullptr) {
+	if (!pmsg->proplist.has(PR_SENSITIVITY)) {
 		propval.proptag = PR_SENSITIVITY;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = SENSITIVITY_NONE;
@@ -4497,8 +4489,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		return NULL;
 	}
 	if (NULL != mime_enum.pcalendar) {
-		if (tpropval_array_get_propval(&pmsg1->proplist,
-		    PR_MESSAGE_CLASS) == nullptr) {
+		if (!pmsg1->proplist.has(PR_MESSAGE_CLASS)) {
 			/* multiple calendar objects in attachment list */
 			if (NULL != pmsg1->children.pattachments) {
 				if (FALSE == oxcmail_merge_message_attachments(
@@ -4545,8 +4536,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			}
 		}
 	}
-	if (tpropval_array_get_propval(&pmsg->proplist, PR_BODY_W) == nullptr &&
-	    tpropval_array_get_propval(&pmsg->proplist, PR_BODY_A) == nullptr) {
+	if (!pmsg->proplist.has(PR_BODY_W) && !pmsg->proplist.has(PR_BODY_A)) {
 		phtml_bin = static_cast<BINARY *>(tpropval_array_get_propval(
 		            &pmsg->proplist, PROP_TAG_HTML));
 		if (NULL != phtml_bin) {
@@ -4583,8 +4573,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			}
 		}
 	}
-	if (NULL == tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_HTML)) {
+	if (!pmsg->proplist.has(PROP_TAG_HTML)) {
 		pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_BODY);
 		if (NULL != pvalue) {
 			phtml_bin = static_cast<BINARY *>(alloc(sizeof(BINARY)));
@@ -4613,10 +4602,8 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		0 != pmsg->children.pattachments->count) {
 		pattachments = pmsg->children.pattachments;
 		for (i=0; i<pattachments->count; i++) {
-			if (tpropval_array_get_propval(&pattachments->pplist[i]->proplist,
-			    PR_ATTACH_CONTENT_ID) != nullptr ||
-			    tpropval_array_get_propval(&pattachments->pplist[i]->proplist,
-			    PR_ATTACH_CONTENT_ID_A) != nullptr)
+			if (pattachments->pplist[i]->proplist.has(PR_ATTACH_CONTENT_ID) ||
+			    pattachments->pplist[i]->proplist.has(PR_ATTACH_CONTENT_ID_A))
 				continue;	
 			pvalue = tpropval_array_get_propval(
 				&pattachments->pplist[i]->proplist,
@@ -5086,8 +5073,8 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 		auto pvalue = static_cast<uint32_t *>(tpropval_array_get_propval(
 		              &pattachment->proplist, PR_ATTACH_FLAGS));
 		if (NULL != pvalue && (*pvalue & ATTACH_FLAG_RENDEREDINBODY)) {
-			if (tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_CONTENT_ID) != nullptr ||
-			    tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_CONTENT_LOCATION) != nullptr) {
+			if (pattachment->proplist.has(PR_ATTACH_CONTENT_ID) ||
+			    pattachment->proplist.has(PR_ATTACH_CONTENT_LOCATION)) {
 				pskeleton->b_inline = TRUE;
 				continue;
 			}
@@ -6926,8 +6913,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 		if (NULL == pattachment->pembedded &&
 		    (pvalue = tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_FLAGS)) != nullptr &&
 		    (*static_cast<uint32_t *>(pvalue) & ATTACH_FLAG_RENDEREDINBODY) &&
-		    (tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_CONTENT_ID) != nullptr ||
-		    tpropval_array_get_propval(&pattachment->proplist, PR_ATTACH_CONTENT_LOCATION) != nullptr)) {
+		    (pattachment->proplist.has(PR_ATTACH_CONTENT_ID) ||
+		    pattachment->proplist.has(PR_ATTACH_CONTENT_LOCATION))) {
 			b_inline = TRUE;
 			pmime = pmail->add_child(prelated, MIME_ADD_LAST);
 		} else {

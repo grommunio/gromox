@@ -1709,7 +1709,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	}
 	phash1.reset();
 	
-	if (tpropval_array_get_propval(&pmsg->proplist, PR_INTERNET_CPID) == nullptr) {
+	if (!pmsg->proplist.has(PR_INTERNET_CPID)) {
 		propval.proptag = PR_INTERNET_CPID;
 		propval.pvalue = &cpid;
 		tpropval_array_set_propval(&pmsg->proplist, &propval);

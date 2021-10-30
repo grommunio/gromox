@@ -544,7 +544,7 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
 		fprintf(stderr, "exm: allocate_cn(fld) RPC failed\n");
 		return -EIO;
 	}
-	if (tpropval_array_get_propval(props, PR_LAST_MODIFICATION_TIME) == nullptr) {
+	if (!props->has(PR_LAST_MODIFICATION_TIME)) {
 		auto last_time = rop_util_current_nttime();
 		if (!tpropval_array_set_propval(props, PR_LAST_MODIFICATION_TIME, &last_time))
 			return -ENOMEM;
@@ -612,7 +612,7 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 		return -ENOMEM;
 	}
 	auto props = &ctnt->proplist;
-	if (tpropval_array_get_propval(props, PR_LAST_MODIFICATION_TIME) == nullptr) {
+	if (!props->has(PR_LAST_MODIFICATION_TIME)) {
 		auto last_time = rop_util_current_nttime();
 		if (!tpropval_array_set_propval(props, PR_LAST_MODIFICATION_TIME, &last_time))
 			return -ENOMEM;

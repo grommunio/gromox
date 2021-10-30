@@ -2676,7 +2676,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			}
 		}
 	}
-	if (tpropval_array_get_propval(&pmsg->proplist, PR_IMPORTANCE) == nullptr) {
+	if (!pmsg->proplist.has(PR_IMPORTANCE)) {
 		propval.proptag = PR_IMPORTANCE;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = IMPORTANCE_NORMAL;
@@ -5357,10 +5357,8 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (pvalue == nullptr || strcasecmp(static_cast<char *>(pvalue),
 			    "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}"))
 				continue;
-			if (NULL == tpropval_array_get_propval(
-				&pembedded->proplist, proptag_xrt)) {
+			if (!pembedded->proplist.has(proptag_xrt))
 				continue;
-			}
 			if (FALSE == oxcical_export_internal(method, tzid,
 				ptz_component, pembedded, pical, entryid_to_username,
 				essdn_to_username, lcid_to_ltag, alloc, get_propids)) {

@@ -410,12 +410,9 @@ MESSAGE_CONTENT* oxvcard_import(
 				pnode1 = double_list_get_after(
 					&pvline->param_list, pnode1);
 				if (NULL == pnode1) {
-					if (NULL != tpropval_array_get_propval(
-						&pmsg->proplist, PROP_TAG_HOMETELEPHONENUMBER)) {
-						propval.proptag = PROP_TAG_HOME2TELEPHONENUMBER;
-					} else {
-						propval.proptag = PROP_TAG_HOMETELEPHONENUMBER;
-					}
+					propval.proptag = pmsg->proplist.has(PROP_TAG_HOMETELEPHONENUMBER) ?
+					                  PROP_TAG_HOME2TELEPHONENUMBER :
+					                  PROP_TAG_HOMETELEPHONENUMBER;
 				} else if (0 == strcasecmp(((VCARD_PARAM*)
 					pnode1->pdata)->name, "fax")) {
 					propval.proptag = PROP_TAG_HOMEFAXNUMBER;
@@ -428,12 +425,9 @@ MESSAGE_CONTENT* oxvcard_import(
 				pnode1 = double_list_get_after(
 					&pvline->param_list, pnode1);
 				if (NULL == pnode1) {
-					if (NULL != tpropval_array_get_propval(
-						&pmsg->proplist, PROP_TAG_BUSINESSTELEPHONENUMBER)) {
-						propval.proptag = PROP_TAG_BUSINESS2TELEPHONENUMBER;
-					} else {
-						propval.proptag = PROP_TAG_BUSINESSTELEPHONENUMBER;
-					}
+					propval.proptag = pmsg->proplist.has(PROP_TAG_BUSINESSTELEPHONENUMBER) ?
+					                  PROP_TAG_BUSINESS2TELEPHONENUMBER :
+					                  PROP_TAG_BUSINESSTELEPHONENUMBER;
 				} else if (0 == strcasecmp(((VCARD_PARAM*)
 					pnode1->pdata)->name, "fax")) {
 					propval.proptag = PROP_TAG_BUSINESSFAXNUMBER;

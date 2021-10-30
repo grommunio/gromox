@@ -156,7 +156,7 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 	};
 	for (auto t : tags)
 		tpropval_array_remove_propval(pproplist, t);
-	if (tpropval_array_get_propval(pproplist, PR_DISPLAY_NAME) == nullptr)
+	if (!pproplist->has(PR_DISPLAY_NAME))
 		return FALSE;
 	propval.proptag = PR_FOLDER_TYPE;
 	propval.pvalue = &tmp_type;

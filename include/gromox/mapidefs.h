@@ -1090,6 +1090,7 @@ extern GX_EXPORT void *tpropval_array_get_propval(const TPROPVAL_ARRAY *, uint32
 extern GX_EXPORT TPROPVAL_ARRAY *tpropval_array_dup(TPROPVAL_ARRAY *);
 
 struct TPROPVAL_ARRAY {
+	inline bool has(uint32_t tag) const { return tpropval_array_get_propval(this, tag) != nullptr; }
 	uint16_t count;
 	TAGGED_PROPVAL *ppropval;
 };
