@@ -67,11 +67,13 @@ somewhere locally. (To skip over file-based attachments, use the empty
 value, i.e. \fB\-\-src\-at ""\fP.)
 .TP
 \fB\-\-src\-guid\fP \fIguid\fP
-Extract the mailbox with the particular GUID from the source.
-(May be used to read orphaned stores.)
+Selects the mailbox with the particular GUID for extraction.
+(This may be used to read orphaned stores.)
 .TP
 \fB\-\-src\-mbox\fP \fIusername\fP
-Extract the mailbox of the given username from the source.
+Scan the source database for a mailbox which appears to have last been used by
+\fIusername\fP, and use it for extraction. There are a number of caveats
+related to this lookup; see the section "Store lookup by name" further below.
 .TP
 \fB\-\-l1\fP \fIx\fP, \fB\-\-l2\fP \fIy\fP
 If you are using "attachment_storage=files_v1-\fIx\fP-\fIy\fP" in
@@ -107,5 +109,48 @@ ssh -Tenone root@gromox.lan "gromox\-mt2exm \-u target@domain.de"
 It is also possible to copy the attachment directory beforehand, or to store
 the MT data stream, though additional disk space for these intermediate objects
 and representation would be required.
+.SH Store lookup using Kopano tools
+If kdb2mt's built-in heuristic \-\-src\-mbox resolution mechanism is not
+adequate enough, you can use utilities from the Kopano installation, provided
+that is still active.
+.IP \(bu 4
+`kopano\-storeadm \-M` is the gold standard. This dumps the entire store list,
+in JSON representation. The GUIDs can then be used together with \-\-src\-guid.
+.IP \(bu 4
+The global "SYSTEM" user object has a private store titled "Inbox \- SYSTEM".
+Not that you will ever need it; this store is practically empty all the time.
+Alternatively, the GUID can also be shown with `kopano\-admin \-\-details
+SYSTEM`.
+.IP \(bu 4
+The global public store, if it exists, is owned by the "Everyone" \fIgroup
+object\fP. In kopano\-storeadm output, it can be found by looking for the
+display name "Public Folders". There is no way to see the GUID via
+kopano\-admin.
+.IP \(bu 4
+Just for completeness: There is no per-company SYSTEM user (and hence no
+store). If anything, companies re-use the global SYSTEM user as a member.
+.IP \(bu 4
+The per-company public folder, if it exists, is owned by the respective
+\fIcompany object\fP. In kopano\-storeadm output, it can be found by looking
+for the display name "Public Folders - MyCompany". Alternatively, the GUID can
+also be shown with `kopano\-admin \-\-type company \-\-details MyCompany`.
+.SH Store lookup by name
+Generally, Kopano SQL databases do not store usernames. Store ownership is
+recorded with a Kopano-level numeric ID, which itself is mapped to a
+site-specific attribute of an authentication service, e.g. the uidNumber field
+of an LDAP. Only the auth service would know the username, and kdb2mt does not
+rely on its existence.
+.PP
+Every store has a metadata field for the \fBmost recent owner\fP (MRO). This
+field was intended for orphaned stores and has informational value only.
+Because it is possible to orphan and recreate stores, the MRO field value is
+\fBnot unique\fP across the set of all stores.
+.PP
+Furthermore, the MRO field is missing the domain/company part of the username.
+Company public stores (in hosted setups) use the company name as MRO. This all
+contributes to \-\-src\-mbox possibly matching multiple stores.
+.PP
+When more than one store matches in any way, kdb2mt will print the result set
+with GUIDs and exit, at which point you need to use \-\-src\-guid instead.
 .SH See also
 \fBgromox\fP(7), \fBgromox\-mt2exm\fP(8gx)
