@@ -2420,11 +2420,7 @@ BOOL exmdb_server_get_instance_properties(
 static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
     const TPROPVAL_ARRAY *pproperties, PROBLEM_ARRAY *pproblems)
 {
-	int i;
-	uint8_t tmp_byte;
-	uint32_t body_type;
-	uint32_t message_flags;
-	TAGGED_PROPVAL propval;
+	static constexpr uint8_t one_byte = 1;
 
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproperties->count);
@@ -2432,7 +2428,8 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 		return FALSE;
 	}
 	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
-	for (i=0; i<pproperties->count; i++) {
+	for (size_t i = 0; i < pproperties->count; ++i) {
+		TAGGED_PROPVAL propval;
 		switch (pproperties->ppropval[i].proptag) {
 		case PR_ASSOCIATED:
 			if (TRUE == pinstance->b_new) {
@@ -2485,35 +2482,19 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				continue;
 			}
-			message_flags = *(uint32_t*)pproperties->ppropval[i].pvalue;
-			if (message_flags & MSGFLAG_READ) {
-				propval.proptag = PR_READ;
-				propval.pvalue = &tmp_byte;
-				tmp_byte = 1;
-				if (pmsgctnt->proplist.set(propval) != 0)
-					return FALSE;
-			}
-			if (message_flags & MSGFLAG_ASSOCIATED) {
-				propval.proptag = PR_ASSOCIATED;
-				propval.pvalue = &tmp_byte;
-				tmp_byte = 1;
-				if (pmsgctnt->proplist.set(propval) != 0)
-					return FALSE;
-			}
-			if (message_flags & MSGFLAG_RN_PENDING) {
-				propval.proptag = PR_READ_RECEIPT_REQUESTED;
-				propval.pvalue = &tmp_byte;
-				tmp_byte = 1;
-				if (pmsgctnt->proplist.set(propval) != 0)
-					return FALSE;
-			}
-			if (message_flags & MSGFLAG_NRN_PENDING) {
-				propval.proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
-				propval.pvalue = &tmp_byte;
-				tmp_byte = 1;
-				if (pmsgctnt->proplist.set(propval) != 0)
-					return FALSE;
-			}
+			auto message_flags = *static_cast<uint32_t *>(pproperties->ppropval[i].pvalue);
+			if (message_flags & MSGFLAG_READ &&
+			    pmsgctnt->proplist.set(PR_READ, &one_byte) != 0)
+				return FALSE;
+			if (message_flags & MSGFLAG_ASSOCIATED &&
+			    pmsgctnt->proplist.set(PR_ASSOCIATED, &one_byte) != 0)
+				return FALSE;
+			if (message_flags & MSGFLAG_RN_PENDING &&
+			    pmsgctnt->proplist.set(PR_READ_RECEIPT_REQUESTED, &one_byte) != 0)
+				return FALSE;
+			if (message_flags & MSGFLAG_NRN_PENDING &&
+			    pmsgctnt->proplist.set(PR_NON_RECEIPT_NOTIFICATION_REQUESTED, &one_byte) != 0)
+				return FALSE;
 			message_flags &= ~(MSGFLAG_READ | MSGFLAG_UNMODIFIED |
 					 MSGFLAG_HASATTACH | MSGFLAG_FROMME |
 					 MSGFLAG_ASSOCIATED | MSGFLAG_RN_PENDING |
@@ -2595,6 +2576,8 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 		    propval.proptag != PROP_TAG_BODYHTML &&
 		    propval.proptag != PROP_TAG_RTFCOMPRESSED)
 			continue;
+
+		uint32_t body_type = 0;
 		switch (propval.proptag) {
 		case PR_BODY:
 			pinstance->change_mask |= CHANGE_MASK_BODY;
@@ -2610,9 +2593,7 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 			body_type = NATIVE_BODY_RTF;
 			break;
 		}
-		propval.proptag = PROP_TAG_NATIVEBODY;
-		propval.pvalue = &body_type;
-		if (pmsgctnt->proplist.set(propval) != 0)
+		if (pmsgctnt->proplist.set(PROP_TAG_NATIVEBODY, &body_type) != 0)
 			return FALSE;
 	}
 	return TRUE;
@@ -2621,16 +2602,14 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 static BOOL set_xns_props_atx(INSTANCE_NODE *pinstance,
     const TPROPVAL_ARRAY *pproperties, PROBLEM_ARRAY *pproblems)
 {
-	int i;
-	TAGGED_PROPVAL propval;
-
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproperties->count);
 	if (NULL == pproblems->pproblem) {
 		return FALSE;
 	}
 	auto pattachment = static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent);
-	for (i=0; i<pproperties->count; i++) {
+	for (size_t i = 0; i < pproperties->count; ++i) {
+		TAGGED_PROPVAL propval;
 		switch (pproperties->ppropval[i].proptag) {
 		case ID_TAG_ATTACHDATABINARY:
 		case ID_TAG_ATTACHDATAOBJECT:
