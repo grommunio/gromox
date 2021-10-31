@@ -3259,7 +3259,6 @@ static BOOL oxcical_get_smtp_address(TPROPVAL_ARRAY *prcpt,
 	}
 	pvalue = prcpt->getval(PROP_TAG_ADDRESSTYPE);
 	if (NULL == pvalue) {
- FIND_ENTRYID:
 		pvalue = prcpt->getval(PR_ENTRYID);
 		if (NULL == pvalue) {
 			return FALSE;
@@ -3279,7 +3278,10 @@ static BOOL oxcical_get_smtp_address(TPROPVAL_ARRAY *prcpt,
 		pvalue = NULL;
 	}
 	if (NULL == pvalue) {
-		goto FIND_ENTRYID;
+		pvalue = prcpt->getval(PR_ENTRYID);
+		if (pvalue == nullptr)
+			return FALSE;
+		return entryid_to_username(static_cast<BINARY *>(pvalue), alloc, username, ulen);
 	}
 	gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
 	return TRUE;
