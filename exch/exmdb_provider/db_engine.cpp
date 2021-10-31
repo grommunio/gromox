@@ -929,11 +929,6 @@ void db_engine_delete_dynamic(db_item_ptr &pdb, uint64_t folder_id)
 void db_engine_proc_dynamic_event(db_item_ptr &pdb, uint32_t cpid,
 	int event_type, uint64_t id1, uint64_t id2, uint64_t id3)
 {
-	BOOL b_exist;
-	BOOL b_included;
-	BOOL b_included1;
-	uint64_t message_id;
-	char sql_string[128];
 	uint32_t folder_type;
 	DYNAMIC_NODE *pdynamic;
 	DOUBLE_LIST_NODE *pnode;
@@ -951,24 +946,32 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, uint32_t cpid,
 		pdynamic = (DYNAMIC_NODE*)pnode->pdata;
 		for (size_t i = 0; i < pdynamic->folder_ids.count; ++i) {
 			if (DYNAMIC_EVENT_MOVE_FOLDER == event_type) {
-				if (pdynamic->search_flags & SEARCH_FLAG_RECURSIVE) {
+				[](db_item_ptr &pdb, uint32_t cpid, uint64_t id1, uint64_t id2, uint64_t id3, uint32_t folder_type, DYNAMIC_NODE *pdynamic, size_t i) {
+				BOOL b_exist, b_included, b_included1;
+				uint64_t message_id;
+				char sql_string[128];
+
+				if (!(pdynamic->search_flags & SEARCH_FLAG_RECURSIVE))
+					return;
+
+				{
 					if (!common_util_check_descendant(pdb->psqlite,
 					    id1, pdynamic->folder_ids.pll[i], &b_included) ||
 					    !common_util_check_descendant(pdb->psqlite,
 					    id2, pdynamic->folder_ids.pll[i], &b_included1)) {
 						debug_info("[db_engine]: fatal error in"
 							" common_util_check_descendant\n");
-						continue;
+						return;
 					}
 					if (b_included == b_included1) {
-						continue;
+						return;
 					}
 					snprintf(sql_string, arsizeof(sql_string), folder_type == FOLDER_SEARCH ?
 					         "SELECT message_id FROM search_result WHERE folder_id=%llu" :
 					         "SELECT message_id FROM messages WHERE parent_fid=%llu", LLU(id3));
 					auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 					if (pstmt == nullptr)
-						continue;
+						return;
 					while (SQLITE_ROW == sqlite3_step(pstmt)) {
 						message_id = sqlite3_column_int64(pstmt, 0);
 						if (FALSE == common_util_check_search_result(
@@ -976,10 +979,10 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, uint32_t cpid,
 							message_id, &b_exist)) {
 							debug_info("[db_engine]: fail to check"
 								" item in search_result\n");
-							continue;
+							return;
 						}
 						if (b_included != b_exist) {
-							continue;
+							return;
 						}
 						if (TRUE == b_included) {
 							db_engine_notify_link_deletion(pdb,
@@ -995,12 +998,13 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, uint32_t cpid,
 								debug_info("[db_engine]: fail to "
 									"delete from search_result\n");
 							}
+							continue;
 						} else {
 							if (FALSE ==
 								common_util_evaluate_message_restriction(
 								pdb->psqlite, cpid, message_id,
 								pdynamic->prestriction)) {
-								continue;
+								return;
 							}
 							snprintf(sql_string, arsizeof(sql_string), "INSERT INTO search_result "
 								"(folder_id, message_id) VALUES (%llu, %llu)",
@@ -1016,21 +1020,28 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, uint32_t cpid,
 						}
 					}
 				}
+				}(pdb, cpid, id1, id2, id3, folder_type, pdynamic, i);
 				continue;
 			}
+
+			[](db_item_ptr &pdb, uint32_t cpid, int event_type, uint64_t id1, uint64_t id2, DYNAMIC_NODE *pdynamic, size_t i) {
+			BOOL b_exist;
+			BOOL b_included;
+			char sql_string[128];
+
 			if (pdynamic->search_flags & SEARCH_FLAG_RECURSIVE) {
 				if (!common_util_check_descendant(pdb->psqlite,
 				    id1, pdynamic->folder_ids.pll[i], &b_included)) {
 					debug_info("[db_engine]: fatal error in"
 						" common_util_check_descendant\n");
-					continue;
+					return;
 				}
 				if (FALSE == b_included) {
-					continue;
+					return;
 				}
 			} else {
 				if (id1 != pdynamic->folder_ids.pll[i]) {
-					continue;
+					return;
 				}
 			}
 			switch (event_type) {
@@ -1039,14 +1050,14 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, uint32_t cpid,
 					pdb->psqlite, pdynamic->folder_id, id2, &b_exist)) {
 					debug_info("[db_engine]: fail to check"
 						" item in search_result\n");
-					continue;
+					return;
 				}
 				if (TRUE == b_exist) {
-					continue;
+					return;
 				}
 				if (FALSE == common_util_evaluate_message_restriction(
 					pdb->psqlite, cpid, id2, pdynamic->prestriction)) {
-					continue;
+					return;
 				}
 				snprintf(sql_string, arsizeof(sql_string), "INSERT INTO search_result "
 					"(folder_id, message_id) VALUES (%llu, %llu)",
@@ -1068,10 +1079,10 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, uint32_t cpid,
 					pdb->psqlite, pdynamic->folder_id, id2, &b_exist)) {
 					debug_info("[db_engine]: fail to check"
 						" item in search_result\n");
-					continue;
+					return;
 				}
 				if (FALSE == b_exist) {
-					continue;
+					return;
 				}
 				db_engine_notify_link_deletion(pdb,
 					pdynamic->folder_id, id2);
@@ -1092,7 +1103,7 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, uint32_t cpid,
 					pdb->psqlite, pdynamic->folder_id, id2, &b_exist)) {
 					debug_info("[db_engine]: fail to check"
 						" item in search_result\n");
-					continue;
+					return;
 				}
 				if (TRUE == common_util_evaluate_message_restriction(
 					pdb->psqlite, cpid, id2, pdynamic->prestriction)) {
@@ -1103,7 +1114,7 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, uint32_t cpid,
 							common_util_get_folder_parent_fid(
 							pdb->psqlite, pdynamic->folder_id),
 							pdynamic->folder_id);
-						continue;
+						return;
 					}
 					snprintf(sql_string, arsizeof(sql_string), "INSERT INTO search_result "
 						"(folder_id, message_id) VALUES (%llu, %llu)",
@@ -1121,7 +1132,7 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, uint32_t cpid,
 					}
 				} else {
 					if (FALSE == b_exist) {
-						continue;
+						return;
 					}
 					db_engine_notify_link_deletion(pdb,
 						pdynamic->folder_id, id2);
@@ -1139,6 +1150,7 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, uint32_t cpid,
 				}
 				break;
 			}
+			}(pdb, cpid, event_type, id1, id2, pdynamic, i);
 		}
 	}
 }
