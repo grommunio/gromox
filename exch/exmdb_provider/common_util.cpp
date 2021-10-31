@@ -936,17 +936,15 @@ static uint32_t common_util_get_folder_count(sqlite3 *psqlite,
 			"search_result.message_id=messages.message_id"
 			" AND messages.is_associated=%u",
 			LLU(folder_id), !!b_associated);
+	} else if (exmdb_server_check_private()) {
+		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
+			" FROM messages WHERE parent_fid=%llu "
+			"AND is_associated=%u", LLU(folder_id), !!b_associated);
 	} else {
-		if (TRUE == exmdb_server_check_private()) {
-			snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
-				" FROM messages WHERE parent_fid=%llu "
-				"AND is_associated=%u", LLU(folder_id), !!b_associated);
-		} else {
-			snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
-				" FROM messages WHERE parent_fid=%llu "
-				"AND is_deleted=0 AND is_associated=%u",
-				LLU(folder_id), !!b_associated);
-		}
+		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
+			" FROM messages WHERE parent_fid=%llu "
+			"AND is_deleted=0 AND is_associated=%u",
+			LLU(folder_id), !!b_associated);
 	}
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
