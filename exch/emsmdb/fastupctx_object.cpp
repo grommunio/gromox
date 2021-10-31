@@ -324,17 +324,16 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 		pctx->pproplist = NULL;
 		break;
 	case 0:
-		if (ROOT_ELEMENT_FOLDERCONTENT == pctx->root_element) {
-			if (NULL == pctx->pproplist) {
-				break;
-			}
-			if (pctx->pproplist->count > 0) {
-				if (!static_cast<folder_object *>(pctx->pobject)->set_properties(pctx->pproplist, &tmp_problems))
-					return GXERR_CALL_FAILED;
-			}
-			tpropval_array_free(pctx->pproplist);
-			pctx->pproplist = NULL;
+		if (pctx->root_element != ROOT_ELEMENT_FOLDERCONTENT)
+			break;
+		if (NULL == pctx->pproplist) {
+			break;
 		}
+		if (pctx->pproplist->count > 0 &&
+		    !static_cast<folder_object *>(pctx->pobject)->set_properties(pctx->pproplist, &tmp_problems))
+			return GXERR_CALL_FAILED;
+		tpropval_array_free(pctx->pproplist);
+		pctx->pproplist = NULL;
 		break;
 	}
 	switch (marker) {
