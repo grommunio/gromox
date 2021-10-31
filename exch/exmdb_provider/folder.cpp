@@ -571,6 +571,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 			SYSTEM_ALLOCATED_EID_RANGE - 1), LLD(time(nullptr)));
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
+			sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 			return FALSE;
 		}
 		if (0 == tmp_fid) {

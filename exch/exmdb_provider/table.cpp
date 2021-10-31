@@ -3949,6 +3949,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		pstmt.finalize();
 		pstmt1.finalize();
 		pstmt2.finalize();
+		sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 		sqlite3_close(psqlite);
 		return FALSE;
 	}

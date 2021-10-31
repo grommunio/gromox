@@ -3069,12 +3069,15 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 		snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM"
 			" t%u WHERE row_id=?", ptable->table_id);
 		pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-		if (pstmt == nullptr)
+		if (pstmt == nullptr) {
+			sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 			continue;
+		}
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM t%u "
 					"WHERE row_id=?", ptable->table_id);
 		auto pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt1 == nullptr) {
+			sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 			continue;
 		}
 		xstmt pstmt2, pstmt3, pstmt4;
@@ -3083,18 +3086,21 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 				"extremum=? WHERE row_id=?", ptable->table_id);
 			pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt2 == nullptr) {
+				sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 				continue;
 			}
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET "
 				"prev_id=? WHERE row_id=?", ptable->table_id);
 			pstmt3 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt3 == nullptr) {
+				sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 				continue;
 			}
 			snprintf(sql_string, arsizeof(sql_string), "SELECT row_id, inst_id, "
 				"extremum FROM t%u WHERE prev_id=?", ptable->table_id);
 			pstmt4 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt4 == nullptr) {
+				sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 				continue;
 			}
 		}
