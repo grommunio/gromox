@@ -3253,32 +3253,33 @@ static BOOL oxcical_get_smtp_address(TPROPVAL_ARRAY *prcpt,
     EXT_BUFFER_ALLOC alloc, char *username, size_t ulen)
 {
 	auto pvalue = prcpt->getval(PR_SMTP_ADDRESS);
+	if (pvalue != nullptr) {
+		gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
+		return TRUE;
+	}
+	pvalue = prcpt->getval(PROP_TAG_ADDRESSTYPE);
 	if (NULL == pvalue) {
-		pvalue = prcpt->getval(PROP_TAG_ADDRESSTYPE);
-		if (NULL == pvalue) {
  FIND_ENTRYID:
-			pvalue = prcpt->getval(PR_ENTRYID);
-			if (NULL == pvalue) {
-				return FALSE;
-			}
-			return entryid_to_username(static_cast<BINARY *>(pvalue), alloc, username, ulen);
-		} else {
-			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-				pvalue = prcpt->getval(PR_EMAIL_ADDRESS);
-			} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
-				pvalue = prcpt->getval(PR_EMAIL_ADDRESS);
-				if (NULL != pvalue) {
-					if (essdn_to_username(static_cast<char *>(pvalue), username, ulen))
-						return TRUE;
-					pvalue = NULL;
-				}
-			} else {
-				pvalue = NULL;
-			}
-			if (NULL == pvalue) {
-				goto FIND_ENTRYID;
-			}
+		pvalue = prcpt->getval(PR_ENTRYID);
+		if (NULL == pvalue) {
+			return FALSE;
 		}
+		return entryid_to_username(static_cast<BINARY *>(pvalue), alloc, username, ulen);
+	}
+	if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
+		pvalue = prcpt->getval(PR_EMAIL_ADDRESS);
+	} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
+		pvalue = prcpt->getval(PR_EMAIL_ADDRESS);
+		if (NULL != pvalue) {
+			if (essdn_to_username(static_cast<char *>(pvalue), username, ulen))
+				return TRUE;
+			pvalue = NULL;
+		}
+	} else {
+		pvalue = NULL;
+	}
+	if (NULL == pvalue) {
+		goto FIND_ENTRYID;
 	}
 	gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
 	return TRUE;
