@@ -182,26 +182,26 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 	if (!exmdb_client_create_folder_by_properties(pctx->pstream->plogon->get_dir(),
 	    pinfo->cpid, pproplist, pfolder_id) || *pfolder_id == 0)
 		return FALSE;
-	if (pctx->pstream->plogon->logon_mode != LOGON_MODE_OWNER) {
-		auto rpc_info = get_rpc_info();
-		pentryid = common_util_username_to_addressbook_entryid(
-											rpc_info.username);
-		if (NULL != pentryid) {
-			tmp_id = 1;
-			permission = rightsGromox7;
-			permission_row.flags = ROW_ADD;
-			permission_row.propvals.count = 3;
-			permission_row.propvals.ppropval = propval_buff;
-			propval_buff[0].proptag = PR_ENTRYID;
-			propval_buff[0].pvalue = pentryid;
-			propval_buff[1].proptag = PROP_TAG_MEMBERID;
-			propval_buff[1].pvalue = &tmp_id;
-			propval_buff[2].proptag = PROP_TAG_MEMBERRIGHTS;
-			propval_buff[2].pvalue = &permission;
-			exmdb_client_update_folder_permission(pctx->pstream->plogon->get_dir(),
-				*pfolder_id, FALSE, 1, &permission_row);
-		}
-	}
+	if (pctx->pstream->plogon->logon_mode == LOGON_MODE_OWNER)
+		return TRUE;
+	auto rpc_info = get_rpc_info();
+	pentryid = common_util_username_to_addressbook_entryid(
+										rpc_info.username);
+	if (pentryid == nullptr)
+		return TRUE;
+	tmp_id = 1;
+	permission = rightsGromox7;
+	permission_row.flags = ROW_ADD;
+	permission_row.propvals.count = 3;
+	permission_row.propvals.ppropval = propval_buff;
+	propval_buff[0].proptag = PR_ENTRYID;
+	propval_buff[0].pvalue = pentryid;
+	propval_buff[1].proptag = PROP_TAG_MEMBERID;
+	propval_buff[1].pvalue = &tmp_id;
+	propval_buff[2].proptag = PROP_TAG_MEMBERRIGHTS;
+	propval_buff[2].pvalue = &permission;
+	exmdb_client_update_folder_permission(pctx->pstream->plogon->get_dir(),
+		*pfolder_id, FALSE, 1, &permission_row);
 	return TRUE;
 }
 
