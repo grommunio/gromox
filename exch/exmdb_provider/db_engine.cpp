@@ -1654,21 +1654,20 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			} else {
 				sqlite3_exec(pdb->tables.psqlite,
 					"BEGIN TRANSACTION", NULL, NULL, NULL);
+				auto clean_transact = make_scope_exit([&]() {
+					sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+				});
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET idx=-(idx+1)"
 					" WHERE idx>=%u;UPDATE t%u SET idx=-idx WHERE"
 					" idx<0", ptable->table_id, idx, ptable->table_id);
 				if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 					sql_string, NULL, NULL, NULL)) {
-					sqlite3_exec(pdb->tables.psqlite,
-						"ROLLBACK", NULL, NULL, NULL);
 					continue;
 				}
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET prev_id=NULL "
 					"WHERE row_id=%llu", ptable->table_id, LLU(row_id1));
 				if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 					sql_string, NULL, NULL, NULL)) {
-					sqlite3_exec(pdb->tables.psqlite,
-						"ROLLBACK", NULL, NULL, NULL);
 					continue;
 				}
 				if (0 == row_id) {
@@ -1684,8 +1683,6 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				}
 				if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 					sql_string, NULL, NULL, NULL)) {
-					sqlite3_exec(pdb->tables.psqlite,
-						"ROLLBACK", NULL, NULL, NULL);
 					continue;
 				}
 				row_id = sqlite3_last_insert_rowid(pdb->tables.psqlite);
@@ -1693,12 +1690,11 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				        " row_id=%llu", ptable->table_id, LLU(row_id), LLU(row_id1));
 				if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 					sql_string, NULL, NULL, NULL)) {
-					sqlite3_exec(pdb->tables.psqlite,
-						"ROLLBACK", NULL, NULL, NULL);
 					continue;
 				}
 				sqlite3_exec(pdb->tables.psqlite,
 					"COMMIT TRANSACTION", NULL, NULL, NULL);
+				clean_transact.release();
 				padded_row->after_row_id = inst_id;
 			}
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS) {
@@ -1796,12 +1792,13 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			}
 			sqlite3_exec(pdb->tables.psqlite,
 				"BEGIN TRANSACTION", NULL, NULL, NULL);
+			auto clean_transact = make_scope_exit([&]() {
+				sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+			});
 			snprintf(sql_string, arsizeof(sql_string), "SELECT row_id, inst_id, "
 				"value FROM t%u WHERE prev_id=?", ptable->table_id);
 			auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt == nullptr) {
-				sqlite3_exec(pdb->tables.psqlite,
-					"ROLLBACK", NULL, NULL, NULL);
 				continue;
 			}
 			snprintf(sql_string, arsizeof(sql_string), "INSERT INTO t%u (inst_id, "
@@ -1810,30 +1807,18 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				"?, ?, ?, ?, ?, ?, ?, ?, ?)", ptable->table_id);
 			auto pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt1 == nullptr) {
-				pstmt.finalize();
-				sqlite3_exec(pdb->tables.psqlite,
-					"ROLLBACK", NULL, NULL, NULL);
 				continue;
 			}
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET "
 				"prev_id=? WHERE row_id=?", ptable->table_id);
 			auto pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt2 == nullptr) {
-				pstmt.finalize();
-				pstmt1.finalize();
-				sqlite3_exec(pdb->tables.psqlite,
-					"ROLLBACK", NULL, NULL, NULL);
 				continue;
 			}
 			snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM"
 				" t%u WHERE row_id=?", ptable->table_id);
 			auto pstmt3 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt3 == nullptr) {
-				pstmt.finalize();
-				pstmt1.finalize();
-				pstmt2.finalize();
-				sqlite3_exec(pdb->tables.psqlite,
-					"ROLLBACK", NULL, NULL, NULL);
 				continue;
 			}
 			if (0 != ptable->extremum_tag) {
@@ -1841,12 +1826,6 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					"extremum=? WHERE row_id=?", ptable->table_id);
 				pstmt4 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 				if (pstmt4 == nullptr) {
-					pstmt.finalize();
-					pstmt1.finalize();
-					pstmt2.finalize();
-					pstmt3.finalize();
-					sqlite3_exec(pdb->tables.psqlite,
-						"ROLLBACK", NULL, NULL, NULL);
 					continue;
 				}
 			}
@@ -1941,8 +1920,6 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 						pdb->tables.psqlite, i, parent_id, row_id,
 						row_id1, ptable->psorts, propvals, pstmt1, pstmt2,
 						&ptable->header_id, &notify_list, &parent_id)) {
-						sqlite3_exec(pdb->tables.psqlite,
-							"ROLLBACK", NULL, NULL, NULL);
 						return;
 					}
 				}
@@ -1961,8 +1938,6 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 							MESSAGE_PROPERTIES_TABLE, inst_id,
 							ptable->cpid, pdb->psqlite,
 							propvals[i].proptag, &pvalue)) {
-							sqlite3_exec(pdb->tables.psqlite,
-							"ROLLBACK", NULL, NULL, NULL);
 							return;
 						}
 						result = db_engine_compare_propval(
@@ -2007,16 +1982,12 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					ptable->psorts->ccategories, inst_num,
 					type, pvalue, parent_id, row_id, row_id1,
 					pstmt1, pstmt2, &notify_list, &row_id)) {
-					sqlite3_exec(pdb->tables.psqlite,
-						"ROLLBACK", NULL, NULL, NULL);
 					return;
 				}
 				parent_id = 0;
 				while (true) {
 					sqlite3_bind_int64(pstmt3, 1, row_id);
 					if (SQLITE_ROW != sqlite3_step(pstmt3)) {
-						sqlite3_exec(pdb->tables.psqlite,
-							"ROLLBACK", NULL, NULL, NULL);
 						return;
 					}
 					row_id = sqlite3_column_int64(pstmt3, 6);
@@ -2037,8 +2008,6 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					}
 					if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 						sql_string, NULL, NULL, NULL)) {
-						sqlite3_exec(pdb->tables.psqlite,
-							"ROLLBACK", NULL, NULL, NULL);
 						return;
 					}
 					db_engine_append_rowinfo_node(&notify_list, row_id);
@@ -2051,8 +2020,6 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					ptable->psorts->ccategories].type;
 				sqlite3_bind_int64(pstmt3, 1, row_id);
 				if (SQLITE_ROW != sqlite3_step(pstmt3)) {
-					sqlite3_exec(pdb->tables.psqlite,
-						"ROLLBACK", NULL, NULL, NULL);
 					return;
 				}
 				parent_id = sqlite3_column_int64(pstmt3, 6);
@@ -2083,15 +2050,11 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				} else {
 					if (FALSE == common_util_bind_sqlite_statement(
 						pstmt4, 1, type, pvalue)) {
-						sqlite3_exec(pdb->tables.psqlite,
-							"ROLLBACK", NULL, NULL, NULL);
 						return;
 					}
 				}
 				sqlite3_bind_int64(pstmt4, 2, row_id);
 				if (SQLITE_DONE != sqlite3_step(pstmt4)) {
-					sqlite3_exec(pdb->tables.psqlite,
-						"ROLLBACK", NULL, NULL, NULL);
 					return;
 				}
 				sqlite3_reset(pstmt4);
@@ -2138,8 +2101,6 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				}
 				sqlite3_bind_int64(pstmt3, 1, row_id);
 				if (SQLITE_ROW != sqlite3_step(pstmt3)) {
-					sqlite3_exec(pdb->tables.psqlite,
-						"ROLLBACK", NULL, NULL, NULL);
 					return;
 				}
 				prev_id1 = sqlite3_column_int64(pstmt3, 2);
@@ -2156,8 +2117,6 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					sqlite3_bind_null(pstmt2, 1);
 					sqlite3_bind_int64(pstmt2, 2, row_id1);
 					if (SQLITE_DONE != sqlite3_step(pstmt2)) {
-						sqlite3_exec(pdb->tables.psqlite,
-							"ROLLBACK", NULL, NULL, NULL);
 						return;
 					}
 					sqlite3_reset(pstmt2);
@@ -2165,8 +2124,6 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				sqlite3_bind_int64(pstmt2, 1, prev_id);
 				sqlite3_bind_int64(pstmt2, 2, row_id);
 				if (SQLITE_DONE != sqlite3_step(pstmt2)) {
-					sqlite3_exec(pdb->tables.psqlite,
-						"ROLLBACK", NULL, NULL, NULL);
 					return;
 				}
 				sqlite3_reset(pstmt2);
@@ -2175,16 +2132,12 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 						LLD(prev_id1), LLD(row_id));
 				if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 					sql_string, NULL, NULL, NULL)) {
-					sqlite3_exec(pdb->tables.psqlite,
-						"ROLLBACK", NULL, NULL, NULL);
 					return;
 				}
 				if (0 != row_id1) {
 					sqlite3_bind_int64(pstmt2, 1, row_id);
 					sqlite3_bind_int64(pstmt2, 2, row_id1);
 					if (SQLITE_DONE != sqlite3_step(pstmt2)) {
-						sqlite3_exec(pdb->tables.psqlite,
-							"ROLLBACK", NULL, NULL, NULL);
 						return;
 					}
 					sqlite3_reset(pstmt2);
@@ -2197,24 +2150,18 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET idx=NULL", ptable->table_id);
 			if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 				sql_string, NULL, NULL, NULL)) {
-				sqlite3_exec(pdb->tables.psqlite,
-					"ROLLBACK", NULL, NULL, NULL);
 				return;
 			}
 			snprintf(sql_string, arsizeof(sql_string), "SELECT row_id, row_stat"
 			" FROM t%u WHERE prev_id=?", ptable->table_id);
 			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt == nullptr) {
-				sqlite3_exec(pdb->tables.psqlite,
-					"ROLLBACK", NULL, NULL, NULL);
 				return;
 			}
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET"
 				" idx=? WHERE row_id=?", ptable->table_id);
 			pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt1 == nullptr) {
-				sqlite3_exec(pdb->tables.psqlite,
-					"ROLLBACK", NULL, NULL, NULL);
 				return;
 			}
 			idx = 0;
@@ -2222,8 +2169,6 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			if (SQLITE_ROW == sqlite3_step(pstmt)) {
 				if (FALSE == common_util_indexing_sub_contents(
 					ptable->psorts->ccategories, pstmt, pstmt1, &idx)) {
-					sqlite3_exec(pdb->tables.psqlite,
-						"ROLLBACK", NULL, NULL, NULL);
 					return;
 				}
 			}
@@ -2231,6 +2176,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			pstmt1.finalize();
 			sqlite3_exec(pdb->tables.psqlite,
 				"COMMIT TRANSACTION", NULL, NULL, NULL);
+			clean_transact.release();
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS) {
 				continue;
 			}
@@ -2693,13 +2639,14 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 			}
 			sqlite3_exec(pdb->tables.psqlite,
 				"BEGIN TRANSACTION", NULL, NULL, NULL);
+			auto clean_transact = make_scope_exit([&]() {
+				sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+			});
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET idx=-(idx+1)"
 				" WHERE idx>%u;UPDATE t%u SET idx=-idx WHERE"
 				" idx<0", ptable->table_id, idx, ptable->table_id);
 			if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 				sql_string, NULL, NULL, NULL)) {
-				sqlite3_exec(pdb->tables.psqlite,
-					"ROLLBACK", NULL, NULL, NULL);
 				continue;
 			}
 			sqlite3_exec(pdb->tables.psqlite,
@@ -2971,20 +2918,19 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			pstmt.finalize();
 			sqlite3_exec(pdb->tables.psqlite,
 				"BEGIN TRANSACTION", NULL, NULL, NULL);
+			auto clean_transact = make_scope_exit([&]() {
+				sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+			});
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM t%u WHERE "
 				"row_id=%llu", ptable->table_id, LLU(row_id));
 			if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 				sql_string, NULL, NULL, NULL)) {
-				sqlite3_exec(pdb->tables.psqlite,
-					"ROLLBACK", NULL, NULL, NULL);
 				continue;
 			}
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET prev_id=%llu WHERE"
 					" idx=%u", ptable->table_id, LLU(prev_id), idx + 1);
 			if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 				sql_string, NULL, NULL, NULL)) {
-				sqlite3_exec(pdb->tables.psqlite,
-					"ROLLBACK", NULL, NULL, NULL);
 				continue;
 			}
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET idx=-(idx-1)"
@@ -2992,8 +2938,6 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 				" idx<0", ptable->table_id, idx, ptable->table_id);
 			if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 				sql_string, NULL, NULL, NULL)) {
-				sqlite3_exec(pdb->tables.psqlite,
-					"ROLLBACK", NULL, NULL, NULL);
 				continue;
 			}
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE sqlite_sequence SET seq="
@@ -3001,12 +2945,11 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 				ptable->table_id, ptable->table_id);
 			if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 				sql_string, NULL, NULL, NULL)) {
-				sqlite3_exec(pdb->tables.psqlite,
-					"ROLLBACK", NULL, NULL, NULL);
 				continue;
 			}
 			sqlite3_exec(pdb->tables.psqlite,
 				"COMMIT TRANSACTION", NULL, NULL, NULL);
+			clean_transact.release();
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS) {
 				continue;
 			}
@@ -3066,18 +3009,19 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 		pstmt.finalize();
 		sqlite3_exec(pdb->tables.psqlite,
 			"BEGIN TRANSACTION", NULL, NULL, NULL);
+		auto clean_transact = make_scope_exit([&]() {
+			sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+		});
 		snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM"
 			" t%u WHERE row_id=?", ptable->table_id);
 		pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt == nullptr) {
-			sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 			continue;
 		}
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM t%u "
 					"WHERE row_id=?", ptable->table_id);
 		auto pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 		if (pstmt1 == nullptr) {
-			sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 			continue;
 		}
 		xstmt pstmt2, pstmt3, pstmt4;
@@ -3086,21 +3030,18 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 				"extremum=? WHERE row_id=?", ptable->table_id);
 			pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt2 == nullptr) {
-				sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 				continue;
 			}
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET "
 				"prev_id=? WHERE row_id=?", ptable->table_id);
 			pstmt3 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt3 == nullptr) {
-				sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 				continue;
 			}
 			snprintf(sql_string, arsizeof(sql_string), "SELECT row_id, inst_id, "
 				"extremum FROM t%u WHERE prev_id=?", ptable->table_id);
 			pstmt4 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt4 == nullptr) {
-				sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 				continue;
 			}
 		}
@@ -3303,32 +3244,24 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			pstmt4.finalize();
 		}
 		if (NULL != pnode1) {
-			sqlite3_exec(pdb->tables.psqlite,
-				"ROLLBACK", NULL, NULL, NULL);
 			continue;
 		}
 		if (TRUE == b_index) {
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET idx=NULL", ptable->table_id);
 			if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
 				sql_string, NULL, NULL, NULL)) {
-				sqlite3_exec(pdb->tables.psqlite,
-					"ROLLBACK", NULL, NULL, NULL);
 				continue;
 			}
 			snprintf(sql_string, arsizeof(sql_string), "SELECT row_id, row_stat"
 					" FROM t%u WHERE prev_id=?", ptable->table_id);
 			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt == nullptr) {
-				sqlite3_exec(pdb->tables.psqlite,
-					"ROLLBACK", NULL, NULL, NULL);
 				continue;
 			}
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET"
 				" idx=? WHERE row_id=?", ptable->table_id);
 			pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 			if (pstmt1 == nullptr) {
-				sqlite3_exec(pdb->tables.psqlite,
-					"ROLLBACK", NULL, NULL, NULL);
 				continue;
 			}
 			idx = 0;
@@ -3336,8 +3269,6 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			if (SQLITE_ROW == sqlite3_step(pstmt)) {
 				if (FALSE == common_util_indexing_sub_contents(
 					ptable->psorts->ccategories, pstmt, pstmt1, &idx)) {
-					sqlite3_exec(pdb->tables.psqlite,
-						"ROLLBACK", NULL, NULL, NULL);
 					continue;
 				}
 			}
@@ -3346,6 +3277,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 		}
 		sqlite3_exec(pdb->tables.psqlite,
 			"COMMIT TRANSACTION", NULL, NULL, NULL);
+		clean_transact.release();
 		if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS) {
 			continue;
 		}

@@ -128,16 +128,16 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 	}
 	pstmt.finalize();
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	snprintf(sql_string, arsizeof(sql_string), "SELECT parent_fid, is_associated"
 	          " FROM messages WHERE message_id=%llu", LLU(mid_val));
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		*pb_result = FALSE;
 		return TRUE;
 	}
@@ -152,11 +152,9 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 	if (FALSE == common_util_copy_message(
 		pdb->psqlite, account_id, mid_val,
 		fid_val, &dst_val, &b_result, &message_size)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	if (FALSE == b_result) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		*pb_result = FALSE;
 		return TRUE;
 	}
@@ -176,7 +174,6 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 			        " WHERE message_id=%llu", LLU(mid_val));
 			if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 				sql_string, NULL, NULL, NULL)) {
-				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 				return FALSE;
 			}
 			b_update = FALSE;
@@ -185,14 +182,12 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 			        "is_deleted=1 WHERE message_id=%llu", LLU(mid_val));
 			if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 				sql_string, NULL, NULL, NULL)) {
-				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 				return FALSE;
 			}
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM "
 			          "read_states message_id=%llu", LLU(mid_val));
 			if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 				sql_string, NULL, NULL, NULL)) {
-				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 				return FALSE;
 			}
 		}
@@ -201,13 +196,11 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 		if (0 == is_associated) {
 			if (FALSE == common_util_increase_store_size(
 				pdb->psqlite, message_size, 0)) {
-				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 				return FALSE;
 			}
 		} else {
 			if (FALSE == common_util_increase_store_size(
 				pdb->psqlite, 0, message_size)) {
-				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 				return FALSE;
 			}
 		}
@@ -217,7 +210,6 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 		propvals.count = 5;
 		propvals.ppropval = tmp_propvals;
 		if (FALSE == common_util_allocate_cn(pdb->psqlite, &change_num)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		tmp_cn = rop_util_make_eid_ex(1, change_num);
@@ -233,14 +225,12 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 		    !common_util_get_property(FOLDER_PROPERTIES_TABLE,
 		     parent_fid, 0, pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST,
 		     &pvalue)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		tmp_propvals[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
 		tmp_propvals[2].pvalue = common_util_pcl_append(static_cast<BINARY *>(pvalue),
 		                         static_cast<BINARY *>(tmp_propvals[1].pvalue));
 		if (NULL == tmp_propvals[2].pvalue) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		nt_time = rop_util_current_nttime();
@@ -257,6 +247,7 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		fid_val, 0, pdb->psqlite, &tmp_propval, &b_result);
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	*pb_result = TRUE;
 	return TRUE;
 }
@@ -322,11 +313,13 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 			db_engine_cancel_batch_mode(pdb);
 	});
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	snprintf(sql_string, arsizeof(sql_string), "SELECT parent_fid, "
 		"is_associated FROM messages WHERE message_id=?");
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	b_update = TRUE;
@@ -341,8 +334,6 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		}
 		pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt1 == nullptr) {
-			pstmt.finalize();
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 	}
@@ -401,11 +392,6 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		if (FALSE == common_util_copy_message(
 			pdb->psqlite, account_id, tmp_val, dst_val,
 			&tmp_val1, &b_result, &message_size)) {
-			pstmt.finalize();
-			if (FALSE == b_copy) {
-				pstmt1.finalize();
-			}
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		if (FALSE == b_result) {
@@ -446,7 +432,6 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 	if (TRUE == b_update && normal_size + fai_size > 0) {
 		if (FALSE == common_util_increase_store_size(
 			pdb->psqlite, normal_size, fai_size)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 	}
@@ -455,7 +440,6 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		propvals.count = 5;
 		propvals.ppropval = tmp_propvals;
 		if (FALSE == common_util_allocate_cn(pdb->psqlite, &change_num)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		tmp_cn = rop_util_make_eid_ex(1, change_num);
@@ -471,14 +455,12 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		    !common_util_get_property(FOLDER_PROPERTIES_TABLE,
 		    parent_fid, 0, pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST,
 		    &pvalue)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		tmp_propvals[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
 		tmp_propvals[2].pvalue = common_util_pcl_append(static_cast<BINARY *>(pvalue),
 		                         static_cast<BINARY *>(tmp_propvals[1].pvalue));
 		if (NULL == tmp_propvals[2].pvalue) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		nt_time = rop_util_current_nttime();
@@ -496,6 +478,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		dst_val, 0, pdb->psqlite, &tmp_propval, &b_result);
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	if (TRUE == b_batch) {
 		b_batch = false;
 		db_engine_commit_batch_mode(std::move(pdb));
@@ -503,11 +486,6 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 	return TRUE;
 
  MVCP_FAILURE:
-	pstmt.finalize();
-	if (FALSE == b_copy) {
-		pstmt1.finalize();
-	}
-	sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 	return FALSE;
 }
 
@@ -569,11 +547,13 @@ BOOL exmdb_server_delete_messages(const char *dir,
 			db_engine_cancel_batch_mode(pdb);
 	});
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	snprintf(sql_string, arsizeof(sql_string), "SELECT parent_fid, is_associated, "
 					"message_size FROM messages WHERE message_id=?");
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	if (TRUE == b_hard) {
@@ -585,9 +565,6 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	}
 	auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt1 == nullptr) {
-		pstmt.finalize();
-		sqlite3_exec(pdb->psqlite,
-			"ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	fai_size = 0;
@@ -610,19 +587,11 @@ BOOL exmdb_server_delete_messages(const char *dir,
 			if (TRUE == b_check) {
 				if (FALSE == common_util_check_folder_permission(
 					pdb->psqlite, parent_fid, username, &permission)) {
-					pstmt.finalize();
-					pstmt1.finalize();
-					sqlite3_exec(pdb->psqlite,
-						"ROLLBACK", NULL, NULL, NULL);
 					return FALSE;
 				}
 				if (!(permission & (frightsOwner | frightsDeleteAny))) {
 					if (FALSE == common_util_check_message_owner(
 						pdb->psqlite, tmp_val, username, &b_owner)) {
-						pstmt.finalize();
-						pstmt1.finalize();
-						sqlite3_exec(pdb->psqlite,
-							"ROLLBACK", NULL, NULL, NULL);
 						return FALSE;
 					}
 					if (FALSE == b_owner) {
@@ -639,10 +608,6 @@ BOOL exmdb_server_delete_messages(const char *dir,
 			if (TRUE == b_check) {
 				if (FALSE == common_util_check_message_owner(
 					pdb->psqlite, tmp_val, username, &b_owner)) {
-					pstmt.finalize();
-					pstmt1.finalize();
-					sqlite3_exec(pdb->psqlite,
-						"ROLLBACK", NULL, NULL, NULL);
 					return FALSE;
 				}
 				if (FALSE == b_owner) {
@@ -661,10 +626,6 @@ BOOL exmdb_server_delete_messages(const char *dir,
 			db_engine_notify_message_deletion(pdb, src_val, tmp_val);
 		sqlite3_bind_int64(pstmt1, 1, tmp_val);
 		if (SQLITE_DONE != sqlite3_step(pstmt1)) {
-			pstmt.finalize();
-			pstmt1.finalize();
-			sqlite3_exec(pdb->psqlite,
-				"ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		sqlite3_reset(pstmt1);
@@ -673,10 +634,6 @@ BOOL exmdb_server_delete_messages(const char *dir,
 			        " WHERE message_id=%llu", LLU(tmp_val));
 			if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 				sql_string, NULL, NULL, NULL)) {
-				pstmt.finalize();
-				pstmt1.finalize();
-				sqlite3_exec(pdb->psqlite,
-					"ROLLBACK", NULL, NULL, NULL);
 				return FALSE;
 			}
 		}
@@ -686,14 +643,12 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	if (TRUE == b_hard) {
 		if (FALSE == common_util_decrease_store_size(
 			pdb->psqlite, normal_size, fai_size)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 	}
 	propvals.count = 5;
 	propvals.ppropval = tmp_propvals;
 	if (FALSE == common_util_allocate_cn(pdb->psqlite, &change_num)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	tmp_cn = rop_util_make_eid_ex(1, change_num);
@@ -708,14 +663,12 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	if (tmp_propvals[1].pvalue == nullptr ||
 	    !common_util_get_property(FOLDER_PROPERTIES_TABLE, src_val, 0,
 	    pdb->psqlite, PR_PREDECESSOR_CHANGE_LIST, &pvalue)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	tmp_propvals[2].proptag = PR_PREDECESSOR_CHANGE_LIST;
 	tmp_propvals[2].pvalue = common_util_pcl_append(static_cast<BINARY *>(pvalue),
 	                         static_cast<BINARY *>(tmp_propvals[1].pvalue));
 	if (NULL == tmp_propvals[2].pvalue) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	nt_time = rop_util_current_nttime();
@@ -728,6 +681,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	common_util_increase_deleted_count(
 		pdb->psqlite, src_val, del_count);
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	if (TRUE == b_batch) {
 		b_batch = false;
 		db_engine_commit_batch_mode(std::move(pdb));
@@ -1023,15 +977,16 @@ BOOL exmdb_server_set_message_properties(const char *dir,
 	}
 	mid_val = rop_util_get_gc_value(message_id);
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	if (FALSE == common_util_set_properties(
 		MESSAGE_PROPERTIES_TABLE, mid_val, cpid,
 		pdb->psqlite, pproperties, pproblems)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	if (FALSE == common_util_get_message_parent_folder(
 		pdb->psqlite, mid_val, &fid_val) || 0 == fid_val) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	nt_time = rop_util_current_nttime();
@@ -1040,6 +995,7 @@ BOOL exmdb_server_set_message_properties(const char *dir,
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		fid_val, 0, pdb->psqlite, &tmp_propval, &b_result);
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	db_engine_proc_dynamic_event(pdb,
 		cpid, DYNAMIC_EVENT_MODIFY_MESSAGE,
 		fid_val, mid_val, 0);
@@ -1063,15 +1019,16 @@ BOOL exmdb_server_remove_message_properties(
 		return FALSE;
 	mid_val = rop_util_get_gc_value(message_id);
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	if (FALSE == common_util_remove_properties(
 		MESSAGE_PROPERTIES_TABLE, mid_val,
 		pdb->psqlite, pproptags)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	if (FALSE == common_util_get_message_parent_folder(
 		pdb->psqlite, mid_val, &fid_val) || 0 == fid_val) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	nt_time = rop_util_current_nttime();
@@ -1080,6 +1037,7 @@ BOOL exmdb_server_remove_message_properties(
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		fid_val, 0, pdb->psqlite, &tmp_propval, &b_result);
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	db_engine_proc_dynamic_event(pdb,
 		cpid, DYNAMIC_EVENT_MODIFY_MESSAGE,
 		fid_val, mid_val, 0);
@@ -1105,8 +1063,10 @@ BOOL exmdb_server_set_message_read_state(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	if (FALSE == common_util_allocate_cn(pdb->psqlite, &read_cn)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return false;
 	}
 	if (FALSE == exmdb_server_check_private()) {
@@ -1118,13 +1078,10 @@ BOOL exmdb_server_set_message_read_state(const char *dir,
 				LLU(mid_val), LLU(read_cn));
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
-			pstmt.finalize();
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 	} else {
@@ -1135,13 +1092,11 @@ BOOL exmdb_server_set_message_read_state(const char *dir,
 			LLU(read_cn), LLU(mid_val));
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 	}
 	if (FALSE == common_util_get_message_parent_folder(
 		pdb->psqlite, mid_val, &fid_val)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	nt_time = rop_util_current_nttime();
@@ -1150,6 +1105,7 @@ BOOL exmdb_server_set_message_read_state(const char *dir,
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
 		fid_val, 0, pdb->psqlite, &tmp_propval, &b_result);
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	db_engine_proc_dynamic_event(pdb,
 		0, DYNAMIC_EVENT_MODIFY_MESSAGE,
 		fid_val, mid_val, 0);
@@ -1468,32 +1424,31 @@ BOOL exmdb_server_clear_submit(const char *dir,
 		*pmessage_flags &= ~MSGFLAG_UNSENT;
 	}
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	propval.proptag = PR_MESSAGE_FLAGS;
 	propval.pvalue = pmessage_flags;
 	if (FALSE == common_util_set_property(MESSAGE_PROPERTIES_TABLE,
 		mid_val, 0, pdb->psqlite, &propval, &b_result)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	if (FALSE == b_result) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return TRUE;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET"
 	          " timer_id=? WHERE message_id=%llu", LLU(mid_val));
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	sqlite3_bind_null(pstmt, 1);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		pstmt.finalize();
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	pstmt.finalize();
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	return TRUE;
 }
 
@@ -4731,13 +4686,14 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		*(uint64_t*)pvalue = nt_time;
 	}
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	if (FALSE == message_write_message(FALSE, pdb->psqlite,
 		paccount, cpid, FALSE, fid_val, &tmp_msg, &message_id)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	if (0 == message_id) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		*presult = 2;
 		return TRUE;
 	}
@@ -4752,7 +4708,6 @@ BOOL exmdb_server_delivery_message(const char *dir,
 			close(fd);
 			if (FALSE == common_util_set_mid_string(
 				pdb->psqlite, message_id, mid_string)) {
-				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 				return FALSE;
 			}
 		}
@@ -4763,10 +4718,10 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	if (FALSE == message_rule_new_message(b_oof,
 		from_address, account, cpid, pdb->psqlite,
 		fid_val, message_id, pdigest, &folder_list, &msg_list)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION",  NULL, NULL, NULL);
+	clean_transact.release();
 	for (pnode=double_list_get_head(&msg_list); NULL!=pnode;
 		pnode=double_list_get_after(&msg_list, pnode)) {
 		pmnode = (MESSAGE_NODE*)pnode->pdata;
@@ -4835,16 +4790,18 @@ BOOL exmdb_server_write_message(const char *dir, const char *account,
 		*(uint64_t*)pvalue = nt_time;
 	}
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	if (FALSE == message_write_message(FALSE, pdb->psqlite,
 		account, cpid, FALSE, fid_val, pmsgctnt, &mid_val)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	if (0 == mid_val) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		*pe_result = GXERR_CALL_FAILED;
 	} else {
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+		clean_transact.release();
 		*pe_result = GXERR_SUCCESS;
 	}
 	if (TRUE == b_exist) {
@@ -4873,18 +4830,20 @@ BOOL exmdb_server_read_message(const char *dir, const char *username,
 	}
 	mid_val = rop_util_get_gc_value(message_id);
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	if (FALSE == common_util_begin_message_optimize(pdb->psqlite)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	if (FALSE == message_read_message(
 		pdb->psqlite, cpid, mid_val, ppmsgctnt)) {
 		common_util_end_message_optimize();
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	common_util_end_message_optimize();
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	return TRUE;
 }
 

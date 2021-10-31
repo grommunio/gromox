@@ -229,17 +229,24 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	/*
+	 * Read-only transaction here.
+	 *
+	 * https://stackoverflow.com/questions/309834/should-i-commit-or-rollback-a-read-transaction
+	 * "Intuitively, I'd guess that ROLLBACK is more expensive. COMMIT is
+	 * the normal use case, and ROLLBACK the exceptional case."
+	 */
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", nullptr, nullptr, nullptr);
+	});
 	snprintf(sql_string, arsizeof(sql_string), "SELECT count(message_id) FROM"
 			" messages WHERE parent_fid=%llu AND is_associated=0",
 			LLU(rop_util_get_gc_value(folder_id)));
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
-		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 		return FALSE;
 	}
 	if (SQLITE_ROW != sqlite3_step(pstmt)) {
-		pstmt.finalize();
-		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 		return FALSE;
 	}
 	pset->count = sqlite3_column_int64(pstmt, 0);
@@ -247,7 +254,6 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(pset->count);
 	if (NULL == pset->pparray) {
 		pset->count = 0;
-		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 		return FALSE;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id, read_state,"
@@ -255,7 +261,6 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 			"is_associated=0", LLU(rop_util_get_gc_value(folder_id)));
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
-		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 		return FALSE;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT propval "
@@ -263,31 +268,20 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		" AND proptag=?");
 	auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt1 == nullptr) {
-		pstmt.finalize();
-		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 		return FALSE;
 	}
 	for (size_t i = 0; i < pset->count; ++i) {
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			pstmt.finalize();
-			pstmt1.finalize();
-			sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 			return FALSE;
 		}
 		ppropvals = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == ppropvals) {
-			pstmt.finalize();
-			pstmt1.finalize();
-			sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 			return FALSE;
 		}
 		pset->pparray[i] = ppropvals;
 		ppropvals->count = 0;
 		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(5);
 		if (NULL == ppropvals->ppropval) {
-			pstmt.finalize();
-			pstmt1.finalize();
-			sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 			return FALSE;
 		}
 		message_id = sqlite3_column_int64(pstmt, 0);
@@ -295,10 +289,6 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		pv->proptag = PROP_TAG_MID;
 		pv->pvalue = cu_alloc<uint64_t>();
 		if (pv->pvalue == nullptr) {
-			pstmt.finalize();
-			pstmt1.finalize();
-			sqlite3_exec(pdb->psqlite,
-				"COMMIT TRANSACTION", NULL, NULL, NULL);
 			return FALSE;
 		}
 		*static_cast<uint64_t *>(pv->pvalue) = rop_util_make_eid_ex(1, message_id);
@@ -308,10 +298,6 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 			pv->proptag = PROP_TAG_MIDSTRING;
 			pv->pvalue = common_util_dup(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 2)));
 			if (pv->pvalue == nullptr) {
-				pstmt.finalize();
-				pstmt1.finalize();
-				sqlite3_exec(pdb->psqlite,
-					"COMMIT TRANSACTION", NULL, NULL, NULL);
 				return FALSE;
 			}
 			ppropvals->count ++;
@@ -331,10 +317,6 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 			pv->proptag = PR_MESSAGE_FLAGS;
 			pv->pvalue = cu_alloc<uint32_t>();
 			if (pv->pvalue == nullptr) {
-				pstmt.finalize();
-				pstmt1.finalize();
-				sqlite3_exec(pdb->psqlite,
-					"COMMIT TRANSACTION", NULL, NULL, NULL);
 				return FALSE;
 			}
 			*static_cast<uint32_t *>(pv->pvalue) = message_flags;
@@ -348,10 +330,6 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 			pv->proptag = PR_LAST_MODIFICATION_TIME;
 			pv->pvalue = cu_alloc<uint64_t>();
 			if (pv->pvalue == nullptr) {
-				pstmt.finalize();
-				pstmt1.finalize();
-				sqlite3_exec(pdb->psqlite,
-					"COMMIT TRANSACTION", NULL, NULL, NULL);
 				return FALSE;
 			}
 			*static_cast<uint64_t *>(pv->pvalue) = sqlite3_column_int64(pstmt1, 0);
@@ -365,10 +343,6 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 			pv->proptag = PROP_TAG_MESSAGEDELIVERYTIME;
 			pv->pvalue = cu_alloc<uint64_t>();
 			if (pv->pvalue == nullptr) {
-				pstmt.finalize();
-				pstmt1.finalize();
-				sqlite3_exec(pdb->psqlite,
-					"COMMIT TRANSACTION", NULL, NULL, NULL);
 				return FALSE;
 			}
 			*static_cast<uint64_t *>(pv->pvalue) = sqlite3_column_int64(pstmt1, 0);
@@ -376,9 +350,6 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 			++pv;
 		}
 	}
-	pstmt.finalize();
-	pstmt1.finalize();
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	return TRUE;
 }
 
@@ -749,6 +720,9 @@ BOOL exmdb_server_set_folder_properties(
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	if (TRUE == exmdb_server_check_private()
 		&& PRIVATE_FID_ROOT == fid_val) {
 		for (i=0; i<pproperties->count; i++) {
@@ -759,8 +733,6 @@ BOOL exmdb_server_set_folder_properties(
 					FOLDER_PROPERTIES_TABLE, PRIVATE_FID_INBOX,
 					0, pdb->psqlite, &pproperties->ppropval[i],
 					&b_result)) {
-					sqlite3_exec(pdb->psqlite,
-						"ROLLBACK", NULL, NULL, NULL);
 					return FALSE;
 				}
 			}
@@ -768,10 +740,10 @@ BOOL exmdb_server_set_folder_properties(
 	}
 	if (FALSE == common_util_set_properties(FOLDER_PROPERTIES_TABLE,
 		fid_val, cpid, pdb->psqlite, pproperties, pproblems)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	db_engine_notify_folder_modification(pdb,
 		common_util_get_folder_parent_fid(
 		pdb->psqlite, fid_val), fid_val);

@@ -349,6 +349,9 @@ int main(int argc, const char **argv)
 	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	/* begin the transaction */
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	if (sqlite3_exec(psqlite, sql_string.c_str(), nullptr, nullptr,
 	    &err_msg) != SQLITE_OK) {
 		printf("fail to execute table creation sql, error: %s\n", err_msg);
@@ -688,5 +691,6 @@ int main(int argc, const char **argv)
 	
 	/* commit the transaction */
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	return EXIT_SUCCESS;
 }

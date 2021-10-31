@@ -2430,6 +2430,9 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	{
 	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	snprintf(sql_string, arsizeof(sql_string), "CREATE TABLE folders "
 			"(folder_id INTEGER PRIMARY KEY,"
 			"parent_fid INTEGER,"
@@ -2503,39 +2506,33 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	}
 	pstmt.finalize();
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	sqlite3_exec(pidb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto pidb_transact = make_scope_exit([&]() {
+		sqlite3_exec(pidb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id, "
 				"parent_fid, commit_max FROM folders");
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr) {
-		sqlite3_exec(pidb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 		return false;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id, parent_fid, "
 				"commit_max, name FROM folders WHERE folder_id=?");
 	auto pstmt1 = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt1 == nullptr) {
-		pstmt.finalize();
-		sqlite3_exec(pidb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 		return false;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO folders (folder_id, "
 				"parent_fid, commit_max, name) VALUES (?, ?, ?, ?)");
 	auto pstmt2 = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt2 == nullptr) {
-		pstmt.finalize();
-		pstmt1.finalize();
-		sqlite3_exec(pidb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 		return false;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT parent_fid, "
 		"display_name FROM folders WHERE folder_id=?");
 	auto pstmt3 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt3 == nullptr) {
-		pstmt.finalize();
-		pstmt1.finalize();
-		pstmt2.finalize();
-		sqlite3_exec(pidb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 		return false;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
@@ -2560,11 +2557,6 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 			sqlite3_bind_int64(pstmt2, 3, commit_max);
 			sqlite3_bind_text(pstmt2, 4, encoded_name, -1, SQLITE_STATIC);
 			if (SQLITE_DONE != sqlite3_step(pstmt2)) {
-				pstmt.finalize();
-				pstmt1.finalize();
-				pstmt2.finalize();
-				pstmt3.finalize();
-				sqlite3_exec(pidb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 				return false;
 			}
 			b_new = TRUE;
@@ -2585,11 +2577,6 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 			b_new = FALSE;
 		}
 		if (FALSE == mail_engine_sync_contents(pidb, folder_id)) {
-			pstmt.finalize();
-			pstmt1.finalize();
-			pstmt2.finalize();
-			pstmt3.finalize();
-			sqlite3_exec(pidb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 			return false;
 		}
 		if (FALSE == b_new) {
@@ -2605,22 +2592,12 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM folders");
 	pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr) {
-		pstmt.finalize();
-		pstmt1.finalize();
-		pstmt2.finalize();
-		pstmt3.finalize();
-		sqlite3_exec(pidb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 		return false;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT "
 		"folder_id FROM folders WHERE folder_id=?");
 	pstmt1 = gx_sql_prep(psqlite, sql_string);
 	if (pstmt1 == nullptr) {
-		pstmt.finalize();
-		pstmt1.finalize();
-		pstmt2.finalize();
-		pstmt3.finalize();
-		sqlite3_exec(pidb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 		return false;
 	}
 	double_list_init(&temp_list);
@@ -2631,20 +2608,10 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 		if (SQLITE_ROW != sqlite3_step(pstmt1)) {
 			pnode = cu_alloc<DOUBLE_LIST_NODE>();
 			if (NULL == pnode) {
-				pstmt.finalize();
-				pstmt1.finalize();
-				pstmt2.finalize();
-				pstmt3.finalize();
-				sqlite3_exec(pidb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 				return false;
 			}
 			pnode->pdata = cu_alloc<uint64_t>();
 			if (NULL == pnode->pdata) {
-				pstmt.finalize();
-				pstmt1.finalize();
-				pstmt2.finalize();
-				pstmt3.finalize();
-				sqlite3_exec(pidb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 				return false;
 			}
 			*(uint64_t*)pnode->pdata = folder_id;
@@ -2658,28 +2625,19 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 			" FROM folders WHERE folder_id=?");
 		pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 		if (pstmt == nullptr) {
-			pstmt.finalize();
-			pstmt1.finalize();
-			pstmt2.finalize();
-			pstmt3.finalize();
-			sqlite3_exec(pidb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 			return false;
 		}
 		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
 			sqlite3_reset(pstmt);
 			sqlite3_bind_int64(pstmt, 1, *(uint64_t*)pnode->pdata);
 			if (SQLITE_DONE != sqlite3_step(pstmt)) {
-				pstmt.finalize();
-				pstmt1.finalize();
-				pstmt2.finalize();
-				pstmt3.finalize();
-				sqlite3_exec(pidb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 				return false;
 			}
 		}
 		pstmt.finalize();
 	}
 	sqlite3_exec(pidb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	pidb_transact.release();
 	}
 	if (!exmdb_client::subscribe_notification(dir,
 		NOTIFICATION_TYPE_OBJECTCREATED|NOTIFICATION_TYPE_OBJECTDELETED|

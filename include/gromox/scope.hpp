@@ -22,6 +22,7 @@ template<typename F> class scope_exit {
 	} catch (...) {
 	}
 	void operator=(scope_exit &&) = delete;
+	void release() noexcept { m_eod = false; }
 };
 
 template<typename F> scope_exit<F> make_scope_exit(F &&f)

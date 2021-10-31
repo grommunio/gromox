@@ -283,6 +283,9 @@ int main(int argc, const char **argv)
 	}
 	
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	const char *csql_string = "INSERT INTO configurations "
 		"SELECT * FROM source_db.configurations";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
@@ -411,6 +414,7 @@ int main(int argc, const char **argv)
 	}
 	/* commit the transaction */
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	sqlite3_exec(psqlite, "DETACH DATABASE source_db", NULL, NULL, NULL);
 	csql_string = "REINDEX";
 	if (SQLITE_OK != sqlite3_exec(psqlite,

@@ -398,14 +398,15 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 		exmdb_server_set_public_username(username);
 	}
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	if (FALSE == common_util_begin_message_optimize(pdb->psqlite)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	if (!instance_load_message(pdb->psqlite, mid_val, &pinstance->last_id,
 	    reinterpret_cast<MESSAGE_CONTENT **>(&pinstance->pcontent))) {
 		common_util_end_message_optimize();
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		if (NULL != pinstance->username) {
 			free(pinstance->username);
 		}
@@ -414,6 +415,7 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 	}
 	common_util_end_message_optimize();
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	if (NULL == pinstance->pcontent) {
 		if (NULL != pinstance->username) {
 			free(pinstance->username);
