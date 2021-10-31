@@ -2548,20 +2548,8 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 	const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
 	int32_t *pposition, TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
-	int idx;
-	int count;
-	void *pvalue;
-	int row_type;
-	uint32_t proptag;
-	uint64_t rule_id;
-	uint64_t inst_id;
-	uint64_t folder_id;
 	TABLE_NODE *ptnode;
-	char sql_string[1024];
 	DOUBLE_LIST_NODE *pnode;
-	CONTENT_ROW_PARAM content_param;
-	HIERARCHY_ROW_PARAM hierarchy_param;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -2580,10 +2568,13 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 	if (FALSE == exmdb_server_check_private()) {
 		exmdb_server_set_public_username(username);
 	}
-	idx = 0;
 	ppropvals->count = 0;
 	ppropvals->ppropval = NULL;
 	if (TABLE_TYPE_HIERARCHY == ptnode->type) {
+		auto ret = [](uint32_t cpid, uint32_t table_id, BOOL b_forward, uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags, int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb) -> BOOL {
+		char sql_string[1024];
+		int i, count, idx = 0;
+
 		if (TRUE == b_forward) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id,"
 				" idx, depth FROM t%u WHERE idx>=%u ORDER BY"
@@ -2602,13 +2593,17 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 		});
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
+			HIERARCHY_ROW_PARAM hierarchy_param;
+			uint64_t folder_id;
 			folder_id = sqlite3_column_int64(pstmt, 0);
 			hierarchy_param.cpid = cpid;
 			hierarchy_param.psqlite = pdb->psqlite;
 			hierarchy_param.pstmt = pstmt;
 			hierarchy_param.folder_id = folder_id;
-			if (TRUE == table_evaluate_row_restriction(pres,
+			if (!table_evaluate_row_restriction(pres,
 				&hierarchy_param, table_get_hierarchy_row_property)) {
+				continue;
+			} else {
 				idx = sqlite3_column_int64(pstmt, 1);
 				count = 0;
 				ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
@@ -2616,6 +2611,7 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 					return FALSE;
 				}
 				for (i=0; i<pproptags->count; i++) {
+					void *pvalue;
 					if (PROP_TAG_DEPTH == pproptags->pproptag[i]) {
 						pvalue = cu_alloc<uint32_t>();
 						if (NULL == pvalue) {
@@ -2654,7 +2650,16 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 		clean_transact.release();
 		*pposition = idx - 1;
+		return TRUE;
+		}(cpid, table_id, b_forward, start_pos, pres, pproptags, pposition, ppropvals, pdb);
+		if (!ret)
+			return false;
 	} else if (TABLE_TYPE_CONTENT == ptnode->type) {
+		auto ret = [](uint32_t cpid, uint32_t table_id, BOOL b_forward, uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags, int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb, TABLE_NODE *ptnode) -> BOOL {
+		char sql_string[1024];
+		int i, count, row_type, idx = 0;
+		uint64_t inst_id;
+
 		if (TRUE == b_forward) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM t%u"
 				" WHERE idx>=%u ORDER BY idx ASC", table_id,
@@ -2694,6 +2699,7 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 			return FALSE;
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
+			CONTENT_ROW_PARAM content_param;
 			inst_id = sqlite3_column_int64(pstmt, 3);
 			row_type = sqlite3_column_int64(pstmt, 4);
 			content_param.cpid = cpid;
@@ -2707,8 +2713,10 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 			content_param.psorts = ptnode->psorts;
 			content_param.instance_tag = ptnode->instance_tag;
 			content_param.extremum_tag = ptnode->extremum_tag;
-			if (TRUE == table_evaluate_row_restriction(pres,
+			if (!table_evaluate_row_restriction(pres,
 				&content_param, table_get_content_row_property)) {
+				continue;
+			} else {
 				idx = sqlite3_column_int64(pstmt, 1);
 				count = 0;
 				ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
@@ -2717,6 +2725,7 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 					return FALSE;
 				}
 				for (i=0; i<pproptags->count; i++) {
+					void *pvalue;
 					if (FALSE == table_column_content_tmptbl(pstmt, pstmt1,
 						pstmt2, ptnode->psorts, ptnode->folder_id, row_type,
 						pproptags->pproptag[i], ptnode->instance_tag,
@@ -2757,7 +2766,16 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 		clean_transact.release();
 		*pposition = idx - 1;
+		return TRUE;
+		}(cpid, table_id, b_forward, start_pos, pres, pproptags, pposition, ppropvals, pdb, ptnode);
+		if (!ret)
+			return false;
 	} else if (TABLE_TYPE_RULE == ptnode->type) {
+		auto ret = [](uint32_t cpid, uint32_t table_id, BOOL b_forward, uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags, int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb) -> BOOL {
+		char sql_string[1024];
+		int i, count, idx = 0;
+		uint64_t rule_id;
+
 		if (TRUE == b_forward) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT rule_id"
 					" idx FROM t%u WHERE idx>=%u ORDER BY"
@@ -2773,8 +2791,10 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
 			rule_id = sqlite3_column_int64(pstmt, 0);
-			if (TRUE == table_evaluate_rule_restriction(
+			if (!table_evaluate_rule_restriction(
 				pdb->psqlite, rule_id, pres)) {
+				continue;
+			} else {
 				ppropvals->count = 0;
 				ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 				if (NULL == ppropvals->ppropval) {
@@ -2782,6 +2802,8 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 				}
 				count = 0;
 				for (i=0; i<pproptags->count; i++) {
+					void *pvalue;
+					uint32_t proptag;
 					proptag = pproptags->pproptag[i];
 					if (proptag == PR_RULE_NAME_A)
 						proptag = PR_RULE_NAME;
@@ -2807,6 +2829,10 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 			}
 		}
 		*pposition = idx - 1;
+		return TRUE;
+		}(cpid, table_id, b_forward, start_pos, pres, pproptags, pposition, ppropvals, pdb);
+		if (!ret)
+			return ret;
 	} else {
 		*pposition = -1;
 	}
