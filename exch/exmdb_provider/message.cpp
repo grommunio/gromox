@@ -317,15 +317,16 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 	if (TRUE == b_batch) {
 		db_engine_begin_batch_mode(pdb);
 	}
+	auto cl_0 = make_scope_exit([&]() {
+		if (b_batch)
+			db_engine_cancel_batch_mode(pdb);
+	});
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	snprintf(sql_string, arsizeof(sql_string), "SELECT parent_fid, "
 		"is_associated FROM messages WHERE message_id=?");
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-		if (TRUE == b_batch) {
-			db_engine_cancel_batch_mode(pdb);
-		}
 		return FALSE;
 	}
 	b_update = TRUE;
@@ -342,9 +343,6 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		if (pstmt1 == nullptr) {
 			pstmt.finalize();
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-			if (TRUE == b_batch) {
-				db_engine_cancel_batch_mode(pdb);
-			}
 			return FALSE;
 		}
 	}
@@ -408,9 +406,6 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 				pstmt1.finalize();
 			}
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-			if (TRUE == b_batch) {
-				db_engine_cancel_batch_mode(pdb);
-			}
 			return FALSE;
 		}
 		if (FALSE == b_result) {
@@ -452,9 +447,6 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		if (FALSE == common_util_increase_store_size(
 			pdb->psqlite, normal_size, fai_size)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-			if (TRUE == b_batch) {
-				db_engine_cancel_batch_mode(pdb);
-			}
 			return FALSE;
 		}
 	}
@@ -505,6 +497,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		dst_val, 0, pdb->psqlite, &tmp_propval, &b_result);
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	if (TRUE == b_batch) {
+		b_batch = false;
 		db_engine_commit_batch_mode(std::move(pdb));
 	}
 	return TRUE;
@@ -515,9 +508,6 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		pstmt1.finalize();
 	}
 	sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-	if (TRUE == b_batch) {
-		db_engine_cancel_batch_mode(pdb);
-	}
 	return FALSE;
 }
 
@@ -574,15 +564,16 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	if (TRUE == b_batch) {
 		db_engine_begin_batch_mode(pdb);
 	}
+	auto cl_0 = make_scope_exit([&]() {
+		if (b_batch)
+			db_engine_cancel_batch_mode(pdb);
+	});
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	snprintf(sql_string, arsizeof(sql_string), "SELECT parent_fid, is_associated, "
 					"message_size FROM messages WHERE message_id=?");
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-		if (TRUE == b_batch) {
-			db_engine_cancel_batch_mode(pdb);
-		}
 		return FALSE;
 	}
 	if (TRUE == b_hard) {
@@ -597,9 +588,6 @@ BOOL exmdb_server_delete_messages(const char *dir,
 		pstmt.finalize();
 		sqlite3_exec(pdb->psqlite,
 			"ROLLBACK", NULL, NULL, NULL);
-		if (TRUE == b_batch) {
-			db_engine_cancel_batch_mode(pdb);
-		}
 		return FALSE;
 	}
 	fai_size = 0;
@@ -626,9 +614,6 @@ BOOL exmdb_server_delete_messages(const char *dir,
 					pstmt1.finalize();
 					sqlite3_exec(pdb->psqlite,
 						"ROLLBACK", NULL, NULL, NULL);
-					if (TRUE == b_batch) {
-						db_engine_cancel_batch_mode(pdb);
-					}
 					return FALSE;
 				}
 				if (!(permission & (frightsOwner | frightsDeleteAny))) {
@@ -638,9 +623,6 @@ BOOL exmdb_server_delete_messages(const char *dir,
 						pstmt1.finalize();
 						sqlite3_exec(pdb->psqlite,
 							"ROLLBACK", NULL, NULL, NULL);
-						if (TRUE == b_batch) {
-							db_engine_cancel_batch_mode(pdb);
-						}
 						return FALSE;
 					}
 					if (FALSE == b_owner) {
@@ -661,9 +643,6 @@ BOOL exmdb_server_delete_messages(const char *dir,
 					pstmt1.finalize();
 					sqlite3_exec(pdb->psqlite,
 						"ROLLBACK", NULL, NULL, NULL);
-					if (TRUE == b_batch) {
-						db_engine_cancel_batch_mode(pdb);
-					}
 					return FALSE;
 				}
 				if (FALSE == b_owner) {
@@ -686,9 +665,6 @@ BOOL exmdb_server_delete_messages(const char *dir,
 			pstmt1.finalize();
 			sqlite3_exec(pdb->psqlite,
 				"ROLLBACK", NULL, NULL, NULL);
-			if (TRUE == b_batch) {
-				db_engine_cancel_batch_mode(pdb);
-			}
 			return FALSE;
 		}
 		sqlite3_reset(pstmt1);
@@ -701,9 +677,6 @@ BOOL exmdb_server_delete_messages(const char *dir,
 				pstmt1.finalize();
 				sqlite3_exec(pdb->psqlite,
 					"ROLLBACK", NULL, NULL, NULL);
-				if (TRUE == b_batch) {
-					db_engine_cancel_batch_mode(pdb);
-				}
 				return FALSE;
 			}
 		}
@@ -714,9 +687,6 @@ BOOL exmdb_server_delete_messages(const char *dir,
 		if (FALSE == common_util_decrease_store_size(
 			pdb->psqlite, normal_size, fai_size)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-			if (TRUE == b_batch) {
-				db_engine_cancel_batch_mode(pdb);
-			}
 			return FALSE;
 		}
 	}
@@ -759,6 +729,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 		pdb->psqlite, src_val, del_count);
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	if (TRUE == b_batch) {
+		b_batch = false;
 		db_engine_commit_batch_mode(std::move(pdb));
 	}
 	return TRUE;
