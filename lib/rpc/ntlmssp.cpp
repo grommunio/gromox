@@ -1550,47 +1550,7 @@ static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
 	uint8_t digest[16];
 	uint8_t seq_num[4];
 	
-	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-		HMACMD5_CTX hmac_ctx;
-
-		switch (direction) {
-		case NTLMSSP_DIRECTION_SEND:
-			cpu_to_le32p(seq_num, pntlmssp->crypt.ntlm2.sending.seq_num);
-			pntlmssp->crypt.ntlm2.sending.seq_num ++;
-			hmac_ctx = HMACMD5_CTX(pntlmssp->crypt.ntlm2.sending.sign_key, 16);
-			break;
-		case NTLMSSP_DIRECTION_RECEIVE:
-			cpu_to_le32p(seq_num, pntlmssp->crypt.ntlm2.receiving.seq_num);
-			pntlmssp->crypt.ntlm2.receiving.seq_num ++;
-			hmac_ctx = HMACMD5_CTX(pntlmssp->crypt.ntlm2.receiving.sign_key, 16);
-			break;
-		}
-
-		if (!hmac_ctx.is_valid() ||
-		    !hmac_ctx.update(seq_num, sizeof(seq_num)) ||
-		    !hmac_ctx.update(pwhole_pdu, pdu_length) ||
-		    !hmac_ctx.finish(digest))
-			return false;
-
-		if (encrypt_sig && (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH)) {
-			switch (direction) {
-			case NTLMSSP_DIRECTION_SEND:
-				arcfour_crypt_sbox(&pntlmssp->crypt.ntlm2.sending.seal_state,
-					digest, 8);
-				break;
-			case NTLMSSP_DIRECTION_RECEIVE:
-				arcfour_crypt_sbox(&pntlmssp->crypt.ntlm2.receiving.seal_state,
-					digest, 8);
-				break;
-			}
-		}
-
-		cpu_to_le32p(&psig->data[0], NTLMSSP_SIGN_VERSION);
-		memcpy(psig->data + 4, digest, 8);
-		memcpy(psig->data + 12, seq_num, 4);
-		psig->length = NTLMSSP_SIG_SIZE;
-
-	} else {
+	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2)) {
 		crc = crc32_calc_buffer(pdata, length);
 		if (!ntlmssp_gen_packet(psig, "dddd", NTLMSSP_SIGN_VERSION,
 		    0, crc, pntlmssp->crypt.ntlm.seq_num))
@@ -1598,7 +1558,46 @@ static bool ntlmssp_make_packet_signature(NTLMSSP_CTX *pntlmssp,
 		pntlmssp->crypt.ntlm.seq_num ++;
 		arcfour_crypt_sbox(&pntlmssp->crypt.ntlm.seal_state,
 			psig->data + 4, psig->length - 4);
+		return true;
 	}
+
+	HMACMD5_CTX hmac_ctx;
+	switch (direction) {
+	case NTLMSSP_DIRECTION_SEND:
+		cpu_to_le32p(seq_num, pntlmssp->crypt.ntlm2.sending.seq_num);
+		pntlmssp->crypt.ntlm2.sending.seq_num ++;
+		hmac_ctx = HMACMD5_CTX(pntlmssp->crypt.ntlm2.sending.sign_key, 16);
+		break;
+	case NTLMSSP_DIRECTION_RECEIVE:
+		cpu_to_le32p(seq_num, pntlmssp->crypt.ntlm2.receiving.seq_num);
+		pntlmssp->crypt.ntlm2.receiving.seq_num ++;
+		hmac_ctx = HMACMD5_CTX(pntlmssp->crypt.ntlm2.receiving.sign_key, 16);
+		break;
+	}
+
+	if (!hmac_ctx.is_valid() ||
+	    !hmac_ctx.update(seq_num, sizeof(seq_num)) ||
+	    !hmac_ctx.update(pwhole_pdu, pdu_length) ||
+	    !hmac_ctx.finish(digest))
+		return false;
+
+	if (encrypt_sig && (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_KEY_EXCH)) {
+		switch (direction) {
+		case NTLMSSP_DIRECTION_SEND:
+			arcfour_crypt_sbox(&pntlmssp->crypt.ntlm2.sending.seal_state,
+				digest, 8);
+			break;
+		case NTLMSSP_DIRECTION_RECEIVE:
+			arcfour_crypt_sbox(&pntlmssp->crypt.ntlm2.receiving.seal_state,
+				digest, 8);
+			break;
+		}
+	}
+
+	cpu_to_le32p(&psig->data[0], NTLMSSP_SIGN_VERSION);
+	memcpy(psig->data + 4, digest, 8);
+	memcpy(psig->data + 12, seq_num, 4);
+	psig->length = NTLMSSP_SIG_SIZE;
 	return true;
 }
 
