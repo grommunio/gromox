@@ -921,29 +921,28 @@ static bool ntlmssp_server_preauth(NTLMSSP_CTX *pntlmssp,
 		ntlmssp_handle_neg_flags(pntlmssp, auth_flags);
 	}
 	
-	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
-		if (24 == pntlmssp->nt_resp.length && 24 == pntlmssp->lm_resp.length) {
-			pauth->doing_ntlm2 = true;
-			memcpy(pauth->session_nonce, pntlmssp->internal_chal.data, 8);
-			memcpy(pauth->session_nonce + 8, pntlmssp->lm_resp.data, 8);
+	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) ||
+	    pntlmssp->nt_resp.length != 24 || pntlmssp->lm_resp.length != 24)
+		return true;
+	pauth->doing_ntlm2 = true;
+	memcpy(pauth->session_nonce, pntlmssp->internal_chal.data, 8);
+	memcpy(pauth->session_nonce + 8, pntlmssp->lm_resp.data, 8);
 
-			std::unique_ptr<EVP_MD_CTX, sslfree> ctx(EVP_MD_CTX_new());
-			if (ctx == nullptr ||
-			    EVP_DigestInit(ctx.get(), EVP_md5()) <= 0 ||
-			    EVP_DigestUpdate(ctx.get(), pauth->session_nonce, 16) <= 0 ||
-			    EVP_DigestFinal(ctx.get(), session_nonce_hash, nullptr) <= 0)
-				return false;
+	std::unique_ptr<EVP_MD_CTX, sslfree> ctx(EVP_MD_CTX_new());
+	if (ctx == nullptr ||
+	    EVP_DigestInit(ctx.get(), EVP_md5()) <= 0 ||
+	    EVP_DigestUpdate(ctx.get(), pauth->session_nonce, 16) <= 0 ||
+	    EVP_DigestFinal(ctx.get(), session_nonce_hash, nullptr) <= 0)
+		return false;
 
-			/* LM response is no longer useful */
-			pntlmssp->lm_resp.length = 0;
+	/* LM response is no longer useful */
+	pntlmssp->lm_resp.length = 0;
 
-			memcpy(pntlmssp->challenge.blob.data, session_nonce_hash, 8);
-			pntlmssp->challenge.blob.length = 8;
+	memcpy(pntlmssp->challenge.blob.data, session_nonce_hash, 8);
+	pntlmssp->challenge.blob.length = 8;
 
-			/* LM Key is incompatible. */
-			pntlmssp->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
-		}
-	}
+	/* LM Key is incompatible. */
+	pntlmssp->neg_flags &= ~NTLMSSP_NEGOTIATE_LM_KEY;
 	return true;
 }
 
