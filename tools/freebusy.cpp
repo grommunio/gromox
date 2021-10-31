@@ -151,9 +151,8 @@ static int exmdb_client_push_load_content_table_request(
 		TRY(pext->p_uint8(1));
 		TRY(pext->p_restriction(r->prestriction));
 	}
-	if (NULL == r->psorts) {
+	if (r->psorts == nullptr)
 		return pext->p_uint8(0);
-	}
 	TRY(pext->p_uint8(1));
 	return pext->p_sortorder_set(r->psorts);
 }
@@ -416,20 +415,17 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 	char tmp_buff[1024];
 	
 	auto pcomponent = ical_new_component("VTIMEZONE");
-	if (NULL == pcomponent) {
+	if (pcomponent == nullptr)
 		return NULL;
-	}
 	auto piline = ical_new_simple_line("TZID", tzid);
-	if (NULL == piline) {
+	if (piline == nullptr)
 		return NULL;
-	}
 	if (pcomponent->append_line(piline) < 0)
 		return nullptr;
 	/* STANDARD component */
 	auto pcomponent1 = ical_new_component("STANDARD");
-	if (NULL == pcomponent1) {
+	if (pcomponent1 == nullptr)
 		return NULL;
-	}
 	if (pcomponent->append_comp(pcomponent1) < 0)
 		return nullptr;
 	if (0 == ptzstruct->daylightdate.month) {
@@ -457,37 +453,32 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		}
 	}
 	piline = ical_new_simple_line("DTSTART", tmp_buff);
-	if (NULL == piline) {
+	if (piline == nullptr)
 		return NULL;
-	}
 	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	if (0 != ptzstruct->daylightdate.month) {
 		if (0 == ptzstruct->standarddate.year) {
 			piline = ical_new_line("RRULE");
-			if (NULL == piline) {
+			if (piline == nullptr)
 				return NULL;
-			}
 			if (pcomponent1->append_line(piline) < 0)
 				return nullptr;
 			pivalue = ical_new_value("FREQ");
-			if (NULL == pivalue) {
+			if (pivalue == nullptr)
 				return NULL;
-			}
 			if (piline->append_value(pivalue) < 0)
 				return nullptr;
 			if (!pivalue->append_subval("YEARLY"))
 				return NULL;
 			pivalue = ical_new_value("BYDAY");
-			if (NULL == pivalue) {
+			if (pivalue == nullptr)
 				return NULL;
-			}
 			if (piline->append_value(pivalue) < 0)
 				return nullptr;
 			order = ptzstruct->standarddate.day;
-			if (5 == order) {
+			if (order == 5)
 				order = -1;
-			}
 			switch (ptzstruct->standarddate.dayofweek) {
 			case 0:
 				snprintf(tmp_buff, arsizeof(tmp_buff), "%dSU", order);
@@ -516,9 +507,8 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			if (!pivalue->append_subval(tmp_buff))
 				return NULL;
 			pivalue = ical_new_value("BYMONTH");
-			if (NULL == pivalue) {
+			if (pivalue == nullptr)
 				return NULL;
-			}
 			if (piline->append_value(pivalue) < 0)
 				return nullptr;
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.month);
@@ -526,30 +516,26 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 				return NULL;
 		} else if (1 == ptzstruct->standarddate.year) {
 			piline = ical_new_line("RRULE");
-			if (NULL == piline) {
+			if (piline == nullptr)
 				return NULL;
-			}
 			if (pcomponent1->append_line(piline) < 0)
 				return nullptr;
 			pivalue = ical_new_value("FREQ");
-			if (NULL == pivalue) {
+			if (pivalue == nullptr)
 				return NULL;
-			}
 			if (piline->append_value(pivalue) < 0)
 				return nullptr;
 			if (!pivalue->append_subval("YEARLY"))
 				return NULL;
 			pivalue = ical_new_value("BYMONTHDAY");
-			if (NULL == pivalue) {
+			if (pivalue == nullptr)
 				return NULL;
-			}
 			if (piline->append_value(pivalue) < 0)
 				return nullptr;
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.day);
 			pivalue = ical_new_value("BYMONTH");
-			if (NULL == pivalue) {
+			if (pivalue == nullptr)
 				return NULL;
-			}
 			if (piline->append_value(pivalue) < 0)
 				return nullptr;
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->standarddate.month);
@@ -575,14 +561,12 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		return nullptr;
 	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
-	if (0 == ptzstruct->daylightdate.month) {
+	if (ptzstruct->daylightdate.month == 0)
 		return pcomponent;
-	}
 	/* DAYLIGHT component */
 	pcomponent1 = ical_new_component("DAYLIGHT");
-	if (NULL == pcomponent1) {
+	if (pcomponent1 == nullptr)
 		return NULL;
-	}
 	if (pcomponent->append_comp(pcomponent1) < 0)
 		return nullptr;
 	if (0 == ptzstruct->daylightdate.year) {
@@ -606,36 +590,31 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		return NULL;
 	}
 	piline = ical_new_simple_line("DTSTART", tmp_buff);
-	if (NULL == piline) {
+	if (piline == nullptr)
 		return NULL;
-	}
 	if (pcomponent1->append_line(piline) < 0)
 		return nullptr;
 	if (0 == ptzstruct->daylightdate.year) {
 		piline = ical_new_line("RRULE");
-		if (NULL == piline) {
+		if (piline == nullptr)
 			return NULL;
-		}
 		if (pcomponent1->append_line(piline) < 0)
 			return nullptr;
 		pivalue = ical_new_value("FREQ");
-		if (NULL == pivalue) {
+		if (pivalue == nullptr)
 			return NULL;
-		}
 		if (piline->append_value(pivalue) < 0)
 			return nullptr;
 		if (!pivalue->append_subval("YEARLY"))
 			return NULL;
 		pivalue = ical_new_value("BYDAY");
-		if (NULL == pivalue) {
+		if (pivalue == nullptr)
 			return NULL;
-		}
 		if (piline->append_value(pivalue) < 0)
 			return nullptr;
 		order = ptzstruct->daylightdate.day;
-		if (5 == order) {
+		if (order == 5)
 			order = -1;
-		}
 		switch (ptzstruct->daylightdate.dayofweek) {
 		case 0:
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%dSU", order);
@@ -664,9 +643,8 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 		if (!pivalue->append_subval(tmp_buff))
 			return NULL;
 		pivalue = ical_new_value("BYMONTH");
-		if (NULL == pivalue) {
+		if (pivalue == nullptr)
 			return NULL;
-		}
 		if (piline->append_value(pivalue) < 0)
 			return nullptr;
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.month);
@@ -674,30 +652,26 @@ static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 			return NULL;
 	} else if (1 == ptzstruct->daylightdate.year) {
 		piline = ical_new_line("RRULE");
-		if (NULL == piline) {
+		if (piline == nullptr)
 			return NULL;
-		}
 		if (pcomponent1->append_line(piline) < 0)
 			return nullptr;
 		pivalue = ical_new_value("FREQ");
-		if (NULL == pivalue) {
+		if (pivalue == nullptr)
 			return NULL;
-		}
 		if (piline->append_value(pivalue) < 0)
 			return nullptr;
 		if (!pivalue->append_subval("YEARLY"))
 			return NULL;
 		pivalue = ical_new_value("BYMONTHDAY");
-		if (NULL == pivalue) {
+		if (pivalue == nullptr)
 			return NULL;
-		}
 		if (piline->append_value(pivalue) < 0)
 			return nullptr;
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.day);
 		pivalue = ical_new_value("BYMONTH");
-		if (NULL == pivalue) {
+		if (pivalue == nullptr)
 			return NULL;
-		}
 		if (piline->append_value(pivalue) < 0)
 			return nullptr;
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%d", (int)ptzstruct->daylightdate.month);
@@ -736,24 +710,21 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 	char tmp_buff[1024];
 	
 	auto piline = ical_new_line("RRULE");
-	if (NULL == piline) {
+	if (piline == nullptr)
 		return FALSE;
-	}
 	switch (apr->recur_pat.patterntype) {
 	case PATTERNTYPE_DAY:
 		pivalue = ical_new_value("FREQ");
-		if (NULL == pivalue) {
+		if (pivalue == nullptr)
 			return FALSE;
-		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (!pivalue->append_subval("DAILY"))
 			return FALSE;
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period/1440);
 		pivalue = ical_new_value("INTERVAL");
-		if (NULL == pivalue) {
+		if (pivalue == nullptr)
 			return FALSE;
-		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (!pivalue->append_subval(tmp_buff))
@@ -761,26 +732,23 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 		break;
 	case PATTERNTYPE_WEEK:
 		pivalue = ical_new_value("FREQ");
-		if (NULL == pivalue) {
+		if (pivalue == nullptr)
 			return FALSE;
-		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (!pivalue->append_subval("WEEKLY"))
 			return FALSE;
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
 		pivalue = ical_new_value("INTERVAL");
-		if (NULL == pivalue) {
+		if (pivalue == nullptr)
 			return FALSE;
-		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (!pivalue->append_subval(tmp_buff))
 			return FALSE;
 		pivalue = ical_new_value("BYDAY");
-		if (NULL == pivalue) {
+		if (pivalue == nullptr)
 			return FALSE;
-		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (apr->recur_pat.pts.weekrecur & week_recur_bit::sun &&
@@ -808,9 +776,8 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 	case PATTERNTYPE_MONTH:
 	case PATTERNTYPE_HJMONTH:
 		pivalue = ical_new_value("FREQ");
-		if (NULL == pivalue) {
+		if (pivalue == nullptr)
 			return FALSE;
-		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
 		/* XXX: This looks an awful lot like oxcical.cpp */
@@ -819,17 +786,15 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 				return FALSE;
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
 			pivalue = ical_new_value("INTERVAL");
-			if (NULL == pivalue) {
+			if (pivalue == nullptr)
 				return FALSE;
-			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYMONTHDAY");
-			if (NULL == pivalue) {
+			if (pivalue == nullptr)
 				return FALSE;
-			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (apr->recur_pat.pts.dayofmonth == 31)
@@ -843,17 +808,15 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 				return FALSE;
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period/12);
 			pivalue = ical_new_value("INTERVAL");
-			if (NULL == pivalue) {
+			if (pivalue == nullptr)
 				return FALSE;
-			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYMONTHDAY");
-			if (NULL == pivalue) {
+			if (pivalue == nullptr)
 				return FALSE;
-			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (apr->recur_pat.pts.dayofmonth == 31)
@@ -863,9 +826,8 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYMONTH");
-			if (NULL == pivalue) {
+			if (pivalue == nullptr)
 				return FALSE;
-			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
 			ical_get_itime_from_yearday(1601, apr->recur_pat.firstdatetime / 1440 + 1, &itime);
@@ -877,9 +839,8 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 	case PATTERNTYPE_MONTHNTH:
 	case PATTERNTYPE_HJMONTHNTH:
 		pivalue = ical_new_value("FREQ");
-		if (NULL == pivalue) {
+		if (pivalue == nullptr)
 			return FALSE;
-		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (apr->recur_pat.period % 12 != 0) {
@@ -887,17 +848,15 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 				return FALSE;
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period);
 			pivalue = ical_new_value("INTERVAL");
-			if (NULL == pivalue) {
+			if (pivalue == nullptr)
 				return FALSE;
-			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYDAY");
-			if (NULL == pivalue) {
+			if (pivalue == nullptr)
 				return FALSE;
-			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::sun &&
@@ -922,9 +881,8 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			    !pivalue->append_subval("SA"))
 				return false;
 			pivalue = ical_new_value("BYSETPOS");
-			if (NULL == pivalue) {
+			if (pivalue == nullptr)
 				return FALSE;
-			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (apr->recur_pat.pts.monthnth.recurnum == 5)
@@ -938,17 +896,15 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 				return FALSE;
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.period / 12);
 			pivalue = ical_new_value("INTERVAL");
-			if (NULL == pivalue) {
+			if (pivalue == nullptr)
 				return FALSE;
-			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYDAY");
-			if (NULL == pivalue) {
+			if (pivalue == nullptr)
 				return FALSE;
-			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::sun &&
@@ -973,9 +929,8 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			    !pivalue->append_subval("SA"))
 				return false;
 			pivalue = ical_new_value("BYSETPOS");
-			if (NULL == pivalue) {
+			if (pivalue == nullptr)
 				return FALSE;
-			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
 			if (apr->recur_pat.pts.monthnth.recurnum == 5)
@@ -985,9 +940,8 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			if (!pivalue->append_subval(tmp_buff))
 				return FALSE;
 			pivalue = ical_new_value("BYMONTH");
-			if (NULL == pivalue) {
+			if (pivalue == nullptr)
 				return FALSE;
-			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.firstdatetime);
@@ -1001,9 +955,8 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 	if (apr->recur_pat.endtype == ENDTYPE_AFTER_N_OCCURRENCES) {
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%u", apr->recur_pat.occurrencecount);
 		pivalue = ical_new_value("COUNT");
-		if (NULL == pivalue) {
+		if (pivalue == nullptr)
 			return FALSE;
-		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (!pivalue->append_subval(tmp_buff))
@@ -1017,9 +970,8 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 			itime.year, itime.month, itime.day,
 			itime.hour, itime.minute, itime.second);
 		pivalue = ical_new_value("UNTIL");
-		if (NULL == pivalue) {
+		if (pivalue == nullptr)
 			return FALSE;
-		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
 		if (!pivalue->append_subval(tmp_buff))
@@ -1027,9 +979,8 @@ static BOOL recurrencepattern_to_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_compo
 	}
 	if (apr->recur_pat.patterntype == PATTERNTYPE_WEEK) {
 		pivalue = ical_new_value("WKST");
-		if (NULL == pivalue) {
+		if (pivalue == nullptr)
 			return FALSE;
-		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
 		switch (apr->recur_pat.firstdow) {
@@ -1089,16 +1040,14 @@ static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	do {
 		itime = ical_rrule_instance_itime(&irrule);
 		ical_itime_to_utc(ptz_component, itime, &tmp_time);
-		if (tmp_time < start_time) {
+		if (tmp_time < start_time)
 			continue;
-		}
 		ical_itime_to_utc(NULL, itime, &tmp_time1);
 		for (i = 0; i < apr->exceptioncount; ++i) {
 			nt_time = apr->pexceptioninfo[i].originalstartdate;
 			nt_time *= 600000000;
-			if (tmp_time1 == rop_util_nttime_to_unix(nt_time)) {
+			if (tmp_time1 == rop_util_nttime_to_unix(nt_time))
 				break;
-			}
 		}
 		if (i < apr->exceptioncount)
 			continue;
@@ -1109,9 +1058,8 @@ static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		pevnode->pexception = NULL;
 		pevnode->pex_exception = NULL;
 		double_list_append_as_tail(plist, &pevnode->node);
-		if (tmp_time >= end_time) {
+		if (tmp_time >= end_time)
 			break;
-		}
 	} while (ical_rrule_iterate(&irrule));
 	for (i = 0; i < apr->exceptioncount; ++i) {
 		nt_time = apr->pexceptioninfo[i].startdatetime;
@@ -1355,16 +1303,12 @@ static BOOL get_freebusy(const char *dir)
 	tmp_propnames[12].lid = PidLidTimeZoneStruct;
 	
 	sockd = connect_exmdb(dir);
-	if (-1 == sockd) {
+	if (sockd < 0)
 		return FALSE;
-	}
-	if (FALSE == exmdb_client_get_named_propids(
-		sockd, dir, FALSE, &propnames, &propids)) {
+	if (!exmdb_client_get_named_propids(sockd, dir, FALSE, &propnames, &propids))
 		return FALSE;
-	}
-	if (propids.count != propnames.count) {
+	if (propids.count != propnames.count)
 		return FALSE;
-	}
 	pidlidappointmentstartwhole = PROP_TAG(PT_SYSTIME, propids.ppropid[0]);
 	pidlidappointmentendwhole = PROP_TAG(PT_SYSTIME, propids.ppropid[1]);
 	pidlidbusystatus = PROP_TAG(PT_LONG, propids.ppropid[2]);
@@ -1571,14 +1515,12 @@ static BOOL get_freebusy(const char *dir)
 	b_first = FALSE;
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		pvalue = tmp_set.pparray[i]->getval(pidlidappointmentstartwhole);
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			continue;
-		}
 		whole_start_time = rop_util_nttime_to_unix(*(uint64_t*)pvalue);
 		pvalue = tmp_set.pparray[i]->getval(pidlidappointmentendwhole);
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			continue;
-		}
 		whole_end_time = rop_util_nttime_to_unix(*(uint64_t*)pvalue);
 		pvalue = tmp_set.pparray[i]->getval(pidlidglobalobjectid);
 		if (!make_ical_uid(static_cast<BINARY *>(pvalue), uid_buff))
@@ -1594,9 +1536,8 @@ static BOOL get_freebusy(const char *dir)
 			busy_type = 0;
 		} else {
 			busy_type = *(uint32_t*)pvalue;
-			if (busy_type > 4) {
+			if (busy_type > 4)
 				busy_type = 0;
-			}
 		}
 		pvalue = tmp_set.pparray[i]->getval(pidlidappointmentstateflags);
 		BOOL b_meeting = pvalue == nullptr ? false :
@@ -1613,56 +1554,46 @@ static BOOL get_freebusy(const char *dir)
 					continue;	
 				ptz_component = tzstruct_to_vtimezone(
 						1600, "timezone", &tzstruct);
-				if (NULL == ptz_component) {
+				if (ptz_component == nullptr)
 					continue;
-				}
 			}
 			pvalue = tmp_set.pparray[i]->getval(pidlidappointmentrecur);
-			if (NULL == pvalue) {
+			if (pvalue == nullptr)
 				continue;
-			}
 			ext_pull.init(static_cast<BINARY *>(pvalue)->pb,
 				static_cast<BINARY *>(pvalue)->cb, malloc, EXT_FLAG_UTF16);
 			if (ext_pull.g_apptrecpat(&apprecurr) != EXT_ERR_SUCCESS)
 				continue;
-			if (FALSE == find_recurrence_times(ptz_component,
-				whole_start_time, &apprecurr, g_start_time,
-				g_end_time, &tmp_list)) {
+			if (!find_recurrence_times(ptz_component, whole_start_time,
+			    &apprecurr, g_start_time, g_end_time, &tmp_list))
 				continue;	
-			}
 			while ((pnode = double_list_pop_front(&tmp_list)) != nullptr) {
 				pevnode = (EVENT_NODE*)pnode->pdata;
 				if (NULL != pevnode->pexception &&
 					NULL != pevnode->pex_exception) {
-					if (pevnode->pexception->overrideflags &
-						OVERRIDEFLAG_MEETINGTYPE) {
+					if (pevnode->pexception->overrideflags & OVERRIDEFLAG_MEETINGTYPE)
 						b_meeting1 = (pevnode->pexception->meetingtype & 1) ? TRUE : false;
-					} else {
+					else
 						b_meeting1 = b_meeting;
-					}
-					if (pevnode->pexception->overrideflags &
-						OVERRIDEFLAG_REMINDER) {
+					if (pevnode->pexception->overrideflags & OVERRIDEFLAG_REMINDER)
 						b_reminder1 = pevnode->pexception->reminderset == 0 ? false : TRUE;
-					} else {
+					else
 						b_reminder1 = b_reminder;
-					}
 					uint32_t busy_type1 = (pevnode->pexception->overrideflags & OVERRIDEFLAG_BUSYSTATUS) ?
 					                      pevnode->pexception->busystatus : busy_type;
 					auto psubject1  = (pevnode->pexception->overrideflags & OVERRIDEFLAG_SUBJECT) ?
 					                  pevnode->pex_exception->subject : psubject;
 					auto plocation1 = (pevnode->pexception->overrideflags & OVERRIDEFLAG_LOCATION) ?
 					                  pevnode->pex_exception->location : plocation;
-					if (TRUE == b_first) {
+					if (b_first)
 						printf(",");
-					}
 					b_first = TRUE;
 					output_event(pevnode->start_time, pevnode->end_time,
 						busy_type1, uid_buff, psubject1, plocation1,
 						b_meeting1, TRUE, TRUE, b_reminder1, b_private1);
 				} else {
-					if (TRUE == b_first) {
+					if (b_first)
 						printf(",");
-					}
 					b_first = TRUE;
 					output_event(pevnode->start_time, pevnode->end_time,
 						busy_type, uid_buff, psubject, plocation,
@@ -1670,9 +1601,8 @@ static BOOL get_freebusy(const char *dir)
 				}
 			}
 		} else {
-			if (TRUE == b_first) {
+			if (b_first)
 				printf(",");
-			}
 			b_first = TRUE;
 			output_event(whole_start_time, whole_end_time,
 				busy_type, uid_buff, psubject, plocation,
@@ -1833,21 +1763,20 @@ int main(int argc, const char **argv)
 	tzstruct.standarddate.year = pstdyear == nullptr ? 0 : strtol(pstdyear, nullptr, 0);
 	tzstruct.standardyear = tzstruct.standarddate.year;
 	tzstruct.standarddate.month = strtol(pstdmonth, nullptr, 0);
-	if (0 == strcasecmp(pstddayofweek, "Sunday")) {
+	if (strcasecmp(pstddayofweek, "Sunday") == 0)
 		tzstruct.standarddate.dayofweek = 0;
-	} else if (0 == strcasecmp(pstddayofweek, "Monday")) {
+	else if (strcasecmp(pstddayofweek, "Monday") == 0)
 		tzstruct.standarddate.dayofweek = 1;
-	} else if (0 == strcasecmp(pstddayofweek, "Tuesday")) {
+	else if (strcasecmp(pstddayofweek, "Tuesday") == 0)
 		tzstruct.standarddate.dayofweek = 2;
-	} else if (0 == strcasecmp(pstddayofweek, "Wednesday")) {
+	else if (strcasecmp(pstddayofweek, "Wednesday") == 0)
 		tzstruct.standarddate.dayofweek = 3;
-	} else if (0 == strcasecmp(pstddayofweek, "Thursday")) {
+	else if (strcasecmp(pstddayofweek, "Thursday") == 0)
 		tzstruct.standarddate.dayofweek = 4;
-	} else if (0 == strcasecmp(pstddayofweek, "Friday")) {
+	else if (strcasecmp(pstddayofweek, "Friday") == 0)
 		tzstruct.standarddate.dayofweek = 5;
-	} else if (0 == strcasecmp(pstddayofweek, "Saturday")) {
+	else if (strcasecmp(pstddayofweek, "Saturday") == 0)
 		tzstruct.standarddate.dayofweek = 6;
-	}
 	tzstruct.standarddate.day = strtol(pstddayorder, nullptr, 0);
 	gx_strlcpy(tmp_buff, pstdtime, GX_ARRAY_SIZE(tmp_buff));
 	ptoken = strchr(tmp_buff, ':');
@@ -1870,21 +1799,20 @@ int main(int argc, const char **argv)
 	tzstruct.daylightdate.year = pdtlyear == nullptr ? 0 : strtol(pdtlyear, nullptr, 0);
 	tzstruct.daylightyear = tzstruct.daylightdate.year;
 	tzstruct.daylightdate.month = strtol(pdtlmonth, nullptr, 0);
-	if (0 == strcasecmp(pdtldayofweek, "Sunday")) {
+	if (strcasecmp(pdtldayofweek, "Sunday") == 0)
 		tzstruct.daylightdate.dayofweek = 0;
-	} else if (0 == strcasecmp(pdtldayofweek, "Monday")) {
+	else if (strcasecmp(pdtldayofweek, "Monday") == 0)
 		tzstruct.daylightdate.dayofweek = 1;
-	} else if (0 == strcasecmp(pdtldayofweek, "Tuesday")) {
+	else if (strcasecmp(pdtldayofweek, "Tuesday") == 0)
 		tzstruct.daylightdate.dayofweek = 2;
-	} else if (0 == strcasecmp(pdtldayofweek, "Wednesday")) {
+	else if (strcasecmp(pdtldayofweek, "Wednesday") == 0)
 		tzstruct.daylightdate.dayofweek = 3;
-	} else if (0 == strcasecmp(pdtldayofweek, "Thursday")) {
+	else if (strcasecmp(pdtldayofweek, "Thursday") == 0)
 		tzstruct.daylightdate.dayofweek = 4;
-	} else if (0 == strcasecmp(pdtldayofweek, "Friday")) {
+	else if (strcasecmp(pdtldayofweek, "Friday") == 0)
 		tzstruct.daylightdate.dayofweek = 5;
-	} else if (0 == strcasecmp(pdtldayofweek, "Saturday")) {
+	else if (strcasecmp(pdtldayofweek, "Saturday") == 0)
 		tzstruct.daylightdate.dayofweek = 6;
-	}
 	tzstruct.daylightdate.day = strtol(pdtldayorder, nullptr, 0);
 	gx_strlcpy(tmp_buff, pdtltime, GX_ARRAY_SIZE(tmp_buff));
 	ptoken = strchr(tmp_buff, ':');
@@ -1922,9 +1850,8 @@ int main(int argc, const char **argv)
 	for (decltype(dir_num) i = 0; i < dir_num; ++i) {
 		snprintf(tmp_buff, arsizeof(tmp_buff), "dir%d", i);
 		pdir = cookie_parser_get(pparser, tmp_buff);
-		if (NULL != pdir) {
+		if (pdir != nullptr)
 			get_freebusy(pdir);
-		}
 	}
 	exit(0);
 }
