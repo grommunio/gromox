@@ -971,19 +971,18 @@ static bool ntlmssp_check_ntlm1(const DATA_BLOB *pnt_response,
 	if (!E_P24(p21, psec_blob->data, p24))
 		return false;
 	
-	if (0 == memcmp(p24, pnt_response->data, 24)) {
-		if (puser_key != NULL) {
-			std::unique_ptr<EVP_MD_CTX, sslfree> ctx(EVP_MD_CTX_new());
-			if (ctx == nullptr ||
-			    EVP_DigestInit(ctx.get(), EVP_md4()) <= 0 ||
-			    EVP_DigestUpdate(ctx.get(), part_passwd, 16) <= 0 ||
-			    EVP_DigestFinal(ctx.get(), puser_key->data, nullptr) <= 0)
-				return false;
-			puser_key->length = 16;
-		}
+	if (memcmp(p24, pnt_response->data, 24) != 0)
+		return false;
+	if (puser_key == nullptr)
 		return true;
-	} 
-	return false;
+	std::unique_ptr<EVP_MD_CTX, sslfree> ctx(EVP_MD_CTX_new());
+	if (ctx == nullptr ||
+	    EVP_DigestInit(ctx.get(), EVP_md4()) <= 0 ||
+	    EVP_DigestUpdate(ctx.get(), part_passwd, 16) <= 0 ||
+	    EVP_DigestFinal(ctx.get(), puser_key->data, nullptr) <= 0)
+		return false;
+	puser_key->length = 16;
+	return true;
 }
 
 static bool ntlmssp_check_ntlm2(const DATA_BLOB *pntv2_response,
