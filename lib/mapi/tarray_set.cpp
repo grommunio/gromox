@@ -69,14 +69,13 @@ bool tarray_set_append_internal(TARRAY_SET *pset, TPROPVAL_ARRAY *pproplist)
 TARRAY_SET* tarray_set_dup(TARRAY_SET *pset)
 {
 	TARRAY_SET *pset1;
-	TPROPVAL_ARRAY *pproplist;
 	
 	pset1 = tarray_set_init();
 	if (NULL == pset1) {
 		return NULL;
 	}
 	for (size_t i = 0; i < pset->count; ++i) {
-		pproplist = tpropval_array_dup(pset->pparray[i]);
+		auto pproplist = pset->pparray[i]->dup();
 		if (NULL == pproplist) {
 			tarray_set_free(pset1);
 			return NULL;

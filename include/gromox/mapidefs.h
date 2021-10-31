@@ -1085,13 +1085,13 @@ static inline bool tpropval_array_set_propval(TPROPVAL_ARRAY *a, uint32_t tag, c
 	TAGGED_PROPVAL v{tag, deconst(d)};
 	return tpropval_array_set_propval(a, &v);
 }
-extern GX_EXPORT TPROPVAL_ARRAY *tpropval_array_dup(TPROPVAL_ARRAY *);
 
 struct TPROPVAL_ARRAY {
 	inline bool has(uint32_t tag) const { return getval(tag) != nullptr; }
 	void *getval(uint32_t tag) const;
 	template<typename T> inline T *get(uint32_t tag) const { return static_cast<T *>(getval(tag)); }
 	void erase(uint32_t tag);
+	TPROPVAL_ARRAY *dup() const;
 
 	uint16_t count;
 	TAGGED_PROPVAL *ppropval;

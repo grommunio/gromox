@@ -109,7 +109,7 @@ static root_object *object_tree_init_root(const char *maildir)
 		free(prootobj);
 		return NULL;
 	}
-	prootobj->pprivate_proplist = tpropval_array_dup(&propvals);
+	prootobj->pprivate_proplist = propvals.dup();
 	if (NULL == prootobj->pprivate_proplist) {
 		free(pbuff);
 		free(prootobj->maildir);

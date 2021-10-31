@@ -2972,7 +2972,6 @@ BOOL exmdb_server_update_message_instance_rcpts(
 	const char *dir, uint32_t instance_id, const TARRAY_SET *pset)
 {
 	uint32_t row_id;
-	TPROPVAL_ARRAY *prcpt;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -3001,7 +3000,7 @@ BOOL exmdb_server_update_message_instance_rcpts(
 				if (1 == pset->pparray[i]->count) {
 					tarray_set_remove(pmsgctnt->children.prcpts, j);
 				} else {
-					prcpt = tpropval_array_dup(pset->pparray[i]);
+					auto prcpt = pset->pparray[i]->dup();
 					if (NULL == prcpt) {
 						return FALSE;
 					}
@@ -3017,7 +3016,7 @@ BOOL exmdb_server_update_message_instance_rcpts(
 				>= MAX_RECIPIENT_NUMBER) {
 				return FALSE;
 			}
-			prcpt = tpropval_array_dup(pset->pparray[i]);
+			auto prcpt = pset->pparray[i]->dup();
 			if (NULL == prcpt) {
 				return FALSE;
 			}

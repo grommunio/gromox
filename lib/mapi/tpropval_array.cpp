@@ -124,12 +124,11 @@ void tpropval_array_free(TPROPVAL_ARRAY *parray)
 	free(parray);
 }
 
-TPROPVAL_ARRAY* tpropval_array_dup(TPROPVAL_ARRAY *parray)
+TPROPVAL_ARRAY *TPROPVAL_ARRAY::dup() const
 {
+	auto parray = this;
 	int i;
-	TPROPVAL_ARRAY *parray1;
-	
-	parray1 = tpropval_array_init();
+	auto parray1 = tpropval_array_init();
 	if (NULL == parray1) {
 		return NULL;
 	}
