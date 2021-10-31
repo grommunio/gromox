@@ -3302,12 +3302,11 @@ static bool oxcmail_enum_dsn_reporting_mta(const char *tag,
 {
 	TAGGED_PROPVAL propval;
 	
-	if (0 == strcasecmp(tag, "Reporting-MTA")) {
-		propval.proptag = PROP_TAG_REPORTINGMESSAGETRANSFERAGENT;
-		propval.pvalue = deconst(value);
-		return static_cast<MESSAGE_CONTENT *>(pparam)->proplist.set(propval) == 0;
-	}
-	return true;
+	if (strcasecmp(tag, "Reporting-MTA") != 0)
+		return true;
+	propval.proptag = PROP_TAG_REPORTINGMESSAGETRANSFERAGENT;
+	propval.pvalue = deconst(value);
+	return static_cast<MESSAGE_CONTENT *>(pparam)->proplist.set(propval) == 0;
 }
 
 static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
