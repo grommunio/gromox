@@ -398,9 +398,8 @@ static void *ev_acceptwork(void *param)
 		/* wait for an incoming connection */
         addrlen = sizeof(peer_name);
         sockd2 = accept(sockd, (struct sockaddr*)&peer_name, &addrlen);
-		if (-1 == sockd2) {
+		if (sockd2 < 0)
 			continue;
-		}
 		int ret = getnameinfo(reinterpret_cast<sockaddr *>(&peer_name),
 		          addrlen, client_hostip, sizeof(client_hostip),
 		          nullptr, 0, NI_NUMERICHOST | NI_NUMERICSERV);
@@ -561,11 +560,10 @@ static void *ev_enqwork(void *param)
 				}
 			}
 			hl_hold.unlock();
-			if (TRUE == b_result) {
+			if (b_result)
 				write(penqueue->sockd, "TRUE\r\n", 6);
-			} else {
+			else
 				write(penqueue->sockd, "FALSE\r\n", 7);
-			}
 			continue;
 		} else if (0 == strncasecmp(penqueue->line, "UNSELECT ", 9)) {
 			pspace = strchr(penqueue->line + 9, ' ');
@@ -609,9 +607,8 @@ static void *ev_enqwork(void *param)
 				continue;
 			}
 			pspace2 = strchr(pspace1 + 1, ' ');
-			if (NULL == pspace2) {
+			if (pspace2 == nullptr)
 				pspace2 = penqueue->line + strlen(penqueue->line);
-			}
 			if (pspace1 - pspace > 128 || pspace2 - pspace1 > 64) {
 				write(penqueue->sockd, "FALSE\r\n", 7);
 				continue;
@@ -641,11 +638,10 @@ static void *ev_enqwork(void *param)
 					std::unique_lock dl_hold(pdequeue->lock);
 					b_result = pdequeue->fifo.enqueue(&temp_file);
 					dl_hold.unlock();
-					if (FALSE == b_result) {
+					if (!b_result)
 						mem_file_free(&temp_file);
-					} else {
+					else
 						pdequeue->waken_cond.notify_one();
-					}
 					phost->list.push_back(pdequeue);
 				}
 			}
@@ -769,26 +765,16 @@ static BOOL read_response(int sockd)
 		tv.tv_sec = SOCKET_TIMEOUT;
 		FD_ZERO(&myset);
 		FD_SET(sockd, &myset);
-		if (select(sockd + 1, &myset, NULL, NULL, &tv) <= 0) {
+		if (select(sockd + 1, &myset, nullptr, nullptr, &tv) <= 0)
 			return FALSE;
-		}
 		read_len = read(sockd, buff + offset, 1024 - offset);
-		if (read_len <= 0) {
+		if (read_len <= 0)
 			return FALSE;
-		}
 		offset += read_len;
-		
-		if (6 == offset) {
-			if (0 == strncasecmp(buff, "TRUE\r\n", 6)) {
-				return TRUE;
-			} else {
-				return FALSE;
-			}
-		}
-		
-		if (offset > 6) {
+		if (offset == 6)
+			return strncasecmp(buff, "TRUE\r\n", 6) == 0 ? TRUE : false;
+		if (offset > 6)
 			return FALSE;
-		}
 	}
 }
 
@@ -803,14 +789,12 @@ static BOOL read_mark(ENQUEUE_NODE *penqueue)
 		tv.tv_sec = SOCKET_TIMEOUT;
 		FD_ZERO(&myset);
 		FD_SET(penqueue->sockd, &myset);
-		if (select(penqueue->sockd + 1, &myset, NULL, NULL, &tv) <= 0) {
+		if (select(penqueue->sockd + 1, &myset, nullptr, nullptr, &tv) <= 0)
 			return FALSE;
-		}
 		read_len = read(penqueue->sockd, penqueue->buffer +
 		penqueue->offset, MAX_CMD_LENGTH - penqueue->offset);
-		if (read_len <= 0) {
+		if (read_len <= 0)
 			return FALSE;
-		}
 		penqueue->offset += read_len;
 		for (i=0; i<penqueue->offset-1; i++) {
 			if ('\r' == penqueue->buffer[i] &&
@@ -823,9 +807,8 @@ static BOOL read_mark(ENQUEUE_NODE *penqueue)
 				return TRUE;
 			}
 		}
-		if (MAX_CMD_LENGTH == penqueue->offset) {
+		if (penqueue->offset == MAX_CMD_LENGTH)
 			return FALSE;
-		}
 	}
 }
 

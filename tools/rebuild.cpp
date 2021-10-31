@@ -62,13 +62,11 @@ static int exmdb_client_push_connect_request(
 	EXT_PUSH *pext, const CONNECT_REQUEST *r)
 {
 	auto status = pext->p_str(r->prefix);
-	if (EXT_ERR_SUCCESS != status) {
+	if (status != EXT_ERR_SUCCESS)
 		return status;
-	}
 	status = pext->p_str(r->remote_id);
-	if (EXT_ERR_SUCCESS != status) {
+	if (status != EXT_ERR_SUCCESS)
 		return status;
-	}
 	return pext->p_bool(r->b_private);
 }
 
@@ -87,25 +85,21 @@ static int exmdb_client_push_request(uint8_t call_id,
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		return EXT_ERR_ALLOC;
 	status = ext_push.advance(sizeof(uint32_t));
-	if (EXT_ERR_SUCCESS != status) {
+	if (status != EXT_ERR_SUCCESS)
 		return status;
-	}
 	status = ext_push.p_uint8(call_id);
-	if (EXT_ERR_SUCCESS != status) {
+	if (status != EXT_ERR_SUCCESS)
 		return status;
-	}
 	switch (call_id) {
 	case exmdb_callid::CONNECT:
 		status = exmdb_client_push_connect_request(&ext_push, static_cast<CONNECT_REQUEST *>(prequest));
-		if (EXT_ERR_SUCCESS != status) {
+		if (status != EXT_ERR_SUCCESS)
 			return status;
-		}
 		break;
 	case exmdb_callid::UNLOAD_STORE:
 		status = exmdb_client_push_unload_store_request(&ext_push, static_cast<UNLOAD_STORE_REQUEST *>(prequest));
-		if (EXT_ERR_SUCCESS != status) {
+		if (status != EXT_ERR_SUCCESS)
 			return status;
-		}
 		break;
 	default:
 		return EXT_ERR_BAD_SWITCH;
@@ -185,9 +179,8 @@ static BOOL exmdb_client_unload_store(const char *dir)
 	    &request, &tmp_bin) != EXT_ERR_SUCCESS)
 		return FALSE;
 	sockd = connect_exmdb(dir);
-	if (-1 == sockd) {
+	if (sockd < 0)
 		return FALSE;
-	}
 	if (!exmdb_client_write_socket(sockd, &tmp_bin) ||
 	    !cl_rd_sock(sockd, &tmp_bin) ||
 	    tmp_bin.cb != 5 || tmp_bin.pb[0] != exmdb_response::SUCCESS) {

@@ -128,9 +128,8 @@ static void save_timers(time_t &last_cltime, const time_t &cur_time)
 		if (pitem[i].exectime != 0)
 			continue;
 		for (size_t j = 0; j < item_num; ++j) {
-			if (i == j) {
+			if (i == j)
 				continue;
-			}
 			if (pitem[i].tid == pitem[j].tid) {
 				pitem[j].exectime = 0;
 				break;
@@ -246,9 +245,8 @@ int main(int argc, const char **argv) try
 		if (pitem[i].exectime != 0)
 			continue;
 		for (size_t j = 0; j < item_num; ++j) {
-			if (i == j) {
+			if (i == j)
 				continue;
-			}
 			if (pitem[i].tid == pitem[j].tid) {
 				pitem[j].exectime = 0;
 				break;
@@ -346,9 +344,8 @@ int main(int argc, const char **argv) try
 		std::unique_lock li_hold(g_list_lock);
 		time(&cur_time);
 		for (auto ptimer = g_exec_list.begin(); ptimer != g_exec_list.end(); ) {
-			if (ptimer->exec_time > cur_time) {
+			if (ptimer->exec_time > cur_time)
 				break;
-			}
 			std::list<TIMER> stash;
 			stash.splice(stash.end(), g_exec_list, ptimer++);
 			execute_timer(&stash.front());
@@ -377,9 +374,8 @@ static void *tmr_acceptwork(void *param)
 		/* wait for an incoming connection */
         addrlen = sizeof(peer_name);
         sockd2 = accept(sockd, (struct sockaddr*)&peer_name, &addrlen);
-		if (-1 == sockd2) {
+		if (sockd2 < 0)
 			continue;
-		}
 		CONNECTION_NODE conn;
 		conn.sockd = sockd2;
 		int ret = getnameinfo(reinterpret_cast<sockaddr *>(&peer_name),
@@ -433,11 +429,7 @@ static void execute_timer(TIMER *ptimer)
 			_exit(-1);
 		} else if (pid > 0) {
 			if (waitpid(pid, &status, 0) > 0) {
-				if (WIFEXITED(status) && 0 == WEXITSTATUS(status)) {
-					strcpy(result, "DONE");
-				} else {
-					strcpy(result, "EXEC-FAILURE");
-				}
+				strcpy(result, WIFEXITED(status) && !WEXITSTATUS(status) ? "DONE" : "EXEC-FAILURE");
 			} else {
 				strcpy(result, "FAIL-TO-WAIT");
 			}
@@ -570,14 +562,12 @@ static BOOL read_mark(CONNECTION_NODE *pconnection)
 		tv.tv_sec = SOCKET_TIMEOUT;
 		FD_ZERO(&myset);
 		FD_SET(pconnection->sockd, &myset);
-		if (select(pconnection->sockd + 1, &myset, NULL, NULL, &tv) <= 0) {
+		if (select(pconnection->sockd + 1, &myset, nullptr, nullptr, &tv) <= 0)
 			return FALSE;
-		}
 		read_len = read(pconnection->sockd, pconnection->buffer +
 		pconnection->offset, 1024 - pconnection->offset);
-		if (read_len <= 0) {
+		if (read_len <= 0)
 			return FALSE;
-		}
 		pconnection->offset += read_len;
 		for (i=0; i<pconnection->offset-1; i++) {
 			if ('\r' == pconnection->buffer[i] &&
@@ -590,9 +580,8 @@ static BOOL read_mark(CONNECTION_NODE *pconnection)
 				return TRUE;
 			}
 		}
-		if (1024 == pconnection->offset) {
+		if (pconnection->offset == 1024)
 			return FALSE;
-		}
 	}
 }
 
@@ -639,9 +628,8 @@ static int parse_line(char *pbuff, const char* cmdline, char** argv)
 					last_quote = nullptr;
 					last_space = ptr + 1;
 					argc ++;
-					if (argc >= MAXARGS) {
+					if (argc >= MAXARGS)
 						return 0;
-					}
 				}
 			}
 		}
@@ -654,9 +642,8 @@ static int parse_line(char *pbuff, const char* cmdline, char** argv)
 				*ptr = '\0';
 				last_space = ptr + 1;
 				argc ++;
-				if (argc >= MAXARGS) {
+				if (argc >= MAXARGS)
 					return 0;
-				}
 			}
 		}
 		ptr ++;

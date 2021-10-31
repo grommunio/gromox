@@ -63,31 +63,29 @@ int main(int argc, const char **argv)
 	if (pconfig == nullptr)
 		return 2;
 	auto str_value = pconfig->get_value("MYSQL_HOST");
-	if (NULL == str_value) {
+	if (str_value == nullptr)
 		strcpy(mysql_host, "localhost");
-	} else {
+	else
 		gx_strlcpy(mysql_host, str_value, GX_ARRAY_SIZE(mysql_host));
-	}
 	
 	str_value = pconfig->get_value("MYSQL_PORT");
 	if (NULL == str_value) {
 		mysql_port = 3306;
 	} else {
 		mysql_port = strtol(str_value, nullptr, 0);
-		if (mysql_port <= 0) {
+		if (mysql_port <= 0)
 			mysql_port = 3306;
-		}
 	}
 
 	str_value = pconfig->get_value("MYSQL_USERNAME");
 	gx_strlcpy(mysql_user, str_value != nullptr ? str_value : "root", GX_ARRAY_SIZE(mysql_user));
 	auto mysql_passwd = pconfig->get_value("MYSQL_PASSWORD");
 	str_value = pconfig->get_value("MYSQL_DBNAME");
-	if (NULL == str_value) {
+	if (str_value == nullptr)
 		strcpy(db_name, "email");
-	} else {
+	else
 		gx_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
-	}
+
 	const char *datadir = opt_datadir != nullptr ? opt_datadir :
 	                      pconfig->get_value("data_file_path");
 	if (datadir == nullptr)
@@ -195,9 +193,8 @@ int main(int argc, const char **argv)
 	
 	const char *csql_string = "INSERT INTO configurations VALUES (?, ?)";
 	auto pstmt = gx_sql_prep(psqlite, csql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return 9;
-	}
 	
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_USERNAME);
 	sqlite3_bind_text(pstmt, 2, argv[1], -1, SQLITE_STATIC);

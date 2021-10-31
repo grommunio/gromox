@@ -88,10 +88,8 @@ static BOOL create_generic_folder(sqlite3 *psqlite, uint64_t folder_id,
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO allocated_eids"
 	        " VALUES (%llu, %llu, %lld, 1)", LLU(cur_eid),
 	        LLU(max_eid), static_cast<long long>(time(nullptr)));
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (sqlite3_exec(psqlite, sql_string, nullptr, nullptr, nullptr) != SQLITE_OK)
 		return FALSE;
-	}
 	g_last_cn ++;
 	change_num = g_last_cn;
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO folders "
@@ -101,17 +99,15 @@ static BOOL create_generic_folder(sqlite3 *psqlite, uint64_t folder_id,
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 1, folder_id);
-	if (0 == parent_id) {
+	if (parent_id == 0)
 		sqlite3_bind_null(pstmt, 2);
-	} else {
+	else
 		sqlite3_bind_int64(pstmt, 2, parent_id);
-	}
 	sqlite3_bind_int64(pstmt, 3, change_num);
 	sqlite3_bind_int64(pstmt, 4, cur_eid);
 	sqlite3_bind_int64(pstmt, 5, max_eid);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
+	if (sqlite3_step(pstmt) != SQLITE_DONE)
 		return FALSE;
-	}
 	pstmt.finalize();
 	g_last_art ++;
 	art_num = g_last_art;
@@ -128,9 +124,8 @@ static BOOL create_generic_folder(sqlite3 *psqlite, uint64_t folder_id,
 	if (TRUE == b_hidden) {
 		sqlite3_bind_int64(pstmt, 1, PR_ATTR_HIDDEN);
 		sqlite3_bind_int64(pstmt, 2, 1);
-		if (SQLITE_DONE != sqlite3_step(pstmt)) {
+		if (sqlite3_step(pstmt) != SQLITE_DONE)
 			return FALSE;
-		}
 		sqlite3_reset(pstmt);
 	}
 	return TRUE;
@@ -153,15 +148,13 @@ static BOOL create_search_folder(sqlite3 *psqlite, uint64_t folder_id,
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 1, folder_id);
-	if (0 == parent_id) {
+	if (parent_id == 0)
 		sqlite3_bind_null(pstmt, 2);
-	} else {
+	else
 		sqlite3_bind_int64(pstmt, 2, parent_id);
-	}
 	sqlite3_bind_int64(pstmt, 3, change_num);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
+	if (sqlite3_step(pstmt) != SQLITE_DONE)
 		return FALSE;
-	}
 	pstmt.finalize();
 	g_last_art ++;
 	art_num = g_last_art;
@@ -209,31 +202,29 @@ int main(int argc, const char **argv)
 	if (pconfig == nullptr)
 		return 2;
 	auto str_value = pconfig->get_value("MYSQL_HOST");
-	if (NULL == str_value) {
+	if (str_value == nullptr)
 		strcpy(mysql_host, "localhost");
-	} else {
+	else
 		gx_strlcpy(mysql_host, str_value, GX_ARRAY_SIZE(mysql_host));
-	}
 	
 	str_value = pconfig->get_value("MYSQL_PORT");
 	if (NULL == str_value) {
 		mysql_port = 3306;
 	} else {
 		mysql_port = strtol(str_value, nullptr, 0);
-		if (mysql_port <= 0) {
+		if (mysql_port <= 0)
 			mysql_port = 3306;
-		}
 	}
 
 	str_value = pconfig->get_value("MYSQL_USERNAME");
 	gx_strlcpy(mysql_user, str_value != nullptr ? str_value : "root", GX_ARRAY_SIZE(mysql_user));
 	auto mysql_passwd = pconfig->get_value("MYSQL_PASSWORD");
 	str_value = pconfig->get_value("MYSQL_DBNAME");
-	if (NULL == str_value) {
+	if (str_value == nullptr)
 		strcpy(db_name, "email");
-	} else {
+	else
 		gx_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
-	}
+
 	const char *datadir = opt_datadir != nullptr ? opt_datadir :
 	                      pconfig->get_value("data_file_path");
 	if (datadir == nullptr)
@@ -367,9 +358,8 @@ int main(int argc, const char **argv)
 	}
 	const char *csql_string = "INSERT INTO named_properties VALUES (?, ?)";
 	auto pstmt = gx_sql_prep(psqlite, csql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return 9;
-	}
 	
 	size_t i = 0;
 	for (const auto &name : namedprop_list) {
@@ -389,9 +379,8 @@ int main(int argc, const char **argv)
 	
 	csql_string = "INSERT INTO receive_table VALUES (?, ?, ?)";
 	pstmt = gx_sql_prep(psqlite, csql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return 9;
-	}
 	sqlite3_bind_text(pstmt, 1, "", -1, SQLITE_STATIC);
 	sqlite3_bind_int64(pstmt, 2, PRIVATE_FID_INBOX);
 	sqlite3_bind_int64(pstmt, 3, nt_time);
@@ -427,9 +416,8 @@ int main(int argc, const char **argv)
 	
 	csql_string = "INSERT INTO store_properties VALUES (?, ?)";
 	pstmt = gx_sql_prep(psqlite, csql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return 9;
-	}
 	sqlite3_bind_int64(pstmt, 1, PR_CREATION_TIME);
 	sqlite3_bind_int64(pstmt, 2, nt_time);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
@@ -619,9 +607,8 @@ int main(int argc, const char **argv)
 	sqlite3_exec(psqlite, tmp_sql, NULL, NULL, NULL);
 	csql_string = "INSERT INTO configurations VALUES (?, ?)";
 	pstmt = gx_sql_prep(psqlite, csql_string);
-	if (pstmt == nullptr) {
+	if (pstmt == nullptr)
 		return 9;
-	}
 	tmp_guid = guid_random_new();
 	char tmp_bguid[GUIDSTR_SIZE];
 	guid_to_string(&tmp_guid, tmp_bguid, arsizeof(tmp_bguid));
