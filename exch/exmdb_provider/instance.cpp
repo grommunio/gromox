@@ -2417,275 +2417,291 @@ BOOL exmdb_server_get_instance_properties(
 	return TRUE;
 }
 
-BOOL exmdb_server_set_instance_properties(const char *dir,
-	uint32_t instance_id, const TPROPVAL_ARRAY *pproperties,
-	PROBLEM_ARRAY *pproblems)
+static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
+    const TPROPVAL_ARRAY *pproperties, PROBLEM_ARRAY *pproblems)
 {
 	int i;
-	void *pvalue;
 	uint8_t tmp_byte;
 	uint32_t body_type;
 	uint32_t message_flags;
 	TAGGED_PROPVAL propval;
-	MESSAGE_CONTENT *pmsgctnt;
-	ATTACHMENT_CONTENT *pattachment;
-	
-	auto pdb = db_engine_get_db(dir);
-	if (pdb == nullptr || pdb->psqlite == nullptr)
-		return FALSE;
-	auto pinstance = instance_get_instance(pdb, instance_id);
-	if (NULL == pinstance) {
-		return FALSE;
-	}
+
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproperties->count);
 	if (NULL == pproblems->pproblem) {
 		return FALSE;
 	}
-	if (INSTANCE_TYPE_MESSAGE == pinstance->type) {
-		pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
-		for (i=0; i<pproperties->count; i++) {
-			switch (pproperties->ppropval[i].proptag) {
-			case PR_ASSOCIATED:
-				if (TRUE == pinstance->b_new) {
-					break;
-				}
-			case ID_TAG_BODY:
-			case ID_TAG_BODY_STRING8:
-			case ID_TAG_HTML:
-			case ID_TAG_RTFCOMPRESSED:
-			case PROP_TAG_MID:
-			case PR_ENTRYID:
-			case PROP_TAG_FOLDERID:
-			case PROP_TAG_CODEPAGEID:
-			case PROP_TAG_PARENTFOLDERID:
-			case PROP_TAG_INSTANCESVREID:
-			case PROP_TAG_HASNAMEDPROPERTIES:
-			case PR_MESSAGE_SIZE:
-			case PR_HASATTACH:
-			case PR_DISPLAY_TO:
-			case PR_DISPLAY_CC:
-			case PR_DISPLAY_BCC:
-			case PR_DISPLAY_TO_A:
-			case PR_DISPLAY_CC_A:
-			case PR_DISPLAY_BCC_A:
-			case PROP_TAG_TRANSPORTMESSAGEHEADERS:
-			case PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
+	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
+	for (i=0; i<pproperties->count; i++) {
+		switch (pproperties->ppropval[i].proptag) {
+		case PR_ASSOCIATED:
+			if (TRUE == pinstance->b_new) {
+				break;
+			}
+		case ID_TAG_BODY:
+		case ID_TAG_BODY_STRING8:
+		case ID_TAG_HTML:
+		case ID_TAG_RTFCOMPRESSED:
+		case PROP_TAG_MID:
+		case PR_ENTRYID:
+		case PROP_TAG_FOLDERID:
+		case PROP_TAG_CODEPAGEID:
+		case PROP_TAG_PARENTFOLDERID:
+		case PROP_TAG_INSTANCESVREID:
+		case PROP_TAG_HASNAMEDPROPERTIES:
+		case PR_MESSAGE_SIZE:
+		case PR_HASATTACH:
+		case PR_DISPLAY_TO:
+		case PR_DISPLAY_CC:
+		case PR_DISPLAY_BCC:
+		case PR_DISPLAY_TO_A:
+		case PR_DISPLAY_CC_A:
+		case PR_DISPLAY_BCC_A:
+		case PROP_TAG_TRANSPORTMESSAGEHEADERS:
+		case PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
+			pproblems->pproblem[pproblems->count].index = i;
+			pproblems->pproblem[pproblems->count].proptag =
+							pproperties->ppropval[i].proptag;
+			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
+			continue;
+		case PR_READ: {
+			if (*static_cast<uint8_t *>(pproperties->ppropval[i].pvalue) == 0)
+				break;
+			auto pvalue = pmsgctnt->proplist.getval(PR_MESSAGE_FLAGS);
+			if (NULL != pvalue) {
+				*static_cast<uint32_t *>(pvalue) |= MSGFLAG_EVERREAD;
+			}
+			break;
+		}
+		case PROP_TAG_MESSAGESTATUS:
+			/* PidTagMessageStatus can only be
+				set by RopSetMessageStatus */
+			continue;
+		case PR_MESSAGE_FLAGS: {
+			if (FALSE == pinstance->b_new) {
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 								pproperties->ppropval[i].proptag;
 				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				continue;
-			case PR_READ:
-				if (0 != *(uint8_t*)pproperties->ppropval[i].pvalue) {
-					pvalue = pmsgctnt->proplist.getval(PR_MESSAGE_FLAGS);
-					if (NULL != pvalue) {
-						*static_cast<uint32_t *>(pvalue) |= MSGFLAG_EVERREAD;
-					}
-				}
-				break;
-			case PROP_TAG_MESSAGESTATUS:
-				/* PidTagMessageStatus can only be
-					set by RopSetMessageStatus */
-				continue;
-			case PR_MESSAGE_FLAGS:
-				if (FALSE == pinstance->b_new) {
-					pproblems->pproblem[pproblems->count].index = i;
-					pproblems->pproblem[pproblems->count].proptag =
-									pproperties->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
-					continue;
-				}
-				message_flags = *(uint32_t*)pproperties->ppropval[i].pvalue;
-				if (message_flags & MSGFLAG_READ) {
-					propval.proptag = PR_READ;
-					propval.pvalue = &tmp_byte;
-					tmp_byte = 1;
-					if (pmsgctnt->proplist.set(propval) != 0)
-						return FALSE;
-				}
-				if (message_flags & MSGFLAG_ASSOCIATED) {
-					propval.proptag = PR_ASSOCIATED;
-					propval.pvalue = &tmp_byte;
-					tmp_byte = 1;
-					if (pmsgctnt->proplist.set(propval) != 0)
-						return FALSE;
-				}
-				if (message_flags & MSGFLAG_RN_PENDING) {
-					propval.proptag = PR_READ_RECEIPT_REQUESTED;
-					propval.pvalue = &tmp_byte;
-					tmp_byte = 1;
-					if (pmsgctnt->proplist.set(propval) != 0)
-						return FALSE;
-				}
-				if (message_flags & MSGFLAG_NRN_PENDING) {
-					propval.proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
-					propval.pvalue = &tmp_byte;
-					tmp_byte = 1;
-					if (pmsgctnt->proplist.set(propval) != 0)
-						return FALSE;
-				}
-				message_flags &= ~(MSGFLAG_READ | MSGFLAG_UNMODIFIED |
-				                 MSGFLAG_HASATTACH | MSGFLAG_FROMME |
-				                 MSGFLAG_ASSOCIATED | MSGFLAG_RN_PENDING |
-				                 MSGFLAG_NRN_PENDING);
-				*(uint32_t*)pproperties->ppropval[i].pvalue = message_flags;
-				break;
-			case PR_SUBJECT:
-			case PR_SUBJECT_A:
-				pmsgctnt->proplist.erase(PR_SUBJECT_PREFIX);
-				pmsgctnt->proplist.erase(PR_SUBJECT_PREFIX_A);
-				pmsgctnt->proplist.erase(PR_NORMALIZED_SUBJECT);
-				pmsgctnt->proplist.erase(PR_NORMALIZED_SUBJECT_A);
-				propval.proptag = PR_NORMALIZED_SUBJECT;
-				if (pproperties->ppropval[i].proptag == PR_SUBJECT) {
-					propval.pvalue = pproperties->ppropval[i].pvalue;
-				} else {
-					propval.pvalue = common_util_convert_copy(TRUE,
-						pinstance->cpid, static_cast<char *>(pproperties->ppropval[i].pvalue));
-					if (NULL == propval.pvalue) {
-						return FALSE;
-					}
-				}
+			}
+			message_flags = *(uint32_t*)pproperties->ppropval[i].pvalue;
+			if (message_flags & MSGFLAG_READ) {
+				propval.proptag = PR_READ;
+				propval.pvalue = &tmp_byte;
+				tmp_byte = 1;
 				if (pmsgctnt->proplist.set(propval) != 0)
 					return FALSE;
-				continue;
-			case PR_BODY:
-			case PR_BODY_A:
-				pmsgctnt->proplist.erase(ID_TAG_BODY);
-				pmsgctnt->proplist.erase(ID_TAG_BODY_STRING8);
-				break;
-			case PROP_TAG_HTML:
-				pmsgctnt->proplist.erase(ID_TAG_HTML);
-				break;
-			case PROP_TAG_RTFCOMPRESSED:
-				pmsgctnt->proplist.erase(ID_TAG_RTFCOMPRESSED);
-				break;
 			}
-			switch (PROP_TYPE(pproperties->ppropval[i].proptag)) {
-			case PT_STRING8:
-			case PT_UNICODE:
-				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_STRING8));
-				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_UNICODE));
-				propval.proptag = CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_UNICODE);
-				if (PROP_TYPE(pproperties->ppropval[i].proptag) == PT_UNICODE) {
-					propval.pvalue = pproperties->ppropval[i].pvalue;
-				} else {
-					propval.pvalue = common_util_convert_copy(TRUE,
-						pinstance->cpid, static_cast<char *>(pproperties->ppropval[i].pvalue));
-					if (NULL == propval.pvalue) {
-						return FALSE;
-					}
+			if (message_flags & MSGFLAG_ASSOCIATED) {
+				propval.proptag = PR_ASSOCIATED;
+				propval.pvalue = &tmp_byte;
+				tmp_byte = 1;
+				if (pmsgctnt->proplist.set(propval) != 0)
+					return FALSE;
+			}
+			if (message_flags & MSGFLAG_RN_PENDING) {
+				propval.proptag = PR_READ_RECEIPT_REQUESTED;
+				propval.pvalue = &tmp_byte;
+				tmp_byte = 1;
+				if (pmsgctnt->proplist.set(propval) != 0)
+					return FALSE;
+			}
+			if (message_flags & MSGFLAG_NRN_PENDING) {
+				propval.proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
+				propval.pvalue = &tmp_byte;
+				tmp_byte = 1;
+				if (pmsgctnt->proplist.set(propval) != 0)
+					return FALSE;
+			}
+			message_flags &= ~(MSGFLAG_READ | MSGFLAG_UNMODIFIED |
+					 MSGFLAG_HASATTACH | MSGFLAG_FROMME |
+					 MSGFLAG_ASSOCIATED | MSGFLAG_RN_PENDING |
+					 MSGFLAG_NRN_PENDING);
+			*(uint32_t*)pproperties->ppropval[i].pvalue = message_flags;
+			break;
+		}
+		case PR_SUBJECT:
+		case PR_SUBJECT_A:
+			pmsgctnt->proplist.erase(PR_SUBJECT_PREFIX);
+			pmsgctnt->proplist.erase(PR_SUBJECT_PREFIX_A);
+			pmsgctnt->proplist.erase(PR_NORMALIZED_SUBJECT);
+			pmsgctnt->proplist.erase(PR_NORMALIZED_SUBJECT_A);
+			propval.proptag = PR_NORMALIZED_SUBJECT;
+			if (pproperties->ppropval[i].proptag == PR_SUBJECT) {
+				propval.pvalue = pproperties->ppropval[i].pvalue;
+			} else {
+				propval.pvalue = common_util_convert_copy(TRUE,
+					pinstance->cpid, static_cast<char *>(pproperties->ppropval[i].pvalue));
+				if (NULL == propval.pvalue) {
+					return FALSE;
 				}
-				break;
-			case PT_MV_STRING8:
-			case PT_MV_UNICODE:
-				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_STRING8));
-				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_UNICODE));
-				propval.proptag = CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_UNICODE);
-				if (PROP_TYPE(pproperties->ppropval[i].proptag) == PT_MV_UNICODE) {
-					propval.pvalue = pproperties->ppropval[i].pvalue;
-				} else {
-					propval.pvalue = common_util_convert_copy_string_array(
-										TRUE, pinstance->cpid,
-					                 static_cast<STRING_ARRAY *>(pproperties->ppropval[i].pvalue));
-					if (NULL == propval.pvalue) {
-						return FALSE;
-					}
-				}
-				break;
-			default:
-				propval = pproperties->ppropval[i];
-				break;
 			}
 			if (pmsgctnt->proplist.set(propval) != 0)
 				return FALSE;
-			if (propval.proptag == PR_BODY ||
-				PROP_TAG_HTML == propval.proptag ||
-				PROP_TAG_BODYHTML == propval.proptag ||
-				PROP_TAG_RTFCOMPRESSED == propval.proptag) {
-				switch (propval.proptag) {
-				case PR_BODY:
-					pinstance->change_mask |= CHANGE_MASK_BODY;
-					body_type = NATIVE_BODY_PLAIN;
-					break;
-				case PROP_TAG_HTML:
-					pinstance->change_mask |= CHANGE_MASK_HTML;
-					[[fallthrough]];
-				case PROP_TAG_BODYHTML:
-					body_type = NATIVE_BODY_HTML;
-					break;
-				case PROP_TAG_RTFCOMPRESSED:
-					body_type = NATIVE_BODY_RTF;
-					break;
-				}
-				propval.proptag = PROP_TAG_NATIVEBODY;
-				propval.pvalue = &body_type;
-				if (pmsgctnt->proplist.set(propval) != 0)
-					return FALSE;
-			}
+			continue;
+		case PR_BODY:
+		case PR_BODY_A:
+			pmsgctnt->proplist.erase(ID_TAG_BODY);
+			pmsgctnt->proplist.erase(ID_TAG_BODY_STRING8);
+			break;
+		case PROP_TAG_HTML:
+			pmsgctnt->proplist.erase(ID_TAG_HTML);
+			break;
+		case PROP_TAG_RTFCOMPRESSED:
+			pmsgctnt->proplist.erase(ID_TAG_RTFCOMPRESSED);
+			break;
 		}
-	} else {
-		pattachment = static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent);
-		for (i=0; i<pproperties->count; i++) {
-			switch (pproperties->ppropval[i].proptag) {
-			case ID_TAG_ATTACHDATABINARY:
-			case ID_TAG_ATTACHDATAOBJECT:
-			case PR_ATTACH_NUM:
-			case PR_RECORD_KEY:
-				pproblems->pproblem[pproblems->count].index = i;
-				pproblems->pproblem[pproblems->count].proptag =
-								pproperties->ppropval[i].proptag;
-				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
-				continue;
-			case PR_ATTACH_DATA_BIN:
-				pattachment->proplist.erase(ID_TAG_ATTACHDATABINARY);
-				break;
-			case PR_ATTACH_DATA_OBJ:
-				pattachment->proplist.erase(ID_TAG_ATTACHDATAOBJECT);
+		switch (PROP_TYPE(pproperties->ppropval[i].proptag)) {
+		case PT_STRING8:
+		case PT_UNICODE:
+			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_STRING8));
+			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_UNICODE));
+			propval.proptag = CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_UNICODE);
+			if (PROP_TYPE(pproperties->ppropval[i].proptag) == PT_UNICODE) {
+				propval.pvalue = pproperties->ppropval[i].pvalue;
 				break;
 			}
-			switch (PROP_TYPE(pproperties->ppropval[i].proptag)) {
-			case PT_STRING8:
-			case PT_UNICODE:
-				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_STRING8));
-				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_UNICODE));
-				propval.proptag = CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_UNICODE);
-				if (PROP_TYPE(pproperties->ppropval[i].proptag) == PT_UNICODE) {
-					propval.pvalue = pproperties->ppropval[i].pvalue;
-				} else {
-					propval.pvalue = common_util_convert_copy(TRUE,
-						pinstance->cpid, static_cast<char *>(pproperties->ppropval[i].pvalue));
-					if (NULL == propval.pvalue) {
-						return FALSE;
-					}
-				}
-				break;
-			case PT_MV_STRING8:
-			case PT_MV_UNICODE:
-				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_STRING8));
-				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_UNICODE));
-				propval.proptag = CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_UNICODE);
-				if (PROP_TYPE(pproperties->ppropval[i].proptag) == PT_MV_UNICODE) {
-					propval.pvalue = pproperties->ppropval[i].pvalue;
-				} else {
-					propval.pvalue = common_util_convert_copy_string_array(
-										TRUE, pinstance->cpid,
-					                 static_cast<STRING_ARRAY *>(pproperties->ppropval[i].pvalue));
-					if (NULL == propval.pvalue) {
-						return FALSE;
-					}
-				}
-				break;
-			default:
-				propval = pproperties->ppropval[i];
-				break;
-			}
-			if (pattachment->proplist.set(propval) != 0)
+			propval.pvalue = common_util_convert_copy(TRUE,
+				pinstance->cpid, static_cast<char *>(pproperties->ppropval[i].pvalue));
+			if (NULL == propval.pvalue) {
 				return FALSE;
+			}
+			break;
+		case PT_MV_STRING8:
+		case PT_MV_UNICODE:
+			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_STRING8));
+			pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_UNICODE));
+			propval.proptag = CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_UNICODE);
+			if (PROP_TYPE(pproperties->ppropval[i].proptag) == PT_MV_UNICODE) {
+				propval.pvalue = pproperties->ppropval[i].pvalue;
+				break;
+			}
+			propval.pvalue = common_util_convert_copy_string_array(
+			                 TRUE, pinstance->cpid,
+			                 static_cast<STRING_ARRAY *>(pproperties->ppropval[i].pvalue));
+			if (NULL == propval.pvalue) {
+				return FALSE;
+			}
+			break;
+		default:
+			propval = pproperties->ppropval[i];
+			break;
 		}
+		if (pmsgctnt->proplist.set(propval) != 0)
+			return FALSE;
+		if (propval.proptag != PR_BODY &&
+		    propval.proptag != PROP_TAG_HTML &&
+		    propval.proptag != PROP_TAG_BODYHTML &&
+		    propval.proptag != PROP_TAG_RTFCOMPRESSED)
+			continue;
+		switch (propval.proptag) {
+		case PR_BODY:
+			pinstance->change_mask |= CHANGE_MASK_BODY;
+			body_type = NATIVE_BODY_PLAIN;
+			break;
+		case PROP_TAG_HTML:
+			pinstance->change_mask |= CHANGE_MASK_HTML;
+			[[fallthrough]];
+		case PROP_TAG_BODYHTML:
+			body_type = NATIVE_BODY_HTML;
+			break;
+		case PROP_TAG_RTFCOMPRESSED:
+			body_type = NATIVE_BODY_RTF;
+			break;
+		}
+		propval.proptag = PROP_TAG_NATIVEBODY;
+		propval.pvalue = &body_type;
+		if (pmsgctnt->proplist.set(propval) != 0)
+			return FALSE;
 	}
 	return TRUE;
+}
+
+static BOOL set_xns_props_atx(INSTANCE_NODE *pinstance,
+    const TPROPVAL_ARRAY *pproperties, PROBLEM_ARRAY *pproblems)
+{
+	int i;
+	TAGGED_PROPVAL propval;
+
+	pproblems->count = 0;
+	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproperties->count);
+	if (NULL == pproblems->pproblem) {
+		return FALSE;
+	}
+	auto pattachment = static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent);
+	for (i=0; i<pproperties->count; i++) {
+		switch (pproperties->ppropval[i].proptag) {
+		case ID_TAG_ATTACHDATABINARY:
+		case ID_TAG_ATTACHDATAOBJECT:
+		case PR_ATTACH_NUM:
+		case PR_RECORD_KEY:
+			pproblems->pproblem[pproblems->count].index = i;
+			pproblems->pproblem[pproblems->count].proptag =
+							pproperties->ppropval[i].proptag;
+			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
+			continue;
+		case PR_ATTACH_DATA_BIN:
+			pattachment->proplist.erase(ID_TAG_ATTACHDATABINARY);
+			break;
+		case PR_ATTACH_DATA_OBJ:
+			pattachment->proplist.erase(ID_TAG_ATTACHDATAOBJECT);
+			break;
+		}
+		switch (PROP_TYPE(pproperties->ppropval[i].proptag)) {
+		case PT_STRING8:
+		case PT_UNICODE:
+			pattachment->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_STRING8));
+			pattachment->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_UNICODE));
+			propval.proptag = CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_UNICODE);
+			if (PROP_TYPE(pproperties->ppropval[i].proptag) == PT_UNICODE) {
+				propval.pvalue = pproperties->ppropval[i].pvalue;
+				break;
+			}
+			propval.pvalue = common_util_convert_copy(TRUE,
+				pinstance->cpid, static_cast<char *>(pproperties->ppropval[i].pvalue));
+			if (NULL == propval.pvalue) {
+				return FALSE;
+			}
+			break;
+		case PT_MV_STRING8:
+		case PT_MV_UNICODE:
+			pattachment->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_STRING8));
+			pattachment->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_UNICODE));
+			propval.proptag = CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_UNICODE);
+			if (PROP_TYPE(pproperties->ppropval[i].proptag) == PT_MV_UNICODE) {
+				propval.pvalue = pproperties->ppropval[i].pvalue;
+				break;
+			}
+			propval.pvalue = common_util_convert_copy_string_array(
+			                 TRUE, pinstance->cpid,
+					 static_cast<STRING_ARRAY *>(pproperties->ppropval[i].pvalue));
+			if (NULL == propval.pvalue) {
+				return FALSE;
+			}
+			break;
+		default:
+			propval = pproperties->ppropval[i];
+			break;
+		}
+		if (pattachment->proplist.set(propval) != 0)
+			return FALSE;
+	}
+	return TRUE;
+}
+
+BOOL exmdb_server_set_instance_properties(const char *dir, uint32_t instance_id,
+    const TPROPVAL_ARRAY *props, PROBLEM_ARRAY *prob)
+{
+	auto db = db_engine_get_db(dir);
+	if (db == nullptr || db->psqlite == nullptr)
+		return false;
+	auto ins = instance_get_instance(db, instance_id);
+	if (ins == nullptr)
+		return false;
+	if (ins->type == INSTANCE_TYPE_MESSAGE)
+		return set_xns_props_msg(ins, props, prob);
+	return set_xns_props_atx(ins, props, prob);
 }
 
 BOOL exmdb_server_remove_instance_properties(
