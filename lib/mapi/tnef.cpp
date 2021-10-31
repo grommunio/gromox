@@ -1014,7 +1014,7 @@ static void tnef_replace_propid(TPROPVAL_ARRAY *pproplist, INT_HASH_TABLE *phash
 			continue;
 		auto ppropid = phash->query<uint16_t>(propid);
 		if (NULL == ppropid || 0 == *ppropid) {
-			tpropval_array_remove_propval(pproplist, proptag);
+			pproplist->erase(proptag);
 			i --;
 			continue;
 		}
@@ -1475,7 +1475,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 						return NULL;
 					}
 				}
-				tpropval_array_remove_propval(pproplist, PR_ENTRYID);
+				pproplist->erase(PR_ENTRYID);
 				auto psmtp = pproplist->get<char>(PR_SMTP_ADDRESS);
 				auto pdisplay_name = pproplist->get<char>(PR_DISPLAY_NAME);
 				if (NULL != psmtp) {
@@ -1711,9 +1711,9 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 		tpropval_array_set_propval(&pmsg->proplist, &propval);
 	}
 	tnef_message_to_unicode(cpid, pmsg);
-	tpropval_array_remove_propval(&pmsg->proplist, PROP_TAG_MID);
-	tpropval_array_remove_propval(&pmsg->proplist, PR_ENTRYID);
-	tpropval_array_remove_propval(&pmsg->proplist, PROP_TAG_SEARCHKEY);
+	pmsg->proplist.erase(PROP_TAG_MID);
+	pmsg->proplist.erase(PR_ENTRYID);
+	pmsg->proplist.erase(PROP_TAG_SEARCHKEY);
 	auto pmsg_ret = pmsg;
 	pmsg = nullptr; /* note cl_0 scope guard */
 	return pmsg_ret;

@@ -518,8 +518,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 			&pmsg->proplist, &propval);
 	}
 	
-	tpropval_array_remove_propval(
-		&pmsg->proplist, PROP_TAG_CHANGENUMBER);
+	pmsg->proplist.erase(PROP_TAG_CHANGENUMBER);
 	result = exmdb_client_delivery_message(
 		home_dir, pcontext->pcontrol->from,
 		address, 0, pmsg, temp_buff);

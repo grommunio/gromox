@@ -155,7 +155,7 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 		PR_SOURCE_KEY, PR_PARENT_SOURCE_KEY,
 	};
 	for (auto t : tags)
-		tpropval_array_remove_propval(pproplist, t);
+		pproplist->erase(t);
 	if (!pproplist->has(PR_DISPLAY_NAME))
 		return FALSE;
 	propval.proptag = PR_FOLDER_TYPE;
@@ -257,7 +257,7 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 		PR_OBJECT_TYPE, PR_PARENT_ENTRYID, PR_STORE_RECORD_KEY,
 	};
 	for (auto t : tags)
-		tpropval_array_remove_propval(pproplist, t);
+		pproplist->erase(t);
 	if (!exmdb_client_allocate_cn(pctx->pstream->plogon->get_dir(), &change_num))
 		return GXERR_CALL_FAILED;
 	propval.proptag = PROP_TAG_CHANGENUMBER;

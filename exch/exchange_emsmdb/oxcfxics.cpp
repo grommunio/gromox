@@ -594,8 +594,7 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		}
 		auto pproplist = pfldctnt->get_proplist();
 		for (i=0; i<pproptags->count; i++) {
-			tpropval_array_remove_propval(
-				pproplist, pproptags->pproptag[i]);
+			pproplist->erase(pproptags->pproptag[i]);
 		}
 		if (!pctx->make_foldercontent(b_sub, std::move(pfldctnt)))
 			return ecError;
@@ -739,8 +738,7 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			if (META_TAG_NEWFXFOLDER != pproplist->ppropval[i].proptag) {
 				if (-1 == common_util_index_proptags(pproptags,
 					pproplist->ppropval[i].proptag)) {
-					tpropval_array_remove_propval(pproplist,
-							pproplist->ppropval[i].proptag);
+					pproplist->erase(pproplist->ppropval[i].proptag);
 					continue;
 				}
 			}

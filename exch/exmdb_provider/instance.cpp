@@ -1156,24 +1156,18 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 		switch (proptag) {
 		case PR_BODY:
 		case PR_BODY_A:	
-			tpropval_array_remove_propval(
-				pproplist, ID_TAG_BODY);
-			tpropval_array_remove_propval(
-				pproplist, ID_TAG_BODY_STRING8);
+			pproplist->erase(ID_TAG_BODY);
+			pproplist->erase(ID_TAG_BODY_STRING8);
 			pinstance->change_mask |= CHANGE_MASK_BODY;
 			break;
 		case PROP_TAG_HTML:
-			tpropval_array_remove_propval(
-				pproplist, ID_TAG_HTML);
-			tpropval_array_remove_propval(
-				pproplist, PROP_TAG_BODYHTML);
-			tpropval_array_remove_propval(
-				pproplist, PROP_TAG_BODYHTML_STRING8);
+			pproplist->erase(ID_TAG_HTML);
+			pproplist->erase(PROP_TAG_BODYHTML);
+			pproplist->erase(PROP_TAG_BODYHTML_STRING8);
 			pinstance->change_mask |= CHANGE_MASK_HTML;
 			break;
 		case PROP_TAG_RTFCOMPRESSED:
-			tpropval_array_remove_propval(
-				pproplist, ID_TAG_RTFCOMPRESSED);
+			pproplist->erase(ID_TAG_RTFCOMPRESSED);
 			break;
 		}
 		if (!tpropval_array_set_propval(pproplist, pmsgctnt->proplist.ppropval + i)) {
@@ -1429,12 +1423,10 @@ BOOL exmdb_server_write_attachment_instance(const char *dir,
 		}
 		switch (proptag) {
 		case PR_ATTACH_DATA_BIN:
-			tpropval_array_remove_propval(
-				pproplist, ID_TAG_ATTACHDATABINARY);
+			pproplist->erase(ID_TAG_ATTACHDATABINARY);
 			break;
 		case PR_ATTACH_DATA_OBJ:
-			tpropval_array_remove_propval(
-				pproplist, ID_TAG_ATTACHDATAOBJECT);
+			pproplist->erase(ID_TAG_ATTACHDATAOBJECT);
 			break;
 		}
 		if (!tpropval_array_set_propval(pproplist, pattctnt->proplist.ppropval + i)) {
@@ -2562,10 +2554,10 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				break;
 			case PR_SUBJECT:
 			case PR_SUBJECT_A:
-				tpropval_array_remove_propval(&pmsgctnt->proplist, PR_SUBJECT_PREFIX);
-				tpropval_array_remove_propval(&pmsgctnt->proplist, PR_SUBJECT_PREFIX_A);
-				tpropval_array_remove_propval(&pmsgctnt->proplist, PR_NORMALIZED_SUBJECT);
-				tpropval_array_remove_propval(&pmsgctnt->proplist, PR_NORMALIZED_SUBJECT_A);
+				pmsgctnt->proplist.erase(PR_SUBJECT_PREFIX);
+				pmsgctnt->proplist.erase(PR_SUBJECT_PREFIX_A);
+				pmsgctnt->proplist.erase(PR_NORMALIZED_SUBJECT);
+				pmsgctnt->proplist.erase(PR_NORMALIZED_SUBJECT_A);
 				propval.proptag = PR_NORMALIZED_SUBJECT;
 				if (pproperties->ppropval[i].proptag == PR_SUBJECT) {
 					propval.pvalue = pproperties->ppropval[i].pvalue;
@@ -2582,27 +2574,21 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				continue;
 			case PR_BODY:
 			case PR_BODY_A:
-				tpropval_array_remove_propval(
-					&pmsgctnt->proplist, ID_TAG_BODY);
-				tpropval_array_remove_propval(
-					&pmsgctnt->proplist, ID_TAG_BODY_STRING8);
+				pmsgctnt->proplist.erase(ID_TAG_BODY);
+				pmsgctnt->proplist.erase(ID_TAG_BODY_STRING8);
 				break;
 			case PROP_TAG_HTML:
-				tpropval_array_remove_propval(
-					&pmsgctnt->proplist, ID_TAG_HTML);
+				pmsgctnt->proplist.erase(ID_TAG_HTML);
 				break;
 			case PROP_TAG_RTFCOMPRESSED:
-				tpropval_array_remove_propval(
-					&pmsgctnt->proplist, ID_TAG_RTFCOMPRESSED);
+				pmsgctnt->proplist.erase(ID_TAG_RTFCOMPRESSED);
 				break;
 			}
 			switch (PROP_TYPE(pproperties->ppropval[i].proptag)) {
 			case PT_STRING8:
 			case PT_UNICODE:
-				tpropval_array_remove_propval(&pmsgctnt->proplist,
-					CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_STRING8));
-				tpropval_array_remove_propval(&pmsgctnt->proplist,
-					CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_UNICODE));
+				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_STRING8));
+				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_UNICODE));
 				propval.proptag = CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_UNICODE);
 				if (PROP_TYPE(pproperties->ppropval[i].proptag) == PT_UNICODE) {
 					propval.pvalue = pproperties->ppropval[i].pvalue;
@@ -2616,10 +2602,8 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				break;
 			case PT_MV_STRING8:
 			case PT_MV_UNICODE:
-				tpropval_array_remove_propval(&pmsgctnt->proplist,
-					CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_STRING8));
-				tpropval_array_remove_propval(&pmsgctnt->proplist,
-					CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_UNICODE));
+				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_STRING8));
+				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_UNICODE));
 				propval.proptag = CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_UNICODE);
 				if (PROP_TYPE(pproperties->ppropval[i].proptag) == PT_MV_UNICODE) {
 					propval.pvalue = pproperties->ppropval[i].pvalue;
@@ -2679,21 +2663,17 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				continue;
 			case PR_ATTACH_DATA_BIN:
-				tpropval_array_remove_propval(
-					&pattachment->proplist, ID_TAG_ATTACHDATABINARY);
+				pattachment->proplist.erase(ID_TAG_ATTACHDATABINARY);
 				break;
 			case PR_ATTACH_DATA_OBJ:
-				tpropval_array_remove_propval(
-					&pattachment->proplist, ID_TAG_ATTACHDATAOBJECT);
+				pattachment->proplist.erase(ID_TAG_ATTACHDATAOBJECT);
 				break;
 			}
 			switch (PROP_TYPE(pproperties->ppropval[i].proptag)) {
 			case PT_STRING8:
 			case PT_UNICODE:
-				tpropval_array_remove_propval(&pattachment->proplist,
-					CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_STRING8));
-				tpropval_array_remove_propval(&pattachment->proplist,
-					CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_UNICODE));
+				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_STRING8));
+				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_UNICODE));
 				propval.proptag = CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_UNICODE);
 				if (PROP_TYPE(pproperties->ppropval[i].proptag) == PT_UNICODE) {
 					propval.pvalue = pproperties->ppropval[i].pvalue;
@@ -2707,10 +2687,8 @@ BOOL exmdb_server_set_instance_properties(const char *dir,
 				break;
 			case PT_MV_STRING8:
 			case PT_MV_UNICODE:
-				tpropval_array_remove_propval(&pattachment->proplist,
-					CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_STRING8));
-				tpropval_array_remove_propval(&pattachment->proplist,
-					CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_UNICODE));
+				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_STRING8));
+				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_UNICODE));
 				propval.proptag = CHANGE_PROP_TYPE(pproperties->ppropval[i].proptag, PT_MV_UNICODE);
 				if (PROP_TYPE(pproperties->ppropval[i].proptag) == PT_MV_UNICODE) {
 					propval.pvalue = pproperties->ppropval[i].pvalue;
@@ -2759,10 +2737,8 @@ BOOL exmdb_server_remove_instance_properties(
 			case PR_BODY:
 			case PR_BODY_A:
 			case PROP_TAG_BODY_UNSPECIFIED:
-				tpropval_array_remove_propval(
-					&pmsgctnt->proplist, ID_TAG_BODY);
-				tpropval_array_remove_propval(
-					&pmsgctnt->proplist, ID_TAG_BODY_STRING8);
+				pmsgctnt->proplist.erase(ID_TAG_BODY);
+				pmsgctnt->proplist.erase(ID_TAG_BODY_STRING8);
 				if ((pvalue = pmsgctnt->proplist.getval(PROP_TAG_NATIVEBODY)) != nullptr &&
 				    *static_cast<uint32_t *>(pvalue) == NATIVE_BODY_PLAIN)
 					*(uint32_t*)pvalue = NATIVE_BODY_UNDEFINED;	
@@ -2771,12 +2747,9 @@ BOOL exmdb_server_remove_instance_properties(
 			case PROP_TAG_BODYHTML:
 			case PROP_TAG_BODYHTML_STRING8:
 			case PROP_TAG_HTML_UNSPECIFIED:
-				tpropval_array_remove_propval(
-					&pmsgctnt->proplist, PROP_TAG_BODYHTML);
-				tpropval_array_remove_propval(
-					&pmsgctnt->proplist, PROP_TAG_BODYHTML_STRING8);
-				tpropval_array_remove_propval(
-					&pmsgctnt->proplist, ID_TAG_HTML);
+				pmsgctnt->proplist.erase(PROP_TAG_BODYHTML);
+				pmsgctnt->proplist.erase(PROP_TAG_BODYHTML_STRING8);
+				pmsgctnt->proplist.erase(ID_TAG_HTML);
 				if ((pvalue = pmsgctnt->proplist.getval(PROP_TAG_NATIVEBODY)) != nullptr &&
 				    *static_cast<uint32_t *>(pvalue) == NATIVE_BODY_HTML)
 					*(uint32_t*)pvalue = NATIVE_BODY_UNDEFINED;	
@@ -2785,28 +2758,22 @@ BOOL exmdb_server_remove_instance_properties(
 				if ((pvalue = pmsgctnt->proplist.getval(PROP_TAG_NATIVEBODY)) != nullptr &&
 				    *static_cast<uint32_t *>(pvalue) == NATIVE_BODY_RTF)
 					*(uint32_t*)pvalue = NATIVE_BODY_UNDEFINED;	
-				tpropval_array_remove_propval(
-					&pmsgctnt->proplist, ID_TAG_RTFCOMPRESSED);
+				pmsgctnt->proplist.erase(ID_TAG_RTFCOMPRESSED);
 				break;
 			}
-			tpropval_array_remove_propval(
-				&pmsgctnt->proplist, pproptags->pproptag[i]);
+			pmsgctnt->proplist.erase(pproptags->pproptag[i]);
 			switch (PROP_TYPE(pproptags->pproptag[i])) {
 			case PT_STRING8:
-				tpropval_array_remove_propval(&pmsgctnt->proplist,
-					CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
+				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
 				break;
 			case PT_UNICODE:
-				tpropval_array_remove_propval(&pmsgctnt->proplist,
-					CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
+				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
 				break;
 			case PT_MV_STRING8:
-				tpropval_array_remove_propval(&pmsgctnt->proplist,
-					CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
+				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
 				break;
 			case PT_MV_UNICODE:
-				tpropval_array_remove_propval(&pmsgctnt->proplist,
-					CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8));
+				pmsgctnt->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8));
 				break;
 			}
 		}
@@ -2815,32 +2782,25 @@ BOOL exmdb_server_remove_instance_properties(
 		for (i=0; i<pproptags->count; i++) {
 			switch (pproptags->pproptag[i]) {
 			case PR_ATTACH_DATA_BIN:
-				tpropval_array_remove_propval(
-					&pattachment->proplist, ID_TAG_ATTACHDATABINARY);
+				pattachment->proplist.erase(ID_TAG_ATTACHDATABINARY);
 				break;
 			case PR_ATTACH_DATA_OBJ:
-				tpropval_array_remove_propval(
-					&pattachment->proplist, ID_TAG_ATTACHDATAOBJECT);
+				pattachment->proplist.erase(ID_TAG_ATTACHDATAOBJECT);
 				break;
 			}
-			tpropval_array_remove_propval(
-				&pattachment->proplist, pproptags->pproptag[i]);
+			pattachment->proplist.erase(pproptags->pproptag[i]);
 			switch (PROP_TYPE(pproptags->pproptag[i])) {
 			case PT_STRING8:
-				tpropval_array_remove_propval(&pattachment->proplist,
-					CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
+				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
 				break;
 			case PT_UNICODE:
-				tpropval_array_remove_propval(&pattachment->proplist,
-					CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
+				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
 				break;
 			case PT_MV_STRING8:
-				tpropval_array_remove_propval(&pattachment->proplist,
-					CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
+				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
 				break;
 			case PT_MV_UNICODE:
-				tpropval_array_remove_propval(&pattachment->proplist,
-					CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8));
+				pattachment->proplist.erase(CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_STRING8));
 				break;
 			}
 		}
@@ -3346,7 +3306,7 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 			attachment_content_free(pattachment);
 			return FALSE;
 		}
-		tpropval_array_remove_propval(&pembedded->proplist, PROP_TAG_MID);
+		pembedded->proplist.erase(PROP_TAG_MID);
 		attachment_content_set_embedded_internal(pattachment, pembedded);
 		if (FALSE == attachment_list_append_internal(
 			pattachments, pattachment)) {
@@ -3378,7 +3338,7 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 		attachment_content_free(pattachment);
 		return FALSE;
 	}
-	tpropval_array_remove_propval(&pembedded->proplist, PROP_TAG_MID);
+	pembedded->proplist.erase(PROP_TAG_MID);
 	attachment_content_set_embedded_internal(pattachment, pembedded);
 	if (FALSE == attachment_list_append_internal(
 		pattachments, pattachment)) {

@@ -2928,10 +2928,10 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		}
 		MAIL mail(pmime_enum->pmime_pool);
 		if (mail.retrieve(pcontent.get(), content_len)) {
-			tpropval_array_remove_propval(&pattachment->proplist, PR_ATTACH_LONG_FILENAME);
-			tpropval_array_remove_propval(&pattachment->proplist, PR_ATTACH_LONG_FILENAME_A);
-			tpropval_array_remove_propval(&pattachment->proplist, PR_ATTACH_EXTENSION);
-			tpropval_array_remove_propval(&pattachment->proplist, PR_ATTACH_EXTENSION_A);
+			pattachment->proplist.erase(PR_ATTACH_LONG_FILENAME);
+			pattachment->proplist.erase(PR_ATTACH_LONG_FILENAME_A);
+			pattachment->proplist.erase(PR_ATTACH_EXTENSION);
+			pattachment->proplist.erase(PR_ATTACH_EXTENSION_A);
 			if (FALSE == b_description) {
 				if (mime_get_field(mail.get_head(), "Subject", tmp_buff, 256)) {
 					if (TRUE == mime_string_to_utf8(
@@ -3101,7 +3101,7 @@ static void oxcmail_replace_propid(TPROPVAL_ARRAY *pproplist,
 			continue;
 		auto it = phash.find(propid);
 		if (it == phash.cend() || it->second == 0) {
-			tpropval_array_remove_propval(pproplist, proptag);
+			pproplist->erase(proptag);
 			i --;
 			continue;
 		}
@@ -3161,8 +3161,7 @@ static void oxcmail_remove_flag_propties(
 	PROPNAME_ARRAY propnames;
 	PROPERTY_NAME propname_buff[3];
 	
-	tpropval_array_remove_propval(&pmsg->proplist,
-						PROP_TAG_FLAGCOMPLETETIME);
+	pmsg->proplist.erase(PROP_TAG_FLAGCOMPLETETIME);
 	propnames.count = 3;
 	propnames.ppropname = propname_buff;
 	rop_util_get_common_pset(PSETID_TASK,
@@ -3180,12 +3179,9 @@ static void oxcmail_remove_flag_propties(
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return;
 	}
-	tpropval_array_remove_propval(&pmsg->proplist,
-		PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
-	tpropval_array_remove_propval(&pmsg->proplist,
-		PROP_TAG(PT_SYSTIME, propids.ppropid[1]));
-	tpropval_array_remove_propval(&pmsg->proplist,
-		PROP_TAG(PT_SYSTIME, propids.ppropid[2]));
+	pmsg->proplist.erase(PROP_TAG(PT_SYSTIME, propids.ppropid[0]));
+	pmsg->proplist.erase(PROP_TAG(PT_SYSTIME, propids.ppropid[1]));
+	pmsg->proplist.erase(PROP_TAG(PT_SYSTIME, propids.ppropid[2]));
 }
 
 static BOOL oxcmail_copy_message_proplist(

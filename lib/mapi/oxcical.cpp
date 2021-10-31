@@ -1901,7 +1901,7 @@ static void oxcical_replace_propid(TPROPVAL_ARRAY *pproplist,
 			continue;
 		auto it = phash.find(propid);
 		if (it == phash.cend() || it->second == 0) {
-			tpropval_array_remove_propval(pproplist, proptag);
+			pproplist->erase(proptag);
 			i --;
 			continue;
 		}

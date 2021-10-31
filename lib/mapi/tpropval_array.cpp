@@ -68,8 +68,9 @@ bool tpropval_array_set_propval(TPROPVAL_ARRAY *parray,
 	return tpropval_array_append(parray, ppropval);
 }
 
-void tpropval_array_remove_propval(TPROPVAL_ARRAY *parray, uint32_t proptag)
+void TPROPVAL_ARRAY::erase(uint32_t proptag)
 {
+	auto parray = this;
 	int i;
 	
 	for (i=0; i<parray->count; i++) {

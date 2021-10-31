@@ -367,8 +367,7 @@ void OBJECT_TREE::remove_zstore_propval(uint32_t proptag)
 	}
 	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
-	tpropval_array_remove_propval(
-		prootobj->pprivate_proplist, proptag);
+	prootobj->pprivate_proplist->erase(proptag);
 }
 
 TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)

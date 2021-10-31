@@ -3868,7 +3868,7 @@ uint32_t zarafa_server_deletepropvals(GUID hsession,
 	switch (mapi_type) {
 	case ZMG_PROFPROPERTY:
 		for (i=0; i<pproptags->count; i++) {
-			tpropval_array_remove_propval(static_cast<TPROPVAL_ARRAY *>(pobject), pproptags->pproptag[i]);
+			static_cast<TPROPVAL_ARRAY *>(pobject)->erase(pproptags->pproptag[i]);
 		}
 		pinfo->ptree->touch_profile_sec();
 		return ecSuccess;
