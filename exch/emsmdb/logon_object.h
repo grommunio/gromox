@@ -18,7 +18,7 @@ struct logon_object {
 	public:
 	~logon_object();
 	static std::unique_ptr<logon_object> create(uint8_t logon_flags, uint32_t open_flags, int logon_mode, int account_id, const char *account, const char *dir, GUID mailbox_guid);
-	BOOL check_private() const;
+	BOOL check_private() const { return (logon_flags & LOGON_FLAG_PRIVATE) ? TRUE : false; }
 	GUID guid() const;
 	const char *get_account() const { return account; }
 	const char *get_dir() const { return dir; }

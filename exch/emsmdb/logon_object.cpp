@@ -185,11 +185,6 @@ logon_object::~logon_object()
 	plogon->ppropname_hash.reset();
 }
 
-BOOL logon_object::check_private() const
-{
-	return (logon_flags & LOGON_FLAG_PRIVATE) ? TRUE : false;
-}
-
 GUID logon_object::guid() const
 {
 	return check_private() ? rop_util_make_user_guid(account_id) :
