@@ -404,18 +404,16 @@ BOOL exmdb_server_subscribe_notification(const char *dir,
 	pnsub->b_whole = b_whole;
 	if (0 == folder_id) {
 		pnsub->folder_id = 0;
+	} else if (exmdb_server_check_private()) {
+		pnsub->folder_id = rop_util_get_gc_value(folder_id);
 	} else {
-		if (TRUE == exmdb_server_check_private()) {
+		replid = rop_util_get_replid(folder_id);
+		if (1 == replid) {
 			pnsub->folder_id = rop_util_get_gc_value(folder_id);
 		} else {
-			replid = rop_util_get_replid(folder_id);
-			if (1 == replid) {
-				pnsub->folder_id = rop_util_get_gc_value(folder_id);
-			} else {
-				pnsub->folder_id = replid;
-				pnsub->folder_id <<= 48;
-				pnsub->folder_id |= rop_util_get_gc_value(folder_id);
-			}
+			pnsub->folder_id = replid;
+			pnsub->folder_id <<= 48;
+			pnsub->folder_id |= rop_util_get_gc_value(folder_id);
 		}
 	}
 	pnsub->message_id = message_id == 0 ? 0 :
