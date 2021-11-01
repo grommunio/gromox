@@ -2100,6 +2100,8 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			propval.proptag = PR_ATTACH_METHOD;
 			propval.pvalue = &tmp_int32;
 			tmp_int32 = ATTACH_BY_VALUE;
+			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+				return FALSE;
 			pvalue1 = piline->get_first_paramval("FMTYPE");
 			if (NULL != pvalue1) {
 				propval.proptag = PR_ATTACH_MIME_TAG;
@@ -2214,6 +2216,8 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 		propval.proptag = PR_ATTACH_METHOD;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = ATTACH_BY_VALUE;
+		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+			return FALSE;
 		pvalue1 = piline->get_first_paramval("FMTYPE");
 		if (NULL != pvalue1) {
 			propval.proptag = PR_ATTACH_MIME_TAG;
