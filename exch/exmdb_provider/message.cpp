@@ -2773,7 +2773,6 @@ static BOOL message_make_deferred_error_message(const char *username,
 	uint64_t nt_time;
 	MESSAGE_NODE *pmnode;
 	MESSAGE_CONTENT *pmsg;
-	TAGGED_PROPVAL propval;
 	
 	if (FALSE == exmdb_server_check_private()) {
 		return TRUE;
@@ -2783,80 +2782,33 @@ static BOOL message_make_deferred_error_message(const char *username,
 		return FALSE;
 	}
 	nt_time = rop_util_current_nttime();
-	propval.proptag = PROP_TAG_CLIENTSUBMITTIME;
-	propval.pvalue = &nt_time;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (pmsg->proplist.set(PROP_TAG_CLIENTSUBMITTIME, &nt_time) != 0 ||
+	    pmsg->proplist.set(PR_CREATION_TIME, &nt_time) != 0 ||
+	    pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &nt_time) != 0 ||
+	    pmsg->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME, &nt_time) != 0 ||
+	    pmsg->proplist.set(PR_MESSAGE_CLASS, "IPC.Microsoft Exchange 4.0.Deferred Error") != 0 ||
+	    pmsg->proplist.set(PR_RULE_ACTION_TYPE, &action_type) != 0 ||
+	    pmsg->proplist.set(PR_RULE_ACTION_NUMBER, &block_index) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PR_CREATION_TIME;
-	propval.pvalue = &nt_time;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
-	propval.proptag = PR_LAST_MODIFICATION_TIME;
-	propval.pvalue = &nt_time;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
-	propval.proptag = PROP_TAG_MESSAGEDELIVERYTIME;
-	propval.pvalue = &nt_time;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
-	propval.proptag = PR_MESSAGE_CLASS;
-	propval.pvalue  = deconst("IPC.Microsoft Exchange 4.0.Deferred Error");
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
-	propval.proptag = PR_RULE_ACTION_TYPE;
-	propval.pvalue = &action_type;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
-	propval.proptag = PR_RULE_ACTION_NUMBER;
-	propval.pvalue = &block_index;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
-	propval.proptag = PR_DAM_ORIGINAL_ENTRYID;
-	propval.pvalue = common_util_to_private_message_entryid(
+	auto newval = common_util_to_private_message_entryid(
 				psqlite, username, folder_id, message_id);
-	if (NULL == propval.pvalue) {
+	if (newval == nullptr ||
+	    pmsg->proplist.set(PR_DAM_ORIGINAL_ENTRYID, newval) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
-	propval.proptag = PR_RULE_FOLDER_ENTRYID;
-	propval.pvalue = common_util_to_private_folder_entryid(
+	newval = common_util_to_private_folder_entryid(
 							psqlite, username, folder_id);
-	if (NULL == propval.pvalue) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
-	propval.proptag = PR_RULE_PROVIDER;
-	propval.pvalue = deconst(provider);
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (newval == nullptr ||
+	    pmsg->proplist.set(PR_RULE_FOLDER_ENTRYID, newval) != 0 ||
+	    pmsg->proplist.set(PR_RULE_PROVIDER, provider) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	tmp_eid = rop_util_make_eid_ex(1, rule_id);
-	propval.proptag = PR_RULE_ID;
-	propval.pvalue = &tmp_eid;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (pmsg->proplist.set(PR_RULE_ID, &tmp_eid) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
@@ -2866,6 +2818,7 @@ static BOOL message_make_deferred_error_message(const char *username,
 		return FALSE;
 	}
 	message_content_free(pmsg);
+	TAGGED_PROPVAL propval;
 	propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	propval.pvalue = &nt_time;
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
