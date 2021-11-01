@@ -2543,6 +2543,272 @@ static BOOL table_evaluate_row_restriction(
 	return FALSE;
 }
 
+static BOOL match_tbl_hier(uint32_t cpid, uint32_t table_id, BOOL b_forward,
+    uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
+    int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb)
+{
+	char sql_string[1024];
+	int i, count, idx = 0;
+
+	if (TRUE == b_forward) {
+		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id,"
+		         " idx, depth FROM t%u WHERE idx>=%u ORDER BY"
+		         " idx ASC", table_id, start_pos + 1);
+	} else {
+		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id,"
+		         " idx, depth FROM t%u WHERE idx<=%u ORDER BY"
+		         " idx DESC", table_id, start_pos + 1);
+	}
+	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	if (pstmt == nullptr) {
+		return FALSE;
+	}
+	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
+	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+		HIERARCHY_ROW_PARAM hierarchy_param;
+		uint64_t folder_id;
+
+		folder_id = sqlite3_column_int64(pstmt, 0);
+		hierarchy_param.cpid = cpid;
+		hierarchy_param.psqlite = pdb->psqlite;
+		hierarchy_param.pstmt = pstmt;
+		hierarchy_param.folder_id = folder_id;
+		if (!table_evaluate_row_restriction(pres,
+			&hierarchy_param, table_get_hierarchy_row_property)) {
+			continue;
+		}
+		idx = sqlite3_column_int64(pstmt, 1);
+		count = 0;
+		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		if (NULL == ppropvals->ppropval) {
+			return FALSE;
+		}
+		for (i = 0; i < pproptags->count; i++) {
+			void *pvalue;
+			if (PROP_TAG_DEPTH == pproptags->pproptag[i]) {
+				pvalue = cu_alloc<uint32_t>();
+				if (NULL == pvalue) {
+					return FALSE;
+				}
+				*(uint32_t *)pvalue = sqlite3_column_int64(pstmt, 2);
+			} else {
+				if (FALSE == common_util_get_property(
+				    FOLDER_PROPERTIES_TABLE, folder_id, cpid,
+				    pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
+					return FALSE;
+				}
+				if (NULL == pvalue) {
+					continue;
+				}
+				switch (PROP_TYPE(pproptags->pproptag[i])) {
+				case PT_UNICODE:
+					utf8_truncate(static_cast<char *>(pvalue), 255);
+					break;
+				case PT_STRING8:
+					table_truncate_string(cpid, static_cast<char *>(pvalue));
+					break;
+				case PT_BINARY:
+					if (static_cast<BINARY *>(pvalue)->cb > 510)
+						static_cast<BINARY *>(pvalue)->cb = 510;
+					break;
+				}
+			}
+			ppropvals->ppropval[count].proptag = pproptags->pproptag[i];
+			ppropvals->ppropval[count++].pvalue = pvalue;
+		}
+		ppropvals->count = count;
+		break;
+	}
+	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
+	*pposition = idx - 1;
+	return TRUE;
+}
+
+static BOOL match_tbl_ctnt(uint32_t cpid, uint32_t table_id, BOOL b_forward,
+    uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
+    int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb,
+    TABLE_NODE *ptnode)
+{
+	char sql_string[1024];
+	int i, count, row_type, idx = 0;
+	uint64_t inst_id;
+
+	if (TRUE == b_forward) {
+		snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM t%u"
+		         " WHERE idx>=%u ORDER BY idx ASC", table_id,
+		         start_pos + 1);
+	} else {
+		snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM t%u"
+		         " WHERE idx<=%u ORDER BY idx DESC", table_id,
+		         start_pos + 1);
+	}
+	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	if (pstmt == nullptr) {
+		return FALSE;
+	}
+	xstmt pstmt1, pstmt2;
+	if (NULL != ptnode->psorts && ptnode->psorts->ccategories > 0) {
+		snprintf(sql_string, arsizeof(sql_string), "SELECT parent_id FROM"
+		         " t%u WHERE row_id=?", ptnode->table_id);
+		pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		if (pstmt1 == nullptr) {
+			return FALSE;
+		}
+		snprintf(sql_string, arsizeof(sql_string), "SELECT value FROM"
+		         " t%u WHERE row_id=?", ptnode->table_id);
+		pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		if (pstmt2 == nullptr) {
+			return FALSE;
+		}
+	} else {
+		pstmt1 = NULL;
+		pstmt2 = NULL;
+	}
+	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
+	if (FALSE == common_util_begin_message_optimize(pdb->psqlite)) {
+		return FALSE;
+	}
+	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+		CONTENT_ROW_PARAM content_param;
+
+		inst_id = sqlite3_column_int64(pstmt, 3);
+		row_type = sqlite3_column_int64(pstmt, 4);
+		content_param.cpid = cpid;
+		content_param.psqlite = pdb->psqlite;
+		content_param.pstmt = pstmt;
+		content_param.pstmt1 = pstmt1;
+		content_param.pstmt2 = pstmt2;
+		content_param.folder_id = ptnode->folder_id;
+		content_param.inst_id = inst_id;
+		content_param.row_type = row_type;
+		content_param.psorts = ptnode->psorts;
+		content_param.instance_tag = ptnode->instance_tag;
+		content_param.extremum_tag = ptnode->extremum_tag;
+		if (!table_evaluate_row_restriction(pres,
+		    &content_param, table_get_content_row_property)) {
+			continue;
+		}
+		idx = sqlite3_column_int64(pstmt, 1);
+		count = 0;
+		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		if (NULL == ppropvals->ppropval) {
+			common_util_end_message_optimize();
+			return FALSE;
+		}
+		for (i = 0; i < pproptags->count; i++) {
+			void *pvalue;
+			if (FALSE == table_column_content_tmptbl(pstmt, pstmt1,
+			    pstmt2, ptnode->psorts, ptnode->folder_id, row_type,
+			    pproptags->pproptag[i], ptnode->instance_tag,
+			    ptnode->extremum_tag, &pvalue)) {
+				if (CONTENT_ROW_HEADER == row_type) {
+					continue;
+				}
+				if (FALSE == common_util_get_property(
+				    MESSAGE_PROPERTIES_TABLE, inst_id, cpid,
+				    pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
+					common_util_end_message_optimize();
+					return FALSE;
+				}
+			}
+			if (NULL == pvalue) {
+				continue;
+			}
+			switch (PROP_TYPE(pproptags->pproptag[i])) {
+			case PT_UNICODE:
+				utf8_truncate(static_cast<char *>(pvalue), 255);
+				break;
+			case PT_STRING8:
+				table_truncate_string(cpid, static_cast<char *>(pvalue));
+				break;
+			case PT_BINARY:
+				if (static_cast<BINARY *>(pvalue)->cb > 510)
+					static_cast<BINARY *>(pvalue)->cb = 510;
+				break;
+			}
+			ppropvals->ppropval[count].proptag = pproptags->pproptag[i];
+			ppropvals->ppropval[count++].pvalue = pvalue;
+		}
+		ppropvals->count = count;
+		break;
+	}
+	common_util_end_message_optimize();
+	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
+	*pposition = idx - 1;
+	return TRUE;
+}
+
+static BOOL match_tbl_rule(uint32_t cpid, uint32_t table_id, BOOL b_forward,
+    uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
+    int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb)
+{
+	char sql_string[1024];
+	int i, count, idx = 0;
+	uint64_t rule_id;
+
+	if (TRUE == b_forward) {
+		snprintf(sql_string, arsizeof(sql_string), "SELECT rule_id"
+		         " idx FROM t%u WHERE idx>=%u ORDER BY"
+		         " idx ASC", table_id, start_pos + 1);
+	} else {
+		snprintf(sql_string, arsizeof(sql_string), "SELECT rule_id,"
+		         " idx FROM t%u WHERE idx<=%u ORDER BY"
+		         " idx DESC", table_id, start_pos + 1);
+	}
+	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+	if (pstmt == nullptr) {
+		return FALSE;
+	}
+	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+		rule_id = sqlite3_column_int64(pstmt, 0);
+		if (!table_evaluate_rule_restriction(
+			pdb->psqlite, rule_id, pres)) {
+			continue;
+		}
+		ppropvals->count = 0;
+		ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+		if (NULL == ppropvals->ppropval) {
+			return FALSE;
+		}
+		count = 0;
+		for (i = 0; i < pproptags->count; i++) {
+			void *pvalue;
+			uint32_t proptag;
+			proptag = pproptags->pproptag[i];
+			if (proptag == PR_RULE_NAME_A)
+				proptag = PR_RULE_NAME;
+			else if (proptag == PR_RULE_PROVIDER_A)
+				proptag = PR_RULE_PROVIDER;
+			if (FALSE == common_util_get_rule_property(
+			    rule_id, pdb->psqlite, proptag, &pvalue)) {
+				return FALSE;
+			}
+			if (NULL == pvalue) {
+				continue;
+			}
+			ppropvals->ppropval[count].proptag = pproptags->pproptag[i];
+			if (pproptags->pproptag[i] == PR_RULE_NAME_A ||
+			    pproptags->pproptag[i] == PR_RULE_PROVIDER_A)
+				ppropvals->ppropval[count++].pvalue =
+					common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
+			else
+				ppropvals->ppropval[count++].pvalue = pvalue;
+		}
+		ppropvals->count = count;
+		break;
+	}
+	*pposition = idx - 1;
+	return TRUE;
+}
+
 BOOL exmdb_server_match_table(const char *dir, const char *username,
 	uint32_t cpid, uint32_t table_id, BOOL b_forward, uint32_t start_pos,
 	const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags,
@@ -2570,273 +2836,17 @@ BOOL exmdb_server_match_table(const char *dir, const char *username,
 	}
 	ppropvals->count = 0;
 	ppropvals->ppropval = NULL;
+	BOOL ret = TRUE;
 	if (TABLE_TYPE_HIERARCHY == ptnode->type) {
-		auto ret = [](uint32_t cpid, uint32_t table_id, BOOL b_forward, uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags, int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb) -> BOOL {
-		char sql_string[1024];
-		int i, count, idx = 0;
-
-		if (TRUE == b_forward) {
-			snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id,"
-				" idx, depth FROM t%u WHERE idx>=%u ORDER BY"
-				" idx ASC", table_id, start_pos + 1);
-		} else {
-			snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id,"
-				" idx, depth FROM t%u WHERE idx<=%u ORDER BY"
-				" idx DESC", table_id, start_pos + 1);
-		}
-		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-		if (pstmt == nullptr) {
-			return FALSE;
-		}
-		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-		auto clean_transact = make_scope_exit([&]() {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-		});
-		while (SQLITE_ROW == sqlite3_step(pstmt)) {
-			HIERARCHY_ROW_PARAM hierarchy_param;
-			uint64_t folder_id;
-			folder_id = sqlite3_column_int64(pstmt, 0);
-			hierarchy_param.cpid = cpid;
-			hierarchy_param.psqlite = pdb->psqlite;
-			hierarchy_param.pstmt = pstmt;
-			hierarchy_param.folder_id = folder_id;
-			if (!table_evaluate_row_restriction(pres,
-				&hierarchy_param, table_get_hierarchy_row_property)) {
-				continue;
-			} else {
-				idx = sqlite3_column_int64(pstmt, 1);
-				count = 0;
-				ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-				if (NULL == ppropvals->ppropval) {
-					return FALSE;
-				}
-				for (i=0; i<pproptags->count; i++) {
-					void *pvalue;
-					if (PROP_TAG_DEPTH == pproptags->pproptag[i]) {
-						pvalue = cu_alloc<uint32_t>();
-						if (NULL == pvalue) {
-							return FALSE;
-						}
-						*(uint32_t*)pvalue = sqlite3_column_int64(pstmt, 2);
-					} else {
-						if (FALSE == common_util_get_property(
-							FOLDER_PROPERTIES_TABLE, folder_id, cpid,
-							pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
-							return FALSE;
-						}
-						if (NULL == pvalue) {
-							continue;
-						}
-						switch (PROP_TYPE(pproptags->pproptag[i])) {
-						case PT_UNICODE:
-							utf8_truncate(static_cast<char *>(pvalue), 255);
-							break;
-						case PT_STRING8:
-							table_truncate_string(cpid, static_cast<char *>(pvalue));
-							break;
-						case PT_BINARY:
-							if (static_cast<BINARY *>(pvalue)->cb > 510)
-								static_cast<BINARY *>(pvalue)->cb = 510;
-							break;
-						}
-					}
-					ppropvals->ppropval[count].proptag = pproptags->pproptag[i];
-					ppropvals->ppropval[count++].pvalue = pvalue;
-				}
-				ppropvals->count = count;
-				break;
-			}
-		}
-		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-		clean_transact.release();
-		*pposition = idx - 1;
-		return TRUE;
-		}(cpid, table_id, b_forward, start_pos, pres, pproptags, pposition, ppropvals, pdb);
-		if (!ret)
-			return false;
+		ret = match_tbl_hier(cpid, table_id, b_forward, start_pos, pres, pproptags, pposition, ppropvals, pdb);
 	} else if (TABLE_TYPE_CONTENT == ptnode->type) {
-		auto ret = [](uint32_t cpid, uint32_t table_id, BOOL b_forward, uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags, int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb, TABLE_NODE *ptnode) -> BOOL {
-		char sql_string[1024];
-		int i, count, row_type, idx = 0;
-		uint64_t inst_id;
-
-		if (TRUE == b_forward) {
-			snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM t%u"
-				" WHERE idx>=%u ORDER BY idx ASC", table_id,
-				start_pos + 1);
-		} else {
-			snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM t%u"
-				" WHERE idx<=%u ORDER BY idx DESC", table_id,
-				start_pos + 1);
-		}
-		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-		if (pstmt == nullptr) {
-			return FALSE;
-		}
-		xstmt pstmt1, pstmt2;
-		if (NULL != ptnode->psorts && ptnode->psorts->ccategories > 0) {
-			snprintf(sql_string, arsizeof(sql_string), "SELECT parent_id FROM"
-					" t%u WHERE row_id=?", ptnode->table_id);
-			pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
-			if (pstmt1 == nullptr) {
-				return FALSE;
-			}
-			snprintf(sql_string, arsizeof(sql_string), "SELECT value FROM"
-					" t%u WHERE row_id=?", ptnode->table_id);
-			pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
-			if (pstmt2 == nullptr) {
-				return FALSE;
-			}
-		} else {
-			pstmt1 = NULL;
-			pstmt2 = NULL;
-		}
-		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-		auto clean_transact = make_scope_exit([&]() {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-		});
-		if (FALSE == common_util_begin_message_optimize(pdb->psqlite)) {
-			return FALSE;
-		}
-		while (SQLITE_ROW == sqlite3_step(pstmt)) {
-			CONTENT_ROW_PARAM content_param;
-			inst_id = sqlite3_column_int64(pstmt, 3);
-			row_type = sqlite3_column_int64(pstmt, 4);
-			content_param.cpid = cpid;
-			content_param.psqlite = pdb->psqlite;
-			content_param.pstmt = pstmt;
-			content_param.pstmt1 = pstmt1;
-			content_param.pstmt2 = pstmt2;
-			content_param.folder_id = ptnode->folder_id;
-			content_param.inst_id = inst_id;
-			content_param.row_type = row_type;
-			content_param.psorts = ptnode->psorts;
-			content_param.instance_tag = ptnode->instance_tag;
-			content_param.extremum_tag = ptnode->extremum_tag;
-			if (!table_evaluate_row_restriction(pres,
-				&content_param, table_get_content_row_property)) {
-				continue;
-			} else {
-				idx = sqlite3_column_int64(pstmt, 1);
-				count = 0;
-				ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-				if (NULL == ppropvals->ppropval) {
-					common_util_end_message_optimize();
-					return FALSE;
-				}
-				for (i=0; i<pproptags->count; i++) {
-					void *pvalue;
-					if (FALSE == table_column_content_tmptbl(pstmt, pstmt1,
-						pstmt2, ptnode->psorts, ptnode->folder_id, row_type,
-						pproptags->pproptag[i], ptnode->instance_tag,
-						ptnode->extremum_tag, &pvalue)) {
-						if (CONTENT_ROW_HEADER == row_type) {
-							continue;
-						}
-						if (FALSE == common_util_get_property(
-							MESSAGE_PROPERTIES_TABLE, inst_id, cpid,
-							pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
-							common_util_end_message_optimize();
-							return FALSE;
-						}
-					}
-					if (NULL == pvalue) {
-						continue;
-					}
-					switch (PROP_TYPE(pproptags->pproptag[i])) {
-					case PT_UNICODE:
-						utf8_truncate(static_cast<char *>(pvalue), 255);
-						break;
-					case PT_STRING8:
-						table_truncate_string(cpid, static_cast<char *>(pvalue));
-						break;
-					case PT_BINARY:
-						if (static_cast<BINARY *>(pvalue)->cb > 510)
-							static_cast<BINARY *>(pvalue)->cb = 510;
-						break;
-					}
-					ppropvals->ppropval[count].proptag = pproptags->pproptag[i];
-					ppropvals->ppropval[count++].pvalue = pvalue;
-				}
-				ppropvals->count = count;
-				break;
-			}
-		}
-		common_util_end_message_optimize();
-		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-		clean_transact.release();
-		*pposition = idx - 1;
-		return TRUE;
-		}(cpid, table_id, b_forward, start_pos, pres, pproptags, pposition, ppropvals, pdb, ptnode);
-		if (!ret)
-			return false;
+		ret = match_tbl_ctnt(cpid, table_id, b_forward, start_pos, pres, pproptags, pposition, ppropvals, pdb, ptnode);
 	} else if (TABLE_TYPE_RULE == ptnode->type) {
-		auto ret = [](uint32_t cpid, uint32_t table_id, BOOL b_forward, uint32_t start_pos, const RESTRICTION *pres, const PROPTAG_ARRAY *pproptags, int32_t *pposition, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb) -> BOOL {
-		char sql_string[1024];
-		int i, count, idx = 0;
-		uint64_t rule_id;
-
-		if (TRUE == b_forward) {
-			snprintf(sql_string, arsizeof(sql_string), "SELECT rule_id"
-					" idx FROM t%u WHERE idx>=%u ORDER BY"
-					" idx ASC", table_id, start_pos + 1);
-		} else {
-			snprintf(sql_string, arsizeof(sql_string), "SELECT rule_id,"
-					" idx FROM t%u WHERE idx<=%u ORDER BY"
-					" idx DESC", table_id, start_pos + 1);
-		}
-		auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-		if (pstmt == nullptr) {
-			return FALSE;
-		}
-		while (SQLITE_ROW == sqlite3_step(pstmt)) {
-			rule_id = sqlite3_column_int64(pstmt, 0);
-			if (!table_evaluate_rule_restriction(
-				pdb->psqlite, rule_id, pres)) {
-				continue;
-			} else {
-				ppropvals->count = 0;
-				ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
-				if (NULL == ppropvals->ppropval) {
-					return FALSE;
-				}
-				count = 0;
-				for (i=0; i<pproptags->count; i++) {
-					void *pvalue;
-					uint32_t proptag;
-					proptag = pproptags->pproptag[i];
-					if (proptag == PR_RULE_NAME_A)
-						proptag = PR_RULE_NAME;
-					else if (proptag == PR_RULE_PROVIDER_A)
-						proptag = PR_RULE_PROVIDER;
-					if (FALSE == common_util_get_rule_property(
-						rule_id, pdb->psqlite, proptag, &pvalue)) {
-						return FALSE;
-					}
-					if (NULL == pvalue) {
-						continue;
-					}
-					ppropvals->ppropval[count].proptag = pproptags->pproptag[i];
-					if (pproptags->pproptag[i] == PR_RULE_NAME_A ||
-					    pproptags->pproptag[i] == PR_RULE_PROVIDER_A)
-						ppropvals->ppropval[count++].pvalue =
-							common_util_convert_copy(FALSE, cpid, static_cast<char *>(pvalue));
-					else
-						ppropvals->ppropval[count++].pvalue = pvalue;
-				}
-				ppropvals->count = count;
-				break;
-			}
-		}
-		*pposition = idx - 1;
-		return TRUE;
-		}(cpid, table_id, b_forward, start_pos, pres, pproptags, pposition, ppropvals, pdb);
-		if (!ret)
-			return ret;
+		ret = match_tbl_rule(cpid, table_id, b_forward, start_pos, pres, pproptags, pposition, ppropvals, pdb);
 	} else {
 		*pposition = -1;
 	}
-	return TRUE;
+	return ret;
 }
 
 BOOL exmdb_server_locate_table(const char *dir,
