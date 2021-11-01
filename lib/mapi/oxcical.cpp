@@ -2640,6 +2640,10 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		if (NULL != piline) {
 			pvalue = piline->get_first_subvalue();
 			if (NULL != pvalue) {
+				/*
+				 * RFC 5545 §3.8.1.9 / MS-OXCICAL v13 §2.1.3.1.1.20.17 pg 58.
+				 * (Decidedly different from OXCMAIL's X-Priority.)
+				 */
 				propval.proptag = PROP_TAG_IMPORTANCE;
 				propval.pvalue = &tmp_int32;
 				switch (strtol(pvalue, nullptr, 0)) {
@@ -5073,6 +5077,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	pvalue = tpropval_array_get_propval(
 		&pmsg->proplist, PROP_TAG_IMPORTANCE);
 	if (NULL != pvalue) {
+		/* RFC 5545 §3.8.1.9 / MS-OXCICAL v13 §2.1.3.1.1.20.17 pg 58 */
 		switch (*(uint32_t*)pvalue) {
 		case 1:
 			piline = ical_new_simple_line("PRIORITY", "5");

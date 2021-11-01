@@ -1552,6 +1552,7 @@ static BOOL oxcmail_enum_mail_head(
 		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "Sensitivity")) {
+		/* MS-OXCMAIL v22 §2.1.3.2.6 pg 31 */
 		if (0 == strcasecmp(field, "Normal")) {
 			tmp_int32 = 0;
 		} else if (0 == strcasecmp(field, "Personal")) {
@@ -1569,6 +1570,7 @@ static BOOL oxcmail_enum_mail_head(
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "Importance") ||
 		0 == strcasecmp(tag, "X-MSMail-Priority")) {
+		/* MS-OXCMAIL v22 §2.2.3.2.5 pg 61 */
 		if (0 == strcasecmp(field, "Low")) {
 			tmp_int32 = 0;
 		} else if (0 == strcasecmp(field, "Normal")) {
@@ -1583,20 +1585,22 @@ static BOOL oxcmail_enum_mail_head(
 		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "Priority")) {
+		/* RFC 2156 §5.3.6 pg 96, MS-OXCMAIL v22 §2.2.3.2.5 pg 60 */
 		if (0 == strcasecmp(field, "Non-Urgent")) {
 			tmp_int32 = 0;
 		} else if (0 == strcasecmp(field, "Normal")) {
-			tmp_int32 = 0;
+			tmp_int32 = 1;
 		} else if (0 == strcasecmp(field, "Urgent")) {
 			tmp_int32 = 2;
 		} else {
-			tmp_int32 = 0;
+			tmp_int32 = 1;
 		}
-		propval.proptag = PROP_TAG_SENSITIVITY;
+		propval.proptag = PROP_TAG_IMPORTANCE;
 		propval.pvalue = &tmp_int32;
 		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "X-Priority")) {
+		/* MS-OXCMAIL v22 §2.2.3.2.5 pg 61 */
 		switch (field[0]) {
 		case '5':
 		case '4':
@@ -1613,7 +1617,7 @@ static BOOL oxcmail_enum_mail_head(
 			tmp_int32 = 1;
 			break;
 		}
-		propval.proptag = PROP_TAG_SENSITIVITY;
+		propval.proptag = PROP_TAG_IMPORTANCE;
 		propval.pvalue = &tmp_int32;
 		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
