@@ -2925,14 +2925,7 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 	uint32_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags,
 	uint64_t inst_id, uint32_t inst_num, TPROPVAL_ARRAY *ppropvals)
 {
-	int i;
-	int count;
-	void *pvalue;
-	int row_type;
-	uint32_t depth;
 	TABLE_NODE *ptnode;
-	uint64_t folder_id;
-	char sql_string[1024];
 	DOUBLE_LIST_NODE *pnode;
 	
 	auto pdb = db_engine_get_db(dir);
@@ -2953,6 +2946,13 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 		exmdb_server_set_public_username(username);
 	}
 	if (TABLE_TYPE_HIERARCHY == ptnode->type) {
+		return [](uint32_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags, uint64_t inst_id, uint32_t inst_num, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb) -> BOOL {
+		int i, count;
+		void *pvalue;
+		uint32_t depth;
+		uint64_t folder_id;
+		char sql_string[1024];
+
 		if (1 == rop_util_get_replid(inst_id)) {
 			folder_id = rop_util_get_gc_value(inst_id);
 		} else {
@@ -3016,7 +3016,14 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 		ppropvals->count = count;
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 		clean_transact.release();
+		return TRUE;
+		}(cpid, table_id, pproptags, inst_id, inst_num, ppropvals, pdb);
 	} else if (TABLE_TYPE_CONTENT == ptnode->type) {
+		return [](uint32_t cpid, uint32_t table_id, const PROPTAG_ARRAY *pproptags, uint64_t inst_id, uint32_t inst_num, TPROPVAL_ARRAY *ppropvals, db_item_ptr &pdb, TABLE_NODE *ptnode) -> BOOL {
+		int i, count, row_type;
+		void *pvalue;
+		char sql_string[1024];
+
 		inst_id = rop_util_get_replid(inst_id) == 1 ?
 		          rop_util_get_gc_value(inst_id) :
 		          rop_util_get_gc_value(inst_id) | 0x100000000000000ULL;
@@ -3094,6 +3101,8 @@ BOOL exmdb_server_read_table_row(const char *dir, const char *username,
 		ppropvals->count = count;
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 		clean_transact.release();
+		return TRUE;
+		}(cpid, table_id, pproptags, inst_id, inst_num, ppropvals, pdb, ptnode);
 	} else {
 		ppropvals->count = 0;
 	}
