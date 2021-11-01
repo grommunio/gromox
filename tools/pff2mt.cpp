@@ -247,7 +247,7 @@ static int do_attach2(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t
 
 static bool tpropval_subject_handler(const uint8_t *buf, TPROPVAL_ARRAY *ar, TAGGED_PROPVAL &&pv)
 {
-	/* MS-PST § 2.5.3.1.1.1 */
+	/* MS-PST v9 §2.5.3.1.1.1 */
 	auto s = reinterpret_cast<const char *>(buf);
 	if (buf[0] != 0x01 || buf[1] == 0x00 || strnlen(s, buf[1]) < buf[1])
 		return false;

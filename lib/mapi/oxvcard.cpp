@@ -193,7 +193,7 @@ MESSAGE_CONTENT* oxvcard_import(
 		pnode=double_list_get_after(plist, pnode)) {
 		pvline = (VCARD_LINE*)pnode->pdata;
 		if (strcasecmp(pvline->name, "UID") == 0) {
-			/* MS-OXVCARD § 2.1.3.7.7 deviation */
+			/* Deviation from MS-OXVCARD v8.3 §2.1.3.7.7 */
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
 				goto IMPORT_FAILURE;

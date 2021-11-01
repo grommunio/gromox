@@ -31,7 +31,7 @@ struct NSP_PROPNAME {
 	uint32_t id;
 };
 
-/* OXNSPI §2.2.2.6 vs §2.2.7.1 oddity that is irrelevant for our implementation */
+/* MS-OXNSPI v13 §2.2.2.6 vs §2.2.7.1 oddity that is irrelevant for our implementation */
 using STRINGS_ARRAY = STRING_ARRAY;
 
 struct FILETIME {

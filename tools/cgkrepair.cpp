@@ -28,7 +28,7 @@ static const struct HXoption g_options_table[] = {
 
 static inline bool change_key_size_ok(const BINARY &b)
 {
-	/* Not much else to do. OXCFXICS §2.2.2.2 */
+	/* Not much else to do. MS-OXCFXICS v24 §2.2.2.2 */
 	return b.cb >= 16 && b.cb <= 24;
 }
 

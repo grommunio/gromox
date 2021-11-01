@@ -531,7 +531,7 @@ enum bm_relop {
 };
 
 enum calendar_scale {
-	/* 0x1..0xC,0x17 from winnls.h, the others from MS-OXOCAL v18.1 §2.2.1.44.1 */
+	/* 0x1..0xC,0x17 from winnls.h, the others from MS-OXOCAL v20 §2.2.1.44.1 pg 37 */
 	CAL_DEFAULT = 0,
 	CAL_GREGORIAN = 0x1,
 	CAL_GREGORIAN_US = 0x2,
@@ -556,7 +556,7 @@ enum calendar_scale {
 };
 
 enum {
-	/* one-off entryid flags, MS-OXCDATA v15.2 §2.2.5.1 */
+	/* one-off entryid flags, MS-OXCDATA v17 §2.2.5.1 pg 25 */
 	CTRL_FLAG_BINHEX = 0x00,
 	CTRL_FLAG_UUENCODE = 0x20,
 	CTRL_FLAG_APPLESINGLE = 0x40,
@@ -601,7 +601,7 @@ enum display_type {
 };
 
 enum {
-	/* PR_CONTROL_FLAGS (PidTagControlFlags), MS-OXOABKT v12 §2.2.2.1.2 */
+	/* PR_CONTROL_FLAGS (PidTagControlFlags), MS-OXOABKT v14 §2.2.2.1.2 */
 	_DT_NONE         = 0U, /* gromox-only */
 	DT_MULTILINE     = 1U << 0,
 	DT_EDITABLE      = 1U << 1,

@@ -1171,7 +1171,7 @@ uint32_t rop_setstreamsize(uint64_t stream_size, LOGMAP *plogmap,
 	int object_type;
 	
 	if (stream_size > static_cast<uint64_t>(INT32_MAX) + 1)
-		/* That weird +1 is specified in MS-OXCPRPT §2.2.19 and §2.2.20 */
+		/* That weird +1 is specified in MS-OXCPRPT v17 §2.2.19 and §2.2.20 */
 		return ecInvalidParam;
 	auto pstream = rop_proc_get_obj<stream_object>(plogmap, logon_id, hin, &object_type);
 	if (NULL == pstream) {

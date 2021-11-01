@@ -196,7 +196,7 @@ Default: \fI/usr/libexec/gromox\fP
 .TP
 \fBrequest_max_mem\fP
 The maximum hint size for fragmented RPC PDU requests that will be allowed
-(C706 §12.6.3.7, RPCE §2.2.2.6).
+(C706 §12.6.3.7, MS-RPCE v33 §2.2.2.6).
 .TP
 \fBrunning_identity\fP
 An unprivileged user account to switch the process to after startup.

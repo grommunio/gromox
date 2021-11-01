@@ -1337,7 +1337,7 @@ int EXT_PULL::g_flagged_pv(uint16_t type, FLAGGED_PROPVAL *r)
 	void **ppvalue;
 	
 	if (type == PT_UNSPECIFIED) {
-		/* OXCDATA §2.11.6 FlaggedPropertyValueWithType */
+		/* MS-OXCDATA v17 §2.11.6 FlaggedPropertyValueWithType */
 		TRY(g_uint16(&type));
 		r->pvalue = anew<TYPED_PROPVAL>();
 		if (r->pvalue == nullptr)

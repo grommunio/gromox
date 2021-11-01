@@ -55,8 +55,8 @@ GLOBCNT rop_util_get_gc_array(uint64_t eid)
  * 		* Gromox-level folder identifier like 0xd (inbox), ...,
  * 		* Gromox-level message identifier
  * @gc:		Low 48 bits of @value, encoded as a 48-bit big-endian integer.
- * 		(pursuant to the requirements of OXCFXICS §3.1.5.3 “increase
- * 		with time, when compared byte to byte”, which means MSB)
+ * 		(pursuant to the requirements of MS-OXCFXICS v24 §3.1.5.3
+ * 		“increase with time, when compared byte to byte”, which means MSB)
  */
 GLOBCNT rop_util_value_to_gc(uint64_t value)
 {
@@ -96,8 +96,8 @@ uint64_t rop_util_gc_to_value(GLOBCNT gc)
  * @replid:	replica id as per OXCFXICS
  * @gc:		Gromox-level folder/message id/CN encoded as 48-bit big-endian
  *
- * Produces an Exchange-level folder/message identifier (OXCDATA §2.2.1.2) —
- * later visible in e.g. PR_RECORD_KEY (see also
+ * Produces an Exchange-level folder/message identifier (MS-OXCDATA v17
+ * §2.2.1.2) — later visible in e.g. PR_RECORD_KEY (see also
  * mapi_types.hpp:FOLDER_ENTRYID), which contains the 48-bit big-endian gc
  * _before_ the 16-bit replid.
  *
