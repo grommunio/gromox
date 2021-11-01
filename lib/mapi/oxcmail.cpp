@@ -3494,6 +3494,8 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 		}
 		propval.pvalue = tmp_buff;
 	}
+	if (!tpropval_array_set_propval(pproplist, &propval))
+		return false;
 	status_code = 100*kind + 10*subject + detail;
 	propval.proptag = PROP_TAG_NONDELIVERYREPORTSTATUSCODE;
 	propval.pvalue = &status_code;
