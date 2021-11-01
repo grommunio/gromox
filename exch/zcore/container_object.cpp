@@ -314,7 +314,6 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 	TARRAY_SET tmp_set;
 	char *pdisplayname;
 	char *paddress_type;
-	TAGGED_PROPVAL propval;
 	PROPTAG_ARRAY proptags;
 	LONG_ARRAY minid_array;
 	BINARY *pparent_entryid = nullptr;
@@ -447,61 +446,32 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			if (NULL == ppropvals) {
 				return FALSE;
 			}
-			propval.proptag = PR_SMTP_ADDRESS;
-			propval.pvalue = username;
-			if (!tpropval_array_set_propval(ppropvals, &propval)) {
-				tpropval_array_free(ppropvals);
-				return FALSE;
-			}
-			propval.proptag = PROP_TAG_ACCOUNT;
-			if (!tpropval_array_set_propval(ppropvals, &propval)) {
-				tpropval_array_free(ppropvals);
-				return FALSE;
-			}
-			propval.proptag = PROP_TAG_ADDRESSTYPE;
-			propval.pvalue  = deconst("SMTP");
-			if (!tpropval_array_set_propval(ppropvals, &propval)) {
-				tpropval_array_free(ppropvals);
-				return FALSE;
-			}
-			propval.proptag = PR_EMAIL_ADDRESS;
-			propval.pvalue = username;
-			if (!tpropval_array_set_propval(ppropvals, &propval)) {
+			if (ppropvals->set(PR_SMTP_ADDRESS, username) != 0 ||
+			    ppropvals->set(PROP_TAG_ACCOUNT, username) != 0 ||
+			    ppropvals->set(PROP_TAG_ADDRESSTYPE, "SMTP") != 0 ||
+			    ppropvals->set(PR_EMAIL_ADDRESS, username) != 0) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
 			if (NULL != pdisplayname) {
-				propval.proptag = PR_DISPLAY_NAME;
-				propval.pvalue = pdisplayname;
-				if (!tpropval_array_set_propval(ppropvals, &propval)) {
-					tpropval_array_free(ppropvals);
-					return FALSE;
-				}
-				propval.proptag = PROP_TAG_TRANSMITTABLEDISPLAYNAME;
-				if (!tpropval_array_set_propval(ppropvals, &propval)) {
-					tpropval_array_free(ppropvals);
-					return FALSE;
-				}
-				propval.proptag = PR_EMS_AB_DISPLAY_NAME_PRINTABLE;
-				if (!tpropval_array_set_propval(ppropvals, &propval)) {
+				if (ppropvals->set(PR_DISPLAY_NAME, pdisplayname) != 0 ||
+				    ppropvals->set(PROP_TAG_TRANSMITTABLEDISPLAYNAME, pdisplayname) != 0 ||
+				    ppropvals->set(PR_EMS_AB_DISPLAY_NAME_PRINTABLE, pdisplayname) != 0) {
 					tpropval_array_free(ppropvals);
 					return FALSE;
 				}
 			}
 			for (size_t k = 0; k < GX_ARRAY_SIZE(tmp_proptags); ++k) {
-				propval.proptag = tmp_proptags[k];
-				propval.pvalue = common_util_get_propvals(
-					tmp_set.pparray[i], propval.proptag);
-				if (NULL != propval.pvalue) {
-					if (!tpropval_array_set_propval(ppropvals, &propval)) {
-						tpropval_array_free(ppropvals);
-						return FALSE;
-					}
+				uint32_t tag = tmp_proptags[k];
+				auto newval = common_util_get_propvals(tmp_set.pparray[i], tag);
+				if (newval == nullptr)
+					continue;
+				if (ppropvals->set(tag, newval) != 0) {
+					tpropval_array_free(ppropvals);
+					return FALSE;
 				}
 			}
-			propval.proptag = PR_PARENT_ENTRYID;
-			propval.pvalue = pparent_entryid;
-			if (!tpropval_array_set_propval(ppropvals, &propval)) {
+			if (ppropvals->set(PR_PARENT_ENTRYID, pparent_entryid) != 0) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
@@ -511,56 +481,30 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
-			propval.proptag = PR_ENTRYID;
-			propval.pvalue = container_object_message_to_addressbook_entryid(
+			pvalue = container_object_message_to_addressbook_entryid(
 								TRUE, pinfo->user_id, *(uint64_t*)pvalue, j);
-			if (NULL == propval.pvalue) {
+			if (pvalue == nullptr ||
+			    ppropvals->set(PR_ENTRYID, pvalue) != 0 ||
+			    ppropvals->set(PR_RECORD_KEY, pvalue) != 0 ||
+			    ppropvals->set(PROP_TAG_TEMPLATEID, pvalue) != 0 ||
+			    ppropvals->set(PROP_TAG_ORIGINALENTRYID, pvalue) != 0) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
-			if (!tpropval_array_set_propval(ppropvals, &propval)) {
-				tpropval_array_free(ppropvals);
-				return FALSE;
-			}
-			propval.proptag = PR_RECORD_KEY;
-			if (!tpropval_array_set_propval(ppropvals, &propval)) {
-				tpropval_array_free(ppropvals);
-				return FALSE;
-			}
-			propval.proptag = PROP_TAG_TEMPLATEID;
-			if (!tpropval_array_set_propval(ppropvals, &propval)) {
-				tpropval_array_free(ppropvals);
-				return FALSE;
-			}
-			propval.proptag = PROP_TAG_ORIGINALENTRYID;
-			if (!tpropval_array_set_propval(ppropvals, &propval)) {
-				tpropval_array_free(ppropvals);
-				return FALSE;
-			}
-			propval.proptag = PROP_TAG_ABPROVIDERID;
-			propval.pvalue = &tmp_bin;
 			tmp_bin.cb = 16;
 			tmp_bin.pb = deconst(common_util_get_muidzcsab());
-			if (!tpropval_array_set_propval(ppropvals, &propval)) {
+			if (ppropvals->set(PROP_TAG_ABPROVIDERID, &tmp_bin) != 0) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
-			propval.proptag = PR_OBJECT_TYPE;
-			propval.pvalue = &tmp_int;
 			tmp_int = MAPI_MAILUSER;
-			if (!tpropval_array_set_propval(ppropvals, &propval)) {
+			if (ppropvals->set(PR_OBJECT_TYPE, &tmp_int) != 0) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
-			propval.proptag = PR_DISPLAY_TYPE;
-			propval.pvalue = &tmp_int;
 			tmp_int = DT_MAILUSER;
-			if (!tpropval_array_set_propval(ppropvals, &propval)) {
-				tpropval_array_free(ppropvals);
-				return FALSE;
-			}
-			propval.proptag = PR_DISPLAY_TYPE_EX;
-			if (!tpropval_array_set_propval(ppropvals, &propval)) {
+			if (ppropvals->set(PR_DISPLAY_TYPE, &tmp_int) != 0 ||
+			    ppropvals->set(PR_DISPLAY_TYPE_EX, &tmp_int) != 0) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}

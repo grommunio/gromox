@@ -391,10 +391,7 @@ TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)
 	if (NULL == pproplist) {
 		return NULL;
 	}
-	TAGGED_PROPVAL propval;
-	propval.proptag = PROP_TAG_PROPFILESECLSID;
-	propval.pvalue = &sec_guid;
-	if (!tpropval_array_set_propval(pproplist, &propval) || 
+	if (pproplist->set(PROP_TAG_PROPFILESECLSID, &sec_guid) != 0 ||
 	    !tarray_set_append_internal(prootobj->pprof_set, pproplist)) {
 		tpropval_array_free(pproplist);
 		return NULL;

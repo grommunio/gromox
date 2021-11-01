@@ -77,7 +77,6 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 {
 	BINARY *pbin;
 	EXT_PUSH ext_push;
-	TAGGED_PROPVAL propval;
 	TPROPVAL_ARRAY *pproplist;
 	static constexpr uint8_t bin_buff[8]{};
 	static constexpr BINARY fake_bin = {gromox::arsizeof(bin_buff), {deconst(bin_buff)}};
@@ -105,9 +104,7 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 		tpropval_array_free(pproplist);
 		return NULL;
 	}
-	propval.proptag = META_TAG_IDSETGIVEN1;
-	propval.pvalue = pbin;
-	if (!tpropval_array_set_propval(pproplist, &propval)) {
+	if (pproplist->set(META_TAG_IDSETGIVEN1, pbin) != 0) {
 		rop_util_free_binary(pbin);
 		tpropval_array_free(pproplist);
 		return NULL;
@@ -119,9 +116,7 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 		tpropval_array_free(pproplist);
 		return NULL;
 	}
-	propval.proptag = META_TAG_CNSETSEEN;
-	propval.pvalue = pbin;
-	if (!tpropval_array_set_propval(pproplist, &propval)) {
+	if (pproplist->set(META_TAG_CNSETSEEN, pbin) != 0) {
 		rop_util_free_binary(pbin);
 		tpropval_array_free(pproplist);
 		return NULL;
@@ -134,9 +129,7 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 			tpropval_array_free(pproplist);
 			return NULL;
 		}
-		propval.proptag = META_TAG_CNSETSEENFAI;
-		propval.pvalue = pbin;
-		if (!tpropval_array_set_propval(pproplist, &propval)) {
+		if (pproplist->set(META_TAG_CNSETSEENFAI, pbin) != 0) {
 			rop_util_free_binary(pbin);
 			tpropval_array_free(pproplist);
 			return NULL;
@@ -151,9 +144,7 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 			tpropval_array_free(pproplist);
 			return NULL;
 		}
-		propval.proptag = META_TAG_CNSETREAD;
-		propval.pvalue = pbin;
-		if (!tpropval_array_set_propval(pproplist, &propval)) {
+		if (pproplist->set(META_TAG_CNSETREAD, pbin) != 0) {
 			rop_util_free_binary(pbin);
 			tpropval_array_free(pproplist);
 			return NULL;
