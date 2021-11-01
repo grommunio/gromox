@@ -385,47 +385,21 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 		if (FALSE == container_object_get_pidlids(&proptags)) {
 			return FALSE;
 		}
-		proptags.pproptag[proptags.count] = PR_DISPLAY_NAME;
-		proptags.count ++;
-		proptags.pproptag[proptags.count] =
-						PROP_TAG_NICKNAME;
-		proptags.count ++;
-		proptags.pproptag[proptags.count] =
-							PROP_TAG_TITLE;
-		proptags.count ++;
-		proptags.pproptag[proptags.count] =
-						PROP_TAG_SURNAME;
-		proptags.count ++;
-		proptags.pproptag[proptags.count] =
-						PROP_TAG_GIVENNAME;
-		proptags.count ++;
-		proptags.pproptag[proptags.count] =
-						PROP_TAG_MIDDLENAME;
-		proptags.count ++;
-		proptags.pproptag[proptags.count] =
-			PROP_TAG_PRIMARYTELEPHONENUMBER;
-		proptags.count ++;
-		proptags.pproptag[proptags.count] =
-			PROP_TAG_MOBILETELEPHONENUMBER;
-		proptags.count ++;
-		proptags.pproptag[proptags.count] =
-				PROP_TAG_HOMEADDRESSSTREET;
-		proptags.count ++;
+		proptags.pproptag[proptags.count++] = PR_DISPLAY_NAME;
+		proptags.pproptag[proptags.count++] = PROP_TAG_NICKNAME;
+		proptags.pproptag[proptags.count++] = PROP_TAG_TITLE;
+		proptags.pproptag[proptags.count++] = PROP_TAG_SURNAME;
+		proptags.pproptag[proptags.count++] = PROP_TAG_GIVENNAME;
+		proptags.pproptag[proptags.count++] = PROP_TAG_MIDDLENAME;
+		proptags.pproptag[proptags.count++] = PROP_TAG_PRIMARYTELEPHONENUMBER;
+		proptags.pproptag[proptags.count++] = PROP_TAG_MOBILETELEPHONENUMBER;
+		proptags.pproptag[proptags.count++] = PROP_TAG_HOMEADDRESSSTREET;
 		proptags.pproptag[proptags.count++] = PR_COMMENT;
-		proptags.pproptag[proptags.count] =
-						PROP_TAG_COMPANYNAME;
-		proptags.count ++;
-		proptags.pproptag[proptags.count] =
-					PROP_TAG_DEPARTMENTNAME;
-		proptags.count ++;
-		proptags.pproptag[proptags.count] =
-					PROP_TAG_OFFICELOCATION;
-		proptags.count ++;
-		proptags.pproptag[proptags.count] = PR_CREATION_TIME;
-		proptags.count ++;
-		proptags.pproptag[proptags.count] =
-							PROP_TAG_MID;
-		proptags.count ++;
+		proptags.pproptag[proptags.count++] = PROP_TAG_COMPANYNAME;
+		proptags.pproptag[proptags.count++] = PROP_TAG_DEPARTMENTNAME;
+		proptags.pproptag[proptags.count++] = PROP_TAG_OFFICELOCATION;
+		proptags.pproptag[proptags.count++] = PR_CREATION_TIME;
+		proptags.pproptag[proptags.count++] = PROP_TAG_MID;
 		if (!exmdb_client::query_table(pinfo->get_maildir(), nullptr,
 		    pinfo->cpid, table_id, &proptags, 0, row_num, &tmp_set))
 			return FALSE;

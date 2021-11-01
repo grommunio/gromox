@@ -58,10 +58,8 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		sizeof(uint32_t)*tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
 	pproptags->pproptag[pproptags->count++] = PR_ACCESS;
-	pproptags->pproptag[pproptags->count] = PR_ENTRYID;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PR_OBJECT_TYPE;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_ENTRYID;
+	pproptags->pproptag[pproptags->count++] = PR_OBJECT_TYPE;
 	pproptags->pproptag[pproptags->count++] = PR_MAPPING_SIGNATURE;
 	pproptags->pproptag[pproptags->count++] = PR_RIGHTS;
 	pproptags->pproptag[pproptags->count++] = PR_PARENT_ENTRYID;
@@ -69,8 +67,7 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
 	if (common_util_index_proptags(&tmp_proptags, PR_SOURCE_KEY) < 0) {
-		pproptags->pproptag[pproptags->count] = PR_SOURCE_KEY;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PR_SOURCE_KEY;
 	}
 	if (!pfolder->pstore->b_private)
 		return TRUE;
@@ -548,12 +545,9 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 			}
 			ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-			ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
-			ppropvals->count ++;
+			ppropvals->ppropval[ppropvals->count++].pvalue = pvalue;
 		} else {
-			tmp_proptags.pproptag[tmp_proptags.count] =
-								pproptags->pproptag[i];
-			tmp_proptags.count ++;
+			tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
 		}
 	}
 	if (0 == tmp_proptags.count) {
@@ -596,9 +590,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 		return FALSE;
 	tmp_propvals.ppropval[tmp_propvals.count].proptag =
 									PROP_TAG_CHANGENUMBER;
-	tmp_propvals.ppropval[tmp_propvals.count].pvalue =
-											&change_num;
-	tmp_propvals.count ++;
+	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &change_num;
 	if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 	    0, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
 	    reinterpret_cast<void **>(&pbin_pcl)) ||
@@ -614,17 +606,11 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	}
 	last_time = rop_util_current_nttime();
 	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_CHANGE_KEY;
-	tmp_propvals.ppropval[tmp_propvals.count].pvalue = 
-										pbin_changekey;
-	tmp_propvals.count ++;
+	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_changekey;
 	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_PREDECESSOR_CHANGE_LIST;
-	tmp_propvals.ppropval[tmp_propvals.count].pvalue =
-												pbin_pcl;
-	tmp_propvals.count ++;
+	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_pcl;
 	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
-	tmp_propvals.ppropval[tmp_propvals.count].pvalue =
-											&last_time;
-	tmp_propvals.count ++;
+	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &last_time;
 	auto pinfo = zarafa_server_get_info();
 	if (!exmdb_client::set_folder_properties(pfolder->pstore->get_dir(),
 	    pinfo->cpid, pfolder->folder_id, &tmp_propvals, &tmp_problems))
@@ -652,9 +638,7 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	for (i=0; i<pproptags->count; i++) {
 		if (pfolder->check_readonly_property(pproptags->pproptag[i]))
 			continue;
-		tmp_proptags.pproptag[tmp_proptags.count] =
-							pproptags->pproptag[i];
-		tmp_proptags.count ++;
+		tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
 	}
 	if (0 == tmp_proptags.count) {
 		return TRUE;
@@ -743,8 +727,7 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 		}
 		pperm_set->prows[pperm_set->count].flags = RIGHT_NORMAL;
 		pperm_set->prows[pperm_set->count].entryid = *pentry_id;
-		pperm_set->prows[pperm_set->count].member_rights = *prights;
-		pperm_set->count ++;
+		pperm_set->prows[pperm_set->count++].member_rights = *prights;
 	}
 	return TRUE;
 }
@@ -919,8 +902,7 @@ static BOOL folder_object_flush_delegates(int fd,
 			return FALSE;	
 		if ('\0' != address_buff[0]) {
 			tmp_len = strlen(address_buff);
-			address_buff[tmp_len] = '\n';
-			tmp_len ++;
+			address_buff[tmp_len++] = '\n';
 			write(fd, address_buff, tmp_len);
 		}
 	}

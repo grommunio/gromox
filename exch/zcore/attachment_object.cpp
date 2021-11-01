@@ -56,20 +56,14 @@ BOOL attachment_object::init_attachment()
 	}
 	
 	propvals.ppropval[propvals.count].proptag = PR_ATTACH_NUM;
-	propvals.ppropval[propvals.count].pvalue =
-					&pattachment->attachment_num;
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue = &pattachment->attachment_num;
 	propvals.ppropval[propvals.count].proptag =
 					PROP_TAG_RENDERINGPOSITION;
 	propvals.ppropval[propvals.count].pvalue = cu_alloc<uint32_t>();
 	if (NULL == propvals.ppropval[propvals.count].pvalue) {
 		return FALSE;
 	}
-	*(uint32_t*)propvals.ppropval[propvals.count].pvalue =
-												0xFFFFFFFF;
-	propvals.count ++;
-	
+	*static_cast<uint32_t *>(propvals.ppropval[propvals.count++].pvalue) = 0xFFFFFFFF;
 	pvalue = cu_alloc<uint64_t>();
 	if (NULL == pvalue) {
 		return FALSE;
@@ -77,12 +71,9 @@ BOOL attachment_object::init_attachment()
 	*(uint64_t*)pvalue = rop_util_current_nttime();
 	
 	propvals.ppropval[propvals.count].proptag = PR_CREATION_TIME;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	propvals.ppropval[propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	return exmdb_client::set_instance_properties(pattachment->pparent->pstore->get_dir(),
 	       pattachment->instance_id, &propvals, &problems);
 }
@@ -142,8 +133,7 @@ BOOL attachment_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 				sizeof(uint32_t)*tmp_proptags.count);
 	pproptags->pproptag[pproptags->count++] = PR_ACCESS;
 	pproptags->pproptag[pproptags->count++] = PR_ACCESS_LEVEL;
-	pproptags->pproptag[pproptags->count] = PR_OBJECT_TYPE;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_OBJECT_TYPE;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
 	return TRUE;
@@ -236,12 +226,10 @@ BOOL attachment_object::get_properties(const PROPTAG_ARRAY *pproptags,
 			}
 			ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-			ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
-			ppropvals->count ++;
+			ppropvals->ppropval[ppropvals->count++].pvalue = pvalue;
 			continue;
 		}
-		tmp_proptags.pproptag[tmp_proptags.count] = pproptags->pproptag[i];
-		tmp_proptags.count ++;
+		tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
 	}
 	if (0 == tmp_proptags.count) {
 		return TRUE;
@@ -275,9 +263,7 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 		if (aobj_check_readonly_property(pattachment,
 		    ppropvals->ppropval[i].proptag))
 			continue;
-		tmp_propvals.ppropval[tmp_propvals.count] =
-							ppropvals->ppropval[i];
-		tmp_propvals.count ++;
+		tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
 	}
 	if (0 == tmp_propvals.count) {
 		return TRUE;
@@ -307,9 +293,7 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 		if (aobj_check_readonly_property(pattachment,
 		    pproptags->pproptag[i]))
 			continue;
-		tmp_proptags.pproptag[tmp_proptags.count] =
-								pproptags->pproptag[i];
-		tmp_proptags.count ++;
+		tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
 	}
 	if (0 == tmp_proptags.count) {
 		return TRUE;

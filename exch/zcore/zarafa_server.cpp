@@ -1803,8 +1803,7 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 		    account_id != pstore->account_id ||
 		    folder_id != pfolder->folder_id)
 			continue;
-		ids.pids[ids.count] = message_id;
-		ids.count ++;
+		ids.pids[ids.count++] = message_id;
 	}
 	BOOL b_hard = (flags & FLAG_HARD_DELETE) ? false : TRUE; /* XXX */
 	if (FALSE == notify_non_read) {
@@ -1842,8 +1841,7 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 			    pinfo->cpid, ids.pids[i], &pbrief))
 				return ecError;
 		}
-		ids1.pids[ids1.count] = ids.pids[i];
-		ids1.count ++;
+		ids1.pids[ids1.count++] = ids.pids[i];
 		if (pbrief != nullptr)
 			common_util_notify_receipt(pstore->get_account(),
 				NOTIFY_RECEIPT_NON_READ, pbrief);
@@ -1954,8 +1952,7 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 		    account_id != pstore->account_id ||
 		    folder_id != psrc_folder->folder_id)
 			continue;
-		ids.pids[ids.count] = message_id;
-		ids.count ++;
+		ids.pids[ids.count++] = message_id;
 	}
 	if (!pstore->check_owner_mode()) {
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
@@ -2041,9 +2038,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 				if (1 != tmp_set.pparray[i]->count) {
 					continue;
 				}
-				tmp_bins.pbin[tmp_bins.count] =
-					*(BINARY*)tmp_set.pparray[i]->ppropval[0].pvalue;
-				tmp_bins.count ++;
+				tmp_bins.pbin[tmp_bins.count++] = *static_cast<BINARY *>(tmp_set.pparray[i]->ppropval[0].pvalue);
 			}
 			pentryids = &tmp_bins;
 		}
@@ -2810,8 +2805,7 @@ uint32_t zarafa_server_queryrows(
 					break;
 				}
 				ptable->seek_current(TRUE, 1);
-				prowset->pparray[prowset->count] = tmp_set.pparray[0];
-				prowset->count ++;
+				prowset->pparray[prowset->count++] = tmp_set.pparray[0];
 				if (count == prowset->count) {
 					break;
 				}
@@ -4106,9 +4100,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 			if (!b_force && common_util_index_proptags(&proptags1,
 			    proptags.pproptag[i]) >= 0)
 				continue;
-			tmp_proptags.pproptag[tmp_proptags.count] = 
-									proptags.pproptag[i];
-			tmp_proptags.count ++;
+			tmp_proptags.pproptag[tmp_proptags.count++] = proptags.pproptag[i];
 		}
 		if (!folder->get_properties(&tmp_proptags, &propvals))
 			return ecError;
@@ -4720,16 +4712,12 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		tmp_propvals.ppropval[4].pvalue = &change_num;
 		tmp_propvals.count = 5;
 		for (i=0; i<ppropvals->count; i++) {
-			tmp_propvals.ppropval[tmp_propvals.count] =
-								ppropvals->ppropval[i];
-			tmp_propvals.count ++;
+			tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
 		}
 		if (common_util_get_propvals(&tmp_propvals, PR_FOLDER_TYPE) == nullptr) {
 			tmp_type = FOLDER_GENERIC;
 			tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_FOLDER_TYPE;
-			tmp_propvals.ppropval[tmp_propvals.count].pvalue =
-													&tmp_type;
-			tmp_propvals.count ++;
+			tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &tmp_type;
 		}
 		if (!exmdb_client::create_folder_by_properties(pstore->get_dir(),
 		    pinfo->cpid, &tmp_propvals, &tmp_fid) || folder_id != tmp_fid)
@@ -4792,9 +4780,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 	tmp_propvals.ppropval[2].pvalue = &change_num;
 	tmp_propvals.count = 3;
 	for (i=0; i<ppropvals->count; i++) {
-		tmp_propvals.ppropval[tmp_propvals.count] =
-							ppropvals->ppropval[i];
-		tmp_propvals.count ++;
+		tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
 	}
 	if (!exmdb_client::set_folder_properties(pstore->get_dir(),
 	    pinfo->cpid, folder_id, &tmp_propvals, &tmp_problems))
@@ -4915,8 +4901,7 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 			}
 		}
 		if (SYNC_TYPE_CONTENTS == sync_type) {
-			message_ids.pids[message_ids.count] = eid;
-			message_ids.count ++;
+			message_ids.pids[message_ids.count++] = eid;
 		} else {
 			if (pstore->b_private) {
 				if (!exmdb_client_get_folder_property(pstore->get_dir(),

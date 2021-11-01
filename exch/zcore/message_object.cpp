@@ -165,9 +165,7 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 		return FALSE;
 	}
 	*static_cast<uint32_t *>(pvalue) = new_cpid;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	propvals.ppropval[propvals.count].proptag =
 							PROP_TAG_IMPORTANCE;
 	pvalue = cu_alloc<uint32_t>();
@@ -175,13 +173,9 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 		return FALSE;
 	}
 	*(uint32_t*)pvalue = 1;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_CLASS;
-	propvals.ppropval[propvals.count].pvalue  = deconst("IPM.Note");
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue  = deconst("IPM.Note");
 	propvals.ppropval[propvals.count].proptag =
 							PROP_TAG_SENSITIVITY;
 	pvalue = cu_alloc<uint32_t>();
@@ -189,51 +183,37 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 		return FALSE;
 	}
 	*(uint32_t*)pvalue = 0;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	propvals.ppropval[propvals.count].proptag =
 					PROP_TAG_ORIGINALDISPLAYBCC;
-	propvals.ppropval[propvals.count].pvalue  = deconst("");
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue  = deconst("");
 	propvals.ppropval[propvals.count].proptag =
 					PROP_TAG_ORIGINALDISPLAYCC;
-	propvals.ppropval[propvals.count].pvalue  = deconst("");
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue  = deconst("");
 	propvals.ppropval[propvals.count].proptag =
 					PROP_TAG_ORIGINALDISPLAYTO;
-	propvals.ppropval[propvals.count].pvalue  = deconst("");
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue  = deconst("");
 	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_FLAGS;
 	pvalue = cu_alloc<uint32_t>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
 	*static_cast<uint32_t *>(pvalue) = MSGFLAG_UNSENT | MSGFLAG_UNMODIFIED;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	propvals.ppropval[propvals.count].proptag = PR_READ;
 	pvalue = cu_alloc<uint8_t>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
 	*(uint8_t*)pvalue = 1;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	propvals.ppropval[propvals.count].proptag = PR_ASSOCIATED;
 	pvalue = cu_alloc<uint8_t>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
 	*static_cast<uint8_t *>(pvalue) = !!b_fai;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	propvals.ppropval[propvals.count].proptag =
 							PROP_TAG_TRUSTSENDER;
 	pvalue = cu_alloc<uint32_t>();
@@ -241,18 +221,14 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 		return FALSE;
 	}
 	*(uint32_t*)pvalue = 1;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	propvals.ppropval[propvals.count].proptag = PR_CREATION_TIME;
 	pvalue = cu_alloc<uint64_t>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
 	*(uint64_t*)pvalue = rop_util_current_nttime();
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	propvals.ppropval[propvals.count].proptag =
 							PROP_TAG_SEARCHKEY;
 	pvalue = cu_alloc<BINARY>();
@@ -264,21 +240,16 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_LOCALE_ID;
 	pvalue = cu_alloc<uint32_t>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
 	*(uint32_t*)pvalue = 0x0409;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	propvals.ppropval[propvals.count].proptag = PR_LOCALE_ID;
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	propvals.ppropval[propvals.count].proptag =
 							PROP_TAG_CREATORNAME;
 	pvalue = common_util_alloc(1024);
@@ -290,18 +261,14 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	    static_cast<char *>(pvalue)) ||
 	    *static_cast<char *>(pvalue) == '\0')
 		strcpy(static_cast<char *>(pvalue), pinfo->get_username());
-	propvals.ppropval[propvals.count].pvalue = pvalue;
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	propvals.ppropval[propvals.count].proptag =
 						PROP_TAG_CREATORENTRYID;
 	pvalue = common_util_username_to_addressbook_entryid(pinfo->get_username());
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	propvals.ppropval[propvals.count].pvalue = pvalue;	
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue = pvalue;	
 	tmp_guid = guid_random_new();
 	if (!ext_push.init(id_string, 256, 0) ||
 	    ext_push.p_guid(&tmp_guid) != EXT_ERR_SUCCESS)
@@ -312,9 +279,7 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	snprintf(id_string + 33, 128, "@%s>", common_util_get_hostname());
 	propvals.ppropval[propvals.count].proptag =
 					PROP_TAG_INTERNETMESSAGEID;
-	propvals.ppropval[propvals.count].pvalue = id_string;
-	propvals.count ++;
-	
+	propvals.ppropval[propvals.count++].pvalue = id_string;
 	if (!exmdb_client::set_instance_properties(pmessage->pstore->get_dir(),
 	    pmessage->instance_id, &propvals, &problems))
 		return FALSE;	
@@ -366,14 +331,11 @@ gxerr_t message_object::save()
 		return GXERR_CALL_FAILED;
 	}
 	*(uint64_t*)pvalue = rop_util_current_nttime();
-	tmp_propvals.ppropval[tmp_propvals.count].pvalue = pvalue;
-	tmp_propvals.count ++;
-	
+	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pvalue;
 	if (!proptag_array_check(pmessage->pchanged_proptags,
 	    PR_LAST_MODIFICATION_TIME)) {
 		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
-		tmp_propvals.ppropval[tmp_propvals.count].pvalue = pvalue;
-		tmp_propvals.count ++;
+		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pvalue;
 	}
 	
 	if (!proptag_array_check(pmessage->pchanged_proptags,
@@ -388,8 +350,7 @@ gxerr_t message_object::save()
 		    static_cast<char *>(pvalue)) ||
 		    *static_cast<char *>(pvalue) == '\0')
 			strcpy(static_cast<char *>(pvalue), pinfo->get_username());
-		tmp_propvals.ppropval[tmp_propvals.count].pvalue = pvalue;
-		tmp_propvals.count ++;
+		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pvalue;
 	}
 	
 	tmp_propvals.ppropval[tmp_propvals.count].proptag =
@@ -398,9 +359,7 @@ gxerr_t message_object::save()
 	if (NULL == pvalue) {
 		return GXERR_CALL_FAILED;
 	}
-	tmp_propvals.ppropval[tmp_propvals.count].pvalue = pvalue;
-	tmp_propvals.count ++;
-	
+	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pvalue;
 	if (0 != pmessage->message_id) {
 		if (!exmdb_client_get_instance_property(dir,
 		    pmessage->instance_id, PR_PREDECESSOR_CHANGE_LIST,
@@ -413,17 +372,13 @@ gxerr_t message_object::save()
 		if (NULL == pbin_changekey) {
 			return GXERR_CALL_FAILED;
 		}
-		tmp_propvals.ppropval[tmp_propvals.count].pvalue =
-											pbin_changekey;
-		tmp_propvals.count ++;
-		
+		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_changekey;
 		pbin_pcl = common_util_pcl_append(pbin_pcl, pbin_changekey);
 		if (NULL == pbin_pcl) {
 			return GXERR_CALL_FAILED;
 		}
 		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_PREDECESSOR_CHANGE_LIST;
-		tmp_propvals.ppropval[tmp_propvals.count].pvalue = pbin_pcl;	
-		tmp_propvals.count ++;
+		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_pcl;	
 	}
 	
 	if (FALSE == message_object_set_properties_internal(
@@ -784,29 +739,23 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		case PROP_TAG_CHANGENUMBER:
 			continue;
 		default:
-			pproptags->pproptag[pproptags->count] =
-							tmp_proptags.pproptag[i];
-			pproptags->count ++;
+			pproptags->pproptag[pproptags->count++] = tmp_proptags.pproptag[i];
 			break;
 		}
 	}
 	pproptags->pproptag[pproptags->count++] = PR_ACCESS;
-	pproptags->pproptag[pproptags->count] = PR_ENTRYID;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_ACCESS_LEVEL;
-	pproptags->pproptag[pproptags->count] = PR_OBJECT_TYPE;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_OBJECT_TYPE;
 	pproptags->pproptag[pproptags->count++] = PR_PARENT_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_PARENT_SOURCE_KEY;
-	pproptags->pproptag[pproptags->count] = PR_RECORD_KEY;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_RECORD_KEY;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
 	pproptags->pproptag[pproptags->count++] = PR_MAPPING_SIGNATURE;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
 	if (pmessage->pembedding == nullptr &&
 	    common_util_index_proptags(pproptags, PR_SOURCE_KEY) < 0) {
-		pproptags->pproptag[pproptags->count] = PR_SOURCE_KEY;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PR_SOURCE_KEY;
 	}
 	if (common_util_index_proptags(pproptags, PR_MESSAGE_LOCALE_ID) < 0)
 		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_LOCALE_ID;
@@ -978,13 +927,10 @@ BOOL message_object::get_properties(const PROPTAG_ARRAY *pproptags,
 			}
 			ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-			ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
-			ppropvals->count ++;
+			ppropvals->ppropval[ppropvals->count++].pvalue = pvalue;
 			continue;
 		}
-		tmp_proptags.pproptag[tmp_proptags.count] =
-							pproptags->pproptag[i];
-		tmp_proptags.count ++;
+		tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
 	}
 	if (0 == tmp_proptags.count) {
 		return TRUE;
@@ -1001,15 +947,12 @@ BOOL message_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (common_util_index_proptags(pproptags, PR_MESSAGE_LOCALE_ID) >= 0 &&
 	    common_util_get_propvals(ppropvals, PR_MESSAGE_LOCALE_ID) == nullptr) {
 		ppropvals->ppropval[ppropvals->count].proptag = PR_MESSAGE_LOCALE_ID;
-		ppropvals->ppropval[ppropvals->count].pvalue = deconst(&lcid_default);
-		ppropvals->count ++;
+		ppropvals->ppropval[ppropvals->count++].pvalue = deconst(&lcid_default);
 	}
 	if (common_util_index_proptags(pproptags, PR_MESSAGE_CODEPAGE) >= 0 &&
 	    common_util_get_propvals(ppropvals, PR_MESSAGE_CODEPAGE) == nullptr) {
 		ppropvals->ppropval[ppropvals->count].proptag = PR_MESSAGE_CODEPAGE;
-		ppropvals->ppropval[ppropvals->count].pvalue =
-										&pmessage->cpid;
-		ppropvals->count ++;
+		ppropvals->ppropval[ppropvals->count++].pvalue = &pmessage->cpid;
 	}
 	return TRUE;	
 }
@@ -1047,8 +990,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 	for (i=0; i<ppropvals->count; i++) {
 		if (TRUE == b_check) {
 			if (msgo_check_readonly_property(pmessage, ppropvals->ppropval[i].proptag)) {
-				problems.pproblem[problems.count].index = i;
-				problems.count ++;
+				problems.pproblem[problems.count++].index = i;
 				continue;
 			} else if (PROP_TAG_EXTENDEDRULEMESSAGECONDITION
 				== ppropvals->ppropval[i].proptag) {
@@ -1056,14 +998,12 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 				    pmessage->instance_id, PR_ASSOCIATED, &pvalue))
 					return FALSE;	
 				if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
-					problems.pproblem[problems.count].index = i;
-					problems.count ++;
+					problems.pproblem[problems.count++].index = i;
 					continue;
 				}
 				if (static_cast<BINARY *>(ppropvals->ppropval[i].pvalue)->cb >
 				    common_util_get_param(COMMON_UTIL_MAX_EXTRULE_LENGTH)) {
-					problems.pproblem[problems.count].index = i;
-					problems.count ++;
+					problems.pproblem[problems.count++].index = i;
 					continue;
 				}
 			} else if (ppropvals->ppropval[i].proptag == PR_MESSAGE_FLAGS) {
@@ -1085,8 +1025,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 		}
 		tmp_propvals.ppropval[tmp_propvals.count] =
 							ppropvals->ppropval[i];
-		poriginal_indices[tmp_propvals.count] = i;
-		tmp_propvals.count ++;
+		poriginal_indices[tmp_propvals.count++] = i;
 	}
 	if (0 == tmp_propvals.count) {
 		return TRUE;
@@ -1183,14 +1122,12 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	}
 	for (i=0; i<pproptags->count; i++) {
 		if (msgo_check_readonly_property(pmessage, pproptags->pproptag[i])) {
-			problems.pproblem[problems.count].index = i;
-			problems.count ++;
+			problems.pproblem[problems.count++].index = i;
 			continue;
 		}
 		tmp_proptags.pproptag[tmp_proptags.count] =
 							pproptags->pproptag[i];
-		poriginal_indices[tmp_proptags.count] = i;
-		tmp_proptags.count ++;
+		poriginal_indices[tmp_proptags.count++] = i;
 	}
 	if (0 == tmp_proptags.count) {
 		return TRUE;

@@ -292,9 +292,7 @@ BOOL store_object::get_named_propnames(const PROPID_ARRAY *ppropids, PROPNAME_AR
 			pindex_map[i] = i;
 			ppropnames->ppropname[i] = *pname;
 		} else {
-			tmp_propids.ppropid[tmp_propids.count] =
-								ppropids->ppropid[i];
-			tmp_propids.count ++;
+			tmp_propids.ppropid[tmp_propids.count++] = ppropids->ppropid[i];
 			pindex_map[i] = -tmp_propids.count;
 		}
 	}
@@ -420,9 +418,7 @@ BOOL store_object::get_named_propids(BOOL b_create,
 			pindex_map[i] = i;
 			ppropids->ppropid[i] = *pid;
 		} else {
-			tmp_propnames.ppropname[tmp_propnames.count] =
-									ppropnames->ppropname[i];
-			tmp_propnames.count ++;
+			tmp_propnames.ppropname[tmp_propnames.count++] = ppropnames->ppropname[i];
 			pindex_map[i] = -tmp_propnames.count;
 		}
 	}
@@ -574,18 +570,11 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 				sizeof(uint32_t)*tmp_proptags.count);
 	pproptags->count = tmp_proptags.count;
 	if (pstore->b_private) {
-		pproptags->pproptag[pproptags->count] =
-					PR_MAILBOX_OWNER_NAME;
-		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-				PR_MAILBOX_OWNER_ENTRYID;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PR_MAILBOX_OWNER_NAME;
+		pproptags->pproptag[pproptags->count++] = PR_MAILBOX_OWNER_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_MAX_SUBMIT_MESSAGE_SIZE;
-		pproptags->pproptag[pproptags->count] = PR_EMAIL_ADDRESS;
-		pproptags->count ++;
-		pproptags->pproptag[pproptags->count] =
-		PR_EMS_AB_DISPLAY_NAME_PRINTABLE;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PR_EMAIL_ADDRESS;
+		pproptags->pproptag[pproptags->count++] = PR_EMS_AB_DISPLAY_NAME_PRINTABLE;
 		pproptags->pproptag[pproptags->count++] = PR_FINDER_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_IPM_OUTBOX_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_IPM_SENTMAIL_ENTRYID;
@@ -601,9 +590,7 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		pproptags->pproptag[pproptags->count++] = PR_EC_EXTERNAL_REPLY;
 		pproptags->pproptag[pproptags->count++] = PR_EC_EXTERNAL_SUBJECT;
 	} else {
-		pproptags->pproptag[pproptags->count] =
-						PROP_TAG_HIERARCHYSERVER;
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = PROP_TAG_HIERARCHYSERVER;
 		pproptags->pproptag[pproptags->count++] = PR_IPM_PUBLIC_FOLDERS_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_NON_IPM_SUBTREE_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_EFORMS_REGISTRY_ENTRYID;
@@ -613,37 +600,23 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	pproptags->pproptag[pproptags->count++] = PR_IPM_FAVORITES_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_IPM_SUBTREE_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_MDB_PROVIDER;
-	pproptags->pproptag[pproptags->count] =
-					PROP_TAG_DEFAULTSTORE;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] = PR_DISPLAY_NAME;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-			PROP_TAG_EXTENDEDRULESIZELIMIT;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PROP_TAG_DEFAULTSTORE;
+	pproptags->pproptag[pproptags->count++] = PR_DISPLAY_NAME;
+	pproptags->pproptag[pproptags->count++] = PROP_TAG_EXTENDEDRULESIZELIMIT;
 	pproptags->pproptag[pproptags->count++] = PR_USER_ENTRYID;
-	pproptags->pproptag[pproptags->count] =
-					PROP_TAG_CONTENTCOUNT;
-	pproptags->count ++;	
-	pproptags->pproptag[pproptags->count] = PR_OBJECT_TYPE;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PROP_TAG_CONTENTCOUNT;
+	pproptags->pproptag[pproptags->count++] = PR_OBJECT_TYPE;
 	pproptags->pproptag[pproptags->count++] = PR_PROVIDER_DISPLAY;
 	pproptags->pproptag[pproptags->count++] = PR_RESOURCE_FLAGS;
 	pproptags->pproptag[pproptags->count++] = PR_RESOURCE_TYPE;
-	pproptags->pproptag[pproptags->count] = PR_RECORD_KEY;
-	pproptags->count ++;
-	pproptags->pproptag[pproptags->count] =
-						PROP_TAG_INSTANCEKEY;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_RECORD_KEY;
+	pproptags->pproptag[pproptags->count++] = PROP_TAG_INSTANCEKEY;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
 	pproptags->pproptag[pproptags->count++] = PR_MAPPING_SIGNATURE;
-	pproptags->pproptag[pproptags->count] = PR_ENTRYID;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PR_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_SUPPORT_MASK;
-	pproptags->pproptag[pproptags->count] =
-					PROP_TAG_ECSERVERVERSION;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = PROP_TAG_ECSERVERVERSION;
 	return TRUE;
 }
 
@@ -1219,12 +1192,9 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 			}
 			ppropvals->ppropval[ppropvals->count].proptag =
 										pproptags->pproptag[i];
-			ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
-			ppropvals->count ++;
+			ppropvals->ppropval[ppropvals->count++].pvalue = pvalue;
 		} else {
-			tmp_proptags.pproptag[tmp_proptags.count] =
-								pproptags->pproptag[i];
-			tmp_proptags.count ++;
+			tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
 		}
 	}
 	if (0 == tmp_proptags.count) {
@@ -1681,8 +1651,7 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 		}
 		pperm_set->prows[pperm_set->count].flags = RIGHT_NORMAL;
 		pperm_set->prows[pperm_set->count].entryid = *pentryid;
-		pperm_set->prows[pperm_set->count].member_rights = *prights;
-		pperm_set->count ++;
+		pperm_set->prows[pperm_set->count++].member_rights = *prights;
 	}
 	return TRUE;
 }
