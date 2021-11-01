@@ -2122,11 +2122,6 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			tmp_byte = 0;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 				return FALSE;
-			propval.proptag = PR_ATTACHMENT_CONTACTPHOTO;
-			propval.pvalue = &tmp_byte;
-			tmp_byte = 0;
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
-				return FALSE;
 			propval.proptag = PROP_TAG_EXCEPTIONSTARTTIME;
 			propval.pvalue = &tmp_int64;
 			tmp_int64 = 0x0CB34557A3DD4000;
@@ -2234,11 +2229,6 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 		propval.proptag = PR_ATTACHMENT_LINKID;
 		propval.pvalue = &tmp_int32;
 		tmp_int32 = 0;
-		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
-			return FALSE;
-		propval.proptag = PR_ATTACHMENT_CONTACTPHOTO;
-		propval.pvalue = &tmp_byte;
-		tmp_byte = 0;
 		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 			return FALSE;
 		propval.proptag = PR_ATTACHMENT_CONTACTPHOTO;
