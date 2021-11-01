@@ -1,4 +1,5 @@
 #pragma once
+#include <cerrno>
 #include <cstdint>
 #include <string>
 #include <gromox/defs.h>
@@ -1090,6 +1091,11 @@ struct TPROPVAL_ARRAY {
 	inline bool has(uint32_t tag) const { return getval(tag) != nullptr; }
 	void *getval(uint32_t tag) const;
 	template<typename T> inline T *get(uint32_t tag) const { return static_cast<T *>(getval(tag)); }
+	int set(uint32_t tag, const void *d)
+	{
+		TAGGED_PROPVAL v{tag, deconst(d)};
+		return tpropval_array_set_propval(this, &v) ? 0 : -ENOMEM;
+	}
 	void erase(uint32_t tag);
 	TPROPVAL_ARRAY *dup() const;
 

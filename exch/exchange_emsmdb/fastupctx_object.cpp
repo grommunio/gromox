@@ -135,7 +135,6 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 	uint32_t tmp_type;
 	uint64_t change_num;
 	uint32_t permission;
-	TAGGED_PROPVAL propval;
 	PERMISSION_DATA permission_row;
 	TAGGED_PROPVAL propval_buff[10];
 	
@@ -158,36 +157,26 @@ static BOOL fastupctx_object_create_folder(fastupctx_object *pctx,
 		pproplist->erase(t);
 	if (!pproplist->has(PR_DISPLAY_NAME))
 		return FALSE;
-	propval.proptag = PR_FOLDER_TYPE;
-	propval.pvalue = &tmp_type;
 	tmp_type = FOLDER_GENERIC;
-	if (!tpropval_array_set_propval(pproplist, &propval))
+	if (pproplist->set(PR_FOLDER_TYPE, &tmp_type) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG_PARENTFOLDERID;
-	propval.pvalue = &parent_id;
-	if (!tpropval_array_set_propval(pproplist, &propval))
+	if (pproplist->set(PROP_TAG_PARENTFOLDERID, &parent_id) != 0)
 		return FALSE;
 	if (!exmdb_client_allocate_cn(pctx->pstream->plogon->get_dir(), &change_num))
 		return FALSE;
-	propval.proptag = PROP_TAG_CHANGENUMBER;
-	propval.pvalue = &change_num;
-	if (!tpropval_array_set_propval(pproplist, &propval))
+	if (pproplist->set(PROP_TAG_CHANGENUMBER, &change_num) != 0)
 		return FALSE;
 	auto pbin = cu_xid_to_bin({pctx->pstream->plogon->guid(), change_num});
 	if (NULL == pbin) {
 		return FALSE;
 	}
-	propval.proptag = PR_CHANGE_KEY;
-	propval.pvalue = pbin;
-	if (!tpropval_array_set_propval(pproplist, &propval))
+	if (pproplist->set(PR_CHANGE_KEY, pbin) != 0)
 		return FALSE;
 	auto pbin1 = pproplist->get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
-	propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
-	propval.pvalue = common_util_pcl_append(pbin1, pbin);
-	if (NULL == propval.pvalue) {
+	auto newval = common_util_pcl_append(pbin1, pbin);
+	if (newval == nullptr)
 		return FALSE;
-	}
-	if (!tpropval_array_set_propval(pproplist, &propval))
+	if (pproplist->set(PR_PREDECESSOR_CHANGE_LIST, newval) != 0)
 		return FALSE;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client_create_folder_by_properties(pctx->pstream->plogon->get_dir(),
@@ -244,7 +233,6 @@ static gxerr_t
 fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 {
 	uint64_t change_num;
-	TAGGED_PROPVAL propval;
 	TPROPVAL_ARRAY *pproplist;
 	
 	pproplist = message_content_get_proplist(pctx->pmsgctnt);
@@ -260,25 +248,19 @@ fastupctx_object_write_message(fastupctx_object *pctx, uint64_t folder_id)
 		pproplist->erase(t);
 	if (!exmdb_client_allocate_cn(pctx->pstream->plogon->get_dir(), &change_num))
 		return GXERR_CALL_FAILED;
-	propval.proptag = PROP_TAG_CHANGENUMBER;
-	propval.pvalue = &change_num;
-	if (!tpropval_array_set_propval(pproplist, &propval))
+	if (pproplist->set(PROP_TAG_CHANGENUMBER, &change_num) != 0)
 		return GXERR_CALL_FAILED;
 	auto pbin = cu_xid_to_bin({pctx->pstream->plogon->guid(), change_num});
 	if (NULL == pbin) {
 		return GXERR_CALL_FAILED;
 	}
-	propval.proptag = PR_CHANGE_KEY;
-	propval.pvalue = pbin;
-	if (!tpropval_array_set_propval(pproplist, &propval))
+	if (pproplist->set(PR_CHANGE_KEY, pbin) != 0)
 		return GXERR_CALL_FAILED;
 	auto pbin1 = pproplist->get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
-	propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
-	propval.pvalue = common_util_pcl_append(pbin1, pbin);
-	if (NULL == propval.pvalue) {
+	auto pvalue = common_util_pcl_append(pbin1, pbin);
+	if (pvalue == nullptr)
 		return GXERR_CALL_FAILED;
-	}
-	if (!tpropval_array_set_propval(pproplist, &propval))
+	if (pproplist->set(PR_PREDECESSOR_CHANGE_LIST, pvalue) != 0)
 		return GXERR_CALL_FAILED;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	gxerr_t e_result = GXERR_CALL_FAILED;
@@ -299,7 +281,6 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 	uint32_t instance_id;
 	TARRAY_SET tmp_rcpts;
 	MARKER_NODE *pmarker;
-	TAGGED_PROPVAL propval;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
@@ -445,10 +426,8 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 		message_content_set_attachments_internal(
 					pctx->pmsgctnt, pattachments);
 		pproplist = message_content_get_proplist(pctx->pmsgctnt);
-		propval.proptag = PR_ASSOCIATED;
 		uint8_t tmp_byte = marker == STARTFAIMSG;
-		propval.pvalue = &tmp_byte;
-		if (!tpropval_array_set_propval(pproplist, &propval))
+		if (pproplist->set(PR_ASSOCIATED, &tmp_byte) != 0)
 			return GXERR_CALL_FAILED;
 		pmarker = me_alloc<MARKER_NODE>();
 		if (NULL == pmarker) {

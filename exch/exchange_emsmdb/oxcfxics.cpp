@@ -93,7 +93,6 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 	uint32_t tmp_proptag;
 	EID_ARRAY *pmessage_ids;
 	LONG_TERM_ID long_term_id;
-	TAGGED_PROPVAL tmp_propval;
 	PROPTAG_ARRAY tmp_proptags;
 	TPROPVAL_ARRAY tmp_propvals;
 	
@@ -142,12 +141,8 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 		if (NULL == pbin) {
 			return NULL;
 		}
-		tmp_propval.proptag = META_TAG_NEWFXFOLDER;
-		tmp_propval.pvalue = pbin;
-		if (!tpropval_array_set_propval(pproplist,
-		    &tmp_propval)) {
+		if (pproplist->set(META_TAG_NEWFXFOLDER, pbin) != 0)
 			return NULL;
-		}
 		return pfldctnt;
 	}
 	if (TRUE == b_fai) {

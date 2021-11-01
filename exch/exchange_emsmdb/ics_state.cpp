@@ -173,7 +173,6 @@ TPROPVAL_ARRAY *ICS_STATE::serialize()
 {
 	auto pstate = this;
 	BINARY *pbin;
-	TAGGED_PROPVAL propval;
 	TPROPVAL_ARRAY *pproplist;
 	
 	
@@ -191,9 +190,7 @@ TPROPVAL_ARRAY *ICS_STATE::serialize()
 			tpropval_array_free(pproplist);
 			return NULL;
 		}
-		propval.proptag = META_TAG_IDSETGIVEN1;
-		propval.pvalue = pbin;
-		if (!tpropval_array_set_propval(pproplist, &propval)) {
+		if (pproplist->set(META_TAG_IDSETGIVEN1, pbin) != 0) {
 			rop_util_free_binary(pbin);
 			tpropval_array_free(pproplist);
 			return NULL;
@@ -206,9 +203,7 @@ TPROPVAL_ARRAY *ICS_STATE::serialize()
 		tpropval_array_free(pproplist);
 		return NULL;
 	}
-	propval.proptag = META_TAG_CNSETSEEN;
-	propval.pvalue = pbin;
-	if (!tpropval_array_set_propval(pproplist, &propval)) {
+	if (pproplist->set(META_TAG_CNSETSEEN, pbin) != 0) {
 		rop_util_free_binary(pbin);
 		tpropval_array_free(pproplist);
 		return NULL;
@@ -222,9 +217,7 @@ TPROPVAL_ARRAY *ICS_STATE::serialize()
 			tpropval_array_free(pproplist);
 			return NULL;
 		}
-		propval.proptag = META_TAG_CNSETSEENFAI;
-		propval.pvalue = pbin;
-		if (!tpropval_array_set_propval(pproplist, &propval)) {
+		if (pproplist->set(META_TAG_CNSETSEENFAI, pbin) != 0) {
 			rop_util_free_binary(pbin);
 			tpropval_array_free(pproplist);
 			return NULL;
@@ -240,9 +233,7 @@ TPROPVAL_ARRAY *ICS_STATE::serialize()
 			tpropval_array_free(pproplist);
 			return NULL;
 		}
-		propval.proptag = META_TAG_CNSETREAD;
-		propval.pvalue = pbin;
-		if (!tpropval_array_set_propval(pproplist, &propval)) {
+		if (pproplist->set(META_TAG_CNSETREAD, pbin) != 0) {
 			rop_util_free_binary(pbin);
 			tpropval_array_free(pproplist);
 			return NULL;
