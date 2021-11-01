@@ -4908,16 +4908,11 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	auto b_private = exmdb_server_check_private();
 	
 	if (FALSE == b_embedded) {
-		if (0 == *pdst_mid) {
-			if (FALSE == common_util_allocate_eid_from_folder(
-				psqlite, parent_id, pdst_mid)) {
-				return FALSE;
-			}
-		}
-	} else {
-		if (FALSE == common_util_allocate_eid(psqlite, pdst_mid)) {
+		if (*pdst_mid == 0 &&
+		    !common_util_allocate_eid_from_folder(psqlite, parent_id, pdst_mid))
 			return FALSE;
-		}
+	} else if (!common_util_allocate_eid(psqlite, pdst_mid)) {
+		return FALSE;
 	}
 	if (FALSE == common_util_allocate_cn(psqlite, &change_num)) {
 		return FALSE;
@@ -4976,34 +4971,32 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 			sql_string, NULL, NULL, NULL)) {
 			return FALSE;
 		}
-	} else {
-		if (TRUE == b_private) {
-			snprintf(sql_string, arsizeof(sql_string), "INSERT INTO messages (message_id, "
-					"parent_fid, parent_attid, is_associated, change_number, "
-					"read_state, message_size, mid_string) VALUES (%llu, %llu,"
-					" NULL, %d, %llu, %d, %u, ?)", LLU(*pdst_mid), LLU(parent_id),
-					is_associated, LLU(change_num), read_state, message_size);
-			pstmt = gx_sql_prep(psqlite, sql_string);
-			if (pstmt == nullptr)
-				return FALSE;
-			if ('\0' == mid_string[0]) {
-				sqlite3_bind_null(pstmt, 1);
-			} else {
-				sqlite3_bind_text(pstmt, 1, mid_string, -1, SQLITE_STATIC);
-			}
-			if (SQLITE_DONE != sqlite3_step(pstmt)) {
-				return FALSE;
-			}
-			pstmt.finalize();
+	} else if (b_private) {
+		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO messages (message_id, "
+		         "parent_fid, parent_attid, is_associated, change_number, "
+		         "read_state, message_size, mid_string) VALUES (%llu, %llu,"
+		         " NULL, %d, %llu, %d, %u, ?)", LLU(*pdst_mid), LLU(parent_id),
+		         is_associated, LLU(change_num), read_state, message_size);
+		pstmt = gx_sql_prep(psqlite, sql_string);
+		if (pstmt == nullptr)
+			return FALSE;
+		if ('\0' == mid_string[0]) {
+			sqlite3_bind_null(pstmt, 1);
 		} else {
-			snprintf(sql_string, arsizeof(sql_string), "INSERT INTO messages (message_id, parent_fid,"
-				" parent_attid, is_associated, change_number, message_size) "
-				"VALUES (%llu, %llu, NULL, %d, %llu, %u)", LLU(*pdst_mid),
-				LLU(parent_id), is_associated, LLU(change_num), message_size);
-			if (SQLITE_OK != sqlite3_exec(psqlite,
-				sql_string, NULL, NULL, NULL)) {
-				return FALSE;
-			}
+			sqlite3_bind_text(pstmt, 1, mid_string, -1, SQLITE_STATIC);
+		}
+		if (SQLITE_DONE != sqlite3_step(pstmt)) {
+			return FALSE;
+		}
+		pstmt.finalize();
+	} else {
+		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO messages (message_id, parent_fid,"
+		         " parent_attid, is_associated, change_number, message_size) "
+		         "VALUES (%llu, %llu, NULL, %d, %llu, %u)", LLU(*pdst_mid),
+		         LLU(parent_id), is_associated, LLU(change_num), message_size);
+		if (SQLITE_OK != sqlite3_exec(psqlite,
+		    sql_string, NULL, NULL, NULL)) {
+			return FALSE;
 		}
 	}
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO message_properties (message_id,"
