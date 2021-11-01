@@ -3476,7 +3476,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 	propval.pvalue = &pinfo->submit_time;
 	if (!tpropval_array_set_propval(pproplist, &propval))
 		return false;
-	propval.proptag = PROP_TAG_SUPPLEMENTARYINFO;
+	propval.proptag = PR_SUPPLEMENTARY_INFO;
 	if (NULL != f_info.x_supplementary_info) {
 		propval.pvalue = deconst(f_info.x_supplementary_info);
 	} else {
@@ -6027,8 +6027,7 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 				return FALSE;
 			}
 		}
-		pvalue = tpropval_array_get_propval(
-			prcpts->pparray[i], PROP_TAG_SUPPLEMENTARYINFO);
+		pvalue = tpropval_array_get_propval(prcpts->pparray[i], PR_SUPPLEMENTARY_INFO);
 		if (NULL != pvalue) {
 			if (!dsn_append_field(pdsn_fields, "X-Supplementary-Info",
 			    static_cast<char *>(pvalue))) {
