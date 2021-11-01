@@ -1062,28 +1062,28 @@ BOOL common_util_get_folder_type(sqlite3 *psqlite, uint64_t folder_id,
 {
 	char sql_string[128];
 	
-	if (TRUE == exmdb_server_check_private()) {
-		if (PRIVATE_FID_ROOT == folder_id) {
-			*pfolder_type = FOLDER_ROOT;
-			return TRUE;
-		}
-		snprintf(sql_string, arsizeof(sql_string), "SELECT is_search "
-		          "FROM folders WHERE folder_id=%llu", LLU(folder_id));
-		auto pstmt = gx_sql_prep(psqlite, sql_string);
-		if (pstmt == nullptr)
-			return FALSE;
-		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			/*
-			 * Could be if db_engine_proc_dynamic_event was just
-			 * looking at a folder a moment ago that then was
-			 * deleted.
-			 */
-			return FALSE;
-		}
-		*pfolder_type = sqlite3_column_int64(pstmt, 0) == 0 ? FOLDER_GENERIC : FOLDER_SEARCH;
-	} else {
+	if (!exmdb_server_check_private()) {
 		*pfolder_type = folder_id == PUBLIC_FID_ROOT ? FOLDER_ROOT : FOLDER_GENERIC;
+		return TRUE;
 	}
+	if (PRIVATE_FID_ROOT == folder_id) {
+		*pfolder_type = FOLDER_ROOT;
+		return TRUE;
+	}
+	snprintf(sql_string, arsizeof(sql_string), "SELECT is_search "
+	         "FROM folders WHERE folder_id=%llu", LLU(folder_id));
+	auto pstmt = gx_sql_prep(psqlite, sql_string);
+	if (pstmt == nullptr)
+		return FALSE;
+	if (SQLITE_ROW != sqlite3_step(pstmt)) {
+		/*
+		 * Could be if db_engine_proc_dynamic_event was just
+		 * looking at a folder a moment ago that then was
+		 * deleted.
+		 */
+		return FALSE;
+	}
+	*pfolder_type = sqlite3_column_int64(pstmt, 0) == 0 ? FOLDER_GENERIC : FOLDER_SEARCH;
 	return TRUE;
 }
 
