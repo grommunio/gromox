@@ -1418,16 +1418,16 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			}
 			break;
 		case ATTRIBUTE_ID_PRIORITY:
-			propval.proptag = PROP_TAG_IMPORTANCE;
+			propval.proptag = PR_IMPORTANCE;
 			switch (*(uint16_t*)attribute.pvalue) {
 			case 3:
-				tmp_int32 = 0;
+				tmp_int32 = IMPORTANCE_LOW;
 				break;
 			case 2:
-				tmp_int32 = 1;
+				tmp_int32 = IMPORTANCE_NORMAL;
 				break;
 			case 1:
-				tmp_int32 = 2;
+				tmp_int32 = IMPORTANCE_HIGH;
 				break;
 			default:
 				debug_info("[tnef]: attPriority error");
@@ -2508,23 +2508,23 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		tmp_proptags.count ++;
 	}
 	/* ATTRIBUTE_ID_PRIORITY */
-	pvalue = tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_IMPORTANCE);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_IMPORTANCE);
 	if (NULL != pvalue) {
 		attribute.attr_id = ATTRIBUTE_ID_PRIORITY;
 		attribute.lvl = LVL_MESSAGE;
 		attribute.pvalue = &tmp_int16;
 		switch (*(uint32_t*)pvalue) {
-		case 0:
+		case IMPORTANCE_LOW:
 			tmp_int16 = 3;
 			break;
-		case 1:
+		case IMPORTANCE_NORMAL:
 			tmp_int16 = 2;
 			break;
-		case 2:
+		case IMPORTANCE_HIGH:
 			tmp_int16 = 1;
 			break;
 		default:
-			debug_info("[tnef]: PROP_TAG_IMPORTANCE error");
+			debug_info("[tnef]: PR_IMPORTANCE error");
 			return FALSE;
 		}
 		if (EXT_ERR_SUCCESS != tnef_push_attribute(

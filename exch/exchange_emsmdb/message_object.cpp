@@ -246,12 +246,12 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	*static_cast<uint32_t *>(pvalue) = new_cpid;
 	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	
-	propvals.ppropval[propvals.count].proptag = PROP_TAG_IMPORTANCE;
+	propvals.ppropval[propvals.count].proptag = PR_IMPORTANCE;
 	pvalue = cu_alloc<uint32_t>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	*(uint32_t*)pvalue = 1;
+	*static_cast<uint32_t *>(pvalue) = IMPORTANCE_NORMAL;
 	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	
 	propvals.ppropval[propvals.count].proptag = PR_DEF_POST_MSGCLASS;

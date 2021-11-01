@@ -1572,30 +1572,30 @@ static BOOL oxcmail_enum_mail_head(
 		0 == strcasecmp(tag, "X-MSMail-Priority")) {
 		/* MS-OXCMAIL v22 §2.2.3.2.5 pg 61 */
 		if (0 == strcasecmp(field, "Low")) {
-			tmp_int32 = 0;
+			tmp_int32 = IMPORTANCE_LOW;
 		} else if (0 == strcasecmp(field, "Normal")) {
-			tmp_int32 = 1;
+			tmp_int32 = IMPORTANCE_NORMAL;
 		} else if (0 == strcasecmp(field, "High")) {
-			tmp_int32 = 2;
+			tmp_int32 = IMPORTANCE_HIGH;
 		} else {
-			tmp_int32 = 1;
+			tmp_int32 = IMPORTANCE_NORMAL;
 		}
-		propval.proptag = PROP_TAG_IMPORTANCE;
+		propval.proptag = PR_IMPORTANCE;
 		propval.pvalue = &tmp_int32;
 		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "Priority")) {
 		/* RFC 2156 §5.3.6 pg 96, MS-OXCMAIL v22 §2.2.3.2.5 pg 60 */
 		if (0 == strcasecmp(field, "Non-Urgent")) {
-			tmp_int32 = 0;
+			tmp_int32 = IMPORTANCE_LOW;
 		} else if (0 == strcasecmp(field, "Normal")) {
-			tmp_int32 = 1;
+			tmp_int32 = IMPORTANCE_NORMAL;
 		} else if (0 == strcasecmp(field, "Urgent")) {
-			tmp_int32 = 2;
+			tmp_int32 = IMPORTANCE_HIGH;
 		} else {
-			tmp_int32 = 1;
+			tmp_int32 = IMPORTANCE_NORMAL;
 		}
-		propval.proptag = PROP_TAG_IMPORTANCE;
+		propval.proptag = PR_IMPORTANCE;
 		propval.pvalue = &tmp_int32;
 		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
@@ -1604,20 +1604,20 @@ static BOOL oxcmail_enum_mail_head(
 		switch (field[0]) {
 		case '5':
 		case '4':
-			tmp_int32 = 0;
+			tmp_int32 = IMPORTANCE_LOW;
 			break;
 		case '3':
-			tmp_int32 = 1;
+			tmp_int32 = IMPORTANCE_NORMAL;
 			break;
 		case '2':
 		case '1':
-			tmp_int32 = 2;
+			tmp_int32 = IMPORTANCE_HIGH;
 			break;
 		default:
-			tmp_int32 = 1;
+			tmp_int32 = IMPORTANCE_NORMAL;
 			break;
 		}
-		propval.proptag = PROP_TAG_IMPORTANCE;
+		propval.proptag = PR_IMPORTANCE;
 		propval.pvalue = &tmp_int32;
 		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
@@ -4118,11 +4118,10 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			return NULL;
 		}	
 	}
-	if (NULL == tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_IMPORTANCE)) {
-		propval.proptag = PROP_TAG_IMPORTANCE;
+	if (tpropval_array_get_propval(&pmsg->proplist, PR_IMPORTANCE) == nullptr) {
+		propval.proptag = PR_IMPORTANCE;
 		propval.pvalue = &tmp_int32;
-		tmp_int32 = 1;
+		tmp_int32 = IMPORTANCE_NORMAL;
 		if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 			message_content_free(pmsg);
 			return NULL;
@@ -5365,23 +5364,22 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			return FALSE;
 	}
 	
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_IMPORTANCE);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_IMPORTANCE);
 	if (NULL != pvalue) {
 		switch (*(uint32_t*)pvalue) {
-		case 0:
+		case IMPORTANCE_LOW:
 			if (FALSE == mime_set_field(phead,
 				"Importance", "Low")) {
 				return FALSE;
 			}
 			break;
-		case 1:
+		case IMPORTANCE_NORMAL:
 			if (FALSE == mime_set_field(phead,
 				"Importance", "Normal")) {
 				return FALSE;
 			}
 			break;
-		case 2:
+		case IMPORTANCE_HIGH:
 			if (FALSE == mime_set_field(phead,
 				"Importance", "High")) {
 				return FALSE;

@@ -2627,8 +2627,8 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		pvalue = piline->get_first_subvalue();
 		if (NULL != pvalue) {
 			tmp_int32 = strtol(pvalue, nullptr, 0);
-			if (0 == tmp_int32 || 1 == tmp_int32 || 2 == tmp_int32) {
-				propval.proptag = PROP_TAG_IMPORTANCE;
+			if (tmp_int32 >= IMPORTANCE_LOW && tmp_int32 <= IMPORTANCE_HIGH) {
+				propval.proptag = PR_IMPORTANCE;
 				propval.pvalue = &tmp_int32;
 				if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 					return FALSE;
@@ -2644,20 +2644,20 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 				 * RFC 5545 §3.8.1.9 / MS-OXCICAL v13 §2.1.3.1.1.20.17 pg 58.
 				 * (Decidedly different from OXCMAIL's X-Priority.)
 				 */
-				propval.proptag = PROP_TAG_IMPORTANCE;
+				propval.proptag = PR_IMPORTANCE;
 				propval.pvalue = &tmp_int32;
 				switch (strtol(pvalue, nullptr, 0)) {
 				case 1:
 				case 2:
 				case 3:
 				case 4:
-					tmp_int32 = 2;
+					tmp_int32 = IMPORTANCE_HIGH;
 					if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 						return FALSE;
 					}
 					break;
 				case 5:
-					tmp_int32 = 1;
+					tmp_int32 = IMPORTANCE_NORMAL;
 					if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 						return FALSE;
 					}
@@ -2666,7 +2666,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 				case 7:
 				case 8:
 				case 9:
-					tmp_int32 = 0;
+					tmp_int32 = IMPORTANCE_LOW;
 					if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 						return FALSE;
 					}
@@ -2675,11 +2675,10 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			}
 		}
 	}
-	if (NULL == tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_IMPORTANCE)) {
-		propval.proptag = PROP_TAG_IMPORTANCE;
+	if (tpropval_array_get_propval(&pmsg->proplist, PR_IMPORTANCE) == nullptr) {
+		propval.proptag = PR_IMPORTANCE;
 		propval.pvalue = &tmp_int32;
-		tmp_int32 = 1;
+		tmp_int32 = IMPORTANCE_NORMAL;
 		if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 			return FALSE;
 		}
@@ -5074,15 +5073,14 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	if (pcomponent->append_line(piline) < 0)
 		return false;
 	
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_IMPORTANCE);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_IMPORTANCE);
 	if (NULL != pvalue) {
 		/* RFC 5545 §3.8.1.9 / MS-OXCICAL v13 §2.1.3.1.1.20.17 pg 58 */
 		switch (*(uint32_t*)pvalue) {
-		case 1:
+		case IMPORTANCE_NORMAL:
 			piline = ical_new_simple_line("PRIORITY", "5");
 			break;
-		case 2:
+		case IMPORTANCE_HIGH:
 			piline = ical_new_simple_line("PRIORITY", "1");
 			break;
 		default:
@@ -5274,11 +5272,10 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	if (pcomponent->append_line(piline) < 0)
 		return false;
 	
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_IMPORTANCE);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_IMPORTANCE);
 	if (NULL != pvalue) {
 		switch (*(uint32_t*)pvalue) {
-		case 0:
+		case IMPORTANCE_LOW:
 			piline = ical_new_simple_line(
 				"X-MICROSOFT-CDO-IMPORTANCE", "0");
 			if (NULL == piline) {
@@ -5287,7 +5284,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (pcomponent->append_line(piline) < 0)
 				return false;
 			break;
-		case 1:
+		case IMPORTANCE_NORMAL:
 			piline = ical_new_simple_line(
 				"X-MICROSOFT-CDO-IMPORTANCE", "1");
 			if (NULL == piline) {
@@ -5296,7 +5293,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (pcomponent->append_line(piline) < 0)
 				return false;
 			break;
-		case 2:
+		case IMPORTANCE_HIGH:
 			piline = ical_new_simple_line(
 				"X-MICROSOFT-CDO-IMPORTANCE", "2");
 			if (NULL == piline) {

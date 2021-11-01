@@ -101,6 +101,7 @@ enum {
  */
 enum {
 	PR_NULL = PROP_TAG(PT_NULL, 0x0000), /* PidTagNull */
+	PR_IMPORTANCE = PROP_TAG(PT_LONG, 0x0017), /* PidTagImportance */
 	PR_MESSAGE_CLASS = PROP_TAG(PT_UNICODE, 0x001A), /* PidTagMessageClass */
 	PR_MESSAGE_CLASS_A = PROP_TAG(PT_STRING8, 0x001A),
 	PR_PARENT_KEY = PROP_TAG(PT_BINARY, 0x0025), /* PidTagParentKey */
@@ -643,6 +644,12 @@ enum mapi_folder_type {
 	FOLDER_ROOT = 0,
 	FOLDER_GENERIC = 1,
 	FOLDER_SEARCH = 2,
+};
+
+enum mapi_importance {
+	IMPORTANCE_LOW = 0,
+	IMPORTANCE_NORMAL = 1,
+	IMPORTANCE_HIGH = 2,
 };
 
 enum mapi_object_type {
