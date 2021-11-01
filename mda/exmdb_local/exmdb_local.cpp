@@ -381,7 +381,6 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	char hostname[128];
 	char home_dir[256];
 	uint32_t tmp_int32;
-	TAGGED_PROPVAL propval;
 	uint32_t suppress_mask;
 	BOOL b_bounce_delivered = false;
 	ALLOC_CONTEXT alloc_ctx;
@@ -506,16 +505,11 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	pthread_setspecific(g_alloc_key, NULL);
 	
 	nt_time = rop_util_current_nttime();
-	propval.proptag = PROP_TAG_MESSAGEDELIVERYTIME;
-	propval.pvalue = &nt_time;
-	tpropval_array_set_propval(&pmsg->proplist, &propval);
+	pmsg->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME, &nt_time);
 	
 	if (FALSE == pcontext->pcontrol->need_bounce) {
-		propval.proptag = PROP_TAG_AUTORESPONSESUPPRESS;
-		propval.pvalue = &tmp_int32;
 		tmp_int32 = 0xFFFFFFFF;
-		tpropval_array_set_propval(
-			&pmsg->proplist, &propval);
+		pmsg->proplist.set(PROP_TAG_AUTORESPONSESUPPRESS, &tmp_int32);
 	}
 	
 	pmsg->proplist.erase(PROP_TAG_CHANGENUMBER);
