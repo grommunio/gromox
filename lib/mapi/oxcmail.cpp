@@ -2888,11 +2888,15 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 					if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 						pmime_enum->b_result = FALSE;
 					vcard_free(&vcard);
+					/* parsed successfully */
 					return;
 				}
 				vcard_free(&vcard);
 			}
-			tmp_int32 = ATTACH_EMBEDDED_MSG;
+			/* parsing as vcard failed */
+			tmp_int32 = ATTACH_BY_VALUE;
+			propval.proptag = PR_ATTACH_METHOD;
+			propval.pvalue = &tmp_int32;
 			if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 				pmime_enum->b_result = FALSE;
 				return;
