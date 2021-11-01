@@ -3204,7 +3204,6 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	uint64_t message_id;
 	char sql_string[1024];
 	struct stat node_stat;
-	TAGGED_PROPVAL propval;
 	char temp_buff[MAX_DIGLEN];
 	
 	if (6 != argc || strlen(argv[1]) >= 256
@@ -3285,27 +3284,19 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		return MIDB_E_NO_MEMORY;
 	}
 	auto nt_time = rop_util_unix_to_nttime(strtol(argv[5], nullptr, 0));
-	propval.proptag = PROP_TAG_MESSAGEDELIVERYTIME;
-	propval.pvalue = &nt_time;
-	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
+	if (pmsgctnt->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME, &nt_time) != 0) {
 		pidb.reset();
 		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
-	if (0 != b_read) {
-		propval.proptag = PR_READ;
-		propval.pvalue = &b_read;
-		if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
-			pidb.reset();
-			message_content_free(pmsgctnt);
-			return MIDB_E_NO_MEMORY;
-		}
+	if (b_read && pmsgctnt->proplist.set(PR_READ, &b_read) != 0) {
+		pidb.reset();
+		message_content_free(pmsgctnt);
+		return MIDB_E_NO_MEMORY;
 	}
 	if (0 != b_unsent) {
-		propval.proptag = PR_MESSAGE_FLAGS;
-		propval.pvalue = &tmp_flags;
 		tmp_flags = MSGFLAG_UNSENT;
-		if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
+		if (pmsgctnt->proplist.set(PR_MESSAGE_FLAGS, &tmp_flags) != 0) {
 			pidb.reset();
 			message_content_free(pmsgctnt);
 			return MIDB_E_NO_MEMORY;
@@ -3345,33 +3336,20 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		return MIDB_E_NO_MEMORY;
 	}
 	pidb.reset();
-	propval.proptag = PROP_TAG_MID;
-	propval.pvalue = &message_id;
-	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
-		message_content_free(pmsgctnt);
-		return MIDB_E_NO_MEMORY;
-	}
-	propval.proptag = PROP_TAG_CHANGENUMBER;
-	propval.pvalue = &change_num;
-	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
+	if (pmsgctnt->proplist.set(PROP_TAG_MID, &message_id) != 0 ||
+	    pmsgctnt->proplist.set(PROP_TAG_CHANGENUMBER, &change_num) != 0) {
 		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
 	auto pbin = cu_xid_to_bin({rop_util_make_user_guid(user_id), change_num});
-	if (NULL == pbin) {
-		message_content_free(pmsgctnt);
-		return MIDB_E_NO_MEMORY;
-	}   
-	propval.proptag = PR_CHANGE_KEY;
-	propval.pvalue = pbin;
-	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
+	if (pbin == nullptr ||
+	    pmsgctnt->proplist.set(PR_CHANGE_KEY, pbin) != 0) {
 		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
-	propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
-	propval.pvalue = common_util_pcl_append(NULL, pbin);
-	if (NULL == propval.pvalue ||
-	    !tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
+	auto newval = common_util_pcl_append(NULL, pbin);
+	if (newval == nullptr ||
+	    pmsgctnt->proplist.set(PR_PREDECESSOR_CHANGE_LIST, newval) != 0) {
 		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
@@ -3459,7 +3437,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	uint64_t message_id;
 	char sql_string[1024];
 	struct stat node_stat;
-	TAGGED_PROPVAL propval;
 
 	if (5 != argc || strlen(argv[1]) >= 256 ||
 		strlen(argv[2]) >= 1024 || strlen(argv[4]) >= 1024) {
@@ -3565,22 +3542,13 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	if (NULL == pmsgctnt) {
 		return MIDB_E_NO_MEMORY;
 	}
-
-	propval.proptag = PROP_TAG_MESSAGEDELIVERYTIME;
-	propval.pvalue = &nt_time;
-	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+	if (pmsgctnt->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME, &nt_time) != 0)
 		return MIDB_E_NO_MEMORY;
-	if (0 != b_read) {
-		propval.proptag = PR_READ;
-		propval.pvalue = &b_read;
-		if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
-			return MIDB_E_NO_MEMORY;
-	}
+	if (b_read && pmsgctnt->proplist.set(PR_READ, &b_read) != 0)
+		return MIDB_E_NO_MEMORY;
 	if (0 != b_unsent) {
-		propval.proptag = PR_MESSAGE_FLAGS;
-		propval.pvalue = &tmp_flags;
 		tmp_flags = MSGFLAG_UNSENT;
-		if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval))
+		if (pmsgctnt->proplist.set(PR_MESSAGE_FLAGS, &tmp_flags) != 0)
 			return MIDB_E_NO_MEMORY;
 	}
 	if (!exmdb_client::allocate_message_id(argv[1],
@@ -3631,33 +3599,20 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		return MIDB_E_NO_MEMORY;
 	}
 	pidb.reset();
-	propval.proptag = PROP_TAG_MID;
-	propval.pvalue = &message_id;
-	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
-		message_content_free(pmsgctnt);
-		return MIDB_E_NO_MEMORY;
-	}
-	propval.proptag = PROP_TAG_CHANGENUMBER;
-	propval.pvalue = &change_num;
-	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
+	if (pmsgctnt->proplist.set(PROP_TAG_MID, &message_id) != 0 ||
+	    pmsgctnt->proplist.set(PROP_TAG_CHANGENUMBER, &change_num) != 0) {
 		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
 	auto pbin = cu_xid_to_bin({rop_util_make_user_guid(user_id), change_num});
-	if (NULL == pbin) {
-		message_content_free(pmsgctnt);
-		return MIDB_E_NO_MEMORY;
-	}   
-	propval.proptag = PR_CHANGE_KEY;
-	propval.pvalue = pbin;
-	if (!tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
+	if (pbin == nullptr ||
+	    pmsgctnt->proplist.set(PR_CHANGE_KEY, pbin) != 0) {
 		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
-	propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
-	propval.pvalue = common_util_pcl_append(NULL, pbin);
-	if (NULL == propval.pvalue ||
-	    !tpropval_array_set_propval(&pmsgctnt->proplist, &propval)) {
+	auto newval = common_util_pcl_append(NULL, pbin);
+	if (newval == nullptr ||
+	    pmsgctnt->proplist.set(PR_PREDECESSOR_CHANGE_LIST, newval) != 0) {
 		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
