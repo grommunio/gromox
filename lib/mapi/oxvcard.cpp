@@ -161,7 +161,6 @@ MESSAGE_CONTENT* oxvcard_import(
 	MESSAGE_CONTENT *pmsg;
 	BINARY_ARRAY bin_array;
 	const char *photo_type;
-	TAGGED_PROPVAL propval;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
 	DOUBLE_LIST_NODE *pnode2;
@@ -183,9 +182,7 @@ MESSAGE_CONTENT* oxvcard_import(
 	if (NULL == pmsg) {
 		return NULL;
 	}
-	propval.proptag = PR_MESSAGE_CLASS;
-	propval.pvalue  = deconst("IPM.Contact");
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Contact") != 0)
 		goto IMPORT_FAILURE;
 	plist = (DOUBLE_LIST*)pvcard;
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
@@ -196,26 +193,16 @@ MESSAGE_CONTENT* oxvcard_import(
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring == nullptr)
 				goto IMPORT_FAILURE;
-			propval.proptag = g_vcarduid_proptag;
-			propval.pvalue = deconst(pstring);
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pmsg->proplist.set(g_vcarduid_proptag, pstring) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "FN")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (NULL == pstring) {
 				goto IMPORT_FAILURE;
 			}
-			propval.proptag = PR_DISPLAY_NAME;
-			propval.pvalue = deconst(pstring);
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
-				goto IMPORT_FAILURE;
-			propval.proptag = PR_NORMALIZED_SUBJECT;
-			propval.pvalue = tmp_buff;
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
-				goto IMPORT_FAILURE;
-			propval.proptag = PROP_TAG_CONVERSATIONTOPIC;
-			propval.pvalue = tmp_buff;
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pmsg->proplist.set(PR_DISPLAY_NAME, pstring) != 0 ||
+			    pmsg->proplist.set(PR_NORMALIZED_SUBJECT, tmp_buff) != 0 ||
+			    pmsg->proplist.set(PROP_TAG_CONVERSATIONTOPIC, tmp_buff) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "N")) {
 			count = 0;
@@ -231,24 +218,16 @@ MESSAGE_CONTENT* oxvcard_import(
 					goto IMPORT_FAILURE;
 				}
 				pnode2 = double_list_get_head(&pvvalue->subval_list);
-				if (NULL != pnode2) {
-					if (NULL != pnode2->pdata) {
-						propval.proptag = g_n_proptags[count];
-						propval.pvalue = pnode2->pdata;
-						if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
-							goto IMPORT_FAILURE;
-					}
-				}
+				if (pnode2 != nullptr && pnode2->pdata != nullptr &&
+				    pmsg->proplist.set(g_n_proptags[count], pnode2->pdata) != 0)
+					goto IMPORT_FAILURE;
 				count ++;
 			}
 		} else if (0 == strcasecmp(pvline->name, "NICKNAME")) {
 			pstring = vcard_get_first_subvalue(pvline);
-			if (NULL != pstring) {
-				propval.proptag = PROP_TAG_NICKNAME;
-				propval.pvalue = deconst(pstring);
-				if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pstring != nullptr &&
+			    pmsg->proplist.set(PROP_TAG_NICKNAME, pstring) != 0)
 					goto IMPORT_FAILURE;
-			}
 		} else if (0 == strcasecmp(pvline->name, "PHOTO")) {
 			if (NULL != pmsg->children.pattachments) {
 				goto IMPORT_FAILURE;
@@ -313,23 +292,14 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = decode_len;
-			propval.proptag = PR_ATTACH_DATA_BIN;
-			propval.pvalue = &tmp_bin;
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
-				goto IMPORT_FAILURE;
-			propval.proptag = PR_ATTACH_EXTENSION;
-			propval.pvalue = deconst(photo_type);
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+			if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0 ||
+			    pattachment->proplist.set(PR_ATTACH_EXTENSION, photo_type) != 0)
 				goto IMPORT_FAILURE;
 			snprintf(tmp_buff, arsizeof(tmp_buff), "ContactPhoto.%s", photo_type);
-			propval.proptag = PR_ATTACH_LONG_FILENAME;
-			propval.pvalue = tmp_buff;
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+			if (pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, tmp_buff) != 0)
 				goto IMPORT_FAILURE;
-			propval.proptag = PR_ATTACHMENT_CONTACTPHOTO;
-			propval.pvalue = &tmp_byte;
 			tmp_byte = 1;
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pmsg->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "BDAY")) {
 			pstring = vcard_get_first_subvalue(pvline);
@@ -339,9 +309,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL != strptime(pstring, "%Y-%m-%d", &tmp_tm)) {
 				tmp_int64 = rop_util_unix_to_nttime(
 							mktime(&tmp_tm) - timezone);
-				propval.proptag = PROP_TAG_BIRTHDAY;
-				propval.pvalue = &tmp_int64;
-				if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+				if (pmsg->proplist.set(PROP_TAG_BIRTHDAY, &tmp_int64) != 0)
 					goto IMPORT_FAILURE;
 			}
 		} else if (0 == strcasecmp(pvline->name, "ADR")) {
@@ -373,15 +341,15 @@ MESSAGE_CONTENT* oxvcard_import(
 					if (NULL == pnode2->pdata) {
 						continue;
 					}
+					uint32_t tag;
 					if (0 == strcasecmp(address_type, "work")) {
-						propval.proptag = g_workaddr_proptags[count];
+						tag = g_workaddr_proptags[count];
 					} else if (0 == strcasecmp(address_type, "home")) {
-						propval.proptag = g_homeaddr_proptags[count];
+						tag = g_homeaddr_proptags[count];
 					} else {
-						propval.proptag = g_otheraddr_proptags[count];
+						tag = g_otheraddr_proptags[count];
 					}
-					propval.pvalue = pnode2->pdata;
-					if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+					if (pmsg->proplist.set(tag, pnode2->pdata) != 0)
 						goto IMPORT_FAILURE;
 				}
 				count ++;
@@ -404,79 +372,73 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.pvalue = deconst(pstring);
+			uint32_t tag = 0;
 			auto keyword = static_cast<char *>(pnode2->pdata);
 			if (strcasecmp(keyword, "home") == 0) {
 				pnode1 = double_list_get_after(
 					&pvline->param_list, pnode1);
 				if (NULL == pnode1) {
-					propval.proptag = pmsg->proplist.has(PROP_TAG_HOMETELEPHONENUMBER) ?
+					tag = pmsg->proplist.has(PROP_TAG_HOMETELEPHONENUMBER) ?
 					                  PROP_TAG_HOME2TELEPHONENUMBER :
 					                  PROP_TAG_HOMETELEPHONENUMBER;
 				} else if (0 == strcasecmp(((VCARD_PARAM*)
 					pnode1->pdata)->name, "fax")) {
-					propval.proptag = PROP_TAG_HOMEFAXNUMBER;
+					tag = PROP_TAG_HOMEFAXNUMBER;
 				} else {
 					goto IMPORT_FAILURE;
 				}
 			} else if (strcasecmp(keyword, "voice") == 0) {
-				propval.proptag = PROP_TAG_OTHERTELEPHONENUMBER;
+				tag = PROP_TAG_OTHERTELEPHONENUMBER;
 			} else if (strcasecmp(keyword, "work") == 0) {
 				pnode1 = double_list_get_after(
 					&pvline->param_list, pnode1);
 				if (NULL == pnode1) {
-					propval.proptag = pmsg->proplist.has(PROP_TAG_BUSINESSTELEPHONENUMBER) ?
+					tag = pmsg->proplist.has(PROP_TAG_BUSINESSTELEPHONENUMBER) ?
 					                  PROP_TAG_BUSINESS2TELEPHONENUMBER :
 					                  PROP_TAG_BUSINESSTELEPHONENUMBER;
 				} else if (0 == strcasecmp(((VCARD_PARAM*)
 					pnode1->pdata)->name, "fax")) {
-					propval.proptag = PROP_TAG_BUSINESSFAXNUMBER;
+					tag = PROP_TAG_BUSINESSFAXNUMBER;
 				} else {
 					goto IMPORT_FAILURE;
 				}
 			} else if (strcasecmp(keyword, "cell") == 0) {
-				propval.proptag = PROP_TAG_MOBILETELEPHONENUMBER;
+				tag = PROP_TAG_MOBILETELEPHONENUMBER;
 			} else if (strcasecmp(keyword, "pager") == 0) {
-				propval.proptag = PROP_TAG_PAGERTELEPHONENUMBER;
+				tag = PROP_TAG_PAGERTELEPHONENUMBER;
 			} else if (strcasecmp(keyword, "car") == 0) {
-				propval.proptag = PROP_TAG_CARTELEPHONENUMBER;
+				tag = PROP_TAG_CARTELEPHONENUMBER;
 			} else if (strcasecmp(keyword, "isdn") == 0) {
-				propval.proptag = PROP_TAG_ISDNNUMBER;
+				tag = PROP_TAG_ISDNNUMBER;
 			} else if (strcasecmp(keyword, "pref") == 0) {
-				propval.proptag = PROP_TAG_PRIMARYTELEPHONENUMBER;
+				tag = PROP_TAG_PRIMARYTELEPHONENUMBER;
 			} else {
 				continue;
 			}
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pmsg->proplist.set(tag, pstring) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "EMAIL")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.pvalue = deconst(pstring);
 			if (mail_count > 2)
 				continue;
-			propval.proptag = g_email_proptags[mail_count++];
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pmsg->proplist.set(g_email_proptags[mail_count++], pstring) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "TITLE")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.proptag = PROP_TAG_TITLE;
-			propval.pvalue = deconst(pstring);
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pmsg->proplist.set(PROP_TAG_TITLE, pstring) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "ROLE")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.proptag = PROP_TAG_PROFESSION;
-			propval.pvalue = deconst(pstring);
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pmsg->proplist.set(PROP_TAG_PROFESSION, pstring) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "ORG")) {
 			pnode1 = double_list_get_head(&pvline->value_list);
@@ -486,23 +448,17 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL != pnode1->pdata) {
 				pvvalue = (VCARD_VALUE*)pnode1->pdata;
 				pnode2 = double_list_get_head(&pvvalue->subval_list);
-				if (NULL != pnode2 && NULL != pnode2->pdata) {
-					propval.proptag = PROP_TAG_COMPANYNAME;
-					propval.pvalue = pnode2->pdata;
-					if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
-						goto IMPORT_FAILURE;
-				}
+				if (pnode2 != nullptr && pnode2->pdata != nullptr &&
+				    pmsg->proplist.set(PROP_TAG_COMPANYNAME, pnode2->pdata) != 0)
+					goto IMPORT_FAILURE;
 			}
 			pnode1 = double_list_get_after(&pvline->value_list, pnode1);
 			if (NULL != pnode1 && NULL != pnode1->pdata) {
 				pvvalue = (VCARD_VALUE*)pnode1->pdata;
 				pnode2 = double_list_get_head(&pvvalue->subval_list);
-				if (NULL != pnode2 && NULL != pnode2->pdata) {
-					propval.proptag = PROP_TAG_DEPARTMENTNAME;
-					propval.pvalue = pnode2->pdata;
-					if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
-						goto IMPORT_FAILURE;
-				}
+				if (pnode2 != nullptr && pnode2->pdata != nullptr &&
+				    pmsg->proplist.set(PROP_TAG_DEPARTMENTNAME, pnode2->pdata) != 0)
+					goto IMPORT_FAILURE;
 			}
 		} else if (strcasecmp(pvline->name, "CATEGORIES") == 0) {
 			pnode1 = double_list_get_head(&pvline->value_list);
@@ -521,20 +477,15 @@ MESSAGE_CONTENT* oxvcard_import(
 				strings_array.ppstr[strings_array.count] = static_cast<char *>(pnode2->pdata);
 				strings_array.count ++;
 			}
-			if (0 != strings_array.count && strings_array.count < 128) {
-				propval.proptag = g_categories_proptag;
-				propval.pvalue = &strings_array;
-				if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
-					goto IMPORT_FAILURE;
-			}
+			if (strings_array.count != 0 && strings_array.count < 128 &&
+			    pmsg->proplist.set(g_categories_proptag, &strings_array) != 0)
+				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "NOTE")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.proptag = PR_BODY;
-			propval.pvalue = deconst(pstring);
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pmsg->proplist.set(PR_BODY, pstring) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "REV")) {
 			pstring = vcard_get_first_subvalue(pvline);
@@ -545,9 +496,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL != strptime(pstring, "%Y-%m-%dT%H:%M:%S", &tmp_tm)) {
 				tmp_int64 = rop_util_unix_to_nttime(
 						mktime(&tmp_tm) - timezone);
-				propval.proptag = PR_LAST_MODIFICATION_TIME;
-				propval.pvalue = &tmp_int64;
-				if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+				if (pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &tmp_int64) != 0)
 					goto IMPORT_FAILURE;
 			}
 		} else if (0 == strcasecmp(pvline->name, "URL")) {
@@ -568,16 +517,16 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.pvalue = deconst(pstring);
+			uint32_t tag;
 			auto keyword = static_cast<char *>(pnode2->pdata);
 			if (strcasecmp(keyword, "home") == 0) {
-				propval.proptag = PROP_TAG_PERSONALHOMEPAGE;
+				tag = PROP_TAG_PERSONALHOMEPAGE;
 			} else if (strcasecmp(keyword, "work") == 0) {
-				propval.proptag = PROP_TAG_BUSINESSHOMEPAGE;
+				tag = PROP_TAG_BUSINESSHOMEPAGE;
 			} else {
 				continue;
 			}
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pmsg->proplist.set(tag, pstring) != 0)
 				goto IMPORT_FAILURE;
 		} else if (strcasecmp(pvline->name, "CLASS") == 0 &&
 		    (pstring = vcard_get_first_subvalue(pvline)) != nullptr) {
@@ -588,9 +537,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			} else {
 				tmp_int32 = SENSITIVITY_NONE;
 			}
-			propval.proptag = PR_SENSITIVITY;
-			propval.pvalue = &tmp_int32;
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pmsg->proplist.set(PR_SENSITIVITY, &tmp_int32) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "KEY")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
@@ -614,24 +561,20 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (0 != decode64(pstring, tmp_len, tmp_buff, &decode_len)) {
 				goto IMPORT_FAILURE;
 			}
-			propval.proptag = PROP_TAG_USERX509CERTIFICATE;
-			propval.pvalue = &bin_array;
 			bin_array.count = 1;
 			bin_array.pbin = &tmp_bin;
 			tmp_bin.pc = tmp_buff;
 			tmp_bin.cb = decode_len;
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pmsg->proplist.set(PROP_TAG_USERX509CERTIFICATE, &bin_array) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-OL-DESIGN")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.proptag = g_bcd_proptag;
-			propval.pvalue = &tmp_bin;
 			tmp_bin.cb = strlen(pstring);
 			tmp_bin.pv = deconst(pstring);
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pmsg->proplist.set(g_bcd_proptag, &tmp_bin) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-CHILD")) {
 			pstring = vcard_get_first_subvalue(pvline);
@@ -647,13 +590,10 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.pvalue = deconst(pstring);
 			if (ufld_count > 3) {
 				goto IMPORT_FAILURE;
 			}
-			propval.proptag = g_ufld_proptags[ufld_count];
-			ufld_count ++;
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pmsg->proplist.set(g_ufld_proptags[ufld_count++], pstring) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-IMADDRESS") ||
 			0 == strcasecmp(pvline->name, "X-MS-RM-IMACCOUNT")) {
@@ -661,9 +601,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.proptag = g_im_proptag;
-			propval.pvalue = deconst(pstring);
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pmsg->proplist.set(g_im_proptag, pstring) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-TEL")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
@@ -678,22 +616,21 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.pvalue = deconst(pstring);
+			uint32_t tag;
 			if (0 == strcasecmp(pvparam->name, "ASSISTANT")) {
-				propval.proptag = PROP_TAG_ASSISTANTTELEPHONENUMBER;
+				tag = PROP_TAG_ASSISTANTTELEPHONENUMBER;
 			} else if (0 == strcasecmp(pvparam->name, "CALLBACK")) {
-				propval.proptag = PROP_TAG_CALLBACKTELEPHONENUMBER;
+				tag = PROP_TAG_CALLBACKTELEPHONENUMBER;
 			} else if (0 == strcasecmp(pvparam->name, "COMPANY")) {
-				propval.proptag = PROP_TAG_COMPANYMAINTELEPHONENUMBER;
+				tag = PROP_TAG_COMPANYMAINTELEPHONENUMBER;
 			} else if (0 != strcasecmp(pvparam->name, "RADIO")) {
-				propval.proptag = PROP_TAG_RADIOTELEPHONENUMBER;
+				tag = PROP_TAG_RADIOTELEPHONENUMBER;
 			} else if (0 == strcasecmp(pvparam->name, "TTYTTD")) {
-				propval.proptag =
-					PROP_TAG_TELECOMMUNICATIONSDEVICEFORDEAFTELEPHONENUMBER;
+				tag = PROP_TAG_TELECOMMUNICATIONSDEVICEFORDEAFTELEPHONENUMBER;
 			} else {
 				goto IMPORT_FAILURE;
 			}
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pmsg->proplist.set(tag, pstring) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-ANNIVERSARY")) {
 			pstring = vcard_get_first_subvalue(pvline);
@@ -703,9 +640,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL != strptime(pstring, "%Y-%m-%d", &tmp_tm)) {
 				tmp_int64 = rop_util_unix_to_nttime(
 							mktime(&tmp_tm) - timezone);
-				propval.proptag = PROP_TAG_WEDDINGANNIVERSARY;
-				propval.pvalue = &tmp_int64;
-				if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+				if (pmsg->proplist.set(PROP_TAG_WEDDINGANNIVERSARY, &tmp_int64) != 0)
 					goto IMPORT_FAILURE;
 			}	
 		} else if (0 == strcasecmp(pvline->name, "X-MS-SPOUSE")) {
@@ -722,9 +657,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.proptag = PROP_TAG_SPOUSENAME;
-			propval.pvalue = deconst(pstring);
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pmsg->proplist.set(PROP_TAG_SPOUSENAME, pstring) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-MANAGER")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
@@ -740,9 +673,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.proptag = PROP_TAG_MANAGERNAME;
-			propval.pvalue = deconst(pstring);
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pmsg->proplist.set(PROP_TAG_MANAGERNAME, pstring) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-ASSISTANT")) {
 			pnode1 = double_list_get_head(&pvline->param_list);
@@ -758,18 +689,14 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.proptag = PROP_TAG_ASSISTANT;
-			propval.pvalue = deconst(pstring);
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pmsg->proplist.set(PROP_TAG_ASSISTANT, pstring) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "FBURL")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (NULL == pstring) {
 				continue;
 			}
-			propval.proptag = g_fbl_proptag;
-			propval.pvalue = deconst(pstring);
-			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+			if (pmsg->proplist.set(g_fbl_proptag, pstring) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "X-MS-INTERESTS")) {
 			pnode1 = double_list_get_head(&pvline->value_list);
@@ -788,20 +715,14 @@ MESSAGE_CONTENT* oxvcard_import(
 				strings_array.ppstr[strings_array.count] = static_cast<char *>(pnode2->pdata);
 				strings_array.count ++;
 			}
-			if (0 != strings_array.count && strings_array.count < 128) {
-				propval.proptag = PROP_TAG_HOBBIES;
-				propval.pvalue = &strings_array;
-				if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
-					goto IMPORT_FAILURE;
-			}
+			if (strings_array.count != 0 && strings_array.count < 128 &&
+			    pmsg->proplist.set(PROP_TAG_HOBBIES, &strings_array) != 0)
+				goto IMPORT_FAILURE;
 		}
 	}
-	if (0 != child_strings.count) {
-		propval.proptag = PROP_TAG_CHILDRENSNAMES;
-		propval.pvalue = &child_strings;
-		if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
-			goto IMPORT_FAILURE;
-	}
+	if (child_strings.count != 0 &&
+	    pmsg->proplist.set(PROP_TAG_CHILDRENSNAMES, &child_strings) != 0)
+		goto IMPORT_FAILURE;
 	for (i=0; i<pmsg->proplist.count; i++) {
 		proptag = pmsg->proplist.ppropval[i].proptag;
 		propid = PROP_ID(proptag);
@@ -1468,11 +1389,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	if (pvalue == nullptr) {
 		auto guid = guid_random_new();
 		auto gstr = "uuid:" + bin2hex(&guid, sizeof(guid));
-		TAGGED_PROPVAL pv2;
-		pv2.proptag = PROP_TAG(PROP_TYPE(g_vcarduid_proptag), propids.ppropid[PROP_ID(g_vcarduid_proptag)-0x8000]);
-		pv2.pvalue  = deconst(gstr.c_str());
-		tpropval_array_set_propval(&pmsg->proplist, &pv2);
-		pvalue = pmsg->proplist.get<char>(PROP_TAG(PROP_TYPE(g_vcarduid_proptag), propids.ppropid[PROP_ID(g_vcarduid_proptag)-0x8000]));
+		uint32_t tag = PROP_TAG(PROP_TYPE(g_vcarduid_proptag), propids.ppropid[PROP_ID(g_vcarduid_proptag)-0x8000]);
+		pmsg->proplist.set(proptag, gstr.c_str());
+		pvalue = pmsg->proplist.get<char>(tag);
 	}
 	if (pvalue != nullptr) {
 		pvline = vcard_new_simple_line("UID", pvalue);
