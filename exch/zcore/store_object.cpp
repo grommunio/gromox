@@ -607,7 +607,6 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 		pproptags->pproptag[pproptags->count++] = PR_IPM_PUBLIC_FOLDERS_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_NON_IPM_SUBTREE_ENTRYID;
 		pproptags->pproptag[pproptags->count++] = PR_EFORMS_REGISTRY_ENTRYID;
-		pproptags->count ++;
 		/* TODO: For PR_EMAIL_ADDRESS,
 		check if the mail address of a public folder exists. */
 	}
