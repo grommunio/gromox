@@ -841,22 +841,18 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	if (NULL == pfolder) {
 		return ecNullObject;
 	}
-	if (sync_type == SYNC_TYPE_CONTENTS) {
-		if (plogon->logon_mode != LOGON_MODE_OWNER) {
-			auto rpc_info = get_rpc_info();
-			if (!exmdb_client_check_folder_permission(plogon->get_dir(),
-			    pfolder->folder_id, rpc_info.username, &permission))
-				return ecError;
-			if (!(permission & (frightsOwner | frightsReadAny)))
-				return ecAccessDenied;
-		}
-	}
-	if (NULL != pres) {
-		if (FALSE == common_util_convert_restriction(
-			TRUE, (RESTRICTION*)pres)) {
+	if (sync_type == SYNC_TYPE_CONTENTS &&
+	    plogon->logon_mode != LOGON_MODE_OWNER) {
+		auto rpc_info = get_rpc_info();
+		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
+		    pfolder->folder_id, rpc_info.username, &permission))
 			return ecError;
-		}
+		if (!(permission & (frightsOwner | frightsReadAny)))
+			return ecAccessDenied;
 	}
+	if (pres != nullptr && !common_util_convert_restriction(TRUE,
+	    const_cast<RESTRICTION *>(pres)))
+			return ecError;
 	auto pctx = icsdownctx_object::create(plogon, pfolder, sync_type,
 	            send_options, sync_flags, pres, extra_flags, pproptags);
 	auto hnd = rop_processor_add_object_handle(plogmap,
