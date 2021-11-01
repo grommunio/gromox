@@ -159,41 +159,42 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 		}
 		pfldctnt->append_normallist_internal(pmessage_ids);
 	}
-	if (TRUE == b_sub) {
-		DCERPC_INFO rpc_info;
-		if (plogon->logon_mode != LOGON_MODE_OWNER) {
-			rpc_info = get_rpc_info();
-			username = rpc_info.username;
-		} else {
-			username = NULL;
+	if (!b_sub)
+		return pfldctnt;
+
+	DCERPC_INFO rpc_info;
+	if (plogon->logon_mode != LOGON_MODE_OWNER) {
+		rpc_info = get_rpc_info();
+		username = rpc_info.username;
+	} else {
+		username = NULL;
+	}
+	if (!exmdb_client_load_hierarchy_table(plogon->get_dir(),
+	    folder_id, username, TABLE_FLAG_NONOTIFICATIONS, nullptr,
+	    &table_id, &row_count)) {
+		return NULL;
+	}
+	tmp_proptags.count = 1;
+	tmp_proptags.pproptag = &tmp_proptag;
+	tmp_proptag = PROP_TAG_FOLDERID;
+	if (!exmdb_client_query_table(plogon->get_dir(), nullptr, 0,
+	    table_id, &tmp_proptags, 0, row_count, &tmp_set)) {
+		return NULL;
+	}
+	exmdb_client_unload_table(plogon->get_dir(), table_id);
+	for (size_t i = 0; i < tmp_set.count; ++i) {
+		pfolder_id = static_cast<uint64_t *>(common_util_get_propvals(
+			     tmp_set.pparray[i], PROP_TAG_FOLDERID));
+		if (NULL == pfolder_id) {
+			return NULL;
 		}
-		if (!exmdb_client_load_hierarchy_table(plogon->get_dir(),
-		    folder_id, username, TABLE_FLAG_NONOTIFICATIONS, nullptr,
-		    &table_id, &row_count)) {
-			return NULL;	
+		auto psubfldctnt = oxcfxics_load_folder_content(
+		                   plogon, *pfolder_id, TRUE, TRUE, TRUE);
+		if (NULL == psubfldctnt) {
+			return NULL;
 		}
-		tmp_proptags.count = 1;
-		tmp_proptags.pproptag = &tmp_proptag;
-		tmp_proptag = PROP_TAG_FOLDERID;
-		if (!exmdb_client_query_table(plogon->get_dir(), nullptr, 0,
-		    table_id, &tmp_proptags, 0, row_count, &tmp_set)) {
-			return NULL;	
-		}
-		exmdb_client_unload_table(plogon->get_dir(), table_id);
-		for (size_t i = 0; i < tmp_set.count; ++i) {
-			pfolder_id = static_cast<uint64_t *>(common_util_get_propvals(
-			             tmp_set.pparray[i], PROP_TAG_FOLDERID));
-			if (NULL == pfolder_id) {
-				return NULL;
-			}
-			auto psubfldctnt = oxcfxics_load_folder_content(
-				plogon, *pfolder_id, TRUE, TRUE, TRUE);
-			if (NULL == psubfldctnt) {
-				return NULL;
-			}
-			if (!pfldctnt->append_subfolder_internal(std::move(*psubfldctnt)))
-				return NULL;
-		}
+		if (!pfldctnt->append_subfolder_internal(std::move(*psubfldctnt)))
+			return NULL;
 	}
 	return pfldctnt;
 }
