@@ -1205,7 +1205,7 @@ static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
 			return TRUE;
 		}
 		propval.pvalue = deconst("IPM.Note.Microsoft.Voicemail.UM");
-	} if (0 == strncasecmp(field, "urn:content-class:custom.", 25)) {
+	} else if (0 == strncasecmp(field, "urn:content-class:custom.", 25)) {
 		snprintf(tmp_class, arsizeof(tmp_class), "IPM.Note.Custom.%s", field + 25);
 		propval.pvalue = tmp_class;
 	} else if (0 == strncasecmp(field, "InfoPathForm.", 13)) {
