@@ -669,7 +669,6 @@ static BOOL oxcical_parse_tzdisplay(BOOL b_dtstart,
 	uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	BINARY tmp_bin;
-	TAGGED_PROPVAL propval;
 	PROPERTY_NAME propname;
 	TIMEZONEDEFINITION tz_definition;
 	TZRULE rules_buff[MAX_TZRULE_NUMBER];
@@ -691,9 +690,7 @@ static BOOL oxcical_parse_tzdisplay(BOOL b_dtstart,
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
-	propval.pvalue = &tmp_bin;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	return TRUE;
@@ -704,7 +701,6 @@ static BOOL oxcical_parse_recurring_timezone(std::shared_ptr<ICAL_COMPONENT> ptz
 {
 	BINARY tmp_bin;
 	const char *ptzid;
-	TAGGED_PROPVAL propval;
 	PROPERTY_NAME propname;
 	TIMEZONESTRUCT tz_struct;
 	TIMEZONEDEFINITION tz_definition;
@@ -729,9 +725,7 @@ static BOOL oxcical_parse_recurring_timezone(std::shared_ptr<ICAL_COMPONENT> ptz
 	propname.lid = PidLidTimeZoneDescription;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_UNICODE, *plast_propid);
-	propval.pvalue = deconst(ptzid);
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), ptzid) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	oxcical_convert_to_tzstruct(&tz_definition, &tz_struct);
@@ -746,9 +740,7 @@ static BOOL oxcical_parse_recurring_timezone(std::shared_ptr<ICAL_COMPONENT> ptz
 	propname.lid = PidLidTimeZoneStruct;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
-	propval.pvalue = &tmp_bin;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	tmp_bin.pb = bin_buff;
@@ -763,9 +755,7 @@ static BOOL oxcical_parse_recurring_timezone(std::shared_ptr<ICAL_COMPONENT> ptz
 	propname.lid = PidLidAppointmentTimeZoneDefinitionRecur;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
-	propval.pvalue = &tmp_bin;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	return TRUE;
@@ -775,7 +765,6 @@ static BOOL oxcical_parse_proposal(namemap &phash,
 	uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	uint8_t tmp_byte;
-	TAGGED_PROPVAL propval;
 	PROPERTY_NAME propname;
 	
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
@@ -783,10 +772,8 @@ static BOOL oxcical_parse_proposal(namemap &phash,
 	propname.lid = PidLidAppointmentCounterProposal;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_BOOLEAN, *plast_propid);
-	propval.pvalue = &tmp_byte;
 	tmp_byte = 1;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	return TRUE;
@@ -804,7 +791,6 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 	uint8_t tmp_buff[1024];
 	const char *pcutype;
 	const char *paddress;
-	TAGGED_PROPVAL propval;
 	TPROPVAL_ARRAY *pproplist;
 	const char *pdisplay_name;
 	
@@ -846,45 +832,23 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 			tpropval_array_free(pproplist);
 			return FALSE;
 		}
-		propval.proptag = PROP_TAG_ADDRESSTYPE;
-		propval.pvalue  = deconst("SMTP");
-		if (!tpropval_array_set_propval(pproplist, &propval))
-			return FALSE;
-		propval.proptag = PR_EMAIL_ADDRESS;
-		propval.pvalue = deconst(paddress);
-		if (!tpropval_array_set_propval(pproplist, &propval))
-			return FALSE;
-		propval.proptag = PR_SMTP_ADDRESS;
-		propval.pvalue = deconst(paddress);
-		if (!tpropval_array_set_propval(pproplist, &propval))
+		if (pproplist->set(PROP_TAG_ADDRESSTYPE, "SMTP") != 0 ||
+		    pproplist->set(PR_EMAIL_ADDRESS, paddress) != 0 ||
+		    pproplist->set(PR_SMTP_ADDRESS, paddress) != 0)
 			return FALSE;
 		if (NULL == pdisplay_name) {
 			pdisplay_name = paddress;
 		}
-		propval.proptag = PR_DISPLAY_NAME;
-		propval.pvalue = deconst(pdisplay_name);
-		if (!tpropval_array_set_propval(pproplist, &propval))
-			return FALSE;
-		propval.proptag = PROP_TAG_TRANSMITTABLEDISPLAYNAME;
-		propval.pvalue = deconst(pdisplay_name);
-		if (!tpropval_array_set_propval(pproplist, &propval))
+		if (pproplist->set(PR_DISPLAY_NAME, pdisplay_name) != 0 ||
+		    pproplist->set(PROP_TAG_TRANSMITTABLEDISPLAYNAME, pdisplay_name) != 0)
 			return FALSE;
 		tmp_bin.pb = tmp_buff;
 		tmp_bin.cb = 0;
 		auto dtypx = DT_MAILUSER;
-		if (!username_to_entryid(paddress, pdisplay_name, &tmp_bin, &dtypx))
-			return FALSE;
-		propval.proptag = PR_ENTRYID;
-		propval.pvalue = &tmp_bin;
-		if (!tpropval_array_set_propval(pproplist, &propval))
-			return FALSE;
-		propval.proptag = PROP_TAG_RECIPIENTENTRYID;
-		propval.pvalue = &tmp_bin;
-		if (!tpropval_array_set_propval(pproplist, &propval))
-			return FALSE;
-		propval.proptag = PR_RECORD_KEY;
-		propval.pvalue = &tmp_bin;
-		if (!tpropval_array_set_propval(pproplist, &propval))
+		if (!username_to_entryid(paddress, pdisplay_name, &tmp_bin, &dtypx) ||
+		    pproplist->set(PR_ENTRYID, &tmp_bin) != 0 ||
+		    pproplist->set(PROP_TAG_RECIPIENTENTRYID, &tmp_bin) != 0 ||
+		    pproplist->set(PR_RECORD_KEY, &tmp_bin) != 0)
 			return FALSE;
 		if (NULL != prole && 0 == strcasecmp(prole, "CHAIR")) {
 			tmp_int32 = 1;
@@ -906,38 +870,27 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 		} else {
 			tmp_int32 = 1;
 		}
-		propval.proptag = PROP_TAG_RECIPIENTTYPE;
-		propval.pvalue = &tmp_int32;
-		if (!tpropval_array_set_propval(pproplist, &propval))
+		if (pproplist->set(PROP_TAG_RECIPIENTTYPE, &tmp_int32) != 0)
 			return FALSE;
-		propval.proptag = PR_OBJECT_TYPE;
-		propval.pvalue = &tmp_int32;
 		tmp_int32 = dtypx == DT_DISTLIST ? MAPI_DISTLIST : MAPI_MAILUSER;
-		if (!tpropval_array_set_propval(pproplist, &propval))
+		if (pproplist->set(PR_OBJECT_TYPE, &tmp_int32) != 0)
 			return FALSE;
-		propval.proptag = PR_DISPLAY_TYPE;
-		propval.pvalue = &tmp_int32;
 		tmp_int32 = static_cast<uint32_t>(dtypx);
-		if (!tpropval_array_set_propval(pproplist, &propval))
+		if (pproplist->set(PR_DISPLAY_TYPE, &tmp_int32) != 0)
 			return FALSE;
 		tmp_byte = 1;
-		propval.proptag = PROP_TAG_RESPONSIBILITY;
-		propval.pvalue = &tmp_byte;
-		if (!tpropval_array_set_propval(pproplist, &propval))
+		if (pproplist->set(PROP_TAG_RESPONSIBILITY, &tmp_byte) != 0)
 			return FALSE;
 		tmp_int32 = 1;
-		propval.proptag = PROP_TAG_RECIPIENTFLAGS;
-		propval.pvalue = &tmp_int32;
-		if (!tpropval_array_set_propval(pproplist, &propval))
+		if (pproplist->set(PROP_TAG_RECIPIENTFLAGS, &tmp_int32) != 0)
 			return FALSE;
 	}
-	propval.proptag = PROP_TAG_RESPONSEREQUESTED;
-	propval.pvalue = &tmp_byte;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
-		return FALSE;
-	propval.proptag = PROP_TAG_REPLYREQUESTED;
-	propval.pvalue = &tmp_byte;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	/*
+	 * XXX: Value of tmp_byte is unclear, but it appears it coincides with
+	 * the presence of any recipients.
+	 */
+	if (pmsg->proplist.set(PROP_TAG_RESPONSEREQUESTED, &tmp_byte) != 0 ||
+	    pmsg->proplist.set(PROP_TAG_REPLYREQUESTED, &tmp_byte) != 0)
 		return FALSE;
 	return TRUE;
 }
@@ -946,7 +899,6 @@ static BOOL oxcical_parse_categories(std::shared_ptr<ICAL_LINE> piline,
    namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	char *tmp_buff[128];
-	TAGGED_PROPVAL propval;
 	PROPERTY_NAME propname;
 	STRING_ARRAY strings_array;
 	
@@ -970,9 +922,7 @@ static BOOL oxcical_parse_categories(std::shared_ptr<ICAL_LINE> piline,
 		propname.pname = deconst(PidNameKeywords);
 		if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 			return FALSE;
-		propval.proptag = PROP_TAG(PT_MV_UNICODE, *plast_propid);
-		propval.pvalue = &strings_array;
-		if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+		if (pmsg->proplist.set(PROP_TAG(PT_MV_UNICODE, *plast_propid), &strings_array) != 0)
 			return FALSE;
 		(*plast_propid) ++;
 	}
@@ -984,7 +934,6 @@ static BOOL oxcical_parse_class(std::shared_ptr<ICAL_LINE> piline,
 {
 	uint32_t tmp_int32;
 	const char *pvalue;
-	TAGGED_PROPVAL propval;
 	
 	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
@@ -1002,9 +951,7 @@ static BOOL oxcical_parse_class(std::shared_ptr<ICAL_LINE> piline,
 	} else {
 		return TRUE;
 	}
-	propval.proptag = PR_SENSITIVITY;
-	propval.pvalue = &tmp_int32;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PR_SENSITIVITY, &tmp_int32) != 0)
 		return FALSE;
 	return TRUE;
 }
@@ -1013,15 +960,12 @@ static BOOL oxcical_parse_body(std::shared_ptr<ICAL_LINE> piline,
     MESSAGE_CONTENT *pmsg)
 {
 	const char *pvalue;
-	TAGGED_PROPVAL propval;
 	
 	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return TRUE;
 	}
-	propval.proptag = PR_BODY;
-	propval.pvalue = deconst(pvalue);
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PR_BODY, pvalue) != 0)
 		return FALSE;
 	return TRUE;
 }
@@ -1032,22 +976,17 @@ static BOOL oxcical_parse_html(std::shared_ptr<ICAL_LINE> piline,
 	BINARY tmp_bin;
 	const char *pvalue;
 	uint32_t tmp_int32;
-	TAGGED_PROPVAL propval;
 	
 	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return TRUE;
 	}
-	propval.proptag = PROP_TAG_HTML;
-	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = strlen(pvalue);
 	tmp_bin.pc = deconst(pvalue);
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG_HTML, &tmp_bin) != 0)
 		return FALSE;
-	propval.proptag = PR_INTERNET_CPID;
-	propval.pvalue = &tmp_int32;
 	tmp_int32 = 65001;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PR_INTERNET_CPID, &tmp_int32) != 0)
 		return FALSE;
 	return TRUE;
 }
@@ -1060,7 +999,6 @@ static BOOL oxcical_parse_dtstamp(std::shared_ptr<ICAL_LINE> piline,
 	uint64_t tmp_int64;
 	const char *pvalue;
 	PROPERTY_NAME propname;
-	TAGGED_PROPVAL propval;
 	
 	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
@@ -1075,10 +1013,8 @@ static BOOL oxcical_parse_dtstamp(std::shared_ptr<ICAL_LINE> piline,
 	rop_util_get_common_pset(PSETID_MEETING, &propname.guid);
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
-	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	return TRUE;
@@ -1090,7 +1026,6 @@ static BOOL oxcical_parse_start_end(BOOL b_start, BOOL b_proposal,
 {
 	uint64_t tmp_int64;
 	PROPERTY_NAME propname;
-	TAGGED_PROPVAL propval;
 	
 	tmp_int64 = rop_util_unix_to_nttime(unix_time);
 	if (TRUE == b_proposal) {
@@ -1100,9 +1035,7 @@ static BOOL oxcical_parse_start_end(BOOL b_start, BOOL b_proposal,
 		rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
 		if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 			return FALSE;
-		propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
-		propval.pvalue = &tmp_int64;
-		if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+		if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0)
 			return FALSE;
 		(*plast_propid) ++;
 	}
@@ -1115,9 +1048,7 @@ static BOOL oxcical_parse_start_end(BOOL b_start, BOOL b_proposal,
 		rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
 		if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 			return FALSE;
-		propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
-		propval.pvalue = &tmp_int64;
-		if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+		if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0)
 			return FALSE;
 		(*plast_propid) ++;
 	}
@@ -1129,17 +1060,14 @@ static BOOL oxcical_parse_subtype(namemap &phash, uint16_t *plast_propid,
 {
 	uint8_t tmp_byte;
 	PROPERTY_NAME propname;
-	TAGGED_PROPVAL propval;
 	
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
 	propname.kind = MNID_ID;
 	propname.lid = PidLidAppointmentSubType;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_BOOLEAN, *plast_propid);
-	propval.pvalue = &tmp_byte;
 	tmp_byte = 1;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	if (NULL != pexception) {
@@ -1212,16 +1140,13 @@ static BOOL oxcical_parse_duration(uint32_t minutes, namemap &phash,
     uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
 	PROPERTY_NAME propname;
-	TAGGED_PROPVAL propval;
 	
 	rop_util_get_common_pset(PSETID_APPOINTMENT, &propname.guid);
 	propname.kind = MNID_ID;
 	propname.lid = PidLidAppointmentDuration;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
-	propval.pvalue = &minutes;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &minutes) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	return TRUE;
@@ -1278,7 +1203,6 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ICAL_LINE> piline,
 	const char *pvalue;
 	char tmp_buff[1024];
 	PROPERTY_NAME propname;
-	TAGGED_PROPVAL propval;
 	GLOBALOBJECTID globalobjectid;
 	
 	pvalue = piline->get_first_subvalue();
@@ -1326,9 +1250,7 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ICAL_LINE> piline,
 	propname.lid = PidLidGlobalObjectId;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
-	propval.pvalue = &tmp_bin;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	globalobjectid.year = 0;
@@ -1344,9 +1266,7 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ICAL_LINE> piline,
 	propname.lid = PidLidCleanGlobalObjectId;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
-	propval.pvalue = &tmp_bin;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	return TRUE;
@@ -1362,7 +1282,6 @@ static BOOL oxcical_parse_location(std::shared_ptr<ICAL_LINE> piline,
 	const char *pvalue;
 	char tmp_buff[1024];
 	PROPERTY_NAME propname;
-	TAGGED_PROPVAL propval;
 	
 	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
@@ -1388,9 +1307,7 @@ static BOOL oxcical_parse_location(std::shared_ptr<ICAL_LINE> piline,
 	propname.lid = PidLidLocation;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_UNICODE, *plast_propid);
-	propval.pvalue = tmp_buff;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), tmp_buff) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	pvalue = piline->get_first_paramval("ALTREP");
@@ -1402,9 +1319,7 @@ static BOOL oxcical_parse_location(std::shared_ptr<ICAL_LINE> piline,
 	propname.pname = deconst(PidNameLocationUrl);
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_UNICODE, *plast_propid);
-	propval.pvalue = deconst(pvalue);
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), pvalue) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	if (NULL != pexception && NULL != pext_exception) {
@@ -1429,7 +1344,6 @@ static BOOL oxcical_parse_organizer(std::shared_ptr<ICAL_LINE> piline,
 	BINARY tmp_bin;
 	uint8_t tmp_buff[1024];
 	const char *paddress;
-	TAGGED_PROPVAL propval;
 	const char *pdisplay_name;
 	
 	auto pvalue = pmsg->proplist.get<char>(PR_MESSAGE_CLASS);
@@ -1452,13 +1366,8 @@ static BOOL oxcical_parse_organizer(std::shared_ptr<ICAL_LINE> piline,
 	}
 	pdisplay_name = piline->get_first_paramval("CN");
 	if (NULL != pdisplay_name) {
-		propval.proptag = PR_SENT_REPRESENTING_NAME;
-		propval.pvalue = deconst(pdisplay_name);
-		if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
-			return FALSE;
-		propval.proptag = PR_SENDER_NAME;
-		propval.pvalue = deconst(pdisplay_name);
-		if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+		if (pmsg->proplist.set(PR_SENT_REPRESENTING_NAME, pdisplay_name) != 0 ||
+		    pmsg->proplist.set(PR_SENDER_NAME, pdisplay_name) != 0)
 			return FALSE;
 	}
 	if (NULL == paddress) {
@@ -1470,37 +1379,14 @@ static BOOL oxcical_parse_organizer(std::shared_ptr<ICAL_LINE> piline,
 		pdisplay_name, &tmp_bin, NULL)) {
 		return FALSE;
 	}
-	propval.proptag = PR_SENT_REPRESENTING_ADDRTYPE;
-	propval.pvalue  = deconst("SMTP");
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
-		return FALSE;
-	propval.proptag = PR_SENT_REPRESENTING_EMAIL_ADDRESS;
-	propval.pvalue = deconst(paddress);
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
-		return FALSE;
-	propval.proptag = PR_SENT_REPRESENTING_SMTP_ADDRESS;
-	propval.pvalue = deconst(paddress);
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
-		return FALSE;
-	propval.proptag = PR_SENT_REPRESENTING_ENTRYID;
-	propval.pvalue = &tmp_bin;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
-		return FALSE;
-	propval.proptag = PR_SENDER_ADDRTYPE;
-	propval.pvalue  = deconst("SMTP");
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
-		return FALSE;
-	propval.proptag = PR_SENDER_EMAIL_ADDRESS;
-	propval.pvalue = deconst(paddress);
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
-		return FALSE;
-	propval.proptag = PROP_TAG_SENDERSMTPADDRESS;
-	propval.pvalue = deconst(paddress);
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
-		return FALSE;
-	propval.proptag = PR_SENDER_ENTRYID;
-	propval.pvalue = &tmp_bin;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, "SMTP") != 0 ||
+	    pmsg->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, paddress) != 0 ||
+	    pmsg->proplist.set(PR_SENT_REPRESENTING_SMTP_ADDRESS, paddress) != 0 ||
+	    pmsg->proplist.set(PR_SENT_REPRESENTING_ENTRYID, &tmp_bin) != 0 ||
+	    pmsg->proplist.set(PR_SENDER_ADDRTYPE, "SMTP") != 0 ||
+	    pmsg->proplist.set(PR_SENDER_EMAIL_ADDRESS, paddress) != 0 ||
+	    pmsg->proplist.set(PROP_TAG_SENDERSMTPADDRESS, paddress) != 0 ||
+	    pmsg->proplist.set(PR_SENDER_ENTRYID, &tmp_bin) != 0)
 		return FALSE;
 	return TRUE;
 }
@@ -1510,7 +1396,6 @@ static BOOL oxcical_parse_sequence(std::shared_ptr<ICAL_LINE> piline,
 {
 	const char *pvalue;
 	PROPERTY_NAME propname;
-	TAGGED_PROPVAL propval;
 	
 	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
@@ -1522,9 +1407,7 @@ static BOOL oxcical_parse_sequence(std::shared_ptr<ICAL_LINE> piline,
 	propname.lid = PidLidAppointmentSequence;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
-	propval.pvalue = &tmp_int32;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &tmp_int32) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	return TRUE;
@@ -1545,7 +1428,6 @@ static BOOL oxcical_parse_busystatus(std::shared_ptr<ICAL_LINE> piline,
 		return TRUE;
 	const char *pvalue;
 	PROPERTY_NAME propname;
-	TAGGED_PROPVAL propval;
 	
 	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
@@ -1560,9 +1442,7 @@ static BOOL oxcical_parse_busystatus(std::shared_ptr<ICAL_LINE> piline,
 	propname.lid = pidlid;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
-	propval.pvalue = &busy_status;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &busy_status) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	if (NULL != pexception) {
@@ -1579,7 +1459,6 @@ static BOOL oxcical_parse_transp(std::shared_ptr<ICAL_LINE> piline,
 	uint32_t tmp_int32;
 	const char *pvalue;
 	PROPERTY_NAME propname;
-	TAGGED_PROPVAL propval;
 	
 	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
@@ -1597,9 +1476,7 @@ static BOOL oxcical_parse_transp(std::shared_ptr<ICAL_LINE> piline,
 	propname.lid = PidLidBusyStatus;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
-	propval.pvalue = &tmp_int32;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &tmp_int32) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	if (NULL != pexception) {
@@ -1616,9 +1493,7 @@ static BOOL oxcical_parse_transp(std::shared_ptr<ICAL_LINE> piline,
 	propname.lid = PidLidIntendedBusyStatus;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
-	propval.pvalue = &intended_val;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &intended_val) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	return TRUE;
@@ -1631,7 +1506,6 @@ static BOOL oxcical_parse_status(std::shared_ptr<ICAL_LINE> piline,
 	uint32_t tmp_int32;
 	const char *pvalue;
 	PROPERTY_NAME propname;
-	TAGGED_PROPVAL propval;
 	
 	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
@@ -1651,9 +1525,7 @@ static BOOL oxcical_parse_status(std::shared_ptr<ICAL_LINE> piline,
 	propname.lid = PidLidBusyStatus;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
-	propval.pvalue = &tmp_int32;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &tmp_int32) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	if (NULL != pexception) {
@@ -1670,9 +1542,7 @@ static BOOL oxcical_parse_status(std::shared_ptr<ICAL_LINE> piline,
 	propname.lid = PidLidIntendedBusyStatus;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
-	propval.pvalue = &intended_val;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &intended_val) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	return TRUE;
@@ -1687,7 +1557,6 @@ static BOOL oxcical_parse_summary(
 	int tmp_len;
 	const char *pvalue;
 	char tmp_buff[1024];
-	TAGGED_PROPVAL propval;
 	
 	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
@@ -1708,9 +1577,7 @@ static BOOL oxcical_parse_summary(
 			tmp_len --;
 		}
 	}
-	propval.proptag = PR_SUBJECT;
-	propval.pvalue = tmp_buff;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PR_SUBJECT, tmp_buff) != 0)
 		return FALSE;
 	if (NULL != pexception && NULL != pext_exception) {
 		pexception->overrideflags |= OVERRIDEFLAG_SUBJECT;
@@ -1732,16 +1599,13 @@ static BOOL oxcical_parse_ownerapptid(std::shared_ptr<ICAL_LINE> piline,
     MESSAGE_CONTENT *pmsg)
 {
 	const char *pvalue;
-	TAGGED_PROPVAL propval;
 	
 	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
 		return TRUE;
 	}
 	uint32_t tmp_int32 = strtol(pvalue, nullptr, 0);
-	propval.proptag = PROP_TAG_OWNERAPPOINTMENTID;
-	propval.pvalue = &tmp_int32;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG_OWNERAPPOINTMENTID, &tmp_int32) != 0)
 		return FALSE;
 	return TRUE;
 }
@@ -1754,7 +1618,6 @@ static BOOL oxcical_parse_recurrence_id(std::shared_ptr<ICAL_COMPONENT> ptz_comp
 	ICAL_TIME itime;
 	uint64_t tmp_int64;
 	PROPERTY_NAME propname;
-	TAGGED_PROPVAL propval;
 	bool b_utc;
 	
 	if (FALSE == oxcical_parse_dtvalue(ptz_component,
@@ -1766,10 +1629,8 @@ static BOOL oxcical_parse_recurrence_id(std::shared_ptr<ICAL_COMPONENT> ptz_comp
 	propname.lid = PidLidExceptionReplaceTime;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
-	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	return TRUE;
@@ -1781,7 +1642,6 @@ static BOOL oxcical_parse_disallow_counter(std::shared_ptr<ICAL_LINE> piline,
 	uint8_t tmp_byte;
 	const char *pvalue;
 	PROPERTY_NAME propname;
-	TAGGED_PROPVAL propval;
 	
 	pvalue = piline->get_first_subvalue();
 	if (NULL == pvalue) {
@@ -1799,9 +1659,7 @@ static BOOL oxcical_parse_disallow_counter(std::shared_ptr<ICAL_LINE> piline,
 	propname.lid = PidLidAppointmentNotAllowPropose;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_BOOLEAN, *plast_propid);
-	propval.pvalue = &tmp_byte;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	return TRUE;
@@ -1821,7 +1679,6 @@ static BOOL oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
 	uint64_t nt_time;
 	EXT_PUSH ext_push;
 	PROPERTY_NAME propname;
-	TAGGED_PROPVAL propval;
 	
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
 	    ext_push.p_apptrecpat(apr) != EXT_ERR_SUCCESS)
@@ -1833,11 +1690,8 @@ static BOOL oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
 	propname.lid = PidLidAppointmentRecur;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_BINARY, *plast_propid);
-	propval.pvalue = &tmp_bin;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+	if (pmsg->proplist.set(PROP_TAG(PT_BINARY, *plast_propid), &tmp_bin) != 0)
 		return FALSE;
-	}
 	(*plast_propid) ++;
 	nt_time = apr->recur_pat.endtype == ENDTYPE_NEVER_END ||
 	          apr->recur_pat.endtype == ENDTYPE_NEVER_END1 ?
@@ -1849,9 +1703,7 @@ static BOOL oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
 	propname.lid = PidLidClipEnd;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
-	propval.pvalue = &nt_time;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &nt_time) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	nt_time = apr->recur_pat.startdate;
@@ -1861,9 +1713,7 @@ static BOOL oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
 	propname.lid = PidLidClipStart;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
-	propval.pvalue = &nt_time;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &nt_time) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	return TRUE;
@@ -1963,68 +1813,43 @@ static BOOL oxcical_parse_exceptional_attachment(ATTACHMENT_CONTENT *pattachment
 	uint8_t tmp_byte;
 	uint32_t tmp_int32;
 	uint64_t tmp_int64;
-	TAGGED_PROPVAL propval;
 	
-	propval.proptag = PR_ATTACH_METHOD;
-	propval.pvalue = &tmp_int32;
 	tmp_int32 = ATTACH_EMBEDDED_MSG;
-	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG_RENDERINGPOSITION;
-	propval.pvalue = &tmp_int32;
 	tmp_int32 = 0xFFFFFFFF;
-	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+	if (pattachment->proplist.set(PROP_TAG_RENDERINGPOSITION, &tmp_int32) != 0)
 		return FALSE;
-	propval.proptag = PR_DISPLAY_NAME;
-	propval.pvalue = pattachment->pembedded->proplist.getval(PR_SUBJECT);
-	if (NULL != propval.pvalue) {
-		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
-			return FALSE;
-	}
+	auto newval = pattachment->pembedded->proplist.getval(PR_SUBJECT);
+	if (newval != nullptr &&
+	    pattachment->proplist.set(PR_DISPLAY_NAME, newval) != 0)
+		return FALSE;
 	if (!ical_itime_to_utc(nullptr, start_itime, &tmp_time))
 		return FALSE;
-	propval.proptag = PROP_TAG_EXCEPTIONSTARTTIME;
-	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+	if (pattachment->proplist.set(PROP_TAG_EXCEPTIONSTARTTIME, &tmp_int64) != 0)
 		return FALSE;
 	if (!ical_itime_to_utc(nullptr, end_itime, &tmp_time))
 		return FALSE;
-	propval.proptag = PROP_TAG_EXCEPTIONENDTIME;
-	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+	if (pattachment->proplist.set(PROP_TAG_EXCEPTIONENDTIME, &tmp_int64) != 0)
 		return FALSE;
-	propval.proptag = PR_ATTACH_ENCODING;
-	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = 0;
 	tmp_bin.pb = NULL;
-	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
 		return FALSE;
-	propval.proptag = PR_ATTACHMENT_FLAGS;
-	propval.pvalue = &tmp_int32;
 	tmp_int32 = 0x00000002;
-	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+	if (pattachment->proplist.set(PR_ATTACHMENT_FLAGS, &tmp_int32) != 0)
 		return FALSE;
-	propval.proptag = PR_ATTACHMENT_LINKID;
-	propval.pvalue = &tmp_int32;
 	tmp_int32 = 0x00000000;
-	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+	if (pattachment->proplist.set(PR_ATTACHMENT_LINKID, &tmp_int32) != 0 ||
+	    pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32) != 0)
 		return FALSE;
-	propval.proptag = PR_ATTACH_FLAGS;
-	propval.pvalue = &tmp_int32;
-	tmp_int32 = 0x00000000;
-	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
-		return FALSE;
-	propval.proptag = PR_ATTACHMENT_HIDDEN;
-	propval.pvalue = &tmp_byte;
 	tmp_byte = 1;
-	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+	if (pattachment->proplist.set(PR_ATTACHMENT_HIDDEN, &tmp_byte) != 0)
 		return FALSE;
-	propval.proptag = PR_ATTACHMENT_CONTACTPHOTO;
-	propval.pvalue = &tmp_byte;
 	tmp_byte = 0;
-	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+	if (pattachment->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != 0)
 		return FALSE;
 	return TRUE;
 }
@@ -2040,7 +1865,6 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 	const char *pvalue;
 	const char *pvalue1;
 	char tmp_buff[1024];
-	TAGGED_PROPVAL propval;
 	ATTACHMENT_LIST *pattachments;
 	ATTACHMENT_CONTENT *pattachment;
 	
@@ -2070,71 +1894,44 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			tmp_bin.cb = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 				"[InternetShortcut]\r\nURL=%s", pvalue);
 			tmp_bin.pc = tmp_buff;
-			propval.proptag = PR_ATTACH_DATA_BIN;
-			propval.pvalue = &tmp_bin;
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+			if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0)
 				return FALSE;
-			propval.proptag = PR_ATTACH_ENCODING;
-			propval.pvalue = &tmp_bin;
 			tmp_bin.cb = 0;
 			tmp_bin.pb = NULL;
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+			if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
 				return FALSE;
-			propval.proptag = PR_ATTACH_EXTENSION;
-			propval.pvalue  = deconst(".URL");
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+			if (pattachment->proplist.set(PR_ATTACH_EXTENSION, ".URL") != 0)
 				return FALSE;
 			pvalue1 = strrchr(pvalue, '/');
 			if (NULL == pvalue1) {
 				pvalue1 = pvalue;
 			}
 			snprintf(tmp_buff, 256, "%s.url", pvalue1);
-			propval.proptag = PR_ATTACH_LONG_FILENAME;
-			propval.pvalue = tmp_buff;
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+			if (pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, tmp_buff) != 0 ||
+			    pattachment->proplist.set(PR_DISPLAY_NAME, tmp_buff) != 0)
 				return FALSE;
-			propval.proptag = PR_DISPLAY_NAME;
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
-				return FALSE;
-			propval.proptag = PR_ATTACH_METHOD;
-			propval.pvalue = &tmp_int32;
 			tmp_int32 = ATTACH_BY_VALUE;
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+			if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
 				return FALSE;
 			pvalue1 = piline->get_first_paramval("FMTYPE");
-			if (NULL != pvalue1) {
-				propval.proptag = PR_ATTACH_MIME_TAG;
-				propval.pvalue = deconst(pvalue1);
-				if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+			if (pvalue1 != nullptr &&
+			    pattachment->proplist.set(PR_ATTACH_MIME_TAG, pvalue1) != 0)
 					return FALSE;
-			}
-			propval.proptag = PR_ATTACH_FLAGS;
-			propval.pvalue = &tmp_int32;
 			tmp_int32 = 0;
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+			if (pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32) != 0)
 				return FALSE;
-			propval.proptag = PR_ATTACHMENT_LINKID;
-			propval.pvalue = &tmp_int32;
 			tmp_int32 = 0;
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+			if (pattachment->proplist.set(PR_ATTACHMENT_LINKID, &tmp_int32) != 0)
 				return FALSE;
-			propval.proptag = PR_ATTACHMENT_CONTACTPHOTO;
-			propval.pvalue = &tmp_byte;
 			tmp_byte = 0;
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+			if (pattachment->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != 0)
 				return FALSE;
-			propval.proptag = PROP_TAG_EXCEPTIONSTARTTIME;
-			propval.pvalue = &tmp_int64;
 			tmp_int64 = 0x0CB34557A3DD4000;
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+			if (pattachment->proplist.set(PROP_TAG_EXCEPTIONSTARTTIME, &tmp_int64) != 0 ||
+			    pattachment->proplist.set(PROP_TAG_EXCEPTIONENDTIME, &tmp_int64) != 0)
 				return FALSE;
-			propval.proptag = PROP_TAG_EXCEPTIONENDTIME;
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
-				return FALSE;
-			propval.proptag = PROP_TAG_RENDERINGPOSITION;
-			propval.pvalue = &tmp_int32;
 			tmp_int32 = 0xFFFFFFFF;
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+			if (pattachment->proplist.set(PROP_TAG_RENDERINGPOSITION, &tmp_int32) != 0)
 				return FALSE;
 		}
 	} else if (0 == strcasecmp(pvalue, "BINARY")) {
@@ -2176,18 +1973,14 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 			tmp_bin.cb = 0;
 			tmp_bin.pb = NULL;
 		}
-		propval.proptag = PR_ATTACH_DATA_BIN;
-		propval.pvalue = &tmp_bin;
-		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+		if (pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin) != 0)
 			return FALSE;
 		if (NULL != tmp_bin.pb) {
 			free(tmp_bin.pb);
 		}
-		propval.proptag = PR_ATTACH_ENCODING;
-		propval.pvalue = &tmp_bin;
 		tmp_bin.cb = 0;
 		tmp_bin.pb = NULL;
-		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+		if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
 			return FALSE;
 		pvalue = piline->get_first_paramval("X-FILENAME");
 		if (NULL == pvalue) {
@@ -2201,56 +1994,30 @@ static BOOL oxcical_parse_attachment(std::shared_ptr<ICAL_LINE> piline,
 		if (NULL == pvalue1) {
 			pvalue1 = ".dat";
 		}
-		propval.proptag = PR_ATTACH_EXTENSION;
-		propval.pvalue = deconst(pvalue1);
-		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+		if (pattachment->proplist.set(PR_ATTACH_EXTENSION, pvalue1) != 0 ||
+		    pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, pvalue) != 0 ||
+		    pattachment->proplist.set(PR_DISPLAY_NAME, pvalue) != 0)
 			return FALSE;
-		propval.proptag = PR_ATTACH_LONG_FILENAME;
-		propval.pvalue = deconst(pvalue);
-		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
-			return FALSE;
-		propval.proptag = PR_DISPLAY_NAME;
-		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
-			return FALSE;
-		propval.proptag = PR_ATTACH_METHOD;
-		propval.pvalue = &tmp_int32;
 		tmp_int32 = ATTACH_BY_VALUE;
-		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+		if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
 			return FALSE;
 		pvalue1 = piline->get_first_paramval("FMTYPE");
-		if (NULL != pvalue1) {
-			propval.proptag = PR_ATTACH_MIME_TAG;
-			propval.pvalue = deconst(pvalue1);
-			if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
-				return FALSE;
-		}
-		propval.proptag = PR_ATTACH_FLAGS;
-		propval.pvalue = &tmp_int32;
-		tmp_int32 = 0;
-		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+		if (pvalue1 != nullptr &&
+		    pattachment->proplist.set(PR_ATTACH_MIME_TAG, pvalue1) != 0)
 			return FALSE;
-		propval.proptag = PR_ATTACHMENT_LINKID;
-		propval.pvalue = &tmp_int32;
 		tmp_int32 = 0;
-		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+		if (pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32) != 0 ||
+		    pattachment->proplist.set(PR_ATTACHMENT_LINKID, &tmp_int32) != 0)
 			return FALSE;
-		propval.proptag = PR_ATTACHMENT_CONTACTPHOTO;
-		propval.pvalue = &tmp_byte;
 		tmp_byte = 0;
-		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+		if (pattachment->proplist.set(PR_ATTACHMENT_CONTACTPHOTO, &tmp_byte) != 0)
 			return FALSE;
-		propval.proptag = PROP_TAG_EXCEPTIONSTARTTIME;
-		propval.pvalue = &tmp_int64;
 		tmp_int64 = 0x0CB34557A3DD4000;
-		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+		if (pattachment->proplist.set(PROP_TAG_EXCEPTIONSTARTTIME, &tmp_int64) != 0 ||
+		    pattachment->proplist.set(PROP_TAG_EXCEPTIONENDTIME, &tmp_int64) != 0)
 			return FALSE;
-		propval.proptag = PROP_TAG_EXCEPTIONENDTIME;
-		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
-			return FALSE;
-		propval.proptag = PROP_TAG_RENDERINGPOSITION;
-		propval.pvalue = &tmp_int32;
 		tmp_int32 = 0xFFFFFFFF;
-		if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
+		if (pattachment->proplist.set(PROP_TAG_RENDERINGPOSITION, &tmp_int32) != 0)
 			return FALSE;
 	}
 	return TRUE;
@@ -2262,16 +2029,13 @@ static BOOL oxcical_parse_valarm(uint32_t reminder_delta, time_t start_time,
 	uint8_t tmp_byte;
 	uint64_t tmp_int64;
 	PROPERTY_NAME propname;
-	TAGGED_PROPVAL propval;
 	
 	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
 	propname.kind = MNID_ID;
 	propname.lid = PidLidReminderDelta;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_LONG, *plast_propid);
-	propval.pvalue = &reminder_delta;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &reminder_delta) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
@@ -2279,10 +2043,8 @@ static BOOL oxcical_parse_valarm(uint32_t reminder_delta, time_t start_time,
 	propname.lid = PidLidReminderTime;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
-	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(start_time);
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
@@ -2290,11 +2052,9 @@ static BOOL oxcical_parse_valarm(uint32_t reminder_delta, time_t start_time,
 	propname.lid = PidLidReminderSignalTime;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_SYSTIME, *plast_propid);
-	propval.pvalue = &tmp_int64;
 	tmp_int64 = rop_util_unix_to_nttime(
 		start_time - reminder_delta*60);
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_SYSTIME, *plast_propid), &tmp_int64) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
@@ -2302,10 +2062,8 @@ static BOOL oxcical_parse_valarm(uint32_t reminder_delta, time_t start_time,
 	propname.lid = PidLidReminderSet;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	propval.proptag = PROP_TAG(PT_BOOLEAN, *plast_propid);
-	propval.pvalue = &tmp_byte;
 	tmp_byte = 1;
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, *plast_propid), &tmp_byte) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	return TRUE;
@@ -2333,7 +2091,6 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	ICAL_TIME end_itime;
 	uint16_t last_propid;
 	ICAL_TIME start_itime;
-	TAGGED_PROPVAL propval;
 	MESSAGE_CONTENT *pembedded;
 	std::shared_ptr<ICAL_COMPONENT> pmain_event;
 	uint32_t deleted_dates[1024];
@@ -2402,12 +2159,9 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			return FALSE;
 		}
 	} else {
-		propval.proptag = PR_SENSITIVITY;
-		propval.pvalue = &tmp_int32;
 		tmp_int32 = SENSITIVITY_NONE;
-		if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+		if (pmsg->proplist.set(PR_SENSITIVITY, &tmp_int32) != 0)
 			return FALSE;
-		}
 	}
 	
 	if (NULL != method && (0 == strcasecmp(method, "REPLY") ||
@@ -2626,13 +2380,9 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		pvalue = piline->get_first_subvalue();
 		if (NULL != pvalue) {
 			tmp_int32 = strtol(pvalue, nullptr, 0);
-			if (tmp_int32 >= IMPORTANCE_LOW && tmp_int32 <= IMPORTANCE_HIGH) {
-				propval.proptag = PR_IMPORTANCE;
-				propval.pvalue = &tmp_int32;
-				if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
-					return FALSE;
-				}
-			}
+			if (tmp_int32 >= IMPORTANCE_LOW && tmp_int32 <= IMPORTANCE_HIGH &&
+			    pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
+				return FALSE;
 		}
 	} else {
 		piline = pmain_event->get_line("PRIORITY");
@@ -2643,44 +2393,36 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 				 * RFC 5545 §3.8.1.9 / MS-OXCICAL v13 §2.1.3.1.1.20.17 pg 58.
 				 * (Decidedly different from OXCMAIL's X-Priority.)
 				 */
-				propval.proptag = PR_IMPORTANCE;
-				propval.pvalue = &tmp_int32;
 				switch (strtol(pvalue, nullptr, 0)) {
 				case 1:
 				case 2:
 				case 3:
 				case 4:
 					tmp_int32 = IMPORTANCE_HIGH;
-					if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+					if (pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
 						return FALSE;
-					}
 					break;
 				case 5:
 					tmp_int32 = IMPORTANCE_NORMAL;
-					if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+					if (pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
 						return FALSE;
-					}
 					break;
 				case 6:
 				case 7:
 				case 8:
 				case 9:
 					tmp_int32 = IMPORTANCE_LOW;
-					if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+					if (pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
 						return FALSE;
-					}
 					break;
 				}
 			}
 		}
 	}
 	if (!pmsg->proplist.has(PR_IMPORTANCE)) {
-		propval.proptag = PR_IMPORTANCE;
-		propval.pvalue = &tmp_int32;
 		tmp_int32 = IMPORTANCE_NORMAL;
-		if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
+		if (pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
 			return FALSE;
-		}
 	}
 	
 	piline = pmain_event->get_line("X-MICROSOFT-CDO-APPT-SEQUENCE");
@@ -2830,11 +2572,8 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 				return FALSE;
 			}
 			attachment_content_set_embedded_internal(pattachment, pembedded);
-			propval.proptag = PR_MESSAGE_CLASS;
-			propval.pvalue  = deconst("IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}");
-			if (!tpropval_array_set_propval(&pembedded->proplist, &propval)) {
+			if (pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.OLE.CLASS.{00061055-0000-0000-C000-000000000046}") != 0)
 				return FALSE;
-			}
 			
 			std::list<std::shared_ptr<ICAL_COMPONENT>> tmp_list;
 			try {
@@ -2973,7 +2712,6 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
     EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
     USERNAME_TO_ENTRYID username_to_entryid, MESSAGE_CONTENT *pmsg)
 {
-	TAGGED_PROPVAL propval;
 	MESSAGE_CONTENT *pembedded;
 	ATTACHMENT_LIST *pattachments;
 	ATTACHMENT_CONTENT *pattachment;
@@ -2998,9 +2736,7 @@ static BOOL oxcical_import_events(const char *str_zone, uint16_t calendartype,
 			return FALSE;
 		}
 		attachment_content_set_embedded_internal(pattachment, pembedded);
-		propval.proptag = PR_MESSAGE_CLASS;
-		propval.pvalue  = deconst("IPM.Appointment");
-		if (!tpropval_array_set_propval(&pembedded->proplist, &propval))
+		if (pembedded->proplist.set(PR_MESSAGE_CLASS, "IPM.Appointment") != 0)
 			return FALSE;
 		if (!oxcical_import_internal(str_zone, "PUBLISH", false,
 		    calendartype, pical, puid_events->list, alloc, get_propids,
@@ -3104,7 +2840,6 @@ MESSAGE_CONTENT* oxcical_import(
 	const char *pvalue = nullptr, *pvalue1 = nullptr;
 	uint16_t calendartype;
 	MESSAGE_CONTENT *pmsg;
-	TAGGED_PROPVAL propval;
 	std::list<std::shared_ptr<UID_EVENTS>> events_list;
 	
 	b_proposal = FALSE;
@@ -3114,12 +2849,11 @@ MESSAGE_CONTENT* oxcical_import(
 	}
 	auto piline = const_cast<ICAL *>(pical)->get_line("X-MICROSOFT-CALSCALE");
 	calendartype = oxcical_get_calendartype(piline);
+	auto mclass = "IPM.Appointment";
 	if (!oxcical_classify_calendar(pical, events_list) ||
 	    events_list.size() == 0)
 		goto IMPORT_FAILURE;
-	propval.proptag = PR_MESSAGE_CLASS;
 	piline = const_cast<ICAL *>(pical)->get_line("METHOD");
-	propval.pvalue = deconst("IPM.Appointment");
 	if (NULL != piline) {
 		pvalue = piline->get_first_subvalue();
 		if (NULL != pvalue) {
@@ -3132,22 +2866,22 @@ MESSAGE_CONTENT* oxcical_import(
 						goto IMPORT_FAILURE;
 					return pmsg;
 				}
-				propval.pvalue = deconst("IPM.Appointment");
+				mclass = "IPM.Appointment";
 			} else if (0 == strcasecmp(pvalue, "REQUEST")) {
 				if (events_list.size() != 1)
 					goto IMPORT_FAILURE;
-				propval.pvalue = deconst("IPM.Schedule.Meeting.Request");
+				mclass = "IPM.Schedule.Meeting.Request";
 			} else if (0 == strcasecmp(pvalue, "REPLY")) {
 				if (events_list.size() != 1)
 					goto IMPORT_FAILURE;
 				pvalue1 = oxcical_get_partstat(events_list);
 				if (NULL != pvalue1) {
 					if (0 == strcasecmp(pvalue1, "ACCEPTED")) {
-						propval.pvalue = deconst("IPM.Schedule.Meeting.Resp.Pos");
+						mclass = "IPM.Schedule.Meeting.Resp.Pos";
 					} else if (0 == strcasecmp(pvalue1, "TENTATIVE")) {
-						propval.pvalue = deconst("IPM.Schedule.Meeting.Resp.Tent");
+						mclass = "IPM.Schedule.Meeting.Resp.Tent";
 					} else if (0 == strcasecmp(pvalue1, "DECLINED")) {
-						propval.pvalue = deconst("IPM.Schedule.Meeting.Resp.Neg");
+						mclass = "IPM.Schedule.Meeting.Resp.Neg";
 					}
 				}
 			} else if (0 == strcasecmp(pvalue, "COUNTER")) {
@@ -3155,11 +2889,11 @@ MESSAGE_CONTENT* oxcical_import(
 					goto IMPORT_FAILURE;
 				pvalue1 = oxcical_get_partstat(events_list);
 				if (NULL != pvalue1 && 0 == strcasecmp(pvalue1, "TENTATIVE")) {
-					propval.pvalue = deconst("IPM.Schedule.Meeting.Resp.Tent");
+					mclass = "IPM.Schedule.Meeting.Resp.Tent";
 					b_proposal = TRUE;
 				}
 			} else if (0 == strcasecmp(pvalue, "CANCEL")) {
-				propval.pvalue = deconst("IPM.Schedule.Meeting.Canceled");
+				mclass = "IPM.Schedule.Meeting.Canceled";
 			}
 		}
 	} else {
@@ -3171,7 +2905,7 @@ MESSAGE_CONTENT* oxcical_import(
 			return pmsg;
 		}
 	}
-	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
+	if (pmsg->proplist.set(PR_MESSAGE_CLASS, mclass) != 0)
 		goto IMPORT_FAILURE;
 	if (oxcical_import_internal(str_zone, pvalue, b_proposal, calendartype,
 	    deconst(pical), events_list.front()->list, alloc, get_propids,
