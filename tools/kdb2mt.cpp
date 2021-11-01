@@ -239,16 +239,13 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 		}
 	}
 
-	TAGGED_PROPVAL pv;
 	for (auto &&[proptag, xpair] : collect) {
-		pv.proptag = proptag;
 		switch (PROP_TYPE(proptag)) {
 		case PT_MV_LONG: {
 			LONG_ARRAY la;
 			la.count = xpair.mvl.size();
 			la.pl = xpair.mvl.data();
-			pv.pvalue = &la;
-			if (!tpropval_array_set_propval(ar, &pv))
+			if (ar->set(proptag, &la) != 0)
 				throw std::bad_alloc();
 			break;
 		}
@@ -258,8 +255,7 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 			LONGLONG_ARRAY la;
 			la.count = xpair.mvll.size();
 			la.pll = xpair.mvll.data();
-			pv.pvalue = &la;
-			if (!tpropval_array_set_propval(ar, &pv))
+			if (ar->set(proptag, &la) != 0)
 				throw std::bad_alloc();
 			break;
 		}
@@ -271,9 +267,7 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 			for (size_t i = 0; i < sa.count; ++i)
 				ptrs[i] = xpair.mvstr[i].data();
 			sa.ppstr = ptrs.data();
-			pv.proptag = CHANGE_PROP_TYPE(proptag, PT_MV_UNICODE);
-			pv.pvalue = &sa;
-			if (!tpropval_array_set_propval(ar, &pv))
+			if (ar->set(CHANGE_PROP_TYPE(proptag, PT_MV_UNICODE), &sa) != 0)
 				throw std::bad_alloc();
 			break;
 		}
@@ -286,8 +280,7 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 				bins[i].cb = xpair.mvstr[i].size();
 			}
 			ba.pbin = bins.data();
-			pv.pvalue = &ba;
-			if (!tpropval_array_set_propval(ar, &pv))
+			if (ar->set(proptag, &ba) != 0)
 				throw std::bad_alloc();
 			break;
 		}
@@ -854,10 +847,7 @@ static void do_attach_byval(driver &drv, unsigned int depth, unsigned int hid,
 	BINARY bin;
 	bin.cb = contents.size();
 	bin.pv = contents.data();
-	TAGGED_PROPVAL pv;
-	pv.proptag = PR_ATTACH_DATA_BIN;
-	pv.pvalue = &bin;
-	if (!tpropval_array_set_propval(props, &pv))
+	if (props->set(PR_ATTACH_DATA_BIN, &bin) != 0)
 		throw std::bad_alloc();
 }
 

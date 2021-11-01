@@ -155,20 +155,16 @@ static void exm_adjust_staticprops(TPROPVAL_ARRAY &props)
 	 */
 	auto mfp = props.get<uint32_t>(PR_MESSAGE_FLAGS);
 	uint32_t mf = mfp != nullptr ? *mfp : 0;
-	uint8_t a_one = 1;
-	TAGGED_PROPVAL tp;
-	tp.pvalue = &a_one;
+	static constexpr uint8_t a_one = 1;
 	static constexpr std::pair<unsigned int, unsigned int> xmap[] = {
 		{MSGFLAG_READ, PR_READ},
 		{MSGFLAG_ASSOCIATED, PR_ASSOCIATED},
 		{MSGFLAG_RN_PENDING, PR_READ_RECEIPT_REQUESTED},
 		{MSGFLAG_NRN_PENDING, PR_NON_RECEIPT_NOTIFICATION_REQUESTED},
 	};
-	for (const auto &e : xmap) {
-		tp.proptag = e.second;
-		if (mf & e.first && !tpropval_array_set_propval(&props, &tp))
+	for (const auto &e : xmap)
+		if (mf & e.first && props.set(e.second, &a_one) != 0)
 			throw std::bad_alloc();
-	}
 }
 
 static void exm_adjust_namedprops(TPROPVAL_ARRAY &props)
@@ -226,8 +222,7 @@ static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
 		 * #1. Instruction to create folder beneath @fid_to
 		 * such as {NID_ROOT_FOLDER, {true, IPMSUBTREE, "Import of ..."}}
 		 */
-		if (!tpropval_array_set_propval(&props, PR_DISPLAY_NAME,
-		    current_it->second.create_name.c_str()))
+		if (props.set(PR_DISPLAY_NAME, current_it->second.create_name.c_str()) != 0)
 			throw std::bad_alloc();
 		auto ret = exm_create_folder(current_it->second.fid_to,
 			   &props, g_oexcl, &new_fid);

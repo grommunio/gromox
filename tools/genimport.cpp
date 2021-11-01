@@ -523,9 +523,9 @@ int exm_set_change_keys(TPROPVAL_ARRAY *props, uint64_t change_num)
 		fprintf(stderr, "exm: pcl_serialize: ENOMEM\n");
 		return -ENOMEM;
 	}
-	if (!tpropval_array_set_propval(props, PROP_TAG_CHANGENUMBER, &change_num) ||
-	    !tpropval_array_set_propval(props, PR_CHANGE_KEY, &bxid) ||
-	    !tpropval_array_set_propval(props, PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) {
+	if (props->set(PROP_TAG_CHANGENUMBER, &change_num) != 0 ||
+	    props->set(PR_CHANGE_KEY, &bxid) != 0 ||
+	    props->set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get()) != 0) {
 		fprintf(stderr, "%s: ENOMEM\n", __func__);
 		return -ENOMEM;
 	}
@@ -546,10 +546,10 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
 	}
 	if (!props->has(PR_LAST_MODIFICATION_TIME)) {
 		auto last_time = rop_util_current_nttime();
-		if (!tpropval_array_set_propval(props, PR_LAST_MODIFICATION_TIME, &last_time))
+		if (props->set(PR_LAST_MODIFICATION_TIME, &last_time) != 0)
 			return -ENOMEM;
 	}
-	if (!tpropval_array_set_propval(props, PROP_TAG_PARENTFOLDERID, &parent_fld) ||
+	if (props->set(PROP_TAG_PARENTFOLDERID, &parent_fld) != 0 ||
 	    exm_set_change_keys(props, change_num) < 0) {
 		fprintf(stderr, "exm: tpropval: ENOMEM\n");
 		return -ENOMEM;
@@ -614,13 +614,13 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 	auto props = &ctnt->proplist;
 	if (!props->has(PR_LAST_MODIFICATION_TIME)) {
 		auto last_time = rop_util_current_nttime();
-		if (!tpropval_array_set_propval(props, PR_LAST_MODIFICATION_TIME, &last_time))
+		if (props->set(PR_LAST_MODIFICATION_TIME, &last_time) != 0)
 			return -ENOMEM;
 	}
-	if (!tpropval_array_set_propval(props, PROP_TAG_MID, &msg_id) ||
-	    !tpropval_array_set_propval(props, PROP_TAG_CHANGENUMBER, &change_num) ||
-	    !tpropval_array_set_propval(props, PR_CHANGE_KEY, &bxid) ||
-	    !tpropval_array_set_propval(props, PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) {
+	if (props->set(PROP_TAG_MID, &msg_id) != 0 ||
+	    props->set(PROP_TAG_CHANGENUMBER, &change_num) != 0 ||
+	    props->set(PR_CHANGE_KEY, &bxid) != 0 ||
+	    props->set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get()) != 0) {
 		fprintf(stderr, "exm: tpropval: ENOMEM\n");
 		return -ENOMEM;
 	}
