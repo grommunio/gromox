@@ -1148,11 +1148,9 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 		if (0 != sqlite3_column_int64(pstmt, 0)) {
 			b_search = TRUE;
 		}
-	} else {
-		if (fid_val < PUBLIC_FID_CUSTOM) {
-			*pb_result = FALSE;
-			return TRUE;
-		}
+	} else if (fid_val < PUBLIC_FID_CUSTOM) {
+		*pb_result = FALSE;
+		return TRUE;
 	}
 	if (FALSE == b_search) {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM "
@@ -1201,24 +1199,22 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 	if (TRUE == exmdb_server_check_private()) {
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM folders"
 		        " WHERE folder_id=%llu", LLU(fid_val));
-	} else {
-		if (TRUE == b_hard) {
-			if (FALSE == folder_empty_folder(pdb, cpid,
-				NULL, fid_val, TRUE, TRUE, TRUE, TRUE,
-				&b_partial, &normal_size, &fai_size,
-				NULL, NULL) || TRUE == b_partial ||
-				FALSE == common_util_decrease_store_size(
-				pdb->psqlite, normal_size, fai_size)) {
-				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
-				return FALSE;
-			}
-			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM folders"
-			        " WHERE folder_id=%llu", LLU(fid_val));
-		} else {
-			snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET"
-				" is_deleted=1 WHERE folder_id=%llu",
-				LLU(fid_val));
+	} else if (b_hard) {
+		if (FALSE == folder_empty_folder(pdb, cpid,
+		    NULL, fid_val, TRUE, TRUE, TRUE, TRUE,
+		    &b_partial, &normal_size, &fai_size,
+		    NULL, NULL) || TRUE == b_partial ||
+		    FALSE == common_util_decrease_store_size(
+		    pdb->psqlite, normal_size, fai_size)) {
+			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
+			return FALSE;
 		}
+		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM folders"
+			" WHERE folder_id=%llu", LLU(fid_val));
+	} else {
+		snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET"
+			" is_deleted=1 WHERE folder_id=%llu",
+			LLU(fid_val));
 	}
 	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 		sql_string, NULL, NULL, NULL)) {
