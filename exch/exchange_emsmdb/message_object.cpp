@@ -257,12 +257,12 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	propvals.ppropval[propvals.count].proptag = PR_DEF_POST_MSGCLASS;
 	propvals.ppropval[propvals.count++].pvalue  = deconst("IPM.Note");
 	
-	propvals.ppropval[propvals.count].proptag = PROP_TAG_SENSITIVITY;
+	propvals.ppropval[propvals.count].proptag = PR_SENSITIVITY;
 	pvalue = cu_alloc<uint32_t>();
 	if (NULL == pvalue) {
 		return FALSE;
 	}
-	*(uint32_t*)pvalue = 0;
+	*static_cast<uint32_t *>(pvalue) = SENSITIVITY_NONE;
 	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_ORIGINALDISPLAYBCC;

@@ -1554,17 +1554,17 @@ static BOOL oxcmail_enum_mail_head(
 	} else if (0 == strcasecmp(tag, "Sensitivity")) {
 		/* MS-OXCMAIL v22 §2.1.3.2.6 pg 31 */
 		if (0 == strcasecmp(field, "Normal")) {
-			tmp_int32 = 0;
+			tmp_int32 = SENSITIVITY_NONE;
 		} else if (0 == strcasecmp(field, "Personal")) {
-			tmp_int32 = 1;
+			tmp_int32 = SENSITIVITY_PERSONAL;
 		} else if (0 == strcasecmp(field, "Private")) {
-			tmp_int32 = 2;
+			tmp_int32 = SENSITIVITY_PRIVATE;
 		} else if (0 == strcasecmp(field, "Company-Confidential")) {
-			tmp_int32 = 3;
+			tmp_int32 = SENSITIVITY_COMPANY_CONFIDENTIAL;
 		} else {
-			tmp_int32 = 0;
+			tmp_int32 = SENSITIVITY_NONE;
 		}
-		propval.proptag = PROP_TAG_SENSITIVITY;
+		propval.proptag = PR_SENSITIVITY;
 		propval.pvalue = &tmp_int32;
 		if (!tpropval_array_set_propval(&penum_param->pmsg->proplist, &propval))
 			return FALSE;
@@ -4127,11 +4127,10 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			return NULL;
 		}
 	}
-	if (NULL == tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_SENSITIVITY)) {
-		propval.proptag = PROP_TAG_SENSITIVITY;
+	if (tpropval_array_get_propval(&pmsg->proplist, PR_SENSITIVITY) == nullptr) {
+		propval.proptag = PR_SENSITIVITY;
 		propval.pvalue = &tmp_int32;
-		tmp_int32 = 0;
+		tmp_int32 = SENSITIVITY_NONE;
 		if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 			message_content_free(pmsg);
 			return NULL;
@@ -5388,29 +5387,28 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_SENSITIVITY);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_SENSITIVITY);
 	if (NULL != pvalue) {
 		switch (*(uint32_t*)pvalue) {
-		case 0:
+		case SENSITIVITY_NONE:
 			if (FALSE == mime_set_field(phead,
 				"Sensitivity", "Normal")) {
 				return FALSE;
 			}
 			break;
-		case 1:
+		case SENSITIVITY_PERSONAL:
 			if (FALSE == mime_set_field(phead,
 				"Sensitivity", "Personal")) {
 				return FALSE;
 			}
 			break;
-		case 2:
+		case SENSITIVITY_PRIVATE:
 			if (FALSE == mime_set_field(phead,
 				"Sensitivity", "Private")) {
 				return FALSE;
 			}
 			break;
-		case 3:
+		case SENSITIVITY_COMPANY_CONFIDENTIAL:
 			if (FALSE == mime_set_field(
 				phead, "Sensitivity",
 				"Company-Confidential")) {

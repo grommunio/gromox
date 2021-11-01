@@ -993,17 +993,17 @@ static BOOL oxcical_parse_class(std::shared_ptr<ICAL_LINE> piline,
 	}
 	if (0 == strcasecmp(pvalue, "PERSONAL") ||
 		0 == strcasecmp(pvalue, "X-PERSONAL")) {
-		tmp_int32 = 1;
+		tmp_int32 = SENSITIVITY_PERSONAL;
 	} else if (0 == strcasecmp(pvalue, "PRIVATE")) {
-		tmp_int32 = 2;
+		tmp_int32 = SENSITIVITY_PRIVATE;
 	} else if (0 == strcasecmp(pvalue, "CONFIDENTIAL")) {
-		tmp_int32 = 3;
+		tmp_int32 = SENSITIVITY_COMPANY_CONFIDENTIAL;
 	} else if (0 == strcasecmp(pvalue, "PUBLIC")) {
-		tmp_int32 = 0;
+		tmp_int32 = SENSITIVITY_NONE;
 	} else {
 		return TRUE;
 	}
-	propval.proptag = PROP_TAG_SENSITIVITY;
+	propval.proptag = PR_SENSITIVITY;
 	propval.pvalue = &tmp_int32;
 	if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 		return FALSE;
@@ -2403,9 +2403,9 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			return FALSE;
 		}
 	} else {
-		propval.proptag = PROP_TAG_SENSITIVITY;
+		propval.proptag = PR_SENSITIVITY;
 		propval.pvalue = &tmp_int32;
-		tmp_int32 = 0;
+		tmp_int32 = SENSITIVITY_NONE;
 		if (!tpropval_array_set_propval(&pmsg->proplist, &propval)) {
 			return FALSE;
 		}
@@ -5047,19 +5047,18 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				return FALSE;
 	}
 	
-	pvalue = tpropval_array_get_propval(
-		&pmsg->proplist, PROP_TAG_SENSITIVITY);
+	pvalue = tpropval_array_get_propval(&pmsg->proplist, PR_SENSITIVITY);
 	if (NULL == pvalue) {
 		piline = ical_new_simple_line("CLASS", "PUBLIC");
 	} else {
 		switch (*(uint32_t*)pvalue) {
-		case 1:
+		case SENSITIVITY_PERSONAL:
 			piline = ical_new_simple_line("CLASS", "PERSONAL");
 			break;
-		case 2:
+		case SENSITIVITY_PRIVATE:
 			piline = ical_new_simple_line("CLASS", "PRIVATE");
 			break;
-		case 3:
+		case SENSITIVITY_COMPANY_CONFIDENTIAL:
 			piline = ical_new_simple_line("CLASS", "CONFIDENTIAL");
 			break;
 		default:

@@ -589,13 +589,13 @@ MESSAGE_CONTENT* oxvcard_import(
 		} else if (strcasecmp(pvline->name, "CLASS") == 0 &&
 		    (pstring = vcard_get_first_subvalue(pvline)) != nullptr) {
 			if (0 == strcasecmp(pstring, "PRIVATE")) {
-				tmp_int32 = 2;
+				tmp_int32 = SENSITIVITY_PRIVATE;
 			} else if (0 == strcasecmp(pstring, "CONFIDENTIAL")) {
-				tmp_int32 = 3;
+				tmp_int32 = SENSITIVITY_COMPANY_CONFIDENTIAL;
 			} else {
-				tmp_int32 = 0;
+				tmp_int32 = SENSITIVITY_NONE;
 			}
-			propval.proptag = PROP_TAG_SENSITIVITY;
+			propval.proptag = PR_SENSITIVITY;
 			propval.pvalue = &tmp_int32;
 			if (!tpropval_array_set_propval(&pmsg->proplist, &propval))
 				goto IMPORT_FAILURE;
@@ -1057,15 +1057,15 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_DEPARTMENTNAME));
 	vcard_append_subval(pvvalue, pvalue);
 	
-	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PROP_TAG_SENSITIVITY));
+	pvalue = static_cast<char *>(tpropval_array_get_propval(&pmsg->proplist, PR_SENSITIVITY));
 	if (NULL == pvalue) {
 		pvalue = "PUBLIC";
 	} else {
 		switch (*(uint32_t*)pvalue) {
-		case 2:
+		case SENSITIVITY_PRIVATE:
 			pvalue = "PRIVATE";
 			break;
-		case 3:
+		case SENSITIVITY_COMPANY_CONFIDENTIAL:
 			pvalue = "CONFIDENTIAL";
 			break;
 		default:
