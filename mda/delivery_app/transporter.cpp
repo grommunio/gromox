@@ -596,36 +596,36 @@ static void *dxp_scanwork(void *arg)
 	
 	while (!g_notify_stop) {
 		sleep(SCAN_INTERVAL);
-		if (0 != message_dequeue_get_param(MESSAGE_DEQUEUE_HOLDING)) {
-			std::unique_lock tl_hold(g_threads_list_mutex);
-			if (g_threads_max==double_list_get_nodes_num(&g_threads_list)) {
-				continue;
-			}
-			tl_hold.unlock();
-			/* get a thread data node from free list */
-			std::unique_lock ft_hold(g_free_threads_mutex);
-			pnode = double_list_pop_front(&g_free_threads);
-			ft_hold.unlock();
-			if (NULL == pnode) {
-				continue;
-			}
-			pthr_data = (THREAD_DATA*)pnode->pdata;
-			pthread_attr_init(&attr);
-			pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
-			auto ret = pthread_create(&pthr_data->id, &attr, dxp_thrwork, pthr_data);
-			if (ret == 0) {
-				pthread_setname_np(pthr_data->id, "xprt/+");
-				tl_hold.lock();
-				double_list_append_as_tail(&g_threads_list, &pthr_data->node);
-				tl_hold.unlock();
-			} else {
-				fprintf(stderr, "W-1446: pthread_create: %s\n", strerror(ret));
-				tl_hold.lock();
-				double_list_append_as_tail(&g_free_threads, &pthr_data->node);
-				tl_hold.unlock();
-			}
-			pthread_attr_destroy(&attr);
+		if (message_dequeue_get_param(MESSAGE_DEQUEUE_HOLDING) == 0)
+			continue;
+		std::unique_lock tl_hold(g_threads_list_mutex);
+		if (g_threads_max == double_list_get_nodes_num(&g_threads_list)) {
+			continue;
 		}
+		tl_hold.unlock();
+		/* get a thread data node from free list */
+		std::unique_lock ft_hold(g_free_threads_mutex);
+		pnode = double_list_pop_front(&g_free_threads);
+		ft_hold.unlock();
+		if (NULL == pnode) {
+			continue;
+		}
+		pthr_data = (THREAD_DATA *)pnode->pdata;
+		pthread_attr_init(&attr);
+		pthread_attr_setstacksize(&attr, THREAD_STACK_SIZE);
+		auto ret = pthread_create(&pthr_data->id, &attr, dxp_thrwork, pthr_data);
+		if (ret == 0) {
+			pthread_setname_np(pthr_data->id, "xprt/+");
+			tl_hold.lock();
+			double_list_append_as_tail(&g_threads_list, &pthr_data->node);
+			tl_hold.unlock();
+		} else {
+			fprintf(stderr, "W-1446: pthread_create: %s\n", strerror(ret));
+			tl_hold.lock();
+			double_list_append_as_tail(&g_free_threads, &pthr_data->node);
+			tl_hold.unlock();
+		}
+		pthread_attr_destroy(&attr);
 	}
 	return NULL;
 }
