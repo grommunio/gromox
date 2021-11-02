@@ -49,6 +49,8 @@
 		return; \
 	} while (false)
 
+using namespace gromox;
+
 namespace {
 
 struct MAPI_RESOURCE {
@@ -298,18 +300,23 @@ static int le_mapi_exportchanges;
 static int le_mapi_importcontentschanges;
 static int le_mapi_importhierarchychanges;
 
-static GUID GUID_NONE = {0x00000000, 0x0000, 0x0000,
-	{0x00, 0x00}, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
-static GUID IID_IStream = {0x0000000c, 0x0000, 0x0000,
-	{0xc0, 0x00}, {0x00, 0x00, 0x00, 0x00, 0x00, 0x46}};
-static GUID IID_IMessage = {0x00020307, 0x0000, 0x0000,
-	{0xc0, 0x00}, {0x00, 0x00, 0x00, 0x00, 0x00, 0x46}};
-static GUID IID_IExchangeExportChanges = {0xa3ea9cc0, 0xd1b2,
-	0x11cd, {0x80, 0xfc}, {0x00, 0xaa, 0x00, 0x4b, 0xba, 0x0b}};
-static GUID IID_IExchangeImportContentsChanges = {0xf75abfa0,
-	0xd0e0, 0x11cd, {0x80, 0xfc}, {0x00, 0xaa, 0x00, 0x4b, 0xba, 0x0b}};
-static GUID IID_IExchangeImportHierarchyChanges = {0x85a66cf0,
-	0xd0e0, 0x11cd, {0x80, 0xfc}, {0x00, 0xaa, 0x00, 0x4b, 0xba, 0x0b}};
+static constexpr GUID GUID_NONE =
+	{0x00000000, 0x0000, 0x0000, {0x00, 0x00}, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
+static constexpr GUID IID_IStream =
+	/* {0000000c-0000-0000-c000-000000000046} */
+	{0x0000000c, 0x0000, 0x0000, {0xc0, 0x00}, {0x00, 0x00, 0x00, 0x00, 0x00, 0x46}};
+static constexpr GUID IID_IMessage =
+	/* {00020307-0000-0000-c000-000000000046} */
+	{0x00020307, 0x0000, 0x0000, {0xc0, 0x00}, {0x00, 0x00, 0x00, 0x00, 0x00, 0x46}};
+static constexpr GUID IID_IExchangeExportChanges =
+	/* {a3ea9cc0-d1b2-11cd-80fc-00aa004bba0b} */
+	{0xa3ea9cc0, 0xd1b2, 0x11cd, {0x80, 0xfc}, {0x00, 0xaa, 0x00, 0x4b, 0xba, 0x0b}};
+static constexpr GUID IID_IExchangeImportContentsChanges =
+	/* {f75abfa0-d0e0-11cd-80fc-00aa004bba0b} */
+	{0xf75abfa0, 0xd0e0, 0x11cd, {0x80, 0xfc}, {0x00, 0xaa, 0x00, 0x4b, 0xba, 0x0b}};
+static constexpr GUID IID_IExchangeImportHierarchyChanges =
+	/* {85a66cf0-d0e0-11cd-80fc-00aa004bba0b} */
+	{0x85a66cf0, 0xd0e0, 0x11cd, {0x80, 0xfc}, {0x00, 0xaa, 0x00, 0x4b, 0xba, 0x0b}};
 
 static STREAM_OBJECT* stream_object_create()
 {
@@ -760,7 +767,8 @@ ZEND_FUNCTION(mapi_createoneoff)
 	PUSH_CTX push_ctx;
 	char *pdisplayname;
 	ONEOFF_ENTRYID tmp_entry;
-	static const uint8_t oneoff_guid[] ={
+	static constexpr uint8_t muidOOP[] = {
+		/* {a41f2b81-a3be-1910-9d6e-00dd010f5402} */
 		0x81, 0x2B, 0x1F, 0xA4, 0xBE, 0xA3, 0x10, 0x19,
 		0x9D, 0x6E, 0x00, 0xDD, 0x01, 0x0F, 0x54, 0x02};
 	char empty[1]{};
@@ -778,7 +786,7 @@ ZEND_FUNCTION(mapi_createoneoff)
 		pdisplayname = empty;
 	}
 	tmp_entry.flags = 0;
-	memcpy(tmp_entry.provider_uid, oneoff_guid, 16);
+	memcpy(tmp_entry.provider_uid, muidOOP, arsizeof(muidOOP));
 	tmp_entry.version = 0;
 	tmp_entry.ctrl_flags = flags;
 	tmp_entry.pdisplay_name = pdisplayname;
@@ -5229,7 +5237,7 @@ ZEND_FUNCTION(mapi_feature)
 		NULL == szfeature || 0 == cbfeature) {
 		return;
 	}
-	for (size_t i = 0; i < gromox::arsizeof(features); ++i) {
+	for (size_t i = 0; i < arsizeof(features); ++i) {
 		if (0 == strcasecmp(features[i], szfeature)) {
 			RETVAL_TRUE;
 			return;

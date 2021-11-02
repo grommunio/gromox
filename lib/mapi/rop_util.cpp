@@ -8,9 +8,9 @@
 #include <cstdlib>
 #include <cstring>
 #include <sys/time.h>
-
-
 #define TIME_FIXUP_CONSTANT_INT				11644473600LL
+
+using namespace gromox;
 
 static uint8_t rop_util_is_little_endian()
 {
@@ -135,6 +135,10 @@ uint64_t rop_util_make_eid_ex(uint16_t replid, uint64_t value)
 
 GUID rop_util_make_user_guid(int user_id)
 {
+	/*
+	 * {XXXXXXXX-18a5-6f7b-bcdc-ea1ed03c5657} Database GUID (within
+	 * Exchange entryids) for Gromox private stores.
+	 */
 	GUID guid;
 	
 	guid.time_low = user_id;
@@ -153,6 +157,10 @@ GUID rop_util_make_user_guid(int user_id)
 
 GUID rop_util_make_domain_guid(int domain_id)
 {
+	/*
+	 * {XXXXXXXX-0afb-7df6-9192-49886aa738ce}: Database GUID
+	 * for Gromox public stores.
+	 */
 	GUID guid;
 	
 	guid.time_low = domain_id;
@@ -287,7 +295,7 @@ BOOL rop_util_get_common_pset(unsigned int pset_type, GUID *pguid)
 		guid_from_string(&guids[PSETID_KCARCHIVE], "72e98ebc-57d2-4ab5-b0aad50a7b531cb9");
 		b_parsed = TRUE;
 	}
-	if (pset_type >= gromox::arsizeof(guids))
+	if (pset_type >= arsizeof(guids))
 		return FALSE;
 	*pguid = guids[pset_type];
 	return TRUE;
@@ -295,43 +303,49 @@ BOOL rop_util_get_common_pset(unsigned int pset_type, GUID *pguid)
 
 BOOL rop_util_get_provider_uid(int provider_type, uint8_t *pflat_guid)
 {
-	static const uint8_t store_entry_guid[] = {
+	static constexpr uint8_t muidStoreWrap[] = {
+		/* {10bba138-e505-1a10-a1bb-08002b2a56c2} */
 		0x38, 0xA1, 0xBB, 0x10, 0x05, 0xE5, 0x10, 0x1A,
 		0xA1, 0xBB, 0x08, 0x00, 0x2B, 0x2A, 0x56, 0xC2};
-	static const uint8_t wrapped_private_guid[] = {
+	static constexpr uint8_t g_muidStorePrivate[] = {
+		/* {20fa551b-66aa-cd11-9bc8-00aa002fc45a} */
 		0x1B, 0x55, 0xFA, 0x20, 0xAA, 0x66, 0x11, 0xCD,
 		0x9B, 0xC8, 0x00, 0xAA, 0x00, 0x2F, 0xC4, 0x5A};
-	static const uint8_t wrapped_public_guid[] = {
+	static constexpr uint8_t g_muidStorePublic[] = {
+		/* {1002831c-66aa-cd11-9bc8-00aa002fc45a} */
 		0x1C, 0x83, 0x02, 0x10, 0xAA, 0x66, 0x11, 0xCD,
 		0x9B, 0xC8, 0x00, 0xAA, 0x00, 0x2F, 0xC4, 0x5A};
-	static const uint8_t ab_entry_guid[] = {
+	static constexpr uint8_t muidEMSAB[] = {
+		/* {c840a7dc-42c0-1a10-b4b9-08002b2fe182} */
 		0xDC, 0xA7, 0x40, 0xC8, 0xC0, 0x42, 0x10, 0x1A,
 		0xB4, 0xB9, 0x08, 0x00, 0x2B, 0x2F, 0xE1, 0x82};
-	static const uint8_t public_provider[] = {
+	static constexpr uint8_t pbLongTermNonPrivateGuid[] = {
+		/* {9073441a-66aa-cd11-9bc8-00aa002fc45a} */
 		0x1A, 0x44, 0x73, 0x90, 0xAA, 0x66, 0x11, 0xCD,
 		0x9B, 0xC8, 0x00, 0xAA, 0x00, 0x2F, 0xC4, 0x5A};
-	static const uint8_t oneoff_guid[] ={
+	static constexpr uint8_t muidOOP[] = {
+		/* {a41f2b81-a3be-1910-9d6e-00dd010f5402} */
 		0x81, 0x2B, 0x1F, 0xA4, 0xBE, 0xA3, 0x10, 0x19,
 		0x9D, 0x6E, 0x00, 0xDD, 0x01, 0x0F, 0x54, 0x02}; 
 	
 	switch (provider_type) {
 	case PROVIDER_UID_ADDRESS_BOOK:
-		memcpy(pflat_guid, ab_entry_guid, 16);
+		memcpy(pflat_guid, muidEMSAB, arsizeof(muidEMSAB));
 		return TRUE;
 	case PROVIDER_UID_PUBLIC:
-		memcpy(pflat_guid, public_provider, 16);
+		memcpy(pflat_guid, pbLongTermNonPrivateGuid, arsizeof(pbLongTermNonPrivateGuid));
 		return TRUE;
 	case PROVIDER_UID_ONE_OFF:
-		memcpy(pflat_guid, oneoff_guid, 16);
+		memcpy(pflat_guid, muidOOP, arsizeof(muidOOP));
 		return TRUE;
 	case PROVIDER_UID_STORE:
-		memcpy(pflat_guid, store_entry_guid, 16);
+		memcpy(pflat_guid, muidStoreWrap, arsizeof(muidStoreWrap));
 		return TRUE;
 	case PROVIDER_UID_WRAPPED_PRIVATE:
-		memcpy(pflat_guid, wrapped_private_guid, 16);
+		memcpy(pflat_guid, g_muidStorePrivate, arsizeof(g_muidStorePrivate));
 		return TRUE;
 	case PROVIDER_UID_WRAPPED_PUBLIC:
-		memcpy(pflat_guid, wrapped_public_guid, 16);
+		memcpy(pflat_guid, g_muidStorePublic, arsizeof(g_muidStorePublic));
 		return TRUE;
 	default:
 		return FALSE;

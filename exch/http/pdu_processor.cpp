@@ -106,9 +106,11 @@ static LIB_BUFFER *g_context_allocator;
 static LIB_BUFFER *g_processor_allocator;
 static const char *const *g_plugin_names;
 static const SYNTAX_ID g_transfer_syntax_ndr = 
+	/* {8a885d04-1ceb-11c9-9fe8-08002b104860} */
 	{{0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8}, {0x08,0x00,0x2b,0x10,0x48,0x60}}, 2};
 
 static const SYNTAX_ID g_transfer_syntax_ndr64 =
+	/* {71710533-beba-4937-8319-b5dbef9ccc36} */
 	{{0x71710533, 0xbeba, 0x4937, {0x83, 0x19}, {0xb5,0xdb,0xef,0x9c,0xcc,0x36}}, 1};
 
 static int pdu_processor_load_library(const char* plugin_name);
