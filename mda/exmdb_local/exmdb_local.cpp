@@ -179,147 +179,147 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			continue;
 		}
 		pdomain ++;
-		if (TRUE == exmdb_local_check_domain(pdomain)) {
-			switch (exmdb_local_deliverquota(pcontext, rcpt_buff)) {
-			case DELIVERY_OPERATION_OK:
-				net_failure_statistic(1, 0, 0, 0);
-				break;
-			case DELIVERY_OPERATION_DELIVERED:
-				net_failure_statistic(1, 0, 0, 0);
-				if (TRUE == pcontext->pcontrol->need_bounce &&
-					0 != strcasecmp(pcontext->pcontrol->from, "none@none")) {
-					pbounce_context = get_context();
-					if (NULL == pbounce_context) {
-						exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
-							"fail to get bounce context");
-					} else {
-						if (FALSE == bounce_audit_check(rcpt_buff)) {
-							exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
-								"will not produce bounce message, "
-								"because of too many mails to %s", rcpt_buff);
-							put_context(pbounce_context);
-						} else {
-							time(&current_time);
-							bounce_producer_make(pcontext->pcontrol->from,
-								rcpt_buff, pcontext->pmail, current_time,
-								BOUNCE_MAIL_DELIVERED, pbounce_context->pmail);
-							pbounce_context->pcontrol->need_bounce = FALSE;
-							sprintf(pbounce_context->pcontrol->from,
-								"postmaster@%s", get_default_domain());
-							mem_file_writeline(
-								&pbounce_context->pcontrol->f_rcpt_to,
-								pcontext->pcontrol->from);
-							enqueue_context(pbounce_context);
-						}
-					}
-				}
-				break;
-			case DELIVERY_NO_USER:
-				net_failure_statistic(0, 0, 0, 1);
-				if (TRUE == pcontext->pcontrol->need_bounce &&
-					0 != strcasecmp(pcontext->pcontrol->from, "none@none")) {
-					pbounce_context = get_context();
-					if (NULL == pbounce_context) {
-						exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
-							"fail to get bounce context");
-					} else {
-						if (FALSE == bounce_audit_check(rcpt_buff)) {
-							exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
-								"will not produce bounce message, "
-								"because of too many mails to %s", rcpt_buff);
-							put_context(pbounce_context);
-						} else {
-							time(&current_time);
-							bounce_producer_make(pcontext->pcontrol->from,
-								rcpt_buff, pcontext->pmail, current_time,
-								BOUNCE_NO_USER, pbounce_context->pmail);
-							pbounce_context->pcontrol->need_bounce = FALSE;
-							sprintf(pbounce_context->pcontrol->from,
-								"postmaster@%s", get_default_domain());
-							mem_file_writeline(
-								&pbounce_context->pcontrol->f_rcpt_to,
-								pcontext->pcontrol->from);
-							enqueue_context(pbounce_context);
-						}
-					}
-				}
-				break;
-			case DELIVERY_MAILBOX_FULL:
-				if (TRUE == pcontext->pcontrol->need_bounce &&
-					0 != strcasecmp(pcontext->pcontrol->from, "none@none")) {
-					pbounce_context = get_context();
-					if (NULL == pbounce_context) {
-						exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
-							"fail to get bounce context");
-					} else {
-						if (FALSE == bounce_audit_check(rcpt_buff)) {
-							exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
-								"will not produce bounce message, "
-								"because of too many mails to %s", rcpt_buff);
-							put_context(pbounce_context);
-						} else {
-							time(&current_time);
-							bounce_producer_make(pcontext->pcontrol->from,
-								rcpt_buff, pcontext->pmail, current_time,
-								BOUNCE_MAILBOX_FULL, pbounce_context->pmail);
-							pbounce_context->pcontrol->need_bounce = FALSE;
-							sprintf(pbounce_context->pcontrol->from,
-								"postmaster@%s", get_default_domain());
-							mem_file_writeline(
-								&pbounce_context->pcontrol->f_rcpt_to,
-								pcontext->pcontrol->from);
-							enqueue_context(pbounce_context);
-						}
-					}
-				}
-				break;
-			case DELIVERY_OPERATION_ERROR:
-				net_failure_statistic(0, 0, 1, 0);
-				if (TRUE == pcontext->pcontrol->need_bounce &&
-					0 != strcasecmp(pcontext->pcontrol->from, "none@none")) {
-					pbounce_context = get_context();
-					if (NULL == pbounce_context) {
-						exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
-							"fail to get bounce context");
-					} else {
-						if (FALSE == bounce_audit_check(rcpt_buff)) {
-							exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
-								"will not produce bounce message, "
-								"because of too many mails to %s", rcpt_buff);
-							put_context(pbounce_context);
-						} else {
-							time(&current_time);
-							bounce_producer_make(pcontext->pcontrol->from,
-								rcpt_buff, pcontext->pmail, current_time,
-								BOUNCE_OPERATION_ERROR, pbounce_context->pmail);
-							pbounce_context->pcontrol->need_bounce = FALSE;
-							sprintf(pbounce_context->pcontrol->from,
-								"postmaster@%s", get_default_domain());
-							mem_file_writeline(
-								&pbounce_context->pcontrol->f_rcpt_to,
-								pcontext->pcontrol->from);
-							enqueue_context(pbounce_context);
-						}
-					}
-				}
-				break;
-			case DELIVERY_OPERATION_FAILURE:
-				net_failure_statistic(0, 1, 0, 0);
-				time(&current_time);
-				cache_ID = cache_queue_put(pcontext, rcpt_buff, current_time);
-				if (cache_ID >= 0) {
-					exmdb_local_log_info(pcontext, rcpt_buff, LV_INFO,
-						"message is put into cache queue with cache ID %d and "
-						"wait to be delivered next time", cache_ID);
-				} else {
-					exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
-						"failed to put message into cache queue");
-				}
-				break;
-			}
-		} else {
+		if (!exmdb_local_check_domain(pdomain)) {
 			remote_found = TRUE;
 			mem_file_writeline(&remote_file, rcpt_buff);
+			continue;
+		}
+		switch (exmdb_local_deliverquota(pcontext, rcpt_buff)) {
+		case DELIVERY_OPERATION_OK:
+			net_failure_statistic(1, 0, 0, 0);
+			break;
+		case DELIVERY_OPERATION_DELIVERED:
+			net_failure_statistic(1, 0, 0, 0);
+			if (TRUE == pcontext->pcontrol->need_bounce &&
+				0 != strcasecmp(pcontext->pcontrol->from, "none@none")) {
+				pbounce_context = get_context();
+				if (NULL == pbounce_context) {
+					exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
+						"fail to get bounce context");
+				} else {
+					if (FALSE == bounce_audit_check(rcpt_buff)) {
+						exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
+							"will not produce bounce message, "
+							"because of too many mails to %s", rcpt_buff);
+						put_context(pbounce_context);
+					} else {
+						time(&current_time);
+						bounce_producer_make(pcontext->pcontrol->from,
+							rcpt_buff, pcontext->pmail, current_time,
+							BOUNCE_MAIL_DELIVERED, pbounce_context->pmail);
+						pbounce_context->pcontrol->need_bounce = FALSE;
+						sprintf(pbounce_context->pcontrol->from,
+							"postmaster@%s", get_default_domain());
+						mem_file_writeline(
+							&pbounce_context->pcontrol->f_rcpt_to,
+							pcontext->pcontrol->from);
+						enqueue_context(pbounce_context);
+					}
+				}
+			}
+			break;
+		case DELIVERY_NO_USER:
+			net_failure_statistic(0, 0, 0, 1);
+			if (TRUE == pcontext->pcontrol->need_bounce &&
+				0 != strcasecmp(pcontext->pcontrol->from, "none@none")) {
+				pbounce_context = get_context();
+				if (NULL == pbounce_context) {
+					exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
+						"fail to get bounce context");
+				} else {
+					if (FALSE == bounce_audit_check(rcpt_buff)) {
+						exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
+							"will not produce bounce message, "
+							"because of too many mails to %s", rcpt_buff);
+						put_context(pbounce_context);
+					} else {
+						time(&current_time);
+						bounce_producer_make(pcontext->pcontrol->from,
+							rcpt_buff, pcontext->pmail, current_time,
+							BOUNCE_NO_USER, pbounce_context->pmail);
+						pbounce_context->pcontrol->need_bounce = FALSE;
+						sprintf(pbounce_context->pcontrol->from,
+							"postmaster@%s", get_default_domain());
+						mem_file_writeline(
+							&pbounce_context->pcontrol->f_rcpt_to,
+							pcontext->pcontrol->from);
+						enqueue_context(pbounce_context);
+					}
+				}
+			}
+			break;
+		case DELIVERY_MAILBOX_FULL:
+			if (TRUE == pcontext->pcontrol->need_bounce &&
+				0 != strcasecmp(pcontext->pcontrol->from, "none@none")) {
+				pbounce_context = get_context();
+				if (NULL == pbounce_context) {
+					exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
+						"fail to get bounce context");
+				} else {
+					if (FALSE == bounce_audit_check(rcpt_buff)) {
+						exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
+							"will not produce bounce message, "
+							"because of too many mails to %s", rcpt_buff);
+						put_context(pbounce_context);
+					} else {
+						time(&current_time);
+						bounce_producer_make(pcontext->pcontrol->from,
+							rcpt_buff, pcontext->pmail, current_time,
+							BOUNCE_MAILBOX_FULL, pbounce_context->pmail);
+						pbounce_context->pcontrol->need_bounce = FALSE;
+						sprintf(pbounce_context->pcontrol->from,
+							"postmaster@%s", get_default_domain());
+						mem_file_writeline(
+							&pbounce_context->pcontrol->f_rcpt_to,
+							pcontext->pcontrol->from);
+						enqueue_context(pbounce_context);
+					}
+				}
+			}
+			break;
+		case DELIVERY_OPERATION_ERROR:
+			net_failure_statistic(0, 0, 1, 0);
+			if (TRUE == pcontext->pcontrol->need_bounce &&
+				0 != strcasecmp(pcontext->pcontrol->from, "none@none")) {
+				pbounce_context = get_context();
+				if (NULL == pbounce_context) {
+					exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
+						"fail to get bounce context");
+				} else {
+					if (FALSE == bounce_audit_check(rcpt_buff)) {
+						exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
+							"will not produce bounce message, "
+							"because of too many mails to %s", rcpt_buff);
+						put_context(pbounce_context);
+					} else {
+						time(&current_time);
+						bounce_producer_make(pcontext->pcontrol->from,
+							rcpt_buff, pcontext->pmail, current_time,
+							BOUNCE_OPERATION_ERROR, pbounce_context->pmail);
+						pbounce_context->pcontrol->need_bounce = FALSE;
+						sprintf(pbounce_context->pcontrol->from,
+							"postmaster@%s", get_default_domain());
+						mem_file_writeline(
+							&pbounce_context->pcontrol->f_rcpt_to,
+							pcontext->pcontrol->from);
+						enqueue_context(pbounce_context);
+					}
+				}
+			}
+			break;
+		case DELIVERY_OPERATION_FAILURE:
+			net_failure_statistic(0, 1, 0, 0);
+			time(&current_time);
+			cache_ID = cache_queue_put(pcontext, rcpt_buff, current_time);
+			if (cache_ID >= 0) {
+				exmdb_local_log_info(pcontext, rcpt_buff, LV_INFO,
+					"message is put into cache queue with cache ID %d and "
+					"wait to be delivered next time", cache_ID);
+			} else {
+				exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
+					"failed to put message into cache queue");
+			}
+			break;
 		}
 	}
 	if (TRUE == remote_found) {
