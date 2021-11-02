@@ -38,8 +38,11 @@ Password for Simple Authentication of ldap_bind_user.
 Default: (unset)
 .TP
 \fBldap_host\fP
-Whitespace-separated RFC 2255-style set of LDAP URIs that specify protocol
-and host.
+Whitespace-separated set of LDAP URIs in the form of
+\fIldap[si]://[name[:port]]\fP. The openldap2 ldap.conf(5) manpage does not
+specify trailing slashes or DN bases like RFC 2255 specifies. openldap2
+utilities accept-ignore such part of the URI, while other implementations like
+python\-ldap3 fail to connect.
 .br
 Default: (libldap default, see ldap.conf(5))
 .TP
