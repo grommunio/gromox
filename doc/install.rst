@@ -1,5 +1,5 @@
-Source build procedure
-======================
+Dependency installation
+=======================
 
 A pre-built version of Gromox is readily available by way of the grommunio Linux
 distribution. If you choose to build from source nevertheless, a number of
@@ -17,6 +17,28 @@ dependencies are needed:
 * PHP 7/8 headers
 * SQLite3
 * zlib
+
+When the grommunio repository is known to zypper, one can request to install
+the dependencies of the SRPM, which conveniently brings in everything that was
+used to build Gromox in the first place. By extension, the same mechanism can
+be used for other source repositories such as libexmdbpp.
+
+.. code-block::
+
+	# zypper si -d gromox
+	Loading repository data...
+	Reading installed packages...
+	Resolving package dependencies...
+
+	The following 62 NEW packages are going to be installed:
+	  autoconf automake binutils [...]
+	Overall download size: 70.8 MiB. Already cached: 0 B. After the operation,
+	additional 284.5 MiB will be used.
+	Continue? [y/n/v/...? shows all options] (y):
+
+
+Source build procedure
+======================
 
 The procedure is the well-established autotools run. Note that the default
 prefix is /usr, not /usr/local.
@@ -57,6 +79,9 @@ Runtime desirables
   occur in the MTA chain.
 
 * w3m, for improved HTML-to-text conversion.
+
+* If tinkering with databases, having the ``sqlite3`` and ``mysql``
+  command-line clients may prove useful.
 
 
 Minimal configuration
@@ -157,6 +182,30 @@ install a full MTA like Postfix with configuration directives similar to::
 
 	virtual_mailbox_domains = mydomain.de myotherdomain.com
 	virtual_transport = lmtp:localhost:24
+
+
+Running from the source checkout
+--------------------------------
+
+It is possible to run Gromox daemons from the source checkout. Heed the
+following notes.
+
+Gromox daemons switch to unprivileged mode, and after doing so, will still need
+access to the ``.libs`` directory in the build directory. If any path component
+of the build directory is missing the +x permission bit for everyone, the
+daemon may be unable to start up. This happens predominantly when someone tries
+to build Gromox as root (not a great idea) in ``/root`` (has mode 0700).
+
+Gromox programs default to look for files in the installed system, i.e.
+``/etc/gromox`` and ``/usr/share/gromox``. To test updates to data files, the
+modifications will either have to be copied from the checkout to ``/usr``;
+else, you can run the daemon with an alternate config, e.g.:
+
+.. code-block:: sh
+
+	cp /etc/gromox/http.cfg http.cfg
+	echo data_file_path=/root/gromox/data >>http.cfg
+	./http -c http.cfg
 
 
 Service start
