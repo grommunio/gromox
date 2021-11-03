@@ -95,24 +95,32 @@ static void exm_read_base_maps()
 	errno = 0;
 	char magic[8];
 	auto ret = fullread(STDIN_FILENO, magic, arsizeof(magic));
-	if (ret < 0 || static_cast<size_t>(ret) != arsizeof(magic))
+	if (ret == 0)
+		throw YError("PG-1009: EOF on input");
+	else if (ret < 0 || static_cast<size_t>(ret) != arsizeof(magic))
 		throw YError("PG-1126: %s", strerror(errno));
 	if (memcmp(magic, "GXMT0000", 8) != 0)
 		throw YError("PG-1127: Unrecognized input format");
 	ret = fullread(STDIN_FILENO, &g_splice, sizeof(g_splice));
-	if (ret < 0 || static_cast<size_t>(ret) != sizeof(g_splice))
+	if (ret == 0)
+		throw YError("PG-1008: EOF on input");
+	else if (ret < 0 || static_cast<size_t>(ret) != sizeof(g_splice))
 		throw YError("PG-1120: %s", strerror(errno));
 
 	uint64_t xsize = 0;
 	errno = 0;
 	ret = fullread(STDIN_FILENO, &xsize, sizeof(xsize));
-	if (ret < 0 || static_cast<size_t>(ret) != sizeof(xsize))
+	if (ret == 0)
+		throw YError("PG-1007: EOF on input");
+	else if (ret < 0 || static_cast<size_t>(ret) != sizeof(xsize))
 		throw YError("PG-1001: %s", strerror(errno));
 	xsize = le64_to_cpu(xsize);
 	auto buf = std::make_unique<char[]>(xsize);
 	errno = 0;
 	ret = fullread(STDIN_FILENO, buf.get(), xsize);
-	if (ret < 0 || static_cast<size_t>(ret) != xsize)
+	if (ret == 0)
+		throw YError("PG-1010: EOF on input");
+	else if (ret < 0 || static_cast<size_t>(ret) != xsize)
 		throw YError("PG-1002: %s", strerror(errno));
 	gi_folder_map_read(buf.get(), xsize, g_folder_map);
 	gi_dump_folder_map(g_folder_map);
@@ -123,12 +131,16 @@ static void exm_read_base_maps()
 
 	errno = 0;
 	ret = fullread(STDIN_FILENO, &xsize, sizeof(xsize));
-	if (ret < 0 || static_cast<size_t>(ret) != sizeof(xsize))
+	if (ret == 0)
+		throw YError("PG-1011: EOF on input");
+	else if (ret < 0 || static_cast<size_t>(ret) != sizeof(xsize))
 		throw YError("PG-1003: %s", strerror(errno));
 	xsize = le64_to_cpu(xsize);
 	buf = std::make_unique<char[]>(xsize);
 	ret = fullread(STDIN_FILENO, buf.get(), xsize);
-	if (ret < 0 || static_cast<size_t>(ret) != xsize)
+	if (ret == 0)
+		throw YError("PG-1012: EOF on input");
+	else if (ret < 0 || static_cast<size_t>(ret) != xsize)
 		throw YError("PG-1004: %s", strerror(errno));
 	gi_name_map_read(buf.get(), xsize, g_src_name_map);
 	gi_dump_name_map(g_src_name_map);
@@ -359,7 +371,9 @@ int main(int argc, const char **argv) try
 		auto buf = std::make_unique<char[]>(xsize);
 		errno = 0;
 		ret = fullread(STDIN_FILENO, buf.get(), xsize);
-		if (ret < 0 || static_cast<size_t>(ret) != xsize)
+		if (ret == 0)
+			throw YError("PG-1013: EOF on input");
+		else if (ret < 0 || static_cast<size_t>(ret) != xsize)
 			throw YError("PG-1006: %s", strerror(errno));
 		exm_packet(buf.get(), xsize);
 	}
