@@ -1753,7 +1753,9 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					case PT_MV_LONG:
 						multi_num = ((LONG_ARRAY*)pmultival)->count;
 						break;
+					case PT_MV_CURRENCY:
 					case PT_MV_I8:
+					case PT_MV_SYSTIME:
 						multi_num = ((LONGLONG_ARRAY*)pmultival)->count;
 						break;
 					case PT_MV_STRING8:
@@ -1847,7 +1849,9 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 						propvals[multi_index].pvalue =
 							((LONG_ARRAY*)pmultival)->pl + j;
 						break;
+					case PT_MV_CURRENCY:
 					case PT_MV_I8:
+					case PT_MV_SYSTIME:
 						propvals[multi_index].pvalue =
 							((LONGLONG_ARRAY*)pmultival)->pll + j;
 						break;

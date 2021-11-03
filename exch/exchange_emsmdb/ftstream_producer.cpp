@@ -507,7 +507,9 @@ static BOOL ftstream_producer_write_propvalue(
 				return FALSE;
 		}
 		return TRUE;
+	case PT_MV_CURRENCY:
 	case PT_MV_I8:
+	case PT_MV_SYSTIME:
 		count = ((LONGLONG_ARRAY*)ppropval->pvalue)->count;
 		if (!pstream->write_uint32(count))
 			return FALSE;

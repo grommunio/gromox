@@ -3020,9 +3020,11 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 		case PT_BINARY:
 		case PT_MV_SHORT:
 		case PT_MV_LONG:
+		case PT_MV_CURRENCY:
 		case PT_MV_I8:
 		case PT_MV_STRING8:
 		case PT_MV_UNICODE:
+		case PT_MV_SYSTIME:
 		case PT_MV_CLSID:
 		case PT_MV_BINARY:
 			break;

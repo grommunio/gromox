@@ -584,7 +584,9 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 		}
 		return FTSTREAM_PARSER_READ_OK;
 	}
-	case PT_MV_I8: {
+	case PT_MV_CURRENCY:
+	case PT_MV_I8:
+	case PT_MV_SYSTIME: {
 		auto la = cu_alloc<LONGLONG_ARRAY>();
 		propval.pvalue = la;
 		if (la == nullptr)

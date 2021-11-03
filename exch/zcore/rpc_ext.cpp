@@ -100,7 +100,9 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;
 		QRF(pext->g_uint32_a(static_cast<LONG_ARRAY *>(*ppval)));
 		return TRUE;
+	case PT_MV_CURRENCY:
 	case PT_MV_I8:
+	case PT_MV_SYSTIME:
 		*ppval = pext->anew<LONGLONG_ARRAY>();
 		if (*ppval == nullptr)
 			return FALSE;
@@ -290,7 +292,9 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 	case PT_MV_LONG:
 		QRF(pext->p_uint32_a(static_cast<const LONG_ARRAY *>(pval)));
 		return TRUE;
+	case PT_MV_CURRENCY:
 	case PT_MV_I8:
+	case PT_MV_SYSTIME:
 		QRF(pext->p_uint64_a(static_cast<const LONGLONG_ARRAY *>(pval)));
 		return TRUE;
 	case PT_MV_STRING8:

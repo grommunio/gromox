@@ -1101,13 +1101,15 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 					}
 					break;
 				}
-				case PT_MV_I8: {
+				case PT_MV_CURRENCY:
+				case PT_MV_I8:
+				case PT_MV_SYSTIME: {
 					auto la = static_cast<LONGLONG_ARRAY *>(pvalue);
 					if (la->count == 0)
 						goto BIND_NULL_INSTANCE;
 					for (size_t i = 0; i < la->count; ++i) {
 						if (FALSE == common_util_bind_sqlite_statement(
-						    pstmt1, multi_index, PT_I8, &la->pll[i]))
+						    pstmt1, multi_index, type & ~MV_FLAG, &la->pll[i]))
 							return false;
 						sqlite3_bind_int64(pstmt1,
 							tag_count + 3, i + 1);

@@ -2553,7 +2553,9 @@ BOOL common_util_get_properties(int table_type,
 						return FALSE;
 				}
 				break;
+			case PT_MV_CURRENCY:
 			case PT_MV_I8:
+			case PT_MV_SYSTIME:
 				pvalue = cu_alloc<LONGLONG_ARRAY>();
 				if (NULL != pvalue) {
 					ext_pull.init(sqlite3_column_blob(pstmt, 0),
@@ -3411,7 +3413,9 @@ BOOL common_util_set_properties(int table_type,
 			s_result = sqlite3_step(pstmt);
 			break;
 		}
-		case PT_MV_I8: {
+		case PT_MV_CURRENCY:
+		case PT_MV_I8:
+		case PT_MV_SYSTIME: {
 			EXT_PUSH ext_push;
 			if (!ext_push.init(nullptr, 0, 0) ||
 			    ext_push.p_uint64_a(static_cast<LONGLONG_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
