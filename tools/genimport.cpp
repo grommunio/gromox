@@ -161,6 +161,47 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 		tlog("}");
 		break;
 	}
+	case PT_MV_CURRENCY: {
+		auto &sl = *static_cast<LONGLONG_ARRAY *>(tp.pvalue);
+		tlog("mvcur[%zu]", static_cast<size_t>(sl.count));
+		if (!g_show_props)
+			break;
+		tlog("={");
+		for (size_t i = 0; i < sl.count; ++i) {
+			unsigned long long v = sl.pll[i];
+			tlog("%llu.%04llu,", v / 1000, v % 1000);
+		}
+		tlog("}");
+		break;
+	}
+	case PT_MV_I8: {
+		auto &sl = *static_cast<LONGLONG_ARRAY *>(tp.pvalue);
+		tlog("mvi8[%zu]", static_cast<size_t>(sl.count));
+		if (!g_show_props)
+			break;
+		tlog("={");
+		for (size_t i = 0; i < sl.count; ++i)
+			tlog("%llu,", static_cast<unsigned long long>(sl.pll[i]));
+		tlog("}");
+		break;
+	}
+	case PT_MV_SYSTIME: {
+		auto &sl = *static_cast<LONGLONG_ARRAY *>(tp.pvalue);
+		tlog("mvi8[%zu]", static_cast<size_t>(sl.count));
+		if (!g_show_props)
+			break;
+		tlog("={");
+		for (size_t i = 0; i < sl.count; ++i) {
+			time_t ut = rop_util_nttime_to_unix(sl.pll[i]);
+			char buf[80]{};
+			auto tm = localtime(&ut);
+			if (tm != nullptr)
+				strftime(buf, arsizeof(buf), "%FT%T", tm);
+			tlog("%s (raw %llxh), ", buf, static_cast<unsigned long long>(sl.pll[i]));
+		}
+		tlog("}");
+		break;
+	}
 	case PT_MV_BINARY: {
 		auto &sb = *static_cast<BINARY_ARRAY *>(tp.pvalue);
 		tlog("mvbin[%zu]", static_cast<size_t>(sb.count));
