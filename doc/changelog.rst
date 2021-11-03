@@ -1,3 +1,19 @@
+1.6.31
+======
+
+Fixes:
+
+* mapi_lib: fix misparsing of X-Priority/Priority header on mail ingestion
+
+Enhancements:
+
+* mysql_adaptor: recognize shared mailboxes for SMTP RCPT command
+* doc: add Grommunio Admin API directives to ldap_adaptor manpage
+* exch: add handling for PT_MV_SYSTIME, PT_MV_CURRENCY property types
+* kdb2mt: support extraction of PT_CURRENCY, PT_MV_{I8,SYSTIME,CURRENCY}
+  properties from KDBs
+
+
 1.6 (2021-10-30)
 ================
 
