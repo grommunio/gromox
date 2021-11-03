@@ -190,7 +190,10 @@ static void hid_to_tpropval_1(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)
 static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)
 {
 	auto res = drv.query(qstr);
-	using UPW = std::pair<std::vector<uint32_t>, std::vector<std::string>>;
+	struct UPW {
+		std::vector<uint32_t> mvl;
+		std::vector<std::string> mvstr;
+	};
 	std::unordered_map<uint32_t, UPW> collect;
 	DB_ROW row;
 	while ((row = res.fetch_row()) != nullptr) {
@@ -204,18 +207,18 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 		case PT_MV_LONG:
 			if (row[PCOL_ULONG] == nullptr)
 				continue;
-			collect[proptag].first.emplace_back(strtoul(row[PCOL_ULONG], nullptr, 0));
+			collect[proptag].mvl.emplace_back(strtoul(row[PCOL_ULONG], nullptr, 0));
 			break;
 		case PT_MV_STRING8:
 		case PT_MV_UNICODE:
 			if (row[PCOL_STRING] == nullptr)
 				continue;
-			collect[proptag].second.emplace_back(row[PCOL_STRING]);
+			collect[proptag].mvstr.emplace_back(row[PCOL_STRING]);
 			break;
 		case PT_MV_BINARY:
 			if (row[PCOL_BINARY] == nullptr)
 				continue;
-			collect[proptag].second.emplace_back(std::string(row[PCOL_BINARY], colen[PCOL_BINARY]));
+			collect[proptag].mvstr.emplace_back(row[PCOL_BINARY], colen[PCOL_BINARY]);
 			break;
 		default:
 			throw YError("PK-1010: Proptype %lxh not supported. Implement me!", static_cast<unsigned long>(proptag));
@@ -228,8 +231,8 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 		switch (PROP_TYPE(proptag)) {
 		case PT_MV_LONG: {
 			LONG_ARRAY la;
-			la.count = xpair.first.size();
-			la.pl = xpair.first.data();
+			la.count = xpair.mvl.size();
+			la.pl = xpair.mvl.data();
 			pv.pvalue = &la;
 			if (!tpropval_array_set_propval(ar, &pv))
 				throw std::bad_alloc();
@@ -237,11 +240,11 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 		}
 		case PT_MV_STRING8:
 		case PT_MV_UNICODE: {
-			std::vector<char *> ptrs(xpair.second.size());
+			std::vector<char *> ptrs(xpair.mvstr.size());
 			STRING_ARRAY sa;
-			sa.count = xpair.second.size();
+			sa.count = xpair.mvstr.size();
 			for (size_t i = 0; i < sa.count; ++i)
-				ptrs[i] = xpair.second[i].data();
+				ptrs[i] = xpair.mvstr[i].data();
 			sa.ppstr = ptrs.data();
 			pv.proptag = CHANGE_PROP_TYPE(proptag, PT_MV_UNICODE);
 			pv.pvalue = &sa;
@@ -250,12 +253,12 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 			break;
 		}
 		case PT_MV_BINARY: {
-			std::vector<BINARY> bins(xpair.second.size());
+			std::vector<BINARY> bins(xpair.mvstr.size());
 			BINARY_ARRAY ba;
-			ba.count = xpair.second.size();
+			ba.count = xpair.mvstr.size();
 			for (size_t i = 0; i < ba.count; ++i) {
-				bins[i].pv = xpair.second[i].data();
-				bins[i].cb = xpair.second[i].size();
+				bins[i].pv = xpair.mvstr[i].data();
+				bins[i].cb = xpair.mvstr[i].size();
 			}
 			ba.pbin = bins.data();
 			pv.pvalue = &ba;
