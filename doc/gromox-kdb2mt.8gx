@@ -23,6 +23,9 @@ The directory of Kopano attachments of the home server should be made available
 in the mount namespace whereever gromox\-kdb2mt runs.
 .PP
 No permissions are extracted.
+.PP
+Store object properties are only shown (with \-p), but not dumped to the MT
+stream.
 .SH Options
 .TP
 \fB\-p\fP

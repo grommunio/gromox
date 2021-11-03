@@ -892,6 +892,10 @@ static int do_item(driver &drv, unsigned int depth, const parent_desc &parent, k
 		ret = do_recip(drv, depth, parent, item);
 	} else if (item.m_mapitype == MAPI_ATTACH) {
 		ret = do_attach(drv, depth, parent, item);
+	} else {
+		auto props = item.get_props();
+		if (g_show_tree)
+			gi_dump_tpropval_a(depth, *props);
 	}
 	if (ret < 0)
 		return ret;
