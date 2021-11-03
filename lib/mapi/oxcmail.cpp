@@ -139,7 +139,7 @@ static constexpr char
 	PidNameContentClass[] = "Content-Class",
 	PidNameKeywords[] = "Keywords";
 static constexpr size_t namemap_limit = 0x1000;
-static uint8_t MACBINARY_ENCODING[] =
+static constexpr uint8_t MACBINARY_ENCODING[] =
 	{0x2A, 0x86, 0x48, 0x86, 0xF7, 0x14, 0x03, 0x0B, 0x01};
 static char g_oxcmail_org_name[256];
 static GET_USER_IDS oxcmail_get_user_ids;
@@ -798,7 +798,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 	ONEOFF_ENTRYID tmp_entry;
 	uint8_t bin_buff[256*1024];
 	char str_buff[MIME_FIELD_LEN];
-	static uint8_t pad_bytes[3];
+	static constexpr uint8_t pad_bytes[3]{};
 	
 	len = strlen(field);
 	field[len] = ';';
@@ -2132,7 +2132,7 @@ static BOOL oxcmail_parse_binhex(MIME *pmime, ATTACHMENT_CONTENT *pattachment,
 	propval.proptag = PR_ATTACH_ENCODING;
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = 9;
-	tmp_bin.pb = MACBINARY_ENCODING;
+	tmp_bin.pb = deconst(MACBINARY_ENCODING);
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
 	auto rdlength = mime_get_length(pmime);
@@ -2255,7 +2255,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 	propval.proptag = PR_ATTACH_ENCODING;
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = 9;
-	tmp_bin.pb = MACBINARY_ENCODING;
+	tmp_bin.pb = deconst(MACBINARY_ENCODING);
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval))
 		return FALSE;
 	rop_util_get_common_pset(PSETID_ATTACHMENT, &propname.guid);
@@ -2401,7 +2401,7 @@ static BOOL oxcmail_parse_macbinary(MIME *pmime,
 	propval.proptag = PR_ATTACH_ENCODING;
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = 9;
-	tmp_bin.pb = MACBINARY_ENCODING;
+	tmp_bin.pb = deconst(MACBINARY_ENCODING);
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		free(pcontent);
 		return FALSE;
@@ -2494,7 +2494,7 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 	propval.proptag = PR_ATTACH_ENCODING;
 	propval.pvalue = &tmp_bin;
 	tmp_bin.cb = 9;
-	tmp_bin.pb = MACBINARY_ENCODING;
+	tmp_bin.pb = deconst(MACBINARY_ENCODING);
 	if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 		free(pcontent);
 		return FALSE;

@@ -3731,7 +3731,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 	char sql_string[128];
 	const char *pusername;
 	char display_name[256];
-	static const BINARY fake_bin{};
+	static constexpr BINARY fake_bin{};
 	
 	switch (proptag) {
 	case PR_ENTRYID:

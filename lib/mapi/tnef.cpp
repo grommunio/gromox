@@ -154,12 +154,10 @@ static constexpr uint8_t IID_IStream[] = {
 	/* {0000000c-0000-0000-c000-000000000046} */
 	0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46};
-
-static uint8_t OLE_TAG[] = {
+static constexpr uint8_t OLE_TAG[] = {
 	0x2A, 0x86, 0x48, 0x86, 0xF7, 0x14, 0x03, 0x0A,
 	0x03, 0x02, 0x01};
-	
-static uint8_t MACBINARY_ENCODING[] = {
+static constexpr uint8_t MACBINARY_ENCODING[] = {
 	0x2A, 0x86, 0x48, 0x86, 0xF7, 0x14, 0x03, 0x0B,
 	0x01};
 
@@ -1634,7 +1632,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				propval.proptag = PR_ATTACH_TAG;
 				propval.pvalue = &tmp_bin;
 				tmp_bin.cb = 11;
-				tmp_bin.pb = OLE_TAG;
+				tmp_bin.pb = deconst(OLE_TAG);
 				if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 					return NULL;
 				}
@@ -1644,7 +1642,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				propval.proptag = PR_ATTACH_ENCODING;
 				propval.pvalue = &tmp_bin;
 				tmp_bin.cb = 9;
-				tmp_bin.pb = MACBINARY_ENCODING;
+				tmp_bin.pb = deconst(MACBINARY_ENCODING);
 				if (!tpropval_array_set_propval(&pattachment->proplist, &propval)) {
 					return NULL;
 				}
@@ -1935,7 +1933,7 @@ static int tnef_push_attribute(EXT_PUSH *pext, const TNEF_ATTRIBUTE *r,
 	time_t unix_time;
 	struct tm tmp_tm;
 	TRP_HEADER header;
-	static uint8_t empty_bytes[8];
+	static constexpr uint8_t empty_bytes[8]{};
 
 	TRY(pext->p_uint8(r->lvl));
 	TRY(pext->p_uint32(r->attr_id));

@@ -1867,9 +1867,8 @@ static BOOL instance_get_message_display_recipients(
 	void *pvalue;
 	char tmp_buff[64*1024];
 	uint32_t recipient_type = 0;
-	static uint8_t fake_empty;
+	static constexpr uint8_t fake_empty = 0;
 
-	fake_empty = 0;
 	switch (proptag) {
 	case PR_DISPLAY_TO:
 	case PR_DISPLAY_TO_A:

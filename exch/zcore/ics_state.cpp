@@ -80,8 +80,8 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 	EXT_PUSH ext_push;
 	TAGGED_PROPVAL propval;
 	TPROPVAL_ARRAY *pproplist;
-	static uint8_t bin_buff[8];
-	static const BINARY fake_bin = {sizeof(bin_buff), {(uint8_t *)bin_buff}};
+	static constexpr uint8_t bin_buff[8]{};
+	static constexpr BINARY fake_bin = {gromox::arsizeof(bin_buff), {deconst(bin_buff)}};
 	
 	if (ICS_TYPE_CONTENTS == pstate->type) {
 		if (TRUE == idset_check_empty(pstate->pgiven) &&

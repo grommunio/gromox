@@ -37,7 +37,7 @@ struct WRITE_STAT {
 };
 }
 
-static char g_hqxheader[] = "(This file must be converted with BinHex 4.0)\r\n";
+static constexpr char g_hqxheader[] = "(This file must be converted with BinHex 4.0)\r\n";
 
 static const int8_t g_demap[256] = {
    0,  0,  0,  0,  0,  0,  0,  0,
@@ -100,7 +100,7 @@ static const uint16_t g_magic[256] = {
   0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0
 };
 
-static uint8_t g_zero[2];
+static constexpr uint8_t g_zero[2]{};
 
 static uint16_t binhex_crc(const uint8_t *ptr,
 	uint32_t count, uint16_t crc)
