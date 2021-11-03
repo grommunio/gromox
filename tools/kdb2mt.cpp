@@ -164,6 +164,7 @@ static void hid_to_tpropval_1(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)
 		case PT_DOUBLE: upv.dbl = strtod(znul(row[PCOL_DOUBLE]), nullptr); break;
 		case PT_BOOLEAN: upv.b = strtoul(znul(row[PCOL_ULONG]), nullptr, 0); break;
 		case PT_I8: upv.ll = strtoll(znul(row[PCOL_LONGINT]), nullptr, 0); break;
+		case PT_CURRENCY:
 		case PT_SYSTIME:
 			upv.ll = (static_cast<uint64_t>(strtol(znul(row[PCOL_HI]), nullptr, 0)) << 32) |
 			         strtoul(znul(row[PCOL_LO]), nullptr, 0);
@@ -192,6 +193,7 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 	auto res = drv.query(qstr);
 	struct UPW {
 		std::vector<uint32_t> mvl;
+		std::vector<uint64_t> mvll;
 		std::vector<std::string> mvstr;
 	};
 	std::unordered_map<uint32_t, UPW> collect;
@@ -208,6 +210,19 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 			if (row[PCOL_ULONG] == nullptr)
 				continue;
 			collect[proptag].mvl.emplace_back(strtoul(row[PCOL_ULONG], nullptr, 0));
+			break;
+		case PT_MV_I8:
+			if (row[PCOL_LONGINT] == nullptr)
+				continue;
+			collect[proptag].mvll.emplace_back(strtoul(row[PCOL_LONGINT], nullptr, 0));
+			break;
+		case PT_MV_CURRENCY:
+		case PT_MV_SYSTIME:
+			if (row[PCOL_HI] == nullptr || row[PCOL_LO] == nullptr)
+				continue;
+			collect[proptag].mvll.emplace_back(
+				(static_cast<uint64_t>(strtol(znul(row[PCOL_HI]), nullptr, 0)) << 32) |
+			         strtoul(znul(row[PCOL_LO]), nullptr, 0));
 			break;
 		case PT_MV_STRING8:
 		case PT_MV_UNICODE:
@@ -233,6 +248,17 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 			LONG_ARRAY la;
 			la.count = xpair.mvl.size();
 			la.pl = xpair.mvl.data();
+			pv.pvalue = &la;
+			if (!tpropval_array_set_propval(ar, &pv))
+				throw std::bad_alloc();
+			break;
+		}
+		case PT_MV_CURRENCY:
+		case PT_MV_I8:
+		case PT_MV_SYSTIME: {
+			LONGLONG_ARRAY la;
+			la.count = xpair.mvll.size();
+			la.pll = xpair.mvll.data();
 			pv.pvalue = &la;
 			if (!tpropval_array_set_propval(ar, &pv))
 				throw std::bad_alloc();
