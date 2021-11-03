@@ -247,6 +247,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		}
 		*static_cast<double *>(pvalue) = zval_get_double(entry);
 		break;
+	case PT_CURRENCY:
 	case PT_I8:
 		pvalue = emalloc(sizeof(uint64_t));
 		if (NULL == pvalue) {
@@ -360,6 +361,7 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		} ZEND_HASH_FOREACH_END();
 		break;
 	}
+	case PT_MV_CURRENCY:
 	case PT_MV_I8: {
 		ZVAL_DEREF(entry);
 		pdata_hash = HASH_OF(entry);
@@ -415,6 +417,30 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 			xs->ppstr[j++] = pstring;
 			memcpy(pstring, str->val, str->len);
 			pstring[str->len] = '\0';
+		} ZEND_HASH_FOREACH_END();
+		break;
+	}
+	case PT_MV_SYSTIME: {
+		ZVAL_DEREF(entry);
+		pdata_hash = HASH_OF(entry);
+		if (pdata_hash == nullptr)
+			return nullptr;
+		pvalue = emalloc(sizeof(LONGLONG_ARRAY));
+		auto xl = static_cast<LONGLONG_ARRAY *>(pvalue);
+		if (xl == nullptr)
+			return nullptr;
+		xl->count = zend_hash_num_elements(pdata_hash);
+		if (xl->count == 0) {
+			xl->pll = nullptr;
+			break;
+		}
+		xl->pll = sta_malloc<uint64_t>(xl->count);
+		if (xl->pll == nullptr) {
+			xl->count = 0;
+			return NULL;
+		}
+		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
+			xl->pll[j++] = unix_to_nttime(zval_get_long(data_entry));
 		} ZEND_HASH_FOREACH_END();
 		break;
 	}
@@ -1224,6 +1250,7 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 		case PT_APPTIME:
 			add_assoc_double(pzret, proptag_string, *(double*)ppropval->pvalue);
 			break;
+		case PT_CURRENCY:
 		case PT_I8:
  			add_assoc_double(pzret, proptag_string, *(uint64_t*)ppropval->pvalue);
 			break;
