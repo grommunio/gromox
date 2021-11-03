@@ -27,6 +27,7 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	EMSMDB_INFO *pemsmdb_info;
 	uint8_t partial_completion;
 	
+	*ppresponse = NULL;
 	pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 	if (prequest->hindex >= hnum) {
 		return ecInvalidObject;
@@ -34,7 +35,6 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	if (prequest->rop_id == ropRelease) {
 		rop_release(pemsmdb_info->plogmap,
 			prequest->logon_id, phandles[prequest->hindex]);
-		*ppresponse = NULL;
 		return ecSuccess;
 	}
 	*ppresponse = cu_alloc<ROP_RESPONSE>();
@@ -1695,9 +1695,5 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			prequest->rop_id);
 		return ecError;
 	}
-	if (g_rop_debug == 0)
-		return ecSuccess;
-	if ((*ppresponse)->result != 0 || g_rop_debug == 2)
-		fprintf(stderr, "ROP %s %xh\n", rop_idtoname(prequest->rop_id), (*ppresponse)->result);
 	return ecSuccess;
 }

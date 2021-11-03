@@ -537,6 +537,12 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 		auto req = static_cast<ROP_REQUEST *>(pnode->pdata);
 		result = rop_dispatch(req, reinterpret_cast<ROP_RESPONSE **>(&pnode1->pdata),
 				prop_buff->phandles, prop_buff->hnum);
+		auto rsp = static_cast<ROP_RESPONSE *>(pnode1->pdata);
+		if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != 0))
+			fprintf(stderr, "rop_dispatch(%s) EC = %xh\n", rop_idtoname(req->rop_id), result);
+		if (rsp != nullptr && (g_rop_debug >= 2 ||
+		    (g_rop_debug >= 1 && rsp->result != 0)))
+			fprintf(stderr, "rop_dispatch(%s) RS = %xh\n", rop_idtoname(req->rop_id), rsp->result);
 		switch (result) {
 		case ecSuccess:
 			/* disable compression when RopReadStream
@@ -716,6 +722,8 @@ uint32_t rop_processor_proc(uint32_t flags, const uint8_t *pin,
 	tmp_cb = *pcb_out;
 	result = rop_processor_execute_and_push(pout,
 		&tmp_cb, &rop_buff, TRUE, &response_list);
+	if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != 0))
+		fprintf(stderr, "rop_proc_ex+push() EC = %xh\n", result);
 	if (result != ecSuccess)
 		return result;
 	offset = tmp_cb;
