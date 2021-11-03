@@ -431,7 +431,9 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			TRY(pext->g_uint32(&la->pl[i]));
 		return EXT_ERR_SUCCESS;
 	}
-	case PT_MV_I8: {
+	case PT_MV_CURRENCY:
+	case PT_MV_I8:
+	case PT_MV_SYSTIME: {
 		r->pvalue = pext->anew<LONGLONG_ARRAY>();
 		if (NULL == r->pvalue) {
 			return EXT_ERR_ALLOC;
@@ -1864,7 +1866,9 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 			TRY(pext->p_uint32(la->pl[i]));
 		return EXT_ERR_SUCCESS;
 	}
-	case PT_MV_I8: {
+	case PT_MV_CURRENCY:
+	case PT_MV_I8:
+	case PT_MV_SYSTIME: {
 		auto la = static_cast<LONGLONG_ARRAY *>(r->pvalue);
 		TRY(pext->p_uint32(la->count));
 		for (size_t i = 0; i < la->count; ++i)

@@ -917,7 +917,9 @@ int EXT_PULL::g_propval(uint16_t type, void **ppval)
 		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
 		return g_uint32_a(static_cast<LONG_ARRAY *>(*ppval));
+	case PT_MV_CURRENCY:
 	case PT_MV_I8:
+	case PT_MV_SYSTIME:
 		*ppval = anew<LONGLONG_ARRAY>();
 		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
@@ -2671,7 +2673,9 @@ int EXT_PUSH::p_propval(uint16_t type, const void *pval)
 		return p_uint16_a(static_cast<const SHORT_ARRAY *>(pval));
 	case PT_MV_LONG:
 		return p_uint32_a(static_cast<const LONG_ARRAY *>(pval));
+	case PT_MV_CURRENCY:
 	case PT_MV_I8:
+	case PT_MV_SYSTIME:
 		return p_uint64_a(static_cast<const LONGLONG_ARRAY *>(pval));
 	case PT_MV_STRING8:
 		return p_str_a(static_cast<const STRING_ARRAY *>(pval));

@@ -185,7 +185,9 @@ void* propval_dup(uint16_t type, void *pvi)
 		memcpy(preturn->pl, psrc->pl, sizeof(uint32_t) * psrc->count);
 		return preturn;
 	}
-	case PT_MV_I8: {
+	case PT_MV_CURRENCY:
+	case PT_MV_I8:
+	case PT_MV_SYSTIME: {
 		auto preturn = static_cast<LONGLONG_ARRAY *>(malloc(sizeof(LONGLONG_ARRAY)));
 		auto psrc = static_cast<LONGLONG_ARRAY *>(pvi);
 		if (NULL == preturn) {
@@ -337,7 +339,9 @@ void propval_free(uint16_t type, void *pvalue)
 	case PT_MV_LONG:
 		free(((LONG_ARRAY*)pvalue)->pl);
 		break;
+	case PT_MV_CURRENCY:
 	case PT_MV_I8:
+	case PT_MV_SYSTIME:
 		free(((LONGLONG_ARRAY*)pvalue)->pll);
 		break;
 	case PT_MV_STRING8:
@@ -418,7 +422,9 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 		return sizeof(uint16_t)*((SHORT_ARRAY*)pvalue)->count;
 	case PT_MV_LONG:
 		return sizeof(uint32_t)*((LONG_ARRAY*)pvalue)->count;
+	case PT_MV_CURRENCY:
 	case PT_MV_I8:
+	case PT_MV_SYSTIME:
 		return sizeof(uint64_t)*((LONGLONG_ARRAY*)pvalue)->count;
 	case PT_MV_STRING8: {
 		length = 0;
@@ -893,7 +899,9 @@ BOOL propval_compare_relop(uint8_t relop,
 		}
 		return FALSE;
 	}
-	case PT_MV_I8: {
+	case PT_MV_CURRENCY:
+	case PT_MV_I8:
+	case PT_MV_SYSTIME: {
 		auto la1 = static_cast<LONGLONG_ARRAY *>(pvalue1);
 		auto la2 = static_cast<LONGLONG_ARRAY *>(pvalue2);
 		switch (relop) {
