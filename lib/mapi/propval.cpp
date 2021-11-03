@@ -100,27 +100,27 @@ void* propval_dup(uint16_t type, void *pvi)
 		if (NULL == preturn) {
 			return NULL;
 		}
-		if (psrc->pbin != nullptr) {
-			preturn->pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
-			if (preturn->pbin == nullptr) {
-				free(preturn);
-				return NULL;
-			}
-			preturn->pbin->cb = psrc->pbin->cb;
-			if (psrc->pbin->cb == 0) {
-				preturn->pbin->pv = nullptr;
-			} else {
-				preturn->pbin->pv = malloc(psrc->pbin->cb);
-				if (preturn->pbin->pv == nullptr) {
-					free(preturn->pbin);
-					free(preturn);
-					return NULL;
-				}
-				memcpy(preturn->pbin->pv, psrc->pbin->pv, psrc->pbin->cb);
-			}
-		} else {
+		if (psrc->pbin == nullptr) {
 			memcpy(preturn, pvi, sizeof(SVREID));
+			return preturn;
 		}
+		preturn->pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
+		if (preturn->pbin == nullptr) {
+			free(preturn);
+			return NULL;
+		}
+		preturn->pbin->cb = psrc->pbin->cb;
+		if (psrc->pbin->cb == 0) {
+			preturn->pbin->pv = nullptr;
+			return preturn;
+		}
+		preturn->pbin->pv = malloc(psrc->pbin->cb);
+		if (preturn->pbin->pv == nullptr) {
+			free(preturn->pbin);
+			free(preturn);
+			return NULL;
+		}
+		memcpy(preturn->pbin->pv, psrc->pbin->pv, psrc->pbin->cb);
 		return preturn;
 	}
 	case PT_SRESTRICTION:
@@ -137,14 +137,14 @@ void* propval_dup(uint16_t type, void *pvi)
 		preturn->cb = psrc->cb;
 		if (psrc->cb == 0) {
 			preturn->pv = NULL;
-		} else {
-			preturn->pv = malloc(psrc->cb);
-			if (preturn->pv == nullptr) {
-				free(preturn);
-				return NULL;
-			}
-			memcpy(preturn->pv, psrc->pv, psrc->cb);
+			return preturn;
 		}
+		preturn->pv = malloc(psrc->cb);
+		if (preturn->pv == nullptr) {
+			free(preturn);
+			return NULL;
+		}
+		memcpy(preturn->pv, psrc->pv, psrc->cb);
 		return preturn;
 	}
 	case PT_MV_SHORT: {
@@ -156,14 +156,14 @@ void* propval_dup(uint16_t type, void *pvi)
 		preturn->count = psrc->count;
 		if (psrc->count == 0) {
 			preturn->ps = nullptr;
-		} else {
-			preturn->ps = static_cast<uint16_t *>(malloc(sizeof(uint16_t) * psrc->count));
-			if (preturn->ps == nullptr) {
-				free(preturn);
-				return NULL;
-			}
-			memcpy(preturn->ps, psrc->ps, sizeof(uint16_t) * psrc->count);
+			return preturn;
 		}
+		preturn->ps = static_cast<uint16_t *>(malloc(sizeof(uint16_t) * psrc->count));
+		if (preturn->ps == nullptr) {
+			free(preturn);
+			return NULL;
+		}
+		memcpy(preturn->ps, psrc->ps, sizeof(uint16_t) * psrc->count);
 		return preturn;
 	}
 	case PT_MV_LONG: {
@@ -175,14 +175,14 @@ void* propval_dup(uint16_t type, void *pvi)
 		preturn->count = psrc->count;
 		if (psrc->count == 0) {
 			preturn->pl = NULL;
-		} else {
-			preturn->pl = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * psrc->count));
-			if (preturn->pl == nullptr) {
-				free(preturn);
-				return NULL;
-			}
-			memcpy(preturn->pl, psrc->pl, sizeof(uint32_t) * psrc->count);
+			return preturn;
 		}
+		preturn->pl = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * psrc->count));
+		if (preturn->pl == nullptr) {
+			free(preturn);
+			return NULL;
+		}
+		memcpy(preturn->pl, psrc->pl, sizeof(uint32_t) * psrc->count);
 		return preturn;
 	}
 	case PT_MV_I8: {
@@ -194,14 +194,14 @@ void* propval_dup(uint16_t type, void *pvi)
 		preturn->count = psrc->count;
 		if (psrc->count == 0) {
 			preturn->pll = nullptr;
-		} else {
-			preturn->pll = static_cast<uint64_t *>(malloc(sizeof(uint64_t) * psrc->count));
-			if (preturn->pll == nullptr) {
-				free(preturn);
-				return NULL;
-			}
-			memcpy(preturn->pll, psrc->pll, sizeof(uint64_t) * psrc->count);
+			return preturn;
 		}
+		preturn->pll = static_cast<uint64_t *>(malloc(sizeof(uint64_t) * psrc->count));
+		if (preturn->pll == nullptr) {
+			free(preturn);
+			return NULL;
+		}
+		memcpy(preturn->pll, psrc->pll, sizeof(uint64_t) * psrc->count);
 		return preturn;
 	}
 	case PT_MV_STRING8:
@@ -214,22 +214,22 @@ void* propval_dup(uint16_t type, void *pvi)
 		preturn->count = psrc->count;
 		if (psrc->count == 0) {
 			preturn->ppstr = nullptr;
-		} else {
-			preturn->ppstr = static_cast<char **>(malloc(sizeof(char *) * psrc->count));
-			if (preturn->ppstr == nullptr) {
-				free(preturn);
-				return NULL;
-			}
-			for (size_t i = 0; i < psrc->count; ++i) {
-				preturn->ppstr[i] = strdup(psrc->ppstr[i]);
-				if (preturn->ppstr[i] == nullptr) {
-					while (i-- > 0)
-						free(preturn->ppstr[i]);
-					free(preturn->ppstr);
-					free(preturn);
-					return NULL;
-				}
-			}
+			return preturn;
+		}
+		preturn->ppstr = static_cast<char **>(malloc(sizeof(char *) * psrc->count));
+		if (preturn->ppstr == nullptr) {
+			free(preturn);
+			return NULL;
+		}
+		for (size_t i = 0; i < psrc->count; ++i) {
+			preturn->ppstr[i] = strdup(psrc->ppstr[i]);
+			if (preturn->ppstr[i] != nullptr)
+				continue;
+			while (i-- > 0)
+				free(preturn->ppstr[i]);
+			free(preturn->ppstr);
+			free(preturn);
+			return NULL;
 		}
 		return preturn;
 	}
@@ -242,14 +242,14 @@ void* propval_dup(uint16_t type, void *pvi)
 		preturn->count = psrc->count;
 		if (psrc->count == 0) {
 			preturn->pguid = nullptr;
-		} else {
-			preturn->pguid = static_cast<GUID *>(malloc(sizeof(GUID) * psrc->count));
-			if (preturn->pguid == nullptr) {
-				free(preturn);
-				return NULL;
-			}
-			memcpy(preturn->pguid, psrc->pguid, sizeof(GUID) * psrc->count);
+			return preturn;
 		}
+		preturn->pguid = static_cast<GUID *>(malloc(sizeof(GUID) * psrc->count));
+		if (preturn->pguid == nullptr) {
+			free(preturn);
+			return NULL;
+		}
+		memcpy(preturn->pguid, psrc->pguid, sizeof(GUID) * psrc->count);
 		return preturn;
 	}
 	case PT_MV_BINARY: {
@@ -261,28 +261,28 @@ void* propval_dup(uint16_t type, void *pvi)
 		preturn->count = psrc->count;
 		if (psrc->count == 0) {
 			preturn->pbin = nullptr;
-		} else {
-			preturn->pbin = static_cast<BINARY *>(malloc(sizeof(BINARY) * psrc->count));
-			if (preturn->pbin == nullptr) {
+			return preturn;
+		}
+		preturn->pbin = static_cast<BINARY *>(malloc(sizeof(BINARY) * psrc->count));
+		if (preturn->pbin == nullptr) {
+			free(preturn);
+			return NULL;
+		}
+		for (size_t i = 0; i < psrc->count; ++i) {
+			preturn->pbin[i].cb = psrc->pbin[i].cb;
+			if (psrc->pbin[i].cb == 0) {
+				preturn->pbin[i].pb = NULL;
+				continue;
+			}
+			preturn->pbin[i].pv = malloc(psrc->pbin[i].cb);
+			if (preturn->pbin[i].pv == nullptr) {
+				while (i > 0)
+					free(preturn->pbin[--i].pv);
+				free(preturn->pbin);
 				free(preturn);
 				return NULL;
 			}
-			for (size_t i = 0; i < psrc->count; ++i) {
-				preturn->pbin[i].cb = psrc->pbin[i].cb;
-				if (psrc->pbin[i].cb == 0) {
-					preturn->pbin[i].pb = NULL;
-					continue;
-				}
-				preturn->pbin[i].pv = malloc(psrc->pbin[i].cb);
-				if (preturn->pbin[i].pv == nullptr) {
-					while (i > 0)
-						free(preturn->pbin[--i].pv);
-					free(preturn->pbin);
-					free(preturn);
-					return NULL;
-				}
-				memcpy(preturn->pbin[i].pv, psrc->pbin[i].pv, psrc->pbin[i].cb);
-			}
+			memcpy(preturn->pbin[i].pv, psrc->pbin[i].pv, psrc->pbin[i].cb);
 		}
 		return preturn;
 	}
