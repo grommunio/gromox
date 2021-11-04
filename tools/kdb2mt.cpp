@@ -661,7 +661,7 @@ static void do_namemap_table(driver &drv, gi_name_map &map)
 			memcpy(pnstr.get(), row[3], rowlen[3] + 1);
 			pn_req.pname = pnstr.get();
 		}
-		map.emplace(PROP_TAG(PT_UNSPECIFIED, 0x8501 + strtoul(row[0], nullptr, 0)), pn_req);
+		map.emplace(PROP_TAG(PT_UNSPECIFIED, 0x8501 + strtoul(row[0], nullptr, 0)), std::move(pn_req));
 		pnstr.release();
 		pn_req.pname = nullptr;
 	}
@@ -686,12 +686,12 @@ static gi_name_map do_namemap(driver &drv)
 		{PSETID_KC,               0x0002, 0x0002, 0x8380},
 	};
 	PROPERTY_NAME pn;
-	pn.kind = MNID_ID;
 
 	for (const auto &row : hardmapped_nprops) {
+		pn.kind = MNID_ID;
 		rop_util_get_common_pset(row.psetid, &pn.guid);
 		for (pn.lid = row.lid_min; pn.lid < row.lid_max; ++pn.lid)
-			map.emplace(PROP_TAG(PT_UNSPECIFIED, pn.lid - row.lid_min + row.base), pn);
+			map.emplace(PROP_TAG(PT_UNSPECIFIED, pn.lid - row.lid_min + row.base), std::move(pn));
 	}
 	do_namemap_table(drv, map);
 	return map;
