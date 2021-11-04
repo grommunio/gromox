@@ -1436,15 +1436,14 @@ BOOL mysql_adaptor_get_user_info(const char *username,
 
 	if (pmyres.num_rows() != 1) {
 		maildir[0] = '\0';
+	}
+	auto myrow = pmyres.fetch_row();
+	if (strtol(myrow[1], nullptr, 0) == 0) {
+		strcpy(maildir, myrow[0]);
+		strcpy(lang, myrow[2]);
+		strcpy(zone, myrow[3]);
 	} else {
-		auto myrow = pmyres.fetch_row();
-		if (strtol(myrow[1], nullptr, 0) == 0) {
-			strcpy(maildir, myrow[0]);
-			strcpy(lang, myrow[2]);
-			strcpy(zone, myrow[3]);
-		} else {
-			maildir[0] = '\0';
-		}
+		maildir[0] = '\0';
 	}
 	return TRUE;
 } catch (const std::exception &e) {
