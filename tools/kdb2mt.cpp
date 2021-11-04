@@ -495,12 +495,6 @@ void driver::fmap_setup_splice()
 	nid = hid_from_mst(*store, PR_IPM_SENTMAIL_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_SENT_ITEMS, "FID_SENT_ITEMS"});
-	nid = hid_from_mst(*store, PR_COMMON_VIEWS_ENTRYID);
-	if (nid != 0)
-		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_COMMON_VIEWS, "FID_COMMON_VIEWS"});
-	nid = hid_from_mst(*store, PR_VIEWS_ENTRYID);
-	if (nid != 0)
-		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_VIEWS, "FID_VIEWS"});
 	nid = hid_from_mst(*store, PR_FINDER_ENTRYID);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_FINDER, "FID_FINDER"});

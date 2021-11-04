@@ -1,9 +1,11 @@
-1.6.34
+1.6.39
 ======
 
 Fixes:
 
 * mapi_lib: fix misparsing of X-Priority/Priority header on mail ingestion
+* kdb2mt, pff2mt: do not splice-import IPM_COMMON_VIEWS (may contain
+  entryids no longer applicable)
 
 Enhancements:
 

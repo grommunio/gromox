@@ -724,9 +724,6 @@ static void az_lookup_specials(libpff_file_t *file)
 	nid = az_nid_from_mst(mst.get(), PR_IPM_SENTMAIL_ENTRYID);
 	if (nid != 0)
 		g_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_SENT_ITEMS, "FID_SENT_ITEMS"});
-	nid = az_nid_from_mst(mst.get(), PR_COMMON_VIEWS_ENTRYID);
-	if (nid != 0)
-		g_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_COMMON_VIEWS, "FID_COMMON_VIEWS"});
 	nid = az_nid_from_mst(mst.get(), PR_FINDER_ENTRYID);
 	if (nid != 0)
 		g_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_FINDER, "FID_FINDER"});
