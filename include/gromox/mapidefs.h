@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <string>
 
 #define PROP_ID(x) ((x) >> 16)
 #define PROP_TYPE(x) ((x) & 0xFFFF)
@@ -1001,6 +1002,16 @@ struct PROPERTY_NAME {
 	GUID guid;
 	uint32_t lid;
 	char *pname;
+};
+
+struct PROPERTY_XNAME {
+	PROPERTY_XNAME() = default;
+	PROPERTY_XNAME(const PROPERTY_NAME &);
+
+	uint8_t kind = KIND_NONE;
+	uint32_t lid = 0;
+	GUID guid{};
+	std::string name;
 };
 
 struct PROPID_ARRAY {

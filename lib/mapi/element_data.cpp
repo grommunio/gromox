@@ -426,3 +426,10 @@ void property_groupinfo_free(PROPERTY_GROUPINFO *pgpinfo)
 	property_groupinfo_free_internal(pgpinfo);
 	free(pgpinfo);
 }
+
+PROPERTY_XNAME::PROPERTY_XNAME(const PROPERTY_NAME &o) :
+	kind(o.kind), lid(o.lid), guid(o.guid)
+{
+	if (o.kind == MNID_STRING && o.pname != nullptr)
+		name = o.pname;
+}

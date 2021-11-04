@@ -189,7 +189,7 @@ static void exm_adjust_namedprops(TPROPVAL_ARRAY &props)
 			fprintf(stderr, "Database corruption: No named property entry for proptag %xh.\n", old_tag);
 			continue;
 		}
-		auto new_id = gi_resolve_namedprop(&name_iter->second);
+		auto new_id = gi_resolve_namedprop(name_iter->second);
 		props.ppropval[i].proptag = PROP_TAG(PROP_TYPE(old_tag), new_id);
 		g_thru_name_map.emplace(PROP_ID(old_tag), new_id);
 	}

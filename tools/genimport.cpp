@@ -64,21 +64,6 @@ YError::YError(const char *fmt, ...)
 	m_str = ret >= 0 && strp != nullptr ? strp.get() : "vasprintf";
 }
 
-gi_name_map::gi_name_map(gi_name_map &&o)
-{
-	for (auto &e : *this)
-		if (e.second.kind == MNID_STRING)
-			free(e.second.pname);
-	static_cast<base_t &>(*this) = std::move(static_cast<base_t &>(o));
-}
-
-gi_name_map::~gi_name_map()
-{
-	for (auto &e : *this)
-		if (e.second.kind == MNID_STRING)
-			free(e.second.pname);
-}
-
 void tree(unsigned int depth)
 {
 	if (!g_show_tree)
@@ -313,7 +298,7 @@ void gi_dump_name_map(const gi_name_map &map)
 				static_cast<unsigned int>(propname.lid));
 		else if (propname.kind == MNID_STRING)
 			fprintf(stderr, "\t%08xh <-> {MNID_STRING, %s, %s}\n",
-				propid, bin2hex(propname.guid).c_str(), propname.pname);
+				propid, bin2hex(propname.guid).c_str(), propname.name.c_str());
 	}
 }
 
@@ -385,6 +370,7 @@ void gi_name_map_read(const void *buf, size_t bufsize, gi_name_map &map)
 			free(propname.pname);
 			throw;
 		}
+		free(propname.pname);
 	}
 }
 
@@ -395,10 +381,14 @@ void gi_name_map_write(const gi_name_map &map)
 		throw std::bad_alloc();
 	if (ep.p_uint64(map.size()) != EXT_ERR_SUCCESS)
 		throw YError("PG-1110");
-	for (const auto &[propid, propname] : map)
+	for (const auto &[propid, xn] : map) {
+		PROPERTY_NAME propname =
+			{xn.kind, xn.guid, xn.lid,
+			deconst(xn.kind == MNID_STRING ? xn.name.c_str() : nullptr)};
 		if (ep.p_uint32(propid) != EXT_ERR_SUCCESS ||
 		    ep.p_propname(&propname) != EXT_ERR_SUCCESS)
 			throw YError("PG-1111");
+	}
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
 	auto ret = write(STDOUT_FILENO, &xsize, sizeof(xsize));
 	if (ret < 0)
@@ -412,11 +402,16 @@ void gi_name_map_write(const gi_name_map &map)
 		throw YError("PG-1115");
 }
 
-uint16_t gi_resolve_namedprop(const PROPERTY_NAME *pn_req)
+uint16_t gi_resolve_namedprop(const PROPERTY_XNAME &xpn_req)
 {
+	PROPERTY_NAME pn_req;
+	pn_req.kind  = xpn_req.kind;
+	pn_req.lid   = xpn_req.lid;
+	pn_req.guid  = xpn_req.guid;
+	pn_req.pname = deconst(xpn_req.kind == MNID_STRING ? xpn_req.name.c_str() : nullptr);
 	PROPNAME_ARRAY pna_req;
 	pna_req.count = 1;
-	pna_req.ppropname = deconst(pn_req);
+	pna_req.ppropname = &pn_req;
 
 	PROPID_ARRAY pid_rsp{};
 	if (!exmdb_client::get_named_propids(g_storedir, TRUE, &pna_req, &pid_rsp))
