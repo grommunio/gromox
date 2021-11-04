@@ -1,4 +1,4 @@
-1.6.31
+1.6.34
 ======
 
 Fixes:
@@ -7,7 +7,7 @@ Fixes:
 
 Enhancements:
 
-* mysql_adaptor: recognize shared mailboxes for SMTP RCPT command
+* delivery & queue: recognize shared mailboxes
 * doc: add Grommunio Admin API directives to ldap_adaptor manpage
 * exch: add handling for PT_MV_SYSTIME, PT_MV_CURRENCY property types
 * kdb2mt: support extraction of PT_CURRENCY, PT_MV_{I8,SYSTIME,CURRENCY}

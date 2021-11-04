@@ -1416,6 +1416,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 	return false;
 }
 
+/* only used by gromox-delivery/exmdb_local */
 BOOL mysql_adaptor_get_user_info(const char *username,
     char *maildir, char *lang, char *zone) try
 {
@@ -1438,7 +1439,8 @@ BOOL mysql_adaptor_get_user_info(const char *username,
 		maildir[0] = '\0';
 	}
 	auto myrow = pmyres.fetch_row();
-	if (strtol(myrow[1], nullptr, 0) == 0) {
+	auto status = strtol(myrow[1], nullptr, 0);
+	if (status == AF_USER_NORMAL || status == AF_USER_SHAREDMBOX) {
 		strcpy(maildir, myrow[0]);
 		strcpy(lang, myrow[2]);
 		strcpy(zone, myrow[3]);
