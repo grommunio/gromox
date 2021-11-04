@@ -1028,13 +1028,13 @@ int main(int argc, const char **argv)
 		}
 		ret = do_database(std::move(drv), g_srcguid != nullptr ? g_srcguid : g_srcmbox);
 	} catch (const char *e) {
-		fprintf(stderr, "Exception: %s\n", e);
+		fprintf(stderr, "kdb2mt: Exception: %s\n", e);
 		return -ECANCELED;
 	} catch (const std::string &e) {
-		fprintf(stderr, "Exception: %s\n", e.c_str());
+		fprintf(stderr, "kdb2mt: Exception: %s\n", e.c_str());
 		return -ECANCELED;
 	} catch (const std::exception &e) {
-		fprintf(stderr, "Exception: %s\n", e.what());
+		fprintf(stderr, "kdb2mt: Exception: %s\n", e.what());
 		return -ECANCELED;
 	}
 	return ret == 0 ? EXIT_SUCCESS : EXIT_FAILURE;

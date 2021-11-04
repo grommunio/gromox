@@ -380,6 +380,6 @@ int main(int argc, const char **argv) try
 	gi_dump_thru_map(g_thru_name_map);
 	return EXIT_SUCCESS;
 } catch (const std::exception &e) {
-	fprintf(stderr, "Exception: %s\n", e.what());
+	fprintf(stderr, "mt2exm: Exception: %s\n", e.what());
 	return EXIT_FAILURE;
 }
