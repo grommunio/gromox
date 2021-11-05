@@ -102,8 +102,9 @@ users, groups and other objects like distribution lists. The default database
 name Gromox's mysql_adaptor plugin will use is ``email``, hence you would
 create that as a blank database. The default database access users is root with
 no password, which fits the default installation of MariaDB too. Any deviations
-will have to be specified in ``/etc/gromox/mysql_adaptor.cfg``; the
-corresponding manpage is mysql_adaptor(4gx). The database can then be populated
+will have to be specified in ``/etc/gromox/mysql_adaptor.cfg`` and
+``/etc/gromox/autodiscover.ini``; the corresponding manpage is
+mysql_adaptor(4gx) and autodiscover(4gx). The database can then be populated
 using ``gromox-dbop -C``.
 
 Gromox only requires SELECT,UPDATE permissions on this database as it does not
@@ -130,6 +131,14 @@ certificate should indeed be set up. Then, since you already have the
 certificates, you could also use them in e.g. ``smtp.cfg``.
 
 __ https://github.com/grommunio/gromox/blob/master/exch/php/ews/autodiscover.php#L24
+
+
+Hostname
+--------
+
+If the kernel hostname is different from the hostname used to access the
+service(s), this needs to be specified in ``autodiscover.ini`` using
+``hostname=...``.
 
 
 x500_org_name
