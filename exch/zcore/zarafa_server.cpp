@@ -762,8 +762,7 @@ uint32_t zarafa_server_logon(const char *username,
 	tl_hold.unlock();
 	if (FALSE == system_services_get_id_from_username(
 		username, &user_id) ||
-		FALSE == system_services_get_homedir(
-		pdomain, homedir) ||
+	    !system_services_get_homedir(pdomain, homedir, arsizeof(homedir)) ||
 		FALSE == system_services_get_domain_ids(
 		pdomain, &domain_id, &org_id)) {
 		return ecError;

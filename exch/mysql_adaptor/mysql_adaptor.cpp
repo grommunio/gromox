@@ -504,7 +504,7 @@ BOOL mysql_adaptor_get_domainname_from_id(int domain_id, char *domainname) try
 	return false;
 }
 
-BOOL mysql_adaptor_get_homedir(const char *domainname, char *homedir) try
+bool mysql_adaptor_get_homedir(const char *domainname, char *homedir, size_t dsize) try
 {
 	char temp_name[UDOM_SIZE*2];
 	
@@ -518,10 +518,10 @@ BOOL mysql_adaptor_get_homedir(const char *domainname, char *homedir) try
 		return false;
 	conn.finish();
 	if (pmyres.num_rows() != 1)
-		return FALSE;
+		return false;
 	auto myrow = pmyres.fetch_row();
-	strncpy(homedir, myrow[0], 256);
-	return TRUE;
+	gx_strlcpy(homedir, myrow[0], dsize);
+	return true;
 } catch (const std::exception &e) {
 	printf("E-%u: %s\n", 1716, e.what());
 	return false;
