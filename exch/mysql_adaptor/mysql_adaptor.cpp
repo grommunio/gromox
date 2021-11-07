@@ -527,7 +527,7 @@ bool mysql_adaptor_get_homedir(const char *domainname, char *homedir, size_t dsi
 	return false;
 }
 
-BOOL mysql_adaptor_get_homedir_by_id(int domain_id, char *homedir) try
+bool mysql_adaptor_get_homedir_by_id(int domain_id, char *homedir, size_t dsize) try
 {
 	auto qstr = "SELECT homedir FROM domains WHERE id=" + std::to_string(domain_id);
 	auto conn = g_sqlconn_pool.get_wait();
@@ -538,10 +538,10 @@ BOOL mysql_adaptor_get_homedir_by_id(int domain_id, char *homedir) try
 		return false;
 	conn.finish();
 	if (pmyres.num_rows() != 1)
-		return FALSE;
+		return false;
 	auto myrow = pmyres.fetch_row();
-	strncpy(homedir, myrow[0], 256);
-	return TRUE;
+	gx_strlcpy(homedir, myrow[0], dsize);
+	return true;
 } catch (const std::exception &e) {
 	printf("E-%u: %s\n", 1717, e.what());
 	return false;

@@ -197,9 +197,8 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 			pdomain = pdomain1;
 		}
 	}
-	if (FALSE == common_util_get_homedir_by_id(domain_id, homedir)) {
+	if (!common_util_get_homedir_by_id(domain_id, homedir, arsizeof(homedir)))
 		return ecError;
-	}
 	/* like EXCHANGE 2013 or later, we only
 		return four folder_ids to client */
 	pfolder_id[0]  = rop_util_make_eid_ex(1, PUBLIC_FID_ROOT);
