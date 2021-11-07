@@ -6,9 +6,13 @@ function get_app_config()
 	if ($appconf) {
 		return $appconf;
 	}
-	$a = @parse_ini_file("/etc/gromox/autodiscover.ini", true);
-	if ($a === false)
+	if (file_exists("/etc/gromox/autodiscover.ini")) {
+		$a = parse_ini_file("/etc/gromox/autodiscover.ini", true);
+		if ($a === false)
+			$a = [];
+	} else {
 		$a = [];
+	}
 	$a["database"] ??= [];
 	$a["database"]["host"] ??= "localhost";
 	$a["database"]["username"] ??= "root";
