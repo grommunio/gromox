@@ -102,8 +102,7 @@ static TAG_ITEM g_tags[] = {
 
 BOOL (*bounce_producer_check_domain)(const char *domainname);
 bool (*bounce_producer_get_lang)(const char *username, char *lang, size_t);
-BOOL (*bounce_producer_get_timezone)(const char *username, char *timezone);
-
+bool (*bounce_producer_get_timezone)(const char *username, char *timezone, size_t);
 BOOL (*bounce_producer_lang_to_charset)(const char *lang, char *charset);
 
 static void bounce_producer_enum_parts(MIME *pmime, ENUM_PARTS *penum);
@@ -392,7 +391,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 		if (TRUE == bounce_producer_check_domain(pdomain)) {
 			if (bounce_producer_get_lang(from, lang, arsizeof(lang)))
 				bounce_producer_lang_to_charset(lang, charset);
-			bounce_producer_get_timezone(from, time_zone);
+			bounce_producer_get_timezone(from, time_zone, arsizeof(time_zone));
 		}
 	}
 	

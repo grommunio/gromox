@@ -94,7 +94,7 @@ BOOL mysql_adaptor_get_user_privilege_bits(
 	const char *username, uint32_t *pprivilege_bits);
 extern bool mysql_adaptor_get_user_lang(const char *username, char *lang, size_t);
 BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang);
-BOOL mysql_adaptor_get_timezone(const char *username, char *timezone);
+extern bool mysql_adaptor_get_timezone(const char *username, char *timezone, size_t);
 BOOL mysql_adaptor_set_timezone(const char *username, const char *timezone);
 BOOL mysql_adaptor_get_maildir(const char *username, char *maildir);
 BOOL mysql_adaptor_get_domainname_from_id(int domain_id, char *domainname);

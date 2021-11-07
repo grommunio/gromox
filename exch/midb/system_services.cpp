@@ -5,7 +5,7 @@
 #include <cstdio>
 
 bool (*system_services_get_user_lang)(const char *, char *, size_t);
-BOOL (*system_services_get_timezone)(const char*, char *);
+bool (*system_services_get_timezone)(const char *, char *, size_t);
 decltype(system_services_get_username_from_id) system_services_get_username_from_id;
 BOOL (*system_services_get_id_from_username)(const char*, int*);
 BOOL (*system_services_get_user_ids)(const char *, int *, int *, enum display_type *);

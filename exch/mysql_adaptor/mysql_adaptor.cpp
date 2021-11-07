@@ -418,7 +418,7 @@ static BOOL mysql_adaptor_expand_hierarchy(MYSQL *pmysql,
 	return false;
 }
 
-BOOL mysql_adaptor_get_timezone(const char *username, char *zone) try
+bool mysql_adaptor_get_timezone(const char *username, char *zone, size_t zone_size) try
 {
 	char temp_name[UADDR_SIZE*2];
 	
@@ -435,9 +435,9 @@ BOOL mysql_adaptor_get_timezone(const char *username, char *zone) try
 		zone[0] = '\0';
 	} else {
 		auto myrow = pmyres.fetch_row();
-		strcpy(zone, myrow[0]);
+		gx_strlcpy(zone, myrow[0], zone_size);
 	}
-	return TRUE;
+	return true;
 } catch (const std::exception &e) {
 	printf("E-%u: %s\n", 1712, e.what());
 	return false;

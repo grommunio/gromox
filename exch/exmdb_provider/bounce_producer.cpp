@@ -356,7 +356,7 @@ BOOL bounce_producer_make_content(const char *from,
 	time_zone[0] = '\0';
 	if (common_util_get_user_lang(from, lang, arsizeof(lang))) {
 		common_util_lang_to_charset(lang, charset);
-		common_util_get_timezone(from, time_zone);
+		common_util_get_timezone(from, time_zone, arsizeof(time_zone));
 	}
 	if('\0' != time_zone[0]) {
 		auto sp = tz::tz_alloc(time_zone);

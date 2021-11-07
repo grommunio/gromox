@@ -2581,8 +2581,8 @@ MESSAGE_CONTENT *common_util_rfc822_to_message(store_object *pstore,
 	if (!system_services_lang_to_charset(pinfo->get_lang(), charset) ||
 	    charset[0] == '\0')
 		strcpy(charset, g_default_charset);
-	if (!system_services_get_timezone(pinfo->get_username(), tmzone) ||
-	    tmzone[0] == '\0')
+	if (!system_services_get_timezone(pinfo->get_username(), tmzone,
+	    arsizeof(tmzone)) || tmzone[0] == '\0')
 		strcpy(tmzone, g_default_zone);
 	common_util_set_dir(pstore->get_dir());
 	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
@@ -2626,8 +2626,8 @@ MESSAGE_CONTENT *common_util_ical_to_message(store_object *pstore,
 	char tmzone[64];
 	
 	auto pinfo = zarafa_server_get_info();
-	if (!system_services_get_timezone(pinfo->get_username(), tmzone) ||
-	    tmzone[0] == '\0')
+	if (!system_services_get_timezone(pinfo->get_username(), tmzone,
+	    arsizeof(tmzone)) || tmzone[0] == '\0')
 		strcpy(tmzone, g_default_zone);
 	auto pbuff = cu_alloc<char>(pical_bin->cb + 1);
 	if (NULL == pbuff) {

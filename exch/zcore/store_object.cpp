@@ -1149,9 +1149,8 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PROP_TAG_ECUSERTIMEZONE:
 		if (!pstore->b_private)
 			return FALSE;
-		if (FALSE == system_services_get_timezone(
-			pstore->account, temp_buff) || '\0' ==
-			temp_buff[0]) {
+		if (!system_services_get_timezone(pstore->account, temp_buff,
+		    arsizeof(temp_buff)) || temp_buff[0] == '\0') {
 			*ppvalue = deconst(common_util_get_default_timezone());
 			return TRUE;
 		}

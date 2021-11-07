@@ -3275,8 +3275,8 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		lang, charset) || '\0' == charset[0]) {
 		strcpy(charset, g_default_charset);
 	}
-	if (!system_services_get_timezone(pidb->username.c_str(), tmzone) ||
-	    tmzone[0] == '\0')
+	if (!system_services_get_timezone(pidb->username.c_str(), tmzone,
+	    arsizeof(tmzone)) || tmzone[0] == '\0')
 		strcpy(tmzone, g_default_timezone);
 	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
 	                common_util_alloc, common_util_get_propids_create);
@@ -3556,8 +3556,8 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		lang, charset) || '\0' == charset[0]) {
 		strcpy(charset, g_default_charset);
 	}
-	if (!system_services_get_timezone(pidb->username.c_str(), tmzone) ||
-	    tmzone[0] == '\0')
+	if (!system_services_get_timezone(pidb->username.c_str(), tmzone,
+	    arsizeof(tmzone)) || tmzone[0] == '\0')
 		strcpy(tmzone, g_default_timezone);
 	auto pmsgctnt = oxcmail_import(charset, tmzone, &imail,
 	                common_util_alloc, common_util_get_propids_create);
