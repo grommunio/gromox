@@ -354,7 +354,7 @@ BOOL bounce_producer_make_content(const char *from,
 	ptr = pcontent;
 	charset[0] = '\0';
 	time_zone[0] = '\0';
-	if (TRUE == common_util_get_user_lang(from, lang)) {
+	if (common_util_get_user_lang(from, lang, arsizeof(lang))) {
 		common_util_lang_to_charset(lang, charset);
 		common_util_get_timezone(from, time_zone);
 	}

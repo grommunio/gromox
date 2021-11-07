@@ -348,7 +348,7 @@ BOOL mysql_adaptor_get_user_privilege_bits(const char *username,
 	return false;
 }
 
-BOOL mysql_adaptor_get_user_lang(const char *username, char *lang) try
+bool mysql_adaptor_get_user_lang(const char *username, char *lang, size_t lang_size) try
 {
 	char temp_name[UADDR_SIZE*2];
 	
@@ -365,9 +365,9 @@ BOOL mysql_adaptor_get_user_lang(const char *username, char *lang) try
 		lang[0] = '\0';	
 	} else {
 		auto myrow = pmyres.fetch_row();
-		strcpy(lang, myrow[0]);
+		gx_strlcpy(lang, myrow[0], lang_size);
 	}
-	return TRUE;
+	return true;
 } catch (const std::exception &e) {
 	printf("E-%u: %s\n", 1709, e.what());
 	return false;

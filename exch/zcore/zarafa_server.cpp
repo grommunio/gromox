@@ -770,7 +770,7 @@ uint32_t zarafa_server_logon(const char *username,
 	}
 	if (password == nullptr &&
 	    (!system_services_get_maildir(username, maildir) ||
-	    !system_services_get_user_lang(username, lang)))
+	    !system_services_get_user_lang(username, lang, arsizeof(lang))))
 		return ecError;
 
 	USER_INFO tmp_info;

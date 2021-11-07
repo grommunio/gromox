@@ -13,7 +13,7 @@ enum {
 #define BOUND_NOTLOCAL					7
 
 extern BOOL (*exmdb_local_check_domain)(const char *domainname);
-extern BOOL (*exmdb_local_get_lang)(const char *username, char *lang);
+extern bool (*exmdb_local_get_lang)(const char *username, char *lang, size_t);
 extern BOOL (*exmdb_local_get_timezone)(
 	const char *username, char *timezone);
 extern BOOL (*exmdb_local_check_same_org2)(

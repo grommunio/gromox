@@ -375,9 +375,8 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	if (NULL != pdomain) {
 		pdomain ++;
 		if (TRUE == exmdb_local_check_domain(pdomain)) {
-			if (TRUE == exmdb_local_get_lang(from, lang)) {
+			if (exmdb_local_get_lang(from, lang, arsizeof(lang)))
 				exmdb_local_lang_to_charset(lang, charset);
-			}
 			exmdb_local_get_timezone(from, time_zone);
 		}
 	}

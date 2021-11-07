@@ -92,7 +92,7 @@ BOOL mysql_adaptor_get_user_displayname(
 	const char *username, char *pdisplayname);
 BOOL mysql_adaptor_get_user_privilege_bits(
 	const char *username, uint32_t *pprivilege_bits);
-BOOL mysql_adaptor_get_user_lang(const char *username, char *lang);
+extern bool mysql_adaptor_get_user_lang(const char *username, char *lang, size_t);
 BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang);
 BOOL mysql_adaptor_get_timezone(const char *username, char *timezone);
 BOOL mysql_adaptor_set_timezone(const char *username, const char *timezone);

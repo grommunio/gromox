@@ -375,7 +375,7 @@ static BOOL bounce_producer_make_content(const char *username,
 	if (NULL == from) {
 		from = "none@none";
 	}
-	if (TRUE == system_services_get_user_lang(from, lang)) {
+	if (system_services_get_user_lang(from, lang, arsizeof(lang))) {
 		system_services_lang_to_charset(lang, charset);
 		system_services_get_timezone(from, time_zone);
 	}

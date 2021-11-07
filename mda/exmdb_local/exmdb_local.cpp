@@ -48,8 +48,7 @@ BOOL (*exmdb_local_check_domain)(const char *domainname);
 
 static BOOL (*exmdb_local_get_user_info)(const char *username,
 	char *home_dir, char *charset, char *timezone);
-BOOL (*exmdb_local_get_lang)(const char *username, char *lang);
-
+bool (*exmdb_local_get_lang)(const char *username, char *lang, size_t);
 BOOL (*exmdb_local_get_timezone)(const char *username, char *timezone);
 
 BOOL (*exmdb_local_check_same_org2)(

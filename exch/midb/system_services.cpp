@@ -4,7 +4,7 @@
 #include "service.h"
 #include <cstdio>
 
-BOOL (*system_services_get_user_lang)(const char*, char*);
+bool (*system_services_get_user_lang)(const char *, char *, size_t);
 BOOL (*system_services_get_timezone)(const char*, char *);
 decltype(system_services_get_username_from_id) system_services_get_username_from_id;
 BOOL (*system_services_get_id_from_username)(const char*, int*);

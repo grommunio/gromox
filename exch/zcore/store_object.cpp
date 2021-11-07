@@ -1140,11 +1140,9 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PROP_TAG_ECUSERLANGUAGE:
 		if (!pstore->b_private)
 			return FALSE;
-		if (FALSE == system_services_get_user_lang(
-			pstore->account, temp_buff) ||
-			'\0' == temp_buff[0]) {
+		if (!system_services_get_user_lang(pstore->account, temp_buff,
+		    arsizeof(temp_buff)) || temp_buff[0] == '\0')
 			return FALSE;	
-		}
 		HX_strlcat(temp_buff, ".UTF-8", sizeof(temp_buff));
 		*ppvalue = common_util_dup(temp_buff);
 		return TRUE;

@@ -3269,8 +3269,8 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		pidb.reset();
 		return MIDB_E_NO_MEMORY;
 	}
-	if (!system_services_get_user_lang(pidb->username.c_str(), lang) ||
-	    lang[0] == '\0' ||
+	if (!system_services_get_user_lang(pidb->username.c_str(), lang,
+	    arsizeof(lang)) || lang[0] == '\0' ||
 		FALSE == system_services_lang_to_charset(
 		lang, charset) || '\0' == charset[0]) {
 		strcpy(charset, g_default_charset);
@@ -3550,8 +3550,8 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		pidb.reset();
 		return MIDB_E_NO_MEMORY;
 	}
-	if (!system_services_get_user_lang(pidb->username.c_str(), lang) ||
-	    lang[0] == '\0' ||
+	if (!system_services_get_user_lang(pidb->username.c_str(), lang,
+	    arsizeof(lang)) || lang[0] == '\0' ||
 		FALSE == system_services_lang_to_charset(
 		lang, charset) || '\0' == charset[0]) {
 		strcpy(charset, g_default_charset);
