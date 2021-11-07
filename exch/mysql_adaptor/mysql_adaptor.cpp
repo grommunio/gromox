@@ -287,8 +287,8 @@ BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, int *puser_id) try
 	return false;
 }
 
-BOOL mysql_adaptor_get_user_displayname(const char *username,
-    char *pdisplayname) try
+bool mysql_adaptor_get_user_displayname(const char *username,
+    char *pdisplayname, size_t dsize) try
 {
 	char temp_name[UADDR_SIZE*2];
 	
@@ -308,17 +308,17 @@ BOOL mysql_adaptor_get_user_displayname(const char *username,
 		return false;
 	conn.finish();
 	if (pmyres.num_rows() != 1)
-		return FALSE;
+		return false;
 	auto myrow = pmyres.fetch_row();
 	auto dtypx = DT_MAILUSER;
 	if (myrow[2] != nullptr)
 		dtypx = static_cast<enum display_type>(strtoul(myrow[2], nullptr, 0));
-	strcpy(pdisplayname,
+	gx_strlcpy(pdisplayname,
 	       dtypx == DT_DISTLIST ? username :
 	       myrow[0] != nullptr && *myrow[0] != '\0' ? myrow[0] :
 	       myrow[1] != nullptr && *myrow[1] != '\0' ? myrow[1] :
-	       username);
-	return TRUE;
+	       username, dsize);
+	return true;
 } catch (const std::exception &e) {
 	printf("E-%u: %s\n", 1707, e.what());
 	return false;

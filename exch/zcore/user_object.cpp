@@ -120,7 +120,8 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 					++vc;
 				}
 				if (common_util_index_proptags(pproptags, PR_DISPLAY_NAME) >= 0 &&
-				    system_services_get_user_displayname(username, tmp_buff)) {
+				    system_services_get_user_displayname(username,
+				    tmp_buff, arsizeof(tmp_buff))) {
 					if ('\0' == tmp_buff[0]) {
 						strcpy(tmp_buff, username);
 					}

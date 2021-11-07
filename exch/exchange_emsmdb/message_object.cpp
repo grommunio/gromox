@@ -344,7 +344,7 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	if (dispname == nullptr)
 		return FALSE;
 	if (!common_util_get_user_displayname(rpc_info.username,
-	    dispname) || *dispname == '\0')
+	    dispname, 1024) || *dispname == '\0')
 		strcpy(dispname, rpc_info.username);
 	propvals.ppropval[propvals.count++].pvalue = dispname;
 	
@@ -520,7 +520,7 @@ gxerr_t message_object::save()
 		if (dispname == nullptr)
 			return GXERR_CALL_FAILED;
 		if (!common_util_get_user_displayname(rpc_info.username,
-		    dispname) || *dispname == '\0')
+		    dispname, 1024) || *dispname == '\0')
 			strcpy(dispname, rpc_info.username);
 		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pvalue;
 	}

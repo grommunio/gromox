@@ -800,7 +800,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		}
 		if (TRUE == pstore->b_private) {
 			if (!system_services_get_user_displayname(pstore->account,
-			    dispname))
+			    dispname, 256))
 				strcpy(dispname, pstore->account);
 		} else {
 			sprintf(dispname, "Public Folders - %s", pstore->account);
@@ -816,7 +816,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return FALSE;
 		}
 		if (!system_services_get_user_displayname(pstore->account,
-		    dispname))
+		    dispname, 256))
 			return FALSE;	
 		auto temp_len = strlen(dispname);
 		for (size_t i = 0; i < temp_len; ++i) {
@@ -934,10 +934,9 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 	case PR_MAILBOX_OWNER_NAME: {
 		if (!pstore->b_private)
 			return FALSE;
-		if (FALSE == system_services_get_user_displayname(
-			pstore->account, temp_buff)) {
+		if (!system_services_get_user_displayname(pstore->account,
+		    temp_buff, arsizeof(temp_buff)))
 			return FALSE;	
-		}
 		if ('\0' == temp_buff[0]) {
 			auto tstr = cu_alloc<char>(strlen(pstore->account) + 1);
 			*ppvalue = tstr;

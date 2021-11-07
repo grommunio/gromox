@@ -88,8 +88,7 @@ BOOL mysql_adaptor_setpasswd(const char *username,
 extern BOOL mysql_adaptor_get_username_from_id(int user_id, char *username, size_t);
 BOOL mysql_adaptor_get_id_from_username(const char *username, int *puser_id);
 BOOL mysql_adaptor_get_id_from_maildir(const char *maildir, int *puser_id);
-BOOL mysql_adaptor_get_user_displayname(
-	const char *username, char *pdisplayname);
+extern bool mysql_adaptor_get_user_displayname(const char *username, char *dispname, size_t);
 BOOL mysql_adaptor_get_user_privilege_bits(
 	const char *username, uint32_t *pprivilege_bits);
 extern bool mysql_adaptor_get_user_lang(const char *username, char *lang, size_t);

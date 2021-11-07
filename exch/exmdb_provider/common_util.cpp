@@ -3838,7 +3838,9 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 			return TRUE;
 		}
 		*ppvalue = common_util_dup(proptag == PR_SMTP_ADDRESS ||
-		           !common_util_get_user_displayname(pusername, display_name) || display_name[0] == '\0'?
+		           !common_util_get_user_displayname(pusername,
+		           display_name, arsizeof(display_name)) ||
+		           display_name[0] == '\0'?
 		               pusername : display_name);
 		if (NULL == *ppvalue) {
 			*ppvalue = NULL;

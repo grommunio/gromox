@@ -3893,8 +3893,8 @@ static bool op_delegate(const char *from_address, const char *account,
 		propval.pvalue = essdn_buff + 3;
 		common_util_set_propvals(&pmsgctnt->proplist, &propval);
 		char display_name[1024];
-		if (TRUE == common_util_get_user_displayname(
-		    account, display_name)) {
+		if (common_util_get_user_displayname(account, display_name,
+		    arsizeof(display_name))) {
 			propval.proptag = PR_RCVD_REPRESENTING_NAME;
 			propval.pvalue = display_name;
 			common_util_set_propvals(
@@ -4327,8 +4327,8 @@ static bool opx_delegate(const char *from_address, const char *account,
 		propval.pvalue = essdn_buff + 3;
 		common_util_set_propvals(&pmsgctnt->proplist, &propval);
 		char display_name[1024];
-		if (TRUE == common_util_get_user_displayname(
-		    account, display_name)) {
+		if (common_util_get_user_displayname(account, display_name,
+		    arsizeof(display_name))) {
 			propval.proptag = PR_RCVD_REPRESENTING_NAME;
 			propval.pvalue = display_name;
 			common_util_set_propvals(
@@ -4754,8 +4754,8 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		propval.proptag = PROP_TAG_RECEIVEDBYEMAILADDRESS;
 		propval.pvalue = essdn_buff + 3;
 		common_util_set_propvals(&tmp_msg.proplist, &propval);
-		if (TRUE == common_util_get_user_displayname(
-			account, display_name)) {
+		if (common_util_get_user_displayname(account, display_name,
+		    arsizeof(display_name))) {
 			propval.proptag = PROP_TAG_RECEIVEDBYNAME;
 			propval.pvalue = display_name;
 			common_util_set_propvals(&tmp_msg.proplist, &propval);

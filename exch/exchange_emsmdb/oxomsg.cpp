@@ -58,9 +58,9 @@ static gxerr_t oxomsg_rectify_message(message_object *pmessage,
 	propval_buff[5].pvalue  = deconst("EX");
 	if (!common_util_username_to_essdn(account, essdn_buff, GX_ARRAY_SIZE(essdn_buff)))
 		return GXERR_CALL_FAILED;
-	if (FALSE == common_util_get_user_displayname(account, tmp_display)) {
+	if (!common_util_get_user_displayname(account,
+	    tmp_display, arsizeof(tmp_display)))
 		return GXERR_CALL_FAILED;
-	}
 	pentryid = common_util_username_to_addressbook_entryid(account);
 	if (NULL == pentryid) {
 		return GXERR_CALL_FAILED;
@@ -79,10 +79,9 @@ static gxerr_t oxomsg_rectify_message(message_object *pmessage,
 		if (!common_util_username_to_essdn(representing_username,
 		    essdn_buff1, GX_ARRAY_SIZE(essdn_buff1)))
 			return GXERR_CALL_FAILED;
-		if (FALSE == common_util_get_user_displayname(
-			representing_username, tmp_display1)) {
+		if (!common_util_get_user_displayname(representing_username,
+		    tmp_display1, arsizeof(tmp_display1)))
 			return GXERR_CALL_FAILED;
-		}
 		pentryid = common_util_username_to_addressbook_entryid(
 										representing_username);
 		if (NULL == pentryid) {

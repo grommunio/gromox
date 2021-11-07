@@ -482,8 +482,8 @@ BOOL bounce_producer_make(const char *username,
 	DSN_FIELDS *pdsn_fields;
 	char content_buff[256*1024];
 	
-	if (TRUE == common_util_get_user_displayname(
-		username, tmp_buff) && '\0' != tmp_buff[0]) {
+	if (common_util_get_user_displayname(username, tmp_buff,
+	    arsizeof(tmp_buff)) && tmp_buff[0] != '\0') {
 		memcpy(mime_from, "=?utf-8?b?", 10);
 		encode64(tmp_buff, strlen(tmp_buff), mime_from + 10,
 			sizeof(mime_from) - 13, &out_len);

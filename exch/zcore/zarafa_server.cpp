@@ -839,8 +839,8 @@ uint32_t zarafa_server_uinfo(const char *username, BINARY *pentryid,
 	char display_name[1024];
 	ADDRESSBOOK_ENTRYID tmp_entryid;
 	
-	if (FALSE == system_services_get_user_displayname(
-		username, display_name) ||
+	if (!system_services_get_user_displayname(username,
+	    display_name, arsizeof(display_name)) ||
 		FALSE == system_services_get_user_privilege_bits(
 		username, pprivilege_bits) || FALSE ==
 	    common_util_username_to_essdn(username, x500dn, GX_ARRAY_SIZE(x500dn)))
@@ -3355,10 +3355,9 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 				if (tmp_propval.pvalue == nullptr)
 					return ecError;
 				common_util_set_propvals(prcpt, &tmp_propval);
-				if (FALSE == system_services_get_user_displayname(
-					tmp_buff, tmp_buff)) {
+				if (!system_services_get_user_displayname(tmp_buff,
+				    tmp_buff, arsizeof(tmp_buff)))
 					continue;	
-				}
 				tmp_propval.proptag = PR_DISPLAY_NAME;
 				tmp_propval.pvalue = common_util_dup(tmp_buff);
 				if (tmp_propval.pvalue == nullptr)

@@ -254,7 +254,7 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 		return FALSE;
 	auto pinfo = zarafa_server_get_info();
 	if (!system_services_get_user_displayname(pinfo->get_username(),
-	    dispname) || *dispname == '\0')
+	    dispname, 1024) || *dispname == '\0')
 		strcpy(dispname, pinfo->get_username());
 	propvals.ppropval[propvals.count++].pvalue = dispname;
 
@@ -340,7 +340,7 @@ gxerr_t message_object::save()
 		if (dispname == nullptr)
 			return GXERR_CALL_FAILED;
 		if (!system_services_get_user_displayname(pinfo->get_username(),
-		    dispname) || *dispname == '\0')
+		    dispname, 1024) || *dispname == '\0')
 			strcpy(dispname, pinfo->get_username());
 		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = dispname;
 	}

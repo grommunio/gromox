@@ -568,7 +568,7 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	if (0 != strcasecmp(username, rpc_info.username)) {
 		return ecAccessDenied;
 	}
-	if (FALSE == common_util_get_user_displayname(username, temp_buff) ||
+	if (!common_util_get_user_displayname(username, temp_buff, arsizeof(temp_buff)) ||
 		common_util_mb_from_utf8(cpid, temp_buff, pdisplayname, 1024) < 0) {
 		return ecRpcFailed;
 	}

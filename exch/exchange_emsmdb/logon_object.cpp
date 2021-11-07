@@ -611,7 +611,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (!common_util_get_user_displayname(plogon->account, dispname))
+		if (!common_util_get_user_displayname(plogon->account, dispname, 256))
 			return FALSE;	
 		auto temp_len = strlen(dispname);
 		for (size_t i = 0; i < temp_len; ++i) {
@@ -696,10 +696,9 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 	case PR_MAILBOX_OWNER_NAME:
 		if (!plogon->check_private())
 			return FALSE;
-		if (FALSE == common_util_get_user_displayname(
-			plogon->account, temp_buff)) {
+		if (!common_util_get_user_displayname(plogon->account,
+		    temp_buff, arsizeof(temp_buff)))
 			return FALSE;	
-		}
 		if ('\0' == temp_buff[0]) {
 			auto tstr = cu_alloc<char>(strlen(plogon->account) + 1);
 			*ppvalue = tstr;
@@ -719,10 +718,9 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 	case PROP_TAG_MAILBOXOWNERNAME_STRING8: {
 		if (!plogon->check_private())
 			return FALSE;
-		if (FALSE == common_util_get_user_displayname(
-			plogon->account, temp_buff)) {
+		if (!common_util_get_user_displayname(plogon->account,
+		    temp_buff, arsizeof(temp_buff)))
 			return FALSE;	
-		}
 		auto temp_len = 2 * strlen(temp_buff) + 1;
 		auto tstr = cu_alloc<char>(temp_len);
 		*ppvalue = tstr;
