@@ -203,32 +203,21 @@ An IPv6 address (or v4-mapped address) of the server running exmdb_provider(4gx)
 The TCP port number of the server
 .SH Files
 .IP \(bu 4
-\fIdata_file_path\fP/exmdb_list.txt: exmdb multiserver map
+\fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map, see
+exmdb_provider(4gx) for details.
 .IP \(bu 4
 \fIdata_file_path\fP/folder_lang.txt: Translations for essential folders in a
 message store.
 .IP \(bu 4
-\fIdata_file_path\fP/langmap.txt: Mapping between translation names and
-libc locale names.
+\fIdata_file_path\fP/langmap.txt: mapping between language code and its
+corresponding libc locale name.
 .IP \(bu 4
 \fIdata_file_path\fP/msgchg_grouping/: Data files for exchange_emsmdb(4gx)
 .IP \(bu 4
 \fIdata_file_path\fP/notify_bounce/: A directory with translation files for
-various bounce notifications.
+bounce notification templates for when mail cannot be delivered
 .IP \(bu 4
 /usr/lib/gromox/libgxs_*.so: service plugins
-.SH Files
-.IP \(bu 4
-\fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map, see
-exmdb_provider(4gx) for details.
-.IP \(bu 4
-\fIdata_file_path\fP/langmap.txt: mapping between language code and its
-corresponding libc locale name.
-.IP \(bu 4
-\fIdata_file_path\fP/msgchg_grouping/\fI*\fP.txt
-.IP \(bu 4
-\fIdata_file_path\fP/notify_bounce/: response templates for when mail cannot be
-delivered
 .IP \(bu 4
 \fI/var/lib/gromox/user/**/config/zarafa.dat\fP: file for the
 PR_EC_WEBACCESS_JSON property.
