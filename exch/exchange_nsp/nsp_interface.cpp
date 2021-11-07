@@ -1622,7 +1622,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			goto EXIT_GET_MATCHES;
 		}
 		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, temp_buff, GX_ARRAY_SIZE(temp_buff));
-		if (FALSE == get_maildir(temp_buff, maildir)) {
+		if (!get_maildir(temp_buff, maildir, arsizeof(maildir))) {
 			result = ecError;
 			goto EXIT_GET_MATCHES;
 		}
@@ -2538,7 +2538,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		result = ecAccessDenied;
 		goto EXIT_MOD_LINKATT;
 	}
-	if (FALSE == get_maildir(username, maildir)) {
+	if (!get_maildir(username, maildir, arsizeof(maildir))) {
 		result = ecError;
 		goto EXIT_MOD_LINKATT;
 	}

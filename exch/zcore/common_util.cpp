@@ -220,10 +220,9 @@ BOOL common_util_check_delegate_permission_ex(
 	if (0 == strcasecmp(account, account_representing)) {
 		return TRUE;
 	}
-	if (FALSE == system_services_get_maildir(
-		account_representing, maildir)) {
+	if (!system_services_get_maildir(account_representing,
+	    maildir, arsizeof(maildir)))
 		return FALSE;
-	}
 	return common_util_check_delegate_permission(account, maildir);
 }
 

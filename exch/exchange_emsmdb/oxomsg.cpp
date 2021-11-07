@@ -171,10 +171,8 @@ static BOOL oxomsg_check_permission(const char *account,
 	if (0 == strcasecmp(account, account_representing)) {
 		return TRUE;
 	}
-	if (FALSE == common_util_get_maildir(
-		account_representing, maildir)) {
+	if (!common_util_get_maildir(account_representing, maildir, arsizeof(maildir)))
 		return FALSE;
-	}
 	auto dlg_path = maildir + "/config/delegates.txt"s;
 	struct srcitem { char a[324]; };
 	auto pfile = list_file_initd(dlg_path.c_str(), nullptr, "%s:324");

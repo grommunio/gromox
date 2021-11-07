@@ -461,7 +461,7 @@ BOOL mysql_adaptor_set_timezone(const char *username, const char *zone) try
 	return false;
 }
 
-BOOL mysql_adaptor_get_maildir(const char *username, char *maildir) try
+bool mysql_adaptor_get_maildir(const char *username, char *maildir, size_t md_size) try
 {
 	char temp_name[UADDR_SIZE*2];
 	
@@ -477,8 +477,8 @@ BOOL mysql_adaptor_get_maildir(const char *username, char *maildir) try
 	if (pmyres.num_rows() != 1)
 		return FALSE;
 	auto myrow = pmyres.fetch_row();
-	strncpy(maildir, myrow[0], 256);
-	return TRUE;
+	gx_strlcpy(maildir, myrow[0], md_size);
+	return true;
 } catch (const std::exception &e) {
 	printf("E-%u: %s\n", 1714, e.what());
 	return false;

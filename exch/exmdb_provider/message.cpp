@@ -3927,7 +3927,8 @@ static bool op_delegate(const char *from_address, const char *account,
 	     NULL != pnode1; pnode1 = double_list_get_after(
 	     &rcpt_list, pnode1)) {
 		char maildir[256];
-		if (!common_util_get_maildir(static_cast<char *>(pnode1->pdata), maildir))
+		if (!common_util_get_maildir(static_cast<char *>(pnode1->pdata),
+		    maildir, arsizeof(maildir)))
 			continue;
 		auto mid_string = std::to_string(time(nullptr)) + "." +
 				  std::to_string(common_util_sequence_ID()) + "." +
@@ -4360,7 +4361,8 @@ static bool opx_delegate(const char *from_address, const char *account,
 	     NULL != pnode1; pnode1 = double_list_get_after(
 	     &rcpt_list, pnode1)) {
 		char maildir[256];
-		if (!common_util_get_maildir(static_cast<char *>(pnode1->pdata), maildir))
+		if (!common_util_get_maildir(static_cast<char *>(pnode1->pdata),
+		    maildir, arsizeof(maildir)))
 			continue;
 		auto mid_string = std::to_string(time(nullptr)) + "." +
 				  std::to_string(common_util_sequence_ID()) + "." +

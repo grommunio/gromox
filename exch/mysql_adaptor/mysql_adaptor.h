@@ -96,7 +96,7 @@ extern bool mysql_adaptor_get_user_lang(const char *username, char *lang, size_t
 BOOL mysql_adaptor_set_user_lang(const char *username, const char *lang);
 extern bool mysql_adaptor_get_timezone(const char *username, char *timezone, size_t);
 BOOL mysql_adaptor_set_timezone(const char *username, const char *timezone);
-BOOL mysql_adaptor_get_maildir(const char *username, char *maildir);
+extern bool mysql_adaptor_get_maildir(const char *username, char *maildir, size_t);
 BOOL mysql_adaptor_get_domainname_from_id(int domain_id, char *domainname);
 extern BOOL mysql_adaptor_get_homedir(const char *domainname, char *homedir);
 BOOL mysql_adaptor_get_homedir_by_id(int domain_id, char *homedir);

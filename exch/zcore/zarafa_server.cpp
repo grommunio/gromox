@@ -769,7 +769,7 @@ uint32_t zarafa_server_logon(const char *username,
 		return ecError;
 	}
 	if (password == nullptr &&
-	    (!system_services_get_maildir(username, maildir) ||
+	    (!system_services_get_maildir(username, maildir, arsizeof(maildir)) ||
 	    !system_services_get_user_lang(username, lang, arsizeof(lang))))
 		return ecError;
 
@@ -1500,10 +1500,8 @@ uint32_t zarafa_server_openstore(GUID hsession,
 		if (pinfo->user_id != user_id) {
 			if (!system_services_get_username_from_id(user_id,
 			    username, GX_ARRAY_SIZE(username)) ||
-				FALSE == system_services_get_maildir(
-				username, dir)) {
+			    !system_services_get_maildir(username, dir, arsizeof(dir)))
 				return ecError;
-			}
 			uint32_t permission = rightsNone;
 			if (!exmdb_client::check_mailbox_permission(dir,
 			    pinfo->get_username(), &permission))
@@ -5254,7 +5252,7 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 		return ecError;
 	if (!common_util_addressbook_entryid_to_username(entryid,
 	    username, GX_ARRAY_SIZE(username)) ||
-	    !system_services_get_maildir(username, maildir)) {
+	    !system_services_get_maildir(username, maildir, arsizeof(maildir))) {
 		*ppresult_string = NULL;
 		return ecSuccess;
 	}

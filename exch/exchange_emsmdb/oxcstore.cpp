@@ -50,9 +50,8 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		if (open_flags & LOGON_OPEN_FLAG_USE_ADMIN_PRIVILEGE) {
 			return ecLoginPerm;
 		}
-		if (FALSE == common_util_get_maildir(username, maildir)) {
+		if (!common_util_get_maildir(username, maildir, arsizeof(maildir)))
 			return ecError;
-		}
 		if (FALSE == exmdb_client_check_mailbox_permission(maildir,
 			rpc_info.username, &permission)) {
 			return ecError;

@@ -447,10 +447,8 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 		} else {
 			if (!system_services_get_username_from_id(account_id,
 			    account, GX_ARRAY_SIZE(account)) ||
-				FALSE == system_services_get_maildir(
-				account, dir)) {
+			    !system_services_get_maildir(account, dir, arsizeof(dir)))
 				return INVALID_HANDLE;	
-			}
 		}
 	} else {
 		if (account_id != pinfo->domain_id) {
