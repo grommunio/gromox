@@ -403,46 +403,44 @@ static BOOL ftstream_producer_write_propvalue(
 	/* META_TAG_IDSETGIVEN, MS-OXCFXICS 3.2.5.2.1 */
 	if (0x4017 == propid) {
 		write_type = PT_LONG;
-	} else {
-		if (proptype == PT_STRING8 || proptype == PT_UNICODE) {
-			if (pstream->string_option & STRING_OPTION_FORCE_UNICODE) {
-				if (proptype == PT_STRING8) {
-					proptype = PT_UNICODE;
-					write_type = PT_UNICODE;
-					auto len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 2;
-					pvalue = cu_alloc<char>(len);
-					if (NULL == pvalue) {
-						return FALSE;
-					}
-					if (common_util_convert_string(TRUE,
-					    static_cast<char *>(ppropval->pvalue), pvalue, len) <= 0)
-						*pvalue = '\0';	
-					ppropval->pvalue = pvalue;
+	} else if (proptype == PT_STRING8 || proptype == PT_UNICODE) {
+		if (pstream->string_option & STRING_OPTION_FORCE_UNICODE) {
+			if (proptype == PT_STRING8) {
+				proptype = PT_UNICODE;
+				write_type = PT_UNICODE;
+				auto len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 2;
+				pvalue = cu_alloc<char>(len);
+				if (NULL == pvalue) {
+					return FALSE;
 				}
-			} else if (pstream->string_option & STRING_OPTION_CPID) {
-				if (proptype == PT_STRING8) {
-					auto pinfo = emsmdb_interface_get_emsmdb_info();
-					if (NULL == pinfo) {
-						return FALSE;
-					}
-					write_type = FXICS_CODEPAGE_FLAG | (uint16_t)pinfo->cpid;
-				} else {
-					write_type = FXICS_CODEPAGE_FLAG | 1200;
+				if (common_util_convert_string(TRUE,
+				    static_cast<char *>(ppropval->pvalue), pvalue, len) <= 0)
+					*pvalue = '\0';	
+				ppropval->pvalue = pvalue;
+			}
+		} else if (pstream->string_option & STRING_OPTION_CPID) {
+			if (proptype == PT_STRING8) {
+				auto pinfo = emsmdb_interface_get_emsmdb_info();
+				if (NULL == pinfo) {
+					return FALSE;
 				}
-			} else if (STRING_OPTION_NONE == pstream->string_option) {
-				if (proptype == PT_UNICODE) {
-					proptype = PT_STRING8;
-					write_type = PT_STRING8;
-					auto len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 2;
-					pvalue = cu_alloc<char>(len);
-					if (NULL == pvalue) {
-						return FALSE;
-					}
-					if (common_util_convert_string(FALSE,
-					    static_cast<char *>(ppropval->pvalue), pvalue, len) <= 0)
-						*pvalue = '\0';	
-					ppropval->pvalue = pvalue;
+				write_type = FXICS_CODEPAGE_FLAG | (uint16_t)pinfo->cpid;
+			} else {
+				write_type = FXICS_CODEPAGE_FLAG | 1200;
+			}
+		} else if (STRING_OPTION_NONE == pstream->string_option) {
+			if (proptype == PT_UNICODE) {
+				proptype = PT_STRING8;
+				write_type = PT_STRING8;
+				auto len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 2;
+				pvalue = cu_alloc<char>(len);
+				if (NULL == pvalue) {
+					return FALSE;
 				}
+				if (common_util_convert_string(FALSE,
+				    static_cast<char *>(ppropval->pvalue), pvalue, len) <= 0)
+					*pvalue = '\0';	
+				ppropval->pvalue = pvalue;
 			}
 		}
 	}
