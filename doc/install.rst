@@ -65,8 +65,8 @@ depending on choice) if they are shared libraries (usually gcc): ``make
 LIBS="-lasan -lubsan"``
 
 
-Runtime desirables
-==================
+Optional runtime components
+===========================
 
 * A FastCGI server that can execute PHP >= 7.4,
   to enable AutoDiscover and Free/Busy Scheduling Assistant functions.
@@ -80,8 +80,11 @@ Runtime desirables
 
 * w3m, for improved HTML-to-text conversion.
 
-* If tinkering with databases, having the ``sqlite3`` and ``mysql``
+* If tinkering with databases, the ``sqlite3`` and ``mysql``
   command-line clients may prove useful.
+
+* If tinkering with coredumps, the ``zstd`` utility for decompressing
+  files from ``/var/lib/systemd/coredump`` will help.
 
 
 Minimal configuration
