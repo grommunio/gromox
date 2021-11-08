@@ -1142,8 +1142,18 @@ SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	pabnode->node_type = NODE_TYPE_REMOTE;
 	pabnode->minid = xab->minid;
 	pabnode->id = domain_id;
-	pabnode->d_info = new(std::nothrow) sql_domain(*static_cast<sql_domain *>(xab->d_info));
-	if (pabnode->d_info == nullptr) {
+	pabnode->d_info = nullptr;
+	if (xab->node_type == NODE_TYPE_REMOTE)
+		fprintf(stderr, "W-1554: unexplored case\n");
+	else if (xab->node_type == NODE_TYPE_DOMAIN)
+		pabnode->d_info = new(std::nothrow) sql_domain(*static_cast<sql_domain *>(xab->d_info));
+	else if (xab->node_type == NODE_TYPE_GROUP)
+		pabnode->d_info = new(std::nothrow) sql_group(*static_cast<sql_group *>(xab->d_info));
+	else if (xab->node_type == NODE_TYPE_CLASS)
+		pabnode->d_info = new(std::nothrow) sql_class(*static_cast<sql_class *>(xab->d_info));
+	else
+		pabnode->d_info = new(std::nothrow) sql_user(*static_cast<sql_user *>(xab->d_info));
+	if (pabnode->d_info == nullptr && xab->node_type != NODE_TYPE_REMOTE) {
 		ab_tree_put_abnode(pabnode);
 		ab_tree_put_snode(psnode);
 		return nullptr;
