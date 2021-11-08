@@ -1437,6 +1437,7 @@ BOOL mysql_adaptor_get_user_info(const char *username,
 
 	if (pmyres.num_rows() != 1) {
 		maildir[0] = '\0';
+		return TRUE;
 	}
 	auto myrow = pmyres.fetch_row();
 	auto status = strtol(myrow[1], nullptr, 0);
