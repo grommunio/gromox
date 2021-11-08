@@ -334,8 +334,7 @@ static BOOL ftstream_producer_write_binary(
 	return TRUE;
 }
 
-static BOOL ftstream_producer_write_propdef(
-	FTSTREAM_PRODUCER *pstream,
+static int ftstream_producer_write_propdef(FTSTREAM_PRODUCER *pstream,
 	uint16_t proptype, uint16_t propid)
 {
 	uint16_t tmp_val;
@@ -346,41 +345,41 @@ static BOOL ftstream_producer_write_propdef(
 	tmp_val = cpu_to_le16(proptype);
 	if (FALSE == ftstream_producer_write_internal(
 		pstream, &tmp_val, sizeof(uint16_t))) {
-		return FALSE;
+		return -1;
 	}
 	tmp_val = cpu_to_le16(propid);
 	if (FALSE == ftstream_producer_write_internal(
 		pstream, &tmp_val, sizeof(uint16_t))) {
-		return FALSE;
+		return -1;
 	}
 	if (propid == PROP_ID_INVALID)
 		fprintf(stderr, "W-1271: ftstream with PROP_ID_INVALID seen\n");
 	if (!is_nameprop_id(propid)) {
 		ftstream_producer_try_recode_nbp(pstream);
-		return TRUE;
+		return 0;
 	}
 	if (!pstream->plogon->get_named_propname(propid, &propname))
-		return FALSE;
+		return -1;
 	if (!ext_push.init(tmp_buff, sizeof(tmp_buff), EXT_FLAG_UTF16) ||
 	    ext_push.p_guid(&propname.guid) != EXT_ERR_SUCCESS ||
 	    ext_push.p_uint8(propname.kind) != EXT_ERR_SUCCESS)
-		return FALSE;
+		return -1;
 	switch (propname.kind) {
 	case MNID_ID:
 		if (ext_push.p_uint32(propname.lid) != EXT_ERR_SUCCESS)
-			return FALSE;
+			return -1;
 		break;
 	case MNID_STRING:
 		if (ext_push.p_wstr(propname.pname) != EXT_ERR_SUCCESS)
-			return FALSE;
+			return -1;
 		break;
 	default:
-		return FALSE;
+		return -1;
 	}
 	if (!ftstream_producer_write_internal(pstream, tmp_buff, ext_push.m_offset))
-		return FALSE;
+		return -1;
 	ftstream_producer_try_recode_nbp(pstream);
-	return TRUE;
+	return 0;
 }
 
 static BOOL ftstream_producer_write_propvalue(
@@ -444,10 +443,9 @@ static BOOL ftstream_producer_write_propvalue(
 			}
 		}
 	}
-	if (FALSE == ftstream_producer_write_propdef(
-		pstream, write_type, propid)) {
+	auto ret = ftstream_producer_write_propdef(pstream, write_type, propid);
+	if (ret < 0)
 		return FALSE;
-	}
 	
 	switch (proptype) {
 	case PT_SHORT:
