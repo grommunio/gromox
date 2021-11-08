@@ -341,6 +341,17 @@ static int ftstream_producer_write_propdef(FTSTREAM_PRODUCER *pstream,
 	EXT_PUSH ext_push;
 	char tmp_buff[1024];
 	PROPERTY_NAME propname;
+
+	if (propid == PROP_ID_INVALID)
+		fprintf(stderr, "W-1271: ftstream with PROP_ID_INVALID seen\n");
+	if (is_nameprop_id(propid)) {
+		if (!pstream->plogon->get_named_propname(propid, &propname))
+			return -1;
+		if (propname.kind == KIND_NONE) {
+			fprintf(stderr, "W-1555: propid %xh has no matching namedprop\n", propid);
+			return 2;
+		}
+	}
 	
 	tmp_val = cpu_to_le16(proptype);
 	if (FALSE == ftstream_producer_write_internal(
@@ -352,14 +363,10 @@ static int ftstream_producer_write_propdef(FTSTREAM_PRODUCER *pstream,
 		pstream, &tmp_val, sizeof(uint16_t))) {
 		return -1;
 	}
-	if (propid == PROP_ID_INVALID)
-		fprintf(stderr, "W-1271: ftstream with PROP_ID_INVALID seen\n");
 	if (!is_nameprop_id(propid)) {
 		ftstream_producer_try_recode_nbp(pstream);
 		return 0;
 	}
-	if (!pstream->plogon->get_named_propname(propid, &propname))
-		return -1;
 	if (!ext_push.init(tmp_buff, sizeof(tmp_buff), EXT_FLAG_UTF16) ||
 	    ext_push.p_guid(&propname.guid) != EXT_ERR_SUCCESS ||
 	    ext_push.p_uint8(propname.kind) != EXT_ERR_SUCCESS)
@@ -446,6 +453,8 @@ static BOOL ftstream_producer_write_propvalue(
 	auto ret = ftstream_producer_write_propdef(pstream, write_type, propid);
 	if (ret < 0)
 		return FALSE;
+	if (ret == 2)
+		return TRUE;
 	
 	switch (proptype) {
 	case PT_SHORT:
