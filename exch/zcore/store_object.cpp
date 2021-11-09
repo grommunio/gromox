@@ -793,35 +793,37 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		return TRUE;
 	}
 	case PR_DISPLAY_NAME: {
-		auto dispname = cu_alloc<char>(256);
+		static constexpr size_t dsize = UADDR_SIZE + 17;
+		auto dispname = cu_alloc<char>(dsize);
 		*ppvalue = dispname;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		if (TRUE == pstore->b_private) {
 			if (!system_services_get_user_displayname(pstore->account,
-			    dispname, 256))
-				strcpy(dispname, pstore->account);
+			    dispname, dsize))
+				gx_strlcpy(dispname, pstore->account, dsize);
 		} else {
-			sprintf(dispname, "Public Folders - %s", pstore->account);
+			snprintf(dispname, dsize, "Public Folders - %s", pstore->account);
 		}
 		return TRUE;
 	}
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE: {
 		if (!pstore->b_private)
 			return FALSE;
-		auto dispname = cu_alloc<char>(256);
+		static constexpr size_t dsize = UADDR_SIZE;
+		auto dispname = cu_alloc<char>(dsize);
 		*ppvalue = dispname;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		if (!system_services_get_user_displayname(pstore->account,
-		    dispname, 256))
+		    dispname, dsize))
 			return FALSE;	
 		auto temp_len = strlen(dispname);
 		for (size_t i = 0; i < temp_len; ++i) {
 			if (!isascii(dispname[i])) {
-				strcpy(dispname, pstore->account);
+				gx_strlcpy(dispname, pstore->account, dsize);
 				auto p = strchr(dispname, '@');
 				if (p != nullptr)
 					*p = '\0';

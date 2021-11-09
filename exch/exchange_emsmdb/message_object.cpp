@@ -340,12 +340,13 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	
 	propvals.ppropval[propvals.count].proptag = PR_CREATOR_NAME;
+	static constexpr size_t dispnamesize = 1024;
 	auto dispname = cu_alloc<char>(1024);
 	if (dispname == nullptr)
 		return FALSE;
 	if (!common_util_get_user_displayname(rpc_info.username,
-	    dispname, 1024) || *dispname == '\0')
-		strcpy(dispname, rpc_info.username);
+	    dispname, dispnamesize) || *dispname == '\0')
+		gx_strlcpy(dispname, rpc_info.username, dispnamesize);
 	propvals.ppropval[propvals.count++].pvalue = dispname;
 	
 	propvals.ppropval[propvals.count].proptag = PR_CREATOR_ENTRYID;
@@ -516,12 +517,13 @@ gxerr_t message_object::save()
 	if (!proptag_array_check(pmessage->pchanged_proptags,
 	    PR_LAST_MODIFIER_NAME)) {
 		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFIER_NAME;
+		static constexpr size_t dsize = 1024;
 		auto dispname = cu_alloc<char>(1024);
 		if (dispname == nullptr)
 			return GXERR_CALL_FAILED;
 		if (!common_util_get_user_displayname(rpc_info.username,
-		    dispname, 1024) || *dispname == '\0')
-			strcpy(dispname, rpc_info.username);
+		    dispname, dsize) || *dispname == '\0')
+			gx_strlcpy(dispname, rpc_info.username, dsize);
 		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pvalue;
 	}
 	

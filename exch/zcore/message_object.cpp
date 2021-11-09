@@ -249,13 +249,14 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	propvals.ppropval[propvals.count].proptag = PR_LOCALE_ID;
 	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	propvals.ppropval[propvals.count].proptag = PR_CREATOR_NAME;
+	static constexpr size_t dispnamesize = 1024;
 	auto dispname = cu_alloc<char>(1024);
 	if (dispname == nullptr)
 		return FALSE;
 	auto pinfo = zarafa_server_get_info();
 	if (!system_services_get_user_displayname(pinfo->get_username(),
-	    dispname, 1024) || *dispname == '\0')
-		strcpy(dispname, pinfo->get_username());
+	    dispname, dispnamesize) || *dispname == '\0')
+		gx_strlcpy(dispname, pinfo->get_username(), dispnamesize);
 	propvals.ppropval[propvals.count++].pvalue = dispname;
 
 	propvals.ppropval[propvals.count].proptag = PR_CREATOR_ENTRYID;
@@ -336,12 +337,13 @@ gxerr_t message_object::save()
 	if (!proptag_array_check(pmessage->pchanged_proptags,
 	    PR_LAST_MODIFIER_NAME)) {
 		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFIER_NAME;
+		static constexpr size_t dispnamesize = 1024;
 		auto dispname = cu_alloc<char>(1024);
 		if (dispname == nullptr)
 			return GXERR_CALL_FAILED;
 		if (!system_services_get_user_displayname(pinfo->get_username(),
-		    dispname, 1024) || *dispname == '\0')
-			strcpy(dispname, pinfo->get_username());
+		    dispname, dispnamesize) || *dispname == '\0')
+			gx_strlcpy(dispname, pinfo->get_username(), dispnamesize);
 		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = dispname;
 	}
 	
