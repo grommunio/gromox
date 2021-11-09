@@ -6318,6 +6318,16 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 	
 	b_vcard = FALSE;
 	if (NULL != pattachment->pembedded) {
+		/*
+		 * "Send as business card" makes Outlook (2019) generate a MAPI
+		 * attachment object, representing a file which contains a
+		 * vCard 2.0 header and which is marked as text/vcard. oxcmail
+		 * just repacks that into the MIME framing.
+		 *
+		 * "Send as Outlook contact" makes Outlook produce a MAPI-based
+		 * attachment. oxcmail will convert this to vCard 4.0 and mark
+		 * it as text/directory.
+		 */
 		auto pvalue = tpropval_array_get_propval(&pattachment->pembedded->proplist, PR_MESSAGE_CLASS);
 		if (pvalue != nullptr &&
 		    strcasecmp(static_cast<char *>(pvalue), "IPM.Contact") == 0)
