@@ -686,6 +686,14 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{91, tbl_scndstore_91},
 	{92, tbl_userdev_92},
 	{93, tbl_userdevhist_93},
+	{94, "UPDATE `users` SET lang=\"zh_TW\" where lang=\"cn\""},
+	{95, "UPDATE `users` SET lang=\"cs\" where lang=\"cz\""},
+	{96, "UPDATE `users` SET lang=\"da\" where lang=\"dk\""},
+	{97, "UPDATE `users` SET lang=\"ja\" where lang=\"jp\""},
+	{98, "UPDATE `users` SET lang=\"nb\" where lang=\"no\""},
+	{99, "UPDATE `users` SET lang=\"pt_BR\" where lang=\"pt\""},
+	{100, "UPDATE `users` SET lang=\"sl\" where lang=\"si\""},
+	{101, "UPDATE `users` SET lang=\"zh_CN\" where lang=\"zh\""},
 	{0, nullptr},
 };
 

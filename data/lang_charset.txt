@@ -1,3 +1,3 @@
-zh	gbk
-cn	big5
-jp	euc-jp
+zh_TW	gbk
+zh_CN	big5
+ja	euc-jp
