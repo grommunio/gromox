@@ -46,7 +46,6 @@ static BOOL svc_mysql_adaptor(int reason, void** ppdata)
 	E(mysql_adaptor_get_timezone, "get_timezone");
 	E(mysql_adaptor_set_timezone, "set_timezone");
 	E(mysql_adaptor_get_maildir, "get_maildir");
-	E(mysql_adaptor_get_domainname_from_id, "get_domainname_from_id");
 	E(mysql_adaptor_get_homedir, "get_homedir");
 	E(mysql_adaptor_get_homedir_by_id, "get_homedir_by_id");
 	E(mysql_adaptor_get_id_from_homedir, "get_id_from_homedir");

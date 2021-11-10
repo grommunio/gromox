@@ -484,26 +484,6 @@ bool mysql_adaptor_get_maildir(const char *username, char *maildir, size_t md_si
 	return false;
 }
 
-BOOL mysql_adaptor_get_domainname_from_id(int domain_id, char *domainname) try
-{
-	auto qstr = "SELECT domainname FROM domains WHERE id=" + std::to_string(domain_id);
-	auto conn = g_sqlconn_pool.get_wait();
-	if (!conn.res.query(qstr.c_str()))
-		return false;
-	DB_RESULT pmyres = mysql_store_result(conn.res.get());
-	if (pmyres == nullptr)
-		return false;
-	conn.finish();
-	if (pmyres.num_rows() != 1)
-		return FALSE;
-	auto myrow = pmyres.fetch_row();
-	strncpy(domainname, myrow[0], 256);
-	return TRUE;
-} catch (const std::exception &e) {
-	printf("E-%u: %s\n", 1715, e.what());
-	return false;
-}
-
 bool mysql_adaptor_get_homedir(const char *domainname, char *homedir, size_t dsize) try
 {
 	char temp_name[UDOM_SIZE*2];

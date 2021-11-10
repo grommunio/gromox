@@ -78,7 +78,6 @@ E(get_user_ids)
 E(get_domain_ids)
 E(check_same_org)
 E(get_homedir_by_id)
-E(get_domainname_from_id)
 E(get_id_from_maildir)
 E(get_id_from_homedir)
 E(lang_to_charset)
@@ -2268,7 +2267,6 @@ int common_util_run()
 	E(common_util_get_domain_ids, "get_domain_ids");
 	E(common_util_check_same_org, "check_same_org");
 	E(common_util_get_homedir_by_id, "get_homedir_by_id");
-	E(common_util_get_domainname_from_id, "get_domainname_from_id");
 	E(common_util_get_id_from_maildir, "get_id_from_maildir");
 	E(common_util_get_id_from_homedir, "get_id_from_homedir");
 	E(common_util_lang_to_charset, "lang_to_charset");

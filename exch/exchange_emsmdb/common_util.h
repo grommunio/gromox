@@ -125,7 +125,6 @@ extern BOOL common_util_send_message(logon_object *, uint64_t msg_id, BOOL submi
 E(check_mlist_include)
 E(check_same_org)
 E(get_domain_ids)
-E(get_domainname_from_id)
 E(get_homedir)
 E(get_homedir_by_id)
 E(get_id_from_homedir)
