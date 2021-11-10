@@ -5329,7 +5329,7 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 uint32_t zarafa_server_setpasswd(const char *username,
 	const char *passwd, const char *new_passwd)
 {
-	return system_services_set_password(username, passwd, new_passwd) ?
+	return system_services_setpasswd(username, passwd, new_passwd) ?
 	       ecSuccess : ecAccessDenied;
 }
 

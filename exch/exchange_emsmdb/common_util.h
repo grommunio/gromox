@@ -4,6 +4,7 @@
 #include <memory>
 #include <type_traits>
 #include <gromox/mapi_types.hpp>
+#include "../mysql_adaptor/mysql_adaptor.h"
 #define NOTIFY_RECEIPT_READ							1
 #define NOTIFY_RECEIPT_NON_READ						2
 #define MAX_HANDLES_ON_CONTEXT						10
@@ -120,33 +121,23 @@ BOOL common_util_send_mail(MAIL *pmail,
 	const char *sender, DOUBLE_LIST *prcpt_list);
 extern BOOL common_util_send_message(logon_object *, uint64_t msg_id, BOOL submit);
 
-extern BOOL (*common_util_get_maildir)(
-	const char *username, char *maildir);
-extern BOOL (*common_util_get_homedir)(
-	const char *domainname, char *homedir);
-extern BOOL (*common_util_get_user_displayname)(
-	const char *username, char *pdisplayname);
-extern BOOL (*common_util_check_mlist_include)(
-	const char *mlistname, const char *username);
-extern BOOL (*common_util_get_user_lang)(
-	const char *username, char *lang);
-extern BOOL (*common_util_get_timezone)(
-	const char *username, char *timezone);
-extern BOOL (*common_util_get_username_from_id)(int id, char *username, size_t);
-extern BOOL (*common_util_get_id_from_username)(
-	const char *username, int *puser_id);
-extern BOOL (*common_util_get_user_ids)(const char *username, int *user_id, int *domain_id, enum display_type *);
-extern BOOL (*common_util_get_domain_ids)(const char *domainname,
-	int *pdomain_id, int *porg_id);
-extern BOOL (*common_util_check_same_org)(int domain_id1, int domain_id2);
-extern BOOL (*common_util_get_homedir_by_id)(
-	int domain_id, char *homedir);
-extern BOOL (*common_util_get_domainname_from_id)(
-	int domain_id, char *domainname);
-extern BOOL (*common_util_get_id_from_maildir)(
-	const char *maildir, int *puser_id);
-extern BOOL (*common_util_get_id_from_homedir)(
-	const char *homedir, int *pdomain_id);
+#define E(s) extern decltype(mysql_adaptor_ ## s) *common_util_ ## s;
+E(check_mlist_include)
+E(check_same_org)
+E(get_domain_ids)
+E(get_domainname_from_id)
+E(get_homedir)
+E(get_homedir_by_id)
+E(get_id_from_homedir)
+E(get_id_from_maildir)
+E(get_id_from_username)
+E(get_maildir)
+E(get_timezone)
+E(get_user_displayname)
+E(get_user_ids)
+E(get_user_lang)
+E(get_username_from_id)
+#undef E
 extern BOOL (*common_util_lang_to_charset)(
 	const char *lang, char *charset);
 extern const char* (*common_util_cpid_to_charset)(uint32_t cpid);

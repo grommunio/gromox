@@ -8,6 +8,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/element_data.hpp>
 #include <sqlite3.h>
+#include "../mysql_adaptor/mysql_adaptor.h"
 
 #define SOCKET_TIMEOUT										60
 #define MAXIMUM_PROPNAME_NUMBER								0x7000
@@ -41,24 +42,18 @@ enum {
 extern BOOL (*common_util_lang_to_charset)(
 	const char *lang, char *charset);
 extern const char* (*common_util_cpid_to_charset)(uint32_t cpid);
-extern BOOL (*common_util_get_user_displayname)(
-	const char *username, char *pdisplayname);
-extern BOOL (*common_util_check_mlist_include)(
-	const char *mlistname, const char *username);
-extern BOOL (*common_util_get_user_lang)(
-	const char *username, char *lang);
-extern BOOL (*common_util_get_timezone)(
-	const char *username, char *timezone);
-extern BOOL (*common_util_get_maildir)(
-	const char *username, char *maildir);
-extern BOOL (*common_util_get_id_from_username)(
-	const char *username, int *puser_id);
-extern BOOL (*common_util_get_domain_ids)(const char *domainname,
-	int *pdomain_id, int *porg_id);
-extern BOOL (*common_util_get_id_from_maildir)(
-	const char *maildir, int *puser_id);
-extern BOOL (*common_util_get_id_from_homedir)(
-	const char *homedir, int *pdomain_id);
+#define E(s) extern decltype(mysql_adaptor_ ## s) *common_util_ ## s;
+E(check_mlist_include)
+E(get_domain_ids)
+E(get_homedir_by_id)
+E(get_id_from_homedir)
+E(get_id_from_maildir)
+E(get_id_from_username)
+E(get_maildir)
+E(get_timezone)
+E(get_user_displayname)
+E(get_user_lang)
+#undef E
 extern BOOL (*common_util_send_mail)(MAIL *pmail,
 	const char *sender, DOUBLE_LIST *prcpt_list);
 extern std::shared_ptr<MIME_POOL> (*common_util_get_mime_pool)();

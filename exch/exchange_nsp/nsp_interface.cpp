@@ -60,10 +60,9 @@ enum {
 
 static BOOL g_session_check;
 static bool (*verify_cpid)(uint32_t cpid);
-static BOOL (*get_domain_ids)(const char *domainname,
-	int *pdomain_id, int *porg_id);
-static BOOL (*get_maildir)(const char *username, char *maildir);
-static BOOL (*get_id_from_username)(const char *username, int *puser_id);
+static decltype(mysql_adaptor_get_domain_ids) *get_domain_ids;
+static decltype(mysql_adaptor_get_id_from_username) *get_id_from_username;
+static decltype(mysql_adaptor_get_maildir) *get_maildir;
 static decltype(gromox::abkt_tojson) *nsp_abktojson;
 static decltype(gromox::abkt_tobinary) *nsp_abktobinary;
 
