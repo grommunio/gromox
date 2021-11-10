@@ -294,11 +294,10 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 
 static BOOL vcard_check_empty_line(const char *pline)
 {	
-	while ('\0' != *pline) {
+	for (; *pline != '\0'; ++pline)
 		if (' ' != *pline && '\t' != *pline) {
 			return FALSE;
 		}
-	}
 	return TRUE;
 }
 
