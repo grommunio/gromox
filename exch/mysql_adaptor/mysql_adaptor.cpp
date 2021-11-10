@@ -1397,8 +1397,8 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 }
 
 /* only used by gromox-delivery/exmdb_local */
-BOOL mysql_adaptor_get_user_info(const char *username,
-    char *maildir, char *lang, char *zone) try
+bool mysql_adaptor_get_user_info(const char *username, char *maildir,
+    size_t msize, char *lang, size_t lsize, char *zone, size_t tsize) try
 {
 	char temp_name[UADDR_SIZE*2];
 
@@ -1417,18 +1417,20 @@ BOOL mysql_adaptor_get_user_info(const char *username,
 
 	if (pmyres.num_rows() != 1) {
 		maildir[0] = '\0';
-		return TRUE;
+		return true;
 	}
 	auto myrow = pmyres.fetch_row();
 	auto status = strtol(myrow[1], nullptr, 0);
 	if (status == AF_USER_NORMAL || status == AF_USER_SHAREDMBOX) {
-		strcpy(maildir, myrow[0]);
-		strcpy(lang, myrow[2]);
-		strcpy(zone, myrow[3]);
+		gx_strlcpy(maildir, myrow[0], msize);
+		gx_strlcpy(lang, myrow[2], lsize);
+		gx_strlcpy(zone, myrow[3], tsize);
 	} else {
 		maildir[0] = '\0';
+		lang[0] = '\0';
+		zone[0] = '\0';
 	}
-	return TRUE;
+	return true;
 } catch (const std::exception &e) {
 	printf("E-%u: %s\n", 1733, e.what());
 	return false;

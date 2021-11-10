@@ -46,8 +46,7 @@ static std::atomic<int> g_sequence_id{0};
 
 BOOL (*exmdb_local_check_domain)(const char *domainname);
 
-static BOOL (*exmdb_local_get_user_info)(const char *username,
-	char *home_dir, char *charset, char *timezone);
+static bool (*exmdb_local_get_user_info)(const char *username, char *home_dir, size_t dsize, char *lang, size_t lsize, char *timezone, size_t tsize);
 bool (*exmdb_local_get_lang)(const char *username, char *lang, size_t);
 bool (*exmdb_local_get_timezone)(const char *username, char *timezone, size_t);
 BOOL (*exmdb_local_check_same_org2)(
@@ -390,7 +389,8 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	char temp_buff[MAX_DIGLEN];
 	MESSAGE_CONTEXT *pcontext1;
 
-	if (!exmdb_local_get_user_info(address, home_dir, lang, tmzone)) {
+	if (!exmdb_local_get_user_info(address, home_dir, arsizeof(home_dir),
+	    lang, arsizeof(lang), tmzone, arsizeof(tmzone))) {
 		exmdb_local_log_info(pcontext, address, LV_ERR, "fail"
 			"to get user information from data source!");
 		return DELIVERY_OPERATION_FAILURE;
