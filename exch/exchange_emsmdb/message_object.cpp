@@ -340,14 +340,13 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_CREATORNAME;
-	pvalue = common_util_alloc(1024);
-	if (NULL == pvalue) {
+	auto dispname = cu_alloc<char>(1024);
+	if (dispname == nullptr)
 		return FALSE;
-	}
 	if (!common_util_get_user_displayname(rpc_info.username,
-	    static_cast<char *>(pvalue)) || *static_cast<char *>(pvalue) == '\0')
-		strcpy(static_cast<char *>(pvalue), rpc_info.username);
-	propvals.ppropval[propvals.count++].pvalue = pvalue;
+	    dispname) || *dispname == '\0')
+		strcpy(dispname, rpc_info.username);
+	propvals.ppropval[propvals.count++].pvalue = dispname;
 	
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_CREATORENTRYID;
 	pvalue = common_util_username_to_addressbook_entryid(rpc_info.username);
@@ -518,13 +517,12 @@ gxerr_t message_object::save()
 	    PROP_TAG_LASTMODIFIERNAME)) {
 		tmp_propvals.ppropval[tmp_propvals.count].proptag =
 									PROP_TAG_LASTMODIFIERNAME;
-		pvalue = common_util_alloc(1024);
-		if (NULL == pvalue) {
+		auto dispname = cu_alloc<char>(1024);
+		if (dispname == nullptr)
 			return GXERR_CALL_FAILED;
-		}
 		if (!common_util_get_user_displayname(rpc_info.username,
-		    static_cast<char *>(pvalue)) || *static_cast<char *>(pvalue) == '\0')
-			strcpy(static_cast<char *>(pvalue), rpc_info.username);
+		    dispname) || *dispname == '\0')
+			strcpy(dispname, rpc_info.username);
 		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pvalue;
 	}
 	

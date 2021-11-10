@@ -761,9 +761,6 @@ static void* store_object_get_oof_property(
 static BOOL store_object_get_calculated_property(store_object *pstore,
     uint32_t proptag, void **ppvalue)
 {
-	int i;
-	int temp_len;
-	void *pvalue;
 	uint32_t permission;
 	char temp_buff[1024];
 	static constexpr uint8_t pbExchangeProviderPrimaryUserGuid[] = {
@@ -795,39 +792,44 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		         pbExchangeProviderDelegateGuid);
 		return TRUE;
 	}
-	case PR_DISPLAY_NAME:
-		*ppvalue = common_util_alloc(256);
+	case PR_DISPLAY_NAME: {
+		auto dispname = cu_alloc<char>(256);
+		*ppvalue = dispname;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		if (TRUE == pstore->b_private) {
 			if (!system_services_get_user_displayname(pstore->account,
-			    static_cast<char *>(*ppvalue)))
-				strcpy(static_cast<char *>(*ppvalue), pstore->account);
+			    dispname))
+				strcpy(dispname, pstore->account);
 		} else {
-			sprintf(static_cast<char *>(*ppvalue), "Public Folders - %s", pstore->account);
+			sprintf(dispname, "Public Folders - %s", pstore->account);
 		}
 		return TRUE;
-	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
+	}
+	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE: {
 		if (!pstore->b_private)
 			return FALSE;
-		*ppvalue = common_util_alloc(256);
+		auto dispname = cu_alloc<char>(256);
+		*ppvalue = dispname;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		if (!system_services_get_user_displayname(pstore->account,
-		    static_cast<char *>(*ppvalue)))
+		    dispname))
 			return FALSE;	
-		temp_len = strlen(static_cast<char *>(*ppvalue));
-		for (i=0; i<temp_len; i++) {
-			if (0 == isascii(((char*)(*ppvalue))[i])) {
-				strcpy(static_cast<char *>(*ppvalue), pstore->account);
-				pvalue = strchr(static_cast<char *>(*ppvalue), '@');
-				*(char*)pvalue = '\0';
+		auto temp_len = strlen(dispname);
+		for (size_t i = 0; i < temp_len; ++i) {
+			if (!isascii(dispname[i])) {
+				strcpy(dispname, pstore->account);
+				auto p = strchr(dispname, '@');
+				if (p != nullptr)
+					*p = '\0';
 				break;
 			}
 		}
 		return TRUE;
+	}
 	case PROP_TAG_DEFAULTSTORE:
 		*ppvalue = cu_alloc<uint8_t>();
 		if (NULL == *ppvalue) {
@@ -894,7 +896,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		*static_cast<uint32_t *>(*ppvalue) = rightsAll | frightsContact;
 		return TRUE;
 	}
-	case PR_EMAIL_ADDRESS:
+	case PR_EMAIL_ADDRESS: {
 		if (TRUE == pstore->b_private) {
 			if (!common_util_username_to_essdn(pstore->account,
 			    temp_buff, GX_ARRAY_SIZE(temp_buff)))
@@ -904,12 +906,14 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			    temp_buff, GX_ARRAY_SIZE(temp_buff)))
 				return FALSE;	
 		}
-		*ppvalue = common_util_alloc(strlen(temp_buff) + 1);
+		auto tstr = cu_alloc<char>(strlen(temp_buff) + 1);
+		*ppvalue = tstr;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		strcpy(static_cast<char *>(*ppvalue), temp_buff);
+		strcpy(tstr, temp_buff);
 		return TRUE;
+	}
 	case PROP_TAG_EXTENDEDRULESIZELIMIT:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
@@ -927,7 +931,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return FALSE;
 		}
 		return TRUE;
-	case PR_MAILBOX_OWNER_NAME:
+	case PR_MAILBOX_OWNER_NAME: {
 		if (!pstore->b_private)
 			return FALSE;
 		if (FALSE == system_services_get_user_displayname(
@@ -935,19 +939,22 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return FALSE;	
 		}
 		if ('\0' == temp_buff[0]) {
-			*ppvalue = common_util_alloc(strlen(pstore->account) + 1);
+			auto tstr = cu_alloc<char>(strlen(pstore->account) + 1);
+			*ppvalue = tstr;
 			if (NULL == *ppvalue) {
 				return FALSE;
 			}
-			strcpy(static_cast<char *>(*ppvalue), pstore->account);
+			strcpy(tstr, pstore->account);
 			return TRUE;
 		}
-		*ppvalue = common_util_alloc(strlen(temp_buff) + 1);
+		auto tstr = cu_alloc<char>(strlen(temp_buff) + 1);
+		*ppvalue = tstr;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		strcpy(static_cast<char *>(*ppvalue), temp_buff);
+		strcpy(tstr, temp_buff);
 		return TRUE;
+	}
 	case PR_MAX_SUBMIT_MESSAGE_SIZE:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {

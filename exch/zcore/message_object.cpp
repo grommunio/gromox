@@ -250,16 +250,15 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	propvals.ppropval[propvals.count].proptag =
 							PROP_TAG_CREATORNAME;
-	pvalue = common_util_alloc(1024);
-	if (NULL == pvalue) {
+	auto dispname = cu_alloc<char>(1024);
+	if (dispname == nullptr)
 		return FALSE;
-	}
 	auto pinfo = zarafa_server_get_info();
 	if (!system_services_get_user_displayname(pinfo->get_username(),
-	    static_cast<char *>(pvalue)) ||
-	    *static_cast<char *>(pvalue) == '\0')
-		strcpy(static_cast<char *>(pvalue), pinfo->get_username());
-	propvals.ppropval[propvals.count++].pvalue = pvalue;
+	    dispname) || *dispname == '\0')
+		strcpy(dispname, pinfo->get_username());
+	propvals.ppropval[propvals.count++].pvalue = dispname;
+
 	propvals.ppropval[propvals.count].proptag =
 						PROP_TAG_CREATORENTRYID;
 	pvalue = common_util_username_to_addressbook_entryid(pinfo->get_username());
@@ -340,15 +339,13 @@ gxerr_t message_object::save()
 	    PROP_TAG_LASTMODIFIERNAME)) {
 		tmp_propvals.ppropval[tmp_propvals.count].proptag =
 									PROP_TAG_LASTMODIFIERNAME;
-		pvalue = common_util_alloc(1024);
-		if (NULL == pvalue) {
+		auto dispname = cu_alloc<char>(1024);
+		if (dispname == nullptr)
 			return GXERR_CALL_FAILED;
-		}
 		if (!system_services_get_user_displayname(pinfo->get_username(),
-		    static_cast<char *>(pvalue)) ||
-		    *static_cast<char *>(pvalue) == '\0')
-			strcpy(static_cast<char *>(pvalue), pinfo->get_username());
-		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pvalue;
+		    dispname) || *dispname == '\0')
+			strcpy(dispname, pinfo->get_username());
+		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = dispname;
 	}
 	
 	tmp_propvals.ppropval[tmp_propvals.count].proptag =

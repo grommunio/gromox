@@ -563,8 +563,6 @@ static BOOL lo_check_readonly_property(const logon_object *plogon, uint32_t prop
 static BOOL logon_object_get_calculated_property(logon_object *plogon,
     uint32_t proptag, void **ppvalue)
 {
-	int i;
-	int temp_len;
 	void *pvalue;
 	char temp_buff[1024];
 	static constexpr uint64_t tmp_ll = 0;
@@ -605,25 +603,28 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		**reinterpret_cast<uint32_t **>(ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
-	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A:
+	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A: {
 		if (!plogon->check_private())
 			return FALSE;
-		*ppvalue = common_util_alloc(256);
+		auto dispname = cu_alloc<char>(256);
+		*ppvalue = dispname;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (!common_util_get_user_displayname(plogon->account, static_cast<char *>(*ppvalue)))
+		if (!common_util_get_user_displayname(plogon->account, dispname))
 			return FALSE;	
-		temp_len = strlen(static_cast<char *>(*ppvalue));
-		for (i=0; i<temp_len; i++) {
-			if (0 == isascii(((char*)(*ppvalue))[i])) {
-				strcpy(static_cast<char *>(*ppvalue), plogon->account);
-				pvalue = strchr(static_cast<char *>(*ppvalue), '@');
-				*(char*)pvalue = '\0';
+		auto temp_len = strlen(dispname);
+		for (size_t i = 0; i < temp_len; ++i) {
+			if (!isascii(dispname[i])) {
+				strcpy(dispname, plogon->account);
+				auto p = strchr(dispname, '@');
+				if (p != nullptr)
+					*p = '\0';
 				break;
 			}
 		}
 		return TRUE;
+	}
 	case PROP_TAG_CODEPAGEID: {
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		*ppvalue = &pinfo->cpid;
@@ -640,7 +641,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		*ppvalue = deconst(&tmp_ll);
 		return TRUE;
 	case PR_EMAIL_ADDRESS:
-	case PR_EMAIL_ADDRESS_A:
+	case PR_EMAIL_ADDRESS_A: {
 		if (plogon->check_private()) {
 			if (!common_util_username_to_essdn(plogon->account,
 			    temp_buff, GX_ARRAY_SIZE(temp_buff)))
@@ -650,12 +651,14 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 			    temp_buff, GX_ARRAY_SIZE(temp_buff)))
 				return FALSE;	
 		}
-		*ppvalue = common_util_alloc(strlen(temp_buff) + 1);
+		auto tstr = cu_alloc<char>(strlen(temp_buff) + 1);
+		*ppvalue = tstr;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		strcpy(static_cast<char *>(*ppvalue), temp_buff);
+		strcpy(tstr, temp_buff);
 		return TRUE;
+	}
 	case PROP_TAG_EXTENDEDRULESIZELIMIT:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
@@ -664,16 +667,18 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		*(uint32_t*)(*ppvalue) = common_util_get_param(
 						COMMON_UTIL_MAX_EXTRULE_LENGTH);
 		return TRUE;
-	case PROP_TAG_HIERARCHYSERVER:
+	case PROP_TAG_HIERARCHYSERVER: {
 		if (plogon->check_private())
 			return FALSE;
 		common_util_get_domain_server(plogon->account, temp_buff);
-		*ppvalue = common_util_alloc(strlen(temp_buff) + 1);
+		auto tstr = cu_alloc<char>(strlen(temp_buff) + 1);
+		*ppvalue = tstr;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		strcpy(static_cast<char *>(*ppvalue), temp_buff);
+		strcpy(tstr, temp_buff);
 		return TRUE;
+	}
 	case PR_LOCALE_ID: {
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		*ppvalue = &pinfo->lcid_string;
@@ -696,38 +701,41 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 			return FALSE;	
 		}
 		if ('\0' == temp_buff[0]) {
-			*ppvalue = common_util_alloc(strlen(plogon->account) + 1);
+			auto tstr = cu_alloc<char>(strlen(plogon->account) + 1);
+			*ppvalue = tstr;
 			if (NULL == *ppvalue) {
 				return FALSE;
 			}
-			strcpy(static_cast<char *>(*ppvalue), plogon->account);
+			strcpy(tstr, plogon->account);
 		} else {
-			*ppvalue = common_util_alloc(strlen(temp_buff) + 1);
+			auto tstr = cu_alloc<char>(strlen(temp_buff) + 1);
+			*ppvalue = tstr;
 			if (NULL == *ppvalue) {
 				return FALSE;
 			}
-			strcpy(static_cast<char *>(*ppvalue), temp_buff);
+			strcpy(tstr, temp_buff);
 		}
 		return TRUE;
-	case PROP_TAG_MAILBOXOWNERNAME_STRING8:
+	case PROP_TAG_MAILBOXOWNERNAME_STRING8: {
 		if (!plogon->check_private())
 			return FALSE;
 		if (FALSE == common_util_get_user_displayname(
 			plogon->account, temp_buff)) {
 			return FALSE;	
 		}
-		temp_len = 2*strlen(temp_buff) + 1;
-		*ppvalue = common_util_alloc(temp_len);
+		auto temp_len = 2 * strlen(temp_buff) + 1;
+		auto tstr = cu_alloc<char>(temp_len);
+		*ppvalue = tstr;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		if (common_util_convert_string(FALSE, temp_buff,
-		    static_cast<char *>(*ppvalue), temp_len) < 0)
+		    tstr, temp_len) < 0)
 			return FALSE;	
-		if ('\0' == ((char*)*ppvalue)[0]) {
-			strcpy(static_cast<char *>(*ppvalue), plogon->account);
-		}
+		if (*tstr == '\0')
+			strcpy(tstr, plogon->account);
 		return TRUE;
+	}
 	case PR_MAX_SUBMIT_MESSAGE_SIZE:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
