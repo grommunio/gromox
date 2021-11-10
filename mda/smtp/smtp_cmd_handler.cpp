@@ -261,7 +261,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
             NULL != system_services_check_user) {
 			snprintf(buff, arsizeof(buff), "%s@%s", email_addr.local_part,
                     email_addr.domain);
-			if (FALSE == system_services_check_user(buff, path)) {
+			if (!system_services_check_user(buff, path, arsizeof(path))) {
                 /* 550 invalid user - <email_addr> */
 				smtp_reply_str = resource_get_smtp_code(516, 1, &string_length);
 				smtp_reply_str2 = resource_get_smtp_code(516, 2, &string_length);

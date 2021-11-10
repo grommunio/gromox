@@ -973,7 +973,7 @@ BOOL mysql_adaptor_check_same_org2(const char *domainname1,
 }
 
 /* only used by delivery-queue; who can receive mail? */
-BOOL mysql_adaptor_check_user(const char *username, char *path) try
+bool mysql_adaptor_check_user(const char *username, char *path, size_t dsize) try
 {
 	char temp_name[UADDR_SIZE*2];
 
@@ -993,16 +993,16 @@ BOOL mysql_adaptor_check_user(const char *username, char *path) try
 		return false;
 	conn.finish();
 	if (pmyres.num_rows() == 0) {
-		return FALSE;
+		return false;
 	} else if (pmyres.num_rows() > 1) {
 		fprintf(stderr, "W-1510: userdb conflict: <%s> is in both \"users\" and \"aliases\"\n", username);
 		return false;
 	}
 	auto myrow = pmyres.fetch_row();
 	if (path != nullptr)
-		strcpy(path, myrow[1]);
+		gx_strlcpy(path, myrow[1], dsize);
 	auto status = strtol(myrow[0], nullptr, 0);
-	return status == AF_USER_NORMAL || status == AF_USER_SHAREDMBOX ? TRUE : false;
+	return status == AF_USER_NORMAL || status == AF_USER_SHAREDMBOX;
 } catch (const std::exception &e) {
 	printf("E-%u: %s\n", 1731, e.what());
 	return false;

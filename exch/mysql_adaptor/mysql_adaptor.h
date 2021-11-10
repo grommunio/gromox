@@ -116,7 +116,7 @@ extern int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &
 BOOL mysql_adaptor_check_mlist_include(
 	const char *mlist_name, const char *account);
 extern BOOL mysql_adaptor_check_same_org2(const char *domainname1, const char *domainname2);
-extern BOOL mysql_adaptor_check_user(const char *username, char *path);
+extern bool mysql_adaptor_check_user(const char *username, char *path, size_t);
 extern BOOL mysql_adaptor_get_mlist(const char *username, const char *from, int *presult, std::vector<std::string> &);
 extern BOOL mysql_adaptor_get_user_info(const char *username, char *maildir, char *lang, char *timezone);
 extern BOOL mysql_adaptor_get_username(int user_id, char *username);
