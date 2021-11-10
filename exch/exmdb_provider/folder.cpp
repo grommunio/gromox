@@ -906,9 +906,15 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 		}
 	}
 	if (TRUE == b_normal && TRUE == b_fai) {
-		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
-			" message_size, is_associated, is_deleted FROM"
-			" messages WHERE parent_fid=%llu", LLU(fid_val));
+		/* Note the differing table schemas between private and public schemas */
+		if (b_private)
+			snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
+				" message_size, is_associated FROM"
+				" messages WHERE parent_fid=%llu", LLU(fid_val));
+		else
+			snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
+				" message_size, is_associated, is_deleted FROM"
+				" messages WHERE parent_fid=%llu", LLU(fid_val));
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
@@ -981,10 +987,16 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 		}
 	} else if (b_normal || b_fai) {
 		bool is_associated = !b_normal;
-		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
-			" message_size, is_deleted FROM messages "
-			"WHERE parent_fid=%llu AND is_associated=%d",
-			LLU(fid_val), is_associated);
+		if (b_private)
+			snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
+				" message_size FROM messages "
+				"WHERE parent_fid=%llu AND is_associated=%d",
+				LLU(fid_val), is_associated);
+		else
+			snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
+				" message_size, is_deleted FROM messages "
+				"WHERE parent_fid=%llu AND is_associated=%d AND 2",
+				LLU(fid_val), is_associated);
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
