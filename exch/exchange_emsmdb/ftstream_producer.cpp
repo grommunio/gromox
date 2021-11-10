@@ -348,7 +348,7 @@ static int ftstream_producer_write_propdef(FTSTREAM_PRODUCER *pstream,
 		if (!pstream->plogon->get_named_propname(propid, &propname))
 			return -1;
 		if (propname.kind == KIND_NONE) {
-			fprintf(stderr, "W-1555: propid %xh has no matching namedprop\n", propid);
+			fprintf(stderr, "W-1566: propid %xh has no matching namedprop\n", propid);
 			return 2;
 		}
 	}

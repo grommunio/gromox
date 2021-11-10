@@ -219,7 +219,7 @@ int grey_list_refresh()
 		phash.emplace(pitem->string, GREY_LIST_ENTRY{0, pitem->allow_times,
 			static_cast<int>(atoitvl(pitem->interval)), current_time});
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1537: ENOMEM\n");
+		fprintf(stderr, "E-1564: ENOMEM\n");
 		return false;
 	}
 
@@ -296,7 +296,7 @@ BOOL grey_list_add_string(const char* str, int times, int interval)
 		return g_grey_table.emplace(temp_string, GREY_LIST_ENTRY{0,
 		       times, interval, current_time}).second ? TRUE : false;
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1538: ENOMEM\n");
+		fprintf(stderr, "E-1565: ENOMEM\n");
 		return FALSE;
 	}
 }

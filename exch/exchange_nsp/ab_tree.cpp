@@ -1144,7 +1144,7 @@ SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 	pabnode->id = domain_id;
 	pabnode->d_info = nullptr;
 	if (xab->node_type == NODE_TYPE_REMOTE)
-		fprintf(stderr, "W-1554: unexplored case\n");
+		fprintf(stderr, "W-1568: unexplored case\n");
 	else if (xab->node_type == NODE_TYPE_DOMAIN)
 		pabnode->d_info = new(std::nothrow) sql_domain(*static_cast<sql_domain *>(xab->d_info));
 	else if (xab->node_type == NODE_TYPE_GROUP)

@@ -86,6 +86,6 @@ BOOL bounce_audit_check(const char *audit_string) try
 	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1534: ENOMEM\n");
+	fprintf(stderr, "E-1563: ENOMEM\n");
 	return TRUE;
 }

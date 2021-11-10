@@ -967,7 +967,7 @@ static BOOL tnef_convert_to_propname(const std::string &input_tag,
 	try {
 		working_tag = input_tag;
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1544: ENOMEM\n");
+		fprintf(stderr, "E-1567: ENOMEM\n");
 		return false;
 	}
 	char *tag_string = working_tag.data();

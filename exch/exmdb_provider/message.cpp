@@ -2525,7 +2525,7 @@ static BOOL message_load_folder_rules(BOOL b_oof, sqlite3 *psqlite,
 			seq = sqlite3_column_int64(pstmt, 2);
 			rn.push_back(RULE_NODE{seq, state, msg_id, prov});
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1506: ENOMEM\n");
+			fprintf(stderr, "E-1561: ENOMEM\n");
 			return false;
 		}
 		auto it = std::find_if(plist.begin(), plist.end(),

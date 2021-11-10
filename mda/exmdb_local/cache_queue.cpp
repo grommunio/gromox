@@ -383,7 +383,7 @@ static void *mdl_thrwork(void *arg)
 			ptr += zlen;
 			size -= zlen;
 			if (size == 0)
-				fprintf(stderr, "W-1559: garbage in %s; review and delete\n", temp_path.c_str());
+				fprintf(stderr, "W-1570: garbage in %s; review and delete\n", temp_path.c_str());
 			snprintf(temp_from, arsizeof(temp_from), "%.*s",
 			         static_cast<int>(std::min(size, static_cast<size_t>(INT32_MAX))), ptr);
 			zlen = strnlen(ptr, size);
@@ -392,7 +392,7 @@ static void *mdl_thrwork(void *arg)
 			mem_file_clear(&pcontext->pcontrol->f_rcpt_to);
 			mem_file_writeline(&pcontext->pcontrol->f_rcpt_to, ptr);
 			if (size == 0)
-				fprintf(stderr, "W-1559: garbage in %s; review and delete\n", temp_path.c_str());
+				fprintf(stderr, "W-1571: garbage in %s; review and delete\n", temp_path.c_str());
 			snprintf(temp_rcpt, arsizeof(temp_rcpt), "%.*s",
 			         static_cast<int>(std::min(size, static_cast<size_t>(INT32_MAX))), ptr);
 			zlen = strnlen(ptr, size);

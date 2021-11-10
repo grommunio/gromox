@@ -576,7 +576,7 @@ static void db_engine_notify_search_completion(db_item_ptr &pdb, uint64_t folder
 		    pnsub->message_id == 0)) try {
 			tmp_list.push_back(ID_NODE{pnsub->remote_id, pnsub->sub_id});
 		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1510: ENOMEM\n");
+			fprintf(stderr, "E-1562: ENOMEM\n");
 			return;
 		}
 	}
