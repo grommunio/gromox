@@ -820,68 +820,68 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 	}
 	if (folder_type == FOLDER_SEARCH) {
 		/* always in private store, there's only hard deletion */
-		if (TRUE == b_normal || TRUE == b_fai) {
-			snprintf(sql_string, arsizeof(sql_string), "SELECT messages.message_id,"
-						" messages.parent_fid, messages.message_size, "
-						"messages.is_associated FROM messages JOIN "
-						"search_result ON messages.message_id="
-						"search_result.message_id AND "
-						"search_result.folder_id=%llu", LLU(fid_val));
-			auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-			if (pstmt == nullptr)
-				return FALSE;
-			while (SQLITE_ROW == sqlite3_step(pstmt)) {
-				bool is_associated = sqlite3_column_int64(pstmt, 3);
-				if ((is_associated && !b_fai) ||
-				    (!is_associated && !b_normal))
-					continue;
-				uint64_t message_id = sqlite3_column_int64(pstmt, 0);
-				uint64_t parent_fid = sqlite3_column_int64(pstmt, 1);
-				if (NULL != username) {
-					uint32_t permission;
-					if (FALSE == common_util_check_folder_permission(
-						pdb->psqlite, parent_fid, username, &permission)) {
+		if (!b_normal && !b_fai)
+			return TRUE;
+		snprintf(sql_string, arsizeof(sql_string), "SELECT messages.message_id,"
+		         " messages.parent_fid, messages.message_size, "
+		         "messages.is_associated FROM messages JOIN "
+		         "search_result ON messages.message_id="
+		         "search_result.message_id AND "
+		         "search_result.folder_id=%llu", LLU(fid_val));
+		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		if (pstmt == nullptr)
+			return FALSE;
+		while (SQLITE_ROW == sqlite3_step(pstmt)) {
+			bool is_associated = sqlite3_column_int64(pstmt, 3);
+			if ((is_associated && !b_fai) ||
+			    (!is_associated && !b_normal))
+				continue;
+			uint64_t message_id = sqlite3_column_int64(pstmt, 0);
+			uint64_t parent_fid = sqlite3_column_int64(pstmt, 1);
+			if (NULL != username) {
+				uint32_t permission;
+				if (FALSE == common_util_check_folder_permission(
+				    pdb->psqlite, parent_fid, username, &permission)) {
+					return FALSE;
+				}
+				if (permission & (frightsOwner | frightsDeleteAny)) {
+					/* do nothing */
+				} else if (permission & frightsDeleteOwned) {
+					if (FALSE == common_util_check_message_owner(
+					    pdb->psqlite, message_id, username, &b_owner)) {
 						return FALSE;
 					}
-					if (permission & (frightsOwner | frightsDeleteAny)) {
-						/* do nothing */
-					} else if (permission & frightsDeleteOwned) {
-						if (FALSE == common_util_check_message_owner(
-							pdb->psqlite, message_id, username, &b_owner)) {
-							return FALSE;
-						}
-						if (FALSE == b_owner) {
-							*pb_partial = TRUE;
-							continue;
-						}
-					} else {
+					if (FALSE == b_owner) {
 						*pb_partial = TRUE;
 						continue;
 					}
+				} else {
+					*pb_partial = TRUE;
+					continue;
 				}
-				if (NULL != pmessage_count) {
-					(*pmessage_count) ++;
-				}
-				if (is_associated && pfai_size != nullptr)
-					*pfai_size += sqlite3_column_int64(pstmt, 2);
-				else if (!is_associated && pnormal_size != nullptr)
-					*pnormal_size += sqlite3_column_int64(pstmt, 2);
-				db_engine_proc_dynamic_event(pdb, cpid,
-					DYNAMIC_EVENT_DELETE_MESSAGE,
-					fid_val, message_id, 0);
-				db_engine_proc_dynamic_event(pdb, cpid,
-					DYNAMIC_EVENT_DELETE_MESSAGE,
-					parent_fid, message_id, 0);
-				db_engine_notify_link_deletion(
-					pdb, fid_val, message_id);
-				db_engine_notify_message_deletion(
-					pdb, parent_fid, message_id);
-				snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages "
-				        "WHERE message_id=%llu", LLU(message_id));
-				if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-					sql_string, NULL, NULL, NULL)) {
-					return FALSE;
-				}
+			}
+			if (NULL != pmessage_count) {
+				(*pmessage_count) ++;
+			}
+			if (is_associated && pfai_size != nullptr)
+				*pfai_size += sqlite3_column_int64(pstmt, 2);
+			else if (!is_associated && pnormal_size != nullptr)
+				*pnormal_size += sqlite3_column_int64(pstmt, 2);
+			db_engine_proc_dynamic_event(pdb, cpid,
+				DYNAMIC_EVENT_DELETE_MESSAGE,
+				fid_val, message_id, 0);
+			db_engine_proc_dynamic_event(pdb, cpid,
+				DYNAMIC_EVENT_DELETE_MESSAGE,
+				parent_fid, message_id, 0);
+			db_engine_notify_link_deletion(
+				pdb, fid_val, message_id);
+			db_engine_notify_message_deletion(
+				pdb, parent_fid, message_id);
+			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages "
+				"WHERE message_id=%llu", LLU(message_id));
+			if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
+			    sql_string, NULL, NULL, NULL)) {
+				return FALSE;
 			}
 		}
 		return TRUE;
