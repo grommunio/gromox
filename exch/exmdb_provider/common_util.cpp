@@ -4867,10 +4867,9 @@ BOOL common_util_check_message_owner(sqlite3 *psqlite,
 	char tmp_name[UADDR_SIZE];
 	ADDRESSBOOK_ENTRYID ab_entryid;
 	
-	if (FALSE == common_util_get_property(MESSAGE_PROPERTIES_TABLE,
-		message_id, 0, psqlite, PROP_TAG_CREATORENTRYID, (void**)&pbin)) {
+	if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE, message_id, 0,
+	    psqlite, PR_CREATOR_ENTRYID, reinterpret_cast<void **>(&pbin)))
 		return FALSE;
-	}
 	if (NULL == pbin) {
 		*pb_owner = FALSE;
 		return TRUE;

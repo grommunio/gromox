@@ -653,10 +653,9 @@ BOOL exmdb_client_check_message_owner(const char *dir,
 	char tmp_name[UADDR_SIZE];
 	ADDRESSBOOK_ENTRYID ab_entryid;
 	
-	if (FALSE == exmdb_client_get_message_property(dir, NULL,
-		0, message_id, PROP_TAG_CREATORENTRYID, (void**)&pbin)) {
+	if (!exmdb_client_get_message_property(dir, nullptr, 0, message_id,
+	    PR_CREATOR_ENTRYID, reinterpret_cast<void **>(&pbin)))
 		return FALSE;
-	}
 	if (NULL == pbin) {
 		*pb_owner = FALSE;
 		return TRUE;

@@ -381,9 +381,8 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			tmp_propval.pvalue = deconst(&fake_byte);
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		}
-		if (NULL == common_util_get_propvals(
-			fldchgs.pfldchgs + i, PROP_TAG_CREATORSID)) {
-			tmp_propval.proptag = PROP_TAG_CREATORSID;
+		if (common_util_get_propvals(&fldchgs.pfldchgs[i], PR_CREATOR_SID) == nullptr) {
+			tmp_propval.proptag = PR_CREATOR_SID;
 			tmp_propval.pvalue = &tmp_bin;
 			tmp_bin.cb = 0;
 			tmp_bin.pb = NULL;

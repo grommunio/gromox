@@ -1930,57 +1930,55 @@ static BOOL message_rectify_message(const char *account,
 		pmsgctnt1->proplist.count ++;
 		++vc;
 	}
-	if (NULL == common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_CREATORNAME)) {
+	if (common_util_get_propvals(&pmsgctnt->proplist, PR_CREATOR_NAME) == nullptr) {
 		auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_SENDER_NAME);
 		if (NULL == pvalue) {
 			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
 			         PR_SENT_REPRESENTING_NAME);
 		}
 		if (NULL != pvalue) {
-			vc->proptag = PROP_TAG_CREATORNAME;
+			vc->proptag = PR_CREATOR_NAME;
 			vc->pvalue = pvalue;
 			pmsgctnt1->proplist.count ++;
 			++vc;
 		}
 	}
-	if (NULL == common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_CREATORENTRYID)) {
+	if (common_util_get_propvals(&pmsgctnt->proplist, PR_CREATOR_ENTRYID) == nullptr) {
 		auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_SENDER_ENTRYID);
 		if (NULL == pvalue) {
 			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
 			         PR_SENT_REPRESENTING_ENTRYID);
 		}
 		if (NULL != pvalue) {
-			vc->proptag = PROP_TAG_CREATORENTRYID;
+			vc->proptag = PR_CREATOR_ENTRYID;
 			vc->pvalue = pvalue;
 			pmsgctnt1->proplist.count ++;
 			++vc;
 		}
 	}
-	if (NULL == common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_LASTMODIFIERNAME)) {
+	if (common_util_get_propvals(&pmsgctnt->proplist,
+	    PR_LAST_MODIFIER_NAME) == nullptr) {
 		auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_SENDER_NAME);
 		if (NULL == pvalue) {
 			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
 			         PR_SENT_REPRESENTING_NAME);
 		}
 		if (NULL != pvalue) {
-			vc->proptag = PROP_TAG_LASTMODIFIERNAME;
+			vc->proptag = PR_LAST_MODIFIER_NAME;
 			vc->pvalue = pvalue;
 			pmsgctnt1->proplist.count ++;
 			++vc;
 		}
 	}
-	if (NULL == common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_LASTMODIFIERENTRYID)) {
+	if (common_util_get_propvals(&pmsgctnt->proplist,
+	    PR_LAST_MODIFIER_ENTRYID) == nullptr) {
 		auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_SENDER_ENTRYID);
 		if (NULL == pvalue) {
 			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
 			         PR_SENT_REPRESENTING_ENTRYID);
 		}
 		if (NULL != pvalue) {
-			vc->proptag = PROP_TAG_LASTMODIFIERENTRYID;
+			vc->proptag = PR_LAST_MODIFIER_ENTRYID;
 			vc->pvalue = pvalue;
 			pmsgctnt1->proplist.count ++;
 			++vc;

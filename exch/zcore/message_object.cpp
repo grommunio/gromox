@@ -248,8 +248,7 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	propvals.ppropval[propvals.count].proptag = PR_LOCALE_ID;
 	propvals.ppropval[propvals.count++].pvalue = pvalue;
-	propvals.ppropval[propvals.count].proptag =
-							PROP_TAG_CREATORNAME;
+	propvals.ppropval[propvals.count].proptag = PR_CREATOR_NAME;
 	auto dispname = cu_alloc<char>(1024);
 	if (dispname == nullptr)
 		return FALSE;
@@ -259,8 +258,7 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 		strcpy(dispname, pinfo->get_username());
 	propvals.ppropval[propvals.count++].pvalue = dispname;
 
-	propvals.ppropval[propvals.count].proptag =
-						PROP_TAG_CREATORENTRYID;
+	propvals.ppropval[propvals.count].proptag = PR_CREATOR_ENTRYID;
 	pvalue = common_util_username_to_addressbook_entryid(pinfo->get_username());
 	if (NULL == pvalue) {
 		return FALSE;
@@ -336,9 +334,8 @@ gxerr_t message_object::save()
 	}
 	
 	if (!proptag_array_check(pmessage->pchanged_proptags,
-	    PROP_TAG_LASTMODIFIERNAME)) {
-		tmp_propvals.ppropval[tmp_propvals.count].proptag =
-									PROP_TAG_LASTMODIFIERNAME;
+	    PR_LAST_MODIFIER_NAME)) {
+		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFIER_NAME;
 		auto dispname = cu_alloc<char>(1024);
 		if (dispname == nullptr)
 			return GXERR_CALL_FAILED;
@@ -348,8 +345,7 @@ gxerr_t message_object::save()
 		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = dispname;
 	}
 	
-	tmp_propvals.ppropval[tmp_propvals.count].proptag =
-							PROP_TAG_LASTMODIFIERENTRYID;
+	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFIER_ENTRYID;
 	pvalue = common_util_username_to_addressbook_entryid(pinfo->get_username());
 	if (NULL == pvalue) {
 		return GXERR_CALL_FAILED;
@@ -770,8 +766,8 @@ static BOOL msgo_check_readonly_property(const message_object *pmessage,
 	case PR_ASSOCIATED:
 	case PROP_TAG_CHANGENUMBER:
 	case PROP_TAG_CONVERSATIONID:
-	case PROP_TAG_CREATORNAME:
-	case PROP_TAG_CREATORENTRYID:
+	case PR_CREATOR_NAME:
+	case PR_CREATOR_ENTRYID:
 	case PR_DISPLAY_BCC:
 	case PR_DISPLAY_CC:
 	case PR_DISPLAY_TO:
@@ -779,7 +775,7 @@ static BOOL msgo_check_readonly_property(const message_object *pmessage,
 	case PROP_TAG_FOLDERID:
 	case PR_HASATTACH:
 	case PROP_TAG_HASNAMEDPROPERTIES:
-	case PROP_TAG_LASTMODIFIERENTRYID:
+	case PR_LAST_MODIFIER_ENTRYID:
 	case PROP_TAG_MID:
 	case PROP_TAG_MIMESKELETON:
 	case PROP_TAG_NATIVEBODY:
