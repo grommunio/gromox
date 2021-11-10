@@ -1792,128 +1792,125 @@ static BOOL folder_copy_folder_internal(db_item_ptr &pdb, int account_id,
 				DYNAMIC_EVENT_NEW_MESSAGE, dst_fid,
 				message_id1, 0);
 		}
-	} else {
-		if (TRUE == b_normal || TRUE == b_fai) {
-			is_associated = !b_normal;
-			if (TRUE == b_private) {
-				snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
-							" FROM messages WHERE parent_fid=%llu"
-							" AND is_associated=%d", LLU(fid_val),
-							is_associated);
-			} else {
-				snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
-							" is_deleted FROM messages WHERE "
-							"parent_fid=%llu AND is_associated=%d",
-							LLU(fid_val), is_associated);
-			}
-			auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-			if (pstmt == nullptr)
-				return FALSE;
-			while (SQLITE_ROW == sqlite3_step(pstmt)) {
-				if (FALSE == b_private) {
-					if (0 != sqlite3_column_int64(pstmt, 1)) {
-						continue;
-					}
-				}
-				message_id = sqlite3_column_int64(pstmt, 0);
-				if (TRUE == b_check) {
-					if (FALSE == common_util_check_message_owner(
-						pdb->psqlite, message_id, username, &b_owner)) {
-						return FALSE;
-					}
-					if (FALSE == b_owner) {
-						*pb_partial = TRUE;
-						continue;
-					}
-				}
-				message_id1 = 0;
-				if (FALSE == common_util_copy_message(pdb->psqlite,
-					account_id, message_id, dst_fid, &message_id1,
-					&b_result, &message_size)) {
+		return TRUE;
+	}
+	if (TRUE == b_normal || TRUE == b_fai) {
+		is_associated = !b_normal;
+		if (TRUE == b_private) {
+			snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
+			         " FROM messages WHERE parent_fid=%llu"
+			         " AND is_associated=%d", LLU(fid_val),
+			         is_associated);
+		} else {
+			snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
+			         " is_deleted FROM messages WHERE "
+			         "parent_fid=%llu AND is_associated=%d",
+			         LLU(fid_val), is_associated);
+		}
+		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		if (pstmt == nullptr)
+			return FALSE;
+		while (SQLITE_ROW == sqlite3_step(pstmt)) {
+			if (!b_private && sqlite3_column_int64(pstmt, 1) != 0)
+				continue;
+			message_id = sqlite3_column_int64(pstmt, 0);
+			if (TRUE == b_check) {
+				if (FALSE == common_util_check_message_owner(
+					pdb->psqlite, message_id, username, &b_owner)) {
 					return FALSE;
 				}
-				if (FALSE == b_result) {
+				if (FALSE == b_owner) {
 					*pb_partial = TRUE;
 					continue;
 				}
-				if (0 == is_associated) {
-					if (NULL != pnormal_size) {
-						*pnormal_size += message_size;
-					}
-				} else {
-					if (NULL != pfai_size) {
-						*pfai_size += message_size;
-					}
+			}
+			message_id1 = 0;
+			if (FALSE == common_util_copy_message(pdb->psqlite,
+			    account_id, message_id, dst_fid, &message_id1,
+			    &b_result, &message_size)) {
+				return FALSE;
+			}
+			if (FALSE == b_result) {
+				*pb_partial = TRUE;
+				continue;
+			}
+			if (0 == is_associated) {
+				if (NULL != pnormal_size) {
+					*pnormal_size += message_size;
 				}
-				db_engine_proc_dynamic_event(pdb, cpid,
-					DYNAMIC_EVENT_NEW_MESSAGE, dst_fid,
-					message_id1, 0);
+			} else {
+				if (NULL != pfai_size) {
+					*pfai_size += message_size;
+				}
+			}
+			db_engine_proc_dynamic_event(pdb, cpid,
+				DYNAMIC_EVENT_NEW_MESSAGE, dst_fid,
+				message_id1, 0);
+		}
+	}
+ COPY_SUBFOLDER:
+	if (!b_sub)
+		return TRUE;
+	if (TRUE == b_guest) {
+		if (FALSE == common_util_check_folder_permission(
+		    pdb->psqlite, dst_fid, username, &permission)) {
+			return FALSE;
+		}
+		if (!(permission & frightsCreateSubfolder)) {
+			*pb_partial = TRUE;
+			return TRUE;
+		}
+	}
+	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id "
+		  "FROM folders WHERE parent_id=%llu", LLU(fid_val));
+	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	if (pstmt == nullptr)
+		return FALSE;
+	while (SQLITE_ROW == sqlite3_step(pstmt)) {
+		src_fid1 = sqlite3_column_int64(pstmt, 0);
+		fid_val = src_fid1;
+		if (TRUE == b_check) {
+			if (FALSE == common_util_check_folder_permission(
+			    pdb->psqlite, fid_val, username, &permission)) {
+				return FALSE;
+			}
+			if (!(permission & (frightsReadAny | frightsVisible))) {
+				*pb_partial = TRUE;
+				continue;
 			}
 		}
- COPY_SUBFOLDER:
-		if (TRUE == b_sub) {
-			if (TRUE == b_guest) {
-				if (FALSE == common_util_check_folder_permission(
-					pdb->psqlite, dst_fid, username, &permission)) {
-					return FALSE;
-				}
-				if (!(permission & frightsCreateSubfolder)) {
-					*pb_partial = TRUE;
-					return TRUE;
-				}
-			}
-			snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id "
-			          "FROM folders WHERE parent_id=%llu", LLU(fid_val));
-			auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
-			if (pstmt == nullptr)
+		if (FALSE == common_util_get_folder_type(
+			pdb->psqlite, fid_val, &folder_type)) {
+			return FALSE;
+		}
+		if (folder_type == FOLDER_SEARCH) {
+			if (FALSE == folder_copy_search_folder(pdb, cpid,
+			    b_guest, username, fid_val, dst_fid, &fid_val)) {
 				return FALSE;
-			while (SQLITE_ROW == sqlite3_step(pstmt)) {
-				src_fid1 = sqlite3_column_int64(pstmt, 0);
-				fid_val = src_fid1;
-				if (TRUE == b_check) {
-					if (FALSE == common_util_check_folder_permission(
-						pdb->psqlite, fid_val, username, &permission)) {
-						return FALSE;
-					}
-					if (!(permission & (frightsReadAny | frightsVisible))) {
-						*pb_partial = TRUE;
-						continue;
-					}
-				}
-				if (FALSE == common_util_get_folder_type(
-					pdb->psqlite, fid_val, &folder_type)) {
-					return FALSE;
-				}
-				if (folder_type == FOLDER_SEARCH) {
-					if (FALSE == folder_copy_search_folder(pdb, cpid,
-						b_guest, username, fid_val, dst_fid, &fid_val)) {
-						return FALSE;
-					}
-				} else {
-					if (FALSE == folder_copy_generic_folder(pdb->psqlite,
-						b_guest, username, fid_val, dst_fid, &fid_val)) {
-						return FALSE;
-					}
-				}
-				if (0 == fid_val) {
-					*pb_partial = TRUE;
-					continue;
-				}
-				if (NULL != pfolder_count) {
-					(*pfolder_count) ++;
-				}
-				if (folder_type == FOLDER_SEARCH)
-					continue;
-				if (FALSE == folder_copy_folder_internal(pdb, account_id,
-					cpid, b_guest, username, src_fid1, TRUE, TRUE, TRUE,
-					fid_val, &b_partial, pnormal_size, pfai_size, NULL)) {
-					return FALSE;
-				}
-				if (TRUE == b_partial) {
-					*pb_partial = TRUE;
-					continue;
-				}
 			}
+		} else {
+			if (FALSE == folder_copy_generic_folder(pdb->psqlite,
+			    b_guest, username, fid_val, dst_fid, &fid_val)) {
+				return FALSE;
+			}
+		}
+		if (0 == fid_val) {
+			*pb_partial = TRUE;
+			continue;
+		}
+		if (NULL != pfolder_count) {
+			(*pfolder_count) ++;
+		}
+		if (folder_type == FOLDER_SEARCH)
+			continue;
+		if (FALSE == folder_copy_folder_internal(pdb, account_id,
+		    cpid, b_guest, username, src_fid1, TRUE, TRUE, TRUE,
+		    fid_val, &b_partial, pnormal_size, pfai_size, NULL)) {
+			return FALSE;
+		}
+		if (TRUE == b_partial) {
+			*pb_partial = TRUE;
+			continue;
 		}
 	}
 	return TRUE;
