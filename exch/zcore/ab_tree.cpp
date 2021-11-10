@@ -1386,8 +1386,8 @@ static ec_error_t ab_tree_fetchprop(SIMPLE_TREE_NODE *node,
 
 	switch (PROP_TYPE(proptag)) {
 	case PT_BOOLEAN:
-		*prop = cu_alloc<int16_t>();
-		*static_cast<int16_t *>(*prop) = strtol(it->second.c_str(), nullptr, 0) != 0;
+		*prop = cu_alloc<int8_t>();
+		*static_cast<int8_t *>(*prop) = strtol(it->second.c_str(), nullptr, 0) != 0;
 		return ecSuccess;
 	case PT_SHORT:
 		*prop = cu_alloc<int16_t>();
@@ -1395,12 +1395,12 @@ static ec_error_t ab_tree_fetchprop(SIMPLE_TREE_NODE *node,
 		return ecSuccess;
 	case PT_LONG:
 		*prop = cu_alloc<int32_t>();
-		*static_cast<int16_t *>(*prop) = strtol(it->second.c_str(), nullptr, 0);
+		*static_cast<int32_t *>(*prop) = strtol(it->second.c_str(), nullptr, 0);
 		return ecSuccess;
 	case PT_I8:
 	case PT_SYSTIME:
 		*prop = cu_alloc<int64_t>();
-		*static_cast<int16_t *>(*prop) = strtoll(it->second.c_str(), nullptr, 0);
+		*static_cast<int64_t *>(*prop) = strtoll(it->second.c_str(), nullptr, 0);
 		return ecSuccess;
 	case PT_STRING8:
 	case PT_UNICODE:
