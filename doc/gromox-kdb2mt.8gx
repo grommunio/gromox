@@ -24,8 +24,9 @@ in the mount namespace whereever gromox\-kdb2mt runs.
 .PP
 No permissions are extracted.
 .PP
-Store object properties are only shown (with \-p), but not dumped to the MT
-stream.
+Properties of the \fIstore object itself\fP are only shown (if and when \-p is
+used), but never dumped to the MT data stream. Properties of the store \fIroot
+folder object\fP are(!) transferred.
 .SH Options
 .TP
 \fB\-p\fP
