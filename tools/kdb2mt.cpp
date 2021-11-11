@@ -379,10 +379,11 @@ kdb_open_by_guid(const char *guid, const sql_login_param &sqp)
 static void present_stores(const char *storeuser, DB_RESULT &res)
 {
 	DB_ROW row;
-	fprintf(stderr, "PK-1008: This utility only does a heuristic search, "
-	        "lest it would require the full original user database, "
-	        "a requirement this tool does not want to impose. "
-	        "The search for \"%s\" has turned up multiple candidate stores:\n\n", storeuser);
+	if (*storeuser != '\0')
+		fprintf(stderr, "PK-1008: This utility only does a heuristic search, "
+			"lest it would require the full original user database, "
+			"a requirement this tool does not want to impose. "
+			"The search for \"%s\" has turned up multiple candidate stores:\n\n", storeuser);
 	fprintf(stderr, "GUID                              user_id  most_recent_owner\n");
 	fprintf(stderr, "============================================================\n");
 	while ((row = res.fetch_row()) != nullptr) {
@@ -406,9 +407,13 @@ kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
 		throw YError("PK-1019: mysql_connect %s@%s: %s",
 		      sqp.user.c_str(), sqp.host.c_str(), mysql_error(drv->m_conn));
 
-	auto qstr = "SELECT guid, user_id, user_name FROM stores WHERE stores.user_name='" + sql_escape(drv->m_conn, storeuser) + "'";
+	auto qstr = *storeuser == '\0' ?
+	            "SELECT guid, user_id, user_name FROM stores"s :
+		    "SELECT guid, user_id, user_name FROM stores "
+		    "WHERE stores.user_name='" +
+		    sql_escape(drv->m_conn, storeuser) + "'";
 	auto res = drv->query(qstr.c_str());
-	if (mysql_num_rows(res.get()) > 1) {
+	if (*storeuser == '\0' || mysql_num_rows(res.get()) > 1) {
 		present_stores(storeuser, res);
 		throw YError("PK-1013: \"%s\" was ambiguous.\n", storeuser);
 	}

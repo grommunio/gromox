@@ -78,6 +78,7 @@ Selects the mailbox with the particular GUID for extraction.
 Scan the source database for a mailbox which appears to have last been used by
 \fIusername\fP, and use it for extraction. There are a number of caveats
 related to this lookup; see the section "Store lookup by name" further below.
+(To get a listing of all stores, use \fB\-\-src\-mbox ""\fP.)
 .TP
 \fB\-\-l1\fP \fIx\fP, \fB\-\-l2\fP \fIy\fP
 If you are using "attachment_storage=files_v1-\fIx\fP-\fIy\fP" in
