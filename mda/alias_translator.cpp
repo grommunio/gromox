@@ -5,6 +5,7 @@
 #include <cstring>
 #include <memory>
 #include <shared_mutex>
+#include <utility>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/hook_common.h>

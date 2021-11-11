@@ -4,6 +4,7 @@
 #include <cstring>
 #include <memory>
 #include <mutex>
+#include <utility>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include "subscription_object.h"
