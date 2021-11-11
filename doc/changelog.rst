@@ -1,3 +1,26 @@
+1.7.55
+======
+
+Fixes:
+
+* mysql_adaptor: fix nullptr deref in get_user_info
+* exchange_nsp: fix crash when an addressbook datum was to be copied
+* exchange_emsmdb: do not send unresolvable namedprops into faststream;
+  reduce "Synchronization Issues" messages popping up in Outlook
+* zcore: integer values of freeform user properties were truncated
+* zcore: fix unbounded buffer writes when returning certain propvals
+* exmdb_provider: fix SQL logic error appearing during folder emptying
+* mapi_lib: when vCards cannot be ingested as a MAPI object, ingest
+  them as files - set missing PR_ATTACH_METHOD for this.
+* email_lib: fix infinite loop in vcard_check_empty_line
+
+Enhancements:
+
+* php: do print reason when autodiscover.ini cannot be read
+* mapi_lib: set PR_SUPPLEMENTARY_INFO when ingesting mail
+* doc: update kdb2mt -s description
+
+
 1.7 (2021-11-07)
 ================
 
