@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <memory>
+#include <string>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 

@@ -2,6 +2,7 @@
 #define DECLARE_SVC_API_STATIC
 #include <csignal>
 #include <cstdint>
+#include <string>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>

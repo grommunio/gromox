@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <string>
 #include <unistd.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>

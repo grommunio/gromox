@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #define DECLARE_SVC_API_STATIC
+#include <csignal>
 #include <cstdint>
 #include <mutex>
-#include <csignal>
+#include <string>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>

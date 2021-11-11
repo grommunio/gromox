@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <utility>
 #include <gromox/cookie_parser.hpp>
 

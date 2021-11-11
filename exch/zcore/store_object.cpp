@@ -5,6 +5,7 @@
 #include <cctype>
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <utility>
 #include <libHX/string.h>
 #include "msgchg_grouping.h"

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdio>
+#include <string>
 #include <typeinfo>
 #include <gromox/hook_common.h>
 #include "bounce_producer.h"

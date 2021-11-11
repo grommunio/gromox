@@ -2,6 +2,7 @@
 #include <climits>
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/mapidefs.h>

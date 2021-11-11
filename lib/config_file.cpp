@@ -10,6 +10,7 @@
 #include <cerrno>
 #include <memory>
 #include <stdexcept>
+#include <string>
 #include <libHX/defs.h>
 #include <libHX/proc.h>
 #include <libHX/string.h>

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <string>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/scope.hpp>

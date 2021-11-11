@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cstdio>
+#include <ctime>
+#include <fcntl.h>
 #include <mutex>
+#include <string>
+#include <unistd.h>
 #include <unordered_map>
 #include <libHX/string.h>
 #include "bounce_audit.h"
@@ -8,10 +13,6 @@
 #include <gromox/util.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <cstdio>
-#include <ctime>
 
 /* private global variable */
 static int g_audit_num;

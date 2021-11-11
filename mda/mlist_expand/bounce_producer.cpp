@@ -5,6 +5,7 @@
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
+#include <string>
 #include <typeinfo>
 #include <utility>
 #include <vector>
