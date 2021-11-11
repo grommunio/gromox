@@ -2,6 +2,7 @@
 /* imap parser is a module, which first read data from socket, parses the imap 
  * commands and then do the corresponding action. 
  */ 
+#include <atomic>
 #include <cerrno>
 #include <climits>
 #include <csignal>

@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <atomic>
 #include <list>
 #include <cstdint>
 #include <list>
