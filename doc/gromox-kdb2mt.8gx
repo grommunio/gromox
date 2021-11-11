@@ -32,10 +32,10 @@ stream.
 Show properties in detail (enhances \fB\-t\fP).
 .TP
 \fB\-s\fP
-Splice objects from the source database into existing (Gromox-side) folders.
-Specifically, the source mailbox root is mapped to the Gromox store root, and
-special folders (Sent Items, Deleted Items, etc.) are mapped to special folders
-in the target store.
+Map the source mailbox folder hierarchy (and its subobjects) to the target
+mailbox's hierarchy and splice objects accordingly. Only use \-s when both the
+source side and the target side are private stores. See the section "Splice
+mode" below for more information.
 .TP
 \fB\-t\fP
 Show a diagnostic tree view of the source data as it is being read.
@@ -87,6 +87,30 @@ Extract just the object with the given hierarchy id. This option may be
 specified multiple times. In the output stream, the objects will have an
 unspecified location given as their parent folder. (mt2exm will use the
 drafts folder because it is expectedly less crowded than one's inbox.)
+.SH Splice mode
+Normally, kdb2mt will have a folder mapping table that specifies one entry,
+which is "(Source root)" to "(Target root)\\Top of Information Store\\Import of
+GUID @date". Any objects within an entry's source folder (including more
+folders) are copied. This default entry makes sure absolutely everything is
+imported, without loss.
+.PP
+Using the \-s option, this behavior will change. The default mapping is
+replaced by one that will intermix imported folders with an existing hierarchy.
+Specifically, special folders such as the root folder item, Top of Information
+Store (a.k.a. TOIS or IPM_SUBTREE), Inbox, etc. are mapped. This only works
+when both the source and target are private stores!
+.PP
+Special folders are identified by metadata, not by name. This way, kdb2mt can
+support localized folder names and correctly map, for example, a German
+"Gesendete Elemente" to a French "Éléments envoyés" (Sent Items). Regular
+folders will be processed normally (by name), e.g. "(Source root)\\Top of
+Information Store\\Invoices" will be imported at "(Target root)\\Top of
+Information Store\\Invoices".
+.PP
+The \-s option is most useful when importing one's own store from one system to
+another that's new and blank. If importing someone \fIelse's\fP store into
+yours, leaving out \-s is normally the desired behavior, since you may not want
+want to mix your (existing) with their mails.
 .SH Environment variables
 .TP
 \fBSRCPASS\fP
