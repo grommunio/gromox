@@ -388,7 +388,7 @@ static void present_stores(const char *storeuser, DB_RESULT &res)
 	while ((row = res.fetch_row()) != nullptr) {
 		auto colen = res.row_lengths();
 		fprintf(stderr, "%s  %7lu  %s\n", bin2hex(row[0], colen[0]).c_str(),
-		        strtoul(row[1], nullptr, 0), storeuser);
+		        strtoul(row[1], nullptr, 0), row[2] != nullptr ? row[2] : "");
 	}
 	fprintf(stderr, "============================================================\n");
 }
@@ -406,7 +406,7 @@ kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
 		throw YError("PK-1019: mysql_connect %s@%s: %s",
 		      sqp.user.c_str(), sqp.host.c_str(), mysql_error(drv->m_conn));
 
-	auto qstr = "SELECT stores.guid, stores.user_id FROM stores INNER JOIN users ON stores.user_id=users.id WHERE stores.user_name='" + sql_escape(drv->m_conn, storeuser) + "'";
+	auto qstr = "SELECT guid, user_id, user_name FROM stores WHERE stores.user_name='" + sql_escape(drv->m_conn, storeuser) + "'";
 	auto res = drv->query(qstr.c_str());
 	if (mysql_num_rows(res.get()) > 1) {
 		present_stores(storeuser, res);
