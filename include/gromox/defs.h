@@ -69,6 +69,7 @@ enum ec_error_t {
 	SYNC_E_IGNORE = 0x80040801,
 	SYNC_E_CONFLICT = 0x80040802,
 	SYNC_E_NO_PARENT = 0x80040803,
+	ecNPQuotaExceeded = 0x80040900, /* MAPI_E_NAMED_PROP_QUOTA_EXCEEDED */
 	NotImplemented = 0x80040FFF, /* _not_ the same as ecNotSupported/ecNotImplemented/MAPI_E_NOT_IMPLEMENTED */
 	ecAccessDenied = 0x80070005, /* MAPI_E_NO_ACCESS */
 	ecMAPIOOM = 0x8007000E, /* MAPI_E_NOT_ENOUGH_MEMORY */

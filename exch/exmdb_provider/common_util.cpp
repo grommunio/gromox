@@ -5191,6 +5191,7 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 		if (sqlite3_column_int64(pstmt, 0) + ppropnames->count >
 			MAXIMUM_PROPNAME_NUMBER) {
 			b_create = FALSE;
+			/* at some point we may want to return ecNPQuotaExceeded */
 		}
 	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT propid FROM "
