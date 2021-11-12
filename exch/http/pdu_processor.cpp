@@ -3754,18 +3754,6 @@ static int pdu_processor_load_library(const char* plugin_name)
 	return PLUGIN_LOAD_OK;
 }
 
-int pdu_processor_console_talk(int argc, char** argv, char *result, int length)
-{
-	auto pplugin = std::find_if(g_plugin_list.cbegin(), g_plugin_list.cend(),
-	               [&](const PROC_PLUGIN &p) { return p.file_name == argv[0]; });
-	if (pplugin == g_plugin_list.cend())
-		return PLUGIN_NO_FILE;
-	if (pplugin->talk_main == nullptr)
-		return PLUGIN_NO_TALK;
-	pplugin->talk_main(argc, argv, result, length);
-	return PLUGIN_TALK_OK;
-}
-
 void pdu_processor_reload()
 {
 	for (const auto &p : g_plugin_list)

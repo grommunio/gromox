@@ -122,8 +122,6 @@ void pdu_processor_rts_echo(char *pbuff);
 BOOL pdu_processor_rts_flowcontrolack_withdestination(
 	DCERPC_CALL *pcall, uint32_t bytes_received,
 	uint32_t available_window, const char *channel_cookie);
-int pdu_processor_console_talk(int argc, char** argv,
-	char *result, int length);
 void* pdu_processor_ndr_stack_alloc(int type, size_t size);
 extern BOOL pdu_processor_rpc_new_environment();
 extern void pdu_processor_rpc_free_environment();
