@@ -947,15 +947,15 @@ static BOOL tnef_set_attribute_address(TPROPVAL_ARRAY *pproplist,
 }
 
 static void tnef_convert_from_propname(const PROPERTY_NAME *ppropname,
-	char *tag_string)
+    char *tag_string, size_t tag_size)
 {
 	char tmp_guid[64];
 	
 	guid_to_string(&ppropname->guid, tmp_guid, 64);
 	if (ppropname->kind == MNID_ID)
-		snprintf(tag_string, 256, "%s:lid:%u", tmp_guid, ppropname->lid);
+		snprintf(tag_string, tag_size, "%s:lid:%u", tmp_guid, ppropname->lid);
 	else
-		snprintf(tag_string, 256, "%s:name:%s", tmp_guid, ppropname->pname);
+		snprintf(tag_string, tag_size, "%s:name:%s", tmp_guid, ppropname->pname);
 	HX_strlower(tag_string);
 }
 
@@ -1124,8 +1124,8 @@ static bool rec_namedprop(propmap_t &map, uint16_t &last_propid, TNEF_PROPVAL *t
 {
 	if (tnef_pv->ppropname == nullptr)
 		return true;
-	char ts[256];
-	tnef_convert_from_propname(tnef_pv->ppropname, ts);
+	char ts[NP_STRBUF_SIZE];
+	tnef_convert_from_propname(tnef_pv->ppropname, ts, arsizeof(ts));
 	auto iter = as_const(map).find(ts);
 	if (iter != map.end()) {
 		tnef_pv->propid = iter->second;

@@ -70,8 +70,6 @@ static BOOL logon_object_enlarge_propname_hash(logon_object *plogon)
 static BOOL logon_object_cache_propname(logon_object *plogon,
 	uint16_t propid, const PROPERTY_NAME *ppropname)
 {
-	char tmp_guid[64];
-	char tmp_string[256];
 	PROPERTY_NAME tmp_name;
 	
 	if (NULL == plogon->ppropid_hash) {
@@ -90,6 +88,7 @@ static BOOL logon_object_cache_propname(logon_object *plogon,
 	}
 	tmp_name.kind = ppropname->kind;
 	tmp_name.guid = ppropname->guid;
+	char tmp_string[NP_STRBUF_SIZE], tmp_guid[64];
 	guid_to_string(&ppropname->guid, tmp_guid, 64);
 	switch (ppropname->kind) {
 	case MNID_ID:
@@ -103,7 +102,7 @@ static BOOL logon_object_cache_propname(logon_object *plogon,
 		if (NULL == tmp_name.pname) {
 			return FALSE;
 		}
-		snprintf(tmp_string, 256, "%s:name:%s", tmp_guid, ppropname->pname);
+		snprintf(tmp_string, arsizeof(tmp_string), "%s:name:%s", tmp_guid, ppropname->pname);
 		break;
 	default:
 		return FALSE;
@@ -292,21 +291,20 @@ BOOL logon_object::get_named_propid(BOOL b_create,
     const PROPERTY_NAME *ppropname, uint16_t *ppropid)
 {
 	GUID guid;
-	char tmp_guid[64];
-	char tmp_string[256];
 	
 	rop_util_get_common_pset(PS_MAPI, &guid);
 	if (0 == guid_compare(&ppropname->guid, &guid)) {
 		*ppropid = ppropname->kind == MNID_ID ? ppropname->lid : 0;
 		return TRUE;
 	}
+	char tmp_string[NP_STRBUF_SIZE], tmp_guid[64];
 	guid_to_string(&ppropname->guid, tmp_guid, 64);
 	switch (ppropname->kind) {
 	case MNID_ID:
 		snprintf(tmp_string, arsizeof(tmp_string), "%s:lid:%u", tmp_guid, ppropname->lid);
 		break;
 	case MNID_STRING:
-		snprintf(tmp_string, 256, "%s:name:%s", tmp_guid, ppropname->pname);
+		snprintf(tmp_string, arsizeof(tmp_string), "%s:name:%s", tmp_guid, ppropname->pname);
 		HX_strlower(tmp_string);
 		break;
 	default:
@@ -337,8 +335,6 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 {
 	int i;
 	GUID guid;
-	char tmp_guid[64];
-	char tmp_string[256];
 	PROPID_ARRAY tmp_propids;
 	PROPNAME_ARRAY tmp_propnames;
 	
@@ -369,14 +365,15 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 			pindex_map[i] = i;
 			continue;
 		}
+		char tmp_string[NP_STRBUF_SIZE], tmp_guid[64];
 		guid_to_string(&ppropnames->ppropname[i].guid, tmp_guid, 64);
 		switch (ppropnames->ppropname[i].kind) {
 		case MNID_ID:
-			snprintf(tmp_string, 256, "%s:lid:%u",
+			snprintf(tmp_string, arsizeof(tmp_string), "%s:lid:%u",
 			         tmp_guid, ppropnames->ppropname[i].lid);
 			break;
 		case MNID_STRING:
-			snprintf(tmp_string, 256, "%s:name:%s",
+			snprintf(tmp_string, arsizeof(tmp_string), "%s:name:%s",
 				tmp_guid, ppropnames->ppropname[i].pname);
 			HX_strlower(tmp_string);
 			break;
