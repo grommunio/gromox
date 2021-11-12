@@ -457,19 +457,6 @@ void hpm_processor_free()
 	g_plugin_names = NULL;
 }
 
-int hpm_processor_console_talk(int argc,
-	char** argv, char *result, int length)
-{
-	auto pplugin = std::find_if(g_plugin_list.cbegin(), g_plugin_list.cend(),
-	               [&](const HPM_PLUGIN &p) { return p.file_name == argv[0]; });
-	if (pplugin == g_plugin_list.cend())
-		return PLUGIN_NO_FILE;
-	if (pplugin->talk_main == nullptr)
-		return PLUGIN_NO_TALK;
-	pplugin->talk_main(argc, argv, result, length);
-	return PLUGIN_TALK_OK;
-}
-
 BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 {
 	int tmp_len;

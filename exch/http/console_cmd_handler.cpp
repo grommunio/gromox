@@ -221,24 +221,6 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 	return TRUE;
 }
 
-BOOL cmd_handler_hpm_plugins(int argc, char** argv)
-{
-	char buf[TALK_BUFFER_LEN];
-	
-	memset(buf, 0, TALK_BUFFER_LEN);
-	if (PLUGIN_TALK_OK == 
-		hpm_processor_console_talk(argc, argv, buf, TALK_BUFFER_LEN)) {
-		if (strlen(buf) == 0) {
-			strncpy(buf, "550 proc plugin console talk is error "
-					"implemented", sizeof(buf) - 1);
-			buf[sizeof(buf) - 1] = '\0';
-		}
-		console_server_reply_to_client("%s", buf);
-		return TRUE;
-	}
-	return FALSE;
-}
-
 BOOL cmd_handler_service_plugins(int argc, char** argv)
 {
 	char buf[TALK_BUFFER_LEN];

@@ -26,7 +26,6 @@ extern void hpm_processor_init(int context_num, const char *plugins_path, const 
 extern int hpm_processor_run();
 extern void hpm_processor_stop();
 extern void hpm_processor_free();
-int hpm_processor_console_talk(int argc, char **argv, char *result, int length);
 BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp);
 void hpm_processor_put_context(HTTP_CONTEXT *phttp);
 BOOL hpm_processor_check_context(HTTP_CONTEXT *phttp);
