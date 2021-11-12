@@ -705,10 +705,21 @@ static uint32_t az_nid_from_mst(libpff_item_t *item, uint32_t proptag)
 	return le32p_to_cpu(&eid[20]);
 }
 
-static void az_lookup_specials(libpff_file_t *file)
+static void az_fmap_standard(libpff_file_t *file, const char *filename)
 {
-	libpff_item_ptr mst;
+	char timebuf[64];
+	time_t now = time(nullptr);
+	auto tm = localtime(&now);
+	strftime(timebuf, arsizeof(timebuf), " @%FT%T", tm);
+	g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{true, PRIVATE_FID_IPMSUBTREE,
+		"Import of "s + HX_basename(filename) + timebuf});
+}
 
+static void az_fmap_splice(libpff_file_t *file)
+{
+	g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{false, PRIVATE_FID_ROOT, "FID_ROOT"});
+
+	libpff_item_ptr mst;
 	if (libpff_file_get_message_store(file, &~unique_tie(mst), nullptr) < 1)
 		return;
 	auto nid = az_nid_from_mst(mst.get(), PR_IPM_SUBTREE_ENTRYID);
@@ -726,22 +737,6 @@ static void az_lookup_specials(libpff_file_t *file)
 	nid = az_nid_from_mst(mst.get(), PR_FINDER_ENTRYID);
 	if (nid != 0)
 		g_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_FINDER, "FID_FINDER"});
-}
-
-static void az_fmap_standard(libpff_file_t *file, const char *filename)
-{
-	char timebuf[64];
-	time_t now = time(nullptr);
-	auto tm = localtime(&now);
-	strftime(timebuf, arsizeof(timebuf), " @%FT%T", tm);
-	g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{true, PRIVATE_FID_IPMSUBTREE,
-		"Import of "s + HX_basename(filename) + timebuf});
-}
-
-static void az_fmap_splice(libpff_file_t *file)
-{
-	g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{false, PRIVATE_FID_ROOT, "FID_ROOT"});
-	az_lookup_specials(file);
 }
 
 static void npg_ent(gi_name_map &map, libpff_record_entry_t *rent)
