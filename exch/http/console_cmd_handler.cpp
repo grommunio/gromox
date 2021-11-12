@@ -169,29 +169,29 @@ static void cmd_handler_dump_interfaces(DCERPC_INTERFACE *pinterface)
 	const char *format_string;
 	char uuid_string[64];
 	
-	if (g_plugname_buffer_size < PLUG_BUFFER_SIZE) {
-		guid_to_string(&pinterface->uuid, uuid_string, 64);
-		version = pinterface->version;
-		if (0 == (version&0xFFFF0000)) {
-			format_string = "\t\tinterface(%s) %s(%u.%u)\r\n";
-		} else {
-			format_string = "\t\tinterface(%s) %s(%u.%02u)\r\n";
-		}
-		g_plugname_buffer_size += gx_snprintf(g_plugname_buffer +
-			g_plugname_buffer_size, PLUG_BUFFER_SIZE - g_plugname_buffer_size,
-			format_string, pinterface->name, uuid_string,
-			version&0xFFFF, (version&0xFFFF0000)>>16);
+	if (g_plugname_buffer_size >= PLUG_BUFFER_SIZE)
+		return;
+	guid_to_string(&pinterface->uuid, uuid_string, 64);
+	version = pinterface->version;
+	if (0 == (version & 0xFFFF0000)) {
+		format_string = "\t\tinterface(%s) %s(%u.%u)\r\n";
+	} else {
+		format_string = "\t\tinterface(%s) %s(%u.%02u)\r\n";
 	}
+	g_plugname_buffer_size += gx_snprintf(g_plugname_buffer +
+		g_plugname_buffer_size, PLUG_BUFFER_SIZE - g_plugname_buffer_size,
+		format_string, pinterface->name, uuid_string,
+		version & 0xFFFF, (version & 0xFFFF0000) >> 16);
 }
 
 static void cmd_handler_dump_endpoints(DCERPC_ENDPOINT *pendpoint)
 {
-	if (g_plugname_buffer_size < PLUG_BUFFER_SIZE) {
-		g_plugname_buffer_size += gx_snprintf(g_plugname_buffer +
-			g_plugname_buffer_size, PLUG_BUFFER_SIZE - g_plugname_buffer_size,
-			"\tendpoint %s:%d:\r\n", pendpoint->host, pendpoint->tcp_port);
-		pdu_processor_enum_interfaces(pendpoint, cmd_handler_dump_interfaces);
-	}
+	if (g_plugname_buffer_size >= PLUG_BUFFER_SIZE)
+		return;
+	g_plugname_buffer_size += gx_snprintf(g_plugname_buffer +
+		g_plugname_buffer_size, PLUG_BUFFER_SIZE - g_plugname_buffer_size,
+		"\tendpoint %s:%d:\r\n", pendpoint->host, pendpoint->tcp_port);
+	pdu_processor_enum_interfaces(pendpoint, cmd_handler_dump_interfaces);
 }
 
 BOOL cmd_handler_rpc_control(int argc, char** argv)
