@@ -106,16 +106,14 @@ BOOL emsmdb_interface_check_acxh(ACXH *pacxh,
 	guid_to_string(&pacxh->guid, guid_string, sizeof(guid_string));
 	std::lock_guard gl_hold(g_lock);
 	auto phandle = g_handle_hash->query<HANDLE_DATA>(guid_string);
-	if (NULL != phandle) {
-		if (TRUE == b_touch) {
-			time(&phandle->last_time);
-		}
-		strcpy(username, phandle->username);
-		*pcxr = phandle->cxr;
-		return TRUE;
-	} else {
-		return FALSE;
+	if (phandle == nullptr)
+		return false;
+	if (TRUE == b_touch) {
+		time(&phandle->last_time);
 	}
+	strcpy(username, phandle->username);
+	*pcxr = phandle->cxr;
+	return TRUE;
 }
 
 BOOL emsmdb_interface_check_notify(ACXH *pacxh)
