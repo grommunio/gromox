@@ -110,6 +110,7 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	pfolder_id[12] = rop_util_make_eid_ex(1, PRIVATE_FID_SHORTCUTS);
 	
 	*preplica_id = 0xFFFF;
+	/* {XXXXXXXX-7f26-edf8-b32a-ce7a6da2e3b5} */
 	preplica_guid->time_low = user_id;
 	preplica_guid->time_mid = 0x7f26;
 	preplica_guid->time_hi_and_version = 0xedf8;
@@ -205,17 +206,18 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	pfolder_id[1]  = rop_util_make_eid_ex(1, PUBLIC_FID_IPMSUBTREE);
 	pfolder_id[2]  = rop_util_make_eid_ex(1, PUBLIC_FID_NONIPMSUBTREE);
 	pfolder_id[3]  = rop_util_make_eid_ex(1, PUBLIC_FID_EFORMSREGISTRY);
-	pfolder_id[4]  = 0;
-	pfolder_id[5]  = 0;
-	pfolder_id[6]  = 0;
-	pfolder_id[7]  = 0;
-	pfolder_id[8]  = 0;
-	pfolder_id[9]  = 0;
+	pfolder_id[4]  = 0; /* Free/Busy data */
+	pfolder_id[5]  = 0; /* Offline Address Book data */
+	pfolder_id[6]  = 0; /* EForms Registry for the user's locale */
+	pfolder_id[7]  = 0; /* Local site's Free/Busy data */
+	pfolder_id[8]  = 0; /* Local site's Offline Addressbook data */
+	pfolder_id[9]  = 0; /* NTTP article index */
 	pfolder_id[10] = 0;
 	pfolder_id[11] = 0;
 	pfolder_id[12] = 0;
 	
 	*preplica_id = 0xFFFF;
+	/* {XXXXXXXX-e361-8fde-a23c-c4f67e1d2fc6} */
 	preplica_guid->time_low = domain_id;
 	preplica_guid->time_mid = 0xe361;
 	preplica_guid->time_hi_and_version = 0x8fde;
