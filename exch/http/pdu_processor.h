@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <string>
 #include <gromox/dcerpc.hpp>
 #include <gromox/ndr.hpp>
@@ -44,14 +45,13 @@ struct DCERPC_ENDPOINT {
 
 /* virtual connection to DCE RPC server, actually only data structure of context */
 struct PDU_PROCESSOR {
-	DOUBLE_LIST_NODE node;
-	int async_num;
-	DCERPC_ENDPOINT *pendpoint;
-	uint32_t assoc_group_id; 	/* we do not support association mechanism */
-	DOUBLE_LIST context_list;
-	DOUBLE_LIST auth_list;
-	DOUBLE_LIST fragmented_list;
-	uint32_t cli_max_recv_frag;	/* the maximum size the client wants to receive */
+	~PDU_PROCESSOR();
+
+	int async_num = 0;
+	uint32_t assoc_group_id = 0; /* we do not support association mechanism */
+	uint32_t cli_max_recv_frag = 0; /* the maximum size the client wants to receive */
+	DCERPC_ENDPOINT *pendpoint = nullptr;
+	DOUBLE_LIST context_list{}, auth_list{}, fragmented_list{};
 };
 
 struct DCERPC_AUTH_CONTEXT {
@@ -103,8 +103,8 @@ extern void pdu_processor_init(int connection_num, int connection_ratio,
 extern int pdu_processor_run();
 extern void pdu_processor_stop();
 extern void pdu_processor_free();
-PDU_PROCESSOR* pdu_processor_create(const char *host, int tcp_port);
-void pdu_processor_destroy(PDU_PROCESSOR *pprocessor);
+extern std::unique_ptr<PDU_PROCESSOR> pdu_processor_create(const char *host, int tcp_port);
+extern void pdu_processor_destroy(std::unique_ptr<PDU_PROCESSOR> &&);
 int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	uint16_t length, DCERPC_CALL **ppcall);
 int pdu_processor_rts_input(const char *pbuff, uint16_t length,

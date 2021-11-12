@@ -60,7 +60,7 @@ struct VIRTUAL_CONNECTION {
 	std::atomic<int> reference{0};
 	std::mutex lock;
 	bool locked = false;
-	PDU_PROCESSOR *pprocessor = nullptr;
+	std::unique_ptr<PDU_PROCESSOR> pprocessor;
 	HTTP_CONTEXT *pcontext_in = nullptr, *pcontext_insucc = nullptr;
 	HTTP_CONTEXT *pcontext_out = nullptr, *pcontext_outsucc = nullptr;
 };
@@ -152,7 +152,7 @@ static void http_parser_ssl_id(CRYPTO_THREADID* id)
 VIRTUAL_CONNECTION::~VIRTUAL_CONNECTION()
 {
 	if (pprocessor != nullptr)
-		pdu_processor_destroy(pprocessor);
+		pdu_processor_destroy(std::move(pprocessor));
 }
 
 /* 
@@ -1562,7 +1562,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 					"virtual connection error in hash table");
 				return X_RUNOFF;
 			}
-			result = pdu_processor_input(pvconnection->pprocessor,
+			result = pdu_processor_input(pvconnection->pprocessor.get(),
 				 static_cast<char *>(pbuff), frag_length, &pcall);
 			pchannel_in->available_window -= frag_length;
 			pchannel_in->bytes_received += frag_length;

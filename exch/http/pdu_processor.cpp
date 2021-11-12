@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <list>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <typeinfo>
@@ -97,13 +98,12 @@ static DOUBLE_LIST g_endpoint_list;
 static bool g_ign_loaderr;
 static std::unique_ptr<INT_HASH_TABLE> g_async_hash;
 static LIB_BUFFER *g_call_allocator;
-static DOUBLE_LIST g_processor_list;
+static std::list<PDU_PROCESSOR *> g_processor_list; /* ptrs owned by VIRTUAL_CONNECTION */
 static LIB_BUFFER *g_auth_allocator;
 static LIB_BUFFER *g_async_allocator;
 static LIB_BUFFER *g_bnode_allocator;
 static LIB_BUFFER *g_stack_allocator;
 static LIB_BUFFER *g_context_allocator;
-static LIB_BUFFER *g_processor_allocator;
 static const char *const *g_plugin_names;
 static const SYNTAX_ID g_transfer_syntax_ndr = 
 	/* {8a885d04-1ceb-11c9-9fe8-08002b104860} */
@@ -188,7 +188,6 @@ void pdu_processor_init(int connection_num, int connection_ratio,
 	g_plugin_names = names;
 	g_ign_loaderr = ignerr;
 	double_list_init(&g_endpoint_list);
-	double_list_init(&g_processor_list);
 }
 
 int pdu_processor_run()
@@ -213,11 +212,6 @@ int pdu_processor_run()
 		sizeof(DCERPC_AUTH_CONTEXT), context_num, TRUE);
 	if (NULL == g_auth_allocator) {
 		return -3;
-	}
-	g_processor_allocator = lib_buffer_init(
-		sizeof(PDU_PROCESSOR), g_connection_num, TRUE);
-	if (NULL == g_processor_allocator) {
-		return -4;
 	}
 	g_bnode_allocator = lib_buffer_init(
 		sizeof(BLOB_NODE), g_connection_num*32, TRUE);
@@ -293,13 +287,14 @@ void pdu_processor_stop()
 {
 	DOUBLE_LIST_NODE *pnode;
 
-	auto z = double_list_get_nodes_num(&g_processor_list);
-	if (z > 0)
+	auto z = g_processor_list.size();
+	if (z > 0) {
 		/* http_parser_stop runs before pdu_processor_stop, so all
 		 * VIRTUAL_CONNECTION objects ought to be gone already. */
 		fprintf(stderr, "W-1573: %zu PDU_PROCESSORs remaining\n", z);
+		g_processor_list.clear();
+	}
 
-	double_list_free(&g_processor_list);
 	g_plugin_list.clear();
 	while ((pnode = double_list_pop_front(&g_endpoint_list)) != nullptr) {
 		double_list_free(&((DCERPC_ENDPOINT*)pnode->pdata)->interface_list);
@@ -330,10 +325,6 @@ void pdu_processor_stop()
 		lib_buffer_free(g_auth_allocator);
 		g_auth_allocator = NULL;
 	}
-	if (NULL != g_processor_allocator) {
-		lib_buffer_free(g_processor_allocator);
-		g_processor_allocator = NULL;
-	}
 	g_async_hash.reset();
 	pthread_key_delete(g_call_key);
 	pthread_key_delete(g_stack_key);
@@ -342,7 +333,6 @@ void pdu_processor_stop()
 void pdu_processor_free()
 {
 	double_list_free(&g_endpoint_list);
-	double_list_free(&g_processor_list);
 	g_plugins_path[0] = '\0';
 	g_plugin_names = NULL;
 }
@@ -395,17 +385,19 @@ static DCERPC_INTERFACE* pdu_processor_find_interface_by_uuid(
 	return NULL;
 }
 
-PDU_PROCESSOR* pdu_processor_create(const char *host, int tcp_port)
+std::unique_ptr<PDU_PROCESSOR>
+pdu_processor_create(const char *host, int tcp_port)
 {
+	std::unique_ptr<PDU_PROCESSOR> pprocessor;
 	DOUBLE_LIST_NODE *pnode;
 	DCERPC_ENDPOINT *pendpoint;
 	
-	auto pprocessor = lib_buffer_get<PDU_PROCESSOR>(g_processor_allocator);
-	if (NULL == pprocessor) {
+	try {
+		pprocessor = std::make_unique<PDU_PROCESSOR>();
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1574: ENOMEM\n");
 		return NULL;
 	}
-	memset(pprocessor, 0, sizeof(PDU_PROCESSOR));
-	pprocessor->node.pdata = pprocessor;
 	for (pnode=double_list_get_head(&g_endpoint_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_endpoint_list, pnode)) {
 		pendpoint = (DCERPC_ENDPOINT*)pnode->pdata;
@@ -416,16 +408,16 @@ PDU_PROCESSOR* pdu_processor_create(const char *host, int tcp_port)
 			double_list_init(&pprocessor->fragmented_list);
 			pprocessor->pendpoint = pendpoint;
 			std::lock_guard li_hold(g_list_lock);
-			double_list_append_as_tail(&g_processor_list, &pprocessor->node);
+			g_processor_list.push_back(pprocessor.get());
 			return pprocessor;
 		}
 	}
-	lib_buffer_put(g_processor_allocator, pprocessor);
 	return NULL;
 }
 
-static void pdu_processor_destroy1(PDU_PROCESSOR *pprocessor)
+PDU_PROCESSOR::~PDU_PROCESSOR()
 {
+	auto pprocessor = this;
 	uint64_t handle;
 	DCERPC_CALL *pcall;
 	DCERPC_CALL fake_call;
@@ -468,14 +460,14 @@ static void pdu_processor_destroy1(PDU_PROCESSOR *pprocessor)
 	
 	pprocessor->cli_max_recv_frag = 0;
 	std::unique_lock li_hold(g_list_lock);
-	double_list_remove(&g_processor_list, &pprocessor->node);
+	g_processor_list.remove(this);
 	li_hold.unlock();
 	pprocessor->pendpoint = NULL;
-	lib_buffer_put(g_processor_allocator, pprocessor);
 }
 
-void pdu_processor_destroy(PDU_PROCESSOR *pprocessor)
+void pdu_processor_destroy(std::unique_ptr<PDU_PROCESSOR> &&p)
 {
+	auto pprocessor = std::move(p); /* cause destruction at end of this function */
 	while (true) {
 		std::unique_lock as_hold(g_async_lock);
 		if (pprocessor->async_num <= 0) {
@@ -485,7 +477,6 @@ void pdu_processor_destroy(PDU_PROCESSOR *pprocessor)
 		as_hold.unlock();
 		usleep(100000);
 	}
-	pdu_processor_destroy1(pprocessor);
 }
 
 static void pdu_processor_set_frag_length(DATA_BLOB *pblob, uint16_t v)
