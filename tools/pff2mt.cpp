@@ -842,8 +842,16 @@ static int do_file(const char *filename) try
 		return -(errno = s);
 	}
 
-	write(STDOUT_FILENO, "GXMT0000", 8);
+	write(STDOUT_FILENO, "GXMT0001", 8);
 	uint8_t xsplice = g_splice;
+	write(STDOUT_FILENO, &xsplice, sizeof(xsplice));
+	/*
+	 * There seems to be no way to export a public store hierarchy from
+	 * EXC2019; you can only ever export individual "public folders"
+	 * (folders within IPM_SUBTREE) via Outlook - but these have no special
+	 * hierarchy anymore that is worth thinking about.
+	 */
+	xsplice = false; /* <=> not public store. */
 	write(STDOUT_FILENO, &xsplice, sizeof(xsplice));
 	g_folder_map.clear();
 	if (g_splice)

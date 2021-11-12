@@ -99,13 +99,24 @@ static void exm_read_base_maps()
 		throw YError("PG-1009: EOF on input");
 	else if (ret < 0 || static_cast<size_t>(ret) != arsizeof(magic))
 		throw YError("PG-1126: %s", strerror(errno));
-	if (memcmp(magic, "GXMT0000", 8) != 0)
+	if (memcmp(magic, "GXMT0001", 8) != 0)
 		throw YError("PG-1127: Unrecognized input format");
 	ret = fullread(STDIN_FILENO, &g_splice, sizeof(g_splice));
 	if (ret == 0)
 		throw YError("PG-1008: EOF on input");
 	else if (ret < 0 || static_cast<size_t>(ret) != sizeof(g_splice))
 		throw YError("PG-1120: %s", strerror(errno));
+	ret = fullread(STDIN_FILENO, &magic[0], 1);
+	if (ret == 0)
+		throw YError("PG-1123: EOF on input");
+	else if (ret < 0 || static_cast<size_t>(ret) != 1)
+		throw YError("PG-1124: %s", strerror(errno));
+	if (g_splice && g_public_folder && magic[0] != 1)
+		throw YError("PG-1125: Cannot satisfy splice request. The target is a public store, but input is from a private store."
+			" Remove the -s option from your kdb2mt/pff2mt command and retry.");
+	else if (g_splice && !g_public_folder && magic[0] != 0)
+		throw YError("PG-1128: Cannot satisfy splice request. The target is a private store, but input is from a public store."
+			" Remove the -s option from your kdb2mt/pff2mt command and retry.");
 
 	uint64_t xsize = 0;
 	errno = 0;

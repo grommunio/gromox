@@ -69,13 +69,15 @@ struct driver final {
 	std::unique_ptr<kdb_item> get_root_folder();
 	void fmap_setup_standard(const char *title);
 	void fmap_setup_splice();
+	void fmap_setup_splice_public();
 
 	void do_database(const char *title);
 
 	MYSQL *m_conn = nullptr;
 	uint32_t m_user_id = 0, m_store_hid = 0, m_root_hid = 0;
-	gi_folder_map_t m_folder_map;
 	unsigned int schema_vers = 0;
+	bool m_public_store = false;
+	gi_folder_map_t m_folder_map;
 };
 
 struct kdb_item final {
@@ -351,13 +353,14 @@ kdb_open_by_guid_1(std::unique_ptr<driver> &&drv, const char *guid)
 	fprintf(stderr, "Database schema n%u\n", drv->schema_vers);
 
 	/* user_id available from n61 */
-	snprintf(qstr, arsizeof(qstr), "SELECT hierarchy_id, user_id FROM stores WHERE guid=0x%.32s", guid);
+	snprintf(qstr, arsizeof(qstr), "SELECT hierarchy_id, user_id, type FROM stores WHERE guid=0x%.32s", guid);
 	res = drv->query(qstr);
 	row = res.fetch_row();
 	if (row == nullptr || row[0] == nullptr || row[1] == nullptr)
 		throw YError("PK-1014: no store by that GUID");
 	drv->m_user_id = strtoul(row[1], nullptr, 0);
 	drv->m_store_hid = strtoul(row[0], nullptr, 0);
+	drv->m_public_store = row[2] != nullptr && strtoul(row[2], nullptr, 0) == 1;
 	return std::move(drv);
 }
 
@@ -408,8 +411,8 @@ kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
 		      sqp.user.c_str(), sqp.host.c_str(), mysql_error(drv->m_conn));
 
 	auto qstr = *storeuser == '\0' ?
-	            "SELECT guid, user_id, user_name FROM stores"s :
-		    "SELECT guid, user_id, user_name FROM stores "
+	            "SELECT guid, user_id, user_name, type FROM stores"s :
+		    "SELECT guid, user_id, user_name, type FROM stores "
 		    "WHERE stores.user_name='" +
 		    sql_escape(drv->m_conn, storeuser) + "'";
 	auto res = drv->query(qstr.c_str());
@@ -539,6 +542,23 @@ void driver::fmap_setup_splice()
 	nid = hid_from_ren(*root, sfJunkEmail);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_JUNK, "FID_JUNK"});
+}
+
+void driver::fmap_setup_splice_public()
+{
+	m_folder_map.clear();
+	auto store = get_store_item();
+	auto root = get_root_folder();
+	m_folder_map.emplace(root->m_hid, tgt_folder{false, PUBLIC_FID_ROOT, "FID_ROOT"});
+	auto nid = hid_from_mst(*store, PR_IPM_SUBTREE_ENTRYID);
+	if (nid != 0)
+		m_folder_map.emplace(nid, tgt_folder{false, PUBLIC_FID_IPMSUBTREE, "FID_IPM"});
+	nid = hid_from_mst(*store, PR_NON_IPM_SUBTREE_ENTRYID);
+	if (nid != 0)
+		m_folder_map.emplace(nid, tgt_folder{false, PUBLIC_FID_NONIPMSUBTREE, "FID_NONIPM"});
+	nid = hid_from_mst(*store, PR_EFORMS_REGISTRY_ENTRYID);
+	if (nid != 0)
+		m_folder_map.emplace(nid, tgt_folder{false, PUBLIC_FID_EFORMSREGISTRY, "FID_EFORMS"});
 }
 
 void driver::fmap_setup_standard(const char *title)
@@ -943,10 +963,14 @@ static int do_item(driver &drv, unsigned int depth, const parent_desc &parent, k
 
 static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 {
-	write(STDOUT_FILENO, "GXMT0000", 8);
+	write(STDOUT_FILENO, "GXMT0001", 8);
 	uint8_t xsplice = g_splice;
 	write(STDOUT_FILENO, &xsplice, sizeof(xsplice));
-	if (g_splice)
+	xsplice = drv->m_public_store;
+	write(STDOUT_FILENO, &xsplice, sizeof(xsplice));
+	if (g_splice && drv->m_public_store)
+		drv->fmap_setup_splice_public();
+	else if (g_splice)
 		drv->fmap_setup_splice();
 	else
 		drv->fmap_setup_standard(title);
