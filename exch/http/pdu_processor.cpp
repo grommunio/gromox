@@ -293,8 +293,11 @@ void pdu_processor_stop()
 {
 	DOUBLE_LIST_NODE *pnode;
 
-	while ((pnode = double_list_get_head(&g_processor_list)) != nullptr)
-		pdu_processor_destroy(static_cast<PDU_PROCESSOR *>(pnode->pdata));
+	auto z = double_list_get_nodes_num(&g_processor_list);
+	if (z > 0)
+		/* http_parser_stop runs before pdu_processor_stop, so all
+		 * VIRTUAL_CONNECTION objects ought to be gone already. */
+		fprintf(stderr, "W-1573: %zu PDU_PROCESSORs remaining\n", z);
 
 	double_list_free(&g_processor_list);
 	g_plugin_list.clear();
