@@ -2245,8 +2245,9 @@ BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall)
 }
 
 static BOOL pdu_processor_retrieve_conn_b1(DCERPC_CALL *pcall,
-	char *connection_cookie, char *channel_cookie, uint32_t *plife_time,
-	uint32_t *pclient_keepalive, char *associationgroupid)
+    char *conn_cookie, size_t conn_ck_size, char *chan_cookie,
+    size_t chan_ck_size, uint32_t *plife_time, uint32_t *pclient_keepalive,
+    char *associationgroupid, size_t gid_size)
 {
 	DCERPC_RTS *prts;
 	
@@ -2264,13 +2265,11 @@ static BOOL pdu_processor_retrieve_conn_b1(DCERPC_CALL *pcall,
 	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[1].command.cookie, connection_cookie, 64);
-	
+	guid_to_string(&prts->commands[1].command.cookie, conn_cookie, conn_ck_size);
 	if (RTS_CMD_COOKIE != prts->commands[2].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[2].command.cookie, channel_cookie, 64);
-	
+	guid_to_string(&prts->commands[2].command.cookie, chan_cookie, chan_ck_size);
 	if (RTS_CMD_CHANNEL_LIFETIME != prts->commands[3].command_type) {
 		return FALSE;
 	}
@@ -2286,13 +2285,13 @@ static BOOL pdu_processor_retrieve_conn_b1(DCERPC_CALL *pcall,
 		return FALSE;
 	}
 	guid_to_string(&prts->commands[5].command.associationgroupid,
-		associationgroupid, 64);
-	
+		associationgroupid, gid_size);
 	return TRUE;
 }
 
 static BOOL pdu_processor_retrieve_conn_a1(DCERPC_CALL *pcall,
-	char *connection_cookie, char *channel_cookie, uint32_t *pwindow_size)
+    char *conn_cookie, size_t conn_ck_size, char *chan_cookie,
+    size_t chan_ck_size, uint32_t *pwindow_size)
 {
 	DCERPC_RTS *prts;
 	
@@ -2309,13 +2308,11 @@ static BOOL pdu_processor_retrieve_conn_a1(DCERPC_CALL *pcall,
 	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[1].command.cookie, connection_cookie, 64);
-	
+	guid_to_string(&prts->commands[1].command.cookie, conn_cookie, conn_ck_size);
 	if (RTS_CMD_COOKIE != prts->commands[2].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[2].command.cookie, channel_cookie, 64);
-	
+	guid_to_string(&prts->commands[2].command.cookie, chan_cookie, chan_ck_size);
 	if (RTS_CMD_RECEIVE_WINDOW_SIZE != prts->commands[3].command_type) {
 		return FALSE;
 	}
@@ -2325,7 +2322,8 @@ static BOOL pdu_processor_retrieve_conn_a1(DCERPC_CALL *pcall,
 }
 
 static BOOL pdu_processor_retrieve_inr2_a1(DCERPC_CALL *pcall,
-	char *connection_cookie, char *pred_cookie, char *succ_cookie)
+    char *conn_cookie, size_t conn_ck_size, char *pred_cookie,
+    size_t pred_ck_size, char *succ_cookie, size_t succ_ck_size)
 {
 	DCERPC_RTS *prts;
 	
@@ -2345,23 +2343,20 @@ static BOOL pdu_processor_retrieve_inr2_a1(DCERPC_CALL *pcall,
 	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[1].command.cookie, connection_cookie, 64);
-	
+	guid_to_string(&prts->commands[1].command.cookie, conn_cookie, conn_ck_size);
 	if (RTS_CMD_COOKIE != prts->commands[2].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[2].command.cookie, pred_cookie, 64);
-	
+	guid_to_string(&prts->commands[2].command.cookie, pred_cookie, pred_ck_size);
 	if (RTS_CMD_COOKIE != prts->commands[3].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[3].command.cookie, succ_cookie, 64);
-	
+	guid_to_string(&prts->commands[3].command.cookie, succ_cookie, succ_ck_size);
 	return TRUE;
 }
 
 static BOOL pdu_processor_retrieve_inr2_a5(DCERPC_CALL *pcall,
-	char *succ_cookie)
+    char *succ_cookie, size_t succ_ck_size)
 {
 	DCERPC_RTS *prts;
 	
@@ -2378,13 +2373,12 @@ static BOOL pdu_processor_retrieve_inr2_a5(DCERPC_CALL *pcall,
 	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[1].command.cookie, succ_cookie, 64);
-	
+	guid_to_string(&prts->commands[1].command.cookie, succ_cookie, succ_ck_size);
 	return TRUE;
 }
 
 static BOOL pdu_processor_retrieve_outr2_a7(DCERPC_CALL *pcall,
-	char *succ_cookie)
+    char *succ_cookie, size_t succ_ck_size)
 {
 	DCERPC_RTS *prts;
 	
@@ -2404,8 +2398,7 @@ static BOOL pdu_processor_retrieve_outr2_a7(DCERPC_CALL *pcall,
 	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[1].command.cookie, succ_cookie, 64);
-	
+	guid_to_string(&prts->commands[1].command.cookie, succ_cookie, succ_ck_size);
 	if (RTS_CMD_VERSION != prts->commands[2].command_type) {
 		return FALSE;
 	}
@@ -2414,8 +2407,9 @@ static BOOL pdu_processor_retrieve_outr2_a7(DCERPC_CALL *pcall,
 }
 
 static BOOL pdu_processor_retrieve_outr2_a3(DCERPC_CALL *pcall,
-	char *connection_cookie, char *pred_cookie, char *succ_cookie,
-	uint32_t *pwindow_size)
+    char *conn_cookie, size_t conn_ck_size, char *pred_cookie,
+    size_t pred_ck_size, char *succ_cookie, size_t succ_ck_size,
+    uint32_t *pwindow_size)
 {
 	DCERPC_RTS *prts;
 	
@@ -2435,18 +2429,15 @@ static BOOL pdu_processor_retrieve_outr2_a3(DCERPC_CALL *pcall,
 	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[1].command.cookie, connection_cookie, 64);
-	
+	guid_to_string(&prts->commands[1].command.cookie, conn_cookie, conn_ck_size);
 	if (RTS_CMD_COOKIE != prts->commands[2].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[2].command.cookie, pred_cookie, 64);
-	
+	guid_to_string(&prts->commands[2].command.cookie, pred_cookie, pred_ck_size);
 	if (RTS_CMD_COOKIE != prts->commands[3].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[3].command.cookie, succ_cookie, 64);
-		
+	guid_to_string(&prts->commands[3].command.cookie, succ_cookie, succ_ck_size);
 	if (RTS_CMD_RECEIVE_WINDOW_SIZE != prts->commands[4].command_type) {
 		return FALSE;
 	}
@@ -2888,10 +2879,10 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
-			if (FALSE == pdu_processor_retrieve_conn_a1(pcall,
-				pchannel_out->connection_cookie,
-				pchannel_out->channel_cookie,
-				&pchannel_out->window_size)) {
+			if (!pdu_processor_retrieve_conn_a1(pcall,
+			    pchannel_out->connection_cookie, arsizeof(pchannel_out->connection_cookie),
+			    pchannel_out->channel_cookie, arsizeof(pchannel_out->channel_cookie),
+			    &pchannel_out->window_size)) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2917,10 +2908,11 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			}
 			
 			/* process outr2/a3 rts pdu and do recycling */
-			if (FALSE == pdu_processor_retrieve_outr2_a3(pcall,
-				pchannel_out->connection_cookie, channel_cookie,
-				pchannel_out->channel_cookie,
-				&pchannel_out->window_size)) {
+			if (!pdu_processor_retrieve_outr2_a3(pcall,
+			    pchannel_out->connection_cookie, arsizeof(pchannel_out->connection_cookie),
+			    channel_cookie, arsizeof(channel_cookie),
+			    pchannel_out->channel_cookie, arsizeof(pchannel_out->channel_cookie),
+			    &pchannel_out->window_size)) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2961,12 +2953,11 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			}
 			
 			/* process conn/b1 rts pdu and do connection to out channel */ 
-			if (FALSE == pdu_processor_retrieve_conn_b1(pcall,
-				pchannel_in->connection_cookie,
-				pchannel_in->channel_cookie,
-				&pchannel_in->life_time,
-				&pchannel_in->client_keepalive,
-				pchannel_in->assoc_group_id)) {
+			if (!pdu_processor_retrieve_conn_b1(pcall,
+			    pchannel_in->connection_cookie, arsizeof(pchannel_in->connection_cookie),
+			    pchannel_in->channel_cookie, arsizeof(pchannel_in->channel_cookie),
+			    &pchannel_in->life_time, &pchannel_in->client_keepalive,
+			    pchannel_in->assoc_group_id, arsizeof(pchannel_in->assoc_group_id))) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2989,9 +2980,10 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			}
 			
 			/* process inr2/a1 rts pdu and do recycling */
-			if (FALSE == pdu_processor_retrieve_inr2_a1(pcall,
-				pchannel_in->connection_cookie, channel_cookie,
-				pchannel_in->channel_cookie)) {
+			if (!pdu_processor_retrieve_inr2_a1(pcall,
+			    pchannel_in->connection_cookie, arsizeof(pchannel_in->connection_cookie),
+			    channel_cookie, arsizeof(channel_cookie),
+			    pchannel_in->channel_cookie, arsizeof(pchannel_in->channel_cookie))) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -3042,8 +3034,8 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				return PDU_PROCESSOR_ERROR;
 			}
 			
-			if (FALSE == pdu_processor_retrieve_inr2_a5(pcall,
-				channel_cookie)) {
+			if (!pdu_processor_retrieve_inr2_a5(pcall,
+			    channel_cookie, arsizeof(channel_cookie))) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -3071,8 +3063,8 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_INPUT;
 			} else if (RTS_FLAG_OUT_CHANNEL == pcall->pkt.payload.rts.flags) {
-				if (FALSE == pdu_processor_retrieve_outr2_a7(pcall,
-					channel_cookie)) {
+				if (!pdu_processor_retrieve_outr2_a7(pcall,
+				    channel_cookie, arsizeof(channel_cookie))) {
 					pdu_processor_free_call(pcall);
 					return PDU_PROCESSOR_ERROR;
 				}
