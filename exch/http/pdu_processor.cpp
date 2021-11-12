@@ -291,43 +291,11 @@ static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
 
 void pdu_processor_stop()
 {
-	uint64_t handle;
 	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *pnode1;
-	DCERPC_CONTEXT *pcontext;
-	PDU_PROCESSOR *pprocessor;
-	DCERPC_AUTH_CONTEXT *pauth_ctx;
-	
-	while ((pnode = double_list_pop_front(&g_processor_list)) != nullptr) {
-		pprocessor = (PDU_PROCESSOR*)pnode->pdata;
-		while ((pnode1 = double_list_pop_front(&pprocessor->context_list)) != nullptr) {
-			pcontext = (DCERPC_CONTEXT*)pnode1->pdata;
-			if (NULL != pcontext->pinterface->unbind) {
-				handle = pcontext->assoc_group_id;
-				handle <<= 32;
-				handle |= pcontext->context_id;
-				pcontext->pinterface->unbind(handle);
-			}
-			pdu_processor_free_context(pcontext);
-		}
-		double_list_free(&pprocessor->context_list);
-		
-		while ((pnode = double_list_pop_front(&pprocessor->auth_list)) != nullptr) {
-			pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
-			pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
-			if (NULL != pauth_ctx->pntlmssp) {
-				ntlmssp_destroy(pauth_ctx->pntlmssp);
-				pauth_ctx->pntlmssp = NULL;
-			}
-			lib_buffer_put(g_auth_allocator, pauth_ctx);
-		}
-		double_list_free(&pprocessor->auth_list);
-		
-		while ((pnode1 = double_list_pop_front(&pprocessor->fragmented_list)) != nullptr)
-			pdu_processor_free_call(static_cast<DCERPC_CALL *>(pnode1->pdata));
-		double_list_free(&pprocessor->fragmented_list);
-		lib_buffer_put(g_processor_allocator, pprocessor);
-	}
+
+	while ((pnode = double_list_get_head(&g_processor_list)) != nullptr)
+		pdu_processor_destroy(static_cast<PDU_PROCESSOR *>(pnode->pdata));
+
 	double_list_free(&g_processor_list);
 	g_plugin_list.clear();
 	while ((pnode = double_list_pop_front(&g_endpoint_list)) != nullptr) {
@@ -453,7 +421,7 @@ PDU_PROCESSOR* pdu_processor_create(const char *host, int tcp_port)
 	return NULL;
 }
 
-void pdu_processor_destroy(PDU_PROCESSOR *pprocessor)
+static void pdu_processor_destroy1(PDU_PROCESSOR *pprocessor)
 {
 	uint64_t handle;
 	DCERPC_CALL *pcall;
@@ -461,16 +429,6 @@ void pdu_processor_destroy(PDU_PROCESSOR *pprocessor)
 	DOUBLE_LIST_NODE *pnode;
 	DCERPC_CONTEXT *pcontext;
 	DCERPC_AUTH_CONTEXT *pauth_ctx;
-	
-	while (true) {
-		std::unique_lock as_hold(g_async_lock);
-		if (pprocessor->async_num <= 0) {
-			pprocessor->async_num = -1;
-			break;
-		}
-		as_hold.unlock();
-		usleep(100000);
-	}
 	
 	while ((pnode = double_list_pop_front(&pprocessor->context_list)) != nullptr) {
 		pcontext = (DCERPC_CONTEXT*)pnode->pdata;
@@ -511,6 +469,20 @@ void pdu_processor_destroy(PDU_PROCESSOR *pprocessor)
 	li_hold.unlock();
 	pprocessor->pendpoint = NULL;
 	lib_buffer_put(g_processor_allocator, pprocessor);
+}
+
+void pdu_processor_destroy(PDU_PROCESSOR *pprocessor)
+{
+	while (true) {
+		std::unique_lock as_hold(g_async_lock);
+		if (pprocessor->async_num <= 0) {
+			pprocessor->async_num = -1;
+			break;
+		}
+		as_hold.unlock();
+		usleep(100000);
+	}
+	pdu_processor_destroy1(pprocessor);
 }
 
 static void pdu_processor_set_frag_length(DATA_BLOB *pblob, uint16_t v)
