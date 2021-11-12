@@ -2219,7 +2219,7 @@ void http_parser_set_outchannel_flowcontrol(HTTP_CONTEXT *pcontext,
 }
 
 BOOL http_parser_recycle_inchannel(
-	HTTP_CONTEXT *pcontext, char *predecessor_cookie)
+	HTTP_CONTEXT *pcontext, const char *predecessor_cookie)
 {
 	if (CHANNEL_TYPE_IN != pcontext->channel_type) {
 		return FALSE;
@@ -2242,7 +2242,7 @@ BOOL http_parser_recycle_inchannel(
 }
 
 BOOL http_parser_recycle_outchannel(
-	HTTP_CONTEXT *pcontext, char *predecessor_cookie)
+	HTTP_CONTEXT *pcontext, const char *predecessor_cookie)
 {
 	if (CHANNEL_TYPE_OUT != pcontext->channel_type) {
 		return FALSE;

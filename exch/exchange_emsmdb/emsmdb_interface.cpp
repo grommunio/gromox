@@ -98,11 +98,10 @@ static uint32_t emsmdb_interface_get_timestamp()
 BOOL emsmdb_interface_check_acxh(ACXH *pacxh,
 	char *username, uint16_t *pcxr, BOOL b_touch)
 {
-	char guid_string[64];
-	
 	if (HANDLE_EXCHANGE_ASYNCEMSMDB != pacxh->handle_type) {
 		return FALSE;
 	}
+	char guid_string[GUIDSTR_SIZE];
 	guid_to_string(&pacxh->guid, guid_string, sizeof(guid_string));
 	std::lock_guard gl_hold(g_lock);
 	auto phandle = g_handle_hash->query<HANDLE_DATA>(guid_string);
@@ -118,11 +117,10 @@ BOOL emsmdb_interface_check_acxh(ACXH *pacxh,
 
 BOOL emsmdb_interface_check_notify(ACXH *pacxh)
 {
-	char guid_string[64];
-	
 	if (HANDLE_EXCHANGE_ASYNCEMSMDB != pacxh->handle_type) {
 		return FALSE;
 	}
+	char guid_string[GUIDSTR_SIZE];
 	guid_to_string(&pacxh->guid, guid_string, sizeof(guid_string));
 	std::lock_guard gl_hold(g_lock);
 	auto phandle = g_handle_hash->query<HANDLE_DATA>(guid_string);
@@ -132,11 +130,10 @@ BOOL emsmdb_interface_check_notify(ACXH *pacxh)
 /* called by moh_emsmdb module */
 void emsmdb_interface_touch_handle(CXH *pcxh)
 {
-	char guid_string[64];
-
 	if (HANDLE_EXCHANGE_EMSMDB != pcxh->handle_type) {
 		return;
 	}
+	char guid_string[GUIDSTR_SIZE];
 	guid_to_string(&pcxh->guid, guid_string, sizeof(guid_string));
 	std::lock_guard gl_hold(g_lock);
 	auto phandle = g_handle_hash->query<HANDLE_DATA>(guid_string);
@@ -147,11 +144,10 @@ void emsmdb_interface_touch_handle(CXH *pcxh)
 
 static HANDLE_DATA* emsmdb_interface_get_handle_data(CXH *pcxh)
 {
-	char guid_string[64];
-	
 	if (HANDLE_EXCHANGE_EMSMDB != pcxh->handle_type) {
 		return NULL;
 	}
+	char guid_string[GUIDSTR_SIZE];
 	guid_to_string(&pcxh->guid, guid_string, sizeof(guid_string));
 	while (true) {
 		std::unique_lock gl_hold(g_lock);
@@ -177,11 +173,10 @@ static void emsmdb_interface_put_handle_data(HANDLE_DATA *phandle)
 
 static HANDLE_DATA* emsmdb_interface_get_handle_notify_list(CXH *pcxh)
 {
-	char guid_string[64];
-	
 	if (HANDLE_EXCHANGE_EMSMDB != pcxh->handle_type) {
 		return NULL;
 	}
+	char guid_string[GUIDSTR_SIZE];
 	guid_to_string(&pcxh->guid, guid_string, sizeof(guid_string));
 	while (true) {
 		std::unique_lock gl_hold(g_lock);
@@ -232,7 +227,6 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	uint32_t lcid_string, uint32_t lcid_sort, uint16_t *pcxr, CXH *pcxh)
 {
 	DOUBLE_LIST tmp_list;
-	char guid_string[64];
 	HANDLE_DATA temp_handle;
 	
 	if (!common_util_verify_cpid(cpid))
@@ -249,6 +243,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	time(&temp_handle.last_time);
 	gx_strlcpy(temp_handle.username, username, GX_ARRAY_SIZE(temp_handle.username));
 	HX_strlower(temp_handle.username);
+	char guid_string[GUIDSTR_SIZE];
 	guid_to_string(&temp_handle.guid, guid_string, sizeof(guid_string));
 	std::unique_lock gl_hold(g_lock);
 	if (g_handle_hash->add(guid_string, &temp_handle) != 1)
@@ -308,13 +303,13 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 
 static void emsmdb_interface_remove_handle(CXH *pcxh)
 {
-	char guid_string[64];
 	HANDLE_DATA *phandle;
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (HANDLE_EXCHANGE_EMSMDB != pcxh->handle_type) {
 		return;
 	}
+	char guid_string[GUIDSTR_SIZE];
 	guid_to_string(&pcxh->guid, guid_string, sizeof(guid_string));
 	std::unique_lock gl_hold(g_lock);
 	while (true) {

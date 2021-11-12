@@ -192,10 +192,10 @@ BOOL MhContext::ping_response() const
 
 BOOL MhContext::failure_response(uint32_t status) const
 {
-	char text_buff[256], seq_string[40], response_buff[4096];
+	char text_buff[256], seq_string[GUIDSTR_SIZE], response_buff[4096];
 	auto current_time = time_point::clock::now();
 	auto text_len = render_content(text_buff, current_time, start_time)+8;
-	guid_to_string(&sequence_guid, seq_string, 40);
+	guid_to_string(&sequence_guid, seq_string, arsizeof(seq_string));
 	size_t response_len = StringRenderer(response_buff, sizeof(response_buff))
 	                      .add(commonHeader, request_value, request_id, client_info, session_string, current_time)
 	                      .add("Content-Length: %d\r\n", text_len)
@@ -207,11 +207,11 @@ BOOL MhContext::failure_response(uint32_t status) const
 
 BOOL MhContext::normal_response() const
 {
-	char text_buff[256], seq_string[40], chunk_string[32];
+	char text_buff[256], seq_string[GUIDSTR_SIZE], chunk_string[32];
 	char response_buff[4096];
 	auto current_time = time_point::clock::now();
 
-	guid_to_string(&sequence_guid, seq_string, 40);
+	guid_to_string(&sequence_guid, seq_string, arsizeof(seq_string));
 	size_t response_len = StringRenderer(response_buff, sizeof(response_buff))
 	                      .add(commonHeader, request_value, request_id, client_info, session_string, current_time)
 	                      .add("Transfer-Encoding: chunked\r\n")

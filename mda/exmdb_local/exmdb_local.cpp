@@ -346,8 +346,8 @@ static BOOL exmdb_local_get_propids(const PROPNAME_ARRAY *ppropnames,
 	ppropids->count = ppropnames->count;
 	ppropids->ppropid = static_cast<uint16_t *>(exmdb_local_alloc(sizeof(uint16_t) * ppropnames->count));
 	for (i=0; i<ppropnames->count; i++) {
-		char tmp_string[NP_STRBUF_SIZE], tmp_guid[64];
-		guid_to_string(&ppropnames->ppropname[i].guid, tmp_guid, 64);
+		char tmp_string[NP_STRBUF_SIZE], tmp_guid[GUIDSTR_SIZE];
+		guid_to_string(&ppropnames->ppropname[i].guid, tmp_guid, arsizeof(tmp_guid));
 		if (ppropnames->ppropname[i].kind == MNID_ID)
 			snprintf(tmp_string, arsizeof(tmp_string), "GUID=%s,LID=%u",
 			         tmp_guid, ppropnames->ppropname[i].lid);

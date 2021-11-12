@@ -6,6 +6,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/generic_connection.hpp>
+#include <gromox/guid.hpp>
 #include <gromox/hpm_common.h>
 #include "pdu_processor.h"
 #include <gromox/stream.hpp>
@@ -77,7 +78,7 @@ struct RPC_IN_CHANNEL {
 	NOMOVE(RPC_IN_CHANNEL);
 
 	uint16_t frag_length = 0; /* indicating in coming PDU length */
-	char channel_cookie[64]{}, connection_cookie[64]{};
+	char channel_cookie[GUIDSTR_SIZE]{}, connection_cookie[GUIDSTR_SIZE]{};
 	uint32_t life_time = 0, client_keepalive = 0, available_window = 0;
 	uint32_t bytes_received = 0;
 	char assoc_group_id[64]{};
@@ -117,10 +118,8 @@ extern bool http_parser_get_password(const char *username, char *password);
 BOOL http_parser_try_create_vconnection(HTTP_CONTEXT *pcontext);
 void http_parser_set_outchannel_flowcontrol(HTTP_CONTEXT *pcontext,
 	uint32_t bytes_received, uint32_t available_window);
-BOOL http_parser_recycle_inchannel(
-	HTTP_CONTEXT *pcontext, char *predecessor_cookie);
-BOOL http_parser_recycle_outchannel(
-	HTTP_CONTEXT *pcontext, char *predecessor_cookie);
+extern BOOL http_parser_recycle_inchannel(HTTP_CONTEXT *, const char *predecessor_cookie);
+extern BOOL http_parser_recycle_outchannel(HTTP_CONTEXT *, const char *predecessor_cookie);
 BOOL http_parser_activate_inrecycling(
 	HTTP_CONTEXT *pcontext, const char *successor_cookie);
 BOOL http_parser_activate_outrecycling(

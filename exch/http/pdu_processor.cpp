@@ -1020,7 +1020,6 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	BOOL b_ndr64;
 	uint32_t reason;
 	uint32_t result;
-	char uuid_str[64];
 	DCERPC_BIND *pbind;
 	uint32_t context_id;
 	uint32_t if_version;
@@ -1090,6 +1089,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	    memcmp(&pbind->ctx_list[0].abstract_syntax,
 	    &pbind->ctx_list[1].abstract_syntax, sizeof(SYNTAX_ID)) == 0 &&
 	    pbind->ctx_list[1].num_transfer_syntaxes > 0) {
+		char uuid_str[GUIDSTR_SIZE];
 		guid_to_string(&pbind->ctx_list[1].transfer_syntaxes[0].uuid,
 			uuid_str, sizeof(uuid_str));
 		if (0 == strncmp("6cb71c2c-9812-4540", uuid_str, 18)) {
@@ -1100,6 +1100,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	pinterface = pdu_processor_find_interface_by_uuid(
 					pcall->pprocessor->pendpoint, &uuid, if_version);
 	if (NULL == pinterface) {
+		char uuid_str[GUIDSTR_SIZE];
 		guid_to_string(&uuid, uuid_str, sizeof(uuid_str));
 		debug_info("[pdu_processor]: interface %s/%d unknown when binding\n",
 			uuid_str, if_version);
@@ -1355,7 +1356,6 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	BOOL b_ndr64;
 	BOOL b_found;
 	uint32_t result = 0, reason = 0;
-	char uuid_str[64];
 	uint32_t if_version;
 	uint32_t context_id;
 	DCERPC_BIND *palter;
@@ -1430,6 +1430,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 		pinterface = pdu_processor_find_interface_by_uuid(pprocessor->pendpoint,
 						&uuid, if_version);
 		if (NULL == pinterface) {
+			char uuid_str[GUIDSTR_SIZE];
 			guid_to_string(&uuid, uuid_str, sizeof(uuid_str));
 			debug_info("[pdu_processor]: interface %s/%d unknown when altering\n",
 				uuid_str, if_version);
@@ -2825,7 +2826,6 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	BOOL b_bigendian;
 	uint32_t keep_alive;
 	HTTP_CONTEXT *pcontext;
-	char channel_cookie[64];
 	RPC_IN_CHANNEL *pchannel_in;
 	RPC_OUT_CHANNEL *pchannel_out;
 	
@@ -2908,6 +2908,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			}
 			
 			/* process outr2/a3 rts pdu and do recycling */
+			char channel_cookie[GUIDSTR_SIZE];
 			if (!pdu_processor_retrieve_outr2_a3(pcall,
 			    pchannel_out->connection_cookie, arsizeof(pchannel_out->connection_cookie),
 			    channel_cookie, arsizeof(channel_cookie),
@@ -2980,6 +2981,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			}
 			
 			/* process inr2/a1 rts pdu and do recycling */
+			char channel_cookie[GUIDSTR_SIZE];
 			if (!pdu_processor_retrieve_inr2_a1(pcall,
 			    pchannel_in->connection_cookie, arsizeof(pchannel_in->connection_cookie),
 			    channel_cookie, arsizeof(channel_cookie),
@@ -3034,6 +3036,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				return PDU_PROCESSOR_ERROR;
 			}
 			
+			char channel_cookie[GUIDSTR_SIZE];
 			if (!pdu_processor_retrieve_inr2_a5(pcall,
 			    channel_cookie, arsizeof(channel_cookie))) {
 				pdu_processor_free_call(pcall);
@@ -3063,6 +3066,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_INPUT;
 			} else if (RTS_FLAG_OUT_CHANNEL == pcall->pkt.payload.rts.flags) {
+				char channel_cookie[GUIDSTR_SIZE];
 				if (!pdu_processor_retrieve_outr2_a7(pcall,
 				    channel_cookie, arsizeof(channel_cookie))) {
 					pdu_processor_free_call(pcall);

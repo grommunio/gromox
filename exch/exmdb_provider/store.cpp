@@ -129,8 +129,6 @@ BOOL exmdb_server_get_mapping_guid(const char *dir,
 BOOL exmdb_server_get_mapping_replid(const char *dir,
 	GUID guid, BOOL *pb_found, uint16_t *preplid)
 {
-	char guid_string[64];
-	char sql_string[128];
 	
 	if (TRUE == exmdb_server_check_private()) {
 		return FALSE;
@@ -138,7 +136,8 @@ BOOL exmdb_server_get_mapping_replid(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	guid_to_string(&guid, guid_string, 64);
+	char guid_string[GUIDSTR_SIZE], sql_string[128];
+	guid_to_string(&guid, guid_string, arsizeof(guid_string));
 	snprintf(sql_string, arsizeof(sql_string), "SELECT replid FROM "
 		"replca_mapping WHERE replguid='%s'", guid_string);
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);

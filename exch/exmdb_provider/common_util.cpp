@@ -5174,7 +5174,6 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 	PROPID_ARRAY *ppropids)
 {
 	char sql_string[128];
-	char guid_string[64];
 	
 	ppropids->ppropid = cu_alloc<uint16_t>(ppropnames->count);
 	if (NULL == ppropids->ppropid) {
@@ -5209,7 +5208,8 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 		}
 	}
 	for (size_t i = 0; i < ppropnames->count; ++i) try {
-		guid_to_string(&ppropnames->ppropname[i].guid, guid_string, 64);
+		char guid_string[GUIDSTR_SIZE];
+		guid_to_string(&ppropnames->ppropname[i].guid, guid_string, arsizeof(guid_string));
 		std::string name_string;
 		switch (ppropnames->ppropname[i].kind) {
 		case MNID_ID:

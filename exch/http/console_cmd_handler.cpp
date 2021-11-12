@@ -167,11 +167,11 @@ static void cmd_handler_dump_interfaces(DCERPC_INTERFACE *pinterface)
 {
 	uint32_t version;
 	const char *format_string;
-	char uuid_string[64];
 	
 	if (g_plugname_buffer_size >= PLUG_BUFFER_SIZE)
 		return;
-	guid_to_string(&pinterface->uuid, uuid_string, 64);
+	char uuid_string[GUIDSTR_SIZE];
+	guid_to_string(&pinterface->uuid, uuid_string, arsizeof(uuid_string));
 	version = pinterface->version;
 	if (0 == (version & 0xFFFF0000)) {
 		format_string = "\t\tinterface(%s) %s(%u.%u)\r\n";

@@ -108,8 +108,8 @@ static BOOL store_object_cache_propname(store_object *pstore,
 	}
 	tmp_name.kind = ppropname->kind;
 	tmp_name.guid = ppropname->guid;
-	char tmp_string[NP_STRBUF_SIZE], tmp_guid[64];
-	guid_to_string(&ppropname->guid, tmp_guid, 64);
+	char tmp_string[NP_STRBUF_SIZE], tmp_guid[GUIDSTR_SIZE];
+	guid_to_string(&ppropname->guid, tmp_guid, arsizeof(tmp_guid));
 	switch (ppropname->kind) {
 	case MNID_ID:
 		tmp_name.lid = ppropname->lid;
@@ -328,8 +328,8 @@ static BOOL store_object_get_named_propid(store_object *pstore,
 		*ppropid = ppropname->kind == MNID_ID ? ppropname->lid : 0;
 		return TRUE;
 	}
-	char tmp_string[NP_STRBUF_SIZE], tmp_guid[64];
-	guid_to_string(&ppropname->guid, tmp_guid, 64);
+	char tmp_string[NP_STRBUF_SIZE], tmp_guid[GUIDSTR_SIZE];
+	guid_to_string(&ppropname->guid, tmp_guid, arsizeof(tmp_guid));
 	switch (ppropname->kind) {
 	case MNID_ID:
 		snprintf(tmp_string, arsizeof(tmp_string), "%s:lid:%u", tmp_guid, ppropname->lid);
@@ -395,8 +395,8 @@ BOOL store_object::get_named_propids(BOOL b_create,
 			pindex_map[i] = i;
 			continue;
 		}
-		char tmp_string[NP_STRBUF_SIZE], tmp_guid[64];
-		guid_to_string(&ppropnames->ppropname[i].guid, tmp_guid, 64);
+		char tmp_string[NP_STRBUF_SIZE], tmp_guid[GUIDSTR_SIZE];
+		guid_to_string(&ppropnames->ppropname[i].guid, tmp_guid, arsizeof(tmp_guid));
 		switch (ppropnames->ppropname[i].kind) {
 		case MNID_ID:
 			snprintf(tmp_string, arsizeof(tmp_string), "%s:lid:%u",

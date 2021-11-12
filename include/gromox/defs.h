@@ -95,6 +95,7 @@ enum {
 	 * OXCPRPT v17 §4.1.1. Since Gromox operates in UTF-8, that's a few
 	 * more octets. (TNEF uses a larger, 32-bit field.)
 	 */
+	GUIDSTR_SIZE = 37,
 	NP_NAMEBUF_SIZE = 763,
 	NP_STRBUF_SIZE = 36 + 11 + NP_NAMEBUF_SIZE, /* "GUID=<>,NAME=<>" */
 };

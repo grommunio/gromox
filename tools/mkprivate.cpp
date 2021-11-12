@@ -192,7 +192,6 @@ int main(int argc, const char **argv)
 	sqlite3 *psqlite;
 	char db_name[256];
 	MYSQL_RES *pmyres;
-	char tmp_buff[256];
 	char tmp_sql[1024];
 	char mysql_host[256];
 	char mysql_user[256];
@@ -621,9 +620,10 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	tmp_guid = guid_random_new();
-	guid_to_string(&tmp_guid, tmp_buff, sizeof(tmp_buff));
+	char tmp_bguid[GUIDSTR_SIZE];
+	guid_to_string(&tmp_guid, tmp_bguid, arsizeof(tmp_bguid));
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_MAILBOX_GUID);
-	sqlite3_bind_text(pstmt, 2, tmp_buff, -1, SQLITE_STATIC);
+	sqlite3_bind_text(pstmt, 2, tmp_bguid, -1, SQLITE_STATIC);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
 		return 9;

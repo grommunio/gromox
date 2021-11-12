@@ -56,7 +56,7 @@ int guid_compare(const GUID *u1, const GUID *u2)
 	return memcmp(u1->node, u2->node, 6);
 }
 
-void guid_to_string(const GUID *guid, char *buff, int buflen)
+void guid_to_string(const GUID *guid, char *buff, size_t buflen)
 {
 	snprintf(buff, buflen, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
 		guid->time_low, guid->time_mid,
