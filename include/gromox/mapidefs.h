@@ -192,6 +192,7 @@ enum {
 	PR_RTF_COMPRESSED = PROP_TAG(PT_BINARY, 0x1009), /* PidTagRtfCompressed */
 	PR_HTML = PROP_TAG(PT_BINARY, 0x1013), /* PidTagHtml */
 	PR_ATTR_HIDDEN = PROP_TAG(PT_BOOLEAN, 0x10F4), /* PidTagAttributeHidden */
+	// ? = PROP_TAG(PT_BINARY, 0x120D), /* entryid to Calendar\Birthdays folder */
 	PR_DISPLAY_NAME_A = PROP_TAG(PT_STRING8, 0x3001),
 	PR_DISPLAY_NAME = PROP_TAG(PT_UNICODE, 0x3001), /* PidTagDisplayName */
 	PR_EMAIL_ADDRESS_A = PROP_TAG(PT_STRING8, 0x3003),
@@ -204,13 +205,21 @@ enum {
 	PR_STORE_SUPPORT_MASK = PROP_TAG(PT_LONG, 0x340D), /* PidTagStoreSupportMask */
 	PR_STORE_STATE = PROP_TAG(PT_LONG, 0x340E), /* PidTagStoreState */
 	PR_MDB_PROVIDER = PROP_TAG(PT_BINARY, 0x3414), /* PidTagStoreProvider */
+	// ? = PROP_TAG(PT_BINARY, 0x35D8), /* entryid to root folder */
 	PR_IPM_SUBTREE_ENTRYID = PROP_TAG(PT_BINARY, 0x35E0), /* PidTagIpmSubtreeEntryId */
+	// ? = PROP_TAG(PT_BINARY, 0x35E1), /* entryid to IPM_SUBTREE\Inbox folder */
 	PR_IPM_OUTBOX_ENTRYID = PROP_TAG(PT_BINARY, 0x35E2), /* PidTagIpmOutboxEntryId */
 	PR_IPM_WASTEBASKET_ENTRYID = PROP_TAG(PT_BINARY, 0x35E3), /* PidTagIpmWastebasketEntryId */
 	PR_IPM_SENTMAIL_ENTRYID = PROP_TAG(PT_BINARY, 0x35E4), /* PidTagIpmSentMailEntryId */
 	PR_VIEWS_ENTRYID = PROP_TAG(PT_BINARY, 0x35E5), /* PidTagViewsEntryId */
 	PR_COMMON_VIEWS_ENTRYID = PROP_TAG(PT_BINARY, 0x35E6), /* PidTagCommonViewsEntryId */
 	PR_FINDER_ENTRYID = PROP_TAG(PT_BINARY, 0x35E7), /* PidTagFinderEntryId */
+	// ? = PROP_TAG(PT_BINARY, 0x35E8), /* entryid to Spooler Queue folder */
+	// ? = PROP_TAG(PT_BINARY, 0x35EA), /* entryid to "exchangeSyncData" folder (EXC2019) */
+	// ? = PROP_TAG(PT_BINARY, 0x35EB), /* entryid to some non-existing folder (EXC2019) */
+	// ? = PROP_TAG(PT_BINARY, 0x35EE), /* entryid to "AllItems" folder (EXC2019) */
+	// ? = PROP_TAG(PT_BINARY, 0x35EF), /* entryid to "Sharing" folder (EXC2019) */
+	// ? = PROP_TAG(PT_BINARY, 0x35FD), /* entryid to some non-existing folder (EXC2019) */
 	PR_FOLDER_TYPE = PROP_TAG(PT_LONG, 0x3601), /* PidTagFolderType */
 	// PR_DETAILS_TABLE  = PROP_TAG(PT_OBJECT, 0x3605), /* PidTagDetailsTable */
 	PR_CONTAINER_CLASS = PROP_TAG(PT_UNICODE, 0x3613), /* PidTagContainerClass */
@@ -317,6 +326,7 @@ enum {
 	PR_RULE_ACTION_TYPE = PROP_TAG(PT_LONG, 0x6649), /* PidTagRuleActionType */
 	PR_RULE_ACTION_NUMBER = PROP_TAG(PT_LONG, 0x6650), /* PidTagRuleActionNumber */
 	PR_RULE_FOLDER_ENTRYID = PROP_TAG(PT_BINARY, 0x6651), /* PidTagRuleFolderEntryId */
+	// ? = PROP_TAG(PT_UNICODE, 0x6656), /* mh_emsmdb URL for the current store */
 	PR_PROHIBIT_RECEIVE_QUOTA = PROP_TAG(PT_LONG, 0x666A), /* PidTagProhibitReceiveQuota */
 	PR_MAX_SUBMIT_MESSAGE_SIZE = PROP_TAG(PT_LONG, 0x666D), /* PidTagMaximumSubmitMessageSize */
 	PR_PROHIBIT_SEND_QUOTA = PROP_TAG(PT_LONG, 0x666E), /* PidTagProhibitSendQuota */
@@ -366,6 +376,7 @@ enum {
 	// PR_LTP_ROW_VER = PROP_TAG(PT_LONG, 0x67F3), /* PidTagLtpRowVer */
 	// PR_PST_PASSWORD = PROP_TAG(PT_LONG, 0x67FF), /* PidTagPstPassword */
 	// PR_OAB_MESSAGE_CLASS = PROP_TAG(PT_LONG, 0x6803), /* PidTagOfflineAddressBookMessageClass */
+	// ? = PROP_TAG(PT_BINARY, 0x6814), /* entryid to IPM.Microsoft.OOF.UserOofSettings message */
 	PR_ATTACHMENT_LINKID = PROP_TAG(PT_LONG, 0x7FFA), /* PidTagAttachmentLinkId */
 	PR_ATTACHMENT_FLAGS = PROP_TAG(PT_LONG, 0x7FFD), /* PidTagAttachmentFlags */
 	PR_ATTACHMENT_HIDDEN = PROP_TAG(PT_BOOLEAN, 0x7FFE), /* PidTagAttachmentHidden */
