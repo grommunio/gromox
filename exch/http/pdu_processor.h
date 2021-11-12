@@ -114,7 +114,6 @@ void pdu_processor_output_pdu(DCERPC_CALL *pcall, DOUBLE_LIST *ppdu_list);
 void pdu_processor_free_blob(BLOB_NODE *pbnode);
 void pdu_processor_free_call(DCERPC_CALL *pcall);
 BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size);
-BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall);
 BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall);
 BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall);
 BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall);

@@ -2570,7 +2570,7 @@ BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 	return TRUE;
 }
 
-BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
+static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 {
 	DCERPC_NCACN_PACKET pkt;
 	
