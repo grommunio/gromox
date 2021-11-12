@@ -128,12 +128,7 @@ BOOL emsmdb_interface_check_notify(ACXH *pacxh)
 	guid_to_string(&pacxh->guid, guid_string, sizeof(guid_string));
 	std::lock_guard gl_hold(g_lock);
 	auto phandle = g_handle_hash->query<HANDLE_DATA>(guid_string);
-	if (NULL != phandle) {
-		if (double_list_get_nodes_num(&phandle->notify_list) > 0) {
-			return TRUE;
-		}
-	}
-	return FALSE;
+	return phandle != nullptr && double_list_get_nodes_num(&phandle->notify_list) > 0 ? TRUE : false;
 }
 
 /* called by moh_emsmdb module */
