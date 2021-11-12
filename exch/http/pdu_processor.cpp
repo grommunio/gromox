@@ -3368,6 +3368,8 @@ static DCERPC_ENDPOINT* pdu_processor_register_endpoint(const char *host,
 	pendpoint->last_group_id = 0;
 	double_list_init(&pendpoint->interface_list);
 	double_list_append_as_tail(&g_endpoint_list, &pendpoint->node);
+	printf("[pdu_processor]: registered endpoint %s:%d\n",
+	       pendpoint->host, pendpoint->tcp_port);
 	return pendpoint;
 }
 
@@ -3427,6 +3429,12 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 	pif_node->pendpoint = pendpoint;
 	pif_node->pinterface = static_cast<DCERPC_INTERFACE *>(pnode->pdata);
 	double_list_append_as_tail(&g_cur_plugin->interface_list, &pif_node->node);
+	char uuid_string[GUIDSTR_SIZE];
+	guid_to_string(&pinterface->uuid, uuid_string, arsizeof(uuid_string));
+	printf("[pdu_processor]: EP %s:%d: registered interface %s {%s} (v %u.%02u)\n",
+	       pendpoint->host, pendpoint->tcp_port, pinterface->name,
+	       uuid_string, pinterface->version & 0xFFFF,
+	       (pinterface->version >> 16) & 0xFFFF);
 	return TRUE;
 }
 
@@ -3790,27 +3798,6 @@ int pdu_processor_console_talk(int argc, char** argv, char *result, int length)
 		return PLUGIN_NO_TALK;
 	pplugin->talk_main(argc, argv, result, length);
 	return PLUGIN_TALK_OK;
-}
-
-void pdu_processor_enum_endpoints(void (*enum_ep)(DCERPC_ENDPOINT*))
-{
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&g_endpoint_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_endpoint_list, pnode)) {
-		enum_ep(static_cast<DCERPC_ENDPOINT *>(pnode->pdata));
-	}
-}
-
-void pdu_processor_enum_interfaces(DCERPC_ENDPOINT *pendpoint,
-	void (*enum_if)(DCERPC_INTERFACE*))
-{
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&pendpoint->interface_list); NULL!=pnode;
-		pnode=double_list_get_after(&pendpoint->interface_list, pnode)) {
-		enum_if(static_cast<DCERPC_INTERFACE *>(pnode->pdata));
-	}
 }
 
 void pdu_processor_reload()

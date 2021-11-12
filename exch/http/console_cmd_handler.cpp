@@ -24,13 +24,9 @@
 
 using namespace gromox;
 
-static char g_plugname_buffer[PLUG_BUFFER_SIZE + 2];
-static int g_plugname_buffer_size;
-
 static char g_server_help[] =
 	"250 HTTP DAEMON server help information:\r\n"
 	"\thttp           --http operating\r\n"
-	"\trpc            --rpc operating\r\n"
 	"\tsystem         --control the HTTP DAEMON server\r\n"
 	"\ttype \"<control-unit> --help\" for more information";
 
@@ -46,11 +42,6 @@ static char g_http_help[] =
 	"\t    --how long a connection will be blocked if the failure of\r\n"
 	"\t    authentication exceeds allowed times";
 
-static char g_rpc_help[] = 
-	"250 HTTP DAEMON rpc help information:\r\n"
-	"\trpc info\r\n"
-	"\t    --print all end-pointers of rpc";
-	
 static char g_system_help[] =
 	"250 HTTP DAEMON system help information:\r\n"
 	"\tsystem set default-domain <domain>\r\n"
@@ -160,60 +151,6 @@ BOOL cmd_handler_http_control(int argc, char** argv)
 	
 
 	console_server_reply_to_client("550 no such argument %s", argv[2]);
-	return TRUE;
-}
-
-static void cmd_handler_dump_interfaces(DCERPC_INTERFACE *pinterface)
-{
-	uint32_t version;
-	const char *format_string;
-	
-	if (g_plugname_buffer_size >= PLUG_BUFFER_SIZE)
-		return;
-	char uuid_string[GUIDSTR_SIZE];
-	guid_to_string(&pinterface->uuid, uuid_string, arsizeof(uuid_string));
-	version = pinterface->version;
-	if (0 == (version & 0xFFFF0000)) {
-		format_string = "\t\tinterface(%s) %s(%u.%u)\r\n";
-	} else {
-		format_string = "\t\tinterface(%s) %s(%u.%02u)\r\n";
-	}
-	g_plugname_buffer_size += gx_snprintf(g_plugname_buffer +
-		g_plugname_buffer_size, PLUG_BUFFER_SIZE - g_plugname_buffer_size,
-		format_string, pinterface->name, uuid_string,
-		version & 0xFFFF, (version & 0xFFFF0000) >> 16);
-}
-
-static void cmd_handler_dump_endpoints(DCERPC_ENDPOINT *pendpoint)
-{
-	if (g_plugname_buffer_size >= PLUG_BUFFER_SIZE)
-		return;
-	g_plugname_buffer_size += gx_snprintf(g_plugname_buffer +
-		g_plugname_buffer_size, PLUG_BUFFER_SIZE - g_plugname_buffer_size,
-		"\tendpoint %s:%d:\r\n", pendpoint->host, pendpoint->tcp_port);
-	pdu_processor_enum_interfaces(pendpoint, cmd_handler_dump_interfaces);
-}
-
-BOOL cmd_handler_rpc_control(int argc, char** argv)
-{	
-	 if (1 == argc) {
-		console_server_reply_to_client("550 too few arguments");
-		return TRUE;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "--help")) {
-		console_server_reply_to_client(g_rpc_help);
-		return TRUE;
-	}
-	if (2 == argc && 0 == strcmp(argv[1], "info")) {
-		g_plugname_buffer_size = 0;
-		pdu_processor_enum_endpoints(cmd_handler_dump_endpoints);
-		g_plugname_buffer[g_plugname_buffer_size] = '\0';
-		console_server_reply_to_client("250 loaded proc plugins:\r\n%s",
-			g_plugname_buffer);
-		return TRUE;
-	}
-
-	console_server_reply_to_client("550 invalid argument %s", argv[1]);
 	return TRUE;
 }
 
