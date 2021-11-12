@@ -1086,15 +1086,14 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		b_ndr64 = TRUE;
 	}
 #ifdef SUPPORT_NEGOTIATE
-	if (TRUE == b_found && pbind->num_contexts > 1) {
-		if (0 == memcmp(&pbind->ctx_list[0].abstract_syntax,
-			&pbind->ctx_list[1].abstract_syntax, sizeof(SYNTAX_ID)) &&
-			pbind->ctx_list[1].num_transfer_syntaxes > 0) {
-			guid_to_string(&pbind->ctx_list[1].transfer_syntaxes[0].uuid,
-				uuid_str, sizeof(uuid_str));
-			if (0 == strncmp("6cb71c2c-9812-4540", uuid_str, 18)) {
-				b_negotiate = TRUE;
-			}
+	if (b_found && pbind->num_contexts > 1 &&
+	    memcmp(&pbind->ctx_list[0].abstract_syntax,
+	    &pbind->ctx_list[1].abstract_syntax, sizeof(SYNTAX_ID)) == 0 &&
+	    pbind->ctx_list[1].num_transfer_syntaxes > 0) {
+		guid_to_string(&pbind->ctx_list[1].transfer_syntaxes[0].uuid,
+			uuid_str, sizeof(uuid_str));
+		if (0 == strncmp("6cb71c2c-9812-4540", uuid_str, 18)) {
+			b_negotiate = TRUE;
 		}
 	}
 #endif
