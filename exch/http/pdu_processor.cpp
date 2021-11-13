@@ -351,9 +351,8 @@ static int pdu_processor_find_secondary(const char *host,
 		pnode=double_list_get_after(&g_endpoint_list, pnode)) {
 		pendpoint = (DCERPC_ENDPOINT*)pnode->pdata;
 		if (0 != strcasecmp(host, pendpoint->host) ||
-			pendpoint->tcp_port == tcp_port) {
+		    pendpoint->tcp_port != tcp_port)
 			continue;
-		}
 		plist = &pendpoint->interface_list;
 		for (pnode1=double_list_get_head(plist); NULL!=pnode1;
 			pnode1=double_list_get_after(plist, pnode1)) {
