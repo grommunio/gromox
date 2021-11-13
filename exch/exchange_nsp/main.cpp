@@ -47,6 +47,14 @@ static void exchange_nsp_unbind(uint64_t handle);
 
 DECLARE_PROC_API();
 
+static constexpr DCERPC_INTERFACE interface = {
+	"exchangeNSP",
+	/* {f5cc5a18-4264-101a-8c59-08002b2f8426} */
+	{0xf5cc5a18, 0x4264, 0x101a, {0x8c, 0x59}, {0x08, 0x00, 0x2b, 0x2f, 0x84, 0x26}},
+	56, exchange_nsp_ndr_pull, exchange_nsp_dispatch, exchange_nsp_ndr_push,
+	exchange_nsp_unbind,
+};
+
 static BOOL proc_exchange_nsp(int reason, void **ppdata)
 {
 	BOOL b_check;
@@ -57,7 +65,6 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 	void *pendpoint2;
 	int cache_interval;
 	char temp_buff[45];
-	DCERPC_INTERFACE interface;
 	
 	/* path contains the config files directory */
 	switch (reason) {
@@ -141,14 +148,6 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 			printf("[exchange_nsp]: failed to register endpoint with port 6004\n");
 			return FALSE;
 		}
-		strcpy(interface.name, "exchangeNSP");
-		guid_from_string(&interface.uuid, "f5cc5a18-4264-101a-8c59-08002b2f8426");
-		interface.version = 56;
-		interface.ndr_pull = exchange_nsp_ndr_pull;
-		interface.dispatch = exchange_nsp_dispatch;
-		interface.ndr_push = exchange_nsp_ndr_push;
-		interface.unbind = exchange_nsp_unbind;
-		interface.reclaim = NULL;
 		if (FALSE == register_interface(pendpoint1, &interface) ||
 			FALSE == register_interface(pendpoint2, &interface)) {
 			printf("[exchange_nsp]: failed to register interface\n");

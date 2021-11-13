@@ -75,6 +75,22 @@ static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig)
 	return true;
 }
 
+static constexpr DCERPC_INTERFACE interface_emsmdb = {
+	"exchangeEMSMDB",
+	/* {a4f1db00-ca47-1067-b31f-00dd010662da} */
+	{0xa4f1db00, 0xca47, 0x1067, {0xb3, 0x1f}, {0x00, 0xdd, 0x01, 0x06, 0x62, 0xda}},
+	0x510000, exchange_emsmdb_ndr_pull, exchange_emsmdb_dispatch,
+	exchange_emsmdb_ndr_push, exchange_emsmdb_unbind,
+};
+
+static constexpr DCERPC_INTERFACE interface_async_emsmdb = {
+	"exchangeAsyncEMSMDB",
+	/* {5261574a-4572-206e-b268-6b199213b4e4} */
+	{0x5261574a, 0x4572, 0x206e, {0xb2, 0x68}, {0x6b, 0x19, 0x92, 0x13, 0xb4, 0xe4}},
+	0x10000, exchange_async_emsmdb_ndr_pull, exchange_async_emsmdb_dispatch,
+	exchange_async_emsmdb_ndr_push, nullptr, exchange_async_emsmdb_reclaim,
+};
+
 static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 {
 	int max_mail;
@@ -94,8 +110,6 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 	char temp_buff[256];
 	char file_name[256];
 	char submit_command[1024], *psearch;
-	DCERPC_INTERFACE interface_emsmdb;
-	DCERPC_INTERFACE interface_async_emsmdb;
 	
 	/* path contains the config files directory */
 	switch (reason) {
@@ -216,26 +230,10 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 			printf("[exchange_emsmdb]: failed to register endpoint with port 6001\n");
 			return FALSE;
 		}
-		strcpy(interface_emsmdb.name, "exchangeEMSMDB");
-		guid_from_string(&interface_emsmdb.uuid, "a4f1db00-ca47-1067-b31f-00dd010662da");
-		interface_emsmdb.version = 0x510000;
-		interface_emsmdb.ndr_pull = exchange_emsmdb_ndr_pull;
-		interface_emsmdb.dispatch = exchange_emsmdb_dispatch;
-		interface_emsmdb.ndr_push = exchange_emsmdb_ndr_push;
-		interface_emsmdb.unbind = exchange_emsmdb_unbind;
-		interface_emsmdb.reclaim = NULL;
 		if (FALSE == register_interface(pendpoint, &interface_emsmdb)) {
 			printf("[exchange_emsmdb]: failed to register emsmdb interface\n");
 			return FALSE;
 		}
-		strcpy(interface_async_emsmdb.name, "exchangeAsyncEMSMDB");
-		guid_from_string(&interface_async_emsmdb.uuid, "5261574a-4572-206e-b268-6b199213b4e4");
-		interface_async_emsmdb.version = 0x10000;
-		interface_async_emsmdb.ndr_pull = exchange_async_emsmdb_ndr_pull;
-		interface_async_emsmdb.dispatch = exchange_async_emsmdb_dispatch;
-		interface_async_emsmdb.ndr_push = exchange_async_emsmdb_ndr_push;
-		interface_async_emsmdb.unbind = NULL;
-		interface_async_emsmdb.reclaim = exchange_async_emsmdb_reclaim;
 		if (FALSE == register_interface(pendpoint, &interface_async_emsmdb)) {
 			printf("[exchange_emsmdb]: failed to register emsmdb interface\n");
 			return FALSE;

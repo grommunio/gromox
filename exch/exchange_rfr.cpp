@@ -56,15 +56,21 @@ static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout);
 
 static BOOL (*get_id_from_username)(const char *username, int *puser_id);
 
+static constexpr DCERPC_INTERFACE interface = {
+	"exchangeRFR",
+	/* {1544f5e0-613c-11d1-93df-00c04fd7bd09} */
+	{0x1544f5e0, 0x613c, 0x11d1, {0x93, 0xdf}, {0x00, 0xc0, 0x4f, 0xd7, 0xbd, 0x09}},
+	1, exchange_rfr_ndr_pull, exchange_rfr_dispatch, exchange_rfr_ndr_push,
+};
+
 static BOOL proc_exchange_rfr(int reason, void **ppdata)
 {
 	void *pendpoint1;
 	void *pendpoint2;
-	DCERPC_INTERFACE interface;
 	
 	/* path contains the config files directory */
 	switch (reason) {
-    case PLUGIN_INIT:
+	case PLUGIN_INIT: {
 		LINK_PROC_API(ppdata);
 		query_service1(get_id_from_username);
 		if (NULL == get_id_from_username) {
@@ -81,14 +87,6 @@ static BOOL proc_exchange_rfr(int reason, void **ppdata)
 			printf("[exchange_rfr]: failed to register endpoint with port 6002\n");
 			return FALSE;
 		}
-		strcpy(interface.name, "exchangeRFR");
-		guid_from_string(&interface.uuid, "1544f5e0-613c-11d1-93df-00c04fd7bd09");
-		interface.version = 1;
-		interface.ndr_pull = exchange_rfr_ndr_pull;
-		interface.dispatch = exchange_rfr_dispatch;
-		interface.ndr_push = exchange_rfr_ndr_push;
-		interface.unbind = NULL;
-		interface.reclaim = NULL;
 		if (FALSE == register_interface(pendpoint1, &interface) ||
 			FALSE == register_interface(pendpoint2, &interface)) {
 			printf("[exchange_rfr]: failed to register interface\n");
@@ -96,6 +94,7 @@ static BOOL proc_exchange_rfr(int reason, void **ppdata)
 		}
 		printf("[exchange_rfr]: plugin is loaded into system\n");
 		return TRUE;
+	}
 	case PLUGIN_FREE:
 		return TRUE;
 	}

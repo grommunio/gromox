@@ -69,8 +69,8 @@ struct DCERPC_CONTEXT {
 	BOOL b_ndr64;
 	uint32_t stat_flags; /* this is the default stat_flags */
 	uint32_t assoc_group_id;
-	DCERPC_INTERFACE *pinterface; /* the ndr function table for the chosen interface */
-	DCERPC_ENDPOINT *pendpoint;
+	const DCERPC_INTERFACE *pinterface; /* the ndr function table for the chosen interface */
+	const DCERPC_ENDPOINT *pendpoint;
 	DOUBLE_LIST async_list;
 };
 

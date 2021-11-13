@@ -22,18 +22,18 @@ struct DCERPC_INFO {
 }; /* used for proc plugin to get dcerpc information */
 
 struct DCERPC_INTERFACE {
-	char name[128];
-	GUID uuid;
-	uint32_t version;
+	char name[128]{};
+	GUID uuid{};
+	uint32_t version = 0;
 	/* the ndr_pull function for the chosen interface. */
-	int (*ndr_pull)(int opnum, NDR_PULL* pndr, void **ppin);
+	int (*ndr_pull)(int opnum, NDR_PULL* pndr, void **ppin) = nullptr;
 	/* the dispatch function for the chosen interface. */
 	int (*dispatch)(int opnum, const GUID*, uint64_t handle,
-		void *pin, void **ppout);
+		void *pin, void **ppout) = nullptr;
 	/* the ndr_push function for the chosen interface. */
-	int (*ndr_push)(int opnum, NDR_PUSH *pndr, void *pout);
+	int (*ndr_push)(int opnum, NDR_PUSH *pndr, void *pout) = nullptr;
 	/* the unbind function for the chosen interface */
-	void (*unbind)(uint64_t handle);
+	void (*unbind)(uint64_t handle) = nullptr;
 	/* the reclaim function for the chosen interface */
-	void (*reclaim)(uint32_t async_id);
+	void (*reclaim)(uint32_t async_id) = nullptr;
 };

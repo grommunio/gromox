@@ -339,7 +339,7 @@ void pdu_processor_free()
 
 
 static uint16_t pdu_processor_find_secondary(const char *host,
-    uint16_t tcp_port, GUID *puuid, uint32_t version)
+    uint16_t tcp_port, const GUID *puuid, uint32_t version)
 {
 	DOUBLE_LIST *plist;
 	DOUBLE_LIST_NODE *pnode;
@@ -367,10 +367,11 @@ static uint16_t pdu_processor_find_secondary(const char *host,
 }
 
 /* find the interface operations on an endpoint by uuid */
-static DCERPC_INTERFACE* pdu_processor_find_interface_by_uuid(
-	DCERPC_ENDPOINT *pendpoint, GUID *puuid, uint32_t if_version)
+static const DCERPC_INTERFACE *
+pdu_processor_find_interface_by_uuid(const DCERPC_ENDPOINT *pendpoint,
+    const GUID *puuid, uint32_t if_version)
 {
-	DOUBLE_LIST_NODE *pnode;
+	const DOUBLE_LIST_NODE *pnode;
 	DCERPC_INTERFACE *pinterface;
 	
 	for (pnode=double_list_get_head(&pendpoint->interface_list); NULL!=pnode;
@@ -991,7 +992,6 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	DOUBLE_LIST_NODE *pnode;
 	DCERPC_NCACN_PACKET pkt;
 	DCERPC_CONTEXT *pcontext;
-	DCERPC_INTERFACE *pinterface;
 	DCERPC_AUTH_CONTEXT *pauth_ctx;
 #ifdef SUPPORT_NEGOTIATE
 	BOOL b_negotiate = FALSE;
@@ -1061,7 +1061,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		}
 	}
 #endif
-	pinterface = pdu_processor_find_interface_by_uuid(
+	auto pinterface = pdu_processor_find_interface_by_uuid(
 					pcall->pprocessor->pendpoint, &uuid, if_version);
 	if (NULL == pinterface) {
 		char uuid_str[GUIDSTR_SIZE];
@@ -1328,7 +1328,6 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	DOUBLE_LIST_NODE *pnode;
 	DCERPC_CONTEXT *pcontext = nullptr;
 	PDU_PROCESSOR *pprocessor;
-	DCERPC_INTERFACE *pinterface;
 	DCERPC_AUTH_CONTEXT *pauth_ctx;
 	
 	
@@ -1391,7 +1390,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 			b_ndr64 = TRUE;
 		}
 
-		pinterface = pdu_processor_find_interface_by_uuid(pprocessor->pendpoint,
+		auto pinterface = pdu_processor_find_interface_by_uuid(pprocessor->pendpoint,
 						&uuid, if_version);
 		if (NULL == pinterface) {
 			char uuid_str[GUIDSTR_SIZE];
@@ -3338,7 +3337,7 @@ static DCERPC_ENDPOINT* pdu_processor_register_endpoint(const char *host,
 }
 
 static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
-	DCERPC_INTERFACE *pinterface)
+    const DCERPC_INTERFACE *pinterface)
 {
 	DOUBLE_LIST_NODE *pnode;
 	INTERFACE_NODE *pif_node;
