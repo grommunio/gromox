@@ -1,5 +1,5 @@
-1.7.55
-======
+1.8 (2021-11-13)
+================
 
 Fixes:
 
@@ -18,7 +18,8 @@ Enhancements:
 
 * php: do print reason when autodiscover.ini cannot be read
 * mapi_lib: set PR_SUPPLEMENTARY_INFO when ingesting mail
-* doc: update kdb2mt -s description
+* kdb2mt: support -s for public stores
+* kdb2mt: support --src-mbox "" to get a listing of all stores
 
 
 1.7 (2021-11-07)
