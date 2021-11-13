@@ -21,6 +21,17 @@ enum {
 	PDU_PROCESSOR_TERMINATE
 };
 
+struct DCERPC_ENDPOINT {
+	DCERPC_ENDPOINT();
+	~DCERPC_ENDPOINT();
+	NOMOVE(DCERPC_ENDPOINT);
+
+	char host[128]{};
+	DOUBLE_LIST interface_list{};
+	uint32_t last_group_id = 0;
+	uint16_t tcp_port = 0; /* only for ncacn_http */
+};
+
 struct PROC_PLUGIN {
 	PROC_PLUGIN();
 	PROC_PLUGIN(PROC_PLUGIN &&);
@@ -33,14 +44,6 @@ struct PROC_PLUGIN {
 	TALK_MAIN talk_main = nullptr;
 	std::string file_name;
 	bool completed_init = false;
-};
-
-struct DCERPC_ENDPOINT {
-	DOUBLE_LIST_NODE node;
-	char host[128];
-	uint16_t tcp_port; /* only for ncacn_http */
-	DOUBLE_LIST interface_list;
-	uint32_t last_group_id;
 };
 
 /* virtual connection to DCE RPC server, actually only data structure of context */

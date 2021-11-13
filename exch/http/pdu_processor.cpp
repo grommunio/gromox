@@ -77,6 +77,25 @@ struct ASYNC_NODE {
 	char vconn_cookie[64];
 };
 
+class endpoint_eq {
+	public:
+	constexpr endpoint_eq(const char *h, uint16_t p) : host(h), port(p) {}
+	bool operator()(const DCERPC_ENDPOINT &e) const {
+		return e.tcp_port == port && strcasecmp(e.host, host) == 0;
+	}
+	protected:
+	const char *host = nullptr;
+	uint16_t port = 0;
+};
+
+class endpoint_mt : public endpoint_eq {
+	public:
+	using endpoint_eq::endpoint_eq;
+	bool operator()(const DCERPC_ENDPOINT &e) const {
+		return e.tcp_port == port && wildcard_match(host, e.host, TRUE) > 0;
+	}
+};
+
 }
 
 static BOOL g_bigendian;
@@ -94,7 +113,7 @@ static pthread_key_t g_stack_key;
 static PROC_PLUGIN *g_cur_plugin;
 static std::list<PROC_PLUGIN> g_plugin_list;
 static std::mutex g_list_lock, g_async_lock;
-static DOUBLE_LIST g_endpoint_list;
+static std::list<DCERPC_ENDPOINT> g_endpoint_list;
 static bool g_ign_loaderr;
 static std::unique_ptr<INT_HASH_TABLE> g_async_hash;
 static LIB_BUFFER *g_call_allocator;
@@ -115,6 +134,15 @@ static const SYNTAX_ID g_transfer_syntax_ndr64 =
 
 static int pdu_processor_load_library(const char* plugin_name);
 
+DCERPC_ENDPOINT::DCERPC_ENDPOINT()
+{
+	double_list_init(&interface_list);
+}
+
+DCERPC_ENDPOINT::~DCERPC_ENDPOINT()
+{
+	double_list_free(&interface_list);
+}
 
 static NDR_STACK_ROOT* pdu_processor_new_stack_root()
 {
@@ -187,7 +215,6 @@ void pdu_processor_init(int connection_num, int connection_ratio,
 	gx_strlcpy(g_plugins_path, plugins_path, GX_ARRAY_SIZE(g_plugins_path));
 	g_plugin_names = names;
 	g_ign_loaderr = ignerr;
-	double_list_init(&g_endpoint_list);
 }
 
 int pdu_processor_run()
@@ -285,8 +312,6 @@ static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
 
 void pdu_processor_stop()
 {
-	DOUBLE_LIST_NODE *pnode;
-
 	auto z = g_processor_list.size();
 	if (z > 0) {
 		/* http_parser_stop runs before pdu_processor_stop, so all
@@ -296,11 +321,7 @@ void pdu_processor_stop()
 	}
 
 	g_plugin_list.clear();
-	while ((pnode = double_list_pop_front(&g_endpoint_list)) != nullptr) {
-		double_list_free(&((DCERPC_ENDPOINT*)pnode->pdata)->interface_list);
-		free(pnode->pdata);
-	}
-	
+	g_endpoint_list.clear();
 	if (NULL != g_stack_allocator) {
 		lib_buffer_free(g_stack_allocator);
 		g_stack_allocator = NULL;
@@ -332,37 +353,28 @@ void pdu_processor_stop()
 
 void pdu_processor_free()
 {
-	double_list_free(&g_endpoint_list);
 	g_plugins_path[0] = '\0';
 	g_plugin_names = NULL;
 }
 
-
 static uint16_t pdu_processor_find_secondary(const char *host,
     uint16_t tcp_port, const GUID *puuid, uint32_t version)
 {
-	DOUBLE_LIST *plist;
-	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *pnode1;
-	DCERPC_ENDPOINT *pendpoint;
 	DCERPC_INTERFACE *pinterface;
 	
-	for (pnode=double_list_get_head(&g_endpoint_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_endpoint_list, pnode)) {
-		pendpoint = (DCERPC_ENDPOINT*)pnode->pdata;
-		if (0 != strcasecmp(host, pendpoint->host) ||
-		    pendpoint->tcp_port != tcp_port)
-			continue;
-		plist = &pendpoint->interface_list;
-		for (pnode1=double_list_get_head(plist); NULL!=pnode1;
+	auto ei = std::find_if(g_endpoint_list.cbegin(), g_endpoint_list.cend(),
+	          endpoint_eq(host, tcp_port));
+	if (ei == g_endpoint_list.cend())
+		return tcp_port;
+	auto plist = &ei->interface_list;
+	for (auto pnode1 = double_list_get_head(plist); pnode1 != nullptr;
 			pnode1=double_list_get_after(plist, pnode1)) {
 			pinterface = (DCERPC_INTERFACE*)pnode1->pdata;
 			if (0 == guid_compare(puuid, &pinterface->uuid) &&
 				pinterface->version == version) {
-				return pendpoint->tcp_port;
+				return ei->tcp_port;
 			}
 		}
-	}
 	return tcp_port;
 }
 
@@ -389,8 +401,6 @@ std::unique_ptr<PDU_PROCESSOR>
 pdu_processor_create(const char *host, uint16_t tcp_port)
 {
 	std::unique_ptr<PDU_PROCESSOR> pprocessor;
-	DOUBLE_LIST_NODE *pnode;
-	DCERPC_ENDPOINT *pendpoint;
 	
 	try {
 		pprocessor = std::make_unique<PDU_PROCESSOR>();
@@ -398,19 +408,19 @@ pdu_processor_create(const char *host, uint16_t tcp_port)
 		fprintf(stderr, "E-1574: ENOMEM\n");
 		return NULL;
 	}
-	for (pnode=double_list_get_head(&g_endpoint_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_endpoint_list, pnode)) {
-		pendpoint = (DCERPC_ENDPOINT*)pnode->pdata;
-		if (tcp_port == pendpoint->tcp_port &&
-			0 != wildcard_match(host, pendpoint->host, TRUE)) {
+	/* verify that EP&INTF exists */
+	auto ei = std::find_if(g_endpoint_list.begin(), g_endpoint_list.end(),
+	          endpoint_mt(host, tcp_port));
+	if (ei == g_endpoint_list.end())
+		return nullptr;
+	{
 			double_list_init(&pprocessor->context_list);
 			double_list_init(&pprocessor->auth_list);
 			double_list_init(&pprocessor->fragmented_list);
-			pprocessor->pendpoint = pendpoint;
+			pprocessor->pendpoint = &*ei;
 			std::lock_guard li_hold(g_list_lock);
 			g_processor_list.push_back(pprocessor.get());
 			return pprocessor;
-		}
 	}
 	return NULL;
 }
@@ -3308,32 +3318,23 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 }
 
 static DCERPC_ENDPOINT* pdu_processor_register_endpoint(const char *host,
-    uint16_t tcp_port)
+    uint16_t tcp_port) try
 {
-	DOUBLE_LIST_NODE *pnode;
-	DCERPC_ENDPOINT *pendpoint;
-	
-	for (pnode=double_list_get_head(&g_endpoint_list); NULL!=pnode;
-		pnode=double_list_get_after(&g_endpoint_list, pnode)) {
-		pendpoint = (DCERPC_ENDPOINT*)pnode->pdata;
-		if (0 == strcasecmp(pendpoint->host, host) &&
-			tcp_port == pendpoint->tcp_port) {
-			return pendpoint;
-		}
-	}
-	pendpoint = static_cast<DCERPC_ENDPOINT *>(malloc(sizeof(*pendpoint)));
-	if (NULL == pendpoint) {
-		return NULL;
-	}
-	pendpoint->node.pdata = pendpoint;
+	auto ei = std::find_if(g_endpoint_list.begin(), g_endpoint_list.end(),
+	          endpoint_eq(host, tcp_port));
+	if (ei != g_endpoint_list.end())
+		return &*ei;
+	auto &ep = g_endpoint_list.emplace_back();
+	auto pendpoint = &ep;
 	gx_strlcpy(pendpoint->host, host, GX_ARRAY_SIZE(pendpoint->host));
 	pendpoint->tcp_port = tcp_port;
 	pendpoint->last_group_id = 0;
-	double_list_init(&pendpoint->interface_list);
-	double_list_append_as_tail(&g_endpoint_list, &pendpoint->node);
 	printf("[pdu_processor]: registered endpoint [%s]:%hu\n",
 	       pendpoint->host, pendpoint->tcp_port);
 	return pendpoint;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1575: ENOMEM\n");
+	return nullptr;
 }
 
 static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
