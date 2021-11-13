@@ -46,6 +46,7 @@ static int exchange_nsp_ndr_push(int opnum, NDR_PUSH *pndr, void *pout);
 static void exchange_nsp_unbind(uint64_t handle);
 
 DECLARE_PROC_API();
+static DCERPC_ENDPOINT *ep_6001, *ep_6004;
 
 static constexpr DCERPC_INTERFACE interface = {
 	"exchangeNSP",
@@ -136,18 +137,18 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 		}
 #undef regsvr
 
-		auto pendpoint1 = register_endpoint("*", 6001);
-		if (NULL == pendpoint1) {
+		ep_6001 = register_endpoint("*", 6001);
+		if (ep_6001 == nullptr) {
 			printf("[exchange_nsp]: failed to register endpoint with port 6001\n");
 			return FALSE;
 		}
-		auto pendpoint2 = register_endpoint("*", 6004);
-		if (NULL == pendpoint2) {
+		ep_6004 = register_endpoint("*", 6004);
+		if (ep_6004 == nullptr) {
 			printf("[exchange_nsp]: failed to register endpoint with port 6004\n");
 			return FALSE;
 		}
-		if (FALSE == register_interface(pendpoint1, &interface) ||
-			FALSE == register_interface(pendpoint2, &interface)) {
+		if (!register_interface(ep_6001, &interface) ||
+		    !register_interface(ep_6004, &interface)) {
 			printf("[exchange_nsp]: failed to register interface\n");
 			return FALSE;
 		}
@@ -169,6 +170,8 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 	}
 	case PLUGIN_FREE:
 		ab_tree_stop();
+		unregister_interface(ep_6004, &interface);
+		unregister_interface(ep_6001, &interface);
 		return TRUE;
 	case PLUGIN_RELOAD:
 		ab_tree_invalidate_cache();

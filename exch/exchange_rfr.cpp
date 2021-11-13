@@ -55,6 +55,7 @@ static int exchange_rfr_dispatch(int opnum, const GUID *pobject,
 static int exchange_rfr_ndr_push(int opnum, NDR_PUSH *pndr, void *pout);
 
 static BOOL (*get_id_from_username)(const char *username, int *puser_id);
+static DCERPC_ENDPOINT *ep_6001, *ep_6002;
 
 static constexpr DCERPC_INTERFACE interface = {
 	"exchangeRFR",
@@ -65,6 +66,11 @@ static constexpr DCERPC_INTERFACE interface = {
 
 static BOOL proc_exchange_rfr(int reason, void **ppdata)
 {
+	if (reason == PLUGIN_FREE) {
+		unregister_interface(ep_6002, &interface);
+		unregister_interface(ep_6001, &interface);
+		return TRUE;
+	}
 	/* path contains the config files directory */
 	switch (reason) {
 	case PLUGIN_INIT: {
@@ -74,26 +80,24 @@ static BOOL proc_exchange_rfr(int reason, void **ppdata)
 			printf("[exchange_rfr]: failed to get service \"get_id_from_username\"\n");
 			return FALSE;
 		}
-		auto pendpoint1 = register_endpoint("*", 6001);
-		if (NULL == pendpoint1) {
+		ep_6001 = register_endpoint("*", 6001);
+		if (ep_6001 == nullptr) {
 			printf("[exchange_rfr]: failed to register endpoint with port 6001\n");
 			return FALSE;
 		}
-		auto pendpoint2 = register_endpoint("*", 6002);
-		if (NULL == pendpoint2) {
+		ep_6002 = register_endpoint("*", 6002);
+		if (ep_6002 == nullptr) {
 			printf("[exchange_rfr]: failed to register endpoint with port 6002\n");
 			return FALSE;
 		}
-		if (FALSE == register_interface(pendpoint1, &interface) ||
-			FALSE == register_interface(pendpoint2, &interface)) {
+		if (!register_interface(ep_6001, &interface) ||
+		    !register_interface(ep_6002, &interface)) {
 			printf("[exchange_rfr]: failed to register interface\n");
 			return FALSE;
 		}
 		printf("[exchange_rfr]: plugin is loaded into system\n");
 		return TRUE;
 	}
-	case PLUGIN_FREE:
-		return TRUE;
 	}
 	return TRUE;
 }

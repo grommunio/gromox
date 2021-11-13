@@ -55,12 +55,6 @@ struct pdu_service_node {
 	char *service_name;
 };
 
-struct INTERFACE_NODE {
-	DOUBLE_LIST_NODE node;
-	DCERPC_ENDPOINT *pendpoint;
-	DCERPC_INTERFACE *pinterface;
-};
-
 struct NDR_STACK_ROOT {
 	ALLOC_CONTEXT in_stack;
 	ALLOC_CONTEXT out_stack;
@@ -3341,9 +3335,7 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
     const DCERPC_INTERFACE *pinterface)
 {
 	DOUBLE_LIST_NODE *pnode;
-	INTERFACE_NODE *pif_node;
 	DCERPC_INTERFACE *pinterface1;
-	
 	
 	if (NULL == pinterface->ndr_pull) {
 		printf("[pdu_processor]: ndr_pull of interface %s cannot be NULL\n",
@@ -3381,18 +3373,8 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 		free(pnode);
 		return FALSE;
 	}
-	pif_node = static_cast<INTERFACE_NODE *>(malloc(sizeof(*pif_node)));
-	if (NULL == pif_node) {
-		free(pnode->pdata);
-		free(pnode);
-		return FALSE;
-	}
 	memcpy(pnode->pdata, pinterface, sizeof(DCERPC_INTERFACE));
 	double_list_append_as_tail(&pendpoint->interface_list, pnode);
-	pif_node->node.pdata = pif_node;
-	pif_node->pendpoint = pendpoint;
-	pif_node->pinterface = static_cast<DCERPC_INTERFACE *>(pnode->pdata);
-	double_list_append_as_tail(&g_cur_plugin->interface_list, &pif_node->node);
 	char uuid_string[GUIDSTR_SIZE];
 	guid_to_string(&pinterface->uuid, uuid_string, arsizeof(uuid_string));
 	printf("[pdu_processor]: EP [%s]:%hu: registered interface %s {%s} (v %u.%02u)\n",
@@ -3402,19 +3384,32 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 	return TRUE;
 }
 
+static void pdu_processor_unregister_interface(DCERPC_ENDPOINT *ep,
+    const DCERPC_INTERFACE *tpl)
+{
+	for (auto n = double_list_get_head(&ep->interface_list); n != nullptr;
+	     n = double_list_get_after(&ep->interface_list, n)) {
+		auto ix = static_cast<const DCERPC_INTERFACE *>(n->pdata);
+		if (ix->version == tpl->version &&
+		    guid_compare(&ix->uuid, &tpl->uuid) == 0) {
+			double_list_remove(&ep->interface_list, n);
+			free(n->pdata);
+			free(n);
+		}
+	}
+}
+
 PROC_PLUGIN::PROC_PLUGIN()
 {
 	double_list_init(&list_reference);
-	double_list_init(&interface_list);
 }
 
 PROC_PLUGIN::PROC_PLUGIN(PROC_PLUGIN &&o) :
-	list_reference(o.list_reference), interface_list(o.interface_list),
+	list_reference(o.list_reference),
 	lib_main(o.lib_main), talk_main(o.talk_main),
 	file_name(std::move(o.file_name)), completed_init(o.completed_init)
 {
 	o.list_reference = {};
-	o.interface_list = {};
 	o.handle = nullptr;
 	o.completed_init = false;
 }
@@ -3422,30 +3417,11 @@ PROC_PLUGIN::PROC_PLUGIN(PROC_PLUGIN &&o) :
 PROC_PLUGIN::~PROC_PLUGIN()
 {
 	PLUGIN_MAIN func;
-	DOUBLE_LIST *plist;
 	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *pnode1;
-	INTERFACE_NODE *pif_node;
 	auto pplugin = this;
 	
 	if (pplugin->file_name.size() > 0)
 		printf("[pdu_processor]: unloading %s\n", pplugin->file_name.c_str());
-	while ((pnode = double_list_pop_front(&pplugin->interface_list)) != nullptr) {
-		pif_node = (INTERFACE_NODE*)pnode->pdata;
-		plist = &pif_node->pendpoint->interface_list;
-		for (pnode1=double_list_get_head(plist); NULL!=pnode1;
-			pnode1=double_list_get_after(plist, pnode1)) {
-			if (pif_node->pinterface == pnode1->pdata) {
-				double_list_remove(plist, pnode1);
-				free(pnode1->pdata);
-				free(pnode1);
-				break;
-			}
-		}
-		free(pif_node);
-	}
-	double_list_free(&pplugin->interface_list);
-	
 	func = (PLUGIN_MAIN)pplugin->lib_main;
 	if (func != nullptr && pplugin->completed_init)
 		/* notify the plugin that it willbe unloaded */
@@ -3604,6 +3580,8 @@ static void *pdu_processor_queryservice(const char *service, const std::type_inf
 	if (strcmp(service, "register_interface") == 0) {
 		return reinterpret_cast<void *>(pdu_processor_register_interface);
 	}
+	if (strcmp(service, "unregister_interface") == 0)
+		return reinterpret_cast<void *>(pdu_processor_unregister_interface);
 	if (strcmp(service, "register_service") == 0)
 		return reinterpret_cast<void *>(service_register_service);
 	if (strcmp(service, "register_talk") == 0) {

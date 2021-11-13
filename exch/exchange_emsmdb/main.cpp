@@ -60,6 +60,7 @@ static int exchange_async_emsmdb_ndr_push(int opnum,
 static void exchange_async_emsmdb_reclaim(uint32_t async_id);
 
 DECLARE_PROC_API();
+static DCERPC_ENDPOINT *ep_6001;
 
 static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig)
 {
@@ -224,16 +225,13 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 #undef regsvr
 
 		/* host can include wildcard */
-		auto pendpoint = register_endpoint("*", 6001);
-		if (NULL == pendpoint) {
+		ep_6001 = register_endpoint("*", 6001);
+		if (ep_6001 == nullptr) {
 			printf("[exchange_emsmdb]: failed to register endpoint with port 6001\n");
 			return FALSE;
 		}
-		if (FALSE == register_interface(pendpoint, &interface_emsmdb)) {
-			printf("[exchange_emsmdb]: failed to register emsmdb interface\n");
-			return FALSE;
-		}
-		if (FALSE == register_interface(pendpoint, &interface_async_emsmdb)) {
+		if (!register_interface(ep_6001, &interface_emsmdb) ||
+		    !register_interface(ep_6001, &interface_async_emsmdb)) {
 			printf("[exchange_emsmdb]: failed to register emsmdb interface\n");
 			return FALSE;
 		}

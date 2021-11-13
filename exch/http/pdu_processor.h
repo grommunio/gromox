@@ -38,7 +38,7 @@ struct PROC_PLUGIN {
 	~PROC_PLUGIN();
 	void operator=(PROC_PLUGIN &&) = delete;
 
-	DOUBLE_LIST list_reference{}, interface_list{};
+	DOUBLE_LIST list_reference{};
 	void *handle = nullptr;
 	PLUGIN_MAIN lib_main = nullptr;
 	TALK_MAIN talk_main = nullptr;
