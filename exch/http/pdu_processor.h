@@ -38,7 +38,7 @@ struct PROC_PLUGIN {
 struct DCERPC_ENDPOINT {
 	DOUBLE_LIST_NODE node;
 	char host[128];
-	int tcp_port;		/* only for ncacn_http */
+	uint16_t tcp_port; /* only for ncacn_http */
 	DOUBLE_LIST interface_list;
 	uint32_t last_group_id;
 };
@@ -103,7 +103,7 @@ extern void pdu_processor_init(int connection_num, int connection_ratio,
 extern int pdu_processor_run();
 extern void pdu_processor_stop();
 extern void pdu_processor_free();
-extern std::unique_ptr<PDU_PROCESSOR> pdu_processor_create(const char *host, int tcp_port);
+extern std::unique_ptr<PDU_PROCESSOR> pdu_processor_create(const char *host, uint16_t tcp_port);
 extern void pdu_processor_destroy(std::unique_ptr<PDU_PROCESSOR> &&);
 int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	uint16_t length, DCERPC_CALL **ppcall);

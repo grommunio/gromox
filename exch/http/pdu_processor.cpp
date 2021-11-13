@@ -73,7 +73,7 @@ struct ASYNC_NODE {
 	DCERPC_CALL *pcall;
 	NDR_STACK_ROOT* pstack_root;
 	char vconn_host[256];
-	int vconn_port;
+	uint16_t vconn_port;
 	char vconn_cookie[64];
 };
 
@@ -338,8 +338,8 @@ void pdu_processor_free()
 }
 
 
-static int pdu_processor_find_secondary(const char *host,
-	int tcp_port, GUID *puuid, uint32_t version)
+static uint16_t pdu_processor_find_secondary(const char *host,
+    uint16_t tcp_port, GUID *puuid, uint32_t version)
 {
 	DOUBLE_LIST *plist;
 	DOUBLE_LIST_NODE *pnode;
@@ -385,7 +385,7 @@ static DCERPC_INTERFACE* pdu_processor_find_interface_by_uuid(
 }
 
 std::unique_ptr<PDU_PROCESSOR>
-pdu_processor_create(const char *host, int tcp_port)
+pdu_processor_create(const char *host, uint16_t tcp_port)
 {
 	std::unique_ptr<PDU_PROCESSOR> pprocessor;
 	DOUBLE_LIST_NODE *pnode;
@@ -979,7 +979,6 @@ static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason)
 static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 {
 	int i;
-	int port2;
 	GUID uuid;
 	BOOL b_found;
 	BOOL b_ndr64;
@@ -1156,11 +1155,11 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	}
 
 	if (NULL != pinterface) {
-		port2 = pdu_processor_find_secondary(
+		auto port2 = pdu_processor_find_secondary(
 					pcall->pprocessor->pendpoint->host,
 					pcall->pprocessor->pendpoint->tcp_port,
 					&pinterface->uuid, pinterface->version);
-		snprintf(pkt.payload.bind_ack.secondary_address, 64, "%d", port2);
+		snprintf(pkt.payload.bind_ack.secondary_address, 64, "%hu", port2);
 	} else {
 		pkt.payload.bind_ack.secondary_address[0] = '\0';
 	}
@@ -3310,7 +3309,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 }
 
 static DCERPC_ENDPOINT* pdu_processor_register_endpoint(const char *host,
-	int tcp_port)
+    uint16_t tcp_port)
 {
 	DOUBLE_LIST_NODE *pnode;
 	DCERPC_ENDPOINT *pendpoint;
@@ -3333,7 +3332,7 @@ static DCERPC_ENDPOINT* pdu_processor_register_endpoint(const char *host,
 	pendpoint->last_group_id = 0;
 	double_list_init(&pendpoint->interface_list);
 	double_list_append_as_tail(&g_endpoint_list, &pendpoint->node);
-	printf("[pdu_processor]: registered endpoint %s:%d\n",
+	printf("[pdu_processor]: registered endpoint [%s]:%hu\n",
 	       pendpoint->host, pendpoint->tcp_port);
 	return pendpoint;
 }
@@ -3367,7 +3366,7 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 		if (pinterface1->version == pinterface->version &&
 			0 == guid_compare(&pinterface1->uuid, &pinterface->uuid)) {
 			printf("[pdu_processor]: interface already exists under "
-				"endpoint %s:%d\n", pendpoint->host, pendpoint->tcp_port);
+			       "endpoint [%s]:%hu\n", pendpoint->host, pendpoint->tcp_port);
 			return FALSE;
 		}
 	}
@@ -3396,7 +3395,7 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 	double_list_append_as_tail(&g_cur_plugin->interface_list, &pif_node->node);
 	char uuid_string[GUIDSTR_SIZE];
 	guid_to_string(&pinterface->uuid, uuid_string, arsizeof(uuid_string));
-	printf("[pdu_processor]: EP %s:%d: registered interface %s {%s} (v %u.%02u)\n",
+	printf("[pdu_processor]: EP [%s]:%hu: registered interface %s {%s} (v %u.%02u)\n",
 	       pendpoint->host, pendpoint->tcp_port, pinterface->name,
 	       uuid_string, pinterface->version & 0xFFFF,
 	       (pinterface->version >> 16) & 0xFFFF);

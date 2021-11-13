@@ -9,11 +9,11 @@ struct NDR_PUSH;
 
 struct DCERPC_INFO {
 	const char *client_ip;
-	int client_port;
 	const char *server_ip; /* http server ip */
-	int server_port;       /* http server port */
 	const char *ep_host;   /* endpoint host name */
-	int ep_port;           /* endpoint port */
+	uint16_t client_port;
+	uint16_t server_port; /* HTTP server port */
+	uint16_t ep_port; /* endpoint port */
 	BOOL is_login;         /* if client login */
 	const char *username;  /* username of client by http auth */
 	const char *maildir;
