@@ -98,7 +98,6 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 	int async_num;
 	uint16_t smtp_port;
 	int max_length;
-	void *pendpoint;
 	int max_rule_len;
 	char smtp_ip[40];
 	int ping_interval;
@@ -225,7 +224,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 #undef regsvr
 
 		/* host can include wildcard */
-		pendpoint = register_endpoint("*", 6001);
+		auto pendpoint = register_endpoint("*", 6001);
 		if (NULL == pendpoint) {
 			printf("[exchange_emsmdb]: failed to register endpoint with port 6001\n");
 			return FALSE;

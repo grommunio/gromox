@@ -65,9 +65,6 @@ static constexpr DCERPC_INTERFACE interface = {
 
 static BOOL proc_exchange_rfr(int reason, void **ppdata)
 {
-	void *pendpoint1;
-	void *pendpoint2;
-	
 	/* path contains the config files directory */
 	switch (reason) {
 	case PLUGIN_INIT: {
@@ -77,12 +74,12 @@ static BOOL proc_exchange_rfr(int reason, void **ppdata)
 			printf("[exchange_rfr]: failed to get service \"get_id_from_username\"\n");
 			return FALSE;
 		}
-		pendpoint1 = register_endpoint("*", 6001);
+		auto pendpoint1 = register_endpoint("*", 6001);
 		if (NULL == pendpoint1) {
 			printf("[exchange_rfr]: failed to register endpoint with port 6001\n");
 			return FALSE;
 		}
-		pendpoint2 = register_endpoint("*", 6002);
+		auto pendpoint2 = register_endpoint("*", 6002);
 		if (NULL == pendpoint2) {
 			printf("[exchange_rfr]: failed to register endpoint with port 6002\n");
 			return FALSE;

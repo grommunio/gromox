@@ -13,13 +13,14 @@
 #define DISPATCH_SUCCESS			1
 #define DISPATCH_PENDING			2
 
+struct DCERPC_ENDPOINT;
 struct DCERPC_INFO;
 struct DCERPC_INTERFACE;
 #define DECLARE_PROC_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \
 	x BOOL (*register_serviceF)(const char *, void *, const std::type_info &); \
-	x void *(*register_endpoint)(const char *, int); \
-	x BOOL (*register_interface)(void *, const DCERPC_INTERFACE *); \
+	x DCERPC_ENDPOINT *(*register_endpoint)(const char *, int); \
+	x BOOL (*register_interface)(DCERPC_ENDPOINT *, const DCERPC_INTERFACE *); \
 	x BOOL (*register_talk)(TALK_MAIN); \
 	x void (*log_info)(unsigned int, const char *, ...); \
 	x const char *(*get_host_ID)(); \

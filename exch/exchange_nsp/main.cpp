@@ -61,8 +61,6 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 	const char *org_name;
 	int table_size;
 	int max_item_num;
-	void *pendpoint1;
-	void *pendpoint2;
 	int cache_interval;
 	char temp_buff[45];
 	
@@ -138,12 +136,12 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 		}
 #undef regsvr
 
-		pendpoint1 = register_endpoint("*", 6001);
+		auto pendpoint1 = register_endpoint("*", 6001);
 		if (NULL == pendpoint1) {
 			printf("[exchange_nsp]: failed to register endpoint with port 6001\n");
 			return FALSE;
 		}
-		pendpoint2 = register_endpoint("*", 6004);
+		auto pendpoint2 = register_endpoint("*", 6004);
 		if (NULL == pendpoint2) {
 			printf("[exchange_nsp]: failed to register endpoint with port 6004\n");
 			return FALSE;
