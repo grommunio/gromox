@@ -1,4 +1,5 @@
 #pragma once
+#include <list>
 #include <memory>
 #include <string>
 #include <gromox/dcerpc.hpp>
@@ -22,12 +23,8 @@ enum {
 };
 
 struct DCERPC_ENDPOINT {
-	DCERPC_ENDPOINT();
-	~DCERPC_ENDPOINT();
-	NOMOVE(DCERPC_ENDPOINT);
-
 	char host[128]{};
-	DOUBLE_LIST interface_list{};
+	std::list<DCERPC_INTERFACE> interface_list;
 	uint32_t last_group_id = 0;
 	uint16_t tcp_port = 0; /* only for ncacn_http */
 };
@@ -65,7 +62,6 @@ struct DCERPC_AUTH_CONTEXT {
 	BOOL is_login;
 };
 
-struct DCERPC_INTERFACE;
 struct DCERPC_CONTEXT {
 	DOUBLE_LIST_NODE node;
 	uint32_t context_id;

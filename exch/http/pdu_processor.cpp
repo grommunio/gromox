@@ -90,6 +90,17 @@ class endpoint_mt : public endpoint_eq {
 	}
 };
 
+class interface_eq {
+	public:
+	constexpr interface_eq(const GUID &g, uint32_t v) : uuid(g), ver(v) {}
+	bool operator()(const DCERPC_INTERFACE &i) const {
+		return guid_compare(&i.uuid, &uuid) == 0 && i.version == ver;
+	}
+	protected:
+	GUID uuid{};
+	uint32_t ver = 0;
+};
+
 }
 
 static BOOL g_bigendian;
@@ -127,16 +138,6 @@ static const SYNTAX_ID g_transfer_syntax_ndr64 =
 	{{0x71710533, 0xbeba, 0x4937, {0x83, 0x19}, {0xb5,0xdb,0xef,0x9c,0xcc,0x36}}, 1};
 
 static int pdu_processor_load_library(const char* plugin_name);
-
-DCERPC_ENDPOINT::DCERPC_ENDPOINT()
-{
-	double_list_init(&interface_list);
-}
-
-DCERPC_ENDPOINT::~DCERPC_ENDPOINT()
-{
-	double_list_free(&interface_list);
-}
 
 static NDR_STACK_ROOT* pdu_processor_new_stack_root()
 {
@@ -354,22 +355,13 @@ void pdu_processor_free()
 static uint16_t pdu_processor_find_secondary(const char *host,
     uint16_t tcp_port, const GUID *puuid, uint32_t version)
 {
-	DCERPC_INTERFACE *pinterface;
-	
 	auto ei = std::find_if(g_endpoint_list.cbegin(), g_endpoint_list.cend(),
 	          endpoint_eq(host, tcp_port));
 	if (ei == g_endpoint_list.cend())
 		return tcp_port;
-	auto plist = &ei->interface_list;
-	for (auto pnode1 = double_list_get_head(plist); pnode1 != nullptr;
-			pnode1=double_list_get_after(plist, pnode1)) {
-			pinterface = (DCERPC_INTERFACE*)pnode1->pdata;
-			if (0 == guid_compare(puuid, &pinterface->uuid) &&
-				pinterface->version == version) {
-				return ei->tcp_port;
-			}
-		}
-	return tcp_port;
+	auto &lst = ei->interface_list;
+	auto ix = std::find_if(lst.cbegin(), lst.cend(), interface_eq(*puuid, version));
+	return ix != lst.cend() ? ei->tcp_port : tcp_port;
 }
 
 /* find the interface operations on an endpoint by uuid */
@@ -377,18 +369,9 @@ static const DCERPC_INTERFACE *
 pdu_processor_find_interface_by_uuid(const DCERPC_ENDPOINT *pendpoint,
     const GUID *puuid, uint32_t if_version)
 {
-	const DOUBLE_LIST_NODE *pnode;
-	DCERPC_INTERFACE *pinterface;
-	
-	for (pnode=double_list_get_head(&pendpoint->interface_list); NULL!=pnode;
-		pnode=double_list_get_after(&pendpoint->interface_list, pnode)) {
-		pinterface = (DCERPC_INTERFACE*)pnode->pdata;
-		if (0 == guid_compare(&pinterface->uuid, puuid)
-			&& pinterface->version == if_version) {
-			return pinterface;
-		}
-	}
-	return NULL;
+	auto &lst = pendpoint->interface_list;
+	auto ix = std::find_if(lst.begin(), lst.end(), interface_eq(*puuid, if_version));
+	return ix != lst.end() ? &*ix : nullptr;
 }
 
 std::unique_ptr<PDU_PROCESSOR>
@@ -3334,9 +3317,6 @@ static DCERPC_ENDPOINT* pdu_processor_register_endpoint(const char *host,
 static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
     const DCERPC_INTERFACE *pinterface)
 {
-	DOUBLE_LIST_NODE *pnode;
-	DCERPC_INTERFACE *pinterface1;
-	
 	if (NULL == pinterface->ndr_pull) {
 		printf("[pdu_processor]: ndr_pull of interface %s cannot be NULL\n",
 			pinterface->name);
@@ -3352,29 +3332,20 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 			pinterface->name);
 		return FALSE;
 	}
-	for (pnode=double_list_get_head(&pendpoint->interface_list); NULL!=pnode;
-		pnode=double_list_get_after(&pendpoint->interface_list, pnode)) {
-		pinterface1 = (DCERPC_INTERFACE*)pnode->pdata;
-		if (pinterface1->version == pinterface->version &&
-			0 == guid_compare(&pinterface1->uuid, &pinterface->uuid)) {
-			printf("[pdu_processor]: interface already exists under "
-			       "endpoint [%s]:%hu\n", pendpoint->host, pendpoint->tcp_port);
-			return FALSE;
-		}
-	}
-	
-	pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(*pnode)));
-	if (NULL == pnode) {
+	auto &lst = pendpoint->interface_list;
+	auto ix = std::find_if(lst.cbegin(), lst.cend(),
+	          interface_eq(pinterface->uuid, pinterface->version));
+	if (ix != lst.cend()) {
+		printf("[pdu_processor]: interface already exists under "
+		       "endpoint [%s]:%hu\n", pendpoint->host, pendpoint->tcp_port);
 		return FALSE;
 	}
-	
-	pnode->pdata = malloc(sizeof(DCERPC_INTERFACE));
-	if (NULL == pnode->pdata) {
-		free(pnode);
-		return FALSE;
+	try {
+		pendpoint->interface_list.emplace_back(*pinterface);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1576: ENOMEM\n");
+		return false;
 	}
-	memcpy(pnode->pdata, pinterface, sizeof(DCERPC_INTERFACE));
-	double_list_append_as_tail(&pendpoint->interface_list, pnode);
 	char uuid_string[GUIDSTR_SIZE];
 	guid_to_string(&pinterface->uuid, uuid_string, arsizeof(uuid_string));
 	printf("[pdu_processor]: EP [%s]:%hu: registered interface %s {%s} (v %u.%02u)\n",
@@ -3385,18 +3356,17 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 }
 
 static void pdu_processor_unregister_interface(DCERPC_ENDPOINT *ep,
-    const DCERPC_INTERFACE *tpl)
+    const DCERPC_INTERFACE *tp)
 {
-	for (auto n = double_list_get_head(&ep->interface_list); n != nullptr;
-	     n = double_list_get_after(&ep->interface_list, n)) {
-		auto ix = static_cast<const DCERPC_INTERFACE *>(n->pdata);
-		if (ix->version == tpl->version &&
-		    guid_compare(&ix->uuid, &tpl->uuid) == 0) {
-			double_list_remove(&ep->interface_list, n);
-			free(n->pdata);
-			free(n);
-		}
-	}
+	auto &lst = ep->interface_list;
+#if __cplusplus >= 202000L
+	lst.remove_if(interface_eq(tp->uuid, tp->version));
+#else
+	auto ei = std::find_if(lst.begin(), lst.end(),
+	          interface_eq(tp->uuid, tp->version));
+	if (ei != lst.end())
+		lst.erase(ei);
+#endif
 }
 
 PROC_PLUGIN::PROC_PLUGIN()
