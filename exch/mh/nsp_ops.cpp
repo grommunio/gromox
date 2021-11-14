@@ -191,7 +191,6 @@ int nsp_ext_pull::g_nsp_request(getmatches_request &req)
 		req.filter = anew<RESTRICTION>();
 		if (req.filter == nullptr)
 			return EXT_ERR_ALLOC;
-		SCOPED_ABK_DISABLE(*this);
 		TRY(g_restriction(req.filter));
 	}
 	TRY(g_uint8(&tmp_byte));

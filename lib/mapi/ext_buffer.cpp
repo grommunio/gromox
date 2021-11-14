@@ -16,6 +16,13 @@
 
 using namespace gromox;
 
+/*
+ * On the matter of %EXT_FLAG_ABK: When NSP is run over MH, some nonsensical
+ * alternate data formats are used. OXCMAPIHTTP v13 §2.2.1 mentions some of
+ * these. The document is grossly incomplete. Only §2.2.1.1 specifies a
+ * HasValue field, but 0xFF bytes can appear in other structs too.
+ */
+
 void EXT_PULL::init(const void *pdata, uint32_t data_size,
     EXT_BUFFER_ALLOC alloc, uint32_t flags)
 {
@@ -455,6 +462,17 @@ static int ext_buffer_pull_restriction_content(
 {
 	TRY(pext->g_uint32(&r->fuzzy_level));
 	TRY(pext->g_uint32(&r->proptag));
+	if (pext->m_flags & EXT_FLAG_ABK) {
+		/* modeled upon restriction_property; presumed to occur */
+		uint8_t value_set;
+		TRY(pext->g_uint8(&value_set));
+		if (value_set == 0) {
+			r->propval = {};
+			return EXT_ERR_SUCCESS;
+		} else if (value_set != 0xFF) {
+			return EXT_ERR_FORMAT;
+		}
+	}
 	return pext->g_tagged_pv(&r->propval);
 }
 
@@ -466,6 +484,16 @@ static int ext_buffer_pull_restriction_property(
 	TRY(pext->g_uint8(&relop));
 	r->relop = static_cast<enum relop>(relop);
 	TRY(pext->g_uint32(&r->proptag));
+	if (pext->m_flags & EXT_FLAG_ABK) {
+		uint8_t value_set;
+		TRY(pext->g_uint8(&value_set));
+		if (value_set == 0) {
+			r->propval = {};
+			return EXT_ERR_SUCCESS;
+		} else if (value_set != 0xFF) {
+			return EXT_ERR_FORMAT;
+		}
+	}
 	return pext->g_tagged_pv(&r->propval);
 }
 
