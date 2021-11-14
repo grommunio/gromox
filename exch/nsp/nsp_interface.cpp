@@ -1550,18 +1550,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
     uint32_t requested, MID_ARRAY **ppoutmids, const LPROPTAG_ARRAY *pproptags,
     NSP_ROWSET **pprows)
 {
-	int base_id;
-	int user_id;
-	uint32_t result, start_pos, last_row, total;
-	char maildir[256];
-	uint32_t *pproptag;
-	NSP_PROPROW *prow;
-	char temp_buff[1024];
-	SINGLE_LIST *pgal_list;
 	PROPERTY_VALUE prop_val;
-	SIMPLE_TREE_NODE *pnode;
-	SINGLE_LIST_NODE *psnode;
-	
 	
 	if (NULL == pstat || CODEPAGE_UNICODE == pstat->codepage) {
 		*ppoutmids = NULL;
@@ -1581,7 +1570,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		*pprows = NULL;
 		return ecNotSupported;
 	}
-	base_id = ab_tree_get_guid_base_id(handle.guid);
+	auto base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
 		*ppoutmids = NULL;
 		*pprows = NULL;
@@ -1614,13 +1603,15 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		*pprows = NULL;
 		return ecError;
 	}
-	
+
+	uint32_t result;
 	if (pstat->container_id == PR_EMS_AB_PUBLIC_DELEGATES) {
-		pnode = ab_tree_minid_to_node(pbase.get(), pstat->cur_rec);
+		auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->cur_rec);
 		if (NULL == pnode) {
 			result = ecInvalidBookmark;
 			goto EXIT_GET_MATCHES;
 		}
+		char maildir[256], temp_buff[1024];
 		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, temp_buff, GX_ARRAY_SIZE(temp_buff));
 		if (!get_maildir(temp_buff, maildir, arsizeof(maildir))) {
 			result = ecError;
@@ -1645,6 +1636,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			if ((*ppoutmids)->cvalues > requested) {
 				break;
 			}
+			int user_id;
 			if (!get_id_from_username(pitem[i].user, &user_id) ||
 				NULL == (pnode = ab_tree_uid_to_node(pbase.get(), user_id))) {
 				continue;
@@ -1653,7 +1645,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 				pnode, pstat->codepage, pfilter)) {
 				continue;	
 			}
-			pproptag = common_util_proptagarray_enlarge(*ppoutmids);
+			auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 			if (NULL == pproptag) {
 				result = ecMAPIOOM;
 				goto EXIT_GET_MATCHES;
@@ -1663,11 +1655,12 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		goto FETCH_ROWS;
 	}
 	if (pfilter == nullptr) {
-		pnode = ab_tree_minid_to_node(pbase.get(), pstat->cur_rec);
+		char temp_buff[1024];
+		auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->cur_rec);
 		if (pnode != nullptr && nsp_interface_fetch_property(pnode,
 		    TRUE, pstat->codepage, pstat->container_id, &prop_val,
 		    temp_buff, GX_ARRAY_SIZE(temp_buff)) == ecSuccess) {
-			pproptag = common_util_proptagarray_enlarge(*ppoutmids);
+			auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 			if (NULL == pproptag) {
 				result = ecMAPIOOM;
 				goto EXIT_GET_MATCHES;
@@ -1675,11 +1668,12 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			*pproptag = ab_tree_get_node_minid(pnode);
 		}
 	} else if (pstat->container_id == 0) {
-		pgal_list = &pbase->gal_list;
+		auto pgal_list = &pbase->gal_list;
+		uint32_t start_pos, last_row, total;
 		nsp_interface_position_in_list(pstat,
 			pgal_list, &start_pos, &last_row, &total);
 		size_t i = 0;
-		for (psnode = single_list_get_head(pgal_list); NULL != psnode;
+		for (auto psnode = single_list_get_head(pgal_list); NULL != psnode;
 		     psnode = single_list_get_after(pgal_list, psnode)) {
 			if (i > last_row || (*ppoutmids)->cvalues > requested) {
 				break;
@@ -1689,7 +1683,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			}
 			if (nsp_interface_match_node(static_cast<SIMPLE_TREE_NODE *>(psnode->pdata),
 			    pstat->codepage, pfilter)) {
-				pproptag = common_util_proptagarray_enlarge(*ppoutmids);
+				auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 				if (NULL == pproptag) {
 					result = ecMAPIOOM;
 					goto EXIT_GET_MATCHES;
@@ -1699,11 +1693,12 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			i++;
 		}
 	} else {
-		pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
+		auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 		if (NULL == pnode) {
 			result = ecInvalidBookmark;
 			goto EXIT_GET_MATCHES;
 		}
+		uint32_t start_pos, last_row, total;
 		nsp_interface_position_in_table(pstat,
 			pnode, &start_pos, &last_row, &total);
 		pnode = simple_tree_node_get_child(pnode);
@@ -1721,7 +1716,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			}
 			if (TRUE == nsp_interface_match_node(pnode,
 			    pstat->codepage, pfilter)) {
-				pproptag = common_util_proptagarray_enlarge(*ppoutmids);
+				auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 				if (NULL == pproptag) {
 					result = ecMAPIOOM;
 					goto EXIT_GET_MATCHES;
@@ -1735,13 +1730,13 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
  FETCH_ROWS:
 	if (NULL != *pprows) {
 		for (size_t i = 0; i < (*ppoutmids)->cvalues; ++i) {
-			prow = common_util_proprowset_enlarge(*pprows);
+			auto prow = common_util_proprowset_enlarge(*pprows);
 			if (NULL == prow || NULL ==
 				common_util_propertyrow_init(prow)) {
 				result = ecMAPIOOM;
 				goto EXIT_GET_MATCHES;
 			}
-			pnode = ab_tree_minid_to_node(pbase.get(), (*ppoutmids)->pproptag[i]);
+			auto pnode = ab_tree_minid_to_node(pbase.get(), (*ppoutmids)->pproptag[i]);
 			if (NULL == pnode) {
 				nsp_interface_make_ptyperror_row(pproptags, prow);
 			} else {
