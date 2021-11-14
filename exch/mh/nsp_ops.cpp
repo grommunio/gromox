@@ -684,7 +684,6 @@ static int nsp_ext_p_stat(nsp_ext_push &ext, const STAT &s)
 
 static int nsp_ext_p_colrow(nsp_ext_push &ext, const nsp_rowset2 *colrow)
 {
-	SCOPED_ABKFLAG(ext);
 	TRY(ext.p_proptag_a(&colrow->columns));
 	TRY(ext.p_uint32(colrow->row_count));
 	for (size_t i = 0; i < colrow->row_count; ++i)
@@ -748,6 +747,7 @@ int nsp_ext_push::p_nsp_response(const getmatches_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
+		SCOPED_ABKFLAG(*this);
 		TRY(nsp_ext_p_colrow(*this, &rsp.column_rows));
 	}
 	return p_uint32(0);
@@ -848,6 +848,7 @@ int nsp_ext_push::p_nsp_response(const queryrows_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
+		SCOPED_ABKFLAG(*this);
 		TRY(nsp_ext_p_colrow(*this, &rsp.column_rows));
 	}
 	return p_uint32(0);
@@ -882,6 +883,7 @@ int nsp_ext_push::p_nsp_response(const resolvenames_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
+		SCOPED_ABKFLAG(*this);
 		TRY(nsp_ext_p_colrow(*this, &rsp.column_rows));
 	}
 	return p_uint32(0);
@@ -920,6 +922,7 @@ int nsp_ext_push::p_nsp_response(const seekentries_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
+		SCOPED_ABKFLAG(*this);
 		TRY(nsp_ext_p_colrow(*this, &rsp.column_rows));
 	}
 	return p_uint32(0);
