@@ -9,18 +9,6 @@
 	(cls).m_flags |= EXT_FLAG_ABK; \
 	auto cl_flag = gromox::make_scope_exit([&]() { (cls).m_flags = saved_flags; });
 
-static int nsp_ext_g_tpropval_a(nsp_ext_pull &ext, LTPROPVAL_ARRAY *proplist)
-{
-	SCOPED_ABKFLAG(ext);
-	return ext.g_tpropval_a(proplist);
-}
-
-static int nsp_ext_g_proptag_a(nsp_ext_pull &ext, LPROPTAG_ARRAY *proptags)
-{
-	SCOPED_ABKFLAG(ext);
-	return ext.g_proptag_a(proptags);
-}
-
 static int nsp_ext_g_stat(nsp_ext_pull &ext, STAT &s)
 {
 	TRY(ext.g_uint32(&s.sort_type));
@@ -217,7 +205,8 @@ int nsp_ext_pull::g_nsp_request(getmatches_request &req)
 		req.columns = anew<LPROPTAG_ARRAY>();
 		if (req.columns == nullptr)
 			return EXT_ERR_ALLOC;
-		TRY(nsp_ext_g_proptag_a(*this, req.columns));
+		SCOPED_ABKFLAG(*this);
+		TRY(g_proptag_a(req.columns));
 	}
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
@@ -271,7 +260,8 @@ int nsp_ext_pull::g_nsp_request(getprops_request &req)
 		req.proptags = anew<LPROPTAG_ARRAY>();
 		if (req.proptags == nullptr)
 			return EXT_ERR_ALLOC;
-		TRY(nsp_ext_g_proptag_a(*this, req.proptags));
+		SCOPED_ABKFLAG(*this);
+		TRY(g_proptag_a(req.proptags));
 	}
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
@@ -397,7 +387,8 @@ int nsp_ext_pull::g_nsp_request(modprops_request &req)
 		req.proptags = anew<LPROPTAG_ARRAY>();
 		if (req.proptags == nullptr)
 			return EXT_ERR_ALLOC;
-		TRY(nsp_ext_g_proptag_a(*this, req.proptags));
+		SCOPED_ABKFLAG(*this);
+		TRY(g_proptag_a(req.proptags));
 	}
 	TRY(g_uint8(&tmp_byte));
 	if (tmp_byte == 0) {
@@ -406,7 +397,8 @@ int nsp_ext_pull::g_nsp_request(modprops_request &req)
 		req.values = anew<LTPROPVAL_ARRAY>();
 		if (req.values == nullptr)
 			return EXT_ERR_ALLOC;
-		TRY(nsp_ext_g_tpropval_a(*this, req.values));
+		SCOPED_ABKFLAG(*this);
+		TRY(g_tpropval_a(req.values));
 	}
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
@@ -444,7 +436,8 @@ int nsp_ext_pull::g_nsp_request(queryrows_request &req)
 		req.columns = anew<LPROPTAG_ARRAY>();
 		if (req.columns == nullptr)
 			return EXT_ERR_ALLOC;
-		TRY(nsp_ext_g_proptag_a(*this, req.columns));
+		SCOPED_ABKFLAG(*this);
+		TRY(g_proptag_a(req.columns));
 	}
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
@@ -497,7 +490,8 @@ int nsp_ext_pull::g_nsp_request(resolvenames_request &req)
 		req.proptags = anew<LPROPTAG_ARRAY>();
 		if (req.proptags == nullptr)
 			return EXT_ERR_ALLOC;
-		TRY(nsp_ext_g_proptag_a(*this, req.proptags));
+		SCOPED_ABKFLAG(*this);
+		TRY(g_proptag_a(req.proptags));
 	}
 	TRY(g_uint8(&tmp_byte));
 	if (tmp_byte == 0) {
@@ -597,7 +591,8 @@ int nsp_ext_pull::g_nsp_request(seekentries_request &req)
 		req.columns = anew<LPROPTAG_ARRAY>();
 		if (req.columns == nullptr)
 			return EXT_ERR_ALLOC;
-		TRY(nsp_ext_g_proptag_a(*this, req.columns));
+		SCOPED_ABKFLAG(*this);
+		TRY(g_proptag_a(req.columns));
 	}
 	TRY(g_uint32(&req.cb_auxin));
 	if (req.cb_auxin == 0) {
@@ -674,18 +669,6 @@ int nsp_ext_pull::g_nsp_request(getaddressbookurl_request &req)
 	return g_bytes(req.auxin, req.cb_auxin);
 }
 
-static int nsp_ext_p_tpropval_a(nsp_ext_push &ext, const LTPROPVAL_ARRAY *proplist)
-{
-	SCOPED_ABKFLAG(ext);
-	return ext.p_tpropval_a(proplist);
-}
-
-static int nsp_ext_p_proptag_a(nsp_ext_push &ext, const LPROPTAG_ARRAY *proptags)
-{
-	SCOPED_ABKFLAG(ext);
-	return ext.p_proptag_a(proptags);
-}
-
 static int nsp_ext_p_stat(nsp_ext_push &ext, const STAT &s)
 {
 	TRY(ext.p_uint32(s.sort_type));
@@ -701,9 +684,9 @@ static int nsp_ext_p_stat(nsp_ext_push &ext, const STAT &s)
 
 static int nsp_ext_p_colrow(nsp_ext_push &ext, const nsp_rowset2 *colrow)
 {
-	TRY(nsp_ext_p_proptag_a(ext, &colrow->columns));
-	TRY(ext.p_uint32(colrow->row_count));
 	SCOPED_ABKFLAG(ext);
+	TRY(ext.p_proptag_a(&colrow->columns));
+	TRY(ext.p_uint32(colrow->row_count));
 	for (size_t i = 0; i < colrow->row_count; ++i)
 		TRY(ext.p_proprow(&colrow->columns, &colrow->rows[i]));
 	return EXT_ERR_SUCCESS;
@@ -778,7 +761,8 @@ int nsp_ext_push::p_nsp_response(const getproplist_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(nsp_ext_p_proptag_a(*this, rsp.proptags));
+		SCOPED_ABKFLAG(*this);
+		TRY(p_proptag_a(rsp.proptags));
 	}
 	return p_uint32(0);
 }
@@ -792,7 +776,8 @@ int nsp_ext_push::p_nsp_response(const getprops_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(nsp_ext_p_tpropval_a(*this, rsp.row));
+		SCOPED_ABKFLAG(*this);
+		TRY(p_tpropval_a(rsp.row));
 	}
 	return p_uint32(0);
 }
@@ -813,8 +798,9 @@ int nsp_ext_push::p_nsp_response(const getspecialtable_response &rsp)
 	} else {
 		TRY(p_uint8(0xFF));
 		TRY(p_uint32(rsp.count));
+		SCOPED_ABKFLAG(*this);
 		for (size_t i = 0; i < rsp.count; ++i)
-			TRY(nsp_ext_p_tpropval_a(*this, &rsp.row[i]));
+			TRY(p_tpropval_a(&rsp.row[i]));
 	}
 	return p_uint32(0);
 }
@@ -828,7 +814,8 @@ int nsp_ext_push::p_nsp_response(const gettemplateinfo_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(nsp_ext_p_tpropval_a(*this, rsp.row));
+		SCOPED_ABKFLAG(*this);
+		TRY(p_tpropval_a(rsp.row));
 	}
 	return p_uint32(0);
 }
@@ -874,7 +861,8 @@ int nsp_ext_push::p_nsp_response(const querycolumns_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(nsp_ext_p_proptag_a(*this, rsp.columns));
+		SCOPED_ABKFLAG(*this);
+		TRY(p_proptag_a(rsp.columns));
 	}
 	return p_uint32(0);
 }
