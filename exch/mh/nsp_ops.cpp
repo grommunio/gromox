@@ -188,6 +188,7 @@ int nsp_ext_pull::g_nsp_request(getmatches_request &req)
 			return EXT_ERR_ALLOC;
 		TRY(g_restriction(req.filter));
 	}
+	SCOPED_ABKFLAG(*this);
 	TRY(g_uint8(&tmp_byte));
 	if (tmp_byte == 0) {
 		req.propname = nullptr;
@@ -205,7 +206,6 @@ int nsp_ext_pull::g_nsp_request(getmatches_request &req)
 		req.columns = anew<LPROPTAG_ARRAY>();
 		if (req.columns == nullptr)
 			return EXT_ERR_ALLOC;
-		SCOPED_ABKFLAG(*this);
 		TRY(g_proptag_a(req.columns));
 	}
 	TRY(g_uint32(&req.cb_auxin));
@@ -241,6 +241,7 @@ int nsp_ext_pull::g_nsp_request(getproplist_request &req)
 
 int nsp_ext_pull::g_nsp_request(getprops_request &req)
 {
+	SCOPED_ABKFLAG(*this);
 	uint8_t tmp_byte;
 
 	TRY(g_uint32(&req.flags));
@@ -260,7 +261,6 @@ int nsp_ext_pull::g_nsp_request(getprops_request &req)
 		req.proptags = anew<LPROPTAG_ARRAY>();
 		if (req.proptags == nullptr)
 			return EXT_ERR_ALLOC;
-		SCOPED_ABKFLAG(*this);
 		TRY(g_proptag_a(req.proptags));
 	}
 	TRY(g_uint32(&req.cb_auxin));
@@ -368,6 +368,7 @@ int nsp_ext_pull::g_nsp_request(modlinkatt_request &req)
 
 int nsp_ext_pull::g_nsp_request(modprops_request &req)
 {
+	SCOPED_ABKFLAG(*this);
 	uint8_t tmp_byte;
 
 	TRY(g_uint32(&req.reserved));
@@ -387,7 +388,6 @@ int nsp_ext_pull::g_nsp_request(modprops_request &req)
 		req.proptags = anew<LPROPTAG_ARRAY>();
 		if (req.proptags == nullptr)
 			return EXT_ERR_ALLOC;
-		SCOPED_ABKFLAG(*this);
 		TRY(g_proptag_a(req.proptags));
 	}
 	TRY(g_uint8(&tmp_byte));
@@ -397,7 +397,6 @@ int nsp_ext_pull::g_nsp_request(modprops_request &req)
 		req.values = anew<LTPROPVAL_ARRAY>();
 		if (req.values == nullptr)
 			return EXT_ERR_ALLOC;
-		SCOPED_ABKFLAG(*this);
 		TRY(g_tpropval_a(req.values));
 	}
 	TRY(g_uint32(&req.cb_auxin));
@@ -415,6 +414,7 @@ int nsp_ext_pull::g_nsp_request(modprops_request &req)
 
 int nsp_ext_pull::g_nsp_request(queryrows_request &req)
 {
+	SCOPED_ABKFLAG(*this);
 	uint8_t tmp_byte;
 
 	TRY(g_uint32(&req.flags));
@@ -436,7 +436,6 @@ int nsp_ext_pull::g_nsp_request(queryrows_request &req)
 		req.columns = anew<LPROPTAG_ARRAY>();
 		if (req.columns == nullptr)
 			return EXT_ERR_ALLOC;
-		SCOPED_ABKFLAG(*this);
 		TRY(g_proptag_a(req.columns));
 	}
 	TRY(g_uint32(&req.cb_auxin));
@@ -553,6 +552,7 @@ int nsp_ext_pull::g_nsp_request(resortrestriction_request &req)
 
 int nsp_ext_pull::g_nsp_request(seekentries_request &req)
 {
+	SCOPED_ABKFLAG(*this);
 	uint8_t tmp_byte;
 
 	TRY(g_uint32(&req.reserved));
@@ -572,7 +572,6 @@ int nsp_ext_pull::g_nsp_request(seekentries_request &req)
 		req.target = anew<TAGGED_PROPVAL>();
 		if (req.target == nullptr)
 			return EXT_ERR_ALLOC;
-		SCOPED_ABKFLAG(*this);
 		TRY(g_tagged_pv(req.target));
 	}
 	TRY(g_uint8(&tmp_byte));
@@ -591,7 +590,6 @@ int nsp_ext_pull::g_nsp_request(seekentries_request &req)
 		req.columns = anew<LPROPTAG_ARRAY>();
 		if (req.columns == nullptr)
 			return EXT_ERR_ALLOC;
-		SCOPED_ABKFLAG(*this);
 		TRY(g_proptag_a(req.columns));
 	}
 	TRY(g_uint32(&req.cb_auxin));
@@ -729,6 +727,7 @@ int nsp_ext_push::p_nsp_response(const dntomid_response &rsp)
 
 int nsp_ext_push::p_nsp_response(const getmatches_response &rsp)
 {
+	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
 	if (rsp.stat == nullptr) {
@@ -747,7 +746,6 @@ int nsp_ext_push::p_nsp_response(const getmatches_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		SCOPED_ABKFLAG(*this);
 		TRY(nsp_ext_p_colrow(*this, &rsp.column_rows));
 	}
 	return p_uint32(0);
@@ -755,13 +753,13 @@ int nsp_ext_push::p_nsp_response(const getmatches_response &rsp)
 
 int nsp_ext_push::p_nsp_response(const getproplist_response &rsp)
 {
+	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
 	if (rsp.proptags == nullptr) {
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		SCOPED_ABKFLAG(*this);
 		TRY(p_proptag_a(rsp.proptags));
 	}
 	return p_uint32(0);
@@ -769,6 +767,7 @@ int nsp_ext_push::p_nsp_response(const getproplist_response &rsp)
 
 int nsp_ext_push::p_nsp_response(const getprops_response &rsp)
 {
+	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
 	TRY(p_uint32(rsp.codepage));
@@ -776,7 +775,6 @@ int nsp_ext_push::p_nsp_response(const getprops_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		SCOPED_ABKFLAG(*this);
 		TRY(p_tpropval_a(rsp.row));
 	}
 	return p_uint32(0);
@@ -784,6 +782,7 @@ int nsp_ext_push::p_nsp_response(const getprops_response &rsp)
 
 int nsp_ext_push::p_nsp_response(const getspecialtable_response &rsp)
 {
+	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
 	TRY(p_uint32(rsp.codepage));
@@ -798,7 +797,6 @@ int nsp_ext_push::p_nsp_response(const getspecialtable_response &rsp)
 	} else {
 		TRY(p_uint8(0xFF));
 		TRY(p_uint32(rsp.count));
-		SCOPED_ABKFLAG(*this);
 		for (size_t i = 0; i < rsp.count; ++i)
 			TRY(p_tpropval_a(&rsp.row[i]));
 	}
@@ -807,6 +805,7 @@ int nsp_ext_push::p_nsp_response(const getspecialtable_response &rsp)
 
 int nsp_ext_push::p_nsp_response(const gettemplateinfo_response &rsp)
 {
+	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
 	TRY(p_uint32(rsp.codepage));
@@ -814,7 +813,6 @@ int nsp_ext_push::p_nsp_response(const gettemplateinfo_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		SCOPED_ABKFLAG(*this);
 		TRY(p_tpropval_a(rsp.row));
 	}
 	return p_uint32(0);
@@ -836,6 +834,7 @@ int nsp_ext_push::p_nsp_response(const modprops_response &rsp)
 
 int nsp_ext_push::p_nsp_response(const queryrows_response &rsp)
 {
+	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
 	if (rsp.stat == nullptr) {
@@ -848,7 +847,6 @@ int nsp_ext_push::p_nsp_response(const queryrows_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		SCOPED_ABKFLAG(*this);
 		TRY(nsp_ext_p_colrow(*this, &rsp.column_rows));
 	}
 	return p_uint32(0);
@@ -856,13 +854,13 @@ int nsp_ext_push::p_nsp_response(const queryrows_response &rsp)
 
 int nsp_ext_push::p_nsp_response(const querycolumns_response &rsp)
 {
+	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
 	if (rsp.columns == nullptr) {
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		SCOPED_ABKFLAG(*this);
 		TRY(p_proptag_a(rsp.columns));
 	}
 	return p_uint32(0);
@@ -870,6 +868,7 @@ int nsp_ext_push::p_nsp_response(const querycolumns_response &rsp)
 
 int nsp_ext_push::p_nsp_response(const resolvenames_response &rsp)
 {
+	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
 	TRY(p_uint32(rsp.codepage));
@@ -883,7 +882,6 @@ int nsp_ext_push::p_nsp_response(const resolvenames_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		SCOPED_ABKFLAG(*this);
 		TRY(nsp_ext_p_colrow(*this, &rsp.column_rows));
 	}
 	return p_uint32(0);
@@ -910,6 +908,7 @@ int nsp_ext_push::p_nsp_response(const resortrestriction_response &rsp)
 
 int nsp_ext_push::p_nsp_response(const seekentries_response &rsp)
 {
+	SCOPED_ABKFLAG(*this);
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
 	if (rsp.stat == nullptr) {
@@ -922,7 +921,6 @@ int nsp_ext_push::p_nsp_response(const seekentries_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		SCOPED_ABKFLAG(*this);
 		TRY(nsp_ext_p_colrow(*this, &rsp.column_rows));
 	}
 	return p_uint32(0);
