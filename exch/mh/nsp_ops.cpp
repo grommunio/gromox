@@ -720,7 +720,7 @@ static int nsp_ext_p_colrow(nsp_ext_push &ext, const nsp_rowset2 *colrow)
 		auto ret = ext.p_proprow(&colrow->columns, &colrow->rows[i]);
 		if (ret != EXT_ERR_SUCCESS) {
 			ext.m_flags = saved_flags;
-			break;
+			return ret;
 		}
 	}
 	ext.m_flags = saved_flags;
