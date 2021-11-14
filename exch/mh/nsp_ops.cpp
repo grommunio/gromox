@@ -1,25 +1,24 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
+#include <gromox/scope.hpp>
 #include "nsp_ops.hpp"
 #define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
+#define SCOPED_ABKFLAG(cls) \
+	auto saved_flags = (cls).m_flags; \
+	(cls).m_flags |= EXT_FLAG_ABK; \
+	auto cl_flag = gromox::make_scope_exit([&]() { (cls).m_flags = saved_flags; });
 
 static int nsp_ext_g_tpropval_a(nsp_ext_pull &ext, LTPROPVAL_ARRAY *proplist)
 {
-	auto saved_flags = ext.m_flags;
-	ext.m_flags |= EXT_FLAG_ABK;
-	auto ret = ext.g_tpropval_a(proplist);
-	ext.m_flags = saved_flags;
-	return ret;
+	SCOPED_ABKFLAG(ext);
+	return ext.g_tpropval_a(proplist);
 }
 
 static int nsp_ext_g_proptag_a(nsp_ext_pull &ext, LPROPTAG_ARRAY *proptags)
 {
-	auto saved_flags = ext.m_flags;
-	ext.m_flags |= EXT_FLAG_ABK;
-	auto ret = ext.g_proptag_a(proptags);
-	ext.m_flags = saved_flags;
-	return ret;
+	SCOPED_ABKFLAG(ext);
+	return ext.g_proptag_a(proptags);
 }
 
 static int nsp_ext_g_stat(nsp_ext_pull &ext, STAT &s)
@@ -579,12 +578,8 @@ int nsp_ext_pull::g_nsp_request(seekentries_request &req)
 		req.target = anew<TAGGED_PROPVAL>();
 		if (req.target == nullptr)
 			return EXT_ERR_ALLOC;
-		auto saved_flags = m_flags;
-		m_flags |= EXT_FLAG_ABK;
-		auto ret = g_tagged_pv(req.target);
-		m_flags = saved_flags;
-		if (ret != EXT_ERR_SUCCESS)
-			return ret;
+		SCOPED_ABKFLAG(*this);
+		TRY(g_tagged_pv(req.target));
 	}
 	TRY(g_uint8(&tmp_byte));
 	if (tmp_byte == 0) {
@@ -681,20 +676,14 @@ int nsp_ext_pull::g_nsp_request(getaddressbookurl_request &req)
 
 static int nsp_ext_p_tpropval_a(nsp_ext_push &ext, const LTPROPVAL_ARRAY *proplist)
 {
-	auto saved_flags = ext.m_flags;
-	ext.m_flags |= EXT_FLAG_ABK;
-	auto ret = ext.p_tpropval_a(proplist);
-	ext.m_flags = saved_flags;
-	return ret;
+	SCOPED_ABKFLAG(ext);
+	return ext.p_tpropval_a(proplist);
 }
 
 static int nsp_ext_p_proptag_a(nsp_ext_push &ext, const LPROPTAG_ARRAY *proptags)
 {
-	auto saved_flags = ext.m_flags;
-	ext.m_flags |= EXT_FLAG_ABK;
-	auto ret = ext.p_proptag_a(proptags);
-	ext.m_flags = saved_flags;
-	return ret;
+	SCOPED_ABKFLAG(ext);
+	return ext.p_proptag_a(proptags);
 }
 
 static int nsp_ext_p_stat(nsp_ext_push &ext, const STAT &s)
@@ -714,16 +703,9 @@ static int nsp_ext_p_colrow(nsp_ext_push &ext, const nsp_rowset2 *colrow)
 {
 	TRY(nsp_ext_p_proptag_a(ext, &colrow->columns));
 	TRY(ext.p_uint32(colrow->row_count));
-	auto saved_flags = ext.m_flags;
-	ext.m_flags |= EXT_FLAG_ABK;
-	for (size_t i = 0; i < colrow->row_count; ++i) {
-		auto ret = ext.p_proprow(&colrow->columns, &colrow->rows[i]);
-		if (ret != EXT_ERR_SUCCESS) {
-			ext.m_flags = saved_flags;
-			return ret;
-		}
-	}
-	ext.m_flags = saved_flags;
+	SCOPED_ABKFLAG(ext);
+	for (size_t i = 0; i < colrow->row_count; ++i)
+		TRY(ext.p_proprow(&colrow->columns, &colrow->rows[i]));
 	return EXT_ERR_SUCCESS;
 }
 
