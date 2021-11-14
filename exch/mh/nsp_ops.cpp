@@ -8,6 +8,10 @@
 	auto saved_flags = (cls).m_flags; \
 	(cls).m_flags |= EXT_FLAG_ABK; \
 	auto cl_flag = gromox::make_scope_exit([&]() { (cls).m_flags = saved_flags; });
+#define SCOPED_ABK_DISABLE(cls) \
+	auto saved_flags = (cls).m_flags; \
+	(cls).m_flags &= ~EXT_FLAG_ABK; \
+	auto cl_flag = gromox::make_scope_exit([&]() { (cls).m_flags = saved_flags; });
 
 static int nsp_ext_g_stat(nsp_ext_pull &ext, STAT &s)
 {
@@ -157,6 +161,7 @@ int nsp_ext_pull::g_nsp_request(dntomid_request &req)
 
 int nsp_ext_pull::g_nsp_request(getmatches_request &req)
 {
+	SCOPED_ABKFLAG(*this);
 	uint8_t tmp_byte;
 
 	TRY(g_uint32(&req.reserved1));
@@ -186,9 +191,9 @@ int nsp_ext_pull::g_nsp_request(getmatches_request &req)
 		req.filter = anew<RESTRICTION>();
 		if (req.filter == nullptr)
 			return EXT_ERR_ALLOC;
+		SCOPED_ABK_DISABLE(*this);
 		TRY(g_restriction(req.filter));
 	}
-	SCOPED_ABKFLAG(*this);
 	TRY(g_uint8(&tmp_byte));
 	if (tmp_byte == 0) {
 		req.propname = nullptr;
@@ -470,6 +475,7 @@ int nsp_ext_pull::g_nsp_request(querycolumns_request &req)
 
 int nsp_ext_pull::g_nsp_request(resolvenames_request &req)
 {
+	SCOPED_ABKFLAG(*this);
 	uint8_t tmp_byte;
 
 	TRY(g_uint32(&req.reserved));
@@ -489,7 +495,6 @@ int nsp_ext_pull::g_nsp_request(resolvenames_request &req)
 		req.proptags = anew<LPROPTAG_ARRAY>();
 		if (req.proptags == nullptr)
 			return EXT_ERR_ALLOC;
-		SCOPED_ABKFLAG(*this);
 		TRY(g_proptag_a(req.proptags));
 	}
 	TRY(g_uint8(&tmp_byte));
@@ -499,6 +504,7 @@ int nsp_ext_pull::g_nsp_request(resolvenames_request &req)
 		req.names = anew<STRING_ARRAY>();
 		if (req.names == nullptr)
 			return EXT_ERR_ALLOC;
+		SCOPED_ABK_DISABLE(*this);
 		TRY(g_wstr_a(req.names));
 	}
 	TRY(g_uint32(&req.cb_auxin));
