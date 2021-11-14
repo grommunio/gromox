@@ -336,6 +336,8 @@ int EXT_PULL::g_bin_a(BINARY_ARRAY *r)
 				r->pbin[i].cb = 0;
 				r->pbin[i].pb = nullptr;
 				continue;
+			} else if (value_set != 0xFF) {
+				return EXT_ERR_FORMAT;
 			}
 		}
 		TRY(g_bin(&r->pbin[i]));
@@ -362,6 +364,8 @@ int EXT_PULL::g_str_a(STRING_ARRAY *r)
 			if (value_set == 0) {
 				r->ppstr[i] = nullptr;
 				continue;
+			} else if (value_set != 0xFF) {
+				return EXT_ERR_FORMAT;
 			}
 		}
 		TRY(g_str(&r->ppstr[i]));
@@ -388,6 +392,8 @@ int EXT_PULL::g_wstr_a(STRING_ARRAY *r)
 			if (value_set == 0) {
 				r->ppstr[i] = nullptr;
 				continue;
+			} else if (value_set != 0xFF) {
+				return EXT_ERR_FORMAT;
 			}
 		}
 		TRY(g_wstr(&r->ppstr[i]));
