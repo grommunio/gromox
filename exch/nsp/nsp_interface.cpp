@@ -1662,65 +1662,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		}
 		goto FETCH_ROWS;
 	}
-	if (NULL != pfilter) {
-		if (0 == pstat->container_id) {
-			pgal_list = &pbase->gal_list;
-			nsp_interface_position_in_list(pstat,
-				pgal_list, &start_pos, &last_row, &total);
-			size_t i = 0;
-			for (psnode=single_list_get_head(pgal_list); NULL!=psnode;
-				psnode=single_list_get_after(pgal_list, psnode)) {
-				if (i > last_row || (*ppoutmids)->cvalues > requested) {
-					break;
-				} else if (i < start_pos) {
-					i ++;
-					continue;
-				}
-				if (nsp_interface_match_node(static_cast<SIMPLE_TREE_NODE *>(psnode->pdata),
-					pstat->codepage, pfilter)) {
-					pproptag = common_util_proptagarray_enlarge(*ppoutmids);
-					if (NULL == pproptag) {
-						result = ecMAPIOOM;
-						goto EXIT_GET_MATCHES;
-					}
-					*pproptag = ab_tree_get_node_minid(static_cast<SIMPLE_TREE_NODE *>(psnode->pdata));
-				}
-				i ++;
-			}
-		} else {
-			pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
-			if (NULL == pnode) {
-				result = ecInvalidBookmark;
-				goto EXIT_GET_MATCHES;
-			}
-			nsp_interface_position_in_table(pstat,
-				pnode, &start_pos, &last_row, &total);
-			pnode = simple_tree_node_get_child(pnode);
-			if (NULL == pnode) {
-				result = ecSuccess;
-				goto EXIT_GET_MATCHES;
-			}
-			size_t i = 0;
-			do {
-				if (i > last_row || (*ppoutmids)->cvalues > requested) {
-					break;
-				} else if (i < start_pos) {
-					i ++;
-					continue;
-				}
-				if (TRUE == nsp_interface_match_node(pnode,
-					pstat->codepage, pfilter)) {
-					pproptag = common_util_proptagarray_enlarge(*ppoutmids);
-					if (NULL == pproptag) {
-						result = ecMAPIOOM;
-						goto EXIT_GET_MATCHES;
-					}
-					*pproptag = ab_tree_get_node_minid(pnode);
-				}
-				i ++;
-			} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
-		}
-	} else {
+	if (pfilter == nullptr) {
 		pnode = ab_tree_minid_to_node(pbase.get(), pstat->cur_rec);
 		if (pnode != nullptr && nsp_interface_fetch_property(pnode,
 		    TRUE, pstat->codepage, pstat->container_id, &prop_val,
@@ -1732,6 +1674,62 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			}
 			*pproptag = ab_tree_get_node_minid(pnode);
 		}
+	} else if (pstat->container_id == 0) {
+		pgal_list = &pbase->gal_list;
+		nsp_interface_position_in_list(pstat,
+			pgal_list, &start_pos, &last_row, &total);
+		size_t i = 0;
+		for (psnode = single_list_get_head(pgal_list); NULL != psnode;
+		     psnode = single_list_get_after(pgal_list, psnode)) {
+			if (i > last_row || (*ppoutmids)->cvalues > requested) {
+				break;
+			} else if (i < start_pos) {
+				i++;
+				continue;
+			}
+			if (nsp_interface_match_node(static_cast<SIMPLE_TREE_NODE *>(psnode->pdata),
+			    pstat->codepage, pfilter)) {
+				pproptag = common_util_proptagarray_enlarge(*ppoutmids);
+				if (NULL == pproptag) {
+					result = ecMAPIOOM;
+					goto EXIT_GET_MATCHES;
+				}
+				*pproptag = ab_tree_get_node_minid(static_cast<SIMPLE_TREE_NODE *>(psnode->pdata));
+			}
+			i++;
+		}
+	} else {
+		pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
+		if (NULL == pnode) {
+			result = ecInvalidBookmark;
+			goto EXIT_GET_MATCHES;
+		}
+		nsp_interface_position_in_table(pstat,
+			pnode, &start_pos, &last_row, &total);
+		pnode = simple_tree_node_get_child(pnode);
+		if (NULL == pnode) {
+			result = ecSuccess;
+			goto EXIT_GET_MATCHES;
+		}
+		size_t i = 0;
+		do {
+			if (i > last_row || (*ppoutmids)->cvalues > requested) {
+				break;
+			} else if (i < start_pos) {
+				i++;
+				continue;
+			}
+			if (TRUE == nsp_interface_match_node(pnode,
+			    pstat->codepage, pfilter)) {
+				pproptag = common_util_proptagarray_enlarge(*ppoutmids);
+				if (NULL == pproptag) {
+					result = ecMAPIOOM;
+					goto EXIT_GET_MATCHES;
+				}
+				*pproptag = ab_tree_get_node_minid(pnode);
+			}
+			i++;
+		} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
 	}
 
  FETCH_ROWS:
