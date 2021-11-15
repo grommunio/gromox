@@ -5,9 +5,12 @@
 #include <cstring>
 #include <fcntl.h>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <unistd.h>
 #include <utility>
+#include <json/reader.h>
+#include <json/value.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
@@ -27,32 +30,6 @@
 #define DEF_MODE			S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
 using namespace gromox;
-
-enum {
-	RETRIEVE_NONE,
-	RETRIEVE_TAG_FINDING,
-	RETRIEVE_TAG_FOUND,
-	RETRIEVE_TAG_END,
-	RETRIEVE_VALUE_FINDING,
-	RETRIEVE_VALUE_FOUND,
-	RETRIEVE_VALUE_END,
-	RETRIEVE_END
-};
-
-enum {
-	RETRIEVE_TOKEN_QUOTA,
-	RETRIEVE_TOKEN_SQUARE,
-	RETRIEVE_TOKEN_BRACKET,
-	RETRIEVE_TOKEN_DIGIT
-};
-
-enum {
-	PARSE_STAT_NONE,
-	PARSE_STAT_PROCESSING,
-	PARSE_STAT_PROCESSED,
-	PARSE_STAT_FINDITEM,
-	PARSE_STAT_END
-};
 
 enum {
 	TYPE_STRUCTURE,
@@ -77,11 +54,8 @@ struct BUILD_PARAM {
 }
 
 static void mjson_enum_delete(SIMPLE_TREE_NODE *pnode);
-static BOOL mjson_record_value(MJSON *pjson, char *tag, char *value, size_t length);
-static BOOL mjson_parse_array(MJSON *pjson, char *value, int length, int type);
-
-static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type);
-
+static bool mjson_parse_array(MJSON *, const Json::Value &, unsigned int type);
+static BOOL mjson_record_node(MJSON *, const Json::Value &, unsigned int type);
 static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	const char *storage_path, const char *msg_filename, const char* charset,
 	const char *email_charset, BOOL b_ext, char *buff, int length);
@@ -185,12 +159,7 @@ MJSON::~MJSON()
 BOOL MJSON::retrieve(char *digest_buff, int length, const char *inpath) try
 {
 	auto pjson = this;
-	int bcount = 0, scount = 0;
-	BOOL b_none, b_quota = false;
-	int i, rstat;
-	int last_pos;
-	int token_type;
-	char temp_tag[128];
+	BOOL b_none;
 	
 #ifdef _DEBUG_UMTA
 	if (digest_buff == nullptr) {
@@ -198,190 +167,46 @@ BOOL MJSON::retrieve(char *digest_buff, int length, const char *inpath) try
 		return FALSE;
 	}
 #endif
-	
-	last_pos = 0;
 	clear();
-	rstat = RETRIEVE_NONE;
-    for (i=0; i<length; i++) {
-		switch (rstat) {
-		case RETRIEVE_NONE:
-			/* get the first "{" in the buffer */
-			if ('{' == digest_buff[i]) {
-				rstat = RETRIEVE_TAG_FINDING;
-			} else if (' ' != digest_buff[i] && '\t' != digest_buff[i]) {
-				return FALSE;
-			}
-			break;
-		case RETRIEVE_TAG_FINDING:
-			if ('"' == digest_buff[i]) {
-				rstat = RETRIEVE_TAG_FOUND;
-				last_pos = i + 1;
-			} else if ('}' == digest_buff[i]) {
-				rstat = RETRIEVE_END;
-			} else if (' ' != digest_buff[i] && '\t' != digest_buff[i]) {
-				return FALSE;
-			}
-			break;
-		case RETRIEVE_TAG_FOUND:
-			if ('"' == digest_buff[i] && '\\' != digest_buff[i - 1]) {
-				if (i < last_pos || i - last_pos > 127) {
-					return FALSE;
-				}
-				rstat = RETRIEVE_TAG_END;
-				memcpy(temp_tag, digest_buff + last_pos, i - last_pos);
-				temp_tag[i - last_pos] = '\0';
-			}
-			break;
-		case RETRIEVE_TAG_END:
-			if (':' == digest_buff[i]) {
-				rstat = RETRIEVE_VALUE_FINDING;
-			} else if (' ' != digest_buff[i] && '\t' != digest_buff[i]) {
-				return FALSE;
-			}
-			break;
-		case RETRIEVE_VALUE_FINDING:
-			if ('"' == digest_buff[i]) {
-				rstat = RETRIEVE_VALUE_FOUND;
-				last_pos = i + 1;
-				token_type = RETRIEVE_TOKEN_QUOTA;
-			} else if ('[' == digest_buff[i]) {
-				rstat = RETRIEVE_VALUE_FOUND;
-				last_pos = i ;
-				b_quota = FALSE;
-				scount = 0;
-				bcount = 0;
-				token_type = RETRIEVE_TOKEN_SQUARE;
-			} else if ('{' == digest_buff[i]) {
-				rstat = RETRIEVE_VALUE_FOUND;
-				last_pos = i;
-				b_quota = FALSE;
-				scount = 0;
-				bcount = 0;
-				token_type = RETRIEVE_TOKEN_BRACKET;
-			} else if (HX_isdigit(digest_buff[i])) {
-				rstat = RETRIEVE_VALUE_FOUND;
-				last_pos = i;
-				token_type = RETRIEVE_TOKEN_DIGIT;
-			} else if (' ' != digest_buff[i] && '\t' != digest_buff[i]) {
-				return FALSE;
-			}
-			break;
-		case RETRIEVE_VALUE_FOUND:
-			switch (token_type) {
-			case RETRIEVE_TOKEN_QUOTA:
-				if ('"' == digest_buff[i] && '\\' != digest_buff[i - 1]) {
-					if (i < last_pos) {
-						return FALSE;
-					}
-					if (!mjson_record_value(pjson, temp_tag,
-					    digest_buff + last_pos, i - last_pos))
-						return FALSE;
-					rstat = RETRIEVE_VALUE_END;
-				}
-				break;
-			case RETRIEVE_TOKEN_SQUARE:
-				if (!b_quota && scount == 0 &&
-					0 == bcount && ']' == digest_buff[i]) {
-					if (i + 1 < last_pos) {
-						return FALSE;
-					}
-					if (!mjson_record_value(pjson, temp_tag,
-					    digest_buff + last_pos, i + 1 - last_pos))
-						return FALSE;
-					rstat = RETRIEVE_VALUE_END;
-				} 
-				if ('"' == digest_buff[i] && '\\' != digest_buff[i - 1]) {
-					b_quota = b_quota?FALSE:TRUE;
-				}
-				if (!b_quota) {
-					if ('{' == digest_buff[i]) {
-						bcount ++;
-					} else if ('}' == digest_buff[i]) {
-						bcount --;
-					} else if ('[' == digest_buff[i]) {
-						scount ++;
-					} else if (']' == digest_buff[i]) {
-						scount --;
-					}
-				}
-				break;
-			case RETRIEVE_TOKEN_BRACKET:
-				if (!b_quota && bcount == 0 &&
-					0 == scount && '}' == digest_buff[i]) {
-					if (i + 1 < last_pos) {
-						return FALSE;
-					}
-					if (!mjson_record_value(pjson, temp_tag,
-					    digest_buff + last_pos, i + 1 - last_pos))
-						return FALSE;
-					rstat = RETRIEVE_VALUE_END;
-				}
-				if ('"' == digest_buff[i] && '\\' != digest_buff[i - 1]) {
-					b_quota = b_quota?FALSE:TRUE;
-				}
-				if (!b_quota) {
-					if ('{' == digest_buff[i]) {
-						bcount ++;
-					} else if ('}' == digest_buff[i]) {
-						bcount --;
-					} else if ('[' == digest_buff[i]) {
-						scount ++;
-					} else if (']' == digest_buff[i]) {
-						scount --;
-					}
-				}
-				break;
-			case RETRIEVE_TOKEN_DIGIT:
-				if (',' == digest_buff[i]) {
-					if (i < last_pos) {
-						return FALSE;
-					}
-					if (!mjson_record_value(pjson, temp_tag,
-					    digest_buff + last_pos, i - last_pos))
-						return FALSE;
-					rstat = RETRIEVE_TAG_FINDING;
-				} else if ('}' == digest_buff[i]) {
-					if (i < last_pos) {
-						return FALSE;
-					}
-					if (!mjson_record_value(pjson, temp_tag,
-					    digest_buff + last_pos, i - last_pos))
-						return FALSE;
-					rstat = RETRIEVE_END;
-				} else if (' ' == digest_buff[i] || '\t' == digest_buff[i]) {
-					if (i < last_pos) {
-						return FALSE;
-					}
-					if (!mjson_record_value(pjson, temp_tag,
-					    digest_buff + last_pos, i - last_pos))
-						return FALSE;
-					rstat = RETRIEVE_VALUE_END;
-				} else if (!HX_isdigit(digest_buff[i])) {
-					return FALSE;
-				}
-				break;
-			}
-			break;
-		case RETRIEVE_VALUE_END:
-			if (',' == digest_buff[i]) {
-				rstat = RETRIEVE_TAG_FINDING;
-			} else if ('}' == digest_buff[i]) {
-				rstat = RETRIEVE_END;
-			} else if (' ' != digest_buff[i] && '\t' != digest_buff[i]) {
-				return FALSE;
-			}
-			break;
-		case RETRIEVE_END:
-			if (' ' != digest_buff[i] && '\t' != digest_buff[i] &&
-				'\0' != digest_buff[i]) {
-				return FALSE;
-			}
-			break;
-		}
+	bool valid_json = false;
+	Json::Value root;
+	try {
+		std::string json = digest_buff;
+		std::istringstream sin(json);
+		valid_json = Json::parseFromStream(Json::CharReaderBuilder(), sin, &root, nullptr);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1554: ENOMEM\n");
+		return false;
 	}
-	
-	if (RETRIEVE_END != rstat) {
-		return FALSE;
+
+	if (valid_json) {
+		pjson->filename     = root["file"].asString();
+		pjson->uid          = root["uid"].asUInt();
+		pjson->msgid        = base64_decode(root["msgid"].asString());
+		pjson->from         = base64_decode(root["from"].asString());
+		pjson->charset      = root["charset"].asString();
+		pjson->sender       = base64_decode(root["sender"].asString());
+		pjson->reply        = base64_decode(root["reply"].asString());
+		pjson->to           = base64_decode(root["to"].asString());
+		pjson->cc           = base64_decode(root["cc"].asString());
+		pjson->inreply      = base64_decode(root["inreply"].asString());
+		pjson->subject      = base64_decode(root["subject"].asString());
+		pjson->received     = base64_decode(root["received"].asString());
+		HX_strltrim(pjson->received.data());
+		pjson->received.resize(strlen(pjson->received.data()));
+		pjson->date         = base64_decode(root["date"].asString());
+		pjson->notification = base64_decode(root["notification"].asString());
+		pjson->read         = root["read"].asBool();
+		pjson->replied      = root["replied"].asBool();
+		pjson->unsent       = root["unsent"].asBool();
+		pjson->forwarded    = root["forwarded"].asBool();
+		pjson->flag         = root["flag"].asBool();
+		pjson->priority     = root["priority"].asUInt();
+		pjson->ref          = base64_decode(root["ref"].asString());
+		if (!mjson_parse_array(pjson, root["structure"], TYPE_STRUCTURE) ||
+		    !mjson_parse_array(pjson, root["mimes"], TYPE_MIMES))
+			return false;
+		pjson->size         = root["size"].asUInt();
 	}
 	auto pnode = pjson->tree.get_root();
 	if (NULL == pnode) {
@@ -511,276 +336,34 @@ MJSON_MIME *MJSON::get_mime(const char *id)
 	return enum_param.pmime;
 }
 
-static BOOL mjson_record_value(MJSON *pjson, char *tag,
-    char *value, size_t length) try
+static BOOL mjson_record_node(MJSON *pjson, const Json::Value &jv, unsigned int type) try
 {
-	char temp_buff[32];
-	
-	if (0 == strcasecmp(tag, "file")) {
-		if (pjson->filename.empty())
-			pjson->filename.assign(value, length);
-	} else if (0 == strcasecmp(tag, "uid")) {
-		if (0 == pjson->uid && length < 16) {
-			memcpy(temp_buff, value, length);
-			temp_buff[length] = '\0';
-			pjson->uid = strtol(temp_buff, nullptr, 0);
-		}
-	} else if (0 == strcasecmp(tag, "msgid")) {
-		if (pjson->msgid.empty())
-			pjson->msgid = base64_decode(std::string_view(value, length));
-	} else if (0 == strcasecmp(tag, "from")) {
-		if (pjson->from.empty())
-			pjson->from = base64_decode(std::string_view(value, length));
-	} else if (0 == strcasecmp(tag, "charset")) {
-		if (pjson->charset.empty() && length < 32)
-			pjson->charset.assign(value, length);
-	} else if (0 == strcasecmp(tag, "sender")) {
-		if (pjson->sender.empty())
-			pjson->sender = base64_decode(std::string_view(value, length));
-	} else if (0 == strcasecmp(tag, "reply")) {
-		if (pjson->reply.empty())
-			pjson->reply = base64_decode(std::string_view(value, length));
-	} else if (0 == strcasecmp(tag, "to")) {
-		if (pjson->to.empty())
-			pjson->to = base64_decode(std::string_view(value, length));
-	} else if (0 == strcasecmp(tag, "cc")) {
-		if (pjson->cc.empty())
-			pjson->cc = base64_decode(std::string_view(value, length));
-	} else if (0 == strcasecmp(tag, "inreply")) {
-		if (pjson->inreply.empty())
-			pjson->inreply = base64_decode(std::string_view(value, length));
-	} else if (0 == strcasecmp(tag, "subject")) {
-		if (pjson->subject.empty())
-			pjson->subject = base64_decode(std::string_view(value, length));
-	} else if (0 == strcasecmp(tag, "received")) {
-		if (pjson->received.empty()) {
-			pjson->received = base64_decode(std::string_view(value, length));
-			HX_strltrim(pjson->received.data());
-			pjson->received.resize(strlen(pjson->received.data()));
-		}
-	} else if (0 == strcasecmp(tag, "date")) {
-		if (pjson->date.empty())
-			pjson->date = base64_decode(std::string_view(value, length));
-	} else if (0 == strcasecmp(tag, "notification")) {
-		if (pjson->notification.empty())
-			pjson->notification = base64_decode(std::string_view(value, length));
-	} else if (0 == strcasecmp(tag, "read")) {
-		if (!pjson->read && length == 1 && *value == '1')
-			pjson->read = 1;
-	} else if (0 == strcasecmp(tag, "replied")) {
-		if (!pjson->replied && length == 1 && *value == '1')
-			pjson->replied = 1;
-	} else if (0 == strcasecmp(tag, "unsent")) {
-		if (!pjson->unsent && length == 1 && *value == '1')
-			pjson->unsent = 1;
-	} else if (0 == strcasecmp(tag, "forwarded")) {
-		if (!pjson->forwarded && length == 1 && *value == '1')
-			pjson->forwarded = 1;
-	} else if (0 == strcasecmp(tag, "flag")) {
-		if (!pjson->flag && length == 1 && *value == '1')
-			pjson->flag = 1;
-	} else if (0 == strcasecmp(tag, "priority")) {
-		if (!pjson->priority && length == 1 && *value >= '0' && *value <= '9')
-			pjson->priority = value[0] - '0';
-	} else if (0 == strcasecmp(tag, "ref")) {
-		if (pjson->ref.empty())
-			pjson->ref = base64_decode(std::string_view(value, length));
-	} else if (0 == strcasecmp(tag, "structure")) {
-		if (!mjson_parse_array(pjson, value, length, TYPE_STRUCTURE))
-			return FALSE;
-	} else if (0 == strcasecmp(tag, "mimes")) {
-		if (!mjson_parse_array(pjson, value, length, TYPE_MIMES))
-			return FALSE;
-	} else if (0 == strcasecmp(tag, "size")) {
-		if (0 == pjson->size && length <= 16) {
-			memcpy(temp_buff, value, length);
-			temp_buff[length] = '\0';
-			pjson->size = strtoull(temp_buff, nullptr, 0);
-		}
-	}
-	return TRUE;
-} catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-2785: ENOMEM\n");
-	return false;
-}
-
-static BOOL mjson_parse_array(MJSON *pjson, char *value, int length, int type)
-{
-	int rstat;
-	int i, bcount, last_pos = 0;
-	BOOL b_quota;
-	
-	rstat = PARSE_STAT_NONE;
-	for (i=0; i<length; i++) {
-		switch (rstat) {
-		case PARSE_STAT_NONE:
-			if ('[' == value[i]) {
-				rstat = PARSE_STAT_FINDITEM;
-			} else if (' ' != value[i] && '\t' != value[i]) {
-				return FALSE;
-			}
-			break;
-		case PARSE_STAT_FINDITEM:
-			if ('{' == value[i]) {
-				bcount = 1;
-				last_pos = i + 1;
-				b_quota = FALSE;
-				rstat = PARSE_STAT_PROCESSING;
-			} else if (']' == value[i]) {
-				/* empty array like [] */
-				rstat = PARSE_STAT_END;
-			}  else if (' ' != value[i] && '\t' != value[i]) {
-				return FALSE;
-			}
-			break;
-		case PARSE_STAT_PROCESSING:
-			if ('"' == value[i] && '\\' != value[i - 1]) {
-				b_quota = b_quota?FALSE:TRUE;
-			} else if (!b_quota) {
-				if ('{' == value[i]) {
-					bcount++;
-				} else if ('}' == value[i]) {
-					bcount--;
-					if (0 == bcount) {
-						if (i < last_pos) {
-							return FALSE;
-						}
-						if (!mjson_record_node(pjson,
-						    value + last_pos, i - last_pos, type))
-							return FALSE;
-						rstat = PARSE_STAT_PROCESSED;
-					}
-				}
-			}
-			break;
-		case PARSE_STAT_PROCESSED:
-			if (',' == value[i]) {
-				rstat = PARSE_STAT_FINDITEM;
-			} else if (']' == value[i]) {
-				rstat = PARSE_STAT_END;
-			} else if (' ' != value[i] && '\t' != value[i]) {
-				return FALSE;
-			}
-			break;
-		case PARSE_STAT_END:
-			if (' ' != value[i] && '\t' != value[i]) {
-				return FALSE;
-			}
-			break;
-		}
-	}
-	
-	return rstat == PARSE_STAT_END ? TRUE : false;
-}
-
-static BOOL mjson_record_node(MJSON *pjson, char *value, int length,
-    int type) try
-{
-	int rstat, j, last_pos = 0;
-	size_t temp_len;
-	BOOL b_digit;
-	char temp_tag[128];
+	int j, last_pos = 0;
 	char temp_buff[64];
 	MJSON_MIME temp_mime;
 	
 	temp_mime.ppool = pjson->ppool;
 	temp_mime.mime_type = type == TYPE_STRUCTURE ? mime_type::multiple : mime_type::single;
-	rstat = RETRIEVE_TAG_FINDING;
-	for (int i = 0; i < length; ++i) {
-		switch (rstat) {
-		case RETRIEVE_TAG_FINDING:
-			if ('"' == value[i]) {
-				rstat = RETRIEVE_TAG_FOUND;
-				last_pos = i + 1;
-			} else if (' ' != value[i] && '\t' != value[i]) {
-				return FALSE;
-			}
-			break;
-		case RETRIEVE_TAG_FOUND:
-			if ('"' == value[i] && '\\' != value[i - 1]) {
-				if (i < last_pos || i - last_pos > 127) {
-					return FALSE;
-				}
-				rstat = RETRIEVE_TAG_END;
-				memcpy(temp_tag, value + last_pos, i - last_pos);
-				temp_tag[i - last_pos] = '\0';
-			}
-			break;
-		case RETRIEVE_TAG_END:
-			if (':' == value[i]) {
-				rstat = RETRIEVE_VALUE_FINDING;
-			} else if (' ' != value[i] && '\t' != value[i]) {
-				return FALSE;
-			}
-			break;
-		case RETRIEVE_VALUE_FINDING:
-			if ('"' == value[i]) {
-				rstat = RETRIEVE_VALUE_FOUND;
-				b_digit = FALSE;
-				last_pos = i + 1;
-			} else if (HX_isdigit(value[i])) {
-				rstat = RETRIEVE_VALUE_FOUND;
-				b_digit = TRUE;
-				last_pos = i;
-			} else if (' ' != value[i] && '\t' != value[i]) {
-				return FALSE;
-			}
-			break;
-		case RETRIEVE_VALUE_FOUND:
-			if ((!b_digit && (value[i] == '"' && value[i-1] != '\\')) ||
-			    (b_digit && (value[i] == ' ' || value[i] == '\t' ||
-			    value[i] == ',' || i == length - 1))) {
-				temp_len = !b_digit ? i - last_pos : i + 1 - last_pos;
-				if (strcasecmp(temp_tag, "id") == 0) {
-					temp_mime.id.assign(&value[last_pos], temp_len);
-				} else if (strcasecmp(temp_tag, "ctype") == 0) {
-					temp_mime.ctype.assign(&value[last_pos], temp_len);
-				} else if (strcasecmp(temp_tag, "encoding") == 0) {
-					temp_mime.encoding.assign(&value[last_pos], temp_len);
-				} else if (strcasecmp(temp_tag, "charset") == 0) {
-					temp_mime.charset.assign(&value[last_pos], temp_len);
-				} else if (strcasecmp(temp_tag, "filename") == 0) {
-					temp_mime.filename = base64_decode(std::string_view(&value[last_pos], temp_len));
-				} else if (strcasecmp(temp_tag, "cid") == 0) {
-					temp_mime.cid = base64_decode(std::string_view(&value[last_pos], temp_len));
-				} else if (strcasecmp(temp_tag, "cntl") == 0) {
-					temp_mime.cntl = base64_decode(std::string_view(&value[last_pos], temp_len));
-				} else if (strcasecmp(temp_tag, "cntdspn") == 0) {
-					temp_mime.cntdspn.assign(&value[last_pos], temp_len);
-				} else if (0 == strcasecmp(temp_tag, "head") && temp_len < 16) {
-					memcpy(temp_buff, value + last_pos, temp_len);
-					temp_buff[temp_len] = '\0';
-					temp_mime.head = strtoull(temp_buff, nullptr, 0);
-				} else if (0 == strcasecmp(temp_tag, "begin")) {
-					memcpy(temp_buff, value + last_pos, temp_len);
-					temp_buff[temp_len] = '\0';
-					temp_mime.begin = strtoull(temp_buff, nullptr, 0);
-				} else if (0 == strcasecmp(temp_tag, "length")) {
-					memcpy(temp_buff, value + last_pos, temp_len);
-					temp_buff[temp_len] = '\0';
-					temp_mime.length = strtoull(temp_buff, nullptr, 0);
-				}
-				rstat = b_digit && value[i] == ',' ?
-				        RETRIEVE_TAG_FINDING : RETRIEVE_VALUE_END;
-			}
-			break;
-		case RETRIEVE_VALUE_END:
-			if (',' == value[i]) {
-				rstat = RETRIEVE_TAG_FINDING;
-			}  else if (' ' != value[i] && '\t' != value[i]) {
-				return FALSE;
-			}
-			break;
-		}
-	}
-	
-	if (temp_mime.ctype.empty())
-		temp_mime.ctype = "application/octet-stream";
+
+	auto &m    = temp_mime;
+	m.id       = jv["id"].asString();
+	m.ctype    = jv["ctype"].asString();
+	m.encoding = jv["encoding"].asString();
+	m.charset  = jv["charset"].asString();
+	m.filename = base64_decode(jv["filename"].asString());
+	m.cid      = base64_decode(jv["cid"].asString());
+	m.cntl     = base64_decode(jv["cntl"].asString());
+	m.cntdspn  = jv["cntdspn"].asString();
+	m.head     = jv["head"].asUInt();
+	m.begin    = jv["begin"].asUInt();
+	m.length   = jv["length"].asUInt();
+	if (m.ctype.empty())
+		m.ctype = "application/octet-stream";
 
 	/* for some MUA such as Foxmail, use application/octet-stream
 	   as the Content-Type, so make the revision for these mimes
 	*/
-	temp_len = temp_mime.filename.size();
+	auto temp_len = temp_mime.filename.size();
 	if (temp_len > 4 && strncasecmp(&temp_mime.filename[temp_len-4], ".eml", 4) == 0 &&
 	    !temp_mime.ctype_is_rfc822())
 		temp_mime.ctype = "message/rfc822";
@@ -856,7 +439,17 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length,
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-2185: ENOMEM\n");
 	return false;
-} 
+}
+
+static bool mjson_parse_array(MJSON *m, const Json::Value &jv, unsigned int type)
+{
+	if (!jv.isArray())
+		return false;
+	for (const auto &e : jv)
+		if (!mjson_record_node(m, e, type))
+			return false;
+	return true;
+}
 
 int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff,
     int length) try
