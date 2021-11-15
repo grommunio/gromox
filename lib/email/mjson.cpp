@@ -451,118 +451,9 @@ void MJSON::enum_mime(MJSON_MIME_ENUM enum_func, void *param)
         (SIMPLE_TREE_ENUM)enum_func, param);
 }
 
-/*
- *	get mime mime_type from mime object
- *	@param
- *		pmime [in]			indicate the mime object
- */
-int mjson_get_mime_mtype(MJSON_MIME *pmime)
+size_t MJSON_MIME::get_length(unsigned int param) const
 {
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mail]: NULL pointer in mjson_get_mime_mtype");
-		return MJSON_MIME_NONE;
-	}
-#endif
-	return pmime->mime_type;
-}
-
-/*
- *	get mime content type from mime object
- *	@param
- *		pmime [in]			indicate the mime object
- */
-const char* mjson_get_mime_ctype(MJSON_MIME *pmime)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mail]: NULL pointer in mjson_get_mime_ctype");
-		return NULL;
-	}
-#endif
-	return pmime->ctype;
-}
-
-/*
- *	get mime charset from mime object
- *	@param
- *		pmime [in]			indicate the mime object
- */
-const char* mjson_get_mime_charset(MJSON_MIME *pmime)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mail]: NULL pointer in mjson_get_mime_charset");
-		return NULL;
-	}
-#endif
-	return pmime->charset;
-}
-
-/*
- *	get mime filename from mime object
- *	@param
- *		pmime [in]			indicate the mime object
- */
-const char* mjson_get_mime_filename(MJSON_MIME *pmime)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mail]: NULL pointer in mjson_get_mime_filename");
-		return NULL;
-	}
-#endif
-	return pmime->filename;
-}
-
-/*
- *	get mime content trandfer encoding from mime object
- *	@param
- *		pmime [in]			indicate the mime object
- */
-const char* mjson_get_mime_encoding(MJSON_MIME *pmime)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mail]: NULL pointer in mjson_get_mime_encoding");
-		return NULL;
-	}
-#endif
-	return pmime->encoding;
-}
-
-/*
- *	get mime ID from mime object
- *	@param
- *		pmime [in]			indicate the mime object
- */
-const char* mjson_get_mime_id(MJSON_MIME *pmime)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mail]: NULL pointer in mjson_get_mime_id");
-		return NULL;
-	}
-#endif
-	return pmime->id;
-}
-
-/*
- *	get mime length from mjson object
- *	@param
- *		pmime [in]			indicate the mime object
- *		param					MJSON_MIME_HEAD
- *								MJSON_MIME_CONTENT
- *								MJSON_MIME_ENTIRE
- */
-size_t mjson_get_mime_length(MJSON_MIME *pmime, int param)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mail]: NULL pointer in mjson_get_mime_length");
-		return 0;
-	}
-#endif
+	auto pmime = this;
 	switch (param) {
 	case MJSON_MIME_HEAD:
 		return (pmime->begin - pmime->head);
@@ -575,21 +466,9 @@ size_t mjson_get_mime_length(MJSON_MIME *pmime, int param)
 	}
 }
 
-/*
- *	get mime offset from mjson object
- *	@param
- *		pmime [in]			indicate the mime object
- *		param					MJSON_MIME_HEAD
- *								MJSON_MIME_CONTENT
- */
-size_t mjson_get_mime_offset(MJSON_MIME *pmime, int param)
+size_t MJSON_MIME::get_offset(unsigned int param) const
 {
-	#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mail]: NULL pointer in mjson_get_mime_offset");
-		return 0;
-	}
-#endif
+	auto pmime = this;
 	switch (param) {
 	case MJSON_MIME_HEAD:
 		return pmime->head;
@@ -598,7 +477,6 @@ size_t mjson_get_mime_offset(MJSON_MIME *pmime, int param)
 	default:
 		return 0;
 	}
-
 }
 
 /*
@@ -1847,7 +1725,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		return;
 	}
 	
-	auto length = mjson_get_mime_length(pmime, MJSON_MIME_CONTENT);
+	auto length = pmime->get_length(MJSON_MIME_CONTENT);
 	std::unique_ptr<char[], stdlib_delete> pbuff(static_cast<char *>(malloc(strange_roundup(length - 1, 64 * 1024))));
 	if (NULL == pbuff) {
 		close(fd);
@@ -1855,7 +1733,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		return;
 	}
 	
-	if (lseek(fd, mjson_get_mime_offset(pmime, MJSON_MIME_CONTENT), SEEK_SET) < 0)
+	if (lseek(fd, pmime->get_offset(MJSON_MIME_CONTENT), SEEK_SET) < 0)
 		fprintf(stderr, "E-1430: lseek: %s\n", strerror(errno));
 	auto rdlen = ::read(fd, pbuff.get(), length);
 	if (rdlen < 0 || static_cast<size_t>(rdlen) != length) {

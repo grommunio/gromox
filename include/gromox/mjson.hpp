@@ -27,6 +27,15 @@ struct MJSON_MIME {
 	size_t      head;
 	size_t      begin;
 	size_t		length;
+
+	inline int get_mtype() const { return mime_type; }
+	inline const char *get_ctype() const { return ctype; }
+	inline const char *get_charset() const { return charset; }
+	inline const char *get_filename() const { return filename; }
+	inline const char *get_encoding() const { return encoding; }
+	inline const char *get_id() const { return id; }
+	size_t get_length(unsigned int param) const;
+	size_t get_offset(unsigned int param) const;
 };
 
 struct GX_EXPORT MJSON {
@@ -81,12 +90,3 @@ enum {
 
 extern GX_EXPORT LIB_BUFFER *mjson_allocator_init(size_t max_size);
 void mjson_allocator_free(LIB_BUFFER *pallocator);
-
-int mjson_get_mime_mtype(MJSON_MIME *pmime);
-const char* mjson_get_mime_ctype(MJSON_MIME *pmime);
-const char* mjson_get_mime_charset(MJSON_MIME *pmime);
-const char* mjson_get_mime_filename(MJSON_MIME *pmime);
-const char* mjson_get_mime_encoding(MJSON_MIME *pmime);
-const char* mjson_get_mime_id(MJSON_MIME *pmime);
-size_t mjson_get_mime_length(MJSON_MIME *pmime, int param);
-size_t mjson_get_mime_offset(MJSON_MIME *pmime, int param);

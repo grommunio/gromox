@@ -476,16 +476,16 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, KEYWORD_ENUM *penum)
 	if (TRUE == penum->b_result) {
 		return;
 	}
-	if (MJSON_MIME_SINGLE != mjson_get_mime_mtype(pmime)) {
+	if (pmime->get_mtype() != MJSON_MIME_SINGLE)
 		return;
-	}
-	if (0 == strncmp(mjson_get_mime_ctype(pmime), "text/", 5)) {
-		length = mjson_get_mime_length(pmime, MJSON_MIME_CONTENT);
+
+	if (strncmp(pmime->get_ctype(), "text/", 5) == 0) {
+		length = pmime->get_length(MJSON_MIME_CONTENT);
 		pbuff = me_alloc<char>(2 * length + 1);
 		if (NULL == pbuff) {
 			return;
 		}
-		auto fd = penum->pjson->seek_fd(mjson_get_mime_id(pmime), MJSON_MIME_CONTENT);
+		auto fd = penum->pjson->seek_fd(pmime->get_id(), MJSON_MIME_CONTENT);
 		if (-1 == fd) {
 			free(pbuff);
 			return;
@@ -495,15 +495,14 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, KEYWORD_ENUM *penum)
 			free(pbuff);
 			return;
 		}
-		if (0 == strcasecmp(mjson_get_mime_encoding(pmime), "base64")) {
+		if (strcasecmp(pmime->get_encoding(), "base64") == 0) {
 			if (0 != decode64_ex(pbuff, length,
 				pbuff + length, length, &temp_len)) {
 				free(pbuff);
 				return;
 			}
 			pbuff[length + temp_len] = '\0';
-		} else if (0 == strcasecmp(
-			mjson_get_mime_encoding(pmime), "quoted-printable")) {
+		} else if (strcasecmp(pmime->get_encoding(), "quoted-printable") == 0) {
 			temp_len = qp_decode(pbuff + length, pbuff, length);
 			pbuff[length + temp_len] = '\0';
 		} else {
@@ -511,7 +510,7 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, KEYWORD_ENUM *penum)
 			pbuff[2*length] = '\0';
 		}
 			
-		charset = mjson_get_mime_charset(pmime);
+		charset = pmime->get_charset();
 		if ('\0' != charset[0]) {
 			ret_string = mail_engine_ct_to_utf8(
 						charset, pbuff + length);
@@ -528,7 +527,7 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, KEYWORD_ENUM *penum)
 		}
 		free(pbuff);			
 	} else {
-		filename = mjson_get_mime_filename(pmime);
+		filename = pmime->get_filename();
 		if ('\0' != filename[0]) {
 			ret_string = mail_engine_ct_decode_mime(
 							penum->charset, filename);
