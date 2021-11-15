@@ -52,10 +52,10 @@ struct GX_EXPORT MJSON {
 
 	SIMPLE_TREE tree{};
 	alloc_limiter<MJSON_MIME> *ppool = nullptr;
-	unsigned int uid = 0;
+	bool read = false, replied = false, forwarded = false, unsent = false;
+	bool flag = false;
+	unsigned int priority = 0, uid = 0;
 	int message_fd = -1;
-	int read = 0, replied = 0, forwarded = 0, unsent = 0;
-	int flag = 0, priority = 0;
 	size_t size = 0;
 	std::string path, filename, charset, msgid, from, sender, reply, to, cc;
 	std::string inreply, subject, received, date, ref, notification;
