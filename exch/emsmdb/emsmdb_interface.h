@@ -48,7 +48,7 @@ extern EMSMDB_INFO *emsmdb_interface_get_emsmdb_info();
 extern DOUBLE_LIST *emsmdb_interface_get_notify_list();
 extern void emsmdb_interface_put_notify_list();
 BOOL emsmdb_interface_get_cxr(uint16_t *pcxr);
-BOOL emsmdb_interface_alloc_hanlde_number(uint32_t *pnum);
+extern BOOL emsmdb_interface_alloc_handle_number(uint32_t *num);
 BOOL emsmdb_interface_get_cxh(CXH *pcxh);
 BOOL emsmdb_interface_get_rop_left(uint16_t *psize);
 BOOL emsmdb_interface_set_rop_left(uint16_t size);

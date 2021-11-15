@@ -46,9 +46,7 @@
 #define MAX_CONTENT_ROW_DELETED			6
 
 #define FLAG_PRIVILEGE_ADMIN			0x00000001
-
-#define HANLDE_VALID_INTERVAL			2000
-
+#define HANDLE_VALID_INTERVAL			2000
 #define MAX_HANDLE_PER_USER				100
 
 using namespace gromox;
@@ -668,7 +666,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 		memset(pcxh, 0, sizeof(CXH));
 		return ecAccessDenied;
 	}
-	if (first_time.tv_sec - phandle->last_time > HANLDE_VALID_INTERVAL) {
+	if (first_time.tv_sec - phandle->last_time > HANDLE_VALID_INTERVAL) {
 		emsmdb_interface_put_handle_data(phandle);
 		emsmdb_interface_remove_handle(pcxh);
 		*pflags = 0;
@@ -787,7 +785,7 @@ BOOL emsmdb_interface_get_cxr(uint16_t *pcxr)
 	return TRUE;
 }
 
-BOOL emsmdb_interface_alloc_hanlde_number(uint32_t *pnum)
+BOOL emsmdb_interface_alloc_handle_number(uint32_t *pnum)
 {
 	HANDLE_DATA *phandle;
 	
@@ -1226,7 +1224,7 @@ static void *emsi_scanwork(void *pparam)
 				TRUE == phandle->b_occupied) {
 				continue;
 			}
-			if (cur_time - phandle->last_time > HANLDE_VALID_INTERVAL) {
+			if (cur_time - phandle->last_time > HANDLE_VALID_INTERVAL) {
 				pnode = me_alloc<DOUBLE_LIST_NODE>();
 				if (NULL == pnode) {
 					continue;
