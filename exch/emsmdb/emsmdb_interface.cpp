@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <csignal>
 #include <cstdint>
 #include <mutex>
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
@@ -54,7 +56,6 @@ using namespace gromox;
 namespace {
 
 struct HANDLE_DATA {
-	DOUBLE_LIST_NODE node;
 	GUID guid;
 	char username[UADDR_SIZE];
 	uint16_t cxr;
@@ -82,9 +83,10 @@ static pthread_t g_scan_id;
 static std::mutex g_lock, g_notify_lock;
 static gromox::atomic_bool g_notify_stop{true};
 static pthread_key_t g_handle_key;
-static std::unique_ptr<STR_HASH_TABLE> g_user_hash, g_handle_hash;
+static std::unique_ptr<STR_HASH_TABLE> g_handle_hash;
+static std::unordered_map<std::string, std::vector<HANDLE_DATA *>> g_user_hash;
 static std::unordered_map<std::string, NOTIFY_ITEM> g_notify_hash;
-static size_t g_notify_hash_max;
+static size_t g_user_hash_max, g_notify_hash_max;
 
 static void *emsi_scanwork(void *);
 
@@ -198,17 +200,16 @@ static void emsmdb_interface_put_handle_notify_list(HANDLE_DATA *phandle)
 	phandle->b_occupied = FALSE;
 }
 
-static BOOL emsmdb_interface_alloc_cxr(DOUBLE_LIST *plist,
+static BOOL emsmdb_interface_alloc_cxr(std::vector<HANDLE_DATA *> &plist,
 	HANDLE_DATA *phandle)
 {
-	int i;
-	DOUBLE_LIST_NODE *pnode;
+	int i = 1;
 	
-	for (i=1,pnode=double_list_get_head(plist); NULL!=pnode&&i<=0xFFFF;
-		pnode=double_list_get_after(plist, pnode),i++) {
-		if (i < ((HANDLE_DATA*)pnode->pdata)->cxr) {
+	for (auto ha_iter = plist.begin(); ha_iter != plist.end() && i <= 0xFFFF;
+	     ++ha_iter, ++i) {
+		if (i < (*ha_iter)->cxr) {
 			phandle->cxr = i;
-			double_list_insert_before(plist, pnode, &phandle->node);
+			plist.insert(ha_iter, phandle);
 			return TRUE;
 		}
 	}
@@ -216,7 +217,7 @@ static BOOL emsmdb_interface_alloc_cxr(DOUBLE_LIST *plist,
 		return FALSE;
 	}
 	phandle->cxr = i;
-	double_list_append_as_tail(plist, &phandle->node);
+	plist.push_back(phandle);
 	return TRUE;
 }
 
@@ -224,7 +225,6 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	uint16_t client_version[4], uint16_t client_mode, uint32_t cpid,
 	uint32_t lcid_string, uint32_t lcid_sort, uint16_t *pcxr, CXH *pcxh)
 {
-	DOUBLE_LIST tmp_list;
 	HANDLE_DATA temp_handle;
 	
 	if (!common_util_verify_cpid(cpid))
@@ -250,8 +250,6 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	if (phandle == nullptr)
 		/* Should never occur; the value was recently added successfully. */
 		return false;
-	phandle->node.pdata = phandle;
-	
 	phandle->last_handle = 0;
 	auto plogmap = rop_processor_create_logmap();
 	if (NULL == plogmap) {
@@ -260,32 +258,37 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	}
 	phandle->info.plogmap = plogmap;
 	
-	auto plist = g_user_hash->query<DOUBLE_LIST>(temp_handle.username);
-	if (NULL == plist) {
-		if (g_user_hash->add(temp_handle.username, &tmp_list) != 1) {
+	auto uh_iter = g_user_hash.find(temp_handle.username);
+	if (uh_iter == g_user_hash.end()) {
+		if (g_user_hash.size() >= g_user_hash_max) {
 			g_handle_hash->remove(guid_string);
 			gl_hold.unlock();
 			rop_processor_release_logmap(plogmap);
 			return FALSE;
 		}
-		plist = g_user_hash->query<DOUBLE_LIST>(temp_handle.username);
-		if (plist == nullptr)
-			/* Should never occur; the value was recently added successfully. */
-			return false;
-		double_list_init(plist);
-	} else {
-		if (double_list_get_nodes_num(plist) >= MAX_HANDLE_PER_USER) {
+		try {
+			auto xp = g_user_hash.emplace(temp_handle.username, std::vector<HANDLE_DATA *>{});
+			uh_iter = xp.first;
+		} catch (const std::bad_alloc &) {
 			g_handle_hash->remove(guid_string);
 			gl_hold.unlock();
 			rop_processor_release_logmap(plogmap);
+			fprintf(stderr, "E-1579: ENOMEM\n");
+			return FALSE;
+		}
+	} else {
+		if (uh_iter->second.size() >= MAX_HANDLE_PER_USER) {
+			g_handle_hash->remove(guid_string);
+			gl_hold.unlock();
+			rop_processor_release_logmap(plogmap);
+			fprintf(stderr, "W-1580: user %s reached maximum number of handles (%u)\n",
+			        temp_handle.username, MAX_HANDLE_PER_USER);
 			return FALSE;
 		}
 	}
-	if (FALSE == emsmdb_interface_alloc_cxr(plist, phandle)) {
-		if (0 == double_list_get_nodes_num(plist)) {
-			double_list_free(plist);
-			g_user_hash->remove(temp_handle.username);
-		}
+	if (!emsmdb_interface_alloc_cxr(uh_iter->second, phandle)) {
+		if (uh_iter->second.empty())
+			g_user_hash.erase(temp_handle.username);
 		g_handle_hash->remove(guid_string);
 		gl_hold.unlock();
 		rop_processor_release_logmap(plogmap);
@@ -328,13 +331,16 @@ static void emsmdb_interface_remove_handle(CXH *pcxh)
 			break;
 		}
 	}
-	auto plist = g_user_hash->query<DOUBLE_LIST>(phandle->username);
-	if (NULL != plist) {
-		double_list_remove(plist, &phandle->node);
-		if (0 == double_list_get_nodes_num(plist)) {
-			double_list_free(plist);
-			g_user_hash->remove(phandle->username);
-		}
+	auto uh_iter = g_user_hash.find(phandle->username);
+	if (uh_iter != g_user_hash.end()) {
+		auto &uhv = uh_iter->second;
+#if __cplusplus >= 202000L
+		std::erase(uhv, phandle);
+#else
+		uhv.erase(std::remove(uhv.begin(), uhv.end(), phandle), uhv.end());
+#endif
+		if (uhv.empty())
+			g_user_hash.erase(phandle->username);
 	}
 	auto plogmap = phandle->info.plogmap;
 	while ((pnode = double_list_pop_front(&phandle->notify_list)) != nullptr) {
@@ -365,11 +371,7 @@ int emsmdb_interface_run()
 		printf("[exchange_emsmdb]: Failed to init handle hash table\n");
 		return -1;
 	}
-	g_user_hash = STR_HASH_TABLE::create(context_num + 1, sizeof(DOUBLE_LIST), nullptr);
-	if (NULL == g_user_hash) {
-		printf("[exchange_emsmdb]: Failed to init user hash table\n");
-		return -2;
-	}
+	g_user_hash_max = context_num + 1;
 	g_notify_hash_max = AVERAGE_NOTIFY_NUM * context_num;
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, emsi_scanwork, nullptr);
@@ -390,7 +392,7 @@ void emsmdb_interface_stop()
 		pthread_join(g_scan_id, NULL);
 	}
 	g_notify_hash.clear();
-	g_user_hash.reset();
+	g_user_hash.clear();
 	g_handle_hash.reset();
 }
 
