@@ -21,7 +21,6 @@
 #include "common_util.h"
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
-#include <gromox/str_hash.hpp>
 #include "aux_ext.h"
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
@@ -83,10 +82,10 @@ static pthread_t g_scan_id;
 static std::mutex g_lock, g_notify_lock;
 static gromox::atomic_bool g_notify_stop{true};
 static pthread_key_t g_handle_key;
-static std::unique_ptr<STR_HASH_TABLE> g_handle_hash;
+static std::unordered_map<std::string, HANDLE_DATA> g_handle_hash;
 static std::unordered_map<std::string, std::vector<HANDLE_DATA *>> g_user_hash;
 static std::unordered_map<std::string, NOTIFY_ITEM> g_notify_hash;
-static size_t g_user_hash_max, g_notify_hash_max;
+static size_t g_handle_hash_max, g_user_hash_max, g_notify_hash_max;
 
 static void *emsi_scanwork(void *);
 
@@ -104,9 +103,10 @@ BOOL emsmdb_interface_check_acxh(ACXH *pacxh,
 	char guid_string[GUIDSTR_SIZE];
 	guid_to_string(&pacxh->guid, guid_string, sizeof(guid_string));
 	std::lock_guard gl_hold(g_lock);
-	auto phandle = g_handle_hash->query<HANDLE_DATA>(guid_string);
-	if (phandle == nullptr)
+	auto iter = g_handle_hash.find(guid_string);
+	if (iter == g_handle_hash.end())
 		return false;
+	auto phandle = &iter->second;
 	if (TRUE == b_touch) {
 		time(&phandle->last_time);
 	}
@@ -123,8 +123,11 @@ BOOL emsmdb_interface_check_notify(ACXH *pacxh)
 	char guid_string[GUIDSTR_SIZE];
 	guid_to_string(&pacxh->guid, guid_string, sizeof(guid_string));
 	std::lock_guard gl_hold(g_lock);
-	auto phandle = g_handle_hash->query<HANDLE_DATA>(guid_string);
-	return phandle != nullptr && double_list_get_nodes_num(&phandle->notify_list) > 0 ? TRUE : false;
+	auto iter = g_handle_hash.find(guid_string);
+	if (iter == g_handle_hash.end())
+		return false;
+	auto phandle = &iter->second;
+	return double_list_get_nodes_num(&phandle->notify_list) > 0 ? TRUE : false;
 }
 
 /* called by moh_emsmdb module */
@@ -136,10 +139,9 @@ void emsmdb_interface_touch_handle(CXH *pcxh)
 	char guid_string[GUIDSTR_SIZE];
 	guid_to_string(&pcxh->guid, guid_string, sizeof(guid_string));
 	std::lock_guard gl_hold(g_lock);
-	auto phandle = g_handle_hash->query<HANDLE_DATA>(guid_string);
-	if (NULL != phandle) {
-		time(&phandle->last_time);
-	}
+	auto iter = g_handle_hash.find(guid_string);
+	if (iter != g_handle_hash.end())
+		iter->second.last_time = time(nullptr);
 }
 
 static HANDLE_DATA* emsmdb_interface_get_handle_data(CXH *pcxh)
@@ -151,10 +153,10 @@ static HANDLE_DATA* emsmdb_interface_get_handle_data(CXH *pcxh)
 	guid_to_string(&pcxh->guid, guid_string, sizeof(guid_string));
 	while (true) {
 		std::unique_lock gl_hold(g_lock);
-		auto phandle = g_handle_hash->query<HANDLE_DATA>(guid_string);
-		if (NULL == phandle) {
+		auto iter = g_handle_hash.find(guid_string);
+		if (iter == g_handle_hash.end())
 			return NULL;
-		}
+		auto phandle = &iter->second;
 		if (TRUE == phandle->b_processing) {
 			gl_hold.unlock();
 			usleep(100000);
@@ -180,10 +182,10 @@ static HANDLE_DATA* emsmdb_interface_get_handle_notify_list(CXH *pcxh)
 	guid_to_string(&pcxh->guid, guid_string, sizeof(guid_string));
 	while (true) {
 		std::unique_lock gl_hold(g_lock);
-		auto phandle = g_handle_hash->query<HANDLE_DATA>(guid_string);
-		if (NULL == phandle) {
+		auto iter = g_handle_hash.find(guid_string);
+		if (iter == g_handle_hash.end())
 			return NULL;
-		}
+		auto phandle = &iter->second;
 		if (TRUE == phandle->b_occupied) {
 			gl_hold.unlock();
 			usleep(100000);
@@ -244,16 +246,22 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	char guid_string[GUIDSTR_SIZE];
 	guid_to_string(&temp_handle.guid, guid_string, sizeof(guid_string));
 	std::unique_lock gl_hold(g_lock);
-	if (g_handle_hash->add(guid_string, &temp_handle) != 1)
+	if (g_handle_hash.size() >= g_handle_hash_max) {
+		fprintf(stderr, "W-1577: g_handle_hash is full\n");
 		return FALSE;
-	auto phandle = g_handle_hash->query<HANDLE_DATA>(guid_string);
-	if (phandle == nullptr)
-		/* Should never occur; the value was recently added successfully. */
+	}
+	HANDLE_DATA *phandle;
+	try {
+		auto xp = g_handle_hash.emplace(guid_string, temp_handle);
+		phandle = &xp.first->second;
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1578: ENOMEM|n");
 		return false;
+	}
 	phandle->last_handle = 0;
 	auto plogmap = rop_processor_create_logmap();
 	if (NULL == plogmap) {
-		g_handle_hash->remove(guid_string);
+		g_handle_hash.erase(guid_string);
 		return FALSE;
 	}
 	phandle->info.plogmap = plogmap;
@@ -261,7 +269,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	auto uh_iter = g_user_hash.find(temp_handle.username);
 	if (uh_iter == g_user_hash.end()) {
 		if (g_user_hash.size() >= g_user_hash_max) {
-			g_handle_hash->remove(guid_string);
+			g_handle_hash.erase(guid_string);
 			gl_hold.unlock();
 			rop_processor_release_logmap(plogmap);
 			return FALSE;
@@ -270,7 +278,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 			auto xp = g_user_hash.emplace(temp_handle.username, std::vector<HANDLE_DATA *>{});
 			uh_iter = xp.first;
 		} catch (const std::bad_alloc &) {
-			g_handle_hash->remove(guid_string);
+			g_handle_hash.erase(guid_string);
 			gl_hold.unlock();
 			rop_processor_release_logmap(plogmap);
 			fprintf(stderr, "E-1579: ENOMEM\n");
@@ -278,7 +286,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 		}
 	} else {
 		if (uh_iter->second.size() >= MAX_HANDLE_PER_USER) {
-			g_handle_hash->remove(guid_string);
+			g_handle_hash.erase(guid_string);
 			gl_hold.unlock();
 			rop_processor_release_logmap(plogmap);
 			fprintf(stderr, "W-1580: user %s reached maximum number of handles (%u)\n",
@@ -289,7 +297,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	if (!emsmdb_interface_alloc_cxr(uh_iter->second, phandle)) {
 		if (uh_iter->second.empty())
 			g_user_hash.erase(temp_handle.username);
-		g_handle_hash->remove(guid_string);
+		g_handle_hash.erase(guid_string);
 		gl_hold.unlock();
 		rop_processor_release_logmap(plogmap);
 		return FALSE;
@@ -314,10 +322,10 @@ static void emsmdb_interface_remove_handle(CXH *pcxh)
 	guid_to_string(&pcxh->guid, guid_string, sizeof(guid_string));
 	std::unique_lock gl_hold(g_lock);
 	while (true) {
-		phandle = g_handle_hash->query<HANDLE_DATA>(guid_string);
-		if (NULL == phandle) {
+		auto iter = g_handle_hash.find(guid_string);
+		if (iter == g_handle_hash.end())
 			return;
-		}
+		phandle = &iter->second;
 		if (TRUE == phandle->b_processing) {
 			/* this means handle is being processed
 			   in emsmdb_interface_rpc_ext2 by another
@@ -349,7 +357,7 @@ static void emsmdb_interface_remove_handle(CXH *pcxh)
 		free(pnode);
 	}
 	double_list_free(&phandle->notify_list);
-	g_handle_hash->remove(guid_string);
+	g_handle_hash.erase(guid_string);
 	gl_hold.unlock();
 	rop_processor_release_logmap(plogmap);
 }
@@ -365,12 +373,7 @@ int emsmdb_interface_run()
 	int context_num;
 	
 	context_num = get_context_num();
-	g_handle_hash = STR_HASH_TABLE::create((context_num + 1) *
-		MAX_HANDLES_ON_CONTEXT, sizeof(HANDLE_DATA), NULL);
-	if (NULL == g_handle_hash) {
-		printf("[exchange_emsmdb]: Failed to init handle hash table\n");
-		return -1;
-	}
+	g_handle_hash_max = (context_num + 1) * MAX_HANDLES_ON_CONTEXT;
 	g_user_hash_max = context_num + 1;
 	g_notify_hash_max = AVERAGE_NOTIFY_NUM * context_num;
 	g_notify_stop = false;
@@ -393,7 +396,7 @@ void emsmdb_interface_stop()
 	}
 	g_notify_hash.clear();
 	g_user_hash.clear();
-	g_handle_hash.reset();
+	g_handle_hash.clear();
 }
 
 void emsmdb_interface_free()
@@ -1208,45 +1211,29 @@ static void *emsi_scanwork(void *pparam)
 {
 	CXH cxh;
 	time_t cur_time;
-	char guid_string[64];
-	HANDLE_DATA *phandle;
-	DOUBLE_LIST temp_list;
-	DOUBLE_LIST_NODE *pnode;
 	
-	double_list_init(&temp_list);
 	while (!g_notify_stop) {
+		std::vector<std::string> temp_list;
 		time(&cur_time);
 		std::unique_lock gl_hold(g_lock);
-		auto iter = g_handle_hash->make_iter();
-		for (str_hash_iter_begin(iter);
-			FALSE == str_hash_iter_done(iter);
-			str_hash_iter_forward(iter)) {
-			phandle = static_cast<HANDLE_DATA *>(str_hash_iter_get_value(iter, guid_string));
+		for (const auto &[guid_string, handle] : g_handle_hash) {
+			auto phandle = &handle;
 			if (TRUE == phandle->b_processing ||
 				TRUE == phandle->b_occupied) {
 				continue;
 			}
-			if (cur_time - phandle->last_time > HANDLE_VALID_INTERVAL) {
-				pnode = me_alloc<DOUBLE_LIST_NODE>();
-				if (NULL == pnode) {
-					continue;
-				}
-				pnode->pdata = strdup(guid_string);
-				if (NULL == pnode->pdata) {
-					free(pnode);
-					continue;
-				}
-				double_list_append_as_tail(&temp_list, pnode);
+			if (cur_time - phandle->last_time > HANDLE_VALID_INTERVAL) try {
+				temp_list.push_back(guid_string);
+			} catch (const std::bad_alloc &) {
+				fprintf(stderr, "E-1579: ENOMEM\n");
+				continue;
 			}
 		}
-		str_hash_iter_free(iter);
 		gl_hold.unlock();
-		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
+		for (auto &&guid : temp_list) {
 			cxh.handle_type = HANDLE_EXCHANGE_EMSMDB;
-			guid_from_string(&cxh.guid, static_cast<char *>(pnode->pdata));
+			guid_from_string(&cxh.guid, guid.c_str());
 			emsmdb_interface_remove_handle(&cxh);
-			free(pnode->pdata);
-			free(pnode);
 		}
 		sleep(3);
 	}
