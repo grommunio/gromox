@@ -67,6 +67,7 @@ Makefile.in
 /system/*.service
 /tests/bodyconv
 /tests/cryptest
+/tests/jsontest
 /tests/lzxpress
 /tests/utiltest
 /tests/vcard
