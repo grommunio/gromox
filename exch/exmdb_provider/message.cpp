@@ -3269,7 +3269,6 @@ static BOOL message_make_deferred_action_message(const char *username,
 	MESSAGE_NODE *pmnode;
 	RULE_ACTIONS actions;
 	MESSAGE_CONTENT *pmsg;
-	TAGGED_PROPVAL propval;
 	uint64_t tmp_ids[MAX_DAMS_PER_RULE_FOLDER];
 	
 	pmsg = message_content_init();
@@ -3277,85 +3276,65 @@ static BOOL message_make_deferred_action_message(const char *username,
 		return FALSE;
 	}
 	nt_time = rop_util_current_nttime();
-	propval.proptag = PROP_TAG_CLIENTSUBMITTIME;
-	propval.pvalue = &nt_time;
-	if (pmsg->proplist.set(propval) != 0) {
+	if (pmsg->proplist.set(PROP_TAG_CLIENTSUBMITTIME, &nt_time) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PR_CREATION_TIME;
-	propval.pvalue = &nt_time;
-	if (pmsg->proplist.set(propval) != 0) {
+	if (pmsg->proplist.set(PR_CREATION_TIME, &nt_time) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PR_LAST_MODIFICATION_TIME;
-	propval.pvalue = &nt_time;
-	if (pmsg->proplist.set(propval) != 0) {
+	if (pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &nt_time) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_MESSAGEDELIVERYTIME;
-	propval.pvalue = &nt_time;
-	if (pmsg->proplist.set(propval) != 0) {
+	if (pmsg->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME, &nt_time) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PR_MESSAGE_CLASS;
-	propval.pvalue  = deconst("IPC.Microsoft Exchange 4.0.Deferred Action");
-	if (pmsg->proplist.set(propval) != 0) {
+	if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPC.Microsoft Exchange 4.0.Deferred Action") != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_DAMBACKPATCHED;
-	propval.pvalue = &tmp_byte;
 	tmp_byte = 0;
-	if (pmsg->proplist.set(propval) != 0) {
+	if (pmsg->proplist.set(PROP_TAG_DAMBACKPATCHED, &tmp_byte) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PR_DAM_ORIGINAL_ENTRYID;
-	propval.pvalue = common_util_to_private_message_entryid(
+	auto pvalue = common_util_to_private_message_entryid(
 					psqlite, username, folder_id, message_id);
-	if (NULL == propval.pvalue) {
+	if (pvalue == nullptr) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	if (pmsg->proplist.set(propval) != 0) {
+	if (pmsg->proplist.set(PR_DAM_ORIGINAL_ENTRYID, pvalue) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PR_DAM_ORIG_MSG_SVREID;
-	propval.pvalue = &svreid;
 	svreid.pbin = NULL;
 	svreid.folder_id = rop_util_make_eid_ex(1, folder_id);
 	svreid.message_id = rop_util_make_eid_ex(1, message_id);
 	svreid.instance = 0;
-	if (pmsg->proplist.set(propval) != 0) {
+	if (pmsg->proplist.set(PR_DAM_ORIG_MSG_SVREID, &svreid) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PR_RULE_FOLDER_FID;
-	propval.pvalue = &tmp_eid;
 	tmp_eid = rop_util_make_eid_ex(1, folder_id);
-	if (pmsg->proplist.set(propval) != 0) {
+	if (pmsg->proplist.set(PR_RULE_FOLDER_FID, &tmp_eid) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PR_RULE_FOLDER_ENTRYID;
-	propval.pvalue = common_util_to_private_folder_entryid(
+	pvalue = common_util_to_private_folder_entryid(
 							psqlite, username, folder_id);
-	if (NULL == propval.pvalue) {
+	if (pvalue == nullptr) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	if (pmsg->proplist.set(propval) != 0) {
+	if (pmsg->proplist.set(PR_RULE_FOLDER_ENTRYID, pvalue) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PR_RULE_PROVIDER;
-	propval.pvalue = deconst(provider);
-	if (pmsg->proplist.set(propval) != 0) {
+	if (pmsg->proplist.set(PR_RULE_PROVIDER, provider) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
@@ -3387,17 +3366,13 @@ static BOOL message_make_deferred_action_message(const char *username,
 	BINARY tmp_bin;
 	tmp_bin.pb = ext_push.m_udata;
 	tmp_bin.cb = ext_push.m_offset;
-	propval.proptag = PROP_TAG_CLIENTACTIONS;
-	propval.pvalue = &tmp_bin;
-	if (pmsg->proplist.set(propval) != 0) {
+	if (pmsg->proplist.set(PROP_TAG_CLIENTACTIONS, &tmp_bin) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	tmp_bin.pv = tmp_ids;
 	tmp_bin.cb = sizeof(uint64_t)*id_count;
-	propval.proptag = PR_RULE_IDS;
-	propval.pvalue = &tmp_bin;
-	if (pmsg->proplist.set(propval) != 0) {
+	if (pmsg->proplist.set(PR_RULE_IDS, &tmp_bin) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
@@ -3407,6 +3382,7 @@ static BOOL message_make_deferred_action_message(const char *username,
 		return FALSE;
 	}
 	message_content_free(pmsg);
+	TAGGED_PROPVAL propval;
 	propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	propval.pvalue = &nt_time;
 	common_util_set_property(FOLDER_PROPERTIES_TABLE,
