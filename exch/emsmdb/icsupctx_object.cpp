@@ -114,18 +114,17 @@ BOOL icsupctx_object::end_state_stream()
 	mem_file_free(&pctx->f_state_stream);
 	auto saved_state_prop = pctx->state_property;
 	pctx->state_property = 0;
-	if (FALSE == idset_deserialize(pset, &tmp_bin)) {
+	if (!pset->deserialize(&tmp_bin)) {
 		idset_free(pset);
 		return FALSE;
 	}
 	tmp_bin.cb = sizeof(void*);
 	tmp_bin.pv = &pctx->plogon;
-	if (FALSE == idset_register_mapping(pset,
-		&tmp_bin, common_util_mapping_replica)) {
+	if (!pset->register_mapping(&tmp_bin, common_util_mapping_replica)) {
 		idset_free(pset);
 		return FALSE;
 	}
-	if (FALSE == idset_convert(pset)) {
+	if (!pset->convert()) {
 		idset_free(pset);
 		return FALSE;
 	}

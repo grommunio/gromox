@@ -156,9 +156,9 @@ static BOOL ics_hint_idset_cache(IDSET_CACHE *pcache, uint64_t id_val)
 	return FALSE;
 }
 
-static void ics_enum_content_idset(
-	ENUM_PARAM *pparam, uint64_t message_id)
+static void ics_enum_content_idset(void *vparam, uint64_t message_id)
 {
+	auto pparam = static_cast<ENUM_PARAM *>(vparam);
 	uint64_t mid_val;
 	
 	if (FALSE == pparam->b_result) {
@@ -345,20 +345,17 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			*plast_readcn = read_cn;
 		}
 		if (TRUE == b_fai) {
-			if (TRUE == ics_hint_idset_cache(&cache, mid_val)
-				&& TRUE == idset_hint((IDSET*)pseen_fai,
-				rop_util_make_eid_ex(1, change_num))) {
+			if (ics_hint_idset_cache(&cache, mid_val) &&
+			    const_cast<IDSET *>(pseen_fai)->hint(rop_util_make_eid_ex(1, change_num)))
 				continue;
-			}
 		} else {
-			if (TRUE == ics_hint_idset_cache(&cache, mid_val)
-				&& TRUE == idset_hint((IDSET*)pseen,
-				rop_util_make_eid_ex(1, change_num))) {
+			if (ics_hint_idset_cache(&cache, mid_val) &&
+			    const_cast<IDSET *>(pseen)->hint(rop_util_make_eid_ex(1, change_num))) {
 				if (NULL == pread) {
 					continue;
 				}
-				if (0 == read_cn || TRUE == idset_hint((IDSET*)pread,
-					rop_util_make_eid_ex(1, read_cn))) {
+				if (read_cn == 0 ||
+				    const_cast<IDSET *>(pread)->hint(rop_util_make_eid_ex(1, read_cn))) {
 					continue;	
 				}
 				int read_state;
@@ -491,8 +488,8 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		eid_array_free(enum_param.pdeleted_eids);
 		return FALSE;
 	}
-	if (FALSE == idset_enum_repl((IDSET*)pgiven, 1,
-		&enum_param, (REPLICA_ENUM)ics_enum_content_idset)) {
+	if (!const_cast<IDSET *>(pgiven)->enum_repl(1, &enum_param,
+	    ics_enum_content_idset)) {
 		eid_array_free(enum_param.pdeleted_eids);
 		eid_array_free(enum_param.pnolonger_mids);
 		return FALSE;	
@@ -606,9 +603,9 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	return TRUE;
 }
 
-static void ics_enum_hierarchy_idset(
-	ENUM_PARAM *pparam, uint64_t folder_id)
+static void ics_enum_hierarchy_idset(void *vparam, uint64_t folder_id)
 {
+	auto pparam = static_cast<ENUM_PARAM *>(vparam);
 	uint16_t replid;
 	uint64_t fid_val;
 	
@@ -628,9 +625,9 @@ static void ics_enum_hierarchy_idset(
 		pparam->b_result = FALSE;
 }
 
-static void ics_enum_hierarchy_replist(
-	REPLID_ARRAY *preplids, uint16_t replid)
+static void ics_enum_hierarchy_replist(void *vpar, uint16_t replid)
 {
+	auto preplids = static_cast<REPLID_ARRAY *>(vpar);
 	if (preplids->count < 1024) {
 		preplids->replids[preplids->count++] = replid;
 	}
@@ -679,12 +676,9 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite,
 		if (change_num > *plast_cn) {
 			*plast_cn = change_num;
 		}
-		if (TRUE == idset_hint((IDSET*)pgiven,
-			rop_util_make_eid_ex(1, fid_val)) &&
-			TRUE == idset_hint((IDSET*)pseen,
-			rop_util_make_eid_ex(1, change_num))) {
+		if (const_cast<IDSET *>(pgiven)->hint(rop_util_make_eid_ex(1, fid_val)) &&
+		    const_cast<IDSET *>(pseen)->hint(rop_util_make_eid_ex(1, change_num)))
 			continue;
-		}
 		sqlite3_reset(stm_insert_chg);
 		sqlite3_bind_int64(stm_insert_chg, 1, fid_val);
 		if (sqlite3_step(stm_insert_chg) != SQLITE_DONE)
@@ -862,8 +856,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	{
 	REPLID_ARRAY replids;
 	replids.count = 0;
-	idset_enum_replist((IDSET*)pgiven, &replids,
-		(REPLIST_ENUM)ics_enum_hierarchy_replist);
+	const_cast<IDSET *>(pgiven)->enum_replist(&replids, ics_enum_hierarchy_replist);
 	ENUM_PARAM enum_param;
 	enum_param.stm_exist = gx_sql_prep(psqlite, "SELECT folder_id"
 	                       " FROM existence WHERE folder_id=?");
@@ -875,9 +868,8 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		return FALSE;
 	}
 	for (size_t i = 0; i < replids.count; ++i) {
-		if (FALSE == idset_enum_repl((IDSET*)pgiven,
-			replids.replids[i], &enum_param,
-			(REPLICA_ENUM)ics_enum_hierarchy_idset)) {
+		if (!const_cast<IDSET *>(pgiven)->enum_repl(replids.replids[i],
+		    &enum_param, ics_enum_hierarchy_idset)) {
 			eid_array_free(enum_param.pdeleted_eids);
 			return FALSE;	
 		}

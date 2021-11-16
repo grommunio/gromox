@@ -847,6 +847,25 @@ using REPLIST_ENUM = void (*)(void *, uint16_t);
 using REPLICA_ENUM = void (*)(void *, uint64_t);
 
 struct IDSET {
+	BOOL register_mapping(BINARY *, REPLICA_MAPPING);
+	void clear();
+	BOOL check_empty() const;
+	BOOL append(uint64_t eid);
+	BOOL append_range(uint16_t replid, uint64_t low_value, uint64_t high_value);
+	void remove(uint64_t eid);
+	BOOL concatenate(const IDSET *set_src);
+	BOOL hint(uint64_t eid);
+	BINARY *serialize() const;
+	BINARY *serialize_replid() const;
+	BINARY *serialize_replguid() const;
+	BOOL deserialize(const BINARY *);
+	/* convert from deserialize idset into serialize idset */
+	BOOL convert();
+	/* get maximum of first range in idset for specified replid */
+	BOOL get_repl_first_max(uint16_t replid, uint64_t *eid);
+	BOOL enum_replist(void *param, REPLIST_ENUM);
+	BOOL enum_repl(uint16_t replid, void *param, REPLICA_ENUM);
+
 	void *pparam;
 	REPLICA_MAPPING mapping;
 	BOOL b_serialize; /* if b_serialize is FALSE in idset and repl_type is

@@ -385,14 +385,11 @@ gxerr_t message_object::save()
 	}
 	
 	if (NULL != pmessage->pstate) {
-		idset_append(pmessage->pstate->pgiven,
-						pmessage->message_id);
+		pmessage->pstate->pgiven->append(pmessage->message_id);
 		if (FALSE == b_fai) {
-			idset_append(pmessage->pstate->pseen,
-							pmessage->change_num);
+			pmessage->pstate->pseen->append(pmessage->change_num);
 		} else {
-			idset_append(pmessage->pstate->pseen_fai,
-								pmessage->change_num);
+			pmessage->pstate->pseen_fai->append(pmessage->change_num);
 		}
 	}
 	

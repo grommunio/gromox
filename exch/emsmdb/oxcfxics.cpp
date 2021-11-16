@@ -1096,7 +1096,7 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 			    pread_stat[i].mark_as_read, &read_cn))
 				return ecError;
 		}
-		idset_append(pctx->pstate->pread, read_cn);
+		pctx->pstate->pread->append(read_cn);
 	}
 	return ecSuccess;
 }
@@ -1269,7 +1269,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		if (!exmdb_client_create_folder_by_properties(plogon->get_dir(),
 		    pinfo->cpid, &tmp_propvals, &tmp_fid) || folder_id != tmp_fid)
 			return ecError;
-		idset_append(pctx->pstate->pseen, change_num);
+		pctx->pstate->pseen->append(change_num);
 		return ecSuccess;
 	}
 	if (!exmdb_client_get_folder_property(plogon->get_dir(), 0,
@@ -1351,7 +1351,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	if (!exmdb_client_set_folder_properties(plogon->get_dir(),
 	    pinfo->cpid, folder_id, &tmp_propvals, &tmp_problems))
 		return ecError;
-	idset_append(pctx->pstate->pseen, change_num);
+	pctx->pstate->pseen->append(change_num);
 	return ecSuccess;
 }
 
@@ -1625,9 +1625,9 @@ uint32_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 	if (!exmdb_client_get_message_property(plogon->get_dir(), nullptr, 0,
 	    dst_mid, PROP_TAG_CHANGENUMBER, &pvalue) || pvalue == nullptr)
 		return ecError;
-	idset_append(b_fai ? pctx->pstate->pseen_fai : pctx->pstate->pseen,
-	             *static_cast<uint64_t *>(pvalue));
-	idset_append(pctx->pstate->pgiven, dst_mid);
+	auto s = b_fai ? pctx->pstate->pseen_fai : pctx->pstate->pseen;
+	s->append(*static_cast<uint64_t *>(pvalue));
+	pctx->pstate->pgiven->append(dst_mid);
 	*pmessage_id = 0;
 	if (TRUE == b_newer) {
 		return SYNC_W_CLIENT_CHANGE_NEWER;

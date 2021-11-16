@@ -75,31 +75,28 @@ void ics_state_free(ICS_STATE *pstate)
 
 BINARY* ics_state_serialize(ICS_STATE *pstate)
 {
-	BINARY *pbin;
 	EXT_PUSH ext_push;
 	TPROPVAL_ARRAY *pproplist;
 	static constexpr uint8_t bin_buff[8]{};
 	static constexpr BINARY fake_bin = {gromox::arsizeof(bin_buff), {deconst(bin_buff)}};
 	
 	if (ICS_TYPE_CONTENTS == pstate->type) {
-		if (TRUE == idset_check_empty(pstate->pgiven) &&
-			TRUE == idset_check_empty(pstate->pseen) &&
-			TRUE == idset_check_empty(pstate->pseen_fai) &&
-			TRUE == idset_check_empty(pstate->pread)) {
+		if (pstate->pgiven->check_empty() &&
+		    pstate->pseen->check_empty() &&
+		    pstate->pseen_fai->check_empty() &&
+		    pstate->pread->check_empty())
 			return deconst(&fake_bin);
-		}
 	} else {
-		if (TRUE == idset_check_empty(pstate->pgiven) &&
-			TRUE == idset_check_empty(pstate->pseen)) {
+		if (pstate->pgiven->check_empty() &&
+		    pstate->pseen->check_empty())
 			return deconst(&fake_bin);
-		}
 	}
 	pproplist = tpropval_array_init();
 	if (NULL == pproplist) {
 		return NULL;
 	}
 	
-	pbin = idset_serialize(pstate->pgiven);
+	auto pbin = pstate->pgiven->serialize();
 	if (NULL == pbin) {
 		tpropval_array_free(pproplist);
 		return NULL;
@@ -111,7 +108,7 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 	}
 	rop_util_free_binary(pbin);
 	
-	pbin = idset_serialize(pstate->pseen);
+	pbin = pstate->pseen->serialize();
 	if (NULL == pbin) {
 		tpropval_array_free(pproplist);
 		return NULL;
@@ -124,7 +121,7 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 	rop_util_free_binary(pbin);
 	
 	if (ICS_TYPE_CONTENTS == pstate->type) {
-		pbin = idset_serialize(pstate->pseen_fai);
+		pbin = pstate->pseen_fai->serialize();
 		if (NULL == pbin) {
 			tpropval_array_free(pproplist);
 			return NULL;
@@ -138,8 +135,8 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 	}
 	
 	if (ICS_TYPE_CONTENTS == pstate->type &&
-		FALSE == idset_check_empty(pstate->pread)) {
-		pbin = idset_serialize(pstate->pread);
+	    !pstate->pread->check_empty()) {
+		pbin = pstate->pread->serialize();
 		if (NULL == pbin) {
 			tpropval_array_free(pproplist);
 			return NULL;
@@ -189,8 +186,8 @@ BOOL ics_state_deserialize(ICS_STATE *pstate, const BINARY *pbin)
 			if (NULL == pset) {
 				return FALSE;
 			}
-			if (!idset_deserialize(pset, static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
-				FALSE == idset_convert(pset)) {
+			if (!pset->deserialize(static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
+			    !pset->convert()) {
 				idset_free(pset);
 				return FALSE;
 			}
@@ -202,8 +199,8 @@ BOOL ics_state_deserialize(ICS_STATE *pstate, const BINARY *pbin)
 			if (NULL == pset) {
 				return FALSE;
 			}
-			if (!idset_deserialize(pset, static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
-				FALSE == idset_convert(pset)) {
+			if (!pset->deserialize(static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
+			    !pset->convert()) {
 				idset_free(pset);
 				return FALSE;
 			}
@@ -216,8 +213,8 @@ BOOL ics_state_deserialize(ICS_STATE *pstate, const BINARY *pbin)
 				if (NULL == pset) {
 					return FALSE;
 				}
-				if (!idset_deserialize(pset, static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
-					FALSE == idset_convert(pset)) {
+				if (!pset->deserialize(static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
+				    !pset->convert()) {
 					idset_free(pset);
 					return FALSE;
 				}
@@ -231,8 +228,8 @@ BOOL ics_state_deserialize(ICS_STATE *pstate, const BINARY *pbin)
 				if (NULL == pset) {
 					return FALSE;
 				}
-				if (!idset_deserialize(pset, static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
-					FALSE == idset_convert(pset)) {
+				if (!pset->deserialize(static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
+				    !pset->convert()) {
 					idset_free(pset);
 					return FALSE;
 				}

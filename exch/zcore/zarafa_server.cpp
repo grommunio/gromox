@@ -4700,7 +4700,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		if (!exmdb_client::create_folder_by_properties(pstore->get_dir(),
 		    pinfo->cpid, &tmp_propvals, &tmp_fid) || folder_id != tmp_fid)
 			return ecError;
-		idset_append(pctx->pstate->pseen, change_num);
+		pctx->pstate->pseen->append(change_num);
 		return ecSuccess;
 	}
 	if (!pstore->check_owner_mode()) {
@@ -4763,7 +4763,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 	if (!exmdb_client::set_folder_properties(pstore->get_dir(),
 	    pinfo->cpid, folder_id, &tmp_propvals, &tmp_problems))
 		return ecError;
-	idset_append(pctx->pstate->pseen, change_num);
+	pctx->pstate->pseen->append(change_num);
 	return ecSuccess;
 }
 
@@ -4986,7 +4986,7 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 			    pinfo->get_username(), message_id, mark_as_read, &read_cn))
 				return ecError;
 		}
-		idset_append(pctx->pstate->pread, read_cn);
+		pctx->pstate->pread->append(read_cn);
 	}
 	return ecSuccess;
 }

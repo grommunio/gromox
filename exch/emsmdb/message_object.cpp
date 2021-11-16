@@ -559,8 +559,8 @@ gxerr_t message_object::save()
 		return GXERR_SUCCESS;
 	
 	if (NULL != pmessage->pstate) {
-		auto &x = pmessage->pstate;
-		idset_append(b_fai ? x->pseen_fai : x->pseen, pmessage->change_num);
+		auto s = b_fai ? pmessage->pstate->pseen_fai : pmessage->pstate->pseen;
+		s->append(pmessage->change_num);
 	}
 	
 	if (0 == pmessage->message_id || TRUE == b_fai) {

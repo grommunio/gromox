@@ -2116,8 +2116,7 @@ static int exmdb_ext_pull_get_content_sync_request(
 		idset_init(FALSE, REPL_TYPE_ID);
 	if (ppayload->get_content_sync.pgiven == nullptr)
 		return EXT_ERR_ALLOC;
-	if (FALSE == idset_deserialize(
-		ppayload->get_content_sync.pgiven, &tmp_bin)) {
+	if (!ppayload->get_content_sync.pgiven->deserialize(&tmp_bin)) {
 		idset_free(ppayload->get_content_sync.pgiven);
 		return EXT_ERR_FORMAT;
 	}
@@ -2132,7 +2131,7 @@ static int exmdb_ext_pull_get_content_sync_request(
 			idset_init(FALSE, REPL_TYPE_ID);
 		if (ppayload->get_content_sync.pseen == nullptr)
 			return gcsr_failure(EXT_ERR_ALLOC, ppayload);
-		if (!idset_deserialize(ppayload->get_content_sync.pseen, &tmp_bin))
+		if (!ppayload->get_content_sync.pseen->deserialize(&tmp_bin))
 			return gcsr_failure(EXT_ERR_FORMAT, ppayload);
 	}
 	status = pext->g_uint8(&tmp_byte);
@@ -2146,7 +2145,7 @@ static int exmdb_ext_pull_get_content_sync_request(
 			idset_init(FALSE, REPL_TYPE_ID);
 		if (ppayload->get_content_sync.pseen_fai == nullptr)
 			return gcsr_failure(EXT_ERR_ALLOC, ppayload);
-		if (!idset_deserialize(ppayload->get_content_sync.pseen_fai, &tmp_bin))
+		if (!ppayload->get_content_sync.pseen_fai->deserialize(&tmp_bin))
 			return gcsr_failure(EXT_ERR_FORMAT, ppayload);
 	}
 	status = pext->g_uint8(&tmp_byte);
@@ -2160,7 +2159,7 @@ static int exmdb_ext_pull_get_content_sync_request(
 			idset_init(FALSE, REPL_TYPE_ID);
 		if (ppayload->get_content_sync.pread == nullptr)
 			return gcsr_failure(EXT_ERR_ALLOC, ppayload);
-		if (!idset_deserialize(ppayload->get_content_sync.pread, &tmp_bin))
+		if (!ppayload->get_content_sync.pread->deserialize(&tmp_bin))
 			return gcsr_failure(EXT_ERR_FORMAT, ppayload);
 	}
 	status = pext->g_uint32(&ppayload->get_content_sync.cpid);
@@ -2187,7 +2186,6 @@ static int exmdb_ext_push_get_content_sync_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
 {
 	int status;
-	BINARY *pbin;
 	
 	TRY(pext->p_uint64(ppayload->get_content_sync.folder_id));
 	if (NULL == ppayload->get_content_sync.username) {
@@ -2196,8 +2194,7 @@ static int exmdb_ext_push_get_content_sync_request(
 		TRY(pext->p_uint8(1));
 		TRY(pext->p_str(ppayload->get_content_sync.username));
 	}
-	pbin = idset_serialize_replid(
-		ppayload->get_content_sync.pgiven);
+	auto pbin = ppayload->get_content_sync.pgiven->serialize_replid();
 	if (pbin == nullptr)
 		return EXT_ERR_ALLOC;
 	status = pext->p_bin_ex(pbin);
@@ -2210,8 +2207,7 @@ static int exmdb_ext_push_get_content_sync_request(
 		TRY(pext->p_uint8(0));
 	} else {
 		TRY(pext->p_uint8(1));
-		pbin = idset_serialize_replid(
-			ppayload->get_content_sync.pseen);
+		pbin = ppayload->get_content_sync.pseen->serialize_replid();
 		if (pbin == nullptr)
 			return EXT_ERR_ALLOC;
 		status = pext->p_bin_ex(pbin);
@@ -2225,8 +2221,7 @@ static int exmdb_ext_push_get_content_sync_request(
 		TRY(pext->p_uint8(0));
 	} else {
 		TRY(pext->p_uint8(1));
-		pbin = idset_serialize_replid(
-			ppayload->get_content_sync.pseen_fai);
+		pbin = ppayload->get_content_sync.pseen_fai->serialize_replid();
 		if (pbin == nullptr)
 			return EXT_ERR_ALLOC;
 		status = pext->p_bin_ex(pbin);
@@ -2240,8 +2235,7 @@ static int exmdb_ext_push_get_content_sync_request(
 		TRY(pext->p_uint8(0));
 	} else {
 		TRY(pext->p_uint8(1));
-		pbin = idset_serialize_replid(
-			ppayload->get_content_sync.pread);
+		pbin = ppayload->get_content_sync.pread->serialize_replid();
 		if (pbin == nullptr)
 			return EXT_ERR_ALLOC;
 		status = pext->p_bin_ex(pbin);
@@ -2278,8 +2272,7 @@ static int exmdb_ext_pull_get_hierarchy_sync_request(
 		idset_init(FALSE, REPL_TYPE_ID);
 	if (ppayload->get_hierarchy_sync.pgiven == nullptr)
 		return EXT_ERR_ALLOC;
-	if (FALSE == idset_deserialize(
-		ppayload->get_hierarchy_sync.pgiven, &tmp_bin)) {
+	if (!ppayload->get_hierarchy_sync.pgiven->deserialize(&tmp_bin)) {
 		idset_free(ppayload->get_hierarchy_sync.pgiven);
 		return EXT_ERR_FORMAT;
 	}
@@ -2300,8 +2293,7 @@ static int exmdb_ext_pull_get_hierarchy_sync_request(
 			idset_free(ppayload->get_hierarchy_sync.pgiven);
 			return EXT_ERR_ALLOC;
 		}
-		if (FALSE == idset_deserialize(
-			ppayload->get_hierarchy_sync.pseen, &tmp_bin)) {
+		if (!ppayload->get_hierarchy_sync.pseen->deserialize(&tmp_bin)) {
 			idset_free(ppayload->get_hierarchy_sync.pseen);
 			idset_free(ppayload->get_hierarchy_sync.pgiven);
 			return EXT_ERR_FORMAT;
@@ -2314,7 +2306,6 @@ static int exmdb_ext_push_get_hierarchy_sync_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
 {
 	int status;
-	BINARY *pbin;
 	
 	TRY(pext->p_uint64(ppayload->get_hierarchy_sync.folder_id));
 	if (NULL == ppayload->get_hierarchy_sync.username) {
@@ -2323,8 +2314,7 @@ static int exmdb_ext_push_get_hierarchy_sync_request(
 		TRY(pext->p_uint8(1));
 		TRY(pext->p_str(ppayload->get_hierarchy_sync.username));
 	}
-	pbin = idset_serialize_replid(
-		ppayload->get_hierarchy_sync.pgiven);
+	auto pbin = ppayload->get_hierarchy_sync.pgiven->serialize_replid();
 	if (pbin == nullptr)
 		return EXT_ERR_ALLOC;
 	status = pext->p_bin_ex(pbin);
@@ -2337,8 +2327,7 @@ static int exmdb_ext_push_get_hierarchy_sync_request(
 		TRY(pext->p_uint8(0));
 	} else {
 		TRY(pext->p_uint8(1));
-		pbin = idset_serialize_replid(
-			ppayload->get_hierarchy_sync.pseen);
+		pbin = ppayload->get_hierarchy_sync.pseen->serialize_replid();
 		if (pbin == nullptr)
 			return EXT_ERR_ALLOC;
 		status = pext->p_bin_ex(pbin);

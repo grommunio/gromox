@@ -47,9 +47,9 @@ IDSET* idset_init(BOOL b_serialize, uint8_t repl_type)
 	return pset;
 }
 
-BOOL idset_register_mapping(IDSET *pset,
-	BINARY *pparam, REPLICA_MAPPING mapping)
+BOOL IDSET::register_mapping(BINARY *pparam, REPLICA_MAPPING mapping)
 {
+	auto pset = this;
 	if (NULL != pset->pparam ||
 		NULL != pset->mapping) {
 		return FALSE;
@@ -71,8 +71,9 @@ BOOL idset_register_mapping(IDSET *pset,
 	return TRUE;
 }
 
-void idset_clear(IDSET *pset)
+void IDSET::clear()
 {
+	auto pset = this;
 	DOUBLE_LIST *plist;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
@@ -93,7 +94,7 @@ void idset_clear(IDSET *pset)
 
 void idset_free(IDSET *pset)
 {
-	idset_clear(pset);
+	pset->clear();
 	double_list_free(&pset->repl_list);
 	if (NULL != pset->pparam) {
 		free(pset->pparam);
@@ -101,8 +102,9 @@ void idset_free(IDSET *pset)
 	free(pset);
 }
 
-BOOL idset_check_empty(const IDSET *pset)
+BOOL IDSET::check_empty() const
 {
+	auto pset = this;
 	if (0 == double_list_get_nodes_num(&pset->repl_list)) {
 		return TRUE;
 	}
@@ -188,8 +190,9 @@ static BOOL idset_append_internal(IDSET *pset,
 	return TRUE;
 }
 
-BOOL idset_append(IDSET *pset, uint64_t eid)
+BOOL IDSET::append(uint64_t eid)
 {
+	auto pset = this;
 	uint64_t value;
 	uint16_t replid;
 	
@@ -198,9 +201,9 @@ BOOL idset_append(IDSET *pset, uint64_t eid)
 	return idset_append_internal(pset, replid, value);
 }
 
-BOOL idset_append_range(IDSET *pset, uint16_t replid,
-	uint64_t low_value, uint64_t high_value)
+BOOL IDSET::append_range(uint16_t replid, uint64_t low_value, uint64_t high_value)
 {
+	auto pset = this;
 	REPLID_NODE *prepl_node;
 	DOUBLE_LIST_NODE *pnode;
 	RANGE_NODE *prange_node;
@@ -283,8 +286,9 @@ BOOL idset_append_range(IDSET *pset, uint16_t replid,
 	return TRUE;
 }
 
-void idset_remove(IDSET *pset, uint64_t eid)
+void IDSET::remove(uint64_t eid)
 {
+	auto pset = this;
 	uint64_t value;
 	uint16_t replid;
 	REPLID_NODE *prepl_node;
@@ -338,8 +342,9 @@ void idset_remove(IDSET *pset, uint64_t eid)
 	}
 }
 
-BOOL idset_concatenate(IDSET *pset_dst, const IDSET *pset_src)
+BOOL IDSET::concatenate(const IDSET *pset_src)
 {
+	auto pset_dst = this;
 	DOUBLE_LIST *prepl_list;
 	REPLID_NODE *prepl_node;
 	RANGE_NODE *prange_node;
@@ -363,19 +368,18 @@ BOOL idset_concatenate(IDSET *pset_dst, const IDSET *pset_src)
 					return FALSE;	
 				}
 			} else {
-				if (FALSE == idset_append_range(pset_dst,
-					prepl_node->replid, prange_node->low_value,
-					prange_node->high_value)) {
+				if (!append_range(prepl_node->replid,
+				    prange_node->low_value, prange_node->high_value))
 					return FALSE;	
-				}
 			}
 		}
 	}
 	return TRUE;
 }
 
-BOOL idset_hint(IDSET *pset, uint64_t eid)
+BOOL IDSET::hint(uint64_t eid)
 {
+	auto pset = this;
 	uint64_t value;
 	uint16_t replid;
 	RANGE_NODE *prange_node;
@@ -646,8 +650,9 @@ static BOOL idset_write_guid(BINARY *pbin, const GUID *pguid)
 	return TRUE;
 }
 
-BINARY *idset_serialize_replid(const IDSET *pset)
+BINARY *IDSET::serialize_replid() const
 {
+	auto pset = this;
 	BINARY *pbin;
 	
 	if (FALSE == pset->b_serialize) {
@@ -675,8 +680,9 @@ BINARY *idset_serialize_replid(const IDSET *pset)
 	return pbin;
 }
 
-BINARY *idset_serialize_replguid(const IDSET *pset)
+BINARY *IDSET::serialize_replguid() const
 {
+	auto pset = this;
 	BINARY *pbin;
 	GUID tmp_guid;
 	
@@ -713,13 +719,9 @@ BINARY *idset_serialize_replguid(const IDSET *pset)
 	return pbin;
 }
 
-BINARY *idset_serialize(const IDSET *pset)
+BINARY *IDSET::serialize() const
 {
-	if (REPL_TYPE_ID == pset->repl_type) {
-		return idset_serialize_replid(pset);
-	} else {
-		return idset_serialize_replguid(pset);
-	}
+	return repl_type == REPL_TYPE_ID ? serialize_replid() : serialize_replguid();
 }
 
 static uint32_t idset_decoding_globset(
@@ -875,8 +877,9 @@ static void idset_read_guid(const void *pv, uint32_t offset, GUID *pguid)
 	memcpy(pguid->node, pb + offset, 6);
 }
 
-BOOL idset_deserialize(IDSET *pset, const BINARY *pbin)
+BOOL IDSET::deserialize(const BINARY *pbin)
 {
+	auto pset = this;
 	BINARY bin1;
 	uint32_t offset;
 	uint32_t length;
@@ -928,8 +931,9 @@ BOOL idset_deserialize(IDSET *pset, const BINARY *pbin)
 	return TRUE;
 }
 
-BOOL idset_convert(IDSET *pset)
+BOOL IDSET::convert()
 {
+	auto pset = this;
 	uint16_t replid;
 	DOUBLE_LIST temp_list;
 	DOUBLE_LIST_NODE *pnode;
@@ -975,9 +979,9 @@ BOOL idset_convert(IDSET *pset)
 	return FALSE;
 }
 
-BOOL idset_get_repl_first_max(IDSET *pset,
-	uint16_t replid, uint64_t *peid)
+BOOL IDSET::get_repl_first_max(uint16_t replid, uint64_t *peid)
 {
+	auto pset = this;
 	uint16_t tmp_replid;
 	DOUBLE_LIST_NODE *pnode;
 	REPLID_NODE *prepl_node;
@@ -1026,9 +1030,9 @@ BOOL idset_get_repl_first_max(IDSET *pset,
 	return TRUE;
 }
 
-BOOL idset_enum_replist(IDSET *pset, void *pparam,
-	REPLIST_ENUM replist_enum)
+BOOL IDSET::enum_replist(void *pparam, REPLIST_ENUM replist_enum)
 {
+	auto pset = this;
 	uint16_t tmp_replid;
 	DOUBLE_LIST_NODE *pnode;
 	REPLID_NODE *prepl_node;
@@ -1058,9 +1062,9 @@ BOOL idset_enum_replist(IDSET *pset, void *pparam,
 	return TRUE;
 }
 
-BOOL idset_enum_repl(IDSET *pset, uint16_t replid,
-	void *pparam, REPLICA_ENUM repl_enum)
+BOOL IDSET::enum_repl(uint16_t replid, void *pparam, REPLICA_ENUM repl_enum)
 {
+	auto pset = this;
 	uint64_t ival;
 	uint64_t tmp_eid;
 	uint16_t tmp_replid;

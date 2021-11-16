@@ -43,72 +43,63 @@ std::unique_ptr<ics_state> ics_state::create(logon_object *plogon, int type)
 	if (NULL == pstate->pseen) {
 		return NULL;
 	}
-	if (FALSE == idset_register_mapping(pstate->pseen,
-		&tmp_bin, common_util_mapping_replica)) {
+	if (!pstate->pseen->register_mapping(&tmp_bin, common_util_mapping_replica))
 		return NULL;
-	}
 	switch (type) {
 	case ICS_STATE_CONTENTS_DOWN:
 		pstate->pgiven = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pgiven) {
 			return NULL;
 		}
-		if (FALSE == idset_register_mapping(pstate->pgiven,
-			&tmp_bin, common_util_mapping_replica)) {
+		if (!pstate->pgiven->register_mapping(&tmp_bin,
+		    common_util_mapping_replica))
 			return NULL;
-		}
 		pstate->pseen_fai = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pseen_fai) {
 			return NULL;
 		}
-		if (FALSE == idset_register_mapping(pstate->pseen_fai,
-			&tmp_bin, common_util_mapping_replica)) {
+		if (!pstate->pseen_fai->register_mapping(&tmp_bin,
+		    common_util_mapping_replica))
 			return NULL;
-		}
 		pstate->pread = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pread) {
 			return NULL;
 		}
-		if (FALSE == idset_register_mapping(pstate->pread,
-			&tmp_bin, common_util_mapping_replica)) {
+		if (!pstate->pread->register_mapping(&tmp_bin,
+		    common_util_mapping_replica))
 			return NULL;
-		}
 		break;
 	case ICS_STATE_HIERARCHY_DOWN:
 		pstate->pgiven = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pgiven) {
 			return NULL;
 		}
-		if (FALSE == idset_register_mapping(pstate->pgiven,
-			&tmp_bin, common_util_mapping_replica)) {
+		if (!pstate->pgiven->register_mapping(&tmp_bin,
+		    common_util_mapping_replica))
 			return NULL;
-		}
 		break;
 	case ICS_STATE_CONTENTS_UP:
 		pstate->pgiven = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pgiven) {
 			return NULL;
 		}
-		if (FALSE == idset_register_mapping(pstate->pgiven,
-			&tmp_bin, common_util_mapping_replica)) {
+		if (!pstate->pgiven->register_mapping(&tmp_bin,
+		    common_util_mapping_replica))
 			return NULL;
-		}
 		pstate->pseen_fai = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pseen_fai) {
 			return NULL;
 		}
-		if (FALSE == idset_register_mapping(pstate->pseen_fai,
-			&tmp_bin, common_util_mapping_replica)) {
+		if (!pstate->pseen_fai->register_mapping(&tmp_bin,
+		    common_util_mapping_replica))
 			return NULL;
-		}
 		pstate->pread = idset_init(TRUE, REPL_TYPE_GUID);
 		if (NULL == pstate->pread) {
 			return NULL;
 		}
-		if (FALSE == idset_register_mapping(pstate->pread,
-			&tmp_bin, common_util_mapping_replica)) {
+		if (!pstate->pread->register_mapping(&tmp_bin,
+		    common_util_mapping_replica))
 			return NULL;
-		}
 		break;
 	case ICS_STATE_HIERARCHY_UP:
 		break;
@@ -132,11 +123,9 @@ BOOL ICS_STATE::append_idset(uint32_t state_property, IDSET *pset)
 		if (NULL != pstate->pseen) {
 			if ((ICS_STATE_CONTENTS_UP == pstate->type ||
 				ICS_STATE_HIERARCHY_UP == pstate->type) &&
-				FALSE == idset_check_empty(pstate->pseen)) {
-				if (FALSE == idset_concatenate(pset, pstate->pseen)) {
-					return FALSE;
-				}
-			}
+			    !pstate->pseen->check_empty() &&
+			    !pset->concatenate(pstate->pseen))
+				return FALSE;
 			idset_free(pstate->pseen);
 		}
 		pstate->pseen = pset;
@@ -144,11 +133,9 @@ BOOL ICS_STATE::append_idset(uint32_t state_property, IDSET *pset)
 	case META_TAG_CNSETSEENFAI:
 		if (NULL != pstate->pseen_fai) {
 			if (ICS_STATE_CONTENTS_UP == pstate->type &&
-				FALSE == idset_check_empty(pstate->pseen_fai)) {
-				if (FALSE == idset_concatenate(pset, pstate->pseen_fai)) {
-					return FALSE;
-				}
-			}
+			    !pstate->pseen_fai->check_empty() &&
+			    !pset->concatenate(pstate->pseen_fai))
+				return FALSE;
 			idset_free(pstate->pseen_fai);
 		}
 		pstate->pseen_fai = pset;
@@ -156,11 +143,9 @@ BOOL ICS_STATE::append_idset(uint32_t state_property, IDSET *pset)
 	case META_TAG_CNSETREAD:
 		if (NULL != pstate->pread) {
 			if (ICS_STATE_CONTENTS_UP == pstate->type &&
-				FALSE == idset_check_empty(pstate->pread)) {
-				if (FALSE == idset_concatenate(pset, pstate->pread)) {
-					return FALSE;
-				}
-			}
+			    !pstate->pread->check_empty() &&
+			    !pset->concatenate(pstate->pread))
+				return FALSE;
 			idset_free(pstate->pread);
 		}
 		pstate->pread = pset;
@@ -172,7 +157,6 @@ BOOL ICS_STATE::append_idset(uint32_t state_property, IDSET *pset)
 TPROPVAL_ARRAY *ICS_STATE::serialize()
 {
 	auto pstate = this;
-	BINARY *pbin;
 	TPROPVAL_ARRAY *pproplist;
 	
 	
@@ -184,8 +168,8 @@ TPROPVAL_ARRAY *ICS_STATE::serialize()
 	if (ICS_STATE_CONTENTS_DOWN == pstate->type ||
 		ICS_STATE_HIERARCHY_DOWN == pstate->type ||
 		(ICS_STATE_CONTENTS_UP == pstate->type &&
-		FALSE == idset_check_empty(pstate->pgiven))) {
-		pbin = idset_serialize(pstate->pgiven);
+	    !pstate->pgiven->check_empty())) {
+		auto pbin = pstate->pgiven->serialize();
 		if (NULL == pbin) {
 			tpropval_array_free(pproplist);
 			return NULL;
@@ -198,7 +182,7 @@ TPROPVAL_ARRAY *ICS_STATE::serialize()
 		rop_util_free_binary(pbin);
 	}
 	
-	pbin = idset_serialize(pstate->pseen);
+	auto pbin = pstate->pseen->serialize();
 	if (NULL == pbin) {
 		tpropval_array_free(pproplist);
 		return NULL;
@@ -212,7 +196,7 @@ TPROPVAL_ARRAY *ICS_STATE::serialize()
 	
 	if (ICS_STATE_CONTENTS_DOWN == pstate->type ||
 		ICS_STATE_CONTENTS_UP == pstate->type) {
-		pbin = idset_serialize(pstate->pseen_fai);
+		pbin = pstate->pseen_fai->serialize();
 		if (NULL == pbin) {
 			tpropval_array_free(pproplist);
 			return NULL;
@@ -227,8 +211,8 @@ TPROPVAL_ARRAY *ICS_STATE::serialize()
 	
 	if (ICS_STATE_CONTENTS_DOWN == pstate->type ||
 		(ICS_STATE_CONTENTS_UP == pstate->type &&
-		FALSE == idset_check_empty(pstate->pread))) {
-		pbin = idset_serialize(pstate->pread);
+	    !pstate->pread->check_empty())) {
+		pbin = pstate->pread->serialize();
 		if (NULL == pbin) {
 			tpropval_array_free(pproplist);
 			return NULL;
