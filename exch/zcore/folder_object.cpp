@@ -875,7 +875,7 @@ static BOOL folder_object_flush_delegates(int fd,
 		pentryid = NULL;
 		for (j=0; j<paction->pblock[i].count; j++) {
 			switch (paction->pblock[i].ppropval[j].proptag) {
-			case PROP_TAG_ADDRESSTYPE:
+			case PR_ADDRTYPE:
 				ptype = static_cast<char *>(paction->pblock[i].ppropval[j].pvalue);
 				break;
 			case PR_ENTRYID:

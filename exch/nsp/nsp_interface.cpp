@@ -123,8 +123,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		pnode = simple_tree_node_get_parent(pnode);
 		pprop->value.l = pnode == nullptr ? 0 : ab_tree_get_node_minid(pnode);
 		return ecSuccess;
-	case PROP_TAG_ADDRESSTYPE:
-	case PROP_TAG_ADDRESSTYPE_STRING8:
+	case PR_ADDRTYPE:
+	case PR_ADDRTYPE_A:
 		pprop->value.pstr = deconst("EX");
 		return ecSuccess;
 	case PR_EMAIL_ADDRESS:
@@ -201,7 +201,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 			}
 		}
 		return ecSuccess;
-	case PROP_TAG_SEARCHKEY:
+	case PR_SEARCH_KEY:
 		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 			return ecNotFound;
 		pprop->value.bin.cb = strlen(dn) + 4;
@@ -216,7 +216,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		sprintf(pprop->value.bin.pc, "EX:%s", dn);
 		HX_strupper(pprop->value.bin.pc);
 		return ecSuccess;
-	case PROP_TAG_INSTANCEKEY:
+	case PR_INSTANCE_KEY:
 		if (NULL == pbuff) {
 			pprop->value.bin.pv = ndr_stack_alloc(NDR_STACK_OUT, 4);
 			if (NULL == pprop->value.bin.pb) {
@@ -1894,7 +1894,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 
 	auto &t = pproptags->pproptag;
 	t[z++] = U(PR_DISPLAY_NAME);
-	t[z++] = U(PROP_TAG_ADDRESSTYPE);
+	t[z++] = U(PR_ADDRTYPE);
 	t[z++] = U(PR_EMAIL_ADDRESS);
 	t[z++] = U(PR_EMS_AB_DISPLAY_NAME_PRINTABLE);
 	t[z++] = PR_OBJECT_TYPE;
@@ -1903,8 +1903,8 @@ static int nsp_interface_get_default_proptags(int node_type,
 	t[z++] = PR_ENTRYID;
 	t[z++] = PR_RECORD_KEY;
 	t[z++] = PROP_TAG_ORIGINALENTRYID;
-	t[z++] = PROP_TAG_SEARCHKEY;
-	t[z++] = PROP_TAG_INSTANCEKEY;
+	t[z++] = PR_SEARCH_KEY;
+	t[z++] = PR_INSTANCE_KEY;
 	t[z++] = PR_MAPPING_SIGNATURE;
 	t[z++] = PROP_TAG_SENDRICHINFO;
 	t[z++] = PROP_TAG_TEMPLATEID;
@@ -2664,7 +2664,7 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	t[8] = U(PROP_TAG_COMPANYNAME);
 	t[9] = U(PROP_TAG_DEPARTMENTNAME);
 	t[10] = U(PROP_TAG_OFFICELOCATION);
-	t[11] = U(PROP_TAG_ADDRESSTYPE);
+	t[11] = U(PR_ADDRTYPE);
 	t[12] = U(PR_SMTP_ADDRESS);
 	t[13] = U(PR_EMAIL_ADDRESS);
 	t[14] = U(PR_EMS_AB_DISPLAY_NAME_PRINTABLE);
@@ -2677,8 +2677,8 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	t[21] = PR_ENTRYID;
 	t[22] = PR_RECORD_KEY;
 	t[23] = PROP_TAG_ORIGINALENTRYID;
-	t[24] = PROP_TAG_SEARCHKEY;
-	t[25] = PROP_TAG_INSTANCEKEY;
+	t[24] = PR_SEARCH_KEY;
+	t[25] = PR_INSTANCE_KEY;
 	t[26] = PR_MAPPING_SIGNATURE;
 	t[27] = PROP_TAG_SENDRICHINFO;
 	t[28] = PROP_TAG_TEMPLATEID;
@@ -2803,8 +2803,8 @@ static uint32_t nsp_interface_fetch_smtp_property(
 	pprop->proptag = proptag;
 	pprop->reserved = 0;
 	switch (proptag) {
-	case PROP_TAG_ADDRESSTYPE:
-	case PROP_TAG_ADDRESSTYPE_STRING8:
+	case PR_ADDRTYPE:
+	case PR_ADDRTYPE_A:
 		pprop->value.pstr = deconst("SMTP");
 		break;
 	case PR_EMAIL_ADDRESS:
@@ -2825,7 +2825,7 @@ static uint32_t nsp_interface_fetch_smtp_property(
 	case PR_DISPLAY_TYPE_EX:
 		pprop->value.l = DT_MAILUSER;
 		break;
-	case PROP_TAG_SEARCHKEY:
+	case PR_SEARCH_KEY:
 		pprop->value.bin.cb = strlen(paddress) + 6;
 		pprop->value.bin.pv = ndr_stack_alloc(
 			NDR_STACK_OUT, pprop->value.bin.cb);

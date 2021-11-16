@@ -1379,7 +1379,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_MESSAGEID:
-			propval.proptag = PROP_TAG_SEARCHKEY;
+			propval.proptag = PR_SEARCH_KEY;
 			tmp_bin.cb = strlen(static_cast<char *>(attribute.pvalue)) / 2;
 			if (tmp_bin.cb > 0) { 
 				tmp_bin.pv = alloc(tmp_bin.cb);
@@ -1685,7 +1685,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	tnef_message_to_unicode(cpid, pmsg);
 	pmsg->proplist.erase(PROP_TAG_MID);
 	pmsg->proplist.erase(PR_ENTRYID);
-	pmsg->proplist.erase(PROP_TAG_SEARCHKEY);
+	pmsg->proplist.erase(PR_SEARCH_KEY);
 	auto pmsg_ret = pmsg;
 	pmsg = nullptr; /* note cl_0 scope guard */
 	return pmsg_ret;
@@ -2298,7 +2298,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		}
 	}
 	/* ATTRIBUTE_ID_MESSAGEID */
-	pvalue = pmsg->proplist.getval(PROP_TAG_SEARCHKEY);
+	pvalue = pmsg->proplist.getval(PR_SEARCH_KEY);
 	if (NULL != pvalue) {
 		auto bv = static_cast<BINARY *>(pvalue);
 		if (!encode_hex_binary(bv->pb, bv->cb, tmp_buff, arsizeof(tmp_buff)))
@@ -2310,8 +2310,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			pext, &attribute, alloc, get_propname)) {
 			return FALSE;
 		}
-		tmp_proptags.pproptag[tmp_proptags.count] =
-								PROP_TAG_SEARCHKEY;
+		tmp_proptags.pproptag[tmp_proptags.count] = PR_SEARCH_KEY;
 		tmp_proptags.count ++;
 	}
 	/* ATTRIBUTE_ID_OWNER */
@@ -2567,10 +2566,8 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		if (pmsg->proplist.ppropval[i].proptag == PR_MESSAGE_CLASS) {
 			tnef_proplist.ppropval[tnef_proplist.count].proptype = PT_STRING8;
 		} else {
-			if (PROP_TAG_TNEFCORRELATIONKEY ==
-				pmsg->proplist.ppropval[i].proptag) {
+			if (pmsg->proplist.ppropval[i].proptag == PR_TNEF_CORRELATION_KEY)
 				b_key = TRUE;
-			}
 			tnef_proplist.ppropval[tnef_proplist.count].proptype = PROP_TYPE(pmsg->proplist.ppropval[i].proptag);
 		}
 		if (is_nameprop_id(tnef_proplist.ppropval[tnef_proplist.count].propid)) {
@@ -2591,7 +2588,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		pvalue = pmsg->proplist.getval(PROP_TAG_INTERNETMESSAGEID);
 		if (NULL != pvalue) {
 			tnef_proplist.ppropval[tnef_proplist.count].propid =
-				PROP_ID(PROP_TAG_TNEFCORRELATIONKEY);
+				PROP_ID(PR_TNEF_CORRELATION_KEY);
 			tnef_proplist.ppropval[tnef_proplist.count].proptype = PT_BINARY;
 			tnef_proplist.ppropval[tnef_proplist.count].ppropname = NULL;
 			tnef_proplist.ppropval[tnef_proplist.count].pvalue = &key_bin;

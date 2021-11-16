@@ -156,7 +156,7 @@ static BOOL table_object_get_store_table_all_proptags(
 		PR_RESOURCE_FLAGS,
 		PR_RESOURCE_TYPE,
 		PR_RECORD_KEY,
-		PROP_TAG_INSTANCEKEY,
+		PR_INSTANCE_KEY,
 		PR_ENTRYID,
 		PR_STORE_ENTRYID,
 		PR_USER_ENTRYID
@@ -286,7 +286,7 @@ static BOOL rcpttable_query_rows(const table_object *ptable,
 	for (size_t i = 0; i < pset->count; ++i) {
 		if (common_util_get_propvals(pset->pparray[i], PR_ENTRYID) != nullptr)
 			continue;
-		auto pvalue = common_util_get_propvals(pset->pparray[i], PROP_TAG_ADDRESSTYPE);
+		auto pvalue = common_util_get_propvals(pset->pparray[i], PR_ADDRTYPE);
 		if (pvalue == nullptr ||
 		    strcasecmp(static_cast<char *>(pvalue), "EX") != 0)
 			continue;

@@ -1178,7 +1178,7 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 	if (NULL != prow->psimple_name) {
 		prow->flags |= RECIPIENT_ROW_FLAG_SIMPLE;
 	}
-	pvalue = common_util_get_propvals(ppropvals, PROP_TAG_ADDRESSTYPE);
+	pvalue = common_util_get_propvals(ppropvals, PR_ADDRTYPE);
 	if (NULL != pvalue) {
 		if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
 			prow->flags |= RECIPIENT_ROW_TYPE_X500DN;
@@ -1274,7 +1274,7 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 		}
 		common_util_set_propvals(ppropvals, &propval);
 	}
-	propval.proptag = PROP_TAG_ADDRESSTYPE;
+	propval.proptag = PR_ADDRTYPE;
 	switch (prow->flags & 0x0007) {
 	case RECIPIENT_ROW_TYPE_NONE:
 		if (NULL != prow->paddress_type) {
@@ -2094,8 +2094,7 @@ BOOL common_util_send_message(logon_object *plogon,
 			double_list_append_as_tail(&temp_list, pnode);
 			continue;
 		}
-		pvalue = common_util_get_propvals(
-			prcpts->pparray[i], PROP_TAG_ADDRESSTYPE);
+		pvalue = common_util_get_propvals(prcpts->pparray[i], PR_ADDRTYPE);
 		if (NULL == pvalue) {
  CONVERT_ENTRYID:
 			pvalue = common_util_get_propvals(prcpts->pparray[i], PR_ENTRYID);

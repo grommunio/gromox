@@ -3315,7 +3315,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			pbin = static_cast<BINARY *>(common_util_get_propvals(prcpt, PR_ENTRYID));
 			if (pbin == nullptr ||
 			    (common_util_get_propvals(prcpt, PR_EMAIL_ADDRESS) != nullptr &&
-			    common_util_get_propvals(prcpt, PROP_TAG_ADDRESSTYPE) != nullptr &&
+			    common_util_get_propvals(prcpt, PR_ADDRTYPE) != nullptr &&
 			    common_util_get_propvals(prcpt, PR_DISPLAY_NAME) != nullptr))
 				continue;
 			ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
@@ -3339,7 +3339,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 				memcpy(ppropval, prcpt->ppropval,
 					prcpt->count*sizeof(TAGGED_PROPVAL));
 				prcpt->ppropval = ppropval;
-				tmp_propval.proptag = PROP_TAG_ADDRESSTYPE;
+				tmp_propval.proptag = PR_ADDRTYPE;
 				tmp_propval.pvalue  = deconst("EX");
 				common_util_set_propvals(prcpt, &tmp_propval);
 				tmp_propval.proptag = PR_EMAIL_ADDRESS;
@@ -3377,7 +3377,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 				memcpy(ppropval, prcpt->ppropval,
 					prcpt->count*sizeof(TAGGED_PROPVAL));
 				prcpt->ppropval = ppropval;
-				tmp_propval.proptag = PROP_TAG_ADDRESSTYPE;
+				tmp_propval.proptag = PR_ADDRTYPE;
 				tmp_propval.pvalue  = deconst("SMTP");
 				common_util_set_propvals(prcpt, &tmp_propval);
 				tmp_propval.proptag = PR_EMAIL_ADDRESS;

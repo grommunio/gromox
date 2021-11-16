@@ -1848,8 +1848,7 @@ BOOL common_util_send_message(store_object *pstore,
 			double_list_append_as_tail(&temp_list, pnode);
 			continue;
 		}
-		pvalue = common_util_get_propvals(
-			prcpts->pparray[i], PROP_TAG_ADDRESSTYPE);
+		pvalue = common_util_get_propvals(prcpts->pparray[i], PR_ADDRTYPE);
 		if (NULL == pvalue) {
  CONVERT_ENTRYID:
 			pvalue = common_util_get_propvals(prcpts->pparray[i], PR_ENTRYID);
@@ -2282,7 +2281,7 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 		PROP_TAG_LOCALCOMMITTIME, PR_LOCAL_COMMIT_TIME_MAX,
 		PR_MESSAGE_SIZE, PR_MESSAGE_SIZE_EXTENDED, PROP_TAG_NATIVEBODY,
 		PR_OBJECT_TYPE, PR_PARENT_ENTRYID, PR_RECORD_KEY,
-		PROP_TAG_SEARCHKEY, PR_STORE_ENTRYID, PR_STORE_RECORD_KEY,
+		PR_SEARCH_KEY, PR_STORE_ENTRYID, PR_STORE_RECORD_KEY,
 		PR_SOURCE_KEY, PR_PARENT_SOURCE_KEY,
 	};
 	for (auto t : tags)

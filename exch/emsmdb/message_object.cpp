@@ -43,16 +43,16 @@ static BOOL message_object_get_recipient_all_proptags(message_object *pmessage,
 	for (i=0; i<tmp_proptags.count; i++) {
 		switch (tmp_proptags.pproptag[i]) {
 		case PROP_TAG_RESPONSIBILITY:
-		case PROP_TAG_ADDRESSTYPE:
+		case PR_ADDRTYPE:
 		case PR_DISPLAY_NAME:
 		case PR_DISPLAY_NAME_A:
 		case PR_EMAIL_ADDRESS:
 		case PR_EMAIL_ADDRESS_A:
 		case PR_ENTRYID:
-		case PROP_TAG_INSTANCEKEY:
+		case PR_INSTANCE_KEY:
 		case PROP_TAG_RECIPIENTTYPE:
 		case PROP_TAG_ROWID:
-		case PROP_TAG_SEARCHKEY:
+		case PR_SEARCH_KEY:
 		case PROP_TAG_SENDRICHINFO:
 		case PROP_TAG_TRANSMITTABLEDISPLAYNAME:
 		case PROP_TAG_TRANSMITTABLEDISPLAYNAME_STRING8:
@@ -314,7 +314,7 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	*(uint64_t*)pvalue = rop_util_current_nttime();
 	propvals.ppropval[propvals.count++].pvalue = pvalue;
 	
-	propvals.ppropval[propvals.count].proptag = PROP_TAG_SEARCHKEY;
+	propvals.ppropval[propvals.count].proptag = PR_SEARCH_KEY;
 	pvalue = cu_alloc<BINARY>();
 	if (NULL == pvalue) {
 		return FALSE;
@@ -774,16 +774,16 @@ BOOL message_object::set_rcpts(const TARRAY_SET *pset)
 		for (size_t j = 0; j < pset->pparray[i]->count; ++j) {
 			switch (pset->pparray[i]->ppropval[j].proptag) {
 			case PROP_TAG_RESPONSIBILITY:
-			case PROP_TAG_ADDRESSTYPE:
+			case PR_ADDRTYPE:
 			case PR_DISPLAY_NAME:
 			case PR_DISPLAY_NAME_A:
 			case PR_EMAIL_ADDRESS:
 			case PR_EMAIL_ADDRESS_A:
 			case PR_ENTRYID:
-			case PROP_TAG_INSTANCEKEY:
+			case PR_INSTANCE_KEY:
 			case PROP_TAG_RECIPIENTTYPE:
 			case PROP_TAG_ROWID:
-			case PROP_TAG_SEARCHKEY:
+			case PR_SEARCH_KEY:
 			case PROP_TAG_SENDRICHINFO:
 			case PROP_TAG_TRANSMITTABLEDISPLAYNAME:
 			case PROP_TAG_TRANSMITTABLEDISPLAYNAME_STRING8:

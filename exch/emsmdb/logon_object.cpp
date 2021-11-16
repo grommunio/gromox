@@ -535,7 +535,7 @@ static BOOL lo_check_readonly_property(const logon_object *plogon, uint32_t prop
 	case PR_PROHIBIT_RECEIVE_QUOTA:
 	case PR_PROHIBIT_SEND_QUOTA:
 	case PR_RECORD_KEY:
-	case PROP_TAG_SEARCHKEY:
+	case PR_SEARCH_KEY:
 	case PROP_TAG_SORTLOCALEID:
 	case PR_STORAGE_QUOTA_LIMIT:
 	case PR_STORE_ENTRYID:

@@ -61,8 +61,7 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 			return the necessary information to the caller */
 		if (common_util_index_proptags(pproptags, PR_OBJECT_TYPE) >= 0 ||
 		    common_util_index_proptags(pproptags, PR_SMTP_ADDRESS) >= 0 ||
-			common_util_index_proptags(pproptags,
-			PROP_TAG_ADDRESSTYPE) >= 0 ||
+		    common_util_index_proptags(pproptags, PR_ADDRTYPE) >= 0 ||
 		    common_util_index_proptags(pproptags, PR_EMAIL_ADDRESS) >= 0 ||
 		    common_util_index_proptags(pproptags, PR_DISPLAY_NAME) >= 0 ||
 			common_util_index_proptags(pproptags,
@@ -78,9 +77,8 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 				ppropvals->count ++;
 				++vc;
 			}
-			if (common_util_index_proptags(pproptags,
-				PROP_TAG_ADDRESSTYPE) >= 0) {
-				vc->proptag = PROP_TAG_ADDRESSTYPE;
+			if (common_util_index_proptags(pproptags, PR_ADDRTYPE) >= 0) {
+				vc->proptag = PR_ADDRTYPE;
 				vc->pvalue = deconst("EX");
 				ppropvals->count ++;
 				++vc;

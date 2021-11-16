@@ -5436,8 +5436,7 @@ BOOL common_util_recipients_to_list(
 			double_list_append_as_tail(plist, pnode);
 			continue;
 		}
-		pvalue = common_util_get_propvals(
-			prcpts->pparray[i], PROP_TAG_ADDRESSTYPE);
+		pvalue = common_util_get_propvals(prcpts->pparray[i], PR_ADDRTYPE);
 		if (NULL == pvalue) {
  CONVERT_ENTRYID:
 			pvalue = common_util_get_propvals(prcpts->pparray[i], PR_ENTRYID);

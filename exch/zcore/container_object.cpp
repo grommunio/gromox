@@ -448,7 +448,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			}
 			if (ppropvals->set(PR_SMTP_ADDRESS, username) != 0 ||
 			    ppropvals->set(PROP_TAG_ACCOUNT, username) != 0 ||
-			    ppropvals->set(PROP_TAG_ADDRESSTYPE, "SMTP") != 0 ||
+			    ppropvals->set(PR_ADDRTYPE, "SMTP") != 0 ||
 			    ppropvals->set(PR_EMAIL_ADDRESS, username) != 0) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
@@ -818,7 +818,7 @@ void container_object_get_container_table_all_proptags(
 		PR_ENTRYID,
 		PROP_TAG_CONTAINERFLAGS,
 		PROP_TAG_DEPTH,
-		PROP_TAG_INSTANCEKEY,
+		PR_INSTANCE_KEY,
 		PR_EMS_AB_CONTAINERID,
 		PR_DISPLAY_NAME,
 		PR_EMS_AB_IS_MASTER,
@@ -1109,7 +1109,7 @@ void container_object_get_user_table_all_proptags(
 		PROP_TAG_COMPANYNAME,
 		PROP_TAG_DEPARTMENTNAME,
 		PROP_TAG_OFFICELOCATION,
-		PROP_TAG_ADDRESSTYPE,
+		PR_ADDRTYPE,
 		PR_SMTP_ADDRESS,
 		PR_EMAIL_ADDRESS,
 		PR_EMS_AB_DISPLAY_NAME_PRINTABLE,
@@ -1122,8 +1122,8 @@ void container_object_get_user_table_all_proptags(
 		PR_ENTRYID,
 		PR_RECORD_KEY,
 		PROP_TAG_ORIGINALENTRYID,
-		PROP_TAG_SEARCHKEY,
-		PROP_TAG_INSTANCEKEY,
+		PR_SEARCH_KEY,
+		PR_INSTANCE_KEY,
 		PR_MAPPING_SIGNATURE,
 		PROP_TAG_SENDRICHINFO,
 		PROP_TAG_TEMPLATEID,

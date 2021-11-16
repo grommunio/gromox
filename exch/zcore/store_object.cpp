@@ -522,10 +522,10 @@ static BOOL store_object_check_readonly_property(store_object *pstore, uint32_t 
 	case PR_OOF_STATE:
 	case PR_PROHIBIT_RECEIVE_QUOTA:
 	case PR_PROHIBIT_SEND_QUOTA:
-	case PROP_TAG_INSTANCEKEY:
+	case PR_INSTANCE_KEY:
 	case PR_RECORD_KEY:
 	case PR_RIGHTS:
-	case PROP_TAG_SEARCHKEY:
+	case PR_SEARCH_KEY:
 	case PROP_TAG_SORTLOCALEID:
 	case PR_STORAGE_QUOTA_LIMIT:
 	case PR_STORE_ENTRYID:
@@ -610,7 +610,7 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	pproptags->pproptag[pproptags->count++] = PR_RESOURCE_FLAGS;
 	pproptags->pproptag[pproptags->count++] = PR_RESOURCE_TYPE;
 	pproptags->pproptag[pproptags->count++] = PR_RECORD_KEY;
-	pproptags->pproptag[pproptags->count++] = PROP_TAG_INSTANCEKEY;
+	pproptags->pproptag[pproptags->count++] = PR_INSTANCE_KEY;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
 	pproptags->pproptag[pproptags->count++] = PR_MAPPING_SIGNATURE;
 	pproptags->pproptag[pproptags->count++] = PR_ENTRYID;
@@ -1011,7 +1011,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		return TRUE;
 	}
 	case PR_RECORD_KEY:
-	case PROP_TAG_INSTANCEKEY:
+	case PR_INSTANCE_KEY:
 	case PR_STORE_RECORD_KEY:
 	case PR_MAPPING_SIGNATURE:
 		*ppvalue = common_util_guid_to_binary(pstore->mailbox_guid);

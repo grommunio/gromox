@@ -227,8 +227,7 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	}
 	*(uint64_t*)pvalue = rop_util_current_nttime();
 	propvals.ppropval[propvals.count++].pvalue = pvalue;
-	propvals.ppropval[propvals.count].proptag =
-							PROP_TAG_SEARCHKEY;
+	propvals.ppropval[propvals.count].proptag = PR_SEARCH_KEY;
 	pvalue = cu_alloc<BINARY>();
 	if (NULL == pvalue) {
 		return FALSE;

@@ -362,13 +362,13 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
 	}
 	for (i=0; i<pproptags->count; i++) {
 		switch (pproptags->pproptag[i]) {
-		case PROP_TAG_ADDRESSTYPE:
+		case PR_ADDRTYPE:
 		case PR_DISPLAY_NAME:
 		case PR_EMAIL_ADDRESS:
 		case PR_ENTRYID:
-		case PROP_TAG_INSTANCEKEY:
+		case PR_INSTANCE_KEY:
 		case PROP_TAG_RECIPIENTTYPE:
-		case PROP_TAG_SEARCHKEY:
+		case PR_SEARCH_KEY:
 		case PROP_TAG_SENDRICHINFO:
 		case PROP_TAG_TRANSMITTABLEDISPLAYNAME:
 			return ecInvalidParam;

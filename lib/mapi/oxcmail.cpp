@@ -559,19 +559,19 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 			dtypx = DT_MAILUSER;
 			tmp_bin.cb = snprintf(tmp_buff, arsizeof(tmp_buff), "SMTP:%s", username) + 1;
 			HX_strupper(tmp_buff);
-			if (pproplist->set(PROP_TAG_ADDRESSTYPE, "SMTP") != 0 ||
+			if (pproplist->set(PR_ADDRTYPE, "SMTP") != 0 ||
 			    pproplist->set(PR_EMAIL_ADDRESS, username) != 0)
 				return FALSE;
 		} else {
 			tmp_bin.cb = snprintf(tmp_buff, arsizeof(tmp_buff), "EX:%s", essdn) + 1;
-			if (pproplist->set(PROP_TAG_ADDRESSTYPE, "EX") != 0 ||
+			if (pproplist->set(PR_ADDRTYPE, "EX") != 0 ||
 			    pproplist->set(PR_EMAIL_ADDRESS, essdn) != 0)
 				return FALSE;
 		}
 		if (pproplist->set(PR_SMTP_ADDRESS, username) != 0)
 			return FALSE;
 		tmp_bin.pc = tmp_buff;
-		if (pproplist->set(PROP_TAG_SEARCHKEY, &tmp_bin) != 0)
+		if (pproplist->set(PR_SEARCH_KEY, &tmp_bin) != 0)
 			return FALSE;
 		tmp_bin.cb = 0;
 		tmp_bin.pc = tmp_buff;
@@ -1393,7 +1393,7 @@ static BOOL oxcmail_enum_mail_head(
 			PROP_TAG_READRECEIPTADDRESSTYPE,
 			PROP_TAG_READRECEIPTEMAILADDRESS,
 			PROP_TAG_READRECEIPTSMTPADDRESS,
-			PROP_TAG_READRECEIPTSEARCHKEY,
+			PR_READ_RECEIPT_SEARCH_KEY,
 			PROP_TAG_READRECEIPTENTRYID,
 			&penum_param->pmsg->proplist)) {
 			return FALSE;
@@ -3104,19 +3104,19 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 		tmp_bin.cb = snprintf(tmp_buff, arsizeof(tmp_buff), "SMTP:%s",
 					f_info.final_recipient) + 1;
 		HX_strupper(tmp_buff);
-		if (pproplist->set(PROP_TAG_ADDRESSTYPE, "SMTP") != 0 ||
+		if (pproplist->set(PR_ADDRTYPE, "SMTP") != 0 ||
 		    pproplist->set(PR_EMAIL_ADDRESS, f_info.final_recipient) != 0)
 			return false;
 	} else {
 		tmp_bin.cb = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "EX:%s", essdn) + 1;
-		if (pproplist->set(PROP_TAG_ADDRESSTYPE, "EX") != 0 ||
+		if (pproplist->set(PR_ADDRTYPE, "EX") != 0 ||
 		    pproplist->set(PR_EMAIL_ADDRESS, essdn) != 0)
 			return false;
 	}
 	if (pproplist->set(PR_SMTP_ADDRESS, f_info.final_recipient) != 0)
 		return false;
 	tmp_bin.pc = tmp_buff;
-	if (pproplist->set(PROP_TAG_SEARCHKEY, &tmp_bin) != 0)
+	if (pproplist->set(PR_SEARCH_KEY, &tmp_bin) != 0)
 		return false;
 	tmp_bin.cb = 0;
 	tmp_bin.pc = tmp_buff;
@@ -3832,7 +3832,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		&& (pmsg1 = oxcmail_parse_tnef(phead,
 		alloc, get_propids))) {
 #ifdef VERIFY_TNEF_CORRELATOR
-		auto ptnef_key = pmsg1->proplist.get<BINARY>(PROP_TAG_TNEFCORRELATIONKEY);
+		auto ptnef_key = pmsg1->proplist.get<BINARY>(PR_TNEF_CORRELATION_KEY);
 		if (NULL == ptnef_key || 0 != strncmp(
 			ptnef_key->pb, tmp_buff, ptnef_key->cb)) {
 			message_content_free(pmsg1);
@@ -3896,7 +3896,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			&& (pmsg1 = oxcmail_parse_tnef(pmime1,
 			alloc, get_propids))) {
 #ifdef VERIFY_TNEF_CORRELATOR
-			ptnef_key = pmsg1->proplist.get<BINARY>(PROP_TAG_TNEFCORRELATIONKEY);
+			ptnef_key = pmsg1->proplist.get<BINARY>(PR_TNEF_CORRELATION_KEY);
 			if (NULL == ptnef_key || 0 != strncmp(
 				ptnef_key->pb, tmp_buff, ptnef_key->cb)) {
 				message_content_free(pmsg1);
@@ -4401,7 +4401,7 @@ static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
 				return FALSE;
 		}
 		if (oxcmail_get_smtp_address(prcpt, alloc, PR_SMTP_ADDRESS,
-		    PROP_TAG_ADDRESSTYPE, PR_EMAIL_ADDRESS, PR_ENTRYID,
+		    PR_ADDRTYPE, PR_EMAIL_ADDRESS, PR_ENTRYID,
 		    username, GX_ARRAY_SIZE(username))) {
 			if (NULL != pdisplay_name) {
 				offset += std::max(0, gx_snprintf(field + offset,
@@ -5425,7 +5425,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	}
 	
 	if (MAIL_TYPE_TNEF == pskeleton->mail_type) {
-		pvalue = pmsg->proplist.getval(PROP_TAG_TNEFCORRELATIONKEY);
+		pvalue = pmsg->proplist.getval(PR_TNEF_CORRELATION_KEY);
 		if (NULL == pvalue) {
 			pvalue = pmsg->proplist.getval(PROP_TAG_INTERNETMESSAGEID);
 			if (NULL != pvalue) {
@@ -5560,7 +5560,7 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 		}
 		strcpy(tmp_buff, "rfc822;");
 		if (!oxcmail_get_smtp_address(prcpts->pparray[i], alloc,
-		    PR_SMTP_ADDRESS, PROP_TAG_ADDRESSTYPE,
+		    PR_SMTP_ADDRESS, PR_ADDRTYPE,
 		    PR_EMAIL_ADDRESS, PR_ENTRYID, tmp_buff + 7,
 		    GX_ARRAY_SIZE(tmp_buff) - 7)) {
 			dsn_free(&dsn);

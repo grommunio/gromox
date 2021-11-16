@@ -1812,8 +1812,7 @@ static BOOL message_rectify_message(const char *account,
 		++pmsgctnt1->proplist.count;
 		++vc;
 	}
-	if (NULL == common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_SEARCHKEY)) {
+	if (common_util_get_propvals(&pmsgctnt->proplist, PR_SEARCH_KEY) == nullptr) {
 		pbin = cu_alloc<BINARY>();
 		if (NULL == pbin) {
 			return FALSE;
@@ -1826,7 +1825,7 @@ static BOOL message_rectify_message(const char *account,
 		if (!ext_push.init(pbin->pb, 16, 0) ||
 		    ext_push.p_guid(&tmp_guid) != EXT_ERR_SUCCESS)
 			return false;
-		vc->proptag = PROP_TAG_SEARCHKEY;
+		vc->proptag = PR_SEARCH_KEY;
 		vc->pvalue = pbin;
 		pmsgctnt1->proplist.count ++;
 		++vc;
@@ -4642,7 +4641,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		}
 		searchkey_bin.cb = strlen(essdn_buff) + 1;
 		searchkey_bin.pv = essdn_buff;
-		propval.proptag = PROP_TAG_RECEIVEDBYSEARCHKEY;
+		propval.proptag = PR_RECEIVED_BY_SEARCH_KEY;
 		propval.pvalue = &searchkey_bin;
 		common_util_set_propvals(&tmp_msg.proplist, &propval);
 		if (common_util_get_propvals(&pmsg->proplist,

@@ -1538,7 +1538,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		}
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_ADDRESSTYPE:
+	case PR_ADDRTYPE:
 		if (node_type > 0x80) {
 			return TRUE;
 		}
@@ -1639,7 +1639,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	}
-	case PROP_TAG_SEARCHKEY: {
+	case PR_SEARCH_KEY: {
 		if (node_type > 0x80) {
 			return TRUE;
 		}
@@ -1659,7 +1659,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	}
-	case PROP_TAG_INSTANCEKEY: {
+	case PR_INSTANCE_KEY: {
 		pvalue = cu_alloc<BINARY>();
 		if (NULL == pvalue) {
 			return FALSE;
