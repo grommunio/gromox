@@ -12,15 +12,6 @@
 
 using namespace gromox;
 
-static uint8_t rop_util_is_little_endian()
-{
-	int x;
-	
-	x = 1;
-	auto py = reinterpret_cast<const char *>(&x);
-	return *py;
-}
-
 uint16_t rop_util_get_replid(eid_t eid)
 {
 	/* replid is kept in host-endian, see rop_util_make_eid for detail */
@@ -41,11 +32,11 @@ uint64_t rop_util_get_gc_value(eid_t eid)
 GLOBCNT rop_util_get_gc_array(eid_t eid)
 {
 	GLOBCNT gc;
-	if (rop_util_is_little_endian()) {
-		memcpy(gc.ab, reinterpret_cast<uint8_t *>(&eid) + 2, 6);
-	} else {
-		memcpy(gc.ab, &eid, 6);
-	}
+#if !GX_BIG_ENDIAN
+	memcpy(gc.ab, reinterpret_cast<uint8_t *>(&eid) + 2, 6);
+#else
+	memcpy(gc.ab, &eid, 6);
+#endif
 	return gc;
 }
 
@@ -74,21 +65,21 @@ uint64_t rop_util_gc_to_value(GLOBCNT gc)
 {
 	uint64_t value;
 	auto v = reinterpret_cast<uint8_t *>(&value);
-	
-	if (rop_util_is_little_endian()) {
-		v[0] = gc.ab[5];
-		v[1] = gc.ab[4];
-		v[2] = gc.ab[3];
-		v[3] = gc.ab[2];
-		v[4] = gc.ab[1];
-		v[5] = gc.ab[0];
-		v[6] = 0;
-		v[7] = 0;
-	} else {
-		v[0] = 0;
-		v[1] = 0;
-		memcpy(v + 2, gc.ab, 6);
-	}
+
+#if !GX_BIG_ENDIAN
+	v[0] = gc.ab[5];
+	v[1] = gc.ab[4];
+	v[2] = gc.ab[3];
+	v[3] = gc.ab[2];
+	v[4] = gc.ab[1];
+	v[5] = gc.ab[0];
+	v[6] = 0;
+	v[7] = 0;
+#else
+	v[0] = 0;
+	v[1] = 0;
+	memcpy(v + 2, gc.ab, 6);
+#endif
 	return value;
 }
 
@@ -116,15 +107,15 @@ eid_t rop_util_make_eid(uint16_t replid, GLOBCNT gc)
 	eid_t eid;
 	auto e = reinterpret_cast<uint8_t *>(&eid);
 	
-	if (rop_util_is_little_endian()) {
-		e[0] = 0;
-		e[1] = 0;
-		memcpy(e + 2, gc.ab, 6);
-	} else {
-		memcpy(&eid, gc.ab, 6);
-		e[6] = 0;
-		e[7] = 0;
-	}
+#if !GX_BIG_ENDIAN
+	e[0] = 0;
+	e[1] = 0;
+	memcpy(e + 2, gc.ab, 6);
+#else
+	memcpy(&eid, gc.ab, 6);
+	e[6] = 0;
+	e[7] = 0;
+#endif
 	return (eid | replid);
 }
 

@@ -17,6 +17,7 @@
 #	define be16_to_cpu(x) static_cast<uint16_t>(x)
 #	define be32_to_cpu(x) static_cast<uint32_t>(x)
 #	define be64_to_cpu(x) static_cast<uint64_t>(x)
+#	define GX_BIG_ENDIAN 1
 #else
 #	define cpu_to_le16(x) (x)
 #	define cpu_to_le32(x) (x)
@@ -30,6 +31,7 @@
 #	define be16_to_cpu(x) __builtin_bswap16(x)
 #	define be32_to_cpu(x) __builtin_bswap32(x)
 #	define be64_to_cpu(x) __builtin_bswap64(x)
+#	define GX_BIG_ENDIAN 0
 #endif
 
 static inline uint16_t le16p_to_cpu(const void *p) { uint16_t v; memcpy(&v, p, sizeof(v)); return le16_to_cpu(v); }
