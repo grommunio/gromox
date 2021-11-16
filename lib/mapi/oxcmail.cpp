@@ -586,7 +586,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 			}
 		}
 		if (pproplist->set(PR_ENTRYID, &tmp_bin) != 0 ||
-		    pproplist->set(PROP_TAG_RECIPIENTENTRYID, &tmp_bin) != 0 ||
+		    pproplist->set(PR_RECIPIENT_ENTRYID, &tmp_bin) != 0 ||
 		    pproplist->set(PR_RECORD_KEY, &tmp_bin) != 0)
 			return FALSE;
 		tmp_int32 = dtypx == DT_DISTLIST ? MAPI_DISTLIST : MAPI_MAILUSER;
@@ -1394,7 +1394,7 @@ static BOOL oxcmail_enum_mail_head(
 			PROP_TAG_READRECEIPTEMAILADDRESS,
 			PROP_TAG_READRECEIPTSMTPADDRESS,
 			PR_READ_RECEIPT_SEARCH_KEY,
-			PROP_TAG_READRECEIPTENTRYID,
+			PR_READ_RECEIPT_ENTRYID,
 			&penum_param->pmsg->proplist)) {
 			return FALSE;
 		}
@@ -3131,7 +3131,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 		}
 	}
 	if (pproplist->set(PR_ENTRYID, &tmp_bin) != 0 ||
-	    pproplist->set(PROP_TAG_RECIPIENTENTRYID, &tmp_bin) != 0 ||
+	    pproplist->set(PR_RECIPIENT_ENTRYID, &tmp_bin) != 0 ||
 	    pproplist->set(PR_RECORD_KEY, &tmp_bin) != 0)
 		return false;
 	tmp_int32 = dtypx == DT_DISTLIST ? MAPI_DISTLIST : MAPI_MAILUSER;
@@ -4814,7 +4814,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			PROP_TAG_READRECEIPTADDRESSTYPE,
 			PROP_TAG_READRECEIPTEMAILADDRESS,
 			PROP_TAG_READRECEIPTSMTPADDRESS,
-			PROP_TAG_READRECEIPTENTRYID,
+			PR_READ_RECEIPT_ENTRYID,
 		    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field)) ||
 
 		    oxcmail_export_address(pmsg, alloc, PR_SENDER_NAME,
@@ -4840,7 +4840,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			PROP_TAG_READRECEIPTADDRESSTYPE,
 			PROP_TAG_READRECEIPTEMAILADDRESS,
 			PROP_TAG_READRECEIPTSMTPADDRESS,
-			PROP_TAG_READRECEIPTENTRYID,
+			PR_READ_RECEIPT_ENTRYID,
 		    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field)) ||
 
 		    oxcmail_export_address(pmsg, alloc, PR_SENT_REPRESENTING_NAME,

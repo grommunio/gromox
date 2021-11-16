@@ -847,7 +847,7 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 		auto dtypx = DT_MAILUSER;
 		if (!username_to_entryid(paddress, pdisplay_name, &tmp_bin, &dtypx) ||
 		    pproplist->set(PR_ENTRYID, &tmp_bin) != 0 ||
-		    pproplist->set(PROP_TAG_RECIPIENTENTRYID, &tmp_bin) != 0 ||
+		    pproplist->set(PR_RECIPIENT_ENTRYID, &tmp_bin) != 0 ||
 		    pproplist->set(PR_RECORD_KEY, &tmp_bin) != 0)
 			return FALSE;
 		if (NULL != prole && 0 == strcasecmp(prole, "CHAIR")) {

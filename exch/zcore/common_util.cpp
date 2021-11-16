@@ -1920,7 +1920,7 @@ BOOL common_util_send_message(store_object *pstore,
 	common_util_remove_propvals(&pmsgctnt->proplist,
 							PROP_TAG_SENTMAILSVREID);
 	auto ptarget = static_cast<BINARY *>(common_util_get_propvals(
-	               &pmsgctnt->proplist, PROP_TAG_TARGETENTRYID));
+	               &pmsgctnt->proplist, PR_TARGET_ENTRYID));
 	if (NULL != ptarget) {
 		if (FALSE == common_util_from_message_entryid(*ptarget,
 			&b_private, &accound_id, &folder_id, &new_id)) {

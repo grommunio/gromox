@@ -487,7 +487,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			    ppropvals->set(PR_ENTRYID, pvalue) != 0 ||
 			    ppropvals->set(PR_RECORD_KEY, pvalue) != 0 ||
 			    ppropvals->set(PROP_TAG_TEMPLATEID, pvalue) != 0 ||
-			    ppropvals->set(PROP_TAG_ORIGINALENTRYID, pvalue) != 0) {
+			    ppropvals->set(PR_ORIGINAL_ENTRYID, pvalue) != 0) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
@@ -1121,7 +1121,7 @@ void container_object_get_user_table_all_proptags(
 		PR_DISPLAY_TYPE_EX,
 		PR_ENTRYID,
 		PR_RECORD_KEY,
-		PROP_TAG_ORIGINALENTRYID,
+		PR_ORIGINAL_ENTRYID,
 		PR_SEARCH_KEY,
 		PR_INSTANCE_KEY,
 		PR_MAPPING_SIGNATURE,

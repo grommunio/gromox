@@ -397,17 +397,16 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 					static constexpr uint32_t tags[] = {
 						PR_ENTRYID, PR_SOURCE_KEY,
 						PR_CHANGE_KEY,
-						PROP_TAG_ORIGINALENTRYID,
+						PR_ORIGINAL_ENTRYID,
 						PR_LAST_MODIFICATION_TIME,
 						PR_PREDECESSOR_CHANGE_LIST,
 					};
 					for (auto t : tags)
 						common_util_remove_propvals(&pmsgctnt->proplist, t);
 				} else {
-					common_util_remove_propvals(&pmsgctnt->proplist,
-										PROP_TAG_ORIGINALENTRYID);
+					common_util_remove_propvals(&pmsgctnt->proplist, PR_ORIGINAL_ENTRYID);
 					common_util_retag_propvals(&pmsgctnt->proplist,
-						PR_ENTRYID, PROP_TAG_ORIGINALENTRYID);
+						PR_ENTRYID, PR_ORIGINAL_ENTRYID);
 				}
 			} else {
 				common_util_remove_propvals(&pmsgctnt->proplist, PR_ENTRYID);

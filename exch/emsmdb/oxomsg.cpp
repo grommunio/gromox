@@ -507,7 +507,6 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	BOOL b_exist;
 	BOOL b_result;
 	BOOL b_delete;
-	BINARY *ptarget;
 	uint64_t new_id;
 	uint64_t parent_id;
 	uint64_t folder_id;
@@ -545,7 +544,7 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	tmp_proptags.count = 3;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PROP_TAG_DELETEAFTERSUBMIT;
-	proptag_buff[1] = PROP_TAG_TARGETENTRYID;
+	proptag_buff[1] = PR_TARGET_ENTRYID;
 	proptag_buff[2] = PR_PARENT_ENTRYID;
 	if (!exmdb_client_get_message_properties(plogon->get_dir(), nullptr, 0,
 	    message_id, &tmp_proptags, &tmp_propvals))
@@ -557,8 +556,7 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 		b_delete = TRUE;
 	}
 	
-	ptarget = static_cast<BINARY *>(common_util_get_propvals(&tmp_propvals,
-	          PROP_TAG_TARGETENTRYID));
+	auto ptarget = static_cast<BINARY *>(common_util_get_propvals(&tmp_propvals, PR_TARGET_ENTRYID));
 	pvalue = common_util_get_propvals(&tmp_propvals, PR_PARENT_ENTRYID);
 	if (NULL == pvalue) {
 		return ecError;

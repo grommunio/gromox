@@ -1611,7 +1611,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 	case PR_ENTRYID:
 	case PR_RECORD_KEY:
 	case PROP_TAG_TEMPLATEID:
-	case PROP_TAG_ORIGINALENTRYID: {
+	case PR_ORIGINAL_ENTRYID: {
 		pvalue = cu_alloc<BINARY>();
 		if (NULL == pvalue) {
 			return FALSE;

@@ -3346,7 +3346,7 @@ static BOOL message_make_deferred_action_message(const char *username,
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_DEFERREDACTIONMESSAGEORIGINALENTRYID;
+	propval.proptag = PR_DAM_ORIG_MSG_SVREID;
 	propval.pvalue = &svreid;
 	svreid.pbin = NULL;
 	svreid.folder_id = rop_util_make_eid_ex(1, folder_id);
@@ -4622,7 +4622,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		    essdn_buff + 3, GX_ARRAY_SIZE(essdn_buff) - 3))
 			return FALSE;
 		HX_strupper(essdn_buff);
-		propval.proptag = PROP_TAG_RECEIVEDBYENTRYID;
+		propval.proptag = PR_RECEIVED_BY_ENTRYID;
 		propval.pvalue = pentryid;
 		common_util_set_propvals(&tmp_msg.proplist, &propval);
 		propval.proptag = PROP_TAG_RECEIVEDBYADDRESSTYPE;

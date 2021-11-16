@@ -2017,7 +2017,6 @@ BOOL common_util_send_message(logon_object *plogon,
 	EID_ARRAY ids;
 	BOOL b_partial;
 	uint64_t new_id;
-	BINARY *ptarget;
 	char username[UADDR_SIZE];
 	uint64_t parent_id;
 	uint64_t folder_id;
@@ -2178,7 +2177,7 @@ BOOL common_util_send_message(logon_object *plogon,
 	}
 	common_util_remove_propvals(&pmsgctnt->proplist,
 							PROP_TAG_SENTMAILSVREID);
-	ptarget = static_cast<BINARY *>(common_util_get_propvals(&pmsgctnt->proplist, PROP_TAG_TARGETENTRYID));
+	auto ptarget = static_cast<BINARY *>(common_util_get_propvals(&pmsgctnt->proplist, PR_TARGET_ENTRYID));
 	if (NULL != ptarget) {
 		if (FALSE == common_util_from_message_entryid(
 			plogon, ptarget, &folder_id, &new_id)) {
