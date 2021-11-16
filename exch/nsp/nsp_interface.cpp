@@ -1884,7 +1884,7 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 static int nsp_interface_get_default_proptags(int node_type,
 	BOOL b_unicode, LPROPTAG_ARRAY *pproptags)
 {
-#define U(x) (b_unicode ? (x) : CHANGE_PROP_TYPE(PT_STRING8, (x)))
+#define U(x) (b_unicode ? (x) : CHANGE_PROP_TYPE((x), PT_STRING8))
 	static constexpr size_t UPPER_LIMIT = 32;
 	unsigned int &z = pproptags->cvalues;
 	pproptags->cvalues  = 0;
