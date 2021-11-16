@@ -17,7 +17,7 @@
 using namespace gromox;
 
 static const uint32_t g_n_proptags[] = 
-	{PROP_TAG_SURNAME, PROP_TAG_GIVENNAME, PROP_TAG_MIDDLENAME,
+	{PR_SURNAME, PR_GIVEN_NAME, PR_MIDDLE_NAME,
 	PR_DISPLAY_NAME_PREFIX, PROP_TAG_GENERATION};
 static const uint32_t g_workaddr_proptags[] =
 	{0x8000001F, 0x8001001F, 0x8002001F, 0x8003001F, 0x8004001F, 0x8005001F};
@@ -226,7 +226,7 @@ MESSAGE_CONTENT* oxvcard_import(
 		} else if (0 == strcasecmp(pvline->name, "NICKNAME")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (pstring != nullptr &&
-			    pmsg->proplist.set(PROP_TAG_NICKNAME, pstring) != 0)
+			    pmsg->proplist.set(PR_NICKNAME, pstring) != 0)
 					goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "PHOTO")) {
 			if (NULL != pmsg->children.pattachments) {
@@ -431,7 +431,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (NULL == pstring) {
 				continue;
 			}
-			if (pmsg->proplist.set(PROP_TAG_TITLE, pstring) != 0)
+			if (pmsg->proplist.set(PR_TITLE, pstring) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "ROLE")) {
 			pstring = vcard_get_first_subvalue(pvline);
@@ -449,7 +449,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				pvvalue = (VCARD_VALUE*)pnode1->pdata;
 				pnode2 = double_list_get_head(&pvvalue->subval_list);
 				if (pnode2 != nullptr && pnode2->pdata != nullptr &&
-				    pmsg->proplist.set(PROP_TAG_COMPANYNAME, pnode2->pdata) != 0)
+				    pmsg->proplist.set(PR_COMPANY_NAME, pnode2->pdata) != 0)
 					goto IMPORT_FAILURE;
 			}
 			pnode1 = double_list_get_after(&pvline->value_list, pnode1);
@@ -457,7 +457,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				pvvalue = (VCARD_VALUE*)pnode1->pdata;
 				pnode2 = double_list_get_head(&pvvalue->subval_list);
 				if (pnode2 != nullptr && pnode2->pdata != nullptr &&
-				    pmsg->proplist.set(PROP_TAG_DEPARTMENTNAME, pnode2->pdata) != 0)
+				    pmsg->proplist.set(PR_DEPARTMENT_NAME, pnode2->pdata) != 0)
 					goto IMPORT_FAILURE;
 			}
 		} else if (strcasecmp(pvline->name, "CATEGORIES") == 0) {
@@ -784,7 +784,6 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		PR_COMPANY_MAIN_PHONE_NUMBER, PR_RADIO_TELEPHONE_NUMBER,
 		PR_TTYTDD_PHONE_NUMBER};
 	
-	
 	if (FALSE == oxvcard_get_propids(&propids, get_propids)) {
 		return FALSE;
 	}
@@ -844,7 +843,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		}
 	}
 	
-	pvalue = pmsg->proplist.get<char>(PROP_TAG_NICKNAME);
+	pvalue = pmsg->proplist.get<char>(PR_NICKNAME);
 	if (NULL != pvalue) {
 		pvline = vcard_new_simple_line("NICKNAME", pvalue);
 		if (NULL == pvline) {
@@ -961,14 +960,14 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		goto EXPORT_FAILURE;
 	}
 	vcard_append_value(pvline, pvvalue);
-	pvalue = pmsg->proplist.get<char>(PROP_TAG_COMPANYNAME);
+	pvalue = pmsg->proplist.get<char>(PR_COMPANY_NAME);
 	vcard_append_subval(pvvalue, pvalue);
 	pvvalue = vcard_new_value();
 	if (NULL == pvvalue) {
 		goto EXPORT_FAILURE;
 	}
 	vcard_append_value(pvline, pvvalue);
-	pvalue = pmsg->proplist.get<char>(PROP_TAG_DEPARTMENTNAME);
+	pvalue = pmsg->proplist.get<char>(PR_DEPARTMENT_NAME);
 	vcard_append_subval(pvvalue, pvalue);
 	
 	pvalue = pmsg->proplist.get<char>(PR_SENSITIVITY);
@@ -1459,7 +1458,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		}
 	}
 	
-	pvalue = pmsg->proplist.get<char>(PROP_TAG_TITLE);
+	pvalue = pmsg->proplist.get<char>(PR_TITLE);
 	pvline = vcard_new_simple_line("TITLE", pvalue);
 	if (NULL == pvline) {
 		goto EXPORT_FAILURE;

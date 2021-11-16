@@ -320,20 +320,12 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 	LONG_ARRAY *pminid_array;
 	TPROPVAL_ARRAY *ppropvals;
 	uint32_t proptag_buff[25];
-	static const uint32_t tmp_proptags[] = {
-			PROP_TAG_NICKNAME,
-			PROP_TAG_SURNAME,
-			PROP_TAG_GIVENNAME,
-			PROP_TAG_MIDDLENAME,
-			PROP_TAG_TITLE,
-			PR_PRIMARY_TELEPHONE_NUMBER,
-			PR_MOBILE_TELEPHONE_NUMBER,
-			PR_HOME_ADDRESS_STREET,
-			PR_COMMENT,
-			PROP_TAG_COMPANYNAME,
-			PROP_TAG_DEPARTMENTNAME,
-			PROP_TAG_OFFICELOCATION,
-			PR_CREATION_TIME
+	static constexpr uint32_t tmp_proptags[] = {
+		PR_NICKNAME, PR_SURNAME, PR_GIVEN_NAME, PR_MIDDLE_NAME,
+		PR_TITLE, PR_PRIMARY_TELEPHONE_NUMBER,
+		PR_MOBILE_TELEPHONE_NUMBER, PR_HOME_ADDRESS_STREET, PR_COMMENT,
+		PR_COMPANY_NAME, PR_DEPARTMENT_NAME, PR_OFFICE_LOCATION,
+		PR_CREATION_TIME
 	};
 	
 	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
@@ -384,18 +376,18 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			return FALSE;
 		}
 		proptags.pproptag[proptags.count++] = PR_DISPLAY_NAME;
-		proptags.pproptag[proptags.count++] = PROP_TAG_NICKNAME;
-		proptags.pproptag[proptags.count++] = PROP_TAG_TITLE;
-		proptags.pproptag[proptags.count++] = PROP_TAG_SURNAME;
-		proptags.pproptag[proptags.count++] = PROP_TAG_GIVENNAME;
-		proptags.pproptag[proptags.count++] = PROP_TAG_MIDDLENAME;
+		proptags.pproptag[proptags.count++] = PR_NICKNAME;
+		proptags.pproptag[proptags.count++] = PR_TITLE;
+		proptags.pproptag[proptags.count++] = PR_SURNAME;
+		proptags.pproptag[proptags.count++] = PR_GIVEN_NAME;
+		proptags.pproptag[proptags.count++] = PR_MIDDLE_NAME;
 		proptags.pproptag[proptags.count++] = PR_PRIMARY_TELEPHONE_NUMBER;
 		proptags.pproptag[proptags.count++] = PR_MOBILE_TELEPHONE_NUMBER;
 		proptags.pproptag[proptags.count++] = PR_HOME_ADDRESS_STREET;
 		proptags.pproptag[proptags.count++] = PR_COMMENT;
-		proptags.pproptag[proptags.count++] = PROP_TAG_COMPANYNAME;
-		proptags.pproptag[proptags.count++] = PROP_TAG_DEPARTMENTNAME;
-		proptags.pproptag[proptags.count++] = PROP_TAG_OFFICELOCATION;
+		proptags.pproptag[proptags.count++] = PR_COMPANY_NAME;
+		proptags.pproptag[proptags.count++] = PR_DEPARTMENT_NAME;
+		proptags.pproptag[proptags.count++] = PR_OFFICE_LOCATION;
 		proptags.pproptag[proptags.count++] = PR_CREATION_TIME;
 		proptags.pproptag[proptags.count++] = PROP_TAG_MID;
 		if (!exmdb_client::query_table(pinfo->get_maildir(), nullptr,
@@ -447,7 +439,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 				return FALSE;
 			}
 			if (ppropvals->set(PR_SMTP_ADDRESS, username) != 0 ||
-			    ppropvals->set(PROP_TAG_ACCOUNT, username) != 0 ||
+			    ppropvals->set(PR_ACCOUNT, username) != 0 ||
 			    ppropvals->set(PR_ADDRTYPE, "SMTP") != 0 ||
 			    ppropvals->set(PR_EMAIL_ADDRESS, username) != 0) {
 				tpropval_array_free(ppropvals);
@@ -455,7 +447,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			}
 			if (NULL != pdisplayname) {
 				if (ppropvals->set(PR_DISPLAY_NAME, pdisplayname) != 0 ||
-				    ppropvals->set(PROP_TAG_TRANSMITTABLEDISPLAYNAME, pdisplayname) != 0 ||
+				    ppropvals->set(PR_TRANSMITABLE_DISPLAY_NAME, pdisplayname) != 0 ||
 				    ppropvals->set(PR_EMS_AB_DISPLAY_NAME_PRINTABLE, pdisplayname) != 0) {
 					tpropval_array_free(ppropvals);
 					return FALSE;
@@ -486,7 +478,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			if (pvalue == nullptr ||
 			    ppropvals->set(PR_ENTRYID, pvalue) != 0 ||
 			    ppropvals->set(PR_RECORD_KEY, pvalue) != 0 ||
-			    ppropvals->set(PROP_TAG_TEMPLATEID, pvalue) != 0 ||
+			    ppropvals->set(PR_TEMPLATEID, pvalue) != 0 ||
 			    ppropvals->set(PR_ORIGINAL_ENTRYID, pvalue) != 0) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
@@ -1097,24 +1089,16 @@ void container_object_get_user_table_all_proptags(
 {
 	static const uint32_t proptag_buff[] = {
 		PR_DISPLAY_NAME,
-		PROP_TAG_NICKNAME,
-		PROP_TAG_SURNAME,
-		PROP_TAG_GIVENNAME,
-		PROP_TAG_MIDDLENAME,
-		PROP_TAG_TITLE,
-		PR_PRIMARY_TELEPHONE_NUMBER,
-		PR_MOBILE_TELEPHONE_NUMBER,
-		PR_HOME_ADDRESS_STREET,
 		PR_COMMENT,
-		PROP_TAG_COMPANYNAME,
-		PROP_TAG_DEPARTMENTNAME,
-		PROP_TAG_OFFICELOCATION,
+		PR_COMPANY_NAME,
+		PR_DEPARTMENT_NAME,
+		PR_OFFICE_LOCATION,
 		PR_ADDRTYPE,
 		PR_SMTP_ADDRESS,
 		PR_EMAIL_ADDRESS,
 		PR_EMS_AB_DISPLAY_NAME_PRINTABLE,
-		PROP_TAG_ACCOUNT,
-		PROP_TAG_TRANSMITTABLEDISPLAYNAME,
+		PR_ACCOUNT,
+		PR_TRANSMITABLE_DISPLAY_NAME,
 		PR_EMS_AB_PROXY_ADDRESSES,
 		PR_OBJECT_TYPE,
 		PR_DISPLAY_TYPE,
@@ -1125,8 +1109,8 @@ void container_object_get_user_table_all_proptags(
 		PR_SEARCH_KEY,
 		PR_INSTANCE_KEY,
 		PR_MAPPING_SIGNATURE,
-		PROP_TAG_SENDRICHINFO,
-		PROP_TAG_TEMPLATEID,
+		PR_SEND_RICH_INFO,
+		PR_TEMPLATEID,
 		PR_EMS_AB_OBJECT_GUID,
 		PR_CREATION_TIME,
 		PROP_TAG_THUMBNAILPHOTO

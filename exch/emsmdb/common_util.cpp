@@ -1132,15 +1132,14 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		prow->flags |= RECIPIENT_ROW_FLAG_RESPONSIBLE;
 	}
-	pvalue = common_util_get_propvals(ppropvals, PROP_TAG_SENDRICHINFO);
+	pvalue = common_util_get_propvals(ppropvals, PR_SEND_RICH_INFO);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		prow->flags |= RECIPIENT_ROW_FLAG_NONRICH;
 	}
 	prow->ptransmittable_name = static_cast<char *>(common_util_get_propvals(
-	                            ppropvals, PROP_TAG_TRANSMITTABLEDISPLAYNAME));
+	                            ppropvals, PR_TRANSMITABLE_DISPLAY_NAME));
 	if (NULL == prow->ptransmittable_name) {
-		pvalue = common_util_get_propvals(ppropvals,
-			PROP_TAG_TRANSMITTABLEDISPLAYNAME_STRING8);
+		pvalue = common_util_get_propvals(ppropvals, PR_TRANSMITABLE_DISPLAY_NAME_A);
 		if (NULL != pvalue) {
 			prow->ptransmittable_name =
 				common_util_dup_mb_to_utf8(cpid, static_cast<char *>(pvalue));
@@ -1237,11 +1236,11 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 	propval.proptag = PROP_TAG_RESPONSIBILITY;
 	propval.pvalue = deconst((prow->flags & RECIPIENT_ROW_FLAG_RESPONSIBLE) ? &persist_true : &persist_false);
 	common_util_set_propvals(ppropvals, &propval);
-	propval.proptag = PROP_TAG_SENDRICHINFO;
+	propval.proptag = PR_SEND_RICH_INFO;
 	propval.pvalue = deconst((prow->flags & RECIPIENT_ROW_FLAG_NONRICH) ? &persist_true : &persist_false);
 	common_util_set_propvals(ppropvals, &propval);
 	if (NULL != prow->ptransmittable_name) {
-		propval.proptag = PROP_TAG_TRANSMITTABLEDISPLAYNAME;
+		propval.proptag = PR_TRANSMITABLE_DISPLAY_NAME;
 		if (TRUE == b_unicode) {
 			propval.pvalue = prow->ptransmittable_name;
 		} else {

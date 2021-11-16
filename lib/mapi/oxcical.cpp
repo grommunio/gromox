@@ -840,7 +840,7 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 			pdisplay_name = paddress;
 		}
 		if (pproplist->set(PR_DISPLAY_NAME, pdisplay_name) != 0 ||
-		    pproplist->set(PROP_TAG_TRANSMITTABLEDISPLAYNAME, pdisplay_name) != 0)
+		    pproplist->set(PR_TRANSMITABLE_DISPLAY_NAME, pdisplay_name) != 0)
 			return FALSE;
 		tmp_bin.pb = tmp_buff;
 		tmp_bin.cb = 0;

@@ -53,9 +53,9 @@ static BOOL message_object_get_recipient_all_proptags(message_object *pmessage,
 		case PROP_TAG_RECIPIENTTYPE:
 		case PROP_TAG_ROWID:
 		case PR_SEARCH_KEY:
-		case PROP_TAG_SENDRICHINFO:
-		case PROP_TAG_TRANSMITTABLEDISPLAYNAME:
-		case PROP_TAG_TRANSMITTABLEDISPLAYNAME_STRING8:
+		case PR_SEND_RICH_INFO:
+		case PR_TRANSMITABLE_DISPLAY_NAME:
+		case PR_TRANSMITABLE_DISPLAY_NAME_A:
 			continue;
 		default:
 			pproptags->pproptag[pproptags->count++] = tmp_proptags.pproptag[i];
@@ -784,9 +784,9 @@ BOOL message_object::set_rcpts(const TARRAY_SET *pset)
 			case PROP_TAG_RECIPIENTTYPE:
 			case PROP_TAG_ROWID:
 			case PR_SEARCH_KEY:
-			case PROP_TAG_SENDRICHINFO:
-			case PROP_TAG_TRANSMITTABLEDISPLAYNAME:
-			case PROP_TAG_TRANSMITTABLEDISPLAYNAME_STRING8:
+			case PR_SEND_RICH_INFO:
+			case PR_TRANSMITABLE_DISPLAY_NAME:
+			case PR_TRANSMITABLE_DISPLAY_NAME_A:
 				continue;
 			}
 			proptag_array_append(pmessage->precipient_columns,

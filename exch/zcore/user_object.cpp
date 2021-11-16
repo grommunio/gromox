@@ -65,7 +65,7 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		    common_util_index_proptags(pproptags, PR_EMAIL_ADDRESS) >= 0 ||
 		    common_util_index_proptags(pproptags, PR_DISPLAY_NAME) >= 0 ||
 			common_util_index_proptags(pproptags,
-			PROP_TAG_ACCOUNT) >= 0) {
+			PR_ACCOUNT) >= 0) {
 			ppropvals->count = 0;
 			auto *vc = ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(3);
 			if (NULL == ppropvals->ppropval) {
@@ -87,7 +87,7 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 			    common_util_index_proptags(pproptags, PR_EMAIL_ADDRESS) >= 0 ||
 			    common_util_index_proptags(pproptags, PR_DISPLAY_NAME) >= 0 ||
 				common_util_index_proptags(pproptags,
-				PROP_TAG_ACCOUNT) >= 0) && MINID_TYPE_ADDRESS
+				PR_ACCOUNT) >= 0) && MINID_TYPE_ADDRESS
 				== ab_tree_get_minid_type(puser->minid) &&
 			    system_services_get_username_from_id(ab_tree_get_minid_value(puser->minid),
 			    username, GX_ARRAY_SIZE(username))) {
@@ -100,8 +100,8 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 					++vc;
 				}
 				if (common_util_index_proptags(pproptags,
-					PROP_TAG_ACCOUNT) >= 0) {
-					vc->proptag = PROP_TAG_ACCOUNT;
+					PR_ACCOUNT) >= 0) {
+					vc->proptag = PR_ACCOUNT;
 					vc->pvalue = common_util_dup(username);
 					if (vc->pvalue == nullptr)
 						return FALSE;

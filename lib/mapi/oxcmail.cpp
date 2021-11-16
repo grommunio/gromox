@@ -542,11 +542,11 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 			newval = utf8_field;
 		}
 		if (pproplist->set(PR_DISPLAY_NAME, newval) != 0 ||
-		    pproplist->set(PROP_TAG_TRANSMITTABLEDISPLAYNAME, utf8_field) != 0)
+		    pproplist->set(PR_TRANSMITABLE_DISPLAY_NAME, utf8_field) != 0)
 			return FALSE;
 	} else {
 		if (pproplist->set(PR_DISPLAY_NAME_A, display_name) != 0 ||
-		    pproplist->set(PROP_TAG_TRANSMITTABLEDISPLAYNAME_STRING8, display_name) != 0)
+		    pproplist->set(PR_TRANSMITABLE_DISPLAY_NAME_A, display_name) != 0)
 			return FALSE;
 	}
 	if (paddr->local_part[0] != '\0' && paddr->domain[0] != '\0' &&

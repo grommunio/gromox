@@ -369,8 +369,8 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
 		case PR_INSTANCE_KEY:
 		case PROP_TAG_RECIPIENTTYPE:
 		case PR_SEARCH_KEY:
-		case PROP_TAG_SENDRICHINFO:
-		case PROP_TAG_TRANSMITTABLEDISPLAYNAME:
+		case PR_SEND_RICH_INFO:
+		case PR_TRANSMITABLE_DISPLAY_NAME:
 			return ecInvalidParam;
 		}
 	}

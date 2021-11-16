@@ -1225,11 +1225,11 @@ static void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type,
 	switch (type) {
 	case USER_MAIL_ADDRESS: gx_strlcpy(value, u->username.c_str(), vsize); return;
 	case USER_REAL_NAME: tag = PR_DISPLAY_NAME; break;
-	case USER_JOB_TITLE: tag = PROP_TAG_TITLE; break;
+	case USER_JOB_TITLE: tag = PR_TITLE; break;
 	case USER_COMMENT: tag = PR_COMMENT; break;
 	case USER_MOBILE_TEL: tag = PR_MOBILE_TELEPHONE_NUMBER; break;
 	case USER_BUSINESS_TEL: tag = PR_PRIMARY_TELEPHONE_NUMBER; break;
-	case USER_NICK_NAME: tag = PROP_TAG_NICKNAME; break;
+	case USER_NICK_NAME: tag = PR_NICKNAME; break;
 	case USER_HOME_ADDRESS: tag = PR_HOME_ADDRESS_STREET; break;
 	case USER_CREATE_DAY: *value = '\0'; return;
 	case USER_STORE_PATH: gx_strlcpy(value, u->maildir.c_str(), vsize); return;
@@ -1610,7 +1610,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			pnode, codepage, proptag, ppvalue);
 	case PR_ENTRYID:
 	case PR_RECORD_KEY:
-	case PROP_TAG_TEMPLATEID:
+	case PR_TEMPLATEID:
 	case PR_ORIGINAL_ENTRYID: {
 		pvalue = cu_alloc<BINARY>();
 		if (NULL == pvalue) {
@@ -1677,7 +1677,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	}
-	case PROP_TAG_TRANSMITTABLEDISPLAYNAME:
+	case PR_TRANSMITABLE_DISPLAY_NAME:
 		if (node_type > 0x80) {
 			return TRUE;
 		}
@@ -1694,7 +1694,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		}
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_COMPANYNAME:
+	case PR_COMPANY_NAME:
 		if (node_type > 0x80) {
 			return TRUE;
 		}
@@ -1708,7 +1708,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		}
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_DEPARTMENTNAME:
+	case PR_DEPARTMENT_NAME:
 		if (node_type > 0x80) {
 			return TRUE;
 		}
@@ -1722,7 +1722,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		}
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_ACCOUNT:
+	case PR_ACCOUNT:
 	case PR_SMTP_ADDRESS:
 		if (NODE_TYPE_MLIST == node_type) {
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
@@ -1813,7 +1813,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 	 * (in case e.g. a user has not explicitly set SENDRICHINFO=0)
 	 */
 	switch (proptag) {
-	case PROP_TAG_SENDRICHINFO:
+	case PR_SEND_RICH_INFO:
 		if (node_type > 0x80) {
 			return TRUE;
 		}
@@ -2018,7 +2018,7 @@ static BOOL ab_tree_match_node(SIMPLE_TREE_NODE *pnode,
 		auto rprop = pfilter->prop;
 		if (rprop->proptag == PROP_TAG_ANR) {
 			if (ab_tree_fetch_node_property(pnode, codepage,
-			    PROP_TAG_ACCOUNT, &pvalue) && pvalue != nullptr &&
+			    PR_ACCOUNT, &pvalue) && pvalue != nullptr &&
 			    strcasestr(static_cast<char *>(pvalue),
 			    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
 				return TRUE;

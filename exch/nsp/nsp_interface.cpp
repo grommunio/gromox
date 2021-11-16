@@ -168,7 +168,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		pguid = common_util_get_nspi_guid();
 		memcpy(pprop->value.bin.pb, pguid, 16);
 		return ecSuccess;
-	case PROP_TAG_TEMPLATEID:
+	case PR_TEMPLATEID:
 		display_type = node_type == NODE_TYPE_MLIST ? DT_DISTLIST : DT_MAILUSER;
 		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 			return ecNotFound;
@@ -232,7 +232,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		pprop->value.bin.pb[2] = (minid >> 16) & 0xFF;
 		pprop->value.bin.pb[3] = (minid >> 24) & 0xFF;
 		return ecSuccess;
-	case PROP_TAG_TRANSMITTABLEDISPLAYNAME:
+	case PR_TRANSMITABLE_DISPLAY_NAME:
 		if (node_type != NODE_TYPE_PERSON &&
 			node_type != NODE_TYPE_EQUIPMENT &&
 			node_type != NODE_TYPE_ROOM) {
@@ -256,7 +256,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		strcpy(pprop->value.pstr, dn);
 		return ecSuccess;
-	case PROP_TAG_TRANSMITTABLEDISPLAYNAME_STRING8:
+	case PR_TRANSMITABLE_DISPLAY_NAME_A:
 		if (node_type != NODE_TYPE_PERSON &&
 			node_type != NODE_TYPE_EQUIPMENT &&
 			node_type != NODE_TYPE_ROOM) {
@@ -282,7 +282,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		common_util_from_utf8(codepage, dn,
 				pprop->value.pstr, temp_len);
 		return ecSuccess;
-	case PROP_TAG_COMPANYNAME:
+	case PR_COMPANY_NAME:
 		ab_tree_get_company_info(pnode, dn, NULL);
 		if ('\0' == dn[0]) {
 			return ecNotFound;
@@ -298,7 +298,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		strcpy(pprop->value.pstr, dn);
 		return ecSuccess;
-	case PROP_TAG_COMPANYNAME_STRING8:
+	case PR_COMPANY_NAME_A:
 		ab_tree_get_company_info(pnode, dn, NULL);
 		if ('\0' == dn[0]) {
 			return ecNotFound;
@@ -315,7 +315,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		common_util_from_utf8(codepage,
 			dn, pprop->value.pstr, temp_len);
 		return ecSuccess;
-	case PROP_TAG_DEPARTMENTNAME:
+	case PR_DEPARTMENT_NAME:
 		ab_tree_get_department_name(pnode, dn);
 		if ('\0' == dn[0]) {
 			return ecNotFound;
@@ -331,7 +331,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		strcpy(pprop->value.pstr, dn);
 		return ecSuccess;
-	case PROP_TAG_DEPARTMENTNAME_STRING8:
+	case PR_DEPARTMENT_NAME_A:
 		ab_tree_get_department_name(pnode, dn);
 		if ('\0' == dn[0]) {
 			return ecNotFound;
@@ -348,7 +348,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		common_util_from_utf8(codepage,
 			dn, pprop->value.pstr, temp_len);
 		return ecSuccess;
-	case PROP_TAG_OFFICELOCATION:
+	case PR_OFFICE_LOCATION:
 		ab_tree_get_company_info(pnode, NULL, dn);
 		if ('\0' == dn[0]) {
 			return ecNotFound;
@@ -364,7 +364,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		}
 		strcpy(pprop->value.pstr, dn);
 		return ecSuccess;
-	case PROP_TAG_OFFICELOCATION_STRING8:
+	case PR_OFFICE_LOCATION_A:
 		ab_tree_get_company_info(pnode, NULL, dn);
 		if ('\0' == dn[0]) {
 			return ecNotFound;
@@ -381,8 +381,8 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		common_util_from_utf8(codepage, dn,
 				pprop->value.pstr, temp_len);
 		return ecSuccess;
-	case PROP_TAG_ACCOUNT:
-	case PROP_TAG_ACCOUNT_STRING8:
+	case PR_ACCOUNT:
+	case PR_ACCOUNT_A:
 	case PR_SMTP_ADDRESS:
 	case PROP_TAG_SMTPADDRESS_STRING8:
 		if (NODE_TYPE_MLIST == node_type) {
@@ -502,7 +502,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	 * (in case e.g. a user has not explicitly set SENDRICHINFO=0)
 	 */
 	switch (proptag) {
-	case PROP_TAG_SENDRICHINFO:
+	case PR_SEND_RICH_INFO:
 		pprop->value.b = 1;
 		return ecSuccess;
 	}
@@ -878,8 +878,8 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 		nt->pproptag[2] = PR_DISPLAY_TYPE;
 		nt->pproptag[3] = PR_DISPLAY_NAME_A;
 		nt->pproptag[4] = PR_PRIMARY_TELEPHONE_NUMBER_A;
-		nt->pproptag[5] = PROP_TAG_DEPARTMENTNAME_STRING8;
-		nt->pproptag[6] = PROP_TAG_OFFICELOCATION_STRING8;
+		nt->pproptag[5] = PR_DEPARTMENT_NAME_A;
+		nt->pproptag[6] = PR_OFFICE_LOCATION_A;
 	} else {
 		if (pproptags->cvalues > 100) {
 			*pprows = NULL;
@@ -1092,8 +1092,8 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		nt->pproptag[2] = PR_DISPLAY_TYPE;
 		nt->pproptag[3] = PR_DISPLAY_NAME_A;
 		nt->pproptag[4] = PR_PRIMARY_TELEPHONE_NUMBER_A;
-		nt->pproptag[5] = PROP_TAG_DEPARTMENTNAME_STRING8;
-		nt->pproptag[6] = PROP_TAG_OFFICELOCATION_STRING8;
+		nt->pproptag[5] = PR_DEPARTMENT_NAME_A;
+		nt->pproptag[6] = PR_OFFICE_LOCATION_A;
 	} else {
 		if (pproptags->cvalues > 100) {
 			*pprows = NULL;
@@ -1295,7 +1295,7 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode, uint32_t codepage,
 		}
 		if (PROP_TAG_ANR == pfilter->res.res_property.proptag) {
 			if (nsp_interface_fetch_property(pnode, false, codepage,
-			    PROP_TAG_ACCOUNT, &prop_val, temp_buff,
+			    PR_ACCOUNT, &prop_val, temp_buff,
 			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess) {
 				if (NULL != strcasestr(temp_buff,
 					pfilter->res.res_property.pprop->value.pstr)) {
@@ -1325,7 +1325,7 @@ static BOOL nsp_interface_match_node(SIMPLE_TREE_NODE *pnode, uint32_t codepage,
 			return FALSE;
 		} else if (PROP_TAG_ANR_STRING8 == pfilter->res.res_property.proptag) {
 			if (nsp_interface_fetch_property(pnode, false, codepage,
-			    PROP_TAG_ACCOUNT_STRING8, &prop_val, temp_buff,
+			    PR_ACCOUNT_A, &prop_val, temp_buff,
 			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess) {
 				if (NULL != strcasestr(temp_buff,
 					pfilter->res.res_property.pprop->value.pstr)) {
@@ -1906,8 +1906,8 @@ static int nsp_interface_get_default_proptags(int node_type,
 	t[z++] = PR_SEARCH_KEY;
 	t[z++] = PR_INSTANCE_KEY;
 	t[z++] = PR_MAPPING_SIGNATURE;
-	t[z++] = PROP_TAG_SENDRICHINFO;
-	t[z++] = PROP_TAG_TEMPLATEID;
+	t[z++] = PR_SEND_RICH_INFO;
+	t[z++] = PR_TEMPLATEID;
 	t[z++] = PR_EMS_AB_OBJECT_GUID;
 	switch (node_type) {
 	case NODE_TYPE_DOMAIN:
@@ -1917,18 +1917,18 @@ static int nsp_interface_get_default_proptags(int node_type,
 	case NODE_TYPE_PERSON:
 	case NODE_TYPE_ROOM:
 	case NODE_TYPE_EQUIPMENT:
-		t[z++] = U(PROP_TAG_NICKNAME);
-		t[z++] = U(PROP_TAG_TITLE);
+		t[z++] = U(PR_NICKNAME);
+		t[z++] = U(PR_TITLE);
 		t[z++] = U(PR_PRIMARY_TELEPHONE_NUMBER);
 		t[z++] = U(PR_MOBILE_TELEPHONE_NUMBER);
 		t[z++] = U(PR_HOME_ADDRESS_STREET);
 		t[z++] = U(PR_COMMENT);
-		t[z++] = U(PROP_TAG_COMPANYNAME);
-		t[z++] = U(PROP_TAG_DEPARTMENTNAME);
-		t[z++] = U(PROP_TAG_OFFICELOCATION);
+		t[z++] = U(PR_COMPANY_NAME);
+		t[z++] = U(PR_DEPARTMENT_NAME);
+		t[z++] = U(PR_OFFICE_LOCATION);
 		t[z++] = U(PR_SMTP_ADDRESS);
-		t[z++] = U(PROP_TAG_ACCOUNT);
-		t[z++] = U(PROP_TAG_TRANSMITTABLEDISPLAYNAME);
+		t[z++] = U(PR_ACCOUNT);
+		t[z++] = U(PR_TRANSMITABLE_DISPLAY_NAME);
 		t[z++] = U(PR_EMS_AB_PROXY_ADDRESSES);
 		t[z++] = U(PR_EMS_AB_HOME_MDB);
 		t[z++] = PR_CREATION_TIME;
@@ -1937,14 +1937,14 @@ static int nsp_interface_get_default_proptags(int node_type,
 		break;
 	case NODE_TYPE_MLIST:
 		t[z++] = U(PR_SMTP_ADDRESS);
-		t[z++] = U(PROP_TAG_COMPANYNAME);
-		t[z++] = U(PROP_TAG_DEPARTMENTNAME);
+		t[z++] = U(PR_COMPANY_NAME);
+		t[z++] = U(PR_DEPARTMENT_NAME);
 		t[z++] = U(PR_EMS_AB_PROXY_ADDRESSES);
 		t[z++] = PR_CREATION_TIME;
 		break;
 	case NODE_TYPE_FOLDER:
-		t[z++] = PROP_TAG_COMPANYNAME_STRING8;
-		t[z++] = PROP_TAG_DEPARTMENTNAME_STRING8;
+		t[z++] = PR_COMPANY_NAME_A;
+		t[z++] = PR_DEPARTMENT_NAME_A;
 		break;
 	default:
 		return ecInvalidObject;
@@ -2654,22 +2654,22 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 #define U(x) (b_unicode ? (x) : CHANGE_PROP_TYPE((x), PT_STRING8))
 	auto &t = pcolumns->pproptag;
 	t[0] = U(PR_DISPLAY_NAME);
-	t[1] = U(PROP_TAG_NICKNAME);
-	t[2] = U(PROP_TAG_TITLE);
+	t[1] = U(PR_NICKNAME);
+	t[2] = U(PR_TITLE);
 	t[3] = U(PR_BUSINESS_TELEPHONE_NUMBER);
 	t[4] = U(PR_PRIMARY_TELEPHONE_NUMBER);
 	t[5] = U(PR_MOBILE_TELEPHONE_NUMBER);
 	t[6] = U(PR_HOME_ADDRESS_STREET);
 	t[7] = U(PR_COMMENT);
-	t[8] = U(PROP_TAG_COMPANYNAME);
-	t[9] = U(PROP_TAG_DEPARTMENTNAME);
-	t[10] = U(PROP_TAG_OFFICELOCATION);
+	t[8] = U(PR_COMPANY_NAME);
+	t[9] = U(PR_DEPARTMENT_NAME);
+	t[10] = U(PR_OFFICE_LOCATION);
 	t[11] = U(PR_ADDRTYPE);
 	t[12] = U(PR_SMTP_ADDRESS);
 	t[13] = U(PR_EMAIL_ADDRESS);
 	t[14] = U(PR_EMS_AB_DISPLAY_NAME_PRINTABLE);
-	t[15] = U(PROP_TAG_ACCOUNT);
-	t[16] = U(PROP_TAG_TRANSMITTABLEDISPLAYNAME);
+	t[15] = U(PR_ACCOUNT);
+	t[16] = U(PR_TRANSMITABLE_DISPLAY_NAME);
 	t[17] = U(PR_EMS_AB_PROXY_ADDRESSES);
 	t[18] = PR_OBJECT_TYPE;
 	t[19] = PR_DISPLAY_TYPE;
@@ -2680,8 +2680,8 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	t[24] = PR_SEARCH_KEY;
 	t[25] = PR_INSTANCE_KEY;
 	t[26] = PR_MAPPING_SIGNATURE;
-	t[27] = PROP_TAG_SENDRICHINFO;
-	t[28] = PROP_TAG_TEMPLATEID;
+	t[27] = PR_SEND_RICH_INFO;
+	t[28] = PR_TEMPLATEID;
 	t[29] = PR_EMS_AB_OBJECT_GUID;
 	t[30] = PR_CREATION_TIME;
 #undef U
@@ -2834,8 +2834,8 @@ static uint32_t nsp_interface_fetch_smtp_property(
 		sprintf(pprop->value.bin.pc, "SMTP:%s", paddress);
 		HX_strupper(pprop->value.bin.pc);
 		break;
-	case PROP_TAG_TRANSMITTABLEDISPLAYNAME:
-	case PROP_TAG_TRANSMITTABLEDISPLAYNAME_STRING8:
+	case PR_TRANSMITABLE_DISPLAY_NAME:
+	case PR_TRANSMITABLE_DISPLAY_NAME_A:
 	case PR_DISPLAY_NAME:
 	case PR_DISPLAY_NAME_A:
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
@@ -2925,8 +2925,8 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		nt->pproptag[2] = PR_DISPLAY_TYPE;
 		nt->pproptag[3] = PR_DISPLAY_NAME_A;
 		nt->pproptag[4] = PR_PRIMARY_TELEPHONE_NUMBER_A;
-		nt->pproptag[5] = PROP_TAG_DEPARTMENTNAME_STRING8;
-		nt->pproptag[6] = PROP_TAG_OFFICELOCATION_STRING8;
+		nt->pproptag[5] = PR_DEPARTMENT_NAME_A;
+		nt->pproptag[6] = PR_OFFICE_LOCATION_A;
 	} else {
 		if (pproptags->cvalues > 100) {
 			*ppmids = NULL;
