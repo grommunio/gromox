@@ -376,9 +376,6 @@ static BOOL notify_response_specify_hierarchy_table_row_added(
 	pmemory->row_folder_id = (row_folder_id & 0xFF00000000000000ULL) == 0 ?
 	                         rop_util_make_eid_ex(1, row_folder_id) :
 	                         rop_util_make_eid_ex(row_folder_id >> 48, row_folder_id & 0x00FFFFFFFFFFFFFFULL);
-	pmemory->row_folder_id = (row_folder_id & 0xFF00000000000000ULL) == 0 ?
-	                         rop_util_make_eid_ex(1, row_folder_id) :
-	                         rop_util_make_eid_ex(row_folder_id >> 48, row_folder_id & 0x00FFFFFFFFFFFFFFULL);
 	pnotify->notification_data.pafter_folder_id = &pmemory->after_folder_id;
 	pmemory->after_folder_id = after_folder_id == 0 ? eid_t(0) :
 	                           (after_folder_id & 0xFF00000000000000ULL) == 0 ?
