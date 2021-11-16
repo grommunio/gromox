@@ -2899,7 +2899,6 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 	char picture_name[64];
 	EXT_PUSH picture_push;
 	const char *img_ctype = nullptr, *pext = nullptr;
-	TAGGED_PROPVAL propval;
 	bool b_paragraph_begun = false, b_hyperlinked = false;
 	SIMPLE_TREE_NODE *pchild;
 	char name[MAX_CONTROL_LEN];
@@ -3149,45 +3148,33 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 				free(tmp_bin.pv);
 				return -EINVAL;
 			}
-			propval.proptag = PR_ATTACH_MIME_TAG;
-			propval.pvalue = deconst(img_ctype);
-			auto ret = pattachment->proplist.set(propval);
+			auto ret = pattachment->proplist.set(PR_ATTACH_MIME_TAG, img_ctype);
 			if (ret != 0) {
 				free(tmp_bin.pv);
 				return ret;
 			}
-			propval.proptag = PR_ATTACH_CONTENT_ID;
-			propval.pvalue = cid_name;
-			ret = pattachment->proplist.set(propval);
+			ret = pattachment->proplist.set(PR_ATTACH_CONTENT_ID, cid_name);
 			if (ret != 0) {
 				free(tmp_bin.pv);
 				return ret;
 			}
-			propval.proptag = PR_ATTACH_EXTENSION;
-			propval.pvalue = deconst(pext);
-			ret = pattachment->proplist.set(propval);
+			ret = pattachment->proplist.set(PR_ATTACH_EXTENSION, pext);
 			if (ret != 0) {
 				free(tmp_bin.pv);
 				return ret;
 			}
-			propval.proptag = PR_ATTACH_LONG_FILENAME;
-			propval.pvalue = picture_name;
-			ret = pattachment->proplist.set(propval);
+			ret = pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, picture_name);
 			if (ret != 0) {
 				free(tmp_bin.pv);
 				return ret;
 			}
-			propval.proptag = PR_ATTACH_FLAGS;
-			propval.pvalue = &tmp_int32;
 			tmp_int32 = ATTACH_FLAG_RENDEREDINBODY;
-			ret = pattachment->proplist.set(propval);
+			ret = pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32);
 			if (ret != 0) {
 				free(tmp_bin.pv);
 				return ret;
 			}
-			propval.proptag = PR_ATTACH_DATA_BIN;
-			propval.pvalue = &tmp_bin;
-			ret = pattachment->proplist.set(propval);
+			ret = pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin);
 			if (ret != 0) {
 				free(tmp_bin.pv);
 				return ret;

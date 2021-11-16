@@ -924,26 +924,17 @@ static BOOL tnef_set_attribute_address(TPROPVAL_ARRAY *pproplist,
 	uint32_t proptag1, uint32_t proptag2, uint32_t proptag3,
 	ATTR_ADDR *paddr)
 {
-	char *ptr;
-	TAGGED_PROPVAL propval;
-	
-	propval.proptag = proptag1;
-	propval.pvalue = paddr->displayname;
-	if (pproplist->set(propval) != 0)
+	if (pproplist->set(proptag1, paddr->displayname) != 0)
 		return FALSE;
-	ptr = strchr(paddr->address, ':');
+	auto ptr = strchr(paddr->address, ':');
 	if (NULL == ptr) {
 		return FALSE;
 	}
 	*ptr = '\0';
 	ptr ++;
-	propval.proptag = proptag2;
-	propval.pvalue = paddr->address;
-	if (pproplist->set(propval) != 0)
+	if (pproplist->set(proptag2, paddr->address) != 0)
 		return FALSE;
-	propval.proptag = proptag3;
-	propval.pvalue = ptr;
-	return pproplist->set(propval) == 0 ? TRUE : false;
+	return pproplist->set(proptag3, ptr) == 0 ? TRUE : false;
 }
 
 static void tnef_convert_from_propname(const PROPERTY_NAME *ppropname,
@@ -1185,7 +1176,6 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	uint16_t last_propid;
 	PROPID_ARRAY propids;
 	PROPID_ARRAY propids1;
-	TAGGED_PROPVAL propval;
 	PROPNAME_ARRAY propnames;
 	TNEF_ATTRIBUTE attribute;
 	const char *message_class;
@@ -1270,9 +1260,8 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				if (!rec_namedprop(phash, last_propid, ptnef_propval)) {
 					return nullptr;
 				}
-				propval.proptag = PROP_TAG(ptnef_propval->proptype, ptnef_propval->propid);
-				propval.pvalue = ptnef_propval->pvalue;
-				if (pmsg->proplist.set(propval) != 0)
+				if (pmsg->proplist.set(PROP_TAG(ptnef_propval->proptype,
+				    ptnef_propval->propid), ptnef_propval->pvalue) != 0)
 					return NULL;
 			}
 			b_props = TRUE;
@@ -1291,40 +1280,31 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			}
 			break;
 		case ATTRIBUTE_ID_DELEGATE:
-			propval.proptag = PR_RCVD_REPRESENTING_ENTRYID;
-			propval.pvalue = attribute.pvalue;
-			if (pmsg->proplist.set(propval) != 0)
+			if (pmsg->proplist.set(PR_RCVD_REPRESENTING_ENTRYID,
+			    attribute.pvalue) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_DATESTART:
-			propval.proptag = PROP_TAG_STARTDATE;
-			propval.pvalue = attribute.pvalue;
-			if (pmsg->proplist.set(propval) != 0)
+			if (pmsg->proplist.set(PROP_TAG_STARTDATE, attribute.pvalue) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_DATEEND:
-			propval.proptag = PROP_TAG_ENDDATE;
-			propval.pvalue = attribute.pvalue;
-			if (pmsg->proplist.set(propval) != 0)
+			if (pmsg->proplist.set(PROP_TAG_ENDDATE, attribute.pvalue) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_AIDOWNER:
-			propval.proptag = PROP_TAG_OWNERAPPOINTMENTID;
-			propval.pvalue = attribute.pvalue;
-			if (pmsg->proplist.set(propval) != 0)
+			if (pmsg->proplist.set(PROP_TAG_OWNERAPPOINTMENTID,
+			    attribute.pvalue) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_REQUESTRES:
 			tmp_byte = !!*static_cast<uint16_t *>(attribute.pvalue);
-			propval.proptag = PROP_TAG_RESPONSEREQUESTED;
-			propval.pvalue = &tmp_byte;
-			if (pmsg->proplist.set(propval) != 0)
+			if (pmsg->proplist.set(PROP_TAG_RESPONSEREQUESTED, &tmp_byte) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_ORIGNINALMESSAGECLASS:
-			propval.proptag = PR_ORIG_MESSAGE_CLASS_A;
-			propval.pvalue = deconst(tnef_to_msgclass(static_cast<char *>(attribute.pvalue)));
-			if (pmsg->proplist.set(propval) != 0)
+			if (pmsg->proplist.set(PR_ORIG_MESSAGE_CLASS_A,
+			    tnef_to_msgclass(static_cast<char *>(attribute.pvalue))) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_FROM:
@@ -1337,21 +1317,17 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			}
 			break;
 		case ATTRIBUTE_ID_SUBJECT:
-			propval.proptag = PR_SUBJECT_A;
-			propval.pvalue = attribute.pvalue;
-			if (pmsg->proplist.set(propval) != 0)
+			if (pmsg->proplist.set(PR_SUBJECT_A, attribute.pvalue) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_DATESENT:
-			propval.proptag = PROP_TAG_CLIENTSUBMITTIME;
-			propval.pvalue = attribute.pvalue;
-			if (pmsg->proplist.set(propval) != 0)
+			if (pmsg->proplist.set(PROP_TAG_CLIENTSUBMITTIME,
+			    attribute.pvalue) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_DATERECD:
-			propval.proptag = PROP_TAG_MESSAGEDELIVERYTIME;
-			propval.pvalue = attribute.pvalue;
-			if (pmsg->proplist.set(propval) != 0)
+			if (pmsg->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME,
+			    attribute.pvalue) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_MESSAGESTATUS: {
@@ -1363,9 +1339,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				if (*bv->pb & FMS_SUBMITTED)
 					tmp_int32 |= MSGFLAG_SUBMITTED;
 				if (0 != tmp_int32) {
-					propval.proptag = PR_MESSAGE_FLAGS;
-					propval.pvalue = &tmp_int32;
-					if (pmsg->proplist.set(propval) != 0)
+					if (pmsg->proplist.set(PR_MESSAGE_FLAGS, &tmp_int32) != 0)
 						return NULL;
 				}
 			}
@@ -1373,13 +1347,10 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 		}
 		case ATTRIBUTE_ID_MESSAGECLASS:
 			message_class = tnef_to_msgclass(static_cast<char *>(attribute.pvalue));
-			propval.proptag = PR_MESSAGE_CLASS_A;
-			propval.pvalue = deconst(message_class);
-			if (pmsg->proplist.set(propval) != 0)
+			if (pmsg->proplist.set(PR_MESSAGE_CLASS_A, message_class) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_MESSAGEID:
-			propval.proptag = PR_SEARCH_KEY;
 			tmp_bin.cb = strlen(static_cast<char *>(attribute.pvalue)) / 2;
 			if (tmp_bin.cb > 0) { 
 				tmp_bin.pv = alloc(tmp_bin.cb);
@@ -1390,19 +1361,15 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				    tmp_bin.pv, tmp_bin.cb)) {
 					return NULL;
 				}
-				propval.pvalue = &tmp_bin;
-				if (pmsg->proplist.set(propval) != 0)
+				if (pmsg->proplist.set(PR_SEARCH_KEY, &tmp_bin) != 0)
 					return NULL;
 			}
 			break;
 		case ATTRIBUTE_ID_BODY:
-			propval.proptag = PR_BODY_A;
-			propval.pvalue = attribute.pvalue;
-			if (pmsg->proplist.set(propval) != 0)
+			if (pmsg->proplist.set(PR_BODY_A, attribute.pvalue) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_PRIORITY:
-			propval.proptag = PR_IMPORTANCE;
 			switch (*(uint16_t*)attribute.pvalue) {
 			case 3:
 				tmp_int32 = IMPORTANCE_LOW;
@@ -1417,14 +1384,12 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				debug_info("[tnef]: attPriority error");
 				return NULL;
 			}
-			propval.pvalue = &tmp_int32;
-			if (pmsg->proplist.set(propval) != 0)
+			if (pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_DATEMODIFY:
-			propval.proptag = PR_LAST_MODIFICATION_TIME;
-			propval.pvalue = attribute.pvalue;
-			if (pmsg->proplist.set(propval) != 0)
+			if (pmsg->proplist.set(PR_LAST_MODIFICATION_TIME,
+			    attribute.pvalue) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_RECIPTABLE: {
@@ -1453,9 +1418,8 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 					if (!rec_namedprop(phash, last_propid, ptnef_propval)) {
 						return nullptr;
 					}
-					propval.proptag = PROP_TAG(ptnef_propval->proptype, ptnef_propval->propid);
-					propval.pvalue = ptnef_propval->pvalue;
-					if (pproplist->set(propval) != 0)
+					if (pproplist->set(PROP_TAG(ptnef_propval->proptype,
+					    ptnef_propval->propid), ptnef_propval->pvalue) != 0)
 						return NULL;
 				}
 				pproplist->erase(PR_ENTRYID);
@@ -1468,9 +1432,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 						pdisplay_name, &tmp_bin, NULL)) {
 						return NULL;
 					}
-					propval.proptag = PR_ENTRYID;
-					propval.pvalue = &tmp_bin;
-					if (pproplist->set(propval) != 0)
+					if (pproplist->set(PR_ENTRYID, &tmp_bin) != 0)
 						return NULL;
 				}
 			}
@@ -1545,48 +1507,41 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				if (r == X_ERROR) {
 					return nullptr;
 				}
-				propval.proptag = PROP_TAG(ptnef_propval->proptype, ptnef_propval->propid);
-				propval.pvalue = ptnef_propval->pvalue;
-				if (pattachment->proplist.set(propval) != 0)
+				if (pattachment->proplist.set(PROP_TAG(ptnef_propval->proptype,
+				    ptnef_propval->propid), ptnef_propval->pvalue) != 0)
 					return NULL;
 			}
 			b_props = TRUE;
 			break;
 		}
 		case ATTRIBUTE_ID_ATTACHDATA:
-			propval.proptag = PR_ATTACH_DATA_BIN;
-			propval.pvalue = attribute.pvalue;
-			if (pattachment->proplist.set(propval) != 0)
+			if (pattachment->proplist.set(PR_ATTACH_DATA_BIN,
+			    attribute.pvalue) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_ATTACHTITLE:
-			propval.proptag = PR_ATTACH_LONG_FILENAME_A;
-			propval.pvalue = attribute.pvalue;
-			if (pattachment->proplist.set(propval) != 0)
+			if (pattachment->proplist.set(PR_ATTACH_LONG_FILENAME_A,
+			    attribute.pvalue) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_ATTACHMETAFILE:
-			propval.proptag = PR_ATTACH_RENDERING;
-			propval.pvalue = attribute.pvalue;
-			if (pattachment->proplist.set(propval) != 0)
+			if (pattachment->proplist.set(PR_ATTACH_RENDERING,
+			    attribute.pvalue) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_ATTACHCREATEDATE:
-			propval.proptag = PR_CREATION_TIME;
-			propval.pvalue = attribute.pvalue;
-			if (pattachment->proplist.set(propval) != 0)
+			if (pattachment->proplist.set(PR_CREATION_TIME,
+			    attribute.pvalue) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_ATTACHMODIFYDATE:
-			propval.proptag = PR_LAST_MODIFICATION_TIME;
-			propval.pvalue = attribute.pvalue;
-			if (pattachment->proplist.set(propval) != 0)
+			if (pattachment->proplist.set(PR_LAST_MODIFICATION_TIME,
+			    attribute.pvalue) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_ATTACHTRANSPORTFILENAME:
-			propval.proptag = PR_ATTACH_TRANSPORT_NAME_A;
-			propval.pvalue = attribute.pvalue;
-			if (pattachment->proplist.set(propval) != 0)
+			if (pattachment->proplist.set(PR_ATTACH_TRANSPORT_NAME_A,
+			    attribute.pvalue) != 0)
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_ATTACHRENDDATA:
@@ -1601,25 +1556,20 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			}
 			if (ATTACH_TYPE_OLE == ((REND_DATA*)
 				attribute.pvalue)->attach_type) {
-				propval.proptag = PR_ATTACH_TAG;
-				propval.pvalue = &tmp_bin;
 				tmp_bin.cb = 11;
 				tmp_bin.pb = deconst(OLE_TAG);
-				if (pattachment->proplist.set(propval) != 0)
+				if (pattachment->proplist.set(PR_ATTACH_TAG, &tmp_bin) != 0)
 					return NULL;
 			}
 			if (FILE_DATA_MACBINARY == ((REND_DATA*)
 				attribute.pvalue)->attach_type) {
-				propval.proptag = PR_ATTACH_ENCODING;
-				propval.pvalue = &tmp_bin;
 				tmp_bin.cb = 9;
 				tmp_bin.pb = deconst(MACBINARY_ENCODING);
-				if (pattachment->proplist.set(propval) != 0)
+				if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
 					return NULL;
 			}
-			propval.proptag = PROP_TAG_RENDERINGPOSITION;
-			propval.pvalue = &((REND_DATA*)attribute.pvalue)->attach_position;
-			if (pattachment->proplist.set(propval) != 0)
+			if (pattachment->proplist.set(PROP_TAG_RENDERINGPOSITION,
+			    &static_cast<REND_DATA *>(attribute.pvalue)->attach_position) != 0)
 				return NULL;
 			b_props = FALSE;
 			break;
@@ -1678,9 +1628,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	phash1.reset();
 	
 	if (!pmsg->proplist.has(PR_INTERNET_CPID)) {
-		propval.proptag = PR_INTERNET_CPID;
-		propval.pvalue = &cpid;
-		pmsg->proplist.set(propval);
+		pmsg->proplist.set(PR_INTERNET_CPID, &cpid);
 	}
 	tnef_message_to_unicode(cpid, pmsg);
 	pmsg->proplist.erase(PROP_TAG_MID);
