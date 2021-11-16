@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
+#include <chrono>
 #include <csignal>
 #include <cstdint>
 #include <mutex>
@@ -24,14 +25,10 @@
 #include "aux_ext.h"
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
-#include <ctime>
 #include <cstdio>
 #include <cstring>
 #include <unistd.h>
 #include <pthread.h>
-#include <sys/time.h>
-
-
 #define	EMSMDB_PCMSPOLLMAX				60000
 #define	EMSMDB_PCRETRY					6
 #define	EMSMDB_PCRETRYDELAY				10000
@@ -47,9 +44,9 @@
 #define MAX_CONTENT_ROW_DELETED			6
 
 #define FLAG_PRIVILEGE_ADMIN			0x00000001
-#define HANDLE_VALID_INTERVAL			2000
 #define MAX_HANDLE_PER_USER				100
 
+using time_point = std::chrono::time_point<std::chrono::steady_clock>;
 using namespace gromox;
 
 template<> struct std::hash<GUID> {
@@ -71,7 +68,7 @@ struct HANDLE_DATA {
 	char username[UADDR_SIZE]{};
 	BOOL b_processing = false; /* if the handle is processing rops */
 	BOOL b_occupied = false; /* if the notify list is locked */
-	time_t last_time = 0;
+	time_point last_time;
 	uint32_t last_handle = 0;
 	int rop_num = 0;
 	uint16_t rop_left = 0; /* size left in rop response buffer */
@@ -88,8 +85,9 @@ struct NOTIFY_ITEM {
 
 }
 
+static constexpr auto HANDLE_VALID_INTERVAL = std::chrono::seconds(2000);
 static constexpr size_t TAG_SIZE = 256;
-static time_t g_start_time;
+static time_point g_start_time;
 static pthread_t g_scan_id;
 static std::mutex g_lock, g_notify_lock;
 static gromox::atomic_bool g_notify_stop{true};
@@ -103,7 +101,8 @@ static void *emsi_scanwork(void *);
 
 static uint32_t emsmdb_interface_get_timestamp()
 {
-	return time(NULL) - g_start_time + 1230336000;
+	auto d = decltype(g_start_time)::clock::now() - g_start_time;
+	return std::chrono::duration_cast<std::chrono::seconds>(d).count() + 1230336000;
 }
 
 BOOL emsmdb_interface_check_acxh(ACXH *pacxh,
@@ -118,7 +117,7 @@ BOOL emsmdb_interface_check_acxh(ACXH *pacxh,
 		return false;
 	auto phandle = &iter->second;
 	if (TRUE == b_touch) {
-		time(&phandle->last_time);
+		phandle->last_time = time_point::clock::now();
 	}
 	strcpy(username, phandle->username);
 	*pcxr = phandle->cxr;
@@ -147,7 +146,7 @@ void emsmdb_interface_touch_handle(CXH *pcxh)
 	std::lock_guard gl_hold(g_lock);
 	auto iter = g_handle_hash.find(pcxh->guid);
 	if (iter != g_handle_hash.end())
-		iter->second.last_time = time(nullptr);
+		iter->second.last_time = time_point::clock::now();
 }
 
 static HANDLE_DATA* emsmdb_interface_get_handle_data(CXH *pcxh)
@@ -225,7 +224,8 @@ static BOOL emsmdb_interface_alloc_cxr(std::vector<HANDLE_DATA *> &plist,
 	return TRUE;
 }
 
-HANDLE_DATA::HANDLE_DATA() : guid(guid_random_new()), last_time(time(nullptr))
+HANDLE_DATA::HANDLE_DATA() :
+	guid(guid_random_new()), last_time(time_point::clock::now())
 {
 	double_list_init(&notify_list);
 }
@@ -364,7 +364,7 @@ static void emsmdb_interface_remove_handle(CXH *pcxh)
 
 void emsmdb_interface_init()
 {
-	time(&g_start_time);
+	g_start_time = decltype(g_start_time)::clock::now();
 	pthread_key_create(&g_handle_key, NULL);
 }
 
@@ -612,15 +612,6 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	return ecSuccess;
 }
 
-static uint32_t emsmdb_interface_get_interval(struct timeval first_time)
-{
-	struct timeval last_time;
-	
-	gettimeofday(&last_time, NULL);
-	return (last_time.tv_sec - first_time.tv_sec)*1000 +
-			last_time.tv_usec/1000 - first_time.tv_usec/1000;
-}
-
 int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 	const uint8_t *pin, uint32_t cb_in, uint8_t *pout, uint32_t *pcb_out,
 	const uint8_t *pauxin, uint32_t cb_auxin, uint8_t *pauxout,
@@ -632,7 +623,6 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 	EXT_PULL ext_pull;
 	char username[UADDR_SIZE];
 	HANDLE_DATA *phandle;
-	struct timeval first_time;
 	
 	/* ms-oxcrpc 3.1.4.2 */
 	if (cb_in < 0x00000008 || *pcb_out < 0x00000008) {
@@ -651,7 +641,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 		memset(pcxh, 0, sizeof(CXH));
 		return RPC_X_BAD_STUB_DATA;
 	}
-	gettimeofday(&first_time, NULL);
+	auto first_time = time_point::clock::now();
 	phandle = emsmdb_interface_get_handle_data(pcxh);
 	if (NULL == phandle) {
 		*pflags = 0;
@@ -671,7 +661,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 		memset(pcxh, 0, sizeof(CXH));
 		return ecAccessDenied;
 	}
-	if (first_time.tv_sec - phandle->last_time > HANDLE_VALID_INTERVAL) {
+	if (first_time - phandle->last_time > HANDLE_VALID_INTERVAL) {
 		emsmdb_interface_put_handle_data(phandle);
 		emsmdb_interface_remove_handle(pcxh);
 		*pflags = 0;
@@ -681,7 +671,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 		memset(pcxh, 0, sizeof(CXH));
 		return ecError;
 	}
-	time(&phandle->last_time);
+	phandle->last_time = time_point::clock::now();
 	pthread_setspecific(g_handle_key, (const void*)phandle);
 	if (cb_auxin > 0) {
 		ext_pull.init(pauxin, cb_auxin, common_util_alloc, EXT_FLAG_UTF16);
@@ -702,7 +692,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 	if (result == ecSuccess) {
 		*pflags = 0;
 		*pcb_auxout = 0;
-		*ptrans_time = emsmdb_interface_get_interval(first_time);
+		*ptrans_time = std::chrono::duration_cast<std::chrono::milliseconds>(time_point::clock::now() - first_time).count();
 		return ecSuccess;
 	} else {
 		*pflags = 0;
@@ -1210,11 +1200,10 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 static void *emsi_scanwork(void *pparam)
 {
 	CXH cxh;
-	time_t cur_time;
 	
 	while (!g_notify_stop) {
 		std::vector<GUID> temp_list;
-		time(&cur_time);
+		auto cur_time = time_point::clock::now();
 		std::unique_lock gl_hold(g_lock);
 		for (const auto &[guid, handle] : g_handle_hash) {
 			auto phandle = &handle;
