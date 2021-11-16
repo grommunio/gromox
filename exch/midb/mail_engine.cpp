@@ -59,9 +59,6 @@
 #define CONDITION_TREE					DOUBLE_LIST
 
 #define RELOAD_INTERVAL					3600
-
-#define DB_LOCK_TIMEOUT					60
-
 #define MAX_DB_WAITING_THREADS			5
 
 using namespace std::string_literals;
@@ -202,6 +199,7 @@ struct SUB_NODE {
 
 }
 
+static constexpr auto DB_LOCK_TIMEOUT = std::chrono::seconds(60);
 static BOOL g_wal;
 static BOOL g_async;
 static int g_mime_num;
@@ -2755,7 +2753,7 @@ static IDB_REF mail_engine_get_idb(const char *path)
 	}
 	pidb->reference ++;
 	hhold.unlock();
-	if (!pidb->lock.try_lock_for(std::chrono::seconds(DB_LOCK_TIMEOUT))) {
+	if (!pidb->lock.try_lock_for(DB_LOCK_TIMEOUT)) {
 		hhold.lock();
 		pidb->reference --;
 		hhold.unlock();
