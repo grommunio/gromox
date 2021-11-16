@@ -16,6 +16,7 @@
 #include "ics_state.h"
 #include <gromox/eid_array.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/idset.hpp>
 #include <cstdlib>
 #include <cstring>
@@ -1379,14 +1380,17 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 /* only be called under content sync */
 static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 {
-	BINARY *pbin1;
-	BINARY *pbin2;
+	BINARY *pbin1 = nullptr, *pbin2 = nullptr;
+	auto cl_0 = gromox::make_scope_exit([&]() {
+		if (pbin1 != nullptr)
+			rop_util_free_binary(pbin1);
+		if (pbin2 != nullptr)
+			rop_util_free_binary(pbin2);
+	});
 	IDSET *pidset;
 	TPROPVAL_ARRAY proplist;
 	TAGGED_PROPVAL tmp_propvals[2];
 	
-	pbin1 = NULL;
-	pbin2 = NULL;
 	proplist.count = 0;
 	proplist.ppropval = tmp_propvals;
 	if (pctx->pread_messags->count > 0) {
@@ -1413,27 +1417,18 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 	if (pctx->punread_messags->count > 0) {
 		pidset = idset_init(TRUE, REPL_TYPE_ID);
 		if (NULL == pidset) {
-			if (NULL != pbin1) {
-				rop_util_free_binary(pbin1);
-			}
 			return FALSE;
 		}
 		for (size_t i = 0; i < pctx->punread_messags->count; ++i) {
 			if (FALSE == idset_append(pidset,
 				pctx->punread_messags->pids[i])) {
 				idset_free(pidset);
-				if (NULL != pbin1) {
-					rop_util_free_binary(pbin1);
-				}
 				return FALSE;
 			}
 		}
 		pbin2 = idset_serialize(pidset);
 		idset_free(pidset);
 		if (NULL == pbin2) {
-			if (NULL != pbin1) {
-				rop_util_free_binary(pbin1);
-			}
 			return FALSE;
 		}
 		proplist.ppropval[proplist.count].proptag =
@@ -1444,19 +1439,7 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 		return TRUE;
 	}
 	if (!pctx->pstream->write_readstatechanges(&proplist)) {
-		if (NULL != pbin1) {
-			rop_util_free_binary(pbin1);
-		}
-		if (NULL != pbin2) {
-			rop_util_free_binary(pbin2);
-		}
 		return FALSE;
-	}
-	if (NULL != pbin1) {
-		rop_util_free_binary(pbin1);
-	}
-	if (NULL != pbin2) {
-		rop_util_free_binary(pbin2);
 	}
 	return TRUE;
 }
