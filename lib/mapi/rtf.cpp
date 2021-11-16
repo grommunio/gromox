@@ -3148,34 +3148,14 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 				free(tmp_bin.pv);
 				return -EINVAL;
 			}
-			auto ret = pattachment->proplist.set(PR_ATTACH_MIME_TAG, img_ctype);
-			if (ret != 0) {
-				free(tmp_bin.pv);
-				return ret;
-			}
-			ret = pattachment->proplist.set(PR_ATTACH_CONTENT_ID, cid_name);
-			if (ret != 0) {
-				free(tmp_bin.pv);
-				return ret;
-			}
-			ret = pattachment->proplist.set(PR_ATTACH_EXTENSION, pext);
-			if (ret != 0) {
-				free(tmp_bin.pv);
-				return ret;
-			}
-			ret = pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, picture_name);
-			if (ret != 0) {
-				free(tmp_bin.pv);
-				return ret;
-			}
+			int ret;
 			tmp_int32 = ATTACH_FLAG_RENDEREDINBODY;
-			ret = pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32);
-			if (ret != 0) {
-				free(tmp_bin.pv);
-				return ret;
-			}
-			ret = pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin);
-			if (ret != 0) {
+			if ((ret = pattachment->proplist.set(PR_ATTACH_MIME_TAG, img_ctype)) != 0 ||
+			    (ret = pattachment->proplist.set(PR_ATTACH_CONTENT_ID, cid_name)) != 0 ||
+			    (ret = pattachment->proplist.set(PR_ATTACH_EXTENSION, pext)) != 0 ||
+			    (ret = pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, picture_name)) != 0 ||
+			    (ret = pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32)) != 0 ||
+			    (ret = pattachment->proplist.set(PR_ATTACH_DATA_BIN, &tmp_bin)) != 0) {
 				free(tmp_bin.pv);
 				return ret;
 			}

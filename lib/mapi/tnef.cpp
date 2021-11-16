@@ -932,9 +932,8 @@ static BOOL tnef_set_attribute_address(TPROPVAL_ARRAY *pproplist,
 	}
 	*ptr = '\0';
 	ptr ++;
-	if (pproplist->set(proptag2, paddr->address) != 0)
-		return FALSE;
-	return pproplist->set(proptag3, ptr) == 0 ? TRUE : false;
+	return pproplist->set(proptag2, paddr->address) == 0 &&
+	       pproplist->set(proptag3, ptr) == 0 ? TRUE : false;
 }
 
 static void tnef_convert_from_propname(const PROPERTY_NAME *ppropname,
@@ -1257,10 +1256,8 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			auto count = tf->count;
 			for (size_t i = 0; i < count; ++i) {
 				auto ptnef_propval = &tf->ppropval[i];
-				if (!rec_namedprop(phash, last_propid, ptnef_propval)) {
-					return nullptr;
-				}
-				if (pmsg->proplist.set(PROP_TAG(ptnef_propval->proptype,
+				if (!rec_namedprop(phash, last_propid, ptnef_propval) ||
+				    pmsg->proplist.set(PROP_TAG(ptnef_propval->proptype,
 				    ptnef_propval->propid), ptnef_propval->pvalue) != 0)
 					return NULL;
 			}
@@ -1338,10 +1335,9 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 					tmp_int32 |= MSGFLAG_UNSENT;
 				if (*bv->pb & FMS_SUBMITTED)
 					tmp_int32 |= MSGFLAG_SUBMITTED;
-				if (0 != tmp_int32) {
-					if (pmsg->proplist.set(PR_MESSAGE_FLAGS, &tmp_int32) != 0)
-						return NULL;
-				}
+				if (tmp_int32 != 0 &&
+				    pmsg->proplist.set(PR_MESSAGE_FLAGS, &tmp_int32) != 0)
+					return NULL;
 			}
 			break;
 		}
@@ -1354,14 +1350,10 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			tmp_bin.cb = strlen(static_cast<char *>(attribute.pvalue)) / 2;
 			if (tmp_bin.cb > 0) { 
 				tmp_bin.pv = alloc(tmp_bin.cb);
-				if (tmp_bin.pv == nullptr) {
-					return NULL;
-				}
-				if (!decode_hex_binary(static_cast<char *>(attribute.pvalue),
-				    tmp_bin.pv, tmp_bin.cb)) {
-					return NULL;
-				}
-				if (pmsg->proplist.set(PR_SEARCH_KEY, &tmp_bin) != 0)
+				if (tmp_bin.pv == nullptr ||
+				    !decode_hex_binary(static_cast<char *>(attribute.pvalue),
+				    tmp_bin.pv, tmp_bin.cb) ||
+				    pmsg->proplist.set(PR_SEARCH_KEY, &tmp_bin) != 0)
 					return NULL;
 			}
 			break;
@@ -1415,10 +1407,8 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				}
 				for (size_t j = 0; j < ptnef_proplist->count; ++j) {
 					auto ptnef_propval = ptnef_proplist->ppropval + j;
-					if (!rec_namedprop(phash, last_propid, ptnef_propval)) {
-						return nullptr;
-					}
-					if (pproplist->set(PROP_TAG(ptnef_propval->proptype,
+					if (!rec_namedprop(phash, last_propid, ptnef_propval) ||
+					    pproplist->set(PROP_TAG(ptnef_propval->proptype,
 					    ptnef_propval->propid), ptnef_propval->pvalue) != 0)
 						return NULL;
 				}
@@ -1428,11 +1418,8 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				if (NULL != psmtp) {
 					tmp_bin.cb = 0;
 					tmp_bin.pb = tmp_buff;
-					if (FALSE == username_to_entryid(psmtp,
-						pdisplay_name, &tmp_bin, NULL)) {
-						return NULL;
-					}
-					if (pproplist->set(PR_ENTRYID, &tmp_bin) != 0)
+					if (!username_to_entryid(psmtp, pdisplay_name, &tmp_bin, nullptr) ||
+					    pproplist->set(PR_ENTRYID, &tmp_bin) != 0)
 						return NULL;
 				}
 			}
@@ -1504,10 +1491,8 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				         pattachment, ptnef_propval);
 				if (r == X_CONTINUE)
 					continue;
-				if (r == X_ERROR) {
-					return nullptr;
-				}
-				if (pattachment->proplist.set(PROP_TAG(ptnef_propval->proptype,
+				if (r == X_ERROR ||
+				    pattachment->proplist.set(PROP_TAG(ptnef_propval->proptype,
 				    ptnef_propval->propid), ptnef_propval->pvalue) != 0)
 					return NULL;
 			}

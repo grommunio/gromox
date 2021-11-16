@@ -568,10 +568,9 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 			    pproplist->set(PR_EMAIL_ADDRESS, essdn) != 0)
 				return FALSE;
 		}
-		if (pproplist->set(PR_SMTP_ADDRESS, username) != 0)
-			return FALSE;
 		tmp_bin.pc = tmp_buff;
-		if (pproplist->set(PR_SEARCH_KEY, &tmp_bin) != 0)
+		if (pproplist->set(PR_SMTP_ADDRESS, username) != 0 ||
+		    pproplist->set(PR_SEARCH_KEY, &tmp_bin) != 0)
 			return FALSE;
 		tmp_bin.cb = 0;
 		tmp_bin.pc = tmp_buff;
@@ -3405,16 +3404,13 @@ static bool oxcmail_enum_mdn(const char *tag,
 	auto mcparam = static_cast<MESSAGE_CONTENT *>(pparam);
 	
 	if (0 == strcasecmp(tag, "Original-Recipient")) {
-		if (0 == strncasecmp(value, "rfc822;", 7)) {
-			if (mcparam->proplist.set(PROP_TAG_ORIGINALDISPLAYTO, value + 7) != 0)
-				return false;
-		}
+		if (strncasecmp(value, "rfc822;", 7) == 0 &&
+		    mcparam->proplist.set(PROP_TAG_ORIGINALDISPLAYTO, value + 7) != 0)
+			return false;
 	} else if (0 == strcasecmp(tag, "Final-Recipient")) {
-		if (0 == strncasecmp(value, "rfc822;", 7)) {
-			if (!static_cast<MESSAGE_CONTENT *>(pparam)->proplist.has(PROP_TAG_ORIGINALDISPLAYTO)) {
-				return mcparam->proplist.set(PROP_TAG_ORIGINALDISPLAYTO, value + 7) == 0;
-			}
-		}
+		if (strncasecmp(value, "rfc822;", 7) == 0 &&
+		    !static_cast<MESSAGE_CONTENT *>(pparam)->proplist.has(PROP_TAG_ORIGINALDISPLAYTO))
+			return mcparam->proplist.set(PROP_TAG_ORIGINALDISPLAYTO, value + 7) == 0;
 	} else if (0 == strcasecmp(tag, "Disposition")) {
 		auto ptoken2 = strchr(value, ';');
 		if (ptoken2 == nullptr)
@@ -3437,9 +3433,8 @@ static bool oxcmail_enum_mdn(const char *tag,
 		} else {
 			return true;
 		}
-		if (mcparam->proplist.set(PR_MESSAGE_CLASS, tmp_buff) != 0)
-			return false;
-		return mcparam->proplist.set(PROP_TAG_REPORTTEXT, value) == 0;
+		return mcparam->proplist.set(PR_MESSAGE_CLASS, tmp_buff) == 0 &&
+		       mcparam->proplist.set(PROP_TAG_REPORTTEXT, value) == 0;
 	} else if (0 == strcasecmp(tag, "X-MSExch-Correlation-Key")) {
 		len = strlen(value);
 		if (len <= 1024 && 0 == decode64(value, len, tmp_buff, &len)) {
@@ -3448,9 +3443,8 @@ static bool oxcmail_enum_mdn(const char *tag,
 			return mcparam->proplist.set(PR_PARENT_KEY, &tmp_bin) == 0;
 		}
 	} else if (0 == strcasecmp(tag, "Original-Message-ID")) {
-		if (mcparam->proplist.set(PROP_TAG_ORIGINALMESSAGEID, value) != 0)
-			return false;
-		return mcparam->proplist.set(PROP_TAG_INTERNETREFERENCES, value) == 0;
+		return mcparam->proplist.set(PROP_TAG_ORIGINALMESSAGEID, value) == 0 &&
+		       mcparam->proplist.set(PROP_TAG_INTERNETREFERENCES, value) == 0;
 	} else if (0 == strcasecmp(tag, "X-Display-Name")) {
 		if (TRUE == mime_string_to_utf8("utf-8", value, tmp_buff)) {
 			return mcparam->proplist.set(PR_DISPLAY_NAME, tmp_buff) == 0;
@@ -3503,9 +3497,8 @@ static MIME* oxcmail_parse_mdn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 	}
 	dsn_free(&dsn);
 	pvalue = pmsg->proplist.getval(PROP_TAG_CLIENTSUBMITTIME);
-	if (pmsg->proplist.set(PROP_TAG_ORIGINALDELIVERYTIME, pvalue) != 0)
-		return NULL;
-	if (pmsg->proplist.set(PROP_TAG_RECEIPTTIME, pvalue) != 0)
+	if (pmsg->proplist.set(PROP_TAG_ORIGINALDELIVERYTIME, pvalue) != 0 ||
+	    pmsg->proplist.set(PROP_TAG_RECEIPTTIME, pvalue) != 0)
 		return NULL;
 	for (size_t i = 0; i < pmsg->children.prcpts->count; ++i)
 		if (pmsg->children.prcpts->pparray[i]->set(PROP_TAG_REPORTTIME, pvalue) != 0)
@@ -3526,9 +3519,8 @@ static BOOL oxcmail_parse_encrypted(MIME *phead, uint16_t *plast_propid,
 	rop_util_get_common_pset(PS_INTERNET_HEADERS, &propname.guid);
 	propname.kind = MNID_STRING;
 	propname.pname = deconst("Content-Type");
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
-		return FALSE;
-	if (pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), tmp_buff) != 0)
+	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0 ||
+	    pmsg->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), tmp_buff) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	return TRUE;
@@ -3602,17 +3594,12 @@ static BOOL oxcmail_parse_smime_message(
 	}
 	free(pcontent);
 	tmp_int32 = ATTACH_BY_VALUE;
-	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0)
-		return FALSE;
-	if (pattachment->proplist.set(PR_ATTACH_MIME_TAG, content_type) != 0)
-		return FALSE;
-	if (pattachment->proplist.set(PR_ATTACH_EXTENSION, ".p7m") != 0)
-		return FALSE;
-	if (pattachment->proplist.set(PR_ATTACH_FILENAME, "SMIME.p7m") != 0)
-		return FALSE;
-	if (pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, "SMIME.p7m") != 0)
-		return FALSE;
-	if (pattachment->proplist.set(PR_DISPLAY_NAME, "SMIME.p7m") != 0)
+	if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) != 0 ||
+	    pattachment->proplist.set(PR_ATTACH_MIME_TAG, content_type) != 0 ||
+	    pattachment->proplist.set(PR_ATTACH_EXTENSION, ".p7m") != 0 ||
+	    pattachment->proplist.set(PR_ATTACH_FILENAME, "SMIME.p7m") != 0 ||
+	    pattachment->proplist.set(PR_ATTACH_LONG_FILENAME, "SMIME.p7m") != 0 ||
+	    pattachment->proplist.set(PR_DISPLAY_NAME, "SMIME.p7m") != 0)
 		return FALSE;
 	return TRUE;
 }
@@ -3751,11 +3738,8 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	} else {
 		mime_enum.nttime_stamp = *(uint64_t*)pvalue;
 	}
-	if (pmsg->proplist.set(PR_CREATION_TIME, &mime_enum.nttime_stamp) != 0) {
-		message_content_free(pmsg);
-		return NULL;
-	}
-	if (pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &mime_enum.nttime_stamp) != 0) {
+	if (pmsg->proplist.set(PR_CREATION_TIME, &mime_enum.nttime_stamp) != 0 ||
+	    pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &mime_enum.nttime_stamp) != 0) {
 		message_content_free(pmsg);
 		return NULL;
 	}
@@ -3877,12 +3861,8 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		mime_get_content_type(phead)) ||
 		0 == strcasecmp("application/x-pkcs7-mime",
 		mime_get_content_type(phead))) {
-		if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Note.SMIME") != 0) {
-			message_content_free(pmsg);
-			return NULL;
-		}
-		if (FALSE == oxcmail_parse_encrypted(phead,
-			&field_param.last_propid, phash, pmsg)) {
+		if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Note.SMIME") != 0 ||
+		    !oxcmail_parse_encrypted(phead, &field_param.last_propid, phash, pmsg)) {
 			message_content_free(pmsg);
 			return NULL;
 		}
