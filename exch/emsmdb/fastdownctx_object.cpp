@@ -389,24 +389,22 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 			if (NULL == pmsgctnt) {
 				continue;
 			}
-			if (NULL == pctx->pmsglst) {
-				if (FALSE == pctx->b_chginfo) {
-					static constexpr uint32_t tags[] = {
-						PR_ENTRYID, PR_SOURCE_KEY,
-						PR_CHANGE_KEY,
-						PR_ORIGINAL_ENTRYID,
-						PR_LAST_MODIFICATION_TIME,
-						PR_PREDECESSOR_CHANGE_LIST,
-					};
-					for (auto t : tags)
-						common_util_remove_propvals(&pmsgctnt->proplist, t);
-				} else {
-					common_util_remove_propvals(&pmsgctnt->proplist, PR_ORIGINAL_ENTRYID);
-					common_util_retag_propvals(&pmsgctnt->proplist,
-						PR_ENTRYID, PR_ORIGINAL_ENTRYID);
-				}
-			} else {
+			if (pctx->pmsglst != nullptr) {
 				common_util_remove_propvals(&pmsgctnt->proplist, PR_ENTRYID);
+			} else if (!pctx->b_chginfo) {
+				static constexpr uint32_t tags[] = {
+					PR_ENTRYID, PR_SOURCE_KEY,
+					PR_CHANGE_KEY,
+					PR_ORIGINAL_ENTRYID,
+					PR_LAST_MODIFICATION_TIME,
+					PR_PREDECESSOR_CHANGE_LIST,
+				};
+				for (auto t : tags)
+					common_util_remove_propvals(&pmsgctnt->proplist, t);
+			} else {
+				common_util_remove_propvals(&pmsgctnt->proplist, PR_ORIGINAL_ENTRYID);
+				common_util_retag_propvals(&pmsgctnt->proplist,
+					PR_ENTRYID, PR_ORIGINAL_ENTRYID);
 			}
 			if (!pctx->pstream->write_message(pmsgctnt)) {
 				free(pnode->pdata);
