@@ -21,14 +21,14 @@ static const uint32_t g_n_proptags[] =
 	PR_DISPLAY_NAME_PREFIX, PROP_TAG_GENERATION};
 static const uint32_t g_workaddr_proptags[] =
 	{0x8000001F, 0x8001001F, 0x8002001F, 0x8003001F, 0x8004001F, 0x8005001F};
-static const uint32_t g_homeaddr_proptags[] =
-	{PROP_TAG_HOMEADDRESSPOSTOFFICEBOX, PROP_TAG_HOMEADDRESSSTREET,
-	PROP_TAG_HOMEADDRESSCITY, PROP_TAG_HOMEADDRESSSTATEORPROVINCE,
-	PROP_TAG_HOMEADDRESSPOSTALCODE, PROP_TAG_HOMEADDRESSCOUNTRY};
-static const uint32_t g_otheraddr_proptags[] =
-	{PROP_TAG_OTHERADDRESSPOSTOFFICEBOX, PROP_TAG_OTHERADDRESSSTREET,
-	PROP_TAG_OTHERADDRESSCITY, PROP_TAG_OTHERADDRESSSTATEORPROVINCE,
-	PROP_TAG_OTHERADDRESSPOSTALCODE, PROP_TAG_OTHERADDRESSCOUNTRY};
+static constexpr uint32_t g_homeaddr_proptags[] =
+	{PR_HOME_ADDRESS_POST_OFFICE_BOX, PR_HOME_ADDRESS_STREET,
+	PR_HOME_ADDRESS_CITY, PR_HOME_ADDRESS_STATE_OR_PROVINCE,
+	PR_HOME_ADDRESS_POSTAL_CODE, PR_HOME_ADDRESS_COUNTRY};
+static constexpr uint32_t g_otheraddr_proptags[] =
+	{PR_OTHER_ADDRESS_POST_OFFICE_BOX, PR_OTHER_ADDRESS_STREET,
+	PR_OTHER_ADDRESS_CITY, PR_OTHER_ADDRESS_STATE_OR_PROVINCE,
+	PR_OTHER_ADDRESS_POSTAL_CODE, PR_OTHER_ADDRESS_COUNTRY};
 static const uint32_t g_email_proptags[] =
 	{0x8006001F, 0x8007001F, 0x8008001F};
 static const uint32_t g_im_proptag = 0x8009001F;
@@ -383,7 +383,7 @@ MESSAGE_CONTENT* oxvcard_import(
 					      PR_HOME_TELEPHONE_NUMBER;
 				} else if (0 == strcasecmp(((VCARD_PARAM*)
 					pnode1->pdata)->name, "fax")) {
-					tag = PROP_TAG_HOMEFAXNUMBER;
+					tag = PR_HOME_FAX_NUMBER;
 				} else {
 					goto IMPORT_FAILURE;
 				}
@@ -398,7 +398,7 @@ MESSAGE_CONTENT* oxvcard_import(
 					      PR_BUSINESS_TELEPHONE_NUMBER;
 				} else if (0 == strcasecmp(((VCARD_PARAM*)
 					pnode1->pdata)->name, "fax")) {
-					tag = PROP_TAG_BUSINESSFAXNUMBER;
+					tag = PR_BUSINESS_FAX_NUMBER;
 				} else {
 					goto IMPORT_FAILURE;
 				}
@@ -522,7 +522,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			if (strcasecmp(keyword, "home") == 0) {
 				tag = PROP_TAG_PERSONALHOMEPAGE;
 			} else if (strcasecmp(keyword, "work") == 0) {
-				tag = PROP_TAG_BUSINESSHOMEPAGE;
+				tag = PR_BUSINESS_HOME_PAGE;
 			} else {
 				continue;
 			}
@@ -1116,7 +1116,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		}
 	}
 	
-	pvalue = pmsg->proplist.get<char>(PROP_TAG_HOMEFAXNUMBER);
+	pvalue = pmsg->proplist.get<char>(PR_HOME_FAX_NUMBER);
 	if (NULL != pvalue) {
 			pvline = vcard_new_line("TEL");
 		if (NULL == pvline) {
@@ -1146,7 +1146,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		}
 	}
 	
-	pvalue = pmsg->proplist.get<char>(PROP_TAG_BUSINESSFAXNUMBER);
+	pvalue = pmsg->proplist.get<char>(PR_BUSINESS_FAX_NUMBER);
 	if (NULL != pvalue) {
 			pvline = vcard_new_line("TEL");
 		if (NULL == pvline) {
@@ -1229,7 +1229,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		}
 	}
 	
-	pvalue = pmsg->proplist.get<char>(PROP_TAG_BUSINESSHOMEPAGE);
+	pvalue = pmsg->proplist.get<char>(PR_BUSINESS_HOME_PAGE);
 	if (NULL != pvalue) {
 		pvline = vcard_new_line("URL");
 		if (NULL == pvline) {

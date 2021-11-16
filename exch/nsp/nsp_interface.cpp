@@ -1921,7 +1921,7 @@ static int nsp_interface_get_default_proptags(int node_type,
 		t[z++] = U(PROP_TAG_TITLE);
 		t[z++] = U(PR_PRIMARY_TELEPHONE_NUMBER);
 		t[z++] = U(PR_MOBILE_TELEPHONE_NUMBER);
-		t[z++] = U(PROP_TAG_HOMEADDRESSSTREET);
+		t[z++] = U(PR_HOME_ADDRESS_STREET);
 		t[z++] = U(PR_COMMENT);
 		t[z++] = U(PROP_TAG_COMPANYNAME);
 		t[z++] = U(PROP_TAG_DEPARTMENTNAME);
@@ -2659,7 +2659,7 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	t[3] = U(PR_BUSINESS_TELEPHONE_NUMBER);
 	t[4] = U(PR_PRIMARY_TELEPHONE_NUMBER);
 	t[5] = U(PR_MOBILE_TELEPHONE_NUMBER);
-	t[6] = U(PROP_TAG_HOMEADDRESSSTREET);
+	t[6] = U(PR_HOME_ADDRESS_STREET);
 	t[7] = U(PR_COMMENT);
 	t[8] = U(PROP_TAG_COMPANYNAME);
 	t[9] = U(PROP_TAG_DEPARTMENTNAME);
