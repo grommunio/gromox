@@ -909,6 +909,14 @@ enum {
 	RIGHT_AUTOUPDATE_DENIED = 1U << 3,
 };
 
+struct eid_t {
+	eid_t() = default;
+	constexpr eid_t(uint64_t v) : m_value(v) {}
+	constexpr operator uint64_t() const { return m_value; }
+	void operator=(uint64_t) = delete;
+	uint64_t m_value;
+};
+
 struct ACTION_BLOCK {
 	uint16_t length;
 	uint8_t type;

@@ -30,13 +30,13 @@ enum {
 	PSETID__MAX,
 };
 
-uint16_t rop_util_get_replid(uint64_t eid);
-extern uint64_t rop_util_get_gc_value(uint64_t eid);
-extern GLOBCNT rop_util_get_gc_array(uint64_t eid);
-extern GLOBCNT rop_util_value_to_gc(uint64_t value);
+extern uint16_t rop_util_get_replid(eid_t);
+extern uint64_t rop_util_get_gc_value(eid_t);
+extern GLOBCNT rop_util_get_gc_array(eid_t);
+extern GLOBCNT rop_util_value_to_gc(uint64_t);
 extern uint64_t rop_util_gc_to_value(GLOBCNT);
-extern uint64_t rop_util_make_eid(uint16_t replid, GLOBCNT);
-uint64_t rop_util_make_eid_ex(uint16_t replid, uint64_t value);
+extern eid_t rop_util_make_eid(uint16_t replid, GLOBCNT);
+extern eid_t rop_util_make_eid_ex(uint16_t replid, uint64_t value);
 GUID rop_util_make_user_guid(int user_id);
 GUID rop_util_make_domain_guid(int domain_id);
 extern GX_EXPORT int rop_util_get_user_id(GUID);

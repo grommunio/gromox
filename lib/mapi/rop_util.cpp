@@ -21,7 +21,7 @@ static uint8_t rop_util_is_little_endian()
 	return *py;
 }
 
-uint16_t rop_util_get_replid(uint64_t eid)
+uint16_t rop_util_get_replid(eid_t eid)
 {
 	/* replid is kept in host-endian, see rop_util_make_eid for detail */
 	return eid & 0xFFFF;
@@ -30,7 +30,7 @@ uint16_t rop_util_get_replid(uint64_t eid)
 /**
  * The reverse of rop_util_make_eid, see there for details.
  */
-uint64_t rop_util_get_gc_value(uint64_t eid)
+uint64_t rop_util_get_gc_value(eid_t eid)
 {
 	return rop_util_gc_to_value(rop_util_get_gc_array(eid));
 }
@@ -38,7 +38,7 @@ uint64_t rop_util_get_gc_value(uint64_t eid)
 /**
  * Extract the GC portion of a value produced by rop_util_make_eid.
  */
-GLOBCNT rop_util_get_gc_array(uint64_t eid)
+GLOBCNT rop_util_get_gc_array(eid_t eid)
 {
 	GLOBCNT gc;
 	if (rop_util_is_little_endian()) {
@@ -111,9 +111,9 @@ uint64_t rop_util_gc_to_value(GLOBCNT gc)
  * number. Consumers such as message_object.cpp:common_util_to_folder_entryid
  * just deconstruct it again for PR_RECORD_KEY.
  */
-uint64_t rop_util_make_eid(uint16_t replid, GLOBCNT gc)
+eid_t rop_util_make_eid(uint16_t replid, GLOBCNT gc)
 {
-	uint64_t eid;
+	eid_t eid;
 	auto e = reinterpret_cast<uint8_t *>(&eid);
 	
 	if (rop_util_is_little_endian()) {
@@ -128,7 +128,7 @@ uint64_t rop_util_make_eid(uint16_t replid, GLOBCNT gc)
 	return (eid | replid);
 }
 
-uint64_t rop_util_make_eid_ex(uint16_t replid, uint64_t value)
+eid_t rop_util_make_eid_ex(uint16_t replid, uint64_t value)
 {
 	return rop_util_make_eid(replid, rop_util_value_to_gc(value));
 }
