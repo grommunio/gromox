@@ -3276,38 +3276,20 @@ static BOOL message_make_deferred_action_message(const char *username,
 		return FALSE;
 	}
 	nt_time = rop_util_current_nttime();
-	if (pmsg->proplist.set(PROP_TAG_CLIENTSUBMITTIME, &nt_time) != 0) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
-	if (pmsg->proplist.set(PR_CREATION_TIME, &nt_time) != 0) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
-	if (pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &nt_time) != 0) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
-	if (pmsg->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME, &nt_time) != 0) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
-	if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPC.Microsoft Exchange 4.0.Deferred Action") != 0) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
 	tmp_byte = 0;
-	if (pmsg->proplist.set(PROP_TAG_DAMBACKPATCHED, &tmp_byte) != 0) {
+	if (pmsg->proplist.set(PROP_TAG_CLIENTSUBMITTIME, &nt_time) != 0 ||
+	    pmsg->proplist.set(PR_CREATION_TIME, &nt_time) != 0 ||
+	    pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &nt_time) != 0 ||
+	    pmsg->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME, &nt_time) != 0 ||
+	    pmsg->proplist.set(PR_MESSAGE_CLASS, "IPC.Microsoft Exchange 4.0.Deferred Action") != 0 ||
+	    pmsg->proplist.set(PROP_TAG_DAMBACKPATCHED, &tmp_byte) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	auto pvalue = common_util_to_private_message_entryid(
 					psqlite, username, folder_id, message_id);
-	if (pvalue == nullptr) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
-	if (pmsg->proplist.set(PR_DAM_ORIGINAL_ENTRYID, pvalue) != 0) {
+	if (pvalue == nullptr ||
+	    pmsg->proplist.set(PR_DAM_ORIGINAL_ENTRYID, pvalue) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
@@ -3315,26 +3297,17 @@ static BOOL message_make_deferred_action_message(const char *username,
 	svreid.folder_id = rop_util_make_eid_ex(1, folder_id);
 	svreid.message_id = rop_util_make_eid_ex(1, message_id);
 	svreid.instance = 0;
-	if (pmsg->proplist.set(PR_DAM_ORIG_MSG_SVREID, &svreid) != 0) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
 	tmp_eid = rop_util_make_eid_ex(1, folder_id);
-	if (pmsg->proplist.set(PR_RULE_FOLDER_FID, &tmp_eid) != 0) {
+	if (pmsg->proplist.set(PR_DAM_ORIG_MSG_SVREID, &svreid) != 0 ||
+	    pmsg->proplist.set(PR_RULE_FOLDER_FID, &tmp_eid) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
 	pvalue = common_util_to_private_folder_entryid(
 							psqlite, username, folder_id);
-	if (pvalue == nullptr) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
-	if (pmsg->proplist.set(PR_RULE_FOLDER_ENTRYID, pvalue) != 0) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
-	if (pmsg->proplist.set(PR_RULE_PROVIDER, provider) != 0) {
+	if (pvalue == nullptr ||
+	    pmsg->proplist.set(PR_RULE_FOLDER_ENTRYID, pvalue) != 0 ||
+	    pmsg->proplist.set(PR_RULE_PROVIDER, provider) != 0) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
@@ -3372,12 +3345,9 @@ static BOOL message_make_deferred_action_message(const char *username,
 	}
 	tmp_bin.pv = tmp_ids;
 	tmp_bin.cb = sizeof(uint64_t)*id_count;
-	if (pmsg->proplist.set(PR_RULE_IDS, &tmp_bin) != 0) {
-		message_content_free(pmsg);
-		return FALSE;
-	}
-	if (FALSE == message_write_message(FALSE, psqlite, username,
-		0, FALSE, PRIVATE_FID_DEFERRED_ACTION, pmsg, &mid_val)) {
+	if (pmsg->proplist.set(PR_RULE_IDS, &tmp_bin) != 0 ||
+	    !message_write_message(FALSE, psqlite, username, 0, false,
+	    PRIVATE_FID_DEFERRED_ACTION, pmsg, &mid_val)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}

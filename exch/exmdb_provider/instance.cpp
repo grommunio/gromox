@@ -1597,23 +1597,20 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 			if (common_util_parse_addressbook_entryid(pbin,
 			    address_type, GX_ARRAY_SIZE(address_type),
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
-				if (pmsgctnt->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, address_type) != 0)
-					return FALSE;
-				if (pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, tmp_buff) != 0)
+				if (pmsgctnt->proplist.set(PR_SENT_REPRESENTING_ADDRTYPE, address_type) != 0 ||
+				    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, tmp_buff) != 0)
 					return FALSE;
 			}
 		} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
 			if (common_util_addressbook_entryid_to_essdn(pbin,
-			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
-				if (pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, tmp_buff) != 0)
-					return FALSE;
-			}
+			    tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
+			    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, tmp_buff) != 0)
+				return FALSE;
 		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
 			if (common_util_addressbook_entryid_to_username(pbin,
-			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
-				if (pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, tmp_buff) != 0)
-					return FALSE;
-			}
+			    tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
+			    pmsgctnt->proplist.set(PR_SENT_REPRESENTING_EMAIL_ADDRESS, tmp_buff) != 0)
+				return FALSE;
 		}
 	}
 	pbin = pmsgctnt->proplist.get<BINARY>(PR_SENDER_ENTRYID);
@@ -1623,23 +1620,20 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 			if (common_util_parse_addressbook_entryid(pbin,
 			    address_type, GX_ARRAY_SIZE(address_type),
 			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
-				if (pmsgctnt->proplist.set(PR_SENDER_ADDRTYPE, address_type) != 0)
-					return FALSE;
-				if (pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, tmp_buff) != 0)
+				if (pmsgctnt->proplist.set(PR_SENDER_ADDRTYPE, address_type) != 0 ||
+				    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, tmp_buff) != 0)
 					return FALSE;
 			}
 		} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
 			if (common_util_addressbook_entryid_to_essdn(pbin,
-			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
-				if (pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, tmp_buff) != 0)
-					return FALSE;
-			}
+			    tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
+			    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, tmp_buff) != 0)
+				return FALSE;
 		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
 			if (common_util_addressbook_entryid_to_username(pbin,
-			    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
-				if (pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, tmp_buff) != 0)
-					return FALSE;
-			}
+			    tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
+			    pmsgctnt->proplist.set(PR_SENDER_EMAIL_ADDRESS, tmp_buff) != 0)
+				return FALSE;
 		}
 	}
 	pinstance->b_new = FALSE;
@@ -3264,16 +3258,14 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 		tmp_byte = 1;
 		if (pattachment->proplist.set(PROP_TAG_INCONFLICT, &tmp_byte) != 0)
 			/* ignore; reevaluate another time */;
-	} else {
-		if (NULL == pmsg->children.pattachments) {
-			pattachments = attachment_list_init();
-			if (NULL == pattachments) {
-				return FALSE;
-			}
-			pmsg->children.pattachments = pattachments;
-		} else {
-			pattachments = pmsg->children.pattachments;
+	} else if (pmsg->children.pattachments == nullptr) {
+		pattachments = attachment_list_init();
+		if (NULL == pattachments) {
+			return FALSE;
 		}
+		pmsg->children.pattachments = pattachments;
+	} else {
+		pattachments = pmsg->children.pattachments;
 	}
 	pattachment = attachment_content_init();
 	if (NULL == pattachment) {
