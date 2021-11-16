@@ -64,17 +64,20 @@ template<> struct std::hash<GUID> {
 namespace {
 
 struct HANDLE_DATA {
-	GUID guid;
-	char username[UADDR_SIZE];
-	uint16_t cxr;
-	uint32_t last_handle;
-	EMSMDB_INFO info;
-	BOOL b_processing;	/* if the handle is processing rops */
-	BOOL b_occupied;	/* if the notify list is locked */
-	DOUBLE_LIST notify_list;
-	int rop_num;
-	uint16_t rop_left;	/* size left in rop response buffer */
-	time_t last_time;
+	HANDLE_DATA();
+	~HANDLE_DATA();
+
+	GUID guid{};
+	char username[UADDR_SIZE]{};
+	BOOL b_processing = false; /* if the handle is processing rops */
+	BOOL b_occupied = false; /* if the notify list is locked */
+	time_t last_time = 0;
+	uint32_t last_handle = 0;
+	int rop_num = 0;
+	uint16_t rop_left = 0; /* size left in rop response buffer */
+	uint16_t cxr = 0;
+	EMSMDB_INFO info{};
+	DOUBLE_LIST notify_list{};
 };
 
 struct NOTIFY_ITEM {
@@ -222,6 +225,16 @@ static BOOL emsmdb_interface_alloc_cxr(std::vector<HANDLE_DATA *> &plist,
 	return TRUE;
 }
 
+HANDLE_DATA::HANDLE_DATA() : guid(guid_random_new()), last_time(time(nullptr))
+{
+	double_list_init(&notify_list);
+}
+
+HANDLE_DATA::~HANDLE_DATA()
+{
+	double_list_free(&notify_list);
+}
+
 static BOOL emsmdb_interface_create_handle(const char *username,
 	uint16_t client_version[4], uint16_t client_mode, uint32_t cpid,
 	uint32_t lcid_string, uint32_t lcid_sort, uint16_t *pcxr, CXH *pcxh)
@@ -230,16 +243,11 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	
 	if (!common_util_verify_cpid(cpid))
 		return FALSE;
-	temp_handle.b_processing = FALSE;
-	temp_handle.b_occupied = FALSE;
-	temp_handle.guid = guid_random_new();
 	temp_handle.info.cpid = cpid;
 	temp_handle.info.lcid_string = lcid_string;
 	temp_handle.info.lcid_sort = lcid_sort;
 	memcpy(temp_handle.info.client_version, client_version, 4);
 	temp_handle.info.client_mode = client_mode;
-	temp_handle.info.upctx_ref = 0;
-	time(&temp_handle.last_time);
 	gx_strlcpy(temp_handle.username, username, GX_ARRAY_SIZE(temp_handle.username));
 	HX_strlower(temp_handle.username);
 	std::unique_lock gl_hold(g_lock);
@@ -255,7 +263,6 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 		fprintf(stderr, "E-1578: ENOMEM|n");
 		return false;
 	}
-	phandle->last_handle = 0;
 	auto plogmap = rop_processor_create_logmap();
 	if (NULL == plogmap) {
 		g_handle_hash.erase(temp_handle.guid);
@@ -303,7 +310,6 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	gl_hold.unlock();
 	pcxh->handle_type = HANDLE_EXCHANGE_EMSMDB;
 	pcxh->guid = temp_handle.guid;
-	double_list_init(&phandle->notify_list);
 	return TRUE;
 }
 
@@ -351,7 +357,6 @@ static void emsmdb_interface_remove_handle(CXH *pcxh)
 		free(pnode->pdata);
 		free(pnode);
 	}
-	double_list_free(&phandle->notify_list);
 	g_handle_hash.erase(pcxh->guid);
 	gl_hold.unlock();
 	rop_processor_release_logmap(plogmap);
