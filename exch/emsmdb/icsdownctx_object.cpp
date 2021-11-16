@@ -1465,38 +1465,24 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 static BOOL icsdownctx_object_write_state(icsdownctx_object *pctx)
 {
 	idset_clear(pctx->pstate->pseen);
-	if (pctx->sync_flags & SYNC_FLAG_NORMAL) {
-		if (0 != pctx->last_changenum) {
-			if (FALSE == idset_append_range(pctx->pstate->pseen, 1,
-				1, rop_util_get_gc_value(pctx->last_changenum))) {
-				return FALSE;
-			}
-		}
-	}
+	if (pctx->sync_flags & SYNC_FLAG_NORMAL && pctx->last_changenum != 0 &&
+	    !idset_append_range(pctx->pstate->pseen, 1, 1,
+	    rop_util_get_gc_value(pctx->last_changenum)))
+		return FALSE;
 	idset_clear(pctx->pstate->pseen_fai);
-	if (pctx->sync_flags & SYNC_FLAG_FAI) {
-		if (0 != pctx->last_changenum) {
-			if (FALSE == idset_append_range(pctx->pstate->pseen_fai,
-				1, 1, rop_util_get_gc_value(pctx->last_changenum))) {
-				return FALSE;
-			}
-		}
-	}
+	if (pctx->sync_flags & SYNC_FLAG_FAI && pctx->last_changenum != 0 &&
+	    !idset_append_range(pctx->pstate->pseen_fai, 1, 1,
+	    rop_util_get_gc_value(pctx->last_changenum)))
+		return FALSE;
 	idset_clear(pctx->pstate->pread);
 	if (pctx->sync_flags & SYNC_FLAG_READSTATE) {
 		if (0 == pctx->last_readcn) {
-			if (0 != pctx->last_changenum) {
-				if (FALSE == idset_append_range(
-					pctx->pstate->pread, 1, 1,
-					CHANGE_NUMBER_BEGIN - 1)) {
-					return FALSE;	
-				}
-			}
-		} else {
-			if (FALSE == idset_append_range(pctx->pstate->pread,
-				1, 1, rop_util_get_gc_value(pctx->last_readcn))) {
+			if (pctx->last_changenum != 0 &&
+			    !idset_append_range(pctx->pstate->pread, 1, 1, CHANGE_NUMBER_BEGIN - 1))
 				return FALSE;
-			}
+		} else if (!idset_append_range(pctx->pstate->pread, 1, 1,
+		    rop_util_get_gc_value(pctx->last_readcn))) {
+			return FALSE;
 		}
 	}
 	auto pproplist = pctx->pstate->serialize();
