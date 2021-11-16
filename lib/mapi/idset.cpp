@@ -101,7 +101,7 @@ void idset_free(IDSET *pset)
 	free(pset);
 }
 
-BOOL idset_check_empty(IDSET *pset)
+BOOL idset_check_empty(const IDSET *pset)
 {
 	if (0 == double_list_get_nodes_num(&pset->repl_list)) {
 		return TRUE;
@@ -552,14 +552,14 @@ static uint8_t idset_stack_get_common_bytes(DOUBLE_LIST *pstack, GLOBCNT &common
 	return common_length;
 }
 
-static BOOL idset_encoding_globset(BINARY *pbin, DOUBLE_LIST *pglobset)
+static BOOL idset_encoding_globset(BINARY *pbin, const DOUBLE_LIST *pglobset)
 {
 	int i;
 	uint8_t stack_length;
 	
 	if (1 == double_list_get_nodes_num(pglobset)) {
 		auto pnode = double_list_get_head(pglobset);
-		auto prange_node = static_cast<RANGE_NODE *>(pnode->pdata);
+		auto prange_node = static_cast<const RANGE_NODE *>(pnode->pdata);
 		auto common_bytes = rop_util_value_to_gc(prange_node->low_value);
 		if (prange_node->high_value == prange_node->low_value) {
 			if (!idset_encoding_push_command(pbin, 6, common_bytes.ab))
@@ -573,9 +573,9 @@ static BOOL idset_encoding_globset(BINARY *pbin, DOUBLE_LIST *pglobset)
 		return idset_encode_end_command(pbin);
 	}
 	auto pnode = double_list_get_head(pglobset);
-	auto low_value = reinterpret_cast<RANGE_NODE *>(pnode)->low_value;
+	auto low_value = reinterpret_cast<const RANGE_NODE *>(pnode)->low_value;
 	pnode = double_list_get_tail(pglobset);
-	auto high_value = reinterpret_cast<RANGE_NODE *>(pnode)->high_value;
+	auto high_value = reinterpret_cast<const RANGE_NODE *>(pnode)->high_value;
 	auto common_bytes = rop_util_value_to_gc(low_value);
 	auto common_bytes1 = rop_util_value_to_gc(high_value);
 	for (stack_length=0; stack_length<6; stack_length++) {
@@ -587,7 +587,7 @@ static BOOL idset_encoding_globset(BINARY *pbin, DOUBLE_LIST *pglobset)
 		return FALSE;
 	for (pnode=double_list_get_head(pglobset); NULL!=pnode;
 		pnode=double_list_get_after(pglobset, pnode)) {
-		auto prange_node = static_cast<RANGE_NODE *>(pnode->pdata);
+		auto prange_node = static_cast<const RANGE_NODE *>(pnode->pdata);
 		common_bytes = rop_util_value_to_gc(prange_node->low_value);
 		if (prange_node->high_value == prange_node->low_value) {
 			if (!idset_encoding_push_command(pbin,
@@ -646,11 +646,9 @@ static BOOL idset_write_guid(BINARY *pbin, const GUID *pguid)
 	return TRUE;
 }
 
-BINARY* idset_serialize_replid(IDSET *pset)
+BINARY *idset_serialize_replid(const IDSET *pset)
 {
 	BINARY *pbin;
-	REPLID_NODE *prepl_node;
-	DOUBLE_LIST_NODE *pnode;
 	
 	if (FALSE == pset->b_serialize) {
 		return NULL;
@@ -659,9 +657,9 @@ BINARY* idset_serialize_replid(IDSET *pset)
 	if (NULL == pbin) {
 		return NULL;
 	}
-	for (pnode=double_list_get_head(&pset->repl_list); NULL!=pnode;
+	for (auto pnode = double_list_get_head(&pset->repl_list); pnode != nullptr;
 		pnode=double_list_get_after(&pset->repl_list, pnode)) {
-		prepl_node = (REPLID_NODE*)pnode->pdata;
+		auto prepl_node = static_cast<const REPLID_NODE *>(pnode->pdata);
 		if (0 == double_list_get_nodes_num(&prepl_node->range_list)) {
 			continue;
 		}
@@ -677,12 +675,10 @@ BINARY* idset_serialize_replid(IDSET *pset)
 	return pbin;
 }
 
-BINARY* idset_serialize_replguid(IDSET *pset)
+BINARY *idset_serialize_replguid(const IDSET *pset)
 {
 	BINARY *pbin;
 	GUID tmp_guid;
-	REPLID_NODE *prepl_node;
-	DOUBLE_LIST_NODE *pnode;
 	
 	if (FALSE == pset->b_serialize) {
 		return NULL;
@@ -694,9 +690,9 @@ BINARY* idset_serialize_replguid(IDSET *pset)
 	if (NULL == pbin) {
 		return NULL;
 	}
-	for (pnode=double_list_get_head(&pset->repl_list); NULL!=pnode;
+	for (auto pnode = double_list_get_head(&pset->repl_list); pnode != nullptr;
 		pnode=double_list_get_after(&pset->repl_list, pnode)) {
-		prepl_node = (REPLID_NODE*)pnode->pdata;
+		auto prepl_node = static_cast<REPLID_NODE *>(pnode->pdata);
 		if (0 == double_list_get_nodes_num(&prepl_node->range_list)) {
 			continue;
 		}
@@ -717,7 +713,7 @@ BINARY* idset_serialize_replguid(IDSET *pset)
 	return pbin;
 }
 
-BINARY* idset_serialize(IDSET *pset)
+BINARY *idset_serialize(const IDSET *pset)
 {
 	if (REPL_TYPE_ID == pset->repl_type) {
 		return idset_serialize_replid(pset);

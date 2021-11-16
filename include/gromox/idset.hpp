@@ -7,16 +7,16 @@ BOOL idset_register_mapping(IDSET *pset,
 	BINARY *pparam, REPLICA_MAPPING mapping);
 void idset_free(IDSET *pset);
 void idset_clear(IDSET *pset);
-BOOL idset_check_empty(IDSET *pset);
+extern GX_EXPORT BOOL idset_check_empty(const IDSET *);
 BOOL idset_append(IDSET *pset, uint64_t eid);
 BOOL idset_append_range(IDSET *pset, uint16_t replid,
 	uint64_t low_value, uint64_t high_value);
 void idset_remove(IDSET *pset, uint64_t eid);
 BOOL idset_concatenate(IDSET *pset_dst, const IDSET *pset_src);
 BOOL idset_hint(IDSET *pset, uint64_t eid);
-BINARY* idset_serialize(IDSET *pset);
-BINARY* idset_serialize_replid(IDSET *pset);
-BINARY* idset_serialize_replguid(IDSET *pset);
+extern GX_EXPORT BINARY *idset_serialize(const IDSET *);
+extern GX_EXPORT BINARY *idset_serialize_replid(const IDSET *);
+extern GX_EXPORT BINARY *idset_serialize_replguid(const IDSET *);
 BOOL idset_deserialize(IDSET *pset, const BINARY *pbin);
 /* convert from deserialize idset into serialize idset */
 BOOL idset_convert(IDSET *pset);
