@@ -877,7 +877,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 		nt->pproptag[1] = PR_OBJECT_TYPE;
 		nt->pproptag[2] = PR_DISPLAY_TYPE;
 		nt->pproptag[3] = PR_DISPLAY_NAME_A;
-		nt->pproptag[4] = PROP_TAG_PRIMARYTELEPHONENUMBER_STRING8;
+		nt->pproptag[4] = PR_PRIMARY_TELEPHONE_NUMBER_A;
 		nt->pproptag[5] = PROP_TAG_DEPARTMENTNAME_STRING8;
 		nt->pproptag[6] = PROP_TAG_OFFICELOCATION_STRING8;
 	} else {
@@ -1091,7 +1091,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		nt->pproptag[1] = PR_OBJECT_TYPE;
 		nt->pproptag[2] = PR_DISPLAY_TYPE;
 		nt->pproptag[3] = PR_DISPLAY_NAME_A;
-		nt->pproptag[4] = PROP_TAG_PRIMARYTELEPHONENUMBER_STRING8;
+		nt->pproptag[4] = PR_PRIMARY_TELEPHONE_NUMBER_A;
 		nt->pproptag[5] = PROP_TAG_DEPARTMENTNAME_STRING8;
 		nt->pproptag[6] = PROP_TAG_OFFICELOCATION_STRING8;
 	} else {
@@ -1919,8 +1919,8 @@ static int nsp_interface_get_default_proptags(int node_type,
 	case NODE_TYPE_EQUIPMENT:
 		t[z++] = U(PROP_TAG_NICKNAME);
 		t[z++] = U(PROP_TAG_TITLE);
-		t[z++] = U(PROP_TAG_PRIMARYTELEPHONENUMBER);
-		t[z++] = U(PROP_TAG_MOBILETELEPHONENUMBER);
+		t[z++] = U(PR_PRIMARY_TELEPHONE_NUMBER);
+		t[z++] = U(PR_MOBILE_TELEPHONE_NUMBER);
 		t[z++] = U(PROP_TAG_HOMEADDRESSSTREET);
 		t[z++] = U(PR_COMMENT);
 		t[z++] = U(PROP_TAG_COMPANYNAME);
@@ -2656,9 +2656,9 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	t[0] = U(PR_DISPLAY_NAME);
 	t[1] = U(PROP_TAG_NICKNAME);
 	t[2] = U(PROP_TAG_TITLE);
-	t[3] = U(PROP_TAG_BUSINESSTELEPHONENUMBER);
-	t[4] = U(PROP_TAG_PRIMARYTELEPHONENUMBER);
-	t[5] = U(PROP_TAG_MOBILETELEPHONENUMBER);
+	t[3] = U(PR_BUSINESS_TELEPHONE_NUMBER);
+	t[4] = U(PR_PRIMARY_TELEPHONE_NUMBER);
+	t[5] = U(PR_MOBILE_TELEPHONE_NUMBER);
 	t[6] = U(PROP_TAG_HOMEADDRESSSTREET);
 	t[7] = U(PR_COMMENT);
 	t[8] = U(PROP_TAG_COMPANYNAME);
@@ -2924,7 +2924,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		nt->pproptag[1] = PR_OBJECT_TYPE;
 		nt->pproptag[2] = PR_DISPLAY_TYPE;
 		nt->pproptag[3] = PR_DISPLAY_NAME_A;
-		nt->pproptag[4] = PROP_TAG_PRIMARYTELEPHONENUMBER_STRING8;
+		nt->pproptag[4] = PR_PRIMARY_TELEPHONE_NUMBER_A;
 		nt->pproptag[5] = PROP_TAG_DEPARTMENTNAME_STRING8;
 		nt->pproptag[6] = PROP_TAG_OFFICELOCATION_STRING8;
 	} else {

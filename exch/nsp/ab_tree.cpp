@@ -1297,8 +1297,8 @@ void ab_tree_get_user_info(SIMPLE_TREE_NODE *pnode, int type, char *value, size_
 	case USER_REAL_NAME: tag = PR_DISPLAY_NAME; break;
 	case USER_JOB_TITLE: tag = PROP_TAG_TITLE; break;
 	case USER_COMMENT: tag = PR_COMMENT; break;
-	case USER_MOBILE_TEL: tag = PROP_TAG_MOBILETELEPHONENUMBER; break;
-	case USER_BUSINESS_TEL: tag = PROP_TAG_PRIMARYTELEPHONENUMBER; break;
+	case USER_MOBILE_TEL: tag = PR_MOBILE_TELEPHONE_NUMBER; break;
+	case USER_BUSINESS_TEL: tag = PR_PRIMARY_TELEPHONE_NUMBER; break;
 	case USER_NICK_NAME: tag = PROP_TAG_NICKNAME; break;
 	case USER_HOME_ADDRESS: tag = PROP_TAG_HOMEADDRESSSTREET; break;
 	case USER_CREATE_DAY: *value = '\0'; return;

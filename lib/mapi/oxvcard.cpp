@@ -378,9 +378,9 @@ MESSAGE_CONTENT* oxvcard_import(
 				pnode1 = double_list_get_after(
 					&pvline->param_list, pnode1);
 				if (NULL == pnode1) {
-					tag = pmsg->proplist.has(PROP_TAG_HOMETELEPHONENUMBER) ?
-					                  PROP_TAG_HOME2TELEPHONENUMBER :
-					                  PROP_TAG_HOMETELEPHONENUMBER;
+					tag = pmsg->proplist.has(PR_HOME_TELEPHONE_NUMBER) ?
+					      PR_HOME2_TELEPHONE_NUMBER :
+					      PR_HOME_TELEPHONE_NUMBER;
 				} else if (0 == strcasecmp(((VCARD_PARAM*)
 					pnode1->pdata)->name, "fax")) {
 					tag = PROP_TAG_HOMEFAXNUMBER;
@@ -388,14 +388,14 @@ MESSAGE_CONTENT* oxvcard_import(
 					goto IMPORT_FAILURE;
 				}
 			} else if (strcasecmp(keyword, "voice") == 0) {
-				tag = PROP_TAG_OTHERTELEPHONENUMBER;
+				tag = PR_OTHER_TELEPHONE_NUMBER;
 			} else if (strcasecmp(keyword, "work") == 0) {
 				pnode1 = double_list_get_after(
 					&pvline->param_list, pnode1);
 				if (NULL == pnode1) {
-					tag = pmsg->proplist.has(PROP_TAG_BUSINESSTELEPHONENUMBER) ?
-					                  PROP_TAG_BUSINESS2TELEPHONENUMBER :
-					                  PROP_TAG_BUSINESSTELEPHONENUMBER;
+					tag = pmsg->proplist.has(PR_BUSINESS_TELEPHONE_NUMBER) ?
+					      PR_BUSINESS2_TELEPHONE_NUMBER :
+					      PR_BUSINESS_TELEPHONE_NUMBER;
 				} else if (0 == strcasecmp(((VCARD_PARAM*)
 					pnode1->pdata)->name, "fax")) {
 					tag = PROP_TAG_BUSINESSFAXNUMBER;
@@ -403,15 +403,15 @@ MESSAGE_CONTENT* oxvcard_import(
 					goto IMPORT_FAILURE;
 				}
 			} else if (strcasecmp(keyword, "cell") == 0) {
-				tag = PROP_TAG_MOBILETELEPHONENUMBER;
+				tag = PR_MOBILE_TELEPHONE_NUMBER;
 			} else if (strcasecmp(keyword, "pager") == 0) {
-				tag = PROP_TAG_PAGERTELEPHONENUMBER;
+				tag = PR_PAGER_TELEPHONE_NUMBER;
 			} else if (strcasecmp(keyword, "car") == 0) {
-				tag = PROP_TAG_CARTELEPHONENUMBER;
+				tag = PR_CAR_TELEPHONE_NUMBER;
 			} else if (strcasecmp(keyword, "isdn") == 0) {
-				tag = PROP_TAG_ISDNNUMBER;
+				tag = PR_ISDN_NUMBER;
 			} else if (strcasecmp(keyword, "pref") == 0) {
-				tag = PROP_TAG_PRIMARYTELEPHONENUMBER;
+				tag = PR_PRIMARY_TELEPHONE_NUMBER;
 			} else {
 				continue;
 			}
@@ -618,15 +618,15 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			uint32_t tag;
 			if (0 == strcasecmp(pvparam->name, "ASSISTANT")) {
-				tag = PROP_TAG_ASSISTANTTELEPHONENUMBER;
+				tag = PR_ASSISTANT_TELEPHONE_NUMBER;
 			} else if (0 == strcasecmp(pvparam->name, "CALLBACK")) {
-				tag = PROP_TAG_CALLBACKTELEPHONENUMBER;
+				tag = PR_CALLBACK_TELEPHONE_NUMBER;
 			} else if (0 == strcasecmp(pvparam->name, "COMPANY")) {
-				tag = PROP_TAG_COMPANYMAINTELEPHONENUMBER;
+				tag = PR_COMPANY_MAIN_PHONE_NUMBER;
 			} else if (0 != strcasecmp(pvparam->name, "RADIO")) {
-				tag = PROP_TAG_RADIOTELEPHONENUMBER;
+				tag = PR_RADIO_TELEPHONE_NUMBER;
 			} else if (0 == strcasecmp(pvparam->name, "TTYTTD")) {
-				tag = PROP_TAG_TELECOMMUNICATIONSDEVICEFORDEAFTELEPHONENUMBER;
+				tag = PR_TTYTDD_PHONE_NUMBER;
 			} else {
 				goto IMPORT_FAILURE;
 			}
@@ -773,16 +773,16 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		"CELL", "PAGER", "CAR", "ISDN", "PREF"};
 	const char* ms_tel_types[] =
 		{"ASSISTANT", "CALLBACK", "COMPANY", "RADIO", "TTYTTD"};
-	uint32_t tel_proptags[] =
-		{PROP_TAG_HOMETELEPHONENUMBER, PROP_TAG_HOME2TELEPHONENUMBER,
-		PROP_TAG_OTHERTELEPHONENUMBER, PROP_TAG_BUSINESSTELEPHONENUMBER,
-		PROP_TAG_BUSINESS2TELEPHONENUMBER, PROP_TAG_MOBILETELEPHONENUMBER,
-		PROP_TAG_PAGERTELEPHONENUMBER, PROP_TAG_CARTELEPHONENUMBER,
-		PROP_TAG_ISDNNUMBER, PROP_TAG_PRIMARYTELEPHONENUMBER};
-	uint32_t ms_tel_proptags[] =
-		{PROP_TAG_ASSISTANTTELEPHONENUMBER, PROP_TAG_CALLBACKTELEPHONENUMBER,
-		PROP_TAG_COMPANYMAINTELEPHONENUMBER, PROP_TAG_RADIOTELEPHONENUMBER,
-		PROP_TAG_TELECOMMUNICATIONSDEVICEFORDEAFTELEPHONENUMBER};
+	static constexpr uint32_t tel_proptags[] =
+		{PR_HOME_TELEPHONE_NUMBER, PR_HOME2_TELEPHONE_NUMBER,
+		PR_OTHER_TELEPHONE_NUMBER, PR_BUSINESS_TELEPHONE_NUMBER,
+		PR_BUSINESS2_TELEPHONE_NUMBER, PR_MOBILE_TELEPHONE_NUMBER,
+		PR_PAGER_TELEPHONE_NUMBER, PR_CAR_TELEPHONE_NUMBER,
+		PR_ISDN_NUMBER, PR_PRIMARY_TELEPHONE_NUMBER};
+	static constexpr uint32_t ms_tel_proptags[] =
+		{PR_ASSISTANT_TELEPHONE_NUMBER, PR_CALLBACK_TELEPHONE_NUMBER,
+		PR_COMPANY_MAIN_PHONE_NUMBER, PR_RADIO_TELEPHONE_NUMBER,
+		PR_TTYTDD_PHONE_NUMBER};
 	
 	
 	if (FALSE == oxvcard_get_propids(&propids, get_propids)) {

@@ -326,8 +326,8 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			PROP_TAG_GIVENNAME,
 			PROP_TAG_MIDDLENAME,
 			PROP_TAG_TITLE,
-			PROP_TAG_PRIMARYTELEPHONENUMBER,
-			PROP_TAG_MOBILETELEPHONENUMBER,
+			PR_PRIMARY_TELEPHONE_NUMBER,
+			PR_MOBILE_TELEPHONE_NUMBER,
 			PROP_TAG_HOMEADDRESSSTREET,
 			PR_COMMENT,
 			PROP_TAG_COMPANYNAME,
@@ -389,8 +389,8 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 		proptags.pproptag[proptags.count++] = PROP_TAG_SURNAME;
 		proptags.pproptag[proptags.count++] = PROP_TAG_GIVENNAME;
 		proptags.pproptag[proptags.count++] = PROP_TAG_MIDDLENAME;
-		proptags.pproptag[proptags.count++] = PROP_TAG_PRIMARYTELEPHONENUMBER;
-		proptags.pproptag[proptags.count++] = PROP_TAG_MOBILETELEPHONENUMBER;
+		proptags.pproptag[proptags.count++] = PR_PRIMARY_TELEPHONE_NUMBER;
+		proptags.pproptag[proptags.count++] = PR_MOBILE_TELEPHONE_NUMBER;
 		proptags.pproptag[proptags.count++] = PROP_TAG_HOMEADDRESSSTREET;
 		proptags.pproptag[proptags.count++] = PR_COMMENT;
 		proptags.pproptag[proptags.count++] = PROP_TAG_COMPANYNAME;
@@ -1102,8 +1102,8 @@ void container_object_get_user_table_all_proptags(
 		PROP_TAG_GIVENNAME,
 		PROP_TAG_MIDDLENAME,
 		PROP_TAG_TITLE,
-		PROP_TAG_PRIMARYTELEPHONENUMBER,
-		PROP_TAG_MOBILETELEPHONENUMBER,
+		PR_PRIMARY_TELEPHONE_NUMBER,
+		PR_MOBILE_TELEPHONE_NUMBER,
 		PROP_TAG_HOMEADDRESSSTREET,
 		PR_COMMENT,
 		PROP_TAG_COMPANYNAME,

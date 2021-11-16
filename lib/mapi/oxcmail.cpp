@@ -1678,8 +1678,8 @@ static BOOL oxcmail_enum_mail_head(
 		}
 	} else if (0 == strcasecmp(tag, "X-CallingTelephoneNumber")) {
 		uint32_t tag = oxcmail_check_ascii(field) ?
-		                  PROP_TAG_SENDERTELEPHONENUMBER :
-		                  PROP_TAG_SENDERTELEPHONENUMBER_STRING8;
+		               PR_SENDER_TELEPHONE_NUMBER :
+		               PR_SENDER_TELEPHONE_NUMBER_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "X-VoiceMessageSenderName")) {
@@ -4930,7 +4930,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			}
 		}
 	}
-	pvalue = pmsg->proplist.getval(PROP_TAG_SENDERTELEPHONENUMBER);
+	pvalue = pmsg->proplist.getval(PR_SENDER_TELEPHONE_NUMBER);
 	if (NULL != pvalue) {
 		if (!mime_set_field(phead, "X-CallingTelephoneNumber",
 		    static_cast<char *>(pvalue)))
