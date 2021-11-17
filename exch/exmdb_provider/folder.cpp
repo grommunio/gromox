@@ -431,22 +431,30 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	}
 	*pfolder_id = 0;
 	pvalue = common_util_get_propvals(pproperties, PROP_TAG_PARENTFOLDERID);
-	if (pvalue == nullptr || rop_util_get_replid(*static_cast<uint64_t *>(pvalue)) != 1)
+	if (pvalue == nullptr || rop_util_get_replid(*static_cast<uint64_t *>(pvalue)) != 1) {
+		fprintf(stderr, "E-1581: create_folder_b_p request with no parent or wrong EID\n");
 		return TRUE;
+	}
 	parent_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
 	common_util_remove_propvals(
 		(TPROPVAL_ARRAY*)pproperties, PROP_TAG_PARENTFOLDERID);
 	pname = static_cast<char *>(common_util_get_propvals(pproperties, PR_DISPLAY_NAME));
-	if (pname == nullptr)
+	if (pname == nullptr) {
+		fprintf(stderr, "E-1582: create_folder_b_p request with no name\n");
 		return TRUE;
+	}
 	pvalue = common_util_get_propvals(pproperties, PROP_TAG_CHANGENUMBER);
-	if (pvalue == nullptr)
+	if (pvalue == nullptr) {
+		fprintf(stderr, "E-1583: create_folder_b_p request without CN\n");
 		return TRUE;
+	}
 	common_util_remove_propvals(
 		(TPROPVAL_ARRAY*)pproperties, PROP_TAG_CHANGENUMBER);
 	change_num = rop_util_get_gc_value(*(uint64_t*)pvalue);
-	if (common_util_get_propvals(pproperties, PR_PREDECESSOR_CHANGE_LIST) == nullptr)
+	if (common_util_get_propvals(pproperties, PR_PREDECESSOR_CHANGE_LIST) == nullptr) {
+		fprintf(stderr, "E-1584: create_folder_b_p request without PCL\n");
 		return TRUE;
+	}
 	pvalue = common_util_get_propvals(pproperties, PR_FOLDER_TYPE);
 	if (NULL == pvalue) {
 		type = FOLDER_GENERIC;
@@ -456,8 +464,10 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		case FOLDER_GENERIC:
 			break;
 		case FOLDER_SEARCH:
-			if (!exmdb_server_check_private())
+			if (!exmdb_server_check_private()) {
+				fprintf(stderr, "E-1585: create_folder_b_p request without PCL\n");
 				return TRUE;
+			}
 			break;
 		default:
 			return TRUE;
@@ -473,8 +483,10 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		return FALSE;
 	}
 	if (sqlite3_step(pstmt) != SQLITE_ROW ||
-	    sqlite3_column_int64(pstmt, 0) > MAXIMUM_STORE_FOLDERS)
+	    sqlite3_column_int64(pstmt, 0) > MAXIMUM_STORE_FOLDERS) {
+		fprintf(stderr, "E-1586: create_folder_b_p: reached maximum folders in store\n");
 		return TRUE;
+	}
 	pstmt.finalize();
 	if (FALSE == common_util_get_folder_type(
 		pdb->psqlite, parent_id, &parent_type)) {
