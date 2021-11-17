@@ -5379,9 +5379,9 @@ BOOL common_util_decrease_store_size(sqlite3 *psqlite,
 	uint64_t normal_size, uint64_t fai_size)
 {
 	char sql_string[256];
-	
+
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE store_properties"
-				" SET propval=propval-? WHERE proptag=?");
+	         " SET propval=MAX(0,propval-?) WHERE proptag=?");
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
