@@ -385,7 +385,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			tmp_bin.pb = NULL;
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		}
-		auto pvalue = common_util_get_propvals(&fldchgs.pfldchgs[i], PROP_TAG_FOLDERID);
+		auto pvalue = fldchgs.pfldchgs[i].getval(PROP_TAG_FOLDERID);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -395,9 +395,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 				fldchgs.pfldchgs + i,
 				PROP_TAG_FOLDERID);
 		}
-		pvalue = common_util_get_propvals(
-					fldchgs.pfldchgs + i,
-					PROP_TAG_PARENTFOLDERID);
+		pvalue = fldchgs.pfldchgs[i].getval(PROP_TAG_PARENTFOLDERID);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -740,7 +738,7 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 		return FALSE;
 	}
 	pchgheader->count = 0;
-	auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_SOURCE_KEY);
+	auto pvalue = pmsgctnt->proplist.getval(PR_SOURCE_KEY);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -748,21 +746,21 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_SOURCE_KEY);
 	
-	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_LAST_MODIFICATION_TIME);
+	pvalue = pmsgctnt->proplist.getval(PR_LAST_MODIFICATION_TIME);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
 	pchgheader->ppropval[pchgheader->count].proptag = PR_LAST_MODIFICATION_TIME;
 	pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
 	
-	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_CHANGE_KEY);
+	pvalue = pmsgctnt->proplist.getval(PR_CHANGE_KEY);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
 	pchgheader->ppropval[pchgheader->count].proptag = PR_CHANGE_KEY;
 	pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
 	
-	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_PREDECESSOR_CHANGE_LIST);
+	pvalue = pmsgctnt->proplist.getval(PR_PREDECESSOR_CHANGE_LIST);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -770,7 +768,7 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_PREDECESSOR_CHANGE_LIST);
 	
-	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
+	pvalue = pmsgctnt->proplist.getval(PR_ASSOCIATED);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -780,8 +778,7 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
 	
 	if (SYNC_EXTRA_FLAG_EID & extra_flags) {
-		pvalue = common_util_get_propvals(
-			&pmsgctnt->proplist, PROP_TAG_MID);
+		pvalue = pmsgctnt->proplist.getval(PROP_TAG_MID);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -792,7 +789,7 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	common_util_remove_propvals(
 			&pmsgctnt->proplist, PROP_TAG_MID);
 	
-	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_MESSAGE_SIZE);
+	pvalue = pmsgctnt->proplist.getval(PR_MESSAGE_SIZE);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -804,8 +801,7 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_MESSAGE_SIZE);
 	
 	if (SYNC_EXTRA_FLAG_CN & extra_flags) {
-		pvalue = common_util_get_propvals(
-			&pmsgctnt->proplist, PROP_TAG_CHANGENUMBER);
+		pvalue = pmsgctnt->proplist.getval(PROP_TAG_CHANGENUMBER);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -924,7 +920,7 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 					pmsgctnt->children.pattachments;
 				break;
 			default: {
-				auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, proptag);
+				auto pvalue = pmsgctnt->proplist.getval(proptag);
 				if (NULL != pvalue) {
 					pmsg->pchanges[i].proplist.ppropval[
 								count].proptag = proptag;
@@ -957,7 +953,7 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 				pmsgctnt->children.pattachments;
 			break;
 		default: {
-			auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, proptag);
+			auto pvalue = pmsgctnt->proplist.getval(proptag);
 			if (NULL != pvalue) {
 				pmsg->pchanges[i].proplist.ppropval[
 							count].proptag = proptag;
@@ -1009,8 +1005,7 @@ static void icsdownctx_object_trim_report_recipients(
 	int i;
 	ATTACHMENT_CONTENT *pattachment;
 	
-	auto pvalue = static_cast<const char *>(common_util_get_propvals(
-	              &pmsgctnt->proplist, PR_MESSAGE_CLASS));
+	auto pvalue = pmsgctnt->proplist.get<const char>(PR_MESSAGE_CLASS);
 	if (NULL != pvalue && 0 == strncasecmp(
 		pvalue, "REPORT.IPM.Note.", 16)) {
 		pmsgctnt->children.prcpts = NULL;
@@ -1034,7 +1029,6 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	BOOL b_full;
 	void *pvalue;
 	uint64_t last_cn;
-	uint32_t *pstatus;
 	INDEX_ARRAY indices;
 	uint32_t *pgroup_id;
 	PROPTAG_ARRAY proptags;
@@ -1075,8 +1069,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	}
 	icsdownctx_object_trim_report_recipients(pmsgctnt);
 	auto folder_id = pctx->pfolder->folder_id;
-	pstatus = static_cast<uint32_t *>(common_util_get_propvals(
-	          &pmsgctnt->proplist, PROP_TAG_MESSAGESTATUS));
+	auto pstatus = pmsgctnt->proplist.get<uint32_t>(PROP_TAG_MESSAGESTATUS);
 	if (NULL == pstatus) {
 		return FALSE;
 	}
@@ -1144,7 +1137,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			common_util_remove_propvals(&pembedded->proplist, PR_CHANGE_KEY);
 			common_util_remove_propvals(
 				&pembedded->proplist, PROP_TAG_MESSAGESTATUS);
-			pvalue = common_util_get_propvals(&pembedded->proplist, PR_MESSAGE_FLAGS);
+			pvalue = pembedded->proplist.getval(PR_MESSAGE_FLAGS);
 			tmp_propval.proptag = PR_READ_RECEIPT_REQUESTED;
 			tmp_propval.pvalue = pvalue != nullptr &&
 			                     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_RN_PENDING) ?
@@ -1277,7 +1270,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 		common_util_remove_propvals(&pmsgctnt->proplist, PR_CHANGE_KEY);
 		common_util_remove_propvals(
 			&pmsgctnt->proplist, PROP_TAG_MESSAGESTATUS);
-		pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_MESSAGE_FLAGS);
+		pvalue = pmsgctnt->proplist.getval(PR_MESSAGE_FLAGS);
 		tmp_propval.proptag = PR_READ_RECEIPT_REQUESTED;
 		tmp_propval.pvalue = pvalue != nullptr &&
 		                     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_RN_PENDING) ?

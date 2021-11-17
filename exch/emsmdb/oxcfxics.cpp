@@ -29,7 +29,6 @@
 static EID_ARRAY *oxcfxics_load_folder_messages(logon_object *plogon,
     uint64_t folder_id, const char *username, BOOL b_fai)
 {
-	uint64_t *pmid;
 	uint32_t table_id;
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
@@ -62,8 +61,7 @@ static EID_ARRAY *oxcfxics_load_folder_messages(logon_object *plogon,
 		return NULL;
 	}
 	for (size_t i = 0; i < tmp_set.count; ++i) {
-		pmid = static_cast<uint64_t *>(common_util_get_propvals(
-		       tmp_set.pparray[i], PROP_TAG_MID));
+		auto pmid = tmp_set.pparray[i]->get<uint64_t>(PROP_TAG_MID);
 		if (NULL == pmid) {
 			eid_array_free(pmessage_ids);
 			return NULL;
@@ -89,7 +87,6 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 	char tmp_essdn[256];
 	uint32_t permission;
 	const char *username;
-	uint64_t *pfolder_id;
 	uint32_t tmp_proptag;
 	EID_ARRAY *pmessage_ids;
 	LONG_TERM_ID long_term_id;
@@ -183,8 +180,7 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 	}
 	exmdb_client_unload_table(plogon->get_dir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
-		pfolder_id = static_cast<uint64_t *>(common_util_get_propvals(
-			     tmp_set.pparray[i], PROP_TAG_FOLDERID));
+		auto pfolder_id = tmp_set.pparray[i]->get<uint64_t>(PROP_TAG_FOLDERID);
 		if (NULL == pfolder_id) {
 			return NULL;
 		}
@@ -262,20 +258,19 @@ uint32_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags,
 		proptag_buff[3] = PROP_TAG_CONTENTCOUNT;
 		if (!plogon->get_properties(&tmp_proptags, &tmp_propvals))
 			return ecError;
-		auto pvalue = common_util_get_propvals(&tmp_propvals, PR_STORAGE_QUOTA_LIMIT);
+		auto pvalue = tmp_propvals.getval(PR_STORAGE_QUOTA_LIMIT);
 		uint64_t max_quota = ULLONG_MAX;
 		if (pvalue != nullptr) {
 			max_quota = *static_cast<uint32_t *>(pvalue);
 			max_quota = max_quota >= ULLONG_MAX / 1024 ? ULLONG_MAX : max_quota * 1024ULL;
 		}
-		pvalue = common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE_EXTENDED);
+		pvalue = tmp_propvals.getval(PR_MESSAGE_SIZE_EXTENDED);
 		uint64_t total_size = pvalue == nullptr ? 0 : *static_cast<uint64_t *>(pvalue);
 		if (total_size > max_quota)
 			return ecQuotaExceeded;
-		pvalue = common_util_get_propvals(&tmp_propvals, PR_ASSOC_CONTENT_COUNT);
+		pvalue = tmp_propvals.getval(PR_ASSOC_CONTENT_COUNT);
 		uint32_t total_mail = pvalue != nullptr ? *static_cast<uint32_t *>(pvalue) : 0;
-		pvalue = common_util_get_propvals(&tmp_propvals,
-								PROP_TAG_CONTENTCOUNT);
+		pvalue = tmp_propvals.getval(PROP_TAG_CONTENTCOUNT);
 		if (NULL != pvalue) {
 			total_mail += *(uint32_t*)pvalue;
 		}
@@ -986,7 +981,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 		tmp_proptag = PR_PREDECESSOR_CHANGE_LIST;
 		if (!pmessage->get_properties(0, &proptags, &tmp_propvals))
 			return ecError;
-		pvalue = common_util_get_propvals(&tmp_propvals,  PR_PREDECESSOR_CHANGE_LIST);
+		pvalue = tmp_propvals.getval(PR_PREDECESSOR_CHANGE_LIST);
 		if (NULL == pvalue) {
 			return ecError;
 		}
@@ -1093,11 +1088,11 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 		if (!exmdb_client_get_message_properties(plogon->get_dir(),
 		    nullptr, 0, message_id, &tmp_proptags, &tmp_propvals))
 			return ecError;
-		pvalue = common_util_get_propvals(&tmp_propvals, PR_ASSOCIATED);
+		pvalue = tmp_propvals.getval(PR_ASSOCIATED);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			continue;
 		}
-		pvalue = common_util_get_propvals(&tmp_propvals, PR_READ);
+		pvalue = tmp_propvals.getval(PR_READ);
 		if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
 			if (0 == pread_stat[i].mark_as_read) {
 				continue;

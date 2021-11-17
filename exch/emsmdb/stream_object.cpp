@@ -47,7 +47,7 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 		proptag_buff[1] = PR_MESSAGE_SIZE;
 		if (!static_cast<message_object *>(pparent)->get_properties(0, &proptags, &propvals))
 			return NULL;
-		auto psize = static_cast<uint32_t *>(common_util_get_propvals(&propvals, PR_MESSAGE_SIZE));
+		auto psize = propvals.get<uint32_t>(PR_MESSAGE_SIZE);
 		if (NULL != psize && *psize >= common_util_get_param(
 			COMMON_UTIL_MAX_MAIL_LENGTH)) {
 			return NULL;
@@ -61,7 +61,7 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 		proptag_buff[1] = PR_ATTACH_SIZE;
 		if (!static_cast<attachment_object *>(pparent)->get_properties(0, &proptags, &propvals))
 			return NULL;
-		auto psize = static_cast<uint32_t *>(common_util_get_propvals(&propvals, PR_ATTACH_SIZE));
+		auto psize = propvals.get<uint32_t>(PR_ATTACH_SIZE);
 		if (NULL != psize && *psize >= common_util_get_param(
 			COMMON_UTIL_MAX_MAIL_LENGTH)) {
 			return NULL;
@@ -77,7 +77,7 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 	default:
 		return NULL;
 	}
-	auto pvalue = common_util_get_propvals(&propvals, proptag);
+	auto pvalue = propvals.getval(proptag);
 	if (NULL == pvalue) {
 		if (0 == (open_flags & OPENSTREAM_FLAG_CREATE)) {
 			/* cannot find proptag, return immediately to

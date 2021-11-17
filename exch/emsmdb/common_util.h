@@ -79,8 +79,6 @@ void common_util_set_propvals(TPROPVAL_ARRAY *parray,
 	const TAGGED_PROPVAL *ppropval);
 void common_util_remove_propvals(
 	TPROPVAL_ARRAY *parray, uint32_t proptag);
-void* common_util_get_propvals(
-	const TPROPVAL_ARRAY *parray, uint32_t proptag);
 BOOL common_util_retag_propvals(TPROPVAL_ARRAY *parray,
 	uint32_t orignal_proptag, uint32_t new_proptag);
 void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,

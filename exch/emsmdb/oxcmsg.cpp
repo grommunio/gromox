@@ -126,10 +126,9 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 	proptag_buff[2] = PR_NORMALIZED_SUBJECT;
 	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
-	pvalue = common_util_get_propvals(&propvals,
-				PROP_TAG_HASNAMEDPROPERTIES);
+	pvalue = propvals.getval(PROP_TAG_HASNAMEDPROPERTIES);
 	*phas_named_properties = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0; /* XXX */
-	pvalue = common_util_get_propvals(&propvals, PR_SUBJECT_PREFIX);
+	pvalue = propvals.getval(PR_SUBJECT_PREFIX);
 	if (NULL == pvalue) {
 		psubject_prefix->string_type = STRING_TYPE_EMPTY;
 		psubject_prefix->pstring = NULL;
@@ -137,7 +136,7 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 		psubject_prefix->string_type = STRING_TYPE_UNICODE;
 		psubject_prefix->pstring = static_cast<char *>(pvalue);
 	}
-	pvalue = common_util_get_propvals(&propvals, PR_NORMALIZED_SUBJECT);
+	pvalue = propvals.getval(PR_NORMALIZED_SUBJECT);
 	if (NULL == pvalue) {
 		pnormalized_subject->string_type = STRING_TYPE_EMPTY;
 		pnormalized_subject->pstring = NULL;
@@ -228,20 +227,19 @@ uint32_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
 	proptag_buff[3] = PROP_TAG_CONTENTCOUNT;
 	if (!plogon->get_properties(&tmp_proptags, &tmp_propvals))
 		return ecError;
-	auto pvalue = common_util_get_propvals(&tmp_propvals, PR_STORAGE_QUOTA_LIMIT);
+	auto pvalue = tmp_propvals.getval(PR_STORAGE_QUOTA_LIMIT);
 	uint64_t max_quota = ULLONG_MAX;
 	if (pvalue != nullptr) {
 		max_quota = *static_cast<uint32_t *>(pvalue);
 		max_quota = max_quota >= ULLONG_MAX / 1024 ? ULLONG_MAX : max_quota * 1024ULL;
 	}
-	pvalue = common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE_EXTENDED);
+	pvalue = tmp_propvals.getval(PR_MESSAGE_SIZE_EXTENDED);
 	uint64_t total_size = pvalue == nullptr ? 0 : *static_cast<uint64_t *>(pvalue);
 	if (total_size > max_quota)
 		return ecQuotaExceeded;
-	pvalue = common_util_get_propvals(&tmp_propvals, PR_ASSOC_CONTENT_COUNT);
+	pvalue = tmp_propvals.getval(PR_ASSOC_CONTENT_COUNT);
 	uint32_t total_mail = pvalue != nullptr ? *static_cast<uint32_t *>(pvalue) : 0;
-	pvalue = common_util_get_propvals(&tmp_propvals,
-							PROP_TAG_CONTENTCOUNT);
+	pvalue = tmp_propvals.getval(PROP_TAG_CONTENTCOUNT);
 	if (NULL != pvalue) {
 		total_mail += *(uint32_t*)pvalue;
 	}
@@ -315,11 +313,11 @@ uint32_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
 	tmp_proptag = PROP_TAG_MID;
 	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
-	auto pvalue = common_util_get_propvals(&propvals, PROP_TAG_MID);
+	auto pvalue = propvals.get<uint64_t>(PROP_TAG_MID);
 	if (NULL == pvalue) {
 		return ecError;
 	}
-	*pmessage_id = *(uint64_t*)pvalue;
+	*pmessage_id = *pvalue;
 	auto err = pmessage->save();
 	if (err != GXERR_SUCCESS)
 		return gxerr_to_hresult(err);
@@ -482,10 +480,9 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 	proptag_buff[2] = PR_NORMALIZED_SUBJECT;
 	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
-	auto pvalue = common_util_get_propvals(&propvals,
-				PROP_TAG_HASNAMEDPROPERTIES);
+	auto pvalue = propvals.getval(PROP_TAG_HASNAMEDPROPERTIES);
 	*phas_named_properties = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0; /* XXX */
-	pvalue = common_util_get_propvals(&propvals, PR_SUBJECT_PREFIX);
+	pvalue = propvals.getval(PR_SUBJECT_PREFIX);
 	if (NULL == pvalue) {
 		psubject_prefix->string_type = STRING_TYPE_EMPTY;
 		psubject_prefix->pstring = NULL;
@@ -493,7 +490,7 @@ uint32_t rop_reloadcachedinformation(uint16_t reserved,
 		psubject_prefix->string_type = STRING_TYPE_UNICODE;
 		psubject_prefix->pstring = static_cast<char *>(pvalue);
 	}
-	pvalue = common_util_get_propvals(&propvals, PR_NORMALIZED_SUBJECT);
+	pvalue = propvals.getval(PR_NORMALIZED_SUBJECT);
 	if (NULL == pvalue) {
 		pnormalized_subject->string_type = STRING_TYPE_EMPTY;
 		pnormalized_subject->pstring = NULL;
@@ -959,7 +956,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 		proptag_buff[0] = PROP_TAG_MID;
 		if (!pmessage->get_properties(0, &proptags, &propvals))
 			return ecError;
-		auto pvalue = common_util_get_propvals(&propvals, PROP_TAG_MID);
+		auto pvalue = propvals.getval(PROP_TAG_MID);
 		if (NULL == pvalue) {
 			return ecError;
 		}
@@ -991,15 +988,14 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 	proptag_buff[3] = PR_NORMALIZED_SUBJECT;
 	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
-	auto pvalue = common_util_get_propvals(&propvals, PROP_TAG_MID);
+	auto pvalue = propvals.getval(PROP_TAG_MID);
 	if (NULL == pvalue) {
 		return ecError;
 	}
 	*pmessage_id = *(uint64_t*)pvalue;
-	pvalue = common_util_get_propvals(&propvals,
-				PROP_TAG_HASNAMEDPROPERTIES);
+	pvalue = propvals.getval(PROP_TAG_HASNAMEDPROPERTIES);
 	*phas_named_properties = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0; /* XXX */
-	pvalue = common_util_get_propvals(&propvals, PR_SUBJECT_PREFIX);
+	pvalue = propvals.getval(PR_SUBJECT_PREFIX);
 	if (NULL == pvalue) {
 		psubject_prefix->string_type = STRING_TYPE_EMPTY;
 		psubject_prefix->pstring = NULL;
@@ -1007,7 +1003,7 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 		psubject_prefix->string_type = STRING_TYPE_UNICODE;
 		psubject_prefix->pstring = static_cast<char *>(pvalue);
 	}
-	pvalue = common_util_get_propvals(&propvals, PR_NORMALIZED_SUBJECT);
+	pvalue = propvals.getval(PR_NORMALIZED_SUBJECT);
 	if (NULL == pvalue) {
 		pnormalized_subject->string_type = STRING_TYPE_EMPTY;
 		pnormalized_subject->pstring = NULL;

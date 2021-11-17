@@ -85,12 +85,12 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 		maildir, 0, &proptags, &propvals)) {
 		return ecError;
 	}
-	auto pvalue = common_util_get_propvals(&propvals, PR_STORE_RECORD_KEY);
+	auto pvalue = propvals.getval(PR_STORE_RECORD_KEY);
 	if (NULL == pvalue) {
 		return ecError;
 	}
 	*pmailbox_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
-	pvalue = common_util_get_propvals(&propvals, PR_OOF_STATE);
+	pvalue = propvals.getval(PR_OOF_STATE);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		*presponse_flags |= RESPONSE_FLAG_OOF;
 	}

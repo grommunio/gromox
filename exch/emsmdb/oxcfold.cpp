@@ -837,7 +837,6 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
     uint8_t *ppartial_completion, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	BOOL b_owner;
-	void *pvalue;
 	EID_ARRAY ids;
 	BOOL b_partial;
 	BOOL b_partial1;
@@ -908,11 +907,10 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 		    nullptr, 0, pmessage_ids->pll[i], &tmp_proptags, &tmp_propvals))
 			return ecError;
 		pbrief = NULL;
-		pvalue = common_util_get_propvals(&tmp_propvals, PR_NON_RECEIPT_NOTIFICATION_REQUESTED);
-		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-			pvalue = common_util_get_propvals(&tmp_propvals, PR_READ);
-			if (pvalue == nullptr ||
-			    *static_cast<uint8_t *>(pvalue) == 0 ||
+		auto pvalue = tmp_propvals.get<uint8_t>(PR_NON_RECEIPT_NOTIFICATION_REQUESTED);
+		if (pvalue != nullptr && *pvalue != 0) {
+			pvalue = tmp_propvals.get<uint8_t>(PR_READ);
+			if (pvalue == nullptr || *pvalue == 0 ||
 			    !exmdb_client_get_message_brief(plogon->get_dir(),
 			     pinfo->cpid, pmessage_ids->pll[i], &pbrief))
 				return ecError;

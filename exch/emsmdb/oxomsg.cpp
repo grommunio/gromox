@@ -128,32 +128,28 @@ static BOOL oxomsg_check_delegate(message_object *pmessage, char *username, size
 		username[0] = '\0';
 		return TRUE;
 	}
-	auto pvalue = common_util_get_propvals(&tmp_propvals,
-	              PR_SENT_REPRESENTING_ADDRTYPE);
+	auto pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_ADDRTYPE);
 	if (NULL != pvalue) {
 		if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
-			pvalue = common_util_get_propvals(&tmp_propvals,
-			         PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+			pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 			if (NULL != pvalue) {
 				return common_util_essdn_to_username(static_cast<char *>(pvalue),
 				       username, ulen);
 			}
 		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-			pvalue = common_util_get_propvals(&tmp_propvals,
-			         PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+			pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 			if (NULL != pvalue) {
 				gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
 				return TRUE;
 			}
 		}
 	}
-	pvalue = common_util_get_propvals(&tmp_propvals,
-	         PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (NULL != pvalue) {
 		gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
 		return TRUE;
 	}
-	pvalue = common_util_get_propvals(&tmp_propvals, PR_SENT_REPRESENTING_ENTRYID);
+	pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_ENTRYID);
 	if (NULL != pvalue) {
 		return common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
 		       username, ulen);
@@ -251,7 +247,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	proptag_buff[0] = PR_ASSOCIATED;
 	if (!pmessage->get_properties(0, &tmp_proptags, &tmp_propvals))
 		return ecError;
-	auto pvalue = common_util_get_propvals(&tmp_propvals, PR_ASSOCIATED);
+	auto pvalue = tmp_propvals.getval(PR_ASSOCIATED);
 	/* FAI message cannot be sent */
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		return ecAccessDenied;
@@ -279,14 +275,14 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (!plogon->get_properties(&tmp_proptags, &tmp_propvals))
 		return ecError;
 
-	auto sendquota = static_cast<uint32_t *>(common_util_get_propvals(&tmp_propvals, PR_PROHIBIT_SEND_QUOTA));
-	auto storesize = static_cast<uint64_t *>(common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE_EXTENDED));
+	auto sendquota = tmp_propvals.get<uint32_t>(PR_PROHIBIT_SEND_QUOTA);
+	auto storesize = tmp_propvals.get<uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
 	/* Sendquota is in KiB, storesize in bytes */
 	if (sendquota != nullptr && storesize != nullptr &&
 	    static_cast<uint64_t>(*sendquota) * 1024 <= *storesize)
 		return ecQuotaExceeded;
 
-	pvalue = common_util_get_propvals(&tmp_propvals, PR_MAX_SUBMIT_MESSAGE_SIZE);
+	pvalue = tmp_propvals.getval(PR_MAX_SUBMIT_MESSAGE_SIZE);
 	max_length = -1;
 	if (NULL != pvalue) {
 		max_length = *(int32_t*)pvalue;
@@ -301,14 +297,14 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	proptag_buff[5] = PROP_TAG_DELETEAFTERSUBMIT;
 	if (!pmessage->get_properties(0, &tmp_proptags, &tmp_propvals))
 		return ecError;
-	pvalue = common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE);
+	pvalue = tmp_propvals.getval(PR_MESSAGE_SIZE);
 	if (NULL == pvalue) {
 		return ecError;
 	}
 	mail_length = *(uint32_t*)pvalue;
 	if (max_length > 0 && mail_length > static_cast<uint32_t>(max_length))
 		return EC_EXCEEDED_SIZE;
-	pvalue = common_util_get_propvals(&tmp_propvals, PR_MESSAGE_FLAGS);
+	pvalue = tmp_propvals.getval(PR_MESSAGE_FLAGS);
 	if (NULL == pvalue) {
 		return ecError;
 	}
@@ -316,8 +312,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (message_flags & MSGFLAG_SUBMITTED)
 		return ecAccessDenied;
 	BOOL b_unsent = (message_flags & MSGFLAG_UNSENT) ? TRUE : false;
-	pvalue = common_util_get_propvals(&tmp_propvals,
-						PROP_TAG_DELETEAFTERSUBMIT);
+	pvalue = tmp_propvals.getval(PROP_TAG_DELETEAFTERSUBMIT);
 	BOOL b_delete = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 ? TRUE : false;
 	/* we don't use spool queue, so disable the whole functionality */
 #if 0
@@ -347,20 +342,17 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	deferred_time = 0;
 	time(&cur_time);
 	submit_time = rop_util_unix_to_nttime(cur_time);
-	pvalue = common_util_get_propvals(&tmp_propvals,
-							PROP_TAG_DEFERREDSENDTIME);
+	pvalue = tmp_propvals.getval(PROP_TAG_DEFERREDSENDTIME);
 	if (NULL != pvalue) {
 		if (submit_time < *(uint64_t*)pvalue) {
 			deferred_time = rop_util_nttime_to_unix(
 						*(uint64_t*)pvalue) - cur_time;
 		}
 	} else {
-		pvalue = common_util_get_propvals(&tmp_propvals,
-							PROP_TAG_DEFERREDSENDNUMBER);
+		pvalue = tmp_propvals.getval(PROP_TAG_DEFERREDSENDNUMBER);
 		if (NULL != pvalue) {
 			tmp_num = *(uint32_t*)pvalue;
-			pvalue = common_util_get_propvals(&tmp_propvals,
-								PROP_TAG_DEFERREDSENDUNITS);
+			pvalue = tmp_propvals.getval(PROP_TAG_DEFERREDSENDUNITS);
 			if (NULL != pvalue) {
 				switch (*(uint32_t*)pvalue) {
 				case 0:
@@ -549,15 +541,14 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	if (!exmdb_client_get_message_properties(plogon->get_dir(), nullptr, 0,
 	    message_id, &tmp_proptags, &tmp_propvals))
 		return ecError;
-	auto pvalue = common_util_get_propvals(&tmp_propvals,
-						PROP_TAG_DELETEAFTERSUBMIT);
+	auto pvalue = tmp_propvals.getval(PROP_TAG_DELETEAFTERSUBMIT);
 	b_delete = FALSE;
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		b_delete = TRUE;
 	}
 	
-	auto ptarget = static_cast<BINARY *>(common_util_get_propvals(&tmp_propvals, PR_TARGET_ENTRYID));
-	pvalue = common_util_get_propvals(&tmp_propvals, PR_PARENT_ENTRYID);
+	auto ptarget = tmp_propvals.get<BINARY>(PR_TARGET_ENTRYID);
+	pvalue = tmp_propvals.getval(PR_PARENT_ENTRYID);
 	if (NULL == pvalue) {
 		return ecError;
 	}

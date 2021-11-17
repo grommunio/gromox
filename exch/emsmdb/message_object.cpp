@@ -447,8 +447,7 @@ gxerr_t message_object::save()
 						return GXERR_CALL_FAILED;
 					}
 					if (NULL != pmsgctnt) {
-						pvalue = common_util_get_propvals(
-							&pmsgctnt->proplist, PROP_TAG_MESSAGESTATUS);
+						pvalue = pmsgctnt->proplist.getval(PROP_TAG_MESSAGESTATUS);
 						if (NULL == pvalue) {
 							return GXERR_CALL_FAILED;
 						}
