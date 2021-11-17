@@ -130,19 +130,6 @@ void common_util_remove_propvals(
 	}
 }
 
-void* common_util_get_propvals(
-	const TPROPVAL_ARRAY *parray, uint32_t proptag)
-{
-	int i;
-	
-	for (i=0; i<parray->count; i++) {
-		if (proptag == parray->ppropval[i].proptag) {
-			return (void*)parray->ppropval[i].pvalue;
-		}
-	}
-	return NULL;
-}
-
 BOOL common_util_essdn_to_username(const char *pessdn,
     char *username, size_t ulen)
 {
@@ -887,8 +874,8 @@ BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag)
 		0, 0, psqlite, &proptags, &propvals)) {
 		return FALSE;
 	}
-	auto ptotal = static_cast<uint64_t *>(common_util_get_propvals(&propvals, PR_MESSAGE_SIZE_EXTENDED));
-	auto qv_kb = static_cast<uint32_t *>(common_util_get_propvals(&propvals, qtag));
+	auto ptotal = propvals.get<uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
+	auto qv_kb = propvals.get<uint32_t>(qtag);
 	return ptotal != nullptr && qv_kb != nullptr &&
 	       *ptotal >= static_cast<uint64_t>(*qv_kb) * 1024;
 }
@@ -5431,15 +5418,15 @@ BOOL common_util_recipients_to_list(
 		if (NULL == pnode) {
 			return FALSE;
 		}
-		pnode->pdata = common_util_get_propvals(prcpts->pparray[i], PR_SMTP_ADDRESS);
+		pnode->pdata = prcpts->pparray[i]->getval(PR_SMTP_ADDRESS);
 		if (NULL != pnode->pdata) {
 			double_list_append_as_tail(plist, pnode);
 			continue;
 		}
-		pvalue = common_util_get_propvals(prcpts->pparray[i], PR_ADDRTYPE);
+		pvalue = prcpts->pparray[i]->getval(PR_ADDRTYPE);
 		if (NULL == pvalue) {
  CONVERT_ENTRYID:
-			pvalue = common_util_get_propvals(prcpts->pparray[i], PR_ENTRYID);
+			pvalue = prcpts->pparray[i]->getval(PR_ENTRYID);
 			if (NULL == pvalue) {
 				return FALSE;
 			}
@@ -5452,7 +5439,7 @@ BOOL common_util_recipients_to_list(
 				return FALSE;
 		} else {
 			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-				pnode->pdata = common_util_get_propvals(prcpts->pparray[i], PR_EMAIL_ADDRESS);
+				pnode->pdata = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
 				if (NULL == pnode->pdata) {
 					goto CONVERT_ENTRYID;
 				}

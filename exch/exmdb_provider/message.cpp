@@ -1746,7 +1746,6 @@ static BOOL message_rectify_message(const char *account,
 {
 	int i;
 	BINARY *pbin;
-	BINARY *pbin1;
 	GUID tmp_guid;
 	uint64_t nt_time;
 	EXT_PUSH ext_push;
@@ -1781,7 +1780,7 @@ static BOOL message_rectify_message(const char *account,
 	vc->pvalue = deconst(&fake_int32);
 	pmsgctnt1->proplist.count ++;
 	++vc;
-	auto msgfl = common_util_get_propvals(&pmsgctnt->proplist, PR_MESSAGE_FLAGS);
+	auto msgfl = pmsgctnt->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
 	if (msgfl == nullptr) {
 		vc->proptag = PR_MESSAGE_FLAGS;
 		vc->pvalue = deconst(&fake_flags);
@@ -1801,7 +1800,7 @@ static BOOL message_rectify_message(const char *account,
 		auto x = cu_alloc<uint8_t>();
 		if (x == nullptr)
 			return false;
-		*x = *static_cast<uint32_t *>(msgfl) & MSGFLAG_READ;
+		*x = *msgfl & MSGFLAG_READ;
 		vc->proptag = PR_READ;
 		vc->pvalue = x;
 		++pmsgctnt1->proplist.count;
@@ -1849,10 +1848,9 @@ static BOOL message_rectify_message(const char *account,
 		++vc;
 	}
 	if (!pmsgctnt->proplist.has(PR_CREATOR_NAME)) {
-		auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_SENDER_NAME);
+		auto pvalue = pmsgctnt->proplist.get<char>(PR_SENDER_NAME);
 		if (NULL == pvalue) {
-			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
-			         PR_SENT_REPRESENTING_NAME);
+			pvalue = pmsgctnt->proplist.get<char>(PR_SENT_REPRESENTING_NAME);
 		}
 		if (NULL != pvalue) {
 			vc->proptag = PR_CREATOR_NAME;
@@ -1862,10 +1860,9 @@ static BOOL message_rectify_message(const char *account,
 		}
 	}
 	if (!pmsgctnt->proplist.has(PR_CREATOR_ENTRYID)) {
-		auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_SENDER_ENTRYID);
+		auto pvalue = pmsgctnt->proplist.get<char>(PR_SENDER_ENTRYID);
 		if (NULL == pvalue) {
-			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
-			         PR_SENT_REPRESENTING_ENTRYID);
+			pvalue = pmsgctnt->proplist.get<char>(PR_SENT_REPRESENTING_ENTRYID);
 		}
 		if (NULL != pvalue) {
 			vc->proptag = PR_CREATOR_ENTRYID;
@@ -1875,10 +1872,9 @@ static BOOL message_rectify_message(const char *account,
 		}
 	}
 	if (!pmsgctnt->proplist.has(PR_LAST_MODIFIER_NAME)) {
-		auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_SENDER_NAME);
+		auto pvalue = pmsgctnt->proplist.get<char>(PR_SENDER_NAME);
 		if (NULL == pvalue) {
-			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
-			         PR_SENT_REPRESENTING_NAME);
+			pvalue = pmsgctnt->proplist.get<char>(PR_SENT_REPRESENTING_NAME);
 		}
 		if (NULL != pvalue) {
 			vc->proptag = PR_LAST_MODIFIER_NAME;
@@ -1888,10 +1884,9 @@ static BOOL message_rectify_message(const char *account,
 		}
 	}
 	if (!pmsgctnt->proplist.has(PR_LAST_MODIFIER_ENTRYID)) {
-		auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_SENDER_ENTRYID);
+		auto pvalue = pmsgctnt->proplist.get<BINARY>(PR_SENDER_ENTRYID);
 		if (NULL == pvalue) {
-			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
-			         PR_SENT_REPRESENTING_ENTRYID);
+			pvalue = pmsgctnt->proplist.get<BINARY>(PR_SENT_REPRESENTING_ENTRYID);
 		}
 		if (NULL != pvalue) {
 			vc->proptag = PR_LAST_MODIFIER_ENTRYID;
@@ -1900,8 +1895,7 @@ static BOOL message_rectify_message(const char *account,
 			++vc;
 		}
 	}
-	pbin1 = static_cast<BINARY *>(common_util_get_propvals(
-	        &pmsgctnt->proplist, PROP_TAG_CONVERSATIONINDEX));
+	auto pbin1 = pmsgctnt->proplist.get<BINARY>(PROP_TAG_CONVERSATIONINDEX);
 	pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return FALSE;
@@ -1913,10 +1907,9 @@ static BOOL message_rectify_message(const char *account,
 		pbin->pv = common_util_alloc(16);
 		if (pbin->pv == nullptr)
 			return FALSE;
-		auto pvalue = common_util_get_propvals(&pmsgctnt->proplist,
-		              PROP_TAG_CONVERSATIONTOPIC);
-		if (NULL != pvalue && '\0' != ((uint8_t*)pvalue)[0]) {
-			if (!message_md5_string(static_cast<char *>(pvalue), pbin->pb))
+		auto pvalue = pmsgctnt->proplist.get<char>(PROP_TAG_CONVERSATIONTOPIC);
+		if (pvalue != nullptr && *pvalue != '\0') {
+			if (!message_md5_string(pvalue, pbin->pb))
 				return false;
 		} else {
 			tmp_guid = guid_random_new();
@@ -1956,16 +1949,14 @@ static BOOL message_rectify_message(const char *account,
 		pmsgctnt1->proplist.count ++;
 		++vc;
 	}
-	auto pvalue = common_util_get_propvals(&pmsgctnt->proplist,
-	              PROP_TAG_CONVERSATIONTOPIC);
+	auto pvalue = pmsgctnt->proplist.get<char>(PROP_TAG_CONVERSATIONTOPIC);
 	if (NULL == pvalue) {
-		pvalue = common_util_get_propvals(&pmsgctnt->proplist,
-						PROP_TAG_CONVERSATIONTOPIC_STRING8);
+		pvalue = pmsgctnt->proplist.get<char>(PROP_TAG_CONVERSATIONTOPIC_STRING8);
 	}
 	if (NULL == pvalue) {
-		pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_NORMALIZED_SUBJECT);
+		pvalue = pmsgctnt->proplist.get<char>(PR_NORMALIZED_SUBJECT);
 		if (NULL == pvalue) {
-			pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_NORMALIZED_SUBJECT_A);
+			pvalue = pmsgctnt->proplist.get<char>(PR_NORMALIZED_SUBJECT_A);
 			if (NULL != pvalue) {
 				vc->proptag = PROP_TAG_CONVERSATIONTOPIC_STRING8;
 				vc->pvalue = pvalue;
@@ -2029,7 +2020,6 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 {
 	BOOL b_cn;
 	int tmp_int, tmp_int1, is_associated = 0;
-	void *pvalue;
 	BOOL b_exist;
 	BOOL b_result;
 	uint32_t next;
@@ -2048,8 +2038,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	const TPROPVAL_ARRAY *pproplist;
 	
 	pproplist = &pmsgctnt->proplist;
-	pvalue = common_util_get_propvals(
-		pproplist, PROP_TAG_CHANGENUMBER);
+	auto pvalue = pproplist->getval(PROP_TAG_CHANGENUMBER);
 	if (NULL == pvalue) {
 		if (FALSE == common_util_allocate_cn(psqlite, &change_num)) {
 			return FALSE;
@@ -2099,7 +2088,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	original_size = 0;
 	message_size = common_util_calculate_message_size(pmsgctnt);
 	if (FALSE == b_embedded) {
-		pvalue = common_util_get_propvals(pproplist, PR_ASSOCIATED);
+		pvalue = pproplist->getval(PR_ASSOCIATED);
 		is_associated = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? 0 : 1;
 		if (TRUE == exmdb_server_check_private()) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT is_search FROM "
@@ -2122,7 +2111,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			return TRUE;
 		}
 		b_exist = FALSE;
-		pvalue = common_util_get_propvals(pproplist, PROP_TAG_MID);
+		pvalue = pproplist->getval(PROP_TAG_MID);
 		if (NULL == pvalue) {
 			if (FALSE == common_util_allocate_eid_from_folder(
 				psqlite, parent_id, pmessage_id)) {
@@ -2869,7 +2858,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		*pb_result = FALSE;
 		return TRUE;
 	}
-	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_MESSAGE_CLASS);
+	pvalue = pmsgctnt->proplist.getval(PR_MESSAGE_CLASS);
 	if (NULL == pvalue) {
 		*pb_result = FALSE;
 		return TRUE;
@@ -2887,13 +2876,12 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 			return TRUE;
 		}
 	}
-	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
+	pvalue = pmsgctnt->proplist.getval(PR_ASSOCIATED);
 	if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
 		*pb_result = FALSE;
 		return TRUE;
 	}
-	pvalue = common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_REPLYTEMPLATEID);
+	pvalue = pmsgctnt->proplist.getval(PROP_TAG_REPLYTEMPLATEID);
 	if (pvalue == nullptr || static_cast<BINARY *>(pvalue)->cb != 16) {
 		*pb_result = FALSE;
 		return TRUE;
@@ -2975,7 +2963,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		} else if (0 == strcasecmp(content_type, "text/html")) {
 			propval.proptag = PROP_TAG_HTML;
 			propval.pvalue = &tmp_bin;
-			pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_INTERNET_CPID);
+			pvalue = pmsgctnt->proplist.getval(PR_INTERNET_CPID);
 			if (NULL != pvalue && 1200 != *(uint32_t*)pvalue) {
 				tmp_bin.pc = common_util_convert_copy(
 					FALSE, *(uint32_t*)pvalue, tmp_buff);
@@ -3180,8 +3168,7 @@ static BOOL message_forward_message(const char *from_address,
 			message_id, &pmsgctnt) || NULL == pmsgctnt) {
 			return FALSE;
 		}
-		pvalue = common_util_get_propvals(&pmsgctnt->proplist,
-						PROP_TAG_INTERNETMAILOVERRIDEFORMAT);
+		pvalue = pmsgctnt->proplist.getval(PROP_TAG_INTERNETMAILOVERRIDEFORMAT);
 		if (NULL == pvalue) {
 			body_type = OXCMAIL_BODY_PLAIN_AND_HTML;
 		} else {
@@ -4529,20 +4516,18 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	b_cc_me = FALSE;
 	if (NULL != pmsg->children.prcpts) {
 		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i) {
-			pvalue = common_util_get_propvals(
-				pmsg->children.prcpts->pparray[i],
-				PROP_TAG_RECIPIENTTYPE);
+			pvalue = pmsg->children.prcpts->pparray[i]->getval(PROP_TAG_RECIPIENTTYPE);
 			if (NULL == pvalue) {
 				continue;
 			}
 			switch (*(uint32_t*)pvalue) {
 			case RECIPIENT_TYPE_TO:
-				pvalue = common_util_get_propvals(pmsg->children.prcpts->pparray[i], PR_SMTP_ADDRESS);
+				pvalue = pmsg->children.prcpts->pparray[i]->getval(PR_SMTP_ADDRESS);
 				if (pvalue != nullptr && strcasecmp(account, static_cast<char *>(pvalue)) == 0)
 					b_to_me = TRUE;	
 				break;
 			case RECIPIENT_TYPE_CC:
-				pvalue = common_util_get_propvals(pmsg->children.prcpts->pparray[i], PR_SMTP_ADDRESS);
+				pvalue = pmsg->children.prcpts->pparray[i]->getval(PR_SMTP_ADDRESS);
 				if (pvalue != nullptr && strcasecmp(account, static_cast<char *>(pvalue)) == 0)
 					b_cc_me = TRUE;	
 				break;
@@ -4662,12 +4647,11 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		}
 	}
 	nt_time = rop_util_current_nttime();
-	pvalue = common_util_get_propvals(&tmp_msg.proplist,
-							PROP_TAG_MESSAGEDELIVERYTIME);
+	pvalue = tmp_msg.proplist.getval(PROP_TAG_MESSAGEDELIVERYTIME);
 	if (NULL != pvalue) {
 		*(uint64_t*)pvalue = nt_time;
 	}
-	pvalue = common_util_get_propvals(&tmp_msg.proplist, PR_LAST_MODIFICATION_TIME);
+	pvalue = tmp_msg.proplist.getval(PR_LAST_MODIFICATION_TIME);
 	if (NULL != pvalue) {
 		*(uint64_t*)pvalue = nt_time;
 	}
@@ -4733,8 +4717,6 @@ BOOL exmdb_server_write_message(const char *dir, const char *account,
     gxerr_t *pe_result)
 {
 	BOOL b_exist;
-	void *pvalue;
-	uint64_t *pmid;
 	uint64_t nt_time;
 	uint64_t mid_val;
 	uint64_t fid_val;
@@ -4745,8 +4727,7 @@ BOOL exmdb_server_write_message(const char *dir, const char *account,
 		return TRUE;
 	}
 	b_exist = FALSE;
-	pmid = static_cast<uint64_t *>(common_util_get_propvals(
-	       &pmsgctnt->proplist, PROP_TAG_MID));
+	auto pmid = pmsgctnt->proplist.get<uint64_t>(PROP_TAG_MID);
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
@@ -4770,9 +4751,9 @@ BOOL exmdb_server_write_message(const char *dir, const char *account,
 		}
 	}
 	nt_time = rop_util_current_nttime();
-	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_LAST_MODIFICATION_TIME);
+	auto pvalue = pmsgctnt->proplist.get<uint64_t>(PR_LAST_MODIFICATION_TIME);
 	if (NULL != pvalue) {
-		*(uint64_t*)pvalue = nt_time;
+		*pvalue = nt_time;
 	}
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	auto clean_transact = make_scope_exit([&]() {

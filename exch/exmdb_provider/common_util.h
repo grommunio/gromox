@@ -64,8 +64,6 @@ void common_util_set_propvals(TPROPVAL_ARRAY *parray,
 	const TAGGED_PROPVAL *ppropval);
 void common_util_remove_propvals(
 	TPROPVAL_ARRAY *parray, uint32_t proptag);
-void* common_util_get_propvals(
-	const TPROPVAL_ARRAY *parray, uint32_t proptag);
 extern BOOL common_util_essdn_to_username(const char *pessdn, char *username, size_t);
 extern BOOL common_util_username_to_essdn(const char *username, char *dn, size_t);
 void common_util_pass_service(int service_id, void *func);

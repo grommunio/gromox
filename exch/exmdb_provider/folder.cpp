@@ -400,7 +400,6 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	uint32_t cpid, const TPROPVAL_ARRAY *pproperties,
 	uint64_t *pfolder_id)
 {
-	void *pvalue;
 	uint32_t art;
 	uint32_t hcn;
 	uint32_t type;
@@ -421,7 +420,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	TAGGED_PROPVAL tmp_propval;
 	PROBLEM_ARRAY tmp_problems;
 	
-	pvalue = common_util_get_propvals(pproperties, PROP_TAG_FOLDERID);
+	auto pvalue = pproperties->getval(PROP_TAG_FOLDERID);
 	if (NULL == pvalue) {
 		tmp_fid = 0;
 	} else {
@@ -430,7 +429,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 			(TPROPVAL_ARRAY*)pproperties, PROP_TAG_FOLDERID);
 	}
 	*pfolder_id = 0;
-	pvalue = common_util_get_propvals(pproperties, PROP_TAG_PARENTFOLDERID);
+	pvalue = pproperties->getval(PROP_TAG_PARENTFOLDERID);
 	if (pvalue == nullptr || rop_util_get_replid(*static_cast<uint64_t *>(pvalue)) != 1) {
 		fprintf(stderr, "E-1581: create_folder_b_p request with no parent or wrong EID\n");
 		return TRUE;
@@ -438,12 +437,12 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	parent_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
 	common_util_remove_propvals(
 		(TPROPVAL_ARRAY*)pproperties, PROP_TAG_PARENTFOLDERID);
-	pname = static_cast<char *>(common_util_get_propvals(pproperties, PR_DISPLAY_NAME));
+	pname = pproperties->get<char>(PR_DISPLAY_NAME);
 	if (pname == nullptr) {
 		fprintf(stderr, "E-1582: create_folder_b_p request with no name\n");
 		return TRUE;
 	}
-	pvalue = common_util_get_propvals(pproperties, PROP_TAG_CHANGENUMBER);
+	pvalue = pproperties->getval(PROP_TAG_CHANGENUMBER);
 	if (pvalue == nullptr) {
 		fprintf(stderr, "E-1583: create_folder_b_p request without CN\n");
 		return TRUE;
@@ -455,7 +454,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		fprintf(stderr, "E-1584: create_folder_b_p request without PCL\n");
 		return TRUE;
 	}
-	pvalue = common_util_get_propvals(pproperties, PR_FOLDER_TYPE);
+	pvalue = pproperties->getval(PR_FOLDER_TYPE);
 	if (NULL == pvalue) {
 		type = FOLDER_GENERIC;
 	} else {
@@ -2503,19 +2502,19 @@ BOOL exmdb_server_empty_folder_permission(
 static bool ufp_add(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
     bool b_freebusy, uint64_t fid_val, xstmt &pstmt)
 {
-	auto pvalue = common_util_get_propvals(&propvals, PR_ENTRYID);
+	auto pvalue = propvals.getval(PR_ENTRYID);
 	char username[UADDR_SIZE];
 	if (NULL != pvalue) {
 		if (!common_util_addressbook_entryid_to_username(static_cast<BINARY *>(pvalue), username, GX_ARRAY_SIZE(username)))
 			return true;
 	} else {
-		pvalue = common_util_get_propvals(&propvals, PR_SMTP_ADDRESS);
+		pvalue = propvals.getval(PR_SMTP_ADDRESS);
 		if (NULL == pvalue) {
 			return true;
 		}
 		gx_strlcpy(username, static_cast<char *>(pvalue), GX_ARRAY_SIZE(username));
 	}
-	pvalue = common_util_get_propvals(&propvals, PROP_TAG_MEMBERRIGHTS);
+	pvalue = propvals.getval(PROP_TAG_MEMBERRIGHTS);
 	if (NULL == pvalue) {
 		return true;
 	}
@@ -2555,7 +2554,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
     bool b_freebusy, uint64_t fid_val)
 {
 	static constexpr uint64_t DEFAULT = 0, ANONYMOUS = UINT64_MAX;
-	auto pvalue = common_util_get_propvals(&propvals, PROP_TAG_MEMBERID);
+	auto pvalue = propvals.getval(PROP_TAG_MEMBERID);
 	if (NULL == pvalue) {
 		return true;
 	}
@@ -2610,7 +2609,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 	    gx_sql_col_uint64(pstmt1, 0) != fid_val)
 		return true;
 	pstmt1.finalize();
-	pvalue = common_util_get_propvals(&propvals, PROP_TAG_MEMBERRIGHTS);
+	pvalue = propvals.getval(PROP_TAG_MEMBERRIGHTS);
 	if (NULL == pvalue) {
 		return true;
 	}
@@ -2640,7 +2639,7 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
     uint64_t fid_val)
 {
-	auto pvalue = common_util_get_propvals(&propvals, PROP_TAG_MEMBERID);
+	auto pvalue = propvals.getval(PROP_TAG_MEMBERID);
 	if (NULL == pvalue) {
 		return true;
 	}
@@ -2744,20 +2743,12 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 	const RULE_DATA *prow, BOOL *pb_exceed)
 {
 	int i;
-	char *pname;
-	void *pvalue;
 	uint32_t state;
-	char *pprovider;
 	uint32_t seq_id;
 	uint64_t fid_val;
 	uint64_t rule_id;
-	uint32_t *plevel;
 	EXT_PUSH ext_push;
 	char sql_string[256];
-	BINARY *pprovider_bin;
-	uint32_t *puser_flags;
-	RULE_ACTIONS *paction;
-	RESTRICTION *pcondition;
 	char action_buff[256*1024];
 	char condition_buff[256*1024];
 	
@@ -2783,14 +2774,12 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 				return TRUE;
 			}
-			pname = static_cast<char *>(common_util_get_propvals(
-			        &prow[i].propvals, PR_RULE_NAME));
-			pprovider = static_cast<char *>(common_util_get_propvals(
-			            &prow[i].propvals, PR_RULE_PROVIDER));
+			auto pname = prow[i].propvals.get<const char>(PR_RULE_NAME);
+			auto pprovider = prow[i].propvals.get<const char>(PR_RULE_PROVIDER);
 			if (NULL == pprovider) {
 				continue;
 			}
-			pvalue = common_util_get_propvals(&prow[i].propvals, PR_RULE_SEQUENCE);
+			auto pvalue = prow[i].propvals.getval(PR_RULE_SEQUENCE);
 			if (NULL == pvalue) {
 				snprintf(sql_string, arsizeof(sql_string), "SELECT max(sequence)"
 				          " FROM rules WHERE folder_id=%llu", LLU(fid_val));
@@ -2804,16 +2793,12 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			} else {
 				seq_id = *(uint32_t*)pvalue;
 			}
-			pvalue = common_util_get_propvals(&prow[i].propvals, PR_RULE_STATE);
+			pvalue = prow[i].propvals.getval(PR_RULE_STATE);
 			state = pvalue == nullptr ? 0 : *static_cast<uint32_t *>(pvalue);
-			plevel = static_cast<uint32_t *>(common_util_get_propvals(
-			         &prow[i].propvals, PR_RULE_LEVEL));
-			puser_flags = static_cast<uint32_t *>(common_util_get_propvals(
-			              &prow[i].propvals, PR_RULE_USER_FLAGS));
-			pprovider_bin = static_cast<BINARY *>(common_util_get_propvals(
-			                &prow[i].propvals, PR_RULE_PROVIDER_DATA));
-			pcondition = static_cast<RESTRICTION *>(common_util_get_propvals(
-			             &prow[i].propvals, PR_RULE_CONDITION));
+			auto plevel = prow[i].propvals.get<const uint32_t>(PR_RULE_LEVEL);
+			auto puser_flags = prow[i].propvals.get<const uint32_t>(PR_RULE_USER_FLAGS);
+			auto pprovider_bin = prow[i].propvals.get<const BINARY>(PR_RULE_PROVIDER_DATA);
+			auto pcondition = prow[i].propvals.get<RESTRICTION>(PR_RULE_CONDITION);
 			if (NULL == pcondition) {
 				continue;
 			}
@@ -2821,8 +2806,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			    ext_push.p_restriction(pcondition) != EXT_ERR_SUCCESS)
 				goto RULE_FAILURE;
 			int condition_len = ext_push.m_offset;
-			paction = static_cast<RULE_ACTIONS *>(common_util_get_propvals(
-			          &prow[i].propvals, PR_RULE_ACTIONS));
+			auto paction = prow[i].propvals.get<RULE_ACTIONS>(PR_RULE_ACTIONS);
 			if (NULL == paction) {
 				continue;
 			}
@@ -2870,7 +2854,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			break;
 		}
 		case ROW_MODIFY: {
-			pvalue = common_util_get_propvals(&prow[i].propvals, PR_RULE_ID);
+			auto pvalue = prow[i].propvals.getval(PR_RULE_ID);
 			if (NULL == pvalue) {
 				continue;
 			}
@@ -2884,7 +2868,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			    gx_sql_col_uint64(pstmt1, 0) != fid_val)
 				continue;
 			pstmt1.finalize();
-			pprovider = static_cast<char *>(common_util_get_propvals(&prow[i].propvals, PR_RULE_PROVIDER));
+			auto pprovider = prow[i].propvals.get<const char>(PR_RULE_PROVIDER);
 			if (NULL != pprovider) {
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE rules SET"
 				          " provider=? WHERE rule_id=%llu", LLU(rule_id));
@@ -2897,7 +2881,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 				}
 				pstmt1.finalize();
 			}
-			pvalue = common_util_get_propvals(&prow[i].propvals, PR_RULE_SEQUENCE);
+			pvalue = prow[i].propvals.getval(PR_RULE_SEQUENCE);
 			if (NULL != pvalue) {
 				seq_id = *(uint32_t*)pvalue;
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE rules SET sequence=%u"
@@ -2907,7 +2891,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 					goto RULE_FAILURE;
 				}
 			}
-			pvalue = common_util_get_propvals(&prow[i].propvals, PR_RULE_STATE);
+			pvalue = prow[i].propvals.getval(PR_RULE_STATE);
 			if (NULL != pvalue) {
 				state = *(uint32_t*)pvalue;
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE rules SET state=%u"
@@ -2917,8 +2901,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 					goto RULE_FAILURE;
 				}
 			}
-			plevel = static_cast<uint32_t *>(common_util_get_propvals(
-			         &prow[i].propvals, PR_RULE_LEVEL));
+			auto plevel = prow[i].propvals.get<uint32_t>(PR_RULE_LEVEL);
 			if (NULL != plevel) {
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE rules SET level=%u"
 				        " WHERE rule_id=%llu", *plevel, LLU(rule_id));
@@ -2927,8 +2910,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 					goto RULE_FAILURE;
 				}
 			}
-			puser_flags = static_cast<uint32_t *>(common_util_get_propvals(
-			              &prow[i].propvals, PR_RULE_USER_FLAGS));
+			auto puser_flags = prow[i].propvals.get<uint32_t>(PR_RULE_USER_FLAGS);
 			if (NULL != puser_flags) {
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE rules SET user_flags=%u"
 				        " WHERE rule_id=%llu", *puser_flags, LLU(rule_id));
@@ -2937,8 +2919,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 					goto RULE_FAILURE;
 				}
 			}
-			pprovider_bin = static_cast<BINARY *>(common_util_get_propvals(
-			                &prow[i].propvals, PR_RULE_PROVIDER_DATA));
+			auto pprovider_bin = prow[i].propvals.get<BINARY>(PR_RULE_PROVIDER_DATA);
 			if (NULL != pprovider_bin) {
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE rules SET "
 				          "provider_data=? WHERE rule_id=%llu", LLU(rule_id));
@@ -2952,8 +2933,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 				}
 				pstmt1.finalize();
 			}
-			pcondition = static_cast<RESTRICTION *>(common_util_get_propvals(
-			             &prow[i].propvals, PR_RULE_CONDITION));
+			auto pcondition = prow[i].propvals.get<RESTRICTION>(PR_RULE_CONDITION);
 			if (NULL != pcondition) {
 				if (!ext_push.init(condition_buff, sizeof(condition_buff), 0) ||
 				    ext_push.p_restriction(pcondition) != EXT_ERR_SUCCESS)
@@ -2972,8 +2952,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 				}
 				pstmt1.finalize();
 			}
-			paction = static_cast<RULE_ACTIONS *>(common_util_get_propvals(
-			          &prow[i].propvals, PR_RULE_ACTIONS));
+			auto paction = prow[i].propvals.get<RULE_ACTIONS>(PR_RULE_ACTIONS);
 			if (NULL != paction) {
 				if (!ext_push.init(action_buff, sizeof(action_buff), 0) ||
 				    ext_push.p_rule_actions(paction) != EXT_ERR_SUCCESS)
@@ -2995,7 +2974,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			break;
 		}
 		case ROW_REMOVE: {
-			pvalue = common_util_get_propvals(&prow[i].propvals, PR_RULE_ID);
+			auto pvalue = prow[i].propvals.getval(PR_RULE_ID);
 			if (NULL == pvalue) {
 				continue;
 			}
