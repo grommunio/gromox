@@ -525,18 +525,16 @@ BOOL exmdb_server_delete_messages(const char *dir,
 		pdb->psqlite, src_val, &folder_type)) {
 		return FALSE;
 	}
-	if (NULL != username) {
-		if (folder_type != FOLDER_SEARCH) {
-			if (FALSE == common_util_check_folder_permission(
-				pdb->psqlite, src_val, username, &permission)) {
-				return FALSE;
-			}
-			b_check = (permission & (frightsOwner | frightsDeleteAny)) ? false : TRUE;
-		} else {
-			b_check = TRUE;
-		}
-	} else {
+	if (username == nullptr) {
 		b_check = FALSE;
+	} else if (folder_type == FOLDER_SEARCH) {
+		b_check = TRUE;
+	} else {
+		if (FALSE == common_util_check_folder_permission(
+			pdb->psqlite, src_val, username, &permission)) {
+			return FALSE;
+		}
+		b_check = (permission & (frightsOwner | frightsDeleteAny)) ? false : TRUE;
 	}
 	BOOL b_batch = pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM ? TRUE : false;
 	if (TRUE == b_batch) {
@@ -640,12 +638,9 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	}
 	pstmt.finalize();
 	pstmt1.finalize();
-	if (TRUE == b_hard) {
-		if (FALSE == common_util_decrease_store_size(
-			pdb->psqlite, normal_size, fai_size)) {
-			return FALSE;
-		}
-	}
+	if (b_hard && !common_util_decrease_store_size(pdb->psqlite,
+	    normal_size, fai_size))
+		return FALSE;
 	propvals.count = 5;
 	propvals.ppropval = tmp_propvals;
 	if (FALSE == common_util_allocate_cn(pdb->psqlite, &change_num)) {
