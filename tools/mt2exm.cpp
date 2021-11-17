@@ -67,27 +67,12 @@ static ssize_t fullread(int fd, void *vbuf, size_t size)
 
 static void filter_folder_map(gi_folder_map_t &fmap)
 {
-	if (!g_public_folder) {
+	if (!g_public_folder)
 		fmap.emplace(~0ULL, tgt_folder{false, PRIVATE_FID_DRAFT, ""});
-		for (auto &p : fmap)
-			p.second.fid_to = rop_util_make_eid_ex(1, p.second.fid_to);
-		return;
-	}
-	fmap.emplace(~0ULL, tgt_folder{false, PUBLIC_FID_IPMSUBTREE, ""});
-	for (auto i = fmap.begin(); i != fmap.end(); ) {
-		auto &e = i->second;
-		if (e.fid_to == 0 || !e.create) {
-			++i;
-		} else if (e.fid_to == PRIVATE_FID_ROOT) {
-			e.fid_to = rop_util_make_eid_ex(1, PUBLIC_FID_ROOT);
-			++i;
-		} else if (e.fid_to == PRIVATE_FID_IPMSUBTREE) {
-			e.fid_to = rop_util_make_eid_ex(1, PUBLIC_FID_IPMSUBTREE);
-			++i;
-		} else {
-			i = fmap.erase(i);
-		}
-	}
+	else
+		fmap.emplace(~0ULL, tgt_folder{false, PUBLIC_FID_IPMSUBTREE, ""});
+	for (auto &p : fmap)
+		p.second.fid_to = rop_util_make_eid_ex(1, p.second.fid_to);
 }
 
 static void exm_read_base_maps()
