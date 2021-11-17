@@ -1,3 +1,12 @@
+1.8.87
+======
+
+Enhancements:
+
+* kdb2mt: support -s for public stores
+* Recognize ABK PropertyRestriction format for GetNames
+
+
 1.8 (2021-11-13)
 ================
 
@@ -18,7 +27,6 @@ Enhancements:
 
 * php: do print reason when autodiscover.ini cannot be read
 * mapi_lib: set PR_SUPPLEMENTARY_INFO when ingesting mail
-* kdb2mt: support -s for public stores
 * kdb2mt: support --src-mbox "" to get a listing of all stores
 
 
