@@ -1794,7 +1794,7 @@ BOOL common_util_send_message(store_object *pstore,
 	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
-	if (common_util_get_propvals(&pmsgctnt->proplist, PR_INTERNET_CPID) == nullptr) {
+	if (!pmsgctnt->proplist.has(PR_INTERNET_CPID)) {
 		ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
 		if (NULL == ppropval) {
 			return FALSE;
@@ -2286,7 +2286,7 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 	};
 	for (auto t : tags)
 		common_util_remove_propvals(pproplist, t);
-	if (common_util_get_propvals(pproplist, PR_DISPLAY_NAME) == nullptr)
+	if (!pproplist->has(PR_DISPLAY_NAME))
 		return FALSE;
 	propval.proptag = PR_FOLDER_TYPE;
 	propval.pvalue = &tmp_type;
@@ -2504,7 +2504,7 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
-	if (common_util_get_propvals(&pmsgctnt->proplist, PR_INTERNET_CPID) == nullptr) {
+	if (!pmsgctnt->proplist.has(PR_INTERNET_CPID)) {
 		ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
 		if (NULL == ppropval) {
 			return FALSE;

@@ -937,12 +937,12 @@ BOOL message_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		ppropvals->count += tmp_propvals.count;
 	}
 	if (common_util_index_proptags(pproptags, PR_MESSAGE_LOCALE_ID) >= 0 &&
-	    common_util_get_propvals(ppropvals, PR_MESSAGE_LOCALE_ID) == nullptr) {
+	    !ppropvals->has(PR_MESSAGE_LOCALE_ID)) {
 		ppropvals->ppropval[ppropvals->count].proptag = PR_MESSAGE_LOCALE_ID;
 		ppropvals->ppropval[ppropvals->count++].pvalue = deconst(&lcid_default);
 	}
 	if (common_util_index_proptags(pproptags, PR_MESSAGE_CODEPAGE) >= 0 &&
-	    common_util_get_propvals(ppropvals, PR_MESSAGE_CODEPAGE) == nullptr) {
+	    !ppropvals->has(PR_MESSAGE_CODEPAGE)) {
 		ppropvals->ppropval[ppropvals->count].proptag = PR_MESSAGE_CODEPAGE;
 		ppropvals->ppropval[ppropvals->count++].pvalue = &pmessage->cpid;
 	}

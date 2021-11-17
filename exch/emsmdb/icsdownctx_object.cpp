@@ -363,24 +363,22 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		};
 		for (auto t : tags)
 			common_util_remove_propvals(&fldchgs.pfldchgs[i], t);
-		if (common_util_get_propvals(&fldchgs.pfldchgs[i], PR_ATTR_HIDDEN) == nullptr) {
+		if (!fldchgs.pfldchgs[i].has(PR_ATTR_HIDDEN)) {
 			tmp_propval.proptag = PR_ATTR_HIDDEN;
 			tmp_propval.pvalue = deconst(&fake_byte);
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		}
-		if (NULL == common_util_get_propvals(
-			fldchgs.pfldchgs + i, PROP_TAG_ATTRIBUTESYSTEM)) {
+		if (!fldchgs.pfldchgs[i].has(PROP_TAG_ATTRIBUTESYSTEM)) {
 			tmp_propval.proptag = PROP_TAG_ATTRIBUTESYSTEM;
 			tmp_propval.pvalue = deconst(&fake_byte);
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		}
-		if (NULL == common_util_get_propvals(
-			fldchgs.pfldchgs + i, PROP_TAG_ATTRIBUTEREADONLY)) {
+		if (!fldchgs.pfldchgs[i].has(PROP_TAG_ATTRIBUTEREADONLY)) {
 			tmp_propval.proptag = PROP_TAG_ATTRIBUTEREADONLY;
 			tmp_propval.pvalue = deconst(&fake_byte);
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		}
-		if (common_util_get_propvals(&fldchgs.pfldchgs[i], PR_CREATOR_SID) == nullptr) {
+		if (!fldchgs.pfldchgs[i].has(PR_CREATOR_SID)) {
 			tmp_propval.proptag = PR_CREATOR_SID;
 			tmp_propval.pvalue = &tmp_bin;
 			tmp_bin.cb = 0;
@@ -430,7 +428,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			}
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		} else {
-			if (common_util_get_propvals(&fldchgs.pfldchgs[i], PR_SOURCE_KEY) == nullptr) {
+			if (!fldchgs.pfldchgs[i].has(PR_SOURCE_KEY)) {
 				tmp_propval.proptag = PR_SOURCE_KEY;
 				tmp_propval.pvalue =
 					common_util_calculate_folder_sourcekey(
@@ -522,7 +520,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 				return FALSE;
 			}
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-			if (common_util_get_propvals(&fldchgs.pfldchgs[i], PR_ADDITIONAL_REN_ENTRYIDS) == nullptr) {
+			if (!fldchgs.pfldchgs[i].has(PR_ADDITIONAL_REN_ENTRYIDS)) {
 				tmp_propval.proptag = PR_ADDITIONAL_REN_ENTRYIDS;
 				pvalue = cu_alloc<BINARY_ARRAY>();
 				auto ba = static_cast<BINARY_ARRAY *>(pvalue);
@@ -568,7 +566,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 				common_util_set_propvals(
 					fldchgs.pfldchgs + i, &tmp_propval);
 			}
-			if (common_util_get_propvals(&fldchgs.pfldchgs[i], PR_ADDITIONAL_REN_ENTRYIDS_EX) == nullptr) {
+			if (!fldchgs.pfldchgs[i].has(PR_ADDITIONAL_REN_ENTRYIDS_EX)) {
 				tmp_propval.proptag = PR_ADDITIONAL_REN_ENTRYIDS_EX;
 				pvalue = cu_alloc<BINARY>();
 				auto bv = static_cast<BINARY *>(pvalue);
@@ -614,7 +612,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 				common_util_set_propvals(
 					fldchgs.pfldchgs + i, &tmp_propval);
 			}
-			if (common_util_get_propvals(&fldchgs.pfldchgs[i], PR_FREEBUSY_ENTRYIDS) == nullptr) {
+			if (!fldchgs.pfldchgs[i].has(PR_FREEBUSY_ENTRYIDS)) {
 				tmp_propval.proptag = PR_FREEBUSY_ENTRYIDS;
 				pvalue = cu_alloc<BINARY_ARRAY>();
 				auto ba = static_cast<BINARY_ARRAY *>(pvalue);
@@ -1099,11 +1097,8 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			return FALSE;
 		}
 		for (i=0; i<pmsgctnt->children.pattachments->count; i++) {
-			if (NULL == common_util_get_propvals(
-				&pmsgctnt->children.pattachments->pplist[i]->proplist,
-				PROP_TAG_INCONFLICT)) {
+			if (!pmsgctnt->children.pattachments->pplist[i]->proplist.has(PROP_TAG_INCONFLICT))
 				continue;
-			}
 			pembedded = pmsgctnt->children.pattachments->pplist[i]->pembedded;
 			if (NULL == pembedded) {
 				return FALSE;
@@ -1122,7 +1117,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
 			tmp_propval.pvalue = pvalue;
 			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
-			if (common_util_get_propvals(&pembedded->proplist, PR_SOURCE_KEY) == nullptr) {
+			if (!pembedded->proplist.has(PR_SOURCE_KEY)) {
 				tmp_propval.proptag = PR_SOURCE_KEY;
 				tmp_propval.pvalue = common_util_calculate_message_sourcekey(
 										pctx->pstream->plogon, message_id);
@@ -1189,7 +1184,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			tmp_propval.pvalue = pvalue;
 		}
 		common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
-		if (common_util_get_propvals(&pmsgctnt->proplist, PR_SOURCE_KEY) == nullptr) {
+		if (!pmsgctnt->proplist.has(PR_SOURCE_KEY)) {
 			tmp_propval.proptag = PR_SOURCE_KEY;
 			tmp_propval.pvalue =
 				common_util_calculate_message_sourcekey(

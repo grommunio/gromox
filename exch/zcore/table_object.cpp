@@ -284,7 +284,7 @@ static BOOL rcpttable_query_rows(const table_object *ptable,
 	if (common_util_index_proptags(pcolumns, PR_ENTRYID) < 0)
 		return TRUE;
 	for (size_t i = 0; i < pset->count; ++i) {
-		if (common_util_get_propvals(pset->pparray[i], PR_ENTRYID) != nullptr)
+		if (pset->pparray[i]->has(PR_ENTRYID))
 			continue;
 		auto pvalue = common_util_get_propvals(pset->pparray[i], PR_ADDRTYPE);
 		if (pvalue == nullptr ||
@@ -995,11 +995,7 @@ static BOOL table_object_evaluate_restriction(
 		       &val_size, &rsize->size);
 	}
 	case RES_EXIST:
-		pvalue = common_util_get_propvals(ppropvals, pres->exist->proptag);
-		if (NULL == pvalue) {
-			return FALSE;
-		}
-		return TRUE;
+		return ppropvals->has(pres->exist->proptag) ? TRUE : false;
 	case RES_COMMENT:
 		if (pres->comment->pres == nullptr)
 			return TRUE;

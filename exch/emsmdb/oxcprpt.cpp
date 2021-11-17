@@ -647,8 +647,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		if (!fldsrc->get_properties(&proptags, &propvals))
 			return ecError;
 		for (i=0; i<proptags.count; i++) {
-			if (NULL == common_util_get_propvals(
-				&propvals, proptags.pproptag[i])) {
+			if (!propvals.has(proptags.pproptag[i])) {
 				pproblems->pproblem[pproblems->count].index =
 										poriginal_indices[i];
 				pproblems->pproblem[pproblems->count].proptag = 
@@ -722,8 +721,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		if (!msgsrc->get_properties(0, &proptags, &propvals))
 			return ecError;
 		for (i=0; i<proptags.count; i++) {
-			if (NULL == common_util_get_propvals(
-				&propvals, proptags.pproptag[i])) {
+			if (!propvals.has(proptags.pproptag[i])) {
 				pproblems->pproblem[pproblems->count].index =
 										poriginal_indices[i];
 				pproblems->pproblem[pproblems->count].proptag = 
@@ -776,8 +774,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		if (!atsrc->get_properties(0, &proptags, &propvals))
 			return ecError;
 		for (i=0; i<proptags.count; i++) {
-			if (NULL == common_util_get_propvals(
-				&propvals, proptags.pproptag[i])) {
+			if (!propvals.has(proptags.pproptag[i])) {
 				pproblems->pproblem[pproblems->count].index =
 										poriginal_indices[i];
 				pproblems->pproblem[pproblems->count].proptag = 

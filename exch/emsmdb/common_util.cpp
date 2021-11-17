@@ -980,10 +980,8 @@ BOOL common_util_propvals_to_row(
 	static const uint32_t errcode = ecNotFound;
 	
 	for (i=0; i<pcolumns->count; i++) {
-		if (NULL == common_util_get_propvals(
-			ppropvals, pcolumns->pproptag[i])) {
+		if (!ppropvals->has(pcolumns->pproptag[i]))
 			break;	
-		}
 	}
 	prow->flag = i < pcolumns->count ? PROPERTY_ROW_FLAG_FLAGGED : PROPERTY_ROW_FLAG_NONE;
 	prow->pppropval = cu_alloc<void *>(pcolumns->count);
@@ -1058,10 +1056,8 @@ BOOL common_util_propvals_to_row_ex(uint32_t cpid,
 	static const uint32_t errcode = ecNotFound;
 	
 	for (i=0; i<pcolumns->count; i++) {
-		if (NULL == common_util_get_propvals(
-			(TPROPVAL_ARRAY*)ppropvals, pcolumns->pproptag[i])) {
+		if (!ppropvals->has(pcolumns->pproptag[i]))
 			break;	
-		}
 	}
 	prow->flag = i < pcolumns->count ? PROPERTY_ROW_FLAG_FLAGGED : PROPERTY_ROW_FLAG_NONE;
 	prow->pppropval = cu_alloc<void *>(pcolumns->count);
@@ -2040,7 +2036,7 @@ BOOL common_util_send_message(logon_object *plogon,
 		log_err("W-1288: Failed to read mid:0x%llx from exmdb", LLU(message_id));
 		return FALSE;
 	}
-	if (common_util_get_propvals(&pmsgctnt->proplist, PR_INTERNET_CPID) == nullptr) {
+	if (!pmsgctnt->proplist.has(PR_INTERNET_CPID)) {
 		ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
 		if (NULL == ppropval) {
 			return FALSE;

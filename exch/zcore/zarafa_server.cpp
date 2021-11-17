@@ -3286,9 +3286,9 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 	if (!pmessage->get_rowid_begin(&last_rowid))
 		return ecError;
 	for (size_t i = 0; i < prcpt_list->count; ++i, ++last_rowid) {
-		if (common_util_get_propvals(prcpt_list->pparray[i], PR_ENTRYID) == nullptr &&
-		    common_util_get_propvals(prcpt_list->pparray[i], PR_EMAIL_ADDRESS) == nullptr &&
-		    common_util_get_propvals(prcpt_list->pparray[i], PR_SMTP_ADDRESS) == nullptr)
+		if (!prcpt_list->pparray[i]->has(PR_ENTRYID) &&
+		    !prcpt_list->pparray[i]->has(PR_EMAIL_ADDRESS) &&
+		    !prcpt_list->pparray[i]->has(PR_SMTP_ADDRESS))
 			return ecInvalidParam;
 		prowid = static_cast<uint32_t *>(common_util_get_propvals(
 		         prcpt_list->pparray[i], PROP_TAG_ROWID));
@@ -3314,9 +3314,8 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			prcpt->count ++;
 			pbin = static_cast<BINARY *>(common_util_get_propvals(prcpt, PR_ENTRYID));
 			if (pbin == nullptr ||
-			    (common_util_get_propvals(prcpt, PR_EMAIL_ADDRESS) != nullptr &&
-			    common_util_get_propvals(prcpt, PR_ADDRTYPE) != nullptr &&
-			    common_util_get_propvals(prcpt, PR_DISPLAY_NAME) != nullptr))
+			    (prcpt->has(PR_EMAIL_ADDRESS) &&
+			    prcpt->has(PR_ADDRTYPE) && prcpt->has(PR_DISPLAY_NAME)))
 				continue;
 			ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, 0);
 			if (ext_pull.g_uint32(&tmp_flags) != EXT_ERR_SUCCESS ||
@@ -4709,7 +4708,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		for (i=0; i<ppropvals->count; i++) {
 			tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
 		}
-		if (common_util_get_propvals(&tmp_propvals, PR_FOLDER_TYPE) == nullptr) {
+		if (!tmp_propvals.has(PR_FOLDER_TYPE)) {
 			tmp_type = FOLDER_GENERIC;
 			tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_FOLDER_TYPE;
 			tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &tmp_type;

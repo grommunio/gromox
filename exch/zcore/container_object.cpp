@@ -172,11 +172,7 @@ static BOOL container_object_match_contact_message(
 		return FALSE;
 	}
 	case RES_EXIST:
-		pvalue = common_util_get_propvals(ppropvals, pfilter->exist->proptag);
-		if (NULL != pvalue) {
-			return TRUE;	
-		}
-		return FALSE;
+		return ppropvals->has(pfilter->exist->proptag) ? TRUE : false;
 	default:
 		return FALSE;
 	}

@@ -1284,7 +1284,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		for (i=0; i<ppropvals->count; i++) {
 			tmp_propvals.ppropval[tmp_propvals.count++] = ppropvals->ppropval[i];
 		}
-		if (common_util_get_propvals(&tmp_propvals, PR_FOLDER_TYPE) == nullptr) {
+		if (!tmp_propvals.has(PR_FOLDER_TYPE)) {
 			tmp_type = FOLDER_GENERIC;
 			tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_FOLDER_TYPE;
 			tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &tmp_type;

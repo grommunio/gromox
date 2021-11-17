@@ -118,13 +118,10 @@ static BOOL fastdownctx_object_record_foldermessagesnodelprops(
 static BOOL fastdownctx_object_record_foldercontent(
 	DOUBLE_LIST *pflow_list, const FOLDER_CONTENT *pfldctnt)
 {
-	if (NULL != common_util_get_propvals(
-		(TPROPVAL_ARRAY*)&pfldctnt->proplist,
-		META_TAG_NEWFXFOLDER)) {
+	if (pfldctnt->proplist.has(META_TAG_NEWFXFOLDER))
 		return fastdownctx_object_record_flow_node(
 						pflow_list, FUNC_ID_PROPLIST,
 						(void*)&pfldctnt->proplist);
-	}
 	if (FALSE == fastdownctx_object_record_flow_node(
 		pflow_list, FUNC_ID_PROPLIST, (void*)&pfldctnt->proplist)) {
 		return FALSE;

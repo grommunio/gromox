@@ -451,7 +451,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 	common_util_remove_propvals(
 		(TPROPVAL_ARRAY*)pproperties, PROP_TAG_CHANGENUMBER);
 	change_num = rop_util_get_gc_value(*(uint64_t*)pvalue);
-	if (common_util_get_propvals(pproperties, PR_PREDECESSOR_CHANGE_LIST) == nullptr) {
+	if (!pproperties->has(PR_PREDECESSOR_CHANGE_LIST)) {
 		fprintf(stderr, "E-1584: create_folder_b_p request without PCL\n");
 		return TRUE;
 	}

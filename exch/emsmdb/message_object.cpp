@@ -1190,7 +1190,7 @@ BOOL message_object::get_properties(uint32_t size_limit,
 	}
 	if (pmessage->pembedding == nullptr &&
 	    common_util_index_proptags(pproptags, PR_SOURCE_KEY) >= 0 &&
-	    common_util_get_propvals(ppropvals, PR_SOURCE_KEY) == nullptr) {
+	    !ppropvals->has(PR_SOURCE_KEY)) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		pv.proptag = PR_SOURCE_KEY;
 		pv.pvalue = common_util_calculate_message_sourcekey(pmessage->plogon, pmessage->message_id);
@@ -1199,7 +1199,7 @@ BOOL message_object::get_properties(uint32_t size_limit,
 		ppropvals->count ++;
 	}
 	if (common_util_index_proptags(pproptags, PR_MESSAGE_LOCALE_ID) >= 0 &&
-	    common_util_get_propvals(ppropvals, PR_MESSAGE_LOCALE_ID) == nullptr) {
+	    !ppropvals->has(PR_MESSAGE_LOCALE_ID)) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		pv.proptag = PR_MESSAGE_LOCALE_ID;
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
@@ -1212,7 +1212,7 @@ BOOL message_object::get_properties(uint32_t size_limit,
 		ppropvals->count ++;
 	}
 	if (common_util_index_proptags(pproptags, PR_MESSAGE_CODEPAGE) >= 0 &&
-	    common_util_get_propvals(ppropvals, PR_MESSAGE_CODEPAGE) == nullptr) {
+	    !ppropvals->has(PR_MESSAGE_CODEPAGE)) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		pv.proptag = PR_MESSAGE_CODEPAGE;
 		pv.pvalue = &pmessage->cpid;

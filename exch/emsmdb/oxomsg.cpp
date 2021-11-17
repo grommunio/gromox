@@ -641,8 +641,7 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 		proptag_buff[6] = PROP_TAG_PROVIDERSUBMITTIME;
 		if (!pmessage->get_properties(0, &proptags, *pppropvals))
 			*pppropvals = NULL;
-		if (NULL == common_util_get_propvals(
-			*pppropvals, PROP_TAG_PROVIDERSUBMITTIME)) {
+		if (!(**pppropvals).has(PROP_TAG_PROVIDERSUBMITTIME)) {
 			propval.proptag = PROP_TAG_PROVIDERSUBMITTIME;
 			propval.pvalue = cu_alloc<uint64_t>();
 			if (NULL != propval.pvalue) {

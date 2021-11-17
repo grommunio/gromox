@@ -553,7 +553,7 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		ppropvals->count += tmp_propvals.count;
 	}
 	if (common_util_index_proptags(pproptags, PR_SOURCE_KEY) >= 0 &&
-	    common_util_get_propvals(ppropvals, PR_SOURCE_KEY) == nullptr) {
+	    !ppropvals->has(PR_SOURCE_KEY)) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		pv.proptag = PR_SOURCE_KEY;
 		pv.pvalue = common_util_calculate_folder_sourcekey(pfolder->plogon, pfolder->folder_id);

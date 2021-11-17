@@ -1769,8 +1769,8 @@ static BOOL message_rectify_message(const char *account,
 			continue;
 		case PR_SUBJECT:
 		case PR_SUBJECT_A:
-			if (common_util_get_propvals(&pmsgctnt->proplist, PR_NORMALIZED_SUBJECT) != nullptr ||
-			    common_util_get_propvals(&pmsgctnt->proplist, PR_NORMALIZED_SUBJECT_A) != nullptr)
+			if (pmsgctnt->proplist.has(PR_NORMALIZED_SUBJECT) ||
+			    pmsgctnt->proplist.has(PR_NORMALIZED_SUBJECT_A))
 				continue;	
 			break;
 		}
@@ -1787,7 +1787,7 @@ static BOOL message_rectify_message(const char *account,
 		vc->pvalue = deconst(&fake_flags);
 		pmsgctnt1->proplist.count ++;
 		++vc;
-		if (common_util_get_propvals(&pmsgctnt->proplist, PR_READ) == nullptr) {
+		if (!pmsgctnt->proplist.has(PR_READ)) {
 			auto x = cu_alloc<uint8_t>();
 			if (x == nullptr)
 				return false;
@@ -1797,7 +1797,7 @@ static BOOL message_rectify_message(const char *account,
 			++pmsgctnt1->proplist.count;
 			++vc;
 		}
-	} else if (common_util_get_propvals(&pmsgctnt->proplist, PR_READ) == nullptr) {
+	} else if (!pmsgctnt->proplist.has(PR_READ)) {
 		auto x = cu_alloc<uint8_t>();
 		if (x == nullptr)
 			return false;
@@ -1807,7 +1807,7 @@ static BOOL message_rectify_message(const char *account,
 		++pmsgctnt1->proplist.count;
 		++vc;
 	}
-	if (common_util_get_propvals(&pmsgctnt->proplist, PR_SEARCH_KEY) == nullptr) {
+	if (!pmsgctnt->proplist.has(PR_SEARCH_KEY)) {
 		pbin = cu_alloc<BINARY>();
 		if (NULL == pbin) {
 			return FALSE;
@@ -1825,8 +1825,7 @@ static BOOL message_rectify_message(const char *account,
 		pmsgctnt1->proplist.count ++;
 		++vc;
 	}
-	if (NULL == common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_BODYCONTENTID)) {
+	if (!pmsgctnt->proplist.has(PROP_TAG_BODYCONTENTID)) {
 		tmp_guid = guid_random_new();
 		if (!ext_push.init(cid_string, 256, 0) ||
 		    ext_push.p_guid(&tmp_guid) != EXT_ERR_SUCCESS)
@@ -1849,7 +1848,7 @@ static BOOL message_rectify_message(const char *account,
 		pmsgctnt1->proplist.count ++;
 		++vc;
 	}
-	if (common_util_get_propvals(&pmsgctnt->proplist, PR_CREATOR_NAME) == nullptr) {
+	if (!pmsgctnt->proplist.has(PR_CREATOR_NAME)) {
 		auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_SENDER_NAME);
 		if (NULL == pvalue) {
 			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
@@ -1862,7 +1861,7 @@ static BOOL message_rectify_message(const char *account,
 			++vc;
 		}
 	}
-	if (common_util_get_propvals(&pmsgctnt->proplist, PR_CREATOR_ENTRYID) == nullptr) {
+	if (!pmsgctnt->proplist.has(PR_CREATOR_ENTRYID)) {
 		auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_SENDER_ENTRYID);
 		if (NULL == pvalue) {
 			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
@@ -1875,8 +1874,7 @@ static BOOL message_rectify_message(const char *account,
 			++vc;
 		}
 	}
-	if (common_util_get_propvals(&pmsgctnt->proplist,
-	    PR_LAST_MODIFIER_NAME) == nullptr) {
+	if (!pmsgctnt->proplist.has(PR_LAST_MODIFIER_NAME)) {
 		auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_SENDER_NAME);
 		if (NULL == pvalue) {
 			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
@@ -1889,8 +1887,7 @@ static BOOL message_rectify_message(const char *account,
 			++vc;
 		}
 	}
-	if (common_util_get_propvals(&pmsgctnt->proplist,
-	    PR_LAST_MODIFIER_ENTRYID) == nullptr) {
+	if (!pmsgctnt->proplist.has(PR_LAST_MODIFIER_ENTRYID)) {
 		auto pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_SENDER_ENTRYID);
 		if (NULL == pvalue) {
 			pvalue = common_util_get_propvals(&pmsgctnt->proplist,
@@ -3723,8 +3720,7 @@ static bool op_delegate(const char *from_address, const char *account,
 	    message_id, &pmsgctnt) || NULL == pmsgctnt) {
 		return FALSE;
 	}
-	if (NULL != common_util_get_propvals(
-	    &pmsgctnt->proplist, PROP_TAG_DELEGATEDBYRULE)) {
+	if (pmsgctnt->proplist.has(PROP_TAG_DELEGATEDBYRULE)) {
 		common_util_log_info(LV_DEBUG, "user=%s host=unkonwn  Delegated"
 			" message %llu in folder %llu cannot be delegated"
 			" again", account, LLU(message_id), LLU(folder_id));
@@ -3742,8 +3738,7 @@ static bool op_delegate(const char *from_address, const char *account,
 	};
 	for (auto t : tags)
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
-	if (common_util_get_propvals(&pmsgctnt->proplist,
-	    PR_RCVD_REPRESENTING_ENTRYID) == nullptr) {
+	if (!pmsgctnt->proplist.has(PR_RCVD_REPRESENTING_ENTRYID)) {
 		char essdn_buff[1280];
 		memcpy(essdn_buff, "EX:", 3);
 		if (!common_util_username_to_essdn(account,
@@ -4158,8 +4153,7 @@ static bool opx_delegate(const char *from_address, const char *account,
 	    message_id, &pmsgctnt) || NULL == pmsgctnt) {
 		return FALSE;
 	}
-	if (NULL != common_util_get_propvals(
-	    &pmsgctnt->proplist, PROP_TAG_DELEGATEDBYRULE)) {
+	if (pmsgctnt->proplist.has(PROP_TAG_DELEGATEDBYRULE)) {
 		common_util_log_info(LV_DEBUG, "user=%s host=unkonwn  Delegated"
 			" message %llu in folder %llu cannot be delegated"
 			" again", account, LLU(message_id), LLU(folder_id));
@@ -4177,8 +4171,7 @@ static bool opx_delegate(const char *from_address, const char *account,
 	};
 	for (auto t : tags)
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
-	if (common_util_get_propvals(&pmsgctnt->proplist,
-	    PR_RCVD_REPRESENTING_ENTRYID) == nullptr) {
+	if (!pmsgctnt->proplist.has(PR_RCVD_REPRESENTING_ENTRYID)) {
 		char essdn_buff[1280];
 		memcpy(essdn_buff, "EX:", 3);
 		if (!common_util_username_to_essdn(account,
@@ -4639,8 +4632,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		propval.proptag = PR_RECEIVED_BY_SEARCH_KEY;
 		propval.pvalue = &searchkey_bin;
 		common_util_set_propvals(&tmp_msg.proplist, &propval);
-		if (common_util_get_propvals(&pmsg->proplist,
-		    PR_RCVD_REPRESENTING_ENTRYID) == nullptr) {
+		if (!pmsg->proplist.has(PR_RCVD_REPRESENTING_ENTRYID)) {
 			propval.proptag = PR_RCVD_REPRESENTING_ENTRYID;
 			propval.pvalue = pentryid;
 			common_util_set_propvals(&tmp_msg.proplist, &propval);	
@@ -4748,8 +4740,7 @@ BOOL exmdb_server_write_message(const char *dir, const char *account,
 	uint64_t fid_val;
 	uint64_t fid_val1;
 	
-	if (NULL == common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_CHANGENUMBER)) {
+	if (!pmsgctnt->proplist.has(PROP_TAG_CHANGENUMBER)) {
 		*pe_result = GXERR_CALL_FAILED;
 		return TRUE;
 	}
