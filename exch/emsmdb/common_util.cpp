@@ -841,18 +841,18 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 	return TRUE;
 }
 
-void common_util_set_propvals(TPROPVAL_ARRAY *parray,
-	const TAGGED_PROPVAL *ppropval)
+void cu_set_propval(TPROPVAL_ARRAY *parray, uint32_t tag, const void *data)
 {
 	int i;
 	
 	for (i=0; i<parray->count; i++) {
-		if (ppropval->proptag == parray->ppropval[i].proptag) {
-			parray->ppropval[i].pvalue = ppropval->pvalue;
+		if (parray->ppropval[i].proptag == tag) {
+			parray->ppropval[i].pvalue = deconst(data);
 			return;
 		}
 	}
-	parray->ppropval[parray->count++] = *ppropval;
+	parray->ppropval[parray->count].proptag = tag;
+	parray->ppropval[parray->count++].pvalue = deconst(data);
 }
 
 void common_util_remove_propvals(
@@ -1050,20 +1050,19 @@ BOOL common_util_row_to_propvals(
 	TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
-	TAGGED_PROPVAL propval;
 	
 	for (i=0; i<pcolumns->count; i++) {
-		propval.proptag = pcolumns->pproptag[i];
+		void *pvalue;
 		if (PROPERTY_ROW_FLAG_NONE == prow->flag) {
-			propval.pvalue = prow->pppropval[i];
+			pvalue = prow->pppropval[i];
 		} else {
 			if (FLAGGED_PROPVAL_FLAG_AVAILABLE !=
 				((FLAGGED_PROPVAL*)prow->pppropval[i])->flag) {
 				continue;	
 			}
-			propval.pvalue = ((FLAGGED_PROPVAL*)prow->pppropval[i])->pvalue;
+			pvalue = ((FLAGGED_PROPVAL*)prow->pppropval[i])->pvalue;
 		}
-		common_util_set_propvals(ppropvals, &propval);
+		cu_set_propval(ppropvals, pcolumns->pproptag[i], pvalue);
 	}
 	return TRUE;
 }
@@ -1168,71 +1167,56 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 	TPROPVAL_ARRAY *ppropvals)
 {
 	static constexpr uint8_t persist_true = true, persist_false = false;
-	TAGGED_PROPVAL propval;
 	PROPTAG_ARRAY tmp_columns;
 	BOOL b_unicode = (prow->flags & RECIPIENT_ROW_FLAG_UNICODE) ? TRUE : false;
 	
-	propval.proptag = PROP_TAG_RESPONSIBILITY;
-	propval.pvalue = deconst((prow->flags & RECIPIENT_ROW_FLAG_RESPONSIBLE) ? &persist_true : &persist_false);
-	common_util_set_propvals(ppropvals, &propval);
-	propval.proptag = PR_SEND_RICH_INFO;
-	propval.pvalue = deconst((prow->flags & RECIPIENT_ROW_FLAG_NONRICH) ? &persist_true : &persist_false);
-	common_util_set_propvals(ppropvals, &propval);
+	cu_set_propval(ppropvals, PROP_TAG_RESPONSIBILITY, (prow->flags & RECIPIENT_ROW_FLAG_RESPONSIBLE) ? &persist_true : &persist_false);
+	cu_set_propval(ppropvals, PR_SEND_RICH_INFO, (prow->flags & RECIPIENT_ROW_FLAG_NONRICH) ? &persist_true : &persist_false);
 	if (NULL != prow->ptransmittable_name) {
-		propval.proptag = PR_TRANSMITABLE_DISPLAY_NAME;
+		void *pvalue;
 		if (TRUE == b_unicode) {
-			propval.pvalue = prow->ptransmittable_name;
+			pvalue = prow->ptransmittable_name;
 		} else {
-			propval.pvalue = common_util_dup_mb_to_utf8(cpid,
+			pvalue = common_util_dup_mb_to_utf8(cpid,
 								prow->ptransmittable_name);
-			if (NULL == propval.pvalue) {
+			if (pvalue == nullptr)
 				return FALSE;
-			}
 		}
-		common_util_set_propvals(ppropvals, &propval);
+		cu_set_propval(ppropvals, PR_TRANSMITABLE_DISPLAY_NAME, pvalue);
 	}
 	if (NULL != prow->pdisplay_name) {
-		propval.proptag = PR_DISPLAY_NAME;
-		propval.pvalue = b_unicode ? prow->pdisplay_name :
-		                 common_util_dup_mb_to_utf8(cpid, prow->pdisplay_name);
-		if (NULL != propval.pvalue) {
-			common_util_set_propvals(ppropvals, &propval);
-		}
+		auto pvalue = b_unicode ? prow->pdisplay_name :
+		              common_util_dup_mb_to_utf8(cpid, prow->pdisplay_name);
+		if (pvalue != nullptr)
+			cu_set_propval(ppropvals, PR_DISPLAY_NAME, pvalue);
 	}
 	if (NULL != prow->pmail_address) {
-		propval.proptag = PR_EMAIL_ADDRESS;
+		void *pvalue;
 		if (TRUE == b_unicode) {
-			propval.pvalue = prow->pmail_address;
+			pvalue = prow->pmail_address;
 		} else {
-			propval.pvalue = common_util_dup_mb_to_utf8(
+			pvalue = common_util_dup_mb_to_utf8(
 								cpid, prow->pmail_address);
-			if (NULL == propval.pvalue) {
+			if (pvalue == nullptr)
 				return FALSE;
-			}
 		}
-		common_util_set_propvals(ppropvals, &propval);
+		cu_set_propval(ppropvals, PR_EMAIL_ADDRESS, pvalue);
 	}
-	propval.proptag = PR_ADDRTYPE;
 	switch (prow->flags & 0x0007) {
 	case RECIPIENT_ROW_TYPE_NONE:
 		if (NULL != prow->paddress_type) {
-			propval.pvalue = prow->paddress_type;
-			common_util_set_propvals(ppropvals, &propval);
+			cu_set_propval(ppropvals, PR_ADDRTYPE, prow->paddress_type);
 		}
 		break;
 	case RECIPIENT_ROW_TYPE_X500DN:
 		if (NULL == prow->px500dn) {
 			return FALSE;
 		}
-		propval.pvalue = deconst("EX");
-		common_util_set_propvals(ppropvals, &propval);
-		propval.proptag = PR_EMAIL_ADDRESS;
-		propval.pvalue = prow->px500dn;
-		common_util_set_propvals(ppropvals, &propval);
+		cu_set_propval(ppropvals, PR_ADDRTYPE, "EX");
+		cu_set_propval(ppropvals, PR_EMAIL_ADDRESS, prow->px500dn);
 		break;
 	case RECIPIENT_ROW_TYPE_SMTP:
-		propval.pvalue = deconst("SMTP");
-		common_util_set_propvals(ppropvals, &propval);
+		cu_set_propval(ppropvals, PR_ADDRTYPE, "SMTP");
 		break;
 	default:
 		/* we do not support other address types */
@@ -1247,15 +1231,12 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 	auto pvalue = ppropvals->get<char>(PR_DISPLAY_NAME);
 	if (pvalue == nullptr || *pvalue == '\0' || strcmp(pvalue, "''") == 0 ||
 	    strcmp(pvalue, "\"\"") == 0) {
-		propval.proptag = PR_DISPLAY_NAME;
-		propval.pvalue = ppropvals->getval(PROP_TAG_RECIPIENTDISPLAYNAME);
-		if (NULL == propval.pvalue) {
-			propval.pvalue = ppropvals->getval(PR_SMTP_ADDRESS);
-		}
-		if (NULL == propval.pvalue) {
-			propval.pvalue = deconst("Undisclosed-Recipients");
-		}
-		common_util_set_propvals(ppropvals, &propval);
+		auto pvalue = ppropvals->get<const char>(PROP_TAG_RECIPIENTDISPLAYNAME);
+		if (pvalue == nullptr)
+			pvalue = ppropvals->get<char>(PR_SMTP_ADDRESS);
+		if (pvalue == nullptr)
+			pvalue = "Undisclosed-Recipients";
+		cu_set_propval(ppropvals, PR_DISPLAY_NAME, pvalue);
 	}
 	return TRUE;
 }

@@ -301,26 +301,18 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		for (auto t : tags)
 			common_util_remove_propvals(&fldchgs.pfldchgs[i], t);
 		if (!fldchgs.pfldchgs[i].has(PR_ATTR_HIDDEN)) {
-			tmp_propval.proptag = PR_ATTR_HIDDEN;
-			tmp_propval.pvalue = deconst(&fake_byte);
-			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
+			cu_set_propval(&fldchgs.pfldchgs[i], PR_ATTR_HIDDEN, &fake_byte);
 		}
 		if (!fldchgs.pfldchgs[i].has(PROP_TAG_ATTRIBUTESYSTEM)) {
-			tmp_propval.proptag = PROP_TAG_ATTRIBUTESYSTEM;
-			tmp_propval.pvalue = deconst(&fake_byte);
-			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
+			cu_set_propval(&fldchgs.pfldchgs[i], PROP_TAG_ATTRIBUTESYSTEM, &fake_byte);
 		}
 		if (!fldchgs.pfldchgs[i].has(PROP_TAG_ATTRIBUTEREADONLY)) {
-			tmp_propval.proptag = PROP_TAG_ATTRIBUTEREADONLY;
-			tmp_propval.pvalue = deconst(&fake_byte);
-			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
+			cu_set_propval(&fldchgs.pfldchgs[i], PROP_TAG_ATTRIBUTEREADONLY, &fake_byte);
 		}
 		if (!fldchgs.pfldchgs[i].has(PR_CREATOR_SID)) {
-			tmp_propval.proptag = PR_CREATOR_SID;
-			tmp_propval.pvalue = &tmp_bin;
 			tmp_bin.cb = 0;
 			tmp_bin.pb = NULL;
-			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
+			cu_set_propval(&fldchgs.pfldchgs[i], PR_CREATOR_SID, &tmp_bin);
 		}
 		auto pvalue = fldchgs.pfldchgs[i].getval(PidTagFolderId);
 		if (NULL == pvalue) {
@@ -337,63 +329,43 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		parent_fid = *(uint64_t*)pvalue;
 		if (SYNC_FLAG_NOFOREIGNIDENTIFIERS & pctx->sync_flags) {
 			common_util_remove_propvals(&fldchgs.pfldchgs[i], PR_SOURCE_KEY);
-			tmp_propval.proptag = PR_SOURCE_KEY;
-			tmp_propval.pvalue =
-				common_util_calculate_folder_sourcekey(
-				pctx->pstream->plogon, folder_id);
-			if (NULL == tmp_propval.pvalue) {
+			auto psk = common_util_calculate_folder_sourcekey(pctx->pstream->plogon, folder_id);
+			if (psk == nullptr)
 				return FALSE;
-			}
-			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
+			cu_set_propval(&fldchgs.pfldchgs[i], PR_SOURCE_KEY, psk);
 			if (pctx->pfolder->folder_id == parent_fid) {
-				tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
-				tmp_propval.pvalue = &tmp_bin;
 				tmp_bin.cb = 0;
 				tmp_bin.pb = NULL;
+				psk = &tmp_bin;
 			} else {
-				tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
-				tmp_propval.pvalue =
-					common_util_calculate_folder_sourcekey(
-					pctx->pstream->plogon, parent_fid);
-				if (NULL == tmp_propval.pvalue) {
+				psk = common_util_calculate_folder_sourcekey(pctx->pstream->plogon, parent_fid);
+				if (psk == nullptr)
 					return FALSE;
-				}
 			}
-			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
+			cu_set_propval(&fldchgs.pfldchgs[i], PR_PARENT_SOURCE_KEY, psk);
 		} else {
 			if (!fldchgs.pfldchgs[i].has(PR_SOURCE_KEY)) {
-				tmp_propval.proptag = PR_SOURCE_KEY;
-				tmp_propval.pvalue =
-					common_util_calculate_folder_sourcekey(
-					pctx->pstream->plogon, folder_id);
-				if (NULL == tmp_propval.pvalue) {
+				auto psk = common_util_calculate_folder_sourcekey(pctx->pstream->plogon, folder_id);
+				if (psk == nullptr)
 					return FALSE;
-				}
-				common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
+				cu_set_propval(&fldchgs.pfldchgs[i], PR_SOURCE_KEY, psk);
 			}
+			void *psk;
 			if (pctx->pfolder->folder_id == parent_fid) {
-				tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
-				tmp_propval.pvalue = &tmp_bin;
 				tmp_bin.cb = 0;
 				tmp_bin.pb = NULL;
+				psk = &tmp_bin;
 			} else {
 				if (!exmdb_client_get_folder_property(pctx->pstream->plogon->get_dir(),
-				    0, parent_fid, PR_SOURCE_KEY, &pvalue))
+				    0, parent_fid, PR_SOURCE_KEY, &psk))
 					return FALSE;	
-				if (NULL == pvalue) {
-					tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
-					tmp_propval.pvalue =
-						common_util_calculate_folder_sourcekey(
-						pctx->pstream->plogon, parent_fid);
-					if (NULL == tmp_propval.pvalue) {
+				if (psk == nullptr) {
+					psk = common_util_calculate_folder_sourcekey(pctx->pstream->plogon, parent_fid);
+					if (psk == nullptr)
 						return FALSE;
-					}
-				} else {
-					tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
-					tmp_propval.pvalue = pvalue;
 				}
 			}
-			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
+			cu_set_propval(&fldchgs.pfldchgs[i], PR_PARENT_SOURCE_KEY, psk);
 		}
 		auto inboxy = pctx->pstream->plogon->check_private() &&
 		              (folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) ||
@@ -935,7 +907,6 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	MESSAGE_CONTENT *pmsgctnt;
 	MESSAGE_CONTENT *pembedded;
 	MSGCHG_PARTIAL msg_partial;
-	TAGGED_PROPVAL tmp_propval;
 	static constexpr uint8_t fake_true = 1;
 	static constexpr uint8_t fake_false = 0;
 	
@@ -1001,20 +972,13 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			memcpy(ppropval, pembedded->proplist.ppropval,
 				sizeof(TAGGED_PROPVAL)*pembedded->proplist.count);
 			pembedded->proplist.ppropval = ppropval;
-			tmp_propval.proptag = PidTagMid;
-			tmp_propval.pvalue = &message_id;
-			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
-			tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
-			tmp_propval.pvalue = pvalue;
-			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
+			cu_set_propval(&pembedded->proplist, PidTagMid, &message_id);
+			cu_set_propval(&pembedded->proplist, PR_PARENT_SOURCE_KEY, pvalue);
 			if (!pembedded->proplist.has(PR_SOURCE_KEY)) {
-				tmp_propval.proptag = PR_SOURCE_KEY;
-				tmp_propval.pvalue = common_util_calculate_message_sourcekey(
-										pctx->pstream->plogon, message_id);
-				if (NULL == tmp_propval.pvalue) {
+				auto psk = common_util_calculate_message_sourcekey(pctx->pstream->plogon, message_id);
+				if (psk == nullptr)
 					return FALSE;
-				}
-				common_util_set_propvals(&pembedded->proplist, &tmp_propval);	
+				cu_set_propval(&pembedded->proplist, PR_SOURCE_KEY, psk);
 			}
 			if (FALSE == icsdownctx_object_extract_msgctntinfo(
 				pembedded, pctx->extra_flags, &chgheader, &progmsg)) {
@@ -1029,16 +993,12 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			common_util_remove_propvals(
 				&pembedded->proplist, PROP_TAG_MESSAGESTATUS);
 			auto flags = pembedded->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
-			tmp_propval.proptag = PR_READ_RECEIPT_REQUESTED;
-			tmp_propval.pvalue = flags != nullptr &&
-			                     (*flags & MSGFLAG_RN_PENDING) ?
+			auto xbit = flags != nullptr && (*flags & MSGFLAG_RN_PENDING) ?
 			                     deconst(&fake_true) : deconst(&fake_false);
-			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
-			tmp_propval.proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
-			tmp_propval.pvalue = flags != nullptr &&
-			                     (*flags & MSGFLAG_NRN_PENDING) ?
+			cu_set_propval(&pembedded->proplist, PR_READ_RECEIPT_REQUESTED, xbit);
+			xbit = flags != nullptr && (*flags & MSGFLAG_NRN_PENDING) ?
 			                     deconst(&fake_true) : deconst(&fake_false);
-			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
+			cu_set_propval(&pembedded->proplist, PR_NON_RECEIPT_NOTIFICATION_REQUESTED, xbit);
 			if (!pctx->pstream->write_messagechangefull(&chgheader, pembedded))
 				return FALSE;
 		}
@@ -1057,42 +1017,26 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 		    0, folder_id, PR_SOURCE_KEY, &pvalue))
 			return FALSE;	
 		if (NULL == pvalue) {
-			tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
-			tmp_propval.pvalue = common_util_calculate_folder_sourcekey(
-									pctx->pstream->plogon, folder_id);
-			if (NULL == tmp_propval.pvalue) {
+			pvalue = common_util_calculate_folder_sourcekey(pctx->pstream->plogon, folder_id);
+			if (pvalue == nullptr)
 				return FALSE;
-			}
-		} else {
-			tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
-			tmp_propval.pvalue = pvalue;
 		}
-		common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
+		cu_set_propval(&pmsgctnt->proplist, PR_PARENT_SOURCE_KEY, pvalue);
 		if (!pmsgctnt->proplist.has(PR_SOURCE_KEY)) {
-			tmp_propval.proptag = PR_SOURCE_KEY;
-			tmp_propval.pvalue =
-				common_util_calculate_message_sourcekey(
-					pctx->pstream->plogon, message_id);
-			if (NULL == tmp_propval.pvalue) {
+			pvalue = common_util_calculate_message_sourcekey(pctx->pstream->plogon, message_id);
+			if (pvalue == nullptr)
 				return FALSE;
-			}
-			common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);	
+			cu_set_propval(&pmsgctnt->proplist, PR_SOURCE_KEY, pvalue);
 		}
 	} else {
-		tmp_propval.proptag = PR_PARENT_SOURCE_KEY;
-		tmp_propval.pvalue = common_util_calculate_folder_sourcekey(
-								pctx->pstream->plogon, folder_id);
-		if (NULL == tmp_propval.pvalue) {
+		pvalue = common_util_calculate_folder_sourcekey(pctx->pstream->plogon, folder_id);
+		if (pvalue == nullptr)
 			return FALSE;
-		}
-		common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
-		tmp_propval.proptag = PR_SOURCE_KEY;
-		tmp_propval.pvalue = common_util_calculate_message_sourcekey(
-								pctx->pstream->plogon, message_id);
-		if (NULL == tmp_propval.pvalue) {
+		cu_set_propval(&pmsgctnt->proplist, PR_PARENT_SOURCE_KEY, pvalue);
+		pvalue = common_util_calculate_message_sourcekey(pctx->pstream->plogon, message_id);
+		if (pvalue == nullptr)
 			return FALSE;
-		}
-		common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
+		cu_set_propval(&pmsgctnt->proplist, PR_SOURCE_KEY, pvalue);
 	}
 	if (FALSE == icsdownctx_object_extract_msgctntinfo(
 		pmsgctnt, pctx->extra_flags, &chgheader, &progmsg)) {
@@ -1141,17 +1085,13 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_CHANGE_KEY);
 	common_util_remove_propvals(
 		&pmsgctnt->proplist, PROP_TAG_MESSAGESTATUS);
-	pvalue = pmsgctnt->proplist.getval(PR_MESSAGE_FLAGS);
-	tmp_propval.proptag = PR_READ_RECEIPT_REQUESTED;
-	tmp_propval.pvalue = pvalue != nullptr &&
-			     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_RN_PENDING) ?
-			     deconst(&fake_true) : deconst(&fake_false);
-	common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
-	tmp_propval.proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
-	tmp_propval.pvalue = pvalue != nullptr &&
-			     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_NRN_PENDING) ?
-			     deconst(&fake_true) : deconst(&fake_false);
-	common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
+	auto flags = pmsgctnt->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
+	auto xbit = flags != nullptr && (*flags & MSGFLAG_RN_PENDING) ?
+	            deconst(&fake_true) : deconst(&fake_false);
+	cu_set_propval(&pmsgctnt->proplist, PR_READ_RECEIPT_REQUESTED, xbit);
+	xbit = flags != nullptr && (*flags & MSGFLAG_NRN_PENDING) ?
+	       deconst(&fake_true) : deconst(&fake_false);
+	cu_set_propval(&pmsgctnt->proplist, PR_NON_RECEIPT_NOTIFICATION_REQUESTED, xbit);
 	return pctx->pstream->write_messagechangefull(&chgheader, pmsgctnt);
 }
 
