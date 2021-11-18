@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <gromox/database.h>
+#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/scope.hpp>
@@ -692,7 +693,17 @@ void *instance_read_cid_content(uint64_t cid, uint32_t *plen)
 	snprintf(path, sizeof(path), "%s/cid/%llu", dir, static_cast<unsigned long long>(cid));
 	auto fd = open(path, O_RDONLY);
 	if (-1 == fd) {
-		return NULL;
+		if (!g_dbg_synth_content)
+			return nullptr;
+		static constexpr size_t dsize = 266;
+		pbuff = cu_alloc<char>(dsize + sizeof(uint32_t));
+		if (pbuff == nullptr)
+			return nullptr;
+		snprintf(pbuff + sizeof(uint32_t), dsize, "{cid:%s}", path);
+		cpu_to_le32p(pbuff, sizeof(uint32_t) + strlen(pbuff));
+		if (plen != nullptr)
+			*plen = sizeof(uint32_t) + strlen(pbuff);
+		return pbuff;
 	}
 	if (fstat(fd, &node_stat) != 0) {
 		close(fd);

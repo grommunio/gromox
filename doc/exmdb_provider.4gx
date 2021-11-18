@@ -11,6 +11,14 @@ network protocol on port 5000.
 \fBcache_interval\fP
 Default: \fI2 hours\fP
 .TP
+\fBdbg_synthesize_content\fP
+When this directive is set to yes, missing content files will not be regarded
+as an error and the respective attachment or property is delivered as an empty
+string. This is meant for debugging with a userdir that is only partially
+present.
+.br
+Default: \fIno\fP
+.TP
 \fBenable_dam\fP
 When set to \fBon\fP, inbox rule processing is allowed to create Deferred
 Action Messages (DAM). Furthermore, the "Deferred Actions" folder will have its

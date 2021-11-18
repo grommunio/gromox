@@ -343,3 +343,5 @@ void exmdb_server_register_proc(void *pproc);
 BOOL exmdb_server_unload_store(const char *dir);
 extern void *instance_read_cid_content(uint64_t cid, uint32_t *plen);
 extern int instance_get_message_body(MESSAGE_CONTENT *, unsigned int tag, unsigned int cpid, TPROPVAL_ARRAY *);
+
+extern unsigned int g_dbg_synth_content;

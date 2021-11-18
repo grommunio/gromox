@@ -30,6 +30,7 @@ static std::shared_ptr<CONFIG_FILE> g_config_during_init;
 
 static constexpr cfg_directive cfg_default_values[] = {
 	{"cache_interval", "2h", CFG_TIME, "1s"},
+	{"dbg_synthesize_content", "false", CFG_BOOL},
 	{"exrpc_debug", "0"},
 	{"enable_dam", "1", CFG_BOOL},
 	{"listen_ip", "::1"},
@@ -50,6 +51,8 @@ static constexpr cfg_directive cfg_default_values[] = {
 	{"x500_org_name", "Gromox default"},
 	{},
 };
+
+unsigned int g_dbg_synth_content;
 
 /*
  *	console talk for exchange_emsmdb plugin
@@ -113,6 +116,7 @@ static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig)
 	}
 	try {
 		g_exrpc_debug = pconfig->get_ll("exrpc_debug");
+		g_dbg_synth_content = pconfig->get_ll("dbg_synthesize_content");
 		g_enable_dam = parse_bool(pconfig->get_value("enable_dam"));
 	} catch (const cfg_error &) {
 		return false;
