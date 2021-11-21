@@ -128,18 +128,6 @@ char* common_util_dup(const char *pstr)
 	return pstr1;
 }
 
-void* common_util_get_propvals(const TPROPVAL_ARRAY *parray, uint32_t proptag)
-{
-	int i;
-
-	for (i=0; i<parray->count; i++) {
-		if (proptag == parray->ppropval[i].proptag) {
-			return (void*)parray->ppropval[i].pvalue;
-		}
-	}
-	return NULL;
-}
-
 BINARY *cu_xid_to_bin(const XID &xid)
 {
 	EXT_PUSH ext_push;

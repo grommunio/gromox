@@ -29,8 +29,6 @@ extern BOOL common_util_switch_allocator();
 void common_util_set_maildir(const char *maildir);
 extern const char* common_util_get_maildir();
 char* common_util_dup(const char *pstr);
-void* common_util_get_propvals(
-	const TPROPVAL_ARRAY *parray, uint32_t proptag);
 extern BINARY *cu_xid_to_bin(const XID &);
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key);

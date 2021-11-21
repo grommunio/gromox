@@ -2137,32 +2137,29 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 		return FALSE;
 	}
 	for (size_t i = 0; i < rows.count; ++i) {
-		pvalue = common_util_get_propvals(
-			rows.pparray[i], PROP_TAG_MID);
+		pvalue = rows.pparray[i]->getval(PROP_TAG_MID);
 		if (NULL == pvalue) {
 			continue;
 		}
 		message_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
-		pvalue = common_util_get_propvals(rows.pparray[i], PR_MESSAGE_FLAGS);
+		pvalue = rows.pparray[i]->getval(PR_MESSAGE_FLAGS);
 		if (NULL == pvalue) {
 			continue;
 		}
 		message_flags = *(uint64_t*)pvalue;
-		pvalue = common_util_get_propvals(rows.pparray[i], PR_LAST_MODIFICATION_TIME);
+		pvalue = rows.pparray[i]->getval(PR_LAST_MODIFICATION_TIME);
 		if (NULL == pvalue) {
 			mod_time = 0;
 		} else {
 			mod_time = *(uint64_t*)pvalue;
 		}
-		pvalue = common_util_get_propvals(
-			rows.pparray[i], PROP_TAG_MESSAGEDELIVERYTIME);
+		pvalue = rows.pparray[i]->getval(PROP_TAG_MESSAGEDELIVERYTIME);
 		if (NULL == pvalue) {
 			received_time = mod_time;
 		} else {
 			received_time = *(uint64_t*)pvalue;
 		}
-		pvalue = common_util_get_propvals(
-			rows.pparray[i], PROP_TAG_MIDSTRING);
+		pvalue = rows.pparray[i]->getval(PROP_TAG_MIDSTRING);
 		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, message_id);
 		if (NULL == pvalue) {
@@ -2447,23 +2444,21 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 		return FALSE;
 	}
 	for (size_t i = 0; i < rows.count; ++i) {
-		const void *pvalue = common_util_get_propvals(rows.pparray[i], PR_ATTR_HIDDEN);
+		const void *pvalue = rows.pparray[i]->getval(PR_ATTR_HIDDEN);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			continue;
 		}
-		pvalue = common_util_get_propvals(rows.pparray[i], PR_CONTAINER_CLASS);
+		pvalue = rows.pparray[i]->getval(PR_CONTAINER_CLASS);
 		if (pvalue == nullptr || strcasecmp(static_cast<const char *>(pvalue), "IPF.Note") != 0)
 			continue;
 		sqlite3_reset(pstmt);
-		pvalue = common_util_get_propvals(
-			rows.pparray[i], PROP_TAG_FOLDERID);
+		pvalue = rows.pparray[i]->getval(PROP_TAG_FOLDERID);
 		if (NULL == pvalue) {
 			continue;
 		}
 		folder_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
 		sqlite3_bind_int64(pstmt, 1, folder_id);
-		pvalue = common_util_get_propvals(
-			rows.pparray[i], PROP_TAG_PARENTFOLDERID);
+		pvalue = rows.pparray[i]->getval(PROP_TAG_PARENTFOLDERID);
 		if (NULL == pvalue) {
 			continue;
 		}
@@ -2486,13 +2481,13 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 			pvalue = "junk";
 			break;
 		default:
-			pvalue = common_util_get_propvals(rows.pparray[i], PR_DISPLAY_NAME);
+			pvalue = rows.pparray[i]->getval(PR_DISPLAY_NAME);
 			if (pvalue == nullptr || strlen(static_cast<const char *>(pvalue)) >= 256)
 				continue;
 			break;
 		}
 		sqlite3_bind_text(pstmt, 3, static_cast<const char *>(pvalue), -1, SQLITE_STATIC);
-		pvalue = common_util_get_propvals(rows.pparray[i], PR_LOCAL_COMMIT_TIME_MAX);
+		pvalue = rows.pparray[i]->getval(PR_LOCAL_COMMIT_TIME_MAX);
 		if (NULL == pvalue) {
 			sqlite3_bind_int64(pstmt, 4, 0);
 		} else {
@@ -2875,8 +2870,8 @@ static int mail_engine_mckfl(int argc, char **argv, int sockd)
 		argv[1], 0, &proptags, &propvals)) {
 		return MIDB_E_NO_MEMORY;
 	}
-	auto ptotal = static_cast<uint64_t *>(common_util_get_propvals(&propvals, PR_MESSAGE_SIZE_EXTENDED));
-	auto pmax   = static_cast<uint32_t *>(common_util_get_propvals(&propvals, PR_PROHIBIT_RECEIVE_QUOTA));
+	auto ptotal = propvals.get<uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
+	auto pmax   = propvals.get<uint32_t>(PR_PROHIBIT_RECEIVE_QUOTA);
 	if (NULL != ptotal && NULL != pmax) {
 		quota = *pmax;
 		quota *= 1024;
@@ -3714,7 +3709,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 		|| !exmdb_client::get_folder_properties(argv[1],
 		0, rop_util_make_eid_ex(1, folder_id), &proptags, &propvals)
 		||
-	     (pbin1 = static_cast<BINARY *>(common_util_get_propvals(&propvals, PR_PREDECESSOR_CHANGE_LIST))) == nullptr) {
+	     (pbin1 = propvals.get<BINARY>(PR_PREDECESSOR_CHANGE_LIST)) == nullptr) {
 		return MIDB_E_NO_MEMORY;
 	}
 	if (parent_id == folder_id1) {
@@ -5250,7 +5245,6 @@ static void mail_engine_add_notification_message(
 {
 	uint32_t uidnext;
 	uint64_t mod_time;
-	const void *pvalue;
 	char flags_buff[16];
 	char mid_string[128];
 	char sql_string[1024];
@@ -5272,27 +5266,26 @@ static void mail_engine_add_notification_message(
 		&proptags, &propvals)) {
 		return;		
 	}
-	pvalue = common_util_get_propvals(&propvals, PR_LAST_MODIFICATION_TIME);
+	const void *pvalue = propvals.getval(PR_LAST_MODIFICATION_TIME);
 	if (NULL == pvalue) {
 		mod_time = 0;
 	} else {
 		mod_time = *(uint64_t*)pvalue;
 	}
-	pvalue = common_util_get_propvals(&propvals,
-					PROP_TAG_MESSAGEDELIVERYTIME);
+	pvalue = propvals.getval(PROP_TAG_MESSAGEDELIVERYTIME);
 	if (NULL == pvalue) {
 		received_time = mod_time;
 	} else {
 		received_time = *(uint64_t*)pvalue;
 	}
-	pvalue = common_util_get_propvals(&propvals, PR_MESSAGE_FLAGS);
+	pvalue = propvals.getval(PR_MESSAGE_FLAGS);
 	if (NULL == pvalue) {
 		message_flags = 0;
 	} else {
 		message_flags = *(uint32_t*)pvalue;
 	}
 	flags_buff[0] = '\0';
-	pvalue = common_util_get_propvals(&propvals, PROP_TAG_MIDSTRING);
+	pvalue = propvals.getval(PROP_TAG_MIDSTRING);
 	if (NULL == pvalue) {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT mid_string, flag_string"
 		          " FROM mapping WHERE message_id=%llu", LLU(message_id));
@@ -5431,11 +5424,11 @@ static BOOL mail_engine_add_notification_folder(
 		&proptags, &propvals)) {
 		return FALSE;		
 	}
-	auto pvalue = common_util_get_propvals(&propvals, PR_ATTR_HIDDEN);
+	auto pvalue = propvals.getval(PR_ATTR_HIDDEN);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		return FALSE;
 	}
-	pvalue = common_util_get_propvals(&propvals, PR_CONTAINER_CLASS);
+	pvalue = propvals.getval(PR_CONTAINER_CLASS);
 	if (NULL == pvalue && FALSE == b_wait) {
 		/* outlook will set the PR_CONTAINER_CLASS
 			after RopCreateFolder, so try to wait! */
@@ -5448,13 +5441,13 @@ static BOOL mail_engine_add_notification_folder(
 	}
 	if (strcasecmp(static_cast<char *>(pvalue), "IPF.Note") != 0)
 		return FALSE;
-	pvalue = common_util_get_propvals(&propvals, PR_LOCAL_COMMIT_TIME_MAX);
+	pvalue = propvals.getval(PR_LOCAL_COMMIT_TIME_MAX);
 	if (NULL == pvalue) {
 		commit_max = 0;
 	} else {
 		commit_max = *(uint64_t*)pvalue;
 	}
-	pvalue = common_util_get_propvals(&propvals, PR_DISPLAY_NAME);
+	pvalue = propvals.getval(PR_DISPLAY_NAME);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -5596,7 +5589,7 @@ static void mail_engine_move_notification_folder(
 		&proptags, &propvals)) {
 		return;		
 	}
-	pvalue = common_util_get_propvals(&propvals, PR_DISPLAY_NAME);
+	pvalue = propvals.getval(PR_DISPLAY_NAME);
 	if (NULL == pvalue) {
 		return;
 	}
@@ -5664,7 +5657,7 @@ static void mail_engine_modify_notification_folder(
 		&proptags, &propvals)) {
 		return;		
 	}
-	pvalue = common_util_get_propvals(&propvals, PR_DISPLAY_NAME);
+	pvalue = propvals.getval(PR_DISPLAY_NAME);
 	if (NULL == pvalue) {
 		return;
 	}
@@ -5701,7 +5694,6 @@ static void mail_engine_modify_notification_message(
 {
 	int b_read;
 	int b_unsent;
-	void *pvalue;
 	uint64_t mod_time;
 	char sql_string[256];
 	uint32_t message_flags;
@@ -5720,13 +5712,13 @@ static void mail_engine_modify_notification_message(
 		&proptags, &propvals)) {
 		return;	
 	}
-	pvalue = common_util_get_propvals(&propvals, PR_MESSAGE_FLAGS);
+	auto pvalue = propvals.getval(PR_MESSAGE_FLAGS);
 	if (NULL == pvalue) {
 		message_flags = 0;
 	} else {
 		message_flags= *(uint32_t*)pvalue;
 	}
-	pvalue = common_util_get_propvals(&propvals, PROP_TAG_MIDSTRING);
+	pvalue = propvals.getval(PROP_TAG_MIDSTRING);
 	if (NULL != pvalue) {
  UPDATE_MESSAGE_FLAGS:
 		b_unsent = !!(message_flags & MSGFLAG_UNSENT);
@@ -5736,7 +5728,7 @@ static void mail_engine_modify_notification_message(
 		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
 		return;
 	}
-	pvalue = common_util_get_propvals(&propvals, PR_LAST_MODIFICATION_TIME);
+	pvalue = propvals.getval(PR_LAST_MODIFICATION_TIME);
 	if (NULL == pvalue) {
 		mod_time = 0;
 	} else {
