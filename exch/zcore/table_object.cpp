@@ -286,11 +286,11 @@ static BOOL rcpttable_query_rows(const table_object *ptable,
 	for (size_t i = 0; i < pset->count; ++i) {
 		if (pset->pparray[i]->has(PR_ENTRYID))
 			continue;
-		auto pvalue = common_util_get_propvals(pset->pparray[i], PR_ADDRTYPE);
+		auto pvalue = pset->pparray[i]->getval(PR_ADDRTYPE);
 		if (pvalue == nullptr ||
 		    strcasecmp(static_cast<char *>(pvalue), "EX") != 0)
 			continue;
-		pvalue = common_util_get_propvals(pset->pparray[i], PR_EMAIL_ADDRESS);
+		pvalue = pset->pparray[i]->getval(PR_EMAIL_ADDRESS);
 		if (NULL == pvalue) {
 			continue;
 		}
@@ -860,8 +860,6 @@ static void table_object_reset(table_object *ptable)
 static BOOL table_object_evaluate_restriction(
 	const TPROPVAL_ARRAY *ppropvals, const RESTRICTION *pres)
 {
-	void *pvalue;
-	void *pvalue1;
 	uint32_t val_size;
 	
 	switch (pres->rt) {
@@ -887,7 +885,7 @@ static BOOL table_object_evaluate_restriction(
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
-		pvalue = common_util_get_propvals(ppropvals, rcon->proptag);
+		auto pvalue = ppropvals->getval(rcon->proptag);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -934,7 +932,7 @@ static BOOL table_object_evaluate_restriction(
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
-		pvalue = common_util_get_propvals(ppropvals, rprop->proptag);
+		auto pvalue = ppropvals->getval(rprop->proptag);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -953,11 +951,11 @@ static BOOL table_object_evaluate_restriction(
 		auto rprop = pres->pcmp;
 		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
-		pvalue = common_util_get_propvals(ppropvals, rprop->proptag1);
+		auto pvalue = ppropvals->getval(rprop->proptag1);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		pvalue1 = common_util_get_propvals(ppropvals, rprop->proptag2);
+		auto pvalue1 = ppropvals->getval(rprop->proptag2);
 		if (NULL == pvalue1) {
 			return FALSE;
 		}
@@ -968,17 +966,17 @@ static BOOL table_object_evaluate_restriction(
 		auto rbm = pres->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
-		pvalue = common_util_get_propvals(ppropvals, rbm->proptag);
+		auto pvalue = ppropvals->get<uint32_t>(rbm->proptag);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
 		switch (rbm->bitmask_relop) {
 		case BMR_EQZ:
-			if ((*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0)
+			if (!(*pvalue & rbm->mask))
 				return TRUE;
 			break;
 		case BMR_NEZ:
-			if (*static_cast<uint32_t *>(pvalue) & rbm->mask)
+			if (*pvalue & rbm->mask)
 				return TRUE;
 			break;
 		}	
@@ -986,7 +984,7 @@ static BOOL table_object_evaluate_restriction(
 	}
 	case RES_SIZE: {
 		auto rsize = pres->size;
-		pvalue = common_util_get_propvals(ppropvals, rsize->proptag);
+		auto pvalue = ppropvals->getval(rsize->proptag);
 		if (NULL == pvalue) {
 			return FALSE;
 		}

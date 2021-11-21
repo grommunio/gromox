@@ -154,7 +154,6 @@ static BOOL store_object_cache_propname(store_object *pstore,
 std::unique_ptr<store_object> store_object::create(BOOL b_private,
 	int account_id, const char *account, const char *dir)
 {
-	void *pvalue;
 	uint32_t proptag;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
@@ -167,7 +166,7 @@ std::unique_ptr<store_object> store_object::create(BOOL b_private,
 		printf("get_store_properties %s: failed\n", dir);
 		return NULL;	
 	}
-	pvalue = common_util_get_propvals(&propvals, PR_STORE_RECORD_KEY);
+	auto pvalue = propvals.getval(PR_STORE_RECORD_KEY);
 	if (NULL == pvalue) {
 		return NULL;
 	}
@@ -1587,10 +1586,8 @@ BOOL store_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 static BOOL store_object_get_folder_permissions(store_object *pstore,
     uint64_t folder_id, PERMISSION_SET *pperm_set)
 {
-	BINARY *pentryid;
 	uint32_t row_num;
 	uint32_t table_id;
-	uint32_t *prights;
 	uint32_t max_count;
 	PROPTAG_ARRAY proptags;
 	TARRAY_SET permission_set;
@@ -1626,8 +1623,7 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 			}
 			pperm_set->prows = pperm_row;
 		}
-		pentryid = static_cast<BINARY *>(common_util_get_propvals(
-		           permission_set.pparray[i], PR_ENTRYID));
+		auto pentryid = permission_set.pparray[i]->get<BINARY>(PR_ENTRYID);
 		/* ignore the default and anonymous user */
 		if (NULL == pentryid || 0 == pentryid->cb) {
 			continue;
@@ -1641,9 +1637,7 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 				break;	
 			}
 		}
-		prights = static_cast<uint32_t *>(common_util_get_propvals(
-				permission_set.pparray[i],
-		          PROP_TAG_MEMBERRIGHTS));
+		auto prights = permission_set.pparray[i]->get<uint32_t>(PROP_TAG_MEMBERRIGHTS);
 		if (NULL == prights) {
 			continue;
 		}

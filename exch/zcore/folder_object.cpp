@@ -679,9 +679,7 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 {
 	uint32_t row_num;
-	uint32_t *prights;
 	uint32_t table_id;
-	BINARY *pentry_id;
 	PROPTAG_ARRAY proptags;
 	TARRAY_SET permission_set;
 	static const uint32_t proptag_buff[] = {
@@ -713,14 +711,12 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 	}
 	for (size_t i = 0; i < permission_set.count; ++i) {
 		pperm_set->prows[pperm_set->count].flags = RIGHT_NORMAL;
-		pentry_id = static_cast<BINARY *>(common_util_get_propvals(
-		            permission_set.pparray[i], PR_ENTRYID));
+		auto pentry_id = permission_set.pparray[i]->get<BINARY>(PR_ENTRYID);
 		/* ignore the default and anonymous user */
 		if (NULL == pentry_id || 0 == pentry_id->cb) {
 			continue;
 		}
-		prights = static_cast<uint32_t *>(common_util_get_propvals(
-		          permission_set.pparray[i], PROP_TAG_MEMBERRIGHTS));
+		auto prights = permission_set.pparray[i]->get<uint32_t>(PROP_TAG_MEMBERRIGHTS);
 		if (NULL == prights) {
 			continue;
 		}
@@ -733,10 +729,8 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 
 BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 {
-	BINARY *pentryid;
 	uint32_t row_num;
 	uint32_t table_id;
-	uint64_t *pmember_id;
 	PROPTAG_ARRAY proptags;
 	TARRAY_SET permission_set;
 	PERMISSION_DATA *pperm_data;
@@ -768,8 +762,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 		if (pperm_set->prows[i].flags & (RIGHT_NEW | RIGHT_MODIFY)) {
 			size_t j;
 			for (j=0; j<permission_set.count; j++) {
-				pentryid = static_cast<BINARY *>(common_util_get_propvals(
-				           permission_set.pparray[j], PR_ENTRYID));
+				auto pentryid = permission_set.pparray[j]->get<BINARY>(PR_ENTRYID);
 				if (NULL != pentryid && pentryid->cb ==
 					pperm_set->prows[i].entryid.cb && 0 ==
 					memcmp(pperm_set->prows[i].entryid.pb,
@@ -778,9 +771,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 				}
 			}
 			if (j < permission_set.count) {
-				pmember_id = static_cast<uint64_t *>(common_util_get_propvals(
-							permission_set.pparray[j],
-				             PROP_TAG_MEMBERID));
+				auto pmember_id = permission_set.pparray[j]->get<uint64_t>(PROP_TAG_MEMBERID);
 				if (NULL == pmember_id) {
 					continue;
 				}
@@ -819,8 +810,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 		} else if (pperm_set->prows[i].flags & RIGHT_DELETED) {
 			size_t j;
 			for (j=0; j<permission_set.count; j++) {
-				pentryid = static_cast<BINARY *>(common_util_get_propvals(
-				           permission_set.pparray[j], PR_ENTRYID));
+				auto pentryid = permission_set.pparray[j]->get<BINARY>(PR_ENTRYID);
 				if (NULL != pentryid && pentryid->cb ==
 					pperm_set->prows[i].entryid.cb && 0 ==
 					memcmp(pperm_set->prows[i].entryid.pb,
@@ -831,9 +821,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 			if (j >= permission_set.count) {
 				continue;
 			}
-			pmember_id = static_cast<uint64_t *>(common_util_get_propvals(
-						permission_set.pparray[j],
-			             PROP_TAG_MEMBERID));
+			auto pmember_id = permission_set.pparray[j]->get<uint64_t>(PROP_TAG_MEMBERID);
 			if (NULL == pmember_id) {
 				continue;
 			}
@@ -914,7 +902,6 @@ BOOL folder_object::updaterules(uint32_t flags, const RULE_LIST *plist)
 	int i;
 	BOOL b_exceed;
 	BOOL b_delegate;
-	char *pprovider;
 	RULE_ACTIONS *pactions = nullptr;
 	auto pfolder = this;
 	
@@ -927,14 +914,12 @@ BOOL folder_object::updaterules(uint32_t flags, const RULE_LIST *plist)
 			&plist->prule[i].propvals)) {
 			return FALSE;	
 		}
-		pprovider = static_cast<char *>(common_util_get_propvals(
-		            &plist->prule[i].propvals, PR_RULE_PROVIDER));
+		auto pprovider = plist->prule[i].propvals.get<char>(PR_RULE_PROVIDER);
 		if (NULL == pprovider || 0 != strcasecmp(
 			pprovider, "Schedule+ EMS Interface")) {
 			continue;	
 		}
-		auto act = static_cast<RULE_ACTIONS *>(common_util_get_propvals(
-		           &plist->prule[i].propvals, PR_RULE_ACTIONS));
+		auto act = plist->prule[i].propvals.get<RULE_ACTIONS>(PR_RULE_ACTIONS);
 		if (act != nullptr) {
 			b_delegate = TRUE;
 			pactions = act;

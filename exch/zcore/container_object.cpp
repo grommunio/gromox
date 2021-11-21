@@ -59,8 +59,6 @@ void container_object::clear()
 static BOOL container_object_match_contact_message(
 	const TPROPVAL_ARRAY *ppropvals, const RESTRICTION *pfilter)
 {
-	void *pvalue;
-	
 	switch (pfilter->rt) {
 	case RES_AND:
 		for (size_t i = 0; i < pfilter->andor->count; ++i)
@@ -82,7 +80,7 @@ static BOOL container_object_match_contact_message(
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
-		pvalue = common_util_get_propvals(ppropvals, rcon->proptag);
+		auto pvalue = ppropvals->getval(rcon->proptag);
 		if (NULL == pvalue) {
 			return FALSE;	
 		}
@@ -130,21 +128,21 @@ static BOOL container_object_match_contact_message(
 	case RES_PROPERTY: {
 		auto rprop = pfilter->prop;
 		if (rprop->proptag == PROP_TAG_ANR) {
-			pvalue = common_util_get_propvals(ppropvals, PR_SMTP_ADDRESS);
+			auto pvalue = ppropvals->get<char>(PR_SMTP_ADDRESS);
 			if (NULL != pvalue) {
-				if (strcasestr(static_cast<char *>(pvalue),
+				if (strcasestr(pvalue,
 				    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
 					return TRUE;
 			}
-			pvalue = common_util_get_propvals(ppropvals, PR_DISPLAY_NAME);
+			pvalue = ppropvals->get<char>(PR_DISPLAY_NAME);
 			if (NULL != pvalue) {
-				if (strcasestr(static_cast<char *>(pvalue),
+				if (strcasestr(pvalue,
 				    static_cast<char *>(rprop->propval.pvalue)) != nullptr)
 					return TRUE;
 			}
 			return FALSE;
 		}
-		pvalue = common_util_get_propvals(ppropvals, rprop->proptag);
+		auto pvalue = ppropvals->getval(rprop->proptag);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -155,17 +153,17 @@ static BOOL container_object_match_contact_message(
 		auto rbm = pfilter->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
-		pvalue = common_util_get_propvals(ppropvals, rbm->proptag);
+		auto pvalue = ppropvals->get<uint32_t>(rbm->proptag);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
 		switch (rbm->bitmask_relop) {
 		case BMR_EQZ:
-			if ((*static_cast<uint32_t *>(pvalue) & rbm->mask) == 0)
+			if (!(*pvalue & rbm->mask))
 				return TRUE;
 			break;
 		case BMR_NEZ:
-			if (*static_cast<uint32_t *>(pvalue) & rbm->mask)
+			if (*pvalue & rbm->mask)
 				return TRUE;
 			break;
 		}
@@ -299,8 +297,6 @@ static BINARY* container_object_message_to_addressbook_entryid(
 BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 {
 	auto pcontainer = this;
-	void *pvalue;
-	char *paddress;
 	BINARY tmp_bin;
 	uint32_t tmp_int;
 	uint32_t row_num;
@@ -308,8 +304,6 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 	uint8_t mapi_type;
 	char username[UADDR_SIZE];
 	TARRAY_SET tmp_set;
-	char *pdisplayname;
-	char *paddress_type;
 	PROPTAG_ARRAY proptags;
 	LONG_ARRAY minid_array;
 	BINARY *pparent_entryid = nullptr;
@@ -408,16 +402,12 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 	}
 	for (size_t i = 0; i < tmp_set.count; ++i) {
 		for (unsigned int j = 0; j < 3; ++j) {
-			pdisplayname = static_cast<char *>(common_util_get_propvals(
-			               tmp_set.pparray[i], proptags.pproptag[3*j]));
+			auto pdisplayname = tmp_set.pparray[i]->get<char>(proptags.pproptag[3*j]);
 			if (NULL == pdisplayname) {
-				pdisplayname = static_cast<char *>(common_util_get_propvals(
-				               tmp_set.pparray[i], PR_DISPLAY_NAME));
+				pdisplayname = tmp_set.pparray[i]->get<char>(PR_DISPLAY_NAME);
 			}
-			paddress_type = static_cast<char *>(common_util_get_propvals(
-				tmp_set.pparray[i], proptags.pproptag[3*j+1]));
-			paddress = static_cast<char *>(common_util_get_propvals(
-				tmp_set.pparray[i], proptags.pproptag[3*j+2]));
+			auto paddress_type = tmp_set.pparray[i]->get<char>(proptags.pproptag[3*j+1]);
+			auto paddress = tmp_set.pparray[i]->get<char>(proptags.pproptag[3*j+2]);
 			if (NULL == paddress || NULL == paddress_type) {
 				continue;
 			}
@@ -451,7 +441,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 			}
 			for (size_t k = 0; k < GX_ARRAY_SIZE(tmp_proptags); ++k) {
 				uint32_t tag = tmp_proptags[k];
-				auto newval = common_util_get_propvals(tmp_set.pparray[i], tag);
+				auto newval = tmp_set.pparray[i]->getval(tag);
 				if (newval == nullptr)
 					continue;
 				if (ppropvals->set(tag, newval) != 0) {
@@ -463,8 +453,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
-			pvalue = common_util_get_propvals(
-				tmp_set.pparray[i], PROP_TAG_MID);
+			auto pvalue = tmp_set.pparray[i]->getval(PROP_TAG_MID);
 			if (NULL == pvalue) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
@@ -619,14 +608,11 @@ static BOOL container_object_fetch_folder_properties(
 {
 	int i;
 	int count;
-	void *pvalue;
-	uint64_t folder_id;
 	
-	pvalue = common_util_get_propvals(ppropvals, PROP_TAG_FOLDERID);
-	if (NULL == pvalue) {
+	auto pvfid = ppropvals->get<uint64_t>(PROP_TAG_FOLDERID);
+	if (pvfid == nullptr)
 		return FALSE;
-	}
-	folder_id = *(uint64_t*)pvalue;
+	auto folder_id = *pvfid;
 	pout_propvals->count = 0;
 	pout_propvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == pout_propvals->ppropval) {
@@ -648,6 +634,7 @@ static BOOL container_object_fetch_folder_properties(
 		case PR_ENTRYID:
 		case PR_PARENT_ENTRYID: {
 			auto pinfo = zarafa_server_get_info();
+			void *pvalue = nullptr;
 			if (pproptags->pproptag[i] == PR_PARENT_ENTRYID) {
 				if (folder_id == rop_util_make_eid_ex(
 					1, PRIVATE_FID_CONTACTS)) {
@@ -655,8 +642,7 @@ static BOOL container_object_fetch_folder_properties(
 					    PR_ENTRYID, &pvalue))
 						return FALSE;	
 				} else {
-					pvalue = common_util_get_propvals(
-						ppropvals, PROP_TAG_PARENTFOLDERID);
+					pvalue = ppropvals->getval(PROP_TAG_PARENTFOLDERID);
 					if (NULL == pvalue) {
 						return FALSE;
 					}
@@ -675,14 +661,13 @@ static BOOL container_object_fetch_folder_properties(
 			break;
 		}
 		case PROP_TAG_CONTAINERFLAGS: {
-			pvalue = common_util_get_propvals(
-				ppropvals, PROP_TAG_SUBFOLDERS);
-			BOOL b_sub = pvalue == nullptr || *static_cast<uint32_t *>(pvalue) == 0 ? false : TRUE;
+			auto pvalue = ppropvals->get<uint32_t>(PROP_TAG_SUBFOLDERS);
+			BOOL b_sub = pvalue == nullptr || *pvalue == 0 ? false : TRUE;
 			pvalue = cu_alloc<uint32_t>();
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			*static_cast<uint32_t *>(pvalue) = b_sub ?
+			*pvalue = b_sub ?
 				AB_RECIPIENTS | AB_UNMODIFIABLE :
 				AB_RECIPIENTS | AB_SUBCONTAINERS | AB_UNMODIFIABLE;
 			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
@@ -690,8 +675,7 @@ static BOOL container_object_fetch_folder_properties(
 			break;
 		}
 		case PROP_TAG_DEPTH: {
-			auto pc = static_cast<char *>(common_util_get_propvals(
-			          ppropvals, PROP_TAG_FOLDERPATHNAME));
+			auto pc = ppropvals->get<const char>(PROP_TAG_FOLDERPATHNAME);
 			if (pc == nullptr)
 				return FALSE;
 			count = 0;
@@ -702,32 +686,34 @@ static BOOL container_object_fetch_folder_properties(
 				return FALSE;
 			}
 			count -= 2;
-			pvalue = cu_alloc<uint32_t>();
+			auto pvalue = cu_alloc<uint32_t>();
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			*(uint32_t*)pvalue = count;
+			*pvalue = count;
 			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
 			pout_propvals->count ++;
 			break;
 		}
-		case PR_DISPLAY_NAME:
-			pvalue = common_util_get_propvals(ppropvals, PR_DISPLAY_NAME);
+		case PR_DISPLAY_NAME: {
+			auto pvalue = ppropvals->get<char>(PR_DISPLAY_NAME);
 			if (NULL == pvalue) {
 				return FALSE;
 			}
 			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
 			pout_propvals->count ++;
 			break;
-		case PR_EMS_AB_IS_MASTER:
-			pvalue = cu_alloc<uint8_t>();
+		}
+		case PR_EMS_AB_IS_MASTER: {
+			auto pvalue = cu_alloc<uint8_t>();
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			*(uint8_t*)pvalue = 0;
+			*pvalue = 0;
 			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
 			pout_propvals->count ++;
 			break;
+		}
 		}
 	}
 	return TRUE;
@@ -879,11 +865,11 @@ static BOOL container_object_query_folder_hierarchy(
 		return FALSE;
 	exmdb_client::unload_table(pinfo->get_maildir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
-		auto pvalue = common_util_get_propvals(tmp_set.pparray[i], PR_ATTR_HIDDEN);
+		auto pvalue = tmp_set.pparray[i]->getval(PR_ATTR_HIDDEN);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			continue;
 		}
-		pvalue = common_util_get_propvals(tmp_set.pparray[i], PR_CONTAINER_CLASS);
+		pvalue = tmp_set.pparray[i]->getval(PR_CONTAINER_CLASS);
 		if (pvalue == nullptr || strcasecmp(static_cast<char *>(pvalue), "IPF.Contact") != 0)
 			continue;
 		auto count = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);

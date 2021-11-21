@@ -157,7 +157,6 @@ BOOL icsdownctx_object::make_hierarchy(const BINARY *state,
     uint16_t sync_flags, BOOL *pb_changed, uint32_t *pfld_count)
 {
 	auto pctx = this;
-	void *pvalue;
 	FOLDER_CHANGES fldchgs;
 	EID_ARRAY given_folders;
 	EID_ARRAY deleted_folders;
@@ -199,12 +198,11 @@ BOOL icsdownctx_object::make_hierarchy(const BINARY *state,
 		return FALSE;
 	}
 	for (size_t i = 0; i < fldchgs.count; ++i) {
-		pvalue = common_util_get_propvals(
-			fldchgs.pfldchgs + i, PROP_TAG_FOLDERID);
+		auto pvalue = fldchgs.pfldchgs[i].get<uint64_t>(PROP_TAG_FOLDERID);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		if (!eid_array_append(pctx->pchg_eids, *static_cast<uint64_t *>(pvalue)))
+		if (!eid_array_append(pctx->pchg_eids, *pvalue))
 			return FALSE;	
 	}
 	if (fldchgs.count > 0) {
@@ -389,15 +387,13 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 	if (!exmdb_client::get_folder_properties(pctx->pstore->get_dir(), 0,
 	    fid, &proptags, &tmp_propvals))
 		return FALSE;
-	pvalue = common_util_get_propvals(
-		&tmp_propvals, PROP_TAG_CHANGENUMBER);
+	pvalue = tmp_propvals.getval(PROP_TAG_CHANGENUMBER);
 	if (NULL == pvalue) {
 		*pb_found = FALSE;
 		return TRUE;
 	}
 	change_num = *(uint64_t*)pvalue;
-	pvalue = common_util_get_propvals(
-		&tmp_propvals, PROP_TAG_PARENTFOLDERID);
+	pvalue = tmp_propvals.getval(PROP_TAG_PARENTFOLDERID);
 	if (NULL != pvalue) {
 		parent_fid = *(uint64_t*)pvalue;
 		pproplist->ppropval[pproplist->count].proptag = PR_PARENT_SOURCE_KEY;
@@ -418,19 +414,19 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 		pproplist->count ++;
 	}
 	pproplist->ppropval[pproplist->count].proptag = PR_DISPLAY_NAME;
-	pvalue = common_util_get_propvals(&tmp_propvals, PR_DISPLAY_NAME);
+	pvalue = tmp_propvals.getval(PR_DISPLAY_NAME);
 	if (NULL != pvalue) {
 		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;
 	}
 	pproplist->ppropval[pproplist->count].proptag = PR_CONTAINER_CLASS;
-	pvalue = common_util_get_propvals(&tmp_propvals, PR_CONTAINER_CLASS);
+	pvalue = tmp_propvals.getval(PR_CONTAINER_CLASS);
 	if (NULL != pvalue) {
 		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;
 	}
 	pproplist->ppropval[pproplist->count].proptag = PR_ATTR_HIDDEN;
-	pvalue = common_util_get_propvals(&tmp_propvals, PR_ATTR_HIDDEN);
+	pvalue = tmp_propvals.getval(PR_ATTR_HIDDEN);
 	if (NULL != pvalue) {
 		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;
@@ -440,8 +436,7 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 	}
 	pproplist->ppropval[pproplist->count].proptag =
 						PROP_TAG_EXTENDEDFOLDERFLAGS;
-	pvalue = common_util_get_propvals(
-		&tmp_propvals, PROP_TAG_EXTENDEDFOLDERFLAGS);
+	pvalue = tmp_propvals.getval(PROP_TAG_EXTENDEDFOLDERFLAGS);
 	if (NULL != pvalue) {
 		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;

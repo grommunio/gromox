@@ -608,8 +608,7 @@ BOOL message_object::get_rowid_begin(uint32_t *pbegin_id)
 		return FALSE;	
 	last_rowid = -1;
 	for (size_t i = 0; i < tmp_set.count; ++i) {
-		auto prow_id = static_cast<int32_t *>(common_util_get_propvals(
-		               tmp_set.pparray[i], PROP_TAG_ROWID));
+		auto prow_id = tmp_set.pparray[i]->get<int32_t>(PROP_TAG_ROWID);
 		if (NULL != prow_id && *prow_id > last_rowid) {
 			last_rowid = *prow_id;
 		}
@@ -1059,21 +1058,19 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 BOOL message_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 {
 	auto pmessage = this;
-	char *psubject;
-	char *pnormalized_subject;
 	
 	/* seems some php-mapi users do not understand well
 		the relationship between PR_SUBJECT and
 		PR_NORMALIZED_SUBJECT, we try to resolve
 		the conflict when there exist both of them */
-	psubject = static_cast<char *>(common_util_get_propvals(ppropvals, PR_SUBJECT));
+	auto psubject = ppropvals->get<char>(PR_SUBJECT);
 	if (NULL == psubject) {
-		psubject = static_cast<char *>(common_util_get_propvals(ppropvals, PR_SUBJECT_A));
+		psubject = ppropvals->get<char>(PR_SUBJECT_A);
 	}
 	if (NULL != psubject) {
-		pnormalized_subject = static_cast<char *>(common_util_get_propvals(ppropvals, PR_NORMALIZED_SUBJECT));
+		auto pnormalized_subject = ppropvals->get<char>(PR_NORMALIZED_SUBJECT);
 		if (NULL == pnormalized_subject) {
-			pnormalized_subject = static_cast<char *>(common_util_get_propvals(ppropvals, PR_NORMALIZED_SUBJECT_A));
+			pnormalized_subject = ppropvals->get<char>(PR_NORMALIZED_SUBJECT_A);
 		}
 		if (NULL != pnormalized_subject) {
 			if ('\0' == pnormalized_subject[0] && '\0' != psubject[0]) {

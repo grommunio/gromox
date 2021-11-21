@@ -326,7 +326,6 @@ static void zarafa_server_notification_proc(const char *dir,
 {
 	int i;
 	int tv_msec;
-	void *pvalue;
 	BINARY *pbin;
 	GUID hsession;
 	BINARY tmp_bin;
@@ -398,11 +397,11 @@ static void zarafa_server_notification_proc(const char *dir,
 			NULL, 0, message_id, &proptags, &propvals)) {
 			return;
 		}
-		pvalue = common_util_get_propvals(&propvals, PR_MESSAGE_CLASS);
+		auto pvalue = propvals.getval(PR_MESSAGE_CLASS);
 		if (pvalue == nullptr)
 			return;
 		pnew_mail->message_class = static_cast<char *>(pvalue);
-		pvalue = common_util_get_propvals(&propvals, PR_MESSAGE_FLAGS);
+		pvalue = propvals.getval(PR_MESSAGE_FLAGS);
 		if (pvalue == nullptr)
 			return;
 		pnew_mail->message_flags = *(uint32_t*)pvalue;
@@ -1318,7 +1317,6 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 uint32_t zarafa_server_resolvename(GUID hsession,
 	const TARRAY_SET *pcond_set, TARRAY_SET *presult_set)
 {
-	char *pstring;
 	SINGLE_LIST temp_list;
 	PROPTAG_ARRAY proptags;
 	SINGLE_LIST result_list;
@@ -1333,8 +1331,7 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 		return ecError;
 	single_list_init(&result_list);
 	for (size_t i = 0; i < pcond_set->count; ++i) {
-		pstring = static_cast<char *>(common_util_get_propvals(
-		          pcond_set->pparray[i], PR_DISPLAY_NAME));
+		auto pstring = pcond_set->pparray[i]->get<char>(PR_DISPLAY_NAME);
 		if (NULL == pstring) {
 			presult_set->count = 0;
 			presult_set->pparray = NULL;
@@ -1706,17 +1703,16 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	proptag_buff[3] = PROP_TAG_CONTENTCOUNT;
 	if (!pstore->get_properties(&tmp_proptags, &tmp_propvals))
 		return ecError;
-	auto pvalue = common_util_get_propvals(&tmp_propvals, PR_STORAGE_QUOTA_LIMIT);
+	auto pvalue = tmp_propvals.getval(PR_STORAGE_QUOTA_LIMIT);
 	int64_t max_quota = pvalue == nullptr ? -1 : static_cast<int64_t>(*static_cast<uint32_t *>(pvalue)) * 1024;
-	pvalue = common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE_EXTENDED);
+	pvalue = tmp_propvals.getval(PR_MESSAGE_SIZE_EXTENDED);
 	uint64_t total_size = pvalue == nullptr ? 0 : *static_cast<uint64_t *>(pvalue);
 	if (max_quota > 0 && total_size > static_cast<uint64_t>(max_quota)) {
 		return ecQuotaExceeded;
 	}
-	pvalue = common_util_get_propvals(&tmp_propvals, PR_ASSOC_CONTENT_COUNT);
+	pvalue = tmp_propvals.getval(PR_ASSOC_CONTENT_COUNT);
 	uint32_t total_mail = pvalue != nullptr ? *static_cast<uint32_t *>(pvalue) : 0;
-	pvalue = common_util_get_propvals(&tmp_propvals,
-							PROP_TAG_CONTENTCOUNT);
+	pvalue = tmp_propvals.getval(PROP_TAG_CONTENTCOUNT);
 	if (pvalue != nullptr)
 		total_mail += *(uint32_t*)pvalue;
 	if (total_mail > common_util_get_param(
@@ -1830,9 +1826,9 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 		    nullptr, 0, ids.pids[i], &tmp_proptags, &tmp_propvals))
 			return ecError;
 		pbrief = NULL;
-		pvalue = common_util_get_propvals(&tmp_propvals, PR_NON_RECEIPT_NOTIFICATION_REQUESTED);
+		pvalue = tmp_propvals.getval(PR_NON_RECEIPT_NOTIFICATION_REQUESTED);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-			pvalue = common_util_get_propvals(&tmp_propvals, PR_READ);
+			pvalue = tmp_propvals.getval(PR_READ);
 			if ((pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0) &&
 			    !exmdb_client::get_message_brief(pstore->get_dir(),
 			    pinfo->cpid, ids.pids[i], &pbrief))
@@ -3235,8 +3231,6 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 {
 	static constexpr uint8_t persist_true = true, persist_false = false;
 	BOOL b_found;
-	BINARY *pbin;
-	uint32_t *prowid;
 	uint8_t mapi_type;
 	EXT_PULL ext_pull;
 	uint32_t tmp_flags;
@@ -3290,8 +3284,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 		    !prcpt_list->pparray[i]->has(PR_EMAIL_ADDRESS) &&
 		    !prcpt_list->pparray[i]->has(PR_SMTP_ADDRESS))
 			return ecInvalidParam;
-		prowid = static_cast<uint32_t *>(common_util_get_propvals(
-		         prcpt_list->pparray[i], PROP_TAG_ROWID));
+		auto prowid = prcpt_list->pparray[i]->get<uint32_t>(PROP_TAG_ROWID);
 		if (NULL != prowid) {
 			if (*prowid < last_rowid) {
 				*prowid = last_rowid;
@@ -3312,7 +3305,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			*(uint32_t*)ppropval[prcpt->count].pvalue = last_rowid;
 			prcpt->ppropval = ppropval;
 			prcpt->count ++;
-			pbin = static_cast<BINARY *>(common_util_get_propvals(prcpt, PR_ENTRYID));
+			auto pbin = prcpt->get<BINARY>(PR_ENTRYID);
 			if (pbin == nullptr ||
 			    (prcpt->has(PR_EMAIL_ADDRESS) &&
 			    prcpt->has(PR_ADDRTYPE) && prcpt->has(PR_DISPLAY_NAME)))
@@ -3405,7 +3398,6 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 {
 	int timer_id;
-	void *pvalue;
 	BOOL b_marked;
 	time_t cur_time;
 	uint32_t tmp_num;
@@ -3454,7 +3446,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	proptag_buff[0] = PR_ASSOCIATED;
 	if (!pmessage->get_properties(&tmp_proptags, &tmp_propvals))
 		return ecError;
-	pvalue = common_util_get_propvals(&tmp_propvals, PR_ASSOCIATED);
+	auto pvalue = tmp_propvals.getval(PR_ASSOCIATED);
 	/* FAI message cannot be sent */
 	if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0)
 		return ecAccessDenied;
@@ -3481,15 +3473,15 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	if (!pstore->get_properties(&tmp_proptags, &tmp_propvals))
 		return ecError;
 
-	auto sendquota = static_cast<uint32_t *>(common_util_get_propvals(&tmp_propvals, PR_PROHIBIT_SEND_QUOTA));
-	auto storesize = static_cast<uint64_t *>(common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE_EXTENDED));
+	auto sendquota = tmp_propvals.get<uint32_t>(PR_PROHIBIT_SEND_QUOTA);
+	auto storesize = tmp_propvals.get<uint64_t>(PR_MESSAGE_SIZE_EXTENDED);
 	/* Sendquota is in KiB, storesize in bytes */
 	if (sendquota != nullptr && storesize != nullptr &&
 	    static_cast<uint64_t>(*sendquota) * 1024 <= *storesize) {
 		return ecQuotaExceeded;
 	}
 
-	pvalue = common_util_get_propvals(&tmp_propvals, PR_MAX_SUBMIT_MESSAGE_SIZE);
+	pvalue = tmp_propvals.getval(PR_MAX_SUBMIT_MESSAGE_SIZE);
 	ssize_t max_length = -1;
 	if (pvalue != nullptr)
 		max_length = *(int32_t*)pvalue;
@@ -3503,14 +3495,14 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 	proptag_buff[5] = PROP_TAG_DELETEAFTERSUBMIT;
 	if (!pmessage->get_properties(&tmp_proptags, &tmp_propvals))
 		return ecError;
-	pvalue = common_util_get_propvals(&tmp_propvals, PR_MESSAGE_SIZE);
+	pvalue = tmp_propvals.getval(PR_MESSAGE_SIZE);
 	if (pvalue == nullptr)
 		return ecError;
 	mail_length = *(uint32_t*)pvalue;
 	if (max_length > 0 && mail_length > static_cast<size_t>(max_length)) {
 		return EC_EXCEEDED_SIZE;
 	}
-	pvalue = common_util_get_propvals(&tmp_propvals, PR_MESSAGE_FLAGS);
+	pvalue = tmp_propvals.getval(PR_MESSAGE_FLAGS);
 	if (pvalue == nullptr)
 		return ecError;
 	message_flags = *(uint32_t*)pvalue;
@@ -3519,8 +3511,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		we always allow a submitted message
 		to be resubmitted */
 	BOOL b_unsent = (message_flags & MSGFLAG_UNSENT) ? TRUE : false;
-	pvalue = common_util_get_propvals(&tmp_propvals,
-						PROP_TAG_DELETEAFTERSUBMIT);
+	pvalue = tmp_propvals.getval(PROP_TAG_DELETEAFTERSUBMIT);
 	BOOL b_delete = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 ? TRUE : false;
 	if (!(message_flags & MSGFLAG_SUBMITTED)) {
 		if (!exmdb_client::try_mark_submit(pstore->get_dir(),
@@ -3531,20 +3522,17 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		deferred_time = 0;
 		time(&cur_time);
 		submit_time = rop_util_unix_to_nttime(cur_time);
-		pvalue = common_util_get_propvals(&tmp_propvals,
-								PROP_TAG_DEFERREDSENDTIME);
+		pvalue = tmp_propvals.getval(PROP_TAG_DEFERREDSENDTIME);
 		if (NULL != pvalue) {
 			if (submit_time < *(uint64_t*)pvalue) {
 				deferred_time = rop_util_nttime_to_unix(
 							*(uint64_t*)pvalue) - cur_time;
 			}
 		} else {
-			pvalue = common_util_get_propvals(&tmp_propvals,
-								PROP_TAG_DEFERREDSENDNUMBER);
+			pvalue = tmp_propvals.getval(PROP_TAG_DEFERREDSENDNUMBER);
 			if (NULL != pvalue) {
 				tmp_num = *(uint32_t*)pvalue;
-				pvalue = common_util_get_propvals(&tmp_propvals,
-									PROP_TAG_DEFERREDSENDUNITS);
+				pvalue = tmp_propvals.getval(PROP_TAG_DEFERREDSENDUNITS);
 				if (NULL != pvalue) {
 					switch (*(uint32_t*)pvalue) {
 					case 0:
@@ -4431,16 +4419,15 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	XID tmp_xid;
 	BOOL b_exist;
 	BOOL b_owner;
-	BINARY *pbin;
 	uint8_t mapi_type;
 	uint64_t message_id;
 	uint32_t permission = rightsNone, tag_access = 0;
 	
-	auto pvalue = common_util_get_propvals(pproplist, PR_ASSOCIATED);
+	auto pvalue = pproplist->getval(PR_ASSOCIATED);
 	if (NULL != pvalue) {
 		b_fai = *static_cast<uint8_t *>(pvalue) == 0 ? TRUE : false;
 	} else {
-		pvalue = common_util_get_propvals(pproplist, PR_MESSAGE_FLAGS);
+		pvalue = pproplist->getval(PR_MESSAGE_FLAGS);
 		b_fai = pvalue != nullptr && (*static_cast<uint32_t *>(pvalue) & MSGFLAG_ASSOCIATED) ?
 		        TRUE : false;
 	}
@@ -4448,7 +4435,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	 * If there is no sourcekey, it is a new message. That is how
 	 * grommunio-sync creates new items coming from mobile devices.
 	 */
-	pbin = static_cast<BINARY *>(common_util_get_propvals(pproplist, PR_SOURCE_KEY));
+	auto pbin = pproplist->get<BINARY>(PR_SOURCE_KEY);
 	if (pbin == nullptr)
 		flags |= SYNC_NEW_MESSAGE;
 	BOOL b_new = (flags & SYNC_NEW_MESSAGE) ? TRUE : false;
@@ -4465,7 +4452,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 		return ecNotSupported;
 	auto folder_id = pctx->get_parent_folder_id();
 	if (FALSE == b_new) {
-		pbin = static_cast<BINARY *>(common_util_get_propvals(pproplist, PR_SOURCE_KEY));
+		pbin = pproplist->get<BINARY>(PR_SOURCE_KEY);
 		if (pbin == nullptr || pbin->cb != 22) {
 			return ecInvalidParam;
 		}
@@ -4577,21 +4564,21 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 	hierarchy_propvals.count = 4;
 	hierarchy_propvals.ppropval = propval_buff;
 	propval_buff[0].proptag = PR_PARENT_SOURCE_KEY;
-	propval_buff[0].pvalue = common_util_get_propvals(ppropvals, PR_PARENT_SOURCE_KEY);
+	propval_buff[0].pvalue = ppropvals->getval(PR_PARENT_SOURCE_KEY);
 	if (propval_buff[0].pvalue == nullptr)
 		return ecInvalidParam;
 	propval_buff[1].proptag = PR_SOURCE_KEY;
-	propval_buff[1].pvalue = common_util_get_propvals(ppropvals, PR_SOURCE_KEY);
+	propval_buff[1].pvalue = ppropvals->getval(PR_SOURCE_KEY);
 	if (propval_buff[1].pvalue == nullptr)
 		return ecInvalidParam;
 	propval_buff[2].proptag = PR_LAST_MODIFICATION_TIME;
-	propval_buff[2].pvalue = common_util_get_propvals(ppropvals, PR_LAST_MODIFICATION_TIME);
+	propval_buff[2].pvalue = ppropvals->getval(PR_LAST_MODIFICATION_TIME);
 	if (NULL == propval_buff[2].pvalue) {
 		propval_buff[2].pvalue = &nttime;
 		nttime = rop_util_current_nttime();
 	}
 	propval_buff[3].proptag = PR_DISPLAY_NAME;
-	propval_buff[3].pvalue = common_util_get_propvals(ppropvals, PR_DISPLAY_NAME);
+	propval_buff[3].pvalue = ppropvals->getval(PR_DISPLAY_NAME);
 	if (propval_buff[3].pvalue == nullptr)
 		return ecInvalidParam;
 	auto pinfo = zarafa_server_query_session(hsession);
@@ -4929,7 +4916,6 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 {
 	XID tmp_xid;
 	BOOL b_owner;
-	void *pvalue;
 	uint64_t read_cn;
 	uint8_t mapi_type;
 	uint64_t folder_id;
@@ -4983,10 +4969,10 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 		if (!exmdb_client::get_message_properties(pstore->get_dir(),
 		    nullptr, 0, message_id, &tmp_proptags, &tmp_propvals))
 			return ecError;
-		pvalue = common_util_get_propvals(&tmp_propvals, PR_ASSOCIATED);
+		auto pvalue = tmp_propvals.getval(PR_ASSOCIATED);
 		if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0)
 			continue;
-		pvalue = common_util_get_propvals(&tmp_propvals, PR_READ);
+		pvalue = tmp_propvals.getval(PR_READ);
 		if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
 			if (!mark_as_read)
 				continue;

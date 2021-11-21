@@ -159,30 +159,28 @@ BOOL common_util_check_delegate(message_object *pmessage, char *username, size_t
 		username[0] = '\0';
 		return TRUE;
 	}
-	auto pvalue = common_util_get_propvals(&tmp_propvals, PR_SENT_REPRESENTING_ADDRTYPE);
+	auto pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_ADDRTYPE);
 	if (NULL != pvalue) {
 		if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
-			pvalue = common_util_get_propvals(&tmp_propvals,
-			         PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+			pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 			if (NULL != pvalue) {
 				return common_util_essdn_to_username(static_cast<char *>(pvalue),
 				       username, ulen);
 			}
 		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-			pvalue = common_util_get_propvals(&tmp_propvals,
-			         PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+			pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 			if (NULL != pvalue) {
 				gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
 				return TRUE;
 			}
 		}
 	}
-	pvalue = common_util_get_propvals(&tmp_propvals, PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (NULL != pvalue) {
 		gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
 		return TRUE;
 	}
-	pvalue = common_util_get_propvals(&tmp_propvals, PR_SENT_REPRESENTING_ENTRYID);
+	pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_ENTRYID);
 	if (NULL != pvalue) {
 		return common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
 		       username, ulen);
@@ -346,19 +344,6 @@ void common_util_remove_propvals(
 			return;
 		}
 	}
-}
-
-void* common_util_get_propvals(
-	const TPROPVAL_ARRAY *parray, uint32_t proptag)
-{
-	int i;
-	
-	for (i=0; i<parray->count; i++) {
-		if (proptag == parray->ppropval[i].proptag) {
-			return (void*)parray->ppropval[i].pvalue;
-		}
-	}
-	return NULL;
 }
 
 int common_util_index_proptags(
@@ -1806,7 +1791,7 @@ BOOL common_util_send_message(store_object *pstore,
 		pmsgctnt->proplist.ppropval = ppropval;
 		pmsgctnt->proplist.count ++;
 	}
-	pvalue = common_util_get_propvals(&pmsgctnt->proplist, PR_MESSAGE_FLAGS);
+	pvalue = pmsgctnt->proplist.getval(PR_MESSAGE_FLAGS);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -1826,8 +1811,7 @@ BOOL common_util_send_message(store_object *pstore,
 			return FALSE;
 		}
 		if (TRUE == b_resend) {
-			pvalue = common_util_get_propvals(
-				prcpts->pparray[i], PROP_TAG_RECIPIENTTYPE);
+			pvalue = prcpts->pparray[i]->getval(PROP_TAG_RECIPIENTTYPE);
 			if (NULL == pvalue) {
 				return FALSE;
 			}
@@ -1836,22 +1820,21 @@ BOOL common_util_send_message(store_object *pstore,
 		}
 		/*
 		if (FALSE == b_submit) {
-			pvalue = common_util_get_propvals(
-				prcpts->pparray[i], PROP_TAG_RESPONSIBILITY);
+			pvalue = prcpts->pparray[i]->getval(PROP_TAG_RESPONSIBILITY);
 			if (NULL == pvalue || 0 != *(uint8_t*)pvalue) {
 				continue;
 			}
 		}
 		*/
-		pnode->pdata = common_util_get_propvals(prcpts->pparray[i], PR_SMTP_ADDRESS);
+		pnode->pdata = prcpts->pparray[i]->getval(PR_SMTP_ADDRESS);
 		if (NULL != pnode->pdata && '\0' != ((char*)pnode->pdata)[0]) {
 			double_list_append_as_tail(&temp_list, pnode);
 			continue;
 		}
-		pvalue = common_util_get_propvals(prcpts->pparray[i], PR_ADDRTYPE);
+		pvalue = prcpts->pparray[i]->getval(PR_ADDRTYPE);
 		if (NULL == pvalue) {
  CONVERT_ENTRYID:
-			pvalue = common_util_get_propvals(prcpts->pparray[i], PR_ENTRYID);
+			pvalue = prcpts->pparray[i]->getval(PR_ENTRYID);
 			if (NULL == pvalue) {
 				return FALSE;
 			}
@@ -1864,12 +1847,12 @@ BOOL common_util_send_message(store_object *pstore,
 				return FALSE;	
 		} else {
 			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-				pnode->pdata = common_util_get_propvals(prcpts->pparray[i], PR_EMAIL_ADDRESS);
+				pnode->pdata = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
 				if (NULL == pnode->pdata) {
 					return FALSE;
 				}
 			} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
-				pvalue = common_util_get_propvals(prcpts->pparray[i], PR_EMAIL_ADDRESS);
+				pvalue = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
 				if (NULL == pvalue) {
 					goto CONVERT_ENTRYID;
 				}
@@ -1887,8 +1870,7 @@ BOOL common_util_send_message(store_object *pstore,
 		double_list_append_as_tail(&temp_list, pnode);
 	}
 	if (double_list_get_nodes_num(&temp_list) > 0) {
-		pvalue = common_util_get_propvals(&pmsgctnt->proplist,
-						PROP_TAG_INTERNETMAILOVERRIDEFORMAT);
+		pvalue = pmsgctnt->proplist.getval(PROP_TAG_INTERNETMAILOVERRIDEFORMAT);
 		if (NULL == pvalue) {
 			body_type = OXCMAIL_BODY_PLAIN_AND_HTML;
 		} else {
@@ -1911,16 +1893,14 @@ BOOL common_util_send_message(store_object *pstore,
 			return FALSE;
 		}
 	}
-	pvalue = common_util_get_propvals(
-		&pmsgctnt->proplist, PROP_TAG_DELETEAFTERSUBMIT);
+	pvalue = pmsgctnt->proplist.getval(PROP_TAG_DELETEAFTERSUBMIT);
 	b_delete = FALSE;
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		b_delete = TRUE;
 	}
 	common_util_remove_propvals(&pmsgctnt->proplist,
 							PROP_TAG_SENTMAILSVREID);
-	auto ptarget = static_cast<BINARY *>(common_util_get_propvals(
-	               &pmsgctnt->proplist, PR_TARGET_ENTRYID));
+	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
 		if (FALSE == common_util_from_message_entryid(*ptarget,
 			&b_private, &accound_id, &folder_id, &new_id)) {
@@ -1955,8 +1935,7 @@ void common_util_notify_receipt(const char *username,
 	DOUBLE_LIST_NODE node;
 	DOUBLE_LIST rcpt_list;
 	
-	node.pdata = common_util_get_propvals(&pbrief->proplist,
-	             PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	node.pdata = pbrief->proplist.getval(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (NULL == node.pdata) {
 		return;
 	}
@@ -2044,8 +2023,7 @@ BOOL common_util_convert_from_zrule(TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
 	
-	auto pactions = static_cast<RULE_ACTIONS *>(common_util_get_propvals(
-	                ppropvals, PR_RULE_ACTIONS));
+	auto pactions = ppropvals->get<RULE_ACTIONS>(PR_RULE_ACTIONS);
 	if (pactions == nullptr)
 		return TRUE;
 	for (i=0; i<pactions->count; i++) {
@@ -2172,7 +2150,7 @@ BOOL common_util_convert_to_zrule_data(store_object *pstore, TPROPVAL_ARRAY *ppr
 {
 	int i;
 	
-	auto pactions = static_cast<RULE_ACTIONS *>(common_util_get_propvals(ppropvals, PR_RULE_ACTIONS));
+	auto pactions = ppropvals->get<RULE_ACTIONS>(PR_RULE_ACTIONS);
 	if (pactions == nullptr)
 		return TRUE;
 	for (i=0; i<pactions->count; i++) {
@@ -2203,7 +2181,6 @@ BOOL common_util_convert_to_zrule_data(store_object *pstore, TPROPVAL_ARRAY *ppr
 gxerr_t common_util_remote_copy_message(store_object *pstore,
     uint64_t message_id, store_object *pstore1, uint64_t folder_id1)
 {
-	BINARY *pbin1;
 	uint64_t change_num;
 	TAGGED_PROPVAL propval;
 	MESSAGE_CONTENT *pmsgctnt;
@@ -2240,8 +2217,7 @@ gxerr_t common_util_remote_copy_message(store_object *pstore,
 	propval.proptag = PR_CHANGE_KEY;
 	propval.pvalue = pbin;
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
-	pbin1 = static_cast<BINARY *>(common_util_get_propvals(&pmsgctnt->proplist,
-	        PR_PREDECESSOR_CHANGE_LIST));
+	auto pbin1 = pmsgctnt->proplist.get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
 	propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval.pvalue = common_util_pcl_append(pbin1, pbin);
 	if (NULL == propval.pvalue) {
@@ -2259,7 +2235,6 @@ gxerr_t common_util_remote_copy_message(store_object *pstore,
 static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 	TPROPVAL_ARRAY *pproplist, uint64_t *pfolder_id)
 {
-	BINARY *pbin1;
 	uint64_t tmp_id;
 	BINARY *pentryid;
 	uint32_t tmp_type;
@@ -2307,7 +2282,7 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 	propval.proptag = PR_CHANGE_KEY;
 	propval.pvalue = pbin;
 	common_util_set_propvals(pproplist, &propval);
-	pbin1 = static_cast<BINARY *>(common_util_get_propvals(pproplist, PR_PREDECESSOR_CHANGE_LIST));
+	auto pbin1 = pproplist->get<BINARY>(PR_PREDECESSOR_CHANGE_LIST);
 	propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
 	propval.pvalue = common_util_pcl_append(pbin1, pbin);
 	if (NULL == propval.pvalue) {
@@ -2342,7 +2317,6 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
     uint64_t folder_id, const char *username)
 {
-	uint64_t *pmid;
 	uint32_t table_id;
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
@@ -2371,8 +2345,7 @@ static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
 		return NULL;
 	}
 	for (size_t i = 0; i < tmp_set.count; ++i) {
-		pmid = static_cast<uint64_t *>(common_util_get_propvals(
-		       tmp_set.pparray[i], PROP_TAG_MID));
+		auto pmid = tmp_set.pparray[i]->get<uint64_t>(PROP_TAG_MID);
 		if (NULL == pmid) {
 			return NULL;
 		}
@@ -2390,7 +2363,6 @@ gxerr_t common_util_remote_copy_folder(store_object *pstore, uint64_t folder_id,
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
 	uint32_t permission;
-	uint64_t *pfolder_id;
 	uint32_t tmp_proptag;
 	TAGGED_PROPVAL propval;
 	EID_ARRAY *pmessage_ids;
@@ -2446,8 +2418,7 @@ gxerr_t common_util_remote_copy_folder(store_object *pstore, uint64_t folder_id,
 		return GXERR_CALL_FAILED;
 	exmdb_client::unload_table(pstore->get_dir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
-		pfolder_id = static_cast<uint64_t *>(common_util_get_propvals(
-		             tmp_set.pparray[i], PROP_TAG_FOLDERID));
+		auto pfolder_id = tmp_set.pparray[i]->get<uint64_t>(PROP_TAG_FOLDERID);
 		if (NULL == pfolder_id) {
 			return GXERR_CALL_FAILED;
 		}
@@ -2516,8 +2487,7 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 		pmsgctnt->proplist.ppropval = ppropval;
 		pmsgctnt->proplist.count ++;
 	}
-	pvalue = common_util_get_propvals(&pmsgctnt->proplist,
-					PROP_TAG_INTERNETMAILOVERRIDEFORMAT);
+	pvalue = pmsgctnt->proplist.getval(PROP_TAG_INTERNETMAILOVERRIDEFORMAT);
 	if (NULL == pvalue) {
 		body_type = OXCMAIL_BODY_PLAIN_AND_HTML;
 	} else {

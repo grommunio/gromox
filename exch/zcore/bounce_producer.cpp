@@ -305,11 +305,11 @@ static int bounce_producer_get_mail_parts(
 	offset = 0;
 	b_first = FALSE;
 	for (i=0; i<pattachments->count; i++) {
-		auto pvalue = common_util_get_propvals(&pattachments->pplist[i]->proplist, PR_ATTACH_LONG_FILENAME);
+		auto pvalue = pattachments->pplist[i]->proplist.get<const char>(PR_ATTACH_LONG_FILENAME);
 		if (NULL == pvalue) {
 			continue;
 		}
-		tmp_len = strlen(static_cast<char *>(pvalue));
+		tmp_len = strlen(pvalue);
 		if (offset + tmp_len < 128*1024) {
 			if (TRUE == b_first) {
 				strcpy(parts + offset, g_separator);
@@ -331,11 +331,11 @@ static int bounce_producer_get_rcpts(
 
 	b_first = FALSE;
 	for (size_t i = 0; i < prcpts->count; ++i) {
-		auto pvalue = common_util_get_propvals(prcpts->pparray[i], PR_SMTP_ADDRESS);
+		auto pvalue = prcpts->pparray[i]->get<const char>(PR_SMTP_ADDRESS);
 		if (NULL == pvalue) {
 			continue;
 		}
-		auto tmp_len = strlen(static_cast<char *>(pvalue));
+		auto tmp_len = strlen(pvalue);
 		if (offset + tmp_len < 128*1024) {
 			if (TRUE == b_first) {
 				strcpy(rcpts + offset, g_separator);
@@ -367,11 +367,10 @@ static BOOL bounce_producer_make_content(const char *username,
 	ptr = pcontent;
 	charset[0] = '\0';
 	time_zone[0] = '\0';
-	auto pvalue = common_util_get_propvals(&pbrief->proplist, PROP_TAG_CLIENTSUBMITTIME);
+	auto pvalue = pbrief->proplist.getval(PROP_TAG_CLIENTSUBMITTIME);
 	tmp_time = pvalue == nullptr ? time(nullptr) :
 	           rop_util_nttime_to_unix(*static_cast<uint64_t *>(pvalue));
-	auto from = static_cast<const char *>(common_util_get_propvals(&pbrief->proplist,
-	            PR_SENT_REPRESENTING_SMTP_ADDRESS));
+	auto from = pbrief->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (NULL == from) {
 		from = "none@none";
 	}
@@ -393,13 +392,13 @@ static BOOL bounce_producer_make_content(const char *username,
 	if ('\0' != time_zone[0]) {
 		snprintf(date_buff + len, 128 - len, " %s", time_zone);
 	}
-	pvalue = common_util_get_propvals(&pbrief->proplist, PR_MESSAGE_SIZE);
+	pvalue = pbrief->proplist.getval(PR_MESSAGE_SIZE);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
 	message_size = *(uint32_t*)pvalue;
 	if ('\0' == charset[0]) {
-		pvalue = common_util_get_propvals(&pbrief->proplist, PR_INTERNET_CPID);
+		pvalue = pbrief->proplist.getval(PR_INTERNET_CPID);
 		if (NULL == pvalue) {
 			strcpy(charset, "ascii");
 		} else {
@@ -438,7 +437,7 @@ static BOOL bounce_producer_make_content(const char *username,
 			ptr += len;
 			break;
 		case TAG_SUBJECT:
-			pvalue = common_util_get_propvals(&pbrief->proplist, PR_SUBJECT);
+			pvalue = pbrief->proplist.getval(PR_SUBJECT);
 			if (NULL != pvalue) {
 				len = strlen(static_cast<char *>(pvalue));
 				memcpy(ptr, pvalue, len);
@@ -507,7 +506,7 @@ BOOL bounce_producer_make(const char *username,
 	pmime = phead;
 	mime_set_content_type(pmime, "multipart/report");
 	mime_set_content_param(pmime, "report-type", "disposition-notification");
-	auto pvalue = common_util_get_propvals(&pbrief->proplist, PROP_TAG_CONVERSATIONINDEX);
+	auto pvalue = pbrief->proplist.getval(PROP_TAG_CONVERSATIONINDEX);
 	if (pvalue != nullptr) {
 		auto bv = static_cast<const BINARY *>(pvalue);
 		if (encode64(bv->pb, bv->cb, tmp_buff, sizeof(tmp_buff), &out_len) == 0)
@@ -522,7 +521,7 @@ BOOL bounce_producer_make(const char *username,
 		fprintf(stderr, "E-1479: ENOMEM\n");
 		return false;
 	}
-	pvalue = common_util_get_propvals(&pbrief->proplist, PR_SENT_REPRESENTING_NAME);
+	pvalue = pbrief->proplist.getval(PR_SENT_REPRESENTING_NAME);
 	if (NULL != pvalue && '\0' != ((char*)pvalue)[0]) {
 		memcpy(mime_to, "\"=?utf-8?b?", 11);
 		encode64(pvalue, strlen(static_cast<char *>(pvalue)), mime_to + 11,
@@ -531,8 +530,7 @@ BOOL bounce_producer_make(const char *username,
 	} else {
 		mime_to[0] = '\0';
 	}
-	pvalue = common_util_get_propvals(&pbrief->proplist,
-	         PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	pvalue = pbrief->proplist.getval(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (NULL != pvalue) {
 		out_len = strlen(mime_to);
 		if (0 != out_len) {
@@ -580,12 +578,11 @@ BOOL bounce_producer_make(const char *username,
 			"manual-action/MDN-sent-automatically; deleted");
 		break;
 	}
-	pvalue = common_util_get_propvals(
-		&pbrief->proplist, PROP_TAG_INTERNETMESSAGEID);
+	pvalue = pbrief->proplist.getval(PROP_TAG_INTERNETMESSAGEID);
 	if (NULL != pvalue) {
 		dsn_append_field(pdsn_fields, "Original-Message-ID", static_cast<char *>(pvalue));
 	}
-	pvalue = common_util_get_propvals(&pbrief->proplist, PR_PARENT_KEY);
+	pvalue = pbrief->proplist.getval(PR_PARENT_KEY);
 	if (NULL != pvalue) {
 		auto bv = static_cast<const BINARY *>(pvalue);
 		encode64(bv->pb, bv->cb, tmp_buff, arsizeof(tmp_buff), &out_len);
