@@ -372,7 +372,7 @@ static void config_file_apply_1(CONFIG_FILE &cfg, const cfg_directive &d)
 	if (sv == nullptr)
 		sv = d.deflt;
 	if (d.flags & CFG_BOOL) {
-		cfg.set_value(d.key, parse_bool(sv) ? "TRUE" : "FALSE");
+		cfg.set_value(d.key, parse_bool(sv) ? "1" : "0");
 		return;
 	}
 	if (d.flags & CFG_TIME) {
