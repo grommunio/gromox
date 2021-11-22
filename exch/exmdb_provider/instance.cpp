@@ -2206,15 +2206,15 @@ BOOL exmdb_server_get_instance_properties(
 		} else if (PROP_TYPE(pproptags->pproptag[i]) == PT_UNSPECIFIED) {
 			propid = PROP_ID(pproptags->pproptag[i]);
 			for (j=0; j<pmsgctnt->proplist.count; j++) {
-				if (PROP_ID(pmsgctnt->proplist.ppropval[j].proptag) == propid) {
-					vc.proptag = pproptags->pproptag[i];
-					vc.pvalue = cu_alloc<TYPED_PROPVAL>();
-					if (vc.pvalue == nullptr)
-						return FALSE;	
-					static_cast<TYPED_PROPVAL *>(vc.pvalue)->type = PROP_TYPE(pmsgctnt->proplist.ppropval[j].proptag);
-					static_cast<TYPED_PROPVAL *>(vc.pvalue)->pvalue = pmsgctnt->proplist.ppropval[j].pvalue;
-					break;
-				}
+				if (propid != PROP_ID(pmsgctnt->proplist.ppropval[j].proptag))
+					continue;
+				vc.proptag = pproptags->pproptag[i];
+				vc.pvalue = cu_alloc<TYPED_PROPVAL>();
+				if (vc.pvalue == nullptr)
+					return FALSE;
+				static_cast<TYPED_PROPVAL *>(vc.pvalue)->type = PROP_TYPE(pmsgctnt->proplist.ppropval[j].proptag);
+				static_cast<TYPED_PROPVAL *>(vc.pvalue)->pvalue = pmsgctnt->proplist.ppropval[j].pvalue;
+				break;
 			}
 		}
 		if (vc.pvalue != nullptr) {
@@ -2244,43 +2244,40 @@ BOOL exmdb_server_get_instance_properties(
 				vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS_UNSPECIFIED;
 				vc.pvalue = cu_alloc<TYPED_PROPVAL>();
 				if (vc.pvalue == nullptr)
-					return FALSE;	
+					return FALSE;
 				static_cast<TYPED_PROPVAL *>(vc.pvalue)->type = PT_UNICODE;
 				static_cast<TYPED_PROPVAL *>(vc.pvalue)->pvalue = static_cast<char *>(pvalue) + sizeof(uint32_t);
 				ppropvals->count ++;
 				continue;
-			} else {
-				pvalue = pmsgctnt->proplist.getval(ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
-				if (NULL != pvalue) {
-					pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), nullptr, 0);
-					if (NULL == pvalue) {
-						return FALSE;
-					}
-					vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS_UNSPECIFIED;
-					vc.pvalue = cu_alloc<TYPED_PROPVAL>();
-					if (vc.pvalue == nullptr)
-						return FALSE;	
-					static_cast<TYPED_PROPVAL *>(vc.pvalue)->type = PT_STRING8;
-					static_cast<TYPED_PROPVAL *>(vc.pvalue)->pvalue = pvalue;
-					ppropvals->count ++;
-					continue;
-				}
 			}
-			break;
+			pvalue = pmsgctnt->proplist.getval(ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
+			if (pvalue == nullptr)
+				break;
+			pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), nullptr, 0);
+			if (NULL == pvalue) {
+				return FALSE;
+			}
+			vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS_UNSPECIFIED;
+			vc.pvalue = cu_alloc<TYPED_PROPVAL>();
+			if (vc.pvalue == nullptr)
+				return FALSE;
+			static_cast<TYPED_PROPVAL *>(vc.pvalue)->type = PT_STRING8;
+			static_cast<TYPED_PROPVAL *>(vc.pvalue)->pvalue = pvalue;
+			ppropvals->count ++;
+			continue;
 		case PR_SUBJECT:
 		case PR_SUBJECT_A:
 			if (FALSE == instance_get_message_subject(
 				&pmsgctnt->proplist, pinstance->cpid,
 				pproptags->pproptag[i], &pvalue)) {
-				return FALSE;	
+				return FALSE;
 			}
-			if (NULL != pvalue) {
-				vc.proptag = pproptags->pproptag[i];
-				vc.pvalue = pvalue;
-				ppropvals->count ++;
-				continue;
-			}
-			break;
+			if (pvalue == nullptr)
+				break;
+			vc.proptag = pproptags->pproptag[i];
+			vc.pvalue = pvalue;
+			ppropvals->count++;
+			continue;
 		case PROP_TAG_TRANSPORTMESSAGEHEADERS:
 			pvalue = pmsgctnt->proplist.getval(ID_TAG_TRANSPORTMESSAGEHEADERS);
 			if (NULL != pvalue) {
@@ -2294,18 +2291,18 @@ BOOL exmdb_server_get_instance_properties(
 				continue;
 			}
 			pvalue = pmsgctnt->proplist.getval(ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
-			if (NULL != pvalue) {
-				pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), nullptr, 0);
-				if (NULL == pvalue) {
-					return FALSE;
-				}
-				vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS;
-				vc.pvalue = common_util_convert_copy(TRUE,
-				            pinstance->cpid, static_cast<char *>(pvalue));
-				if (vc.pvalue != nullptr) {
-					ppropvals->count ++;
-					continue;	
-				}
+			if (pvalue == nullptr)
+				break;
+			pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), nullptr, 0);
+			if (NULL == pvalue) {
+				return FALSE;
+			}
+			vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS;
+			vc.pvalue = common_util_convert_copy(TRUE,
+				    pinstance->cpid, static_cast<char *>(pvalue));
+			if (vc.pvalue != nullptr) {
+				ppropvals->count++;
+				continue;
 			}
 			break;
 		case PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
@@ -2321,31 +2318,30 @@ BOOL exmdb_server_get_instance_properties(
 				continue;
 			}
 			pvalue = pmsgctnt->proplist.getval(ID_TAG_TRANSPORTMESSAGEHEADERS);
-			if (NULL != pvalue) {
-				pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), nullptr, ID_TAG_BODY);
-				if (NULL == pvalue) {
-					return FALSE;
-				}
-				vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
-				vc.pvalue = common_util_convert_copy(false,
-				            pinstance->cpid, static_cast<char *>(pvalue) + sizeof(uint32_t));
-				if (vc.pvalue != nullptr) {
-					ppropvals->count ++;
-					continue;	
-				}
+			if (pvalue == nullptr)
+				break;
+			pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), nullptr, ID_TAG_BODY);
+			if (NULL == pvalue) {
+				return FALSE;
 			}
-			break;
-		case PROP_TAG_FOLDERID:
-			if (0 == pinstance->parent_id) {
-				vc.proptag = pproptags->pproptag[i];
-				vc.pvalue = cu_alloc<uint64_t>();
-				if (vc.pvalue == nullptr)
-					return FALSE;	
-				*static_cast<uint64_t *>(vc.pvalue) = rop_util_make_eid_ex(1, pinstance->folder_id);
-				ppropvals->count ++;
+			vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
+			vc.pvalue = common_util_convert_copy(false,
+				    pinstance->cpid, static_cast<char *>(pvalue) + sizeof(uint32_t));
+			if (vc.pvalue != nullptr) {
+				ppropvals->count++;
 				continue;
 			}
 			break;
+		case PROP_TAG_FOLDERID:
+			if (pinstance->parent_id != 0)
+				break;
+			vc.proptag = pproptags->pproptag[i];
+			vc.pvalue = cu_alloc<uint64_t>();
+			if (vc.pvalue == nullptr)
+				return FALSE;
+			*static_cast<uint64_t *>(vc.pvalue) = rop_util_make_eid_ex(1, pinstance->folder_id);
+			ppropvals->count++;
+			continue;
 		case PROP_TAG_CODEPAGEID:
 			vc.proptag = pproptags->pproptag[i];
 			vc.pvalue = &pinstance->cpid;
@@ -2388,18 +2384,17 @@ BOOL exmdb_server_get_instance_properties(
 		case PR_DISPLAY_CC_A:
 		case PR_DISPLAY_BCC:
 		case PR_DISPLAY_BCC_A:
-			if (NULL != pmsgctnt->children.prcpts) {
-				if (FALSE == instance_get_message_display_recipients(
-					pmsgctnt->children.prcpts, pinstance->cpid,
-					pproptags->pproptag[i], &pvalue)) {
-					return FALSE;
-				}
-				vc.proptag = pproptags->pproptag[i];
-				vc.pvalue = pvalue;
-				ppropvals->count ++;
-				continue;
+			if (pmsgctnt->children.prcpts == nullptr)
+				break;
+			if (FALSE == instance_get_message_display_recipients(
+				pmsgctnt->children.prcpts, pinstance->cpid,
+				pproptags->pproptag[i], &pvalue)) {
+				return FALSE;
 			}
-			break;
+			vc.proptag = pproptags->pproptag[i];
+			vc.pvalue = pvalue;
+			ppropvals->count++;
+			continue;
 		}
 	}
 	return TRUE;
