@@ -53,7 +53,7 @@ int main()
 			continue;
 		strftime(timebuf, sizeof(timebuf), "%FT%T", localtime(&sb.st_mtime));
 		printf("%-6s  %-19s", de->d_name, timebuf);
-		size_t clump_size = sizeof(size_t) + 3 * sizeof(int) + 2;
+		size_t clump_size = sizeof(size_t) + 3 * sizeof(uint32_t) + 2;
 		if (static_cast<size_t>(sb.st_size) < clump_size) {
 			printf("\n");
 			continue;

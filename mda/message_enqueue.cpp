@@ -243,7 +243,7 @@ static void *meq_thrwork(void *arg)
 			if (FLUSH_WHOLE_MAIL == pentity->pflusher->flush_action) {
     			msg.msg_type = MESSAGE_MESS;
     			msg.msg_content = pentity->pflusher->flush_ID;
-    			msgsnd(g_msg_id, &msg, sizeof(int), IPC_NOWAIT);
+				msgsnd(g_msg_id, &msg, sizeof(uint32_t), IPC_NOWAIT);
 				g_enqueued_num ++;
 			}
 			pentity->pflusher->flush_result = FLUSH_RESULT_OK;
@@ -341,18 +341,14 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 	mess_len = ftell(fp);
 	mess_len -= sizeof(size_t);
    	/* write flush ID */
-	if (sizeof(int) != fwrite(&pentity->pflusher->flush_ID,1,sizeof(int),fp)) {
+	if (fwrite(&pentity->pflusher->flush_ID, 1, sizeof(uint32_t), fp) != sizeof(uint32_t))
 		goto REMOVE_MESS;
-	}
 	/* write bound type */
 	smtp_type = pentity->penvelope->is_relay ? SMTP_RELAY :
 	            pentity->penvelope->is_outbound ? SMTP_OUT : SMTP_IN;
-	if (sizeof(int) != fwrite(&smtp_type, 1, sizeof(int), fp)) {
+	if (fwrite(&smtp_type, 1, sizeof(uint32_t), fp) != sizeof(uint32_t) ||
+	    fwrite(&pentity->is_spam, 1, sizeof(uint32_t), fp) != sizeof(uint32_t))
 		goto REMOVE_MESS;
-	}
-	if (sizeof(int) != fwrite(&pentity->is_spam, 1, sizeof(int), fp)) {
-		goto REMOVE_MESS;
-	}	
 	/* write envelope from */
 	utmp_len = strlen(pentity->penvelope->from) + 1;
 	if (fwrite(pentity->penvelope->from, 1, utmp_len, fp) != utmp_len)
@@ -411,7 +407,7 @@ static int message_enqueue_retrieve_max_ID() try
 			if (-1 == fd) {
 				continue;
 			}
-			if (sizeof(int) != read(fd, &size, sizeof(int))) {
+			if (read(fd, &size, sizeof(uint32_t)) != sizeof(uint32_t)) {
 				close(fd);
 				continue;
 			}

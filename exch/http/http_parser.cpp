@@ -327,12 +327,11 @@ static BOOL http_parser_request_head(MEM_FILE *pfile_others,
 	if (name_len >= 64) {
 		return FALSE;
 	}
-	while (MEM_END_OF_FILE != mem_file_read(
-		pfile_others, &tmp_len, sizeof(int))) {
+	while (mem_file_read(pfile_others, &tmp_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		if (name_len == tmp_len) {
 			 mem_file_read(pfile_others, name_buff, tmp_len);
 			 if (0 == strncasecmp(name_buff, field_name, name_len)) {
-				 mem_file_read(pfile_others, &tmp_len, sizeof(int));
+				 mem_file_read(pfile_others, &tmp_len, sizeof(uint32_t));
 				 if (tmp_len >= buff_len) {
 					 return FALSE;
 				 }
@@ -344,7 +343,7 @@ static BOOL http_parser_request_head(MEM_FILE *pfile_others,
 			mem_file_seek(pfile_others, MEM_FILE_READ_PTR,
 							tmp_len, MEM_FILE_SEEK_CUR);
 		}
-		mem_file_read(pfile_others, &tmp_len, sizeof(int));
+		mem_file_read(pfile_others, &tmp_len, sizeof(uint32_t));
 		mem_file_seek(pfile_others, MEM_FILE_READ_PTR,
 						tmp_len, MEM_FILE_SEEK_CUR);
 	}

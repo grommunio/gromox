@@ -1651,7 +1651,7 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 		return NULL;
 	pbuff[node_stat.st_size] = 0;
 	if (proptag1 == PR_BODY)
-		pbuff += sizeof(int);
+		pbuff += sizeof(uint32_t);
 	if (proptag == proptag1) {
 		return pbuff;
 	}
@@ -1702,7 +1702,7 @@ static void *common_util_get_message_header(sqlite3 *psqlite,
 		return NULL;
 	pbuff[node_stat.st_size] = 0;
 	if (PROP_TAG_TRANSPORTMESSAGEHEADERS == proptag1) {
-		pbuff += sizeof(int);
+		pbuff += sizeof(uint32_t);
 	}
 	if (proptag == proptag1) {
 		return pbuff;
@@ -2763,7 +2763,7 @@ static BOOL common_util_set_message_body(
 	}
 	if (proptag == PR_BODY) {
 		if (!utf8_len(static_cast<char *>(pvalue), &len) ||
-			sizeof(int) != write(fd, &len, sizeof(int))) {
+		    write(fd, &len, sizeof(uint32_t)) != sizeof(uint32_t)) {
 			close(fd);
 			if (remove(path) < 0 && errno != ENOENT)
 				fprintf(stderr, "W-1382: remove %s: %s\n", path, strerror(errno));
@@ -2829,7 +2829,7 @@ static BOOL common_util_set_message_header(
 	}
 	if (PROP_TAG_TRANSPORTMESSAGEHEADERS == proptag) {
 		if (!utf8_len(static_cast<char *>(pvalue), &len) ||
-			sizeof(int) != write(fd, &len, sizeof(int))) {
+		    write(fd, &len, sizeof(uint32_t)) != sizeof(uint32_t)) {
 			close(fd);
 			if (remove(path) < 0 && errno != ENOENT)
 				fprintf(stderr, "W-1335: remove %s: %s\n", path, strerror(errno));
@@ -5763,7 +5763,7 @@ static uint32_t common_util_get_cid_string_length(uint32_t cid)
 	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
 	wrapfd fd = open(path, O_RDONLY);
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
-	    read(fd.get(), &length, sizeof(int)) != sizeof(int))
+	    read(fd.get(), &length, sizeof(uint32_t)) != sizeof(uint32_t))
 		return 0;
 	return 2*length;
 }

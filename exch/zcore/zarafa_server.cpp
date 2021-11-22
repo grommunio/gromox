@@ -124,9 +124,9 @@ USER_INFO::~USER_INFO()
 
 static int zarafa_server_get_user_id(GUID hsession)
 {
-	int user_id;
+	int32_t user_id;
 	
-	memcpy(&user_id, hsession.node, sizeof(int));
+	memcpy(&user_id, hsession.node, sizeof(int32_t));
 	return user_id;
 }
 
@@ -773,7 +773,7 @@ uint32_t zarafa_server_logon(const char *username,
 
 	USER_INFO tmp_info;
 	tmp_info.hsession = guid_random_new();
-	memcpy(tmp_info.hsession.node, &user_id, sizeof(int));
+	memcpy(tmp_info.hsession.node, &user_id, sizeof(int32_t));
 	tmp_info.user_id = user_id;
 	tmp_info.domain_id = domain_id;
 	tmp_info.org_id = org_id;

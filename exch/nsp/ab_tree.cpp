@@ -781,7 +781,7 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 		pbase->base_id = base_id;
 		pbase->status = BASE_STATUS_CONSTRUCTING;
 		pbase->guid = guid_random_new();
-		memcpy(pbase->guid.node, &base_id, sizeof(int));
+		memcpy(pbase->guid.node, &base_id, sizeof(uint32_t));
 		pbase->phash.clear();
 		bhold.unlock();
 		if (FALSE == ab_tree_load_base(pbase)) {
@@ -1437,9 +1437,9 @@ void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode, char *str_name)
 
 int ab_tree_get_guid_base_id(GUID guid)
 {
-	int base_id;
+	int32_t base_id;
 	
-	memcpy(&base_id, guid.node, sizeof(int));
+	memcpy(&base_id, guid.node, sizeof(int32_t));
 	std::lock_guard bhold(g_base_lock);
 	return g_base_hash.find(base_id) != g_base_hash.end() ? base_id : 0;
 }

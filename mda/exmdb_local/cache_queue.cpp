@@ -322,7 +322,7 @@ static void *mdl_thrwork(void *arg)
 			}
 			time_t original_time = le64_to_cpu(enc_origtime);
 			mess_len = le32_to_cpu(mess_len);
-			size_t size = node_stat.st_size - sizeof(time_t) - 2*sizeof(int);
+			size_t size = node_stat.st_size - sizeof(time_t) - 2 * sizeof(uint32_t);
 			if (size < mess_len) {
 				fprintf(stderr, "W-1554: garbage in %s; review and delete\n", temp_path.c_str());
 				continue;
@@ -352,15 +352,15 @@ static void *mdl_thrwork(void *arg)
 				continue;
 			}
 			pcontext->pcontrol->queue_ID = le32p_to_cpu(ptr);
-			ptr += sizeof(int);
-			size -= sizeof(int);
+			ptr += sizeof(uint32_t);
+			size -= sizeof(uint32_t);
 			if (size < sizeof(uint32_t)) {
 				fprintf(stderr, "W-1556: garbage in %s; review and delete\n", temp_path.c_str());
 				continue;
 			}
 			pcontext->pcontrol->bound_type = le32p_to_cpu(ptr);
-			ptr += sizeof(int);
-			size -= sizeof(int);
+			ptr += sizeof(uint32_t);
+			size -= sizeof(uint32_t);
 			if (size < sizeof(uint32_t)) {
 				fprintf(stderr, "W-1557: garbage in %s; review and delete\n", temp_path.c_str());
 				continue;

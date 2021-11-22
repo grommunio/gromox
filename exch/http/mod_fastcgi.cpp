@@ -358,7 +358,7 @@ static BOOL mod_fastcgi_get_others_field(MEM_FILE *pf_others,
 			return FALSE;
 		mem_file_read(pf_others, tmp_buff, tag_len);
 		tmp_buff[tag_len] = '\0';
-		mem_file_read(pf_others, &val_len, sizeof(int));
+		mem_file_read(pf_others, &val_len, sizeof(uint32_t));
 		if (0 == strcasecmp(tag, tmp_buff)) {
 			length = (length > val_len)?val_len:(length - 1);
 			mem_file_read(pf_others, value, length);

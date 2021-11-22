@@ -808,7 +808,7 @@ static BOOL instance_read_message(
 				return FALSE;
 			}
 			pmsgctnt->proplist.ppropval[i].proptag = PR_BODY;
-			pmsgctnt->proplist.ppropval[i].pvalue = static_cast<char *>(pbuff) + sizeof(int);
+			pmsgctnt->proplist.ppropval[i].pvalue = static_cast<char *>(pbuff) + sizeof(uint32_t);
 			break;
 		case ID_TAG_BODY_STRING8:
 			cid = *(uint64_t*)pmsgctnt1->proplist.ppropval[i].pvalue;
@@ -845,7 +845,7 @@ static BOOL instance_read_message(
 			}
 			pmsgctnt->proplist.ppropval[i].proptag =
 					PROP_TAG_TRANSPORTMESSAGEHEADERS;
-			pmsgctnt->proplist.ppropval[i].pvalue = static_cast<char *>(pbuff) + sizeof(int);
+			pmsgctnt->proplist.ppropval[i].pvalue = static_cast<char *>(pbuff) + sizeof(uint32_t);
 			break;
 		case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
 			cid = *(uint64_t*)pmsgctnt1->proplist.ppropval[i].pvalue;
@@ -2227,7 +2227,7 @@ BOOL exmdb_server_get_instance_properties(
 				if (vc.pvalue == nullptr)
 					return FALSE;	
 				static_cast<TYPED_PROPVAL *>(vc.pvalue)->type = PT_UNICODE;
-				static_cast<TYPED_PROPVAL *>(vc.pvalue)->pvalue = static_cast<char *>(pvalue) + sizeof(int);
+				static_cast<TYPED_PROPVAL *>(vc.pvalue)->pvalue = static_cast<char *>(pvalue) + sizeof(uint32_t);
 				ppropvals->count ++;
 				continue;
 			} else {
@@ -2272,7 +2272,7 @@ BOOL exmdb_server_get_instance_properties(
 					return FALSE;
 				}
 				vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS;
-				vc.pvalue = static_cast<char *>(pvalue) + sizeof(int);
+				vc.pvalue = static_cast<char *>(pvalue) + sizeof(uint32_t);
 				ppropvals->count ++;
 				continue;
 			}
@@ -2314,7 +2314,7 @@ BOOL exmdb_server_get_instance_properties(
 				}
 				vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
 				vc.pvalue = common_util_convert_copy(false,
-				            pinstance->cpid, static_cast<char *>(pvalue) + sizeof(int));
+				            pinstance->cpid, static_cast<char *>(pvalue) + sizeof(uint32_t));
 				if (vc.pvalue != nullptr) {
 					ppropvals->count ++;
 					continue;	

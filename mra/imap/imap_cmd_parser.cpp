@@ -2677,7 +2677,7 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pc
 	if (-1 == fd) {
 		return 1909 | DISPATCH_BREAK;
 	}
-	len = sizeof(int);
+	len = sizeof(uint32_t);
 	len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len, "%s", temp_name);
 	buff[len] = '\0';
 	len ++;
@@ -2716,7 +2716,6 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	int name_len;
 	unsigned long uidvalid;
 	int flags_len;
-	char *str_name;
 	BOOL b_flagged;
 	BOOL b_answered;
 	char *str_flags;
@@ -2770,7 +2769,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		pcontext->file_path.clear();
 		return 1909;
 	}
-	str_name = pbuff.get() + sizeof(int);
+	auto str_name = pbuff.get() + sizeof(uint32_t);
 	name_len = strlen(str_name);
 	str_flags = str_name + name_len + 1;
 	flags_len = strlen(str_flags);

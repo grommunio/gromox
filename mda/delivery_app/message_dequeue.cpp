@@ -277,12 +277,12 @@ static void message_dequeue_retrieve_to_message(MESSAGE *pmessage,
 	pmessage->begin_address = deconst(in_buff);
 	pmessage->mail_begin = deconst(in_buff) + sizeof(size_t);
 	memcpy(&pmessage->mail_length, in_buff, sizeof(size_t));
-	memcpy(&pmessage->flush_ID, in_buff + sizeof(size_t) + pmessage->mail_length, sizeof(int));
-	memcpy(&pmessage->bound_type, in_buff + sizeof(size_t) + sizeof(int) + pmessage->mail_length, sizeof(int));
+	memcpy(&pmessage->flush_ID, in_buff + sizeof(size_t) + pmessage->mail_length, sizeof(uint32_t));
+	memcpy(&pmessage->bound_type, in_buff + sizeof(size_t) + sizeof(uint32_t) + pmessage->mail_length, sizeof(uint32_t));
 	int z;
-	memcpy(&z, in_buff + sizeof(size_t) + 2 * sizeof(int) + pmessage->mail_length, sizeof(int));
+	memcpy(&z, in_buff + sizeof(size_t) + 2 * sizeof(uint32_t) + pmessage->mail_length, sizeof(uint32_t));
 	pmessage->is_spam = z;
-	pmessage->envelope_from = deconst(in_buff) + sizeof(size_t) + 3*sizeof(int) + pmessage->mail_length;
+	pmessage->envelope_from = deconst(in_buff) + sizeof(size_t) + 3*sizeof(uint32_t) + pmessage->mail_length;
 	pmessage->envelope_rcpt = pmessage->envelope_from + strlen(pmessage->envelope_from) + 1;
 }
 
@@ -429,7 +429,7 @@ static void *mdq_thrwork(void *arg)
     }
 
 	while (!g_notify_stop) {
-		if (-1 != msgrcv(g_msg_id, &msg, sizeof(int), 0, IPC_NOWAIT)) {
+		if (msgrcv(g_msg_id, &msg, sizeof(uint32_t), 0, IPC_NOWAIT) != -1) {
 			switch(msg.msg_type) {
 			case MESSAGE_MESS:
 				message_dequeue_load_from_mess(msg.msg_content);
@@ -538,7 +538,7 @@ void message_dequeue_save(MESSAGE *pmessage)
 			       new_file.c_str(), strerror(errno));
 			return;
 		}
-		write(fd, pmessage->begin_address, pmessage->mail_length + 4*sizeof(int));
+		write(fd, pmessage->begin_address, pmessage->mail_length + 4 * sizeof(uint32_t));
 		len = strlen(pmessage->envelope_from);
 		write(fd, pmessage->envelope_from, len + 1);
 		ptr = pmessage->envelope_rcpt;
