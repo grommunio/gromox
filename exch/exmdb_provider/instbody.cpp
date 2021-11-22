@@ -39,7 +39,7 @@ static int instance_get_raw(MESSAGE_CONTENT *mc, BINARY *&bin, unsigned int tag)
 	if (data == nullptr)
 		return 0;
 	uint32_t length = 0;
-	auto content = instance_read_cid_content(*static_cast<uint64_t *>(data), &length);
+	auto content = instance_read_cid_content(*static_cast<uint64_t *>(data), &length, tag);
 	if (content == nullptr)
 		return -1;
 	bin = cu_alloc<BINARY>();
