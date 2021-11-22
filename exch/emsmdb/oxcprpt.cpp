@@ -636,10 +636,8 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 				continue;
 			}
 			if ((copy_flags & COPY_FLAG_NOOVERWRITE) &&
-				common_util_index_proptags(&proptags1,
-				pproptags->pproptag[i]) >= 0) {
+			    proptags1.has(pproptags->pproptag[i]))
 				continue;
-			}
 			proptags.pproptag[proptags.count] = 
 							pproptags->pproptag[i];
 			poriginal_indices[proptags.count++] = i;
@@ -658,8 +656,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		if (!flddst->set_properties(&propvals, &tmp_problems))
 			return ecError;
 		for (i=0; i<tmp_problems.count; i++) {
-			tmp_problems.pproblem[i].index = common_util_index_proptags(
-							pproptags, tmp_problems.pproblem[i].proptag);
+			tmp_problems.pproblem[i].index = pproptags->indexof(tmp_problems.pproblem[i].proptag);
 		}
 		memcpy(pproblems->pproblem + pproblems->count,
 			tmp_problems.pproblem, tmp_problems.count*
@@ -710,10 +707,8 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 				continue;
 			}
 			if ((copy_flags & COPY_FLAG_NOOVERWRITE) &&
-				common_util_index_proptags(&proptags1,
-				pproptags->pproptag[i]) >= 0) {
+			    proptags1.has(pproptags->pproptag[i]))
 				continue;
-			}
 			proptags.pproptag[proptags.count] = 
 							pproptags->pproptag[i];
 			poriginal_indices[proptags.count++] = i;
@@ -732,8 +727,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		if (!msgdst->set_properties(&propvals, &tmp_problems))
 			return ecError;
 		for (i=0; i<tmp_problems.count; i++) {
-			tmp_problems.pproblem[i].index = common_util_index_proptags(
-							pproptags, tmp_problems.pproblem[i].proptag);
+			tmp_problems.pproblem[i].index = pproptags->indexof(tmp_problems.pproblem[i].proptag);
 		}
 		memcpy(pproblems->pproblem + pproblems->count,
 			tmp_problems.pproblem, tmp_problems.count*
@@ -763,10 +757,8 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 				continue;
 			}
 			if ((copy_flags & COPY_FLAG_NOOVERWRITE) &&
-				common_util_index_proptags(&proptags1,
-				pproptags->pproptag[i]) >= 0) {
+			    proptags1.has(pproptags->pproptag[i]))
 				continue;
-			}
 			proptags.pproptag[proptags.count] = 
 							pproptags->pproptag[i];
 			poriginal_indices[proptags.count++] = i;
@@ -785,8 +777,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		if (!atdst->set_properties(&propvals, &tmp_problems))
 			return ecError;
 		for (i=0; i<tmp_problems.count; i++) {
-			tmp_problems.pproblem[i].index = common_util_index_proptags(
-							pproptags, tmp_problems.pproblem[i].proptag);
+			tmp_problems.pproblem[i].index = pproptags->indexof(tmp_problems.pproblem[i].proptag);
 		}
 		memcpy(pproblems->pproblem + pproblems->count,
 			tmp_problems.pproblem, tmp_problems.count*
@@ -872,8 +863,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 		} else {
 			username = NULL;
 		}
-		if (common_util_index_proptags(pexcluded_proptags,
-			PROP_TAG_CONTAINERHIERARCHY) < 0) {
+		if (!pexcluded_proptags->has(PROP_TAG_CONTAINERHIERARCHY)) {
 			if (!exmdb_client_check_folder_cycle(plogon->get_dir(),
 			    fldsrc->folder_id, flddst->folder_id, &b_cycle))
 				return ecError;
@@ -884,8 +874,8 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 		} else {
 			b_sub = FALSE;
 		}
-		BOOL b_normal = common_util_index_proptags(pexcluded_proptags, PROP_TAG_CONTAINERCONTENTS) < 0 ? TRUE : false;
-		BOOL b_fai    = common_util_index_proptags(pexcluded_proptags, PROP_TAG_FOLDERASSOCIATEDCONTENTS) < 0 ? TRUE : false;
+		BOOL b_normal = !pexcluded_proptags->has(PROP_TAG_CONTAINERCONTENTS) ? TRUE : false;
+		BOOL b_fai    = !pexcluded_proptags->has(PROP_TAG_FOLDERASSOCIATEDCONTENTS) ? TRUE : false;
 		if (!fldsrc->get_all_proptags(&proptags))
 			return ecError;
 		common_util_reduce_proptags(&proptags, pexcluded_proptags);
@@ -901,10 +891,8 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 		for (i=0; i<proptags.count; i++) {
 			if (flddst->check_readonly_property(proptags.pproptag[i]))
 				continue;
-			if (FALSE == b_force && common_util_index_proptags(
-				&proptags1, proptags.pproptag[i]) >= 0) {
+			if (!b_force && proptags1.has(proptags.pproptag[i]))
 				continue;
-			}
 			tmp_proptags.pproptag[tmp_proptags.count++] = proptags.pproptag[i];
 		}
 		if (!fldsrc->get_properties(&tmp_proptags, &propvals))

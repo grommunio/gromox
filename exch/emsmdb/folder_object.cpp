@@ -51,32 +51,31 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	pproptags->pproptag[pproptags->count++] = PR_RIGHTS;
 	pproptags->pproptag[pproptags->count++] = PR_PARENT_ENTRYID;
 	pproptags->pproptag[pproptags->count++] = PR_PARENT_SOURCE_KEY;
-	if (common_util_index_proptags(&tmp_proptags, PR_SOURCE_KEY) < 0) {
+	if (!tmp_proptags.has(PR_SOURCE_KEY))
 		pproptags->pproptag[pproptags->count++] = PR_SOURCE_KEY;
-	}
 	if (!pfolder->plogon->check_private())
 		return TRUE;
 	auto basic_fld = pfolder->folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) ||
 	                 pfolder->folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_INBOX);
 	if (!basic_fld)
 		return TRUE;
-	if (common_util_index_proptags(&tmp_proptags, PR_IPM_DRAFTS_ENTRYID) < 0)
+	if (!tmp_proptags.has(PR_IPM_DRAFTS_ENTRYID))
 		pproptags->pproptag[pproptags->count++] = PR_IPM_DRAFTS_ENTRYID;
-	if (common_util_index_proptags(&tmp_proptags, PR_IPM_CONTACT_ENTRYID) < 0)
+	if (!tmp_proptags.has(PR_IPM_CONTACT_ENTRYID))
 		pproptags->pproptag[pproptags->count++] = PR_IPM_CONTACT_ENTRYID;
-	if (common_util_index_proptags(&tmp_proptags, PR_IPM_APPOINTMENT_ENTRYID) < 0)
+	if (!tmp_proptags.has(PR_IPM_APPOINTMENT_ENTRYID))
 		pproptags->pproptag[pproptags->count++] = PR_IPM_APPOINTMENT_ENTRYID;
-	if (common_util_index_proptags(&tmp_proptags, PR_IPM_JOURNAL_ENTRYID) < 0)
+	if (!tmp_proptags.has(PR_IPM_JOURNAL_ENTRYID))
 		pproptags->pproptag[pproptags->count++] = PR_IPM_JOURNAL_ENTRYID;
-	if (common_util_index_proptags(&tmp_proptags, PR_IPM_NOTE_ENTRYID) < 0)
+	if (!tmp_proptags.has(PR_IPM_NOTE_ENTRYID))
 		pproptags->pproptag[pproptags->count++] = PR_IPM_NOTE_ENTRYID;
-	if (common_util_index_proptags(&tmp_proptags, PR_IPM_TASK_ENTRYID) < 0)
+	if (!tmp_proptags.has(PR_IPM_TASK_ENTRYID))
 		pproptags->pproptag[pproptags->count++] = PR_IPM_TASK_ENTRYID;
-	if (common_util_index_proptags(&tmp_proptags, PR_FREEBUSY_ENTRYIDS) < 0)
+	if (!tmp_proptags.has(PR_FREEBUSY_ENTRYIDS))
 		pproptags->pproptag[pproptags->count++] = PR_FREEBUSY_ENTRYIDS;
-	if (common_util_index_proptags(&tmp_proptags, PR_ADDITIONAL_REN_ENTRYIDS) < 0)
+	if (!tmp_proptags.has(PR_ADDITIONAL_REN_ENTRYIDS))
 		pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS;
-	if (common_util_index_proptags(&tmp_proptags, PR_ADDITIONAL_REN_ENTRYIDS_EX) < 0)
+	if (!tmp_proptags.has(PR_ADDITIONAL_REN_ENTRYIDS_EX))
 		pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS_EX;
 	return TRUE;
 }
@@ -552,8 +551,7 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 			sizeof(TAGGED_PROPVAL)*tmp_propvals.count);
 		ppropvals->count += tmp_propvals.count;
 	}
-	if (common_util_index_proptags(pproptags, PR_SOURCE_KEY) >= 0 &&
-	    !ppropvals->has(PR_SOURCE_KEY)) {
+	if (pproptags->has(PR_SOURCE_KEY) && !ppropvals->has(PR_SOURCE_KEY)) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		pv.proptag = PR_SOURCE_KEY;
 		pv.pvalue = common_util_calculate_folder_sourcekey(pfolder->plogon, pfolder->folder_id);

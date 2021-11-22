@@ -430,3 +430,11 @@ PROPERTY_XNAME::PROPERTY_XNAME(const PROPERTY_NAME &o) :
 	if (o.kind == MNID_STRING && o.pname != nullptr)
 		name = o.pname;
 }
+
+size_t PROPTAG_ARRAY::indexof(uint32_t tag) const
+{
+	for (size_t i = 0; i < count; ++i)
+		if (pproptag[i] == tag)
+			return i;
+	return npos;
+}

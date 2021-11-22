@@ -917,19 +917,6 @@ void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 	}
 }
 
-int common_util_index_proptags(
-	const PROPTAG_ARRAY *pproptags, uint32_t proptag)
-{
-	int i;
-	
-	for (i=0; i<pproptags->count; i++) {
-		if (proptag == pproptags->pproptag[i]) {
-			return i;
-		}
-	}
-	return -1;
-}
-
 PROPTAG_ARRAY* common_util_trim_proptags(const PROPTAG_ARRAY *pproptags)
 {
 	int i;

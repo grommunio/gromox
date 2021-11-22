@@ -968,20 +968,18 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	for (pnode=double_list_get_head(&pmessage->stream_list); NULL!=pnode;
 		pnode=double_list_get_after(&pmessage->stream_list, pnode)) {
 		auto proptag = static_cast<stream_object *>(pnode->pdata)->get_proptag();
-		if (common_util_index_proptags(pproptags, proptag) < 0) {
+		if (!pproptags->has(proptag))
 			pproptags->pproptag[pproptags->count++] = proptag;
-		}
 	}
 	pproptags->pproptag[pproptags->count++] = PR_ACCESS;
 	pproptags->pproptag[pproptags->count++] = PR_ACCESS_LEVEL;
 	pproptags->pproptag[pproptags->count++] = PROP_TAG_FOLDERID;
 	pproptags->pproptag[pproptags->count++] = PR_PARENT_SOURCE_KEY;
-	if (pmessage->pembedding == nullptr &&
-	    common_util_index_proptags(pproptags, PR_SOURCE_KEY) < 0)
+	if (pmessage->pembedding == nullptr && !pproptags->has(PR_SOURCE_KEY))
 		pproptags->pproptag[pproptags->count++] = PR_SOURCE_KEY;
-	if (common_util_index_proptags(pproptags, PR_MESSAGE_LOCALE_ID) < 0)
+	if (!pproptags->has(PR_MESSAGE_LOCALE_ID))
 		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_LOCALE_ID;
-	if (common_util_index_proptags(pproptags, PR_MESSAGE_CODEPAGE) < 0)
+	if (!pproptags->has(PR_MESSAGE_CODEPAGE))
 		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_CODEPAGE;
 	return TRUE;
 }
@@ -1187,8 +1185,7 @@ BOOL message_object::get_properties(uint32_t size_limit,
 			sizeof(TAGGED_PROPVAL)*tmp_propvals.count);
 		ppropvals->count += tmp_propvals.count;
 	}
-	if (pmessage->pembedding == nullptr &&
-	    common_util_index_proptags(pproptags, PR_SOURCE_KEY) >= 0 &&
+	if (pmessage->pembedding == nullptr && pproptags->has(PR_SOURCE_KEY) &&
 	    !ppropvals->has(PR_SOURCE_KEY)) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		pv.proptag = PR_SOURCE_KEY;
@@ -1197,7 +1194,7 @@ BOOL message_object::get_properties(uint32_t size_limit,
 			return FALSE;
 		ppropvals->count ++;
 	}
-	if (common_util_index_proptags(pproptags, PR_MESSAGE_LOCALE_ID) >= 0 &&
+	if (pproptags->has(PR_MESSAGE_LOCALE_ID) &&
 	    !ppropvals->has(PR_MESSAGE_LOCALE_ID)) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		pv.proptag = PR_MESSAGE_LOCALE_ID;
@@ -1210,7 +1207,7 @@ BOOL message_object::get_properties(uint32_t size_limit,
 			pv.pvalue = deconst(&lcid_default);
 		ppropvals->count ++;
 	}
-	if (common_util_index_proptags(pproptags, PR_MESSAGE_CODEPAGE) >= 0 &&
+	if (pproptags->has(PR_MESSAGE_CODEPAGE) &&
 	    !ppropvals->has(PR_MESSAGE_CODEPAGE)) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
 		pv.proptag = PR_MESSAGE_CODEPAGE;
@@ -1481,17 +1478,16 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 		common_util_remove_propvals(&msgctnt.proplist, t);
 	i = 0;
 	while (i < msgctnt.proplist.count) {
-		if (common_util_index_proptags(pexcluded_proptags,
-			msgctnt.proplist.ppropval[i].proptag) >= 0) {
+		if (pexcluded_proptags->has(msgctnt.proplist.ppropval[i].proptag)) {
 			common_util_remove_propvals(&msgctnt.proplist,
 					msgctnt.proplist.ppropval[i].proptag);
 			continue;
 		}
 		i ++;
 	}
-	if (common_util_index_proptags(pexcluded_proptags, PR_MESSAGE_RECIPIENTS) >= 0)
+	if (pexcluded_proptags->has(PR_MESSAGE_RECIPIENTS))
 		msgctnt.children.prcpts = NULL;
-	if (common_util_index_proptags(pexcluded_proptags, PR_MESSAGE_ATTACHMENTS) >= 0)
+	if (pexcluded_proptags->has(PR_MESSAGE_ATTACHMENTS))
 		msgctnt.children.pattachments = NULL;
 	if (!exmdb_client_write_message_instance(pmessage->plogon->get_dir(),
 	    pmessage->instance_id, &msgctnt, b_force, &proptags, pproblems))

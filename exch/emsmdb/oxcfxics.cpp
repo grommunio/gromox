@@ -725,8 +725,7 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		i = 0;
 		while (i < pproplist->count) {
 			if (META_TAG_NEWFXFOLDER != pproplist->ppropval[i].proptag) {
-				if (-1 == common_util_index_proptags(pproptags,
-					pproplist->ppropval[i].proptag)) {
+				if (!pproptags->has(pproplist->ppropval[i].proptag)) {
 					pproplist->erase(pproplist->ppropval[i].proptag);
 					continue;
 				}
@@ -745,17 +744,16 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			return ecError;
 		i = 0;
 		while (i < msgctnt.proplist.count) {
-			if (-1 == common_util_index_proptags(pproptags,
-				msgctnt.proplist.ppropval[i].proptag)) {
+			if (!pproptags->has(msgctnt.proplist.ppropval[i].proptag)) {
 				common_util_remove_propvals(&msgctnt.proplist,
 						msgctnt.proplist.ppropval[i].proptag);
 				continue;
 			}
 			i ++;
 		}
-		if (common_util_index_proptags(pproptags, PR_MESSAGE_RECIPIENTS) == -1)
+		if (!pproptags->has(PR_MESSAGE_RECIPIENTS))
 			msgctnt.children.prcpts = NULL;
-		if (common_util_index_proptags(pproptags, PR_MESSAGE_ATTACHMENTS) == -1)
+		if (!pproptags->has(PR_MESSAGE_ATTACHMENTS))
 			msgctnt.children.pattachments = NULL;
 		if (0 != level) {
 			msgctnt.children.prcpts = NULL;
@@ -772,15 +770,14 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 			return ecError;
 		i = 0;
 		while (i < attctnt.proplist.count) {
-			if (-1 == common_util_index_proptags(pproptags,
-				attctnt.proplist.ppropval[i].proptag)) {
+			if (!pproptags->has(attctnt.proplist.ppropval[i].proptag)) {
 				common_util_remove_propvals(&attctnt.proplist,
 						attctnt.proplist.ppropval[i].proptag);
 				continue;
 			}
 			i ++;
 		}
-		if (common_util_index_proptags(pproptags, PR_ATTACH_DATA_OBJ) == -1)
+		if (!pproptags->has(PR_ATTACH_DATA_OBJ))
 			attctnt.pembedded = NULL;
 		if (!pctx->make_attachmentcontent(&attctnt))
 			return ecError;

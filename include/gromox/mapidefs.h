@@ -1126,8 +1126,12 @@ struct PROPNAME_ARRAY {
 };
 
 struct PROPTAG_ARRAY {
+	size_t indexof(uint32_t tag) const;
+	inline bool has(uint32_t tag) const { return indexof(tag) != npos; }
+
 	uint16_t count;
 	uint32_t *pproptag;
+	static constexpr size_t npos = -1;
 };
 
 struct SHORT_ARRAY {
