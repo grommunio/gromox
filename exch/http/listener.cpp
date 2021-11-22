@@ -66,12 +66,10 @@ int listener_run()
 		       g_listener_port, strerror(-g_listener_sock));
 		return -1;
 	}
-	if (g_mss_size > 0) {
-		if (setsockopt(g_listener_sock, IPPROTO_TCP, TCP_MAXSEG,
-			(const void*)&g_mss_size, sizeof(int)) < 0) {
-			return -2;	
-		}
-	}
+	if (g_mss_size > 0 &&
+	    setsockopt(g_listener_sock, IPPROTO_TCP, TCP_MAXSEG,
+	    &g_mss_size, sizeof(g_mss_size)) < 0)
+		return -2;
 	
 	if (g_listener_ssl_port > 0) {
 		g_listener_ssl_sock = gx_inet_listen("::", g_listener_ssl_port);
@@ -80,12 +78,10 @@ int listener_run()
 			       g_listener_ssl_port, strerror(-g_listener_ssl_sock));
 			return -1;
 		}
-		if (g_mss_size > 0) {
-			if (setsockopt(g_listener_ssl_sock, IPPROTO_TCP, TCP_MAXSEG,
-				(const void*)&g_mss_size, sizeof(int)) < 0) {
-				return -2;	
-			}
-		}
+		if (g_mss_size > 0 &&
+		    setsockopt(g_listener_ssl_sock, IPPROTO_TCP, TCP_MAXSEG,
+		    &g_mss_size, sizeof(g_mss_size)) < 0)
+			return -2;
 	}
 
 	return 0;
