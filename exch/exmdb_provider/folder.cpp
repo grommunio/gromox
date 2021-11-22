@@ -396,9 +396,8 @@ BOOL exmdb_server_get_folder_by_name(const char *dir,
 	return TRUE;
 }
 
-BOOL exmdb_server_create_folder_by_properties(const char *dir,
-	uint32_t cpid, const TPROPVAL_ARRAY *pproperties,
-	uint64_t *pfolder_id)
+BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
+    TPROPVAL_ARRAY *pproperties, uint64_t *pfolder_id)
 {
 	uint32_t art;
 	uint32_t hcn;
@@ -425,8 +424,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		tmp_fid = 0;
 	} else {
 		tmp_fid = *(uint64_t*)pvalue;
-		common_util_remove_propvals(
-			(TPROPVAL_ARRAY*)pproperties, PROP_TAG_FOLDERID);
+		common_util_remove_propvals(pproperties, PROP_TAG_FOLDERID);
 	}
 	*pfolder_id = 0;
 	pvalue = pproperties->getval(PROP_TAG_PARENTFOLDERID);
@@ -435,8 +433,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		return TRUE;
 	}
 	parent_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
-	common_util_remove_propvals(
-		(TPROPVAL_ARRAY*)pproperties, PROP_TAG_PARENTFOLDERID);
+	common_util_remove_propvals(pproperties, PROP_TAG_PARENTFOLDERID);
 	pname = pproperties->get<char>(PR_DISPLAY_NAME);
 	if (pname == nullptr) {
 		fprintf(stderr, "E-1582: create_folder_b_p request with no name\n");
@@ -447,8 +444,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		fprintf(stderr, "E-1583: create_folder_b_p request without CN\n");
 		return TRUE;
 	}
-	common_util_remove_propvals(
-		(TPROPVAL_ARRAY*)pproperties, PROP_TAG_CHANGENUMBER);
+	common_util_remove_propvals(pproperties, PROP_TAG_CHANGENUMBER);
 	change_num = rop_util_get_gc_value(*(uint64_t*)pvalue);
 	if (!pproperties->has(PR_PREDECESSOR_CHANGE_LIST)) {
 		fprintf(stderr, "E-1584: create_folder_b_p request without PCL\n");
@@ -471,7 +467,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir,
 		default:
 			return TRUE;
 		}
-		common_util_remove_propvals(deconst(pproperties), PR_FOLDER_TYPE);
+		common_util_remove_propvals(pproperties, PR_FOLDER_TYPE);
 	}
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
