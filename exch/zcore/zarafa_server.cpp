@@ -3674,8 +3674,8 @@ uint32_t zarafa_server_deleteattachment(GUID hsession,
 	return pmessage->delete_attachment(attach_id) ? ecSuccess : ecError;
 }
 
-uint32_t zarafa_server_setpropvals(GUID hsession,
-	uint32_t hobject, const TPROPVAL_ARRAY *ppropvals)
+uint32_t zarafa_server_setpropvals(GUID hsession, uint32_t hobject,
+    TPROPVAL_ARRAY *ppropvals)
 {
 	int i;
 	uint8_t mapi_type;

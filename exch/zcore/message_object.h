@@ -42,7 +42,7 @@ struct message_object {
 	BOOL clear_unsent();
 	BOOL get_all_proptags(PROPTAG_ARRAY *);
 	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
-	BOOL set_properties(const TPROPVAL_ARRAY *);
+	BOOL set_properties(TPROPVAL_ARRAY *);
 	BOOL remove_properties(const PROPTAG_ARRAY *);
 	BOOL copy_to(message_object *src, const PROPTAG_ARRAY *exclprop, BOOL force, BOOL *cycle);
 	BOOL set_readflag(uint8_t read_flag, BOOL *changed);

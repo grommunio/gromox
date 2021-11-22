@@ -1055,7 +1055,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 	return TRUE;
 }
 
-BOOL message_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
+BOOL message_object::set_properties(TPROPVAL_ARRAY *ppropvals)
 {
 	auto pmessage = this;
 	
@@ -1074,8 +1074,8 @@ BOOL message_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 		}
 		if (NULL != pnormalized_subject) {
 			if ('\0' == pnormalized_subject[0] && '\0' != psubject[0]) {
-				common_util_remove_propvals(deconst(ppropvals), PR_NORMALIZED_SUBJECT);
-				common_util_remove_propvals(deconst(ppropvals), PR_NORMALIZED_SUBJECT_A);
+				common_util_remove_propvals(ppropvals, PR_NORMALIZED_SUBJECT);
+				common_util_remove_propvals(ppropvals, PR_NORMALIZED_SUBJECT_A);
 			}
 		}
 	}

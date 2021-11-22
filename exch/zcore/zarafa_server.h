@@ -149,8 +149,7 @@ uint32_t zarafa_server_createattachment(GUID hsession,
 	uint32_t hmessage, uint32_t *phobject);
 uint32_t zarafa_server_deleteattachment(GUID hsession,
 	uint32_t hmessage, uint32_t attach_id);
-uint32_t zarafa_server_setpropvals(GUID hsession,
-	uint32_t hobject, const TPROPVAL_ARRAY *ppropvals);
+extern uint32_t zarafa_server_setpropvals(GUID ses, uint32_t obj, TPROPVAL_ARRAY *);
 uint32_t zarafa_server_getpropvals(GUID hsession,
 	uint32_t hobject, const PROPTAG_ARRAY *pproptags,
 	TPROPVAL_ARRAY *ppropvals);
