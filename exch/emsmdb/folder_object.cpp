@@ -54,30 +54,30 @@ BOOL folder_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	if (common_util_index_proptags(&tmp_proptags, PR_SOURCE_KEY) < 0) {
 		pproptags->pproptag[pproptags->count++] = PR_SOURCE_KEY;
 	}
-	if (pfolder->plogon->check_private()) {
-		if (pfolder->folder_id == rop_util_make_eid_ex(
-			1, PRIVATE_FID_ROOT) || pfolder->folder_id ==
-			rop_util_make_eid_ex(1, PRIVATE_FID_INBOX)) {
-			if (common_util_index_proptags(&tmp_proptags, PR_IPM_DRAFTS_ENTRYID) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_IPM_DRAFTS_ENTRYID;
-			if (common_util_index_proptags(&tmp_proptags, PR_IPM_CONTACT_ENTRYID) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_IPM_CONTACT_ENTRYID;
-			if (common_util_index_proptags(&tmp_proptags, PR_IPM_APPOINTMENT_ENTRYID) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_IPM_APPOINTMENT_ENTRYID;
-			if (common_util_index_proptags(&tmp_proptags, PR_IPM_JOURNAL_ENTRYID) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_IPM_JOURNAL_ENTRYID;
-			if (common_util_index_proptags(&tmp_proptags, PR_IPM_NOTE_ENTRYID) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_IPM_NOTE_ENTRYID;
-			if (common_util_index_proptags(&tmp_proptags, PR_IPM_TASK_ENTRYID) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_IPM_TASK_ENTRYID;
-			if (common_util_index_proptags(&tmp_proptags, PR_FREEBUSY_ENTRYIDS) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_FREEBUSY_ENTRYIDS;
-			if (common_util_index_proptags(&tmp_proptags, PR_ADDITIONAL_REN_ENTRYIDS) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS;
-			if (common_util_index_proptags(&tmp_proptags, PR_ADDITIONAL_REN_ENTRYIDS_EX) < 0)
-				pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS_EX;
-		}
-	}
+	if (!pfolder->plogon->check_private())
+		return TRUE;
+	auto basic_fld = pfolder->folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) ||
+	                 pfolder->folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_INBOX);
+	if (!basic_fld)
+		return TRUE;
+	if (common_util_index_proptags(&tmp_proptags, PR_IPM_DRAFTS_ENTRYID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_IPM_DRAFTS_ENTRYID;
+	if (common_util_index_proptags(&tmp_proptags, PR_IPM_CONTACT_ENTRYID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_IPM_CONTACT_ENTRYID;
+	if (common_util_index_proptags(&tmp_proptags, PR_IPM_APPOINTMENT_ENTRYID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_IPM_APPOINTMENT_ENTRYID;
+	if (common_util_index_proptags(&tmp_proptags, PR_IPM_JOURNAL_ENTRYID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_IPM_JOURNAL_ENTRYID;
+	if (common_util_index_proptags(&tmp_proptags, PR_IPM_NOTE_ENTRYID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_IPM_NOTE_ENTRYID;
+	if (common_util_index_proptags(&tmp_proptags, PR_IPM_TASK_ENTRYID) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_IPM_TASK_ENTRYID;
+	if (common_util_index_proptags(&tmp_proptags, PR_FREEBUSY_ENTRYIDS) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_FREEBUSY_ENTRYIDS;
+	if (common_util_index_proptags(&tmp_proptags, PR_ADDITIONAL_REN_ENTRYIDS) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS;
+	if (common_util_index_proptags(&tmp_proptags, PR_ADDITIONAL_REN_ENTRYIDS_EX) < 0)
+		pproptags->pproptag[pproptags->count++] = PR_ADDITIONAL_REN_ENTRYIDS_EX;
 	return TRUE;
 }
 
