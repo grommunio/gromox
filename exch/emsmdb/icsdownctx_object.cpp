@@ -461,183 +461,184 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			}
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		}
-		if (pctx->pstream->plogon->check_private() &&
-		    (folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) ||
-		    folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_INBOX))) {
-			ppropval = cu_alloc<TAGGED_PROPVAL>(fldchgs.pfldchgs[i].count + 10);
-			if (NULL == ppropval) {
+		auto inboxy = pctx->pstream->plogon->check_private() &&
+		              (folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) ||
+		              folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_INBOX));
+		if (!inboxy)
+			continue;
+		ppropval = cu_alloc<TAGGED_PROPVAL>(fldchgs.pfldchgs[i].count + 10);
+		if (NULL == ppropval) {
+			return FALSE;
+		}
+		memcpy(ppropval, fldchgs.pfldchgs[i].ppropval,
+			sizeof(TAGGED_PROPVAL)*fldchgs.pfldchgs[i].count);
+		fldchgs.pfldchgs[i].ppropval = ppropval;
+		tmp_propval.proptag = PR_IPM_DRAFTS_ENTRYID;
+		tmp_propval.pvalue = common_util_to_folder_entryid(
+			pctx->pstream->plogon, rop_util_make_eid_ex(1,
+			PRIVATE_FID_DRAFT));
+		if (NULL == tmp_propval.pvalue) {
+			return FALSE;
+		}
+		common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
+		tmp_propval.proptag = PR_IPM_CONTACT_ENTRYID;
+		tmp_propval.pvalue = common_util_to_folder_entryid(
+			pctx->pstream->plogon, rop_util_make_eid_ex(1,
+			PRIVATE_FID_CONTACTS));
+		if (NULL == tmp_propval.pvalue) {
+			return FALSE;
+		}
+		common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
+		tmp_propval.proptag = PR_IPM_APPOINTMENT_ENTRYID;
+		tmp_propval.pvalue = common_util_to_folder_entryid(
+			pctx->pstream->plogon, rop_util_make_eid_ex(1,
+			PRIVATE_FID_CALENDAR));
+		if (NULL == tmp_propval.pvalue) {
+			return FALSE;
+		}
+		common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
+		tmp_propval.proptag = PR_IPM_JOURNAL_ENTRYID;
+		tmp_propval.pvalue = common_util_to_folder_entryid(
+			pctx->pstream->plogon, rop_util_make_eid_ex(1,
+			PRIVATE_FID_JOURNAL));
+		if (NULL == tmp_propval.pvalue) {
+			return FALSE;
+		}
+		common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
+		tmp_propval.proptag = PR_IPM_NOTE_ENTRYID;
+		tmp_propval.pvalue = common_util_to_folder_entryid(
+			pctx->pstream->plogon, rop_util_make_eid_ex(1,
+			PRIVATE_FID_NOTES));
+		if (NULL == tmp_propval.pvalue) {
+			return FALSE;
+		}
+		common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
+		tmp_propval.proptag = PR_IPM_TASK_ENTRYID;
+		tmp_propval.pvalue = common_util_to_folder_entryid(
+			pctx->pstream->plogon, rop_util_make_eid_ex(1,
+			PRIVATE_FID_TASKS));
+		if (NULL == tmp_propval.pvalue) {
+			return FALSE;
+		}
+		common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
+		if (!fldchgs.pfldchgs[i].has(PR_ADDITIONAL_REN_ENTRYIDS)) {
+			tmp_propval.proptag = PR_ADDITIONAL_REN_ENTRYIDS;
+			pvalue = cu_alloc<BINARY_ARRAY>();
+			auto ba = static_cast<BINARY_ARRAY *>(pvalue);
+			if (NULL == pvalue) {
 				return FALSE;
 			}
-			memcpy(ppropval, fldchgs.pfldchgs[i].ppropval,
-				sizeof(TAGGED_PROPVAL)*fldchgs.pfldchgs[i].count);
-			fldchgs.pfldchgs[i].ppropval = ppropval;
-			tmp_propval.proptag = PR_IPM_DRAFTS_ENTRYID;
-			tmp_propval.pvalue = common_util_to_folder_entryid(
-				pctx->pstream->plogon, rop_util_make_eid_ex(1,
-				PRIVATE_FID_DRAFT));
-			if (NULL == tmp_propval.pvalue) {
+			tmp_propval.pvalue = pvalue;
+			ba->count = 5;
+			ba->pbin = cu_alloc<BINARY>(ba->count);
+			if (ba->pbin == nullptr) {
 				return FALSE;
 			}
-			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-			tmp_propval.proptag = PR_IPM_CONTACT_ENTRYID;
-			tmp_propval.pvalue = common_util_to_folder_entryid(
-				pctx->pstream->plogon, rop_util_make_eid_ex(1,
-				PRIVATE_FID_CONTACTS));
-			if (NULL == tmp_propval.pvalue) {
+			pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
+			       rop_util_make_eid_ex(1, PRIVATE_FID_CONFLICTS));
+			if (NULL == pbin) {
 				return FALSE;
 			}
-			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-			tmp_propval.proptag = PR_IPM_APPOINTMENT_ENTRYID;
-			tmp_propval.pvalue = common_util_to_folder_entryid(
-				pctx->pstream->plogon, rop_util_make_eid_ex(1,
-				PRIVATE_FID_CALENDAR));
-			if (NULL == tmp_propval.pvalue) {
+			ba->pbin[0] = *pbin;
+			pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
+			       rop_util_make_eid_ex(1, PRIVATE_FID_SYNC_ISSUES));
+			if (NULL == pbin) {
 				return FALSE;
 			}
-			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-			tmp_propval.proptag = PR_IPM_JOURNAL_ENTRYID;
-			tmp_propval.pvalue = common_util_to_folder_entryid(
-				pctx->pstream->plogon, rop_util_make_eid_ex(1,
-				PRIVATE_FID_JOURNAL));
-			if (NULL == tmp_propval.pvalue) {
+			ba->pbin[1] = *pbin;
+			pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
+			       rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FAILURES));
+			if (NULL == pbin) {
 				return FALSE;
 			}
-			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-			tmp_propval.proptag = PR_IPM_NOTE_ENTRYID;
-			tmp_propval.pvalue = common_util_to_folder_entryid(
-				pctx->pstream->plogon, rop_util_make_eid_ex(1,
-				PRIVATE_FID_NOTES));
-			if (NULL == tmp_propval.pvalue) {
+			ba->pbin[2] = *pbin;
+			pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
+			       rop_util_make_eid_ex(1, PRIVATE_FID_SERVER_FAILURES));
+			if (NULL == pbin) {
 				return FALSE;
 			}
-			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-			tmp_propval.proptag = PR_IPM_TASK_ENTRYID;
-			tmp_propval.pvalue = common_util_to_folder_entryid(
-				pctx->pstream->plogon, rop_util_make_eid_ex(1,
-				PRIVATE_FID_TASKS));
-			if (NULL == tmp_propval.pvalue) {
+			ba->pbin[3] = *pbin;
+			pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
+			       rop_util_make_eid_ex(1, PRIVATE_FID_JUNK));
+			if (NULL == pbin) {
 				return FALSE;
 			}
-			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
-			if (!fldchgs.pfldchgs[i].has(PR_ADDITIONAL_REN_ENTRYIDS)) {
-				tmp_propval.proptag = PR_ADDITIONAL_REN_ENTRYIDS;
-				pvalue = cu_alloc<BINARY_ARRAY>();
-				auto ba = static_cast<BINARY_ARRAY *>(pvalue);
-				if (NULL == pvalue) {
-					return FALSE;
-				}
-				tmp_propval.pvalue = pvalue;
-				ba->count = 5;
-				ba->pbin = cu_alloc<BINARY>(ba->count);
-				if (ba->pbin == nullptr) {
-					return FALSE;
-				}
-				pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
-							rop_util_make_eid_ex(1, PRIVATE_FID_CONFLICTS));
-				if (NULL == pbin) {
-					return FALSE;
-				}
-				ba->pbin[0] = *pbin;
-				pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
-						rop_util_make_eid_ex(1, PRIVATE_FID_SYNC_ISSUES));
-				if (NULL == pbin) {
-					return FALSE;
-				}
-				ba->pbin[1] = *pbin;
-				pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
-						rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FAILURES));
-				if (NULL == pbin) {
-					return FALSE;
-				}
-				ba->pbin[2] = *pbin;
-				pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
-						rop_util_make_eid_ex(1, PRIVATE_FID_SERVER_FAILURES));
-				if (NULL == pbin) {
-					return FALSE;
-				}
-				ba->pbin[3] = *pbin;
-				pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
-								rop_util_make_eid_ex(1, PRIVATE_FID_JUNK));
-				if (NULL == pbin) {
-					return FALSE;
-				}
-				ba->pbin[4] = *pbin;
-				common_util_set_propvals(
-					fldchgs.pfldchgs + i, &tmp_propval);
+			ba->pbin[4] = *pbin;
+			common_util_set_propvals(
+				fldchgs.pfldchgs + i, &tmp_propval);
+		}
+		if (!fldchgs.pfldchgs[i].has(PR_ADDITIONAL_REN_ENTRYIDS_EX)) {
+			tmp_propval.proptag = PR_ADDITIONAL_REN_ENTRYIDS_EX;
+			pvalue = cu_alloc<BINARY>();
+			auto bv = static_cast<BINARY *>(pvalue);
+			if (NULL == pvalue) {
+				return FALSE;
 			}
-			if (!fldchgs.pfldchgs[i].has(PR_ADDITIONAL_REN_ENTRYIDS_EX)) {
-				tmp_propval.proptag = PR_ADDITIONAL_REN_ENTRYIDS_EX;
-				pvalue = cu_alloc<BINARY>();
-				auto bv = static_cast<BINARY *>(pvalue);
-				if (NULL == pvalue) {
-					return FALSE;
-				}
-				tmp_propval.pvalue = pvalue;
-				persistdatas.count = 3;
-				persistdatas.ppitems = cu_alloc<PERSISTDATA *>(persistdatas.count);
-				if (NULL == persistdatas.ppitems) {
-					return FALSE;
-				}
-				ppersistdata = cu_alloc<PERSISTDATA>(persistdatas.count);
-				if (NULL == ppersistdata) {
-					return FALSE;
-				}
-				persistdatas.ppitems[0] = ppersistdata;
-				persistdatas.ppitems[0]->persist_id = RSF_PID_CONV_ACTIONS;
-				persistdatas.ppitems[0]->element.element_id = RSF_ELID_ENTRYID;
-				persistdatas.ppitems[0]->element.pentry_id =
-					common_util_to_folder_entryid(pctx->pstream->plogon,
-					rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS));
-				persistdatas.ppitems[1] = ppersistdata + 1;
-				persistdatas.ppitems[1]->persist_id = RSF_PID_BUDDYLIST_PDLS;
-				persistdatas.ppitems[1]->element.element_id = RSF_ELID_ENTRYID;
-				persistdatas.ppitems[1]->element.pentry_id =
-					common_util_to_folder_entryid(pctx->pstream->plogon,
-					rop_util_make_eid_ex(1, PRIVATE_FID_IMCONTACTLIST));
-				persistdatas.ppitems[2] = ppersistdata + 2;
-				persistdatas.ppitems[2]->persist_id = RSF_PID_BUDDYLIST_CONTACTS;
-				persistdatas.ppitems[2]->element.element_id = RSF_ELID_ENTRYID;
-				persistdatas.ppitems[2]->element.pentry_id =
-					common_util_to_folder_entryid(pctx->pstream->plogon,
-					rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS));
-				if (!ext_push.init(temp_buff, sizeof(temp_buff), 0) ||
-				    ext_push.p_persistdata_a(&persistdatas) != EXT_ERR_SUCCESS)
-					return false;
-				bv->cb = ext_push.m_offset;
-				bv->pv = common_util_alloc(bv->cb);
-				if (bv->pv == nullptr)
-					return FALSE;
-				memcpy(bv->pv, ext_push.m_udata, bv->cb);
-				common_util_set_propvals(
-					fldchgs.pfldchgs + i, &tmp_propval);
+			tmp_propval.pvalue = pvalue;
+			persistdatas.count = 3;
+			persistdatas.ppitems = cu_alloc<PERSISTDATA *>(persistdatas.count);
+			if (NULL == persistdatas.ppitems) {
+				return FALSE;
 			}
-			if (!fldchgs.pfldchgs[i].has(PR_FREEBUSY_ENTRYIDS)) {
-				tmp_propval.proptag = PR_FREEBUSY_ENTRYIDS;
-				pvalue = cu_alloc<BINARY_ARRAY>();
-				auto ba = static_cast<BINARY_ARRAY *>(pvalue);
-				if (NULL == pvalue) {
-					return FALSE;
-				}
-				tmp_propval.pvalue = pvalue;
-				ba->count = 4;
-				ba->pbin = cu_alloc<BINARY>(ba->count);
-				if (ba->pbin == nullptr)
-					return FALSE;
-				ba->pbin[0].cb = 0;
-				ba->pbin[0].pb = nullptr;
-				ba->pbin[1].cb = 0;
-				ba->pbin[1].pb = nullptr;
-				ba->pbin[2].cb = 0;
-				ba->pbin[2].pb = nullptr;
-				pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
-						rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FREEBUSY));
-				if (NULL == pbin) {
-					return FALSE;
-				}
-				ba->pbin[3] = *pbin;
-				common_util_set_propvals(
-					fldchgs.pfldchgs + i, &tmp_propval);
+			ppersistdata = cu_alloc<PERSISTDATA>(persistdatas.count);
+			if (NULL == ppersistdata) {
+				return FALSE;
 			}
+			persistdatas.ppitems[0] = ppersistdata;
+			persistdatas.ppitems[0]->persist_id = RSF_PID_CONV_ACTIONS;
+			persistdatas.ppitems[0]->element.element_id = RSF_ELID_ENTRYID;
+			persistdatas.ppitems[0]->element.pentry_id =
+				common_util_to_folder_entryid(pctx->pstream->plogon,
+				rop_util_make_eid_ex(1, PRIVATE_FID_CONVERSATION_ACTION_SETTINGS));
+			persistdatas.ppitems[1] = ppersistdata + 1;
+			persistdatas.ppitems[1]->persist_id = RSF_PID_BUDDYLIST_PDLS;
+			persistdatas.ppitems[1]->element.element_id = RSF_ELID_ENTRYID;
+			persistdatas.ppitems[1]->element.pentry_id =
+				common_util_to_folder_entryid(pctx->pstream->plogon,
+				rop_util_make_eid_ex(1, PRIVATE_FID_IMCONTACTLIST));
+			persistdatas.ppitems[2] = ppersistdata + 2;
+			persistdatas.ppitems[2]->persist_id = RSF_PID_BUDDYLIST_CONTACTS;
+			persistdatas.ppitems[2]->element.element_id = RSF_ELID_ENTRYID;
+			persistdatas.ppitems[2]->element.pentry_id =
+				common_util_to_folder_entryid(pctx->pstream->plogon,
+				rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS));
+			if (!ext_push.init(temp_buff, sizeof(temp_buff), 0) ||
+			    ext_push.p_persistdata_a(&persistdatas) != EXT_ERR_SUCCESS)
+				return false;
+			bv->cb = ext_push.m_offset;
+			bv->pv = common_util_alloc(bv->cb);
+			if (bv->pv == nullptr)
+				return FALSE;
+			memcpy(bv->pv, ext_push.m_udata, bv->cb);
+			common_util_set_propvals(
+				fldchgs.pfldchgs + i, &tmp_propval);
+		}
+		if (!fldchgs.pfldchgs[i].has(PR_FREEBUSY_ENTRYIDS)) {
+			tmp_propval.proptag = PR_FREEBUSY_ENTRYIDS;
+			pvalue = cu_alloc<BINARY_ARRAY>();
+			auto ba = static_cast<BINARY_ARRAY *>(pvalue);
+			if (NULL == pvalue) {
+				return FALSE;
+			}
+			tmp_propval.pvalue = pvalue;
+			ba->count = 4;
+			ba->pbin = cu_alloc<BINARY>(ba->count);
+			if (ba->pbin == nullptr)
+				return FALSE;
+			ba->pbin[0].cb = 0;
+			ba->pbin[0].pb = nullptr;
+			ba->pbin[1].cb = 0;
+			ba->pbin[1].pb = nullptr;
+			ba->pbin[2].cb = 0;
+			ba->pbin[2].pb = nullptr;
+			pbin = common_util_to_folder_entryid(pctx->pstream->plogon,
+					rop_util_make_eid_ex(1, PRIVATE_FID_LOCAL_FREEBUSY));
+			if (NULL == pbin) {
+				return FALSE;
+			}
+			ba->pbin[3] = *pbin;
+			common_util_set_propvals(
+				fldchgs.pfldchgs + i, &tmp_propval);
 		}
 	}
 	if (pctx->sync_flags & SYNC_FLAG_ONLYSPECIFIEDPROPERTIES) {
@@ -647,33 +648,29 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		icsdownctx_object_adjust_fldchgs(
 			&fldchgs, pctx->pproptags, TRUE);
 	}
-	if (0 == (pctx->sync_flags & SYNC_FLAG_NODELETIONS)) {
-		if (0 == deleted_folders.count) {
-			pproplist_deletions = NULL;
-		} else {
-			pidset = idset_init(TRUE, REPL_TYPE_ID);
-			if (NULL == pidset) {
+	if ((pctx->sync_flags & SYNC_FLAG_NODELETIONS) || deleted_folders.count == 0) {
+		pproplist_deletions = NULL;
+	} else {
+		pidset = idset_init(TRUE, REPL_TYPE_ID);
+		if (NULL == pidset) {
+			return FALSE;
+		}
+		for (size_t i = 0; i < deleted_folders.count; ++i) {
+			if (FALSE == idset_append(pidset,
+				deleted_folders.pids[i])) {
+				idset_free(pidset);
 				return FALSE;
 			}
-			for (size_t i = 0; i < deleted_folders.count; ++i) {
-				if (FALSE == idset_append(pidset,
-					deleted_folders.pids[i])) {
-					idset_free(pidset);
-					return FALSE;
-				}
-			}
-			pbin = idset_serialize(pidset);
-			idset_free(pidset);
-			if (pbin == nullptr)
-				return false;
-			pproplist_deletions = &tmp_proplist;
-			pproplist_deletions->count = 1;
-			pproplist_deletions->ppropval = &tmp_propval;
-			tmp_propval.proptag = META_TAG_IDSETDELETED;
-			tmp_propval.pvalue = pbin;
 		}
-	} else {
-		pproplist_deletions = NULL;
+		pbin = idset_serialize(pidset);
+		idset_free(pidset);
+		if (pbin == nullptr)
+			return false;
+		pproplist_deletions = &tmp_proplist;
+		pproplist_deletions->count = 1;
+		pproplist_deletions->ppropval = &tmp_propval;
+		tmp_propval.proptag = META_TAG_IDSETDELETED;
+		tmp_propval.pvalue = pbin;
 	}
 	if (0 != last_changenum) {
 		idset_clear(pctx->pstate->pseen);
