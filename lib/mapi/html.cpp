@@ -1339,7 +1339,7 @@ static void html_enum_tables(RTF_WRITER *pwriter, GumboNode *pnode)
 		pattribute = gumbo_get_attribute(
 			&pnode->v.element.attributes, "color");
 		if (NULL != pattribute) {
-			color = html_convert_color(pattribute->value != nullptr ? pattribute->value : "");
+			color = html_convert_color(znul(pattribute->value));
 			if (-1 != color) {
 				html_set_colortable(pwriter, color);
 			}

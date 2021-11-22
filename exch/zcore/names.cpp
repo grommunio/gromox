@@ -104,5 +104,5 @@ const char *zcore_rpc_idtoname(unsigned int i)
 {
 	static_assert(GX_ARRAY_SIZE(zcore_rpc_names) == zcore_callid::LINKMESSAGE + 1);
 	const char *s = i < GX_ARRAY_SIZE(zcore_rpc_names) ? zcore_rpc_names[i] : nullptr;
-	return s != nullptr ? s : "";
+	return znul(s);
 }

@@ -701,7 +701,7 @@ static int sql_meta(MYSQL *sqh, const char *username, bool is_domain,
 	if (row == nullptr)
 		return -ENOENT;
 	*user_id = strtoul(row[0], nullptr, 0);
-	storedir = row[1] != nullptr ? row[1] : "";
+	storedir = znul(row[1]);
 	return 0;
 } catch (const std::bad_alloc &) {
 	return -ENOMEM;

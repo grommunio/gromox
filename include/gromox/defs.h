@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <string>
 namespace gromox {
 template<typename T, size_t N> constexpr inline size_t arsizeof(T (&)[N]) { return N; }
 #define GX_ARRAY_SIZE arsizeof
@@ -127,5 +128,7 @@ namespace gromox {
 struct stdlib_delete {
 	inline void operator()(void *x) const { free(x); }
 };
+static inline const char *snul(const std::string &s) { return s.size() != 0 ? s.c_str() : nullptr; }
+static inline const char *znul(const char *s) { return s != nullptr ? s : ""; }
 
 }

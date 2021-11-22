@@ -604,7 +604,7 @@ static int exmdb_ext_push_movecopy_folder_request(
 	TRY(pext->p_uint64(ppayload->movecopy_folder.src_pid));
 	TRY(pext->p_uint64(ppayload->movecopy_folder.src_fid));
 	TRY(pext->p_uint64(ppayload->movecopy_folder.dst_fid));
-	TRY(pext->p_str(ppayload->movecopy_folder.str_new != nullptr ? ppayload->movecopy_folder.str_new : ""));
+	TRY(pext->p_str(znul(ppayload->movecopy_folder.str_new)));
 	return pext->p_bool(ppayload->movecopy_folder.b_copy);
 }
 

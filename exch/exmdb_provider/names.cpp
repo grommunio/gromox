@@ -147,5 +147,5 @@ const char *exmdb_rpc_idtoname(unsigned int i)
 {
 	static_assert(GX_ARRAY_SIZE(exmdb_rpc_names) == exmdb_callid::UNLOAD_STORE + 1);
 	const char *s = i < GX_ARRAY_SIZE(exmdb_rpc_names) ? exmdb_rpc_names[i] : nullptr;
-	return s != nullptr ? s : "";
+	return znul(s);
 }

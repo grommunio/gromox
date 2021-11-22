@@ -165,7 +165,7 @@ BOOL ldap_adaptor_login2(const char *username, const char *password)
 		return FALSE;
 
 	struct berval bv;
-	bv.bv_val = deconst(password != nullptr ? password : "");
+	bv.bv_val = deconst(znul(password));
 	bv.bv_len = password != nullptr ? strlen(password) : 0;
 	ret = gx_auto_retry_2(ldap_sasl_bind_s, tok.res.bind, AVOID_BIND, dn,
 	      LDAP_SASL_SIMPLE, &bv, nullptr, nullptr, nullptr);
@@ -192,7 +192,7 @@ static bool ldap_adaptor_load() try
 	}
 
 	val = pfile->get_value("ldap_host");
-	g_ldap_host = val != nullptr ? val : "";
+	g_ldap_host = znul(val);
 	g_use_tls = parse_bool(pfile->get_value("ldap_start_tls"));
 
 	val = pfile->get_value("ldap_bind_user");
@@ -206,7 +206,7 @@ static bool ldap_adaptor_load() try
 	g_mail_attr = val != nullptr ? val : "mail";
 
 	val = pfile->get_value("ldap_search_base");
-	g_search_base = val != nullptr ? val : "";
+	g_search_base = znul(val);
 	printf("[ldap_adaptor]: hosts <%s>%s, base <%s>, #conn=%d, mailattr=%s\n",
 	       g_ldap_host.c_str(), g_use_tls ? " +TLS" : "",
 	       g_search_base.c_str(), 2 * g_dataconn_num, g_mail_attr.c_str());

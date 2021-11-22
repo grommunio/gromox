@@ -133,9 +133,6 @@ static const struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static const char *snul(const std::string &s) { return s.size() != 0 ? s.c_str() : nullptr; }
-static const char *znul(const char *s) { return s != nullptr ? s : ""; }
-
 static std::string sql_escape(MYSQL *sqh, const char *in)
 {
 	std::string out;
@@ -392,7 +389,7 @@ static void present_stores(const char *storeuser, DB_RESULT &res)
 	while ((row = res.fetch_row()) != nullptr) {
 		auto colen = res.row_lengths();
 		fprintf(stderr, "%s  %7lu  %s\n", bin2hex(row[0], colen[0]).c_str(),
-		        strtoul(row[1], nullptr, 0), row[2] != nullptr ? row[2] : "");
+		        strtoul(row[1], nullptr, 0), znul(row[2]));
 	}
 	fprintf(stderr, "============================================================\n");
 }
@@ -715,7 +712,7 @@ static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent,
 	} else {
 		auto dn = props->get<const char>(PR_DISPLAY_NAME);
 		fprintf(stderr, "Processing folder \"%s\" (%zu elements)...\n",
-		        dn != nullptr ? dn : "", item.m_sub_hids.size());
+		        znul(dn), item.m_sub_hids.size());
 	}
 
 	bool b_create = false;

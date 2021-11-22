@@ -1216,7 +1216,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 	if (g_http_debug) {
 		auto s = static_cast<const char *>(pcontext->write_buff);
 		fprintf(stderr, ">> ctx %p send %zd\n%.*s\n>>-EOP\n", pcontext,
-		        written_len, (int)written_len, s != nullptr ? s : "");
+		        written_len, (int)written_len, znul(s));
 	}
 	if (pcontext->write_buff == nullptr)
 		written_len = 0;

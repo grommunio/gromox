@@ -3986,8 +3986,7 @@ int imap_cmd_parser_dval(int argc, char **argv, IMAP_CONTEXT *ctx, unsigned int 
 		tag = *ctx->tag_string != '\0' ? ctx->tag_string : "BUG";
 	else
 		tag = argc > 0 ? argv[0] : "*";
-	len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s",
-	      tag, str, estr != nullptr ? estr : "");
+	len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s", tag, str, znul(estr));
 	imap_parser_safe_write(ctx, buff, len);
 	return ret & DISPATCH_ACTMASK;
 }

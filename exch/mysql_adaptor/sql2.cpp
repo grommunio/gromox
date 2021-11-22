@@ -25,11 +25,6 @@ using propmap_t  = std::multimap<unsigned int, std::pair<unsigned int, std::stri
 mysql_adaptor_init_param g_parm;
 struct sqlconnpool g_sqlconn_pool;
 
-static inline const char *z_null(const char *s)
-{
-	return s != nullptr ? s : "";
-}
-
 static bool connection_severed(int e)
 {
 #ifdef ER_CONNECTION_KILLED
@@ -225,8 +220,8 @@ static int userlist_parse(sqlconn &conn, const char *query,
 		u.propvals = propmap_extract(pmap, u.id);
 		u.maildir = row[4];
 		if (u.dtypx == DT_DISTLIST) {
-			u.list_type = static_cast<enum mlist_type>(strtoul(z_null(row[5]), nullptr, 0));
-			u.list_priv = strtoul(z_null(row[6]), nullptr, 0);
+			u.list_type = static_cast<enum mlist_type>(strtoul(znul(row[5]), nullptr, 0));
+			u.list_priv = strtoul(znul(row[6]), nullptr, 0);
 			/* no overwrite of propval is intended */
 			if (u.list_type == MLIST_TYPE_CLASS && row[7] != nullptr)
 				u.propvals.emplace(PR_DISPLAY_NAME, row[7]);
