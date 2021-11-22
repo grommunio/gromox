@@ -1205,19 +1205,17 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 		pmsgctnt, pctx->extra_flags, &chgheader, &progmsg)) {
 		return FALSE;
 	}
-	if (pctx->sync_flags & SYNC_FLAG_ONLYSPECIFIEDPROPERTIES) {
-		if (pctx->sync_flags & SYNC_FLAG_IGNORESPECIFIEDONFAI) {
-			if (FALSE == progmsg.b_fai) {
-				icsdownctx_object_adjust_msgctnt(
-					pmsgctnt, pctx->pproptags, FALSE);
-			}
-		} else {
+	if (!(pctx->sync_flags & SYNC_FLAG_ONLYSPECIFIEDPROPERTIES)) {
+		icsdownctx_object_adjust_msgctnt(
+			pmsgctnt, pctx->pproptags, TRUE);
+	} else if (pctx->sync_flags & SYNC_FLAG_IGNORESPECIFIEDONFAI) {
+		if (FALSE == progmsg.b_fai) {
 			icsdownctx_object_adjust_msgctnt(
 				pmsgctnt, pctx->pproptags, FALSE);
 		}
 	} else {
 		icsdownctx_object_adjust_msgctnt(
-			pmsgctnt, pctx->pproptags, TRUE);
+			pmsgctnt, pctx->pproptags, FALSE);
 	}
 	if (FALSE == b_downloaded || TRUE == progmsg.b_fai) {
 		b_full = TRUE;
@@ -1251,41 +1249,33 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 				(*ppartial_count) ++;
 			}
 		}
-		if (FALSE == b_full) {
-			if (FALSE == icsdownctx_object_get_changepartial(
-				pctx, pmsgctnt, *pgroup_id, &indices,
-				&proptags, &msg_partial)) {
-				return FALSE;
-			}
-		}
+		if (!b_full && !icsdownctx_object_get_changepartial(pctx,
+		    pmsgctnt, *pgroup_id, &indices, &proptags, &msg_partial))
+			return FALSE;
 	}
 	if (pctx->sync_flags & SYNC_FLAG_PROGRESS &&
 	    !pctx->pstream->write_progresspermessage(&progmsg))
 		return FALSE;
 	pctx->next_progress_steps += progmsg.message_size;
-	if (TRUE == b_full) {
-		common_util_remove_propvals(&pmsgctnt->proplist, PR_READ);
-		common_util_remove_propvals(&pmsgctnt->proplist, PR_CHANGE_KEY);
-		common_util_remove_propvals(
-			&pmsgctnt->proplist, PROP_TAG_MESSAGESTATUS);
-		pvalue = pmsgctnt->proplist.getval(PR_MESSAGE_FLAGS);
-		tmp_propval.proptag = PR_READ_RECEIPT_REQUESTED;
-		tmp_propval.pvalue = pvalue != nullptr &&
-		                     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_RN_PENDING) ?
-		                     deconst(&fake_true) : deconst(&fake_false);
-		common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
-		tmp_propval.proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
-		tmp_propval.pvalue = pvalue != nullptr &&
-		                     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_NRN_PENDING) ?
-		                     deconst(&fake_true) : deconst(&fake_false);
-		common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
-		if (!pctx->pstream->write_messagechangefull(&chgheader, pmsgctnt))
-			return FALSE;
-	} else {
-		if (!pctx->pstream->write_messagechangepartial(&chgheader, &msg_partial))
-			return FALSE;
+	if (!b_full) {
+		return pctx->pstream->write_messagechangepartial(&chgheader, &msg_partial);
 	}
-	return TRUE;
+	common_util_remove_propvals(&pmsgctnt->proplist, PR_READ);
+	common_util_remove_propvals(&pmsgctnt->proplist, PR_CHANGE_KEY);
+	common_util_remove_propvals(
+		&pmsgctnt->proplist, PROP_TAG_MESSAGESTATUS);
+	pvalue = pmsgctnt->proplist.getval(PR_MESSAGE_FLAGS);
+	tmp_propval.proptag = PR_READ_RECEIPT_REQUESTED;
+	tmp_propval.pvalue = pvalue != nullptr &&
+			     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_RN_PENDING) ?
+			     deconst(&fake_true) : deconst(&fake_false);
+	common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
+	tmp_propval.proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
+	tmp_propval.pvalue = pvalue != nullptr &&
+			     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_NRN_PENDING) ?
+			     deconst(&fake_true) : deconst(&fake_false);
+	common_util_set_propvals(&pmsgctnt->proplist, &tmp_propval);
+	return pctx->pstream->write_messagechangefull(&chgheader, pmsgctnt);
 }
 
 /* only be called under content sync */
