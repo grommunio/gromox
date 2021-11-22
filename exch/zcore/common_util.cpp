@@ -346,19 +346,6 @@ void common_util_remove_propvals(
 	}
 }
 
-int common_util_index_proptags(
-	const PROPTAG_ARRAY *pproptags, uint32_t proptag)
-{
-	int i;
-	
-	for (i=0; i<pproptags->count; i++) {
-		if (proptag == pproptags->pproptag[i]) {
-			return i;
-		}
-	}
-	return -1;
-}
-
 void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 	const PROPTAG_ARRAY *pproptags_subtractor)
 {

@@ -2824,8 +2824,7 @@ uint32_t zarafa_server_queryrows(
 		CONTENT_TABLE != table_type &&
 		ATTACHMENT_TABLE != table_type)
 		||
-	    (pproptags != nullptr &&
-	    common_util_index_proptags(pproptags, PR_OBJECT_TYPE) < 0))
+	    (pproptags != nullptr && !pproptags->has(PR_OBJECT_TYPE)))
 		return ecSuccess;
 	switch (table_type) {
 	case STORE_TABLE:
@@ -4054,8 +4053,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 				return ecAccessDenied;
 		}
 		BOOL b_sub;
-		if (common_util_index_proptags(pexclude_proptags,
-			PROP_TAG_CONTAINERHIERARCHY) < 0) {
+		if (!pexclude_proptags->has(PROP_TAG_CONTAINERHIERARCHY)) {
 			if (!exmdb_client::check_folder_cycle(pstore->get_dir(),
 			    folder->folder_id, fdst->folder_id, &b_cycle))
 				return ecError;
@@ -4065,8 +4063,8 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 		} else {
 			b_sub = FALSE;
 		}
-		BOOL b_normal = common_util_index_proptags(pexclude_proptags, PROP_TAG_CONTAINERCONTENTS) < 0 ? TRUE : false;
-		BOOL b_fai    = common_util_index_proptags(pexclude_proptags, PROP_TAG_FOLDERASSOCIATEDCONTENTS) < 0 ? TRUE : false;
+		BOOL b_normal = !pexclude_proptags->has(PROP_TAG_CONTAINERCONTENTS) ? TRUE : false;
+		BOOL b_fai    = !pexclude_proptags->has(PROP_TAG_FOLDERASSOCIATEDCONTENTS) ? TRUE : false;
 		if (!static_cast<folder_object *>(pobject)->get_all_proptags(&proptags))
 			return ecError;
 		common_util_reduce_proptags(&proptags, pexclude_proptags);
@@ -4079,8 +4077,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 		for (i=0; i<proptags.count; i++) {
 			if (fdst->check_readonly_property(proptags.pproptag[i]))
 				continue;
-			if (!b_force && common_util_index_proptags(&proptags1,
-			    proptags.pproptag[i]) >= 0)
+			if (!b_force && proptags1.has(proptags.pproptag[i]))
 				continue;
 			tmp_proptags.pproptag[tmp_proptags.count++] = proptags.pproptag[i];
 		}

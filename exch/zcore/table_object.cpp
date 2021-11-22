@@ -174,21 +174,16 @@ static BOOL table_object_get_store_table_all_proptags(
 				sizeof(uint32_t)*tmp_proptags1.count);
 	pproptags->count = tmp_proptags1.count;
 	for (size_t i = 0; i < tmp_proptags2.count; ++i) {
-		if (common_util_index_proptags(&tmp_proptags1,
-			tmp_proptags2.pproptag[i]) >= 0) {
+		if (tmp_proptags1.has(tmp_proptags2.pproptag[i]))
 			continue;	
-		}
 		pproptags->pproptag[pproptags->count] =
 					tmp_proptags2.pproptag[i];
 		pproptags->count ++;
 	}
 	for (size_t i = 0; i < gromox::arsizeof(proptag_buff); ++i) {
-		if (common_util_index_proptags(&tmp_proptags1,
-			proptag_buff[i]) >= 0 ||
-			common_util_index_proptags(&tmp_proptags2,
-			proptag_buff[i]) >= 0) {
+		if (tmp_proptags1.has(proptag_buff[i]) ||
+		    tmp_proptags2.has(proptag_buff[i]))
 			continue;	
-		}
 		pproptags->pproptag[pproptags->count] = proptag_buff[i];
 		pproptags->count ++;
 	}
@@ -281,7 +276,7 @@ static BOOL rcpttable_query_rows(const table_object *ptable,
 		pset->pparray[pset->count] = rcpt_set.pparray[i];
 		pset->count++;
 	}
-	if (common_util_index_proptags(pcolumns, PR_ENTRYID) < 0)
+	if (!pcolumns->has(PR_ENTRYID))
 		return TRUE;
 	for (size_t i = 0; i < pset->count; ++i) {
 		if (pset->pparray[i]->has(PR_ENTRYID))
@@ -432,15 +427,15 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
     const USER_INFO *pinfo, uint32_t row_needed, TARRAY_SET *pset)
 {
 	auto username = ptable->pstore->b_private ? nullptr : pinfo->get_username();
-	int idx = common_util_index_proptags(pcolumns, PR_SOURCE_KEY);
-	int idx1 = -1, idx2 = -1;
+	size_t idx = pcolumns->indexof(PR_SOURCE_KEY);
+	size_t idx1 = pcolumns->npos, idx2 = pcolumns->npos;
 	TARRAY_SET temp_set;
 
 	if (HIERARCHY_TABLE == ptable->table_type) {
-		idx1 = common_util_index_proptags(pcolumns, PR_ACCESS);
-		idx2 = common_util_index_proptags(pcolumns, PR_RIGHTS);
+		idx1 = pcolumns->indexof(PR_ACCESS);
+		idx2 = pcolumns->indexof(PR_RIGHTS);
 	}
-	if (idx >= 0 || idx1 >= 0 || idx2 >= 0) {
+	if (idx != pcolumns->npos || idx1 != pcolumns->npos || idx2 != pcolumns->npos) {
 		tmp_columns.pproptag = cu_alloc<uint32_t>(pcolumns->count);
 		if (NULL == tmp_columns.pproptag) {
 			return FALSE;
@@ -448,16 +443,13 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
 		tmp_columns.count = pcolumns->count;
 		memcpy(tmp_columns.pproptag, pcolumns->pproptag,
 			sizeof(uint32_t)*pcolumns->count);
-		if (idx >= 0) {
+		if (idx != pcolumns->npos)
 			tmp_columns.pproptag[idx] = ptable->table_type == CONTENT_TABLE ?
 			                            PROP_TAG_MID : PROP_TAG_FOLDERID;
-		}
-		if (idx1 >= 0) {
+		if (idx1 != pcolumns->npos)
 			tmp_columns.pproptag[idx1] = PROP_TAG_FOLDERID;
-		}
-		if (idx2 >= 0) {
+		if (idx2 != pcolumns->npos)
 			tmp_columns.pproptag[idx2] = PROP_TAG_FOLDERID;
-		}
 		if (!exmdb_client::query_table(ptable->pstore->get_dir(),
 		    username, pinfo->cpid, ptable->table_id, &tmp_columns,
 		    ptable->position, row_needed, &temp_set))
@@ -489,7 +481,7 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
 		    pcolumns, ptable->position, row_needed, &temp_set))
 			return FALSE;
 	}
-	if (common_util_index_proptags(pcolumns, PR_STORE_ENTRYID) >= 0) {
+	if (pcolumns->has(PR_STORE_ENTRYID)) {
 		auto pentryid = common_util_to_store_entryid(ptable->pstore);
 		if (NULL == pentryid) {
 			return FALSE;

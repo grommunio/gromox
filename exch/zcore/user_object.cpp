@@ -59,39 +59,37 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		pbase.reset();
 		/* if user is hidden from addressbook tree, we simply
 			return the necessary information to the caller */
-		if (common_util_index_proptags(pproptags, PR_OBJECT_TYPE) >= 0 ||
-		    common_util_index_proptags(pproptags, PR_SMTP_ADDRESS) >= 0 ||
-		    common_util_index_proptags(pproptags, PR_ADDRTYPE) >= 0 ||
-		    common_util_index_proptags(pproptags, PR_EMAIL_ADDRESS) >= 0 ||
-		    common_util_index_proptags(pproptags, PR_DISPLAY_NAME) >= 0 ||
-			common_util_index_proptags(pproptags,
-			PR_ACCOUNT) >= 0) {
+		if (pproptags->has(PR_OBJECT_TYPE) ||
+		    pproptags->has(PR_SMTP_ADDRESS) ||
+		    pproptags->has(PR_ADDRTYPE) ||
+		    pproptags->has(PR_EMAIL_ADDRESS) ||
+		    pproptags->has(PR_DISPLAY_NAME) ||
+		    pproptags->has(PR_ACCOUNT)) {
 			ppropvals->count = 0;
 			auto *vc = ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(3);
 			if (NULL == ppropvals->ppropval) {
 				return FALSE;
 			}
-			if (common_util_index_proptags(pproptags, PR_OBJECT_TYPE) >= 0) {
+			if (pproptags->has(PR_OBJECT_TYPE)) {
 				vc->proptag = PR_OBJECT_TYPE;
 				vc->pvalue = deconst(&fake_type);
 				ppropvals->count ++;
 				++vc;
 			}
-			if (common_util_index_proptags(pproptags, PR_ADDRTYPE) >= 0) {
+			if (pproptags->has(PR_ADDRTYPE)) {
 				vc->proptag = PR_ADDRTYPE;
 				vc->pvalue = deconst("EX");
 				ppropvals->count ++;
 				++vc;
 			}
-			if ((common_util_index_proptags(pproptags, PR_SMTP_ADDRESS) >= 0 ||
-			    common_util_index_proptags(pproptags, PR_EMAIL_ADDRESS) >= 0 ||
-			    common_util_index_proptags(pproptags, PR_DISPLAY_NAME) >= 0 ||
-				common_util_index_proptags(pproptags,
-				PR_ACCOUNT) >= 0) && MINID_TYPE_ADDRESS
-				== ab_tree_get_minid_type(puser->minid) &&
+			if ((pproptags->has(PR_SMTP_ADDRESS) ||
+			    pproptags->has(PR_EMAIL_ADDRESS) ||
+			    pproptags->has(PR_DISPLAY_NAME) ||
+			    pproptags->has(PR_ACCOUNT)) &&
+			    ab_tree_get_minid_type(puser->minid) == MINID_TYPE_ADDRESS &&
 			    system_services_get_username_from_id(ab_tree_get_minid_value(puser->minid),
 			    username, GX_ARRAY_SIZE(username))) {
-				if (common_util_index_proptags(pproptags, PR_SMTP_ADDRESS) >= 0) {
+				if (pproptags->has(PR_SMTP_ADDRESS)) {
 					vc->proptag = PR_SMTP_ADDRESS;
 					vc->pvalue = common_util_dup(username);
 					if (vc->pvalue == nullptr)
@@ -99,8 +97,7 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 					ppropvals->count ++;
 					++vc;
 				}
-				if (common_util_index_proptags(pproptags,
-					PR_ACCOUNT) >= 0) {
+				if (pproptags->has(PR_ACCOUNT)) {
 					vc->proptag = PR_ACCOUNT;
 					vc->pvalue = common_util_dup(username);
 					if (vc->pvalue == nullptr)
@@ -108,7 +105,7 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 					ppropvals->count ++;
 					++vc;
 				}
-				if (common_util_index_proptags(pproptags, PR_EMAIL_ADDRESS) >= 0 &&
+				if (pproptags->has(PR_EMAIL_ADDRESS) &&
 				    common_util_username_to_essdn(username, tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
 					vc->proptag = PR_EMAIL_ADDRESS;
 					vc->pvalue = common_util_dup(tmp_buff);
@@ -117,7 +114,7 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 					ppropvals->count ++;
 					++vc;
 				}
-				if (common_util_index_proptags(pproptags, PR_DISPLAY_NAME) >= 0 &&
+				if (pproptags->has(PR_DISPLAY_NAME) &&
 				    system_services_get_user_displayname(username,
 				    tmp_buff, arsizeof(tmp_buff))) {
 					if ('\0' == tmp_buff[0]) {

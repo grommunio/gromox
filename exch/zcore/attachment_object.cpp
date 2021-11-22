@@ -326,15 +326,14 @@ BOOL attachment_object::copy_properties(attachment_object *pattachment_src,
 	common_util_remove_propvals(&attctnt.proplist, PR_ATTACH_NUM);
 	i = 0;
 	while (i < attctnt.proplist.count) {
-		if (common_util_index_proptags(pexcluded_proptags,
-			attctnt.proplist.ppropval[i].proptag) >= 0) {
+		if (pexcluded_proptags->has(attctnt.proplist.ppropval[i].proptag)) {
 			common_util_remove_propvals(&attctnt.proplist,
 					attctnt.proplist.ppropval[i].proptag);
 			continue;
 		}
 		i ++;
 	}
-	if (common_util_index_proptags(pexcluded_proptags, PR_ATTACH_DATA_OBJ) >= 0)
+	if (pexcluded_proptags->has(PR_ATTACH_DATA_OBJ))
 		attctnt.pembedded = NULL;
 	if (!exmdb_client::write_attachment_instance(pattachment->pparent->pstore->get_dir(),
 	    pattachment->instance_id, &attctnt, b_force, &tmp_problems))

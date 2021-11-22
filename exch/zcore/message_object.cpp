@@ -744,13 +744,11 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	pproptags->pproptag[pproptags->count++] = PR_STORE_RECORD_KEY;
 	pproptags->pproptag[pproptags->count++] = PR_MAPPING_SIGNATURE;
 	pproptags->pproptag[pproptags->count++] = PR_STORE_ENTRYID;
-	if (pmessage->pembedding == nullptr &&
-	    common_util_index_proptags(pproptags, PR_SOURCE_KEY) < 0) {
+	if (pmessage->pembedding == nullptr && !pproptags->has(PR_SOURCE_KEY))
 		pproptags->pproptag[pproptags->count++] = PR_SOURCE_KEY;
-	}
-	if (common_util_index_proptags(pproptags, PR_MESSAGE_LOCALE_ID) < 0)
+	if (!pproptags->has(PR_MESSAGE_LOCALE_ID))
 		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_LOCALE_ID;
-	if (common_util_index_proptags(pproptags, PR_MESSAGE_CODEPAGE) < 0)
+	if (!pproptags->has(PR_MESSAGE_CODEPAGE))
 		pproptags->pproptag[pproptags->count++] = PR_MESSAGE_CODEPAGE;
 	return TRUE;
 }
@@ -935,12 +933,12 @@ BOOL message_object::get_properties(const PROPTAG_ARRAY *pproptags,
 			sizeof(TAGGED_PROPVAL)*tmp_propvals.count);
 		ppropvals->count += tmp_propvals.count;
 	}
-	if (common_util_index_proptags(pproptags, PR_MESSAGE_LOCALE_ID) >= 0 &&
+	if (pproptags->has(PR_MESSAGE_LOCALE_ID) &&
 	    !ppropvals->has(PR_MESSAGE_LOCALE_ID)) {
 		ppropvals->ppropval[ppropvals->count].proptag = PR_MESSAGE_LOCALE_ID;
 		ppropvals->ppropval[ppropvals->count++].pvalue = deconst(&lcid_default);
 	}
-	if (common_util_index_proptags(pproptags, PR_MESSAGE_CODEPAGE) >= 0 &&
+	if (pproptags->has(PR_MESSAGE_CODEPAGE) &&
 	    !ppropvals->has(PR_MESSAGE_CODEPAGE)) {
 		ppropvals->ppropval[ppropvals->count].proptag = PR_MESSAGE_CODEPAGE;
 		ppropvals->ppropval[ppropvals->count++].pvalue = &pmessage->cpid;
@@ -1176,17 +1174,16 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 		common_util_remove_propvals(&msgctnt.proplist, t);
 	i = 0;
 	while (i < msgctnt.proplist.count) {
-		if (common_util_index_proptags(pexcluded_proptags,
-			msgctnt.proplist.ppropval[i].proptag) >= 0) {
+		if (pexcluded_proptags->has(msgctnt.proplist.ppropval[i].proptag)) {
 			common_util_remove_propvals(&msgctnt.proplist,
 					msgctnt.proplist.ppropval[i].proptag);
 			continue;
 		}
 		i ++;
 	}
-	if (common_util_index_proptags(pexcluded_proptags, PR_MESSAGE_RECIPIENTS) >= 0)
+	if (pexcluded_proptags->has(PR_MESSAGE_RECIPIENTS))
 		msgctnt.children.prcpts = NULL;
-	if (common_util_index_proptags(pexcluded_proptags, PR_MESSAGE_ATTACHMENTS) >= 0)
+	if (pexcluded_proptags->has(PR_MESSAGE_ATTACHMENTS))
 		msgctnt.children.pattachments = NULL;
 	if (!exmdb_client::write_message_instance(pmessage->pstore->get_dir(),
 	    pmessage->instance_id, &msgctnt, b_force, &proptags, &tmp_problems))
