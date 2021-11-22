@@ -32,7 +32,7 @@ enum {
 	TABLE_TYPE_RULE
 };
 
-enum {
+enum instance_type {
 	INSTANCE_TYPE_MESSAGE,
 	INSTANCE_TYPE_ATTACHMENT
 };
@@ -77,7 +77,7 @@ struct INSTANCE_NODE {
 	uint32_t last_id;
 	uint32_t cpid;
 	char *username;
-	int type;
+	enum instance_type type;
 	BOOL b_new;
 	uint8_t change_mask;
 	void *pcontent;
