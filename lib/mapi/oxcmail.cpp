@@ -4157,9 +4157,6 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		0 != pmsg->children.pattachments->count) {
 		pattachments = pmsg->children.pattachments;
 		for (i=0; i<pattachments->count; i++) {
-			if (pattachments->pplist[i]->proplist.has(PR_ATTACH_CONTENT_ID) ||
-			    pattachments->pplist[i]->proplist.has(PR_ATTACH_CONTENT_ID_A))
-				continue;	
 			pvalue = pattachments->pplist[i]->proplist.getval(PR_ATTACHMENT_HIDDEN);
 			if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0)
 				continue;
