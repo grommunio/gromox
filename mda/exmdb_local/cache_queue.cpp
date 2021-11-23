@@ -366,48 +366,54 @@ static void *mdl_thrwork(void *arg)
 				continue;
 			}
 			pcontext->pcontrol->is_spam = le32p_to_cpu(ptr);
-			ptr += sizeof(BOOL);
-			size -= sizeof(BOOL);
+			ptr += sizeof(uint32_t);
+			size -= sizeof(uint32_t);
 			if (size < sizeof(uint32_t)) {
 				fprintf(stderr, "W-1558: garbage in %s; review and delete\n", temp_path.c_str());
 				continue;
 			}
 			pcontext->pcontrol->need_bounce = le32p_to_cpu(ptr);
-			ptr += sizeof(BOOL);
-			size -= sizeof(BOOL);
+			ptr += sizeof(uint32_t);
+			size -= sizeof(uint32_t);
+
 			if (size == 0)
 				fprintf(stderr, "W-1559: garbage in %s; review and delete\n", temp_path.c_str());
-			snprintf(pcontext->pcontrol->from, arsizeof(pcontext->pcontrol->from),
-			         "%.*s", static_cast<int>(std::min(size, static_cast<size_t>(INT32_MAX))), ptr);
 			auto zlen = strnlen(ptr, size);
+			snprintf(pcontext->pcontrol->from, arsizeof(pcontext->pcontrol->from),
+			         "%.*s", static_cast<int>(std::min(zlen, static_cast<size_t>(INT32_MAX))), ptr);
+			snprintf(temp_from, arsizeof(temp_from),
+			         "%.*s", static_cast<int>(std::min(zlen, static_cast<size_t>(INT32_MAX))), ptr);
 			ptr += zlen;
 			size -= zlen;
-			if (size == 0)
+			if (size == 0 || *ptr != '\0')
 				fprintf(stderr, "W-1570: garbage in %s; review and delete\n", temp_path.c_str());
-			snprintf(temp_from, arsizeof(temp_from), "%.*s",
-			         static_cast<int>(std::min(size, static_cast<size_t>(INT32_MAX))), ptr);
-			zlen = strnlen(ptr, size);
-			ptr += zlen;
-			size -= zlen;
-			mem_file_clear(&pcontext->pcontrol->f_rcpt_to);
-			mem_file_writeline(&pcontext->pcontrol->f_rcpt_to, ptr);
+			++ptr;
+			--size;
+
 			if (size == 0)
-				fprintf(stderr, "W-1571: garbage in %s; review and delete\n", temp_path.c_str());
-			snprintf(temp_rcpt, arsizeof(temp_rcpt), "%.*s",
-			         static_cast<int>(std::min(size, static_cast<size_t>(INT32_MAX))), ptr);
+				fprintf(stderr, "W-1590: garbage in %s; review and delete\n", temp_path.c_str());
 			zlen = strnlen(ptr, size);
-			ptr += zlen;
-			size -= zlen;
-			
-			if (static_cast<unsigned int>(g_retrying_times) <= times) {
-				need_bounce = TRUE;
-				need_remove = TRUE;
-				bounce_type = BOUNCE_OPERATION_ERROR;
+			/* Need \0 for going on */
+			int deliv_ret;
+			if (zlen == size) {
+				fprintf(stderr, "W-1591: garbage in %s; review and delete\n", temp_path.c_str());
+				deliv_ret = DELIVERY_OPERATION_ERROR;
 			} else {
-				need_bounce = FALSE;
-				need_remove = FALSE;
+				mem_file_clear(&pcontext->pcontrol->f_rcpt_to);
+				mem_file_writeline(&pcontext->pcontrol->f_rcpt_to, ptr);
+				gx_strlcpy(temp_rcpt, ptr, arsizeof(temp_rcpt));
+
+				if (static_cast<unsigned int>(g_retrying_times) <= times) {
+					need_bounce = TRUE;
+					need_remove = TRUE;
+					bounce_type = BOUNCE_OPERATION_ERROR;
+				} else {
+					need_bounce = FALSE;
+					need_remove = FALSE;
+				}
+				deliv_ret = exmdb_local_deliverquota(pcontext, ptr);
 			}
-			switch (exmdb_local_deliverquota(pcontext, ptr)) {
+			switch (deliv_ret) {
 			case DELIVERY_OPERATION_OK:
 				need_bounce = FALSE;
 				need_remove = TRUE;
