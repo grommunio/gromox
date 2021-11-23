@@ -400,7 +400,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	}
 	if ('\0' == home_dir[0]) {
 		exmdb_local_log_info(pcontext, address, LV_ERR,
-			"there's no user in mail system");
+			"<%s> has no mailbox here", address);
 		return DELIVERY_NO_USER;
 	}
 	if (tmzone[0] == '\0')
@@ -443,9 +443,8 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		if (NULL != pcontext1) {
 			put_context(pcontext1);
 		}
-		exmdb_local_log_info(pcontext, address,
-			LV_ERR, "fail to creating mail file in"
-			" directory %s/eml", home_dir);
+		exmdb_local_log_info(pcontext, address, LV_ERR,
+			"open WR %s: %s", eml_path.c_str(), strerror(errno));
 		return DELIVERY_OPERATION_FAILURE;
 	}
 	
@@ -457,9 +456,8 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		if (NULL != pcontext1) {
 			put_context(pcontext1);
 		}
-		exmdb_local_log_info(pcontext, address,
-			LV_ERR, "fail to write mail file in"
-			" directory %s/eml", home_dir);
+		exmdb_local_log_info(pcontext, address, LV_ERR,
+			"%s: pmail->to_file failed for unspecified reasons", eml_path.c_str());
 		return DELIVERY_OPERATION_FAILURE;
 	}
 	close(fd);
