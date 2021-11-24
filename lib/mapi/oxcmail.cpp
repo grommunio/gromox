@@ -3616,6 +3616,27 @@ static BOOL oxcmail_try_assign_propval(TPROPVAL_ARRAY *pproplist,
 	return pproplist->set(proptag1, pvalue) == 0 ? TRUE : false;
 }
 
+static bool atx_is_hidden(const TPROPVAL_ARRAY &props)
+{
+	auto v = props.getval(PR_ATTACH_FLAGS);
+	if (v != nullptr && (*static_cast<uint32_t *>(v) & ATT_MHTML_REF))
+		return true;
+	v = props.getval(PR_ATTACHMENT_HIDDEN);
+	if (v != nullptr && *static_cast<uint8_t *>(v) != 0)
+		return true;
+	return false;
+}
+
+static bool atxlist_all_hidden(const ATTACHMENT_LIST *atl)
+{
+	if (atl == nullptr || atl->count == 0)
+		return false;
+	for (size_t i = 0; i < atl->count; ++i)
+		if (!atx_is_hidden(atl->pplist[i]->proplist))
+			return false;
+	return true;
+}
+
 MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	const char *str_zone, MAIL *pmail,
 	EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids)
@@ -4151,34 +4172,25 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			pmsg->proplist.set(PR_INTERNET_CPID, &tmp_int32);
 		}
 	}
-	if (NULL != pmsg->children.pattachments &&
-		0 != pmsg->children.pattachments->count) {
-		pattachments = pmsg->children.pattachments;
-		for (i=0; i<pattachments->count; i++) {
-			pvalue = pattachments->pplist[i]->proplist.getval(PR_ATTACH_FLAGS);
-			if (pvalue != nullptr && *static_cast<uint32_t *>(pvalue) & ATT_MHTML_REF)
-				continue;
-			pvalue = pattachments->pplist[i]->proplist.getval(PR_ATTACHMENT_HIDDEN);
-			if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0)
-				continue;
-			break;
+	if (atxlist_all_hidden(pmsg->children.pattachments)) {
+		/*
+		 * You know the data model sucks when you cannot determine
+		 * all-hidden in O(1) without creating redundant information
+		 * like this property.
+		 */
+		rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+		propname.kind = MNID_ID;
+		propname.lid = PidLidSmartNoAttach;
+		propnames.count = 1;
+		propnames.ppropname = &propname;
+		if (FALSE == get_propids(&propnames, &propids)) {
+			message_content_free(pmsg);
+			return nullptr;
 		}
-		/* @i is now the index of the first visible attachment (or maxed out if none) */
-		if (i >= pattachments->count) {
-			rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
-			propname.kind = MNID_ID;
-			propname.lid = PidLidSmartNoAttach;
-			propnames.count = 1;
-			propnames.ppropname = &propname;
-			if (FALSE == get_propids(&propnames, &propids)) {
-				message_content_free(pmsg);
-				return nullptr;
-			}
-			tmp_byte = 1;
-			if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]), &tmp_byte) != 0) {
-				message_content_free(pmsg);
-				return nullptr;
-			}
+		tmp_byte = 1;
+		if (pmsg->proplist.set(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]), &tmp_byte) != 0) {
+			message_content_free(pmsg);
+			return nullptr;
 		}
 	}
 	if (TRUE == field_param.b_flag_del) {
