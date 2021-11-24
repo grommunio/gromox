@@ -3149,7 +3149,7 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 				return -EINVAL;
 			}
 			int ret;
-			tmp_int32 = ATTACH_FLAG_RENDEREDINBODY;
+			tmp_int32 = ATT_MHTML_REF;
 			if ((ret = pattachment->proplist.set(PR_ATTACH_MIME_TAG, img_ctype)) != 0 ||
 			    (ret = pattachment->proplist.set(PR_ATTACH_CONTENT_ID, cid_name)) != 0 ||
 			    (ret = pattachment->proplist.set(PR_ATTACH_EXTENSION, pext)) != 0 ||

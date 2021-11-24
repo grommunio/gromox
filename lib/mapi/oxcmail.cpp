@@ -2567,7 +2567,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		}
 	}
 	if (TRUE == b_inline) {
-		tmp_int32 = ATTACH_FLAG_RENDEREDINBODY;
+		tmp_int32 = ATT_MHTML_REF;
 		if (pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32) != 0) {
 			pmime_enum->b_result = FALSE;
 			return;
@@ -4602,7 +4602,7 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 			continue;
 		}
 		auto pvalue = pattachment->proplist.get<uint32_t>(PR_ATTACH_FLAGS);
-		if (NULL != pvalue && (*pvalue & ATTACH_FLAG_RENDEREDINBODY)) {
+		if (pvalue != nullptr && (*pvalue & ATT_MHTML_REF)) {
 			if (pattachment->proplist.has(PR_ATTACH_CONTENT_ID) ||
 			    pattachment->proplist.has(PR_ATTACH_CONTENT_LOCATION)) {
 				pskeleton->b_inline = TRUE;
@@ -6378,7 +6378,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 		}
 		if (NULL == pattachment->pembedded &&
 		    (pvalue = pattachment->proplist.getval(PR_ATTACH_FLAGS)) != nullptr &&
-		    (*static_cast<uint32_t *>(pvalue) & ATTACH_FLAG_RENDEREDINBODY) &&
+		    (*static_cast<uint32_t *>(pvalue) & ATT_MHTML_REF) &&
 		    (pattachment->proplist.has(PR_ATTACH_CONTENT_ID) ||
 		    pattachment->proplist.has(PR_ATTACH_CONTENT_LOCATION))) {
 			b_inline = TRUE;

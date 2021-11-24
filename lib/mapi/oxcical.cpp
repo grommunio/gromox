@@ -1838,7 +1838,7 @@ static BOOL oxcical_parse_exceptional_attachment(ATTACHMENT_CONTENT *pattachment
 	tmp_bin.pb = NULL;
 	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
 		return FALSE;
-	tmp_int32 = 0x00000002;
+	tmp_int32 = afException;
 	if (pattachment->proplist.set(PR_ATTACHMENT_FLAGS, &tmp_int32) != 0)
 		return FALSE;
 	tmp_int32 = 0x00000000;

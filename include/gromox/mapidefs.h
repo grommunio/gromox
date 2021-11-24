@@ -623,6 +623,16 @@ enum attach_method {
 	ATTACH_BY_WEBREFERENCE = 7, /* afByWebReference */
 };
 
+enum { /* for PR_ATTACH_FLAGS */
+	ATT_INVISIBLE_IN_HTML = 1U << 0,
+	ATT_INVISIBLE_IN_RTF  = 1U << 1,
+	ATT_MHTML_REF         = 1U << 2,
+};
+
+enum { /* for PR_ATTACHMENT_FLAGS */
+	afException = 1U << 1, /* OXOCAL v20 §2.2.10.1.2 */
+};
+
 enum bm_relop {
 	BMR_EQZ = 0,
 	BMR_NEZ,
