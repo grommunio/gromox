@@ -2328,7 +2328,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	MIME *pmime1;
 	BOOL b_unifn;
 	char *ptoken;
-	BOOL b_inline;
 	BINARY tmp_bin;
 	BOOL b_filename;
 	time_t tmp_time;
@@ -2464,8 +2463,10 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			return;
 		}
 	}
+	bool b_inline = false;
 	if (TRUE == mime_get_field(pmime,
 		"Content-Disposition", tmp_buff, 1024)) {
+		b_inline = strcmp(tmp_buff, "inline") == 0 || strncasecmp(tmp_buff, "inline;", 7) == 0;
 		if (TRUE == oxcmail_get_field_param(tmp_buff,
 			"create-date", date_buff, 128)) {
 			if (TRUE == parse_rfc822_timestamp(
@@ -2499,9 +2500,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		pmime_enum->b_result = FALSE;
 		return;
 	}
-	b_inline = FALSE;
 	if (TRUE == mime_get_field(pmime, "Content-ID", tmp_buff, 128)) {
-		b_inline = TRUE;
 		tmp_int32 = strlen(tmp_buff);
 		if (tmp_int32 > 0) {
 			if ('>' == tmp_buff[tmp_int32 - 1]) {
@@ -2522,7 +2521,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		}
 	}
 	if (TRUE == mime_get_field(pmime, "Content-Location", tmp_buff, 1024)) {
-		b_inline = TRUE;
 		uint32_t tag = oxcmail_check_ascii(tmp_buff) ?
 		                  PR_ATTACH_CONTENT_LOCATION :
 		                  PR_ATTACH_CONTENT_LOCATION_A;
@@ -2539,7 +2537,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			return;
 		}
 	}
-	if (TRUE == b_inline) {
+	if (b_inline) {
 		if (0 != strcasecmp("image/jpeg",
 			mime_get_content_type(pmime)) &&
 			0 != strcasecmp("image/jpg",
@@ -2554,19 +2552,19 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			mime_get_content_type(pmime)) &&
 			0 != strcasecmp("image/x-png",
 			mime_get_content_type(pmime))) {
-			b_inline = FALSE;
+			b_inline = false;
 		}
 	}
-	if (TRUE == b_inline) {
+	if (b_inline) {
 		if (NULL == mime_get_parent(pmime) ||
 			(0 != strcasecmp(mime_get_content_type(
 			mime_get_parent(pmime)), "multipart/related") &&
 			0 != strcasecmp(mime_get_content_type(
 			mime_get_parent(pmime)), "multipart/mixed"))) {
-			b_inline = FALSE;
+			b_inline = false;
 		}
 	}
-	if (TRUE == b_inline) {
+	if (b_inline) {
 		tmp_int32 = ATT_MHTML_REF;
 		if (pattachment->proplist.set(PR_ATTACH_FLAGS, &tmp_int32) != 0) {
 			pmime_enum->b_result = FALSE;
@@ -4157,11 +4155,15 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		0 != pmsg->children.pattachments->count) {
 		pattachments = pmsg->children.pattachments;
 		for (i=0; i<pattachments->count; i++) {
+			pvalue = pattachments->pplist[i]->proplist.getval(PR_ATTACH_FLAGS);
+			if (pvalue != nullptr && *static_cast<uint32_t *>(pvalue) & ATT_MHTML_REF)
+				continue;
 			pvalue = pattachments->pplist[i]->proplist.getval(PR_ATTACHMENT_HIDDEN);
 			if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0)
 				continue;
 			break;
 		}
+		/* @i is now the index of the first visible attachment (or maxed out if none) */
 		if (i >= pattachments->count) {
 			rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
 			propname.kind = MNID_ID;
