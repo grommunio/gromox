@@ -48,7 +48,6 @@ std::unique_ptr<attachment_object> attachment_object::create(message_object *ppa
 BOOL attachment_object::init_attachment()
 {
 	auto pattachment = this;
-	void *pvalue;
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
 	
@@ -71,16 +70,14 @@ BOOL attachment_object::init_attachment()
 	}
 	*static_cast<uint32_t *>(propvals.ppropval[propvals.count++].pvalue) = 0xFFFFFFFF;
 	
-	pvalue = cu_alloc<uint64_t>();
-	if (NULL == pvalue) {
+	auto modtime = cu_alloc<uint64_t>();
+	if (modtime == nullptr)
 		return FALSE;
-	}
-	*(uint64_t*)pvalue = rop_util_current_nttime();
-	
+	*modtime = rop_util_current_nttime();
 	propvals.ppropval[propvals.count].proptag = PR_CREATION_TIME;
-	propvals.ppropval[propvals.count++].pvalue = pvalue;
+	propvals.ppropval[propvals.count++].pvalue = modtime;
 	propvals.ppropval[propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
-	propvals.ppropval[propvals.count++].pvalue = pvalue;
+	propvals.ppropval[propvals.count++].pvalue = modtime;
 	return exmdb_client_set_instance_properties(pattachment->pparent->plogon->get_dir(),
 	       pattachment->instance_id, &propvals, &problems);
 }

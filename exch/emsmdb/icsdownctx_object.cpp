@@ -523,12 +523,10 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		if (!fldchgs.pfldchgs[i].has(PR_ADDITIONAL_REN_ENTRYIDS)) {
 			tmp_propval.proptag = PR_ADDITIONAL_REN_ENTRYIDS;
-			pvalue = cu_alloc<BINARY_ARRAY>();
-			auto ba = static_cast<BINARY_ARRAY *>(pvalue);
-			if (NULL == pvalue) {
+			auto ba = cu_alloc<BINARY_ARRAY>();
+			if (ba == nullptr)
 				return FALSE;
-			}
-			tmp_propval.pvalue = pvalue;
+			tmp_propval.pvalue = ba;
 			ba->count = 5;
 			ba->pbin = cu_alloc<BINARY>(ba->count);
 			if (ba->pbin == nullptr) {
@@ -569,12 +567,10 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		}
 		if (!fldchgs.pfldchgs[i].has(PR_ADDITIONAL_REN_ENTRYIDS_EX)) {
 			tmp_propval.proptag = PR_ADDITIONAL_REN_ENTRYIDS_EX;
-			pvalue = cu_alloc<BINARY>();
-			auto bv = static_cast<BINARY *>(pvalue);
-			if (NULL == pvalue) {
+			auto bv = cu_alloc<BINARY>();
+			if (bv == nullptr)
 				return FALSE;
-			}
-			tmp_propval.pvalue = pvalue;
+			tmp_propval.pvalue = bv;
 			persistdatas.count = 3;
 			persistdatas.ppitems = cu_alloc<PERSISTDATA *>(persistdatas.count);
 			if (NULL == persistdatas.ppitems) {
@@ -615,12 +611,10 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		}
 		if (!fldchgs.pfldchgs[i].has(PR_FREEBUSY_ENTRYIDS)) {
 			tmp_propval.proptag = PR_FREEBUSY_ENTRYIDS;
-			pvalue = cu_alloc<BINARY_ARRAY>();
-			auto ba = static_cast<BINARY_ARRAY *>(pvalue);
-			if (NULL == pvalue) {
+			auto ba = cu_alloc<BINARY_ARRAY>();
+			if (ba == nullptr)
 				return FALSE;
-			}
-			tmp_propval.pvalue = pvalue;
+			tmp_propval.pvalue = ba;
 			ba->count = 4;
 			ba->pbin = cu_alloc<BINARY>(ba->count);
 			if (ba->pbin == nullptr)

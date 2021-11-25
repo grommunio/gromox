@@ -217,7 +217,6 @@ message_object::~message_object()
 BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 {
 	auto pmessage = this;
-	GUID tmp_guid;
 	EXT_PUSH ext_push;
 	char id_string[256];
 	PROBLEM_ARRAY problems;
@@ -239,31 +238,28 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	}
 	
 	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_CODEPAGE;
-	void *pvalue = cu_alloc<uint32_t>();
-	if (NULL == pvalue) {
+	auto msgcpid = cu_alloc<uint32_t>();
+	if (msgcpid == nullptr)
 		return FALSE;
-	}
-	*static_cast<uint32_t *>(pvalue) = new_cpid;
-	propvals.ppropval[propvals.count++].pvalue = pvalue;
+	*msgcpid = new_cpid;
+	propvals.ppropval[propvals.count++].pvalue = msgcpid;
 	
 	propvals.ppropval[propvals.count].proptag = PR_IMPORTANCE;
-	pvalue = cu_alloc<uint32_t>();
-	if (NULL == pvalue) {
+	auto importance = cu_alloc<uint32_t>();
+	if (importance == nullptr)
 		return FALSE;
-	}
-	*static_cast<uint32_t *>(pvalue) = IMPORTANCE_NORMAL;
-	propvals.ppropval[propvals.count++].pvalue = pvalue;
+	*importance = IMPORTANCE_NORMAL;
+	propvals.ppropval[propvals.count++].pvalue = importance;
 	
 	propvals.ppropval[propvals.count].proptag = PR_DEF_POST_MSGCLASS;
 	propvals.ppropval[propvals.count++].pvalue  = deconst("IPM.Note");
 	
 	propvals.ppropval[propvals.count].proptag = PR_SENSITIVITY;
-	pvalue = cu_alloc<uint32_t>();
-	if (NULL == pvalue) {
+	auto sens = cu_alloc<uint32_t>();
+	if (sens == nullptr)
 		return FALSE;
-	}
-	*static_cast<uint32_t *>(pvalue) = SENSITIVITY_NONE;
-	propvals.ppropval[propvals.count++].pvalue = pvalue;
+	*sens = SENSITIVITY_NONE;
+	propvals.ppropval[propvals.count++].pvalue = sens;
 	
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_ORIGINALDISPLAYBCC;
 	propvals.ppropval[propvals.count++].pvalue  = deconst("");
@@ -275,69 +271,56 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	propvals.ppropval[propvals.count++].pvalue  = deconst("");
 	
 	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_FLAGS;
-	pvalue = cu_alloc<uint32_t>();
-	if (NULL == pvalue) {
+	auto msgflags = cu_alloc<uint32_t>();
+	if (msgflags == nullptr)
 		return FALSE;
-	}
-	*static_cast<uint32_t *>(pvalue) = MSGFLAG_UNSENT | MSGFLAG_UNMODIFIED;
-	propvals.ppropval[propvals.count++].pvalue = pvalue;
+	*msgflags = MSGFLAG_UNSENT | MSGFLAG_UNMODIFIED;
+	propvals.ppropval[propvals.count++].pvalue = msgflags;
 	
 	propvals.ppropval[propvals.count].proptag = PR_READ;
-	pvalue = cu_alloc<uint8_t>();
-	if (NULL == pvalue) {
+	auto readflag = cu_alloc<uint8_t>();
+	if (readflag == nullptr)
 		return FALSE;
-	}
-	*(uint8_t*)pvalue = 0;
-	propvals.ppropval[propvals.count++].pvalue = pvalue;
+	*readflag = 0;
+	propvals.ppropval[propvals.count++].pvalue = readflag;
 	
 	propvals.ppropval[propvals.count].proptag = PR_ASSOCIATED;
-	pvalue = cu_alloc<uint8_t>();
-	if (NULL == pvalue) {
+	auto assocflag = cu_alloc<uint8_t>();
+	if (assocflag == nullptr)
 		return FALSE;
-	}
-	*static_cast<uint8_t *>(pvalue) = !!b_fai;
-	propvals.ppropval[propvals.count++].pvalue = pvalue;
+	*assocflag = !!b_fai;
+	propvals.ppropval[propvals.count++].pvalue = assocflag;
 	
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_TRUSTSENDER;
-	pvalue = cu_alloc<uint32_t>();
-	if (NULL == pvalue) {
+	auto trustsender = cu_alloc<uint32_t>();
+	if (trustsender == nullptr)
 		return FALSE;
-	}
-	*(uint32_t*)pvalue = 1;
-	propvals.ppropval[propvals.count++].pvalue = pvalue;
+	*trustsender = 1;
+	propvals.ppropval[propvals.count++].pvalue = trustsender;
 	
 	propvals.ppropval[propvals.count].proptag = PR_CREATION_TIME;
-	pvalue = cu_alloc<uint64_t>();
-	if (NULL == pvalue) {
+	auto modtime = cu_alloc<uint64_t>();
+	if (modtime == nullptr)
 		return FALSE;
-	}
-	*(uint64_t*)pvalue = rop_util_current_nttime();
-	propvals.ppropval[propvals.count++].pvalue = pvalue;
+	*modtime = rop_util_current_nttime();
+	propvals.ppropval[propvals.count++].pvalue = modtime;
 	
 	propvals.ppropval[propvals.count].proptag = PR_SEARCH_KEY;
-	pvalue = cu_alloc<BINARY>();
-	if (NULL == pvalue) {
+	auto search_key = common_util_guid_to_binary(guid_random_new());
+	if (search_key == nullptr)
 		return FALSE;
-	}
-	
-	pvalue = common_util_guid_to_binary(guid_random_new());
-	if (NULL == pvalue) {
-		return FALSE;
-	}
-	propvals.ppropval[propvals.count++].pvalue = pvalue;
+	propvals.ppropval[propvals.count++].pvalue = search_key;
 	
 	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_LOCALE_ID;
-	pvalue = cu_alloc<uint32_t>();
-	if (NULL == pvalue) {
+	auto msglcid = cu_alloc<uint32_t>();
+	if (msglcid == nullptr)
 		return FALSE;
-	}
-	*(uint32_t*)pvalue = pinfo->lcid_string;
-	if (0 == *(uint32_t*)pvalue) {
-		*(uint32_t*)pvalue = 0x0409;
-	}
-	propvals.ppropval[propvals.count++].pvalue = pvalue;
+	*msglcid = pinfo->lcid_string;
+	if (*msglcid == 0)
+		*msglcid = 0x0409;
+	propvals.ppropval[propvals.count++].pvalue = msglcid;
 	propvals.ppropval[propvals.count].proptag = PR_LOCALE_ID;
-	propvals.ppropval[propvals.count++].pvalue = pvalue;
+	propvals.ppropval[propvals.count++].pvalue = msglcid;
 	
 	propvals.ppropval[propvals.count].proptag = PR_CREATOR_NAME;
 	static constexpr size_t dispnamesize = 1024;
@@ -350,13 +333,12 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	propvals.ppropval[propvals.count++].pvalue = dispname;
 	
 	propvals.ppropval[propvals.count].proptag = PR_CREATOR_ENTRYID;
-	pvalue = common_util_username_to_addressbook_entryid(rpc_info.username);
-	if (NULL == pvalue) {
+	auto abk_eid = common_util_username_to_addressbook_entryid(rpc_info.username);
+	if (abk_eid == nullptr)
 		return FALSE;
-	}
-	propvals.ppropval[propvals.count++].pvalue = pvalue;
+	propvals.ppropval[propvals.count++].pvalue = abk_eid;
 	
-	tmp_guid = guid_random_new();
+	auto tmp_guid = guid_random_new();
 	if (!ext_push.init(id_string, 256, 0) ||
 	    ext_push.p_guid(&tmp_guid) != EXT_ERR_SUCCESS)
 		return false;
@@ -383,13 +365,11 @@ gxerr_t message_object::save()
 {
 	auto pmessage = this;
 	int i;
-	void *pvalue;
 	uint32_t result;
 	BINARY *pbin_pcl;
 	BINARY *pbin_pcl1;
 	uint32_t tmp_index;
 	uint32_t *pgroup_id;
-	uint32_t tmp_status;
 	INDEX_ARRAY *pindices;
 	INDEX_ARRAY tmp_indices;
 	MESSAGE_CONTENT *pmsgctnt;
@@ -407,11 +387,12 @@ gxerr_t message_object::save()
 	auto rpc_info = get_rpc_info();
 	if (!exmdb_client_allocate_cn(pmessage->plogon->get_dir(), &pmessage->change_num))
 		return GXERR_CALL_FAILED;
+	void *assoc;
 	if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
-	    pmessage->instance_id, PR_ASSOCIATED, &pvalue))
+	    pmessage->instance_id, PR_ASSOCIATED, &assoc))
 		return GXERR_CALL_FAILED;
 
-	BOOL b_fai = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? false : TRUE;
+	BOOL b_fai = assoc == nullptr || *static_cast<uint8_t *>(assoc) == 0 ? false : TRUE;
 	if (NULL != pmessage->pstate) {
 		if (FALSE == pmessage->b_new) {
 			if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
@@ -429,11 +410,12 @@ gxerr_t message_object::save()
 				return GXERR_CALL_FAILED;
 			}
 			if (PCL_CONFLICT == result) {
+				void *rv;
 				if (!exmdb_client_get_folder_property(pmessage->plogon->get_dir(),
-				    0, pmessage->folder_id, PROP_TAG_RESOLVEMETHOD, &pvalue))
+				    0, pmessage->folder_id, PROP_TAG_RESOLVEMETHOD, &rv))
 					return GXERR_CALL_FAILED;
-				uint32_t resolve_method = pvalue == nullptr ? RESOLVE_METHOD_DEFAULT :
-				                          *static_cast<uint32_t *>(pvalue);
+				uint32_t resolve_method = rv == nullptr ? RESOLVE_METHOD_DEFAULT :
+				                          *static_cast<uint32_t *>(rv);
 				if (FALSE == b_fai &&
 					RESOLVE_METHOD_DEFAULT == resolve_method) {
 					if (pmessage->plogon->check_private()) {
@@ -447,20 +429,18 @@ gxerr_t message_object::save()
 						return GXERR_CALL_FAILED;
 					}
 					if (NULL != pmsgctnt) {
-						pvalue = pmsgctnt->proplist.getval(PROP_TAG_MESSAGESTATUS);
-						if (NULL == pvalue) {
+						auto mstatus = pmsgctnt->proplist.get<const uint32_t>(PROP_TAG_MESSAGESTATUS);
+						if (mstatus == nullptr)
 							return GXERR_CALL_FAILED;
-						}
-						tmp_status = *(uint32_t*)pvalue;
 						if (!exmdb_client_set_message_instance_conflict(
 						    pmessage->plogon->get_dir(),
 						    pmessage->instance_id, pmsgctnt))
 							return GXERR_CALL_FAILED;
+						auto tmp_status = *mstatus | MESSAGE_STATUS_IN_CONFLICT;
 						tmp_propvals.count = 1;
 						tmp_propvals.ppropval = &tmp_propval;
 						tmp_propval.proptag = PROP_TAG_MESSAGESTATUS;
 						tmp_propval.pvalue = &tmp_status;
-						tmp_status |= MESSAGE_STATUS_IN_CONFLICT;
 						if (FALSE == message_object_set_properties_internal(
 							pmessage, FALSE, &tmp_propvals, &tmp_problems)) {
 							return GXERR_CALL_FAILED;
@@ -500,17 +480,16 @@ gxerr_t message_object::save()
 	
 	tmp_propvals.ppropval[tmp_propvals.count].proptag =
 								PROP_TAG_LOCALCOMMITTIME;
-	pvalue = cu_alloc<uint64_t>();
-	if (NULL == pvalue) {
+	auto modtime = cu_alloc<uint64_t>();
+	if (modtime == nullptr)
 		return GXERR_CALL_FAILED;
-	}
-	*(uint64_t*)pvalue = rop_util_current_nttime();
-	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pvalue;
+	*modtime = rop_util_current_nttime();
+	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = modtime;
 	
 	if (!proptag_array_check(pmessage->pchanged_proptags,
 	    PR_LAST_MODIFICATION_TIME)) {
 		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
-		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pvalue;
+		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = modtime;
 	}
 	
 	if (!proptag_array_check(pmessage->pchanged_proptags,
@@ -527,11 +506,10 @@ gxerr_t message_object::save()
 	}
 	
 	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFIER_ENTRYID;
-	pvalue = common_util_username_to_addressbook_entryid(rpc_info.username);
-	if (NULL == pvalue) {
+	auto abk_eid = common_util_username_to_addressbook_entryid(rpc_info.username);
+	if (abk_eid == nullptr)
 		return GXERR_CALL_FAILED;
-	}
-	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pvalue;
+	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = abk_eid;
 	
 	if (0 != pmessage->message_id && NULL == pmessage->pstate) {
 		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_CHANGE_KEY;

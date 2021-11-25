@@ -392,7 +392,6 @@ static int ftstream_producer_write_propdef(FTSTREAM_PRODUCER *pstream,
 static BOOL ftstream_producer_write_propvalue(
 	FTSTREAM_PRODUCER *pstream, TAGGED_PROPVAL *ppropval)
 {
-	char *pvalue;
 	uint32_t count;
 	uint16_t propid;
 	uint16_t proptype;
@@ -415,7 +414,7 @@ static BOOL ftstream_producer_write_propvalue(
 				proptype = PT_UNICODE;
 				write_type = PT_UNICODE;
 				auto len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 2;
-				pvalue = cu_alloc<char>(len);
+				auto pvalue = cu_alloc<char>(len);
 				if (NULL == pvalue) {
 					return FALSE;
 				}
@@ -439,7 +438,7 @@ static BOOL ftstream_producer_write_propvalue(
 				proptype = PT_STRING8;
 				write_type = PT_STRING8;
 				auto len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 2;
-				pvalue = cu_alloc<char>(len);
+				auto pvalue = cu_alloc<char>(len);
 				if (NULL == pvalue) {
 					return FALSE;
 				}
