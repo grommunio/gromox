@@ -227,9 +227,8 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 		return FALSE;
 	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (NULL == pinfo) {
+	if (pinfo == nullptr)
 		return FALSE;
-	}
 	auto rpc_info = get_rpc_info();
 	propvals.count = 0;
 	propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(20);

@@ -48,9 +48,8 @@ std::unique_ptr<fastupctx_object> fastupctx_object::create(logon_object *plogon,
 	pctx->b_ended = FALSE;
 	pctx->root_element = root_element;
 	pctx->pstream = ftstream_parser::create(plogon);
-	if (NULL == pctx->pstream) {
+	if (pctx->pstream == nullptr)
 		return NULL;
-	}
 	pctx->pproplist = NULL;
 	pctx->pmsgctnt = NULL;
 	switch (root_element) {

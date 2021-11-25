@@ -27,16 +27,13 @@ uint32_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 		return ecInvalidParam;
 	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pfolder) {
+	if (pfolder == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode != LOGON_MODE_OWNER) {
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
@@ -77,21 +74,17 @@ uint32_t rop_getrulestable(uint8_t flags, LOGMAP *plogmap, uint8_t logon_id,
 	int object_type;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pfolder) {
+	if (pfolder == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	auto ptable = table_object::create(plogon, pfolder,
 	              flags, ropGetRulesTable, logon_id);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecMAPIOOM;
-	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, OBJECT_TYPE_TABLE, ptable.get());
 	if (hnd < 0) {
@@ -123,9 +116,8 @@ uint32_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	if (!plogon->check_private())
 		return ecNotSupported;
 	fid_deferred = rop_util_make_eid_ex(1, PRIVATE_FID_DEFERRED_ACTION);

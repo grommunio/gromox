@@ -426,9 +426,8 @@ static BOOL ftstream_producer_write_propvalue(
 		} else if (pstream->string_option & STRING_OPTION_CPID) {
 			if (proptype == PT_STRING8) {
 				auto pinfo = emsmdb_interface_get_emsmdb_info();
-				if (NULL == pinfo) {
+				if (pinfo == nullptr)
 					return FALSE;
-				}
 				write_type = FXICS_CODEPAGE_FLAG | (uint16_t)pinfo->cpid;
 			} else {
 				write_type = FXICS_CODEPAGE_FLAG | 1200;

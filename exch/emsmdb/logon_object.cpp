@@ -32,9 +32,8 @@ static BOOL logon_object_enlarge_propid_hash(logon_object *plogon)
 	void *ptmp_value;
 	auto phash = INT_HASH_TABLE::create(plogon->ppropid_hash->capacity +
 	                        HGROWING_SIZE, sizeof(PROPERTY_NAME));
-	if (NULL == phash) {
+	if (phash == nullptr)
 		return FALSE;
-	}
 	auto iter = plogon->ppropid_hash->make_iter();
 	for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
 		int_hash_iter_forward(iter)) {
@@ -53,9 +52,8 @@ static BOOL logon_object_enlarge_propname_hash(logon_object *plogon)
 	
 	auto phash = STR_HASH_TABLE::create(plogon->ppropname_hash->capacity
 				+ HGROWING_SIZE, sizeof(uint16_t), NULL);
-	if (NULL == phash) {
+	if (phash == nullptr)
 		return FALSE;
-	}
 	auto iter = plogon->ppropname_hash->make_iter();
 	for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
@@ -75,9 +73,8 @@ static BOOL logon_object_cache_propname(logon_object *plogon,
 	if (NULL == plogon->ppropid_hash) {
 		plogon->ppropid_hash = INT_HASH_TABLE::create(HGROWING_SIZE,
 		                       sizeof(PROPERTY_NAME));
-		if (NULL == plogon->ppropid_hash) {
+		if (plogon->ppropid_hash == nullptr)
 			return FALSE;
-		}
 	}
 	if (NULL == plogon->ppropname_hash) {
 		plogon->ppropname_hash = STR_HASH_TABLE::create(HGROWING_SIZE, sizeof(uint16_t), nullptr);
@@ -775,9 +772,8 @@ BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	static const uint32_t err_code = ecError;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (NULL == pinfo) {
+	if (pinfo == nullptr)
 		return FALSE;
-	}
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
@@ -831,9 +827,8 @@ BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	uint16_t *poriginal_indices;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (NULL == pinfo) {
+	if (pinfo == nullptr)
 		return FALSE;
-	}
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(ppropvals->count);
 	if (NULL == pproblems->pproblem) {

@@ -76,9 +76,8 @@ std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogo
 		return NULL;
 	}
 	pctx->pstate = ics_state::create(plogon, state_type);
-	if (NULL == pctx->pstate) {
+	if (pctx->pstate == nullptr)
 		return NULL;
-	}
 	pctx->pfolder = pfolder;
 	pctx->sync_type = sync_type;
 	pctx->send_options = send_options;
@@ -97,9 +96,8 @@ std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogo
 		pctx->prestriction = NULL;
 	}
 	pctx->pstream = ftstream_producer::create(plogon, send_options & 0x0F);
-	if (NULL == pctx->pstream) {
+	if (pctx->pstream == nullptr)
 		return NULL;
-	}
 	double_list_init(&pctx->flow_list);
 	double_list_init(&pctx->group_list);
 	pctx->pprogtotal = NULL;

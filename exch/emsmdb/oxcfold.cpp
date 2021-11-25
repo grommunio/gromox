@@ -31,15 +31,12 @@ uint32_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 	uint32_t permission;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
 		return ecNullObject;
-	if (OBJECT_TYPE_LOGON != object_type &&
-		OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_LOGON && object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	replid = rop_util_get_replid(folder_id);
 	if (plogon->check_private()) {
 		if (1 != replid) {
@@ -116,9 +113,8 @@ uint32_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 		return ecError;
 	*phas_rules = pvalue == nullptr ? 0 : *static_cast<uint8_t *>(pvalue);
 	auto pfolder = folder_object::create(plogon, folder_id, type, tag_access);
-	if (NULL == pfolder) {
+	if (pfolder == nullptr)
 		return ecMAPIOOM;
-	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, OBJECT_TYPE_FOLDER, pfolder.get());
 	if (hnd < 0) {
@@ -162,20 +158,17 @@ uint32_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 		return ecInvalidParam;
 	}
 	auto pparent = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pparent) {
+	if (pparent == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	if (rop_util_get_replid(pparent->folder_id) != 1)
 		return ecAccessDenied;
 	if (pparent->type == FOLDER_SEARCH)
 		return ecNotSupported;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	if (!plogon->check_private() && folder_type == FOLDER_SEARCH)
 		return ecNotSupported;
 	if (0 == use_unicode) {
@@ -278,9 +271,8 @@ uint32_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
 				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
 	auto pfolder = folder_object::create(plogon, folder_id, folder_type, tag_access);
-	if (NULL == pfolder) {
+	if (pfolder == nullptr)
 		return ecMAPIOOM;
-	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, OBJECT_TYPE_FOLDER, pfolder.get());
 	if (hnd < 0) {
@@ -308,16 +300,13 @@ uint32_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 	
 	*ppartial_completion = 1;
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pfolder) {
+	if (pfolder == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	 if (plogon->check_private()) {
 		if (rop_util_get_gc_value(folder_id) < PRIVATE_FID_CUSTOM) {
 			return ecAccessDenied;
@@ -399,18 +388,15 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 		search_flags |= SEARCH_FLAG_SHALLOW;
 	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	if (!plogon->check_private())
 		return ecNotSupported;
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pfolder) {
+	if (pfolder == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	if (pfolder->type != FOLDER_SEARCH)
 		return ecNotSearchFolder;
 	auto rpc_info = get_rpc_info();
@@ -471,9 +457,8 @@ uint32_t rop_getsearchcriteria(uint8_t use_unicode, uint8_t include_restriction,
 	int object_type;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	if (!plogon->check_private())
 		return ecNotSupported;
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
@@ -518,25 +503,20 @@ uint32_t rop_movecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	}
 	*ppartial_completion = 1;
 	auto psrc_folder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hsrc, &object_type);
-	if (NULL == psrc_folder) {
+	if (psrc_folder == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	auto pdst_folder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hdst, &object_type);
-	if (NULL == pdst_folder) {
+	if (pdst_folder == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	if (pdst_folder->type == FOLDER_SEARCH)
 		return ecNotSupported;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	ids.count = pmessage_ids->count;
 	ids.pids = pmessage_ids->pll;
 	BOOL b_copy = want_copy == 0 ? false : TRUE;
@@ -581,23 +561,18 @@ uint32_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 	
 	*ppartial_completion = 1;
 	auto psrc_parent = rop_proc_get_obj<folder_object>(plogmap, logon_id, hsrc, &object_type);
-	if (NULL == psrc_parent) {
+	if (psrc_parent == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	auto pdst_folder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hdst, &object_type);
-	if (NULL == pdst_folder) {
+	if (pdst_folder == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	if (0 == use_unicode) {
 		if (common_util_convert_string(TRUE, pnew_name,
 			new_name, sizeof(new_name)) < 0) {
@@ -697,23 +672,18 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 	
 	*ppartial_completion = 1;
 	auto psrc_parent = rop_proc_get_obj<folder_object>(plogmap, logon_id, hsrc, &object_type);
-	if (NULL == psrc_parent) {
+	if (psrc_parent == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	auto pdst_folder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hdst, &object_type);
-	if (NULL == pdst_folder) {
+	if (pdst_folder == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	if (0 == use_unicode) {
 		if (common_util_convert_string(TRUE, pnew_name,
 			new_name, sizeof(new_name)) < 0) {
@@ -779,16 +749,13 @@ static uint32_t oxcfold_emptyfolder(BOOL b_hard, uint8_t want_delete_associated,
 	
 	*ppartial_completion = 1;
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pfolder) {
+	if (pfolder == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	BOOL b_fai = want_delete_associated == 0 ? false : TRUE;
 	auto rpc_info = get_rpc_info();
 	if (!plogon->check_private())
@@ -852,16 +819,13 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 	*ppartial_completion = 1;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pfolder) {
+	if (pfolder == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode == LOGON_MODE_OWNER)
 		username = NULL;
@@ -958,16 +922,13 @@ uint32_t rop_gethierarchytable(uint8_t table_flags, uint32_t *prow_count,
 		return ecInvalidParam;
 	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pfolder) {
+	if (pfolder == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	BOOL b_depth = (table_flags & TABLE_FLAG_DEPTH) ? TRUE : false;
 	auto rpc_info = get_rpc_info();
 	auto username = plogon->logon_mode == LOGON_MODE_OWNER ? nullptr : rpc_info.username;
@@ -976,9 +937,8 @@ uint32_t rop_gethierarchytable(uint8_t table_flags, uint32_t *prow_count,
 		return ecError;
 	auto ptable = table_object::create(plogon, pfolder, table_flags,
 	              ropGetHierarchyTable, logon_id);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecMAPIOOM;
-	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, OBJECT_TYPE_TABLE, ptable.get());
 	if (hnd < 0) {
@@ -999,16 +959,13 @@ uint32_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
 	BOOL b_conversation;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pfolder) {
+	if (pfolder == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	b_conversation = FALSE;
 	if (plogon->check_private()) {
 		if (pfolder->folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) &&
@@ -1049,9 +1006,8 @@ uint32_t rop_getcontentstable(uint8_t table_flags, uint32_t *prow_count,
 	}
 	auto ptable = table_object::create(plogon, pfolder, table_flags,
 	              ropGetContentsTable, logon_id);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecMAPIOOM;
-	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, OBJECT_TYPE_TABLE, ptable.get());
 	if (hnd < 0) {

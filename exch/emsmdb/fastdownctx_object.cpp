@@ -459,9 +459,8 @@ fastdownctx_object::create(logon_object *plogon, uint8_t string_option)
 		return NULL;
 	}
 	pctx->pstream = ftstream_producer::create(plogon, string_option);
-	if (NULL == pctx->pstream) {
+	if (pctx->pstream == nullptr)
 		return NULL;
-	}
 	double_list_init(&pctx->flow_list);
 	pctx->pmsglst = NULL;
 	return pctx;

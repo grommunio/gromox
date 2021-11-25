@@ -208,13 +208,11 @@ uint32_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags,
 		return ecInvalidParam;
 	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
-	if (NULL == pobject) {
+	if (pobject == nullptr)
 		return ecNullObject;
-	}
 	switch (source_operation) {
 	case FAST_SOURCE_OPERATION_COPYTO:
 	case FAST_SOURCE_OPERATION_COPYPROPERTIES:
@@ -233,15 +231,13 @@ uint32_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags,
 		}
 		break;
 	case FAST_SOURCE_OPERATION_COPYMESSAGES:
-		if (OBJECT_TYPE_FOLDER != object_type) {
+		if (object_type != OBJECT_TYPE_FOLDER)
 			return ecNotSupported;
-		}
 		root_element = ROOT_ELEMENT_MESSAGELIST;
 		break;
 	case FAST_SOURCE_OPERATION_COPYFOLDER:
-		if (OBJECT_TYPE_FOLDER != object_type) {
+		if (object_type != OBJECT_TYPE_FOLDER)
 			return ecNotSupported;
-		}
 		root_element = ROOT_ELEMENT_TOPFOLDER;
 		break;
 	default:
@@ -280,9 +276,8 @@ uint32_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags,
 		}
 	}
 	auto pctx = fastupctx_object::create(plogon, pobject, root_element);
-	if (NULL == pctx) {
+	if (pctx == nullptr)
 		return ecError;
-	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, OBJECT_TYPE_FASTUPCTX, pctx.get());
 	if (hnd < 0) {
@@ -306,12 +301,10 @@ uint32_t rop_fasttransferdestputbuffer(const BINARY *ptransfer_data,
 	*preserved = 0;
 	*pused_size = 0;
 	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
-	if (NULL == pobject) {
+	if (pobject == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FASTUPCTX != object_type) {
+	if (object_type != OBJECT_TYPE_FASTUPCTX)
 		return ecNotSupported;
-	}
 	auto err = static_cast<fastupctx_object *>(pobject)->write_buffer(ptransfer_data);
 	if (err != GXERR_SUCCESS)
 		return gxerr_to_hresult(err);
@@ -335,13 +328,11 @@ uint32_t rop_fasttransfersourcegetbuffer(uint16_t buffer_size,
 	*preserved = 0;
 	ptransfer_data->cb = 0;
 	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
-	if (NULL == pobject) {
+	if (pobject == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_ICSDOWNCTX != object_type &&
-		OBJECT_TYPE_FASTDOWNCTX != object_type) {
+	if (object_type != OBJECT_TYPE_ICSDOWNCTX &&
+	    object_type != OBJECT_TYPE_FASTDOWNCTX)
 		return ecNotSupported;
-	}
 	emsmdb_interface_get_rop_left(&max_rop);
 	max_rop -= 32;
 	if (max_rop > 0x7b00) {
@@ -392,16 +383,13 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
 		return ecInvalidParam;
 	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pfolder) {
+	if (pfolder == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	b_sub = FALSE;
 	if (flags & FAST_COPY_FOLDER_FLAG_MOVE ||
 		flags & FAST_COPY_FOLDER_FLAG_COPYSUBFOLDERS) {
@@ -413,9 +401,8 @@ uint32_t rop_fasttransfersourcecopyfolder(uint8_t flags, uint8_t send_options,
 		return ecError;
 	}
 	auto pctx = fastdownctx_object::create(plogon, send_options & 0x0F);
-	if (NULL == pctx) {
+	if (pctx == nullptr)
 		return ecError;
-	}
 	if (!pctx->make_topfolder(std::move(pfldctnt)))
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap,
@@ -451,16 +438,13 @@ uint32_t rop_fasttransfersourcecopymessages(const LONGLONG_ARRAY *pmessage_ids,
 	/* we ignore the FAST_COPY_MESSAGE_FLAG_MOVE
 	   in flags just like exchange 2010 or later */
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pfolder) {
+	if (pfolder == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	if (plogon->logon_mode != LOGON_MODE_OWNER) {
 		auto rpc_info = get_rpc_info();
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
@@ -535,22 +519,18 @@ uint32_t rop_fasttransfersourcecopyto(uint8_t level, uint32_t flags,
 		return ecInvalidParam;
 	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
-	if (NULL == pobject) {
+	if (pobject == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type &&
-		OBJECT_TYPE_MESSAGE != object_type &&
-		OBJECT_TYPE_ATTACHMENT != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER &&
+	    object_type != OBJECT_TYPE_MESSAGE &&
+	    object_type != OBJECT_TYPE_ATTACHMENT)
 		return ecNotSupported;
-	}
 	auto pctx = fastdownctx_object::create(plogon, send_options & 0x0F);
-	if (NULL == pctx) {
+	if (pctx == nullptr)
 		return ecError;
-	}
 	switch (object_type) {
 	case OBJECT_TYPE_FOLDER: {
 		if (0 == level) {
@@ -675,22 +655,18 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		return ecInvalidParam;
 	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
-	if (NULL == pobject) {
+	if (pobject == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type &&
-		OBJECT_TYPE_MESSAGE != object_type &&
-		OBJECT_TYPE_ATTACHMENT != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER &&
+	    object_type != OBJECT_TYPE_MESSAGE &&
+	    object_type != OBJECT_TYPE_ATTACHMENT)
 		return ecNotSupported;
-	}
 	auto pctx = fastdownctx_object::create(plogon, send_options & 0x0F);
-	if (NULL == pctx) {
+	if (pctx == nullptr)
 		return ecError;
-	}
 	switch (object_type) {
 	case OBJECT_TYPE_FOLDER: {
 		if (0 == level) {
@@ -826,13 +802,11 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 		return ecInvalidParam;
 	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pfolder) {
+	if (pfolder == nullptr)
 		return ecNullObject;
-	}
 	if (sync_type == SYNC_TYPE_CONTENTS &&
 	    plogon->logon_mode != LOGON_MODE_OWNER) {
 		auto rpc_info = get_rpc_info();
@@ -884,16 +858,13 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	    ppropvals->ppropval[3].proptag != PR_PREDECESSOR_CHANGE_LIST)
 		return ecInvalidParam;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pctx) {
+	if (pctx == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_ICSUPCTX != object_type) {
+	if (object_type != OBJECT_TYPE_ICSUPCTX)
 		return ecNotSupported;
-	}
 	if (pctx->get_sync_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
 	pctx->mark_started();
@@ -969,9 +940,8 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	auto pmessage = message_object::create(plogon, b_new, pinfo->cpid,
 	                message_id, &folder_id, tag_access,
 	                OPEN_MODE_FLAG_READWRITE, pctx->pstate.get());
-	if (NULL == pmessage) {
+	if (pmessage == nullptr)
 		return ecError;
-	}
 	if (TRUE == b_exist) {
 		proptags.count = 1;
 		proptags.pproptag = &tmp_proptag;
@@ -1036,16 +1006,13 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pctx) {
+	if (pctx == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_ICSUPCTX != object_type) {
+	if (object_type != OBJECT_TYPE_ICSUPCTX)
 		return ecNotSupported;
-	}
 	if (pctx->get_sync_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
 	pctx->mark_started();
@@ -1149,16 +1116,13 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	    phichyvals->ppropval[5].proptag != PR_DISPLAY_NAME)
 		return ecInvalidParam;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pctx) {
+	if (pctx == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_ICSUPCTX != object_type) {
+	if (object_type != OBJECT_TYPE_ICSUPCTX)
 		return ecNotSupported;
-	}
 	if (pctx->get_sync_type() != SYNC_TYPE_HIERARCHY)
 		return ecNotSupported;
 	pctx->mark_started();
@@ -1392,16 +1356,13 @@ uint32_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 	    PROP_TYPE(ppropvals->ppropval[0].proptag) != PT_MV_BINARY)
 		return ecInvalidParam;
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pctx) {
+	if (pctx == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_ICSUPCTX != object_type) {
+	if (object_type != OBJECT_TYPE_ICSUPCTX)
 		return ecNotSupported;
-	}
 	auto sync_type = pctx->get_sync_type();
 	BOOL b_hard = (flags & SYNC_DELETES_FLAG_HARDDELETE) ? TRUE : false;
 	if (SYNC_DELETES_FLAG_HIERARCHY & flags) {
@@ -1555,16 +1516,13 @@ uint32_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 		return ecInvalidParam;
 	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto pctx = rop_proc_get_obj<icsupctx_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pctx) {
+	if (pctx == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_ICSUPCTX != object_type) {
+	if (object_type != OBJECT_TYPE_ICSUPCTX)
 		return ecNotSupported;
-	}
 	if (pctx->get_sync_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
 	pctx->mark_started();
@@ -1663,16 +1621,13 @@ uint32_t rop_syncopencollector(uint8_t is_content_collector, LOGMAP *plogmap,
 	int object_type;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pfolder) {
+	if (pfolder == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	uint8_t sync_type = is_content_collector == 0 ? SYNC_TYPE_HIERARCHY : SYNC_TYPE_CONTENTS;
 	auto pctx = icsupctx_object::create(plogon, pfolder, sync_type);
 	auto hnd = rop_processor_add_object_handle(plogmap,
@@ -1692,13 +1647,11 @@ uint32_t rop_syncgettransferstate(LOGMAP *plogmap, uint8_t logon_id,
 	ICS_STATE *pstate;
 
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto pobject = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
-	if (NULL == pobject) {
+	if (pobject == nullptr)
 		return ecNullObject;
-	}
 	if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
 		pstate = static_cast<icsdownctx_object *>(pobject)->get_state();
 	} else if (OBJECT_TYPE_ICSUPCTX == object_type) {
@@ -1710,9 +1663,8 @@ uint32_t rop_syncgettransferstate(LOGMAP *plogmap, uint8_t logon_id,
 		return ecError;
 	}
 	auto pctx = fastdownctx_object::create(plogon, 0);
-	if (NULL == pctx) {
+	if (pctx == nullptr)
 		return ecError;
-	}
 	if (!pctx->make_state(pstate))
 		return ecError;
 	auto hnd = rop_processor_add_object_handle(plogmap,
@@ -1730,9 +1682,8 @@ uint32_t rop_syncuploadstatestreambegin(uint32_t proptag_state,
 {
 	int object_type;
 	auto pctx = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
-	if (NULL == pctx) {
+	if (pctx == nullptr)
 		return ecNullObject;
-	}
 	if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
 		if (!static_cast<icsdownctx_object *>(pctx)->begin_state_stream(proptag_state))
 			return ecError;
@@ -1750,9 +1701,8 @@ uint32_t rop_syncuploadstatestreamcontinue(const BINARY *pstream_data,
 {
 	int object_type;
 	auto pctx = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
-	if (NULL == pctx) {
+	if (pctx == nullptr)
 		return ecNullObject;
-	}
 	if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
 		if (!static_cast<icsdownctx_object *>(pctx)->continue_state_stream(pstream_data))
 			return ecError;
@@ -1770,9 +1720,8 @@ uint32_t rop_syncuploadstatestreamend(LOGMAP *plogmap,
 {
 	int object_type;
 	auto pctx = rop_processor_get_object(plogmap, logon_id, hin, &object_type);
-	if (NULL == pctx) {
+	if (pctx == nullptr)
 		return ecNullObject;
-	}
 	if (OBJECT_TYPE_ICSDOWNCTX == object_type) {
 		if (!static_cast<icsdownctx_object *>(pctx)->end_state_stream())
 			return ecError;
@@ -1798,12 +1747,10 @@ uint32_t rop_getlocalreplicaids(uint32_t count, GUID *pguid,
 	int object_type;
 	uint64_t begin_eid;
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_LOGON != object_type) {
+	if (object_type != OBJECT_TYPE_LOGON)
 		return ecError;
-	}
 	if (!exmdb_client_allocate_ids(plogon->get_dir(), count, &begin_eid))
 		return ecError;
 	/* allocate too many eids within an interval */

@@ -19,9 +19,8 @@ uint32_t rop_registernotification(uint8_t notification_types, uint8_t reserved,
 	uint64_t message_id;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecNullObject;
-	}
 	if (rop_processor_get_object(plogmap, logon_id, hin, &object_type) == nullptr)
 		return ecNullObject;
 	if (0 == want_whole_store) {
@@ -35,9 +34,8 @@ uint32_t rop_registernotification(uint8_t notification_types, uint8_t reserved,
 	}
 	auto psub = subscription_object::create(plogon, logon_id,
 	            notification_types, b_whole, folder_id, message_id);
-	if (NULL == psub) {
+	if (psub == nullptr)
 		return ecMAPIOOM;
-	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, OBJECT_TYPE_SUBSCRIPTION, psub.get());
 	if (hnd < 0) {

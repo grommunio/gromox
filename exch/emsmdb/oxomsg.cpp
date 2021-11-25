@@ -209,25 +209,21 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (NULL == pinfo) {
+	if (pinfo == nullptr)
 		return ecError;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	if (!plogon->check_private())
 		return ecNotSupported;
 	if (plogon->logon_mode == LOGON_MODE_GUEST)
 		return ecAccessDenied;
 
 	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pmessage) {
+	if (pmessage == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_MESSAGE != object_type) {
+	if (object_type != OBJECT_TYPE_MESSAGE)
 		return ecNotSupported;
-	}
 	if (pmessage->get_id() == 0)
 		return ecNotSupported;
 	if (pmessage->check_importing())
@@ -411,13 +407,11 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 	uint32_t *pmessage_flags;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (NULL == pinfo) {
+	if (pinfo == nullptr)
 		return ecError;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	if (!plogon->check_private())
 		return ecNotSupported;
 	if (plogon->logon_mode == LOGON_MODE_GUEST)
@@ -472,9 +466,8 @@ uint32_t rop_getaddresstypes(STRING_ARRAY *paddress_types, LOGMAP *plogmap,
 	static const char *const address_types[] = {"SMTP", "EX"};
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	if (!plogon->check_private())
 		return ecNotSupported;
 	paddress_types->count = 2;
@@ -485,9 +478,8 @@ uint32_t rop_getaddresstypes(STRING_ARRAY *paddress_types, LOGMAP *plogmap,
 uint32_t rop_setspooler(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	if (!plogon->check_private())
 		return ecNotSupported;
 	return ecSuccess;
@@ -508,13 +500,11 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (NULL == pinfo) {
+	if (pinfo == nullptr)
 		return ecError;
-	}
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	if (!plogon->check_private())
 		return ecNotSupported;
 	if (plogon->logon_mode == LOGON_MODE_GUEST)
@@ -583,20 +573,17 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	uint32_t proptag_buff[7];
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	if (!plogon->check_private())
 		return ecNotSupported;
 	if (plogon->logon_mode == LOGON_MODE_GUEST)
 		return ecAccessDenied;
 	auto pmessage = rop_proc_get_obj<message_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pmessage) {
+	if (pmessage == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_MESSAGE != object_type) {
+	if (object_type != OBJECT_TYPE_MESSAGE)
 		return ecNotSupported;
-	}
 	if (pmessage->get_id() == 0)
 		return ecNotSupported;
 	if (pmessage->check_importing())
@@ -651,9 +638,8 @@ uint32_t rop_transportnewmail(uint64_t message_id, uint64_t folder_id,
     uint8_t logon_id, uint32_t hin)
 {
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	if (!exmdb_client_transport_new_mail(plogon->get_dir(), message_id,
 	    folder_id, message_flags, pstr_class))
 		return ecError;
@@ -664,9 +650,8 @@ uint32_t rop_gettransportfolder(uint64_t *pfolder_id, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecNullObject;
-	}
 	if (!plogon->check_private())
 		return ecNotSupported;
 	*pfolder_id = rop_util_make_eid_ex(1, PRIVATE_FID_OUTBOX);

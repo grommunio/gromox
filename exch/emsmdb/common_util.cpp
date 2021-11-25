@@ -173,9 +173,8 @@ int common_util_convert_string(BOOL to_utf8,
 	const char *src, char *dst, size_t len)
 {
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (NULL == pinfo) {
+	if (pinfo == nullptr)
 		return -1;
-	}
 	return to_utf8 ? common_util_mb_to_utf8(pinfo->cpid, src, dst, len) :
 	       common_util_mb_from_utf8(pinfo->cpid, src, dst, len);
 }

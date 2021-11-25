@@ -138,9 +138,8 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	*pstore_stat = 0;
 	auto plogon = logon_object::create(logon_flags, open_flags, logon_mode,
 	              user_id, username, maildir, *pmailbox_guid);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecMAPIOOM;
-	}
 	/* create logon map and logon object */
 	handle = rop_processor_create_logon_item(plogmap, logon_id, plogon.get());
 	if (handle < 0) {
@@ -239,9 +238,8 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 	mailbox_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
 	auto plogon = logon_object::create(logon_flags, open_flags,
 	              LOGON_MODE_GUEST, domain_id, pdomain, homedir, mailbox_guid);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecMAPIOOM;
-	}
 	/* create logon map and logon object */
 	handle = rop_processor_create_logon_item(plogmap, logon_id, plogon.get());
 	if (handle < 0) {
@@ -261,12 +259,10 @@ uint32_t rop_getreceivefolder(const char *pstr_class, uint64_t *pfolder_id,
 		return ecInvalidParam;
 	}
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_LOGON != object_type) {
+	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
-	}
 	if (!plogon->check_private())
 		return ecNotSupported;
 	*ppstr_explicit = cu_alloc<char>(256);
@@ -297,12 +293,10 @@ uint32_t rop_setreceivefolder(uint64_t folder_id, const char *pstr_class,
 		return ecAccessDenied;
 	}
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_LOGON != object_type) {
+	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
-	}
 	if (!plogon->check_private())
 		return ecNotSupported;
 	if (0 != folder_id) {
@@ -337,12 +331,10 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows, LOGMAP *plogmap,
 	columns.count = arsizeof(proptags);
 	columns.pproptag = proptags;
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_LOGON != object_type) {
+	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
-	}
 	if (!plogon->check_private())
 		return ecNotSupported;
 	if (!exmdb_client_get_folder_class_table(plogon->get_dir(), &class_table))
@@ -381,12 +373,10 @@ uint32_t rop_getowningservers(uint64_t folder_id, GHOST_SERVER *pghost,
 	uint16_t replid;
 	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_LOGON != object_type) {
+	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
-	}
 	if (plogon->check_private())
 		return ecNotSupported;
 	pghost->server_count = 1;
@@ -429,12 +419,10 @@ uint32_t rop_publicfolderisghosted(uint64_t folder_id, GHOST_SERVER **ppghost,
 	uint16_t replid;
 	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_LOGON != object_type) {
+	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
-	}
 	if (plogon->check_private()) {
 		*ppghost = NULL;
 		return ecSuccess;
@@ -460,12 +448,10 @@ uint32_t rop_longtermidfromid(uint64_t id, LONG_TERM_ID *plong_term_id,
 	int object_type;
 	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_LOGON != object_type) {
+	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
-	}
 	memset(plong_term_id, 0, sizeof(LONG_TERM_ID));
 	if (plogon->check_private()) {
 		if (1 != rop_util_get_replid(id)) {
@@ -497,12 +483,10 @@ uint32_t rop_idfromlongtermid(const LONG_TERM_ID *plong_term_id, uint64_t *pid,
 	uint16_t replid;
 	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_LOGON != object_type) {
+	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
-	}
 	if (plogon->check_private()) {
 		auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
 		if (0 != memcmp(&tmp_guid, &plong_term_id->guid, sizeof(GUID))) {
@@ -538,12 +522,10 @@ uint32_t rop_getperuserlongtermids(const GUID *pguid,
 	int object_type;
 	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_LOGON != object_type) {
+	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
-	}
 	if (plogon->check_private()) {
 		plong_term_ids->count = 0;
 		return ecSuccess;
@@ -557,12 +539,10 @@ uint32_t rop_getperuserguid(const LONG_TERM_ID *plong_term_id, GUID *pguid,
 	int object_type;
 	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_LOGON != object_type) {
+	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
-	}
 	if (plogon->check_private())
 		return ecNotFound;
 	return ecNotSupported;
@@ -576,12 +556,10 @@ uint32_t rop_readperuserinformation(const LONG_TERM_ID *plong_folder_id,
 	int object_type;
 	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_LOGON != object_type) {
+	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
-	}
 	*phas_finished = 1;
 	pdata->cb = 0;
 	pdata->pb = NULL;
@@ -595,11 +573,9 @@ uint32_t rop_writeperuserinformation(const LONG_TERM_ID *plong_folder_id,
 	int object_type;
 	
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_LOGON != object_type) {
+	if (object_type != OBJECT_TYPE_LOGON)
 		return ecNotSupported;
-	}
 	return ecSuccess;
 }

@@ -509,9 +509,8 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	static const uint32_t err_code = ecError;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (NULL == pinfo) {
+	if (pinfo == nullptr)
 		return FALSE;
-	}
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
@@ -575,9 +574,8 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	uint16_t *poriginal_indices;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (NULL == pinfo) {
+	if (pinfo == nullptr)
 		return FALSE;
-	}
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(ppropvals->count);
 	if (NULL == pproblems->pproblem) {

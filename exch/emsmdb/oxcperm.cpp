@@ -22,16 +22,13 @@ uint32_t rop_modifypermissions(uint8_t flags, uint16_t count,
 	uint32_t permission;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pfolder) {
+	if (pfolder == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	b_freebusy = FALSE;
 	auto folder_id = pfolder->folder_id;
 	if (flags & MODIFY_PERMISSIONS_FLAG_INCLUDEFREEBUSY) {
@@ -70,16 +67,13 @@ uint32_t rop_getpermissionstable(uint8_t flags, LOGMAP *plogmap,
 	uint32_t permission;
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
-	if (NULL == plogon) {
+	if (plogon == nullptr)
 		return ecError;
-	}
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pfolder) {
+	if (pfolder == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_FOLDER != object_type) {
+	if (object_type != OBJECT_TYPE_FOLDER)
 		return ecNotSupported;
-	}
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode != LOGON_MODE_OWNER) {
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
@@ -90,9 +84,8 @@ uint32_t rop_getpermissionstable(uint8_t flags, LOGMAP *plogmap,
 	}
 	auto ptable = table_object::create(plogon, pfolder, flags,
 	              ropGetPermissionsTable, logon_id);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecMAPIOOM;
-	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, OBJECT_TYPE_TABLE, ptable.get());
 	if (hnd < 0) {

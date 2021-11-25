@@ -52,12 +52,10 @@ uint32_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
 		return ecInvalidParam;
 	}
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_TABLE != object_type) {
+	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	}
 	for (i=0; i<pproptags->count; i++) {
 		type = PROP_TYPE(pproptags->pproptag[i]);
 		if ((type & MVI_FLAG) == MVI_FLAG) {
@@ -126,12 +124,10 @@ uint32_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteria,
 		return ecTooComplex;
 	}
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_TABLE != object_type) {
+	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	}
 	if (ptable->rop_id != ropGetContentsTable)
 		return ecNotSupported;
 	b_max = FALSE;
@@ -248,12 +244,10 @@ uint32_t rop_restrict(uint8_t res_flags, const RESTRICTION *pres,
 	int object_type;
 	
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_TABLE != object_type) {
+	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	}
 	switch (ptable->rop_id) {
 	case ropGetHierarchyTable:
 	case ropGetContentsTable:
@@ -288,12 +282,10 @@ uint32_t rop_queryrows(uint8_t flags, uint8_t forward_read, uint16_t row_count,
 	PROPERTY_ROW tmp_row;
 	
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_TABLE != object_type) {
+	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	}
 	if (ptable->get_columns() == nullptr)
 		return ecNullObject;
 	if (!ptable->check_to_load())
@@ -343,12 +335,10 @@ uint32_t rop_abort(uint8_t *ptable_status, LOGMAP *plogmap,
 	int object_type;
 	
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_TABLE != object_type) {
+	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	}
 	return ecUnableToAbort;
 }
 
@@ -358,12 +348,10 @@ uint32_t rop_getstatus(uint8_t *ptable_status, LOGMAP *plogmap,
 	int object_type;
 	
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_TABLE != object_type) {
+	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	}
 	*ptable_status = TABLE_STATUS_COMPLETE;
 	return ecSuccess;
 }
@@ -374,12 +362,10 @@ uint32_t rop_queryposition(uint32_t *pnumerator, uint32_t *pdenominator,
 	int object_type;
 	
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_TABLE != object_type) {
+	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	}
 	if (!ptable->check_to_load())
 		return ecError;
 	*pnumerator = ptable->get_position();
@@ -395,12 +381,10 @@ uint32_t rop_seekrow(uint8_t seek_pos, int32_t offset, uint8_t want_moved_count,
 	uint32_t original_position;
 	
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_TABLE != object_type) {
+	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	}
 	if (!ptable->check_to_load())
 		return ecError;
 	int8_t clamped = 0;
@@ -448,12 +432,10 @@ uint32_t rop_seekrowbookmark(const BINARY *pbookmark, int32_t offset,
 		return ecInvalidBookmark;
 	}
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_TABLE != object_type) {
+	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	}
 	switch (ptable->rop_id) {
 	case ropGetContentsTable:
 	case ropGetHierarchyTable:
@@ -483,12 +465,10 @@ uint32_t rop_seekrowfractional(uint32_t numerator, uint32_t denominator,
 		return ecInvalidBookmark;
 	}
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_TABLE != object_type) {
+	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	}
 	if (!ptable->check_to_load())
 		return ecError;
 	auto position = numerator * ptable->get_total() / denominator;
@@ -502,12 +482,10 @@ uint32_t rop_createbookmark(BINARY *pbookmark, LOGMAP *plogmap,
 	int object_type;
 	
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_TABLE != object_type) {
+	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	}
 	switch (ptable->rop_id) {
 	case ropGetContentsTable:
 	case ropGetHierarchyTable:
@@ -534,12 +512,10 @@ uint32_t rop_querycolumnsall(PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
 	int object_type;
 	
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_TABLE != object_type) {
+	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	}
 	if (!ptable->check_to_load())
 		return ecError;
 	if (!ptable->get_all_columns(pproptags))
@@ -559,12 +535,10 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres, uint8_t seek_pos,
 	TPROPVAL_ARRAY propvals;
 	
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_TABLE != object_type) {
+	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	}
 	switch (ptable->rop_id) {
 	case ropGetContentsTable:
 	case ropGetHierarchyTable:
@@ -635,12 +609,10 @@ uint32_t rop_freebookmark(const BINARY *pbookmark, LOGMAP *plogmap,
 		return ecInvalidBookmark;
 	}
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_TABLE != object_type) {
+	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	}
 	switch (ptable->rop_id) {
 	case ropGetContentsTable:
 	case ropGetHierarchyTable:
@@ -661,12 +633,10 @@ uint32_t rop_resettable(LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 	int object_type;
 	
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_TABLE != object_type) {
+	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	}
 	ptable->reset();
 	return ecSuccess;
 }
@@ -684,12 +654,10 @@ uint32_t rop_expandrow(uint16_t max_count, uint64_t category_id,
 	PROPERTY_ROW tmp_row;
 	
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_TABLE != object_type) {
+	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	}
 	if (ptable->rop_id != ropGetContentsTable)
 		return ecNotSupported;
 	if (ptable->get_columns() == nullptr)
@@ -739,12 +707,10 @@ uint32_t rop_collapserow(uint64_t category_id, uint32_t *pcollapsed_count,
 	int32_t position;
 	
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_TABLE != object_type) {
+	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	}
 	if (ptable->rop_id != ropGetContentsTable)
 		return ecNotSupported;
 	if (ptable->get_columns() == nullptr)
@@ -774,12 +740,10 @@ uint32_t rop_getcollapsestate(uint64_t row_id, uint32_t row_instance,
 	int object_type;
 	
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_TABLE != object_type) {
+	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	}
 	if (ropGetContentsTable != ptable->rop_id)
 		return ecNotSupported;
 	if (ptable->get_columns() == nullptr)
@@ -802,12 +766,10 @@ uint32_t rop_setcollapsestate(const BINARY *pcollapse_state, BINARY *pbookmark,
 	int object_type;
 	
 	auto ptable = rop_proc_get_obj<table_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == ptable) {
+	if (ptable == nullptr)
 		return ecNullObject;
-	}
-	if (OBJECT_TYPE_TABLE != object_type) {
+	if (object_type != OBJECT_TYPE_TABLE)
 		return ecNotSupported;
-	}
 	if (ropGetContentsTable != ptable->rop_id)
 		return ecNotSupported;
 	if (sizeof(uint32_t) != pcollapse_state->cb) {

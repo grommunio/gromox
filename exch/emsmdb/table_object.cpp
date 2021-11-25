@@ -84,9 +84,8 @@ BOOL table_object::check_to_load()
 	case ropGetContentsTable: {
 		auto rpc_info = get_rpc_info();
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
-		if (NULL == pinfo) {
+		if (pinfo == nullptr)
 			return FALSE;
-		}
 		const char *username = nullptr;
 		if (ptable->plogon != LOGON_MODE_OWNER) {
 			if (!ptable->plogon->check_private()) {
@@ -142,9 +141,8 @@ BOOL table_object::query_rows(BOOL b_forward, uint16_t row_count, TARRAY_SET *ps
 	if (m_columns == nullptr)
 		return FALSE;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
-	if (NULL == pinfo) {
+	if (pinfo == nullptr)
 		return FALSE;
-	}
 	if (m_position == 0 && !b_forward) {
 		pset->count = 0;
 		return TRUE;

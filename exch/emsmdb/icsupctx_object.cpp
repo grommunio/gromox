@@ -18,9 +18,8 @@ std::unique_ptr<icsupctx_object> icsupctx_object::create(logon_object *plogon,
 		return NULL;
 	}
 	pctx->pstate = ics_state::create(plogon, state_type);
-	if (NULL == pctx->pstate) {
+	if (pctx->pstate == nullptr)
 		return NULL;
-	}
 	pctx->plogon = plogon;
 	pctx->pfolder = pfolder;
 	pctx->state_property = 0;
