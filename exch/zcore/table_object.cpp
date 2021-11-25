@@ -222,23 +222,23 @@ static uint32_t table_object_get_folder_tag_access(store_object *pstore,
 		tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
 				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
 				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
-	} else {
-		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
-		    folder_id, username, &permission))
-			return 0;
-		tag_access = TAG_ACCESS_READ;
-		if (permission & frightsOwner) {
-			tag_access = TAG_ACCESS_MODIFY |TAG_ACCESS_DELETE |
-				TAG_ACCESS_HIERARCHY | TAG_ACCESS_CONTENTS |
-				TAG_ACCESS_FAI_CONTENTS;
-		} else {
-			if (permission & frightsCreate)
-				tag_access |= TAG_ACCESS_CONTENTS |
-							TAG_ACCESS_FAI_CONTENTS;
-			if (permission & frightsCreateSubfolder)
-				tag_access |= TAG_ACCESS_HIERARCHY;
-		}
+		return tag_access;
 	}
+	if (!exmdb_client::check_folder_permission(pstore->get_dir(),
+	    folder_id, username, &permission))
+		return 0;
+	tag_access = TAG_ACCESS_READ;
+	if (permission & frightsOwner) {
+		tag_access = TAG_ACCESS_MODIFY |TAG_ACCESS_DELETE |
+			TAG_ACCESS_HIERARCHY | TAG_ACCESS_CONTENTS |
+			TAG_ACCESS_FAI_CONTENTS;
+		return tag_access;
+	}
+	if (permission & frightsCreate)
+		tag_access |= TAG_ACCESS_CONTENTS |
+		              TAG_ACCESS_FAI_CONTENTS;
+	if (permission & frightsCreateSubfolder)
+		tag_access |= TAG_ACCESS_HIERARCHY;
 	return tag_access;
 }
 
@@ -248,12 +248,11 @@ static uint32_t table_object_get_folder_permission_rights(store_object *pstore,
 	uint32_t permission;
 	
 	if (pstore->check_owner_mode()) {
-		permission = rightsAll | frightsContact;
-	} else {
-		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
-		    folder_id, username, &permission))
-			return 0;
+		return rightsAll | frightsContact;
 	}
+	if (!exmdb_client::check_folder_permission(pstore->get_dir(),
+	    folder_id, username, &permission))
+		return 0;
 	return permission;
 }
 
