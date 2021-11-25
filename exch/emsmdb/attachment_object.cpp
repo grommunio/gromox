@@ -109,9 +109,8 @@ gxerr_t attachment_object::save()
 	TAGGED_PROPVAL tmp_propval;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	if (FALSE == pattachment->b_touched) {
+	if (!b_touched && !b_new)
 		return GXERR_SUCCESS;
-	}
 	tmp_propvals.count = 1;
 	tmp_propvals.ppropval = &tmp_propval;
 	if (!flush_streams())
