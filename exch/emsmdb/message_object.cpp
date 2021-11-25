@@ -523,7 +523,7 @@ gxerr_t message_object::save()
 		if (!common_util_get_user_displayname(rpc_info.username,
 		    dispname, dsize) || *dispname == '\0')
 			gx_strlcpy(dispname, rpc_info.username, dsize);
-		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pvalue;
+		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = dispname;
 	}
 	
 	tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFIER_ENTRYID;
