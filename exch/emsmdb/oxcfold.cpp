@@ -477,9 +477,10 @@ uint32_t rop_getsearchcriteria(uint8_t use_unicode, uint8_t include_restriction,
 	if (!plogon->check_private())
 		return ecNotSupported;
 	auto pfolder = rop_proc_get_obj<folder_object>(plogmap, logon_id, hin, &object_type);
-	if (NULL == pfolder || OBJECT_TYPE_FOLDER != object_type) {
+	if (pfolder == nullptr)
 		return ecNullObject;
-	}
+	if (object_type != OBJECT_TYPE_FOLDER)
+		return ecNotSupported;
 	if (pfolder->type != FOLDER_SEARCH)
 		return ecNotSearchFolder;
 	if (0 == include_restriction) {
