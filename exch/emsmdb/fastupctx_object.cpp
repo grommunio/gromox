@@ -868,11 +868,14 @@ static gxerr_t fastupctx_object_record_propval(fastupctx_object *pctx,
 		case ROOT_ELEMENT_FOLDERCONTENT:
 			return pctx->pproplist->set(*ppropval) == 0 ?
 			       GXERR_SUCCESS : GXERR_CALL_FAILED;
-		case ROOT_ELEMENT_MESSAGECONTENT:
-			return exmdb_client_set_instance_property(pctx->pstream->plogon->get_dir(),
-			       static_cast<message_object *>(pctx->pobject)->get_instance_id(),
-					ppropval, &b_result) == TRUE ?
-					GXERR_SUCCESS : GXERR_CALL_FAILED;
+		case ROOT_ELEMENT_MESSAGECONTENT: {
+			auto msg = static_cast<message_object *>(pctx->pobject);
+			TPROPVAL_ARRAY av;
+			av.count = 1;
+			av.ppropval = deconst(ppropval);
+			PROBLEM_ARRAY pa;
+			return msg->set_properties(&av, &pa) == TRUE ? GXERR_SUCCESS : GXERR_CALL_FAILED;
+		}
 		case ROOT_ELEMENT_ATTACHMENTCONTENT: {
 			auto atx = static_cast<attachment_object *>(pctx->pobject);
 			TPROPVAL_ARRAY av;
