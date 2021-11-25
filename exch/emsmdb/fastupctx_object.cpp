@@ -902,26 +902,24 @@ static gxerr_t fastupctx_object_record_propval(fastupctx_object *pctx,
 	case STARTEMBED:
 	case NEWATTACH: {
 		auto mknd = static_cast<MARKER_NODE *>(pnode->pdata);
-		auto tp = static_cast<TPROPVAL_ARRAY *>(mknd->data.pelement);
 		if (ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element ||
 			ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element) {
 			return exmdb_client_set_instance_property(pctx->pstream->plogon->get_dir(),
 			       mknd->data.instance_id, ppropval, &b_result) == TRUE ?
 			       GXERR_SUCCESS : GXERR_CALL_FAILED;
-		} else {
-			return tp->set(*ppropval) == 0 ? GXERR_SUCCESS : GXERR_CALL_FAILED;
 		}
+		auto tp = static_cast<TPROPVAL_ARRAY *>(mknd->data.pelement);
+		return tp->set(*ppropval) == 0 ? GXERR_SUCCESS : GXERR_CALL_FAILED;
 	}
 	case STARTRECIP: {
-		auto mknd = static_cast<MARKER_NODE *>(pnode->pdata);
-		auto tp = static_cast<TPROPVAL_ARRAY *>(mknd->data.pelement);
 		if (ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element ||
 			ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element) {
 			return pctx->pproplist->set(*ppropval) == 0 ?
 			       GXERR_SUCCESS : GXERR_CALL_FAILED;
-		} else {
-			return tp->set(*ppropval) == 0 ? GXERR_SUCCESS : GXERR_CALL_FAILED;
 		}
+		auto mknd = static_cast<MARKER_NODE *>(pnode->pdata);
+		auto tp = static_cast<TPROPVAL_ARRAY *>(mknd->data.pelement);
+		return tp->set(*ppropval) == 0 ? GXERR_SUCCESS : GXERR_CALL_FAILED;
 	}
 	default:
 		return GXERR_CALL_FAILED;
