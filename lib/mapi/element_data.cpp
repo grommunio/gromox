@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <memory>
 #include <utility>
 #include <gromox/mapidefs.h>
@@ -437,4 +438,19 @@ size_t PROPTAG_ARRAY::indexof(uint32_t tag) const
 		if (pproptag[i] == tag)
 			return i;
 	return npos;
+}
+
+PROBLEM_ARRAY &PROBLEM_ARRAY::operator+=(PROBLEM_ARRAY &&other)
+{
+	std::move(other.pproblem, other.pproblem + other.count, pproblem + count);
+	count += other.count;
+	other.count = 0;
+	std::sort(pproblem, pproblem + count);
+	return *this;
+}
+
+void PROBLEM_ARRAY::transform(const uint16_t *orig_indices)
+{
+	for (size_t i = 0; i < count; ++i)
+		pproblem[i].index = orig_indices[pproblem[i].index];
 }

@@ -4,6 +4,7 @@
 #include <climits>
 #include <cstdint>
 #include <cstring>
+#include <utility>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "rops.h"
@@ -639,12 +640,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		for (i=0; i<tmp_problems.count; i++) {
 			tmp_problems.pproblem[i].index = pproptags->indexof(tmp_problems.pproblem[i].proptag);
 		}
-		memcpy(pproblems->pproblem + pproblems->count,
-			tmp_problems.pproblem, tmp_problems.count*
-			sizeof(PROPERTY_PROBLEM));
-		pproblems->count += tmp_problems.count;
-		qsort(pproblems->pproblem, pproblems->count,
-			sizeof(PROPERTY_PROBLEM), common_util_problem_compare);
+		*pproblems += std::move(tmp_problems);
 		return ecSuccess;
 	}
 	case OBJECT_TYPE_MESSAGE: {
@@ -710,12 +706,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		for (i=0; i<tmp_problems.count; i++) {
 			tmp_problems.pproblem[i].index = pproptags->indexof(tmp_problems.pproblem[i].proptag);
 		}
-		memcpy(pproblems->pproblem + pproblems->count,
-			tmp_problems.pproblem, tmp_problems.count*
-			sizeof(PROPERTY_PROBLEM));
-		pproblems->count += tmp_problems.count;
-		qsort(pproblems->pproblem, pproblems->count,
-			sizeof(PROPERTY_PROBLEM), common_util_problem_compare);
+		*pproblems += std::move(tmp_problems);
 		return ecSuccess;
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
@@ -760,12 +751,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		for (i=0; i<tmp_problems.count; i++) {
 			tmp_problems.pproblem[i].index = pproptags->indexof(tmp_problems.pproblem[i].proptag);
 		}
-		memcpy(pproblems->pproblem + pproblems->count,
-			tmp_problems.pproblem, tmp_problems.count*
-			sizeof(PROPERTY_PROBLEM));
-		pproblems->count += tmp_problems.count;
-		qsort(pproblems->pproblem, pproblems->count,
-			sizeof(PROPERTY_PROBLEM), common_util_problem_compare);
+		*pproblems += std::move(tmp_problems);
 		return ecSuccess;
 	}
 	default:

@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <cstdint>
 #include <memory>
+#include <utility>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -1003,14 +1004,8 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 	    pmessage->instance_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
 	if (tmp_problems.count > 0) {
-		for (i=0; i<tmp_problems.count; i++) {
-			tmp_problems.pproblem[i].index =
-				poriginal_indices[tmp_problems.pproblem[i].index];
-		}
-		memcpy(problems.pproblem + problems.count,
-			tmp_problems.pproblem, tmp_problems.count
-			*sizeof(PROPERTY_PROBLEM));
-		problems.count += tmp_problems.count;
+		tmp_problems.transform(poriginal_indices);
+		problems += std::move(tmp_problems);
 	}
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
@@ -1103,14 +1098,8 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	    pmessage->instance_id, &tmp_proptags, &tmp_problems))
 		return FALSE;	
 	if (tmp_problems.count > 0) {
-		for (i=0; i<tmp_problems.count; i++) {
-			tmp_problems.pproblem[i].index =
-				poriginal_indices[tmp_problems.pproblem[i].index];
-		}
-		memcpy(problems.pproblem + problems.count,
-			tmp_problems.pproblem, tmp_problems.count*
-			sizeof(PROPERTY_PROBLEM));
-		problems.count += tmp_problems.count;
+		tmp_problems.transform(poriginal_indices);
+		problems += std::move(tmp_problems);
 	}
 	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;

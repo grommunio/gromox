@@ -1299,16 +1299,8 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 	    pmessage->instance_id, &tmp_propvals, &tmp_problems))
 		return FALSE;	
 	if (tmp_problems.count > 0) {
-		for (i=0; i<tmp_problems.count; i++) {
-			tmp_problems.pproblem[i].index =
-				poriginal_indices[tmp_problems.pproblem[i].index];
-		}
-		memcpy(pproblems->pproblem + pproblems->count,
-			tmp_problems.pproblem, tmp_problems.count*
-			sizeof(PROPERTY_PROBLEM));
-		pproblems->count += tmp_problems.count;
-		qsort(pproblems->pproblem, pproblems->count,
-			sizeof(PROPERTY_PROBLEM), common_util_problem_compare);
+		tmp_problems.transform(poriginal_indices);
+		*pproblems += std::move(tmp_problems);
 	}
 	if (TRUE == pmessage->b_new || 0 == pmessage->message_id) {
 		return TRUE;
@@ -1389,16 +1381,8 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	    pmessage->instance_id, &tmp_proptags, &tmp_problems))
 		return FALSE;	
 	if (tmp_problems.count > 0) {
-		for (i=0; i<tmp_problems.count; i++) {
-			tmp_problems.pproblem[i].index =
-				poriginal_indices[tmp_problems.pproblem[i].index];
-		}
-		memcpy(pproblems->pproblem + pproblems->count,
-			tmp_problems.pproblem, tmp_problems.count*
-			sizeof(PROPERTY_PROBLEM));
-		pproblems->count += tmp_problems.count;
-		qsort(pproblems->pproblem, pproblems->count,
-			sizeof(PROPERTY_PROBLEM), common_util_problem_compare);
+		tmp_problems.transform(poriginal_indices);
+		*pproblems += std::move(tmp_problems);
 	}
 	if (TRUE == pmessage->b_new || 0 == pmessage->message_id) {
 		return TRUE;

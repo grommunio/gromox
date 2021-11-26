@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <memory>
+#include <utility>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "attachment_object.h"
@@ -415,16 +416,8 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 		pattachment->b_touched = TRUE;
 		return TRUE;
 	}
-	for (i=0; i<tmp_problems.count; i++) {
-		tmp_problems.pproblem[i].index =
-			poriginal_indices[tmp_problems.pproblem[i].index];
-	}
-	memcpy(pproblems->pproblem + pproblems->count,
-		tmp_problems.pproblem, tmp_problems.count*
-		sizeof(PROPERTY_PROBLEM));
-	pproblems->count += tmp_problems.count;
-	qsort(pproblems->pproblem, pproblems->count,
-		sizeof(PROPERTY_PROBLEM), common_util_problem_compare);
+	tmp_problems.transform(poriginal_indices);
+	*pproblems += std::move(tmp_problems);
 	for (i=0; i<ppropvals->count; i++) {
 		for (j=0; j<pproblems->count; j++) {
 			if (i == pproblems->pproblem[j].index) {
@@ -486,16 +479,8 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 		pattachment->b_touched = TRUE;
 		return TRUE;
 	}
-	for (i=0; i<tmp_problems.count; i++) {
-		tmp_problems.pproblem[i].index =
-			poriginal_indices[tmp_problems.pproblem[i].index];
-	}
-	memcpy(pproblems->pproblem + pproblems->count,
-		tmp_problems.pproblem, tmp_problems.count*
-		sizeof(PROPERTY_PROBLEM));
-	pproblems->count += tmp_problems.count;
-	qsort(pproblems->pproblem, pproblems->count,
-		sizeof(PROPERTY_PROBLEM), common_util_problem_compare);
+	tmp_problems.transform(poriginal_indices);
+	*pproblems += std::move(tmp_problems);
 	for (i=0; i<pproptags->count; i++) {
 		for (j=0; j<pproblems->count; j++) {
 			if (i == pproblems->pproblem[j].index) {

@@ -84,8 +84,6 @@ BOOL common_util_retag_propvals(TPROPVAL_ARRAY *parray,
 void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 	const PROPTAG_ARRAY *pproptags_subtractor);
 PROPTAG_ARRAY* common_util_trim_proptags(const PROPTAG_ARRAY *pproptags);
-int common_util_problem_compare(const void *pproblem1,
-	const void *pproblem2);
 BOOL common_util_propvals_to_row(
 	const TPROPVAL_ARRAY *ppropvals,
 	const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *prow);

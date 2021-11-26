@@ -220,11 +220,16 @@ struct PROPERTY_PROBLEM {
 	uint16_t index;
 	uint32_t proptag;
 	uint32_t err;
+
+	inline bool operator<(const PROPERTY_PROBLEM &o) const { return index < o.index; }
 };
 
 struct PROBLEM_ARRAY {
 	uint16_t count;
 	PROPERTY_PROBLEM *pproblem;
+
+	PROBLEM_ARRAY &operator+=(PROBLEM_ARRAY &&);
+	void transform(const uint16_t *);
 };
 
 #define PROVIDER_UID_ADDRESS_BOOK					1
