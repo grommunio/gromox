@@ -15,8 +15,6 @@
 #include <cstring>
 #include <cstdio>
 #include <ctime>
-#define MAXIMUM_ALLOCATION_NUMBER				1000000
-
 #define ALLOCATION_INTERVAL						24*60*60
 
 using namespace gromox;
@@ -27,6 +25,8 @@ struct dlgitem {
 	char user[324];
 };
 }
+
+static constexpr size_t MAXIMUM_ALLOCATION_NUMBER = 0x7fffffffffffLL;
 
 BOOL exmdb_server_ping_store(const char *dir)
 {
@@ -346,6 +346,8 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 	}
 	pstmt.finalize();
 	if (range_end - range_begin + count > MAXIMUM_ALLOCATION_NUMBER) {
+		fprintf(stderr, "E-1592: store \"%s\" has used up all local replica IDs. "
+		        "(Did you create too many Offline profiles?)\n", dir);
 		*pbegin_eid = 0;
 		return TRUE;
 	}
