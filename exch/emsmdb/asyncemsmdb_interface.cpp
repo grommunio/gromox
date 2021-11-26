@@ -267,17 +267,15 @@ static void asyncemsmdb_interface_activate(
 {
 	if (0 == pwait->async_id) {
 		active_hpm_context(pwait->out_payload.context_id, b_pending);
-	} else {
-		if (TRUE == rpc_build_environment(pwait->async_id)) {
-			pwait->out_payload.pout->result = ecSuccess;
-			if (TRUE == b_pending) {
-				pwait->out_payload.pout->flags_out =
-							FLAG_NOTIFICATION_PENDING;
-			} else {
-				pwait->out_payload.pout->flags_out = 0;
-			}
-			async_reply(pwait->async_id, pwait->out_payload.pout);
+	} else if (rpc_build_environment(pwait->async_id)) {
+		pwait->out_payload.pout->result = ecSuccess;
+		if (TRUE == b_pending) {
+			pwait->out_payload.pout->flags_out =
+				FLAG_NOTIFICATION_PENDING;
+		} else {
+			pwait->out_payload.pout->flags_out = 0;
 		}
+		async_reply(pwait->async_id, pwait->out_payload.pout);
 	}
 	lib_buffer_put(g_wait_allocator, pwait);
 }
