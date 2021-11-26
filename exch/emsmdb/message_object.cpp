@@ -549,10 +549,10 @@ gxerr_t message_object::save()
 	auto is_new = pmessage->b_new;
 	pmessage->b_new = FALSE;
 	pmessage->b_touched = FALSE;
-	if (0 == pmessage->message_id) {
+	if (pmessage->pembedding != nullptr)
 		pmessage->pembedding->b_touched = TRUE;
+	if (pmessage->message_id == 0)
 		return GXERR_SUCCESS;
-	}
 	
 	if (NULL != pmessage->pstate) {
 		auto &x = pmessage->pstate;
@@ -1303,6 +1303,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 		*pproblems += std::move(tmp_problems);
 	}
 	if (TRUE == pmessage->b_new || 0 == pmessage->message_id) {
+		pmessage->b_touched = TRUE;
 		return TRUE;
 	}
 	for (i=0; i<ppropvals->count; i++) {
@@ -1385,6 +1386,7 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 		*pproblems += std::move(tmp_problems);
 	}
 	if (TRUE == pmessage->b_new || 0 == pmessage->message_id) {
+		pmessage->b_touched = TRUE;
 		return TRUE;
 	}
 	for (i=0; i<pproptags->count; i++) {
