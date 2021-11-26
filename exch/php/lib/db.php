@@ -4,7 +4,7 @@
 function get_db_connection()
 {
 	static $db_conn = NULL;
-	
+
 	if ($db_conn) {
 		return $db_conn;
 	}
@@ -37,7 +37,7 @@ function get_db_connection()
 function get_user_info_by_name($email_address)
 {
 	$db_conn = get_db_connection();
-	
+
 	$sql_string = "SELECT maildir, '', username, id, domain_id, timezone FROM users WHERE username='" . $db_conn->real_escape_string($email_address) . "'";
 	$results = $db_conn->query($sql_string);
 	if (!$results) {
@@ -78,7 +78,7 @@ function get_user_info_by_name($email_address)
 function get_user_info_by_id($user_id)
 {
 	$db_conn = get_db_connection();
-	
+
 	$sql_string = "SELECT maildir, '', username, id, domain_id, timezone FROM users WHERE id=" . $user_id;
 	$results = $db_conn->query($sql_string);
 	if (!$results) {
@@ -118,7 +118,7 @@ function get_user_info_by_id($user_id)
 function get_domain_info_by_name($domain)
 {
 	$db_conn = get_db_connection();
-	
+
 	$sql_string = "SELECT homedir, id, domainname FROM domains WHERE domainname='" . $db_conn->real_escape_string($domain) . "'";
 	$results = $db_conn->query($sql_string);
 	if (!$results) {
@@ -134,7 +134,7 @@ function get_domain_info_by_name($domain)
 function get_domain_info_by_id($domain_id)
 {
 	$db_conn = get_db_connection();
-	
+
 	$sql_string = "SELECT homedir, id, domainname FROM domains WHERE id=" . $domain_id;
 	$results = $db_conn->query($sql_string);
 	if (!$results) {
@@ -162,6 +162,30 @@ function get_domains()
 		$domains[] = $row[0];
 	}
 	return $domains;
+}
+
+function get_secondary_store_hints($email_address)
+{
+	$db_conn = get_db_connection();
+
+	$sql_string = "SELECT up.propval_str, u2.primary_email
+		FROM users AS u1
+		LEFT JOIN secondary_store_hints AS ssh ON u1.id = ssh.secondary
+		LEFT JOIN users AS u2 ON ssh.primary = u2.id
+		LEFT JOIN user_properties AS up ON u2.id = up.user_id
+		WHERE proptag = 0x3001001F AND u1.primary_email = '". $db_conn->real_escape_string($email_address) ."';";
+
+	$results = $db_conn->query($sql_string);
+	if (!$results) {
+		_log_db("fail to query database: " . $db_conn->error);
+	}
+
+	$secondaryStores = array();
+	for ($i = 0, $nrResults = mysqli_num_rows($results); $i < $nrResults; ++$i) {
+		$row = $results->fetch_row();
+		$secondaryStores[] = ['DisplayName' => $row[0], 'SmtpAddress' => $row[1]];
+	}
+	return $secondaryStores;
 }
 
 ?>

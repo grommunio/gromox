@@ -112,7 +112,7 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 		header("WWW-Authenticate: Basic realm=" . $_SERVER['SERVER_NAME']);
 		exit;
 	}
-	
+
 	if (isset($xml_request->Request->AcceptableResponseSchema) &&
 		0 == strcasecmp($xml_request->Request->AcceptableResponseSchema,
 		RESPONSE_MOBILE_XMLNS)) {
@@ -121,7 +121,7 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 		if (!$uinfo) {
 			die("cannot find email address information");
 		}
-		
+
 		$Autodiscover = new SimpleXMLElement('<?xml version="1.0" encoding="utf-8"?><Autodiscover></Autodiscover>');
 		$Autodiscover->addAttribute('xmlns', RESPONSE_XMLNS);
 		$Response = $Autodiscover->addChild('Response');
@@ -138,7 +138,7 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 		$Server->addChild('Type', 'MobileSync');
 		$Server->addChild('Url', $server_url);
 		$Server->addChild('Name', $server_url);
-		
+
 	} else {
 		$legacy_dn = $xml_request->Request->LegacyDN;
 		if ($legacy_dn) {
@@ -152,7 +152,7 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 				die("cannot find email address information");
 			}
 		}
-		
+
 		$Autodiscover = new SimpleXMLElement('<?xml version="1.0" encoding="utf-8"?><Autodiscover></Autodiscover>');
 		$Autodiscover->addAttribute('xmlns', RESPONSE_XMLNS);
 		$Response = $Autodiscover->addChild('Response');
@@ -221,6 +221,16 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 			$Protocol->addChild('AuthPackage', 'basic');
 			$Protocol->addChild('ServerExclusiveConnect', 'on');
 		}
+
+		$altMailboxes = get_secondary_store_hints($email_address);
+		foreach ($altMailboxes as $altMailbox) {
+			$AlternativeMailbox = $Account->addChild('AlternativeMailbox');
+			$AlternativeMailbox->addChild('Type', 'Delegate');
+			$AlternativeMailbox->addChild('DisplayName', $altMailbox['DisplayName']);
+			$AlternativeMailbox->addChild('SmtpAddress', $altMailbox['SmtpAddress']);
+			$AlternativeMailbox->addChild('OwnerSmtpAddress', $altMailbox['SmtpAddress']);
+		}
+
 		$publicfolder = $Account->addChild('PublicFolderInformation');
 		$publicfolder->addChild('SmtpAddress', 'public.folder.root' . substr($email_address, strpos($email_address, "@")));
 	}
