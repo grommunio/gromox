@@ -247,6 +247,17 @@ static const char tbl_orgs_0[] =
 "  PRIMARY KEY (`id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
+/*
+ * A table to facilitate faster lookup for Autodiscover. When an OXDISCO
+ * request is made for primary@example.com, we want to know all the extra
+ * (secondary) stores for which primary@ has (exact: _may_ have) permission.
+ *
+ * In other words, secondary_store_hints is the *reverse* of sqlite3 permission
+ * tables.
+ *
+ * All secondary stores so found still need to be tested for actual permissions
+ * before OXDISCO is allowed to return them.
+ */
 static const char tbl_scndstore_91[] =
 "CREATE TABLE `secondary_store_hints` ("
 "  `primary` int(10) unsigned NOT NULL,"
