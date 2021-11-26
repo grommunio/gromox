@@ -458,17 +458,17 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
 			if (!ret)
 				return false;
 		} else {
-			if (idx >= 0) {
+			if (idx != pcolumns->npos) {
 				auto ret = hiertbl_q0(ptable, temp_set);
 				if (!ret)
 					return false;
 			}
-			if (idx1 >= 0) {
+			if (idx1 != pcolumns->npos) {
 				auto ret = hiertbl_q1(ptable, pinfo, temp_set);
 				if (!ret)
 					return false;
 			}
-			if (idx2 >= 0) {
+			if (idx2 != pcolumns->npos) {
 				auto ret = hiertbl_q2(ptable, pinfo, temp_set);
 				if (!ret)
 					return false;
