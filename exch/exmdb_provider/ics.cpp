@@ -168,16 +168,16 @@ static void ics_enum_content_idset(
 	mid_val = rop_util_get_gc_value(message_id);
 	sqlite3_reset(pparam->pstmt);
 	sqlite3_bind_int64(pparam->pstmt, 1, mid_val);
-	if (SQLITE_ROW != sqlite3_step(pparam->pstmt)) {
-		sqlite3_reset(pparam->pstmt1);
-		sqlite3_bind_int64(pparam->pstmt1, 1, mid_val);
-		if (SQLITE_ROW == sqlite3_step(pparam->pstmt1)) {
-			if (!eid_array_append(pparam->pnolonger_mids, message_id))
-				pparam->b_result = FALSE;	
-		} else {
-			if (!eid_array_append(pparam->pdeleted_eids, message_id))
-				pparam->b_result = FALSE;
-		}
+	if (sqlite3_step(pparam->pstmt) == SQLITE_ROW)
+		return;
+	sqlite3_reset(pparam->pstmt1);
+	sqlite3_bind_int64(pparam->pstmt1, 1, mid_val);
+	if (SQLITE_ROW == sqlite3_step(pparam->pstmt1)) {
+		if (!eid_array_append(pparam->pnolonger_mids, message_id))
+			pparam->b_result = FALSE;
+	} else {
+		if (!eid_array_append(pparam->pdeleted_eids, message_id))
+			pparam->b_result = FALSE;
 	}
 }
 
@@ -636,10 +636,10 @@ static void ics_enum_hierarchy_idset(
 	}
 	sqlite3_reset(pparam->pstmt);
 	sqlite3_bind_int64(pparam->pstmt, 1, fid_val);
-	if (SQLITE_ROW != sqlite3_step(pparam->pstmt)) {
-		if (!eid_array_append(pparam->pdeleted_eids, folder_id))
-			pparam->b_result = FALSE;
-	}
+	if (sqlite3_step(pparam->pstmt) == SQLITE_ROW)
+		return;
+	if (!eid_array_append(pparam->pdeleted_eids, folder_id))
+		pparam->b_result = FALSE;
 }
 
 static void ics_enum_hierarchy_replist(
