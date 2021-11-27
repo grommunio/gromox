@@ -18,8 +18,7 @@ using namespace gromox;
 namespace {
 
 struct ENUM_PARAM {
-	sqlite3_stmt *pstmt;
-	sqlite3_stmt *pstmt1;
+	xstmt stm_exist, stm_msg;
 	EID_ARRAY *pdeleted_eids;
 	EID_ARRAY *pnolonger_mids;
 	BOOL b_result;
@@ -166,13 +165,13 @@ static void ics_enum_content_idset(
 		return;
 	}
 	mid_val = rop_util_get_gc_value(message_id);
-	sqlite3_reset(pparam->pstmt);
-	sqlite3_bind_int64(pparam->pstmt, 1, mid_val);
-	if (sqlite3_step(pparam->pstmt) == SQLITE_ROW)
+	sqlite3_reset(pparam->stm_exist);
+	sqlite3_bind_int64(pparam->stm_exist, 1, mid_val);
+	if (sqlite3_step(pparam->stm_exist) == SQLITE_ROW)
 		return;
-	sqlite3_reset(pparam->pstmt1);
-	sqlite3_bind_int64(pparam->pstmt1, 1, mid_val);
-	if (SQLITE_ROW == sqlite3_step(pparam->pstmt1)) {
+	sqlite3_reset(pparam->stm_msg);
+	sqlite3_bind_int64(pparam->stm_msg, 1, mid_val);
+	if (SQLITE_ROW == sqlite3_step(pparam->stm_msg)) {
 		if (!eid_array_append(pparam->pnolonger_mids, message_id))
 			pparam->b_result = FALSE;
 	} else {
@@ -482,20 +481,16 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 
 	/* Query section 3 */
 	{
-	auto pstmt = gx_sql_prep(psqlite,
-	             "SELECT message_id FROM existence WHERE message_id=?");
-	if (pstmt == nullptr) {
-		return FALSE;
-	}
-	auto pstmt1 = gx_sql_prep(pdb->psqlite,
-	              "SELECT message_id FROM messages WHERE message_id=?");
-	if (pstmt1 == nullptr) {
-		return FALSE;
-	}
 	ENUM_PARAM enum_param;
+	enum_param.stm_exist = gx_sql_prep(psqlite,
+	                       "SELECT message_id FROM existence WHERE message_id=?");
+	if (enum_param.stm_exist == nullptr)
+		return FALSE;
+	enum_param.stm_msg = gx_sql_prep(pdb->psqlite,
+	                     "SELECT message_id FROM messages WHERE message_id=?");
+	if (enum_param.stm_msg == nullptr)
+		return FALSE;
 	enum_param.b_result = TRUE;
-	enum_param.pstmt = pstmt;
-	enum_param.pstmt1 = pstmt1;
 	enum_param.pdeleted_eids = eid_array_init();
 	if (NULL == enum_param.pdeleted_eids) {
 		return FALSE;
@@ -511,8 +506,8 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		eid_array_free(enum_param.pnolonger_mids);
 		return FALSE;	
 	}
-	pstmt.finalize();
-	pstmt1.finalize();
+	enum_param.stm_exist.finalize();
+	enum_param.stm_msg.finalize();
 	pdeleted_mids->count = enum_param.pdeleted_eids->count;
 	if (0 != enum_param.pdeleted_eids->count) {
 		pdeleted_mids->pids = cu_alloc<uint64_t>(pdeleted_mids->count);
@@ -634,9 +629,9 @@ static void ics_enum_hierarchy_idset(
 	if (1 != replid) {
 		fid_val |= ((uint64_t)replid) << 48;
 	}
-	sqlite3_reset(pparam->pstmt);
-	sqlite3_bind_int64(pparam->pstmt, 1, fid_val);
-	if (sqlite3_step(pparam->pstmt) == SQLITE_ROW)
+	sqlite3_reset(pparam->stm_exist);
+	sqlite3_bind_int64(pparam->stm_exist, 1, fid_val);
+	if (sqlite3_step(pparam->stm_exist) == SQLITE_ROW)
 		return;
 	if (!eid_array_append(pparam->pdeleted_eids, folder_id))
 		pparam->b_result = FALSE;
@@ -887,14 +882,12 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	replids.count = 0;
 	idset_enum_replist((IDSET*)pgiven, &replids,
 		(REPLIST_ENUM)ics_enum_hierarchy_replist);
-	auto pstmt = gx_sql_prep(psqlite, "SELECT folder_id"
-	        " FROM existence WHERE folder_id=?");
-	if (pstmt == nullptr) {
-		return FALSE;
-	}
 	ENUM_PARAM enum_param;
+	enum_param.stm_exist = gx_sql_prep(psqlite, "SELECT folder_id"
+	                       " FROM existence WHERE folder_id=?");
+	if (enum_param.stm_exist == nullptr)
+		return FALSE;
 	enum_param.b_result = TRUE;
-	enum_param.pstmt = pstmt;
 	enum_param.pdeleted_eids = eid_array_init();
 	if (NULL == enum_param.pdeleted_eids) {
 		return FALSE;
