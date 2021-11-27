@@ -434,7 +434,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", nullptr, nullptr, nullptr);
 	}
 	clean_transact.release();
-	}
+	} /* section 1 */
 
 	/* Query section 2a */
 	{
@@ -721,20 +721,13 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	const IDSET *pseen, FOLDER_CHANGES *pfldchgs, uint64_t *plast_cn,
 	EID_ARRAY *pgiven_fids, EID_ARRAY *pdeleted_fids)
 {
-	int count;
 	sqlite3 *psqlite;
-	uint64_t fid_val;
-	uint64_t fid_val1;
-	REPLID_ARRAY replids;
-	ENUM_PARAM enum_param;
-	PROPTAG_ARRAY proptags;
-	uint32_t tmp_proptags[0x8000];
 	
+	/* Setup of scratch space db */
 	if (SQLITE_OK != sqlite3_open_v2(":memory:", &psqlite,
 		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
 		return FALSE;
 	}
-	{
 	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	if (sqlite3_exec(psqlite, "CREATE TABLE existence "
 	    "(folder_id INTEGER PRIMARY KEY)",
@@ -745,10 +738,13 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	    " folder_id INTEGER UNIQUE NOT NULL)",
 	    nullptr, nullptr, nullptr) != SQLITE_OK)
 		return FALSE;
-	fid_val = rop_util_get_gc_value(folder_id);
+	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
+
+	/* Query section 1 */
+	{
 	auto pstmt = gx_sql_prep(pdb->psqlite, exmdb_server_check_private() ?
 	             "SELECT folder_id, change_number FROM folders WHERE parent_id=?" :
 	             "SELECT folder_id, change_number FROM folders WHERE parent_id=? AND is_deleted=0");
@@ -780,7 +776,11 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	}
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	clean_transact.release();
-	pstmt = gx_sql_prep(psqlite, "SELECT count(*) FROM changes");
+	} /* section 1 */
+
+	/* Query section 2 */
+	{
+	auto pstmt = gx_sql_prep(psqlite, "SELECT count(*) FROM changes");
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
 	pfldchgs->count = sqlite3_column_int64(pstmt, 0);
@@ -794,11 +794,15 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	} else {
 		pfldchgs->pfldchgs = NULL;
 	}
+	} /* section 2 */
+
+	/* Query section 3 */
+	{
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	auto clean_transact2 = make_scope_exit([&]() {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 	});
-	pstmt = gx_sql_prep(psqlite, "SELECT folder_id FROM changes ORDER BY idx ASC");
+	auto pstmt = gx_sql_prep(psqlite, "SELECT folder_id FROM changes ORDER BY idx ASC");
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -806,13 +810,16 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			return FALSE;
 		}
-		fid_val1 = sqlite3_column_int64(pstmt, 0);
+		auto fid_val1 = sqlite3_column_int64(pstmt, 0);
+		PROPTAG_ARRAY proptags;
 		if (FALSE == common_util_get_proptags(
 			FOLDER_PROPERTIES_TABLE, fid_val1,
 			pdb->psqlite, &proptags)) {
 			return FALSE;
 		}
-		count = 0;
+
+		uint32_t tmp_proptags[0x8000];
+		size_t count = 0;
 		for (size_t j = 0; j < proptags.count; ++j) {
 			if (PROP_TAG_HASRULES == proptags.pproptag[j] ||
 				PROP_TAG_CHANGENUMBER == proptags.pproptag[j] ||
@@ -836,27 +843,32 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	pstmt.finalize();
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	clean_transact2.release();
+	} /* section 3 */
+
 	pdb.reset();
-	pstmt = gx_sql_prep(psqlite, "SELECT count(*) FROM existence");
+
+	/* Query section 4 */
+	{
+	auto pstmt = gx_sql_prep(psqlite, "SELECT count(*) FROM existence");
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
-	count = sqlite3_column_int64(pstmt, 0);
+	ssize_t count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	pgiven_fids->count = 0;
-	if (0 == count) {
+	if (count <= 0) {
 		pgiven_fids->pids = NULL;
 	} else {
 		pgiven_fids->pids = cu_alloc<uint64_t>(count);
 		if (NULL == pgiven_fids->pids) {
 			return FALSE;
 		}
-		pstmt = gx_sql_prep(psqlite, "SELECT folder_id"
-		        " FROM existence ORDER BY folder_id DESC");
+		auto pstmt = gx_sql_prep(psqlite, "SELECT folder_id"
+		             " FROM existence ORDER BY folder_id DESC");
 		if (pstmt == nullptr) {
 			return FALSE;
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
-			fid_val = sqlite3_column_int64(pstmt, 0);
+			uint64_t fid_val = sqlite3_column_int64(pstmt, 0);
 			if (0 == (fid_val & 0xFF00000000000000ULL)) {
 				pgiven_fids->pids[pgiven_fids->count++] =
 						rop_util_make_eid_ex(1, fid_val);
@@ -866,16 +878,21 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 					fid_val & 0x00FFFFFFFFFFFFFFULL);
 			}
 		}
-		pstmt.finalize();
 	}
+	} /* section 4 */
+
+	/* Query section 5 */
+	{
+	REPLID_ARRAY replids;
 	replids.count = 0;
 	idset_enum_replist((IDSET*)pgiven, &replids,
 		(REPLIST_ENUM)ics_enum_hierarchy_replist);
-	pstmt = gx_sql_prep(psqlite, "SELECT folder_id"
+	auto pstmt = gx_sql_prep(psqlite, "SELECT folder_id"
 	        " FROM existence WHERE folder_id=?");
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
+	ENUM_PARAM enum_param;
 	enum_param.b_result = TRUE;
 	enum_param.pstmt = pstmt;
 	enum_param.pdeleted_eids = eid_array_init();
@@ -890,7 +907,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 			return FALSE;	
 		}
 	}
-	}
+
 	pdeleted_fids->count = enum_param.pdeleted_eids->count;
 	pdeleted_fids->pids = cu_alloc<uint64_t>(pdeleted_fids->count);
 	if (NULL == pdeleted_fids->pids) {
@@ -902,5 +919,6 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		enum_param.pdeleted_eids->pids,
 		sizeof(uint64_t)*pdeleted_fids->count);
 	eid_array_free(enum_param.pdeleted_eids);
+	} /* section 5 */
 	return TRUE;
 }
