@@ -193,24 +193,15 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	EID_ARRAY *pnolonger_mids, EID_ARRAY *pread_mids,
 	EID_ARRAY *punread_mids, uint64_t *plast_readcn)
 {
-	int i;
-	int count;
-	int read_state;
-	uint64_t dtime = 0, mtime = 0;
-	uint64_t read_cn;
 	sqlite3 *psqlite;
-	uint64_t fid_val;
-	uint64_t mid_val;
-	uint64_t change_num;
-	char sql_string[256];
-	ENUM_PARAM enum_param;
-	uint64_t message_size;
 	
 	*pfai_count = 0;
 	*pfai_total = 0;
 	*pnormal_count = 0;
 	*pnormal_total = 0;
 	auto b_private = exmdb_server_check_private();
+
+	/* Setup of scratch space db */
 	if (SQLITE_OK != sqlite3_open_v2(":memory:", &psqlite,
 		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
 		return FALSE;
@@ -247,10 +238,13 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	if (FALSE == ics_init_idset_cache(pgiven, &cache)) {
 		return FALSE;
 	}
-	fid_val = rop_util_get_gc_value(folder_id);
+	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
+
+	/* Query section 1 */
+	{
 	sqlite3_exec(psqlite, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
 	if (NULL != prestriction) {
 		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
@@ -260,6 +254,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		if (prestriction != nullptr)
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 	});
+	char sql_string[256];
 	if (TRUE == b_private) {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
 			" change_number, is_associated, message_size,"
@@ -314,10 +309,10 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	*plast_cn = 0;
 	*plast_readcn = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		mid_val = sqlite3_column_int64(pstmt, 0);
-		change_num = sqlite3_column_int64(pstmt, 1);
+		uint64_t mid_val = sqlite3_column_int64(pstmt, 0);
+		uint64_t change_num = sqlite3_column_int64(pstmt, 1);
 		BOOL b_fai = sqlite3_column_int64(pstmt, 2) == 0 ? false : TRUE;
-		message_size = sqlite3_column_int64(pstmt, 3);
+		uint64_t message_size = sqlite3_column_int64(pstmt, 3);
 		if (NULL == pseen && NULL == pseen_fai) {
 			continue;
 		} else if (NULL != pseen && NULL == pseen_fai) {
@@ -342,6 +337,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		if (change_num > *plast_cn) {
 			*plast_cn = change_num;
 		}
+		uint64_t read_cn;
 		if (TRUE == b_private) {
 			read_cn = sqlite3_column_type(pstmt, 5) == SQLITE_NULL ? 0 :
 			          sqlite3_column_int64(pstmt, 5);
@@ -373,6 +369,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 					rop_util_make_eid_ex(1, read_cn))) {
 					continue;	
 				}
+				int read_state;
 				if (TRUE == b_private) {
 					read_state = sqlite3_column_int64(pstmt, 4);
 				} else {
@@ -391,6 +388,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 				continue;
 			}
 		}
+		uint64_t dtime = 0, mtime = 0;
 		if (TRUE == b_ordered) {
 			sqlite3_reset(pstmt6);
 			sqlite3_bind_int64(pstmt6, 1, PROP_TAG_MESSAGEDELIVERYTIME);
@@ -436,14 +434,20 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", nullptr, nullptr, nullptr);
 	}
 	clean_transact.release();
-	pstmt = gx_sql_prep(psqlite, "SELECT count(*) FROM changes");
+	}
+
+	/* Query section 2a */
+	{
+	ssize_t count;
+	{
+	auto pstmt = gx_sql_prep(psqlite, "SELECT count(*) FROM changes");
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
 	count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	pchg_mids->count = 0;
 	pupdated_mids->count = 0;
-	if (0 != count) {
+	if (count > 0) {
 		pupdated_mids->pids = cu_alloc<uint64_t>(count);
 		pchg_mids->pids = cu_alloc<uint64_t>(count);
 		if (NULL == pupdated_mids->pids || NULL == pchg_mids->pids) {
@@ -453,31 +457,42 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		pupdated_mids->pids = NULL;
 		pchg_mids->pids = NULL;
 	}
-	pstmt = gx_sql_prep(psqlite, b_ordered ?
+	} /* section 2a */
+
+	/* Query section 2b */
+	{
+	auto pstmt = gx_sql_prep(psqlite, b_ordered ?
 	        "SELECT message_id FROM changes ORDER BY delivery_time DESC, mod_time DESC" :
 	        "SELECT message_id FROM changes");
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	for (i=0; i<count; i++) {
+	for (ssize_t i = 0; i < count; ++i) {
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			return FALSE;
 		}
-		mid_val = sqlite3_column_int64(pstmt, 0);
+		uint64_t mid_val = sqlite3_column_int64(pstmt, 0);
 		pchg_mids->pids[pchg_mids->count++] = rop_util_make_eid_ex(1, mid_val);
 		if (TRUE == ics_hint_idset_cache(&cache, mid_val)) {
 			pupdated_mids->pids[pupdated_mids->count++] = rop_util_make_eid_ex(1, mid_val);
 		}
 	}
-	pstmt.finalize();
-	pstmt = gx_sql_prep(psqlite, "SELECT message_id FROM existence WHERE message_id=?");
+	} /* section 2b */
+	}
+
+	/* Query section 3 */
+	{
+	auto pstmt = gx_sql_prep(psqlite,
+	             "SELECT message_id FROM existence WHERE message_id=?");
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT message_id FROM messages WHERE message_id=?");
+	auto pstmt1 = gx_sql_prep(pdb->psqlite,
+	              "SELECT message_id FROM messages WHERE message_id=?");
 	if (pstmt1 == nullptr) {
 		return FALSE;
 	}
+	ENUM_PARAM enum_param;
 	enum_param.b_result = TRUE;
 	enum_param.pstmt = pstmt;
 	enum_param.pstmt1 = pstmt1;
@@ -529,40 +544,48 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		pnolonger_mids->pids = NULL;
 	}
 	eid_array_free(enum_param.pnolonger_mids);
+	} /* section 3 */
+
 	pdb.reset();
-	pstmt = gx_sql_prep(psqlite, "SELECT count(*) FROM existence");
+
+	/* Query section 4 */
+	{
+	auto pstmt = gx_sql_prep(psqlite, "SELECT count(*) FROM existence");
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
-	count = sqlite3_column_int64(pstmt, 0);
+	int64_t count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	pgiven_mids->count = 0;
-	if (0 == count) {
+	if (count <= 0) {
 		pgiven_mids->pids = NULL;
 	} else {
 		pgiven_mids->pids = cu_alloc<uint64_t>(count);
 		if (NULL == pgiven_mids->pids) {
 			return FALSE;
 		}
-		pstmt = gx_sql_prep(psqlite, "SELECT message_id"
-		        " FROM existence ORDER BY message_id DESC");
+		auto pstmt = gx_sql_prep(psqlite, "SELECT message_id"
+		             " FROM existence ORDER BY message_id DESC");
 		if (pstmt == nullptr) {
 			return FALSE;
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
-			mid_val = sqlite3_column_int64(pstmt, 0);
+			uint64_t mid_val = sqlite3_column_int64(pstmt, 0);
 			pgiven_mids->pids[pgiven_mids->count++] = rop_util_make_eid_ex(1, mid_val);
 		}
-		pstmt.finalize();
 	}
+	} /* section 4 */
+
+	/* Query section 5 */
+	{
 	if (NULL != pread) {
-		pstmt = gx_sql_prep(psqlite, "SELECT count(*) FROM reads");
+		auto pstmt = gx_sql_prep(psqlite, "SELECT count(*) FROM reads");
 		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 			return FALSE;
-		count = sqlite3_column_int64(pstmt, 0);
+		ssize_t count = sqlite3_column_int64(pstmt, 0);
 		pstmt.finalize();
 		pread_mids->count = 0;
 		punread_mids->count = 0;
-		if (0 == count) {
+		if (count <= 0) {
 			pread_mids->pids = NULL;
 			punread_mids->pids = NULL;
 		} else {
@@ -580,20 +603,20 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			return FALSE;
 		}
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
-			mid_val = sqlite3_column_int64(pstmt, 0);
+			uint64_t mid_val = sqlite3_column_int64(pstmt, 0);
 			if (0 == sqlite3_column_int64(pstmt, 1)) {
 				punread_mids->pids[punread_mids->count++] = rop_util_make_eid_ex(1, mid_val);
 			} else {
 				pread_mids->pids[pread_mids->count++] = rop_util_make_eid_ex(1, mid_val);
 			}
 		}
-		pstmt.finalize();
 	} else {
 		pread_mids->count = 0;
 		pread_mids->pids = NULL;
 		punread_mids->count = 0;
 		punread_mids->pids = NULL;
 	}
+	} /* section 5 */
 	return TRUE;
 }
 
