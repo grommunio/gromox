@@ -70,7 +70,6 @@ IDSET_CACHE::~IDSET_CACHE()
 static BOOL ics_init_idset_cache(const IDSET *pset, IDSET_CACHE *pcache)
 {
 	uint64_t ival;
-	char sql_string[128];
 	DOUBLE_LIST_NODE *pnode;
 	REPLID_NODE *prepl_node;
 	RANGE_NODE *prange_node;
@@ -81,12 +80,9 @@ static BOOL ics_init_idset_cache(const IDSET *pset, IDSET_CACHE *pcache)
 		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
 		return FALSE;
 	}
-	snprintf(sql_string, arsizeof(sql_string), "CREATE TABLE id_vals"
-			" (id_val INTEGER PRIMARY KEY)");
-	if (SQLITE_OK != sqlite3_exec(pcache->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (sqlite3_exec(pcache->psqlite, "CREATE TABLE id_vals "
+	    "(id_val INTEGER PRIMARY KEY)", nullptr, nullptr, nullptr) != SQLITE_OK)
 		return FALSE;
-	}
 	pcache->pstmt = NULL;
 	prange_list = NULL;
 	for (pnode=double_list_get_head(
@@ -102,8 +98,7 @@ static BOOL ics_init_idset_cache(const IDSET *pset, IDSET_CACHE *pcache)
 	if (NULL == prange_list) {
 		return TRUE;
 	}
-	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO id_vals VALUES (?)");
-	auto pstmt = gx_sql_prep(pcache->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pcache->psqlite, "INSERT INTO id_vals VALUES (?)");
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -138,14 +133,11 @@ static BOOL ics_init_idset_cache(const IDSET *pset, IDSET_CACHE *pcache)
 
 static BOOL ics_hint_idset_cache(IDSET_CACHE *pcache, uint64_t id_val)
 {
-	char sql_string[128];
 	RANGE_NODE *prange_node;
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (NULL == pcache->pstmt) {
-		snprintf(sql_string, arsizeof(sql_string), "SELECT "
-			"id_val FROM id_vals WHERE id_val=?");
-		pcache->pstmt = gx_sql_prep(pcache->psqlite, sql_string);
+		pcache->pstmt = gx_sql_prep(pcache->psqlite, "SELECT id_val FROM id_vals WHERE id_val=?");
 		if (pcache->pstmt == nullptr)
 			return FALSE;
 	}
@@ -224,48 +216,32 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		return FALSE;
 	}
 	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
-	snprintf(sql_string, arsizeof(sql_string), "CREATE TABLE existence"
-			" (message_id INTEGER PRIMARY KEY)");
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (sqlite3_exec(psqlite, "CREATE TABLE existence "
+	    "(message_id INTEGER PRIMARY KEY)", nullptr, nullptr, nullptr) != SQLITE_OK)
 		return FALSE;
-	}
 	if (NULL != pread) {
-		snprintf(sql_string, arsizeof(sql_string), "CREATE TABLE reads"
-			" (message_id INTEGER PRIMARY KEY, "
-			"read_state INTEGER)");
-		if (SQLITE_OK != sqlite3_exec(psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (sqlite3_exec(psqlite, "CREATE TABLE reads "
+		    "(message_id INTEGER PRIMARY KEY, read_state INTEGER)",
+		    nullptr, nullptr, nullptr) != SQLITE_OK)
 			return FALSE;
-		}
 	}
 	if (TRUE == b_ordered) {
-		snprintf(sql_string, arsizeof(sql_string), "CREATE TABLE changes"
-			" (message_id INTEGER PRIMARY KEY, "
-			"delivery_time INTEGER, mod_time INTEGER)");
-		if (SQLITE_OK != sqlite3_exec(psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (sqlite3_exec(psqlite, "CREATE TABLE changes"
+		    " (message_id INTEGER PRIMARY KEY, "
+		    "delivery_time INTEGER, mod_time INTEGER)",
+		    nullptr, nullptr, nullptr) != SQLITE_OK)
 			return FALSE;
-		}
-		snprintf(sql_string, arsizeof(sql_string), "CREATE INDEX idx_dtime"
-					" ON changes (delivery_time)");
-		if (SQLITE_OK != sqlite3_exec(psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (sqlite3_exec(psqlite, "CREATE INDEX idx_dtime ON changes (delivery_time)",
+		    nullptr, nullptr, nullptr) != SQLITE_OK)
 			return FALSE;
-		}
-		snprintf(sql_string, arsizeof(sql_string), "CREATE INDEX idx_mtime"
-						" ON changes (mod_time)");
-		if (SQLITE_OK != sqlite3_exec(psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (sqlite3_exec(psqlite, "CREATE INDEX idx_mtime ON changes (mod_time)",
+		    nullptr, nullptr, nullptr) != SQLITE_OK)
 			return FALSE;
-		}
 	} else {
-		snprintf(sql_string, arsizeof(sql_string), "CREATE TABLE changes "
-				"(message_id INTEGER PRIMARY KEY)");
-		if (SQLITE_OK != sqlite3_exec(psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (sqlite3_exec(psqlite, "CREATE TABLE changes "
+		    "(message_id INTEGER PRIMARY KEY)",
+		    nullptr, nullptr, nullptr) != SQLITE_OK)
 			return FALSE;
-		}
 	}
 	IDSET_CACHE cache;
 	if (FALSE == ics_init_idset_cache(pgiven, &cache)) {
@@ -275,9 +251,9 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	sqlite3_exec(psqlite, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
 	if (NULL != prestriction) {
-		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
 	}
 	auto clean_transact = make_scope_exit([&]() {
 		sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
@@ -299,46 +275,38 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	if (pstmt == nullptr) {
 		return false;
 	}
-	if (TRUE == b_ordered) {
-		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO changes VALUES (?, ?, ?)");
-	} else {
-		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO changes VALUES (?)");
-	}
-	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
+	auto pstmt1 = gx_sql_prep(psqlite, b_ordered ?
+	              "INSERT INTO changes VALUES (?, ?, ?)" :
+	              "INSERT INTO changes VALUES (?)");
 	if (pstmt1 == nullptr) {
 		return false;
 	}
-	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO existence VALUES (?)");
-	auto pstmt2 = gx_sql_prep(psqlite, sql_string);
+	auto pstmt2 = gx_sql_prep(psqlite, "INSERT INTO existence VALUES (?)");
 	if (pstmt2 == nullptr) {
 		return false;
 	}
 	xstmt pstmt3, pstmt4, pstmt5, pstmt6;
 	if (NULL != pread) {
 		if (FALSE == b_private) {
-			snprintf(sql_string, arsizeof(sql_string), "SELECT read_cn FROM "
-					"read_cns WHERE message_id=? AND username=?");
-			pstmt4 = gx_sql_prep(pdb->psqlite, sql_string);
+			pstmt4 = gx_sql_prep(pdb->psqlite, "SELECT read_cn FROM "
+			         "read_cns WHERE message_id=? AND username=?");
 			if (pstmt4 == nullptr) {
 				return false;
 			}
-			snprintf(sql_string, arsizeof(sql_string), "SELECT message_id FROM "
-					"read_states WHERE message_id=? AND username=?");
-			pstmt5 = gx_sql_prep(pdb->psqlite, sql_string);
+			pstmt5 = gx_sql_prep(pdb->psqlite, "SELECT message_id FROM "
+			         "read_states WHERE message_id=? AND username=?");
 			if (pstmt5 == nullptr) {
 				return false;
 			}
 		}
-		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO reads VALUES (?, ?)");
-		pstmt3 = gx_sql_prep(psqlite, sql_string);
+		pstmt3 = gx_sql_prep(psqlite, "INSERT INTO reads VALUES (?, ?)");
 		if (pstmt3 == nullptr) {
 			return false;
 		}
 	}
 	if (TRUE == b_ordered) {
-		snprintf(sql_string, arsizeof(sql_string), "SELECT propval FROM "
-			"message_properties WHERE proptag=? AND message_id=?");
-		pstmt6 = gx_sql_prep(pdb->psqlite, sql_string);
+		pstmt6 = gx_sql_prep(pdb->psqlite, "SELECT propval FROM "
+		         "message_properties WHERE proptag=? AND message_id=?");
 		if (pstmt6 == nullptr) {
 			return false;
 		}
@@ -463,13 +431,12 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	if (0 != *plast_readcn) {
 		*plast_readcn = rop_util_make_eid_ex(1, *plast_readcn);
 	}
-	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	sqlite3_exec(psqlite, "COMMIT TRANSACTION", nullptr, nullptr, nullptr);
 	if (NULL != prestriction) {
-		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", nullptr, nullptr, nullptr);
 	}
 	clean_transact.release();
-	snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM changes");
-	pstmt = gx_sql_prep(psqlite, sql_string);
+	pstmt = gx_sql_prep(psqlite, "SELECT count(*) FROM changes");
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
 	count = sqlite3_column_int64(pstmt, 0);
@@ -486,13 +453,9 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		pupdated_mids->pids = NULL;
 		pchg_mids->pids = NULL;
 	}
-	if (TRUE == b_ordered) {
-		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id FROM "
-			"changes ORDER BY delivery_time DESC, mod_time DESC");
-	} else {
-		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id FROM changes");
-	}
-	pstmt = gx_sql_prep(psqlite, sql_string);
+	pstmt = gx_sql_prep(psqlite, b_ordered ?
+	        "SELECT message_id FROM changes ORDER BY delivery_time DESC, mod_time DESC" :
+	        "SELECT message_id FROM changes");
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -507,15 +470,11 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		}
 	}
 	pstmt.finalize();
-	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id"
-				" FROM existence WHERE message_id=?");
-	pstmt = gx_sql_prep(psqlite, sql_string);
+	pstmt = gx_sql_prep(psqlite, "SELECT message_id FROM existence WHERE message_id=?");
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id"
-				" FROM messages WHERE message_id=?");
-	pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+	pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT message_id FROM messages WHERE message_id=?");
 	if (pstmt1 == nullptr) {
 		return FALSE;
 	}
@@ -571,8 +530,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	}
 	eid_array_free(enum_param.pnolonger_mids);
 	pdb.reset();
-	snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM existence");
-	pstmt = gx_sql_prep(psqlite, sql_string);
+	pstmt = gx_sql_prep(psqlite, "SELECT count(*) FROM existence");
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
 	count = sqlite3_column_int64(pstmt, 0);
@@ -585,9 +543,8 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		if (NULL == pgiven_mids->pids) {
 			return FALSE;
 		}
-		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id"
-			" FROM existence ORDER BY message_id DESC");
-		pstmt = gx_sql_prep(psqlite, sql_string);
+		pstmt = gx_sql_prep(psqlite, "SELECT message_id"
+		        " FROM existence ORDER BY message_id DESC");
 		if (pstmt == nullptr) {
 			return FALSE;
 		}
@@ -598,8 +555,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		pstmt.finalize();
 	}
 	if (NULL != pread) {
-		snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM reads");
-		pstmt = gx_sql_prep(psqlite, sql_string);
+		pstmt = gx_sql_prep(psqlite, "SELECT count(*) FROM reads");
 		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 			return FALSE;
 		count = sqlite3_column_int64(pstmt, 0);
@@ -619,9 +575,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 				return FALSE;
 			}
 		}
-		snprintf(sql_string, arsizeof(sql_string), "SELECT "
-			"message_id, read_state FROM reads");
-		pstmt = gx_sql_prep(psqlite, sql_string);
+		pstmt = gx_sql_prep(psqlite, "SELECT message_id, read_state FROM reads");
 		if (pstmt == nullptr) {
 			return FALSE;
 		}
@@ -748,7 +702,6 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	sqlite3 *psqlite;
 	uint64_t fid_val;
 	uint64_t fid_val1;
-	char sql_string[256];
 	REPLID_ARRAY replids;
 	ENUM_PARAM enum_param;
 	PROPTAG_ARRAY proptags;
@@ -760,32 +713,22 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	}
 	{
 	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
-	snprintf(sql_string, arsizeof(sql_string), "CREATE TABLE existence "
-				"(folder_id INTEGER PRIMARY KEY)");
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (sqlite3_exec(psqlite, "CREATE TABLE existence "
+	    "(folder_id INTEGER PRIMARY KEY)",
+	    nullptr, nullptr, nullptr) != SQLITE_OK)
 		return FALSE;
-	}
-	snprintf(sql_string, arsizeof(sql_string), "CREATE TABLE changes "
-		"(idx INTEGER PRIMARY KEY AUTOINCREMENT,"
-		" folder_id INTEGER UNIQUE NOT NULL)");
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (sqlite3_exec(psqlite, "CREATE TABLE changes "
+	    "(idx INTEGER PRIMARY KEY AUTOINCREMENT,"
+	    " folder_id INTEGER UNIQUE NOT NULL)",
+	    nullptr, nullptr, nullptr) != SQLITE_OK)
 		return FALSE;
-	}
 	fid_val = rop_util_get_gc_value(folder_id);
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (TRUE == exmdb_server_check_private()) {
-		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id, "
-			"change_number FROM folders WHERE parent_id=?");
-	} else {
-		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id, "
-			"change_number FROM folders WHERE parent_id=?"
-			" AND is_deleted=0");
-	}
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, exmdb_server_check_private() ?
+	             "SELECT folder_id, change_number FROM folders WHERE parent_id=?" :
+	             "SELECT folder_id, change_number FROM folders WHERE parent_id=? AND is_deleted=0");
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -793,14 +736,11 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	auto clean_transact = make_scope_exit([&]() {
 		sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 	});
-	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO"
-			" changes (folder_id) VALUES (?)");
-	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
+	auto pstmt1 = gx_sql_prep(psqlite, "INSERT INTO changes (folder_id) VALUES (?)");
 	if (pstmt1 == nullptr) {
 		return FALSE;
 	}
-	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO existence VALUES (?)");
-	auto pstmt2 = gx_sql_prep(psqlite, sql_string);
+	auto pstmt2 = gx_sql_prep(psqlite, "INSERT INTO existence VALUES (?)");
 	if (pstmt2 == nullptr) {
 		return FALSE;
 	}
@@ -817,8 +757,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	}
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	clean_transact.release();
-	snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM changes");
-	pstmt = gx_sql_prep(psqlite, sql_string);
+	pstmt = gx_sql_prep(psqlite, "SELECT count(*) FROM changes");
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
 	pfldchgs->count = sqlite3_column_int64(pstmt, 0);
@@ -836,9 +775,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	auto clean_transact2 = make_scope_exit([&]() {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 	});
-	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id"
-					" FROM changes ORDER BY idx ASC");
-	pstmt = gx_sql_prep(psqlite, sql_string);
+	pstmt = gx_sql_prep(psqlite, "SELECT folder_id FROM changes ORDER BY idx ASC");
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -877,8 +814,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	clean_transact2.release();
 	pdb.reset();
-	snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM existence");
-	pstmt = gx_sql_prep(psqlite, sql_string);
+	pstmt = gx_sql_prep(psqlite, "SELECT count(*) FROM existence");
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
 	count = sqlite3_column_int64(pstmt, 0);
@@ -891,9 +827,8 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		if (NULL == pgiven_fids->pids) {
 			return FALSE;
 		}
-		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id"
-			" FROM existence ORDER BY folder_id DESC");
-		pstmt = gx_sql_prep(psqlite, sql_string);
+		pstmt = gx_sql_prep(psqlite, "SELECT folder_id"
+		        " FROM existence ORDER BY folder_id DESC");
 		if (pstmt == nullptr) {
 			return FALSE;
 		}
@@ -913,9 +848,8 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	replids.count = 0;
 	idset_enum_replist((IDSET*)pgiven, &replids,
 		(REPLIST_ENUM)ics_enum_hierarchy_replist);
-	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id"
-				" FROM existence WHERE folder_id=?");
-	pstmt = gx_sql_prep(psqlite, sql_string);
+	pstmt = gx_sql_prep(psqlite, "SELECT folder_id"
+	        " FROM existence WHERE folder_id=?");
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
