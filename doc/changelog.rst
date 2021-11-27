@@ -1,10 +1,23 @@
-1.8.87
-======
+1.9 (2021-11-27)
+================
+
+Fixes:
+
+* emsmdb: fix dangling data pointer when setting ``PR_LAST_MODIFIER_NAME``
+* emsmdb: propagate "modified" flag upwards when saving embedded messages
+* exmdb_provider: raise limit for local replica IDs
 
 Enhancements:
 
-* kdb2mt: support -s for public stores
-* Recognize ABK PropertyRestriction format for GetNames
+* kdb2mt: support ``-s`` for public stores
+* exmdb_provider: add config directive ``dbg_synthesize_content``
+* Recognize MH/ABK PropertyRestriction format for the ``nspiResolveNames`` RPC
+
+Changes:
+
+* On mail ingestion, the Content-Disposition header value is now used instead
+  of the Content-ID header presence to determine whether an attachment is
+  inline (and possibly "hidden").
 
 
 1.8 (2021-11-13)
