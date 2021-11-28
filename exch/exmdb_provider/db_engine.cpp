@@ -3776,60 +3776,56 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			pstmt.finalize();
 			b_error = FALSE;
 			for (i=0; i<ptable->psorts->count; i++) {
-				if (0 != inst_id) {
-					if (!cu_get_property(db_table::msg_props, inst_id,
-						ptable->cpid, pdb->psqlite,
-						propvals[i].proptag, &pvalue)) {
-						b_error = TRUE;
+				if (inst_id == 0)
+					continue;
+				if (!cu_get_property(db_table::msg_props, inst_id,
+					ptable->cpid, pdb->psqlite,
+					propvals[i].proptag, &pvalue)) {
+					b_error = TRUE;
+					break;
+				}
+				result = db_engine_compare_propval(
+					ptable->psorts->psort[i].type,
+					propvals[i].pvalue, pvalue);
+				if (TABLE_SORT_ASCEND ==
+					ptable->psorts->psort[i].table_sort) {
+					if (result < 0) {
+						goto REFRESH_TABLE;
+					} else if (result > 0) {
 						break;
 					}
-					result = db_engine_compare_propval(
-						ptable->psorts->psort[i].type,
-						propvals[i].pvalue, pvalue);
-					if (TABLE_SORT_ASCEND ==
-						ptable->psorts->psort[i].table_sort) {
-						if (result < 0) {
-							goto REFRESH_TABLE;
-						} else if (result > 0) {
-							break;
-						}
-					} else {
-						if (result > 0) {
-							goto REFRESH_TABLE;
-						} else if (result < 0) {
-							break;
-						}
-					}
+				} else if (result > 0) {
+					goto REFRESH_TABLE;
+				} else if (result < 0) {
+					break;
 				}
 			}
 			if (TRUE == b_error) {
 				continue;
 			}
 			for (i=0; i<ptable->psorts->count; i++) {
-				if (0 != inst_id1) {
-					if (!cu_get_property(db_table::msg_props, inst_id1,
-						ptable->cpid, pdb->psqlite,
-						propvals[i].proptag, &pvalue)) {
-						b_error = TRUE;
+				if (inst_id1 == 0)
+					continue;
+				if (!cu_get_property(db_table::msg_props, inst_id1,
+					ptable->cpid, pdb->psqlite,
+					propvals[i].proptag, &pvalue)) {
+					b_error = TRUE;
+					break;
+				}
+				result = db_engine_compare_propval(
+					ptable->psorts->psort[i].type,
+					propvals[i].pvalue, pvalue);
+				if (TABLE_SORT_ASCEND ==
+					ptable->psorts->psort[i].table_sort) {
+					if (result > 0) {
+						goto REFRESH_TABLE;
+					} else if (result < 0) {
 						break;
 					}
-					result = db_engine_compare_propval(
-						ptable->psorts->psort[i].type,
-						propvals[i].pvalue, pvalue);
-					if (TABLE_SORT_ASCEND ==
-						ptable->psorts->psort[i].table_sort) {
-						if (result > 0) {
-							goto REFRESH_TABLE;
-						} else if (result < 0) {
-							break;
-						}
-					} else {
-						if (result < 0) {
-							goto REFRESH_TABLE;
-						} else if (result > 0) {
-							break;
-						}
-					}
+				} else if (result < 0) {
+					goto REFRESH_TABLE;
+				} else if (result > 0) {
+					break;
 				}
 			}
 			if (TRUE == b_error) {
@@ -3842,12 +3838,9 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			pmodified_row->after_row_id = inst_id;
 			if (0 == pmodified_row->after_row_id) {
 				pmodified_row->after_folder_id = 0;
-			} else {
-				if (FALSE == common_util_get_message_parent_folder(
-					pdb->psqlite, pmodified_row->after_row_id,
-					&pmodified_row->after_folder_id)) {
-					continue;
-				}
+			} else if (!common_util_get_message_parent_folder(pdb->psqlite,
+			     pmodified_row->after_row_id, &pmodified_row->after_folder_id)) {
+				continue;
 			}
 			pmodified_row->after_instance = 0;
 			if (FALSE == ptable->b_search) {
@@ -3911,43 +3904,43 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 							pstmt.finalize();
 							goto REFRESH_TABLE;
 						}
-					} else {
-						if (0 == inst_num || inst_num > multi_num) {
-							pstmt.finalize();
-							goto REFRESH_TABLE;
-						}
-						switch (type) {
-						case PT_SHORT:
-							pvalue1 = &((SHORT_ARRAY*)
-								pmultival)->ps[inst_num - 1];
-							break;
-						case PT_LONG:
-							pvalue1 = &((LONG_ARRAY*)
-								pmultival)->pl[inst_num - 1];
-							break;
-						case PT_I8:
-							pvalue1 = &((LONGLONG_ARRAY*)
-								pmultival)->pll[inst_num - 1];
-							break;
-						case PT_STRING8:
-						case PT_UNICODE:
-							pvalue1 = ((STRING_ARRAY*)
-								pmultival)->ppstr[inst_num - 1];
-							break;
-						case PT_CLSID:
-							pvalue1 = &((GUID_ARRAY*)
-								pmultival)->pguid[inst_num - 1];
-							break;
-						case PT_BINARY:
-							pvalue1 = &((BINARY_ARRAY*)
-								pmultival)->pbin[inst_num - 1];
-							break;
-						}
-						if (0 != db_engine_compare_propval(
-							type, pvalue, pvalue1)) {
-							pstmt.finalize();
-							goto REFRESH_TABLE;
-						}
+						continue;
+					}
+					if (0 == inst_num || inst_num > multi_num) {
+						pstmt.finalize();
+						goto REFRESH_TABLE;
+					}
+					switch (type) {
+					case PT_SHORT:
+						pvalue1 = &((SHORT_ARRAY *)
+							pmultival)->ps[inst_num - 1];
+						break;
+					case PT_LONG:
+						pvalue1 = &((LONG_ARRAY *)
+							pmultival)->pl[inst_num - 1];
+						break;
+					case PT_I8:
+						pvalue1 = &((LONGLONG_ARRAY *)
+							pmultival)->pll[inst_num - 1];
+						break;
+					case PT_STRING8:
+					case PT_UNICODE:
+						pvalue1 = ((STRING_ARRAY *)
+							pmultival)->ppstr[inst_num - 1];
+						break;
+					case PT_CLSID:
+						pvalue1 = &((GUID_ARRAY *)
+							pmultival)->pguid[inst_num - 1];
+						break;
+					case PT_BINARY:
+						pvalue1 = &((BINARY_ARRAY *)
+							pmultival)->pbin[inst_num - 1];
+						break;
+					}
+					if (0 != db_engine_compare_propval(
+						type, pvalue, pvalue1)) {
+						pstmt.finalize();
+						goto REFRESH_TABLE;
 					}
 				}
 				pstmt.finalize();
@@ -3959,12 +3952,10 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				propvals[i].proptag = PROP_TAG(ptable->psorts->psort[i].type, ptable->psorts->psort[i].propid);
 				if (propvals[i].proptag == ptable->instance_tag) {
 					propvals[i].pvalue = NULL;
-				} else {
-					if (!cu_get_property(db_table::msg_props, message_id,
-						ptable->cpid, pdb->psqlite, propvals[i].proptag,
-						&propvals[i].pvalue)) {
-						break;
-					}
+				} else if (!cu_get_property(db_table::msg_props, message_id,
+				    ptable->cpid, pdb->psqlite, propvals[i].proptag,
+				    &propvals[i].pvalue)) {
+					break;
 				}
 			}
 			if (i < ptable->psorts->count) {
@@ -4021,7 +4012,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 					if (0 != db_engine_compare_propval(
 						ptable->psorts->psort[j].type,
 						pvalue, propvals[j].pvalue)) {
-						pstmt.finalize();	
+						pstmt.finalize();
 						pstmt1.finalize();
 						goto REFRESH_TABLE;
 					}
@@ -4046,16 +4037,14 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 					if (TABLE_SORT_MAXIMUM_CATEGORY == ptable->psorts->psort[
 						ptable->psorts->ccategories].table_sort) {
 						if (result < 0) {
-							pstmt.finalize();	
+							pstmt.finalize();
 							pstmt1.finalize();
 							goto REFRESH_TABLE;
 						}
-					} else {
-						if (result > 0) {
-							pstmt.finalize();	
-							pstmt1.finalize();
-							goto REFRESH_TABLE;
-						}
+					} else if (result > 0) {
+						pstmt.finalize();
+						pstmt1.finalize();
+						goto REFRESH_TABLE;
 					}
 				}
 				i = ptable->psorts->ccategories;
@@ -4085,34 +4074,32 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 					           sqlite3_column_int64(pstmt2, 0);
 				}
 				for (; i<ptable->psorts->count; i++) {
-					if (0 != inst_id) {
-						if (!cu_get_property(db_table::msg_props, inst_id,
-							ptable->cpid, pdb->psqlite,
-							propvals[i].proptag, &pvalue)) {
-							b_error = TRUE;
+					if (inst_id == 0)
+						continue;
+					if (!cu_get_property(db_table::msg_props, inst_id,
+						ptable->cpid, pdb->psqlite,
+						propvals[i].proptag, &pvalue)) {
+						b_error = TRUE;
+						break;
+					}
+					result = db_engine_compare_propval(
+						ptable->psorts->psort[i].type,
+						propvals[i].pvalue, pvalue);
+					if (TABLE_SORT_ASCEND ==
+						ptable->psorts->psort[i].table_sort) {
+						if (result < 0) {
+							pstmt.finalize();
+							pstmt1.finalize();
+							goto REFRESH_TABLE;
+						} else if (result > 0) {
 							break;
 						}
-						result = db_engine_compare_propval(
-							ptable->psorts->psort[i].type,
-							propvals[i].pvalue, pvalue);
-						if (TABLE_SORT_ASCEND ==
-							ptable->psorts->psort[i].table_sort) {
-							if (result < 0) {
-								pstmt.finalize();
-								pstmt1.finalize();
-								goto REFRESH_TABLE;
-							} else if (result > 0) {
-								break;
-							}
-						} else {
-							if (result > 0) {
-								pstmt.finalize();
-								pstmt1.finalize();
-								goto REFRESH_TABLE;
-							} else if (result < 0) {
-								break;
-							}
-						}
+					} else if (result > 0) {
+						pstmt.finalize();
+						pstmt1.finalize();
+						goto REFRESH_TABLE;
+					} else if (result < 0) {
+						break;
 					}
 				}
 				if (TRUE == b_error) {
@@ -4122,34 +4109,32 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				if (ptable->extremum_tag != 0)
 					++i;
 				for (; i<ptable->psorts->count; i++) {
-					if (0 != inst_id1) {
-						if (!cu_get_property(db_table::msg_props, inst_id1,
-							ptable->cpid, pdb->psqlite,
-							propvals[i].proptag, &pvalue)) {
-							b_error = TRUE;
+					if (inst_id1 == 0)
+						continue;
+					if (!cu_get_property(db_table::msg_props, inst_id1,
+						ptable->cpid, pdb->psqlite,
+						propvals[i].proptag, &pvalue)) {
+						b_error = TRUE;
+						break;
+					}
+					result = db_engine_compare_propval(
+						ptable->psorts->psort[i].type,
+						propvals[i].pvalue, pvalue);
+					if (TABLE_SORT_ASCEND ==
+						ptable->psorts->psort[i].table_sort) {
+						if (result > 0) {
+							pstmt.finalize();
+							pstmt1.finalize();
+							goto REFRESH_TABLE;
+						} else if (result < 0) {
 							break;
 						}
-						result = db_engine_compare_propval(
-							ptable->psorts->psort[i].type,
-							propvals[i].pvalue, pvalue);
-						if (TABLE_SORT_ASCEND ==
-							ptable->psorts->psort[i].table_sort) {
-							if (result > 0) {
-								pstmt.finalize();
-								pstmt1.finalize();
-								goto REFRESH_TABLE;
-							} else if (result < 0) {
-								break;
-							}
-						} else {
-							if (result < 0) {
-								pstmt.finalize();
-								pstmt1.finalize();
-								goto REFRESH_TABLE;
-							} else if (result > 0) {
-								break;
-							}
-						}
+					} else if (result < 0) {
+						pstmt.finalize();
+						pstmt1.finalize();
+						goto REFRESH_TABLE;
+					} else if (result > 0) {
+						break;
 					}
 				}
 				if (TRUE == b_error) {
@@ -4318,41 +4303,40 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 		ptnode->node.pdata = ptnode;
 		double_list_append_as_tail(&tmp_list, &ptnode->node);
 	}
-	if (double_list_get_nodes_num(&tmp_list) > 0) {
-		tmp_list1 = pdb->tables.table_list;
-		pdb->tables.table_list = tmp_list;
-		db_engine_notify_content_table_delete_row(
-			pdb, folder_id, message_id);
-		db_engine_notify_content_table_add_row(
-			pdb, folder_id, message_id);
-		pdb->tables.table_list = tmp_list1;
-		for (pnode=double_list_get_head(&tmp_list); NULL!=pnode;
-			pnode=double_list_get_after(&tmp_list, pnode)) {
-			ptable = (TABLE_NODE*)pnode->pdata;
-			for (pnode1=double_list_get_head(
-				&pdb->tables.table_list); NULL!=pnode1;
-				pnode1=double_list_get_after(
-				&pdb->tables.table_list, pnode1)) {
-				ptnode = (TABLE_NODE*)pnode1->pdata;
-				if (ptable->table_id == ptnode->table_id) {
-					ptnode->header_id = ptable->header_id;
-					if (0 != ptable->psorts->ccategories &&
-						0 == (ptnode->table_flags &
-						TABLE_FLAG_NONOTIFICATIONS)) {
-						if (FALSE == ptnode->b_search) {
-							datagram.db_notify.type =
-								DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED;
-						} else {
-							datagram.db_notify.type =
-								DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED;
-						}
-						datagram.id_array.pl = &ptable->table_id;
-						notification_agent_backward_notify(
-							ptable->remote_id, &datagram);
-					}
-					break;
-				}
+	if (double_list_get_nodes_num(&tmp_list) == 0)
+		return;
+	tmp_list1 = pdb->tables.table_list;
+	pdb->tables.table_list = tmp_list;
+	db_engine_notify_content_table_delete_row(
+		pdb, folder_id, message_id);
+	db_engine_notify_content_table_add_row(
+		pdb, folder_id, message_id);
+	pdb->tables.table_list = tmp_list1;
+	for (pnode = double_list_get_head(&tmp_list); NULL != pnode;
+	     pnode = double_list_get_after(&tmp_list, pnode)) {
+		ptable = (TABLE_NODE *)pnode->pdata;
+		for (pnode1 = double_list_get_head(
+		     &pdb->tables.table_list); NULL != pnode1;
+		     pnode1 = double_list_get_after(
+		     &pdb->tables.table_list, pnode1)) {
+			ptnode = (TABLE_NODE *)pnode1->pdata;
+			if (ptable->table_id != ptnode->table_id)
+				continue;
+			ptnode->header_id = ptable->header_id;
+			if (ptable->psorts->ccategories == 0 ||
+			    (ptnode->table_flags & TABLE_FLAG_NONOTIFICATIONS))
+				break;
+			if (FALSE == ptnode->b_search) {
+				datagram.db_notify.type =
+					DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED;
+			} else {
+				datagram.db_notify.type =
+					DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED;
 			}
+			datagram.id_array.pl = &ptable->table_id;
+			notification_agent_backward_notify(
+				ptable->remote_id, &datagram);
+			break;
 		}
 	}
 }
