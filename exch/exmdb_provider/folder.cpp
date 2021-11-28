@@ -733,14 +733,14 @@ BOOL exmdb_server_set_folder_properties(
 	if (TRUE == exmdb_server_check_private()
 		&& PRIVATE_FID_ROOT == fid_val) {
 		for (i=0; i<pproperties->count; i++) {
-			if (pproperties->ppropval[i].proptag == PR_ADDITIONAL_REN_ENTRYIDS ||
-			    pproperties->ppropval[i].proptag == PR_ADDITIONAL_REN_ENTRYIDS_EX ||
-			    pproperties->ppropval[i].proptag == PR_REM_ONLINE_ENTRYID) {
-				if (!cu_set_property(db_table::folder_props, PRIVATE_FID_INBOX,
-					0, pdb->psqlite, &pproperties->ppropval[i],
-					&b_result)) {
-					return FALSE;
-				}
+			if (pproperties->ppropval[i].proptag != PR_ADDITIONAL_REN_ENTRYIDS &&
+			    pproperties->ppropval[i].proptag != PR_ADDITIONAL_REN_ENTRYIDS_EX &&
+			    pproperties->ppropval[i].proptag != PR_REM_ONLINE_ENTRYID)
+				continue;
+			if (!cu_set_property(db_table::folder_props, PRIVATE_FID_INBOX,
+			    0, pdb->psqlite, &pproperties->ppropval[i],
+			    &b_result)) {
+				return FALSE;
 			}
 		}
 	}
