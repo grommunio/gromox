@@ -2947,14 +2947,16 @@ BOOL exmdb_server_update_message_instance_rcpts(
 			continue;
 		}
 		row_id = *prow_id;
+		bool did_match = false;
 		size_t j;
 		for (j=0; j<pmsgctnt->children.prcpts->count; j++) {
 			auto ex_rcpt = pmsgctnt->children.prcpts->pparray[j];
 			prow_id = ex_rcpt->get<uint32_t>(PROP_TAG_ROWID);
 			if (prow_id == nullptr || *prow_id != row_id)
 				continue;
+			did_match = true;
 			if (mod.count == 1) {
-				// Contains just ROWID
+				/* contains just ROWID */
 				tarray_set_remove(pmsgctnt->children.prcpts, j);
 				break;
 			}
@@ -2966,8 +2968,9 @@ BOOL exmdb_server_update_message_instance_rcpts(
 			pmsgctnt->children.prcpts->pparray[j] = prcpt;
 			break;
 		}
-		if (j < pmsgctnt->children.prcpts->count)
+		if (j < pmsgctnt->children.prcpts->count || did_match)
 			continue;
+		/* No previous rowid matched, so this constitutes a new entry */
 		if (pmsgctnt->children.prcpts->count
 			>= MAX_RECIPIENT_NUMBER) {
 			return FALSE;
