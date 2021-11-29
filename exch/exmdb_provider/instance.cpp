@@ -2941,26 +2941,28 @@ BOOL exmdb_server_update_message_instance_rcpts(
 		}
 	}
 	for (size_t i = 0; i < pset->count; ++i) {
-		auto prow_id = pset->pparray[i]->get<uint32_t>(PROP_TAG_ROWID);
+		auto &mod = *pset->pparray[i];
+		auto prow_id = mod.get<uint32_t>(PROP_TAG_ROWID);
 		if (NULL == prow_id) {
 			continue;
 		}
 		row_id = *prow_id;
 		size_t j;
 		for (j=0; j<pmsgctnt->children.prcpts->count; j++) {
-			prow_id = pmsgctnt->children.prcpts->pparray[j]->get<uint32_t>(PROP_TAG_ROWID);
+			auto ex_rcpt = pmsgctnt->children.prcpts->pparray[j];
+			prow_id = ex_rcpt->get<uint32_t>(PROP_TAG_ROWID);
 			if (prow_id == nullptr || *prow_id != row_id)
 				continue;
-			if (1 == pset->pparray[i]->count) {
+			if (mod.count == 1) {
+				// Contains just ROWID
 				tarray_set_remove(pmsgctnt->children.prcpts, j);
 				break;
 			}
-			auto prcpt = pset->pparray[i]->dup();
+			auto prcpt = mod.dup();
 			if (NULL == prcpt) {
 				return FALSE;
 			}
-			tpropval_array_free(
-				pmsgctnt->children.prcpts->pparray[j]);
+			tpropval_array_free(ex_rcpt);
 			pmsgctnt->children.prcpts->pparray[j] = prcpt;
 			break;
 		}
@@ -2970,7 +2972,7 @@ BOOL exmdb_server_update_message_instance_rcpts(
 			>= MAX_RECIPIENT_NUMBER) {
 			return FALSE;
 		}
-		auto prcpt = pset->pparray[i]->dup();
+		auto prcpt = mod.dup();
 		if (NULL == prcpt) {
 			return FALSE;
 		}
