@@ -47,6 +47,9 @@ static BOOL instance_read_message(
 
 static BOOL instance_identify_message(MESSAGE_CONTENT *pmsgctnt);
 
+static constexpr uint32_t dummy_rcpttype = MAPI_TO;
+static constexpr char dummy_addrtype[] = "NONE", dummy_string[] = "";
+
 static BOOL instance_load_message(sqlite3 *psqlite,
 	uint64_t message_id, uint32_t *plast_id,
 	MESSAGE_CONTENT **ppmsgctnt)
@@ -215,6 +218,14 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			}
 		}
 		sqlite3_reset(pstmt1);
+		if (!pproplist->has(PR_RECIPIENT_TYPE))
+			pproplist->set(PR_RECIPIENT_TYPE, &dummy_rcpttype);
+		if (!pproplist->has(PR_DISPLAY_NAME))
+			pproplist->set(PR_DISPLAY_NAME, dummy_string);
+		if (!pproplist->has(PR_ADDRTYPE))
+			pproplist->set(PR_ADDRTYPE, &dummy_addrtype);
+		if (!pproplist->has(PR_EMAIL_ADDRESS))
+			pproplist->set(PR_EMAIL_ADDRESS, dummy_string);
 	}
 	pstmt.finalize();
 	pstmt1.finalize();
@@ -2821,6 +2832,12 @@ BOOL exmdb_server_get_message_instance_rcpts_all_proptags(
 				proptag_array_free(pproptags1);
 				return FALSE;
 			}
+	/* MSMAPI expects to always see these four tags, even if no rows are sent later. */
+	proptag_array_append(pproptags1, PR_RECIPIENT_TYPE);
+	proptag_array_append(pproptags1, PR_DISPLAY_NAME);
+	proptag_array_append(pproptags1, PR_ADDRTYPE);
+	proptag_array_append(pproptags1, PR_EMAIL_ADDRESS);
+
 	pproptags->count = pproptags1->count;
 	pproptags->pproptag = cu_alloc<uint32_t>(pproptags1->count);
 	if (NULL == pproptags->pproptag) {
@@ -2881,7 +2898,7 @@ BOOL exmdb_server_get_message_instance_rcpts(
 		}
 		pset->pparray[i]->count =
 			prcpts->pparray[begin_pos + i]->count;
-		pset->pparray[i]->ppropval = cu_alloc<TAGGED_PROPVAL>(pset->pparray[i]->count);
+		pset->pparray[i]->ppropval = cu_alloc<TAGGED_PROPVAL>(pset->pparray[i]->count + 4);
 		if (NULL == pset->pparray[i]->ppropval) {
 			pset->pparray[i]->count = 0;
 			return FALSE;
@@ -2889,6 +2906,29 @@ BOOL exmdb_server_get_message_instance_rcpts(
 		memcpy(pset->pparray[i]->ppropval,
 			prcpts->pparray[begin_pos + i]->ppropval,
 			sizeof(TAGGED_PROPVAL)*pset->pparray[i]->count);
+
+		auto &srecip = *prcpts->pparray[begin_pos+i];
+		auto drecip = *pset->pparray[i];
+		if (!srecip.has(PR_RECIPIENT_TYPE)) {
+			auto &p = drecip.ppropval[drecip.count++];
+			p.proptag = PR_RECIPIENT_TYPE;
+			p.pvalue = deconst(&dummy_rcpttype);
+		}
+		if (!srecip.has(PR_DISPLAY_NAME)) {
+			auto &p = drecip.ppropval[drecip.count++];
+			p.proptag = PR_DISPLAY_NAME;
+			p.pvalue = deconst(dummy_string);
+		}
+		if (!srecip.has(PR_ADDRTYPE)) {
+			auto &p = drecip.ppropval[drecip.count++];
+			p.proptag = PR_ADDRTYPE;
+			p.pvalue = deconst(&dummy_addrtype);
+		}
+		if (!srecip.has(PR_EMAIL_ADDRESS)) {
+			auto &p = drecip.ppropval[drecip.count++];
+			p.proptag = PR_EMAIL_ADDRESS;
+			p.pvalue = deconst(dummy_string);
+		}
 	}
 	return TRUE;
 }

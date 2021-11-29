@@ -67,6 +67,9 @@ struct MESSAGE_NODE {
 
 static BOOL message_rule_new_message(BOOL, const char *, const char *, uint32_t, sqlite3 *, uint64_t, uint64_t, const char *, DOUBLE_LIST *, DOUBLE_LIST *);
 
+static constexpr uint32_t dummy_rcpttype = MAPI_TO;
+static constexpr char dummy_addrtype[] = "NONE", dummy_string[] = "";
+
 /* Caution: If a message is soft deleted from a public folder,
 	it also should be removed from read_states! if someone's
 	read stat is "unread", the item of this user should be
@@ -731,7 +734,9 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 		while (SQLITE_ROW == sqlite3_step(pstmt1)) {
 			tmp_proptags[proptags.count++] = sqlite3_column_int64(pstmt1, 0);
 		}
-		tmp_proptags[proptags.count++] = PR_ROWID;
+		/* Nudge cu_get_properties allocation to make extra room. */
+		for (size_t i = 0; i < 5; ++i)
+			tmp_proptags[proptags.count++] = PR_NULL;
 		sqlite3_reset(pstmt1);
 		pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == pset->pparray[pset->count] ||
@@ -752,6 +757,31 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 			return FALSE;
 		}
 		*(uint32_t*)ppropval->pvalue = row_id++;
+		auto &drcpt = *pset->pparray[pset->count];
+		auto ptr = drcpt.find(PR_RECIPIENT_TYPE);
+		if (ptr == nullptr) {
+			ptr = &drcpt.ppropval[drcpt.count++];
+			ptr->proptag = PR_RECIPIENT_TYPE;
+			ptr->pvalue = deconst(&dummy_rcpttype);
+		}
+		ptr = drcpt.find(PR_DISPLAY_NAME);
+		if (ptr == nullptr) {
+			ptr = &drcpt.ppropval[drcpt.count++];
+			ptr->proptag = PR_DISPLAY_NAME;
+			ptr->pvalue = deconst(dummy_string);
+		}
+		ptr = drcpt.find(PR_ADDRTYPE);
+		if (ptr == nullptr) {
+			ptr = &drcpt.ppropval[drcpt.count++];
+			ptr->proptag = PR_ADDRTYPE;
+			ptr->pvalue = deconst(dummy_addrtype);
+		}
+		ptr = drcpt.find(PR_EMAIL_ADDRESS);
+		if (ptr == nullptr) {
+			ptr = &drcpt.ppropval[drcpt.count++];
+			ptr->proptag = PR_EMAIL_ADDRESS;
+			ptr->pvalue = deconst(dummy_string);
+		}
 		pset->count ++;
 	}
 	return TRUE;

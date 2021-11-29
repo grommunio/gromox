@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <atomic>
 #include <cassert>
 #include <cerrno>
@@ -676,6 +677,19 @@ BOOL cu_get_proptags(db_table table_type, uint64_t id,
 		i ++;
 	}
 	pstmt.finalize();
+	if (table_type == db_table::rcpt_props) {
+		auto oldcount = i;
+		if (std::find(proptags, proptags + i, PR_RECIPIENT_TYPE) == proptags + i)
+			proptags[i++] = PR_RECIPIENT_TYPE;
+		if (std::find(proptags, proptags + i, PR_DISPLAY_NAME) == proptags + i)
+			proptags[i++] = PR_DISPLAY_NAME;
+		if (std::find(proptags, proptags + i, PR_ADDRTYPE) == proptags + i)
+			proptags[i++] = PR_ADDRTYPE;
+		if (std::find(proptags, proptags + i, PR_EMAIL_ADDRESS) == proptags + i)
+			proptags[i++] = PR_EMAIL_ADDRESS;
+		if (i != oldcount)
+			fprintf(stderr, "W-1595: unobserved case\n");
+	}
 	pproptags->count = i;
 	pproptags->pproptag = cu_alloc<uint32_t>(i);
 	if (NULL == pproptags->pproptag) {
@@ -2346,7 +2360,27 @@ BOOL cu_get_properties(db_table table_type,
 			}
 		}
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			continue;
+			if (table_type != db_table::rcpt_props)
+				continue;
+			switch (pproptags->pproptag[i]) {
+			case PR_RECIPIENT_TYPE:
+				own_stmt = gx_sql_prep(psqlite, "SELECT 1"); // MAPI_TO
+				break;
+			case PR_DISPLAY_NAME:
+			case PR_EMAIL_ADDRESS:
+				own_stmt = gx_sql_prep(psqlite, "SELECT 15, ''"); // PT_UNICODE
+				break;
+			case PR_ADDRTYPE:
+				own_stmt = gx_sql_prep(psqlite, "SELECT 15, 'NONE'");
+				break;
+			default:
+				own_stmt = nullptr;
+				break;
+			}
+			pstmt = own_stmt;
+			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
+				continue;
+			fprintf(stderr, "W-1596: unobserved case\n");
 		}
 		switch (proptype) {
 		case PT_UNSPECIFIED: {
