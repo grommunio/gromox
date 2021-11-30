@@ -211,34 +211,34 @@ db_item_ptr db_engine_get_db(const char *path)
 		hhold.unlock();
 		return NULL;
 	}
-	if (TRUE == b_new) {
-		double_list_init(&pdb->dynamic_list);
-		double_list_init(&pdb->tables.table_list);
-		double_list_init(&pdb->nsub_list);
-		double_list_init(&pdb->instance_list);
-		pdb->tables.last_id = 0;
-		pdb->tables.b_batch = FALSE;
-		pdb->tables.psqlite = NULL;
-		sprintf(db_path, "%s/exmdb/exchange.sqlite3", path);
-		auto ret = sqlite3_open_v2(db_path, &pdb->psqlite, SQLITE_OPEN_READWRITE, nullptr);
-		if (ret != SQLITE_OK) {
-			fprintf(stderr, "E-1434: sqlite3_open %s: %s\n", db_path, sqlite3_errstr(ret));
-			pdb->psqlite = NULL;
-		} else {
-			sqlite3_exec(pdb->psqlite, "PRAGMA foreign_keys=ON",
-				NULL, NULL, NULL);
-			sqlite3_exec(pdb->psqlite, g_async ? "PRAGMA synchronous=ON" :
-			             "PRAGMA synchronous=OFF", nullptr, nullptr, nullptr);
-			sqlite3_exec(pdb->psqlite, g_wal ? "PRAGMA journal_mode=WAL" :
-			             "PRAGMA journal_mode=DELETE", nullptr, nullptr, nullptr);
-			if (0 != g_mmap_size) {
-				snprintf(sql_string, sizeof(sql_string), "PRAGMA mmap_size=%llu", LLU(g_mmap_size));
-				sqlite3_exec(pdb->psqlite, sql_string, NULL, NULL, NULL);
-			}
-			if (TRUE == exmdb_server_check_private()) {
-				db_engine_load_dynamic_list(pdb);
-			}
-		}
+	if (!b_new)
+		return db_item_ptr(pdb);
+	double_list_init(&pdb->dynamic_list);
+	double_list_init(&pdb->tables.table_list);
+	double_list_init(&pdb->nsub_list);
+	double_list_init(&pdb->instance_list);
+	pdb->tables.last_id = 0;
+	pdb->tables.b_batch = FALSE;
+	pdb->tables.psqlite = NULL;
+	sprintf(db_path, "%s/exmdb/exchange.sqlite3", path);
+	auto ret = sqlite3_open_v2(db_path, &pdb->psqlite, SQLITE_OPEN_READWRITE, nullptr);
+	if (ret != SQLITE_OK) {
+		fprintf(stderr, "E-1434: sqlite3_open %s: %s\n", db_path, sqlite3_errstr(ret));
+		pdb->psqlite = NULL;
+		return db_item_ptr(pdb);
+	}
+	sqlite3_exec(pdb->psqlite, "PRAGMA foreign_keys=ON",
+		NULL, NULL, NULL);
+	sqlite3_exec(pdb->psqlite, g_async ? "PRAGMA synchronous=ON" :
+		     "PRAGMA synchronous=OFF", nullptr, nullptr, nullptr);
+	sqlite3_exec(pdb->psqlite, g_wal ? "PRAGMA journal_mode=WAL" :
+		     "PRAGMA journal_mode=DELETE", nullptr, nullptr, nullptr);
+	if (0 != g_mmap_size) {
+		snprintf(sql_string, sizeof(sql_string), "PRAGMA mmap_size=%llu", LLU(g_mmap_size));
+		sqlite3_exec(pdb->psqlite, sql_string, NULL, NULL, NULL);
+	}
+	if (TRUE == exmdb_server_check_private()) {
+		db_engine_load_dynamic_list(pdb);
 	}
 	return db_item_ptr(pdb);
 }
