@@ -776,6 +776,15 @@ enum mapi_object_type {
 	MAPI_FORMINFO = 0xC,
 };
 
+enum mapi_recipient_type {
+	MAPI_ORIG = 0U,
+	MAPI_TO = 1U,
+	MAPI_CC = 2U,
+	MAPI_BCC = 3U,
+	MAPI_P1 = 1U << 28, /* a need to resend */
+	MAPI_SUBMITTED = 1U << 31, /* no need to resend */
+};
+
 enum mapi_sensitivity {
 	SENSITIVITY_NONE = 0,
 	SENSITIVITY_PERSONAL = 1,

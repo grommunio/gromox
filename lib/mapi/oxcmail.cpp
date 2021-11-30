@@ -1355,26 +1355,17 @@ static BOOL oxcmail_enum_mail_head(
 			return FALSE;
 		}
 	} else if (0 == strcasecmp(tag, "To")) {
-		if (FALSE == oxcmail_parse_addresses(
-			penum_param->charset,
-			field, RECIPIENT_TYPE_TO,
-			penum_param->pmsg->children.prcpts)) {
+		if (!oxcmail_parse_addresses(penum_param->charset, field, MAPI_TO,
+		    penum_param->pmsg->children.prcpts))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "Cc")) {
-		if (FALSE == oxcmail_parse_addresses(
-			penum_param->charset,
-			field, RECIPIENT_TYPE_CC,
-			penum_param->pmsg->children.prcpts)) {
+		if (!oxcmail_parse_addresses(penum_param->charset, field, MAPI_CC,
+		    penum_param->pmsg->children.prcpts))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "Bcc")) {
-		if (FALSE == oxcmail_parse_addresses(
-			penum_param->charset,
-			field, RECIPIENT_TYPE_BCC,
-			penum_param->pmsg->children.prcpts)) {
+		if (!oxcmail_parse_addresses(penum_param->charset, field, MAPI_BCC,
+		    penum_param->pmsg->children.prcpts))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "Return-Receipt-To")) {
 		tmp_byte = 1;
 		if (penum_param->pmsg->proplist.set(PROP_TAG_ORIGINATORDELIVERYREPORTREQUESTED, &tmp_byte) != 0)
@@ -3011,7 +3002,6 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 	char *ptoken2;
 	BINARY tmp_bin;
 	char essdn[1280];
-	uint32_t tmp_int32;
 	char tmp_buff[1280];
 	uint32_t status_code;
 	DSN_ENUM_INFO *pinfo;
@@ -3083,7 +3073,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 		tpropval_array_free(pproplist);
 		return false;
 	}
-	tmp_int32 = RECIPIENT_TYPE_TO;
+	uint32_t tmp_int32 = MAPI_TO;
 	if (pproplist->set(PR_RECIPIENT_TYPE, &tmp_int32) != 0)
 		return false;
 	if (NULL != f_info.x_display_name) {
@@ -4781,14 +4771,14 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		goto EXPORT_CONTENT_CLASS;
 	}
 	if (oxcmail_export_addresses(pskeleton->charset, pmsg->children.prcpts,
-	    RECIPIENT_TYPE_TO, alloc, tmp_field, GX_ARRAY_SIZE(tmp_field))) {
+	    MAPI_TO, alloc, tmp_field, GX_ARRAY_SIZE(tmp_field))) {
 		if (FALSE == mime_set_field(
 			phead, "To", tmp_field)) {
 			return FALSE;
 		}
 	}
 	if (oxcmail_export_addresses(pskeleton->charset, pmsg->children.prcpts,
-	    RECIPIENT_TYPE_CC, alloc, tmp_field, GX_ARRAY_SIZE(tmp_field))) {
+	    MAPI_CC, alloc, tmp_field, GX_ARRAY_SIZE(tmp_field))) {
 		if (FALSE == mime_set_field(
 			phead, "Cc", tmp_field)) {
 			return FALSE;
@@ -4801,7 +4791,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		"IPM.Task") || 0 == strncasecmp(
 		pskeleton->pmessage_class, "IPM.Task.", 9)) {
 		if (oxcmail_export_addresses(pskeleton->charset,
-		    pmsg->children.prcpts, RECIPIENT_TYPE_BCC, alloc,
+		    pmsg->children.prcpts, MAPI_BCC, alloc,
 		    tmp_field, GX_ARRAY_SIZE(tmp_field))) {
 			if (FALSE == mime_set_field(
 				phead, "Bcc", tmp_field)) {

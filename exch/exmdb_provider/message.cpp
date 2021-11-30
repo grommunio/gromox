@@ -2926,7 +2926,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		*(uint32_t*)pvalue = RECIPIENT_TYPE_TO;
+		*static_cast<uint32_t *>(pvalue) = MAPI_TO;
 		(*prcpts->pparray)->ppropval[1].pvalue = pvalue; 
 		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE, message_id,
 		    0, psqlite, PR_SENT_REPRESENTING_NAME, &pvalue))
@@ -4465,12 +4465,12 @@ BOOL exmdb_server_delivery_message(const char *dir,
 				continue;
 			}
 			switch (*(uint32_t*)pvalue) {
-			case RECIPIENT_TYPE_TO:
+			case MAPI_TO:
 				pvalue = pmsg->children.prcpts->pparray[i]->getval(PR_SMTP_ADDRESS);
 				if (pvalue != nullptr && strcasecmp(account, static_cast<char *>(pvalue)) == 0)
 					b_to_me = TRUE;	
 				break;
-			case RECIPIENT_TYPE_CC:
+			case MAPI_CC:
 				pvalue = pmsg->children.prcpts->pparray[i]->getval(PR_SMTP_ADDRESS);
 				if (pvalue != nullptr && strcasecmp(account, static_cast<char *>(pvalue)) == 0)
 					b_cc_me = TRUE;	
@@ -4499,6 +4499,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		return TRUE;
 	}
 	if (TRUE == exmdb_server_check_private()) {
+		void *pvalue;
 		if (!common_util_get_property(STORE_PROPERTIES_TABLE, 0, 0,
 		    pdb->psqlite, PR_OOF_STATE, &pvalue))
 			return FALSE;
@@ -4591,7 +4592,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		}
 	}
 	nt_time = rop_util_current_nttime();
-	pvalue = tmp_msg.proplist.getval(PROP_TAG_MESSAGEDELIVERYTIME);
+	auto pvalue = tmp_msg.proplist.getval(PROP_TAG_MESSAGEDELIVERYTIME);
 	if (NULL != pvalue) {
 		*(uint64_t*)pvalue = nt_time;
 	}

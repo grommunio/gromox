@@ -2463,9 +2463,8 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i) {
 			pvalue = pmsg->children.prcpts->pparray[i]->getval(PR_RECIPIENT_TYPE);
 			/* BCC recipients must be excluded */
-			if (NULL != pvalue && RECIPIENT_TYPE_BCC == *(uint32_t*)pvalue) {
+			if (pvalue != nullptr && *static_cast<uint32_t *>(pvalue) == MAPI_BCC)
 				continue;
-			}
 			tnef_propset.pplist[tnef_propset.count] =
 				tnef_convert_recipient(pmsg->children.prcpts->pparray[i],
 					alloc, get_propname);

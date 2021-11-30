@@ -1276,7 +1276,7 @@ BOOL common_util_propvals_to_openrecipient(uint32_t cpid,
 	OPENRECIPIENT_ROW *prow)
 {
 	auto pvalue = ppropvals->get<uint32_t>(PR_RECIPIENT_TYPE);
-	prow->recipient_type = pvalue == nullptr ? RECIPIENT_TYPE_NONE : *pvalue;
+	prow->recipient_type = pvalue == nullptr ? MAPI_ORIG : *pvalue;
 	prow->reserved = 0;
 	prow->cpid = cpid;
 	return common_util_propvals_to_recipient(cpid,
@@ -1293,7 +1293,7 @@ BOOL common_util_propvals_to_readrecipient(uint32_t cpid,
 	}
 	prow->row_id = *pvalue;
 	pvalue = ppropvals->get<uint32_t>(PR_RECIPIENT_TYPE);
-	prow->recipient_type = pvalue == nullptr ? RECIPIENT_TYPE_NONE : *pvalue;
+	prow->recipient_type = pvalue == nullptr ? MAPI_ORIG : *pvalue;
 	prow->reserved = 0;
 	prow->cpid = cpid;
 	return common_util_propvals_to_recipient(cpid,
@@ -2021,7 +2021,7 @@ BOOL common_util_send_message(logon_object *plogon,
 			if (NULL == pvalue) {
 				continue;
 			}
-			if (!(*static_cast<uint32_t *>(pvalue) & RECIPIENT_TYPE_NEED_RESEND))
+			if (!(*static_cast<uint32_t *>(pvalue) & MAPI_P1))
 				continue;	
 		}
 		/*

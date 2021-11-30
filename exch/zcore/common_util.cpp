@@ -1802,7 +1802,7 @@ BOOL common_util_send_message(store_object *pstore,
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			if (!(*static_cast<uint32_t *>(pvalue) & RECIPIENT_TYPE_NEED_RESEND))
+			if (!(*static_cast<uint32_t *>(pvalue) & MAPI_P1))
 				continue;	
 		}
 		/*

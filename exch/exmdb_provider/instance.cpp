@@ -1800,15 +1800,15 @@ static BOOL instance_get_message_display_recipients(
 	switch (proptag) {
 	case PR_DISPLAY_TO:
 	case PR_DISPLAY_TO_A:
-		recipient_type = RECIPIENT_TYPE_TO;
+		recipient_type = MAPI_TO;
 		break;
 	case PR_DISPLAY_CC:
 	case PR_DISPLAY_CC_A:
-		recipient_type = RECIPIENT_TYPE_CC;
+		recipient_type = MAPI_CC;
 		break;
 	case PR_DISPLAY_BCC:
 	case PR_DISPLAY_BCC_A:
-		recipient_type = RECIPIENT_TYPE_BCC;
+		recipient_type = MAPI_BCC;
 		break;
 	}
 	size_t offset = 0;
