@@ -50,8 +50,8 @@ static BOOL message_object_get_recipient_all_proptags(message_object *pmessage,
 		case PR_EMAIL_ADDRESS_A:
 		case PR_ENTRYID:
 		case PR_INSTANCE_KEY:
-		case PROP_TAG_RECIPIENTTYPE:
-		case PROP_TAG_ROWID:
+		case PR_RECIPIENT_TYPE:
+		case PR_ROWID:
 		case PR_SEARCH_KEY:
 		case PR_SEND_RICH_INFO:
 		case PR_TRANSMITABLE_DISPLAY_NAME:
@@ -757,8 +757,8 @@ BOOL message_object::set_rcpts(const TARRAY_SET *pset)
 			case PR_EMAIL_ADDRESS_A:
 			case PR_ENTRYID:
 			case PR_INSTANCE_KEY:
-			case PROP_TAG_RECIPIENTTYPE:
-			case PROP_TAG_ROWID:
+			case PR_RECIPIENT_TYPE:
+			case PR_ROWID:
 			case PR_SEARCH_KEY:
 			case PR_SEND_RICH_INFO:
 			case PR_TRANSMITABLE_DISPLAY_NAME:

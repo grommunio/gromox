@@ -1798,7 +1798,7 @@ BOOL common_util_send_message(store_object *pstore,
 			return FALSE;
 		}
 		if (TRUE == b_resend) {
-			pvalue = prcpts->pparray[i]->getval(PROP_TAG_RECIPIENTTYPE);
+			pvalue = prcpts->pparray[i]->getval(PR_RECIPIENT_TYPE);
 			if (NULL == pvalue) {
 				return FALSE;
 			}

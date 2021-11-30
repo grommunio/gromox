@@ -211,7 +211,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			message_content_free(pmsgctnt);
 			return FALSE;
 		}
-		if (pproplist->set(PROP_TAG_ROWID, &row_id) != 0) {
+		if (pproplist->set(PR_ROWID, &row_id) != 0) {
 			message_content_free(pmsgctnt);
 			return FALSE;	
 		}
@@ -1036,7 +1036,7 @@ static BOOL instance_identify_rcpts(TARRAY_SET *prcpts)
 	uint32_t i;
 	
 	for (i=0; i<prcpts->count; i++) {
-		if (prcpts->pparray[i]->set(PROP_TAG_ROWID, &i) != 0)
+		if (prcpts->pparray[i]->set(PR_ROWID, &i) != 0)
 			return FALSE;
 	}
 	return TRUE;
@@ -1793,7 +1793,6 @@ static BOOL instance_get_message_display_recipients(
 	TARRAY_SET *prcpts, uint32_t cpid, uint32_t proptag,
 	void **ppvalue)
 {
-	void *pvalue;
 	char tmp_buff[64*1024];
 	uint32_t recipient_type = 0;
 	static constexpr uint8_t fake_empty = 0;
@@ -1814,7 +1813,7 @@ static BOOL instance_get_message_display_recipients(
 	}
 	size_t offset = 0;
 	for (size_t i = 0; i < prcpts->count; ++i) {
-		pvalue = prcpts->pparray[i]->getval(PROP_TAG_RECIPIENTTYPE);
+		auto pvalue = prcpts->pparray[i]->getval(PR_RECIPIENT_TYPE);
 		if (NULL == pvalue || *(uint32_t*)pvalue != recipient_type) {
 			continue;
 		}
@@ -2882,7 +2881,7 @@ BOOL exmdb_server_get_message_instance_rcpts(
 	prcpts = pmsgctnt->children.prcpts;
 	size_t i;
 	for (i=0; i<prcpts->count; i++) {
-		auto prow_id = prcpts->pparray[i]->get<uint32_t>(PROP_TAG_ROWID);
+		auto prow_id = prcpts->pparray[i]->get<uint32_t>(PR_ROWID);
 		if (NULL != prow_id && row_id == *prow_id) {
 			break;
 		}
@@ -2920,7 +2919,7 @@ BOOL exmdb_server_get_message_instance_rcpts(
 	return TRUE;
 }
 
-/* if only PROP_TAG_ROWID in propvals, means delete this row */
+/* if only PR_ROWID in propvals, means delete this row */
 BOOL exmdb_server_update_message_instance_rcpts(
 	const char *dir, uint32_t instance_id, const TARRAY_SET *pset)
 {
@@ -2942,7 +2941,7 @@ BOOL exmdb_server_update_message_instance_rcpts(
 	}
 	for (size_t i = 0; i < pset->count; ++i) {
 		auto &mod = *pset->pparray[i];
-		auto prow_id = mod.get<uint32_t>(PROP_TAG_ROWID);
+		auto prow_id = mod.get<uint32_t>(PR_ROWID);
 		if (NULL == prow_id) {
 			continue;
 		}
@@ -2951,7 +2950,7 @@ BOOL exmdb_server_update_message_instance_rcpts(
 		size_t j;
 		for (j=0; j<pmsgctnt->children.prcpts->count; j++) {
 			auto ex_rcpt = pmsgctnt->children.prcpts->pparray[j];
-			prow_id = ex_rcpt->get<uint32_t>(PROP_TAG_ROWID);
+			prow_id = ex_rcpt->get<uint32_t>(PR_ROWID);
 			if (prow_id == nullptr || *prow_id != row_id)
 				continue;
 			did_match = true;

@@ -351,7 +351,7 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
 		case PR_EMAIL_ADDRESS:
 		case PR_ENTRYID:
 		case PR_INSTANCE_KEY:
-		case PROP_TAG_RECIPIENTTYPE:
+		case PR_RECIPIENT_TYPE:
 		case PR_SEARCH_KEY:
 		case PR_SEND_RICH_INFO:
 		case PR_TRANSMITABLE_DISPLAY_NAME:
@@ -382,7 +382,7 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
 			if (NULL == ppropvals->ppropval) {
 				return ecMAPIOOM;
 			}
-			ppropvals->ppropval->proptag = PROP_TAG_ROWID;
+			ppropvals->ppropval->proptag = PR_ROWID;
 			ppropvals->ppropval->pvalue = (void*)&prow[i].row_id;
 		} else {
 			if (FALSE == common_util_modifyrecipient_to_propvals(

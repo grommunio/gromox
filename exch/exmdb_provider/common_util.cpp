@@ -1574,11 +1574,9 @@ static BOOL common_util_get_message_display_recipients(
 	offset = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		rcpt_id = sqlite3_column_int64(pstmt, 0);
-		if (FALSE == common_util_get_property(
-			RECIPIENT_PROPERTIES_TABLE, rcpt_id, 0,
-			psqlite, PROP_TAG_RECIPIENTTYPE, &pvalue)) {
+		if (!common_util_get_property(RECIPIENT_PROPERTIES_TABLE,
+		    rcpt_id, 0, psqlite, PR_RECIPIENT_TYPE, &pvalue))
 			return FALSE;
-		}
 		if (NULL == pvalue || *(uint32_t*)pvalue != recipient_type) {
 			continue;
 		}
@@ -3236,7 +3234,7 @@ BOOL common_util_set_properties(int table_type,
 			break;
 		case RECIPIENT_PROPERTIES_TABLE:
 			switch (ppropvals->ppropval[i].proptag) {
-			case PROP_TAG_ROWID:
+			case PR_ROWID:
 				continue;
 			}
 			break;
@@ -5835,9 +5833,8 @@ uint32_t common_util_calculate_message_size(
 		for (size_t i = 0; i < pmsgctnt->children.prcpts->count; ++i) {
 			for (size_t j = 0; j < pmsgctnt->children.prcpts->pparray[i]->count; ++j) {
 				ppropval = pmsgctnt->children.prcpts->pparray[i]->ppropval + j;
-				if (PROP_TAG_ROWID == ppropval->proptag) {
+				if (ppropval->proptag == PR_ROWID)
 					continue;
-				}
 				message_size += propval_size(PROP_TYPE(ppropval->proptag), ppropval->pvalue);
 			}
 		}

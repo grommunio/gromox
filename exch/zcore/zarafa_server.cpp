@@ -3262,7 +3262,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			prcpt = prcpt_list->pparray[i];
 			b_found = FALSE;
 			for (size_t j = 0; j < prcpt->count; ++j) {
-				if (PROP_TAG_ROWID == prcpt->ppropval[j].proptag) {
+				if (prcpt->ppropval[j].proptag == PR_ROWID) {
 					prcpt->count = 1;
 					prcpt->ppropval = prcpt->ppropval + j;
 					b_found = TRUE;
@@ -3283,7 +3283,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 		    !prcpt_list->pparray[i]->has(PR_EMAIL_ADDRESS) &&
 		    !prcpt_list->pparray[i]->has(PR_SMTP_ADDRESS))
 			return ecInvalidParam;
-		auto prowid = prcpt_list->pparray[i]->get<uint32_t>(PROP_TAG_ROWID);
+		auto prowid = prcpt_list->pparray[i]->get<uint32_t>(PR_ROWID);
 		if (NULL != prowid) {
 			if (*prowid < last_rowid) {
 				*prowid = last_rowid;
@@ -3297,7 +3297,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 				return ecError;
 			memcpy(ppropval, prcpt->ppropval,
 				sizeof(TAGGED_PROPVAL)*prcpt->count);
-			ppropval[prcpt->count].proptag = PROP_TAG_ROWID;
+			ppropval[prcpt->count].proptag = PR_ROWID;
 			ppropval[prcpt->count].pvalue = cu_alloc<uint32_t>();
 			if (ppropval[prcpt->count].pvalue == nullptr)
 				return ecError;

@@ -731,7 +731,7 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 		while (SQLITE_ROW == sqlite3_step(pstmt1)) {
 			tmp_proptags[proptags.count++] = sqlite3_column_int64(pstmt1, 0);
 		}
-		tmp_proptags[proptags.count++] = PROP_TAG_ROWID;
+		tmp_proptags[proptags.count++] = PR_ROWID;
 		sqlite3_reset(pstmt1);
 		pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == pset->pparray[pset->count] ||
@@ -741,13 +741,13 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 			pset->pparray[pset->count])) {
 			return FALSE;
 		}
-		/* PROP_TAG_ROWID MUST be the first */
+		/* PR_ROWID MUST be the first */
 		memmove(pset->pparray[pset->count]->ppropval + 1,
 			pset->pparray[pset->count]->ppropval, sizeof(
 			TAGGED_PROPVAL)*pset->pparray[pset->count]->count);
 		ppropval = pset->pparray[pset->count]->ppropval;
 		pset->pparray[pset->count]->count ++;
-		ppropval->proptag = PROP_TAG_ROWID;
+		ppropval->proptag = PR_ROWID;
 		ppropval->pvalue = cu_alloc<uint32_t>();
 		if (NULL == ppropval->pvalue) {
 			return FALSE;
@@ -2921,8 +2921,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 			return FALSE;
 		(*prcpts->pparray)->ppropval[0].pvalue = pvalue == nullptr ?
 			deconst(from_address) : pvalue;
-		(*prcpts->pparray)->ppropval[1].proptag =
-							PROP_TAG_RECIPIENTTYPE;
+		(*prcpts->pparray)->ppropval[1].proptag = PR_RECIPIENT_TYPE;
 		pvalue = cu_alloc<uint32_t>();
 		if (NULL == pvalue) {
 			return FALSE;
@@ -4435,7 +4434,6 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	BOOL b_oof;
 	BOOL b_to_me;
 	BOOL b_cc_me;
-	void *pvalue;
 	uint64_t nt_time;
 	uint64_t fid_val;
 	BINARY *pentryid;
@@ -4462,7 +4460,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	b_cc_me = FALSE;
 	if (NULL != pmsg->children.prcpts) {
 		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i) {
-			pvalue = pmsg->children.prcpts->pparray[i]->getval(PROP_TAG_RECIPIENTTYPE);
+			auto pvalue = pmsg->children.prcpts->pparray[i]->getval(PR_RECIPIENT_TYPE);
 			if (NULL == pvalue) {
 				continue;
 			}

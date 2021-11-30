@@ -2461,7 +2461,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			}
 		}
 		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i) {
-			pvalue = pmsg->children.prcpts->pparray[i]->getval(PROP_TAG_RECIPIENTTYPE);
+			pvalue = pmsg->children.prcpts->pparray[i]->getval(PR_RECIPIENT_TYPE);
 			/* BCC recipients must be excluded */
 			if (NULL != pvalue && RECIPIENT_TYPE_BCC == *(uint32_t*)pvalue) {
 				continue;

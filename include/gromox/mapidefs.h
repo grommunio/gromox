@@ -152,6 +152,7 @@ enum {
 	// PR_EMS_AB_ROOM_CAPACITY = PROP_TAG(PT_LONG, 0x0807), /* PidTagAddressBookRoomCapacity */
 	// PR_EMS_AB_ROOM_DESCRIPTION = PROP_TAG(PT_UNICODE, 0x0809), /* PidTagAddressBookRoomDescription */
 	PR_NON_RECEIPT_NOTIFICATION_REQUESTED = PROP_TAG(PT_BOOLEAN, 0x0C06), /* PidTagNonReceiptNotificationRequested */
+	PR_RECIPIENT_TYPE = PROP_TAG(PT_LONG, 0x0C15), /* PidTagRecipientType */
 	PR_SENDER_ENTRYID = PROP_TAG(PT_BINARY, 0x0C19), /* PidTagSenderEntryId */
 	PR_SENDER_NAME = PROP_TAG(PT_UNICODE, 0x0C1A), /* PidTagSenderName */
 	PR_SENDER_NAME_A = PROP_TAG(PT_STRING8, 0x0C1A),
@@ -206,6 +207,7 @@ enum {
 	PR_HTML = PROP_TAG(PT_BINARY, 0x1013), /* PidTagHtml */
 	PR_ATTR_HIDDEN = PROP_TAG(PT_BOOLEAN, 0x10F4), /* PidTagAttributeHidden */
 	// ? = PROP_TAG(PT_BINARY, 0x120D), /* entryid to Calendar\Birthdays folder */
+	PR_ROWID = PROP_TAG(PT_LONG, 0x3000), /* PidTagRowid */
 	PR_DISPLAY_NAME_A = PROP_TAG(PT_STRING8, 0x3001),
 	PR_DISPLAY_NAME = PROP_TAG(PT_UNICODE, 0x3001), /* PidTagDisplayName */
 	PR_ADDRTYPE = PROP_TAG(PT_UNICODE, 0x3002), /* PidTagAddressType */

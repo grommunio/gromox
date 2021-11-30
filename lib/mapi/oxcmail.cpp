@@ -604,7 +604,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	tmp_int32 = 1;
 	if (pproplist->set(PROP_TAG_RECIPIENTFLAGS, &tmp_int32) != 0)
 		return FALSE;
-	return pproplist->set(PROP_TAG_RECIPIENTTYPE, &rcpt_type) == 0 ? TRUE : false;
+	return pproplist->set(PR_RECIPIENT_TYPE, &rcpt_type) == 0 ? TRUE : false;
 }
 
 static BOOL oxcmail_parse_addresses(const char *charset,
@@ -3084,7 +3084,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 		return false;
 	}
 	tmp_int32 = RECIPIENT_TYPE_TO;
-	if (pproplist->set(PROP_TAG_RECIPIENTTYPE, &tmp_int32) != 0)
+	if (pproplist->set(PR_RECIPIENT_TYPE, &tmp_int32) != 0)
 		return false;
 	if (NULL != f_info.x_display_name) {
 		if (strlen(f_info.x_display_name) < 256 &&
@@ -4287,7 +4287,7 @@ static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
 	
 	for (size_t i = 0; i < prcpts->count; ++i) {
 		auto prcpt = prcpts->pparray[i];
-		auto pvalue = prcpt->get<uint32_t>(PROP_TAG_RECIPIENTTYPE);
+		auto pvalue = prcpt->get<uint32_t>(PR_RECIPIENT_TYPE);
 		if (pvalue == nullptr || *pvalue != rcpt_type)
 			continue;
 		if (0 != offset) {

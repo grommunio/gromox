@@ -589,7 +589,7 @@ BOOL message_object::get_rowid_begin(uint32_t *pbegin_id)
 		return FALSE;	
 	last_rowid = -1;
 	for (size_t i = 0; i < tmp_set.count; ++i) {
-		auto prow_id = tmp_set.pparray[i]->get<int32_t>(PROP_TAG_ROWID);
+		auto prow_id = tmp_set.pparray[i]->get<int32_t>(PR_ROWID);
 		if (NULL != prow_id && *prow_id > last_rowid) {
 			last_rowid = *prow_id;
 		}

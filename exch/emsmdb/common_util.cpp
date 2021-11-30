@@ -1275,7 +1275,7 @@ BOOL common_util_propvals_to_openrecipient(uint32_t cpid,
 	TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pcolumns,
 	OPENRECIPIENT_ROW *prow)
 {
-	auto pvalue = ppropvals->get<uint32_t>(PROP_TAG_RECIPIENTTYPE);
+	auto pvalue = ppropvals->get<uint32_t>(PR_RECIPIENT_TYPE);
 	prow->recipient_type = pvalue == nullptr ? RECIPIENT_TYPE_NONE : *pvalue;
 	prow->reserved = 0;
 	prow->cpid = cpid;
@@ -1287,12 +1287,12 @@ BOOL common_util_propvals_to_readrecipient(uint32_t cpid,
 	TPROPVAL_ARRAY *ppropvals, const PROPTAG_ARRAY *pcolumns,
 	READRECIPIENT_ROW *prow)
 {
-	auto pvalue = ppropvals->get<uint32_t>(PROP_TAG_ROWID);
+	auto pvalue = ppropvals->get<uint32_t>(PR_ROWID);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
 	prow->row_id = *pvalue;
-	pvalue = ppropvals->get<uint32_t>(PROP_TAG_RECIPIENTTYPE);
+	pvalue = ppropvals->get<uint32_t>(PR_RECIPIENT_TYPE);
 	prow->recipient_type = pvalue == nullptr ? RECIPIENT_TYPE_NONE : *pvalue;
 	prow->reserved = 0;
 	prow->cpid = cpid;
@@ -1311,10 +1311,10 @@ BOOL common_util_modifyrecipient_to_propvals(
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
-	propval.proptag = PROP_TAG_ROWID;
+	propval.proptag = PR_ROWID;
 	propval.pvalue = (void*)&prow->row_id;
 	common_util_set_propvals(ppropvals, &propval);
-	propval.proptag = PROP_TAG_RECIPIENTTYPE;
+	propval.proptag = PR_RECIPIENT_TYPE;
 	propval.pvalue = cu_alloc<uint32_t>();
 	if (NULL == propval.pvalue) {
 		return FALSE;
@@ -2017,7 +2017,7 @@ BOOL common_util_send_message(logon_object *plogon,
 			return FALSE;
 		}
 		if (TRUE == b_resend) {
-			pvalue = prcpts->pparray[i]->getval(PROP_TAG_RECIPIENTTYPE);
+			pvalue = prcpts->pparray[i]->getval(PR_RECIPIENT_TYPE);
 			if (NULL == pvalue) {
 				continue;
 			}

@@ -870,7 +870,7 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 		} else {
 			tmp_int32 = 1;
 		}
-		if (pproplist->set(PROP_TAG_RECIPIENTTYPE, &tmp_int32) != 0)
+		if (pproplist->set(PR_RECIPIENT_TYPE, &tmp_int32) != 0)
 			return FALSE;
 		tmp_int32 = dtypx == DT_DISTLIST ? MAPI_DISTLIST : MAPI_MAILUSER;
 		if (pproplist->set(PR_OBJECT_TYPE, &tmp_int32) != 0)
@@ -3356,7 +3356,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 			(*(uint32_t*)pvalue) & 0x00000002) {
 			continue;
 		}
-		pvalue = pmsg->children.prcpts->pparray[i]->getval(PROP_TAG_RECIPIENTTYPE);
+		pvalue = pmsg->children.prcpts->pparray[i]->getval(PR_RECIPIENT_TYPE);
 		if (NULL != pvalue && 0 == *(uint32_t*)pvalue) {
 			continue;
 		}
