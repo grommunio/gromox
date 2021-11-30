@@ -34,19 +34,6 @@ static bool tpropval_array_append(TPROPVAL_ARRAY *parray, uint32_t proptag,
 	return true;
 }
 
-void *TPROPVAL_ARRAY::getval(uint32_t proptag) const
-{
-	auto parray = this;
-	int i;
-	
-	for (i=0; i<parray->count; i++) {
-		if (proptag == parray->ppropval[i].proptag) {
-			return parray->ppropval[i].pvalue;
-		}
-	}
-	return NULL;
-}
-
 int TPROPVAL_ARRAY::set(uint32_t tag, const void *xpropval)
 {
 	auto parray = this;

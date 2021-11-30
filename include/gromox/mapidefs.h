@@ -1191,8 +1191,17 @@ extern GX_EXPORT bool tpropval_array_init_internal(TPROPVAL_ARRAY *);
 extern GX_EXPORT void tpropval_array_free_internal(TPROPVAL_ARRAY *);
 
 struct TPROPVAL_ARRAY {
-	inline bool has(uint32_t tag) const { return getval(tag) != nullptr; }
-	void *getval(uint32_t tag) const;
+	TAGGED_PROPVAL *find(uint32_t tag) const {
+		for (size_t i = 0; i < count; ++i)
+			if (ppropval[i].proptag == tag)
+				return &ppropval[i];
+		return nullptr;
+	}
+	inline bool has(uint32_t tag) const { return find(tag) != nullptr; }
+	inline void *getval(uint32_t tag) const {
+		auto v = find(tag);
+		return v != nullptr ? v->pvalue : nullptr;
+	}
 	template<typename T> inline T *get(uint32_t tag) const { return static_cast<T *>(getval(tag)); }
 	int set(uint32_t tag, const void *d);
 	inline int set(const TAGGED_PROPVAL &a) { return set(a.proptag, a.pvalue); }
