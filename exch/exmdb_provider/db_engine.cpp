@@ -227,20 +227,10 @@ db_item_ptr db_engine_get_db(const char *path)
 		} else {
 			sqlite3_exec(pdb->psqlite, "PRAGMA foreign_keys=ON",
 				NULL, NULL, NULL);
-			if (FALSE == g_async) {
-				sqlite3_exec(pdb->psqlite, "PRAGMA synchronous=OFF",
-					NULL, NULL, NULL);
-			} else {
-				sqlite3_exec(pdb->psqlite, "PRAGMA synchronous=ON",
-					NULL, NULL, NULL);
-			}
-			if (FALSE == g_wal) {
-				sqlite3_exec(pdb->psqlite, "PRAGMA journal_mode=DELETE",
-					NULL, NULL, NULL);
-			} else {
-				sqlite3_exec(pdb->psqlite, "PRAGMA journal_mode=WAL",
-					NULL, NULL, NULL);
-			}
+			sqlite3_exec(pdb->psqlite, g_async ? "PRAGMA synchronous=ON" :
+			             "PRAGMA synchronous=OFF", nullptr, nullptr, nullptr);
+			sqlite3_exec(pdb->psqlite, g_wal ? "PRAGMA journal_mode=WAL" :
+			             "PRAGMA journal_mode=DELETE", nullptr, nullptr, nullptr);
 			if (0 != g_mmap_size) {
 				snprintf(sql_string, sizeof(sql_string), "PRAGMA mmap_size=%llu", LLU(g_mmap_size));
 				sqlite3_exec(pdb->psqlite, sql_string, NULL, NULL, NULL);
