@@ -66,6 +66,18 @@ Default: \fI1000\fP
 \fBmax_store_message_count\fP
 Default: \fI200000\fP
 .TP
+\fBmbox_contention_warning\fP
+If there are more than this many threads waiting to use a mailbox, emit a
+warning log message.
+.br
+Default: \fI5\fP
+.TP
+\fBmbox_contention_reject\fP
+If there are more than this many threads waiting to use a mailbox, reject the
+particular exmdb RPC that is currently executing.
+.br
+Default: \fI5\fP
+.TP
 \fBnotify_stub_threads_num\fP
 Default: \fI4\fP
 .TP

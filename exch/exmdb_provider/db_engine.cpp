@@ -35,9 +35,6 @@
 #define LLU(x) static_cast<unsigned long long>(x)
 
 #define DB_LOCK_TIMEOUT					60
-
-#define MAX_DB_WAITING_THREADS			5
-
 #define MAX_DYNAMIC_NODES				100
 
 using namespace gromox;
@@ -197,11 +194,14 @@ db_item_ptr db_engine_get_db(const char *path)
 		b_new = TRUE;
 	} else {
 		pdb = &it->second;
-		if (pdb->reference > MAX_DB_WAITING_THREADS) {
+		auto refs = pdb->reference.load();
+		if (refs > 0 && static_cast<unsigned int>(refs) > g_mbox_contention_reject) {
 			hhold.unlock();
-			printf("[exmdb_provider]: too many threads waiting on %s\n", path);
+			printf("E-1593: contention on %s (%u uses), rejecting db request\n", path, refs);
 			return NULL;
 		}
+		if (refs > 0 && static_cast<unsigned int>(refs) > g_mbox_contention_warning)
+			fprintf(stderr, "W-1593: contention on %s (%u uses)\n", path, refs);
 	}
 	pdb->reference ++;
 	hhold.unlock();

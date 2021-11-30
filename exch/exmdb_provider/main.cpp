@@ -40,6 +40,8 @@ static constexpr cfg_directive cfg_default_values[] = {
 	{"max_rpc_stub_threads", "4095M", CFG_SIZE},
 	{"max_rule_number", "1000", CFG_SIZE, "1", "2000"},
 	{"max_store_message_count", "200000", CFG_SIZE},
+	{"mbox_contention_warning", "5", CFG_SIZE},
+	{"mbox_contention_reject", "5", CFG_SIZE},
 	{"notify_stub_threads_num", "4", CFG_SIZE, "0"},
 	{"populating_threads_num", "50", CFG_SIZE, "1", "50"},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "0"},
@@ -53,6 +55,7 @@ static constexpr cfg_directive cfg_default_values[] = {
 };
 
 unsigned int g_dbg_synth_content;
+unsigned int g_mbox_contention_warning, g_mbox_contention_reject;
 
 /*
  *	console talk for exchange_emsmdb plugin
@@ -118,6 +121,8 @@ static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig)
 		g_exrpc_debug = pconfig->get_ll("exrpc_debug");
 		g_dbg_synth_content = pconfig->get_ll("dbg_synthesize_content");
 		g_enable_dam = parse_bool(pconfig->get_value("enable_dam"));
+		g_mbox_contention_warning = pconfig->get_ll("mbox_contention_warning");
+		g_mbox_contention_reject = pconfig->get_ll("mbox_contention_reject");
 	} catch (const cfg_error &) {
 		return false;
 	}
