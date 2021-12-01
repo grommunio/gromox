@@ -26,12 +26,8 @@
 #define ID_TAG_ATTACHDATABINARY										0x000B0014
 #define ID_TAG_ATTACHDATAOBJECT										0x000F0014
 
-enum {
-	STORE_PROPERTIES_TABLE,
-	FOLDER_PROPERTIES_TABLE,
-	MESSAGE_PROPERTIES_TABLE,
-	RECIPIENT_PROPERTIES_TABLE,
-	ATTACHMENT_PROPERTIES_TABLE
+enum class db_table {
+	store_props, folder_props, msg_props, rcpt_props, atx_props,
 };
 
 enum {
@@ -99,28 +95,17 @@ BOOL common_util_allocate_folder_art(sqlite3 *psqlite, uint32_t *part);
 BOOL common_util_check_allocated_eid(sqlite3 *psqlite,
 	uint64_t eid_val, BOOL *pb_result);
 BOOL common_util_allocate_cid(sqlite3 *psqlite, uint64_t *pcid);
-BOOL common_util_get_proptags(int table_type, uint64_t id,
-	sqlite3 *psqlite, PROPTAG_ARRAY *pproptags);
+extern BOOL cu_get_proptags(db_table, uint64_t id, sqlite3 *, PROPTAG_ARRAY *);
 BOOL common_util_get_mapping_guid(sqlite3 *psqlite,
 	uint16_t replid, BOOL *pb_found, GUID *pguid);
 BOOL common_util_begin_message_optimize(sqlite3 *psqlite);
 extern void common_util_end_message_optimize();
-BOOL common_util_get_property(int table_type, uint64_t id,
-	uint32_t cpid, sqlite3 *psqlite, uint32_t proptag,
-	void **ppvalue);
-BOOL common_util_get_properties(int table_type,
-	uint64_t id, uint32_t cpid, sqlite3 *psqlite,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals);
-BOOL common_util_set_property(int table_type,
-	uint64_t id, uint32_t cpid, sqlite3 *psqlite,
-	const TAGGED_PROPVAL *ppropval, BOOL *pb_result); 
-BOOL common_util_set_properties(int table_type,
-	uint64_t id, uint32_t cpid, sqlite3 *psqlite,
-	const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems);
-BOOL common_util_remove_property(int table_type,
-	uint64_t id, sqlite3 *psqlite, uint32_t proptag);
-BOOL common_util_remove_properties(int table_type, uint64_t id,
-	sqlite3 *psqlite,const PROPTAG_ARRAY *pproptags);
+extern BOOL cu_get_property(db_table, uint64_t id, uint32_t cpid, sqlite3 *, uint32_t proptag, void **out);
+extern BOOL cu_get_properties(db_table, uint64_t id, uint32_t cpid, sqlite3 *, const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
+extern BOOL cu_set_property(db_table, uint64_t id, uint32_t cpid, sqlite3 *, const TAGGED_PROPVAL *, BOOL *result);
+extern BOOL cu_set_properties(db_table, uint64_t id, uint32_t cpid, sqlite3 *, const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
+extern BOOL cu_remove_property(db_table, uint64_t id, sqlite3 *, uint32_t proptag);
+extern BOOL cu_remove_properties(db_table, uint64_t id, sqlite3 *, const PROPTAG_ARRAY *);
 BOOL common_util_get_rule_property(uint64_t rule_id,
 	sqlite3 *psqlite, uint32_t proptag, void **ppvalue);
 BOOL common_util_get_permission_property(uint64_t member_id,

@@ -82,8 +82,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	if (NULL == pmsgctnt) {
 		return FALSE;
 	}
-	if (FALSE == common_util_get_proptags(
-		MESSAGE_PROPERTIES_TABLE, message_id,
+	if (!cu_get_proptags(db_table::msg_props, message_id,
 		psqlite, &proptags)) {
 		message_content_free(pmsgctnt);
 		return FALSE;
@@ -168,7 +167,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		}
 		default: {
 			void *newval = nullptr;
-			if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+			if (!cu_get_property(db_table::msg_props,
 			    message_id, 0, psqlite, proptags.pproptag[i], &newval) ||
 			    newval == nullptr ||
 			    pmsgctnt->proplist.set(proptags.pproptag[i], newval) != 0) {
@@ -221,7 +220,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		while (SQLITE_ROW == sqlite3_step(pstmt1)) {
 			uint32_t tag = sqlite3_column_int64(pstmt1, 0);
 			void *newval = nullptr;
-			if (!common_util_get_property(RECIPIENT_PROPERTIES_TABLE,
+			if (!cu_get_property(db_table::rcpt_props,
 			    rcpt_id, 0, psqlite, tag, &newval) ||
 			    newval == nullptr ||
 			    pproplist->set(tag, newval) != 0) {
@@ -271,8 +270,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		}
 		(*plast_id) ++;
 		attachment_id = sqlite3_column_int64(pstmt, 0);
-		if (FALSE == common_util_get_proptags(
-			ATTACHMENT_PROPERTIES_TABLE,
+		if (!cu_get_proptags(db_table::atx_props,
 			attachment_id, psqlite, &proptags)) {
 			message_content_free(pmsgctnt);
 			return FALSE;
@@ -302,7 +300,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			}
 			default: {
 				void *newval = nullptr;
-				if (!common_util_get_property(ATTACHMENT_PROPERTIES_TABLE,
+				if (!cu_get_property(db_table::atx_props,
 				    attachment_id, 0, psqlite, proptags.pproptag[i], &newval) ||
 				    newval == nullptr ||
 				    pattachment->proplist.set(proptags.pproptag[i], newval) != 0) {

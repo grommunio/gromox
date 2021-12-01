@@ -159,8 +159,7 @@ BOOL exmdb_server_get_store_all_proptags(
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (FALSE == common_util_get_proptags(
-		STORE_PROPERTIES_TABLE, 0,
+	if (!cu_get_proptags(db_table::store_props, 0,
 		pdb->psqlite, pproptags)) {
 		return FALSE;
 	}
@@ -174,8 +173,7 @@ BOOL exmdb_server_get_store_properties(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (FALSE == common_util_get_properties(
-		STORE_PROPERTIES_TABLE, 0, cpid, pdb->psqlite,
+	if (!cu_get_properties(db_table::store_props, 0, cpid, pdb->psqlite,
 		pproptags, ppropvals)) {
 		return FALSE;
 	}
@@ -190,8 +188,7 @@ BOOL exmdb_server_set_store_properties(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	if (FALSE == common_util_set_properties(
-		STORE_PROPERTIES_TABLE, 0, cpid, pdb->psqlite,
+	if (!cu_set_properties(db_table::store_props, 0, cpid, pdb->psqlite,
 		ppropvals, pproblems)) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
@@ -207,8 +204,7 @@ BOOL exmdb_server_remove_store_properties(
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	if (FALSE == common_util_remove_properties(
-		STORE_PROPERTIES_TABLE, 0, pdb->psqlite, pproptags)) {
+	if (!cu_remove_properties(db_table::store_props, 0, pdb->psqlite, pproptags)) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}

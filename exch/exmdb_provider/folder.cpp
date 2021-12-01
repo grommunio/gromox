@@ -579,7 +579,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 			return FALSE;
 		}
 		pstmt.finalize();
-		if (FALSE == common_util_set_properties(FOLDER_PROPERTIES_TABLE,
+		if (!cu_set_properties(db_table::folder_props,
 			folder_id, cpid, pdb->psqlite, pproperties, &tmp_problems)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
@@ -587,12 +587,12 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 		next = 1;
 		tmp_propval.proptag = PROP_TAG_ARTICLENUMBERNEXT;
 		tmp_propval.pvalue = &next;
-		common_util_set_property(FOLDER_PROPERTIES_TABLE,
+		cu_set_property(db_table::folder_props,
 			folder_id, 0, pdb->psqlite, &tmp_propval, &b_result);
 		del_cnt = 0;
 		tmp_propval.proptag = PR_DELETED_COUNT_TOTAL;
 		tmp_propval.pvalue = &del_cnt;
-		common_util_set_property(FOLDER_PROPERTIES_TABLE,
+		cu_set_property(db_table::folder_props,
 			folder_id, 0, pdb->psqlite, &tmp_propval, &b_result);
 	} else {
 		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
@@ -622,7 +622,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 			return FALSE;
 		}
 		pstmt.finalize();
-		if (FALSE == common_util_set_properties(FOLDER_PROPERTIES_TABLE,
+		if (!cu_set_properties(db_table::folder_props,
 			folder_id, cpid, pdb->psqlite, pproperties, &tmp_problems)) {
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
@@ -633,19 +633,19 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 	}
 	tmp_propval.proptag = PR_INTERNET_ARTICLE_NUMBER;
 	tmp_propval.pvalue = &art;
-	common_util_set_property(FOLDER_PROPERTIES_TABLE,
+	cu_set_property(db_table::folder_props,
 		folder_id, 0, pdb->psqlite, &tmp_propval, &b_result);
 	nt_time = rop_util_current_nttime();
 	tmp_propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	tmp_propval.pvalue = &nt_time;
-	common_util_set_property(FOLDER_PROPERTIES_TABLE,
+	cu_set_property(db_table::folder_props,
 		parent_id, 0, pdb->psqlite, &tmp_propval, &b_result);
-	common_util_set_property(FOLDER_PROPERTIES_TABLE,
+	cu_set_property(db_table::folder_props,
 		folder_id, 0, pdb->psqlite, &tmp_propval, &b_result);
 	hcn = 0;
 	tmp_propval.proptag = PR_HIERARCHY_CHANGE_NUM;
 	tmp_propval.pvalue = &hcn;
-	common_util_set_property(FOLDER_PROPERTIES_TABLE,
+	cu_set_property(db_table::folder_props,
 		folder_id, 0, pdb->psqlite, &tmp_propval, &b_result);
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET"
 		" propval=propval+1 WHERE folder_id=%llu AND "
@@ -653,9 +653,9 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 	sqlite3_exec(pdb->psqlite, sql_string, NULL, NULL, NULL);
 	tmp_propval.proptag = PROP_TAG_HIERREV;
 	tmp_propval.pvalue = &nt_time;
-	common_util_set_property(FOLDER_PROPERTIES_TABLE,
+	cu_set_property(db_table::folder_props,
 		parent_id, 0, pdb->psqlite, &tmp_propval, &b_result);
-	common_util_set_property(FOLDER_PROPERTIES_TABLE,
+	cu_set_property(db_table::folder_props,
 		folder_id, 0, pdb->psqlite, &tmp_propval, &b_result);
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 	db_engine_notify_folder_creation(pdb, parent_id, folder_id);
@@ -672,7 +672,7 @@ BOOL exmdb_server_get_folder_all_proptags(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (FALSE == common_util_get_proptags(FOLDER_PROPERTIES_TABLE,
+	if (!cu_get_proptags(db_table::folder_props,
 		rop_util_get_gc_value(folder_id), pdb->psqlite, &tmp_proptags)) {
 		return FALSE;
 	}
@@ -704,7 +704,7 @@ BOOL exmdb_server_get_folder_properties(
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (FALSE == common_util_get_properties(FOLDER_PROPERTIES_TABLE,
+	if (!cu_get_properties(db_table::folder_props,
 		rop_util_get_gc_value(folder_id), cpid, pdb->psqlite,
 		pproptags, ppropvals)) {
 		return FALSE;
@@ -736,8 +736,7 @@ BOOL exmdb_server_set_folder_properties(
 			if (pproperties->ppropval[i].proptag == PR_ADDITIONAL_REN_ENTRYIDS ||
 			    pproperties->ppropval[i].proptag == PR_ADDITIONAL_REN_ENTRYIDS_EX ||
 			    pproperties->ppropval[i].proptag == PR_REM_ONLINE_ENTRYID) {
-				if (FALSE == common_util_set_property(
-					FOLDER_PROPERTIES_TABLE, PRIVATE_FID_INBOX,
+				if (!cu_set_property(db_table::folder_props, PRIVATE_FID_INBOX,
 					0, pdb->psqlite, &pproperties->ppropval[i],
 					&b_result)) {
 					return FALSE;
@@ -745,7 +744,7 @@ BOOL exmdb_server_set_folder_properties(
 			}
 		}
 	}
-	if (FALSE == common_util_set_properties(FOLDER_PROPERTIES_TABLE,
+	if (!cu_set_properties(db_table::folder_props,
 		fid_val, cpid, pdb->psqlite, pproperties, pproblems)) {
 		return FALSE;
 	}
@@ -766,7 +765,7 @@ BOOL exmdb_server_remove_folder_properties(const char *dir,
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	if (FALSE == common_util_remove_properties(FOLDER_PROPERTIES_TABLE,
+	if (!cu_remove_properties(db_table::folder_props,
 		fid_val, pdb->psqlite, pproptags)) {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;

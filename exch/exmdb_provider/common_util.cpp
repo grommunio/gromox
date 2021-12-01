@@ -579,23 +579,20 @@ void common_util_end_message_optimize()
 	delete op;
 }
 
-static sqlite3_stmt* common_util_get_optimize_stmt(
-	int table_type, BOOL b_normal)
+static sqlite3_stmt *cu_get_optimize_stmt(db_table table_type, bool b_normal)
 {
-	if (MESSAGE_PROPERTIES_TABLE != table_type &&
-		RECIPIENT_PROPERTIES_TABLE != table_type) {
+	if (table_type != db_table::msg_props &&
+	    table_type != db_table::rcpt_props)
 		return NULL;	
-	}
 	auto op = static_cast<prepared_statements *>(pthread_getspecific(g_opt_key));
 	if (op == nullptr)
 		return NULL;
-	if (MESSAGE_PROPERTIES_TABLE == table_type) {
+	if (table_type == db_table::msg_props)
 		return b_normal ? op->msg_norm : op->msg_str;
-	}
 	return b_normal ? op->rcpt_norm : op->rcpt_str;
 }
 
-BOOL common_util_get_proptags(int table_type, uint64_t id,
+BOOL cu_get_proptags(db_table table_type, uint64_t id,
 	sqlite3 *psqlite, PROPTAG_ARRAY *pproptags)
 {
 	BOOL b_subject;
@@ -604,11 +601,11 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 	size_t i = 0;
 
 	switch (table_type) {
-	case STORE_PROPERTIES_TABLE:
+	case db_table::store_props:
 		gx_strlcpy(sql_string, "SELECT proptag FROM store_properties", arsizeof(sql_string));
 		proptags[i++] = PR_INTERNET_ARTICLE_NUMBER;
 		break;
-	case FOLDER_PROPERTIES_TABLE:
+	case db_table::folder_props:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
 		        "folder_properties WHERE folder_id=%llu", LLU(id));
 		proptags[i++] = PR_ASSOC_CONTENT_COUNT;
@@ -627,7 +624,7 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 		proptags[i++] = PROP_TAG_CHANGENUMBER;
 		proptags[i++] = PROP_TAG_FOLDERFLAGS;
 		break;
-	case MESSAGE_PROPERTIES_TABLE:
+	case db_table::msg_props:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
 		        "message_properties WHERE message_id=%llu", LLU(id));
 		proptags[i++] = PROP_TAG_MID;
@@ -641,11 +638,11 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 		proptags[i++] = PR_DISPLAY_CC;
 		proptags[i++] = PR_DISPLAY_BCC;
 		break;
-	case RECIPIENT_PROPERTIES_TABLE:
+	case db_table::rcpt_props:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
 		        "recipients_properties WHERE recipient_id=%llu", LLU(id));
 		break;
-	case ATTACHMENT_PROPERTIES_TABLE:
+	case db_table::atx_props:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
 		        "attachment_properties WHERE attachment_id=%llu", LLU(id));
 		proptags[i++] = PR_RECORD_KEY;
@@ -657,10 +654,10 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 	b_subject = FALSE;
 	while (sqlite3_step(pstmt) == SQLITE_ROW && i < GX_ARRAY_SIZE(proptags)) {
 		proptags[i] = sqlite3_column_int64(pstmt, 0);
-		if (MESSAGE_PROPERTIES_TABLE == table_type &&
+		if (table_type == db_table::msg_props &&
 		    proptags[i] == PR_MESSAGE_FLAGS)
 			continue;
-		if (MESSAGE_PROPERTIES_TABLE == table_type && FALSE == b_subject) {
+		if (table_type == db_table::msg_props && !b_subject) {
 			if ((proptags[i] == PR_NORMALIZED_SUBJECT ||
 			    proptags[i] == PR_SUBJECT_PREFIX) &&
 			    i + 1 < GX_ARRAY_SIZE(proptags)) {
@@ -849,7 +846,7 @@ BOOL cu_check_msgsize_overflow(sqlite3 *psqlite, uint32_t qtag)
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = qtag;
 	proptag_buff[1] = PR_MESSAGE_SIZE_EXTENDED;
-	if (FALSE == common_util_get_properties(STORE_PROPERTIES_TABLE,
+	if (!cu_get_properties(db_table::store_props,
 		0, 0, psqlite, &proptags, &propvals)) {
 		return FALSE;
 	}
@@ -1365,7 +1362,7 @@ BOOL common_util_get_message_flags(sqlite3 *psqlite,
 	uint64_t message_id, BOOL b_native,
 	uint32_t **ppmessage_flags)
 {
-	auto pstmt = common_util_get_optimize_stmt(MESSAGE_PROPERTIES_TABLE, TRUE);
+	auto pstmt = cu_get_optimize_stmt(db_table::msg_props, true);
 	xstmt own_stmt;
 	if (NULL != pstmt) {
 		sqlite3_reset(pstmt);
@@ -1432,7 +1429,7 @@ static void* common_util_get_message_parent_display(
 		psqlite, message_id, &folder_id)) {
 		return NULL;	
 	}
-	if (!common_util_get_property(FOLDER_PROPERTIES_TABLE, folder_id, 0,
+	if (!cu_get_property(db_table::folder_props, folder_id, 0,
 	    psqlite, PR_DISPLAY_NAME, &pvalue))
 		return NULL;	
 	return pvalue;
@@ -1447,7 +1444,7 @@ static BOOL common_util_get_message_subject(
 	
 	psubject_prefix = NULL;
 	pnormalized_subject = NULL;
-	auto pstmt = common_util_get_optimize_stmt(MESSAGE_PROPERTIES_TABLE, TRUE);
+	auto pstmt = cu_get_optimize_stmt(db_table::msg_props, true);
 	xstmt own_stmt;
 	if (NULL != pstmt) {
 		sqlite3_reset(pstmt);
@@ -1548,17 +1545,17 @@ static BOOL common_util_get_message_display_recipients(
 	offset = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		rcpt_id = sqlite3_column_int64(pstmt, 0);
-		if (!common_util_get_property(RECIPIENT_PROPERTIES_TABLE,
+		if (!cu_get_property(db_table::rcpt_props,
 		    rcpt_id, 0, psqlite, PR_RECIPIENT_TYPE, &pvalue))
 			return FALSE;
 		if (NULL == pvalue || *(uint32_t*)pvalue != recipient_type) {
 			continue;
 		}
-		if (!common_util_get_property(RECIPIENT_PROPERTIES_TABLE,
+		if (!cu_get_property(db_table::rcpt_props,
 		    rcpt_id, cpid, psqlite, PR_DISPLAY_NAME, &pvalue))
 			return FALSE;	
 		if (NULL == pvalue) {
-			if (!common_util_get_property(RECIPIENT_PROPERTIES_TABLE,
+			if (!cu_get_property(db_table::rcpt_props,
 			    rcpt_id, cpid, psqlite, PR_SMTP_ADDRESS, &pvalue))
 				return FALSE;	
 		}
@@ -1774,7 +1771,7 @@ static void* common_util_get_attachment_cid_value(sqlite3 *psqlite,
 	return pbin;
 }
 
-BOOL common_util_get_property(int table_type, uint64_t id,
+BOOL cu_get_property(db_table table_type, uint64_t id,
 	uint32_t cpid, sqlite3 *psqlite, uint32_t proptag,
 	void **ppvalue)
 {
@@ -1783,7 +1780,7 @@ BOOL common_util_get_property(int table_type, uint64_t id,
 	
 	proptags.count = 1;
 	proptags.pproptag = &proptag;
-	if (FALSE == common_util_get_properties(table_type,
+	if (!cu_get_properties(table_type,
 		id, cpid, psqlite, &proptags, &propvals)) {
 		return FALSE;
 	}
@@ -2096,26 +2093,26 @@ static GP_RESULT gp_atxprop(uint32_t tag, TAGGED_PROPVAL &pv,
 	return GP_UNHANDLED;
 }
 
-static GP_RESULT gp_spectableprop(unsigned int table_type, uint32_t tag,
+static GP_RESULT gp_spectableprop(db_table table_type, uint32_t tag,
     TAGGED_PROPVAL &pv, sqlite3 *db, uint64_t id, uint32_t cpid)
 {
 	switch (table_type) {
-	case STORE_PROPERTIES_TABLE:
+	case db_table::store_props:
 		return gp_storeprop(tag, pv, db);
-	case FOLDER_PROPERTIES_TABLE:
+	case db_table::folder_props:
 		return gp_folderprop(tag, pv, db, id);
-	case MESSAGE_PROPERTIES_TABLE:
+	case db_table::msg_props:
 		return gp_msgprop(tag, pv, db, id, cpid);
-	case RECIPIENT_PROPERTIES_TABLE:
+	case db_table::rcpt_props:
 		return GP_UNHANDLED;
-	case ATTACHMENT_PROPERTIES_TABLE:
+	case db_table::atx_props:
 		return gp_atxprop(tag, pv, db, id);
 	default:
 		return GP_UNHANDLED;
 	}
 }
 
-BOOL common_util_get_properties(int table_type,
+BOOL cu_get_properties(db_table table_type,
 	uint64_t id, uint32_t cpid, sqlite3 *psqlite,
 	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals)
 {
@@ -2134,7 +2131,7 @@ BOOL common_util_get_properties(int table_type,
 	}
 	for (size_t i = 0; i < pproptags->count; ++i) {
 		if (PROP_TYPE(pproptags->pproptag[i]) == PT_OBJECT &&
-		    (table_type != ATTACHMENT_PROPERTIES_TABLE ||
+		    (table_type != db_table::atx_props ||
 		    pproptags->pproptag[i] != PR_ATTACH_DATA_OBJ))
 			continue;
 		/* begin of special properties */
@@ -2155,7 +2152,7 @@ BOOL common_util_get_properties(int table_type,
 		if (proptype == PT_UNSPECIFIED || proptype == PT_STRING8 ||
 		    proptype == PT_UNICODE) {
 			switch (table_type) {
-			case STORE_PROPERTIES_TABLE:
+			case db_table::store_props:
 				own_stmt = gx_sql_prep(psqlite, "SELECT proptag, propval"
 				           " FROM store_properties WHERE proptag=?");
 				if (own_stmt == nullptr)
@@ -2163,7 +2160,7 @@ BOOL common_util_get_properties(int table_type,
 				pstmt = own_stmt;
 				sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
 				break;
-			case FOLDER_PROPERTIES_TABLE:
+			case db_table::folder_props:
 				own_stmt = gx_sql_prep(psqlite, "SELECT proptag,"
 				           " propval FROM folder_properties WHERE"
 				           " folder_id=? AND proptag=?");
@@ -2173,8 +2170,8 @@ BOOL common_util_get_properties(int table_type,
 				sqlite3_bind_int64(pstmt, 1, id);
 				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
 				break;
-			case MESSAGE_PROPERTIES_TABLE:
-				pstmt = common_util_get_optimize_stmt(table_type, FALSE);
+			case db_table::msg_props:
+				pstmt = cu_get_optimize_stmt(table_type, false);
 				if (NULL != pstmt) {
 					sqlite3_reset(pstmt);
 				} else {
@@ -2189,8 +2186,8 @@ BOOL common_util_get_properties(int table_type,
 				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
 				sqlite3_bind_int64(pstmt, 3, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
 				break;
-			case RECIPIENT_PROPERTIES_TABLE:
-				pstmt = common_util_get_optimize_stmt(table_type, FALSE);
+			case db_table::rcpt_props:
+				pstmt = cu_get_optimize_stmt(table_type, false);
 				if (NULL != pstmt) {
 					sqlite3_reset(pstmt);
 				} else {
@@ -2205,7 +2202,7 @@ BOOL common_util_get_properties(int table_type,
 				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
 				sqlite3_bind_int64(pstmt, 3, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
 				break;
-			case ATTACHMENT_PROPERTIES_TABLE:
+			case db_table::atx_props:
 				own_stmt = gx_sql_prep(psqlite, "SELECT proptag, propval"
 				           " FROM attachment_properties WHERE attachment_id=?"
 				           " AND (proptag=? OR proptag=?)");
@@ -2219,7 +2216,7 @@ BOOL common_util_get_properties(int table_type,
 			}
 		} else if (proptype == PT_MV_STRING8) {
 			switch (table_type) {
-			case STORE_PROPERTIES_TABLE:
+			case db_table::store_props:
 				own_stmt = gx_sql_prep(psqlite, "SELECT propval"
 				           " FROM store_properties WHERE proptag=?");
 				if (own_stmt == nullptr)
@@ -2227,7 +2224,7 @@ BOOL common_util_get_properties(int table_type,
 				pstmt = own_stmt;
 				sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
 				break;
-			case FOLDER_PROPERTIES_TABLE:
+			case db_table::folder_props:
 				own_stmt = gx_sql_prep(psqlite, "SELECT propval "
 				           "FROM folder_properties WHERE folder_id=? "
 				           "AND proptag=?)");
@@ -2237,8 +2234,8 @@ BOOL common_util_get_properties(int table_type,
 				sqlite3_bind_int64(pstmt, 1, id);
 				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
 				break;
-			case MESSAGE_PROPERTIES_TABLE:
-				pstmt = common_util_get_optimize_stmt(table_type, TRUE);
+			case db_table::msg_props:
+				pstmt = cu_get_optimize_stmt(table_type, true);
 				if (NULL != pstmt) {
 					sqlite3_reset(pstmt);
 				} else {
@@ -2252,8 +2249,8 @@ BOOL common_util_get_properties(int table_type,
 				sqlite3_bind_int64(pstmt, 1, id);
 				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
 				break;
-			case RECIPIENT_PROPERTIES_TABLE:
-				pstmt = common_util_get_optimize_stmt(table_type, TRUE);
+			case db_table::rcpt_props:
+				pstmt = cu_get_optimize_stmt(table_type, true);
 				if (NULL != pstmt) {
 					sqlite3_reset(pstmt);
 				} else {
@@ -2267,7 +2264,7 @@ BOOL common_util_get_properties(int table_type,
 				sqlite3_bind_int64(pstmt, 1, id);
 				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
 				break;
-			case ATTACHMENT_PROPERTIES_TABLE:
+			case db_table::atx_props:
 				own_stmt = gx_sql_prep(psqlite, "SELECT propval "
 				           "FROM attachment_properties WHERE "
 				           "attachment_id=? AND proptag=?");
@@ -2280,7 +2277,7 @@ BOOL common_util_get_properties(int table_type,
 			}
 		} else {
 			switch (table_type) {
-			case STORE_PROPERTIES_TABLE:
+			case db_table::store_props:
 				proptag = pproptags->pproptag[i];
 				own_stmt = gx_sql_prep(psqlite, "SELECT propval "
 				           "FROM store_properties WHERE proptag=?");
@@ -2289,7 +2286,7 @@ BOOL common_util_get_properties(int table_type,
 				pstmt = own_stmt;
 				sqlite3_bind_int64(pstmt, 1, proptag);
 				break;
-			case FOLDER_PROPERTIES_TABLE:
+			case db_table::folder_props:
 				switch (pproptags->pproptag[i]) {
 				case PROP_TAG_LOCALCOMMITTIME:
 					proptag = PR_LAST_MODIFICATION_TIME;
@@ -2306,8 +2303,8 @@ BOOL common_util_get_properties(int table_type,
 				sqlite3_bind_int64(pstmt, 1, id);
 				sqlite3_bind_int64(pstmt, 2, proptag);
 				break;
-			case MESSAGE_PROPERTIES_TABLE:
-				pstmt = common_util_get_optimize_stmt(table_type, TRUE);
+			case db_table::msg_props:
+				pstmt = cu_get_optimize_stmt(table_type, true);
 				if (NULL != pstmt) {
 					sqlite3_reset(pstmt);
 				} else {
@@ -2321,8 +2318,8 @@ BOOL common_util_get_properties(int table_type,
 				sqlite3_bind_int64(pstmt, 1, id);
 				sqlite3_bind_int64(pstmt, 2, pproptags->pproptag[i]);
 				break;
-			case RECIPIENT_PROPERTIES_TABLE:
-				pstmt = common_util_get_optimize_stmt(table_type, TRUE);
+			case db_table::rcpt_props:
+				pstmt = cu_get_optimize_stmt(table_type, true);
 				if (NULL != pstmt) {
 					sqlite3_reset(pstmt);
 				} else {
@@ -2336,7 +2333,7 @@ BOOL common_util_get_properties(int table_type,
 				sqlite3_bind_int64(pstmt, 1, id);
 				sqlite3_bind_int64(pstmt, 2, pproptags->pproptag[i]);
 				break;
-			case ATTACHMENT_PROPERTIES_TABLE:
+			case db_table::atx_props:
 				own_stmt = gx_sql_prep(psqlite, "SELECT propval FROM "
 				           "attachment_properties WHERE attachment_id=?"
 				           " AND proptag=?");
@@ -2903,7 +2900,7 @@ static BOOL common_util_set_attachment_cid_value(sqlite3 *psqlite,
 	return TRUE;
 }
 
-BOOL common_util_set_property(int table_type,
+BOOL cu_set_property(db_table table_type,
 	uint64_t id, uint32_t cpid, sqlite3 *psqlite,
 	const TAGGED_PROPVAL *ppropval, BOOL *pb_result)
 {
@@ -2913,7 +2910,7 @@ BOOL common_util_set_property(int table_type,
 	tmp_propvals.count = 1;
 	tmp_propvals.ppropval = (TAGGED_PROPVAL*)ppropval;
 	
-	if (FALSE == common_util_set_properties(table_type,
+	if (!cu_set_properties(table_type,
 		id, cpid, psqlite, &tmp_propvals, &tmp_problems)) {
 		return FALSE;
 	}
@@ -2921,7 +2918,7 @@ BOOL common_util_set_property(int table_type,
 	return TRUE;
 }
 
-BOOL common_util_set_properties(int table_type,
+BOOL cu_set_properties(db_table table_type,
 	uint64_t id, uint32_t cpid, sqlite3 *psqlite,
 	const TPROPVAL_ARRAY *ppropvals, PROBLEM_ARRAY *pproblems)
 {
@@ -2940,23 +2937,23 @@ BOOL common_util_set_properties(int table_type,
 		return FALSE;
 	}
 	switch (table_type) {
-	case STORE_PROPERTIES_TABLE:
+	case db_table::store_props:
 		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO "
 					"store_properties VALUES (?, ?)");
 		break;
-	case FOLDER_PROPERTIES_TABLE:
+	case db_table::folder_props:
 		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO "
 		          "folder_properties VALUES (%llu, ?, ?)", LLU(id));
 		break;
-	case MESSAGE_PROPERTIES_TABLE:
+	case db_table::msg_props:
 		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO "
 		          "message_properties VALUES (%llu, ?, ?)", LLU(id));
 		break;
-	case RECIPIENT_PROPERTIES_TABLE:
+	case db_table::rcpt_props:
 		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO "
 		          "recipients_properties VALUES (%llu, ?, ?)", LLU(id));
 		break;
-	case ATTACHMENT_PROPERTIES_TABLE:
+	case db_table::atx_props:
 		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO "
 		          "attachment_properties VALUES (%llu, ?, ?)", LLU(id));
 		break;
@@ -2966,7 +2963,7 @@ BOOL common_util_set_properties(int table_type,
 		return FALSE;
 	for (size_t i = 0; i < ppropvals->count; ++i) {
 		if (PROP_TYPE(ppropvals->ppropval[i].proptag) == PT_OBJECT &&
-		    (table_type != ATTACHMENT_PROPERTIES_TABLE ||
+		    (table_type != db_table::atx_props ||
 		    ppropvals->ppropval[i].proptag != PR_ATTACH_DATA_OBJ)) {
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
@@ -2975,7 +2972,7 @@ BOOL common_util_set_properties(int table_type,
 			continue;
 		}
 		switch (table_type) {
-		case STORE_PROPERTIES_TABLE:
+		case db_table::store_props:
 			switch (ppropvals->ppropval[i].proptag) {
 			case PR_STORE_STATE:
 			case PR_MESSAGE_SIZE:
@@ -2995,7 +2992,7 @@ BOOL common_util_set_properties(int table_type,
 				continue;
 			}
 			break;
-		case FOLDER_PROPERTIES_TABLE:
+		case db_table::folder_props:
 			switch (ppropvals->ppropval[i].proptag) {
 			case PR_ENTRYID:
 			case PROP_TAG_FOLDERID:
@@ -3052,7 +3049,7 @@ BOOL common_util_set_properties(int table_type,
 				break;
 			}
 			break;
-		case MESSAGE_PROPERTIES_TABLE:
+		case db_table::msg_props:
 			switch (ppropvals->ppropval[i].proptag) {
 			case PR_ENTRYID:
 			case PROP_TAG_FOLDERID:
@@ -3094,7 +3091,7 @@ BOOL common_util_set_properties(int table_type,
 				break;
 			case PR_SUBJECT:
 			case PR_SUBJECT_A:
-				if (!common_util_remove_property(MESSAGE_PROPERTIES_TABLE,
+				if (!cu_remove_property(db_table::msg_props,
 				    id, psqlite, PR_SUBJECT_PREFIX))
 					return FALSE;	
 				if (FALSE == common_util_set_message_subject(
@@ -3190,13 +3187,13 @@ BOOL common_util_set_properties(int table_type,
 				continue;
 			}
 			break;
-		case RECIPIENT_PROPERTIES_TABLE:
+		case db_table::rcpt_props:
 			switch (ppropvals->ppropval[i].proptag) {
 			case PR_ROWID:
 				continue;
 			}
 			break;
-		case ATTACHMENT_PROPERTIES_TABLE:
+		case db_table::atx_props:
 			switch (ppropvals->ppropval[i].proptag) {
 			case PR_RECORD_KEY:
 			case PR_ATTACH_NUM:
@@ -3439,7 +3436,7 @@ BOOL common_util_set_properties(int table_type,
 	return TRUE;
 }
 
-BOOL common_util_remove_property(int table_type,
+BOOL cu_remove_property(db_table table_type,
 	uint64_t id, sqlite3 *psqlite, uint32_t proptag)
 {
 	PROPTAG_ARRAY tmp_proptags;
@@ -3447,11 +3444,11 @@ BOOL common_util_remove_property(int table_type,
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &proptag;
 	
-	return common_util_remove_properties(
+	return cu_remove_properties(
 		table_type, id, psqlite, &tmp_proptags);
 }
 
-BOOL common_util_remove_properties(int table_type, uint64_t id,
+BOOL cu_remove_properties(db_table table_type, uint64_t id,
 	sqlite3 *psqlite, const PROPTAG_ARRAY *pproptags)
 {
 	int i;
@@ -3459,20 +3456,20 @@ BOOL common_util_remove_properties(int table_type, uint64_t id,
 	char sql_string[128];
 	
 	switch (table_type) {
-	case STORE_PROPERTIES_TABLE:
+	case db_table::store_props:
 		gx_strlcpy(sql_string, "DELETE FROM store_properties WHERE proptag=?", arsizeof(sql_string));
 		break;
-	case FOLDER_PROPERTIES_TABLE:
+	case db_table::folder_props:
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM "
 			"folder_properties WHERE folder_id=%llu"
 			" AND proptag=?", LLU(id));
 		break;
-	case MESSAGE_PROPERTIES_TABLE:
+	case db_table::msg_props:
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM "
 			"message_properties WHERE message_id=%llu"
 			" AND proptag=?", LLU(id));
 		break;
-	case ATTACHMENT_PROPERTIES_TABLE:
+	case db_table::atx_props:
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM "
 			"attachment_properties WHERE attachment_id=%llu"
 			" AND proptag=?", LLU(id));
@@ -3483,7 +3480,7 @@ BOOL common_util_remove_properties(int table_type, uint64_t id,
 		return FALSE;
 	for (i=0; i<pproptags->count; i++) {
 		switch (table_type) {
-		case STORE_PROPERTIES_TABLE:
+		case db_table::store_props:
 			switch (pproptags->pproptag[i]) {
 			case PR_MESSAGE_SIZE_EXTENDED:
 			case PR_ASSOC_CONTENT_COUNT:
@@ -3492,14 +3489,14 @@ BOOL common_util_remove_properties(int table_type, uint64_t id,
 				continue;
 			}
 			break;
-		case FOLDER_PROPERTIES_TABLE:
+		case db_table::folder_props:
 			switch (pproptags->pproptag[i]) {
 			case PR_DISPLAY_NAME:
 			case PR_PREDECESSOR_CHANGE_LIST:
 				continue;
 			}
 			break;
-		case MESSAGE_PROPERTIES_TABLE:
+		case db_table::msg_props:
 			switch (pproptags->pproptag[i]) {
 			case PROP_TAG_MESSAGESTATUS:
 			case PR_PREDECESSOR_CHANGE_LIST:
@@ -4177,9 +4174,8 @@ BOOL common_util_load_search_scopes(sqlite3 *psqlite,
 	return TRUE;
 }
 
-static BOOL common_util_evaluate_subitem_restriction(
-	sqlite3 *psqlite, uint32_t cpid, int table_type,
-	uint64_t id, const RESTRICTION *pres)
+static BOOL common_util_evaluate_subitem_restriction(sqlite3 *psqlite,
+    uint32_t cpid, db_table table_type, uint64_t id, const RESTRICTION *pres)
 {
 	int len;
 	void *pvalue;
@@ -4194,7 +4190,7 @@ static BOOL common_util_evaluate_subitem_restriction(
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
-		if (!common_util_get_property(table_type, id, cpid, psqlite,
+		if (!cu_get_property(table_type, id, cpid, psqlite,
 		    rcon->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		switch (rcon->fuzzy_level & 0xFFFF) {
@@ -4242,7 +4238,7 @@ static BOOL common_util_evaluate_subitem_restriction(
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
-		if (!common_util_get_property(table_type, id, cpid, psqlite,
+		if (!cu_get_property(table_type, id, cpid, psqlite,
 		    rprop->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		if (rprop->proptag == PROP_TAG_ANR) {
@@ -4260,10 +4256,10 @@ static BOOL common_util_evaluate_subitem_restriction(
 		auto rprop = pres->pcmp;
 		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
-		if (!common_util_get_property(table_type, id, cpid, psqlite,
+		if (!cu_get_property(table_type, id, cpid, psqlite,
 		    rprop->proptag1, &pvalue) || pvalue == nullptr)
 			return FALSE;
-		if (!common_util_get_property(table_type, id, cpid, psqlite,
+		if (!cu_get_property(table_type, id, cpid, psqlite,
 		    rprop->proptag1, &pvalue1) || pvalue1 == nullptr)
 			return FALSE;
 		return propval_compare_relop(rprop->relop,
@@ -4273,7 +4269,7 @@ static BOOL common_util_evaluate_subitem_restriction(
 		auto rbm = pres->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
-		if (!common_util_get_property(table_type, id, cpid, psqlite,
+		if (!cu_get_property(table_type, id, cpid, psqlite,
 		    rbm->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		switch (rbm->bitmask_relop) {
@@ -4290,7 +4286,7 @@ static BOOL common_util_evaluate_subitem_restriction(
 	}
 	case RES_SIZE: {
 		auto rsize = pres->size;
-		if (!common_util_get_property(table_type, id, cpid, psqlite,
+		if (!cu_get_property(table_type, id, cpid, psqlite,
 		    rsize->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		val_size = propval_size(rsize->proptag, pvalue);
@@ -4299,7 +4295,7 @@ static BOOL common_util_evaluate_subitem_restriction(
 	}
 	case RES_EXIST: {
 		auto rex = pres->exist;
-		if (!common_util_get_property(table_type, id, cpid, psqlite,
+		if (!cu_get_property(table_type, id, cpid, psqlite,
 		    rex->proptag, &pvalue) || pvalue == nullptr)
 			return FALSE;
 		return TRUE;
@@ -4323,15 +4319,15 @@ static BOOL common_util_evaluate_msgsubs_restriction(
 {
 	uint64_t id;
 	uint32_t count;
-	int table_type;
+	db_table table_type;
 	char sql_string[128];
 	
 	if (proptag == PR_MESSAGE_RECIPIENTS) {
-		table_type = RECIPIENT_PROPERTIES_TABLE;
+		table_type = db_table::rcpt_props;
 		snprintf(sql_string, arsizeof(sql_string), "SELECT recipient_id FROM "
 				"recipients WHERE message_id=%llu", LLU(message_id));
 	} else {
-		table_type = ATTACHMENT_PROPERTIES_TABLE;
+		table_type = db_table::atx_props;
 		snprintf(sql_string, arsizeof(sql_string), "SELECT attachment_id FROM"
 				" attachments WHERE message_id=%llu", LLU(message_id));
 	}
@@ -4426,7 +4422,7 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
-		if (!common_util_get_property(FOLDER_PROPERTIES_TABLE,
+		if (!cu_get_property(db_table::folder_props,
 		    folder_id, 0, psqlite, rcon->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
@@ -4476,7 +4472,7 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 	}
 	case RES_PROPERTY: {
 		auto rprop = pres->prop;
-		if (!common_util_get_property(FOLDER_PROPERTIES_TABLE,
+		if (!cu_get_property(db_table::folder_props,
 		    folder_id, 0, psqlite, rprop->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
@@ -4495,11 +4491,11 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 		auto rprop = pres->pcmp;
 		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
-		if (!common_util_get_property(FOLDER_PROPERTIES_TABLE,
+		if (!cu_get_property(db_table::folder_props,
 		    folder_id, 0, psqlite, rprop->proptag1, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
-		if (!common_util_get_property(FOLDER_PROPERTIES_TABLE,
+		if (!cu_get_property(db_table::folder_props,
 		    folder_id, 0, psqlite, rprop->proptag2, &pvalue1) ||
 		    pvalue1 == nullptr)
 			return FALSE;
@@ -4510,7 +4506,7 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 		auto rbm = pres->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
-		if (!common_util_get_property(FOLDER_PROPERTIES_TABLE,
+		if (!cu_get_property(db_table::folder_props,
 		    folder_id, 0, psqlite, rbm->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
@@ -4528,7 +4524,7 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 	}
 	case RES_SIZE: {
 		auto rsize = pres->size;
-		if (!common_util_get_property(FOLDER_PROPERTIES_TABLE,
+		if (!cu_get_property(db_table::folder_props,
 		    folder_id, 0, psqlite, rsize->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
@@ -4537,7 +4533,7 @@ BOOL common_util_evaluate_folder_restriction(sqlite3 *psqlite,
 		       &val_size, &rsize->size);
 	}
 	case RES_EXIST:
-		if (!common_util_get_property(FOLDER_PROPERTIES_TABLE,
+		if (!cu_get_property(db_table::folder_props,
 		    folder_id, 0, psqlite, pres->exist->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
@@ -4585,7 +4581,7 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 			return FALSE;
 		if (PROP_TYPE(rcon->proptag) != PROP_TYPE(rcon->propval.proptag))
 			return FALSE;
-		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+		if (!cu_get_property(db_table::msg_props,
 		    message_id, cpid, psqlite, rcon->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
@@ -4646,7 +4642,7 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 			}
 			break;
 		default:
-			if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+			if (!cu_get_property(db_table::msg_props,
 			    message_id, cpid, psqlite, rprop->proptag, &pvalue) ||
 			    pvalue == nullptr)
 				return FALSE;
@@ -4667,11 +4663,11 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 		auto rprop = pres->pcmp;
 		if (PROP_TYPE(rprop->proptag1) != PROP_TYPE(rprop->proptag2))
 			return FALSE;
-		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+		if (!cu_get_property(db_table::msg_props,
 		    message_id, cpid, psqlite, rprop->proptag1, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
-		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+		if (!cu_get_property(db_table::msg_props,
 		    message_id, cpid, psqlite, rprop->proptag1, &pvalue1) ||
 		    pvalue1 == nullptr)
 			return FALSE;
@@ -4682,7 +4678,7 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 		auto rbm = pres->bm;
 		if (PROP_TYPE(rbm->proptag) != PT_LONG)
 			return FALSE;
-		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+		if (!cu_get_property(db_table::msg_props,
 		    message_id, cpid, psqlite, rbm->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
@@ -4700,7 +4696,7 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 	}
 	case RES_SIZE: {
 		auto rsize = pres->size;
-		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+		if (!cu_get_property(db_table::msg_props,
 		    message_id, cpid, psqlite, rsize->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
@@ -4709,7 +4705,7 @@ BOOL common_util_evaluate_message_restriction(sqlite3 *psqlite,
 		       &val_size, &rsize->size);
 	}
 	case RES_EXIST:
-		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+		if (!cu_get_property(db_table::msg_props,
 		    message_id, cpid, psqlite, pres->exist->proptag, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;
@@ -4807,7 +4803,7 @@ BOOL common_util_check_message_owner(sqlite3 *psqlite,
 	char tmp_name[UADDR_SIZE];
 	ADDRESSBOOK_ENTRYID ab_entryid;
 	
-	if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE, message_id, 0,
+	if (!cu_get_property(db_table::msg_props, message_id, 0,
 	    psqlite, PR_CREATOR_ENTRYID, reinterpret_cast<void **>(&pbin)))
 		return FALSE;
 	if (NULL == pbin) {
@@ -5053,7 +5049,7 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 		return FALSE;
 	}
 	if (TRUE == *pb_result) {
-		if (FALSE == common_util_get_property(FOLDER_PROPERTIES_TABLE,
+		if (!cu_get_property(db_table::folder_props,
 			folder_id, 0, psqlite, PROP_TAG_ARTICLENUMBERNEXT, &pvalue)) {
 			return FALSE;
 		}
@@ -5063,7 +5059,7 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 		next = *(uint32_t*)pvalue + 1;
 		tmp_propval.proptag = PROP_TAG_ARTICLENUMBERNEXT;
 		tmp_propval.pvalue = &next;
-		if (FALSE == common_util_set_property(FOLDER_PROPERTIES_TABLE,
+		if (!cu_set_property(db_table::folder_props,
 			folder_id, 0, psqlite, &tmp_propval, &b_result)) {
 			return FALSE;	
 		}
@@ -5088,8 +5084,7 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 		propval_buff[3].pvalue = &nt_time;
 		propvals.count = 4;
 		propvals.ppropval = propval_buff;
-		if (FALSE == common_util_set_properties(
-			MESSAGE_PROPERTIES_TABLE, *pdst_mid, 0,
+		if (!cu_set_properties(db_table::msg_props, *pdst_mid, 0,
 			psqlite, &propvals, &tmp_problems)) {
 			return FALSE;
 		}

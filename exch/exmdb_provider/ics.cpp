@@ -791,8 +791,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 			return FALSE;
 		auto fid_val1 = sqlite3_column_int64(stm_select_chg, 0);
 		PROPTAG_ARRAY proptags;
-		if (FALSE == common_util_get_proptags(
-			FOLDER_PROPERTIES_TABLE, fid_val1,
+		if (!cu_get_proptags(db_table::folder_props, fid_val1,
 			pdb->psqlite, &proptags)) {
 			return FALSE;
 		}
@@ -813,8 +812,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		tmp_proptags[count++] = PROP_TAG_PARENTFOLDERID;
 		proptags.count = count;
 		proptags.pproptag = tmp_proptags;
-		if (FALSE == common_util_get_properties(
-			FOLDER_PROPERTIES_TABLE, fid_val1, 0,
+		if (!cu_get_properties(db_table::folder_props, fid_val1, 0,
 			pdb->psqlite, &proptags, pfldchgs->pfldchgs + i)) {
 			return FALSE;
 		}

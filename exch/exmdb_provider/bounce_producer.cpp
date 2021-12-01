@@ -313,7 +313,7 @@ static int bounce_producer_get_mail_parts(sqlite3 *psqlite,
 		return 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		attachment_id = sqlite3_column_int64(pstmt, 0);
-		if (!common_util_get_property(ATTACHMENT_PROPERTIES_TABLE,
+		if (!cu_get_property(db_table::atx_props,
 		    attachment_id, 0, psqlite, PR_ATTACH_LONG_FILENAME, &pvalue))
 			return 0;
 		if (NULL == pvalue) {
@@ -372,12 +372,12 @@ BOOL bounce_producer_make_content(const char *from,
 	if ('\0' != time_zone[0]) {
 		snprintf(date_buff + len, 128 - len, " %s", time_zone);
 	}
-	if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE, message_id, 0,
+	if (!cu_get_property(db_table::msg_props, message_id, 0,
 	    psqlite, PR_MESSAGE_SIZE, &pvalue) || pvalue == nullptr)
 		return FALSE;
 	message_size = *(uint32_t*)pvalue;
 	if ('\0' == charset[0]) {
-		if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+		if (!cu_get_property(db_table::msg_props,
 		    message_id, 0, psqlite, PR_INTERNET_CPID, &pvalue))
 			return FALSE;
 		if (NULL == pvalue) {
@@ -413,7 +413,7 @@ BOOL bounce_producer_make_content(const char *from,
 			ptr += strlen(rcpt);
 			break;
 		case TAG_SUBJECT:
-			if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+			if (!cu_get_property(db_table::msg_props,
 			    message_id, 0, psqlite, PR_SUBJECT, &pvalue))
 				return FALSE;
 			if (NULL != pvalue) {

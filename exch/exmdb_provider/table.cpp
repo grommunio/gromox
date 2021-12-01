@@ -1024,8 +1024,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 				if (tmp_proptag == ptnode->instance_tag) {
 					continue;
 				}
-				if (FALSE == common_util_get_property(
-					MESSAGE_PROPERTIES_TABLE, mid_val,
+				if (!cu_get_property(db_table::msg_props, mid_val,
 					cpid, pdb->psqlite, tmp_proptag,
 					&pvalue)) {
 					return false;
@@ -1037,7 +1036,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 				}
 			}
 			if (psorts->ccategories > 0) {
-				if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+				if (!cu_get_property(db_table::msg_props,
 				    mid_val, 0, pdb->psqlite, PR_READ, &pvalue))
 					return false;
 				sqlite3_bind_int64(pstmt1, tag_count + 2,
@@ -1047,7 +1046,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			if (0 != ptnode->instance_tag) {
 				type = PROP_TYPE(ptnode->instance_tag);
 				type &= ~MV_INSTANCE;
-				if (!common_util_get_property(MESSAGE_PROPERTIES_TABLE,
+				if (!cu_get_property(db_table::msg_props,
 				    mid_val, cpid, pdb->psqlite,
 				    ptnode->instance_tag & ~MV_INSTANCE, &pvalue))
 					return false;
@@ -2045,8 +2044,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 					}
 					*(uint32_t*)pvalue = sqlite3_column_int64(pstmt, 1);
 				} else {
-					if (FALSE == common_util_get_property(
-						FOLDER_PROPERTIES_TABLE, folder_id, cpid,
+					if (!cu_get_property(db_table::folder_props, folder_id, cpid,
 						pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
 						return FALSE;
 					}
@@ -2147,8 +2145,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 					if (CONTENT_ROW_HEADER == row_type) {
 						continue;
 					}
-					if (FALSE == common_util_get_property(
-						MESSAGE_PROPERTIES_TABLE, inst_id, cpid,
+					if (!cu_get_property(db_table::msg_props, inst_id, cpid,
 						pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
 						common_util_end_message_optimize();
 						return FALSE;
@@ -2356,8 +2353,7 @@ static BOOL table_get_content_row_property(
 			*ppvalue = NULL;
 			return TRUE;
 		}
-		if (FALSE == common_util_get_property(
-			MESSAGE_PROPERTIES_TABLE, prow_param->inst_id,
+		if (!cu_get_property(db_table::msg_props, prow_param->inst_id,
 			prow_param->cpid, prow_param->psqlite, proptag,
 			ppvalue)) {
 			return FALSE;	
@@ -2379,8 +2375,7 @@ static BOOL table_get_hierarchy_row_property(
 		}
 		*(uint32_t*)*ppvalue = sqlite3_column_int64(prow_param->pstmt, 2);
 	} else {
-		if (FALSE == common_util_get_property(
-			FOLDER_PROPERTIES_TABLE, prow_param->folder_id,
+		if (!cu_get_property(db_table::folder_props, prow_param->folder_id,
 			prow_param->cpid, prow_param->psqlite, proptag,
 			ppvalue)) {
 			return FALSE;
@@ -2595,8 +2590,7 @@ static BOOL match_tbl_hier(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 				}
 				*(uint32_t *)pvalue = sqlite3_column_int64(pstmt, 2);
 			} else {
-				if (FALSE == common_util_get_property(
-				    FOLDER_PROPERTIES_TABLE, folder_id, cpid,
+				if (!cu_get_property(db_table::folder_props, folder_id, cpid,
 				    pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
 					return FALSE;
 				}
@@ -2711,8 +2705,7 @@ static BOOL match_tbl_ctnt(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 				if (CONTENT_ROW_HEADER == row_type) {
 					continue;
 				}
-				if (FALSE == common_util_get_property(
-				    MESSAGE_PROPERTIES_TABLE, inst_id, cpid,
+				if (!cu_get_property(db_table::msg_props, inst_id, cpid,
 				    pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
 					common_util_end_message_optimize();
 					return FALSE;
@@ -2967,8 +2960,7 @@ static BOOL read_tblrow_hier(uint32_t cpid, uint32_t table_id,
 			}
 			*(uint32_t *)pvalue = depth;
 		} else {
-			if (FALSE == common_util_get_property(
-			    FOLDER_PROPERTIES_TABLE, folder_id, cpid,
+			if (!cu_get_property(db_table::folder_props, folder_id, cpid,
 			    pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
 				return FALSE;
 			}
@@ -3055,8 +3047,7 @@ static BOOL read_tblrow_ctnt(uint32_t cpid, uint32_t table_id,
 			if (CONTENT_ROW_HEADER == row_type) {
 				continue;
 			}
-			if (FALSE == common_util_get_property(
-			    MESSAGE_PROPERTIES_TABLE, inst_id, cpid,
+			if (!cu_get_property(db_table::msg_props, inst_id, cpid,
 			    pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
 				return FALSE;
 			}
