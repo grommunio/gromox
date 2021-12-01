@@ -59,11 +59,8 @@ using namespace std::string_literals;
 using namespace gromox;
 
 namespace {
-struct OPTIMIZE_STMTS {
-	xstmt pstmt_msg1; /* normal message property */
-	xstmt pstmt_msg2; /* string message property */
-	xstmt pstmt_rcpt1; /* normal recipient property */
-	xstmt pstmt_rcpt2; /* string recipient property */
+struct prepared_statements {
+	xstmt msg_norm, msg_str, rcpt_norm, rcpt_str;
 };
 }
 
@@ -552,50 +549,44 @@ BOOL common_util_begin_message_optimize(sqlite3 *psqlite)
 {
 	char sql_string[256];
 	
-	std::unique_ptr<OPTIMIZE_STMTS> popt_stmts(new(std::nothrow) OPTIMIZE_STMTS);
-	if (NULL == popt_stmts) {
+	std::unique_ptr<prepared_statements> op(new(std::nothrow) prepared_statements);
+	if (op == nullptr)
 		return FALSE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT propval"
 				" FROM message_properties WHERE "
 				"message_id=? AND proptag=?");
-	popt_stmts->pstmt_msg1 = gx_sql_prep(psqlite, sql_string);
-	if (popt_stmts->pstmt_msg1 == nullptr) {
+	op->msg_norm = gx_sql_prep(psqlite, sql_string);
+	if (op->msg_norm == nullptr)
 		return FALSE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, "
 			"propval FROM message_properties WHERE "
 			"message_id=? AND (proptag=? OR proptag=?)");
-	popt_stmts->pstmt_msg2 = gx_sql_prep(psqlite, sql_string);
-	if (popt_stmts->pstmt_msg2 == nullptr) {
+	op->msg_str = gx_sql_prep(psqlite, sql_string);
+	if (op->msg_str == nullptr)
 		return FALSE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT propval "
 				"FROM recipients_properties WHERE "
 				"recipient_id=? AND proptag=?");
-	popt_stmts->pstmt_rcpt1 = gx_sql_prep(psqlite, sql_string);
-	if (popt_stmts->pstmt_rcpt1 == nullptr) {
+	op->rcpt_norm = gx_sql_prep(psqlite, sql_string);
+	if (op->rcpt_norm == nullptr)
 		return FALSE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval"
 		" FROM recipients_properties WHERE recipient_id=?"
 		" AND (proptag=? OR proptag=?)");
-	popt_stmts->pstmt_rcpt2 = gx_sql_prep(psqlite, sql_string);
-	if (popt_stmts->pstmt_rcpt2 == nullptr) {
+	op->rcpt_str = gx_sql_prep(psqlite, sql_string);
+	if (op->rcpt_str == nullptr)
 		return FALSE;
-	}
-	pthread_setspecific(g_opt_key, popt_stmts.release());
+	pthread_setspecific(g_opt_key, op.release());
 	return TRUE;
 }
 
 void common_util_end_message_optimize()
 {
-	auto popt_stmts = static_cast<OPTIMIZE_STMTS *>(pthread_getspecific(g_opt_key));
-	if (NULL == popt_stmts) {
+	auto op = static_cast<prepared_statements *>(pthread_getspecific(g_opt_key));
+	if (op == nullptr)
 		return;
-	}
 	pthread_setspecific(g_opt_key, NULL);
-	delete popt_stmts;
+	delete op;
 }
 
 static sqlite3_stmt* common_util_get_optimize_stmt(
@@ -605,15 +596,13 @@ static sqlite3_stmt* common_util_get_optimize_stmt(
 		RECIPIENT_PROPERTIES_TABLE != table_type) {
 		return NULL;	
 	}
-	auto popt_stmts = static_cast<OPTIMIZE_STMTS *>(pthread_getspecific(g_opt_key));
-	if (NULL == popt_stmts) {
+	auto op = static_cast<prepared_statements *>(pthread_getspecific(g_opt_key));
+	if (op == nullptr)
 		return NULL;
-	}
 	if (MESSAGE_PROPERTIES_TABLE == table_type) {
-		return b_normal ? popt_stmts->pstmt_msg1 : popt_stmts->pstmt_msg2;
-	} else {
-		return b_normal ? popt_stmts->pstmt_rcpt1 : popt_stmts->pstmt_rcpt2;
+		return b_normal ? op->msg_norm : op->msg_str;
 	}
+	return b_normal ? op->rcpt_norm : op->rcpt_str;
 }
 
 BOOL common_util_get_proptags(int table_type, uint64_t id,
