@@ -2123,7 +2123,6 @@ BOOL cu_get_properties(db_table table_type,
 	uint16_t proptype;
 	EXT_PULL ext_pull;
 	sqlite3_stmt *pstmt = nullptr;
-	TYPED_PROPVAL *ptyped;
 	
 	ppropvals->count = 0;
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
@@ -2349,8 +2348,9 @@ BOOL cu_get_properties(db_table table_type,
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			continue;
 		}
-		if (proptype == PT_UNSPECIFIED) {
-			ptyped = cu_alloc<TYPED_PROPVAL>();
+		switch (proptype) {
+		case PT_UNSPECIFIED: {
+			auto ptyped = cu_alloc<TYPED_PROPVAL>();
 			if (NULL == ptyped) {
 				return FALSE;
 			}
@@ -2363,193 +2363,193 @@ BOOL cu_get_properties(db_table table_type,
 			pv.pvalue = ptyped;
 			ppropvals->count ++;
 			continue;
-		} else if (proptype == PT_STRING8) {
+		}
+		case PT_STRING8:
 			if (proptype == PROP_TYPE(sqlite3_column_int64(pstmt, 0)))
 				pvalue = common_util_dup(S2A(sqlite3_column_text(pstmt, 1)));
 			else
 				pvalue = common_util_convert_copy(FALSE, cpid,
 				         S2A(sqlite3_column_text(pstmt, 1)));
-		} else if (proptype == PT_UNICODE) {
+			break;
+		case PT_UNICODE:
 			if (proptype == PROP_TYPE(sqlite3_column_int64(pstmt, 0)))
 				pvalue = common_util_dup(S2A(sqlite3_column_text(pstmt, 1)));
 			else
 				pvalue = common_util_convert_copy(TRUE, cpid,
 				         S2A(sqlite3_column_text(pstmt, 1)));
-		} else {
-			switch (proptype) {
-			case PT_FLOAT:
-				pvalue = cu_alloc<float>();
-				if (NULL != pvalue) {
-					*(float*)pvalue = sqlite3_column_double(pstmt, 0);
-				}
-				break;
-			case PT_DOUBLE:
-			case PT_APPTIME:
-				pvalue = cu_alloc<double>();
-				if (NULL != pvalue) {
-					*(double*)pvalue = sqlite3_column_double(pstmt, 0);
-				}
-				break;
-			case PT_CURRENCY:
-			case PT_I8:
-			case PT_SYSTIME:
-				pvalue = cu_alloc<uint64_t>();
-				if (NULL != pvalue) {
-					*(uint64_t*)pvalue = sqlite3_column_int64(pstmt, 0);
-				}
-				break;
-			case PT_SHORT:
-				pvalue = cu_alloc<uint16_t>();
-				if (NULL != pvalue) {
-					*(uint16_t*)pvalue = sqlite3_column_int64(pstmt, 0);
-				}
-				break;
-			case PT_LONG:
-				pvalue = cu_alloc<uint32_t>();
-				if (NULL != pvalue) {
-					*(uint32_t*)pvalue = sqlite3_column_int64(pstmt, 0);
-				}
-				break;
-			case PT_BOOLEAN:
-				pvalue = cu_alloc<uint8_t>();
-				if (NULL != pvalue) {
-					*(uint8_t*)pvalue = sqlite3_column_int64(pstmt, 0);
-				}
-				break;
-			case PT_CLSID:
-				pvalue = cu_alloc<GUID>();
-				if (NULL != pvalue) {
-					ext_pull.init(sqlite3_column_blob(pstmt, 0),
-						sqlite3_column_bytes(pstmt, 0),
-						common_util_alloc, 0);
-					if (ext_pull.g_guid(static_cast<GUID *>(pvalue)) != EXT_ERR_SUCCESS)
-						return FALSE;
-				}
-				break;
-			case PT_SVREID:
-				pvalue = cu_alloc<SVREID>();
-				if (NULL != pvalue) {
-					ext_pull.init(sqlite3_column_blob(pstmt, 0),
-						sqlite3_column_bytes(pstmt, 0),
-						common_util_alloc, 0);
-					if (ext_pull.g_svreid(static_cast<SVREID *>(pvalue)) != EXT_ERR_SUCCESS)
-						return FALSE;
-				}
-				break;
-			case PT_SRESTRICTION:
-				pvalue = cu_alloc<RESTRICTION>();
-				if (NULL != pvalue) {
-					ext_pull.init(sqlite3_column_blob(pstmt, 0),
-						sqlite3_column_bytes(pstmt, 0),
-						common_util_alloc, 0);
-					if (ext_pull.g_restriction(static_cast<RESTRICTION *>(pvalue)) != EXT_ERR_SUCCESS)
-						return FALSE;
-				}
-				break;
-			case PT_ACTIONS:
-				pvalue = cu_alloc<RULE_ACTIONS>();
-				if (NULL != pvalue) {
-					ext_pull.init(sqlite3_column_blob(pstmt, 0),
-						sqlite3_column_bytes(pstmt, 0),
-						common_util_alloc, 0);
-					if (ext_pull.g_rule_actions(static_cast<RULE_ACTIONS *>(pvalue)) != EXT_ERR_SUCCESS)
-						return FALSE;
-				}
-				break;
-			case PT_OBJECT:
-			case PT_BINARY: {
-				pvalue = cu_alloc<BINARY>();
-				auto bv = static_cast<BINARY *>(pvalue);
-				if (NULL != pvalue) {
-					bv->cb = sqlite3_column_bytes(pstmt, 0);
-					bv->pv = common_util_alloc(bv->cb);
-					if (bv->pv == nullptr) {
-						return FALSE;
-					}
-					auto blob = sqlite3_column_blob(pstmt, 0);
-					if (bv->cb != 0 || blob != nullptr)
-						memcpy(bv->pv, blob, bv->cb);
-				}
-				break;
+			break;
+		case PT_FLOAT:
+			pvalue = cu_alloc<float>();
+			if (pvalue == nullptr)
+				return false;
+			*(float *)pvalue = sqlite3_column_double(pstmt, 0);
+			break;
+		case PT_DOUBLE:
+		case PT_APPTIME:
+			pvalue = cu_alloc<double>();
+			if (pvalue == nullptr)
+				return false;
+			*(double *)pvalue = sqlite3_column_double(pstmt, 0);
+			break;
+		case PT_CURRENCY:
+		case PT_I8:
+		case PT_SYSTIME:
+			pvalue = cu_alloc<uint64_t>();
+			if (pvalue == nullptr)
+				return false;
+			*(uint64_t *)pvalue = sqlite3_column_int64(pstmt, 0);
+			break;
+		case PT_SHORT:
+			pvalue = cu_alloc<uint16_t>();
+			if (pvalue == nullptr)
+				return false;
+			*(uint16_t *)pvalue = sqlite3_column_int64(pstmt, 0);
+			break;
+		case PT_LONG:
+			pvalue = cu_alloc<uint32_t>();
+			if (pvalue == nullptr)
+				return false;
+			*(uint32_t *)pvalue = sqlite3_column_int64(pstmt, 0);
+			break;
+		case PT_BOOLEAN:
+			pvalue = cu_alloc<uint8_t>();
+			if (pvalue == nullptr)
+				return false;
+			*(uint8_t *)pvalue = sqlite3_column_int64(pstmt, 0);
+			break;
+		case PT_CLSID:
+			pvalue = cu_alloc<GUID>();
+			if (pvalue == nullptr)
+				return false;
+			ext_pull.init(sqlite3_column_blob(pstmt, 0),
+				sqlite3_column_bytes(pstmt, 0),
+				common_util_alloc, 0);
+			if (ext_pull.g_guid(static_cast<GUID *>(pvalue)) != EXT_ERR_SUCCESS)
+				return FALSE;
+			break;
+		case PT_SVREID:
+			pvalue = cu_alloc<SVREID>();
+			if (pvalue == nullptr)
+				return false;
+			ext_pull.init(sqlite3_column_blob(pstmt, 0),
+				sqlite3_column_bytes(pstmt, 0),
+				common_util_alloc, 0);
+			if (ext_pull.g_svreid(static_cast<SVREID *>(pvalue)) != EXT_ERR_SUCCESS)
+				return FALSE;
+			break;
+		case PT_SRESTRICTION:
+			pvalue = cu_alloc<RESTRICTION>();
+			if (pvalue == nullptr)
+				return false;
+			ext_pull.init(sqlite3_column_blob(pstmt, 0),
+				sqlite3_column_bytes(pstmt, 0),
+				common_util_alloc, 0);
+			if (ext_pull.g_restriction(static_cast<RESTRICTION *>(pvalue)) != EXT_ERR_SUCCESS)
+				return FALSE;
+			break;
+		case PT_ACTIONS:
+			pvalue = cu_alloc<RULE_ACTIONS>();
+			if (pvalue == nullptr)
+				return false;
+			ext_pull.init(sqlite3_column_blob(pstmt, 0),
+				sqlite3_column_bytes(pstmt, 0),
+				common_util_alloc, 0);
+			if (ext_pull.g_rule_actions(static_cast<RULE_ACTIONS *>(pvalue)) != EXT_ERR_SUCCESS)
+				return FALSE;
+			break;
+		case PT_OBJECT:
+		case PT_BINARY: {
+			pvalue = cu_alloc<BINARY>();
+			if (pvalue == nullptr)
+				return false;
+			auto bv = static_cast<BINARY *>(pvalue);
+			bv->cb = sqlite3_column_bytes(pstmt, 0);
+			bv->pv = common_util_alloc(bv->cb);
+			if (bv->pv == nullptr) {
+				return FALSE;
 			}
-			case PT_MV_SHORT:
-				pvalue = cu_alloc<SHORT_ARRAY>();
-				if (NULL != pvalue) {
-					ext_pull.init(sqlite3_column_blob(pstmt, 0),
-						sqlite3_column_bytes(pstmt, 0),
-						common_util_alloc, 0);
-					if (ext_pull.g_uint16_a(static_cast<SHORT_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
-						return FALSE;
-				}
+			auto blob = sqlite3_column_blob(pstmt, 0);
+			if (bv->cb != 0 || blob != nullptr)
+				memcpy(bv->pv, blob, bv->cb);
+			break;
+		}
+		case PT_MV_SHORT:
+			pvalue = cu_alloc<SHORT_ARRAY>();
+			if (pvalue == nullptr)
+				return false;
+			ext_pull.init(sqlite3_column_blob(pstmt, 0),
+				sqlite3_column_bytes(pstmt, 0),
+				common_util_alloc, 0);
+			if (ext_pull.g_uint16_a(static_cast<SHORT_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
+				return FALSE;
+			break;
+		case PT_MV_LONG:
+			pvalue = cu_alloc<LONG_ARRAY>();
+			if (pvalue == nullptr)
+				return false;
+			ext_pull.init(sqlite3_column_blob(pstmt, 0),
+				sqlite3_column_bytes(pstmt, 0),
+				common_util_alloc, 0);
+			if (ext_pull.g_uint32_a(static_cast<LONG_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
+				return FALSE;
+			break;
+		case PT_MV_CURRENCY:
+		case PT_MV_I8:
+		case PT_MV_SYSTIME:
+			pvalue = cu_alloc<LONGLONG_ARRAY>();
+			if (pvalue == nullptr)
+				return false;
+			ext_pull.init(sqlite3_column_blob(pstmt, 0),
+				sqlite3_column_bytes(pstmt, 0),
+				common_util_alloc, 0);
+			if (ext_pull.g_uint64_a(static_cast<LONGLONG_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
+				return FALSE;
+			break;
+		case PT_MV_STRING8:
+		case PT_MV_UNICODE: {
+			auto sa = cu_alloc<STRING_ARRAY>();
+			pvalue = sa;
+			if (pvalue == nullptr)
+				return false;
+			ext_pull.init(sqlite3_column_blob(pstmt, 0),
+				sqlite3_column_bytes(pstmt, 0),
+				common_util_alloc, 0);
+			if (ext_pull.g_wstr_a(sa) != EXT_ERR_SUCCESS)
+				return FALSE;
+			if (proptype != PT_MV_STRING8)
 				break;
-			case PT_MV_LONG:
-				pvalue = cu_alloc<LONG_ARRAY>();
-				if (NULL != pvalue) {
-					ext_pull.init(sqlite3_column_blob(pstmt, 0),
-						sqlite3_column_bytes(pstmt, 0),
-						common_util_alloc, 0);
-					if (ext_pull.g_uint32_a(static_cast<LONG_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
-						return FALSE;
+			for (size_t j = 0; j < sa->count; ++j) {
+				pstring = common_util_convert_copy(false, cpid, sa->ppstr[j]);
+				if (NULL == pstring) {
+					return FALSE;
 				}
-				break;
-			case PT_MV_CURRENCY:
-			case PT_MV_I8:
-			case PT_MV_SYSTIME:
-				pvalue = cu_alloc<LONGLONG_ARRAY>();
-				if (NULL != pvalue) {
-					ext_pull.init(sqlite3_column_blob(pstmt, 0),
-						sqlite3_column_bytes(pstmt, 0),
-						common_util_alloc, 0);
-					if (ext_pull.g_uint64_a(static_cast<LONGLONG_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
-						return FALSE;
-				}
-				break;
-			case PT_MV_STRING8:
-			case PT_MV_UNICODE: {
-				auto sa = cu_alloc<STRING_ARRAY>();
-				pvalue = sa;
-				if (sa != nullptr) {
-					ext_pull.init(sqlite3_column_blob(pstmt, 0),
-						sqlite3_column_bytes(pstmt, 0),
-						common_util_alloc, 0);
-					if (ext_pull.g_wstr_a(sa) != EXT_ERR_SUCCESS)
-						return FALSE;
-					if (proptype == PT_MV_STRING8) {
-						for (size_t j = 0; j < sa->count; ++j) {
-							pstring = common_util_convert_copy(false, cpid, sa->ppstr[j]);
-							if (NULL == pstring) {
-								return FALSE;
-							}
-							sa->ppstr[j] = pstring;
-						}
-					}
-				}
-				break;
+				sa->ppstr[j] = pstring;
 			}
-			case PT_MV_CLSID:
-				pvalue = cu_alloc<GUID_ARRAY>();
-				if (NULL != pvalue) {
-					ext_pull.init(sqlite3_column_blob(pstmt, 0),
-						sqlite3_column_bytes(pstmt, 0),
-						common_util_alloc, 0);
-					if (ext_pull.g_guid_a(static_cast<GUID_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
-						return FALSE;
-				}
-				break;
-			case PT_MV_BINARY:
-				pvalue = cu_alloc<BINARY_ARRAY>();
-				if (NULL != pvalue) {
-					ext_pull.init(sqlite3_column_blob(pstmt, 0),
-						sqlite3_column_bytes(pstmt, 0),
-						common_util_alloc, 0);
-					if (ext_pull.g_bin_a(static_cast<BINARY_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
-						return FALSE;
-				}
-				break;
-			default:
-				pvalue = NULL;
-				break;
-			}
+			break;
+		}
+		case PT_MV_CLSID:
+			pvalue = cu_alloc<GUID_ARRAY>();
+			if (pvalue == nullptr)
+				return false;
+			ext_pull.init(sqlite3_column_blob(pstmt, 0),
+				sqlite3_column_bytes(pstmt, 0),
+				common_util_alloc, 0);
+			if (ext_pull.g_guid_a(static_cast<GUID_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
+				return FALSE;
+			break;
+		case PT_MV_BINARY:
+			pvalue = cu_alloc<BINARY_ARRAY>();
+			if (pvalue == nullptr)
+				return false;
+			ext_pull.init(sqlite3_column_blob(pstmt, 0),
+				sqlite3_column_bytes(pstmt, 0),
+				common_util_alloc, 0);
+			if (ext_pull.g_bin_a(static_cast<BINARY_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
+				return FALSE;
+			break;
+		default:
+			assert(false);
+			return false;
 		}
 		if (NULL == pvalue) {
 			return FALSE;
