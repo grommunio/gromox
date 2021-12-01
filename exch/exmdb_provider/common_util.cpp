@@ -368,9 +368,7 @@ BOOL common_util_allocate_eid(sqlite3 *psqlite, uint64_t *peid)
 	max_eid = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	if (cur_eid >= max_eid) {
-		snprintf(sql_string, arsizeof(sql_string), "SELECT "
-			"max(range_end) FROM allocated_eids");
-		pstmt = gx_sql_prep(psqlite, sql_string);
+		pstmt = gx_sql_prep(psqlite, "SELECT MAX(range_end) FROM allocated_eids");
 		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 			return FALSE;
 		cur_eid = sqlite3_column_int64(pstmt, 0);
@@ -420,9 +418,7 @@ BOOL common_util_allocate_eid_from_folder(sqlite3 *psqlite,
 	pstmt.finalize();
 	cur_eid = *peid + 1;
 	if (cur_eid > max_eid) {
-		snprintf(sql_string, arsizeof(sql_string), "SELECT "
-			"max(range_end) FROM allocated_eids");
-		pstmt = gx_sql_prep(psqlite, sql_string);
+		pstmt = gx_sql_prep(psqlite, "SELECT MAX(range_end) FROM allocated_eids");
 		if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 			return FALSE;
 		*peid = sqlite3_column_int64(pstmt, 0);
@@ -547,33 +543,27 @@ BOOL common_util_allocate_cid(sqlite3 *psqlite, uint64_t *pcid)
 
 BOOL common_util_begin_message_optimize(sqlite3 *psqlite)
 {
-	char sql_string[256];
-	
 	std::unique_ptr<prepared_statements> op(new(std::nothrow) prepared_statements);
 	if (op == nullptr)
 		return FALSE;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT propval"
-				" FROM message_properties WHERE "
-				"message_id=? AND proptag=?");
-	op->msg_norm = gx_sql_prep(psqlite, sql_string);
+	op->msg_norm = gx_sql_prep(psqlite, "SELECT propval"
+	               " FROM message_properties WHERE "
+	               "message_id=? AND proptag=?");
 	if (op->msg_norm == nullptr)
 		return FALSE;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, "
-			"propval FROM message_properties WHERE "
-			"message_id=? AND (proptag=? OR proptag=?)");
-	op->msg_str = gx_sql_prep(psqlite, sql_string);
+	op->msg_str = gx_sql_prep(psqlite, "SELECT proptag, "
+	              "propval FROM message_properties WHERE "
+	              "message_id=? AND (proptag=? OR proptag=?)");
 	if (op->msg_str == nullptr)
 		return FALSE;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT propval "
-				"FROM recipients_properties WHERE "
-				"recipient_id=? AND proptag=?");
-	op->rcpt_norm = gx_sql_prep(psqlite, sql_string);
+	op->rcpt_norm = gx_sql_prep(psqlite, "SELECT propval "
+	                "FROM recipients_properties WHERE "
+	                "recipient_id=? AND proptag=?");
 	if (op->rcpt_norm == nullptr)
 		return FALSE;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval"
-		" FROM recipients_properties WHERE recipient_id=?"
-		" AND (proptag=? OR proptag=?)");
-	op->rcpt_str = gx_sql_prep(psqlite, sql_string);
+	op->rcpt_str = gx_sql_prep(psqlite, "SELECT proptag, propval"
+	               " FROM recipients_properties WHERE recipient_id=?"
+	               " AND (proptag=? OR proptag=?)");
 	if (op->rcpt_str == nullptr)
 		return FALSE;
 	pthread_setspecific(g_opt_key, op.release());
@@ -615,7 +605,7 @@ BOOL common_util_get_proptags(int table_type, uint64_t id,
 
 	switch (table_type) {
 	case STORE_PROPERTIES_TABLE:
-		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM store_properties");
+		gx_strlcpy(sql_string, "SELECT proptag FROM store_properties", arsizeof(sql_string));
 		proptags[i++] = PR_INTERNET_ARTICLE_NUMBER;
 		break;
 	case FOLDER_PROPERTIES_TABLE:
@@ -1375,17 +1365,14 @@ BOOL common_util_get_message_flags(sqlite3 *psqlite,
 	uint64_t message_id, BOOL b_native,
 	uint32_t **ppmessage_flags)
 {
-	char sql_string[128];
-	
 	auto pstmt = common_util_get_optimize_stmt(MESSAGE_PROPERTIES_TABLE, TRUE);
 	xstmt own_stmt;
 	if (NULL != pstmt) {
 		sqlite3_reset(pstmt);
 	} else {
-		snprintf(sql_string, arsizeof(sql_string), "SELECT propval "
-			"FROM message_properties WHERE message_id=?"
-			" AND proptag=?");
-		own_stmt = gx_sql_prep(psqlite, sql_string);
+		own_stmt = gx_sql_prep(psqlite, "SELECT propval "
+		           "FROM message_properties WHERE message_id=?"
+		           " AND proptag=?");
 		if (own_stmt == nullptr)
 			return FALSE;
 		pstmt = own_stmt;
@@ -1456,7 +1443,6 @@ static BOOL common_util_get_message_subject(
 	uint32_t proptag, void **ppvalue)
 {
 	char *pvalue;
-	char sql_string[128];
 	const char *psubject_prefix, *pnormalized_subject;
 	
 	psubject_prefix = NULL;
@@ -1466,10 +1452,9 @@ static BOOL common_util_get_message_subject(
 	if (NULL != pstmt) {
 		sqlite3_reset(pstmt);
 	} else {
-		snprintf(sql_string, arsizeof(sql_string), "SELECT propval "
-			"FROM message_properties WHERE message_id=?"
-			" AND proptag=?");
-		own_stmt = gx_sql_prep(psqlite, sql_string);
+		own_stmt = gx_sql_prep(psqlite, "SELECT propval "
+		           "FROM message_properties WHERE message_id=?"
+		           " AND proptag=?");
 		if (own_stmt == nullptr)
 			return FALSE;
 		pstmt = own_stmt;
@@ -2140,7 +2125,6 @@ BOOL common_util_get_properties(int table_type,
 	uint16_t proptype;
 	EXT_PULL ext_pull;
 	sqlite3_stmt *pstmt = nullptr;
-	char sql_string[256];
 	TYPED_PROPVAL *ptyped;
 	
 	ppropvals->count = 0;
@@ -2172,19 +2156,17 @@ BOOL common_util_get_properties(int table_type,
 		    proptype == PT_UNICODE) {
 			switch (table_type) {
 			case STORE_PROPERTIES_TABLE:
-				snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval"
-							" FROM store_properties WHERE proptag=?");
-				own_stmt = gx_sql_prep(psqlite, sql_string);
+				own_stmt = gx_sql_prep(psqlite, "SELECT proptag, propval"
+				           " FROM store_properties WHERE proptag=?");
 				if (own_stmt == nullptr)
 					return FALSE;
 				pstmt = own_stmt;
 				sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_UNICODE));
 				break;
 			case FOLDER_PROPERTIES_TABLE:
-				snprintf(sql_string, arsizeof(sql_string), "SELECT proptag,"
-						" propval FROM folder_properties WHERE"
-						" folder_id=? AND proptag=?");
-				own_stmt = gx_sql_prep(psqlite, sql_string);
+				own_stmt = gx_sql_prep(psqlite, "SELECT proptag,"
+				           " propval FROM folder_properties WHERE"
+				           " folder_id=? AND proptag=?");
 				if (own_stmt == nullptr)
 					return FALSE;
 				pstmt = own_stmt;
@@ -2196,10 +2178,9 @@ BOOL common_util_get_properties(int table_type,
 				if (NULL != pstmt) {
 					sqlite3_reset(pstmt);
 				} else {
-					snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, "
-							"propval FROM message_properties WHERE "
-							"message_id=? AND (proptag=? OR proptag=?)");
-					own_stmt = gx_sql_prep(psqlite, sql_string);
+					own_stmt = gx_sql_prep(psqlite, "SELECT proptag, "
+					           "propval FROM message_properties WHERE "
+					           "message_id=? AND (proptag=? OR proptag=?)");
 					if (own_stmt == nullptr)
 						return FALSE;
 					pstmt = own_stmt;
@@ -2213,10 +2194,9 @@ BOOL common_util_get_properties(int table_type,
 				if (NULL != pstmt) {
 					sqlite3_reset(pstmt);
 				} else {
-					snprintf(sql_string, arsizeof(sql_string), "SELECT proptag,"
-						" propval FROM recipients_properties WHERE"
-						" recipient_id=? AND (proptag=? OR proptag=?)");
-					own_stmt = gx_sql_prep(psqlite, sql_string);
+					own_stmt = gx_sql_prep(psqlite, "SELECT proptag,"
+					           " propval FROM recipients_properties WHERE"
+					           " recipient_id=? AND (proptag=? OR proptag=?)");
 					if (own_stmt == nullptr)
 						return FALSE;
 					pstmt = own_stmt;
@@ -2226,10 +2206,9 @@ BOOL common_util_get_properties(int table_type,
 				sqlite3_bind_int64(pstmt, 3, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_STRING8));
 				break;
 			case ATTACHMENT_PROPERTIES_TABLE:
-				snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval"
-					" FROM attachment_properties WHERE attachment_id=?"
-					" AND (proptag=? OR proptag=?)");
-				own_stmt = gx_sql_prep(psqlite, sql_string);
+				own_stmt = gx_sql_prep(psqlite, "SELECT proptag, propval"
+				           " FROM attachment_properties WHERE attachment_id=?"
+				           " AND (proptag=? OR proptag=?)");
 				if (own_stmt == nullptr)
 					return FALSE;
 				pstmt = own_stmt;
@@ -2241,19 +2220,17 @@ BOOL common_util_get_properties(int table_type,
 		} else if (proptype == PT_MV_STRING8) {
 			switch (table_type) {
 			case STORE_PROPERTIES_TABLE:
-				snprintf(sql_string, arsizeof(sql_string), "SELECT propval"
-					" FROM store_properties WHERE proptag=?");
-				own_stmt = gx_sql_prep(psqlite, sql_string);
+				own_stmt = gx_sql_prep(psqlite, "SELECT propval"
+				           " FROM store_properties WHERE proptag=?");
 				if (own_stmt == nullptr)
 					return FALSE;
 				pstmt = own_stmt;
 				sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
 				break;
 			case FOLDER_PROPERTIES_TABLE:
-				snprintf(sql_string, arsizeof(sql_string), "SELECT propval "
-					"FROM folder_properties WHERE folder_id=? "
-					"AND proptag=?)");
-				own_stmt = gx_sql_prep(psqlite, sql_string);
+				own_stmt = gx_sql_prep(psqlite, "SELECT propval "
+				           "FROM folder_properties WHERE folder_id=? "
+				           "AND proptag=?)");
 				if (own_stmt == nullptr)
 					return FALSE;
 				pstmt = own_stmt;
@@ -2265,10 +2242,9 @@ BOOL common_util_get_properties(int table_type,
 				if (NULL != pstmt) {
 					sqlite3_reset(pstmt);
 				} else {
-					snprintf(sql_string, arsizeof(sql_string), "SELECT propval"
-								" FROM message_properties WHERE "
-								"message_id=? AND proptag=?");
-					own_stmt = gx_sql_prep(psqlite, sql_string);
+					own_stmt = gx_sql_prep(psqlite, "SELECT propval"
+					           " FROM message_properties WHERE "
+					           "message_id=? AND proptag=?");
 					if (own_stmt == nullptr)
 						return FALSE;
 					pstmt = own_stmt;
@@ -2281,10 +2257,9 @@ BOOL common_util_get_properties(int table_type,
 				if (NULL != pstmt) {
 					sqlite3_reset(pstmt);
 				} else {
-					snprintf(sql_string, arsizeof(sql_string), "SELECT propval "
-								"FROM recipients_properties WHERE "
-								"recipient_id=? AND proptag=?");
-					own_stmt = gx_sql_prep(psqlite, sql_string);
+					own_stmt = gx_sql_prep(psqlite, "SELECT propval "
+					           "FROM recipients_properties WHERE "
+					           "recipient_id=? AND proptag=?");
 					if (own_stmt == nullptr)
 						return FALSE;
 					pstmt = own_stmt;
@@ -2293,10 +2268,9 @@ BOOL common_util_get_properties(int table_type,
 				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_MV_UNICODE));
 				break;
 			case ATTACHMENT_PROPERTIES_TABLE:
-				snprintf(sql_string, arsizeof(sql_string), "SELECT propval "
-							"FROM attachment_properties WHERE "
-							"attachment_id=? AND proptag=?");
-				own_stmt = gx_sql_prep(psqlite, sql_string);
+				own_stmt = gx_sql_prep(psqlite, "SELECT propval "
+				           "FROM attachment_properties WHERE "
+				           "attachment_id=? AND proptag=?");
 				if (own_stmt == nullptr)
 					return FALSE;
 				pstmt = own_stmt;
@@ -2308,9 +2282,8 @@ BOOL common_util_get_properties(int table_type,
 			switch (table_type) {
 			case STORE_PROPERTIES_TABLE:
 				proptag = pproptags->pproptag[i];
-				snprintf(sql_string, arsizeof(sql_string), "SELECT propval "
-					"FROM store_properties WHERE proptag=?");
-				own_stmt = gx_sql_prep(psqlite, sql_string);
+				own_stmt = gx_sql_prep(psqlite, "SELECT propval "
+				           "FROM store_properties WHERE proptag=?");
 				if (own_stmt == nullptr)
 					return FALSE;
 				pstmt = own_stmt;
@@ -2325,9 +2298,8 @@ BOOL common_util_get_properties(int table_type,
 					proptag = pproptags->pproptag[i];
 					break;
 				}
-				snprintf(sql_string, arsizeof(sql_string), "SELECT propval FROM "
-					"folder_properties WHERE folder_id=? AND proptag=?");
-				own_stmt = gx_sql_prep(psqlite, sql_string);
+				own_stmt = gx_sql_prep(psqlite, "SELECT propval FROM "
+				           "folder_properties WHERE folder_id=? AND proptag=?");
 				if (own_stmt == nullptr)
 					return FALSE;
 				pstmt = own_stmt;
@@ -2339,10 +2311,9 @@ BOOL common_util_get_properties(int table_type,
 				if (NULL != pstmt) {
 					sqlite3_reset(pstmt);
 				} else {
-					snprintf(sql_string, arsizeof(sql_string), "SELECT propval"
-								" FROM message_properties WHERE "
-								"message_id=? AND proptag=?");
-					own_stmt = gx_sql_prep(psqlite, sql_string);
+					own_stmt = gx_sql_prep(psqlite, "SELECT propval"
+					           " FROM message_properties WHERE "
+					           "message_id=? AND proptag=?");
 					if (own_stmt == nullptr)
 						return FALSE;
 					pstmt = own_stmt;
@@ -2355,10 +2326,9 @@ BOOL common_util_get_properties(int table_type,
 				if (NULL != pstmt) {
 					sqlite3_reset(pstmt);
 				} else {
-					snprintf(sql_string, arsizeof(sql_string), "SELECT propval "
-								"FROM recipients_properties WHERE "
-								"recipient_id=? AND proptag=?");
-					own_stmt = gx_sql_prep(psqlite, sql_string);
+					own_stmt = gx_sql_prep(psqlite, "SELECT propval "
+					           "FROM recipients_properties WHERE "
+					           "recipient_id=? AND proptag=?");
 					if (own_stmt == nullptr)
 						return FALSE;
 					pstmt = own_stmt;
@@ -2367,10 +2337,9 @@ BOOL common_util_get_properties(int table_type,
 				sqlite3_bind_int64(pstmt, 2, pproptags->pproptag[i]);
 				break;
 			case ATTACHMENT_PROPERTIES_TABLE:
-				snprintf(sql_string, arsizeof(sql_string), "SELECT propval FROM "
-						"attachment_properties WHERE attachment_id=?"
-						" AND proptag=?");
-				own_stmt = gx_sql_prep(psqlite, sql_string);
+				own_stmt = gx_sql_prep(psqlite, "SELECT propval FROM "
+				           "attachment_properties WHERE attachment_id=?"
+				           " AND proptag=?");
 				if (own_stmt == nullptr)
 					return FALSE;
 				pstmt = own_stmt;
@@ -3491,8 +3460,7 @@ BOOL common_util_remove_properties(int table_type, uint64_t id,
 	
 	switch (table_type) {
 	case STORE_PROPERTIES_TABLE:
-		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM "
-				"store_properties WHERE proptag=?");
+		gx_strlcpy(sql_string, "DELETE FROM store_properties WHERE proptag=?", arsizeof(sql_string));
 		break;
 	case FOLDER_PROPERTIES_TABLE:
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM "
@@ -4109,7 +4077,6 @@ BOOL common_util_check_descendant(sqlite3 *psqlite,
 {
 	BOOL b_private;
 	uint64_t folder_id;
-	char sql_string[128];
 	
 	if (inner_fid == outer_fid) {
 		*pb_included = TRUE;
@@ -4117,9 +4084,8 @@ BOOL common_util_check_descendant(sqlite3 *psqlite,
 	}
 	folder_id = inner_fid;
 	b_private = exmdb_server_check_private();
-	snprintf(sql_string, arsizeof(sql_string), "SELECT parent_id"
-				" FROM folders WHERE folder_id=?");
-	auto pstmt = gx_sql_prep(psqlite, sql_string);
+	auto pstmt = gx_sql_prep(psqlite, "SELECT parent_id"
+	             " FROM folders WHERE folder_id=?");
 	if (pstmt == nullptr)
 		return FALSE;
 	while (!((TRUE == b_private && PRIVATE_FID_ROOT == folder_id) ||
@@ -4992,10 +4958,9 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	if (pstmt1 == nullptr) {
 		return FALSE;
 	}
-	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO recipients_properties "
-				"(recipient_id, proptag, propval) SELECT ?, proptag, "
-				"propval FROM recipients_properties WHERE recipient_id=?");
-	auto pstmt2 = gx_sql_prep(psqlite, sql_string);
+	auto pstmt2 = gx_sql_prep(psqlite, "INSERT INTO recipients_properties "
+	              "(recipient_id, proptag, propval) SELECT ?, proptag, "
+	              "propval FROM recipients_properties WHERE recipient_id=?");
 	if (pstmt2 == nullptr) {
 		return FALSE;
 	}
@@ -5026,16 +4991,14 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	if (pstmt1 == nullptr) {
 		return FALSE;
 	}
-	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO attachment_properties "
-				"(attachment_id, proptag, propval) SELECT ?, proptag, "
-				"propval FROM attachment_properties WHERE attachment_id=?");
-	pstmt2 = gx_sql_prep(psqlite, sql_string);
+	pstmt2 = gx_sql_prep(psqlite, "INSERT INTO attachment_properties "
+	         "(attachment_id, proptag, propval) SELECT ?, proptag, "
+	         "propval FROM attachment_properties WHERE attachment_id=?");
 	if (pstmt2 == nullptr) {
 		return FALSE;
 	}
-	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id"
-			" FROM messages WHERE parent_attid=?");
-	auto pstmt3 = gx_sql_prep(psqlite, sql_string);
+	auto pstmt3 = gx_sql_prep(psqlite, "SELECT message_id"
+	              " FROM messages WHERE parent_attid=?");
 	if (pstmt3 == nullptr) {
 		return FALSE;
 	}
@@ -5158,9 +5121,8 @@ BOOL common_util_get_named_propids(sqlite3 *psqlite,
 			/* at some point we may want to return ecNPQuotaExceeded */
 		}
 	}
-	snprintf(sql_string, arsizeof(sql_string), "SELECT propid FROM "
-				"named_properties WHERE name_string=?");
-	auto pstmt = gx_sql_prep(psqlite, sql_string);
+	auto pstmt = gx_sql_prep(psqlite, "SELECT propid FROM "
+	             "named_properties WHERE name_string=?");
 	decltype(pstmt) pstmt1;
 	if (pstmt == nullptr)
 		return FALSE;
@@ -5222,7 +5184,6 @@ BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 {
 	int i;
 	char *ptoken;
-	char sql_string[128];
 	char temp_name[1024];
 	
 	ppropnames->ppropname = cu_alloc<PROPERTY_NAME>(ppropids->count);
@@ -5230,9 +5191,8 @@ BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 		return FALSE;
 	}
 	ppropnames->count = ppropids->count;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT name_string "
-				"FROM named_properties WHERE propid=?");
-	auto pstmt = gx_sql_prep(psqlite, sql_string);
+	auto pstmt = gx_sql_prep(psqlite, "SELECT name_string "
+	             "FROM named_properties WHERE propid=?");
 	if (pstmt == nullptr)
 		return FALSE;
 	for (i=0; i<ppropids->count; i++) {
@@ -5318,11 +5278,8 @@ BOOL common_util_increase_deleted_count(sqlite3 *psqlite,
 BOOL common_util_increase_store_size(sqlite3 *psqlite,
 	uint64_t normal_size, uint64_t fai_size)
 {
-	char sql_string[256];
-	
-	snprintf(sql_string, arsizeof(sql_string), "UPDATE store_properties"
-				" SET propval=propval+? WHERE proptag=?");
-	auto pstmt = gx_sql_prep(psqlite, sql_string);
+	auto pstmt = gx_sql_prep(psqlite, "UPDATE store_properties"
+	             " SET propval=propval+? WHERE proptag=?");
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 1, normal_size + fai_size);
@@ -5352,11 +5309,8 @@ BOOL common_util_increase_store_size(sqlite3 *psqlite,
 BOOL common_util_decrease_store_size(sqlite3 *psqlite,
 	uint64_t normal_size, uint64_t fai_size)
 {
-	char sql_string[256];
-
-	snprintf(sql_string, arsizeof(sql_string), "UPDATE store_properties"
-	         " SET propval=MAX(0,propval-?) WHERE proptag=?");
-	auto pstmt = gx_sql_prep(psqlite, sql_string);
+	auto pstmt = gx_sql_prep(psqlite, "UPDATE store_properties"
+	             " SET propval=MAX(0,propval-?) WHERE proptag=?");
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 1, normal_size + fai_size);
