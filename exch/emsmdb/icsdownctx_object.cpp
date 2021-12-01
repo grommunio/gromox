@@ -282,9 +282,9 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 }
 
 static void icsdownctx_object_adjust_fldchgs(FOLDER_CHANGES *pfldchgs,
-	const PROPTAG_ARRAY *pproptags, BOOL b_exclude)
+    const PROPTAG_ARRAY *pproptags, bool b_exclude)
 {
-	if (TRUE == b_exclude) {
+	if (b_exclude) {
 		for (size_t i = 0; i < pfldchgs->count; ++i) {
 			for (size_t j = 0; j < pproptags->count; ++j) {
 				common_util_remove_propvals(
@@ -633,13 +633,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 				fldchgs.pfldchgs + i, &tmp_propval);
 		}
 	}
-	if (pctx->sync_flags & SYNC_FLAG_ONLYSPECIFIEDPROPERTIES) {
-		icsdownctx_object_adjust_fldchgs(
-			&fldchgs, pctx->pproptags, FALSE);
-	} else {
-		icsdownctx_object_adjust_fldchgs(
-			&fldchgs, pctx->pproptags, TRUE);
-	}
+	icsdownctx_object_adjust_fldchgs(&fldchgs, pctx->pproptags, !(pctx->sync_flags & SYNC_FLAG_ONLYSPECIFIEDPROPERTIES));
 	if ((pctx->sync_flags & SYNC_FLAG_NODELETIONS) || deleted_folders.count == 0) {
 		pproplist_deletions = NULL;
 	} else {
@@ -805,11 +799,11 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 }
 
 static void icsdownctx_object_adjust_msgctnt(MESSAGE_CONTENT *pmsgctnt,
-	const PROPTAG_ARRAY *pproptags, BOOL b_exclude)
+    const PROPTAG_ARRAY *pproptags, bool b_exclude)
 {
 	int i;
 	
-	if (TRUE == b_exclude) {
+	if (b_exclude) {
 		for (i=0; i<pproptags->count; i++) {
 			switch (pproptags->pproptag[i]) {
 			case PR_MESSAGE_RECIPIENTS:
@@ -1113,13 +1107,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 				pembedded, pctx->extra_flags, &chgheader, &progmsg)) {
 				return FALSE;
 			}
-			if (pctx->sync_flags & SYNC_FLAG_ONLYSPECIFIEDPROPERTIES) {
-				icsdownctx_object_adjust_msgctnt(
-					pembedded, pctx->pproptags, FALSE);
-			} else {
-				icsdownctx_object_adjust_msgctnt(
-					pembedded, pctx->pproptags, TRUE);
-			}
+			icsdownctx_object_adjust_msgctnt(pembedded, pctx->pproptags, !(pctx->sync_flags & SYNC_FLAG_ONLYSPECIFIEDPROPERTIES));
 			if (pctx->sync_flags & SYNC_FLAG_PROGRESS &&
 			    !pctx->pstream->write_progresspermessage(&progmsg))
 				return FALSE;
@@ -1197,18 +1185,10 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 		pmsgctnt, pctx->extra_flags, &chgheader, &progmsg)) {
 		return FALSE;
 	}
-	if (!(pctx->sync_flags & SYNC_FLAG_ONLYSPECIFIEDPROPERTIES)) {
-		icsdownctx_object_adjust_msgctnt(
-			pmsgctnt, pctx->pproptags, TRUE);
-	} else if (pctx->sync_flags & SYNC_FLAG_IGNORESPECIFIEDONFAI) {
-		if (FALSE == progmsg.b_fai) {
-			icsdownctx_object_adjust_msgctnt(
-				pmsgctnt, pctx->pproptags, FALSE);
-		}
-	} else {
-		icsdownctx_object_adjust_msgctnt(
-			pmsgctnt, pctx->pproptags, FALSE);
-	}
+	auto cond1 = !(pctx->sync_flags & SYNC_FLAG_ONLYSPECIFIEDPROPERTIES);
+	if (!(pctx->sync_flags & SYNC_FLAG_IGNORESPECIFIEDONFAI) ||
+	    cond1 || !progmsg.b_fai)
+		icsdownctx_object_adjust_msgctnt(pmsgctnt, pctx->pproptags, cond1);
 	if (FALSE == b_downloaded || TRUE == progmsg.b_fai) {
 		b_full = TRUE;
 	} else {
