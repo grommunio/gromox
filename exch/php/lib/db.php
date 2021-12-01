@@ -50,10 +50,11 @@ function get_user_info_by_name($email_address)
 	$data_array = array(
 		"maildir" => $row[0],
 		"username" => $row[2],
-		"domain" => substr($row[2], strpos($row[2], '@')),
 		"uid" => $row[3],
 		"did" => $row[4],
 	);
+	$pos = strpos($row[2], '@');
+	$data_array["domain"] = $pos !== false ? substr($row[2], $pos + 1) : "";
 	if (!$row[5]) {
 		$config = get_app_config();
 		$data_array["timezone"] = $config['default']['timezone'];
