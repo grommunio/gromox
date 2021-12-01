@@ -1116,7 +1116,7 @@ static bool rec_namedprop(propmap_t &map, uint16_t &last_propid, TNEF_PROPVAL *t
 		return true;
 	char ts[NP_STRBUF_SIZE];
 	tnef_convert_from_propname(tnef_pv->ppropname, ts, arsizeof(ts));
-	auto iter = as_const(map).find(ts);
+	auto iter = map.find(ts);
 	if (iter != map.end()) {
 		tnef_pv->propid = iter->second;
 		return true;

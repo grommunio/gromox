@@ -880,8 +880,9 @@ static BOOL emsmdb_interface_get_table_notify(const char *dir,
 	char tag_buff[TAG_SIZE];
 	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u:%s", table_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
-	auto iter = as_const(g_notify_hash).find(tag_buff);
-	if (iter == g_notify_hash.cend())
+	const auto &nh = g_notify_hash;
+	auto iter = nh.find(tag_buff);
+	if (iter == nh.cend())
 		return FALSE;
 	auto pnotify = &iter->second;
 	*phandle = pnotify->handle;
@@ -928,8 +929,9 @@ static BOOL emsmdb_interface_get_subscription_notify(
 	char tag_buff[TAG_SIZE];
 	snprintf(tag_buff, GX_ARRAY_SIZE(tag_buff), "%u|%s", sub_id, dir);
 	std::lock_guard nt_hold(g_notify_lock);
-	auto iter = as_const(g_notify_hash).find(tag_buff);
-	if (iter == g_notify_hash.cend())
+	const auto &nh = g_notify_hash;
+	auto iter = nh.find(tag_buff);
+	if (iter == nh.cend())
 		return FALSE;
 	auto pnotify = &iter->second;
 	*phandle = pnotify->handle;

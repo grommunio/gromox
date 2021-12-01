@@ -157,8 +157,9 @@ BOOL grey_list_echo(const char *str, int *ptimes, int *pinterval)
 
 	std::shared_lock rd_hold(g_refresh_lock);
 	gettimeofday(&current_time, NULL);
-	auto iter = as_const(g_grey_table).find(temp_string);
-	if (iter == g_grey_table.end()) {
+	const auto &gt = g_grey_table;
+	auto iter = gt.find(temp_string);
+	if (iter == gt.cend()) {
 		*ptimes = 0;
 		*pinterval = 0;
         return FALSE; /* not in grey list */
