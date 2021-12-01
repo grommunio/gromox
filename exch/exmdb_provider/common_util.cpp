@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
 #include <atomic>
+#include <cassert>
 #include <cerrno>
 #include <climits>
 #include <cstdint>
@@ -3474,6 +3475,9 @@ BOOL cu_remove_properties(db_table table_type, uint64_t id,
 			"attachment_properties WHERE attachment_id=%llu"
 			" AND proptag=?", LLU(id));
 		break;
+	default:
+		fprintf(stderr, "W-1594: %s undiscovered case\n", __func__);
+		return false;
 	}
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
@@ -3503,6 +3507,9 @@ BOOL cu_remove_properties(db_table table_type, uint64_t id,
 				continue;
 			}
 			break;
+		default:
+			assert(false); /* cannot happen now */
+			return false;
 		}
 		proptag = pproptags->pproptag[i];
 		switch (PROP_TYPE(proptag)) {
