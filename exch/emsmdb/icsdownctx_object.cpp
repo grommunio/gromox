@@ -292,18 +292,18 @@ static void icsdownctx_object_adjust_fldchgs(FOLDER_CHANGES *pfldchgs,
 					pproptags->pproptag[j]);
 			}
 		}
-	} else {
-		for (size_t i = 0; i < pfldchgs->count; ++i) {
-			size_t j = 0;
-			while (j < pfldchgs->pfldchgs[i].count) {
-				if (!proptag_array_check(pproptags,
-				    pfldchgs->pfldchgs[i].ppropval[j].proptag)) {
-					common_util_remove_propvals(pfldchgs->pfldchgs + i,
-							pfldchgs->pfldchgs[i].ppropval[j].proptag);
-					continue;
-				}
-				j ++;
+		return;
+	}
+	for (size_t i = 0; i < pfldchgs->count; ++i) {
+		size_t j = 0;
+		while (j < pfldchgs->pfldchgs[i].count) {
+			if (!proptag_array_check(pproptags,
+			    pfldchgs->pfldchgs[i].ppropval[j].proptag)) {
+				common_util_remove_propvals(pfldchgs->pfldchgs + i,
+					pfldchgs->pfldchgs[i].ppropval[j].proptag);
+				continue;
 			}
+			j++;
 		}
 	}
 }
@@ -818,22 +818,22 @@ static void icsdownctx_object_adjust_msgctnt(MESSAGE_CONTENT *pmsgctnt,
 				break;
 			}
 		}
-	} else {
-		i = 0;
-		while (i < pmsgctnt->proplist.count) {
-			if (!proptag_array_check(pproptags,
-			    pmsgctnt->proplist.ppropval[i].proptag)) {
-				common_util_remove_propvals(&pmsgctnt->proplist,
-						pmsgctnt->proplist.ppropval[i].proptag);
-				continue;
-			}
-			i ++;
-		}
-		if (!proptag_array_check(pproptags, PR_MESSAGE_RECIPIENTS))
-			pmsgctnt->children.prcpts = NULL;
-		if (!proptag_array_check(pproptags, PR_MESSAGE_ATTACHMENTS))
-			pmsgctnt->children.pattachments = NULL;
+		return;
 	}
+	i = 0;
+	while (i < pmsgctnt->proplist.count) {
+		if (!proptag_array_check(pproptags,
+		    pmsgctnt->proplist.ppropval[i].proptag)) {
+			common_util_remove_propvals(&pmsgctnt->proplist,
+				pmsgctnt->proplist.ppropval[i].proptag);
+			continue;
+		}
+		i++;
+	}
+	if (!proptag_array_check(pproptags, PR_MESSAGE_RECIPIENTS))
+		pmsgctnt->children.prcpts = NULL;
+	if (!proptag_array_check(pproptags, PR_MESSAGE_ATTACHMENTS))
+		pmsgctnt->children.pattachments = NULL;
 }
 
 static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
