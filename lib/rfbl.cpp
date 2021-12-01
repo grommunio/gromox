@@ -263,7 +263,7 @@ ssize_t feed_w3m(const void *inbuf, size_t len, std::string &outbuf) try
 	int status = 0;
 	auto cl3 = make_scope_exit([&]() { waitpid(pid, &status, 0); });
 	outbuf = std::string();
-	size_t ret;
+	ssize_t ret;
 	char fbuf[4096];
 	while ((ret = read(fout, fbuf, GX_ARRAY_SIZE(fbuf))) > 0)
 		outbuf.append(fbuf, ret);
