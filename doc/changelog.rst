@@ -1,3 +1,18 @@
+1.9.17
+======
+
+Fixes:
+
+* exmdb_provider: cease adding a broken recipient when deleting last recipient
+* exmdb_provider: synthesize mandatory recipient properties essential for MSMAPI
+  (The source of incomplete recipients is from imported KGWC databases.)
+
+Enhancements:
+
+* exmdb_provider: add config directives mbox_contention_warning and
+  mbox_contention_reject
+
+
 1.9 (2021-11-27)
 ================
 
