@@ -517,46 +517,46 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 {
 	char tmp_buff[1024];
 	size_t tmp_len = mem_file_read(&ctx.orig.f_cookie, tmp_buff, arsizeof(tmp_buff) - 1);
-	if (tmp_len != MEM_END_OF_FILE) {
-		tmp_buff[tmp_len] = '\0';
-		auto pparser = cookie_parser_init(tmp_buff);
-		auto string = cookie_parser_get(pparser, "sid");
-		if (string == nullptr || strlen(string) >= arsizeof(ctx.session_string))
-			return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
-		HX_strlcpy(ctx.session_string, string, arsizeof(ctx.session_string));
-		if (strcasecmp(ctx.request_value, "PING") != 0 &&
-		    strcasecmp(ctx.request_value, "NotificationWait") != 0) {
-			string = cookie_parser_get(pparser, "sequence");
-			if (string == nullptr || !guid_from_string(&ctx.sequence_guid, string))
-				return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
-		}
-		std::unique_lock hl_hold(hashLock);
-		auto it = sessions.find(ctx.session_string);
-		if (it == sessions.end())
-			return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
-		if (it->second.expire_time < ctx.start_time) {
-			removeSession(it);
-			return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
-		}
-		ctx.session = &it->second;
-		if (strcasecmp(ctx.session->username, ctx.auth_info.username) != 0)
-			return ctx.error_responsecode(RC_NO_PRIVILEGE);
-		ctx.session_guid = ctx.session->session_guid;
-		if (strcasecmp(ctx.request_value, "Execute") == 0 &&
-		    guid_compare(&ctx.sequence_guid, &ctx.session->sequence_guid) != 0)
-			return ctx.error_responsecode(RC_INVALID_SEQUENCE);
-		if (strcasecmp(ctx.request_value, "PING") != 0 &&
-		    strcasecmp(ctx.request_value, "Disconnect") != 0 &&
-		    strcasecmp(ctx.request_value, "NotificationWait") != 0) {
-			ctx.sequence_guid = guid_random_new();
-			ctx.session->sequence_guid = ctx.sequence_guid;
-		}
-		ctx.session->expire_time = ctx.start_time + session_valid_interval + std::chrono::seconds(60);
-	} else {
+	if (tmp_len == MEM_END_OF_FILE) {
 		if (strcasecmp(ctx.request_value, "Connect"))
 			return ctx.error_responsecode(RC_MISSING_COOKIE);
 		ctx.session = nullptr;
+		return std::nullopt;
 	}
+	tmp_buff[tmp_len] = '\0';
+	auto pparser = cookie_parser_init(tmp_buff);
+	auto string = cookie_parser_get(pparser, "sid");
+	if (string == nullptr || strlen(string) >= arsizeof(ctx.session_string))
+		return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
+	HX_strlcpy(ctx.session_string, string, arsizeof(ctx.session_string));
+	if (strcasecmp(ctx.request_value, "PING") != 0 &&
+	    strcasecmp(ctx.request_value, "NotificationWait") != 0) {
+		string = cookie_parser_get(pparser, "sequence");
+		if (string == nullptr || !guid_from_string(&ctx.sequence_guid, string))
+			return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
+	}
+	std::unique_lock hl_hold(hashLock);
+	auto it = sessions.find(ctx.session_string);
+	if (it == sessions.end())
+		return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
+	if (it->second.expire_time < ctx.start_time) {
+		removeSession(it);
+		return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
+	}
+	ctx.session = &it->second;
+	if (strcasecmp(ctx.session->username, ctx.auth_info.username) != 0)
+		return ctx.error_responsecode(RC_NO_PRIVILEGE);
+	ctx.session_guid = ctx.session->session_guid;
+	if (strcasecmp(ctx.request_value, "Execute") == 0 &&
+	    guid_compare(&ctx.sequence_guid, &ctx.session->sequence_guid) != 0)
+		return ctx.error_responsecode(RC_INVALID_SEQUENCE);
+	if (strcasecmp(ctx.request_value, "PING") != 0 &&
+	    strcasecmp(ctx.request_value, "Disconnect") != 0 &&
+	    strcasecmp(ctx.request_value, "NotificationWait") != 0) {
+		ctx.sequence_guid = guid_random_new();
+		ctx.session->sequence_guid = ctx.sequence_guid;
+	}
+	ctx.session->expire_time = ctx.start_time + session_valid_interval + std::chrono::seconds(60);
 	return std::nullopt;
 }
 

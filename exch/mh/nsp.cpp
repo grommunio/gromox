@@ -457,45 +457,49 @@ MhNspPlugin::ProcRes MhNspPlugin::loadCookies(MhNspContext& ctx)
 {
 	char tmp_buff[1024];
 	size_t tmp_len = mem_file_read(&ctx.orig.f_cookie, tmp_buff, arsizeof(tmp_buff) - 1);
-	if (tmp_len != MEM_END_OF_FILE) {
-		tmp_buff[tmp_len] = '\0';
-		auto pparser = cookie_parser_init(tmp_buff);
-		auto string = cookie_parser_get(pparser, "sid");
-		if (string == nullptr || strlen(string) >= arsizeof(ctx.session_string))
-			return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
-		gx_strlcpy(ctx.session_string, string, arsizeof(ctx.session_string));
-		if (strcasecmp(ctx.request_value, "PING") != 0 &&
-		    strcasecmp(ctx.request_value, "Unbind") != 0) {
-			string = cookie_parser_get(pparser, "sequence");
-			if (string == nullptr || !guid_from_string(&ctx.sequence_guid, string))
-				return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
-		}
-		std::unique_lock hl_hold(hashLock);
-		auto it = sessions.find(ctx.session_string);
-		if (it == sessions.end())
-			return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
-		if (it->second.expire_time < ctx.start_time) {
-			removeSession(it);
-			return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
-		}
-		ctx.session = &it->second;
-		if (strcasecmp(ctx.request_value, "PING") != 0 &&
-		    strcasecmp(ctx.request_value, "Bind") !=0 &&
-		    strcasecmp(ctx.request_value, "Unbind") != 0 &&
-		    guid_compare(&ctx.sequence_guid, &ctx.session->sequence_guid) != 0)
-				return ctx.error_responsecode(RC_INVALID_SEQUENCE);
-		if (strcasecmp(ctx.request_value, "PING") != 0 &&
-		    strcasecmp(ctx.request_value, "Unbind") != 0) {
-			ctx.sequence_guid = guid_random_new();
-			ctx.session->sequence_guid = ctx.sequence_guid;
-		}
-		ctx.session_guid = ctx.session->session_guid;
-		ctx.session->expire_time = ctx.start_time + session_valid_interval + std::chrono::seconds(60);
-	} else {
+	if (tmp_len == MEM_END_OF_FILE) {
 		if (strcasecmp(ctx.request_value, "Bind") != 0)
 			return ctx.error_responsecode(RC_MISSING_COOKIE);
 		ctx.session = nullptr;
+		if (strcasecmp(ctx.request_value, "PING") == 0) {
+			nsp_bridge_touch_handle(ctx.session_guid);
+			return ctx.ping_response();
+		}
+		return std::nullopt;
 	}
+	tmp_buff[tmp_len] = '\0';
+	auto pparser = cookie_parser_init(tmp_buff);
+	auto string = cookie_parser_get(pparser, "sid");
+	if (string == nullptr || strlen(string) >= arsizeof(ctx.session_string))
+		return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
+	gx_strlcpy(ctx.session_string, string, arsizeof(ctx.session_string));
+	if (strcasecmp(ctx.request_value, "PING") != 0 &&
+	    strcasecmp(ctx.request_value, "Unbind") != 0) {
+		string = cookie_parser_get(pparser, "sequence");
+		if (string == nullptr || !guid_from_string(&ctx.sequence_guid, string))
+			return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
+	}
+	std::unique_lock hl_hold(hashLock);
+	auto it = sessions.find(ctx.session_string);
+	if (it == sessions.end())
+		return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
+	if (it->second.expire_time < ctx.start_time) {
+		removeSession(it);
+		return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
+	}
+	ctx.session = &it->second;
+	if (strcasecmp(ctx.request_value, "PING") != 0 &&
+	    strcasecmp(ctx.request_value, "Bind") !=0 &&
+	    strcasecmp(ctx.request_value, "Unbind") != 0 &&
+	    guid_compare(&ctx.sequence_guid, &ctx.session->sequence_guid) != 0)
+			return ctx.error_responsecode(RC_INVALID_SEQUENCE);
+	if (strcasecmp(ctx.request_value, "PING") != 0 &&
+	    strcasecmp(ctx.request_value, "Unbind") != 0) {
+		ctx.sequence_guid = guid_random_new();
+		ctx.session->sequence_guid = ctx.sequence_guid;
+	}
+	ctx.session_guid = ctx.session->session_guid;
+	ctx.session->expire_time = ctx.start_time + session_valid_interval + std::chrono::seconds(60);
 	if (strcasecmp(ctx.request_value, "PING") == 0) {
 		nsp_bridge_touch_handle(ctx.session_guid);
 		return ctx.ping_response();
@@ -510,34 +514,37 @@ MhNspPlugin::ProcRes MhNspPlugin::bind(MhNspContext& ctx)
 	if (ctx.ext_pull.g_nsp_request(request) != EXT_ERR_SUCCESS)
 		return ctx.error_responsecode(RC_INVALID_REQUEST_BODY);
 	response.result = nsp_bridge_run(ctx.session_guid, request, response);
-	if (response.result == ecSuccess) {
-		if (ctx.session != nullptr) {
-			std::lock_guard hl_hold(hashLock);
-			auto sd_iter = sessions.find(ctx.session_string);
-			if (sd_iter != sessions.end()) {
-				auto& psession = sd_iter->second;
-				nsp_bridge_unbind(psession.session_guid, 0);
-				psession.session_guid = ctx.session_guid;
-			}
-		} else {
-			produce_session(ctx.auth_info.username, ctx.session_string);
-			ctx.sequence_guid = guid_random_new();
-			auto exptime = time_point::clock::now() + session_valid_interval + std::chrono::seconds(60);
-			std::unique_lock hl_hold(hashLock);
-			try {
-				auto emplaced = sessions.try_emplace(ctx.session_string, ctx.session_guid, ctx.sequence_guid, ctx.auth_info.username, exptime);
-				if (!emplaced.second) {
-					hl_hold.unlock();
-					nsp_bridge_unbind(ctx.session_guid, 0);
-					return ctx.failure_response(ecInsufficientResrc);
-				}
-				auto ucount = users.emplace(emplaced.first->second.username, 0);
-				++ucount.first->second;
-			}  catch (std::bad_alloc&) {
+	if (response.result != ecSuccess) {
+		if (ctx.ext_push.p_nsp_response(response) != EXT_ERR_SUCCESS)
+			return ctx.failure_response(RPC_X_BAD_STUB_DATA);
+		return std::nullopt;
+	}
+	if (ctx.session != nullptr) {
+		std::lock_guard hl_hold(hashLock);
+		auto sd_iter = sessions.find(ctx.session_string);
+		if (sd_iter != sessions.end()) {
+			auto& psession = sd_iter->second;
+			nsp_bridge_unbind(psession.session_guid, 0);
+			psession.session_guid = ctx.session_guid;
+		}
+	} else {
+		produce_session(ctx.auth_info.username, ctx.session_string);
+		ctx.sequence_guid = guid_random_new();
+		auto exptime = time_point::clock::now() + session_valid_interval + std::chrono::seconds(60);
+		std::unique_lock hl_hold(hashLock);
+		try {
+			auto emplaced = sessions.try_emplace(ctx.session_string, ctx.session_guid, ctx.sequence_guid, ctx.auth_info.username, exptime);
+			if (!emplaced.second) {
 				hl_hold.unlock();
 				nsp_bridge_unbind(ctx.session_guid, 0);
-				return ctx.failure_response(ecMAPIOOM);
+				return ctx.failure_response(ecInsufficientResrc);
 			}
+			auto ucount = users.emplace(emplaced.first->second.username, 0);
+			++ucount.first->second;
+		}  catch (std::bad_alloc&) {
+			hl_hold.unlock();
+			nsp_bridge_unbind(ctx.session_guid, 0);
+			return ctx.failure_response(ecMAPIOOM);
 		}
 	}
 	if (ctx.ext_push.p_nsp_response(response) != EXT_ERR_SUCCESS)
