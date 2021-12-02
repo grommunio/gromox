@@ -20,20 +20,6 @@
 #include <gromox/rop_util.hpp>
 #include <cstdlib>
 
-namespace {
-
-struct MARKER_NODE {
-	DOUBLE_LIST_NODE node;
-	uint32_t marker;
-	union {
-		void *pelement;
-		uint32_t instance_id;
-		uint64_t folder_id;
-	} data;
-};
-
-}
-
 std::unique_ptr<fastupctx_object> fastupctx_object::create(logon_object *plogon,
     void *pobject, int root_element)
 {
@@ -67,14 +53,12 @@ std::unique_ptr<fastupctx_object> fastupctx_object::create(logon_object *plogon,
 	default:
 		return NULL;
 	}
-	double_list_init(&pctx->marker_stack);
 	return pctx;
 }
 
 fastupctx_object::~fastupctx_object()
 {
 	auto pctx = this;
-	DOUBLE_LIST_NODE *pnode;
 	
 	if (NULL != pctx->pproplist) {
 		tpropval_array_free(pctx->pproplist);
@@ -82,47 +66,32 @@ fastupctx_object::~fastupctx_object()
 	if (NULL != pctx->pmsgctnt) {
 		message_content_free(pctx->pmsgctnt);
 	}
-	while ((pnode = double_list_pop_front(&pctx->marker_stack)) != nullptr)
-		free(pnode->pdata);
-	double_list_free(&pctx->marker_stack);
 }
 
 static uint64_t fastupctx_object_get_last_folder(fastupctx_object *pctx)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_tail(&pctx->marker_stack); NULL!=pnode;
-		pnode=double_list_get_before(&pctx->marker_stack, pnode)) {
-		if (STARTSUBFLD == ((MARKER_NODE*)pnode->pdata)->marker) {
-			return ((MARKER_NODE*)pnode->pdata)->data.folder_id;
-		}
-	}
+	for (auto node = pctx->marker_stack.rbegin();
+	     node != pctx->marker_stack.rend(); ++node)
+		if (node->marker == STARTSUBFLD)
+			return node->data.folder_id;
 	return static_cast<folder_object *>(pctx->pobject)->folder_id;
 }
 
 static uint32_t fastupctx_object_get_last_attachment_instance(fastupctx_object *pctx)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_tail(&pctx->marker_stack); NULL!=pnode;
-		pnode=double_list_get_before(&pctx->marker_stack, pnode)) {
-		if (NEWATTACH == ((MARKER_NODE*)pnode->pdata)->marker) {
-			return ((MARKER_NODE*)pnode->pdata)->data.instance_id;
-		}
-	}
+	for (auto node = pctx->marker_stack.rbegin();
+	     node != pctx->marker_stack.rend(); ++node)
+		if (node->marker == NEWATTACH)
+			return node->data.instance_id;
 	return static_cast<attachment_object *>(pctx->pobject)->get_instance_id();
 }
 
 static uint32_t fastupctx_object_get_last_message_instance(fastupctx_object *pctx)
 {
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_tail(&pctx->marker_stack); NULL!=pnode;
-		pnode=double_list_get_before(&pctx->marker_stack, pnode)) {
-		if (STARTEMBED == ((MARKER_NODE*)pnode->pdata)->marker) {
-			return ((MARKER_NODE*)pnode->pdata)->data.instance_id;
-		}
-	}
+	for (auto node = pctx->marker_stack.rbegin();
+	     node != pctx->marker_stack.rend(); ++node)
+		if (node->marker == STARTEMBED)
+			return node->data.instance_id;
 	return static_cast<message_object *>(pctx->pobject)->get_instance_id();
 }
 
@@ -279,17 +248,19 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 	uint64_t folder_id;
 	uint32_t instance_id;
 	TARRAY_SET tmp_rcpts;
-	MARKER_NODE *pmarker;
-	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *pnode1;
+	fxup_marker_node new_mark{}, *pmarker = &new_mark;
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
 	TPROPVAL_ARRAY *pproplist, *prcpt = nullptr;
 	PROBLEM_ARRAY tmp_problems;
 	ATTACHMENT_LIST *pattachments;
 	ATTACHMENT_CONTENT *pattachment = nullptr;
 	
-	pnode = double_list_get_tail(&pctx->marker_stack);
-	uint32_t last_marker = pnode == nullptr ? 0 : static_cast<MARKER_NODE *>(pnode->pdata)->marker;
+	auto pnode = pctx->marker_stack.end();
+	uint32_t last_marker = 0;
+	if (pnode != pctx->marker_stack.begin()) {
+		--pnode;
+		last_marker = pnode->marker;
+	}
 	switch (last_marker) {
 	case STARTSUBFLD: {
 		if (NULL == pctx->pproplist) {
@@ -298,17 +269,16 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 		if (0 == pctx->pproplist->count) {
 			return GXERR_CALL_FAILED;
 		}
-		pnode1 = double_list_get_before(&pctx->marker_stack, pnode);
-		uint64_t parent_id = pnode1 == nullptr ?
+		uint64_t parent_id = pnode == pctx->marker_stack.begin() ?
 		                     static_cast<folder_object *>(pctx->pobject)->folder_id :
-		                     static_cast<MARKER_NODE *>(pnode1->pdata)->data.folder_id;
+		                     std::prev(pnode)->data.folder_id;
 		if (FALSE == fastupctx_object_create_folder(pctx,
 			parent_id, pctx->pproplist, &folder_id)) {
 			return GXERR_CALL_FAILED;
 		}
 		tpropval_array_free(pctx->pproplist);
 		pctx->pproplist = NULL;
-		((MARKER_NODE*)pnode->pdata)->data.folder_id = folder_id;
+		pnode->data.folder_id = folder_id;
 		break;
 	}
 	case STARTTOPFLD:
@@ -348,11 +318,6 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 		if (NULL == pctx->pproplist) {
 			return GXERR_CALL_FAILED;
 		}
-		pmarker = me_alloc<MARKER_NODE>();
-		if (NULL == pmarker) {
-			return GXERR_CALL_FAILED;
-		}
-		pmarker->node.pdata = pmarker;
 		pmarker->marker = marker;
 		break;
 	case STARTSUBFLD:
@@ -367,11 +332,6 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 		if (NULL == pctx->pproplist) {
 			return GXERR_CALL_FAILED;
 		}
-		pmarker = me_alloc<MARKER_NODE>();
-		if (NULL == pmarker) {
-			return GXERR_CALL_FAILED;
-		}
-		pmarker->node.pdata = pmarker;
 		pmarker->marker = marker;
 		break;
 	case ENDFOLDER:
@@ -379,8 +339,7 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 			STARTSUBFLD != last_marker) {
 			return GXERR_CALL_FAILED;
 		}
-		double_list_remove(&pctx->marker_stack, pnode);
-		free(pnode->pdata);
+		pctx->marker_stack.erase(pnode);
 		if (STARTTOPFLD == last_marker) {
 			/* mark fast stream ended */
 			pctx->b_ended = TRUE;
@@ -427,11 +386,6 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 		uint8_t tmp_byte = marker == STARTFAIMSG;
 		if (pproplist->set(PR_ASSOCIATED, &tmp_byte) != 0)
 			return GXERR_CALL_FAILED;
-		pmarker = me_alloc<MARKER_NODE>();
-		if (NULL == pmarker) {
-			return GXERR_CALL_FAILED;
-		}
-		pmarker->node.pdata = pmarker;
 		pmarker->marker = marker;
 		pmarker->data.pelement = pctx->pmsgctnt;
 		break;
@@ -441,12 +395,10 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 			STARTFAIMSG != last_marker) {
 			return GXERR_CALL_FAILED;
 		}
-		if (NULL == pctx->pmsgctnt || pctx->pmsgctnt !=
-			((MARKER_NODE*)pnode->pdata)->data.pelement) {
+		if (pctx->pmsgctnt == nullptr ||
+		    pctx->pmsgctnt != pnode->data.pelement)
 			return GXERR_CALL_FAILED;
-		}
-		double_list_remove(&pctx->marker_stack, pnode);
-		free(pnode->pdata);
+		pctx->marker_stack.erase(pnode);
 		folder_id = fastupctx_object_get_last_folder(pctx);
 		gxerr_t err = fastupctx_object_write_message(pctx, folder_id);
 		if (err != GXERR_SUCCESS)
@@ -493,17 +445,12 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 			if (NULL == prcpt) {
 				return GXERR_CALL_FAILED;
 			}
-			pmsgctnt = static_cast<MESSAGE_CONTENT *>(static_cast<MARKER_NODE *>(pnode->pdata)->data.pelement);
+			pmsgctnt = static_cast<MESSAGE_CONTENT *>(pnode->data.pelement);
 			if (!tarray_set_append_internal(pmsgctnt->children.prcpts, prcpt)) {
 				tpropval_array_free(prcpt);
 				return GXERR_CALL_FAILED;
 			}
 		}
-		pmarker = me_alloc<MARKER_NODE>();
-		if (NULL == pmarker) {
-			return GXERR_CALL_FAILED;
-		}
-		pmarker->node.pdata = pmarker;
 		pmarker->marker = marker;
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
@@ -522,14 +469,12 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 			tmp_rcpts.count = 1;
 			tmp_rcpts.pparray = &pctx->pproplist;
 			if (!exmdb_client_update_message_instance_rcpts(pctx->pstream->plogon->get_dir(),
-			    static_cast<MARKER_NODE *>(pnode->pdata)->data.instance_id,
-			    &tmp_rcpts))
+			    pnode->data.instance_id, &tmp_rcpts))
 				return GXERR_CALL_FAILED;
 			tpropval_array_free(pctx->pproplist);
 			pctx->pproplist = NULL;
 		}
-		double_list_remove(&pctx->marker_stack, pnode);
-		free(pnode->pdata);
+		pctx->marker_stack.erase(pnode);
 		return GXERR_SUCCESS;
 	case NEWATTACH:
 		switch (pctx->root_element) {
@@ -566,18 +511,13 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 			if (NULL == pattachment) {
 				return GXERR_CALL_FAILED;
 			}
-			pmsgctnt = static_cast<MESSAGE_CONTENT *>(static_cast<MARKER_NODE *>(pnode->pdata)->data.pelement);
+			pmsgctnt = static_cast<MESSAGE_CONTENT *>(pnode->data.pelement);
 			if (FALSE == attachment_list_append_internal(
 				pmsgctnt->children.pattachments, pattachment)) {
 				attachment_content_free(pattachment);
 				return GXERR_CALL_FAILED;
 			}
 		}
-		pmarker = me_alloc<MARKER_NODE>();
-		if (NULL == pmarker) {
-			return GXERR_CALL_FAILED;
-		}
-		pmarker->node.pdata = pmarker;
 		pmarker->marker = marker;
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
@@ -594,15 +534,14 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			gxerr_t e_result = GXERR_CALL_FAILED;
 			if (!exmdb_client_flush_instance(pctx->pstream->plogon->get_dir(),
-			    static_cast<MARKER_NODE *>(pnode->pdata)->data.instance_id,
-			    nullptr, &e_result) || e_result != GXERR_SUCCESS)
+			    pnode->data.instance_id, nullptr, &e_result) ||
+			    e_result != GXERR_SUCCESS)
 				return e_result;
 			if (!exmdb_client_unload_instance(pctx->pstream->plogon->get_dir(),
-			    static_cast<MARKER_NODE *>(pnode->pdata)->data.instance_id))
+			    pnode->data.instance_id))
 				return GXERR_CALL_FAILED;
 		}
-		double_list_remove(&pctx->marker_stack, pnode);
-		free(pnode->pdata);
+		pctx->marker_stack.erase(pnode);
 		return GXERR_SUCCESS;
 	case STARTEMBED:
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
@@ -651,14 +590,9 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 			message_content_set_attachments_internal(
 							pmsgctnt, pattachments);
 			attachment_content_set_embedded_internal(
-				static_cast<ATTACHMENT_CONTENT *>(static_cast<MARKER_NODE *>(pnode->pdata)->data.pelement),
+				static_cast<ATTACHMENT_CONTENT *>(pnode->data.pelement),
 				pmsgctnt);
 		}
-		pmarker = me_alloc<MARKER_NODE>();
-		if (NULL == pmarker) {
-			return GXERR_CALL_FAILED;
-		}
-		pmarker->node.pdata = pmarker;
 		pmarker->marker = marker;
 		if (ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element ||
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
@@ -675,15 +609,14 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element) {
 			gxerr_t e_result = GXERR_CALL_FAILED;
 			if (!exmdb_client_flush_instance(pctx->pstream->plogon->get_dir(),
-			    static_cast<MARKER_NODE *>(pnode->pdata)->data.instance_id,
-			    nullptr, &e_result) || e_result != GXERR_SUCCESS)
+			    pnode->data.instance_id, nullptr, &e_result) ||
+			    e_result != GXERR_SUCCESS)
 				return e_result;
 			if (!exmdb_client_unload_instance(pctx->pstream->plogon->get_dir(),
-			    static_cast<MARKER_NODE *>(pnode->pdata)->data.instance_id))
+			    pnode->data.instance_id))
 				return GXERR_CALL_FAILED;
 		}
-		double_list_remove(&pctx->marker_stack, pnode);
-		free(pnode->pdata);
+		pctx->marker_stack.erase(pnode);
 		return GXERR_SUCCESS;
 	case FXERRORINFO:
 		/* we do not support this feature */
@@ -691,18 +624,21 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 	default:
 		return GXERR_CALL_FAILED;
 	}
-	double_list_append_as_tail(&pctx->marker_stack, &pmarker->node);
+	try {
+		pctx->marker_stack.emplace_back(std::move(new_mark));
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1600: ENOMEM\n");
+		return GXERR_CALL_FAILED;
+	}
 	return GXERR_SUCCESS;
 }
 
 static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 {
 	int instance_id;
-	DOUBLE_LIST_NODE *pnode;
-	MESSAGE_CONTENT *pmsgctnt;
 	
-	pnode = double_list_get_tail(&pctx->marker_stack);
-	uint32_t last_marker = pnode == nullptr ? 0 : static_cast<MARKER_NODE *>(pnode->pdata)->marker;
+	auto pnode = pctx->marker_stack.rbegin();
+	auto last_marker = pnode == pctx->marker_stack.rend() ? 0U : pnode->marker;
 	switch (marker) {
 	case PR_MESSAGE_RECIPIENTS:
 		switch (pctx->root_element) {
@@ -731,7 +667,7 @@ static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 				STARTEMBED != last_marker) {
 				return FALSE;	
 			}
-			pmsgctnt = static_cast<MESSAGE_CONTENT *>(static_cast<MARKER_NODE *>(pnode->pdata)->data.pelement);
+			auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pnode->data.pelement);
 			if (0 != pmsgctnt->children.prcpts->count) {
 				return FALSE;
 			}
@@ -766,7 +702,7 @@ static BOOL fastupctx_object_del_props(fastupctx_object *pctx, uint32_t marker)
 				STARTEMBED != last_marker) {
 				return FALSE;	
 			}
-			pmsgctnt = static_cast<MESSAGE_CONTENT *>(static_cast<MARKER_NODE *>(pnode->pdata)->data.pelement);
+			auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(pnode->data.pelement);
 			if (0 != pmsgctnt->children.pattachments->count) {
 				return FALSE;
 			}
@@ -817,7 +753,6 @@ static gxerr_t fastupctx_object_record_propval(fastupctx_object *pctx,
     const TAGGED_PROPVAL *ppropval)
 {
 	uint32_t b_result;
-	DOUBLE_LIST_NODE *pnode;
 	
 	switch (ppropval->proptag) {
 	case META_TAG_FXDELPROP:
@@ -851,8 +786,8 @@ static gxerr_t fastupctx_object_record_propval(fastupctx_object *pctx,
 	case META_TAG_IDSETUNREAD:
 		return GXERR_CALL_FAILED;
 	}
-	pnode = double_list_get_tail(&pctx->marker_stack);
-	uint32_t last_marker = pnode != nullptr ? static_cast<MARKER_NODE *>(pnode->pdata)->marker : 0;
+	auto pnode = pctx->marker_stack.rbegin();
+	auto last_marker = pnode == pctx->marker_stack.rend() ? 0U : pnode->marker;
 	if (PROP_TYPE(ppropval->proptag) == PT_OBJECT) {
 		if (NEWATTACH == last_marker || (0 == last_marker &&
 			ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element)) {
@@ -895,20 +830,18 @@ static gxerr_t fastupctx_object_record_propval(fastupctx_object *pctx,
 		       GXERR_SUCCESS : GXERR_CALL_FAILED;
 	case STARTMESSAGE:
 	case STARTFAIMSG: {
-		auto mknd = static_cast<MARKER_NODE *>(pnode->pdata);
-		auto tp = static_cast<TPROPVAL_ARRAY *>(mknd->data.pelement);
+		auto tp = static_cast<TPROPVAL_ARRAY *>(pnode->data.pelement);
 		return tp->set(*ppropval) == 0 ? GXERR_SUCCESS : GXERR_CALL_FAILED;
 	}
 	case STARTEMBED:
 	case NEWATTACH: {
-		auto mknd = static_cast<MARKER_NODE *>(pnode->pdata);
 		if (ROOT_ELEMENT_ATTACHMENTCONTENT == pctx->root_element ||
 			ROOT_ELEMENT_MESSAGECONTENT == pctx->root_element) {
 			return exmdb_client_set_instance_property(pctx->pstream->plogon->get_dir(),
-			       mknd->data.instance_id, ppropval, &b_result) == TRUE ?
+			       pnode->data.instance_id, ppropval, &b_result) == TRUE ?
 			       GXERR_SUCCESS : GXERR_CALL_FAILED;
 		}
-		auto tp = static_cast<TPROPVAL_ARRAY *>(mknd->data.pelement);
+		auto tp = static_cast<TPROPVAL_ARRAY *>(pnode->data.pelement);
 		return tp->set(*ppropval) == 0 ? GXERR_SUCCESS : GXERR_CALL_FAILED;
 	}
 	case STARTRECIP: {
@@ -917,8 +850,7 @@ static gxerr_t fastupctx_object_record_propval(fastupctx_object *pctx,
 			return pctx->pproplist->set(*ppropval) == 0 ?
 			       GXERR_SUCCESS : GXERR_CALL_FAILED;
 		}
-		auto mknd = static_cast<MARKER_NODE *>(pnode->pdata);
-		auto tp = static_cast<TPROPVAL_ARRAY *>(mknd->data.pelement);
+		auto tp = static_cast<TPROPVAL_ARRAY *>(pnode->data.pelement);
 		return tp->set(*ppropval) == 0 ? GXERR_SUCCESS : GXERR_CALL_FAILED;
 	}
 	default:
