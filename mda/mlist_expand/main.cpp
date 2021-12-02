@@ -102,12 +102,12 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			}
 			break;
 		case MLIST_RESULT_NONE:
-			mem_file_writeline(&temp_file2, rcpt_to);
+			temp_file2.writeline(rcpt_to);
 			break;
 		case MLIST_RESULT_PRIVIL_DOMAIN:
 			pbounce_context = get_context();
 			if (NULL == pbounce_context) {
-				mem_file_writeline(&temp_file2, rcpt_to);
+				temp_file2.writeline(rcpt_to);
 				break;
 			}
 			bounce_producer_make(pcontext->pcontrol->from, rcpt_to,
@@ -116,8 +116,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			pbounce_context->pcontrol->need_bounce = FALSE;
 			sprintf(pbounce_context->pcontrol->from, "postmaster@%s",
 				get_default_domain());
-			mem_file_writeline(&pbounce_context->pcontrol->f_rcpt_to,
-				pcontext->pcontrol->from);
+			pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
 			throw_context(pbounce_context);
 			pbounce_context = NULL;
 			b_touched = TRUE;
@@ -143,7 +142,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 		case MLIST_RESULT_PRIVIL_INTERNAL:
 			pbounce_context = get_context();
 			if (NULL == pbounce_context) {
-				mem_file_writeline(&temp_file2, rcpt_to);
+				temp_file2.writeline(rcpt_to);
 				break;
 			}
 			bounce_producer_make(pcontext->pcontrol->from, rcpt_to,
@@ -152,8 +151,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			pbounce_context->pcontrol->need_bounce = FALSE;
 			sprintf(pbounce_context->pcontrol->from, "postmaster@%s",
 				get_default_domain());
-			mem_file_writeline(&pbounce_context->pcontrol->f_rcpt_to,
-				pcontext->pcontrol->from);
+			pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
 			throw_context(pbounce_context);
 			pbounce_context = NULL;
 			b_touched = TRUE;
@@ -179,7 +177,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 		case MLIST_RESULT_PRIVIL_SPECIFIED:
 			pbounce_context = get_context();
 			if (NULL == pbounce_context) {
-				mem_file_writeline(&temp_file2, rcpt_to);
+				temp_file2.writeline(rcpt_to);
 				break;
 			}
 			bounce_producer_make(pcontext->pcontrol->from, rcpt_to,
@@ -188,8 +186,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			pbounce_context->pcontrol->need_bounce = FALSE;
 			sprintf(pbounce_context->pcontrol->from, "postmaster@%s",
 				get_default_domain());
-			mem_file_writeline(&pbounce_context->pcontrol->f_rcpt_to,
-				pcontext->pcontrol->from);
+			pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
 			throw_context(pbounce_context);
 			pbounce_context = NULL;
 			b_touched = TRUE;
@@ -235,7 +232,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 				    strcasecmp(delivered_to, recip.c_str()) == 0)
 					break;
 			if (i == num) {
-				mem_file_writeline(&pcontext->pcontrol->f_rcpt_to, recip.c_str());
+				pcontext->pcontrol->f_rcpt_to.writeline(recip.c_str());
 			}
 		}
 		goto EXIT_EXPAND;
@@ -250,7 +247,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 			    strcasecmp(delivered_to, recip.c_str()) == 0)
 				break;
 		if (i == num) {
-			mem_file_writeline(&pcontext_expand->pcontrol->f_rcpt_to, recip.c_str());
+			pcontext_expand->pcontrol->f_rcpt_to.writeline(recip.c_str());
 		}
 	}
 	pcontext->pmail->dup(pcontext_expand->pmail);

@@ -152,8 +152,7 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 		sprintf(pcontext->pcontrol->from, "local-alarm@%s",
 		        get_default_domain());
 	}
-	mem_file_writeline(&pcontext->pcontrol->f_rcpt_to,
-		(char *)get_admin_mailbox());
+	pcontext->pcontrol->f_rcpt_to.writeline(get_admin_mailbox());
 	auto pmime = pcontext->pmail->add_head();
 	if (NULL == pmime) {
 		put_context(pcontext);

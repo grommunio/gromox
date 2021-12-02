@@ -498,12 +498,13 @@ ssize_t	mem_file_seek(MEM_FILE* pfile, int type, ssize_t offset, int opt)
  *	  @return
  *		  indicate actual size that has been written
  */
-size_t mem_file_write(MEM_FILE *pfile, const void *pbuff, size_t size)
+size_t MEM_FILE::write(const void *pbuff, size_t size)
 {
+	auto pfile = this;
 	size_t bytes_need, cur_end, remains; 
 	size_t blocks, actual_written, i;
 #ifdef _DEBUG_UMTA
-	if (NULL == pfile || NULL == pbuff) {
+	if (pbuff == nullptr) {
 		debug_info("[mem_file]: mem_file_write, param NULL");
 		return 0;
 	}
@@ -579,23 +580,23 @@ size_t mem_file_write(MEM_FILE *pfile, const void *pbuff, size_t size)
  *	  @return
  *		  return actual size written into mem file
  */
-size_t mem_file_writeline(MEM_FILE *pfile, const char *pbuff)
+size_t MEM_FILE::writeline(const char *pbuff)
 {
-	size_t length, written;
+	auto pfile = this;
 #ifdef _DEBUG_UMTA
-	if (NULL == pfile || NULL == pbuff) {
+	if (pbuff == nullptr) {
 		debug_info("[mem_file]: mem_file_writeline, param NULL");
 		return 0;
 	}
 #endif						 
-	length = strlen(pbuff);
-	written = mem_file_write(pfile, pbuff, length);
+	auto length = strlen(pbuff);
+	auto written = write(pbuff, length);
 	if (length == written) {
-		if ( 1 == mem_file_write(pfile, "\n", 1)) {
+		if ( write("\n", 1) == 1) {
 			return length;
 		} else {
 			mem_file_seek(pfile, MEM_FILE_WRITE_PTR, MEM_FILE_SEEK_CUR, -1);
-			mem_file_write(pfile, "\n", 1);
+			write("\n", 1);
 			return length - 1;
 		}
 	} else {

@@ -557,7 +557,7 @@ static void *dxp_thrwork(void *arg)
 			ptr = pmessage->envelope_rcpt;
 			while ((len = strlen(ptr)) != 0) {
 				len ++;
-				mem_file_writeline(&pcontext->pcontrol->f_rcpt_to, ptr);
+				pcontext->pcontrol->f_rcpt_to.writeline(ptr);
 				ptr += len;
 			}
 			b_self = FALSE;

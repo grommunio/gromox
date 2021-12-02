@@ -884,10 +884,10 @@ void parse_field_value(const char *in_buff, long buff_len, char *value,
 			paratag_len = strlen(param_tag);
 			paraval_len = strlen(param_value);
 			if (0 != paratag_len || 0 != paraval_len) {
-				mem_file_write(pfile, &paratag_len, sizeof(uint32_t));
-				mem_file_write(pfile, param_tag, paratag_len);
-				mem_file_write(pfile, &paraval_len, sizeof(uint32_t));
-				mem_file_write(pfile, param_value, paraval_len);
+				pfile->write(&paratag_len, sizeof(uint32_t));
+				pfile->write(param_tag, paratag_len);
+				pfile->write(&paraval_len, sizeof(uint32_t));
+				pfile->write(param_value, paraval_len);
 			}
 		}
 		ptr ++;
@@ -923,10 +923,10 @@ void parse_field_value(const char *in_buff, long buff_len, char *value,
 		paratag_len = strlen(param_tag);
 		paraval_len = strlen(param_value);
 		if (0 != paratag_len || 0 != paraval_len) {
-			mem_file_write(pfile, &paratag_len, sizeof(uint32_t));
-			mem_file_write(pfile, param_tag, paratag_len);
-			mem_file_write(pfile, &paraval_len, sizeof(uint32_t));
-			mem_file_write(pfile, param_value, paraval_len);
+			pfile->write(&paratag_len, sizeof(uint32_t));
+			pfile->write(param_tag, paratag_len);
+			pfile->write(&paraval_len, sizeof(uint32_t));
+			pfile->write(param_value, paraval_len);
 		}
 	}
 }

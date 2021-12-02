@@ -1336,7 +1336,7 @@ void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string)
 		pcontext1 = (IMAP_CONTEXT*)(pnode->pdata);
 		if (pcontext != pcontext1 && 0 == strcmp(pcontext->selected_folder,
 			pcontext1->selected_folder)) {
-			mem_file_writeline(&pcontext1->f_flags, (char*)mid_string);
+			pcontext1->f_flags.writeline(mid_string);
 		}
 	}
 	hl_hold.unlock();
@@ -1367,7 +1367,7 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 		pnode=double_list_get_after(plist, pnode)) {
 		pcontext = (IMAP_CONTEXT*)(pnode->pdata);
 		if (0 == strcmp(pcontext->selected_folder, folder)) {
-			mem_file_writeline(&pcontext->f_flags, (char*)mid_string);
+			pcontext->f_flags.writeline(mid_string);
 		}
 	}
 }
@@ -1903,9 +1903,9 @@ static void *imps_scanwork(void *argp)
 				pnode=double_list_get_after(plist, pnode)) {
 				pcontext = (IMAP_CONTEXT*)pnode->pdata;
 				if (cur_time - pcontext->selected_time > SELECT_INTERVAL) {
-					mem_file_writeline(&temp_file, pcontext->username);
-					mem_file_writeline(&temp_file, pcontext->maildir);
-					mem_file_writeline(&temp_file, pcontext->selected_folder);
+					temp_file.writeline(pcontext->username);
+					temp_file.writeline(pcontext->maildir);
+					temp_file.writeline(pcontext->selected_folder);
 					pcontext->selected_time = cur_time;
 				}
 			}

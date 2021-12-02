@@ -400,7 +400,7 @@ static void *mdl_thrwork(void *arg)
 				deliv_ret = DELIVERY_OPERATION_ERROR;
 			} else {
 				mem_file_clear(&pcontext->pcontrol->f_rcpt_to);
-				mem_file_writeline(&pcontext->pcontrol->f_rcpt_to, ptr);
+				pcontext->pcontrol->f_rcpt_to.writeline(ptr);
 				gx_strlcpy(temp_rcpt, ptr, arsizeof(temp_rcpt));
 
 				if (static_cast<unsigned int>(g_retrying_times) <= times) {
@@ -478,9 +478,7 @@ static void *mdl_thrwork(void *arg)
 							pbounce_context->pmail);
 						sprintf(pbounce_context->pcontrol->from,
 							"postmaster@%s", get_default_domain());
-						mem_file_writeline(
-							&pbounce_context->pcontrol->f_rcpt_to,
-							pcontext->pcontrol->from);
+						pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
 						enqueue_context(pbounce_context);
 					}
 				}

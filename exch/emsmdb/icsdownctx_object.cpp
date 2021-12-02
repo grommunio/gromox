@@ -1541,11 +1541,8 @@ BOOL icsdownctx_object::continue_state_stream(const BINARY *pstream_data)
 	if (0 == pctx->state_property) {
 		return FALSE;
 	}
-	if (pstream_data->cb != mem_file_write(&pctx->f_state_stream,
-		pstream_data->pb, pstream_data->cb)) {
-		return FALSE;	
-	}
-	return TRUE;
+	return f_state_stream.write(pstream_data->pb, pstream_data->cb) ==
+	       pstream_data->cb ? TRUE : false;
 }
 
 BOOL icsdownctx_object::end_state_stream()

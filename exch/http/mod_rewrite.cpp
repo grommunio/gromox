@@ -251,7 +251,7 @@ BOOL mod_rewrite_process(const char *uri_buff, size_t uri_len,
 		tmp_buff[uri_len] = '\0';
 		if (mod_rewrite_rreplace(tmp_buff, sizeof(tmp_buff),
 		    &node.search_pattern, node.replace_string.c_str())) {
-			mem_file_write(pf_request_uri, tmp_buff, strlen(tmp_buff));
+			pf_request_uri->write(tmp_buff, strlen(tmp_buff));
 			return TRUE;
 		}
 	}

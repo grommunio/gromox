@@ -302,7 +302,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
         /* everything is OK */
 		snprintf(buff, arsizeof(buff), "%s@%s", email_addr.local_part,
             email_addr.domain);
-		mem_file_writeline(&pcontext->mail.envelope.f_rcpt_to, buff);
+		pcontext->mail.envelope.f_rcpt_to.writeline(buff);
         /* 250 OK */
 		return 205;
     } else {

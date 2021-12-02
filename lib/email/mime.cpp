@@ -159,18 +159,12 @@ BOOL mime_retrieve(MIME *pmime_parent,
 					pmime->mime_type = SINGLE_MIME;
 				}
 			} else {
-				mem_file_write(&pmime->f_other_fields,
-				               &mime_field.field_name_len,
-						sizeof(mime_field.field_name_len));
-				mem_file_write(&pmime->f_other_fields,
-						mime_field.field_name,
-						mime_field.field_name_len);
-				mem_file_write(&pmime->f_other_fields,
-				               &mime_field.field_value_len,
-				        sizeof(mime_field.field_value_len));
-				mem_file_write(&pmime->f_other_fields,
-						mime_field.field_value,
-						mime_field.field_value_len);
+				static_assert(sizeof(mime_field.field_name_len) == sizeof(uint32_t));
+				static_assert(sizeof(mime_field.field_value_len) == sizeof(uint32_t));
+				pmime->f_other_fields.write(&mime_field.field_name_len, sizeof(mime_field.field_name_len));
+				pmime->f_other_fields.write(mime_field.field_name, mime_field.field_name_len);
+				pmime->f_other_fields.write(&mime_field.field_value_len, sizeof(mime_field.field_value_len));
+				pmime->f_other_fields.write(mime_field.field_value, mime_field.field_value_len);
 			}
 			if ('\r' == in_buff[current_offset]) {
 				pmime->head_begin = in_buff;
@@ -810,10 +804,10 @@ BOOL mime_set_field(MIME *pmime, const char *tag, const char *value)
 	if (FALSE == found_tag){
 		tag_len = strlen(tag);
 		val_len = strlen(value);
-		mem_file_write(&pmime->f_other_fields, &tag_len, sizeof(uint32_t));
-		mem_file_write(&pmime->f_other_fields, tag, tag_len);
-		mem_file_write(&pmime->f_other_fields, &val_len, sizeof(uint32_t));
-		mem_file_write(&pmime->f_other_fields, value, val_len);
+		pmime->f_other_fields.write(&tag_len, sizeof(uint32_t));
+		pmime->f_other_fields.write(tag, tag_len);
+		pmime->f_other_fields.write(&val_len, sizeof(uint32_t));
+		pmime->f_other_fields.write(value, val_len);
 	} else {
 		mem_file_init(&file_tmp, pmime->f_other_fields.allocator);
 		mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, 0, 
@@ -823,24 +817,24 @@ BOOL mime_set_field(MIME *pmime, const char *tag, const char *value)
 		       sizeof(uint32_t)) != MEM_END_OF_FILE) {
 			pmime->f_other_fields.read(tmp_buff, tag_len);
 			if (i != mark) {
-				mem_file_write(&file_tmp, &tag_len, sizeof(uint32_t));
-				mem_file_write(&file_tmp, tmp_buff, tag_len);
+				file_tmp.write(&tag_len, sizeof(uint32_t));
+				file_tmp.write(tmp_buff, tag_len);
 			}
 			pmime->f_other_fields.read(&val_len, sizeof(uint32_t));
 			pmime->f_other_fields.read(tmp_buff, val_len);
 			if (i != mark) {
-				mem_file_write(&file_tmp, &val_len, sizeof(uint32_t));
-				mem_file_write(&file_tmp, tmp_buff, val_len);
+				file_tmp.write(&val_len, sizeof(uint32_t));
+				file_tmp.write(tmp_buff, val_len);
 			}
 			i ++;
 		}
 		/* write the new tag-value at the end of mem file */
 		tag_len = strlen(tag);
 		val_len = strlen(value);
-		mem_file_write(&file_tmp, &tag_len, sizeof(uint32_t));
-		mem_file_write(&file_tmp, tag, tag_len);
-		mem_file_write(&file_tmp, &val_len, sizeof(uint32_t));
-		mem_file_write(&file_tmp, value, val_len);
+		file_tmp.write(&tag_len, sizeof(uint32_t));
+		file_tmp.write(tag, tag_len);
+		file_tmp.write(&val_len, sizeof(uint32_t));
+		file_tmp.write(value, val_len);
 		mem_file_copy(&file_tmp, &pmime->f_other_fields);
 		mem_file_free(&file_tmp);
 	}
@@ -874,10 +868,10 @@ BOOL mime_append_field(MIME *pmime, const char *tag, const char *value)
 	}
 	tag_len = strlen(tag);
 	val_len = strlen(value);
-	mem_file_write(&pmime->f_other_fields, &tag_len, sizeof(uint32_t));
-	mem_file_write(&pmime->f_other_fields, tag, tag_len);
-	mem_file_write(&pmime->f_other_fields, &val_len, sizeof(uint32_t));
-	mem_file_write(&pmime->f_other_fields, value, val_len);
+	pmime->f_other_fields.write(&tag_len, sizeof(uint32_t));
+	pmime->f_other_fields.write(tag, tag_len);
+	pmime->f_other_fields.write(&val_len, sizeof(uint32_t));
+	pmime->f_other_fields.write(value, val_len);
 	pmime->head_touched = TRUE;
 	return TRUE;
 }
@@ -913,12 +907,12 @@ BOOL mime_remove_field(MIME *pmime, const char *tag)
 			mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, val_len,
 				MEM_FILE_SEEK_CUR);
 		} else {
-			mem_file_write(&file_tmp, &tag_len, sizeof(uint32_t));
-			mem_file_write(&file_tmp, tmp_buff, tag_len);
+			file_tmp.write(&tag_len, sizeof(uint32_t));
+			file_tmp.write(tmp_buff, tag_len);
 			pmime->f_other_fields.read(&val_len, sizeof(uint32_t));
 			pmime->f_other_fields.read(tmp_buff, val_len);
-			mem_file_write(&file_tmp, &val_len, sizeof(uint32_t));
-			mem_file_write(&file_tmp, tmp_buff, val_len);
+			file_tmp.write(&val_len, sizeof(uint32_t));
+			file_tmp.write(tmp_buff, val_len);
 		}
 	}
 	if (TRUE == found_tag) {
@@ -1023,10 +1017,10 @@ BOOL mime_set_content_param(MIME *pmime, const char *tag, const char *value)
 	if (FALSE == found_tag){
 		tag_len = strlen(tag);
 		val_len = strlen(value);
-		mem_file_write(&pmime->f_type_params, &tag_len, sizeof(uint32_t));
-		mem_file_write(&pmime->f_type_params, tag, tag_len);
-		mem_file_write(&pmime->f_type_params, &val_len, sizeof(uint32_t));
-		mem_file_write(&pmime->f_type_params, value, val_len);
+		pmime->f_type_params.write(&tag_len, sizeof(uint32_t));
+		pmime->f_type_params.write(tag, tag_len);
+		pmime->f_type_params.write(&val_len, sizeof(uint32_t));
+		pmime->f_type_params.write(value, val_len);
 	} else {
 		mem_file_init(&file_tmp, pmime->f_type_params.allocator);
 		mem_file_seek(&pmime->f_type_params, MEM_FILE_READ_PTR, 0, 
@@ -1035,24 +1029,24 @@ BOOL mime_set_content_param(MIME *pmime, const char *tag, const char *value)
 		while (pmime->f_type_params.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 			pmime->f_type_params.read(tmp_buff, tag_len);
 			if (i != mark) {
-				mem_file_write(&file_tmp, &tag_len, sizeof(uint32_t));
-				mem_file_write(&file_tmp, tmp_buff, tag_len);
+				file_tmp.write(&tag_len, sizeof(uint32_t));
+				file_tmp.write(tmp_buff, tag_len);
 			}
 			pmime->f_type_params.read(&val_len, sizeof(uint32_t));
 			pmime->f_type_params.read(tmp_buff, val_len);
 			if (i != mark) {
-				mem_file_write(&file_tmp, &val_len, sizeof(uint32_t));
-				mem_file_write(&file_tmp, tmp_buff, val_len);
+				file_tmp.write(&val_len, sizeof(uint32_t));
+				file_tmp.write(tmp_buff, val_len);
 			}
 			i ++;
 		}
 		/* write the new tag-value at the end of mem file */
 		tag_len = strlen(tag);
 		val_len = strlen(value);
-		mem_file_write(&file_tmp, &tag_len, sizeof(uint32_t));
-		mem_file_write(&file_tmp, tag, tag_len);
-		mem_file_write(&file_tmp, &val_len, sizeof(uint32_t));
-		mem_file_write(&file_tmp, value, val_len);
+		file_tmp.write(&tag_len, sizeof(uint32_t));
+		file_tmp.write(tag, tag_len);
+		file_tmp.write(&val_len, sizeof(uint32_t));
+		file_tmp.write(value, val_len);
 		mem_file_copy(&file_tmp, &pmime->f_type_params);
 		mem_file_free(&file_tmp);
 	}

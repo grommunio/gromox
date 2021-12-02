@@ -1027,7 +1027,7 @@ void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,
 			all_rcpts += ' ';
 		all_rcpts += rcpt;
 	}
-	while (mem_file_readline(&pcontext->mail.envelope.f_rcpt_to, rcpt, arsizeof(rcpt)) != MEM_END_OF_FILE)
+	while (pcontext->mail.envelope.f_rcpt_to.readline(rcpt, arsizeof(rcpt)) != MEM_END_OF_FILE)
 		++i;
 	if (i > limit)
 		all_rcpts += " + " + std::to_string(i - limit) + " others";

@@ -108,7 +108,7 @@ static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 			strcpy(rcpt_to, mainname);
 			b_replaced = TRUE;
 		}
-		mem_file_writeline(&temp_file, rcpt_to);
+		temp_file.writeline(rcpt_to);
 	}
 	if (TRUE == b_replaced) {
 		mem_file_copy(&temp_file, &pcontext->pcontrol->f_rcpt_to);

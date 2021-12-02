@@ -172,13 +172,13 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 	       arsizeof(rcpt_buff)) != MEM_END_OF_FILE) {
 		pdomain = strchr(rcpt_buff, '@');
 		if (NULL == pdomain) {
-			mem_file_writeline(&remote_file, rcpt_buff);
+			remote_file.writeline(rcpt_buff);
 			continue;
 		}
 		pdomain ++;
 		if (!exmdb_local_check_domain(pdomain)) {
 			remote_found = TRUE;
-			mem_file_writeline(&remote_file, rcpt_buff);
+			remote_file.writeline(rcpt_buff);
 			continue;
 		}
 		switch (exmdb_local_deliverquota(pcontext, rcpt_buff)) {
@@ -210,9 +210,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			pbounce_context->pcontrol->need_bounce = FALSE;
 			sprintf(pbounce_context->pcontrol->from,
 				"postmaster@%s", get_default_domain());
-			mem_file_writeline(
-				&pbounce_context->pcontrol->f_rcpt_to,
-				pcontext->pcontrol->from);
+			pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
 			enqueue_context(pbounce_context);
 			break;
 		case DELIVERY_NO_USER:
@@ -240,9 +238,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			pbounce_context->pcontrol->need_bounce = FALSE;
 			sprintf(pbounce_context->pcontrol->from,
 				"postmaster@%s", get_default_domain());
-			mem_file_writeline(
-				&pbounce_context->pcontrol->f_rcpt_to,
-				pcontext->pcontrol->from);
+			pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
 			enqueue_context(pbounce_context);
 			break;
 		case DELIVERY_MAILBOX_FULL:
@@ -269,9 +265,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			pbounce_context->pcontrol->need_bounce = FALSE;
 			sprintf(pbounce_context->pcontrol->from,
 				"postmaster@%s", get_default_domain());
-			mem_file_writeline(
-				&pbounce_context->pcontrol->f_rcpt_to,
-				pcontext->pcontrol->from);
+			pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
 			enqueue_context(pbounce_context);
 			break;
 		case DELIVERY_OPERATION_ERROR:
@@ -299,9 +293,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			pbounce_context->pcontrol->need_bounce = FALSE;
 			sprintf(pbounce_context->pcontrol->from,
 				"postmaster@%s", get_default_domain());
-			mem_file_writeline(
-				&pbounce_context->pcontrol->f_rcpt_to,
-				pcontext->pcontrol->from);
+			pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
 			enqueue_context(pbounce_context);
 			break;
 		case DELIVERY_OPERATION_FAILURE:

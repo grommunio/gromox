@@ -201,8 +201,7 @@ void auto_response_reply(const char *user_home,
 	}
 	auto pdomain = strchr(from, '@') + 1;
 	sprintf(pcontext->pcontrol->from, "auto-reply@%s", pdomain);
-	
-	mem_file_writeline(&pcontext->pcontrol->f_rcpt_to, (char*)rcpt);
+	pcontext->pcontrol->f_rcpt_to.writeline(rcpt);
 	auto pmime = pcontext->pmail->add_head();
 	if (NULL == pmime) {
 		put_context(pcontext);

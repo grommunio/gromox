@@ -23,6 +23,8 @@ enum {
 struct MEM_FILE {
 	size_t read(void *, size_t);
 	size_t readline(char *, size_t);
+	size_t write(const void *, size_t);
+	size_t writeline(const char *);
 
     DOUBLE_LIST_NODE    *pnode_rd;    /* node of current reading */
     DOUBLE_LIST_NODE    *pnode_wr;    /* node of current writing */
@@ -40,6 +42,4 @@ ssize_t mem_file_seek(MEM_FILE *pfile, int type, ssize_t offset, int opt);
 size_t mem_file_get_total_length(MEM_FILE *pfile);
 void mem_file_clear(MEM_FILE *pfile);
 void mem_file_free(MEM_FILE *pfile);
-extern size_t mem_file_write(MEM_FILE *pfile, const void *buf, size_t size);
-extern size_t mem_file_writeline(MEM_FILE *pfile, const char *buf);
 size_t mem_file_copy(MEM_FILE *pfile_src, MEM_FILE *pfile_dst);

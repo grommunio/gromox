@@ -1227,7 +1227,7 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 				count ++;
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 				temp_line[line_pos] = '\0';
-				mem_file_writeline(pfile, temp_line);
+				pfile->writeline(temp_line);
 				line_pos = 0;
 			} else {
 				if ('\r' != buff[i] || i != offset - 1) {
@@ -1350,7 +1350,7 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 				count ++;
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 				temp_line[line_pos] = '\0';
-				mem_file_writeline(pfile, temp_line);
+				pfile->writeline(temp_line);
 				line_pos = 0;
 			} else {
 				if ('\r' != buff[i] || i != offset - 1) {
@@ -1953,7 +1953,7 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 					}
 					
 					mem_file_init(&mitem.f_digest, g_file_allocator);
-					mem_file_write(&mitem.f_digest, temp_line, line_pos);
+					mitem.f_digest.write(temp_line, line_pos);
 					xarray_append(pxarray, &mitem, mitem.uid);
 				} else {
 					b_format_error = TRUE;
@@ -2379,7 +2379,7 @@ static int fetch_detail(const char *path, const char *folder,
 							}
 							
 							mem_file_init(&pitem->f_digest, g_file_allocator);
-							mem_file_write(&pitem->f_digest, temp_line, line_pos);
+							pitem->f_digest.write(temp_line, line_pos);
 						}
 					} else {
 						b_format_error = TRUE;
@@ -2781,7 +2781,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 							}
 							
 							mem_file_init(&pitem->f_digest, g_file_allocator);
-							mem_file_write(&pitem->f_digest, pspace, temp_len);
+							pitem->f_digest.write(pspace, temp_len);
 						}
 					} else {
 						b_format_error = TRUE;

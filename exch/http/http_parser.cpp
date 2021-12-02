@@ -573,8 +573,7 @@ static int htparse_rdhead_no(HTTP_CONTEXT *pcontext, char *line, unsigned int li
 	}
 	if (FALSE == mod_rewrite_process(ptoken + 1,
 	    tmp_len1, &pcontext->request.f_request_uri)) {
-	    mem_file_write(&pcontext->request.f_request_uri,
-			ptoken + 1, tmp_len1);
+		pcontext->request.f_request_uri.write(ptoken + 1, tmp_len1);
 	}
 	memcpy(pcontext->request.version, ptoken1 + 6, tmp_len);
 	pcontext->request.version[tmp_len] = '\0';
@@ -607,37 +606,28 @@ static int htparse_rdhead_mt(HTTP_CONTEXT *pcontext, char *line, unsigned int li
 	}
 	tmp_len = line_length - static_cast<size_t>(ptoken - line);
 	if (0 == strcasecmp(field_name, "Host")) {
-		mem_file_write(&pcontext->request.f_host,
-			ptoken, tmp_len);
+		pcontext->request.f_host.write(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name, "User-Agent")) {
-		mem_file_write(&pcontext->request.f_user_agent,
-			ptoken, tmp_len);
+		pcontext->request.f_user_agent.write(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name, "Accept")) {
-		mem_file_write(&pcontext->request.f_accept,
-			ptoken, tmp_len);
+		pcontext->request.f_accept.write(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name,
 		"Accept-Language")) {
-		mem_file_write(&pcontext->request.f_accept_language,
-			ptoken, tmp_len);
+		pcontext->request.f_accept_language.write(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name,
 		"Accept-Encoding")) {
-		mem_file_write(&pcontext->request.f_accept_encoding,
-			ptoken, tmp_len);
+		pcontext->request.f_accept_encoding.write(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name,
 		"Content-Type")) {
-		mem_file_write(&pcontext->request.f_content_type,
-			ptoken, tmp_len);
+		pcontext->request.f_content_type.write(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name,
 		"Content-Length")) {
-		mem_file_write(&pcontext->request.f_content_length,
-			ptoken, tmp_len);
+		pcontext->request.f_content_length.write(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name,
 		"Transfer-Encoding")) {
-		mem_file_write(&pcontext->request.f_transfer_encoding,
-			ptoken, tmp_len);
+		pcontext->request.f_transfer_encoding.write(ptoken, tmp_len);
 	} else if (0 == strcasecmp(field_name, "Cookie")) {
-		mem_file_write(&pcontext->request.f_cookie,
-			ptoken, tmp_len);
+		pcontext->request.f_cookie.write(ptoken, tmp_len);
 	} else {
 		if (0 == strcasecmp(field_name, "Connection") &&
 		    0 == strncasecmp(ptoken, "keep-alive", tmp_len)) {
@@ -646,10 +636,10 @@ static int htparse_rdhead_mt(HTTP_CONTEXT *pcontext, char *line, unsigned int li
 			pcontext->b_close = FALSE;
 		}
 		uint32_t tmp_len1 = strlen(field_name);
-		mem_file_write(&pcontext->request.f_others, reinterpret_cast<char *>(&tmp_len1), sizeof(uint32_t));
-		mem_file_write(&pcontext->request.f_others, field_name, tmp_len1);
-		mem_file_write(&pcontext->request.f_others, reinterpret_cast<char *>(&tmp_len), sizeof(uint32_t));
-		mem_file_write(&pcontext->request.f_others, ptoken, tmp_len);
+		pcontext->request.f_others.write(&tmp_len1, sizeof(uint32_t));
+		pcontext->request.f_others.write(field_name, tmp_len1);
+		pcontext->request.f_others.write(&tmp_len, sizeof(uint32_t));
+		pcontext->request.f_others.write(ptoken, tmp_len);
 	}
 	return X_RUNOFF;
 }

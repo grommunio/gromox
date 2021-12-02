@@ -633,8 +633,7 @@ static void *ev_enqwork(void *param)
 					auto pdequeue = phost->list.front();
 					phost->list.erase(phost->list.begin());
 					mem_file_init(&temp_file, g_file_alloc);
-					mem_file_write(&temp_file, penqueue->line,
-						strlen(penqueue->line));
+					temp_file.write(penqueue->line, strlen(penqueue->line));
 					std::unique_lock dl_hold(pdequeue->lock);
 					b_result = pdequeue->fifo.enqueue(&temp_file);
 					dl_hold.unlock();

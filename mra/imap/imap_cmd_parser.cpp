@@ -1364,7 +1364,7 @@ static void imap_cmd_parser_convert_folderlist(
 	while (pfile->readline(temp_name, arsizeof(temp_name)) != MEM_END_OF_FILE) {
 		if (TRUE == imap_cmd_parser_sysfolder_to_imapfolder(
 			lang, temp_name, converted_name)) {
-			mem_file_writeline(&temp_file, converted_name);
+			temp_file.writeline(converted_name);
 		}
 	}
 	mem_file_clear(pfile);
@@ -1804,11 +1804,11 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
-	mem_file_writeline(&temp_file, "inbox");
-	mem_file_writeline(&temp_file, "draft");
-	mem_file_writeline(&temp_file, "sent");
-	mem_file_writeline(&temp_file, "trash");
-	mem_file_writeline(&temp_file, "junk");
+	temp_file.writeline("inbox");
+	temp_file.writeline("draft");
+	temp_file.writeline("sent");
+	temp_file.writeline("trash");
+	temp_file.writeline("junk");
 	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
 	strcpy(temp_name, argv[2]);
 	len = strlen(temp_name);
@@ -2078,11 +2078,11 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 		}
 		}
-		mem_file_writeline(&temp_file, "inbox");
-		mem_file_writeline(&temp_file, "draft");
-		mem_file_writeline(&temp_file, "sent");
-		mem_file_writeline(&temp_file, "trash");
-		mem_file_writeline(&temp_file, "junk");
+		temp_file.writeline("inbox");
+		temp_file.writeline("draft");
+		temp_file.writeline("sent");
+		temp_file.writeline("trash");
+		temp_file.writeline("junk");
 		imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
 		dir_tree_init(&temp_tree, imap_parser_get_dpool());
 		dir_tree_retrieve(&temp_tree, &temp_file);
@@ -2133,11 +2133,11 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	snprintf(search_pattern, 1024, "%s%s", argv[3], argv[4]);
 	mem_file_init(&temp_file, imap_parser_get_allocator());
-	mem_file_writeline(&temp_file, "inbox");
-	mem_file_writeline(&temp_file, "draft");
-	mem_file_writeline(&temp_file, "sent");
-	mem_file_writeline(&temp_file, "trash");
-	mem_file_writeline(&temp_file, "junk");
+	temp_file.writeline("inbox");
+	temp_file.writeline("draft");
+	temp_file.writeline("sent");
+	temp_file.writeline("trash");
+	temp_file.writeline("junk");
 	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
 	len = 0;
 	while (temp_file.readline(temp_name, arsizeof(temp_name)) != MEM_END_OF_FILE) {
@@ -2318,11 +2318,11 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
 	mem_file_init(&temp_file1, imap_parser_get_allocator());
 	system_services_enum_folders(pcontext->maildir, &temp_file1, &errnum);
-	mem_file_writeline(&temp_file1, "inbox");
-	mem_file_writeline(&temp_file1, "draft");
-	mem_file_writeline(&temp_file1, "sent");
-	mem_file_writeline(&temp_file1, "trash");
-	mem_file_writeline(&temp_file1, "junk");
+	temp_file1.writeline("inbox");
+	temp_file1.writeline("draft");
+	temp_file1.writeline("sent");
+	temp_file1.writeline("trash");
+	temp_file1.writeline("junk");
 	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file1);
 	dir_tree_init(&temp_tree, imap_parser_get_dpool());
 	dir_tree_retrieve(&temp_tree, &temp_file1);

@@ -75,11 +75,8 @@ BOOL icsupctx_object::continue_state_stream(const BINARY *pstream_data)
 		META_TAG_IDSETGIVEN1 == pctx->state_property) {
 		return TRUE;
 	}
-	if (pstream_data->cb != mem_file_write(&pctx->f_state_stream,
-		pstream_data->pb, pstream_data->cb)) {
-		return FALSE;	
-	}
-	return TRUE;
+	return f_state_stream.write(pstream_data->pb, pstream_data->cb) ==
+	       pstream_data->cb ? TRUE : false;
 }
 
 BOOL icsupctx_object::end_state_stream()
