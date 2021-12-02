@@ -491,32 +491,32 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 			ps = va_arg(ap, char*);
 			if (0 == len1 && 0 == len2) {
 				ps[0] = '\0';
+				break;
+			}
+			/* make sure its in the right format - be strict */
+			if (len1 != len2 || ptr_ofs + len1 < ptr_ofs ||
+				ptr_ofs + len1 < len1 || ptr_ofs + len1 > blob.length) {
+				va_end(ap);
+				return false;
+			}
+			if (len1 & 1) {
+				/* if odd length and unicode */
+				va_end(ap);
+				return false;
+			}
+			if (blob.data + ptr_ofs < (uint8_t*)(long)ptr_ofs ||
+				blob.data + ptr_ofs < blob.data) {
+				va_end(ap);
+				return false;
+			}
+			if (len1 > 0) {
+				if (!ntlmssp_utf16le_to_utf8(blob.data + ptr_ofs,
+				    len1, ps, le32p_to_cpu(ps))) {
+					va_end(ap);
+					return false;
+				}
 			} else {
-				/* make sure its in the right format - be strict */
-				if (len1 != len2 || ptr_ofs + len1 < ptr_ofs ||
-					ptr_ofs + len1 < len1 || ptr_ofs + len1 > blob.length) {
-					va_end(ap);
-					return false;
-				}
-				if (len1 & 1) {
-					/* if odd length and unicode */
-					va_end(ap);
-					return false;
-				}
-				if (blob.data + ptr_ofs < (uint8_t*)(long)ptr_ofs ||
-					blob.data + ptr_ofs < blob.data) {
-					va_end(ap);
-					return false;
-				}
-				if (len1 > 0) {
-					if (!ntlmssp_utf16le_to_utf8(blob.data + ptr_ofs,
-					    len1, ps, le32p_to_cpu(ps))) {
-						va_end(ap);
-						return false;
-					}
-				} else {
-					ps[0] = '\0';
-				}
+				ps[0] = '\0';
 			}
 			break;
 		case 'A':
@@ -535,25 +535,23 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 			/* make sure its in the right format - be strict */
 			if (0 == len1 && 0 == len2) {
 				ps[0] = '\0';
+				break;
+			}
+			if (len1 != len2 || ptr_ofs + len1 < ptr_ofs ||
+				ptr_ofs + len1 < len1 || ptr_ofs + len1 > blob.length) {
+				va_end(ap);
+				return false;
+			}
+			if (blob.data + ptr_ofs < (uint8_t *)(long)ptr_ofs ||
+				blob.data + ptr_ofs < blob.data) {
+				va_end(ap);
+				return false;
+			}
+			if (len1 > 0) {
+				memcpy(ps, blob.data + ptr_ofs, len1);
+				ps[len1] = '\0';
 			} else {
-				if (len1 != len2 || ptr_ofs + len1 < ptr_ofs ||
-					ptr_ofs + len1 < len1 || ptr_ofs + len1 > blob.length) {
-					va_end(ap);
-					return false;
-				}
-
-				if (blob.data + ptr_ofs < (uint8_t *)(long)ptr_ofs ||
-					blob.data + ptr_ofs < blob.data) {
-					va_end(ap);
-					return false;
-				}
-
-				if (len1 > 0) {
-					memcpy(ps, blob.data + ptr_ofs, len1);
-					ps[len1] = '\0';
-				} else {
-					ps[0] = '\0';
-				}
+				ps[0] = '\0';
 			}
 			break;
 		case 'B':
