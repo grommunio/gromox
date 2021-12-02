@@ -1186,7 +1186,7 @@ BOOL mime_serialize(MIME *pmime, STREAM *pstream)
 	return TRUE;
 }
 
-static BOOL mime_read_mutlipart_content(MIME *pmime,
+static BOOL mime_read_multipart_content(MIME *pmime,
 	char *out_buff, size_t *plength)
 {
 	void *ptr;
@@ -1206,7 +1206,7 @@ static BOOL mime_read_mutlipart_content(MIME *pmime,
 			tmp_size / STREAM_BLOCK_SIZE + 1, FALSE);
 	if (NULL == pallocator) {
 		debug_info("[mime]: Failed to init lib buffer"
-				" in mime_read_mutlipart_content");
+		           " in mime_read_multipart_content");
 		*plength = 0;
 		return FALSE;
 	}
@@ -1248,7 +1248,7 @@ static BOOL mime_read_mutlipart_content(MIME *pmime,
 		} else if (0 == tmp_len) {
 			tmp_stream.write("\r\n", 2);
 		} else {
-			debug_info("[mime]: fatal error in mime_read_mutlipart_content");
+			debug_info("[mime]: fatal error in mime_read_multipart_content");
 		}
 	}
 	offset = 0;
@@ -1398,7 +1398,7 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 		return FALSE;
 	}
 	if (MULTIPLE_MIME == pmime->mime_type) {
-		return mime_read_mutlipart_content(pmime, out_buff, plength);
+		return mime_read_multipart_content(pmime, out_buff, plength);
 	}
 	if (*plength <= 0) {
 		*plength = 0;
