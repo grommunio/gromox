@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <vector>
 #include <gromox/element_data.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/mapi_types.hpp>
@@ -33,7 +34,8 @@ struct icsdownctx_object final {
 	uint32_t state_property = 0;
 	MEM_FILE f_state_stream{};
 	BOOL b_started = false;
-	DOUBLE_LIST flow_list{}, group_list{};
+	DOUBLE_LIST flow_list{};
+	std::vector<uint32_t> group_list;
 	uint64_t last_readcn = 0, last_changenum = 0;
 	PROGRESS_INFORMATION *pprogtotal = nullptr;
 	EID_ARRAY *pmessages = nullptr, *pdeleted_messages = nullptr;

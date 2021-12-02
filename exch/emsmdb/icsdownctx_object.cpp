@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <memory>
@@ -37,11 +38,6 @@ struct ICS_FLOW_NODE {
 	DOUBLE_LIST_NODE node;
 	uint8_t func_id;
 	void *pparam;
-};
-
-struct ics_group_node {
-	DOUBLE_LIST_NODE node;
-	uint32_t group_id;
 };
 
 }
@@ -99,7 +95,6 @@ std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogo
 	if (pctx->pstream == nullptr)
 		return NULL;
 	double_list_init(&pctx->flow_list);
-	double_list_init(&pctx->group_list);
 	pctx->pprogtotal = NULL;
 	pctx->pmessages = NULL;
 	pctx->pread_messags = NULL;
@@ -843,10 +838,7 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 	int i, j;
 	uint16_t count;
 	uint32_t index;
-	BOOL b_written;
 	uint32_t proptag;
-	ics_group_node *pgpnode = nullptr;
-	DOUBLE_LIST_NODE *pnode;
 	PROPTAG_ARRAY *pchangetags;
 	static constexpr BINARY fake_bin{};
 	
@@ -854,26 +846,19 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 	if (NULL == pgpinfo) {
 		return FALSE;
 	}
-	b_written = FALSE;
-	for (pnode=double_list_get_head(&pctx->group_list); NULL!=pnode;
-		pnode=double_list_get_after(&pctx->group_list, pnode)) {
-		if (static_cast<ics_group_node *>(pnode->pdata)->group_id == group_id) {
-			b_written = TRUE;
-			break;
-		}
-	}
+	auto b_written = std::find(pctx->group_list.cbegin(), pctx->group_list.cend(), group_id) !=
+	                 pctx->group_list.cend();
 	pmsg->group_id = group_id;
-	if (TRUE == b_written) {
+	if (b_written) {
 		pmsg->pgpinfo= &pctx->fake_gpinfo;
 	} else {
 		pmsg->pgpinfo = pgpinfo;
-		pgpnode = me_alloc<ics_group_node>();
-		if (NULL == pgpnode) {
-			return FALSE;
+		try {
+			pctx->group_list.push_back(group_id);
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1597: ENOMEM\n");
+			return false;
 		}
-		pgpnode->node.pdata = pgpnode;
-		pgpnode->group_id = group_id;
-		double_list_append_as_tail(&pctx->group_list, &pgpnode->node);
 	}
 	pmsg->count = pindices->count;
 	if (pproptags->count != 0)
@@ -1564,9 +1549,6 @@ icsdownctx_object::~icsdownctx_object()
 	while ((pnode = double_list_pop_front(&pctx->flow_list)) != nullptr)
 		free(pnode->pdata);
 	double_list_free(&pctx->flow_list);
-	while ((pnode = double_list_pop_front(&pctx->group_list)) != nullptr)
-		free(pnode->pdata);
-	double_list_free(&pctx->group_list);
 	if (NULL != pctx->pprogtotal) {
 		free(pctx->pprogtotal);
 	}
