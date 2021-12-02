@@ -579,19 +579,19 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 			}
 			pcontext->stream.write(line_buff, line_length);
 			
-			if (STREAM_COPY_OK == copy_result && pcontext->cur_line >= 0) {
-				if (pcontext->until_line == pcontext->cur_line) {
-					pcontext->stream.write(".\r\n", 3);
-					if (-1 != pcontext->message_fd) {
-						close(pcontext->message_fd);
-						pcontext->message_fd = -1;
-					}
-					b_stop = TRUE;
-					break;
-				} else {
-					pcontext->cur_line ++;
-				}
+			if (copy_result != STREAM_COPY_OK ||
+			    pcontext->cur_line <= 0)
+				break;
+			if (pcontext->until_line != pcontext->cur_line) {
+				++pcontext->cur_line;
+				break;
 			}
+			pcontext->stream.write(".\r\n", 3);
+			if (-1 != pcontext->message_fd) {
+				close(pcontext->message_fd);
+				pcontext->message_fd = -1;
+			}
+			b_stop = TRUE;
 			break;
 		}
 		last_result = copy_result;
