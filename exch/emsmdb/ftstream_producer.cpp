@@ -21,127 +21,60 @@
 
 using namespace std::string_literals;
 
-enum class point_type {
-	normal_break, long_var, wstring,
-};
-
-namespace {
-
-struct POINT_NODE {
-	DOUBLE_LIST_NODE node;
-	point_type type;
-	uint32_t offset;
-};
-
-}
-
-static void ftstream_producer_try_recode_nbp(
-	FTSTREAM_PRODUCER *pstream)
+static void ftstream_producer_try_recode_nbp(FTSTREAM_PRODUCER *pstream) try
 {
-	POINT_NODE *ppoint;
-	DOUBLE_LIST_NODE *pnode;
-	
-	pnode = double_list_get_tail(&pstream->bp_list);
-	uint32_t last_seek = pnode == nullptr ? 0 : static_cast<POINT_NODE *>(pnode->pdata)->offset;
+	auto last_seek = pstream->bp_list.size() == 0 ? 0 : pstream->bp_list.back().offset;
 	if (pstream->offset - last_seek < FTSTREAM_PRODUCER_POINT_LENGTH)
 		return;
-	ppoint = me_alloc<POINT_NODE>();
-	if (NULL == ppoint) {
-		return;
-	}
-	ppoint->node.pdata = ppoint;
-	ppoint->type = point_type::normal_break;
-	ppoint->offset = pstream->offset;
-	double_list_append_as_tail(
-		&pstream->bp_list, &ppoint->node);
+	point_node p = {point_type::normal_break, pstream->offset};
+	pstream->bp_list.push_back(std::move(p));
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "W-1601: ENOMEM\n");
 }
 
-static void ftstream_producer_record_nbp(
-	FTSTREAM_PRODUCER *pstream, uint32_t nbp)
+static void ftstream_producer_record_nbp(FTSTREAM_PRODUCER *pstream,
+    uint32_t nbp) try
 {
-	POINT_NODE *pbpnode;
-	DOUBLE_LIST_NODE *pnode;
-	
-	pnode = double_list_get_tail(&pstream->bp_list);
-	if (pnode != nullptr && nbp <= static_cast<POINT_NODE *>(pnode->pdata)->offset)
+	if (pstream->bp_list.size() > 0 && nbp <= pstream->bp_list.back().offset)
 		return;
-	pbpnode = me_alloc<POINT_NODE>();
-	if (NULL == pbpnode) {
-		return;
-	}
-	pbpnode->node.pdata = pbpnode;
-	pbpnode->type = point_type::normal_break;
-	pbpnode->offset = nbp;
-	double_list_append_as_tail(
-		&pstream->bp_list, &pbpnode->node);
+	point_node p = {point_type::normal_break, nbp};
+	pstream->bp_list.emplace_back(std::move(p));
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "W-1602: ENOMEM\n");
 }
 
-static void ftstream_producer_record_lvp(
-	FTSTREAM_PRODUCER *pstream,
-	uint32_t position, uint32_t length)
+static void ftstream_producer_record_lvp(FTSTREAM_PRODUCER *pstream,
+     uint32_t position, uint32_t length) try
 {
-	POINT_NODE *pbpnode;
-	DOUBLE_LIST_NODE *pnode;
-	
-	pnode = double_list_get_tail(&pstream->bp_list);
-	if (NULL == pnode || position >
-		((POINT_NODE*)pnode->pdata)->offset) {
-		pbpnode = me_alloc<POINT_NODE>();
-		if (NULL == pbpnode) {
-			return;
-		}
-		pbpnode->node.pdata = pbpnode;
-		pbpnode->type = point_type::normal_break;
-		pbpnode->offset = position;
-		double_list_append_as_tail(
-			&pstream->bp_list, &pbpnode->node);
-		pnode = &pbpnode->node;
+	auto pnode = pstream->bp_list.rbegin();
+	if (pnode == pstream->bp_list.rend() || position > pnode->offset) {
+		point_node p = {point_type::normal_break, position};
+		pstream->bp_list.emplace_back(std::move(p));
+		pnode = pstream->bp_list.rbegin();
 	}
-	if (position + length <= static_cast<POINT_NODE *>(pnode->pdata)->offset)
+	if (position + length <= pnode->offset)
 		return;
-	pbpnode = me_alloc<POINT_NODE>();
-	if (NULL == pbpnode) {
-		return;
-	}
-	pbpnode->node.pdata = pbpnode;
-	pbpnode->type = point_type::long_var;
-	pbpnode->offset = position + length;
-	double_list_append_as_tail(
-		&pstream->bp_list, &pbpnode->node);
+	point_node p = {point_type::long_var, position + length};
+	pstream->bp_list.emplace_back(std::move(p));
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "W-1603: ENOMEM\n");
 }
 
-static void ftstream_producer_record_wsp(
-	FTSTREAM_PRODUCER *pstream,
-	uint32_t position, uint32_t length)
+static void ftstream_producer_record_wsp(FTSTREAM_PRODUCER *pstream,
+    uint32_t position, uint32_t length) try
 {
-	POINT_NODE *pbpnode;
-	DOUBLE_LIST_NODE *pnode;
-	
-	pnode = double_list_get_tail(&pstream->bp_list);
-	if (NULL == pnode || position >
-		((POINT_NODE*)pnode->pdata)->offset) {
-		pbpnode = me_alloc<POINT_NODE>();
-		if (NULL == pbpnode) {
-			return;
-		}
-		pbpnode->node.pdata = pbpnode;
-		pbpnode->type = point_type::normal_break;
-		pbpnode->offset = position;
-		double_list_append_as_tail(
-			&pstream->bp_list, &pbpnode->node);
-		pnode = &pbpnode->node;
+	auto pnode = pstream->bp_list.rbegin();
+	if (pnode == pstream->bp_list.rend() || position > pnode->offset) {
+		point_node p = {point_type::normal_break, position};
+		pstream->bp_list.emplace_back(std::move(p));
+		pnode = pstream->bp_list.rbegin();
 	}
-	if (position + length <= static_cast<POINT_NODE *>(pnode->pdata)->offset)
+	if (position + length <= pnode->offset)
 		return;
-	pbpnode = me_alloc<POINT_NODE>();
-	if (NULL == pbpnode) {
-		return;
-	}
-	pbpnode->node.pdata = pbpnode;
-	pbpnode->type = point_type::wstring;
-	pbpnode->offset = position + length;
-	double_list_append_as_tail(
-		&pstream->bp_list, &pbpnode->node);
+	point_node p = {point_type::wstring, position + length};
+	pstream->bp_list.emplace_back(std::move(p));
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "W-1604: ENOMEM\n");
 }
 
 static BOOL ftstream_producer_write_internal(
@@ -951,11 +884,6 @@ BOOL ftstream_producer::write_hierarchysync(
 	return TRUE;
 }
 
-fxstream_producer::fxstream_producer()
-{
-	double_list_init(&bp_list);
-}
-
 std::unique_ptr<ftstream_producer>
 ftstream_producer::create(logon_object *plogon, uint8_t string_option) try
 {
@@ -986,33 +914,23 @@ ftstream_producer::create(logon_object *plogon, uint8_t string_option) try
 fxstream_producer::~fxstream_producer()
 {
 	auto pstream = this;
-	DOUBLE_LIST_NODE *pnode;
-	
 	if (-1 != pstream->fd) {
 		close(pstream->fd);
 		if (remove(pstream->path.c_str()) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1371: remove %s: %s\n", pstream->path.c_str(), strerror(errno));
 	}
-	while ((pnode = double_list_pop_front(&pstream->bp_list)) != nullptr)
-		free(pnode->pdata);
-	double_list_free(&pstream->bp_list);
 }
 
 BOOL ftstream_producer::read_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last)
 {
 	auto pstream = this;
-	POINT_NODE *ppoint;
-	POINT_NODE *ppoint1;
 	uint32_t cur_offset;
-	DOUBLE_LIST_NODE *pnode;
 	
 	if (FALSE == pstream->b_read) {
-		pnode = double_list_get_tail(&pstream->bp_list);
-		if (NULL == pnode) {
+		auto pnode = pstream->bp_list.rbegin();
+		if (pnode == pstream->bp_list.rend() ||
+		    pnode->offset != pstream->offset)
 			ftstream_producer_record_nbp(pstream, pstream->offset);
-		} else if (static_cast<POINT_NODE *>(pnode->pdata)->offset != pstream->offset) {
-			ftstream_producer_record_nbp(pstream, pstream->offset);
-		}
 		pstream->b_read = TRUE;
 		if (-1 != pstream->fd) {
 			if (0 != pstream->buffer_offset &&
@@ -1026,43 +944,32 @@ BOOL ftstream_producer::read_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last)
 	} else {
 		cur_offset = pstream->fd != -1 ? lseek(pstream->fd, 0, SEEK_CUR) : pstream->read_offset;
 	}
-	for (pnode=double_list_get_head(&pstream->bp_list); NULL!=pnode;
-		pnode=double_list_get_after(&pstream->bp_list, pnode)) {
-		ppoint = (POINT_NODE*)pnode->pdata;
+	for (auto pnode = pstream->bp_list.begin();
+	     pnode != pstream->bp_list.end(); ++pnode) {
+		auto ppoint = &*pnode;
 		if (ppoint->offset - cur_offset <= *plen) {
 			continue;
 		}
 		if (ppoint->type == point_type::normal_break) {
-			pnode = double_list_get_before(&pstream->bp_list, pnode);
-			if (NULL == pnode) {
+			if (pnode == pstream->bp_list.begin())
 				return FALSE;
-			}
-			ppoint1 = (POINT_NODE*)pnode->pdata;
-			if (ppoint1->offset < cur_offset) {
+			auto p2 = std::prev(pnode);
+			if (p2->offset < cur_offset)
 				return FALSE;
-			}
-			*plen = ppoint1->offset - cur_offset;
+			*plen = p2->offset - cur_offset;
 		} else if (ppoint->type == point_type::wstring) {
 			/* align to 2 bytes */
-			pnode = double_list_get_before(&pstream->bp_list, pnode);
-			if (NULL == pnode) {
+			if (pnode == pstream->bp_list.begin()) {
 				if (0 != (*plen)%2) {
 					(*plen) --;
 				}
 			} else {
-				ppoint1 = (POINT_NODE*)pnode->pdata;
-				if (0 != (*plen - (ppoint1->offset - cur_offset))%2) {
+				auto p2 = std::prev(pnode);
+				if ((*plen - (p2->offset - cur_offset)) % 2 != 0)
 					(*plen) --;
-				}
 			}
 		}
-		while ((pnode = double_list_pop_front(&pstream->bp_list)) != nullptr) {
-			if (pnode->pdata == ppoint) {
-				double_list_insert_as_head(&pstream->bp_list, pnode);
-				break;
-			}
-			free(pnode->pdata);
-		}
+		pstream->bp_list.erase(pstream->bp_list.begin(), pnode);
 		if (-1 != pstream->fd) {
 			if (*plen != read(pstream->fd, pbuff, *plen)) {
 				return FALSE;
@@ -1074,17 +981,14 @@ BOOL ftstream_producer::read_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last)
 		*pb_last = FALSE;
 		return TRUE;
 	}
-	pnode = double_list_get_tail(&pstream->bp_list);
-	if (NULL == pnode) {
+	if (pstream->bp_list.size() == 0)
 		return FALSE;
-	}
-	ppoint = (POINT_NODE*)pnode->pdata;
+	auto ppoint = &pstream->bp_list.back();
 	if (ppoint->offset < cur_offset) {
 		return FALSE;
 	}
 	*plen = ppoint->offset - cur_offset;
-	while ((pnode = double_list_pop_front(&pstream->bp_list)) != nullptr)
-		free(pnode->pdata);
+	pstream->bp_list.clear();
 	if (-1 != pstream->fd) {
 		if (*plen != read(pstream->fd, pbuff, *plen)) {
 			return FALSE;

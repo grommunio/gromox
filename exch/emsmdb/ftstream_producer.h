@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <list>
 #include <memory>
 #include <string>
 #include <gromox/mapi_types.hpp>
@@ -20,9 +21,18 @@ struct MSGCHG_PARTIAL;
 struct PROGRESS_INFORMATION;
 struct PROGRESS_MESSAGE;
 
+enum point_type {
+	normal_break, long_var, wstring,
+};
+
+struct point_node {
+	point_type type;
+	uint32_t offset;
+};
+
 struct fxstream_producer {
 	protected:
-	fxstream_producer();
+	fxstream_producer() = default;
 	NOMOVE(fxstream_producer);
 
 	public:
@@ -51,7 +61,7 @@ struct fxstream_producer {
 	uint32_t buffer_offset = 0, read_offset = 0;
 	uint8_t string_option = 0;
 	logon_object *plogon = nullptr; /* plogon is a protected member */
-	DOUBLE_LIST bp_list{};
+	std::list<point_node> bp_list;
 	BOOL b_read = false;
 };
 using FTSTREAM_PRODUCER = fxstream_producer;
