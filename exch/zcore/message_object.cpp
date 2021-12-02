@@ -1197,18 +1197,18 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		if (!exmdb_client_get_instance_property(dir,
 		    pmessage->instance_id, PR_READ, &pvalue))
 			return FALSE;	
-		if (NULL == pvalue || 0 == *(uint8_t*)pvalue) {
-			tmp_byte = 1;
-			*pb_changed = TRUE;
-			if (MSG_READ_FLAG_DEFAULT == read_flag) {
-				if (!exmdb_client_get_instance_property(dir,
-				    pmessage->instance_id,
-				    PR_READ_RECEIPT_REQUESTED, &pvalue))
-					return FALSE;
-				if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-					b_notify = TRUE;
-				}
-			}
+		if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != '\0')
+			break;
+		tmp_byte = 1;
+		*pb_changed = TRUE;
+		if (read_flag != MSG_READ_FLAG_DEFAULT)
+			break;
+		if (!exmdb_client_get_instance_property(dir,
+		    pmessage->instance_id,
+		    PR_READ_RECEIPT_REQUESTED, &pvalue))
+			return FALSE;
+		if (NULL != pvalue && 0 != *(uint8_t *)pvalue) {
+			b_notify = TRUE;
 		}
 		break;
 	case MSG_READ_FLAG_CLEAR_READ_FLAG:

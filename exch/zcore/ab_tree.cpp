@@ -1157,12 +1157,12 @@ static void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode,
 		auto it = obj->propvals.find(PR_DISPLAY_NAME);
 		if (it != obj->propvals.cend()) {
 			HX_strlcpy(str_dname, it->second.c_str(), dn_size);
-		} else {
-			HX_strlcpy(str_dname, obj->username.c_str(), dn_size);
-			ptoken = strchr(str_dname, '@');
-			if (NULL != ptoken) {
-				*ptoken = '\0';
-			}
+			break;
+		}
+		HX_strlcpy(str_dname, obj->username.c_str(), dn_size);
+		ptoken = strchr(str_dname, '@');
+		if (NULL != ptoken) {
+			*ptoken = '\0';
 		}
 		break;
 	}
