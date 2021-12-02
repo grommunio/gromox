@@ -986,12 +986,7 @@ int ical_get_negative_yearweekorder(
 	int year, int month, int day)
 {
 	int yearday;
-	int yeardays;
-	
-	if (ical_check_leap_year(year))
-		yeardays = 366;
-	else
-		yeardays = 365;
+	auto yeardays = 365 + ical_check_leap_year(year);
 	yearday = ical_get_dayofyear(year, month, day);
 	return (yearday - yeardays)/7 - 1;
 }
@@ -1149,24 +1144,13 @@ void ICAL_TIME::add_day(int days)
 				pitime->month, pitime->day);
 	yearday += days;
 	while (true) {
-		if (ical_check_leap_year(pitime->year)) {
-			if (yearday > 366) {
-				pitime->year ++;
-				pitime->month = 1;
-				pitime->day = 1;
-				yearday -= 366;
-				continue;
-			}
-		} else {
-			if (yearday > 365) {
-				pitime->year ++;
-				pitime->month = 1;
-				pitime->day = 1;
-				yearday -= 365;
-				continue;
-			}
-		}
-		break;
+		auto z = 365 + ical_check_leap_year(pitime->year);
+		if (yearday <= z)
+			break;
+		pitime->year++;
+		pitime->month = 1;
+		pitime->day = 1;
+		yearday -= z;
 	}
 	ical_get_itime_from_yearday(pitime->year, yearday, pitime);
 }
@@ -1183,10 +1167,7 @@ void ICAL_TIME::subtract_day(int days)
 		pitime->year --;
 		pitime->month = 12;
 		pitime->day = 31;
-		if (ical_check_leap_year(pitime->year))
-			yearday = 366;
-		else
-			yearday = 365;
+		yearday = 365 + ical_check_leap_year(pitime->year);
 	}
 	yearday -= days;
 	ical_get_itime_from_yearday(pitime->year, yearday, pitime);
@@ -1204,10 +1185,7 @@ int ICAL_TIME::delta_day(ICAL_TIME itime2) const
 	delta_days = 0;
 	while (itime2.year != itime1.year) {
 		yearday = ical_get_dayofyear(itime2.year, itime2.month, itime2.day); 
-		if (ical_check_leap_year(itime2.year))
-			delta_days += 366 + 1 - yearday;
-		else
-			delta_days += 365 + 1 - yearday;
+		delta_days += 365 + ical_check_leap_year(itime2.year) + 1 - yearday;
 		itime2.year ++;
 		itime2.month = 1;
 		itime2.day = 1;
@@ -1851,10 +1829,7 @@ static int ical_hint_rrule(ICAL_RRULE *pirrule, ICAL_TIME itime)
 			return RRULE_BY_WEEKNO;
 	}
 	if (pirrule->by_mask[RRULE_BY_YEARDAY]) {
-		if (ical_check_leap_year(itime.year))
-			yeardays = 366;
-		else
-			yeardays = 365;
+		yeardays = 365 + ical_check_leap_year(itime.year);
 		yearday = ical_get_dayofyear(itime.year, itime.month, itime.day);
 		if (!ical_hint_bitmap(pirrule->yday_bitmap, yearday - 1) &&
 		    !ical_hint_bitmap(pirrule->nyday_bitmap, yeardays - yearday))
