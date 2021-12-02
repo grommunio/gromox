@@ -119,14 +119,14 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 			prange_node1->high_value = prange_node->high_value;
 			double_list_append_as_tail(
 				&pcache->range_list, &prange_node1->node);
-		} else {
-			for (ival=prange_node->low_value;
-				ival<=prange_node->high_value; ival++) {
-				sqlite3_reset(pstmt);
-				sqlite3_bind_int64(pstmt, 1, ival);
-				if (SQLITE_DONE != sqlite3_step(pstmt)) {
-					return FALSE;
-				}
+			continue;
+		}
+		for (ival = prange_node->low_value;
+		     ival <= prange_node->high_value; ival++) {
+			sqlite3_reset(pstmt);
+			sqlite3_bind_int64(pstmt, 1, ival);
+			if (SQLITE_DONE != sqlite3_step(pstmt)) {
+				return FALSE;
 			}
 		}
 	}
