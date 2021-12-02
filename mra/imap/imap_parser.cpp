@@ -1419,65 +1419,63 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 	while (MEM_END_OF_FILE != mem_file_readline(&temp_file, mid_string, sizeof(mid_string))) {
 		if (system_services_get_id(pcontext->maildir,
 		    pcontext->selected_folder, mid_string,
-		    reinterpret_cast<unsigned int *>(&id)) == MIDB_RESULT_OK &&
-			MIDB_RESULT_OK == system_services_get_flags(pcontext->maildir,
-			pcontext->selected_folder, mid_string, &flag_bits, &err)) {
-			tmp_len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* %d FETCH (FLAGS (", id);
-			b_first = FALSE;
-			if (flag_bits & FLAG_RECENT) {
-				tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Recent");
-				b_first = TRUE;
-			}
-			if (flag_bits & FLAG_ANSWERED) {
-				if (TRUE == b_first) {
-					buff[tmp_len] = ' ';
-					tmp_len ++;
-				}
-				tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Answered");
-				b_first = TRUE;
-			}
-			if (flag_bits & FLAG_FLAGGED) {
-				if (TRUE == b_first) {
-					buff[tmp_len] = ' ';
-					tmp_len ++;
-				}
-				tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Flagged");
-				b_first = TRUE;
-			}
-			if (flag_bits & FLAG_DELETED) {
-				if (TRUE == b_first) {
-					buff[tmp_len] = ' ';
-					tmp_len ++;
-				}
-				tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Deleted");
-				b_first = TRUE;
-			}
-			if (flag_bits & FLAG_SEEN) {
-				if (TRUE == b_first) {
-					buff[tmp_len] = ' ';
-					tmp_len ++;
-				}
-				tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Seen");
-				b_first = TRUE;
-			}
-			if (flag_bits & FLAG_DRAFT) {
-				if (TRUE == b_first) {
-					buff[tmp_len] = ' ';
-					tmp_len ++;
-				}
-				tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Draft");
-			}
-			tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "))\r\n");
-			if (NULL == pstream) {
-				if (NULL != pcontext->connection.ssl) {
-					SSL_write(pcontext->connection.ssl, buff, tmp_len);
-				} else {
-					write(pcontext->connection.sockd, buff, tmp_len);
-				}
-			} else {
-				pstream->write(buff, tmp_len);
-			}
+		    reinterpret_cast<unsigned int *>(&id)) != MIDB_RESULT_OK ||
+		    system_services_get_flags(pcontext->maildir,
+		    pcontext->selected_folder, mid_string, &flag_bits,
+		    &err) != MIDB_RESULT_OK)
+			continue;
+		tmp_len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* %d FETCH (FLAGS (", id);
+		b_first = FALSE;
+		if (flag_bits & FLAG_RECENT) {
+			tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Recent");
+			b_first = TRUE;
 		}
+		if (flag_bits & FLAG_ANSWERED) {
+			if (TRUE == b_first) {
+				buff[tmp_len] = ' ';
+				tmp_len++;
+			}
+			tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Answered");
+			b_first = TRUE;
+		}
+		if (flag_bits & FLAG_FLAGGED) {
+			if (TRUE == b_first) {
+				buff[tmp_len] = ' ';
+				tmp_len++;
+			}
+			tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Flagged");
+			b_first = TRUE;
+		}
+		if (flag_bits & FLAG_DELETED) {
+			if (TRUE == b_first) {
+				buff[tmp_len] = ' ';
+				tmp_len++;
+			}
+			tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Deleted");
+			b_first = TRUE;
+		}
+		if (flag_bits & FLAG_SEEN) {
+			if (TRUE == b_first) {
+				buff[tmp_len] = ' ';
+				tmp_len++;
+			}
+			tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Seen");
+			b_first = TRUE;
+		}
+		if (flag_bits & FLAG_DRAFT) {
+			if (TRUE == b_first) {
+				buff[tmp_len] = ' ';
+				tmp_len++;
+			}
+			tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Draft");
+		}
+		tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "))\r\n");
+		if (pstream != nullptr)
+			pstream->write(buff, tmp_len);
+		else if (pcontext->connection.ssl != nullptr)
+			SSL_write(pcontext->connection.ssl, buff, tmp_len);
+		else
+			write(pcontext->connection.sockd, buff, tmp_len);
 	}
 	mem_file_free(&temp_file);
 }

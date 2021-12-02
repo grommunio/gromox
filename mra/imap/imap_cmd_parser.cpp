@@ -1817,39 +1817,43 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		temp_name[len] = '\0';
 	}
 	for (i=0; i<=len; i++) {
-		if ('/' == temp_name[i] || '\0' == temp_name[i]) {
-			temp_name1[i] = '\0';
-			b_found = FALSE;
-			mem_file_seek(&temp_file, MEM_FILE_READ_PTR,
-								0, MEM_FILE_SEEK_BEGIN);
-			while (MEM_END_OF_FILE != mem_file_readline(
-				&temp_file, temp_folder, 1024)) {
-				if (0 == strcmp(temp_folder, temp_name1)) {
-					b_found = TRUE;
-					break;
-				}
+		if (temp_name[i] != '/' && temp_name[i] != '\0') {
+			temp_name1[i] = temp_name[i];
+			continue;
+		}
+		temp_name1[i] = '\0';
+		b_found = FALSE;
+		mem_file_seek(&temp_file, MEM_FILE_READ_PTR,
+		              0, MEM_FILE_SEEK_BEGIN);
+		while (MEM_END_OF_FILE != mem_file_readline(
+		       &temp_file, temp_folder, 1024)) {
+			if (0 == strcmp(temp_folder, temp_name1)) {
+				b_found = TRUE;
+				break;
 			}
-			if (FALSE == b_found) {		
-				imap_cmd_parser_imapfolder_to_sysfolder(
-					pcontext->lang, temp_name1, converted_name);
-				switch (system_services_make_folder(
-				        pcontext->maildir, converted_name, &errnum)) {
-				case MIDB_RESULT_OK:
-					break;
-				case MIDB_NO_SERVER: {
-					mem_file_free(&temp_file);
-					return 1905;
-				}
-				case MIDB_RDWR_ERROR: {
-					mem_file_free(&temp_file);
-					return 1906;
-				}
-				default: {
-					mem_file_free(&temp_file);
-					return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
-				}
-				}
-			}
+		}
+		if (b_found) {
+			temp_name1[i] = temp_name[i];
+			continue;
+		}
+		imap_cmd_parser_imapfolder_to_sysfolder(
+			pcontext->lang, temp_name1, converted_name);
+		switch (system_services_make_folder(
+			pcontext->maildir, converted_name, &errnum)) {
+		case MIDB_RESULT_OK:
+			break;
+		case MIDB_NO_SERVER: {
+			mem_file_free(&temp_file);
+			return 1905;
+		}
+		case MIDB_RDWR_ERROR: {
+			mem_file_free(&temp_file);
+			return 1906;
+		}
+		default: {
+			mem_file_free(&temp_file);
+			return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
+		}
 		}
 		temp_name1[i] = temp_name[i];
 	}
@@ -2086,16 +2090,15 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		mem_file_seek(&temp_file, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (MEM_END_OF_FILE != mem_file_readline(
 			&temp_file, temp_name, 1024)) {
-			if (TRUE == imap_cmd_parser_wildcard_match(
-				temp_name, search_pattern)) {
-				pdir = dir_tree_match(&temp_tree, temp_name);
-				if (NULL != pdir && NULL != dir_tree_get_child(pdir)) {
-					len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
-						"* LIST (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
-				} else {
-					len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
-						"* LIST (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
-				}
+			if (!imap_cmd_parser_wildcard_match(temp_name, search_pattern))
+				continue;
+			pdir = dir_tree_match(&temp_tree, temp_name);
+			if (NULL != pdir && NULL != dir_tree_get_child(pdir)) {
+				len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
+				       "* LIST (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
+			} else {
+				len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
+				       "* LIST (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
 			}
 		}
 		mem_file_free(&temp_file);
@@ -2234,16 +2237,15 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	mem_file_seek(&temp_file, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (MEM_END_OF_FILE != mem_file_readline(
 		&temp_file, temp_name, 1024)) {
-		if (TRUE == imap_cmd_parser_wildcard_match(
-			temp_name, search_pattern)) {
-			pdir = dir_tree_match(&temp_tree, temp_name);
-			if (NULL != pdir && NULL != dir_tree_get_child(pdir)) {
-				len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
-					"* XLIST (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
-			} else {
-				len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
-					"* XLIST (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
-			}
+		if (!imap_cmd_parser_wildcard_match(temp_name, search_pattern))
+			continue;
+		pdir = dir_tree_match(&temp_tree, temp_name);
+		if (NULL != pdir && NULL != dir_tree_get_child(pdir)) {
+			len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
+				"* XLIST (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
+		} else {
+			len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
+				"* XLIST (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
 		}
 	}
 	mem_file_free(&temp_file);
@@ -2331,16 +2333,15 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	len = 0;
 	while (MEM_END_OF_FILE != mem_file_readline(
 		&temp_file, temp_name, 1024)) {
-		if (TRUE == imap_cmd_parser_wildcard_match(
-			temp_name, search_pattern)) {
-			pdir = dir_tree_match(&temp_tree, temp_name);
-			if (NULL != pdir && NULL != dir_tree_get_child(pdir)) {
-				len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
-					"* LSUB (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
-			} else {
-				len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
-					"* LSUB (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
-			}
+		if (!imap_cmd_parser_wildcard_match(temp_name, search_pattern))
+			continue;
+		pdir = dir_tree_match(&temp_tree, temp_name);
+		if (NULL != pdir && NULL != dir_tree_get_child(pdir)) {
+			len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
+				"* LSUB (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
+		} else {
+			len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
+				"* LSUB (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
 		}
 	}
 	mem_file_free(&temp_file);
