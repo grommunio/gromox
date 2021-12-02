@@ -41,7 +41,6 @@ struct MIME {
 
 struct MAIL;
 
-extern GX_EXPORT bool mail_set_header(MAIL *, const char *hdr, const char *val);
 void mime_init(MIME *pmime, LIB_BUFFER *palloc);
 void mime_free(MIME *pmime);
 BOOL mime_retrieve(MIME *pmime_parent,

@@ -34,6 +34,7 @@ struct GX_EXPORT MAIL {
 	MIME *add_child(MIME *base, int opt);
 	void enum_mime(MAIL_MIME_ENUM, void *);
 	BOOL dup(MAIL *dst);
+	bool set_header(const char *hdr, const char *val);
 
 	SIMPLE_TREE tree{};
 	std::shared_ptr<MIME_POOL> pmime_pool;

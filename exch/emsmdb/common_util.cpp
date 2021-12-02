@@ -1885,7 +1885,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 		return FALSE;
 	}
 
-	mail_set_header(pmail, "X-Mailer", "gromox-emsmdb " PACKAGE_VERSION);
+	pmail->set_header("X-Mailer", "gromox-emsmdb " PACKAGE_VERSION);
 	if (!pmail->to_file(sockd) ||
 		FALSE == common_util_send_command(sockd, ".\r\n", 3)) {
 		close(sockd);

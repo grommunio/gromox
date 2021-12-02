@@ -26,8 +26,9 @@ static void mime_produce_boundary(MIME *pmime);
 
 static BOOL mime_check_ascii_printable(const char *astring);
 
-bool mail_set_header(MAIL *mail, const char *hdr, const char *val)
+bool MAIL::set_header(const char *hdr, const char *val)
 {
+	auto mail = this;
 	SIMPLE_TREE_NODE *node = simple_tree_get_root(&mail->tree);
 	if (node == nullptr)
 		return false;

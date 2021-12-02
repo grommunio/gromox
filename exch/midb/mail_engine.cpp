@@ -1999,7 +1999,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 			common_util_switch_allocator();
 			return;
 		}
-		mail_set_header(&imail, "X-Mailer", "gromox-midb " PACKAGE_VERSION);
+		imail.set_header("X-Mailer", "gromox-midb " PACKAGE_VERSION);
 		common_util_switch_allocator();
 		tmp_len = sprintf(temp_buff, "{\"file\":\"\",");
 		if (imail.get_digest(&size, temp_buff + tmp_len,
