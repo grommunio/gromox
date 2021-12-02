@@ -1030,12 +1030,12 @@ void ical_get_itime_from_yearday(int year, int yearday, ICAL_TIME *pitime)
 				return;
 			}
 		}
-	} else {
-		for (pitime->month=1; pitime->month<=12; pitime->month++) {
-			if (yearday <= days[0][pitime->month]) {
-				pitime->day = yearday - days[0][pitime->month - 1];
-				return;
-			}
+		return;
+	}
+	for (pitime->month=1; pitime->month<=12; pitime->month++) {
+		if (yearday <= days[0][pitime->month]) {
+			pitime->day = yearday - days[0][pitime->month - 1];
+			return;
 		}
 	}
 }
