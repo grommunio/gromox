@@ -21,17 +21,15 @@
 
 using namespace std::string_literals;
 
-enum {
-	POINT_TYPE_NORMAL_BREAK,
-	POINT_TYPE_LONG_VAR,
-	POINT_TYPE_WSTRING
+enum class point_type {
+	normal_break, long_var, wstring,
 };
 
 namespace {
 
 struct POINT_NODE {
 	DOUBLE_LIST_NODE node;
-	uint8_t type;
+	point_type type;
 	uint32_t offset;
 };
 
@@ -52,7 +50,7 @@ static void ftstream_producer_try_recode_nbp(
 		return;
 	}
 	ppoint->node.pdata = ppoint;
-	ppoint->type = POINT_TYPE_NORMAL_BREAK;
+	ppoint->type = point_type::normal_break;
 	ppoint->offset = pstream->offset;
 	double_list_append_as_tail(
 		&pstream->bp_list, &ppoint->node);
@@ -72,7 +70,7 @@ static void ftstream_producer_record_nbp(
 		return;
 	}
 	pbpnode->node.pdata = pbpnode;
-	pbpnode->type = POINT_TYPE_NORMAL_BREAK;
+	pbpnode->type = point_type::normal_break;
 	pbpnode->offset = nbp;
 	double_list_append_as_tail(
 		&pstream->bp_list, &pbpnode->node);
@@ -93,7 +91,7 @@ static void ftstream_producer_record_lvp(
 			return;
 		}
 		pbpnode->node.pdata = pbpnode;
-		pbpnode->type = POINT_TYPE_NORMAL_BREAK;
+		pbpnode->type = point_type::normal_break;
 		pbpnode->offset = position;
 		double_list_append_as_tail(
 			&pstream->bp_list, &pbpnode->node);
@@ -106,7 +104,7 @@ static void ftstream_producer_record_lvp(
 		return;
 	}
 	pbpnode->node.pdata = pbpnode;
-	pbpnode->type = POINT_TYPE_LONG_VAR;
+	pbpnode->type = point_type::long_var;
 	pbpnode->offset = position + length;
 	double_list_append_as_tail(
 		&pstream->bp_list, &pbpnode->node);
@@ -127,7 +125,7 @@ static void ftstream_producer_record_wsp(
 			return;
 		}
 		pbpnode->node.pdata = pbpnode;
-		pbpnode->type = POINT_TYPE_NORMAL_BREAK;
+		pbpnode->type = point_type::normal_break;
 		pbpnode->offset = position;
 		double_list_append_as_tail(
 			&pstream->bp_list, &pbpnode->node);
@@ -140,7 +138,7 @@ static void ftstream_producer_record_wsp(
 		return;
 	}
 	pbpnode->node.pdata = pbpnode;
-	pbpnode->type = POINT_TYPE_WSTRING;
+	pbpnode->type = point_type::wstring;
 	pbpnode->offset = position + length;
 	double_list_append_as_tail(
 		&pstream->bp_list, &pbpnode->node);
@@ -1034,7 +1032,7 @@ BOOL ftstream_producer::read_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last)
 		if (ppoint->offset - cur_offset <= *plen) {
 			continue;
 		}
-		if (POINT_TYPE_NORMAL_BREAK == ppoint->type) {
+		if (ppoint->type == point_type::normal_break) {
 			pnode = double_list_get_before(&pstream->bp_list, pnode);
 			if (NULL == pnode) {
 				return FALSE;
@@ -1044,7 +1042,7 @@ BOOL ftstream_producer::read_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last)
 				return FALSE;
 			}
 			*plen = ppoint1->offset - cur_offset;
-		} else if (POINT_TYPE_WSTRING == ppoint->type) {
+		} else if (ppoint->type == point_type::wstring) {
 			/* align to 2 bytes */
 			pnode = double_list_get_before(&pstream->bp_list, pnode);
 			if (NULL == pnode) {
