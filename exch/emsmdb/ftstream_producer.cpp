@@ -957,6 +957,11 @@ BOOL ftstream_producer::write_hierarchysync(
 	return TRUE;
 }
 
+fxstream_producer::fxstream_producer()
+{
+	double_list_init(&bp_list);
+}
+
 std::unique_ptr<ftstream_producer>
 ftstream_producer::create(logon_object *plogon, uint8_t string_option) try
 {
@@ -976,21 +981,15 @@ ftstream_producer::create(logon_object *plogon, uint8_t string_option) try
 	}
 	std::unique_ptr<ftstream_producer> pstream(new ftstream_producer);
 	pstream->path = path + "/"s + std::to_string(stream_id) + "." + get_host_ID();
-	pstream->fd = -1;
-	pstream->offset = 0;
-	pstream->buffer_offset = 0;
-	pstream->read_offset = 0;
 	pstream->plogon = plogon;
 	pstream->string_option = string_option;
-	double_list_init(&pstream->bp_list);
-	pstream->b_read = FALSE;
 	return pstream;
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1452: ENOMEM\n");
 	return nullptr;
 }
 
-FTSTREAM_PRODUCER::~FTSTREAM_PRODUCER()
+fxstream_producer::~fxstream_producer()
 {
 	auto pstream = this;
 	DOUBLE_LIST_NODE *pnode;

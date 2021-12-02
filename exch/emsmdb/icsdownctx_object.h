@@ -8,7 +8,7 @@
 #include <gromox/mapi_types.hpp>
 
 struct folder_object;
-struct FTSTREAM_PRODUCER;
+struct fxstream_producer;
 struct ICS_STATE;
 struct logon_object;
 using flow_node = std::pair<uint8_t, const void *>;
@@ -34,7 +34,7 @@ struct icsdownctx_object final {
 	ICS_STATE *get_state() const { return pstate.get(); }
 	BOOL get_buffer(void *buf, uint16_t *len, BOOL *last, uint16_t *progress, uint16_t *total);
 
-	std::unique_ptr<FTSTREAM_PRODUCER> pstream;
+	std::unique_ptr<fxstream_producer> pstream;
 	uint8_t sync_type = 0;
 	folder_object *pfolder = nullptr;
 	std::unique_ptr<ICS_STATE> pstate; /* public member */

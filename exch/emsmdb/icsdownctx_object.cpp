@@ -80,20 +80,10 @@ std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogo
 		if (NULL == pctx->prestriction) {
 			return NULL;
 		}
-	} else {
-		pctx->prestriction = NULL;
 	}
 	pctx->pstream = ftstream_producer::create(plogon, send_options & 0x0F);
 	if (pctx->pstream == nullptr)
 		return NULL;
-	pctx->pprogtotal = NULL;
-	pctx->pmessages = NULL;
-	pctx->pread_messags = NULL;
-	pctx->punread_messags = NULL;
-	pctx->pdeleted_messages = NULL;
-	pctx->pnolonger_messages = NULL;
-	pctx->state_property = 0;
-	pctx->b_started = FALSE;
 	return pctx;
 }
 

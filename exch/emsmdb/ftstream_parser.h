@@ -9,14 +9,14 @@ struct logon_object;
 using RECORD_MARKER = gxerr_t (*)(fastupctx_object *, uint32_t);
 using RECORD_PROPVAL = gxerr_t (*)(fastupctx_object *, const TAGGED_PROPVAL *);
 
-struct FTSTREAM_PARSER {
+struct fxstream_parser {
 	protected:
-	FTSTREAM_PARSER() = default;
-	NOMOVE(FTSTREAM_PARSER);
+	fxstream_parser() = default;
+	NOMOVE(fxstream_parser);
 
 	public:
-	~FTSTREAM_PARSER();
-	static std::unique_ptr<FTSTREAM_PARSER> create(logon_object *);
+	~fxstream_parser();
+	static std::unique_ptr<fxstream_parser> create(logon_object *);
 	BOOL write_buffer(const BINARY *transfer_data);
 	gxerr_t process(RECORD_MARKER, RECORD_PROPVAL, void *param);
 
@@ -25,4 +25,5 @@ struct FTSTREAM_PARSER {
 	std::string path;
 	logon_object *plogon = nullptr; /* plogon is a protected member */
 };
-using ftstream_parser = FTSTREAM_PARSER;
+using FTSTREAM_PARSER = fxstream_parser;
+using ftstream_parser = fxstream_parser;

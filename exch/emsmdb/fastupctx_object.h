@@ -11,7 +11,7 @@
 #define ROOT_ELEMENT_MESSAGELIST			4
 #define ROOT_ELEMENT_TOPFOLDER				5
 
-struct FTSTREAM_PARSER;
+struct fxstream_parser;
 struct logon_object;
 struct MESSAGE_CONTENT;
 
@@ -34,7 +34,7 @@ struct fastupctx_object final {
 	static std::unique_ptr<fastupctx_object> create(logon_object *, void *pobject, int root_element);
 	gxerr_t write_buffer(const BINARY *transfer_data);
 
-	std::unique_ptr<FTSTREAM_PARSER> pstream;
+	std::unique_ptr<fxstream_parser> pstream;
 	void *pobject = nullptr;
 	BOOL b_ended = false;
 	int root_element = 0;

@@ -330,7 +330,6 @@ fastdownctx_object::create(logon_object *plogon, uint8_t string_option)
 	pctx->pstream = ftstream_producer::create(plogon, string_option);
 	if (pctx->pstream == nullptr)
 		return NULL;
-	pctx->pmsglst = NULL;
 	return pctx;
 }
 

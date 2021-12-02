@@ -31,13 +31,10 @@ std::unique_ptr<fastupctx_object> fastupctx_object::create(logon_object *plogon,
 		return NULL;
 	}
 	pctx->pobject = pobject;
-	pctx->b_ended = FALSE;
 	pctx->root_element = root_element;
 	pctx->pstream = ftstream_parser::create(plogon);
 	if (pctx->pstream == nullptr)
 		return NULL;
-	pctx->pproplist = NULL;
-	pctx->pmsgctnt = NULL;
 	switch (root_element) {
 	case ROOT_ELEMENT_FOLDERCONTENT:
 		pctx->pproplist = tpropval_array_init();

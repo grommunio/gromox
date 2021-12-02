@@ -247,6 +247,11 @@ uint32_t table_object::get_total() const
 	return total_rows;
 }
 
+table_object::table_object()
+{
+	double_list_init(&bookmark_list);
+}
+
 std::unique_ptr<table_object> table_object::create(logon_object *plogon,
 	void *pparent_obj, uint8_t table_flags,
 	uint8_t rop_id, uint8_t logon_id)
@@ -262,17 +267,9 @@ std::unique_ptr<table_object> table_object::create(logon_object *plogon,
 	}
 	ptable->plogon = plogon;
 	ptable->pparent_obj = pparent_obj;
-	ptable->handle = 0;
 	ptable->rop_id = rop_id;
 	ptable->table_flags = table_flags;
 	ptable->logon_id = logon_id;
-	ptable->m_columns = nullptr;
-	ptable->m_sorts = nullptr;
-	ptable->m_restriction = nullptr;
-	ptable->m_position = 0;
-	ptable->m_table_id = 0;
-	ptable->bookmark_index = 0;
-	double_list_init(&ptable->bookmark_list);
 	return ptable;
 }
 

@@ -36,9 +36,7 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 	pstream->object_type = object_type;
 	pstream->open_flags = open_flags;
 	pstream->proptag = proptag;
-	pstream->seek_ptr = 0;
 	pstream->max_length = max_length;
-	pstream->b_touched = FALSE;
 	switch (object_type) {
 	case OBJECT_TYPE_MESSAGE: {
 		proptags.count = 2;

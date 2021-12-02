@@ -7,7 +7,7 @@
 struct ATTACHMENT_CONTENT;
 struct FOLDER_CONTENT;
 struct FOLDER_MESSAGES;
-struct FTSTREAM_PRODUCER;
+struct fxstream_producer;
 struct ICS_STATE;
 struct logon_object;
 struct MESSAGE_CONTENT;
@@ -42,7 +42,7 @@ struct fastdownctx_object final {
 	BOOL make_state(ICS_STATE *);
 	BOOL get_buffer(void *buf, uint16_t *len, BOOL *last, uint16_t *progress, uint16_t *total);
 
-	std::unique_ptr<FTSTREAM_PRODUCER> pstream;
+	std::unique_ptr<fxstream_producer> pstream;
 	BOOL b_back = false, b_last = false, b_chginfo = false;
 	EID_ARRAY *pmsglst = nullptr;
 	std::unique_ptr<FOLDER_CONTENT> pfldctnt;

@@ -22,9 +22,7 @@ std::unique_ptr<icsupctx_object> icsupctx_object::create(logon_object *plogon,
 		return NULL;
 	pctx->plogon = plogon;
 	pctx->pfolder = pfolder;
-	pctx->state_property = 0;
 	pctx->sync_type = sync_type;
-	pctx->b_started = FALSE;
 	return pctx;
 }
 
