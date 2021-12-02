@@ -16,10 +16,10 @@ MhContext::MhContext(int context_id) :
 bool MhContext::getHeader(char* dest, size_t maxlen)
 {
 	uint32_t tmp_len;
-	mem_file_read(&orig.f_others, &tmp_len, sizeof(uint32_t));
+	orig.f_others.read(&tmp_len, sizeof(uint32_t));
 	if (tmp_len >= maxlen)
 		 return false;
-	mem_file_read(&orig.f_others, dest, tmp_len);
+	orig.f_others.read(dest, tmp_len);
 	dest[tmp_len] = '\0';
 	return true;
 }
@@ -28,9 +28,9 @@ bool MhContext::loadHeaders()
 {
 	uint32_t tmp_len;
 	char tmp_buff[1024];
-	while (mem_file_read(&orig.f_others, &tmp_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
+	while (orig.f_others.read(&tmp_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		if (tmp_len >= 11 && tmp_len <= 13) {
-			mem_file_read(&orig.f_others, tmp_buff, tmp_len);
+			orig.f_others.read(tmp_buff, tmp_len);
 			if (strncasecmp(tmp_buff, "X-RequestId", 11) == 0) {
 				if (!getHeader(request_id, arsizeof(request_id)))
 					return false;
@@ -46,7 +46,7 @@ bool MhContext::loadHeaders()
 			}
 		} else
 			mem_file_seek(&orig.f_others, MEM_FILE_READ_PTR, tmp_len, MEM_FILE_SEEK_CUR);
-		mem_file_read(&orig.f_others, &tmp_len, sizeof(uint32_t));
+		orig.f_others.read(&tmp_len, sizeof(uint32_t));
 		mem_file_seek(&orig.f_others, MEM_FILE_READ_PTR, tmp_len, MEM_FILE_SEEK_CUR);
 	}
 	return true;

@@ -340,15 +340,15 @@ static BOOL mod_cache_get_others_field(MEM_FILE *pf_others,
 	
 	mem_file_seek(pf_others, MEM_FILE_READ_PTR,
 		0, MEM_FILE_SEEK_BEGIN);
-	while (mem_file_read(pf_others, &tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
+	while (pf_others->read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		if (tag_len >= GX_ARRAY_SIZE(tmp_buff))
 			return FALSE;
-		mem_file_read(pf_others, tmp_buff, tag_len);
+		pf_others->read(tmp_buff, tag_len);
 		tmp_buff[tag_len] = '\0';
-		mem_file_read(pf_others, &val_len, sizeof(uint32_t));
+		pf_others->read(&val_len, sizeof(uint32_t));
 		if (0 == strcasecmp(tag, tmp_buff)) {
 			length = (length > val_len)?val_len:(length - 1);
-			mem_file_read(pf_others, value, length);
+			pf_others->read(value, length);
 			value[length] = '\0';
 			return TRUE;
 		}
@@ -644,7 +644,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		}
 		mem_file_seek(&phttp->request.f_content_length,
 			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		mem_file_read(&phttp->request.f_content_length, tmp_buff, tmp_len);
+		phttp->request.f_content_length.read(tmp_buff, tmp_len);
 		tmp_buff[tmp_len] = '\0';
 		if (strtoll(tmp_buff, nullptr, 0) != 0)
 			return FALSE;
@@ -660,7 +660,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	} else {
 		mem_file_seek(&phttp->request.f_host,
 			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		mem_file_read(&phttp->request.f_host, domain, tmp_len);
+		phttp->request.f_host.read(domain, tmp_len);
 		domain[tmp_len] = '\0';
 	}
 	ptoken = strchr(domain, ':');
@@ -680,7 +680,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	}
 	mem_file_seek(&phttp->request.f_request_uri,
 		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	mem_file_read(&phttp->request.f_request_uri, tmp_buff, tmp_len);
+	phttp->request.f_request_uri.read(tmp_buff, tmp_len);
 	tmp_buff[tmp_len] = '\0';
 	if (FALSE == parse_uri(tmp_buff, request_uri)) {
 		http_parser_log_info(phttp, LV_DEBUG, "request"

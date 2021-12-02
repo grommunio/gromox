@@ -1570,7 +1570,7 @@ BOOL icsdownctx_object::end_state_stream()
 		idset_free(pset);
 		return FALSE;
 	}
-	mem_file_read(&pctx->f_state_stream, tmp_bin.pv, tmp_bin.cb);
+	pctx->f_state_stream.read(tmp_bin.pv, tmp_bin.cb);
 	mem_file_free(&pctx->f_state_stream);
 	auto saved_state_property = pctx->state_property;
 	pctx->state_property = 0;

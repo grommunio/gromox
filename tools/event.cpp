@@ -721,7 +721,7 @@ static void *ev_deqwork(void *param)
 			continue;
 		}
 		
-		int len = mem_file_read(&temp_file, buff, arsizeof(buff) - 2);
+		int len = temp_file.read(buff, arsizeof(buff) - 2);
 		buff[len] = '\r';
 		len ++;
 		buff[len] = '\n';

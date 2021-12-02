@@ -168,8 +168,8 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 		return FALSE;
 	}
 	mem_file_init(&remote_file, pcontext->pcontrol->f_rcpt_to.allocator);
-	while (MEM_END_OF_FILE != mem_file_readline(
-		&pcontext->pcontrol->f_rcpt_to, rcpt_buff, 256)) {
+	while (pcontext->pcontrol->f_rcpt_to.readline(rcpt_buff,
+	       arsizeof(rcpt_buff)) != MEM_END_OF_FILE) {
 		pdomain = strchr(rcpt_buff, '@');
 		if (NULL == pdomain) {
 			mem_file_writeline(&remote_file, rcpt_buff);

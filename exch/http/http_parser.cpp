@@ -327,15 +327,15 @@ static BOOL http_parser_request_head(MEM_FILE *pfile_others,
 	if (name_len >= 64) {
 		return FALSE;
 	}
-	while (mem_file_read(pfile_others, &tmp_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
+	while (pfile_others->read(&tmp_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		if (name_len == tmp_len) {
-			 mem_file_read(pfile_others, name_buff, tmp_len);
+			 pfile_others->read(name_buff, tmp_len);
 			 if (0 == strncasecmp(name_buff, field_name, name_len)) {
-				 mem_file_read(pfile_others, &tmp_len, sizeof(uint32_t));
+				 pfile_others->read(&tmp_len, sizeof(uint32_t));
 				 if (tmp_len >= buff_len) {
 					 return FALSE;
 				 }
-				 mem_file_read(pfile_others, field_value, tmp_len);
+				 pfile_others->read(field_value, tmp_len);
 				 field_value[tmp_len] = '\0';
 				 return TRUE;
 			 }
@@ -343,7 +343,7 @@ static BOOL http_parser_request_head(MEM_FILE *pfile_others,
 			mem_file_seek(pfile_others, MEM_FILE_READ_PTR,
 							tmp_len, MEM_FILE_SEEK_CUR);
 		}
-		mem_file_read(pfile_others, &tmp_len, sizeof(uint32_t));
+		pfile_others->read(&tmp_len, sizeof(uint32_t));
 		mem_file_seek(pfile_others, MEM_FILE_READ_PTR,
 						tmp_len, MEM_FILE_SEEK_CUR);
 	}
@@ -756,9 +756,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 		return X_LOOP;
 	}
 	char tmp_buff[2048];
-	tmp_len = mem_file_read(
-	          &pcontext->request.f_request_uri,
-	          tmp_buff, 1024);
+	tmp_len = pcontext->request.f_request_uri.read(tmp_buff, 1024);
 	if (tmp_len == MEM_END_OF_FILE) {
 		http_parser_log_info(pcontext, LV_DEBUG, "rpcproxy request method error");
 		http_4xx(pcontext);
@@ -820,9 +818,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 		return X_LOOP;
 	}
 
-	tmp_len = mem_file_read(
-	          &pcontext->request.f_content_length,
-	          tmp_buff, 256);
+	tmp_len = pcontext->request.f_content_length.read(tmp_buff, 256);
 	if (MEM_END_OF_FILE == tmp_len) {
 		http_parser_log_info(pcontext, LV_DEBUG,
 			"content-length of rpcproxy request error");

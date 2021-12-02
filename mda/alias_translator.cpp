@@ -100,7 +100,7 @@ static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 	}
 
 	b_replaced = FALSE;
-	while (MEM_END_OF_FILE != mem_file_readline(&rcpt_file, rcpt_to, arsizeof(rcpt_to))) {
+	while (rcpt_file.readline(rcpt_to, arsizeof(rcpt_to)) != MEM_END_OF_FILE) {
 		if (strchr(rcpt_to, '@') != nullptr &&
 		    address_table_query(rcpt_to, mainname)) {
 			alias_log_info(pcontext, LV_DEBUG, "replace alias rcpt-address "
@@ -136,8 +136,7 @@ static void alias_log_info(MESSAGE_CONTEXT *pcontext, int level,
 	mem_file_seek(&pcontext->pcontrol->f_rcpt_to, MEM_FILE_READ_PTR, 0,
 		MEM_FILE_SEEK_BEGIN);
 	for (i=0; i<8; i++) {
-		size_read = mem_file_readline(&pcontext->pcontrol->f_rcpt_to,
-						rcpt_buff + rcpt_len, UADDR_SIZE);
+		size_read = pcontext->pcontrol->f_rcpt_to.readline(rcpt_buff + rcpt_len, UADDR_SIZE);
 		if (size_read == MEM_END_OF_FILE) {
 			break;
 		}

@@ -80,7 +80,8 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 
 
 	b_touched = FALSE;
-	while (mem_file_readline(&pcontext->pcontrol->f_rcpt_to, rcpt_to, arsizeof(rcpt_to)) != MEM_END_OF_FILE) {
+	while (pcontext->pcontrol->f_rcpt_to.readline(rcpt_to,
+	       arsizeof(rcpt_to)) != MEM_END_OF_FILE) {
 		get_mlist(rcpt_to, pcontext->pcontrol->from, &result, temp_file1);
 		switch (result) {
 		case MLIST_RESULT_OK:

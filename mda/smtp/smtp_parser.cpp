@@ -1019,8 +1019,7 @@ void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,
 	std::string all_rcpts;
 	static constexpr size_t limit = 3;
 	for (i = 0; i < limit; ++i) {
-		auto size_read = mem_file_readline(&pcontext->mail.envelope.f_rcpt_to,
-		                 rcpt, arsizeof(rcpt));
+		auto size_read = pcontext->mail.envelope.f_rcpt_to.readline(rcpt, arsizeof(rcpt));
 		if (size_read == MEM_END_OF_FILE) {
 			break;
 		}

@@ -481,8 +481,7 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 				}
 				mem_file_seek(&phttp->request.f_content_length,
 					MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-				mem_file_read(&phttp->request.f_content_length,
-					tmp_buff, tmp_len);
+				phttp->request.f_content_length.read(tmp_buff, tmp_len);
 				tmp_buff[tmp_len] = '\0';
 				content_length = strtoull(tmp_buff, nullptr, 0);
 			}
@@ -498,8 +497,7 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 			if (tmp_len > 0 && static_cast<size_t>(tmp_len) < GX_ARRAY_SIZE(tmp_buff)) {
 				mem_file_seek(&phttp->request.f_transfer_encoding,
 						MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-				mem_file_read(&phttp->request.f_transfer_encoding,
-					tmp_buff, tmp_len);
+				phttp->request.f_transfer_encoding.read(tmp_buff, tmp_len);
 				tmp_buff[tmp_len] = '\0';
 				if (0 == strcasecmp(tmp_buff, "chunked")) {
 					b_chunked = TRUE;

@@ -1416,7 +1416,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 		return;
 	}
 	
-	while (MEM_END_OF_FILE != mem_file_readline(&temp_file, mid_string, sizeof(mid_string))) {
+	while (temp_file.readline(mid_string, sizeof(mid_string)) != MEM_END_OF_FILE) {
 		if (system_services_get_id(pcontext->maildir,
 		    pcontext->selected_folder, mid_string,
 		    reinterpret_cast<unsigned int *>(&id)) != MIDB_RESULT_OK ||
@@ -1913,9 +1913,9 @@ static void *imps_scanwork(void *argp)
 		str_hash_iter_free(iter);
 		hl_hold.unlock();
 		
-		while (MEM_END_OF_FILE != mem_file_readline(&temp_file, username, GX_ARRAY_SIZE(username))) {
-			mem_file_readline(&temp_file, maildir, 256);
-			mem_file_readline(&temp_file, folder, 128);
+		while (temp_file.readline(username, arsizeof(username)) != MEM_END_OF_FILE) {
+			temp_file.readline(maildir, arsizeof(maildir));
+			temp_file.readline(folder, arsizeof(folder));
 			system_services_broadcast_select(username, folder);
 			system_services_ping_mailbox(maildir, &err_num);
 		}

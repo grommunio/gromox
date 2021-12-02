@@ -516,7 +516,7 @@ static void produce_session(const char *tag, char *session)
 MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 {
 	char tmp_buff[1024];
-	size_t tmp_len = mem_file_read(&ctx.orig.f_cookie, tmp_buff, arsizeof(tmp_buff) - 1);
+	auto tmp_len = ctx.orig.f_cookie.read(tmp_buff, arsizeof(tmp_buff) - 1);
 	if (tmp_len == MEM_END_OF_FILE) {
 		if (strcasecmp(ctx.request_value, "Connect"))
 			return ctx.error_responsecode(RC_MISSING_COOKIE);
@@ -785,7 +785,7 @@ static BOOL emsmdb_preproc(int context_id)
 	if (strcasecmp(prequest->method, "POST") != 0)
 		return false;
 	char tmp_uri[1024];
-	size_t tmp_len = mem_file_read(&prequest->f_request_uri, tmp_uri, sizeof(tmp_uri)-1);
+	size_t tmp_len = prequest->f_request_uri.read(tmp_uri, sizeof(tmp_uri) - 1);
 	if (tmp_len == MEM_END_OF_FILE)
 		return false;
 	tmp_uri[tmp_len] = '\0';

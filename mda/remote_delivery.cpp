@@ -109,7 +109,7 @@ static void rd_log(const MESSAGE_CONTEXT *ctx, unsigned int level,
 	char rcpt[UADDR_SIZE];
 	bool second_rcpt = false;
 	mem_file_seek(&ctrl->f_rcpt_to, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	while (mem_file_readline(&ctrl->f_rcpt_to, rcpt, arsizeof(rcpt)) != MEM_END_OF_FILE) {
+	while (ctrl->f_rcpt_to.readline(rcpt, arsizeof(rcpt)) != MEM_END_OF_FILE) {
 		if (second_rcpt)
 			outbuf += ',';
 		second_rcpt = true;
@@ -234,7 +234,8 @@ static int rd_rcptto(rd_connection &conn, MESSAGE_CONTEXT *ctx,
 {
 	bool any_success = false;
 	char rcpt[UADDR_SIZE];
-	while (mem_file_readline(&ctx->pcontrol->f_rcpt_to, rcpt, arsizeof(rcpt)) != MEM_END_OF_FILE) {
+	while (ctx->pcontrol->f_rcpt_to.readline(rcpt,
+	       arsizeof(rcpt)) != MEM_END_OF_FILE) {
 		char cmd[1024];
 		auto len = gx_snprintf(cmd, arsizeof(cmd), "RCPT TO: <%s>\r\n", rcpt);
 		if (!rd_send_cmd(conn, cmd, len))
@@ -378,7 +379,7 @@ static BOOL remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 	        "SMTP reason string: %s. Recipient(s) affected:\n",
 	        strerror(ret), errstr.c_str());
 	mem_file_seek(&l_ctrl.f_rcpt_to, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	while (mem_file_readline(&l_ctrl.f_rcpt_to, rcpt, arsizeof(rcpt)) != MEM_END_OF_FILE)
+	while (l_ctrl.f_rcpt_to.readline(rcpt, arsizeof(rcpt)) != MEM_END_OF_FILE)
 		fprintf(stderr, "[remote_delivery]:\t%s\n", rcpt);
 	return TRUE;
 }

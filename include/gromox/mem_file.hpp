@@ -21,6 +21,9 @@ enum {
 
 /* struct for describing the mem file */
 struct MEM_FILE {
+	size_t read(void *, size_t);
+	size_t readline(char *, size_t);
+
     DOUBLE_LIST_NODE    *pnode_rd;    /* node of current reading */
     DOUBLE_LIST_NODE    *pnode_wr;    /* node of current writing */
     size_t            rd_block_pos;   /* read position in block(node) */
@@ -33,8 +36,6 @@ struct MEM_FILE {
 };
     
 void mem_file_init(MEM_FILE *pfile, LIB_BUFFER *palloc);
-size_t mem_file_read(MEM_FILE *pfile, void* pbuff, size_t size);
-size_t mem_file_readline(MEM_FILE *pfile, char* pbuff, size_t size);
 ssize_t mem_file_seek(MEM_FILE *pfile, int type, ssize_t offset, int opt);
 size_t mem_file_get_total_length(MEM_FILE *pfile);
 void mem_file_clear(MEM_FILE *pfile);

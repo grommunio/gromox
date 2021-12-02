@@ -55,12 +55,13 @@ void mem_file_init(MEM_FILE *pfile, LIB_BUFFER *palloc)
  *	  @return		  
  *		  size of line, not include the token '\n' 
  */
-size_t mem_file_readline(MEM_FILE *pfile, char* pbuff, size_t size)
+size_t MEM_FILE::readline(char *pbuff, size_t size)
 {
+	auto pfile = this;
 	size_t distance, blocks, i, j, end, actual_size;
 
 #ifdef _DEBUG_UMTA
-	if (NULL == pfile || NULL == pbuff) {
+	if (pbuff == nullptr) {
 		debug_info("[mem_file]: mem_file_readline, param NULL");
 		return 0;
 	}
@@ -213,12 +214,13 @@ size_t mem_file_readline(MEM_FILE *pfile, char* pbuff, size_t size)
  *	  @return		 
  *		  size of bytes that actually read
  */
-size_t	mem_file_read(MEM_FILE *pfile, void* pbuff, size_t size)
+size_t MEM_FILE::read(void* pbuff, size_t size)
 {
+	auto pfile = this;
 	size_t i, distance, blocks, actual_size, remains;
 	
 #ifdef _DEBUG_UMTA
-	if (NULL == pfile || NULL == pbuff) {
+	if (pbuff == nullptr) {
 		debug_info("[mem_file]: mem_file_read, param NULL");
 		return 0;
 	}

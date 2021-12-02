@@ -41,8 +41,7 @@ void dir_tree_retrieve(DIR_TREE *ptree, MEM_FILE *pfile)
 	
 	mem_file_seek(pfile, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	size_t len;
-	while (MEM_END_OF_FILE != (len = mem_file_readline(
-		pfile, temp_path, 4096))) {
+	while ((len = pfile->readline(temp_path, 4096)) != MEM_END_OF_FILE) {
 		pnode = proot;
 		if (len == 0 || temp_path[len-1] != '/') {
 			temp_path[len] = '/';

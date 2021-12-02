@@ -1248,8 +1248,7 @@ static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level,
 	mem_file_seek(&pcontext->pcontrol->f_rcpt_to, MEM_FILE_READ_PTR, 0,
 				  MEM_FILE_SEEK_BEGIN);
 	for (i=0; i<8; i++) {
-		size_read = mem_file_readline(&pcontext->pcontrol->f_rcpt_to,
-					rcpt_buff + rcpt_len, 256);
+		size_read = pcontext->pcontrol->f_rcpt_to.readline(rcpt_buff + rcpt_len, 256);
 		if (size_read == MEM_END_OF_FILE) {
 			break;
 		}
