@@ -45,18 +45,17 @@ static void ftstream_producer_try_recode_nbp(
 	
 	pnode = double_list_get_tail(&pstream->bp_list);
 	uint32_t last_seek = pnode == nullptr ? 0 : static_cast<POINT_NODE *>(pnode->pdata)->offset;
-	if (pstream->offset - last_seek >=
-		FTSTREAM_PRODUCER_POINT_LENGTH) {
-		ppoint = me_alloc<POINT_NODE>();
-		if (NULL == ppoint) {
-			return;
-		}
-		ppoint->node.pdata = ppoint;
-		ppoint->type = POINT_TYPE_NORMAL_BREAK;
-		ppoint->offset = pstream->offset;
-		double_list_append_as_tail(
-			&pstream->bp_list, &ppoint->node);
+	if (pstream->offset - last_seek < FTSTREAM_PRODUCER_POINT_LENGTH)
+		return;
+	ppoint = me_alloc<POINT_NODE>();
+	if (NULL == ppoint) {
+		return;
 	}
+	ppoint->node.pdata = ppoint;
+	ppoint->type = POINT_TYPE_NORMAL_BREAK;
+	ppoint->offset = pstream->offset;
+	double_list_append_as_tail(
+		&pstream->bp_list, &ppoint->node);
 }
 
 static void ftstream_producer_record_nbp(
@@ -66,18 +65,17 @@ static void ftstream_producer_record_nbp(
 	DOUBLE_LIST_NODE *pnode;
 	
 	pnode = double_list_get_tail(&pstream->bp_list);
-	if (NULL == pnode || nbp > 
-		((POINT_NODE*)pnode->pdata)->offset) {
-		pbpnode = me_alloc<POINT_NODE>();
-		if (NULL == pbpnode) {
-			return;
-		}
-		pbpnode->node.pdata = pbpnode;
-		pbpnode->type = POINT_TYPE_NORMAL_BREAK;
-		pbpnode->offset = nbp;
-		double_list_append_as_tail(
-			&pstream->bp_list, &pbpnode->node);
+	if (pnode != nullptr && nbp <= static_cast<POINT_NODE *>(pnode->pdata)->offset)
+		return;
+	pbpnode = me_alloc<POINT_NODE>();
+	if (NULL == pbpnode) {
+		return;
 	}
+	pbpnode->node.pdata = pbpnode;
+	pbpnode->type = POINT_TYPE_NORMAL_BREAK;
+	pbpnode->offset = nbp;
+	double_list_append_as_tail(
+		&pstream->bp_list, &pbpnode->node);
 }
 
 static void ftstream_producer_record_lvp(
@@ -101,18 +99,17 @@ static void ftstream_producer_record_lvp(
 			&pstream->bp_list, &pbpnode->node);
 		pnode = &pbpnode->node;
 	}
-	if (position + length >
-		((POINT_NODE*)pnode->pdata)->offset) {
-		pbpnode = me_alloc<POINT_NODE>();
-		if (NULL == pbpnode) {
-			return;
-		}
-		pbpnode->node.pdata = pbpnode;
-		pbpnode->type = POINT_TYPE_LONG_VAR;
-		pbpnode->offset = position + length;
-		double_list_append_as_tail(
-			&pstream->bp_list, &pbpnode->node);
+	if (position + length <= static_cast<POINT_NODE *>(pnode->pdata)->offset)
+		return;
+	pbpnode = me_alloc<POINT_NODE>();
+	if (NULL == pbpnode) {
+		return;
 	}
+	pbpnode->node.pdata = pbpnode;
+	pbpnode->type = POINT_TYPE_LONG_VAR;
+	pbpnode->offset = position + length;
+	double_list_append_as_tail(
+		&pstream->bp_list, &pbpnode->node);
 }
 
 static void ftstream_producer_record_wsp(
@@ -136,18 +133,17 @@ static void ftstream_producer_record_wsp(
 			&pstream->bp_list, &pbpnode->node);
 		pnode = &pbpnode->node;
 	}
-	if (position + length >
-		((POINT_NODE*)pnode->pdata)->offset) {
-		pbpnode = me_alloc<POINT_NODE>();
-		if (NULL == pbpnode) {
-			return;
-		}
-		pbpnode->node.pdata = pbpnode;
-		pbpnode->type = POINT_TYPE_WSTRING;
-		pbpnode->offset = position + length;
-		double_list_append_as_tail(
-			&pstream->bp_list, &pbpnode->node);
+	if (position + length <= static_cast<POINT_NODE *>(pnode->pdata)->offset)
+		return;
+	pbpnode = me_alloc<POINT_NODE>();
+	if (NULL == pbpnode) {
+		return;
 	}
+	pbpnode->node.pdata = pbpnode;
+	pbpnode->type = POINT_TYPE_WSTRING;
+	pbpnode->offset = position + length;
+	double_list_append_as_tail(
+		&pstream->bp_list, &pbpnode->node);
 }
 
 static BOOL ftstream_producer_write_internal(
@@ -662,12 +658,12 @@ static BOOL ftstream_producer_write_messagechildren(
 		if (!pstream->write_uint32(PR_MESSAGE_ATTACHMENTS))
 			return FALSE;
 	}
-	if (NULL != pchildren->pattachments) {
-		for (size_t i = 0; i < pchildren->pattachments->count; ++i) {
-			if (FALSE == ftstream_producer_write_attachment(pstream,
-				b_delprop, pchildren->pattachments->pplist[i])) {
-				return FALSE;
-			}
+	if (pchildren->pattachments == nullptr)
+		return TRUE;
+	for (size_t i = 0; i < pchildren->pattachments->count; ++i) {
+		if (FALSE == ftstream_producer_write_attachment(pstream,
+		    b_delprop, pchildren->pattachments->pplist[i])) {
+			return FALSE;
 		}
 	}
 	return TRUE;
@@ -1016,11 +1012,8 @@ BOOL ftstream_producer::read_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last)
 		pnode = double_list_get_tail(&pstream->bp_list);
 		if (NULL == pnode) {
 			ftstream_producer_record_nbp(pstream, pstream->offset);
-		} else {
-			if (((POINT_NODE*)pnode->pdata)->offset !=
-				pstream->offset) {
-				ftstream_producer_record_nbp(pstream, pstream->offset);
-			}
+		} else if (static_cast<POINT_NODE *>(pnode->pdata)->offset != pstream->offset) {
+			ftstream_producer_record_nbp(pstream, pstream->offset);
 		}
 		pstream->b_read = TRUE;
 		if (-1 != pstream->fd) {
