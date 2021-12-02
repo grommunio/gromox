@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <list>
 #include <memory>
 #include <vector>
 #include <gromox/element_data.hpp>
@@ -10,6 +11,12 @@ struct folder_object;
 struct FTSTREAM_PRODUCER;
 struct ICS_STATE;
 struct logon_object;
+using flow_node = std::pair<uint8_t, const void *>;
+
+struct ics_flow_list : public std::list<flow_node> {
+	bool record_node(uint8_t, const void * = nullptr);
+	bool record_tag(uint32_t);
+};
 
 struct icsdownctx_object final {
 	protected:
@@ -34,7 +41,7 @@ struct icsdownctx_object final {
 	uint32_t state_property = 0;
 	MEM_FILE f_state_stream{};
 	BOOL b_started = false;
-	DOUBLE_LIST flow_list{};
+	ics_flow_list flow_list;
 	std::vector<uint32_t> group_list;
 	uint64_t last_readcn = 0, last_changenum = 0;
 	PROGRESS_INFORMATION *pprogtotal = nullptr;

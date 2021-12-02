@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
+#include <list>
 #include <memory>
 #include "icsdownctx_object.h"
 #include "emsmdb_interface.h"
@@ -32,30 +33,21 @@ enum {
 	FUNC_ID_STATE
 };
 
-namespace {
-
-struct ICS_FLOW_NODE {
-	DOUBLE_LIST_NODE node;
-	uint8_t func_id;
-	void *pparam;
-};
-
-}
-
 #define MAX_PARTIAL_ON_ROP		100	/* for limit of memory accumulation */
 
-static BOOL icsdownctx_object_record_flow_node(
-	DOUBLE_LIST *pflow_list, int func_id, void *pparam)
+bool ics_flow_list::record_node(uint8_t func_id, const void *param) try
 {
-	auto pflow = me_alloc<ICS_FLOW_NODE>();
-	if (NULL == pflow) {
-		return FALSE;
-	}
-	pflow->node.pdata = pflow;
-	pflow->func_id = func_id;
-	pflow->pparam = pparam;
-	double_list_append_as_tail(pflow_list, &pflow->node);
-	return TRUE;
+	emplace_back(func_id, param);
+	return true;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1598: ENOMEM\n");
+	return false;
+}
+
+bool ics_flow_list::record_tag(uint32_t tag)
+{
+	static_assert(sizeof(void *) >= sizeof(tag));
+	return record_node(FUNC_ID_UINT32, reinterpret_cast<void *>(static_cast<uintptr_t>(tag)));
 }
 
 std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogon,
@@ -94,7 +86,6 @@ std::unique_ptr<icsdownctx_object> icsdownctx_object::create(logon_object *plogo
 	pctx->pstream = ftstream_producer::create(plogon, send_options & 0x0F);
 	if (pctx->pstream == nullptr)
 		return NULL;
-	double_list_init(&pctx->flow_list);
 	pctx->pprogtotal = NULL;
 	pctx->pmessages = NULL;
 	pctx->pread_messags = NULL;
@@ -208,10 +199,8 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 	pctx->fake_gpinfo.pgroups = NULL;
 	
 	if (SYNC_FLAG_PROGRESS & pctx->sync_flags) {
-		if (FALSE == icsdownctx_object_record_flow_node(
-			&pctx->flow_list, FUNC_ID_PROGRESSTOTAL, NULL)) {
+		if (!pctx->flow_list.record_node(FUNC_ID_PROGRESSTOTAL))
 			return FALSE;
-		}
 	}
 	
 	if ((pctx->sync_flags & SYNC_FLAG_FAI) ||
@@ -223,46 +212,24 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 					break;
 				}
 			}
-			if (j < updated_messages.count) {
-				if (FALSE == icsdownctx_object_record_flow_node(
-					&pctx->flow_list, FUNC_ID_UPDATED_MESSAGE,
-					pctx->pmessages->pids + i)) {
-					return FALSE;	
-				}
-			} else {
-				if (FALSE == icsdownctx_object_record_flow_node(
-					&pctx->flow_list, FUNC_ID_NEW_MESSAGE,
-					pctx->pmessages->pids + i)) {
-					return FALSE;	
-				}
-			}
+			if (!pctx->flow_list.record_node(j < updated_messages.count ?
+			    FUNC_ID_UPDATED_MESSAGE : FUNC_ID_NEW_MESSAGE, &pctx->pmessages->pids[i]))
+				return FALSE;	
 		}
 	}
 	
 	if (0 == (pctx->sync_flags & SYNC_FLAG_NODELETIONS)) {
-		if (FALSE == icsdownctx_object_record_flow_node(
-			&pctx->flow_list, FUNC_ID_DELETIONS, NULL)) {
+		if (!pctx->flow_list.record_node(FUNC_ID_DELETIONS))
 			return FALSE;
-		}
 	}
 	
 	if (pctx->sync_flags & SYNC_FLAG_READSTATE) {
-		if (FALSE == icsdownctx_object_record_flow_node(
-			&pctx->flow_list, FUNC_ID_READSTATECHANGES, NULL)) {
+		if (!pctx->flow_list.record_node(FUNC_ID_READSTATECHANGES))
 			return FALSE;
-		}
 	}
-	
-	if (FALSE == icsdownctx_object_record_flow_node(
-		&pctx->flow_list, FUNC_ID_STATE, NULL)) {
-		return FALSE;
-	}
-	
-	if (FALSE == icsdownctx_object_record_flow_node(
-		&pctx->flow_list, FUNC_ID_UINT32, (void*)INCRSYNCEND)) {
+	if (!pctx->flow_list.record_node(FUNC_ID_STATE) ||
+	    !pctx->flow_list.record_tag(INCRSYNCEND))
 		return FALSE;	
-	}
-	
 	pctx->progress_steps = 0;
 	pctx->next_progress_steps = 0;
 	pctx->total_steps = total_normal + total_fai;
@@ -1431,11 +1398,8 @@ static BOOL icsdownctx_object_get_buffer_internal(icsdownctx_object *pctx,
 	uint16_t len;
 	uint16_t len1;
 	int partial_count;
-	uint64_t message_id;
-	ICS_FLOW_NODE *pflow;
-	DOUBLE_LIST_NODE *pnode;
 	
-	if (0 == double_list_get_nodes_num(&pctx->flow_list)) {
+	if (pctx->flow_list.size() == 0) {
 		if (!pctx->pstream->read_buffer(pbuff, plen, pb_last))
 			return FALSE;	
 		if (SYNC_TYPE_HIERARCHY == pctx->sync_type) {
@@ -1457,68 +1421,61 @@ static BOOL icsdownctx_object_get_buffer_internal(icsdownctx_object *pctx,
 	}
 	partial_count = 0;
 	len1 = *plen - len;
-	while ((pnode = double_list_pop_front(&pctx->flow_list)) != nullptr) {
+	while (pctx->flow_list.size() > 0) {
+		auto [func_id, pparam] = pctx->flow_list.front();
+		pctx->flow_list.pop_front();
 		pctx->progress_steps = pctx->next_progress_steps;
-		pflow = (ICS_FLOW_NODE*)pnode->pdata;
-		switch (pflow->func_id) {
+		switch (func_id) {
 		case FUNC_ID_UINT32:
-			if (!pctx->pstream->write_uint32(reinterpret_cast<uintptr_t>(pflow->pparam))) {
-				free(pnode->pdata);
+			if (!pctx->pstream->write_uint32(reinterpret_cast<uintptr_t>(pparam)))
 				return FALSE;
-			}
 			break;
 		case FUNC_ID_PROGRESSTOTAL:
 			if (!pctx->pstream->write_progresstotal(pctx->pprogtotal)) {
-				free(pnode->pdata);
 				return FALSE;
 			}
 			break;
-		case FUNC_ID_UPDATED_MESSAGE:
-			message_id = *(uint64_t*)pflow->pparam;
+		case FUNC_ID_UPDATED_MESSAGE: {
+			auto message_id = *static_cast<const uint64_t *>(pparam);
 			if (FALSE == icsdownctx_object_write_message_change(
 				pctx, message_id, TRUE, &partial_count)) {
-				free(pnode->pdata);
 				return FALSE;
 			}
 			break;
-		case FUNC_ID_NEW_MESSAGE:
-			message_id = *(uint64_t*)pflow->pparam;
+		}
+		case FUNC_ID_NEW_MESSAGE: {
+			auto message_id = *static_cast<const uint64_t *>(pparam);
 			if (FALSE == icsdownctx_object_write_message_change(
 				pctx, message_id, FALSE, &partial_count)) {
-				free(pnode->pdata);
 				return FALSE;
 			}
 			break;
+		}
 		case FUNC_ID_DELETIONS:
 			if (FALSE == icsdownctx_object_write_deletions(pctx)) {
-				free(pnode->pdata);
 				return FALSE;
 			}
 			break;
 		case FUNC_ID_READSTATECHANGES:
 			if (FALSE == icsdownctx_object_write_readstate_changes(pctx)) {
-				free(pnode->pdata);
 				return FALSE;
 			}
 			break;
 		case FUNC_ID_STATE:
 			if (FALSE == icsdownctx_object_write_state(pctx)) {
-				free(pnode->pdata);
 				return FALSE;
 			}
 			break;
 		default:
-			free(pnode->pdata);
 			return FALSE;
 		}
-		free(pnode->pdata);
 		if (pctx->pstream->total_length() > len1)
 			break;
 	}
 	if (!pctx->pstream->read_buffer(static_cast<char *>(pbuff) + len, &len1, &b_last))
 		return FALSE;	
 	*plen = len + len1;
-	*pb_last = double_list_get_nodes_num(&pctx->flow_list) == 0 && b_last ? TRUE : false;
+	*pb_last = pctx->flow_list.size() == 0 && b_last ? TRUE : false;
 	return TRUE;
 }
 
@@ -1544,11 +1501,6 @@ BOOL icsdownctx_object::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
 icsdownctx_object::~icsdownctx_object()
 {
 	auto pctx = this;
-	DOUBLE_LIST_NODE *pnode;
-	
-	while ((pnode = double_list_pop_front(&pctx->flow_list)) != nullptr)
-		free(pnode->pdata);
-	double_list_free(&pctx->flow_list);
 	if (NULL != pctx->pprogtotal) {
 		free(pctx->pprogtotal);
 	}
