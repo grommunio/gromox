@@ -1894,11 +1894,11 @@ static int html_to_plain_boring(const void *inbuf, int len, std::string &outbuf)
 			/* JavaScript & Other HTML scripting languages */
 			if (state == st::TAG && p[-1] == '<') {
 				state = st::QUOTE;
-			} else {
-				if (state == st::NONE) {
-					*(rp ++) = c;
-					linebegin = false;
-				}
+				break;
+			}
+			if (state == st::NONE) {
+				*(rp ++) = c;
+				linebegin = false;
 			}
 			break;
 		case '-':
