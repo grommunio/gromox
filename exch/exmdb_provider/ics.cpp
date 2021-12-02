@@ -45,6 +45,8 @@ struct IDSET_CACHE {
 	IDSET_CACHE();
 	~IDSET_CACHE();
 	NOMOVE(IDSET_CACHE);
+	BOOL init(const IDSET *);
+	BOOL hint(uint64_t);
 
 	sqlite3 *psqlite = nullptr;
 	xstmt pstmt;
@@ -66,8 +68,9 @@ IDSET_CACHE::~IDSET_CACHE()
 	double_list_free(&range_list);
 }
 
-static BOOL ics_init_idset_cache(const IDSET *pset, IDSET_CACHE *pcache)
+BOOL IDSET_CACHE::init(const IDSET *pset)
 {
+	auto pcache = this;
 	uint64_t ival;
 	DOUBLE_LIST_NODE *pnode;
 	REPLID_NODE *prepl_node;
@@ -130,8 +133,9 @@ static BOOL ics_init_idset_cache(const IDSET *pset, IDSET_CACHE *pcache)
 	return TRUE;
 }
 
-static BOOL ics_hint_idset_cache(IDSET_CACHE *pcache, uint64_t id_val)
+BOOL IDSET_CACHE::hint(uint64_t id_val)
 {
+	auto pcache = this;
 	RANGE_NODE *prange_node;
 	DOUBLE_LIST_NODE *pnode;
 	
@@ -234,9 +238,8 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			return FALSE;
 	}
 	IDSET_CACHE cache;
-	if (FALSE == ics_init_idset_cache(pgiven, &cache)) {
+	if (!cache.init(pgiven))
 		return FALSE;
-	}
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -345,11 +348,11 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			*plast_readcn = read_cn;
 		}
 		if (TRUE == b_fai) {
-			if (ics_hint_idset_cache(&cache, mid_val) &&
+			if (cache.hint(mid_val) &&
 			    const_cast<IDSET *>(pseen_fai)->hint(rop_util_make_eid_ex(1, change_num)))
 				continue;
 		} else {
-			if (ics_hint_idset_cache(&cache, mid_val) &&
+			if (cache.hint(mid_val) &&
 			    const_cast<IDSET *>(pseen)->hint(rop_util_make_eid_ex(1, change_num))) {
 				if (NULL == pread) {
 					continue;
@@ -460,9 +463,8 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			return FALSE;
 		uint64_t mid_val = sqlite3_column_int64(stm_select_chg, 0);
 		pchg_mids->pids[pchg_mids->count++] = rop_util_make_eid_ex(1, mid_val);
-		if (TRUE == ics_hint_idset_cache(&cache, mid_val)) {
+		if (cache.hint(mid_val))
 			pupdated_mids->pids[pupdated_mids->count++] = rop_util_make_eid_ex(1, mid_val);
-		}
 	}
 	} /* section 2b */
 	}
