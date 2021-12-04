@@ -1910,8 +1910,8 @@ BOOL common_util_send_mail(MAIL *pmail,
 	case SMTP_SEND_OK:
 		common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		log_err("SMTP server [%s]:%hu has received"
-			" message from %s", g_smtp_ip, g_smtp_port, sender);
+		log_err("emsmdb: succesfully sent mail %s -> SMTP [%s]:%hu",
+		        sender, g_smtp_ip, g_smtp_port);
 		return TRUE;
 	}
 	return false;
