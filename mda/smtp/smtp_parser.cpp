@@ -1027,7 +1027,7 @@ void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,
 	}
 	rcpt_buff[rcpt_len] = '\0';
 	
-	system_services_log_info(level,"remote MTA IP: %s, FROM: %s, TO: %s %s",
+	system_services_log_info(level,"remote=[%s] from=<%s> to=<%s> %s",
 		pcontext->connection.client_ip,
 		pcontext->mail.envelope.from, rcpt_buff, log_buf);
 }
