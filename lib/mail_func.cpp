@@ -1534,7 +1534,7 @@ BOOL mime_string_to_utf8(const char *charset,
 			} else if (0 == strcmp(encode_string.encoding,
 				"quoted-printable")){
 				decode_len = qp_decode(temp_buff, encode_string.title,
-								tmp_len);
+				             tmp_len, QP_MIME_HEADER);
 				temp_buff[decode_len] = '\0';
 				if (FALSE == string_to_utf8(encode_string.charset, temp_buff,
 					out_buff + offset)) {

@@ -1323,15 +1323,14 @@ static const unsigned char hex_tab[256] =
 	0x10, 0x10, 0x10, 0x10, 0x10, 0x10
 };
 
-size_t qp_decode(void *voutput, const char *input, size_t length)
+size_t qp_decode(void *voutput, const char *input, size_t length,
+    unsigned int qp_flags)
 {
 	auto output = static_cast<uint8_t *>(voutput);
-	int c;
+	bool mime_mode = qp_flags & QP_MIME_HEADER;
 	size_t i, cnt = 0;
 	for (i = 0; i < length; i++) {
-
-		c = input[i];
-
+		char c = input[i];
 		switch (c) {
 		case '=':
 			/* quoted char, process it */
@@ -1354,6 +1353,12 @@ size_t qp_decode(void *voutput, const char *input, size_t length)
 			   anything (report an error/add a fussy mode?) 
 			*/
 			break;
+		case '_':
+			if (mime_mode) {
+				output[cnt++] = ' ';
+				break;
+			}
+			[[fallthrough]];
 		default:
 			/* pass other characters through unmolested */
 			output[cnt++] = c;
