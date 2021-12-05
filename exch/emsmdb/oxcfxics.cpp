@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include <utility>
+#include <vector>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include "rops.h"
@@ -819,6 +820,25 @@ uint32_t rop_syncconfigure(uint8_t sync_type, uint8_t send_options,
 	if (pres != nullptr && !common_util_convert_restriction(TRUE,
 	    const_cast<RESTRICTION *>(pres)))
 			return ecError;
+
+	std::vector<uint32_t> new_tags;
+	PROPTAG_ARRAY new_pta;
+	auto bodyof = pproptags->indexof(PR_BODY);
+	if (bodyof != pproptags->npos && !pproptags->has(PR_HTML)) try {
+		/*
+		 * Send at least one body format. (Ignoring RTF presence
+		 * altogether here; that is another consideration.)
+		 */
+		auto p = pproptags->pproptag;
+		new_tags.insert(new_tags.end(), p, p + bodyof);
+		new_tags.insert(new_tags.end(), p + bodyof + 1, p + pproptags->count - 1);
+		new_pta.count = new_tags.size();
+		new_pta.pproptag = new_tags.data();
+		pproptags = &new_pta;
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1610: ENOMEM\n");
+		return ecMAPIOOM;
+	}
 	auto pctx = icsdownctx_object::create(plogon, pfolder, sync_type,
 	            send_options, sync_flags, pres, extra_flags, pproptags);
 	auto hnd = rop_processor_add_object_handle(plogmap,
