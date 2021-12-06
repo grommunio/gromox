@@ -171,8 +171,8 @@ function get_secondary_store_hints($email_address)
 
 	$sql_string = "SELECT up.propval_str, u2.primary_email
 		FROM users AS u1
-		LEFT JOIN secondary_store_hints AS ssh ON u1.id = ssh.secondary
-		LEFT JOIN users AS u2 ON ssh.primary = u2.id
+		LEFT JOIN secondary_store_hints AS ssh ON u1.id = ssh.primary
+		LEFT JOIN users AS u2 ON ssh.secondary = u2.id
 		LEFT JOIN user_properties AS up ON u2.id = up.user_id
 		WHERE proptag = 0x3001001F AND u1.primary_email = '". $db_conn->real_escape_string($email_address) ."';";
 
