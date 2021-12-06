@@ -71,7 +71,7 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *pcontex
 static void imap_parser_context_clear(IMAP_CONTEXT *pcontext);
 static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *);
 
-static std::atomic<int> g_sequence_id{0};
+static std::atomic<int> g_sequence_id;
 static int g_average_num;
 static size_t g_context_num, g_cache_size;
 static unsigned int g_timeout;
@@ -81,7 +81,7 @@ static int g_block_auth_fail;
 static int g_ssl_port;
 static pthread_t g_thr_id;
 static pthread_t g_scan_id;
-static gromox::atomic_bool g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop;
 static std::unique_ptr<IMAP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static LIB_BUFFER *g_alloc_file;

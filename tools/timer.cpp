@@ -67,7 +67,7 @@ struct srcitem {
 
 }
 
-static gromox::atomic_bool g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop;
 static size_t g_threads_num;
 static int g_last_tid;
 static int g_list_fd = -1;

@@ -72,7 +72,7 @@ static pthread_key_t g_var_key;
 static pthread_key_t g_opt_key;
 static unsigned int g_max_rule_num;
 static unsigned int g_max_ext_rule_num;
-static std::atomic<int> g_sequence_id{0};
+static std::atomic<int> g_sequence_id;
 
 #define E(s) decltype(common_util_ ## s) common_util_ ## s;
 E(lang_to_charset)

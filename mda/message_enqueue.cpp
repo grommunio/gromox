@@ -69,7 +69,7 @@ static BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *);
 static char         g_path[256];
 static int			g_msg_id;
 static pthread_t    g_flushing_thread;
-static gromox::atomic_bool g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop;
 static int			g_last_flush_ID;
 static int			g_enqueued_num;
 static int			g_last_pos;

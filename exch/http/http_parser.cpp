@@ -89,7 +89,7 @@ class VCONN_REF {
 }
 
 static size_t g_context_num;
-static gromox::atomic_bool g_async_stop{false};
+static gromox::atomic_bool g_async_stop;
 static BOOL g_support_ssl;
 static SSL_CTX *g_ssl_ctx;
 static int g_max_auth_times;

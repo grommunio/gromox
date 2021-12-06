@@ -28,7 +28,7 @@ using namespace gromox;
 static uint16_t g_listen_port;
 static char g_listen_ip[40];
 static int g_listen_sockd;
-static gromox::atomic_bool g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop;
 static std::vector<std::string> g_acl_list;
 
 static void *midls_thrwork(void *);

@@ -37,7 +37,7 @@ struct CLIENT_NODE {
 }
 
 static int g_thread_num;
-static gromox::atomic_bool g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop;
 static pthread_t *g_thread_ids;
 static DOUBLE_LIST g_conn_list;
 static std::condition_variable g_waken_cond;

@@ -42,7 +42,7 @@ struct BACK_CONN {
 
 }
 
-static gromox::atomic_bool g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop;
 static char g_event_ip[40];
 static uint16_t g_event_port;
 static pthread_t g_scan_id;

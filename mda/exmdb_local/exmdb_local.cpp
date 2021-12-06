@@ -42,7 +42,7 @@ static pthread_key_t g_alloc_key;
 static std::unique_ptr<STR_HASH_TABLE> g_str_hash;
 static char g_default_charset[32];
 static char g_default_timezone[64];
-static std::atomic<int> g_sequence_id{0};
+static std::atomic<int> g_sequence_id;
 
 BOOL (*exmdb_local_check_domain)(const char *domainname);
 

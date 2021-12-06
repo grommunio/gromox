@@ -30,7 +30,7 @@
 using namespace gromox;
 
 static size_t g_threads_num;
-static gromox::atomic_bool g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop;
 static int g_timeout_interval;
 static pthread_t *g_thread_ids;
 static std::mutex g_connection_lock, g_cond_mutex;
