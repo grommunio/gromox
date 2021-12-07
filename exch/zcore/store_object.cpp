@@ -252,6 +252,14 @@ BOOL store_object::check_owner_mode() const
 	return TRUE;
 }
 
+bool store_object::check_primary_mode() const
+{
+	if (!b_private)
+		return false;
+	auto pinfo = zarafa_server_get_info();
+	return pinfo->user_id == account_id;
+}
+
 BOOL store_object::get_named_propnames(const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames)
 {
 	int i;
@@ -785,7 +793,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		*ppvalue = bv;
 		bv->cb = 16;
 		bv->pb = deconst(!pstore->b_private ? pbExchangeProviderPublicGuid :
-		         pstore->check_owner_mode() ?
+		         pstore->check_primary_mode() ?
 		         pbExchangeProviderPrimaryUserGuid :
 		         pbExchangeProviderDelegateGuid);
 		return TRUE;
@@ -835,7 +843,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*static_cast<uint8_t *>(*ppvalue) = !!pstore->check_owner_mode();
+		*static_cast<uint8_t *>(*ppvalue) = pstore->check_primary_mode();
 		return TRUE;
 	case PR_ACCESS: {
 		*ppvalue = cu_alloc<uint8_t>();

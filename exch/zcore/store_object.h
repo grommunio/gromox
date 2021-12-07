@@ -16,6 +16,7 @@ struct store_object {
 	static std::unique_ptr<store_object> create(BOOL b_private, int account_id, const char *account, const char *dir);
 	GUID guid() const;
 	BOOL check_owner_mode() const;
+	bool check_primary_mode() const;
 	const char *get_account() const { return account; }
 	const char *get_dir() const { return dir; }
 	BOOL get_named_propnames(const PROPID_ARRAY *ppropids, PROPNAME_ARRAY *ppropnames);
