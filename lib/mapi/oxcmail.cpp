@@ -1079,39 +1079,39 @@ static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
 		mclass = "IPM.Note.Microsoft.Fax.CA";
 	} else if (0 == strcasecmp(field, "missedcall")) {
 		auto pmime = pmail->get_head();
-		if (0 != strcasecmp("audio/gsm", mime_get_content_type(pmime)) &&
-			0 != strcasecmp("audio/mp3", mime_get_content_type(pmime)) &&
-			0 != strcasecmp("audio/wav", mime_get_content_type(pmime)) &&
-			0 != strcasecmp("audio/wma", mime_get_content_type(pmime))) {
+		auto cttype = mime_get_content_type(pmime);
+		if (strcasecmp(cttype, "audio/gsm") != 0 &&
+		    strcasecmp(cttype, "audio/mp3") != 0 &&
+		    strcasecmp(cttype, "audio/wav") != 0 &&
+		    strcasecmp(cttype, "audio/wma") != 0)
 			return TRUE;
-		}
 		mclass = "IPM.Note.Microsoft.Missed.Voice";
 	} else if (0 == strcasecmp(field, "voice-uc")) {
 		auto pmime = pmail->get_head();
-		if (0 != strcasecmp("audio/gsm", mime_get_content_type(pmime)) &&
-			0 != strcasecmp("audio/mp3", mime_get_content_type(pmime)) &&
-			0 != strcasecmp("audio/wav", mime_get_content_type(pmime)) &&
-			0 != strcasecmp("audio/wma", mime_get_content_type(pmime))) {
+		auto cttype = mime_get_content_type(pmime);
+		if (strcasecmp(cttype, "audio/gsm") != 0 &&
+		    strcasecmp(cttype, "audio/mp3") != 0 &&
+		    strcasecmp(cttype, "audio/wav") != 0 &&
+		    strcasecmp(cttype, "audio/wma") != 0)
 			return TRUE;
-		}
 		mclass = "IPM.Note.Microsoft.Conversation.Voice";
 	} else if (0 == strcasecmp(field, "voice-ca")) {
 		auto pmime = pmail->get_head();
-		if (0 != strcasecmp("audio/gsm", mime_get_content_type(pmime)) &&
-			0 != strcasecmp("audio/mp3", mime_get_content_type(pmime)) &&
-			0 != strcasecmp("audio/wav", mime_get_content_type(pmime)) &&
-			0 != strcasecmp("audio/wma", mime_get_content_type(pmime))) {
+		auto cttype = mime_get_content_type(pmime);
+		if (strcasecmp(cttype, "audio/gsm") != 0 &&
+		    strcasecmp(cttype, "audio/mp3") != 0 &&
+		    strcasecmp(cttype, "audio/wav") != 0 &&
+		    strcasecmp(cttype, "audio/wma") != 0)
 			return TRUE;
-		}
 		mclass = "IPM.Note.Microsoft.Voicemail.UM.CA";
 	} else if (0 == strcasecmp(field, "voice")) {
 		auto pmime = pmail->get_head();
-		if (0 != strcasecmp("audio/gsm", mime_get_content_type(pmime)) &&
-			0 != strcasecmp("audio/mp3", mime_get_content_type(pmime)) &&
-			0 != strcasecmp("audio/wav", mime_get_content_type(pmime)) &&
-			0 != strcasecmp("audio/wma", mime_get_content_type(pmime))) {
+		auto cttype = mime_get_content_type(pmime);
+		if (strcasecmp(cttype, "audio/gsm") != 0 &&
+		    strcasecmp(cttype, "audio/mp3") != 0 &&
+		    strcasecmp(cttype, "audio/wav") != 0 &&
+		    strcasecmp(cttype, "audio/wma") != 0)
 			return TRUE;
-		}
 		mclass = "IPM.Note.Microsoft.Voicemail.UM";
 	} else if (0 == strncasecmp(field, "urn:content-class:custom.", 25)) {
 		snprintf(tmp_class, arsizeof(tmp_class), "IPM.Note.Custom.%s", field + 25);
@@ -2322,7 +2322,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	BINARY tmp_bin;
 	BOOL b_filename;
 	time_t tmp_time;
-	const char *pext;
 	uint64_t tmp_int64;
 	uint32_t tmp_int32;
 	BOOL b_description;
@@ -2381,13 +2380,9 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		pmime_enum->b_result = FALSE;
 		return;
 	}
-	const char *newval;
-	if (0 == strcasecmp("application/ms-tnef",
-		mime_get_content_type(pmime))) {
-		newval = "application/octet-stream";
-	} else {
-		newval = mime_get_content_type(pmime);
-	}
+	auto cttype = mime_get_content_type(pmime);
+	auto newval = strcasecmp(cttype, "application/ms-tnef") == 0 ?
+	              "application/octet-stream" : cttype;
 	if (pattachment->proplist.set(PR_ATTACH_MIME_TAG, newval) != 0) {
 		pmime_enum->b_result = FALSE;
 		return;
@@ -2404,8 +2399,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		}
 		oxcmail_split_filename(file_name, extension);
 		if ('\0' == extension[0]) {
-			pext = oxcmail_mime_to_extension(
-					mime_get_content_type(pmime));
+			auto pext = oxcmail_mime_to_extension(cttype);
 			if (pext != NULL) {
 				sprintf(extension, ".%s", pext);
 				HX_strlcat(file_name, extension, sizeof(file_name));
@@ -2414,8 +2408,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	} else {
 		b_unifn = TRUE;
 		if ('\0' != extension[0]) {
-			pext = oxcmail_mime_to_extension(
-					mime_get_content_type(pmime));
+			auto pext = oxcmail_mime_to_extension(cttype);
 			if (NULL != pext) {
 				sprintf(extension, ".%s", pext);
 				HX_strlcat(file_name, extension, sizeof(file_name));
@@ -2529,20 +2522,13 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		}
 	}
 	if (b_inline) {
-		if (0 != strcasecmp("image/jpeg",
-			mime_get_content_type(pmime)) &&
-			0 != strcasecmp("image/jpg",
-			mime_get_content_type(pmime)) &&
-			0 != strcasecmp("image/pjpeg",
-			mime_get_content_type(pmime)) &&
-			0 != strcasecmp("image/gif",
-			mime_get_content_type(pmime)) &&
-			0 != strcasecmp("image/bmp",
-			mime_get_content_type(pmime)) &&
-			0 != strcasecmp("image/png",
-			mime_get_content_type(pmime)) &&
-			0 != strcasecmp("image/x-png",
-			mime_get_content_type(pmime))) {
+		if (strcasecmp(cttype, "image/jpeg") != 0 &&
+		    strcasecmp(cttype, "image/jpg") != 0 &&
+		    strcasecmp(cttype, "image/pjpeg") != 0 &&
+		    strcasecmp(cttype, "image/gif") != 0 &&
+		    strcasecmp(cttype, "image/bmp") != 0 &&
+		    strcasecmp(cttype, "image/png") != 0 &&
+		    strcasecmp(cttype, "image/x-png") != 0) {
 			b_inline = false;
 		}
 	}
@@ -2575,7 +2561,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			pmime_enum->phash);
 		return;
 	}
-	if (0 == strcasecmp("text/directory",  mime_get_content_type(pmime))) {
+	if (strcasecmp(cttype, "text/directory") == 0) {
 		auto rdlength = mime_get_length(pmime);
 		if (rdlength < 0) {
 			printf("%s:mime_get_length:%u: unsuccessful\n", __func__, __LINE__);
@@ -2627,7 +2613,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			return;
 		}
 	}
-	if (0 == strcasecmp("message/rfc822", mime_get_content_type(pmime)) ||
+	if (strcasecmp(cttype, "message/rfc822") == 0 ||
 		(TRUE == b_filename && 0 == strcasecmp(".eml", extension))) {
 		auto rdlength = mime_get_length(pmime);
 		if (rdlength < 0) {
@@ -2674,8 +2660,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			return;
 		}
 	}
-	if (TRUE == b_filename && 0 == strcasecmp(
-		"message/external-body", mime_get_content_type(pmime)) &&
+	if (b_filename && strcasecmp(cttype, "message/external-body") == 0 &&
 		TRUE == oxcmail_get_content_param(pmime, "access-type",
 		tmp_buff, 32) && 0 == strcasecmp(tmp_buff, "anon-ftp") &&
 		TRUE == oxcmail_get_content_param(
@@ -2715,14 +2700,12 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		pmime_enum->b_result = FALSE;
 		return;
 	}
-	if (0 == strcasecmp("application/mac-binhex40",
-		mime_get_content_type(pmime))) {
+	if (strcasecmp(cttype, "application/mac-binhex40") == 0) {
 		pmime_enum->b_result = oxcmail_parse_binhex(
 			pmime, pattachment, b_filename, b_description,
 			&pmime_enum->last_propid, pmime_enum->phash);
 		return;
-	} else if (0 == strcasecmp("application/applefile",
-		mime_get_content_type(pmime))) {
+	} else if (strcasecmp(cttype, "application/applefile") == 0) {
 		if (TRUE == oxcmail_parse_applesingle(
 			pmime, pattachment, b_filename, b_description,
 			pmime_enum->alloc, &pmime_enum->last_propid,
@@ -2730,7 +2713,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			return;
 		}
 	}
-	if (0 == strncasecmp(mime_get_content_type(pmime), "text/", 5)) {
+	if (strncasecmp(cttype, "text/", 5) == 0) {
 		if (TRUE == oxcmail_get_content_param(
 			pmime, "charset", tmp_buff, 32)) {
 			uint32_t tag = oxcmail_check_ascii(tmp_buff) ?
@@ -3894,58 +3877,36 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		b_alternative = TRUE;
 	}
 	do {
-		if (0 == strcasecmp("text/plain",
-			mime_get_content_type(pmime))) {
-			if (NULL == mime_enum.pplain) {
-				mime_enum.pplain = pmime;
-			}
-		}
-		if (0 == strcasecmp("text/html",
-			mime_get_content_type(pmime))) {
-			if (NULL == mime_enum.phtml) {
-				mime_enum.phtml = pmime;
-			}
-		}
-		if (0 == strcasecmp("text/enriched",
-			mime_get_content_type(pmime))) {
-			if (NULL == mime_enum.penriched) {
-				mime_enum.penriched = pmime;
-			}
-		}
-		if (0 == strcasecmp("text/calendar",
-			mime_get_content_type(pmime))) {
-			if (NULL == mime_enum.pcalendar) {
-				mime_enum.pcalendar = pmime;
-			}
-		}
+		auto cttype = mime_get_content_type(pmime);
+		if (strcasecmp(cttype, "text/plain") == 0 &&
+		    mime_enum.pplain == nullptr)
+			mime_enum.pplain = pmime;
+		if (strcasecmp(cttype, "text/html") == 0 &&
+		    mime_enum.phtml == nullptr)
+			mime_enum.phtml = pmime;
+		if (strcasecmp(cttype, "text/enriched") == 0 &&
+		    mime_enum.penriched == nullptr)
+			mime_enum.penriched = pmime;
+		if (strcasecmp(cttype, "text/calendar") == 0 &&
+		    mime_enum.pcalendar == nullptr)
+			mime_enum.pcalendar = pmime;
 		if (TRUE == b_alternative &&
 			MULTIPLE_MIME == mime_get_type(pmime)) {
 			pmime1 = mime_get_child(pmime);
 			while (NULL != pmime1) {
-				if (0 == strcasecmp("text/plain",
-					mime_get_content_type(pmime1))) {
-					if (NULL == mime_enum.pplain) {
-						mime_enum.pplain = pmime1;
-					}
-				}
-				if (0 == strcasecmp("text/html",
-					mime_get_content_type(pmime1))) {
-					if (NULL == mime_enum.phtml) {
-						mime_enum.phtml = pmime1;
-					}
-				}
-				if (0 == strcasecmp("text/enriched",
-					mime_get_content_type(pmime1))) {
-					if (NULL == mime_enum.penriched) {
-						mime_enum.penriched = pmime1;
-					}
-				}
-				if (0 == strcasecmp("text/calendar",
-					mime_get_content_type(pmime1))) {
-					if (NULL == mime_enum.pcalendar) {
-						mime_enum.pcalendar = pmime1;
-					}
-				}
+				cttype = mime_get_content_type(pmime1);
+				if (strcasecmp(cttype, "text/plain") == 0 &&
+				    mime_enum.pplain == nullptr)
+					mime_enum.pplain = pmime1;
+				if (strcasecmp(cttype, "text/html") == 0 &&
+				    mime_enum.phtml == nullptr)
+					mime_enum.phtml = pmime1;
+				if (strcasecmp(cttype, "text/enriched") == 0 &&
+				    mime_enum.penriched == nullptr)
+					mime_enum.penriched = pmime1;
+				if (strcasecmp(cttype, "text/calendar") == 0 &&
+				    mime_enum.pcalendar == nullptr)
+					mime_enum.pcalendar = pmime1;
 				pmime1 = mime_get_sibling(pmime1);
 			}
 		}
