@@ -1043,6 +1043,84 @@ static BOOL oxcmail_parse_response_suppress(
 	return pproplist->set(PROP_TAG_AUTORESPONSESUPPRESS, &tmp_int32) == 0 ? TRUE : false;
 }
 
+static inline bool cttype_is_voiceaudio(const char *s)
+{
+	static constexpr char types[][10] =
+		{"audio/gsm", "audio/mp3", "audio/wav", "audio/wma"};
+	return std::any_of(std::cbegin(types), std::cend(types),
+	       [=](const char *e) { return strcasecmp(e, s) == 0; });
+}
+
+static inline bool cttype_is_image(const char *s)
+{
+	static constexpr char types[][12] =
+		{"image/jpeg", "image/jpg", "image/pjpeg", "image/gif",
+		"image/bmp", "image/png", "image/x-png"};
+	return std::any_of(std::cbegin(types), std::cend(types),
+	       [=](const char *e) { return strcasecmp(e, s) == 0; });
+}
+
+static inline unsigned int om_parse_sensitivity(const char *s)
+{
+	/* MS-OXCMAIL v22 §2.1.3.2.6 pg 31 */
+	if (strcasecmp(s, "Personal") == 0)
+		return SENSITIVITY_PERSONAL;
+	if (strcasecmp(s, "Private") == 0)
+		return SENSITIVITY_PRIVATE;
+	if (strcasecmp(s, "Company-Confidential") == 0)
+		return SENSITIVITY_COMPANY_CONFIDENTIAL;
+	return SENSITIVITY_NONE;
+}
+
+static inline unsigned int om_parse_importance(const char *s)
+{
+	/* MS-OXCMAIL v22 §2.2.3.2.5 pg 61 */
+	if (strcasecmp(s, "Low") == 0)
+		return IMPORTANCE_LOW;
+	if (strcasecmp(s, "High") == 0)
+		return IMPORTANCE_HIGH;
+	return IMPORTANCE_NORMAL;
+}
+
+static inline unsigned int om_parse_priority(const char *s)
+{
+	/* RFC 2156 §5.3.6 pg 96, MS-OXCMAIL v22 §2.2.3.2.5 pg 60 */
+	if (strcasecmp(s, "Non-Urgent") == 0)
+		return IMPORTANCE_LOW;
+	if (strcasecmp(s, "Urgent") == 0)
+		return IMPORTANCE_HIGH;
+	return IMPORTANCE_NORMAL;
+}
+
+static inline unsigned int om_parse_xpriority(const char *s)
+{
+	/* MS-OXCMAIL v22 §2.2.3.2.5 pg 61 */
+	if (*s == '5' || *s == '4')
+		return IMPORTANCE_LOW;
+	if (*s == '2' || *s == '1')
+		return IMPORTANCE_HIGH;
+	return IMPORTANCE_NORMAL;
+}
+
+static inline unsigned int om_parse_senderidresult(const char *s)
+{
+	if (strcasecmp(s, "Neutral") == 0)
+		return 1;
+	if (strcasecmp(s, "Pass") == 0)
+		return 2;
+	if (strcasecmp(s, "Fail") == 0)
+		return 3;
+	if (strcasecmp(s, "SoftFail") == 0)
+		return 4;
+	if (strcasecmp(s, "None") == 0)
+		return 5;
+	if (strcasecmp(s, "TempError") == 0)
+		return 6;
+	if (strcasecmp(s, "PermError") == 0)
+		return 7;
+	return 0;
+}
+
 static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
     uint16_t *plast_propid, namemap &phash, TPROPVAL_ARRAY *pproplist)
 {
@@ -1080,37 +1158,25 @@ static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
 	} else if (0 == strcasecmp(field, "missedcall")) {
 		auto pmime = pmail->get_head();
 		auto cttype = mime_get_content_type(pmime);
-		if (strcasecmp(cttype, "audio/gsm") != 0 &&
-		    strcasecmp(cttype, "audio/mp3") != 0 &&
-		    strcasecmp(cttype, "audio/wav") != 0 &&
-		    strcasecmp(cttype, "audio/wma") != 0)
+		if (!cttype_is_voiceaudio(cttype))
 			return TRUE;
 		mclass = "IPM.Note.Microsoft.Missed.Voice";
 	} else if (0 == strcasecmp(field, "voice-uc")) {
 		auto pmime = pmail->get_head();
 		auto cttype = mime_get_content_type(pmime);
-		if (strcasecmp(cttype, "audio/gsm") != 0 &&
-		    strcasecmp(cttype, "audio/mp3") != 0 &&
-		    strcasecmp(cttype, "audio/wav") != 0 &&
-		    strcasecmp(cttype, "audio/wma") != 0)
+		if (!cttype_is_voiceaudio(cttype))
 			return TRUE;
 		mclass = "IPM.Note.Microsoft.Conversation.Voice";
 	} else if (0 == strcasecmp(field, "voice-ca")) {
 		auto pmime = pmail->get_head();
 		auto cttype = mime_get_content_type(pmime);
-		if (strcasecmp(cttype, "audio/gsm") != 0 &&
-		    strcasecmp(cttype, "audio/mp3") != 0 &&
-		    strcasecmp(cttype, "audio/wav") != 0 &&
-		    strcasecmp(cttype, "audio/wma") != 0)
+		if (!cttype_is_voiceaudio(cttype))
 			return TRUE;
 		mclass = "IPM.Note.Microsoft.Voicemail.UM.CA";
 	} else if (0 == strcasecmp(field, "voice")) {
 		auto pmime = pmail->get_head();
 		auto cttype = mime_get_content_type(pmime);
-		if (strcasecmp(cttype, "audio/gsm") != 0 &&
-		    strcasecmp(cttype, "audio/mp3") != 0 &&
-		    strcasecmp(cttype, "audio/wav") != 0 &&
-		    strcasecmp(cttype, "audio/wma") != 0)
+		if (!cttype_is_voiceaudio(cttype))
 			return TRUE;
 		mclass = "IPM.Note.Microsoft.Voicemail.UM";
 	} else if (0 == strncasecmp(field, "urn:content-class:custom.", 25)) {
@@ -1407,65 +1473,20 @@ static BOOL oxcmail_enum_mail_head(
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "Sensitivity")) {
-		/* MS-OXCMAIL v22 §2.1.3.2.6 pg 31 */
-		if (0 == strcasecmp(field, "Normal")) {
-			tmp_int32 = SENSITIVITY_NONE;
-		} else if (0 == strcasecmp(field, "Personal")) {
-			tmp_int32 = SENSITIVITY_PERSONAL;
-		} else if (0 == strcasecmp(field, "Private")) {
-			tmp_int32 = SENSITIVITY_PRIVATE;
-		} else if (0 == strcasecmp(field, "Company-Confidential")) {
-			tmp_int32 = SENSITIVITY_COMPANY_CONFIDENTIAL;
-		} else {
-			tmp_int32 = SENSITIVITY_NONE;
-		}
+		tmp_int32 = om_parse_sensitivity(field);
 		if (penum_param->pmsg->proplist.set(PR_SENSITIVITY, &tmp_int32) != 0)
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "Importance") ||
 		0 == strcasecmp(tag, "X-MSMail-Priority")) {
-		/* MS-OXCMAIL v22 §2.2.3.2.5 pg 61 */
-		if (0 == strcasecmp(field, "Low")) {
-			tmp_int32 = IMPORTANCE_LOW;
-		} else if (0 == strcasecmp(field, "Normal")) {
-			tmp_int32 = IMPORTANCE_NORMAL;
-		} else if (0 == strcasecmp(field, "High")) {
-			tmp_int32 = IMPORTANCE_HIGH;
-		} else {
-			tmp_int32 = IMPORTANCE_NORMAL;
-		}
+		tmp_int32 = om_parse_importance(field);
 		if (penum_param->pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "Priority")) {
-		/* RFC 2156 §5.3.6 pg 96, MS-OXCMAIL v22 §2.2.3.2.5 pg 60 */
-		if (0 == strcasecmp(field, "Non-Urgent")) {
-			tmp_int32 = IMPORTANCE_LOW;
-		} else if (0 == strcasecmp(field, "Normal")) {
-			tmp_int32 = IMPORTANCE_NORMAL;
-		} else if (0 == strcasecmp(field, "Urgent")) {
-			tmp_int32 = IMPORTANCE_HIGH;
-		} else {
-			tmp_int32 = IMPORTANCE_NORMAL;
-		}
+		tmp_int32 = om_parse_priority(field);
 		if (penum_param->pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "X-Priority")) {
-		/* MS-OXCMAIL v22 §2.2.3.2.5 pg 61 */
-		switch (field[0]) {
-		case '5':
-		case '4':
-			tmp_int32 = IMPORTANCE_LOW;
-			break;
-		case '3':
-			tmp_int32 = IMPORTANCE_NORMAL;
-			break;
-		case '2':
-		case '1':
-			tmp_int32 = IMPORTANCE_HIGH;
-			break;
-		default:
-			tmp_int32 = IMPORTANCE_NORMAL;
-			break;
-		}
+		tmp_int32 = om_parse_xpriority(field);
 		if (penum_param->pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "Subject")) {
@@ -1601,23 +1622,7 @@ static BOOL oxcmail_enum_mail_head(
 			return FALSE;
 	} else if (0 == strcasecmp(tag,
 		"X-MS-Exchange-Organization-SenderIdResult")) {
-		if (0 == strcasecmp(field, "Neutral")) {
-			tmp_int32 = 1;
-		} else if (0 == strcasecmp(field, "Pass")) {
-			tmp_int32 = 2;
-		} else if (0 == strcasecmp(field, "Fail")) {
-			tmp_int32 = 3;
-		} else if (0 == strcasecmp(field, "SoftFail")) {
-			tmp_int32 = 4;
-		} else if (0 == strcasecmp(field, "None")) {
-			tmp_int32 = 5;
-		} else if (0 == strcasecmp(field, "TempError")) {
-			tmp_int32 = 6;
-		} else if (0 == strcasecmp(field, "PermError")) {
-			tmp_int32 = 7;
-		} else {
-			tmp_int32 = 0;
-		}
+		tmp_int32 = om_parse_senderidresult(field);
 		if (tmp_int32 != 0 &&
 		    penum_param->pmsg->proplist.set(PR_SENDER_ID_STATUS, &tmp_int32) != 0)
 			return FALSE;
@@ -2518,17 +2523,8 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			return;
 		}
 	}
-	if (b_inline) {
-		if (strcasecmp(cttype, "image/jpeg") != 0 &&
-		    strcasecmp(cttype, "image/jpg") != 0 &&
-		    strcasecmp(cttype, "image/pjpeg") != 0 &&
-		    strcasecmp(cttype, "image/gif") != 0 &&
-		    strcasecmp(cttype, "image/bmp") != 0 &&
-		    strcasecmp(cttype, "image/png") != 0 &&
-		    strcasecmp(cttype, "image/x-png") != 0) {
-			b_inline = false;
-		}
-	}
+	if (b_inline && !cttype_is_image(cttype))
+		b_inline = false;
 	if (b_inline) {
 		if (NULL == mime_get_parent(pmime) ||
 			(0 != strcasecmp(mime_get_content_type(
@@ -3267,6 +3263,21 @@ static bool oxcmail_enum_dsn_reporting_mta(const char *tag,
 	return static_cast<MESSAGE_CONTENT *>(pparam)->proplist.set(PROP_TAG_REPORTINGMESSAGETRANSFERAGENT, value) == 0;
 }
 
+static inline const char *om_actsev_to_mclass(unsigned int s)
+{
+	if (s == 0)
+		return "REPORT.IPM.Note.DR";
+	if (s == 1)
+		return "REPORT.IPM.Note.Expanded.DR";
+	if (s == 2)
+		return "REPORT.IPM.Note.Relayed.DR";
+	if (s == 3)
+		return "REPORT.IPM.Note.Delayed.DR";
+	if (s == 4)
+		return "REPORT.IPM.Note.NDR";
+	return nullptr;
+}
+
 static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 {
 	DSN dsn;
@@ -3332,29 +3343,13 @@ static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 		dsn_free(&dsn);
 		return NULL;
 	}
-	switch (dsn_info.action_severity) {
-	case 0:
-		strcpy(tmp_buff, "REPORT.IPM.Note.DR");
-		break;
-	case 1:
-		strcpy(tmp_buff, "REPORT.IPM.Note.Expanded.DR");
-		break;
-	case 2:
-		strcpy(tmp_buff, "REPORT.IPM.Note.Relayed.DR");
-		break;
-	case 3:
-		strcpy(tmp_buff, "REPORT.IPM.Note.Delayed.DR");
-		break;
-	case 4:
-		strcpy(tmp_buff, "REPORT.IPM.Note.NDR");
-		break;
-	default:
-		*tmp_buff = '\0';
-		break;
-	}
-	if (*tmp_buff != '\0' && pmsg->proplist.set(PR_MESSAGE_CLASS, tmp_buff) != 0) {
-		dsn_free(&dsn);
-		return NULL;
+	auto as = om_actsev_to_mclass(dsn_info.action_severity);
+	if (as != nullptr) {
+		gx_strlcpy(tmp_buff, as, arsizeof(tmp_buff));
+		if (pmsg->proplist.set(PR_MESSAGE_CLASS, tmp_buff) != 0) {
+			dsn_free(&dsn);
+			return NULL;
+		}
 	}
 	dsn_free(&dsn);
 	return pmime;
