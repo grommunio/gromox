@@ -5,6 +5,7 @@
 #include <cerrno>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <unistd.h>
 #include <utility>
 #include <vector>
@@ -20,6 +21,7 @@
 #include <gromox/lib_buffer.hpp>
 #include <gromox/util.hpp>
 #include <gromox/mail_func.hpp>
+#include <gromox/tie.hpp>
 #include <pthread.h>
 #include <cstring>
 #include <cstdarg>
@@ -1001,35 +1003,40 @@ static void smtp_parser_reset_stream_reading(SMTP_CONTEXT *pcontext)
 }
 
 void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,
-    const char *format, ...)
+    const char *format, ...) try
 {
-	char log_buf[2048], rcpt_buff[2048];
-	size_t size_read = 0, rcpt_len = 0, i;
+	std::unique_ptr<char[], stdlib_delete> line_buf;
+	size_t i;
 	va_list ap;
 
 	va_start(ap, format);
-	vsnprintf(log_buf, sizeof(log_buf) - 1, format, ap);
+	vasprintf(&unique_tie(line_buf), format, ap);
 	va_end(ap);
-	log_buf[sizeof(log_buf) - 1] = '\0';
 	
-	/* maximum record 8 rcpt to address */
 	mem_file_seek(&pcontext->mail.envelope.f_rcpt_to, MEM_FILE_READ_PTR, 0,
 				  MEM_FILE_SEEK_BEGIN);
-	for (i=0; i<8; i++) {
-		size_read = mem_file_readline(&pcontext->mail.envelope.f_rcpt_to,
-					rcpt_buff + rcpt_len, 256);
+	char rcpt[UADDR_SIZE];
+	std::string all_rcpts;
+	static constexpr size_t limit = 3;
+	for (i = 0; i < limit; ++i) {
+		auto size_read = mem_file_readline(&pcontext->mail.envelope.f_rcpt_to,
+		                 rcpt, arsizeof(rcpt));
 		if (size_read == MEM_END_OF_FILE) {
 			break;
 		}
-		rcpt_len += size_read;
-		rcpt_buff[rcpt_len] = ' ';
-		rcpt_len ++;
+		if (all_rcpts.size() > 0)
+			all_rcpts += ' ';
+		all_rcpts += rcpt;
 	}
-	rcpt_buff[rcpt_len] = '\0';
-	
-	system_services_log_info(level,"remote=[%s] from=<%s> to=<%s> %s",
+	while (mem_file_readline(&pcontext->mail.envelope.f_rcpt_to, rcpt, arsizeof(rcpt)) != MEM_END_OF_FILE)
+		++i;
+	if (i > limit)
+		all_rcpts += " + " + std::to_string(i - limit) + " others";
+	system_services_log_info(level, "remote=[%s] from=<%s> to={%s} %s",
 		pcontext->connection.client_ip,
-		pcontext->mail.envelope.from, rcpt_buff, log_buf);
+		pcontext->mail.envelope.from, all_rcpts.c_str(), line_buf.get());
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1609: ENOMEM\n");
 }
 
 int smtp_parser_get_extra_num(SMTP_CONTEXT *pcontext)
