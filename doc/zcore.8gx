@@ -209,9 +209,6 @@ exmdb_provider(4gx) for details.
 \fIdata_file_path\fP/folder_lang.txt: Translations for essential folders in a
 message store.
 .IP \(bu 4
-\fIdata_file_path\fP/langmap.txt: mapping between libc locale names and an
-index into folder_lang.txt.
-.IP \(bu 4
 \fIdata_file_path\fP/msgchg_grouping/: Data files for exchange_emsmdb(4gx)
 .IP \(bu 4
 \fIdata_file_path\fP/notify_bounce/: A directory with translation files for
