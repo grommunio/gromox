@@ -1,11 +1,15 @@
-1.9.17
-======
+1.10 (2021-12-07)
+=================
 
 Fixes:
 
 * exmdb_provider: cease adding a broken recipient when deleting last recipient
 * exmdb_provider: synthesize mandatory recipient properties essential for MSMAPI
   (The source of incomplete recipients is from imported KGWC databases.)
+* autodiscover: repair double @@ appearing in EXCH server name
+* emsmdb: work around Outlook not displaying any body in Cached Mode when
+  there is no HTML body
+* mapi_lib: avoid making underscores in subjects when there are umlauts
 
 Enhancements:
 
