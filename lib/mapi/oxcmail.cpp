@@ -293,11 +293,8 @@ static BOOL oxcmail_username_to_oneoff(const char *username,
 	tmp_entry.provider_uid = muidOOP;
 	tmp_entry.version = 0;
 	tmp_entry.ctrl_flags = CTRL_FLAG_NORICH | CTRL_FLAG_UNICODE;
-	if (NULL != pdisplay_name && '\0' != pdisplay_name[0]) {
-		tmp_entry.pdisplay_name = deconst(pdisplay_name);
-	} else {
-		tmp_entry.pdisplay_name = deconst(username);
-	}
+	tmp_entry.pdisplay_name = pdisplay_name != nullptr && *pdisplay_name != '\0' ?
+	                          deconst(pdisplay_name) : deconst(username);
 	tmp_entry.paddress_type = deconst("SMTP");
 	tmp_entry.pmail_address = deconst(username);
 	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16))
@@ -419,11 +416,7 @@ static BOOL oxcmail_get_field_param(char *field,
 	}
 	pbegin ++;
 	pend = strchr(pbegin, ';');
-	if (NULL == pend) {
-		tmp_len = strlen(pbegin);
-	} else {
-		tmp_len = pend - pbegin;
-	}
+	tmp_len = pend == nullptr ? strlen(pbegin) : pend - pbegin;
 	if (tmp_len >= length) {
 		return FALSE;
 	}
@@ -625,11 +618,7 @@ static BOOL oxcmail_parse_addresses(const char *charset,
 	b_quote = FALSE;
 	for (i=0; i<len; i++) {
 		if ('"' == field[i]) {
-			if (FALSE == b_quote) {
-				b_quote = TRUE;
-			} else {
-				b_quote = FALSE;
-			}
+			b_quote = b_quote ? false : TRUE;
 		}
 		if (',' == field[i] || ';' == field[i]) {
 			ptoken = field + i;
@@ -761,11 +750,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 	b_quote = FALSE;
 	for (i=0; i<len; i++) {
 		if ('"' == field[i]) {
-			if (FALSE == b_quote) {
-				b_quote = TRUE;
-			} else {
-				b_quote = FALSE;
-			}
+			b_quote = b_quote ? false : TRUE;
 		}
 		if (',' == field[i] || ';' == field[i]) {
 			ptoken = field + i;
@@ -1705,11 +1690,7 @@ static BOOL oxcmail_enum_mail_head(
 			if ('>' == field[tmp_int32 - 1]) {
 				field[tmp_int32 - 1] = '\0';
 			}
-			if ('<' == field[0]) {
-				pvalue = field + 1;
-			} else {
-				pvalue = field;
-			}
+			pvalue = field[0] == '<' ? field + 1 : field;
 			uint32_t tag = oxcmail_check_ascii(static_cast<char *>(pvalue)) ?
 			                  PROP_TAG_BODYCONTENTID :
 			                  PROP_TAG_BODYCONTENTID_STRING8;
@@ -3949,11 +3930,8 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		if (FALSE == oxcmail_get_content_param(
 			mime_enum.pcalendar, "charset",
 			mime_charset, 32)) {
-			if (FALSE == utf8_check(pcontent)) {
-				strcpy(mime_charset, default_charset);
-			} else {
-				strcpy(mime_charset, "utf-8");
-			}
+			gx_strlcpy(mime_charset, !utf8_check(pcontent) ?
+				default_charset : "utf-8", arsizeof(mime_charset));
 		}
 		if (FALSE == string_to_utf8(
 			mime_charset, pcontent,
@@ -4038,11 +4016,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			phtml_bin = pmsg->proplist.get<BINARY>(PR_HTML);
 			if (NULL != phtml_bin) {
 				pvalue = pmsg->proplist.getval(PR_INTERNET_CPID);
-				if (NULL == pvalue) {
-					tmp_int32 = 65001;
-				} else {
-					tmp_int32 = *(uint32_t*)pvalue;
-				}
+				tmp_int32 = pvalue == nullptr ? 65001 : *static_cast<uint32_t *>(pvalue);
 				char *rtfout = nullptr;
 				if (html_to_rtf(phtml_bin->pv, phtml_bin->cb, tmp_int32,
 				    &rtfout, &content_len)) {
@@ -4060,11 +4034,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		phtml_bin = pmsg->proplist.get<BINARY>(PR_HTML);
 		if (NULL != phtml_bin) {
 			pvalue = pmsg->proplist.getval(PR_INTERNET_CPID);
-			if (NULL == pvalue) {
-				tmp_int32 = 65001;
-			} else {
-				tmp_int32 = *(uint32_t*)pvalue;
-			}
+			tmp_int32 = pvalue == nullptr ? 65001 : *static_cast<uint32_t *>(pvalue);
 			std::string plainbuf;
 			auto ret = html_to_plain(phtml_bin->pc, phtml_bin->cb, plainbuf);
 			if (ret < 0) {
@@ -4255,15 +4225,8 @@ static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
 		if (oxcmail_get_smtp_address(prcpt, alloc, PR_SMTP_ADDRESS,
 		    PR_ADDRTYPE, PR_EMAIL_ADDRESS, PR_ENTRYID,
 		    username, GX_ARRAY_SIZE(username))) {
-			if (NULL != pdisplay_name) {
-				offset += std::max(0, gx_snprintf(field + offset,
-				          fdsize - offset,
-						" <%s>", username));
-			} else {
-				offset += std::max(0, gx_snprintf(field,
-				          fdsize - offset,
-					"<%s>", username));
-			}
+			offset += std::max(0, gx_snprintf(field + offset, fdsize - offset,
+			          pdisplay_name != nullptr ? " <%s>" : "<%s>", username));
 		}
 	}
 	if (0 == offset || offset >= fdsize)
@@ -4321,13 +4284,9 @@ static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 			address_array.pentry_id[i].paddress_type)) {
 			return FALSE;
 		}
-		if (NULL != pstrings) {
-			offset += std::max(0, gx_snprintf(field, MIME_FIELD_LEN - offset,
-				" <%s>", address_array.pentry_id[i].pmail_address));
-		} else {
-			offset += std::max(0, gx_snprintf(field, MIME_FIELD_LEN - offset,
-				"<%s>", address_array.pentry_id[i].pmail_address));
-		}
+		offset += std::max(0, gx_snprintf(field, MIME_FIELD_LEN - offset,
+		          pstrings != nullptr ? " <%s>" : "<%s>",
+		          address_array.pentry_id[i].pmail_address));
 	}
 	if (0 == offset || offset >= MIME_FIELD_LEN) {
 		return FALSE;
