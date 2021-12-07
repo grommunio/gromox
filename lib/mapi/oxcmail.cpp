@@ -3368,8 +3368,11 @@ static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 	case 4:
 		strcpy(tmp_buff, "REPORT.IPM.Note.NDR");
 		break;
+	default:
+		*tmp_buff = '\0';
+		break;
 	}
-	if (pmsg->proplist.set(PR_MESSAGE_CLASS, tmp_buff) != 0) {
+	if (*tmp_buff != '\0' && pmsg->proplist.set(PR_MESSAGE_CLASS, tmp_buff) != 0) {
 		dsn_free(&dsn);
 		return NULL;
 	}
