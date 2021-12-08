@@ -169,6 +169,8 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 		$Protocol = $Account->addChild('Protocol');
 		$host_name = get_default_hostname();
 		$server_name = get_user_server_guid($uinfo) . '@' . $uinfo['domain'];
+		$Protocol->addChild('OOFUrl', 'https://' . $host_name . '/EWS/Exchange.asmx');
+		$Protocol->addChild('OABUrl', 'https://' . $host_name . '/OAB/');
 		if (get_mapihttp_supported() &&
 			0 == strncasecmp($_SERVER['HTTP_USER_AGENT'], "Microsoft Office/", 17)
 			&& floatval(substr($_SERVER['HTTP_USER_AGENT'], 17)) >= 16) {
@@ -198,8 +200,6 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 			$Protocol->addChild('ServerVersion', SERVER_VERSION);
 			$Protocol->addChild('ServerDN', get_server_dn($server_name));
 			$Protocol->addChild('MdbDN', get_mdb_dn($server_name));
-			$Protocol->addChild('OOFUrl', 'https://' . $host_name . '/EWS/Exchange.asmx');
-			$Protocol->addChild('OABUrl', 'https://' . $host_name . '/OAB/');
 			if (0 == strncasecmp($_SERVER['HTTP_USER_AGENT'], "Microsoft Office/", 17)
 				&& floatval(substr($_SERVER['HTTP_USER_AGENT'], 17)) >= 15) {
 				$Protocol->addChild('AuthPackage', 'anonymous');
@@ -220,6 +220,8 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 			$Protocol->addChild('CertPrincipalName', 'None');
 			$Protocol->addChild('AuthPackage', 'basic');
 			$Protocol->addChild('ServerExclusiveConnect', 'on');
+			$Protocol->addChild('OOFUrl', 'https://' . $host_name . '/EWS/Exchange.asmx');
+			$Protocol->addChild('OABUrl', 'https://' . $host_name . '/OAB/');
 		}
 
 		$altMailboxes = get_secondary_store_hints($email_address);
