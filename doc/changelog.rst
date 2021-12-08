@@ -1,3 +1,12 @@
+1.10+
+=====
+
+Enhancements:
+
+* mt2exm: perform named property translation on folder properties, message
+  recipient properties and attachment properties
+
+
 1.10 (2021-12-07)
 =================
 

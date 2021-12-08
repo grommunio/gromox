@@ -187,6 +187,40 @@ static void exm_adjust_namedprops(TPROPVAL_ARRAY &props)
 	}
 }
 
+static void exm_adjust_propids(MESSAGE_CONTENT &);
+static void exm_adjust_propids(ATTACHMENT_CONTENT &ac)
+{
+	exm_adjust_staticprops(ac.proplist);
+	exm_adjust_namedprops(ac.proplist);
+	if (ac.pembedded != nullptr)
+		exm_adjust_propids(*ac.pembedded);
+}
+
+static void exm_adjust_propids(MESSAGE_CONTENT &mc)
+{
+	exm_adjust_staticprops(mc.proplist);
+	exm_adjust_namedprops(mc.proplist);
+	if (mc.children.prcpts != nullptr)
+		for (size_t i = 0; i < mc.children.prcpts->count; ++i) {
+			if (mc.children.prcpts->pparray == nullptr)
+				continue;
+			auto set = mc.children.prcpts->pparray[i];
+			if (set == nullptr)
+				continue;
+			exm_adjust_staticprops(*mc.children.prcpts->pparray[i]);
+			exm_adjust_namedprops(*mc.children.prcpts->pparray[i]);
+		}
+	if (mc.children.pattachments != nullptr)
+		for (size_t i = 0; i < mc.children.pattachments->count; ++i) {
+			if (mc.children.pattachments->pplist == nullptr)
+				continue;
+			auto at = mc.children.pattachments->pplist[i];
+			if (at == nullptr)
+				continue;
+			exm_adjust_propids(*at);
+		}
+}
+
 static void exm_folder_adjust(TPROPVAL_ARRAY &props)
 {
 	/*
@@ -196,6 +230,8 @@ static void exm_folder_adjust(TPROPVAL_ARRAY &props)
 	auto ft = props.get<uint32_t>(PR_FOLDER_TYPE);
 	if (ft != nullptr && *ft != FOLDER_GENERIC && *ft != FOLDER_SEARCH)
 		*ft = FOLDER_GENERIC;
+	exm_adjust_staticprops(props);
+	exm_adjust_namedprops(props);
 }
 
 static int exm_folder(const ob_desc &obd, TPROPVAL_ARRAY &props)
@@ -281,8 +317,7 @@ static int exm_message(const ob_desc &obd, MESSAGE_CONTENT &ctnt)
 		        static_cast<unsigned long long>(obd.parent.folder_id));
 		return 0;
 	}
-	exm_adjust_staticprops(ctnt.proplist);
-	exm_adjust_namedprops(ctnt.proplist);
+	exm_adjust_propids(ctnt);
 	if (g_show_tree && g_show_props) {
 		tree(0);
 		tlog("adjusted properties:\n");
