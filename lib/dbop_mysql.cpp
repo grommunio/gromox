@@ -333,6 +333,21 @@ static const char tbl_userdevhist_93[] =
 "  CONSTRAINT `user_device_history_ibfk_1` FOREIGN KEY (`user_device_id`) REFERENCES `user_devices` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 
+static const char tbl_taskqueue_102[] =
+"CREATE TABLE `tasq` ("
+"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+"  `command` varchar(16) NOT NULL,"
+"  `state` tinyint(3) unsigned NOT NULL DEFAULT '0',"
+"  `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+"  `updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,"
+"  `message` varchar(160) NOT NULL DEFAULT '',"
+"  `access` text,"
+"  `params` text,"
+"  PRIMARY KEY (`id`),"
+"  KEY `state` (`state`),"
+"  KEY `updated` (`updated`)"
+") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
 static const struct tbl_init tbl_init_0[] = {
 	{"aliases", tbl_alias_0},
 	{"associations", tbl_assoc_0},
@@ -555,6 +570,7 @@ static const struct tbl_init tbl_init_top[] = {
 	{"secondary_store_hints", tbl_scndstore_91},
 	{"user_devices", tbl_userdev_92},
 	{"user_device_history", tbl_userdevhist_93},
+	{"task_queue", tbl_taskqueue_102},
 	{nullptr},
 };
 
@@ -705,6 +721,7 @@ static const struct tbl_upgradefn tbl_upgrade_list[] = {
 	{99, "UPDATE `users` SET lang=\"pt_BR\" where lang=\"pt\""},
 	{100, "UPDATE `users` SET lang=\"sl\" where lang=\"si\""},
 	{101, "UPDATE `users` SET lang=\"zh_CN\" where lang=\"zh\""},
+	{102, tbl_taskqueue_102},
 	{0, nullptr},
 };
 
