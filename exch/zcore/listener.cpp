@@ -18,7 +18,7 @@
 #include <cstring>
 #include <cstdio>
 
-static gromox::atomic_bool g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop;
 static int g_listen_sockd;
 static pthread_t g_listener_id;
 

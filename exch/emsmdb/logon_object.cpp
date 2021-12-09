@@ -127,6 +127,11 @@ static BOOL logon_object_cache_propname(logon_object *plogon,
 	return TRUE;
 }
 
+logon_object::logon_object()
+{
+	double_list_init(&group_list);
+}
+
 std::unique_ptr<logon_object> logon_object::create(uint8_t logon_flags,
 	uint32_t open_flags, int logon_mode, int account_id,
 	const char *account, const char *dir, GUID mailbox_guid)
@@ -144,10 +149,6 @@ std::unique_ptr<logon_object> logon_object::create(uint8_t logon_flags,
 	gx_strlcpy(plogon->account, account, GX_ARRAY_SIZE(plogon->account));
 	gx_strlcpy(plogon->dir, dir, GX_ARRAY_SIZE(plogon->dir));
 	plogon->mailbox_guid = mailbox_guid;
-	plogon->m_gpinfo = nullptr;
-	plogon->ppropid_hash = NULL;
-	plogon->ppropname_hash = NULL;
-	double_list_init(&plogon->group_list);
 	return plogon;
 }
 

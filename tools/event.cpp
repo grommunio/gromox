@@ -96,7 +96,7 @@ struct HOST_NODE {
 
 }
 
-static gromox::atomic_bool g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop;
 static unsigned int g_threads_num;
 static LIB_BUFFER *g_fifo_alloc;
 static LIB_BUFFER *g_file_alloc;

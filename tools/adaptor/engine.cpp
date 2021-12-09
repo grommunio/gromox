@@ -23,7 +23,7 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-static gromox::atomic_bool g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop;
 static pthread_t g_thread_id1;
 static char g_domainlist_path[256];
 static char g_aliasaddress_path[256];

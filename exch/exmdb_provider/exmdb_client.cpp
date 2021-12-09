@@ -75,7 +75,7 @@ static int cl_wr_sock(int fd, const BINARY *b) { return exmdb_client_write_socke
 
 static int g_conn_num;
 static int g_threads_num;
-static gromox::atomic_bool g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop;
 static pthread_t g_scan_id;
 static std::list<REMOTE_CONN> g_lost_list;
 static std::list<AGENT_THREAD> g_agent_list;

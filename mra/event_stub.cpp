@@ -42,7 +42,7 @@ struct BACK_CONN {
 
 using EVENT_STUB_FUNC = void (*)(char *);
 
-static gromox::atomic_bool g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop;
 static char g_event_ip[40];
 static uint16_t g_event_port;
 static DOUBLE_LIST g_back_list;

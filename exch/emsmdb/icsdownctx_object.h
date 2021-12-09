@@ -1,14 +1,22 @@
 #pragma once
 #include <cstdint>
+#include <list>
 #include <memory>
+#include <vector>
 #include <gromox/element_data.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/mapi_types.hpp>
 
 struct folder_object;
-struct FTSTREAM_PRODUCER;
+struct fxstream_producer;
 struct ICS_STATE;
 struct logon_object;
+using flow_node = std::pair<uint8_t, const void *>;
+
+struct ics_flow_list : public std::list<flow_node> {
+	bool record_node(uint8_t, const void * = nullptr);
+	bool record_tag(uint32_t);
+};
 
 struct icsdownctx_object final {
 	protected:
@@ -26,14 +34,15 @@ struct icsdownctx_object final {
 	ICS_STATE *get_state() const { return pstate.get(); }
 	BOOL get_buffer(void *buf, uint16_t *len, BOOL *last, uint16_t *progress, uint16_t *total);
 
-	std::unique_ptr<FTSTREAM_PRODUCER> pstream;
+	std::unique_ptr<fxstream_producer> pstream;
 	uint8_t sync_type = 0;
 	folder_object *pfolder = nullptr;
 	std::unique_ptr<ICS_STATE> pstate; /* public member */
 	uint32_t state_property = 0;
 	MEM_FILE f_state_stream{};
 	BOOL b_started = false;
-	DOUBLE_LIST flow_list{}, group_list{};
+	ics_flow_list flow_list;
+	std::vector<uint32_t> group_list;
 	uint64_t last_readcn = 0, last_changenum = 0;
 	PROGRESS_INFORMATION *pprogtotal = nullptr;
 	EID_ARRAY *pmessages = nullptr, *pdeleted_messages = nullptr;

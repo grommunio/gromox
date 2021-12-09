@@ -128,7 +128,7 @@ static BOOL check_full(const char *path);
 static void console_talk(int argc, char **argv, char *result, int length);
 
 static int g_conn_num;
-static gromox::atomic_bool g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop;
 static pthread_t g_scan_id;
 static DOUBLE_LIST g_lost_list;
 static DOUBLE_LIST g_server_list;

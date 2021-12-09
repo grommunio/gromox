@@ -1,14 +1,29 @@
 #pragma once
 #include <cstdint>
+#include <list>
 #include <memory>
 #include <gromox/mapi_types.hpp>
 
 struct ATTACHMENT_CONTENT;
 struct FOLDER_CONTENT;
-struct FTSTREAM_PRODUCER;
+struct FOLDER_MESSAGES;
+struct fxstream_producer;
 struct ICS_STATE;
 struct logon_object;
 struct MESSAGE_CONTENT;
+using flow_node = std::pair<uint8_t, const void *>;
+
+struct fxdown_flow_list : public std::list<flow_node> {
+	bool record_node(uint8_t, const void * = nullptr);
+	bool record_tag(uint32_t);
+	bool record_messagelist(EID_ARRAY *);
+	bool record_foldermessages(const FOLDER_MESSAGES *);
+	bool record_foldermessagesnodelprops(const FOLDER_MESSAGES *);
+	bool record_foldercontent(const FOLDER_CONTENT *);
+	bool record_foldercontentnodelprops(const FOLDER_CONTENT *);
+	bool record_subfoldernodelprops(const FOLDER_CONTENT *);
+	bool record_subfolder(const FOLDER_CONTENT *);
+};
 
 struct fastdownctx_object final {
 	protected:
@@ -27,10 +42,10 @@ struct fastdownctx_object final {
 	BOOL make_state(ICS_STATE *);
 	BOOL get_buffer(void *buf, uint16_t *len, BOOL *last, uint16_t *progress, uint16_t *total);
 
-	std::unique_ptr<FTSTREAM_PRODUCER> pstream;
+	std::unique_ptr<fxstream_producer> pstream;
 	BOOL b_back = false, b_last = false, b_chginfo = false;
 	EID_ARRAY *pmsglst = nullptr;
 	std::unique_ptr<FOLDER_CONTENT> pfldctnt;
-	DOUBLE_LIST flow_list{};
+	fxdown_flow_list flow_list;
 	uint32_t total_steps = 0, progress_steps = 0;
 };

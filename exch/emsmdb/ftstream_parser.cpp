@@ -870,8 +870,6 @@ std::unique_ptr<ftstream_parser> ftstream_parser::create(logon_object *plogon) t
 		return nullptr;
 	}
 	std::unique_ptr<ftstream_parser> pstream(new ftstream_parser);
-	pstream->offset = 0;
-	pstream->st_size = 0;
 	pstream->path = std::move(path) + "/" + std::to_string(stream_id) + "." + get_host_ID();
 	pstream->fd = open(pstream->path.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
 	if (-1 == pstream->fd) {
@@ -885,7 +883,7 @@ std::unique_ptr<ftstream_parser> ftstream_parser::create(logon_object *plogon) t
 	return nullptr;
 }
 
-FTSTREAM_PARSER::~FTSTREAM_PARSER()
+fxstream_parser::~fxstream_parser()
 {
 	auto pstream = this;
 	close(pstream->fd);

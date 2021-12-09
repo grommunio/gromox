@@ -70,7 +70,7 @@ struct DIRECTORY_NODE {
 }
 
 static int g_context_num;
-static gromox::atomic_bool g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop;
 static pthread_t g_scan_tid;
 static DOUBLE_LIST g_item_list;
 static std::mutex g_hash_lock;

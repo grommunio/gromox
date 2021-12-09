@@ -29,7 +29,7 @@ using namespace gromox;
 
 static uint16_t g_listen_port;
 static int g_listen_sockd;
-static gromox::atomic_bool g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop;
 static char g_listen_ip[40];
 static std::vector<std::string> g_acl_list;
 static pthread_t g_listener_id;

@@ -81,6 +81,11 @@ static uint32_t message_object_rectify_proptag(uint32_t proptag)
 	return proptag;
 }
 
+message_object::message_object()
+{
+	double_list_init(&stream_list);
+}
+
 std::unique_ptr<message_object> message_object::create(logon_object *plogon,
 	BOOL b_new, uint32_t cpid, uint64_t message_id, void *pparent,
 	uint32_t tag_access, uint8_t open_flags, ICS_STATE *pstate)
@@ -101,7 +106,6 @@ std::unique_ptr<message_object> message_object::create(logon_object *plogon,
 	pmessage->tag_access = tag_access;
 	pmessage->open_flags = open_flags;
 	pmessage->pstate = pstate;
-	double_list_init(&pmessage->stream_list);
 	if (0 == message_id) {
 		pmessage->pembedding = static_cast<attachment_object *>(pparent);
 		if (!exmdb_client_load_embedded_instance(plogon->get_dir(),

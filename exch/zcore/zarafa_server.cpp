@@ -78,7 +78,7 @@ struct user_info_del {
 using USER_INFO_REF = std::unique_ptr<USER_INFO, user_info_del>;
 
 static size_t g_table_size;
-static gromox::atomic_bool g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop;
 static int g_ping_interval;
 static pthread_t g_scan_id;
 static int g_cache_interval;

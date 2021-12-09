@@ -33,10 +33,10 @@
 
 using namespace gromox;
 
-gromox::atomic_bool g_notify_stop{false};
+gromox::atomic_bool g_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
-static gromox::atomic_bool g_hup_signalled{false};
+static gromox::atomic_bool g_hup_signalled;
 LIB_BUFFER *g_files_allocator;
 
 static struct HXoption g_options_table[] = {

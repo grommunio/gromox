@@ -36,7 +36,7 @@ static void *imls_thrwork(void *);
 static void *imls_thrworkssl(void *);
 
 static pthread_t g_thr_id;
-static gromox::atomic_bool g_stop_accept{false};
+static gromox::atomic_bool g_stop_accept;
 static int g_listener_sock;
 static uint16_t g_listener_port, g_listener_ssl_port;
 static pthread_t g_ssl_thr_id;

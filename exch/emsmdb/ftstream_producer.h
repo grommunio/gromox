@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <list>
 #include <memory>
 #include <string>
 #include <gromox/mapi_types.hpp>
@@ -20,14 +21,23 @@ struct MSGCHG_PARTIAL;
 struct PROGRESS_INFORMATION;
 struct PROGRESS_MESSAGE;
 
-struct FTSTREAM_PRODUCER {
+enum point_type {
+	normal_break, long_var, wstring,
+};
+
+struct point_node {
+	point_type type;
+	uint32_t offset;
+};
+
+struct fxstream_producer {
 	protected:
-	FTSTREAM_PRODUCER() = default;
-	NOMOVE(FTSTREAM_PRODUCER);
+	fxstream_producer() = default;
+	NOMOVE(fxstream_producer);
 
 	public:
-	~FTSTREAM_PRODUCER();
-	static std::unique_ptr<FTSTREAM_PRODUCER> create(logon_object *, uint8_t string_option);
+	~fxstream_producer();
+	static std::unique_ptr<fxstream_producer> create(logon_object *, uint8_t string_option);
 	inline int total_length() const { return offset; }
 	BOOL read_buffer(void *buf, uint16_t *len, BOOL *last);
 	BOOL write_uint32(uint32_t);
@@ -51,7 +61,8 @@ struct FTSTREAM_PRODUCER {
 	uint32_t buffer_offset = 0, read_offset = 0;
 	uint8_t string_option = 0;
 	logon_object *plogon = nullptr; /* plogon is a protected member */
-	DOUBLE_LIST bp_list{};
+	std::list<point_node> bp_list;
 	BOOL b_read = false;
 };
-using ftstream_producer = FTSTREAM_PRODUCER;
+using FTSTREAM_PRODUCER = fxstream_producer;
+using ftstream_producer = fxstream_producer;

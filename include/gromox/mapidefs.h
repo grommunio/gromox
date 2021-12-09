@@ -858,29 +858,35 @@ enum res_type {
 };
 
 enum {
-	frightsReadAny              = 1U << 0,
-	frightsCreate               = 1U << 1,
-	frightsGromoxSendAs         = 1U << 2,
-	frightsEditOwned            = 1U << 3,
-	frightsDeleteOwned          = 1U << 4,
-	frightsEditAny              = 1U << 5,
-	frightsDeleteAny            = 1U << 6,
-	frightsCreateSubfolder      = 1U << 7,
-	frightsOwner                = 1U << 8,
-	frightsContact              = 1U << 9,
-	frightsVisible              = 1U << 10,
-	frightsFreeBusySimple       = 1U << 11, /* cf. IExchangeModifyTable */
-	frightsFreeBusyDetailed     = 1U << 12, /* cf. IExchangeModifyTable */
-	frightsGromoxStoreOwner     = 1U << 13,
+	/* right bits */
+	frightsReadAny              = 1U << 0, /* 0x001 */
+	frightsCreate               = 1U << 1, /* 0x002 */
+	frightsGromoxSendAs         = 1U << 2, /* 0x004 */
+	frightsEditOwned            = 1U << 3, /* 0x008 */
+	frightsDeleteOwned          = 1U << 4, /* 0x010 */
+	frightsEditAny              = 1U << 5, /* 0x020 */
+	frightsDeleteAny            = 1U << 6, /* 0x040 */
+	frightsCreateSubfolder      = 1U << 7, /* 0x080 */
+	frightsOwner                = 1U << 8, /* 0x100, "all of the above 8" (i.e. redundant flag?) */
+	frightsContact              = 1U << 9, /* 0x200 */
+	frightsVisible              = 1U << 10, /* 0x400 */
+	frightsFreeBusySimple       = 1U << 11, /* 0x800, cf. IExchangeModifyTable */
+	frightsFreeBusyDetailed     = 1U << 12, /* 0x1000, cf. IExchangeModifyTable */
+	frightsGromoxStoreOwner     = 1U << 13, /* 0x2000 */
 
+	/* right sets as per edkmdb */
 	rightsNone = 0,
-	rightsGromox7 = frightsReadAny | frightsCreate | frightsEditAny |
-	                frightsDeleteAny | frightsCreateSubfolder |
-	                frightsOwner | frightsVisible,
-	/* as per edkmdb */
+	rightsReadOnly = frightsReadAny,
+	rightsReadWrite = frightsReadAny | frightsEditAny,
+	/* (0x5fb/1531) */
 	rightsAll = frightsReadAny | frightsCreate | frightsEditOwned |
 	            frightsDeleteOwned | frightsEditAny | frightsDeleteAny |
 	            frightsCreateSubfolder | frightsOwner | frightsVisible,
+
+	/* a set that's often used in code (0x5e3/1507) */
+	rightsGromox7 = frightsReadAny | frightsCreate | frightsEditAny |
+	                frightsDeleteAny | frightsCreateSubfolder |
+	                frightsOwner | frightsVisible,
 };
 
 enum { /* ROWENTRY::ulRowFlags bits */

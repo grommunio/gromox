@@ -35,7 +35,7 @@ static void *htls_thrwork(void *);
 static void *htls_thrworkssl(void *);
 
 static int g_mss_size;
-static gromox::atomic_bool g_stop_accept{false};
+static gromox::atomic_bool g_stop_accept;
 static pthread_t g_thr_id;
 static int g_listener_sock;
 static uint16_t g_listener_port, g_listener_ssl_port;

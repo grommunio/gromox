@@ -86,7 +86,7 @@ static BOOL g_wal;
 static BOOL g_async;
 static size_t g_table_size; /* hash table size */
 static int g_threads_num;
-static gromox::atomic_bool g_notify_stop{false}; /* stop signal for scaning thread */
+static gromox::atomic_bool g_notify_stop; /* stop signal for scaning thread */
 static pthread_t g_scan_tid;
 static uint64_t g_mmap_size;
 static int g_cache_interval;	/* maximum living interval in table */

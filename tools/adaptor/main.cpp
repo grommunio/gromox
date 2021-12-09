@@ -24,7 +24,7 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-static gromox::atomic_bool g_notify_stop{false}, g_hup_signalled{false};
+static gromox::atomic_bool g_notify_stop, g_hup_signalled;
 static char *opt_config_file;
 static unsigned int opt_show_version;
 

@@ -9,7 +9,7 @@ struct logon_object;
 struct LOGMAP;
 struct table_object {
 	protected:
-	table_object() = default;
+	table_object();
 	NOMOVE(table_object)
 
 	public:

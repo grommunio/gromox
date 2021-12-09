@@ -86,7 +86,7 @@ struct ab_sort_item {
 
 static size_t g_base_size;
 static int g_file_blocks, g_ab_cache_interval;
-static gromox::atomic_bool g_notify_stop{false};
+static gromox::atomic_bool g_notify_stop;
 static pthread_t g_scan_id;
 static char g_nsp_org_name[256];
 static std::unordered_map<int, AB_BASE> g_base_hash;

@@ -12,7 +12,7 @@ struct INT_HASH_TABLE;
 
 struct logon_object {
 	protected:
-	logon_object() = default;
+	logon_object();
 	NOMOVE(logon_object);
 
 	public:

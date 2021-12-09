@@ -56,7 +56,7 @@ struct CONSOLE_NODE {
 }
 
 extern gromox::atomic_bool g_notify_stop;
-static gromox::atomic_bool g_terminate{false};
+static gromox::atomic_bool g_terminate;
 static char g_listen_ip[40];
 static uint16_t g_listen_port;
 static pthread_t g_listening_tid;
