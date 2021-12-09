@@ -42,6 +42,7 @@ enum ec_error_t {
 	ecRejected = 0x000007EE,
 	ecWarnWithErrors = 0x00040380, /* MAPI_W_ERRORS_RETURNED */
 	SYNC_W_CLIENT_CHANGE_NEWER = 0x00040821,
+	// ecInterfaceNotSupported = 0x80004002, /* E_NOINTERFACE, MAPI_E_INTERFACE_NOT_SUPPORTED */
 	ecError = 0x80004005, /* MAPI_E_CALL_FAILED */
 	STG_E_ACCESSDENIED = 0x80030005, /* STG := "storage" */
 	StreamSeekError = 0x80030019,
