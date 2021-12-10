@@ -761,8 +761,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (pitem->flag_bits & FLAG_LOADED) {
-		mem_file_seek(&pitem->f_digest,
-			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		pitem->f_digest.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		auto len = pitem->f_digest.read(buff, arsizeof(buff));
 		if (MEM_END_OF_FILE == len) {
 			return;
@@ -1823,8 +1822,7 @@ int imap_cmd_parser_create(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 		temp_name1[i] = '\0';
 		b_found = FALSE;
-		mem_file_seek(&temp_file, MEM_FILE_READ_PTR,
-		              0, MEM_FILE_SEEK_BEGIN);
+		temp_file.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (temp_file.readline(temp_folder,
 		       arsizeof(temp_folder)) != MEM_END_OF_FILE) {
 			if (0 == strcmp(temp_folder, temp_name1)) {
@@ -2087,7 +2085,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		dir_tree_init(&temp_tree, imap_parser_get_dpool());
 		dir_tree_retrieve(&temp_tree, &temp_file);
 		len = 0;
-		mem_file_seek(&temp_file, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		temp_file.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (temp_file.readline(temp_name, arsizeof(temp_name)) != MEM_END_OF_FILE) {
 			if (!imap_cmd_parser_wildcard_match(temp_name, search_pattern))
 				continue;
@@ -2232,7 +2230,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			}
 		}
 	}
-	mem_file_seek(&temp_file, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	temp_file.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (temp_file.readline(temp_name, arsizeof(temp_name)) != MEM_END_OF_FILE) {
 		if (!imap_cmd_parser_wildcard_match(temp_name, search_pattern))
 			continue;

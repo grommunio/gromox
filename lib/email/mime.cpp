@@ -555,8 +555,7 @@ BOOL mime_enum_field(MIME *pmime, MIME_FIELD_ENUM enum_func, void *pparam)
 	if (FALSE == enum_func("Content-Type", pmime->content_type, pparam)) {
 		return FALSE;
 	}
-	mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, 0, 
-		MEM_FILE_SEEK_BEGIN);
+	pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (pmime->f_other_fields.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		pmime->f_other_fields.read(tmp_tag, tag_len);
 		tmp_tag[tag_len] = '\0';
@@ -582,8 +581,7 @@ static BOOL mime_get_content_type_field(MIME *pmime, char *value, int length)
 		return FALSE;
 	}
 	memcpy(value, pmime->content_type, offset);
-	mem_file_seek(&pmime->f_type_params, MEM_FILE_READ_PTR, 0, 
-		MEM_FILE_SEEK_BEGIN);
+	pmime->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (pmime->f_type_params.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		/* content-type: xxxxx"; "yyyyy */
 		if (offset + 4 + tag_len >= length) {
@@ -636,8 +634,7 @@ BOOL mime_get_field(MIME *pmime, const char *tag, char *value, int length)
 	if (0 == strcasecmp(tag, "Content-Type")) {
 		return mime_get_content_type_field(pmime, value, length);
 	}
-	mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, 0, 
-		MEM_FILE_SEEK_BEGIN);
+	pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (pmime->f_other_fields.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		pmime->f_other_fields.read(tmp_buff, tag_len);
 		tmp_buff[tag_len] = '\0';
@@ -648,8 +645,7 @@ BOOL mime_get_field(MIME *pmime, const char *tag, char *value, int length)
 			value[length] = '\0';
 			return TRUE;
 		} 
-		mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR,
-			val_len, MEM_FILE_SEEK_CUR);
+		pmime->f_other_fields.seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
 	}
 	return FALSE;
 }
@@ -678,8 +674,7 @@ int mime_get_field_num(MIME *pmime, const char *tag)
 		return 1;
 	}
 	i = 0;
-	mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, 0, 
-		MEM_FILE_SEEK_BEGIN);
+	pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (pmime->f_other_fields.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		pmime->f_other_fields.read(tmp_buff, tag_len);
 		tmp_buff[tag_len] = '\0';
@@ -687,8 +682,7 @@ int mime_get_field_num(MIME *pmime, const char *tag)
 		if (0 == strcasecmp(tag, tmp_buff)) {
 			i ++;
 		}
-		mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR,
-			val_len, MEM_FILE_SEEK_CUR);
+		pmime->f_other_fields.seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
 	}
 	return i;
 		
@@ -731,8 +725,7 @@ BOOL mime_search_field(MIME *pmime, const char *tag, int order, char *value,
 		}
 	}
 	i = -1;
-	mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, 0, 
-		MEM_FILE_SEEK_BEGIN);
+	pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (pmime->f_other_fields.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		pmime->f_other_fields.read(tmp_buff, tag_len);
 		tmp_buff[tag_len] = '\0';
@@ -786,8 +779,7 @@ BOOL mime_set_field(MIME *pmime, const char *tag, const char *value)
 		}
 		return TRUE;
 	}
-	mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, 0,
-		MEM_FILE_SEEK_BEGIN);
+	pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	mark = -1;
 	while (pmime->f_other_fields.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		mark ++;
@@ -798,8 +790,7 @@ BOOL mime_set_field(MIME *pmime, const char *tag, const char *value)
 			break;
 		} 
 		pmime->f_other_fields.read(&val_len, sizeof(uint32_t));
-		mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, val_len,
-			MEM_FILE_SEEK_CUR);
+		pmime->f_other_fields.seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
 	}
 	if (FALSE == found_tag){
 		tag_len = strlen(tag);
@@ -810,8 +801,7 @@ BOOL mime_set_field(MIME *pmime, const char *tag, const char *value)
 		pmime->f_other_fields.write(value, val_len);
 	} else {
 		mem_file_init(&file_tmp, pmime->f_other_fields.allocator);
-		mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, 0, 
-			MEM_FILE_SEEK_BEGIN);
+		pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		i = 0;
 		while (pmime->f_other_fields.read(&tag_len,
 		       sizeof(uint32_t)) != MEM_END_OF_FILE) {
@@ -896,16 +886,14 @@ BOOL mime_remove_field(MIME *pmime, const char *tag)
 		return FALSE;
 	}
 	mem_file_init(&file_tmp, pmime->f_other_fields.allocator);
-	mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, 0,
-		MEM_FILE_SEEK_BEGIN);
+	pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (pmime->f_other_fields.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		pmime->f_other_fields.read(tmp_buff, tag_len);
 		tmp_buff[tag_len] = '\0';
 		if (0 == strcasecmp(tag, tmp_buff)) {
 			found_tag = TRUE;
 			pmime->f_other_fields.read(&val_len, sizeof(uint32_t));
-			mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, val_len,
-				MEM_FILE_SEEK_CUR);
+			pmime->f_other_fields.seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
 		} else {
 			file_tmp.write(&tag_len, sizeof(uint32_t));
 			file_tmp.write(tmp_buff, tag_len);
@@ -943,8 +931,7 @@ BOOL mime_get_content_param(MIME *pmime, const char *tag, char *value,
 		return FALSE;
 	}
 #endif
-	mem_file_seek(&pmime->f_type_params, MEM_FILE_READ_PTR, 0, 
-		MEM_FILE_SEEK_BEGIN);
+	pmime->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (pmime->f_type_params.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		pmime->f_type_params.read(tmp_buff, tag_len);
 		tmp_buff[tag_len] = '\0';
@@ -1000,8 +987,7 @@ BOOL mime_set_content_param(MIME *pmime, const char *tag, const char *value)
 			pmime->boundary_len = boundary_len;
 		}
 	}
-	mem_file_seek(&pmime->f_type_params, MEM_FILE_READ_PTR, 0, 
-		MEM_FILE_SEEK_BEGIN);
+	pmime->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	mark = -1;
 	while (pmime->f_type_params.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		mark ++;
@@ -1023,8 +1009,7 @@ BOOL mime_set_content_param(MIME *pmime, const char *tag, const char *value)
 		pmime->f_type_params.write(value, val_len);
 	} else {
 		mem_file_init(&file_tmp, pmime->f_type_params.allocator);
-		mem_file_seek(&pmime->f_type_params, MEM_FILE_READ_PTR, 0, 
-			MEM_FILE_SEEK_BEGIN);
+		pmime->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		i = 0;
 		while (pmime->f_type_params.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 			pmime->f_type_params.read(tmp_buff, tag_len);
@@ -1090,8 +1075,7 @@ BOOL mime_serialize(MIME *pmime, STREAM *pstream)
 			pstream->write("\r\n", 2);
 		}
 	} else {	
-		mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, 0, 
-			MEM_FILE_SEEK_BEGIN);
+		pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (pmime->f_other_fields.read(&tag_len,
 		       sizeof(uint32_t)) != MEM_END_OF_FILE) {
 			/* xxxxx: yyyyy */
@@ -1110,8 +1094,7 @@ BOOL mime_serialize(MIME *pmime, STREAM *pstream)
 		len = strlen(pmime->content_type);
 		pstream->write(pmime->content_type, len);
 		/* Content-Type: xxxxx;\r\n\tyyyyy=zzzzz */
-		mem_file_seek(&pmime->f_type_params, MEM_FILE_READ_PTR, 0, 
-			MEM_FILE_SEEK_BEGIN);
+		pmime->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (pmime->f_type_params.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 			/* content-type: xxxxx"; \r\n\t"yyyyy */
 			pstream->write(";\r\n\t", 4);
@@ -1298,8 +1281,7 @@ BOOL mime_read_head(MIME *pmime, char *out_buff, size_t *plength)
 		return TRUE;
 	}
 	offset = 0;
-	mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, 0, 
-		MEM_FILE_SEEK_BEGIN);
+	pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (pmime->f_other_fields.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		/* xxxxx: yyyyy */
 		pmime->f_other_fields.read(tmp_buff, tag_len);
@@ -1325,8 +1307,7 @@ BOOL mime_read_head(MIME *pmime, char *out_buff, size_t *plength)
 	memcpy(tmp_buff + len, pmime->content_type, val_len);
 	len += val_len;
 	/* Content-Type: xxxxx;\r\n\tyyyyy=zzzzz */
-	mem_file_seek(&pmime->f_type_params, MEM_FILE_READ_PTR, 0, 
-		MEM_FILE_SEEK_BEGIN);
+	pmime->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (pmime->f_type_params.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		/* content-type: xxxxx"; \r\n\t"yyyyy */
 		if (len > MIME_FIELD_LEN + MIME_NAME_LEN - tag_len) {
@@ -1581,8 +1562,7 @@ BOOL mime_to_file(MIME *pmime, int fd)
 			}
 		}
 	} else {	
-		mem_file_seek(&pmime->f_other_fields,
-			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (pmime->f_other_fields.read(&tag_len,
 		       sizeof(uint32_t)) != MEM_END_OF_FILE) {
 			/* xxxxx: yyyyy */
@@ -1607,8 +1587,7 @@ BOOL mime_to_file(MIME *pmime, int fd)
 		memcpy(tmp_buff + len, pmime->content_type, val_len);
 		len += val_len;
 		/* Content-Type: xxxxx;\r\n\tyyyyy=zzzzz */
-		mem_file_seek(&pmime->f_type_params, MEM_FILE_READ_PTR, 0, 
-			MEM_FILE_SEEK_BEGIN);
+		pmime->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (pmime->f_type_params.read(&tag_len,
 		       sizeof(uint32_t)) != MEM_END_OF_FILE) {
 			/* content-type: xxxxx"; \r\n\t"yyyyy */
@@ -1779,8 +1758,7 @@ BOOL mime_to_ssl(MIME *pmime, SSL *ssl)
 			}
 		}
 	} else {	
-		mem_file_seek(&pmime->f_other_fields,
-			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (pmime->f_other_fields.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 			/* xxxxx: yyyyy */
 			pmime->f_other_fields.read(tmp_buff, tag_len);
@@ -1804,8 +1782,7 @@ BOOL mime_to_ssl(MIME *pmime, SSL *ssl)
 		memcpy(tmp_buff + len, pmime->content_type, val_len);
 		len += val_len;
 		/* Content-Type: xxxxx;\r\n\tyyyyy=zzzzz */
-		mem_file_seek(&pmime->f_type_params, MEM_FILE_READ_PTR, 0, 
-			MEM_FILE_SEEK_BEGIN);
+		pmime->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (pmime->f_type_params.read(&tag_len,
 		       sizeof(uint32_t)) != MEM_END_OF_FILE) {
 			/* content-type: xxxxx"; \r\n\t"yyyyy */
@@ -1964,8 +1941,7 @@ BOOL mime_check_dot(MIME *pmime)
 			return TRUE;
 		}
 	} else {	
-		mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, 0, 
-			MEM_FILE_SEEK_BEGIN);
+		pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (pmime->f_other_fields.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 			/* xxxxx: yyyyy */
 			pmime->f_other_fields.read(tmp_buff, tag_len);
@@ -1973,8 +1949,7 @@ BOOL mime_check_dot(MIME *pmime)
 				return TRUE;
 			}
 			pmime->f_other_fields.read(&val_len, sizeof(uint32_t));
-			mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, val_len,
-                MEM_FILE_SEEK_CUR);
+			pmime->f_other_fields.seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
 		}
 		
 	}
@@ -2052,16 +2027,13 @@ ssize_t mime_get_length(MIME *pmime)
 		/* the original buffer contains \r\n */
 		mime_len += pmime->head_length + 2;
 	} else {	
-		mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, 0, 
-			MEM_FILE_SEEK_BEGIN);
+		pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (pmime->f_other_fields.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 			/* xxxxx: yyyyy */
-			mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, tag_len,
-				MEM_FILE_SEEK_CUR);
+			pmime->f_other_fields.seek(MEM_FILE_READ_PTR, tag_len, MEM_FILE_SEEK_CUR);
 			mime_len += tag_len + 2;
 			pmime->f_other_fields.read(&val_len, sizeof(uint32_t));
-			mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, val_len,
-				MEM_FILE_SEEK_CUR);
+			pmime->f_other_fields.seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
 			mime_len += val_len + 2;
 		}
 
@@ -2069,20 +2041,17 @@ ssize_t mime_get_length(MIME *pmime)
 		mime_len += 14;
 		mime_len += strlen(pmime->content_type);
 		/* Content-Type: xxxxx;\r\n\tyyyyy=zzzzz */
-		mem_file_seek(&pmime->f_type_params, MEM_FILE_READ_PTR, 0, 
-			MEM_FILE_SEEK_BEGIN);
+		pmime->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (pmime->f_type_params.read(&tag_len,
 		       sizeof(uint32_t)) != MEM_END_OF_FILE) {
 			/* content-type: xxxxx"; \r\n\t"yyyyy */
 			mime_len += tag_len + 4;
-			mem_file_seek(&pmime->f_type_params, MEM_FILE_READ_PTR, tag_len,
-				MEM_FILE_SEEK_CUR);
+			pmime->f_type_params.seek(MEM_FILE_READ_PTR, tag_len, MEM_FILE_SEEK_CUR);
 			pmime->f_type_params.read(&val_len, sizeof(uint32_t));
 			/* content_type: xxxxx; \r\n\tyyyyy=zzz */
 			if (0 != val_len) {
 				mime_len += val_len + 1;
-				mem_file_seek(&pmime->f_type_params, MEM_FILE_READ_PTR, val_len,
-					MEM_FILE_SEEK_CUR);
+				pmime->f_type_params.seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
 			}
 		}
 		/* \r\n for separate head and content */
@@ -2271,16 +2240,13 @@ ssize_t mime_get_mimes_digest(MIME *pmime, const char *id_string,
 		/* the original buffer contains \r\n */
 		*poffset += pmime->head_length + 2;
 	} else {	
-		mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, 0, 
-			MEM_FILE_SEEK_BEGIN);
+		pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (pmime->f_other_fields.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 			/* xxxxx: yyyyy */
-			mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, tag_len,
-				MEM_FILE_SEEK_CUR);
+			pmime->f_other_fields.seek(MEM_FILE_READ_PTR, tag_len, MEM_FILE_SEEK_CUR);
 			*poffset += tag_len + 2;
 			pmime->f_other_fields.read(&val_len, sizeof(uint32_t));
-			mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, val_len,
-				MEM_FILE_SEEK_CUR);
+			pmime->f_other_fields.seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
 			*poffset += val_len + 2;
 		}
 
@@ -2288,20 +2254,17 @@ ssize_t mime_get_mimes_digest(MIME *pmime, const char *id_string,
 		*poffset += 14;
 		*poffset += strlen(pmime->content_type);
 		/* Content-Type: xxxxx;\r\n\tyyyyy=zzzzz */
-		mem_file_seek(&pmime->f_type_params, MEM_FILE_READ_PTR, 0, 
-			MEM_FILE_SEEK_BEGIN);
+		pmime->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (pmime->f_type_params.read(&tag_len,
 		       sizeof(uint32_t)) != MEM_END_OF_FILE) {
 			/* content-type: xxxxx"; \r\n\t"yyyyy */
 			*poffset += tag_len + 4;
-			mem_file_seek(&pmime->f_type_params, MEM_FILE_READ_PTR, tag_len,
-				MEM_FILE_SEEK_CUR);
+			pmime->f_type_params.seek(MEM_FILE_READ_PTR, tag_len, MEM_FILE_SEEK_CUR);
 			pmime->f_type_params.read(&val_len, sizeof(uint32_t));
 			/* content_type: xxxxx; \r\n\tyyyyy=zzz */
 			if (0 != val_len) {
 				*poffset += val_len + 1;
-				mem_file_seek(&pmime->f_type_params, MEM_FILE_READ_PTR, val_len,
-					MEM_FILE_SEEK_CUR);
+				pmime->f_type_params.seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
 			}
 		}
 		/* \r\n for separate head and content */
@@ -2535,17 +2498,14 @@ ssize_t mime_get_structure_digest(MIME *pmime, const char *id_string,
 		/* the original buffer contains \r\n */
 		*poffset += pmime->head_length + 2;
 	} else {	
-		mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, 0, 
-			MEM_FILE_SEEK_BEGIN);
+		pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (pmime->f_other_fields.read(&tag_len,
 		       sizeof(uint32_t)) != MEM_END_OF_FILE) {
 			/* xxxxx: yyyyy */
-			mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, tag_len,
-				MEM_FILE_SEEK_CUR);
+			pmime->f_other_fields.seek(MEM_FILE_READ_PTR, tag_len, MEM_FILE_SEEK_CUR);
 			*poffset += tag_len + 2;
 			pmime->f_other_fields.read(&val_len, sizeof(uint32_t));
-			mem_file_seek(&pmime->f_other_fields, MEM_FILE_READ_PTR, val_len,
-				MEM_FILE_SEEK_CUR);
+			pmime->f_other_fields.seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
 			*poffset += val_len + 2;
 		}
 
@@ -2553,20 +2513,17 @@ ssize_t mime_get_structure_digest(MIME *pmime, const char *id_string,
 		*poffset += 14;
 		*poffset += strlen(pmime->content_type);
 		/* Content-Type: xxxxx;\r\n\tyyyyy=zzzzz */
-		mem_file_seek(&pmime->f_type_params, MEM_FILE_READ_PTR, 0, 
-			MEM_FILE_SEEK_BEGIN);
+		pmime->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (pmime->f_type_params.read(&tag_len,
 		       sizeof(uint32_t)) != MEM_END_OF_FILE) {
 			/* content-type: xxxxx"; \r\n\t"yyyyy */
 			*poffset += tag_len + 4;
-			mem_file_seek(&pmime->f_type_params, MEM_FILE_READ_PTR, tag_len,
-				MEM_FILE_SEEK_CUR);
+			pmime->f_type_params.seek(MEM_FILE_READ_PTR, tag_len, MEM_FILE_SEEK_CUR);
 			pmime->f_type_params.read(&val_len, sizeof(uint32_t));
 			/* content_type: xxxxx; \r\n\tyyyyy=zzz */
 			if (0 != val_len) {
 				*poffset += val_len + 1;
-				mem_file_seek(&pmime->f_type_params, MEM_FILE_READ_PTR, val_len,
-					MEM_FILE_SEEK_CUR);
+				pmime->f_type_params.seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
 			}
 		}
 		/* \r\n for separate head and content */

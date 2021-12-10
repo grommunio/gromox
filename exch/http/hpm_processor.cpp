@@ -171,28 +171,17 @@ static GENERIC_CONNECTION *hpm_processor_get_connection(unsigned int context_id)
 static HTTP_REQUEST *hpm_processor_get_request(unsigned int context_id)
 {
 	auto phttp = static_cast<HTTP_CONTEXT *>(http_parser_get_contexts_list()[context_id]);
-	mem_file_seek(&phttp->request.f_request_uri,
-		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	mem_file_seek(&phttp->request.f_host,
-		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	mem_file_seek(&phttp->request.f_user_agent,
-		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	mem_file_seek(&phttp->request.f_accept,
-		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	mem_file_seek(&phttp->request.f_accept_language,
-		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	mem_file_seek(&phttp->request.f_accept_encoding,
-		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	mem_file_seek(&phttp->request.f_content_type,
-		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	mem_file_seek(&phttp->request.f_content_length,
-		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	mem_file_seek(&phttp->request.f_transfer_encoding,
-		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	mem_file_seek(&phttp->request.f_cookie,
-		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-	mem_file_seek(&phttp->request.f_others,
-		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	phttp->request.f_request_uri.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	phttp->request.f_host.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	phttp->request.f_user_agent.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	phttp->request.f_accept.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	phttp->request.f_accept_language.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	phttp->request.f_accept_encoding.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	phttp->request.f_content_type.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	phttp->request.f_content_length.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	phttp->request.f_transfer_encoding.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	phttp->request.f_cookie.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	phttp->request.f_others.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	return &phttp->request;
 }
 
@@ -479,8 +468,7 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 						"content-length is too long for hpm_processor");
 					return FALSE;
 				}
-				mem_file_seek(&phttp->request.f_content_length,
-					MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+				phttp->request.f_content_length.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 				phttp->request.f_content_length.read(tmp_buff, tmp_len);
 				tmp_buff[tmp_len] = '\0';
 				content_length = strtoull(tmp_buff, nullptr, 0);
@@ -495,8 +483,7 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 			tmp_len = mem_file_get_total_length(
 				&phttp->request.f_transfer_encoding);
 			if (tmp_len > 0 && static_cast<size_t>(tmp_len) < GX_ARRAY_SIZE(tmp_buff)) {
-				mem_file_seek(&phttp->request.f_transfer_encoding,
-						MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+				phttp->request.f_transfer_encoding.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 				phttp->request.f_transfer_encoding.read(tmp_buff, tmp_len);
 				tmp_buff[tmp_len] = '\0';
 				if (0 == strcasecmp(tmp_buff, "chunked")) {

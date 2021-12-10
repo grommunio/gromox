@@ -322,7 +322,7 @@ static BOOL http_parser_request_head(MEM_FILE *pfile_others,
 	int name_len;
 	char name_buff[64];
 	
-	mem_file_seek(pfile_others, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	pfile_others->seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	name_len = strlen(field_name);
 	if (name_len >= 64) {
 		return FALSE;
@@ -340,12 +340,10 @@ static BOOL http_parser_request_head(MEM_FILE *pfile_others,
 				 return TRUE;
 			 }
 		} else {
-			mem_file_seek(pfile_others, MEM_FILE_READ_PTR,
-							tmp_len, MEM_FILE_SEEK_CUR);
+			pfile_others->seek(MEM_FILE_READ_PTR, tmp_len, MEM_FILE_SEEK_CUR);
 		}
 		pfile_others->read(&tmp_len, sizeof(uint32_t));
-		mem_file_seek(pfile_others, MEM_FILE_READ_PTR,
-						tmp_len, MEM_FILE_SEEK_CUR);
+		pfile_others->seek(MEM_FILE_READ_PTR, tmp_len, MEM_FILE_SEEK_CUR);
 	}
 	return FALSE;
 }

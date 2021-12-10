@@ -108,7 +108,7 @@ static void rd_log(const MESSAGE_CONTEXT *ctx, unsigned int level,
 
 	char rcpt[UADDR_SIZE];
 	bool second_rcpt = false;
-	mem_file_seek(&ctrl->f_rcpt_to, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	ctrl->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (ctrl->f_rcpt_to.readline(rcpt, arsizeof(rcpt)) != MEM_END_OF_FILE) {
 		if (second_rcpt)
 			outbuf += ',';
@@ -333,7 +333,7 @@ static int rd_starttls(rd_connection &&conn, MESSAGE_CONTEXT *ctx,
 
 static int rd_send_mail(MESSAGE_CONTEXT *ctx, std::string &response)
 {
-	mem_file_seek(&ctx->pcontrol->f_rcpt_to, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	ctx->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	rd_connection conn;
 	conn.fd = gx_inet_connect(g_mx_host.c_str(), g_mx_port, 0);
 	if (conn.fd < 0) {
@@ -363,7 +363,7 @@ static BOOL remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 	l_ctx.pmail    = ctx->pmail;
 
 	std::string errstr;
-	mem_file_seek(&l_ctrl.f_rcpt_to, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	l_ctrl.f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	int ret;
 	try {
 		ret = rd_send_mail(ctx, errstr);
@@ -378,7 +378,7 @@ static BOOL remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 	fprintf(stderr, "[remote_delivery]: Local code: %s. "
 	        "SMTP reason string: %s. Recipient(s) affected:\n",
 	        strerror(ret), errstr.c_str());
-	mem_file_seek(&l_ctrl.f_rcpt_to, MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	l_ctrl.f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (l_ctrl.f_rcpt_to.readline(rcpt, arsizeof(rcpt)) != MEM_END_OF_FILE)
 		fprintf(stderr, "[remote_delivery]:\t%s\n", rcpt);
 	return TRUE;

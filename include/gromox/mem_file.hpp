@@ -23,6 +23,7 @@ enum {
 struct MEM_FILE {
 	size_t read(void *, size_t);
 	size_t readline(char *, size_t);
+	ssize_t seek(int type, ssize_t offset, int opt);
 	size_t write(const void *, size_t);
 	size_t writeline(const char *);
 
@@ -38,7 +39,6 @@ struct MEM_FILE {
 };
     
 void mem_file_init(MEM_FILE *pfile, LIB_BUFFER *palloc);
-ssize_t mem_file_seek(MEM_FILE *pfile, int type, ssize_t offset, int opt);
 size_t mem_file_get_total_length(MEM_FILE *pfile);
 void mem_file_clear(MEM_FILE *pfile);
 void mem_file_free(MEM_FILE *pfile);

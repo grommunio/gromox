@@ -442,8 +442,7 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 			std::unique_lock ct_hold(g_count_lock);
 			phook->count ++;
 			ct_hold.unlock();
-			mem_file_seek(&pcontext->pcontrol->f_rcpt_to, MEM_FILE_READ_PTR, 0,
-				MEM_FILE_SEEK_BEGIN);
+			pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 			hook_result = phook->hook_addr(pcontext);
 			ct_hold.lock();
 			phook->count --;
@@ -459,16 +458,14 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 	}
 	if (FALSE == hook_result) {
 		if (pthr_data->last_thrower != g_local_hook) {
-			mem_file_seek(&pcontext->pcontrol->f_rcpt_to, MEM_FILE_READ_PTR, 0,
-				MEM_FILE_SEEK_BEGIN);
+			pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 			pthr_data->last_hook = g_local_hook;
 			if (TRUE == g_local_hook(pcontext)) {
 				return TRUE;	
 			}
 		}
 		if (pthr_data->last_thrower != g_remote_hook) {
-			mem_file_seek(&pcontext->pcontrol->f_rcpt_to, MEM_FILE_READ_PTR, 0,
-				MEM_FILE_SEEK_BEGIN);
+			pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 			pthr_data->last_hook = g_remote_hook;
 			if (g_remote_hook(pcontext))
 				return TRUE;
@@ -1245,8 +1242,7 @@ static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level,
 	log_buf[sizeof(log_buf) - 1] = '\0';
 
 	/* maximum record 8 rcpt to address */
-	mem_file_seek(&pcontext->pcontrol->f_rcpt_to, MEM_FILE_READ_PTR, 0,
-				  MEM_FILE_SEEK_BEGIN);
+	pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	for (i=0; i<8; i++) {
 		size_read = pcontext->pcontrol->f_rcpt_to.readline(rcpt_buff + rcpt_len, 256);
 		if (size_read == MEM_END_OF_FILE) {

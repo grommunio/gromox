@@ -133,8 +133,7 @@ static void alias_log_info(MESSAGE_CONTEXT *pcontext, int level,
 	log_buf[sizeof(log_buf) - 1] = '\0';
 
 	/* maximum record 8 rcpt to address */
-	mem_file_seek(&pcontext->pcontrol->f_rcpt_to, MEM_FILE_READ_PTR, 0,
-		MEM_FILE_SEEK_BEGIN);
+	pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	for (i=0; i<8; i++) {
 		size_read = pcontext->pcontrol->f_rcpt_to.readline(rcpt_buff + rcpt_len, UADDR_SIZE);
 		if (size_read == MEM_END_OF_FILE) {

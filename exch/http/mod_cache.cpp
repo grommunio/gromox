@@ -338,8 +338,7 @@ static BOOL mod_cache_get_others_field(MEM_FILE *pf_others,
 	char tmp_buff[256];
 	uint32_t tag_len, val_len;
 	
-	mem_file_seek(pf_others, MEM_FILE_READ_PTR,
-		0, MEM_FILE_SEEK_BEGIN);
+	pf_others->seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (pf_others->read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		if (tag_len >= GX_ARRAY_SIZE(tmp_buff))
 			return FALSE;
@@ -352,8 +351,7 @@ static BOOL mod_cache_get_others_field(MEM_FILE *pf_others,
 			value[length] = '\0';
 			return TRUE;
 		}
-		mem_file_seek(pf_others, MEM_FILE_READ_PTR,
-			val_len, MEM_FILE_SEEK_CUR);
+		pf_others->seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
 	}
 	return FALSE;
 }
@@ -642,8 +640,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		if (tmp_len >= 32) {
 			return FALSE;
 		}
-		mem_file_seek(&phttp->request.f_content_length,
-			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		phttp->request.f_content_length.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		phttp->request.f_content_length.read(tmp_buff, tmp_len);
 		tmp_buff[tmp_len] = '\0';
 		if (strtoll(tmp_buff, nullptr, 0) != 0)
@@ -658,8 +655,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	if (0 == tmp_len) {
 		gx_strlcpy(domain, phttp->connection.server_ip, GX_ARRAY_SIZE(domain));
 	} else {
-		mem_file_seek(&phttp->request.f_host,
-			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		phttp->request.f_host.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		phttp->request.f_host.read(domain, tmp_len);
 		domain[tmp_len] = '\0';
 	}
@@ -678,8 +674,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 			"request uri is too long for mod_cache");
 		return FALSE;
 	}
-	mem_file_seek(&phttp->request.f_request_uri,
-		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	phttp->request.f_request_uri.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	phttp->request.f_request_uri.read(tmp_buff, tmp_len);
 	tmp_buff[tmp_len] = '\0';
 	if (FALSE == parse_uri(tmp_buff, request_uri)) {

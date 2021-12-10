@@ -354,8 +354,7 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 	if (fwrite(pentity->penvelope->from, 1, utmp_len, fp) != utmp_len)
 		goto REMOVE_MESS;
 	/* write envelope rcpts */
-	mem_file_seek(&pentity->penvelope->f_rcpt_to, MEM_FILE_READ_PTR, 0,
-		MEM_FILE_SEEK_BEGIN);
+	pentity->penvelope->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while ((utmp_len = pentity->penvelope->f_rcpt_to.readline(tmp_buff, 256)) != MEM_END_OF_FILE) {
 		tmp_buff[utmp_len] = 0;
 		++utmp_len;

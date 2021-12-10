@@ -1013,8 +1013,7 @@ void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,
 	vasprintf(&unique_tie(line_buf), format, ap);
 	va_end(ap);
 	
-	mem_file_seek(&pcontext->mail.envelope.f_rcpt_to, MEM_FILE_READ_PTR, 0,
-				  MEM_FILE_SEEK_BEGIN);
+	pcontext->mail.envelope.f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	char rcpt[UADDR_SIZE];
 	std::string all_rcpts;
 	static constexpr size_t limit = 3;

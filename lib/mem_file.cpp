@@ -287,17 +287,13 @@ size_t MEM_FILE::read(void* pbuff, size_t size)
  *	  @return
  *		  the actual size of seeking
  */
-ssize_t	mem_file_seek(MEM_FILE* pfile, int type, ssize_t offset, int opt)
+ssize_t	MEM_FILE::seek(int type, ssize_t offset, int opt)
 {
+	auto pfile = this;
 	DOUBLE_LIST_NODE *pnode;
 	ssize_t ret_val;
 	size_t blocks, end;
 
-#ifdef _DEBUG_UMTA
-	if(NULL == pfile) {
-		return 0;
-	}
-#endif
 	switch(opt) {
 	case MEM_FILE_SEEK_BEGIN:
 		if (offset < 0) {
@@ -595,7 +591,7 @@ size_t MEM_FILE::writeline(const char *pbuff)
 		if ( write("\n", 1) == 1) {
 			return length;
 		} else {
-			mem_file_seek(pfile, MEM_FILE_WRITE_PTR, MEM_FILE_SEEK_CUR, -1);
+			seek(MEM_FILE_WRITE_PTR, MEM_FILE_SEEK_CUR, -1);
 			write("\n", 1);
 			return length - 1;
 		}

@@ -351,8 +351,7 @@ static BOOL mod_fastcgi_get_others_field(MEM_FILE *pf_others,
 	char tmp_buff[256];
 	uint32_t tag_len, val_len;
 	
-	mem_file_seek(pf_others, MEM_FILE_READ_PTR,
-		0, MEM_FILE_SEEK_BEGIN);
+	pf_others->seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (pf_others->read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 		if (tag_len >= GX_ARRAY_SIZE(tmp_buff))
 			return FALSE;
@@ -365,8 +364,7 @@ static BOOL mod_fastcgi_get_others_field(MEM_FILE *pf_others,
 			value[length] = '\0';
 			return TRUE;
 		}
-		mem_file_seek(pf_others, MEM_FILE_READ_PTR,
-			val_len, MEM_FILE_SEEK_CUR);
+		pf_others->seek(MEM_FILE_READ_PTR, val_len, MEM_FILE_SEEK_CUR);
 	}
 	return FALSE;
 }
@@ -414,8 +412,7 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 	if (0 == tmp_len) {
 		gx_strlcpy(domain, phttp->connection.server_ip, GX_ARRAY_SIZE(domain));
 	} else {
-		mem_file_seek(&phttp->request.f_host,
-			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		phttp->request.f_host.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		phttp->request.f_host.read(domain, tmp_len);
 		domain[tmp_len] = '\0';
 	}
@@ -433,8 +430,7 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 			"request uri is too long for mod_fastcgi");
 		return FALSE;
 	}
-	mem_file_seek(&phttp->request.f_request_uri,
-			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	phttp->request.f_request_uri.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	phttp->request.f_request_uri.read(tmp_buff, tmp_len);
 	tmp_buff[tmp_len] = '\0';
 	if (FALSE == parse_uri(tmp_buff, request_uri)) {
@@ -486,8 +482,7 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 				"content-length is too long for mod_fastcgi");
 			return FALSE;
 		}
-		mem_file_seek(&phttp->request.f_content_length,
-			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		phttp->request.f_content_length.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		phttp->request.f_content_length.read(tmp_buff, tmp_len);
 		tmp_buff[tmp_len] = '\0';
 		content_length = strtoull(tmp_buff, nullptr, 0);
@@ -500,8 +495,7 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 	b_chunked = FALSE;
 	tmp_len = mem_file_get_total_length(&phttp->request.f_transfer_encoding);
 	if (tmp_len > 0 && tmp_len < 64) {
-		mem_file_seek(&phttp->request.f_transfer_encoding,
-				MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		phttp->request.f_transfer_encoding.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		phttp->request.f_transfer_encoding.read(tmp_buff, tmp_len);
 		tmp_buff[tmp_len] = '\0';
 		if (strcasecmp(tmp_buff, "chunked") == 0)
@@ -575,8 +569,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	if (0 == tmp_len) {
 		gx_strlcpy(domain, phttp->connection.server_ip, GX_ARRAY_SIZE(domain));
 	} else {
-		mem_file_seek(&phttp->request.f_host,
-			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		phttp->request.f_host.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		phttp->request.f_host.read(domain, tmp_len);
 		domain[tmp_len] = '\0';
 	}
@@ -605,8 +598,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 			"request uri is too long for mod_fastcgi");
 		return FALSE;
 	}
-	mem_file_seek(&phttp->request.f_request_uri,
-		MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	phttp->request.f_request_uri.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	phttp->request.f_request_uri.read(tmp_buff, tmp_len);
 	tmp_buff[tmp_len] = '\0';
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_URI", tmp_buff));
@@ -659,8 +651,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	if (0 == tmp_len) {
 		tmp_buff[0] = '\0';
 	} else {
-		mem_file_seek(&phttp->request.f_accept,
-			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		phttp->request.f_accept.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		phttp->request.f_accept.read(tmp_buff, tmp_len);
 		tmp_buff[tmp_len] = '\0';
 	}
@@ -674,8 +665,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	if (0 == tmp_len) {
 		tmp_buff[0] = '\0';
 	} else {
-		mem_file_seek(&phttp->request.f_user_agent,
-			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		phttp->request.f_user_agent.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		phttp->request.f_user_agent.read(tmp_buff, tmp_len);
 		tmp_buff[tmp_len] = '\0';
 	}
@@ -689,8 +679,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	if (0 == tmp_len) {
 		tmp_buff[0] = '\0';
 	} else {
-		mem_file_seek(&phttp->request.f_accept_language,
-			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		phttp->request.f_accept_language.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		phttp->request.f_accept_language.read(tmp_buff, tmp_len);
 		tmp_buff[tmp_len] = '\0';
 	}
@@ -704,8 +693,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	if (0 == tmp_len) {
 		tmp_buff[0] = '\0';
 	} else {
-		mem_file_seek(&phttp->request.f_accept_encoding,
-			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		phttp->request.f_accept_encoding.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		phttp->request.f_accept_encoding.read(tmp_buff, tmp_len);
 		tmp_buff[tmp_len] = '\0';
 	}
@@ -717,8 +705,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		return FALSE;
 	}
 	if (0 != tmp_len) {
-		mem_file_seek(&phttp->request.f_cookie,
-			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		phttp->request.f_cookie.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		phttp->request.f_cookie.read(tmp_buff, tmp_len);
 		tmp_buff[tmp_len] = '\0';
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "HTTP_COOKIE", tmp_buff));
@@ -732,8 +719,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	if (0 == tmp_len) {
 		tmp_buff[0] = '\0';
 	} else {
-		mem_file_seek(&phttp->request.f_content_type,
-			MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		phttp->request.f_content_type.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		phttp->request.f_content_type.read(tmp_buff, tmp_len);
 		tmp_buff[tmp_len] = '\0';
 	}

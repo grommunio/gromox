@@ -45,9 +45,9 @@ bool MhContext::loadHeaders()
 				continue;
 			}
 		} else
-			mem_file_seek(&orig.f_others, MEM_FILE_READ_PTR, tmp_len, MEM_FILE_SEEK_CUR);
+			orig.f_others.seek(MEM_FILE_READ_PTR, tmp_len, MEM_FILE_SEEK_CUR);
 		orig.f_others.read(&tmp_len, sizeof(uint32_t));
-		mem_file_seek(&orig.f_others, MEM_FILE_READ_PTR, tmp_len, MEM_FILE_SEEK_CUR);
+		orig.f_others.seek(MEM_FILE_READ_PTR, tmp_len, MEM_FILE_SEEK_CUR);
 	}
 	return true;
 }
