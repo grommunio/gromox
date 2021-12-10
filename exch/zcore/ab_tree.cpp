@@ -1618,8 +1618,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		}
 		auto bv = static_cast<BINARY *>(pvalue);
 		ab_entryid.flags = 0;
-		rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
-									ab_entryid.provider_uid);
+		memcpy(ab_entryid.provider_uid, muidEMSAB, sizeof(GUID));
 		ab_entryid.version = 1;
 		if (node_type > 0x80) {
 			ab_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;

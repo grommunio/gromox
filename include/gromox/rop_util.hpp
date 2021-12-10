@@ -47,5 +47,4 @@ extern uint64_t rop_util_current_nttime();
 GUID rop_util_binary_to_guid(const BINARY *pbin);
 void rop_util_guid_to_binary(GUID guid, BINARY *pbin);
 extern BOOL rop_util_get_common_pset(unsigned int pset_type, GUID *pguid);
-BOOL rop_util_get_provider_uid(int provider_type, uint8_t *pflat_guid);
 void rop_util_free_binary(BINARY *pbin);

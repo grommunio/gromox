@@ -242,8 +242,7 @@ static BINARY* container_object_folder_to_addressbook_entryid(
 	common_util_exmdb_locinfo_to_string(
 		type, db_id, folder_id, x500dn + 7);
 	tmp_entryid.flags = 0;
-	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
-								tmp_entryid.provider_uid);
+	memcpy(tmp_entryid.provider_uid, muidEMSAB, sizeof(muidEMSAB));
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;
 	tmp_entryid.px500dn = x500dn;
@@ -524,8 +523,7 @@ BOOL container_object_fetch_special_property(
 		}
 		auto bv = static_cast<BINARY *>(pvalue);
 		ab_entryid.flags = 0;
-		rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
-									ab_entryid.provider_uid);
+		memcpy(ab_entryid.provider_uid, muidEMSAB, sizeof(muidEMSAB));
 		ab_entryid.version = 1;
 		ab_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;
 		ab_entryid.px500dn = special_type == SPECIAL_CONTAINER_GAL ?

@@ -179,8 +179,7 @@ static BOOL tnef_username_to_oneoff(const char *username,
 	ONEOFF_ENTRYID tmp_entry;
 	
 	tmp_entry.flags = 0;
-	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF,
-							tmp_entry.provider_uid);
+	memcpy(tmp_entry.provider_uid, muidOOP, sizeof(muidOOP));
 	tmp_entry.version = 0;
 	tmp_entry.ctrl_flags = CTRL_FLAG_NORICH | CTRL_FLAG_UNICODE;
 	if (NULL != pdisplay_name) {

@@ -8,21 +8,12 @@
 
 struct STORE_ENTRYID {
 	uint32_t flags;
-	 /* 38.A1.BB.10.05.E5.10.1A.A1.BB.08.00.2B.2A.56.C2 */
-	uint8_t provider_uid[16];
+	uint8_t provider_uid[16]; /* muidStoreWrap */
 	uint8_t version;
 	uint8_t flag;
-	/* emsmdb.dll
-	   45.4D.53.4D.44.42.2E.44.4C.4C.00.00.00.00
-	*/ 
-	char dll_name[14];
+	char dll_name[14]; /* "emsmdb.dll" */
 	uint32_t wrapped_flags;
-	/* Mailbox Store object:
-		1B.55.FA.20.AA.66.11.CD.9B.C8.00.AA.00.2F.C4.5A
-	   Public folder Store object:
-		1C.83.02.10.AA.66.11.CD.9B.C8.00.AA.00.2F.C4.5A
-	*/
-	uint8_t wrapped_provider_uid[16];
+	uint8_t wrapped_provider_uid[16]; /* g_muidStorePrivate / g_muidStorePublic */
 	uint32_t wrapped_type;
 	char *pserver_name;
 	char *pmailbox_dn;
@@ -232,13 +223,6 @@ struct PROBLEM_ARRAY {
 	void transform(const uint16_t *);
 };
 
-#define PROVIDER_UID_ADDRESS_BOOK					1
-#define PROVIDER_UID_PUBLIC							2
-#define PROVIDER_UID_ONE_OFF						3
-#define PROVIDER_UID_STORE							4
-#define PROVIDER_UID_WRAPPED_PRIVATE				5
-#define PROVIDER_UID_WRAPPED_PUBLIC					6
-
 #define ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER			0x00000000
 #define ADDRESSBOOK_ENTRYID_TYPE_DLIST				0x00000001
 #define ADDRESSBOOK_ENTRYID_TYPE_BULLETIN			0x00000002
@@ -254,8 +238,7 @@ struct PROBLEM_ARRAY {
 
 struct ADDRESSBOOK_ENTRYID {
 	uint32_t flags;
-	 /* DC.A7.40.C8.C0.42.10.1A.B4.B9.08.00.2B.2F.E1.82 */
-	uint8_t provider_uid[16];
+	uint8_t provider_uid[16]; /* muidEMSAB */
 	uint32_t version; /* should be 0x00000001 */
 	uint32_t type;
 	char *px500dn;

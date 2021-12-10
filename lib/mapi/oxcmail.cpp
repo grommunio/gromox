@@ -243,7 +243,6 @@ static BOOL oxcmail_entryid_to_username(const BINARY *pbin,
 {
 	uint32_t flags;
 	EXT_PULL ext_pull;
-	uint8_t tmp_uid[16];
 	uint8_t provider_uid[16];
 	ONEOFF_ENTRYID oneoff_entry;
 	ADDRESSBOOK_ENTRYID ab_entryid;
@@ -255,8 +254,7 @@ static BOOL oxcmail_entryid_to_username(const BINARY *pbin,
 	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
 	    ext_pull.g_bytes(provider_uid, arsizeof(provider_uid)) != EXT_ERR_SUCCESS)
 		return FALSE;
-	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK, tmp_uid);
-	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
+	if (memcmp(provider_uid, muidEMSAB, sizeof(muidEMSAB)) == 0) {
 		ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
 		if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS)
 			return FALSE;
@@ -265,8 +263,7 @@ static BOOL oxcmail_entryid_to_username(const BINARY *pbin,
 		}
 		return oxcmail_essdn_to_username(ab_entryid.px500dn, username, ulen);
 	}
-	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF, tmp_uid);
-	if (0 == memcmp(tmp_uid, provider_uid, 16)) {
+	if (memcmp(provider_uid, muidOOP, sizeof(muidOOP)) == 0) {
 		ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
 		if (ext_pull.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS)
 			return FALSE;
@@ -287,8 +284,7 @@ static BOOL oxcmail_username_to_oneoff(const char *username,
 	ONEOFF_ENTRYID tmp_entry;
 	
 	tmp_entry.flags = 0;
-	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF,
-							tmp_entry.provider_uid);
+	memcpy(tmp_entry.provider_uid, muidOOP, sizeof(muidOOP));
 	tmp_entry.version = 0;
 	tmp_entry.ctrl_flags = CTRL_FLAG_NORICH | CTRL_FLAG_UNICODE;
 	if (NULL != pdisplay_name && '\0' != pdisplay_name[0]) {
@@ -318,8 +314,7 @@ static BOOL oxcmail_essdn_to_entryid(const char *pessdn, BINARY *pbin)
 	ADDRESSBOOK_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	rop_util_get_provider_uid(PROVIDER_UID_ADDRESS_BOOK,
-							tmp_entryid.provider_uid);
+	memcpy(tmp_entryid.provider_uid, muidEMSAB, sizeof(muidEMSAB));
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = deconst(pessdn);
@@ -752,8 +747,7 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 		return FALSE;
 	str_offset = 0;
 	tmp_entry.flags = 0;
-	rop_util_get_provider_uid(PROVIDER_UID_ONE_OFF,
-							tmp_entry.provider_uid);
+	memcpy(tmp_entry.provider_uid, muidOOP, sizeof(muidOOP));
 	tmp_entry.version = 0;
 	tmp_entry.pdisplay_name = utf8_field;
 	tmp_entry.paddress_type = deconst("SMTP");

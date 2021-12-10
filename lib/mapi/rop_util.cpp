@@ -292,57 +292,6 @@ BOOL rop_util_get_common_pset(unsigned int pset_type, GUID *pguid)
 	return TRUE;
 }
 
-BOOL rop_util_get_provider_uid(int provider_type, uint8_t *pflat_guid)
-{
-	static constexpr uint8_t muidStoreWrap[] = {
-		/* {10bba138-e505-1a10-a1bb-08002b2a56c2} */
-		0x38, 0xA1, 0xBB, 0x10, 0x05, 0xE5, 0x10, 0x1A,
-		0xA1, 0xBB, 0x08, 0x00, 0x2B, 0x2A, 0x56, 0xC2};
-	static constexpr uint8_t g_muidStorePrivate[] = {
-		/* {20fa551b-66aa-cd11-9bc8-00aa002fc45a} */
-		0x1B, 0x55, 0xFA, 0x20, 0xAA, 0x66, 0x11, 0xCD,
-		0x9B, 0xC8, 0x00, 0xAA, 0x00, 0x2F, 0xC4, 0x5A};
-	static constexpr uint8_t g_muidStorePublic[] = {
-		/* {1002831c-66aa-cd11-9bc8-00aa002fc45a} */
-		0x1C, 0x83, 0x02, 0x10, 0xAA, 0x66, 0x11, 0xCD,
-		0x9B, 0xC8, 0x00, 0xAA, 0x00, 0x2F, 0xC4, 0x5A};
-	static constexpr uint8_t muidEMSAB[] = {
-		/* {c840a7dc-42c0-1a10-b4b9-08002b2fe182} */
-		0xDC, 0xA7, 0x40, 0xC8, 0xC0, 0x42, 0x10, 0x1A,
-		0xB4, 0xB9, 0x08, 0x00, 0x2B, 0x2F, 0xE1, 0x82};
-	static constexpr uint8_t pbLongTermNonPrivateGuid[] = {
-		/* {9073441a-66aa-cd11-9bc8-00aa002fc45a} */
-		0x1A, 0x44, 0x73, 0x90, 0xAA, 0x66, 0x11, 0xCD,
-		0x9B, 0xC8, 0x00, 0xAA, 0x00, 0x2F, 0xC4, 0x5A};
-	static constexpr uint8_t muidOOP[] = {
-		/* {a41f2b81-a3be-1910-9d6e-00dd010f5402} */
-		0x81, 0x2B, 0x1F, 0xA4, 0xBE, 0xA3, 0x10, 0x19,
-		0x9D, 0x6E, 0x00, 0xDD, 0x01, 0x0F, 0x54, 0x02}; 
-	
-	switch (provider_type) {
-	case PROVIDER_UID_ADDRESS_BOOK:
-		memcpy(pflat_guid, muidEMSAB, arsizeof(muidEMSAB));
-		return TRUE;
-	case PROVIDER_UID_PUBLIC:
-		memcpy(pflat_guid, pbLongTermNonPrivateGuid, arsizeof(pbLongTermNonPrivateGuid));
-		return TRUE;
-	case PROVIDER_UID_ONE_OFF:
-		memcpy(pflat_guid, muidOOP, arsizeof(muidOOP));
-		return TRUE;
-	case PROVIDER_UID_STORE:
-		memcpy(pflat_guid, muidStoreWrap, arsizeof(muidStoreWrap));
-		return TRUE;
-	case PROVIDER_UID_WRAPPED_PRIVATE:
-		memcpy(pflat_guid, g_muidStorePrivate, arsizeof(g_muidStorePrivate));
-		return TRUE;
-	case PROVIDER_UID_WRAPPED_PUBLIC:
-		memcpy(pflat_guid, g_muidStorePublic, arsizeof(g_muidStorePublic));
-		return TRUE;
-	default:
-		return FALSE;
-	}
-}
-
 void rop_util_free_binary(BINARY *pbin)
 {
 	free(pbin->pb);

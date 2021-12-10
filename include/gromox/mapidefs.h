@@ -1396,3 +1396,7 @@ struct FORWARDDELEGATE_ACTION {
 	uint16_t count;
 	RECIPIENT_BLOCK *pblock;
 };
+
+extern const uint8_t
+	muidStoreWrap[16], muidEMSAB[16], pbLongTermNonPrivateGuid[16],
+	g_muidStorePrivate[16], g_muidStorePublic[16], muidOOP[16];
