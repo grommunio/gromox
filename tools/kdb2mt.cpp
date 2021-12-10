@@ -114,7 +114,7 @@ static void cb_only_obj(const HXoptcb *cb) {
 		g_only_objs.push_back(cb->data_long);
 }
 
-static const struct HXoption g_options_table[] = {
+static constexpr HXoption g_options_table[] = {
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Map folders of a private store (see manpage for detail)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the source archive"},

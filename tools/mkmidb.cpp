@@ -30,7 +30,7 @@ using namespace std::string_literals;
 using namespace gromox;
 
 static char *opt_config_file, *opt_datadir;
-static const struct HXoption g_options_table[] = {
+static constexpr HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
 	{nullptr, 'd', HXTYPE_STRING, &opt_datadir, nullptr, nullptr, 0, "Data directory", "DIR"},
 	HXOPT_AUTOHELP,

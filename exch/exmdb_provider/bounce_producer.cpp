@@ -73,13 +73,11 @@ static char g_separator[16];
 static std::vector<RESOURCE_NODE> g_resource_list;
 static RESOURCE_NODE *g_default_resource;
 static std::shared_mutex g_list_lock;
-static const char *g_resource_table[] = {
-	"BOUNCE_AUTO_RESPONSE",
-	"BOUNCE_MAIL_TOO_LARGE",
-	"BOUNCE_CANNOT_DISPLAY",
-	"BOUNCE_GENERIC_ERROR"
+static constexpr const char *g_resource_table[] = {
+	"BOUNCE_AUTO_RESPONSE", "BOUNCE_MAIL_TOO_LARGE",
+	"BOUNCE_CANNOT_DISPLAY", "BOUNCE_GENERIC_ERROR"
 };
-static TAG_ITEM g_tags[] = {
+static constexpr TAG_ITEM g_tags[] = {
 	{"<time>", 6},
 	{"<from>", 6},
 	{"<rcpt>", 6},

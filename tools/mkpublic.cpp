@@ -42,7 +42,7 @@ static uint64_t g_last_cn = CHANGE_NUMBER_BEGIN;
 static uint64_t g_last_eid = ALLOCATED_EID_RANGE;
 static char *opt_config_file, *opt_datadir;
 
-static const struct HXoption g_options_table[] = {
+static constexpr HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
 	{nullptr, 'd', HXTYPE_STRING, &opt_datadir, nullptr, nullptr, 0, "Data directory", "DIR"},
 	HXOPT_AUTOHELP,

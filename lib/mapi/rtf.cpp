@@ -490,7 +490,7 @@ static uint32_t rtf_fcharset_to_cpid(int num)
 
 static const FONTENTRY *rtf_lookup_font(RTF_READER *preader, int num)
 {
-	static const FONTENTRY fake_entries[] =
+	static constexpr FONTENTRY fake_entries[] =
 		{{FONTNIL_STR, ""}, {FONTROMAN_STR, ""},
 		{FONTSWISS_STR, ""}, {FONTMODERN_STR, ""},
 		{FONTSCRIPT_STR, ""}, {FONTDECOR_STR, ""},
@@ -1293,7 +1293,7 @@ static bool rtf_optimize_element(DOUBLE_LIST *pcollection_list,
     const char *str_word)
 {
 	const char *text;
-	static const char* opt_tags[] = {"\\fs", "\\f"};
+	static constexpr char opt_tags[][4] = {"\\fs", "\\f"};
 	
 	for (size_t i = 0; i < GX_ARRAY_SIZE(opt_tags); ++i) {
 		auto len = strlen(opt_tags[i]);

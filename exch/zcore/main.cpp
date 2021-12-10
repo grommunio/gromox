@@ -45,14 +45,14 @@ static char *opt_config_file;
 static unsigned int opt_show_version;
 static gromox::atomic_bool g_hup_signalled;
 
-static struct HXoption g_options_table[] = {
+static constexpr struct HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
 	{"version", 0, HXTYPE_NONE, &opt_show_version, nullptr, nullptr, 0, "Output version information and exit"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
 
-static const char *const g_dfl_svc_plugins[] = {
+static constexpr const char *g_dfl_svc_plugins[] = {
 	"libgxs_codepage_lang.so",
 	"libgxs_logthru.so",
 	"libgxs_ldap_adaptor.so",

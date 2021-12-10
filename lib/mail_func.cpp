@@ -31,7 +31,7 @@ enum {
 	SW_QUOTED_SECOND
 };
 
-static uint32_t  g_uri_usual[] = {
+static constexpr uint32_t g_uri_usual[] = {
     0xffffdbfe, /* 1111 1111 1111 1111  1101 1011 1111 1110 */
 
                 /* ?>=< ;:98 7654 3210  /.-, +*)( '&%$ #"!  */

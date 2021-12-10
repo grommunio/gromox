@@ -463,7 +463,7 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 uint32_t rop_getaddresstypes(STRING_ARRAY *paddress_types, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
-	static const char *const address_types[] = {"SMTP", "EX"};
+	static constexpr const char *address_types[] = {"SMTP", "EX"};
 	
 	auto plogon = rop_processor_get_logon_object(plogmap, logon_id);
 	if (plogon == nullptr)

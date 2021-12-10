@@ -18,7 +18,7 @@ static constexpr unsigned int codepage = 65001;
 static unsigned int g_dry_run;
 static char *g_primail;
 
-static const struct HXoption g_options_table[] = {
+static constexpr HXoption g_options_table[] = {
 	{nullptr, 'e', HXTYPE_STRING, &g_primail, nullptr, nullptr, 0, "Primary e-mail address of store", "ADDR"},
 	{nullptr, 'n', HXTYPE_NONE, &g_dry_run, nullptr, nullptr, 0, "Perform a dry run"},
 	HXOPT_AUTOHELP,

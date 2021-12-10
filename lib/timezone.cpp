@@ -84,7 +84,7 @@ namespace tz {
 static char wildabbr[] = "   ";
 #endif /* TM_ZONE */
 
-static const char gmt[] = "GMT";
+static constexpr char gmt[] = "GMT";
 
 /*
 ** The DST rules to use if TZ has no rules and we can't load TZDEFRULES.

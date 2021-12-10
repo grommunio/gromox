@@ -407,7 +407,7 @@ static BOOL remote_delivery_entry(int request, void **apidata)
 		       filename.c_str(), strerror(errno));
 		return false;
 	}
-	static const cfg_directive cfg_default_values[] = {
+	static constexpr cfg_directive cfg_default_values[] = {
 		{"mx_host", "::1"},
 		{"mx_port", "25", 0, "1", "65535"},
 		{"starttls_support", "on", CFG_BOOL},

@@ -16,10 +16,10 @@
 
 using namespace gromox;
 
-static const uint32_t g_n_proptags[] = 
+static constexpr uint32_t g_n_proptags[] = 
 	{PR_SURNAME, PR_GIVEN_NAME, PR_MIDDLE_NAME,
 	PR_DISPLAY_NAME_PREFIX, PROP_TAG_GENERATION};
-static const uint32_t g_workaddr_proptags[] =
+static constexpr uint32_t g_workaddr_proptags[] =
 	{0x8000001F, 0x8001001F, 0x8002001F, 0x8003001F, 0x8004001F, 0x8005001F};
 static constexpr uint32_t g_homeaddr_proptags[] =
 	{PR_HOME_ADDRESS_POST_OFFICE_BOX, PR_HOME_ADDRESS_STREET,
@@ -29,15 +29,15 @@ static constexpr uint32_t g_otheraddr_proptags[] =
 	{PR_OTHER_ADDRESS_POST_OFFICE_BOX, PR_OTHER_ADDRESS_STREET,
 	PR_OTHER_ADDRESS_CITY, PR_OTHER_ADDRESS_STATE_OR_PROVINCE,
 	PR_OTHER_ADDRESS_POSTAL_CODE, PR_OTHER_ADDRESS_COUNTRY};
-static const uint32_t g_email_proptags[] =
+static constexpr uint32_t g_email_proptags[] =
 	{0x8006001F, 0x8007001F, 0x8008001F};
-static const uint32_t g_im_proptag = 0x8009001F;
-static const uint32_t g_categories_proptag = 0x800A101F;
-static const uint32_t g_bcd_proptag = 0x800B0102;
-static const uint32_t g_ufld_proptags[] = 
+static constexpr uint32_t g_im_proptag = 0x8009001F;
+static constexpr uint32_t g_categories_proptag = 0x800A101F;
+static constexpr uint32_t g_bcd_proptag = 0x800B0102;
+static constexpr uint32_t g_ufld_proptags[] = 
 	{0x800C001F, 0x800D001F, 0x800E001F, 0x800F001F};
-static const uint32_t g_fbl_proptag = 0x8010001F;
-static const uint32_t g_vcarduid_proptag = 0x8011001F;
+static constexpr uint32_t g_fbl_proptag = 0x8010001F;
+static constexpr uint32_t g_vcarduid_proptag = 0x8011001F;
 
 static BOOL oxvcard_check_compatible(const VCARD *pvcard)
 {

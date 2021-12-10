@@ -16,6 +16,8 @@
 #include <cstdio>
 #include <ctime>
 
+using namespace gromox;
+
 static constexpr unsigned int SR_GROW_NSP_PROPROW = 40, SR_GROW_NSP_ROWSET = 100;
 static GUID g_server_guid;
 
@@ -159,7 +161,7 @@ BOOL common_util_set_permanententryid(uint32_t display_type,
 		if (NULL == pobj_guid) {
 			ppermeid->pdn = deconst("/");
 		} else {
-			len = gx_snprintf(buff, gromox::arsizeof(buff),
+			len = gx_snprintf(buff, arsizeof(buff),
 				"/guid=%08X%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X",
 				pobj_guid->time_low, pobj_guid->time_mid,
 				pobj_guid->time_hi_and_version,

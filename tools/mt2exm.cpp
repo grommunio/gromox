@@ -35,7 +35,7 @@ static gi_name_map g_src_name_map;
 static gi_thru_map g_thru_name_map;
 static uint8_t g_splice;
 static unsigned int g_oexcl = 1;
-static const struct HXoption g_options_table[] = {
+static constexpr HXoption g_options_table[] = {
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
 	{nullptr, 'u', HXTYPE_STRING, &g_username, nullptr, nullptr, 0, "Username of store to import to", "EMAILADDR"},

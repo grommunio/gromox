@@ -79,11 +79,9 @@ static char g_separator[16];
 static std::vector<RESOURCE_NODE> g_resource_list;
 static RESOURCE_NODE *g_default_resource;
 static std::shared_mutex g_list_lock;
-static const char *g_resource_table[] = {
-	"BOUNCE_NOTIFY_READ",
-	"BOUNCE_NOTIFY_NON_READ"
-};
-static TAG_ITEM g_tags[] = {
+static constexpr const char *g_resource_table[] =
+	{"BOUNCE_NOTIFY_READ", "BOUNCE_NOTIFY_NON_READ"};
+static constexpr TAG_ITEM g_tags[] = {
 	{"<time>", 6},
 	{"<from>", 6},
 	{"<user>", 6},

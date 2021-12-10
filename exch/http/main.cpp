@@ -54,20 +54,18 @@ static struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static const char *const g_dfl_hpm_plugins[] = {
+static constexpr const char *g_dfl_hpm_plugins[] = {
 	"libgxh_mh_emsmdb.so",
 	"libgxh_mh_nsp.so",
 	NULL,
 };
-
-static const char *const g_dfl_proc_plugins[] = {
+static constexpr const char *g_dfl_proc_plugins[] = {
 	"libgxp_exchange_emsmdb.so",
 	"libgxp_exchange_nsp.so",
 	"libgxp_exchange_rfr.so",
 	NULL,
 };
-
-static const char *const g_dfl_svc_plugins[] = {
+static constexpr const char *g_dfl_svc_plugins[] = {
 	"libgxs_abktplug.so",
 	"libgxs_codepage_lang.so",
 	"libgxs_exmdb_provider.so",
@@ -116,7 +114,7 @@ int main(int argc, const char **argv) try
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
 
-	static const cfg_directive cfg_default_values[] = {
+	static constexpr cfg_directive cfg_default_values[] = {
 		{"block_interval_auths", "1min", CFG_TIME, "1s"},
 		{"config_file_path", PKGSYSCONFDIR "/http:" PKGSYSCONFDIR},
 		{"console_server_ip", "::1"},

@@ -17,7 +17,7 @@ using namespace gromox;
 
 static unsigned int g_tobin, g_tojson, g_cpid, g_dogap;
 
-static const struct HXoption g_options_table[] = {
+static constexpr struct HXoption g_options_table[] = {
 	{nullptr, 'b', HXTYPE_NONE, &g_tobin, nullptr, nullptr, 0, "Select (from-json-)to-binary mode"},
 	{nullptr, 'c', HXTYPE_UINT, &g_cpid, nullptr, nullptr, 0, "Read/write using code page", "ID"},
 	{nullptr, 'g', HXTYPE_NONE, &g_dogap, nullptr, nullptr, 0, "Emit Exchange string table gap"},

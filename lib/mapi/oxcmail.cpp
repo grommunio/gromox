@@ -848,7 +848,7 @@ static BOOL oxcmail_parse_subject(const char *charset,
 	char prefix_buff[32];
 	char tmp_buff[MIME_FIELD_LEN];
 	char utf8_field[MIME_FIELD_LEN];
-	static const uint8_t seperator[] = {':', 0x00, ' ', 0x00};
+	static constexpr uint8_t seperator[] = {':', 0x00, ' ', 0x00};
 	
 	if (TRUE == mime_string_to_utf8(
 		charset, field, utf8_field)) {
@@ -5397,9 +5397,9 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 	TARRAY_SET *prcpts;
 	char tmp_buff[1024];
 	DSN_FIELDS *pdsn_fields;
-	static const char* status_strings1[] =
+	static constexpr const char status_strings1[][6] =
 		{"5.4.0", "5.1.0", "5.6.5", "5.6.5", "5.2.0", "5.3.0", "4.4.3"};
-	static const char* status_strings2[] =
+	static constexpr const char status_strings2[][6] =
 		{"5.1.0", "5.1.4", "4.4.5", "4.4.6", "5.1.0", "4.4.7",
 		"5.3.0", "5.6.0", "5.6.3", "5.6.2", "5.6.0", "5.5.4",
 		"5.6.0", "5.3.4", "5.6.0", "5.6.1", "5.5.3", "5.5.5",
@@ -5409,7 +5409,6 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 		"5.1.0", "5.3.0", "5.3.0", "5.1.0", "5.1.6", "5.1.0",
 		"5.1.0", "5.1.6", "5.0.0", "5.0.0", "5.7.0", "5.0.0",
 		"5.1.2"};
-	
 	
 	dsn_init(&dsn);
 	pdsn_fields = dsn_get_message_fileds(&dsn);

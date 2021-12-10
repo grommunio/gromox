@@ -28,14 +28,14 @@ struct tbl_upgradefn {
 }
 
 /* If you are thinking about changing any tbl_XXX_N, with N=number, then you should rather add tbl_XXX_top. */
-static const char tbl_options_1[] =
+static constexpr char tbl_options_1[] =
 "CREATE TABLE `options` ("
 "  `key` varchar(32) CHARACTER SET ascii NOT NULL,"
 "  `value` varchar(255) DEFAULT NULL,"
 "  PRIMARY KEY (`key`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_uprops_25[] =
+static constexpr char tbl_uprops_25[] =
 "CREATE TABLE `user_properties` ("
 "  `user_id` int(10) unsigned NOT NULL,"
 "  `proptag` int(10) unsigned NOT NULL,"
@@ -45,7 +45,7 @@ static const char tbl_uprops_25[] =
 "  CONSTRAINT `user_properties_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_admroles_41[] =
+static constexpr char tbl_admroles_41[] =
 "CREATE TABLE `admin_roles` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `name` varchar(32) NOT NULL,"
@@ -54,7 +54,7 @@ static const char tbl_admroles_41[] =
 "  UNIQUE KEY `name` (`name`)"
 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_admroleperm_42[] =
+static constexpr char tbl_admroleperm_42[] =
 "CREATE TABLE `admin_role_permission_relation` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `role_id` int(10) unsigned NOT NULL,"
@@ -65,7 +65,7 @@ static const char tbl_admroleperm_42[] =
 "  CONSTRAINT `admin_role_permission_relation_ibfk_1` FOREIGN KEY (`role_id`) REFERENCES `admin_roles` (`id`)"
 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_admuserrole_43[] =
+static constexpr char tbl_admuserrole_43[] =
 "CREATE TABLE `admin_user_role_relation` ("
 "  `user_id` int(10) unsigned NOT NULL,"
 "  `role_id` int(10) unsigned NOT NULL,"
@@ -75,7 +75,7 @@ static const char tbl_admuserrole_43[] =
 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 
 /* Initialization to create schema 0 */
-static const char tbl_alias_0[] =
+static constexpr char tbl_alias_0[] =
 "CREATE TABLE `aliases` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `aliasname` varchar(128) NOT NULL,"
@@ -85,7 +85,7 @@ static const char tbl_alias_0[] =
 "  KEY `mainname` (`mainname`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_assoc_0[] =
+static constexpr char tbl_assoc_0[] =
 "CREATE TABLE `associations` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `username` varchar(128) NOT NULL,"
@@ -96,7 +96,7 @@ static const char tbl_assoc_0[] =
 "  KEY `list_id` (`list_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_classes_0[] =
+static constexpr char tbl_classes_0[] =
 "CREATE TABLE `classes` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `classname` varchar(128) NOT NULL,"
@@ -109,7 +109,7 @@ static const char tbl_classes_0[] =
 "  KEY `group_id` (`group_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_configs_71[] =
+static constexpr char tbl_configs_71[] =
 "CREATE TABLE `configs` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `service` varchar(200) NOT NULL,"
@@ -122,7 +122,7 @@ static const char tbl_configs_71[] =
 "  KEY `file` (`file`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_domains_0[] =
+static constexpr char tbl_domains_0[] =
 "CREATE TABLE `domains` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `org_id` int(10) unsigned NOT NULL DEFAULT 0,"
@@ -147,7 +147,7 @@ static const char tbl_domains_0[] =
 "  KEY `org_id` (`org_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_fetchmail_75[] =
+static constexpr char tbl_fetchmail_75[] =
 "CREATE TABLE `fetchmail` ("
 "  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,"
 "  `user_id` int(10) unsigned NOT NULL,"
@@ -172,7 +172,7 @@ static const char tbl_fetchmail_75[] =
 "  CONSTRAINT `fetchmail_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
 ")";
 
-static const char tbl_forwards_0[] =
+static constexpr char tbl_forwards_0[] =
 "CREATE TABLE `forwards` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `username` varchar(128) NOT NULL,"
@@ -182,7 +182,7 @@ static const char tbl_forwards_0[] =
 "  UNIQUE KEY `username` (`username`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_groups_0[] =
+static constexpr char tbl_groups_0[] =
 "CREATE TABLE `groups` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `groupname` varchar(128) NOT NULL,"
@@ -199,7 +199,7 @@ static const char tbl_groups_0[] =
 "  KEY `domain_id` (`domain_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_hierarchy_0[] =
+static constexpr char tbl_hierarchy_0[] =
 "CREATE TABLE `hierarchy` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `class_id` int(10) unsigned NOT NULL,"
@@ -213,7 +213,7 @@ static const char tbl_hierarchy_0[] =
 "  KEY `group_id` (`group_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_members_0[] =
+static constexpr char tbl_members_0[] =
 "CREATE TABLE `members` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `username` varchar(128) NOT NULL,"
@@ -228,7 +228,7 @@ static const char tbl_members_0[] =
 "  KEY `group_id` (`group_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_mlists_0[] =
+static constexpr char tbl_mlists_0[] =
 "CREATE TABLE `mlists` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `listname` varchar(128) NOT NULL,"
@@ -240,7 +240,7 @@ static const char tbl_mlists_0[] =
 "  KEY `domain_id` (`domain_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_orgs_0[] =
+static constexpr char tbl_orgs_0[] =
 "CREATE TABLE `orgs` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `memo` varchar(128) NOT NULL DEFAULT '',"
@@ -258,7 +258,7 @@ static const char tbl_orgs_0[] =
  * All secondary stores so found still need to be tested for actual permissions
  * before OXDISCO is allowed to return them.
  */
-static const char tbl_scndstore_91[] =
+static constexpr char tbl_scndstore_91[] =
 "CREATE TABLE `secondary_store_hints` ("
 "  `primary` int(10) unsigned NOT NULL,"
 "  `secondary` int(10) unsigned NOT NULL,"
@@ -267,7 +267,7 @@ static const char tbl_scndstore_91[] =
 "  CONSTRAINT `users_ibfk_2` FOREIGN KEY (`secondary`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_specifieds_0[] =
+static constexpr char tbl_specifieds_0[] =
 "CREATE TABLE `specifieds` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `username` varchar(128) NOT NULL,"
@@ -276,7 +276,7 @@ static const char tbl_specifieds_0[] =
 "  KEY `list_id` (`list_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_users_0[] =
+static constexpr char tbl_users_0[] =
 "CREATE TABLE `users` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `username` varchar(128) NOT NULL,"
@@ -310,7 +310,7 @@ static const char tbl_users_0[] =
 "  KEY `maildir` (`maildir`,`address_type`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_userdev_92[] =
+static constexpr char tbl_userdev_92[] =
 "CREATE TABLE `user_devices` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `user_id` int(10) unsigned NOT NULL,"
@@ -321,7 +321,7 @@ static const char tbl_userdev_92[] =
 "  CONSTRAINT `user_devices_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_userdevhist_93[] =
+static constexpr char tbl_userdevhist_93[] =
 "CREATE TABLE `user_device_history` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `user_device_id` int(10) unsigned NOT NULL,"
@@ -333,7 +333,7 @@ static const char tbl_userdevhist_93[] =
 "  CONSTRAINT `user_device_history_ibfk_1` FOREIGN KEY (`user_device_id`) REFERENCES `user_devices` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_taskqueue_102[] =
+static constexpr char tbl_taskqueue_102[] =
 "CREATE TABLE `tasq` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `command` varchar(16) NOT NULL,"
@@ -348,7 +348,7 @@ static const char tbl_taskqueue_102[] =
 "  KEY `updated` (`updated`)"
 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 
-static const struct tbl_init tbl_init_0[] = {
+static constexpr struct tbl_init tbl_init_0[] = {
 	{"aliases", tbl_alias_0},
 	{"associations", tbl_assoc_0},
 	{"classes", tbl_classes_0},
@@ -383,7 +383,7 @@ int dbop_mysql_create_0(MYSQL *conn)
 }
 
 /* Initialization to create most recent schema */
-static const char tbl_alias_top[] =
+static constexpr char tbl_alias_top[] =
 "CREATE TABLE `aliases` ("
 "  `aliasname` varchar(320) CHARACTER SET ascii NOT NULL,"
 "  `mainname` varchar(320) CHARACTER SET ascii NOT NULL,"
@@ -392,7 +392,7 @@ static const char tbl_alias_top[] =
 "  CONSTRAINT `aliases_ibfk_1` FOREIGN KEY (`mainname`) REFERENCES `users` (`username`) ON DELETE CASCADE ON UPDATE CASCADE"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_assoc_top[] =
+static constexpr char tbl_assoc_top[] =
 "CREATE TABLE `associations` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
@@ -403,7 +403,7 @@ static const char tbl_assoc_top[] =
 "  KEY `list_id` (`list_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_classes_top[] =
+static constexpr char tbl_classes_top[] =
 "CREATE TABLE `classes` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `classname` varchar(128) NOT NULL,"
@@ -415,7 +415,7 @@ static const char tbl_classes_top[] =
 "  FOREIGN KEY (`domain_id`) REFERENCES domains (`id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_domains_top[] =
+static constexpr char tbl_domains_top[] =
 "CREATE TABLE `domains` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `org_id` int(10) unsigned NOT NULL DEFAULT 0,"
@@ -436,7 +436,7 @@ static const char tbl_domains_top[] =
 "  KEY `org_id` (`org_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_forwards_top[] =
+static constexpr char tbl_forwards_top[] =
 "CREATE TABLE `forwards` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
@@ -446,7 +446,7 @@ static const char tbl_forwards_top[] =
 "  UNIQUE KEY `username` (`username`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_groups_top[] =
+static constexpr char tbl_groups_top[] =
 "CREATE TABLE `groups` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `groupname` varchar(320) CHARACTER SET ascii NOT NULL,"
@@ -458,7 +458,7 @@ static const char tbl_groups_top[] =
 "  KEY `domain_id` (`domain_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_hierarchy_top[] =
+static constexpr char tbl_hierarchy_top[] =
 "CREATE TABLE `hierarchy` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `class_id` int(10) unsigned NOT NULL,"
@@ -470,7 +470,7 @@ static const char tbl_hierarchy_top[] =
 "  KEY `group_id` (`group_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_members_top[] =
+static constexpr char tbl_members_top[] =
 "CREATE TABLE `members` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
@@ -481,7 +481,7 @@ static const char tbl_members_top[] =
 "  KEY `class_id` (`class_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_mlists_top[] =
+static constexpr char tbl_mlists_top[] =
 "CREATE TABLE `mlists` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `listname` varchar(320) CHARACTER SET ascii NOT NULL,"
@@ -493,7 +493,7 @@ static const char tbl_mlists_top[] =
 "  KEY `domain_id` (`domain_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_orgs_top[] =
+static constexpr char tbl_orgs_top[] =
 "CREATE TABLE `orgs` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `name` varchar(32) NOT NULL,"
@@ -501,7 +501,7 @@ static const char tbl_orgs_top[] =
 "  PRIMARY KEY (`id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_specifieds_top[] =
+static constexpr char tbl_specifieds_top[] =
 "CREATE TABLE `specifieds` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
@@ -510,7 +510,7 @@ static const char tbl_specifieds_top[] =
 "  KEY `list_id` (`list_id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_users_top[] =
+static constexpr char tbl_users_top[] =
 "CREATE TABLE `users` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `username` varchar(320) CHARACTER SET ascii NOT NULL,"
@@ -536,7 +536,7 @@ static const char tbl_users_top[] =
 "  KEY `maildir` (`maildir`)"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const char tbl_uprops_top[] =
+static constexpr char tbl_uprops_top[] =
 "CREATE TABLE `user_properties` ("
 "  `user_id` int(10) unsigned NOT NULL,"
 "  `proptag` int(10) unsigned NOT NULL,"
@@ -547,7 +547,7 @@ static const char tbl_uprops_top[] =
 "  CONSTRAINT `user_properties_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE"
 ") DEFAULT CHARSET=utf8mb4";
 
-static const struct tbl_init tbl_init_top[] = {
+static constexpr struct tbl_init tbl_init_top[] = {
 	{"admin_roles", tbl_admroles_41},
 	{"associations", tbl_assoc_top},
 	{"configs", tbl_configs_71},
@@ -608,7 +608,7 @@ int dbop_mysql_schemaversion(MYSQL *conn)
 	return strtoul(row[0], nullptr, 0);
 }
 
-static const struct tbl_upgradefn tbl_upgrade_list[] = {
+static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 	{1, "CREATE TABLE IF NOT EXISTS `options` (`key` varchar(32) CHARACTER SET ascii NOT NULL,"
 	    " `value` varchar(255) DEFAULT NULL, PRIMARY KEY (`key`)) DEFAULT CHARSET=utf8mb4"},
 	{2, "ALTER TABLE `aliases` CHANGE COLUMN `aliasname` `aliasname` varchar(320) CHARACTER SET ascii NOT NULL"},

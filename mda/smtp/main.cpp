@@ -45,7 +45,7 @@ static struct HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-static const char *const g_dfl_svc_plugins[] = {
+static constexpr const char *g_dfl_svc_plugins[] = {
 	"libgxs_domain_list.so",
 	"libgxs_logthru.so",
 	"libgxs_midb_agent.so",

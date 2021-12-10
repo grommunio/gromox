@@ -1600,10 +1600,7 @@ static BOOL store_object_get_folder_permissions(store_object *pstore,
 	PROPTAG_ARRAY proptags;
 	TARRAY_SET permission_set;
 	PERMISSION_ROW *pperm_row;
-	static const uint32_t proptag_buff[] = {
-		PR_ENTRYID,
-		PROP_TAG_MEMBERRIGHTS
-	};
+	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PROP_TAG_MEMBERRIGHTS};
 	
 	if (!exmdb_client::load_permission_table(
 		pstore->dir, folder_id, 0, &table_id, &row_num)) {

@@ -680,10 +680,7 @@ BOOL folder_object::get_permissions(PERMISSION_SET *pperm_set)
 	uint32_t table_id;
 	PROPTAG_ARRAY proptags;
 	TARRAY_SET permission_set;
-	static const uint32_t proptag_buff[] = {
-		PR_ENTRYID,
-		PROP_TAG_MEMBERRIGHTS
-	};
+	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PROP_TAG_MEMBERRIGHTS};
 	
 	auto pfolder = this;
 	auto dir = pfolder->pstore->get_dir();
@@ -732,10 +729,7 @@ BOOL folder_object::set_permissions(const PERMISSION_SET *pperm_set)
 	PROPTAG_ARRAY proptags;
 	TARRAY_SET permission_set;
 	PERMISSION_DATA *pperm_data;
-	static const uint32_t proptag_buff[] = {
-		PR_ENTRYID,
-		PROP_TAG_MEMBERID
-	};
+	static constexpr uint32_t proptag_buff[] = {PR_ENTRYID, PROP_TAG_MEMBERID};
 	
 	auto pfolder = this;
 	auto dir = pfolder->pstore->get_dir();

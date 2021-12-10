@@ -50,8 +50,8 @@ enum {
 	TYPE_WILDP
 };
 
-static const char *g_folder_list[] = {"draft", "sent", "trash", "junk"};
-static const char *g_xproperty_list[] = {"Drafts", "Sent", "Trash", "Spam"};
+static constexpr const char *g_folder_list[] = {"draft", "sent", "trash", "junk"};
+static constexpr const char *g_xproperty_list[] = {"Drafts", "Sent", "Trash", "Spam"};
 
 static BOOL imap_cmd_parser_hint_sequence(DOUBLE_LIST *plist,
 	unsigned int num, unsigned int max_uid)

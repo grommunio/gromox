@@ -264,24 +264,23 @@ BEGIN_EXTERN_C()
 	ZEND_GET_MODULE(mapi)
 END_EXTERN_C()
 
-static char name_mapi_session[] = "MAPI Session";
-static char name_mapi_table[] = "MAPI Table";
-static char name_mapi_msgstore[] = "MAPI Message Store";
-static char name_mapi_addressbook[] = "MAPI Addressbook";
-static char name_mapi_mailuser[] = "MAPI Mail User";
-static char name_mapi_distlist[] = "MAPI Distribution List";
-static char name_mapi_abcont[] = "MAPI Addressbook Container";
-static char name_mapi_folder[] = "MAPI Folder";
-static char name_mapi_message[] = "MAPI Message";
-static char name_mapi_attachment[] = "MAPI Attachment";
-static char name_mapi_property[] = "MAPI Property";
-static char name_stream[] = "IStream Interface";
-static char name_mapi_exportchanges[] = "ICS Export Changes";
-static char name_mapi_advisesink[] = "MAPI Advise sink";
-static char name_mapi_importhierarchychanges[] =
-					"ICS Import Hierarchy Changes";
-static const char name_mapi_importcontentschanges[] =
-						"ICS Import Contents Changes";
+static constexpr char
+	name_mapi_session[] = "MAPI Session",
+	name_mapi_table[] = "MAPI Table",
+	name_mapi_msgstore[] = "MAPI Message Store",
+	name_mapi_addressbook[] = "MAPI Addressbook",
+	name_mapi_mailuser[] = "MAPI Mail User",
+	name_mapi_distlist[] = "MAPI Distribution List",
+	name_mapi_abcont[] = "MAPI Addressbook Container",
+	name_mapi_folder[] = "MAPI Folder",
+	name_mapi_message[] = "MAPI Message",
+	name_mapi_attachment[] = "MAPI Attachment",
+	name_mapi_property[] = "MAPI Property",
+	name_stream[] = "IStream Interface",
+	name_mapi_exportchanges[] = "ICS Export Changes",
+	name_mapi_advisesink[] = "MAPI Advise sink",
+	name_mapi_importhierarchychanges[] = "ICS Import Hierarchy Changes",
+	name_mapi_importcontentschanges[] = "ICS Import Contents Changes";
 
 static int le_stream;
 static int le_mapi_table;
@@ -5227,7 +5226,7 @@ ZEND_FUNCTION(mapi_feature)
 {
 	size_t cbfeature = 0;
 	const char *szfeature;
-	static const char *const features[] =
+	static constexpr const char *features[] =
 		{"LOGONFLAGS", "NOTIFICATIONS",
 		"INETMAPI_IMTOMAPI", "ST_ONLY_WHEN_OOF"};
 	
