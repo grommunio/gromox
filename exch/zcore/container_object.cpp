@@ -379,7 +379,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 		proptags.pproptag[proptags.count++] = PR_DEPARTMENT_NAME;
 		proptags.pproptag[proptags.count++] = PR_OFFICE_LOCATION;
 		proptags.pproptag[proptags.count++] = PR_CREATION_TIME;
-		proptags.pproptag[proptags.count++] = PROP_TAG_MID;
+		proptags.pproptag[proptags.count++] = PidTagMid;
 		if (!exmdb_client::query_table(pinfo->get_maildir(), nullptr,
 		    pinfo->cpid, table_id, &proptags, 0, row_num, &tmp_set))
 			return FALSE;
@@ -453,7 +453,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
-			auto pvalue = tmp_set.pparray[i]->getval(PROP_TAG_MID);
+			auto pvalue = tmp_set.pparray[i]->getval(PidTagMid);
 			if (NULL == pvalue) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
@@ -609,7 +609,7 @@ static BOOL container_object_fetch_folder_properties(
 	int i;
 	int count;
 	
-	auto pvfid = ppropvals->get<uint64_t>(PROP_TAG_FOLDERID);
+	auto pvfid = ppropvals->get<uint64_t>(PidTagFolderId);
 	if (pvfid == nullptr)
 		return FALSE;
 	auto folder_id = *pvfid;
@@ -642,7 +642,7 @@ static BOOL container_object_fetch_folder_properties(
 					    PR_ENTRYID, &pvalue))
 						return FALSE;	
 				} else {
-					pvalue = ppropvals->getval(PROP_TAG_PARENTFOLDERID);
+					pvalue = ppropvals->getval(PidTagParentFolderId);
 					if (NULL == pvalue) {
 						return FALSE;
 					}
@@ -722,12 +722,12 @@ static BOOL container_object_fetch_folder_properties(
 static const PROPTAG_ARRAY* container_object_get_folder_proptags()
 {
 	static const uint32_t proptag_buff[] = {
-					PROP_TAG_FOLDERID,
+					PidTagFolderId,
 					PROP_TAG_SUBFOLDERS,
 					PR_DISPLAY_NAME,
 					PR_CONTAINER_CLASS,
 					PROP_TAG_FOLDERPATHNAME,
-					PROP_TAG_PARENTFOLDERID,
+					PidTagParentFolderId,
 					PR_ATTR_HIDDEN};
 	static const PROPTAG_ARRAY proptags = {.count = 7, .pproptag = (uint32_t *)proptag_buff};
 	return &proptags;

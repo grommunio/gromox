@@ -622,17 +622,17 @@ BOOL cu_get_proptags(db_table table_type, uint64_t id,
 		proptags[i++] = PROP_TAG_HASRULES;
 		proptags[i++] = PROP_TAG_FOLDERPATHNAME;
 		proptags[i++] = PROP_TAG_LOCALCOMMITTIME;
-		proptags[i++] = PROP_TAG_FOLDERID;
-		proptags[i++] = PROP_TAG_CHANGENUMBER;
+		proptags[i++] = PidTagFolderId;
+		proptags[i++] = PidTagChangeNumber;
 		proptags[i++] = PROP_TAG_FOLDERFLAGS;
 		break;
 	case db_table::msg_props:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
 		        "message_properties WHERE message_id=%llu", LLU(id));
-		proptags[i++] = PROP_TAG_MID;
+		proptags[i++] = PidTagMid;
 		proptags[i++] = PR_MESSAGE_SIZE;
 		proptags[i++] = PR_ASSOCIATED;
-		proptags[i++] = PROP_TAG_CHANGENUMBER;
+		proptags[i++] = PidTagChangeNumber;
 		proptags[i++] = PR_READ;
 		proptags[i++] = PR_HASATTACH;
 		proptags[i++] = PR_MESSAGE_FLAGS;
@@ -1850,7 +1850,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 	case PR_ENTRYID:
 		pv.pvalue = common_util_to_folder_entryid(db, id);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
-	case PROP_TAG_FOLDERID:
+	case PidTagFolderId:
 		pv.pvalue = cu_alloc<uint64_t>();
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
@@ -1859,7 +1859,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 			rop_util_make_eid_ex(1, id) :
 			rop_util_make_eid_ex(id >> 48, id & 0x00FFFFFFFFFFFFFFULL);
 		return GP_ADV;
-	case PROP_TAG_PARENTFOLDERID: {
+	case PidTagParentFolderId: {
 		pv.pvalue = cu_alloc<uint64_t>();
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
@@ -1876,7 +1876,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 		pv.pvalue = common_util_to_folder_entryid(db, tmp_id);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	}
-	case PROP_TAG_CHANGENUMBER:
+	case PidTagChangeNumber:
 		pv.pvalue = cu_alloc<uint64_t>();
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
@@ -1968,8 +1968,8 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		pv.pvalue = common_util_to_folder_entryid(db, tmp_id);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	}
-	case PROP_TAG_FOLDERID:
-	case PROP_TAG_PARENTFOLDERID: {
+	case PidTagFolderId:
+	case PidTagParentFolderId: {
 		uint64_t tmp_id;
 		if (!common_util_get_message_parent_folder(db, id, &tmp_id) || tmp_id == 0)
 			return GP_ERR;
@@ -2015,7 +2015,7 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 			return GP_ERR;
 		*static_cast<uint8_t *>(pv.pvalue) = !!common_util_check_message_associated(db, id);
 		return GP_ADV;
-	case PROP_TAG_CHANGENUMBER:
+	case PidTagChangeNumber:
 		pv.pvalue = cu_alloc<uint64_t>();
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
@@ -2039,7 +2039,7 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 			return GP_ERR;
 		*static_cast<uint8_t *>(pv.pvalue) = !!common_util_check_message_has_attachments(db, id);
 		return GP_ADV;
-	case PROP_TAG_MID:
+	case PidTagMid:
 		pv.pvalue = cu_alloc<uint64_t>();
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
@@ -2076,7 +2076,7 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 	case PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
 		pv.pvalue = common_util_get_message_header(db, cpid, id, tag);
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
-	case PROP_TAG_MIDSTRING: /* self-defined proptag */
+	case PidTagMidString: /* self-defined proptag */
 		return common_util_get_mid_string(db, id, reinterpret_cast<char **>(&pv.pvalue)) &&
 		       pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
 	}
@@ -3030,8 +3030,8 @@ BOOL cu_set_properties(db_table table_type,
 		case db_table::folder_props:
 			switch (ppropvals->ppropval[i].proptag) {
 			case PR_ENTRYID:
-			case PROP_TAG_FOLDERID:
-			case PROP_TAG_PARENTFOLDERID:
+			case PidTagFolderId:
+			case PidTagParentFolderId:
 			case PROP_TAG_FOLDERFLAGS:
 			case PROP_TAG_SUBFOLDERS:
 			case PROP_TAG_CONTENTCOUNT:
@@ -3050,7 +3050,7 @@ BOOL cu_set_properties(db_table table_type,
 								ppropvals->ppropval[i].proptag;
 				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				continue;
-			case PROP_TAG_CHANGENUMBER:
+			case PidTagChangeNumber:
 				common_util_set_folder_changenum(psqlite, id,
 					rop_util_get_gc_value(*(uint64_t*)
 					ppropvals->ppropval[i].pvalue));
@@ -3087,12 +3087,12 @@ BOOL cu_set_properties(db_table table_type,
 		case db_table::msg_props:
 			switch (ppropvals->ppropval[i].proptag) {
 			case PR_ENTRYID:
-			case PROP_TAG_FOLDERID:
-			case PROP_TAG_PARENTFOLDERID:
+			case PidTagFolderId:
+			case PidTagParentFolderId:
 			case PROP_TAG_INSTANCESVREID:
 			case PR_PARENT_SOURCE_KEY:
 			case PROP_TAG_HASNAMEDPROPERTIES:
-			case PROP_TAG_MID:
+			case PidTagMid:
 			case PR_MESSAGE_SIZE:
 			case PR_ASSOCIATED:
 			case PR_HASATTACH:
@@ -3102,13 +3102,13 @@ BOOL cu_set_properties(db_table table_type,
 			case PR_DISPLAY_TO_A:
 			case PR_DISPLAY_CC_A:
 			case PR_DISPLAY_BCC_A:
-			case PROP_TAG_MIDSTRING: /* self-defined proptag */
+			case PidTagMidString: /* self-defined proptag */
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 								ppropvals->ppropval[i].proptag;
 				pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 				continue;
-			case PROP_TAG_CHANGENUMBER:
+			case PidTagChangeNumber:
 				common_util_set_message_changenum(psqlite, id,
 					rop_util_get_gc_value(*(uint64_t*)
 					ppropvals->ppropval[i].pvalue));
@@ -5767,14 +5767,14 @@ uint32_t common_util_calculate_message_size(
 	TAGGED_PROPVAL *ppropval;
 	ATTACHMENT_CONTENT *pattachment;
 	
-	/* PR_ASSOCIATED, PROP_TAG_MID, PROP_TAG_CHANGENUMBER */
+	/* PR_ASSOCIATED, PidTagMid, PidTagChangeNumber */
 	message_size = sizeof(uint8_t) + 2*sizeof(uint64_t);
 	for (size_t i = 0; i < pmsgctnt->proplist.count; ++i) {
 		ppropval = pmsgctnt->proplist.ppropval + i;
 		switch (ppropval->proptag) {
 		case PR_ASSOCIATED:
-		case PROP_TAG_MID:
-		case PROP_TAG_CHANGENUMBER:
+		case PidTagMid:
+		case PidTagChangeNumber:
 			continue;
 		case ID_TAG_BODY:
 			message_size += common_util_get_cid_string_length(

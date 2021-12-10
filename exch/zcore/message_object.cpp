@@ -93,7 +93,7 @@ std::unique_ptr<message_object> message_object::create(store_object *pstore,
 	}
 	if (FALSE == b_new) {
 		if (!exmdb_client_get_instance_property(pstore->get_dir(),
-		    pmessage->instance_id, PROP_TAG_CHANGENUMBER,
+		    pmessage->instance_id, PidTagChangeNumber,
 		    reinterpret_cast<void **>(&pchange_num)))
 			return NULL;
 		if (NULL != pchange_num) {
@@ -114,7 +114,7 @@ BOOL message_object::check_orignal_touched(BOOL *pb_touched)
 	}
 	if (0 != pmessage->message_id) {
 		if (!exmdb_client_get_message_property(pmessage->pstore->get_dir(),
-		    nullptr, 0, pmessage->message_id, PROP_TAG_CHANGENUMBER,
+		    nullptr, 0, pmessage->message_id, PidTagChangeNumber,
 		    reinterpret_cast<void **>(&pchange_num)))
 			return FALSE;
 	} else {
@@ -122,7 +122,7 @@ BOOL message_object::check_orignal_touched(BOOL *pb_touched)
 		    pmessage->instance_id, &pchange_num))
 			return FALSE;	
 	}
-	/* if it cannot find PROP_TAG_CHANGENUMBER, it means message does not exist any more */
+	/* if it cannot find PidTagChangeNumber, it means message does not exist any more */
 	*pb_touched = pchange_num == nullptr || *pchange_num != pmessage->change_num ? TRUE : false;
 	return TRUE;
 }
@@ -363,7 +363,7 @@ gxerr_t message_object::save()
 		modification's check when the rop_savechangesmessage
 		is called, it is useless for ICS!
 	*/
-	tmp_propval.proptag = PROP_TAG_CHANGENUMBER;
+	tmp_propval.proptag = PidTagChangeNumber;
 	tmp_propval.pvalue = &pmessage->change_num;
 	if (FALSE == exmdb_client_set_instance_property(dir,
 		pmessage->instance_id, &tmp_propval, &result)) {
@@ -522,7 +522,7 @@ BOOL message_object::reload()
 	pmessage->change_num = 0;
 	if (FALSE == pmessage->b_new) {
 		if (!exmdb_client_get_instance_property(pmessage->pstore->get_dir(),
-		    pmessage->instance_id, PROP_TAG_CHANGENUMBER,
+		    pmessage->instance_id, PidTagChangeNumber,
 		    reinterpret_cast<void **>(&pchange_num)) ||
 		    pchange_num == nullptr)
 			return FALSE;
@@ -532,9 +532,9 @@ BOOL message_object::reload()
 }
 
 static constexpr uint32_t trimtags[] = {
-	PROP_TAG_MID, PR_DISPLAY_TO, PR_DISPLAY_CC,
+	PidTagMid, PR_DISPLAY_TO, PR_DISPLAY_CC,
 	PR_DISPLAY_BCC, PR_MESSAGE_SIZE, PR_HASATTACH,
-	PR_CHANGE_KEY, PROP_TAG_CHANGENUMBER,
+	PR_CHANGE_KEY, PidTagChangeNumber,
 	PR_PREDECESSOR_CHANGE_LIST,
 };
 
@@ -703,9 +703,9 @@ BOOL message_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	}
 	for (i=0; i<tmp_proptags.count; i++) {
 		switch (tmp_proptags.pproptag[i]) {
-		case PROP_TAG_MID:
+		case PidTagMid:
 		case PR_ASSOCIATED:
-		case PROP_TAG_CHANGENUMBER:
+		case PidTagChangeNumber:
 			continue;
 		default:
 			pproptags->pproptag[pproptags->count++] = tmp_proptags.pproptag[i];
@@ -740,7 +740,7 @@ static BOOL msgo_check_readonly_property(const message_object *pmessage,
 	case PR_ACCESS:
 	case PR_ACCESS_LEVEL:
 	case PR_ASSOCIATED:
-	case PROP_TAG_CHANGENUMBER:
+	case PidTagChangeNumber:
 	case PROP_TAG_CONVERSATIONID:
 	case PR_CREATOR_NAME:
 	case PR_CREATOR_ENTRYID:
@@ -748,11 +748,11 @@ static BOOL msgo_check_readonly_property(const message_object *pmessage,
 	case PR_DISPLAY_CC:
 	case PR_DISPLAY_TO:
 	case PR_ENTRYID:
-	case PROP_TAG_FOLDERID:
+	case PidTagFolderId:
 	case PR_HASATTACH:
 	case PROP_TAG_HASNAMEDPROPERTIES:
 	case PR_LAST_MODIFIER_ENTRYID:
-	case PROP_TAG_MID:
+	case PidTagMid:
 	case PROP_TAG_MIMESKELETON:
 	case PROP_TAG_NATIVEBODY:
 	case PR_OBJECT_TYPE:
@@ -825,8 +825,8 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 		*ppvalue = common_util_to_folder_entryid(
 			pmessage->pstore, pmessage->folder_id);
 		return TRUE;
-	case PROP_TAG_FOLDERID:
-	case PROP_TAG_PARENTFOLDERID:
+	case PidTagFolderId:
+	case PidTagParentFolderId:
 		if (0 == pmessage->message_id) {
 			return FALSE;
 		}
@@ -839,7 +839,7 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 			return FALSE;
 		}
 		return TRUE;
-	case PROP_TAG_MID:
+	case PidTagMid:
 		if (0 == pmessage->message_id) {
 			return FALSE;
 		}

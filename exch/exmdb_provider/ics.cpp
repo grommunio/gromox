@@ -796,7 +796,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		size_t count = 0;
 		for (size_t j = 0; j < proptags.count; ++j) {
 			if (PROP_TAG_HASRULES == proptags.pproptag[j] ||
-				PROP_TAG_CHANGENUMBER == proptags.pproptag[j] ||
+			    proptags.pproptag[j] == PidTagChangeNumber ||
 				PROP_TAG_LOCALCOMMITTIME == proptags.pproptag[j] ||
 			    proptags.pproptag[j] == PR_DELETED_COUNT_TOTAL ||
 			    proptags.pproptag[j] == PR_NORMAL_MESSAGE_SIZE ||
@@ -805,7 +805,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 				continue;
 			tmp_proptags[count++] = proptags.pproptag[j];
 		}
-		tmp_proptags[count++] = PROP_TAG_PARENTFOLDERID;
+		tmp_proptags[count++] = PidTagParentFolderId;
 		proptags.count = count;
 		proptags.pproptag = tmp_proptags;
 		if (!cu_get_properties(db_table::folder_props, fid_val1, 0,

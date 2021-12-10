@@ -326,7 +326,7 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows, LOGMAP *plogmap,
 	int object_type;
 	PROPTAG_ARRAY columns;
 	TARRAY_SET class_table;
-	uint32_t proptags[] = {PROP_TAG_FOLDERID, PR_MESSAGE_CLASS_A, PR_LAST_MODIFICATION_TIME};
+	uint32_t proptags[] = {PidTagFolderId, PR_MESSAGE_CLASS_A, PR_LAST_MODIFICATION_TIME};
 	
 	columns.count = arsizeof(proptags);
 	columns.pproptag = proptags;

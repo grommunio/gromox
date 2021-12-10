@@ -61,7 +61,7 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 		return ecNotFound;
 	}
 	if (!exmdb_client_get_message_property(plogon->get_dir(), nullptr, 0,
-	    message_id, PROP_TAG_FOLDERID, &pvalue) || pvalue == nullptr)
+	    message_id, PidTagFolderId, &pvalue) || pvalue == nullptr)
 		return ecError;
 	folder_id = *(uint64_t*)pvalue;
 	if (!exmdb_client_check_message_deleted(plogon->get_dir(), message_id, &b_del))
@@ -268,7 +268,6 @@ uint32_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
 {
 	BOOL b_touched;
 	int object_type;
-	uint32_t tmp_proptag;
 	PROPTAG_ARRAY proptags;
 	TPROPVAL_ARRAY propvals;
 	
@@ -296,12 +295,12 @@ uint32_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
 			return ecObjectModified;
 		}
 	}
+	uint32_t tmp_proptag = PidTagMid;
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
-	tmp_proptag = PROP_TAG_MID;
 	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
-	auto pvalue = propvals.get<uint64_t>(PROP_TAG_MID);
+	auto pvalue = propvals.get<uint64_t>(PidTagMid);
 	if (NULL == pvalue) {
 		return ecError;
 	}
@@ -904,10 +903,10 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 			return ecError;
 		proptags.count = 1;
 		proptags.pproptag = proptag_buff;
-		proptag_buff[0] = PROP_TAG_MID;
+		proptag_buff[0] = PidTagMid;
 		if (!pmessage->get_properties(0, &proptags, &propvals))
 			return ecError;
-		auto pvalue = propvals.getval(PROP_TAG_MID);
+		auto pvalue = propvals.getval(PidTagMid);
 		if (NULL == pvalue) {
 			return ecError;
 		}
@@ -933,13 +932,13 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 	}
 	proptags.count = 4;
 	proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_MID;
+	proptag_buff[0] = PidTagMid;
 	proptag_buff[1] = PROP_TAG_HASNAMEDPROPERTIES;
 	proptag_buff[2] = PR_SUBJECT_PREFIX;
 	proptag_buff[3] = PR_NORMALIZED_SUBJECT;
 	if (!pmessage->get_properties(0, &proptags, &propvals))
 		return ecError;
-	auto pvalue = propvals.getval(PROP_TAG_MID);
+	auto pvalue = propvals.getval(PidTagMid);
 	if (NULL == pvalue) {
 		return ecError;
 	}

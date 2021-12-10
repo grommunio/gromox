@@ -524,7 +524,7 @@ int exm_set_change_keys(TPROPVAL_ARRAY *props, uint64_t change_num)
 		return -ENOMEM;
 	}
 	int ret;
-	if ((ret = props->set(PROP_TAG_CHANGENUMBER, &change_num)) != 0 ||
+	if ((ret = props->set(PidTagChangeNumber, &change_num)) != 0 ||
 	    (ret = props->set(PR_CHANGE_KEY, &bxid) != 0) ||
 	    (ret = props->set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) != 0) {
 		fprintf(stderr, "%s: %s\n", __func__, strerror(-ret));
@@ -552,7 +552,7 @@ int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_excl,
 			return ret;
 	}
 	int ret;
-	if ((ret = props->set(PROP_TAG_PARENTFOLDERID, &parent_fld)) != 0 ||
+	if ((ret = props->set(PidTagParentFolderId, &parent_fld)) != 0 ||
 	    (ret = exm_set_change_keys(props, change_num)) != 0) {
 		fprintf(stderr, "exm: tpropval: %s\n", strerror(-ret));
 		return ret;
@@ -622,8 +622,8 @@ int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *ctnt)
 			return ret;
 	}
 	int ret;
-	if ((ret = props->set(PROP_TAG_MID, &msg_id)) != 0 ||
-	    (ret = props->set(PROP_TAG_CHANGENUMBER, &change_num)) != 0 ||
+	if ((ret = props->set(PidTagMid, &msg_id)) != 0 ||
+	    (ret = props->set(PidTagChangeNumber, &change_num)) != 0 ||
 	    (ret = props->set(PR_CHANGE_KEY, &bxid)) != 0 ||
 	    (ret = props->set(PR_PREDECESSOR_CHANGE_LIST, pclbin.get())) != 0) {
 		fprintf(stderr, "exm: tpropval: %s\n", strerror(-ret));

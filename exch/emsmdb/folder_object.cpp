@@ -91,7 +91,7 @@ BOOL folder_object::check_readonly_property(uint32_t proptag)
 	case PROP_TAG_ARTICLENUMBERNEXT:
 	case PR_ASSOC_CONTENT_COUNT:
 	case PROP_TAG_ATTRIBUTEREADONLY:
-	case PROP_TAG_CHANGENUMBER:
+	case PidTagChangeNumber:
 	case PROP_TAG_CONTENTCOUNT:
 	case PROP_TAG_CONTENTUNREADCOUNT:
 	case PR_CREATION_TIME:
@@ -101,7 +101,7 @@ BOOL folder_object::check_readonly_property(uint32_t proptag)
 	case PR_ENTRYID:
 	case PROP_TAG_FOLDERCHILDCOUNT:
 	case PROP_TAG_FOLDERFLAGS:
-	case PROP_TAG_FOLDERID:
+	case PidTagFolderId:
 	case PR_FOLDER_TYPE:
 	case PROP_TAG_HASRULES:
 	case PR_HIERARCHY_CHANGE_NUM:
@@ -116,7 +116,7 @@ BOOL folder_object::check_readonly_property(uint32_t proptag)
 	case PR_NORMAL_MESSAGE_SIZE:
 	case PR_NORMAL_MESSAGE_SIZE_EXTENDED:
 	case PR_PARENT_ENTRYID:
-	case PROP_TAG_PARENTFOLDERID:
+	case PidTagParentFolderId:
 	case PR_STORE_RECORD_KEY:
 	case PR_CHANGE_KEY:
 	case PR_SOURCE_KEY:
@@ -202,7 +202,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	case PR_ACCESS:
 		*outvalue = &pfolder->tag_access;
 		return TRUE;
-	case PROP_TAG_FOLDERID:
+	case PidTagFolderId:
 		*outvalue = cu_alloc<uint64_t>();
 		if (*outvalue == nullptr)
 			return FALSE;
@@ -229,7 +229,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		return TRUE;
 	case PR_PARENT_ENTRYID:
 		if (!exmdb_client_get_folder_property(pfolder->plogon->get_dir(),
-		    0, pfolder->folder_id, PROP_TAG_PARENTFOLDERID,
+		    0, pfolder->folder_id, PidTagParentFolderId,
 		    &pvalue) || pvalue == nullptr)
 			return FALSE;	
 		*outvalue = common_util_to_folder_entryid(
@@ -250,7 +250,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			}
 		}
 		if (!exmdb_client_get_folder_property(pfolder->plogon->get_dir(),
-		    0, pfolder->folder_id, PROP_TAG_PARENTFOLDERID,
+		    0, pfolder->folder_id, PidTagParentFolderId,
 		    &pvalue) || pvalue == nullptr)
 			return FALSE;	
 		if (!exmdb_client_get_folder_property(pfolder->plogon->get_dir(),
@@ -610,8 +610,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	}
 	if (!exmdb_client_allocate_cn(pfolder->plogon->get_dir(), &change_num))
 		return FALSE;
-	tmp_propvals.ppropval[tmp_propvals.count].proptag =
-											PROP_TAG_CHANGENUMBER;
+	tmp_propvals.ppropval[tmp_propvals.count].proptag = PidTagChangeNumber;
 	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &change_num;
 	
 	if (!exmdb_client_get_folder_property(pfolder->plogon->get_dir(),
@@ -694,7 +693,7 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	    reinterpret_cast<void **>(&pbin_pcl)) ||
 	    pbin_pcl == nullptr)
 		return FALSE;
-	propval_buff[0].proptag = PROP_TAG_CHANGENUMBER;
+	propval_buff[0].proptag = PidTagChangeNumber;
 	propval_buff[0].pvalue = &change_num;
 	auto pbin_changekey = cu_xid_to_bin({pfolder->plogon->guid(), change_num});
 	if (NULL == pbin_changekey) {

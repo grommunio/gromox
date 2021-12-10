@@ -361,7 +361,7 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 			return FALSE;
 		}
 		auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
-		if (ict->proplist.set(PROP_TAG_MID, &message_id) != 0) {
+		if (ict->proplist.set(PidTagMid, &message_id) != 0) {
 			message_content_free(ict);
 			if (NULL != pinstance->username) {
 				free(pinstance->username);
@@ -490,7 +490,7 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 			return FALSE;
 		}
 		auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
-		if (ict->proplist.set(PROP_TAG_MID, &message_id) != 0) {
+		if (ict->proplist.set(PidTagMid, &message_id) != 0) {
 			message_content_free(ict);
 			if (NULL != pinstance->username) {
 				free(pinstance->username);
@@ -547,7 +547,7 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 	return TRUE;
 }
 
-/* get PROP_TAG_CHANGENUMBER from embedded message */
+/* get PidTagChangeNumber from embedded message */
 BOOL exmdb_server_get_embedded_cn(const char *dir, uint32_t instance_id,
     uint64_t **ppcn)
 {
@@ -560,7 +560,7 @@ BOOL exmdb_server_get_embedded_cn(const char *dir, uint32_t instance_id,
 	}
 	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	*ppcn = pinstance->parent_id == 0 ? nullptr :
-	        ict->proplist.get<uint64_t>(PROP_TAG_CHANGENUMBER);
+	        ict->proplist.get<uint64_t>(PidTagChangeNumber);
 	return TRUE;
 }
 
@@ -585,7 +585,7 @@ BOOL exmdb_server_reload_message_instance(
 	}
 	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	if (0 == pinstance->parent_id) {
-		auto pvalue = ict->proplist.getval(PROP_TAG_MID);
+		auto pvalue = ict->proplist.getval(PidTagMid);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -645,7 +645,7 @@ BOOL exmdb_server_clear_message_instance(
 		return FALSE;
 	}
 	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
-	auto pvalue = ict->proplist.getval(PROP_TAG_MID);
+	auto pvalue = ict->proplist.getval(PidTagMid);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -653,7 +653,7 @@ BOOL exmdb_server_clear_message_instance(
 	if (NULL == pmsgctnt) {
 		return FALSE;
 	}
-	if (pmsgctnt->proplist.set(PROP_TAG_MID, pvalue) != 0) {
+	if (pmsgctnt->proplist.set(PidTagMid, pvalue) != 0) {
 		message_content_free(pmsgctnt);
 		return FALSE;
 	}
@@ -1098,11 +1098,11 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 			if (TRUE == pinstance->b_new) {
 				break;
 			}
-		case PROP_TAG_MID:
+		case PidTagMid:
 		case PR_ENTRYID:
-		case PROP_TAG_FOLDERID:
+		case PidTagFolderId:
 		case PROP_TAG_CODEPAGEID:
-		case PROP_TAG_PARENTFOLDERID:
+		case PidTagParentFolderId:
 		case PROP_TAG_INSTANCESVREID:
 		case PROP_TAG_HASNAMEDPROPERTIES:
 		case PR_MESSAGE_SIZE:
@@ -1168,7 +1168,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 			return FALSE;
 		switch (proptag) {
 		case PR_CHANGE_KEY:
-		case PROP_TAG_CHANGENUMBER:
+		case PidTagChangeNumber:
 		case PR_PREDECESSOR_CHANGE_LIST:
 			continue;
 		}
@@ -1999,7 +1999,7 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 			continue;
 		}
 		switch (pproptags->pproptag[i]) {
-		case PROP_TAG_MID:
+		case PidTagMid:
 			if (NULL != pmessage_id) {
 				auto pv = cu_alloc<uint64_t>();
 				vc.pvalue = pv;
@@ -2122,7 +2122,7 @@ BOOL exmdb_server_get_instance_properties(
 		if (NULL == pinstance1) {
 			return FALSE;
 		}
-		auto pvalue = static_cast<MESSAGE_CONTENT *>(pinstance1->pcontent)->proplist.get<uint64_t>(PROP_TAG_MID);
+		auto pvalue = static_cast<MESSAGE_CONTENT *>(pinstance1->pcontent)->proplist.get<uint64_t>(PidTagMid);
 		if (!instance_get_attachment_properties(pinstance->cpid, pvalue,
 		    static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent),
 			pproptags, ppropvals)) {
@@ -2316,7 +2316,7 @@ BOOL exmdb_server_get_instance_properties(
 				continue;
 			}
 			break;
-		case PROP_TAG_FOLDERID:
+		case PidTagFolderId:
 			if (pinstance->parent_id != 0)
 				break;
 			vc.proptag = pproptags->pproptag[i];
@@ -2405,11 +2405,11 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 		case ID_TAG_BODY_STRING8:
 		case ID_TAG_HTML:
 		case ID_TAG_RTFCOMPRESSED:
-		case PROP_TAG_MID:
+		case PidTagMid:
 		case PR_ENTRYID:
-		case PROP_TAG_FOLDERID:
+		case PidTagFolderId:
 		case PROP_TAG_CODEPAGEID:
-		case PROP_TAG_PARENTFOLDERID:
+		case PidTagParentFolderId:
 		case PROP_TAG_INSTANCESVREID:
 		case PROP_TAG_HASNAMEDPROPERTIES:
 		case PR_MESSAGE_SIZE:
@@ -3175,7 +3175,7 @@ BOOL exmdb_server_query_message_instance_attachment_table(
 		pset->pparray = NULL;
 		return TRUE;
 	}
-	auto pvalue = pmsgctnt->proplist.getval(PROP_TAG_MID);
+	auto pvalue = pmsgctnt->proplist.getval(PidTagMid);
 	auto pattachments = pmsgctnt->children.pattachments;
 	if (row_needed > 0) {
 		end_pos = start_pos + row_needed;
@@ -3275,7 +3275,7 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 			attachment_content_free(pattachment);
 			return FALSE;
 		}
-		pembedded->proplist.erase(PROP_TAG_MID);
+		pembedded->proplist.erase(PidTagMid);
 		attachment_content_set_embedded_internal(pattachment, pembedded);
 		if (FALSE == attachment_list_append_internal(
 			pattachments, pattachment)) {
@@ -3303,7 +3303,7 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 		attachment_content_free(pattachment);
 		return FALSE;
 	}
-	pembedded->proplist.erase(PROP_TAG_MID);
+	pembedded->proplist.erase(PidTagMid);
 	attachment_content_set_embedded_internal(pattachment, pembedded);
 	if (FALSE == attachment_list_append_internal(
 		pattachments, pattachment)) {

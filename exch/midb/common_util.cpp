@@ -206,7 +206,7 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	last_time = rop_util_unix_to_nttime(time(NULL));
 	tmp_propvals.count = 9;
 	tmp_propvals.ppropval = propval_buff;
-	propval_buff[0].proptag = PROP_TAG_PARENTFOLDERID;
+	propval_buff[0].proptag = PidTagParentFolderId;
 	propval_buff[0].pvalue = &parent_id;
 	propval_buff[1].proptag = PR_FOLDER_TYPE;
 	propval_buff[1].pvalue = &tmp_type;
@@ -218,7 +218,7 @@ BOOL common_util_create_folder(const char *dir, int user_id,
 	propval_buff[4].pvalue = &last_time;
 	propval_buff[5].proptag = PR_LAST_MODIFICATION_TIME;
 	propval_buff[5].pvalue = &last_time;
-	propval_buff[6].proptag = PROP_TAG_CHANGENUMBER;
+	propval_buff[6].proptag = PidTagChangeNumber;
 	propval_buff[6].pvalue = &change_num;
 	XID xid{rop_util_make_user_guid(user_id), change_num};
 	if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||

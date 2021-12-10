@@ -162,10 +162,11 @@ static int rop_ext_push_getreceivefoldertable_response(
 	EXT_PUSH *pext, GETRECEIVEFOLDERTABLE_RESPONSE *r)
 {
 	PROPTAG_ARRAY columns;
-	uint32_t proptags[] = {PROP_TAG_FOLDERID, PR_MESSAGE_CLASS_A, PR_LAST_MODIFICATION_TIME};
+	static constexpr uint32_t proptags[] =
+		{PidTagFolderId, PR_MESSAGE_CLASS_A, PR_LAST_MODIFICATION_TIME};
 	
 	columns.count = arsizeof(proptags);
-	columns.pproptag = proptags;
+	columns.pproptag = deconst(proptags);
 	TRY(pext->p_uint32(r->rows.count));
 	for (size_t i = 0; i < r->rows.count; ++i)
 		TRY(pext->p_proprow(&columns, &r->rows.prows[i]));

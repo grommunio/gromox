@@ -2081,7 +2081,6 @@ static void mail_engine_sync_message(IDB_ITEM *pidb,
 
 static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 {
-	void *pvalue;
 	const char *dir;
 	TARRAY_SET rows;
 	sqlite3 *psqlite;
@@ -2136,7 +2135,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 		return FALSE;
 	}
 	for (size_t i = 0; i < rows.count; ++i) {
-		pvalue = rows.pparray[i]->getval(PROP_TAG_MID);
+		auto pvalue = rows.pparray[i]->getval(PidTagMid);
 		if (NULL == pvalue) {
 			continue;
 		}
@@ -2158,7 +2157,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 		} else {
 			received_time = *(uint64_t*)pvalue;
 		}
-		pvalue = rows.pparray[i]->getval(PROP_TAG_MIDSTRING);
+		pvalue = rows.pparray[i]->getval(PidTagMidString);
 		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, message_id);
 		if (NULL == pvalue) {
@@ -2405,8 +2404,8 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	}
 	proptags.count = 6;
 	proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_FOLDERID;
-	proptag_buff[1] = PROP_TAG_PARENTFOLDERID;
+	proptag_buff[0] = PidTagFolderId;
+	proptag_buff[1] = PidTagParentFolderId;
 	proptag_buff[2] = PR_ATTR_HIDDEN;
 	proptag_buff[3] = PR_CONTAINER_CLASS;
 	proptag_buff[4] = PR_DISPLAY_NAME;
@@ -2451,13 +2450,13 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 		if (pvalue == nullptr || strcasecmp(static_cast<const char *>(pvalue), "IPF.Note") != 0)
 			continue;
 		sqlite3_reset(pstmt);
-		pvalue = rows.pparray[i]->getval(PROP_TAG_FOLDERID);
+		pvalue = rows.pparray[i]->getval(PidTagFolderId);
 		if (NULL == pvalue) {
 			continue;
 		}
 		folder_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
 		sqlite3_bind_int64(pstmt, 1, folder_id);
-		pvalue = rows.pparray[i]->getval(PROP_TAG_PARENTFOLDERID);
+		pvalue = rows.pparray[i]->getval(PidTagParentFolderId);
 		if (NULL == pvalue) {
 			continue;
 		}
@@ -3287,8 +3286,8 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		return MIDB_E_NO_MEMORY;
 	}
 	pidb.reset();
-	if (pmsgctnt->proplist.set(PROP_TAG_MID, &message_id) != 0 ||
-	    pmsgctnt->proplist.set(PROP_TAG_CHANGENUMBER, &change_num) != 0) {
+	if (pmsgctnt->proplist.set(PidTagMid, &message_id) != 0 ||
+	    pmsgctnt->proplist.set(PidTagChangeNumber, &change_num) != 0) {
 		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
@@ -3550,8 +3549,8 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		return MIDB_E_NO_MEMORY;
 	}
 	pidb.reset();
-	if (pmsgctnt->proplist.set(PROP_TAG_MID, &message_id) != 0 ||
-	    pmsgctnt->proplist.set(PROP_TAG_CHANGENUMBER, &change_num) != 0) {
+	if (pmsgctnt->proplist.set(PidTagMid, &message_id) != 0 ||
+	    pmsgctnt->proplist.set(PidTagChangeNumber, &change_num) != 0) {
 		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
@@ -3717,7 +3716,7 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 		propvals.count = 4;
 	}
 	propvals.ppropval = propval_buff;
-	propval_buff[0].proptag = PROP_TAG_CHANGENUMBER;
+	propval_buff[0].proptag = PidTagChangeNumber;
 	propval_buff[0].pvalue = &change_num;
 	auto pbin = cu_xid_to_bin({rop_util_make_user_guid(user_id), change_num});
 	if (NULL == pbin) {
@@ -5257,7 +5256,7 @@ static void mail_engine_add_notification_message(
 	proptags.pproptag = tmp_proptags;
 	tmp_proptags[0] = PROP_TAG_MESSAGEDELIVERYTIME;
 	tmp_proptags[1] = PR_LAST_MODIFICATION_TIME;
-	tmp_proptags[2] = PROP_TAG_MIDSTRING;
+	tmp_proptags[2] = PidTagMidString;
 	tmp_proptags[3] = PR_MESSAGE_FLAGS;
 	if (!exmdb_client::get_message_properties(
 		common_util_get_maildir(), NULL, 0,
@@ -5284,7 +5283,7 @@ static void mail_engine_add_notification_message(
 		message_flags = *(uint32_t*)pvalue;
 	}
 	flags_buff[0] = '\0';
-	pvalue = propvals.getval(PROP_TAG_MIDSTRING);
+	pvalue = propvals.getval(PidTagMidString);
 	if (NULL == pvalue) {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT mid_string, flag_string"
 		          " FROM mapping WHERE message_id=%llu", LLU(message_id));
@@ -5704,7 +5703,7 @@ static void mail_engine_modify_notification_message(
 	proptags.pproptag = tmp_proptags;
 	tmp_proptags[0] = PR_MESSAGE_FLAGS;
 	tmp_proptags[1] = PR_LAST_MODIFICATION_TIME;
-	tmp_proptags[2] = PROP_TAG_MIDSTRING;
+	tmp_proptags[2] = PidTagMidString;
 	if (!exmdb_client::get_message_properties(
 		common_util_get_maildir(), NULL, 0,
 		rop_util_make_eid_ex(1, message_id),
@@ -5717,7 +5716,7 @@ static void mail_engine_modify_notification_message(
 	} else {
 		message_flags= *(uint32_t*)pvalue;
 	}
-	pvalue = propvals.getval(PROP_TAG_MIDSTRING);
+	pvalue = propvals.getval(PidTagMidString);
 	if (NULL != pvalue) {
  UPDATE_MESSAGE_FLAGS:
 		b_unsent = !!(message_flags & MSGFLAG_UNSENT);

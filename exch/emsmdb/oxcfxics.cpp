@@ -33,7 +33,6 @@ static EID_ARRAY *oxcfxics_load_folder_messages(logon_object *plogon,
 	uint32_t table_id;
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
-	uint32_t tmp_proptag;
 	PROPTAG_ARRAY proptags;
 	RESTRICTION restriction;
 	EID_ARRAY *pmessage_ids;
@@ -50,9 +49,9 @@ static EID_ARRAY *oxcfxics_load_folder_messages(logon_object *plogon,
 	    username, TABLE_FLAG_NONOTIFICATIONS, &restriction, nullptr,
 	    &table_id, &row_count))
 		return NULL;	
+	uint32_t tmp_proptag = PidTagMid;
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
-	tmp_proptag = PROP_TAG_MID;
 	if (!exmdb_client_query_table(plogon->get_dir(), nullptr, 0, table_id,
 	    &proptags, 0, row_count, &tmp_set))
 		return NULL;	
@@ -62,7 +61,7 @@ static EID_ARRAY *oxcfxics_load_folder_messages(logon_object *plogon,
 		return NULL;
 	}
 	for (size_t i = 0; i < tmp_set.count; ++i) {
-		auto pmid = tmp_set.pparray[i]->get<uint64_t>(PROP_TAG_MID);
+		auto pmid = tmp_set.pparray[i]->get<uint64_t>(PidTagMid);
 		if (NULL == pmid) {
 			eid_array_free(pmessage_ids);
 			return NULL;
@@ -88,7 +87,6 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 	char tmp_essdn[256];
 	uint32_t permission;
 	const char *username;
-	uint32_t tmp_proptag;
 	EID_ARRAY *pmessage_ids;
 	LONG_TERM_ID long_term_id;
 	PROPTAG_ARRAY tmp_proptags;
@@ -172,16 +170,16 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 	    &table_id, &row_count)) {
 		return NULL;
 	}
+	uint32_t tmp_proptag = PidTagFolderId;
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &tmp_proptag;
-	tmp_proptag = PROP_TAG_FOLDERID;
 	if (!exmdb_client_query_table(plogon->get_dir(), nullptr, 0,
 	    table_id, &tmp_proptags, 0, row_count, &tmp_set)) {
 		return NULL;
 	}
 	exmdb_client_unload_table(plogon->get_dir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
-		auto pfolder_id = tmp_set.pparray[i]->get<uint64_t>(PROP_TAG_FOLDERID);
+		auto pfolder_id = tmp_set.pparray[i]->get<uint64_t>(PidTagFolderId);
 		if (NULL == pfolder_id) {
 			return NULL;
 		}
@@ -1242,9 +1240,9 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		if (NULL == tmp_propvals.ppropval) {
 			return ecMAPIOOM;
 		}
-		tmp_propvals.ppropval[0].proptag = PROP_TAG_FOLDERID;
+		tmp_propvals.ppropval[0].proptag = PidTagFolderId;
 		tmp_propvals.ppropval[0].pvalue = &folder_id;
-		tmp_propvals.ppropval[1].proptag = PROP_TAG_PARENTFOLDERID;
+		tmp_propvals.ppropval[1].proptag = PidTagParentFolderId;
 		tmp_propvals.ppropval[1].pvalue = &parent_id1;
 		tmp_propvals.ppropval[2].proptag = PR_LAST_MODIFICATION_TIME;
 		tmp_propvals.ppropval[2].pvalue = phichyvals->ppropval[2].pvalue;
@@ -1254,7 +1252,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		tmp_propvals.ppropval[4].pvalue = phichyvals->ppropval[4].pvalue;
 		tmp_propvals.ppropval[5].proptag = PR_DISPLAY_NAME;
 		tmp_propvals.ppropval[5].pvalue = phichyvals->ppropval[5].pvalue;
-		tmp_propvals.ppropval[6].proptag = PROP_TAG_CHANGENUMBER;
+		tmp_propvals.ppropval[6].proptag = PidTagChangeNumber;
 		tmp_propvals.ppropval[6].pvalue = &change_num;
 		tmp_propvals.count = 7;
 		for (i=0; i<ppropvals->count; i++) {
@@ -1290,7 +1288,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			return ecAccessDenied;
 	}
 	if (!exmdb_client_get_folder_property(plogon->get_dir(), 0, folder_id,
-	    PROP_TAG_PARENTFOLDERID, &pvalue) || pvalue == nullptr)
+	    PidTagParentFolderId, &pvalue) || pvalue == nullptr)
 		return ecError;
 	parent_id = *(uint64_t*)pvalue;
 	if (parent_id != parent_id1) {
@@ -1341,7 +1339,7 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	tmp_propvals.ppropval[2].pvalue = phichyvals->ppropval[4].pvalue;
 	tmp_propvals.ppropval[3].proptag = PR_DISPLAY_NAME;
 	tmp_propvals.ppropval[3].pvalue = phichyvals->ppropval[5].pvalue;
-	tmp_propvals.ppropval[4].proptag = PROP_TAG_CHANGENUMBER;
+	tmp_propvals.ppropval[4].proptag = PidTagChangeNumber;
 	tmp_propvals.ppropval[4].pvalue = &change_num;
 	tmp_propvals.count = 5;
 	for (i=0; i<ppropvals->count; i++) {
@@ -1623,7 +1621,7 @@ uint32_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 			0, dst_mid, &tmp_propval, &result_unused);
 	}
 	if (!exmdb_client_get_message_property(plogon->get_dir(), nullptr, 0,
-	    dst_mid, PROP_TAG_CHANGENUMBER, &pvalue) || pvalue == nullptr)
+	    dst_mid, PidTagChangeNumber, &pvalue) || pvalue == nullptr)
 		return ecError;
 	auto s = b_fai ? pctx->pstate->pseen_fai : pctx->pstate->pseen;
 	s->append(*static_cast<uint64_t *>(pvalue));

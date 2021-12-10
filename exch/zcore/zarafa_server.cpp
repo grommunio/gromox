@@ -1047,7 +1047,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 		if (LOC_TYPE_PRIVATE_MESSAGE == loc_type ||
 			LOC_TYPE_PUBLIC_MESSAGE == loc_type) {
 			if (!exmdb_client_get_message_property(pstore->get_dir(),
-			    nullptr, 0, message_id, PROP_TAG_PARENTFOLDERID,
+			    nullptr, 0, message_id, PidTagParentFolderId,
 			    &pvalue) || pvalue == nullptr)
 				return ecError;
 			folder_id = *(uint64_t*)pvalue;
@@ -2155,7 +2155,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		last_time = rop_util_current_nttime();
 		tmp_propvals.count = 9;
 		tmp_propvals.ppropval = propval_buff;
-		propval_buff[0].proptag = PROP_TAG_PARENTFOLDERID;
+		propval_buff[0].proptag = PidTagParentFolderId;
 		propval_buff[0].pvalue = &parent_id;
 		propval_buff[1].proptag = PR_FOLDER_TYPE;
 		propval_buff[1].pvalue = &tmp_type;
@@ -2167,7 +2167,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 		propval_buff[4].pvalue = &last_time;
 		propval_buff[5].proptag = PR_LAST_MODIFICATION_TIME;
 		propval_buff[5].pvalue = &last_time;
-		propval_buff[6].proptag = PROP_TAG_CHANGENUMBER;
+		propval_buff[6].proptag = PidTagChangeNumber;
 		propval_buff[6].pvalue = &change_num;
 		propval_buff[7].proptag = PR_CHANGE_KEY;
 		propval_buff[7].pvalue = cu_xid_to_bin({pstore->guid(), change_num});
@@ -4678,15 +4678,15 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(8 + ppropvals->count);
 		if (tmp_propvals.ppropval == nullptr)
 			return ecError;
-		tmp_propvals.ppropval[0].proptag = PROP_TAG_FOLDERID;
+		tmp_propvals.ppropval[0].proptag = PidTagFolderId;
 		tmp_propvals.ppropval[0].pvalue = &folder_id;
-		tmp_propvals.ppropval[1].proptag = PROP_TAG_PARENTFOLDERID;
+		tmp_propvals.ppropval[1].proptag = PidTagParentFolderId;
 		tmp_propvals.ppropval[1].pvalue = &parent_id1;
 		tmp_propvals.ppropval[2].proptag = PR_LAST_MODIFICATION_TIME;
 		tmp_propvals.ppropval[2].pvalue = pproplist->ppropval[2].pvalue;
 		tmp_propvals.ppropval[3].proptag = PR_DISPLAY_NAME;
 		tmp_propvals.ppropval[3].pvalue = pproplist->ppropval[3].pvalue;
-		tmp_propvals.ppropval[4].proptag = PROP_TAG_CHANGENUMBER;
+		tmp_propvals.ppropval[4].proptag = PidTagChangeNumber;
 		tmp_propvals.ppropval[4].pvalue = &change_num;
 		tmp_propvals.count = 5;
 		for (i=0; i<ppropvals->count; i++) {
@@ -4711,7 +4711,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 			return ecAccessDenied;
 	}
 	if (!exmdb_client_get_folder_property(pstore->get_dir(), 0, folder_id,
-	    PROP_TAG_PARENTFOLDERID, &pvalue) || pvalue == nullptr)
+	    PidTagParentFolderId, &pvalue) || pvalue == nullptr)
 		return ecError;
 	parent_id = *(uint64_t*)pvalue;
 	if (parent_id != parent_id1) {
@@ -4754,7 +4754,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 	tmp_propvals.ppropval[0].pvalue = pproplist->ppropval[2].pvalue;
 	tmp_propvals.ppropval[1].proptag = PR_DISPLAY_NAME;
 	tmp_propvals.ppropval[1].pvalue = pproplist->ppropval[3].pvalue;
-	tmp_propvals.ppropval[2].proptag = PROP_TAG_CHANGENUMBER;
+	tmp_propvals.ppropval[2].proptag = PidTagChangeNumber;
 	tmp_propvals.ppropval[2].pvalue = &change_num;
 	tmp_propvals.count = 3;
 	for (i=0; i<ppropvals->count; i++) {

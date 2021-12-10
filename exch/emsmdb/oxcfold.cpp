@@ -213,7 +213,7 @@ uint32_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 		last_time = rop_util_current_nttime();
 		tmp_propvals.count = 9;
 		tmp_propvals.ppropval = propval_buff;
-		propval_buff[0].proptag = PROP_TAG_PARENTFOLDERID;
+		propval_buff[0].proptag = PidTagParentFolderId;
 		propval_buff[0].pvalue = &parent_id;
 		propval_buff[1].proptag = PR_FOLDER_TYPE;
 		propval_buff[1].pvalue = &tmp_type;
@@ -225,7 +225,7 @@ uint32_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 		propval_buff[4].pvalue = &last_time;
 		propval_buff[5].proptag = PR_LAST_MODIFICATION_TIME;
 		propval_buff[5].pvalue = &last_time;
-		propval_buff[6].proptag = PROP_TAG_CHANGENUMBER;
+		propval_buff[6].proptag = PidTagChangeNumber;
 		propval_buff[6].pvalue = &change_num;
 		propval_buff[7].proptag = PR_CHANGE_KEY;
 		propval_buff[7].pvalue = cu_xid_to_bin({plogon->guid(), change_num});
@@ -643,7 +643,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 	nt_time = rop_util_current_nttime();
 	propvals.count = 4;
 	propvals.ppropval = propval_buff;
-	propval_buff[0].proptag = PROP_TAG_CHANGENUMBER;
+	propval_buff[0].proptag = PidTagChangeNumber;
 	propval_buff[0].pvalue = &change_num;
 	propval_buff[1].proptag = PR_CHANGE_KEY;
 	propval_buff[1].pvalue = pbin_changekey;

@@ -501,7 +501,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		pmsg->proplist.set(PROP_TAG_AUTORESPONSESUPPRESS, &tmp_int32);
 	}
 	
-	pmsg->proplist.erase(PROP_TAG_CHANGENUMBER);
+	pmsg->proplist.erase(PidTagChangeNumber);
 	result = exmdb_client_delivery_message(
 		home_dir, pcontext->pcontrol->from,
 		address, 0, pmsg, temp_buff);

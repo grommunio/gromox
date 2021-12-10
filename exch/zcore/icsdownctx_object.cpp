@@ -198,7 +198,7 @@ BOOL icsdownctx_object::make_hierarchy(const BINARY *state,
 		return FALSE;
 	}
 	for (size_t i = 0; i < fldchgs.count; ++i) {
-		auto pvalue = fldchgs.pfldchgs[i].get<uint64_t>(PROP_TAG_FOLDERID);
+		auto pvalue = fldchgs.pfldchgs[i].get<uint64_t>(PidTagFolderId);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -299,7 +299,7 @@ BOOL icsdownctx_object::sync_message_change(BOOL *pb_found, BOOL *pb_new,
 		message_id = pctx->pchg_eids->pids[pctx->eid_pos];
 		pctx->eid_pos ++;
 		if (!exmdb_client_get_message_property(pctx->pstore->get_dir(),
-		    nullptr, 0, message_id, PROP_TAG_CHANGENUMBER, &pvalue))
+		    nullptr, 0, message_id, PidTagChangeNumber, &pvalue))
 			return FALSE;	
 	} while (NULL == pvalue);
 	*pb_new = !eid_array_check(pctx->pupdated_eids, message_id) ? TRUE : false;
@@ -372,22 +372,22 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 	pproplist->count ++;
 	proptags.count = 6;
 	proptags.pproptag = proptag_buff;
-	proptag_buff[0] = PROP_TAG_PARENTFOLDERID;
+	proptag_buff[0] = PidTagParentFolderId;
 	proptag_buff[1] = PR_DISPLAY_NAME;
 	proptag_buff[2] = PR_CONTAINER_CLASS;
 	proptag_buff[3] = PR_ATTR_HIDDEN;
 	proptag_buff[4] = PROP_TAG_EXTENDEDFOLDERFLAGS;
-	proptag_buff[5] = PROP_TAG_CHANGENUMBER;
+	proptag_buff[5] = PidTagChangeNumber;
 	if (!exmdb_client::get_folder_properties(pctx->pstore->get_dir(), 0,
 	    fid, &proptags, &tmp_propvals))
 		return FALSE;
-	pvalue = tmp_propvals.getval(PROP_TAG_CHANGENUMBER);
+	pvalue = tmp_propvals.getval(PidTagChangeNumber);
 	if (NULL == pvalue) {
 		*pb_found = FALSE;
 		return TRUE;
 	}
 	change_num = *(uint64_t*)pvalue;
-	pvalue = tmp_propvals.getval(PROP_TAG_PARENTFOLDERID);
+	pvalue = tmp_propvals.getval(PidTagParentFolderId);
 	if (NULL != pvalue) {
 		parent_fid = *(uint64_t*)pvalue;
 		pproplist->ppropval[pproplist->count].proptag = PR_PARENT_SOURCE_KEY;

@@ -1439,7 +1439,7 @@ static BOOL store_object_set_folder_name(store_object *pstore,
 	if (!exmdb_client::allocate_cn(pstore->dir, &change_num)) {
 		return FALSE;
 	}
-	tmp_propvals.ppropval[1].proptag = PROP_TAG_CHANGENUMBER;
+	tmp_propvals.ppropval[1].proptag = PidTagChangeNumber;
 	tmp_propvals.ppropval[1].pvalue = &change_num;
 	if (!exmdb_client_get_folder_property(pstore->dir, 0, folder_id,
 	    PR_PREDECESSOR_CHANGE_LIST, reinterpret_cast<void **>(&pbin_pcl)) ||
@@ -1678,7 +1678,7 @@ BOOL store_object::get_permissions(PERMISSION_SET *pperm_set)
 	}
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
-	tmp_proptag = PROP_TAG_FOLDERID;
+	tmp_proptag = PidTagFolderId;
 	if (!exmdb_client::query_table(pstore->dir, NULL,
 		0, table_id, &proptags, 0, row_num, &tmp_set)) {
 		return FALSE;

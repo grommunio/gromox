@@ -105,7 +105,6 @@ uint32_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
 	uint32_t permission;
-	uint32_t tmp_proptag;
 	uint64_t fid_deferred;
 	PROBLEM_ARRAY problems;
 	PROPTAG_ARRAY proptags;
@@ -141,9 +140,9 @@ uint32_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	    &table_id, &row_count))
 		return ecError;
 	
+	uint32_t tmp_proptag = PidTagMid;
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
-	tmp_proptag = PROP_TAG_MID;
 	
 	if (!exmdb_client_query_table(plogon->get_dir(), nullptr, 0,
 	    table_id, &proptags, 0, row_count, &tmp_set))
@@ -159,7 +158,7 @@ uint32_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	tmp_byte = 1;
 	
 	for (size_t i = 0; i < tmp_set.count; ++i) {
-		auto pmid = tmp_set.pparray[i]->get<uint64_t>(PROP_TAG_MID);
+		auto pmid = tmp_set.pparray[i]->get<uint64_t>(PidTagMid);
 		if (NULL == pmid) {
 			continue;
 		}

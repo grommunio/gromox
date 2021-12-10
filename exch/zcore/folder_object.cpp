@@ -104,7 +104,7 @@ BOOL folder_object::check_readonly_property(uint32_t proptag) const
 	case PROP_TAG_ARTICLENUMBERNEXT:
 	case PR_ASSOC_CONTENT_COUNT:
 	case PROP_TAG_ATTRIBUTEREADONLY:
-	case PROP_TAG_CHANGENUMBER:
+	case PidTagChangeNumber:
 	case PROP_TAG_CONTENTCOUNT:
 	case PROP_TAG_CONTENTUNREADCOUNT:
 	case PR_CREATION_TIME:
@@ -114,7 +114,7 @@ BOOL folder_object::check_readonly_property(uint32_t proptag) const
 	case PR_ENTRYID:
 	case PROP_TAG_FOLDERCHILDCOUNT:
 	case PROP_TAG_FOLDERFLAGS:
-	case PROP_TAG_FOLDERID:
+	case PidTagFolderId:
 	case PR_FOLDER_TYPE:
 	case PROP_TAG_HASRULES:
 	case PR_HIERARCHY_CHANGE_NUM:
@@ -129,7 +129,7 @@ BOOL folder_object::check_readonly_property(uint32_t proptag) const
 	case PR_NORMAL_MESSAGE_SIZE:
 	case PR_NORMAL_MESSAGE_SIZE_EXTENDED:
 	case PR_PARENT_ENTRYID:
-	case PROP_TAG_PARENTFOLDERID:
+	case PidTagParentFolderId:
 	case PR_STORE_RECORD_KEY:
 	case PR_STORE_ENTRYID:
 	case PR_CHANGE_KEY:
@@ -186,7 +186,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		       pinfo->get_username(), pfolder->folder_id,
 		       static_cast<uint32_t *>(*ppvalue));
 	}
-	case PROP_TAG_FOLDERID:
+	case PidTagFolderId:
 		*ppvalue = cu_alloc<uint64_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
@@ -214,7 +214,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		return TRUE;
 	case PR_PARENT_ENTRYID:
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
-		    0, pfolder->folder_id, PROP_TAG_PARENTFOLDERID, &pvalue) ||
+		    0, pfolder->folder_id, PidTagParentFolderId, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
 		*ppvalue = common_util_to_folder_entryid(
@@ -239,7 +239,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			}
 		}
 		if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
-		    0, pfolder->folder_id, PROP_TAG_PARENTFOLDERID, &pvalue) ||
+		    0, pfolder->folder_id, PidTagParentFolderId, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
 		*ppvalue = common_util_calculate_folder_sourcekey(
@@ -586,8 +586,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	auto pfolder = this;
 	if (!exmdb_client::allocate_cn(pfolder->pstore->get_dir(), &change_num))
 		return FALSE;
-	tmp_propvals.ppropval[tmp_propvals.count].proptag =
-									PROP_TAG_CHANGENUMBER;
+	tmp_propvals.ppropval[tmp_propvals.count].proptag = PidTagChangeNumber;
 	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = &change_num;
 	if (!exmdb_client_get_folder_property(pfolder->pstore->get_dir(),
 	    0, pfolder->folder_id, PR_PREDECESSOR_CHANGE_LIST,
@@ -653,7 +652,7 @@ BOOL folder_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	    reinterpret_cast<void **>(&pbin_pcl)) ||
 	    pbin_pcl == nullptr)
 		return FALSE;
-	propval_buff[0].proptag = PROP_TAG_CHANGENUMBER;
+	propval_buff[0].proptag = PidTagChangeNumber;
 	propval_buff[0].pvalue = &change_num;
 	auto pbin_changekey = cu_xid_to_bin({pfolder->pstore->guid(), change_num});
 	if (NULL == pbin_changekey) {

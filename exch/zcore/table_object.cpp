@@ -346,7 +346,7 @@ static bool conttbl_q0(const table_object *ptable, TARRAY_SET &temp_set)
 	for (size_t i = 0; i < temp_set.count; ++i) {
 		for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
 			auto &r = temp_set.pparray[i]->ppropval[j];
-			if (r.proptag != PROP_TAG_MID)
+			if (r.proptag != PidTagMid)
 				continue;
 			auto tmp_eid = *static_cast<uint64_t *>(r.pvalue);
 			r.pvalue = common_util_calculate_message_sourcekey(ptable->pstore, tmp_eid);
@@ -364,7 +364,7 @@ static bool hiertbl_q0(const table_object *ptable, TARRAY_SET &temp_set)
 	for (size_t i = 0; i < temp_set.count; ++i) {
 		for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
 			auto &r = temp_set.pparray[i]->ppropval[j];
-			if (r.proptag != PROP_TAG_FOLDERID)
+			if (r.proptag != PidTagFolderId)
 				continue;
 			auto tmp_eid = *static_cast<uint64_t *>(r.pvalue);
 			r.pvalue = common_util_calculate_folder_sourcekey(ptable->pstore, tmp_eid);
@@ -383,7 +383,7 @@ static bool hiertbl_q1(const table_object *ptable, const USER_INFO *pinfo,
 	for (size_t i = 0; i < temp_set.count; ++i) {
 		for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
 			auto &r = temp_set.pparray[i]->ppropval[j];
-			if (r.proptag != PROP_TAG_FOLDERID)
+			if (r.proptag != PidTagFolderId)
 				continue;
 			auto tmp_eid = *static_cast<uint64_t *>(r.pvalue);
 			auto ptag_access = cu_alloc<uint32_t>();
@@ -405,7 +405,7 @@ static bool hiertbl_q2(const table_object *ptable, const USER_INFO *pinfo,
 	for (size_t i = 0; i < temp_set.count; ++i) {
 		for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
 			auto &r = temp_set.pparray[i]->ppropval[j];
-			if (r.proptag != PROP_TAG_FOLDERID)
+			if (r.proptag != PidTagFolderId)
 				continue;
 			auto tmp_eid = *static_cast<uint64_t *>(r.pvalue);
 			auto perm = cu_alloc<uint32_t>();
@@ -444,11 +444,11 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
 			sizeof(uint32_t)*pcolumns->count);
 		if (idx != pcolumns->npos)
 			tmp_columns.pproptag[idx] = ptable->table_type == CONTENT_TABLE ?
-			                            PROP_TAG_MID : PROP_TAG_FOLDERID;
+			                            PidTagMid : PidTagFolderId;
 		if (idx1 != pcolumns->npos)
-			tmp_columns.pproptag[idx1] = PROP_TAG_FOLDERID;
+			tmp_columns.pproptag[idx1] = PidTagFolderId;
 		if (idx2 != pcolumns->npos)
-			tmp_columns.pproptag[idx2] = PROP_TAG_FOLDERID;
+			tmp_columns.pproptag[idx2] = PidTagFolderId;
 		if (!exmdb_client::query_table(ptable->pstore->get_dir(),
 		    username, pinfo->cpid, ptable->table_id, &tmp_columns,
 		    ptable->position, row_needed, &temp_set))

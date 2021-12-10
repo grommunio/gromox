@@ -145,7 +145,7 @@ static BOOL aobj_check_readonly_property(const attachment_object *pattachment,
 	if (PROP_TYPE(proptag) == PT_OBJECT && proptag != PR_ATTACH_DATA_OBJ)
 		return TRUE;
 	switch (proptag) {
-	case PROP_TAG_MID:
+	case PidTagMid:
 	case PR_ACCESS_LEVEL:
 	case PROP_TAG_INCONFLICT:
 	case PR_OBJECT_TYPE:

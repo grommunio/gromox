@@ -332,17 +332,15 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			tmp_bin.pb = NULL;
 			common_util_set_propvals(fldchgs.pfldchgs + i, &tmp_propval);
 		}
-		auto pvalue = fldchgs.pfldchgs[i].getval(PROP_TAG_FOLDERID);
+		auto pvalue = fldchgs.pfldchgs[i].getval(PidTagFolderId);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
 		folder_id = *(uint64_t*)pvalue;
 		if (0 == (SYNC_EXTRA_FLAG_EID & pctx->extra_flags)) {
-			common_util_remove_propvals(
-				fldchgs.pfldchgs + i,
-				PROP_TAG_FOLDERID);
+			common_util_remove_propvals(&fldchgs.pfldchgs[i], PidTagFolderId);
 		}
-		pvalue = fldchgs.pfldchgs[i].getval(PROP_TAG_PARENTFOLDERID);
+		pvalue = fldchgs.pfldchgs[i].getval(PidTagParentFolderId);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
@@ -708,16 +706,14 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
 	
 	if (SYNC_EXTRA_FLAG_EID & extra_flags) {
-		pvalue = pmsgctnt->proplist.getval(PROP_TAG_MID);
+		pvalue = pmsgctnt->proplist.getval(PidTagMid);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		pchgheader->ppropval[pchgheader->count].proptag =
-												PROP_TAG_MID;
+		pchgheader->ppropval[pchgheader->count].proptag = PidTagMid;
 		pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
 	}
-	common_util_remove_propvals(
-			&pmsgctnt->proplist, PROP_TAG_MID);
+	common_util_remove_propvals(&pmsgctnt->proplist, PidTagMid);
 	
 	pvalue = pmsgctnt->proplist.getval(PR_MESSAGE_SIZE);
 	if (NULL == pvalue) {
@@ -731,16 +727,14 @@ static BOOL icsdownctx_object_extract_msgctntinfo(
 	common_util_remove_propvals(&pmsgctnt->proplist, PR_MESSAGE_SIZE);
 	
 	if (SYNC_EXTRA_FLAG_CN & extra_flags) {
-		pvalue = pmsgctnt->proplist.getval(PROP_TAG_CHANGENUMBER);
+		pvalue = pmsgctnt->proplist.getval(PidTagChangeNumber);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		pchgheader->ppropval[pchgheader->count].proptag =
-										PROP_TAG_CHANGENUMBER;
+		pchgheader->ppropval[pchgheader->count].proptag = PidTagChangeNumber;
 		pchgheader->ppropval[pchgheader->count++].pvalue = pvalue;
 	}
-	common_util_remove_propvals(
-		&pmsgctnt->proplist, PROP_TAG_CHANGENUMBER);
+	common_util_remove_propvals(&pmsgctnt->proplist, PidTagChangeNumber);
 	return TRUE;
 }
 
@@ -904,13 +898,12 @@ static void icsdownctx_object_trim_embedded(
 		}
 		pembedded = pattachment->pembedded;
 		for (j=0; j<pembedded->proplist.count; j++) {
-			if (PROP_TAG_MID == pembedded->proplist.ppropval[j].proptag) {
+			if (pembedded->proplist.ppropval[j].proptag == PidTagMid) {
 				*(uint64_t*)pembedded->proplist.ppropval[j].pvalue = 0;
 				break;
 			}
 		}
-		common_util_remove_propvals(
-			&pembedded->proplist, PROP_TAG_CHANGENUMBER);
+		common_util_remove_propvals(&pembedded->proplist, PidTagChangeNumber);
 		common_util_remove_propvals(
 			&pembedded->proplist, PROP_TAG_MESSAGESTATUS);
 		icsdownctx_object_trim_embedded(pembedded);
@@ -1024,7 +1017,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			memcpy(ppropval, pembedded->proplist.ppropval,
 				sizeof(TAGGED_PROPVAL)*pembedded->proplist.count);
 			pembedded->proplist.ppropval = ppropval;
-			tmp_propval.proptag = PROP_TAG_MID;
+			tmp_propval.proptag = PidTagMid;
 			tmp_propval.pvalue = &message_id;
 			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
 			tmp_propval.proptag = PR_PARENT_SOURCE_KEY;

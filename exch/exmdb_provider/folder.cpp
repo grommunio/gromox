@@ -175,7 +175,7 @@ BOOL exmdb_server_get_folder_class_table(
 		if (NULL == ppropvals->ppropval) {
 			return FALSE;
 		}
-		ppropvals->ppropval[0].proptag = PROP_TAG_FOLDERID;
+		ppropvals->ppropval[0].proptag = PidTagFolderId;
 		ppropvals->ppropval[0].pvalue = cu_alloc<uint64_t>();
 		if (NULL == ppropvals->ppropval[0].pvalue) {
 			return FALSE;
@@ -286,7 +286,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		}
 		message_id = sqlite3_column_int64(pstmt, 0);
 		auto *pv = &ppropvals->ppropval[ppropvals->count];
-		pv->proptag = PROP_TAG_MID;
+		pv->proptag = PidTagMid;
 		pv->pvalue = cu_alloc<uint64_t>();
 		if (pv->pvalue == nullptr) {
 			return FALSE;
@@ -295,7 +295,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		ppropvals->count ++;
 		++pv;
 		if (SQLITE_NULL != sqlite3_column_type(pstmt, 2)) {
-			pv->proptag = PROP_TAG_MIDSTRING;
+			pv->proptag = PidTagMidString;
 			pv->pvalue = common_util_dup(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 2)));
 			if (pv->pvalue == nullptr) {
 				return FALSE;
@@ -419,32 +419,32 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 	TAGGED_PROPVAL tmp_propval;
 	PROBLEM_ARRAY tmp_problems;
 	
-	auto pvalue = pproperties->getval(PROP_TAG_FOLDERID);
+	auto pvalue = pproperties->getval(PidTagFolderId);
 	if (NULL == pvalue) {
 		tmp_fid = 0;
 	} else {
 		tmp_fid = *(uint64_t*)pvalue;
-		common_util_remove_propvals(pproperties, PROP_TAG_FOLDERID);
+		common_util_remove_propvals(pproperties, PidTagFolderId);
 	}
 	*pfolder_id = 0;
-	pvalue = pproperties->getval(PROP_TAG_PARENTFOLDERID);
+	pvalue = pproperties->getval(PidTagParentFolderId);
 	if (pvalue == nullptr || rop_util_get_replid(*static_cast<uint64_t *>(pvalue)) != 1) {
 		fprintf(stderr, "E-1581: create_folder_b_p request with no parent or wrong EID\n");
 		return TRUE;
 	}
 	parent_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
-	common_util_remove_propvals(pproperties, PROP_TAG_PARENTFOLDERID);
+	common_util_remove_propvals(pproperties, PidTagParentFolderId);
 	pname = pproperties->get<char>(PR_DISPLAY_NAME);
 	if (pname == nullptr) {
 		fprintf(stderr, "E-1582: create_folder_b_p request with no name\n");
 		return TRUE;
 	}
-	pvalue = pproperties->getval(PROP_TAG_CHANGENUMBER);
+	pvalue = pproperties->getval(PidTagChangeNumber);
 	if (pvalue == nullptr) {
 		fprintf(stderr, "E-1583: create_folder_b_p request without CN\n");
 		return TRUE;
 	}
-	common_util_remove_propvals(pproperties, PROP_TAG_CHANGENUMBER);
+	common_util_remove_propvals(pproperties, PidTagChangeNumber);
 	change_num = rop_util_get_gc_value(*(uint64_t*)pvalue);
 	if (!pproperties->has(PR_PREDECESSOR_CHANGE_LIST)) {
 		fprintf(stderr, "E-1584: create_folder_b_p request without PCL\n");
@@ -712,7 +712,7 @@ BOOL exmdb_server_get_folder_properties(
 	return TRUE;
 }
 
-/* no PROPERTY_PROBLEM for PROP_TAG_CHANGENUMBER and PR_CHANGE_KEY */
+/* no PROPERTY_PROBLEM for PidTagChangeNumber and PR_CHANGE_KEY */
 BOOL exmdb_server_set_folder_properties(
 	const char *dir, uint32_t cpid, uint64_t folder_id,
 	const TPROPVAL_ARRAY *pproperties,

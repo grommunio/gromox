@@ -216,7 +216,7 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 			return FALSE;
 		}
 		tmp_cn = rop_util_make_eid_ex(1, change_num);
-		tmp_propvals[0].proptag = PROP_TAG_CHANGENUMBER;
+		tmp_propvals[0].proptag = PidTagChangeNumber;
 		tmp_propvals[0].pvalue = &tmp_cn;
 		tmp_propvals[1].proptag = PR_CHANGE_KEY;
 		tmp_propvals[1].pvalue = cu_xid_to_bin({
@@ -446,7 +446,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 			return FALSE;
 		}
 		tmp_cn = rop_util_make_eid_ex(1, change_num);
-		tmp_propvals[0].proptag = PROP_TAG_CHANGENUMBER;
+		tmp_propvals[0].proptag = PidTagChangeNumber;
 		tmp_propvals[0].pvalue = &tmp_cn;
 		tmp_propvals[1].proptag = PR_CHANGE_KEY;
 		tmp_propvals[1].pvalue = cu_xid_to_bin({
@@ -650,7 +650,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 		return FALSE;
 	}
 	tmp_cn = rop_util_make_eid_ex(1, change_num);
-	tmp_propvals[0].proptag = PROP_TAG_CHANGENUMBER;
+	tmp_propvals[0].proptag = PidTagChangeNumber;
 	tmp_propvals[0].pvalue = &tmp_cn;
 	tmp_propvals[1].proptag = PR_CHANGE_KEY;
 	tmp_propvals[1].pvalue = cu_xid_to_bin({
@@ -1782,9 +1782,9 @@ static BOOL message_rectify_message(const char *account,
 		return FALSE;
 	for (i=0; i<pmsgctnt->proplist.count; i++) {
 		switch (pmsgctnt->proplist.ppropval[i].proptag) {
-		case PROP_TAG_MID:
+		case PidTagMid:
 		case PR_ASSOCIATED:
-		case PROP_TAG_CHANGENUMBER:
+		case PidTagChangeNumber:
 		case PROP_TAG_MESSAGESTATUS:
 			continue;
 		case PR_SUBJECT:
@@ -2059,7 +2059,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	const TPROPVAL_ARRAY *pproplist;
 	
 	pproplist = &pmsgctnt->proplist;
-	auto pvalue = pproplist->getval(PROP_TAG_CHANGENUMBER);
+	auto pvalue = pproplist->getval(PidTagChangeNumber);
 	if (NULL == pvalue) {
 		if (FALSE == common_util_allocate_cn(psqlite, &change_num)) {
 			return FALSE;
@@ -2132,7 +2132,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			return TRUE;
 		}
 		b_exist = FALSE;
-		pvalue = pproplist->getval(PROP_TAG_MID);
+		pvalue = pproplist->getval(PidTagMid);
 		if (NULL == pvalue) {
 			if (FALSE == common_util_allocate_eid_from_folder(
 				psqlite, parent_id, pmessage_id)) {
@@ -2964,8 +2964,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 			return FALSE;
 		}
 		common_util_remove_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
-		common_util_remove_propvals(
-			&pmsgctnt->proplist, PROP_TAG_MID);
+		common_util_remove_propvals(&pmsgctnt->proplist, PidTagMid);
 		common_util_remove_propvals(&pmsgctnt->proplist, PR_BODY);
 		common_util_remove_propvals(
 			&pmsgctnt->proplist, PROP_TAG_HTML);
@@ -3677,9 +3676,8 @@ static bool op_delegate(const char *from_address, const char *account,
 	static constexpr uint32_t tags[] = {
 		PR_DISPLAY_TO, PR_DISPLAY_TO_A,
 		PR_DISPLAY_CC, PR_DISPLAY_CC_A,
-		PR_DISPLAY_BCC, PR_DISPLAY_BCC_A,
-		PROP_TAG_MID, PR_MESSAGE_SIZE,
-		PR_ASSOCIATED, PROP_TAG_CHANGENUMBER,
+		PR_DISPLAY_BCC, PR_DISPLAY_BCC_A, PidTagMid, PR_MESSAGE_SIZE,
+		PR_ASSOCIATED, PidTagChangeNumber,
 		PR_CHANGE_KEY, PR_READ, PR_HASATTACH,
 		PR_PREDECESSOR_CHANGE_LIST,
 		PROP_TAG_MESSAGETOME, PROP_TAG_MESSAGECCME
@@ -4109,9 +4107,8 @@ static bool opx_delegate(const char *from_address, const char *account,
 	static constexpr uint32_t tags[] = {
 		PR_DISPLAY_TO, PR_DISPLAY_TO_A,
 		PR_DISPLAY_CC, PR_DISPLAY_CC_A,
-		PR_DISPLAY_BCC, PR_DISPLAY_BCC_A,
-		PROP_TAG_MID, PR_MESSAGE_SIZE,
-		PR_ASSOCIATED, PROP_TAG_CHANGENUMBER,
+		PR_DISPLAY_BCC, PR_DISPLAY_BCC_A, PidTagMid, PR_MESSAGE_SIZE,
+		PR_ASSOCIATED, PidTagChangeNumber,
 		PR_CHANGE_KEY, PR_READ, PR_HASATTACH,
 		PR_PREDECESSOR_CHANGE_LIST,
 		PROP_TAG_MESSAGETOME, PROP_TAG_MESSAGECCME,
@@ -4679,12 +4676,12 @@ BOOL exmdb_server_write_message(const char *dir, const char *account,
 	uint64_t fid_val;
 	uint64_t fid_val1;
 	
-	if (!pmsgctnt->proplist.has(PROP_TAG_CHANGENUMBER)) {
+	if (!pmsgctnt->proplist.has(PidTagChangeNumber)) {
 		*pe_result = GXERR_CALL_FAILED;
 		return TRUE;
 	}
 	b_exist = FALSE;
-	auto pmid = pmsgctnt->proplist.get<uint64_t>(PROP_TAG_MID);
+	auto pmid = pmsgctnt->proplist.get<uint64_t>(PidTagMid);
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;

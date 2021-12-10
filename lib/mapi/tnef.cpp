@@ -1616,7 +1616,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 		pmsg->proplist.set(PR_INTERNET_CPID, &cpid);
 	}
 	tnef_message_to_unicode(cpid, pmsg);
-	pmsg->proplist.erase(PROP_TAG_MID);
+	pmsg->proplist.erase(PidTagMid);
 	pmsg->proplist.erase(PR_ENTRYID);
 	pmsg->proplist.erase(PR_SEARCH_KEY);
 	auto pmsg_ret = pmsg;

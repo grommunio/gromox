@@ -1608,7 +1608,7 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 		return FALSE;	
 	tmp_propvals.count = 2;
 	tmp_propvals.ppropval = propval_buff;
-	propval_buff[0].proptag = PROP_TAG_CHANGENUMBER;
+	propval_buff[0].proptag = PidTagChangeNumber;
 	propval_buff[0].pvalue = &change_num;
 	propval_buff[1].proptag = PR_CHANGE_KEY;
 	propval_buff[1].pvalue = cu_xid_to_bin({plogon->guid(), change_num});
@@ -1977,7 +1977,7 @@ BOOL common_util_send_message(logon_object *plogon,
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
 	if (!exmdb_client_get_message_property(plogon->get_dir(), nullptr, 0,
-	    message_id, PROP_TAG_PARENTFOLDERID, &pvalue) || pvalue == nullptr) {
+	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr) {
 		log_err("W-1289: Cannot get parent folder_id of mid:0x%llx", LLU(message_id));
 		return FALSE;
 	}

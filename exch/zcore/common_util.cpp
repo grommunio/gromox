@@ -1760,7 +1760,7 @@ BOOL common_util_send_message(store_object *pstore,
 	auto pinfo = zarafa_server_get_info();
 	uint32_t cpid = pinfo == nullptr ? 1252 : pinfo->cpid;
 	if (!exmdb_client_get_message_property(pstore->get_dir(), nullptr, 0,
-	    message_id, PROP_TAG_PARENTFOLDERID, &pvalue) || pvalue == nullptr)
+	    message_id, PidTagParentFolderId, &pvalue) || pvalue == nullptr)
 		return FALSE;
 	parent_id = *(uint64_t*)pvalue;
 	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
@@ -2183,18 +2183,17 @@ gxerr_t common_util_remote_copy_message(store_object *pstore,
 	static constexpr uint32_t tags[] = {
 		PROP_TAG_CONVERSATIONID, PR_DISPLAY_TO,
 		PR_DISPLAY_TO_A, PR_DISPLAY_CC,
-		PR_DISPLAY_CC_A, PR_DISPLAY_BCC,
-		PR_DISPLAY_BCC_A, PROP_TAG_MID,
+		PR_DISPLAY_CC_A, PR_DISPLAY_BCC, PR_DISPLAY_BCC_A, PidTagMid,
 		PR_MESSAGE_SIZE, PR_MESSAGE_SIZE_EXTENDED,
 		PROP_TAG_HASNAMEDPROPERTIES, PR_HASATTACH,
-		PR_ENTRYID, PROP_TAG_FOLDERID, PR_OBJECT_TYPE,
+		PR_ENTRYID, PidTagFolderId, PR_OBJECT_TYPE,
 		PR_PARENT_ENTRYID, PR_STORE_RECORD_KEY,
 	};
 	for (auto t : tags)
 		common_util_remove_propvals(&pmsgctnt->proplist, t);
 	if (!exmdb_client::allocate_cn(pstore->get_dir(), &change_num))
 		return GXERR_CALL_FAILED;
-	propval.proptag = PROP_TAG_CHANGENUMBER;
+	propval.proptag = PidTagChangeNumber;
 	propval.pvalue = &change_num;
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	auto pbin = cu_xid_to_bin({pstore->guid(), change_num});
@@ -2238,7 +2237,7 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 		PR_DELETED_COUNT_TOTAL, PR_DELETED_FOLDER_COUNT,
 		PROP_TAG_ARTICLENUMBERNEXT, PR_INTERNET_ARTICLE_NUMBER,
 		PR_DISPLAY_TYPE, PR_DELETED_ON, PR_ENTRYID,
-		PROP_TAG_FOLDERCHILDCOUNT, PROP_TAG_FOLDERFLAGS, PROP_TAG_FOLDERID,
+		PROP_TAG_FOLDERCHILDCOUNT, PROP_TAG_FOLDERFLAGS, PidTagFolderId,
 		PR_FOLDER_TYPE, PROP_TAG_HASRULES, PR_HIERARCHY_CHANGE_NUM,
 		PROP_TAG_LOCALCOMMITTIME, PR_LOCAL_COMMIT_TIME_MAX,
 		PR_MESSAGE_SIZE, PR_MESSAGE_SIZE_EXTENDED, PROP_TAG_NATIVEBODY,
@@ -2254,12 +2253,12 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 	propval.pvalue = &tmp_type;
 	tmp_type = FOLDER_GENERIC;
 	common_util_set_propvals(pproplist, &propval);
-	propval.proptag = PROP_TAG_PARENTFOLDERID;
+	propval.proptag = PidTagParentFolderId;
 	propval.pvalue = &parent_id;
 	common_util_set_propvals(pproplist, &propval);
 	if (!exmdb_client::allocate_cn(pstore->get_dir(), &change_num))
 		return FALSE;
-	propval.proptag = PROP_TAG_CHANGENUMBER;
+	propval.proptag = PidTagChangeNumber;
 	propval.pvalue = &change_num;
 	common_util_set_propvals(pproplist, &propval);
 	auto pbin = cu_xid_to_bin({pstore->guid(), change_num});
@@ -2307,7 +2306,6 @@ static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
 	uint32_t table_id;
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
-	uint32_t tmp_proptag;
 	PROPTAG_ARRAY proptags;
 	EID_ARRAY *pmessage_ids;
 	
@@ -2315,9 +2313,9 @@ static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
 	    username, TABLE_FLAG_NONOTIFICATIONS,
 	    nullptr, nullptr, &table_id, &row_count))
 		return NULL;	
+	uint32_t tmp_proptag = PidTagMid;
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
-	tmp_proptag = PROP_TAG_MID;
 	if (!exmdb_client::query_table(pstore->get_dir(), nullptr, 0, table_id,
 	    &proptags, 0, row_count, &tmp_set))
 		return NULL;	
@@ -2332,7 +2330,7 @@ static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
 		return NULL;
 	}
 	for (size_t i = 0; i < tmp_set.count; ++i) {
-		auto pmid = tmp_set.pparray[i]->get<uint64_t>(PROP_TAG_MID);
+		auto pmid = tmp_set.pparray[i]->get<uint64_t>(PidTagMid);
 		if (NULL == pmid) {
 			return NULL;
 		}
@@ -2350,7 +2348,6 @@ gxerr_t common_util_remote_copy_folder(store_object *pstore, uint64_t folder_id,
 	uint32_t row_count;
 	TARRAY_SET tmp_set;
 	uint32_t permission;
-	uint32_t tmp_proptag;
 	TAGGED_PROPVAL propval;
 	EID_ARRAY *pmessage_ids;
 	PROPTAG_ARRAY tmp_proptags;
@@ -2397,15 +2394,15 @@ gxerr_t common_util_remote_copy_folder(store_object *pstore, uint64_t folder_id,
 	    username, TABLE_FLAG_NONOTIFICATIONS, nullptr,
 	    &table_id, &row_count))
 		return GXERR_CALL_FAILED;
+	uint32_t tmp_proptag = PidTagFolderId;
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = &tmp_proptag;
-	tmp_proptag = PROP_TAG_FOLDERID;
 	if (!exmdb_client::query_table(pstore->get_dir(), nullptr, 0, table_id,
 	    &tmp_proptags, 0, row_count, &tmp_set))
 		return GXERR_CALL_FAILED;
 	exmdb_client::unload_table(pstore->get_dir(), table_id);
 	for (size_t i = 0; i < tmp_set.count; ++i) {
-		auto pfolder_id = tmp_set.pparray[i]->get<uint64_t>(PROP_TAG_FOLDERID);
+		auto pfolder_id = tmp_set.pparray[i]->get<uint64_t>(PidTagFolderId);
 		if (NULL == pfolder_id) {
 			return GXERR_CALL_FAILED;
 		}
@@ -2449,7 +2446,7 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	if (exmdb_client_get_message_property(pstore->get_dir(), nullptr, 0,
-	    message_id, PROP_TAG_MIDSTRING, &pvalue) && pvalue != nullptr) try {
+	    message_id, PidTagMidString, &pvalue) && pvalue != nullptr) try {
 		auto eml_path = pstore->get_dir() + "/eml/"s +
 		                static_cast<const char *>(pvalue);
 		return common_util_load_file(eml_path.c_str(), peml_bin);

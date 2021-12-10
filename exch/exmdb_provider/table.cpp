@@ -1806,7 +1806,7 @@ static BOOL table_column_content_tmptbl(
 	uint32_t tmp_proptag;
 	
 	switch (proptag) {
-	case PROP_TAG_FOLDERID:
+	case PidTagFolderId:
 		if (CONTENT_ROW_HEADER == row_type) {
 			*ppvalue = cu_alloc<uint64_t>();
 			if (NULL != *ppvalue) {
@@ -3305,10 +3305,10 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		}
 		int_hash_iter_free(iter);
 		phash.reset();
-		tmp_proptags[pproptags->count++] = PROP_TAG_MID;
+		tmp_proptags[pproptags->count++] = PidTagMid;
 		tmp_proptags[pproptags->count++] = PR_MESSAGE_SIZE;
 		tmp_proptags[pproptags->count++] = PR_ASSOCIATED;
-		tmp_proptags[pproptags->count++] = PROP_TAG_CHANGENUMBER;
+		tmp_proptags[pproptags->count++] = PidTagChangeNumber;
 		tmp_proptags[pproptags->count++] = PR_READ;
 		tmp_proptags[pproptags->count++] = PR_HASATTACH;
 		tmp_proptags[pproptags->count++] = PR_MESSAGE_FLAGS;

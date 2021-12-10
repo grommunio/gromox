@@ -85,7 +85,7 @@ static int repair_folder(uint64_t fid)
 static int repair_mbox()
 {
 	static constexpr uint32_t tags[] =
-		{PROP_TAG_FOLDERID, PR_CHANGE_KEY, PR_PREDECESSOR_CHANGE_LIST};
+		{PidTagFolderId, PR_CHANGE_KEY, PR_PREDECESSOR_CHANGE_LIST};
 	static constexpr PROPTAG_ARRAY ptags[] = {3, deconst(tags)};
 	uint32_t table_id = 0, row_num = 0;
 	uint64_t root_fld = g_public_folder ? rop_util_make_eid_ex(1, PRIVATE_FID_ROOT) :
@@ -109,7 +109,7 @@ static int repair_mbox()
 
 	printf("Hierarchy discovery: %u folders\n", tset.count);
 	for (size_t i = 0; i < tset.count; ++i) {
-		auto fid = tset.pparray[i]->get<uint64_t>(PROP_TAG_FOLDERID);
+		auto fid = tset.pparray[i]->get<uint64_t>(PidTagFolderId);
 		if (fid == nullptr)
 			continue;
 		auto ckey = tset.pparray[i]->get<BINARY>(PR_CHANGE_KEY);
