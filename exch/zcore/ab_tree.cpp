@@ -98,10 +98,6 @@ static char g_zcab_org_name[256];
 static std::unordered_map<int, AB_BASE> g_base_hash;
 static std::mutex g_base_lock;
 static LIB_BUFFER *g_file_allocator;
-static const uint8_t g_guid_nspi[] = {0xDC, 0xA7, 0x40, 0xC8,
-									   0xC0, 0x42, 0x10, 0x1A,
-									   0xB4, 0xB9, 0x08, 0x00,
-									   0x2B, 0x2F, 0xE1, 0x82};
 
 static void *zcoreab_scanwork(void *);
 static void ab_tree_get_display_name(SIMPLE_TREE_NODE *, uint32_t codepage, char *str_dname, size_t dn_size);
@@ -1597,8 +1593,8 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (bv == nullptr)
 			return FALSE;
 		*ppvalue = bv;
-		bv->cb = 16;
-		bv->pb = deconst(g_guid_nspi);
+		bv->cb = sizeof(muidEMSAB);
+		bv->pb = deconst(muidEMSAB);
 		return TRUE;
 	}
 	case PR_PARENT_ENTRYID:

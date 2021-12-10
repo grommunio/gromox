@@ -43,7 +43,6 @@
 
 #define EPOCH_DIFF 						11644473600LL
 
-extern const uint8_t *common_util_get_nspi_guid();
 extern GUID common_util_get_server_guid();
 void common_util_day_to_filetime(const char *day, FILETIME *pftime);
 int common_util_from_utf8(uint32_t codepage,

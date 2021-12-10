@@ -13,6 +13,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/oxoabkt.hpp>
 #include <gromox/paths.h>
+#include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include "nsp_interface.h"
 #include "common_util.h"
@@ -75,7 +76,6 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 	char dn[1280]{};
 	GUID temp_guid;
 	uint8_t node_type;
-	const uint8_t *pguid;
 	uint32_t display_type;
 	EPHEMERAL_ENTRYID ephid;
 	PERMANENT_ENTRYID permeid;
@@ -165,8 +165,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		} else {
 			pprop->value.bin.pv = pbuff;
 		}
-		pguid = common_util_get_nspi_guid();
-		memcpy(pprop->value.bin.pb, pguid, 16);
+		memcpy(pprop->value.bin.pb, muidEMSAB, sizeof(muidEMSAB));
 		return ecSuccess;
 	case PR_TEMPLATEID:
 		display_type = node_type == NODE_TYPE_MLIST ? DT_DISTLIST : DT_MAILUSER;

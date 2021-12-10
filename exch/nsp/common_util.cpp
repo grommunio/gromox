@@ -6,6 +6,7 @@
 #include <gromox/proc_common.h>
 #include <gromox/ndr_stack.hpp>
 #include <gromox/guid.hpp>
+#include <gromox/rop_util.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -17,17 +18,8 @@
 
 static constexpr unsigned int SR_GROW_NSP_PROPROW = 40, SR_GROW_NSP_ROWSET = 100;
 static GUID g_server_guid;
-static const uint8_t g_guid_nspi[] = {0xDC, 0xA7, 0x40, 0xC8,
-									   0xC0, 0x42, 0x10, 0x1A,
-									   0xB4, 0xB9, 0x08, 0x00,
-									   0x2B, 0x2F, 0xE1, 0x82};
 
 static const char* (*cpid_to_charset)(uint32_t cpid);
-
-const uint8_t* common_util_get_nspi_guid()
-{
-	return g_guid_nspi;
-}
 
 GUID common_util_get_server_guid()
 {
@@ -159,7 +151,7 @@ BOOL common_util_set_permanententryid(uint32_t display_type,
 	ppermeid->r1 = 0x0;
 	ppermeid->r2 = 0x0;
 	ppermeid->r3 = 0x0;
-	memcpy(ppermeid->provider_uid.ab, g_guid_nspi, 16);
+	memcpy(ppermeid->provider_uid.ab, muidEMSAB, sizeof(muidEMSAB));
 	ppermeid->r4 = 0x1;
 	ppermeid->display_type = display_type;
 	ppermeid->pdn = NULL;
