@@ -399,7 +399,7 @@ static void *mdl_thrwork(void *arg)
 				fprintf(stderr, "W-1591: garbage in %s; review and delete\n", temp_path.c_str());
 				deliv_ret = DELIVERY_OPERATION_ERROR;
 			} else {
-				mem_file_clear(&pcontext->pcontrol->f_rcpt_to);
+				pcontext->pcontrol->f_rcpt_to.clear();
 				pcontext->pcontrol->f_rcpt_to.writeline(ptr);
 				gx_strlcpy(temp_rcpt, ptr, arsizeof(temp_rcpt));
 

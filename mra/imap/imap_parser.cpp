@@ -1390,8 +1390,8 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 	std::unique_lock hl_hold(g_hash_lock);
 	b_modify = pcontext->b_modify;
 	pcontext->b_modify = FALSE;
-	mem_file_copy(&pcontext->f_flags, &temp_file);
-	mem_file_clear(&pcontext->f_flags);
+	pcontext->f_flags.copy_to(temp_file);
+	pcontext->f_flags.clear();
 	hl_hold.unlock();
 	
 	if (TRUE == b_modify && MIDB_RESULT_OK == system_services_summary_folder(
@@ -1411,7 +1411,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 		}
 	}
 	
-	if (0 == mem_file_get_total_length(&temp_file)) {
+	if (temp_file.get_total_length() == 0) {
 		mem_file_free(&temp_file);
 		return;
 	}
@@ -1681,7 +1681,7 @@ static void imap_parser_context_clear(IMAP_CONTEXT *pcontext)
 	pcontext->literal_len = 0;
 	pcontext->current_len = 0;
 	pcontext->stream.clear();
-	mem_file_clear(&pcontext->f_flags);
+	pcontext->f_flags.clear();
 	pcontext->auth_times = 0;
 	pcontext->username[0] = '\0';
 	pcontext->maildir[0] = '\0';
@@ -1854,7 +1854,7 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 			g_select_hash->remove(temp_string);
 		}
 		pcontext->b_modify = FALSE;
-		mem_file_clear(&pcontext->f_flags);
+		pcontext->f_flags.clear();
 		for (pnode=double_list_get_head(plist); NULL!=pnode;
 			pnode=double_list_get_after(plist, pnode)) {
 			pcontext1 = (IMAP_CONTEXT*)pnode->pdata;

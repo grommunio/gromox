@@ -635,7 +635,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		0 != strcasecmp(phttp->request.method, "HEAD")) {
 		return FALSE;
 	}
-	auto tmp_len = mem_file_get_total_length(&phttp->request.f_content_length);
+	auto tmp_len = phttp->request.f_content_length.get_total_length();
 	if (0 != tmp_len) {
 		if (tmp_len >= 32) {
 			return FALSE;
@@ -646,7 +646,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		if (strtoll(tmp_buff, nullptr, 0) != 0)
 			return FALSE;
 	}
-	tmp_len = mem_file_get_total_length(&phttp->request.f_host);
+	tmp_len = phttp->request.f_host.get_total_length();
 	if (tmp_len >= sizeof(domain)) {
 		http_parser_log_info(phttp, LV_DEBUG, "length of "
 			"request host is too long for mod_cache");
@@ -663,8 +663,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	if (NULL != ptoken) {
 		*ptoken = '\0';
 	}
-	tmp_len = mem_file_get_total_length(
-		&phttp->request.f_request_uri);
+	tmp_len = phttp->request.f_request_uri.get_total_length();
 	if (0 == tmp_len) {
 		http_parser_log_info(phttp, LV_DEBUG, "cannot"
 			" find request uri for mod_cache");

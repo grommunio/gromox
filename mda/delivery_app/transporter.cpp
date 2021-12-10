@@ -570,7 +570,7 @@ static void *dxp_thrwork(void *arg)
 			}
 		}
 		if (FALSE == b_self) {
-			mem_file_clear(&pcontext->pcontrol->f_rcpt_to);
+			pcontext->pcontrol->f_rcpt_to.clear();
 			pcontext->pmail->clear();
 			message_dequeue_put(pmessage);
 		} else {
@@ -928,7 +928,7 @@ static MESSAGE_CONTEXT* transporter_get_context()
 static void transporter_put_context(MESSAGE_CONTEXT *pcontext)
 {
 	/* reset the context object */
-	mem_file_clear(&pcontext->pcontrol->f_rcpt_to);
+	pcontext->pcontrol->f_rcpt_to.clear();
 	pcontext->pcontrol->queue_ID = 0;
 	pcontext->pcontrol->is_spam = FALSE;
 	pcontext->pcontrol->bound_type = BOUND_UNKNOWN;

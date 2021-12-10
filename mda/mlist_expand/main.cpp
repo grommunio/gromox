@@ -217,7 +217,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 		return FALSE;
 	}
 	
-	mem_file_copy(&temp_file2, &pcontext->pcontrol->f_rcpt_to);
+	temp_file2.copy_to(pcontext->pcontrol->f_rcpt_to);
 	mem_file_free(&temp_file2);
 
 	if (temp_file1.size() == 0) {
@@ -254,11 +254,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 	throw_context(pcontext_expand);
 
  EXIT_EXPAND:
-	if (0 == mem_file_get_total_length(&pcontext->pcontrol->f_rcpt_to)) {
-		return TRUE;
-	} else {
-		return FALSE;
-	}
+	return pcontext->pcontrol->f_rcpt_to.get_total_length() == 0 ? TRUE : false;
 }
 
 static void console_talk(int argc, char **argv, char *result, int length)

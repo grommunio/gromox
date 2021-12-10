@@ -289,8 +289,8 @@ void mime_clear(MIME *pmime)
 	pmime->content_length	 = 0;
 	pmime->first_boundary    = NULL;
     pmime->last_boundary     = NULL;
-	mem_file_clear(&pmime->f_type_params);
-	mem_file_clear(&pmime->f_other_fields);
+	pmime->f_type_params.clear();
+	pmime->f_other_fields.clear();
 
 }
 
@@ -770,11 +770,11 @@ BOOL mime_set_field(MIME *pmime, const char *tag, const char *value)
 	}
 #endif
 	if (0 == strcasecmp(tag, "Content-Type")) {
-		mem_file_clear(&pmime->f_type_params);
+		pmime->f_type_params.clear();
 		parse_field_value(value, strlen(value), tmp_buff, 256,
 			&pmime->f_type_params);
 		if (FALSE == mime_set_content_type(pmime, tmp_buff)) {
-			mem_file_clear(&pmime->f_type_params);
+			pmime->f_type_params.clear();
 			return FALSE;
 		}
 		return TRUE;
@@ -825,7 +825,7 @@ BOOL mime_set_field(MIME *pmime, const char *tag, const char *value)
 		file_tmp.write(tag, tag_len);
 		file_tmp.write(&val_len, sizeof(uint32_t));
 		file_tmp.write(value, val_len);
-		mem_file_copy(&file_tmp, &pmime->f_other_fields);
+		file_tmp.copy_to(pmime->f_other_fields);
 		mem_file_free(&file_tmp);
 	}
 	pmime->head_touched = TRUE;
@@ -904,7 +904,7 @@ BOOL mime_remove_field(MIME *pmime, const char *tag)
 		}
 	}
 	if (TRUE == found_tag) {
-		mem_file_copy(&file_tmp, &pmime->f_other_fields);
+		file_tmp.copy_to(pmime->f_other_fields);
 	}
 	mem_file_free(&file_tmp);
 	return found_tag;
@@ -1032,7 +1032,7 @@ BOOL mime_set_content_param(MIME *pmime, const char *tag, const char *value)
 		file_tmp.write(tag, tag_len);
 		file_tmp.write(&val_len, sizeof(uint32_t));
 		file_tmp.write(value, val_len);
-		mem_file_copy(&file_tmp, &pmime->f_type_params);
+		file_tmp.copy_to(pmime->f_type_params);
 		mem_file_free(&file_tmp);
 	}
 	pmime->head_touched = TRUE;
@@ -2788,8 +2788,8 @@ void mime_copy(MIME *pmime_src, MIME *pmime_dst)
 		pmime_dst->content_begin = NULL;
 		pmime_dst->content_length = 0;
 	}
-	mem_file_copy(&pmime_src->f_type_params, &pmime_dst->f_type_params);
-	mem_file_copy(&pmime_src->f_other_fields, &pmime_dst->f_other_fields);
+	pmime_src->f_type_params.copy_to(pmime_dst->f_type_params);
+	pmime_src->f_other_fields.copy_to(pmime_dst->f_other_fields);
 	pmime_dst->head_touched = TRUE;
 	pmime_dst->content_touched = TRUE;
 }

@@ -312,7 +312,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 		}
 	}
 	if (TRUE == remote_found) {
-		mem_file_copy(&remote_file, &pcontext->pcontrol->f_rcpt_to);
+		remote_file.copy_to(pcontext->pcontrol->f_rcpt_to);
 		mem_file_free(&remote_file);
 		return FALSE;
 	}

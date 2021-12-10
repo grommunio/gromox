@@ -578,7 +578,6 @@ size_t MEM_FILE::write(const void *pbuff, size_t size)
  */
 size_t MEM_FILE::writeline(const char *pbuff)
 {
-	auto pfile = this;
 #ifdef _DEBUG_UMTA
 	if (pbuff == nullptr) {
 		debug_info("[mem_file]: mem_file_writeline, param NULL");
@@ -606,11 +605,12 @@ size_t MEM_FILE::writeline(const char *pbuff)
  *	  @param
  *		  pfile [in]	indicate the mem file object
  */
-void mem_file_clear(MEM_FILE *pfile)
+void MEM_FILE::clear()
 {
+	auto pfile = this;
 	DOUBLE_LIST_NODE *pnode, *phead;
 #ifdef _DEBUG_UMTA
-	if (NULL == pfile || NULL == pfile->allocator) {
+	if (pfile->allocator == nullptr) {
 		debug_info("[mem_file]: mem_file_clear, param NULL");
 		return;
 	}
@@ -648,7 +648,7 @@ void mem_file_free(MEM_FILE *pfile)
 		return;
 	}
 #endif
-	mem_file_clear(pfile);
+	pfile->clear();
 	phead = double_list_pop_front(&pfile->list);
 	lib_buffer_put(pfile->allocator, phead);
 	pfile->allocator = NULL;
@@ -681,17 +681,6 @@ static DOUBLE_LIST_NODE* mem_file_append_node(MEM_FILE *pfile)
 	return pnode;
 }
 
-size_t mem_file_get_total_length(MEM_FILE *pfile) 
-{
-#ifdef _DEBUG_UMTA
-	if (NULL== pfile) {
-		debug_info("[mem_file]: mem_file_get_total_length, param NULL");
-		return 0;
-	}
-#endif
-	return pfile->file_total_len;
-}
-
 /*
  *	copy mem file from one to another
  *	@param
@@ -700,23 +689,17 @@ size_t mem_file_get_total_length(MEM_FILE *pfile)
  *	@return
  *		bytes actually copied
  */
-size_t mem_file_copy(MEM_FILE *pfile_src, MEM_FILE *pfile_dst)
+size_t MEM_FILE::copy_to(MEM_FILE &mdst)
 {
-	size_t nodes_num, i;
+	auto pfile_src = this;
+	auto pfile_dst = &mdst;
 	DOUBLE_LIST_NODE *pnode, *pnode_dst;
 	
-#ifdef _DEBUG_UMTA
-	if (NULL == pfile_src || NULL == pfile_dst) {
-		debug_info("[mem_file]: mem_file_copy, param NULL");
-		return 0;
-	}
-#endif
-
-	mem_file_clear(pfile_dst);
-	nodes_num = double_list_get_nodes_num(&pfile_src->list);
-	for (i=0; i<nodes_num-1; i++) {
+	mdst.clear();
+	auto nodes_num = double_list_get_nodes_num(&list);
+	for (size_t i = 0; i < nodes_num - 1; ++i) {
 		if (NULL == mem_file_append_node(pfile_dst)) {
-			mem_file_clear(pfile_dst);
+			pfile_dst->clear();
 			return 0;
 		}
 	}
@@ -733,9 +716,8 @@ size_t mem_file_copy(MEM_FILE *pfile_src, MEM_FILE *pfile_dst)
 	pfile_dst->file_total_len = pfile_src->file_total_len;
 	nodes_num = pfile_dst->wr_total_pos/FILE_BLOCK_SIZE;
 	pnode = double_list_get_head(&pfile_dst->list);
-	for(i=0; i<nodes_num; i++) {
+	for (size_t i = 0; i < nodes_num; ++i)
 		pnode = double_list_get_after(&pfile_dst->list, pnode);
-	}
 	pfile_dst->pnode_wr = pnode;
 	return pfile_dst->file_total_len;
 }

@@ -457,8 +457,7 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 	for (const auto &p : g_plugin_list) {
 		auto pplugin = &p;
 		if (pplugin->interface.preproc(phttp->context_id)) {
-			tmp_len = mem_file_get_total_length(
-				&phttp->request.f_content_length);
+			tmp_len = phttp->request.f_content_length.get_total_length();
 			if (0 == tmp_len) {
 				content_length = 0;
 			} else {
@@ -480,8 +479,7 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 				return FALSE;
 			}
 			b_chunked = FALSE;
-			tmp_len = mem_file_get_total_length(
-				&phttp->request.f_transfer_encoding);
+			tmp_len = phttp->request.f_transfer_encoding.get_total_length();
 			if (tmp_len > 0 && static_cast<size_t>(tmp_len) < GX_ARRAY_SIZE(tmp_buff)) {
 				phttp->request.f_transfer_encoding.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 				phttp->request.f_transfer_encoding.read(tmp_buff, tmp_len);

@@ -101,7 +101,7 @@ BOOL icsupctx_object::end_state_stream()
 	if (NULL == pset) {
 		return FALSE;
 	}
-	tmp_bin.cb = mem_file_get_total_length(&pctx->f_state_stream);
+	tmp_bin.cb = pctx->f_state_stream.get_total_length();
 	tmp_bin.pv = common_util_alloc(tmp_bin.cb);
 	if (tmp_bin.pv == nullptr) {
 		idset_free(pset);

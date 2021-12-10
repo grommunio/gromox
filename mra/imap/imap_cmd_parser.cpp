@@ -1366,8 +1366,8 @@ static void imap_cmd_parser_convert_folderlist(
 			temp_file.writeline(converted_name);
 		}
 	}
-	mem_file_clear(pfile);
-	mem_file_copy(&temp_file, pfile);
+	pfile->clear();
+	temp_file.copy_to(*pfile);
 	mem_file_free(&temp_file);
 }
 

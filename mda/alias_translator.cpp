@@ -90,7 +90,7 @@ static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 
 	mem_file_init(&temp_file, pcontext->pcontrol->f_rcpt_to.allocator);
 	mem_file_init(&rcpt_file, pcontext->pcontrol->f_rcpt_to.allocator);
-	mem_file_copy(&pcontext->pcontrol->f_rcpt_to, &rcpt_file);
+	pcontext->pcontrol->f_rcpt_to.copy_to(rcpt_file);
 	
 	if (strchr(pcontext->pcontrol->from, '@') != nullptr &&
 	    address_table_query(pcontext->pcontrol->from, mainname)) {
@@ -111,7 +111,7 @@ static BOOL mail_hook(MESSAGE_CONTEXT *pcontext)
 		temp_file.writeline(rcpt_to);
 	}
 	if (TRUE == b_replaced) {
-		mem_file_copy(&temp_file, &pcontext->pcontrol->f_rcpt_to);
+		temp_file.copy_to(pcontext->pcontrol->f_rcpt_to);
 	}
 	mem_file_free(&temp_file);
 	mem_file_free(&rcpt_file);

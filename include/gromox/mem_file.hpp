@@ -24,8 +24,11 @@ struct MEM_FILE {
 	size_t read(void *, size_t);
 	size_t readline(char *, size_t);
 	ssize_t seek(int type, ssize_t offset, int opt);
+	size_t get_total_length() const { return file_total_len; }
+	void clear();
 	size_t write(const void *, size_t);
 	size_t writeline(const char *);
+	size_t copy_to(MEM_FILE &dst);
 
     DOUBLE_LIST_NODE    *pnode_rd;    /* node of current reading */
     DOUBLE_LIST_NODE    *pnode_wr;    /* node of current writing */
@@ -39,7 +42,4 @@ struct MEM_FILE {
 };
     
 void mem_file_init(MEM_FILE *pfile, LIB_BUFFER *palloc);
-size_t mem_file_get_total_length(MEM_FILE *pfile);
-void mem_file_clear(MEM_FILE *pfile);
 void mem_file_free(MEM_FILE *pfile);
-size_t mem_file_copy(MEM_FILE *pfile_src, MEM_FILE *pfile_dst);

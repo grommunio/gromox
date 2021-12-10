@@ -735,8 +735,7 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 
 static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 {
-	auto tmp_len = mem_file_get_total_length(
-	               &pcontext->request.f_request_uri);
+	auto tmp_len = pcontext->request.f_request_uri.get_total_length();
 	if (0 == tmp_len || tmp_len >= 1024) {
 		http_parser_log_info(pcontext, LV_DEBUG,
 			"rpcproxy request method error");
@@ -2015,17 +2014,17 @@ static void http_parser_request_clear(HTTP_REQUEST *prequest)
 	
 	prequest->method[0] = '\0';
 	prequest->version[0] = '\0';
-	mem_file_clear(&prequest->f_request_uri);
-	mem_file_clear(&prequest->f_host);
-	mem_file_clear(&prequest->f_user_agent);
-	mem_file_clear(&prequest->f_accept);
-	mem_file_clear(&prequest->f_accept_language);
-	mem_file_clear(&prequest->f_accept_encoding);
-	mem_file_clear(&prequest->f_content_type);
-	mem_file_clear(&prequest->f_content_length);
-	mem_file_clear(&prequest->f_transfer_encoding);
-	mem_file_clear(&prequest->f_cookie);
-	mem_file_clear(&prequest->f_others);
+	prequest->f_request_uri.clear();
+	prequest->f_host.clear();
+	prequest->f_user_agent.clear();
+	prequest->f_accept.clear();
+	prequest->f_accept_language.clear();
+	prequest->f_accept_encoding.clear();
+	prequest->f_content_type.clear();
+	prequest->f_content_length.clear();
+	prequest->f_transfer_encoding.clear();
+	prequest->f_cookie.clear();
+	prequest->f_others.clear();
 }
 
 HTTP_CONTEXT::~HTTP_CONTEXT()

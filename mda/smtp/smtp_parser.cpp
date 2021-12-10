@@ -884,7 +884,7 @@ void smtp_parser_reset_context_envelope(SMTP_CONTEXT *pcontext)
 	pcontext->mail.envelope.from[0] = '\0';
 	/* pcontext->mail.envelope.username[0] = '\0'; */
 	strcpy(pcontext->mail.envelope.parsed_domain, "unknown");
-	mem_file_clear(&pcontext->mail.envelope.f_rcpt_to);
+	pcontext->mail.envelope.f_rcpt_to.clear();
 }
 
 SMTP_CONTEXT::SMTP_CONTEXT() :
@@ -947,22 +947,22 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
 	pcontext->mail.body.mail_length        = 0;
 	pcontext->mail.body.parts_num          = 0;
 	pcontext->stream.clear();
-	mem_file_clear(&pcontext->block_info.f_last_blkmime);
+	pcontext->block_info.f_last_blkmime.clear();
 	strcpy(pcontext->mail.envelope.parsed_domain, "unknown");
 	memset(&pcontext->mail.envelope.hello_domain, 0, arsizeof(pcontext->mail.envelope.hello_domain));
 	memset(&pcontext->mail.envelope.from, 0, arsizeof(pcontext->mail.envelope.from));
 	if (!pcontext->mail.envelope.is_login)
 		memset(&pcontext->mail.envelope.username, 0, arsizeof(pcontext->mail.envelope.username));
-	mem_file_clear(&pcontext->mail.envelope.f_rcpt_to);
-	mem_file_clear(&pcontext->mail.head.f_mime_to);
-	mem_file_clear(&pcontext->mail.head.f_mime_from);
-	mem_file_clear(&pcontext->mail.head.f_mime_cc);
-	mem_file_clear(&pcontext->mail.head.f_mime_delivered_to);
-	mem_file_clear(&pcontext->mail.head.f_xmailer);
-	mem_file_clear(&pcontext->mail.head.f_subject);
-	mem_file_clear(&pcontext->mail.head.f_content_type);
-	mem_file_clear(&pcontext->mail.head.f_others);
-	mem_file_clear(&pcontext->mail.body.f_mail_parts);
+	pcontext->mail.envelope.f_rcpt_to.clear();
+	pcontext->mail.head.f_mime_to.clear();
+	pcontext->mail.head.f_mime_from.clear();
+	pcontext->mail.head.f_mime_cc.clear();
+	pcontext->mail.head.f_mime_delivered_to.clear();
+	pcontext->mail.head.f_xmailer.clear();
+	pcontext->mail.head.f_subject.clear();
+	pcontext->mail.head.f_content_type.clear();
+	pcontext->mail.head.f_others.clear();
+	pcontext->mail.body.f_mail_parts.clear();
 	memset(&pcontext->mail.head.x_original_ip, 0, sizeof(pcontext->mail.head.x_original_ip));
 	memset(&pcontext->mail.head.compose_time, 0, arsizeof(pcontext->mail.head.compose_time));
 	memset(&pcontext->flusher, 0, sizeof(FLUSH_INFO));
