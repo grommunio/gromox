@@ -142,6 +142,13 @@ static std::string sql_escape(MYSQL *sqh, const char *in)
 	return out;
 }
 
+static bool is_imap_propid(uint16_t id)
+{
+	return id == PROP_ID(PR_EC_IMAP_ID) || id == PROP_ID(PR_EC_IMAP_SUBSCRIBED) ||
+	       id == PROP_ID(PR_EC_IMAP_MAX_ID) || id == PROP_ID(PR_EC_IMAP_EMAIL_SIZE) ||
+	       id == PROP_ID(PR_EC_IMAP_BODY) || id == PROP_ID(PR_EC_IMAP_BODYSTRUCTURE);
+}
+
 static void hid_to_tpropval_1(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)
 {
 	auto res = drv.query(qstr);
@@ -154,6 +161,13 @@ static void hid_to_tpropval_1(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)
 		TAGGED_PROPVAL pv{};
 		pv.pvalue = &upv;
 
+		/*
+		 * Skip importing IMAP data; midb rebuilds this anyway, and has
+		 * its own database for this so as to not clutter the store
+		 * with what is effectively computable data.
+		 */
+		if (is_imap_propid(xtag))
+			continue;
 		switch (xtype) {
 		case PT_SHORT: upv.i = strtoul(znul(row[PCOL_ULONG]), nullptr, 0); break;
 		case PT_LONG: [[fallthrough]];

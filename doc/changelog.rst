@@ -21,6 +21,7 @@ Changes:
 
 * http, imap, pop3: Addresses in log messages are now (more
   consistently) in square brackets.
+* kdb2mt: skip over IMAP properties when reading databases
 
 
 1.10 (2021-12-07)
