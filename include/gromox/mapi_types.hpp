@@ -716,17 +716,6 @@ struct RECURRENCE_PATTERN {
 	uint32_t enddate; /* if no enddate, shoule be set to 0x5AE980DF */
 };
 
-#define OVERRIDEFLAG_SUBJECT						0x0001
-#define OVERRIDEFLAG_MEETINGTYPE					0x0002
-#define OVERRIDEFLAG_REMINDERDELTA					0x0004
-#define OVERRIDEFLAG_REMINDER						0x0008
-#define OVERRIDEFLAG_LOCATION						0x0010
-#define OVERRIDEFLAG_BUSYSTATUS						0x0020
-#define OVERRIDEFLAG_ATTACHMENT						0x0040
-#define OVERRIDEFLAG_SUBTYPE						0x0080
-#define OVERRIDEFLAG_APPTCOLOR						0x0100
-#define OVERRIDEFLAG_EXCEPTIONAL_BODY				0x0200
-
 struct EXCEPTIONINFO {
 	uint32_t startdatetime;
 	uint32_t enddatetime;

@@ -619,6 +619,19 @@ enum ACTTYPE {
 	OP_MARK_AS_READ = 0xbU,
 };
 
+enum apptrecur_flags {
+	ARO_SUBJECT          =   0x1U,
+	ARO_MEETINGTYPE      =   0x2U,
+	ARO_REMINDERDELTA    =   0x4U,
+	ARO_REMINDER         =   0x8U,
+	ARO_LOCATION         =  0x10U,
+	ARO_BUSYSTATUS       =  0x20U,
+	ARO_ATTACHMENT       =  0x40U,
+	ARO_SUBTYPE          =  0x80U,
+	ARO_APPTCOLOR        = 0x100U,
+	ARO_EXCEPTIONAL_BODY = 0x200U,
+};
+
 enum attach_method {
 	NO_ATTACHMENT = 0, /* afNone */
 	ATTACH_BY_VALUE = 1, /* afByValue */

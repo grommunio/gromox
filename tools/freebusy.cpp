@@ -1571,19 +1571,19 @@ static BOOL get_freebusy(const char *dir)
 				pevnode = (EVENT_NODE*)pnode->pdata;
 				if (NULL != pevnode->pexception &&
 					NULL != pevnode->pex_exception) {
-					if (pevnode->pexception->overrideflags & OVERRIDEFLAG_MEETINGTYPE)
+					if (pevnode->pexception->overrideflags & ARO_MEETINGTYPE)
 						b_meeting1 = (pevnode->pexception->meetingtype & 1) ? TRUE : false;
 					else
 						b_meeting1 = b_meeting;
-					if (pevnode->pexception->overrideflags & OVERRIDEFLAG_REMINDER)
+					if (pevnode->pexception->overrideflags & ARO_REMINDER)
 						b_reminder1 = pevnode->pexception->reminderset == 0 ? false : TRUE;
 					else
 						b_reminder1 = b_reminder;
-					uint32_t busy_type1 = (pevnode->pexception->overrideflags & OVERRIDEFLAG_BUSYSTATUS) ?
+					uint32_t busy_type1 = (pevnode->pexception->overrideflags & ARO_BUSYSTATUS) ?
 					                      pevnode->pexception->busystatus : busy_type;
-					auto psubject1  = (pevnode->pexception->overrideflags & OVERRIDEFLAG_SUBJECT) ?
+					auto psubject1  = (pevnode->pexception->overrideflags & ARO_SUBJECT) ?
 					                  pevnode->pex_exception->subject : psubject;
-					auto plocation1 = (pevnode->pexception->overrideflags & OVERRIDEFLAG_LOCATION) ?
+					auto plocation1 = (pevnode->pexception->overrideflags & ARO_LOCATION) ?
 					                  pevnode->pex_exception->location : plocation;
 					if (b_first)
 						printf(",");

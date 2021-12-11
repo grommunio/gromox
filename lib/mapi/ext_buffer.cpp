@@ -1786,7 +1786,7 @@ static int ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *r)
 	TRY(pext->g_uint32(&r->enddatetime));
 	TRY(pext->g_uint32(&r->originalstartdate));
 	TRY(pext->g_uint16(&r->overrideflags));
-	if (r->overrideflags & OVERRIDEFLAG_SUBJECT) {
+	if (r->overrideflags & ARO_SUBJECT) {
 		TRY(pext->g_uint16(&tmp_len));
 		TRY(pext->g_uint16(&tmp_len2));
 		if (tmp_len != tmp_len2 + 1)
@@ -1797,13 +1797,13 @@ static int ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *r)
 		TRY(pext->g_bytes(r->subject, tmp_len2));
 		r->subject[tmp_len2] = '\0';
 	}
-	if (r->overrideflags & OVERRIDEFLAG_MEETINGTYPE)
+	if (r->overrideflags & ARO_MEETINGTYPE)
 		TRY(pext->g_uint32(&r->meetingtype));
-	if (r->overrideflags & OVERRIDEFLAG_REMINDERDELTA)
+	if (r->overrideflags & ARO_REMINDERDELTA)
 		TRY(pext->g_uint32(&r->reminderdelta));
-	if (r->overrideflags & OVERRIDEFLAG_REMINDER)
+	if (r->overrideflags & ARO_REMINDER)
 		TRY(pext->g_uint32(&r->reminderset));
-	if (r->overrideflags & OVERRIDEFLAG_LOCATION) {
+	if (r->overrideflags & ARO_LOCATION) {
 		TRY(pext->g_uint16(&tmp_len));
 		TRY(pext->g_uint16(&tmp_len2));
 		if (tmp_len != tmp_len2 + 1)
@@ -1814,13 +1814,13 @@ static int ext_buffer_pull_exceptioninfo(EXT_PULL *pext, EXCEPTIONINFO *r)
 		TRY(pext->g_bytes(r->location, tmp_len2));
 		r->location[tmp_len2] = '\0';
 	}
-	if (r->overrideflags & OVERRIDEFLAG_BUSYSTATUS)
+	if (r->overrideflags & ARO_BUSYSTATUS)
 		TRY(pext->g_uint32(&r->busystatus));
-	if (r->overrideflags & OVERRIDEFLAG_ATTACHMENT)
+	if (r->overrideflags & ARO_ATTACHMENT)
 		TRY(pext->g_uint32(&r->attachment));
-	if (r->overrideflags & OVERRIDEFLAG_SUBTYPE)
+	if (r->overrideflags & ARO_SUBTYPE)
 		TRY(pext->g_uint32(&r->subtype));
-	if (r->overrideflags & OVERRIDEFLAG_APPTCOLOR)
+	if (r->overrideflags & ARO_APPTCOLOR)
 		TRY(pext->g_uint32(&r->appointmentcolor));
 	return EXT_ERR_SUCCESS;
 }
@@ -1864,13 +1864,12 @@ static int ext_buffer_pull_extendedexception(
 		}
 		TRY(pext->g_bytes(r->preservedblockee1, r->reservedblockee1size));
 	}
-	if ((overrideflags & OVERRIDEFLAG_LOCATION) ||
-		(overrideflags & OVERRIDEFLAG_SUBJECT)) {
+	if (overrideflags & (ARO_LOCATION | ARO_SUBJECT)) {
 		TRY(pext->g_uint32(&r->startdatetime));
 		TRY(pext->g_uint32(&r->enddatetime));
 		TRY(pext->g_uint32(&r->originalstartdate));
 	}
-	if (overrideflags & OVERRIDEFLAG_SUBJECT) {
+	if (overrideflags & ARO_SUBJECT) {
 		TRY(pext->g_uint16(&tmp_len));
 		tmp_len *= 2;
 		std::unique_ptr<char[]> pbuff;
@@ -1890,7 +1889,7 @@ static int ext_buffer_pull_extendedexception(
 			return EXT_ERR_ALLOC;
 		strcpy(r->subject, &pbuff[tmp_len]);
 	}
-	if (overrideflags & OVERRIDEFLAG_LOCATION) {
+	if (overrideflags & ARO_LOCATION) {
 		TRY(pext->g_uint16(&tmp_len));
 		tmp_len *= 2;
 		std::unique_ptr<char[]> pbuff;
@@ -1910,8 +1909,7 @@ static int ext_buffer_pull_extendedexception(
 			return EXT_ERR_ALLOC;
 		strcpy(r->location, &pbuff[tmp_len]);
 	}
-	if ((overrideflags & OVERRIDEFLAG_LOCATION) ||
-		(overrideflags & OVERRIDEFLAG_SUBJECT)) {
+	if (overrideflags & (ARO_SUBJECT | ARO_LOCATION)) {
 		TRY(pext->g_uint32(&r->reservedblockee2size));
 		if (0 == r->reservedblockee2size) {
 			r->preservedblockee2 = NULL;
@@ -3269,31 +3267,31 @@ static int ext_buffer_push_exceptioninfo(
 	TRY(pext->p_uint32(r->enddatetime));
 	TRY(pext->p_uint32(r->originalstartdate));
 	TRY(pext->p_uint16(r->overrideflags));
-	if (r->overrideflags & OVERRIDEFLAG_SUBJECT) {
+	if (r->overrideflags & ARO_SUBJECT) {
 		tmp_len = strlen(r->subject);
 		TRY(pext->p_uint16(tmp_len + 1));
 		TRY(pext->p_uint16(tmp_len));
 		TRY(pext->p_bytes(r->subject, tmp_len));
 	}
-	if (r->overrideflags & OVERRIDEFLAG_MEETINGTYPE)
+	if (r->overrideflags & ARO_MEETINGTYPE)
 		TRY(pext->p_uint32(r->meetingtype));
-	if (r->overrideflags & OVERRIDEFLAG_REMINDERDELTA)
+	if (r->overrideflags & ARO_REMINDERDELTA)
 		TRY(pext->p_uint32(r->reminderdelta));
-	if (r->overrideflags & OVERRIDEFLAG_REMINDER)
+	if (r->overrideflags & ARO_REMINDER)
 		TRY(pext->p_uint32(r->reminderset));
-	if (r->overrideflags & OVERRIDEFLAG_LOCATION) {
+	if (r->overrideflags & ARO_LOCATION) {
 		tmp_len = strlen(r->location);
 		TRY(pext->p_uint16(tmp_len + 1));
 		TRY(pext->p_uint16(tmp_len));
 		TRY(pext->p_bytes(r->location, tmp_len));
 	}
-	if (r->overrideflags & OVERRIDEFLAG_BUSYSTATUS)
+	if (r->overrideflags & ARO_BUSYSTATUS)
 		TRY(pext->p_uint32(r->busystatus));
-	if (r->overrideflags & OVERRIDEFLAG_ATTACHMENT)
+	if (r->overrideflags & ARO_ATTACHMENT)
 		TRY(pext->p_uint32(r->attachment));
-	if (r->overrideflags & OVERRIDEFLAG_SUBTYPE)
+	if (r->overrideflags & ARO_SUBTYPE)
 		TRY(pext->p_uint32(r->subtype));
-	if (r->overrideflags & OVERRIDEFLAG_APPTCOLOR)
+	if (r->overrideflags & ARO_APPTCOLOR)
 		TRY(pext->p_uint32(r->appointmentcolor));
 	return EXT_ERR_SUCCESS;
 }
@@ -3322,13 +3320,12 @@ static int ext_buffer_push_extendedexception(
 	TRY(pext->p_uint32(r->reservedblockee1size));
 	if (r->reservedblockee1size != 0)
 		TRY(pext->p_bytes(r->preservedblockee1, r->reservedblockee1size));
-	if ((overrideflags & OVERRIDEFLAG_LOCATION) ||
-		(overrideflags & OVERRIDEFLAG_SUBJECT)) {
+	if (overrideflags & (ARO_SUBJECT | ARO_LOCATION)) {
 		TRY(pext->p_uint32(r->startdatetime));
 		TRY(pext->p_uint32(r->enddatetime));
 		TRY(pext->p_uint32(r->originalstartdate));
 	}
-	if (overrideflags & OVERRIDEFLAG_SUBJECT) {
+	if (overrideflags & ARO_SUBJECT) {
 		auto subj = r->subject != nullptr ? r->subject : "";
 		tmp_len = strlen(subj) + 1;
 		std::unique_ptr<char[]> pbuff;
@@ -3344,7 +3341,7 @@ static int ext_buffer_push_extendedexception(
 		TRY(pext->p_uint16(string_len / 2));
 		TRY(pext->p_bytes(pbuff.get(), string_len));
 	}
-	if (overrideflags & OVERRIDEFLAG_LOCATION) {
+	if (overrideflags & ARO_LOCATION) {
 		auto loc = r->location != nullptr ? r->location : "";
 		tmp_len = strlen(loc) + 1;
 		std::unique_ptr<char[]> pbuff;
@@ -3360,8 +3357,7 @@ static int ext_buffer_push_extendedexception(
 		TRY(pext->p_uint16(string_len / 2));
 		TRY(pext->p_bytes(pbuff.get(), string_len));
 	}
-	if ((overrideflags & OVERRIDEFLAG_LOCATION) ||
-		(overrideflags & OVERRIDEFLAG_SUBJECT)) {
+	if (overrideflags & (ARO_LOCATION | ARO_SUBJECT)) {
 		TRY(pext->p_uint32(r->reservedblockee2size));
 		if (r->reservedblockee2size != 0)
 			TRY(pext->p_bytes(r->preservedblockee2, r->reservedblockee2size));

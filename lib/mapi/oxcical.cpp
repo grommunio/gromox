@@ -1071,7 +1071,7 @@ static BOOL oxcical_parse_subtype(namemap &phash, uint16_t *plast_propid,
 		return FALSE;
 	(*plast_propid) ++;
 	if (NULL != pexception) {
-		pexception->overrideflags |= OVERRIDEFLAG_SUBTYPE;
+		pexception->overrideflags |= ARO_SUBTYPE;
 		pexception->subtype = 1;
 	}
 	return TRUE;
@@ -1323,7 +1323,7 @@ static BOOL oxcical_parse_location(std::shared_ptr<ICAL_LINE> piline,
 		return FALSE;
 	(*plast_propid) ++;
 	if (NULL != pexception && NULL != pext_exception) {
-		pexception->overrideflags |= OVERRIDEFLAG_LOCATION;
+		pexception->overrideflags |= ARO_LOCATION;
 		pexception->location = static_cast<char *>(alloc(tmp_len + 1));
 		if (NULL == pexception->location) {
 			return FALSE;
@@ -1446,7 +1446,7 @@ static BOOL oxcical_parse_busystatus(std::shared_ptr<ICAL_LINE> piline,
 		return FALSE;
 	(*plast_propid) ++;
 	if (NULL != pexception) {
-		pexception->overrideflags |= OVERRIDEFLAG_BUSYSTATUS;
+		pexception->overrideflags |= ARO_BUSYSTATUS;
 		pexception->busystatus = busy_status;
 	}
 	return TRUE;
@@ -1480,7 +1480,7 @@ static BOOL oxcical_parse_transp(std::shared_ptr<ICAL_LINE> piline,
 		return FALSE;
 	(*plast_propid) ++;
 	if (NULL != pexception) {
-		pexception->overrideflags |= OVERRIDEFLAG_BUSYSTATUS;
+		pexception->overrideflags |= ARO_BUSYSTATUS;
 		pexception->busystatus = tmp_int32;
 	}
 
@@ -1529,7 +1529,7 @@ static BOOL oxcical_parse_status(std::shared_ptr<ICAL_LINE> piline,
 		return FALSE;
 	(*plast_propid) ++;
 	if (NULL != pexception) {
-		pexception->overrideflags |= OVERRIDEFLAG_BUSYSTATUS;
+		pexception->overrideflags |= ARO_BUSYSTATUS;
 		pexception->busystatus = tmp_int32;
 	}
 
@@ -1580,7 +1580,7 @@ static BOOL oxcical_parse_summary(
 	if (pmsg->proplist.set(PR_SUBJECT, tmp_buff) != 0)
 		return FALSE;
 	if (NULL != pexception && NULL != pext_exception) {
-		pexception->overrideflags |= OVERRIDEFLAG_SUBJECT;
+		pexception->overrideflags |= ARO_SUBJECT;
 		pexception->subject = static_cast<char *>(alloc(tmp_len + 1));
 		if (NULL == pexception->subject) {
 			return FALSE;
@@ -2691,10 +2691,10 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	
 	if (NULL != pexception) {
 		if (FALSE == b_alarm) {
-			pexception->overrideflags |= OVERRIDEFLAG_REMINDER;
+			pexception->overrideflags |= ARO_REMINDER;
 			pexception->reminderset = 0;
 		} else {
-			pexception->overrideflags |= OVERRIDEFLAG_REMINDERDELTA;
+			pexception->overrideflags |= ARO_REMINDERDELTA;
 			pexception->reminderdelta = tmp_int32;
 		}
 	}
