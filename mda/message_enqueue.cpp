@@ -20,6 +20,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/fileio.h>
 #include <gromox/flusher_common.h>
 #include <gromox/paths.h>
@@ -281,10 +282,9 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
         }
 		pentity->pflusher->flush_ptr = fp;
 		/* write first 4(8) bytes in the file to indicate incomplete mess */
-		mess_len = 0;
-		if (sizeof(size_t) != fwrite(&mess_len, 1, sizeof(size_t), fp)) {
+		uint64_t mess_len = cpu_to_le64(0);
+		if (fwrite(&mess_len, 1, sizeof(mess_len), fp) != sizeof(mess_len))
 			goto REMOVE_MESS;
-		}
         /* construct head information for mess file */
         cur_time = time(NULL);
         strftime(time_buff, 128,"%a, %d %b %Y %H:%M:%S %z",
@@ -339,7 +339,7 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 		return TRUE;
 	}
 	mess_len = ftell(fp);
-	mess_len -= sizeof(size_t);
+	mess_len -= sizeof(uint64_t); /* length at front of file */
    	/* write flush ID */
 	if (fwrite(&pentity->pflusher->flush_ID, 1, sizeof(uint32_t), fp) != sizeof(uint32_t))
 		goto REMOVE_MESS;

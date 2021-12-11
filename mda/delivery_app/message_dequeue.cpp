@@ -368,7 +368,6 @@ static void message_dequeue_load_from_mess(int mess)
 {
 	struct stat node_stat;
 	char *ptr;
-	size_t size;
 
 	std::unique_lock h(g_hash_mutex);
 	auto pmessage = g_mess_hash->query<MESSAGE>(mess);
@@ -387,7 +386,7 @@ static void message_dequeue_load_from_mess(int mess)
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
 	    !S_ISREG(node_stat.st_mode))
 		return;
-	size = ((node_stat.st_size - 1)/(64 * 1024) + 1) * 64 * 1024;
+	uint64_t size = ((node_stat.st_size - 1) / (64 * 1024) + 1) * 64 * 1024;
 	pmessage = message_dequeue_get_from_free(MESSAGE_MESS, size);
 	if (NULL == pmessage) {
 		return;
@@ -404,7 +403,7 @@ static void message_dequeue_load_from_mess(int mess)
         return;
 	}
 	/* check if it is an incomplete message */
-	if (le32p_to_cpu(ptr) == 0) {
+	if (le64p_to_cpu(ptr) == 0) {
 		message_dequeue_put_to_free(pmessage);
 		free(ptr);
 		return;	
@@ -418,7 +417,6 @@ static void message_dequeue_load_from_mess(int mess)
 static void *mdq_thrwork(void *arg)
 {
 	MSG_BUFF msg;
-	size_t size;
     DIR *dirp;
     struct dirent *direntp;
 
@@ -464,14 +462,11 @@ static void *mdq_thrwork(void *arg)
 			if (-1 == mess_fd) {
 				continue;
 			}
-			ssize_t len = read(mess_fd, &size, sizeof(size_t));
+			uint64_t size;
+			ssize_t len = read(mess_fd, &size, sizeof(size));
 			close(mess_fd);
-			if (len != sizeof(size_t)) {
+			if (len < 0 || len != sizeof(size) || size == 0)
 				continue;
-			}
-			if (0 == size) {
-				continue;
-			}
 			message_dequeue_load_from_mess(strtol(direntp->d_name, nullptr, 0));
 		}
 	}
