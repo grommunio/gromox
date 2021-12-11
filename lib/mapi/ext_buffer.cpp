@@ -3329,14 +3329,15 @@ static int ext_buffer_push_extendedexception(
 		TRY(pext->p_uint32(r->originalstartdate));
 	}
 	if (overrideflags & OVERRIDEFLAG_SUBJECT) {
-		tmp_len = strlen(r->subject) + 1;
+		auto subj = r->subject != nullptr ? r->subject : "";
+		tmp_len = strlen(subj) + 1;
 		std::unique_ptr<char[]> pbuff;
 		try {
 			pbuff = std::make_unique<char[]>(2 * tmp_len);
 		} catch (const std::bad_alloc &) {
 			return EXT_ERR_ALLOC;
 		}
-		string_len = utf8_to_utf16le(r->subject, pbuff.get(), 2 * tmp_len);
+		string_len = utf8_to_utf16le(subj, pbuff.get(), 2 * tmp_len);
 		if (string_len < 2)
 			return EXT_ERR_CHARCNV;
 		string_len -= 2;
@@ -3344,14 +3345,15 @@ static int ext_buffer_push_extendedexception(
 		TRY(pext->p_bytes(pbuff.get(), string_len));
 	}
 	if (overrideflags & OVERRIDEFLAG_LOCATION) {
-		tmp_len = strlen(r->location) + 1;
+		auto loc = r->location != nullptr ? r->location : "";
+		tmp_len = strlen(loc) + 1;
 		std::unique_ptr<char[]> pbuff;
 		try {
 			pbuff = std::make_unique<char[]>(2 * tmp_len);
 		} catch (const std::bad_alloc &) {
 			return EXT_ERR_ALLOC;
 		}
-		string_len = utf8_to_utf16le(r->location, pbuff.get(), 2 * tmp_len);
+		string_len = utf8_to_utf16le(loc, pbuff.get(), 2 * tmp_len);
 		if (string_len < 2)
 			return EXT_ERR_CHARCNV;
 		string_len -= 2;
