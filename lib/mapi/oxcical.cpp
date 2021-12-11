@@ -2537,10 +2537,9 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			for (size_t i = 0; i < apr.exceptioncount; ++i) {
 				memset(exceptions + i, 0, sizeof(EXCEPTIONINFO));
 				memset(ext_exceptions + i, 0, sizeof(EXTENDEDEXCEPTION));
-				exceptions[i].startdatetime = modified_dates[i];
-				exceptions[i].enddatetime = modified_dates[i] +
-									(end_time - start_time)/60;
-				exceptions[i].originalstartdate = deleted_dates[i];
+				ext_exceptions[i].startdatetime = exceptions[i].startdatetime = modified_dates[i];
+				ext_exceptions[i].enddatetime = exceptions[i].enddatetime = modified_dates[i] + (end_time - start_time)/60;
+				ext_exceptions[i].originalstartdate = exceptions[i].originalstartdate = deleted_dates[i];
 				exceptions[i].overrideflags = 0;
 				ext_exceptions[i].changehighlight.size = sizeof(uint32_t);
 			}
