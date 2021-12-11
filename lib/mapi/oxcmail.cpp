@@ -5375,9 +5375,9 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		if (0 != guid_compare(&ppropname->guid, &guid)) {
 			continue;
 		}
-		if (0 == strcasecmp(ppropname->pname, "Content-Type")) {
+		if (ppropname->kind != MNID_STRING ||
+		    strcasecmp(ppropname->pname, "Content-Type") == 0)
 			continue;
-		}
 		if (!mime_set_field(phead, ppropname->pname,
 		    static_cast<char *>(pmsg->proplist.ppropval[i].pvalue)))
 			return FALSE;
