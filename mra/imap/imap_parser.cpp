@@ -1780,8 +1780,7 @@ void imap_parser_log_info(IMAP_CONTEXT *pcontext, int level, const char *format,
 	vsnprintf(log_buf, sizeof(log_buf) - 1, format, ap);
 	va_end(ap);
 	log_buf[sizeof(log_buf) - 1] = '\0';
-	
-	system_services_log_info(level, "user: %s, IP: %s  %s",
+	system_services_log_info(level, "user=%s, host=[%s]  %s",
 		pcontext->username, pcontext->connection.client_ip, log_buf);
 
 }
