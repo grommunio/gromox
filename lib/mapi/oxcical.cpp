@@ -2120,6 +2120,85 @@ static BOOL oxcical_parse_valarm(uint32_t reminder_delta, time_t start_time,
 	return TRUE;
 }
 
+static std::shared_ptr<ical_component>
+oxcical_main_event(const std::list<std::shared_ptr<ical_component>> &evlist)
+{
+	if (evlist.size() == 1)
+		return evlist.front();
+	std::shared_ptr<ical_component> main_event;
+	for (auto event : evlist) {
+		auto line = event->get_line("RECURRENCE-ID");
+		if (line != nullptr) {
+			if (event->get_line("X-MICROSOFT-RRULE") != nullptr ||
+			    event->get_line("RRULE") != nullptr)
+				return nullptr;
+			continue;
+		}
+		if (main_event != nullptr)
+			return nullptr;
+		main_event = event;
+		if (main_event->get_line("X-MICROSOFT-RRULE") == nullptr &&
+		    main_event->get_line("RRULE") == nullptr)
+			return nullptr;
+	}
+	return main_event;
+}
+
+static bool oxcical_parse_allday(std::shared_ptr<ical_component> main_ev)
+{
+	auto line = main_ev->get_line("X-MICROSOFT-MSNCALENDAR-ALLDAYEVENT");
+	if (line == nullptr)
+		line = main_ev->get_line("X-MICROSOFT-CDO-ALLDAYEVENT");
+	if (line == nullptr)
+		return false;
+	auto v = line->get_first_subvalue();
+	return v != nullptr && strcasecmp(v, "true") == 0;
+}
+
+static bool oxcical_parse_importance(std::shared_ptr<ical_component> main_event,
+    MESSAGE_CONTENT *msg)
+{
+	auto line = main_event->get_line("X-MICROSOFT-CDO-IMPORTANCE");
+	if (line == nullptr)
+		line = main_event->get_line("X-MICROSOFT-MSNCALENDAR-IMPORTANCE");
+	if (line != nullptr) {
+		auto str = line->get_first_subvalue();
+		if (str == nullptr)
+			return true;
+		auto imp = strtol(str, nullptr, 0);
+		if (imp >= IMPORTANCE_LOW && imp <= IMPORTANCE_HIGH &&
+		    msg->proplist.set(PR_IMPORTANCE, &imp) != 0)
+			return false;
+		return true;
+	}
+	line = main_event->get_line("PRIORITY");
+	if (line == nullptr)
+		return true;
+	auto str = line->get_first_subvalue();
+	if (str == nullptr)
+		return true;
+	/*
+	 * RFC 5545 §3.8.1.9 / MS-OXCICAL v13 §2.1.3.1.1.20.17 pg 58.
+	 * (Decidedly different from OXCMAIL's X-Priority.)
+	 */
+	auto v = strtol(str, nullptr, 0);
+	uint32_t imp;
+	if (v >= 1 && v <= 4)
+		imp = IMPORTANCE_HIGH;
+	else if (v == 5)
+		imp = IMPORTANCE_NORMAL;
+	else if (v >= 6 && v <= 9)
+		imp = IMPORTANCE_LOW;
+	else
+		return true;
+	return msg->proplist.set(PR_IMPORTANCE, &imp) == 0;
+}
+
+static inline unsigned int dfl_alarm_offset(bool allday)
+{
+	return allday ? 1080 : 15;
+}
+
 static BOOL oxcical_import_internal(const char *str_zone, const char *method,
     BOOL b_proposal, uint16_t calendartype, ICAL *pical,
     std::list<std::shared_ptr<ICAL_COMPONENT>> &pevent_list,
@@ -2129,7 +2208,6 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
     EXCEPTIONINFO *pexception, EXTENDEDEXCEPTION *pext_exception)
 {
 	BOOL b_alarm;
-	BOOL b_allday;
 	long duration;
 	time_t tmp_time;
 	time_t end_time;
@@ -2143,7 +2221,6 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	uint16_t last_propid;
 	ICAL_TIME start_itime;
 	MESSAGE_CONTENT *pembedded;
-	std::shared_ptr<ICAL_COMPONENT> pmain_event;
 	uint32_t deleted_dates[1024];
 	uint32_t modified_dates[1024];
 	std::shared_ptr<ICAL_COMPONENT> ptz_component;
@@ -2152,30 +2229,10 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	ATTACHMENT_CONTENT *pattachment = nullptr;
 	EXTENDEDEXCEPTION ext_exceptions[1024];
 	APPOINTMENT_RECUR_PAT apr;
-	
-	if (pevent_list.size() == 1) {
-		pmain_event = pevent_list.front();
-	} else {
-		pmain_event = NULL;
-		for (auto event : pevent_list) {
-			auto piline = event->get_line("RECURRENCE-ID");
-			if (NULL == piline) {
-				if (NULL != pmain_event) {
-					return FALSE;
-				}
-				pmain_event = event;
-				if (pmain_event->get_line("X-MICROSOFT-RRULE") == nullptr &&
-				    pmain_event->get_line("RRULE") == nullptr)
-					return FALSE;
-			} else {
-				if (event->get_line("X-MICROSOFT-RRULE") != nullptr ||
-				    event->get_line("RRULE") != nullptr)
-					return FALSE;
-			}
-		}
-		if (NULL == pmain_event) {
-			return FALSE;
-		}
+
+	auto pmain_event = oxcical_main_event(pevent_list);
+	if (NULL == pmain_event) {
+		return FALSE;
 	}
 	
 	if (NULL != pexception && NULL != pext_exception) {
@@ -2203,24 +2260,12 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	    !oxcical_parse_body(pmain_event, method, pmsg) ||
 	    !oxcical_parse_html(pmain_event, pmsg))
 		return FALSE;
-	
-	b_allday = FALSE;
-	auto piline = pmain_event->get_line("X-MICROSOFT-MSNCALENDAR-ALLDAYEVENT");
-	if (NULL == piline) {
-		piline = pmain_event->get_line("X-MICROSOFT-CDO-ALLDAYEVENT");
-	}
-	if (NULL != piline) {
-		pvalue = piline->get_first_subvalue();
-		if (NULL != pvalue && 0 == strcasecmp(pvalue, "TRUE")) {
-			b_allday = TRUE;
-		}
-	}
-	
+	BOOL b_allday = oxcical_parse_allday(pmain_event) ? TRUE : false;
 	if (!oxcical_parse_dtstamp(pmain_event, method,
 	    phash, &last_propid, pmsg))
 		return FALSE;
 	
-	piline = pmain_event->get_line("DTSTART");
+	auto piline = pmain_event->get_line("DTSTART");
 	if (NULL == piline) {
 		printf("GW-2741: oxcical_import_internal: no DTSTART\n");
 		return FALSE;
@@ -2366,56 +2411,9 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	    phash, &last_propid, pmsg) ||
 	    !oxcical_parse_location(pmain_event, phash, &last_propid, alloc,
 	    pmsg, pexception, pext_exception) ||
-	    !oxcical_parse_organizer(pmain_event, username_to_entryid, pmsg))
+	    !oxcical_parse_organizer(pmain_event, username_to_entryid, pmsg) ||
+	    !oxcical_parse_importance(pmain_event, pmsg))
 		return FALSE;
-	
-	piline = pmain_event->get_line("X-MICROSOFT-CDO-IMPORTANCE");
-	if (NULL == piline) {
-		piline = pmain_event->get_line("X-MICROSOFT-MSNCALENDAR-IMPORTANCE");
-	}
-	if (NULL != piline) {
-		pvalue = piline->get_first_subvalue();
-		if (NULL != pvalue) {
-			tmp_int32 = strtol(pvalue, nullptr, 0);
-			if (tmp_int32 >= IMPORTANCE_LOW && tmp_int32 <= IMPORTANCE_HIGH &&
-			    pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
-				return FALSE;
-		}
-	} else {
-		piline = pmain_event->get_line("PRIORITY");
-		if (NULL != piline) {
-			pvalue = piline->get_first_subvalue();
-			if (NULL != pvalue) {
-				/*
-				 * RFC 5545 §3.8.1.9 / MS-OXCICAL v13 §2.1.3.1.1.20.17 pg 58.
-				 * (Decidedly different from OXCMAIL's X-Priority.)
-				 */
-				switch (strtol(pvalue, nullptr, 0)) {
-				case 1:
-				case 2:
-				case 3:
-				case 4:
-					tmp_int32 = IMPORTANCE_HIGH;
-					if (pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
-						return FALSE;
-					break;
-				case 5:
-					tmp_int32 = IMPORTANCE_NORMAL;
-					if (pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
-						return FALSE;
-					break;
-				case 6:
-				case 7:
-				case 8:
-				case 9:
-					tmp_int32 = IMPORTANCE_LOW;
-					if (pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
-						return FALSE;
-					break;
-				}
-			}
-		}
-	}
 	if (!pmsg->proplist.has(PR_IMPORTANCE)) {
 		tmp_int32 = IMPORTANCE_NORMAL;
 		if (pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
@@ -2622,37 +2620,20 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			piline = palarm_component->get_line("TRIGGER");
 			if (piline == nullptr ||
 			    (pvalue = piline->get_first_subvalue()) == nullptr) {
-				if (FALSE == b_allday) {
-					tmp_int32 = 15;
-				} else {
-					tmp_int32 = 1080;
-				}
+				tmp_int32 = dfl_alarm_offset(b_allday);
 			} else {
 				pvalue1 = piline->get_first_paramval("RELATED");
 				if (NULL == pvalue1) {
 					pvalue1 = piline->get_first_paramval("VALUE");
-					if ((pvalue1 == nullptr ||
-					    strcasecmp(pvalue1, "DATE-TIME") == 0) &&
-					    ical_datetime_to_utc(ptz_component, pvalue, &tmp_time)) {
-						tmp_int32 = llabs(start_time - tmp_time) / 60;
-					} else {
-						if (FALSE == b_allday) {
-							tmp_int32 = 15;
-						} else {
-							tmp_int32 = 1080;
-						}
-					}
+					tmp_int32 = (pvalue1 == nullptr || strcasecmp(pvalue1, "DATE-TIME") == 0) &&
+					            ical_datetime_to_utc(ptz_component, pvalue, &tmp_time) ?
+					            llabs(start_time - tmp_time) / 60 :
+					            dfl_alarm_offset(b_allday);
 				} else {
-					if (0 != strcasecmp(pvalue1, "START") ||
-					    !ical_parse_duration(pvalue, &duration)) {
-						if (FALSE == b_allday) {
-							tmp_int32 = 15;
-						} else {
-							tmp_int32 = 1080;
-						}
-					} else {
-						tmp_int32 = labs(duration) / 60;
-					}
+					tmp_int32 = strcasecmp(pvalue1, "START") == 0 &&
+					            ical_parse_duration(pvalue, &duration) ?
+					            labs(duration) / 60 :
+					            dfl_alarm_offset(b_allday);
 				}
 			}
 			if (FALSE == oxcical_parse_valarm(tmp_int32,
