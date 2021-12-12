@@ -247,8 +247,7 @@ static void icsdownctx_object_adjust_fldchgs(FOLDER_CHANGES *pfldchgs,
 	for (size_t i = 0; i < pfldchgs->count; ++i) {
 		size_t j = 0;
 		while (j < pfldchgs->pfldchgs[i].count) {
-			if (!proptag_array_check(pproptags,
-			    pfldchgs->pfldchgs[i].ppropval[j].proptag)) {
+			if (!pproptags->has(pfldchgs->pfldchgs[i].ppropval[j].proptag)) {
 				common_util_remove_propvals(pfldchgs->pfldchgs + i,
 					pfldchgs->pfldchgs[i].ppropval[j].proptag);
 				continue;
@@ -762,17 +761,16 @@ static void icsdownctx_object_adjust_msgctnt(MESSAGE_CONTENT *pmsgctnt,
 	}
 	i = 0;
 	while (i < pmsgctnt->proplist.count) {
-		if (!proptag_array_check(pproptags,
-		    pmsgctnt->proplist.ppropval[i].proptag)) {
+		if (!pproptags->has(pmsgctnt->proplist.ppropval[i].proptag)) {
 			common_util_remove_propvals(&pmsgctnt->proplist,
 				pmsgctnt->proplist.ppropval[i].proptag);
 			continue;
 		}
 		i++;
 	}
-	if (!proptag_array_check(pproptags, PR_MESSAGE_RECIPIENTS))
+	if (!pproptags->has(PR_MESSAGE_RECIPIENTS))
 		pmsgctnt->children.prcpts = NULL;
-	if (!proptag_array_check(pproptags, PR_MESSAGE_ATTACHMENTS))
+	if (!pproptags->has(PR_MESSAGE_ATTACHMENTS))
 		pmsgctnt->children.pattachments = NULL;
 }
 

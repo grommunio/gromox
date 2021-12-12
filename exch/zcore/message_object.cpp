@@ -309,14 +309,12 @@ gxerr_t message_object::save()
 		return GXERR_CALL_FAILED;
 	*modtime = rop_util_current_nttime();
 	tmp_propvals.ppropval[tmp_propvals.count++].pvalue = modtime;
-	if (!proptag_array_check(pmessage->pchanged_proptags,
-	    PR_LAST_MODIFICATION_TIME)) {
+	if (!pmessage->pchanged_proptags->has(PR_LAST_MODIFICATION_TIME)) {
 		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFICATION_TIME;
 		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = modtime;
 	}
 	
-	if (!proptag_array_check(pmessage->pchanged_proptags,
-	    PR_LAST_MODIFIER_NAME)) {
+	if (!pmessage->pchanged_proptags->has(PR_LAST_MODIFIER_NAME)) {
 		tmp_propvals.ppropval[tmp_propvals.count].proptag = PR_LAST_MODIFIER_NAME;
 		static constexpr size_t dispnamesize = 1024;
 		auto dispname = cu_alloc<char>(1024);

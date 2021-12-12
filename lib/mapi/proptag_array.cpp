@@ -79,18 +79,6 @@ void proptag_array_remove(PROPTAG_ARRAY *pproptags, uint32_t proptag)
 	}
 }
 
-bool proptag_array_check(const PROPTAG_ARRAY *pproptags, uint32_t proptag)
-{
-	int i;
-	
-	for (i=0; i<pproptags->count; i++) {
-		if (proptag == pproptags->pproptag[i]) {
-			return true;
-		}
-	}
-	return false;
-}
-
 static bool proptag_array_dup_internal(const PROPTAG_ARRAY *pproptags,
     PROPTAG_ARRAY *pproptags_dst)
 {

@@ -2489,8 +2489,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		return FALSE;
 	}
 	for (size_t i = 0; i < pmsg->proplist.count; ++i) {
-		if (proptag_array_check(&tmp_proptags,
-		    pmsg->proplist.ppropval[i].proptag))
+		if (tmp_proptags.has(pmsg->proplist.ppropval[i].proptag))
 			continue;
 		tnef_proplist.ppropval[tnef_proplist.count].propid =
 			PROP_ID(pmsg->proplist.ppropval[i].proptag);
@@ -2684,8 +2683,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			return FALSE;
 		}
 		for (size_t j = 0; j < pattachment->proplist.count; ++j) {
-			if (proptag_array_check(&tmp_proptags,
-			    pattachment->proplist.ppropval[j].proptag))
+			if (tmp_proptags.has(pattachment->proplist.ppropval[j].proptag))
 				continue;
 			tnef_proplist.ppropval[tnef_proplist.count].propid =
 				PROP_ID(pattachment->proplist.ppropval[j].proptag);
