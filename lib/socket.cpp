@@ -155,11 +155,14 @@ int gx_inet_listen(const char *host, uint16_t port)
 {
 	auto aires = gx_inet_lookup(host, port, AI_PASSIVE);
 	int saved_errno = EHOSTUNREACH;
+	auto use_env = getenv("HX_LISTEN_TOP_FD") != nullptr || getenv("LISTEN_FDS") != nullptr;
 	for (auto r = aires.get(); r != nullptr; r = r->ai_next) {
-		int fd = HX_socket_from_env(r, nullptr);
-		if (fd >= 0)
-			return fd;
-		fd = socket(r->ai_family, r->ai_socktype, r->ai_protocol);
+		if (use_env) {
+			auto fd = HX_socket_from_env(r, nullptr);
+			if (fd >= 0)
+				return fd;
+		}
+		auto fd = socket(r->ai_family, r->ai_socktype, r->ai_protocol);
 		if (fd < 0) {
 			if (saved_errno != 0)
 				saved_errno = errno;
