@@ -60,18 +60,19 @@ struct GX_EXPORT ICAL_LINE {
 	ical_vlist value_list;
 };
 
-struct GX_EXPORT ICAL_COMPONENT {
+struct GX_EXPORT ical_component {
 	public:
-	int append_comp(std::shared_ptr<ICAL_COMPONENT>);
+	int append_comp(std::shared_ptr<ical_component>);
 	int append_line(std::shared_ptr<ICAL_LINE>);
 	std::shared_ptr<ICAL_LINE> get_line(const char *name);
 
 	std::string m_name;
 	std::list<std::shared_ptr<ICAL_LINE>> line_list;
-	std::list<std::shared_ptr<ICAL_COMPONENT>> component_list;
+	std::list<std::shared_ptr<ical_component>> component_list;
 };
+using ICAL_COMPONENT = ical_component;
 
-struct GX_EXPORT ICAL : public ICAL_COMPONENT {
+struct GX_EXPORT ICAL : public ical_component {
 };
 
 struct ICAL_TIME {

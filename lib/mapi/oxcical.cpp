@@ -891,9 +891,13 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 	return TRUE;
 }
 
-static BOOL oxcical_parse_categories(std::shared_ptr<ICAL_LINE> piline,
+static BOOL oxcical_parse_categories(std::shared_ptr<ical_component> main_event,
    namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
+	auto piline = main_event->get_line("CATEGORIES");
+	if (piline == nullptr)
+		return TRUE;
+
 	char *tmp_buff[128];
 	PROPERTY_NAME propname;
 	STRING_ARRAY strings_array;
@@ -925,9 +929,17 @@ static BOOL oxcical_parse_categories(std::shared_ptr<ICAL_LINE> piline,
 	return TRUE;
 }
 
-static BOOL oxcical_parse_class(std::shared_ptr<ICAL_LINE> piline,
+static BOOL oxcical_parse_class(std::shared_ptr<ical_component> main_event,
     MESSAGE_CONTENT *pmsg)
 {
+	auto piline = main_event->get_line("CLASS");
+	if (piline == nullptr) {
+		uint32_t v = SENSITIVITY_NONE;
+		if (pmsg->proplist.set(PR_SENSITIVITY, &v) != 0)
+			return FALSE;
+		return TRUE;
+	}
+
 	uint32_t tmp_int32;
 	const char *pvalue;
 	
@@ -952,9 +964,17 @@ static BOOL oxcical_parse_class(std::shared_ptr<ICAL_LINE> piline,
 	return TRUE;
 }
 
-static BOOL oxcical_parse_body(std::shared_ptr<ICAL_LINE> piline,
-    MESSAGE_CONTENT *pmsg)
+static BOOL oxcical_parse_body(std::shared_ptr<ical_component> main_event,
+    const char *method, MESSAGE_CONTENT *pmsg)
 {
+	const char *linetype = "DESCRIPTION";
+	if (method != nullptr && (strcasecmp(method, "reply") == 0 ||
+	    strcasecmp(method, "counter") == 0))
+		linetype = "COMMENT";
+	auto piline = main_event->get_line(linetype);
+	if (piline == nullptr)
+		return TRUE;
+
 	const char *pvalue;
 	
 	pvalue = piline->get_first_subvalue();
@@ -966,11 +986,17 @@ static BOOL oxcical_parse_body(std::shared_ptr<ICAL_LINE> piline,
 	return TRUE;
 }
 
-static BOOL oxcical_parse_html(std::shared_ptr<ICAL_LINE> piline,
+static BOOL oxcical_parse_html(std::shared_ptr<ical_component> main_event,
     MESSAGE_CONTENT *pmsg)
 {
+	auto piline = main_event->get_line("X-ALT-DESC");
+	if (piline == nullptr)
+		return TRUE;
+	auto pvalue = piline->get_first_paramval("FMTTYPE");
+	if (pvalue == nullptr || strcasecmp(pvalue, "text/html") != 0)
+		return TRUE;
+
 	BINARY tmp_bin;
-	const char *pvalue;
 	uint32_t tmp_int32;
 	
 	pvalue = piline->get_first_subvalue();
@@ -987,10 +1013,14 @@ static BOOL oxcical_parse_html(std::shared_ptr<ICAL_LINE> piline,
 	return TRUE;
 }
 
-static BOOL oxcical_parse_dtstamp(std::shared_ptr<ICAL_LINE> piline,
+static BOOL oxcical_parse_dtstamp(std::shared_ptr<ical_component> main_event,
     const char *method, namemap &phash,
 	uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
+	auto piline = main_event->get_line("DTSTAMP");
+	if (piline == nullptr)
+		return TRUE;
+
 	time_t tmp_time;
 	uint64_t tmp_int64;
 	const char *pvalue;
@@ -1189,10 +1219,14 @@ static BOOL oxcical_parse_dtvalue(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	return TRUE;
 }
 
-static BOOL oxcical_parse_uid(std::shared_ptr<ICAL_LINE> piline,
+static BOOL oxcical_parse_uid(std::shared_ptr<ical_component> main_event,
     ICAL_TIME effective_itime, EXT_BUFFER_ALLOC alloc, namemap &phash,
     uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
+	auto piline = main_event->get_line("UID");
+	if (piline == nullptr)
+		return TRUE;
+
 	BINARY tmp_bin;
 	EXT_PULL ext_pull;
 	EXT_PUSH ext_push;
@@ -1268,11 +1302,15 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ICAL_LINE> piline,
 	return TRUE;
 }
 
-static BOOL oxcical_parse_location(std::shared_ptr<ICAL_LINE> piline,
+static BOOL oxcical_parse_location(std::shared_ptr<ical_component> main_event,
     namemap &phash, uint16_t *plast_propid, EXT_BUFFER_ALLOC alloc,
 	MESSAGE_CONTENT *pmsg, EXCEPTIONINFO *pexception,
 	EXTENDEDEXCEPTION *pext_exception)
 {
+	auto piline = main_event->get_line("LOCATION");
+	if (piline == nullptr)
+		return TRUE;
+
 	int i;
 	int tmp_len;
 	const char *pvalue;
@@ -1334,9 +1372,12 @@ static BOOL oxcical_parse_location(std::shared_ptr<ICAL_LINE> piline,
 	return TRUE;
 }
 
-static BOOL oxcical_parse_organizer(std::shared_ptr<ICAL_LINE> piline,
+static BOOL oxcical_parse_organizer(std::shared_ptr<ical_component> main_event,
 	USERNAME_TO_ENTRYID username_to_entryid, MESSAGE_CONTENT *pmsg)
 {
+	auto piline = main_event->get_line("ORGANIZER");
+	if (piline == nullptr)
+		return TRUE;
 	BINARY tmp_bin;
 	uint8_t tmp_buff[1024];
 	const char *paddress;
@@ -1387,9 +1428,15 @@ static BOOL oxcical_parse_organizer(std::shared_ptr<ICAL_LINE> piline,
 	return TRUE;
 }
 
-static BOOL oxcical_parse_sequence(std::shared_ptr<ICAL_LINE> piline,
+static BOOL oxcical_parse_sequence(std::shared_ptr<ical_component> main_event,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
+	auto piline = main_event->get_line("X-MICROSOFT-CDO-APPT-SEQUENCE");
+	if (piline == nullptr)
+		piline = main_event->get_line("SEQUENCE");
+	if (piline == nullptr)
+		return TRUE;
+
 	const char *pvalue;
 	PROPERTY_NAME propname;
 	
@@ -1544,11 +1591,13 @@ static BOOL oxcical_parse_status(std::shared_ptr<ICAL_LINE> piline,
 	return TRUE;
 }
 
-static BOOL oxcical_parse_summary(
-    std::shared_ptr<ICAL_LINE> piline, MESSAGE_CONTENT *pmsg,
-	EXT_BUFFER_ALLOC alloc, EXCEPTIONINFO *pexception,
+static BOOL oxcical_parse_summary(std::shared_ptr<ical_component> main_event,
+    MESSAGE_CONTENT *pmsg, EXT_BUFFER_ALLOC alloc, EXCEPTIONINFO *pexception,
 	EXTENDEDEXCEPTION *pext_exception)
 {
+	auto piline = main_event->get_line("SUMMARY");
+	if (piline == nullptr)
+		return TRUE;
 	int i;
 	int tmp_len;
 	const char *pvalue;
@@ -1591,9 +1640,12 @@ static BOOL oxcical_parse_summary(
 	return TRUE;
 }
 
-static BOOL oxcical_parse_ownerapptid(std::shared_ptr<ICAL_LINE> piline,
+static BOOL oxcical_parse_ownerapptid(std::shared_ptr<ical_component> main_event,
     MESSAGE_CONTENT *pmsg)
 {
+	auto piline = main_event->get_line("X-MICROSOFT-CDO-OWNERAPPTID");
+	if (piline == nullptr)
+		return TRUE;
 	const char *pvalue;
 	
 	pvalue = piline->get_first_subvalue();
@@ -1632,9 +1684,12 @@ static BOOL oxcical_parse_recurrence_id(std::shared_ptr<ICAL_COMPONENT> ptz_comp
 	return TRUE;
 }
 
-static BOOL oxcical_parse_disallow_counter(std::shared_ptr<ICAL_LINE> piline,
+static BOOL oxcical_parse_disallow_counter(std::shared_ptr<ical_component> main_event,
     namemap &phash, uint16_t *plast_propid, MESSAGE_CONTENT *pmsg)
 {
+	auto piline = main_event->get_line("X-MICROSOFT-DISALLOW-COUNTER");
+	if (piline == nullptr)
+		return TRUE;
 	uint8_t tmp_byte;
 	const char *pvalue;
 	PROPERTY_NAME propname;
@@ -2143,47 +2198,14 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		}
 	}
 	
-	auto piline = pmain_event->get_line("CATEGORIES");
-	if (NULL != piline) {
-		if (!oxcical_parse_categories(piline, phash, &last_propid, pmsg)) {
-			return FALSE;
-		}
-	}
-	piline = pmain_event->get_line("CLASS");
-	if (NULL != piline) {
-		if (FALSE == oxcical_parse_class(piline, pmsg)) {
-			return FALSE;
-		}
-	} else {
-		tmp_int32 = SENSITIVITY_NONE;
-		if (pmsg->proplist.set(PR_SENSITIVITY, &tmp_int32) != 0)
-			return FALSE;
-	}
-	
-	if (NULL != method && (0 == strcasecmp(method, "REPLY") ||
-		0 == strcasecmp(method, "COUNTER"))) {
-		piline = pmain_event->get_line("COMMENT");
-	} else {
-		piline = pmain_event->get_line("DESCRIPTION");
-	}
-	if (NULL != piline) {
-		if (FALSE == oxcical_parse_body(piline, pmsg)) {
-			return FALSE;
-		}
-	}
-	
-	piline = pmain_event->get_line("X-ALT-DESC");
-	if (NULL != piline) {
-		pvalue = piline->get_first_paramval("FMTTYPE");
-		if (NULL != pvalue && 0 == strcasecmp(pvalue, "text/html")) {
-			if (FALSE == oxcical_parse_html(piline, pmsg)) {
-				return FALSE;
-			}
-		}
-	}
+	if (!oxcical_parse_categories(pmain_event, phash, &last_propid, pmsg) ||
+	    !oxcical_parse_class(pmain_event, pmsg) ||
+	    !oxcical_parse_body(pmain_event, method, pmsg) ||
+	    !oxcical_parse_html(pmain_event, pmsg))
+		return FALSE;
 	
 	b_allday = FALSE;
-	piline = pmain_event->get_line("X-MICROSOFT-MSNCALENDAR-ALLDAYEVENT");
+	auto piline = pmain_event->get_line("X-MICROSOFT-MSNCALENDAR-ALLDAYEVENT");
 	if (NULL == piline) {
 		piline = pmain_event->get_line("X-MICROSOFT-CDO-ALLDAYEVENT");
 	}
@@ -2194,13 +2216,9 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		}
 	}
 	
-	piline = pmain_event->get_line("DTSTAMP");
-	if (NULL != piline) {
-		if (FALSE == oxcical_parse_dtstamp(piline,
-			method, phash, &last_propid, pmsg)) {
-			return FALSE;
-		}
-	}
+	if (!oxcical_parse_dtstamp(pmain_event, method,
+	    phash, &last_propid, pmsg))
+		return FALSE;
 	
 	piline = pmain_event->get_line("DTSTART");
 	if (NULL == piline) {
@@ -2344,29 +2362,12 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		}
 	}
 	
-	piline = pmain_event->get_line("UID");
-	if (NULL != piline) {
-		if (FALSE == oxcical_parse_uid(piline, itime,
-			alloc, phash, &last_propid, pmsg)) {
-			return FALSE;
-		}
-	}
-	
-	piline = pmain_event->get_line("LOCATION");
-	if (NULL != piline) {
-		if (FALSE == oxcical_parse_location(piline, phash,
-			&last_propid, alloc, pmsg, pexception, pext_exception)) {
-			return FALSE;
-		}
-	}
-	
-	piline = pmain_event->get_line("ORGANIZER");
-	if (NULL != piline) {
-		if (FALSE == oxcical_parse_organizer(
-			piline, username_to_entryid, pmsg)) {
-			return FALSE;
-		}
-	}
+	if (!oxcical_parse_uid(pmain_event, itime, alloc,
+	    phash, &last_propid, pmsg) ||
+	    !oxcical_parse_location(pmain_event, phash, &last_propid, alloc,
+	    pmsg, pexception, pext_exception) ||
+	    !oxcical_parse_organizer(pmain_event, username_to_entryid, pmsg))
+		return FALSE;
 	
 	piline = pmain_event->get_line("X-MICROSOFT-CDO-IMPORTANCE");
 	if (NULL == piline) {
@@ -2420,16 +2421,8 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		if (pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
 			return FALSE;
 	}
-	
-	piline = pmain_event->get_line("X-MICROSOFT-CDO-APPT-SEQUENCE");
-	if (NULL == piline) {
-		piline = pmain_event->get_line("SEQUENCE");
-	}
-	if (NULL != piline) {
-		if (!oxcical_parse_sequence(piline, phash, &last_propid, pmsg)) {
-			return FALSE;
-		}
-	}
+	if (!oxcical_parse_sequence(pmain_event, phash, &last_propid, pmsg))
+		return FALSE;
 	
 	auto busy_line = pmain_event->get_line("X-MICROSOFT-CDO-BUSYSTATUS");
 	if (busy_line == nullptr)
@@ -2470,28 +2463,12 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		}
 	}
 	
-	piline = pmain_event->get_line("X-MICROSOFT-CDO-OWNERAPPTID");
-	if (NULL != piline) {
-		if (FALSE == oxcical_parse_ownerapptid(piline, pmsg)) {
-			return FALSE;
-		}
-	}
-	
-	piline = pmain_event->get_line("X-MICROSOFT-DISALLOW-COUNTER");
-	if (NULL != piline) {
-		if (FALSE == oxcical_parse_disallow_counter(
-			piline, phash, &last_propid, pmsg)) {
-			return FALSE;
-		}
-	}
-	
-	piline = pmain_event->get_line("SUMMARY");
-	if (NULL != piline) {
-		if (FALSE == oxcical_parse_summary(piline,
-			pmsg, alloc, pexception, pext_exception)) {
-			return FALSE;
-		}
-	}
+	if (!oxcical_parse_ownerapptid(pmain_event, pmsg) ||
+	    !oxcical_parse_disallow_counter(pmain_event, phash,
+	    &last_propid, pmsg) ||
+	    !oxcical_parse_summary(pmain_event, pmsg, alloc,
+	    pexception, pext_exception))
+		return FALSE;
 	
 	piline = pmain_event->get_line("RRULE");
 	if (NULL == piline) {
