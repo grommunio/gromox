@@ -332,8 +332,8 @@ static BOOL ftstream_producer_write_propvalue(
 	if (ppropval->proptag == PR_MESSAGE_CLASS)
 		proptype = PT_STRING8;
 	write_type = proptype;
-	/* META_TAG_IDSETGIVEN, MS-OXCFXICS 3.2.5.2.1 */
-	if (0x4017 == propid) {
+	if (propid == PROP_ID(META_TAG_IDSETGIVEN)) {
+		/* OXCFXICS v §3.2.5.2.1 */
 		write_type = PT_LONG;
 	} else if (proptype == PT_STRING8 || proptype == PT_UNICODE) {
 		if (pstream->string_option & STRING_OPTION_FORCE_UNICODE) {
