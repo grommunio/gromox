@@ -2071,10 +2071,10 @@ void http_parser_log_info(HTTP_CONTEXT *pcontext, int level,
 	log_buf[sizeof(log_buf) - 1] = '\0';
 	
 	if ('\0' == pcontext->username[0]) {
-		system_services_log_info(level, "context-ID: %u, IP: %s  %s",
+		system_services_log_info(level, "ctxid=%u, host=[%s]  %s",
 			pcontext->context_id, pcontext->connection.client_ip, log_buf);
 	} else {
-		system_services_log_info(level, "user: %s, IP: %s  %s",
+		system_services_log_info(level, "user=%s, host=[%s]  %s",
 			pcontext->username, pcontext->connection.client_ip, log_buf);
 	}
 
