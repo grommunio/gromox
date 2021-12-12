@@ -6,6 +6,22 @@ Enhancements:
 * mt2exm: perform named property translation on folder properties, message
   recipient properties and attachment properties
 
+Fixes:
+
+* mapi_lib: Resolved a crash when ingesting an iCal attachment with
+  SUMMARY lines and time-based as well as timeless exceptions.
+* mapi_lib: Resolved a crash when emitting messages that have
+  some properties from the PS_INTERNET_HEADERS group set.
+* delivery-queue: The message_enqueue plugin had written an improperly-sized
+  integer to mail data files, and message_dequeue could not read them.
+  (32-bit platforms only)
+* daemons: resolve a slow startup under strace
+
+Changes:
+
+* http, imap, pop3: Addresses in log messages are now (more
+  consistently) in square brackets.
+
 
 1.10 (2021-12-07)
 =================
