@@ -653,6 +653,23 @@ enum { /* for PR_ATTACHMENT_FLAGS */
 	afException = 1U << 1, /* OXOCAL v20 §2.2.10.1.2 */
 };
 
+enum { /* bits for PidLidChangeHighlight */
+	BIT_CH_START        = 1U << 0,
+	BIT_CH_END          = 1U << 1,
+	BIT_CH_RECUR        = 1U << 2,
+	BIT_CH_LOCATION     = 1U << 3,
+	BIT_CH_SUBJECT      = 1U << 4,
+	BIT_CH_REQATT       = 1U << 5,
+	BIT_CH_OPTATT       = 1U << 6,
+	BIT_CH_BODY         = 1U << 7,
+	BIT_CH_RESPONSE     = 1U << 9,
+	BIT_CH_ALLOWPROPOSE = 1U << 10,
+	BIT_CH_CNF          = 1U << 11, /* deprecated since OXOCAL v0.1 */
+	BIT_CH_REM          = 1U << 12, /* reserved since OXOCAL v0.1 */
+	// 1U << 27 was reserved from OXOCAL v0.1 to v4.1,
+	// 1U << 31 is reversed since OXOCAL v5.0.
+};
+
 enum bm_relop {
 	BMR_EQZ = 0,
 	BMR_NEZ,
