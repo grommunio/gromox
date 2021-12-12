@@ -779,6 +779,22 @@ static BOOL oxcical_parse_proposal(namemap &phash,
 	return TRUE;
 }
 
+static unsigned int role_to_rcpttype(const char *r, const char *cu)
+{
+	/* Cf. OXCICAL v13 §2.1.3.1.1.20.2 */
+	if (r == nullptr || strcasecmp(r, "chair") == 0 ||
+	    strcasecmp(r, "req-participant") == 0)
+		return MAPI_TO;
+	if (strcasecmp(r, "opt-participant") == 0)
+		return MAPI_CC;
+	if (cu != nullptr && (strcasecmp(cu, "resource") == 0 ||
+	    strcasecmp(cu, "room") == 0))
+		return MAPI_BCC;
+	if (strcasecmp(r, "non-participant") == 0)
+		return MAPI_CC; /* OL2007 behavior */
+	return MAPI_TO;
+}
+
 static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event,
 	USERNAME_TO_ENTRYID username_to_entryid, MESSAGE_CONTENT *pmsg)
 {
@@ -789,7 +805,6 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 	uint32_t tmp_int32;
 	TARRAY_SET *prcpts;
 	uint8_t tmp_buff[1024];
-	const char *pcutype;
 	const char *paddress;
 	TPROPVAL_ARRAY *pproplist;
 	const char *pdisplay_name;
@@ -818,7 +833,7 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 		}
 		paddress += 7;
 		pdisplay_name = piline->get_first_paramval("CN");
-		pcutype = piline->get_first_paramval("CUTYPE");
+		auto cutype = piline->get_first_paramval("CUTYPE");
 		prole = piline->get_first_paramval("ROLE");
 		prsvp = piline->get_first_paramval("RSVP");
 		if (NULL != prsvp && 0 == strcasecmp(prsvp, "TRUE")) {
@@ -850,26 +865,7 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 		    pproplist->set(PR_RECIPIENT_ENTRYID, &tmp_bin) != 0 ||
 		    pproplist->set(PR_RECORD_KEY, &tmp_bin) != 0)
 			return FALSE;
-		if (NULL != prole && 0 == strcasecmp(prole, "CHAIR")) {
-			tmp_int32 = 1;
-		} else if (NULL != prole && 0 == strcasecmp(
-			prole, "REQ-PARTICIPANT")) {
-			tmp_int32 = 1;
-		} else if (NULL != prole && 0 == strcasecmp(
-			prole, "OPT-PARTICIPANT")) {
-			tmp_int32 = 2;
-		} else if (NULL != pcutype && 0 == strcasecmp(
-			pcutype, "RESOURCE")) {
-			tmp_int32 = 3;
-		} else if (NULL != pcutype && 0 == strcasecmp(
-			pcutype, "ROOM")) {
-			tmp_int32 = 3;
-		} else if (NULL != prole && 0 == strcasecmp(
-			prole, "NON-PARTICIPANT")) {
-			tmp_int32 = 2;
-		} else {
-			tmp_int32 = 1;
-		}
+		tmp_int32 = role_to_rcpttype(prole, cutype);
 		if (pproplist->set(PR_RECIPIENT_TYPE, &tmp_int32) != 0)
 			return FALSE;
 		tmp_int32 = dtypx == DT_DISTLIST ? MAPI_DISTLIST : MAPI_MAILUSER;
