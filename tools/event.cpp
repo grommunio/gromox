@@ -232,6 +232,7 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to create listen socket: %s\n", strerror(-sockd));
 		return 5;
 	}
+	gx_reexec_record(sockd);
 	auto cl_2 = make_scope_exit([&]() { close(sockd); });
 	auto ret = switch_user_exec(*pconfig, argv);
 	if (ret < 0)

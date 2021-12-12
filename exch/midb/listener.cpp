@@ -7,6 +7,7 @@
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include <gromox/common_types.hpp>
 #include "cmd_parser.h"
@@ -52,6 +53,7 @@ int listener_run(const char *configdir)
 		printf("[listener]: failed to create listen socket: %s\n", strerror(-g_listen_sockd));
 		return -1;
 	}
+	gx_reexec_record(g_listen_sockd);
 	
 	auto ret = list_file_read_fixedstrings("midb_acl.txt",
 	           configdir, g_acl_list);

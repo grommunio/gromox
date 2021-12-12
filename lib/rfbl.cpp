@@ -41,6 +41,8 @@ class hxmc_deleter {
 
 using namespace gromox;
 
+static int gx_reexec_top_fd = -1;
+
 char **read_file_by_line(const char *file)
 {
 	std::unique_ptr<FILE, file_deleter> fp(fopen(file, "r"));
@@ -442,7 +444,14 @@ int gx_reexec(const char *const *argv)
 	if (s != nullptr || argv == nullptr) {
 		chdir("/");
 		unsetenv("GX_REEXEC_DONE");
+		unsetenv("HX_LISTEN_TOP_FD");
+		unsetenv("LISTEN_FDS");
 		return 0;
+	}
+	if (gx_reexec_top_fd >= 0) {
+		char topfd[16];
+		snprintf(topfd, arsizeof(topfd), "%d", gx_reexec_top_fd + 1);
+		setenv("HX_LISTEN_TOP_FD", topfd, true);
 	}
 	setenv("GX_REEXEC_DONE", "1", true);
 
@@ -460,6 +469,12 @@ int gx_reexec(const char *const *argv)
 	return -saved_errno;
 }
 
+void gx_reexec_record(int fd)
+{
+	if (fd > gx_reexec_top_fd)
+		gx_reexec_top_fd = fd;
+}
+
 int switch_user_exec(const CONFIG_FILE &cf, const char **argv)
 {
 	auto user = cf.get_value("running_identity");
@@ -467,7 +482,7 @@ int switch_user_exec(const CONFIG_FILE &cf, const char **argv)
 		user = "gromox";
 	switch (HXproc_switch_user(user, nullptr)) {
 	case HXPROC_SU_NOOP:
-		return 0;
+		return gx_reexec(nullptr);
 	case HXPROC_SU_SUCCESS:
 		return gx_reexec(argv);
 	case HXPROC_USER_NOT_FOUND:

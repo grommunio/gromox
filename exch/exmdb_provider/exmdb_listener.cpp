@@ -113,6 +113,7 @@ int exmdb_listener_run(const char *config_path)
 		printf("[exmdb_provider]: failed to create listen socket: %s\n", strerror(-g_listen_sockd));
 		return -1;
 	}
+	gx_reexec_record(g_listen_sockd);
 
 	auto ret = list_file_read_fixedstrings("exmdb_acl.txt", config_path, g_acl_list);
 	if (ret == -ENOENT) {

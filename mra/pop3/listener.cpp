@@ -11,6 +11,7 @@
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include "listener.h"
 #include "system_services.h"
@@ -65,6 +66,7 @@ int listener_run()
 		       g_listener_port, strerror(-g_listener_sock));
 		return -1;
 	}
+	gx_reexec_record(g_listener_sock);
 	if (g_listener_ssl_port > 0) {
 		g_listener_ssl_sock = gx_inet_listen("::", g_listener_ssl_port);
 		if (g_listener_ssl_sock < 0) {
@@ -72,6 +74,7 @@ int listener_run()
 			       g_listener_ssl_port, strerror(-g_listener_ssl_sock));
 			return -1;
 		}
+		gx_reexec_record(g_listener_sock);
 	}
 
 	return 0;

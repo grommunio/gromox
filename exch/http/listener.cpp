@@ -66,6 +66,7 @@ int listener_run()
 		       g_listener_port, strerror(-g_listener_sock));
 		return -1;
 	}
+	gx_reexec_record(g_listener_sock);
 	if (g_mss_size > 0 &&
 	    setsockopt(g_listener_sock, IPPROTO_TCP, TCP_MAXSEG,
 	    &g_mss_size, sizeof(g_mss_size)) < 0)
@@ -78,6 +79,7 @@ int listener_run()
 			       g_listener_ssl_port, strerror(-g_listener_ssl_sock));
 			return -1;
 		}
+		gx_reexec_record(g_listener_ssl_sock);
 		if (g_mss_size > 0 &&
 		    setsockopt(g_listener_ssl_sock, IPPROTO_TCP, TCP_MAXSEG,
 		    &g_mss_size, sizeof(g_mss_size)) < 0)

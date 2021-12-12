@@ -125,6 +125,7 @@ int console_server_run()
 		close(sock);
 		return -5;
 	}
+	gx_reexec_record(sock);
 	pthread_setname_np(g_listening_tid, "console/accept");
 	g_console_buff = pnodes;
     return 0;
