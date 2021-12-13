@@ -1127,9 +1127,7 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 	} else {
 		time(&cur_time);
 		memset(&globalobjectid, 0, sizeof(GLOBALOBJECTID));
-		memcpy(globalobjectid.arrayid,
-			"\x04\x00\x00\x00\x82\x00\xE0\x00"
-			"\x74\xC5\xB7\x10\x1A\x82\xE0\x08", 16);
+		globalobjectid.arrayid = EncodedGlobalId;
 		globalobjectid.creationtime = rop_util_unix_to_nttime(cur_time);
 		globalobjectid.data.cb = 16;
 		globalobjectid.data.pv = tmp_buff1;

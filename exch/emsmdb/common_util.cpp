@@ -285,7 +285,7 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 {
 	uint32_t flags;
 	EXT_PULL ext_pull;
-	uint8_t provider_uid[16];
+	FLATUID provider_uid;
 	ONEOFF_ENTRYID oneoff_entry;
 	ADDRESSBOOK_ENTRYID ab_entryid;
 	
@@ -294,9 +294,9 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 	}
 	ext_pull.init(pbin->pb, 20, common_util_alloc, 0);
 	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
-	    ext_pull.g_bytes(provider_uid, arsizeof(provider_uid)) != EXT_ERR_SUCCESS)
+	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
 		return FALSE;	
-	if (memcmp(provider_uid, muidEMSAB, sizeof(muidEMSAB)) == 0) {
+	if (provider_uid == muidEMSAB) {
 		ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
 		if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS)
 			return FALSE;	
@@ -306,7 +306,7 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 		return common_util_essdn_to_username(ab_entryid.px500dn,
 		       username, ulen);
 	}
-	if (memcmp(provider_uid, muidOOP, sizeof(muidOOP)) == 0) {
+	if (provider_uid == muidOOP) {
 		ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
 		if (ext_pull.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS)
 			return FALSE;	
@@ -333,7 +333,7 @@ BINARY* common_util_username_to_addressbook_entryid(const char *username)
 	if (!common_util_username_to_essdn(username, x500dn, GX_ARRAY_SIZE(x500dn)))
 		return NULL;
 	tmp_entryid.flags = 0;
-	memcpy(tmp_entryid.provider_uid, muidEMSAB, sizeof(muidEMSAB));
+	tmp_entryid.provider_uid = muidEMSAB;
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = x500dn;
@@ -359,7 +359,7 @@ BINARY* common_util_public_to_addressbook_entryid(const char *domainname)
 	if (!common_util_public_to_essdn(domainname, x500dn, GX_ARRAY_SIZE(x500dn)))
 		return NULL;
 	tmp_entryid.flags = 0;
-	memcpy(tmp_entryid.provider_uid, muidEMSAB, sizeof(muidEMSAB));
+	tmp_entryid.provider_uid = muidEMSAB;
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = x500dn;
@@ -387,12 +387,12 @@ BINARY *common_util_to_folder_entryid(logon_object *plogon, uint64_t folder_id)
 	tmp_entryid.flags = 0;
 	if (plogon->check_private()) {
 		tmp_bin.cb = 0;
-		tmp_bin.pb = tmp_entryid.provider_uid;
+		tmp_bin.pv = &tmp_entryid.provider_uid;
 		rop_util_guid_to_binary(plogon->mailbox_guid, &tmp_bin);
 		tmp_entryid.database_guid = rop_util_make_user_guid(plogon->account_id);
 		tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
 	} else {
-		memcpy(tmp_entryid.provider_uid, pbLongTermNonPrivateGuid, sizeof(GUID));
+		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
 		replid = rop_util_get_replid(folder_id);
 		if (1 != replid) {
 			if (!exmdb_client_get_mapping_guid(plogon->get_dir(),
@@ -471,12 +471,12 @@ BINARY *common_util_to_message_entryid(logon_object *plogon,
 	tmp_entryid.flags = 0;
 	if (plogon->check_private()) {
 		tmp_bin.cb = 0;
-		tmp_bin.pb = tmp_entryid.provider_uid;
+		tmp_bin.pv = &tmp_entryid.provider_uid;
 		rop_util_guid_to_binary(plogon->mailbox_guid, &tmp_bin);
 		tmp_entryid.folder_database_guid = rop_util_make_user_guid(plogon->account_id);
 		tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;
 	} else {
-		memcpy(tmp_entryid.provider_uid, pbLongTermNonPrivateGuid, sizeof(GUID));
+		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
 		replid = rop_util_get_replid(folder_id);
 		if (1 != replid) {
 			if (!exmdb_client_get_mapping_guid(plogon->get_dir(),

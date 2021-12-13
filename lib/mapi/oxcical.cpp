@@ -42,9 +42,6 @@ static constexpr char
 static constexpr size_t namemap_limit = 0x1000;
 static constexpr char EncodedGlobalId_hex[] =
 	"040000008200E00074C5B7101A82E008";
-static constexpr uint8_t EncodedGlobalId[16] =
-	/* MS-OXCICAL v13 §2.1.3.1.1.20.26 pg 67 */
-	{0x04, 0x00, 0x00, 0x00, 0x82, 0x00, 0xE0, 0x00, 0x74, 0xC5, 0xB7, 0x10, 0x1A, 0x82, 0xE0, 0x08};
 static constexpr uint8_t ThirdPartyGlobalId[12] =
 	/* pg 68 // 7643616C2D55696401000000 */
 	{0x76, 0x43, 0x61, 0x6c, 0x2d, 0x55, 0x69, 0x64, 0x01, 0x00, 0x00, 0x00};
@@ -1258,7 +1255,7 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ical_component> main_event,
 		}
 	}
 	memset(&globalobjectid, 0, sizeof(GLOBALOBJECTID));
-	memcpy(globalobjectid.arrayid, EncodedGlobalId, 16);
+	globalobjectid.arrayid = EncodedGlobalId;
 	globalobjectid.year = effective_itime.year;
 	globalobjectid.month = effective_itime.month;
 	globalobjectid.day = effective_itime.day;
@@ -4443,7 +4440,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	} else {
 		time(&cur_time);
 		memset(&globalobjectid, 0, sizeof(GLOBALOBJECTID));
-		memcpy(globalobjectid.arrayid, EncodedGlobalId, 16);
+		globalobjectid.arrayid = EncodedGlobalId;
 		globalobjectid.creationtime = rop_util_unix_to_nttime(cur_time);
 		globalobjectid.data.cb = 16;
 		globalobjectid.data.pc = tmp_buff1;

@@ -845,7 +845,7 @@ uint32_t zarafa_server_uinfo(const char *username, BINARY *pentryid,
 	    common_util_username_to_essdn(username, x500dn, GX_ARRAY_SIZE(x500dn)))
 		return ecNotFound;
 	tmp_entryid.flags = 0;
-	memcpy(tmp_entryid.provider_uid, muidEMSAB, sizeof(muidEMSAB));
+	tmp_entryid.provider_uid = muidEMSAB;
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = x500dn;
@@ -1481,7 +1481,7 @@ uint32_t zarafa_server_openstore(GUID hsession,
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
-	if (memcmp(store_entryid.wrapped_provider_uid, g_muidStorePublic, sizeof(GUID)) == 0) {
+	if (store_entryid.wrapped_provider_uid == g_muidStorePublic) {
 		*phobject = pinfo->ptree->get_store_handle(false, pinfo->domain_id);
 	} else {
 		if (FALSE == common_util_essdn_to_uid(
@@ -2459,12 +2459,12 @@ uint32_t zarafa_server_getstoreentryid(
 		mailbox_dn = tmp_buff;
 	}
 	store_entryid.flags = 0;
-	memcpy(store_entryid.provider_uid, muidStoreWrap, sizeof(GUID));
+	store_entryid.provider_uid = muidStoreWrap;
 	store_entryid.version = 0;
 	store_entryid.flag = 0;
 	snprintf(store_entryid.dll_name, sizeof(store_entryid.dll_name), "emsmdb.dll");
 	store_entryid.wrapped_flags = 0;
-	memcpy(store_entryid.wrapped_provider_uid, g_muidStorePrivate, sizeof(GUID));
+	store_entryid.wrapped_provider_uid = g_muidStorePrivate;
 	store_entryid.wrapped_type = 0x0000000C;
 	store_entryid.pserver_name = username;
 	store_entryid.pmailbox_dn = deconst(mailbox_dn);
@@ -3228,7 +3228,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 	char tmp_buff[256];
 	uint32_t last_rowid;
 	TPROPVAL_ARRAY *prcpt;
-	uint8_t provider_uid[16];
+	FLATUID provider_uid;
 	TAGGED_PROPVAL *ppropval;
 	TAGGED_PROPVAL tmp_propval;
 	ONEOFF_ENTRYID oneoff_entry;
@@ -3304,9 +3304,9 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			if (ext_pull.g_uint32(&tmp_flags) != EXT_ERR_SUCCESS ||
 			    tmp_flags != 0)
 				continue;
-			if (ext_pull.g_bytes(provider_uid, arsizeof(provider_uid)) != EXT_ERR_SUCCESS)
+			if (ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
 				continue;
-			if (memcmp(provider_uid, muidEMSAB, sizeof(muidEMSAB)) == 0) {
+			if (provider_uid == muidEMSAB) {
 				ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
 				if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS)
 					continue;
@@ -3346,7 +3346,7 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 				common_util_set_propvals(prcpt, &tmp_propval);
 				continue;
 			}
-			if (memcmp(provider_uid, muidOOP, sizeof(muidOOP)) == 0) {
+			if (provider_uid == muidOOP) {
 				ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
 				if (ext_pull.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS ||
 				    strcasecmp(oneoff_entry.paddress_type, "SMTP") != 0)

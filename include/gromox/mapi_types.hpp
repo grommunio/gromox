@@ -8,12 +8,12 @@
 
 struct STORE_ENTRYID {
 	uint32_t flags;
-	uint8_t provider_uid[16]; /* muidStoreWrap */
+	FLATUID provider_uid; /* muidStoreWrap */
 	uint8_t version;
 	uint8_t flag;
 	char dll_name[14]; /* "emsmdb.dll" */
 	uint32_t wrapped_flags;
-	uint8_t wrapped_provider_uid[16]; /* g_muidStorePrivate / g_muidStorePublic */
+	FLATUID wrapped_provider_uid; /* g_muidStorePrivate / g_muidStorePublic */
 	uint32_t wrapped_type;
 	char *pserver_name;
 	char *pmailbox_dn;
@@ -29,7 +29,7 @@ struct STORE_ENTRYID {
 
 struct FOLDER_ENTRYID {
 	uint32_t flags;
-	uint8_t provider_uid[16];
+	FLATUID provider_uid;
 	uint16_t folder_type;
 	GUID database_guid;
 	GLOBCNT global_counter;
@@ -38,7 +38,7 @@ struct FOLDER_ENTRYID {
 
 struct MESSAGE_ENTRYID {
 	uint32_t flags;
-	uint8_t provider_uid[16];
+	FLATUID provider_uid;
 	uint16_t message_type;
 	GUID folder_database_guid;
 	GLOBCNT folder_global_counter;
@@ -238,7 +238,7 @@ struct PROBLEM_ARRAY {
 
 struct ADDRESSBOOK_ENTRYID {
 	uint32_t flags;
-	uint8_t provider_uid[16]; /* muidEMSAB */
+	FLATUID provider_uid; /* muidEMSAB */
 	uint32_t version; /* should be 0x00000001 */
 	uint32_t type;
 	char *px500dn;
@@ -713,7 +713,7 @@ struct APPOINTMENT_RECUR_PAT {
 };
 
 struct GLOBALOBJECTID {
-	uint8_t arrayid[16]; /* SHOULD be EncodedGlobalId */
+	FLATUID arrayid; /* SHOULD be EncodedGlobalId */
 	uint16_t year;
 	uint8_t month;
 	uint8_t day;

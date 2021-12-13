@@ -242,7 +242,7 @@ static BINARY* container_object_folder_to_addressbook_entryid(
 	common_util_exmdb_locinfo_to_string(
 		type, db_id, folder_id, x500dn + 7);
 	tmp_entryid.flags = 0;
-	memcpy(tmp_entryid.provider_uid, muidEMSAB, sizeof(muidEMSAB));
+	tmp_entryid.provider_uid = muidEMSAB;
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;
 	tmp_entryid.px500dn = x500dn;
@@ -275,7 +275,7 @@ static BINARY* container_object_message_to_addressbook_entryid(
 	len = strlen(x500dn);
 	sprintf(x500dn + len, ":%d", num);
 	tmp_entryid.flags = 0;
-	memcpy(tmp_entryid.provider_uid, muidZCSAB, sizeof(muidZCSAB));
+	tmp_entryid.provider_uid = muidZCSAB;
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_REMOTE_USER;
 	tmp_entryid.px500dn = x500dn;
@@ -467,7 +467,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 				return FALSE;
 			}
 			tmp_bin.cb = sizeof(muidZCSAB);
-			tmp_bin.pb = deconst(muidZCSAB);
+			tmp_bin.pv = deconst(&muidZCSAB);
 			if (ppropvals->set(PROP_TAG_ABPROVIDERID, &tmp_bin) != 0) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
@@ -512,7 +512,7 @@ BOOL container_object_fetch_special_property(
 			return FALSE;
 		*ppvalue = bv;
 		bv->cb = sizeof(muidECSAB);
-		bv->pb = deconst(muidECSAB);
+		bv->pv = deconst(&muidECSAB);
 		return TRUE;
 	}
 	case PR_ENTRYID: {
@@ -522,7 +522,7 @@ BOOL container_object_fetch_special_property(
 		}
 		auto bv = static_cast<BINARY *>(pvalue);
 		ab_entryid.flags = 0;
-		memcpy(ab_entryid.provider_uid, muidEMSAB, sizeof(muidEMSAB));
+		ab_entryid.provider_uid = muidEMSAB;
 		ab_entryid.version = 1;
 		ab_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;
 		ab_entryid.px500dn = special_type == SPECIAL_CONTAINER_GAL ?
@@ -625,7 +625,7 @@ static BOOL container_object_fetch_folder_properties(
 				return FALSE;
 			pout_propvals->ppropval[pout_propvals->count++].pvalue = bv;
 			bv->cb = sizeof(muidZCSAB);
-			bv->pb = deconst(muidZCSAB);
+			bv->pv = deconst(&muidZCSAB);
 			break;
 		}
 		case PR_ENTRYID:

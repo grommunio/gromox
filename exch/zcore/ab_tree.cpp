@@ -1458,7 +1458,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		*ppvalue = bv;
 		bv->cb = sizeof(muidECSAB);
-		bv->pb = deconst(muidECSAB);
+		bv->pv = deconst(&muidECSAB);
 		return TRUE;
 	}
 	case PROP_TAG_CONTAINERFLAGS:
@@ -1594,7 +1594,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		*ppvalue = bv;
 		bv->cb = sizeof(muidEMSAB);
-		bv->pb = deconst(muidEMSAB);
+		bv->pv = deconst(&muidEMSAB);
 		return TRUE;
 	}
 	case PR_PARENT_ENTRYID:
@@ -1614,7 +1614,7 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		}
 		auto bv = static_cast<BINARY *>(pvalue);
 		ab_entryid.flags = 0;
-		memcpy(ab_entryid.provider_uid, muidEMSAB, sizeof(GUID));
+		ab_entryid.provider_uid = muidEMSAB;
 		ab_entryid.version = 1;
 		if (node_type > 0x80) {
 			ab_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;

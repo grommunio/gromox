@@ -153,7 +153,7 @@ BOOL common_util_set_permanententryid(uint32_t display_type,
 	ppermeid->r1 = 0x0;
 	ppermeid->r2 = 0x0;
 	ppermeid->r3 = 0x0;
-	memcpy(ppermeid->provider_uid.ab, muidEMSAB, sizeof(muidEMSAB));
+	ppermeid->provider_uid = muidEMSAB;
 	ppermeid->r4 = 0x1;
 	ppermeid->display_type = display_type;
 	ppermeid->pdn = NULL;

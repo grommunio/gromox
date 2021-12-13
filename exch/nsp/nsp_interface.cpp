@@ -165,7 +165,7 @@ static uint32_t nsp_interface_fetch_property(SIMPLE_TREE_NODE *pnode,
 		} else {
 			pprop->value.bin.pv = pbuff;
 		}
-		memcpy(pprop->value.bin.pb, muidEMSAB, sizeof(muidEMSAB));
+		memcpy(pprop->value.bin.pb, &muidEMSAB, sizeof(muidEMSAB));
 		return ecSuccess;
 	case PR_TEMPLATEID:
 		display_type = node_type == NODE_TYPE_MLIST ? DT_DISTLIST : DT_MAILUSER;

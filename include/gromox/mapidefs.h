@@ -1,6 +1,7 @@
 #pragma once
 #include <cerrno>
 #include <cstdint>
+#include <cstring>
 #include <string>
 #include <gromox/defs.h>
 
@@ -1132,8 +1133,18 @@ struct BINARY_ARRAY {
 	BINARY *pbin;
 };
 
+/*
+ * The native-endian view of GUID is often not needed and it can just be
+ * treated as an opaque byte sequence.
+ */
 struct FLATUID {
 	uint8_t ab[16];
+#if __cplusplus >= 202000L && defined(__GNUG__) >= 13
+	/* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=103733 */
+	bool operator==(const FLATUID &) const = default;
+#else
+	inline bool operator==(const FLATUID &o) const { return memcmp(ab, o.ab, sizeof(ab)) == 0; }
+#endif
 };
 
 struct FLATUID_ARRAY {
@@ -1187,7 +1198,7 @@ struct NOTIF_SINK {
 struct ONEOFF_ENTRYID {
 	uint32_t flags;
 	/* 81.2B.1F.A4.BE.A3.10.19.9D.6E.00.DD.01.0F.54.02 */
-	uint8_t provider_uid[16];
+	FLATUID provider_uid;
 	uint16_t version; /* should be 0x0000 */
 	uint16_t ctrl_flags;
 	char *pdisplay_name;
@@ -1478,7 +1489,7 @@ struct FORWARDDELEGATE_ACTION {
 	RECIPIENT_BLOCK *pblock;
 };
 
-extern const uint8_t
-	muidStoreWrap[16], muidEMSAB[16], pbLongTermNonPrivateGuid[16],
-	g_muidStorePrivate[16], g_muidStorePublic[16], muidOOP[16],
-	muidECSAB[16], muidZCSAB[16];
+extern const FLATUID
+	muidStoreWrap, muidEMSAB, pbLongTermNonPrivateGuid,
+	g_muidStorePrivate, g_muidStorePublic, muidOOP,
+	muidECSAB, muidZCSAB, EncodedGlobalId;

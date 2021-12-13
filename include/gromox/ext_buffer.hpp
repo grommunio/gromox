@@ -94,6 +94,7 @@ struct EXT_PULL {
 	int g_bool(BOOL *);
 	int g_bytes(void *, uint32_t);
 	int g_guid(GUID *);
+	inline int g_guid(FLATUID *v) { return g_bytes(v, sizeof(*v)); }
 	int g_str(char **);
 	int g_wstr(char **);
 	int g_blob(DATA_BLOB *);
@@ -185,6 +186,7 @@ struct EXT_PUSH {
 	int p_bin_s(const BINARY *);
 	int p_bin_ex(const BINARY *);
 	int p_guid(const GUID *);
+	inline int p_guid(const FLATUID *v) { return p_bytes(v, sizeof(*v)); }
 	int p_str(const char *);
 	int p_wstr(const char *);
 	int p_uint16_a(const SHORT_ARRAY *);

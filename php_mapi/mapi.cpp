@@ -766,10 +766,6 @@ ZEND_FUNCTION(mapi_createoneoff)
 	PUSH_CTX push_ctx;
 	char *pdisplayname;
 	ONEOFF_ENTRYID tmp_entry;
-	static constexpr uint8_t muidOOP[] = {
-		/* {a41f2b81-a3be-1910-9d6e-00dd010f5402} */
-		0x81, 0x2B, 0x1F, 0xA4, 0xBE, 0xA3, 0x10, 0x19,
-		0x9D, 0x6E, 0x00, 0xDD, 0x01, 0x0F, 0x54, 0x02};
 	char empty[1]{};
 	
 	flags = 0;
@@ -785,7 +781,7 @@ ZEND_FUNCTION(mapi_createoneoff)
 		pdisplayname = empty;
 	}
 	tmp_entry.flags = 0;
-	memcpy(tmp_entry.provider_uid, muidOOP, sizeof(muidOOP));
+	tmp_entry.provider_uid = muidOOP;
 	tmp_entry.version = 0;
 	tmp_entry.ctrl_flags = flags;
 	tmp_entry.pdisplay_name = pdisplayname;

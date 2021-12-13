@@ -680,12 +680,12 @@ int EXT_PULL::g_svreid(SVREID *r)
 int EXT_PULL::g_store_eid(STORE_ENTRYID *r)
 {
 	TRY(g_uint32(&r->flags));
-	TRY(g_bytes(r->provider_uid, 16));
+	TRY(g_guid(&r->provider_uid));
 	TRY(g_uint8(&r->version));
 	TRY(g_uint8(&r->flag));
 	TRY(g_bytes(r->dll_name, 14));
 	TRY(g_uint32(&r->wrapped_flags));
-	TRY(g_bytes(r->wrapped_provider_uid, 16));
+	TRY(g_guid(&r->wrapped_provider_uid));
 	TRY(g_uint32(&r->wrapped_type));
 	TRY(g_str(&r->pserver_name));
 	return g_str(&r->pmailbox_dn);
@@ -1186,7 +1186,7 @@ int EXT_PULL::g_xid(uint8_t size, XID *pxid)
 int EXT_PULL::g_folder_eid(FOLDER_ENTRYID *r)
 {
 	TRY(g_uint32(&r->flags));
-	TRY(g_bytes(r->provider_uid, 16));
+	TRY(g_guid(&r->provider_uid));
 	TRY(g_uint16(&r->folder_type));
 	TRY(g_guid(&r->database_guid));
 	TRY(g_bytes(r->global_counter.ab, 6));
@@ -1212,7 +1212,7 @@ static int ext_buffer_pull_ext_movecopy_action(
 int EXT_PULL::g_msg_eid(MESSAGE_ENTRYID *r)
 {
 	TRY(g_uint32(&r->flags));
-	TRY(g_bytes(r->provider_uid, 16));
+	TRY(g_guid(&r->provider_uid));
 	TRY(g_uint16(&r->message_type));
 	TRY(g_guid(&r->folder_database_guid));
 	TRY(g_bytes(r->folder_global_counter.ab, 6));
@@ -1570,7 +1570,7 @@ int EXT_PULL::g_rule_data(RULE_DATA *r)
 int EXT_PULL::g_abk_eid(ADDRESSBOOK_ENTRYID *r)
 {
 	TRY(g_uint32(&r->flags));
-	TRY(g_bytes(r->provider_uid, 16));
+	TRY(g_guid(&r->provider_uid));
 	TRY(g_uint32(&r->version));
 	TRY(g_uint32(&r->type));
 	return g_str(&r->px500dn);
@@ -1579,7 +1579,7 @@ int EXT_PULL::g_abk_eid(ADDRESSBOOK_ENTRYID *r)
 int EXT_PULL::g_oneoff_eid(ONEOFF_ENTRYID *r)
 {
 	TRY(g_uint32(&r->flags));
-	TRY(g_bytes(r->provider_uid, 16));
+	TRY(g_guid(&r->provider_uid));
 	TRY(g_uint16(&r->version));
 	TRY(g_uint16(&r->ctrl_flags));
 	if (r->ctrl_flags & CTRL_FLAG_UNICODE) {
@@ -1981,7 +1981,7 @@ int EXT_PULL::g_goid(GLOBALOBJECTID *r)
 	uint8_t yh;
 	uint8_t yl;
 	
-	TRY(g_bytes(r->arrayid, 16));
+	TRY(g_guid(&r->arrayid));
 	TRY(g_uint8(&yh));
 	TRY(g_uint8(&yl));
 	r->year = ((uint16_t)yh) << 8 | yl;
@@ -2513,12 +2513,12 @@ int EXT_PUSH::p_svreid(const SVREID *r)
 int EXT_PUSH::p_store_eid(const STORE_ENTRYID *r)
 {
 	TRY(p_uint32(r->flags));
-	TRY(p_bytes(r->provider_uid, 16));
+	TRY(p_guid(&r->provider_uid));
 	TRY(p_uint8(r->version));
 	TRY(p_uint8(r->flag));
 	TRY(p_bytes(r->dll_name, 14));
 	TRY(p_uint32(r->wrapped_flags));
-	TRY(p_bytes(r->wrapped_provider_uid, 16));
+	TRY(p_guid(&r->wrapped_provider_uid));
 	TRY(p_uint32(r->wrapped_type));
 	TRY(p_str(r->pserver_name));
 	return p_str(r->pmailbox_dn);
@@ -2852,7 +2852,7 @@ int EXT_PUSH::p_xid(const XID &xid)
 int EXT_PUSH::p_folder_eid(const FOLDER_ENTRYID *r)
 {
 	TRY(p_uint32(r->flags));
-	TRY(p_bytes(r->provider_uid, 16));
+	TRY(p_guid(&r->provider_uid));
 	TRY(p_uint16(r->folder_type));
 	TRY(p_guid(&r->database_guid));
 	TRY(p_bytes(r->global_counter.ab, 6));
@@ -2862,7 +2862,7 @@ int EXT_PUSH::p_folder_eid(const FOLDER_ENTRYID *r)
 int EXT_PUSH::p_msg_eid(const MESSAGE_ENTRYID *r)
 {
 	TRY(p_uint32(r->flags));
-	TRY(p_bytes(r->provider_uid, 16));
+	TRY(p_guid(&r->provider_uid));
 	TRY(p_uint16(r->message_type));
 	TRY(p_guid(&r->folder_database_guid));
 	TRY(p_bytes(r->folder_global_counter.ab, 6));
@@ -3075,7 +3075,7 @@ int EXT_PUSH::p_rule_data(const RULE_DATA *r)
 int EXT_PUSH::p_abk_eid(const ADDRESSBOOK_ENTRYID *r)
 {
 	TRY(p_uint32(r->flags));
-	TRY(p_bytes(r->provider_uid, 16));
+	TRY(p_guid(&r->provider_uid));
 	TRY(p_uint32(r->version));
 	TRY(p_uint32(r->type));
 	return p_str(r->px500dn);
@@ -3084,7 +3084,7 @@ int EXT_PUSH::p_abk_eid(const ADDRESSBOOK_ENTRYID *r)
 int EXT_PUSH::p_oneoff_eid(const ONEOFF_ENTRYID *r)
 {
 	TRY(p_uint32(r->flags));
-	TRY(p_bytes(r->provider_uid, 16));
+	TRY(p_guid(&r->provider_uid));
 	TRY(p_uint16(r->version));
 	TRY(p_uint16(r->ctrl_flags));
 	if (r->ctrl_flags & CTRL_FLAG_UNICODE) {
@@ -3386,7 +3386,7 @@ int EXT_PUSH::p_apptrecpat(const APPOINTMENT_RECUR_PAT *r)
 
 int EXT_PUSH::p_goid(const GLOBALOBJECTID *r)
 {
-	TRY(p_bytes(r->arrayid, 16));
+	TRY(p_guid(&r->arrayid));
 	TRY(p_uint8(r->year >> 8));
 	TRY(p_uint8(r->year & 0xFF));
 	TRY(p_uint8(r->month));

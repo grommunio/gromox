@@ -932,7 +932,7 @@ static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
 {
 	uint32_t flags;
 	EXT_PULL ext_pull;
-	uint8_t provider_uid[16];
+	FLATUID provider_uid;
 	ONEOFF_ENTRYID oneoff_entry;
 	ADDRESSBOOK_ENTRYID ab_entryid;
 	
@@ -941,9 +941,9 @@ static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
 	}
 	ext_pull.init(pbin->pb, 20, alloc, 0);
 	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
-	    ext_pull.g_bytes(provider_uid, arsizeof(provider_uid)) != EXT_ERR_SUCCESS)
+	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
 		return FALSE;
-	if (memcmp(provider_uid, muidEMSAB, sizeof(muidEMSAB)) == 0) {
+	if (provider_uid == muidEMSAB) {
 		ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
 		if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS)
 			return FALSE;
@@ -953,7 +953,7 @@ static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
 		return common_util_essdn_to_username(ab_entryid.px500dn,
 		       username, ulen);
 	}
-	if (memcmp(provider_uid, muidOOP, sizeof(muidOOP)) == 0) {
+	if (provider_uid == muidOOP) {
 		ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
 		if (ext_pull.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS)
 			return FALSE;
@@ -983,7 +983,7 @@ BINARY* common_util_username_to_addressbook_entryid(
 	if (!common_util_username_to_essdn(username, x500dn, GX_ARRAY_SIZE(x500dn)))
 		return NULL;
 	tmp_entryid.flags = 0;
-	memcpy(tmp_entryid.provider_uid, muidEMSAB, sizeof(muidEMSAB));
+	tmp_entryid.provider_uid = muidEMSAB;
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = x500dn;
@@ -1009,7 +1009,7 @@ BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin)
 	if (pbin->pv == nullptr)
 		return FALSE;
 	tmp_entryid.flags = 0;
-	memcpy(tmp_entryid.provider_uid, muidEMSAB, sizeof(muidEMSAB));
+	tmp_entryid.provider_uid = muidEMSAB;
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = deconst(essdn);
@@ -1059,7 +1059,7 @@ static BOOL common_util_username_to_entryid(const char *username,
 	if (pbin->pv == nullptr)
 		return FALSE;
 	oneoff_entry.flags = 0;
-	memcpy(oneoff_entry.provider_uid, muidOOP, sizeof(muidOOP));
+	oneoff_entry.provider_uid = muidOOP;
 	oneoff_entry.version = 0;
 	oneoff_entry.ctrl_flags = CTRL_FLAG_NORICH | CTRL_FLAG_UNICODE;
 	oneoff_entry.pdisplay_name = pdisplay_name != nullptr && *pdisplay_name != '\0' ?
@@ -1087,11 +1087,11 @@ uint16_t common_util_get_messaging_entryid_type(BINARY bin)
 	uint32_t flags;
 	EXT_PULL ext_pull;
 	uint16_t folder_type;
-	char provider_uid[16];
+	FLATUID provider_uid;
 	
 	ext_pull.init(bin.pb, bin.cb, common_util_alloc, 0);
 	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS ||
-	    ext_pull.g_bytes(provider_uid, arsizeof(provider_uid)) != EXT_ERR_SUCCESS ||
+	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS ||
 	    ext_pull.g_uint16(&folder_type) != EXT_ERR_SUCCESS)
 		return 0;
 	return folder_type;
@@ -1209,12 +1209,12 @@ BINARY *common_util_to_folder_entryid(store_object *pstore, uint64_t folder_id)
 	tmp_entryid.flags = 0;
 	if (pstore->b_private) {
 		tmp_bin.cb = 0;
-		tmp_bin.pb = tmp_entryid.provider_uid;
+		tmp_bin.pv = &tmp_entryid.provider_uid;
 		rop_util_guid_to_binary(pstore->mailbox_guid, &tmp_bin);
 		tmp_entryid.database_guid = rop_util_make_user_guid(pstore->account_id);
 		tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
 	} else {
-		memcpy(tmp_entryid.provider_uid, pbLongTermNonPrivateGuid, sizeof(GUID));
+		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
 		replid = rop_util_get_replid(folder_id);
 		if (1 != replid) {
 			if (!exmdb_client::get_mapping_guid(pstore->get_dir(),
@@ -1292,12 +1292,12 @@ BINARY *common_util_to_message_entryid(store_object *pstore,
 	tmp_entryid.flags = 0;
 	if (pstore->b_private) {
 		tmp_bin.cb = 0;
-		tmp_bin.pb = tmp_entryid.provider_uid;
+		tmp_bin.pv = &tmp_entryid.provider_uid;
 		rop_util_guid_to_binary(pstore->mailbox_guid, &tmp_bin);
 		tmp_entryid.folder_database_guid = rop_util_make_user_guid(pstore->account_id);
 		tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;
 	} else {
-		memcpy(tmp_entryid.provider_uid, pbLongTermNonPrivateGuid, sizeof(GUID));
+		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
 		replid = rop_util_get_replid(folder_id);
 		if (1 != replid) {
 			if (!exmdb_client::get_mapping_guid(pstore->get_dir(),
@@ -2037,20 +2037,20 @@ BINARY *common_util_to_store_entryid(store_object *pstore)
 	STORE_ENTRYID store_entryid = {};
 	
 	store_entryid.flags = 0;
-	memcpy(store_entryid.provider_uid, muidStoreWrap, sizeof(GUID));
+	store_entryid.provider_uid = muidStoreWrap;
 	store_entryid.version = 0;
 	store_entryid.flag = 0;
 	snprintf(store_entryid.dll_name, sizeof(store_entryid.dll_name), "emsmdb.dll");
 	store_entryid.wrapped_flags = 0;
 	if (pstore->b_private) {
-		memcpy(store_entryid.wrapped_provider_uid, g_muidStorePrivate, sizeof(GUID));
+		store_entryid.wrapped_provider_uid = g_muidStorePrivate;
 		store_entryid.wrapped_type = 0x0000000C;
 		store_entryid.pserver_name = deconst(pstore->get_account());
 		if (!common_util_username_to_essdn(pstore->get_account(),
 		    tmp_buff, GX_ARRAY_SIZE(tmp_buff)))
 			return NULL;	
 	} else {
-		memcpy(store_entryid.wrapped_provider_uid, g_muidStorePublic, sizeof(GUID));
+		store_entryid.wrapped_provider_uid = g_muidStorePublic;
 		store_entryid.wrapped_type = 0x00000006;
 		store_entryid.pserver_name = g_hostname;
 		auto pinfo = zarafa_server_get_info();
