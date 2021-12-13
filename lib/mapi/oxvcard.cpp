@@ -768,6 +768,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	const char *photo_type;
 	ATTACHMENT_CONTENT *pattachment;
 	char tmp_buff[VCARD_MAX_BUFFER_LEN];
+	std::string vcarduid;
 	const char* tel_types[] =
 		{"HOME", "HOME", "VOICE", "WORK", "WORK",
 		"CELL", "PAGER", "CAR", "ISDN", "PREF"};
@@ -1385,12 +1386,13 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PROP_TAG(PROP_TYPE(g_vcarduid_proptag), propids.ppropid[PROP_ID(g_vcarduid_proptag)-0x8000]));
-	if (pvalue == nullptr) {
+	if (pvalue == nullptr) try {
 		auto guid = guid_random_new();
-		auto gstr = "uuid:" + bin2hex(&guid, sizeof(guid));
-		uint32_t tag = PROP_TAG(PROP_TYPE(g_vcarduid_proptag), propids.ppropid[PROP_ID(g_vcarduid_proptag)-0x8000]);
-		pmsg->proplist.set(proptag, gstr.c_str());
-		pvalue = pmsg->proplist.get<char>(tag);
+		vcarduid = "uuid:" + bin2hex(&guid, sizeof(guid));
+		pvalue = vcarduid.c_str();
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1605: ENOMEM\n");
+		goto EXPORT_FAILURE;
 	}
 	if (pvalue != nullptr) {
 		pvline = vcard_new_simple_line("UID", pvalue);
