@@ -45,6 +45,8 @@ enum ec_error_t {
 	ecError = 0x80004005, /* MAPI_E_CALL_FAILED */
 	STG_E_ACCESSDENIED = 0x80030005, /* STG := "storage" */
 	StreamSeekError = 0x80030019,
+	ecInterfaceNotSupported = 0x80004002, /* E_NOINTERFACE, MAPI_E_INTERFACE_NOT_SUPPORTED */
+	ecComputed = 0x8004011A, /* MAPI_E_COMPUTED */
 	ecNotSupported = 0x80040102, /* MAPI_E_NO_SUPPORT */
 	ecInvalidObject = 0x80040108, /* MAPI_E_INVALID_OBJECT */
 	ecObjectModified = 0x80040109, /* MAPI_E_OBJECT_CHANGED */
