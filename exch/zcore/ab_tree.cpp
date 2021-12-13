@@ -1457,8 +1457,8 @@ static BOOL ab_tree_fetch_node_property(SIMPLE_TREE_NODE *pnode,
 		if (bv == nullptr)
 			return FALSE;
 		*ppvalue = bv;
-		bv->cb = 16;
-		bv->pb = deconst(common_util_get_muidecsab());
+		bv->cb = sizeof(muidECSAB);
+		bv->pb = deconst(muidECSAB);
 		return TRUE;
 	}
 	case PROP_TAG_CONTAINERFLAGS:

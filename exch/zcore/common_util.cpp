@@ -2401,26 +2401,6 @@ gxerr_t common_util_remote_copy_folder(store_object *pstore, uint64_t folder_id,
 	return GXERR_SUCCESS;
 }
 
-const uint8_t *common_util_get_muidecsab()
-{
-	static constexpr uint8_t muidECSAB[] = {
-		/* {50a921ac-d340-48ee-b319-fba753304425} */
-		/* (ZARAFA6 provider ID (GAB)) */
-		0xAC, 0x21, 0xA9, 0x50, 0x40, 0xD3, 0xEE, 0x48,
-		0xB3, 0x19, 0xFB, 0xA7, 0x53, 0x30, 0x44, 0x25};
-	return muidECSAB;
-}
-
-const uint8_t *common_util_get_muidzcsab()
-{
-	static constexpr uint8_t muidZCSAB[] = {
-		/* {30047f72-92e3-da4f-b86a-e52a7fe46571} */
-		/* (ZCONTACTS provider ID (PAB)) */
-		0x72, 0x7F, 0x04, 0x30, 0xE3, 0x92, 0x4F, 0xDA,
-		0xB8, 0x6A, 0xE5, 0x2A, 0x7F, 0xE4, 0x65, 0x71};
-	return muidZCSAB;
-}
-
 BOOL common_util_message_to_rfc822(store_object *pstore,
 	uint64_t message_id, BINARY *peml_bin)
 {

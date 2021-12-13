@@ -1480,4 +1480,5 @@ struct FORWARDDELEGATE_ACTION {
 
 extern const uint8_t
 	muidStoreWrap[16], muidEMSAB[16], pbLongTermNonPrivateGuid[16],
-	g_muidStorePrivate[16], g_muidStorePublic[16], muidOOP[16];
+	g_muidStorePrivate[16], g_muidStorePublic[16], muidOOP[16],
+	muidECSAB[16], muidZCSAB[16];

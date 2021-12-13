@@ -275,8 +275,7 @@ static BINARY* container_object_message_to_addressbook_entryid(
 	len = strlen(x500dn);
 	sprintf(x500dn + len, ":%d", num);
 	tmp_entryid.flags = 0;
-	memcpy(tmp_entryid.provider_uid,
-		common_util_get_muidzcsab(), 16);
+	memcpy(tmp_entryid.provider_uid, muidZCSAB, sizeof(muidZCSAB));
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_REMOTE_USER;
 	tmp_entryid.px500dn = x500dn;
@@ -467,8 +466,8 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
-			tmp_bin.cb = 16;
-			tmp_bin.pb = deconst(common_util_get_muidzcsab());
+			tmp_bin.cb = sizeof(muidZCSAB);
+			tmp_bin.pb = deconst(muidZCSAB);
 			if (ppropvals->set(PROP_TAG_ABPROVIDERID, &tmp_bin) != 0) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
@@ -512,8 +511,8 @@ BOOL container_object_fetch_special_property(
 		if (bv == nullptr)
 			return FALSE;
 		*ppvalue = bv;
-		bv->cb = 16;
-		bv->pb = deconst(common_util_get_muidecsab());
+		bv->cb = sizeof(muidECSAB);
+		bv->pb = deconst(muidECSAB);
 		return TRUE;
 	}
 	case PR_ENTRYID: {
@@ -625,8 +624,8 @@ static BOOL container_object_fetch_folder_properties(
 			if (bv == nullptr)
 				return FALSE;
 			pout_propvals->ppropval[pout_propvals->count++].pvalue = bv;
-			bv->cb = 16;
-			bv->pb = deconst(common_util_get_muidzcsab());
+			bv->cb = sizeof(muidZCSAB);
+			bv->pb = deconst(muidZCSAB);
 			break;
 		}
 		case PR_ENTRYID:
