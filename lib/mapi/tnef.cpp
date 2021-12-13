@@ -1622,19 +1622,15 @@ MESSAGE_CONTENT* tnef_deserialize(const void *pbuff,
 static int tnef_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 {
 	auto &ext = *pext;
-	uint32_t tmp_int;
 	
 	TRY(pext->p_guid(&r->guid));
-	if (r->kind == MNID_ID)
-		tmp_int = 0;
-	else if (r->kind == MNID_STRING)
-		tmp_int = 1;
-	else
+	if (r->kind != MNID_ID && r->kind != MNID_STRING)
 		return EXT_ERR_FORMAT;
+	uint32_t tmp_int = r->kind;
 	TRY(pext->p_uint32(tmp_int));
-	if (0 == tmp_int) {
+	if (r->kind == MNID_ID) {
 		return pext->p_uint32(r->lid);
-	} else if (1 == tmp_int) {
+	} else if (r->kind == MNID_STRING) {
 		uint32_t offset = ext.m_offset;
 		TRY(pext->advance(sizeof(uint32_t)));
 		TRY(pext->p_wstr(r->pname));
