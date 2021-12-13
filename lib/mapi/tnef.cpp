@@ -1715,20 +1715,19 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 			TRY(pext->p_bytes(bv->pb, bv->cb));
 			return pext->p_bytes(g_pad_bytes,
 			       tnef_align(bv->cb + 16));
-		} else {
-			uint32_t offset = ext.m_offset;
-			TRY(pext->advance(sizeof(uint32_t)));
-			TRY(pext->p_guid(&IID_IMessage));
-			if (FALSE == tnef_serialize_internal(pext, TRUE,
-			    static_cast<MESSAGE_CONTENT *>(bv->pv), alloc, get_propname))
-				return EXT_ERR_FORMAT;
-			uint32_t offset1 = ext.m_offset;
-			tmp_int = offset1 - (offset + sizeof(uint32_t));
-			ext.m_offset = offset;
-			TRY(pext->p_uint32(tmp_int));
-			ext.m_offset = offset1;
-			return pext->p_bytes(g_pad_bytes, tnef_align(tmp_int));
 		}
+		uint32_t offset = ext.m_offset;
+		TRY(pext->advance(sizeof(uint32_t)));
+		TRY(pext->p_guid(&IID_IMessage));
+		if (FALSE == tnef_serialize_internal(pext, TRUE,
+		    static_cast<MESSAGE_CONTENT *>(bv->pv), alloc, get_propname))
+			return EXT_ERR_FORMAT;
+		uint32_t offset1 = ext.m_offset;
+		tmp_int = offset1 - (offset + sizeof(uint32_t));
+		ext.m_offset = offset;
+		TRY(pext->p_uint32(tmp_int));
+		ext.m_offset = offset1;
+		return pext->p_bytes(g_pad_bytes, tnef_align(tmp_int));
 	}
 	case PT_BINARY: {
 		TRY(pext->p_uint32(1));
