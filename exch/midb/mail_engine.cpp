@@ -2095,6 +2095,8 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	DOUBLE_LIST_NODE *pnode;
 	
 	dir = common_util_get_maildir();
+	fprintf(stderr, "Running sync_contents for %s, folder %llu\n",
+	        dir, LLU(folder_id));
 	if (!exmdb_client::query_folder_messages(
 		dir, rop_util_make_eid_ex(1, folder_id), &rows)) {
 		return FALSE;
@@ -2174,6 +2176,12 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	}
 	pstmt.finalize();
 	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+
+	pstmt = gx_sql_prep(psqlite, "SELECT COUNT(*) FROM messages");
+	size_t totalmsgs = 0, procmsgs = 0;
+	if (pstmt != nullptr && sqlite3_step(pstmt) == SQLITE_ROW)
+		totalmsgs = sqlite3_column_int64(pstmt, 0);
+
 	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id, "
 		"mid_string, mod_time, message_flags, received"
 		" FROM messages");
@@ -2225,7 +2233,14 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 				sqlite3_column_int64(pstmt1, 3),
 				sqlite3_column_int64(pstmt1, 4));
 		}
+		if (++procmsgs % 512 == 0)
+			fprintf(stderr, "sync_contents %s fld %llu progress: %zu/%zu\n",
+			        dir, LLU(folder_id), procmsgs, totalmsgs);
 	}
+	if (procmsgs > 512)
+		/* display final value */
+			fprintf(stderr, "sync_contents %s fld %llu progress: %zu/%zu\n",
+			        dir, LLU(folder_id), procmsgs, totalmsgs);
 	pstmt.finalize();
 	pstmt1.finalize();
 	pstmt2.finalize();
@@ -2396,6 +2411,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	uint32_t proptag_buff[6];
 	
 	dir = common_util_get_maildir();
+	fprintf(stderr, "Running sync_mailbox for %s\n", dir);
 	if (!exmdb_client::load_hierarchy_table(dir,
 		rop_util_make_eid_ex(1, PRIVATE_FID_IPMSUBTREE),
 		NULL, TABLE_FLAG_DEPTH|TABLE_FLAG_NONOTIFICATIONS,
@@ -2638,6 +2654,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 		pidb->sub_id = 0;	
 	}
 	time(&pidb->load_time);
+	fprintf(stderr, "Ended sync_mailbox for %s\n", dir);
 	return TRUE;
 }
 
