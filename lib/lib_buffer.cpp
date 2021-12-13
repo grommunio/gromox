@@ -152,7 +152,7 @@ void *lib_buffer_get1(LIB_BUFFER *m_buf)
  *		item  [in]	the buffer to return
  *
  */
-void lib_buffer_put(LIB_BUFFER* m_buf, void *item)
+void lib_buffer_put1(LIB_BUFFER *m_buf, void *item)
 {
 	char *pcur_item = NULL;
 #ifdef _DEBUG_UMTA

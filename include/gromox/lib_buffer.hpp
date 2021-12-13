@@ -33,12 +33,26 @@ extern GX_EXPORT void lib_buffer_free(LIB_BUFFER *);
 extern GX_EXPORT void *lib_buffer_get1(LIB_BUFFER *);
 template<typename T> T *lib_buffer_get(LIB_BUFFER *b)
 {
-	static_assert(std::is_trivially_constructible_v<T> && std::is_trivially_destructible_v<T>);
+	static_assert(std::is_trivially_constructible_v<T>);
 	return static_cast<T *>(lib_buffer_get1(b));
 }
 template<typename T> T *lib_buffer_get_u(LIB_BUFFER *b)
 {
 	return static_cast<T *>(lib_buffer_get1(b));
 }
-extern GX_EXPORT void lib_buffer_put(LIB_BUFFER *, void *item);
+extern GX_EXPORT void lib_buffer_put1(LIB_BUFFER *, void *item);
+template<typename T> void lib_buffer_put(LIB_BUFFER *b, T *i)
+{
+	static_assert(std::is_trivially_destructible_v<T>);
+	lib_buffer_put1(b, i);
+}
+inline void lib_buffer_put(LIB_BUFFER *b, void *i)
+{
+	lib_buffer_put1(b, i);
+}
+template<typename T> void lib_buffer_put_u(LIB_BUFFER *b, T *i)
+{
+	i->~T();
+	lib_buffer_put1(b, i);
+}
 size_t lib_buffer_get_param(LIB_BUFFER* m_buf, PARAM_TYPE type);

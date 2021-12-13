@@ -180,7 +180,7 @@ static void rop_processor_release_objnode(
 	if (TRUE == b_root) {
 		simple_tree_free(&plogitem->tree);
 		plogitem->phash.reset();
-		lib_buffer_put(g_logitem_allocator, plogitem);
+		lib_buffer_put_u<LOGON_ITEM>(g_logitem_allocator, plogitem);
 	}
 }
 
@@ -228,8 +228,7 @@ int rop_processor_create_logon_item(LOGMAP *plogmap,
 	new(plogitem) LOGON_ITEM;
 	plogitem->phash = INT_HASH_TABLE::create(HGROWING_SIZE, sizeof(OBJECT_NODE *));
 	if (NULL == plogitem->phash) {
-		plogitem->~LOGON_ITEM();
-		lib_buffer_put(g_logitem_allocator, plogitem);
+		lib_buffer_put_u(g_logitem_allocator, plogitem);
 		return -2;
 	}
 	simple_tree_init(&plogitem->tree);
@@ -237,8 +236,7 @@ int rop_processor_create_logon_item(LOGMAP *plogmap,
 	handle = rop_processor_add_object_handle(plogmap,
 				logon_id, -1, OBJECT_TYPE_LOGON, plogon);
 	if (handle < 0) {
-		plogitem->~LOGON_ITEM();
-		lib_buffer_put(g_logitem_allocator, plogitem);
+		lib_buffer_put_u(g_logitem_allocator, plogitem);
 		return -3;
 	}
 	std::lock_guard hl_hold(g_hash_lock);
