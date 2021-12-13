@@ -373,7 +373,9 @@ bool mysql_adaptor_reload_config(const char *path,
 	printf("[mysql_adaptor]: host [%s]:%d, #conn=%d timeout=%d, db=%s\n",
 	       par.host.size() == 0 ? "*" : par.host.c_str(), par.port,
 	       par.conn_num, par.timeout, par.dbname.c_str());
-	v = pfile->get_value("schema_upgrades");
+	v = pfile->get_value("schema_upgrade");
+	if (v == nullptr)
+		v = pfile->get_value("schema_upgrades");
 	par.schema_upgrade = S_SKIP;
 	if (v != nullptr && strncmp(v, "host:", 5) == 0 &&
 	    prog_id != nullptr && strcmp(prog_id, "http") == 0 &&

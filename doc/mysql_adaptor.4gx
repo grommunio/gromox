@@ -47,7 +47,7 @@ Default: \fIroot\fP
 \fBscan_interval\fP
 Default: \fI1 minute\fP
 .TP
-\fBschema_upgrades\fP
+\fBschema_upgrade\fP
 This controls what to do when a database schema update is available.
 Because there is no locking mechanism available that works across machines,
 the mysql_adaptor plugin does not use any locking locally either. As a result,
