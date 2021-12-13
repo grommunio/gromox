@@ -92,7 +92,7 @@ struct EXT_PULL {
 	int g_float(float *);
 	int g_double(double *);
 	int g_bool(BOOL *);
-	int g_bytes(void *, uint32_t);
+	int g_bytes(void *, uint32_t) __attribute__((nonnull(2)));
 	int g_guid(GUID *);
 	inline int g_guid(FLATUID *v) { return g_bytes(v, sizeof(*v)); }
 	int g_str(char **);

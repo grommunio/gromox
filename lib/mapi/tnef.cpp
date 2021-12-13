@@ -544,10 +544,9 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 					ba->pbin[i].cb = 0;
 					return EXT_ERR_ALLOC;
 				}
+				TRY(pext->g_bytes(ba->pbin[i].pv, ba->pbin[i].cb));
+				TRY(pext->advance(tnef_align(ba->pbin[i].cb)));
 			}
-			uint32_t offset = ext.m_offset;
-			TRY(pext->g_bytes(ba->pbin[i].pv, ba->pbin[i].cb));
-			TRY(pext->advance(tnef_align(ext.m_offset - offset)));
 		}
 		return EXT_ERR_SUCCESS;
 	}
