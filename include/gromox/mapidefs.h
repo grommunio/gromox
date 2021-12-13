@@ -1495,3 +1495,4 @@ extern const FLATUID
 	muidECSAB, muidZCSAB, EncodedGlobalId, GUID_NONE, IID_IStorage,
 	IID_IStream, IID_IMessage, IID_IExchangeExportChanges,
 	IID_IExchangeImportContentsChanges, IID_IExchangeImportHierarchyChanges;
+extern const uint8_t MACBINARY_ENCODING[9], OLE_TAG[11], ThirdPartyGlobalId[12];

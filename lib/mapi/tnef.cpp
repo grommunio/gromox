@@ -141,13 +141,6 @@ struct TNEF_PROPSET {
 };
 }
 
-static constexpr uint8_t OLE_TAG[] = {
-	0x2A, 0x86, 0x48, 0x86, 0xF7, 0x14, 0x03, 0x0A,
-	0x03, 0x02, 0x01};
-static constexpr uint8_t MACBINARY_ENCODING[] = {
-	0x2A, 0x86, 0x48, 0x86, 0xF7, 0x14, 0x03, 0x0B,
-	0x01};
-
 static const uint8_t g_pad_bytes[3]{};
 static const char* (*tnef_cpid_to_charset)(uint32_t cpid);
 
@@ -1528,14 +1521,14 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			}
 			if (ATTACH_TYPE_OLE == ((REND_DATA*)
 				attribute.pvalue)->attach_type) {
-				tmp_bin.cb = 11;
+				tmp_bin.cb = sizeof(OLE_TAG);
 				tmp_bin.pb = deconst(OLE_TAG);
 				if (pattachment->proplist.set(PR_ATTACH_TAG, &tmp_bin) != 0)
 					return NULL;
 			}
 			if (FILE_DATA_MACBINARY == ((REND_DATA*)
 				attribute.pvalue)->attach_type) {
-				tmp_bin.cb = 9;
+				tmp_bin.cb = sizeof(MACBINARY_ENCODING);
 				tmp_bin.pb = deconst(MACBINARY_ENCODING);
 				if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
 					return NULL;
@@ -2554,8 +2547,8 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			tmp_rend.attach_position = *(uint32_t*)pvalue;
 		}
 		auto bv = pattachment->proplist.get<BINARY>(PR_ATTACH_ENCODING);
-		tmp_rend.data_flags = bv != nullptr && bv->cb == 9 &&
-		                      memcmp(bv->pb, MACBINARY_ENCODING, 9) == 0 ?
+		tmp_rend.data_flags = bv != nullptr && bv->cb == sizeof(MACBINARY_ENCODING) &&
+		                      memcmp(bv->pb, MACBINARY_ENCODING, sizeof(MACBINARY_ENCODING)) == 0 ?
 		                      FILE_DATA_MACBINARY : FILE_DATA_DEFAULT;
 		tmp_rend.render_width = 32;
 		tmp_rend.render_height = 32;

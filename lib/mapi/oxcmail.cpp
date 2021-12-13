@@ -138,8 +138,6 @@ static constexpr char
 	PidNameContentClass[] = "Content-Class",
 	PidNameKeywords[] = "Keywords";
 static constexpr size_t namemap_limit = 0x1000;
-static constexpr uint8_t MACBINARY_ENCODING[] =
-	{0x2A, 0x86, 0x48, 0x86, 0xF7, 0x14, 0x03, 0x0B, 0x01};
 static char g_oxcmail_org_name[256];
 static GET_USER_IDS oxcmail_get_user_ids;
 static GET_USERNAME oxcmail_get_username;
@@ -1910,7 +1908,7 @@ static BOOL oxcmail_parse_binhex(MIME *pmime, ATTACHMENT_CONTENT *pattachment,
 	char tmp_buff[256];
 	PROPERTY_NAME propname;
 	
-	tmp_bin.cb = 9;
+	tmp_bin.cb = sizeof(MACBINARY_ENCODING);
 	tmp_bin.pb = deconst(MACBINARY_ENCODING);
 	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
 		return FALSE;
@@ -2024,7 +2022,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 	} else {
 		pdmime = psub;
 	}
-	tmp_bin.cb = 9;
+	tmp_bin.cb = sizeof(MACBINARY_ENCODING);
 	tmp_bin.pb = deconst(MACBINARY_ENCODING);
 	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
 		return FALSE;
@@ -2159,7 +2157,7 @@ static BOOL oxcmail_parse_macbinary(MIME *pmime,
 		free(pcontent);
 		return FALSE;
 	}
-	tmp_bin.cb = 9;
+	tmp_bin.cb = sizeof(MACBINARY_ENCODING);
 	tmp_bin.pb = deconst(MACBINARY_ENCODING);
 	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0) {
 		free(pcontent);
@@ -2243,7 +2241,7 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 			pattachment, b_filename, b_description,
 			alloc, plast_propid, phash);
 	}
-	tmp_bin.cb = 9;
+	tmp_bin.cb = sizeof(MACBINARY_ENCODING);
 	tmp_bin.pb = deconst(MACBINARY_ENCODING);
 	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0) {
 		free(pcontent);
@@ -6391,8 +6389,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 		    (pvalue = pattachment->proplist.getval(PR_ATTACH_METHOD)) != nullptr &&
 		    *static_cast<uint32_t *>(pvalue) == ATTACH_BY_VALUE &&
 		    (pvalue = pattachment->proplist.getval(PR_ATTACH_ENCODING)) != nullptr &&
-		    static_cast<BINARY *>(pvalue)->cb == 9 &&
-		    memcmp(static_cast<BINARY *>(pvalue)->pb, MACBINARY_ENCODING, 9) == 0) {
+		    static_cast<BINARY *>(pvalue)->cb == sizeof(MACBINARY_ENCODING) &&
+		    memcmp(static_cast<BINARY *>(pvalue)->pb, MACBINARY_ENCODING, sizeof(MACBINARY_ENCODING)) == 0) {
 			if (TRUE == oxcmail_export_appledouble(pmail,
 				b_inline, pattachment, &mime_skeleton,
 				alloc, get_propids, pmime)) {

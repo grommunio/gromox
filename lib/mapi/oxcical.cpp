@@ -42,9 +42,6 @@ static constexpr char
 static constexpr size_t namemap_limit = 0x1000;
 static constexpr char EncodedGlobalId_hex[] =
 	"040000008200E00074C5B7101A82E008";
-static constexpr uint8_t ThirdPartyGlobalId[12] =
-	/* pg 68 // 7643616C2D55696401000000 */
-	{0x76, 0x43, 0x61, 0x6c, 0x2d, 0x55, 0x69, 0x64, 0x01, 0x00, 0x00, 0x00};
 
 static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 {
