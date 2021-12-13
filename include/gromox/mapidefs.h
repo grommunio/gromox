@@ -1492,4 +1492,6 @@ struct FORWARDDELEGATE_ACTION {
 extern const FLATUID
 	muidStoreWrap, muidEMSAB, pbLongTermNonPrivateGuid,
 	g_muidStorePrivate, g_muidStorePublic, muidOOP,
-	muidECSAB, muidZCSAB, EncodedGlobalId;
+	muidECSAB, muidZCSAB, EncodedGlobalId, GUID_NONE, IID_IStorage,
+	IID_IStream, IID_IMessage, IID_IExchangeExportChanges,
+	IID_IExchangeImportContentsChanges, IID_IExchangeImportHierarchyChanges;

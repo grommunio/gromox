@@ -299,24 +299,6 @@ static int le_mapi_exportchanges;
 static int le_mapi_importcontentschanges;
 static int le_mapi_importhierarchychanges;
 
-static constexpr GUID GUID_NONE =
-	{0x00000000, 0x0000, 0x0000, {0x00, 0x00}, {0x00, 0x00, 0x00, 0x00, 0x00, 0x00}};
-static constexpr GUID IID_IStream =
-	/* {0000000c-0000-0000-c000-000000000046} */
-	{0x0000000c, 0x0000, 0x0000, {0xc0, 0x00}, {0x00, 0x00, 0x00, 0x00, 0x00, 0x46}};
-static constexpr GUID IID_IMessage =
-	/* {00020307-0000-0000-c000-000000000046} */
-	{0x00020307, 0x0000, 0x0000, {0xc0, 0x00}, {0x00, 0x00, 0x00, 0x00, 0x00, 0x46}};
-static constexpr GUID IID_IExchangeExportChanges =
-	/* {a3ea9cc0-d1b2-11cd-80fc-00aa004bba0b} */
-	{0xa3ea9cc0, 0xd1b2, 0x11cd, {0x80, 0xfc}, {0x00, 0xaa, 0x00, 0x4b, 0xba, 0x0b}};
-static constexpr GUID IID_IExchangeImportContentsChanges =
-	/* {f75abfa0-d0e0-11cd-80fc-00aa004bba0b} */
-	{0xf75abfa0, 0xd0e0, 0x11cd, {0x80, 0xfc}, {0x00, 0xaa, 0x00, 0x4b, 0xba, 0x0b}};
-static constexpr GUID IID_IExchangeImportHierarchyChanges =
-	/* {85a66cf0-d0e0-11cd-80fc-00aa004bba0b} */
-	{0x85a66cf0, 0xd0e0, 0x11cd, {0x80, 0xfc}, {0x00, 0xaa, 0x00, 0x4b, 0xba, 0x0b}};
-
 static STREAM_OBJECT* stream_object_create()
 {
 	auto pstream = st_calloc<STREAM_OBJECT>();
@@ -3319,7 +3301,7 @@ ZEND_FUNCTION(mapi_openproperty)
 	long proptag;
 	void *pvalue;
 	char *guidstr;
-	GUID iid_guid;
+	FLATUID iid_guid;
 	uint32_t result;
 	uint32_t hobject;
 	zval *pzresource;
@@ -3351,7 +3333,7 @@ ZEND_FUNCTION(mapi_openproperty)
 			THROW_EXCEPTION;
 		}
 		ext_pack_pull_init(&pull_ctx, reinterpret_cast<const uint8_t *>(guidstr), sizeof(GUID));
-		ext_pack_pull_guid(&pull_ctx, &iid_guid);
+		pull_ctx.g_guid(&iid_guid);
 	}
 	type = Z_RES_TYPE_P(pzresource);
 	if (type == le_mapi_message) {
@@ -3386,7 +3368,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		MAPI_G(hr) = ecNotSupported;
 		THROW_EXCEPTION;
 	}
-	if (0 == memcmp(&iid_guid, &IID_IStream, sizeof(GUID))) {
+	if (iid_guid == IID_IStream) {
 		switch (PROP_TYPE(proptag)) {
 		case PT_BINARY:
 		case PT_STRING8:
@@ -3432,7 +3414,7 @@ ZEND_FUNCTION(mapi_openproperty)
 			}
 			ZEND_REGISTER_RESOURCE(return_value, pstream, le_stream);
 		}
-	} else if (0 == memcmp(&iid_guid, &IID_IMessage, sizeof(GUID))) {
+	} else if (iid_guid == IID_IMessage) {
 		if (type != le_mapi_attachment || proptag != PR_ATTACH_DATA_OBJ) {
 			MAPI_G(hr) = ecNotSupported;
 			THROW_EXCEPTION;
@@ -3452,8 +3434,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		presource->hsession = probject->hsession;
 		presource->hobject = hobject;
 		ZEND_REGISTER_RESOURCE(return_value, presource, le_mapi_message);
-	} else if (0 == memcmp(&iid_guid,
-		&IID_IExchangeExportChanges, sizeof(GUID))) {
+	} else if (iid_guid == IID_IExchangeExportChanges) {
 		if (type != le_mapi_folder) {
 			MAPI_G(hr) = ecNotSupported;
 			THROW_EXCEPTION;
@@ -3494,8 +3475,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		pexporter->total_steps = 0;
 		ZEND_REGISTER_RESOURCE(return_value,
 			pexporter, le_mapi_exportchanges);
-	} else if (0 == memcmp(&iid_guid,
-		&IID_IExchangeImportHierarchyChanges, sizeof(GUID))) {
+	} else if (iid_guid == IID_IExchangeImportHierarchyChanges) {
 		if (type != le_mapi_folder) {
 			MAPI_G(hr) = ecNotSupported;
 			THROW_EXCEPTION;
@@ -3522,9 +3502,7 @@ ZEND_FUNCTION(mapi_openproperty)
 		pimporter->ics_type = ICS_TYPE_HIERARCHY;
 		ZEND_REGISTER_RESOURCE(return_value,
 			pimporter, le_mapi_importhierarchychanges);
-	} else if(0 == memcmp(&iid_guid,
-		&IID_IExchangeImportContentsChanges,
-		sizeof(GUID))) {
+	} else if (iid_guid == IID_IExchangeImportContentsChanges) {
 		if (type != le_mapi_folder) {
 			MAPI_G(hr) = ecNotSupported;
 			THROW_EXCEPTION;

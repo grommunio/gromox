@@ -141,18 +141,6 @@ struct TNEF_PROPSET {
 };
 }
 
-static constexpr uint8_t IID_IMessage[] = {
-	/* {00020307-0000-0000-c000-000000000046} */
-	0x07, 0x03, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46};
-static constexpr uint8_t IID_IStorage[] = {
-	/* {0000000b-0000-0000-c000-000000000046} */
-	0x0B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46};
-static constexpr uint8_t IID_IStream[] = {
-	/* {0000000c-0000-0000-c000-000000000046} */
-	0x0C, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46};
 static constexpr uint8_t OLE_TAG[] = {
 	0x2A, 0x86, 0x48, 0x86, 0xF7, 0x14, 0x03, 0x0A,
 	0x03, 0x02, 0x01};
@@ -355,9 +343,9 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 		}
 		uint32_t offset = ext.m_offset;
 		TRY(pext->g_bytes(bv->pv, bv->cb));
-		if (memcmp(bv->pv, IID_IMessage, 16) != 0 &&
-		    memcmp(bv->pv, IID_IStorage, 16) != 0 &&
-		    memcmp(bv->pv, IID_IStream, 16) != 0)
+		if (memcmp(bv->pv, &IID_IMessage, sizeof(IID_IMessage)) != 0 &&
+		    memcmp(bv->pv, &IID_IStorage, sizeof(IID_IMessage)) != 0 &&
+		    memcmp(bv->pv, &IID_IStream, sizeof(IID_IMessage)) != 0)
 			return EXT_ERR_FORMAT;
 		return pext->advance(tnef_align(ext.m_offset - offset));
 	}
@@ -1143,7 +1131,7 @@ static int rec_ptobj(EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
 	if (tnef_pv->proptype != PT_OBJECT)
 		return X_RUNOFF;
 	auto bv = static_cast<BINARY *>(tnef_pv->pvalue);
-	if (memcmp(IID_IMessage, bv->pb, 16) == 0) {
+	if (memcmp(bv->pb, &IID_IMessage, sizeof(IID_IMessage)) == 0) {
 		auto emb = tnef_deserialize_internal(bv->pb + 16, bv->cb - 16,
 		           TRUE, alloc, get_propids, u2e);
 		if (emb == nullptr)
@@ -1723,14 +1711,14 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 		auto bv = static_cast<BINARY *>(r->pvalue);
 		if (bv->cb != 0xFFFFFFFF) {
 			TRY(pext->p_uint32(bv->cb + 16));
-			TRY(pext->p_bytes(IID_IStorage, 16));
+			TRY(pext->p_guid(&IID_IStorage));
 			TRY(pext->p_bytes(bv->pb, bv->cb));
 			return pext->p_bytes(g_pad_bytes,
 			       tnef_align(bv->cb + 16));
 		} else {
 			uint32_t offset = ext.m_offset;
 			TRY(pext->advance(sizeof(uint32_t)));
-			TRY(pext->p_bytes(IID_IMessage, 16));
+			TRY(pext->p_guid(&IID_IMessage));
 			if (FALSE == tnef_serialize_internal(pext, TRUE,
 			    static_cast<MESSAGE_CONTENT *>(bv->pv), alloc, get_propname))
 				return EXT_ERR_FORMAT;
