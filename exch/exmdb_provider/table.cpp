@@ -227,11 +227,7 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 	}
 	pdb->tables.last_id ++;
 	table_id = pdb->tables.last_id;
-	/* begin the transaction */
-	sqlite3_exec(pdb->tables.psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	auto table_transact = make_scope_exit([&]() {
-		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-	});
+	auto table_transact = gx_sql_begin_trans(pdb->tables.psqlite);
 	snprintf(sql_string, arsizeof(sql_string), "CREATE TABLE t%u "
 		"(idx INTEGER PRIMARY KEY AUTOINCREMENT, "
 		"folder_id INTEGER UNIQUE NOT NULL, "
@@ -694,10 +690,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	} else {
 		table_id = *ptable_id;
 	}
-	sqlite3_exec(pdb->tables.psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	auto table_transact = make_scope_exit([&]() {
-		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-	});
+	auto table_transact = gx_sql_begin_trans(pdb->tables.psqlite);
 	snprintf(sql_string, arsizeof(sql_string), "CREATE TABLE t%u "
 		"(row_id INTEGER PRIMARY KEY AUTOINCREMENT, "
 		"idx INTEGER UNIQUE DEFAULT NULL, "
@@ -1414,11 +1407,7 @@ BOOL exmdb_server_load_permission_table(const char *dir,
 	}
 	pdb->tables.last_id ++;
 	table_id = pdb->tables.last_id;
-	/* begin the transaction */
-	sqlite3_exec(pdb->tables.psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	auto table_transact = make_scope_exit([&]() {
-		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-	});
+	auto table_transact = gx_sql_begin_trans(pdb->tables.psqlite);
 	snprintf(sql_string, arsizeof(sql_string), "CREATE TABLE t%u (idx INTEGER PRIMARY KEY "
 		"AUTOINCREMENT, member_id INTEGER UNIQUE NOT NULL)", table_id);
 	if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
@@ -1672,11 +1661,7 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 	}
 	pdb->tables.last_id ++;
 	table_id = pdb->tables.last_id;
-	/* begin the transaction */
-	sqlite3_exec(pdb->tables.psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	auto table_transact = make_scope_exit([&]() {
-		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-	});
+	auto table_transact = gx_sql_begin_trans(pdb->tables.psqlite);
 	snprintf(sql_string, arsizeof(sql_string), "CREATE TABLE t%u (idx INTEGER PRIMARY KEY "
 		"AUTOINCREMENT, rule_id INTEGER UNIQUE NOT NULL)", table_id);
 	if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
@@ -2021,10 +2006,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 		if (pstmt == nullptr) {
 			return FALSE;
 		}
-		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-		auto clean_transact = make_scope_exit([&]() {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-		});
+		auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
 			folder_id = sqlite3_column_int64(pstmt, 0);
 			pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
@@ -2116,10 +2098,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			pstmt1 = NULL;
 			pstmt2 = NULL;
 		}
-		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-		auto clean_transact = make_scope_exit([&]() {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-		});
+		auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
 		if (FALSE == common_util_begin_message_optimize(pdb->psqlite)) {
 			return FALSE;
 		}
@@ -2559,10 +2538,7 @@ static BOOL match_tbl_hier(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	auto clean_transact = make_scope_exit([&]() {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-	});
+	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		HIERARCHY_ROW_PARAM hierarchy_param;
 		uint64_t folder_id;
@@ -2663,10 +2639,7 @@ static BOOL match_tbl_ctnt(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 		pstmt1 = NULL;
 		pstmt2 = NULL;
 	}
-	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	auto clean_transact = make_scope_exit([&]() {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-	});
+	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (FALSE == common_util_begin_message_optimize(pdb->psqlite)) {
 		return FALSE;
 	}
@@ -2944,10 +2917,7 @@ static BOOL read_tblrow_hier(uint32_t cpid, uint32_t table_id,
 	}
 	depth = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
-	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	auto clean_transact = make_scope_exit([&]() {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-	});
+	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
 	count = 0;
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
@@ -3031,10 +3001,7 @@ static BOOL read_tblrow_ctnt(uint32_t cpid, uint32_t table_id,
 		pstmt1 = NULL;
 		pstmt2 = NULL;
 	}
-	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	auto clean_transact = make_scope_exit([&]() {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-	});
+	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
 	count = 0;
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
@@ -3787,10 +3754,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		*pstate_id = sqlite3_column_int64(pstmt, 0);
 	}
 	pstmt.finalize();
-	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	auto clean_transact = make_scope_exit([&]() {
-		sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-	});
+	auto clean_transact = gx_sql_begin_trans(psqlite);
 	if (0 == *pstate_id) {
 		strcpy(sql_string, "INSERT INTO state_info"
 			"(folder_id, table_flags, sorts) VALUES (?, ?, ?)");
@@ -4095,11 +4059,7 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 		goto RESTORE_POSITION;
 	}
 	{
-	sqlite3_exec(pdb->tables.psqlite,
-		"BEGIN TRANSACTION", NULL, NULL, NULL);
-	auto table_transact = make_scope_exit([&]() {
-		sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-	});
+	auto table_transact = gx_sql_begin_trans(pdb->tables.psqlite);
 	/* reset table into initial state */
 	snprintf(sql_string, arsizeof(sql_string), "SELECT row_id, "
 		"row_stat, depth FROM t%u WHERE row_type=%u",

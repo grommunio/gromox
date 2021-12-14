@@ -1640,11 +1640,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				}
 				padded_row->after_row_id = inst_id1;
 			} else {
-				sqlite3_exec(pdb->tables.psqlite,
-					"BEGIN TRANSACTION", NULL, NULL, NULL);
-				auto clean_transact = make_scope_exit([&]() {
-					sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-				});
+				auto clean_transact = gx_sql_begin_trans(pdb->tables.psqlite);
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET idx=-(idx+1)"
 					" WHERE idx>=%u;UPDATE t%u SET idx=-idx WHERE"
 					" idx<0", ptable->table_id, idx, ptable->table_id);
@@ -1777,11 +1773,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					}
 				}
 			}
-			sqlite3_exec(pdb->tables.psqlite,
-				"BEGIN TRANSACTION", NULL, NULL, NULL);
-			auto clean_transact = make_scope_exit([&]() {
-				sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-			});
+			auto clean_transact = gx_sql_begin_trans(pdb->tables.psqlite);
 			snprintf(sql_string, arsizeof(sql_string), "SELECT row_id, inst_id, "
 				"value FROM t%u WHERE prev_id=?", ptable->table_id);
 			auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
@@ -2623,11 +2615,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 			if (0 == idx) {
 				goto APPEND_END_OF_TABLE;
 			}
-			sqlite3_exec(pdb->tables.psqlite,
-				"BEGIN TRANSACTION", NULL, NULL, NULL);
-			auto clean_transact = make_scope_exit([&]() {
-				sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-			});
+			auto clean_transact = gx_sql_begin_trans(pdb->tables.psqlite);
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET idx=-(idx+1)"
 				" WHERE idx>%u;UPDATE t%u SET idx=-idx WHERE"
 				" idx<0", ptable->table_id, idx, ptable->table_id);
@@ -2902,11 +2890,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			idx = sqlite3_column_int64(pstmt, 1);
 			prev_id = sqlite3_column_int64(pstmt, 2);
 			pstmt.finalize();
-			sqlite3_exec(pdb->tables.psqlite,
-				"BEGIN TRANSACTION", NULL, NULL, NULL);
-			auto clean_transact = make_scope_exit([&]() {
-				sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-			});
+			auto clean_transact = gx_sql_begin_trans(pdb->tables.psqlite);
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM t%u WHERE "
 				"row_id=%llu", ptable->table_id, LLU(row_id));
 			if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
@@ -2993,11 +2977,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			double_list_append_as_tail(&tmp_list, &pdelnode->node);
 		}
 		pstmt.finalize();
-		sqlite3_exec(pdb->tables.psqlite,
-			"BEGIN TRANSACTION", NULL, NULL, NULL);
-		auto clean_transact = make_scope_exit([&]() {
-			sqlite3_exec(pdb->tables.psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-		});
+		auto clean_transact = gx_sql_begin_trans(pdb->tables.psqlite);
 		snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM"
 			" t%u WHERE row_id=?", ptable->table_id);
 		pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);

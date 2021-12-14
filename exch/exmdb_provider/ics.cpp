@@ -729,10 +729,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	                      "SELECT folder_id, change_number FROM folders WHERE parent_id=? AND is_deleted=0");
 	if (stm_select_fld == nullptr)
 		return FALSE;
-	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	auto clean_transact = make_scope_exit([&]() {
-		sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-	});
+	auto clean_transact = gx_sql_begin_trans(psqlite);
 	auto stm_insert_chg = gx_sql_prep(psqlite,
 	                      "INSERT INTO changes (folder_id) VALUES (?)");
 	if (stm_insert_chg == nullptr)
@@ -774,10 +771,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 
 	/* Query section 3 */
 	{
-	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	auto clean_transact2 = make_scope_exit([&]() {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-	});
+	auto clean_transact2 = gx_sql_begin_trans(pdb->psqlite);
 	auto stm_select_chg = gx_sql_prep(psqlite,
 	                      "SELECT folder_id FROM changes ORDER BY idx ASC");
 	if (stm_select_chg == nullptr)

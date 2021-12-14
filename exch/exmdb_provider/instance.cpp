@@ -384,10 +384,7 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 	if (FALSE == exmdb_server_check_private()) {
 		exmdb_server_set_public_username(username);
 	}
-	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	auto clean_transact = make_scope_exit([&]() {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-	});
+	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (FALSE == common_util_begin_message_optimize(pdb->psqlite)) {
 		return FALSE;
 	}
