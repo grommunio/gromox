@@ -3915,10 +3915,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			" t%u WHERE row_id=?", ptnode->table_id);
 	auto pstmt2 = gx_sql_prep(pdb->tables.psqlite, sql_string);
 	if (pstmt2 == nullptr) {
-		pstmt.finalize();
-		pstmt1.finalize();
-		sqlite3_exec(psqlite, "ROLLBACK", NULL, NULL, NULL);
-		sqlite3_close(psqlite);
 		return FALSE;
 	}
 	snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT value FROM"
