@@ -15,6 +15,15 @@ xstmt gx_sql_prep(sqlite3 *db, const char *query)
 	return out;
 }
 
+xtransaction &xtransaction::operator=(xtransaction &&o)
+{
+	if (m_db != nullptr)
+		sqlite3_exec(m_db, "ROLLBACK", nullptr, nullptr, nullptr);
+	m_db = o.m_db;
+	o.m_db = nullptr;
+	return *this;
+}
+
 xtransaction::~xtransaction()
 {
 	if (m_db != nullptr)

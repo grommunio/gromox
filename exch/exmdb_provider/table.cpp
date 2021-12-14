@@ -782,6 +782,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			return false;
 		}
 	}
+	xtransaction psort_transact;
 	if (NULL != psorts) {
 		ptnode->psorts = sortorder_set_dup(psorts);
 		if (NULL == ptnode->psorts) {
@@ -791,7 +792,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
 			return false;
 		}
-		sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+		psort_transact = gx_sql_begin_trans(psqlite);
 		sql_len = snprintf(sql_string, arsizeof(sql_string), "CREATE"
 			" TABLE stbl (message_id INTEGER");
 		tag_count = 0;
@@ -1176,8 +1177,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		sqlite3_reset(pstmt1);
 	}
 	if (NULL != psorts) {
-		sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-		sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+		psort_transact.commit();
+		psort_transact = gx_sql_begin_trans(psqlite);
 	}
 	pstmt.finalize();
 	pstmt1.finalize();
@@ -1203,7 +1204,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		}
 		pstmt.finalize();
 		pstmt1.finalize();
-		sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+		psort_transact.commit();
 		sqlite3_close(psqlite);
 		psqlite = NULL;
 		/* index the content table */

@@ -247,15 +247,11 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 
 	/* Query section 1 */
 	{
-	sqlite3_exec(psqlite, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
+	auto transact1 = gx_sql_begin_trans(psqlite);
+	xtransaction transact2;
 	if (NULL != prestriction) {
-		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
+		transact2 = gx_sql_begin_trans(pdb->psqlite);
 	}
-	auto sql_transact = make_scope_exit([&]() {
-		sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-		if (prestriction != nullptr)
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-	});
 	char sql_string[256];
 	if (TRUE == b_private) {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
@@ -421,11 +417,8 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	if (0 != *plast_readcn) {
 		*plast_readcn = rop_util_make_eid_ex(1, *plast_readcn);
 	}
-	sqlite3_exec(psqlite, "COMMIT TRANSACTION", nullptr, nullptr, nullptr);
-	if (NULL != prestriction) {
-		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", nullptr, nullptr, nullptr);
-	}
-	sql_transact.release();
+	transact1.commit();
+	transact2.commit();
 	} /* section 1 */
 
 	/* Query section 2a */

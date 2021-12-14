@@ -5,11 +5,11 @@
 
 class GX_EXPORT xtransaction {
 	public:
-	constexpr xtransaction(sqlite3 *d) { m_db = d; }
+	constexpr xtransaction(sqlite3 *d = nullptr) { m_db = d; }
 	xtransaction(xtransaction &&) = delete;
 	~xtransaction();
 	void commit();
-	void operator=(xtransaction &&) = delete;
+	xtransaction &operator=(xtransaction &&);
 
 	protected:
 	sqlite3 *m_db = nullptr;
