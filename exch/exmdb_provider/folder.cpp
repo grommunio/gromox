@@ -543,13 +543,17 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 		max_eid = sqlite3_column_int64(pstmt, 0);
 		pstmt.finalize();
 		max_eid ++;
-		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	}
+	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
+	if (type == FOLDER_GENERIC) {
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO allocated_eids"
 			" VALUES (%llu, %llu, %lld, 1)", LLU(max_eid), LLU(max_eid +
 			SYSTEM_ALLOCATED_EID_RANGE - 1), LLD(time(nullptr)));
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 			return FALSE;
 		}
 		if (0 == tmp_fid) {
@@ -565,7 +569,6 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 					"cur_eid, max_eid) VALUES (?, ?, ?, ?, ?)");
 		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		sqlite3_bind_int64(pstmt, 1, folder_id);
@@ -575,13 +578,11 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 		sqlite3_bind_int64(pstmt, 5, max_eid);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			pstmt.finalize();
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		pstmt.finalize();
 		if (!cu_set_properties(db_table::folder_props,
 			folder_id, cpid, pdb->psqlite, pproperties, &tmp_problems)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		next = 1;
@@ -595,10 +596,8 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 		cu_set_property(db_table::folder_props,
 			folder_id, 0, pdb->psqlite, &tmp_propval, &b_result);
 	} else {
-		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 		if (0 == tmp_fid) {
 			if (FALSE == common_util_allocate_eid(pdb->psqlite, &max_eid)) {
-				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 				return FALSE;
 			}
 			folder_id = max_eid;
@@ -610,7 +609,6 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 					"max_eid) VALUES (?, ?, ?, 1, 0, 0)");
 		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		sqlite3_bind_int64(pstmt, 1, folder_id);
@@ -618,13 +616,11 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 		sqlite3_bind_int64(pstmt, 3, change_num);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			pstmt.finalize();
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		pstmt.finalize();
 		if (!cu_set_properties(db_table::folder_props,
 			folder_id, cpid, pdb->psqlite, pproperties, &tmp_problems)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 	}
@@ -658,6 +654,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 	cu_set_property(db_table::folder_props,
 		folder_id, 0, pdb->psqlite, &tmp_propval, &b_result);
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	db_engine_notify_folder_creation(pdb, parent_id, folder_id);
 	*pfolder_id = rop_util_make_eid_ex(1, folder_id);
 	return TRUE;
@@ -1202,6 +1199,9 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 	parent_id = common_util_get_folder_parent_fid(
 							pdb->psqlite, fid_val);
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
+	});
 	if (TRUE == exmdb_server_check_private()) {
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM folders"
 		        " WHERE folder_id=%llu", LLU(fid_val));
@@ -1212,7 +1212,6 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 		    NULL, NULL) || TRUE == b_partial ||
 		    FALSE == common_util_decrease_store_size(
 		    pdb->psqlite, normal_size, fai_size)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM folders"
@@ -1224,7 +1223,6 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 	}
 	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 		sql_string, NULL, NULL, NULL)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	db_engine_notify_folder_deletion(
@@ -1234,7 +1232,6 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 	        "proptag=%u", LLU(parent_id), PR_DELETED_FOLDER_COUNT);
 	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 		sql_string, NULL, NULL, NULL)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET"
@@ -1242,7 +1239,6 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 		 "proptag=%u", LLU(parent_id), PR_HIERARCHY_CHANGE_NUM);
 	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 		sql_string, NULL, NULL, NULL)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties "
@@ -1250,24 +1246,22 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 		LLU(rop_util_current_nttime()), LLU(parent_id));
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	sqlite3_bind_int64(pstmt, 0, PROP_TAG_HIERREV);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		pstmt.finalize();
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	sqlite3_reset(pstmt);
 	sqlite3_bind_int64(pstmt, 0, PR_LOCAL_COMMIT_TIME_MAX);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		pstmt.finalize();
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	pstmt.finalize();
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	*pb_result = TRUE;
 	return TRUE;
 }
@@ -1292,10 +1286,12 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 	normal_size = 0;
 	fai_size = 0;
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	if (FALSE == folder_empty_folder(pdb, cpid, username, fid_val,
 		b_hard, b_normal, b_fai, b_sub, pb_partial, &normal_size,
 		&fai_size, &message_count, &folder_count)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	if (message_count > 0) {
@@ -1305,7 +1301,6 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 		        PR_DELETED_COUNT_TOTAL);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 	}
@@ -1316,7 +1311,6 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 		        PR_DELETED_FOLDER_COUNT);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
@@ -1324,7 +1318,6 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 		         "proptag=%u", LLU(fid_val), PR_HIERARCHY_CHANGE_NUM);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
@@ -1332,7 +1325,6 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 			LLU(rop_util_current_nttime()), LLU(fid_val), PROP_TAG_HIERREV);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 	}
@@ -1343,16 +1335,15 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 		         PR_LOCAL_COMMIT_TIME_MAX);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 	}
 	if (FALSE == common_util_decrease_store_size(
 		pdb->psqlite, normal_size, fai_size)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	return TRUE;
 }
 
@@ -1921,10 +1912,12 @@ BOOL exmdb_server_copy_folder_internal(const char *dir,
 	normal_size = 0;
 	fai_size = 0;
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	if (FALSE == folder_copy_folder_internal(pdb, account_id, cpid,
 		b_guest, username, src_val, b_normal, b_fai, b_sub, dst_val,
 		&b_partial, &normal_size, &fai_size, &folder_count)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	if (folder_count > 0) {
@@ -1933,7 +1926,6 @@ BOOL exmdb_server_copy_folder_internal(const char *dir,
 		         "proptag=%u", LLU(dst_val), PR_HIERARCHY_CHANGE_NUM);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
@@ -1941,7 +1933,6 @@ BOOL exmdb_server_copy_folder_internal(const char *dir,
 			LLU(rop_util_current_nttime()), LLU(dst_val), PROP_TAG_HIERREV);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 	}
@@ -1952,7 +1943,6 @@ BOOL exmdb_server_copy_folder_internal(const char *dir,
 		         PR_LOCAL_COMMIT_TIME_MAX);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 	}
@@ -1960,11 +1950,11 @@ BOOL exmdb_server_copy_folder_internal(const char *dir,
 		pdb->psqlite, normal_size, fai_size)) {
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 	}
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	return TRUE;
 }
 
@@ -2034,12 +2024,14 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 		}
 	}
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	if (FALSE == b_copy) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET parent_id=%llu"
 		        " WHERE folder_id=%llu", LLU(dst_val), LLU(src_val));
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties "
@@ -2047,13 +2039,11 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 		        LLU(src_val), PR_DISPLAY_NAME);
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		sqlite3_bind_text(pstmt, 1, str_new, -1, SQLITE_STATIC);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			pstmt.finalize();
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		pstmt.finalize();
@@ -2063,7 +2053,6 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 		         LLU(nt_time), LLU(parent_val), PR_LOCAL_COMMIT_TIME_MAX);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
@@ -2071,7 +2060,6 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 		        "proptag=%u", LLU(parent_val), PR_DELETED_FOLDER_COUNT);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
@@ -2079,7 +2067,6 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 		         "proptag=%u", LLU(parent_val), PR_HIERARCHY_CHANGE_NUM);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
@@ -2087,7 +2074,6 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 			LLU(nt_time), LLU(parent_val), PROP_TAG_HIERREV);
 		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 			sql_string, NULL, NULL, NULL)) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		fid_val = src_val;
@@ -2115,13 +2101,11 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 		        LLU(fid_val), PR_DISPLAY_NAME);
 		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr) {
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		sqlite3_bind_text(pstmt, 1, str_new, -1, SQLITE_STATIC);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			pstmt.finalize();
-			sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 			return FALSE;
 		}
 		pstmt.finalize();
@@ -2131,14 +2115,12 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 			if (FALSE == folder_copy_folder_internal(pdb, account_id,
 				cpid, b_guest, username, src_val, TRUE, TRUE, TRUE,
 				fid_val, &b_partial, &normal_size, &fai_size, NULL)) {
-				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 				return FALSE;
 			}
 			if (FALSE == common_util_increase_store_size(
 				pdb->psqlite, normal_size, fai_size)) {
 				if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 					sql_string, NULL, NULL, NULL)) {
-					sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 					return FALSE;
 				}
 			}
@@ -2150,7 +2132,6 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 	         LLU(nt_time), LLU(dst_val), PR_LOCAL_COMMIT_TIME_MAX);
 	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 		sql_string, NULL, NULL, NULL)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
@@ -2158,7 +2139,6 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 	         "proptag=%u", LLU(dst_val), PR_HIERARCHY_CHANGE_NUM);
 	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 		sql_string, NULL, NULL, NULL)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
@@ -2166,10 +2146,10 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 		LLU(nt_time), LLU(dst_val), PROP_TAG_HIERREV);
 	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
 		sql_string, NULL, NULL, NULL)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	db_engine_notify_folder_movecopy(pdb, b_copy,
 		dst_val, fid_val, parent_val, src_val);
 	return TRUE;
@@ -2332,6 +2312,9 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 	original_flags = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET search_flags=%u "
 	        "WHERE folder_id=%llu", search_flags, LLU(fid_val));
 	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
@@ -2436,6 +2419,7 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 		goto CRITERIA_FAILURE;
 	}
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	if (search_flags & SEARCH_FLAG_RESTART) {
 		b_populate = TRUE;
 		if (0 == (search_flags & SEARCH_FLAG_STATIC)) {
@@ -2459,7 +2443,6 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 	*pb_result = TRUE;
 	return TRUE;
  CRITERIA_FAILURE:
-	sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 	return FALSE;
 }
 
@@ -2691,6 +2674,9 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 	fid_val = rop_util_get_gc_value(folder_id);
 	pstmt = NULL;
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	for (i=0; i<count; i++) {
 		bool ret = true;
 		switch (prow[i].flags) {
@@ -2709,10 +2695,10 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 	}
 	pstmt.finalize();
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	return TRUE;
 	
  PERMISSION_FAILURE:
-	sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 	return FALSE;
 }
 
@@ -2760,13 +2746,15 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 	pstmt.finalize();
 	*pb_exceed = FALSE;
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto clean_transact = make_scope_exit([&]() {
+		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+	});
 	for (i=0; i<count; i++) {
 		switch (prow[i].flags) {
 		case ROW_ADD: {
 			if (rule_count >= common_util_get_param(
 				COMMON_UTIL_MAX_RULE_NUMBER)) {
 				*pb_exceed = TRUE;
-				sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 				return TRUE;
 			}
 			auto pname = prow[i].propvals.get<const char>(PR_RULE_NAME);
@@ -2994,10 +2982,10 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 		}
 	}
 	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	clean_transact.release();
 	return TRUE;
 	
  RULE_FAILURE:
-	sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 	return FALSE;
 }
 
