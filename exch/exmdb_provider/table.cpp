@@ -300,8 +300,7 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 		return FALSE;
 	}
 	pstmt.finalize();
-	sqlite3_exec(pdb->tables.psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	table_transact.release();
+	table_transact.commit();
 	double_list_append_as_tail(&pdb->tables.table_list, &ptnode->node);
 	*ptable_id = ptnode->table_id;
 	return TRUE;
@@ -1255,9 +1254,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		}
 	}
 	all_ok = true;
-	sqlite3_exec(pdb->tables.psqlite,
-		"COMMIT TRANSACTION", NULL, NULL, NULL);
-	table_transact.release();
+	table_transact.commit();
 	double_list_append_as_tail(&pdb->tables.table_list, &ptnode->node);
 	if (0 == *ptable_id) {
 		*ptable_id = table_id;
@@ -1453,8 +1450,7 @@ BOOL exmdb_server_load_permission_table(const char *dir,
 		return FALSE;
 	}
 	pstmt.finalize();
-	sqlite3_exec(pdb->tables.psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	table_transact.release();
+	table_transact.commit();
 	double_list_append_as_tail(&pdb->tables.table_list, &ptnode->node);
 	*ptable_id = ptnode->table_id;
 	return TRUE;
@@ -1723,8 +1719,7 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 		return FALSE;
 	}
 	pstmt.finalize();
-	sqlite3_exec(pdb->tables.psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	table_transact.release();
+	table_transact.commit();
 	double_list_append_as_tail(&pdb->tables.table_list, &ptnode->node);
 	*ptable_id = ptnode->table_id;
 	return TRUE;
@@ -2006,7 +2001,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 		if (pstmt == nullptr) {
 			return FALSE;
 		}
-		auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
+		auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 		while (SQLITE_ROW == sqlite3_step(pstmt)) {
 			folder_id = sqlite3_column_int64(pstmt, 0);
 			pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
@@ -2053,8 +2048,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			}
 			pset->pparray[pset->count++]->count = count;
 		}
-		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-		clean_transact.release();
+		sql_transact.commit();
 		break;
 	}
 	case TABLE_TYPE_CONTENT: {
@@ -2098,7 +2092,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			pstmt1 = NULL;
 			pstmt2 = NULL;
 		}
-		auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
+		auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 		if (FALSE == common_util_begin_message_optimize(pdb->psqlite)) {
 			return FALSE;
 		}
@@ -2153,8 +2147,7 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			pset->pparray[pset->count++]->count = count;
 		}
 		common_util_end_message_optimize();
-		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-		clean_transact.release();
+		sql_transact.commit();
 		break;
 	}
 	case TABLE_TYPE_PERMISSION: {
@@ -2538,7 +2531,7 @@ static BOOL match_tbl_hier(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		HIERARCHY_ROW_PARAM hierarchy_param;
 		uint64_t folder_id;
@@ -2593,8 +2586,7 @@ static BOOL match_tbl_hier(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 		ppropvals->count = count;
 		break;
 	}
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	*pposition = idx - 1;
 	return TRUE;
 }
@@ -2639,7 +2631,7 @@ static BOOL match_tbl_ctnt(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 		pstmt1 = NULL;
 		pstmt2 = NULL;
 	}
-	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (FALSE == common_util_begin_message_optimize(pdb->psqlite)) {
 		return FALSE;
 	}
@@ -2707,8 +2699,7 @@ static BOOL match_tbl_ctnt(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 		break;
 	}
 	common_util_end_message_optimize();
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	*pposition = idx - 1;
 	return TRUE;
 }
@@ -2917,7 +2908,7 @@ static BOOL read_tblrow_hier(uint32_t cpid, uint32_t table_id,
 	}
 	depth = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
-	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	count = 0;
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
@@ -2955,8 +2946,7 @@ static BOOL read_tblrow_hier(uint32_t cpid, uint32_t table_id,
 		ppropvals->ppropval[count++].pvalue = pvalue;
 	}
 	ppropvals->count = count;
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	return TRUE;
 }
 
@@ -3001,7 +2991,7 @@ static BOOL read_tblrow_ctnt(uint32_t cpid, uint32_t table_id,
 		pstmt1 = NULL;
 		pstmt2 = NULL;
 	}
-	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	count = 0;
 	ppropvals->ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	if (NULL == ppropvals->ppropval) {
@@ -3039,8 +3029,7 @@ static BOOL read_tblrow_ctnt(uint32_t cpid, uint32_t table_id,
 		ppropvals->ppropval[count++].pvalue = pvalue;
 	}
 	ppropvals->count = count;
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	return TRUE;
 }
 
@@ -3754,7 +3743,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		*pstate_id = sqlite3_column_int64(pstmt, 0);
 	}
 	pstmt.finalize();
-	auto clean_transact = gx_sql_begin_trans(psqlite);
+	auto sql_transact = gx_sql_begin_trans(psqlite);
 	if (0 == *pstate_id) {
 		strcpy(sql_string, "INSERT INTO state_info"
 			"(folder_id, table_flags, sorts) VALUES (?, ?, ?)");
@@ -3954,8 +3943,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		}
 		sqlite3_reset(pstmt1);
 	}
-	sqlite3_exec(psqlite, "COMMIT TRANSACTION", nullptr, nullptr, nullptr);
-	clean_transact.release();
+	sql_transact.commit();
 	return TRUE;
 }
 
@@ -4205,9 +4193,7 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	}
 	pstmt.finalize();
 	pstmt1.finalize();
-	sqlite3_exec(pdb->tables.psqlite,
-		"COMMIT TRANSACTION", NULL, NULL, NULL);
-	table_transact.release();
+	table_transact.commit();
 	}
  RESTORE_POSITION:
 	if (0 != message_id) {

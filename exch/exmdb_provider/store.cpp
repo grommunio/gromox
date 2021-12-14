@@ -87,9 +87,7 @@ BOOL exmdb_server_get_named_propids(const char *dir,
 		pdb->psqlite, b_create, ppropnames, ppropids)) {
 		return FALSE;
 	}
-	/* commit the transaction */
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	transact.release();
+	transact.commit();
 	return TRUE;
 }
 
@@ -191,8 +189,7 @@ BOOL exmdb_server_set_store_properties(const char *dir,
 		ppropvals, pproblems)) {
 		return FALSE;
 	}
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	transact.release();
+	transact.commit();
 	return TRUE;
 }
 
@@ -206,8 +203,7 @@ BOOL exmdb_server_remove_store_properties(
 	if (!cu_remove_properties(db_table::store_props, 0, pdb->psqlite, pproptags)) {
 		return FALSE;
 	}
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	transact.release();
+	transact.commit();
 	return TRUE;
 }
 

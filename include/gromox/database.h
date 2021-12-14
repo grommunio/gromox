@@ -2,7 +2,18 @@
 #include <cstdint>
 #include <sqlite3.h>
 #include <gromox/defs.h>
-#include <gromox/scope.hpp>
+
+class GX_EXPORT xtransaction {
+	public:
+	constexpr xtransaction(sqlite3 *d) { m_db = d; }
+	xtransaction(xtransaction &&) = delete;
+	~xtransaction();
+	void commit();
+	void operator=(xtransaction &&) = delete;
+
+	protected:
+	sqlite3 *m_db = nullptr;
+};
 
 struct xstmt {
 	xstmt() = default;
@@ -28,15 +39,10 @@ struct xstmt {
 };
 
 extern GX_EXPORT struct xstmt gx_sql_prep(sqlite3 *, const char *);
+extern GX_EXPORT xtransaction gx_sql_begin_trans(sqlite3 *);
 
 static inline uint64_t gx_sql_col_uint64(sqlite3_stmt *s, int c)
 {
 	auto x = sqlite3_column_int64(s, c);
 	return x >= 0 ? x : 0;
-}
-
-static inline auto gx_sql_begin_trans(sqlite3 *db)
-{
-	sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
-	return gromox::make_scope_exit([&]() { sqlite3_exec(db, "ROLLBACK", nullptr, nullptr, nullptr); });
 }

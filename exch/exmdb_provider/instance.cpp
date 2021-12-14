@@ -384,7 +384,7 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 	if (FALSE == exmdb_server_check_private()) {
 		exmdb_server_set_public_username(username);
 	}
-	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (FALSE == common_util_begin_message_optimize(pdb->psqlite)) {
 		return FALSE;
 	}
@@ -398,8 +398,7 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 		return FALSE;
 	}
 	common_util_end_message_optimize();
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	if (NULL == pinstance->pcontent) {
 		if (NULL != pinstance->username) {
 			free(pinstance->username);

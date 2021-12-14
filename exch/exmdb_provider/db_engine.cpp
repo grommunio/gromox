@@ -1640,7 +1640,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				}
 				padded_row->after_row_id = inst_id1;
 			} else {
-				auto clean_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+				auto sql_transact = gx_sql_begin_trans(pdb->tables.psqlite);
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET idx=-(idx+1)"
 					" WHERE idx>=%u;UPDATE t%u SET idx=-idx WHERE"
 					" idx<0", ptable->table_id, idx, ptable->table_id);
@@ -1676,9 +1676,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					sql_string, NULL, NULL, NULL)) {
 					continue;
 				}
-				sqlite3_exec(pdb->tables.psqlite,
-					"COMMIT TRANSACTION", NULL, NULL, NULL);
-				clean_transact.release();
+				sql_transact.commit();
 				padded_row->after_row_id = inst_id;
 			}
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS) {
@@ -1773,7 +1771,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					}
 				}
 			}
-			auto clean_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+			auto sql_transact = gx_sql_begin_trans(pdb->tables.psqlite);
 			snprintf(sql_string, arsizeof(sql_string), "SELECT row_id, inst_id, "
 				"value FROM t%u WHERE prev_id=?", ptable->table_id);
 			auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
@@ -2152,9 +2150,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			}
 			pstmt.finalize();
 			pstmt1.finalize();
-			sqlite3_exec(pdb->tables.psqlite,
-				"COMMIT TRANSACTION", NULL, NULL, NULL);
-			clean_transact.release();
+			sql_transact.commit();
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS) {
 				continue;
 			}
@@ -2615,7 +2611,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 			if (0 == idx) {
 				goto APPEND_END_OF_TABLE;
 			}
-			auto clean_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+			auto sql_transact = gx_sql_begin_trans(pdb->tables.psqlite);
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET idx=-(idx+1)"
 				" WHERE idx>%u;UPDATE t%u SET idx=-idx WHERE"
 				" idx<0", ptable->table_id, idx, ptable->table_id);
@@ -2623,9 +2619,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 				sql_string, NULL, NULL, NULL)) {
 				continue;
 			}
-			sqlite3_exec(pdb->tables.psqlite,
-				"COMMIT TRANSACTION", NULL, NULL, NULL);
-			clean_transact.release();
+			sql_transact.commit();
 			snprintf(sql_string, arsizeof(sql_string), "INSERT INTO t%u (idx, "
 				"folder_id, depth) VALUES (%u, %llu, %u)",
 				ptable->table_id, idx + 1, LLU(folder_id), depth);
@@ -2890,7 +2884,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			idx = sqlite3_column_int64(pstmt, 1);
 			prev_id = sqlite3_column_int64(pstmt, 2);
 			pstmt.finalize();
-			auto clean_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+			auto sql_transact = gx_sql_begin_trans(pdb->tables.psqlite);
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM t%u WHERE "
 				"row_id=%llu", ptable->table_id, LLU(row_id));
 			if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
@@ -2917,9 +2911,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 				sql_string, NULL, NULL, NULL)) {
 				continue;
 			}
-			sqlite3_exec(pdb->tables.psqlite,
-				"COMMIT TRANSACTION", NULL, NULL, NULL);
-			clean_transact.release();
+			sql_transact.commit();
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS) {
 				continue;
 			}
@@ -2977,7 +2969,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			double_list_append_as_tail(&tmp_list, &pdelnode->node);
 		}
 		pstmt.finalize();
-		auto clean_transact = gx_sql_begin_trans(pdb->tables.psqlite);
+		auto sql_transact = gx_sql_begin_trans(pdb->tables.psqlite);
 		snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM"
 			" t%u WHERE row_id=?", ptable->table_id);
 		pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
@@ -3241,9 +3233,7 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			pstmt.finalize();
 			pstmt1.finalize();
 		}
-		sqlite3_exec(pdb->tables.psqlite,
-			"COMMIT TRANSACTION", NULL, NULL, NULL);
-		clean_transact.release();
+		sql_transact.commit();
 		if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS) {
 			continue;
 		}

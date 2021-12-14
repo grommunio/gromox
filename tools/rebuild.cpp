@@ -265,9 +265,7 @@ int main(int argc, const char **argv)
 		printf("fail to execute table creation sql, error: %s\n", err_msg);
 		return 9;
 	}
-	/* commit the transaction */
-	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	transact1.release();
+	transact1.commit();
 	snprintf(tmp_sql, 1024, "ATTACH DATABASE "
 		"'%s/exmdb/exchange.sqlite3' AS source_db", argv[1]);
 	if (SQLITE_OK != sqlite3_exec(psqlite,
@@ -276,7 +274,7 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	
-	auto clean_transact = gx_sql_begin_trans(psqlite);
+	auto sql_transact = gx_sql_begin_trans(psqlite);
 	const char *csql_string = "INSERT INTO configurations "
 		"SELECT * FROM source_db.configurations";
 	if (SQLITE_OK != sqlite3_exec(psqlite,
@@ -403,9 +401,7 @@ int main(int argc, const char **argv)
 		printf("fail to execute table copy sql, error: %s\n", err_msg);
 		return 9;
 	}
-	/* commit the transaction */
-	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	sqlite3_exec(psqlite, "DETACH DATABASE source_db", NULL, NULL, NULL);
 	csql_string = "REINDEX";
 	if (SQLITE_OK != sqlite3_exec(psqlite,

@@ -251,7 +251,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	if (NULL != prestriction) {
 		sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
 	}
-	auto clean_transact = make_scope_exit([&]() {
+	auto sql_transact = make_scope_exit([&]() {
 		sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
 		if (prestriction != nullptr)
 			sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
@@ -425,7 +425,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	if (NULL != prestriction) {
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", nullptr, nullptr, nullptr);
 	}
-	clean_transact.release();
+	sql_transact.release();
 	} /* section 1 */
 
 	/* Query section 2a */
@@ -729,7 +729,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	                      "SELECT folder_id, change_number FROM folders WHERE parent_id=? AND is_deleted=0");
 	if (stm_select_fld == nullptr)
 		return FALSE;
-	auto clean_transact = gx_sql_begin_trans(psqlite);
+	auto sql_transact = gx_sql_begin_trans(psqlite);
 	auto stm_insert_chg = gx_sql_prep(psqlite,
 	                      "INSERT INTO changes (folder_id) VALUES (?)");
 	if (stm_insert_chg == nullptr)
@@ -747,8 +747,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 	if (0 != *plast_cn) {
 		*plast_cn = rop_util_make_eid_ex(1, *plast_cn);
 	}
-	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	} /* section 1 */
 
 	/* Query section 2 */
@@ -771,7 +770,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 
 	/* Query section 3 */
 	{
-	auto clean_transact2 = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact2 = gx_sql_begin_trans(pdb->psqlite);
 	auto stm_select_chg = gx_sql_prep(psqlite,
 	                      "SELECT folder_id FROM changes ORDER BY idx ASC");
 	if (stm_select_chg == nullptr)
@@ -808,8 +807,7 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		}
 	}
 	stm_select_chg.finalize();
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact2.release();
+	sql_transact2.commit();
 	} /* section 3 */
 
 	pdb.reset();

@@ -338,7 +338,7 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
-	auto clean_transact = gx_sql_begin_trans(psqlite);
+	auto sql_transact = gx_sql_begin_trans(psqlite);
 	if (sqlite3_exec(psqlite, sql_string.c_str(), nullptr, nullptr,
 	    &err_msg) != SQLITE_OK) {
 		printf("fail to execute table creation sql, error: %s\n", err_msg);
@@ -671,9 +671,6 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	pstmt.finalize();
-	
-	/* commit the transaction */
-	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	return EXIT_SUCCESS;
 }

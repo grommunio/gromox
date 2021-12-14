@@ -14,3 +14,21 @@ xstmt gx_sql_prep(sqlite3 *db, const char *query)
 		        query, sqlite3_errstr(ret));
 	return out;
 }
+
+xtransaction::~xtransaction()
+{
+	if (m_db != nullptr)
+		sqlite3_exec(m_db, "ROLLBACK", nullptr, nullptr, nullptr);
+}
+
+void xtransaction::commit()
+{
+	sqlite3_exec(m_db, "COMMIT TRANSACTION", nullptr, nullptr, nullptr);
+	m_db = nullptr;
+}
+
+xtransaction gx_sql_begin_trans(sqlite3 *db)
+{
+	sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
+	return xtransaction(db);
+}

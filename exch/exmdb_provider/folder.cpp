@@ -235,7 +235,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 	 * "Intuitively, I'd guess that ROLLBACK is more expensive. COMMIT is
 	 * the normal use case, and ROLLBACK the exceptional case."
 	 */
-	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	snprintf(sql_string, arsizeof(sql_string), "SELECT count(message_id) FROM"
 			" messages WHERE parent_fid=%llu AND is_associated=0",
 			LLU(rop_util_get_gc_value(folder_id)));
@@ -541,7 +541,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 		pstmt.finalize();
 		max_eid ++;
 	}
-	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (type == FOLDER_GENERIC) {
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO allocated_eids"
 			" VALUES (%llu, %llu, %lld, 1)", LLU(max_eid), LLU(max_eid +
@@ -647,8 +647,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 		parent_id, 0, pdb->psqlite, &tmp_propval, &b_result);
 	cu_set_property(db_table::folder_props,
 		folder_id, 0, pdb->psqlite, &tmp_propval, &b_result);
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	db_engine_notify_folder_creation(pdb, parent_id, folder_id);
 	*pfolder_id = rop_util_make_eid_ex(1, folder_id);
 	return TRUE;
@@ -717,7 +716,7 @@ BOOL exmdb_server_set_folder_properties(
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
-	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (TRUE == exmdb_server_check_private()
 		&& PRIVATE_FID_ROOT == fid_val) {
 		for (i=0; i<pproperties->count; i++) {
@@ -736,8 +735,7 @@ BOOL exmdb_server_set_folder_properties(
 		fid_val, cpid, pdb->psqlite, pproperties, pproblems)) {
 		return FALSE;
 	}
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	db_engine_notify_folder_modification(pdb,
 		common_util_get_folder_parent_fid(
 		pdb->psqlite, fid_val), fid_val);
@@ -752,13 +750,12 @@ BOOL exmdb_server_remove_folder_properties(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
-	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!cu_remove_properties(db_table::folder_props,
 		fid_val, pdb->psqlite, pproptags)) {
 		return FALSE;
 	}
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	db_engine_notify_folder_modification(pdb,
 		common_util_get_folder_parent_fid(
 		pdb->psqlite, fid_val), fid_val);
@@ -1189,7 +1186,7 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 	}
 	parent_id = common_util_get_folder_parent_fid(
 							pdb->psqlite, fid_val);
-	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (TRUE == exmdb_server_check_private()) {
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM folders"
 		        " WHERE folder_id=%llu", LLU(fid_val));
@@ -1248,8 +1245,7 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 		return FALSE;
 	}
 	pstmt.finalize();
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	*pb_result = TRUE;
 	return TRUE;
 }
@@ -1273,7 +1269,7 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 	folder_count = 0;
 	normal_size = 0;
 	fai_size = 0;
-	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (FALSE == folder_empty_folder(pdb, cpid, username, fid_val,
 		b_hard, b_normal, b_fai, b_sub, pb_partial, &normal_size,
 		&fai_size, &message_count, &folder_count)) {
@@ -1327,8 +1323,7 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 		pdb->psqlite, normal_size, fai_size)) {
 		return FALSE;
 	}
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	return TRUE;
 }
 
@@ -1896,7 +1891,7 @@ BOOL exmdb_server_copy_folder_internal(const char *dir,
 	folder_count = 0;
 	normal_size = 0;
 	fai_size = 0;
-	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (FALSE == folder_copy_folder_internal(pdb, account_id, cpid,
 		b_guest, username, src_val, b_normal, b_fai, b_sub, dst_val,
 		&b_partial, &normal_size, &fai_size, &folder_count)) {
@@ -1935,8 +1930,7 @@ BOOL exmdb_server_copy_folder_internal(const char *dir,
 			return FALSE;
 		}
 	}
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	return TRUE;
 }
 
@@ -2005,7 +1999,7 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 			return TRUE;
 		}
 	}
-	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (FALSE == b_copy) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET parent_id=%llu"
 		        " WHERE folder_id=%llu", LLU(dst_val), LLU(src_val));
@@ -2127,8 +2121,7 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 		sql_string, NULL, NULL, NULL)) {
 		return FALSE;
 	}
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	db_engine_notify_folder_movecopy(pdb, b_copy,
 		dst_val, fid_val, parent_val, src_val);
 	return TRUE;
@@ -2290,7 +2283,7 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 		return FALSE;
 	original_flags = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
-	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET search_flags=%u "
 	        "WHERE folder_id=%llu", search_flags, LLU(fid_val));
 	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
@@ -2394,8 +2387,7 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 	if (FALSE == folder_clear_search_folder(pdb, cpid, fid_val)) {
 		return false;
 	}
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	if (search_flags & SEARCH_FLAG_RESTART) {
 		b_populate = TRUE;
 		if (0 == (search_flags & SEARCH_FLAG_STATIC)) {
@@ -2647,7 +2639,7 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
 	pstmt = NULL;
-	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	for (i=0; i<count; i++) {
 		bool ret = true;
 		switch (prow[i].flags) {
@@ -2665,8 +2657,7 @@ BOOL exmdb_server_update_folder_permission(const char *dir,
 			return false;
 	}
 	pstmt.finalize();
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	return TRUE;
 }
 
@@ -2713,7 +2704,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 	size_t rule_count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	*pb_exceed = FALSE;
-	auto clean_transact = gx_sql_begin_trans(pdb->psqlite);
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	for (i=0; i<count; i++) {
 		switch (prow[i].flags) {
 		case ROW_ADD: {
@@ -2946,8 +2937,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 		}
 		}
 	}
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	return TRUE;
 }
 
