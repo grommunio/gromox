@@ -74,7 +74,7 @@ int listener_run()
 			       g_listener_ssl_port, strerror(-g_listener_ssl_sock));
 			return -1;
 		}
-		gx_reexec_record(g_listener_sock);
+		gx_reexec_record(g_listener_ssl_sock);
 	}
 
 	return 0;
