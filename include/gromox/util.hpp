@@ -17,8 +17,7 @@ extern void wchar_to_utf8(uint32_t wchar, char *string);
 const char* replace_iconv_charset(const char *charset);
 BOOL string_to_utf8(const char *charset,
 	const char *in_string, char *out_string);
-BOOL string_from_utf8(const char *charset,
-	const char *in_string, char *out_string);
+extern BOOL string_from_utf8(const char *charset, const char *in_string, char *out_string, size_t out_len);
 extern int utf8_to_utf16le(const char *src, void *dst, size_t len);
 extern BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t len);
 extern BOOL get_digest(const char *src, const char *tag, char *buff, size_t buff_len);

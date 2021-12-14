@@ -147,6 +147,15 @@ static CHARSET_TO_CPID oxcmail_charset_to_cpid;
 static CPID_TO_CHARSET oxcmail_cpid_to_charset;
 static MIME_TO_EXTENSION oxcmail_mime_to_extension;
 static EXTENSION_TO_MIME oxcmail_extension_to_mime;
+
+static inline size_t worst_encoding_overhead(size_t in)
+{
+	/*
+	 * (To be used for conversions _from UTF-8_ to any other encoding.)
+	 * UTF-7 can be *so* pathalogical.
+	 */
+	return 5 * in;
+}
 	
 static int namemap_add(namemap &phash, uint32_t id, PROPERTY_NAME &&el) try
 {
@@ -4186,29 +4195,31 @@ static size_t oxcmail_encode_mime_string(const char *charset,
 {
 	size_t offset;
 	size_t base64_len;
-	char tmp_buff[MIME_FIELD_LEN];
+	auto alloc_size = worst_encoding_overhead(strlen(pstring)) + 1;
+	std::unique_ptr<char[]> tmp_buff;
+	try {
+		tmp_buff = std::make_unique<char[]>(alloc_size);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1539: ENOMEM\n");
+		return 0;
+	}
 	
 	if (!oxcmail_check_ascii(pstring) ||
 		TRUE == oxcmail_check_crlf(pstring)) {
-		if (TRUE == string_from_utf8(
-			charset, pstring, tmp_buff)) {
-			auto string_len = strlen(tmp_buff);
+		if (string_from_utf8(charset, pstring, tmp_buff.get(), alloc_size)) {
+			auto string_len = strlen(tmp_buff.get());
 			offset = std::max(0, gx_snprintf(pout_string,
 				max_length, "=?%s?B?", charset));
-			if (0 != encode64(tmp_buff, string_len,
-				pout_string + offset, max_length - offset,
-				&base64_len)) {
+			if (encode64(tmp_buff.get(), string_len, pout_string + offset,
+			    max_length - offset, &base64_len) != 0)
 				return 0;
-			}
 		} else {
 			auto string_len = strlen(pstring);
 			offset = std::max(0, gx_snprintf(pout_string,
 				max_length, "=?utf-8?B?"));
-			if (0 != encode64(pstring, string_len,
-				pout_string + offset, max_length - offset,
-				&base64_len)) {
+			if (encode64(pstring, string_len, pout_string + offset,
+			    max_length - offset, &base64_len) != 0)
 				return 0;
-			}
 		}
 		offset += base64_len;
 		if (offset + 3 >= max_length) {
@@ -6209,12 +6220,16 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 				goto EXPORT_FAILURE;
 			}
 		} else {
-			std::unique_ptr<char[], stdlib_delete> pbuff(static_cast<char *>(malloc(4 * strlen(mime_skeleton.pplain))));
-			if (NULL == pbuff) {
+			auto alloc_size = worst_encoding_overhead(strlen(mime_skeleton.pplain)) + 1;
+			std::unique_ptr<char[]> pbuff;
+			try {
+				pbuff = std::make_unique<char[]>(alloc_size);
+			} catch (const std::bad_alloc &) {
+				fprintf(stderr, "E-1508: ENOMEM\n");
 				goto EXPORT_FAILURE;
 			}
 			if (!string_from_utf8(mime_skeleton.charset,
-			    mime_skeleton.pplain, pbuff.get())) {
+			    mime_skeleton.pplain, pbuff.get(), alloc_size)) {
 				pbuff.reset();
 				if (FALSE == mime_write_content(
 					pplain, mime_skeleton.pplain,

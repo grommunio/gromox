@@ -312,13 +312,13 @@ BOOL string_to_utf8(const char *charset,
 	return TRUE;
 }
 
-BOOL string_from_utf8(const char *charset,
-	const char *in_string, char *out_string)
+BOOL string_from_utf8(const char *charset, const char *in_string,
+    char *out_string, size_t out_len)
 {
 	int length;
 	iconv_t conv_id;
 	char *pin, *pout;
-	size_t in_len, out_len;
+	size_t in_len;
 	
 	
 	if (0 == strcasecmp(charset, "UTF-8") ||
@@ -349,6 +349,13 @@ BOOL string_from_utf8(const char *charset,
 		return FALSE;
 	}
 	iconv_close(conv_id);
+	/*
+	 * U+0000 converts to nothing in UTF-7. But we still need that string
+	 * terminator. Because no \x00 that the caller planned for was emitted
+	 * yet, there should still be room in out_len.
+	 */
+	if (out_len > 0)
+		*pout = '\0';
 	return TRUE;
 }
 

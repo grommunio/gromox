@@ -1601,9 +1601,8 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 						} else {
 							tmp_cpid = 1252;
 						}
-						if (FALSE == string_from_utf8(
-							rtf_cpid_to_encoding(tmp_cpid),
-							tmp_name, name)) {
+						if (!string_from_utf8(rtf_cpid_to_encoding(tmp_cpid),
+						    tmp_name, name, arsizeof(name))) {
 							debug_info("[rtf]: invalid font name");
 							return false;
 						} else {
