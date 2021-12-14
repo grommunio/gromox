@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
-#include <cstdio>
 #include <sqlite3.h>
+#include <gromox/defs.h>
 
 struct xstmt {
 	xstmt() = default;
@@ -26,15 +26,7 @@ struct xstmt {
 	sqlite3_stmt *m_ptr = nullptr;
 };
 
-static inline xstmt gx_sql_prep(sqlite3 *db, const char *query)
-{
-	xstmt out;
-	int ret = sqlite3_prepare_v2(db, query, -1, &out.m_ptr, nullptr);
-	if (ret != SQLITE_OK)
-		fprintf(stderr, "sqlite3_prepare_v2 \"%s\": %s\n",
-		        query, sqlite3_errstr(ret));
-	return out;
-}
+extern GX_EXPORT struct xstmt gx_sql_prep(sqlite3 *, const char *);
 
 static inline uint64_t gx_sql_col_uint64(sqlite3_stmt *s, int c)
 {
