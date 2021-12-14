@@ -4709,6 +4709,7 @@ BOOL exmdb_server_write_message(const char *dir, const char *account,
 	if (NULL != pvalue) {
 		*pvalue = nt_time;
 	}
+	{
 	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
 	auto clean_transact = make_scope_exit([&]() {
 		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
@@ -4718,11 +4719,13 @@ BOOL exmdb_server_write_message(const char *dir, const char *account,
 		return FALSE;
 	}
 	if (0 == mid_val) {
+		// auto rollback at end of scope
 		*pe_result = GXERR_CALL_FAILED;
 	} else {
 		sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
 		clean_transact.release();
 		*pe_result = GXERR_SUCCESS;
+	}
 	}
 	if (TRUE == b_exist) {
 		db_engine_proc_dynamic_event(pdb, cpid,
