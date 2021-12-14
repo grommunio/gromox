@@ -1264,6 +1264,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	all_ok = true;
 	sqlite3_exec(pdb->tables.psqlite,
 		"COMMIT TRANSACTION", NULL, NULL, NULL);
+	table_transact.release();
 	double_list_append_as_tail(&pdb->tables.table_list, &ptnode->node);
 	if (0 == *ptable_id) {
 		*ptable_id = table_id;
@@ -3993,6 +3994,8 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		}
 		sqlite3_reset(pstmt1);
 	}
+	sqlite3_exec(psqlite, "COMMIT TRANSACTION", nullptr, nullptr, nullptr);
+	clean_transact.release();
 	return TRUE;
 }
 

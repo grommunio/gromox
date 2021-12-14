@@ -2637,6 +2637,7 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 			}
 			sqlite3_exec(pdb->tables.psqlite,
 				"COMMIT TRANSACTION", NULL, NULL, NULL);
+			clean_transact.release();
 			snprintf(sql_string, arsizeof(sql_string), "INSERT INTO t%u (idx, "
 				"folder_id, depth) VALUES (%u, %llu, %u)",
 				ptable->table_id, idx + 1, LLU(folder_id), depth);
