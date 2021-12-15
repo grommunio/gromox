@@ -3242,30 +3242,23 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	if (NULL == pmsgctnt) {
 		return MIDB_E_NO_MEMORY;
 	}
+	auto cl_msg = make_scope_exit([&]() { message_content_free(pmsgctnt); });
 	auto nt_time = rop_util_unix_to_nttime(strtol(argv[5], nullptr, 0));
 	if (pmsgctnt->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME, &nt_time) != 0) {
-		pidb.reset();
-		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
 	if (b_read && pmsgctnt->proplist.set(PR_READ, &b_read) != 0) {
-		pidb.reset();
-		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
 	if (0 != b_unsent) {
 		tmp_flags = MSGFLAG_UNSENT;
 		if (pmsgctnt->proplist.set(PR_MESSAGE_FLAGS, &tmp_flags) != 0) {
-			pidb.reset();
-			message_content_free(pmsgctnt);
 			return MIDB_E_NO_MEMORY;
 		}
 	}
 	if (!exmdb_client::allocate_message_id(argv[1],
 		rop_util_make_eid_ex(1, folder_id), &message_id) ||
 		!exmdb_client::allocate_cn(argv[1], &change_num)) {
-		pidb.reset();
-		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO mapping"
@@ -3273,16 +3266,11 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 		" (%llu, ?, ?)", LLU(rop_util_get_gc_value(message_id)));
 	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr) {
-		pidb.reset();
-		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
 	sqlite3_bind_text(pstmt, 1, argv[3], -1, SQLITE_STATIC);
 	sqlite3_bind_text(pstmt, 2, argv[4], -1, SQLITE_STATIC);
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		pstmt.finalize();
-		pidb.reset();
-		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
 	pstmt.finalize();
@@ -3290,26 +3278,21 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	try {
 		username = pidb->username;
 	} catch (const std::bad_alloc &) {
-		pidb.reset();
-		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
 	pidb.reset();
 	if (pmsgctnt->proplist.set(PidTagMid, &message_id) != 0 ||
 	    pmsgctnt->proplist.set(PidTagChangeNumber, &change_num) != 0) {
-		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
 	auto pbin = cu_xid_to_bin({rop_util_make_user_guid(user_id), change_num});
 	if (pbin == nullptr ||
 	    pmsgctnt->proplist.set(PR_CHANGE_KEY, pbin) != 0) {
-		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
 	auto newval = common_util_pcl_append(NULL, pbin);
 	if (newval == nullptr ||
 	    pmsgctnt->proplist.set(PR_PREDECESSOR_CHANGE_LIST, newval) != 0) {
-		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
 	cpid = system_services_charset_to_cpid(charset);
@@ -3320,10 +3303,8 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	if (!exmdb_client::write_message(argv[1], username.c_str(), cpid,
 	    rop_util_make_eid_ex(1, folder_id), pmsgctnt, &e_result) ||
 	    e_result != GXERR_SUCCESS) {
-		message_content_free(pmsgctnt);
 		return MIDB_E_NO_MEMORY;
 	}
-	message_content_free(pmsgctnt);
 	cmd_write(sockd, "TRUE\r\n", 6);
 	return 0;
 }
