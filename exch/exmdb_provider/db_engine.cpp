@@ -1394,6 +1394,50 @@ static BOOL db_engine_check_new_header(
 	return FALSE;
 }
 
+static inline size_t det_multi_num(uint16_t type, const void *mv)
+{
+	switch (type) {
+	case PT_MV_SHORT:
+		return static_cast<const SHORT_ARRAY *>(mv)->count;
+	case PT_MV_LONG:
+		return static_cast<const LONG_ARRAY *>(mv)->count;
+	case PT_MV_CURRENCY:
+	case PT_MV_I8:
+	case PT_MV_SYSTIME:
+		return static_cast<const LONGLONG_ARRAY *>(mv)->count;
+	case PT_MV_STRING8:
+	case PT_MV_UNICODE:
+		return static_cast<const STRING_ARRAY *>(mv)->count;
+	case PT_MV_CLSID:
+		return static_cast<const GUID_ARRAY *>(mv)->count;
+	case PT_MV_BINARY:
+		return static_cast<const BINARY_ARRAY *>(mv)->count;
+	}
+	return std::string::npos;
+}
+
+static inline void *pick_single_val(uint16_t type, void *mv, size_t j)
+{
+	switch (type) {
+	case PT_MV_SHORT:
+		return &static_cast<const SHORT_ARRAY *>(mv)->ps[j];
+	case PT_MV_LONG:
+		return &static_cast<const LONG_ARRAY *>(mv)->pl[j];
+	case PT_MV_CURRENCY:
+	case PT_MV_I8:
+	case PT_MV_SYSTIME:
+		return &static_cast<const LONGLONG_ARRAY *>(mv)->pll[j];
+	case PT_MV_STRING8:
+	case PT_MV_UNICODE:
+		return static_cast<const STRING_ARRAY *>(mv)->ppstr[j];
+	case PT_MV_CLSID:
+		return &static_cast<const GUID_ARRAY *>(mv)->pguid[j];
+	case PT_MV_BINARY:
+		return &static_cast<const BINARY_ARRAY *>(mv)->pbin[j];
+	}
+	return mv;
+}
+
 static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
     uint64_t folder_id, uint64_t message_id)
 {
@@ -1711,31 +1755,9 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					multi_num = 1;
 				} else {
 					type = ptable->psorts->psort[multi_index].type & ~MV_INSTANCE;
-					switch (type) {
-					case PT_MV_SHORT:
-						multi_num = ((SHORT_ARRAY*)pmultival)->count;
-						break;
-					case PT_MV_LONG:
-						multi_num = ((LONG_ARRAY*)pmultival)->count;
-						break;
-					case PT_MV_CURRENCY:
-					case PT_MV_I8:
-					case PT_MV_SYSTIME:
-						multi_num = ((LONGLONG_ARRAY*)pmultival)->count;
-						break;
-					case PT_MV_STRING8:
-					case PT_MV_UNICODE:
-						multi_num = ((STRING_ARRAY*)pmultival)->count;
-						break;
-					case PT_MV_CLSID:
-						multi_num = ((GUID_ARRAY*)pmultival)->count;
-						break;
-					case PT_MV_BINARY:
-						multi_num = ((BINARY_ARRAY*)pmultival)->count;
-						break;
-					default:
+					multi_num = det_multi_num(type, pmultival);
+					if (multi_num == std::string::npos)
 						return;
-					}
 					if (0 == multi_num) {
 						pmultival = NULL;
 						multi_num = 1;
@@ -1784,35 +1806,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				if (NULL != pmultival) {
 					inst_num = j + 1;
 					type = ptable->psorts->psort[multi_index].type & ~MV_INSTANCE;
-					switch (type) {
-					case PT_MV_SHORT:
-						propvals[multi_index].pvalue =
-							((SHORT_ARRAY*)pmultival)->ps + j;
-						break;
-					case PT_MV_LONG:
-						propvals[multi_index].pvalue =
-							((LONG_ARRAY*)pmultival)->pl + j;
-						break;
-					case PT_MV_CURRENCY:
-					case PT_MV_I8:
-					case PT_MV_SYSTIME:
-						propvals[multi_index].pvalue =
-							((LONGLONG_ARRAY*)pmultival)->pll + j;
-						break;
-					case PT_MV_STRING8:
-					case PT_MV_UNICODE:
-						propvals[multi_index].pvalue =
-							((STRING_ARRAY*)pmultival)->ppstr[j];
-						break;
-					case PT_MV_CLSID:
-						propvals[multi_index].pvalue =
-							((GUID_ARRAY*)pmultival)->pguid + j;
-						break;
-					case PT_MV_BINARY:
-						propvals[multi_index].pvalue =
-							((BINARY_ARRAY*)pmultival)->pbin + j;
-						break;
-					}
+					propvals[multi_index].pvalue = pick_single_val(type, pmultival, j);
 				} else {
 					inst_num = 0;
 				}
