@@ -185,9 +185,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM"
-		" recipients_properties WHERE recipient_id=?");
-	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
+	auto pstmt1 = gx_sql_prep(psqlite, "SELECT proptag FROM"
+	              " recipients_properties WHERE recipient_id=?");
 	if (pstmt1 == nullptr) {
 		return FALSE;
 	}
@@ -240,9 +239,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id"
-			" FROM messages WHERE parent_attid=?");
-	pstmt1 = gx_sql_prep(psqlite, sql_string);
+	pstmt1 = gx_sql_prep(psqlite, "SELECT message_id"
+	         " FROM messages WHERE parent_attid=?");
 	if (pstmt1 == nullptr) {
 		return FALSE;
 	}

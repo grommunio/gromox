@@ -2523,9 +2523,8 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 		if ((ptable->table_flags & TABLE_FLAG_DEPTH) &&
 			ptable->folder_id != parent_id) {
 			if (NULL == pstmt) {
-				snprintf(sql_string, arsizeof(sql_string), "SELECT parent_id "
-								"FROM folders WHERE folder_id=?");
-				pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+				pstmt = gx_sql_prep(pdb->psqlite, "SELECT parent_id "
+				        "FROM folders WHERE folder_id=?");
 				if (pstmt == nullptr) {
 					pstmt = NULL;
 					continue;

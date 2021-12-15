@@ -3153,9 +3153,8 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		if (pstmt == nullptr) {
 			return FALSE;
 		}
-		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag "
-			"FROM folder_properties WHERE folder_id=?");
-		auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT proptag "
+		              "FROM folder_properties WHERE folder_id=?");
 		if (pstmt1 == nullptr) {
 			return FALSE;
 		}
@@ -3205,9 +3204,8 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		if (pstmt == nullptr) {
 			return FALSE;
 		}
-		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag "
-			"FROM message_properties WHERE message_id=?");
-		auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT proptag "
+		              "FROM message_properties WHERE message_id=?");
 		if (pstmt1 == nullptr) {
 			return FALSE;
 		}

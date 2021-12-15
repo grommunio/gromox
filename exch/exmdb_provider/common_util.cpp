@@ -2961,8 +2961,7 @@ BOOL cu_set_properties(db_table table_type,
 	}
 	switch (table_type) {
 	case db_table::store_props:
-		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO "
-					"store_properties VALUES (?, ?)");
+		strcpy(sql_string, "REPLACE INTO store_properties VALUES (?, ?)");
 		break;
 	case db_table::folder_props:
 		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO "

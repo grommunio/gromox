@@ -223,9 +223,8 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	*ppermission = rightsNone;
 
 	/* Store permission := union of folder permissions */
-	snprintf(sql_string, arsizeof(sql_string), "SELECT permission "
-				"FROM permissions WHERE username=?");
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, "SELECT permission "
+	             "FROM permissions WHERE username=?");
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -522,9 +521,8 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 	proptags[0] = PROP_TAG(PT_UNICODE, propids.ppropid[0]);
 	proptags[1] = PROP_TAG(PT_UNICODE, propids.ppropid[1]);
 	proptags[2] = PROP_TAG(PT_UNICODE, propids.ppropid[2]);
-	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id"
-				" FROM folders WHERE parent_id=?");
-	auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT folder_id"
+	              " FROM folders WHERE parent_id=?");
 	if (pstmt1 == nullptr) {
 		return FALSE;
 	}

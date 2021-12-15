@@ -40,9 +40,8 @@ BOOL exmdb_server_get_folder_by_class(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id"
-				" FROM receive_table WHERE class=?");
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, "SELECT folder_id"
+	             " FROM receive_table WHERE class=?");
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -85,9 +84,8 @@ BOOL exmdb_server_set_folder_by_class(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (0 == folder_id) {
-		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM"
-					" receive_table WHERE class=?");
-		auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt = gx_sql_prep(pdb->psqlite, "DELETE FROM"
+		             " receive_table WHERE class=?");
 		if (pstmt == nullptr) {
 			return FALSE;
 		}
@@ -260,10 +258,9 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	snprintf(sql_string, arsizeof(sql_string), "SELECT propval "
-		"FROM message_properties WHERE message_id=?"
-		" AND proptag=?");
-	auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT propval "
+	              "FROM message_properties WHERE message_id=?"
+	              " AND proptag=?");
 	if (pstmt1 == nullptr) {
 		return FALSE;
 	}
@@ -556,10 +553,9 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 			cur_eid = max_eid;
 		}
 		max_eid += SYSTEM_ALLOCATED_EID_RANGE;
-		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO folders "
-					"(folder_id, parent_id, change_number, "
-					"cur_eid, max_eid) VALUES (?, ?, ?, ?, ?)");
-		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		pstmt = gx_sql_prep(pdb->psqlite, "INSERT INTO folders "
+		        "(folder_id, parent_id, change_number, "
+		        "cur_eid, max_eid) VALUES (?, ?, ?, ?, ?)");
 		if (pstmt == nullptr) {
 			return FALSE;
 		}
@@ -595,10 +591,9 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 		} else {
 			folder_id = rop_util_get_gc_value(tmp_fid);
 		}
-		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO folders (folder_id,"
-					" parent_id, change_number, is_search, cur_eid, "
-					"max_eid) VALUES (?, ?, ?, 1, 0, 0)");
-		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+		pstmt = gx_sql_prep(pdb->psqlite, "INSERT INTO folders (folder_id,"
+		        " parent_id, change_number, is_search, cur_eid, "
+		        "max_eid) VALUES (?, ?, ?, 1, 0, 0)");
 		if (pstmt == nullptr) {
 			return FALSE;
 		}
@@ -1329,10 +1324,9 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 			LLU(last_eid + ALLOCATED_EID_RANGE), LLD(time(nullptr)));
 	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO folders "
-				"(folder_id, parent_id, change_number, "
-				"cur_eid, max_eid) VALUES (?, ?, ?, ?, ?)");
-	pstmt = gx_sql_prep(psqlite, sql_string);
+	pstmt = gx_sql_prep(psqlite, "INSERT INTO folders "
+	        "(folder_id, parent_id, change_number, "
+	        "cur_eid, max_eid) VALUES (?, ?, ?, ?, ?)");
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 1, last_eid + 1);
@@ -2262,9 +2256,8 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt == nullptr)
 			return false;
-		snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) "
-					"FROM folders WHERE folder_id=?");
-		auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+		auto pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT COUNT(*) "
+		              "FROM folders WHERE folder_id=?");
 		if (pstmt1 == nullptr)
 			return false;
 		for (size_t i = 0; i < pfolder_ids->count; ++i) {

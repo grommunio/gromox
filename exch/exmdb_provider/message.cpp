@@ -306,21 +306,18 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 			db_engine_cancel_batch_mode(pdb);
 	});
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	snprintf(sql_string, arsizeof(sql_string), "SELECT parent_fid, "
-		"is_associated FROM messages WHERE message_id=?");
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, "SELECT parent_fid, "
+	             "is_associated FROM messages WHERE message_id=?");
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
 	b_update = TRUE;
 	if (FALSE == b_copy) {
 		if (TRUE == exmdb_server_check_private()) {
-			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM "
-						"messages WHERE message_id=?");
+			strcpy(sql_string, "DELETE FROM messages WHERE message_id=?");
 			b_update = FALSE;
 		} else {
-			snprintf(sql_string, arsizeof(sql_string), "UPDATE messages"
-					" SET is_deleted=1 WHERE message_id=?");
+			strcpy(sql_string, "UPDATE messages SET is_deleted=1 WHERE message_id=?");
 		}
 		pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
 		if (pstmt1 == nullptr) {
@@ -532,20 +529,14 @@ BOOL exmdb_server_delete_messages(const char *dir,
 			db_engine_cancel_batch_mode(pdb);
 	});
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	snprintf(sql_string, arsizeof(sql_string), "SELECT parent_fid, is_associated, "
-					"message_size FROM messages WHERE message_id=?");
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, "SELECT parent_fid, is_associated, "
+	             "message_size FROM messages WHERE message_id=?");
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	if (TRUE == b_hard) {
-		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM "
-					"messages WHERE message_id=?");
-	} else {
-		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages"
-				" SET is_deleted=1 WHERE message_id=?");
-	}
-	auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt1 = gx_sql_prep(pdb->psqlite, b_hard ?
+	              "DELETE FROM messages WHERE message_id=?" :
+	              "UPDATE messages SET is_deleted=1 WHERE message_id=?");
 	if (pstmt1 == nullptr) {
 		return FALSE;
 	}
@@ -697,9 +688,8 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM"
-		" recipients_properties WHERE recipient_id=?");
-	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
+	auto pstmt1 = gx_sql_prep(psqlite, "SELECT proptag FROM"
+	              " recipients_properties WHERE recipient_id=?");
 	if (pstmt1 == nullptr) {
 		return FALSE;
 	}
@@ -1192,9 +1182,8 @@ BOOL exmdb_server_save_change_indices(const char *dir,
 		sqlite3_bind_null(pstmt, 1);
 		return sqlite3_step(pstmt) == SQLITE_DONE ? TRUE : false;
 	}
-	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO"
-		" message_changes VALUES (?, ?, ?, ?)");
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, "INSERT INTO"
+	             " message_changes VALUES (?, ?, ?, ?)");
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -1639,9 +1628,8 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id"
-			" FROM messages WHERE parent_attid=?");
-	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
+	auto pstmt1 = gx_sql_prep(psqlite, "SELECT message_id"
+	              " FROM messages WHERE parent_attid=?");
 	if (pstmt1 == nullptr) {
 		return FALSE;
 	}
@@ -2277,15 +2265,13 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
-		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id FROM"
-						" attachments WHERE attachment_id=?");
-		auto pstmt1 = gx_sql_prep(psqlite, sql_string);
+		auto pstmt1 = gx_sql_prep(psqlite, "SELECT message_id FROM"
+		              " attachments WHERE attachment_id=?");
 		if (pstmt1 == nullptr) {
 			return FALSE;
 		}
-		snprintf(sql_string, arsizeof(sql_string), "SELECT parent_attid, "
-			"is_associated FROM messages WHERE message_id=?");
-		auto pstmt2 = gx_sql_prep(psqlite, sql_string);
+		auto pstmt2 = gx_sql_prep(psqlite, "SELECT parent_attid, "
+		              "is_associated FROM messages WHERE message_id=?");
 		if (pstmt2 == nullptr) {
 			return FALSE;
 		}
