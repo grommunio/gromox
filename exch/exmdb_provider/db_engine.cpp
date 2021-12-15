@@ -1599,22 +1599,11 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 						return;
 					}
 					auto result = db_engine_compare_propval(ptable->psorts->psort[i].type, propvals[i].pvalue, pvalue);
-					if (TABLE_SORT_ASCEND ==
-						ptable->psorts->psort[i].table_sort) {
-						if (result < 0) {
-							b_break = TRUE;
-							break;
-						} else if (result > 0) {
-							break;
-						}
-					} else {
-						if (result > 0) {
-							b_break = TRUE;
-							break;	
-						} else if (result < 0) {
-							break;	
-						}
-					}
+					auto asc = ptable->psorts->psort[i].table_sort == TABLE_SORT_ASCEND;
+					if ((asc && result < 0) || (!asc && result > 0))
+						b_break = TRUE;
+					if (result != 0)
+						break;
 				}
 				if (TRUE == b_break) {
 					break;
@@ -1802,17 +1791,10 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 						}
 						if (0 == ptable->extremum_tag ||
 						    i != static_cast<size_t>(ptable->psorts->ccategories) - 1) {
-							if (TABLE_SORT_ASCEND ==
-								ptable->psorts->psort[i].table_sort) {
-								if (result < 0) {
-									b_break = TRUE;
-									break;
-								}
-							} else {
-								if (result > 0) {
-									b_break = TRUE;
-									break;	
-								}
+							auto asc = ptable->psorts->psort[i].table_sort == TABLE_SORT_ASCEND;
+							if ((asc && result < 0) || (!asc && result > 0)) {
+								b_break = TRUE;
+								break;
 							}
 						}
 						sqlite3_reset(pstmt);
@@ -1853,22 +1835,11 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 							return;
 						}
 						auto result = db_engine_compare_propval(ptable->psorts->psort[i].type, propvals[i].pvalue, pvalue);
-						if (TABLE_SORT_ASCEND ==
-							ptable->psorts->psort[i].table_sort) {
-							if (result < 0) {
-								b_break = TRUE;
-								break;
-							} else if (result > 0) {
-								break;
-							}
-						} else {
-							if (result > 0) {
-								b_break = TRUE;
-								break;	
-							} else if (result < 0) {
-								break;	
-							}
-						}
+						auto asc = ptable->psorts->psort[i].table_sort == TABLE_SORT_ASCEND;
+						if ((asc && result < 0) || (!asc && result > 0))
+							b_break = TRUE;
+						if (result != 0)
+							break;
 					}
 					if (TRUE == b_break) {
 						break;
@@ -1984,16 +1955,10 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 						result = db_engine_compare_propval(
 							type, pvalue, propvals[
 							ptable->psorts->ccategories].pvalue);
-						if (TABLE_SORT_ASCEND == table_sort) {
-							if (result > 0) {
-								b_break = TRUE;
-								break;
-							}
-						} else {
-							if (result < 0) {
-								b_break = TRUE;
-								break;	
-							}
+						auto asc = table_sort == TABLE_SORT_ASCEND;
+						if ((asc && result > 0) || (!asc && result < 0)) {
+							b_break = TRUE;
+							break;
 						}
 					}
 					sqlite3_reset(pstmt);
@@ -3037,16 +3002,10 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 												pstmt4, 2, type);
 					result = db_engine_compare_propval(
 								type, pvalue, pvalue1);
-					if (TABLE_SORT_ASCEND == table_sort) {
-						if (result > 0) {
-							b_break = TRUE;
-							break;
-						}
-					} else {
-						if (result < 0) {
-							b_break = TRUE;
-							break;	
-						}
+					auto asc = table_sort == TABLE_SORT_ASCEND;
+					if ((asc && result > 0) || (!asc && result < 0)) {
+						b_break = TRUE;
+						break;
 					}
 				}
 				sqlite3_reset(pstmt4);
@@ -3656,18 +3615,11 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				result = db_engine_compare_propval(
 					ptable->psorts->psort[i].type,
 					propvals[i].pvalue, pvalue);
-				if (TABLE_SORT_ASCEND ==
-					ptable->psorts->psort[i].table_sort) {
-					if (result < 0) {
-						goto REFRESH_TABLE;
-					} else if (result > 0) {
-						break;
-					}
-				} else if (result > 0) {
+				auto asc = ptable->psorts->psort[i].table_sort == TABLE_SORT_ASCEND;
+				if ((asc && result < 0) || (!asc && result > 0))
 					goto REFRESH_TABLE;
-				} else if (result < 0) {
+				if (result != 0)
 					break;
-				}
 			}
 			if (TRUE == b_error) {
 				continue;
@@ -3684,18 +3636,11 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				result = db_engine_compare_propval(
 					ptable->psorts->psort[i].type,
 					propvals[i].pvalue, pvalue);
-				if (TABLE_SORT_ASCEND ==
-					ptable->psorts->psort[i].table_sort) {
-					if (result > 0) {
-						goto REFRESH_TABLE;
-					} else if (result < 0) {
-						break;
-					}
-				} else if (result < 0) {
+				auto asc = ptable->psorts->psort[i].table_sort == TABLE_SORT_ASCEND;
+				if ((asc && result > 0) || (!asc && result < 0))
 					goto REFRESH_TABLE;
-				} else if (result > 0) {
+				if (result != 0)
 					break;
-				}
 			}
 			if (TRUE == b_error) {
 				continue;
@@ -3954,22 +3899,14 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 					result = db_engine_compare_propval(
 						ptable->psorts->psort[i].type,
 						propvals[i].pvalue, pvalue);
-					if (TABLE_SORT_ASCEND ==
-						ptable->psorts->psort[i].table_sort) {
-						if (result < 0) {
-							pstmt.finalize();
-							pstmt1.finalize();
-							goto REFRESH_TABLE;
-						} else if (result > 0) {
-							break;
-						}
-					} else if (result > 0) {
+					auto asc = ptable->psorts->psort[i].table_sort == TABLE_SORT_ASCEND;
+					if ((asc && result < 0) || (!asc && result > 0)) {
 						pstmt.finalize();
 						pstmt1.finalize();
 						goto REFRESH_TABLE;
-					} else if (result < 0) {
-						break;
 					}
+					if (result != 0)
+						break;
 				}
 				if (TRUE == b_error) {
 					break;
@@ -3989,22 +3926,14 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 					result = db_engine_compare_propval(
 						ptable->psorts->psort[i].type,
 						propvals[i].pvalue, pvalue);
-					if (TABLE_SORT_ASCEND ==
-						ptable->psorts->psort[i].table_sort) {
-						if (result > 0) {
-							pstmt.finalize();
-							pstmt1.finalize();
-							goto REFRESH_TABLE;
-						} else if (result < 0) {
-							break;
-						}
-					} else if (result < 0) {
+					auto asc = ptable->psorts->psort[i].table_sort == TABLE_SORT_ASCEND;
+					if ((asc && result > 0) || (!asc && result < 0)) {
 						pstmt.finalize();
 						pstmt1.finalize();
 						goto REFRESH_TABLE;
-					} else if (result > 0) {
-						break;
 					}
+					if (result != 0)
+						break;
 				}
 				if (TRUE == b_error) {
 					break;

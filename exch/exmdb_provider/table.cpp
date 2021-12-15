@@ -428,14 +428,10 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 				           GX_ARRAY_SIZE(sql_string) - sql_len,
 							", v%x ", tmp_proptag);
 			}
-			if (TABLE_SORT_ASCEND ==
-				psorts->psort[i].table_sort) {
-				sql_len += gx_snprintf(sql_string + sql_len,
-				           GX_ARRAY_SIZE(sql_string) - sql_len, " ASC");
-			} else {
-				sql_len += gx_snprintf(sql_string + sql_len,
-				           GX_ARRAY_SIZE(sql_string) - sql_len, " DESC");
-			}
+			sql_len += gx_snprintf(sql_string + sql_len,
+			           arsizeof(sql_string) - sql_len,
+			           psorts->psort[i].table_sort == TABLE_SORT_ASCEND ?
+			           " ASC" : " DESC");
 		}
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr)
@@ -531,13 +527,9 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 				" BY v%x ORDER BY v%x", tmp_proptag,
 				where_clause, tmp_proptag, tmp_proptag);
 	}
-	if (TABLE_SORT_ASCEND == psorts->psort[depth].table_sort) {
-		gx_snprintf(sql_string + sql_len,
-		           GX_ARRAY_SIZE(sql_string) - sql_len, " ASC");
-	} else {
-		gx_snprintf(sql_string + sql_len,
-		           GX_ARRAY_SIZE(sql_string) - sql_len, " DESC");
-	}
+	gx_snprintf(sql_string + sql_len, arsizeof(sql_string) - sql_len,
+	            psorts->psort[depth].table_sort == TABLE_SORT_ASCEND ?
+	            " ASC" : " DESC");
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
