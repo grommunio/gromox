@@ -1464,15 +1464,8 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			folder_id != ptable->folder_id) {
 			continue;
 		}
-		if (ptable->table_flags & TABLE_FLAG_ASSOCIATED) {
-			if (FALSE == b_fai) {
-				continue;
-			}
-		} else {
-			if (TRUE == b_fai) {
-				continue;
-			}
-		}
+		if (!!(ptable->table_flags & TABLE_FLAG_ASSOCIATED) == !b_fai)
+			continue;
 		if (TRUE == pdb->tables.b_batch && TRUE == ptable->b_hint) {
 			continue;
 		}
@@ -1558,13 +1551,9 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				}
 			}
 			datagram.id_array.pl = &ptable->table_id;
-			if (FALSE == ptable->b_search) {
-				datagram.db_notify.type =
-					DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED;
-			} else {
-				datagram.db_notify.type =
-					DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED;
-			}
+			datagram.db_notify.type = ptable->b_search ?
+			                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED :
+			                          DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 		} else if (0 == ptable->psorts->ccategories) {
@@ -1676,13 +1665,9 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			padded_row->row_instance = 0;
 			padded_row->after_instance = 0;
 			datagram.id_array.pl = &ptable->table_id;
-			if (FALSE == ptable->b_search) {
-				datagram.db_notify.type =
-					DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED;
-			} else {
-				datagram.db_notify.type =
-					DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED;
-			}
+			datagram.db_notify.type = ptable->b_search ?
+			                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED :
+			                          DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 		} else {
@@ -2049,13 +2034,9 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			datagram.id_array.pl = &ptable->table_id;
 			datagram1.id_array.pl = &ptable->table_id;
 			if (TRUE == b_resorted) {
-				if (FALSE == ptable->b_search) {
-					datagram1.db_notify.type =
-						DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED;
-				} else {
-					datagram1.db_notify.type =
-						DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED;
-				}
+				datagram1.db_notify.type = ptable->b_search ?
+				                           DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED :
+				                           DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED;
 				notification_agent_backward_notify(
 					ptable->remote_id, &datagram1);
 			} else {
@@ -2110,13 +2091,9 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 							padded_row1->after_row_id = inst_id;
 							padded_row1->after_folder_id = inst_folder_id;
 							padded_row1->after_instance = inst_num;
-							if (FALSE == ptable->b_search) {
-								datagram1.db_notify.type =
-									DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED;
-							} else {
-								datagram1.db_notify.type =
-									DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED;
-							}
+							datagram1.db_notify.type = ptable->b_search ?
+							                           DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED :
+							                           DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED;
 							notification_agent_backward_notify(
 								ptable->remote_id, &datagram1);
 						} else {
@@ -2125,13 +2102,9 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 							padded_row->after_row_id = inst_id;
 							padded_row->after_folder_id = inst_folder_id;
 							padded_row->after_instance = inst_num;
-							if (FALSE == ptable->b_search) {
-								datagram.db_notify.type =
-									DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED;
-							} else {
-								datagram.db_notify.type =
-									DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED;
-							}
+							datagram.db_notify.type = ptable->b_search ?
+							                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED :
+							                          DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_ADDED;
 							notification_agent_backward_notify(
 								ptable->remote_id, &datagram);
 						}
@@ -2141,13 +2114,9 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 						padded_row1->after_row_id = inst_id;
 						padded_row1->after_folder_id = inst_folder_id;
 						padded_row1->after_instance = inst_num;
-						if (FALSE == ptable->b_search) {
-							datagram1.db_notify.type =
-								DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED;
-						} else {
-							datagram1.db_notify.type =
-								DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED;
-						}
+						datagram1.db_notify.type = ptable->b_search ?
+						                           DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED :
+						                           DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED;
 						notification_agent_backward_notify(
 							ptable->remote_id, &datagram1);
 					}
