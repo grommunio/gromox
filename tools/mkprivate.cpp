@@ -352,8 +352,7 @@ int main(int argc, const char **argv)
 		printf("list_file_initd propnames.txt: %s\n", strerror(-ret));
 		return 7;
 	}
-	const char *csql_string = "INSERT INTO named_properties VALUES (?, ?)";
-	auto pstmt = gx_sql_prep(psqlite, csql_string);
+	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO named_properties VALUES (?, ?)");
 	if (pstmt == nullptr)
 		return 9;
 	
@@ -372,9 +371,7 @@ int main(int argc, const char **argv)
 	pstmt.finalize();
 	
 	nt_time = rop_util_unix_to_nttime(time(NULL));
-	
-	csql_string = "INSERT INTO receive_table VALUES (?, ?, ?)";
-	pstmt = gx_sql_prep(psqlite, csql_string);
+	pstmt = gx_sql_prep(psqlite, "INSERT INTO receive_table VALUES (?, ?, ?)");
 	if (pstmt == nullptr)
 		return 9;
 	sqlite3_bind_text(pstmt, 1, "", -1, SQLITE_STATIC);
@@ -410,8 +407,7 @@ int main(int argc, const char **argv)
 	}
 	pstmt.finalize();
 	
-	csql_string = "INSERT INTO store_properties VALUES (?, ?)";
-	pstmt = gx_sql_prep(psqlite, csql_string);
+	pstmt = gx_sql_prep(psqlite, "INSERT INTO store_properties VALUES (?, ?)");
 	if (pstmt == nullptr)
 		return 9;
 	sqlite3_bind_int64(pstmt, 1, PR_CREATION_TIME);
@@ -601,8 +597,7 @@ int main(int argc, const char **argv)
 		"username, permission) VALUES (%u, 'default', %u)",
 	        PRIVATE_FID_LOCAL_FREEBUSY, frightsFreeBusySimple);
 	sqlite3_exec(psqlite, tmp_sql, NULL, NULL, NULL);
-	csql_string = "INSERT INTO configurations VALUES (?, ?)";
-	pstmt = gx_sql_prep(psqlite, csql_string);
+	pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");
 	if (pstmt == nullptr)
 		return 9;
 	tmp_guid = guid_random_new();

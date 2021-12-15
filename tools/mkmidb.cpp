@@ -187,8 +187,7 @@ int main(int argc, const char **argv)
 	}
 	slurp_data.reset();
 	
-	const char *csql_string = "INSERT INTO configurations VALUES (?, ?)";
-	auto pstmt = gx_sql_prep(psqlite, csql_string);
+	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");
 	if (pstmt == nullptr)
 		return 9;
 	
