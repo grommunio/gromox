@@ -275,142 +275,39 @@ int main(int argc, const char **argv)
 	}
 	
 	auto sql_transact = gx_sql_begin_trans(psqlite);
-	const char *csql_string = "INSERT INTO configurations "
-		"SELECT * FROM source_db.configurations";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO allocated_eids "
-		"SELECT * FROM source_db.allocated_eids";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO named_properties "
-		"SELECT * FROM source_db.named_properties";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO store_properties "
-		"SELECT * FROM source_db.store_properties";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO permissions "
-		"SELECT * FROM source_db.permissions";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO rules "
-		"SELECT * FROM source_db.rules";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO folders "
-		"SELECT * FROM source_db.folders";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO folder_properties "
-		"SELECT * FROM source_db.folder_properties";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO receive_table "
-		"SELECT * FROM source_db.receive_table";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO messages "
-		"SELECT * FROM source_db.messages";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO message_properties "
-		"SELECT * FROM source_db.message_properties";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO message_changes "
-		"SELECT * FROM source_db.message_changes";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO recipients "
-		"SELECT * FROM source_db.recipients";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO recipients_properties "
-		"SELECT * FROM source_db.recipients_properties";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO attachments "
-		"SELECT * FROM source_db.attachments";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO attachment_properties "
-		"SELECT * FROM source_db.attachment_properties";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO search_scopes "
-		"SELECT * FROM source_db.search_scopes";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO search_result "
-		"SELECT * FROM source_db.search_result";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
+	static constexpr const char *statements[] = {
+		"INSERT INTO configurations SELECT * FROM source_db.configurations",
+		"INSERT INTO allocated_eids SELECT * FROM source_db.allocated_eids",
+		"INSERT INTO named_properties SELECT * FROM source_db.named_properties",
+		"INSERT INTO store_properties SELECT * FROM source_db.store_properties",
+		"INSERT INTO permissions SELECT * FROM source_db.permissions",
+		"INSERT INTO rules SELECT * FROM source_db.rules",
+		"INSERT INTO folders SELECT * FROM source_db.folders",
+		"INSERT INTO folder_properties SELECT * FROM source_db.folder_properties",
+		"INSERT INTO receive_table SELECT * FROM source_db.receive_table",
+		"INSERT INTO messages SELECT * FROM source_db.messages",
+		"INSERT INTO message_properties SELECT * FROM source_db.message_properties",
+		"INSERT INTO message_changes SELECT * FROM source_db.message_changes",
+		"INSERT INTO recipients SELECT * FROM source_db.recipients",
+		"INSERT INTO recipients_properties SELECT * FROM source_db.recipients_properties",
+		"INSERT INTO attachments SELECT * FROM source_db.attachments",
+		"INSERT INTO attachment_properties SELECT * FROM source_db.attachment_properties",
+		"INSERT INTO search_scopes SELECT * FROM source_db.search_scopes",
+		"INSERT INTO search_result SELECT * FROM source_db.search_result",
+	};
+	for (auto q : statements) {
+		if (sqlite3_exec(psqlite, q, nullptr, nullptr, &err_msg) != SQLITE_OK) {
+			printf("fail to execute table copy sql, error: %s\n", err_msg);
+			return 9;
+		}
 	}
 	sql_transact.commit();
 	sqlite3_exec(psqlite, "DETACH DATABASE source_db", NULL, NULL, NULL);
-	csql_string = "REINDEX";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
+	if (sqlite3_exec(psqlite, "REINDEX", nullptr, nullptr, &err_msg) != SQLITE_OK) {
 		printf("fail to execute reindex sql, error: %s\n", err_msg);
 		return 9;
 	}
-	csql_string = "PRAGMA integrity_check";
-	auto pstmt = gx_sql_prep(psqlite, csql_string);
+	auto pstmt = gx_sql_prep(psqlite, "PRAGMA integrity_check");
 	if (pstmt == nullptr) {
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
 			presult = reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0));
