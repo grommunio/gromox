@@ -1,5 +1,5 @@
-1.10+
-=====
+1.11 (2021-12-16)
+=================
 
 Enhancements:
 
@@ -12,6 +12,8 @@ Fixes:
   SUMMARY lines and time-based as well as timeless exceptions.
 * mapi_lib: Resolved a crash when emitting messages that have
   some properties from the PS_INTERNET_HEADERS group set.
+* mapi_lib: Resolved a crash when emitting messages that have
+  the PSETID_GROMOX:vcarduid property.
 * delivery-queue: The message_enqueue plugin had written an improperly-sized
   integer to mail data files, and message_dequeue could not read them.
   (32-bit platforms only)
