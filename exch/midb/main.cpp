@@ -61,6 +61,18 @@ static void term_handler(int signo)
 	g_notify_stop = true;
 }
 
+static bool midb_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
+{
+	if (pconfig == nullptr)
+		pconfig = config_file_prg(opt_config_file, "midb.cfg");
+	if (opt_config_file != nullptr && pconfig == nullptr) {
+		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
+		return false;
+	}
+	g_cmd_debug = pconfig->get_ll("midb_cmd_debug");
+	return true;
+}
+
 int main(int argc, const char **argv) try
 {
 	struct rlimit rl;
@@ -128,6 +140,8 @@ int main(int argc, const char **argv) try
 		}
 	}
 
+	if (!midb_reload_config(pconfig))
+		return EXIT_FAILURE;
 	int proxy_num = pconfig->get_ll("rpc_proxy_connection_num");
 	printf("[system]: exmdb proxy connection number is %d\n", proxy_num);
 	
@@ -262,8 +276,10 @@ int main(int argc, const char **argv) try
 	printf("[system]: MIDB is now running\n");
 	while (!g_notify_stop) {
 		sleep(1);
-		if (g_hup_signalled.exchange(false))
+		if (g_hup_signalled.exchange(false)) {
+			midb_reload_config(nullptr);
 			service_reload_all();
+		}
 	}
 	return 0;
 } catch (const cfg_error &) {
