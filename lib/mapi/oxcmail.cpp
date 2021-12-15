@@ -3628,6 +3628,25 @@ static bool atxlist_all_hidden(const ATTACHMENT_LIST *atl)
 	return true;
 }
 
+static inline bool tnef_vfy_get_field(MIME *head, char *buf, size_t z)
+{
+#ifdef VERIFY_TNEF_CORRELATOR
+	return mime_get_field(head, "X-MS-TNEF-Correlator", buf, z);
+#else
+	return true;
+#endif
+}
+
+static inline bool tnef_vfy_check_key(MESSAGE_CONTENT *msg, const char *xtnefcorrel)
+{
+#ifdef VERIFY_TNEF_CORRELATOR
+	auto key = msg->proplist.get<BINARY>(PR_TNEF_CORRELATION_KEY);
+	return key != nullptr && strncmp(key->pb, xtnefcorrel, key->cb) == 0);
+#else
+	return true;
+#endif
+}
+
 MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	const char *str_zone, MAIL *pmail,
 	EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids)
@@ -3649,7 +3668,6 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	const char *encoding;
 	char mime_charset[64];
 	MESSAGE_CONTENT *pmsg;
-	MESSAGE_CONTENT *pmsg1;
 	PROPERTY_NAME propname;
 	PROPNAME_ARRAY propnames;
 	char default_charset[64];
@@ -3658,7 +3676,6 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	FIELD_ENUM_PARAM field_param{phash};
 	ATTACHMENT_LIST *pattachments;
 	
-	pmsg1 = NULL;
 	b_smime = FALSE;
 	pmsg = message_content_init();
 	if (NULL == pmsg) {
@@ -3753,31 +3770,21 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		message_content_free(pmsg);
 		return NULL;
 	}
-	if (0 == strcasecmp("application/ms-tnef",
-		mime_get_content_type(phead))
-#ifdef VERIFY_TNEF_CORRELATOR
-		&& TRUE == mime_get_field(phead,
-		"X-MS-TNEF-Correlator", tmp_buff, 256)
-#endif
-		&& (pmsg1 = oxcmail_parse_tnef(phead,
-		alloc, get_propids))) {
-#ifdef VERIFY_TNEF_CORRELATOR
-		auto ptnef_key = pmsg1->proplist.get<BINARY>(PR_TNEF_CORRELATION_KEY);
-		if (NULL == ptnef_key || 0 != strncmp(
-			ptnef_key->pb, tmp_buff, ptnef_key->cb)) {
-			message_content_free(pmsg1);
-		} else {
-#endif
+
+	if (strcasecmp("application/ms-tnef", mime_get_content_type(phead)) == 0 &&
+	    tnef_vfy_get_field(phead, tmp_buff, arsizeof(tmp_buff))) {
+	auto pmsg1 = oxcmail_parse_tnef(phead, alloc, get_propids);
+	if (pmsg1 != nullptr) {
+		auto cl_1 = make_scope_exit([&]() { message_content_free(pmsg1); });
+		if (tnef_vfy_check_key(pmsg1, tmp_buff)) {
 			if (FALSE == oxcmail_fetch_propname(
 				pmsg, phash, alloc, get_propids)) {
 				message_content_free(pmsg);
-				message_content_free(pmsg1);
 				return NULL;
 			}
 			if (FALSE == oxcmail_copy_message_proplist(
 				pmsg, pmsg1)) {
 				message_content_free(pmsg);
-				message_content_free(pmsg1);
 				return NULL;
 			}
 			prcpts = pmsg1->children.prcpts;
@@ -3789,10 +3796,10 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 				oxcmail_remove_flag_propties(
 				pmsg1, get_propids);
 			}
+			cl_1.release();
 			return pmsg1;
-#ifdef VERIFY_TNEF_CORRELATOR
 		}
-#endif
+	}
 	}
 	if (0 == strcasecmp("multipart/report",
 		mime_get_content_type(phead)) &&
@@ -3810,40 +3817,27 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		mime_get_content_type(phead))) {
 		mime_enum.preport = oxcmail_parse_mdn(pmail, pmsg);
 	}		
-	if (0 == strcasecmp("multipart/mixed",
-		mime_get_content_type(phead))) {
-		if (2 == mime_get_children_num(phead) &&
-			(pmime = mime_get_child(phead)) &&
+	if (0 == strcasecmp("multipart/mixed", mime_get_content_type(phead))) {
+		if (mime_get_children_num(phead) == 2 &&
+		    (pmime = mime_get_child(phead)) != nullptr &&
 		    (pmime1 = mime_get_sibling(pmime)) != nullptr &&
-			0 == strcasecmp("text/plain",
-			mime_get_content_type(pmime)) &&
-			0 == strcasecmp("application/ms-tnef",
-			mime_get_content_type(pmime1))
-#ifdef VERIFY_TNEF_CORRELATOR
-			&& TRUE == mime_get_field(phead,
-			"X-MS-TNEF-Correlator", tmp_buff, 256)
-#endif
-			&& (pmsg1 = oxcmail_parse_tnef(pmime1,
-			alloc, get_propids))) {
-#ifdef VERIFY_TNEF_CORRELATOR
-			ptnef_key = pmsg1->proplist.get<BINARY>(PR_TNEF_CORRELATION_KEY);
-			if (NULL == ptnef_key || 0 != strncmp(
-				ptnef_key->pb, tmp_buff, ptnef_key->cb)) {
-				message_content_free(pmsg1);
-			} else {
-#endif
+		    strcasecmp("text/plain", mime_get_content_type(pmime)) == 0 &&
+		    strcasecmp("application/ms-tnef", mime_get_content_type(pmime1)) == 0 &&
+		    tnef_vfy_get_field(phead, tmp_buff, arsizeof(tmp_buff))) {
+		auto pmsg1 = oxcmail_parse_tnef(pmime1, alloc, get_propids);
+		if (pmsg1 != nullptr) {
+			auto cl_1 = make_scope_exit([&]() { message_content_free(pmsg1); });
+			if (tnef_vfy_check_key(pmsg1, tmp_buff)) {
 				if (FALSE == oxcmail_parse_message_body(
 					default_charset, pmime, &pmsg->proplist)
 					|| FALSE == oxcmail_fetch_propname(
 					pmsg, phash, alloc, get_propids)) {
 					message_content_free(pmsg);
-					message_content_free(pmsg1);
 					return NULL;
 				}
 				if (FALSE == oxcmail_copy_message_proplist(
 					pmsg, pmsg1)) {
 					message_content_free(pmsg);
-					message_content_free(pmsg1);
 					return NULL;
 				}
 				prcpts = pmsg1->children.prcpts;
@@ -3855,10 +3849,10 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 					oxcmail_remove_flag_propties(
 					pmsg1, get_propids);
 				}
+				cl_1.release();
 				return pmsg1;
-#ifdef VERIFY_TNEF_CORRELATOR
 			}
-#endif
+		}
 		}
 	} else if (0 == strcasecmp("multipart/signed",
 		mime_get_content_type(phead))) {
@@ -3981,6 +3975,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		}
 	}
 	size_t content_len = 0;
+	MESSAGE_CONTENT *pmsg1 = nullptr; /* ical */
 	if (NULL != mime_enum.pcalendar) {
 		auto rdlength = mime_get_length(mime_enum.pcalendar);
 		if (rdlength < 0) {
