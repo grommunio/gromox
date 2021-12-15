@@ -4161,8 +4161,6 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 					}
 					prnode = cu_alloc<ROWINFO_NODE>();
 					if (NULL == prnode) {
-						pstmt.finalize();
-						pstmt1.finalize();
 						return;
 					}
 					prnode->node.pdata = prnode;

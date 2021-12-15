@@ -1443,7 +1443,6 @@ BOOL exmdb_server_load_permission_table(const char *dir,
 	*prow_count = 0;
 	if (FALSE == table_load_permissions(pdb->psqlite,
 		fid_val, pstmt, prow_count)) {
-		pstmt.finalize();
 		if (NULL != ptnode->remote_id) {
 			free(ptnode->remote_id);
 		}
@@ -3760,7 +3759,6 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			sqlite3_bind_blob(pstmt, 3, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 		}
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
-			pstmt.finalize();
 			return FALSE;
 		}
 		*pstate_id = sqlite3_last_insert_rowid(psqlite);

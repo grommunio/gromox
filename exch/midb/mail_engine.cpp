@@ -3411,12 +3411,10 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	}
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (0 == folder_id) {
-		pidb.reset();
 		return MIDB_E_NO_FOLDER;
 	}
 	auto folder_id1 = mail_engine_get_folder_id(pidb.get(), argv[4]);
 	if (0 == folder_id1) {
-		pidb.reset();
 		return MIDB_E_NO_FOLDER;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id, mod_time, "
@@ -3425,14 +3423,11 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 		"WHERE mid_string=?");
 	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
 	if (pstmt == nullptr) {
-		pidb.reset();
 		return MIDB_E_NO_MEMORY;
 	}
 	sqlite3_bind_text(pstmt, 1, argv[3], -1, SQLITE_STATIC);
 	if (SQLITE_ROW != sqlite3_step(pstmt) ||
 	    gx_sql_col_uint64(pstmt, 12) != folder_id) {
-		pstmt.finalize();
-		pidb.reset();
 		return MIDB_E_NO_MESSAGE;
 	}
 	b_read = 0;
@@ -3463,7 +3458,6 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	nt_time = sqlite3_column_int64(pstmt, 10);
 	pstmt.finalize();
 	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id)) {
-		pidb.reset();
 		return MIDB_E_NO_MEMORY;
 	}
 	if (!system_services_get_user_lang(pidb->username.c_str(), lang,
