@@ -71,8 +71,7 @@ static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig)
 		       strerror(errno));
 		return false;
 	}
-	auto v = pconfig->get_value("rop_debug");
-	g_rop_debug = v != nullptr ? strtoul(v, nullptr, 0) : 0;
+	g_rop_debug = pconfig->get_ll("rop_debug");
 	return true;
 }
 
@@ -139,6 +138,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 			{"max_mail_length", "64M", CFG_SIZE, "1"},
 			{"max_mail_num", "1000000", CFG_SIZE, "1"},
 			{"max_rcpt_num", "256", CFG_SIZE, "1"},
+			{"rop_debug", "0"},
 			{"separator_for_bounce", " "},
 			{"submit_command", "/usr/bin/php " PKGDATADIR "/sa/submit.php"},
 			{"smtp_server_ip", "::1"},

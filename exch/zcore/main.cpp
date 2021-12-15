@@ -77,8 +77,7 @@ static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 		       opt_config_file, strerror(errno));
 		return false;
 	}
-	auto v = pconfig->get_value("zrpc_debug");
-	g_zrpc_debug = v != nullptr ? strtoul(v, nullptr, 0) : 0;
+	g_zrpc_debug = pconfig->get_ll("zrpc_debug");
 	return true;
 }
 
@@ -144,6 +143,7 @@ int main(int argc, const char **argv) try
 		{"zarafa_mime_number", "4096", CFG_SIZE, "1024"},
 		{"zarafa_threads_num", "100", CFG_SIZE, "20", "1000"},
 		{"zcore_listen", PKGRUNDIR "/zcore.sock"},
+		{"zrpc_debug", "0"},
 		{},
 	};
 	config_file_apply(*g_config_file, cfg_default_values);
