@@ -172,24 +172,18 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 		if (TRUE == exmdb_server_check_private()) {
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages"
 			        " WHERE message_id=%llu", LLU(mid_val));
-			if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-				sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			}
 			b_update = FALSE;
 		} else {
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET "
 			        "is_deleted=1 WHERE message_id=%llu", LLU(mid_val));
-			if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-				sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			}
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM "
 			          "read_states message_id=%llu", LLU(mid_val));
-			if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-				sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			}
 		}
 	}
 	if (TRUE == b_update) {
@@ -414,10 +408,8 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 			if (FALSE == exmdb_server_check_private()) {
 				snprintf(sql_string, arsizeof(sql_string), "DELETE FROM read_states"
 				        " WHERE message_id=%llu", LLU(tmp_val));
-				if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-					sql_string, NULL, NULL, NULL)) {
+				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 					goto MVCP_FAILURE;
-				}
 			}
 		}
 	}
@@ -622,10 +614,8 @@ BOOL exmdb_server_delete_messages(const char *dir,
 		if (FALSE == b_hard) {
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM read_states"
 			        " WHERE message_id=%llu", LLU(tmp_val));
-			if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-				sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			}
 		}
 	}
 	pstmt.finalize();
@@ -1087,10 +1077,8 @@ BOOL exmdb_server_set_message_read_state(const char *dir,
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET "
 			"read_cn=%llu WHERE message_id=%llu",
 			LLU(read_cn), LLU(mid_val));
-		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 	}
 	if (FALSE == common_util_get_message_parent_folder(
 		pdb->psqlite, mid_val, &fid_val)) {
@@ -1174,10 +1162,8 @@ BOOL exmdb_server_set_message_group_id(const char *dir,
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET"
 		" group_id=%u WHERE message_id=%llu",
 		UI(group_id), LLU(rop_util_get_gc_value(message_id)));
-	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -1482,10 +1468,8 @@ BOOL exmdb_server_link_message(const char *dir, uint32_t cpid,
 	pstmt.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO search_result"
 	        " VALUES (%llu, %llu)", LLU(fid_val), LLU(mid_val));
-	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	db_engine_proc_dynamic_event(pdb,
 		cpid, DYNAMIC_EVENT_NEW_MESSAGE,
 		fid_val, mid_val, 0);
@@ -1513,10 +1497,8 @@ BOOL exmdb_server_unlink_message(const char *dir,
 	snprintf(sql_string, arsizeof(sql_string), "DELETE FROM search_result"
 		" WHERE folder_id=%llu AND message_id=%llu",
 		LLU(fid_val), LLU(mid_val));
-	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	db_engine_proc_dynamic_event(pdb,
 		cpid, DYNAMIC_EVENT_DELETE_MESSAGE,
 		fid_val, mid_val, 0);
@@ -1539,10 +1521,8 @@ BOOL exmdb_server_set_message_timer(const char *dir,
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET"
 		" timer_id=%u WHERE message_id=%llu",
 		UI(timer_id), LLU(rop_util_get_gc_value(message_id)));
-	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -2139,45 +2119,33 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		if (TRUE == b_exist) {
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM message_properties"
 			        " WHERE message_id=%llu", LLU(*pmessage_id));
-			if (SQLITE_OK != sqlite3_exec(psqlite,
-				sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			}
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM recipients"
 			        " WHERE message_id=%llu", LLU(*pmessage_id));
-			if (SQLITE_OK != sqlite3_exec(psqlite,
-				sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			}
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM attachments"
 			        " WHERE message_id=%llu", LLU(*pmessage_id));
-			if (SQLITE_OK != sqlite3_exec(psqlite,
-				sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			}
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM message_changes"
 			        "  WHERE message_id=%llu", LLU(*pmessage_id));
-			if (SQLITE_OK != sqlite3_exec(psqlite,
-				sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			}
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET change_number=%llu,"
 				" message_size=%u, group_id=NULL WHERE message_id=%llu",
 				LLU(change_num), UI(message_size), LLU(*pmessage_id));
-			if (SQLITE_OK != sqlite3_exec(psqlite,
-				sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			}
 		} else {
 			snprintf(sql_string, arsizeof(sql_string), "INSERT INTO messages (message_id,"
 				" parent_fid, parent_attid, is_associated, "
 				"change_number, message_size) VALUES (%llu, %llu, "
 				"NULL, %d, %llu, %u)", LLU(*pmessage_id), LLU(parent_id),
 				is_associated, LLU(change_num), UI(message_size));
-			if (SQLITE_OK != sqlite3_exec(psqlite,
-				sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			}
 		}
 	} else {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM "
@@ -2210,19 +2178,15 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		} else {
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages"
 			        " WHERE message_id=%llu", LLU(*pmessage_id));
-			if (SQLITE_OK != sqlite3_exec(psqlite,
-				sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			}
 		}
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO messages (message_id,"
 			" parent_fid, parent_attid, change_number, "
 			"message_size) VALUES (%llu, NULL, %llu, %llu, %u)",
 			LLU(*pmessage_id), LLU(parent_id), LLU(change_num), UI(message_size));
-		if (SQLITE_OK != sqlite3_exec(psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 	}
 	if (!cu_set_properties(db_table::msg_props, *pmessage_id, cpid,
 		psqlite, &pmsgctnt->proplist, &tmp_problems)) {
@@ -2742,10 +2706,8 @@ static BOOL message_disable_rule(sqlite3 *psqlite,
 	if (FALSE == b_extended) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE rules SET state=state|%u "
 		        "WHERE rule_id=%llu", RULE_STATE_ERROR, LLU(id));
-		if (SQLITE_OK != sqlite3_exec(psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 	} else {
 		if (!cu_get_property(db_table::msg_props, id, 0, psqlite,
 			PR_RULE_MSG_STATE, &pvalue) ||
@@ -4377,10 +4339,8 @@ static BOOL message_rule_new_message(BOOL b_oof,
 		char sql_string[128];
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages"
 		        " WHERE message_id=%llu", LLU(message_id));
-		if (SQLITE_OK != sqlite3_exec(psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 		if (FALSE == common_util_decrease_store_size(
 			psqlite, message_size, 0)) {
 			return FALSE;

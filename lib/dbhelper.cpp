@@ -41,3 +41,19 @@ xtransaction gx_sql_begin_trans(sqlite3 *db)
 	sqlite3_exec(db, "BEGIN TRANSACTION", nullptr, nullptr, nullptr);
 	return xtransaction(db);
 }
+
+int gx_sql_exec(sqlite3 *db, const char *query)
+{
+	char *estr = nullptr;
+	auto ret = sqlite3_exec(db, query, nullptr, nullptr, &estr);
+	if (ret == SQLITE_OK)
+		return ret;
+	if (estr == nullptr) {
+		fprintf(stderr, "sqlite3_exec \"%s\": %s\n",
+		        query, sqlite3_errstr(ret));
+		return ret;
+	}
+	fprintf(stderr, "sqlite3_exec \"%s\": %s\n", query, estr);
+	sqlite3_free(estr);
+	return ret;
+}

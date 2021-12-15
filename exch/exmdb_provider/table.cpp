@@ -232,10 +232,8 @@ BOOL exmdb_server_load_hierarchy_table(const char *dir,
 		"(idx INTEGER PRIMARY KEY AUTOINCREMENT, "
 		"folder_id INTEGER UNIQUE NOT NULL, "
 		"depth INTEGER NOT NULL)", table_id);
-	if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	ptnode = me_alloc<TABLE_NODE>();
 	if (NULL == ptnode) {
 		return FALSE;
@@ -705,29 +703,21 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		"value NONE DEFAULT NULL, "
 		"extremum NONE DEFAULT NULL)",		/* read(unread) for message row */
 		table_id);
-	if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	if (NULL != psorts && psorts->ccategories > 0) {
 		snprintf(sql_string, arsizeof(sql_string), "CREATE UNIQUE INDEX t%u_1 ON "
 			"t%u (inst_id, inst_num)", table_id, table_id);
-		if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 		snprintf(sql_string, arsizeof(sql_string), "CREATE INDEX t%u_2 ON"
 			" t%u (parent_id)", table_id, table_id);
-		if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 		snprintf(sql_string, arsizeof(sql_string), "CREATE INDEX t%u_3 ON t%u"
 			" (parent_id, value)", table_id, table_id);
-		if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 	}
 	ptnode = me_alloc<TABLE_NODE>();
 	if (NULL == ptnode) {
@@ -746,7 +736,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		pstmt.finalize();
 		pstmt1.finalize();
 		if (psqlite != nullptr) {
-			sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
+			gx_sql_exec(psqlite, "ROLLBACK");
 			sqlite3_close(psqlite);
 		}
 		if (ptnode->psorts != nullptr)
@@ -870,19 +860,15 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		}
 		sql_string[sql_len++] = ')';
 		sql_string[sql_len] = '\0';
-		if (SQLITE_OK != sqlite3_exec(psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return false;
-		}
 		for (size_t i = 0; i < tag_count; ++i) {
 			tmp_proptag = tmp_proptags[i];
 			snprintf(sql_string, GX_ARRAY_SIZE(sql_string),
 			         "CREATE INDEX stbl_%zu ON stbl (v%x)",
 			         i, tmp_proptag);
-			if (SQLITE_OK != sqlite3_exec(psqlite,
-				sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return false;
-			}
 		}
 		if (0 == ptnode->instance_tag) {
 			snprintf(sql_string, arsizeof(sql_string), "CREATE UNIQUE INDEX t%u_4 "
@@ -891,10 +877,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			snprintf(sql_string, arsizeof(sql_string), "CREATE INDEX t%u_4 "
 				"ON t%u (inst_id)", table_id, table_id);
 		}
-		if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 			return false;
-		}
 		sql_len = snprintf(sql_string, arsizeof(sql_string), "INSERT INTO stbl VALUES (?");
 		for (size_t i = 0; i < tag_count; ++i)
 			sql_len += gx_snprintf(sql_string + sql_len,
@@ -1248,10 +1232,8 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 			pstmt1.finalize();
 		} else {
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET idx=row_id", table_id);
-			if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
-				sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 				return false;
-			}
 		}
 	}
 	all_ok = true;
@@ -1308,7 +1290,7 @@ BOOL exmdb_server_reload_content_table(const char *dir, uint32_t table_id)
 	}
 	ptnode = (TABLE_NODE*)pnode->pdata;
 	snprintf(sql_string, arsizeof(sql_string), "DROP TABLE t%u", table_id);
-	sqlite3_exec(pdb->tables.psqlite, sql_string, NULL, NULL, NULL);
+	gx_sql_exec(pdb->tables.psqlite, sql_string);
 	b_result = table_load_content_table(pdb, ptnode->cpid,
 			ptnode->folder_id, ptnode->username, ptnode->table_flags,
 			ptnode->prestriction, ptnode->psorts, &table_id,
@@ -1408,10 +1390,8 @@ BOOL exmdb_server_load_permission_table(const char *dir,
 	auto table_transact = gx_sql_begin_trans(pdb->tables.psqlite);
 	snprintf(sql_string, arsizeof(sql_string), "CREATE TABLE t%u (idx INTEGER PRIMARY KEY "
 		"AUTOINCREMENT, member_id INTEGER UNIQUE NOT NULL)", table_id);
-	if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	ptnode = me_alloc<TABLE_NODE>();
 	if (NULL == ptnode) {
 		return FALSE;
@@ -1660,10 +1640,8 @@ BOOL exmdb_server_load_rule_table(const char *dir,
 	auto table_transact = gx_sql_begin_trans(pdb->tables.psqlite);
 	snprintf(sql_string, arsizeof(sql_string), "CREATE TABLE t%u (idx INTEGER PRIMARY KEY "
 		"AUTOINCREMENT, rule_id INTEGER UNIQUE NOT NULL)", table_id);
-	if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	ptnode = me_alloc<TABLE_NODE>();
 	if (NULL == ptnode) {
 		return FALSE;
@@ -1746,7 +1724,7 @@ BOOL exmdb_server_unload_table(const char *dir, uint32_t table_id)
 	}
 	ptnode = (TABLE_NODE*)pnode->pdata;
 	snprintf(sql_string, arsizeof(sql_string), "DROP TABLE t%u", table_id);
-	sqlite3_exec(pdb->tables.psqlite, sql_string, NULL, NULL, NULL);
+	gx_sql_exec(pdb->tables.psqlite, sql_string);
 	if (NULL != ptnode->remote_id) {
 		free(ptnode->remote_id);
 	}
@@ -3485,10 +3463,8 @@ BOOL exmdb_server_expand_table(const char *dir,
 	pstmt.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET row_stat=1 "
 	        "WHERE row_id=%llu", ptnode->table_id, LLU(row_id));
-	if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	if (0 == *prow_count) {
 		return TRUE;
 	}
@@ -3591,10 +3567,8 @@ BOOL exmdb_server_collapse_table(const char *dir,
 	pstmt.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET row_stat=0 "
 	        "WHERE row_id=%llu", ptnode->table_id, LLU(row_id));
-	if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	*prow_count = 0;
 	prev_id = row_id;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT row_id, "
@@ -3680,8 +3654,8 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			fprintf(stderr, "E-1435: sqlite3_open %s: %s\n", tmp_path, sqlite3_errstr(ret));
 			return FALSE;
 		}
-		sqlite3_exec(psqlite, "PRAGMA journal_mode=OFF", NULL, NULL, NULL);
-		sqlite3_exec(psqlite, "PRAGMA synchronous=OFF", NULL, NULL, NULL);
+		gx_sql_exec(psqlite, "PRAGMA journal_mode=OFF");
+		gx_sql_exec(psqlite, "PRAGMA synchronous=OFF");
 		sprintf(sql_string,
 			"CREATE TABLE state_info "
 			"(state_id INTEGER PRIMARY KEY AUTOINCREMENT, "
@@ -3692,8 +3666,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			"inst_num INTEGER DEFAULT NULL, "
 			"header_id INTEGER DEFAULT NULL, "
 			"header_stat INTEGER DEFAULT NULL)");
-		if (SQLITE_OK != sqlite3_exec(psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK) {
 			sqlite3_close(psqlite);
 			if (remove(tmp_path) < 0 && errno != ENOENT)
 				fprintf(stderr, "W-1348: remove %s: %s\n", tmp_path, strerror(errno));
@@ -3701,8 +3674,7 @@ BOOL exmdb_server_store_table_state(const char *dir,
 		}
 		snprintf(sql_string, arsizeof(sql_string), "CREATE UNIQUE INDEX state_index"
 			" ON state_info (folder_id, table_flags, sorts)");
-		if (SQLITE_OK != sqlite3_exec(psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK) {
 			sqlite3_close(psqlite);
 			remove(tmp_path);
 			return FALSE;
@@ -3713,8 +3685,8 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			fprintf(stderr, "E-1436: sqlite3_open %s: %s\n", tmp_path, sqlite3_errstr(ret));
 			return FALSE;
 		}
-		sqlite3_exec(psqlite, "PRAGMA journal_mode=OFF", NULL, NULL, NULL);
-		sqlite3_exec(psqlite, "PRAGMA synchronous=OFF", NULL, NULL, NULL);
+		gx_sql_exec(psqlite, "PRAGMA journal_mode=OFF");
+		gx_sql_exec(psqlite, "PRAGMA synchronous=OFF");
 	}
 	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	if (NULL != ptnode->psorts && 0 != ptnode->psorts->ccategories) {
@@ -3766,20 +3738,16 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	} else {
 		if (NULL != ptnode->psorts && 0 != ptnode->psorts->ccategories) {
 			snprintf(sql_string, arsizeof(sql_string), "DROP TABLE s%u", *pstate_id);
-			if (SQLITE_OK != sqlite3_exec(psqlite,
-				sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			}
 		}
 		if (1 != rop_util_get_replid(inst_id)) {
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE "
 				"state_info SET message_id=NULL, "
 				"inst_num=NULL WHERE state_id=%u",
 				*pstate_id);
-			if (SQLITE_OK != sqlite3_exec(psqlite,
-				sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			}
 		}
 	}
 	if (1 == rop_util_get_replid(inst_id)) {
@@ -3788,10 +3756,8 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			"inst_num=%u WHERE state_id=%u",
 			LLU(rop_util_get_gc_value(inst_id)),
 			inst_num, *pstate_id);
-		if (SQLITE_OK != sqlite3_exec(psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 	}
 	if (NULL == ptnode->psorts || 0 == ptnode->psorts->ccategories) {
 		return TRUE;
@@ -3841,10 +3807,8 @@ BOOL exmdb_server_store_table_state(const char *dir,
 	}
 	sql_string[sql_len++] = ')';
 	sql_string[sql_len] = '\0';
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT row_id, inst_id,"
 			" row_stat, depth FROM t%u", ptnode->table_id);
 	pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
@@ -3887,10 +3851,8 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE state_info SET header_id=%llu,"
 				" header_stat=%llu WHERE state_id=%u", LLU(last_id + 1),
 				LLU(sqlite3_column_int64(pstmt, 2)), *pstate_id);
-			if (SQLITE_OK != sqlite3_exec(psqlite,
-				sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			}
 		} else {
 			if (0 == sqlite3_column_int64(pstmt, 2)) {
 				if (depth >= ptnode->psorts->cexpanded) {
@@ -4003,8 +3965,8 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 		return FALSE;
 	}
 	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
-	sqlite3_exec(psqlite, "PRAGMA journal_mode=OFF", NULL, NULL, NULL);
-	sqlite3_exec(psqlite, "PRAGMA synchronous=OFF", NULL, NULL, NULL);
+	gx_sql_exec(psqlite, "PRAGMA journal_mode=OFF");
+	gx_sql_exec(psqlite, "PRAGMA synchronous=OFF");
 	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id, table_flags,"
 			" sorts, message_id, inst_num, header_id, header_stat"
 			" FROM state_info WHERE state_id=%u", state_id);
@@ -4165,10 +4127,8 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	sqlite3_close(psqlite);
 	cl_0.release();
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET idx=NULL", ptnode->table_id);
-	if (SQLITE_OK != sqlite3_exec(pdb->tables.psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT row_id, row_stat"
 			" FROM t%u WHERE prev_id=?", ptnode->table_id);
 	pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);

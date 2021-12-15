@@ -65,7 +65,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO allocated_eids"
 	        " VALUES (%llu, %llu, %lld, 1)", LLU(cur_eid),
 	        LLU(max_eid), static_cast<long long>(time(nullptr)));
-	if (sqlite3_exec(psqlite, sql_string, nullptr, nullptr, nullptr) != SQLITE_OK)
+	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
 	g_last_cn ++;
 	change_num = g_last_cn;
@@ -104,7 +104,6 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 int main(int argc, const char **argv)
 {
 	int i;
-	char *err_msg;
 	MYSQL *pmysql;
 	char dir[256];
 	GUID tmp_guid;
@@ -252,11 +251,8 @@ int main(int argc, const char **argv)
 	}
 	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	auto sql_transact = gx_sql_begin_trans(psqlite);
-	if (sqlite3_exec(psqlite, sql_string.c_str(), nullptr, nullptr,
-	    &err_msg) != SQLITE_OK) {
-		printf("fail to execute table creation sql, error: %s\n", err_msg);
+	if (gx_sql_exec(psqlite, sql_string.c_str()) != SQLITE_OK)
 		return 9;
-	}
 	
 	std::vector<std::string> namedprop_list;
 	auto ret = list_file_read_fixedstrings("propnames.txt", datadir, namedprop_list);

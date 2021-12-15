@@ -1899,7 +1899,7 @@ static BOOL mail_engine_sort_folder(IDB_ITEM *pidb,
 	pstmt1.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET sort_field=%d "
 	        "WHERE folder_id=%llu", sort_field, LLU(folder_id));
-	sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+	gx_sql_exec(pidb->psqlite, sql_string);
 	return TRUE;
 }
 
@@ -2071,10 +2071,8 @@ static void mail_engine_sync_message(IDB_ITEM *pidb,
 	}
 	snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages"
 	        " WHERE message_id=%llu", LLU(message_id));
-	if (SQLITE_OK != sqlite3_exec(pidb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pidb->psqlite, sql_string) != SQLITE_OK)
 		return;	
-	}
 	mail_engine_insert_message(pstmt, puidnext, message_id,
 			NULL, message_flags, received_time, mod_time);
 }
@@ -2125,10 +2123,8 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 			"mod_time INTEGER,"
 			"message_flags INTEGER,"
 			"received INTEGER)");
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO messages (message_id,"
 			" mid_string, mod_time, message_flags, received) VALUES "
 			"(?, ?, ?, ?, ?)");
@@ -2296,15 +2292,13 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	if (uidnext != uidnext1) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET uidnext=%u "
 		        "WHERE folder_id=%llu", uidnext, LLU(folder_id));
-		if (SQLITE_OK != sqlite3_exec(pidb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pidb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 	}
 	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET sort_field=%d "
 	        "WHERE folder_id=%llu", FIELD_NONE, LLU(folder_id));
-	sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+	gx_sql_exec(pidb->psqlite, sql_string);
 	return TRUE;
 }
 
@@ -2444,10 +2438,8 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 			"parent_fid INTEGER,"
 			"display_name TEXT,"
 			"commit_max INTEGER)");
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO folders (folder_id, "
 		"parent_fid, display_name, commit_max) VALUES (?, ?, ?, ?)");
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
@@ -2565,12 +2557,12 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET "
 					"parent_fid=%llu WHERE folder_id=%llu",
 					LLU(parent_fid), LLU(folder_id));
-				sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+				gx_sql_exec(pidb->psqlite, sql_string);
 			}
 			if (strcmp(encoded_name, S2A(sqlite3_column_text(pstmt1, 3))) != 0) {
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET name='%s' "
 				        "WHERE folder_id=%llu", encoded_name, LLU(folder_id));
-				sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+				gx_sql_exec(pidb->psqlite, sql_string);
 			}
 			if (gx_sql_col_uint64(pstmt1, 2) == commit_max)
 				continue;	
@@ -2582,7 +2574,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 		if (FALSE == b_new) {
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET commit_max=%llu"
 			        " WHERE folder_id=%llu", LLU(commit_max), LLU(folder_id));
-			sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+			gx_sql_exec(pidb->psqlite, sql_string);
 		}
 	}
 	pstmt.finalize();
@@ -2705,27 +2697,22 @@ static IDB_REF mail_engine_get_idb(const char *path)
 			fprintf(stderr, "E-1438: sqlite3_open %s: %s\n", temp_path, sqlite3_errstr(ret));
 			return {};
 		}
-		sqlite3_exec(pidb->psqlite, "PRAGMA foreign_keys=ON",
-			NULL, NULL, NULL);
+		gx_sql_exec(pidb->psqlite, "PRAGMA foreign_keys=ON");
 		if (FALSE == g_async) {
-			sqlite3_exec(pidb->psqlite, "PRAGMA synchronous=OFF",
-				NULL, NULL, NULL);
+			gx_sql_exec(pidb->psqlite, "PRAGMA synchronous=OFF");
 		} else {
-			sqlite3_exec(pidb->psqlite, "PRAGMA synchronous=ON",
-				NULL, NULL, NULL);
+			gx_sql_exec(pidb->psqlite, "PRAGMA synchronous=ON");
 		}
 		if (FALSE == g_wal) {
-			sqlite3_exec(pidb->psqlite, "PRAGMA journal_mode=DELETE",
-				NULL, NULL, NULL);
+			gx_sql_exec(pidb->psqlite, "PRAGMA journal_mode=DELETE");
 		} else {
-			sqlite3_exec(pidb->psqlite, "PRAGMA journal_mode=WAL",
-				NULL, NULL, NULL);
+			gx_sql_exec(pidb->psqlite, "PRAGMA journal_mode=WAL");
 		}
 		if (0 != g_mmap_size) {
 			snprintf(sql_string, sizeof(sql_string), "PRAGMA mmap_size=%llu", LLU(g_mmap_size));
-			sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+			gx_sql_exec(pidb->psqlite, sql_string);
 		}
-		sqlite3_exec(pidb->psqlite, "DELETE FROM mapping", NULL, NULL, NULL);
+		gx_sql_exec(pidb->psqlite, "DELETE FROM mapping");
 		snprintf(sql_string, arsizeof(sql_string), "SELECT config_value FROM "
 			"configurations WHERE config_id=%u", CONFIG_ID_USERNAME);
 		auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
@@ -4076,7 +4063,7 @@ static int mail_engine_psubf(int argc, char **argv, int sockd)
 	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET unsub=0"
 	        " WHERE folder_id=%llu", LLU(folder_id));
-	sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+	gx_sql_exec(pidb->psqlite, sql_string);
 	pidb.reset();
 	cmd_write(sockd, "TRUE\r\n", 6);
 	return 0;
@@ -4098,7 +4085,7 @@ static int mail_engine_punsf(int argc, char **argv, int sockd)
 	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET unsub=1"
 	        " WHERE folder_id=%llu", LLU(folder_id));
-	sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+	gx_sql_exec(pidb->psqlite, sql_string);
 	pidb.reset();
 	cmd_write(sockd, "TRUE\r\n", 6);
 	return 0;
@@ -4825,7 +4812,7 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 	if (NULL != strchr(argv[4], 'A')) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET replied=1"
 		        " WHERE message_id=%llu", LLU(message_id));
-		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+		gx_sql_exec(pidb->psqlite, sql_string);
 	}
 	if (NULL != strchr(argv[4], 'U')) {
 		proptags.count = 1;
@@ -4850,17 +4837,17 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 	if (NULL != strchr(argv[4], 'F')) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET flagged=1"
 		        " WHERE message_id=%llu", LLU(message_id));
-		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+		gx_sql_exec(pidb->psqlite, sql_string);
 	}
 	if (NULL != strchr(argv[4], 'W')) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET forwarded=1"
 		        " WHERE message_id=%llu", LLU(message_id));
-		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+		gx_sql_exec(pidb->psqlite, sql_string);
 	}
 	if (NULL != strchr(argv[4], 'D')) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET deleted=1"
 		        " WHERE message_id=%llu", LLU(message_id));
-		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+		gx_sql_exec(pidb->psqlite, sql_string);
 	}
 	if (NULL != strchr(argv[4], 'S')) {
 		if (!exmdb_client::set_message_read_state(argv[1],
@@ -4871,7 +4858,7 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 	if (NULL != strchr(argv[4], 'R')) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET recent=1"
 		        " WHERE message_id=%llu", LLU(message_id));
-		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+		gx_sql_exec(pidb->psqlite, sql_string);
 	}
 	pidb.reset();
 	cmd_write(sockd, "TRUE\r\n", 6);
@@ -4915,7 +4902,7 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 	if (NULL != strchr(argv[4], 'A')) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET replied=0"
 		        " WHERE message_id=%llu", LLU(message_id));
-		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+		gx_sql_exec(pidb->psqlite, sql_string);
 	}
 	if (NULL != strchr(argv[4], 'U')) {
 		proptags.count = 1;
@@ -4940,17 +4927,17 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 	if (NULL != strchr(argv[4], 'F')) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET flagged=0"
 		        " WHERE message_id=%llu", LLU(message_id));
-		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+		gx_sql_exec(pidb->psqlite, sql_string);
 	}
 	if (NULL != strchr(argv[4], 'W')) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET forwarded=0"
 		        " WHERE message_id=%llu", LLU(message_id));
-		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+		gx_sql_exec(pidb->psqlite, sql_string);
 	}
 	if (NULL != strchr(argv[4], 'D')) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET deleted=0"
 		        " WHERE message_id=%llu", LLU(message_id));
-		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+		gx_sql_exec(pidb->psqlite, sql_string);
 	}
 	if (NULL != strchr(argv[4], 'S')) {
 		if (!exmdb_client::set_message_read_state(argv[1],
@@ -4961,7 +4948,7 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 	if (NULL != strchr(argv[4], 'R')) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET recent=0"
 		        " WHERE message_id=%llu", LLU(message_id));
-		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+		gx_sql_exec(pidb->psqlite, sql_string);
 	}
 	pidb.reset();
 	cmd_write(sockd, "TRUE\r\n", 6);
@@ -5275,7 +5262,7 @@ static void mail_engine_add_notification_message(
 		if (NULL != pvalue) {
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM mapping"
 			        " WHERE message_id=%llu", LLU(message_id));
-			sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+			gx_sql_exec(pidb->psqlite, sql_string);
 		}
 	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT uidnext FROM"
@@ -5288,10 +5275,8 @@ static void mail_engine_add_notification_message(
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET"
 		" uidnext=uidnext+1, sort_field=%d "
 		"WHERE folder_id=%llu", FIELD_NONE, LLU(folder_id));
-	if (SQLITE_OK != sqlite3_exec(pidb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pidb->psqlite, sql_string) != SQLITE_OK)
 		return;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO messages ("
 		"message_id, folder_id, mid_string, mod_time, uid, "
 		"unsent, read, subject, sender, rcpt, size, received)"
@@ -5306,17 +5291,17 @@ static void mail_engine_add_notification_message(
 	if (NULL != strchr(flags_buff, 'F')) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET "
 		        "flagged=1 WHERE message_id=%llu", LLU(message_id));
-		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+		gx_sql_exec(pidb->psqlite, sql_string);
 	}
 	if (NULL != strchr(flags_buff, 'A')) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET "
 		        "replied=1 WHERE message_id=%llu", LLU(message_id));
-		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+		gx_sql_exec(pidb->psqlite, sql_string);
 	}
 	if (NULL != strchr(flags_buff, 'W')) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET "
 		        "forwarded=1 WHERE message_id=%llu", LLU(message_id));
-		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+		gx_sql_exec(pidb->psqlite, sql_string);
 	}
 }
 
@@ -5334,10 +5319,10 @@ static void mail_engine_delete_notification_message(
 	pstmt.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages"
 	        " WHERE message_id=%llu", LLU(message_id));
-	sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+	gx_sql_exec(pidb->psqlite, sql_string);
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET sort_field=%d "
 	        "WHERE folder_id=%llu", FIELD_NONE, LLU(folder_id));
-	sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+	gx_sql_exec(pidb->psqlite, sql_string);
 }
 
 static BOOL mail_engine_add_notification_folder(
@@ -5445,10 +5430,8 @@ static BOOL mail_engine_add_notification_folder(
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO folders (folder_id, parent_fid, "
 	        "commit_max, name) VALUES (%llu, %llu, %llu, '%s')", LLU(folder_id),
 	        LLU(parent_id), LLU(commit_max), encoded_name);
-	if (SQLITE_OK != sqlite3_exec(pidb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pidb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -5459,7 +5442,7 @@ static void mail_engine_delete_notification_folder(
 	
 	snprintf(sql_string, arsizeof(sql_string), "DELETE FROM folders "
 	        "WHERE folder_id=%llu", LLU(folder_id));
-	sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+	gx_sql_exec(pidb->psqlite, sql_string);
 }
 
 static void mail_engine_update_subfolders_name(IDB_ITEM *pidb,
@@ -5494,7 +5477,7 @@ static void mail_engine_update_subfolders_name(IDB_ITEM *pidb,
 		encode_hex_binary(temp_name, tmp_len, encoded_name, 1024);
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET name='%s' "
 		        "WHERE folder_id=%llu", encoded_name, LLU(folder_id));
-		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+		gx_sql_exec(pidb->psqlite, sql_string);
 		mail_engine_update_subfolders_name(pidb, folder_id, temp_name);
 	}
 }
@@ -5585,7 +5568,7 @@ static void mail_engine_move_notification_folder(
 	encode_hex_binary(temp_name.c_str(), temp_name.size(), encoded_name, arsizeof(encoded_name));
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET parent_fid=%llu, name='%s' "
 	        "WHERE folder_id=%llu", LLU(parent_id), encoded_name, LLU(folder_id));
-	sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+	gx_sql_exec(pidb->psqlite, sql_string);
 	mail_engine_update_subfolders_name(pidb, folder_id, temp_name.c_str());
 }
 
@@ -5656,7 +5639,7 @@ static void mail_engine_modify_notification_folder(
 	encode_hex_binary(decoded_name, tmp_len, encoded_name, 1024);
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET name='%s' "
 	        "WHERE folder_id=%llu", encoded_name, LLU(folder_id));
-	sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+	gx_sql_exec(pidb->psqlite, sql_string);
 	mail_engine_update_subfolders_name(pidb, folder_id, decoded_name);
 }
 
@@ -5696,7 +5679,7 @@ static void mail_engine_modify_notification_message(
 		b_read   = !!(message_flags & MSGFLAG_READ);
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET read=%d, unsent=%d"
 		        " WHERE message_id=%llu", b_read, b_unsent, LLU(message_id));
-		sqlite3_exec(pidb->psqlite, sql_string, NULL, NULL, NULL);
+		gx_sql_exec(pidb->psqlite, sql_string);
 		return;
 	}
 	pvalue = propvals.getval(PR_LAST_MODIFICATION_TIME);
@@ -5717,10 +5700,8 @@ static void mail_engine_modify_notification_message(
 	pstmt.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages"
 	        " WHERE message_id=%llu", LLU(message_id));
-	if (SQLITE_OK != sqlite3_exec(pidb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pidb->psqlite, sql_string) != SQLITE_OK)
 		return;	
-	}
 	return mail_engine_add_notification_message(
 					pidb, folder_id, message_id);
 }

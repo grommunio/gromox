@@ -39,7 +39,6 @@ static constexpr HXoption g_options_table[] = {
 
 int main(int argc, const char **argv)
 {
-	char *err_msg;
 	MYSQL *pmysql;
 	char dir[256];
 	int mysql_port;
@@ -180,11 +179,8 @@ int main(int argc, const char **argv)
 	}
 	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	auto sql_transact = gx_sql_begin_trans(psqlite);
-	if (sqlite3_exec(psqlite, slurp_data.get(), nullptr, nullptr,
-	    &err_msg) != SQLITE_OK) {
-		printf("fail to execute table creation sql, error: %s\n", err_msg);
+	if (gx_sql_exec(psqlite, slurp_data.get()) != SQLITE_OK)
 		return 9;
-	}
 	slurp_data.reset();
 	
 	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");

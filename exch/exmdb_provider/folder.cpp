@@ -546,10 +546,8 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO allocated_eids"
 			" VALUES (%llu, %llu, %lld, 1)", LLU(max_eid), LLU(max_eid +
 			SYSTEM_ALLOCATED_EID_RANGE - 1), LLD(time(nullptr)));
-		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 		if (0 == tmp_fid) {
 			folder_id = max_eid;
 			cur_eid = max_eid + 1;
@@ -638,7 +636,7 @@ BOOL exmdb_server_create_folder_by_properties(const char *dir, uint32_t cpid,
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET"
 		" propval=propval+1 WHERE folder_id=%llu AND "
 		"proptag=%u", LLU(parent_id), PR_HIERARCHY_CHANGE_NUM);
-	sqlite3_exec(pdb->psqlite, sql_string, NULL, NULL, NULL);
+	gx_sql_exec(pdb->psqlite, sql_string);
 	tmp_propval.proptag = PROP_TAG_HIERREV;
 	tmp_propval.pvalue = &nt_time;
 	cu_set_property(db_table::folder_props,
@@ -841,10 +839,8 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 				pdb, parent_fid, message_id);
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages "
 				"WHERE message_id=%llu", LLU(message_id));
-			if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-			    sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			}
 		}
 		return TRUE;
 	}
@@ -919,18 +915,14 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 						"is_deleted=1 WHERE message_id=%llu",
 						LLU(message_id));
 				}
-				if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-					sql_string, NULL, NULL, NULL)) {
+				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 					return FALSE;
-				}
 			}
 			if (FALSE == b_hard) {
 				snprintf(sql_string, arsizeof(sql_string), "DELETE FROM read_states"
 				        " WHERE message_id=%llu", LLU(message_id));
-				if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-					sql_string, NULL, NULL, NULL)) {
+				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 					return FALSE;
-				}
 			}
 		}
 		pstmt.finalize();
@@ -942,10 +934,8 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET "
 				        "is_deleted=1 WHERE parent_fid=%llu", LLU(fid_val));
 			}
-			if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-				sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			}
 		}
 	} else if (b_normal || b_fai) {
 		bool is_associated = !b_normal;
@@ -1000,18 +990,14 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 						"is_deleted=1 WHERE message_id=%llu",
 						LLU(message_id));
 				}
-				if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-					sql_string, NULL, NULL, NULL)) {
+				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 					return FALSE;
-				}
 			}
 			if (FALSE == b_hard) {
 				snprintf(sql_string, arsizeof(sql_string), "DELETE FROM read_states"
 					" WHERE message_id=%llu", LLU(message_id));
-				if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-					sql_string, NULL, NULL, NULL)) {
+				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 					return FALSE;
-				}
 			}
 		}
 		pstmt.finalize();
@@ -1025,10 +1011,8 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 						" WHERE parent_fid=%llu AND is_associated=%d",
 						LLU(fid_val), is_associated);
 			}
-			if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-				sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
-			}
 		}
 	}
 	if (!b_sub)
@@ -1093,10 +1077,8 @@ static BOOL folder_empty_folder(db_item_ptr &pdb, uint32_t cpid,
 				"is_deleted=1 WHERE folder_id=%llu",
 				LLU(fid_val));
 		}
-		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 		db_engine_notify_folder_deletion(
 				pdb, folder_id, fid_val);
 	}
@@ -1204,26 +1186,20 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 			" is_deleted=1 WHERE folder_id=%llu",
 			LLU(fid_val));
 	}
-	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	db_engine_notify_folder_deletion(
 		pdb, parent_id, fid_val);
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET"
 		" propval=propval+1 WHERE folder_id=%llu AND "
 	        "proptag=%u", LLU(parent_id), PR_DELETED_FOLDER_COUNT);
-	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET"
 		" propval=propval+1 WHERE folder_id=%llu AND "
 		 "proptag=%u", LLU(parent_id), PR_HIERARCHY_CHANGE_NUM);
-	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties "
 		"SET propval=%llu WHERE folder_id=%llu AND proptag=?",
 		LLU(rop_util_current_nttime()), LLU(parent_id));
@@ -1276,44 +1252,34 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 			"propval=propval+%u WHERE folder_id=%llu AND "
 			"proptag=%u", message_count, LLU(fid_val),
 		        PR_DELETED_COUNT_TOTAL);
-		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 	}
 	if (folder_count > 0) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=propval+%u WHERE folder_id=%llu AND "
 			"proptag=%u", folder_count, LLU(fid_val),
 		        PR_DELETED_FOLDER_COUNT);
-		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=propval+1 WHERE folder_id=%llu AND "
 		         "proptag=%u", LLU(fid_val), PR_HIERARCHY_CHANGE_NUM);
-		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=%llu WHERE folder_id=%llu AND proptag=%u",
 			LLU(rop_util_current_nttime()), LLU(fid_val), PROP_TAG_HIERREV);
-		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 	}
 	if (message_count > 0 || folder_count > 0) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=%llu WHERE folder_id=%llu AND proptag=%u",
 			LLU(rop_util_current_nttime()), LLU(fid_val),
 		         PR_LOCAL_COMMIT_TIME_MAX);
-		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 	}
 	if (FALSE == common_util_decrease_store_size(
 		pdb->psqlite, normal_size, fai_size)) {
@@ -1361,10 +1327,8 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO allocated_eids"
 			" VALUES (%llu, %llu, %lld, 1)", LLU(last_eid + 1),
 			LLU(last_eid + ALLOCATED_EID_RANGE), LLD(time(nullptr)));
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO folders "
 				"(folder_id, parent_id, change_number, "
 				"cur_eid, max_eid) VALUES (?, ?, ?, ?, ?)");
@@ -1384,10 +1348,8 @@ static BOOL folder_copy_generic_folder(sqlite3 *psqlite,
 		"(folder_id, proptag, propval) SELECT %llu, proptag,"
 		" propval FROM folder_properties WHERE folder_id=%llu",
 		LLU(last_eid + 1), LLU(src_fid));
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	if (TRUE == b_guest) {
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO permissions "
 					"(folder_id, username, permission) VALUES "
@@ -1475,18 +1437,14 @@ static BOOL folder_copy_search_folder(db_item_ptr &pdb,
 		"%llu, %llu, 1, search_flags, search_criteria, 0, 0"
 		" FROM folders WHERE folder_id=%llu", LLU(last_eid),
 		LLU(dst_pid), LLU(change_num), LLU(src_fid));
-	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO folder_properties "
 		"(folder_id, proptag, propval) SELECT %llu, proptag,"
 		" propval FROM folder_properties WHERE folder_id=%llu",
 		LLU(last_eid), LLU(src_fid));
-	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	if (TRUE == b_guest) {
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO permissions "
 					"(folder_id, username, permission) VALUES "
@@ -1543,10 +1501,8 @@ static BOOL folder_copy_search_folder(db_item_ptr &pdb,
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO search_result (folder_id, "
 		"message_id) SELECT %llu, message_id WHERE folder_id=%llu",
 		LLU(last_eid), LLU(src_fid));
-	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id FROM "
 	          "search_result WHERE folder_id=%llu", LLU(last_eid));
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
@@ -1897,34 +1853,26 @@ BOOL exmdb_server_copy_folder_internal(const char *dir,
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=propval+1 WHERE folder_id=%llu AND "
 		         "proptag=%u", LLU(dst_val), PR_HIERARCHY_CHANGE_NUM);
-		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=%llu WHERE folder_id=%llu AND proptag=%u",
 			LLU(rop_util_current_nttime()), LLU(dst_val), PROP_TAG_HIERREV);
-		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 	}
 	if (normal_size + fai_size > 0 || folder_count > 0) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=%llu WHERE folder_id=%llu AND proptag=%u",
 			LLU(rop_util_current_nttime()), LLU(dst_val),
 		         PR_LOCAL_COMMIT_TIME_MAX);
-		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 	}
 	if (FALSE == common_util_increase_store_size(
 		pdb->psqlite, normal_size, fai_size)) {
-		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 	}
 	sql_transact.commit();
 	return TRUE;
@@ -1999,10 +1947,8 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 	if (FALSE == b_copy) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET parent_id=%llu"
 		        " WHERE folder_id=%llu", LLU(dst_val), LLU(src_val));
-		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties "
 			"SET propval=? WHERE folder_id=%llu AND proptag=%u",
 		        LLU(src_val), PR_DISPLAY_NAME);
@@ -2019,31 +1965,23 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=%llu WHERE folder_id=%llu AND proptag=%u",
 		         LLU(nt_time), LLU(parent_val), PR_LOCAL_COMMIT_TIME_MAX);
-		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=propval+1 WHERE folder_id=%llu AND "
 		        "proptag=%u", LLU(parent_val), PR_DELETED_FOLDER_COUNT);
-		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=propval+1 WHERE folder_id=%llu AND "
 		         "proptag=%u", LLU(parent_val), PR_HIERARCHY_CHANGE_NUM);
-		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 			"propval=%llu WHERE folder_id=%llu AND proptag=%u",
 			LLU(nt_time), LLU(parent_val), PROP_TAG_HIERREV);
-		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 		fid_val = src_val;
 		db_engine_proc_dynamic_event(pdb,
 			cpid, DYNAMIC_EVENT_MOVE_FOLDER,
@@ -2086,10 +2024,8 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 			}
 			if (FALSE == common_util_increase_store_size(
 				pdb->psqlite, normal_size, fai_size)) {
-				if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-					sql_string, NULL, NULL, NULL)) {
+				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 					return FALSE;
-				}
 			}
 		}
 	}
@@ -2097,24 +2033,18 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 		"propval=%llu WHERE folder_id=%llu AND proptag=%u",
 	         LLU(nt_time), LLU(dst_val), PR_LOCAL_COMMIT_TIME_MAX);
-	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 		"propval=propval+1 WHERE folder_id=%llu AND "
 	         "proptag=%u", LLU(dst_val), PR_HIERARCHY_CHANGE_NUM);
-	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folder_properties SET "
 		"propval=%llu WHERE folder_id=%llu AND proptag=%u",
 		LLU(nt_time), LLU(dst_val), PROP_TAG_HIERREV);
-	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	sql_transact.commit();
 	db_engine_notify_folder_movecopy(pdb, b_copy,
 		dst_val, fid_val, parent_val, src_val);
@@ -2225,10 +2155,8 @@ static BOOL folder_clear_search_folder(db_item_ptr &pdb,
 	pstmt.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "DELETE FROM search_result"
 	        " WHERE folder_id=%llu", LLU(folder_id));
-	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -2280,10 +2208,8 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET search_flags=%u "
 	        "WHERE folder_id=%llu", search_flags, LLU(fid_val));
-	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return false;
-	}
 	if (NULL != prestriction) {
 		if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
 		    ext_push.p_restriction(prestriction) != EXT_ERR_SUCCESS)
@@ -2329,10 +2255,8 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 		}
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM search_scopes"
 		        " WHERE folder_id=%llu", LLU(fid_val));
-		if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return false;
-		}
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO "
 		          "search_scopes VALUES (%llu, ?)", LLU(fid_val));
 		pstmt = gx_sql_prep(pdb->psqlite, sql_string);
@@ -2427,10 +2351,8 @@ BOOL exmdb_server_empty_folder_permission(
 		return FALSE;
 	snprintf(sql_string, 1024, "DELETE FROM permissions WHERE"
 	         " folder_id=%llu", LLU(rop_util_get_gc_value(folder_id)));
-	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -2563,10 +2485,8 @@ static bool ufp_modify(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE permissions SET permission=%u"
 		" WHERE member_id=%llu", permission, LLU(member_id));
-	if (SQLITE_OK!= sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return false;
-	}
 	return true;
 }
 
@@ -2582,18 +2502,14 @@ static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 		char sql_string[128];
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM permissions WHERE "
 			"folder_id=%llu and username=\"default\"", LLU(fid_val));
-		if (SQLITE_OK!= sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return false;
-		}
 	} else if (member_id == 0xFFFFFFFFFFFFFFFF) {
 		char sql_string[128];
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM permissions WHERE "
 			"folder_id=%llu and username=\"\"", LLU(fid_val));
-		if (SQLITE_OK!= sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return false;
-		}
 	} else {
 		char sql_string[128];
 		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM"
@@ -2607,10 +2523,8 @@ static bool ufp_remove(const TPROPVAL_ARRAY &propvals, db_item_ptr &pdb,
 		pstmt1.finalize();
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM permissions"
 			" WHERE member_id=%llu", LLU(member_id));
-		if (SQLITE_OK!= sqlite3_exec(pdb->psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return false;
-		}
 	}
 	return true;
 }
@@ -2660,10 +2574,8 @@ BOOL exmdb_server_empty_folder_rule(
 		return FALSE;
 	snprintf(sql_string, 1024, "DELETE FROM rules WHERE "
 	         "folder_id=%llu", LLU(rop_util_get_gc_value(folder_id)));
-	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -2815,38 +2727,30 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 				seq_id = *(uint32_t*)pvalue;
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE rules SET sequence=%u"
 				        " WHERE rule_id=%llu", seq_id, LLU(rule_id));
-				if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-					sql_string, NULL, NULL, NULL)) {
+				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 					return false;
-				}
 			}
 			pvalue = prow[i].propvals.getval(PR_RULE_STATE);
 			if (NULL != pvalue) {
 				state = *(uint32_t*)pvalue;
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE rules SET state=%u"
 				        " WHERE rule_id=%llu", state, LLU(rule_id));
-				if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-					sql_string, NULL, NULL, NULL)) {
+				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 					return false;
-				}
 			}
 			auto plevel = prow[i].propvals.get<uint32_t>(PR_RULE_LEVEL);
 			if (NULL != plevel) {
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE rules SET level=%u"
 				        " WHERE rule_id=%llu", *plevel, LLU(rule_id));
-				if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-					sql_string, NULL, NULL, NULL)) {
+				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 					return false;
-				}
 			}
 			auto puser_flags = prow[i].propvals.get<uint32_t>(PR_RULE_USER_FLAGS);
 			if (NULL != puser_flags) {
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE rules SET user_flags=%u"
 				        " WHERE rule_id=%llu", *puser_flags, LLU(rule_id));
-				if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-					sql_string, NULL, NULL, NULL)) {
+				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 					return false;
-				}
 			}
 			auto pprovider_bin = prow[i].propvals.get<BINARY>(PR_RULE_PROVIDER_DATA);
 			if (NULL != pprovider_bin) {
@@ -2918,10 +2822,8 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			pstmt1.finalize();
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM rules"
 			        " WHERE rule_id=%llu", LLU(rule_id));
-			if (SQLITE_OK!= sqlite3_exec(pdb->psqlite,
-				sql_string, NULL, NULL, NULL)) {
+			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 				return false;
-			}
 			break;
 		}
 		}

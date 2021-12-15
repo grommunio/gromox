@@ -379,27 +379,21 @@ BOOL common_util_allocate_eid(sqlite3 *psqlite, uint64_t *peid)
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO allocated_eids"
 			" VALUES (%llu, %llu, %lld, 1)",
 		        LLU(cur_eid + 1), LLU(max_eid), LLD(time(nullptr)));
-		if (SQLITE_OK != sqlite3_exec(psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE configurations SET"
 			" config_value=%llu WHERE config_id=%u",
 			LLU(max_eid), CONFIG_ID_MAXIMUM_EID);
-		if (SQLITE_OK != sqlite3_exec(psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 	} else {
 		cur_eid ++;
 	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE configurations SET"
 		" config_value=%llu WHERE config_id=%u",
 		LLU(cur_eid), CONFIG_ID_CURRENT_EID);
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -430,18 +424,14 @@ BOOL common_util_allocate_eid_from_folder(sqlite3 *psqlite,
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO allocated_eids"
 			" VALUES (%llu, %llu, %llu, 1)", LLU(cur_eid),
 			LLU(max_eid), LLD(time(nullptr)));
-		if (SQLITE_OK != sqlite3_exec(psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET cur_eid=%llu,"
 		" max_eid=%llu WHERE folder_id=%llu", LLU(cur_eid),
 		LLU(max_eid), LLU(folder_id));
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -2600,7 +2590,7 @@ static void common_util_set_folder_changenum(sqlite3 *psqlite,
 	
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET change_number=%llu"
 	        " WHERE folder_id=%llu", LLU(change_num), LLU(folder_id));
-	sqlite3_exec(psqlite, sql_string, NULL, NULL, NULL);
+	gx_sql_exec(psqlite, sql_string);
 }
 
 static void common_util_set_message_changenum(sqlite3 *psqlite,
@@ -2610,7 +2600,7 @@ static void common_util_set_message_changenum(sqlite3 *psqlite,
 	
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET change_number=%llu"
 	        " WHERE message_id=%llu", LLU(change_num), LLU(message_id));
-	sqlite3_exec(psqlite, sql_string, NULL, NULL, NULL);
+	gx_sql_exec(psqlite, sql_string);
 }
 
 void common_util_set_message_read(sqlite3 *psqlite,
@@ -2630,7 +2620,7 @@ void common_util_set_message_read(sqlite3 *psqlite,
 			" AND proptag=%u", MSGFLAG_EVERREAD,
 		        LLU(message_id), PR_MESSAGE_FLAGS);
 	}
-	sqlite3_exec(psqlite, sql_string, NULL, NULL, NULL);
+	gx_sql_exec(psqlite, sql_string);
 	if (TRUE == exmdb_server_check_private()) {
 		if (0 == is_read) {
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET "
@@ -2639,7 +2629,7 @@ void common_util_set_message_read(sqlite3 *psqlite,
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET "
 				"read_state=1 WHERE message_id=%llu", LLU(message_id));
 		}
-		sqlite3_exec(psqlite, sql_string, NULL, NULL, NULL);
+		gx_sql_exec(psqlite, sql_string);
 		return;
 	}
 	username = exmdb_server_get_public_username();
@@ -4935,10 +4925,8 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 			" parent_attid, is_associated, change_number, message_size) "
 			"VALUES (%llu, NULL, %llu, %d, %llu, %u)", LLU(*pdst_mid),
 			LLU(parent_id), 0, LLU(change_num), message_size);
-		if (SQLITE_OK != sqlite3_exec(psqlite,
-			sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 	} else if (b_private) {
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO messages (message_id, "
 		         "parent_fid, parent_attid, is_associated, change_number, "
@@ -4962,19 +4950,15 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 		         " parent_attid, is_associated, change_number, message_size) "
 		         "VALUES (%llu, %llu, NULL, %d, %llu, %u)", LLU(*pdst_mid),
 		         LLU(parent_id), is_associated, LLU(change_num), message_size);
-		if (SQLITE_OK != sqlite3_exec(psqlite,
-		    sql_string, NULL, NULL, NULL)) {
+		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
-		}
 	}
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO message_properties (message_id,"
 			" proptag, propval) SELECT %llu, proptag, propval FROM "
 			"message_properties WHERE message_id=%llu",
 			LLU(*pdst_mid), LLU(message_id));
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT recipient_id FROM"
 	          " recipients WHERE message_id=%llu", LLU(message_id));
 	pstmt = gx_sql_prep(psqlite, sql_string);
@@ -5295,10 +5279,8 @@ BOOL common_util_increase_deleted_count(sqlite3 *psqlite,
 		" SET propval=propval+%u WHERE proptag=%u"
 		" AND folder_id=%llu", del_count,
 	        PR_DELETED_COUNT_TOTAL, LLU(folder_id));
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	return TRUE;
 }
 

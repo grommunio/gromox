@@ -82,8 +82,8 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
 		return FALSE;
 	}
-	if (sqlite3_exec(pcache->psqlite, "CREATE TABLE id_vals "
-	    "(id_val INTEGER PRIMARY KEY)", nullptr, nullptr, nullptr) != SQLITE_OK)
+	if (gx_sql_exec(pcache->psqlite, "CREATE TABLE id_vals "
+	    "(id_val INTEGER PRIMARY KEY)") != SQLITE_OK)
 		return FALSE;
 	pcache->pstmt = NULL;
 	prange_list = NULL;
@@ -210,31 +210,26 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		return FALSE;
 	}
 	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
-	if (sqlite3_exec(psqlite, "CREATE TABLE existence "
-	    "(message_id INTEGER PRIMARY KEY)", nullptr, nullptr, nullptr) != SQLITE_OK)
+	if (gx_sql_exec(psqlite, "CREATE TABLE existence "
+	    "(message_id INTEGER PRIMARY KEY)") != SQLITE_OK)
 		return FALSE;
 	if (NULL != pread) {
-		if (sqlite3_exec(psqlite, "CREATE TABLE reads "
-		    "(message_id INTEGER PRIMARY KEY, read_state INTEGER)",
-		    nullptr, nullptr, nullptr) != SQLITE_OK)
+		if (gx_sql_exec(psqlite, "CREATE TABLE reads "
+		    "(message_id INTEGER PRIMARY KEY, read_state INTEGER)") != SQLITE_OK)
 			return FALSE;
 	}
 	if (TRUE == b_ordered) {
-		if (sqlite3_exec(psqlite, "CREATE TABLE changes"
+		if (gx_sql_exec(psqlite, "CREATE TABLE changes"
 		    " (message_id INTEGER PRIMARY KEY, "
-		    "delivery_time INTEGER, mod_time INTEGER)",
-		    nullptr, nullptr, nullptr) != SQLITE_OK)
+		    "delivery_time INTEGER, mod_time INTEGER)") != SQLITE_OK)
 			return FALSE;
-		if (sqlite3_exec(psqlite, "CREATE INDEX idx_dtime ON changes (delivery_time)",
-		    nullptr, nullptr, nullptr) != SQLITE_OK)
+		if (gx_sql_exec(psqlite, "CREATE INDEX idx_dtime ON changes (delivery_time)") != SQLITE_OK)
 			return FALSE;
-		if (sqlite3_exec(psqlite, "CREATE INDEX idx_mtime ON changes (mod_time)",
-		    nullptr, nullptr, nullptr) != SQLITE_OK)
+		if (gx_sql_exec(psqlite, "CREATE INDEX idx_mtime ON changes (mod_time)") != SQLITE_OK)
 			return FALSE;
 	} else {
-		if (sqlite3_exec(psqlite, "CREATE TABLE changes "
-		    "(message_id INTEGER PRIMARY KEY)",
-		    nullptr, nullptr, nullptr) != SQLITE_OK)
+		if (gx_sql_exec(psqlite, "CREATE TABLE changes "
+		    "(message_id INTEGER PRIMARY KEY)") != SQLITE_OK)
 			return FALSE;
 	}
 	IDSET_CACHE cache;
@@ -701,14 +696,12 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		return FALSE;
 	}
 	auto cl_0 = make_scope_exit([&]() { sqlite3_close(psqlite); });
-	if (sqlite3_exec(psqlite, "CREATE TABLE existence "
-	    "(folder_id INTEGER PRIMARY KEY)",
-	    nullptr, nullptr, nullptr) != SQLITE_OK)
+	if (gx_sql_exec(psqlite, "CREATE TABLE existence "
+	    "(folder_id INTEGER PRIMARY KEY)") != SQLITE_OK)
 		return FALSE;
-	if (sqlite3_exec(psqlite, "CREATE TABLE changes "
+	if (gx_sql_exec(psqlite, "CREATE TABLE changes "
 	    "(idx INTEGER PRIMARY KEY AUTOINCREMENT,"
-	    " folder_id INTEGER UNIQUE NOT NULL)",
-	    nullptr, nullptr, nullptr) != SQLITE_OK)
+	    " folder_id INTEGER UNIQUE NOT NULL)") != SQLITE_OK)
 		return FALSE;
 	auto fid_val = rop_util_get_gc_value(folder_id);
 	auto pdb = db_engine_get_db(dir);

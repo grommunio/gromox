@@ -354,10 +354,8 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 	          static_cast<unsigned long long>(tmp_eid),
 	          static_cast<unsigned long long>(tmp_eid + count),
 	          static_cast<long long>(time(nullptr)));
-	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	*pbegin_eid = rop_util_make_eid_ex(1, tmp_eid);
 	return TRUE;
 }

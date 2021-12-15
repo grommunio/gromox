@@ -193,7 +193,6 @@ static BOOL exmdb_client_unload_store(const char *dir)
 
 int main(int argc, const char **argv)
 {
-	char *err_msg;
 	sqlite3 *psqlite;
 	char tmp_sql[1024];
 	const char *presult;
@@ -260,19 +259,13 @@ int main(int argc, const char **argv)
 	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	adjust_rights(temp_path1);
 	auto transact1 = gx_sql_begin_trans(psqlite);
-	if (sqlite3_exec(psqlite, sql_string.c_str(), nullptr, nullptr,
-	    &err_msg) != SQLITE_OK) {
-		printf("fail to execute table creation sql, error: %s\n", err_msg);
+	if (gx_sql_exec(psqlite, sql_string.c_str()) != SQLITE_OK)
 		return 9;
-	}
 	transact1.commit();
 	snprintf(tmp_sql, 1024, "ATTACH DATABASE "
 		"'%s/exmdb/exchange.sqlite3' AS source_db", argv[1]);
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		tmp_sql, NULL, NULL, &err_msg)) {
-		printf("fail to execute attach database sql, error: %s\n", err_msg);
+	if (gx_sql_exec(psqlite, tmp_sql) != SQLITE_OK)
 		return 9;
-	}
 	
 	auto sql_transact = gx_sql_begin_trans(psqlite);
 	static constexpr const char *statements[] = {
@@ -295,18 +288,13 @@ int main(int argc, const char **argv)
 		"INSERT INTO search_scopes SELECT * FROM source_db.search_scopes",
 		"INSERT INTO search_result SELECT * FROM source_db.search_result",
 	};
-	for (auto q : statements) {
-		if (sqlite3_exec(psqlite, q, nullptr, nullptr, &err_msg) != SQLITE_OK) {
-			printf("fail to execute table copy sql, error: %s\n", err_msg);
+	for (auto q : statements)
+		if (gx_sql_exec(psqlite, q) != SQLITE_OK)
 			return 9;
-		}
-	}
 	sql_transact.commit();
 	sqlite3_exec(psqlite, "DETACH DATABASE source_db", NULL, NULL, NULL);
-	if (sqlite3_exec(psqlite, "REINDEX", nullptr, nullptr, &err_msg) != SQLITE_OK) {
-		printf("fail to execute reindex sql, error: %s\n", err_msg);
+	if (gx_sql_exec(psqlite, "REINDEX") != SQLITE_OK)
 		return 9;
-	}
 	auto pstmt = gx_sql_prep(psqlite, "PRAGMA integrity_check");
 	if (pstmt == nullptr) {
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
