@@ -704,24 +704,20 @@ void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag)
 		fprintf(stderr, "E-1588: ENOMEM\n");
 		return nullptr;
 	}
-	auto fd = open(path.c_str(), O_RDONLY);
-	if (-1 == fd) {
+	wrapfd fd = open(path.c_str(), O_RDONLY);
+	if (fd.get() < 0) {
 		if (g_dbg_synth_content)
 			return fake_read_cid(g_dbg_synth_content, tag, cid, plen);
 		fprintf(stderr, "E-1587: %s: %s\n", path.c_str(), strerror(errno));
 		return nullptr;
 	}
-	if (fstat(fd, &node_stat) != 0) {
-		close(fd);
+	if (fstat(fd.get(), &node_stat) != 0) {
 		return NULL;
 	}
 	auto pbuff = cu_alloc<char>(node_stat.st_size);
 	if (pbuff == nullptr ||
-	    node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
-		close(fd);
+	    read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size)
 		return NULL;
-	}
-	close(fd);
 	if (NULL != plen) {
 		*plen = node_stat.st_size;
 	}
