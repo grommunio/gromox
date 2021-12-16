@@ -1587,14 +1587,11 @@ static BOOL common_util_get_message_display_recipients(
 static void *common_util_get_message_body(sqlite3 *psqlite,
 	uint32_t cpid, uint64_t message_id, uint32_t proptag)
 {
-	uint64_t cid;
 	char path[256];
-	const char *dir;
-	uint32_t proptag1;
 	char sql_string[256];
 	struct stat node_stat;
 	
-	dir = exmdb_server_get_dir();
+	auto dir = exmdb_server_get_dir();
 	if (NULL == dir) {
 		return NULL;
 	}
@@ -1608,8 +1605,8 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return nullptr;
-	proptag1 = sqlite3_column_int64(pstmt, 0);
-	cid = sqlite3_column_int64(pstmt, 1);
+	uint32_t proptag1 = sqlite3_column_int64(pstmt, 0);
+	uint64_t cid = sqlite3_column_int64(pstmt, 1);
 	pstmt.finalize();
 	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
 	wrapfd fd = open(path, O_RDONLY);
@@ -1636,14 +1633,11 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 static void *common_util_get_message_header(sqlite3 *psqlite,
 	uint32_t cpid, uint64_t message_id, uint32_t proptag)
 {
-	uint64_t cid;
 	char path[256];
-	const char *dir;
-	uint32_t proptag1;
 	char sql_string[256];
 	struct stat node_stat;
 	
-	dir = exmdb_server_get_dir();
+	auto dir = exmdb_server_get_dir();
 	if (NULL == dir) {
 		return NULL;
 	}
@@ -1659,8 +1653,8 @@ static void *common_util_get_message_header(sqlite3 *psqlite,
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return nullptr;
-	proptag1 = sqlite3_column_int64(pstmt, 0);
-	cid = sqlite3_column_int64(pstmt, 1);
+	uint32_t proptag1 = sqlite3_column_int64(pstmt, 0);
+	uint64_t cid = sqlite3_column_int64(pstmt, 1);
 	pstmt.finalize();
 	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
 	wrapfd fd = open(path, O_RDONLY);
@@ -1688,15 +1682,11 @@ static void *common_util_get_message_header(sqlite3 *psqlite,
 static void* common_util_get_message_cid_value(
 	sqlite3 *psqlite, uint64_t message_id, uint32_t proptag)
 {
-	void *pbuff;
-	uint64_t cid;
-	BINARY *pbin;
 	char path[256];
-	const char *dir;
 	char sql_string[256];
 	struct stat node_stat;
 	
-	dir = exmdb_server_get_dir();
+	auto dir = exmdb_server_get_dir();
 	if (NULL == dir) {
 		return NULL;
 	}
@@ -1709,19 +1699,19 @@ static void* common_util_get_message_cid_value(
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return nullptr;
-	cid = sqlite3_column_int64(pstmt, 0);
+	uint64_t cid = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
 	wrapfd fd = open(path, O_RDONLY);
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 		return nullptr;
-	pbuff = common_util_alloc(node_stat.st_size);
+	auto pbuff = common_util_alloc(node_stat.st_size);
 	if (NULL == pbuff) {
 		return NULL;
 	}
 	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size)
 		return NULL;
-	pbin = cu_alloc<BINARY>();
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -1733,15 +1723,11 @@ static void* common_util_get_message_cid_value(
 static void* common_util_get_attachment_cid_value(sqlite3 *psqlite,
 	uint64_t attachment_id, uint32_t proptag)
 {
-	void *pbuff;
-	uint64_t cid;
-	BINARY *pbin;
 	char path[256];
-	const char *dir;
 	char sql_string[256];
 	struct stat node_stat;
 	
-	dir = exmdb_server_get_dir();
+	auto dir = exmdb_server_get_dir();
 	if (NULL == dir) {
 		return NULL;
 	}
@@ -1753,19 +1739,19 @@ static void* common_util_get_attachment_cid_value(sqlite3 *psqlite,
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return nullptr;
-	cid = sqlite3_column_int64(pstmt, 0);
+	uint64_t cid = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
 	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
 	wrapfd fd = open(path, O_RDONLY);
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 		return nullptr;
-	pbuff = common_util_alloc(node_stat.st_size);
+	auto pbuff = common_util_alloc(node_stat.st_size);
 	if (NULL == pbuff) {
 		return NULL;
 	}
 	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size)
 		return NULL;
-	pbin = cu_alloc<BINARY>();
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -2700,12 +2686,8 @@ static BOOL common_util_set_message_body(
 	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
 	const TAGGED_PROPVAL *ppropval)
 {
-	int fd;
-	int len;
-	uint64_t cid;
 	void *pvalue;
 	char path[256];
-	const char *dir;
 	uint32_t proptag;
 	
 	if (ppropval->proptag == PR_BODY_A) {
@@ -2725,18 +2707,20 @@ static BOOL common_util_set_message_body(
 	} else {
 		return FALSE;
 	}
-	dir = exmdb_server_get_dir();
+	auto dir = exmdb_server_get_dir();
 	if (NULL == dir) {
 		return FALSE;
 	}
+	uint64_t cid = 0;
 	if (FALSE == common_util_allocate_cid(psqlite, &cid)) {
 		return FALSE;
 	}
 	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
-	fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
+	auto fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
 	if (-1 == fd) {
 		return FALSE;
 	}
+	int len = 0;
 	if (proptag == PR_BODY) {
 		if (!utf8_len(static_cast<char *>(pvalue), &len) ||
 		    write(fd, &len, sizeof(uint32_t)) != sizeof(uint32_t)) {
@@ -2766,12 +2750,8 @@ static BOOL common_util_set_message_header(
 	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
 	const TAGGED_PROPVAL *ppropval)
 {
-	int fd;
-	int len;
-	uint64_t cid;
 	void *pvalue;
 	char path[256];
-	const char *dir;
 	uint32_t proptag;
 	
 	if (PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8 == ppropval->proptag) {
@@ -2791,18 +2771,20 @@ static BOOL common_util_set_message_header(
 	} else {
 		return FALSE;
 	}
-	dir = exmdb_server_get_dir();
+	auto dir = exmdb_server_get_dir();
 	if (NULL == dir) {
 		return FALSE;
 	}
+	uint64_t cid = 0;
 	if (FALSE == common_util_allocate_cid(psqlite, &cid)) {
 		return FALSE;
 	}
 	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
-	fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
+	auto fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
 	if (-1 == fd) {
 		return FALSE;
 	}
+	int len = 0;
 	if (PROP_TAG_TRANSPORTMESSAGEHEADERS == proptag) {
 		if (!utf8_len(static_cast<char *>(pvalue), &len) ||
 		    write(fd, &len, sizeof(uint32_t)) != sizeof(uint32_t)) {
@@ -2831,24 +2813,22 @@ static BOOL common_util_set_message_header(
 static BOOL common_util_set_message_cid_value(sqlite3 *psqlite,
 	uint64_t message_id, const TAGGED_PROPVAL *ppropval)
 {
-	int fd;
-	uint64_t cid;
 	char path[256];
-	const char *dir;
 	
 	if (PROP_TAG_HTML != ppropval->proptag &&
 		PROP_TAG_RTFCOMPRESSED != ppropval->proptag) {
 		return FALSE;
 	}
-	dir = exmdb_server_get_dir();
+	auto dir = exmdb_server_get_dir();
 	if (NULL == dir) {
 		return FALSE;
 	}
+	uint64_t cid = 0;
 	if (FALSE == common_util_allocate_cid(psqlite, &cid)) {
 		return FALSE;
 	}
 	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
-	fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
+	auto fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
 	if (-1 == fd) {
 		return FALSE;
 	}
@@ -2886,23 +2866,21 @@ static BOOL common_util_update_attachment_cid(sqlite3 *psqlite,
 static BOOL common_util_set_attachment_cid_value(sqlite3 *psqlite,
 	uint64_t attachment_id, const TAGGED_PROPVAL *ppropval)
 {
-	int fd;
-	uint64_t cid;
 	char path[256];
-	const char *dir;
 	
 	if (ppropval->proptag != PR_ATTACH_DATA_BIN &&
 	    ppropval->proptag != PR_ATTACH_DATA_OBJ)
 		return FALSE;
-	dir = exmdb_server_get_dir();
+	auto dir = exmdb_server_get_dir();
 	if (NULL == dir) {
 		return FALSE;
 	}
+	uint64_t cid = 0;
 	if (FALSE == common_util_allocate_cid(psqlite, &cid)) {
 		return FALSE;
 	}
 	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
-	fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
+	auto fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
 	if (-1 == fd) {
 		return FALSE;
 	}
@@ -5703,14 +5681,13 @@ BOOL common_util_indexing_sub_contents(
 
 static uint32_t common_util_get_cid_string_length(uint32_t cid)
 {
-	int length;
 	char path[256];
-	const char *dir;
 	struct stat node_stat;
 	
-	dir = exmdb_server_get_dir();
+	auto dir = exmdb_server_get_dir();
 	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
 	wrapfd fd = open(path, O_RDONLY);
+	int length = 0;
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
 	    read(fd.get(), &length, sizeof(uint32_t)) != sizeof(uint32_t))
 		return 0;
@@ -5720,10 +5697,9 @@ static uint32_t common_util_get_cid_string_length(uint32_t cid)
 static uint32_t common_util_get_cid_length(uint64_t cid)
 {
 	char path[256];
-	const char *dir;
 	struct stat node_stat;
 	
-	dir = exmdb_server_get_dir();
+	auto dir = exmdb_server_get_dir();
 	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
 	if (0 != stat(path, &node_stat)) {
 		return 0;

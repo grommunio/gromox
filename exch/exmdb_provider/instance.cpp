@@ -693,7 +693,6 @@ static void *fake_read_cid(unsigned int mode, uint32_t tag, uint64_t cid, uint32
 
 void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag)
 {
-	char *pbuff;
 	struct stat node_stat;
 	std::string path;
 
@@ -716,7 +715,7 @@ void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag)
 		close(fd);
 		return NULL;
 	}
-	pbuff = cu_alloc<char>(node_stat.st_size);
+	auto pbuff = cu_alloc<char>(node_stat.st_size);
 	if (pbuff == nullptr ||
 	    node_stat.st_size != read(fd, pbuff, node_stat.st_size)) {
 		close(fd);
