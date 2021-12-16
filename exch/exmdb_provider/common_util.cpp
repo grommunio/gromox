@@ -2719,25 +2719,25 @@ static BOOL common_util_set_message_body(
 	wrapfd fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
 	if (fd.get() < 0)
 		return FALSE;
+	auto remove_file = make_scope_exit([&]() {
+		if (remove(path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1382: remove %s: %s\n", path, strerror(errno));
+	});
 	int len = 0;
 	if (proptag == PR_BODY) {
 		if (!utf8_len(static_cast<char *>(pvalue), &len) ||
 		    write(fd.get(), &len, sizeof(uint32_t)) != sizeof(uint32_t)) {
-			if (remove(path) < 0 && errno != ENOENT)
-				fprintf(stderr, "W-1382: remove %s: %s\n", path, strerror(errno));
 			return FALSE;
 		}
 	}
 	len = strlen(static_cast<char *>(pvalue)) + 1;
 	if (write(fd.get(), pvalue, len) != len) {
-		if (remove(path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1383: remove %s: %s\n", path, strerror(errno));
 		return FALSE;
 	}
 	if (FALSE == common_util_update_message_cid(
 		psqlite, message_id, proptag, cid)) {
-		if (remove(path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1384: remove %s: %s\n", path, strerror(errno));
+	} else {
+		remove_file.release();
 	}
 	return TRUE;
 }
@@ -2779,25 +2779,25 @@ static BOOL common_util_set_message_header(
 	wrapfd fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
 	if (fd.get() < 0)
 		return FALSE;
+	auto remove_file = make_scope_exit([&]() {
+		if (remove(path) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1335: remove %s: %s\n", path, strerror(errno));
+	});
 	int len = 0;
 	if (PROP_TAG_TRANSPORTMESSAGEHEADERS == proptag) {
 		if (!utf8_len(static_cast<char *>(pvalue), &len) ||
 		    write(fd.get(), &len, sizeof(uint32_t)) != sizeof(uint32_t)) {
-			if (remove(path) < 0 && errno != ENOENT)
-				fprintf(stderr, "W-1335: remove %s: %s\n", path, strerror(errno));
 			return FALSE;
 		}
 	}
 	len = strlen(static_cast<char *>(pvalue)) + 1;
 	if (write(fd.get(), pvalue, len) != len) {
-		if (remove(path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1367: remove %s: %s\n", path, strerror(errno));
 		return FALSE;
 	}
 	if (FALSE == common_util_update_message_cid(
 		psqlite, message_id, proptag, cid)) {
-		if (remove(path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1368: remove %s: %s\n", path, strerror(errno));
+	} else {
+		remove_file.release();
 	}
 	return TRUE;
 }
@@ -2823,18 +2823,19 @@ static BOOL common_util_set_message_cid_value(sqlite3 *psqlite,
 	wrapfd fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
 	if (fd.get() < 0)
 		return FALSE;
-	auto bv = static_cast<BINARY *>(ppropval->pvalue);
-	if (write(fd.get(), bv->pv, bv->cb) != bv->cb) {
+	auto remove_file = make_scope_exit([&]() {
 		if (remove(path) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1389: remove %s: %s\n", path, strerror(errno));
+	});
+	auto bv = static_cast<BINARY *>(ppropval->pvalue);
+	if (write(fd.get(), bv->pv, bv->cb) != bv->cb) {
 		return FALSE;
 	}
 	if (FALSE == common_util_update_message_cid(
 		psqlite, message_id, ppropval->proptag, cid)) {
-		if (remove(path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1390: remove %s: %s\n", path, strerror(errno));
 		return FALSE;
 	}
+	remove_file.release();
 	return TRUE;
 }
 
@@ -2872,18 +2873,19 @@ static BOOL common_util_set_attachment_cid_value(sqlite3 *psqlite,
 	wrapfd fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
 	if (fd.get() < 0)
 		return FALSE;
-	auto bv = static_cast<BINARY *>(ppropval->pvalue);
-	if (write(fd.get(), bv->pv, bv->cb) != bv->cb) {
+	auto remove_file = make_scope_exit([&]() {
 		if (remove(path) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1363: remove %s: %s\n", path, strerror(errno));
+	});
+	auto bv = static_cast<BINARY *>(ppropval->pvalue);
+	if (write(fd.get(), bv->pv, bv->cb) != bv->cb) {
 		return FALSE;
 	}
 	if (FALSE == common_util_update_attachment_cid(
 		psqlite, attachment_id, ppropval->proptag, cid)) {
-		if (remove(path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1364: remove %s: %s\n", path, strerror(errno));
 		return FALSE;	
 	}
+	remove_file.release();
 	return TRUE;
 }
 
