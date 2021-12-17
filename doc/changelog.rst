@@ -1,3 +1,17 @@
+1.11.34
+=======
+
+Enhancements:
+
+* midb: SIGHUP will now reload the midb_cmd_debug directive
+* lib: add error reporting to sqlite3_exec calls
+
+Fixes:
+
+* imap: resolve the Thunderbird folder view showing all rows without subject
+  and sender
+
+
 1.11 (2021-12-16)
 =================
 
