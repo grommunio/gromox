@@ -1585,10 +1585,19 @@ static BOOL common_util_get_message_display_recipients(
 	return *ppvalue != nullptr ? TRUE : false;
 }
 
+static std::string cu_cid_path(const char *dir, uint64_t id) try
+{
+	if (dir == nullptr)
+		dir = exmdb_server_get_dir();
+	return dir + "/cid/"s + std::to_string(id);
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1606: ENOMEM\n");
+	return {};
+}
+
 static void *common_util_get_message_body(sqlite3 *psqlite,
 	uint32_t cpid, uint64_t message_id, uint32_t proptag)
 {
-	char path[256];
 	char sql_string[256];
 	struct stat node_stat;
 	
@@ -1609,8 +1618,7 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 	uint32_t proptag1 = sqlite3_column_int64(pstmt, 0);
 	uint64_t cid = sqlite3_column_int64(pstmt, 1);
 	pstmt.finalize();
-	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
-	wrapfd fd = open(path, O_RDONLY);
+	wrapfd fd = open(cu_cid_path(dir, cid).c_str(), O_RDONLY);
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 		return nullptr;
 	auto pbuff = cu_alloc<char>(node_stat.st_size + 1);
@@ -1634,7 +1642,6 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 static void *common_util_get_message_header(sqlite3 *psqlite,
 	uint32_t cpid, uint64_t message_id, uint32_t proptag)
 {
-	char path[256];
 	char sql_string[256];
 	struct stat node_stat;
 	
@@ -1657,8 +1664,7 @@ static void *common_util_get_message_header(sqlite3 *psqlite,
 	uint32_t proptag1 = sqlite3_column_int64(pstmt, 0);
 	uint64_t cid = sqlite3_column_int64(pstmt, 1);
 	pstmt.finalize();
-	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
-	wrapfd fd = open(path, O_RDONLY);
+	wrapfd fd = open(cu_cid_path(dir, cid).c_str(), O_RDONLY);
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 		return nullptr;
 	auto pbuff = cu_alloc<char>(node_stat.st_size + 1);
@@ -1683,7 +1689,6 @@ static void *common_util_get_message_header(sqlite3 *psqlite,
 static void* common_util_get_message_cid_value(
 	sqlite3 *psqlite, uint64_t message_id, uint32_t proptag)
 {
-	char path[256];
 	char sql_string[256];
 	struct stat node_stat;
 	
@@ -1702,8 +1707,7 @@ static void* common_util_get_message_cid_value(
 		return nullptr;
 	uint64_t cid = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
-	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
-	wrapfd fd = open(path, O_RDONLY);
+	wrapfd fd = open(cu_cid_path(dir, cid).c_str(), O_RDONLY);
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 		return nullptr;
 	auto pbuff = common_util_alloc(node_stat.st_size);
@@ -1724,7 +1728,6 @@ static void* common_util_get_message_cid_value(
 static void* common_util_get_attachment_cid_value(sqlite3 *psqlite,
 	uint64_t attachment_id, uint32_t proptag)
 {
-	char path[256];
 	char sql_string[256];
 	struct stat node_stat;
 	
@@ -1742,8 +1745,7 @@ static void* common_util_get_attachment_cid_value(sqlite3 *psqlite,
 		return nullptr;
 	uint64_t cid = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
-	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
-	wrapfd fd = open(path, O_RDONLY);
+	wrapfd fd = open(cu_cid_path(dir, cid).c_str(), O_RDONLY);
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 		return nullptr;
 	auto pbuff = common_util_alloc(node_stat.st_size);
@@ -2688,7 +2690,6 @@ static BOOL common_util_set_message_body(
 	const TAGGED_PROPVAL *ppropval)
 {
 	void *pvalue;
-	char path[256];
 	uint32_t proptag;
 	
 	if (ppropval->proptag == PR_BODY_A) {
@@ -2716,13 +2717,14 @@ static BOOL common_util_set_message_body(
 	if (FALSE == common_util_allocate_cid(psqlite, &cid)) {
 		return FALSE;
 	}
-	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
-	wrapfd fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
+	auto path = cu_cid_path(dir, cid);
+	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
 	if (fd.get() < 0)
 		return FALSE;
 	auto remove_file = make_scope_exit([&]() {
-		if (remove(path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1382: remove %s: %s\n", path, strerror(errno));
+		if (::remove(path.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1382: remove %s: %s\n",
+			        path.c_str(), strerror(errno));
 	});
 	if (proptag == PR_BODY) {
 		size_t ncp = 0;
@@ -2751,7 +2753,6 @@ static BOOL common_util_set_message_header(
 	const TAGGED_PROPVAL *ppropval)
 {
 	void *pvalue;
-	char path[256];
 	uint32_t proptag;
 	
 	if (PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8 == ppropval->proptag) {
@@ -2779,13 +2780,14 @@ static BOOL common_util_set_message_header(
 	if (FALSE == common_util_allocate_cid(psqlite, &cid)) {
 		return FALSE;
 	}
-	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
-	wrapfd fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
+	auto path = cu_cid_path(dir, cid);
+	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
 	if (fd.get() < 0)
 		return FALSE;
 	auto remove_file = make_scope_exit([&]() {
-		if (remove(path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1335: remove %s: %s\n", path, strerror(errno));
+		if (::remove(path.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1335: remove %s: %s\n",
+			        path.c_str(), strerror(errno));
 	});
 	if (PROP_TAG_TRANSPORTMESSAGEHEADERS == proptag) {
 		size_t ncp = 0;
@@ -2812,8 +2814,6 @@ static BOOL common_util_set_message_header(
 static BOOL common_util_set_message_cid_value(sqlite3 *psqlite,
 	uint64_t message_id, const TAGGED_PROPVAL *ppropval)
 {
-	char path[256];
-	
 	if (PROP_TAG_HTML != ppropval->proptag &&
 		PROP_TAG_RTFCOMPRESSED != ppropval->proptag) {
 		return FALSE;
@@ -2826,13 +2826,14 @@ static BOOL common_util_set_message_cid_value(sqlite3 *psqlite,
 	if (FALSE == common_util_allocate_cid(psqlite, &cid)) {
 		return FALSE;
 	}
-	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
-	wrapfd fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
+	auto path = cu_cid_path(dir, cid);
+	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
 	if (fd.get() < 0)
 		return FALSE;
 	auto remove_file = make_scope_exit([&]() {
-		if (remove(path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1389: remove %s: %s\n", path, strerror(errno));
+		if (::remove(path.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1389: remove %s: %s\n",
+			        path.c_str(), strerror(errno));
 	});
 	auto bv = static_cast<BINARY *>(ppropval->pvalue);
 	if (write(fd.get(), bv->pv, bv->cb) != bv->cb) {
@@ -2863,8 +2864,6 @@ static BOOL common_util_update_attachment_cid(sqlite3 *psqlite,
 static BOOL common_util_set_attachment_cid_value(sqlite3 *psqlite,
 	uint64_t attachment_id, const TAGGED_PROPVAL *ppropval)
 {
-	char path[256];
-	
 	if (ppropval->proptag != PR_ATTACH_DATA_BIN &&
 	    ppropval->proptag != PR_ATTACH_DATA_OBJ)
 		return FALSE;
@@ -2876,13 +2875,14 @@ static BOOL common_util_set_attachment_cid_value(sqlite3 *psqlite,
 	if (FALSE == common_util_allocate_cid(psqlite, &cid)) {
 		return FALSE;
 	}
-	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
-	wrapfd fd = open(path, O_CREAT|O_TRUNC|O_RDWR, 0666);
+	auto path = cu_cid_path(dir, cid);
+	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
 	if (fd.get() < 0)
 		return FALSE;
 	auto remove_file = make_scope_exit([&]() {
-		if (remove(path) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1363: remove %s: %s\n", path, strerror(errno));
+		if (::remove(path.c_str()) < 0 && errno != ENOENT)
+			fprintf(stderr, "W-1363: remove %s: %s\n",
+			        path.c_str(), strerror(errno));
 	});
 	auto bv = static_cast<BINARY *>(ppropval->pvalue);
 	if (write(fd.get(), bv->pv, bv->cb) != bv->cb) {
@@ -5658,12 +5658,8 @@ BOOL common_util_indexing_sub_contents(
  */
 static uint32_t common_util_get_cid_string_length(uint64_t cid)
 {
-	char path[256];
 	struct stat node_stat;
-	
-	auto dir = exmdb_server_get_dir();
-	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
-	wrapfd fd = open(path, O_RDONLY);
+	wrapfd fd = open(cu_cid_path(exmdb_server_get_dir(), cid).c_str(), O_RDONLY);
 	uint32_t length = 0;
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
 	    read(fd.get(), &length, sizeof(uint32_t)) != sizeof(uint32_t))
@@ -5678,14 +5674,9 @@ static uint32_t common_util_get_cid_string_length(uint64_t cid)
  */
 static uint32_t common_util_get_cid_length(uint64_t cid)
 {
-	char path[256];
 	struct stat node_stat;
-	
-	auto dir = exmdb_server_get_dir();
-	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
-	if (0 != stat(path, &node_stat)) {
+	if (stat(cu_cid_path(exmdb_server_get_dir(), cid).c_str(), &node_stat) != 0)
 		return 0;
-	}
 	if (node_stat.st_size > UINT32_MAX)
 		node_stat.st_size = UINT32_MAX;
 	return node_stat.st_size;
