@@ -39,7 +39,6 @@ static constexpr HXoption g_options_table[] = {
 
 int main(int argc, const char **argv)
 {
-	char *err_msg;
 	MYSQL *pmysql;
 	char dir[256];
 	int mysql_port;
@@ -179,20 +178,12 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
-	/* begin the transaction */
-	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	auto clean_transact = make_scope_exit([&]() {
-		sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-	});
-	if (sqlite3_exec(psqlite, slurp_data.get(), nullptr, nullptr,
-	    &err_msg) != SQLITE_OK) {
-		printf("fail to execute table creation sql, error: %s\n", err_msg);
+	auto sql_transact = gx_sql_begin_trans(psqlite);
+	if (gx_sql_exec(psqlite, slurp_data.get()) != SQLITE_OK)
 		return 9;
-	}
 	slurp_data.reset();
 	
-	const char *csql_string = "INSERT INTO configurations VALUES (?, ?)";
-	auto pstmt = gx_sql_prep(psqlite, csql_string);
+	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");
 	if (pstmt == nullptr)
 		return 9;
 	
@@ -204,9 +195,6 @@ int main(int argc, const char **argv)
 	}
 	
 	pstmt.finalize();
-	
-	/* commit the transaction */
-	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	return EXIT_SUCCESS;
 }

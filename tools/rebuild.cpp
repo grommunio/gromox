@@ -193,7 +193,6 @@ static BOOL exmdb_client_unload_store(const char *dir)
 
 int main(int argc, const char **argv)
 {
-	char *err_msg;
 	sqlite3 *psqlite;
 	char tmp_sql[1024];
 	const char *presult;
@@ -259,164 +258,44 @@ int main(int argc, const char **argv)
 	}
 	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	adjust_rights(temp_path1);
-	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	if (sqlite3_exec(psqlite, sql_string.c_str(), nullptr, nullptr,
-	    &err_msg) != SQLITE_OK) {
-		printf("fail to execute table creation sql, error: %s\n", err_msg);
+	auto transact1 = gx_sql_begin_trans(psqlite);
+	if (gx_sql_exec(psqlite, sql_string.c_str()) != SQLITE_OK)
 		return 9;
-	}
-	/* commit the transaction */
-	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	transact1.commit();
 	snprintf(tmp_sql, 1024, "ATTACH DATABASE "
 		"'%s/exmdb/exchange.sqlite3' AS source_db", argv[1]);
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		tmp_sql, NULL, NULL, &err_msg)) {
-		printf("fail to execute attach database sql, error: %s\n", err_msg);
+	if (gx_sql_exec(psqlite, tmp_sql) != SQLITE_OK)
 		return 9;
-	}
 	
-	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	auto clean_transact = make_scope_exit([&]() {
-		sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-	});
-	const char *csql_string = "INSERT INTO configurations "
-		"SELECT * FROM source_db.configurations";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO allocated_eids "
-		"SELECT * FROM source_db.allocated_eids";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO named_properties "
-		"SELECT * FROM source_db.named_properties";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO store_properties "
-		"SELECT * FROM source_db.store_properties";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO permissions "
-		"SELECT * FROM source_db.permissions";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO rules "
-		"SELECT * FROM source_db.rules";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO folders "
-		"SELECT * FROM source_db.folders";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO folder_properties "
-		"SELECT * FROM source_db.folder_properties";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO receive_table "
-		"SELECT * FROM source_db.receive_table";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO messages "
-		"SELECT * FROM source_db.messages";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO message_properties "
-		"SELECT * FROM source_db.message_properties";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO message_changes "
-		"SELECT * FROM source_db.message_changes";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO recipients "
-		"SELECT * FROM source_db.recipients";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO recipients_properties "
-		"SELECT * FROM source_db.recipients_properties";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO attachments "
-		"SELECT * FROM source_db.attachments";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO attachment_properties "
-		"SELECT * FROM source_db.attachment_properties";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO search_scopes "
-		"SELECT * FROM source_db.search_scopes";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	csql_string = "INSERT INTO search_result "
-		"SELECT * FROM source_db.search_result";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute table copy sql, error: %s\n", err_msg);
-		return 9;
-	}
-	/* commit the transaction */
-	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	auto sql_transact = gx_sql_begin_trans(psqlite);
+	static constexpr const char *statements[] = {
+		"INSERT INTO configurations SELECT * FROM source_db.configurations",
+		"INSERT INTO allocated_eids SELECT * FROM source_db.allocated_eids",
+		"INSERT INTO named_properties SELECT * FROM source_db.named_properties",
+		"INSERT INTO store_properties SELECT * FROM source_db.store_properties",
+		"INSERT INTO permissions SELECT * FROM source_db.permissions",
+		"INSERT INTO rules SELECT * FROM source_db.rules",
+		"INSERT INTO folders SELECT * FROM source_db.folders",
+		"INSERT INTO folder_properties SELECT * FROM source_db.folder_properties",
+		"INSERT INTO receive_table SELECT * FROM source_db.receive_table",
+		"INSERT INTO messages SELECT * FROM source_db.messages",
+		"INSERT INTO message_properties SELECT * FROM source_db.message_properties",
+		"INSERT INTO message_changes SELECT * FROM source_db.message_changes",
+		"INSERT INTO recipients SELECT * FROM source_db.recipients",
+		"INSERT INTO recipients_properties SELECT * FROM source_db.recipients_properties",
+		"INSERT INTO attachments SELECT * FROM source_db.attachments",
+		"INSERT INTO attachment_properties SELECT * FROM source_db.attachment_properties",
+		"INSERT INTO search_scopes SELECT * FROM source_db.search_scopes",
+		"INSERT INTO search_result SELECT * FROM source_db.search_result",
+	};
+	for (auto q : statements)
+		if (gx_sql_exec(psqlite, q) != SQLITE_OK)
+			return 9;
+	sql_transact.commit();
 	sqlite3_exec(psqlite, "DETACH DATABASE source_db", NULL, NULL, NULL);
-	csql_string = "REINDEX";
-	if (SQLITE_OK != sqlite3_exec(psqlite,
-		csql_string, NULL, NULL, &err_msg)) {
-		printf("fail to execute reindex sql, error: %s\n", err_msg);
+	if (gx_sql_exec(psqlite, "REINDEX") != SQLITE_OK)
 		return 9;
-	}
-	csql_string = "PRAGMA integrity_check";
-	auto pstmt = gx_sql_prep(psqlite, csql_string);
+	auto pstmt = gx_sql_prep(psqlite, "PRAGMA integrity_check");
 	if (pstmt == nullptr) {
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
 			presult = reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0));

@@ -65,7 +65,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO allocated_eids"
 	        " VALUES (%llu, %llu, %lld, 1)", LLU(cur_eid),
 	        LLU(max_eid), static_cast<long long>(time(nullptr)));
-	if (sqlite3_exec(psqlite, sql_string, nullptr, nullptr, nullptr) != SQLITE_OK)
+	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
 	g_last_cn ++;
 	change_num = g_last_cn;
@@ -104,7 +104,6 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 int main(int argc, const char **argv)
 {
 	int i;
-	char *err_msg;
 	MYSQL *pmysql;
 	char dir[256];
 	GUID tmp_guid;
@@ -251,16 +250,9 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
-	/* begin the transaction */
-	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	auto clean_transact = make_scope_exit([&]() {
-		sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-	});
-	if (sqlite3_exec(psqlite, sql_string.c_str(), nullptr, nullptr,
-	    &err_msg) != SQLITE_OK) {
-		printf("fail to execute table creation sql, error: %s\n", err_msg);
+	auto sql_transact = gx_sql_begin_trans(psqlite);
+	if (gx_sql_exec(psqlite, sql_string.c_str()) != SQLITE_OK)
 		return 9;
-	}
 	
 	std::vector<std::string> namedprop_list;
 	auto ret = list_file_read_fixedstrings("propnames.txt", datadir, namedprop_list);
@@ -269,8 +261,7 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "list_file_initd propnames.txt: %s\n", strerror(-ret));
 		return 7;
 	}
-	const char *csql_string = "INSERT INTO named_properties VALUES (?, ?)";
-	auto pstmt = gx_sql_prep(psqlite, csql_string);
+	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO named_properties VALUES (?, ?)");
 	if (pstmt == nullptr)
 		return 9;
 	
@@ -289,15 +280,9 @@ int main(int argc, const char **argv)
 	}
 	pstmt.finalize();
 	
-	csql_string = "INSERT INTO store_properties VALUES (?, ?)";
-	pstmt = gx_sql_prep(psqlite, csql_string);
+	pstmt = gx_sql_prep(psqlite, "INSERT INTO store_properties VALUES (?, ?)");
 	if (pstmt == nullptr)
 		return 9;
-	csql_string = "INSERT INTO store_properties VALUES (?, ?)";
-	pstmt = gx_sql_prep(psqlite, csql_string);
-	if (pstmt == nullptr)
-		return 9;
-	
 	nt_time = rop_util_unix_to_nttime(time(NULL));
 	sqlite3_bind_int64(pstmt, 1, PR_CREATION_TIME);
 	sqlite3_bind_int64(pstmt, 2, nt_time);
@@ -348,8 +333,7 @@ int main(int argc, const char **argv)
 		return 10;
 	}
 	
-	csql_string = "INSERT INTO configurations VALUES (?, ?)";
-	pstmt = gx_sql_prep(psqlite, csql_string);
+	pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");
 	if (pstmt == nullptr)
 		return 9;
 	tmp_guid = guid_random_new();
@@ -419,9 +403,6 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	pstmt.finalize();
-	
-	/* commit the transaction */
-	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	return EXIT_SUCCESS;
 }

@@ -88,7 +88,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite, uint64_t folder_id,
 	snprintf(sql_string, arsizeof(sql_string), "INSERT INTO allocated_eids"
 	        " VALUES (%llu, %llu, %lld, 1)", LLU(cur_eid),
 	        LLU(max_eid), static_cast<long long>(time(nullptr)));
-	if (sqlite3_exec(psqlite, sql_string, nullptr, nullptr, nullptr) != SQLITE_OK)
+	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
 	g_last_cn ++;
 	change_num = g_last_cn;
@@ -173,7 +173,6 @@ static BOOL create_search_folder(sqlite3 *psqlite, uint64_t folder_id,
 
 int main(int argc, const char **argv)
 {
-	char *err_msg;
 	char lang[32];
 	MYSQL *pmysql;
 	char dir[256];
@@ -338,16 +337,9 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
-	/* begin the transaction */
-	sqlite3_exec(psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	auto clean_transact = make_scope_exit([&]() {
-		sqlite3_exec(psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-	});
-	if (sqlite3_exec(psqlite, sql_string.c_str(), nullptr, nullptr,
-	    &err_msg) != SQLITE_OK) {
-		printf("fail to execute table creation sql, error: %s\n", err_msg);
+	auto sql_transact = gx_sql_begin_trans(psqlite);
+	if (gx_sql_exec(psqlite, sql_string.c_str()) != SQLITE_OK)
 		return 9;
-	}
 	
 	std::vector<std::string> namedprop_list;
 	auto ret = list_file_read_fixedstrings("propnames.txt", datadir, namedprop_list);
@@ -356,8 +348,7 @@ int main(int argc, const char **argv)
 		printf("list_file_initd propnames.txt: %s\n", strerror(-ret));
 		return 7;
 	}
-	const char *csql_string = "INSERT INTO named_properties VALUES (?, ?)";
-	auto pstmt = gx_sql_prep(psqlite, csql_string);
+	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO named_properties VALUES (?, ?)");
 	if (pstmt == nullptr)
 		return 9;
 	
@@ -376,9 +367,7 @@ int main(int argc, const char **argv)
 	pstmt.finalize();
 	
 	nt_time = rop_util_unix_to_nttime(time(NULL));
-	
-	csql_string = "INSERT INTO receive_table VALUES (?, ?, ?)";
-	pstmt = gx_sql_prep(psqlite, csql_string);
+	pstmt = gx_sql_prep(psqlite, "INSERT INTO receive_table VALUES (?, ?, ?)");
 	if (pstmt == nullptr)
 		return 9;
 	sqlite3_bind_text(pstmt, 1, "", -1, SQLITE_STATIC);
@@ -414,8 +403,7 @@ int main(int argc, const char **argv)
 	}
 	pstmt.finalize();
 	
-	csql_string = "INSERT INTO store_properties VALUES (?, ?)";
-	pstmt = gx_sql_prep(psqlite, csql_string);
+	pstmt = gx_sql_prep(psqlite, "INSERT INTO store_properties VALUES (?, ?)");
 	if (pstmt == nullptr)
 		return 9;
 	sqlite3_bind_int64(pstmt, 1, PR_CREATION_TIME);
@@ -500,7 +488,7 @@ int main(int argc, const char **argv)
 	snprintf(tmp_sql, arsizeof(tmp_sql), "INSERT INTO permissions (folder_id, "
 		"username, permission) VALUES (%u, 'default', %u)",
 	        PRIVATE_FID_CALENDAR, frightsFreeBusySimple);
-	sqlite3_exec(psqlite, tmp_sql, NULL, NULL, NULL);
+	gx_sql_exec(psqlite, tmp_sql);
 	if (!create_generic_folder(psqlite, PRIVATE_FID_JOURNAL,
 	    PRIVATE_FID_IPMSUBTREE, user_id, "IPF.Journal")) {
 		printf("fail to create \"journal\" folder\n");
@@ -604,9 +592,8 @@ int main(int argc, const char **argv)
 	snprintf(tmp_sql, arsizeof(tmp_sql), "INSERT INTO permissions (folder_id, "
 		"username, permission) VALUES (%u, 'default', %u)",
 	        PRIVATE_FID_LOCAL_FREEBUSY, frightsFreeBusySimple);
-	sqlite3_exec(psqlite, tmp_sql, NULL, NULL, NULL);
-	csql_string = "INSERT INTO configurations VALUES (?, ?)";
-	pstmt = gx_sql_prep(psqlite, csql_string);
+	gx_sql_exec(psqlite, tmp_sql);
+	pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");
 	if (pstmt == nullptr)
 		return 9;
 	tmp_guid = guid_random_new();
@@ -675,9 +662,6 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	pstmt.finalize();
-	
-	/* commit the transaction */
-	sqlite3_exec(psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	return EXIT_SUCCESS;
 }

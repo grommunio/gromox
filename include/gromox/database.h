@@ -1,7 +1,19 @@
 #pragma once
 #include <cstdint>
-#include <cstdio>
 #include <sqlite3.h>
+#include <gromox/defs.h>
+
+class GX_EXPORT xtransaction {
+	public:
+	constexpr xtransaction(sqlite3 *d = nullptr) { m_db = d; }
+	xtransaction(xtransaction &&) = delete;
+	~xtransaction();
+	void commit();
+	xtransaction &operator=(xtransaction &&);
+
+	protected:
+	sqlite3 *m_db = nullptr;
+};
 
 struct xstmt {
 	xstmt() = default;
@@ -26,14 +38,9 @@ struct xstmt {
 	sqlite3_stmt *m_ptr = nullptr;
 };
 
-static inline xstmt gx_sql_prep(sqlite3 *db, const char *query)
-{
-	xstmt out;
-	int ret = sqlite3_prepare_v2(db, query, -1, &out.m_ptr, nullptr);
-	if (ret != SQLITE_OK)
-		printf("sqlite3_prepare_v2 \"%s\": %s\n", query, sqlite3_errstr(ret));
-	return out;
-}
+extern GX_EXPORT struct xstmt gx_sql_prep(sqlite3 *, const char *);
+extern GX_EXPORT xtransaction gx_sql_begin_trans(sqlite3 *);
+extern GX_EXPORT int gx_sql_exec(sqlite3 *, const char *query);
 
 static inline uint64_t gx_sql_col_uint64(sqlite3_stmt *s, int c)
 {

@@ -82,15 +82,12 @@ BOOL exmdb_server_get_named_propids(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto transact = gx_sql_begin_trans(pdb->psqlite);
 	if (FALSE == common_util_get_named_propids(
 		pdb->psqlite, b_create, ppropnames, ppropids)) {
-		/* rollback the transaction */
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
-	/* commit the transaction */
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	transact.commit();
 	return TRUE;
 }
 
@@ -187,13 +184,12 @@ BOOL exmdb_server_set_store_properties(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!cu_set_properties(db_table::store_props, 0, cpid, pdb->psqlite,
 		ppropvals, pproblems)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	transact.commit();
 	return TRUE;
 }
 
@@ -203,12 +199,11 @@ BOOL exmdb_server_remove_store_properties(
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
+	auto transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!cu_remove_properties(db_table::store_props, 0, pdb->psqlite, pproptags)) {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", NULL, NULL, NULL);
 		return FALSE;
 	}
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
+	transact.commit();
 	return TRUE;
 }
 
@@ -228,9 +223,8 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	*ppermission = rightsNone;
 
 	/* Store permission := union of folder permissions */
-	snprintf(sql_string, arsizeof(sql_string), "SELECT permission "
-				"FROM permissions WHERE username=?");
-	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt = gx_sql_prep(pdb->psqlite, "SELECT permission "
+	             "FROM permissions WHERE username=?");
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
@@ -359,10 +353,8 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 	          static_cast<unsigned long long>(tmp_eid),
 	          static_cast<unsigned long long>(tmp_eid + count),
 	          static_cast<long long>(time(nullptr)));
-	if (SQLITE_OK != sqlite3_exec(pdb->psqlite,
-		sql_string, NULL, NULL, NULL)) {
+	if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	}
 	*pbegin_eid = rop_util_make_eid_ex(1, tmp_eid);
 	return TRUE;
 }
@@ -529,9 +521,8 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 	proptags[0] = PROP_TAG(PT_UNICODE, propids.ppropid[0]);
 	proptags[1] = PROP_TAG(PT_UNICODE, propids.ppropid[1]);
 	proptags[2] = PROP_TAG(PT_UNICODE, propids.ppropid[2]);
-	snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id"
-				" FROM folders WHERE parent_id=?");
-	auto pstmt1 = gx_sql_prep(pdb->psqlite, sql_string);
+	auto pstmt1 = gx_sql_prep(pdb->psqlite, "SELECT folder_id"
+	              " FROM folders WHERE parent_id=?");
 	if (pstmt1 == nullptr) {
 		return FALSE;
 	}

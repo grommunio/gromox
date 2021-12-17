@@ -185,9 +185,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM"
-		" recipients_properties WHERE recipient_id=?");
-	auto pstmt1 = gx_sql_prep(psqlite, sql_string);
+	auto pstmt1 = gx_sql_prep(psqlite, "SELECT proptag FROM"
+	              " recipients_properties WHERE recipient_id=?");
 	if (pstmt1 == nullptr) {
 		return FALSE;
 	}
@@ -240,9 +239,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id"
-			" FROM messages WHERE parent_attid=?");
-	pstmt1 = gx_sql_prep(psqlite, sql_string);
+	pstmt1 = gx_sql_prep(psqlite, "SELECT message_id"
+	         " FROM messages WHERE parent_attid=?");
 	if (pstmt1 == nullptr) {
 		return FALSE;
 	}
@@ -384,10 +382,7 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 	if (FALSE == exmdb_server_check_private()) {
 		exmdb_server_set_public_username(username);
 	}
-	sqlite3_exec(pdb->psqlite, "BEGIN TRANSACTION", NULL, NULL, NULL);
-	auto clean_transact = make_scope_exit([&]() {
-		sqlite3_exec(pdb->psqlite, "ROLLBACK", nullptr, nullptr, nullptr);
-	});
+	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (FALSE == common_util_begin_message_optimize(pdb->psqlite)) {
 		return FALSE;
 	}
@@ -401,8 +396,7 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 		return FALSE;
 	}
 	common_util_end_message_optimize();
-	sqlite3_exec(pdb->psqlite, "COMMIT TRANSACTION", NULL, NULL, NULL);
-	clean_transact.release();
+	sql_transact.commit();
 	if (NULL == pinstance->pcontent) {
 		if (NULL != pinstance->username) {
 			free(pinstance->username);
