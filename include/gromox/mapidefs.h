@@ -1119,6 +1119,9 @@ struct ADVISE_INFO {
 	uint32_t sub_id;
 };
 
+/*
+ * @pv:		may legitimately be nullptr (only if cb==0)
+ */
 struct BINARY {
 	uint32_t cb;
 	union {

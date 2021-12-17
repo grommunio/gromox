@@ -2112,6 +2112,12 @@ int EXT_PUSH::advance(uint32_t size)
 
 int EXT_PUSH::p_bytes(const void *pdata, uint32_t n)
 {
+	if (n == 0)
+		/*
+		 * Covers pdata==nullptr case as far as we care. If
+		 * pdata==nullptr and n>0, memcpy/ASAN will usually crash/exit.
+		 */
+		return EXT_ERR_SUCCESS;
 	if (!check_ovf(n))
 		return EXT_ERR_BUFSIZE;
 	memcpy(&m_udata[m_offset], pdata, n);
