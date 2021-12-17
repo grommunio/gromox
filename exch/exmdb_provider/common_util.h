@@ -181,7 +181,6 @@ extern BINARY *cu_xid_to_bin(const XID &);
 BOOL common_util_binary_to_xid(const BINARY *pbin, XID *pxid);
 BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	const BINARY *pchange_key);
-BOOL common_util_copy_file(const char *src_file, const char *dst_file);
 BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
 	int bind_index, uint16_t proptype, void *pvalue);
 void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,

@@ -5433,31 +5433,6 @@ BINARY* common_util_pcl_append(const BINARY *pbin_pcl,
 	return pbin;
 }
 
-BOOL common_util_copy_file(const char *src_file, const char *dst_file)
-{
-	struct stat node_stat;
-	wrapfd fd = open(src_file, O_RDONLY);
-	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
-		return false;
-	auto pbuff = me_alloc<char>(node_stat.st_size);
-	if (NULL == pbuff) {
-		return FALSE;
-	}
-	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size) {
-		free(pbuff);
-		return FALSE;
-	}
-	fd = open(dst_file, O_CREAT|O_TRUNC|O_WRONLY, 0666);
-	if (fd.get() < 0) {
-		free(pbuff);
-		return FALSE;
-	}
-	write(fd.get(), pbuff, node_stat.st_size);
-	free(pbuff);
-	return TRUE;
-}
-
-
 BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
 	int bind_index, uint16_t proptype, void *pvalue)
 {

@@ -34,6 +34,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <cstdio>
+#include <libHX/io.h>
 #include "exmdb_parser.h"
 #define UI(x) static_cast<unsigned int>(x)
 #define LLU(x) static_cast<unsigned long long>(x)
@@ -3649,8 +3650,12 @@ static bool op_delegate(const char *from_address, const char *account,
 				  std::to_string(common_util_sequence_ID()) + "." +
 				  get_host_ID();
 		auto eml_path = maildir + "/eml/"s + mid_string;
-		if (!common_util_copy_file(tmp_path1, eml_path.c_str()))
+		auto ret = HX_copy_file(tmp_path1, eml_path.c_str(), 0);
+		if (ret < 0) {
+			fprintf(stderr, "E-1606: HX_copy_file %s -> %s: %s\n",
+			        tmp_path1, eml_path.c_str(), strerror(-ret));
 			continue;
+		}
 		char tmp_buff[MAX_DIGLEN];
 		strcpy(tmp_buff, pdigest);
 		auto mid_string2 = "\"" + mid_string + "\"";
@@ -4035,8 +4040,12 @@ static bool opx_delegate(const char *from_address, const char *account,
 				  std::to_string(common_util_sequence_ID()) + "." +
 				  get_host_ID();
 		auto eml_path = maildir + "/eml/"s + mid_string;
-		if (!common_util_copy_file(tmp_path1, eml_path.c_str()))
+		auto ret = HX_copy_file(tmp_path1, eml_path.c_str(), 0);
+		if (ret < 0) {
+			fprintf(stderr, "E-1607: HX_copy_file %s -> %s: %s\n",
+			        tmp_path1, eml_path.c_str(), strerror(-ret));
 			continue;
+		}
 		char tmp_buff[MAX_DIGLEN];
 		strcpy(tmp_buff, pdigest);
 		auto mid_string2 = "\"" + mid_string + "\"";
