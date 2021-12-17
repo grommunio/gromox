@@ -5674,6 +5674,13 @@ BOOL common_util_indexing_sub_contents(
 	}
 }
 
+/**
+ * Return the transfer size (see PR_MESSAGE_SIZE description) for a
+ * content blob that is going to be transferred as UTF-16. The blob
+ * is assumed to be UTF-8 encoded, and have a leading codepoint
+ * counter; the caller must ensure this function only called for
+ * blobs previously so encoded.
+ */
 static uint32_t common_util_get_cid_string_length(uint32_t cid)
 {
 	char path[256];
@@ -5689,6 +5696,11 @@ static uint32_t common_util_get_cid_string_length(uint32_t cid)
 	return 2 * le32_to_cpu(length);
 }
 
+/**
+ * Return the transfer size for a content blob that is transferred
+ * raw; the caller must ensure this function is only called for blobs
+ * previously so encoded (i.e. without codepoint counter).
+ */
 static uint32_t common_util_get_cid_length(uint64_t cid)
 {
 	char path[256];
