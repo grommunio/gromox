@@ -5681,7 +5681,7 @@ BOOL common_util_indexing_sub_contents(
  * counter; the caller must ensure this function only called for
  * blobs previously so encoded.
  */
-static uint32_t common_util_get_cid_string_length(uint32_t cid)
+static uint32_t common_util_get_cid_string_length(uint64_t cid)
 {
 	char path[256];
 	struct stat node_stat;
