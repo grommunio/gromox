@@ -38,7 +38,7 @@ static std::condition_variable g_waken_cond;
 static DOUBLE_LIST g_connection_list;
 static DOUBLE_LIST g_connection_list1;
 static std::unordered_map<std::string, MIDB_CMD_HANDLER> g_cmd_entry;
-static unsigned int g_cmd_debug;
+unsigned int g_cmd_debug;
 
 static void *midcp_thrwork(void *);
 static int cmd_parser_generate_args(char* cmd_line, int cmd_len, char** argv);

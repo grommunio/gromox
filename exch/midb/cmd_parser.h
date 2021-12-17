@@ -19,3 +19,5 @@ extern MIDB_CONNECTION *cmd_parser_get_connection();
 extern void cmd_parser_put_connection(MIDB_CONNECTION *);
 extern void cmd_parser_register_command(const char *command, MIDB_CMD_HANDLER);
 extern void cmd_write(int fd, const void *buf, size_t size);
+
+extern unsigned int g_cmd_debug;
