@@ -719,7 +719,7 @@ static int imap_cmd_parser_print_structure(IMAP_CONTEXT *pcontext,
 
 			len = imap_cmd_parser_match_field(cmd_tag, eml_path.c_str(),
 			      pmime->get_offset(MJSON_MIME_HEAD),
-			      pmime->get_offset(MJSON_MIME_HEAD),
+			      pmime->get_length(MJSON_MIME_HEAD),
 			      b_not, temp_tag, offset, length, buff + buff_len,
 			      max_len - buff_len);
 			if (-1 == len) {
