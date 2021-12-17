@@ -1413,7 +1413,7 @@ static inline size_t det_multi_num(uint16_t type, const void *mv)
 	case PT_MV_BINARY:
 		return static_cast<const BINARY_ARRAY *>(mv)->count;
 	}
-	return std::string::npos;
+	return UINT32_MAX;
 }
 
 static inline void *pick_single_val(uint16_t type, void *mv, size_t j)
@@ -1703,7 +1703,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			pmultival = propvals[multi_index].pvalue;
 			if (pmultival != nullptr) {
 				multi_num = det_multi_num(ptable->psorts->psort[multi_index].type & ~MV_INSTANCE, pmultival);
-				if (multi_num == std::string::npos)
+				if (multi_num == UINT32_MAX)
 					return;
 				if (0 == multi_num) {
 					pmultival = NULL;
