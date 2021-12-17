@@ -30,7 +30,7 @@ static std::shared_ptr<CONFIG_FILE> g_config_during_init;
 
 static constexpr cfg_directive cfg_default_values[] = {
 	{"cache_interval", "2h", CFG_TIME, "1s"},
-	{"dbg_synthesize_content", "false", CFG_BOOL},
+	{"dbg_synthesize_content", "0"},
 	{"exrpc_debug", "0"},
 	{"enable_dam", "1", CFG_BOOL},
 	{"listen_ip", "::1"},

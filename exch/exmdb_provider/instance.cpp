@@ -662,27 +662,36 @@ BOOL exmdb_server_clear_message_instance(
 	return TRUE;
 }
 
-static void *fake_read_cid(std::string &&path, uint32_t tag, uint32_t *outlen) try
+static void *fake_read_cid(unsigned int mode, uint32_t tag, uint64_t cid, uint32_t *outlen) try
 {
-	if (tag == 0) {
-	} else if (tag == ID_TAG_HTML) {
-		path.insert(0, "<html><body><p><tt>cid:");
-		path += "</tt></p></body></html>";
-	} else if (tag == ID_TAG_RTFCOMPRESSED) {
-		path.insert(0, "\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard\ncid:");
-		path += "\\par\n}";
-	} else if (tag == ID_TAG_BODY) {
-		auto len = path.size();
-		path.insert(0, "    ");
-		cpu_to_le32p(path.data(), len);
-	}
-	auto buf = cu_alloc<char>(path.size() + 1);
+	static constexpr size_t bmaxsize = 256;
+	auto buf = cu_alloc<char>(bmaxsize);
 	if (buf == nullptr)
 		return nullptr;
-	memcpy(buf, path.data(), path.size());
-	buf[path.size()] = '\0';
-	if (outlen != nullptr)
-		*outlen = path.size();
+	buf[0] = '\0';
+
+	if (tag == ID_TAG_HTML)
+		strcpy(buf, "<html><body><p><tt>");
+	else if (tag == ID_TAG_RTFCOMPRESSED)
+		strcpy(buf, "\\rtf1\\ansi{\\fonttbl\\f0\\fswiss Helvetica;}\\f0\\pard\n");
+	else if (tag == ID_TAG_BODY)
+		strcpy(buf, "XXXX");
+	if (tag != 0)
+		snprintf(buf + strlen(buf), bmaxsize - strlen(buf),
+		         mode <= 1 ? "[CID=%llu Tag=%xh] Property/Attachment absent" :
+		         "[CID=%llu Tag=%xh] Filler text for debugging",
+		         LLU(cid), tag);
+	if (tag == ID_TAG_HTML)
+		snprintf(buf + strlen(buf), bmaxsize - strlen(buf),
+		         "</tt></p></body></html>");
+	else if (tag == ID_TAG_RTFCOMPRESSED)
+		snprintf(buf + strlen(buf), bmaxsize - strlen(buf), "\\par\n}");
+
+	if (outlen != nullptr) {
+		*outlen = strlen(buf);
+		if (tag == ID_TAG_BODY)
+			cpu_to_le32p(buf, *outlen - 4);
+	}
 	return buf;
 } catch (const std::bad_alloc &) {
 	return nullptr;
@@ -695,6 +704,8 @@ void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag)
 	std::string path;
 
 	try {
+		if (g_dbg_synth_content == 2)
+			return fake_read_cid(g_dbg_synth_content, tag, cid, plen);
 		path = exmdb_server_get_dir() + "/cid/"s + std::to_string(cid);
 	} catch (const std::bad_alloc &) {
 		fprintf(stderr, "E-1588: ENOMEM\n");
@@ -703,7 +714,7 @@ void *instance_read_cid_content(uint64_t cid, uint32_t *plen, uint32_t tag)
 	auto fd = open(path.c_str(), O_RDONLY);
 	if (-1 == fd) {
 		if (g_dbg_synth_content)
-			return fake_read_cid(std::move(path), tag, plen);
+			return fake_read_cid(g_dbg_synth_content, tag, cid, plen);
 		fprintf(stderr, "E-1587: %s: %s\n", path.c_str(), strerror(errno));
 		return nullptr;
 	}

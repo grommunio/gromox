@@ -12,12 +12,12 @@ network protocol on port 5000.
 Default: \fI2 hours\fP
 .TP
 \fBdbg_synthesize_content\fP
-When this directive is set to yes, missing content files will not be regarded
-as an error and the respective attachment or property is delivered as an empty
-string. This is meant for debugging with a userdir that is only partially
-present.
+When this directive is set to 1, missing content files will not be regarded as
+an error and the respective attachment or property is delivered with a
+replacement string. If set to 2, a replacement string is always delivered; mode
+2 is useful for reducing the amount of data downloaded when debugging ICS.
 .br
-Default: \fIno\fP
+Default: \fI0\fP
 .TP
 \fBenable_dam\fP
 When set to \fBon\fP, inbox rule processing is allowed to create Deferred
