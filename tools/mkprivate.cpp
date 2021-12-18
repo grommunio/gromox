@@ -242,6 +242,11 @@ int main(int argc, const char **argv)
 		       mysql_user, mysql_host, db_name);
 		return 3;
 	}
+	if (mysql_set_character_set(pmysql, "utf8mb4") != 0) {
+		fprintf(stderr, "\"utf8mb4\" not available: %s", mysql_error(pmysql));
+		mysql_close(pmysql);
+		return 3;
+	}
 	
 	auto qstr = "SELECT 0, u.maildir, u.lang, up.propval_str AS dtypx, u.address_status, u.id "
 	            "FROM users AS u "
