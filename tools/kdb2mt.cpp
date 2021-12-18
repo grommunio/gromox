@@ -382,11 +382,13 @@ kdb_open_by_guid(const char *guid, const sql_login_param &sqp)
 	drv->m_conn = mysql_init(nullptr);
 	if (drv->m_conn == nullptr)
 		throw std::bad_alloc();
-	mysql_options(drv->m_conn, MYSQL_SET_CHARSET_NAME, "utf8mb4");
 	if (mysql_real_connect(drv->m_conn, snul(sqp.host), sqp.user.c_str(),
 	    sqp.pass.c_str(), sqp.dbname.c_str(), sqp.port, nullptr, 0) == nullptr)
 		throw YError("PK-1018: mysql_connect %s@%s: %s",
 		      sqp.user.c_str(), sqp.host.c_str(), mysql_error(drv->m_conn));
+	if (mysql_set_character_set(drv->m_conn, "utf8mb4") != 0)
+		throw YError("PK-1021: \"utf8mb4\" not available: %s",
+		      mysql_error(drv->m_conn));
 	return kdb_open_by_guid_1(std::move(drv), guid);
 }
 
@@ -415,11 +417,13 @@ kdb_open_by_user(const char *storeuser, const sql_login_param &sqp)
 	drv->m_conn = mysql_init(nullptr);
 	if (drv->m_conn == nullptr)
 		throw std::bad_alloc();
-	mysql_options(drv->m_conn, MYSQL_SET_CHARSET_NAME, "utf8mb4");
 	if (mysql_real_connect(drv->m_conn, snul(sqp.host), sqp.user.c_str(),
 	    sqp.pass.c_str(), sqp.dbname.c_str(), sqp.port, nullptr, 0) == nullptr)
 		throw YError("PK-1019: mysql_connect %s@%s: %s",
 		      sqp.user.c_str(), sqp.host.c_str(), mysql_error(drv->m_conn));
+	if (mysql_set_character_set(drv->m_conn, "utf8mb4") != 0)
+		throw YError("PK-1020: \"utf8mb4\" not available: %s",
+		      mysql_error(drv->m_conn));
 
 	auto qstr = *storeuser == '\0' ?
 	            "SELECT guid, user_id, user_name, type FROM stores"s :

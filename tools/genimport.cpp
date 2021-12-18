@@ -672,14 +672,20 @@ static MYSQL *sql_login()
 		fprintf(stderr, "exm: mysql_init failed\n");
 		return nullptr;
 	}
-	mysql_options(conn, MYSQL_SET_CHARSET_NAME, "utf8mb4");
 	if (mysql_real_connect(conn, sql_host, sql_user, sql_pass, sql_dbname,
-	    sql_port, nullptr, 0) != nullptr)
-		return conn;
-	fprintf(stderr, "exm: Failed to connect to SQL %s@%s: %s\n",
-	        sql_user, sql_host, mysql_error(conn));
-	mysql_close(conn);
-	return nullptr;
+	    sql_port, nullptr, 0) == nullptr) {
+		fprintf(stderr, "exm: Failed to connect to SQL %s@%s: %s\n",
+		        sql_user, sql_host, mysql_error(conn));
+		mysql_close(conn);
+		return nullptr;
+	}
+	if (mysql_set_character_set(conn, "utf8mb4") != 0) {
+		fprintf(stderr, "mysql: \"utf8mb4\" not available: %s\n",
+		        mysql_error(conn));
+		mysql_close(conn);
+		return nullptr;
+	}
+	return conn;
 }
 
 static int sql_meta(MYSQL *sqh, const char *username, bool is_domain,
