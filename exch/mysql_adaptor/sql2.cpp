@@ -78,15 +78,21 @@ MYSQL *sql_make_conn()
 		mysql_options(conn, MYSQL_OPT_READ_TIMEOUT, &g_parm.timeout);
 		mysql_options(conn, MYSQL_OPT_WRITE_TIMEOUT, &g_parm.timeout);
 	}
-	mysql_options(conn, MYSQL_SET_CHARSET_NAME, "utf8mb4");
 	if (mysql_real_connect(conn, g_parm.host.c_str(), g_parm.user.c_str(),
 	    g_parm.pass.size() != 0 ? g_parm.pass.c_str() : nullptr,
-	    g_parm.dbname.c_str(), g_parm.port, nullptr, 0) != nullptr)
-		return conn;
-	printf("[mysql_adaptor]: Failed to connect to mysql server: %s\n",
-	       mysql_error(conn));
-	mysql_close(conn);
-	return nullptr;
+	    g_parm.dbname.c_str(), g_parm.port, nullptr, 0) == nullptr) {
+		printf("[mysql_adaptor]: Failed to connect to mysql server: %s\n",
+		       mysql_error(conn));
+		mysql_close(conn);
+		return nullptr;
+	}
+	if (mysql_set_character_set(conn, "utf8mb4") != 0) {
+		fprintf(stderr, "[mysql_adaptor]: \"utf8mb4\" not available: %s\n",
+		        mysql_error(conn));
+		mysql_close(conn);
+		return nullptr;
+	}
+	return conn;
 }
 
 sqlconn &sqlconn::operator=(sqlconn &&o)
