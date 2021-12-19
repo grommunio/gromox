@@ -70,7 +70,10 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 	if (g_config_file == nullptr)
 		return PAM_AUTH_ERR;
 
-	const char *username = nullptr;
+	const char *service = nullptr, *username = nullptr;
+	for (int i = 0; i < argc; ++i)
+		if (strncmp(argv[i], "service=", 8) == 0)
+			service = argv[i] + 8;
 	auto ret = pam_get_user(pamh, &username, nullptr);
 	if (ret != PAM_SUCCESS || username == nullptr)
 		return PAM_AUTH_ERR;
@@ -116,14 +119,35 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		return PAM_AUTH_ERR;
 	auto cleanup_1 = make_scope_exit(service_stop);
 
-	BOOL (*fptr_login)(const char *, const char *, char *, int);
-	fptr_login = reinterpret_cast<decltype(fptr_login)>(service_query("auth_login_smtp", "system", typeid(decltype(*fptr_login))));
-	if (fptr_login == nullptr)
-		return PAM_AUTH_ERR;
-	auto cleanup_2 = make_scope_exit([]() { service_release("auth_login_smtp", "system"); });
-	char reason[256];
-	return fptr_login(username, authtok.get(), reason, sizeof(reason)) != FALSE ?
-	       PAM_SUCCESS : PAM_AUTH_ERR;
+	if (service == nullptr || strcmp(service, "smtp") == 0) {
+		BOOL (*fptr_login)(const char *, const char *, char *, int);
+		fptr_login = reinterpret_cast<decltype(fptr_login)>(service_query("auth_login_smtp", "system", typeid(decltype(*fptr_login))));
+		if (fptr_login == nullptr)
+			return PAM_AUTH_ERR;
+		auto cleanup_2 = make_scope_exit([]() { service_release("auth_login_smtp", "system"); });
+		char reason[256];
+		return fptr_login(username, authtok.get(), reason, sizeof(reason)) ?
+		       PAM_SUCCESS : PAM_AUTH_ERR;
+	} else if (strcmp(service, "imap") == 0 || strcmp(service, "pop3") == 0) {
+		BOOL (*fptr_login)(const char *, const char *, char *, char *, char *, int);
+		fptr_login = reinterpret_cast<decltype(fptr_login)>(service_query("auth_login_pop3", "system", typeid(decltype(*fptr_login))));
+		if (fptr_login == nullptr)
+			return PAM_AUTH_ERR;
+		auto cleanup_2 = make_scope_exit([]() { service_release("auth_login_pop3", "system"); });
+		char maildir[256], lang[256], reason[256];
+		return fptr_login(username, authtok.get(), maildir, lang, reason, sizeof(reason)) ?
+		       PAM_SUCCESS : PAM_AUTH_ERR;
+	} else if (strcmp(service, "exch") == 0) {
+		BOOL (*fptr_login)(const char *, const char *, char *, char *, char *, int);
+		fptr_login = reinterpret_cast<decltype(fptr_login)>(service_query("auth_login_exch", "system", typeid(decltype(*fptr_login))));
+		if (fptr_login == nullptr)
+			return PAM_AUTH_ERR;
+		auto cleanup_2 = make_scope_exit([]() { service_release("auth_login_exch", "system"); });
+		char maildir[256], lang[256], reason[256];
+		return fptr_login(username, authtok.get(), maildir, lang, reason, sizeof(reason)) ?
+		       PAM_SUCCESS : PAM_AUTH_ERR;
+	}
+	return PAM_AUTH_ERR;
 }
 
 PAM_EXTERN GX_EXPORT int pam_sm_setcred(pam_handle_t *pamh, int flags,

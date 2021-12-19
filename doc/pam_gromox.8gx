@@ -13,7 +13,7 @@ distributions is not suitable and can be wholly replaced. In otherwords,
 /etc/pam.d/smtp need just contain:
 .PP
 .nf
-auth required pam_gromox.so
+auth required pam_gromox.so service=smtp
 account required pam_permit.so
 .fi
 .PP
@@ -22,6 +22,13 @@ required pam_gromox.so" would do nothing. The PAM framework always starts out
 with an initial deny policy, so at least one module needs to be called to make
 the PAM request succeed. For this reason, if there are no other "account"
 modules listed, pam_permit.so should be used.)
+.SH PAM module arguments
+.TP
+\fBservice=\fP\fIs\fP
+Check for a specific privilege bit on the user account. Possible values for
+\fIs\fP are: \fBexch\fP, \fBsmtp\fP, \fBimap\fP, \fBpop3\fP.
+.br
+Default: \fBsmtp\fP
 .SH Configuration directives in /etc/gromox/pam.cfg
 .TP
 \fBconfig_file_path\fP
