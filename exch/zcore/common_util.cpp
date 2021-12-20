@@ -96,11 +96,10 @@ BOOL common_util_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
 	const SORTORDER_SET *psort_criteria)
 {
-	int i;
 	uint32_t proptag;
 	
 	proptag = 0;
-	for (i=0; i<psort_criteria->count; i++) {
+	for (size_t i = 0; i < psort_criteria->count; ++i) {
 		if (!(psort_criteria->psort[i].type & MV_INSTANCE))
 			continue;
 		if (!(psort_criteria->psort[i].type & MV_FLAG))
@@ -108,11 +107,10 @@ BOOL common_util_verify_columns_and_sorts(
 		proptag = PROP_TAG(psort_criteria->psort[i].type, psort_criteria->psort[i].propid);
 		break;
 	}
-	for (i=0; i<pcolumns->count; i++) {
+	for (size_t i = 0; i < pcolumns->count; ++i)
 		if (pcolumns->pproptag[i] & MV_INSTANCE &&
 		    proptag != pcolumns->pproptag[i])
 			return FALSE;
-	}
 	return TRUE;
 }
 
@@ -122,21 +120,15 @@ BOOL common_util_check_message_class(const char *str_class)
 	int len;
 	
 	len = strlen(str_class);
-	if (len + 1 > 255) {
+	if (len + 1 > 255)
 		return FALSE;
-	}
 	for (i=0; i<len; i++) {
-		if (str_class[i] < 32 || str_class[i] > 126) {
+		if (str_class[i] < 32 || str_class[i] > 126)
 			return FALSE;
-		}
-		if ('.' == str_class[i] && '.' == str_class[i + 1]) {
+		if (str_class[i] == '.' && str_class[i+1] == '.')
 			return FALSE;
-		}
 	}
-	if ('.' == str_class[0] || '.' == str_class[len - 1]) {
-		return FALSE;
-	}
-	return TRUE;
+	return str_class[0] == '.' || str_class[len-1] == '.' ? false : TRUE;
 }
 
 BOOL common_util_check_delegate(message_object *pmessage, char *username, size_t ulen)
@@ -161,10 +153,9 @@ BOOL common_util_check_delegate(message_object *pmessage, char *username, size_t
 	if (NULL != pvalue) {
 		if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
 			pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
-			if (NULL != pvalue) {
+			if (pvalue != nullptr)
 				return common_util_essdn_to_username(static_cast<char *>(pvalue),
 				       username, ulen);
-			}
 		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
 			pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 			if (NULL != pvalue) {
@@ -179,10 +170,9 @@ BOOL common_util_check_delegate(message_object *pmessage, char *username, size_t
 		return TRUE;
 	}
 	pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_ENTRYID);
-	if (NULL != pvalue) {
+	if (pvalue != nullptr)
 		return common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
 		       username, ulen);
-	}
 	username[0] = '\0';
 	return TRUE;
 }
@@ -195,16 +185,13 @@ BOOL common_util_check_delegate_permission(
 	
 	sprintf(temp_path, "%s/config/delegates.txt", maildir);
 	auto pfile = list_file_initd(temp_path, nullptr, "%s:324");
-	if (NULL == pfile) {
+	if (pfile == nullptr)
 		return FALSE;
-	}
 	auto item_num = pfile->get_size();
 	auto pitem = static_cast<const srcitem *>(pfile->get_list());
-	for (decltype(item_num) i = 0; i < item_num; ++i) {
-		if (strcasecmp(pitem[i].user, account) == 0) {
+	for (decltype(item_num) i = 0; i < item_num; ++i)
+		if (strcasecmp(pitem[i].user, account) == 0)
 			return TRUE;
-		}
-	}
 	return FALSE;
 }
 
@@ -213,9 +200,8 @@ BOOL common_util_check_delegate_permission_ex(
 {
 	char maildir[256];	
 	
-	if (0 == strcasecmp(account, account_representing)) {
+	if (strcasecmp(account, account_representing) == 0)
 		return TRUE;
-	}
 	if (!system_services_get_maildir(account_representing,
 	    maildir, arsizeof(maildir)))
 		return FALSE;
@@ -264,9 +250,8 @@ gxerr_t common_util_rectify_message(message_object *pmessage,
 	    tmp_display, arsizeof(tmp_display)))
 		return GXERR_CALL_FAILED;
 	pentryid = common_util_username_to_addressbook_entryid(account);
-	if (NULL == pentryid) {
+	if (pentryid == nullptr)
 		return GXERR_CALL_FAILED;
-	}
 	search_bin.cb = gx_snprintf(search_buff, GX_ARRAY_SIZE(search_buff), "EX:%s", essdn_buff) + 1;
 	search_bin.pv = search_buff;
 	propval_buff[6].proptag = PR_SENDER_EMAIL_ADDRESS;
@@ -286,9 +271,8 @@ gxerr_t common_util_rectify_message(message_object *pmessage,
 			return GXERR_CALL_FAILED;
 		pentryid = common_util_username_to_addressbook_entryid(
 										representing_username);
-		if (NULL == pentryid) {
+		if (pentryid == nullptr)
 			return GXERR_CALL_FAILED;
-		}
 	} else {
 		strcpy(essdn_buff1, essdn_buff);
 		strcpy(tmp_display1, tmp_display);
@@ -336,10 +320,9 @@ void common_util_remove_propvals(
 		if (proptag != parray->ppropval[i].proptag)
 			continue;
 		parray->count--;
-		if (i < parray->count) {
+		if (i < parray->count)
 			memmove(parray->ppropval + i, parray->ppropval + i + 1,
 			        (parray->count - i) * sizeof(TAGGED_PROPVAL));
-		}
 		return;
 	}
 }
@@ -354,12 +337,11 @@ void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 			if (pproptags_subtractor->pproptag[j] != pproptags_minuend->pproptag[i])
 				continue;
 			pproptags_minuend->count--;
-			if (i < pproptags_minuend->count) {
+			if (i < pproptags_minuend->count)
 				memmove(pproptags_minuend->pproptag + i,
 					pproptags_minuend->pproptag + i + 1,
 					(pproptags_minuend->count - i) *
 					sizeof(uint32_t));
-			}
 			break;
 		}
 	}
@@ -378,20 +360,16 @@ BOOL common_util_essdn_to_username(const char *pessdn,
 			"/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=",
 			g_org_name);
-	if (0 != strncasecmp(pessdn, tmp_essdn, tmp_len)) {
+	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0 ||
+	    pessdn[tmp_len+16] != '-')
 		return FALSE;
-	}
-	if ('-' != pessdn[tmp_len + 16]) {
-		return FALSE;
-	}
 	plocal = pessdn + tmp_len + 17;
 	user_id = decode_hex_int(pessdn + tmp_len + 8);
 	if (!system_services_get_username_from_id(user_id, username, ulen))
 		return FALSE;
 	pat = strchr(username, '@');
-	if (NULL == pat) {
+	if (pat == nullptr)
 		return FALSE;
-	}
 	return strncasecmp(username, plocal, pat - username) == 0 ? TRUE : false;
 }
 
@@ -404,12 +382,9 @@ BOOL common_util_essdn_to_uid(const char *pessdn, int *puid)
 			"/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=",
 			g_org_name);
-	if (0 != strncasecmp(pessdn, tmp_essdn, tmp_len)) {
+	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0 ||
+	    pessdn[tmp_len+16] != '-')
 		return FALSE;
-	}
-	if ('-' != pessdn[tmp_len + 16]) {
-		return FALSE;
-	}
 	*puid = decode_hex_int(pessdn + tmp_len + 8);
 	return TRUE;
 }
@@ -424,12 +399,9 @@ BOOL common_util_essdn_to_ids(const char *pessdn,
 			"/o=%s/ou=Exchange Administrative Group "
 			"(FYDIBOHF23SPDLT)/cn=Recipients/cn=",
 			g_org_name);
-	if (0 != strncasecmp(pessdn, tmp_essdn, tmp_len)) {
+	if (strncasecmp(pessdn, tmp_essdn, tmp_len) != 0 ||
+	    pessdn[tmp_len+16] != '-')
 		return FALSE;
-	}
-	if ('-' != pessdn[tmp_len + 16]) {
-		return FALSE;
-	}
 	*pdomain_id = decode_hex_int(pessdn + tmp_len);
 	*puser_id = decode_hex_int(pessdn + tmp_len + 8);
 	return TRUE;	
@@ -485,35 +457,31 @@ BOOL common_util_exmdb_locinfo_from_string(
 	uint64_t tmp_val;
 	char tmp_buff[16];
 	
-	if (0 == strncmp(loc_string, "1:", 2)) {
+	if (strncmp(loc_string, "1:", 2) == 0)
 		*ptype = LOC_TYPE_PRIVATE_FOLDER;
-	} else if (0 == strncmp(loc_string, "2:", 2)) {
+	else if (strncmp(loc_string, "2:", 2) == 0)
 		*ptype = LOC_TYPE_PUBLIC_FOLDER;
-	} else if (0 == strncmp(loc_string, "3:", 2)) {
+	else if (strncmp(loc_string, "3:", 2) == 0)
 		*ptype = LOC_TYPE_PRIVATE_MESSAGE;
-	} else if (0 == strncmp(loc_string, "4:", 2)) {
+	else if (strncmp(loc_string, "4:", 2) == 0)
 		*ptype = LOC_TYPE_PUBLIC_MESSAGE;
-	} else {
+	else
 		return FALSE;
-	}
+
 	auto ptoken = strchr(loc_string + 2, ':');
-	if (NULL == ptoken) {
+	if (ptoken == nullptr)
 		return FALSE;
-	}
 	tmp_len = ptoken - (loc_string + 2);
-	if (tmp_len > 12) {
+	if (tmp_len > 12)
 		return FALSE;
-	}
 	memcpy(tmp_buff, loc_string + 2, tmp_len);
 	tmp_buff[tmp_len] = '\0';
 	*pdb_id = strtol(tmp_buff, nullptr, 0);
-	if (0 == *pdb_id) {
+	if (*pdb_id == 0)
 		return FALSE;
-	}
 	tmp_val = strtoll(ptoken + 1, NULL, 16);
-	if (0 == tmp_val) {
+	if (tmp_val == 0)
 		return FALSE;
-	}
 	*peid = rop_util_make_eid_ex(1, tmp_val);
 	return TRUE;
 }
@@ -597,9 +565,8 @@ const char* common_util_get_freebusy_path()
 BOOL common_util_build_environment()
 {
 	auto pctx = me_alloc<ENVIRONMENT_CONTEXT>();
-	if (NULL == pctx) {
+	if (pctx == nullptr)
 		return FALSE;
-	}
 	alloc_context_init(&pctx->allocator);
 	pctx->clifd = -1;
 	pthread_setspecific(g_env_key, pctx);
@@ -625,18 +592,14 @@ void* common_util_alloc(size_t size)
 void common_util_set_clifd(int clifd)
 {
 	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
-	if (NULL != pctx) {
+	if (pctx != nullptr)
 		pctx->clifd = clifd;
-	}
 }
 
 int common_util_get_clifd()
 {
 	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
-	if (NULL == pctx) {
-		return -1;
-	}
-	return pctx->clifd;
+	return pctx == nullptr ? -1 : pctx->clifd;
 }
 
 char* common_util_dup(const char *pstr)
@@ -645,9 +608,8 @@ char* common_util_dup(const char *pstr)
 	
 	len = strlen(pstr) + 1;
 	auto pstr1 = cu_alloc<char>(len);
-	if (NULL == pstr1) {
+	if (pstr1 == nullptr)
 		return NULL;
-	}
 	memcpy(pstr1, pstr, len);
 	return pstr1;
 }
@@ -655,9 +617,8 @@ char* common_util_dup(const char *pstr)
 static BINARY* common_util_dup_binary(const BINARY *pbin)
 {
 	auto pbin1 = cu_alloc<BINARY>();
-	if (NULL == pbin1) {
+	if (pbin1 == nullptr)
 		return NULL;
-	}
 	pbin1->cb = pbin->cb;
 	if (0 == pbin->cb) {
 		pbin1->pb = NULL;
@@ -693,9 +654,8 @@ ZNOTIFICATION* common_util_dup_znotification(
 			}
 		} else {
 			pnew_notify = cu_alloc<NEWMAIL_ZNOTIFICATION>();
-			if (NULL == pnew_notify) {
+			if (pnew_notify == nullptr)
 				return NULL;
-			}
 		}
 		memset(pnew_notify, 0, sizeof(NEWMAIL_ZNOTIFICATION));
 		pnotification1->pnotification_data = pnew_notify;
@@ -743,9 +703,8 @@ ZNOTIFICATION* common_util_dup_znotification(
 		} else {
 			pnew_notify->message_class = common_util_dup(
 							pnew_notify1->message_class);
-			if (NULL == pnew_notify->message_class) {
+			if (pnew_notify->message_class == nullptr)
 				return NULL;
-			}
 		}
 		pnew_notify->message_flags = pnew_notify1->message_flags;
 		return pnotification1;
@@ -778,9 +737,8 @@ ZNOTIFICATION* common_util_dup_znotification(
 		} else {
 			pobj_notify->pentryid = common_util_dup_binary(
 			                        pobj_notify1->pentryid);
-			if (NULL == pobj_notify->pentryid) {
+			if (pobj_notify->pentryid == nullptr)
 				return NULL;
-			}
 		}
 	}
 	if (NULL != pobj_notify1->pparentid) {
@@ -794,9 +752,8 @@ ZNOTIFICATION* common_util_dup_znotification(
 		} else {
 			pobj_notify->pparentid = common_util_dup_binary(
 			                         pobj_notify1->pparentid);
-			if (NULL == pobj_notify->pparentid) {
+			if (pobj_notify->pparentid == nullptr)
 				return NULL;
-			}
 		}
 	}
 	if (NULL != pobj_notify1->pold_entryid) {
@@ -810,9 +767,8 @@ ZNOTIFICATION* common_util_dup_znotification(
 		} else {
 			pobj_notify->pold_entryid = common_util_dup_binary(
 			                            pobj_notify1->pold_entryid);
-			if (NULL == pobj_notify->pold_entryid) {
+			if (pobj_notify->pold_entryid == nullptr)
 				return NULL;
-			}
 		}
 	}
 	if (NULL != pobj_notify->pold_parentid) {
@@ -826,9 +782,8 @@ ZNOTIFICATION* common_util_dup_znotification(
 		} else {
 			pobj_notify->pold_parentid = common_util_dup_binary(
 			                             pobj_notify1->pold_parentid);
-			if (NULL == pobj_notify->pold_parentid) {
+			if (pobj_notify->pold_parentid == nullptr)
 				return NULL;
-			}
 		}
 	}
 	if (NULL != pobj_notify->pproptags) {
@@ -841,15 +796,13 @@ ZNOTIFICATION* common_util_dup_znotification(
 			}
 		} else {
 			pobj_notify1->pproptags = cu_alloc<PROPTAG_ARRAY>();
-			if (NULL == pobj_notify1->pproptags) {
+			if (pobj_notify1->pproptags == nullptr)
 				return NULL;
-			}
 			pobj_notify1->pproptags->count =
 				pobj_notify->pproptags->count;
 			pobj_notify1->pproptags->pproptag = cu_alloc<uint32_t>(pobj_notify->pproptags->count);
-			if (NULL == pobj_notify1->pproptags->pproptag) {
+			if (pobj_notify1->pproptags->pproptag == nullptr)
 				return NULL;
-			}
 			memcpy(pobj_notify1->pproptags->pproptag,
 				pobj_notify->pproptags->pproptag, sizeof(
 				uint32_t) * pobj_notify->pproptags->count);
@@ -866,34 +819,26 @@ void common_util_free_znotification(ZNOTIFICATION *pnotification)
 	if (EVENT_TYPE_NEWMAIL == pnotification->event_type) {
 		pnew_notify = (NEWMAIL_ZNOTIFICATION*)
 			pnotification->pnotification_data;
-		if (NULL != pnew_notify->entryid.pb) {
+		if (pnew_notify->entryid.pb != nullptr)
 			free(pnew_notify->entryid.pb);
-		}
-		if (NULL != pnew_notify->parentid.pb) {
+		if (pnew_notify->parentid.pb != nullptr)
 			free(pnew_notify->parentid.pb);
-		}
-		if (NULL != pnew_notify->message_class) {
+		if (pnew_notify->message_class != nullptr)
 			free(pnew_notify->message_class);
-		}
 		free(pnew_notify);
 	} else {
 		pobj_notify = (OBJECT_ZNOTIFICATION*)
 			pnotification->pnotification_data;
-		if (NULL != pobj_notify->pentryid) {
+		if (pobj_notify->pentryid != nullptr)
 			rop_util_free_binary(pobj_notify->pentryid);
-		}
-		if (NULL != pobj_notify->pparentid) {
+		if (pobj_notify->pparentid != nullptr)
 			rop_util_free_binary(pobj_notify->pparentid);
-		}
-		if (NULL != pobj_notify->pold_entryid) {
+		if (pobj_notify->pold_entryid != nullptr)
 			rop_util_free_binary(pobj_notify->pold_entryid);
-		}
-		if (NULL != pobj_notify->pold_parentid) {
+		if (pobj_notify->pold_parentid != nullptr)
 			rop_util_free_binary(pobj_notify->pold_parentid);
-		}
-		if (NULL != pobj_notify->pproptags) {
+		if (pobj_notify->pproptags != nullptr)
 			proptag_array_free(pobj_notify->pproptags);
-		}
 	}
 	free(pnotification);
 }
@@ -933,9 +878,8 @@ static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
 	ONEOFF_ENTRYID oneoff_entry;
 	ADDRESSBOOK_ENTRYID ab_entryid;
 	
-	if (pbin->cb < 20) {
+	if (pbin->cb < 20)
 		return FALSE;
-	}
 	ext_pull.init(pbin->pb, 20, alloc, 0);
 	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
 	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
@@ -944,9 +888,8 @@ static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
 		ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
 		if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS)
 			return FALSE;
-		if (ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER != ab_entryid.type) {
+		if (ab_entryid.type != ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER)
 			return FALSE;
-		}
 		return common_util_essdn_to_username(ab_entryid.px500dn,
 		       username, ulen);
 	}
@@ -954,9 +897,8 @@ static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
 		ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
 		if (ext_pull.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS)
 			return FALSE;
-		if (0 != strcasecmp(oneoff_entry.paddress_type, "SMTP")) {
+		if (strcasecmp(oneoff_entry.paddress_type, "SMTP") != 0)
 			return FALSE;
-		}
 		gx_strlcpy(username, oneoff_entry.pmail_address, ulen);
 		return TRUE;
 	}
@@ -985,9 +927,8 @@ BINARY* common_util_username_to_addressbook_entryid(
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = x500dn;
 	auto pbin = cu_alloc<BINARY>();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->pv = common_util_alloc(1280);
 	if (pbin->pv == nullptr ||
 	    !ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
@@ -1035,9 +976,8 @@ static BOOL common_util_username_to_entryid(const char *username,
 	if (system_services_get_user_ids(username, &user_id, &domain_id, &dtypx)) {
 		gx_strlcpy(tmp_name, username, GX_ARRAY_SIZE(tmp_name));
 		pdomain = strchr(tmp_name, '@');
-		if (NULL == pdomain) {
+		if (pdomain == nullptr)
 			return FALSE;
-		}
 		*pdomain = '\0';
 		encode_hex_int(user_id, hex_string);
 		encode_hex_int(domain_id, hex_string2);
@@ -1045,9 +985,8 @@ static BOOL common_util_username_to_entryid(const char *username,
 				"Group (FYDIBOHF23SPDLT)/cn=Recipients/cn=%s%s-%s",
 				g_org_name, hex_string2, hex_string, tmp_name);
 		HX_strupper(x500dn);
-		if (FALSE == common_util_essdn_to_entryid(x500dn, pbin)) {
+		if (!common_util_essdn_to_entryid(x500dn, pbin))
 			return FALSE;
-		}
 		if (dtpp != nullptr)
 			*dtpp = dtypx;
 		return TRUE;
@@ -1070,9 +1009,8 @@ static BOOL common_util_username_to_entryid(const char *username,
 		oneoff_entry.ctrl_flags = CTRL_FLAG_NORICH;
 		status = ext_push.p_oneoff_eid(&oneoff_entry);
 	}
-	if (EXT_ERR_SUCCESS != status) {
+	if (status != EXT_ERR_SUCCESS)
 		return FALSE;
-	}
 	pbin->cb = ext_push.m_offset;
 	if (dtpp != nullptr)
 		*dtpp = DT_MAILUSER;
@@ -1109,9 +1047,8 @@ BOOL common_util_from_folder_entryid(BINARY bin,
 	case EITLT_PRIVATE_FOLDER:
 		*pb_private = TRUE;
 		*pdb_id = rop_util_get_user_id(tmp_entryid.database_guid);
-		if (-1 == *pdb_id) {
+		if (*pdb_id == -1)
 			return FALSE;
-		}
 		*pfolder_id = rop_util_make_eid(1,
 				tmp_entryid.global_counter);
 		return TRUE;
@@ -1124,9 +1061,8 @@ BOOL common_util_from_folder_entryid(BINARY bin,
 			return TRUE;
 		}
 		auto pinfo = zarafa_server_get_info();
-		if (NULL == pinfo || *pdb_id != pinfo->domain_id) {
+		if (pinfo == nullptr || *pdb_id != pinfo->domain_id)
 			return FALSE;
-		}
 		if (!exmdb_client::get_mapping_replid(pinfo->get_homedir(),
 		    tmp_entryid.database_guid, &b_found, &replid) || !b_found)
 			return FALSE;

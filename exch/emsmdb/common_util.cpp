@@ -1709,17 +1709,16 @@ static int common_util_get_response(int sockd,
 		read_len -= 2;
 	}
 	response[read_len] = '\0';
-	if (FALSE == expect_3xx && '2' == response[0] &&
-	    HX_isdigit(response[1]) && HX_isdigit(response[2])) {
+	if (!expect_3xx && response[0] == '2' &&
+	    HX_isdigit(response[1]) && HX_isdigit(response[2]))
 		return SMTP_SEND_OK;
-	} else if(TRUE == expect_3xx && '3' == response[0] &&
-	    HX_isdigit(response[1]) && HX_isdigit(response[2])) {
+	else if (expect_3xx && response[0] == '3' &&
+	    HX_isdigit(response[1]) && HX_isdigit(response[2]))
 		return SMTP_SEND_OK;
-	} else if (response[0] == '4') {
+	else if (response[0] == '4')
 		return SMTP_TEMP_ERROR;
-	} else if (response[0] == '5') {
+	else if (response[0] == '5')
 		return SMTP_PERMANENT_ERROR;
-	}
 	return SMTP_UNKOWN_RESPONSE;
 }
 
@@ -2072,15 +2071,14 @@ BOOL common_util_send_message(logon_object *plogon,
 		return FALSE;
 	}
 	pvalue = pmsgctnt->proplist.getval(PROP_TAG_INTERNETMAILOVERRIDEFORMAT);
-	if (NULL == pvalue) {
+	if (pvalue == nullptr)
 		body_type = OXCMAIL_BODY_PLAIN_AND_HTML;
-	} else if (*static_cast<uint32_t *>(pvalue) & MESSAGE_FORMAT_PLAIN_AND_HTML) {
+	else if (*static_cast<uint32_t *>(pvalue) & MESSAGE_FORMAT_PLAIN_AND_HTML)
 		body_type = OXCMAIL_BODY_PLAIN_AND_HTML;
-	} else if (*static_cast<uint32_t *>(pvalue) & MESSAGE_FORMAT_HTML_ONLY) {
+	else if (*static_cast<uint32_t *>(pvalue) & MESSAGE_FORMAT_HTML_ONLY)
 		body_type = OXCMAIL_BODY_HTML_ONLY;
-	} else {
+	else
 		body_type = OXCMAIL_BODY_PLAIN_ONLY;
-	}
 	common_util_set_dir(plogon->get_dir());
 	/* try to avoid TNEF message */
 	if (!oxcmail_export(pmsgctnt, false, body_type, g_mime_pool, &imail,

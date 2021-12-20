@@ -182,11 +182,10 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	pwait->async_id = async_id;
 	HX_strlower(pwait->username);
 	time(&pwait->wait_time);
-	if (0 == async_id) {
+	if (async_id == 0)
 		pwait->out_payload.context_id = pout->flags_out;
-	} else {
+	else
 		pwait->out_payload.pout = pout;
-	}
 	snprintf(tmp_tag, GX_ARRAY_SIZE(tmp_tag), "%s:%d", pwait->username,
 	         static_cast<int>(pwait->cxr));
 	HX_strlower(tmp_tag);

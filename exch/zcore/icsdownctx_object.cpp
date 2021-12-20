@@ -27,9 +27,8 @@ icsdownctx_object::create(folder_object *pfolder, uint8_t sync_type)
 		return NULL;
 	}
 	pctx->pstate = ics_state_create(sync_type);
-	if (NULL == pctx->pstate) {
+	if (pctx->pstate == nullptr)
 		return NULL;
-	}
 	pctx->pstore = pfolder->pstore;
 	pctx->folder_id = pfolder->folder_id;
 	pctx->sync_type = sync_type;
@@ -63,12 +62,10 @@ BOOL icsdownctx_object::make_content(const BINARY *pstate_bin,
 	EID_ARRAY nolonger_messages;
 	
 	*pb_changed = FALSE;
-	if (SYNC_TYPE_CONTENTS != pctx->sync_type) {
+	if (pctx->sync_type != SYNC_TYPE_CONTENTS)
 		return FALSE;
-	}
-	if (FALSE == ics_state_deserialize(pctx->pstate, pstate_bin)) {
+	if (!ics_state_deserialize(pctx->pstate, pstate_bin))
 		return FALSE;
-	}
 	auto pinfo = zarafa_server_get_info();
 	auto pread = (sync_flags & SYNC_FLAG_READSTATE) ? pctx->pstate->pread : nullptr;
 	auto pseen_fai = (sync_flags & SYNC_FLAG_FAI) ? pctx->pstate->pseen_fai : nullptr;
@@ -82,73 +79,56 @@ BOOL icsdownctx_object::make_content(const BINARY *pstate_bin,
 	    &nolonger_messages, &read_messags, &unread_messags,
 	    &pctx->last_readcn))
 		return FALSE;
-	if (NULL != pctx->pgiven_eids) {
+	if (pctx->pgiven_eids != nullptr)
 		eid_array_free(pctx->pgiven_eids);
-	}
 	pctx->pgiven_eids = eid_array_dup(&given_messages);
-	if (NULL == pctx->pgiven_eids) {
+	if (pctx->pgiven_eids == nullptr)
 		return FALSE;
-	}
 	if ((sync_flags & SYNC_FLAG_FAI) ||
 		(sync_flags & SYNC_FLAG_NORMAL)) {
-		if (NULL != pctx->pchg_eids) {
+		if (pctx->pchg_eids != nullptr)
 			eid_array_free(pctx->pchg_eids);
-		}
 		pctx->pchg_eids = eid_array_dup(&chg_messages);
-		if (NULL == pctx->pchg_eids) {
+		if (pctx->pchg_eids == nullptr)
 			return FALSE;
-		}
-		if (NULL != pctx->pupdated_eids) {
+		if (pctx->pupdated_eids != nullptr)
 			eid_array_free(pctx->pupdated_eids);
-		}
 		pctx->pupdated_eids = eid_array_dup(&updated_messages);
-		if (NULL == pctx->pupdated_eids) {
+		if (pctx->pupdated_eids == nullptr)
 			return FALSE;
-		}
 		*pmsg_count = chg_messages.count;
-		if (chg_messages.count > 0) {
+		if (chg_messages.count > 0)
 			*pb_changed = TRUE;
-		}
 	} else {
 		*pmsg_count = 0;
 	}
 	if (0 == (sync_flags & SYNC_FLAG_NODELETIONS)) {
-		if (NULL != pctx->pdeleted_eids) {
+		if (pctx->pdeleted_eids != nullptr)
 			eid_array_free(pctx->pdeleted_eids);
-		}
 		pctx->pdeleted_eids = eid_array_dup(&deleted_messages);
-		if (NULL == pctx->pdeleted_eids) {
+		if (pctx->pdeleted_eids == nullptr)
 			return FALSE;
-		}
-		if (NULL != pctx->pnolonger_messages) {
+		if (pctx->pnolonger_messages != nullptr)
 			eid_array_free(pctx->pnolonger_messages);
-		}
 		pctx->pnolonger_messages = eid_array_dup(&nolonger_messages);
-		if (NULL == pctx->pnolonger_messages) {
+		if (pctx->pnolonger_messages == nullptr)
 			return FALSE;
-		}
-		if (deleted_messages.count > 0 || nolonger_messages.count > 0) {
+		if (deleted_messages.count > 0 || nolonger_messages.count > 0)
 			*pb_changed = TRUE;
-		}
 	}
 	if (sync_flags & SYNC_FLAG_READSTATE) {
-		if (NULL != pctx->pread_messags) {
+		if (pctx->pread_messags != nullptr)
 			eid_array_free(pctx->pread_messags);
-		}
 		pctx->pread_messags = eid_array_dup(&read_messags);
-		if (NULL == pctx->pread_messags) {
+		if (pctx->pread_messags == nullptr)
 			return FALSE;
-		}
-		if (NULL != pctx->punread_messags) {
+		if (pctx->punread_messags != nullptr)
 			eid_array_free(pctx->punread_messags);
-		}
 		pctx->punread_messags = eid_array_dup(&unread_messags);
-		if (NULL == pctx->punread_messags) {
+		if (pctx->punread_messags == nullptr)
 			return FALSE;
-		}
-		if (read_messags.count > 0 || unread_messags.count > 0) {
+		if (read_messags.count > 0 || unread_messags.count > 0)
 			*pb_changed = TRUE;
-		}
 	}
 	return TRUE;
 }
@@ -162,9 +142,8 @@ BOOL icsdownctx_object::make_hierarchy(const BINARY *state,
 	EID_ARRAY deleted_folders;
 	
 	*pb_changed = FALSE;
-	if (SYNC_TYPE_HIERARCHY != pctx->sync_type) {
+	if (pctx->sync_type != SYNC_TYPE_HIERARCHY)
 		return FALSE;
-	}
 	if (!ics_state_deserialize(pctx->pstate, state))
 		return FALSE;
 	auto pinfo = zarafa_server_get_info();
@@ -174,40 +153,32 @@ BOOL icsdownctx_object::make_hierarchy(const BINARY *state,
 	    pctx->pstate->pseen, &fldchgs, &pctx->last_changenum,
 	    &given_folders, &deleted_folders))
 		return FALSE;
-	if (NULL != pctx->pgiven_eids) {
+	if (pctx->pgiven_eids != nullptr)
 		eid_array_free(pctx->pgiven_eids);
-	}
 	pctx->pgiven_eids = eid_array_dup(&given_folders);
-	if (NULL == pctx->pgiven_eids) {
+	if (pctx->pgiven_eids == nullptr)
 		return FALSE;
-	}
 	if (0 == (sync_flags & SYNC_FLAG_NODELETIONS)) {
-		if (NULL != pctx->pdeleted_eids) {
+		if (pctx->pdeleted_eids != nullptr)
 			eid_array_free(pctx->pdeleted_eids);
-		}
 		pctx->pdeleted_eids = eid_array_dup(&deleted_folders);
-		if (NULL == pctx->pdeleted_eids) {
+		if (pctx->pdeleted_eids == nullptr)
 			return FALSE;
-		}
-		if (deleted_folders.count > 0) {
+		if (deleted_folders.count > 0)
 			*pb_changed = TRUE;
-		}
 	}
 	pctx->pchg_eids = eid_array_init();
-	if (NULL == pctx->pchg_eids) {
+	if (pctx->pchg_eids == nullptr)
 		return FALSE;
-	}
 	for (size_t i = 0; i < fldchgs.count; ++i) {
 		auto pvalue = fldchgs.pfldchgs[i].get<uint64_t>(PidTagFolderId);
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return FALSE;
-		}
 		if (!eid_array_append(pctx->pchg_eids, *pvalue))
 			return FALSE;	
 	}
-	if (fldchgs.count > 0) {
+	if (fldchgs.count > 0)
 		*pb_changed = TRUE;
-	}
 	*pfld_count = fldchgs.count;
 	return TRUE;
 }
@@ -219,10 +190,9 @@ BINARY *icsdownctx_object::get_state()
 		&& pctx->eid_pos >= pctx->pchg_eids->count && NULL ==
 		pctx->pdeleted_eids && NULL == pctx->pnolonger_messages) {
 		pctx->pstate->pgiven->clear();
-		for (size_t i = 0; i < pctx->pgiven_eids->count; ++i) {
+		for (size_t i = 0; i < pctx->pgiven_eids->count; ++i)
 			if (!pctx->pstate->pgiven->append(pctx->pgiven_eids->pids[i]))
 				return nullptr;
-		}
 		pctx->pstate->pseen->clear();
 		if (pctx->last_changenum != 0 &&
 		    !pctx->pstate->pseen->append_range(1, 1,
@@ -251,30 +221,22 @@ BINARY *icsdownctx_object::get_state()
 icsdownctx_object::~icsdownctx_object()
 {
 	auto pctx = this;
-	if (NULL != pctx->pgiven_eids) {
+	if (pctx->pgiven_eids != nullptr)
 		eid_array_free(pctx->pgiven_eids);
-	}
-	if (NULL != pctx->pchg_eids) {
+	if (pctx->pchg_eids != nullptr)
 		eid_array_free(pctx->pchg_eids);
-	}
-	if (NULL != pctx->pupdated_eids) {
+	if (pctx->pupdated_eids != nullptr)
 		eid_array_free(pctx->pupdated_eids);
-	}
-	if (NULL != pctx->pdeleted_eids) {
+	if (pctx->pdeleted_eids != nullptr)
 		eid_array_free(pctx->pdeleted_eids);
-	}
-	if (NULL != pctx->pnolonger_messages) {
+	if (pctx->pnolonger_messages != nullptr)
 		eid_array_free(pctx->pnolonger_messages);
-	}
-	if (NULL != pctx->pread_messags) {
+	if (pctx->pread_messags != nullptr)
 		eid_array_free(pctx->pread_messags);
-	}
-	if (NULL != pctx->punread_messags) {
+	if (pctx->punread_messags != nullptr)
 		eid_array_free(pctx->punread_messags);
-	}
-	if (NULL != pctx->pstate) {
+	if (pctx->pstate != nullptr)
 		ics_state_free(pctx->pstate);
-	}
 }
 
 BOOL icsdownctx_object::sync_message_change(BOOL *pb_found, BOOL *pb_new,
@@ -284,9 +246,8 @@ BOOL icsdownctx_object::sync_message_change(BOOL *pb_found, BOOL *pb_new,
 	void *pvalue;
 	uint64_t message_id;
 	
-	if (SYNC_TYPE_CONTENTS != pctx->sync_type) {
+	if (pctx->sync_type != SYNC_TYPE_CONTENTS)
 		return FALSE;
-	}
 	if (NULL == pctx->pchg_eids || NULL == pctx->pupdated_eids) {
 		*pb_found = FALSE;
 		return TRUE;
@@ -305,23 +266,20 @@ BOOL icsdownctx_object::sync_message_change(BOOL *pb_found, BOOL *pb_new,
 	*pb_new = !eid_array_check(pctx->pupdated_eids, message_id) ? TRUE : false;
 	pproplist->count = 2;
 	pproplist->ppropval = cu_alloc<TAGGED_PROPVAL>(2);
-	if (NULL == pproplist->ppropval) {
+	if (pproplist->ppropval == nullptr)
 		return FALSE;
-	}
 	pproplist->ppropval[0].proptag = PR_SOURCE_KEY;
 	pproplist->ppropval[0].pvalue =
 		common_util_calculate_message_sourcekey(
 		pctx->pstore, message_id);
-	if (NULL == pproplist->ppropval[0].pvalue) {
+	if (pproplist->ppropval[0].pvalue == nullptr)
 		return FALSE;
-	}
 	pproplist->ppropval[1].proptag = PR_PARENT_SOURCE_KEY;
 	pproplist->ppropval[1].pvalue =
 		common_util_calculate_folder_sourcekey(
 		pctx->pstore, pctx->folder_id);
-	if (NULL == pproplist->ppropval[1].pvalue) {
+	if (pproplist->ppropval[1].pvalue == nullptr)
 		return FALSE;
-	}
 	*pb_found = TRUE;
 	if (!pctx->pstate->pgiven->append(message_id) ||
 	    !pctx->pstate->pseen->append(*static_cast<uint64_t *>(pvalue)) ||
@@ -341,9 +299,8 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 	TPROPVAL_ARRAY tmp_propvals;
 	static const uint8_t fake_false = false;
 	
-	if (SYNC_TYPE_HIERARCHY != pctx->sync_type) {
+	if (pctx->sync_type != SYNC_TYPE_HIERARCHY)
 		return FALSE;
-	}
 	if (NULL == pctx->pchg_eids ||
 		pctx->eid_pos >= pctx->pchg_eids->count) {
 		*pb_found = FALSE;
@@ -353,21 +310,18 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 	pctx->eid_pos ++;
 	pproplist->count = 0;
 	pproplist->ppropval = cu_alloc<TAGGED_PROPVAL>(8);
-	if (NULL == pproplist->ppropval) {
+	if (pproplist->ppropval == nullptr)
 		return FALSE;
-	}
 	pproplist->ppropval[pproplist->count].proptag = PR_SOURCE_KEY;
 	void *pvalue = common_util_calculate_folder_sourcekey(pctx->pstore, fid);
-	if (NULL == pvalue) {
+	if (pvalue == nullptr)
 		return FALSE;
-	}
 	pproplist->ppropval[pproplist->count].pvalue = pvalue;
 	pproplist->count ++;
 	pproplist->ppropval[pproplist->count].proptag = PR_ENTRYID;
 	pvalue = common_util_to_folder_entryid(pctx->pstore, fid);
-	if (NULL == pvalue) {
+	if (pvalue == nullptr)
 		return FALSE;
-	}
 	pproplist->ppropval[pproplist->count].pvalue = pvalue;
 	pproplist->count ++;
 	proptags.count = 6;
@@ -393,17 +347,15 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 		pproplist->ppropval[pproplist->count].proptag = PR_PARENT_SOURCE_KEY;
 		pvalue = common_util_calculate_folder_sourcekey(
 								pctx->pstore, parent_fid);
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return FALSE;
-		}
 		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;
 		pproplist->ppropval[pproplist->count].proptag = PR_PARENT_ENTRYID;
 		pvalue = common_util_to_folder_entryid(
 						pctx->pstore, parent_fid);
-		if (NULL == pvalue) {
+		if (pvalue == nullptr)
 			return FALSE;
-		}
 		pproplist->ppropval[pproplist->count].pvalue = pvalue;
 		pproplist->count ++;
 	}
@@ -460,16 +412,14 @@ BOOL icsdownctx_object::sync_deletions(uint32_t flags, BINARY_ARRAY *pbins)
 			return TRUE;
 		}
 		pbins->pbin = cu_alloc<BINARY>(pctx->pdeleted_eids->count);
-		if (NULL == pbins->pbin) {
+		if (pbins->pbin == nullptr)
 			return FALSE;
-		}
 		for (size_t i = 0; i < pctx->pdeleted_eids->count; ++i) {
 			auto pbin = pctx->sync_type == SYNC_TYPE_CONTENTS ?
 			            common_util_calculate_message_sourcekey(pctx->pstore, pctx->pdeleted_eids->pids[i]) :
 			            common_util_calculate_folder_sourcekey(pctx->pstore, pctx->pdeleted_eids->pids[i]);
-			if (NULL == pbin) {
+			if (pbin == nullptr)
 				return FALSE;
-			}
 			pbins->pbin[i] = *pbin;
 			pctx->pstate->pgiven->remove(pctx->pdeleted_eids->pids[i]);
 		}
@@ -493,15 +443,13 @@ BOOL icsdownctx_object::sync_deletions(uint32_t flags, BINARY_ARRAY *pbins)
 		return TRUE;
 	}
 	pbins->pbin = cu_alloc<BINARY>(pctx->pnolonger_messages->count);
-	if (NULL == pbins->pbin) {
+	if (pbins->pbin == nullptr)
 		return FALSE;
-	}
 	for (size_t i = 0; i < pctx->pnolonger_messages->count; ++i) {
 		auto pbin = common_util_calculate_message_sourcekey(
 		            pctx->pstore, pctx->pnolonger_messages->pids[i]);
-		if (NULL == pbin) {
+		if (pbin == nullptr)
 			return FALSE;
-		}
 		pbins->pbin[i] = *pbin;
 		pctx->pstate->pgiven->remove(pctx->pnolonger_messages->pids[i]);
 	}
@@ -516,9 +464,8 @@ BOOL icsdownctx_object::sync_readstates(STATE_ARRAY *pstates)
 	auto pctx = this;
 	BINARY *pbin;
 	
-	if (SYNC_TYPE_CONTENTS != pctx->sync_type) {
+	if (pctx->sync_type != SYNC_TYPE_CONTENTS)
 		return FALSE;
-	}
 	if (NULL == pctx->pread_messags ||
 		NULL == pctx->punread_messags) {
 		pstates->count = 0;
@@ -540,9 +487,8 @@ BOOL icsdownctx_object::sync_readstates(STATE_ARRAY *pstates)
 		for (size_t i = 0; i < pctx->pread_messags->count; ++i) {
 			pbin = common_util_calculate_message_sourcekey(
 				pctx->pstore, pctx->pread_messags->pids[i]);
-			if (NULL == pbin) {
+			if (pbin == nullptr)
 				return FALSE;
-			}
 			pstates->pstate[pstates->count].source_key = *pbin;
 			pstates->pstate[pstates->count].message_flags = MSGFLAG_READ;
 			pstates->count ++;
@@ -550,9 +496,8 @@ BOOL icsdownctx_object::sync_readstates(STATE_ARRAY *pstates)
 		for (size_t i = 0; i < pctx->punread_messags->count; ++i) {
 			pbin = common_util_calculate_message_sourcekey(
 				pctx->pstore, pctx->punread_messags->pids[i]);
-			if (NULL == pbin) {
+			if (pbin == nullptr)
 				return FALSE;
-			}
 			pstates->pstate[pstates->count].source_key = *pbin;
 			pstates->pstate[pstates->count].message_flags = 0;
 			pstates->count ++;
