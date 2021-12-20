@@ -94,7 +94,7 @@ class interface_eq {
 	public:
 	constexpr interface_eq(const GUID &g, uint32_t v) : uuid(g), ver(v) {}
 	bool operator()(const DCERPC_INTERFACE &i) const {
-		return guid_compare(&i.uuid, &uuid) == 0 && i.version == ver;
+		return i.uuid == uuid && i.version == ver;
 	}
 	protected:
 	GUID uuid{};
@@ -1009,8 +1009,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	b_ndr64 = FALSE;
 	b_found = FALSE;
 	for (i=0; i<pbind->ctx_list[0].num_transfer_syntaxes; i++) {
-		if (0 == guid_compare(&g_transfer_syntax_ndr.uuid,
-			&pbind->ctx_list[0].transfer_syntaxes[i].uuid) &&
+		if (g_transfer_syntax_ndr.uuid == pbind->ctx_list[0].transfer_syntaxes[i].uuid &&
 			pbind->ctx_list[0].transfer_syntaxes[i].version ==
 			g_transfer_syntax_ndr.version) {
 			b_found = TRUE;
@@ -1020,8 +1019,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	
 	if (FALSE == b_found) {
 		for (i=0; i<pbind->ctx_list[0].num_transfer_syntaxes; i++) {
-			if (0 == guid_compare(&g_transfer_syntax_ndr64.uuid,
-				&pbind->ctx_list[0].transfer_syntaxes[i].uuid) &&
+			if (g_transfer_syntax_ndr64.uuid == pbind->ctx_list[0].transfer_syntaxes[i].uuid &&
 				pbind->ctx_list[0].transfer_syntaxes[i].version ==
 				g_transfer_syntax_ndr64.version) {
 				b_found = TRUE;
@@ -1348,8 +1346,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 		b_found = FALSE;
 		
 		for (i=0; i<palter->ctx_list[0].num_transfer_syntaxes; i++) {
-			if (0 == guid_compare(&g_transfer_syntax_ndr.uuid,
-				&palter->ctx_list[0].transfer_syntaxes[i].uuid) &&
+			if (g_transfer_syntax_ndr.uuid == palter->ctx_list[0].transfer_syntaxes[i].uuid &&
 				palter->ctx_list[0].transfer_syntaxes[i].version ==
 				g_transfer_syntax_ndr.version) {
 				b_found = TRUE;
@@ -1359,8 +1356,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 		
 		if (FALSE == b_found) {
 			for (i=0; i<palter->ctx_list[0].num_transfer_syntaxes; i++) {
-				if (0 == guid_compare(&g_transfer_syntax_ndr64.uuid,
-					&palter->ctx_list[0].transfer_syntaxes[i].uuid) &&
+				if (g_transfer_syntax_ndr64.uuid == palter->ctx_list[0].transfer_syntaxes[i].uuid &&
 					palter->ctx_list[0].transfer_syntaxes[i].version ==
 					g_transfer_syntax_ndr64.version) {
 					b_found = TRUE;

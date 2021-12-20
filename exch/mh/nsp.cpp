@@ -490,7 +490,7 @@ MhNspPlugin::ProcRes MhNspPlugin::loadCookies(MhNspContext& ctx)
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "Bind") !=0 &&
 	    strcasecmp(ctx.request_value, "Unbind") != 0 &&
-	    guid_compare(&ctx.sequence_guid, &ctx.session->sequence_guid) != 0)
+	    ctx.sequence_guid != ctx.session->sequence_guid)
 			return ctx.error_responsecode(RC_INVALID_SEQUENCE);
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "Unbind") != 0) {

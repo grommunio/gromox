@@ -548,7 +548,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 		return ctx.error_responsecode(RC_NO_PRIVILEGE);
 	ctx.session_guid = ctx.session->session_guid;
 	if (strcasecmp(ctx.request_value, "Execute") == 0 &&
-	    guid_compare(&ctx.sequence_guid, &ctx.session->sequence_guid) != 0)
+	    ctx.sequence_guid != ctx.session->sequence_guid)
 		return ctx.error_responsecode(RC_INVALID_SEQUENCE);
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "Disconnect") != 0 &&

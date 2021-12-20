@@ -2823,7 +2823,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		return TRUE;
 	}
 	tmp_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
-	if (0 != guid_compare(&tmp_guid, &template_guid)) {
+	if (tmp_guid != template_guid) {
 		*pb_result = FALSE;
 		return TRUE;
 	}
@@ -3764,10 +3764,8 @@ static bool opx_move_private(const char *account, sqlite3 *psqlite,
 		return true;
 	}
 	auto tmp_guid = rop_util_make_user_guid(tmp_id);
-	if (0 != guid_compare(&tmp_guid,
-	    &pextmvcp->folder_eid.database_guid)) {
+	if (tmp_guid != pextmvcp->folder_eid.database_guid)
 		return message_disable_rule(psqlite, TRUE, prnode->id);
-	}
 	return true;
 }
 
@@ -3787,10 +3785,8 @@ static bool opx_move_public(const char *account, sqlite3 *psqlite,
 	if (!common_util_get_domain_ids(pc, &tmp_id, &tmp_id1))
 		return true;
 	auto tmp_guid = rop_util_make_domain_guid(tmp_id);
-	if (0 != guid_compare(&tmp_guid,
-	    &pextmvcp->folder_eid.database_guid)) {
+	if (tmp_guid != pextmvcp->folder_eid.database_guid)
 		return message_disable_rule(psqlite, TRUE, prnode->id);
-	}
 	return true;
 }
 
@@ -3917,10 +3913,8 @@ static bool opx_reply(const char *from_address, const char *account,
 			return true;
 		}
 		auto tmp_guid = rop_util_make_user_guid(tmp_id);
-		if (0 != guid_compare(&tmp_guid,
-		    &pextreply->message_eid.message_database_guid)) {
+		if (tmp_guid != pextreply->message_eid.message_database_guid)
 			return message_disable_rule(psqlite, TRUE, prnode->id);
-		}
 	} else {
 		auto pc = strchr(account, '@');
 		if (pc == nullptr)
@@ -3930,10 +3924,8 @@ static bool opx_reply(const char *from_address, const char *account,
 		if (!common_util_get_domain_ids(pc, &tmp_id, &tmp_id1))
 			return true;
 		auto tmp_guid = rop_util_make_domain_guid(tmp_id);
-		if (0 != guid_compare(&tmp_guid,
-		    &pextreply->message_eid.message_database_guid)) {
+		if (tmp_guid != pextreply->message_eid.message_database_guid)
 			return message_disable_rule(psqlite, TRUE, prnode->id);
-		}
 	}
 	auto dst_mid = rop_util_gc_to_value(
 		       pextreply->message_eid.message_global_counter);

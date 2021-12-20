@@ -331,7 +331,7 @@ static BOOL store_object_get_named_propid(store_object *pstore,
 	GUID guid;
 	
 	rop_util_get_common_pset(PS_MAPI, &guid);
-	if (0 == guid_compare(&ppropname->guid, &guid)) {
+	if (ppropname->guid == guid) {
 		*ppropid = ppropname->kind == MNID_ID ? ppropname->lid : 0;
 		return TRUE;
 	}
@@ -396,7 +396,7 @@ BOOL store_object::get_named_propids(BOOL b_create,
 	}
 	auto pstore = this;
 	for (i=0; i<ppropnames->count; i++) {
-		if (0 == guid_compare(&ppropnames->ppropname[i].guid, &guid)) {
+		if (ppropnames->ppropname[i].guid == guid) {
 			ppropids->ppropid[i] = ppropnames->ppropname[i].kind == MNID_ID ?
 			                       ppropnames->ppropname[i].lid : 0;
 			pindex_map[i] = i;

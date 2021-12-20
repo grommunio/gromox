@@ -10,3 +10,7 @@ static inline bool operator==(const GUID &a, const GUID &b)
 {
 	return guid_compare(&a, &b) == 0;
 }
+static inline bool operator!=(const GUID &a, const GUID &b)
+{
+	return !operator==(a, b);
+}

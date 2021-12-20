@@ -382,9 +382,8 @@ TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)
 		if (NULL == pguid) {
 			continue;
 		}
-		if (0 == guid_compare(pguid, &sec_guid)) {
+		if (*pguid == sec_guid)
 			return prootobj->pprof_set->pparray[i];
-		}
 	}
 	auto pproplist = tpropval_array_init();
 	if (NULL == pproplist) {
