@@ -1517,10 +1517,11 @@ struct FORWARDDELEGATE_ACTION {
 	RECIPIENT_BLOCK *pblock;
 };
 
+extern const GUID GUID_NONE;
 extern const FLATUID
 	muidStoreWrap, muidEMSAB, pbLongTermNonPrivateGuid,
 	g_muidStorePrivate, g_muidStorePublic, muidOOP,
-	muidECSAB, muidZCSAB, EncodedGlobalId, GUID_NONE, IID_IStorage,
+	muidECSAB, muidZCSAB, EncodedGlobalId, IID_IStorage,
 	IID_IStream, IID_IMessage, IID_IExchangeExportChanges,
 	IID_IExchangeImportContentsChanges, IID_IExchangeImportHierarchyChanges;
 extern const uint8_t MACBINARY_ENCODING[9], OLE_TAG[11], ThirdPartyGlobalId[12];
