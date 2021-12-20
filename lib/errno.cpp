@@ -2,7 +2,6 @@
 #include <gromox/defs.h>
 #include <gromox/mapi_types.hpp>
 
-const GUID GUID_NONE{};
 const FLATUID muidStoreWrap =
 	/* {10bba138-e505-1a10-a1bb-08002b2a56c2} */
 	{0x38, 0xA1, 0xBB, 0x10, 0x05, 0xE5, 0x10, 0x1A,

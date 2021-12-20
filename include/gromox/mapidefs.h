@@ -1517,7 +1517,6 @@ struct FORWARDDELEGATE_ACTION {
 	RECIPIENT_BLOCK *pblock;
 };
 
-extern const GUID GUID_NONE;
 extern const FLATUID
 	muidStoreWrap, muidEMSAB, pbLongTermNonPrivateGuid,
 	g_muidStorePrivate, g_muidStorePublic, muidOOP,
