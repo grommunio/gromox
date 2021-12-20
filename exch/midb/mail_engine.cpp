@@ -465,49 +465,7 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, KEYWORD_ENUM *penum)
 	if (pmime->get_mtype() != MJSON_MIME_SINGLE)
 		return;
 
-	if (strncmp(pmime->get_ctype(), "text/", 5) == 0) {
-		length = pmime->get_length(MJSON_MIME_CONTENT);
-		pbuff = me_alloc<char>(2 * length + 1);
-		if (NULL == pbuff) {
-			return;
-		}
-		auto fd = penum->pjson->seek_fd(pmime->get_id(), MJSON_MIME_CONTENT);
-		if (-1 == fd) {
-			free(pbuff);
-			return;
-		}
-		auto read_len = read(fd, pbuff, length);
-		if (read_len < 0 || static_cast<size_t>(read_len) != length) {
-			free(pbuff);
-			return;
-		}
-		if (strcasecmp(pmime->get_encoding(), "base64") == 0) {
-			if (0 != decode64_ex(pbuff, length,
-				pbuff + length, length, &temp_len)) {
-				free(pbuff);
-				return;
-			}
-			pbuff[length + temp_len] = '\0';
-		} else if (strcasecmp(pmime->get_encoding(), "quoted-printable") == 0) {
-			temp_len = qp_decode(pbuff + length, pbuff, length);
-			pbuff[length + temp_len] = '\0';
-		} else {
-			memcpy(pbuff + length, pbuff, length);
-			pbuff[2*length] = '\0';
-		}
-			
-		charset = pmime->get_charset();
-		auto ret_string = mail_engine_ct_to_utf8(*charset != '\0' ?
-		                  charset : penum->charset, pbuff + length);
-		if (NULL != ret_string) {
-			if (NULL != search_string(ret_string,
-				penum->keyword, strlen(ret_string))) {
-				penum->b_result = TRUE;
-			}
-			free(ret_string);
-		}
-		free(pbuff);			
-	} else {
+	if (strncmp(pmime->get_ctype(), "text/", 5) != 0) {
 		filename = pmime->get_filename();
 		if ('\0' != filename[0]) {
 			auto ret_string = mail_engine_ct_decode_mime(penum->charset, filename);
@@ -520,6 +478,47 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, KEYWORD_ENUM *penum)
 			}
 		}
 	}
+	length = pmime->get_length(MJSON_MIME_CONTENT);
+	pbuff = me_alloc<char>(2 * length + 1);
+	if (NULL == pbuff) {
+		return;
+	}
+	auto fd = penum->pjson->seek_fd(pmime->get_id(), MJSON_MIME_CONTENT);
+	if (-1 == fd) {
+		free(pbuff);
+		return;
+	}
+	auto read_len = read(fd, pbuff, length);
+	if (read_len < 0 || static_cast<size_t>(read_len) != length) {
+		free(pbuff);
+		return;
+	}
+	if (strcasecmp(pmime->get_encoding(), "base64") == 0) {
+		if (0 != decode64_ex(pbuff, length,
+		    pbuff + length, length, &temp_len)) {
+			free(pbuff);
+			return;
+		}
+		pbuff[length + temp_len] = '\0';
+	} else if (strcasecmp(pmime->get_encoding(), "quoted-printable") == 0) {
+		temp_len = qp_decode(pbuff + length, pbuff, length);
+		pbuff[length + temp_len] = '\0';
+	} else {
+		memcpy(pbuff + length, pbuff, length);
+		pbuff[2*length] = '\0';
+	}
+
+	charset = pmime->get_charset();
+	auto ret_string = mail_engine_ct_to_utf8(*charset != '\0' ?
+	                  charset : penum->charset, pbuff + length);
+	if (NULL != ret_string) {
+		if (NULL != search_string(ret_string,
+		    penum->keyword, strlen(ret_string))) {
+			penum->b_result = TRUE;
+		}
+		free(ret_string);
+	}
+	free(pbuff);
 }
 
 static BOOL mail_engine_ct_search_head(const char *charset,
@@ -1708,12 +1707,10 @@ static int mail_engine_ct_fetch_result(CONDITION_RESULT *presult)
 	auto pnode = presult->pcur_node == nullptr ?
 	             single_list_get_head(&presult->list) :
 	             single_list_get_after(&presult->list, presult->pcur_node);
-    if (NULL == pnode) {
-        return -1;
-    } else {
+	if (pnode == nullptr)
+		return -1;
         presult->pcur_node = pnode;
         return (int)(long)pnode->pdata;
-    }
 }
 
 static void mail_engine_ct_free_result(CONDITION_RESULT *presult)

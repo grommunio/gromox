@@ -476,37 +476,38 @@ BOOL icsdownctx_object::sync_deletions(uint32_t flags, BINARY_ARRAY *pbins)
 		pbins->count = pctx->pdeleted_eids->count;
 		eid_array_free(pctx->pdeleted_eids);
 		pctx->pdeleted_eids = NULL;
-	} else {
-		if (SYNC_TYPE_HIERARCHY == pctx->sync_type
-			|| NULL == pctx->pnolonger_messages) {
-			pbins->count = 0;
-			pbins->pbin = NULL;
-			return TRUE;
-		}
-		if (0 == pctx->pnolonger_messages->count) {
-			pbins->count = 0;
-			pbins->pbin = NULL;
-			eid_array_free(pctx->pnolonger_messages);
-			pctx->pnolonger_messages = NULL;
-			return TRUE;
-		}
-		pbins->pbin = cu_alloc<BINARY>(pctx->pnolonger_messages->count);
-		if (NULL == pbins->pbin) {
-			return FALSE;
-		}
-		for (size_t i = 0; i < pctx->pnolonger_messages->count; ++i) {
-			auto pbin = common_util_calculate_message_sourcekey(
-				pctx->pstore, pctx->pnolonger_messages->pids[i]);
-			if (NULL == pbin) {
-				return FALSE;
-			}
-			pbins->pbin[i] = *pbin;
-			pctx->pstate->pgiven->remove(pctx->pnolonger_messages->pids[i]);
-		}
-		pbins->count = pctx->pnolonger_messages->count;
+		return TRUE;
+	}
+
+	if (SYNC_TYPE_HIERARCHY == pctx->sync_type
+	    || NULL == pctx->pnolonger_messages) {
+		pbins->count = 0;
+		pbins->pbin = NULL;
+		return TRUE;
+	}
+	if (0 == pctx->pnolonger_messages->count) {
+		pbins->count = 0;
+		pbins->pbin = NULL;
 		eid_array_free(pctx->pnolonger_messages);
 		pctx->pnolonger_messages = NULL;
+		return TRUE;
 	}
+	pbins->pbin = cu_alloc<BINARY>(pctx->pnolonger_messages->count);
+	if (NULL == pbins->pbin) {
+		return FALSE;
+	}
+	for (size_t i = 0; i < pctx->pnolonger_messages->count; ++i) {
+		auto pbin = common_util_calculate_message_sourcekey(
+		            pctx->pstore, pctx->pnolonger_messages->pids[i]);
+		if (NULL == pbin) {
+			return FALSE;
+		}
+		pbins->pbin[i] = *pbin;
+		pctx->pstate->pgiven->remove(pctx->pnolonger_messages->pids[i]);
+	}
+	pbins->count = pctx->pnolonger_messages->count;
+	eid_array_free(pctx->pnolonger_messages);
+	pctx->pnolonger_messages = NULL;
 	return TRUE;
 }
 

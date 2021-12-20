@@ -103,11 +103,9 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 	}
 	if (0 == (open_mode_flags & OPEN_MODE_FLAG_READWRITE) &&
 		0 == (TAG_ACCESS_MODIFY & tag_access)) {
-		if (open_mode_flags & OPEN_MODE_FLAG_BESTACCESS) {
-			open_mode_flags &= ~OPEN_MODE_FLAG_BESTACCESS;
-		} else {
+		if (!(open_mode_flags & OPEN_MODE_FLAG_BESTACCESS))
 			return ecAccessDenied;
-		}
+		open_mode_flags &= ~OPEN_MODE_FLAG_BESTACCESS;
 	}
 	
 	auto pmessage = message_object::create(plogon, false, cpid, message_id,

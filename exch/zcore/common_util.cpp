@@ -109,11 +109,9 @@ BOOL common_util_verify_columns_and_sorts(
 		break;
 	}
 	for (i=0; i<pcolumns->count; i++) {
-		if (pcolumns->pproptag[i] & MV_INSTANCE) {
-			if (proptag != pcolumns->pproptag[i]) {
-				return FALSE;
-			}
-		}
+		if (pcolumns->pproptag[i] & MV_INSTANCE &&
+		    proptag != pcolumns->pproptag[i])
+			return FALSE;
 	}
 	return TRUE;
 }
@@ -335,14 +333,14 @@ void common_util_remove_propvals(
 	int i;
 	
 	for (i=0; i<parray->count; i++) {
-		if (proptag == parray->ppropval[i].proptag) {
-			parray->count --;
-			if (i < parray->count) {
-				memmove(parray->ppropval + i, parray->ppropval + i + 1,
-					(parray->count - i) * sizeof(TAGGED_PROPVAL));
-			}
-			return;
+		if (proptag != parray->ppropval[i].proptag)
+			continue;
+		parray->count--;
+		if (i < parray->count) {
+			memmove(parray->ppropval + i, parray->ppropval + i + 1,
+			        (parray->count - i) * sizeof(TAGGED_PROPVAL));
 		}
+		return;
 	}
 }
 
@@ -353,17 +351,16 @@ void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 	
 	for (j=0; j<pproptags_subtractor->count; j++) {
 		for (i=0; i<pproptags_minuend->count; i++) {
-			if (pproptags_subtractor->pproptag[j] ==
-				pproptags_minuend->pproptag[i]) {
-				pproptags_minuend->count --;
-				if (i < pproptags_minuend->count) {
-					memmove(pproptags_minuend->pproptag + i,
-						pproptags_minuend->pproptag + i + 1,
-						(pproptags_minuend->count - i) *
-						sizeof(uint32_t));
-				}
-				break;
+			if (pproptags_subtractor->pproptag[j] != pproptags_minuend->pproptag[i])
+				continue;
+			pproptags_minuend->count--;
+			if (i < pproptags_minuend->count) {
+				memmove(pproptags_minuend->pproptag + i,
+					pproptags_minuend->pproptag + i + 1,
+					(pproptags_minuend->count - i) *
+					sizeof(uint32_t));
 			}
+			break;
 		}
 	}
 }
@@ -751,111 +748,111 @@ ZNOTIFICATION* common_util_dup_znotification(
 			}
 		}
 		pnew_notify->message_flags = pnew_notify1->message_flags;
+		return pnotification1;
+	}
+	pobj_notify1 = (OBJECT_ZNOTIFICATION *)
+	               pnotification->pnotification_data;
+	if (FALSE == b_temp) {
+		pobj_notify = me_alloc<OBJECT_ZNOTIFICATION>();
+		if (NULL == pobj_notify) {
+			free(pnotification1);
+			return NULL;
+		}
 	} else {
-		pobj_notify1 = (OBJECT_ZNOTIFICATION*)
-			pnotification->pnotification_data;
+		pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
+		if (NULL == pobj_notify) {
+			return NULL;
+		}
+	}
+	memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
+	pnotification1->pnotification_data = pobj_notify;
+	pobj_notify->object_type = pobj_notify1->object_type;
+	if (NULL != pobj_notify1->pentryid) {
 		if (FALSE == b_temp) {
-			pobj_notify = me_alloc<OBJECT_ZNOTIFICATION>();
-			if (NULL == pobj_notify) {
-				free(pnotification1);
+			pobj_notify->pentryid = static_cast<BINARY *>(propval_dup(PT_BINARY,
+			                        pobj_notify1->pentryid));
+			if (NULL == pobj_notify->pentryid) {
+				common_util_free_znotification(pnotification1);
 				return NULL;
 			}
 		} else {
-			pobj_notify = cu_alloc<OBJECT_ZNOTIFICATION>();
-			if (NULL == pobj_notify) {
+			pobj_notify->pentryid = common_util_dup_binary(
+			                        pobj_notify1->pentryid);
+			if (NULL == pobj_notify->pentryid) {
 				return NULL;
 			}
 		}
-		memset(pobj_notify, 0, sizeof(OBJECT_ZNOTIFICATION));
-		pnotification1->pnotification_data = pobj_notify;
-		pobj_notify->object_type = pobj_notify1->object_type;
-		if (NULL != pobj_notify1->pentryid) {
-			if (FALSE == b_temp) {
-				pobj_notify->pentryid = static_cast<BINARY *>(propval_dup(PT_BINARY,
-				                        pobj_notify1->pentryid));
-				if (NULL == pobj_notify->pentryid) {
-					common_util_free_znotification(pnotification1);
-					return NULL;
-				}
-			} else {
-				pobj_notify->pentryid = common_util_dup_binary(
-										pobj_notify1->pentryid);
-				if (NULL == pobj_notify->pentryid) {
-					return NULL;
-				}
+	}
+	if (NULL != pobj_notify1->pparentid) {
+		if (FALSE == b_temp) {
+			pobj_notify->pparentid = static_cast<BINARY *>(propval_dup(PT_BINARY,
+			                         pobj_notify1->pparentid));
+			if (NULL == pobj_notify->pparentid) {
+				common_util_free_znotification(pnotification1);
+				return NULL;
+			}
+		} else {
+			pobj_notify->pparentid = common_util_dup_binary(
+			                         pobj_notify1->pparentid);
+			if (NULL == pobj_notify->pparentid) {
+				return NULL;
 			}
 		}
-		if (NULL != pobj_notify1->pparentid) {
-			if (FALSE == b_temp) {
-				pobj_notify->pparentid = static_cast<BINARY *>(propval_dup(PT_BINARY,
-				                         pobj_notify1->pparentid));
-				if (NULL == pobj_notify->pparentid) {
-					common_util_free_znotification(pnotification1);
-					return NULL;
-				}
-			} else {
-				pobj_notify->pparentid = common_util_dup_binary(
-										pobj_notify1->pparentid);
-				if (NULL == pobj_notify->pparentid) {
-					return NULL;
-				}
+	}
+	if (NULL != pobj_notify1->pold_entryid) {
+		if (FALSE == b_temp) {
+			pobj_notify->pold_entryid = static_cast<BINARY *>(propval_dup(PT_BINARY,
+			                            pobj_notify1->pold_entryid));
+			if (NULL == pobj_notify->pold_entryid) {
+				common_util_free_znotification(pnotification1);
+				return NULL;
+			}
+		} else {
+			pobj_notify->pold_entryid = common_util_dup_binary(
+			                            pobj_notify1->pold_entryid);
+			if (NULL == pobj_notify->pold_entryid) {
+				return NULL;
 			}
 		}
-		if (NULL != pobj_notify1->pold_entryid) {
-			if (FALSE == b_temp) {
-				pobj_notify->pold_entryid = static_cast<BINARY *>(propval_dup(PT_BINARY,
-				                            pobj_notify1->pold_entryid));
-				if (NULL == pobj_notify->pold_entryid) {
-					common_util_free_znotification(pnotification1);
-					return NULL;
-				}
-			} else {
-				pobj_notify->pold_entryid = common_util_dup_binary(
-										pobj_notify1->pold_entryid);
-				if (NULL == pobj_notify->pold_entryid) {
-					return NULL;
-				}
+	}
+	if (NULL != pobj_notify->pold_parentid) {
+		if (FALSE == b_temp) {
+			pobj_notify->pold_parentid = static_cast<BINARY *>(propval_dup(PT_BINARY,
+			                             pobj_notify1->pold_parentid));
+			if (NULL == pobj_notify->pold_parentid) {
+				common_util_free_znotification(pnotification1);
+				return NULL;
+			}
+		} else {
+			pobj_notify->pold_parentid = common_util_dup_binary(
+			                             pobj_notify1->pold_parentid);
+			if (NULL == pobj_notify->pold_parentid) {
+				return NULL;
 			}
 		}
-		if (NULL != pobj_notify->pold_parentid) {
-			if (FALSE == b_temp) {
-				pobj_notify->pold_parentid = static_cast<BINARY *>(propval_dup(PT_BINARY,
-				                             pobj_notify1->pold_parentid));
-				if (NULL == pobj_notify->pold_parentid) {
-					common_util_free_znotification(pnotification1);
-					return NULL;
-				}
-			} else {
-				pobj_notify->pold_parentid = common_util_dup_binary(
-										pobj_notify1->pold_parentid);
-				if (NULL == pobj_notify->pold_parentid) {
-					return NULL;
-				}
+	}
+	if (NULL != pobj_notify->pproptags) {
+		if (FALSE == b_temp) {
+			pobj_notify1->pproptags = proptag_array_dup(
+			                          pobj_notify->pproptags);
+			if (NULL == pobj_notify1->pproptags) {
+				common_util_free_znotification(pnotification1);
+				return NULL;
 			}
-		}
-		if (NULL != pobj_notify->pproptags) {
-			if (FALSE == b_temp) {
-				pobj_notify1->pproptags = proptag_array_dup(
-									pobj_notify->pproptags);
-				if (NULL == pobj_notify1->pproptags) {
-					common_util_free_znotification(pnotification1);
-					return NULL;
-				}
-			} else {
-				pobj_notify1->pproptags = cu_alloc<PROPTAG_ARRAY>();
-				if (NULL == pobj_notify1->pproptags) {
-					return NULL;
-				}
-				pobj_notify1->pproptags->count =
-					pobj_notify->pproptags->count;
-				pobj_notify1->pproptags->pproptag = cu_alloc<uint32_t>(pobj_notify->pproptags->count);
-				if (NULL == pobj_notify1->pproptags->pproptag) {
-					return NULL;
-				}
-				memcpy(pobj_notify1->pproptags->pproptag,
-					pobj_notify->pproptags->pproptag, sizeof(
-					uint32_t)*pobj_notify->pproptags->count);
+		} else {
+			pobj_notify1->pproptags = cu_alloc<PROPTAG_ARRAY>();
+			if (NULL == pobj_notify1->pproptags) {
+				return NULL;
 			}
+			pobj_notify1->pproptags->count =
+				pobj_notify->pproptags->count;
+			pobj_notify1->pproptags->pproptag = cu_alloc<uint32_t>(pobj_notify->pproptags->count);
+			if (NULL == pobj_notify1->pproptags->pproptag) {
+				return NULL;
+			}
+			memcpy(pobj_notify1->pproptags->pproptag,
+				pobj_notify->pproptags->pproptag, sizeof(
+				uint32_t) * pobj_notify->pproptags->count);
 		}
 	}
 	return pnotification1;
@@ -1481,15 +1478,12 @@ static int common_util_get_response(int sockd,
 	} else if(TRUE == expect_3xx && '3' == response[0] &&
 	    HX_isdigit(response[1]) && HX_isdigit(response[2])) {
 		return SMTP_SEND_OK;
-	} else {
-		if ('4' == response[0]) {
-           	return SMTP_TEMP_ERROR;	
-		} else if ('5' == response[0]) {
-			return SMTP_PERMANENT_ERROR;
-		} else {
-			return SMTP_UNKOWN_RESPONSE;
-		}
+	} else if (response[0] == '4') {
+		return SMTP_TEMP_ERROR;
+	} else if (response[0] == '5') {
+		return SMTP_PERMANENT_ERROR;
 	}
+	return SMTP_UNKOWN_RESPONSE;
 }
 
 static void log_err(const char *format, ...)
