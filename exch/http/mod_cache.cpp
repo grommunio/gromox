@@ -415,15 +415,9 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 	if (NULL == pcontent_type) {
 		pcontent_type = "application/octet-stream";
 	}
-	if (pcontext->until != pcontext->pitem->blob.length) {
-		response_len = gx_snprintf(response_buff,
-		               GX_ARRAY_SIZE(response_buff),
-					"HTTP/1.1 206 Partial Content\r\n");
-	} else {
-		response_len = gx_snprintf(response_buff,
-		               GX_ARRAY_SIZE(response_buff),
-					"HTTP/1.1 200 OK\r\n");
-	}
+	strcpy(response_buff, pcontext->until != pcontext->pitem->blob.length ?
+	       "HTTP/1.1 206 Partial Content\r\n" : "HTTP/1.1 200 OK\r\n");
+	response_len = strlen(response_buff);
 	response_len += gx_snprintf(response_buff + response_len,
 	                GX_ARRAY_SIZE(response_buff) - response_len,
 					"Server: %s\r\n"
