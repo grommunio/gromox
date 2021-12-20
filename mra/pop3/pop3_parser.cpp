@@ -71,15 +71,15 @@ void pop3_parser_init(int context_num, size_t retrieving_size, int timeout,
 	g_ssl_mutex_buf         = NULL;
 	if (TRUE == support_stls) {
 		g_force_stls = force_stls;
-		gx_strlcpy(g_certificate_path, certificate_path, GX_ARRAY_SIZE(g_certificate_path));
+		gx_strlcpy(g_certificate_path, certificate_path, arsizeof(g_certificate_path));
 		if (NULL != cb_passwd) {
-			gx_strlcpy(g_certificate_passwd, cb_passwd, GX_ARRAY_SIZE(g_certificate_passwd));
+			gx_strlcpy(g_certificate_passwd, cb_passwd, arsizeof(g_certificate_passwd));
 		} else {
 			g_certificate_passwd[0] = '\0';
 		}
-		gx_strlcpy(g_private_key_path, key_path, GX_ARRAY_SIZE(g_private_key_path));
+		gx_strlcpy(g_private_key_path, key_path, arsizeof(g_private_key_path));
 	}
-	gx_strlcpy(g_cdn_path, cdn_path, GX_ARRAY_SIZE(g_cdn_path));
+	gx_strlcpy(g_cdn_path, cdn_path, arsizeof(g_cdn_path));
 }
 
 #ifdef OLD_SSL
@@ -758,7 +758,7 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
 	pcontext->is_login = 0;
 	pcontext->is_stls = 0;
 	pcontext->auth_times = 0;
-	memset(pcontext->username, 0, GX_ARRAY_SIZE(pcontext->username));
+	memset(pcontext->username, 0, arsizeof(pcontext->username));
 	memset(pcontext->maildir, 0, arsizeof(pcontext->maildir));
 }
 

@@ -129,13 +129,13 @@ void imap_parser_init(int context_num, int average_num, size_t cache_size,
 	g_sequence_id = 0;
 	if (TRUE == support_starttls) {
 		g_force_starttls = force_starttls;
-		gx_strlcpy(g_certificate_path, certificate_path, GX_ARRAY_SIZE(g_certificate_path));
+		gx_strlcpy(g_certificate_path, certificate_path, arsizeof(g_certificate_path));
 		if (NULL != cb_passwd) {
-			gx_strlcpy(g_certificate_passwd, cb_passwd, GX_ARRAY_SIZE(g_certificate_passwd));
+			gx_strlcpy(g_certificate_passwd, cb_passwd, arsizeof(g_certificate_passwd));
 		} else {
 			g_certificate_passwd[0] = '\0';
 		}
-		gx_strlcpy(g_private_key_path, key_path, GX_ARRAY_SIZE(g_private_key_path));
+		gx_strlcpy(g_private_key_path, key_path, arsizeof(g_private_key_path));
 	}
 }
 
@@ -463,7 +463,7 @@ static int ps_stat_notifying(IMAP_CONTEXT *pcontext)
 	if (MIDB_RESULT_OK == system_services_summary_folder(pcontext->maildir,
 	    pcontext->selected_folder, &exists, &recent, NULL, NULL, NULL, NULL, &err)) {
 		char temp_buff[64];
-		auto len = gx_snprintf(temp_buff, GX_ARRAY_SIZE(temp_buff),
+		auto len = gx_snprintf(temp_buff, arsizeof(temp_buff),
 		           "* %d RECENT\r\n"
 		           "* %d EXISTS\r\n",
 		           recent, exists);
@@ -609,7 +609,7 @@ static int ps_literal_processing(IMAP_CONTEXT *pcontext)
 		pcontext->command_len += i;
 		char *argv[128];
 		auto argc = parse_imap_args(pcontext->command_buffer, pcontext->command_len,
-			    argv, GX_ARRAY_SIZE(argv));
+			    argv, arsizeof(argv));
 		if (argc >= 4 && 0 == strcasecmp(argv[1], "APPEND")) {
 			switch (imap_cmd_parser_append_begin(argc, argv, pcontext)) {
 			case DISPATCH_CONTINUE: {
@@ -720,7 +720,7 @@ static int ps_cmd_processing(IMAP_CONTEXT *pcontext)
 		}
 
 		auto argc = parse_imap_args(pcontext->command_buffer,
-			    pcontext->command_len, argv, GX_ARRAY_SIZE(argv));
+			    pcontext->command_len, argv, arsizeof(argv));
 		if (SCHED_STAT_APPENDED == pcontext->sched_stat) {
 			if (0 != argc) {
 				if (-1 != pcontext->message_fd) {
@@ -1277,7 +1277,7 @@ void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *fold
 	DOUBLE_LIST_NODE *pnode;
 	IMAP_CONTEXT *pcontext1;
 	
-	gx_strlcpy(buff, username, GX_ARRAY_SIZE(buff));
+	gx_strlcpy(buff, username, arsizeof(buff));
 	HX_strlower(buff);
 	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = g_select_hash->query<DOUBLE_LIST>(buff);
@@ -1302,7 +1302,7 @@ static void imap_parser_event_touch(char *username, char *folder)
 	DOUBLE_LIST_NODE *pnode;
 	IMAP_CONTEXT *pcontext;
 	
-	gx_strlcpy(temp_string, username, GX_ARRAY_SIZE(temp_string));
+	gx_strlcpy(temp_string, username, arsizeof(temp_string));
 	HX_strlower(temp_string);
 	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = g_select_hash->query<DOUBLE_LIST>(temp_string);
@@ -1324,7 +1324,7 @@ void imap_parser_modify_flags(IMAP_CONTEXT *pcontext, const char *mid_string)
 	DOUBLE_LIST_NODE *pnode;
 	IMAP_CONTEXT *pcontext1;
 	
-	gx_strlcpy(buff, pcontext->username, GX_ARRAY_SIZE(buff));
+	gx_strlcpy(buff, pcontext->username, arsizeof(buff));
 	HX_strlower(buff);
 	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = g_select_hash->query<DOUBLE_LIST>(buff);
@@ -1356,7 +1356,7 @@ static void imap_parser_event_flag(const char *username, const char *folder,
 	DOUBLE_LIST_NODE *pnode;
 	IMAP_CONTEXT *pcontext;
 	
-	gx_strlcpy(temp_string, username, GX_ARRAY_SIZE(temp_string));
+	gx_strlcpy(temp_string, username, arsizeof(temp_string));
 	HX_strlower(temp_string);
 	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = g_select_hash->query<DOUBLE_LIST>(temp_string);
@@ -1397,7 +1397,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 	if (TRUE == b_modify && MIDB_RESULT_OK == system_services_summary_folder(
 		pcontext->maildir, pcontext->selected_folder, &exists, &recent, 
 		NULL, NULL, NULL, NULL, &err)) {
-		tmp_len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* %d RECENT\r\n"
+		tmp_len = gx_snprintf(buff, arsizeof(buff), "* %d RECENT\r\n"
 									   "* %d EXISTS\r\n",
 									   recent, exists);
 		if (NULL == pstream) {
@@ -1424,10 +1424,10 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 		    pcontext->selected_folder, mid_string, &flag_bits,
 		    &err) != MIDB_RESULT_OK)
 			continue;
-		tmp_len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* %d FETCH (FLAGS (", id);
+		tmp_len = gx_snprintf(buff, arsizeof(buff), "* %d FETCH (FLAGS (", id);
 		b_first = FALSE;
 		if (flag_bits & FLAG_RECENT) {
-			tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Recent");
+			tmp_len += gx_snprintf(buff + tmp_len, arsizeof(buff) - tmp_len, "\\Recent");
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_ANSWERED) {
@@ -1435,7 +1435,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 				buff[tmp_len] = ' ';
 				tmp_len++;
 			}
-			tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Answered");
+			tmp_len += gx_snprintf(buff + tmp_len, arsizeof(buff) - tmp_len, "\\Answered");
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_FLAGGED) {
@@ -1443,7 +1443,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 				buff[tmp_len] = ' ';
 				tmp_len++;
 			}
-			tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Flagged");
+			tmp_len += gx_snprintf(buff + tmp_len, arsizeof(buff) - tmp_len, "\\Flagged");
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_DELETED) {
@@ -1451,7 +1451,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 				buff[tmp_len] = ' ';
 				tmp_len++;
 			}
-			tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Deleted");
+			tmp_len += gx_snprintf(buff + tmp_len, arsizeof(buff) - tmp_len, "\\Deleted");
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_SEEN) {
@@ -1459,7 +1459,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 				buff[tmp_len] = ' ';
 				tmp_len++;
 			}
-			tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Seen");
+			tmp_len += gx_snprintf(buff + tmp_len, arsizeof(buff) - tmp_len, "\\Seen");
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_DRAFT) {
@@ -1467,9 +1467,9 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 				buff[tmp_len] = ' ';
 				tmp_len++;
 			}
-			tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "\\Draft");
+			tmp_len += gx_snprintf(buff + tmp_len, arsizeof(buff) - tmp_len, "\\Draft");
 		}
-		tmp_len += gx_snprintf(buff + tmp_len, GX_ARRAY_SIZE(buff) - tmp_len, "))\r\n");
+		tmp_len += gx_snprintf(buff + tmp_len, arsizeof(buff) - tmp_len, "))\r\n");
 		if (pstream != nullptr)
 			pstream->write(buff, tmp_len);
 		else if (pcontext->connection.ssl != nullptr)
@@ -1628,7 +1628,7 @@ static int imap_parser_dispatch_cmd2(int argc, char **argv, IMAP_CONTEXT *pconte
         return imap_cmd_parser_uid_expunge(argc, argv, pcontext);
     } else {
 		imap_reply_str = resource_get_imap_code(1800, 1, &string_length);
-		string_length = gx_snprintf(reply_buff, GX_ARRAY_SIZE(reply_buff), "%s %s", argv[0], imap_reply_str);
+		string_length = gx_snprintf(reply_buff, arsizeof(reply_buff), "%s %s", argv[0], imap_reply_str);
         if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, reply_buff, string_length);
 		} else {
@@ -1814,7 +1814,7 @@ void imap_parser_add_select(IMAP_CONTEXT *pcontext)
 	char temp_string[UADDR_SIZE];
 	DOUBLE_LIST temp_list;
 	
-	gx_strlcpy(temp_string, pcontext->username, GX_ARRAY_SIZE(temp_string));
+	gx_strlcpy(temp_string, pcontext->username, arsizeof(temp_string));
 	HX_strlower(temp_string);
 	time(&pcontext->selected_time);
 	std::unique_lock hl_hold(g_hash_lock);
@@ -1843,7 +1843,7 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 	
 	should_remove = TRUE;
 	pcontext->selected_time = 0;
-	gx_strlcpy(temp_string, pcontext->username, GX_ARRAY_SIZE(temp_string));
+	gx_strlcpy(temp_string, pcontext->username, arsizeof(temp_string));
 	HX_strlower(temp_string);
 	std::unique_lock hl_hold(g_hash_lock);
 	auto plist = g_select_hash->query<DOUBLE_LIST>(temp_string);

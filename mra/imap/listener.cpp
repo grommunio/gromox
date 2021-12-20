@@ -233,8 +233,8 @@ static void *imls_thrwork(void *arg)
 		pcontext->connection.sockd          = sockd2;
 		pcontext->connection.client_port    = client_port;
 		pcontext->connection.server_port    = g_listener_port;
-		gx_strlcpy(pcontext->connection.client_ip, client_hostip, GX_ARRAY_SIZE(pcontext->connection.client_ip));
-		gx_strlcpy(pcontext->connection.server_ip, server_hostip, GX_ARRAY_SIZE(pcontext->connection.server_ip));
+		gx_strlcpy(pcontext->connection.client_ip, client_hostip, arsizeof(pcontext->connection.client_ip));
+		gx_strlcpy(pcontext->connection.server_ip, server_hostip, arsizeof(pcontext->connection.server_ip));
 		pcontext->sched_stat                = SCHED_STAT_RDCMD;
 		/* 
 		valid the context and wake up one thread if there're some threads 
@@ -355,8 +355,8 @@ static void *imls_thrworkssl(void *arg)
 		pcontext->sched_stat                = SCHED_STAT_STLS;
 		pcontext->connection.client_port    = client_port;
 		pcontext->connection.server_port    = g_listener_ssl_port;
-		gx_strlcpy(pcontext->connection.client_ip, client_hostip, GX_ARRAY_SIZE(pcontext->connection.client_ip));
-		gx_strlcpy(pcontext->connection.server_ip, server_hostip, GX_ARRAY_SIZE(pcontext->connection.server_ip));
+		gx_strlcpy(pcontext->connection.client_ip, client_hostip, arsizeof(pcontext->connection.client_ip));
+		gx_strlcpy(pcontext->connection.server_ip, server_hostip, arsizeof(pcontext->connection.server_ip));
 		/* 
 		valid the context and wake up one thread if there're some threads 
 		block on the condition variable 

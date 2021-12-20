@@ -184,7 +184,7 @@ static bool list_file_read_midb(const char *filename)
 		pserver->node.pdata = pserver;
 		strcpy(pserver->prefix, pitem[i].prefix);
 		pserver->prefix_len = strlen(pserver->prefix);
-		gx_strlcpy(pserver->ip_addr, pitem[i].ip_addr, GX_ARRAY_SIZE(pserver->ip_addr));
+		gx_strlcpy(pserver->ip_addr, pitem[i].ip_addr, arsizeof(pserver->ip_addr));
 		pserver->port = pitem[i].port;
 		double_list_init(&pserver->conn_list);
 		double_list_append_as_tail(&g_server_list, &pserver->node);
@@ -535,7 +535,7 @@ static int list_mail(const char *path, const char *folder,
 				temp_line[line_pos] = '\0';
 
 				MSG_UNIT msg;
-				gx_strlcpy(msg.file_name, temp_line, GX_ARRAY_SIZE(msg.file_name));
+				gx_strlcpy(msg.file_name, temp_line, arsizeof(msg.file_name));
 				msg.size = strtol(pspace, nullptr, 0);
 				*psize += msg.size;
 				msg.b_deleted = FALSE;
@@ -640,7 +640,7 @@ static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist)
 			if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 				goto DELETE_ERROR;
 			if (0 == strncmp(buff, "TRUE", 4)) {
-				length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-DELE %s %s", path, folder);
+				length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
 			} else if (0 == strncmp(buff, "FALSE ", 6)) {
 				std::unique_lock sv_hold(g_server_lock);
 				double_list_append_as_tail(&pback->psvr->conn_list,
@@ -699,7 +699,7 @@ static int imap_search(const char *path, const char *folder,
 				path, folder, charset);
 	int length1 = 0;
 	for (i=0; i<argc; i++) {
-		length1 += gx_snprintf(buff1 + length1, GX_ARRAY_SIZE(buff1) - length1,
+		length1 += gx_snprintf(buff1 + length1, arsizeof(buff1) - length1,
 					"%s", argv[i]) + 1;
 	}
 	buff1[length1] = '\0';
@@ -769,7 +769,7 @@ static int imap_search_uid(const char *path, const char *folder,
 				path, folder, charset);
 	int length1 = 0;
 	for (i=0; i<argc; i++) {
-		length1 += gx_snprintf(buff1 + length1, GX_ARRAY_SIZE(buff1) - length1,
+		length1 += gx_snprintf(buff1 + length1, arsizeof(buff1) - length1,
 					"%s", argv[i]) + 1;
 	}
 	buff1[length1] = '\0';
@@ -1465,7 +1465,7 @@ static int remove_mail(const char *path, const char *folder,
 			if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 				goto RDWR_ERROR;
 			if (0 == strncmp(buff, "TRUE", 4)) {
-				length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-DELE %s %s", path, folder);
+				length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
 			} else if (0 == strncmp(buff, "FALSE ", 6)) {
 				std::unique_lock sv_hold(g_server_lock);
 				double_list_append_as_tail(&pback->psvr->conn_list,
@@ -1599,7 +1599,7 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 						*pspace1 = '\0';
 						pspace ++;
 						pspace1 ++;
-						gx_strlcpy(mitem.mid, temp_line, GX_ARRAY_SIZE(mitem.mid));
+						gx_strlcpy(mitem.mid, temp_line, arsizeof(mitem.mid));
 						mitem.id = count;
 						mitem.uid = strtol(pspace, nullptr, 0);
 						mitem.flag_bits = 0;
@@ -1770,7 +1770,7 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 						*pspace1 = '\0';
 						pspace ++;
 						pspace1 ++;
-						gx_strlcpy(mitem.mid, pspace, GX_ARRAY_SIZE(mitem.mid));
+						gx_strlcpy(mitem.mid, pspace, arsizeof(mitem.mid));
 						mitem.id = strtol(temp_line, nullptr, 0) + 1;
 						mitem.uid = strtol(pspace1, nullptr, 0);
 						mitem.flag_bits = FLAG_DELETED;
@@ -2067,14 +2067,14 @@ static int fetch_simple(const char *path, const char *folder,
 		auto pseq = static_cast<SEQUENCE_NODE *>(pnode->pdata);
 		if (pseq->max == -1) {
 			if (pseq->min == -1)
-				length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SIML %s %s UID ASC -1 1\r\n",
+				length = gx_snprintf(buff, arsizeof(buff), "P-SIML %s %s UID ASC -1 1\r\n",
 						path, folder);
 			else
-				length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SIML %s %s UID ASC %d "
+				length = gx_snprintf(buff, arsizeof(buff), "P-SIML %s %s UID ASC %d "
 						"1000000000\r\n", path, folder,
 						pseq->min - 1);
 		} else {
-			length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SIML %s %s UID ASC %d %d\r\n",
+			length = gx_snprintf(buff, arsizeof(buff), "P-SIML %s %s UID ASC %d %d\r\n",
 						path, folder, pseq->min - 1,
 						pseq->max - pseq->min + 1);
 		}
@@ -2150,7 +2150,7 @@ static int fetch_simple(const char *path, const char *folder,
 								auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, num - 1));
 								pitem->uid = uid;
 								pitem->id = pseq->min + count - 1;
-								gx_strlcpy(pitem->mid, temp_line, GX_ARRAY_SIZE(pitem->mid));
+								gx_strlcpy(pitem->mid, temp_line, arsizeof(pitem->mid));
 								pitem->flag_bits = 0;
 								if (NULL != strchr(pspace1, 'A')) {
 									pitem->flag_bits |= FLAG_ANSWERED;
@@ -2265,14 +2265,14 @@ static int fetch_detail(const char *path, const char *folder,
 		auto pseq = static_cast<SEQUENCE_NODE *>(pnode->pdata);
 		if (pseq->max == -1) {
 			if (pseq->min == -1)
-				length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-LIST %s %s UID ASC -1 1\r\n",
+				length = gx_snprintf(buff, arsizeof(buff), "M-LIST %s %s UID ASC -1 1\r\n",
 						path, folder);
 			else
-				length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-LIST %s %s UID ASC %d "
+				length = gx_snprintf(buff, arsizeof(buff), "M-LIST %s %s UID ASC %d "
 						"1000000000\r\n", path, folder,
 						pseq->min - 1);
 		} else {
-			length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "M-LIST %s %s UID ASC %d %d\r\n",
+			length = gx_snprintf(buff, arsizeof(buff), "M-LIST %s %s UID ASC %d %d\r\n",
 						path, folder, pseq->min - 1,
 						pseq->max - pseq->min + 1);
 		}
@@ -2555,7 +2555,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 									auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, num - 1));
 									pitem->uid = uid;
 									pitem->id = strtol(temp_line, nullptr, 0) + 1;
-									gx_strlcpy(pitem->mid, pspace, GX_ARRAY_SIZE(pitem->mid));
+									gx_strlcpy(pitem->mid, pspace, arsizeof(pitem->mid));
 									pitem->flag_bits = 0;
 									if (NULL != strchr(pspace2, 'A')) {
 										pitem->flag_bits |= FLAG_ANSWERED;
@@ -2896,7 +2896,7 @@ static int set_mail_flags(const char *path, const char *folder,
 	flags_string[length] = ')';
 	length ++;
 	flags_string[length] = '\0';
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-SFLG %s %s %s %s\r\n",
+	length = gx_snprintf(buff, arsizeof(buff), "P-SFLG %s %s %s %s\r\n",
 				path, folder, mid_string, flags_string);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 		goto RDWR_ERROR;
@@ -2966,7 +2966,7 @@ static int unset_mail_flags(const char *path, const char *folder,
 	flags_string[length] = ')';
 	length ++;
 	flags_string[length] = '\0';
-	length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "P-RFLG %s %s %s %s\r\n",
+	length = gx_snprintf(buff, arsizeof(buff), "P-RFLG %s %s %s %s\r\n",
 				path, folder, mid_string, flags_string);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
 		goto RDWR_ERROR;
@@ -3272,7 +3272,7 @@ static BOOL get_digest_string(const char *src, int length, const char *tag,
 	char *ptr1, *ptr2;
 	char temp_tag[256];
 	
-	int len = gx_snprintf(temp_tag, GX_ARRAY_SIZE(temp_tag), "\"%s\"", tag);
+	auto len = gx_snprintf(temp_tag, arsizeof(temp_tag), "\"%s\"", tag);
 	ptr1 = search_string(src, temp_tag, length);
 	if (NULL == ptr1) {
 		return FALSE;

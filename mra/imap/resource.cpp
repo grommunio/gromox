@@ -164,7 +164,7 @@ int resource_run()
 		printf("[resource]: Failed to load IMAP languages\n");
 		return -3;
 	}
-	for (size_t i = 0; i < GX_ARRAY_SIZE(g_default_code_table); ++i) {
+	for (size_t i = 0; i < arsizeof(g_default_code_table); ++i) {
 		g_def_code_table.emplace(g_default_code_table[i].first,
 			resource_parse_stcode_line(g_default_code_table[i].second));
     }
@@ -239,7 +239,7 @@ static int resource_construct_lang_list(std::list<LANG_FOLDER> &plist)
 		
 		*ptr = '\0';
 		LANG_FOLDER lf, *plang = &lf;
-		gx_strlcpy(plang->lang, line, GX_ARRAY_SIZE(plang->lang));
+		gx_strlcpy(plang->lang, line, arsizeof(plang->lang));
 		HX_strrtrim(plang->lang);
 		HX_strltrim(plang->lang);
 		if (0 == strlen(plang->lang) ||
