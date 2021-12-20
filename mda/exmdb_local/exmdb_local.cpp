@@ -419,6 +419,8 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		if (gethostname(hostname, 127) < 0) {
 			strcpy(hostname, "localhost");
 		}
+		else
+			hostname[arsizeof(hostname)-1] = '\0';
 	}
 	std::string mid_string, json_string, eml_path;
 	int fd = -1;

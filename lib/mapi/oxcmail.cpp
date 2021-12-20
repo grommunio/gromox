@@ -5420,6 +5420,7 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 	if (NULL == pvalue) {
 		strcpy(tmp_buff, "dns; ");
 		gethostname(tmp_buff + 5, sizeof(tmp_buff) - 5);
+		tmp_buff[arsizeof(tmp_buff)-1] = '\0';
 		if (!dsn_append_field(pdsn_fields, "Reporting-MTA", tmp_buff)) {
 			dsn_free(&dsn);
 			return FALSE;

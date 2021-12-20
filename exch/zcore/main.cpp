@@ -151,6 +151,7 @@ int main(int argc, const char **argv) try
 	str_value = pconfig->get_value("HOST_ID");
 	if (NULL == str_value) {
 		gethostname(host_name, 256);
+		host_name[arsizeof(host_name)-1] = '\0';
 	} else {
 		gx_strlcpy(host_name, str_value, GX_ARRAY_SIZE(host_name));
 	}

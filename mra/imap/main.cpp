@@ -122,6 +122,7 @@ int main(int argc, const char **argv) try
 	if (str_val == NULL) {
 		memset(temp_buff, 0, arsizeof(temp_buff));
 		gethostname(temp_buff, arsizeof(temp_buff));
+		temp_buff[arsizeof(temp_buff)-1] = '\0';
 		resource_set_string("HOST_ID", temp_buff);
 		str_val = temp_buff;
 		printf("[system]: warning! cannot find host ID, OS host name will be "
