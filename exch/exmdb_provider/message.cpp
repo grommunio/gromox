@@ -3379,11 +3379,7 @@ static bool op_move_same(BOOL b_oof, const char *from_address,
 			psqlite, folder_id, message_id, prnode->id,
 			RULE_ERROR_MOVECOPY, block.type,
 			rule_idx, prnode->provider.c_str(), pmsg_list);
-		if (FALSE == message_disable_rule(
-		    psqlite, FALSE, prnode->id)) {
-			return FALSE;
-		}
-		return true;
+		return message_disable_rule(psqlite, false, prnode->id);
 	}
 	int tmp_id = 0, tmp_id1 = 0;
 	if (TRUE == exmdb_server_check_private()) {
@@ -3507,11 +3503,7 @@ static bool op_reply(const char *from_address, const char *account,
 			message_id, prnode->id, RULE_ERROR_RETRIEVE_TEMPLATE,
 			block.type, rule_idx, prnode->provider.c_str(),
 			pmsg_list);
-		if (FALSE == message_disable_rule(
-		    psqlite, FALSE, prnode->id)) {
-			return FALSE;
-		}
-		return true;
+		return message_disable_rule(psqlite, false, prnode->id);
 	}
 	return true;
 }
@@ -3548,11 +3540,7 @@ static bool op_forward(const char *from_address, const char *account,
 		message_make_deferred_error_message(account, psqlite, folder_id,
 			message_id, prnode->id, RULE_ERROR_TOO_MANY_RCPTS,
 			block.type, rule_idx, prnode->provider.c_str(), pmsg_list);
-		if (FALSE == message_disable_rule(
-		    psqlite, FALSE, prnode->id)) {
-			return FALSE;
-		}
-		return true;
+		return message_disable_rule(psqlite, false, prnode->id);
 	}
 	if (FALSE == message_forward_message(from_address,
 	    account, psqlite, cpid, message_id, pdigest,
@@ -3576,11 +3564,7 @@ static bool op_delegate(const char *from_address, const char *account,
 		message_make_deferred_error_message(account, psqlite, folder_id,
 			message_id, prnode->id, RULE_ERROR_TOO_MANY_RCPTS,
 			block.type, rule_idx, prnode->provider.c_str(), pmsg_list);
-		if (FALSE == message_disable_rule(
-		    psqlite, FALSE, prnode->id)) {
-			return FALSE;
-		}
-		return true;
+		return message_disable_rule(psqlite, false, prnode->id);
 	}
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
 	if (FALSE == message_read_message(psqlite, cpid,
@@ -3772,11 +3756,7 @@ static bool opx_move_private(const char *account, sqlite3 *psqlite,
 {
 	if (EITLT_PRIVATE_FOLDER !=
 	    pextmvcp->folder_eid.folder_type) {
-		if (FALSE == message_disable_rule(
-		    psqlite, TRUE, prnode->id)) {
-			return FALSE;
-		}
-		return true;
+		return message_disable_rule(psqlite, TRUE, prnode->id);
 	}
 	int tmp_id = 0;
 	if (FALSE == common_util_get_id_from_username(
@@ -3786,11 +3766,7 @@ static bool opx_move_private(const char *account, sqlite3 *psqlite,
 	auto tmp_guid = rop_util_make_user_guid(tmp_id);
 	if (0 != guid_compare(&tmp_guid,
 	    &pextmvcp->folder_eid.database_guid)) {
-		if (FALSE == message_disable_rule(
-		    psqlite, TRUE, prnode->id)) {
-			return FALSE;
-		}
-		return true;
+		return message_disable_rule(psqlite, TRUE, prnode->id);
 	}
 	return true;
 }
@@ -3800,11 +3776,7 @@ static bool opx_move_public(const char *account, sqlite3 *psqlite,
 {
 	if (EITLT_PUBLIC_FOLDER !=
 	    pextmvcp->folder_eid.folder_type) {
-		if (FALSE == message_disable_rule(
-		    psqlite, TRUE, prnode->id)) {
-			return FALSE;
-		}
-		return true;
+		return message_disable_rule(psqlite, TRUE, prnode->id);
 	}
 	auto pc = strchr(account, '@');
 	if (pc == nullptr)
@@ -3817,11 +3789,7 @@ static bool opx_move_public(const char *account, sqlite3 *psqlite,
 	auto tmp_guid = rop_util_make_domain_guid(tmp_id);
 	if (0 != guid_compare(&tmp_guid,
 	    &pextmvcp->folder_eid.database_guid)) {
-		if (FALSE == message_disable_rule(
-		    psqlite, TRUE, prnode->id)) {
-			return FALSE;
-		}
-		return true;
+		return message_disable_rule(psqlite, TRUE, prnode->id);
 	}
 	return true;
 }
@@ -3857,11 +3825,7 @@ static bool opx_move(BOOL b_oof, const char *from_address,
 		return FALSE;
 	}
 	if (FALSE == b_exist) {
-		if (FALSE == message_disable_rule(
-		    psqlite, TRUE, prnode->id)) {
-			return FALSE;
-		}
-		return true;
+		return message_disable_rule(psqlite, TRUE, prnode->id);
 	}
 	int tmp_id = 0, tmp_id1 = 0;
 	if (TRUE == exmdb_server_check_private()) {
@@ -3955,11 +3919,7 @@ static bool opx_reply(const char *from_address, const char *account,
 		auto tmp_guid = rop_util_make_user_guid(tmp_id);
 		if (0 != guid_compare(&tmp_guid,
 		    &pextreply->message_eid.message_database_guid)) {
-			if (FALSE == message_disable_rule(
-			    psqlite, TRUE, prnode->id)) {
-				return FALSE;
-			}
-			return true;
+			return message_disable_rule(psqlite, TRUE, prnode->id);
 		}
 	} else {
 		auto pc = strchr(account, '@');
@@ -3972,11 +3932,7 @@ static bool opx_reply(const char *from_address, const char *account,
 		auto tmp_guid = rop_util_make_domain_guid(tmp_id);
 		if (0 != guid_compare(&tmp_guid,
 		    &pextreply->message_eid.message_database_guid)) {
-			if (FALSE == message_disable_rule(
-			    psqlite, TRUE, prnode->id)) {
-				return FALSE;
-			}
-			return true;
+			return message_disable_rule(psqlite, TRUE, prnode->id);
 		}
 	}
 	auto dst_mid = rop_util_gc_to_value(
@@ -3988,11 +3944,7 @@ static bool opx_reply(const char *from_address, const char *account,
 	    dst_mid, pextreply->template_guid, &b_result))
 		return FALSE;
 	if (FALSE == b_result) {
-		if (FALSE == message_disable_rule(
-		    psqlite, TRUE, prnode->id)) {
-			return FALSE;
-		}
-		return true;
+		return message_disable_rule(psqlite, TRUE, prnode->id);
 	}
 	return true;
 }
@@ -4007,11 +3959,7 @@ static bool opx_delegate(const char *from_address, const char *account,
 		return true;
 	}
 	if (pextfwddlgt->count > MAX_RULE_RECIPIENTS) {
-		if (FALSE == message_disable_rule(
-		    psqlite, TRUE, prnode->id)) {
-			return FALSE;
-		}
-		return true;
+		return message_disable_rule(psqlite, TRUE, prnode->id);
 	}
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
 	if (FALSE == message_read_message(psqlite, cpid,
@@ -4148,11 +4096,7 @@ static bool opx_switcheroo(BOOL b_oof, const char *from_address,
 	case OP_FORWARD: {
 		auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
 		if (pextfwddlgt->count > MAX_RULE_RECIPIENTS) {
-			if (FALSE == message_disable_rule(
-			    psqlite, TRUE, prnode->id)) {
-				return FALSE;
-			}
-			return true;
+			return message_disable_rule(psqlite, TRUE, prnode->id);
 		}
 		if (FALSE == message_forward_message(from_address,
 		    account, psqlite, cpid, message_id, pdigest,
