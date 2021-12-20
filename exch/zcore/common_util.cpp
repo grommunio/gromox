@@ -81,7 +81,7 @@ static uint16_t g_smtp_port;
 static int g_max_message;
 static char g_smtp_ip[40];
 static char g_org_name[256];
-static char g_hostname[256];
+static char g_hostname[UDOM_SIZE];
 static std::shared_ptr<MIME_POOL> g_mime_pool;
 static pthread_key_t g_dir_key;
 static pthread_key_t g_env_key;

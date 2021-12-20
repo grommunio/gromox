@@ -65,7 +65,7 @@ struct HTTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	int auth_times = 0;
 	char username[UADDR_SIZE]{}, password[128]{}, maildir[256]{}, lang[32]{};
 	DOUBLE_LIST_NODE node{};
-	char host[256]{};
+	char host[UDOM_SIZE]{};
 	uint16_t port = 0;
 	int channel_type = 0;
 	void *pchannel = nullptr;

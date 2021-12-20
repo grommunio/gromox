@@ -86,7 +86,7 @@ int main(int argc, const char **argv) try
 	struct rlimit rl;
 	char temp_buff[256];
 	int retcode = EXIT_FAILURE;
-	char host_name[256], *ptoken;
+	char host_name[UDOM_SIZE], *ptoken;
 	const char *dns_name, *dns_domain, *netbios_name;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);

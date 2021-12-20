@@ -23,7 +23,7 @@ enum {
 };
 
 struct DCERPC_ENDPOINT {
-	char host[128]{};
+	char host[UDOM_SIZE]{};
 	std::list<DCERPC_INTERFACE> interface_list;
 	uint32_t last_group_id = 0;
 	uint16_t tcp_port = 0; /* only for ncacn_http */

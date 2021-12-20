@@ -66,7 +66,7 @@ struct ASYNC_NODE {
 	uint32_t async_id;
 	DCERPC_CALL *pcall;
 	NDR_STACK_ROOT* pstack_root;
-	char vconn_host[256];
+	char vconn_host[UDOM_SIZE];
 	uint16_t vconn_port;
 	char vconn_cookie[64];
 };
@@ -1819,7 +1819,7 @@ static uint32_t pdu_processor_apply_async_id()
 	pasync_node->b_cancelled = FALSE;
 	pasync_node->pcall = pcall;
 	pasync_node->pstack_root = pstack_root;
-	strcpy(pasync_node->vconn_host, pcontext->host);
+	gx_strlcpy(pasync_node->vconn_host, pcontext->host, arsizeof(pasync_node->vconn_host));
 	pasync_node->vconn_port = pcontext->port;
 	strcpy(pasync_node->vconn_cookie, pchannel_in->connection_cookie);
 	
