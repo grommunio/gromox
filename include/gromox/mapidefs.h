@@ -1191,6 +1191,14 @@ struct GUID {
 	uint16_t time_hi_and_version;
 	uint8_t clock_seq[2];
 	uint8_t node[6];
+
+#if __cplusplus >= 202000L && defined(__GNUG__) >= 13
+	/* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=103733 */
+	bool operator==(const FLATUID &) const = default;
+#else
+	inline bool operator==(const GUID &o) const { return memcmp(this, &o, sizeof(o)) == 0; }
+	inline bool operator!=(const GUID &o) const { return !operator==(o); }
+#endif
 };
 
 struct GUID_ARRAY {
