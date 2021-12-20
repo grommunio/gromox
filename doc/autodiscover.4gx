@@ -72,6 +72,10 @@ Default: \fI0\fP.
 \fBtimezone\fP
 Default: (unspecified)
 .SS [system]
+.SH freebusy
+Program location of the freebusy binary.
+.br
+Default: \fI/usr/libexec/gromox/freebusy\fP
 .SS [http-proxy]
 This section contains the emsmdb multiserver map. This conveys the HTTP home
 server for users. If a HTTP home server is not also the exmdb/sqlite home
