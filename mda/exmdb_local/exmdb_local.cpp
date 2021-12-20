@@ -363,14 +363,11 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	MAIL *pmail;
 	int tmp_len;
 	void *pvalue;
-	char lang[32];
 	size_t mess_len;
 	int sequence_ID;
 	time_t cur_time;
 	uint64_t nt_time;
-	char charset[32], tmzone[64];
-	char hostname[128];
-	char home_dir[256];
+	char lang[32], charset[32], tmzone[64], hostname[UDOM_SIZE], home_dir[256];
 	uint32_t tmp_int32;
 	uint32_t suppress_mask;
 	BOOL b_bounce_delivered = false;
@@ -414,11 +411,10 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	
 	time(&cur_time);
 	sequence_ID = exmdb_local_sequence_ID();
-	strncpy(hostname, get_host_ID(), 127);
+	gx_strlcpy(hostname, get_host_ID(), arsizeof(hostname));
 	if ('\0' == hostname[0]) {
-		if (gethostname(hostname, 127) < 0) {
+		if (gethostname(hostname, arsizeof(hostname)) < 0)
 			strcpy(hostname, "localhost");
-		}
 		else
 			hostname[arsizeof(hostname)-1] = '\0';
 	}
