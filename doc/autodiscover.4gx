@@ -52,8 +52,12 @@ Database name. Default: \fIemail\fP.
 .SS [exchange]
 .TP
 \fBhostname\fP
-The hostname of the Autodiscover server. This is used by the Autodiscovery
-handler to issue HTTP->HTTPS upgrades. Default: (system hostname).
+The \fBglobally valid\fP hostname of this server for the purpose of
+AutoDisocvery referring to itself and other RPC and EWS endpoints. (The OXDSCLI
+protocol requires URLs and Outlook would not do anything if we snuck in
+relative paths in violation of the spec.)
+.br
+Default: (system hostname).
 .TP
 \fBmapihttp\fP
 This setting controls which server types the Autodiscover handler should
