@@ -528,7 +528,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 	auto string = cookie_parser_get(pparser, "sid");
 	if (string == nullptr || strlen(string) >= arsizeof(ctx.session_string))
 		return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
-	HX_strlcpy(ctx.session_string, string, arsizeof(ctx.session_string));
+	gx_strlcpy(ctx.session_string, string, arsizeof(ctx.session_string));
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "NotificationWait") != 0) {
 		string = cookie_parser_get(pparser, "sequence");

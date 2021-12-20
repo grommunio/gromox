@@ -25,7 +25,7 @@ struct session_data {
 	session_data(const GUID& sesguid, const GUID& seqguid, const char* user, time_point exptime)
 	    : session_guid(sesguid), sequence_guid(seqguid), expire_time(exptime)
 	{
-		HX_strlcpy(username, user, UADDR_SIZE);
+		gx_strlcpy(username, user, UADDR_SIZE);
 		HX_strlower(username);
 	}
 

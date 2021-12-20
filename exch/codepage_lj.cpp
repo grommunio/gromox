@@ -30,7 +30,7 @@ static BOOL cpl_get_string(uint32_t codepage, const char *tag, char *value, int 
 		const auto &l2ref = dict[l1key][tag];
 		if (l2ref == Json::Value::null)
 			return false;
-		HX_strlcpy(value, l2ref.asString().c_str(), len);
+		gx_strlcpy(value, l2ref.asString().c_str(), len);
 		return TRUE;
 	}
 	/* use first entry as default */
@@ -40,7 +40,7 @@ static BOOL cpl_get_string(uint32_t codepage, const char *tag, char *value, int 
 	const auto &l2ref = (*it)[tag];
 	if (l2ref == Json::Value::null)
 		return false;
-	HX_strlcpy(value, l2ref.asString().c_str(), len);
+	gx_strlcpy(value, l2ref.asString().c_str(), len);
 	return TRUE;
 }
 

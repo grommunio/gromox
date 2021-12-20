@@ -385,7 +385,7 @@ uint32_t MhNspContext::getaddressbookurl(char* dest)
 		dest = std::get<getaddressbookurl_response>(response).server_url;
 	get_id_from_username(auth_info.username, &user_id);
 	memset(username1, 0, arsizeof(username1));
-	HX_strlcpy(username1, auth_info.username, arsizeof(username1));
+	gx_strlcpy(username1, auth_info.username, arsizeof(username1));
 	auto token = strchr(username1, '@');
 	HX_strlower(username1);
 	if (token != nullptr)

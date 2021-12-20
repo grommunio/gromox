@@ -348,7 +348,7 @@ static void grey_list_flush()
 	}
 	for (const auto &[key, entry] : g_grey_table) {
 		auto pentry = &entry;
-		HX_strlcpy(temp_string, key.c_str(), arsizeof(temp_string));
+		gx_strlcpy(temp_string, key.c_str(), arsizeof(temp_string));
 		int string_len = key.size();
 		for (i = 0, j = 0; i < string_len; ++i, ++j) {
 			if (' ' == temp_string[i] || '\\' == temp_string[i] ||
@@ -395,7 +395,7 @@ BOOL grey_list_dump(const char *path)
 		if (0 == pentry->allowed_times || 0 == pentry->interval) {
 			continue;
 		}
-		HX_strlcpy(temp_string, key.c_str(), arsizeof(temp_string));
+		gx_strlcpy(temp_string, key.c_str(), arsizeof(temp_string));
 		if (CALCULATE_INTERVAL(current_times, pentry->last_access) <=
 			pentry->interval && pentry->current_times > pentry->allowed_times) {
 			len = strlen(temp_string);
