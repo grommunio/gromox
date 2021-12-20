@@ -76,7 +76,7 @@ Selects the mailbox with the particular GUID for extraction.
 .TP
 \fB\-\-src\-mbox\fP \fIusername\fP
 Scan the source database for a mailbox which appears to have last been used by
-\fIusername\fP, and use it for extraction. There are a number of caveats
+\fIusername\fP, and use it for extraction. There are a number of \fBcaveats\fP
 related to this lookup; see the section "Store lookup by name" further below.
 (To get a listing of all stores, use \fB\-\-src\-mbox ""\fP.)
 .TP
@@ -166,13 +166,19 @@ also be shown with `kopano\-admin \-\-type company \-\-details MyCompany`.
 Generally, Kopano SQL databases do not store usernames. Store ownership is
 recorded with a Kopano-level numeric ID, which itself is mapped to a
 site-specific attribute of an authentication service, e.g. the uidNumber field
-of an LDAP. Only the auth service would know the username, and kdb2mt does not
-rely on its existence.
+of an LDAP. Only the authentication service would know the username, and kdb2mt
+does not rely on the existence of such authentication provider.
 .PP
 Every store has a metadata field for the \fBmost recent owner\fP (MRO). This
-field was intended for orphaned stores and has informational value only.
-Because it is possible to orphan and recreate stores, the MRO field value is
-\fBnot unique\fP across the set of all stores.
+field was intended for orphaned stores and has informational value only. The
+MRO field is not always updated by Kopano services, which can lead to
+\-\-src\-mbox not necessarily finding an expected match. In particular,
+kopano\-server misses doing the MRO update on store detach, and on changes to
+the username as provided by LDAP.
+.PP
+Furthermore, because it is possible to detach/orphan and create a new store for
+a user (and repeatedly so), the MRO field value is \fBnot unique\fP across the
+set of all stores.
 .PP
 Furthermore, the MRO field is missing the domain/company part of the username.
 Company public stores (in hosted setups) use the company name as MRO. This all
