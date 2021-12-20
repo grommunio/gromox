@@ -1172,6 +1172,7 @@ struct FLATUID {
 	bool operator==(const FLATUID &) const = default;
 #else
 	inline bool operator==(const FLATUID &o) const { return memcmp(ab, o.ab, sizeof(ab)) == 0; }
+	inline bool operator!=(const FLATUID &o) const { return !operator==(o); }
 #endif
 };
 
