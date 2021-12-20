@@ -105,17 +105,14 @@ int main(int argc, const char **argv)
 {
 	int i;
 	MYSQL *pmysql;
-	char dir[256];
 	GUID tmp_guid;
 	int mysql_port;
 	uint16_t propid;
 	MYSQL_ROW myrow;
 	uint64_t nt_time;
 	sqlite3 *psqlite;
-	char db_name[256];
 	MYSQL_RES *pmyres;
-	char mysql_host[256];
-	char mysql_user[256];
+	char mysql_host[UDOM_SIZE], mysql_user[256], db_name[256], dir[256];
 	char mysql_string[1024];
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);

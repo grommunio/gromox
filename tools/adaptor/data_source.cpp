@@ -22,9 +22,9 @@
 
 using namespace gromox;
 
-static char g_host[256];
+static char g_host[UDOM_SIZE];
 static uint16_t g_port;
-static char g_user[256];
+static char g_user[UADDR_SIZE];
 static char *g_password;
 static char g_password_buff[256];
 static char g_db_name[256];

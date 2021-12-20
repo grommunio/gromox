@@ -40,14 +40,11 @@ static constexpr HXoption g_options_table[] = {
 int main(int argc, const char **argv)
 {
 	MYSQL *pmysql;
-	char dir[256];
 	int mysql_port;
 	MYSQL_ROW myrow;
 	sqlite3 *psqlite;
-	char db_name[256];
 	MYSQL_RES *pmyres;
-	char mysql_host[256];
-	char mysql_user[256];
+	char mysql_host[UDOM_SIZE], mysql_user[256], db_name[256], dir[256];
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)

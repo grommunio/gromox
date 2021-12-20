@@ -173,20 +173,16 @@ static BOOL create_search_folder(sqlite3 *psqlite, uint64_t folder_id,
 
 int main(int argc, const char **argv)
 {
-	char lang[32];
 	MYSQL *pmysql;
-	char dir[256];
 	GUID tmp_guid;
 	int mysql_port;
 	uint16_t propid;
 	MYSQL_ROW myrow;
 	uint64_t nt_time;
 	sqlite3 *psqlite;
-	char db_name[256];
 	MYSQL_RES *pmyres;
 	char tmp_sql[1024];
-	char mysql_host[256];
-	char mysql_user[256];
+	char mysql_host[UDOM_SIZE], mysql_user[256], db_name[256], dir[256], lang[32];
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
