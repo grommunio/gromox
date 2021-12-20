@@ -200,7 +200,7 @@ int main(int argc, const char **argv)
 	if (str_value == nullptr)
 		strcpy(mysql_host, "localhost");
 	else
-		gx_strlcpy(mysql_host, str_value, GX_ARRAY_SIZE(mysql_host));
+		gx_strlcpy(mysql_host, str_value, arsizeof(mysql_host));
 	
 	str_value = pconfig->get_value("MYSQL_PORT");
 	if (NULL == str_value) {
@@ -212,13 +212,13 @@ int main(int argc, const char **argv)
 	}
 
 	str_value = pconfig->get_value("MYSQL_USERNAME");
-	gx_strlcpy(mysql_user, str_value != nullptr ? str_value : "root", GX_ARRAY_SIZE(mysql_user));
+	gx_strlcpy(mysql_user, str_value != nullptr ? str_value : "root", arsizeof(mysql_user));
 	auto mysql_passwd = pconfig->get_value("MYSQL_PASSWORD");
 	str_value = pconfig->get_value("MYSQL_DBNAME");
 	if (str_value == nullptr)
 		strcpy(db_name, "email");
 	else
-		gx_strlcpy(db_name, str_value, GX_ARRAY_SIZE(db_name));
+		gx_strlcpy(db_name, str_value, arsizeof(db_name));
 
 	const char *datadir = opt_datadir != nullptr ? opt_datadir :
 	                      pconfig->get_value("data_file_path");
@@ -279,7 +279,7 @@ int main(int argc, const char **argv)
 	if (address_status != AF_USER_NORMAL && address_status != AF_USER_SHAREDMBOX)
 		printf("Warning: Address status is not \"alive\"(0) but %lu\n", address_status);
 	
-	gx_strlcpy(dir, myrow[1], GX_ARRAY_SIZE(dir));
+	gx_strlcpy(dir, myrow[1], arsizeof(dir));
 	gx_strlcpy(lang, myrow[2], arsizeof(lang));
 	g_lang = folder_namedb_resolve(lang);
 	if (g_lang == nullptr)

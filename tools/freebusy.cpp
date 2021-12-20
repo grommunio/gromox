@@ -1775,7 +1775,7 @@ int main(int argc, const char **argv)
 	else if (strcasecmp(pstddayofweek, "Saturday") == 0)
 		tzstruct.standarddate.dayofweek = 6;
 	tzstruct.standarddate.day = strtol(pstddayorder, nullptr, 0);
-	gx_strlcpy(tmp_buff, pstdtime, GX_ARRAY_SIZE(tmp_buff));
+	gx_strlcpy(tmp_buff, pstdtime, arsizeof(tmp_buff));
 	ptoken = strchr(tmp_buff, ':');
 	if (NULL == ptoken) {
 		fprintf(stderr, "\"stdtime\" format error\n");
@@ -1811,7 +1811,7 @@ int main(int argc, const char **argv)
 	else if (strcasecmp(pdtldayofweek, "Saturday") == 0)
 		tzstruct.daylightdate.dayofweek = 6;
 	tzstruct.daylightdate.day = strtol(pdtldayorder, nullptr, 0);
-	gx_strlcpy(tmp_buff, pdtltime, GX_ARRAY_SIZE(tmp_buff));
+	gx_strlcpy(tmp_buff, pdtltime, arsizeof(tmp_buff));
 	ptoken = strchr(tmp_buff, ':');
 	if (NULL == ptoken) {
 		fprintf(stderr, "\"dtltime\" format error\n");
