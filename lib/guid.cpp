@@ -22,6 +22,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include "config.h"
 #include <gromox/guid.hpp>
 #include <gromox/util.hpp>
 #include <sys/types.h>
@@ -114,23 +115,4 @@ BOOL guid_from_string(GUID *guid, const char *guid_string)
 		}
 	}
 	return FALSE;
-}
-
-GUID guid_random_new()
-{
-	GUID guid;
-	int urand_fd;
-	
-	urand_fd = open("/dev/urandom", O_RDONLY);
-	if (-1 == urand_fd) {
-		randstring((char*)&guid, sizeof(GUID) - 1);
-	} else {
-		if (sizeof(GUID) != read(urand_fd, &guid, sizeof(GUID))) {
-			randstring((char*)&guid, sizeof(GUID) - 1);
-		}
-		close(urand_fd);
-	}
-	guid.clock_seq[0] = (guid.clock_seq[0] & 0x3F) | 0x80;
-	guid.time_hi_and_version = (guid.time_hi_and_version & 0x0FFF) | 0x4000;
-	return guid;
 }

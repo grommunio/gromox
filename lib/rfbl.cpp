@@ -22,6 +22,9 @@
 #include <fcntl.h>
 #include <spawn.h>
 #include <unistd.h>
+#if __linux__ && defined(HAVE_SYS_RANDOM_H)
+#	include <sys/random.h>
+#endif
 #include <sys/wait.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/io.h>
@@ -29,6 +32,7 @@
 #include <libHX/string.h>
 #include <gromox/config_file.hpp>
 #include <gromox/fileio.h>
+#include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/tie.hpp>
