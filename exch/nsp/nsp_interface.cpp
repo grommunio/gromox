@@ -987,13 +987,9 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 		} else if (0 == start_pos + tmp_count) {
 			pstat->cur_rec = MID_BEGINNING_OF_TABLE;
 		} else {
-			if (0 == pstat->container_id) {
-				pstat->cur_rec = nsp_interface_minid_in_list(
-							pgal_list, start_pos + tmp_count);
-			} else {
-				pstat->cur_rec = nsp_interface_minid_in_table(
-								pnode, start_pos + tmp_count);
-			}
+			pstat->cur_rec = pstat->container_id == 0 ?
+			                 nsp_interface_minid_in_list(pgal_list, start_pos + tmp_count) :
+			                 nsp_interface_minid_in_table(pnode, start_pos + tmp_count);
 			if (0 == pstat->cur_rec) {
 				pstat->cur_rec = MID_BEGINNING_OF_TABLE;
 				start_pos = 0;

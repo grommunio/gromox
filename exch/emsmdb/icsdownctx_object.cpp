@@ -1127,13 +1127,9 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			 *ppartial_count > MAX_PARTIAL_ON_ROP) {
 			b_full = TRUE;
 		} else {
-			if (FALSE == progmsg.b_fai) {
-				if (!pctx->pstate->pseen->get_repl_first_max(1, &last_cn))
-					return FALSE;	
-			} else {
-				if (!pctx->pstate->pseen_fai->get_repl_first_max(1, &last_cn))
-					return FALSE;	
-			}
+			auto ps = progmsg.b_fai ? pctx->pstate->pseen_fai : pctx->pstate->pseen;
+			if (!ps->get_repl_first_max(1, &last_cn))
+				return false;
 			if (!exmdb_client_get_change_indices(pctx->pstream->plogon->get_dir(),
 			    message_id, last_cn, &indices, &proptags))
 				return FALSE;	

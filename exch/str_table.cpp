@@ -301,29 +301,19 @@ static void str_table_console_talk(int argc, char **argv, char *result, int leng
 		}
 	}
 	if (3 == argc && 0 == strcmp("add", argv[1])) {
-		if (TRUE == str_table_add(argv[2])) {
-			snprintf(result, length, "250 %s is added", argv[2]);
-		} else {
-			snprintf(result, length, "550 fail to add %s", argv[2]);
-		}
+		snprintf(result, length, str_table_add(argv[2]) ?
+		         "250 %s is added" : "550 failed to add %s", argv[2]);
 		return;
 	}
 	if (3 == argc && 0 == strcmp("remove", argv[1])) {
-		if (TRUE == str_table_remove(argv[2])) {
-			snprintf(result, length, "250 %s is removed", argv[2]);
-		} else {
-			snprintf(result, length, "550 fail to remove %s", argv[2]);
-		}
+		snprintf(result, length, str_table_remove(argv[2]) ?
+		         "250 %s is removed" : "550 failed to remove %s", argv[2]);
 		return;
 	}
 	if (3 == argc && 0 == strcmp("search", argv[1])) {
-		if (TRUE == str_table_query(argv[2])) {
-			snprintf(result, length, "250 %s is found in the string table",
-					argv[2]);
-		} else {
-			snprintf(result, length, "550 cannot find %s in the string table",
-					argv[2]);
-		}
+		snprintf(result, length, str_table_query(argv[2]) ?
+		         "250 %s is found in the string table" :
+		         "550 cannot find %s in the string table", argv[2]);
 		return;
 	}
 	snprintf(result, length, "550 invalid argument %s", argv[1]);

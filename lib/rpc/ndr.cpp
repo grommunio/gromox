@@ -82,17 +82,9 @@ static bool ndr_pull_check_padding(NDR_PULL *pndr, size_t n)
 int ndr_pull_align(NDR_PULL *pndr, size_t size)
 {
 	if (5 == size) {
-		if (pndr->flags & NDR_FLAG_NDR64) {
-			size = 8;
-		} else {
-			size = 4;
-		}
+		size = (pndr->flags & NDR_FLAG_NDR64) ? 8 : 4;
 	} else if (3 == size) {
-		if (pndr->flags & NDR_FLAG_NDR64) {
-			size = 4;
-		} else {
-			size = 2;
-		}
+		size = (pndr->flags & NDR_FLAG_NDR64) ? 4 : 2;
 	}
 	
 	if (0 == (pndr->flags & NDR_FLAG_NOALIGN)) {
@@ -407,17 +399,9 @@ int ndr_push_align(NDR_PUSH *pndr, size_t size)
 	uint32_t pad;
 	
 	if (size == 5) {
-		if (pndr->flags & NDR_FLAG_NDR64) {
-			size = 8;
-		} else {
-			size = 4;
-		}
+		size = (pndr->flags & NDR_FLAG_NDR64) ? 8 : 4;
 	} else if (size == 3) {
-		if (pndr->flags & NDR_FLAG_NDR64) {
-			size = 4;
-		} else {
-			size = 2;
-		}
+		size = (pndr->flags & NDR_FLAG_NDR64) ? 4 : 2;
 	}
 	if (0 == (pndr->flags & NDR_FLAG_NOALIGN)) {
 		pad = ((pndr->offset + (size - 1)) & ~(size - 1)) - pndr->offset;

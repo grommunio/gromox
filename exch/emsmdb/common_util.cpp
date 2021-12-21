@@ -1816,15 +1816,9 @@ BOOL common_util_send_mail(MAIL *pmail,
 
 	for (pnode=double_list_get_head(prcpt_list); NULL!=pnode;
 		pnode=double_list_get_after(prcpt_list, pnode)) {
-		if (strchr(static_cast<char *>(pnode->pdata), '@') == nullptr) {
-			command_len = sprintf(last_command,
-				"rcpt to:<%s@none>\r\n",
-				static_cast<const char *>(pnode->pdata));
-		} else {
-			command_len = sprintf(last_command,
-				"rcpt to:<%s>\r\n",
-				static_cast<const char *>(pnode->pdata));
-		}
+		bool have_at = strchr(static_cast<char *>(pnode->pdata), '@') != nullptr;
+		command_len = sprintf(last_command, have_at ? "rcpt to:<%s>\r\n" :
+		              "rcpt to:<%s@none>\r\n", static_cast<const char *>(pnode->pdata));
 		if (FALSE == common_util_send_command(
 			sockd, last_command, command_len)) {
 			close(sockd);

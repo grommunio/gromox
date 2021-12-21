@@ -626,15 +626,11 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		return TRUE;
 	case PR_EMAIL_ADDRESS:
 	case PR_EMAIL_ADDRESS_A: {
-		if (plogon->check_private()) {
-			if (!common_util_username_to_essdn(plogon->account,
-			    temp_buff, GX_ARRAY_SIZE(temp_buff)))
-				return FALSE;	
-		} else {
-			if (!common_util_public_to_essdn(plogon->account,
-			    temp_buff, GX_ARRAY_SIZE(temp_buff)))
-				return FALSE;	
-		}
+		bool ok = plogon->check_private() ?
+		          common_util_username_to_essdn(plogon->account, temp_buff, arsizeof(temp_buff)) :
+		          common_util_public_to_essdn(plogon->account, temp_buff, arsizeof(temp_buff));
+		if (!ok)
+			return false;
 		auto tstr = cu_alloc<char>(strlen(temp_buff) + 1);
 		*ppvalue = tstr;
 		if (NULL == *ppvalue) {

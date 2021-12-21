@@ -445,7 +445,6 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 BOOL icsdownctx_object::sync_deletions(uint32_t flags, BINARY_ARRAY *pbins)
 {
 	auto pctx = this;
-	BINARY *pbin;
 	
 	if (0 == (flags & SYNC_SOFT_DELETE)) {
 		if (NULL == pctx->pdeleted_eids) {
@@ -465,13 +464,9 @@ BOOL icsdownctx_object::sync_deletions(uint32_t flags, BINARY_ARRAY *pbins)
 			return FALSE;
 		}
 		for (size_t i = 0; i < pctx->pdeleted_eids->count; ++i) {
-			if (SYNC_TYPE_CONTENTS == pctx->sync_type) {
-				pbin = common_util_calculate_message_sourcekey(
-					pctx->pstore, pctx->pdeleted_eids->pids[i]);
-			} else {
-				pbin = common_util_calculate_folder_sourcekey(
-					pctx->pstore, pctx->pdeleted_eids->pids[i]);
-			}
+			auto pbin = pctx->sync_type == SYNC_TYPE_CONTENTS ?
+			            common_util_calculate_message_sourcekey(pctx->pstore, pctx->pdeleted_eids->pids[i]) :
+			            common_util_calculate_folder_sourcekey(pctx->pstore, pctx->pdeleted_eids->pids[i]);
 			if (NULL == pbin) {
 				return FALSE;
 			}
@@ -500,7 +495,7 @@ BOOL icsdownctx_object::sync_deletions(uint32_t flags, BINARY_ARRAY *pbins)
 			return FALSE;
 		}
 		for (size_t i = 0; i < pctx->pnolonger_messages->count; ++i) {
-			pbin = common_util_calculate_message_sourcekey(
+			auto pbin = common_util_calculate_message_sourcekey(
 				pctx->pstore, pctx->pnolonger_messages->pids[i]);
 			if (NULL == pbin) {
 				return FALSE;

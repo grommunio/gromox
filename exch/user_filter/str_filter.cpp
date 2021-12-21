@@ -272,13 +272,9 @@ void str_filter_console_talk(int argc, char **argv, char *result, int length)
 			return;
 		}
 		if (4 == argc && 0 == strcmp("remove", argv[2])) {
-			if (TRUE == audit_filter_remove_string(argv[3])) {
-				snprintf(result, length, "250 %s is remove from audit",
-					argv[3]);
-			} else {
-				snprintf(result, length,"550 fail to remove %s from audit",
-					argv[3]);
-			}
+			snprintf(result, length, audit_filter_remove_string(argv[3]) ?
+			         "250 %s is remove from audit" :
+			         "550 failed to remove %s from audit", argv[3]);
 			return;
 		}
 		if (4 == argc && 0 == strcmp("set", argv[2])) {
@@ -352,24 +348,16 @@ void str_filter_console_talk(int argc, char **argv, char *result, int length)
 			if (grey_interval < 0) {
 				snprintf(result, length,"550 %s is illegal", pslash + 1);
 			}
-			if (TRUE == grey_list_add_string(argv[3], grey_times,
-				grey_interval)) {
-				snprintf(result, length, "250 %s is added into grey list",
-					argv[3]);
-			} else {
-				snprintf(result, length, "550 fail to add %s into grey list",
-					argv[3]);
-			}
+			snprintf(result, length,
+			         grey_list_add_string(argv[3], grey_times, grey_interval) ?
+			         "250 %s is added into grey list" :
+			         "550 failed to add %s into grey list", argv[3]);
 			return;
 		}
 		if (4 == argc && 0 == strcmp("remove", argv[2])) {
-			if (TRUE == grey_list_remove_string(argv[3])) {
-				snprintf(result, length, "250 %s is removed from grey list",
-					argv[3]);
-			} else {
-				snprintf(result, length, "550 fail to remove %s from grey list",
-					argv[3]);
-			}
+			snprintf(result, length, grey_list_remove_string(argv[3]) ?
+			         "250 %s is removed from grey list" :
+			         "550 failed to remove %s from grey list", argv[3]);
 			return;
 		}
 		if (4 == argc && 0 == strcmp("echo", argv[2])) {
@@ -393,23 +381,17 @@ void str_filter_console_talk(int argc, char **argv, char *result, int length)
 			return;
 		}
 		if (4 == argc && 0 == strcmp("dump", argv[2])) {
-			if (FALSE == grey_list_dump(argv[3])) {
-				snprintf(result, length, "550 fail to dump grey list");
-			} else {
-				snprintf(result, length, "250 grey list dump OK");
-			}
+			gx_strlcpy(result, grey_list_dump(argv[3]) ?
+			           "250 grey list dump OK" :
+			           "550 fail to dump grey list", length);
 			return;
 		}
 	}
 	if (0 == strcmp(argv[1], "temp-list")) { 
 		if (4 == argc && 0 == strcmp(argv[2], "remove")) {
-			if (TRUE == temp_list_remove_string(argv[3])) {
-				snprintf(result, length, "250 %s is removed from "
-					"temporary list", argv[3]);
-			} else {
-				snprintf(result, length, "550 fail to remove %s from "
-					"temporary list", argv[3]);
-			}
+			snprintf(result, length, temp_list_remove_string(argv[3]) ?
+			         "250 %s is removed from temporary list" :
+			         "550 failed to remove %s from temporary list", argv[3]);
 			return;
 		}
 		if (5 == argc && 0 == strcmp(argv[2], "add")) {
@@ -418,13 +400,9 @@ void str_filter_console_talk(int argc, char **argv, char *result, int length)
 				snprintf(result, length, "550 %s is illegal", argv[4]);
 				return;
 			}
-			if (TRUE == temp_list_add_string(argv[3], temp_interval)) {
-				snprintf(result, length, "250 %s is added into temporary list",
-					argv[3]);
-			} else {
-				snprintf(result, length, "550 fail to add %s into temporary "
-					"list", argv[3]);
-			}				
+			snprintf(result, length, temp_list_add_string(argv[3], temp_interval) ?
+			         "250 %s is added into temporary list" :
+			         "550 failed to add %s into temporary list", argv[3]);
 			return;
 		}
 		if (4 == argc && 0 == strcmp(argv[2], "echo")) {

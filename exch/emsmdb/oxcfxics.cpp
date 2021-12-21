@@ -1163,15 +1163,11 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		if (FALSE == common_util_binary_to_xid(pbin, &tmp_xid)) {
 			return ecError;
 		}
-		if (plogon->check_private()) {
-			auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
-			if (tmp_guid != tmp_xid.guid)
-				return ecInvalidParam;
-		} else {
-			auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
-			if (tmp_guid != tmp_xid.guid)
-				return ecAccessDenied;
-		}
+		auto tmp_guid = plogon->check_private() ?
+		                rop_util_make_user_guid(plogon->account_id) :
+		                rop_util_make_domain_guid(plogon->account_id);
+		if (tmp_guid != tmp_xid.guid)
+			return ecInvalidParam;
 		parent_id1 = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		if (!exmdb_client_get_folder_property(plogon->get_dir(), 0,
 		    parent_id1, PR_FOLDER_TYPE, &pvalue))
