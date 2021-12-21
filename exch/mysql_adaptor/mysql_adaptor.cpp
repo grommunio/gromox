@@ -52,7 +52,7 @@ void mysql_adaptor_stop()
 }
 
 BOOL mysql_adaptor_meta(const char *username, const char *password,
-    char *maildir, char *lang, char *reason, int length, unsigned int mode,
+    char *maildir, char *lang, char *reason, int length, unsigned int wantpriv,
     char *encrypt_passwd, size_t encrypt_size, uint8_t *externid_present) try
 {
 	char temp_name[UADDR_SIZE*2];
@@ -97,12 +97,10 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 		return FALSE;
 	}
 
-	if (mode == USER_PRIVILEGE_POP3_IMAP && !(strtoul(myrow[3], nullptr, 0) & USER_PRIVILEGE_POP3_IMAP)) {
-		snprintf(reason, length, "\"%s\" is not authorized to use the POP3/IMAP services", username);
-		return false;
-	}
-	if (mode == USER_PRIVILEGE_SMTP && !(strtoul(myrow[3], nullptr, 0) & USER_PRIVILEGE_SMTP)) {
-		snprintf(reason, length, "\"%s\" is not authorized to use the SMTP service", username);
+	auto allowedsvc = strtoul(myrow[3], nullptr, 0);
+	if (!(allowedsvc & wantpriv)) {
+		snprintf(reason, length, "\"%s\" is not authorized to use service(s) %xh",
+		         username, wantpriv);
 		return false;
 	}
 

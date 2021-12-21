@@ -1522,8 +1522,9 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 			"denied by user filter", pcontext->username);
 		return 1901 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
     }
-	if (TRUE == system_services_auth_login(pcontext->username,
-		temp_password, pcontext->maildir, pcontext->lang, reason, 256)) {
+	if (system_services_auth_login(pcontext->username, temp_password,
+	    pcontext->maildir, pcontext->lang, reason, arsizeof(reason),
+	    USER_PRIVILEGE_IMAP)) {
 		if ('\0' == pcontext->maildir[0]) {
 			return 1902 | DISPATCH_TAG;
 		}
@@ -1577,8 +1578,9 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
     }
 	strcpy(temp_password, argv[3]);
 	HX_strltrim(temp_password);
-	if (TRUE == system_services_auth_login(pcontext->username,
-		temp_password, pcontext->maildir, pcontext->lang, reason, 256)) {
+	if (system_services_auth_login(pcontext->username, temp_password,
+	    pcontext->maildir, pcontext->lang, reason, arsizeof(reason),
+	    USER_PRIVILEGE_IMAP)) {
 		if ('\0' == pcontext->maildir[0]) {
 			return 1902;
 		}

@@ -739,7 +739,8 @@ uint32_t zarafa_server_logon(const char *username,
 		return ecUnknownUser;
 	pdomain ++;
 	if (password != nullptr && !system_services_auth_login(username,
-	    password, maildir, lang, reason, arsizeof(reason))) {
+	    password, maildir, lang, reason, arsizeof(reason),
+	    USER_PRIVILEGE_EXCH)) {
 		fprintf(stderr, "auth rejected for \"%s\": %s\n", username, reason);
 		return ecLoginFailure;
 	}

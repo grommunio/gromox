@@ -3,7 +3,7 @@
 #include "system_services.h"
 #include "service.h"
 #include <cstdio>
-#include "../mysql_adaptor/mysql_adaptor.h"
+#include "../exch/authmgr.hpp"
 
 BOOL (*system_services_lang_to_charset)(const char*, char*);
 const char* (*system_services_cpid_to_charset)(uint32_t);
@@ -12,8 +12,7 @@ const char* (*system_services_lcid_to_ltag)(uint32_t);
 uint32_t (*system_services_ltag_to_lcid)(const char*);
 const char* (*system_services_mime_to_extension)(const char*);
 const char* (*system_services_extension_to_mime)(const char*);
-BOOL (*system_services_auth_login)(const char*,
-	const char*, char*, char*, char*, int);
+decltype(system_services_auth_login) system_services_auth_login;
 #define E(s) decltype(system_services_ ## s) system_services_ ## s;
 E(check_same_org)
 E(get_class_users)
@@ -70,7 +69,7 @@ int system_services_run()
 	E(system_services_ltag_to_lcid, "ltag_to_lcid");
 	E(system_services_mime_to_extension, "mime_to_extension");
 	E(system_services_extension_to_mime, "extension_to_mime");
-	E(system_services_auth_login, "auth_login_exch");
+	E(system_services_auth_login, "auth_login_gen");
 	E(system_services_get_user_displayname, "get_user_displayname");
 	E(system_services_get_org_domains, "get_org_domains");
 	E(system_services_get_domain_info, "get_domain_info");
@@ -111,7 +110,7 @@ void system_services_stop()
 	E("ltag_to_lcid");
 	E("mime_to_extension");
 	E("extension_to_mime");
-	E("auth_login_exch");
+	E("auth_login_gen");
 	E("get_user_displayname");
 	E("get_org_domains");
 	E("get_domain_info");

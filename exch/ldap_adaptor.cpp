@@ -19,6 +19,7 @@
 #include <gromox/config_file.hpp>
 #include <gromox/util.hpp>
 #include "ldap_adaptor.hpp"
+#include "mysql_adaptor/mysql_adaptor.h"
 
 using namespace gromox;
 using namespace std::string_literals;
@@ -38,11 +39,6 @@ struct twoconn {
 	ldap_ptr meta, bind;
 };
 }
-
-enum {
-	USER_PRIVILEGE_POP3_IMAP = 1 << 0,
-	USER_PRIVILEGE_SMTP = 1 << 1,
-};
 
 static std::string g_ldap_host, g_search_base, g_mail_attr;
 static std::string g_bind_user, g_bind_pass;

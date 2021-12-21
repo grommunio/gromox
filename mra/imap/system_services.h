@@ -4,6 +4,7 @@
 #include <gromox/xarray.hpp>
 #include <gromox/double_list.hpp>
 #include <gromox/single_list.hpp>
+#include "../exch/authmgr.hpp"
 
 extern int system_services_run();
 extern void system_services_stop();
@@ -13,7 +14,7 @@ extern BOOL (*system_services_container_add_ip)(const char*);
 extern BOOL (*system_services_container_remove_ip)(const char*);
 extern BOOL (*system_services_judge_user)(const char*);
 extern BOOL (*system_services_add_user_into_temp_list)(const char *, int);
-extern BOOL (*system_services_auth_login)(const char*, const char*, char*, char*, char*, int);
+extern authmgr_login_t system_services_auth_login;
 extern int (*system_services_get_id)(const char*, const char*, const char*, unsigned int*);
 extern int (*system_services_get_uid)(const char*, const char*, const char*, unsigned int*);
 extern int (*system_services_summary_folder)(const char*, const char*, int *, int*, int*,

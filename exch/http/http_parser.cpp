@@ -668,9 +668,9 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 	}
 
 	char reason[256];
-	if (TRUE == system_services_auth_login(
-	    pcontext->username, pcontext->password,
-	    pcontext->maildir, pcontext->lang, reason, GX_ARRAY_SIZE(reason))) {
+	if (system_services_auth_login(pcontext->username, pcontext->password,
+	    pcontext->maildir, pcontext->lang, reason, arsizeof(reason),
+	    USER_PRIVILEGE_EXCH)) {
 		if ('\0' == pcontext->maildir[0]) {
 			char dstring[128], response_buff[1024];
 			rfc1123_dstring(dstring, arsizeof(dstring));

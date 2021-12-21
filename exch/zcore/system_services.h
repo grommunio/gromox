@@ -1,6 +1,7 @@
 #pragma once
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
+#include "../authmgr.hpp"
 #include "../mysql_adaptor/mysql_adaptor.h"
 
 extern int system_services_run();
@@ -13,8 +14,7 @@ extern const char* (*system_services_lcid_to_ltag)(uint32_t);
 extern uint32_t (*system_services_ltag_to_lcid)(const char*);
 extern const char* (*system_services_mime_to_extension)(const char*);
 extern const char* (*system_services_extension_to_mime)(const char*);
-extern BOOL (*system_services_auth_login)(const char*,
-	const char*, char*, char*, char*, int);
+extern authmgr_login_t system_services_auth_login;
 #define E(s) extern decltype(mysql_adaptor_ ## s) *system_services_ ## s;
 E(check_same_org)
 E(get_class_users)

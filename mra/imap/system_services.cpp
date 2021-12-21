@@ -62,7 +62,7 @@ int system_services_run()
 	E(system_services_log_info, "log_info");
 	E2(system_services_judge_user, "user_filter_judge");
 	E2(system_services_add_user_into_temp_list, "user_filter_add");
-	E(system_services_auth_login, "auth_login_pop3");
+	E(system_services_auth_login, "auth_login_gen");
 	E(system_services_get_id, "get_mail_id");
 	E(system_services_get_uid, "get_mail_uid");
 	E(system_services_summary_folder, "summary_folder");
@@ -108,7 +108,7 @@ void system_services_stop()
 	service_release("ip_filter_add", "system");
 	service_release("user_filter_add", "system");
 	service_release("log_info", "system");
-	service_release("auth_login_pop3", "system");
+	service_release("auth_login_gen", "system");
 	service_release("get_mail_id", "system");
 	service_release("get_mail_uid", "system");
 	service_release("summary_folder", "system");

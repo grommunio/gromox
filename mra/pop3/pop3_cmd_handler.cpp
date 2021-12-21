@@ -22,7 +22,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-
+#include "../../exch/authmgr.hpp"
 
 #define MIDB_RESULT_OK          0
 
@@ -159,8 +159,9 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
     memcpy(temp_password, cmd_line + 5, line_length - 5);
     temp_password[line_length - 5] = '\0';
 	HX_strltrim(temp_password);
-	if (TRUE == system_services_auth_login(pcontext->username, temp_password,
-		pcontext->maildir, NULL, reason, 256)) {
+	if (system_services_auth_login(pcontext->username, temp_password,
+	    pcontext->maildir, nullptr, reason, arsizeof(reason),
+	    USER_PRIVILEGE_POP3)) {
 		pcontext->array.clear();
 		pcontext->total_size = 0;
 		

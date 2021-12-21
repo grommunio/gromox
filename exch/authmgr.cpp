@@ -10,6 +10,7 @@
 #include <gromox/svc_common.h>
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
+#include "authmgr.hpp"
 #include "ldap_adaptor.hpp"
 #include "mysql_adaptor/mysql_adaptor.h"
 
@@ -21,14 +22,14 @@ static decltype(mysql_adaptor_login2) *fptr_mysql_login;
 static decltype(ldap_adaptor_login2) *fptr_ldap_login;
 static unsigned int am_choice = A_EXTERNID;
 
-static BOOL login_gen(const char *username, const char *password,
-    char *maildir, char *lang, char *reason, int length, unsigned int mode)
+static bool login_gen(const char *username, const char *password,
+    char *maildir, char *lang, char *reason, size_t length, unsigned int wantpriv)
 {
 	char ep[107]{};
 	uint8_t have_xid = 0xFF;
-	BOOL auth = false;
+	bool auth = false;
 	auto meta = fptr_mysql_meta(username, password, maildir, lang, reason,
-	            length, mode, ep, sizeof(ep), &have_xid);
+	            length, wantpriv, ep, sizeof(ep), &have_xid);
 	if (!meta || have_xid == 0xFF)
 		sleep(1);
 	else if (am_choice == A_DENY_ALL)
@@ -45,28 +46,7 @@ static BOOL login_gen(const char *username, const char *password,
 	else if (am_choice == A_EXTERNID)
 		auth = fptr_mysql_login(username, password, ep, sizeof(ep),
 		       reason, length);
-	return meta && auth ? TRUE : false;
-}
-
-static BOOL login_exch(const char *username, const char *password,
-	char *maildir, char *lang, char *reason, int length)
-{
-	return login_gen(username, password, maildir, lang, reason, length, 0);
-}
-
-static BOOL login_pop3(const char *username, const char *password,
-	char *maildir, char *lang, char *reason, int length)
-{
-	return login_gen(username, password, maildir, lang,
-	       reason, length, USER_PRIVILEGE_POP3_IMAP);
-}
-
-static BOOL login_smtp(const char *username, const char *password,
-    char *reason, int length)
-{
-	char maildir[256], lang[32];
-	return login_gen(username, password, maildir, lang,
-	       reason, length, USER_PRIVILEGE_SMTP);
+	return meta && auth;
 }
 
 static bool authmgr_reload()
@@ -113,9 +93,7 @@ static bool authmgr_init()
 		printf("[authmgr]: mysql_adaptor plugin not loaded yet\n");
 		return false;
 	}
-	if (!register_service("auth_login_exch", login_exch) ||
-	    !register_service("auth_login_pop3", login_pop3) ||
-	    !register_service("auth_login_smtp", login_smtp)) {
+	if (!register_service("auth_login_gen", login_gen)) {
 		printf("[authmgr]: failed to register auth services\n");
 		return false;
 	}

@@ -18,6 +18,7 @@
 #include <gromox/tie.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/util.hpp>
+#include "../exch/authmgr.hpp"
 #include "../exch/http/service.h"
 #ifndef PAM_EXTERN
 #	define PAM_EXTERN
@@ -119,35 +120,24 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		return PAM_AUTH_ERR;
 	auto cleanup_1 = make_scope_exit(service_stop);
 
-	if (service == nullptr || strcmp(service, "smtp") == 0) {
-		BOOL (*fptr_login)(const char *, const char *, char *, int);
-		fptr_login = reinterpret_cast<decltype(fptr_login)>(service_query("auth_login_smtp", "system", typeid(decltype(*fptr_login))));
-		if (fptr_login == nullptr)
-			return PAM_AUTH_ERR;
-		auto cleanup_2 = make_scope_exit([]() { service_release("auth_login_smtp", "system"); });
-		char reason[256];
-		return fptr_login(username, authtok.get(), reason, sizeof(reason)) ?
-		       PAM_SUCCESS : PAM_AUTH_ERR;
-	} else if (strcmp(service, "imap") == 0 || strcmp(service, "pop3") == 0) {
-		BOOL (*fptr_login)(const char *, const char *, char *, char *, char *, int);
-		fptr_login = reinterpret_cast<decltype(fptr_login)>(service_query("auth_login_pop3", "system", typeid(decltype(*fptr_login))));
-		if (fptr_login == nullptr)
-			return PAM_AUTH_ERR;
-		auto cleanup_2 = make_scope_exit([]() { service_release("auth_login_pop3", "system"); });
-		char maildir[256], lang[256], reason[256];
-		return fptr_login(username, authtok.get(), maildir, lang, reason, sizeof(reason)) ?
-		       PAM_SUCCESS : PAM_AUTH_ERR;
-	} else if (strcmp(service, "exch") == 0) {
-		BOOL (*fptr_login)(const char *, const char *, char *, char *, char *, int);
-		fptr_login = reinterpret_cast<decltype(fptr_login)>(service_query("auth_login_exch", "system", typeid(decltype(*fptr_login))));
-		if (fptr_login == nullptr)
-			return PAM_AUTH_ERR;
-		auto cleanup_2 = make_scope_exit([]() { service_release("auth_login_exch", "system"); });
-		char maildir[256], lang[256], reason[256];
-		return fptr_login(username, authtok.get(), maildir, lang, reason, sizeof(reason)) ?
-		       PAM_SUCCESS : PAM_AUTH_ERR;
-	}
-	return PAM_AUTH_ERR;
+	unsigned int privbits = 0;
+	if (service == nullptr || strcmp(service, "smtp") == 0)
+		privbits |= USER_PRIVILEGE_SMTP;
+	else if (strcmp(service, "imap") == 0 || strcmp(service, "pop3") == 0)
+		privbits |= USER_PRIVILEGE_IMAP;
+	else if (strcmp(service, "exch") == 0)
+		/* nothing needed */;
+
+	authmgr_login_t fptr_login;
+	fptr_login = reinterpret_cast<authmgr_login_t>(service_query("auth_login_gen",
+	             "system", typeid(decltype(*fptr_login))));
+	if (fptr_login == nullptr)
+		return PAM_AUTH_ERR;
+	char maildir[256], lang[256], reason[256];
+	ret = fptr_login(username, authtok.get(), maildir, lang, reason,
+	      sizeof(reason), privbits) ? PAM_SUCCESS : PAM_AUTH_ERR;
+	service_release("auth_login_gen", "system");
+	return ret;
 }
 
 PAM_EXTERN GX_EXPORT int pam_sm_setcred(pam_handle_t *pamh, int flags,

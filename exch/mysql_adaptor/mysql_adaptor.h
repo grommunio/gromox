@@ -4,6 +4,7 @@
 #include <vector>
 #include <gromox/common_types.hpp>
 #include <gromox/mapidefs.h>
+#include "../authmgr.hpp"
 
 enum {
 	/* Reason codes (users.address_status) for forbidden login */
@@ -29,13 +30,6 @@ enum mlist_type {
 	MLIST_TYPE_GROUP,
 	MLIST_TYPE_DOMAIN,
 	MLIST_TYPE_CLASS,
-};
-
-enum {
-	USER_PRIVILEGE_POP3_IMAP = 1 << 0,
-	USER_PRIVILEGE_SMTP = 1 << 1,
-	USER_PRIVILEGE_CHGPASSWD = 1 << 2,
-	USER_PRIVILEGE_PUBADDR = 1 << 3,
 };
 
 enum sql_schema_upgrade {
