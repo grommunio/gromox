@@ -65,6 +65,10 @@ Default: (unspecified)
 Default: \fI/usr/libexec/gromox/freebusy\fP
 .TP
 \fBhost_id\fP
+A unique identifier for this system. It is used for the HELO line of outgoing
+SMTP connections, and as an unused identifier within muidStoreWrap entryids.
+The identifier should only use characters allowed for hostnames.
+.br
 Default: (system hostname)
 .TP
 \fBmailbox_ping_interval\fP

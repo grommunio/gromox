@@ -73,6 +73,10 @@ potential attackers' information gathering.
 Default: \fIno\fP
 .TP
 \fBhost_id\fP
+A unique identifier for this system. It is used in the POP3 protocol greeting
+lines (positive as well as negative). The identifier should only use characters
+allowed for hostnames.
+.br
 Default: (system hostname)
 .TP
 \fBlisten_port\fP

@@ -131,7 +131,7 @@ cert and the key in the same file, if you wish to do so. Add to
 
 The Gromox Autodiscover handler `forces`__ a HTTPS redirect, which is why a
 certificate should indeed be set up. Then, since you already have the
-certificates, you could also use them in e.g. ``smtp.cfg``.
+certificates, you could also use them in e.g. the SMTP server's configuration.
 
 __ https://github.com/grommunio/gromox/blob/master/exch/php/ews/autodiscover.php#L24
 
@@ -140,8 +140,9 @@ Hostname
 --------
 
 If the kernel hostname is different from the hostname used to access the
-service(s), this needs to be specified in ``autodiscover.ini`` using
-``hostname=...``.
+service(s), then ``autodiscover.ini`` needs the ``hostname=...`` line so that
+Autodiscover can construct the correct TLS upgrade redirect URLs to itself, for
+an external user.
 
 
 x500_org_name

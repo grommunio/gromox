@@ -97,10 +97,12 @@ value, the request is rejected.
 Default: \fI4M\fP
 .TP
 \fBhost_id\fP
-The hostname that the server uses to identify itself (e.g. Server: header in
-HTTP responses).
+A unique identifier for this system. It is used for the Server HTTP responses
+header, for service plugins like exmdb_provider(4gx), which makes use of it for
+SMTP HELO lines, for DSN report texts, for MIDB database/EML cache. The
+identifier should only use characters allowed for hostnames.
 .br
-Default: (inherited from system)
+Default: (system hostname)
 .TP
 \fBhpm_cache_size\fP
 If the HTTP request to a HPM endpoint uses Chunked Transfer Encoding and the

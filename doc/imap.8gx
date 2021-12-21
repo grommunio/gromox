@@ -75,6 +75,12 @@ facilitate potential attackers' information gathering.
 Default: \fIno\fP
 .TP
 \fBhost_id\fP
+A unique identifier for this system. It is used in the IMAP protocol greeting
+lines (positive as well as negative). It is furthermore used as a unique
+identifier among the set of all midb(8gx) clients to construct filenames for
+the MIDB database/EML cache. The identifier should only use characters allowed
+for hostnames.
+.br
 Default: (system hostname)
 .TP
 \fBimap_auth_times\fP

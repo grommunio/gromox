@@ -58,6 +58,10 @@ Default: \fItrue\fP
 Default: \fI512\fP
 .TP
 \fBhost_id\fP
+A unique identifier for this system. It is used for the DSN text of bounce
+messages. It is used as the value for the EHLO command if and when connecting
+to an SMTP service (e.g. inbox rules that do forwarding).
+.br
 Default: (system hostname)
 .TP
 \fBmpc_plugin_ignore_errors\fP

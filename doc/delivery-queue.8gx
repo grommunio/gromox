@@ -67,6 +67,9 @@ Default: (system domainname)
 Default: \fIfalse\fP if server mode is 0 (incoming), \fItrue\fP otherwise
 .TP
 \fBhost_id\fP
+A unique identifier for this system. It is used for greeting lines emitted
+by delivery-queue on the network.
+.br
 Default: (system hostname)
 .TP
 \fBlisten_port\fP
