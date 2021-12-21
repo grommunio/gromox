@@ -410,13 +410,8 @@ static bool rtf_flush_iconv_cache(RTF_READER *preader)
 static const char *rtf_cpid_to_encoding(uint32_t num)
 {
 	const char *encoding;
-	
 	encoding = rtf_cpid_to_charset(num);
-	if (NULL == encoding) {
-		return "windows-1252";
-	} else {
-		return encoding;
-	}
+	return encoding != nullptr ? encoding : "windows-1252";
 }
 
 static int rtf_parse_control(const char *string,

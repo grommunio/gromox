@@ -101,11 +101,7 @@ BOOL str_filter_judge(const char *str)
     case GREY_LIST_DENY:
         return FALSE;
     case GREY_LIST_NOT_FOUND:
-		if (TRUE == audit_filter_judge(str)) {
-			return TRUE;
-		} else {
-			return FALSE;
-		}
+		return audit_filter_judge(str);
     }
     return TRUE;
 }

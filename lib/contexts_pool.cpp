@@ -278,19 +278,13 @@ void contexts_pool_free()
 SCHEDULE_CONTEXT* contexts_pool_get_context(int type)
 {
 	DOUBLE_LIST_NODE *pnode;
-	SCHEDULE_CONTEXT *pcontext;
 	if (CONTEXT_FREE != type && CONTEXT_TURNING != type) {
 		return NULL;
 	}
 	std::lock_guard xhold(g_context_locks[type]);
 	pnode = double_list_pop_front(&g_context_lists[type]);
-	if (NULL != pnode) {
-		pcontext = (SCHEDULE_CONTEXT*)pnode->pdata;
-	} else {
-		pcontext = NULL;
-	}
 	/* do not change context type under this circumstance */
-	return pcontext;
+	return pnode != nullptr ? static_cast<SCHEDULE_CONTEXT *>(pnode->pdata) : nullptr;
 }
 
 /*

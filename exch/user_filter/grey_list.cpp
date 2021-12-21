@@ -121,11 +121,8 @@ int grey_list_query(const char *str, BOOL b_count)
 	if (TRUE == b_count) {
 		pentry->current_times ++;
 	}
-    if (pentry->current_times <= pentry->allowed_times) {
-        return GREY_LIST_ALLOW;
-	} else {
-        return GREY_LIST_DENY;
-	}
+	return pentry->current_times <= pentry->allowed_times ?
+	       GREY_LIST_ALLOW : GREY_LIST_DENY;
 }
 
 /*  search the grey list for the specified string.
@@ -177,16 +174,8 @@ BOOL grey_list_echo(const char *str, int *ptimes, int *pinterval)
     }
 	*ptimes = pentry->allowed_times;
 	*pinterval = pentry->interval;
-	if (CALCULATE_INTERVAL(current_time, pentry->last_access) >
-		pentry->interval) {
-		return FALSE;
-	} else {
-		if (pentry->current_times <= pentry->allowed_times) {
-			return FALSE;
-		} else {
-			return TRUE;
-		}
-	}
+	return CALCULATE_INTERVAL(current_time, pentry->last_access) > pentry->interval ||
+	       pentry->current_times <= pentry->allowed_times ? false : TRUE;
 }
 
 /*

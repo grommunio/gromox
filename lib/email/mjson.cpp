@@ -780,11 +780,7 @@ static BOOL mjson_parse_array(MJSON *pjson, char *value, int length, int type)
 		}
 	}
 	
-	if (PARSE_STAT_END != rstat) {
-		return FALSE;
-	} else {
-		return TRUE;
-	}
+	return rstat == PARSE_STAT_END ? TRUE : false;
 }
 
 static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
