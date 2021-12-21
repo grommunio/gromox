@@ -909,6 +909,31 @@ enum {
 	MSGFLAG_OUTLOOK_NON_EMS_XP = 1U << 16,
 };
 
+enum { /* for PR_PROFILE_OPEN_FLAGS */
+	OPENSTORE_USE_ADMIN_PRIVILEGE              = 1U << 0,
+	OPENSTORE_PUBLIC                           = 1U << 1,
+	OPENSTORE_HOME_LOGON                       = 1U << 2,
+	OPENSTORE_TAKE_OWNERSHIP                   = 1U << 3,
+	OPENSTORE_OVERRIDE_HOME_MDB                = 1U << 4,
+	OPENSTORE_TRANSPORT                        = 1U << 5,
+	OPENSTORE_REMOTE_TRANSPORT                 = 1U << 6,
+	OPENSTORE_INTERNET_ANONYMOUS               = 1U << 7,
+	OPENSTORE_ALTERNATE_SERVER                 = 1U << 8,
+	OPENSTORE_IGNORE_HOME_MDB                  = 1U << 9,
+	OPENSTORE_NO_MAIL                          = 1U << 10,
+	OPENSTORE_OVERRIDE_LAST_MODIFIER           = 1U << 11,
+	OPENSTORE_CALLBACK_LOGON                   = 1U << 12,
+	OPENSTORE_LOCAL                            = 1U << 13,
+	OPENSTORE_FAIL_IF_NO_MAILBOX               = 1U << 14,
+	OPENSTORE_CACHE_EXCHANGE                   = 1U << 15,
+	OPENSTORE_CLI_WITH_NAMEDPROP_FIX           = 1U << 16,
+	OPENSTORE_ENABLE_LAZY_LOGGING              = 1U << 17,
+	OPENSTORE_CLI_WITH_REPLID_GUID_MAPPING_FIX = 1U << 18,
+	OPENSTORE_NO_LOCALIZATION                  = 1U << 19,
+	OPENSTORE_RESTORE_DATABASE                 = 1U << 20,
+	OPENSTORE_XFOREST_MOVE                     = 1U << 21,
+};
+
 enum ol_busy_status {
 	olFree = 0,
 	olTentative = 1,

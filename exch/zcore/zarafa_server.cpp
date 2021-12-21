@@ -2465,7 +2465,7 @@ uint32_t zarafa_server_getstoreentryid(
 	snprintf(store_entryid.dll_name, sizeof(store_entryid.dll_name), "emsmdb.dll");
 	store_entryid.wrapped_flags = 0;
 	store_entryid.wrapped_provider_uid = g_muidStorePrivate;
-	store_entryid.wrapped_type = 0x0000000C;
+	store_entryid.wrapped_type = OPENSTORE_HOME_LOGON | OPENSTORE_TAKE_OWNERSHIP;
 	store_entryid.pserver_name = username;
 	store_entryid.pmailbox_dn = deconst(mailbox_dn);
 	pentryid->pv = common_util_alloc(1024);
