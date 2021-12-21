@@ -120,13 +120,21 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		return PAM_AUTH_ERR;
 	auto cleanup_1 = make_scope_exit(service_stop);
 
-	unsigned int privbits = 0;
+	unsigned int wantpriv = 0;
 	if (service == nullptr || strcmp(service, "smtp") == 0)
-		privbits |= USER_PRIVILEGE_SMTP;
+		wantpriv |= USER_PRIVILEGE_PAM;
 	else if (strcmp(service, "imap") == 0 || strcmp(service, "pop3") == 0)
-		privbits |= USER_PRIVILEGE_IMAP;
+		wantpriv |= USER_PRIVILEGE_IMAP;
 	else if (strcmp(service, "exch") == 0)
 		/* nothing needed */;
+	else if (strcmp(service, "chat") == 0)
+		wantpriv |= USER_PRIVILEGE_CHAT;
+	else if (strcmp(service, "video") == 0)
+		wantpriv |= USER_PRIVILEGE_VIDEO;
+	else if (strcmp(service, "files") == 0)
+		wantpriv |= USER_PRIVILEGE_FILES;
+	else if (strcmp(service, "archive") == 0)
+		wantpriv |= USER_PRIVILEGE_ARCHIVE;
 
 	authmgr_login_t fptr_login;
 	fptr_login = reinterpret_cast<authmgr_login_t>(service_query("auth_login_gen",
@@ -135,7 +143,7 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 		return PAM_AUTH_ERR;
 	char maildir[256], lang[256], reason[256];
 	ret = fptr_login(username, authtok.get(), maildir, lang, reason,
-	      sizeof(reason), privbits) ? PAM_SUCCESS : PAM_AUTH_ERR;
+	      sizeof(reason), wantpriv) ? PAM_SUCCESS : PAM_AUTH_ERR;
 	service_release("auth_login_gen", "system");
 	return ret;
 }
