@@ -19,8 +19,25 @@
 #include <cstdarg>
 #include <unistd.h>
 #include <sys/time.h>
+#if __linux__
+#	include <sys/random.h>
+#endif
 
 using namespace gromox;
+
+namespace {
+static struct rand_initializer {
+	rand_initializer() {
+		int seed;
+#if __linux__
+		getrandom(&seed, sizeof(seed), 0);
+#else
+		seed = time(nullptr) ^ getpid();
+#endif
+		srand(seed);
+	}
+} rand_instance;
+}
 
 static int utf8_byte_num(unsigned char ch)
 {
@@ -818,15 +835,11 @@ void randstring_k(char *buff, int length, const char *string)
 {	 
 	int i, key;
 	int string_len;
-	static int myseed = 25011984;
 	
 	if (length <= 0) {
 		length = 1;
 	}
 	string_len = strlen(string);
-	
-	srand(time(NULL) * length + ++myseed);
-	
 	for (i=0; i<length; i++) {
 		key = rand() % string_len;
 		buff[i] = string[key];
