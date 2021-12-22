@@ -453,9 +453,8 @@ int exmdb_client_run(const char *configdir)
 		}
 		++i;
 	}
-	if (0 == g_conn_num) {
+	if (g_conn_num == 0)
 		return 0;
-	}
 	ret = pthread_create(&g_scan_id, nullptr, midcl_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[exmdb_client]: failed to create proxy scan thread: %s\n", strerror(ret));
@@ -492,9 +491,8 @@ BOOL exmdb_client_do_rpc(const char *dir,
 {
 	BINARY tmp_bin;
 	
-	if (EXT_ERR_SUCCESS != exmdb_ext_push_request(prequest, &tmp_bin)) {
+	if (exmdb_ext_push_request(prequest, &tmp_bin) != EXT_ERR_SUCCESS)
 		return FALSE;
-	}
 	auto pconn = exmdb_client_get_connection(dir);
 	if (pconn == nullptr) {
 		free(tmp_bin.pb);
@@ -514,9 +512,8 @@ BOOL exmdb_client_do_rpc(const char *dir,
 	presponse->call_id = prequest->call_id;
 	tmp_bin.cb -= 5;
 	tmp_bin.pb += 5;
-	if (EXT_ERR_SUCCESS != exmdb_ext_pull_response(&tmp_bin, presponse)) {
+	if (exmdb_ext_pull_response(&tmp_bin, presponse) != EXT_ERR_SUCCESS)
 		return FALSE;
-	}
 	return TRUE;
 }
 
