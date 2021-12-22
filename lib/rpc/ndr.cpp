@@ -16,10 +16,7 @@
 int ndr_pull_advance(NDR_PULL *pndr, uint32_t size)
 {
 	pndr->offset += size;
-	if (pndr->offset > pndr->data_size) {
-		return NDR_ERR_BUFSIZE;
-	}
-	return NDR_ERR_SUCCESS;
+	return pndr->offset > pndr->data_size ? NDR_ERR_BUFSIZE : NDR_ERR_SUCCESS;
 }
 
 void ndr_set_flags(uint32_t *pflags, uint32_t new_flags)
