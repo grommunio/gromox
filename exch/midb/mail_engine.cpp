@@ -452,10 +452,7 @@ static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, KEYWORD_ENUM *penum)
 	const char *charset;
 	const char *filename;
 	
-	if (TRUE == penum->b_result) {
-		return;
-	}
-	if (pmime->get_mtype() != MJSON_MIME_SINGLE)
+	if (penum->b_result || pmime->get_mtype() != MJSON_MIME_SINGLE)
 		return;
 
 	if (strncmp(pmime->get_ctype(), "text/", 5) != 0) {
@@ -4767,12 +4764,9 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 	if (argc != 5 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
 	auto tmp_len = strlen(argv[4]);
-	if (tmp_len >= sizeof(tmp_buff)) {
+	if (tmp_len >= sizeof(tmp_buff) ||
+	    decode64(argv[4], tmp_len, tmp_buff, &decode_len) != 0)
 		return MIDB_E_PARAMETER_ERROR;
-	}
-	if (0 != decode64(argv[4], tmp_len, tmp_buff, &decode_len)) {
-		return MIDB_E_PARAMETER_ERROR;
-	}
 	tmp_argc = 0;
 	parg = tmp_buff;
 	while (*parg != '\0' && parg - tmp_buff >= 0 &&
@@ -4850,12 +4844,9 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 	if (argc != 5 || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024)
 		return MIDB_E_PARAMETER_ERROR;
 	auto tmp_len = strlen(argv[4]);
-	if (tmp_len >= sizeof(tmp_buff)) {
+	if (tmp_len >= sizeof(tmp_buff) ||
+	    decode64(argv[4], tmp_len, tmp_buff, &decode_len) != 0)
 		return MIDB_E_PARAMETER_ERROR;
-	}
-	if (0 != decode64(argv[4], tmp_len, tmp_buff, &decode_len)) {
-		return MIDB_E_PARAMETER_ERROR;
-	}
 	tmp_argc = 0;
 	parg = tmp_buff;
 	while (*parg != '\0' && parg - tmp_buff >= 0 &&
@@ -5088,10 +5079,8 @@ static BOOL mail_engine_add_notification_folder(
 		b_wait = TRUE;
 		goto REQUERY_FOLDER;
 	}
-	if (NULL == pvalue) {
-		return FALSE;
-	}
-	if (strcasecmp(static_cast<char *>(pvalue), "IPF.Note") != 0)
+	if (pvalue == nullptr ||
+	    strcasecmp(static_cast<char *>(pvalue), "IPF.Note") != 0)
 		return FALSE;
 	pvalue = propvals.getval(PR_LOCAL_COMMIT_TIME_MAX);
 	auto commit_max = pvalue != nullptr ? *static_cast<uint64_t *>(pvalue) : 0;
@@ -5156,12 +5145,9 @@ static void mail_engine_update_subfolders_name(IDB_ITEM *pidb,
 		    decoded_name, sizeof(decoded_name)))
 			continue;
 		ptoken = strrchr(decoded_name, '/');
-		if (NULL == ptoken) {
+		if (ptoken == nullptr ||
+		    strlen(ptoken) + strlen(parent_name) >= 512)
 			continue;
-		}
-		if (strlen(ptoken) + strlen(parent_name) >= 512) {
-			continue;
-		}
 		tmp_len = sprintf(temp_name, "%s%s", parent_name, ptoken);
 		encode_hex_binary(temp_name, tmp_len, encoded_name, 1024);
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET name='%s' "
@@ -5384,11 +5370,8 @@ static void mail_engine_notification_proc(const char *dir,
 	if (b_table)
 		return;
 	auto pidb = mail_engine_peek_idb(dir);
-	if (pidb == nullptr)
+	if (pidb == nullptr || pidb->sub_id != notify_id)
 		return;
-	if (pidb->sub_id != notify_id) {
-		return;
-	}
 	switch (pdb_notify->type) {
 	case DB_NOTIFY_TYPE_NEW_MAIL: {
 		auto n = static_cast<const DB_NOTIFY_NEW_MAIL *>(pdb_notify->pdata);
