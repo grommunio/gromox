@@ -4584,12 +4584,10 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 		        " WHERE message_id=%llu", LLU(message_id));
 		gx_sql_exec(pidb->psqlite, sql_string);
 	}
-	if (NULL != strchr(argv[4], 'S')) {
-		if (!exmdb_client::set_message_read_state(argv[1],
-			NULL, rop_util_make_eid_ex(1, message_id), 1, &read_cn)) {
-			return MIDB_E_NO_MEMORY;
-		}
-	}
+	if (strchr(argv[4], 'S') != nullptr &&
+	    !exmdb_client::set_message_read_state(argv[1], nullptr,
+	    rop_util_make_eid_ex(1, message_id), 1, &read_cn))
+		return MIDB_E_NO_MEMORY;
 	if (NULL != strchr(argv[4], 'R')) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET recent=1"
 		        " WHERE message_id=%llu", LLU(message_id));
@@ -4667,12 +4665,10 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 		        " WHERE message_id=%llu", LLU(message_id));
 		gx_sql_exec(pidb->psqlite, sql_string);
 	}
-	if (NULL != strchr(argv[4], 'S')) {
-		if (!exmdb_client::set_message_read_state(argv[1],
-			NULL, rop_util_make_eid_ex(1, message_id), 0, &read_cn)) {
-			return MIDB_E_NO_MEMORY;
-		}
-	}
+	if (strchr(argv[4], 'S') != nullptr &&
+	    !exmdb_client::set_message_read_state(argv[1], nullptr,
+	    rop_util_make_eid_ex(1, message_id), 0, &read_cn))
+		return MIDB_E_NO_MEMORY;
 	if (NULL != strchr(argv[4], 'R')) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET recent=0"
 		        " WHERE message_id=%llu", LLU(message_id));
