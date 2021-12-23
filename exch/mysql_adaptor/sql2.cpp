@@ -7,6 +7,7 @@
 #include <cstring>
 #include <map>
 #include <string>
+#include <typeinfo>
 #include <utility>
 #include <vector>
 #include <gromox/config_file.hpp>
@@ -14,10 +15,13 @@
 #include <gromox/dbop.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
+#include <gromox/svc_common.h>
 #include <mysql.h>
 #include <errmsg.h>
 #include "mysql_adaptor.h"
 #include "sql2.hpp"
+
+DECLARE_SVC_API();
 
 using namespace gromox;
 using aliasmap_t = std::multimap<std::string, std::string, std::less<>>;
@@ -352,37 +356,54 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) tr
 	return false;
 }
 
-bool mysql_adaptor_reload_config(const char *path,
-    const char *host_id, const char *prog_id) try
+void mysql_adaptor_init(mysql_adaptor_init_param &&parm)
 {
-	mysql_adaptor_init_param par;
-	auto pfile = config_file_initd("mysql_adaptor.cfg", path);
-	if (pfile == nullptr) {
+	g_parm = std::move(parm);
+	g_sqlconn_pool.resize(g_parm.conn_num);
+	g_sqlconn_pool.bump();
+}
+
+static constexpr cfg_directive cfg_default_values[] = {
+	{"connection_num", "8", CFG_SIZE},
+	{"enable_firsttime_password", "no", CFG_BOOL},
+	{"mysql_host", "localhost"},
+	{"mysql_port", "3306"},
+	{"mysql_username", "root"},
+	{"mysql_password", ""},
+	{"mysql_dbname", "email"},
+	{"mysql_rdwr_timeout", "0", CFG_TIME},
+	{},
+};
+
+static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
+{
+	if (cfg == nullptr) {
+		cfg = config_file_initd("mysql_adaptor.cfg", get_config_path());
+		if (cfg != nullptr)
+			config_file_apply(*cfg, cfg_default_values);
+	}
+	if (cfg == nullptr) {
 		printf("[mysql_adaptor]: config_file_initd mysql_adaptor.cfg: %s\n",
 		       strerror(errno));
 		return false;
 	}
-	auto v = pfile->get_value("connection_num");
-	par.conn_num = v != nullptr ? strtoul(v, nullptr, 0) : 8;
-	v = pfile->get_value("mysql_host");
-	par.host = v != nullptr ? v : "";
-	v = pfile->get_value("mysql_port");
-	par.port = v != nullptr ? strtoul(v, nullptr, 0) : 3306;
-	v = pfile->get_value("mysql_username");
-	par.user = v != nullptr ? v : "root";
-	v = pfile->get_value("mysql_password");
-	par.pass = v != nullptr ? v : "";
-	v = pfile->get_value("mysql_dbname");
-	par.dbname = v != nullptr ? v : "email";
-	v = pfile->get_value("mysql_rdwr_timeout");
-	par.timeout = v != nullptr ? strtoul(v, nullptr, 0) : 0;
+	mysql_adaptor_init_param par;
+	par.conn_num = cfg->get_ll("connection_num");
+	par.host = cfg->get_value("mysql_host");
+	par.port = cfg->get_ll("mysql_port");
+	par.user = cfg->get_value("mysql_username");
+	par.pass = cfg->get_value("mysql_password");
+	par.dbname = cfg->get_value("mysql_dbname");
+	par.timeout = cfg->get_ll("mysql_rdwr_timeout");
 	printf("[mysql_adaptor]: host [%s]:%d, #conn=%d timeout=%d, db=%s\n",
 	       par.host.size() == 0 ? "*" : par.host.c_str(), par.port,
 	       par.conn_num, par.timeout, par.dbname.c_str());
-	v = pfile->get_value("schema_upgrade");
+	auto v = cfg->get_value("schema_upgrade");
 	if (v == nullptr)
-		v = pfile->get_value("schema_upgrades");
+		v = cfg->get_value("schema_upgrades");
 	par.schema_upgrade = S_SKIP;
+	auto prog_id = get_prog_id();
+	auto host_id = get_host_ID();
 	if (v != nullptr && strncmp(v, "host:", 5) == 0 &&
 	    prog_id != nullptr && strcmp(prog_id, "http") == 0 &&
 	    strcmp(v + 5, host_id) == 0) {
@@ -393,17 +414,77 @@ bool mysql_adaptor_reload_config(const char *path,
 		par.schema_upgrade = S_AUTOUP;
 	}
 
-	v = pfile->get_value("enable_firsttime_password");
-	par.enable_firsttimepw = v != nullptr && strcmp(v, "yes") == 0;
+	par.enable_firsttimepw = cfg->get_ll("enable_firsttime_password");
 	mysql_adaptor_init(std::move(par));
 	return true;
-} catch (const std::bad_alloc &) {
-	return false;
 }
 
-void mysql_adaptor_init(mysql_adaptor_init_param &&parm)
+static BOOL svc_mysql_adaptor(int reason, void **data)
 {
-	g_parm = std::move(parm);
-	g_sqlconn_pool.resize(g_parm.conn_num);
-	g_sqlconn_pool.bump();
+	if (reason == PLUGIN_FREE) {
+		mysql_adaptor_stop();
+		return TRUE;
+	} else if (reason == PLUGIN_RELOAD) {
+		mysql_adaptor_reload_config(nullptr);
+		return TRUE;
+	} else if (reason != PLUGIN_INIT) {
+		return TRUE;
+	}
+
+	LINK_SVC_API(data);
+	auto cfg = config_file_initd("mysql_adaptor.cfg", get_config_path());
+	if (cfg == nullptr) {
+		printf("[mysql_adaptor]: config_file_initd mysql_adaptor.cfg: %s\n",
+		       strerror(errno));
+		return false;
+	}
+	config_file_apply(*cfg, cfg_default_values);
+	if (!mysql_adaptor_reload_config(cfg))
+		return false;
+	if (mysql_adaptor_run() != 0) {
+		printf("[mysql_adaptor]: failed to run mysql adaptor\n");
+		return false;
+	}
+#define E(f, s) do { \
+	if (!register_service((s), mysql_adaptor_ ## f)) { \
+		printf("[%s]: failed to register the \"%s\" service\n", "mysql_adaptor", (s)); \
+		return false; \
+	} \
+} while (false)
+	E(meta, "mysql_auth_meta");
+	E(login2, "mysql_auth_login2");
+	E(setpasswd, "set_password");
+	E(get_username_from_id, "get_username_from_id");
+	E(get_id_from_username, "get_id_from_username");
+	E(get_id_from_maildir, "get_id_from_maildir");
+	E(get_user_displayname, "get_user_displayname");
+	E(get_user_privilege_bits, "get_user_privilege_bits");
+	E(get_user_lang, "get_user_lang");
+	E(set_user_lang, "set_user_lang");
+	E(get_timezone, "get_timezone");
+	E(set_timezone, "set_timezone");
+	E(get_maildir, "get_maildir");
+	E(get_homedir, "get_homedir");
+	E(get_homedir_by_id, "get_homedir_by_id");
+	E(get_id_from_homedir, "get_id_from_homedir");
+	E(get_user_ids, "get_user_ids");
+	E(get_domain_ids, "get_domain_ids");
+	E(get_mlist_ids, "get_mlist_ids");
+	E(get_org_domains, "get_org_domains");
+	E(get_domain_info, "get_domain_info");
+	E(check_same_org, "check_same_org");
+	E(get_domain_groups, "get_domain_groups");
+	E(get_group_classes, "get_group_classes");
+	E(get_sub_classes, "get_sub_classes");
+	E(get_class_users, "get_class_users");
+	E(get_group_users, "get_group_users");
+	E(get_domain_users, "get_domain_users");
+	E(check_mlist_include, "check_mlist_include");
+	E(check_same_org2, "check_same_org2");
+	E(check_user, "check_user");
+	E(get_mlist, "get_mail_list");
+	E(get_user_info, "get_user_info");
+#undef E
+	return TRUE;
 }
+SVC_ENTRY(svc_mysql_adaptor);
