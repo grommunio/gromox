@@ -4,7 +4,7 @@ mod_rewrite \(em http(8gx) processing plugin for altering HTTP request URIs
 before processing
 .SH Description
 mod_rewrite can alter request URIs. It runs before any of the other built-in or
-HPM processing plugins.
+HTTP processing modules.
 .SH Config file directives
 This (built-in) plugin shares \fBhttp.cfg\fP. See http(8gx).
 .SH Rewrite map

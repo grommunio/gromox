@@ -23,9 +23,9 @@ potentially rewritten.
 If a HTTP request is using the methods RPC_IN_DATA or RPC_OUT_DATA, the data
 stream is handed off to the exchange_emsmdb(4gx) plugin.
 .IP \(bu 4
-Otherwise, HPM plugins are invoked. Processing ends when
-one plugin signals that the request was handled. The order depends on the HPM
-plugin list (cf. http.cfg(5gx):\fBhpm_plugin_list\fP).
+Otherwise, HTTP processing modules (HPM) are invoked. Processing ends when
+one module signals that the request was handled. The order depends on the HPM
+list (cf. http.cfg(5gx):\fBhpm_plugin_list\fP).
 .IP \(bu 4
 Otherwise, the mod_fastcgi(4gx) module (built-in) is invoked. Processing ends
 if the module handled the request.
@@ -118,14 +118,14 @@ value, the request is rejected.
 Default: \fI4M\fP
 .TP
 \fBhpm_plugin_ignore_errors\fP
-If set to yes, HPM plugins that fail to load on startup are ignored. If set to
-no, the daemon will exit if any plugin cannot be loaded.
+If set to yes, HTTP processing modules that fail to load on startup are
+ignored. If set to no, the daemon will exit if any plugin cannot be loaded.
 .br
 Default: \fIno\fP
 .TP
 \fBhpm_plugin_list\fP
-Path to a text file which lists the filenames of HPM plugins to load, one per
-line.
+Path to a text file which lists the filenames of HTTP processing modulesplugins
+to load, one per line.
 .br
 Default: (unspecified)
 .TP
