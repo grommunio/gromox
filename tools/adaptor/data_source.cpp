@@ -32,16 +32,16 @@ static char g_db_name[256];
 void data_source_init(const char *host, uint16_t port, const char *user,
 	const char *password, const char *db_name)
 {
-	gx_strlcpy(g_host, host, GX_ARRAY_SIZE(g_host));
+	gx_strlcpy(g_host, host, arsizeof(g_host));
 	g_port = port;
-	gx_strlcpy(g_user, user, GX_ARRAY_SIZE(g_user));
+	gx_strlcpy(g_user, user, arsizeof(g_user));
 	if (NULL == password || '\0' == password[0]) {
 		g_password = NULL;
 	} else {
-		gx_strlcpy(g_password_buff, password, GX_ARRAY_SIZE(g_password_buff));
+		gx_strlcpy(g_password_buff, password, arsizeof(g_password_buff));
 		g_password = g_password_buff;
 	}
-	gx_strlcpy(g_db_name, db_name, GX_ARRAY_SIZE(g_db_name));
+	gx_strlcpy(g_db_name, db_name, arsizeof(g_db_name));
 }
 
 BOOL data_source_get_domain_list(std::vector<DOMAIN_ITEM> &pcollect)

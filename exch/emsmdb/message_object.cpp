@@ -24,6 +24,8 @@
 #include <cstdlib>
 #include <cstring>
 
+using namespace gromox;
+
 static BOOL message_object_set_properties_internal(message_object *, BOOL check, const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
 
 static BOOL message_object_get_recipient_all_proptags(message_object *pmessage,

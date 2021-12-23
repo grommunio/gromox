@@ -1206,17 +1206,17 @@ void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode, uint32_t codepage,
 	switch (pabnode->node_type) {
 	case NODE_TYPE_DOMAIN: {
 		auto obj = static_cast<sql_domain *>(pabnode->d_info);
-		HX_strlcpy(str_dname, obj->title.c_str(), dn_size);
+		gx_strlcpy(str_dname, obj->title.c_str(), dn_size);
 		break;
 	}
 	case NODE_TYPE_GROUP: {
 		auto obj = static_cast<sql_group *>(pabnode->d_info);
-		HX_strlcpy(str_dname, obj->title.c_str(), dn_size);
+		gx_strlcpy(str_dname, obj->title.c_str(), dn_size);
 		break;
 	}
 	case NODE_TYPE_CLASS: {
 		auto obj = static_cast<sql_class *>(pabnode->d_info);
-		HX_strlcpy(str_dname, obj->name.c_str(), dn_size);
+		gx_strlcpy(str_dname, obj->name.c_str(), dn_size);
 		break;
 	}
 	case NODE_TYPE_PERSON:
@@ -1225,9 +1225,9 @@ void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode, uint32_t codepage,
 		auto obj = static_cast<sql_user *>(pabnode->d_info);
 		auto it = obj->propvals.find(PR_DISPLAY_NAME);
 		if (it != obj->propvals.cend()) {
-			HX_strlcpy(str_dname, it->second.c_str(), dn_size);
+			gx_strlcpy(str_dname, it->second.c_str(), dn_size);
 		} else {
-			HX_strlcpy(str_dname, obj->username.c_str(), dn_size);
+			gx_strlcpy(str_dname, obj->username.c_str(), dn_size);
 			ptoken = strchr(str_dname, '@');
 			if (NULL != ptoken) {
 				*ptoken = '\0';
@@ -1253,7 +1253,7 @@ void ab_tree_get_display_name(SIMPLE_TREE_NODE *pnode, uint32_t codepage,
 			break;
 		case MLIST_TYPE_DOMAIN:
 			if (!get_lang(codepage, "mlist2", str_dname, dn_size))
-				HX_strlcpy(str_dname, "all users in domain", dn_size);
+				gx_strlcpy(str_dname, "all users in domain", dn_size);
 			break;
 		case MLIST_TYPE_CLASS:
 			if (FALSE == get_lang(codepage, "mlist3", lang_string, 256)) {

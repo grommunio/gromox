@@ -1172,6 +1172,7 @@ struct FLATUID {
 	bool operator==(const FLATUID &) const = default;
 #else
 	inline bool operator==(const FLATUID &o) const { return memcmp(ab, o.ab, sizeof(ab)) == 0; }
+	inline bool operator!=(const FLATUID &o) const { return !operator==(o); }
 #endif
 };
 
@@ -1190,6 +1191,14 @@ struct GUID {
 	uint16_t time_hi_and_version;
 	uint8_t clock_seq[2];
 	uint8_t node[6];
+
+#if __cplusplus >= 202000L && defined(__GNUG__) >= 13
+	/* https://gcc.gnu.org/bugzilla/show_bug.cgi?id=103733 */
+	bool operator==(const FLATUID &) const = default;
+#else
+	inline bool operator==(const GUID &o) const { return memcmp(this, &o, sizeof(o)) == 0; }
+	inline bool operator!=(const GUID &o) const { return !operator==(o); }
+#endif
 };
 
 struct GUID_ARRAY {
@@ -1520,7 +1529,15 @@ struct FORWARDDELEGATE_ACTION {
 extern const FLATUID
 	muidStoreWrap, muidEMSAB, pbLongTermNonPrivateGuid,
 	g_muidStorePrivate, g_muidStorePublic, muidOOP,
-	muidECSAB, muidZCSAB, EncodedGlobalId, GUID_NONE, IID_IStorage,
+	muidECSAB, muidZCSAB, EncodedGlobalId, IID_IStorage,
 	IID_IStream, IID_IMessage, IID_IExchangeExportChanges,
 	IID_IExchangeImportContentsChanges, IID_IExchangeImportHierarchyChanges;
+extern const GUID
+	PSETID_ADDRESS, PSETID_AIRSYNC, PSETID_APPOINTMENT, PSETID_ATTACHMENT,
+	PSETID_BUSINESSCARDVIEW, PSETID_COMMON, PSETID_GROMOX, PSETID_KC,
+	PSETID_KCARCHIVE, PSETID_LOG, PSETID_MEETING, PSETID_MESSAGING,
+	PSETID_NOTE, PSETID_POSTRSS, PSETID_REMOTE, PSETID_REPORT,
+	PSETID_SHARING, PSETID_TASK, PSETID_UNIFIEDMESSAGING,
+	PSETID_XMLEXTRACTEDENTITIES, PS_INTERNET_HEADERS, PS_MAPI,
+	PS_PUBLIC_STRINGS;
 extern const uint8_t MACBINARY_ENCODING[9], OLE_TAG[11], ThirdPartyGlobalId[12];

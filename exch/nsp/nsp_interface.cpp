@@ -763,10 +763,8 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 		return ecError;
 	}
 	auto pbase = ab_tree_get_base(base_id);
-	if (pbase == nullptr || (g_session_check &&
-		0 != guid_compare(&pbase->guid, &handle.guid))) {
+	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid))
 		return ecError;
-	}
 	if (0 == pstat->container_id) {
 		pgal_list = &pbase->gal_list;
 		nsp_interface_position_in_list(pstat,
@@ -897,8 +895,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 	}
 	
 	auto pbase = ab_tree_get_base(base_id);
-	if (pbase == nullptr || (g_session_check &&
-		0 != guid_compare(&pbase->guid, &handle.guid))) {
+	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
 		*pprows = NULL;
 		return ecError;
 	}
@@ -1111,8 +1108,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	}
 	
 	auto pbase = ab_tree_get_base(base_id);
-	if (pbase == nullptr || (g_session_check &&
-		0 != guid_compare(&pbase->guid, &handle.guid))) {
+	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
 		*pprows = NULL;
 		return ecError;
 	}
@@ -1596,8 +1592,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	}
 	
 	auto pbase = ab_tree_get_base(base_id);
-	if (pbase == nullptr || (g_session_check &&
-		0 != guid_compare(&pbase->guid, &handle.guid))) {
+	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
 		*ppoutmids = NULL;
 		*pprows = NULL;
 		return ecError;
@@ -1798,8 +1793,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 		return ecError;
 	}
 	auto pbase = ab_tree_get_base(base_id);
-	if (pbase == nullptr || (g_session_check &&
-		0 != guid_compare(&pbase->guid, &handle.guid))) {
+	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
 		*ppoutmids = NULL;
 		return ecError;
 	}
@@ -1864,8 +1858,7 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 	(*ppoutmids)->cvalues = pnames->count;
 	memset((*ppoutmids)->pproptag, 0, sizeof(uint32_t) * pnames->count);
 	auto pbase = ab_tree_get_base(base_id);
-	if (pbase == nullptr || (g_session_check &&
-		0 != guid_compare(&pbase->guid, &handle.guid))) {
+	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
 		*ppoutmids = NULL;
 		return ecError;
 	}
@@ -1977,8 +1970,7 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 		return ecMAPIOOM;
 	}
 	auto pbase = ab_tree_get_base(base_id);
-	if (pbase == nullptr || (g_session_check &&
-		0 != guid_compare(&pbase->guid, &handle.guid))) {
+	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
 		*ppproptags = NULL;
 		return ecError;
 	}
@@ -2043,8 +2035,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	}
 	
 	auto pbase = ab_tree_get_base(base_id);
-	if (pbase == nullptr || (g_session_check &&
-		0 != guid_compare(&pbase->guid, &handle.guid))) {
+	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
 		*pprows = NULL;
 		return ecError;
 	}
@@ -2180,10 +2171,8 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 		return ecError;
 	}
 	auto pbase = ab_tree_get_base(base_id);
-	if (pbase == nullptr || (g_session_check &&
-		0 != guid_compare(&pbase->guid, &handle.guid))) {
+	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid))
 		return ecError;
-	}
 	
 	pos1 = -1;
 	pos2 = -1;
@@ -2461,8 +2450,7 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	}
 	
 	auto pbase = ab_tree_get_base(base_id);
-	if (pbase == nullptr || (g_session_check &&
-		0 != guid_compare(&pbase->guid, &handle.guid))) {
+	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
 		*pprows = NULL;
 		return ecError;
 	}
@@ -2505,10 +2493,8 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		return ecError;
 	}
 	auto pbase = ab_tree_get_base(base_id);
-	if (pbase == nullptr || (g_session_check &&
-		0 != guid_compare(&pbase->guid, &handle.guid))) {
+	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid))
 		return ecError;
-	}
 	std::string dlg_path;
 	double_list_init(&tmp_list);
 	ptnode = ab_tree_minid_to_node(pbase.get(), mid);
@@ -2944,8 +2930,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		return ecMAPIOOM;
 	}
 	auto pbase = ab_tree_get_base(base_id);
-	if (pbase == nullptr || (g_session_check &&
-		0 != guid_compare(&pbase->guid, &handle.guid))) {
+	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid)) {
 		*ppmids = NULL;
 		*pprows = NULL;
 		return ecError;

@@ -507,7 +507,7 @@ static int imap_cmd_parser_match_field(const char *cmd_tag,
 	}
 	if (lseek(fd, offset, SEEK_SET) < 0)
 		fprintf(stderr, "E-1431: lseek: %s\n", strerror(errno));
-	gx_strlcpy(temp_buff, tags, GX_ARRAY_SIZE(temp_buff));
+	gx_strlcpy(temp_buff, tags, arsizeof(temp_buff));
 	if ('(' == tags[0]) {
 		tmp_argc = parse_imap_args(temp_buff + 1,
 			strlen(tags) - 2, tmp_argv, sizeof(tmp_argv));
@@ -777,7 +777,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			return;
 	}
 	buff_len = 0;
-	buff_len += gx_snprintf(buff + buff_len, GX_ARRAY_SIZE(buff) - buff_len,
+	buff_len += gx_snprintf(buff + buff_len, arsizeof(buff) - buff_len,
 	            "* %d FETCH (", item_id);
 	b_first = FALSE;
 	for (pnode=double_list_get_head(pitem_list); NULL!=pnode;
@@ -791,7 +791,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		auto kw = static_cast<const char *>(pnode->pdata);
 		if (strcasecmp(kw, "BODY") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
-			            GX_ARRAY_SIZE(buff) - buff_len, "BODY ");
+			            arsizeof(buff) - buff_len, "BODY ");
 			if (mjson.rfc822_check()) {
 				std::string rfc_path;
 				try {
@@ -818,14 +818,14 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					FALSE, buff + buff_len, MAX_DIGLEN - buff_len);
 				if (-1 == len) {
 					buff_len += gx_snprintf(buff + buff_len,
-					            GX_ARRAY_SIZE(buff) - buff_len, "NIL");
+					            arsizeof(buff) - buff_len, "NIL");
 				} else {
 					buff_len += len;
 				}
 			}
 		} else if (strcasecmp(kw, "BODYSTRUCTURE") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
-			            GX_ARRAY_SIZE(buff) - buff_len, "BODYSTRUCTURE ");
+			            arsizeof(buff) - buff_len, "BODYSTRUCTURE ");
 			if (mjson.rfc822_check()) {
 				std::string rfc_path;
 				try {
@@ -852,19 +852,19 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 					TRUE, buff + buff_len, MAX_DIGLEN - buff_len);
 				if (-1 == len) {
 					buff_len += gx_snprintf(buff + buff_len,
-					            GX_ARRAY_SIZE(buff) - buff_len, "NIL");
+					            arsizeof(buff) - buff_len, "NIL");
 				} else {
 					buff_len += len;
 				}
 			}
 		} else if (strcasecmp(kw, "ENVELOPE") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
-			            GX_ARRAY_SIZE(buff) - buff_len, "ENVELOPE ");
+			            arsizeof(buff) - buff_len, "ENVELOPE ");
 			auto len = mjson.fetch_envelope(resource_get_default_charset(pcontext->lang),
 				buff + buff_len, MAX_DIGLEN - buff_len);
 			if (-1 == len) {
 				buff_len += gx_snprintf(buff + buff_len,
-				            GX_ARRAY_SIZE(buff) - buff_len, "NIL");
+				            arsizeof(buff) - buff_len, "NIL");
 			} else {
 				buff_len += len;
 			}
@@ -872,7 +872,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			imap_cmd_parser_convert_flags_string(
 				pitem->flag_bits, flags_string);
 			buff_len += gx_snprintf(buff + buff_len,
-			            GX_ARRAY_SIZE(buff) - buff_len, "FLAGS %s", flags_string);
+			            arsizeof(buff) - buff_len, "FLAGS %s", flags_string);
 		} else if (strcasecmp(kw, "INTERNALDATE") == 0) {
 			if (!parse_rfc822_timestamp(mjson.get_mail_received(), &tmp_time))
 				tmp_time = strtol(mjson.get_mail_filename(), nullptr, 0);
@@ -881,7 +881,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			buff_len += strftime(buff + buff_len, MAX_DIGLEN - buff_len,
 							"INTERNALDATE \"%d-%b-%Y %T %z\"", &tmp_tm);
 		} else if (strcasecmp(kw, "RFC822") == 0) {
-			buff_len += gx_snprintf(buff + buff_len, GX_ARRAY_SIZE(buff) - buff_len,
+			buff_len += gx_snprintf(buff + buff_len, arsizeof(buff) - buff_len,
 							"RFC822 ({%ld}\r\n<<{file}%s|0|%ld\r\n)",
 			            mjson.get_mail_length(),
 			            mjson.get_mail_filename(),
@@ -897,24 +897,24 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 		} else if (strcasecmp(kw, "RFC822.HEADER") == 0) {
 			pmime = mjson.get_mime("");
 			if (NULL != pmime) {
-				buff_len += gx_snprintf(buff + buff_len, GX_ARRAY_SIZE(buff) - buff_len,
+				buff_len += gx_snprintf(buff + buff_len, arsizeof(buff) - buff_len,
 							"RFC822.HEADER ({%ld}\r\n<<{file}%s|0|%ld\r\n)",
 				            pmime->get_length(MJSON_MIME_HEAD),
 				            mjson.get_mail_filename(),
 				            pmime->get_length(MJSON_MIME_HEAD));
 			} else {
 				buff_len += gx_snprintf(buff + buff_len,
-				            GX_ARRAY_SIZE(buff) - buff_len, "RFC822.HEADER NIL");
+				            arsizeof(buff) - buff_len, "RFC822.HEADER NIL");
 			}
 		} else if (strcasecmp(kw, "RFC822.SIZE") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
-			            GX_ARRAY_SIZE(buff) - buff_len,
+			            arsizeof(buff) - buff_len,
 			            "RFC822.SIZE %ld", mjson.get_mail_length());
 		} else if (strcasecmp(kw, "RFC822.TEXT") == 0) {
 			pmime = mjson.get_mime("");
 			if (NULL != pmime) {
 				buff_len += gx_snprintf(buff + buff_len,
-				            GX_ARRAY_SIZE(buff) - buff_len,
+				            arsizeof(buff) - buff_len,
 							"RFC822.TEXT ({%ld}\r\n<<{file}%s|%ld|%ld\r\n)",
 				            pmime->get_length(MJSON_MIME_CONTENT),
 				            mjson.get_mail_filename(),
@@ -922,7 +922,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 				            pmime->get_length(MJSON_MIME_CONTENT));
 			} else {
 				buff_len += gx_snprintf(buff + buff_len,
-				            GX_ARRAY_SIZE(buff) - buff_len, "RFC822.TEXT NIL");
+				            arsizeof(buff) - buff_len, "RFC822.TEXT NIL");
 			}
 			if (FALSE == pcontext->b_readonly &&
 				0 == (pitem->flag_bits & FLAG_SEEN)) {
@@ -934,7 +934,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			}
 		} else if (strcasecmp(kw, "UID") == 0) {
 			buff_len += gx_snprintf(buff + buff_len,
-			            GX_ARRAY_SIZE(buff) - buff_len, "UID %d", pitem->uid);
+			            arsizeof(buff) - buff_len, "UID %d", pitem->uid);
 		} else if (strncasecmp(kw, "BODY[", 5) == 0 ||
 		    strncasecmp(kw, "BODY.PEEK[", 10) == 0) {
 			pbody = strchr(static_cast<char *>(pnode->pdata), '[');
@@ -1020,7 +1020,7 @@ static void imap_cmd_parser_process_fetch_item(IMAP_CONTEXT *pcontext,
 			}
 		}
 	}
-	buff_len += gx_snprintf(buff + buff_len, GX_ARRAY_SIZE(buff) - buff_len, ")\r\n");
+	buff_len += gx_snprintf(buff + buff_len, arsizeof(buff) - buff_len, ")\r\n");
 	pcontext->stream.write(buff, buff_len);
 	if (FALSE == pcontext->b_readonly && pitem->flag_bits & FLAG_RECENT) {
 		pitem->flag_bits &= ~FLAG_RECENT;
@@ -1051,11 +1051,11 @@ static void imap_cmd_parser_store_flags(const char *cmd, const char *mid,
 		if (0 == strcasecmp(cmd, "FLAGS")) {
 			imap_cmd_parser_convert_flags_string(flag_bits, flags_string);
 			if (0 != uid) {
-				string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+				string_length = gx_snprintf(buff, arsizeof(buff),
 					"* %d FETCH (FLAGS %s UID %d)\r\n",
 					id, flags_string, uid);
 			} else {
-				string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+				string_length = gx_snprintf(buff, arsizeof(buff),
 					"* %d FETCH (FLAGS %s)\r\n",
 					id, flags_string);
 			}
@@ -1069,11 +1069,11 @@ static void imap_cmd_parser_store_flags(const char *cmd, const char *mid,
 		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {
 			imap_cmd_parser_convert_flags_string(flag_bits, flags_string);
 			if (0 != uid) {
-				string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+				string_length = gx_snprintf(buff, arsizeof(buff),
 					"* %d FETCH (FLAGS %s UID %d)\r\n",
 					id, flags_string, uid);
 			} else {
-				string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+				string_length = gx_snprintf(buff, arsizeof(buff),
 					"* %d FETCH (FLAGS %s)\r\n",
 					id, flags_string);
 			}
@@ -1087,11 +1087,11 @@ static void imap_cmd_parser_store_flags(const char *cmd, const char *mid,
 		    pcontext->selected_folder, mid, &flag_bits, &errnum)) {
 			imap_cmd_parser_convert_flags_string(flag_bits, flags_string);
 			if (0 != uid) {
-				string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+				string_length = gx_snprintf(buff, arsizeof(buff),
 					"* %d FETCH (FLAGS %s UID %d)\r\n",
 					id, flags_string, uid);
 			} else {
-				string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+				string_length = gx_snprintf(buff, arsizeof(buff),
 					"* %d FETCH (FLAGS %s)\r\n",
 					id, flags_string);
 			}
@@ -1255,7 +1255,7 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
 	
 	ptoken = strchr(temp_name, '/');
 	if (NULL == ptoken) {
-		gx_strlcpy(temp_folder, temp_name, GX_ARRAY_SIZE(temp_folder));
+		gx_strlcpy(temp_folder, temp_name, arsizeof(temp_folder));
 	} else {
 		memcpy(temp_folder, temp_name, ptoken - temp_name);
 		temp_folder[ptoken - temp_name] = '\0';
@@ -1266,13 +1266,13 @@ static BOOL imap_cmd_parser_imapfolder_to_sysfolder(
 		auto f_strings = resource_get_folder_strings(lang);
 		for (i=0; i<4; i++) {
 			if (0 == strcmp(f_strings[i], temp_folder)) {
-				gx_strlcpy(temp_folder, g_folder_list[i], GX_ARRAY_SIZE(temp_folder));
+				gx_strlcpy(temp_folder, g_folder_list[i], arsizeof(temp_folder));
 				break;
 			}
 		}
 	}
 	if (NULL != ptoken) {
-		len = gx_snprintf(converted_name, GX_ARRAY_SIZE(converted_name), "%s%s", temp_folder, ptoken);
+		len = gx_snprintf(converted_name, arsizeof(converted_name), "%s%s", temp_folder, ptoken);
 		encode_hex_binary(converted_name,
 			strlen(converted_name), sys_folder, 1024);
 	} else {
@@ -1324,7 +1324,7 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
 	}
 	ptoken = strchr(temp_name, '/');
 	if (NULL == ptoken) {
-		gx_strlcpy(temp_folder, temp_name, GX_ARRAY_SIZE(temp_folder));
+		gx_strlcpy(temp_folder, temp_name, arsizeof(temp_folder));
 	} else {
 		memcpy(temp_folder, temp_name, ptoken - temp_name);
 		temp_folder[ptoken - temp_name] = '\0';
@@ -1335,7 +1335,7 @@ static BOOL imap_cmd_parser_sysfolder_to_imapfolder(
 		auto f_strings = resource_get_folder_strings(lang);
 		for (i=0; i<4; i++) {
 			if (0 == strcmp(g_folder_list[i], temp_folder)) {
-				gx_strlcpy(temp_folder, f_strings[i], GX_ARRAY_SIZE(temp_folder));
+				gx_strlcpy(temp_folder, f_strings[i], arsizeof(temp_folder));
 				break;
 			}
 		}
@@ -1383,10 +1383,10 @@ int imap_cmd_parser_capability(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	auto imap_reply_str = resource_get_imap_code(1701, 1, &string_length);
 	char ext_str[16]{};
 	if (imap_parser_get_param(IMAP_SUPPORT_STARTTLS))
-		HX_strlcat(ext_str, " STARTTLS", GX_ARRAY_SIZE(ext_str));
+		HX_strlcat(ext_str, " STARTTLS", arsizeof(ext_str));
 	if (imap_parser_get_param(IMAP_SUPPORT_RFC2971))
-		HX_strlcat(ext_str, " ID", GX_ARRAY_SIZE(ext_str));
-	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+		HX_strlcat(ext_str, " ID", arsizeof(ext_str));
+	string_length = gx_snprintf(buff, arsizeof(buff),
 	                "* CAPABILITY IMAP4rev1 XLIST SPECIAL-USE "
 	                "UNSELECT UIDPLUS IDLE AUTH=LOGIN%s\r\n%s %s",
 	                ext_str, argv[0], imap_reply_str);
@@ -1435,7 +1435,7 @@ int imap_cmd_parser_logout(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	/* IMAP_CODE_2170003: OK LOGOUT completed */
 	auto imap_reply_str2 = resource_get_imap_code(1703, 1, &string_length);
 	
-	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* %s%s %s",
+	string_length = gx_snprintf(buff, arsizeof(buff), "* %s%s %s",
 			imap_reply_str, argv[0], imap_reply_str2);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_SHOULD_CLOSE;
@@ -1472,9 +1472,9 @@ int imap_cmd_parser_authenticate(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (pcontext->proto_stat >= PROTO_STAT_AUTH) {
 		return 1803;
 	}
-	gx_strlcpy(pcontext->tag_string, argv[0], GX_ARRAY_SIZE(pcontext->tag_string));
+	gx_strlcpy(pcontext->tag_string, argv[0], arsizeof(pcontext->tag_string));
 	pcontext->proto_stat = PROTO_STAT_USERNAME;
-	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "+ VXNlciBOYW1lAA==\r\n");
+	string_length = gx_snprintf(buff, arsizeof(buff), "+ VXNlciBOYW1lAA==\r\n");
 	imap_parser_safe_write(pcontext, buff, string_length);
     return DISPATCH_CONTINUE;
 }
@@ -1487,13 +1487,13 @@ static int imap_cmd_parser_username2(int argc, char **argv, IMAP_CONTEXT *pconte
 	
 	if (strlen(argv[0]) == 0 ||
 	    decode64_ex(argv[0], strlen(argv[0]),
-	    pcontext->username, GX_ARRAY_SIZE(pcontext->username),
+	    pcontext->username, arsizeof(pcontext->username),
 	    &temp_len) != 0) {
 		pcontext->proto_stat = PROTO_STAT_NOAUTH;
 		return 1819 | DISPATCH_TAG;
 	}
 	pcontext->proto_stat = PROTO_STAT_PASSWORD;
-	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "+ UGFzc3dvcmQA\r\n");
+	string_length = gx_snprintf(buff, arsizeof(buff), "+ UGFzc3dvcmQA\r\n");
 	imap_parser_safe_write(pcontext, buff, string_length);
     return DISPATCH_CONTINUE;
 }
@@ -1529,7 +1529,7 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 			return 1902 | DISPATCH_TAG;
 		}
 		if ('\0' == pcontext->lang[0]) {
-			gx_strlcpy(pcontext->lang, resource_get_string("DEFAULT_LANG"), GX_ARRAY_SIZE(pcontext->lang));
+			gx_strlcpy(pcontext->lang, resource_get_string("DEFAULT_LANG"), arsizeof(pcontext->lang));
 		}
 		pcontext->proto_stat = PROTO_STAT_AUTH;
 		imap_parser_log_info(pcontext, LV_DEBUG, "login success");
@@ -1562,13 +1562,13 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		NULL == pcontext->connection.ssl) {
 		return 1802;
 	}
-	if (argc != 4 || strlen(argv[2]) >= GX_ARRAY_SIZE(pcontext->username) ||
+	if (argc != 4 || strlen(argv[2]) >= arsizeof(pcontext->username) ||
 	    strlen(argv[3]) > 255)
 		return 1800;
 	if (pcontext->proto_stat >= PROTO_STAT_AUTH) {
 		return 1803;
 	}
-	gx_strlcpy(pcontext->username, argv[2], GX_ARRAY_SIZE(pcontext->username));
+	gx_strlcpy(pcontext->username, argv[2], arsizeof(pcontext->username));
 	HX_strltrim(pcontext->username);
 	if (system_services_judge_user != nullptr &&
 	    !system_services_judge_user(pcontext->username)) {
@@ -1585,7 +1585,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			return 1902;
 		}
 		if ('\0' == pcontext->lang[0]) {
-			gx_strlcpy(pcontext->lang, resource_get_string("DEFAULT_LANG"), GX_ARRAY_SIZE(pcontext->lang));
+			gx_strlcpy(pcontext->lang, resource_get_string("DEFAULT_LANG"), arsizeof(pcontext->lang));
 		}
 		pcontext->proto_stat = PROTO_STAT_AUTH;
 		imap_parser_log_info(pcontext, LV_DEBUG, "login success");
@@ -1611,7 +1611,7 @@ int imap_cmd_parser_idle(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (2 != argc) {
 		return 1800;
 	}
-	gx_strlcpy(pcontext->tag_string, argv[0], GX_ARRAY_SIZE(pcontext->tag_string));
+	gx_strlcpy(pcontext->tag_string, argv[0], arsizeof(pcontext->tag_string));
 	pcontext->sched_stat = SCHED_STAT_IDLING;
 	return 1602;
 }
@@ -1661,7 +1661,7 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	pcontext->b_readonly = FALSE;
 	imap_parser_add_select(pcontext);
 	if (-1 != firstunseen) {
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+		string_length = gx_snprintf(buff, arsizeof(buff),
 			"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
 			"* OK [PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)] limited\r\n"
 			"* %d EXISTS\r\n"
@@ -1673,7 +1673,7 @@ int imap_cmd_parser_select(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			exists, recent, firstunseen, firstunseen,
 			(unsigned int)uidvalid, uidnext, argv[0]);
 	} else {
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+		string_length = gx_snprintf(buff, arsizeof(buff),
 			"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
 			"* OK [PERMANENTFLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)] limited\r\n"
 			"* %d EXISTS\r\n"
@@ -1731,7 +1731,7 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	pcontext->b_readonly = TRUE;
 	imap_parser_add_select(pcontext);
 	if (-1 != firstunseen) {
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+		string_length = gx_snprintf(buff, arsizeof(buff),
 			"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
 			"* OK [PERMANENTFLAGS ()] no permanenet flag permited\r\n"
 			"* %d EXISTS\r\n"
@@ -1743,7 +1743,7 @@ int imap_cmd_parser_examine(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			exists, recent, firstunseen, firstunseen,
 			(unsigned int)uidvalid, uidnext, argv[0]);
 	} else {
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+		string_length = gx_snprintf(buff, arsizeof(buff),
 			"* FLAGS (\\Answered \\Flagged \\Deleted \\Seen \\Draft)\r\n"
 			"* OK [PERMANENTFLAGS ()] no permanenet flag permited\r\n"
 			"* %d EXISTS\r\n"
@@ -2053,7 +2053,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			}
 			/* IMAP_CODE_2170011: OK LIST completed */
 			auto imap_reply_str = resource_get_imap_code(1711, 1, &string_length);
-			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+			string_length = gx_snprintf(buff, arsizeof(buff),
 				"* LIST (\\Noselect) \"/\" \"\"\r\n%s %s",
 				argv[0], imap_reply_str);
 			imap_parser_safe_write(pcontext, buff, string_length);
@@ -2093,10 +2093,10 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 				continue;
 			pdir = dir_tree_match(&temp_tree, temp_name);
 			if (NULL != pdir && NULL != dir_tree_get_child(pdir)) {
-				len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
+				len += gx_snprintf(buff + len, arsizeof(buff) - len,
 				       "* LIST (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
 			} else {
-				len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
+				len += gx_snprintf(buff + len, arsizeof(buff) - len,
 				       "* LIST (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
 			}
 		}
@@ -2108,7 +2108,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 		/* IMAP_CODE_2170011: OK LIST completed */
 		auto imap_reply_str = resource_get_imap_code(1711, 1, &string_length);
-		len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
+		len += gx_snprintf(buff + len, arsizeof(buff) - len,
 				"%s %s", argv[0], imap_reply_str);
 		pcontext->stream.write(buff, len);
 		pcontext->write_offset = 0;
@@ -2125,7 +2125,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 		/* IMAP_CODE_2170011: OK LIST completed */
 		auto imap_reply_str = resource_get_imap_code(1711, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+		string_length = gx_snprintf(buff, arsizeof(buff),
 		                "* LIST (\\Noselect) \"/\" \"\"\r\n%s %s",
 		                argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -2143,7 +2143,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	while (temp_file.readline(temp_name, arsizeof(temp_name)) != MEM_END_OF_FILE) {
 		if (TRUE == imap_cmd_parser_wildcard_match(
 			temp_name, search_pattern)) {
-			len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
+			len += gx_snprintf(buff + len, arsizeof(buff) - len,
 			       "* LIST () \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
 		}
 	}
@@ -2154,7 +2154,7 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	/* IMAP_CODE_2170011: OK LIST completed */
 	auto imap_reply_str = resource_get_imap_code(1711, 1, &string_length);
-	len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len, "%s %s", argv[0], imap_reply_str);
+	len += gx_snprintf(buff + len, arsizeof(buff) - len, "%s %s", argv[0], imap_reply_str);
 	pcontext->stream.write(buff, len);
 	pcontext->write_offset = 0;
 	pcontext->sched_stat = SCHED_STAT_WRLST;
@@ -2208,10 +2208,10 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (TRUE == imap_cmd_parser_wildcard_match("INBOX", search_pattern)) {
 		pdir = dir_tree_match(&temp_tree, "INBOX");
 		if (NULL != pdir && NULL != dir_tree_get_child(pdir)) {
-			len = gx_snprintf(buff + len, GX_ARRAY_SIZE(buff),
+			len = gx_snprintf(buff + len, arsizeof(buff),
 				"* XLIST (\\Inbox \\HasChildren) \"/\" \"INBOX\"\r\n");
 		} else {
-			len = gx_snprintf(buff + len, GX_ARRAY_SIZE(buff),
+			len = gx_snprintf(buff + len, arsizeof(buff),
 				"* XLIST (\\Inbox \\HasNoChildren) \"/\" \"INBOX\"\r\n");
 		}
 	}
@@ -2222,11 +2222,11 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			temp_name, search_pattern)) {
 			pdir = dir_tree_match(&temp_tree, temp_name);
 			if (NULL != pdir && NULL != dir_tree_get_child(pdir)) {
-				len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
+				len += gx_snprintf(buff + len, arsizeof(buff) - len,
 					"* XLIST (\\%s \\HasChildren) \"/\" \"%s\"\r\n",
 					g_xproperty_list[i], temp_name);
 			} else {
-				len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
+				len += gx_snprintf(buff + len, arsizeof(buff) - len,
 					"* XLIST (\\%s \\HasNoChildren) \"/\" \"%s\"\r\n",
 					g_xproperty_list[i], temp_name);
 			}
@@ -2238,10 +2238,10 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			continue;
 		pdir = dir_tree_match(&temp_tree, temp_name);
 		if (NULL != pdir && NULL != dir_tree_get_child(pdir)) {
-			len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
+			len += gx_snprintf(buff + len, arsizeof(buff) - len,
 				"* XLIST (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
 		} else {
-			len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
+			len += gx_snprintf(buff + len, arsizeof(buff) - len,
 				"* XLIST (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
 		}
 	}
@@ -2253,7 +2253,7 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	/* IMAP_CODE_2170012: OK XLIST completed */
 	auto imap_reply_str = resource_get_imap_code(1712, 1, &string_length);
-	len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
+	len += gx_snprintf(buff + len, arsizeof(buff) - len,
 			"%s %s", argv[0], imap_reply_str);
 	
 	pcontext->stream.write(buff, len);
@@ -2290,7 +2290,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 		/* IMAP_CODE_2170011: OK LIST completed */
 		auto imap_reply_str = resource_get_imap_code(1711, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+		string_length = gx_snprintf(buff, arsizeof(buff),
 			"* LSUB (\\Noselect) \"/\" \"\"\r\n%s %s",
 			argv[0], imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
@@ -2333,10 +2333,10 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			continue;
 		pdir = dir_tree_match(&temp_tree, temp_name);
 		if (NULL != pdir && NULL != dir_tree_get_child(pdir)) {
-			len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
+			len += gx_snprintf(buff + len, arsizeof(buff) - len,
 				"* LSUB (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
 		} else {
-			len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
+			len += gx_snprintf(buff + len, arsizeof(buff) - len,
 				"* LSUB (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
 		}
 	}
@@ -2348,7 +2348,7 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	/* IMAP_CODE_2170013: OK LSUB completed */
 	auto imap_reply_str = resource_get_imap_code(1713, 1, &string_length);
-	len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len,
+	len += gx_snprintf(buff + len, arsizeof(buff) - len,
 			"%s %s", argv[0], imap_reply_str);
 	pcontext->stream.write(buff, len);
 	pcontext->write_offset = 0;
@@ -2403,7 +2403,7 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	/* IMAP_CODE_2170014: OK STATUS completed */
 	auto imap_reply_str = resource_get_imap_code(1714, 1, &string_length);
-	string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* STATUS {%zu}\r\n%s (", strlen(argv[2]), argv[2]);
+	string_length = gx_snprintf(buff, arsizeof(buff), "* STATUS {%zu}\r\n%s (", strlen(argv[2]), argv[2]);
 	b_first = TRUE;
 	for (i=0; i<temp_argc; i++) {
 		if (FALSE == b_first) {
@@ -2414,20 +2414,20 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		}
 		if (0 == strcasecmp(temp_argv[i], "MESSAGES")) {
 			string_length += gx_snprintf(buff + string_length,
-			                 GX_ARRAY_SIZE(buff) - string_length, "MESSAGES %d", exists);
+			                 arsizeof(buff) - string_length, "MESSAGES %d", exists);
 		} else if (0 == strcasecmp(temp_argv[i], "RECENT")) {
 			string_length += gx_snprintf(buff + string_length,
-			                 GX_ARRAY_SIZE(buff) - string_length, "RECENT %d", recent);
+			                 arsizeof(buff) - string_length, "RECENT %d", recent);
 		} else if (0 == strcasecmp(temp_argv[i], "UIDNEXT")) {
 			string_length += gx_snprintf(buff + string_length,
-			                 GX_ARRAY_SIZE(buff) - string_length, "UIDNEXT %d", uidnext);
+			                 arsizeof(buff) - string_length, "UIDNEXT %d", uidnext);
 		} else if (0 == strcasecmp(temp_argv[i], "UIDVALIDITY")) {
 			string_length += gx_snprintf(buff + string_length,
-			                 GX_ARRAY_SIZE(buff) - string_length, "UIDVALIDITY %u",
+			                 arsizeof(buff) - string_length, "UIDVALIDITY %u",
 					(unsigned int)uidvalid);
 		} else if (0 == strcasecmp(temp_argv[i], "UNSEEN")) {
 			string_length += gx_snprintf(buff + string_length,
-			                 GX_ARRAY_SIZE(buff) - string_length, "UNSEEN %d", unseen);
+			                 arsizeof(buff) - string_length, "UNSEEN %d", unseen);
 		} else {
 			return 1800;
 		}
@@ -2436,7 +2436,7 @@ int imap_cmd_parser_status(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_echo_modify(pcontext, NULL);
 	}
 	string_length += gx_snprintf(buff + string_length,
-	                 GX_ARRAY_SIZE(buff) - string_length, ")\r\n%s %s", argv[0], imap_reply_str);
+	                 arsizeof(buff) - string_length, ")\r\n%s %s", argv[0], imap_reply_str);
 	imap_parser_safe_write(pcontext, buff, string_length);
 	return DISPATCH_CONTINUE;
 }
@@ -2580,7 +2580,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		    nullptr, &errnum) == MIDB_RESULT_OK &&
 		    system_services_get_uid(pcontext->maildir, temp_name,
 		    mid_string.c_str(), &uid) == MIDB_RESULT_OK) {
-			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+			string_length = gx_snprintf(buff, arsizeof(buff),
 			                "%s %s [APPENDUID %u %d] %s",
 				argv[0], imap_reply_str, (unsigned int)uidvalid,
 				uid, imap_reply_str1);
@@ -2589,7 +2589,7 @@ int imap_cmd_parser_append(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		usleep(50000);
 	}
 	if (10 == i) {
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s %s",
+		string_length = gx_snprintf(buff, arsizeof(buff), "%s %s %s",
 				argv[0], imap_reply_str, imap_reply_str1);
 	}
 	imap_parser_safe_write(pcontext, buff, string_length);
@@ -2631,7 +2631,7 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pc
 		str_received = NULL;
 	}
 	if (NULL != flags_string) {
-		gx_strlcpy(str_flags, flags_string, GX_ARRAY_SIZE(str_flags));
+		gx_strlcpy(str_flags, flags_string, arsizeof(str_flags));
 		if ('(' != flags_string[0] || ')' != flags_string[
 			strlen(flags_string) - 1] || -1 == (temp_argc =
 			parse_imap_args(flags_string + 1, strlen(flags_string)
@@ -2662,23 +2662,23 @@ static int imap_cmd_parser_append_begin2(int argc, char **argv, IMAP_CONTEXT *pc
 		return 1909 | DISPATCH_BREAK;
 	}
 	len = sizeof(uint32_t);
-	len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len, "%s", temp_name);
+	len += gx_snprintf(buff + len, arsizeof(buff) - len, "%s", temp_name);
 	buff[len] = '\0';
 	len ++;
 	if (NULL != flags_string) {
-		len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len, "%s", str_flags);
+		len += gx_snprintf(buff + len, arsizeof(buff) - len, "%s", str_flags);
 	}
 	buff[len] = '\0';
 	len ++;
 	if (NULL != str_received) {
-		len += gx_snprintf(buff + len, GX_ARRAY_SIZE(buff) - len, "%s", str_received);
+		len += gx_snprintf(buff + len, arsizeof(buff) - len, "%s", str_received);
 	}
 	buff[len] = '\0';
 	len ++;
 	cpu_to_le32p(buff, len);
 	write(fd, buff, len);
 	pcontext->message_fd = fd;
-	gx_strlcpy(pcontext->tag_string, argv[0], GX_ARRAY_SIZE(pcontext->tag_string));
+	gx_strlcpy(pcontext->tag_string, argv[0], arsizeof(pcontext->tag_string));
 	pcontext->stream.clear();
 	return DISPATCH_CONTINUE;
 }
@@ -2758,7 +2758,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 	str_flags = str_name + name_len + 1;
 	flags_len = strlen(str_flags);
 	str_internal = str_flags + flags_len + 1;
-	gx_strlcpy(temp_name, str_name, GX_ARRAY_SIZE(temp_name));
+	gx_strlcpy(temp_name, str_name, arsizeof(temp_name));
 	if (NULL != search_string(str_flags, "\\Seen", flags_len)) {
 		b_seen = TRUE;
 	}
@@ -2852,7 +2852,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		    nullptr, nullptr, &errnum) == MIDB_RESULT_OK &&
 		    system_services_get_uid(pcontext->maildir, temp_name,
 		    pcontext->mid.c_str(), &uid) == MIDB_RESULT_OK) {
-			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s [APPENDUID %u %d] %s",
+			string_length = gx_snprintf(buff, arsizeof(buff), "%s %s [APPENDUID %u %d] %s",
 				pcontext->tag_string, imap_reply_str, (unsigned int)uidvalid,
 				uid, imap_reply_str1);
 			break;
@@ -2860,7 +2860,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		usleep(50000);
 	}
 	if (10 == i) {
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s %s",
+		string_length = gx_snprintf(buff, arsizeof(buff), "%s %s %s",
 			pcontext->tag_string, imap_reply_str, imap_reply_str1);
 	}
 	imap_parser_safe_write(pcontext, buff, string_length);
@@ -2952,7 +2952,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
 			remove(eml_path.c_str());
 			imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
-			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+			string_length = gx_snprintf(buff, arsizeof(buff),
 				"* %d EXPUNGE\r\n", pitem->id - del_num);
 			pcontext->stream.write(buff, string_length);
 			b_deleted = TRUE;
@@ -2968,7 +2968,7 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_echo_modify(pcontext, NULL);
 		/* IMAP_CODE_2170026: OK EXPUNGE completed */
 		auto imap_reply_str = resource_get_imap_code(1726, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+		string_length = gx_snprintf(buff, arsizeof(buff),
 			"%s %s", argv[0], imap_reply_str);
 		pcontext->stream.write(buff, string_length);
 		pcontext->write_offset = 0;
@@ -3043,7 +3043,7 @@ int imap_cmd_parser_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170019: OK SEARCH completed */
 	auto imap_reply_str = resource_get_imap_code(1719, 1, &string_length);
-	buff_len += gx_snprintf(buff + buff_len, GX_ARRAY_SIZE(buff) - buff_len,
+	buff_len += gx_snprintf(buff + buff_len, arsizeof(buff) - buff_len,
 	            "%s %s", argv[0], imap_reply_str);
 	pcontext->stream.write(buff, buff_len);
 	pcontext->write_offset = 0;
@@ -3301,9 +3301,9 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 				b_first =  TRUE;
 			}
 			string_length += gx_snprintf(uid_string + string_length,
-					 GX_ARRAY_SIZE(uid_string) - string_length, "%d", pitem->uid);
+					 arsizeof(uid_string) - string_length, "%d", pitem->uid);
 			string_length1 += gx_snprintf(uid_string1 + string_length1,
-					  GX_ARRAY_SIZE(uid_string1) - string_length1, "%d", uid);
+					  arsizeof(uid_string1) - string_length1, "%d", uid);
 			break;
 		}
 		if (10 == j) {
@@ -3331,18 +3331,18 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		auto imap_reply_str = resource_get_imap_code(1722, 1, &string_length);
 		auto imap_reply_str1 = resource_get_imap_code(1722, 2, &string_length1);
 		if (0 != uidvalidity) {
-			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+			string_length = gx_snprintf(buff, arsizeof(buff),
 				"%s %s [COPYUID %u %s %s] %s", argv[0],
 				imap_reply_str, (unsigned int)uidvalidity,
 				uid_string, uid_string1, imap_reply_str1);
 		} else {
-			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+			string_length = gx_snprintf(buff, arsizeof(buff),
 				"%s %s %s", argv[0], imap_reply_str, imap_reply_str1);
 		}
 	} else {
 		/* IMAP_CODE_2190016: NO COPY failed */
 		auto imap_reply_str = resource_get_imap_code(1916, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+		string_length = gx_snprintf(buff, arsizeof(buff),
 			"%s %s", argv[0], imap_reply_str);
 	}
 	pcontext->stream.write(buff, string_length);
@@ -3395,7 +3395,7 @@ int imap_cmd_parser_uid_search(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170023: OK UID SEARCH completed */
 	auto imap_reply_str = resource_get_imap_code(1723, 1, &string_length);
-	buff_len += gx_snprintf(buff + buff_len, GX_ARRAY_SIZE(buff) - buff_len,
+	buff_len += gx_snprintf(buff + buff_len, arsizeof(buff) - buff_len,
 	            "%s %s", argv[0], imap_reply_str);
 	pcontext->stream.write(buff, buff_len);
 	pcontext->write_offset = 0;
@@ -3663,7 +3663,7 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 				b_first =  TRUE;
 			}
 			string_length += gx_snprintf(uid_string + string_length,
-			                 GX_ARRAY_SIZE(uid_string) - string_length, "%d", uid);
+			                 arsizeof(uid_string) - string_length, "%d", uid);
 			break;
 		}
 		if (10 == j) {
@@ -3691,18 +3691,18 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		auto imap_reply_str = resource_get_imap_code(1725, 1, &string_length);
 		auto imap_reply_str1 = resource_get_imap_code(1725, 2, &string_length1);
 		if (0 != uidvalidity) {
-			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+			string_length = gx_snprintf(buff, arsizeof(buff),
 				"%s %s [COPYUID %u %s %s] %s", argv[0],
 				imap_reply_str, (unsigned int)uidvalidity, argv[3],
 				uid_string, imap_reply_str1);
 		} else {
-			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s %s",
+			string_length = gx_snprintf(buff, arsizeof(buff), "%s %s %s",
 					argv[0], imap_reply_str, imap_reply_str1);
 		}
 	} else {
 		/* IMAP_CODE_2190017: NO UID COPY failed */
 		auto imap_reply_str = resource_get_imap_code(1917, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s", argv[0], imap_reply_str);
+		string_length = gx_snprintf(buff, arsizeof(buff), "%s %s", argv[0], imap_reply_str);
 	}
 	pcontext->stream.write(buff, string_length);
 	pcontext->write_offset = 0;
@@ -3789,7 +3789,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			auto eml_path = std::string(pcontext->maildir) + "/eml/" + pitem->mid;
 			remove(eml_path.c_str());
 			imap_parser_log_info(pcontext, LV_ERR, "message %s has been deleted", eml_path.c_str());
-			string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+			string_length = gx_snprintf(buff, arsizeof(buff),
 				"* %d EXPUNGE\r\n", pitem->id - del_num);
 			pcontext->stream.write(buff, string_length);
 			b_deleted = TRUE;
@@ -3805,7 +3805,7 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		imap_parser_echo_modify(pcontext, NULL);
 		/* IMAP_CODE_2170026: OK UID EXPUNGE completed */
 		auto imap_reply_str = resource_get_imap_code(1726, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+		string_length = gx_snprintf(buff, arsizeof(buff),
 			"%s %s", argv[0], imap_reply_str);
 		pcontext->stream.write(buff, string_length);
 		pcontext->write_offset = 0;
@@ -3861,7 +3861,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
 		auto imap_reply_str = resource_get_imap_code(1905, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* %s", imap_reply_str);
+		string_length = gx_snprintf(buff, arsizeof(buff), "* %s", imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return;
 	}
@@ -3870,7 +3870,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
 		auto imap_reply_str = resource_get_imap_code(1906, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* %s", imap_reply_str);
+		string_length = gx_snprintf(buff, arsizeof(buff), "* %s", imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return;
 	}
@@ -3879,7 +3879,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		auto imap_reply_str = resource_get_imap_code(1907, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+		string_length = gx_snprintf(buff, arsizeof(buff),
 			"* %s%s", imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return;
@@ -3918,7 +3918,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
 		auto imap_reply_str = resource_get_imap_code(1905, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* %s", imap_reply_str);
+		string_length = gx_snprintf(buff, arsizeof(buff), "* %s", imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return;
 	}
@@ -3927,7 +3927,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
 		auto imap_reply_str = resource_get_imap_code(1906, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "* %s", imap_reply_str);
+		string_length = gx_snprintf(buff, arsizeof(buff), "* %s", imap_reply_str);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return;
 	}
@@ -3936,7 +3936,7 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		auto imap_reply_str = resource_get_imap_code(1907, 1, &string_length);
-		string_length = gx_snprintf(buff, GX_ARRAY_SIZE(buff),
+		string_length = gx_snprintf(buff, arsizeof(buff),
 			"* %s%s", imap_reply_str, estring);
 		imap_parser_safe_write(pcontext, buff, string_length);
 		return;
@@ -3970,7 +3970,7 @@ int imap_cmd_parser_dval(int argc, char **argv, IMAP_CONTEXT *ctx, unsigned int 
 		tag = *ctx->tag_string != '\0' ? ctx->tag_string : "BUG";
 	else
 		tag = argc > 0 ? argv[0] : "*";
-	len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "%s %s%s", tag, str, znul(estr));
+	len = gx_snprintf(buff, arsizeof(buff), "%s %s%s", tag, str, znul(estr));
 	imap_parser_safe_write(ctx, buff, len);
 	return ret & DISPATCH_ACTMASK;
 }

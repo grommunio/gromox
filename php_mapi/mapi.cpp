@@ -264,6 +264,7 @@ BEGIN_EXTERN_C()
 	ZEND_GET_MODULE(mapi)
 END_EXTERN_C()
 
+static constexpr GUID GUID_NONE{};
 static constexpr char
 	name_mapi_session[] = "MAPI Session",
 	name_mapi_table[] = "MAPI Table",

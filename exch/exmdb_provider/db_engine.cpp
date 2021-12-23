@@ -2362,7 +2362,6 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 	xstmt pstmt;
 	char sql_string[256];
 	DOUBLE_LIST_NODE *pnode;
-	const GUID *phandle_guid;
 	DB_NOTIFY_DATAGRAM datagram;
 	DB_NOTIFY_HIERARCHY_TABLE_ROW_ADDED *padded_row;
 	
@@ -2473,11 +2472,9 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 				continue;
 			}
 			if (ptable->table_flags & TABLE_FLAG_SUPPRESSNOTIFICATIONS) {
-				phandle_guid = exmdb_server_get_handle();
-				if (NULL != phandle_guid && 0 == guid_compare(
-					phandle_guid, &ptable->handle_guid)) {
+				auto h = exmdb_server_get_handle();
+				if (h != nullptr && *h == ptable->handle_guid)
 					continue;
-				}
 			}
 			padded_row->after_folder_id = folder_id1;
 		} else {
@@ -2492,11 +2489,9 @@ static void db_engine_notify_hierarchy_table_add_row(db_item_ptr &pdb,
 				continue;
 			}
 			if (ptable->table_flags & TABLE_FLAG_SUPPRESSNOTIFICATIONS) {
-				phandle_guid = exmdb_server_get_handle();
-				if (NULL != phandle_guid && 0 == guid_compare(
-					phandle_guid, &ptable->handle_guid)) {
+				auto h = exmdb_server_get_handle();
+				if (h != nullptr && *h == ptable->handle_guid)
 					continue;
-				}
 			}
 			idx = sqlite3_last_insert_rowid(pdb->tables.psqlite);
 			if (1 == idx) {
@@ -3284,7 +3279,6 @@ static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
 	TABLE_NODE *ptable;
 	char sql_string[256];
 	DOUBLE_LIST_NODE *pnode;
-	const GUID *phandle_guid;
 	DB_NOTIFY_DATAGRAM datagram;
 	DB_NOTIFY_HIERARCHY_TABLE_ROW_DELETED *pdeleted_row;
 	
@@ -3330,11 +3324,9 @@ static void db_engine_notify_hierarchy_table_delete_row(db_item_ptr &pdb,
 			continue;
 		}
 		if (ptable->table_flags & TABLE_FLAG_SUPPRESSNOTIFICATIONS) {
-			phandle_guid = exmdb_server_get_handle();
-			if (NULL != phandle_guid && 0 == guid_compare(
-				phandle_guid, &ptable->handle_guid)) {
+			auto h = exmdb_server_get_handle();
+			if (h != nullptr && *h == ptable->handle_guid)
 				continue;
-			}
 		}
 		if (NULL == pdeleted_row) {
 			datagram.dir = deconst(exmdb_server_get_dir());
@@ -4155,7 +4147,6 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 	TABLE_NODE *ptable;
 	char sql_string[256];
 	DOUBLE_LIST_NODE *pnode;
-	const GUID *phandle_guid;
 	DB_NOTIFY_DATAGRAM datagram;
 	DB_NOTIFY_DATAGRAM datagram1;
 	DB_NOTIFY_DATAGRAM datagram2;
@@ -4214,11 +4205,9 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 					continue;
 				}
 				if (ptable->table_flags & TABLE_FLAG_SUPPRESSNOTIFICATIONS) {
-					phandle_guid = exmdb_server_get_handle();
-					if (NULL != phandle_guid && 0 == guid_compare(
-						phandle_guid, &ptable->handle_guid)) {
+					auto h = exmdb_server_get_handle();
+					if (h != nullptr && *h == ptable->handle_guid)
 						continue;
-					}
 				}
 				idx = sqlite3_last_insert_rowid(pdb->tables.psqlite);
 				if (1 == idx) {
@@ -4263,11 +4252,9 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 				continue;
 			}
 			if (ptable->table_flags & TABLE_FLAG_SUPPRESSNOTIFICATIONS) {
-				phandle_guid = exmdb_server_get_handle();
-				if (NULL != phandle_guid && 0 == guid_compare(
-					phandle_guid, &ptable->handle_guid)) {
+				auto h = exmdb_server_get_handle();
+				if (h != nullptr && *h == ptable->handle_guid)
 					continue;
-				}
 			}
 			if (NULL == pdeleted_row) {
 				datagram1.dir = deconst(exmdb_server_get_dir());
@@ -4291,11 +4278,9 @@ static void db_engine_notify_hierarchy_table_modify_row(db_item_ptr &pdb,
 			continue;
 		}
 		if (ptable->table_flags & TABLE_FLAG_SUPPRESSNOTIFICATIONS) {
-			phandle_guid = exmdb_server_get_handle();
-			if (NULL != phandle_guid && 0 == guid_compare(
-				phandle_guid, &ptable->handle_guid)) {
+			auto h = exmdb_server_get_handle();
+			if (h != nullptr && *h == ptable->handle_guid)
 				continue;
-			}
 		}
 		if (NULL == pmodified_row) {
 			datagram.dir = deconst(exmdb_server_get_dir());

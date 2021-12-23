@@ -898,9 +898,8 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 		return ecError;
 	}
 	auto tmp_guid = plogon->guid();
-	if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
+	if (tmp_guid != tmp_xid.guid)
 		return ecInvalidParam;
-	}
 	auto message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 	if (!exmdb_client_check_message(plogon->get_dir(), folder_id,
 	    message_id, &b_exist))
@@ -1054,9 +1053,8 @@ uint32_t rop_syncimportreadstatechanges(uint16_t count,
 			return ecError;
 		}
 		auto tmp_guid = plogon->guid();
-		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
+		if (tmp_guid != tmp_xid.guid)
 			continue;
-		}
 		auto message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		if (NULL != username) {
 			if (!exmdb_client_check_message_owner(plogon->get_dir(),
@@ -1167,14 +1165,12 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 		}
 		if (plogon->check_private()) {
 			auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
-			if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
+			if (tmp_guid != tmp_xid.guid)
 				return ecInvalidParam;
-			}
 		} else {
 			auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
-			if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
+			if (tmp_guid != tmp_xid.guid)
 				return ecAccessDenied;
-			}
 		}
 		parent_id1 = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		if (!exmdb_client_get_folder_property(plogon->get_dir(), 0,
@@ -1195,13 +1191,12 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 	}
 	if (plogon->check_private()) {
 		auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
-		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
+		if (tmp_guid != tmp_xid.guid)
 			return ecInvalidParam;
-		}
 		folder_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 	} else {
 		auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
-		if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
+		if (tmp_guid != tmp_xid.guid) {
 			auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
 			if (-1 == domain_id) {
 				return ecInvalidParam;
@@ -1425,19 +1420,17 @@ uint32_t rop_syncimportdeletes(uint8_t flags, const TPROPVAL_ARRAY *ppropvals,
 		}
 		if (plogon->check_private()) {
 			auto tmp_guid = rop_util_make_user_guid(plogon->account_id);
-			if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
+			if (tmp_guid != tmp_xid.guid)
 				return ecInvalidParam;
-			}
 			eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		} else if (sync_type == SYNC_TYPE_CONTENTS) {
 			auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
-			if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
+			if (tmp_guid != tmp_xid.guid)
 				return ecInvalidParam;
-			}
 			eid = rop_util_make_eid(1, tmp_xid.local_to_gc());
 		} else {
 			auto tmp_guid = rop_util_make_domain_guid(plogon->account_id);
-			if (0 != guid_compare(&tmp_guid, &tmp_xid.guid)) {
+			if (tmp_guid != tmp_xid.guid) {
 				auto domain_id = rop_util_get_domain_id(tmp_xid.guid);
 				if (-1 == domain_id) {
 					return ecInvalidParam;
@@ -1558,11 +1551,9 @@ uint32_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 		return ecError;
 	}
 	auto tmp_guid = plogon->guid();
-	if (0 != guid_compare(&tmp_guid, &xid_fsrc.guid) ||
-		0 != guid_compare(&tmp_guid, &xid_src.guid) ||
-		0 != guid_compare(&tmp_guid, &xid_dst.guid)) {
+	if (tmp_guid != xid_fsrc.guid || tmp_guid != xid_src.guid ||
+	    tmp_guid != xid_dst.guid)
 		return ecInvalidParam;
-	}
 	auto src_fid = rop_util_make_eid(1, xid_fsrc.local_to_gc());
 	auto src_mid = rop_util_make_eid(1, xid_src.local_to_gc());
 	auto dst_mid = rop_util_make_eid(1, xid_dst.local_to_gc());

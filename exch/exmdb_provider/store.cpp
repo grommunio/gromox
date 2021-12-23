@@ -505,14 +505,12 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 		return FALSE;
 	propnames.count = 3;
 	propnames.ppropname = propname_buff;
-	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[0].guid);
-	propname_buff[0].kind = MNID_ID;
+	for (size_t i = 0; i < arsizeof(propname_buff); ++i) {
+		propname_buff[i].guid = PSETID_ADDRESS;
+		propname_buff[i].kind = MNID_ID;
+	}
 	propname_buff[0].lid = PidLidEmail1EmailAddress;
-	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[1].guid);
-	propname_buff[1].kind = MNID_ID;
 	propname_buff[1].lid = PidLidEmail2EmailAddress;
-	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[2].guid);
-	propname_buff[2].kind = MNID_ID;
 	propname_buff[2].lid = PidLidEmail3EmailAddress;
 	if (FALSE == common_util_get_named_propids(pdb->psqlite,
 		FALSE, &propnames, &propids) || 3 != propids.count) {

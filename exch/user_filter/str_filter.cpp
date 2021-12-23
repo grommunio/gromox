@@ -440,11 +440,9 @@ void str_filter_console_talk(int argc, char **argv, char *result, int length)
 			return;
 		}
 		if (4 == argc && 0 == strcmp("dump", argv[2])) {
-			if (FALSE == temp_list_dump(argv[3])) {
-				snprintf(result, length, "550 fail to dump temporary list");
-			} else {
-				snprintf(result, length, "250 temporary list dump OK");
-			}
+			gx_strlcpy(result, temp_list_dump(argv[3]) ?
+			           "250 temporary list dump OK" :
+			           "550 fail to dump temporary list", length);
 			return;
 		}
 	}

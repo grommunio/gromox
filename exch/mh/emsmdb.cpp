@@ -528,7 +528,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 	auto string = cookie_parser_get(pparser, "sid");
 	if (string == nullptr || strlen(string) >= arsizeof(ctx.session_string))
 		return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
-	HX_strlcpy(ctx.session_string, string, arsizeof(ctx.session_string));
+	gx_strlcpy(ctx.session_string, string, arsizeof(ctx.session_string));
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "NotificationWait") != 0) {
 		string = cookie_parser_get(pparser, "sequence");
@@ -548,7 +548,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 		return ctx.error_responsecode(RC_NO_PRIVILEGE);
 	ctx.session_guid = ctx.session->session_guid;
 	if (strcasecmp(ctx.request_value, "Execute") == 0 &&
-	    guid_compare(&ctx.sequence_guid, &ctx.session->sequence_guid) != 0)
+	    ctx.sequence_guid != ctx.session->sequence_guid)
 		return ctx.error_responsecode(RC_INVALID_SEQUENCE);
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "Disconnect") != 0 &&

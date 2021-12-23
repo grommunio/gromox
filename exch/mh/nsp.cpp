@@ -385,7 +385,7 @@ uint32_t MhNspContext::getaddressbookurl(char* dest)
 		dest = std::get<getaddressbookurl_response>(response).server_url;
 	get_id_from_username(auth_info.username, &user_id);
 	memset(username1, 0, arsizeof(username1));
-	HX_strlcpy(username1, auth_info.username, arsizeof(username1));
+	gx_strlcpy(username1, auth_info.username, arsizeof(username1));
 	auto token = strchr(username1, '@');
 	HX_strlower(username1);
 	if (token != nullptr)
@@ -490,7 +490,7 @@ MhNspPlugin::ProcRes MhNspPlugin::loadCookies(MhNspContext& ctx)
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "Bind") !=0 &&
 	    strcasecmp(ctx.request_value, "Unbind") != 0 &&
-	    guid_compare(&ctx.sequence_guid, &ctx.session->sequence_guid) != 0)
+	    ctx.sequence_guid != ctx.session->sequence_guid)
 			return ctx.error_responsecode(RC_INVALID_SEQUENCE);
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "Unbind") != 0) {

@@ -110,7 +110,7 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 		if (TRUE == pcontext->is_login) {
 			return 1720;
 		}
-		auto umx = std::min(static_cast<size_t>(line_length - 5), GX_ARRAY_SIZE(pcontext->username) - 1);
+		auto umx = std::min(static_cast<size_t>(line_length - 5), arsizeof(pcontext->username) - 1);
 		memcpy(pcontext->username, cmd_line + 5, umx);
 		pcontext->username[umx] = '\0';
 		HX_strltrim(pcontext->username);
@@ -464,7 +464,7 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 		return 1708;
 	}
 	
-	gx_strlcpy(temp_buff, temp_command + 4, GX_ARRAY_SIZE(temp_buff));
+	gx_strlcpy(temp_buff, temp_command + 4, arsizeof(temp_buff));
 	HX_strltrim(temp_buff);
 	ptoken = strchr(temp_buff, ' ');
 	if (NULL == ptoken) {
@@ -528,7 +528,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 				return 1722 | DISPATCH_SHOULD_CLOSE;
 			}
 			}
-			string_length = gx_snprintf(temp_buff, GX_ARRAY_SIZE(temp_buff),
+			string_length = gx_snprintf(temp_buff, arsizeof(temp_buff),
 				"FOLDER-TOUCH %s inbox", pcontext->username);
 			system_services_broadcast_event(temp_buff);
 
