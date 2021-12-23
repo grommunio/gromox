@@ -64,48 +64,16 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-enum midb_cond {
-	CONDITION_ALL,
-	CONDITION_ANSWERED,
-	CONDITION_BCC,
-	CONDITION_BEFORE,
-	CONDITION_BODY,
-	CONDITION_CC,
-	CONDITION_DELETED,
-	CONDITION_DRAFT,
-	CONDITION_FLAGGED,
-	CONDITION_FROM,
-	CONDITION_HEADER,
-	CONDITION_ID,
-	CONDITION_KEYWORD,
-	CONDITION_LARGER,
-	CONDITION_NEW,
-	CONDITION_OLD,
-	CONDITION_ON,
-	CONDITION_RECENT,
-	CONDITION_SEEN,
-	CONDITION_SENTBEFORE,
-	CONDITION_SENTON,
-	CONDITION_SENTSINCE,
-	CONDITION_SINCE,
-	CONDITION_SMALLER,
-	CONDITION_SUBJECT,
-	CONDITION_TEXT,
-	CONDITION_TO,
-	CONDITION_UNANSWERED,
-	CONDITION_UID,
-	CONDITION_UNDELETED,
-	CONDITION_UNDRAFT,
-	CONDITION_UNFLAGGED,
-	CONDITION_UNKEYWORD,
-	CONDITION_UNSEEN,
-	CONDITION_XNONE,
+enum class midb_cond {
+	all, answered, bcc, before, body, cc, deleted, draft, flagged, from,
+	header, id, keyword, larger, is_new, old, on, recent, seen,
+	sent_before, sent_on, sent_since, since, smaller, subject, text, to,
+	unanswered, uid, undeleted, undraft, unflagged, unkeyword, unseen,
+	x_none,
 };
 
-enum midb_conj {
-	CONJUNCTION_AND,
-	CONJUNCTION_OR,
-	CONJUNCTION_NOT
+enum class midb_conj {
+	c_and, c_or, c_not,
 };
 
 namespace {
@@ -624,14 +592,14 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 	BOOL b_loaded;
 	BOOL b_result;
 	BOOL b_result1;
-	int conjunction;
+	midb_conj conjunction;
 	time_t tmp_time;
 	size_t temp_len;
 	char *ret_string;
 	int results[1024];
 	char temp_buff[1024];
 	char temp_buff1[1024];
-	int conjunctions[1024];
+	midb_conj conjunctions[1024];
 	DOUBLE_LIST_NODE *pnode;
 	KEYWORD_ENUM keyword_enum;
 	CONDITION_TREE* trees[1024];
@@ -654,10 +622,9 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 		pnode=double_list_get_after(ptree, pnode)) {
 		ptree_node = (CONDITION_TREE_NODE*)pnode->pdata;
 		conjunction = ptree_node->conjunction;
-		if ((TRUE == b_result && CONJUNCTION_OR == conjunction) ||
-			(FALSE == b_result && CONJUNCTION_AND == conjunction)) {
+		if ((b_result && conjunction == midb_conj::c_or) ||
+		    (!b_result && conjunction == midb_conj::c_and))
 			continue;
-		}
 		b_result1 = FALSE;
 		if (NULL != ptree_node->pbranch) {
 			PUSH_MATCH(ptree, pnode, conjunction, b_result)
@@ -665,12 +632,12 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 			goto PROC_BEGIN;
 		} else {
 			switch (ptree_node->condition) {
-			case CONDITION_ALL:
-			case CONDITION_KEYWORD:
-			case CONDITION_UNKEYWORD:
+			case midb_cond::all:
+			case midb_cond::keyword:
+			case midb_cond::unkeyword:
 				b_result1 = TRUE;
 				break;
-			case CONDITION_ANSWERED:
+			case midb_cond::answered:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -681,11 +648,11 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				}
 				break;
-			case CONDITION_BCC:
+			case midb_cond::bcc:
 				/* we do not support BCC field in mail digest,
 					BCC should not recorded in mail head */
 				break;
-			case CONDITION_BEFORE:
+			case midb_cond::before:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -698,7 +665,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				}
 				break;
-			case CONDITION_BODY: {
+			case midb_cond::body: {
 				if (FALSE == b_loaded) {
 					if (0 == mail_engine_get_digest(
 						psqlite, mid_string, digest_buff)) {
@@ -721,7 +688,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				}
 				break;
 			}
-			case CONDITION_CC:
+			case midb_cond::cc:
 				if (FALSE == b_loaded) {
 					if (0 == mail_engine_get_digest(
 						psqlite, mid_string, digest_buff)) {
@@ -742,7 +709,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					}
 				}
 				break;
-			case CONDITION_DELETED:
+			case midb_cond::deleted:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -753,7 +720,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				}
 				break;
-			case CONDITION_DRAFT:
+			case midb_cond::draft:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -764,7 +731,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				}
 				break;
-			case CONDITION_FLAGGED:
+			case midb_cond::flagged:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -775,7 +742,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				}
 				break;
-			case CONDITION_FROM:
+			case midb_cond::from:
 				if (FALSE == b_loaded) {
 					if (0 == mail_engine_get_digest(
 						psqlite, mid_string, digest_buff)) {
@@ -796,19 +763,19 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					}
 				}
 				break;
-			case CONDITION_HEADER:
+			case midb_cond::header:
 				snprintf(temp_buff1, 256, "%s/eml/%s",
 					common_util_get_maildir(), mid_string);
 				b_result1 = mail_engine_ct_search_head(charset,
 					temp_buff1, ((char**)ptree_node->pstatment)[0],
 					((char**)ptree_node->pstatment)[1]);
 				break;
-			case CONDITION_ID:
+			case midb_cond::id:
 				b_result1 = mail_engine_ct_hint_sequence(
 					(DOUBLE_LIST*)ptree_node->pstatment,
 					id, total_mail);
 				break;
-			case CONDITION_LARGER:
+			case midb_cond::larger:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -819,7 +786,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				    reinterpret_cast<size_t>(ptree_node->pstatment))
 					b_result1 = TRUE;
 				break;
-			case CONDITION_NEW:
+			case midb_cond::is_new:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -831,7 +798,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				}
 				break;
-			case CONDITION_OLD:
+			case midb_cond::old:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -842,7 +809,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				}
 				break;
-			case CONDITION_ON:
+			case midb_cond::on:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -856,7 +823,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				}
 				break;
-			case CONDITION_RECENT:
+			case midb_cond::recent:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -867,7 +834,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				}
 				break;
-			case CONDITION_SEEN:
+			case midb_cond::seen:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -878,7 +845,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				}
 				break;
-			case CONDITION_SENTBEFORE:
+			case midb_cond::sent_before:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -891,7 +858,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				}
 				break;
-			case CONDITION_SENTON:
+			case midb_cond::sent_on:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -905,7 +872,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				}
 				break;
-			case CONDITION_SENTSINCE:
+			case midb_cond::sent_since:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -918,7 +885,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				}
 				break;
-			case CONDITION_SINCE:
+			case midb_cond::since:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -931,7 +898,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				}
 				break;
-			case CONDITION_SMALLER:
+			case midb_cond::smaller:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -942,7 +909,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				    reinterpret_cast<size_t>(ptree_node->pstatment))
 					b_result1 = TRUE;
 				break;
-			case CONDITION_SUBJECT:
+			case midb_cond::subject:
 				if (FALSE == b_loaded) {
 					if (0 == mail_engine_get_digest(
 						psqlite, mid_string, digest_buff)) {
@@ -963,7 +930,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					}
 				}
 				break;
-			case CONDITION_TEXT: {
+			case midb_cond::text: {
 				if (FALSE == b_loaded) {
 					if (0 == mail_engine_get_digest(
 						psqlite, mid_string, digest_buff)) {
@@ -1050,7 +1017,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				}
 				break;
 			}
-			case CONDITION_TO:
+			case midb_cond::to:
 				if (FALSE == b_loaded) {
 					if (0 == mail_engine_get_digest(
 						psqlite, mid_string, digest_buff)) {
@@ -1071,7 +1038,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					}
 				}
 				break;
-			case CONDITION_UNANSWERED:
+			case midb_cond::unanswered:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -1082,7 +1049,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				}
 				break;
-			case CONDITION_UID:
+			case midb_cond::uid:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -1094,7 +1061,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					sqlite3_column_int64(pstmt_message, 2),
 					uidnext);
 				break;
-			case CONDITION_UNDELETED:
+			case midb_cond::undeleted:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -1105,7 +1072,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				}
 				break;
-			case CONDITION_UNDRAFT:
+			case midb_cond::undraft:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -1116,7 +1083,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				}
 				break;
-			case CONDITION_UNFLAGGED:
+			case midb_cond::unflagged:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -1127,7 +1094,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				}
 				break;
-			case CONDITION_UNSEEN:
+			case midb_cond::unseen:
 				sqlite3_reset(pstmt_message);
 				sqlite3_bind_text(pstmt_message,
 					1, mid_string, -1, SQLITE_STATIC);
@@ -1147,13 +1114,13 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 		
  RECURSION_POINT:
 		switch (conjunction) {
-		case CONJUNCTION_AND:
+		case midb_conj::c_and:
 			b_result = (b_result&&b_result1)?TRUE:FALSE;
 			break;
-		case CONJUNCTION_OR:
+		case midb_conj::c_or:
 			b_result = (b_result||b_result1)?TRUE:FALSE;
 			break;
-		case CONJUNCTION_NOT:
+		case midb_conj::c_not:
 			b_result = (b_result&&(!b_result1))?TRUE:FALSE;
 			break;
 		}
@@ -1251,16 +1218,16 @@ static int mail_engine_ct_compile_criteria(int argc,
 
 static inline bool cond_is_id(enum midb_cond x)
 {
-	return x == CONDITION_ID || x == CONDITION_UID;
+	return x == midb_cond::id || x == midb_cond::uid;
 }
 
 static inline bool cond_w_stmt(enum midb_cond x)
 {
-	return x == CONDITION_BCC || x == CONDITION_BODY ||
-	       x == CONDITION_CC || x == CONDITION_FROM ||
-	       x == CONDITION_KEYWORD || x == CONDITION_SUBJECT ||
-	       x == CONDITION_TEXT || x == CONDITION_TO ||
-	       x == CONDITION_UNKEYWORD;
+	return x == midb_cond::bcc || x == midb_cond::body ||
+	       x == midb_cond::cc || x == midb_cond::from ||
+	       x == midb_cond::keyword || x == midb_cond::subject ||
+	       x == midb_cond::text || x == midb_cond::to ||
+	       x == midb_cond::unkeyword;
 }
 
 static void mail_engine_ct_destroy_internal(DOUBLE_LIST *plist)
@@ -1281,7 +1248,7 @@ static void mail_engine_ct_destroy_internal(DOUBLE_LIST *plist)
 			} else if (cond_w_stmt(ptree_node->condition)) {
 				free(ptree_node->pstatment);
 				ptree_node->pstatment = NULL;
-			} else if (CONDITION_HEADER == ptree_node->condition) {
+			} else if (ptree_node->condition == midb_cond::header) {
 				free(((void**)ptree_node->pstatment)[0]);
 				free(((void**)ptree_node->pstatment)[1]);
 				free(ptree_node->pstatment);
@@ -1296,24 +1263,26 @@ static void mail_engine_ct_destroy_internal(DOUBLE_LIST *plist)
 
 static enum midb_cond cond_str_to_cond(const char *s)
 {
-#define E(kw) if (strcasecmp(s, #kw) == 0) return CONDITION_ ## kw
-	E(BCC);
-	E(BODY);
-	E(CC);
-	E(FROM);
-	E(KEYWORD);
-	E(SUBJECT);
-	E(TEXT);
-	E(TO);
-	E(UNKEYWORD);
-	E(BEFORE);
-	E(ON);
-	E(SENTBEFORE);
-	E(SENTON);
-	E(SENTSINCE);
-	E(SINCE);
+#define E(kw) if (strcasecmp(s, #kw) == 0) return midb_cond::kw
+#define E2(a, kw) if (strcasecmp(s, #a) == 0) return midb_cond::kw
+	E(bcc);
+	E(body);
+	E(cc);
+	E(from);
+	E(keyword);
+	E(subject);
+	E(text);
+	E(to);
+	E(unkeyword);
+	E(before);
+	E(on);
+	E2(sentbefore, sent_before);
+	E2(senton, sent_on);
+	E2(sentsince, sent_since);
+	E(since);
+#undef E2
 #undef E
-	return CONDITION_XNONE;
+	return midb_cond::x_none;
 }
 
 static DOUBLE_LIST* mail_engine_ct_build_internal(
@@ -1351,7 +1320,7 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 		ptree_node->node.pdata = ptree_node;
 		ptree_node->pbranch = NULL;
 		if (0 == strcasecmp(argv[i], "NOT")) {
-			ptree_node->conjunction = CONJUNCTION_NOT;
+			ptree_node->conjunction = midb_conj::c_not;
 			i ++;
 			if (i >= argc) {
 				free(ptree_node);
@@ -1359,7 +1328,7 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 				return NULL;
 			}
 		} else {
-			ptree_node->conjunction = CONJUNCTION_AND;
+			ptree_node->conjunction = midb_conj::c_and;
 		}
 		if (array_find_istr(kwlist1, argv[i])) {
 			ptree_node->condition = cond_str_to_cond(argv[i]);
@@ -1454,13 +1423,13 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 				mail_engine_ct_destroy_internal(plist1);
 				return NULL;
 			}
-			((CONDITION_TREE_NODE*)pnode->pdata)->conjunction = CONJUNCTION_OR;
+			static_cast<CONDITION_TREE_NODE *>(pnode->pdata)->conjunction = midb_conj::c_or;
 			ptree_node->pbranch = plist1;
 			i += tmp_argc1 - 1;
 		} else if (array_find_istr(kwlist3, argv[i])) {
 			ptree_node->condition = cond_str_to_cond(argv[i]);
 		} else if (0 == strcasecmp(argv[i], "HEADER")) {
-			ptree_node->condition = CONDITION_HEADER;
+			ptree_node->condition = midb_cond::header;
 			ptree_node->pstatment = me_alloc<char *>(2);
 			if (NULL == ptree_node->pstatment) {
 				free(ptree_node);
@@ -1484,9 +1453,9 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 		} else if (0 == strcasecmp(argv[i], "LARGER") ||
 			0 == strcasecmp(argv[i], "SMALLER")) {
 			if (0 == strcasecmp(argv[i], "LARGER")) {
-				ptree_node->condition = CONDITION_LARGER;
+				ptree_node->condition = midb_cond::larger;
 			} else {
-				ptree_node->condition = CONDITION_SMALLER;
+				ptree_node->condition = midb_cond::smaller;
 			}
 			i ++;
 			if (i + 1 > argc) {
@@ -1496,7 +1465,7 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 			}
 			ptree_node->pstatment = reinterpret_cast<void *>(strtol(argv[i], nullptr, 0));
 		} else if (0 == strcasecmp(argv[i], "UID")) {
-			ptree_node->condition = CONDITION_UID;
+			ptree_node->condition = midb_cond::uid;
 			i ++;
 			if (i + 1 > argc) {
 				free(ptree_node);
@@ -1517,7 +1486,7 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 				mail_engine_ct_destroy_internal(plist);
 				return NULL;
 			}
-			ptree_node->condition = CONDITION_ID;
+			ptree_node->condition = midb_cond::id;
 			ptree_node->pstatment = plist1;
 		}
 		double_list_append_as_tail(plist, &ptree_node->node);
