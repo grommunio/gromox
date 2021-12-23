@@ -98,7 +98,7 @@ BOOL mysql_adaptor_meta(const char *username, const char *password,
 	}
 
 	auto allowedsvc = strtoul(myrow[3], nullptr, 0);
-	if (!(allowedsvc & wantpriv)) {
+	if (wantpriv != 0 && !(allowedsvc & wantpriv)) {
 		snprintf(reason, length, "\"%s\" is not authorized to use service(s) %xh",
 		         username, wantpriv);
 		return false;
