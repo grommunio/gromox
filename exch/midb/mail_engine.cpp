@@ -64,7 +64,7 @@
 using namespace std::string_literals;
 using namespace gromox;
 
-enum {
+enum midb_cond {
 	CONDITION_ALL,
 	CONDITION_ANSWERED,
 	CONDITION_BCC,
@@ -98,10 +98,11 @@ enum {
 	CONDITION_UNDRAFT,
 	CONDITION_UNFLAGGED,
 	CONDITION_UNKEYWORD,
-	CONDITION_UNSEEN
+	CONDITION_UNSEEN,
+	CONDITION_XNONE,
 };
 
-enum {
+enum midb_conj {
 	CONJUNCTION_AND,
 	CONJUNCTION_OR,
 	CONJUNCTION_NOT
@@ -116,9 +117,9 @@ struct CONDITION_RESULT {
 
 struct CONDITION_TREE_NODE {
 	DOUBLE_LIST_NODE node;
-	int conjunction;
 	DOUBLE_LIST *pbranch;
-	int condition;
+	enum midb_conj conjunction;
+	enum midb_cond condition;
 	void *pstatment;
 };
 
@@ -220,6 +221,26 @@ static std::unordered_map<std::string, IDB_ITEM> g_hash_table;
 static DOUBLE_LIST *mail_engine_ct_parse_sequence(char *string);
 static BOOL mail_engine_ct_hint_sequence(DOUBLE_LIST *plist, unsigned int num, unsigned int max_uid);
 static void mail_engine_ct_free_sequence(DOUBLE_LIST *plist);
+
+static constexpr const char *special_folders[] = {"inbox", "draft", "sent", "trash", "junk"};
+
+template<typename T> static inline bool
+array_find_str(const T &kwlist, const char *s)
+{
+	for (const auto kw : kwlist)
+		if (strcmp(s, kw) == 0)
+			return true;
+	return false;
+}
+
+template<typename T> static inline bool
+array_find_istr(const T &kwlist, const char *s)
+{
+	for (const auto kw : kwlist)
+		if (strcasecmp(s, kw) == 0)
+			return true;
+	return false;
+}
 
 static int mail_engine_get_sequence_id()
 {
@@ -1152,6 +1173,14 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 static int mail_engine_ct_compile_criteria(int argc,
 	char **argv, int offset, char **argv_out)
 {
+	static constexpr const char *kwlist1[] =
+		{"ALL", "ANSWERED", "DELETED", "DRAFT", "FLAGGED", "NEW",
+		"OLD", "RECENT", "SEEN", "UNANSWERED", "UNDELETED", "UNDRAFT",
+		"UNFLAGGED", "UNSEEN"};
+	static constexpr const char *kwlist2[] =
+		{"BCC", "BEFORE", "BODY", "CC", "FROM", "KEYWORD", "LARGER",
+		"ON", "SENTBEFORE", "SENTON", "SENTSINCE", "SINCE", "SMALLER",
+		"SUBJECT", "TEXT", "TO", "UID", "UNKEYWORD"};
 	int i;
 	int tmp_argc;
 	int tmp_argc1;
@@ -1182,39 +1211,9 @@ static int mail_engine_ct_compile_criteria(int argc,
 			return -1;
 		}
 		return tmp_argc + tmp_argc1 + 1;
-	} else if (0 == strcasecmp(argv[i], "ALL") ||
-		0 == strcasecmp(argv[i], "ANSWERED") ||
-		0 == strcasecmp(argv[i], "DELETED") ||
-		0 == strcasecmp(argv[i], "DRAFT") ||
-		0 == strcasecmp(argv[i], "FLAGGED") ||
-		0 == strcasecmp(argv[i], "NEW") ||
-		0 == strcasecmp(argv[i], "OLD") ||
-		0 == strcasecmp(argv[i], "RECENT") ||
-		0 == strcasecmp(argv[i], "SEEN") ||
-		0 == strcasecmp(argv[i], "UNANSWERED") ||
-		0 == strcasecmp(argv[i], "UNDELETED") ||
-		0 == strcasecmp(argv[i], "UNDRAFT") ||
-		0 == strcasecmp(argv[i], "UNFLAGGED") ||
-		0 == strcasecmp(argv[i], "UNSEEN")) {
+	} else if (array_find_istr(kwlist1, argv[i])) {
 		return 1;
-	} else if (0 == strcasecmp(argv[i], "BCC") ||
-		0 == strcasecmp(argv[i], "BEFORE") ||
-		0 == strcasecmp(argv[i], "BODY") ||
-		0 == strcasecmp(argv[i], "CC") ||
-		0 == strcasecmp(argv[i], "FROM") ||
-		0 == strcasecmp(argv[i], "KEYWORD") ||
-		0 == strcasecmp(argv[i], "LARGER") ||
-		0 == strcasecmp(argv[i], "ON") ||
-		0 == strcasecmp(argv[i], "SENTBEFORE") ||
-		0 == strcasecmp(argv[i], "SENTON") ||
-		0 == strcasecmp(argv[i], "SENTSINCE") ||
-		0 == strcasecmp(argv[i], "SINCE") ||
-		0 == strcasecmp(argv[i], "SMALLER") ||
-		0 == strcasecmp(argv[i], "SUBJECT") ||
-		0 == strcasecmp(argv[i], "TEXT") ||
-		0 == strcasecmp(argv[i], "TO") ||
-		0 == strcasecmp(argv[i], "UID") ||
-		0 == strcasecmp(argv[i], "UNKEYWORD")) {
+	} else if (array_find_istr(kwlist2, argv[i])) {
 		i ++;
 		if (argc < i + 1) {
 			return -1;
@@ -1250,6 +1249,20 @@ static int mail_engine_ct_compile_criteria(int argc,
 	}
 }
 
+static inline bool cond_is_id(enum midb_cond x)
+{
+	return x == CONDITION_ID || x == CONDITION_UID;
+}
+
+static inline bool cond_w_stmt(enum midb_cond x)
+{
+	return x == CONDITION_BCC || x == CONDITION_BODY ||
+	       x == CONDITION_CC || x == CONDITION_FROM ||
+	       x == CONDITION_KEYWORD || x == CONDITION_SUBJECT ||
+	       x == CONDITION_TEXT || x == CONDITION_TO ||
+	       x == CONDITION_UNKEYWORD;
+}
+
 static void mail_engine_ct_destroy_internal(DOUBLE_LIST *plist)
 {
 	DOUBLE_LIST_NODE *pnode;
@@ -1261,20 +1274,11 @@ static void mail_engine_ct_destroy_internal(DOUBLE_LIST *plist)
 			mail_engine_ct_destroy_internal(ptree_node->pbranch);
 			ptree_node->pbranch = NULL;
 		} else {
-			if (CONDITION_ID == ptree_node->condition ||
-				CONDITION_UID == ptree_node->condition) {
+			if (cond_is_id(ptree_node->condition)) {
 				mail_engine_ct_free_sequence(
 					(DOUBLE_LIST*)ptree_node->pstatment);
 				ptree_node->pstatment = NULL;
-			} else if (CONDITION_BCC == ptree_node->condition ||
-				CONDITION_BODY == ptree_node->condition ||
-				CONDITION_CC == ptree_node->condition ||
-				CONDITION_FROM == ptree_node->condition ||
-				CONDITION_KEYWORD == ptree_node->condition ||
-				CONDITION_SUBJECT == ptree_node->condition ||
-				CONDITION_TEXT == ptree_node->condition ||
-				CONDITION_TO == ptree_node->condition ||
-				CONDITION_UNKEYWORD == ptree_node->condition) {
+			} else if (cond_w_stmt(ptree_node->condition)) {
 				free(ptree_node->pstatment);
 				ptree_node->pstatment = NULL;
 			} else if (CONDITION_HEADER == ptree_node->condition) {
@@ -1290,9 +1294,40 @@ static void mail_engine_ct_destroy_internal(DOUBLE_LIST *plist)
 	free(plist);
 }
 
+static enum midb_cond cond_str_to_cond(const char *s)
+{
+#define E(kw) if (strcasecmp(s, #kw) == 0) return CONDITION_ ## kw
+	E(BCC);
+	E(BODY);
+	E(CC);
+	E(FROM);
+	E(KEYWORD);
+	E(SUBJECT);
+	E(TEXT);
+	E(TO);
+	E(UNKEYWORD);
+	E(BEFORE);
+	E(ON);
+	E(SENTBEFORE);
+	E(SENTON);
+	E(SENTSINCE);
+	E(SINCE);
+#undef E
+	return CONDITION_XNONE;
+}
+
 static DOUBLE_LIST* mail_engine_ct_build_internal(
 	const char *charset, int argc, char **argv)
 {
+	static constexpr const char *kwlist1[] =
+		{"BCC", "BODY", "CC", "FROM", "KEYWORD", "SUBJECT", "TEXT",
+		"TO", "UNKEYWORD"};
+	static constexpr const char *kwlist2[] =
+		{"BEFORE", "ON", "SENTBEFORE", "SENTON", "SENTSINCE", "SINCE"};
+	static constexpr const char *kwlist3[] =
+		{"ALL", "ANSWERED", "DELETED", "DRAFT", "FLAGGED", "NEW",
+		"OLD", "RECENT", "SEEN", "UNANSWERED", "UNDELETED", "UNDRAFT",
+		"UNFLAGGED", "UNSEEN"};
 	int i, len;
 	int tmp_argc;
 	int tmp_argc1;
@@ -1326,34 +1361,8 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 		} else {
 			ptree_node->conjunction = CONJUNCTION_AND;
 		}
-		if (0 == strcasecmp(argv[i], "BCC") ||
-			0 == strcasecmp(argv[i], "BODY") ||
-			0 == strcasecmp(argv[i], "CC") ||
-			0 == strcasecmp(argv[i], "FROM") ||
-			0 == strcasecmp(argv[i], "KEYWORD") ||
-			0 == strcasecmp(argv[i], "SUBJECT") ||
-			0 == strcasecmp(argv[i], "TEXT") ||
-			0 == strcasecmp(argv[i], "TO") ||
-			0 == strcasecmp(argv[i], "UNKEYWORD")) {
-			if (0 == strcasecmp(argv[i], "BCC")) {
-				ptree_node->condition = CONDITION_BCC;
-			} else if (0 == strcasecmp(argv[i], "BODY")) {
-				ptree_node->condition = CONDITION_BODY;
-			} else if (0 == strcasecmp(argv[i], "CC")) {
-				ptree_node->condition = CONDITION_CC;
-			} else if (0 == strcasecmp(argv[i], "FROM")) {
-				ptree_node->condition = CONDITION_FROM;
-			} else if (0 == strcasecmp(argv[i], "KEYWORD")) {
-				ptree_node->condition = CONDITION_KEYWORD;
-			} else if (0 == strcasecmp(argv[i], "SUBJECT")) {
-				ptree_node->condition = CONDITION_SUBJECT;
-			} else if (0 == strcasecmp(argv[i], "TEXT")) {
-				ptree_node->condition = CONDITION_TEXT;
-			} else if (0 == strcasecmp(argv[i], "TO")) {
-				ptree_node->condition = CONDITION_TO;
-			} else if (0 == strcasecmp(argv[i], "UNKEYWORD")) {
-				ptree_node->condition = CONDITION_UNKEYWORD;
-			}
+		if (array_find_istr(kwlist1, argv[i])) {
+			ptree_node->condition = cond_str_to_cond(argv[i]);
 			i ++;
 			if (i + 1 > argc) {
 				free(ptree_node);
@@ -1366,30 +1375,13 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 				mail_engine_ct_destroy_internal(plist);
 				return NULL;
 			}
-		} else if (0 == strcasecmp(argv[i], "BEFORE") ||
-			0 == strcasecmp(argv[i], "ON") ||
-			0 == strcasecmp(argv[i], "SENTBEFORE") ||
-			0 == strcasecmp(argv[i], "SENTON") ||
-			0 == strcasecmp(argv[i], "SENTSINCE") ||
-			0 == strcasecmp(argv[i], "SINCE")) {
+		} else if (array_find_istr(kwlist2, argv[i])) {
 			if (i + 1 > argc) {
 				free(ptree_node);
 				mail_engine_ct_destroy_internal(plist);
 				return NULL;
 			}
-			if (0 == strcasecmp(argv[i], "BEFORE")) {
-				ptree_node->condition = CONDITION_BEFORE;
-			} else if (0 == strcasecmp(argv[i], "ON")) {
-				ptree_node->condition = CONDITION_ON;
-			} else if (0 == strcasecmp(argv[i], "SENTBEFORE")) {
-				ptree_node->condition = CONDITION_SENTBEFORE;
-			} else if (0 == strcasecmp(argv[i], "SENTON")) {
-				ptree_node->condition = CONDITION_SENTON;
-			} else if (0 == strcasecmp(argv[i], "SENTSINCE")) {
-				ptree_node->condition = CONDITION_SENTSINCE;
-			} else if (0 == strcasecmp(argv[i], "SINCE")) {
-				ptree_node->condition = CONDITION_SINCE;
-			}
+			ptree_node->condition = cond_str_to_cond(argv[i]);
 			i ++;
 			if (i + 1 > argc) {
 				free(ptree_node);
@@ -1465,34 +1457,8 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 			((CONDITION_TREE_NODE*)pnode->pdata)->conjunction = CONJUNCTION_OR;
 			ptree_node->pbranch = plist1;
 			i += tmp_argc1 - 1;
-		} else if (0 == strcasecmp(argv[i], "ALL")) {
-			ptree_node->condition = CONDITION_ALL;
-		} else if (0 == strcasecmp(argv[i], "ANSWERED")) {
-			ptree_node->condition = CONDITION_ANSWERED;
-		} else if (0 == strcasecmp(argv[i], "DELETED")) {
-			ptree_node->condition = CONDITION_DELETED;
-		} else if (0 == strcasecmp(argv[i], "DRAFT")) {
-			ptree_node->condition = CONDITION_DRAFT;
-		} else if (0 == strcasecmp(argv[i], "FLAGGED")) {
-			ptree_node->condition = CONDITION_FLAGGED;
-		} else if (0 == strcasecmp(argv[i], "NEW")) {
-			ptree_node->condition = CONDITION_NEW;
-		} else if (0 == strcasecmp(argv[i], "OLD")) {
-			ptree_node->condition = CONDITION_OLD;
-		} else if (0 == strcasecmp(argv[i], "RECENT")) {
-			ptree_node->condition = CONDITION_RECENT;
-		} else if (0 == strcasecmp(argv[i], "SEEN")) {
-			ptree_node->condition = CONDITION_SEEN;
-		} else if (0 == strcasecmp(argv[i], "UNANSWERED")) {
-			ptree_node->condition = CONDITION_UNANSWERED;
-		} else if (0 == strcasecmp(argv[i], "UNDELETED")) {
-			ptree_node->condition = CONDITION_UNDELETED;
-		} else if (0 == strcasecmp(argv[i], "UNDRAFT")) {
-			ptree_node->condition = CONDITION_UNDRAFT;
-		} else if (0 == strcasecmp(argv[i], "UNFLAGGED")) {
-			ptree_node->condition = CONDITION_UNFLAGGED;
-		} else if (0 == strcasecmp(argv[i], "UNSEEN")) {
-			ptree_node->condition = CONDITION_UNSEEN;
+		} else if (array_find_istr(kwlist3, argv[i])) {
+			ptree_node->condition = cond_str_to_cond(argv[i]);
 		} else if (0 == strcasecmp(argv[i], "HEADER")) {
 			ptree_node->condition = CONDITION_HEADER;
 			ptree_node->pstatment = me_alloc<char *>(2);
@@ -3553,13 +3519,8 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 		|| strlen(argv[3]) >= 1024 || 0 == strcmp(argv[2], argv[3])) {
 		return MIDB_E_PARAMETER_ERROR;
 	}
-	if (0 == strcmp(argv[2], "inbox") ||
-		0 == strcmp(argv[2], "draft") ||
-		0 == strcmp(argv[2], "sent") ||
-		0 == strcmp(argv[2], "trash") ||
-		0 == strcmp(argv[2], "junk")) {
+	if (array_find_str(special_folders, argv[2]))
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	if (FALSE == decode_hex_binary(argv[3], decoded_name, 512)) {
 		return MIDB_E_PARAMETER_ERROR;
 	}
@@ -3758,13 +3719,8 @@ static int mail_engine_mremf(int argc, char **argv, int sockd)
 	if (3 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
 		return MIDB_E_PARAMETER_ERROR;
 	}
-	if (0 == strcmp(argv[2], "inbox") ||
-		0 == strcmp(argv[2], "draft") ||
-		0 == strcmp(argv[2], "sent") ||
-		0 == strcmp(argv[2], "trash") ||
-		0 == strcmp(argv[2], "junk")) {
+	if (array_find_str(special_folders, argv[2]))
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -3923,19 +3879,10 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	if (5 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
 		return MIDB_E_PARAMETER_ERROR;
 	}
-	if (0 == strcasecmp(argv[3], "RCV") ||
-		0 == strcasecmp(argv[3], "SUB") ||
-		0 == strcasecmp(argv[3], "FRM") ||
-		0 == strcasecmp(argv[3], "RCP") ||
-		0 == strcasecmp(argv[3], "SIZ") ||
-		0 == strcasecmp(argv[3], "RED") ||
-		0 == strcasecmp(argv[3], "FLG") ||
-		0 == strcasecmp(argv[3], "UID") ||
-		0 == strcasecmp(argv[3], "NON")) {
-		/* do nothing */
-	} else {
+	static constexpr char accept_kw[][4] =
+		{"RCV", "SUB", "FRM", "RCP", "SIZ", "RED", "FLG", "UID", "NON"};
+	if (!array_find_istr(accept_kw, argv[3]))
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	if (0 == strcasecmp(argv[4], "ASC")) {
 		b_asc = TRUE;
 	} else if (0 == strcasecmp(argv[4], "DSC")) {
