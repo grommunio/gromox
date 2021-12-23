@@ -319,12 +319,8 @@ static void *midcl_thrwork(void *pparam)
 			tmp_bin.cb = buff_len;
 			tmp_bin.pb = buff;
 			common_util_build_environment("");
-			if (EXT_ERR_SUCCESS == exmdb_ext_pull_db_notify(
-			    &tmp_bin, &notify)) {
-				resp_code = exmdb_response::SUCCESS;
-			} else {
-				resp_code = exmdb_response::PULL_ERROR;
-			}
+			resp_code = exmdb_ext_pull_db_notify(&tmp_bin, &notify) == EXT_ERR_SUCCESS ?
+			            exmdb_response::SUCCESS : exmdb_response::PULL_ERROR;
 			if (1 != write(pagent->sockd, &resp_code, 1)) {
 				close(pagent->sockd);
 				pagent->sockd = -1;
