@@ -1123,7 +1123,7 @@ static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
 			*ptoken = '\0';
 			ptoken ++;
 			if (TRUE == guid_from_string(&tmp_guid, field + 13)) {
-				rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+				propname.guid = PSETID_COMMON;
 				propname.kind = MNID_ID;
 				propname.lid = PidLidInfoPathFromName;
 				if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
@@ -1137,7 +1137,7 @@ static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
 		snprintf(tmp_class, arsizeof(tmp_class), "IPM.InfoPathForm.%s", field + 13);
 		mclass = tmp_class;
 	} else {
-		rop_util_get_common_pset(PS_INTERNET_HEADERS, &propname.guid);
+		propname.guid = PS_INTERNET_HEADERS;
 		propname.kind = MNID_STRING;
 		propname.pname = deconst(PidNameContentClass);
 		if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
@@ -1161,7 +1161,7 @@ static BOOL oxcmail_parse_message_flag(char *field, uint16_t *plast_propid,
 	uint32_t tmp_int32;
 	PROPERTY_NAME propname;
 	
-	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.guid = PSETID_COMMON;
 	propname.kind = MNID_ID;
 	propname.lid = PidLidFlagRequest;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
@@ -1182,7 +1182,7 @@ static BOOL oxcmail_parse_message_flag(char *field, uint16_t *plast_propid,
 		pvalue = pproplist->getval(PR_SUBJECT_A);
 	}
 	if (NULL != pvalue) {
-		rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+		propname.guid = PSETID_COMMON;
 		propname.kind = MNID_ID;
 		propname.lid = PidLidFlagRequest;
 		if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
@@ -1193,7 +1193,7 @@ static BOOL oxcmail_parse_message_flag(char *field, uint16_t *plast_propid,
 		(*plast_propid) ++;
 	}
 	
-	rop_util_get_common_pset(PSETID_TASK, &propname.guid);
+	propname.guid = PSETID_TASK;
 	propname.kind = MNID_ID;
 	propname.lid = PidLidTaskStatus;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
@@ -1203,7 +1203,7 @@ static BOOL oxcmail_parse_message_flag(char *field, uint16_t *plast_propid,
 		return FALSE;
 	(*plast_propid) ++;
 	
-	rop_util_get_common_pset(PSETID_TASK, &propname.guid);
+	propname.guid = PSETID_TASK;
 	propname.kind = MNID_ID;
 	propname.lid = PidLidTaskComplete;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
@@ -1213,7 +1213,7 @@ static BOOL oxcmail_parse_message_flag(char *field, uint16_t *plast_propid,
 		return FALSE;
 	(*plast_propid) ++;
 	
-	rop_util_get_common_pset(PSETID_TASK, &propname.guid);
+	propname.guid = PSETID_TASK;
 	propname.kind = MNID_ID;
 	propname.lid = PidLidPercentComplete;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
@@ -1233,7 +1233,7 @@ static BOOL oxcmail_parse_classified(char *field, uint16_t *plast_propid,
 	PROPERTY_NAME propname;
 	
 	if (0 == strcasecmp(field, "true")) {
-		rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+		propname.guid = PSETID_COMMON;
 		propname.kind = MNID_ID;
 		propname.lid = PidLidClassified;
 		if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
@@ -1253,7 +1253,7 @@ static BOOL oxcmail_parse_classkeep(char *field, uint16_t *plast_propid,
 	PROPERTY_NAME propname;
 	
 	if (0 == strcasecmp(field, "true") || 0 == strcasecmp(field, "false")) {
-		rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+		propname.guid = PSETID_COMMON;
 		propname.kind = MNID_ID;
 		propname.lid = PidLidClassificationKeep;
 		if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
@@ -1275,7 +1275,7 @@ static BOOL oxcmail_parse_classification(char *field, uint16_t *plast_propid,
 {
 	PROPERTY_NAME propname;
 	
-	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.guid = PSETID_COMMON;
 	propname.kind = MNID_ID;
 	propname.lid = PidLidClassification;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
@@ -1292,7 +1292,7 @@ static BOOL oxcmail_parse_classdesc(char *field, uint16_t *plast_propid,
 {
 	PROPERTY_NAME propname;
 	
-	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.guid = PSETID_COMMON;
 	propname.kind = MNID_ID;
 	propname.lid = PidLidClassificationDescription;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
@@ -1309,7 +1309,7 @@ static BOOL oxcmail_parse_classid(char *field, uint16_t *plast_propid,
 {
 	PROPERTY_NAME propname;
 	
-	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.guid = PSETID_COMMON;
 	propname.kind = MNID_ID;
 	propname.lid = PidLidClassificationGuid;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
@@ -1519,7 +1519,7 @@ static BOOL oxcmail_enum_mail_head(
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "Accept-Language") ||
 		0 == strcasecmp(tag, "X-Accept-Language")) {
-		rop_util_get_common_pset(PS_INTERNET_HEADERS, &propname.guid);
+		propname.guid = PS_INTERNET_HEADERS;
 		propname.kind = MNID_STRING;
 		propname.pname = deconst("Accept-Language");
 		if (namemap_add(penum_param->phash, penum_param->last_propid,
@@ -1530,7 +1530,7 @@ static BOOL oxcmail_enum_mail_head(
 			return FALSE;
 		penum_param->last_propid ++;
 	} else if (0 == strcasecmp(tag, "Keywords")) {
-		rop_util_get_common_pset(PS_PUBLIC_STRINGS, &propname.guid);
+		propname.guid = PS_PUBLIC_STRINGS;
 		propname.kind = MNID_STRING;
 		propname.pname = deconst(PidNameKeywords);
 		if (namemap_add(penum_param->phash, penum_param->last_propid,
@@ -1716,7 +1716,7 @@ static BOOL oxcmail_enum_mail_head(
 				return FALSE;
 		}
 	} else if (0 == strcasecmp(tag, "Content-Base")) {
-		rop_util_get_common_pset(PS_INTERNET_HEADERS, &propname.guid);
+		propname.guid = PS_INTERNET_HEADERS;
 		propname.kind = MNID_STRING;
 		propname.pname = deconst("Content-Base");
 		if (namemap_add(penum_param->phash, penum_param->last_propid,
@@ -1738,7 +1738,7 @@ static BOOL oxcmail_enum_mail_head(
 		0 == strcasecmp(tag, "X-MS-Exchange-Organization-AuthSource") ||
 		0 == strcasecmp(tag, "X-Mailer") ||
 		0 == strcasecmp(tag, "User-Agent")) {
-		rop_util_get_common_pset(PS_INTERNET_HEADERS, &propname.guid);
+		propname.guid = PS_INTERNET_HEADERS;
 		propname.kind = MNID_STRING;
 		propname.pname = static_cast<char *>(penum_param->alloc(strlen(tag) + 1));
 		if (NULL == propname.pname) {
@@ -1960,7 +1960,7 @@ static BOOL oxcmail_parse_binhex(MIME *pmime, ATTACHMENT_CONTENT *pattachment,
 		binhex_clear(&binhex);
 		return FALSE;
 	}
-	rop_util_get_common_pset(PSETID_ATTACHMENT, &propname.guid);
+	propname.guid = PSETID_ATTACHMENT;
 	propname.kind = MNID_STRING;
 	propname.pname = deconst(PidNameAttachmentMacInfo);
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0) {
@@ -2035,7 +2035,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 	tmp_bin.pb = deconst(MACBINARY_ENCODING);
 	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
 		return FALSE;
-	rop_util_get_common_pset(PSETID_ATTACHMENT, &propname.guid);
+	propname.guid = PSETID_ATTACHMENT;
 	propname.kind = MNID_STRING;
 	propname.pname = deconst(PidNameAttachmentMacContentType);
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
@@ -2057,7 +2057,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 		free(pcontent);
 		return FALSE;
 	}
-	rop_util_get_common_pset(PSETID_ATTACHMENT, &propname.guid);
+	propname.guid = PSETID_ATTACHMENT;
 	propname.kind = MNID_STRING;
 	propname.pname = deconst(PidNameAttachmentMacInfo);
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0) {
@@ -2185,7 +2185,7 @@ static BOOL oxcmail_parse_macbinary(MIME *pmime,
 		free(pcontent);
 		return FALSE;
 	}
-	rop_util_get_common_pset(PSETID_ATTACHMENT, &propname.guid);
+	propname.guid = PSETID_ATTACHMENT;
 	propname.kind = MNID_STRING;
 	propname.pname = deconst(PidNameAttachmentMacInfo);
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0) {
@@ -2256,7 +2256,7 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 		free(pcontent);
 		return FALSE;
 	}
-	rop_util_get_common_pset(PSETID_ATTACHMENT, &propname.guid);
+	propname.guid = PSETID_ATTACHMENT;
 	propname.kind = MNID_STRING;
 	propname.pname = deconst(PidNameAttachmentMacInfo);
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0) {
@@ -2862,23 +2862,18 @@ static void oxcmail_remove_flag_propties(
 	MESSAGE_CONTENT *pmsg, GET_PROPIDS get_propids)
 {
 	PROPID_ARRAY propids;
-	PROPNAME_ARRAY propnames;
 	PROPERTY_NAME propname_buff[3];
+	PROPNAME_ARRAY propnames;
 	
 	pmsg->proplist.erase(PROP_TAG_FLAGCOMPLETETIME);
+	for (size_t i = 0; i < arsizeof(propname_buff); ++i) {
+		propname_buff[i].guid = PSETID_TASK;
+		propname_buff[i].kind = MNID_ID;
+	}
 	propnames.count = 3;
 	propnames.ppropname = propname_buff;
-	rop_util_get_common_pset(PSETID_TASK,
-		&propname_buff[0].guid);
-	propname_buff[0].kind = MNID_ID;
 	propname_buff[0].lid = PidLidTaskDueDate;
-	rop_util_get_common_pset(PSETID_TASK,
-		&propname_buff[1].guid);
-	propname_buff[1].kind = MNID_ID;
 	propname_buff[1].lid = PidLidTaskStartDate;
-	rop_util_get_common_pset(PSETID_TASK,
-		&propname_buff[2].guid);
-	propname_buff[2].kind = MNID_ID;
 	propname_buff[2].lid = PidLidTaskDateCompleted;
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return;
@@ -3505,7 +3500,7 @@ static BOOL oxcmail_parse_encrypted(MIME *phead, uint16_t *plast_propid,
 		"Content-Type", tmp_buff, 1024)) {
 		return FALSE;
 	}
-	rop_util_get_common_pset(PS_INTERNET_HEADERS, &propname.guid);
+	propname.guid = PS_INTERNET_HEADERS;
 	propname.kind = MNID_STRING;
 	propname.pname = deconst("Content-Type");
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0 ||
@@ -4164,7 +4159,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		 * all-hidden in O(1) without creating redundant information
 		 * like this property.
 		 */
-		rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+		propname.guid = PSETID_COMMON;
 		propname.kind = MNID_ID;
 		propname.lid = PidLidSmartNoAttach;
 		propnames.count = 1;
@@ -4632,7 +4627,6 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	MIME *phead)
 {
 	size_t tmp_len = 0;
-	GUID guid;
 	time_t tmp_time;
 	uint16_t propid;
 	uint32_t proptag;
@@ -4808,7 +4802,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	} else if (0 == strncasecmp(
 		pskeleton->pmessage_class,
 		"IPM.InfoPathForm.", 17)) {
-		rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+		propname.guid = PSETID_COMMON;
 		propname.kind = MNID_ID;
 		propname.lid = PidLidInfoPathFromName;
 		propnames.count = 1;
@@ -4996,7 +4990,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			return FALSE;
 		}
 	}
-	rop_util_get_common_pset(PS_PUBLIC_STRINGS, &propname.guid);
+	propname.guid = PS_PUBLIC_STRINGS;
 	propname.kind = MNID_STRING;
 	propname.pname = deconst(PidNameKeywords);
 	propnames.count = 1;
@@ -5061,7 +5055,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 				return FALSE;
 		}
 	}
-	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.guid = PSETID_COMMON;
 	propname.kind = MNID_ID;
 	propname.lid = PidLidClassified;
 	propnames.count = 1;
@@ -5078,7 +5072,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			return FALSE;
 		}
 	}
-	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.guid = PSETID_COMMON;
 	propname.kind = MNID_ID;
 	propname.lid = PidLidClassificationKeep;
 	propnames.count = 1;
@@ -5095,7 +5089,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			return FALSE;
 		}
 	}
-	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.guid = PSETID_COMMON;
 	propname.kind = MNID_ID;
 	propname.lid = PidLidClassification;
 	propnames.count = 1;
@@ -5111,7 +5105,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		    static_cast<char *>(pvalue)))
 			return FALSE;
 	}
-	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.guid = PSETID_COMMON;
 	propname.kind = MNID_ID;
 	propname.lid = PidLidClassificationDescription;
 	propnames.count = 1;
@@ -5127,7 +5121,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		    static_cast<char *>(pvalue)))
 			return FALSE;
 	}
-	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.guid = PSETID_COMMON;
 	propname.kind = MNID_ID;
 	propname.lid = PidLidClassificationGuid;
 	propnames.count = 1;
@@ -5299,7 +5293,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	rop_util_get_common_pset(PSETID_COMMON, &propname.guid);
+	propname.guid = PSETID_COMMON;
 	propname.kind = MNID_ID;
 	propname.lid = PidLidFlagRequest;
 	propnames.count = 1;
@@ -5368,7 +5362,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	}
 	
 	mime_set_field(phead, "X-Mailer", "gromox-oxcmail " PACKAGE_VERSION);
-	rop_util_get_common_pset(PS_INTERNET_HEADERS, &guid);
+	auto guid = PS_INTERNET_HEADERS;
 	for (size_t i = 0; i < pmsg->proplist.count; ++i) {
 		propid = PROP_ID(pmsg->proplist.ppropval[i].proptag);
 		if (!is_nameprop_id(propid))
@@ -5664,12 +5658,10 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 	}
 	propnames.count = 2;
 	propnames.ppropname = propname_buff;
-	rop_util_get_common_pset(PSETID_ATTACHMENT,
-		&propname_buff[0].guid);
+	propname_buff[0].guid = PSETID_ATTACHMENT;
 	propname_buff[0].kind = MNID_STRING;
 	propname_buff[0].pname = deconst(PidNameAttachmentMacInfo);
-	rop_util_get_common_pset(PSETID_ATTACHMENT,
-		&propname_buff[1].guid);
+	propname_buff[1].guid = PSETID_ATTACHMENT;
 	propname_buff[1].kind = MNID_STRING;
 	propname_buff[1].pname = deconst(PidNameAttachmentMacContentType);
 	if (FALSE == get_propids(&propnames, &propids)) {

@@ -182,8 +182,8 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 	int i;
 	uint8_t mapi_type;
 	PROPID_ARRAY propids;
-	PROPNAME_ARRAY propnames;
 	PROPERTY_NAME propname_buff[9];
+	PROPNAME_ARRAY propnames;
 	
 	auto pinfo = zarafa_server_get_info();
 	auto handle = pinfo->ptree->get_store_handle(TRUE, pinfo->user_id);
@@ -192,32 +192,18 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 		return FALSE;
 	propnames.count = 9;
 	propnames.ppropname = propname_buff;
-	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[0].guid);
-	propname_buff[0].kind = MNID_ID;
+	for (size_t i = 0; i < arsizeof(propname_buff); ++i) {
+		propname_buff[i].guid = PSETID_ADDRESS;
+		propname_buff[i].kind = MNID_ID;
+	}
 	propname_buff[0].lid = PidLidEmail1DisplayName;
-	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[1].guid);
-	propname_buff[1].kind = MNID_ID;
 	propname_buff[1].lid = PidLidEmail1AddressType;
-	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[2].guid);
-	propname_buff[2].kind = MNID_ID;
 	propname_buff[2].lid = PidLidEmail1EmailAddress;
-	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[3].guid);
-	propname_buff[3].kind = MNID_ID;
 	propname_buff[3].lid = PidLidEmail2DisplayName;
-	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[4].guid);
-	propname_buff[4].kind = MNID_ID;
 	propname_buff[4].lid = PidLidEmail2AddressType;
-	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[5].guid);
-	propname_buff[5].kind = MNID_ID;
 	propname_buff[5].lid = PidLidEmail2EmailAddress;
-	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[6].guid);
-	propname_buff[6].kind = MNID_ID;
 	propname_buff[6].lid = PidLidEmail3DisplayName;
-	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[7].guid);
-	propname_buff[7].kind = MNID_ID;
 	propname_buff[7].lid = PidLidEmail3AddressType;
-	rop_util_get_common_pset(PSETID_ADDRESS, &propname_buff[8].guid);
-	propname_buff[8].kind = MNID_ID;
 	propname_buff[8].lid = PidLidEmail3EmailAddress;
 	if (!pstore->get_named_propids(false, &propnames, &propids) ||
 	    propids.count != 9)

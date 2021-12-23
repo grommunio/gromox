@@ -696,7 +696,8 @@ static gi_name_map do_namemap(driver &drv)
 {
 	gi_name_map map;
 	static constexpr struct {
-		unsigned int psetid, lid_min, lid_max, base;
+		const GUID &guid;
+		unsigned int lid_min, lid_max, base;
 	} hardmapped_nprops[] = {
 		{PSETID_ADDRESS,          0x8000, 0x80EF, 0x80B0},
 		{PSETID_TASK,             0x8100, 0x813F, 0x8070},
@@ -714,7 +715,7 @@ static gi_name_map do_namemap(driver &drv)
 
 	for (const auto &row : hardmapped_nprops) {
 		pn.kind = MNID_ID;
-		rop_util_get_common_pset(row.psetid, &pn.guid);
+		pn.guid = row.guid;
 		for (pn.lid = row.lid_min; pn.lid < row.lid_max; ++pn.lid)
 			map.emplace(PROP_TAG(PT_UNSPECIFIED, pn.lid - row.lid_min + row.base), std::move(pn));
 	}

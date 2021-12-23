@@ -193,7 +193,7 @@ BOOL logon_object::get_named_propname(uint16_t propid, PROPERTY_NAME *ppropname)
 	PROPERTY_NAME *pname;
 	
 	if (propid < 0x8000) {
-		rop_util_get_common_pset(PS_MAPI, &ppropname->guid);
+		ppropname->guid = PS_MAPI;
 		ppropname->kind = MNID_ID;
 		ppropname->lid = propid;
 	}
@@ -243,8 +243,7 @@ BOOL logon_object::get_named_propnames(const PROPID_ARRAY *ppropids,
 	auto plogon = this;
 	for (i=0; i<ppropids->count; i++) {
 		if (ppropids->ppropid[i] < 0x8000) {
-			rop_util_get_common_pset(PS_MAPI,
-				&ppropnames->ppropname[i].guid);
+			ppropnames->ppropname[i].guid = PS_MAPI;
 			ppropnames->ppropname[i].kind = MNID_ID;
 			ppropnames->ppropname[i].lid = ppropids->ppropid[i];
 			pindex_map[i] = i;
@@ -282,10 +281,7 @@ BOOL logon_object::get_named_propnames(const PROPID_ARRAY *ppropids,
 BOOL logon_object::get_named_propid(BOOL b_create,
     const PROPERTY_NAME *ppropname, uint16_t *ppropid)
 {
-	GUID guid;
-	
-	rop_util_get_common_pset(PS_MAPI, &guid);
-	if (ppropname->guid == guid) {
+	if (ppropname->guid == PS_MAPI) {
 		*ppropid = ppropname->kind == MNID_ID ? ppropname->lid : 0;
 		return TRUE;
 	}
@@ -326,7 +322,6 @@ BOOL logon_object::get_named_propids(BOOL b_create,
     const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids)
 {
 	int i;
-	GUID guid;
 	PROPID_ARRAY tmp_propids;
 	PROPNAME_ARRAY tmp_propnames;
 	
@@ -334,7 +329,6 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 		ppropids->count = 0;
 		return TRUE;
 	}
-	rop_util_get_common_pset(PS_MAPI, &guid);
 	auto pindex_map = cu_alloc<int>(ppropnames->count);
 	if (NULL == pindex_map) {
 		return FALSE;
@@ -351,7 +345,7 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 	}
 	auto plogon = this;
 	for (i=0; i<ppropnames->count; i++) {
-		if (ppropnames->ppropname[i].guid == guid) {
+		if (ppropnames->ppropname[i].guid == PS_MAPI) {
 			ppropids->ppropid[i] = ppropnames->ppropname[i].kind == MNID_ID ?
 					       ppropnames->ppropname[i].lid : 0;
 			pindex_map[i] = i;

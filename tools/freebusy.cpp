@@ -1236,6 +1236,7 @@ static BOOL get_freebusy(const char *dir)
 	uint32_t pidlidlocation;
 	RESTRICTION restriction;
 	uint32_t pidlidrecurring;
+	PROPERTY_NAME tmp_propnames[13];
 	PROPNAME_ARRAY propnames;
 	uint32_t tmp_proptags[13];
 	uint32_t pidlidbusystatus;
@@ -1248,7 +1249,6 @@ static BOOL get_freebusy(const char *dir)
 	uint32_t pidlidtimezonestruct;
 	uint32_t pidlidglobalobjectid;
 	uint32_t pidlidappointmentrecur;
-	PROPERTY_NAME tmp_propnames[13];
 	uint32_t pidlidappointmentsubtype;
 	uint32_t pidlidappointmentendwhole;
 	uint32_t pidlidappointmentstateflags;
@@ -1259,44 +1259,30 @@ static BOOL get_freebusy(const char *dir)
 	end_nttime = rop_util_unix_to_nttime(g_end_time);
 	propnames.count = 13;
 	propnames.ppropname = tmp_propnames;
-	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[0].guid);
-	tmp_propnames[0].kind = MNID_ID;
+	for (size_t i = 0; i < arsizeof(tmp_propnames); ++i)
+		tmp_propnames[i].kind = MNID_ID;
+	for (size_t i = 0; i < 5; ++i)
+		tmp_propnames[i].guid = PSETID_APPOINTMENT;
 	tmp_propnames[0].lid = PidLidAppointmentStartWhole;
-	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[1].guid);
-	tmp_propnames[1].kind = MNID_ID;
 	tmp_propnames[1].lid = PidLidAppointmentEndWhole;
-	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[2].guid);
-	tmp_propnames[2].kind = MNID_ID;
 	tmp_propnames[2].lid = PidLidBusyStatus;
-	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[3].guid);
-	tmp_propnames[3].kind = MNID_ID;
 	tmp_propnames[3].lid = PidLidRecurring;
-	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[4].guid);
-	tmp_propnames[4].kind = MNID_ID;
 	tmp_propnames[4].lid = PidLidAppointmentRecur;
-	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[5].guid);
-	tmp_propnames[5].kind = MNID_ID;
 	tmp_propnames[5].lid = PidLidAppointmentSubType;
-	rop_util_get_common_pset(PSETID_COMMON, &tmp_propnames[6].guid);
-	tmp_propnames[6].kind = MNID_ID;
+
+	tmp_propnames[6].guid = PSETID_COMMON;
 	tmp_propnames[6].lid = PidLidPrivate;
-	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[7].guid);
-	tmp_propnames[7].kind = MNID_ID;
+	tmp_propnames[7].guid = PSETID_APPOINTMENT;
 	tmp_propnames[7].lid = PidLidAppointmentStateFlags;
-	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[8].guid);
-	tmp_propnames[8].kind = MNID_ID;
+	tmp_propnames[8].guid = PSETID_APPOINTMENT;
 	tmp_propnames[8].lid = PidLidClipEnd;
-	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[9].guid);
-	tmp_propnames[9].kind = MNID_ID;
+	tmp_propnames[9].guid = PSETID_APPOINTMENT;
 	tmp_propnames[9].lid = PidLidLocation;
-	rop_util_get_common_pset(PSETID_COMMON, &tmp_propnames[10].guid);
-	tmp_propnames[10].kind = MNID_ID;
+	tmp_propnames[10].guid = PSETID_COMMON;
 	tmp_propnames[10].lid = PidLidReminderSet;
-	rop_util_get_common_pset(PSETID_MEETING, &tmp_propnames[11].guid);
-	tmp_propnames[11].kind = MNID_ID;
+	tmp_propnames[11].guid = PSETID_MEETING;
 	tmp_propnames[11].lid = PidLidGlobalObjectId;
-	rop_util_get_common_pset(PSETID_APPOINTMENT, &tmp_propnames[12].guid);
-	tmp_propnames[12].kind = MNID_ID;
+	tmp_propnames[12].guid = PSETID_APPOINTMENT;
 	tmp_propnames[12].lid = PidLidTimeZoneStruct;
 	
 	sockd = connect_exmdb(dir);

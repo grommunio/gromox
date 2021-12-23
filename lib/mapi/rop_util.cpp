@@ -255,43 +255,6 @@ void rop_util_guid_to_binary(GUID guid, BINARY *pbin)
 	pbin->cb += 6;
 }
 
-BOOL rop_util_get_common_pset(unsigned int pset_type, GUID *pguid)
-{
-	static GUID guids[PSETID__MAX];
-	static BOOL b_parsed;
-	
-	if (FALSE == b_parsed) {
-		guid_from_string(&guids[PS_PUBLIC_STRINGS], "00020329-0000-0000-c000-000000000046");
-		guid_from_string(&guids[PSETID_COMMON], "00062008-0000-0000-C000-000000000046");
-		guid_from_string(&guids[PSETID_ADDRESS], "00062004-0000-0000-C000-000000000046");
-		guid_from_string(&guids[PS_INTERNET_HEADERS], "00020386-0000-0000-c000-000000000046");
-		guid_from_string(&guids[PSETID_APPOINTMENT], "00062002-0000-0000-C000-000000000046");
-		guid_from_string(&guids[PSETID_MEETING], "6ED8DA90-450B-101B-98DA-00AA003F1305");
-		guid_from_string(&guids[PSETID_LOG], "0006200A-0000-0000-C000-000000000046");
-		guid_from_string(&guids[PSETID_MESSAGING], "41F28F13-83F4-4114-A584-EEDB5A6B0BFF");
-		guid_from_string(&guids[PSETID_NOTE], "0006200E-0000-0000-C000-000000000046");
-		guid_from_string(&guids[PSETID_POSTRSS], "00062041-0000-0000-C000-000000000046");
-		guid_from_string(&guids[PSETID_TASK], "00062003-0000-0000-C000-000000000046");
-		guid_from_string(&guids[PSETID_UNIFIEDMESSAGING], "4442858E-A9E3-4E80-B900-317A210CC15B");
-		guid_from_string(&guids[PSETID_AIRSYNC], "71035549-0739-4DCB-9163-00F0580DBBDF");
-		guid_from_string(&guids[PSETID_SHARING], "00062040-0000-0000-C000-000000000046");
-		guid_from_string(&guids[PSETID_XMLEXTRACTEDENTITIES], "23239608-685D-4732-9C55-4C95CB4E8E33");
-		guid_from_string(&guids[PS_MAPI], "00020328-0000-0000-c000-000000000046");
-		guid_from_string(&guids[PSETID_ATTACHMENT], "96357F7F-59E1-47D0-99A7-46515C183B54");
-		guid_from_string(&guids[PSETID_GROMOX], "1de937e2-85c6-40a1-bd9d-a6e2b7b787b1");
-		guid_from_string(&guids[PSETID_BUSINESSCARDVIEW], "0006200b-0000-0000-c000-000000000046");
-		guid_from_string(&guids[PSETID_REPORT], "00062013-0000-0000-c000-000000000046");
-		guid_from_string(&guids[PSETID_REMOTE], "00062014-0000-0000-c000-000000000046");
-		guid_from_string(&guids[PSETID_KC], "63aed8c8-4049-4b75-bc8896df9d723f2f");
-		guid_from_string(&guids[PSETID_KCARCHIVE], "72e98ebc-57d2-4ab5-b0aad50a7b531cb9");
-		b_parsed = TRUE;
-	}
-	if (pset_type >= arsizeof(guids))
-		return FALSE;
-	*pguid = guids[pset_type];
-	return TRUE;
-}
-
 void rop_util_free_binary(BINARY *pbin)
 {
 	free(pbin->pb);
