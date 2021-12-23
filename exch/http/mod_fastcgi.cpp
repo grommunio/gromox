@@ -116,7 +116,7 @@ static const FASTCGI_NODE *mod_fastcgi_find_backend(const char *domain,
 		if (wildcard_match(domain, node.domain.c_str(), TRUE) == 0)
 			continue;
 		auto tmp_len = node.path.size();
-		if (strncasecmp(uri_path, node.path.c_str(), tmp_len) != 0 ||
+		if (strncmp(uri_path, node.path.c_str(), tmp_len) != 0 ||
 		    (uri_path[tmp_len] != '/' && uri_path[tmp_len] != '\0'))
 			continue;
 		if ('\0' == file_name[0] && '\0' == suffix[0]) {
@@ -147,12 +147,14 @@ static int mod_fastcgi_defaults()
 	printf("[mod_fastcgi]: defaulting to built-in list of handled paths\n");
 	FASTCGI_NODE node;
 	node.domain = "*";
-	node.path = "/ews";
+	node.path = "/EWS";
 	node.dir = PKGDATADIR "/http/php/ews";
 	node.suffix = "php";
 	node.index = "index.php";
 	node.header_list = {"X-MAPIHttpCapability", "X-AnchorMailbox", "X-ClientCanHandle"};
 	node.sock_path = PKGRUNDIR "/php-fpm.sock";
+	g_fastcgi_list.push_back(node);
+	node.path = "/ews";
 	g_fastcgi_list.push_back(node);
 	node.path = "/sync";
 	node.dir = DATADIR "/grommunio-sync";

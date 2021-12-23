@@ -182,7 +182,7 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 			$Protocol->addChild('ASUrl', 'https://' . $host_name . '/EWS/Exchange.asmx');
 			$Protocol->addChild('EwsUrl', 'https://' . $host_name . '/EWS/Exchange.asmx');
 			$Protocol->addChild('EmwsUrl', 'https://' . $host_name . '/EWS/Exchange.asmx');
-			$Protocol->addChild('EcpUrl', 'https://' . $host_name . '/ews/');
+			$Protocol->addChild('EcpUrl', 'https://' . $host_name . '/EWS/');
 			$Protocol->addChild('EcpUrl-photo', 'thumbnail.php');
 			$Protocol->addChild('ServerExclusiveConnect', 'on');
 			$Protocol = $Account->addChild('Protocol');
@@ -210,7 +210,7 @@ if ('public.folder.root' == substr($email_address, 0, strpos($email_address, "@"
 			$Protocol->addChild('ASUrl', 'https://' . $host_name . '/EWS/Exchange.asmx');
 			$Protocol->addChild('EwsUrl', 'https://' . $host_name . '/EWS/Exchange.asmx');
 			$Protocol->addChild('EmwsUrl', 'https://' . $host_name . '/EWS/Exchange.asmx');
-			$Protocol->addChild('EcpUrl', 'https://' . $host_name . '/ews/');
+			$Protocol->addChild('EcpUrl', 'https://' . $host_name . '/EWS/');
 			$Protocol->addChild('EcpUrl-photo', 'thumbnail.php');
 			$Protocol->addChild('ServerExclusiveConnect', 'off');
 			$Protocol = $Account->addChild('Protocol');
