@@ -4,8 +4,8 @@ pam_gromox \(em a PAM plugin to authenticate with Gromox
 .SH Description
 This module forwards authentication requests to the Gromox service plugins
 which themselves may pick MySQL or LDAP as a backend. pam_gromox is meant to be
-used in conjunction with non-Gromox SMTP/IMAP/etc. server processes that may be
-logically located before Gromox services and serving as accelerators.
+used in conjunction with non-Gromox processes that an administrator may wish
+to integrate with, such as an SMTP daemon.
 .SH Incantation in /etc/pam.d/smtp
 Gromox accounts are not mapped from or to any Unix accounts, so the pam_unix.so
 module that is present in the default /etc/pam.d/smtp module list within Linux
@@ -26,7 +26,8 @@ modules listed, pam_permit.so should be used.)
 .TP
 \fBservice=\fP\fIs\fP
 Check for a specific privilege bit on the user account. Possible values for
-\fIs\fP are: \fBexch\fP, \fBsmtp\fP, \fBimap\fP, \fBpop3\fP.
+\fIs\fP are: \fBexch\fP, \fBsmtp\fP, \fBimap\fP, \fBpop3\fP, \fBchat\fP,
+\fBvideo\fP, \fBfiles\fP, \fBarchive\fP.
 .br
 Default: \fBsmtp\fP
 .SH Configuration directives in /etc/gromox/pam.cfg

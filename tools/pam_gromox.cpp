@@ -122,7 +122,7 @@ PAM_EXTERN GX_EXPORT int pam_sm_authenticate(pam_handle_t *pamh, int flags,
 
 	unsigned int wantpriv = 0;
 	if (service == nullptr || strcmp(service, "smtp") == 0)
-		wantpriv |= USER_PRIVILEGE_PAM;
+		wantpriv |= USER_PRIVILEGE_SMTP;
 	else if (strcmp(service, "imap") == 0 || strcmp(service, "pop3") == 0)
 		wantpriv |= USER_PRIVILEGE_IMAP;
 	else if (strcmp(service, "exch") == 0)

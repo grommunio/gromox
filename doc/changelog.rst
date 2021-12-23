@@ -5,6 +5,9 @@ Enhancements:
 
 * midb: SIGHUP will now reload the midb_cmd_debug directive
 * lib: add error reporting to sqlite3_exec calls
+* pam_gromox: Additional service mode checks.
+  One can now use e.g. ``auth required pam_gromox.so service=chat``
+  in ``/etc/pam.d/xyz`` to test for the CHAT privilege bit.
 
 Fixes:
 
