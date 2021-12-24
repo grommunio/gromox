@@ -351,6 +351,8 @@ long atoitvl(const char *s)
 		s = end;
 		while (HX_isspace(*s))
 			++s;
+		if (*s == '\0')
+			mult = 1; /* assume seconds */
 		for (const auto &e : time_suffix) {
 			if (strncmp(s, e.suffix, e.len) == 0) {
 				mult = e.mult;
