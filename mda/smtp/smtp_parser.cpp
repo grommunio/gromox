@@ -905,7 +905,6 @@ static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext)
 	pcontext->session_num           = 0;
 	pcontext->stream_second.reset();
 	pcontext->mail.envelope.is_login = false;
-	pcontext->mail.envelope.is_relay = false;
 	memset(&pcontext->mail.envelope.username, 0, arsizeof(pcontext->mail.envelope.username));
 	smtp_parser_reset_context_session(pcontext);    
 }

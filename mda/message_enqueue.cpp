@@ -264,8 +264,9 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 	struct tm tm_buff;
 	FILE *fp;
 	size_t mess_len, write_len, utmp_len;
-	int j, tmp_len, smtp_type, copy_result;
+	int j, tmp_len, copy_result;
 	unsigned int size;
+	static constexpr uint32_t smtp_type = SMTP_IN;
 
 	try {
 		name = g_path + "/mess/"s + std::to_string(pentity->pflusher->flush_ID);
@@ -343,8 +344,6 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 	if (fwrite(&pentity->pflusher->flush_ID, 1, sizeof(uint32_t), fp) != sizeof(uint32_t))
 		goto REMOVE_MESS;
 	/* write bound type */
-	smtp_type = pentity->penvelope->is_relay ? SMTP_RELAY :
-	            pentity->penvelope->is_outbound ? SMTP_OUT : SMTP_IN;
 	if (fwrite(&smtp_type, 1, sizeof(uint32_t), fp) != sizeof(uint32_t) ||
 	    fwrite(&pentity->is_spam, 1, sizeof(uint32_t), fp) != sizeof(uint32_t))
 		goto REMOVE_MESS;

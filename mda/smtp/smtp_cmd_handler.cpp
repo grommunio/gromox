@@ -185,7 +185,6 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
             T_MAIL_CMD == pcontext->last_cmd ||
             T_END_MAIL == pcontext->last_cmd) {
             pcontext->last_cmd = T_MAIL_CMD;
-		    pcontext->mail.envelope.is_outbound = FALSE;
 			snprintf(pcontext->mail.envelope.from, arsizeof(pcontext->mail.envelope.from), "%s@%s",
                 email_addr.local_part, email_addr.domain);
             /* 250 OK */
@@ -232,9 +231,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
         return DISPATCH_CONTINUE;
     }
     if (T_MAIL_CMD == pcontext->last_cmd || T_RCPT_CMD == pcontext->last_cmd) {
-		if (!pcontext->mail.envelope.is_outbound &&
-		    !pcontext->mail.envelope.is_relay &&
-            NULL != system_services_check_user) {
+		if (system_services_check_user != nullptr) {
 			snprintf(buff, arsizeof(buff), "%s@%s", email_addr.local_part,
                     email_addr.domain);
 			if (!system_services_check_user(buff, path, arsizeof(path))) {
