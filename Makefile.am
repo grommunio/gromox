@@ -8,7 +8,7 @@ AM_CXXFLAGS = ${my_CXXFLAGS}
 lib_LTLIBRARIES = libgromox_common.la libgromox_cplus.la libgromox_dbop.la libgromox_email.la libgromox_epoll.la libgromox_mapi.la libgromox_exrpc.la libgromox_rpc.la
 noinst_LTLIBRARIES = libphp_mapi.la
 noinst_DATA = libgromox_common.ldd libgromox_cplus.ldd libgromox_dbop.ldd libgromox_email.ldd libgromox_epoll.ldd libgromox_exrpc.la libgromox_mapi.ldd libgromox_rpc.ldd
-pkglibexec_PROGRAMS = adaptor cgkrepair delivery delivery-queue event freebusy http imap midb pop3 rtf2html timer zcore
+pkglibexec_PROGRAMS = cgkrepair delivery delivery-queue event freebusy http imap midb pop3 rtf2html timer zcore
 pkglib_LTLIBRARIES = libmapi4zf.la ${mta_plugins} ${mra_plugins} ${exchange_plugins}
 default_sym = ${srcdir}/default.sym
 default_SYFLAGS = -Wl,--version-script=${default_sym}
@@ -26,7 +26,7 @@ phplib_LTLIBRARIES = mapi.la
 endif
 sysusers_DATA = system/sysusers-gromox.conf
 tmpfiles_DATA = system/tmpfiles-gromox.conf
-unit_DATA = system/gromox-adaptor.service system/gromox-delivery.service system/gromox-delivery-queue.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-midb.service system/gromox-pop3.service system/gromox-timer.service system/gromox-zcore.service
+unit_DATA = system/gromox-delivery.service system/gromox-delivery-queue.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-midb.service system/gromox-pop3.service system/gromox-timer.service system/gromox-zcore.service
 
 mta_plugins = \
 	libgxm_alias_resolve.la \
@@ -247,8 +247,6 @@ rtf2html_SOURCES = tools/rtf2html.cpp
 rtf2html_LDADD = ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_mapi.la
 saphpdir = ${pkgdatadir}/sa
 saphp_DATA = tools/php/conf.php tools/php/db.php tools/php/submit.php
-adaptor_SOURCES = lib/system_log.cpp tools/adaptor/data_source.cpp tools/adaptor/engine.cpp tools/adaptor/file_operation.cpp tools/adaptor/gateway_control.cpp tools/adaptor/main.cpp
-adaptor_LDADD = -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la
 event_SOURCES = tools/event.cpp
 event_LDADD = -lpthread -lrt ${HX_LIBS} libgromox_common.la
 gromox_abktconv_SOURCES = tools/abktconv.cpp
@@ -298,7 +296,7 @@ tests_zendfake_SOURCES = tests/zendfake.cpp
 tests_zendfake_LDADD = libmapi4zf.la
 
 man_MANS = \
-	doc/adaptor.8gx doc/alias_resolve.4gx doc/at_client.4gx \
+	doc/alias_resolve.4gx doc/at_client.4gx \
 	doc/authmgr.4gx doc/autodiscover.4gx \
 	doc/cgkrepair.8gx doc/delivery.8gx doc/delivery-queue.8gx \
 	doc/domain_list.4gx \

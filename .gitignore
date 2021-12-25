@@ -21,7 +21,6 @@ Makefile.in
 /libtool
 /stamp-h1
 
-/adaptor
 /cgkrepair
 /delivery
 /delivery-queue
