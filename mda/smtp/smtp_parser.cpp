@@ -773,17 +773,6 @@ int smtp_parser_set_param(int param, long value)
 	return 0;
 }
 
-BOOL smtp_parser_validate_domainlist(BOOL b_valid)
-{
-	g_param.domainlist_valid = b_valid;
-	return TRUE;
-}
-
-BOOL smtp_parser_domainlist_valid()
-{
-	return g_param.domainlist_valid;
-}
-
 /* 
  *    dispatch the smtp command to the corresponding procedure
  *    @param

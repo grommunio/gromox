@@ -54,7 +54,6 @@ static const char *flusher_get_plugin_name();
 static const char *flusher_get_config_path();
 static const char *flusher_get_data_path();
 static const char *flusher_get_state_path();
-static BOOL flusher_is_domainlist_valid();
 static int flusher_increase_max_ID();
 static void flusher_set_flush_ID(int);
 	
@@ -258,7 +257,6 @@ static void *flusher_queryservice(const char *service, const std::type_info &ti)
 	E("get_config_path", flusher_get_config_path);
 	E("get_data_path", flusher_get_data_path);
 	E("get_state_path", flusher_get_state_path);
-	E("is_domainlist_valid", flusher_is_domainlist_valid);
 #undef E
 	/* check if already exists in the reference list */
 	for (pnode=single_list_get_head(&g_flusher_plug->list_reference); NULL!=pnode;
@@ -363,9 +361,3 @@ static const char *flusher_get_state_path()
 	const char *r = resource_get_string("state_file_path");
 	return r != nullptr ? r : PKGSTATEDIR;
 }
-
-static BOOL flusher_is_domainlist_valid()
-{
-	return smtp_parser_domainlist_valid();
-}
-

@@ -62,9 +62,6 @@ int gateway_control_run()
 void gateway_control_notify(const char *command, int control_mask)
 {
 	for (const auto &c : g_console_list) {
-		if (NOTIFY_SMTP&control_mask) {
-			gateway_control_send(c.smtp_ip, c.smtp_port, command);
-		}
 		if (NOTIFY_DELIVERY&control_mask) {
 			gateway_control_send(c.delivery_ip, c.delivery_port, command);
 		}

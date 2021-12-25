@@ -57,8 +57,6 @@ static char g_system_help[] =
 	"250 SMTP DAEMON system help information:\r\n"
 	"\tsystem set default-domain <domain>\r\n"
 	"\t    --set default domain of system\r\n"
-	"\tsystem set domain-list <TRUE|FALSE>\r\n"
-	"\t    --validate or invalidate domain list in system\r\n"
 	"\tsystem stop\r\n"
 	"\t    --stop the server\r\n"
 	"\tsystem status\r\n"
@@ -318,25 +316,6 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 		console_server_reply_to_client("250 default domain set OK");
 		return TRUE;
 	}
-	if (4 == argc && 0 == strcmp(argv[1], "set") &&
-		0 == strcmp(argv[2], "domain-list")) {
-		if (0 == strcasecmp(argv[3], "TRUE")) {
-			resource_set_string("DOMAIN_LIST_VALID", "TRUE");
-			smtp_parser_validate_domainlist(TRUE);
-			console_server_reply_to_client("250 domain-list valid set OK");
-			return TRUE;
-		} else if (0 == strcasecmp(argv[3], "FALSE")) {
-			resource_set_string("DOMAIN_LIST_VALID", "FALSE");
-			smtp_parser_validate_domainlist(FALSE);
-			console_server_reply_to_client("250 domain-list invalid set OK");
-			return TRUE;
-		} else {
-			console_server_reply_to_client("550 invalid parameter, should be"
-					"TRUE or FALSE");
-			return TRUE;
-		}
-	}
-	
 	if (2 == argc && 0 == strcmp(argv[1], "stop")) {
 		console_server_notify_main_stop();
 		console_server_reply_to_client("250 stop OK");
@@ -359,8 +338,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 			"\tmaximum memory blocks        %ld\r\n"
 			"\tmemory block size            %ldK\r\n"
 			"\tcurrent allocated blocks     %ld\r\n"
-			"\tcurrent threads number       %d\r\n"
-			"\tdomain list valid            %s",
+			"\tcurrent threads number       %d",
 			resource_get_string("HOST_ID"),
 			max_context_num,
 			parsing_context_num,
@@ -368,8 +346,7 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 			max_block_num,
 			block_size / 1024,
 			current_alloc_num,
-			current_thread_num,
-			smtp_parser_domainlist_valid() == FALSE ? "FALSE" : "TRUE");
+			current_thread_num);
 		return TRUE;
 	}
 	if (2 == argc && 0 == strcmp(argv[1], "version")) {

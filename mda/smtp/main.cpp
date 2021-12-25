@@ -46,7 +46,6 @@ static struct HXoption g_options_table[] = {
 };
 
 static constexpr const char *g_dfl_svc_plugins[] = {
-	"libgxs_domain_list.so",
 	"libgxs_logthru.so",
 	"libgxs_midb_agent.so",
 	"libgxs_ldap_adaptor.so",
@@ -99,7 +98,6 @@ int main(int argc, const char **argv) try
 		{"context_average_mem", "256K", CFG_SIZE, "64K"},
 		{"context_max_mem", "2M", CFG_SIZE},
 		{"data_file_path", PKGDATADIR "/smtp:" PKGDATADIR},
-		{"domain_list_valid", "false", CFG_BOOL},
 		{"listen_port", "25"},
 		{"listen_ssl_port", "0"},
 		{"mail_max_length", "64M", CFG_SIZE, "1"},
@@ -188,7 +186,6 @@ int main(int argc, const char **argv) try
 	bytetoa(scfg.flushing_size, temp_buff);
 	printf("[smtp]: context maximum memory is %s\n", temp_buff);
  
-	scfg.domainlist_valid = parse_bool(g_config_file->get_value("domain_list_valid")) ? TRUE : false;
 	scfg.timeout = g_config_file->get_ll("smtp_conn_timeout");
 	itvltoa(scfg.timeout, temp_buff);
 	printf("[smtp]: smtp socket read write time out is %s\n", temp_buff);

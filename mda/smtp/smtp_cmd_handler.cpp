@@ -234,31 +234,6 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
     if (T_MAIL_CMD == pcontext->last_cmd || T_RCPT_CMD == pcontext->last_cmd) {
 		if (!pcontext->mail.envelope.is_outbound &&
 		    !pcontext->mail.envelope.is_relay &&
-			TRUE == smtp_parser_domainlist_valid()) {
-            /* 
-             check whether the mail address's domain is in system domain, 
-             if it is, pass it. else, check it in relay list.
-            */
-            if (FALSE == system_services_check_domain(email_addr.domain)) {
-                /* 554 Relay from your addr <revserse_address> is denied */
-				smtp_reply_str = resource_get_smtp_code(532, 1, &string_length);
-				smtp_reply_str2 = resource_get_smtp_code(532, 2, &string_length);
-                string_length = sprintf(reason, "%s <%s@%s> %s",
-                                    smtp_reply_str, email_addr.local_part,
-                                    email_addr.domain, smtp_reply_str2);
-                if (NULL != pcontext->connection.ssl) {
-					SSL_write(pcontext->connection.ssl, reason, string_length);
-				} else {
-					write(pcontext->connection.sockd, reason, string_length);
-				}
-                smtp_parser_log_info(pcontext, LV_DEBUG, "Closed session because"
-                             " RCPT address is not in our system and ipaddr is not"
-                             " in our relay list either");
-                return DISPATCH_SHOULD_CLOSE;
-            }
-        }
-		if (!pcontext->mail.envelope.is_outbound &&
-		    !pcontext->mail.envelope.is_relay &&
             NULL != system_services_check_user) {
 			snprintf(buff, arsizeof(buff), "%s@%s", email_addr.local_part,
                     email_addr.domain);

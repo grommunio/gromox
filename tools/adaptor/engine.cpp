@@ -102,7 +102,7 @@ static void *adap_thrwork(void *param)
 				fprintf(stderr, "E-1402: rename %s %s: %s\n",
 				        temp_path.c_str(), g_domainlist_path, strerror(errno));
 			gateway_control_notify("libgxs_domain_list.so reload",
-				NOTIFY_SMTP|NOTIFY_DELIVERY);
+				NOTIFY_DELIVERY);
 		}
 		if (!data_source_get_alias_list(alias_map)) {
 			continue;

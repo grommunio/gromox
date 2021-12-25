@@ -158,8 +158,7 @@ struct SMTP_CONTEXT final : public SCHEDULE_CONTEXT {
 
 struct smtp_param {
 	unsigned int context_num = 0;
-	BOOL domainlist_valid = false, need_auth = false;
-	BOOL support_pipeline = TRUE;
+	BOOL need_auth = false, support_pipeline = TRUE;
 	BOOL support_starttls = false, force_starttls = false;
 	size_t max_mail_length = 64ULL * 1024 * 1024;
 	int max_mail_sessions = 0; /* max num of mails in any one session */
@@ -178,8 +177,6 @@ long smtp_parser_get_param(int param);
 int smtp_parser_set_param(int param, long value);
 extern int smtp_parser_get_context_socket(SCHEDULE_CONTEXT *);
 extern struct timeval smtp_parser_get_context_timestamp(SCHEDULE_CONTEXT *);
-BOOL smtp_parser_validate_domainlist(BOOL b_valid);
-extern BOOL smtp_parser_domainlist_valid();
 int smtp_parser_get_extra_num(SMTP_CONTEXT *pcontext);
 const char* smtp_parser_get_extra_tag(SMTP_CONTEXT *pcontext, int pos);
 const char* smtp_parser_get_extra_value(SMTP_CONTEXT *pcontext, int pos);
