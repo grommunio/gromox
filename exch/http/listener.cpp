@@ -134,7 +134,6 @@ static void *htls_thrwork(void *arg)
 	struct sockaddr_storage fact_addr, client_peer;
 	char client_hostip[40], client_txtport[8], server_hostip[40];
 	HTTP_CONTEXT *pcontext;
-	const char *host_ID;
 	char buff[1024];
 	
 	for (;;) {
@@ -186,12 +185,10 @@ static void *htls_thrwork(void *arg)
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
 			system_services_log_info(LV_NOTICE, "no available HTTP_CONTEXT/processing slot");
-			host_ID = resource_get_string("HOST_ID");
 			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 L-202 Service Unavailable\r\n"
-								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
-								"\r\n""", host_ID);
+								"\r\n");
 			write(sockd2, buff, len);
 			close(sockd2);
 			continue;
@@ -200,12 +197,10 @@ static void *htls_thrwork(void *arg)
 		/* pass the client ipaddr into the ipaddr filter */
 		if (system_services_judge_ip != nullptr &&
 		    !system_services_judge_ip(client_hostip)) {
-			host_ID = resource_get_string("HOST_ID");
 			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 L-216 Service Unavailable\r\n"
-								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
-								"\r\n""", host_ID);
+								"\r\n");
 			write(sockd2, buff, len);
 			system_services_log_info(LV_DEBUG, "Connection %s is denied by ipaddr filter",
 				client_hostip);
@@ -217,12 +212,10 @@ static void *htls_thrwork(void *arg)
 		/* pass the client ipaddr into the ipaddr container */
 		if (system_services_container_add_ip != nullptr &&
 		    !system_services_container_add_ip(client_hostip)) {
-			host_ID = resource_get_string("HOST_ID");
 			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 L-234 Service Unavailable\r\n"
-								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
-								"\r\n""", host_ID);
+								"\r\n");
 			write(sockd2, buff, len);
 			system_services_log_info(LV_DEBUG, "Connection %s is denied by "
 				"ipaddr container", client_hostip);
@@ -257,7 +250,6 @@ static void *htls_thrworkssl(void *arg)
 	struct sockaddr_storage fact_addr, client_peer;
 	char client_hostip[40], client_txtport[8], server_hostip[40];
 	HTTP_CONTEXT *pcontext;
-	const char *host_ID;
 	char buff[1024];
 	
 	for (;;) {
@@ -309,12 +301,10 @@ static void *htls_thrworkssl(void *arg)
 		/* there's no context available in contexts pool, close the connection*/
 		if (NULL == pcontext) {
 			system_services_log_info(LV_NOTICE, "no available HTTP_CONTEXT/processing slot");
-			host_ID = resource_get_string("HOST_ID");
 			len = sprintf(buff, "HTTP/1.1 503 L-332 Service Unavailable\r\n"
-								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
-								"\r\n""", host_ID);
+								"\r\n");
 			write(sockd2, buff, len);
 			close(sockd2);
 			continue;
@@ -323,12 +313,10 @@ static void *htls_thrworkssl(void *arg)
 		/* pass the client ipaddr into the ipaddr filter */
 		if (system_services_judge_ip != nullptr &&
 		    !system_services_judge_ip(client_hostip)) {
-			host_ID = resource_get_string("HOST_ID");
 			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 L-346 Service Unavailable\r\n"
-								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
-								"\r\n""", host_ID);
+								"\r\n");
 			write(sockd2, buff, len);
 			system_services_log_info(LV_DEBUG, "TLS connection %s is denied by ipaddr filter",
 				client_hostip);
@@ -340,12 +328,10 @@ static void *htls_thrworkssl(void *arg)
 		/* pass the client ipaddr into the ipaddr container */
 		if (system_services_container_add_ip != nullptr &&
 		    !system_services_container_add_ip(client_hostip)) {
-			host_ID = resource_get_string("HOST_ID");
 			len = gx_snprintf(buff, GX_ARRAY_SIZE(buff), "HTTP/1.1 503 L-364 Service Unavailable\r\n"
-								"Server: %s\r\n"
 								"Content-Length: 0\r\n"
 								"Connection: close\r\n"
-								"\r\n""", host_ID);
+								"\r\n");
 			write(sockd2, buff, len);
 			system_services_log_info(LV_DEBUG, "TLS connection %s is denied by "
 				"ipaddr container", client_hostip);

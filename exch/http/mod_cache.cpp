@@ -384,9 +384,8 @@ static BOOL mod_cache_response_unmodified(HTTP_CONTEXT *phttp)
 	strftime(dstring, 128, "%a, %d %b %Y %T GMT", &tmp_tm);
 	response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 					"HTTP/1.1 304 Not Modified\r\n"
-					"Server: %s\r\n"
 					"Date: %s\r\n\r\n",
-					resource_get_string("HOST_ID"), dstring);
+					dstring);
 	return phttp->stream_out.write(response_buff, response_len) == STREAM_WRITE_OK ? TRUE : false;
 }
 
@@ -420,14 +419,12 @@ static BOOL mod_cache_response_single_header(HTTP_CONTEXT *phttp)
 	response_len = strlen(response_buff);
 	response_len += gx_snprintf(response_buff + response_len,
 	                GX_ARRAY_SIZE(response_buff) - response_len,
-					"Server: %s\r\n"
 					"Date: %s\r\n"
 					"Content-Type: %s\r\n"
 					"Content-Length: %u\r\n"
 					"Accept-Ranges: bytes\r\n"
 					"Last-Modified: %s\r\n"
 					"ETag: \"%s\"\r\n",
-					resource_get_string("HOST_ID"),
 					date_string, pcontent_type,
 					pcontext->until - pcontext->offset,
 					modified_string, etag);
@@ -502,14 +499,12 @@ static BOOL mod_cache_response_multiple_header(HTTP_CONTEXT *phttp)
 	content_length =  mod_cache_calculate_content_length(pcontext);	
 	response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 					"HTTP/1.1 206 Partial Content\r\n"
-					"Server: %s\r\n"
 					"Date: %s\r\n"
 					"Content-Type: multipart/byteranges;"
 					" boundary=%s\r\n"
 					"Content-Length: %u\r\n"
 					"Last-Modified: %s\r\n"
 					"ETag: \"%s\"\r\n",
-					resource_get_string("HOST_ID"),
 					date_string, BOUNDARY_STRING,
 					content_length, modified_string, etag);
 	return phttp->stream_out.write(response_buff, response_len) == STREAM_WRITE_OK ? TRUE : false;

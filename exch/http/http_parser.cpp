@@ -407,10 +407,9 @@ static void http_4xx(HTTP_CONTEXT *ctx, const char *msg = "Bad Request",
 	auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 		"HTTP/1.1 %u %s\r\n"
 		"Date: %s\r\n"
-		"Server: %s\r\n"
 		"Content-Length: 0\r\n"
 		"Connection: close\r\n"
-		"\r\n", code, msg, dstring, resource_get_string("HOST_ID"));
+		"\r\n", code, msg, dstring);
 	ctx->stream_out.write(response_buff, response_len);
 	ctx->total_length = response_len;
 	ctx->bytes_rw = 0;
@@ -433,10 +432,9 @@ static void http_5xx(HTTP_CONTEXT *ctx, const char *msg = "Internal Server Error
 	auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 		"HTTP/1.1 %u %s\r\n"
 		"Date: %s\r\n"
-		"Server: %s\r\n"
 		"Content-Length: 0\r\n"
 		"Connection: close\r\n"
-		"\r\n", code, msg, dstring, resource_get_string("HOST_ID"));
+		"\r\n", code, msg, dstring);
 	ctx->stream_out.write(response_buff, response_len);
 	ctx->total_length = response_len;
 	ctx->bytes_rw = 0;
@@ -652,10 +650,9 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 			response_buff, GX_ARRAY_SIZE(response_buff),
 			"HTTP/1.1 503 L-689 Service Unavailable\r\n"
 			"Date: %s\r\n"
-			"Server: %s\r\n"
 			"Content-Length: 0\r\n"
 			"Connection: close\r\n"
-			"\r\n", dstring, resource_get_string("HOST_ID"));
+			"\r\n", dstring);
 		pcontext->stream_out.write(response_buff, response_len);
 		pcontext->total_length = response_len;
 		pcontext->bytes_rw = 0;
@@ -678,13 +675,11 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 				response_buff, GX_ARRAY_SIZE(response_buff),
 				"HTTP/1.1 401 Unauthorized\r\n"
 				"Date: %s\r\n"
-				"Server: %s\r\n"
 				"Content-Length: 0\r\n"
 				"Keep-Alive: timeout=%d\r\n"
 				"Connection: close\r\n"
 				"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
-				"\r\n", dstring, resource_get_string("HOST_ID"),
-				g_timeout);
+				"\r\n", dstring, g_timeout);
 			pcontext->stream_out.write(response_buff, response_len);
 			pcontext->total_length = response_len;
 			pcontext->bytes_rw = 0;
@@ -716,15 +711,12 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 		response_buff, GX_ARRAY_SIZE(response_buff),
 		"HTTP/1.1 401 Unauthorized\r\n"
 		"Date: %s\r\n"
-		"Server: %s\r\n"
 		"Keep-Alive: timeout=%d\r\n"
 		"Connection: close\r\n"
 		"Content-Type: text/plain; charset=ascii\r\n"
 		"Content-Length: 2\r\n"
 		"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
-		"\r\n\r\n", dstring,
-		resource_get_string("HOST_ID"),
-		g_timeout);
+		"\r\n\r\n", dstring, g_timeout);
 	pcontext->stream_out.write(response_buff, response_len);
 	pcontext->total_length = response_len;
 	pcontext->bytes_rw = 0;
@@ -788,13 +780,11 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 			response_buff, GX_ARRAY_SIZE(response_buff),
 			"HTTP/1.1 401 Unauthorized\r\n"
 			"Date: %s\r\n"
-			"Server: %s\r\n"
 			"Content-Length: 0\r\n"
 			"Keep-Alive: timeout=%d\r\n"
 			"Connection: close\r\n"
 			"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
-			"\r\n", dstring, resource_get_string("HOST_ID"),
-			g_timeout);
+			"\r\n", dstring, g_timeout);
 		pcontext->stream_out.write(response_buff, response_len);
 		pcontext->total_length = response_len;
 		pcontext->bytes_rw = 0;
@@ -994,7 +984,6 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 		auto response_len = gx_snprintf(response_buff, GX_ARRAY_SIZE(response_buff),
 					"HTTP/1.1 404 Not Found\r\n"
 					"Date: %s\r\n"
-					"Server: %s\r\n"
 					"Connection: close\r\n"
 					"Content-Length: 134\r\n\r\n"
 					"<html>\r\n"
@@ -1003,7 +992,7 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 					"<center><h1>404 Not Found</h1></center>\r\n"
 					"</body>\r\n"
 					"</html>\r\n",
-					dstring, resource_get_string("HOST_ID"));
+					dstring);
 		pcontext->stream_out.write(response_buff, response_len);
 		pcontext->total_length = response_len;
 		pcontext->bytes_rw = 0;

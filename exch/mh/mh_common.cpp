@@ -111,7 +111,6 @@ size_t commonHeader(char *dest, size_t maxlen, const char *requestType,
     const char *requestId, const char *clientInfo, const char *sid, time_point date)
 {
 	static constexpr char templ[] = "HTTP/1.1 200 OK\r\n"
-        "Server: %s\r\n"
         "Cache-Control: private\r\n"
         "Content-Type: application/mapi-http\r\n"
         "X-RequestType: %s\r\n"
@@ -126,7 +125,7 @@ size_t commonHeader(char *dest, size_t maxlen, const char *requestType,
 	using namespace std::chrono;
 	char dstring[128];
 	rfc1123_dstring(dstring, arsizeof(dstring), time_point::clock::to_time_t(date));
-	return snprintf(dest, maxlen, templ, get_host_ID(), requestType, requestId, clientInfo,
+	return snprintf(dest, maxlen, templ, requestType, requestId, clientInfo,
 	                static_cast<long long>(duration_cast<milliseconds>(response_pending_period).count()),
 	                static_cast<long long>(duration_cast<milliseconds>(session_valid_interval).count()),
 	                sid, dstring);
@@ -143,11 +142,10 @@ BOOL MhContext::unauthed() const
 	auto tmp_len = snprintf(tmp_buff, sizeof(tmp_buff),
 		"HTTP/1.1 401 Unauthorized\r\n"
 		"Date: %s\r\n"
-		"Server: %s\r\n"
 		"Content-Length: 0\r\n"
 		"Connection: Keep-Alive\r\n"
 		"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
-		"\r\n", dstring, get_host_ID());
+		"\r\n", dstring);
 	return write_response(ID, tmp_buff, tmp_len);
 }
 
@@ -167,13 +165,12 @@ BOOL MhContext::error_responsecode(int response_code) const
 	auto response_len = snprintf(response_buff,
 		sizeof(response_buff),
 		"HTTP/1.1 200 OK\r\n"
-		"Server: %s\r\n"
 		"Cache-Control: private\r\n"
 		"Content-Type: text/html\r\n"
 		"X-ResponseCode: %d\r\n"
 		"Content-Length: %d\r\n"
 		"X-ServerApplication: Exchange/15.00.0847.4040\r\n"
-		"Date: %s\r\n\r\n%s", get_host_ID(),
+		"Date: %s\r\n\r\n%s",
 		response_code, text_len, dstring, text_buff);
 	return write_response(ID, response_buff, response_len);
 }

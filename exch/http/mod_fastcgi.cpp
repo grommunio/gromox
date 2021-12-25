@@ -1267,27 +1267,21 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			if (strcasecmp(phttp->request.method, "HEAD") == 0)
 				tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 								"HTTP/1.1 %s\r\n"
-								"Server: %s\r\n"
 								"Date: %s\r\n"
 								"%s\r\n", status_line,
-								resource_get_string("HOST_ID"),
 								dstring, response_buff);
 			else if (phttp->pfast_context->b_chunked)
 				tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 				          "HTTP/1.1 %s\r\n"
-				          "Server: %s\r\n"
 				          "Date: %s\r\n"
 				          "Transfer-Encoding: chunked\r\n"
 				          "%s\r\n", status_line,
-				          resource_get_string("HOST_ID"),
 				          dstring, response_buff);
 			else
 				tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
 				          "HTTP/1.1 %s\r\n"
-				          "Server: %s\r\n"
 				          "Date: %s\r\n"
 				          "%s\r\n", status_line,
-				          resource_get_string("HOST_ID"),
 				          dstring, response_buff);
 			if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK) {
 				http_parser_log_info(phttp, LV_DEBUG, "fail to write "
