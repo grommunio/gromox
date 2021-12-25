@@ -29,13 +29,13 @@ tmpfiles_DATA = system/tmpfiles-gromox.conf
 unit_DATA = system/gromox-adaptor.service system/gromox-delivery.service system/gromox-delivery-queue.service system/gromox-event.service system/gromox-http.service system/gromox-imap.service system/gromox-midb.service system/gromox-pop3.service system/gromox-timer.service system/gromox-zcore.service
 
 mta_plugins = \
-	libgxm_alias_resolve.la libgxm_alias_translator.la \
+	libgxm_alias_resolve.la \
 	libgxm_exmdb_local.la \
 	libgxm_mlist_expand.la \
 	libgxm_remote_delivery.la \
 	libgxs_domain_list.la
 noinst_DATA += \
-	libgxm_alias_resolve.ldd libgxm_alias_translator.ldd \
+	libgxm_alias_resolve.ldd \
 	libgxm_exmdb_local.ldd \
 	libgxm_mlist_expand.ldd \
 	libgxm_remote_delivery.ldd \
@@ -122,10 +122,6 @@ libgxm_alias_resolve_la_SOURCES = mda/alias_resolve.cpp
 libgxm_alias_resolve_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxm_alias_resolve_la_LIBADD = -lpthread ${HX_LIBS} ${mysql_LIBS} libgromox_common.la
 EXTRA_libgxm_alias_resolve_la_DEPENDENCIES = ${default_sym}
-libgxm_alias_translator_la_SOURCES = mda/alias_translator.cpp
-libgxm_alias_translator_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxm_alias_translator_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libgxm_alias_translator_la_DEPENDENCIES = ${default_sym}
 libgxm_exmdb_local_la_SOURCES = mda/exmdb_local/auto_response.cpp mda/exmdb_local/bounce_audit.cpp mda/exmdb_local/bounce_producer.cpp mda/exmdb_local/cache_queue.cpp mda/exmdb_local/exmdb_client.cpp mda/exmdb_local/exmdb_local.cpp mda/exmdb_local/main.cpp mda/exmdb_local/net_failure.cpp
 libgxm_exmdb_local_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxm_exmdb_local_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la libgromox_email.la libgromox_exrpc.la libgromox_mapi.la
@@ -301,7 +297,7 @@ tests_utiltest_LDADD = libgromox_common.la
 tests_zendfake_LDADD = libmapi4zf.la
 
 man_MANS = \
-	doc/adaptor.8gx doc/alias_resolve.4gx doc/alias_translator.4gx doc/at_client.4gx \
+	doc/adaptor.8gx doc/alias_resolve.4gx doc/at_client.4gx \
 	doc/authmgr.4gx doc/autodiscover.4gx \
 	doc/cgkrepair.8gx doc/delivery.8gx doc/delivery-queue.8gx \
 	doc/domain_list.4gx \
