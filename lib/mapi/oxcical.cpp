@@ -4498,13 +4498,11 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				if (NULL != pvalue) {
 					ext_pull.init(static_cast<BINARY *>(pvalue)->pb,
 						static_cast<BINARY *>(pvalue)->cb, alloc, 0);
-					if (ext_pull.g_goid(&globalobjectid) != EXT_ERR_SUCCESS) {
+					if (ext_pull.g_goid(&globalobjectid) != EXT_ERR_SUCCESS)
 						return FALSE;
-					} else {
-						itime.year = globalobjectid.year;
-						itime.month = globalobjectid.month;
-						itime.day = globalobjectid.day;
-					}
+					itime.year = globalobjectid.year;
+					itime.month = globalobjectid.month;
+					itime.day = globalobjectid.day;
 				}
 			} else {
 				pvalue = NULL;

@@ -1298,11 +1298,9 @@ static bool rtf_optimize_element(DOUBLE_LIST *pcollection_list,
 			if (NULL == text) {
 				continue;
 			}
-			if (0 == strcmp(text, str_word)) {
+			if (strcmp(text, str_word) == 0)
 				return true;
-			} else {
-				rtf_add_to_collection(pcollection_list, i, str_word);
-			}
+			rtf_add_to_collection(pcollection_list, i, str_word);
 			break;
 		}
 	}
@@ -2338,13 +2336,11 @@ static int rtf_cmd_ulnone(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
 static int rtf_cmd_ul(RTF_READER *preader, SIMPLE_TREE_NODE *pword, int align,
     bool b_param, int num)
 {
-	if (b_param && num == 0) {
+	if (b_param && num == 0)
 		return rtf_cmd_ulnone(preader,
 			pword, align, b_param, num);
-	} else {
-		if (!rtf_attrstack_push_express(preader, ATTR_UNDERLINE, 0))
-			return CMD_RESULT_ERROR;
-	}
+	if (!rtf_attrstack_push_express(preader, ATTR_UNDERLINE, 0))
+		return CMD_RESULT_ERROR;
 	return CMD_RESULT_CONTINUE;
 }
 

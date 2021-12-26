@@ -717,15 +717,13 @@ size_t parse_mime_field(char *in_buff, size_t buff_len, MIME_FIELD *pmime_field)
 			++i;
 		}
 		if (i == buff_len) {
-			if ('\n' == *tmp_ptr) {
+			if (*tmp_ptr == '\n') {
 				pmime_field->field_value_len = value_length;
 				return buff_len;
-			} else if (' ' == *tmp_ptr || '\t' == *tmp_ptr ||
-				TRUE == meet_slash) {
-				return 0;
-			} else {
-				buff_len --;
 			}
+			if (*tmp_ptr == ' ' || *tmp_ptr == '\t' || meet_slash)
+				return 0;
+			buff_len--;
 		} else {
 			if ('\n' == *tmp_ptr) {
 				tmp_ptr ++;
@@ -740,13 +738,11 @@ size_t parse_mime_field(char *in_buff, size_t buff_len, MIME_FIELD *pmime_field)
 				tmp_ptr ++; /* skip WSP */
 				i ++;
 			}
-			if (i == buff_len) {
+			if (i == buff_len)
 				return 0;
-			} else {
-				*dest_ptr = ' ';
-				dest_ptr ++;
-				value_length ++;
-			}
+			*dest_ptr = ' ';
+			dest_ptr ++;
+			value_length ++;
 		}
 	}
 	return 0;

@@ -1031,12 +1031,10 @@ int MJSON::fetch_structure(const char *charset, BOOL b_ext, char *buff, int leng
 	pmime = (MJSON_MIME*)pnode->pdata;
 	ret_len = mjson_fetch_mime_structure(pmime, NULL, NULL, charset,
 				pjson->charset, b_ext, buff, length);
-	if (-1 == ret_len) {
+	if (ret_len == -1)
 		return -1;
-	} else {
-		buff[ret_len] = '\0';
-		return ret_len;
-	}
+	buff[ret_len] = '\0';
+	return ret_len;
 }
 
 static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
@@ -1979,12 +1977,10 @@ int MJSON::rfc822_fetch(const char *storage_path,
 	pmime = (MJSON_MIME*)pnode->pdata;
 	ret_len = mjson_fetch_mime_structure(pmime, temp_path, "", charset,
 				pjson->charset, b_ext, buff, length);
-	if (-1 == ret_len) {
+	if (ret_len == -1)
 		return -1;
-	} else {
-		buff[ret_len] = '\0';
-		return ret_len;
-	}
+	buff[ret_len] = '\0';
+	return ret_len;
 }
 
 static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
@@ -2009,11 +2005,9 @@ static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
 	pmime = (MJSON_MIME*)pnode->pdata;
 	ret_len = mjson_fetch_mime_structure(pmime, storage_path, pjson->filename,
 				charset, pjson->charset, b_ext, buff, length);
-	if (-1 == ret_len) {
+	if (ret_len == -1)
 		return -1;
-	} else {
-		buff[ret_len] = '\0';
-		return ret_len;
-	}
+	buff[ret_len] = '\0';
+	return ret_len;
 }
 
