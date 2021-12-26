@@ -11,7 +11,6 @@
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
 #include "common_util.h"
-#include <gromox/console_server.hpp>
 #include "cmd_parser.h"
 #include <poll.h>
 #include <cstdio>

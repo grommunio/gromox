@@ -11,8 +11,6 @@
 #include <gromox/scope.hpp>
 #include <gromox/config_file.hpp>
 #include "message_dequeue.h" 
-#include "console_cmd_handler.h"
-#include <gromox/console_server.hpp>
 #include "system_services.h"
 #include "transporter.h" 
 #include <gromox/lib_buffer.hpp>
@@ -87,8 +85,6 @@ int main(int argc, const char **argv) try
 	static constexpr cfg_directive cfg_default_values[] = {
 		{"admin_mailbox", "root@localhost"},
 		{"config_file_path", PKGSYSCONFDIR "/delivery:" PKGSYSCONFDIR},
-		{"console_server_ip", "::1"},
-		{"console_server_port", "6677"},
 		{"context_average_mime", "8", CFG_SIZE, "1"},
 		{"data_file_path", PKGDATADIR "/delivery:" PKGDATADIR},
 		{"dequeue_maximum_mem", "1G", CFG_SIZE, "1"},
@@ -177,11 +173,6 @@ int main(int argc, const char **argv) try
 		}
 	}
 
-	auto console_server_ip = g_config_file->get_value("console_server_ip");
-	uint16_t console_server_port = g_config_file->get_ll("console_server_port");
-	printf("[console_server]: console server address is [%s]:%hu\n",
-	       *console_server_ip == '\0' ? "*" : console_server_ip, console_server_port);
-	
 	service_init({g_config_file->get_value("service_plugin_path"),
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_file_path"),
@@ -223,17 +214,6 @@ int main(int argc, const char **argv) try
 	auto cleanup_7 = make_scope_exit(message_dequeue_free);
 	auto cleanup_8 = make_scope_exit(message_dequeue_stop);
 
-    console_server_init(console_server_ip, console_server_port);
-	console_server_register_command("system", cmd_handler_system_control);
-	console_server_register_command("help", cmd_handler_help);
-
-    if (0 != console_server_run()) {
-		printf("[system]: failed to run console server\n");
-		return EXIT_FAILURE;
-    }
-	auto cleanup_9 = make_scope_exit(console_server_free);
-	auto cleanup_10 = make_scope_exit(console_server_stop);
-
 	transporter_init(g_config_file->get_value("mpc_plugin_path"),
 		mpc_plugin_list != nullptr ? mpc_plugin_list : g_dfl_mpc_plugins,
 		threads_min, threads_max,
@@ -269,8 +249,5 @@ int main(int argc, const char **argv) try
 
 static void term_handler(int signo)
 {
-	console_server_notify_main_stop();
+	g_notify_stop = true;
 }
-
-
- 

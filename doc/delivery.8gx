@@ -25,17 +25,6 @@ especially those used by plugin instances, will be searched.
 .br
 Default: \fI/etc/gromox/delivery:/etc/gromox\fP
 .TP
-\fBconsole_server_ip\fP
-An IPv6 address (or v4-mapped address) to expose the management console
-frontend on.
-.br
-Default: \fI::1\fP
-.TP
-\fBconsole_server_port\fP
-The TCP port number to expose the management console frontend on.
-.br
-Default: \fI6677\fP
-.TP
 \fBdata_file_path\fP
 Colon-separated list of directories in which static data files will be
 searched.

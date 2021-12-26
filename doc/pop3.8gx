@@ -31,17 +31,6 @@ especially those used by plugin instances, will be searched.
 .br
 Default: \fI/etc/gromox/pop3:/etc/gromox\fP
 .TP
-\fBconsole_server_ip\FP
-An IPv6 address (or v4-mapped address) to expose the management console
-frontend on.
-.br
-Default: \fI::1\fP
-.TP
-\fBconsole_server_port\fP
-The TCP port number to expose the management console frontend on.
-.br
-Default: \fI7788\fP
-.TP
 \fBcontext_average_mem\fP
 Default: \fI256K\fP
 .TP

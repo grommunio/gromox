@@ -17,8 +17,6 @@
 #include "smtp_parser.h" 
 #include "blocks_allocator.h" 
 #include <gromox/threads_pool.hpp>
-#include "console_cmd_handler.h"
-#include <gromox/console_server.hpp>
 #include <gromox/contexts_pool.hpp>
 #include "service.h" 
 #include "system_services.h"
@@ -93,8 +91,6 @@ int main(int argc, const char **argv) try
 		{"block_interval_session", "1min", CFG_TIME, "1s"},
 		{"command_protocol", "both"},
 		{"config_file_path", PKGSYSCONFDIR "/smtp:" PKGSYSCONFDIR},
-		{"console_server_ip", "::1"},
-		{"console_server_port", "5566"},
 		{"context_average_mem", "256K", CFG_SIZE, "64K"},
 		{"context_max_mem", "2M", CFG_SIZE},
 		{"data_file_path", PKGDATADIR "/smtp:" PKGDATADIR},
@@ -267,10 +263,6 @@ int main(int argc, const char **argv) try
 	else
 		scfg.cmd_prot = 0;
 
-	auto console_server_ip = g_config_file->get_value("console_server_ip");
-	uint16_t console_server_port = g_config_file->get_ll("console_server_port");
-	printf("[console_server]: console server is address [%s]:%hu\n",
-	       *console_server_ip == '\0' ? "*" : console_server_ip, console_server_port);
 	listener_init(listen_port, listen_ssl_port);
 	auto cleanup_3 = make_scope_exit(listener_free);
 																			
@@ -370,18 +362,6 @@ int main(int argc, const char **argv) try
 	auto cleanup_19 = make_scope_exit(flusher_free);
 	auto cleanup_20 = make_scope_exit(flusher_stop);
 
-	console_server_init(console_server_ip, console_server_port);
-	console_server_register_command("smtp", cmd_handler_smtp_control);
-	console_server_register_command("system", cmd_handler_system_control);
-	console_server_register_command("help", cmd_handler_help);
-
-	if (0 != console_server_run()) {
-		printf("[system]: failed to run console server\n");
-		return EXIT_FAILURE;
-	}
-	auto cleanup_21 = make_scope_exit(console_server_free);
-	auto cleanup_22 = make_scope_exit(console_server_stop);
-
 	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(smtp_parser_process));
 	threads_pool_register_event_proc(smtp_parser_threads_event_proc);
 	if (0 != threads_pool_run()) {
@@ -412,7 +392,7 @@ int main(int argc, const char **argv) try
 
 static void term_handler(int signo)
 {
-	console_server_notify_main_stop();
+	g_notify_stop = true;
 }
 
 

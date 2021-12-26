@@ -20,8 +20,6 @@
 #include <gromox/config_file.hpp>
 #include "mail_engine.h"
 #include "exmdb_client.h"
-#include "console_cmd_handler.h"
-#include <gromox/console_server.hpp>
 #include "system_services.h"
 #include <cstdio>
 #include <unistd.h>
@@ -106,8 +104,6 @@ int main(int argc, const char **argv) try
 
 	static constexpr cfg_directive cfg_default_values[] = {
 		{"config_file_path", PKGSYSCONFDIR "/midb:" PKGSYSCONFDIR},
-		{"console_server_ip", "::1"},
-		{"console_server_port", "9900"},
 		{"data_path", PKGDATADIR "/midb:" PKGDATADIR},
 		{"default_charset", "windows-1252"},
 		{"default_timezone", "Asia/Shanghai"},
@@ -173,10 +169,6 @@ int main(int argc, const char **argv) try
 		bytetoa(mmap_size, temp_buff);
 		printf("[system]: sqlite mmap_size is %s\n", temp_buff);
 	}
-	auto console_ip = pconfig->get_value("console_server_ip");
-	uint16_t console_port = pconfig->get_ll("console_server_port");
-	printf("[system]: console server address is [%s]:%hu\n",
-	       *console_ip == '\0' ? "*" : console_ip, console_port);
 	
 	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
 		printf("[system]: fail to get file limitation\n");
@@ -216,11 +208,6 @@ int main(int argc, const char **argv) try
 	cmd_parser_init(threads_num, SOCKET_TIMEOUT, cmd_debug);
 	auto cleanup_2 = make_scope_exit(cmd_parser_free);
 
-	console_server_init(console_ip, console_port);
-	console_server_register_command("midb", cmd_handler_midb_control);
-	console_server_register_command("system", cmd_handler_system_control);
-	console_server_register_command("help", cmd_handler_help);
-
 	if (service_run_early() != 0) {
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
 		return 3;
@@ -258,11 +245,6 @@ int main(int argc, const char **argv) try
 		return 9;
 	}
 	auto cl_6 = make_scope_exit(exmdb_client_stop);
-	if (0 != console_server_run()) {
-		printf("[system]: failed to run console server\n");
-		return 10;
-	}
-	auto cl_7 = make_scope_exit(console_server_stop);
 	if (0 != listener_trigger_accept()) {
 		printf("[system]: fail to trigger tcp listener\n");
 		return 11;

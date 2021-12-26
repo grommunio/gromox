@@ -29,7 +29,6 @@
 #include "hpm_processor.h"
 #include "pdu_processor.h"
 #include <gromox/contexts_pool.hpp>
-#include <gromox/console_server.hpp>
 #include "system_services.h"
 #include "blocks_allocator.h"
 #include <cstdio>
@@ -38,7 +37,6 @@
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-#include "console_cmd_handler.h"
 #define PDU_PROCESSOR_RATIO			10
 
 using namespace gromox;
@@ -117,8 +115,6 @@ int main(int argc, const char **argv) try
 	static constexpr cfg_directive cfg_default_values[] = {
 		{"block_interval_auths", "1min", CFG_TIME, "1s"},
 		{"config_file_path", PKGSYSCONFDIR "/http:" PKGSYSCONFDIR},
-		{"console_server_ip", "::1"},
-		{"console_server_port", "8899"},
 		{"context_average_mem", "256K", CFG_SIZE, "192K"},
 		{"context_num", "400", CFG_SIZE},
 		{"data_file_path", PKGDATADIR "/http:" PKGDATADIR},
@@ -292,11 +288,6 @@ int main(int argc, const char **argv) try
 		}
 	}
 
-	auto console_server_ip = g_config_file->get_value("console_server_ip");
-	uint16_t console_server_port = g_config_file->get_ll("console_server_port");
-	printf("[console_server]: console server address is [%s]:%hu\n",
-	       *console_server_ip == '\0' ? "*" : console_server_ip, console_server_port);
-	
 	uint64_t fastcgi_cache_size = g_config_file->get_ll("fastcgi_cache_size");
 	bytetoa(fastcgi_cache_size, temp_buff);
 	printf("[mod_fastcgi]: fastcgi cache size is %s\n", temp_buff);
@@ -463,18 +454,6 @@ int main(int argc, const char **argv) try
 	auto cleanup_23 = make_scope_exit(contexts_pool_free);
 	auto cleanup_24 = make_scope_exit(contexts_pool_stop);
  
-	console_server_init(console_server_ip, console_server_port);
-	console_server_register_command("http", cmd_handler_http_control);
-	console_server_register_command("system", cmd_handler_system_control);
-	console_server_register_command("help", cmd_handler_help);
-
-	if (0 != console_server_run()) {
-		printf("[system]: failed to run console server\n");
-		return EXIT_FAILURE;
-	}
-	auto cleanup_25 = make_scope_exit(console_server_free);
-	auto cleanup_26 = make_scope_exit(console_server_stop);
-
 	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(http_parser_process));
 	threads_pool_register_event_proc(http_parser_threads_event_proc);
 	if (0 != threads_pool_run()) {
@@ -509,6 +488,5 @@ int main(int argc, const char **argv) try
 static void term_handler(int signo)
 {
 	http_parser_shutdown_async();
-	console_server_notify_main_stop();
+	g_notify_stop = true;
 }
-

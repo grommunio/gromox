@@ -1,2 +1,0 @@
-#smtp console ipaddr		port		delivery console ipaddr			port
-::1	5566	::1	6677

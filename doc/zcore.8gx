@@ -38,17 +38,6 @@ configuration files, especially those used by plugin instances.
 .br
 Default: \fI/etc/gromox/zcore:/etc/gromox\fP
 .TP
-\fBconsole_server_ip\fP
-An IPv6 address (or v4-mapped address) to expose the management console
-frontend on.
-.br
-Default: \fI::1\fP
-.TP
-\fBconsole_server_port\fP
-The TCP port number to expose the management console frontend on.
-.br
-Default: \fI3344\fP
-.TP
 \fBdata_file_path\fP
 Colon-separated list of directories which will be scanned when locating data
 files.

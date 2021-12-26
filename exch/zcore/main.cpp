@@ -23,8 +23,6 @@
 #include <gromox/config_file.hpp>
 #include "exmdb_client.h"
 #include "zarafa_server.h"
-#include "console_cmd_handler.h"
-#include <gromox/console_server.hpp>
 #include "msgchg_grouping.h"
 #include "bounce_producer.h"
 #include "system_services.h"
@@ -118,8 +116,6 @@ int main(int argc, const char **argv) try
 		{"address_item_num", "100000", CFG_SIZE, "1"},
 		{"address_table_size", "3000", CFG_SIZE, "1"},
 		{"config_file_path", PKGSYSCONFDIR "/zcore:" PKGSYSCONFDIR},
-		{"console_server_ip", "::1"},
-		{"console_server_port", "3344"},
 		{"data_file_path", PKGDATADIR "/zcore:" PKGDATADIR},
 		{"default_charset", "windows-1252"},
 		{"default_timezone", "Asia/Shanghai"},
@@ -250,15 +246,6 @@ int main(int argc, const char **argv) try
 	zarafa_server_init(table_size, cache_interval, ping_interval);
 	auto cleanup_2 = make_scope_exit(zarafa_server_free);
 	
-	auto console_ip = pconfig->get_value("console_server_ip");
-	uint16_t console_port = pconfig->get_ll("console_server_port");
-	printf("[system]: console server address is [%s]:%hu\n",
-	       *console_ip == '\0' ? "*" : console_ip, console_port);
-	console_server_init(console_ip, console_port);
-	console_server_register_command("zcore", cmd_handler_zcore_control);
-	console_server_register_command("system", cmd_handler_system_control);
-	console_server_register_command("help", cmd_handler_help);
-
 	listener_init();
 	if (listener_run(g_config_file->get_value("zcore_listen")) != 0) {
 		printf("[system]: failed to run listener\n");
@@ -316,11 +303,6 @@ int main(int argc, const char **argv) try
 		return 11;
 	}
 	auto cl_8 = make_scope_exit(exmdb_client_stop);
-	if (0 != console_server_run()) {
-		printf("[system]: failed to run console server\n");
-		return 12;
-	}
-	auto cl_9 = make_scope_exit(console_server_stop);
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGINT, &sact, nullptr);
