@@ -57,54 +57,6 @@ static constexpr cfg_directive cfg_default_values[] = {
 unsigned int g_dbg_synth_content;
 unsigned int g_mbox_contention_warning, g_mbox_contention_reject;
 
-/*
- *	console talk for exchange_emsmdb plugin
- *	@param
- *		argc					arguments number
- *		argv [in]				arguments array
- *		result [out]			buffer for retriving result
- *		length					result buffer length
- */
-static void console_talk(int argc, char **argv, char *result, int length)
-{
-	char help_string[] = "250 exmdb provider help information:\r\n"
-						 "\t%s unload <maildir>\r\n"
-						 "\t    --unload the store\r\n"
-						 "\t%s info\r\n"
-						 "\t    --print the module information";
-
-	if (1 == argc) {
-		gx_strlcpy(result, "550 too few arguments", length);
-		return;
-	}
-	if (2 == argc && 0 == strcmp("--help", argv[1])) {
-		snprintf(result, length, help_string, argv[0], argv[0]);
-		result[length - 1] = '\0';
-		return;
-	}
-	if (2 == argc && 0 == strcmp("info", argv[1])) {
-		snprintf(result, length,
-			"250 exmdb provider information:\r\n"
-			"\talive proxy connections    %d\r\n"
-			"\tlost proxy connections     %d\r\n"
-			"\talive router connections   %d",
-			exmdb_client_get_param(ALIVE_PROXY_CONNECTIONS),
-			exmdb_client_get_param(LOST_PROXY_CONNECTIONS),
-			exmdb_parser_get_param(ALIVE_ROUTER_CONNECTIONS));
-		return;
-	}
-	if (3 == argc && 0 == strcmp("unload", argv[1])) {
-		if (TRUE == exmdb_server_unload_store(argv[2])) {
-			gx_strlcpy(result, "250 unload store OK", length);
-		} else {
-			gx_strlcpy(result, "550 failed to unload store", length);
-		}
-		return;
-	}
-	snprintf(result, length, "550 invalid argument %s", argv[1]);
-    return;
-}
-
 static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig)
 {
 	if (pconfig == nullptr) {
@@ -296,11 +248,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 #undef IDLOUT
 		register_service("exmdb_client_register_proc", exmdb_server_register_proc);
 		register_service("pass_service", common_util_pass_service);
-		if (FALSE == register_talk(console_talk)) {
-			printf("[exmdb_provider]: failed to register console talk\n");
-			return FALSE;
-		}
-		
 		return TRUE;
 	}
 	case PLUGIN_FREE:

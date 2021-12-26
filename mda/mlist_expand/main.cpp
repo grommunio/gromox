@@ -20,8 +20,6 @@ static decltype(mysql_adaptor_get_mlist) *get_mlist;
 
 static BOOL expand_process(MESSAGE_CONTEXT *pcontext);
 
-static void console_talk(int argc, char **argv, char *result, int length);
-
 static BOOL hook_mlist_expand(int reason, void **ppdata)
 {
     switch (reason) {
@@ -42,9 +40,6 @@ static BOOL hook_mlist_expand(int reason, void **ppdata)
 			printf("[mlist_expand]: failed to register the hook function\n");
             return FALSE;
         }
-
-		register_talk(console_talk);
-
 		printf("[mlist_expand]: plugin is loaded into system\n");
         return TRUE;
     case PLUGIN_FREE:
@@ -256,34 +251,3 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
  EXIT_EXPAND:
 	return pcontext->pcontrol->f_rcpt_to.get_total_length() == 0 ? TRUE : false;
 }
-
-static void console_talk(int argc, char **argv, char *result, int length)
-{
-	char help_string[] = "250 mlist expand help information:\r\n"
-						 "\t%s bounce reload\r\n"
-						 "\t    --reload the bounce resource list";
-
-	if (1 == argc) {
-		strncpy(result, "550 too few arguments", length);
-		return;
-	}
-
-	if (2 == argc && 0 == strcmp("--help", argv[1])) {
-		snprintf(result, length, help_string, argv[0]);
-		result[length - 1] ='\0';
-		return;
-	}
-
-	if (3 == argc && 0 == strcmp("bounce", argv[1]) &&
-		0 == strcmp("reload", argv[2])) {
-		if (bounce_producer_refresh(get_data_path()))
-			strncpy(result, "250 bounce resource list reload OK", length);
-		else
-			strncpy(result, "550 bounce resource list reload error", length);
-		return;
-	}
-
-	snprintf(result, length, "550 invalid argument %s", argv[1]);
-	return;
-}
-

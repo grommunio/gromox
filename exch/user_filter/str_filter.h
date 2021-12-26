@@ -14,5 +14,4 @@ extern void str_filter_stop();
 extern BOOL str_filter_judge(const char *str);
 extern BOOL str_filter_query(const char *str);
 extern BOOL str_filter_add_string_into_temp_list(const char *str, int interval);
-void str_filter_console_talk(int argc, char **argv, char *result, int length);
 extern void str_filter_echo(const char *format, ...) __attribute__((format(printf, 1, 2)));

@@ -34,10 +34,6 @@ static BOOL svc_str_filter(int reason, void **ppdata)
 		if (pos != plugname.npos)
 			plugname.erase(pos);
 		auto cfg_path = plugname + ".cfg";
-		if (FALSE == register_talk(str_filter_console_talk)) {
-			printf("[%s]: failed to register console talk\n", plugname.c_str());
-			return FALSE;
-		}
 		auto pfile = config_file_initd(cfg_path.c_str(), get_config_path());
 		if (NULL == pfile) {
 			printf("[%s]: config_file_initd %s: %s\n",

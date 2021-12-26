@@ -125,7 +125,6 @@ static int copy_mail(const char *path, const char *src_folder, const char *mid_s
 static int imap_search(const char *path, const char *folder, const char *charset, int argc, char **argv, char *ret_buff, int *plen, int *perrno);
 static int imap_search_uid(const char *path, const char *folder, const char *charset, int argc, char **argv, char *ret_buff, int *plen, int *perrno);
 static BOOL check_full(const char *path);
-static void console_talk(int argc, char **argv, char *result, int length);
 
 static int g_conn_num;
 static gromox::atomic_bool g_notify_stop;
@@ -284,11 +283,6 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 			return FALSE;
 		}
 #undef E
-		if (FALSE == register_talk(console_talk)) {
-			printf("[midb_agent]: failed to register console talk\n");
-			return FALSE;
-		}
-
 		return TRUE;
 	}
 	case PLUGIN_FREE:
@@ -3222,48 +3216,6 @@ static int connect_midb(const char *ip_addr, uint16_t port)
 		return -1;
 	}
 	return sockd;
-}
-
-static void console_talk(int argc, char **argv, char *result, int length)
-{
-	BACK_SVR *pserver;
-	DOUBLE_LIST_NODE *pnode;
-	char help_string[] = "250 midb agent help information:\r\n"
-						 "\t%s echo mp-path\r\n"
-						 "\t    --print the midb server information";
-
-	if (1 == argc) {
-		strncpy(result, "550 too few arguments", length);
-		return;
-	}
-	if (2 == argc && 0 == strcmp("--help", argv[1])) {
-		snprintf(result, length, help_string, argv[0]);
-		result[length - 1] = '\0';
-		return;
-	}
-	
-	if (3 == argc && 0 == strcmp("echo", argv[1])) {
-		for (pnode=double_list_get_head(&g_server_list); NULL!=pnode;
-			pnode=double_list_get_after(&g_server_list, pnode)) {
-			pserver = (BACK_SVR*)pnode->pdata;
-			if (0 == strcmp(argv[2], pserver->prefix)) {
-				snprintf(result, length,
-				"250 agent information of midb(mp:%s ip:%s port:%d):\r\n"
-				"\ttotal connections       %d\r\n"
-				"\tavailable connections   %zu",
-				pserver->prefix, pserver->ip_addr, pserver->port,
-				g_conn_num, double_list_get_nodes_num(&pserver->conn_list));
-				result[length - 1] = '\0';
-				return;
-			}
-		}
-		snprintf(result, length, "250 no agent information of midb(mp:%s)",
-			argv[2]);
-		return;
-	}
-	
-	snprintf(result, length, "550 invalid argument %s", argv[1]);
-	return;
 }
 
 static BOOL get_digest_string(const char *src, int length, const char *tag,

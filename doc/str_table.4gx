@@ -14,10 +14,6 @@ and make it load different .cfg files. (This is clearly inefficient and may be
 fixed in a future release.) For example, the plugin loader will derive the name
 "domain_list.cfg" from the module name "libgxs_domain_list.so", and then
 pass this filename to the module so it can be loaded as a config file.
-.PP
-The plugin supports temporary modification of the string table as it exists in
-memory through the telnet console mechanism. A reload of the table from disk
-purges these modifications.
 .SH Configuration file directives
 .TP
 \fBadd_service_name\fP
