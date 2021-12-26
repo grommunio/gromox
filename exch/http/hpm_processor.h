@@ -17,7 +17,6 @@ struct HPM_PLUGIN {
 	HPM_INTERFACE interface{};
 	void *handle = nullptr;
 	PLUGIN_MAIN lib_main = nullptr;
-	TALK_MAIN talk_main = nullptr;
 	std::string file_name;
 	bool completed_init = false;
 };

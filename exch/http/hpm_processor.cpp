@@ -105,15 +105,6 @@ static BOOL hpm_processor_register_interface(
 	return TRUE;
 }
 
-static BOOL hpm_processor_register_talk(TALK_MAIN talk)
-{
-    if(NULL == g_cur_plugin) {
-        return FALSE;
-    }
-    g_cur_plugin->talk_main = talk;
-    return TRUE;
-}
-
 static const char *hpm_processor_get_host_ID()
 {
 	return resource_get_string("HOST_ID");
@@ -241,9 +232,6 @@ static void *hpm_processor_queryservice(const char *service, const std::type_inf
 	}
 	if (strcmp(service, "register_service") == 0)
 		return reinterpret_cast<void *>(service_register_service);
-	if (strcmp(service, "register_talk") == 0) {
-		return reinterpret_cast<void *>(hpm_processor_register_talk);
-	}
 	if (strcmp(service, "get_host_ID") == 0) {
 		return reinterpret_cast<void *>(hpm_processor_get_host_ID);
 	}
@@ -341,7 +329,7 @@ HPM_PLUGIN::HPM_PLUGIN()
 
 HPM_PLUGIN::HPM_PLUGIN(HPM_PLUGIN &&o) :
 	list_reference(o.list_reference), interface(o.interface),
-	handle(o.handle), lib_main(o.lib_main), talk_main(o.talk_main),
+	handle(o.handle), lib_main(o.lib_main),
 	file_name(std::move(o.file_name)), completed_init(o.completed_init)
 {
 	o.list_reference = {};

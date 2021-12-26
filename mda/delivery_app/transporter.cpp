@@ -46,7 +46,6 @@ struct HOOK_PLUG_ENTITY {
     DOUBLE_LIST         list_hook;
     void*               handle;
     PLUGIN_MAIN         lib_main;
-    TALK_MAIN           talk_main;
     char                file_name[256];
     char                full_path[256];
 	bool completed_init;
@@ -138,7 +137,6 @@ static void *transporter_queryservice(const char *service, const std::type_info 
 static BOOL transporter_register_hook(HOOK_FUNCTION func);
 static BOOL transporter_register_local(HOOK_FUNCTION func);
 static bool transporter_register_remote(HOOK_FUNCTION);
-static BOOL transporter_register_talk(TALK_MAIN talk);
 static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 	THREAD_DATA *pthr_data); 
 static void transporter_clean_up_unloading();
@@ -849,7 +847,6 @@ static void *transporter_queryservice(const char *service, const std::type_info 
 	E("register_hook", transporter_register_hook);
 	E("register_local", transporter_register_local);
 	E("register_remote", transporter_register_remote);
-	E("register_talk", transporter_register_talk);
 	E("get_host_ID", transporter_get_host_ID);
 	E("get_default_domain", transporter_get_default_domain);
 	E("get_admin_mailbox", transporter_get_admin_mailbox);
@@ -1131,15 +1128,6 @@ static bool transporter_register_remote(HOOK_FUNCTION func)
 	return true;
 }
 
-static BOOL transporter_register_talk(TALK_MAIN talk)
-{
-    if(NULL == g_cur_lib) {
-        return FALSE;
-    }
-    g_cur_lib->talk_main = talk;
-    return TRUE;
-}
-
 static const char* transporter_get_host_ID()
 {
 	return resource_get_string("HOST_ID");
@@ -1196,37 +1184,6 @@ static const char* transporter_get_plugin_name()
 static const char* transporter_get_queue_path()
 {
 	return resource_get_string("DEQUEUE_PATH");
-}
-
-/*
- *	console talk function for each plugin
- *	@param
- *		argc					arguments number
- *		argv [in]				arguments array
- *		result [out]			result buffer for caller
- *		length					result buffer length
- *	@return
- *		PLUGIN_TALK_OK
- *		PLUGIN_NO_TALK
- *		PLUGIN_NO_FILE
- */
-int transporter_console_talk(int argc, char** argv, char *result, int length)
-{
-    DOUBLE_LIST_NODE *pnode;
-
-    for (pnode=double_list_get_head(&g_lib_list); NULL!=pnode;
-         pnode=double_list_get_after(&g_lib_list, pnode)) {
-		auto plib = static_cast<HOOK_PLUG_ENTITY *>(pnode->pdata);
-        if (0 == strncmp(plib->file_name, argv[0], 256)) {
-            if (NULL != plib->talk_main) {
-                plib->talk_main(argc, argv, result, length);
-                return PLUGIN_TALK_OK;
-            } else {
-                return PLUGIN_NO_TALK;
-            }
-        }
-    }
-    return PLUGIN_NO_FILE;
 }
 
 static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level,

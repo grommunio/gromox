@@ -258,7 +258,6 @@ int main(int argc, const char **argv) try
 	console_server_register_command("zcore", cmd_handler_zcore_control);
 	console_server_register_command("system", cmd_handler_system_control);
 	console_server_register_command("help", cmd_handler_help);
-	console_server_register_command(nullptr, cmd_handler_service_plugins);
 
 	listener_init();
 	if (listener_run(g_config_file->get_value("zcore_listen")) != 0) {

@@ -52,7 +52,6 @@ struct HTTP_AUTH_INFO {
 #define DECLARE_HPM_API(x) \
 	x void *(*query_serviceF)(const char *, const std::type_info &); \
 	x BOOL (*register_interface)(HPM_INTERFACE *); \
-	x BOOL (*register_talk)(TALK_MAIN); \
 	x GENERIC_CONNECTION *(*get_connection)(int); \
 	x HTTP_REQUEST *(*get_request)(int); \
 	x HTTP_AUTH_INFO (*get_auth_info)(int); \
@@ -83,7 +82,6 @@ DECLARE_HPM_API(extern);
 #define LINK_HPM_API(param) \
 	query_serviceF = reinterpret_cast<decltype(query_serviceF)>(param[0]); \
 	query_service1(register_interface); \
-	query_service1(register_talk); \
 	query_service1(get_connection); \
 	query_service1(get_request); \
 	query_service1(get_auth_info); \

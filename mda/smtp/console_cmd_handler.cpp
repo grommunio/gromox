@@ -16,7 +16,6 @@
 #include <cstdlib>
 #include <cstdio>
 #define PLUG_BUFFER_SIZE        4096*4
-#define TALK_BUFFER_LEN         65536
 
 using namespace gromox;
 
@@ -357,22 +356,4 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 
 	console_server_reply_to_client("550 invalid argument %s", argv[1]);
 	return TRUE;
-}
-
-BOOL cmd_handler_service_plugins(int argc, char** argv)
-{
-	char buf[TALK_BUFFER_LEN];
-	
-	memset(buf, 0, TALK_BUFFER_LEN);
-	if (PLUGIN_TALK_OK == 
-		service_console_talk(argc, argv, buf, TALK_BUFFER_LEN)) {
-		if (strlen(buf) == 0) {
-			strncpy(buf, "550 service plugin console talk is error "
-				"implemented", sizeof(buf) - 1);
-			buf[sizeof(buf) - 1] = '\0';
-		}
-		console_server_reply_to_client("%s", buf);
-		return TRUE;
-	}
-	return FALSE;
 }

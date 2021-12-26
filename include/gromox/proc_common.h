@@ -22,7 +22,6 @@ struct DCERPC_INTERFACE;
 	x DCERPC_ENDPOINT *(*register_endpoint)(const char *, int); \
 	x BOOL (*register_interface)(DCERPC_ENDPOINT *, const DCERPC_INTERFACE *); \
 	x void (*unregister_interface)(DCERPC_ENDPOINT *, const DCERPC_INTERFACE *); \
-	x BOOL (*register_talk)(TALK_MAIN); \
 	x void (*log_info)(unsigned int, const char *, ...); \
 	x const char *(*get_host_ID)(); \
 	x const char *(*get_default_domain)(); \
@@ -57,7 +56,6 @@ DECLARE_PROC_API(extern);
 	query_service1(register_endpoint); \
 	query_service1(register_interface); \
 	query_service1(unregister_interface); \
-	query_service1(register_talk); \
 	query_service1(log_info); \
 	query_service1(get_host_ID); \
 	query_service1(get_default_domain); \

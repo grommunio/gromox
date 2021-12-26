@@ -475,7 +475,6 @@ static void *mdq_thrwork(void *arg)
 }
 
 /*
- *  message dequeue's console talk function
  *  @param
  *  	param			MESSAGE_DEQUEUE_HOLDING
  *						MESSAGE_DEQUEUE_PROCESSING

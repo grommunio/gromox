@@ -1,6 +1,5 @@
 /*
- *  define the constant for plugin's return value load, unload, reload, 
- *  console talk actions.
+ *  define the constant for plugin's return value load, unload, reload actions.
  */
 #pragma once
 #include <gromox/common_types.hpp>
@@ -33,12 +32,4 @@ enum{
     PLUGIN_UNLOAD_OK = 0,
 };
 
-/* enumeration for result of console talk */
-enum{
-    PLUGIN_NO_TALK = -2,
-    PLUGIN_NO_FILE,
-    PLUGIN_TALK_OK = 0,
-};
-
 using PLUGIN_MAIN = BOOL (*)(int, void **);
-using TALK_MAIN = void (*)(int, char **, char *, int);

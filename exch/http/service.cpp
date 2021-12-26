@@ -40,7 +40,6 @@ struct SVC_PLUG_ENTITY {
 	std::atomic<int> ref_count = 0;
 	void *handle = nullptr;
 	PLUGIN_MAIN lib_main = nullptr;
-	TALK_MAIN talk_main = nullptr;
 	std::string file_name, full_path;
 	bool completed_init = false;
 };
@@ -59,7 +58,6 @@ struct SERVICE_ENTRY {
 
 static int service_load_library(const char *);
 static void *service_query_service(const char *service, const std::type_info &);
-static BOOL service_register_talk(TALK_MAIN talk);
 static const char *service_get_plugin_name();
 static const char *service_get_config_path();
 static const char *service_get_data_path();
@@ -208,7 +206,7 @@ SVC_PLUG_ENTITY::SVC_PLUG_ENTITY()
 
 SVC_PLUG_ENTITY::SVC_PLUG_ENTITY(SVC_PLUG_ENTITY &&o) :
 	list_service(o.list_service), ref_count(o.ref_count.load()),
-	handle(o.handle), lib_main(o.lib_main), talk_main(o.talk_main),
+	handle(o.handle), lib_main(o.lib_main),
 	file_name(std::move(o.file_name)), full_path(std::move(o.full_path)),
 	completed_init(o.completed_init)
 {
@@ -268,9 +266,6 @@ static void *service_query_service(const char *service, const std::type_info &ti
 {
     if (0 == strcmp(service, "register_service")) {
 		return reinterpret_cast<void *>(service_register_service);
-    }
-    if (0 == strcmp(service, "register_talk")) {
-		return reinterpret_cast<void *>(service_register_talk);
     }
 	if (0 == strcmp(service, "get_plugin_name")) {
 		return reinterpret_cast<void *>(service_get_plugin_name);
@@ -374,15 +369,6 @@ BOOL service_register_service(const char *func_name, void *addr, const std::type
 	double_list_append_as_tail(&g_list_service, &pservice->node_service);
 	/* append also the service into service list */
 	double_list_append_as_tail(&plug->list_service, &pservice->node_lib);
-	return TRUE;
-}
-
-static BOOL service_register_talk(TALK_MAIN talk)
-{
-	if(NULL == g_cur_plug) {
-		return FALSE;
-	}
-	g_cur_plug->talk_main = talk;
 	return TRUE;
 }
 
@@ -493,30 +479,6 @@ void service_release(const char *service_name, const char *module)
 		free(pmodule);
 	}
 	pservice->plib->ref_count --;
-}
-
-/*
- *	pass argments to console talk function of plugin
- *	@param
- *		int				argc
- *		argv [in]		arguments list
- *		reason [out]	buffer for return result
- *		int len			length of reason buffer
- *	@return
- *		PLUGIN_TALK_OK    found plugin
- *		PLUGIN_NO_FILE    plug in not in list
- *		PLUGIN_NO_TALK    plug has not registered talk function
- */
-int service_console_talk(int argc, char **argv, char *reason, int len)
-{
-	auto plib = std::find_if(g_list_plug.cbegin(), g_list_plug.cend(),
-	            [&](const SVC_PLUG_ENTITY &p) { return p.file_name == argv[0]; });
-	if (plib == g_list_plug.cend())
-		return PLUGIN_NO_FILE;
-	if (plib->talk_main == nullptr)
-		return PLUGIN_NO_TALK;
-	plib->talk_main(argc, argv, reason, len);
-	return PLUGIN_TALK_OK;
 }
 
 void service_reload_all()

@@ -3374,8 +3374,7 @@ PROC_PLUGIN::PROC_PLUGIN()
 }
 
 PROC_PLUGIN::PROC_PLUGIN(PROC_PLUGIN &&o) :
-	list_reference(o.list_reference),
-	lib_main(o.lib_main), talk_main(o.talk_main),
+	list_reference(o.list_reference), lib_main(o.lib_main),
 	file_name(std::move(o.file_name)), completed_init(o.completed_init)
 {
 	o.list_reference = {};
@@ -3406,15 +3405,6 @@ PROC_PLUGIN::~PROC_PLUGIN()
 	double_list_free(&pplugin->list_reference);
 	if (handle != nullptr)
 		dlclose(handle);
-}
-
-static BOOL pdu_processor_register_talk(TALK_MAIN talk)
-{
-    if(NULL == g_cur_plugin) {
-        return FALSE;
-    }
-    g_cur_plugin->talk_main = talk;
-    return TRUE;
 }
 
 static const char *pdu_processor_get_host_ID()
@@ -3553,9 +3543,6 @@ static void *pdu_processor_queryservice(const char *service, const std::type_inf
 		return reinterpret_cast<void *>(pdu_processor_unregister_interface);
 	if (strcmp(service, "register_service") == 0)
 		return reinterpret_cast<void *>(service_register_service);
-	if (strcmp(service, "register_talk") == 0) {
-		return reinterpret_cast<void *>(pdu_processor_register_talk);
-	}
 	if (strcmp(service, "get_host_ID") == 0) {
 		return reinterpret_cast<void *>(pdu_processor_get_host_ID);
 	}

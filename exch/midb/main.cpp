@@ -220,7 +220,6 @@ int main(int argc, const char **argv) try
 	console_server_register_command("midb", cmd_handler_midb_control);
 	console_server_register_command("system", cmd_handler_system_control);
 	console_server_register_command("help", cmd_handler_help);
-	console_server_register_command(nullptr, cmd_handler_service_plugins);
 
 	if (service_run_early() != 0) {
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");

@@ -467,7 +467,6 @@ int main(int argc, const char **argv) try
 	console_server_register_command("http", cmd_handler_http_control);
 	console_server_register_command("system", cmd_handler_system_control);
 	console_server_register_command("help", cmd_handler_help);
-	console_server_register_command(nullptr, cmd_handler_service_plugins);
 
 	if (0 != console_server_run()) {
 		printf("[system]: failed to run console server\n");

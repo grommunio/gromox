@@ -15,7 +15,6 @@
 #include <cstdlib>
 #include <cstdio>
 #define PLUG_BUFFER_SIZE        4096*4
-#define TALK_BUFFER_LEN         65536
 
 static char g_server_help[] =
 	"250 ZCORE DAEMON server help information:\r\n"
@@ -99,21 +98,4 @@ BOOL cmd_handler_system_control(int argc, char** argv)
 	
 	console_server_reply_to_client("550 invalid argument %s", argv[1]);
 	return TRUE;
-}
-
-BOOL cmd_handler_service_plugins(int argc, char** argv)
-{
-	char buf[TALK_BUFFER_LEN];
-	
-	memset(buf, 0, TALK_BUFFER_LEN);
-	if (PLUGIN_TALK_OK == 
-		service_console_talk(argc, argv, buf, TALK_BUFFER_LEN)) {
-		if (strlen(buf) == 0) {
-			gx_strlcpy(buf, "550 service plugin console talk is error "
-					"implemented", gromox::arsizeof(buf));
-		}
-		console_server_reply_to_client("%s", buf);
-		return TRUE;
-	}
-	return FALSE;
 }
