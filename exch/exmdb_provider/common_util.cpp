@@ -2538,13 +2538,19 @@ void common_util_set_message_read(sqlite3 *psqlite,
 		fprintf(stderr, "W-1274: %s\n", sqlite3_errstr(ret));
 }
 
-static BOOL common_util_update_message_cid(sqlite3 *psqlite,
-	uint64_t message_id, uint32_t proptag, uint64_t cid)
+static BOOL cu_update_object_cid(sqlite3 *psqlite, db_table table_type,
+    uint64_t object_id, uint32_t proptag, uint64_t cid)
 {
 	char sql_string[256];
 	
-	snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO message_properties"
-	          " VALUES (%llu, %u, ?)", LLU(message_id), UI(proptag));
+	if (table_type == db_table::msg_props)
+		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO message_properties"
+		         " VALUES (%llu, %u, ?)", LLU(object_id), UI(proptag));
+	else if (table_type == db_table::atx_props)
+		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO attachment_properties"
+		          " VALUES (%llu, %u, ?)", LLU(object_id), UI(proptag));
+	else
+		return false;
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
@@ -2648,11 +2654,9 @@ static BOOL common_util_set_message_body(
 		return FALSE;
 	if (write(fd.get(), "", 1) != 1)
 		return false;
-	if (FALSE == common_util_update_message_cid(
-		psqlite, message_id, proptag, cid)) {
-	} else {
-		remove_file.release();
-	}
+	if (!cu_update_object_cid(psqlite, db_table::msg_props, message_id, proptag, cid))
+		return TRUE;
+	remove_file.release();
 	return TRUE;
 }
 
@@ -2679,29 +2683,12 @@ static BOOL common_util_set_message_cid_value(sqlite3 *psqlite,
 			        path.c_str(), strerror(errno));
 	});
 	auto bv = static_cast<BINARY *>(ppropval->pvalue);
-	if (write(fd.get(), bv->pv, bv->cb) != bv->cb) {
+	if (write(fd.get(), bv->pv, bv->cb) != bv->cb ||
+	    !cu_update_object_cid(psqlite, db_table::msg_props, message_id,
+	    ppropval->proptag, cid))
 		return FALSE;
-	}
-	if (FALSE == common_util_update_message_cid(
-		psqlite, message_id, ppropval->proptag, cid)) {
-		return FALSE;
-	}
 	remove_file.release();
 	return TRUE;
-}
-
-static BOOL common_util_update_attachment_cid(sqlite3 *psqlite,
-	uint64_t attachment_id, uint32_t proptag, uint64_t cid)
-{
-	char sql_string[256];
-	
-	snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO attachment_properties"
-	          " VALUES (%llu, %u, ?)", LLU(attachment_id), UI(proptag));
-	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr)
-		return FALSE;
-	sqlite3_bind_int64(pstmt, 1, cid);
-	return sqlite3_step(pstmt) == SQLITE_DONE ? TRUE : false;
 }
 
 static BOOL common_util_set_attachment_cid_value(sqlite3 *psqlite,
@@ -2728,13 +2715,10 @@ static BOOL common_util_set_attachment_cid_value(sqlite3 *psqlite,
 			        path.c_str(), strerror(errno));
 	});
 	auto bv = static_cast<BINARY *>(ppropval->pvalue);
-	if (write(fd.get(), bv->pv, bv->cb) != bv->cb) {
-		return FALSE;
-	}
-	if (FALSE == common_util_update_attachment_cid(
-		psqlite, attachment_id, ppropval->proptag, cid)) {
+	if (write(fd.get(), bv->pv, bv->cb) != bv->cb ||
+	    !cu_update_object_cid(psqlite, db_table::atx_props, attachment_id,
+	    ppropval->proptag, cid))
 		return FALSE;	
-	}
 	remove_file.release();
 	return TRUE;
 }
@@ -2941,16 +2925,18 @@ BOOL cu_set_properties(db_table table_type,
 				if (NULL == common_util_get_tls_var()) {
 					break;
 				}
-				if (!common_util_update_message_cid(psqlite,
-				    id, PR_BODY, *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
+				if (!cu_update_object_cid(psqlite,
+				    table_type, id, PR_BODY,
+				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
 					return FALSE;	
 				continue;
 			case ID_TAG_BODY_STRING8:
 				if (NULL == common_util_get_tls_var()) {
 					break;
 				}
-				if (!common_util_update_message_cid(psqlite,
-				    id, PR_BODY_A, *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
+				if (!cu_update_object_cid(psqlite,
+				    table_type, id, PR_BODY_A,
+				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
 					return FALSE;	
 				continue;
 			case PR_BODY:
@@ -2968,7 +2954,7 @@ BOOL cu_set_properties(db_table table_type,
 				if (NULL == common_util_get_tls_var()) {
 					break;
 				}
-				if (!common_util_update_message_cid(psqlite, id, PR_HTML,
+				if (!cu_update_object_cid(psqlite, table_type, id, PR_HTML,
 				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
 					return FALSE;	
 				continue;
@@ -2976,7 +2962,7 @@ BOOL cu_set_properties(db_table table_type,
 				if (NULL == common_util_get_tls_var()) {
 					break;
 				}
-				if (!common_util_update_message_cid(psqlite, id, PR_RTF_COMPRESSED,
+				if (!cu_update_object_cid(psqlite, table_type, id, PR_RTF_COMPRESSED,
 				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
 					return FALSE;	
 				continue;
@@ -2994,8 +2980,8 @@ BOOL cu_set_properties(db_table table_type,
 				if (NULL == common_util_get_tls_var()) {
 					break;
 				}
-				if (!common_util_update_message_cid(psqlite, id,
-				    PR_TRANSPORT_MESSAGE_HEADERS,
+				if (!cu_update_object_cid(psqlite, table_type,
+				    id, PR_TRANSPORT_MESSAGE_HEADERS,
 				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
 					return FALSE;	
 				continue;
@@ -3003,11 +2989,10 @@ BOOL cu_set_properties(db_table table_type,
 				if (NULL == common_util_get_tls_var()) {
 					break;
 				}
-				if (FALSE == common_util_update_message_cid(psqlite,
-					id, PR_TRANSPORT_MESSAGE_HEADERS_A,
-					*(uint64_t*)ppropvals->ppropval[i].pvalue)) {
+				if (!cu_update_object_cid(psqlite, table_type,
+				    id, PR_TRANSPORT_MESSAGE_HEADERS_A,
+				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
 					return FALSE;	
-				}
 				continue;
 			}
 			break;
@@ -3026,8 +3011,8 @@ BOOL cu_set_properties(db_table table_type,
 				if (NULL == common_util_get_tls_var()) {
 					break;
 				}
-				if (!common_util_update_attachment_cid(psqlite,
-				    id, PR_ATTACH_DATA_BIN,
+				if (!cu_update_object_cid(psqlite,
+				    table_type, id, PR_ATTACH_DATA_BIN,
 				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
 					return FALSE;	
 				continue;
@@ -3035,8 +3020,8 @@ BOOL cu_set_properties(db_table table_type,
 				if (NULL == common_util_get_tls_var()) {
 					break;
 				}
-				if (!common_util_update_attachment_cid(psqlite,
-				    id, PR_ATTACH_DATA_OBJ,
+				if (!cu_update_object_cid(psqlite,
+				    table_type, id, PR_ATTACH_DATA_OBJ,
 				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
 					return FALSE;	
 				continue;
