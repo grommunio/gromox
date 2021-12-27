@@ -27,9 +27,13 @@
 #define UI(x) static_cast<unsigned int>(x)
 #define LLU(x) static_cast<unsigned long long>(x)
 
-#define PROP_TAG_BODY_UNSPECIFIED						0x10000000
-#define PROP_TAG_TRANSPORTMESSAGEHEADERS_UNSPECIFIED	0x007D0000
-#define PROP_TAG_HTML_UNSPECIFIED						0x10130000
+enum {
+	PR_BODY_U = CHANGE_PROP_TYPE(PR_BODY, PT_UNSPECIFIED),
+	PR_TRANSPORT_MESSAGE_HEADERS_U = CHANGE_PROP_TYPE(PR_TRANSPORT_MESSAGE_HEADERS, PT_UNSPECIFIED),
+	PR_HTML_U = CHANGE_PROP_TYPE(PR_HTML, PT_UNSPECIFIED),
+	PR_ATTACH_DATA_BIN_U = CHANGE_PROP_TYPE(PR_ATTACH_DATA_BIN, PT_UNSPECIFIED),
+};
+
 #define MAX_RECIPIENT_NUMBER							4096
 #define MAX_ATTACHMENT_NUMBER							1024
 
@@ -122,8 +126,8 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			}
 			break;
 		}
-		case PROP_TAG_HTML:
-		case PROP_TAG_RTFCOMPRESSED: {
+		case PR_HTML:
+		case PR_RTF_COMPRESSED: {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT propval FROM "
 				"message_properties WHERE message_id=%llu AND "
 				"proptag=%u", LLU(message_id), UI(proptags.pproptag[i]));
@@ -133,20 +137,20 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			}
 			cid = sqlite3_column_int64(pstmt, 0);
 			pstmt.finalize();
-			uint32_t tag = proptags.pproptag[i] == PROP_TAG_HTML ?
+			uint32_t tag = proptags.pproptag[i] == PR_HTML ?
 			               ID_TAG_HTML : ID_TAG_RTFCOMPRESSED;
 			if (pmsgctnt->proplist.set(tag, &cid) != 0) {
 				return FALSE;
 			}
 			break;
 		}
-		case PROP_TAG_TRANSPORTMESSAGEHEADERS:
-		case PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8: {
+		case PR_TRANSPORT_MESSAGE_HEADERS:
+		case PR_TRANSPORT_MESSAGE_HEADERS_A: {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval FROM "
 				"message_properties WHERE (message_id=%llu AND proptag=%u)"
 				" OR (message_id=%llu AND proptag=%u)", LLU(message_id),
-				PROP_TAG_TRANSPORTMESSAGEHEADERS, LLU(message_id),
-				PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
+			         PR_TRANSPORT_MESSAGE_HEADERS, LLU(message_id),
+			         PR_TRANSPORT_MESSAGE_HEADERS_A);
 			pstmt = gx_sql_prep(psqlite, sql_string);
 			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW) {
 				return FALSE;
@@ -154,7 +158,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 			proptag = sqlite3_column_int64(pstmt, 0);
 			cid = sqlite3_column_int64(pstmt, 1);
 			pstmt.finalize();
-			uint32_t tag = proptag == PROP_TAG_TRANSPORTMESSAGEHEADERS ?
+			uint32_t tag = proptag == PR_TRANSPORT_MESSAGE_HEADERS ?
 			               ID_TAG_TRANSPORTMESSAGEHEADERS :
 			               ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
 			if (pmsgctnt->proplist.set(tag, &cid) != 0) {
@@ -836,7 +840,7 @@ static BOOL instance_read_message(
 			}
 			pmsgctnt->proplist.ppropval[i].proptag =
 				pmsgctnt1->proplist.ppropval[i].proptag == ID_TAG_HTML ?
-				PROP_TAG_HTML : PROP_TAG_RTFCOMPRESSED;
+				PR_HTML : PR_RTF_COMPRESSED;
 			pbin = cu_alloc<BINARY>();
 			if (NULL == pbin) {
 				return FALSE;
@@ -851,8 +855,7 @@ static BOOL instance_read_message(
 			if (NULL == pbuff) {
 				return FALSE;
 			}
-			pmsgctnt->proplist.ppropval[i].proptag =
-					PROP_TAG_TRANSPORTMESSAGEHEADERS;
+			pmsgctnt->proplist.ppropval[i].proptag = PR_TRANSPORT_MESSAGE_HEADERS;
 			pmsgctnt->proplist.ppropval[i].pvalue = static_cast<char *>(pbuff) + sizeof(uint32_t);
 			break;
 		case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
@@ -861,8 +864,7 @@ static BOOL instance_read_message(
 			if (NULL == pbuff) {
 				return FALSE;
 			}
-			pmsgctnt->proplist.ppropval[i].proptag =
-				PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
+			pmsgctnt->proplist.ppropval[i].proptag = PR_TRANSPORT_MESSAGE_HEADERS_A;
 			pmsgctnt->proplist.ppropval[i].pvalue = pbuff;
 			break;
 		default:
@@ -1128,11 +1130,11 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 				    pproplist->has(ID_TAG_BODY_STRING8))
 					continue;	
 				break;
-			case PROP_TAG_HTML:
+			case PR_HTML:
 				if (pproplist->has(ID_TAG_HTML))
 					continue;	
 				break;
-			case PROP_TAG_RTFCOMPRESSED:
+			case PR_RTF_COMPRESSED:
 				if (pproplist->has(ID_TAG_RTFCOMPRESSED))
 					continue;	
 				break;
@@ -1154,13 +1156,13 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 			pproplist->erase(ID_TAG_BODY_STRING8);
 			pinstance->change_mask |= CHANGE_MASK_BODY;
 			break;
-		case PROP_TAG_HTML:
+		case PR_HTML:
 			pproplist->erase(ID_TAG_HTML);
-			pproplist->erase(PROP_TAG_BODYHTML);
-			pproplist->erase(PROP_TAG_BODYHTML_STRING8);
+			pproplist->erase(PR_BODY_HTML);
+			pproplist->erase(PR_BODY_HTML_A);
 			pinstance->change_mask |= CHANGE_MASK_HTML;
 			break;
-		case PROP_TAG_RTFCOMPRESSED:
+		case PR_RTF_COMPRESSED:
 			pproplist->erase(ID_TAG_RTFCOMPRESSED);
 			break;
 		}
@@ -1558,7 +1560,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 	auto ict = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	if ((pinstance->change_mask & CHANGE_MASK_HTML) &&
 		0 == (pinstance->change_mask & CHANGE_MASK_BODY)) {
-		auto pbin  = ict->proplist.get<BINARY>(PROP_TAG_HTML);
+		auto pbin  = ict->proplist.get<BINARY>(PR_HTML);
 		auto pcpid = ict->proplist.get<uint32_t>(PR_INTERNET_CPID);
 		if (NULL != pbin && NULL != pcpid) {
 			std::string plainbuf;
@@ -1718,17 +1720,16 @@ BOOL exmdb_server_get_instance_all_proptags(
 				pproptags->pproptag[i] = PR_BODY_A;
 				break;
 			case ID_TAG_HTML:
-				pproptags->pproptag[i] = PROP_TAG_HTML;
+				pproptags->pproptag[i] = PR_HTML;
 				break;
 			case ID_TAG_RTFCOMPRESSED:
-				pproptags->pproptag[i] = PROP_TAG_RTFCOMPRESSED;
+				pproptags->pproptag[i] = PR_RTF_COMPRESSED;
 				break;
 			case ID_TAG_TRANSPORTMESSAGEHEADERS:
-				pproptags->pproptag[i] = PROP_TAG_TRANSPORTMESSAGEHEADERS;
+				pproptags->pproptag[i] = PR_TRANSPORT_MESSAGE_HEADERS;
 				break;
 			case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
-				pproptags->pproptag[i] =
-					PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
+				pproptags->pproptag[i] = PR_TRANSPORT_MESSAGE_HEADERS_A;
 				break;
 			default:
 				pproptags->pproptag[i] =
@@ -2022,7 +2023,7 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 			vc.pvalue = pvalue;
 			ppropvals->count ++;
 			continue;
-		case CHANGE_PROP_TYPE(PR_ATTACH_DATA_BIN, PT_UNSPECIFIED): {
+		case PR_ATTACH_DATA_BIN_U: {
 			proptype = PT_BINARY;
 			auto pbin = pattachment->proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
 			if (NULL == pbin) {
@@ -2208,9 +2209,9 @@ BOOL exmdb_server_get_instance_properties(
 		switch (pproptags->pproptag[i]) {
 		case PR_BODY_A:
 		case PR_BODY_W:
-		case CHANGE_PROP_TYPE(PR_BODY, PT_UNSPECIFIED):
+		case PR_BODY_U:
 		case PR_HTML:
-		case CHANGE_PROP_TYPE(PR_HTML, PT_UNSPECIFIED):
+		case PR_HTML_U:
 		case PR_RTF_COMPRESSED: {
 			auto ret = instance_get_message_body(pmsgctnt, pproptags->pproptag[i], pinstance->cpid, ppropvals);
 			if (ret < 0) {
@@ -2218,14 +2219,14 @@ BOOL exmdb_server_get_instance_properties(
 			}
 			break;
 		}
-		case PROP_TAG_TRANSPORTMESSAGEHEADERS_UNSPECIFIED:
+		case PR_TRANSPORT_MESSAGE_HEADERS_U:
 			pvalue = pmsgctnt->proplist.getval(ID_TAG_TRANSPORTMESSAGEHEADERS);
 			if (NULL != pvalue) {
 				pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), nullptr, ID_TAG_BODY);
 				if (NULL == pvalue) {
 					return FALSE;
 				}
-				vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS_UNSPECIFIED;
+				vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS_U;
 				vc.pvalue = cu_alloc<TYPED_PROPVAL>();
 				if (vc.pvalue == nullptr)
 					return FALSE;
@@ -2241,7 +2242,7 @@ BOOL exmdb_server_get_instance_properties(
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS_UNSPECIFIED;
+			vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS_U;
 			vc.pvalue = cu_alloc<TYPED_PROPVAL>();
 			if (vc.pvalue == nullptr)
 				return FALSE;
@@ -2262,14 +2263,14 @@ BOOL exmdb_server_get_instance_properties(
 			vc.pvalue = pvalue;
 			ppropvals->count++;
 			continue;
-		case PROP_TAG_TRANSPORTMESSAGEHEADERS:
+		case PR_TRANSPORT_MESSAGE_HEADERS:
 			pvalue = pmsgctnt->proplist.getval(ID_TAG_TRANSPORTMESSAGEHEADERS);
 			if (NULL != pvalue) {
 				pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), nullptr, ID_TAG_BODY);
 				if (NULL == pvalue) {
 					return FALSE;
 				}
-				vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS;
+				vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS;
 				vc.pvalue = static_cast<char *>(pvalue) + sizeof(uint32_t);
 				ppropvals->count ++;
 				continue;
@@ -2281,7 +2282,7 @@ BOOL exmdb_server_get_instance_properties(
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS;
+			vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS;
 			vc.pvalue = common_util_convert_copy(TRUE,
 				    pinstance->cpid, static_cast<char *>(pvalue));
 			if (vc.pvalue != nullptr) {
@@ -2289,14 +2290,14 @@ BOOL exmdb_server_get_instance_properties(
 				continue;
 			}
 			break;
-		case PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
+		case PR_TRANSPORT_MESSAGE_HEADERS_A:
 			pvalue = pmsgctnt->proplist.getval(ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
 			if (NULL != pvalue) {
 				pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), nullptr, 0);
 				if (NULL == pvalue) {
 					return FALSE;
 				}
-				vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
+				vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS_A;
 				vc.pvalue = pvalue;
 				ppropvals->count ++;
 				continue;
@@ -2308,7 +2309,7 @@ BOOL exmdb_server_get_instance_properties(
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			vc.proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
+			vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS_A;
 			vc.pvalue = common_util_convert_copy(false,
 				    pinstance->cpid, static_cast<char *>(pvalue) + sizeof(uint32_t));
 			if (vc.pvalue != nullptr) {
@@ -2420,8 +2421,8 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 		case PR_DISPLAY_TO_A:
 		case PR_DISPLAY_CC_A:
 		case PR_DISPLAY_BCC_A:
-		case PROP_TAG_TRANSPORTMESSAGEHEADERS:
-		case PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
+		case PR_TRANSPORT_MESSAGE_HEADERS:
+		case PR_TRANSPORT_MESSAGE_HEADERS_A:
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 							pproperties->ppropval[i].proptag;
@@ -2492,10 +2493,10 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 			pmsgctnt->proplist.erase(ID_TAG_BODY);
 			pmsgctnt->proplist.erase(ID_TAG_BODY_STRING8);
 			break;
-		case PROP_TAG_HTML:
+		case PR_HTML:
 			pmsgctnt->proplist.erase(ID_TAG_HTML);
 			break;
-		case PROP_TAG_RTFCOMPRESSED:
+		case PR_RTF_COMPRESSED:
 			pmsgctnt->proplist.erase(ID_TAG_RTFCOMPRESSED);
 			break;
 		}
@@ -2538,10 +2539,9 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 		}
 		if (pmsgctnt->proplist.set(propval) != 0)
 			return FALSE;
-		if (propval.proptag != PR_BODY &&
-		    propval.proptag != PROP_TAG_HTML &&
-		    propval.proptag != PROP_TAG_BODYHTML &&
-		    propval.proptag != PROP_TAG_RTFCOMPRESSED)
+		if (propval.proptag != PR_BODY && propval.proptag != PR_HTML &&
+		    propval.proptag != PR_BODY_HTML &&
+		    propval.proptag != PR_RTF_COMPRESSED)
 			continue;
 
 		uint32_t body_type = 0;
@@ -2550,13 +2550,13 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 			pinstance->change_mask |= CHANGE_MASK_BODY;
 			body_type = NATIVE_BODY_PLAIN;
 			break;
-		case PROP_TAG_HTML:
+		case PR_HTML:
 			pinstance->change_mask |= CHANGE_MASK_HTML;
 			[[fallthrough]];
-		case PROP_TAG_BODYHTML:
+		case PR_BODY_HTML:
 			body_type = NATIVE_BODY_HTML;
 			break;
-		case PROP_TAG_RTFCOMPRESSED:
+		case PR_RTF_COMPRESSED:
 			body_type = NATIVE_BODY_RTF;
 			break;
 		}
@@ -2673,25 +2673,25 @@ BOOL exmdb_server_remove_instance_properties(
 			switch (pproptags->pproptag[i]) {
 			case PR_BODY:
 			case PR_BODY_A:
-			case PROP_TAG_BODY_UNSPECIFIED:
+			case PR_BODY_U:
 				pmsgctnt->proplist.erase(ID_TAG_BODY);
 				pmsgctnt->proplist.erase(ID_TAG_BODY_STRING8);
 				if ((pvalue = pmsgctnt->proplist.getval(PROP_TAG_NATIVEBODY)) != nullptr &&
 				    *static_cast<uint32_t *>(pvalue) == NATIVE_BODY_PLAIN)
 					*(uint32_t*)pvalue = NATIVE_BODY_UNDEFINED;	
 				break;
-			case PROP_TAG_HTML:
-			case PROP_TAG_BODYHTML:
-			case PROP_TAG_BODYHTML_STRING8:
-			case PROP_TAG_HTML_UNSPECIFIED:
-				pmsgctnt->proplist.erase(PROP_TAG_BODYHTML);
-				pmsgctnt->proplist.erase(PROP_TAG_BODYHTML_STRING8);
+			case PR_HTML:
+			case PR_BODY_HTML:
+			case PR_BODY_HTML_A:
+			case PR_HTML_U:
+				pmsgctnt->proplist.erase(PR_BODY_HTML);
+				pmsgctnt->proplist.erase(PR_BODY_HTML_A);
 				pmsgctnt->proplist.erase(ID_TAG_HTML);
 				if ((pvalue = pmsgctnt->proplist.getval(PROP_TAG_NATIVEBODY)) != nullptr &&
 				    *static_cast<uint32_t *>(pvalue) == NATIVE_BODY_HTML)
 					*(uint32_t*)pvalue = NATIVE_BODY_UNDEFINED;	
 				break;
-			case PROP_TAG_RTFCOMPRESSED:
+			case PR_RTF_COMPRESSED:
 				if ((pvalue = pmsgctnt->proplist.getval(PROP_TAG_NATIVEBODY)) != nullptr &&
 				    *static_cast<uint32_t *>(pvalue) == NATIVE_BODY_RTF)
 					*(uint32_t*)pvalue = NATIVE_BODY_UNDEFINED;	

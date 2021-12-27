@@ -1766,8 +1766,8 @@ static BOOL oxcmail_parse_transport_message_header(
 	if (TRUE == mime_read_head(pmime, tmp_buff, &tmp_len)) {
 		tmp_buff[tmp_len + 1] = '\0';
 		uint32_t tag = oxcmail_check_ascii(tmp_buff) ?
-		                  PROP_TAG_TRANSPORTMESSAGEHEADERS :
-		                  PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
+		               PR_TRANSPORT_MESSAGE_HEADERS :
+		               PR_TRANSPORT_MESSAGE_HEADERS_A;
 		if (pproplist->set(tag, tmp_buff) != 0)
 			return FALSE;
 	}
@@ -1812,7 +1812,7 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 		}
 		tmp_bin.cb = length;
 		tmp_bin.pc = pcontent;
-		if (pproplist->set(PROP_TAG_HTML, &tmp_bin) != 0) {
+		if (pproplist->set(PR_HTML, &tmp_bin) != 0) {
 			free(pcontent);
 			return false;
 		}
@@ -1843,7 +1843,7 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 		}
 		tmp_bin.cb = strlen(pcontent + length + 1);
 		tmp_bin.pc = pcontent + length + 1;
-		if (pproplist->set(PROP_TAG_HTML, &tmp_bin) != 0) {
+		if (pproplist->set(PR_HTML, &tmp_bin) != 0) {
 			free(pcontent);
 			return false;
 		}
@@ -4080,7 +4080,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			/* calendar message object can not be displayed
 				correctly without PidTagRtfCompressed convert
 				PidTagHtml to PidTagRtfCompressed */
-			phtml_bin = pmsg->proplist.get<BINARY>(PROP_TAG_HTML);
+			phtml_bin = pmsg->proplist.get<BINARY>(PR_HTML);
 			if (NULL != phtml_bin) {
 				pvalue = pmsg->proplist.getval(PR_INTERNET_CPID);
 				if (NULL == pvalue) {
@@ -4094,7 +4094,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 					pvalue = rtfcp_compress(rtfout, content_len);
 					free(rtfout);
 					if (pvalue != nullptr) {
-						pmsg->proplist.set(PROP_TAG_RTFCOMPRESSED, pvalue);
+						pmsg->proplist.set(PR_RTF_COMPRESSED, pvalue);
 						rop_util_free_binary(static_cast<BINARY *>(pvalue));
 					}
 				}
@@ -4102,7 +4102,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		}
 	}
 	if (!pmsg->proplist.has(PR_BODY_W) && !pmsg->proplist.has(PR_BODY_A)) {
-		phtml_bin = pmsg->proplist.get<BINARY>(PROP_TAG_HTML);
+		phtml_bin = pmsg->proplist.get<BINARY>(PR_HTML);
 		if (NULL != phtml_bin) {
 			pvalue = pmsg->proplist.getval(PR_INTERNET_CPID);
 			if (NULL == pvalue) {
@@ -4134,7 +4134,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			}
 		}
 	}
-	if (!pmsg->proplist.has(PROP_TAG_HTML)) {
+	if (!pmsg->proplist.has(PR_HTML)) {
 		pvalue = pmsg->proplist.getval(PR_BODY);
 		if (NULL != pvalue) {
 			phtml_bin = static_cast<BINARY *>(alloc(sizeof(BINARY)));
@@ -4148,7 +4148,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 				return NULL;
 			}
 			phtml_bin->cb = strlen(phtml_bin->pc);
-			pmsg->proplist.set(PROP_TAG_HTML, phtml_bin);
+			pmsg->proplist.set(PR_HTML, phtml_bin);
 			tmp_int32 = 65001;
 			pmsg->proplist.set(PR_INTERNET_CPID, &tmp_int32);
 		}
@@ -4541,7 +4541,7 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 		    ((pvalue = pmsg->proplist.get<uint32_t>(PROP_TAG_RTFINSYNC)) == nullptr ||
 		    *pvalue == 0)) {
  FIND_RTF:
-			prtf = pmsg->proplist.get<BINARY>(PROP_TAG_RTFCOMPRESSED);
+			prtf = pmsg->proplist.get<BINARY>(PR_RTF_COMPRESSED);
 			if (NULL != prtf) {
 				ssize_t unc_size = rtfcp_uncompressed_size(prtf);
 				pbuff = nullptr;
@@ -4583,7 +4583,7 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 				}
 			}
 		} else {
-			pskeleton->phtml = pmsg->proplist.get<BINARY>(PROP_TAG_HTML);
+			pskeleton->phtml = pmsg->proplist.get<BINARY>(PR_HTML);
 			if (NULL == pskeleton->phtml) {
 				goto FIND_RTF;
 			}

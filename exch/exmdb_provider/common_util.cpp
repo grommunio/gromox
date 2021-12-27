@@ -1649,15 +1649,14 @@ static void *common_util_get_message_header(sqlite3 *psqlite,
 	if (NULL == dir) {
 		return NULL;
 	}
-	if (PROP_TAG_TRANSPORTMESSAGEHEADERS != proptag &&
-		PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8 != proptag) {
+	if (proptag != PR_TRANSPORT_MESSAGE_HEADERS &&
+	    proptag != PR_TRANSPORT_MESSAGE_HEADERS_A)
 		return NULL;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval "
 		"FROM message_properties WHERE (message_id=%llu AND"
 		" proptag=%u) OR (message_id=%llu AND proptag=%u)",
-		LLU(message_id), PROP_TAG_TRANSPORTMESSAGEHEADERS,
-		LLU(message_id), PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8);
+		LLU(message_id), PR_TRANSPORT_MESSAGE_HEADERS,
+		LLU(message_id), PR_TRANSPORT_MESSAGE_HEADERS_A);
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return nullptr;
@@ -1674,9 +1673,8 @@ static void *common_util_get_message_header(sqlite3 *psqlite,
 	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size) 
 		return NULL;
 	pbuff[node_stat.st_size] = 0;
-	if (PROP_TAG_TRANSPORTMESSAGEHEADERS == proptag1) {
+	if (proptag1 == PR_TRANSPORT_MESSAGE_HEADERS)
 		pbuff += sizeof(uint32_t);
-	}
 	if (proptag == proptag1) {
 		return pbuff;
 	}
@@ -1696,9 +1694,8 @@ static void* common_util_get_message_cid_value(
 	if (NULL == dir) {
 		return NULL;
 	}
-	if (PROP_TAG_HTML != proptag && PROP_TAG_RTFCOMPRESSED != proptag) {
+	if (proptag != PR_HTML && proptag != PR_RTF_COMPRESSED)
 		return NULL;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT propval FROM "
 		"message_properties WHERE message_id=%llu AND "
 		"proptag=%u", LLU(message_id), UI(proptag));
@@ -2045,12 +2042,12 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 	case PR_BODY_A:
 		pv.pvalue = common_util_get_message_body(db, cpid, id, tag);
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
-	case PROP_TAG_HTML:
-	case PROP_TAG_RTFCOMPRESSED:
+	case PR_HTML:
+	case PR_RTF_COMPRESSED:
 		pv.pvalue = common_util_get_message_cid_value(db, id, tag);
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
-	case PROP_TAG_TRANSPORTMESSAGEHEADERS:
-	case PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
+	case PR_TRANSPORT_MESSAGE_HEADERS:
+	case PR_TRANSPORT_MESSAGE_HEADERS_A:
 		pv.pvalue = common_util_get_message_header(db, cpid, id, tag);
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
 	case PidTagMidString: /* self-defined proptag */
@@ -2755,19 +2752,19 @@ static BOOL common_util_set_message_header(
 	void *pvalue;
 	uint32_t proptag;
 	
-	if (PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8 == ppropval->proptag) {
+	if (ppropval->proptag == PR_TRANSPORT_MESSAGE_HEADERS_A) {
 		if (0 == cpid) {
-			proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8;
+			proptag = PR_TRANSPORT_MESSAGE_HEADERS_A;
 			pvalue = ppropval->pvalue;
 		} else {
-			proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS;
+			proptag = PR_TRANSPORT_MESSAGE_HEADERS;
 			pvalue = common_util_convert_copy(TRUE, cpid, static_cast<char *>(ppropval->pvalue));
 			if (NULL == pvalue) {
 				return FALSE;
 			}
 		}
-	} else if (PROP_TAG_TRANSPORTMESSAGEHEADERS == ppropval->proptag) {
-		proptag = PROP_TAG_TRANSPORTMESSAGEHEADERS;
+	} else if (ppropval->proptag == PR_TRANSPORT_MESSAGE_HEADERS) {
+		proptag = PR_TRANSPORT_MESSAGE_HEADERS;
 		pvalue = ppropval->pvalue;
 	} else {
 		return FALSE;
@@ -2789,7 +2786,7 @@ static BOOL common_util_set_message_header(
 			fprintf(stderr, "W-1335: remove %s: %s\n",
 			        path.c_str(), strerror(errno));
 	});
-	if (PROP_TAG_TRANSPORTMESSAGEHEADERS == proptag) {
+	if (proptag == PR_TRANSPORT_MESSAGE_HEADERS) {
 		size_t ncp = 0;
 		if (!utf8_count_codepoints(static_cast<char *>(pvalue), &ncp))
 			return false;
@@ -2814,10 +2811,8 @@ static BOOL common_util_set_message_header(
 static BOOL common_util_set_message_cid_value(sqlite3 *psqlite,
 	uint64_t message_id, const TAGGED_PROPVAL *ppropval)
 {
-	if (PROP_TAG_HTML != ppropval->proptag &&
-		PROP_TAG_RTFCOMPRESSED != ppropval->proptag) {
+	if (ppropval->proptag != PR_HTML && ppropval->proptag != PR_RTF_COMPRESSED)
 		return FALSE;
-	}
 	auto dir = exmdb_server_get_dir();
 	if (NULL == dir) {
 		return FALSE;
@@ -3124,24 +3119,20 @@ BOOL cu_set_properties(db_table table_type,
 				if (NULL == common_util_get_tls_var()) {
 					break;
 				}
-				if (FALSE == common_util_update_message_cid(
-					psqlite, id, PROP_TAG_HTML, *(uint64_t*)
-					ppropvals->ppropval[i].pvalue)) {
+				if (!common_util_update_message_cid(psqlite, id, PR_HTML,
+				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
 					return FALSE;	
-				}
 				continue;
 			case ID_TAG_RTFCOMPRESSED:
 				if (NULL == common_util_get_tls_var()) {
 					break;
 				}
-				if (FALSE == common_util_update_message_cid(
-					psqlite, id, PROP_TAG_RTFCOMPRESSED,
-					*(uint64_t*)ppropvals->ppropval[i].pvalue)) {
+				if (!common_util_update_message_cid(psqlite, id, PR_RTF_COMPRESSED,
+				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
 					return FALSE;	
-				}
 				continue;
-			case PROP_TAG_HTML:
-			case PROP_TAG_RTFCOMPRESSED:
+			case PR_HTML:
+			case PR_RTF_COMPRESSED:
 				if (FALSE == common_util_set_message_cid_value(
 					psqlite, id, ppropvals->ppropval + i)) {
 					pproblems->pproblem[pproblems->count].index = i;
@@ -3154,24 +3145,23 @@ BOOL cu_set_properties(db_table table_type,
 				if (NULL == common_util_get_tls_var()) {
 					break;
 				}
-				if (FALSE == common_util_update_message_cid(
-					psqlite, id, PROP_TAG_TRANSPORTMESSAGEHEADERS,
-					*(uint64_t*)ppropvals->ppropval[i].pvalue)) {
+				if (!common_util_update_message_cid(psqlite, id,
+				    PR_TRANSPORT_MESSAGE_HEADERS,
+				    *static_cast<uint64_t *>(ppropvals->ppropval[i].pvalue)))
 					return FALSE;	
-				}
 				continue;
 			case ID_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
 				if (NULL == common_util_get_tls_var()) {
 					break;
 				}
 				if (FALSE == common_util_update_message_cid(psqlite,
-					id, PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8,
+					id, PR_TRANSPORT_MESSAGE_HEADERS_A,
 					*(uint64_t*)ppropvals->ppropval[i].pvalue)) {
 					return FALSE;	
 				}
 				continue;
-			case PROP_TAG_TRANSPORTMESSAGEHEADERS:
-			case PROP_TAG_TRANSPORTMESSAGEHEADERS_STRING8:
+			case PR_TRANSPORT_MESSAGE_HEADERS:
+			case PR_TRANSPORT_MESSAGE_HEADERS_A:
 				if (FALSE == common_util_set_message_header(
 					psqlite, cpid, id, ppropvals->ppropval + i)) {
 					pproblems->pproblem[pproblems->count].index = i;
@@ -3733,7 +3723,7 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		*ppvalue = NULL;
 		return TRUE;
 	}
-	if (PROP_TAG_MEMBERID == proptag) {
+	if (proptag == PROP_TAG_MEMBERID) {
 		*ppvalue = cu_alloc<uint64_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;

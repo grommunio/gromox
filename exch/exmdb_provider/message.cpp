@@ -2887,16 +2887,14 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		common_util_remove_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
 		common_util_remove_propvals(&pmsgctnt->proplist, PidTagMid);
 		common_util_remove_propvals(&pmsgctnt->proplist, PR_BODY);
-		common_util_remove_propvals(
-			&pmsgctnt->proplist, PROP_TAG_HTML);
-		common_util_remove_propvals(
-			&pmsgctnt->proplist, PROP_TAG_RTFCOMPRESSED);
+		common_util_remove_propvals(&pmsgctnt->proplist, PR_HTML);
+		common_util_remove_propvals(&pmsgctnt->proplist, PR_RTF_COMPRESSED);
 		if (0 == strcasecmp(content_type, "text/plain")) {
 			propval.proptag = PR_BODY;
 			propval.pvalue = tmp_buff;
 			common_util_set_propvals(&pmsgctnt->proplist, &propval);
 		} else if (0 == strcasecmp(content_type, "text/html")) {
-			propval.proptag = PROP_TAG_HTML;
+			propval.proptag = PR_HTML;
 			propval.pvalue = &tmp_bin;
 			pvalue = pmsgctnt->proplist.getval(PR_INTERNET_CPID);
 			if (NULL != pvalue && 1200 != *(uint32_t*)pvalue) {

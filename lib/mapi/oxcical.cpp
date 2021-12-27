@@ -999,7 +999,7 @@ static BOOL oxcical_parse_html(std::shared_ptr<ical_component> main_event,
 	}
 	tmp_bin.cb = strlen(pvalue);
 	tmp_bin.pc = deconst(pvalue);
-	if (pmsg->proplist.set(PROP_TAG_HTML, &tmp_bin) != 0)
+	if (pmsg->proplist.set(PR_HTML, &tmp_bin) != 0)
 		return FALSE;
 	tmp_int32 = 65001;
 	if (pmsg->proplist.set(PR_INTERNET_CPID, &tmp_int32) != 0)
