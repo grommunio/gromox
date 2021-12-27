@@ -1598,7 +1598,7 @@ static std::string cu_cid_path(const char *dir, uint64_t id) try
 static void *common_util_get_message_body(sqlite3 *psqlite,
 	uint32_t cpid, uint64_t message_id, uint32_t proptag)
 {
-	char sql_string[256];
+	char sql_string[128];
 	struct stat node_stat;
 	
 	auto dir = exmdb_server_get_dir();
@@ -1607,17 +1607,16 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 	}
 	if (proptag == PR_BODY || proptag == PR_BODY_A)
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval "
-		         "FROM message_properties WHERE (message_id=%llu AND"
-		         " proptag=%u) OR (message_id=%llu AND proptag=%u)",
-		         LLU(message_id), PR_BODY,
-		         LLU(message_id), PR_BODY_A);
+		         "FROM message_properties WHERE message_id=%llu AND"
+		         " proptag IN (%u,%u)",
+		         LLU(message_id), PR_BODY, PR_BODY_A);
 	else if (proptag == PR_TRANSPORT_MESSAGE_HEADERS ||
 	    proptag == PR_TRANSPORT_MESSAGE_HEADERS_A)
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval "
-		         "FROM message_properties WHERE (message_id=%llu AND"
-		         " proptag=%u) OR (message_id=%llu AND proptag=%u)",
+		         "FROM message_properties WHERE message_id=%llu AND"
+		         " proptag IN (%u,%u)",
 		         LLU(message_id), PR_TRANSPORT_MESSAGE_HEADERS,
-		         LLU(message_id), PR_TRANSPORT_MESSAGE_HEADERS_A);
+		         PR_TRANSPORT_MESSAGE_HEADERS_A);
 	else if (proptag == PR_HTML || proptag == PR_RTF_COMPRESSED)
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval FROM "
 		         "message_properties WHERE message_id=%llu AND "
