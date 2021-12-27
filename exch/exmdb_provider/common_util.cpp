@@ -1605,13 +1605,22 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 	if (NULL == dir) {
 		return NULL;
 	}
-	if (proptag != PR_BODY && proptag != PR_BODY_A)
-		return NULL;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval "
-		"FROM message_properties WHERE (message_id=%llu AND"
-		" proptag=%u) OR (message_id=%llu AND proptag=%u)",
-		LLU(message_id), PR_BODY,
-		LLU(message_id), PR_BODY_A);
+	if (proptag == PR_BODY || proptag == PR_BODY_A)
+		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval "
+		         "FROM message_properties WHERE (message_id=%llu AND"
+		         " proptag=%u) OR (message_id=%llu AND proptag=%u)",
+		         LLU(message_id), PR_BODY,
+		         LLU(message_id), PR_BODY_A);
+	else if (proptag == PR_TRANSPORT_MESSAGE_HEADERS ||
+	    proptag == PR_TRANSPORT_MESSAGE_HEADERS_A)
+		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval "
+		         "FROM message_properties WHERE (message_id=%llu AND"
+		         " proptag=%u) OR (message_id=%llu AND proptag=%u)",
+		         LLU(message_id), PR_TRANSPORT_MESSAGE_HEADERS,
+		         LLU(message_id), PR_TRANSPORT_MESSAGE_HEADERS_A);
+	else
+		return nullptr;
+
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return nullptr;
@@ -1628,60 +1637,13 @@ static void *common_util_get_message_body(sqlite3 *psqlite,
 	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size)
 		return NULL;
 	pbuff[node_stat.st_size] = 0;
-	if (proptag1 == PR_BODY)
+	if (PROP_TYPE(proptag1) == PT_UNICODE)
 		pbuff += sizeof(uint32_t);
 	if (proptag == proptag1) {
 		return pbuff;
 	}
-	if (PROP_TYPE(proptag) == PT_STRING8)
-		return common_util_convert_copy(TRUE, cpid, static_cast<char *>(pbuff));
-	else
-		return common_util_convert_copy(FALSE, cpid, static_cast<char *>(pbuff));
-}
-
-static void *common_util_get_message_header(sqlite3 *psqlite,
-	uint32_t cpid, uint64_t message_id, uint32_t proptag)
-{
-	char sql_string[256];
-	struct stat node_stat;
-	
-	auto dir = exmdb_server_get_dir();
-	if (NULL == dir) {
-		return NULL;
-	}
-	if (proptag != PR_TRANSPORT_MESSAGE_HEADERS &&
-	    proptag != PR_TRANSPORT_MESSAGE_HEADERS_A)
-		return NULL;
-	snprintf(sql_string, arsizeof(sql_string), "SELECT proptag, propval "
-		"FROM message_properties WHERE (message_id=%llu AND"
-		" proptag=%u) OR (message_id=%llu AND proptag=%u)",
-		LLU(message_id), PR_TRANSPORT_MESSAGE_HEADERS,
-		LLU(message_id), PR_TRANSPORT_MESSAGE_HEADERS_A);
-	auto pstmt = gx_sql_prep(psqlite, sql_string);
-	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
-		return nullptr;
-	uint32_t proptag1 = sqlite3_column_int64(pstmt, 0);
-	uint64_t cid = sqlite3_column_int64(pstmt, 1);
-	pstmt.finalize();
-	wrapfd fd = open(cu_cid_path(dir, cid).c_str(), O_RDONLY);
-	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
-		return nullptr;
-	auto pbuff = cu_alloc<char>(node_stat.st_size + 1);
-	if (NULL == pbuff) {
-		return NULL;
-	}
-	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size) 
-		return NULL;
-	pbuff[node_stat.st_size] = 0;
-	if (proptag1 == PR_TRANSPORT_MESSAGE_HEADERS)
-		pbuff += sizeof(uint32_t);
-	if (proptag == proptag1) {
-		return pbuff;
-	}
-	if (PROP_TYPE(proptag) == PT_STRING8)
-		return common_util_convert_copy(TRUE, cpid, static_cast<char *>(pbuff));
-	else
-		return common_util_convert_copy(FALSE, cpid, static_cast<char *>(pbuff));
+	return common_util_convert_copy(PROP_TYPE(proptag) == PT_STRING8 ? TRUE : false,
+	       cpid, static_cast<char *>(pbuff));
 }
 
 static void* common_util_get_message_cid_value(
@@ -2040,15 +2002,13 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
 	case PR_BODY:
 	case PR_BODY_A:
+	case PR_TRANSPORT_MESSAGE_HEADERS:
+	case PR_TRANSPORT_MESSAGE_HEADERS_A:
 		pv.pvalue = common_util_get_message_body(db, cpid, id, tag);
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
 	case PR_HTML:
 	case PR_RTF_COMPRESSED:
 		pv.pvalue = common_util_get_message_cid_value(db, id, tag);
-		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
-	case PR_TRANSPORT_MESSAGE_HEADERS:
-	case PR_TRANSPORT_MESSAGE_HEADERS_A:
-		pv.pvalue = common_util_get_message_header(db, cpid, id, tag);
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
 	case PidTagMidString: /* self-defined proptag */
 		return common_util_get_mid_string(db, id, reinterpret_cast<char **>(&pv.pvalue)) &&
