@@ -2561,18 +2561,16 @@ static BOOL common_util_set_message_subject(
 	if (ppropval->proptag == PR_SUBJECT) {
 		sqlite3_bind_int64(pstmt, 1, PR_NORMALIZED_SUBJECT);
 		sqlite3_bind_text(pstmt, 2, static_cast<char *>(ppropval->pvalue), -1, SQLITE_STATIC);
-	} else {
-		if (0 != cpid) {
-			pstring = common_util_convert_copy(TRUE, cpid, static_cast<char *>(ppropval->pvalue));
-			if (NULL == pstring) {
-				return FALSE;
-			}
-			sqlite3_bind_int64(pstmt, 1, PR_NORMALIZED_SUBJECT);
-			sqlite3_bind_text(pstmt, 2, pstring, -1, SQLITE_STATIC);
-		} else {
-			sqlite3_bind_int64(pstmt, 1, PR_NORMALIZED_SUBJECT_A);
-			sqlite3_bind_text(pstmt, 2, static_cast<char *>(ppropval->pvalue), -1, SQLITE_STATIC);
+	} else if (cpid == 0) {
+		pstring = common_util_convert_copy(TRUE, cpid, static_cast<char *>(ppropval->pvalue));
+		if (NULL == pstring) {
+			return FALSE;
 		}
+		sqlite3_bind_int64(pstmt, 1, PR_NORMALIZED_SUBJECT);
+		sqlite3_bind_text(pstmt, 2, pstring, -1, SQLITE_STATIC);
+	} else {
+		sqlite3_bind_int64(pstmt, 1, PR_NORMALIZED_SUBJECT_A);
+		sqlite3_bind_text(pstmt, 2, static_cast<char *>(ppropval->pvalue), -1, SQLITE_STATIC);
 	}
 	if (SQLITE_DONE != sqlite3_step(pstmt)) {
 		return FALSE;
