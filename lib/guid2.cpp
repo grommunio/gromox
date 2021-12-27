@@ -161,7 +161,7 @@ GUID guid_random_new()
 {
 	GUID guid;
 #if __linux__ && defined(HAVE_SYS_RANDOM_H)
-	if (getrandom(&guid, sizeof(guid), 0) != sizeof(guid)) {
+	if (getrandom(&guid, sizeof(guid), 0) == sizeof(guid)) {
 	} else
 #endif
 	{
