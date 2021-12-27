@@ -2597,8 +2597,22 @@ static BOOL common_util_set_message_body(
 				return FALSE;
 			}
 		}
+	} else if (ppropval->proptag == PR_TRANSPORT_MESSAGE_HEADERS_A) {
+		if (cpid == 0) {
+			proptag = PR_TRANSPORT_MESSAGE_HEADERS_A;
+			pvalue = ppropval->pvalue;
+		} else {
+			proptag = PR_TRANSPORT_MESSAGE_HEADERS;
+			pvalue = common_util_convert_copy(TRUE, cpid, static_cast<char *>(ppropval->pvalue));
+			if (NULL == pvalue) {
+				return FALSE;
+			}
+		}
 	} else if (ppropval->proptag == PR_BODY_W) {
 		proptag = PR_BODY_W;
+		pvalue = ppropval->pvalue;
+	} else if (ppropval->proptag == PR_TRANSPORT_MESSAGE_HEADERS) {
+		proptag = PR_TRANSPORT_MESSAGE_HEADERS;
 		pvalue = ppropval->pvalue;
 	} else {
 		return FALSE;
@@ -2620,70 +2634,7 @@ static BOOL common_util_set_message_body(
 			fprintf(stderr, "W-1382: remove %s: %s\n",
 			        path.c_str(), strerror(errno));
 	});
-	if (proptag == PR_BODY) {
-		size_t ncp = 0;
-		if (!utf8_count_codepoints(static_cast<char *>(pvalue), &ncp))
-			return false;
-		uint32_t len = cpu_to_le32(ncp);
-		if (write(fd.get(), &len, sizeof(len)) != sizeof(len))
-			return FALSE;
-	}
-	auto len = strlen(static_cast<char *>(pvalue));
-	auto ret = write(fd.get(), pvalue, len);
-	if (ret < 0 || static_cast<size_t>(ret) != len)
-		return FALSE;
-	if (write(fd.get(), "", 1) != 1)
-		return false;
-	if (FALSE == common_util_update_message_cid(
-		psqlite, message_id, proptag, cid)) {
-	} else {
-		remove_file.release();
-	}
-	return TRUE;
-}
-
-static BOOL common_util_set_message_header(
-	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
-	const TAGGED_PROPVAL *ppropval)
-{
-	void *pvalue;
-	uint32_t proptag;
-	
-	if (ppropval->proptag == PR_TRANSPORT_MESSAGE_HEADERS_A) {
-		if (0 == cpid) {
-			proptag = PR_TRANSPORT_MESSAGE_HEADERS_A;
-			pvalue = ppropval->pvalue;
-		} else {
-			proptag = PR_TRANSPORT_MESSAGE_HEADERS;
-			pvalue = common_util_convert_copy(TRUE, cpid, static_cast<char *>(ppropval->pvalue));
-			if (NULL == pvalue) {
-				return FALSE;
-			}
-		}
-	} else if (ppropval->proptag == PR_TRANSPORT_MESSAGE_HEADERS) {
-		proptag = PR_TRANSPORT_MESSAGE_HEADERS;
-		pvalue = ppropval->pvalue;
-	} else {
-		return FALSE;
-	}
-	auto dir = exmdb_server_get_dir();
-	if (NULL == dir) {
-		return FALSE;
-	}
-	uint64_t cid = 0;
-	if (FALSE == common_util_allocate_cid(psqlite, &cid)) {
-		return FALSE;
-	}
-	auto path = cu_cid_path(dir, cid);
-	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
-	if (fd.get() < 0)
-		return FALSE;
-	auto remove_file = make_scope_exit([&]() {
-		if (::remove(path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1335: remove %s: %s\n",
-			        path.c_str(), strerror(errno));
-	});
-	if (proptag == PR_TRANSPORT_MESSAGE_HEADERS) {
+	if (PROP_TYPE(proptag) == PT_UNICODE) {
 		size_t ncp = 0;
 		if (!utf8_count_codepoints(static_cast<char *>(pvalue), &ncp))
 			return false;
@@ -3004,8 +2955,9 @@ BOOL cu_set_properties(db_table table_type,
 				continue;
 			case PR_BODY:
 			case PR_BODY_A:
-				if (FALSE == common_util_set_message_body(
-					psqlite, cpid, id, ppropvals->ppropval + i)) {
+			case PR_TRANSPORT_MESSAGE_HEADERS:
+			case PR_TRANSPORT_MESSAGE_HEADERS_A:
+				if (!common_util_set_message_body(psqlite, cpid, id, &ppropvals->ppropval[i])) {
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									ppropvals->ppropval[i].proptag;
@@ -3055,16 +3007,6 @@ BOOL cu_set_properties(db_table table_type,
 					id, PR_TRANSPORT_MESSAGE_HEADERS_A,
 					*(uint64_t*)ppropvals->ppropval[i].pvalue)) {
 					return FALSE;	
-				}
-				continue;
-			case PR_TRANSPORT_MESSAGE_HEADERS:
-			case PR_TRANSPORT_MESSAGE_HEADERS_A:
-				if (FALSE == common_util_set_message_header(
-					psqlite, cpid, id, ppropvals->ppropval + i)) {
-					pproblems->pproblem[pproblems->count].index = i;
-					pproblems->pproblem[pproblems->count].proptag =
-									ppropvals->ppropval[i].proptag;
-					pproblems->pproblem[pproblems->count++].err = ecError;
 				}
 				continue;
 			}
