@@ -2660,11 +2660,20 @@ static BOOL common_util_set_message_body(
 	return TRUE;
 }
 
-static BOOL common_util_set_message_cid_value(sqlite3 *psqlite,
-	uint64_t message_id, const TAGGED_PROPVAL *ppropval)
+static BOOL cu_set_object_cid_value(sqlite3 *psqlite, db_table table_type,
+    uint64_t message_id, const TAGGED_PROPVAL *ppropval)
 {
-	if (ppropval->proptag != PR_HTML && ppropval->proptag != PR_RTF_COMPRESSED)
-		return FALSE;
+	if (table_type == db_table::msg_props) {
+		if (ppropval->proptag != PR_HTML &&
+		    ppropval->proptag != PR_RTF_COMPRESSED)
+			return false;
+	} else if (table_type == db_table::atx_props) {
+		if (ppropval->proptag != PR_ATTACH_DATA_BIN &&
+		    ppropval->proptag != PR_ATTACH_DATA_OBJ)
+			return false;
+	} else {
+		return false;
+	}
 	auto dir = exmdb_server_get_dir();
 	if (NULL == dir) {
 		return FALSE;
@@ -2684,41 +2693,9 @@ static BOOL common_util_set_message_cid_value(sqlite3 *psqlite,
 	});
 	auto bv = static_cast<BINARY *>(ppropval->pvalue);
 	if (write(fd.get(), bv->pv, bv->cb) != bv->cb ||
-	    !cu_update_object_cid(psqlite, db_table::msg_props, message_id,
+	    !cu_update_object_cid(psqlite, table_type, message_id,
 	    ppropval->proptag, cid))
 		return FALSE;
-	remove_file.release();
-	return TRUE;
-}
-
-static BOOL common_util_set_attachment_cid_value(sqlite3 *psqlite,
-	uint64_t attachment_id, const TAGGED_PROPVAL *ppropval)
-{
-	if (ppropval->proptag != PR_ATTACH_DATA_BIN &&
-	    ppropval->proptag != PR_ATTACH_DATA_OBJ)
-		return FALSE;
-	auto dir = exmdb_server_get_dir();
-	if (NULL == dir) {
-		return FALSE;
-	}
-	uint64_t cid = 0;
-	if (FALSE == common_util_allocate_cid(psqlite, &cid)) {
-		return FALSE;
-	}
-	auto path = cu_cid_path(dir, cid);
-	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
-	if (fd.get() < 0)
-		return FALSE;
-	auto remove_file = make_scope_exit([&]() {
-		if (::remove(path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1363: remove %s: %s\n",
-			        path.c_str(), strerror(errno));
-	});
-	auto bv = static_cast<BINARY *>(ppropval->pvalue);
-	if (write(fd.get(), bv->pv, bv->cb) != bv->cb ||
-	    !cu_update_object_cid(psqlite, db_table::atx_props, attachment_id,
-	    ppropval->proptag, cid))
-		return FALSE;	
 	remove_file.release();
 	return TRUE;
 }
@@ -2968,8 +2945,8 @@ BOOL cu_set_properties(db_table table_type,
 				continue;
 			case PR_HTML:
 			case PR_RTF_COMPRESSED:
-				if (FALSE == common_util_set_message_cid_value(
-					psqlite, id, ppropvals->ppropval + i)) {
+				if (!cu_set_object_cid_value(psqlite,
+				    table_type, id, &ppropvals->ppropval[i])) {
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									ppropvals->ppropval[i].proptag;
@@ -3027,8 +3004,8 @@ BOOL cu_set_properties(db_table table_type,
 				continue;
 			case PR_ATTACH_DATA_BIN:
 			case PR_ATTACH_DATA_OBJ:
-				if (FALSE == common_util_set_attachment_cid_value(
-					psqlite, id, ppropvals->ppropval + i)) {
+				if (!cu_set_object_cid_value(psqlite,
+				    table_type, id, &ppropvals->ppropval[i])) {
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									ppropvals->ppropval[i].proptag;
