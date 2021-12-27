@@ -1595,7 +1595,7 @@ static std::string cu_cid_path(const char *dir, uint64_t id) try
 	return {};
 }
 
-static void *common_util_get_message_body(sqlite3 *psqlite,
+static void *cu_get_object_text(sqlite3 *psqlite,
 	uint32_t cpid, uint64_t message_id, uint32_t proptag)
 {
 	char sql_string[128];
@@ -1943,11 +1943,11 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 	case PR_BODY_A:
 	case PR_TRANSPORT_MESSAGE_HEADERS:
 	case PR_TRANSPORT_MESSAGE_HEADERS_A:
-		pv.pvalue = common_util_get_message_body(db, cpid, id, tag);
+		pv.pvalue = cu_get_object_text(db, cpid, id, tag);
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
 	case PR_HTML:
 	case PR_RTF_COMPRESSED:
-		pv.pvalue = common_util_get_message_body(db, 0, id, tag);
+		pv.pvalue = cu_get_object_text(db, 0, id, tag);
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
 	case PidTagMidString: /* self-defined proptag */
 		return common_util_get_mid_string(db, id, reinterpret_cast<char **>(&pv.pvalue)) &&
@@ -1975,7 +1975,7 @@ static GP_RESULT gp_atxprop(uint32_t tag, TAGGED_PROPVAL &pv,
 	}
 	case PR_ATTACH_DATA_BIN:
 	case PR_ATTACH_DATA_OBJ:
-		pv.pvalue = common_util_get_message_body(db, 0, id, tag);
+		pv.pvalue = cu_get_object_text(db, 0, id, tag);
 		return pv.pvalue != nullptr ? GP_ADV : GP_SKIP;
 	}
 	return GP_UNHANDLED;
