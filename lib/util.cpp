@@ -90,25 +90,21 @@ BOOL utf8_check(const char *str)
 	return TRUE;
 }
 
-BOOL utf8_len(const char *str, int *plen)
+bool utf8_count_codepoints(const char *str, size_t *plen)
 {
-	int len = 0;
-	int clen = 0;
-	int byte_num = 0;
-	unsigned char ch;
-	const char *ptr = str;
-	
-	clen = strlen(str);
+	size_t len = 0;
+	auto ptr = reinterpret_cast<const unsigned char *>(str);
+	auto clen = strlen(str);
+
 	while (*ptr != '\0' && len < clen) {
-		ch = (unsigned char)*ptr;
-		if (0 == (byte_num = utf8_byte_num(ch))) {
-			return FALSE;
-		}
+		auto byte_num = utf8_byte_num(*ptr);
+		if (byte_num == 0)
+			return false;
 		ptr += byte_num;
 		len ++;
 	}
 	*plen = len;
-	return TRUE;
+	return true;
 }
 
 BOOL utf8_truncate(char *str, int length)

@@ -368,12 +368,10 @@ void propval_free(uint16_t type, void *pvalue)
 
 static uint32_t propval_utf16_len(const char *putf8_string)
 {
-	int len;
-	
-	if (FALSE == utf8_len(putf8_string, &len)) {
+	size_t len;
+	if (!utf8_count_codepoints(putf8_string, &len))
 		return 0;
-	}
-	return 2*len;
+	return len;
 }
 
 uint32_t propval_size(uint16_t type, void *pvalue)

@@ -12,6 +12,7 @@
 #include <string>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/endian.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/pcl.hpp>
 #include <gromox/util.hpp>
@@ -2723,17 +2724,20 @@ static BOOL common_util_set_message_body(
 		if (remove(path) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1382: remove %s: %s\n", path, strerror(errno));
 	});
-	int len = 0;
 	if (proptag == PR_BODY) {
-		if (!utf8_len(static_cast<char *>(pvalue), &len) ||
-		    write(fd.get(), &len, sizeof(uint32_t)) != sizeof(uint32_t)) {
+		size_t ncp = 0;
+		if (!utf8_count_codepoints(static_cast<char *>(pvalue), &ncp))
+			return false;
+		uint32_t len = cpu_to_le32(ncp);
+		if (write(fd.get(), &len, sizeof(len)) != sizeof(len))
 			return FALSE;
-		}
 	}
-	len = strlen(static_cast<char *>(pvalue)) + 1;
-	if (write(fd.get(), pvalue, len) != len) {
+	auto len = strlen(static_cast<char *>(pvalue));
+	auto ret = write(fd.get(), pvalue, len);
+	if (ret < 0 || static_cast<size_t>(ret) != len)
 		return FALSE;
-	}
+	if (write(fd.get(), "", 1) != 1)
+		return false;
 	if (FALSE == common_util_update_message_cid(
 		psqlite, message_id, proptag, cid)) {
 	} else {
@@ -2783,17 +2787,20 @@ static BOOL common_util_set_message_header(
 		if (remove(path) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1335: remove %s: %s\n", path, strerror(errno));
 	});
-	int len = 0;
 	if (PROP_TAG_TRANSPORTMESSAGEHEADERS == proptag) {
-		if (!utf8_len(static_cast<char *>(pvalue), &len) ||
-		    write(fd.get(), &len, sizeof(uint32_t)) != sizeof(uint32_t)) {
+		size_t ncp = 0;
+		if (!utf8_count_codepoints(static_cast<char *>(pvalue), &ncp))
+			return false;
+		uint32_t len = cpu_to_le32(ncp);
+		if (write(fd.get(), &len, sizeof(len)) != sizeof(len))
 			return FALSE;
-		}
 	}
-	len = strlen(static_cast<char *>(pvalue)) + 1;
-	if (write(fd.get(), pvalue, len) != len) {
+	auto len = strlen(static_cast<char *>(pvalue));
+	auto ret = write(fd.get(), pvalue, len);
+	if (ret < 0 || static_cast<size_t>(ret) != len)
 		return FALSE;
-	}
+	if (write(fd.get(), "", 1) != 1)
+		return false;
 	if (FALSE == common_util_update_message_cid(
 		psqlite, message_id, proptag, cid)) {
 	} else {
@@ -5675,11 +5682,11 @@ static uint32_t common_util_get_cid_string_length(uint32_t cid)
 	auto dir = exmdb_server_get_dir();
 	snprintf(path, sizeof(path), "%s/cid/%llu", dir, LLU(cid));
 	wrapfd fd = open(path, O_RDONLY);
-	int length = 0;
+	uint32_t length = 0;
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
 	    read(fd.get(), &length, sizeof(uint32_t)) != sizeof(uint32_t))
 		return 0;
-	return 2*length;
+	return 2 * le32_to_cpu(length);
 }
 
 static uint32_t common_util_get_cid_length(uint64_t cid)
@@ -5692,6 +5699,8 @@ static uint32_t common_util_get_cid_length(uint64_t cid)
 	if (0 != stat(path, &node_stat)) {
 		return 0;
 	}
+	if (node_stat.st_size > UINT32_MAX)
+		node_stat.st_size = UINT32_MAX;
 	return node_stat.st_size;
 }
 
