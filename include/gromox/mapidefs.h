@@ -82,7 +82,8 @@ enum {
  *      \_ Non-transmittable props:   0x0E00..0x0FFF (non-transmittable)
  *      \_ Message content props:     0x1000..0x2FFF
  *      \_ Others:                    0x3000..0x3FFF
- *          \_ Common props:          0x3000..0x33FF
+ *          \_ Common props:          0x3000..0x32FF
+ *          \_ Form props:            0x3300..0x33FF
  *          \_ Message store:         0x3400..0x35FF
  *          \_ Container (folder/AB): 0x3600..0x36FF
  *          \_ Attachment:            0x3700..0x38FF
@@ -90,7 +91,8 @@ enum {
  *          \_ Mail user:             0x3A00..0x3BFF
  *          \_ Distribution list:     0x3C00..0x3CFF
  *          \_ Profsect:              0x3D00..0x3DFF
- *          \_ Status object:         0x3E00..0x3FFF
+ *          \_ Status object:         0x3E00..0x3EFF
+ *          \_ Display table:         0x3F00..0x3FFF
  *  \_ Transport-specific props:      0x4000..0x5FFF
  *      \_ Envelope props:            0x4000..0x57FF
  *      \_ Recipient props:           0x5800..0x5FFF
@@ -102,6 +104,8 @@ enum {
  *      \_ Non-transmittable:         0x7C00..0x7FFF (non-transmittable)
  * Mapping range for named props:     0x8000..0xFFFE
  * Reserved:                          0xFFFF
+ *
+ * There are some more reserved ranges, but we need not bother with it.
  */
 enum {
 	PR_NULL = PROP_TAG(PT_NULL, 0x0000), /* PidTagNull */
@@ -345,7 +349,7 @@ enum {
 	PR_OTHER_ADDRESS_STREET = PROP_TAG(PT_UNICODE, 0x3A63), /* PidTagOtherAddressStreet */
 	PR_OTHER_ADDRESS_POST_OFFICE_BOX = PROP_TAG(PT_UNICODE, 0x3A64), /* PidTagOtherAddressPostOfficeBox */
 	PR_RESOURCE_TYPE = PROP_TAG(PT_LONG, 0x3E03), /* PidTagResourceType */
-	PR_CONTROL_FLAGS = PROP_TAG(PT_LONG, 0x3F02), /* PidTagControlFlags */
+	PR_CONTROL_FLAGS = PROP_TAG(PT_LONG, 0x3F00), /* PidTagControlFlags */
 	PR_CONTROL_TYPE = PROP_TAG(PT_LONG, 0x3F02), /* PidTagControlType */
 	PR_INTERNET_CPID = PROP_TAG(PT_LONG, 0x3FDE), /* PidTagInternetCodepage */
 	// PR_CONFLICT_ENTRYID = PROP_TAG(PT_BINARY, 0x3FF0), /* PidTagConflictEntryId */
