@@ -15,18 +15,14 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/rtf.hpp>
 #include <gromox/rtfcp.hpp>
+#include <gromox/rop_util.hpp>
 
 using namespace gromox;
 
 namespace {
 struct instbody_delete : public stdlib_delete {
 	using stdlib_delete::operator();
-	inline void operator()(BINARY *x) const {
-		if (x == nullptr)
-			return;
-		free(x->pv);
-		free(x);
-	}
+	inline void operator()(BINARY *x) const { rop_util_free_binary(x); }
 };
 }
 
