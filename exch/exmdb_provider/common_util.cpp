@@ -2114,7 +2114,7 @@ BOOL cu_get_properties(db_table table_type,
 			case db_table::folder_props:
 				own_stmt = gx_sql_prep(psqlite, "SELECT propval "
 				           "FROM folder_properties WHERE folder_id=? "
-				           "AND proptag=?)");
+				           "AND proptag=?");
 				if (own_stmt == nullptr)
 					return FALSE;
 				pstmt = own_stmt;
