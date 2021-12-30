@@ -332,8 +332,8 @@ static BOOL ftstream_producer_write_propvalue(
 	if (ppropval->proptag == PR_MESSAGE_CLASS)
 		proptype = PT_STRING8;
 	write_type = proptype;
-	if (propid == PROP_ID(META_TAG_IDSETGIVEN)) {
-		/* OXCFXICS v §3.2.5.2.1 */
+	if (propid == PROP_ID(MetaTagIdsetGiven)) {
+		/* OXCFXICS v24 §3.2.5.2.1 */
 		write_type = PT_LONG;
 	} else if (proptype == PT_STRING8 || proptype == PT_UNICODE) {
 		if (pstream->string_option & STRING_OPTION_FORCE_UNICODE) {
@@ -570,7 +570,7 @@ static BOOL ftstream_producer_write_messagechildren(
 	const MESSAGE_CHILDREN *pchildren)
 {
 	if (TRUE == b_delprop) {
-		if (!pstream->write_uint32(META_TAG_FXDELPROP))
+		if (!pstream->write_uint32(MetaTagFXDelProp))
 			return FALSE;
 		if (!pstream->write_uint32(PR_MESSAGE_RECIPIENTS))
 			return FALSE;
@@ -584,7 +584,7 @@ static BOOL ftstream_producer_write_messagechildren(
 		}
 	}
 	if (TRUE == b_delprop) {
-		if (!pstream->write_uint32(META_TAG_FXDELPROP))
+		if (!pstream->write_uint32(MetaTagFXDelProp))
 			return FALSE;
 		if (!pstream->write_uint32(PR_MESSAGE_ATTACHMENTS))
 			return FALSE;
@@ -719,7 +719,7 @@ BOOL ftstream_producer::write_messagechangepartial(
 		pstream, pmsg->pgpinfo)) {
 		return FALSE;
 	}
-	if (!write_uint32(META_TAG_INCRSYNCGROUPID))
+	if (!write_uint32(MetaTagIncrSyncGroupId))
 		return FALSE;
 	if (!write_uint32(pmsg->group_id))
 		return FALSE;	
@@ -730,7 +730,7 @@ BOOL ftstream_producer::write_messagechangepartial(
 		return FALSE;	
 	}
 	for (size_t i = 0; i < pmsg->count; ++i) {
-		if (!write_uint32(META_TAG_INCREMENTALSYNCMESSAGEPARTIAL))
+		if (!write_uint32(MetaTagIncrementalSyncMessagePartial))
 			return FALSE;
 		if (!write_uint32(pmsg->pchanges[i].index))
 			return FALSE;	
@@ -740,7 +740,7 @@ BOOL ftstream_producer::write_messagechangepartial(
 				if (NULL == pmsg->children.prcpts) {
 					break;
 				}
-				if (!write_uint32(META_TAG_FXDELPROP))
+				if (!write_uint32(MetaTagFXDelProp))
 					return FALSE;
 				if (!write_uint32(PR_MESSAGE_RECIPIENTS))
 					return FALSE;
@@ -755,7 +755,7 @@ BOOL ftstream_producer::write_messagechangepartial(
 				if (NULL == pmsg->children.pattachments) {
 					break;
 				}
-				if (!write_uint32(META_TAG_FXDELPROP))
+				if (!write_uint32(MetaTagFXDelProp))
 					return FALSE;
 				if (!write_uint32(PR_MESSAGE_ATTACHMENTS))
 					return FALSE;

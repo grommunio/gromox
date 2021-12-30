@@ -49,13 +49,13 @@ bool fxdown_flow_list::record_messagelist(EID_ARRAY *pmsglst)
 bool fxdown_flow_list::record_foldermessages(const FOLDER_MESSAGES *pfldmsgs)
 {	
 	if (NULL != pfldmsgs->pfai_msglst) {
-		if (!record_tag(META_TAG_FXDELPROP) ||
+		if (!record_tag(MetaTagFXDelProp) ||
 		    !record_tag(PROP_TAG_FOLDERASSOCIATEDCONTENTS) ||
 		    !record_messagelist(pfldmsgs->pfai_msglst))
 			return false;
 	}
 	if (NULL != pfldmsgs->pnormal_msglst) {
-		if (!record_tag(META_TAG_FXDELPROP) ||
+		if (!record_tag(MetaTagFXDelProp) ||
 		    !record_tag(PROP_TAG_CONTAINERCONTENTS) ||
 		    !record_messagelist(pfldmsgs->pnormal_msglst))
 			return false;
@@ -78,11 +78,11 @@ bool fxdown_flow_list::record_foldermessagesnodelprops(const FOLDER_MESSAGES *pf
 
 bool fxdown_flow_list::record_foldercontent(const FOLDER_CONTENT *pfldctnt)
 {
-	if (pfldctnt->proplist.has(META_TAG_NEWFXFOLDER))
+	if (pfldctnt->proplist.has(MetaTagNewFXFolder))
 		return record_node(FUNC_ID_PROPLIST, &pfldctnt->proplist);
 	if (!record_node(FUNC_ID_PROPLIST, &pfldctnt->proplist) ||
 	    !record_foldermessages(&pfldctnt->fldmsgs) ||
-	    !record_tag(META_TAG_FXDELPROP) ||
+	    !record_tag(MetaTagFXDelProp) ||
 	    !record_tag(PROP_TAG_CONTAINERHIERARCHY))
 		return false;
 	for (const auto &f : pfldctnt->psubflds)
@@ -163,7 +163,7 @@ BOOL fastdownctx_object::make_foldercontent(BOOL b_subfolders,
 	    !flow_list.record_foldermessages(&fc->fldmsgs))
 		return FALSE;	
 	if (TRUE == b_subfolders) {
-		if (!flow_list.record_tag(META_TAG_FXDELPROP) ||
+		if (!flow_list.record_tag(MetaTagFXDelProp) ||
 		    !flow_list.record_tag(PROP_TAG_CONTAINERHIERARCHY))
 			return FALSE;
 		for (const auto &f : fc->psubflds)

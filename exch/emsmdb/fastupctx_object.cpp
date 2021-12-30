@@ -752,7 +752,7 @@ static gxerr_t fastupctx_object_record_propval(fastupctx_object *pctx,
 	uint32_t b_result;
 	
 	switch (ppropval->proptag) {
-	case META_TAG_FXDELPROP:
+	case MetaTagFXDelProp:
 		switch (*(uint32_t*)ppropval->pvalue) {
 		case PR_MESSAGE_RECIPIENTS:
 		case PR_MESSAGE_ATTACHMENTS:
@@ -765,22 +765,22 @@ static gxerr_t fastupctx_object_record_propval(fastupctx_object *pctx,
 		default:
 			return GXERR_CALL_FAILED;
 		}
-	case META_TAG_DNPREFIX:
-	case META_TAG_ECWARNING:
+	case MetaTagDnPrefix:
+	case MetaTagEcWarning:
 		return GXERR_SUCCESS;
-	case META_TAG_NEWFXFOLDER:
-	case META_TAG_INCRSYNCGROUPID:
-	case META_TAG_INCREMENTALSYNCMESSAGEPARTIAL:
-	case META_TAG_IDSETGIVEN:
-	case META_TAG_IDSETGIVEN1:
-	case META_TAG_CNSETSEEN:
-	case META_TAG_CNSETSEENFAI:
-	case META_TAG_CNSETREAD:
-	case META_TAG_IDSETDELETED:
-	case META_TAG_IDSETNOLONGERINSCOPE:
-	case META_TAG_IDSETEXPIRED:
-	case META_TAG_IDSETREAD:
-	case META_TAG_IDSETUNREAD:
+	case MetaTagNewFXFolder:
+	case MetaTagIncrSyncGroupId:
+	case MetaTagIncrementalSyncMessagePartial:
+	case MetaTagIdsetGiven:
+	case MetaTagIdsetGiven1:
+	case MetaTagCnsetSeen:
+	case MetaTagCnsetSeenFAI:
+	case MetaTagCnsetRead:
+	case MetaTagIdsetDeleted:
+	case MetaTagIdsetNoLongerInScope:
+	case MetaTagIdsetExpired:
+	case MetaTagIdsetRead:
+	case MetaTagIdsetUnread:
 		return GXERR_CALL_FAILED;
 	}
 	auto pnode = pctx->marker_stack.rbegin();

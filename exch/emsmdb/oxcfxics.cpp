@@ -135,7 +135,7 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 		if (NULL == pbin) {
 			return NULL;
 		}
-		if (pproplist->set(META_TAG_NEWFXFOLDER, pbin) != 0)
+		if (pproplist->set(MetaTagNewFXFolder, pbin) != 0)
 			return NULL;
 		return pfldctnt;
 	}
@@ -699,7 +699,7 @@ uint32_t rop_fasttransfersourcecopyproperties(uint8_t level, uint8_t flags,
 		auto pproplist = pfldctnt->get_proplist();
 		i = 0;
 		while (i < pproplist->count) {
-			if (META_TAG_NEWFXFOLDER != pproplist->ppropval[i].proptag) {
+			if (pproplist->ppropval[i].proptag != MetaTagNewFXFolder) {
 				if (!pproptags->has(pproplist->ppropval[i].proptag)) {
 					pproplist->erase(pproplist->ppropval[i].proptag);
 					continue;

@@ -101,7 +101,7 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 		tpropval_array_free(pproplist);
 		return NULL;
 	}
-	if (pproplist->set(META_TAG_IDSETGIVEN1, pbin) != 0) {
+	if (pproplist->set(MetaTagIdsetGiven1, pbin) != 0) {
 		rop_util_free_binary(pbin);
 		tpropval_array_free(pproplist);
 		return NULL;
@@ -113,7 +113,7 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 		tpropval_array_free(pproplist);
 		return NULL;
 	}
-	if (pproplist->set(META_TAG_CNSETSEEN, pbin) != 0) {
+	if (pproplist->set(MetaTagCnsetSeen, pbin) != 0) {
 		rop_util_free_binary(pbin);
 		tpropval_array_free(pproplist);
 		return NULL;
@@ -126,7 +126,7 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 			tpropval_array_free(pproplist);
 			return NULL;
 		}
-		if (pproplist->set(META_TAG_CNSETSEENFAI, pbin) != 0) {
+		if (pproplist->set(MetaTagCnsetSeenFAI, pbin) != 0) {
 			rop_util_free_binary(pbin);
 			tpropval_array_free(pproplist);
 			return NULL;
@@ -141,7 +141,7 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 			tpropval_array_free(pproplist);
 			return NULL;
 		}
-		if (pproplist->set(META_TAG_CNSETREAD, pbin) != 0) {
+		if (pproplist->set(MetaTagCnsetRead, pbin) != 0) {
 			rop_util_free_binary(pbin);
 			tpropval_array_free(pproplist);
 			return NULL;
@@ -181,7 +181,7 @@ BOOL ics_state_deserialize(ICS_STATE *pstate, const BINARY *pbin)
 		return FALSE;	
 	for (i=0; i<propvals.count; i++) {
 		switch (propvals.ppropval[i].proptag) {
-		case META_TAG_IDSETGIVEN1:
+		case MetaTagIdsetGiven1:
 			pset = idset_init(FALSE, REPL_TYPE_ID);
 			if (NULL == pset) {
 				return FALSE;
@@ -194,7 +194,7 @@ BOOL ics_state_deserialize(ICS_STATE *pstate, const BINARY *pbin)
 			idset_free(pstate->pgiven);
 			pstate->pgiven = pset;
 			break;
-		case META_TAG_CNSETSEEN:
+		case MetaTagCnsetSeen:
 			pset = idset_init(FALSE, REPL_TYPE_ID);
 			if (NULL == pset) {
 				return FALSE;
@@ -207,7 +207,7 @@ BOOL ics_state_deserialize(ICS_STATE *pstate, const BINARY *pbin)
 			idset_free(pstate->pseen);
 			pstate->pseen = pset;
 			break;
-		case META_TAG_CNSETSEENFAI:
+		case MetaTagCnsetSeenFAI:
 			if (ICS_TYPE_CONTENTS == pstate->type) {
 				pset = idset_init(FALSE, REPL_TYPE_ID);
 				if (NULL == pset) {
@@ -222,7 +222,7 @@ BOOL ics_state_deserialize(ICS_STATE *pstate, const BINARY *pbin)
 				pstate->pseen_fai = pset;
 			}
 			break;
-		case META_TAG_CNSETREAD:
+		case MetaTagCnsetRead:
 			if (ICS_TYPE_CONTENTS == pstate->type) {
 				pset = idset_init(FALSE, REPL_TYPE_ID);
 				if (NULL == pset) {

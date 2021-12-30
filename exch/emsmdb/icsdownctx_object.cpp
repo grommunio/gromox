@@ -599,7 +599,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		pproplist_deletions = &tmp_proplist;
 		pproplist_deletions->count = 1;
 		pproplist_deletions->ppropval = &tmp_propval;
-		tmp_propval.proptag = META_TAG_IDSETDELETED;
+		tmp_propval.proptag = MetaTagIdsetDeleted;
 		tmp_propval.pvalue = pbin;
 	}
 	if (0 != last_changenum) {
@@ -1198,8 +1198,7 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 		if (NULL == pbin1) {
 			return FALSE;
 		}
-		proplist.ppropval[proplist.count].proptag =
-								META_TAG_IDSETDELETED;
+		proplist.ppropval[proplist.count].proptag = MetaTagIdsetDeleted;
 		proplist.ppropval[proplist.count++].pvalue = pbin1;
 	}
 	if (0 == (SYNC_FLAG_IGNORENOLONGERINSCOPE & pctx->sync_flags)
@@ -1228,8 +1227,7 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 			}
 			return FALSE;
 		}
-		proplist.ppropval[proplist.count].proptag =
-						META_TAG_IDSETNOLONGERINSCOPE;
+		proplist.ppropval[proplist.count].proptag = MetaTagIdsetNoLongerInScope;
 		proplist.ppropval[proplist.count++].pvalue = pbin2;
 	}
 	if (0 == proplist.count) {
@@ -1285,8 +1283,7 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 		if (NULL == pbin1) {
 			return FALSE;
 		}
-		proplist.ppropval[proplist.count].proptag =
-								META_TAG_IDSETREAD;
+		proplist.ppropval[proplist.count].proptag = MetaTagIdsetRead;
 		proplist.ppropval[proplist.count++].pvalue = pbin1;
 	}
 	if (pctx->punread_messags->count > 0) {
@@ -1305,8 +1302,7 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 		if (NULL == pbin2) {
 			return FALSE;
 		}
-		proplist.ppropval[proplist.count].proptag =
-								META_TAG_IDSETUNREAD;
+		proplist.ppropval[proplist.count].proptag = MetaTagIdsetUnread;
 		proplist.ppropval[proplist.count++].pvalue = pbin2;
 	}
 	if (0 == proplist.count) {
@@ -1501,12 +1497,12 @@ BOOL icsdownctx_object::begin_state_stream(uint32_t new_state_prop)
 		return FALSE;
 	}
 	switch (new_state_prop) {
-	case META_TAG_IDSETGIVEN:
-	case META_TAG_IDSETGIVEN1:
-	case META_TAG_CNSETSEEN:
+	case MetaTagIdsetGiven:
+	case MetaTagIdsetGiven1:
+	case MetaTagCnsetSeen:
 		break;
-	case META_TAG_CNSETSEENFAI:
-	case META_TAG_CNSETREAD:
+	case MetaTagCnsetSeenFAI:
+	case MetaTagCnsetRead:
 		if (SYNC_TYPE_CONTENTS != pctx->sync_type) {
 			return FALSE;
 		}

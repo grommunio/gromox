@@ -385,10 +385,9 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 	marker = 0;
 	uint16_t proptype = PROP_TYPE(atom_element);
 	uint16_t propid = PROP_ID(atom_element);
-	/* META_TAG_IDSETGIVEN, MS-OXCFXICS 3.2.5.2.1 */
-	if (META_TAG_IDSETGIVEN == atom_element) {
+	/* OXCFXICS v24 3.2.5.2.1 */
+	if (atom_element == MetaTagIdsetGiven)
 		proptype = PT_BINARY;
-	}
 	if (propid == PROP_ID_INVALID)
 		fprintf(stderr, "W-1272: ftstream with PROP_ID_INVALID seen\n");
 	if (is_nameprop_id(propid)) {

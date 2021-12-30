@@ -44,12 +44,12 @@ BOOL icsupctx_object::begin_state_stream(uint32_t new_state_prop)
 		return FALSE;
 	}
 	switch (new_state_prop) {
-	case META_TAG_IDSETGIVEN:
-	case META_TAG_IDSETGIVEN1:
-	case META_TAG_CNSETSEEN:
+	case MetaTagIdsetGiven:
+	case MetaTagIdsetGiven1:
+	case MetaTagCnsetSeen:
 		break;
-	case META_TAG_CNSETSEENFAI:
-	case META_TAG_CNSETREAD:
+	case MetaTagCnsetSeenFAI:
+	case MetaTagCnsetRead:
 		if (SYNC_TYPE_CONTENTS != pctx->sync_type) {
 			return FALSE;
 		}
@@ -71,10 +71,9 @@ BOOL icsupctx_object::continue_state_stream(const BINARY *pstream_data)
 	if (0 == pctx->state_property) {
 		return FALSE;
 	}
-	if (META_TAG_IDSETGIVEN == pctx->state_property ||
-		META_TAG_IDSETGIVEN1 == pctx->state_property) {
+	if (pctx->state_property == MetaTagIdsetGiven ||
+	    pctx->state_property == MetaTagIdsetGiven1)
 		return TRUE;
-	}
 	return f_state_stream.write(pstream_data->pb, pstream_data->cb) ==
 	       pstream_data->cb ? TRUE : false;
 }
@@ -91,8 +90,8 @@ BOOL icsupctx_object::end_state_stream()
 	if (0 == pctx->state_property) {
 		return FALSE;
 	}
-	if (META_TAG_IDSETGIVEN == pctx->state_property ||
-		META_TAG_IDSETGIVEN1 == pctx->state_property) {
+	if (pctx->state_property == MetaTagIdsetGiven ||
+	    pctx->state_property == MetaTagIdsetGiven1) {
 		pctx->state_property = 0;
 		mem_file_free(&pctx->f_state_stream);
 		return TRUE;
