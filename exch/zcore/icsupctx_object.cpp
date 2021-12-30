@@ -27,18 +27,12 @@ icsupctx_object::create(folder_object *pfolder, uint8_t sync_type)
 	return pctx;
 }
 
-icsupctx_object::~icsupctx_object()
-{
-	if (pstate != nullptr)
-		ics_state_free(pstate);
-}
-
 BOOL icsupctx_object::upload_state(const BINARY *out)
 {
-	return ics_state_deserialize(pstate, out);
+	return ics_state_deserialize(pstate.get(), out);
 }
 
 BINARY *icsupctx_object::get_state()
 {
-	return ics_state_serialize(pstate);
+	return ics_state_serialize(pstate.get());
 }

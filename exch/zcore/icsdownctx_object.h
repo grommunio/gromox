@@ -2,9 +2,9 @@
 #include <cstdint>
 #include <memory>
 #include <gromox/mapi_types.hpp>
+#include "ics_state.h"
 
 struct folder_object;
-struct ICS_STATE;
 struct store_object;
 
 struct icsdownctx_object final {
@@ -27,7 +27,7 @@ struct icsdownctx_object final {
 	uint8_t sync_type = 0;
 	store_object *pstore = nullptr;
 	uint64_t folder_id = 0;
-	ICS_STATE *pstate = nullptr;
+	std::unique_ptr<ics_state> pstate;
 	BOOL b_started = false;
 	uint64_t last_changenum = 0, last_readcn = 0;
 	EID_ARRAY *pgiven_eids = nullptr, *pchg_eids = nullptr;

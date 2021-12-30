@@ -2,9 +2,9 @@
 #include <cstdint>
 #include <memory>
 #include <gromox/mapi_types.hpp>
+#include "ics_state.h"
 
 struct folder_object;
-struct ICS_STATE;
 struct store_object;
 
 struct icsupctx_object final {
@@ -12,7 +12,6 @@ struct icsupctx_object final {
 	icsupctx_object() = default;
 
 	public:
-	~icsupctx_object();
 	static std::unique_ptr<icsupctx_object> create(folder_object *, uint8_t sync_type);
 	BOOL upload_state(const BINARY *state);
 	BINARY *get_state();
@@ -22,6 +21,6 @@ struct icsupctx_object final {
 
 	store_object *pstore = nullptr;
 	uint64_t folder_id = 0;
-	ICS_STATE *pstate = nullptr; /* public member */
+	std::unique_ptr<ics_state> pstate; /* public member */
 	uint8_t sync_type = 0;
 };

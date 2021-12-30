@@ -52,26 +52,19 @@ static BOOL ics_state_init(ICS_STATE *pstate)
 	return TRUE;
 }
 
-ICS_STATE* ics_state_create(uint8_t type)
+std::unique_ptr<ics_state> ics_state_create(uint8_t type) try
 {
-	auto pstate = me_alloc<ICS_STATE>();
-	if (NULL == pstate) {
+	auto pstate = std::make_unique<ics_state>(type);
+	if (!ics_state_init(pstate.get()))
 		return NULL;
-	}
-	memset(pstate, 0, sizeof(ICS_STATE));
-	pstate->type = type;
-	if (FALSE == ics_state_init(pstate)) {
-		ics_state_clear(pstate);
-		free(pstate);
-		return NULL;
-	}
 	return pstate;
+} catch (const std::bad_alloc &) {
+	return nullptr;
 }
 
-void ics_state_free(ICS_STATE *pstate)
+ics_state::~ics_state()
 {
-	ics_state_clear(pstate);
-	free(pstate);
+	ics_state_clear(this);
 }
 
 BINARY* ics_state_serialize(ICS_STATE *pstate)

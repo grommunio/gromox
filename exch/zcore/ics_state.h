@@ -1,16 +1,19 @@
 #pragma once
 #include <cstdint>
+#include <memory>
 #include <gromox/mapi_types.hpp>
 
-struct ICS_STATE {
-	int type;
-	IDSET *pgiven;
-	IDSET *pseen;
-	IDSET *pseen_fai;
-	IDSET *pread;
-};
+struct ics_state {
+	ics_state(uint8_t t) : type(t) {}
+	~ics_state();
+	NOMOVE(ics_state);
 
-ICS_STATE* ics_state_create(uint8_t type);
+	int type = 0;
+	IDSET *pgiven = nullptr, *pread = nullptr;
+	IDSET *pseen = nullptr, *pseen_fai = nullptr;
+};
+using ICS_STATE = ics_state;
+
+extern std::unique_ptr<ics_state> ics_state_create(uint8_t type);
 BINARY* ics_state_serialize(ICS_STATE *pstate);
 BOOL ics_state_deserialize(ICS_STATE *pstate, const BINARY *pbin);
-void ics_state_free(ICS_STATE *pstate);
