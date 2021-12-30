@@ -156,11 +156,12 @@ BOOL ICS_STATE::append_idset(uint32_t state_property, IDSET *pset)
 
 TPROPVAL_ARRAY *ICS_STATE::serialize()
 {
+	struct mdel {
+		inline void operator()(BINARY *x) const { rop_util_free_binary(x); }
+		inline void operator()(TPROPVAL_ARRAY *x) const { tpropval_array_free(x); }
+	};
 	auto pstate = this;
-	TPROPVAL_ARRAY *pproplist;
-	
-	
-	pproplist = tpropval_array_init();
+	std::unique_ptr<TPROPVAL_ARRAY, mdel> pproplist(tpropval_array_init());
 	if (NULL == pproplist) {
 		return NULL;
 	}
@@ -171,59 +172,34 @@ TPROPVAL_ARRAY *ICS_STATE::serialize()
 	    !pstate->pgiven->check_empty())) {
 		auto pbin = pstate->pgiven->serialize();
 		if (NULL == pbin) {
-			tpropval_array_free(pproplist);
 			return NULL;
 		}
 		if (pproplist->set(MetaTagIdsetGiven1, pbin) != 0) {
 			rop_util_free_binary(pbin);
-			tpropval_array_free(pproplist);
 			return NULL;
 		}
 		rop_util_free_binary(pbin);
 	}
 	
-	auto pbin = pstate->pseen->serialize();
-	if (NULL == pbin) {
-		tpropval_array_free(pproplist);
+	std::unique_ptr<BINARY, mdel> ser(pstate->pseen->serialize());
+	if (ser == nullptr || pproplist->set(MetaTagCnsetSeen, ser.get()) != 0)
 		return NULL;
-	}
-	if (pproplist->set(MetaTagCnsetSeen, pbin) != 0) {
-		rop_util_free_binary(pbin);
-		tpropval_array_free(pproplist);
-		return NULL;
-	}
-	rop_util_free_binary(pbin);
 	
 	if (ICS_STATE_CONTENTS_DOWN == pstate->type ||
 		ICS_STATE_CONTENTS_UP == pstate->type) {
-		pbin = pstate->pseen_fai->serialize();
-		if (NULL == pbin) {
-			tpropval_array_free(pproplist);
+		decltype(ser) s(pstate->pseen_fai->serialize());
+		if (s == nullptr ||
+		    pproplist->set(MetaTagCnsetSeenFAI, s.get()) != 0)
 			return NULL;
-		}
-		if (pproplist->set(MetaTagCnsetSeenFAI, pbin) != 0) {
-			rop_util_free_binary(pbin);
-			tpropval_array_free(pproplist);
-			return NULL;
-		}
-		rop_util_free_binary(pbin);
 	}
 	
 	if (ICS_STATE_CONTENTS_DOWN == pstate->type ||
 		(ICS_STATE_CONTENTS_UP == pstate->type &&
 	    !pstate->pread->check_empty())) {
-		pbin = pstate->pread->serialize();
-		if (NULL == pbin) {
-			tpropval_array_free(pproplist);
+		decltype(ser) s(pstate->pread->serialize());
+		if (s == nullptr ||
+		    pproplist->set(MetaTagCnsetRead, s.get()) != 0)
 			return NULL;
-		}
-		if (pproplist->set(MetaTagCnsetRead, pbin) != 0) {
-			rop_util_free_binary(pbin);
-			tpropval_array_free(pproplist);
-			return NULL;
-		}
-		rop_util_free_binary(pbin);
 	}
-	
-	return pproplist;
+	return pproplist.release();
 }
