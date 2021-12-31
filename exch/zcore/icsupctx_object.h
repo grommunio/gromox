@@ -13,8 +13,8 @@ struct icsupctx_object final {
 
 	public:
 	static std::unique_ptr<icsupctx_object> create(folder_object *, uint8_t sync_type);
-	BOOL upload_state(const BINARY *state);
-	BINARY *get_state();
+	BOOL upload_state(const BINARY *s) { return pstate->deserialize(s); }
+	BINARY *get_state() { return pstate->serialize(); }
 	store_object *get_store() const { return pstore; }
 	uint8_t get_type() const { return sync_type; }
 	uint64_t get_parent_folder_id() const { return folder_id; }

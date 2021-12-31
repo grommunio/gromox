@@ -26,13 +26,3 @@ icsupctx_object::create(folder_object *pfolder, uint8_t sync_type)
 	pctx->sync_type = sync_type;
 	return pctx;
 }
-
-BOOL icsupctx_object::upload_state(const BINARY *out)
-{
-	return pstate->deserialize(out);
-}
-
-BINARY *icsupctx_object::get_state()
-{
-	return pstate->serialize();
-}

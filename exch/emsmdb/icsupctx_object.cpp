@@ -123,8 +123,3 @@ BOOL icsupctx_object::end_state_stream()
 		return FALSE;
 	return TRUE;
 }
-
-void icsupctx_object::mark_started()
-{
-	b_started = TRUE;
-}

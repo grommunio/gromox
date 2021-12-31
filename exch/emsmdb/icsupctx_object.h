@@ -22,7 +22,7 @@ struct icsupctx_object final {
 	BOOL continue_state_stream(const BINARY *stream_data);
 	BOOL end_state_stream();
 	ics_state *get_state() const { return pstate.get(); }
-	void mark_started();
+	void mark_started() { b_started = TRUE; }
 
 	logon_object *plogon = nullptr;
 	folder_object *pfolder = nullptr;
