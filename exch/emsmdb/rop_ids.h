@@ -122,8 +122,13 @@ enum {
 	ropSynchronizationImportReadStateChanges = 0x80,
 	ropResetTable = 0x81,
 	ropSynchronizationGetTransferState = 0x82,
+	ropSynchronizationOpenAdvisor = 0x83, /* removed in OXCROPS v9 */
+	ropRegisterSynchronizationNotifications = 0x84, /* gone in v9 */
 	ropTellVersion = 0x86,
+	ropOpenPublicFolderByName = 0x87, /* removed in OXCROPS v1.02 */
+	ropSetSynchronizationNotificationGuid = 0x88, /* gone in v9 */
 	ropFreeBookmark = 0x89,
+	ropDeletePublicFolderByName = 0x8A, /* gone in v1.02 */
 	ropWriteAndCommitStream = 0x90,
 	ropHardDeleteMessages = 0x91,
 	ropHardDeleteMessagesAndSubfolders = 0x92,
