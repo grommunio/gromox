@@ -5,7 +5,7 @@
 #include <gromox/mem_file.hpp>
 
 struct folder_object;
-struct ICS_STATE;
+struct ics_state;
 struct logon_object;
 
 struct icsupctx_object final {
@@ -21,12 +21,12 @@ struct icsupctx_object final {
 	BOOL begin_state_stream(uint32_t state_property);
 	BOOL continue_state_stream(const BINARY *stream_data);
 	BOOL end_state_stream();
-	ICS_STATE *get_state() const { return pstate.get(); }
+	ics_state *get_state() const { return pstate.get(); }
 	void mark_started();
 
 	logon_object *plogon = nullptr;
 	folder_object *pfolder = nullptr;
-	std::shared_ptr<ICS_STATE> pstate; /* public member */
+	std::shared_ptr<ics_state> pstate; /* public member */
 	uint32_t state_property = 0;
 	MEM_FILE f_state_stream{};
 	BOOL b_started = false;

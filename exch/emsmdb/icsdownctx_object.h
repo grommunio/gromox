@@ -9,7 +9,7 @@
 
 struct folder_object;
 struct fxstream_producer;
-struct ICS_STATE;
+struct ics_state;
 struct logon_object;
 using flow_node = std::pair<uint8_t, const void *>;
 
@@ -31,13 +31,13 @@ struct icsdownctx_object final {
 	BOOL end_state_stream();
 	BOOL check_started() const { return b_started; }
 	BOOL make_sync();
-	ICS_STATE *get_state() const { return pstate.get(); }
+	ics_state *get_state() const { return pstate.get(); }
 	BOOL get_buffer(void *buf, uint16_t *len, BOOL *last, uint16_t *progress, uint16_t *total);
 
 	std::unique_ptr<fxstream_producer> pstream;
 	uint8_t sync_type = 0;
 	folder_object *pfolder = nullptr;
-	std::unique_ptr<ICS_STATE> pstate; /* public member */
+	std::unique_ptr<ics_state> pstate; /* public member */
 	uint32_t state_property = 0;
 	MEM_FILE f_state_stream{};
 	BOOL b_started = false;

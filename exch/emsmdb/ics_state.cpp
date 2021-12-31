@@ -101,7 +101,7 @@ std::shared_ptr<ics_state> ics_state::create_shared(logon_object *plogon, int ty
 	return nullptr;
 }
 
-BOOL ICS_STATE::append_idset(uint32_t state_property, std::unique_ptr<idset> &&pset)
+BOOL ics_state::append_idset(uint32_t state_property, std::unique_ptr<idset> &&pset)
 {
 	auto pstate = this;
 	switch (state_property) {
@@ -141,7 +141,7 @@ BOOL ICS_STATE::append_idset(uint32_t state_property, std::unique_ptr<idset> &&p
 	return FALSE;
 }
 
-TPROPVAL_ARRAY *ICS_STATE::serialize()
+TPROPVAL_ARRAY *ics_state::serialize()
 {
 	struct mdel {
 		inline void operator()(BINARY *x) const { rop_util_free_binary(x); }

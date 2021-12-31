@@ -8,7 +8,7 @@ struct ATTACHMENT_CONTENT;
 struct FOLDER_CONTENT;
 struct FOLDER_MESSAGES;
 struct fxstream_producer;
-struct ICS_STATE;
+struct ics_state;
 struct logon_object;
 struct MESSAGE_CONTENT;
 using flow_node = std::pair<uint8_t, const void *>;
@@ -39,7 +39,7 @@ struct fastdownctx_object final {
 	BOOL make_foldercontent(BOOL subfolders, std::unique_ptr<FOLDER_CONTENT> &&);
 	BOOL make_topfolder(std::unique_ptr<FOLDER_CONTENT> &&);
 	BOOL make_messagelist(BOOL chginfo, EID_ARRAY *msglst);
-	BOOL make_state(ICS_STATE *);
+	BOOL make_state(ics_state *);
 	BOOL get_buffer(void *buf, uint16_t *len, BOOL *last, uint16_t *progress, uint16_t *total);
 
 	std::unique_ptr<fxstream_producer> pstream;
