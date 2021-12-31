@@ -29,20 +29,8 @@ struct REPLID_ARRAY {
 	uint16_t replids[1024];
 };
 
-struct RANGE_NODE {
-	DOUBLE_LIST_NODE node;
-	uint64_t low_value;
-	uint64_t high_value;
-};
-
-struct REPLID_NODE {
-	DOUBLE_LIST_NODE node;
-	uint16_t replid;
-	DOUBLE_LIST range_list;
-};
-
 struct IDSET_CACHE {
-	IDSET_CACHE();
+	IDSET_CACHE() = default;
 	~IDSET_CACHE();
 	NOMOVE(IDSET_CACHE);
 	BOOL init(const IDSET *);
@@ -50,14 +38,9 @@ struct IDSET_CACHE {
 
 	sqlite3 *psqlite = nullptr;
 	xstmt pstmt;
-	DOUBLE_LIST range_list;
+	std::vector<range_node> range_list;
 };
 
-}
-
-IDSET_CACHE::IDSET_CACHE()
-{
-	double_list_init(&range_list);
 }
 
 IDSET_CACHE::~IDSET_CACHE()
@@ -65,18 +48,12 @@ IDSET_CACHE::~IDSET_CACHE()
 	pstmt.finalize();
 	if (psqlite != nullptr)
 		sqlite3_close(psqlite);
-	double_list_free(&range_list);
 }
 
 BOOL IDSET_CACHE::init(const IDSET *pset)
 {
 	auto pcache = this;
 	uint64_t ival;
-	DOUBLE_LIST_NODE *pnode;
-	REPLID_NODE *prepl_node;
-	RANGE_NODE *prange_node;
-	RANGE_NODE *prange_node1;
-	DOUBLE_LIST *prange_list;
 	
 	if (SQLITE_OK != sqlite3_open_v2(":memory:", &pcache->psqlite,
 		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
@@ -86,12 +63,9 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 	    "(id_val INTEGER PRIMARY KEY)") != SQLITE_OK)
 		return FALSE;
 	pcache->pstmt = NULL;
-	prange_list = NULL;
-	for (pnode=double_list_get_head(
-		(DOUBLE_LIST*)&pset->repl_list);
-		NULL!=pnode; pnode=double_list_get_after(
-		(DOUBLE_LIST*)&pset->repl_list, pnode)) {
-		prepl_node = (REPLID_NODE*)pnode->pdata;
+	const std::vector<range_node> *prange_list = nullptr;
+	for (const auto &repl_node : pset->repl_list) {
+		auto prepl_node = &repl_node;
 		if (1 == prepl_node->replid) {
 			prange_list = &prepl_node->range_list;
 			break;
@@ -104,22 +78,14 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	for (pnode=double_list_get_head(prange_list); NULL!=pnode;
-		pnode=double_list_get_after(prange_list, pnode)) {
-		prange_node = (RANGE_NODE*)pnode->pdata;
-		if (prange_node->high_value -
-			prange_node->low_value >=
-			IDSET_CACHE_MIN_RANGE) {
-			prange_node1 = cu_alloc<RANGE_NODE>();
-			if (NULL == prange_node1) {
-				return FALSE;
-			}
-			prange_node1->node.pdata = prange_node1;
-			prange_node1->low_value = prange_node->low_value;
-			prange_node1->high_value = prange_node->high_value;
-			double_list_append_as_tail(
-				&pcache->range_list, &prange_node1->node);
+	for (const auto &range_node : *prange_list) {
+		auto prange_node = &range_node;
+		if (prange_node->high_value - prange_node->low_value >= IDSET_CACHE_MIN_RANGE) try {
+			pcache->range_list.emplace_back(prange_node->low_value, prange_node->high_value);
 			continue;
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1623: ENOMEM\n");
+			return false;
 		}
 		for (ival = prange_node->low_value;
 		     ival <= prange_node->high_value; ival++) {
@@ -136,8 +102,6 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 BOOL IDSET_CACHE::hint(uint64_t id_val)
 {
 	auto pcache = this;
-	RANGE_NODE *prange_node;
-	DOUBLE_LIST_NODE *pnode;
 	
 	if (NULL == pcache->pstmt) {
 		pcache->pstmt = gx_sql_prep(pcache->psqlite, "SELECT id_val FROM id_vals WHERE id_val=?");
@@ -149,9 +113,8 @@ BOOL IDSET_CACHE::hint(uint64_t id_val)
 	if (SQLITE_ROW == sqlite3_step(pcache->pstmt)) {
 		return TRUE;
 	}
-	for (pnode=double_list_get_head(&pcache->range_list); NULL!=pnode;
-		pnode=double_list_get_after(&pcache->range_list, pnode)) {
-		prange_node = (RANGE_NODE*)pnode->pdata;
+	for (const auto &range_node : pcache->range_list) {
+		auto prange_node = &range_node;
 		if (id_val >= prange_node->low_value &&
 			id_val <= prange_node->high_value) {
 			return TRUE;	

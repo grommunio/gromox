@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <vector>
 #include <gromox/proptags.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
@@ -753,22 +754,40 @@ using REPLICA_MAPPING = BOOL (*)(BOOL, void *, uint16_t *, GUID *);
 using REPLIST_ENUM = void (*)(void *, uint16_t);
 using REPLICA_ENUM = void (*)(void *, uint64_t);
 
+struct range_node {
+	range_node(uint64_t a, uint64_t b) noexcept : low_value(a), high_value(b) {}
+	uint64_t low_value, high_value;
+};
+using RANGE_NODE = range_node;
+
+struct repl_node {
+	repl_node() = default;
+	repl_node(uint16_t r) : replid(r) {}
+	repl_node(const GUID &g) : replguid(g) {}
+
+	union {
+		uint16_t replid;
+		GUID replguid;
+	};
+	std::vector<range_node> range_list; /* GLOBSET */
+};
+
 struct idset {
 	idset(bool serialize, uint8_t type);
 	~idset();
 	static std::unique_ptr<idset> create(bool serialize, uint8_t type);
 
 	BOOL register_mapping(BINARY *, REPLICA_MAPPING);
-	void clear();
+	void clear() { repl_list.clear(); }
 	BOOL check_empty() const;
 	BOOL append(uint64_t eid);
 	BOOL append_range(uint16_t replid, uint64_t low_value, uint64_t high_value);
 	void remove(uint64_t eid);
 	BOOL concatenate(const idset *set_src);
 	BOOL hint(uint64_t eid);
-	BINARY *serialize() const;
+	BINARY *serialize();
 	BINARY *serialize_replid() const;
-	BINARY *serialize_replguid() const;
+	BINARY *serialize_replguid();
 	BOOL deserialize(const BINARY *);
 	/* convert from deserialize idset into serialize idset */
 	BOOL convert();
@@ -778,14 +797,14 @@ struct idset {
 	BOOL enum_repl(uint16_t replid, void *param, REPLICA_ENUM);
 
 	void *pparam = nullptr;
-	REPLICA_MAPPING mapping{};
+	REPLICA_MAPPING mapping = nullptr;
 	/*
 	 * If @b_serialize is false and @repl_type is REPL_TYPE_GUID,
 	 * nodes in repl_list is REPLGUID_NODE.
 	 */
 	bool b_serialize = false;
 	uint8_t repl_type = 0;
-	DOUBLE_LIST repl_list{};
+	std::vector<repl_node> repl_list;
 };
 using IDSET = idset;
 
