@@ -52,7 +52,7 @@ static BOOL ics_state_init(ICS_STATE *pstate)
 	return TRUE;
 }
 
-std::unique_ptr<ics_state> ics_state_create(uint8_t type) try
+std::unique_ptr<ics_state> ics_state::create(uint8_t type) try
 {
 	auto pstate = std::make_unique<ics_state>(type);
 	if (!ics_state_init(pstate.get()))
@@ -67,7 +67,7 @@ ics_state::~ics_state()
 	ics_state_clear(this);
 }
 
-BINARY* ics_state_serialize(ICS_STATE *pstate)
+BINARY *ics_state::serialize()
 {
 	struct mdel {
 		inline void operator()(BINARY *x) { rop_util_free_binary(x); }
@@ -76,6 +76,7 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 	EXT_PUSH ext_push;
 	static constexpr uint8_t bin_buff[8]{};
 	static constexpr BINARY fake_bin = {gromox::arsizeof(bin_buff), {deconst(bin_buff)}};
+	auto pstate = this;
 	
 	if (ICS_TYPE_CONTENTS == pstate->type) {
 		if (pstate->pgiven->check_empty() &&
@@ -126,8 +127,9 @@ BINARY* ics_state_serialize(ICS_STATE *pstate)
 	return pbin;
 }
 
-BOOL ics_state_deserialize(ICS_STATE *pstate, const BINARY *pbin)
+BOOL ics_state::deserialize(const BINARY *pbin)
 {
+	auto pstate = this;
 	int i;
 	IDSET *pset;
 	EXT_PULL ext_pull;

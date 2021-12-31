@@ -26,7 +26,7 @@ icsdownctx_object::create(folder_object *pfolder, uint8_t sync_type)
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
-	pctx->pstate = ics_state_create(sync_type);
+	pctx->pstate = ics_state::create(sync_type);
 	if (pctx->pstate == nullptr)
 		return NULL;
 	pctx->pstore = pfolder->pstore;
@@ -64,7 +64,7 @@ BOOL icsdownctx_object::make_content(const BINARY *pstate_bin,
 	*pb_changed = FALSE;
 	if (pctx->sync_type != SYNC_TYPE_CONTENTS)
 		return FALSE;
-	if (!ics_state_deserialize(pctx->pstate.get(), pstate_bin))
+	if (!pctx->pstate->deserialize(pstate_bin))
 		return FALSE;
 	auto pinfo = zarafa_server_get_info();
 	auto pread = (sync_flags & SYNC_FLAG_READSTATE) ? pctx->pstate->pread : nullptr;
@@ -144,7 +144,7 @@ BOOL icsdownctx_object::make_hierarchy(const BINARY *state,
 	*pb_changed = FALSE;
 	if (pctx->sync_type != SYNC_TYPE_HIERARCHY)
 		return FALSE;
-	if (!ics_state_deserialize(pctx->pstate.get(), state))
+	if (!pctx->pstate->deserialize(state))
 		return FALSE;
 	auto pinfo = zarafa_server_get_info();
 	auto username = pctx->pstore->check_owner_mode() ? nullptr : pinfo->get_username();
@@ -215,7 +215,7 @@ BINARY *icsdownctx_object::get_state()
 			pctx->pupdated_eids = NULL;
 		}
 	}
-	return ics_state_serialize(pctx->pstate.get());
+	return pctx->pstate->serialize();
 }
 
 icsdownctx_object::~icsdownctx_object()

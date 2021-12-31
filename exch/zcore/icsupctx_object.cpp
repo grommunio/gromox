@@ -17,7 +17,7 @@ icsupctx_object::create(folder_object *pfolder, uint8_t sync_type)
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
-	pctx->pstate = ics_state_create(sync_type);
+	pctx->pstate = ics_state::create(sync_type);
 	if (NULL == pctx->pstate) {
 		return NULL;
 	}
@@ -29,10 +29,10 @@ icsupctx_object::create(folder_object *pfolder, uint8_t sync_type)
 
 BOOL icsupctx_object::upload_state(const BINARY *out)
 {
-	return ics_state_deserialize(pstate.get(), out);
+	return pstate->deserialize(out);
 }
 
 BINARY *icsupctx_object::get_state()
 {
-	return ics_state_serialize(pstate.get());
+	return pstate->serialize();
 }
