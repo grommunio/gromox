@@ -98,6 +98,10 @@ static BOOL (*common_util_get_user_ids)(const char *username, int *user_id, int 
 static BOOL common_util_evaluate_subobject_restriction(
 	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
 	uint32_t proptag, const RESTRICTION *pres);
+static bool gp_prepare_anystr(sqlite3 *, db_table, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
+static bool gp_prepare_mvstr(sqlite3 *, db_table, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
+static bool gp_prepare_default(sqlite3 *, db_table, uint64_t, uint32_t, xstmt &, sqlite3_stmt *&);
+static void *gp_fetch(sqlite3 *, sqlite3_stmt *, uint16_t, uint32_t);
 
 void common_util_set_propvals(TPROPVAL_ARRAY *parray,
 	const TAGGED_PROPVAL *ppropval)
@@ -2033,205 +2037,15 @@ BOOL cu_get_properties(db_table table_type,
 		uint16_t proptype = PROP_TYPE(pproptags->pproptag[i]);
 		if (proptype == PT_UNSPECIFIED || proptype == PT_STRING8 ||
 		    proptype == PT_UNICODE) {
-			auto bret = [](sqlite3 *psqlite, db_table table_type, uint64_t id, uint32_t tag, xstmt &own_stmt, sqlite3_stmt *&pstmt) -> bool {
-			switch (table_type) {
-			case db_table::store_props:
-				own_stmt = gx_sql_prep(psqlite, "SELECT proptag, propval"
-				           " FROM store_properties WHERE proptag=?");
-				if (own_stmt == nullptr)
-					return FALSE;
-				pstmt = own_stmt;
-				sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(tag, PT_UNICODE));
-				break;
-			case db_table::folder_props:
-				own_stmt = gx_sql_prep(psqlite, "SELECT proptag,"
-				           " propval FROM folder_properties WHERE"
-				           " folder_id=? AND proptag=?");
-				if (own_stmt == nullptr)
-					return FALSE;
-				pstmt = own_stmt;
-				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(tag, PT_UNICODE));
-				break;
-			case db_table::msg_props:
-				pstmt = cu_get_optimize_stmt(table_type, false);
-				if (NULL != pstmt) {
-					sqlite3_reset(pstmt);
-				} else {
-					own_stmt = gx_sql_prep(psqlite, "SELECT proptag, "
-					           "propval FROM message_properties WHERE "
-					           "message_id=? AND (proptag=? OR proptag=?)");
-					if (own_stmt == nullptr)
-						return FALSE;
-					pstmt = own_stmt;
-				}
-				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(tag, PT_UNICODE));
-				sqlite3_bind_int64(pstmt, 3, CHANGE_PROP_TYPE(tag, PT_STRING8));
-				break;
-			case db_table::rcpt_props:
-				pstmt = cu_get_optimize_stmt(table_type, false);
-				if (NULL != pstmt) {
-					sqlite3_reset(pstmt);
-				} else {
-					own_stmt = gx_sql_prep(psqlite, "SELECT proptag,"
-					           " propval FROM recipients_properties WHERE"
-					           " recipient_id=? AND (proptag=? OR proptag=?)");
-					if (own_stmt == nullptr)
-						return FALSE;
-					pstmt = own_stmt;
-				}
-				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(tag, PT_UNICODE));
-				sqlite3_bind_int64(pstmt, 3, CHANGE_PROP_TYPE(tag, PT_STRING8));
-				break;
-			case db_table::atx_props:
-				own_stmt = gx_sql_prep(psqlite, "SELECT proptag, propval"
-				           " FROM attachment_properties WHERE attachment_id=?"
-				           " AND (proptag=? OR proptag=?)");
-				if (own_stmt == nullptr)
-					return FALSE;
-				pstmt = own_stmt;
-				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(tag, PT_UNICODE));
-				sqlite3_bind_int64(pstmt, 3, CHANGE_PROP_TYPE(tag, PT_STRING8));
-				break;
-			}
-			return true;
-			}(psqlite, table_type, id, pproptags->pproptag[i], own_stmt, pstmt);
+			auto bret = gp_prepare_anystr(psqlite, table_type, id, pproptags->pproptag[i], own_stmt, pstmt);
 			if (!bret)
 				return false;
 		} else if (proptype == PT_MV_STRING8) {
-			auto bret = [](sqlite3 *psqlite, db_table table_type, uint64_t id, uint32_t tag, xstmt &own_stmt, sqlite3_stmt *&pstmt) -> bool {
-			switch (table_type) {
-			case db_table::store_props:
-				own_stmt = gx_sql_prep(psqlite, "SELECT propval"
-				           " FROM store_properties WHERE proptag=?");
-				if (own_stmt == nullptr)
-					return FALSE;
-				pstmt = own_stmt;
-				sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(tag, PT_MV_UNICODE));
-				break;
-			case db_table::folder_props:
-				own_stmt = gx_sql_prep(psqlite, "SELECT propval "
-				           "FROM folder_properties WHERE folder_id=? "
-				           "AND proptag=?");
-				if (own_stmt == nullptr)
-					return FALSE;
-				pstmt = own_stmt;
-				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(tag, PT_MV_UNICODE));
-				break;
-			case db_table::msg_props:
-				pstmt = cu_get_optimize_stmt(table_type, true);
-				if (NULL != pstmt) {
-					sqlite3_reset(pstmt);
-				} else {
-					own_stmt = gx_sql_prep(psqlite, "SELECT propval"
-					           " FROM message_properties WHERE "
-					           "message_id=? AND proptag=?");
-					if (own_stmt == nullptr)
-						return FALSE;
-					pstmt = own_stmt;
-				}
-				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(tag, PT_MV_UNICODE));
-				break;
-			case db_table::rcpt_props:
-				pstmt = cu_get_optimize_stmt(table_type, true);
-				if (NULL != pstmt) {
-					sqlite3_reset(pstmt);
-				} else {
-					own_stmt = gx_sql_prep(psqlite, "SELECT propval "
-					           "FROM recipients_properties WHERE "
-					           "recipient_id=? AND proptag=?");
-					if (own_stmt == nullptr)
-						return FALSE;
-					pstmt = own_stmt;
-				}
-				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(tag, PT_MV_UNICODE));
-				break;
-			case db_table::atx_props:
-				own_stmt = gx_sql_prep(psqlite, "SELECT propval "
-				           "FROM attachment_properties WHERE "
-				           "attachment_id=? AND proptag=?");
-				if (own_stmt == nullptr)
-					return FALSE;
-				pstmt = own_stmt;
-				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(tag, PT_MV_UNICODE));
-				break;
-			}
-			return true;
-			}(psqlite, table_type, id, pproptags->pproptag[i], own_stmt, pstmt);
+			auto bret = gp_prepare_mvstr(psqlite, table_type, id, pproptags->pproptag[i], own_stmt, pstmt);
 			if (!bret)
 				return false;
 		} else {
-			auto bret = [](sqlite3 *psqlite, db_table table_type, uint64_t id, uint32_t tag, xstmt &own_stmt, sqlite3_stmt *&pstmt) -> bool {
-			switch (table_type) {
-			case db_table::store_props:
-				own_stmt = gx_sql_prep(psqlite, "SELECT propval "
-				           "FROM store_properties WHERE proptag=?");
-				if (own_stmt == nullptr)
-					return FALSE;
-				pstmt = own_stmt;
-				sqlite3_bind_int64(pstmt, 1, tag);
-				break;
-			case db_table::folder_props:
-				if (tag == PROP_TAG_LOCALCOMMITTIME)
-					tag = PR_LAST_MODIFICATION_TIME;
-				own_stmt = gx_sql_prep(psqlite, "SELECT propval FROM "
-				           "folder_properties WHERE folder_id=? AND proptag=?");
-				if (own_stmt == nullptr)
-					return FALSE;
-				pstmt = own_stmt;
-				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, tag);
-				break;
-			case db_table::msg_props:
-				pstmt = cu_get_optimize_stmt(table_type, true);
-				if (NULL != pstmt) {
-					sqlite3_reset(pstmt);
-				} else {
-					own_stmt = gx_sql_prep(psqlite, "SELECT propval"
-					           " FROM message_properties WHERE "
-					           "message_id=? AND proptag=?");
-					if (own_stmt == nullptr)
-						return FALSE;
-					pstmt = own_stmt;
-				}
-				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, tag);
-				break;
-			case db_table::rcpt_props:
-				pstmt = cu_get_optimize_stmt(table_type, true);
-				if (NULL != pstmt) {
-					sqlite3_reset(pstmt);
-				} else {
-					own_stmt = gx_sql_prep(psqlite, "SELECT propval "
-					           "FROM recipients_properties WHERE "
-					           "recipient_id=? AND proptag=?");
-					if (own_stmt == nullptr)
-						return FALSE;
-					pstmt = own_stmt;
-				}
-				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, tag);
-				break;
-			case db_table::atx_props:
-				own_stmt = gx_sql_prep(psqlite, "SELECT propval FROM "
-				           "attachment_properties WHERE attachment_id=?"
-				           " AND proptag=?");
-				if (own_stmt == nullptr)
-					return FALSE;
-				pstmt = own_stmt;
-				sqlite3_bind_int64(pstmt, 1, id);
-				sqlite3_bind_int64(pstmt, 2, tag);
-				break;
-			}
-			return true;
-			}(psqlite, table_type, id, pproptags->pproptag[i], own_stmt, pstmt);
+			auto bret = gp_prepare_default(psqlite, table_type, id, pproptags->pproptag[i], own_stmt, pstmt);
 			if (!bret)
 				return false;
 		}
@@ -2258,211 +2072,7 @@ BOOL cu_get_properties(db_table table_type,
 				continue;
 			fprintf(stderr, "W-1596: unobserved case\n");
 		}
-		auto pvalue = [](sqlite3 *psqlite, sqlite3_stmt *pstmt, uint16_t proptype, uint32_t cpid) -> void * {
-		EXT_PULL ext_pull;
-		void *pvalue;
-		switch (proptype) {
-		case PT_UNSPECIFIED: {
-			auto ptyped = cu_alloc<TYPED_PROPVAL>();
-			if (NULL == ptyped) {
-				return FALSE;
-			}
-			ptyped->type = PROP_TYPE(sqlite3_column_int64(pstmt, 0));
-			ptyped->pvalue = common_util_dup(S2A(sqlite3_column_text(pstmt, 1)));
-			if (NULL == ptyped->pvalue) {
-				return FALSE;
-			}
-			return ptyped;
-		}
-		case PT_STRING8:
-			if (proptype == PROP_TYPE(sqlite3_column_int64(pstmt, 0)))
-				pvalue = common_util_dup(S2A(sqlite3_column_text(pstmt, 1)));
-			else
-				pvalue = common_util_convert_copy(FALSE, cpid,
-				         S2A(sqlite3_column_text(pstmt, 1)));
-			break;
-		case PT_UNICODE:
-			if (proptype == PROP_TYPE(sqlite3_column_int64(pstmt, 0)))
-				pvalue = common_util_dup(S2A(sqlite3_column_text(pstmt, 1)));
-			else
-				pvalue = common_util_convert_copy(TRUE, cpid,
-				         S2A(sqlite3_column_text(pstmt, 1)));
-			break;
-		case PT_FLOAT:
-			pvalue = cu_alloc<float>();
-			if (pvalue == nullptr)
-				return nullptr;
-			*(float *)pvalue = sqlite3_column_double(pstmt, 0);
-			break;
-		case PT_DOUBLE:
-		case PT_APPTIME:
-			pvalue = cu_alloc<double>();
-			if (pvalue == nullptr)
-				return nullptr;
-			*(double *)pvalue = sqlite3_column_double(pstmt, 0);
-			break;
-		case PT_CURRENCY:
-		case PT_I8:
-		case PT_SYSTIME:
-			pvalue = cu_alloc<uint64_t>();
-			if (pvalue == nullptr)
-				return nullptr;
-			*(uint64_t *)pvalue = sqlite3_column_int64(pstmt, 0);
-			break;
-		case PT_SHORT:
-			pvalue = cu_alloc<uint16_t>();
-			if (pvalue == nullptr)
-				return nullptr;
-			*(uint16_t *)pvalue = sqlite3_column_int64(pstmt, 0);
-			break;
-		case PT_LONG:
-			pvalue = cu_alloc<uint32_t>();
-			if (pvalue == nullptr)
-				return nullptr;
-			*(uint32_t *)pvalue = sqlite3_column_int64(pstmt, 0);
-			break;
-		case PT_BOOLEAN:
-			pvalue = cu_alloc<uint8_t>();
-			if (pvalue == nullptr)
-				return nullptr;
-			*(uint8_t *)pvalue = sqlite3_column_int64(pstmt, 0);
-			break;
-		case PT_CLSID:
-			pvalue = cu_alloc<GUID>();
-			if (pvalue == nullptr)
-				return nullptr;
-			ext_pull.init(sqlite3_column_blob(pstmt, 0),
-				sqlite3_column_bytes(pstmt, 0),
-				common_util_alloc, 0);
-			if (ext_pull.g_guid(static_cast<GUID *>(pvalue)) != EXT_ERR_SUCCESS)
-				return nullptr;
-			break;
-		case PT_SVREID:
-			pvalue = cu_alloc<SVREID>();
-			if (pvalue == nullptr)
-				return nullptr;
-			ext_pull.init(sqlite3_column_blob(pstmt, 0),
-				sqlite3_column_bytes(pstmt, 0),
-				common_util_alloc, 0);
-			if (ext_pull.g_svreid(static_cast<SVREID *>(pvalue)) != EXT_ERR_SUCCESS)
-				return nullptr;
-			break;
-		case PT_SRESTRICTION:
-			pvalue = cu_alloc<RESTRICTION>();
-			if (pvalue == nullptr)
-				return nullptr;
-			ext_pull.init(sqlite3_column_blob(pstmt, 0),
-				sqlite3_column_bytes(pstmt, 0),
-				common_util_alloc, 0);
-			if (ext_pull.g_restriction(static_cast<RESTRICTION *>(pvalue)) != EXT_ERR_SUCCESS)
-				return nullptr;
-			break;
-		case PT_ACTIONS:
-			pvalue = cu_alloc<RULE_ACTIONS>();
-			if (pvalue == nullptr)
-				return nullptr;
-			ext_pull.init(sqlite3_column_blob(pstmt, 0),
-				sqlite3_column_bytes(pstmt, 0),
-				common_util_alloc, 0);
-			if (ext_pull.g_rule_actions(static_cast<RULE_ACTIONS *>(pvalue)) != EXT_ERR_SUCCESS)
-				return nullptr;
-			break;
-		case PT_OBJECT:
-		case PT_BINARY: {
-			pvalue = cu_alloc<BINARY>();
-			if (pvalue == nullptr)
-				return nullptr;
-			auto bv = static_cast<BINARY *>(pvalue);
-			bv->cb = sqlite3_column_bytes(pstmt, 0);
-			bv->pv = common_util_alloc(bv->cb);
-			if (bv->pv == nullptr) {
-				return nullptr;
-			}
-			auto blob = sqlite3_column_blob(pstmt, 0);
-			if (bv->cb != 0 || blob != nullptr)
-				memcpy(bv->pv, blob, bv->cb);
-			break;
-		}
-		case PT_MV_SHORT:
-			pvalue = cu_alloc<SHORT_ARRAY>();
-			if (pvalue == nullptr)
-				return nullptr;
-			ext_pull.init(sqlite3_column_blob(pstmt, 0),
-				sqlite3_column_bytes(pstmt, 0),
-				common_util_alloc, 0);
-			if (ext_pull.g_uint16_a(static_cast<SHORT_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
-				return nullptr;
-			break;
-		case PT_MV_LONG:
-			pvalue = cu_alloc<LONG_ARRAY>();
-			if (pvalue == nullptr)
-				return nullptr;
-			ext_pull.init(sqlite3_column_blob(pstmt, 0),
-				sqlite3_column_bytes(pstmt, 0),
-				common_util_alloc, 0);
-			if (ext_pull.g_uint32_a(static_cast<LONG_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
-				return nullptr;
-			break;
-		case PT_MV_CURRENCY:
-		case PT_MV_I8:
-		case PT_MV_SYSTIME:
-			pvalue = cu_alloc<LONGLONG_ARRAY>();
-			if (pvalue == nullptr)
-				return nullptr;
-			ext_pull.init(sqlite3_column_blob(pstmt, 0),
-				sqlite3_column_bytes(pstmt, 0),
-				common_util_alloc, 0);
-			if (ext_pull.g_uint64_a(static_cast<LONGLONG_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
-				return nullptr;
-			break;
-		case PT_MV_STRING8:
-		case PT_MV_UNICODE: {
-			auto sa = cu_alloc<STRING_ARRAY>();
-			pvalue = sa;
-			if (pvalue == nullptr)
-				return nullptr;
-			ext_pull.init(sqlite3_column_blob(pstmt, 0),
-				sqlite3_column_bytes(pstmt, 0),
-				common_util_alloc, 0);
-			if (ext_pull.g_wstr_a(sa) != EXT_ERR_SUCCESS)
-				return nullptr;
-			if (proptype != PT_MV_STRING8)
-				break;
-			for (size_t j = 0; j < sa->count; ++j) {
-				auto pstring = common_util_convert_copy(false, cpid, sa->ppstr[j]);
-				if (NULL == pstring) {
-					return nullptr;
-				}
-				sa->ppstr[j] = pstring;
-			}
-			break;
-		}
-		case PT_MV_CLSID:
-			pvalue = cu_alloc<GUID_ARRAY>();
-			if (pvalue == nullptr)
-				return nullptr;
-			ext_pull.init(sqlite3_column_blob(pstmt, 0),
-				sqlite3_column_bytes(pstmt, 0),
-				common_util_alloc, 0);
-			if (ext_pull.g_guid_a(static_cast<GUID_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
-				return nullptr;
-			break;
-		case PT_MV_BINARY:
-			pvalue = cu_alloc<BINARY_ARRAY>();
-			if (pvalue == nullptr)
-				return nullptr;
-			ext_pull.init(sqlite3_column_blob(pstmt, 0),
-				sqlite3_column_bytes(pstmt, 0),
-				common_util_alloc, 0);
-			if (ext_pull.g_bin_a(static_cast<BINARY_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
-				return nullptr;
-			break;
-		default:
-			assert(false);
-			return nullptr;
-		}
-		return pvalue;
-		}(psqlite, pstmt, proptype, cpid);
+		auto pvalue = gp_fetch(psqlite, pstmt, proptype, cpid);
 		if (NULL == pvalue) {
 			return false;
 		}
@@ -2471,6 +2081,416 @@ BOOL cu_get_properties(db_table table_type,
 		ppropvals->count ++;
 	}
 	return TRUE;
+}
+
+static bool gp_prepare_anystr(sqlite3 *psqlite, db_table table_type, uint64_t id,
+    uint32_t tag, xstmt &own_stmt, sqlite3_stmt *&pstmt)
+{
+	switch (table_type) {
+	case db_table::store_props:
+		own_stmt = gx_sql_prep(psqlite, "SELECT proptag, propval"
+		           " FROM store_properties WHERE proptag=?");
+		if (own_stmt == nullptr)
+			return FALSE;
+		pstmt = own_stmt;
+		sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(tag, PT_UNICODE));
+		break;
+	case db_table::folder_props:
+		own_stmt = gx_sql_prep(psqlite, "SELECT proptag,"
+		           " propval FROM folder_properties WHERE"
+		           " folder_id=? AND proptag=?");
+		if (own_stmt == nullptr)
+			return FALSE;
+		pstmt = own_stmt;
+		sqlite3_bind_int64(pstmt, 1, id);
+		sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(tag, PT_UNICODE));
+		break;
+	case db_table::msg_props:
+		pstmt = cu_get_optimize_stmt(table_type, false);
+		if (NULL != pstmt) {
+			sqlite3_reset(pstmt);
+		} else {
+			own_stmt = gx_sql_prep(psqlite, "SELECT proptag, "
+			           "propval FROM message_properties WHERE "
+			           "message_id=? AND (proptag=? OR proptag=?)");
+			if (own_stmt == nullptr)
+				return FALSE;
+			pstmt = own_stmt;
+		}
+		sqlite3_bind_int64(pstmt, 1, id);
+		sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(tag, PT_UNICODE));
+		sqlite3_bind_int64(pstmt, 3, CHANGE_PROP_TYPE(tag, PT_STRING8));
+		break;
+	case db_table::rcpt_props:
+		pstmt = cu_get_optimize_stmt(table_type, false);
+		if (NULL != pstmt) {
+			sqlite3_reset(pstmt);
+		} else {
+			own_stmt = gx_sql_prep(psqlite, "SELECT proptag,"
+			           " propval FROM recipients_properties WHERE"
+			           " recipient_id=? AND (proptag=? OR proptag=?)");
+			if (own_stmt == nullptr)
+				return FALSE;
+			pstmt = own_stmt;
+		}
+		sqlite3_bind_int64(pstmt, 1, id);
+		sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(tag, PT_UNICODE));
+		sqlite3_bind_int64(pstmt, 3, CHANGE_PROP_TYPE(tag, PT_STRING8));
+		break;
+	case db_table::atx_props:
+		own_stmt = gx_sql_prep(psqlite, "SELECT proptag, propval"
+		           " FROM attachment_properties WHERE attachment_id=?"
+		           " AND (proptag=? OR proptag=?)");
+		if (own_stmt == nullptr)
+			return FALSE;
+		pstmt = own_stmt;
+		sqlite3_bind_int64(pstmt, 1, id);
+		sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(tag, PT_UNICODE));
+		sqlite3_bind_int64(pstmt, 3, CHANGE_PROP_TYPE(tag, PT_STRING8));
+		break;
+	}
+	return true;
+}
+
+static bool gp_prepare_mvstr(sqlite3 *psqlite, db_table table_type,
+    uint64_t id, uint32_t tag, xstmt &own_stmt, sqlite3_stmt *&pstmt)
+{
+	switch (table_type) {
+	case db_table::store_props:
+		own_stmt = gx_sql_prep(psqlite, "SELECT propval"
+		           " FROM store_properties WHERE proptag=?");
+		if (own_stmt == nullptr)
+			return FALSE;
+		pstmt = own_stmt;
+		sqlite3_bind_int64(pstmt, 1, CHANGE_PROP_TYPE(tag, PT_MV_UNICODE));
+		break;
+	case db_table::folder_props:
+		own_stmt = gx_sql_prep(psqlite, "SELECT propval "
+		           "FROM folder_properties WHERE folder_id=? "
+		           "AND proptag=?");
+		if (own_stmt == nullptr)
+			return FALSE;
+		pstmt = own_stmt;
+		sqlite3_bind_int64(pstmt, 1, id);
+		sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(tag, PT_MV_UNICODE));
+		break;
+	case db_table::msg_props:
+		pstmt = cu_get_optimize_stmt(table_type, true);
+		if (NULL != pstmt) {
+			sqlite3_reset(pstmt);
+		} else {
+			own_stmt = gx_sql_prep(psqlite, "SELECT propval"
+			           " FROM message_properties WHERE "
+			           "message_id=? AND proptag=?");
+			if (own_stmt == nullptr)
+				return FALSE;
+			pstmt = own_stmt;
+		}
+		sqlite3_bind_int64(pstmt, 1, id);
+		sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(tag, PT_MV_UNICODE));
+		break;
+	case db_table::rcpt_props:
+		pstmt = cu_get_optimize_stmt(table_type, true);
+		if (NULL != pstmt) {
+			sqlite3_reset(pstmt);
+		} else {
+			own_stmt = gx_sql_prep(psqlite, "SELECT propval "
+			           "FROM recipients_properties WHERE "
+			           "recipient_id=? AND proptag=?");
+			if (own_stmt == nullptr)
+				return FALSE;
+			pstmt = own_stmt;
+		}
+		sqlite3_bind_int64(pstmt, 1, id);
+		sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(tag, PT_MV_UNICODE));
+		break;
+	case db_table::atx_props:
+		own_stmt = gx_sql_prep(psqlite, "SELECT propval "
+		           "FROM attachment_properties WHERE "
+		           "attachment_id=? AND proptag=?");
+		if (own_stmt == nullptr)
+			return FALSE;
+		pstmt = own_stmt;
+		sqlite3_bind_int64(pstmt, 1, id);
+		sqlite3_bind_int64(pstmt, 2, CHANGE_PROP_TYPE(tag, PT_MV_UNICODE));
+		break;
+	}
+	return true;
+}
+
+static bool gp_prepare_default(sqlite3 *psqlite, db_table table_type,
+    uint64_t id, uint32_t tag, xstmt &own_stmt, sqlite3_stmt *&pstmt)
+{
+	switch (table_type) {
+	case db_table::store_props:
+		own_stmt = gx_sql_prep(psqlite, "SELECT propval "
+		           "FROM store_properties WHERE proptag=?");
+		if (own_stmt == nullptr)
+			return FALSE;
+		pstmt = own_stmt;
+		sqlite3_bind_int64(pstmt, 1, tag);
+		break;
+	case db_table::folder_props:
+		if (tag == PROP_TAG_LOCALCOMMITTIME)
+			tag = PR_LAST_MODIFICATION_TIME;
+		own_stmt = gx_sql_prep(psqlite, "SELECT propval FROM "
+		           "folder_properties WHERE folder_id=? AND proptag=?");
+		if (own_stmt == nullptr)
+			return FALSE;
+		pstmt = own_stmt;
+		sqlite3_bind_int64(pstmt, 1, id);
+		sqlite3_bind_int64(pstmt, 2, tag);
+		break;
+	case db_table::msg_props:
+		pstmt = cu_get_optimize_stmt(table_type, true);
+		if (NULL != pstmt) {
+			sqlite3_reset(pstmt);
+		} else {
+			own_stmt = gx_sql_prep(psqlite, "SELECT propval"
+			           " FROM message_properties WHERE "
+			           "message_id=? AND proptag=?");
+			if (own_stmt == nullptr)
+				return FALSE;
+			pstmt = own_stmt;
+		}
+		sqlite3_bind_int64(pstmt, 1, id);
+		sqlite3_bind_int64(pstmt, 2, tag);
+		break;
+	case db_table::rcpt_props:
+		pstmt = cu_get_optimize_stmt(table_type, true);
+		if (NULL != pstmt) {
+			sqlite3_reset(pstmt);
+		} else {
+			own_stmt = gx_sql_prep(psqlite, "SELECT propval "
+			           "FROM recipients_properties WHERE "
+			           "recipient_id=? AND proptag=?");
+			if (own_stmt == nullptr)
+				return FALSE;
+			pstmt = own_stmt;
+		}
+		sqlite3_bind_int64(pstmt, 1, id);
+		sqlite3_bind_int64(pstmt, 2, tag);
+		break;
+	case db_table::atx_props:
+		own_stmt = gx_sql_prep(psqlite, "SELECT propval FROM "
+		           "attachment_properties WHERE attachment_id=?"
+		           " AND proptag=?");
+		if (own_stmt == nullptr)
+			return FALSE;
+		pstmt = own_stmt;
+		sqlite3_bind_int64(pstmt, 1, id);
+		sqlite3_bind_int64(pstmt, 2, tag);
+		break;
+	}
+	return true;
+}
+
+static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
+    uint16_t proptype, uint32_t cpid)
+{
+	EXT_PULL ext_pull;
+	void *pvalue;
+	switch (proptype) {
+	case PT_UNSPECIFIED: {
+		auto ptyped = cu_alloc<TYPED_PROPVAL>();
+		if (NULL == ptyped) {
+			return FALSE;
+		}
+		ptyped->type = PROP_TYPE(sqlite3_column_int64(pstmt, 0));
+		ptyped->pvalue = common_util_dup(S2A(sqlite3_column_text(pstmt, 1)));
+		if (NULL == ptyped->pvalue) {
+			return FALSE;
+		}
+		return ptyped;
+	}
+	case PT_STRING8:
+		if (proptype == PROP_TYPE(sqlite3_column_int64(pstmt, 0)))
+			pvalue = common_util_dup(S2A(sqlite3_column_text(pstmt, 1)));
+		else
+			pvalue = common_util_convert_copy(FALSE, cpid,
+				 S2A(sqlite3_column_text(pstmt, 1)));
+		break;
+	case PT_UNICODE:
+		if (proptype == PROP_TYPE(sqlite3_column_int64(pstmt, 0)))
+			pvalue = common_util_dup(S2A(sqlite3_column_text(pstmt, 1)));
+		else
+			pvalue = common_util_convert_copy(TRUE, cpid,
+				 S2A(sqlite3_column_text(pstmt, 1)));
+		break;
+	case PT_FLOAT:
+		pvalue = cu_alloc<float>();
+		if (pvalue == nullptr)
+			return nullptr;
+		*(float *)pvalue = sqlite3_column_double(pstmt, 0);
+		break;
+	case PT_DOUBLE:
+	case PT_APPTIME:
+		pvalue = cu_alloc<double>();
+		if (pvalue == nullptr)
+			return nullptr;
+		*(double *)pvalue = sqlite3_column_double(pstmt, 0);
+		break;
+	case PT_CURRENCY:
+	case PT_I8:
+	case PT_SYSTIME:
+		pvalue = cu_alloc<uint64_t>();
+		if (pvalue == nullptr)
+			return nullptr;
+		*(uint64_t *)pvalue = sqlite3_column_int64(pstmt, 0);
+		break;
+	case PT_SHORT:
+		pvalue = cu_alloc<uint16_t>();
+		if (pvalue == nullptr)
+			return nullptr;
+		*(uint16_t *)pvalue = sqlite3_column_int64(pstmt, 0);
+		break;
+	case PT_LONG:
+		pvalue = cu_alloc<uint32_t>();
+		if (pvalue == nullptr)
+			return nullptr;
+		*(uint32_t *)pvalue = sqlite3_column_int64(pstmt, 0);
+		break;
+	case PT_BOOLEAN:
+		pvalue = cu_alloc<uint8_t>();
+		if (pvalue == nullptr)
+			return nullptr;
+		*(uint8_t *)pvalue = sqlite3_column_int64(pstmt, 0);
+		break;
+	case PT_CLSID:
+		pvalue = cu_alloc<GUID>();
+		if (pvalue == nullptr)
+			return nullptr;
+		ext_pull.init(sqlite3_column_blob(pstmt, 0),
+			sqlite3_column_bytes(pstmt, 0),
+			common_util_alloc, 0);
+		if (ext_pull.g_guid(static_cast<GUID *>(pvalue)) != EXT_ERR_SUCCESS)
+			return nullptr;
+		break;
+	case PT_SVREID:
+		pvalue = cu_alloc<SVREID>();
+		if (pvalue == nullptr)
+			return nullptr;
+		ext_pull.init(sqlite3_column_blob(pstmt, 0),
+			sqlite3_column_bytes(pstmt, 0),
+			common_util_alloc, 0);
+		if (ext_pull.g_svreid(static_cast<SVREID *>(pvalue)) != EXT_ERR_SUCCESS)
+			return nullptr;
+		break;
+	case PT_SRESTRICTION:
+		pvalue = cu_alloc<RESTRICTION>();
+		if (pvalue == nullptr)
+			return nullptr;
+		ext_pull.init(sqlite3_column_blob(pstmt, 0),
+			sqlite3_column_bytes(pstmt, 0),
+			common_util_alloc, 0);
+		if (ext_pull.g_restriction(static_cast<RESTRICTION *>(pvalue)) != EXT_ERR_SUCCESS)
+			return nullptr;
+		break;
+	case PT_ACTIONS:
+		pvalue = cu_alloc<RULE_ACTIONS>();
+		if (pvalue == nullptr)
+			return nullptr;
+		ext_pull.init(sqlite3_column_blob(pstmt, 0),
+			sqlite3_column_bytes(pstmt, 0),
+			common_util_alloc, 0);
+		if (ext_pull.g_rule_actions(static_cast<RULE_ACTIONS *>(pvalue)) != EXT_ERR_SUCCESS)
+			return nullptr;
+		break;
+	case PT_OBJECT:
+	case PT_BINARY: {
+		pvalue = cu_alloc<BINARY>();
+		if (pvalue == nullptr)
+			return nullptr;
+		auto bv = static_cast<BINARY *>(pvalue);
+		bv->cb = sqlite3_column_bytes(pstmt, 0);
+		bv->pv = common_util_alloc(bv->cb);
+		if (bv->pv == nullptr) {
+			return nullptr;
+		}
+		auto blob = sqlite3_column_blob(pstmt, 0);
+		if (bv->cb != 0 || blob != nullptr)
+			memcpy(bv->pv, blob, bv->cb);
+		break;
+	}
+	case PT_MV_SHORT:
+		pvalue = cu_alloc<SHORT_ARRAY>();
+		if (pvalue == nullptr)
+			return nullptr;
+		ext_pull.init(sqlite3_column_blob(pstmt, 0),
+			sqlite3_column_bytes(pstmt, 0),
+			common_util_alloc, 0);
+		if (ext_pull.g_uint16_a(static_cast<SHORT_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
+			return nullptr;
+		break;
+	case PT_MV_LONG:
+		pvalue = cu_alloc<LONG_ARRAY>();
+		if (pvalue == nullptr)
+			return nullptr;
+		ext_pull.init(sqlite3_column_blob(pstmt, 0),
+			sqlite3_column_bytes(pstmt, 0),
+			common_util_alloc, 0);
+		if (ext_pull.g_uint32_a(static_cast<LONG_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
+			return nullptr;
+		break;
+	case PT_MV_CURRENCY:
+	case PT_MV_I8:
+	case PT_MV_SYSTIME:
+		pvalue = cu_alloc<LONGLONG_ARRAY>();
+		if (pvalue == nullptr)
+			return nullptr;
+		ext_pull.init(sqlite3_column_blob(pstmt, 0),
+			sqlite3_column_bytes(pstmt, 0),
+			common_util_alloc, 0);
+		if (ext_pull.g_uint64_a(static_cast<LONGLONG_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
+			return nullptr;
+		break;
+	case PT_MV_STRING8:
+	case PT_MV_UNICODE: {
+		auto sa = cu_alloc<STRING_ARRAY>();
+		pvalue = sa;
+		if (pvalue == nullptr)
+			return nullptr;
+		ext_pull.init(sqlite3_column_blob(pstmt, 0),
+			sqlite3_column_bytes(pstmt, 0),
+			common_util_alloc, 0);
+		if (ext_pull.g_wstr_a(sa) != EXT_ERR_SUCCESS)
+			return nullptr;
+		if (proptype != PT_MV_STRING8)
+			break;
+		for (size_t j = 0; j < sa->count; ++j) {
+			auto pstring = common_util_convert_copy(false, cpid, sa->ppstr[j]);
+			if (NULL == pstring) {
+				return nullptr;
+			}
+			sa->ppstr[j] = pstring;
+		}
+		break;
+	}
+	case PT_MV_CLSID:
+		pvalue = cu_alloc<GUID_ARRAY>();
+		if (pvalue == nullptr)
+			return nullptr;
+		ext_pull.init(sqlite3_column_blob(pstmt, 0),
+			sqlite3_column_bytes(pstmt, 0),
+			common_util_alloc, 0);
+		if (ext_pull.g_guid_a(static_cast<GUID_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
+			return nullptr;
+		break;
+	case PT_MV_BINARY:
+		pvalue = cu_alloc<BINARY_ARRAY>();
+		if (pvalue == nullptr)
+			return nullptr;
+		ext_pull.init(sqlite3_column_blob(pstmt, 0),
+			sqlite3_column_bytes(pstmt, 0),
+			common_util_alloc, 0);
+		if (ext_pull.g_bin_a(static_cast<BINARY_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
+			return nullptr;
+		break;
+	default:
+		assert(false);
+		return nullptr;
+	}
+	return pvalue;
 }
 
 static void common_util_set_folder_changenum(sqlite3 *psqlite,
