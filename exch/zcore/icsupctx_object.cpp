@@ -17,7 +17,7 @@ icsupctx_object::create(folder_object *pfolder, uint8_t sync_type)
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
-	pctx->pstate = ics_state::create(sync_type);
+	pctx->pstate = ics_state::create_shared(sync_type);
 	if (NULL == pctx->pstate) {
 		return NULL;
 	}

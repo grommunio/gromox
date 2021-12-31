@@ -38,9 +38,8 @@ BOOL message_object::get_recipient_all_proptags(PROPTAG_ARRAY *pproptags)
 }
 
 std::unique_ptr<message_object> message_object::create(store_object *pstore,
-	BOOL b_new, uint32_t cpid, uint64_t message_id,
-	void *pparent, uint32_t tag_access, BOOL b_writable,
-	ICS_STATE *pstate)
+    BOOL b_new, uint32_t cpid, uint64_t message_id, void *pparent,
+    uint32_t tag_access, BOOL b_writable, std::shared_ptr<ics_state> pstate)
 {
 	uint64_t *pchange_num;
 	std::unique_ptr<message_object> pmessage;
@@ -55,7 +54,7 @@ std::unique_ptr<message_object> message_object::create(store_object *pstore,
 	pmessage->message_id = message_id;
 	pmessage->tag_access = tag_access;
 	pmessage->b_writable = b_writable;
-	pmessage->pstate = pstate;
+	pmessage->pstate = std::move(pstate);
 	if (0 == message_id) {
 		pmessage->pembedding = static_cast<attachment_object *>(pparent);
 		if (!exmdb_client::load_embedded_instance(pstore->get_dir(),

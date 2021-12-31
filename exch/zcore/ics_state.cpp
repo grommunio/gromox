@@ -62,6 +62,16 @@ std::unique_ptr<ics_state> ics_state::create(uint8_t type) try
 	return nullptr;
 }
 
+std::shared_ptr<ics_state> ics_state::create_shared(uint8_t type) try
+{
+	auto pstate = std::make_shared<ics_state>(type);
+	if (!ics_state_init(pstate.get()))
+		return NULL;
+	return pstate;
+} catch (const std::bad_alloc &) {
+	return nullptr;
+}
+
 ics_state::~ics_state()
 {
 	ics_state_clear(this);

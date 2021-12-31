@@ -21,6 +21,6 @@ struct icsupctx_object final {
 
 	store_object *pstore = nullptr;
 	uint64_t folder_id = 0;
-	std::unique_ptr<ics_state> pstate; /* public member */
+	std::shared_ptr<ics_state> pstate; /* public member */
 	uint8_t sync_type = 0;
 };

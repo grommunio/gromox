@@ -8,6 +8,7 @@ struct ics_state {
 	~ics_state();
 	NOMOVE(ics_state);
 	static std::unique_ptr<ics_state> create(uint8_t type);
+	static std::shared_ptr<ics_state> create_shared(uint8_t type);
 	BINARY *serialize();
 	BOOL deserialize(const BINARY *);
 

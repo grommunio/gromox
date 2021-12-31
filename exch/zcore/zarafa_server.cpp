@@ -4507,7 +4507,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	}
 	auto pmessage = message_object::create(pstore, b_new, pinfo->cpid,
 	                message_id, &folder_id, tag_access,
-	                OPEN_MODE_FLAG_READWRITE, pctx->pstate.get());
+	                OPEN_MODE_FLAG_READWRITE, pctx->pstate);
 	if (pmessage == nullptr)
 		return ecError;
 	if (b_new && !pmessage->init_message(b_fai, pinfo->cpid))
