@@ -12,6 +12,7 @@ struct icsupctx_object final {
 	icsupctx_object() = default;
 
 	public:
+	~icsupctx_object();
 	static std::unique_ptr<icsupctx_object> create(folder_object *, uint8_t sync_type);
 	BOOL upload_state(const BINARY *state);
 	BINARY *get_state();
