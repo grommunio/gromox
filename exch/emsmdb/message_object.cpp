@@ -89,8 +89,8 @@ message_object::message_object()
 }
 
 std::unique_ptr<message_object> message_object::create(logon_object *plogon,
-	BOOL b_new, uint32_t cpid, uint64_t message_id, void *pparent,
-	uint32_t tag_access, uint8_t open_flags, ICS_STATE *pstate)
+    BOOL b_new, uint32_t cpid, uint64_t message_id, void *pparent,
+    uint32_t tag_access, uint8_t open_flags, std::shared_ptr<ICS_STATE> pstate)
 {
 	uint64_t *pchange_num;
 	PROPTAG_ARRAY tmp_columns;
@@ -107,7 +107,7 @@ std::unique_ptr<message_object> message_object::create(logon_object *plogon,
 	pmessage->message_id = message_id;
 	pmessage->tag_access = tag_access;
 	pmessage->open_flags = open_flags;
-	pmessage->pstate = pstate;
+	pmessage->pstate = std::move(pstate);
 	if (0 == message_id) {
 		pmessage->pembedding = static_cast<attachment_object *>(pparent);
 		if (!exmdb_client_load_embedded_instance(plogon->get_dir(),

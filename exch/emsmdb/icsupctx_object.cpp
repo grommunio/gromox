@@ -17,7 +17,7 @@ std::unique_ptr<icsupctx_object> icsupctx_object::create(logon_object *plogon,
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
-	pctx->pstate = ics_state::create(plogon, state_type);
+	pctx->pstate = ics_state::create_shared(plogon, state_type);
 	if (pctx->pstate == nullptr)
 		return NULL;
 	pctx->plogon = plogon;

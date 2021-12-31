@@ -959,7 +959,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	auto pmessage = message_object::create(plogon, b_new, pinfo->cpid,
 	                message_id, &folder_id, tag_access,
-	                OPEN_MODE_FLAG_READWRITE, pctx->pstate.get());
+	                OPEN_MODE_FLAG_READWRITE, pctx->pstate);
 	if (pmessage == nullptr)
 		return ecError;
 	if (TRUE == b_exist) {

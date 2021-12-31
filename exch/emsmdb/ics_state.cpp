@@ -28,15 +28,9 @@ ICS_STATE::~ICS_STATE()
 	}
 }
 
-std::unique_ptr<ics_state> ics_state::create(logon_object *plogon, int type)
+static ics_state *ics_state_init(ics_state *pstate, logon_object *plogon, int type)
 {
-	std::unique_ptr<ICS_STATE> pstate;
 	BINARY tmp_bin;
-	try {
-		pstate.reset(new ics_state);
-	} catch (const std::bad_alloc &) {
-		return NULL;
-	}
 	tmp_bin.cb = sizeof(void*);
 	tmp_bin.pv = &plogon;
 	pstate->pseen = idset_init(TRUE, REPL_TYPE_GUID);
@@ -106,6 +100,26 @@ std::unique_ptr<ics_state> ics_state::create(logon_object *plogon, int type)
 	}
 	pstate->type = type;
 	return pstate;
+}
+
+std::unique_ptr<ics_state> ics_state::create(logon_object *plogon, int type) try
+{
+	auto pstate = std::make_unique<ics_state>();
+	if (ics_state_init(pstate.get(), plogon, type) == nullptr)
+		return nullptr;
+	return pstate;
+} catch (const std::bad_alloc &) {
+	return nullptr;
+}
+
+std::shared_ptr<ics_state> ics_state::create_shared(logon_object *plogon, int type) try
+{
+	auto pstate = std::make_shared<ics_state>();
+	if (ics_state_init(pstate.get(), plogon, type) == nullptr)
+		return nullptr;
+	return pstate;
+} catch (const std::bad_alloc &) {
+	return nullptr;
 }
 
 BOOL ICS_STATE::append_idset(uint32_t state_property, IDSET *pset)

@@ -19,7 +19,7 @@ struct message_object {
 
 	public:
 	~message_object();
-	static std::unique_ptr<message_object> create(logon_object *, BOOL b_new, uint32_t cpid, uint64_t message_id, void *parent, uint32_t tag_access, uint8_t open_flags, ICS_STATE *);
+	static std::unique_ptr<message_object> create(logon_object *, BOOL b_new, uint32_t cpid, uint64_t message_id, void *parent, uint32_t tag_access, uint8_t open_flags, std::shared_ptr<ICS_STATE>);
 	uint32_t get_instance_id() const { return instance_id; }
 	BOOL check_orignal_touched(BOOL *touched);
 	BOOL check_importing() const;
@@ -62,7 +62,7 @@ struct message_object {
 	attachment_object *pembedding = nullptr;
 	uint32_t tag_access = 0;
 	uint8_t open_flags = 0;
-	ICS_STATE *pstate = nullptr;
+	std::shared_ptr<ICS_STATE> pstate;
 	PROPTAG_ARRAY *precipient_columns = nullptr;
 	PROPTAG_ARRAY *pchanged_proptags = nullptr, *premoved_proptags = nullptr;
 	DOUBLE_LIST stream_list{};

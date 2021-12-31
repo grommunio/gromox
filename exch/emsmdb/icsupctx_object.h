@@ -26,7 +26,7 @@ struct icsupctx_object final {
 
 	logon_object *plogon = nullptr;
 	folder_object *pfolder = nullptr;
-	std::unique_ptr<ICS_STATE> pstate; /* public member */
+	std::shared_ptr<ICS_STATE> pstate; /* public member */
 	uint32_t state_property = 0;
 	MEM_FILE f_state_stream{};
 	BOOL b_started = false;
