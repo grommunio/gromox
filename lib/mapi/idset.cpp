@@ -73,12 +73,11 @@ BOOL idset::register_mapping(BINARY *pparam, REPLICA_MAPPING mapping)
 void idset::clear()
 {
 	auto pset = this;
-	DOUBLE_LIST *plist;
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
 	
 	while ((pnode = double_list_pop_front(&pset->repl_list)) != nullptr) {
-		plist = !pset->b_serialize && pset->repl_type == REPL_TYPE_GUID ?
+		auto plist = !pset->b_serialize && pset->repl_type == REPL_TYPE_GUID ?
 		        &static_cast<REPLGUID_NODE *>(pnode->pdata)->range_list :
 		        &static_cast<REPLID_NODE *>(pnode->pdata)->range_list;
 		while ((pnode1 = double_list_pop_front(plist)) != nullptr)
@@ -112,8 +111,6 @@ static BOOL idset_append_internal(IDSET *pset,
 {
 	REPLID_NODE *prepl_node;
 	DOUBLE_LIST_NODE *pnode;
-	RANGE_NODE *prange_node;
-	RANGE_NODE *prange_node1;
 	
 	if (!pset->b_serialize)
 		return FALSE;
@@ -134,9 +131,9 @@ static BOOL idset_append_internal(IDSET *pset,
 		double_list_init(&prepl_node->range_list);
 		double_list_append_as_tail(&pset->repl_list, &prepl_node->node);
 	}
-	for (pnode=double_list_get_head(&prepl_node->range_list); NULL!=pnode;
+	for (auto pnode = double_list_get_head(&prepl_node->range_list); pnode != nullptr;
 		pnode=double_list_get_after(&prepl_node->range_list, pnode)) {
-		prange_node = (RANGE_NODE*)pnode->pdata;
+		auto prange_node = static_cast<RANGE_NODE *>(pnode->pdata);
 		if (value >= prange_node->low_value &&
 			value <= prange_node->high_value) {
 			return TRUE;
@@ -144,7 +141,7 @@ static BOOL idset_append_internal(IDSET *pset,
 			prange_node->low_value = value;
 			pnode = double_list_get_before(&prepl_node->range_list, pnode);
 			if (NULL != pnode) {
-				prange_node1 = (RANGE_NODE*)pnode->pdata;
+				auto prange_node1 = static_cast<RANGE_NODE *>(pnode->pdata);
 				if (prange_node1->high_value >= prange_node->low_value) {
 					prange_node->low_value = prange_node1->low_value;
 					double_list_remove(&prepl_node->range_list, pnode);
@@ -156,7 +153,7 @@ static BOOL idset_append_internal(IDSET *pset,
 			prange_node->high_value = value;
 			pnode = double_list_get_after(&prepl_node->range_list, pnode);
 			if (NULL != pnode) {
-				prange_node1 = (RANGE_NODE*)pnode->pdata;
+				auto prange_node1 = static_cast<RANGE_NODE *>(pnode->pdata);
 				if (prange_node1->low_value <= prange_node->high_value) {
 					prange_node->high_value = prange_node1->high_value;
 					double_list_remove(&prepl_node->range_list, pnode);
@@ -168,7 +165,7 @@ static BOOL idset_append_internal(IDSET *pset,
 			break;
 		}
 	}
-	prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
+	auto prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 	if (NULL == prange_node) {
 		return FALSE;
 	}
@@ -187,13 +184,8 @@ static BOOL idset_append_internal(IDSET *pset,
 
 BOOL idset::append(uint64_t eid)
 {
-	auto pset = this;
-	uint64_t value;
-	uint16_t replid;
-	
-	replid = rop_util_get_replid(eid);
-	value = rop_util_get_gc_value(eid);
-	return idset_append_internal(pset, replid, value);
+	return idset_append_internal(this, rop_util_get_replid(eid),
+	       rop_util_get_gc_value(eid));
 }
 
 BOOL idset::append_range(uint16_t replid, uint64_t low_value, uint64_t high_value)
@@ -201,9 +193,6 @@ BOOL idset::append_range(uint16_t replid, uint64_t low_value, uint64_t high_valu
 	auto pset = this;
 	REPLID_NODE *prepl_node;
 	DOUBLE_LIST_NODE *pnode;
-	RANGE_NODE *prange_node;
-	DOUBLE_LIST_NODE *pnode1;
-	RANGE_NODE *prange_node1;
 	
 	if (!pset->b_serialize)
 		return FALSE;
@@ -227,11 +216,11 @@ BOOL idset::append_range(uint16_t replid, uint64_t low_value, uint64_t high_valu
 		double_list_init(&prepl_node->range_list);
 		double_list_append_as_tail(&pset->repl_list, &prepl_node->node);
 	}
-	prange_node1 = NULL;
+	RANGE_NODE *prange_node1 = nullptr;
 	for (pnode=double_list_get_head(&prepl_node->range_list); NULL!=pnode;
 		pnode=double_list_get_after(&prepl_node->range_list, pnode)) {
-		pnode1 = double_list_get_after(&prepl_node->range_list, pnode);
-		prange_node = (RANGE_NODE*)pnode->pdata;
+		auto pnode1 = double_list_get_after(&prepl_node->range_list, pnode);
+		auto prange_node = static_cast<RANGE_NODE *>(pnode->pdata);
 		if (NULL == prange_node1) {
 			if (low_value == prange_node->high_value) {
 				prange_node1 = prange_node;
@@ -269,7 +258,7 @@ BOOL idset::append_range(uint16_t replid, uint64_t low_value, uint64_t high_valu
 	if (NULL != prange_node1) {
 		return TRUE;
 	}
-	prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
+	auto prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 	if (NULL == prange_node) {
 		return FALSE;
 	}
@@ -283,17 +272,13 @@ BOOL idset::append_range(uint16_t replid, uint64_t low_value, uint64_t high_valu
 void idset::remove(uint64_t eid)
 {
 	auto pset = this;
-	uint64_t value;
-	uint16_t replid;
 	REPLID_NODE *prepl_node;
 	DOUBLE_LIST_NODE *pnode;
-	RANGE_NODE *prange_node;
-	RANGE_NODE *prange_node1;
 	
 	if (!pset->b_serialize)
 		return;
-	replid = rop_util_get_replid(eid);
-	value = rop_util_get_gc_value(eid);
+	auto replid = rop_util_get_replid(eid);
+	auto value = rop_util_get_gc_value(eid);
 	for (pnode=double_list_get_head(&pset->repl_list); NULL!=pnode;
 		pnode=double_list_get_after(&pset->repl_list, pnode)) {
 		prepl_node = (REPLID_NODE*)pnode->pdata;
@@ -306,7 +291,7 @@ void idset::remove(uint64_t eid)
 	}
 	for (pnode=double_list_get_head(&prepl_node->range_list); NULL!=pnode;
 		pnode=double_list_get_after(&prepl_node->range_list, pnode)) {
-		prange_node = (RANGE_NODE*)pnode->pdata;
+		auto prange_node = static_cast<RANGE_NODE *>(pnode->pdata);
 		if (value == prange_node->low_value &&
 			value == prange_node->high_value) {
 			double_list_remove(&prepl_node->range_list, pnode);
@@ -320,7 +305,7 @@ void idset::remove(uint64_t eid)
 			return;
 		} else if (value > prange_node->low_value &&
 			value < prange_node->high_value) {
-			prange_node1 = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
+			auto prange_node1 = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 			if (NULL == prange_node1) {
 				return;
 			}
@@ -338,21 +323,16 @@ void idset::remove(uint64_t eid)
 BOOL idset::concatenate(const IDSET *pset_src)
 {
 	auto pset_dst = this;
-	DOUBLE_LIST *prepl_list;
-	REPLID_NODE *prepl_node;
-	RANGE_NODE *prange_node;
-	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *pnode1;
 	
 	if (!pset_dst->b_serialize || !pset_src->b_serialize)
 		return FALSE;
-	prepl_list = (DOUBLE_LIST*)&pset_src->repl_list;
-	for (pnode=double_list_get_head(prepl_list); NULL!=pnode;
+	auto prepl_list = static_cast<const DOUBLE_LIST *>(&pset_src->repl_list);
+	for (auto pnode = double_list_get_head(prepl_list); pnode != nullptr;
 		pnode=double_list_get_after(prepl_list, pnode)) {
-		prepl_node = (REPLID_NODE*)pnode->pdata;
-		for (pnode1=double_list_get_head(&prepl_node->range_list); NULL!=pnode1;
+		auto prepl_node = static_cast<const REPLID_NODE *>(pnode->pdata);
+		for (auto pnode1 = double_list_get_head(&prepl_node->range_list); pnode1 != nullptr;
 			pnode1=double_list_get_after(&prepl_node->range_list, pnode1)) {
-			prange_node = (RANGE_NODE*)pnode1->pdata;
+			auto prange_node = static_cast<const RANGE_NODE *>(pnode1->pdata);
 			if (prange_node->high_value == prange_node->low_value) {
 				if (FALSE == idset_append_internal(pset_dst,
 					prepl_node->replid, prange_node->low_value)) {
@@ -371,16 +351,13 @@ BOOL idset::concatenate(const IDSET *pset_src)
 BOOL idset::hint(uint64_t eid)
 {
 	auto pset = this;
-	uint64_t value;
-	uint16_t replid;
-	RANGE_NODE *prange_node;
 	REPLID_NODE *prepl_node;
 	DOUBLE_LIST_NODE *pnode;
 	
 	if (!pset->b_serialize && pset->repl_type == REPL_TYPE_GUID)
 		return FALSE;	
-	replid = rop_util_get_replid(eid);
-	value = rop_util_get_gc_value(eid);
+	auto replid = rop_util_get_replid(eid);
+	auto value = rop_util_get_gc_value(eid);
 	for (pnode=double_list_get_head(&pset->repl_list); NULL!=pnode;
 		pnode=double_list_get_after(&pset->repl_list, pnode)) {
 		prepl_node = (REPLID_NODE*)pnode->pdata;
@@ -393,7 +370,7 @@ BOOL idset::hint(uint64_t eid)
 	}
 	for (pnode=double_list_get_head(&prepl_node->range_list); NULL!=pnode;
 		pnode=double_list_get_after(&prepl_node->range_list, pnode)) {
-		prange_node = (RANGE_NODE*)pnode->pdata;
+		auto prange_node = static_cast<RANGE_NODE *>(pnode->pdata);
 		if (value >= prange_node->low_value &&
 			value <= prange_node->high_value) {
 			return TRUE;
@@ -419,11 +396,10 @@ static BINARY* idset_init_binary()
 
 static BOOL idset_write_to_binary(BINARY *pbin, const void *pb, uint8_t len)
 {
-	void *pdata;
 	uint32_t alloc_len = strange_roundup(pbin->cb, 4096);
 	if (pbin->cb + len >= alloc_len) {
 		alloc_len = strange_roundup(pbin->cb + len, 4096);
-		pdata = realloc(pbin->pb, alloc_len);
+		auto pdata = realloc(pbin->pb, alloc_len);
 		if (NULL == pdata) {
 			return FALSE;
 		}
@@ -448,9 +424,7 @@ static BOOL idset_encoding_push_command(BINARY *pbin,
 
 static BOOL idset_encoding_pop_command(BINARY *pbin)
 {
-	uint8_t command;
-	
-	command = 0x50;
+	uint8_t command = 0x50;
 	return idset_write_to_binary(pbin, &command, sizeof(uint8_t));
 }
 
@@ -458,12 +432,10 @@ static BOOL idset_encoding_pop_command(BINARY *pbin)
 static BOOL idset_encode_range_command(BINARY *pbin, uint8_t length,
     const uint8_t *plow_bytes, const uint8_t *phigh_bytes)
 {
-	uint8_t command;
-	
 	if (length > 6 || 0 == length) {
 		return FALSE;
 	}
-	command = 0x52;
+	uint8_t command = 0x52;
 	if (FALSE == idset_write_to_binary(pbin, &command, sizeof(uint8_t))) {
 		return FALSE;
 	}
@@ -475,9 +447,7 @@ static BOOL idset_encode_range_command(BINARY *pbin, uint8_t length,
 
 static BOOL idset_encode_end_command(BINARY *pbin)
 {
-	uint8_t command;
-	
-	command = 0;
+	uint8_t command = 0;
 	return idset_write_to_binary(pbin, &command, sizeof(uint8_t));
 }
 
@@ -488,11 +458,10 @@ static void idset_stack_init(DOUBLE_LIST *pstack)
 
 static void idset_stack_free(DOUBLE_LIST *pstack)
 {
-	STACK_NODE *pstack_node;
 	DOUBLE_LIST_NODE *pnode;
 	
 	while ((pnode = double_list_pop_front(pstack)) != nullptr) {
-		pstack_node = (STACK_NODE*)pnode->pdata;
+		auto pstack_node = static_cast<STACK_NODE *>(pnode->pdata);
 		free(pstack_node->pcommon_bytes);
 		free(pstack_node);
 	}
@@ -530,14 +499,11 @@ static void idset_stack_pop(DOUBLE_LIST *pstack)
 
 static uint8_t idset_stack_get_common_bytes(DOUBLE_LIST *pstack, GLOBCNT &common_bytes)
 {
-	uint8_t common_length;
-	DOUBLE_LIST_NODE *pnode;
-	STACK_NODE *pstack_node;
+	uint8_t common_length = 0;
 	
-	common_length = 0;
-	for (pnode=double_list_get_head(pstack); NULL!=pnode;
+	for (auto pnode=double_list_get_head(pstack); pnode != nullptr;
 		pnode=double_list_get_after(pstack, pnode)) {
-		pstack_node = (STACK_NODE*)pnode->pdata;
+		auto pstack_node = static_cast<STACK_NODE *>(pnode->pdata);
 		memcpy(&common_bytes.ab[common_length],
 			pstack_node->pcommon_bytes, pstack_node->common_length);
 		common_length += pstack_node->common_length;
@@ -547,9 +513,6 @@ static uint8_t idset_stack_get_common_bytes(DOUBLE_LIST *pstack, GLOBCNT &common
 
 static BOOL idset_encoding_globset(BINARY *pbin, const DOUBLE_LIST *pglobset)
 {
-	int i;
-	uint8_t stack_length;
-	
 	if (1 == double_list_get_nodes_num(pglobset)) {
 		auto pnode = double_list_get_head(pglobset);
 		auto prange_node = static_cast<const RANGE_NODE *>(pnode->pdata);
@@ -571,6 +534,7 @@ static BOOL idset_encoding_globset(BINARY *pbin, const DOUBLE_LIST *pglobset)
 	auto high_value = reinterpret_cast<const RANGE_NODE *>(pnode)->high_value;
 	auto common_bytes = rop_util_value_to_gc(low_value);
 	auto common_bytes1 = rop_util_value_to_gc(high_value);
+	uint8_t stack_length;
 	for (stack_length=0; stack_length<6; stack_length++) {
 		if (common_bytes.ab[stack_length] != common_bytes1.ab[stack_length])
 			break;
@@ -589,6 +553,7 @@ static BOOL idset_encoding_globset(BINARY *pbin, const DOUBLE_LIST *pglobset)
 			continue;
 		}
 		common_bytes1 = rop_util_value_to_gc(prange_node->high_value);
+		int i;
 		for (i=stack_length; i<6; i++) {
 			if (common_bytes.ab[i] != common_bytes1.ab[i])
 				break;
@@ -642,11 +607,10 @@ static BOOL idset_write_guid(BINARY *pbin, const GUID *pguid)
 BINARY *idset::serialize_replid() const
 {
 	auto pset = this;
-	BINARY *pbin;
 	
 	if (!pset->b_serialize)
 		return NULL;
-	pbin = idset_init_binary();
+	auto pbin = idset_init_binary();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -671,7 +635,6 @@ BINARY *idset::serialize_replid() const
 BINARY *idset::serialize_replguid() const
 {
 	auto pset = this;
-	BINARY *pbin;
 	GUID tmp_guid;
 	
 	if (!pset->b_serialize)
@@ -679,7 +642,7 @@ BINARY *idset::serialize_replguid() const
 	if (NULL == pset->mapping) {
 		return NULL;
 	}
-	pbin = idset_init_binary();
+	auto pbin = idset_init_binary();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -714,21 +677,12 @@ BINARY *idset::serialize() const
 static uint32_t idset_decoding_globset(
 	const BINARY *pbin, DOUBLE_LIST *pglobset)
 {
-	int i;
-	uint8_t bitmask;
-	uint32_t offset;
-	uint8_t command;
-	uint64_t low_value;
-	uint8_t start_value;
-	uint8_t stack_length;
-	RANGE_NODE *prange_node;
-	GLOBCNT common_bytes;
+	uint32_t offset = 0;
 	DOUBLE_LIST bytes_stack;
 	
-	offset = 0;
 	idset_stack_init(&bytes_stack);
 	while (offset < pbin->cb) {
-		command = pbin->pb[offset];
+		uint8_t command = pbin->pb[offset];
 		offset ++;
 		switch (command) {
 		case 0x0: /* end */
@@ -739,14 +693,15 @@ static uint32_t idset_decoding_globset(
 		case 0x3:
 		case 0x4:
 		case 0x5:
-		case 0x6: /* push */
+		case 0x6: { /* push */
+			GLOBCNT common_bytes;
 			memcpy(common_bytes.ab, &pbin->pb[offset], command);
 			offset += command;
 			idset_stack_push(&bytes_stack, command, common_bytes.ab);
-			stack_length = idset_stack_get_common_bytes(
+			uint8_t stack_length = idset_stack_get_common_bytes(
 							&bytes_stack, common_bytes);
 			if (6 == stack_length) {
-				prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
+				auto prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 				if (NULL == prange_node) {
 					idset_stack_free(&bytes_stack);
 					return 0;
@@ -765,12 +720,12 @@ static uint32_t idset_decoding_globset(
 				return 0;
 			}
 			break;
-		case 0x42: /* bitmask */
-			start_value = pbin->pb[offset];
-			offset ++;
-			bitmask = pbin->pb[offset];
-			offset ++;
-			stack_length = idset_stack_get_common_bytes(
+		}
+		case 0x42: { /* bitmask */
+			GLOBCNT common_bytes;
+			uint8_t start_value = pbin->pb[offset++];
+			uint8_t bitmask = pbin->pb[offset++];
+			uint8_t stack_length = idset_stack_get_common_bytes(
 							&bytes_stack, common_bytes);
 			if (5 != stack_length) {
 				debug_info("[idset]: bitmask command error when "
@@ -779,17 +734,17 @@ static uint32_t idset_decoding_globset(
 				idset_stack_free(&bytes_stack);
 				return 0;
 			}
-			prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
+			auto prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 			if (NULL == prange_node) {
 				idset_stack_free(&bytes_stack);
 				return 0;
 			}
 			prange_node->node.pdata = prange_node;
 			common_bytes.ab[5] = start_value;
-			low_value = rop_util_gc_to_value(common_bytes);
+			auto low_value = rop_util_gc_to_value(common_bytes);
 			prange_node->low_value = low_value;
 			prange_node->high_value = low_value;
-			for (i=0; i<8; i++) {
+			for (int i = 0; i < 8; ++i) {
 				if (bitmask & (1<<i)) {
 					if (NULL == prange_node) {
 						prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
@@ -815,17 +770,19 @@ static uint32_t idset_decoding_globset(
 				double_list_append_as_tail(pglobset, &prange_node->node);
 			}
 			break;
+		}
 		case 0x50: /* pop */
 			idset_stack_pop(&bytes_stack);
 			break;
-		case 0x52: /* range */
-			prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
+		case 0x52: { /* range */
+			GLOBCNT common_bytes;
+			auto prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 			if (NULL == prange_node) {
 				idset_stack_free(&bytes_stack);
 				return 0;
 			}
 			prange_node->node.pdata = prange_node;
-			stack_length = idset_stack_get_common_bytes(
+			uint8_t stack_length = idset_stack_get_common_bytes(
 							&bytes_stack, common_bytes);
 			if (stack_length > 5) {
 				debug_info("[idset]: range command error when "
@@ -844,6 +801,7 @@ static uint32_t idset_decoding_globset(
 			prange_node->high_value = rop_util_gc_to_value(common_bytes);
 			double_list_append_as_tail(pglobset, &prange_node->node);
 			break;
+		}
 		}
 	}
 	idset_stack_free(&bytes_stack);
@@ -867,20 +825,16 @@ static void idset_read_guid(const void *pv, uint32_t offset, GUID *pguid)
 BOOL idset::deserialize(const BINARY *pbin)
 {
 	auto pset = this;
-	BINARY bin1;
-	uint32_t offset;
-	uint32_t length;
-	DOUBLE_LIST *plist;
-	DOUBLE_LIST_NODE *pnode;
-	REPLID_NODE *preplid_node;
-	REPLGUID_NODE *preplguid_node;
+	uint32_t offset = 0;
 	
 	if (pset->b_serialize)
 		return FALSE;
-	offset = 0;
 	while (offset < pbin->cb) {
+		DOUBLE_LIST *plist;
+		DOUBLE_LIST_NODE *pnode;
+
 		if (REPL_TYPE_ID == pset->repl_type) {
-			preplid_node = static_cast<REPLID_NODE *>(malloc(sizeof(REPLID_NODE)));
+			auto preplid_node = static_cast<REPLID_NODE *>(malloc(sizeof(REPLID_NODE)));
 			if (NULL == preplid_node) {
 				return FALSE;
 			}
@@ -890,7 +844,7 @@ BOOL idset::deserialize(const BINARY *pbin)
 			plist = &preplid_node->range_list;
 			pnode = &preplid_node->node;
 		} else {
-			preplguid_node = static_cast<REPLGUID_NODE *>(malloc(sizeof(REPLGUID_NODE)));
+			auto preplguid_node = static_cast<REPLGUID_NODE *>(malloc(sizeof(REPLGUID_NODE)));
 			if (NULL == preplguid_node) {
 				return FALSE;
 			}
@@ -904,10 +858,11 @@ BOOL idset::deserialize(const BINARY *pbin)
 			free(pnode->pdata);
 			return FALSE;
 		}
+		BINARY bin1;
 		bin1.pb = pbin->pb + offset;
 		bin1.cb = pbin->cb - offset;
 		double_list_init(plist);
-		length = idset_decoding_globset(&bin1, plist);
+		uint32_t length = idset_decoding_globset(&bin1, plist);
 		double_list_append_as_tail(&pset->repl_list, pnode);
 		if (0 == length) {
 			return FALSE;
@@ -920,11 +875,7 @@ BOOL idset::deserialize(const BINARY *pbin)
 BOOL idset::convert()
 {
 	auto pset = this;
-	uint16_t replid;
 	DOUBLE_LIST temp_list;
-	DOUBLE_LIST_NODE *pnode;
-	REPLID_NODE *prepl_node;
-	REPLGUID_NODE *preplguid_node;
 	
 	if (pset->b_serialize)
 		return FALSE;
@@ -933,14 +884,15 @@ BOOL idset::convert()
 			return FALSE;
 		}
 		double_list_init(&temp_list);
-		for (pnode=double_list_get_head(&pset->repl_list); NULL!=pnode;
+		for (auto pnode = double_list_get_head(&pset->repl_list); pnode != nullptr;
 			pnode=double_list_get_after(&pset->repl_list, pnode)) {
-			preplguid_node = (REPLGUID_NODE*)pnode->pdata;
+			auto preplguid_node  = static_cast<REPLGUID_NODE *>(pnode->pdata);
+			uint16_t replid;
 			if (FALSE == pset->mapping(FALSE, pset->pparam,
 				&replid, &preplguid_node->replguid)) {
 				goto CLEAN_TEMP_LIST;
 			}
-			prepl_node = static_cast<REPLID_NODE *>(malloc(sizeof(REPLID_NODE)));
+			auto prepl_node = static_cast<REPLID_NODE *>(malloc(sizeof(REPLID_NODE)));
 			if (NULL == prepl_node) {
 				goto CLEAN_TEMP_LIST;
 			}
@@ -949,6 +901,7 @@ BOOL idset::convert()
 			prepl_node->range_list = preplguid_node->range_list;
 			double_list_append_as_tail(&temp_list, &prepl_node->node);
 		}
+		DOUBLE_LIST_NODE *pnode;
 		while ((pnode = double_list_pop_front(&pset->repl_list)) != nullptr)
 			free(pnode->pdata);
 		double_list_free(&pset->repl_list);
@@ -958,6 +911,7 @@ BOOL idset::convert()
 	return TRUE;
 	
  CLEAN_TEMP_LIST:
+	DOUBLE_LIST_NODE *pnode;
 	while ((pnode = double_list_pop_front(&temp_list)) != nullptr)
 		free(pnode->pdata);
 	double_list_free(&temp_list);
@@ -967,20 +921,16 @@ BOOL idset::convert()
 BOOL idset::get_repl_first_max(uint16_t replid, uint64_t *peid)
 {
 	auto pset = this;
-	uint16_t tmp_replid;
-	DOUBLE_LIST_NODE *pnode;
-	REPLID_NODE *prepl_node;
-	DOUBLE_LIST *prange_list;
-	REPLGUID_NODE *preplguid_node;
+	DOUBLE_LIST *prange_list = nullptr;
 	
-	prange_list = NULL;
 	if (!pset->b_serialize && pset->repl_type == REPL_TYPE_GUID) {
 		if (NULL == pset->mapping) {
 			return FALSE;
 		}
-		for (pnode=double_list_get_head(&pset->repl_list); NULL!=pnode;
+		for (auto pnode = double_list_get_head(&pset->repl_list); pnode != nullptr;
 			pnode=double_list_get_after(&pset->repl_list, pnode)) {
-			preplguid_node = (REPLGUID_NODE*)pnode->pdata;
+			auto preplguid_node = static_cast<REPLGUID_NODE *>(pnode->pdata);
+			uint16_t tmp_replid;
 			if (FALSE == pset->mapping(FALSE, pset->pparam,
 				&tmp_replid, &preplguid_node->replguid)) {
 				return FALSE;
@@ -991,9 +941,9 @@ BOOL idset::get_repl_first_max(uint16_t replid, uint64_t *peid)
 			}
 		}
 	} else {
-		for (pnode=double_list_get_head(&pset->repl_list); NULL!=pnode;
+		for (auto pnode = double_list_get_head(&pset->repl_list); pnode != nullptr;
 			pnode=double_list_get_after(&pset->repl_list, pnode)) {
-			prepl_node = (REPLID_NODE*)pnode->pdata;
+			auto prepl_node = static_cast<REPLID_NODE *>(pnode->pdata);
 			if (replid == prepl_node->replid) {
 				prange_list = &prepl_node->range_list;
 				break;
@@ -1004,7 +954,7 @@ BOOL idset::get_repl_first_max(uint16_t replid, uint64_t *peid)
 		*peid = rop_util_make_eid_ex(replid, 0);
 		return TRUE;
 	}
-	pnode = double_list_get_head(prange_list);
+	auto pnode = double_list_get_head(prange_list);
 	if (NULL == pnode) {
 		*peid = rop_util_make_eid_ex(replid, 0);
 	} else {
@@ -1017,18 +967,15 @@ BOOL idset::get_repl_first_max(uint16_t replid, uint64_t *peid)
 BOOL idset::enum_replist(void *pparam, REPLIST_ENUM replist_enum)
 {
 	auto pset = this;
-	uint16_t tmp_replid;
-	DOUBLE_LIST_NODE *pnode;
-	REPLID_NODE *prepl_node;
-	REPLGUID_NODE *preplguid_node;
 	
 	if (!pset->b_serialize && pset->repl_type == REPL_TYPE_GUID) {
 		if (NULL == pset->mapping) {
 			return FALSE;
 		}
-		for (pnode=double_list_get_head(&pset->repl_list); NULL!=pnode;
+		for (auto pnode = double_list_get_head(&pset->repl_list); pnode != nullptr;
 			pnode=double_list_get_after(&pset->repl_list, pnode)) {
-			preplguid_node = (REPLGUID_NODE*)pnode->pdata;
+			auto preplguid_node = static_cast<REPLGUID_NODE *>(pnode->pdata);
+			uint16_t tmp_replid;
 			if (FALSE == pset->mapping(FALSE, pset->pparam,
 				&tmp_replid, &preplguid_node->replguid)) {
 				return FALSE;
@@ -1036,9 +983,9 @@ BOOL idset::enum_replist(void *pparam, REPLIST_ENUM replist_enum)
 			replist_enum(pparam, tmp_replid);
 		}
 	} else {
-		for (pnode=double_list_get_head(&pset->repl_list); NULL!=pnode;
+		for (auto pnode = double_list_get_head(&pset->repl_list); pnode != nullptr;
 			pnode=double_list_get_after(&pset->repl_list, pnode)) {
-			prepl_node = (REPLID_NODE*)pnode->pdata;
+			auto prepl_node = static_cast<REPLID_NODE *>(pnode->pdata);
 			replist_enum(pparam, prepl_node->replid);
 		}
 	}
@@ -1048,23 +995,16 @@ BOOL idset::enum_replist(void *pparam, REPLIST_ENUM replist_enum)
 BOOL idset::enum_repl(uint16_t replid, void *pparam, REPLICA_ENUM repl_enum)
 {
 	auto pset = this;
-	uint64_t ival;
-	uint64_t tmp_eid;
-	uint16_t tmp_replid;
-	RANGE_NODE *prange_node;
-	DOUBLE_LIST_NODE *pnode;
-	REPLID_NODE *prepl_node;
-	DOUBLE_LIST *prange_list;
-	REPLGUID_NODE *preplguid_node;
+	DOUBLE_LIST *prange_list = nullptr;
 	
-	prange_list = NULL;
 	if (!pset->b_serialize && pset->repl_type == REPL_TYPE_GUID) {
 		if (NULL == pset->mapping) {
 			return FALSE;
 		}
-		for (pnode=double_list_get_head(&pset->repl_list); NULL!=pnode;
+		for (auto pnode = double_list_get_head(&pset->repl_list); pnode != nullptr;
 			pnode=double_list_get_after(&pset->repl_list, pnode)) {
-			preplguid_node = (REPLGUID_NODE*)pnode->pdata;
+			auto preplguid_node = static_cast<REPLGUID_NODE *>(pnode->pdata);
+			uint16_t tmp_replid;
 			if (FALSE == pset->mapping(FALSE, pset->pparam,
 				&tmp_replid, &preplguid_node->replguid)) {
 				return FALSE;
@@ -1075,9 +1015,9 @@ BOOL idset::enum_repl(uint16_t replid, void *pparam, REPLICA_ENUM repl_enum)
 			}
 		}
 	} else {
-		for (pnode=double_list_get_head(&pset->repl_list); NULL!=pnode;
+		for (auto pnode = double_list_get_head(&pset->repl_list); pnode != nullptr;
 			pnode=double_list_get_after(&pset->repl_list, pnode)) {
-			prepl_node = (REPLID_NODE*)pnode->pdata;
+			auto prepl_node = static_cast<REPLID_NODE *>(pnode->pdata);
 			if (replid == prepl_node->replid) {
 				prange_list = &prepl_node->range_list;
 				break;
@@ -1087,12 +1027,12 @@ BOOL idset::enum_repl(uint16_t replid, void *pparam, REPLICA_ENUM repl_enum)
 	if (NULL == prange_list) {
 		return TRUE;
 	}
-	for (pnode=double_list_get_head(prange_list); NULL!=pnode;
+	for (auto pnode = double_list_get_head(prange_list); pnode != nullptr;
 		pnode=double_list_get_after(prange_list, pnode)) {
-		prange_node = (RANGE_NODE*)pnode->pdata;
-		for (ival=prange_node->low_value;
+		auto prange_node = static_cast<RANGE_NODE *>(pnode->pdata);
+		for (auto ival = prange_node->low_value;
 			ival<=prange_node->high_value; ival++) {
-			tmp_eid = rop_util_make_eid_ex(replid, ival);
+			auto tmp_eid = rop_util_make_eid_ex(replid, ival);
 			repl_enum(pparam, tmp_eid);
 		}
 	}
