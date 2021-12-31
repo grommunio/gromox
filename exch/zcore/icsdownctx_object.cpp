@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <memory>
 #include "icsdownctx_object.h"
+#include <gromox/mapi_types.hpp>
 #include <gromox/proptag_array.hpp>
 #include "zarafa_server.h"
 #include "exmdb_client.h"
@@ -9,7 +10,6 @@
 #include <gromox/ext_buffer.hpp>
 #include <gromox/eid_array.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/idset.hpp>
 #include <cstdlib>
 #include <cstring>
 #include "common_util.h"
@@ -67,12 +67,12 @@ BOOL icsdownctx_object::make_content(const BINARY *pstate_bin,
 	if (!pctx->pstate->deserialize(pstate_bin))
 		return FALSE;
 	auto pinfo = zarafa_server_get_info();
-	auto pread = (sync_flags & SYNC_FLAG_READSTATE) ? pctx->pstate->pread : nullptr;
-	auto pseen_fai = (sync_flags & SYNC_FLAG_FAI) ? pctx->pstate->pseen_fai : nullptr;
-	auto pseen = (sync_flags & SYNC_FLAG_NORMAL) ? pctx->pstate->pseen : nullptr;
+	auto pread = (sync_flags & SYNC_FLAG_READSTATE) ? pctx->pstate->pread.get() : nullptr;
+	auto pseen_fai = (sync_flags & SYNC_FLAG_FAI) ? pctx->pstate->pseen_fai.get() : nullptr;
+	auto pseen = (sync_flags & SYNC_FLAG_NORMAL) ? pctx->pstate->pseen.get() : nullptr;
 	auto username = pctx->pstore->b_private ? nullptr : pinfo->get_username();
 	if (!exmdb_client::get_content_sync(pctx->pstore->get_dir(),
-	    pctx->folder_id, username, pctx->pstate->pgiven, pseen, pseen_fai,
+	    pctx->folder_id, username, pctx->pstate->pgiven.get(), pseen, pseen_fai,
 	    pread, pinfo->cpid, prestriction, TRUE, &count_fai, &total_fai,
 	    &count_normal, &total_normal, &updated_messages, &chg_messages,
 	    &pctx->last_changenum, &given_messages, &deleted_messages,
@@ -149,8 +149,8 @@ BOOL icsdownctx_object::make_hierarchy(const BINARY *state,
 	auto pinfo = zarafa_server_get_info();
 	auto username = pctx->pstore->check_owner_mode() ? nullptr : pinfo->get_username();
 	if (!exmdb_client::get_hierarchy_sync(pctx->pstore->get_dir(),
-	    pctx->folder_id, username, pctx->pstate->pgiven,
-	    pctx->pstate->pseen, &fldchgs, &pctx->last_changenum,
+	    pctx->folder_id, username, pctx->pstate->pgiven.get(),
+	    pctx->pstate->pseen.get(), &fldchgs, &pctx->last_changenum,
 	    &given_folders, &deleted_folders))
 		return FALSE;
 	if (pctx->pgiven_eids != nullptr)

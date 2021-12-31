@@ -1,39 +1,18 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <memory>
+#include <gromox/mapi_types.hpp>
 #include "common_util.h"
 #include "ics_state.h"
 #include <gromox/rop_util.hpp>
-#include <gromox/idset.hpp>
 #include <cstdlib>
 #include <cstring>
-
-ICS_STATE::~ICS_STATE()
-{
-	auto pstate = this;
-	if (NULL != pstate->pgiven) {
-		idset_free(pstate->pgiven);
-		pstate->pgiven = NULL;
-	}
-	if (NULL != pstate->pseen) {
-		idset_free(pstate->pseen);
-		pstate->pseen = NULL;
-	}
-	if (NULL != pstate->pseen_fai) {
-		idset_free(pstate->pseen_fai);
-		pstate->pseen_fai = NULL;
-	}
-	if (NULL != pstate->pread) {
-		idset_free(pstate->pread);
-		pstate->pread = NULL;
-	}
-}
 
 static ics_state *ics_state_init(ics_state *pstate, logon_object *plogon, int type)
 {
 	BINARY tmp_bin;
 	tmp_bin.cb = sizeof(void*);
 	tmp_bin.pv = &plogon;
-	pstate->pseen = idset_init(TRUE, REPL_TYPE_GUID);
+	pstate->pseen = idset::create(true, REPL_TYPE_GUID);
 	if (NULL == pstate->pseen) {
 		return NULL;
 	}
@@ -41,21 +20,21 @@ static ics_state *ics_state_init(ics_state *pstate, logon_object *plogon, int ty
 		return NULL;
 	switch (type) {
 	case ICS_STATE_CONTENTS_DOWN:
-		pstate->pgiven = idset_init(TRUE, REPL_TYPE_GUID);
+		pstate->pgiven = idset::create(true, REPL_TYPE_GUID);
 		if (NULL == pstate->pgiven) {
 			return NULL;
 		}
 		if (!pstate->pgiven->register_mapping(&tmp_bin,
 		    common_util_mapping_replica))
 			return NULL;
-		pstate->pseen_fai = idset_init(TRUE, REPL_TYPE_GUID);
+		pstate->pseen_fai = idset::create(true, REPL_TYPE_GUID);
 		if (NULL == pstate->pseen_fai) {
 			return NULL;
 		}
 		if (!pstate->pseen_fai->register_mapping(&tmp_bin,
 		    common_util_mapping_replica))
 			return NULL;
-		pstate->pread = idset_init(TRUE, REPL_TYPE_GUID);
+		pstate->pread = idset::create(true, REPL_TYPE_GUID);
 		if (NULL == pstate->pread) {
 			return NULL;
 		}
@@ -64,7 +43,7 @@ static ics_state *ics_state_init(ics_state *pstate, logon_object *plogon, int ty
 			return NULL;
 		break;
 	case ICS_STATE_HIERARCHY_DOWN:
-		pstate->pgiven = idset_init(TRUE, REPL_TYPE_GUID);
+		pstate->pgiven = idset::create(true, REPL_TYPE_GUID);
 		if (NULL == pstate->pgiven) {
 			return NULL;
 		}
@@ -73,21 +52,21 @@ static ics_state *ics_state_init(ics_state *pstate, logon_object *plogon, int ty
 			return NULL;
 		break;
 	case ICS_STATE_CONTENTS_UP:
-		pstate->pgiven = idset_init(TRUE, REPL_TYPE_GUID);
+		pstate->pgiven = idset::create(true, REPL_TYPE_GUID);
 		if (NULL == pstate->pgiven) {
 			return NULL;
 		}
 		if (!pstate->pgiven->register_mapping(&tmp_bin,
 		    common_util_mapping_replica))
 			return NULL;
-		pstate->pseen_fai = idset_init(TRUE, REPL_TYPE_GUID);
+		pstate->pseen_fai = idset::create(true, REPL_TYPE_GUID);
 		if (NULL == pstate->pseen_fai) {
 			return NULL;
 		}
 		if (!pstate->pseen_fai->register_mapping(&tmp_bin,
 		    common_util_mapping_replica))
 			return NULL;
-		pstate->pread = idset_init(TRUE, REPL_TYPE_GUID);
+		pstate->pread = idset::create(true, REPL_TYPE_GUID);
 		if (NULL == pstate->pread) {
 			return NULL;
 		}
@@ -122,47 +101,41 @@ std::shared_ptr<ics_state> ics_state::create_shared(logon_object *plogon, int ty
 	return nullptr;
 }
 
-BOOL ICS_STATE::append_idset(uint32_t state_property, IDSET *pset)
+BOOL ICS_STATE::append_idset(uint32_t state_property, std::unique_ptr<idset> &&pset)
 {
 	auto pstate = this;
 	switch (state_property) {
 	case MetaTagIdsetGiven:
 	case MetaTagIdsetGiven1:
-		if (NULL != pstate->pgiven) {
-			idset_free(pstate->pgiven);
-		}
-		pstate->pgiven = pset;
+		pstate->pgiven = std::move(pset);
 		return TRUE;
 	case MetaTagCnsetSeen:
 		if (NULL != pstate->pseen) {
 			if ((ICS_STATE_CONTENTS_UP == pstate->type ||
 				ICS_STATE_HIERARCHY_UP == pstate->type) &&
 			    !pstate->pseen->check_empty() &&
-			    !pset->concatenate(pstate->pseen))
+			    !pset->concatenate(pstate->pseen.get()))
 				return FALSE;
-			idset_free(pstate->pseen);
 		}
-		pstate->pseen = pset;
+		pstate->pseen = std::move(pset);
 		return TRUE;
 	case MetaTagCnsetSeenFAI:
 		if (NULL != pstate->pseen_fai) {
 			if (ICS_STATE_CONTENTS_UP == pstate->type &&
 			    !pstate->pseen_fai->check_empty() &&
-			    !pset->concatenate(pstate->pseen_fai))
+			    !pset->concatenate(pstate->pseen_fai.get()))
 				return FALSE;
-			idset_free(pstate->pseen_fai);
 		}
-		pstate->pseen_fai = pset;
+		pstate->pseen_fai = std::move(pset);
 		return TRUE;
 	case MetaTagCnsetRead:
 		if (NULL != pstate->pread) {
 			if (ICS_STATE_CONTENTS_UP == pstate->type &&
 			    !pstate->pread->check_empty() &&
-			    !pset->concatenate(pstate->pread))
+			    !pset->concatenate(pstate->pread.get()))
 				return FALSE;
-			idset_free(pstate->pread);
 		}
-		pstate->pread = pset;
+		pstate->pread = std::move(pset);
 		return TRUE;
 	}
 	return FALSE;

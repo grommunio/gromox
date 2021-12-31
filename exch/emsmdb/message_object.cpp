@@ -4,6 +4,7 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
+#include <gromox/mapi_types.hpp>
 #include "attachment_object.h"
 #include "emsmdb_interface.h"
 #include "message_object.h"
@@ -16,7 +17,6 @@
 #include <gromox/proc_common.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/idset.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/util.hpp>
 #include <gromox/pcl.hpp>
@@ -559,7 +559,7 @@ gxerr_t message_object::save()
 		return GXERR_SUCCESS;
 	
 	if (NULL != pmessage->pstate) {
-		auto s = b_fai ? pmessage->pstate->pseen_fai : pmessage->pstate->pseen;
+		auto s = b_fai ? pmessage->pstate->pseen_fai.get() : pmessage->pstate->pseen.get();
 		s->append(pmessage->change_num);
 	}
 	

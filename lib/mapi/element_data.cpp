@@ -3,12 +3,12 @@
 #include <memory>
 #include <utility>
 #include <gromox/mapidefs.h>
+#include <gromox/mapi_types.hpp>
 #include <gromox/proptag_array.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/tarray_set.hpp>
 #include <gromox/eid_array.hpp>
 #include <gromox/propval.hpp>
-#include <gromox/idset.hpp>
 #include <cstdlib>
 #include <cstring>
 

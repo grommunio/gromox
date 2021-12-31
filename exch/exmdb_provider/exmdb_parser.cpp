@@ -20,7 +20,6 @@
 #include <gromox/mapi_types.hpp>
 #include "exmdb_ext.h"
 #include <gromox/list_file.hpp>
-#include <gromox/idset.hpp>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -670,14 +669,10 @@ static BOOL exmdb_parser_dispatch2(const EXMDB_REQUEST *prequest,
 		           &r.chg_mids, &r.last_cn, &r.given_mids,
 		           &r.deleted_mids, &r.nolonger_mids, &r.read_mids,
 		           &r.unread_mids, &r.last_readcn);
-		if (q.pgiven != nullptr)
-			idset_free(q.pgiven);
-		if (q.pseen != nullptr)
-			idset_free(q.pseen);
-		if (q.pseen_fai != nullptr)
-			idset_free(q.pseen_fai);
-		if (q.pread != nullptr)
-			idset_free(q.pread);
+		delete q.pgiven;
+		delete q.pseen;
+		delete q.pseen_fai;
+		delete q.pread;
 		return b_return;
 	}
 	case exmdb_callid::GET_HIERARCHY_SYNC: {
@@ -687,10 +682,8 @@ static BOOL exmdb_parser_dispatch2(const EXMDB_REQUEST *prequest,
 		           q.folder_id, q.username, q.pgiven, q.pseen,
 		           &r.fldchgs, &r.last_cn, &r.given_fids,
 		           &r.deleted_fids);
-		if (q.pgiven != nullptr)
-			idset_free(q.pgiven);
-		if (q.pseen != nullptr)
-			idset_free(q.pseen);
+		delete q.pgiven;
+		delete q.pseen;
 		return b_return;
 	}
 	case exmdb_callid::ALLOCATE_IDS:

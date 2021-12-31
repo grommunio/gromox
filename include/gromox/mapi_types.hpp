@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <gromox/proptags.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
@@ -753,6 +754,10 @@ using REPLIST_ENUM = void (*)(void *, uint16_t);
 using REPLICA_ENUM = void (*)(void *, uint64_t);
 
 struct IDSET {
+	IDSET(bool serialize, uint8_t type);
+	~IDSET();
+	static std::unique_ptr<IDSET> create(bool serialize, uint8_t type);
+
 	BOOL register_mapping(BINARY *, REPLICA_MAPPING);
 	void clear();
 	BOOL check_empty() const;
@@ -772,13 +777,17 @@ struct IDSET {
 	BOOL enum_replist(void *param, REPLIST_ENUM);
 	BOOL enum_repl(uint16_t replid, void *param, REPLICA_ENUM);
 
-	void *pparam;
-	REPLICA_MAPPING mapping;
-	BOOL b_serialize; /* if b_serialize is FALSE in idset and repl_type is
-						REPL_TYPE_GUID, nodes in repl_list is REPLGUID_NODE */
-	uint8_t repl_type;
-	DOUBLE_LIST repl_list;
+	void *pparam = nullptr;
+	REPLICA_MAPPING mapping{};
+	/*
+	 * If @b_serialize is false and @repl_type is REPL_TYPE_GUID,
+	 * nodes in repl_list is REPLGUID_NODE.
+	 */
+	bool b_serialize = false;
+	uint8_t repl_type = 0;
+	DOUBLE_LIST repl_list{};
 };
+using idset = IDSET;
 
 #define DB_NOTIFY_TYPE_NEW_MAIL									0x01
 #define DB_NOTIFY_TYPE_FOLDER_CREATED							0x02

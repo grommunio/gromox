@@ -6,9 +6,9 @@
 #include <vector>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
+#include <gromox/mapi_types.hpp>
 #include "rops.h"
 #include <gromox/guid.hpp>
-#include <gromox/idset.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/eid_array.hpp>
@@ -1613,7 +1613,7 @@ uint32_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 	if (!exmdb_client_get_message_property(plogon->get_dir(), nullptr, 0,
 	    dst_mid, PidTagChangeNumber, &pvalue) || pvalue == nullptr)
 		return ecError;
-	auto s = b_fai ? pctx->pstate->pseen_fai : pctx->pstate->pseen;
+	auto &s = b_fai ? pctx->pstate->pseen_fai : pctx->pstate->pseen;
 	s->append(*static_cast<uint64_t *>(pvalue));
 	pctx->pstate->pgiven->append(dst_mid);
 	*pmessage_id = 0;

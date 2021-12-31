@@ -16,6 +16,7 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
+#include <gromox/mapi_types.hpp>
 #include <gromox/zcore_rpc.hpp>
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
@@ -41,7 +42,6 @@
 #include "ics_state.h"
 #include "object_tree.h"
 #include "store_object.h"
-#include <gromox/idset.hpp>
 #include <sys/socket.h>
 #include <cstdio>
 #include <poll.h>

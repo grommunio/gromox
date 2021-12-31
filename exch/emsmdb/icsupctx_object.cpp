@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <memory>
+#include <gromox/mapi_types.hpp>
 #include "icsupctx_object.h"
 #include "ics_state.h"
 #include "common_util.h"
-#include <gromox/idset.hpp>
 #include <cstdlib>
 
 std::unique_ptr<icsupctx_object> icsupctx_object::create(logon_object *plogon,
@@ -81,7 +81,6 @@ BOOL icsupctx_object::continue_state_stream(const BINARY *pstream_data)
 BOOL icsupctx_object::end_state_stream()
 {
 	auto pctx = this;
-	IDSET *pset;
 	BINARY tmp_bin;
 	
 	if (TRUE == pctx->b_started) {
@@ -96,14 +95,13 @@ BOOL icsupctx_object::end_state_stream()
 		mem_file_free(&pctx->f_state_stream);
 		return TRUE;
 	}
-	pset = idset_init(FALSE, REPL_TYPE_GUID);
+	auto pset = idset::create(false, REPL_TYPE_GUID);
 	if (NULL == pset) {
 		return FALSE;
 	}
 	tmp_bin.cb = pctx->f_state_stream.get_total_length();
 	tmp_bin.pv = common_util_alloc(tmp_bin.cb);
 	if (tmp_bin.pv == nullptr) {
-		idset_free(pset);
 		return FALSE;
 	}
 	pctx->f_state_stream.read(tmp_bin.pv, tmp_bin.cb);
@@ -111,23 +109,18 @@ BOOL icsupctx_object::end_state_stream()
 	auto saved_state_prop = pctx->state_property;
 	pctx->state_property = 0;
 	if (!pset->deserialize(&tmp_bin)) {
-		idset_free(pset);
 		return FALSE;
 	}
 	tmp_bin.cb = sizeof(void*);
 	tmp_bin.pv = &pctx->plogon;
 	if (!pset->register_mapping(&tmp_bin, common_util_mapping_replica)) {
-		idset_free(pset);
 		return FALSE;
 	}
 	if (!pset->convert()) {
-		idset_free(pset);
 		return FALSE;
 	}
-	if (!pctx->pstate->append_idset(saved_state_prop, pset)) {
-		idset_free(pset);
+	if (!pctx->pstate->append_idset(saved_state_prop, std::move(pset)))
 		return FALSE;
-	}
 	return TRUE;
 }
 

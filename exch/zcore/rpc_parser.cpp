@@ -6,7 +6,6 @@
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/zcore_rpc.hpp>
-#include <gromox/idset.hpp>
 #include "rpc_ext.h"
 #include "rpc_parser.h"
 #include "common_util.h"

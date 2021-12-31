@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <gromox/endian.hpp>
+#include <gromox/mapi_types.hpp>
 #include <gromox/util.hpp>
-#include <gromox/idset.hpp>
 #include <gromox/rop_util.hpp>
 #include <cstdlib>
 #include <cstring>
@@ -33,18 +33,17 @@ struct STACK_NODE {
 };
 }
 
-IDSET* idset_init(BOOL b_serialize, uint8_t repl_type)
+IDSET::IDSET(bool ser, uint8_t type) :
+	b_serialize(ser), repl_type(type)
 {
-	auto pset = static_cast<IDSET *>(malloc(sizeof(IDSET)));
-	if (NULL == pset) {
-		return NULL;
-	}
-	pset->pparam = NULL;
-	pset->mapping = NULL;
-	pset->b_serialize = b_serialize;
-	pset->repl_type = repl_type;
-	double_list_init(&pset->repl_list);
-	return pset;
+	double_list_init(&repl_list);
+}
+
+std::unique_ptr<idset> IDSET::create(bool ser, uint8_t type) try
+{
+	return std::make_unique<idset>(ser, type);
+} catch (const std::bad_alloc &) {
+	return nullptr;
 }
 
 BOOL IDSET::register_mapping(BINARY *pparam, REPLICA_MAPPING mapping)
@@ -79,12 +78,9 @@ void IDSET::clear()
 	DOUBLE_LIST_NODE *pnode1;
 	
 	while ((pnode = double_list_pop_front(&pset->repl_list)) != nullptr) {
-		if (FALSE == pset->b_serialize &&
-			REPL_TYPE_GUID == pset->repl_type) {
-			plist = &((REPLGUID_NODE*)pnode->pdata)->range_list;
-		} else {
-			plist = &((REPLID_NODE*)pnode->pdata)->range_list;
-		}
+		plist = !pset->b_serialize && pset->repl_type == REPL_TYPE_GUID ?
+		        &static_cast<REPLGUID_NODE *>(pnode->pdata)->range_list :
+		        &static_cast<REPLID_NODE *>(pnode->pdata)->range_list;
 		while ((pnode1 = double_list_pop_front(plist)) != nullptr)
 			free(pnode1->pdata);
 		double_list_free(plist);
@@ -92,14 +88,14 @@ void IDSET::clear()
 	}
 }
 
-void idset_free(IDSET *pset)
+IDSET::~IDSET()
 {
+	auto pset = this;
 	pset->clear();
 	double_list_free(&pset->repl_list);
 	if (NULL != pset->pparam) {
 		free(pset->pparam);
 	}
-	free(pset);
 }
 
 BOOL IDSET::check_empty() const
@@ -119,9 +115,8 @@ static BOOL idset_append_internal(IDSET *pset,
 	RANGE_NODE *prange_node;
 	RANGE_NODE *prange_node1;
 	
-	if (FALSE == pset->b_serialize) {
+	if (!pset->b_serialize)
 		return FALSE;
-	}
 	for (pnode=double_list_get_head(&pset->repl_list); NULL!=pnode;
 		pnode=double_list_get_after(&pset->repl_list, pnode)) {
 		prepl_node = (REPLID_NODE*)pnode->pdata;
@@ -210,9 +205,8 @@ BOOL IDSET::append_range(uint16_t replid, uint64_t low_value, uint64_t high_valu
 	DOUBLE_LIST_NODE *pnode1;
 	RANGE_NODE *prange_node1;
 	
-	if (FALSE == pset->b_serialize) {
+	if (!pset->b_serialize)
 		return FALSE;
-	}
 	if (low_value > high_value) {
 		return FALSE;
 	}
@@ -296,9 +290,8 @@ void IDSET::remove(uint64_t eid)
 	RANGE_NODE *prange_node;
 	RANGE_NODE *prange_node1;
 	
-	if (FALSE == pset->b_serialize) {
+	if (!pset->b_serialize)
 		return;
-	}
 	replid = rop_util_get_replid(eid);
 	value = rop_util_get_gc_value(eid);
 	for (pnode=double_list_get_head(&pset->repl_list); NULL!=pnode;
@@ -351,10 +344,8 @@ BOOL IDSET::concatenate(const IDSET *pset_src)
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
 	
-	if (FALSE == pset_dst->b_serialize ||
-		FALSE == pset_src->b_serialize) {
+	if (!pset_dst->b_serialize || !pset_src->b_serialize)
 		return FALSE;
-	}
 	prepl_list = (DOUBLE_LIST*)&pset_src->repl_list;
 	for (pnode=double_list_get_head(prepl_list); NULL!=pnode;
 		pnode=double_list_get_after(prepl_list, pnode)) {
@@ -386,10 +377,8 @@ BOOL IDSET::hint(uint64_t eid)
 	REPLID_NODE *prepl_node;
 	DOUBLE_LIST_NODE *pnode;
 	
-	if (FALSE == pset->b_serialize &&
-		REPL_TYPE_GUID == pset->repl_type) {
+	if (!pset->b_serialize && pset->repl_type == REPL_TYPE_GUID)
 		return FALSE;	
-	}
 	replid = rop_util_get_replid(eid);
 	value = rop_util_get_gc_value(eid);
 	for (pnode=double_list_get_head(&pset->repl_list); NULL!=pnode;
@@ -655,9 +644,8 @@ BINARY *IDSET::serialize_replid() const
 	auto pset = this;
 	BINARY *pbin;
 	
-	if (FALSE == pset->b_serialize) {
+	if (!pset->b_serialize)
 		return NULL;
-	}
 	pbin = idset_init_binary();
 	if (NULL == pbin) {
 		return NULL;
@@ -686,9 +674,8 @@ BINARY *IDSET::serialize_replguid() const
 	BINARY *pbin;
 	GUID tmp_guid;
 	
-	if (FALSE == pset->b_serialize) {
+	if (!pset->b_serialize)
 		return NULL;
-	}
 	if (NULL == pset->mapping) {
 		return NULL;
 	}
@@ -888,9 +875,8 @@ BOOL IDSET::deserialize(const BINARY *pbin)
 	REPLID_NODE *preplid_node;
 	REPLGUID_NODE *preplguid_node;
 	
-	if (TRUE == pset->b_serialize) {
+	if (pset->b_serialize)
 		return FALSE;
-	}
 	offset = 0;
 	while (offset < pbin->cb) {
 		if (REPL_TYPE_ID == pset->repl_type) {
@@ -940,9 +926,8 @@ BOOL IDSET::convert()
 	REPLID_NODE *prepl_node;
 	REPLGUID_NODE *preplguid_node;
 	
-	if (TRUE == pset->b_serialize) {
+	if (pset->b_serialize)
 		return FALSE;
-	}
 	if (REPL_TYPE_GUID == pset->repl_type) {
 		if (NULL == pset->mapping) {
 			return FALSE;
@@ -969,7 +954,7 @@ BOOL IDSET::convert()
 		double_list_free(&pset->repl_list);
 		pset->repl_list = temp_list;
 	}
-	pset->b_serialize = TRUE;
+	pset->b_serialize = true;
 	return TRUE;
 	
  CLEAN_TEMP_LIST:
@@ -989,8 +974,7 @@ BOOL IDSET::get_repl_first_max(uint16_t replid, uint64_t *peid)
 	REPLGUID_NODE *preplguid_node;
 	
 	prange_list = NULL;
-	if (FALSE == pset->b_serialize &&
-		REPL_TYPE_GUID == pset->repl_type) {
+	if (!pset->b_serialize && pset->repl_type == REPL_TYPE_GUID) {
 		if (NULL == pset->mapping) {
 			return FALSE;
 		}
@@ -1038,8 +1022,7 @@ BOOL IDSET::enum_replist(void *pparam, REPLIST_ENUM replist_enum)
 	REPLID_NODE *prepl_node;
 	REPLGUID_NODE *preplguid_node;
 	
-	if (FALSE == pset->b_serialize &&
-		REPL_TYPE_GUID == pset->repl_type) {
+	if (!pset->b_serialize && pset->repl_type == REPL_TYPE_GUID) {
 		if (NULL == pset->mapping) {
 			return FALSE;
 		}
@@ -1075,8 +1058,7 @@ BOOL IDSET::enum_repl(uint16_t replid, void *pparam, REPLICA_ENUM repl_enum)
 	REPLGUID_NODE *preplguid_node;
 	
 	prange_list = NULL;
-	if (FALSE == pset->b_serialize &&
-		REPL_TYPE_GUID == pset->repl_type) {
+	if (!pset->b_serialize && pset->repl_type == REPL_TYPE_GUID) {
 		if (NULL == pset->mapping) {
 			return FALSE;
 		}

@@ -7,6 +7,7 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
+#include <gromox/mapi_types.hpp>
 #include "attachment_object.h"
 #include "system_services.h"
 #include "message_object.h"
@@ -18,7 +19,6 @@
 #include "ics_state.h"
 #include <gromox/ext_buffer.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/idset.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/util.hpp>
 #include <gromox/pcl.hpp>

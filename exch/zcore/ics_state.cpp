@@ -3,48 +3,36 @@
 #include <memory>
 #include "common_util.h"
 #include <gromox/ext_buffer.hpp>
+#include <gromox/mapi_types.hpp>
 #include "ics_state.h"
 #include <gromox/rop_util.hpp>
-#include <gromox/idset.hpp>
 #include <cstdlib>
 #include <cstring>
 
 static void ics_state_clear(ICS_STATE *pstate)
 {
-	if (NULL != pstate->pgiven) {
-		idset_free(pstate->pgiven);
-		pstate->pgiven = NULL;
-	}
-	if (NULL != pstate->pseen) {
-		idset_free(pstate->pseen);
-		pstate->pseen = NULL;
-	}
-	if (NULL != pstate->pseen_fai) {
-		idset_free(pstate->pseen_fai);
-		pstate->pseen_fai = NULL;
-	}
-	if (NULL != pstate->pread) {
-		idset_free(pstate->pread);
-		pstate->pread = NULL;
-	}
+	pstate->pgiven.reset();
+	pstate->pseen.reset();
+	pstate->pseen_fai.reset();
+	pstate->pread.reset();
 }
 
 static BOOL ics_state_init(ICS_STATE *pstate)
 {
-	pstate->pgiven = idset_init(TRUE, REPL_TYPE_ID);
+	pstate->pgiven = idset::create(true, REPL_TYPE_ID);
 	if (NULL == pstate->pgiven) {
 		return FALSE;
 	}
-	pstate->pseen = idset_init(TRUE, REPL_TYPE_ID);
+	pstate->pseen = idset::create(true, REPL_TYPE_ID);
 	if (NULL == pstate->pseen) {
 		return FALSE;
 	}
 	if (ICS_TYPE_CONTENTS == pstate->type) {
-		pstate->pseen_fai = idset_init(TRUE, REPL_TYPE_ID);
+		pstate->pseen_fai = idset::create(true, REPL_TYPE_ID);
 		if (NULL == pstate->pseen_fai) {
 			return FALSE;
 		}
-		pstate->pread = idset_init(TRUE, REPL_TYPE_ID);
+		pstate->pread = idset::create(true, REPL_TYPE_ID);
 		if (NULL == pstate->pread) {
 			return FALSE;
 		}
@@ -70,11 +58,6 @@ std::shared_ptr<ics_state> ics_state::create_shared(uint8_t type) try
 	return pstate;
 } catch (const std::bad_alloc &) {
 	return nullptr;
-}
-
-ics_state::~ics_state()
-{
-	ics_state_clear(this);
 }
 
 BINARY *ics_state::serialize()
@@ -141,7 +124,6 @@ BOOL ics_state::deserialize(const BINARY *pbin)
 {
 	auto pstate = this;
 	int i;
-	IDSET *pset;
 	EXT_PULL ext_pull;
 	TPROPVAL_ARRAY propvals;
 	
@@ -155,60 +137,54 @@ BOOL ics_state::deserialize(const BINARY *pbin)
 		return FALSE;	
 	for (i=0; i<propvals.count; i++) {
 		switch (propvals.ppropval[i].proptag) {
-		case MetaTagIdsetGiven1:
-			pset = idset_init(FALSE, REPL_TYPE_ID);
+		case MetaTagIdsetGiven1: {
+			auto pset = idset::create(false, REPL_TYPE_ID);
 			if (NULL == pset) {
 				return FALSE;
 			}
 			if (!pset->deserialize(static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
 			    !pset->convert()) {
-				idset_free(pset);
 				return FALSE;
 			}
-			idset_free(pstate->pgiven);
-			pstate->pgiven = pset;
+			pstate->pgiven = std::move(pset);
 			break;
-		case MetaTagCnsetSeen:
-			pset = idset_init(FALSE, REPL_TYPE_ID);
+		}
+		case MetaTagCnsetSeen: {
+			auto pset = idset::create(false, REPL_TYPE_ID);
 			if (NULL == pset) {
 				return FALSE;
 			}
 			if (!pset->deserialize(static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
 			    !pset->convert()) {
-				idset_free(pset);
 				return FALSE;
 			}
-			idset_free(pstate->pseen);
-			pstate->pseen = pset;
+			pstate->pseen = std::move(pset);
 			break;
+		}
 		case MetaTagCnsetSeenFAI:
 			if (ICS_TYPE_CONTENTS == pstate->type) {
-				pset = idset_init(FALSE, REPL_TYPE_ID);
+				auto pset = idset::create(false, REPL_TYPE_ID);
 				if (NULL == pset) {
 					return FALSE;
 				}
 				if (!pset->deserialize(static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
 				    !pset->convert()) {
-					idset_free(pset);
 					return FALSE;
 				}
-				idset_free(pstate->pseen_fai);
-				pstate->pseen_fai = pset;
+				pstate->pseen_fai = std::move(pset);
 			}
 			break;
 		case MetaTagCnsetRead:
 			if (ICS_TYPE_CONTENTS == pstate->type) {
-				pset = idset_init(FALSE, REPL_TYPE_ID);
+				auto pset = idset::create(false, REPL_TYPE_ID);
 				if (NULL == pset) {
 					return FALSE;
 				}
 				if (!pset->deserialize(static_cast<BINARY *>(propvals.ppropval[i].pvalue)) ||
 				    !pset->convert()) {
-					idset_free(pset);
 					return FALSE;
 				}
-				idset_free(pstate->pread);
-				pstate->pread = pset;
+				pstate->pread = std::move(pset);
 			}
 			break;
 		}

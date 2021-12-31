@@ -7,8 +7,8 @@
 #include "common_util.h"
 #include "db_engine.h"
 #include <gromox/eid_array.hpp>
+#include <gromox/mapi_types.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/idset.hpp>
 #include <gromox/scope.hpp>
 #include <cstdio>
 #define IDSET_CACHE_MIN_RANGE				10

@@ -6,6 +6,7 @@
 #include <memory>
 #include "icsdownctx_object.h"
 #include "emsmdb_interface.h"
+#include <gromox/mapi_types.hpp>
 #include <gromox/proptag_array.hpp>
 #include "exmdb_client.h"
 #include "folder_object.h"
@@ -19,7 +20,6 @@
 #include <gromox/eid_array.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
-#include <gromox/idset.hpp>
 #include <cstdlib>
 #include <cstring>
 
@@ -114,9 +114,9 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 			return FALSE;
 		}
 	}
-	auto pread     = (pctx->sync_flags & SYNC_FLAG_READSTATE) ? pctx->pstate->pread : nullptr;
-	auto pseen_fai = (pctx->sync_flags & SYNC_FLAG_FAI) ? pctx->pstate->pseen_fai : nullptr;
-	auto pseen     = (pctx->sync_flags & SYNC_FLAG_NORMAL) ? pctx->pstate->pseen : nullptr;
+	auto pread     = (pctx->sync_flags & SYNC_FLAG_READSTATE) ? pctx->pstate->pread.get() : nullptr;
+	auto pseen_fai = (pctx->sync_flags & SYNC_FLAG_FAI) ? pctx->pstate->pseen_fai.get() : nullptr;
+	auto pseen     = (pctx->sync_flags & SYNC_FLAG_NORMAL) ? pctx->pstate->pseen.get() : nullptr;
 	BOOL b_ordered = (pctx->extra_flags & SYNC_EXTRA_FLAG_ORDERBYDELIVERYTIME) ? TRUE : false;
 	if (!pctx->pstream->plogon->check_private()) {
 		rpc_info = get_rpc_info();
@@ -127,7 +127,7 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client_get_content_sync(pctx->pstream->plogon->get_dir(),
 	    pctx->pfolder->folder_id, username,
-	    pctx->pstate->pgiven, pseen, pseen_fai, pread,
+	    pctx->pstate->pgiven.get(), pseen, pseen_fai, pread,
 	    pinfo->cpid, pctx->prestriction, b_ordered,
 	    &count_fai, &total_fai, &count_normal, &total_normal,
 	    &updated_messages, &chg_messages, &pctx->last_changenum,
@@ -260,7 +260,6 @@ static void icsdownctx_object_adjust_fldchgs(FOLDER_CHANGES *pfldchgs,
 static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 {
 	BINARY *pbin = nullptr;
-	IDSET *pidset;
 	BINARY tmp_bin;
 	EXT_PUSH ext_push;
 	uint64_t folder_id;
@@ -290,8 +289,8 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		username = rpc_info.username;
 	}
 	if (!exmdb_client_get_hierarchy_sync(pctx->pstream->plogon->get_dir(),
-	    pctx->pfolder->folder_id, username, pctx->pstate->pgiven,
-	    pctx->pstate->pseen, &fldchgs, &last_changenum, &given_folders,
+	    pctx->pfolder->folder_id, username, pctx->pstate->pgiven.get(),
+	    pctx->pstate->pseen.get(), &fldchgs, &last_changenum, &given_folders,
 	    &deleted_folders))
 		return FALSE;
 	pctx->pstate->pgiven->clear();
@@ -582,18 +581,12 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 	if ((pctx->sync_flags & SYNC_FLAG_NODELETIONS) || deleted_folders.count == 0) {
 		pproplist_deletions = NULL;
 	} else {
-		pidset = idset_init(TRUE, REPL_TYPE_ID);
-		if (NULL == pidset) {
-			return FALSE;
-		}
+		idset xset(true, REPL_TYPE_ID);
 		for (size_t i = 0; i < deleted_folders.count; ++i) {
-			if (!pidset->append(deleted_folders.pids[i])) {
-				idset_free(pidset);
+			if (!xset.append(deleted_folders.pids[i]))
 				return FALSE;
-			}
 		}
-		pbin = pidset->serialize();
-		idset_free(pidset);
+		pbin = xset.serialize();
 		if (pbin == nullptr)
 			return false;
 		pproplist_deletions = &tmp_proplist;
@@ -1127,7 +1120,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			 *ppartial_count > MAX_PARTIAL_ON_ROP) {
 			b_full = TRUE;
 		} else {
-			auto ps = progmsg.b_fai ? pctx->pstate->pseen_fai : pctx->pstate->pseen;
+			auto &ps = progmsg.b_fai ? pctx->pstate->pseen_fai : pctx->pstate->pseen;
 			if (!ps->get_repl_first_max(1, &last_cn))
 				return false;
 			if (!exmdb_client_get_change_indices(pctx->pstream->plogon->get_dir(),
@@ -1174,7 +1167,6 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 {
 	BINARY *pbin1;
 	BINARY *pbin2;
-	IDSET *pidset;
 	TPROPVAL_ARRAY proplist;
 	TAGGED_PROPVAL tmp_propvals[2];
 	
@@ -1183,18 +1175,12 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 	pbin1 = NULL;
 	pbin2 = NULL;
 	if (pctx->pdeleted_messages->count > 0) {
-		pidset = idset_init(TRUE, REPL_TYPE_ID);
-		if (NULL == pidset) {
-			return FALSE;
-		}
+		idset xset(true, REPL_TYPE_ID);
 		for (size_t i = 0; i < pctx->pdeleted_messages->count; ++i) {
-			if (!pidset->append(pctx->pdeleted_messages->pids[i])) {
-				idset_free(pidset);
+			if (!xset.append(pctx->pdeleted_messages->pids[i]))
 				return FALSE;
-			}
 		}
-		pbin1 = pidset->serialize();
-		idset_free(pidset);
+		pbin1 = xset.serialize();
 		if (NULL == pbin1) {
 			return FALSE;
 		}
@@ -1203,24 +1189,16 @@ static BOOL icsdownctx_object_write_deletions(icsdownctx_object *pctx)
 	}
 	if (0 == (SYNC_FLAG_IGNORENOLONGERINSCOPE & pctx->sync_flags)
 		&& pctx->pnolonger_messages->count > 0) {
-		pidset = idset_init(TRUE, REPL_TYPE_ID);
-		if (NULL == pidset) {
-			if (NULL != pbin1) {
-				rop_util_free_binary(pbin1);
-			}
-			return FALSE;
-		}
+		idset xset(true, REPL_TYPE_ID);
 		for (size_t i = 0; i < pctx->pnolonger_messages->count; ++i) {
-			if (!pidset->append(pctx->pnolonger_messages->pids[i])) {
-				idset_free(pidset);
+			if (!xset.append(pctx->pnolonger_messages->pids[i])) {
 				if (NULL != pbin1) {
 					rop_util_free_binary(pbin1);
 				}
 				return FALSE;
 			}
 		}
-		pbin2 = pidset->serialize();
-		idset_free(pidset);
+		pbin2 = xset.serialize();
 		if (NULL == pbin2) {
 			if (NULL != pbin1) {
 				rop_util_free_binary(pbin1);
@@ -1261,25 +1239,18 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 		if (pbin2 != nullptr)
 			rop_util_free_binary(pbin2);
 	});
-	IDSET *pidset;
 	TPROPVAL_ARRAY proplist;
 	TAGGED_PROPVAL tmp_propvals[2];
 	
 	proplist.count = 0;
 	proplist.ppropval = tmp_propvals;
 	if (pctx->pread_messags->count > 0) {
-		pidset = idset_init(TRUE, REPL_TYPE_ID);
-		if (NULL == pidset) {
-			return FALSE;
-		}
+		idset xset(true, REPL_TYPE_ID);
 		for (size_t i = 0; i < pctx->pread_messags->count; ++i) {
-			if (!pidset->append(pctx->pread_messags->pids[i])) {
-				idset_free(pidset);
+			if (!xset.append(pctx->pread_messags->pids[i]))
 				return FALSE;
-			}
 		}
-		pbin1 = pidset->serialize();
-		idset_free(pidset);
+		pbin1 = xset.serialize();
 		if (NULL == pbin1) {
 			return FALSE;
 		}
@@ -1287,18 +1258,12 @@ static BOOL icsdownctx_object_write_readstate_changes(icsdownctx_object *pctx)
 		proplist.ppropval[proplist.count++].pvalue = pbin1;
 	}
 	if (pctx->punread_messags->count > 0) {
-		pidset = idset_init(TRUE, REPL_TYPE_ID);
-		if (NULL == pidset) {
-			return FALSE;
-		}
+		idset xset(true, REPL_TYPE_ID);
 		for (size_t i = 0; i < pctx->punread_messags->count; ++i) {
-			if (!pidset->append(pctx->punread_messags->pids[i])) {
-				idset_free(pidset);
+			if (!xset.append(pctx->punread_messags->pids[i]))
 				return FALSE;
-			}
 		}
-		pbin2 = pidset->serialize();
-		idset_free(pidset);
+		pbin2 = xset.serialize();
 		if (NULL == pbin2) {
 			return FALSE;
 		}
@@ -1531,7 +1496,6 @@ BOOL icsdownctx_object::continue_state_stream(const BINARY *pstream_data)
 BOOL icsdownctx_object::end_state_stream()
 {
 	auto pctx = this;
-	IDSET *pset;
 	BINARY tmp_bin;
 	
 	if (TRUE == pctx->b_started) {
@@ -1540,37 +1504,27 @@ BOOL icsdownctx_object::end_state_stream()
 	if (0 == pctx->state_property) {
 		return FALSE;
 	}
-	pset = idset_init(FALSE, REPL_TYPE_GUID);
-	if (NULL == pset) {
+	auto pset = idset::create(false, REPL_TYPE_GUID);
+	if (pset == nullptr)
 		return FALSE;
-	}
 	tmp_bin.cb = pctx->f_state_stream.get_total_length();
 	tmp_bin.pv = common_util_alloc(tmp_bin.cb);
 	if (tmp_bin.pv == nullptr) {
-		idset_free(pset);
 		return FALSE;
 	}
 	pctx->f_state_stream.read(tmp_bin.pv, tmp_bin.cb);
 	mem_file_free(&pctx->f_state_stream);
 	auto saved_state_property = pctx->state_property;
 	pctx->state_property = 0;
-	if (!pset->deserialize(&tmp_bin)) {
-		idset_free(pset);
+	if (!pset->deserialize(&tmp_bin))
 		return FALSE;
-	}
 	tmp_bin.cb = sizeof(void*);
 	tmp_bin.pv = &pctx->pstream->plogon;
-	if (!pset->register_mapping(&tmp_bin, common_util_mapping_replica)) {
-		idset_free(pset);
+	if (!pset->register_mapping(&tmp_bin, common_util_mapping_replica))
 		return FALSE;
-	}
-	if (!pset->convert()) {
-		idset_free(pset);
+	if (!pset->convert())
 		return FALSE;
-	}
-	if (!pctx->pstate->append_idset(saved_state_property, pset)) {
-		idset_free(pset);
+	if (!pctx->pstate->append_idset(saved_state_property, std::move(pset)))
 		return FALSE;
-	}
 	return TRUE;
 }

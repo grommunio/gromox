@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <new>
 #include <poll.h>
 #include <type_traits>
 #include <unistd.h>
@@ -10,9 +11,9 @@
 #include <gromox/endian.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/mapi_types.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/idset.hpp>
 #define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
 
 using namespace gromox;
@@ -2089,13 +2090,10 @@ static int exmdb_ext_push_read_message_request(
 
 static int gcsr_failure(int status, EXMDB_REQUEST_PAYLOAD *p)
 {
-	idset_free(p->get_content_sync.pgiven);
-	if (p->get_content_sync.pseen != nullptr)
-		idset_free(p->get_content_sync.pseen);
-	if (p->get_content_sync.pseen_fai != nullptr)
-		idset_free(p->get_content_sync.pseen_fai);
-	if (p->get_content_sync.pread != nullptr)
-		idset_free(p->get_content_sync.pread);
+	delete p->get_content_sync.pgiven;
+	delete p->get_content_sync.pseen;
+	delete p->get_content_sync.pseen_fai;
+	delete p->get_content_sync.pread;
 	return status;
 }
 
@@ -2112,12 +2110,11 @@ static int exmdb_ext_pull_get_content_sync_request(
 	if (tmp_byte != 0)
 		TRY(pext->g_str(&ppayload->get_content_sync.username));
 	TRY(pext->g_exbin(&tmp_bin));
-	ppayload->get_content_sync.pgiven =
-		idset_init(FALSE, REPL_TYPE_ID);
+	ppayload->get_content_sync.pgiven = new(std::nothrow) idset(false, REPL_TYPE_ID);
 	if (ppayload->get_content_sync.pgiven == nullptr)
 		return EXT_ERR_ALLOC;
 	if (!ppayload->get_content_sync.pgiven->deserialize(&tmp_bin)) {
-		idset_free(ppayload->get_content_sync.pgiven);
+		delete ppayload->get_content_sync.pgiven;
 		return EXT_ERR_FORMAT;
 	}
 	status = pext->g_uint8(&tmp_byte);
@@ -2127,8 +2124,7 @@ static int exmdb_ext_pull_get_content_sync_request(
 		status = pext->g_exbin(&tmp_bin);
 		if (status != EXT_ERR_SUCCESS)
 			return gcsr_failure(status, ppayload);
-		ppayload->get_content_sync.pseen =
-			idset_init(FALSE, REPL_TYPE_ID);
+		ppayload->get_content_sync.pseen = new(std::nothrow) idset(false, REPL_TYPE_ID);
 		if (ppayload->get_content_sync.pseen == nullptr)
 			return gcsr_failure(EXT_ERR_ALLOC, ppayload);
 		if (!ppayload->get_content_sync.pseen->deserialize(&tmp_bin))
@@ -2141,8 +2137,7 @@ static int exmdb_ext_pull_get_content_sync_request(
 		status = pext->g_exbin(&tmp_bin);
 		if (status != EXT_ERR_SUCCESS)
 			return gcsr_failure(status, ppayload);
-		ppayload->get_content_sync.pseen_fai =
-			idset_init(FALSE, REPL_TYPE_ID);
+		ppayload->get_content_sync.pseen_fai = new(std::nothrow) idset(false, REPL_TYPE_ID);
 		if (ppayload->get_content_sync.pseen_fai == nullptr)
 			return gcsr_failure(EXT_ERR_ALLOC, ppayload);
 		if (!ppayload->get_content_sync.pseen_fai->deserialize(&tmp_bin))
@@ -2155,8 +2150,7 @@ static int exmdb_ext_pull_get_content_sync_request(
 		status = pext->g_exbin(&tmp_bin);
 		if (status != EXT_ERR_SUCCESS)
 			return gcsr_failure(status, ppayload);
-		ppayload->get_content_sync.pread =
-			idset_init(FALSE, REPL_TYPE_ID);
+		ppayload->get_content_sync.pread = new(std::nothrow) idset(false, REPL_TYPE_ID);
 		if (ppayload->get_content_sync.pread == nullptr)
 			return gcsr_failure(EXT_ERR_ALLOC, ppayload);
 		if (!ppayload->get_content_sync.pread->deserialize(&tmp_bin))
@@ -2268,34 +2262,32 @@ static int exmdb_ext_pull_get_hierarchy_sync_request(
 	if (tmp_byte != 0)
 		TRY(pext->g_str(&ppayload->get_hierarchy_sync.username));
 	TRY(pext->g_exbin(&tmp_bin));
-	ppayload->get_hierarchy_sync.pgiven =
-		idset_init(FALSE, REPL_TYPE_ID);
+	ppayload->get_hierarchy_sync.pgiven = new(std::nothrow) idset(false, REPL_TYPE_ID);
 	if (ppayload->get_hierarchy_sync.pgiven == nullptr)
 		return EXT_ERR_ALLOC;
 	if (!ppayload->get_hierarchy_sync.pgiven->deserialize(&tmp_bin)) {
-		idset_free(ppayload->get_hierarchy_sync.pgiven);
+		delete ppayload->get_hierarchy_sync.pgiven;
 		return EXT_ERR_FORMAT;
 	}
 	status = pext->g_uint8(&tmp_byte);
 	if (EXT_ERR_SUCCESS != status) {
-		idset_free(ppayload->get_hierarchy_sync.pgiven);
+		delete ppayload->get_hierarchy_sync.pgiven;
 		return status;
 	}
 	if (0 != tmp_byte) {
 		status = pext->g_exbin(&tmp_bin);
 		if (EXT_ERR_SUCCESS != status) {
-			idset_free(ppayload->get_hierarchy_sync.pgiven);
+			delete ppayload->get_hierarchy_sync.pgiven;
 			return status;
 		}
-		ppayload->get_hierarchy_sync.pseen =
-			idset_init(FALSE, REPL_TYPE_ID);
+		ppayload->get_hierarchy_sync.pseen = new(std::nothrow) idset(false, REPL_TYPE_ID);
 		if (NULL == ppayload->get_hierarchy_sync.pseen) {
-			idset_free(ppayload->get_hierarchy_sync.pgiven);
+			delete ppayload->get_hierarchy_sync.pgiven;
 			return EXT_ERR_ALLOC;
 		}
 		if (!ppayload->get_hierarchy_sync.pseen->deserialize(&tmp_bin)) {
-			idset_free(ppayload->get_hierarchy_sync.pseen);
-			idset_free(ppayload->get_hierarchy_sync.pgiven);
+			delete ppayload->get_hierarchy_sync.pseen;
+			delete ppayload->get_hierarchy_sync.pgiven;
 			return EXT_ERR_FORMAT;
 		}
 	}
