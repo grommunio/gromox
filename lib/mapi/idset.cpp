@@ -33,20 +33,20 @@ struct STACK_NODE {
 };
 }
 
-IDSET::IDSET(bool ser, uint8_t type) :
+idset::idset(bool ser, uint8_t type) :
 	b_serialize(ser), repl_type(type)
 {
 	double_list_init(&repl_list);
 }
 
-std::unique_ptr<idset> IDSET::create(bool ser, uint8_t type) try
+std::unique_ptr<idset> idset::create(bool ser, uint8_t type) try
 {
 	return std::make_unique<idset>(ser, type);
 } catch (const std::bad_alloc &) {
 	return nullptr;
 }
 
-BOOL IDSET::register_mapping(BINARY *pparam, REPLICA_MAPPING mapping)
+BOOL idset::register_mapping(BINARY *pparam, REPLICA_MAPPING mapping)
 {
 	auto pset = this;
 	if (NULL != pset->pparam ||
@@ -70,7 +70,7 @@ BOOL IDSET::register_mapping(BINARY *pparam, REPLICA_MAPPING mapping)
 	return TRUE;
 }
 
-void IDSET::clear()
+void idset::clear()
 {
 	auto pset = this;
 	DOUBLE_LIST *plist;
@@ -88,7 +88,7 @@ void IDSET::clear()
 	}
 }
 
-IDSET::~IDSET()
+idset::~idset()
 {
 	auto pset = this;
 	pset->clear();
@@ -98,7 +98,7 @@ IDSET::~IDSET()
 	}
 }
 
-BOOL IDSET::check_empty() const
+BOOL idset::check_empty() const
 {
 	auto pset = this;
 	if (0 == double_list_get_nodes_num(&pset->repl_list)) {
@@ -185,7 +185,7 @@ static BOOL idset_append_internal(IDSET *pset,
 	return TRUE;
 }
 
-BOOL IDSET::append(uint64_t eid)
+BOOL idset::append(uint64_t eid)
 {
 	auto pset = this;
 	uint64_t value;
@@ -196,7 +196,7 @@ BOOL IDSET::append(uint64_t eid)
 	return idset_append_internal(pset, replid, value);
 }
 
-BOOL IDSET::append_range(uint16_t replid, uint64_t low_value, uint64_t high_value)
+BOOL idset::append_range(uint16_t replid, uint64_t low_value, uint64_t high_value)
 {
 	auto pset = this;
 	REPLID_NODE *prepl_node;
@@ -280,7 +280,7 @@ BOOL IDSET::append_range(uint16_t replid, uint64_t low_value, uint64_t high_valu
 	return TRUE;
 }
 
-void IDSET::remove(uint64_t eid)
+void idset::remove(uint64_t eid)
 {
 	auto pset = this;
 	uint64_t value;
@@ -335,7 +335,7 @@ void IDSET::remove(uint64_t eid)
 	}
 }
 
-BOOL IDSET::concatenate(const IDSET *pset_src)
+BOOL idset::concatenate(const IDSET *pset_src)
 {
 	auto pset_dst = this;
 	DOUBLE_LIST *prepl_list;
@@ -368,7 +368,7 @@ BOOL IDSET::concatenate(const IDSET *pset_src)
 	return TRUE;
 }
 
-BOOL IDSET::hint(uint64_t eid)
+BOOL idset::hint(uint64_t eid)
 {
 	auto pset = this;
 	uint64_t value;
@@ -639,7 +639,7 @@ static BOOL idset_write_guid(BINARY *pbin, const GUID *pguid)
 	return TRUE;
 }
 
-BINARY *IDSET::serialize_replid() const
+BINARY *idset::serialize_replid() const
 {
 	auto pset = this;
 	BINARY *pbin;
@@ -668,7 +668,7 @@ BINARY *IDSET::serialize_replid() const
 	return pbin;
 }
 
-BINARY *IDSET::serialize_replguid() const
+BINARY *idset::serialize_replguid() const
 {
 	auto pset = this;
 	BINARY *pbin;
@@ -706,7 +706,7 @@ BINARY *IDSET::serialize_replguid() const
 	return pbin;
 }
 
-BINARY *IDSET::serialize() const
+BINARY *idset::serialize() const
 {
 	return repl_type == REPL_TYPE_ID ? serialize_replid() : serialize_replguid();
 }
@@ -864,7 +864,7 @@ static void idset_read_guid(const void *pv, uint32_t offset, GUID *pguid)
 	memcpy(pguid->node, pb + offset, 6);
 }
 
-BOOL IDSET::deserialize(const BINARY *pbin)
+BOOL idset::deserialize(const BINARY *pbin)
 {
 	auto pset = this;
 	BINARY bin1;
@@ -917,7 +917,7 @@ BOOL IDSET::deserialize(const BINARY *pbin)
 	return TRUE;
 }
 
-BOOL IDSET::convert()
+BOOL idset::convert()
 {
 	auto pset = this;
 	uint16_t replid;
@@ -964,7 +964,7 @@ BOOL IDSET::convert()
 	return FALSE;
 }
 
-BOOL IDSET::get_repl_first_max(uint16_t replid, uint64_t *peid)
+BOOL idset::get_repl_first_max(uint16_t replid, uint64_t *peid)
 {
 	auto pset = this;
 	uint16_t tmp_replid;
@@ -1014,7 +1014,7 @@ BOOL IDSET::get_repl_first_max(uint16_t replid, uint64_t *peid)
 	return TRUE;
 }
 
-BOOL IDSET::enum_replist(void *pparam, REPLIST_ENUM replist_enum)
+BOOL idset::enum_replist(void *pparam, REPLIST_ENUM replist_enum)
 {
 	auto pset = this;
 	uint16_t tmp_replid;
@@ -1045,7 +1045,7 @@ BOOL IDSET::enum_replist(void *pparam, REPLIST_ENUM replist_enum)
 	return TRUE;
 }
 
-BOOL IDSET::enum_repl(uint16_t replid, void *pparam, REPLICA_ENUM repl_enum)
+BOOL idset::enum_repl(uint16_t replid, void *pparam, REPLICA_ENUM repl_enum)
 {
 	auto pset = this;
 	uint64_t ival;

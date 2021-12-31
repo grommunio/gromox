@@ -753,10 +753,10 @@ using REPLICA_MAPPING = BOOL (*)(BOOL, void *, uint16_t *, GUID *);
 using REPLIST_ENUM = void (*)(void *, uint16_t);
 using REPLICA_ENUM = void (*)(void *, uint64_t);
 
-struct IDSET {
-	IDSET(bool serialize, uint8_t type);
-	~IDSET();
-	static std::unique_ptr<IDSET> create(bool serialize, uint8_t type);
+struct idset {
+	idset(bool serialize, uint8_t type);
+	~idset();
+	static std::unique_ptr<idset> create(bool serialize, uint8_t type);
 
 	BOOL register_mapping(BINARY *, REPLICA_MAPPING);
 	void clear();
@@ -764,7 +764,7 @@ struct IDSET {
 	BOOL append(uint64_t eid);
 	BOOL append_range(uint16_t replid, uint64_t low_value, uint64_t high_value);
 	void remove(uint64_t eid);
-	BOOL concatenate(const IDSET *set_src);
+	BOOL concatenate(const idset *set_src);
 	BOOL hint(uint64_t eid);
 	BINARY *serialize() const;
 	BINARY *serialize_replid() const;
@@ -787,7 +787,7 @@ struct IDSET {
 	uint8_t repl_type = 0;
 	DOUBLE_LIST repl_list{};
 };
-using idset = IDSET;
+using IDSET = idset;
 
 #define DB_NOTIFY_TYPE_NEW_MAIL									0x01
 #define DB_NOTIFY_TYPE_FOLDER_CREATED							0x02
