@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
-#include <stddef.h>
-#include <libHX/defs.h>
+#include <gromox/defs.h>
 #include "rop_ids.h"
 
-#define E(s) [s] = #s
-static const char *const rop_names[] = {
+using namespace gromox;
+
+#define E(s) #s
+static constexpr const char *rop_names[256] = {
+	{},
 	E(ropRelease),
 	E(ropOpenFolder),
 	E(ropOpenMessage),
@@ -46,6 +48,7 @@ static const char *const rop_names[] = {
 	E(ropSaveChangesAttachment),
 	E(ropSetReceiveFolder),
 	E(ropGetReceiveFolder),
+	/* 0x28 */ {},
 	E(ropRegisterNotification),
 	E(ropRegisterNotify),
 	E(ropOpenStream),
@@ -65,6 +68,7 @@ static const char *const rop_names[] = {
 	E(ropCopyTo),
 	E(ropCopyToStream),
 	E(ropCloneStream),
+	/* 0x3C-0x3D */ {}, {},
 	E(ropGetPermissionsTable),
 	E(ropGetRulesTable),
 	E(ropModifyPermissions),
@@ -101,18 +105,22 @@ static const char *const rop_names[] = {
 	E(ropQueryNamedProperties),
 	E(ropGetPerUserLongTermIds),
 	E(ropGetPerUserGuid),
+	/* 0x62 */ {},
 	E(ropReadPerUserInformation),
 	E(ropWritePerUserInformation),
+	/* 0x65 */ {},
 	E(ropSetReadFlags),
 	E(ropCopyProperties),
 	E(ropGetReceiveFolderTable),
 	E(ropFastTransferSourceCopyProperties),
+	/* 0x6A */ {},
 	E(ropGetCollapseState),
 	E(ropSetCollapseState),
 	E(ropGetTransportFolder),
 	E(ropPending),
 	E(ropOptionsData),
 	E(ropSynchronizationConfigure),
+	/* 0x71 */ {},
 	E(ropSynchronizationImportMessageChange),
 	E(ropSynchronizationImportHierarchyChange),
 	E(ropSynchronizationImportDeletes),
@@ -123,18 +131,30 @@ static const char *const rop_names[] = {
 	E(ropSetPropertiesNoReplicate),
 	E(ropDeletePropertiesNoReplicate),
 	E(ropGetStoreState),
+	/* 0x7C-0x7D */ {}, {},
 	E(ropSynchronizationOpenCollector),
 	E(ropGetLocalReplicaIds),
 	E(ropSynchronizationImportReadStateChanges),
 	E(ropResetTable),
 	E(ropSynchronizationGetTransferState),
+	/* 0x83-0x85 */ {}, {}, {},
 	E(ropTellVersion),
+	/* 0x87-0x88 */ {}, {},
 	E(ropFreeBookmark),
+	/* 0x8A-0x8F */ {}, {}, {}, {}, {}, {},
 	E(ropWriteAndCommitStream),
 	E(ropHardDeleteMessages),
 	E(ropHardDeleteMessagesAndSubfolders),
 	E(ropSetLocalReplicaMidsetDeleted),
+	/* 0x94-0x9F */ {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+	/* 0xA0-0xAF */ {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+	/* 0xB0-0xBF */ {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+	/* 0xC0-0xCF */ {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+	/* 0xD0-0xDF */ {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+	/* 0xE0-0xEF */ {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+	/* 0xF0-0xF8 */ {}, {}, {}, {}, {}, {}, {}, {}, {},
 	E(ropBackoff),
+	/* 0xFA-0xFD */ {}, {}, {}, {},
 	E(ropLogon),
 	E(ropBufferTooSmall),
 };
@@ -142,6 +162,6 @@ static const char *const rop_names[] = {
 
 const char *rop_idtoname(unsigned int i)
 {
-	const char *s = i < ARRAY_SIZE(rop_names) ? rop_names[i] : NULL;
-	return s != NULL ? s : "";
+	const char *s = i < arsizeof(rop_names) ? rop_names[i] : nullptr;
+	return znul(s);
 }
