@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cassert>
 #include <cstdint>
+#include <vector>
 #include <gromox/endian.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/util.hpp>
@@ -27,10 +29,12 @@ struct REPLGUID_NODE {
 };
 
 struct STACK_NODE {
-	DOUBLE_LIST_NODE node;
+	STACK_NODE(const uint8_t *b, uint8_t l) noexcept : common_length(l)
+		{ memcpy(pcommon_bytes, b, common_length); }
 	uint8_t common_length;
-	uint8_t *pcommon_bytes;
+	uint8_t pcommon_bytes[6];
 };
+using byte_stack = std::vector<STACK_NODE>;
 }
 
 idset::idset(bool ser, uint8_t type) :
@@ -449,62 +453,15 @@ static BOOL idset_encode_end_command(BINARY *pbin)
 	return idset_write_to_binary(pbin, &command, sizeof(uint8_t));
 }
 
-static void idset_stack_init(DOUBLE_LIST *pstack)
-{
-	double_list_init(pstack);
-}
-
-static void idset_stack_free(DOUBLE_LIST *pstack)
-{
-	DOUBLE_LIST_NODE *pnode;
-	
-	while ((pnode = double_list_pop_front(pstack)) != nullptr) {
-		auto pstack_node = static_cast<STACK_NODE *>(pnode->pdata);
-		free(pstack_node->pcommon_bytes);
-		free(pstack_node);
-	}
-	double_list_free(pstack);
-}
-
-static BOOL idset_stack_push(DOUBLE_LIST *pstack,
-	uint8_t common_length, uint8_t *pcommon_bytes)
-{
-	auto pstack_node = static_cast<STACK_NODE *>(malloc(sizeof(STACK_NODE)));
-	if (NULL == pstack_node) {
-		return FALSE;
-	}
-	pstack_node->node.pdata = pstack_node;
-	pstack_node->common_length = common_length;
-	pstack_node->pcommon_bytes = static_cast<uint8_t *>(malloc(common_length));
-	if (NULL == pstack_node->pcommon_bytes) {
-		free(pstack_node);
-		return FALSE;
-	}
-	memcpy(pstack_node->pcommon_bytes, pcommon_bytes, common_length);
-	double_list_append_as_tail(pstack, &pstack_node->node);
-	return TRUE;
-}	
-
-static void idset_stack_pop(DOUBLE_LIST *pstack)
-{
-	auto pnode = double_list_pop_back(pstack);
-	if (NULL == pnode) {
-		return;
-	}
-	free(((STACK_NODE*)pnode->pdata)->pcommon_bytes);
-	free(pnode->pdata);
-}
-
-static uint8_t idset_stack_get_common_bytes(DOUBLE_LIST *pstack, GLOBCNT &common_bytes)
+static uint8_t idset_stack_get_common_bytes(const byte_stack &stack, GLOBCNT &common_bytes)
 {
 	uint8_t common_length = 0;
 	
-	for (auto pnode=double_list_get_head(pstack); pnode != nullptr;
-		pnode=double_list_get_after(pstack, pnode)) {
-		auto pstack_node = static_cast<STACK_NODE *>(pnode->pdata);
-		memcpy(&common_bytes.ab[common_length],
-			pstack_node->pcommon_bytes, pstack_node->common_length);
-		common_length += pstack_node->common_length;
+	for (const auto &limb : stack) {
+		if (common_length + limb.common_length <= 6)
+			memcpy(&common_bytes.ab[common_length],
+			       limb.pcommon_bytes, limb.common_length);
+		common_length += limb.common_length;
 	}
 	return common_length;
 }
@@ -672,19 +629,18 @@ BINARY *idset::serialize() const
 	return repl_type == REPL_TYPE_ID ? serialize_replid() : serialize_replguid();
 }
 
-static uint32_t idset_decoding_globset(
-	const BINARY *pbin, DOUBLE_LIST *pglobset)
+static uint32_t idset_decoding_globset(const BINARY *pbin,
+    DOUBLE_LIST *pglobset) try
 {
 	uint32_t offset = 0;
-	DOUBLE_LIST bytes_stack;
+	byte_stack bytes_stack;
+	bytes_stack.reserve(6);
 	
-	idset_stack_init(&bytes_stack);
 	while (offset < pbin->cb) {
 		uint8_t command = pbin->pb[offset];
 		offset ++;
 		switch (command) {
 		case 0x0: /* end */
-			idset_stack_free(&bytes_stack);
 			return offset;
 		case 0x1:
 		case 0x2:
@@ -695,20 +651,17 @@ static uint32_t idset_decoding_globset(
 			GLOBCNT common_bytes;
 			memcpy(common_bytes.ab, &pbin->pb[offset], command);
 			offset += command;
-			idset_stack_push(&bytes_stack, command, common_bytes.ab);
-			uint8_t stack_length = idset_stack_get_common_bytes(
-							&bytes_stack, common_bytes);
+			bytes_stack.emplace_back(common_bytes.ab, command);
+			auto stack_length = idset_stack_get_common_bytes(bytes_stack, common_bytes);
 			if (stack_length > 6) {
 				debug_info("[idset]: length of common bytes in"
 					" stack is too long when deserializing");
-				idset_stack_free(&bytes_stack);
 				return 0;
 			}
 			if (stack_length != 6)
 				break;
 			auto prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 			if (NULL == prange_node) {
-				idset_stack_free(&bytes_stack);
 				return 0;
 			}
 			prange_node->node.pdata = prange_node;
@@ -717,25 +670,23 @@ static uint32_t idset_decoding_globset(
 			double_list_append_as_tail(pglobset, &prange_node->node);
 			/* MS-OXCFXICS 3.1.5.4.3.1.1 */
 			/* pop the stack without pop command */
-			idset_stack_pop(&bytes_stack);
+			if (bytes_stack.size() > 0)
+				bytes_stack.pop_back();
 			break;
 		}
 		case 0x42: { /* bitmask */
 			GLOBCNT common_bytes;
 			uint8_t start_value = pbin->pb[offset++];
 			uint8_t bitmask = pbin->pb[offset++];
-			uint8_t stack_length = idset_stack_get_common_bytes(
-							&bytes_stack, common_bytes);
+			auto stack_length = idset_stack_get_common_bytes(bytes_stack, common_bytes);
 			if (5 != stack_length) {
 				debug_info("[idset]: bitmask command error when "
 					"deserializing, length of common bytes in "
 					"stack should be 5");
-				idset_stack_free(&bytes_stack);
 				return 0;
 			}
 			auto prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 			if (NULL == prange_node) {
-				idset_stack_free(&bytes_stack);
 				return 0;
 			}
 			prange_node->node.pdata = prange_node;
@@ -753,7 +704,6 @@ static uint32_t idset_decoding_globset(
 				} else if (prange_node == nullptr) {
 					prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 					if (NULL == prange_node) {
-						idset_stack_free(&bytes_stack);
 						return 0;
 					}
 					prange_node->node.pdata = prange_node;
@@ -769,23 +719,21 @@ static uint32_t idset_decoding_globset(
 			break;
 		}
 		case 0x50: /* pop */
-			idset_stack_pop(&bytes_stack);
+			if (bytes_stack.size() > 0)
+				bytes_stack.pop_back();
 			break;
 		case 0x52: { /* range */
 			GLOBCNT common_bytes;
 			auto prange_node = static_cast<RANGE_NODE *>(malloc(sizeof(RANGE_NODE)));
 			if (NULL == prange_node) {
-				idset_stack_free(&bytes_stack);
 				return 0;
 			}
 			prange_node->node.pdata = prange_node;
-			uint8_t stack_length = idset_stack_get_common_bytes(
-							&bytes_stack, common_bytes);
+			auto stack_length = idset_stack_get_common_bytes(bytes_stack, common_bytes);
 			if (stack_length > 5) {
 				debug_info("[idset]: range command error when "
 					"deserializing, length of common bytes in "
 					"stack should be less than 5");
-				idset_stack_free(&bytes_stack);
 				return 0;
 			}
 			memcpy(&common_bytes.ab[stack_length],
@@ -801,7 +749,9 @@ static uint32_t idset_decoding_globset(
 		}
 		}
 	}
-	idset_stack_free(&bytes_stack);
+	return 0;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1618: ENOMEM\n");
 	return 0;
 }
 
