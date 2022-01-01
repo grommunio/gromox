@@ -35,6 +35,10 @@ struct STACK_NODE {
 	uint8_t pcommon_bytes[6];
 };
 using byte_stack = std::vector<STACK_NODE>;
+
+struct mdel {
+	inline void operator()(BINARY *x) const { rop_util_free_binary(x); }
+};
 }
 
 idset::idset(bool ser, uint8_t type) :
@@ -381,16 +385,15 @@ BOOL idset::hint(uint64_t eid)
 	return FALSE;
 }
 
-static BINARY* idset_init_binary()
+static std::unique_ptr<BINARY, mdel> idset_init_binary()
 {
-	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
+	std::unique_ptr<BINARY, mdel> pbin(static_cast<BINARY *>(malloc(sizeof(BINARY))));
 	if (NULL == pbin) {
 		return NULL;
 	}
 	pbin->cb = 0;
 	pbin->pv = malloc(4096);
 	if (pbin->pv == nullptr) {
-		free(pbin);
 		return NULL;
 	}
 	return pbin;
@@ -575,16 +578,11 @@ BINARY *idset::serialize_replid() const
 		if (0 == double_list_get_nodes_num(&prepl_node->range_list)) {
 			continue;
 		}
-		if (FALSE == idset_write_uint16(pbin, prepl_node->replid)) {
-			rop_util_free_binary(pbin);
+		if (!idset_write_uint16(pbin.get(), prepl_node->replid) ||
+		    !idset_encoding_globset(pbin.get(), &prepl_node->range_list))
 			return NULL;
-		}
-		if (FALSE == idset_encoding_globset(pbin, &prepl_node->range_list)) {
-			rop_util_free_binary(pbin);
-			return NULL;
-		}
 	}
-	return pbin;
+	return pbin.release();
 }
 
 BINARY *idset::serialize_replguid() const
@@ -609,19 +607,13 @@ BINARY *idset::serialize_replguid() const
 		}
 		if (FALSE == pset->mapping(TRUE, pset->pparam,
 			&prepl_node->replid, &tmp_guid)) {
-			rop_util_free_binary(pbin);
 			return NULL;
 		}
-		if (FALSE == idset_write_guid(pbin, &tmp_guid)) {
-			rop_util_free_binary(pbin);
+		if (!idset_write_guid(pbin.get(), &tmp_guid) ||
+		    !idset_encoding_globset(pbin.get(), &prepl_node->range_list))
 			return NULL;
-		}
-		if (FALSE == idset_encoding_globset(pbin, &prepl_node->range_list)) {
-			rop_util_free_binary(pbin);
-			return NULL;
-		}
 	}
-	return pbin;
+	return pbin.release();
 }
 
 BINARY *idset::serialize() const
