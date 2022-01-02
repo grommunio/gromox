@@ -222,15 +222,13 @@ BOOL idset::concatenate(const IDSET *pset_src)
 	for (auto prepl_node = repl_list.begin();
 	     prepl_node != repl_list.end(); ++prepl_node) {
 		for (const auto &range_node : prepl_node->range_list) {
-			auto prange_node = &range_node;
-			if (prange_node->high_value == prange_node->low_value) {
-				if (FALSE == idset_append_internal(pset_dst,
-					prepl_node->replid, prange_node->low_value)) {
+			if (range_node.high_value == range_node.low_value) {
+				if (!idset_append_internal(pset_dst,
+				    prepl_node->replid, range_node.low_value))
 					return FALSE;	
-				}
 			} else {
 				if (!append_range(prepl_node->replid,
-				    prange_node->low_value, prange_node->high_value))
+				    range_node.low_value, range_node.high_value))
 					return FALSE;	
 			}
 		}
@@ -251,11 +249,8 @@ BOOL idset::hint(uint64_t eid)
 	if (prepl_node == repl_list.end())
 		return FALSE;
 	for (const auto &range_node : prepl_node->range_list) {
-		auto prange_node = &range_node;
-		if (value >= prange_node->low_value &&
-			value <= prange_node->high_value) {
+		if (value >= range_node.low_value && value <= range_node.high_value)
 			return TRUE;
-		}
 	}
 	return FALSE;
 }
@@ -371,15 +366,14 @@ static BOOL idset_encode_globset(BINARY *pbin, const std::vector<range_node> &gl
 	    !idset_encoding_push_command(pbin, stack_length, common_bytes.ab))
 		return FALSE;
 	for (const auto &range_node : globset) {
-		auto prange_node = &range_node;
-		common_bytes = rop_util_value_to_gc(prange_node->low_value);
-		if (prange_node->high_value == prange_node->low_value) {
+		common_bytes = rop_util_value_to_gc(range_node.low_value);
+		if (range_node.high_value == range_node.low_value) {
 			if (!idset_encoding_push_command(pbin,
 			    6 - stack_length, &common_bytes.ab[stack_length]))
 				return FALSE;
 			continue;
 		}
-		common_bytes1 = rop_util_value_to_gc(prange_node->high_value);
+		common_bytes1 = rop_util_value_to_gc(range_node.high_value);
 		int i;
 		for (i=stack_length; i<6; i++) {
 			if (common_bytes.ab[i] != common_bytes1.ab[i])
@@ -442,10 +436,9 @@ BINARY *idset::serialize_replid() const
 		return NULL;
 	}
 	for (const auto &repl_node : repl_list) {
-		auto prepl_node = &repl_node;
 		if (repl_node.range_list.size() == 0)
 			continue;
-		if (!idset_write_uint16(pbin.get(), prepl_node->replid) ||
+		if (!idset_write_uint16(pbin.get(), repl_node.replid) ||
 		    !idset_encode_globset(pbin.get(), repl_node.range_list))
 			return NULL;
 	}
@@ -467,13 +460,11 @@ BINARY *idset::serialize_replguid()
 		return NULL;
 	}
 	for (auto &repl_node : repl_list) {
-		auto prepl_node = &repl_node;
 		if (repl_node.range_list.size() == 0)
 			continue;
 		if (FALSE == pset->mapping(TRUE, pset->pparam,
-			&prepl_node->replid, &tmp_guid)) {
+		    &repl_node.replid, &tmp_guid))
 			return NULL;
-		}
 		if (!idset_write_guid(pbin.get(), &tmp_guid) ||
 		    !idset_encode_globset(pbin.get(), repl_node.range_list))
 			return NULL;
@@ -657,24 +648,19 @@ BOOL idset::convert() try
 			return FALSE;
 		}
 		for (auto &replguid_node : repl_list) {
-			auto preplguid_node = &replguid_node;
 			uint16_t replid;
 			if (FALSE == pset->mapping(FALSE, pset->pparam,
-				&replid, &preplguid_node->replguid)) {
-				goto CLEAN_TEMP_LIST;
-			}
-			repl_node repl_node, *prepl_node = &repl_node;
-			prepl_node->replid = replid;
-			prepl_node->range_list = preplguid_node->range_list;
+			    &replid, &replguid_node.replguid))
+				return false;
+			repl_node repl_node;
+			repl_node.replid = replid;
+			repl_node.range_list = replguid_node.range_list;
 			temp_list.push_back(std::move(repl_node));
 		}
 		repl_list = std::move(temp_list);
 	}
 	pset->b_serialize = true;
 	return TRUE;
-	
- CLEAN_TEMP_LIST:
-	return FALSE;
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1619: ENOMEM\n");
 	return false;
@@ -690,22 +676,19 @@ BOOL idset::get_repl_first_max(uint16_t replid, uint64_t *peid)
 			return FALSE;
 		}
 		for (auto &replguid_node : repl_list) {
-			auto preplguid_node = &replguid_node;
 			uint16_t tmp_replid;
 			if (FALSE == pset->mapping(FALSE, pset->pparam,
-				&tmp_replid, &preplguid_node->replguid)) {
+			    &tmp_replid, &replguid_node.replguid))
 				return FALSE;
-			}
 			if (tmp_replid == replid) {
-				prange_list = &preplguid_node->range_list;
+				prange_list = &replguid_node.range_list;
 				break;
 			}
 		}
 	} else {
 		for (const auto &repl_node : repl_list) {
-			auto prepl_node = &repl_node;
-			if (replid == prepl_node->replid) {
-				prange_list = &prepl_node->range_list;
+			if (replid == repl_node.replid) {
+				prange_list = &repl_node.range_list;
 				break;
 			}
 		}
@@ -728,8 +711,7 @@ BOOL idset::enum_replist(void *pparam, REPLIST_ENUM replist_enum)
 	
 	if (pset->b_serialize || pset->repl_type != REPL_TYPE_GUID) {
 		for (const auto &repl_node : repl_list) {
-			auto prepl_node = &repl_node;
-			replist_enum(pparam, prepl_node->replid);
+			replist_enum(pparam, repl_node.replid);
 		}
 		return TRUE;
 	}
@@ -737,12 +719,10 @@ BOOL idset::enum_replist(void *pparam, REPLIST_ENUM replist_enum)
 		return FALSE;
 	}
 	for (auto &replguid_node : repl_list) {
-		auto preplguid_node = &replguid_node;
 		uint16_t tmp_replid;
 		if (FALSE == pset->mapping(FALSE, pset->pparam,
-		    &tmp_replid, &preplguid_node->replguid)) {
+		    &tmp_replid, &replguid_node.replguid))
 			return FALSE;
-		}
 		replist_enum(pparam, tmp_replid);
 	}
 	return TRUE;
@@ -758,22 +738,19 @@ BOOL idset::enum_repl(uint16_t replid, void *pparam, REPLICA_ENUM repl_enum)
 			return FALSE;
 		}
 		for (auto &replguid_node : repl_list) {
-			auto preplguid_node = &replguid_node;
 			uint16_t tmp_replid;
 			if (FALSE == pset->mapping(FALSE, pset->pparam,
-				&tmp_replid, &preplguid_node->replguid)) {
+			    &tmp_replid, &replguid_node.replguid))
 				return FALSE;
-			}
 			if (tmp_replid == replid) {
-				prange_list = &preplguid_node->range_list;
+				prange_list = &replguid_node.range_list;
 				break;
 			}
 		}
 	} else {
 		for (auto &repl_node : repl_list) {
-			auto prepl_node = &repl_node;
-			if (replid == prepl_node->replid) {
-				prange_list = &prepl_node->range_list;
+			if (replid == repl_node.replid) {
+				prange_list = &repl_node.range_list;
 				break;
 			}
 		}
@@ -782,9 +759,8 @@ BOOL idset::enum_repl(uint16_t replid, void *pparam, REPLICA_ENUM repl_enum)
 		return TRUE;
 	}
 	for (auto &range_node : *prange_list) {
-		auto prange_node = &range_node;
-		for (auto ival = prange_node->low_value;
-			ival<=prange_node->high_value; ival++) {
+		for (auto ival = range_node.low_value;
+		     ival <= range_node.high_value; ++ival) {
 			auto tmp_eid = rop_util_make_eid_ex(replid, ival);
 			repl_enum(pparam, tmp_eid);
 		}

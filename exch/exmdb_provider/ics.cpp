@@ -53,7 +53,6 @@ IDSET_CACHE::~IDSET_CACHE()
 BOOL IDSET_CACHE::init(const IDSET *pset)
 {
 	auto pcache = this;
-	uint64_t ival;
 	
 	if (SQLITE_OK != sqlite3_open_v2(":memory:", &pcache->psqlite,
 		SQLITE_OPEN_READWRITE|SQLITE_OPEN_CREATE, NULL)) {
@@ -65,9 +64,8 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 	pcache->pstmt = NULL;
 	const std::vector<range_node> *prange_list = nullptr;
 	for (const auto &repl_node : pset->repl_list) {
-		auto prepl_node = &repl_node;
-		if (1 == prepl_node->replid) {
-			prange_list = &prepl_node->range_list;
+		if (repl_node.replid == 1) {
+			prange_list = &repl_node.range_list;
 			break;
 		}
 	}
@@ -79,16 +77,15 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 		return FALSE;
 	}
 	for (const auto &range_node : *prange_list) {
-		auto prange_node = &range_node;
-		if (prange_node->high_value - prange_node->low_value >= IDSET_CACHE_MIN_RANGE) try {
-			pcache->range_list.emplace_back(prange_node->low_value, prange_node->high_value);
+		if (range_node.high_value - range_node.low_value >= IDSET_CACHE_MIN_RANGE) try {
+			pcache->range_list.push_back(range_node);
 			continue;
 		} catch (const std::bad_alloc &) {
 			fprintf(stderr, "E-1623: ENOMEM\n");
 			return false;
 		}
-		for (ival = prange_node->low_value;
-		     ival <= prange_node->high_value; ival++) {
+		for (auto ival = range_node.low_value;
+		     ival <= range_node.high_value; ++ival) {
 			sqlite3_reset(pstmt);
 			sqlite3_bind_int64(pstmt, 1, ival);
 			if (SQLITE_DONE != sqlite3_step(pstmt)) {
