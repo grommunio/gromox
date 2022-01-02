@@ -509,7 +509,6 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	} /* section 4 */
 
 	/* Query section 5 */
-	{
 	if (NULL != pread) {
 		auto stm_select_rd = gx_sql_prep(psqlite, "SELECT count(*) FROM reads");
 		if (stm_select_rd == nullptr ||
@@ -531,24 +530,31 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			if (NULL == punread_mids->pids) {
 				return FALSE;
 			}
-		}
-		stm_select_rd = gx_sql_prep(psqlite,
-		                "SELECT message_id, read_state FROM reads");
-		if (stm_select_rd == nullptr)
-			return FALSE;
-		while (sqlite3_step(stm_select_rd) == SQLITE_ROW) {
-			uint64_t mid_val = sqlite3_column_int64(stm_select_rd, 0);
-			if (sqlite3_column_int64(stm_select_rd, 1) == 0)
-				punread_mids->pids[punread_mids->count++] = rop_util_make_eid_ex(1, mid_val);
-			else
-				pread_mids->pids[pread_mids->count++] = rop_util_make_eid_ex(1, mid_val);
+			stm_select_rd = gx_sql_prep(psqlite,
+					"SELECT message_id, read_state FROM reads");
+			if (stm_select_rd == nullptr)
+				return FALSE;
+			while (sqlite3_step(stm_select_rd) == SQLITE_ROW) {
+				uint64_t mid_val = sqlite3_column_int64(stm_select_rd, 0);
+				if (punread_mids->count == count ||
+				    pread_mids->count == count)
+					/*
+					 * This thread is holding the DB. There can't really be a
+					 * discrepance between SELECT COUNT(*) and the subsequent
+					 * SELECT. But check for it anyway to appease static checkers.
+					 */
+					break;
+				if (sqlite3_column_int64(stm_select_rd, 1) == 0)
+					punread_mids->pids[punread_mids->count++] = rop_util_make_eid_ex(1, mid_val);
+				else
+					pread_mids->pids[pread_mids->count++] = rop_util_make_eid_ex(1, mid_val);
+			}
 		}
 	} else {
 		pread_mids->count = 0;
 		pread_mids->pids = NULL;
 		punread_mids->count = 0;
 		punread_mids->pids = NULL;
-	}
 	} /* section 5 */
 	return TRUE;
 }
