@@ -375,7 +375,7 @@ static constexpr cfg_directive cfg_default_values[] = {
 	{},
 };
 
-static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
+static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> cfg) try
 {
 	if (cfg == nullptr) {
 		cfg = config_file_initd("mysql_adaptor.cfg", get_config_path());
@@ -417,6 +417,8 @@ static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 	par.enable_firsttimepw = cfg->get_ll("enable_firsttime_password");
 	mysql_adaptor_init(std::move(par));
 	return true;
+} catch (const cfg_error &) {
+	return false;
 }
 
 static BOOL svc_mysql_adaptor(int reason, void **data)

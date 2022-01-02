@@ -62,7 +62,7 @@ static void exchange_async_emsmdb_reclaim(uint32_t async_id);
 DECLARE_PROC_API();
 static DCERPC_ENDPOINT *ep_6001;
 
-static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig)
+static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 {
 	if (pconfig == nullptr)
 		pconfig = config_file_initd("exchange_emsmdb.cfg", get_config_path());
@@ -73,6 +73,8 @@ static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig)
 	}
 	g_rop_debug = pconfig->get_ll("rop_debug");
 	return true;
+} catch (const cfg_error &) {
+	return false;
 }
 
 static constexpr DCERPC_INTERFACE interface_emsmdb = {
@@ -91,7 +93,7 @@ static constexpr DCERPC_INTERFACE interface_async_emsmdb = {
 	exchange_async_emsmdb_ndr_push, nullptr, exchange_async_emsmdb_reclaim,
 };
 
-static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
+static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 {
 	int max_mail;
 	int max_rcpt;
@@ -254,6 +256,8 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata)
 		return TRUE;
 	}
 	return TRUE;
+} catch (const cfg_error &) {
+	return false;
 }
 PROC_ENTRY(proc_exchange_emsmdb);
 
