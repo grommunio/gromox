@@ -747,7 +747,10 @@ BOOL common_util_get_mapping_guid(sqlite3 *psqlite,
 		*pb_found = FALSE;
 		return TRUE;
 	}
-	guid_from_string(pguid, S2A(sqlite3_column_text(pstmt, 0)));
+	if (!guid_from_string(pguid, S2A(sqlite3_column_text(pstmt, 0)))) {
+		fprintf(stderr, "E-1621: illegal GUID in dataset\n");
+		return false;
+	}
 	*pb_found = TRUE;
 	return TRUE;
 }

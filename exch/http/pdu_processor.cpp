@@ -2745,11 +2745,14 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 	pkt.payload.rts.commands[0].command.destination = FD_CLIENT;
 	
 	pkt.payload.rts.commands[1].command_type = RTS_CMD_FLOW_CONTROL_ACK;
-	pkt.payload.rts.commands[1].command.flowcontrolack.bytes_received = bytes_received;
-	pkt.payload.rts.commands[1].command.flowcontrolack.available_window = available_window;
-	guid_from_string(&pkt.payload.rts.commands[1].command.flowcontrolack.channel_cookie,
-		channel_cookie);
-	
+	auto &fc = pkt.payload.rts.commands[1].command.flowcontrolack;
+	fc.bytes_received = bytes_received;
+	fc.available_window = available_window;
+	if (!guid_from_string(&fc.channel_cookie, channel_cookie)) {
+		pdu_ndr_free_ncacnpkt(&pkt);
+		lib_buffer_put(g_bnode_allocator, pblob_node);
+		return FALSE;
+	}
 	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
