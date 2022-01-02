@@ -2720,7 +2720,8 @@ static int rtf_cmd_info(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
 static int rtf_cmd_pict(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
     int align, bool have_param, int num)
 {
-	rtf_attrstack_push_express(preader, ATTR_PICT, 0);
+	if (!rtf_attrstack_push_express(preader, ATTR_PICT, 0))
+		return CMD_RESULT_ERROR;
 	preader->picture_width = 0;
 	preader->picture_height = 0;
 	preader->picture_type = PICT_WB;
@@ -3157,7 +3158,8 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 		}
 		preader->is_within_picture = false;
 	}
-	rtf_flush_iconv_cache(preader);
+	if (!rtf_flush_iconv_cache(preader))
+		return -EINVAL;
 	if (b_hyperlinked) {
 		if (preader->ext_push.p_bytes(TAG_HYPERLINK_END,
 		    sizeof(TAG_HYPERLINK_END) - 1) != EXT_ERR_SUCCESS)
