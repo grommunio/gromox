@@ -39,10 +39,8 @@ std::unique_ptr<idset> idset::create(bool ser, uint8_t type) try
 BOOL idset::register_mapping(BINARY *pparam, REPLICA_MAPPING mapping)
 {
 	auto pset = this;
-	if (NULL != pset->pparam ||
-		NULL != pset->mapping) {
+	if (pset->pparam != nullptr || pset->mapping != nullptr)
 		return FALSE;
-	}
 	if (NULL == pparam) {
 		pset->pparam = NULL;
 	} else if (pparam->cb == 0) {
@@ -132,11 +130,8 @@ BOOL idset::append_range(uint16_t replid,
 {
 	auto pset = this;
 	
-	if (!pset->b_serialize)
+	if (!pset->b_serialize || low_value > high_value)
 		return FALSE;
-	if (low_value > high_value) {
-		return FALSE;
-	}
 	auto prepl_node = std::find_if(repl_list.begin(), repl_list.end(),
 	                  [&](const repl_node &n) { return n.replid == replid; });
 	if (prepl_node == repl_list.end())
@@ -291,10 +286,8 @@ static BOOL idset_encoding_push_command(BINARY *pbin,
 	if (length > 6) {
 		return FALSE;
 	}
-	if (FALSE == idset_write_to_binary(pbin, &length, sizeof(uint8_t))) {
-		return FALSE;
-	}
-	return idset_write_to_binary(pbin, pcommon_bytes, length);
+	return idset_write_to_binary(pbin, &length, sizeof(uint8_t)) &&
+	       idset_write_to_binary(pbin, pcommon_bytes, length);
 }
 
 static BOOL idset_encoding_pop_command(BINARY *pbin)
@@ -311,13 +304,9 @@ static BOOL idset_encode_range_command(BINARY *pbin, uint8_t length,
 		return FALSE;
 	}
 	uint8_t command = 0x52;
-	if (FALSE == idset_write_to_binary(pbin, &command, sizeof(uint8_t))) {
-		return FALSE;
-	}
-	if (FALSE == idset_write_to_binary(pbin, plow_bytes, length)) {
-		return FALSE;
-	}
-	return idset_write_to_binary(pbin, phigh_bytes, length);
+	return idset_write_to_binary(pbin, &command, sizeof(uint8_t)) &&
+	       idset_write_to_binary(pbin, plow_bytes, length) &&
+	       idset_write_to_binary(pbin, phigh_bytes, length);
 }
 
 static BOOL idset_encode_end_command(BINARY *pbin)
@@ -407,22 +396,11 @@ static BOOL idset_write_uint32(BINARY *pbin, uint32_t v)
 
 static BOOL idset_write_guid(BINARY *pbin, const GUID *pguid)
 {
-	if (FALSE == idset_write_uint32(pbin, pguid->time_low)) {
-		return FALSE;
-	}
-	if (FALSE == idset_write_uint16(pbin, pguid->time_mid)) {
-		return FALSE;
-	}
-	if (FALSE == idset_write_uint16(pbin, pguid->time_hi_and_version)) {
-		return FALSE;
-	}
-	if (FALSE == idset_write_to_binary(pbin, pguid->clock_seq, 2)) {
-		return FALSE;
-	}
-	if (FALSE == idset_write_to_binary(pbin, pguid->node, 6)) {
-		return FALSE;
-	}
-	return TRUE;
+	return idset_write_uint32(pbin, pguid->time_low) &&
+	       idset_write_uint16(pbin, pguid->time_mid) &&
+	       idset_write_uint16(pbin, pguid->time_hi_and_version) &&
+	       idset_write_to_binary(pbin, pguid->clock_seq, 2) &&
+	       idset_write_to_binary(pbin, pguid->node, 6);
 }
 
 BINARY *idset::serialize_replid() const
@@ -450,11 +428,8 @@ BINARY *idset::serialize_replguid()
 	auto pset = this;
 	GUID tmp_guid;
 	
-	if (!pset->b_serialize)
+	if (!pset->b_serialize || pset->mapping == nullptr)
 		return NULL;
-	if (NULL == pset->mapping) {
-		return NULL;
-	}
 	auto pbin = idset_init_binary();
 	if (NULL == pbin) {
 		return NULL;
@@ -463,9 +438,8 @@ BINARY *idset::serialize_replguid()
 		if (repl_node.range_list.size() == 0)
 			continue;
 		if (FALSE == pset->mapping(TRUE, pset->pparam,
-		    &repl_node.replid, &tmp_guid))
-			return NULL;
-		if (!idset_write_guid(pbin.get(), &tmp_guid) ||
+		    &repl_node.replid, &tmp_guid) ||
+		    !idset_write_guid(pbin.get(), &tmp_guid) ||
 		    !idset_encode_globset(pbin.get(), repl_node.range_list))
 			return NULL;
 	}
@@ -666,42 +640,39 @@ BOOL idset::convert() try
 	return false;
 }
 
+static std::pair<bool, std::vector<range_node> *>
+get_range_by_id(idset &set, uint16_t replid)
+{
+	if (set.b_serialize || set.repl_type != REPL_TYPE_GUID) {
+		for (auto &repl_node : set.repl_list)
+			if (replid == repl_node.replid)
+				return {true, &repl_node.range_list};
+		return {true, nullptr};
+	}
+	if (set.mapping == nullptr)
+		return {false, nullptr};
+	for (auto &replguid_node : set.repl_list) {
+		uint16_t tmp_replid;
+		if (!set.mapping(false, set.pparam, &tmp_replid, &replguid_node.replguid))
+			return {false, nullptr};
+		if (tmp_replid == replid)
+			return {true, &replguid_node.range_list};
+	}
+	return {true, nullptr};
+}
+
 BOOL idset::get_repl_first_max(uint16_t replid, uint64_t *peid)
 {
-	auto pset = this;
-	const std::vector<range_node> *prange_list = nullptr;
-	
-	if (!pset->b_serialize && pset->repl_type == REPL_TYPE_GUID) {
-		if (NULL == pset->mapping) {
-			return FALSE;
-		}
-		for (auto &replguid_node : repl_list) {
-			uint16_t tmp_replid;
-			if (FALSE == pset->mapping(FALSE, pset->pparam,
-			    &tmp_replid, &replguid_node.replguid))
-				return FALSE;
-			if (tmp_replid == replid) {
-				prange_list = &replguid_node.range_list;
-				break;
-			}
-		}
-	} else {
-		for (const auto &repl_node : repl_list) {
-			if (replid == repl_node.replid) {
-				prange_list = &repl_node.range_list;
-				break;
-			}
-		}
-	}
+	auto [succ, prange_list] = get_range_by_id(*this, replid);
+	if (!succ)
+		return false;
 	if (NULL == prange_list) {
 		*peid = rop_util_make_eid_ex(replid, 0);
 		return TRUE;
 	}
 	auto pnode = prange_list->begin();
-	if (pnode == prange_list->end())
-		*peid = rop_util_make_eid_ex(replid, 0);
-	else
-		*peid = rop_util_make_eid_ex(replid, pnode->high_value);
+	*peid = rop_util_make_eid_ex(replid, pnode == prange_list->end() ? 0 :
+	        prange_list->front().high_value);
 	return TRUE;
 }
 
@@ -730,31 +701,9 @@ BOOL idset::enum_replist(void *pparam, REPLIST_ENUM replist_enum)
 
 BOOL idset::enum_repl(uint16_t replid, void *pparam, REPLICA_ENUM repl_enum)
 {
-	auto pset = this;
-	std::vector<range_node> *prange_list = nullptr;
-	
-	if (!pset->b_serialize && pset->repl_type == REPL_TYPE_GUID) {
-		if (NULL == pset->mapping) {
-			return FALSE;
-		}
-		for (auto &replguid_node : repl_list) {
-			uint16_t tmp_replid;
-			if (FALSE == pset->mapping(FALSE, pset->pparam,
-			    &tmp_replid, &replguid_node.replguid))
-				return FALSE;
-			if (tmp_replid == replid) {
-				prange_list = &replguid_node.range_list;
-				break;
-			}
-		}
-	} else {
-		for (auto &repl_node : repl_list) {
-			if (replid == repl_node.replid) {
-				prange_list = &repl_node.range_list;
-				break;
-			}
-		}
-	}
+	auto [succ, prange_list] = get_range_by_id(*this, replid);
+	if (!succ)
+		return false;
 	if (NULL == prange_list) {
 		return TRUE;
 	}
