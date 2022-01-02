@@ -3334,7 +3334,10 @@ ZEND_FUNCTION(mapi_openproperty)
 			THROW_EXCEPTION;
 		}
 		ext_pack_pull_init(&pull_ctx, reinterpret_cast<const uint8_t *>(guidstr), sizeof(GUID));
-		pull_ctx.g_guid(&iid_guid);
+		if (pull_ctx.g_guid(&iid_guid) != EXT_ERR_SUCCESS) {
+			MAPI_G(hr) = ecInvalidParam;
+			THROW_EXCEPTION;
+		}
 	}
 	type = Z_RES_TYPE_P(pzresource);
 	if (type == le_mapi_message) {
