@@ -111,6 +111,8 @@ BINARY *ics_state::serialize()
 		return NULL;
 	pproplist.reset();
 	auto pbin = cu_alloc<BINARY>();
+	if (pbin == nullptr)
+		return nullptr;
 	pbin->cb = ext_push.m_offset;
 	pbin->pv = common_util_alloc(pbin->cb);
 	if (pbin->pv == nullptr) {
