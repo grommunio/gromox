@@ -47,9 +47,8 @@ BOOL idset::register_mapping(BINARY *pparam, REPLICA_MAPPING mapping)
 		pset->pparam = NULL;
 	} else {
 		pset->pparam = malloc(pparam->cb);
-		if (NULL == pset->pparam) {
+		if (pset->pparam == nullptr)
 			return FALSE;
-		}
 		memcpy(pset->pparam, pparam->pb, pparam->cb);
 	}
 	pset->mapping = mapping;
@@ -59,9 +58,8 @@ BOOL idset::register_mapping(BINARY *pparam, REPLICA_MAPPING mapping)
 idset::~idset()
 {
 	auto pset = this;
-	if (NULL != pset->pparam) {
+	if (pset->pparam != nullptr)
 		free(pset->pparam);
-	}
 }
 
 BOOL idset::check_empty() const
@@ -243,24 +241,21 @@ BOOL idset::hint(uint64_t eid)
 	                  [&](const repl_node &n) { return n.replid == replid; });
 	if (prepl_node == repl_list.end())
 		return FALSE;
-	for (const auto &range_node : prepl_node->range_list) {
+	for (const auto &range_node : prepl_node->range_list)
 		if (value >= range_node.low_value && value <= range_node.high_value)
 			return TRUE;
-	}
 	return FALSE;
 }
 
 static std::unique_ptr<BINARY, mdel> idset_init_binary()
 {
 	std::unique_ptr<BINARY, mdel> pbin(static_cast<BINARY *>(malloc(sizeof(BINARY))));
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	pbin->cb = 0;
 	pbin->pv = malloc(4096);
-	if (pbin->pv == nullptr) {
+	if (pbin->pv == nullptr)
 		return NULL;
-	}
 	return pbin;
 }
 
@@ -270,9 +265,8 @@ static BOOL idset_write_to_binary(BINARY *pbin, const void *pb, uint8_t len)
 	if (pbin->cb + len >= alloc_len) {
 		alloc_len = strange_roundup(pbin->cb + len, 4096);
 		auto pdata = realloc(pbin->pb, alloc_len);
-		if (NULL == pdata) {
+		if (pdata == nullptr)
 			return FALSE;
-		}
 		pbin->pv = pdata;
 	}
 	memcpy(pbin->pb + pbin->cb, pb, len);
@@ -283,9 +277,8 @@ static BOOL idset_write_to_binary(BINARY *pbin, const void *pb, uint8_t len)
 static BOOL idset_encoding_push_command(BINARY *pbin,
     uint8_t length, const uint8_t *pcommon_bytes)
 {
-	if (length > 6) {
+	if (length > 6)
 		return FALSE;
-	}
 	return idset_write_to_binary(pbin, &length, sizeof(uint8_t)) &&
 	       idset_write_to_binary(pbin, pcommon_bytes, length);
 }
@@ -347,10 +340,9 @@ static BOOL idset_encode_globset(BINARY *pbin, const std::vector<range_node> &gl
 	auto common_bytes = rop_util_value_to_gc(globset.front().low_value);
 	auto common_bytes1 = rop_util_value_to_gc(globset.back().high_value);
 	uint8_t stack_length;
-	for (stack_length=0; stack_length<6; stack_length++) {
+	for (stack_length = 0; stack_length < 6; ++stack_length)
 		if (common_bytes.ab[stack_length] != common_bytes1.ab[stack_length])
 			break;
-	}
 	if (stack_length != 0 &&
 	    !idset_encoding_push_command(pbin, stack_length, common_bytes.ab))
 		return FALSE;
@@ -364,10 +356,9 @@ static BOOL idset_encode_globset(BINARY *pbin, const std::vector<range_node> &gl
 		}
 		common_bytes1 = rop_util_value_to_gc(range_node.high_value);
 		int i;
-		for (i=stack_length; i<6; i++) {
+		for (i = stack_length; i < 6; ++i)
 			if (common_bytes.ab[i] != common_bytes1.ab[i])
 				break;
-		}
 		if (stack_length != i && !idset_encoding_push_command(pbin,
 		    i - stack_length, &common_bytes.ab[stack_length]))
 			return FALSE;
@@ -410,9 +401,8 @@ BINARY *idset::serialize_replid() const
 	if (!pset->b_serialize)
 		return NULL;
 	auto pbin = idset_init_binary();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	for (const auto &repl_node : repl_list) {
 		if (repl_node.range_list.size() == 0)
 			continue;
@@ -431,9 +421,8 @@ BINARY *idset::serialize_replguid()
 	if (!pset->b_serialize || pset->mapping == nullptr)
 		return NULL;
 	auto pbin = idset_init_binary();
-	if (NULL == pbin) {
+	if (pbin == nullptr)
 		return NULL;
-	}
 	for (auto &repl_node : repl_list) {
 		if (repl_node.range_list.size() == 0)
 			continue;
@@ -591,16 +580,14 @@ BOOL idset::deserialize(const BINARY *pbin) try
 			idset_read_guid(pbin->pb, offset, &repl_node.replguid);
 			offset += 16;
 		}
-		if (offset >= pbin->cb) {
+		if (offset >= pbin->cb)
 			return FALSE;
-		}
 		BINARY bin1;
 		bin1.pb = pbin->pb + offset;
 		bin1.cb = pbin->cb - offset;
 		uint32_t length = idset_decode_globset(&bin1, repl_node.range_list);
-		if (0 == length) {
+		if (length == 0)
 			return FALSE;
-		}
 		offset += length;
 		repl_list.push_back(std::move(repl_node));
 	}
@@ -618,9 +605,8 @@ BOOL idset::convert() try
 	if (pset->b_serialize)
 		return FALSE;
 	if (REPL_TYPE_GUID == pset->repl_type) {
-		if (NULL == pset->mapping) {
+		if (pset->mapping == nullptr)
 			return FALSE;
-		}
 		for (auto &replguid_node : repl_list) {
 			uint16_t replid;
 			if (FALSE == pset->mapping(FALSE, pset->pparam,
@@ -681,14 +667,12 @@ BOOL idset::enum_replist(void *pparam, REPLIST_ENUM replist_enum)
 	auto pset = this;
 	
 	if (pset->b_serialize || pset->repl_type != REPL_TYPE_GUID) {
-		for (const auto &repl_node : repl_list) {
+		for (const auto &repl_node : repl_list)
 			replist_enum(pparam, repl_node.replid);
-		}
 		return TRUE;
 	}
-	if (NULL == pset->mapping) {
+	if (pset->mapping == nullptr)
 		return FALSE;
-	}
 	for (auto &replguid_node : repl_list) {
 		uint16_t tmp_replid;
 		if (FALSE == pset->mapping(FALSE, pset->pparam,
@@ -704,9 +688,8 @@ BOOL idset::enum_repl(uint16_t replid, void *pparam, REPLICA_ENUM repl_enum)
 	auto [succ, prange_list] = get_range_by_id(*this, replid);
 	if (!succ)
 		return false;
-	if (NULL == prange_list) {
+	if (prange_list == nullptr)
 		return TRUE;
-	}
 	for (auto &range_node : *prange_list) {
 		for (auto ival = range_node.low_value;
 		     ival <= range_node.high_value; ++ival) {
