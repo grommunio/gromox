@@ -60,9 +60,8 @@ static int add_timer(const char *command, int interval);
 
 static BOOL cancel_timer(int timer_id);
 
-static BOOL svc_timer_agent(int reason, void **ppdata)
+static BOOL svc_timer_agent(int reason, void **ppdata) try
 {
-	int i, conn_num;
     BACK_CONN *pback;
     DOUBLE_LIST_NODE *pnode;
 	
@@ -84,23 +83,23 @@ static BOOL svc_timer_agent(int reason, void **ppdata)
 			return FALSE;
 		}
 
-		auto str_value = pfile->get_value("CONNECTION_NUM");
-		conn_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 8;
-		if (conn_num < 0)
-			conn_num = 8;
-		printf("[timer_agent]: timer connection number is %d\n", conn_num);
+		static constexpr cfg_directive cfg_default_values[] = {
+			{"connection_num", "8", CFG_SIZE, "1"},
+			{"timer_host", "::1"},
+			{"timer_port", "6666"},
+			{},
+		};
+		config_file_apply(*pfile, cfg_default_values);
 
-		str_value = pfile->get_value("TIMER_HOST");
-		gx_strlcpy(g_timer_ip, str_value != nullptr ? str_value : "::1",
-		           GX_ARRAY_SIZE(g_timer_ip));
-		str_value = pfile->get_value("TIMER_PORT");
-		g_timer_port = str_value != nullptr ? strtoul(str_value, nullptr, 0) : 6666;
-		if (g_timer_port == 0)
-			g_timer_port = 6666;
+		size_t conn_num = pfile->get_ll("connection_num");
+		printf("[timer_agent]: timer connection number is %zu\n", conn_num);
+
+		gx_strlcpy(g_timer_ip, pfile->get_value("timer_host"), arsizeof(g_timer_ip));
+		g_timer_port = pfile->get_ll("timer_port");
 		printf("[timer_agent]: timer address is [%s]:%hu\n",
 		       *g_timer_ip == '\0' ? "*" : g_timer_ip, g_timer_port);
 
-		for (i=0; i<conn_num; i++) {
+		for (size_t i = 0; i < conn_num; ++i) {
 			pback = (BACK_CONN*)malloc(sizeof(BACK_CONN));
 			if (NULL != pback) {
 		        pback->node.pdata = pback;
@@ -147,6 +146,8 @@ static BOOL svc_timer_agent(int reason, void **ppdata)
 		return TRUE;
 	}
 	return TRUE;
+} catch (const cfg_error &) {
+	return false;
 }
 SVC_ENTRY(svc_timer_agent);
 
