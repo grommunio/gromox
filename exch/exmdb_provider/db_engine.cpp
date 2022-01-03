@@ -167,15 +167,13 @@ static void db_engine_load_dynamic_list(DB_ITEM *pdb)
 db_item_ptr db_engine_get_db(const char *path)
 {
 	BOOL b_new;
-	char htag[256];
 	char db_path[256];
 	char sql_string[256];
 	DB_ITEM *pdb;
 	
 	b_new = FALSE;
-	swap_string(htag, path);
 	std::unique_lock hhold(g_hash_lock);
-	auto it = g_hash_table.find(htag);
+	auto it = g_hash_table.find(path);
 	if (it == g_hash_table.end()) {
 		if (g_hash_table.size() >= g_table_size) {
 			hhold.unlock();
@@ -183,7 +181,7 @@ db_item_ptr db_engine_get_db(const char *path)
 			return NULL;
 		}
 		try {
-			auto xp = g_hash_table.try_emplace(htag);
+			auto xp = g_hash_table.try_emplace(path);
 			pdb = &xp.first->second;
 		} catch (const std::bad_alloc &) {
 			hhold.unlock();
@@ -251,16 +249,14 @@ void db_engine_put_db(DB_ITEM *pdb)
 BOOL db_engine_unload_db(const char *path)
 {
 	int i;
-	char htag[256];
 	
-	swap_string(htag, path);
 	for (i=0; i<20; i++) {
 		std::unique_lock hhold(g_hash_lock);
-		auto it = g_hash_table.find(htag);
+		auto it = g_hash_table.find(path);
 		DB_ITEM *pdb;
 		if (it == g_hash_table.end()) {
 			try {
-				auto xp = g_hash_table.try_emplace(htag);
+				auto xp = g_hash_table.try_emplace(path);
 				pdb = &xp.first->second;
 			} catch (const std::bad_alloc &) {
 				return TRUE;

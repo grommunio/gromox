@@ -23,7 +23,6 @@ extern BOOL utf16le_to_utf8(const void *src, size_t src_len, char *dst, size_t l
 extern BOOL get_digest(const char *src, const char *tag, char *buff, size_t buff_len);
 extern BOOL set_digest(char *src, size_t length, const char *tag, const char *value);
 extern BOOL add_digest(char *src, size_t length, const char *tag, const char *value);
-void swap_string(char *dest, const char *src);
 char* search_string(const char *haystack, const char *needle, 
     size_t haystacklen);
 char* itvltoa(long interval, char *string);

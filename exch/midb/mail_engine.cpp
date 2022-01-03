@@ -2470,11 +2470,8 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 
 static IDB_REF mail_engine_peek_idb(const char *path)
 {
-	char htag[256];
-	
-	swap_string(htag, path);
 	std::unique_lock hhold(g_hash_lock);
-	auto it = g_hash_table.find(htag);
+	auto it = g_hash_table.find(path);
 	if (it == g_hash_table.end())
 		return {};
 	auto pidb = &it->second;
@@ -2495,20 +2492,18 @@ static IDB_REF mail_engine_peek_idb(const char *path)
 static IDB_REF mail_engine_get_idb(const char *path)
 {
 	BOOL b_load;
-	char htag[256];
 	char temp_path[256];
 	char sql_string[1024];
 	
 	b_load = FALSE;
-	swap_string(htag, path);
 	std::unique_lock hhold(g_hash_lock);
 	if (g_hash_table.size() >= g_table_size) {
 		debug_info("[mail_engine]: W-1295: no room in idb hash table!");
 		return {};
 	}
-	decltype(g_hash_table.try_emplace(htag)) xp;
+	decltype(g_hash_table.try_emplace(path)) xp;
 	try {
-		xp = g_hash_table.try_emplace(htag);
+		xp = g_hash_table.try_emplace(path);
 	} catch (const std::bad_alloc &) {
 		hhold.unlock();
 		debug_info("[mail_engine]: W-1294: mail_engine_get_idb ENOMEM");
@@ -2598,7 +2593,6 @@ IDB_ITEM::~IDB_ITEM()
 static void *midbme_scanwork(void *param)
 {
 	int count;
-	char path[256];
 	time_t now_time;
 
 	count = 0;
@@ -2622,9 +2616,8 @@ static void *midbme_scanwork(void *param)
 				++it;
 				continue;
 			}
-			swap_string(path, it->first.c_str());
 			if (pidb->sub_id != 0) try {
-				unsub_list.emplace_back(path, pidb->sub_id);
+				unsub_list.emplace_back(it->first.c_str(), pidb->sub_id);
 			} catch (const std::bad_alloc &) {
 				fprintf(stderr, "E-1622: ENOMEM\n");
 			}
@@ -2641,10 +2634,8 @@ static void *midbme_scanwork(void *param)
 	std::unique_lock hhold(g_hash_lock);
 	for (auto it = g_hash_table.begin(); it != g_hash_table.end(); ) {
 		auto pidb = &it->second;
-		swap_string(path, it->first.c_str());
 		if (0 != pidb->sub_id) {
-			exmdb_client::unsubscribe_notification(
-								path, pidb->sub_id);
+			exmdb_client::unsubscribe_notification(it->first.c_str(), pidb->sub_id);
 		}
 		it = g_hash_table.erase(it);
 	}

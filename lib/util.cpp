@@ -552,23 +552,6 @@ BOOL add_digest(char *src, size_t length, const char *tag, const char *value)
 }
 
 /*
- *	swap a string from src and fill it into dest
- *	@param
- *		  dest [out]	buffer for writing out
- *		  src [in]	  buffer for reading
- */
-void swap_string(char *dest, const char *src)
-{
-	long i, j, str_len;
-
-	str_len = strlen(src);
-	for (i=str_len-1, j=0; i>=0; i--,j++) {
-		dest[j] = src[i];
-	}
-	dest[str_len] = '\0';
-}
-
-/*
  *	search a substring in a string
  *	@param
  *		haystack [in]  string to be searched
