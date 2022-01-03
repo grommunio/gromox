@@ -12,6 +12,7 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
@@ -159,12 +160,6 @@ struct SIMU_NODE {
 	uint32_t uid;
 	char *mid_string;
 	char *flags_buff;
-};
-
-struct SUB_NODE {
-	DOUBLE_LIST_NODE node;
-	char maildir[256];
-	uint32_t sub_id;
 };
 
 }
@@ -2604,14 +2599,11 @@ static void *midbme_scanwork(void *param)
 {
 	int count;
 	char path[256];
-	SUB_NODE *psub;
 	time_t now_time;
-	DOUBLE_LIST temp_list;
-	DOUBLE_LIST_NODE *pnode;
 
 	count = 0;
-	double_list_init(&temp_list);
 	while (!g_notify_stop) {
+		std::vector<std::pair<std::string, uint32_t>> unsub_list;
 		sleep(1);
 		if (count < 10) {
 			count ++;
@@ -2631,27 +2623,19 @@ static void *midbme_scanwork(void *param)
 				continue;
 			}
 			swap_string(path, it->first.c_str());
-				if (0 != pidb->sub_id) {
-					psub = me_alloc<SUB_NODE>();
-					if (NULL != psub) {
-						psub->node.pdata = psub;
-						strcpy(psub->maildir, path);
-						psub->sub_id = pidb->sub_id;
-						double_list_append_as_tail(
-							&temp_list, &psub->node);
-					}
-				}
+			if (pidb->sub_id != 0) try {
+				unsub_list.emplace_back(path, pidb->sub_id);
+			} catch (const std::bad_alloc &) {
+				fprintf(stderr, "E-1622: ENOMEM\n");
+			}
 			it = g_hash_table.erase(it);
 		}
 		hhold.unlock();
-		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
-			psub = (SUB_NODE*)pnode->pdata;
-			if (TRUE == common_util_build_environment(psub->maildir)) {
-				exmdb_client::unsubscribe_notification(
-						psub->maildir, psub->sub_id);
+		for (auto &&e : unsub_list) {
+			if (common_util_build_environment(e.first.c_str())) {
+				exmdb_client::unsubscribe_notification(e.first.c_str(), e.second);
 				common_util_free_environment();
 			}
-			free(psub);
 		}
 	}
 	std::unique_lock hhold(g_hash_lock);
@@ -2665,7 +2649,6 @@ static void *midbme_scanwork(void *param)
 		it = g_hash_table.erase(it);
 	}
 	hhold.unlock();
-	double_list_free(&temp_list);
 	return nullptr;
 }
 	
