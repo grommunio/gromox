@@ -440,6 +440,7 @@ enum {
 	PR_LAST_MODIFIER_NAME = PROP_TAG(PT_UNICODE, 0x3FFA), /* PidTagLastModifierName */
 	PR_LAST_MODIFIER_ENTRYID = PROP_TAG(PT_BINARY, 0x3FFB), /* PidTagLastModifierEntryId */
 	PR_MESSAGE_CODEPAGE = PROP_TAG(PT_LONG, 0x3FFD), /* PidTagMessageCodepage */
+	// ? = PROP_TAG(PT_LONG, 0x3FFF), /* EXCH2019: shows up with value 0 when ReceiveFolderTable was modified */
 	NEWATTACH = PROP_TAG(PT_LONG, 0x4000), /* OXCFXICS §2.2.4.1.4 */
 	STARTEMBED = PROP_TAG(PT_LONG, 0x4001),
 	ENDEMBED = PROP_TAG(PT_LONG, 0x4002),
@@ -505,6 +506,8 @@ enum {
 	// PR_RULE_MSG_LEVEL = PROP_TAG(PT_LONG, 0x65ED), /* PidTagRuleMessageLevel */
 	// PR_RULE_MSG_PROVIDER_DATA = PROP_TAG(PT_BINARY, 0x65EE), /* PidTagRuleMessageProviderData */
 	PR_RULE_MSG_SEQUENCE = PROP_TAG(PT_LONG, 0x65F3), /* PidTagRuleMessageSequence */
+	// PR_PROFILE_TRANSPORT_FLAGS = PROP_TAG(PT_LONG, 0x6605),
+	PidTagPff6605 = PROP_TAG(PT_LONG, 0x6605), /* PFF: receive folder table: NID for target folder */
 	PR_USER_ENTRYID = PROP_TAG(PT_BINARY, 0x6619), /* PidTagUserEntryId */
 	PR_MAILBOX_OWNER_ENTRYID = PROP_TAG(PT_BINARY, 0x661B), /* PidTagMailboxOwnerEntryId */
 	PR_MAILBOX_OWNER_NAME = PROP_TAG(PT_UNICODE, 0x661C), /* PidTagMailboxOwnerName */
@@ -591,6 +594,7 @@ enum {
 	PR_EC_EXTERNAL_REPLY = PROP_TAG(PT_UNICODE, 0x6767),
 	PR_EC_EXTERNAL_SUBJECT = PROP_TAG(PT_UNICODE, 0x6768),
 	// PR_EC_OUTGOING_FLAGS = PROP_TAG(PT_LONG, 0x6780),
+	// ? = PROP_TAG(PT_LONG, 0x6780), /* EXCH2019: number of ReceiveFolderTable entries pointing to this folder */
 	PR_EC_IMAP_ID = PROP_TAG(PT_LONG, 0x6782),
 	PR_EC_IMAP_SUBSCRIBED = PROP_TAG(PT_BINARY, 0x6784),
 	PR_EC_IMAP_MAX_ID = PROP_TAG(PT_LONG, 0x6785),
@@ -608,6 +612,7 @@ enum {
 	MetaTagIdsetDeleted = PROP_TAG(PT_BINARY, 0x67E5), /* OXCFXICS §2.2.1.3 */
 	// PR_LTP_ROW_ID = PROP_TAG(PT_LONG, 0x67F2), /* PidTagLtpRowId */
 	// PR_LTP_ROW_VER = PROP_TAG(PT_LONG, 0x67F3), /* PidTagLtpRowVer */
+	// ? = PROP_TAG(PT_I8, 0x67F4), /* PFF/OST: EXCH-side FID (0x6748-style) of this folder */
 	// PR_PST_PASSWORD = PROP_TAG(PT_LONG, 0x67FF), /* PidTagPstPassword */
 	// PR_OAB_NAME = PROP_TAG(PT_UNICODE, 0x6800), /* PidTagOfflineAddressBookName */
 	// PR_OAB_SEQUENCE = PROP_TAG(PT_LONG, 0x6801), /* PidTagOfflineAddressBookSequence */

@@ -28,7 +28,7 @@ Show properties in detail (enhances \fB\-t\fP).
 Splice objects from the PFF into existing folders. Specifically, the PFF root
 is mapped to the store root, and special folders (Sent Items, Deleted Items,
 etc.) are mapped to special folders in the store if the PFF has the necessary
-information.
+information. PST files have no such mapping hint for Inbox; only OST do.
 .TP
 \fB\-t\fP
 Show a diagnostic tree view of the source data as it is being read.

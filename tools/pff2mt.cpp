@@ -706,7 +706,7 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 		ret = do_recips(depth, parent, item);
 	} else if (item_type == LIBPFF_ITEM_TYPE_ATTACHMENT) {
 		ret = do_attach(depth, parent, item);
-	} else if (g_show_tree && ident == 0x62b) {
+	} else if (g_show_tree && (ident & NID_TYPE_MASK) == NID_TYPE_RECEIVE_FOLDER_TABLE) {
 		do_print(depth++, item);
 		auto tset = item_to_tarray_set(item);
 		gi_dump_tarray_set(depth, *tset);
@@ -714,10 +714,6 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 
 	if (ret != 0)
 		return ret;
-	/*
-	 * Subitems usually consist exclusively of messages (<=> attachments
-	 * are not subitems, even if they are nested (sub) within a message).
-	 */
 	int nsub = 0;
 	if (libpff_item_get_number_of_sub_items(item, &nsub, &~unique_tie(err)) < 1)
 		throw az_error("PF-1003", err);
@@ -754,7 +750,10 @@ static void az_fmap_standard(libpff_file_t *file, const char *filename)
 		"Import of "s + HX_basename(filename) + timebuf});
 }
 
-static void az_fmap_splice(libpff_file_t *file)
+/**
+ * Analyze message store properties to discover special folders.
+ */
+static void az_fmap_splice_mst(libpff_file_t *file)
 {
 	g_folder_map.emplace(NID_ROOT_FOLDER, tgt_folder{false, PRIVATE_FID_ROOT, "FID_ROOT"});
 
@@ -776,6 +775,59 @@ static void az_fmap_splice(libpff_file_t *file)
 	nid = az_nid_from_mst(mst.get(), PR_FINDER_ENTRYID);
 	if (nid != 0)
 		g_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_FINDER, "FID_FINDER"});
+}
+
+/**
+ * Analyze the Receive Folder Table to discover the inbox special folder.
+ */
+static void az_fmap_splice_rft2(const tarray_set &tset)
+{
+	unsigned int goodmatch = 0;
+	uint32_t nid = 0;
+	for (size_t i = 0; i < tset.count; ++i) {
+		auto props = tset.pparray[i];
+		if (props == nullptr)
+			continue;
+		auto msgcls = props->get<char>(PR_MESSAGE_CLASS);
+		auto tgtfld = props->get<uint32_t>(PidTagPff6605);
+		if (msgcls == nullptr || tgtfld == nullptr)
+			continue;
+		/*
+		 * In PST, the receive folder with msgcls="" is of no
+		 * use because it points to the PST root.
+		 */
+		if (strcmp(msgcls, "IPM") == 0 && goodmatch < 2) {
+			goodmatch = 2;
+			nid = *tgtfld;
+		} else if (strcmp(msgcls, "IPM.Note") == 0 && goodmatch < 3) {
+			goodmatch = 3;
+			nid = *tgtfld;
+		}
+	}
+	if (goodmatch > 0)
+		g_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_INBOX, "FID_INBOX"});
+}
+
+static void az_fmap_splice_rft(libpff_file_t *file)
+{
+	libpff_error_ptr err;
+	libpff_item_ptr root;
+	if (libpff_file_get_root_item(file, &unique_tie(root), &~unique_tie(err)) < 1)
+		throw az_error("PF-1002", err);
+	int nsub = 0;
+	if (libpff_item_get_number_of_sub_items(root.get(), &nsub, &~unique_tie(err)) < 1)
+		throw az_error("PF-1007", err);
+	for (int i = 0; i < nsub; ++i) {
+		libpff_item_ptr subitem;
+		unsigned int ident = 0;
+
+		if (libpff_item_get_sub_item(root.get(), i, &unique_tie(subitem), &~unique_tie(err)) < 1)
+			throw az_error("PF-1008", err);
+		if (libpff_item_get_identifier(subitem.get(), &ident, &~unique_tie(err)) < 1)
+			throw az_error("PF-1009", err);
+		if ((ident & NID_TYPE_MASK) == NID_TYPE_RECEIVE_FOLDER_TABLE)
+			az_fmap_splice_rft2(*item_to_tarray_set(subitem.get()));
+	}
 }
 
 static void npg_ent(gi_name_map &map, libpff_record_entry_t *rent)
@@ -896,10 +948,12 @@ static int do_file(const char *filename) try
 	xsplice = false; /* <=> not public store. */
 	write(STDOUT_FILENO, &xsplice, sizeof(xsplice));
 	g_folder_map.clear();
-	if (g_splice)
-		az_fmap_splice(file.get());
-	else
+	if (g_splice) {
+		az_fmap_splice_mst(file.get());
+		az_fmap_splice_rft(file.get());
+	} else {
 		az_fmap_standard(file.get(), filename);
+	}
 	gi_dump_folder_map(g_folder_map);
 	gi_folder_map_write(g_folder_map);
 
