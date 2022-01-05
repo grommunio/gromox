@@ -128,17 +128,44 @@ static YError az_error(const char *prefix, const libpff_error_ptr &err)
 	return YError(std::string(prefix) + ": " + buf);
 }
 
-static const char *az_item_type_to_str(uint8_t t)
+static const char *az_nid_type_to_str(uint8_t t)
+{
+	thread_local char buf[32];
+	switch (t & NID_TYPE_MASK) {
+	case NID_TYPE_HID: return "hid";
+	case NID_TYPE_INTERNAL: return "int";
+	case NID_TYPE_NORMAL_FOLDER: return "folder";
+	case NID_TYPE_SEARCH_FOLDER: return "sf";
+	case NID_TYPE_ATTACHMENT: return "atx";
+	case NID_TYPE_SEARCH_UPDATE_QUEUE: return "srchupdq";
+	case NID_TYPE_SEARCH_CRITERIA_OBJECT: return "srchcritobj";
+	case NID_TYPE_ASSOC_MESSAGE: return "assoc-msg";
+	case NID_TYPE_CONTENTS_TABLE_INDEX: return "conttblidx";
+	case NID_TYPE_RECEIVE_FOLDER_TABLE: return "rcvfldtbl";
+	case NID_TYPE_OUTGOING_QUEUE_TABLE: return "outgoingq";
+	case NID_TYPE_HIERARCHY_TABLE: return "hier";
+	case NID_TYPE_CONTENTS_TABLE: return "contents";
+	case NID_TYPE_ASSOC_CONTENTS_TABLE: return "assoccnttbl";
+	case NID_TYPE_SEARCH_CONTENTS_TABLE: return "srchconttbl";
+	case NID_TYPE_ATTACHMENT_TABLE: return "atxtbl";
+	case NID_TYPE_RECIPIENT_TABLE: return "rcpttbl";
+	case NID_TYPE_SEARCH_TABLE_INDEX: return "srchtblidx";
+	case NID_TYPE_LTP: return "ltp";
+	default: snprintf(buf, sizeof(buf), "unknown-%xh", t); return buf;
+	}
+}
+
+static const char *az_pffitem_type_to_str(uint8_t t)
 {
 	thread_local char buf[32];
 	switch (t) {
 	case LIBPFF_ITEM_TYPE_ACTIVITY: return "activity";
 	case LIBPFF_ITEM_TYPE_APPOINTMENT: return "appointment";
-	case LIBPFF_ITEM_TYPE_ATTACHMENT: return "atx";
+	case LIBPFF_ITEM_TYPE_ATTACHMENT: return "attachment";
 	case LIBPFF_ITEM_TYPE_CONTACT: return "contact";
 	case LIBPFF_ITEM_TYPE_DISTRIBUTION_LIST: return "dlist";
 	case LIBPFF_ITEM_TYPE_DOCUMENT: return "document";
-	case LIBPFF_ITEM_TYPE_CONFLICT_MESSAGE: return "conflict message";
+	case LIBPFF_ITEM_TYPE_CONFLICT_MESSAGE: return "conflict-message";
 	case LIBPFF_ITEM_TYPE_EMAIL: return "email";
 	case LIBPFF_ITEM_TYPE_EMAIL_SMIME: return "email(smime)";
 	case LIBPFF_ITEM_TYPE_FOLDER: return "folder";
@@ -620,10 +647,11 @@ static void do_print(unsigned int depth, libpff_item_t *item)
 	libpff_item_get_number_of_entries(item, &nent, nullptr);
 	tree(depth);
 	auto sp_nid = az_special_ident(ident);
-	tlog("[id=%lxh%s%s type=%s nset=%d]\n",
+	tlog("[id=%lxh%s%s ntyp=%s type=%s nset=%d]\n",
 		static_cast<unsigned long>(ident),
 		*sp_nid != '\0' ? " " : "", sp_nid,
-		az_item_type_to_str(item_type),
+		az_nid_type_to_str(ident),
+		az_pffitem_type_to_str(item_type),
 		nsets, static_cast<unsigned long>(nent));
 }
 
