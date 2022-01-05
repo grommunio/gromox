@@ -8,7 +8,9 @@ gromox\-mkmidb \(em Tool for creating a blank message index database
 .TP
 \fB\-c\fP \fIconfig\fP
 Read configuration directives from the given file. If this option is not
-specified, /etc/gromox/sa.cfg will be read if it exists.
+specified, /etc/gromox/mysql_adaptor.cfg will be read for MySQL connection
+parameters if that file exists, and /etc/gromox/sa.cfg will be read for program
+parameters if that file exists.
 .TP
 \fB\-d\fP \fIdatapath\fP
 This option can be used to override the \fIdata_file_path\fP variable from the
@@ -21,4 +23,4 @@ Display option summary.
 \fIdata_file_path\fP/sqlite3_midb.txt: SQLite instructions to generate a
 message index database.
 .SH See also
-\fBgromox\fP(7), \fBsa.cfg\fP(5gx)
+\fBgromox\fP(7), \fBmysql_adaptor\fP(4gx), \fBsa.cfg\fP(5gx)

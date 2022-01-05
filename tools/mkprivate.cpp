@@ -202,35 +202,29 @@ int main(int argc, const char **argv)
 		printf("usage: %s <username>\n", argv[0]);
 		return EXIT_FAILURE;
 	}
-	auto pconfig = config_file_prg(opt_config_file, "sa.cfg");
+	auto pconfig = config_file_prg(opt_config_file, "mysql_adaptor.cfg");
 	if (opt_config_file != nullptr && pconfig == nullptr)
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
 		return EXIT_FAILURE;
-	auto str_value = pconfig->get_value("MYSQL_HOST");
-	if (str_value == nullptr)
-		strcpy(mysql_host, "localhost");
-	else
-		gx_strlcpy(mysql_host, str_value, arsizeof(mysql_host));
-	
-	str_value = pconfig->get_value("MYSQL_PORT");
-	if (NULL == str_value) {
-		mysql_port = 3306;
-	} else {
-		mysql_port = strtol(str_value, nullptr, 0);
-		if (mysql_port <= 0)
-			mysql_port = 3306;
-	}
+	static constexpr cfg_directive cfg_default_values[] = {
+		{"mysql_host", "localhost"},
+		{"mysql_port", "3306"},
+		{"mysql_username", "root"},
+		{"mysql_dbname", "email"},
+	};
+	config_file_apply(*pconfig, cfg_default_values);
+	gx_strlcpy(mysql_host, pconfig->get_value("mysql_host"), arsizeof(mysql_host));
+	mysql_port = pconfig->get_ll("mysql_port");
+	gx_strlcpy(mysql_user, pconfig->get_value("mysql_username"), arsizeof(mysql_user));
+	auto mysql_passwd = pconfig->get_value("mysql_password");
+	gx_strlcpy(db_name, pconfig->get_value("mysql_dbname"), arsizeof(db_name));
 
-	str_value = pconfig->get_value("MYSQL_USERNAME");
-	gx_strlcpy(mysql_user, str_value != nullptr ? str_value : "root", arsizeof(mysql_user));
-	auto mysql_passwd = pconfig->get_value("MYSQL_PASSWORD");
-	str_value = pconfig->get_value("MYSQL_DBNAME");
-	if (str_value == nullptr)
-		strcpy(db_name, "email");
-	else
-		gx_strlcpy(db_name, str_value, arsizeof(db_name));
-
+	pconfig = config_file_prg(opt_config_file, "sa.cfg");
+	if (opt_config_file != nullptr && pconfig == nullptr)
+		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
+	if (pconfig == nullptr)
+		return EXIT_FAILURE;
 	const char *datadir = opt_datadir != nullptr ? opt_datadir :
 	                      pconfig->get_value("data_file_path");
 	if (datadir == nullptr)
