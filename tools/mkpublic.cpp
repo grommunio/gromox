@@ -120,13 +120,13 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	if (2 != argc) {
 		printf("usage: %s <domainname>\n", argv[0]);
-		return 1;
+		return EXIT_FAILURE;
 	}
 	auto pconfig = config_file_prg(opt_config_file, "sa.cfg");
 	if (opt_config_file != nullptr && pconfig == nullptr)
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
-		return 2;
+		return EXIT_FAILURE;
 	auto str_value = pconfig->get_value("MYSQL_HOST");
 	if (str_value == nullptr)
 		strcpy(mysql_host, "localhost");
@@ -158,7 +158,7 @@ int main(int argc, const char **argv)
 	
 	if (NULL == (pmysql = mysql_init(NULL))) {
 		printf("Failed to init mysql object\n");
-		return 3;
+		return EXIT_FAILURE;
 	}
 
 	if (NULL == mysql_real_connect(pmysql, mysql_host, mysql_user,
@@ -166,12 +166,12 @@ int main(int argc, const char **argv)
 		mysql_close(pmysql);
 		printf("Failed to connect to the database %s@%s/%s\n",
 		       mysql_user, mysql_host, db_name);
-		return 3;
+		return EXIT_FAILURE;
 	}
 	if (mysql_set_character_set(pmysql, "utf8mb4") != 0) {
 		fprintf(stderr, "\"utf8mb4\" not available: %s", mysql_error(pmysql));
 		mysql_close(pmysql);
-		return 3;
+		return EXIT_FAILURE;
 	}
 	
 	snprintf(mysql_string, arsizeof(mysql_string), "SELECT 0, homedir, 0, "
@@ -181,7 +181,7 @@ int main(int argc, const char **argv)
 		NULL == (pmyres = mysql_store_result(pmysql))) {
 		printf("fail to query database\n");
 		mysql_close(pmysql);
-		return 3;
+		return EXIT_FAILURE;
 	}
 		
 	if (1 != mysql_num_rows(pmyres)) {
@@ -189,7 +189,7 @@ int main(int argc, const char **argv)
 				"for username %s\n", argv[1]);
 		mysql_free_result(pmyres);
 		mysql_close(pmysql);
-		return 3;
+		return EXIT_FAILURE;
 	}
 
 	myrow = mysql_fetch_row(pmyres);
@@ -205,7 +205,7 @@ int main(int argc, const char **argv)
 	auto temp_path = dir + "/exmdb"s;
 	if (mkdir(temp_path.c_str(), 0777) && errno != EEXIST) {
 		fprintf(stderr, "E-1398: mkdir %s: %s\n", temp_path.c_str(), strerror(errno));
-		return 6;
+		return EXIT_FAILURE;
 	}
 	temp_path += "/exchange.sqlite3";
 	/*
@@ -218,13 +218,13 @@ int main(int argc, const char **argv)
 		close(tfd);
 	} else if (errno == EEXIST) {
 		printf("can not create store database, %s already exists\n", temp_path.c_str());
-		return 6;
+		return EXIT_FAILURE;
 	}
 	
 	auto filp = fopen_sd("sqlite3_common.txt", datadir);
 	if (filp == nullptr) {
 		fprintf(stderr, "fopen_sd sqlite3_common.txt: %s\n", strerror(errno));
-		return 7;
+		return EXIT_FAILURE;
 	}
 	std::string sql_string;
 	size_t slurp_len = 0;
@@ -234,7 +234,7 @@ int main(int argc, const char **argv)
 	filp = fopen_sd("sqlite3_public.txt", datadir);
 	if (filp == nullptr) {
 		fprintf(stderr, "fopen_sd sqlite3_public.txt: %s\n", strerror(errno));
-		return 7;
+		return EXIT_FAILURE;
 	}
 	slurp_data.reset(HX_slurp_fd(fileno(filp.get()), &slurp_len));
 	if (slurp_data != nullptr)
@@ -243,29 +243,29 @@ int main(int argc, const char **argv)
 	filp.reset();
 	if (SQLITE_OK != sqlite3_initialize()) {
 		printf("Failed to initialize sqlite engine\n");
-		return 9;
+		return EXIT_FAILURE;
 	}
 	auto cl_0 = make_scope_exit([]() { sqlite3_shutdown(); });
 	if (sqlite3_open_v2(temp_path.c_str(), &psqlite,
 	    SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr) != SQLITE_OK) {
 		printf("fail to create store database\n");
-		return 9;
+		return EXIT_FAILURE;
 	}
 	auto cl_1 = make_scope_exit([&]() { sqlite3_close(psqlite); });
 	auto sql_transact = gx_sql_begin_trans(psqlite);
 	if (gx_sql_exec(psqlite, sql_string.c_str()) != SQLITE_OK)
-		return 9;
+		return EXIT_FAILURE;
 	
 	std::vector<std::string> namedprop_list;
 	auto ret = list_file_read_fixedstrings("propnames.txt", datadir, namedprop_list);
 	if (ret == -ENOENT) {
 	} else if (ret < 0) {
 		fprintf(stderr, "list_file_initd propnames.txt: %s\n", strerror(-ret));
-		return 7;
+		return EXIT_FAILURE;
 	}
 	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO named_properties VALUES (?, ?)");
 	if (pstmt == nullptr)
-		return 9;
+		return EXIT_FAILURE;
 	
 	i = 0;
 	for (const auto &name : namedprop_list) {
@@ -276,7 +276,7 @@ int main(int argc, const char **argv)
 		if (ret != SQLITE_DONE) {
 			printf("sqlite3_step on namedprop \"%s\": %s\n",
 			       name.c_str(), sqlite3_errstr(ret));
-			return 9;
+			return EXIT_FAILURE;
 		}
 		sqlite3_reset(pstmt);
 	}
@@ -284,7 +284,7 @@ int main(int argc, const char **argv)
 	
 	pstmt = gx_sql_prep(psqlite, "INSERT INTO store_properties VALUES (?, ?)");
 	if (pstmt == nullptr)
-		return 9;
+		return EXIT_FAILURE;
 	nt_time = rop_util_unix_to_nttime(time(NULL));
 	std::pair<uint32_t, uint64_t> storeprops[] = {
 		{PR_CREATION_TIME, nt_time},
@@ -297,7 +297,7 @@ int main(int argc, const char **argv)
 		sqlite3_bind_int64(pstmt, 2, e.second);
 		if (sqlite3_step(pstmt) != SQLITE_DONE) {
 			printf("fail to step sql inserting\n");
-			return 9;
+			return EXIT_FAILURE;
 		}
 		sqlite3_reset(pstmt);
 	}
@@ -315,13 +315,13 @@ int main(int argc, const char **argv)
 		if (!create_generic_folder(psqlite, e.fid, e.parent,
 		    domain_id, e.name, nullptr)) {
 			printf("Failed to create \"%s\" folder\n", e.name);
-			return 10;
+			return EXIT_FAILURE;
 		}
 	}
 
 	pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");
 	if (pstmt == nullptr)
-		return 9;
+		return EXIT_FAILURE;
 	tmp_guid = guid_random_new();
 	char tmp_bguid[GUIDSTR_SIZE];
 	guid_to_string(&tmp_guid, tmp_bguid, arsizeof(tmp_bguid));
@@ -329,7 +329,7 @@ int main(int argc, const char **argv)
 	sqlite3_bind_text(pstmt, 2, tmp_bguid, -1, SQLITE_STATIC);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {
 		printf("fail to step sql inserting\n");
-		return 9;
+		return EXIT_FAILURE;
 	}
 	sqlite3_reset(pstmt);
 	std::pair<uint32_t, uint64_t> confprops[] = {
@@ -347,7 +347,7 @@ int main(int argc, const char **argv)
 		sqlite3_bind_int64(pstmt, 2, e.second);
 		if (sqlite3_step(pstmt) != SQLITE_DONE) {
 			printf("fail to step sql inserting\n");
-			return 9;
+			return EXIT_FAILURE;
 		}
 		sqlite3_reset(pstmt);
 	}
