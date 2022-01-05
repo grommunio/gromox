@@ -557,6 +557,28 @@ void driver::fmap_setup_splice()
 	nid = hid_from_ren(*root, sfJunkEmail);
 	if (nid != 0)
 		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_JUNK, "FID_JUNK"});
+
+	char qstr[71];
+	snprintf(qstr, arsizeof(qstr), "SELECT objid, messageclass FROM receivefolder WHERE storeid=%u", m_store_hid);
+	auto res = query(qstr);
+	DB_ROW row;
+	unsigned int goodmatch = 0;
+	while ((row = res.fetch_row()) != nullptr) {
+		auto xobjid = strtoul(znul(row[0]), nullptr, 0);
+		auto xmsgcl = znul(row[1]);
+		if (strcmp(xmsgcl, "") == 0 && goodmatch < 1) {
+			goodmatch = 1;
+			nid = xobjid;
+		} else if (strcmp(xmsgcl, "IPM") == 0 && goodmatch < 2) {
+			goodmatch = 2;
+			nid = xobjid;
+		} else if (strcmp(xmsgcl, "IPM.Note") == 0 && goodmatch < 3) {
+			goodmatch = 3;
+			nid = xobjid;
+		}
+	}
+	if (goodmatch > 0)
+		m_folder_map.emplace(nid, tgt_folder{false, PRIVATE_FID_INBOX, "FID_INBOX"});
 }
 
 void driver::fmap_setup_splice_public()
