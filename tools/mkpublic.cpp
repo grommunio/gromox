@@ -286,55 +286,39 @@ int main(int argc, const char **argv)
 	if (pstmt == nullptr)
 		return 9;
 	nt_time = rop_util_unix_to_nttime(time(NULL));
-	sqlite3_bind_int64(pstmt, 1, PR_CREATION_TIME);
-	sqlite3_bind_int64(pstmt, 2, nt_time);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return 9;
-	}
-	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PR_MESSAGE_SIZE_EXTENDED);
-	sqlite3_bind_int64(pstmt, 2, 0);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return 9;
-	}
-	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PR_ASSOC_MESSAGE_SIZE_EXTENDED);
-	sqlite3_bind_int64(pstmt, 2, 0);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return 9;
-	}
-	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, PR_NORMAL_MESSAGE_SIZE_EXTENDED);
-	sqlite3_bind_int64(pstmt, 2, 0);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return 9;
+	std::pair<uint32_t, uint64_t> storeprops[] = {
+		{PR_CREATION_TIME, nt_time},
+		{PR_MESSAGE_SIZE_EXTENDED, 0},
+		{PR_ASSOC_MESSAGE_SIZE_EXTENDED, 0},
+		{PR_NORMAL_MESSAGE_SIZE_EXTENDED, 0},
+	};
+	for (const auto &e : storeprops) {
+		sqlite3_bind_int64(pstmt, 1, e.first);
+		sqlite3_bind_int64(pstmt, 2, e.second);
+		if (sqlite3_step(pstmt) != SQLITE_DONE) {
+			printf("fail to step sql inserting\n");
+			return 9;
+		}
+		sqlite3_reset(pstmt);
 	}
 	pstmt.finalize();
-	if (FALSE == create_generic_folder(psqlite, PUBLIC_FID_ROOT,
-		0, domain_id, "Root Container", NULL)) {
-		printf("fail to create \"root\" folder\n");
-		return 10;
+	static constexpr struct {
+		uint64_t parent = 0, fid = 0;
+		const char *name = nullptr;
+	} generic_folders[] = {
+		{0, PUBLIC_FID_ROOT, "Root Container"},
+		{PUBLIC_FID_ROOT, PUBLIC_FID_IPMSUBTREE, "IPM_SUBTREE"},
+		{PUBLIC_FID_ROOT, PUBLIC_FID_NONIPMSUBTREE, "NON_IPM_SUBTREE"},
+		{PUBLIC_FID_NONIPMSUBTREE, PUBLIC_FID_EFORMSREGISTRY, "EFORMS REGISTRY"},
+	};
+	for (const auto &e : generic_folders) {
+		if (!create_generic_folder(psqlite, e.fid, e.parent,
+		    domain_id, e.name, nullptr)) {
+			printf("Failed to create \"%s\" folder\n", e.name);
+			return 10;
+		}
 	}
-	if (FALSE == create_generic_folder(psqlite, PUBLIC_FID_IPMSUBTREE,
-		PUBLIC_FID_ROOT, domain_id, "IPM_SUBTREE", NULL)) {
-		printf("fail to create \"ipmsubtree\" folder\n");
-		return 10;
-	}
-	if (FALSE == create_generic_folder(psqlite, PUBLIC_FID_NONIPMSUBTREE,
-		PUBLIC_FID_ROOT, domain_id, "NON_IPM_SUBTREE", NULL)) {
-		printf("fail to create \"ipmsubtree\" folder\n");
-		return 10;
-	}
-	if (FALSE == create_generic_folder(psqlite, PUBLIC_FID_EFORMSREGISTRY,
-		PUBLIC_FID_NONIPMSUBTREE, domain_id, "EFORMS REGISTRY", NULL)) {
-		printf("fail to create \"ipmsubtree\" folder\n");
-		return 10;
-	}
-	
+
 	pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");
 	if (pstmt == nullptr)
 		return 9;
@@ -348,61 +332,24 @@ int main(int argc, const char **argv)
 		return 9;
 	}
 	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_CURRENT_EID);
-	sqlite3_bind_int64(pstmt, 2, 0x100);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return 9;
-	}
-	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_MAXIMUM_EID);
-	sqlite3_bind_int64(pstmt, 2, ALLOCATED_EID_RANGE);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return 9;
-	}
-	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_LAST_CHANGE_NUMBER);
-	sqlite3_bind_int64(pstmt, 2, g_last_cn);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return 9;
-	}
-	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_LAST_CID);
-	sqlite3_bind_int64(pstmt, 2, 0);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return 9;
-	}
-	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_LAST_ARTICLE_NUMBER);
-	sqlite3_bind_int64(pstmt, 2, g_last_art);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return 9;
-	}
-	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_SEARCH_STATE);
-	sqlite3_bind_int64(pstmt, 2, 0);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return 9;
-	}
-	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_DEFAULT_PERMISSION);
-	sqlite3_bind_int64(pstmt, 2, frightsReadAny | frightsCreate |
-		frightsVisible | frightsEditOwned | frightsDeleteOwned);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return 9;
-	}
-	sqlite3_reset(pstmt);
-	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_ANONYMOUS_PERMISSION);
-	sqlite3_bind_int64(pstmt, 2, 0);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return 9;
+	std::pair<uint32_t, uint64_t> confprops[] = {
+		{CONFIG_ID_CURRENT_EID, 0x100},
+		{CONFIG_ID_MAXIMUM_EID, ALLOCATED_EID_RANGE},
+		{CONFIG_ID_LAST_CHANGE_NUMBER, g_last_cn},
+		{CONFIG_ID_LAST_CID, 0},
+		{CONFIG_ID_LAST_ARTICLE_NUMBER, g_last_art},
+		{CONFIG_ID_SEARCH_STATE, 0},
+		{CONFIG_ID_DEFAULT_PERMISSION, frightsReadAny | frightsCreate | frightsVisible | frightsEditOwned | frightsDeleteOwned},
+		{CONFIG_ID_ANONYMOUS_PERMISSION, 0},
+	};
+	for (const auto &e : confprops) {
+		sqlite3_bind_int64(pstmt, 1, e.first);
+		sqlite3_bind_int64(pstmt, 2, e.second);
+		if (sqlite3_step(pstmt) != SQLITE_DONE) {
+			printf("fail to step sql inserting\n");
+			return 9;
+		}
+		sqlite3_reset(pstmt);
 	}
 	pstmt.finalize();
 	sql_transact.commit();
