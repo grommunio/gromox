@@ -243,6 +243,7 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 				continue;
 			collect[proptag].mvstr.emplace_back(row[PCOL_STRING]);
 			break;
+		case PT_MV_CLSID:
 		case PT_MV_BINARY:
 			if (row[PCOL_BINARY] == nullptr)
 				continue;
@@ -285,6 +286,7 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 				throw std::bad_alloc();
 			break;
 		}
+		case PT_MV_CLSID:
 		case PT_MV_BINARY: {
 			std::vector<BINARY> bins(xpair.mvstr.size());
 			BINARY_ARRAY ba;
