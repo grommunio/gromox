@@ -41,6 +41,41 @@ static BOOL oxctable_verify_columns_and_sorts(
 	return TRUE;
 }
 
+static inline bool table_acceptable_type(uint16_t type)
+{
+	switch (type) {
+	case PT_SHORT:
+	case PT_LONG:
+	case PT_FLOAT:
+	case PT_DOUBLE:
+	case PT_CURRENCY:
+	case PT_APPTIME:
+	case PT_BOOLEAN:
+	case PT_OBJECT:
+	case PT_I8:
+	case PT_STRING8:
+	case PT_UNICODE:
+	case PT_SYSTIME:
+	case PT_CLSID:
+	case PT_SVREID:
+	case PT_SRESTRICTION:
+	case PT_ACTIONS:
+	case PT_BINARY:
+	case PT_MV_SHORT:
+	case PT_MV_LONG:
+	case PT_MV_CURRENCY:
+	case PT_MV_I8:
+	case PT_MV_STRING8:
+	case PT_MV_UNICODE:
+	case PT_MV_SYSTIME:
+	case PT_MV_CLSID:
+	case PT_MV_BINARY:
+		return true;
+	default:
+		return false;
+	}
+}
+
 uint32_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
     uint8_t *ptable_status, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
@@ -63,39 +98,8 @@ uint32_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
 					return ecNotSupported;
 				type &= ~MV_INSTANCE;
 		}
-		switch (type) {
-		case PT_SHORT:
-		case PT_LONG:
-		case PT_FLOAT:
-		case PT_DOUBLE:
-		case PT_CURRENCY:
-		case PT_APPTIME:
-		case PT_BOOLEAN:
-		case PT_OBJECT:
-		case PT_I8:
-		case PT_STRING8:
-		case PT_UNICODE:
-		case PT_SYSTIME:
-		case PT_CLSID:
-		case PT_SVREID:
-		case PT_SRESTRICTION:
-		case PT_ACTIONS:
-		case PT_BINARY:
-		case PT_MV_SHORT:
-		case PT_MV_LONG:
-		case PT_MV_CURRENCY:
-		case PT_MV_I8:
-		case PT_MV_STRING8:
-		case PT_MV_UNICODE:
-		case PT_MV_SYSTIME:
-		case PT_MV_CLSID:
-		case PT_MV_BINARY:
-			break;
-		case PT_UNSPECIFIED:
-		case PT_ERROR:
-		default:
+		if (!table_acceptable_type(type))
 			return ecInvalidParam;
-		}
 	}
 	auto psorts = ptable->get_sorts();
 	if (NULL != psorts) {
@@ -178,39 +182,8 @@ uint32_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteria,
 			}
 			b_multi_inst = TRUE;
 		}
-		switch (type) {
-		case PT_SHORT:
-		case PT_LONG:
-		case PT_FLOAT:
-		case PT_DOUBLE:
-		case PT_CURRENCY:
-		case PT_APPTIME:
-		case PT_BOOLEAN:
-		case PT_OBJECT:
-		case PT_I8:
-		case PT_STRING8:
-		case PT_UNICODE:
-		case PT_SYSTIME:
-		case PT_CLSID:
-		case PT_SVREID:
-		case PT_SRESTRICTION:
-		case PT_ACTIONS:
-		case PT_BINARY:
-		case PT_MV_SHORT:
-		case PT_MV_LONG:
-		case PT_MV_CURRENCY:
-		case PT_MV_I8:
-		case PT_MV_STRING8:
-		case PT_MV_UNICODE:
-		case PT_MV_SYSTIME:
-		case PT_MV_CLSID:
-		case PT_MV_BINARY:
-			break;
-		case PT_UNSPECIFIED:
-		case PT_ERROR:
-		default:
+		if (!table_acceptable_type(type))
 			return ecInvalidParam;
-		}
 		if (TABLE_SORT_MAXIMUM_CATEGORY ==
 			psort_criteria->psort[i].table_sort ||
 			TABLE_SORT_MINIMUM_CATEGORY ==
