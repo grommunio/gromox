@@ -864,10 +864,13 @@ static int do_file(const char *filename) try
 		return -EIO;
 	}
 	fprintf(stderr, "pff: Reading %s...\n", filename);
+	errno = 0;
 	if (libpff_file_open(file.get(), filename, LIBPFF_OPEN_READ, nullptr) < 1) {
-		int s = errno;
-		fprintf(stderr, "pff: Could not open \"%s\": %s\n", filename, strerror(s));
-		return -(errno = s);
+		if (errno != 0)
+			fprintf(stderr, "pff: Could not open \"%s\": %s\n", filename, strerror(errno));
+		else
+			fprintf(stderr, "pff: \"%s\" not recognized as PFF\n", filename);
+		return -1;
 	}
 
 	write(STDOUT_FILENO, "GXMT0001", 8);
