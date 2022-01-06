@@ -20,9 +20,8 @@ void *propval_dup(uint16_t type, const void *pvi)
 	case PT_UNSPECIFIED: {
 		auto preturn = static_cast<TYPED_PROPVAL *>(malloc(sizeof(TYPED_PROPVAL)));
 		auto psrc = static_cast<const TYPED_PROPVAL *>(pvi);
-		if (NULL == preturn) {
+		if (preturn == nullptr)
 			return NULL;
-		}
 		preturn->type = psrc->type;
 		preturn->pvalue = propval_dup(psrc->type, psrc->pvalue);
 		if (preturn->pvalue == nullptr) {
@@ -33,43 +32,38 @@ void *propval_dup(uint16_t type, const void *pvi)
 	}
 	case PT_SHORT: {
 		auto preturn = static_cast<uint16_t *>(malloc(sizeof(uint16_t)));
-		if (NULL == preturn) {
+		if (preturn == nullptr)
 			return NULL;
-		}
 		*preturn = *static_cast<const uint16_t *>(pvi);
 		return preturn;
 	}
 	case PT_ERROR:
 	case PT_LONG: {
 		auto preturn = static_cast<uint32_t *>(malloc(sizeof(uint32_t)));
-		if (NULL == preturn) {
+		if (preturn == nullptr)
 			return NULL;
-		}
 		*preturn = *static_cast<const uint32_t *>(pvi);
 		return preturn;
 	}
 	case PT_FLOAT: {
 		auto preturn = static_cast<float *>(malloc(sizeof(float)));
-		if (NULL == preturn) {
+		if (preturn == nullptr)
 			return NULL;
-		}
 		*preturn = *static_cast<const float *>(pvi);
 		return preturn;
 	}
 	case PT_DOUBLE:
 	case PT_APPTIME: {
 		auto preturn = static_cast<double *>(malloc(sizeof(double)));
-		if (NULL == preturn) {
+		if (preturn == nullptr)
 			return NULL;
-		}
 		*preturn = *static_cast<const double *>(pvi);
 		return preturn;
 	}
 	case PT_BOOLEAN: {
 		auto preturn = static_cast<uint8_t *>(malloc(sizeof(uint8_t)));
-		if (NULL == preturn) {
+		if (preturn == nullptr)
 			return NULL;
-		}
 		*preturn = *static_cast<const uint8_t *>(pvi);
 		return preturn;
 	}
@@ -77,9 +71,8 @@ void *propval_dup(uint16_t type, const void *pvi)
 	case PT_I8:
 	case PT_SYSTIME: {
 		auto preturn = static_cast<uint64_t *>(malloc(sizeof(uint64_t)));
-		if (NULL == preturn) {
+		if (preturn == nullptr)
 			return NULL;
-		}
 		*preturn = *static_cast<const uint64_t *>(pvi);
 		return preturn;
 	}
@@ -88,18 +81,16 @@ void *propval_dup(uint16_t type, const void *pvi)
 		return strdup(static_cast<const char *>(pvi));
 	case PT_CLSID: {
 		auto preturn = static_cast<GUID *>(malloc(sizeof(GUID)));
-		if (NULL == preturn) {
+		if (preturn == nullptr)
 			return NULL;
-		}
 		memcpy(preturn, pvi, sizeof(GUID));
 		return preturn;
 	}
 	case PT_SVREID: {
 		auto preturn = static_cast<SVREID *>(malloc(sizeof(SVREID)));
 		auto psrc = static_cast<const SVREID *>(pvi);
-		if (NULL == preturn) {
+		if (preturn == nullptr)
 			return NULL;
-		}
 		if (psrc->pbin == nullptr) {
 			memcpy(preturn, pvi, sizeof(SVREID));
 			return preturn;
@@ -131,9 +122,8 @@ void *propval_dup(uint16_t type, const void *pvi)
 	case PT_OBJECT: {
 		auto preturn = static_cast<BINARY *>(malloc(sizeof(BINARY)));
 		auto psrc = static_cast<const BINARY *>(pvi);
-		if (NULL == preturn) {
+		if (preturn == nullptr)
 			return NULL;
-		}
 		preturn->cb = psrc->cb;
 		if (psrc->cb == 0) {
 			preturn->pv = NULL;
@@ -150,9 +140,8 @@ void *propval_dup(uint16_t type, const void *pvi)
 	case PT_MV_SHORT: {
 		auto preturn = static_cast<SHORT_ARRAY *>(malloc(sizeof(SHORT_ARRAY)));
 		auto psrc = static_cast<const SHORT_ARRAY *>(pvi);
-		if (NULL == preturn) {
+		if (preturn == nullptr)
 			return NULL;
-		}
 		preturn->count = psrc->count;
 		if (psrc->count == 0) {
 			preturn->ps = nullptr;
@@ -169,9 +158,8 @@ void *propval_dup(uint16_t type, const void *pvi)
 	case PT_MV_LONG: {
 		auto preturn = static_cast<LONG_ARRAY *>(malloc(sizeof(LONG_ARRAY)));
 		auto psrc = static_cast<const LONG_ARRAY *>(pvi);
-		if (NULL == preturn) {
+		if (preturn == nullptr)
 			return NULL;
-		}
 		preturn->count = psrc->count;
 		if (psrc->count == 0) {
 			preturn->pl = NULL;
@@ -190,9 +178,8 @@ void *propval_dup(uint16_t type, const void *pvi)
 	case PT_MV_SYSTIME: {
 		auto preturn = static_cast<LONGLONG_ARRAY *>(malloc(sizeof(LONGLONG_ARRAY)));
 		auto psrc = static_cast<const LONGLONG_ARRAY *>(pvi);
-		if (NULL == preturn) {
+		if (preturn == nullptr)
 			return NULL;
-		}
 		preturn->count = psrc->count;
 		if (psrc->count == 0) {
 			preturn->pll = nullptr;
@@ -210,9 +197,8 @@ void *propval_dup(uint16_t type, const void *pvi)
 	case PT_MV_UNICODE: {
 		auto preturn = static_cast<STRING_ARRAY *>(malloc(sizeof(STRING_ARRAY)));
 		auto psrc = static_cast<const STRING_ARRAY *>(pvi);
-		if (NULL == preturn) {
+		if (preturn == nullptr)
 			return NULL;
-		}
 		preturn->count = psrc->count;
 		if (psrc->count == 0) {
 			preturn->ppstr = nullptr;
@@ -238,9 +224,8 @@ void *propval_dup(uint16_t type, const void *pvi)
 	case PT_MV_CLSID: {
 		auto preturn = static_cast<GUID_ARRAY *>(malloc(sizeof(GUID_ARRAY)));
 		auto psrc = static_cast<const GUID_ARRAY *>(pvi);
-		if (NULL == preturn) {
+		if (preturn == nullptr)
 			return NULL;
-		}
 		preturn->count = psrc->count;
 		if (psrc->count == 0) {
 			preturn->pguid = nullptr;
@@ -257,9 +242,8 @@ void *propval_dup(uint16_t type, const void *pvi)
 	case PT_MV_BINARY: {
 		auto preturn = static_cast<BINARY_ARRAY *>(malloc(sizeof(BINARY_ARRAY)));
 		auto psrc = static_cast<const BINARY_ARRAY *>(pvi);
-		if (NULL == preturn) {
+		if (preturn == nullptr)
 			return NULL;
-		}
 		preturn->count = psrc->count;
 		if (psrc->count == 0) {
 			preturn->pbin = nullptr;
@@ -408,9 +392,8 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 	case PT_CLSID:
 		return 16;
 	case PT_SVREID:
-		if (NULL != ((SVREID*)pvalue)->pbin) {
+		if (static_cast<SVREID *>(pvalue)->pbin != nullptr)
 			return ((SVREID*)pvalue)->pbin->cb + 1;
-		}
 		return 21;
 	case PT_SRESTRICTION:
 		return restriction_size(static_cast<RESTRICTION *>(pvalue));
