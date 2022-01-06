@@ -444,25 +444,18 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
 		    ptable->position, row_needed, &temp_set))
 			return FALSE;
 		if (CONTENT_TABLE == ptable->table_type) {
-			auto ret = conttbl_srckey(ptable, temp_set);
-			if (!ret)
+			if (!conttbl_srckey(ptable, temp_set))
 				return false;
 		} else {
-			if (idx_sk != pcolumns->npos) {
-				auto ret = hiertbl_srckey(ptable, temp_set);
-				if (!ret)
-					return false;
-			}
-			if (idx_acc != pcolumns->npos) {
-				auto ret = hiertbl_access(ptable, pinfo->get_username(), temp_set);
-				if (!ret)
-					return false;
-			}
-			if (idx_rig != pcolumns->npos) {
-				auto ret = hiertbl_rights(ptable, pinfo->get_username(), temp_set);
-				if (!ret)
-					return false;
-			}
+			if (idx_sk != pcolumns->npos &&
+			    !hiertbl_srckey(ptable, temp_set))
+				return false;
+			if (idx_acc != pcolumns->npos &&
+			    !hiertbl_access(ptable, pinfo->get_username(), temp_set))
+				return false;
+			if (idx_rig != pcolumns->npos &&
+			    !hiertbl_rights(ptable, pinfo->get_username(), temp_set))
+				return false;
 		}
 	} else {
 		if (!exmdb_client::query_table(ptable->pstore->get_dir(),
