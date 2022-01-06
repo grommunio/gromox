@@ -466,7 +466,7 @@ static tpropval_array_ptr item_to_tpropval_a(libpff_item_t *item)
 		return props;
 	for (int n = 0; n < nsets; ++n) {
 		libpff_record_set_ptr rset;
-		if (libpff_item_get_record_set_by_index(item, 0,
+		if (libpff_item_get_record_set_by_index(item, n,
 		    &unique_tie(rset), &~unique_tie(err)) < 1)
 			throw az_error("PF-1022", err);
 		recordset_to_tpropval_a(rset.get(), props.get());
