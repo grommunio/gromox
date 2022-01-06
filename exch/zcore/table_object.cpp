@@ -358,8 +358,8 @@ static bool hiertbl_srckey(const table_object *ptable, TARRAY_SET &temp_set)
 	return true;
 }
 
-static bool hiertbl_access(const table_object *ptable, const USER_INFO *pinfo,
-    TARRAY_SET &temp_set)
+static bool hiertbl_access(const table_object *ptable,
+    const char *username, TARRAY_SET &temp_set)
 {
 	for (size_t i = 0; i < temp_set.count; ++i) {
 		for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
@@ -371,7 +371,7 @@ static bool hiertbl_access(const table_object *ptable, const USER_INFO *pinfo,
 			if (ptag_access == nullptr)
 				return false;
 			*ptag_access = table_object_get_folder_tag_access(ptable->pstore,
-			               tmp_eid, pinfo->get_username());
+			               tmp_eid, username);
 			r.proptag = PR_ACCESS;
 			r.pvalue = ptag_access;
 			break;
@@ -380,8 +380,8 @@ static bool hiertbl_access(const table_object *ptable, const USER_INFO *pinfo,
 	return true;
 }
 
-static bool hiertbl_rights(const table_object *ptable, const USER_INFO *pinfo,
-    TARRAY_SET &temp_set)
+static bool hiertbl_rights(const table_object *ptable,
+    const char *username, TARRAY_SET &temp_set)
 {
 	for (size_t i = 0; i < temp_set.count; ++i) {
 		for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
@@ -393,7 +393,7 @@ static bool hiertbl_rights(const table_object *ptable, const USER_INFO *pinfo,
 			if (perm == nullptr)
 				return false;
 			*perm = table_object_get_folder_permission_rights(ptable->pstore,
-			        tmp_eid, pinfo->get_username());
+			        tmp_eid, username);
 			r.proptag = PR_RIGHTS;
 			r.pvalue = perm;
 			break;
@@ -454,12 +454,12 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
 					return false;
 			}
 			if (idx_acc != pcolumns->npos) {
-				auto ret = hiertbl_access(ptable, pinfo, temp_set);
+				auto ret = hiertbl_access(ptable, pinfo->get_username(), temp_set);
 				if (!ret)
 					return false;
 			}
 			if (idx_rig != pcolumns->npos) {
-				auto ret = hiertbl_rights(ptable, pinfo, temp_set);
+				auto ret = hiertbl_rights(ptable, pinfo->get_username(), temp_set);
 				if (!ret)
 					return false;
 			}
