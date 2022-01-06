@@ -593,23 +593,20 @@ static int do_recips(unsigned int depth, const parent_desc &parent, libpff_item_
 {
 	int nsets = 0;
 	libpff_error_ptr err;
-	tpropval_array_ptr props(tpropval_array_init());
-	if (props == nullptr)
-		throw std::bad_alloc();
+	assert(parent.type == MAPI_MESSAGE);
 	if (libpff_item_get_number_of_record_sets(item, &nsets, &unique_tie(err)) < 1)
 		return 0;
 	for (int s = 0; s < nsets; ++s) {
 		libpff_record_set_ptr rset;
 		if (libpff_item_get_record_set_by_index(item, s, &unique_tie(rset), nullptr) < 1)
 			throw YError("PF-1049");
+		tpropval_array_ptr props(tpropval_array_init());
+		if (props == nullptr)
+			throw std::bad_alloc();
 		recordset_to_tpropval_a(rset.get(), props.get());
-		assert(parent.type == MAPI_MESSAGE);
 		if (!tarray_set_append_internal(parent.message->children.prcpts, props.get()))
 			throw std::bad_alloc();
 		props.release();
-		props.reset(tpropval_array_init());
-		if (props == nullptr)
-			throw std::bad_alloc();
 	}
 	return 0;
 }
