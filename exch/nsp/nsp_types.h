@@ -45,7 +45,11 @@ struct FILETIME_ARRAY {
 };
 
 union PROP_VAL_UNION {
-	uint16_t s;
+	/*
+	 * A number of types are not specified in either NSPI or OXNSPI, e.g.
+	 * floats, so they make no appearance in the nsp/ source at all.
+	 */
+	uint16_t s; /* NSPI only, not in OXNSPI */
 	uint32_t l;
 	uint8_t b;
 	char *pstr;

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <climits>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <string>
 #include <gromox/defs.h>
@@ -96,6 +97,7 @@ int EXT_PULL::g_float(float *v)
 		return EXT_ERR_BUFSIZE;
 	memcpy(v, &m_udata[m_offset], sizeof(*v));
 	m_offset += sizeof(float);
+	static_assert(std::numeric_limits<float>::is_iec559);
 	return EXT_ERR_SUCCESS;
 }
 
@@ -106,6 +108,7 @@ int EXT_PULL::g_double(double *v)
 		return EXT_ERR_BUFSIZE;
 	memcpy(v, &m_udata[m_offset], sizeof(*v));
 	m_offset += sizeof(double);
+	static_assert(std::numeric_limits<double>::is_iec559);
 	return EXT_ERR_SUCCESS;
 }
 
@@ -320,6 +323,40 @@ int EXT_PULL::g_uint64_sa(LONGLONG_ARRAY *r)
 	}
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(g_uint64(&r->pll[i]));
+	return EXT_ERR_SUCCESS;
+}
+
+int EXT_PULL::g_float_a(FLOAT_ARRAY *r)
+{
+	TRY(g_uint32(&r->count));
+	if (r->count == 0) {
+		r->mval = nullptr;
+		return EXT_ERR_SUCCESS;
+	}
+	r->mval = anew<float>(r->count);
+	if (r->mval == nullptr) {
+		r->count = 0;
+		return EXT_ERR_ALLOC;
+	}
+	for (size_t i = 0; i < r->count; ++i)
+		TRY(g_float(&r->mval[i]));
+	return EXT_ERR_SUCCESS;
+}
+
+int EXT_PULL::g_double_a(DOUBLE_ARRAY *r)
+{
+	TRY(g_uint32(&r->count));
+	if (r->count == 0) {
+		r->mval = nullptr;
+		return EXT_ERR_SUCCESS;
+	}
+	r->mval = anew<double>(r->count);
+	if (r->mval == nullptr) {
+		r->count = 0;
+		return EXT_ERR_ALLOC;
+	}
+	for (size_t i = 0; i < r->count; ++i)
+		TRY(g_double(&r->mval[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -959,6 +996,17 @@ int EXT_PULL::g_propval(uint16_t type, void **ppval)
 		if ((*ppval) == nullptr)
 			return EXT_ERR_ALLOC;
 		return g_uint64_a(static_cast<LONGLONG_ARRAY *>(*ppval));
+	case PT_MV_FLOAT:
+		*ppval = anew<FLOAT_ARRAY>();
+		if (*ppval == nullptr)
+			return EXT_ERR_ALLOC;
+		return g_float_a(static_cast<FLOAT_ARRAY *>(*ppval));
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME:
+		*ppval = anew<DOUBLE_ARRAY>();
+		if (*ppval == nullptr)
+			return EXT_ERR_ALLOC;
+		return g_double_a(static_cast<DOUBLE_ARRAY *>(*ppval));
 	case PT_MV_STRING8:
 		*ppval = anew<STRING_ARRAY>();
 		if ((*ppval) == nullptr)
@@ -2319,6 +2367,22 @@ int EXT_PUSH::p_uint64_sa(const LONGLONG_ARRAY *r)
 	return EXT_ERR_SUCCESS;
 }
 
+int EXT_PUSH::p_float_a(const FLOAT_ARRAY *r)
+{
+	TRY(p_uint32(r->count));
+	for (size_t i = 0; i < r->count; ++i)
+		TRY(p_float(r->mval[i]));
+	return EXT_ERR_SUCCESS;
+}
+
+int EXT_PUSH::p_double_a(const DOUBLE_ARRAY *r)
+{
+	TRY(p_uint32(r->count));
+	for (size_t i = 0; i < r->count; ++i)
+		TRY(p_double(r->mval[i]));
+	return EXT_ERR_SUCCESS;
+}
+
 int EXT_PUSH::p_bin_a(const BINARY_ARRAY *r)
 {
 	TRY(p_uint32(r->count));
@@ -2716,6 +2780,11 @@ int EXT_PUSH::p_propval(uint16_t type, const void *pval)
 	case PT_MV_I8:
 	case PT_MV_SYSTIME:
 		return p_uint64_a(static_cast<const LONGLONG_ARRAY *>(pval));
+	case PT_MV_FLOAT:
+		return p_float_a(static_cast<const FLOAT_ARRAY *>(pval));
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME:
+		return p_double_a(static_cast<const DOUBLE_ARRAY *>(pval));
 	case PT_MV_STRING8:
 		return p_str_a(static_cast<const STRING_ARRAY *>(pval));
 	case PT_MV_UNICODE:

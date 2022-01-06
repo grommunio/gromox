@@ -206,6 +206,8 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 	struct UPW {
 		std::vector<uint32_t> mvl;
 		std::vector<uint64_t> mvll;
+		std::vector<float> mvflt;
+		std::vector<double> mvdbl;
 		std::vector<std::string> mvstr;
 	};
 	std::unordered_map<uint32_t, UPW> collect;
@@ -236,6 +238,17 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 			collect[proptag].mvll.emplace_back(
 				(static_cast<uint64_t>(strtol(znul(row[PCOL_HI]), nullptr, 0)) << 32) |
 			         strtoul(znul(row[PCOL_LO]), nullptr, 0));
+			break;
+		case PT_MV_FLOAT:
+			if (row[PCOL_DOUBLE] == nullptr)
+				continue;
+			collect[proptag].mvflt.emplace_back(strtoul(row[PCOL_DOUBLE], nullptr, 0));
+			break;
+		case PT_MV_DOUBLE:
+		case PT_MV_APPTIME:
+			if (row[PCOL_DOUBLE] == nullptr)
+				continue;
+			collect[proptag].mvdbl.emplace_back(strtoul(row[PCOL_DOUBLE], nullptr, 0));
 			break;
 		case PT_MV_STRING8:
 		case PT_MV_UNICODE:
@@ -270,6 +283,23 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 			LONGLONG_ARRAY la;
 			la.count = xpair.mvll.size();
 			la.pll = xpair.mvll.data();
+			if (ar->set(proptag, &la) != 0)
+				throw std::bad_alloc();
+			break;
+		}
+		case PT_MV_FLOAT: {
+			FLOAT_ARRAY la;
+			la.count = xpair.mvflt.size();
+			la.mval = xpair.mvflt.data();
+			if (ar->set(proptag, &la) != 0)
+				throw std::bad_alloc();
+			break;
+		}
+		case PT_MV_DOUBLE:
+		case PT_MV_APPTIME: {
+			DOUBLE_ARRAY la;
+			la.count = xpair.mvdbl.size();
+			la.mval = xpair.mvdbl.data();
 			if (ar->set(proptag, &la) != 0)
 				throw std::bad_alloc();
 			break;

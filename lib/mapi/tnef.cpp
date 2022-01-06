@@ -433,6 +433,49 @@ static int tnef_pull_propval(EXT_PULL *pext, TNEF_PROPVAL *r)
 			TRY(pext->g_uint64(&la->pll[i]));
 		return EXT_ERR_SUCCESS;
 	}
+	case PT_MV_FLOAT: {
+		r->pvalue = pext->anew<FLOAT_ARRAY>();
+		if (r->pvalue == nullptr)
+			return EXT_ERR_ALLOC;
+		auto la = static_cast<FLOAT_ARRAY *>(r->pvalue);
+		TRY(pext->g_uint32(&la->count));
+		if (la->count > 0xFFFF)
+			return EXT_ERR_FORMAT;
+		if (la->count == 0) {
+			la->mval = nullptr;
+		} else {
+			la->mval = pext->anew<float>(la->count);
+			if (la->mval == nullptr) {
+				la->count = 0;
+				return EXT_ERR_ALLOC;
+			}
+		}
+		for (size_t i = 0; i < la->count; ++i)
+			TRY(pext->g_float(&la->mval[i]));
+		return EXT_ERR_SUCCESS;
+	}
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME: {
+		r->pvalue = pext->anew<DOUBLE_ARRAY>();
+		if (r->pvalue == nullptr)
+			return EXT_ERR_ALLOC;
+		auto la = static_cast<DOUBLE_ARRAY *>(r->pvalue);
+		TRY(pext->g_uint32(&la->count));
+		if (la->count > 0xFFFF)
+			return EXT_ERR_FORMAT;
+		if (la->count == 0) {
+			la->mval = nullptr;
+		} else {
+			la->mval = pext->anew<double>(la->count);
+			if (la->mval == nullptr) {
+				la->count = 0;
+				return EXT_ERR_ALLOC;
+			}
+		}
+		for (size_t i = 0; i < la->count; ++i)
+			TRY(pext->g_double(&la->mval[i]));
+		return EXT_ERR_SUCCESS;
+	}
 	case PT_MV_STRING8: {
 		r->pvalue = pext->anew<STRING_ARRAY>();
 		if (NULL == r->pvalue) {
@@ -1746,6 +1789,21 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 		TRY(pext->p_uint32(la->count));
 		for (size_t i = 0; i < la->count; ++i)
 			TRY(pext->p_uint64(la->pll[i]));
+		return EXT_ERR_SUCCESS;
+	}
+	case PT_MV_FLOAT: {
+		auto la = static_cast<FLOAT_ARRAY *>(r->pvalue);
+		TRY(pext->p_uint32(la->count));
+		for (size_t i = 0; i < la->count; ++i)
+			TRY(pext->p_float(la->mval[i]));
+		return EXT_ERR_SUCCESS;
+	}
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME: {
+		auto la = static_cast<DOUBLE_ARRAY *>(r->pvalue);
+		TRY(pext->p_uint32(la->count));
+		for (size_t i = 0; i < la->count; ++i)
+			TRY(pext->p_double(la->mval[i]));
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_STRING8: {

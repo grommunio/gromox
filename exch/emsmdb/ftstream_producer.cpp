@@ -451,6 +451,25 @@ static BOOL ftstream_producer_write_propvalue(
 			}
 		}
 		return TRUE;
+	case PT_MV_FLOAT: {
+		auto fa = static_cast<FLOAT_ARRAY *>(ppropval->pvalue);
+		if (!pstream->write_uint32(fa->count))
+			return false;
+		for (size_t i = 0; i < fa->count; ++i)
+			if (!ftstream_producer_write_float(pstream, fa->mval[i]))
+				return false;
+		return TRUE;
+	}
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME: {
+		auto fa = static_cast<DOUBLE_ARRAY *>(ppropval->pvalue);
+		if (!pstream->write_uint32(fa->count))
+			return false;
+		for (size_t i = 0; i < fa->count; ++i)
+			if (!ftstream_producer_write_double(pstream, fa->mval[i]))
+				return false;
+		return TRUE;
+	}
 	case PT_MV_STRING8:
 		count = ((STRING_ARRAY*)ppropval->pvalue)->count;
 		if (!pstream->write_uint32(count))

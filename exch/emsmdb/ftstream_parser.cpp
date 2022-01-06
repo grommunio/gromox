@@ -59,6 +59,23 @@ static BOOL ftstream_parser_read_uint64(
 	return TRUE;
 }
 
+static BOOL ftstream_parser_read_float(FTSTREAM_PARSER *pstream, float *pv)
+{
+	if (read(pstream->fd, pv, sizeof(*pv)) != sizeof(*pv))
+		return FALSE;
+	pstream->offset += sizeof(float);
+	static_assert(sizeof(float) == sizeof(uint32_t));
+	return TRUE;
+}
+
+static BOOL ftstream_parser_read_double(FTSTREAM_PARSER *pstream, double *pv)
+{
+	if (read(pstream->fd, pv, sizeof(*pv)) != sizeof(*pv))
+		return FALSE;
+	pstream->offset += sizeof(double);
+	return TRUE;
+}
+
 static char* ftstream_parser_read_wstring(
 	FTSTREAM_PARSER *pstream, BOOL *pb_continue)
 {
@@ -609,6 +626,51 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 			if (!ftstream_parser_read_uint64(pstream, &la->pll[i]))
 				return FTSTREAM_PARSER_READ_FAIL;	
 		}
+		return FTSTREAM_PARSER_READ_OK;
+	}
+	case PT_MV_FLOAT: {
+		auto fa = cu_alloc<FLOAT_ARRAY>();
+		propval.pvalue = fa;
+		if (fa == nullptr ||
+		    !ftstream_parser_read_uint32(pstream, &count) ||
+		    count * sizeof(uint32_t) > 0x10000)
+			return FTSTREAM_PARSER_READ_FAIL;
+		if (pstream->st_size < count * sizeof(uint32_t) + pstream->offset)
+			goto CONTINUE_WAITING;
+		fa->count = count;
+		if (count == 0) {
+			fa->mval = nullptr;
+			return FTSTREAM_PARSER_READ_OK;
+		}
+		fa->mval = cu_alloc<float>(count);
+		if (fa->mval == nullptr)
+			return FTSTREAM_PARSER_READ_FAIL;
+		for (size_t i = 0; i < count; ++i)
+			if (!ftstream_parser_read_float(pstream, &fa->mval[i]))
+				return FTSTREAM_PARSER_READ_FAIL;
+		return FTSTREAM_PARSER_READ_OK;
+	}
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME: {
+		auto fa = cu_alloc<DOUBLE_ARRAY>();
+		propval.pvalue = fa;
+		if (fa == nullptr ||
+		    !ftstream_parser_read_uint32(pstream, &count) ||
+		    count * sizeof(uint32_t) > 0x10000)
+			return FTSTREAM_PARSER_READ_FAIL;
+		if (pstream->st_size < count * sizeof(uint32_t) + pstream->offset)
+			goto CONTINUE_WAITING;
+		fa->count = count;
+		if (count == 0) {
+			fa->mval = nullptr;
+			return FTSTREAM_PARSER_READ_OK;
+		}
+		fa->mval = cu_alloc<double>(count);
+		if (fa->mval == nullptr)
+			return FTSTREAM_PARSER_READ_FAIL;
+		for (size_t i = 0; i < count; ++i)
+			if (!ftstream_parser_read_double(pstream, &fa->mval[i]))
+				return FTSTREAM_PARSER_READ_FAIL;
 		return FTSTREAM_PARSER_READ_OK;
 	}
 	case PT_MV_STRING8: {

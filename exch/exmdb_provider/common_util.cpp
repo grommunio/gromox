@@ -2508,6 +2508,25 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 			return nullptr;
 		return v;
 	}
+	case PT_MV_FLOAT: {
+		auto ar = cu_alloc<FLOAT_ARRAY>();
+		if (ar == nullptr)
+			return nullptr;
+		ext_pull.init(sqlite3_column_blob(pstmt, 0), sqlite3_column_bytes(pstmt, 0), common_util_alloc, 0);
+		if (ext_pull.g_float_a(ar) != EXT_ERR_SUCCESS)
+			return nullptr;
+		return ar;
+	}
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME: {
+		auto ar = cu_alloc<DOUBLE_ARRAY>();
+		if (ar == nullptr)
+			return nullptr;
+		ext_pull.init(sqlite3_column_blob(pstmt, 0), sqlite3_column_bytes(pstmt, 0), common_util_alloc, 0);
+		if (ext_pull.g_double_a(ar) != EXT_ERR_SUCCESS)
+			return nullptr;
+		return ar;
+	}
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE: {
 		auto sa = cu_alloc<STRING_ARRAY>();
@@ -3237,6 +3256,25 @@ BOOL cu_set_properties(db_table table_type,
 			EXT_PUSH ext_push;
 			if (!ext_push.init(nullptr, 0, 0) ||
 			    ext_push.p_uint64_a(static_cast<LONGLONG_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
+				return FALSE;
+			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
+			s_result = sqlite3_step(pstmt);
+			break;
+		}
+		case PT_MV_FLOAT: {
+			EXT_PUSH ext_push;
+			if (!ext_push.init(nullptr, 0, 0) ||
+			    ext_push.p_float_a(static_cast<FLOAT_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
+				return FALSE;
+			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
+			s_result = sqlite3_step(pstmt);
+			break;
+		}
+		case PT_MV_DOUBLE:
+		case PT_MV_APPTIME: {
+			EXT_PUSH ext_push;
+			if (!ext_push.init(nullptr, 0, 0) ||
+			    ext_push.p_double_a(static_cast<DOUBLE_ARRAY *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
 				return FALSE;
 			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);

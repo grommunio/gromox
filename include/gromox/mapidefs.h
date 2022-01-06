@@ -1349,6 +1349,11 @@ struct BINARY_ARRAY {
 	BINARY *pbin;
 };
 
+struct DOUBLE_ARRAY {
+	uint32_t count;
+	double *mval;
+};
+
 /*
  * The native-endian view of GUID is often not needed and it can just be
  * treated as an opaque byte sequence.
@@ -1367,6 +1372,11 @@ struct FLATUID {
 struct FLATUID_ARRAY {
 	uint32_t cvalues;
 	FLATUID **ppguid;
+};
+
+struct FLOAT_ARRAY {
+	uint32_t count;
+	float *mval;
 };
 
 struct GLOBCNT {

@@ -108,6 +108,19 @@ static BOOL rpc_ext_pull_propval(
 			return FALSE;
 		QRF(pext->g_uint64_a(static_cast<LONGLONG_ARRAY *>(*ppval)));
 		return TRUE;
+	case PT_MV_FLOAT:
+		*ppval = pext->anew<FLOAT_ARRAY>();
+		if (*ppval == nullptr)
+			return false;
+		QRF(pext->g_float_a(static_cast<FLOAT_ARRAY *>(*ppval)));
+		return TRUE;
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME:
+		*ppval = pext->anew<DOUBLE_ARRAY>();
+		if (*ppval == nullptr)
+			return false;
+		QRF(pext->g_double_a(static_cast<DOUBLE_ARRAY *>(*ppval)));
+		return TRUE;
 	case PT_MV_STRING8:
 		*ppval = pext->anew<STRING_ARRAY>();
 		if (*ppval == nullptr)
@@ -296,6 +309,13 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 	case PT_MV_I8:
 	case PT_MV_SYSTIME:
 		QRF(pext->p_uint64_a(static_cast<const LONGLONG_ARRAY *>(pval)));
+		return TRUE;
+	case PT_MV_FLOAT:
+		QRF(pext->p_float_a(static_cast<const FLOAT_ARRAY *>(pval)));
+		return TRUE;
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME:
+		QRF(pext->p_double_a(static_cast<const DOUBLE_ARRAY *>(pval)));
 		return TRUE;
 	case PT_MV_STRING8:
 		QRF(pext->p_str_a(static_cast<const STRING_ARRAY *>(pval)));

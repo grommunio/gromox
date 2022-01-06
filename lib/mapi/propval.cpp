@@ -193,6 +193,43 @@ void *propval_dup(uint16_t type, const void *pvi)
 		memcpy(preturn->pll, psrc->pll, sizeof(uint64_t) * psrc->count);
 		return preturn;
 	}
+	case PT_MV_FLOAT: {
+		auto preturn = static_cast<FLOAT_ARRAY *>(malloc(sizeof(FLOAT_ARRAY)));
+		auto psrc = static_cast<const FLOAT_ARRAY *>(pvi);
+		if (preturn == nullptr)
+			return NULL;
+		preturn->count = psrc->count;
+		if (psrc->count == 0) {
+			preturn->mval = nullptr;
+			return preturn;
+		}
+		preturn->mval = static_cast<float *>(malloc(sizeof(float) * psrc->count));
+		if (preturn->mval == nullptr) {
+			free(preturn);
+			return NULL;
+		}
+		memcpy(preturn->mval, psrc->mval, sizeof(float) * psrc->count);
+		return preturn;
+	}
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME: {
+		auto preturn = static_cast<DOUBLE_ARRAY *>(malloc(sizeof(DOUBLE_ARRAY)));
+		auto psrc = static_cast<const DOUBLE_ARRAY *>(pvi);
+		if (preturn == nullptr)
+			return NULL;
+		preturn->count = psrc->count;
+		if (psrc->count == 0) {
+			preturn->mval = nullptr;
+			return preturn;
+		}
+		preturn->mval = static_cast<double *>(malloc(sizeof(double) * psrc->count));
+		if (preturn->mval == nullptr) {
+			free(preturn);
+			return NULL;
+		}
+		memcpy(preturn->mval, psrc->mval, sizeof(double) * psrc->count);
+		return preturn;
+	}
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE: {
 		auto preturn = static_cast<STRING_ARRAY *>(malloc(sizeof(STRING_ARRAY)));
@@ -328,6 +365,13 @@ void propval_free(uint16_t type, void *pvalue)
 	case PT_MV_SYSTIME:
 		free(((LONGLONG_ARRAY*)pvalue)->pll);
 		break;
+	case PT_MV_FLOAT:
+		free(static_cast<FLOAT_ARRAY *>(pvalue)->mval);
+		break;
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME:
+		free(static_cast<DOUBLE_ARRAY *>(pvalue)->mval);
+		break;
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE: {
 		auto sa = static_cast<STRING_ARRAY *>(pvalue);
@@ -407,6 +451,11 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 	case PT_MV_I8:
 	case PT_MV_SYSTIME:
 		return sizeof(uint64_t)*((LONGLONG_ARRAY*)pvalue)->count;
+	case PT_MV_FLOAT:
+		return sizeof(float) * static_cast<FLOAT_ARRAY *>(pvalue)->count;
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME:
+		return sizeof(double) * static_cast<DOUBLE_ARRAY *>(pvalue)->count;
 	case PT_MV_STRING8: {
 		length = 0;
 		auto sa = static_cast<STRING_ARRAY *>(pvalue);
@@ -690,6 +739,37 @@ BOOL propval_compare_relop(uint8_t relop, uint16_t proptype,
 			return FALSE;
 		}
 		return FALSE;
+	}
+	case PT_MV_FLOAT: {
+		auto a = static_cast<const FLOAT_ARRAY *>(pvalue1);
+		auto b = static_cast<const FLOAT_ARRAY *>(pvalue2);
+		switch (relop) {
+		case RELOP_EQ:
+			return a->count == b->count &&
+			       memcmp(a->mval, b->mval, sizeof(float) * a->count) == 0 ?
+			       TRUE : false;
+		case RELOP_NE:
+			return a->count != b->count ||
+			       memcmp(a->mval, b->mval, sizeof(float) * a->count) != 0 ?
+			       TRUE : false;
+		}
+		return false;
+	}
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME: {
+		auto a = static_cast<const DOUBLE_ARRAY *>(pvalue1);
+		auto b = static_cast<const DOUBLE_ARRAY *>(pvalue2);
+		switch (relop) {
+		case RELOP_EQ:
+			return a->count == b->count &&
+			       memcmp(a->mval, b->mval, sizeof(double) * a->count) == 0 ?
+			       TRUE : false;
+		case RELOP_NE:
+			return a->count != b->count ||
+			       memcmp(a->mval, b->mval, sizeof(double) * a->count) != 0 ?
+			       TRUE : false;
+		}
+		return false;
 	}
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE: {

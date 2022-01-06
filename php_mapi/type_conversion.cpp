@@ -387,6 +387,55 @@ static void *php_to_propval(zval *entry, uint16_t proptype)
 		} ZEND_HASH_FOREACH_END();
 		break;
 	}
+	case PT_MV_FLOAT: {
+		ZVAL_DEREF(entry);
+		pdata_hash = HASH_OF(entry);
+		if (pdata_hash == nullptr)
+			return NULL;
+		pvalue = emalloc(sizeof(FLOAT_ARRAY));
+		auto xl = static_cast<FLOAT_ARRAY *>(pvalue);
+		if (xl == nullptr)
+			return NULL;
+		xl->count = zend_hash_num_elements(pdata_hash);
+		if (xl->count == 0) {
+			xl->mval = nullptr;
+			break;
+		}
+		xl->mval = sta_malloc<float>(xl->count);
+		if (xl->mval == nullptr) {
+			xl->count = 0;
+			return NULL;
+		}
+		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
+			xl->mval[j++] = zval_get_double(data_entry);
+		} ZEND_HASH_FOREACH_END();
+		break;
+	}
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME: {
+		ZVAL_DEREF(entry);
+		pdata_hash = HASH_OF(entry);
+		if (pdata_hash == nullptr)
+			return NULL;
+		pvalue = emalloc(sizeof(DOUBLE_ARRAY));
+		auto xl = static_cast<DOUBLE_ARRAY *>(pvalue);
+		if (xl == nullptr)
+			return NULL;
+		xl->count = zend_hash_num_elements(pdata_hash);
+		if (xl->count == 0) {
+			xl->mval = nullptr;
+			break;
+		}
+		xl->mval = sta_malloc<double>(xl->count);
+		if (xl->mval == nullptr) {
+			xl->count = 0;
+			return NULL;
+		}
+		ZEND_HASH_FOREACH_VAL(pdata_hash, data_entry) {
+			xl->mval[j++] = zval_get_double(data_entry);
+		} ZEND_HASH_FOREACH_END();
+		break;
+	}
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE: {
 		ZVAL_DEREF(entry);
@@ -1293,6 +1342,27 @@ zend_bool tpropval_array_to_php(const TPROPVAL_ARRAY *ppropvals, zval *pzret)
 			for (size_t j = 0; j < xl->count; ++j) {
 				snprintf(key, GX_ARRAY_SIZE(key), "%zu", j);
 				add_assoc_long(&pzmval, key, xl->pl[j]);
+			}
+			add_assoc_zval(pzret, proptag_string, &pzmval);
+			break;
+		}
+		case PT_MV_FLOAT: {
+			array_init(&pzmval);
+			auto xl = static_cast<FLOAT_ARRAY *>(ppropval->pvalue);
+			for (size_t j = 0; j < xl->count; ++j) {
+				snprintf(key, arsizeof(key), "%zu", j);
+				add_assoc_double(&pzmval, key, xl->mval[j]);
+			}
+			add_assoc_zval(pzret, proptag_string, &pzmval);
+			break;
+		}
+		case PT_MV_DOUBLE:
+		case PT_MV_APPTIME: {
+			array_init(&pzmval);
+			auto xl = static_cast<DOUBLE_ARRAY *>(ppropval->pvalue);
+			for (size_t j = 0; j < xl->count; ++j) {
+				snprintf(key, arsizeof(key), "%zu", j);
+				add_assoc_double(&pzmval, key, xl->mval[j]);
 			}
 			add_assoc_zval(pzret, proptag_string, &pzmval);
 			break;

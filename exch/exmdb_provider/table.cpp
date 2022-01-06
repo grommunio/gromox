@@ -1083,6 +1083,37 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 					}
 					break;
 				}
+				case PT_MV_FLOAT: {
+					auto fa = static_cast<FLOAT_ARRAY *>(pvalue);
+					if (fa->count == 0)
+						goto BIND_NULL_INSTANCE;
+					for (size_t i = 0; i < fa->count; ++i) {
+						if (!common_util_bind_sqlite_statement(
+						    pstmt1, multi_index, PT_FLOAT, &fa->mval[i]))
+							return false;
+						sqlite3_bind_int64(pstmt1, tag_count + 3, i + 1);
+						if (sqlite3_step(pstmt1) != SQLITE_DONE)
+							return false;
+						sqlite3_reset(pstmt1);
+					}
+					break;
+				}
+				case PT_MV_DOUBLE:
+				case PT_MV_APPTIME: {
+					auto fa = static_cast<DOUBLE_ARRAY *>(pvalue);
+					if (fa->count == 0)
+						goto BIND_NULL_INSTANCE;
+					for (size_t i = 0; i < fa->count; ++i) {
+						if (!common_util_bind_sqlite_statement(
+						    pstmt1, multi_index, PT_DOUBLE, &fa->mval[i]))
+							return false;
+						sqlite3_bind_int64(pstmt1, tag_count + 3, i + 1);
+						if (sqlite3_step(pstmt1) != SQLITE_DONE)
+							return false;
+						sqlite3_reset(pstmt1);
+					}
+					break;
+				}
 				case PT_MV_STRING8:
 				case PT_MV_UNICODE: {
 					auto sa = static_cast<STRING_ARRAY *>(pvalue);

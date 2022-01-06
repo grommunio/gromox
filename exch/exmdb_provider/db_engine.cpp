@@ -1397,6 +1397,11 @@ static inline size_t det_multi_num(uint16_t type, const void *mv)
 	case PT_MV_I8:
 	case PT_MV_SYSTIME:
 		return static_cast<const LONGLONG_ARRAY *>(mv)->count;
+	case PT_MV_FLOAT:
+		return static_cast<const FLOAT_ARRAY *>(mv)->count;
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME:
+		return static_cast<const DOUBLE_ARRAY *>(mv)->count;
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE:
 		return static_cast<const STRING_ARRAY *>(mv)->count;
@@ -1419,6 +1424,11 @@ static inline void *pick_single_val(uint16_t type, void *mv, size_t j)
 	case PT_MV_I8:
 	case PT_MV_SYSTIME:
 		return &static_cast<const LONGLONG_ARRAY *>(mv)->pll[j];
+	case PT_MV_FLOAT:
+		return &static_cast<const FLOAT_ARRAY *>(mv)->mval[j];
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME:
+		return &static_cast<const DOUBLE_ARRAY *>(mv)->mval[j];
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE:
 		return static_cast<const STRING_ARRAY *>(mv)->ppstr[j];

@@ -105,6 +105,8 @@ struct EXT_PULL {
 	int g_uint32_a(LONG_ARRAY *);
 	int g_uint64_a(LONGLONG_ARRAY *);
 	int g_uint64_sa(LONGLONG_ARRAY *);
+	int g_float_a(FLOAT_ARRAY *);
+	int g_double_a(DOUBLE_ARRAY *);
 	int g_bin_a(BINARY_ARRAY *);
 	int g_str_a(STRING_ARRAY *);
 	int g_wstr_a(STRING_ARRAY *);
@@ -193,6 +195,8 @@ struct EXT_PUSH {
 	int p_uint32_a(const LONG_ARRAY *);
 	int p_uint64_a(const LONGLONG_ARRAY *);
 	int p_uint64_sa(const LONGLONG_ARRAY *);
+	int p_float_a(const FLOAT_ARRAY *);
+	int p_double_a(const DOUBLE_ARRAY *);
 	int p_bin_a(const BINARY_ARRAY *);
 	int p_str_a(const STRING_ARRAY *);
 	int p_wstr_a(const STRING_ARRAY *);

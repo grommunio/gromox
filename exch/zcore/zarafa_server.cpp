@@ -2899,6 +2899,9 @@ static bool table_acceptable_type(uint16_t type)
 	case PT_BINARY:
 	case PT_MV_SHORT:
 	case PT_MV_LONG:
+	case PT_MV_FLOAT:
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME:
 	case PT_MV_CURRENCY:
 	case PT_MV_I8:
 	case PT_MV_STRING8:
