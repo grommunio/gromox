@@ -828,7 +828,7 @@ static void npg_item(gi_name_map &map, libpff_item_t *item)
 	if (libpff_item_get_number_of_record_sets(item, &nsets, nullptr) > 0) {
 		for (int n = 0; n < nsets; ++n) {
 			libpff_record_set_ptr rset;
-			if (libpff_item_get_record_set_by_index(item, 0,
+			if (libpff_item_get_record_set_by_index(item, n,
 			    &unique_tie(rset), nullptr) > 0)
 				npg_set(map, rset.get());
 		}
