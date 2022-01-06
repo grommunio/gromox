@@ -328,7 +328,7 @@ static BOOL storetbl_query_rows(const table_object *ptable,
 	return TRUE;
 }
 
-static bool conttbl_q0(const table_object *ptable, TARRAY_SET &temp_set)
+static bool conttbl_srckey(const table_object *ptable, TARRAY_SET &temp_set)
 {
 	for (size_t i = 0; i < temp_set.count; ++i) {
 		for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
@@ -346,7 +346,7 @@ static bool conttbl_q0(const table_object *ptable, TARRAY_SET &temp_set)
 	return true;
 }
 
-static bool hiertbl_q0(const table_object *ptable, TARRAY_SET &temp_set)
+static bool hiertbl_srckey(const table_object *ptable, TARRAY_SET &temp_set)
 {
 	for (size_t i = 0; i < temp_set.count; ++i) {
 		for (size_t j = 0; j < temp_set.pparray[i]->count; ++j) {
@@ -364,7 +364,7 @@ static bool hiertbl_q0(const table_object *ptable, TARRAY_SET &temp_set)
 	return true;
 }
 
-static bool hiertbl_q1(const table_object *ptable, const USER_INFO *pinfo,
+static bool hiertbl_access(const table_object *ptable, const USER_INFO *pinfo,
     TARRAY_SET &temp_set)
 {
 	for (size_t i = 0; i < temp_set.count; ++i) {
@@ -386,7 +386,7 @@ static bool hiertbl_q1(const table_object *ptable, const USER_INFO *pinfo,
 	return true;
 }
 
-static bool hiertbl_q2(const table_object *ptable, const USER_INFO *pinfo,
+static bool hiertbl_rights(const table_object *ptable, const USER_INFO *pinfo,
     TARRAY_SET &temp_set)
 {
 	for (size_t i = 0; i < temp_set.count; ++i) {
@@ -413,15 +413,16 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
     const USER_INFO *pinfo, uint32_t row_needed, TARRAY_SET *pset)
 {
 	auto username = ptable->pstore->b_private ? nullptr : pinfo->get_username();
-	size_t idx = pcolumns->indexof(PR_SOURCE_KEY);
-	size_t idx1 = pcolumns->npos, idx2 = pcolumns->npos;
+	size_t idx_sk = pcolumns->indexof(PR_SOURCE_KEY);
+	size_t idx_acc = pcolumns->npos, idx_rig = pcolumns->npos;
 	TARRAY_SET temp_set;
 
 	if (HIERARCHY_TABLE == ptable->table_type) {
-		idx1 = pcolumns->indexof(PR_ACCESS);
-		idx2 = pcolumns->indexof(PR_RIGHTS);
+		idx_acc = pcolumns->indexof(PR_ACCESS);
+		idx_rig = pcolumns->indexof(PR_RIGHTS);
 	}
-	if (idx != pcolumns->npos || idx1 != pcolumns->npos || idx2 != pcolumns->npos) {
+	if (idx_sk != pcolumns->npos || idx_acc != pcolumns->npos ||
+	    idx_rig != pcolumns->npos) {
 		tmp_columns.pproptag = cu_alloc<uint32_t>(pcolumns->count);
 		if (NULL == tmp_columns.pproptag) {
 			return FALSE;
@@ -429,34 +430,34 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
 		tmp_columns.count = pcolumns->count;
 		memcpy(tmp_columns.pproptag, pcolumns->pproptag,
 			sizeof(uint32_t)*pcolumns->count);
-		if (idx != pcolumns->npos)
-			tmp_columns.pproptag[idx] = ptable->table_type == CONTENT_TABLE ?
+		if (idx_sk != pcolumns->npos)
+			tmp_columns.pproptag[idx_sk] = ptable->table_type == CONTENT_TABLE ?
 			                            PidTagMid : PidTagFolderId;
-		if (idx1 != pcolumns->npos)
-			tmp_columns.pproptag[idx1] = PidTagFolderId;
-		if (idx2 != pcolumns->npos)
-			tmp_columns.pproptag[idx2] = PidTagFolderId;
+		if (idx_acc != pcolumns->npos)
+			tmp_columns.pproptag[idx_acc] = PidTagFolderId;
+		if (idx_rig != pcolumns->npos)
+			tmp_columns.pproptag[idx_rig] = PidTagFolderId;
 		if (!exmdb_client::query_table(ptable->pstore->get_dir(),
 		    username, pinfo->cpid, ptable->table_id, &tmp_columns,
 		    ptable->position, row_needed, &temp_set))
 			return FALSE;
 		if (CONTENT_TABLE == ptable->table_type) {
-			auto ret = conttbl_q0(ptable, temp_set);
+			auto ret = conttbl_srckey(ptable, temp_set);
 			if (!ret)
 				return false;
 		} else {
-			if (idx != pcolumns->npos) {
-				auto ret = hiertbl_q0(ptable, temp_set);
+			if (idx_sk != pcolumns->npos) {
+				auto ret = hiertbl_srckey(ptable, temp_set);
 				if (!ret)
 					return false;
 			}
-			if (idx1 != pcolumns->npos) {
-				auto ret = hiertbl_q1(ptable, pinfo, temp_set);
+			if (idx_acc != pcolumns->npos) {
+				auto ret = hiertbl_access(ptable, pinfo, temp_set);
 				if (!ret)
 					return false;
 			}
-			if (idx2 != pcolumns->npos) {
-				auto ret = hiertbl_q2(ptable, pinfo, temp_set);
+			if (idx_rig != pcolumns->npos) {
+				auto ret = hiertbl_rights(ptable, pinfo, temp_set);
 				if (!ret)
 					return false;
 			}
