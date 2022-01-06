@@ -596,7 +596,7 @@ static int do_recips(unsigned int depth, const parent_desc &parent, libpff_item_
 	tpropval_array_ptr props(tpropval_array_init());
 	if (props == nullptr)
 		throw std::bad_alloc();
-	if (libpff_item_get_number_of_record_sets(item, &nsets, &unique_tie(err)) <= 1)
+	if (libpff_item_get_number_of_record_sets(item, &nsets, &unique_tie(err)) < 1)
 		return 0;
 	for (int s = 0; s < nsets; ++s) {
 		libpff_record_set_ptr rset;
