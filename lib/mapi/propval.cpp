@@ -451,8 +451,8 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 	return 0;
 }
 
-BOOL propval_compare_relop(uint8_t relop,
-	uint16_t proptype, void *pvalue1, void *pvalue2)
+BOOL propval_compare_relop(uint8_t relop, uint16_t proptype,
+    const void *pvalue1, const void *pvalue2)
 {
 #define COMPARE() do { \
 		switch (relop) { \
@@ -468,42 +468,42 @@ BOOL propval_compare_relop(uint8_t relop,
 
 	switch (proptype) {
 	case PT_SHORT: {
-		auto a = static_cast<uint16_t *>(pvalue1);
-		auto b = static_cast<uint16_t *>(pvalue2);
+		auto a = static_cast<const uint16_t *>(pvalue1);
+		auto b = static_cast<const uint16_t *>(pvalue2);
 		COMPARE();
 	}
 	case PT_LONG:
 	case PT_ERROR: {
-		auto a = static_cast<uint32_t *>(pvalue1);
-		auto b = static_cast<uint32_t *>(pvalue2);
+		auto a = static_cast<const uint32_t *>(pvalue1);
+		auto b = static_cast<const uint32_t *>(pvalue2);
 		COMPARE();
 	}
 	case PT_BOOLEAN: {
-		auto a = static_cast<uint8_t *>(pvalue1);
-		auto b = static_cast<uint8_t *>(pvalue2);
+		auto a = static_cast<const uint8_t *>(pvalue1);
+		auto b = static_cast<const uint8_t *>(pvalue2);
 		COMPARE();
 	}
 	case PT_CURRENCY:
 	case PT_I8:
 	case PT_SYSTIME: {
-		auto a = static_cast<uint64_t *>(pvalue1);
-		auto b = static_cast<uint64_t *>(pvalue2);
+		auto a = static_cast<const uint64_t *>(pvalue1);
+		auto b = static_cast<const uint64_t *>(pvalue2);
 		COMPARE();
 	}
 	case PT_FLOAT: {
-		auto a = static_cast<float *>(pvalue1);
-		auto b = static_cast<float *>(pvalue2);
+		auto a = static_cast<const float *>(pvalue1);
+		auto b = static_cast<const float *>(pvalue2);
 		COMPARE();
 	}
 	case PT_DOUBLE:
 	case PT_APPTIME: {
-		auto a = static_cast<double *>(pvalue1);
-		auto b = static_cast<double *>(pvalue2);
+		auto a = static_cast<const double *>(pvalue1);
+		auto b = static_cast<const double *>(pvalue2);
 		COMPARE();
 	}
 	case PT_STRING8:
 	case PT_UNICODE: {
-		auto s1 = static_cast<char *>(pvalue1), s2 = static_cast<char *>(pvalue2);
+		auto s1 = static_cast<const char *>(pvalue1), s2 = static_cast<const char *>(pvalue2);
 		switch (relop) {
 		case RELOP_LT: return strcasecmp(s1, s2) < 0 ? TRUE : false;
 		case RELOP_LE: return strcasecmp(s1, s2) <= 0 ? TRUE : false;
@@ -515,8 +515,8 @@ BOOL propval_compare_relop(uint8_t relop,
 		return FALSE;
 	}
 	case PT_CLSID: {
-		auto g1 = static_cast<GUID *>(pvalue1);
-		auto g2 = static_cast<GUID *>(pvalue2);
+		auto g1 = static_cast<const GUID *>(pvalue1);
+		auto g2 = static_cast<const GUID *>(pvalue2);
 		switch (relop) {
 		case RELOP_LT: return guid_compare(g1, g2) < 0 ? TRUE : false;
 		case RELOP_LE: return guid_compare(g1, g2) <= 0 ? TRUE : false;
@@ -528,8 +528,8 @@ BOOL propval_compare_relop(uint8_t relop,
 		return FALSE;
 	}
 	case PT_BINARY: {
-		auto bv1 = static_cast<BINARY *>(pvalue1);
-		auto bv2 = static_cast<BINARY *>(pvalue2);
+		auto bv1 = static_cast<const BINARY *>(pvalue1);
+		auto bv2 = static_cast<const BINARY *>(pvalue2);
 		switch (relop) {
 		case RELOP_LT:
 			if (bv1->cb == 0 && bv2->cb != 0)
@@ -603,8 +603,8 @@ BOOL propval_compare_relop(uint8_t relop,
 		return FALSE;
 	}
 	case PT_SVREID: {
-		auto sv1 = static_cast<SVREID *>(pvalue1);
-		auto sv2 = static_cast<SVREID *>(pvalue2);
+		auto sv1 = static_cast<const SVREID *>(pvalue1);
+		auto sv2 = static_cast<const SVREID *>(pvalue2);
 		switch (relop) {
 		case RELOP_EQ:
 			if ((sv1->pbin == nullptr && sv2->pbin != nullptr) ||
@@ -650,8 +650,8 @@ BOOL propval_compare_relop(uint8_t relop,
 		return FALSE;
 	}
 	case PT_MV_SHORT: {
-		auto sa1 = static_cast<SHORT_ARRAY *>(pvalue1);
-		auto sa2 = static_cast<SHORT_ARRAY *>(pvalue2);
+		auto sa1 = static_cast<const SHORT_ARRAY *>(pvalue1);
+		auto sa2 = static_cast<const SHORT_ARRAY *>(pvalue2);
 		switch (relop) {
 		case RELOP_EQ:
 			if (sa1->count != sa2->count)
@@ -669,8 +669,8 @@ BOOL propval_compare_relop(uint8_t relop,
 		return FALSE;
 	}
 	case PT_MV_LONG: {
-		auto la1 = static_cast<LONG_ARRAY *>(pvalue1);
-		auto la2 = static_cast<LONG_ARRAY *>(pvalue2);
+		auto la1 = static_cast<const LONG_ARRAY *>(pvalue1);
+		auto la2 = static_cast<const LONG_ARRAY *>(pvalue2);
 		switch (relop) {
 		case RELOP_EQ:
 			if (la1->count != la2->count)
@@ -690,8 +690,8 @@ BOOL propval_compare_relop(uint8_t relop,
 	case PT_MV_CURRENCY:
 	case PT_MV_I8:
 	case PT_MV_SYSTIME: {
-		auto la1 = static_cast<LONGLONG_ARRAY *>(pvalue1);
-		auto la2 = static_cast<LONGLONG_ARRAY *>(pvalue2);
+		auto la1 = static_cast<const LONGLONG_ARRAY *>(pvalue1);
+		auto la2 = static_cast<const LONGLONG_ARRAY *>(pvalue2);
 		switch (relop) {
 		case RELOP_EQ:
 			if (la1->count != la2->count)
@@ -710,8 +710,8 @@ BOOL propval_compare_relop(uint8_t relop,
 	}
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE: {
-		auto sa1 = static_cast<STRING_ARRAY *>(pvalue1);
-		auto sa2 = static_cast<STRING_ARRAY *>(pvalue2);
+		auto sa1 = static_cast<const STRING_ARRAY *>(pvalue1);
+		auto sa2 = static_cast<const STRING_ARRAY *>(pvalue2);
 		switch (relop) {
 		case RELOP_EQ:
 			if (sa1->count != sa2->count)
@@ -731,8 +731,8 @@ BOOL propval_compare_relop(uint8_t relop,
 		return FALSE;
 	}
 	case PT_MV_BINARY: {
-		auto bv1 = static_cast<BINARY_ARRAY *>(pvalue1);
-		auto bv2 = static_cast<BINARY_ARRAY *>(pvalue2);
+		auto bv1 = static_cast<const BINARY_ARRAY *>(pvalue1);
+		auto bv2 = static_cast<const BINARY_ARRAY *>(pvalue2);
 		switch (relop) {
 		case RELOP_EQ:
 			if (bv1->count != bv2->count)
