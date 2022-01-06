@@ -1,5 +1,5 @@
-1.11.34
-=======
+1.11.159
+========
 
 Enhancements:
 
@@ -8,11 +8,23 @@ Enhancements:
 * pam_gromox: Additional service mode checks.
   One can now use e.g. ``auth required pam_gromox.so service=chat``
   in ``/etc/pam.d/xyz`` to test for the CHAT privilege bit.
+* doc: document more MRO field caveats for gromox-kdb2mt
+* kdb2mt: analyze Receive Folder Table and map inbox to inbox when -s is used
 
 Fixes:
 
 * imap: resolve the Thunderbird folder view showing all rows without subject
   and sender
+* Recognize config directives with intervals of value "0" without unit
+* pff2mt: recipient objects were erroneously skipped
+* pff2mt: scan all available record sets for named properties
+
+Changes:
+
+* mod_fastcgi: switch URL processing to case-sensitive
+* mda: alias resolution is now done by the delivery(8gx) daemon itself
+  throught the new alias_resolve(4gx) module, and the adaptor(8gx)
+  daemon's textfile outputs are no longer used
 
 
 1.11 (2021-12-16)
