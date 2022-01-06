@@ -3605,28 +3605,13 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				    ptable->instance_tag & ~MV_INSTANCE, &pmultival))
 					continue;
 				if (NULL != pmultival) {
-					switch (type) {
-					case PT_SHORT:
-						multi_num = ((SHORT_ARRAY*)pmultival)->count;
-						break;
-					case PT_LONG:
-						multi_num = ((LONG_ARRAY*)pmultival)->count;
-						break;
-					case PT_I8:
-						multi_num = ((LONGLONG_ARRAY*)pmultival)->count;
-						break;
-					case PT_STRING8:
-					case PT_UNICODE:
-						multi_num = ((STRING_ARRAY*)pmultival)->count;
-						break;
-					case PT_CLSID:
-						multi_num = ((GUID_ARRAY*)pmultival)->count;
-						break;
-					case PT_BINARY:
-						multi_num = ((BINARY_ARRAY*)pmultival)->count;
-						break;
-					}
-					if (0 == multi_num) {
+					/*
+					 * Original code in this section tested for PT_SHORT and
+					 * did nothing with PT_MV_SHORT, hence we're using ^MV_FLAG
+					 * to reuse det_multi_num to the same effect.
+					 */
+					multi_num = det_multi_num(type ^ MV_FLAG, pmultival);
+					if (multi_num == 0 || multi_num == UINT32_MAX) {
 						pmultival = NULL;
 						multi_num = 1;
 					}
@@ -3654,33 +3639,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 						pstmt.finalize();
 						goto REFRESH_TABLE;
 					}
-					switch (type) {
-					case PT_SHORT:
-						pvalue1 = &((SHORT_ARRAY *)
-							pmultival)->ps[inst_num - 1];
-						break;
-					case PT_LONG:
-						pvalue1 = &((LONG_ARRAY *)
-							pmultival)->pl[inst_num - 1];
-						break;
-					case PT_I8:
-						pvalue1 = &((LONGLONG_ARRAY *)
-							pmultival)->pll[inst_num - 1];
-						break;
-					case PT_STRING8:
-					case PT_UNICODE:
-						pvalue1 = ((STRING_ARRAY *)
-							pmultival)->ppstr[inst_num - 1];
-						break;
-					case PT_CLSID:
-						pvalue1 = &((GUID_ARRAY *)
-							pmultival)->pguid[inst_num - 1];
-						break;
-					case PT_BINARY:
-						pvalue1 = &((BINARY_ARRAY *)
-							pmultival)->pbin[inst_num - 1];
-						break;
-					}
+					pvalue1 = pick_single_val(type ^ MV_FLAG, pmultival, inst_num - 1);
 					if (0 != db_engine_compare_propval(
 						type, pvalue, pvalue1)) {
 						pstmt.finalize();
