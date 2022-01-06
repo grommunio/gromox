@@ -339,6 +339,31 @@ static bool conttbl_srckey(const table_object *ptable, TARRAY_SET &temp_set)
 	return true;
 }
 
+static bool conttbl_access(const table_object *table,
+    const char *username, TARRAY_SET &out_set)
+{
+	auto fid = static_cast<folder_object *>(table->pparent_obj)->folder_id;
+	for (size_t i = 0; i < out_set.count; ++i) {
+		for (size_t j = 0; j < out_set.pparray[i]->count; ++j) {
+			auto &r = out_set.pparray[i]->ppropval[j];
+			if (r.proptag != PidTagMid)
+				continue;
+			auto mid = *static_cast<uint64_t *>(r.pvalue);
+			auto acval = cu_alloc<uint32_t>();
+			if (acval == nullptr)
+				return false;
+			auto err = cu_calc_msg_access(table->pstore, username,
+			           fid, mid, *acval);
+			if (err != ecSuccess)
+				return false;
+			r.proptag = PR_ACCESS;
+			r.pvalue = acval;
+			break;
+		}
+	}
+	return true;
+}
+
 static bool hiertbl_srckey(const table_object *ptable, TARRAY_SET &temp_set)
 {
 	for (size_t i = 0; i < temp_set.count; ++i) {
@@ -408,13 +433,11 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
 {
 	auto username = ptable->pstore->b_private ? nullptr : pinfo->get_username();
 	size_t idx_sk = pcolumns->indexof(PR_SOURCE_KEY);
-	size_t idx_acc = pcolumns->npos, idx_rig = pcolumns->npos;
+	size_t idx_acc = pcolumns->indexof(PR_ACCESS);
+	size_t idx_rig = ptable->table_type == HIERARCHY_TABLE ?
+	                 pcolumns->indexof(PR_RIGHTS) : pcolumns->npos;
 	TARRAY_SET temp_set;
 
-	if (HIERARCHY_TABLE == ptable->table_type) {
-		idx_acc = pcolumns->indexof(PR_ACCESS);
-		idx_rig = pcolumns->indexof(PR_RIGHTS);
-	}
 	if (idx_sk != pcolumns->npos || idx_acc != pcolumns->npos ||
 	    idx_rig != pcolumns->npos) {
 		tmp_columns.pproptag = cu_alloc<uint32_t>(pcolumns->count);
@@ -436,7 +459,8 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
 			tmp_columns.pproptag[idx_sk] = ptable->table_type == CONTENT_TABLE ?
 			                            PidTagMid : PidTagFolderId;
 		if (idx_acc != pcolumns->npos)
-			tmp_columns.pproptag[idx_acc] = PidTagFolderId;
+			tmp_columns.pproptag[idx_acc] = ptable->table_type == CONTENT_TABLE ?
+			                                PidTagMid : PidTagFolderId;
 		if (idx_rig != pcolumns->npos)
 			tmp_columns.pproptag[idx_rig] = PidTagFolderId;
 		if (!exmdb_client::query_table(ptable->pstore->get_dir(),
@@ -444,7 +468,11 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
 		    ptable->position, row_needed, &temp_set))
 			return FALSE;
 		if (CONTENT_TABLE == ptable->table_type) {
-			if (!conttbl_srckey(ptable, temp_set))
+			if (idx_sk != pcolumns->npos &&
+			    !conttbl_srckey(ptable, temp_set))
+				return false;
+			if (idx_acc != pcolumns->npos &&
+			    !conttbl_access(ptable, pinfo->get_username(), temp_set))
 				return false;
 		} else {
 			if (idx_sk != pcolumns->npos &&

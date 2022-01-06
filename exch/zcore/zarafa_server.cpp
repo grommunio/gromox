@@ -958,7 +958,6 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 	uint8_t *pmapi_type, uint32_t *phobject)
 {
 	BOOL b_del;
-	BOOL b_owner;
 	BOOL b_exist;
 	void *pvalue;
 	uint64_t eid;
@@ -1063,34 +1062,10 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			return ecError;
 		if (b_del && !(flags & FLAG_SOFT_DELETE))
 			return ecNotFound;
-		tag_access = 0;
-		if (pstore->check_owner_mode()) {
-			tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
-			goto PERMISSION_CHECK;
-		}
-		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
-		    folder_id, pinfo->get_username(), &permission))
-			return ecError;
-		if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
-			return ecAccessDenied;
-		if (permission & frightsOwner) {
-			tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
-			goto PERMISSION_CHECK;
-		}
-		if (!exmdb_client_check_message_owner(pstore->get_dir(),
-		    message_id, pinfo->get_username(), &b_owner))
-			return ecError;
-		if (b_owner || (permission & frightsReadAny))
-			tag_access |= MAPI_ACCESS_READ;
-		if ((permission & frightsEditAny) ||
-		    (b_owner && (permission & frightsEditOwned)))
-			tag_access |= MAPI_ACCESS_MODIFY;
-		if ((permission & frightsDeleteAny) ||
-		    (b_owner && (permission & frightsDeleteOwned)))
-			tag_access |= MAPI_ACCESS_DELETE;
- PERMISSION_CHECK:
-		if (!(tag_access & MAPI_ACCESS_READ))
-			return ecAccessDenied;
+		auto ret = cu_calc_msg_access(pstore, pinfo->get_username(),
+		           folder_id, message_id, tag_access);
+		if (ret != ecSuccess)
+			return ret;
 		BOOL b_writable = !(tag_access & MAPI_ACCESS_MODIFY) ? false : TRUE;
 		auto pmessage = message_object::create(pstore, false,
 		                pinfo->cpid, message_id, &folder_id, tag_access,

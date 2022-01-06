@@ -1262,6 +1262,43 @@ BINARY *common_util_to_message_entryid(store_object *pstore,
 	return pbin;
 }
 
+int cu_calc_msg_access(store_object *pstore, const char *user,
+    uint64_t folder_id, uint64_t message_id, uint32_t &tag_access)
+{
+	BOOL b_owner = false;
+	uint32_t permission = 0;
+
+	tag_access = 0;
+	if (pstore->check_owner_mode()) {
+		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
+		goto PERMISSION_CHECK;
+	}
+	if (!exmdb_client::check_folder_permission(pstore->get_dir(),
+	    folder_id, user, &permission))
+		return ecError;
+	if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
+		return ecAccessDenied;
+	if (permission & frightsOwner) {
+		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
+		goto PERMISSION_CHECK;
+	}
+	if (!exmdb_client_check_message_owner(pstore->get_dir(),
+	    message_id, user, &b_owner))
+		return ecError;
+	if (b_owner || (permission & frightsReadAny))
+		tag_access |= MAPI_ACCESS_READ;
+	if ((permission & frightsEditAny) ||
+	    (b_owner && (permission & frightsEditOwned)))
+		tag_access |= MAPI_ACCESS_MODIFY;
+	if ((permission & frightsDeleteAny) ||
+	    (b_owner && (permission & frightsDeleteOwned)))
+		tag_access |= MAPI_ACCESS_DELETE;
+ PERMISSION_CHECK:
+	if (!(tag_access & MAPI_ACCESS_READ))
+		return ecAccessDenied;
+	return 0;
+}
+
 BINARY *common_util_calculate_message_sourcekey(store_object *pstore,
     uint64_t message_id)
 {
