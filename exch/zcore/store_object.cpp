@@ -840,7 +840,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		*static_cast<uint8_t *>(*ppvalue) = pstore->check_primary_mode();
 		return TRUE;
 	case PR_ACCESS: {
-		*ppvalue = cu_alloc<uint8_t>();
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -879,7 +879,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		return TRUE;
 	}
 	case PR_RIGHTS: {
-		*ppvalue = cu_alloc<uint8_t>();
+		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
