@@ -72,9 +72,7 @@ uint32_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 	type = *(uint32_t*)pvalue;
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode == LOGON_MODE_OWNER) {
-		tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
-				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
-				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
+		tag_access = MAPI_ACCESS_AllSix;
 	} else {
 		if (!exmdb_client_check_folder_permission(plogon->get_dir(),
 		    folder_id, rpc_info.username, &permission))
@@ -96,16 +94,13 @@ uint32_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 			/* same as exchange 2013, not ecAccessDenied */
 			return ecNotFound;
 		if (permission & frightsOwner) {
-			tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
-				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
-				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
+			tag_access = MAPI_ACCESS_AllSix;
 		} else {
-			tag_access = TAG_ACCESS_READ;
+			tag_access = MAPI_ACCESS_READ;
 			if (permission & frightsCreate)
-				tag_access |= TAG_ACCESS_CONTENTS |
-							TAG_ACCESS_FAI_CONTENTS;
+				tag_access |= MAPI_ACCESS_CREATE_CONTENTS | MAPI_ACCESS_CREATE_ASSOCIATED;
 			if (permission & frightsCreateSubfolder)
-				tag_access |= TAG_ACCESS_HIERARCHY;
+				tag_access |= MAPI_ACCESS_CREATE_HIERARCHY;
 		}
 	}
 	if (!exmdb_client_get_folder_property(plogon->get_dir(), 0, folder_id,
@@ -141,7 +136,6 @@ uint32_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 	uint64_t parent_id;
 	uint64_t folder_id;
 	uint64_t change_num;
-	uint32_t tag_access;
 	uint32_t permission;
 	char folder_name[256];
 	char folder_comment[1024];
@@ -267,9 +261,7 @@ uint32_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode,
 				return ecError;
 		}
 	}
-	tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
-				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
-				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
+	uint32_t tag_access = MAPI_ACCESS_AllSix;
 	auto pfolder = folder_object::create(plogon, folder_id, folder_type, tag_access);
 	if (pfolder == nullptr)
 		return ecMAPIOOM;

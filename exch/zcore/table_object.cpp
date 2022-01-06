@@ -202,30 +202,22 @@ static BOOL table_object_get_all_columns(table_object *ptable,
 static uint32_t table_object_get_folder_tag_access(store_object *pstore,
     uint64_t folder_id, const char *username)
 {
-	uint32_t tag_access;
 	uint32_t permission;
 	
 	if (pstore->check_owner_mode()) {
-		tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
-				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
-				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
-		return tag_access;
+		return MAPI_ACCESS_AllSix;
 	}
 	if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 	    folder_id, username, &permission))
 		return 0;
-	tag_access = TAG_ACCESS_READ;
 	if (permission & frightsOwner) {
-		tag_access = TAG_ACCESS_MODIFY |TAG_ACCESS_DELETE |
-			TAG_ACCESS_HIERARCHY | TAG_ACCESS_CONTENTS |
-			TAG_ACCESS_FAI_CONTENTS;
-		return tag_access;
+		return MAPI_ACCESS_AllSix;
 	}
+	uint32_t tag_access = MAPI_ACCESS_READ;
 	if (permission & frightsCreate)
-		tag_access |= TAG_ACCESS_CONTENTS |
-		              TAG_ACCESS_FAI_CONTENTS;
+		tag_access |= MAPI_ACCESS_CREATE_CONTENTS | MAPI_ACCESS_CREATE_ASSOCIATED;
 	if (permission & frightsCreateSubfolder)
-		tag_access |= TAG_ACCESS_HIERARCHY;
+		tag_access |= MAPI_ACCESS_CREATE_HIERARCHY;
 	return tag_access;
 }
 

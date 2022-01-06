@@ -840,42 +840,33 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		*static_cast<uint8_t *>(*ppvalue) = pstore->check_primary_mode();
 		return TRUE;
 	case PR_ACCESS: {
-		*ppvalue = cu_alloc<uint32_t>();
+		auto acval = cu_alloc<uint32_t>();
+		*ppvalue = acval;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		if (pstore->check_owner_mode()) {
-			*(uint32_t*)*ppvalue =
-				TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
-				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
-				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
+			*acval = MAPI_ACCESS_AllSix;
 			return TRUE;
 		}
 		auto pinfo = zarafa_server_get_info();
 		if (!pstore->b_private) {
-			*static_cast<uint32_t *>(*ppvalue) =
-				TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
-				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
-				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
+			*acval = MAPI_ACCESS_AllSix;
 			return TRUE;
 		}
 		if (!exmdb_client::check_mailbox_permission(pstore->dir,
 		    pinfo->get_username(), &permission))
 			return FALSE;
 		permission &= ~frightsGromoxStoreOwner;
-		*(uint32_t *)*ppvalue = TAG_ACCESS_READ;
+		*acval = MAPI_ACCESS_READ;
 		if (permission & frightsOwner) {
-			*(uint32_t *)*ppvalue =
-				TAG_ACCESS_MODIFY | TAG_ACCESS_DELETE |
-				TAG_ACCESS_HIERARCHY | TAG_ACCESS_CONTENTS |
-				TAG_ACCESS_FAI_CONTENTS;
+			*acval = MAPI_ACCESS_AllSix;
 			return TRUE;
 		}
 		if (permission & frightsCreate)
-			*(uint32_t *)*ppvalue |= TAG_ACCESS_CONTENTS |
-				TAG_ACCESS_FAI_CONTENTS;
+			*acval |= MAPI_ACCESS_CREATE_CONTENTS | MAPI_ACCESS_CREATE_ASSOCIATED;
 		if (permission & frightsCreateSubfolder)
-			*(uint32_t *)*ppvalue |= TAG_ACCESS_HIERARCHY;
+			*acval |= MAPI_ACCESS_CREATE_HIERARCHY;
 		return TRUE;
 	}
 	case PR_RIGHTS: {

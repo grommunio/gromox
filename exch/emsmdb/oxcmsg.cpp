@@ -74,7 +74,7 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 	tag_access = 0;
 	auto rpc_info = get_rpc_info();
 	if (plogon->logon_mode == LOGON_MODE_OWNER) {
-		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ|TAG_ACCESS_DELETE;
+		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
 	}
 	if (!exmdb_client_check_folder_permission(plogon->get_dir(), folder_id,
@@ -83,26 +83,25 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 	if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
 		return ecAccessDenied;
 	if (permission & frightsOwner) {
-		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ|TAG_ACCESS_DELETE;
+		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 		goto PERMISSION_CHECK;
 	}
 	if (!exmdb_client_check_message_owner(plogon->get_dir(), message_id,
 	    rpc_info.username, &b_owner))
 		return ecError;
 	if (b_owner || (permission & frightsReadAny))
-		tag_access |= TAG_ACCESS_READ;
+		tag_access |= MAPI_ACCESS_READ;
 	if ((permission & frightsEditAny) ||
 	    (b_owner && (permission & frightsEditOwned)))
-		tag_access |= TAG_ACCESS_MODIFY;	
+		tag_access |= MAPI_ACCESS_MODIFY;
 	if ((permission & frightsDeleteAny) ||
 	    (b_owner && (permission & frightsDeleteOwned)))
-		tag_access |= TAG_ACCESS_DELETE;	
+		tag_access |= MAPI_ACCESS_DELETE;
  PERMISSION_CHECK:
-	if (0 == (TAG_ACCESS_READ & tag_access)) {
+	if (!(tag_access & MAPI_ACCESS_READ))
 		return ecAccessDenied;
-	}
 	if (0 == (open_mode_flags & OPEN_MODE_FLAG_READWRITE) &&
-		0 == (TAG_ACCESS_MODIFY & tag_access)) {
+	    !(tag_access & MAPI_ACCESS_MODIFY)) {
 		if (!(open_mode_flags & OPEN_MODE_FLAG_BESTACCESS))
 			return ecAccessDenied;
 		open_mode_flags &= ~OPEN_MODE_FLAG_BESTACCESS;
@@ -202,11 +201,11 @@ uint32_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
 			return ecError;
 		if (!(permission & (frightsOwner | frightsCreate)))
 			return ecAccessDenied;
-		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ;
+		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ;
 		if (permission & (frightsDeleteOwned | frightsDeleteAny))
-			tag_access |= TAG_ACCESS_DELETE;
+			tag_access |= MAPI_ACCESS_DELETE;
 	} else {
-		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ|TAG_ACCESS_DELETE;
+		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 	}
 	tmp_proptags.count = 4;
 	tmp_proptags.pproptag = proptag_buff;
@@ -278,9 +277,8 @@ uint32_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
 	if (object_type != OBJECT_TYPE_MESSAGE)
 		return ecNotSupported;
 	auto tag_access = pmessage->get_tag_access();
-	if (0 == (TAG_ACCESS_MODIFY & tag_access)) {
+	if (!(tag_access & MAPI_ACCESS_MODIFY))
 		return ecAccessDenied;
-	}
 	auto open_flags = pmessage->get_open_flags();
 	if (0 == (open_flags & OPEN_MODE_FLAG_READWRITE) &&
 		SAVE_FLAG_FORCESAVE != save_flags) {
@@ -729,7 +727,7 @@ uint32_t rop_openattachment(uint8_t flags, uint32_t attachment_id,
 		return ecNotSupported;
 	if (flags & OPEN_MODE_FLAG_READWRITE) {
 		auto tag_access = pmessage->get_tag_access();
-		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
+		if (!(tag_access & MAPI_ACCESS_MODIFY)) {
 			if (flags & OPEN_MODE_FLAG_BESTACCESS) {
 				flags &= ~OPEN_MODE_FLAG_BESTACCESS;
 			} else {
@@ -766,9 +764,8 @@ uint32_t rop_createattachment(uint32_t *pattachment_id, LOGMAP *plogmap,
 	if (object_type != OBJECT_TYPE_MESSAGE)
 		return ecNotSupported;
 	auto tag_access = pmessage->get_tag_access();
-	if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
+	if (!(tag_access & MAPI_ACCESS_MODIFY))
 		return ecAccessDenied;
-	}
 	auto pattachment = attachment_object::create(pmessage,
 		ATTACHMENT_NUM_INVALID, OPEN_MODE_FLAG_READWRITE);
 	if (pattachment == nullptr)
@@ -799,9 +796,8 @@ uint32_t rop_deleteattachment(uint32_t attachment_id, LOGMAP *plogmap,
 	if (object_type != OBJECT_TYPE_MESSAGE)
 		return ecNotSupported;
 	auto tag_access = pmessage->get_tag_access();
-	if (0 == (TAG_ACCESS_MODIFY & tag_access)) {
+	if (!(tag_access & MAPI_ACCESS_MODIFY & tag_access))
 		return ecAccessDenied;
-	}
 	if (!pmessage->delete_attachment(attachment_id))
 		return ecError;
 	return ecSuccess;
@@ -825,9 +821,8 @@ uint32_t rop_savechangesattachment(uint8_t save_flags, LOGMAP *plogmap,
 	if (object_type != OBJECT_TYPE_ATTACHMENT)
 		return ecNotSupported;
 	auto tag_access = pattachment->get_tag_access();
-	if (0 == (TAG_ACCESS_MODIFY & tag_access)) {
+	if (!(tag_access & MAPI_ACCESS_MODIFY))
 		return ecAccessDenied;
-	}
 	auto open_flags = pattachment->get_open_flags();
 	if (0 == (open_flags & OPEN_MODE_FLAG_READWRITE) &&
 		SAVE_FLAG_FORCESAVE != save_flags) {
@@ -877,10 +872,9 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 	if (object_type != OBJECT_TYPE_ATTACHMENT)
 		return ecNotSupported;
 	auto tag_access = pattachment->get_tag_access();
-	if (0 == (tag_access & TAG_ACCESS_MODIFY) &&
-		((OPEN_EMBEDDED_FLAG_READWRITE & open_embedded_flags))) {
+	if (!(tag_access & MAPI_ACCESS_MODIFY) &&
+	    open_embedded_flags & OPEN_EMBEDDED_FLAG_READWRITE)
 		return ecAccessDenied;
-	}	
 	auto pmessage = message_object::create(plogon, false, cpid, 0,
 	                pattachment, tag_access, open_embedded_flags, nullptr);
 	if (pmessage == nullptr)
@@ -889,9 +883,8 @@ uint32_t rop_openembeddedmessage(uint16_t cpid, uint8_t open_embedded_flags,
 		if (0 == (OPEN_EMBEDDED_FLAG_CREATE & open_embedded_flags)) {
 			return ecNotFound;
 		}
-		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
+		if (!(tag_access & MAPI_ACCESS_MODIFY))
 			return ecAccessDenied;
-		}
 		pmessage = message_object::create(plogon, TRUE, cpid, 0,
 		           pattachment, tag_access, OPEN_MODE_FLAG_READWRITE,
 		           nullptr);

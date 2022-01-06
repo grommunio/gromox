@@ -1065,8 +1065,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			return ecNotFound;
 		tag_access = 0;
 		if (pstore->check_owner_mode()) {
-			tag_access = TAG_ACCESS_MODIFY|
-				TAG_ACCESS_READ|TAG_ACCESS_DELETE;
+			tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 			goto PERMISSION_CHECK;
 		}
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
@@ -1075,26 +1074,24 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 		if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
 			return ecAccessDenied;
 		if (permission & frightsOwner) {
-			tag_access = TAG_ACCESS_MODIFY|
-				TAG_ACCESS_READ|TAG_ACCESS_DELETE;
+			tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 			goto PERMISSION_CHECK;
 		}
 		if (!exmdb_client_check_message_owner(pstore->get_dir(),
 		    message_id, pinfo->get_username(), &b_owner))
 			return ecError;
 		if (b_owner || (permission & frightsReadAny))
-			tag_access |= TAG_ACCESS_READ;
+			tag_access |= MAPI_ACCESS_READ;
 		if ((permission & frightsEditAny) ||
 		    (b_owner && (permission & frightsEditOwned)))
-			tag_access |= TAG_ACCESS_MODIFY;	
+			tag_access |= MAPI_ACCESS_MODIFY;
 		if ((permission & frightsDeleteAny) ||
 		    (b_owner && (permission & frightsDeleteOwned)))
-			tag_access |= TAG_ACCESS_DELETE;	
+			tag_access |= MAPI_ACCESS_DELETE;
  PERMISSION_CHECK:
-		if (0 == (TAG_ACCESS_READ & tag_access)) {
+		if (!(tag_access & MAPI_ACCESS_READ))
 			return ecAccessDenied;
-		}
-		BOOL b_writable = !(tag_access & TAG_ACCESS_MODIFY) ? false : TRUE;
+		BOOL b_writable = !(tag_access & MAPI_ACCESS_MODIFY) ? false : TRUE;
 		auto pmessage = message_object::create(pstore, false,
 		                pinfo->cpid, message_id, &folder_id, tag_access,
 		                b_writable, nullptr);
@@ -1123,9 +1120,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			return ecError;
 		folder_type = *(uint32_t*)pvalue;
 		if (pstore->check_owner_mode()) {
-			tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
-					TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
-					TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
+			tag_access = MAPI_ACCESS_AllSix;
 		} else {
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    folder_id, pinfo->get_username(), &permission))
@@ -1146,16 +1141,13 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 			if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
 				return ecNotFound;
 			if (permission & frightsOwner) {
-				tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
-					TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
-					TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
+				tag_access = MAPI_ACCESS_AllSix;
 			} else {
-				tag_access = TAG_ACCESS_READ;
+				tag_access = MAPI_ACCESS_READ;
 				if (permission & frightsCreate)
-					tag_access |= TAG_ACCESS_CONTENTS |
-								TAG_ACCESS_FAI_CONTENTS;
+					tag_access |= MAPI_ACCESS_CREATE_CONTENTS | MAPI_ACCESS_CREATE_ASSOCIATED;
 				if (permission & frightsCreateSubfolder)
-					tag_access |= TAG_ACCESS_HIERARCHY;
+					tag_access |= MAPI_ACCESS_CREATE_HIERARCHY;
 			}
 		}
 		auto pfolder = folder_object::create(pstore, folder_id,
@@ -1684,12 +1676,11 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 			return ecError;
 		if (!(permission & (frightsOwner | frightsCreate)))
 			return ecNotFound;
-		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ;
+		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ;
 		if (permission & (frightsDeleteOwned | frightsDeleteAny))
-			tag_access |= TAG_ACCESS_DELETE;
+			tag_access |= MAPI_ACCESS_DELETE;
 	} else {
-		tag_access = TAG_ACCESS_MODIFY|
-			TAG_ACCESS_READ|TAG_ACCESS_DELETE;
+		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 	}
 	tmp_proptags.count = 4;
 	tmp_proptags.pproptag = proptag_buff;
@@ -2103,7 +2094,6 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 	uint64_t parent_id;
 	uint64_t folder_id;
 	uint64_t change_num;
-	uint32_t tag_access;
 	uint32_t permission;
 	TPROPVAL_ARRAY tmp_propvals;
 	PERMISSION_DATA permission_row;
@@ -2196,9 +2186,7 @@ uint32_t zarafa_server_createfolder(GUID hsession,
 				return ecError;
 		}
 	}
-	tag_access = TAG_ACCESS_MODIFY | TAG_ACCESS_READ |
-				TAG_ACCESS_DELETE | TAG_ACCESS_HIERARCHY |
-				TAG_ACCESS_CONTENTS | TAG_ACCESS_FAI_CONTENTS;
+	uint32_t tag_access = MAPI_ACCESS_AllSix;
 	auto pfolder = folder_object::create(pstore, folder_id,
 	               folder_type, tag_access);
 	if (pfolder == nullptr)
@@ -4463,31 +4451,30 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 		if (TRUE == b_new) {
 			if (!(permission & frightsCreate))
 				return ecAccessDenied;
-			tag_access = TAG_ACCESS_READ;
+			tag_access = MAPI_ACCESS_READ;
 			if (permission & (frightsEditAny | frightsEditOwned))
-				tag_access |= TAG_ACCESS_MODIFY;	
+				tag_access |= MAPI_ACCESS_MODIFY;
 			if (permission & (frightsDeleteAny | frightsDeleteOwned))
-				tag_access |= TAG_ACCESS_DELETE;	
+				tag_access |= MAPI_ACCESS_DELETE;
 		} else {
 			if (permission & frightsOwner) {
-				tag_access = TAG_ACCESS_MODIFY|
-					TAG_ACCESS_READ|TAG_ACCESS_DELETE;
+				tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 			} else {
 				if (!exmdb_client_check_message_owner(pstore->get_dir(),
 				    message_id, pinfo->get_username(), &b_owner))
 					return ecError;
 				if (b_owner || (permission & frightsReadAny))
-					tag_access |= TAG_ACCESS_READ;
+					tag_access |= MAPI_ACCESS_READ;
 				if ((permission & frightsEditAny) ||
 				    (b_owner && (permission & frightsEditOwned)))
-					tag_access |= TAG_ACCESS_MODIFY;	
+					tag_access |= MAPI_ACCESS_MODIFY;
 				if ((permission & frightsDeleteAny) ||
 				    (b_owner && (permission & frightsDeleteOwned)))
-					tag_access |= TAG_ACCESS_DELETE;	
+					tag_access |= MAPI_ACCESS_DELETE;
 			}
 		}
 	} else {
-		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ|TAG_ACCESS_DELETE;
+		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 	}
 	if (FALSE == b_new) {
 		if (!exmdb_client_get_message_property(pstore->get_dir(),

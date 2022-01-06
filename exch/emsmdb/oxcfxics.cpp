@@ -913,31 +913,30 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 		if (FALSE == b_exist) {
 			if (!(permission & frightsCreate))
 				return ecAccessDenied;
-			tag_access = TAG_ACCESS_READ;
+			tag_access = MAPI_ACCESS_READ;
 			if (permission & (frightsEditAny | frightsEditOwned))
-				tag_access |= TAG_ACCESS_MODIFY;	
+				tag_access |= MAPI_ACCESS_MODIFY;
 			if (permission & (frightsDeleteAny | frightsDeleteOwned))
-				tag_access |= TAG_ACCESS_DELETE;	
+				tag_access |= MAPI_ACCESS_DELETE;
 		} else {
 			if (permission & frightsOwner) {
-				tag_access = TAG_ACCESS_MODIFY|
-					TAG_ACCESS_READ|TAG_ACCESS_DELETE;
+				tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ|MAPI_ACCESS_DELETE;
 			} else {
 				if (!exmdb_client_check_message_owner(plogon->get_dir(),
 				    message_id, rpc_info.username, &b_owner))
 					return ecError;
 				if (b_owner || (permission & frightsReadAny))
-					tag_access |= TAG_ACCESS_READ;
+					tag_access |= MAPI_ACCESS_READ;
 				if ((permission & frightsEditAny) ||
 				    (b_owner && (permission & frightsEditOwned)))
-					tag_access |= TAG_ACCESS_MODIFY;	
+					tag_access |= MAPI_ACCESS_MODIFY;
 				if ((permission & frightsDeleteAny) ||
 				    (b_owner && (permission & frightsDeleteOwned)))
-					tag_access |= TAG_ACCESS_DELETE;	
+					tag_access |= MAPI_ACCESS_DELETE;
 			}
 		}
 	} else {
-		tag_access = TAG_ACCESS_MODIFY|TAG_ACCESS_READ|TAG_ACCESS_DELETE;
+		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 	}
 	if (TRUE == b_exist) {
 		if (!exmdb_client_get_message_property(plogon->get_dir(),

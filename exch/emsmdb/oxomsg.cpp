@@ -229,9 +229,8 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (pmessage->check_importing())
 		return ecAccessDenied;
 	auto tag_access = pmessage->get_tag_access();
-	if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
+	if (!(tag_access & MAPI_ACCESS_MODIFY))
 		return ecAccessDenied;
-	}
 	if (!pmessage->get_recipient_num(&rcpt_num))
 		return ecError;
 	if (rcpt_num > common_util_get_param(COMMON_UTIL_MAX_RCPT)) {

@@ -357,9 +357,8 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 	case OBJECT_TYPE_MESSAGE: {
 		auto msg = static_cast<message_object *>(pobject);
 		auto tag_access = msg->get_tag_access();
-		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
+		if (!(tag_access & MAPI_ACCESS_MODIFY))
 			return ecAccessDenied;
-		}
 		if (!msg->set_properties(ppropvals, pproblems))
 			return ecError;
 		return ecSuccess;
@@ -367,9 +366,8 @@ uint32_t rop_setproperties(const TPROPVAL_ARRAY *ppropvals,
 	case OBJECT_TYPE_ATTACHMENT: {
 		auto atx = static_cast<attachment_object *>(pobject);
 		auto tag_access = atx->get_tag_access();
-		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
+		if (!(tag_access & MAPI_ACCESS_MODIFY))
 			return ecAccessDenied;
-		}
 		if (!atx->set_properties(ppropvals, pproblems))
 			return ecError;
 		return ecSuccess;
@@ -422,9 +420,8 @@ uint32_t rop_deleteproperties(const PROPTAG_ARRAY *pproptags,
 	case OBJECT_TYPE_MESSAGE: {
 		auto msg = static_cast<message_object *>(pobject);
 		auto tag_access = msg->get_tag_access();
-		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
+		if (!(tag_access & MAPI_ACCESS_MODIFY))
 			return ecAccessDenied;
-		}
 		if (!msg->remove_properties(pproptags, pproblems))
 			return ecError;
 		return ecSuccess;
@@ -432,9 +429,8 @@ uint32_t rop_deleteproperties(const PROPTAG_ARRAY *pproptags,
 	case OBJECT_TYPE_ATTACHMENT: {
 		auto atx = static_cast<attachment_object *>(pobject);
 		auto tag_access = atx->get_tag_access();
-		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
+		if (!(tag_access & MAPI_ACCESS_MODIFY))
 			return ecAccessDenied;
-		}
 		if (!atx->remove_properties(pproptags, pproblems))
 			return ecError;
 		return ecSuccess;
@@ -647,9 +643,8 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		auto msgsrc = static_cast<message_object *>(pobject);
 		auto msgdst = static_cast<message_object* >(pobject_dst);
 		auto tag_access = msgdst->get_tag_access();
-		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
+		if (!(tag_access & MAPI_ACCESS_MODIFY))
 			return ecAccessDenied;
-		}
 		b_force = TRUE;
 		if (copy_flags & COPY_FLAG_NOOVERWRITE) {
 			b_force = FALSE;
@@ -713,9 +708,8 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 		auto atsrc = static_cast<attachment_object *>(pobject);
 		auto atdst = static_cast<attachment_object *>(pobject_dst);
 		auto tag_access = atdst->get_tag_access();
-		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
+		if (!(tag_access & MAPI_ACCESS_MODIFY))
 			return ecAccessDenied;
-		}
 		if (copy_flags & COPY_FLAG_NOOVERWRITE) {
 			if (!atdst->get_all_proptags(&proptags1))
 				return ecError;
@@ -883,9 +877,8 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 	case OBJECT_TYPE_MESSAGE: {
 		auto msgdst = static_cast<message_object *>(pobject_dst);
 		auto tag_access = msgdst->get_tag_access();
-		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
+		if (!(tag_access & MAPI_ACCESS_MODIFY))
 			return ecAccessDenied;
-		}
 		if (!msgdst->copy_to(static_cast<message_object *>(pobject),
 		    pexcluded_proptags, b_force, &b_cycle, pproblems))
 			return ecError;
@@ -897,9 +890,8 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 	case OBJECT_TYPE_ATTACHMENT: {
 		auto atdst = static_cast<attachment_object *>(pobject_dst);
 		auto tag_access = atdst->get_tag_access();
-		if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
+		if (!(tag_access & MAPI_ACCESS_MODIFY))
 			return ecAccessDenied;
-		}
 		if (!atdst->copy_properties(static_cast<attachment_object *>(pobject),
 		    pexcluded_proptags, b_force, &b_cycle, pproblems))
 			return ecError;
@@ -975,9 +967,8 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags, uint32_t *pstream_size,
 			auto tag_access = object_type == OBJECT_TYPE_MESSAGE ?
 				static_cast<message_object *>(pobject)->get_tag_access() :
 				static_cast<attachment_object *>(pobject)->get_tag_access();
-			if (0 == (tag_access & TAG_ACCESS_MODIFY)) {
+			if (!(tag_access & MAPI_ACCESS_MODIFY))
 				return ecAccessDenied;
-			}
 		}
 		max_length = common_util_get_param(COMMON_UTIL_MAX_MAIL_LENGTH);
 		break;
