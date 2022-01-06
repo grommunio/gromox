@@ -647,7 +647,7 @@ static void do_print(unsigned int depth, libpff_item_t *item)
 	libpff_item_get_number_of_entries(item, &nent, nullptr);
 	tree(depth);
 	auto sp_nid = az_special_ident(ident);
-	tlog("[id=%lxh%s%s ntyp=%s type=%s nset=%d]\n",
+	tlog("[id=%lxh%s%s ntyp=%s type=%s nset=%d nent=%lu]\n",
 		static_cast<unsigned long>(ident),
 		*sp_nid != '\0' ? " " : "", sp_nid,
 		az_nid_type_to_str(ident),

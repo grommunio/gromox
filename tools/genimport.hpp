@@ -77,7 +77,7 @@ extern const char *g_storedir;
 extern unsigned int g_show_tree, g_show_props, g_wet_run, g_public_folder;
 
 extern void tree(unsigned int d);
-extern void tlog(const char *f, ...);
+extern void tlog(const char *f, ...) __attribute__((format(printf, 1, 2)));
 extern void gi_dump_tpropval_a(unsigned int depth, const TPROPVAL_ARRAY &);
 extern void gi_dump_msgctnt(unsigned int depth, const MESSAGE_CONTENT &);
 extern void gi_dump_folder_map(const gi_folder_map_t &);
