@@ -332,6 +332,7 @@ static bool conttbl_srckey(const table_object *ptable, TARRAY_SET &temp_set)
 			if (r.pvalue == nullptr)
 				return FALSE;
 			r.proptag = PR_SOURCE_KEY;
+			/* Replace just one column of PidTagMid per row with PR_.. */
 			break;
 		}
 	}
@@ -350,6 +351,7 @@ static bool hiertbl_srckey(const table_object *ptable, TARRAY_SET &temp_set)
 			if (r.pvalue == nullptr)
 				return false;
 			r.proptag = PR_SOURCE_KEY;
+			/* Replace just one column of PidTagFolderId per row with PR_.. */
 			break;
 		}
 	}
@@ -422,6 +424,14 @@ static BOOL hierconttbl_query_rows(const table_object *ptable,
 		tmp_columns.count = pcolumns->count;
 		memcpy(tmp_columns.pproptag, pcolumns->pproptag,
 			sizeof(uint32_t)*pcolumns->count);
+		/*
+		 * For source_key/access/rights, we need the MID/FID,
+		 * so do some substitution (which will be "undone")
+		 * in {hier,cont}tbl_{sourcekey,access,right}.
+		 *
+		 * We may be requesting PidTagFolderId more than once from
+		 * exmdb, which is intentional.
+		 */
 		if (idx_sk != pcolumns->npos)
 			tmp_columns.pproptag[idx_sk] = ptable->table_type == CONTENT_TABLE ?
 			                            PidTagMid : PidTagFolderId;
