@@ -798,7 +798,12 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 		ret = do_recips(depth, parent, item);
 	} else if (item_type == LIBPFF_ITEM_TYPE_ATTACHMENT) {
 		ret = do_attach(depth, parent, item);
-	} else if (g_show_tree && (ident & NID_TYPE_MASK) == NID_TYPE_RECEIVE_FOLDER_TABLE) {
+	} else if (g_show_tree && ident != 0) {
+		/*
+		 * The root entry is not very interesting (always
+		 * nset=0,nent=0), it would just indent the remaining tree by
+		 * one level.
+		 */
 		do_print(depth++, item);
 		auto tset = item_to_tarray_set(item);
 		gi_dump_tarray_set(depth, *tset);
