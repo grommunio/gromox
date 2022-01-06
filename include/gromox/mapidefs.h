@@ -252,6 +252,7 @@ enum {
 	// PR_CDO_RECURRENCEID = PROP_TAG(PT_SYSTIME, 0x10C5), /* PidTagCdoRecurrenceid */
 	// PidTagICalendarReminderNextTime = PROP_TAG(PT_SYSTIME, 0x10CA),
 	PR_ATTR_HIDDEN = PROP_TAG(PT_BOOLEAN, 0x10F4), /* PidTagAttributeHidden */
+	// ? = PROP_TAG(PT_MV_SHORT, 0x1205),
 	// ? = PROP_TAG(PT_BINARY, 0x120D), /* entryid to Calendar\Birthdays folder */
 	PR_ROWID = PROP_TAG(PT_LONG, 0x3000), /* PidTagRowid */
 	PR_DISPLAY_NAME_A = PROP_TAG(PT_STRING8, 0x3001),

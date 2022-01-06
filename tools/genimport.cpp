@@ -134,6 +134,17 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 			tlog("bin(%zu)", static_cast<size_t>(b.cb));
 		break;
 	}
+	case PT_MV_SHORT: {
+		auto &sl = *static_cast<SHORT_ARRAY *>(tp.pvalue);
+		tlog("mvshort[%zu]", static_cast<size_t>(sl.count));
+		if (!g_show_props)
+			break;
+		tlog("={");
+		for (size_t i = 0; i < sl.count; ++i)
+			tlog("%hu,", sl.ps[i]);
+		tlog("}");
+		break;
+	}
 	case PT_MV_LONG: {
 		auto &sl = *static_cast<LONG_ARRAY *>(tp.pvalue);
 		tlog("mvlong[%zu]", static_cast<size_t>(sl.count));

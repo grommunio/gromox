@@ -218,6 +218,7 @@ static void hid_to_tpropval_mv(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar
 		auto proptag = PROP_TAG(xtype, xtag);
 		auto colen = res.row_lengths();
 		switch (xtype) {
+		case PT_MV_SHORT:
 		case PT_MV_LONG:
 			if (row[PCOL_ULONG] == nullptr)
 				continue;
