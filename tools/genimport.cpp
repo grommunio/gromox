@@ -22,6 +22,7 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
+#include <gromox/guid.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/paths.h>
 #include <gromox/pcl.hpp>
@@ -92,6 +93,13 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 		tlog("%lu/%lxh", v, v);
 		break;
 	}
+	case PT_FLOAT:
+		tlog("%f", *static_cast<float *>(tp.pvalue));
+		break;
+	case PT_DOUBLE:
+	case PT_APPTIME:
+		tlog("%f", *static_cast<double *>(tp.pvalue));
+		break;
 	case PT_I8: {
 		unsigned long long v = *static_cast<uint64_t *>(tp.pvalue);
 		tlog("%llu/%llxh", v, v);
@@ -124,6 +132,12 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 		if (tm != nullptr)
 			strftime(buf, arsizeof(buf), "%FT%T", tm);
 		tlog("%s (raw %llxh)", buf, v);
+		break;
+	}
+	case PT_CLSID: {
+		char guidstr[GUIDSTR_SIZE];
+		guid_to_string(static_cast<GUID *>(tp.pvalue), guidstr, arsizeof(guidstr));
+		tlog("{%s}", guidstr);
 		break;
 	}
 	case PT_BINARY: {
@@ -219,7 +233,22 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 		tlog("}");
 		break;
 	}
+	case PT_MV_CLSID: {
+		auto &ga = *static_cast<GUID_ARRAY *>(tp.pvalue);
+		tlog("mvguid[%zu]", static_cast<size_t>(ga.count));
+		if (!g_show_props)
+			break;
+		tlog("={");
+		for (size_t i = 0; i < ga.count; ++i) {
+			char guidstr[GUIDSTR_SIZE];
+			guid_to_string(&ga.pguid[i], guidstr, arsizeof(guidstr));
+			tlog("{%s},", guidstr);
+		}
+		tlog("}");
+		break;
+	}
 	default:
+		fprintf(stderr, "PG-1130: unsupported proptype %xh\n", tp.proptag);
 		break;
 	}
 	tlog(g_show_props ? "\n" : ", ");

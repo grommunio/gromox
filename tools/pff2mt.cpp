@@ -402,6 +402,7 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 		SHORT_ARRAY sa;
 		LONG_ARRAY la;
 		LONGLONG_ARRAY lla;
+		GUID_ARRAY ga;
 	} u;
 	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> uextra;
 	TAGGED_PROPVAL pv;
@@ -418,6 +419,7 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 		throw YError("PF-1016: Datasize mismatch on %xh\n", pv.proptag);
 	case PT_I8:
 	case PT_SYSTIME:
+	case PT_CURRENCY:
 		if (dsize == sizeof(uint64_t))
 			break;
 		throw YError("PF-1019: Datasize mismatch on %xh\n", pv.proptag);
@@ -485,6 +487,7 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 		break;
 	case PT_MV_I8:
 	case PT_MV_SYSTIME:
+	case PT_MV_CURRENCY:
 		u.lla.count = dsize / sizeof(uint64_t);
 		u.lla.pll = reinterpret_cast<uint64_t *>(buf.get());
 		pv.pvalue = &u.lla;
@@ -500,11 +503,23 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 		if (uextra != nullptr)
 			pv.pvalue = uextra->ppropval[0].pvalue;
 		break;
+	case PT_MV_CLSID:
+		u.ga.count = dsize / sizeof(GUID);
+		u.ga.pguid = reinterpret_cast<GUID *>(buf.get());
+		pv.pvalue = &u.guid;
+		break;
 	case PT_OBJECT:
 		if (pv.proptag == PR_ATTACH_DATA_OBJ)
 			return; /* Embedded message, which separately handled. */
 		throw YError("PF-1039: Unsupported proptag %xh (datasize %zu). Implement me!\n",
 		        pv.proptag, dsize);
+	case PT_MV_FLOAT:
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME:
+		/*
+		 * This is a larger undertaking, there is no support for these
+		 * three in the MAPI layer (struct TPROPVAL_ARRAY).
+		 */
 	default:
 		throw YError("PF-1042: Unsupported proptype %xh (datasize %zu). Implement me!\n",
 		        pv.proptag, dsize);
