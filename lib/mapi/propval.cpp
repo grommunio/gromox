@@ -454,249 +454,63 @@ uint32_t propval_size(uint16_t type, void *pvalue)
 BOOL propval_compare_relop(uint8_t relop,
 	uint16_t proptype, void *pvalue1, void *pvalue2)
 {
+#define COMPARE() do { \
+		switch (relop) { \
+		case RELOP_LT: return *a < *b ? TRUE : false; \
+		case RELOP_LE: return *a <= *b ? TRUE : false; \
+		case RELOP_GT: return *a > *b ? TRUE : false; \
+		case RELOP_GE: return *a >= *b ? TRUE : false; \
+		case RELOP_EQ: return *a == *b ? TRUE : false; \
+		case RELOP_NE: return *a != *b ? TRUE : false; \
+		} \
+		return false; \
+	} while (false)
+
 	switch (proptype) {
-	case PT_SHORT:
-		switch (relop) {
-		case RELOP_LT:
-			if (*(uint16_t*)pvalue1 < *(uint16_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_LE:
-			if (*(uint16_t*)pvalue1 <= *(uint16_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_GT:
-			if (*(uint16_t*)pvalue1 > *(uint16_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_GE:
-			if (*(uint16_t*)pvalue1 >= *(uint16_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_EQ:
-			if (*(uint16_t*)pvalue1 == *(uint16_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_NE:
-			if (*(uint16_t*)pvalue1 != *(uint16_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		}
-		return FALSE;
+	case PT_SHORT: {
+		auto a = static_cast<uint16_t *>(pvalue1);
+		auto b = static_cast<uint16_t *>(pvalue2);
+		COMPARE();
+	}
 	case PT_LONG:
-	case PT_ERROR:
-		switch (relop) {
-		case RELOP_LT:
-			if (*(uint32_t*)pvalue1 < *(uint32_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_LE:
-			if (*(uint32_t*)pvalue1 <= *(uint32_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_GT:
-			if (*(uint32_t*)pvalue1 > *(uint32_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_GE:
-			if (*(uint32_t*)pvalue1 >= *(uint32_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_EQ:
-			if (*(uint32_t*)pvalue1 == *(uint32_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_NE:
-			if (*(uint32_t*)pvalue1 != *(uint32_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		}
-		return FALSE;
-	case PT_BOOLEAN:
-		switch (relop) {
-		case RELOP_LT:
-			if (*(uint8_t*)pvalue1 < *(uint8_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_LE:
-			if (*(uint8_t*)pvalue1 <= *(uint8_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_GT:
-			if (*(uint8_t*)pvalue1 > *(uint8_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_GE:
-			if (*(uint8_t*)pvalue1 >= *(uint8_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_EQ:
-			if (*(uint8_t*)pvalue1 == *(uint8_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_NE:
-			if (*(uint8_t*)pvalue1 != *(uint8_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		}
-		return FALSE;
+	case PT_ERROR: {
+		auto a = static_cast<uint32_t *>(pvalue1);
+		auto b = static_cast<uint32_t *>(pvalue2);
+		COMPARE();
+	}
+	case PT_BOOLEAN: {
+		auto a = static_cast<uint8_t *>(pvalue1);
+		auto b = static_cast<uint8_t *>(pvalue2);
+		COMPARE();
+	}
 	case PT_CURRENCY:
 	case PT_I8:
-	case PT_SYSTIME:
-		switch (relop) {
-		case RELOP_LT:
-			if (*(uint64_t*)pvalue1 < *(uint64_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_LE:
-			if (*(uint64_t*)pvalue1 <= *(uint64_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_GT:
-			if (*(uint64_t*)pvalue1 > *(uint64_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_GE:
-			if (*(uint64_t*)pvalue1 >= *(uint64_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_EQ:
-			if (*(uint64_t*)pvalue1 == *(uint64_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_NE:
-			if (*(uint64_t*)pvalue1 != *(uint64_t*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		}
-		return FALSE;
-	case PT_FLOAT:
-		switch (relop) {
-		case RELOP_LT:
-			if (*(float*)pvalue1 < *(float*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_LE:
-			if (*(float*)pvalue1 <= *(float*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_GT:
-			if (*(float*)pvalue1 > *(float*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_GE:
-			if (*(float*)pvalue1 >= *(float*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_EQ:
-			if (*(float*)pvalue1 == *(float*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_NE:
-			if (*(float*)pvalue1 != *(float*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		}
-		return FALSE;
+	case PT_SYSTIME: {
+		auto a = static_cast<uint64_t *>(pvalue1);
+		auto b = static_cast<uint64_t *>(pvalue2);
+		COMPARE();
+	}
+	case PT_FLOAT: {
+		auto a = static_cast<float *>(pvalue1);
+		auto b = static_cast<float *>(pvalue2);
+		COMPARE();
+	}
 	case PT_DOUBLE:
-	case PT_APPTIME:
-		switch (relop) {
-		case RELOP_LT:
-			if (*(double*)pvalue1 < *(double*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_LE:
-			if (*(double*)pvalue1 <= *(double*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_GT:
-			if (*(double*)pvalue1 > *(double*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_GE:
-			if (*(double*)pvalue1 >= *(double*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_EQ:
-			if (*(double*)pvalue1 == *(double*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_NE:
-			if (*(double*)pvalue1 != *(double*)pvalue2) {
-				return TRUE;
-			}
-			return FALSE;
-		}
-		return FALSE;
+	case PT_APPTIME: {
+		auto a = static_cast<double *>(pvalue1);
+		auto b = static_cast<double *>(pvalue2);
+		COMPARE();
+	}
 	case PT_STRING8:
 	case PT_UNICODE: {
 		auto s1 = static_cast<char *>(pvalue1), s2 = static_cast<char *>(pvalue2);
 		switch (relop) {
-		case RELOP_LT:
-			if (strcasecmp(s1, s2) < 0) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_LE:
-			if (strcasecmp(s1, s2) <= 0) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_GT:
-			if (strcasecmp(s1, s2) > 0) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_GE:
-			if (strcasecmp(s1, s2) >= 0) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_EQ:
-			if (strcasecmp(s1, s2) == 0) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_NE:
-			if (strcasecmp(s1, s2) != 0) {
-				return TRUE;
-			}
-			return FALSE;
+		case RELOP_LT: return strcasecmp(s1, s2) < 0 ? TRUE : false;
+		case RELOP_LE: return strcasecmp(s1, s2) <= 0 ? TRUE : false;
+		case RELOP_GT: return strcasecmp(s1, s2) > 0 ? TRUE : false;
+		case RELOP_GE: return strcasecmp(s1, s2) >= 0 ? TRUE : false;
+		case RELOP_EQ: return strcasecmp(s1, s2) == 0 ? TRUE : false;
+		case RELOP_NE: return strcasecmp(s1, s2) != 0 ? TRUE : false;
 		}
 		return FALSE;
 	}
@@ -704,36 +518,12 @@ BOOL propval_compare_relop(uint8_t relop,
 		auto g1 = static_cast<GUID *>(pvalue1);
 		auto g2 = static_cast<GUID *>(pvalue2);
 		switch (relop) {
-		case RELOP_LT:
-			if (guid_compare(g1, g2) < 0) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_LE:
-			if (guid_compare(g1, g2) <= 0) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_GT:
-			if (guid_compare(g1, g2) > 0) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_GE:
-			if (guid_compare(g1, g2) >= 0) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_EQ:
-			if (guid_compare(g1, g2) == 0) {
-				return TRUE;
-			}
-			return FALSE;
-		case RELOP_NE:
-			if (guid_compare(g1, g2) != 0) {
-				return TRUE;
-			}
-			return FALSE;
+		case RELOP_LT: return guid_compare(g1, g2) < 0 ? TRUE : false;
+		case RELOP_LE: return guid_compare(g1, g2) <= 0 ? TRUE : false;
+		case RELOP_GT: return guid_compare(g1, g2) > 0 ? TRUE : false;
+		case RELOP_GE: return guid_compare(g1, g2) >= 0 ? TRUE : false;
+		case RELOP_EQ: return *g1 == *g2 ? TRUE : false;
+		case RELOP_NE: return *g1 != *g2 ? TRUE : false;
 		}
 		return FALSE;
 	}
@@ -969,5 +759,5 @@ BOOL propval_compare_relop(uint8_t relop,
 	}
 	}
 	return FALSE;
+#undef COMPARE
 }
-
