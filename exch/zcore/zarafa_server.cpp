@@ -2877,6 +2877,43 @@ uint32_t zarafa_server_seekrow(GUID hsession,
 	return ecSuccess;
 }
 
+static bool table_acceptable_type(uint16_t type)
+{
+	switch (type) {
+	case PT_SHORT:
+	case PT_LONG:
+	case PT_FLOAT:
+	case PT_DOUBLE:
+	case PT_CURRENCY:
+	case PT_APPTIME:
+	case PT_BOOLEAN:
+	case PT_OBJECT:
+	case PT_I8:
+	case PT_STRING8:
+	case PT_UNICODE:
+	case PT_SYSTIME:
+	case PT_CLSID:
+	case PT_SVREID:
+	case PT_SRESTRICTION:
+	case PT_ACTIONS:
+	case PT_BINARY:
+	case PT_MV_SHORT:
+	case PT_MV_LONG:
+	case PT_MV_CURRENCY:
+	case PT_MV_I8:
+	case PT_MV_STRING8:
+	case PT_MV_UNICODE:
+	case PT_MV_SYSTIME:
+	case PT_MV_CLSID:
+	case PT_MV_BINARY:
+		return true;
+	case PT_UNSPECIFIED:
+	case PT_ERROR:
+	default:
+		return false;
+	}
+}
+
 uint32_t zarafa_server_sorttable(GUID hsession,
 	uint32_t htable, const SORTORDER_SET *psortset)
 {
@@ -2948,39 +2985,8 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 				return ecInvalidParam;
 			b_multi_inst = TRUE;
 		}
-		switch (type) {
-		case PT_SHORT:
-		case PT_LONG:
-		case PT_FLOAT:
-		case PT_DOUBLE:
-		case PT_CURRENCY:
-		case PT_APPTIME:
-		case PT_BOOLEAN:
-		case PT_OBJECT:
-		case PT_I8:
-		case PT_STRING8:
-		case PT_UNICODE:
-		case PT_SYSTIME:
-		case PT_CLSID:
-		case PT_SVREID:
-		case PT_SRESTRICTION:
-		case PT_ACTIONS:
-		case PT_BINARY:
-		case PT_MV_SHORT:
-		case PT_MV_LONG:
-		case PT_MV_CURRENCY:
-		case PT_MV_I8:
-		case PT_MV_STRING8:
-		case PT_MV_UNICODE:
-		case PT_MV_SYSTIME:
-		case PT_MV_CLSID:
-		case PT_MV_BINARY:
-			break;
-		case PT_UNSPECIFIED:
-		case PT_ERROR:
-		default:
+		if (!table_acceptable_type(type))
 			return ecInvalidParam;
-		}
 		if (TABLE_SORT_MAXIMUM_CATEGORY ==
 			psortset->psort[i].table_sort ||
 			TABLE_SORT_MINIMUM_CATEGORY ==
