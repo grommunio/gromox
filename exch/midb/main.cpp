@@ -126,7 +126,7 @@ int main(int argc, const char **argv) try
 		{"sqlite_wal_mode", "true", CFG_BOOL},
 		{"state_path", PKGSTATEDIR},
 		{"x500_org_name", "Gromox default"},
-		{},
+		CFG_TABLE_END,
 	};
 	config_file_apply(*g_config_file, cfg_default_values);
 	auto str_value = pconfig->get_value("SERVICE_PLUGIN_LIST");

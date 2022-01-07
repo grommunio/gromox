@@ -113,7 +113,7 @@ int main(int argc, const char **argv) try
 		{"smtp_support_starttls", "false", CFG_BOOL},
 		{"state_path", PKGSTATEDIR},
 		{"thread_charge_num", "400", CFG_SIZE, "4"},
-		{},
+		CFG_TABLE_END,
 	};
 	config_file_apply(*g_config_file, cfg_default_values);
 

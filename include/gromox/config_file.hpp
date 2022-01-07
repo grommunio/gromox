@@ -8,6 +8,7 @@
 #define resource_get_integer(k, vp) g_config_file->get_int((k), (vp))
 #define resource_get_uint(k, vp) g_config_file->get_uint((k), (vp))
 #define resource_set_integer(k, v) g_config_file->set_int((k), (v))
+#define CFG_TABLE_END {}
 
 enum cfg_flags {
 	CFG_BOOL = 1U << 0,

@@ -100,7 +100,7 @@ int main(int argc, const char **argv) try
 		{"service_plugin_path", PKGLIBDIR},
 		{"state_path", PKGSTATEDIR},
 		{"work_threads_min", "16", CFG_SIZE, "1"},
-		{},
+		CFG_TABLE_END,
 	};
 	config_file_apply(*g_config_file, cfg_default_values);
 

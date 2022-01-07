@@ -372,7 +372,7 @@ static constexpr cfg_directive cfg_default_values[] = {
 	{"mysql_password", ""},
 	{"mysql_dbname", "email"},
 	{"mysql_rdwr_timeout", "0", CFG_TIME},
-	{},
+	CFG_TABLE_END,
 };
 
 static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> cfg) try

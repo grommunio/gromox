@@ -146,7 +146,7 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 			{"smtp_server_ip", "::1"},
 			{"smtp_server_port", "25"},
 			{"x500_org_name", "Gromox default"},
-			{},
+			CFG_TABLE_END,
 		};
 		config_file_apply(*pfile, cfg_default_values);
 		gx_strlcpy(separator, pfile->get_value("separator_for_bounce"), arsizeof(separator));

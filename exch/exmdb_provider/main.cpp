@@ -51,7 +51,7 @@ static constexpr cfg_directive cfg_default_values[] = {
 	{"sqlite_wal_mode", "false", CFG_BOOL},
 	{"table_size", "5000", CFG_SIZE, "100"},
 	{"x500_org_name", "Gromox default"},
-	{},
+	CFG_TABLE_END,
 };
 
 unsigned int g_dbg_synth_content;

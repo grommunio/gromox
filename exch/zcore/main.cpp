@@ -144,7 +144,7 @@ int main(int argc, const char **argv) try
 		{"zarafa_threads_num", "100", CFG_SIZE, "20", "1000"},
 		{"zcore_listen", PKGRUNDIR "/zcore.sock"},
 		{"zrpc_debug", "0"},
-		{},
+		CFG_TABLE_END,
 	};
 	config_file_apply(*g_config_file, cfg_default_values);
 

@@ -208,7 +208,7 @@ int main(int argc, const char **argv) try
 		{"timer_listen_port", "6666"},
 		{"timer_state_path", PKGSTATEDIR "/timer.txt"},
 		{"timer_threads_num", "50", CFG_SIZE, "5", "50"},
-		{},
+		CFG_TABLE_END,
 	};
 	config_file_apply(*pconfig, cfg_default_values);
 

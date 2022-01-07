@@ -146,7 +146,7 @@ int main(int argc, const char **argv) try
 		{"thread_charge_num", "20", CFG_SIZE, "4"},
 		{"thread_init_num", "5", CFG_SIZE},
 		{"user_default_lang", "en"},
-		{},
+		CFG_TABLE_END,
 	};
 	config_file_apply(*g_config_file, cfg_default_values);
 

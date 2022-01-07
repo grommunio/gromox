@@ -132,7 +132,7 @@ int main(int argc, const char **argv)
 		{"mysql_port", "3306"},
 		{"mysql_username", "root"},
 		{"mysql_dbname", "email"},
-		{},
+		CFG_TABLE_END,
 	};
 	config_file_apply(*pconfig, cfg_default_values);
 	gx_strlcpy(mysql_host, pconfig->get_value("mysql_host"), arsizeof(mysql_host));

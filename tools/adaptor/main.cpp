@@ -59,7 +59,7 @@ int main(int argc, const char **argv)
 		{"mysql_port", "3306"},
 		{"mysql_username", "root"},
 		{"state_path", PKGSTATEDIR},
-		{},
+		CFG_TABLE_END,
 	};
 	config_file_apply(*pconfig, cfg_default_values);
 

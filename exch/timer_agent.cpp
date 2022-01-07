@@ -87,7 +87,7 @@ static BOOL svc_timer_agent(int reason, void **ppdata) try
 			{"connection_num", "8", CFG_SIZE, "1"},
 			{"timer_host", "::1"},
 			{"timer_port", "6666"},
-			{},
+			CFG_TABLE_END,
 		};
 		config_file_apply(*pfile, cfg_default_values);
 

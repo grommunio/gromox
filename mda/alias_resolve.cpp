@@ -151,11 +151,11 @@ static constexpr const cfg_directive mysql_directives[] = {
 	{"mysql_password", ""},
 	{"mysql_dbname", "email"},
 	{"mysql_rdwr_timeout", "0", CFG_TIME},
-	{},
+	CFG_TABLE_END,
 };
 static constexpr const cfg_directive xa_directives[] = {
 	{"cache_lifetime", "1h", CFG_TIME},
-	{},
+	CFG_TABLE_END,
 };
 
 static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> mcfg, std::shared_ptr<CONFIG_FILE> acfg)

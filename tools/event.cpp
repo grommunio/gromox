@@ -215,7 +215,7 @@ int main(int argc, const char **argv) try
 		{"event_listen_ip", "::1"},
 		{"event_listen_port", "33333"},
 		{"event_threads_num", "50", CFG_SIZE, "1", "1000"},
-		{},
+		CFG_TABLE_END,
 	};
 	config_file_apply(*pconfig, cfg_default_values);
 

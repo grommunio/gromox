@@ -411,7 +411,7 @@ static BOOL remote_delivery_entry(int request, void **apidata) try
 		{"mx_host", "::1"},
 		{"mx_port", "25", 0, "1", "65535"},
 		{"starttls_support", "on", CFG_BOOL},
-		{},
+		CFG_TABLE_END,
 	};
 	config_file_apply(*cfg_file, cfg_default_values);
 	g_files_allocator.reset(lib_buffer_init(FILE_ALLOC_SIZE, 256 * get_threads_num(), TRUE));
