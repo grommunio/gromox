@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <memory>
+#include <optional>
 #include <string>
 #include <libHX/io.h>
 #include <libHX/option.h>
@@ -40,11 +41,9 @@ static constexpr HXoption g_options_table[] = {
 int main(int argc, const char **argv)
 {
 	MYSQL *pmysql;
-	int mysql_port;
 	MYSQL_ROW myrow;
 	sqlite3 *psqlite;
 	MYSQL_RES *pmyres;
-	char mysql_host[UDOM_SIZE], mysql_user[256], db_name[256], dir[256];
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
@@ -65,11 +64,13 @@ int main(int argc, const char **argv)
 		{"mysql_dbname", "email"},
 	};
 	config_file_apply(*pconfig, cfg_default_values);
-	gx_strlcpy(mysql_host, pconfig->get_value("mysql_host"), arsizeof(mysql_host));
-	mysql_port = pconfig->get_ll("mysql_port");
-	gx_strlcpy(mysql_user, pconfig->get_value("mysql_username"), arsizeof(mysql_user));
-	auto mysql_passwd = pconfig->get_value("mysql_password");
-	gx_strlcpy(db_name, pconfig->get_value("mysql_dbname"), arsizeof(db_name));
+	std::string mysql_host = znul(pconfig->get_value("mysql_host"));
+	uint16_t mysql_port = pconfig->get_ll("mysql_port");
+	std::string mysql_user = znul(pconfig->get_value("mysql_username"));
+	std::optional<std::string> mysql_pass;
+	if (auto s = pconfig->get_value("mysql_password"))
+		mysql_pass.emplace(s);
+	std::string db_name = znul(pconfig->get_value("mysql_dbname"));
 
 	pconfig = config_file_prg(opt_config_file, "sa.cfg");
 	if (opt_config_file != nullptr && pconfig == nullptr)
@@ -86,11 +87,12 @@ int main(int argc, const char **argv)
 		return EXIT_FAILURE;
 	}
 
-	if (NULL == mysql_real_connect(pmysql, mysql_host, mysql_user,
-		mysql_passwd, db_name, mysql_port, NULL, 0)) {
+	if (mysql_real_connect(pmysql, mysql_host.c_str(), mysql_user.c_str(),
+	    mysql_pass.has_value() ? mysql_pass->c_str() : nullptr,
+	    db_name.c_str(), mysql_port, nullptr, 0) == nullptr) {
 		mysql_close(pmysql);
 		printf("Failed to connect to the database %s@%s/%s\n",
-		       mysql_user, mysql_host, db_name);
+		       mysql_user.c_str(), mysql_host.c_str(), db_name.c_str());
 		return EXIT_FAILURE;
 	}
 	if (mysql_set_character_set(pmysql, "utf8mb4") != 0) {
@@ -134,7 +136,7 @@ int main(int argc, const char **argv)
 	auto address_status = strtoul(myrow[1], nullptr, 0);
 	if (address_status != AF_USER_NORMAL && address_status != AF_USER_SHAREDMBOX)
 		printf("Warning: Address status is not \"alive\"(0) but %lu\n", address_status);
-	gx_strlcpy(dir, myrow[2], arsizeof(dir));
+	std::string dir = znul(myrow[2]);
 	mysql_free_result(pmyres);
 	mysql_close(pmysql);
 	
