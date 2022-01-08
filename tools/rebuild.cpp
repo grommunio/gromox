@@ -314,9 +314,14 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "list_file_read_exmdb: %s\n", strerror(-ret));
 		return 11;
 	}
+#if __cplusplus >= 202000L
+	std::erase_if(g_exmdb_list,
+		[&](const EXMDB_ITEM &s) { return s.type != EXMDB_ITEM::EXMDB_PRIVATE; });
+#else
 	g_exmdb_list.erase(std::remove_if(g_exmdb_list.begin(), g_exmdb_list.end(),
 		[&](const EXMDB_ITEM &s) { return s.type != EXMDB_ITEM::EXMDB_PRIVATE; }),
 		g_exmdb_list.end());
+#endif
 	if (FALSE == exmdb_client_unload_store(argv[1])) {
 		printf("fail to unload store\n");
 		return 12;
