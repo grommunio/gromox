@@ -417,6 +417,16 @@ PROPERTY_XNAME::PROPERTY_XNAME(const PROPERTY_NAME &o) :
 		name = o.pname;
 }
 
+PROPERTY_XNAME::operator PROPERTY_NAME() const
+{
+	PROPERTY_NAME z;
+	z.kind = kind;
+	z.guid = guid;
+	z.lid = lid;
+	z.pname = const_cast<char *>(name.c_str());
+	return z;
+}
+
 size_t PROPTAG_ARRAY::indexof(uint32_t tag) const
 {
 	for (size_t i = 0; i < count; ++i)

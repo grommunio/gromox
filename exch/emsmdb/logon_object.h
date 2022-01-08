@@ -1,14 +1,14 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <string>
+#include <unordered_map>
 #include <vector>
 #include <gromox/mapi_types.hpp>
-#include <gromox/str_hash.hpp>
 #define LOGON_MODE_OWNER				0
 #define LOGON_MODE_DELEGATE				1
 #define LOGON_MODE_GUEST				2
 
-struct INT_HASH_TABLE;
 struct property_groupinfo;
 
 struct logon_object {
@@ -17,7 +17,6 @@ struct logon_object {
 	NOMOVE(logon_object);
 
 	public:
-	~logon_object();
 	static std::unique_ptr<logon_object> create(uint8_t logon_flags, uint32_t open_flags, int logon_mode, int account_id, const char *account, const char *dir, GUID mailbox_guid);
 	BOOL check_private() const { return (logon_flags & LOGON_FLAG_PRIVATE) ? TRUE : false; }
 	GUID guid() const;
@@ -48,6 +47,6 @@ struct logon_object {
 	GUID mailbox_guid{};
 	std::unique_ptr<property_groupinfo> m_gpinfo;
 	std::vector<property_groupinfo> group_list;
-	std::unique_ptr<INT_HASH_TABLE> ppropid_hash;
-	std::unique_ptr<STR_HASH_TABLE> ppropname_hash;
+	std::unordered_map<uint32_t, PROPERTY_XNAME> propid_hash;
+	std::unordered_map<std::string, uint16_t> propname_hash;
 };

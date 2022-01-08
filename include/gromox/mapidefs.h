@@ -1451,6 +1451,7 @@ struct PROPERTY_NAME {
 struct PROPERTY_XNAME {
 	PROPERTY_XNAME() = default;
 	PROPERTY_XNAME(const PROPERTY_NAME &);
+	explicit operator PROPERTY_NAME() const;
 
 	uint8_t kind = KIND_NONE;
 	uint32_t lid = 0;

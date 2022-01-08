@@ -7,9 +7,7 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
-#include <gromox/int_hash.hpp>
 #include <gromox/proc_common.h>
-#include <gromox/str_hash.hpp>
 #include "emsmdb_interface.h"
 #include "msgchg_grouping.h"
 #include "logon_object.h"
@@ -22,110 +20,35 @@
 #include <cstdlib>
 #include <cstring>
 
-#define HGROWING_SIZE									0x500
-
+using namespace std::string_literals;
 using namespace gromox;
 
-static BOOL logon_object_enlarge_propid_hash(logon_object *plogon)
+static bool propname_to_packed(const PROPERTY_NAME &n, char *dst, size_t z)
 {
-	int tmp_id;
-	void *ptmp_value;
-	auto phash = INT_HASH_TABLE::create(plogon->ppropid_hash->capacity +
-	                        HGROWING_SIZE, sizeof(PROPERTY_NAME));
-	if (phash == nullptr)
-		return FALSE;
-	auto iter = plogon->ppropid_hash->make_iter();
-	for (int_hash_iter_begin(iter); !int_hash_iter_done(iter);
-		int_hash_iter_forward(iter)) {
-		ptmp_value = int_hash_iter_get_value(iter, &tmp_id);
-		phash->add(tmp_id, ptmp_value);
-	}
-	int_hash_iter_free(iter);
-	plogon->ppropid_hash = std::move(phash);
-	return TRUE;
-}
-
-static BOOL logon_object_enlarge_propname_hash(logon_object *plogon)
-{
-	void *ptmp_value;
-	char tmp_string[256];
-	
-	auto phash = STR_HASH_TABLE::create(plogon->ppropname_hash->capacity
-				+ HGROWING_SIZE, sizeof(uint16_t), NULL);
-	if (phash == nullptr)
-		return FALSE;
-	auto iter = plogon->ppropname_hash->make_iter();
-	for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
-		str_hash_iter_forward(iter)) {
-		ptmp_value = str_hash_iter_get_value(iter, tmp_string);
-		phash->add(tmp_string, ptmp_value);
-	}
-	str_hash_iter_free(iter);
-	plogon->ppropname_hash = std::move(phash);
-	return TRUE;
+	char guid[GUIDSTR_SIZE];
+	guid_to_string(&n.guid, guid, arsizeof(guid));
+	if (n.kind == MNID_ID)
+		snprintf(dst, z, "%s:lid:%u", guid, n.lid);
+	else if (n.kind == MNID_STRING)
+		snprintf(dst, z, "%s:name:%s", guid, n.pname);
+	else
+		return false;
+	HX_strlower(dst);
+	return true;
 }
 
 static BOOL logon_object_cache_propname(logon_object *plogon,
-	uint16_t propid, const PROPERTY_NAME *ppropname)
+    uint16_t propid, const PROPERTY_NAME *ppropname) try
 {
-	PROPERTY_NAME tmp_name;
-	
-	if (NULL == plogon->ppropid_hash) {
-		plogon->ppropid_hash = INT_HASH_TABLE::create(HGROWING_SIZE,
-		                       sizeof(PROPERTY_NAME));
-		if (plogon->ppropid_hash == nullptr)
-			return FALSE;
-	}
-	if (NULL == plogon->ppropname_hash) {
-		plogon->ppropname_hash = STR_HASH_TABLE::create(HGROWING_SIZE, sizeof(uint16_t), nullptr);
-		if (NULL == plogon->ppropname_hash) {
-			plogon->ppropid_hash.reset();
-			return FALSE;
-		}
-	}
-	tmp_name.kind = ppropname->kind;
-	tmp_name.guid = ppropname->guid;
-	char tmp_string[NP_STRBUF_SIZE], tmp_guid[GUIDSTR_SIZE];
-	guid_to_string(&ppropname->guid, tmp_guid, arsizeof(tmp_guid));
-	switch (ppropname->kind) {
-	case MNID_ID:
-		tmp_name.lid = ppropname->lid;
-		tmp_name.pname = NULL;
-		snprintf(tmp_string, arsizeof(tmp_string), "%s:lid:%u", tmp_guid, ppropname->lid);
-		break;
-	case MNID_STRING:
-		tmp_name.lid = 0;
-		tmp_name.pname = strdup(ppropname->pname);
-		if (NULL == tmp_name.pname) {
-			return FALSE;
-		}
-		snprintf(tmp_string, arsizeof(tmp_string), "%s:name:%s", tmp_guid, ppropname->pname);
-		break;
-	default:
-		return FALSE;
-	}
-	if (plogon->ppropid_hash->query1(propid) == nullptr) {
-		if (plogon->ppropid_hash->add(propid, &tmp_name) != 1) {
-			if (FALSE == logon_object_enlarge_propid_hash(plogon) ||
-			    plogon->ppropid_hash->add(propid, &tmp_name) != 1) {
-				if (NULL != tmp_name.pname) {
-					free(tmp_name.pname);
-				}
-				return FALSE;
-			}
-		}
-	} else {
-		if (NULL != tmp_name.pname) {
-			free(tmp_name.pname);
-		}
-	}
-	HX_strlower(tmp_string);
-	if (plogon->ppropname_hash->query1(tmp_string) == nullptr &&
-	    plogon->ppropname_hash->add(tmp_string, &propid) != 1)
-		if (!logon_object_enlarge_propname_hash(plogon) ||
-		    plogon->ppropname_hash->add(tmp_string, &propid) != 1)
-			return FALSE;
+	char s[NP_STRBUF_SIZE];
+	if (!propname_to_packed(*ppropname, s, arsizeof(s)))
+		return false;
+	plogon->propid_hash.emplace(propid, *ppropname);
+	plogon->propname_hash.emplace(s, propid);
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1633: ENOMEM\n");
+	return false;
 }
 
 std::unique_ptr<logon_object> logon_object::create(uint8_t logon_flags,
@@ -148,28 +71,6 @@ std::unique_ptr<logon_object> logon_object::create(uint8_t logon_flags,
 	return plogon;
 }
 
-logon_object::~logon_object()
-{
-	PROPERTY_NAME *ppropname;
-
-	auto plogon = this;
-	if (NULL != plogon->ppropid_hash) {
-		auto piter = plogon->ppropid_hash->make_iter();
-		for (int_hash_iter_begin(piter); !int_hash_iter_done(piter);
-			int_hash_iter_forward(piter)) {
-			ppropname = static_cast<PROPERTY_NAME *>(int_hash_iter_get_value(piter, nullptr));
-			switch( ppropname->kind) {
-			case MNID_STRING:
-				free(ppropname->pname);
-				break;
-			}
-		}
-		int_hash_iter_free(piter);
-		plogon->ppropid_hash.reset();
-	}
-	plogon->ppropname_hash.reset();
-}
-
 GUID logon_object::guid() const
 {
 	return check_private() ? rop_util_make_user_guid(account_id) :
@@ -178,20 +79,16 @@ GUID logon_object::guid() const
 
 BOOL logon_object::get_named_propname(uint16_t propid, PROPERTY_NAME *ppropname)
 {
-	PROPERTY_NAME *pname;
-	
 	if (propid < 0x8000) {
 		ppropname->guid = PS_MAPI;
 		ppropname->kind = MNID_ID;
 		ppropname->lid = propid;
 	}
 	auto plogon = this;
-	if (NULL != plogon->ppropid_hash) {
-		pname = plogon->ppropid_hash->query<PROPERTY_NAME>(propid);
-		if (NULL != pname) {
-			*ppropname = *pname;
-			return TRUE;
-		}
+	auto iter = propid_hash.find(propid);
+	if (iter != propid_hash.end()) {
+		*ppropname = static_cast<PROPERTY_NAME>(iter->second);
+		return TRUE;
 	}
 	if (FALSE == exmdb_client_get_named_propname(
 		plogon->dir, propid, ppropname)) {
@@ -206,7 +103,6 @@ BOOL logon_object::get_named_propnames(const PROPID_ARRAY *ppropids,
     PROPNAME_ARRAY *ppropnames)
 {
 	int i;
-	PROPERTY_NAME *pname;
 	PROPID_ARRAY tmp_propids;
 	PROPNAME_ARRAY tmp_propnames;
 	
@@ -237,11 +133,10 @@ BOOL logon_object::get_named_propnames(const PROPID_ARRAY *ppropids,
 			pindex_map[i] = i;
 			continue;
 		}
-		pname = plogon->ppropid_hash == nullptr ? nullptr :
-		        plogon->ppropid_hash->query<PROPERTY_NAME>(ppropids->ppropid[i]);
-		if (NULL != pname) {
+		auto iter = propid_hash.find(ppropids->ppropid[i]);
+		if (iter != propid_hash.end()) {
 			pindex_map[i] = i;
-			ppropnames->ppropname[i] = *pname;
+			ppropnames->ppropname[i] = static_cast<PROPERTY_NAME>(iter->second);
 		} else {
 			tmp_propids.ppropid[tmp_propids.count++] = ppropids->ppropid[i];
 			pindex_map[i] = -tmp_propids.count;
@@ -273,27 +168,16 @@ BOOL logon_object::get_named_propid(BOOL b_create,
 		*ppropid = ppropname->kind == MNID_ID ? ppropname->lid : 0;
 		return TRUE;
 	}
-	char tmp_string[NP_STRBUF_SIZE], tmp_guid[GUIDSTR_SIZE];
-	guid_to_string(&ppropname->guid, tmp_guid, arsizeof(tmp_guid));
-	switch (ppropname->kind) {
-	case MNID_ID:
-		snprintf(tmp_string, arsizeof(tmp_string), "%s:lid:%u", tmp_guid, ppropname->lid);
-		break;
-	case MNID_STRING:
-		snprintf(tmp_string, arsizeof(tmp_string), "%s:name:%s", tmp_guid, ppropname->pname);
-		HX_strlower(tmp_string);
-		break;
-	default:
+	char ps[NP_STRBUF_SIZE];
+	if (!propname_to_packed(*ppropname, ps, arsizeof(ps))) {
 		*ppropid = 0;
 		return TRUE;
 	}
 	auto plogon = this;
-	if (NULL != plogon->ppropname_hash) {
-		auto pid = plogon->ppropname_hash->query<uint16_t>(tmp_string);
-		if (NULL != pid) {
-			*ppropid = *pid;
-			return TRUE;
-		}
+	auto iter = propname_hash.find(ps);
+	if (iter != propname_hash.end()) {
+		*ppropid = iter->second;
+		return TRUE;
 	}
 	if (FALSE == exmdb_client_get_named_propid(
 		plogon->dir, b_create, ppropname, ppropid)) {
@@ -339,28 +223,16 @@ BOOL logon_object::get_named_propids(BOOL b_create,
 			pindex_map[i] = i;
 			continue;
 		}
-		char tmp_string[NP_STRBUF_SIZE], tmp_guid[GUIDSTR_SIZE];
-		guid_to_string(&ppropnames->ppropname[i].guid, tmp_guid, arsizeof(tmp_guid));
-		switch (ppropnames->ppropname[i].kind) {
-		case MNID_ID:
-			snprintf(tmp_string, arsizeof(tmp_string), "%s:lid:%u",
-			         tmp_guid, ppropnames->ppropname[i].lid);
-			break;
-		case MNID_STRING:
-			snprintf(tmp_string, arsizeof(tmp_string), "%s:name:%s",
-				tmp_guid, ppropnames->ppropname[i].pname);
-			HX_strlower(tmp_string);
-			break;
-		default:
+		char ps[NP_STRBUF_SIZE];
+		if (!propname_to_packed(ppropnames->ppropname[i], ps, arsizeof(ps))) {
 			ppropids->ppropid[i] = 0;
 			pindex_map[i] = i;
 			continue;
 		}
-		auto pid = plogon->ppropname_hash == nullptr ? nullptr :
-		           plogon->ppropname_hash->query<uint16_t>(tmp_string);
-		if (NULL != pid) {
+		auto iter = propname_hash.find(ps);
+		if (iter != propname_hash.end()) {
 			pindex_map[i] = i;
-			ppropids->ppropid[i] = *pid;
+			ppropids->ppropid[i] = iter->second;
 		} else {
 			tmp_propnames.ppropname[tmp_propnames.count++] = ppropnames->ppropname[i];
 			pindex_map[i] = -tmp_propnames.count;
