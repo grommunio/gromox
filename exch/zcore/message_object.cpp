@@ -441,8 +441,7 @@ gxerr_t message_object::save()
 		return GXERR_CALL_FAILED;
 	}
 	for (i=0; i<pmessage->pchanged_proptags->count; i++) {
-		if (FALSE == property_groupinfo_get_partial_index(pgpinfo,
-			pmessage->pchanged_proptags->pproptag[i], &tmp_index)) {
+		if (!pgpinfo->get_partial_index(pmessage->pchanged_proptags->pproptag[i], &tmp_index)) {
 			if (!proptag_array_append(pungroup_proptags,
 			    pmessage->pchanged_proptags->pproptag[i])) {
 				proptag_array_free(pindices);
@@ -458,8 +457,7 @@ gxerr_t message_object::save()
 		}
 	}
 	for (i=0; i<pmessage->premoved_proptags->count; i++) {
-		if (FALSE == property_groupinfo_get_partial_index(pgpinfo,
-			pmessage->premoved_proptags->pproptag[i], &tmp_index)) {
+		if (!pgpinfo->get_partial_index(pmessage->premoved_proptags->pproptag[i], &tmp_index)) {
 			proptag_array_free(pindices);
 			proptag_array_free(pungroup_proptags);
 			goto SAVE_FULL_CHANGE;

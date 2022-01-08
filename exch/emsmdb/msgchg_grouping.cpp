@@ -441,8 +441,7 @@ PROPERTY_GROUPINFO *msgchg_grouping_get_groupinfo(
 				return NULL;
 			}
 		}
-		if (FALSE == property_groupinfo_append_internal(
-			pinfo, pproptags)) {
+		if (!pinfo->append_internal(pproptags)) {
 			property_groupinfo_free(pinfo);
 			proptag_array_free(pproptags);
 			return NULL;

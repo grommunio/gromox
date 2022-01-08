@@ -1638,7 +1638,7 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 		proptag_array_free(pindices);
 		return FALSE;
 	}
-	if (!property_groupinfo_get_partial_index(pgpinfo, PR_CHANGE_KEY, &tmp_index)) {
+	if (!pgpinfo->get_partial_index(PR_CHANGE_KEY, &tmp_index)) {
 		if (!proptag_array_append(pungroup_proptags, PR_CHANGE_KEY)) {
 			proptag_array_free(pindices);
 			proptag_array_free(pungroup_proptags);
@@ -1653,8 +1653,7 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 	}
 	if (NULL != pchanged_proptags) {
 		for (i=0; i<pchanged_proptags->count; i++) {
-			if (FALSE == property_groupinfo_get_partial_index(
-				pgpinfo, pchanged_proptags->pproptag[i], &tmp_index)) {
+			if (!pgpinfo->get_partial_index(pchanged_proptags->pproptag[i], &tmp_index)) {
 				if (!proptag_array_append(pungroup_proptags,
 				    pchanged_proptags->pproptag[i])) {
 					proptag_array_free(pindices);

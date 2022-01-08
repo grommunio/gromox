@@ -379,9 +379,9 @@ PROPERTY_GROUPINFO* property_groupinfo_init(uint32_t group_id)
 	return pgpinfo;
 }
 
-BOOL property_groupinfo_append_internal(
-	PROPERTY_GROUPINFO *pgpinfo, PROPTAG_ARRAY *pgroup)
+bool property_groupinfo::append_internal(PROPTAG_ARRAY *pgroup)
 {
+	auto pgpinfo = this;
 	PROPTAG_ARRAY *pgroups;
 	/* allocate like proptag_array.cpp does */
 	auto count = strange_roundup(pgpinfo->count, SR_GROW_PROPTAG_ARRAY);
@@ -400,16 +400,17 @@ BOOL property_groupinfo_append_internal(
 	return TRUE;
 }
 
-BOOL property_groupinfo_get_partial_index(const PROPERTY_GROUPINFO *pgpinfo,
-	uint32_t proptag, uint32_t *pindex)
+bool property_groupinfo::get_partial_index(uint32_t proptag,
+    uint32_t *pindex) const
 {
+	auto pgpinfo = this;
 	for (size_t i = 0; i < pgpinfo->count; ++i)
 		for (size_t j = 0; j < pgpinfo->pgroups[i].count; ++j)
 			if (proptag == pgpinfo->pgroups[i].pproptag[j]) {
 				*pindex = i;
-				return TRUE;
+				return true;
 			}
-	return FALSE;
+	return false;
 }
 
 void property_groupinfo_free_internal(PROPERTY_GROUPINFO *pgpinfo)

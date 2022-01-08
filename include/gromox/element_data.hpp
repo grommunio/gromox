@@ -8,6 +8,9 @@
 struct ATTACHMENT_CONTENT;
 
 struct GX_EXPORT property_groupinfo {
+	bool append_internal(PROPTAG_ARRAY *);
+	bool get_partial_index(uint32_t proptag, uint32_t *idx) const;
+
 	uint32_t group_id;
 	uint32_t reserved;
 	uint32_t count;
@@ -112,8 +115,5 @@ void message_content_free(MESSAGE_CONTENT *pmsgctnt);
 extern MESSAGE_CONTENT *message_content_dup(const MESSAGE_CONTENT *);
 uint32_t message_content_get_size(const MESSAGE_CONTENT *pmsgctnt);
 PROPERTY_GROUPINFO* property_groupinfo_init(uint32_t group_id);
-BOOL property_groupinfo_append_internal(
-	PROPERTY_GROUPINFO *pgpinfo, PROPTAG_ARRAY *pgroup);
-extern GX_EXPORT BOOL property_groupinfo_get_partial_index(const PROPERTY_GROUPINFO *pgpinfo, uint32_t proptag, uint32_t *pindex);
 void property_groupinfo_free(PROPERTY_GROUPINFO *pgpinfo);
 void property_groupinfo_free_internal(PROPERTY_GROUPINFO *pgpinfo);
