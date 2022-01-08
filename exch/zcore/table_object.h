@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+#include <vector>
 #include <gromox/mapi_types.hpp>
 
 enum zcore_table_type {
@@ -15,6 +16,11 @@ enum zcore_table_type {
 };
 
 struct store_object;
+
+struct bookmark_node {
+	uint32_t index = 0, row_type = 0, inst_num = 0, position = 0;
+	uint64_t inst_id = 0;
+};
 
 struct table_object {
 	protected:
@@ -39,7 +45,7 @@ struct table_object {
 	uint32_t get_total();
 	BOOL create_bookmark(uint32_t *index);
 	void remove_bookmark(uint32_t index);
-	void clear_bookmarks();
+	void clear_bookmarks() { bookmark_list.clear(); }
 	BOOL retrieve_bookmark(uint32_t index, BOOL *exist);
 	BOOL filter_rows(uint32_t count, const RESTRICTION *, const PROPTAG_ARRAY *cols, TARRAY_SET *);
 	BOOL match_row(BOOL forward, const RESTRICTION *, int32_t *pos);
@@ -53,5 +59,5 @@ struct table_object {
 	SORTORDER_SET *psorts = nullptr;
 	RESTRICTION *prestriction = nullptr;
 	uint32_t position = 0, table_id = 0, bookmark_index = 0;
-	DOUBLE_LIST bookmark_list{};
+	std::vector<bookmark_node> bookmark_list;
 };

@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <climits>
 #include <cstdint>
 #include <cstdio>
 #include <memory>
+#include <vector>
 #include <gromox/mapidefs.h>
 #include <gromox/tarray_set.hpp>
 #include "object_tree.h"
@@ -22,17 +24,6 @@
 #include <cstdlib>
 #include <cstring>
 #include "common_util.h"
-
-namespace {
-struct BOOKMARK_NODE {
-	DOUBLE_LIST_NODE node;
-	uint32_t index;
-	uint64_t inst_id;
-	uint32_t row_type;
-	uint32_t inst_num;
-	uint32_t position;
-};
-}
 
 static void table_object_reset(table_object *);
 
@@ -729,7 +720,6 @@ std::unique_ptr<table_object> table_object::create(store_object *pstore,
 	ptable->position = 0;
 	ptable->table_id = 0;
 	ptable->bookmark_index = 0x100;
-	double_list_init(&ptable->bookmark_list);
 	return ptable;
 }
 
@@ -737,77 +727,56 @@ table_object::~table_object()
 {
 	auto ptable = this;
 	table_object_reset(ptable);
-	double_list_free(&ptable->bookmark_list);
 	if (RULE_TABLE == ptable->table_type) {
 		free(ptable->pparent_obj);
 	}
 }
 
-BOOL table_object::create_bookmark(uint32_t *pindex)
+BOOL table_object::create_bookmark(uint32_t *pindex) try
 {
 	auto ptable = this;
-	uint64_t inst_id;
-	uint32_t row_type;
-	uint32_t inst_num;
 	
 	if (0 == ptable->table_id) {
 		return FALSE;
 	}
+	bookmark_node bn;
 	if (!exmdb_client::mark_table(ptable->pstore->get_dir(),
-	    ptable->table_id, ptable->position, &inst_id, &inst_num, &row_type))
+	    ptable->table_id, ptable->position,
+	    &bn.inst_id, &bn.inst_num, &bn.row_type))
 		return FALSE;
-	auto pbookmark = me_alloc<BOOKMARK_NODE>();
-	if (NULL == pbookmark) {
-		return FALSE;
-	}
-	pbookmark->node.pdata = pbookmark;
-	pbookmark->index = ptable->bookmark_index;
-	ptable->bookmark_index ++;
-	pbookmark->inst_id = inst_id;
-	pbookmark->row_type = row_type;
-	pbookmark->inst_num = inst_num;
-	pbookmark->position = ptable->position;
-	double_list_append_as_tail(&ptable->bookmark_list, &pbookmark->node);
-	*pindex = pbookmark->index;
+	bn.index = ptable->bookmark_index++;
+	bn.position = ptable->position;
+	bookmark_list.push_back(std::move(bn));
+	*pindex = bookmark_list.back().index;
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1635: ENOMEM\n");
+	return false;
 }
 
 BOOL table_object::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 {
 	auto ptable = this;
-	uint64_t inst_id;
-	uint32_t inst_num, row_type, tmp_type, saved_position;
+	uint32_t tmp_type;
 	int32_t tmp_position;
-	DOUBLE_LIST_NODE *pnode;
 	
 	if (0 == ptable->table_id) {
 		return FALSE;
 	}
-	for (pnode=double_list_get_head(&ptable->bookmark_list); NULL!=pnode;
-		pnode=double_list_get_after(&ptable->bookmark_list, pnode)) {
-		auto bn = static_cast<BOOKMARK_NODE *>(pnode->pdata);
-		if (index == bn->index) {
-			inst_id = bn->inst_id;
-			row_type = bn->row_type;
-			inst_num = bn->inst_num;
-			saved_position = bn->position;
-			break;
-		}
-	}
-	if (NULL == pnode) {
+	auto bn = std::find_if(bookmark_list.cbegin(), bookmark_list.cend(),
+	          [&](const bookmark_node &b) { return b.index == index; });
+	if (bn == bookmark_list.cend())
 		return FALSE;
-	}
 	if (!exmdb_client::locate_table(ptable->pstore->get_dir(),
-	    ptable->table_id, inst_id, inst_num, &tmp_position, &tmp_type))
+	    ptable->table_id, bn->inst_id, bn->inst_num, &tmp_position, &tmp_type))
 		return FALSE;
 	*pb_exist = FALSE;
 	if (tmp_position >= 0) {
-		if (tmp_type == row_type) {
+		if (tmp_type == bn->row_type)
 			*pb_exist = TRUE;
-		}
 		ptable->position = tmp_position;
 	} else {
-		ptable->position = saved_position;
+		ptable->position = bn->position;
 	}
 	auto total_rows = get_total();
 	if (ptable->position > total_rows) {
@@ -818,26 +787,14 @@ BOOL table_object::retrieve_bookmark(uint32_t index, BOOL *pb_exist)
 
 void table_object::remove_bookmark(uint32_t index)
 {
-	auto ptable = this;
-	DOUBLE_LIST_NODE *pnode;
-	
-	for (pnode=double_list_get_head(&ptable->bookmark_list); NULL!=pnode;
-		pnode=double_list_get_after(&ptable->bookmark_list, pnode)) {
-		if (index == ((BOOKMARK_NODE*)pnode->pdata)->index) {
-			double_list_remove(&ptable->bookmark_list, pnode);
-			free(pnode->pdata);
-			break;
-		}
-	}
-}
-
-void table_object::clear_bookmarks()
-{
-	auto ptable = this;
-	DOUBLE_LIST_NODE *pnode;
-	
-	while ((pnode = double_list_pop_front(&ptable->bookmark_list)) != nullptr)
-		free(pnode->pdata);
+#if __cplusplus >= 202000L
+	std::erase_if(bookmark_list,
+		[&](const bookmark_node &b) { return b.index == index; });
+#else
+	bookmark_list.erase(std::remove_if(bookmark_list.begin(), bookmark_list.end(),
+		[&](const bookmark_node &b) { return b.index == index; }),
+		bookmark_list.end());
+#endif
 }
 
 static void table_object_reset(table_object *ptable)

@@ -13,7 +13,6 @@ struct store_object {
 	NOMOVE(store_object);
 
 	public:
-	~store_object();
 	static std::unique_ptr<store_object> create(BOOL b_private, int account_id, const char *account, const char *dir);
 	GUID guid() const;
 	BOOL check_owner_mode() const;
