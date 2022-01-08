@@ -1,11 +1,11 @@
 #pragma once
+#include <cstdint>
 #include <memory>
+#include <string>
+#include <unordered_map>
 #include <vector>
+#include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
-#include <gromox/str_hash.hpp>
-
-struct INT_HASH_TABLE;
-struct property_groupinfo;
 
 struct store_object {
 	protected:
@@ -42,6 +42,6 @@ struct store_object {
 	GUID mailbox_guid{};
 	std::unique_ptr<property_groupinfo> m_gpinfo;
 	std::vector<property_groupinfo> group_list;
-	std::unique_ptr<INT_HASH_TABLE> ppropid_hash;
-	std::unique_ptr<STR_HASH_TABLE> ppropname_hash = nullptr;
+	std::unordered_map<uint16_t, PROPERTY_XNAME> propid_hash;
+	std::unordered_map<std::string, uint16_t> propname_hash;
 };
