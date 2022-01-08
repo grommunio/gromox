@@ -7,6 +7,7 @@
 #include "ftstream_producer.h"
 #include "emsmdb_interface.h"
 #include "common_util.h"
+#include <gromox/element_data.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/proc_common.h>

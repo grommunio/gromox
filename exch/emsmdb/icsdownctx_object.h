@@ -55,5 +55,4 @@ struct icsdownctx_object final {
 	RESTRICTION *prestriction = nullptr;
 	uint64_t total_steps = 0, progress_steps = 0, next_progress_steps = 0;
 	uint64_t ratio = 0;
-	PROPERTY_GROUPINFO fake_gpinfo{};
 };

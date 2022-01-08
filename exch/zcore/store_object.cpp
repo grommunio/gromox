@@ -447,7 +447,7 @@ static BOOL gnpwrap(void *store, BOOL create, const PROPERTY_NAME *pn, uint16_t 
 	return store_object_get_named_propid(static_cast<store_object *>(store), create, pn, pid);
 }
 
-PROPERTY_GROUPINFO *store_object::get_last_property_groupinfo()
+const property_groupinfo *store_object::get_last_property_groupinfo()
 {
 	auto pstore = this;
 	if (m_gpinfo == nullptr)
@@ -456,7 +456,8 @@ PROPERTY_GROUPINFO *store_object::get_last_property_groupinfo()
 	return m_gpinfo;
 }
 
-PROPERTY_GROUPINFO *store_object::get_property_groupinfo(uint32_t group_id)
+const property_groupinfo *
+store_object::get_property_groupinfo(uint32_t group_id)
 {
 	auto pstore = this;
 	

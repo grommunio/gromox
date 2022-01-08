@@ -180,12 +180,6 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 			return FALSE;
 		}
 	}
-	
-	pctx->fake_gpinfo.group_id = 0xFFFFFFFF;
-	pctx->fake_gpinfo.reserved = 0;
-	pctx->fake_gpinfo.count = 0;
-	pctx->fake_gpinfo.pgroups = NULL;
-	
 	if (SYNC_FLAG_PROGRESS & pctx->sync_flags) {
 		if (!pctx->flow_list.record_node(FUNC_ID_PROGRESSTOTAL))
 			return FALSE;
@@ -767,6 +761,7 @@ static void icsdownctx_object_adjust_msgctnt(MESSAGE_CONTENT *pmsgctnt,
 		pmsgctnt->children.pattachments = NULL;
 }
 
+static constexpr property_groupinfo fake_gpinfo = {0xffffffff};
 static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
     MESSAGE_CONTENT *pmsgctnt, uint32_t group_id, const INDEX_ARRAY *pindices,
 	const PROPTAG_ARRAY *pproptags, MSGCHG_PARTIAL *pmsg)
@@ -786,7 +781,7 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 	                 pctx->group_list.cend();
 	pmsg->group_id = group_id;
 	if (b_written) {
-		pmsg->pgpinfo= &pctx->fake_gpinfo;
+		pmsg->pgpinfo = &fake_gpinfo;
 	} else {
 		pmsg->pgpinfo = pgpinfo;
 		try {

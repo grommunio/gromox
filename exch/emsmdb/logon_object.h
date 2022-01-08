@@ -1,7 +1,6 @@
 #pragma once
 #include <cstdint>
 #include <memory>
-#include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/str_hash.hpp>
 #define LOGON_MODE_OWNER				0
@@ -9,6 +8,7 @@
 #define LOGON_MODE_GUEST				2
 
 struct INT_HASH_TABLE;
+struct property_groupinfo;
 
 struct logon_object {
 	protected:
@@ -31,9 +31,9 @@ struct logon_object {
 	 * message, the return value is maintained by logon object,
 	 * do not free it outside.
 	 */
-	PROPERTY_GROUPINFO *get_last_property_groupinfo();
+	const property_groupinfo *get_last_property_groupinfo();
 	/* same as logon_object_get_last_property_groupinfo, do not free it outside */
-	PROPERTY_GROUPINFO *get_property_groupinfo(uint32_t group_id);
+	const property_groupinfo *get_property_groupinfo(uint32_t group_id);
 	BOOL get_all_proptags(PROPTAG_ARRAY *);
 	BOOL get_properties(const PROPTAG_ARRAY *, TPROPVAL_ARRAY *);
 	BOOL set_properties(const TPROPVAL_ARRAY *, PROBLEM_ARRAY *);
@@ -45,7 +45,7 @@ struct logon_object {
 	char account[UADDR_SIZE]{};
 	char dir[256]{};
 	GUID mailbox_guid{};
-	PROPERTY_GROUPINFO *m_gpinfo = nullptr;
+	property_groupinfo *m_gpinfo = nullptr;
 	std::unique_ptr<INT_HASH_TABLE> ppropid_hash;
 	std::unique_ptr<STR_HASH_TABLE> ppropname_hash;
 	DOUBLE_LIST group_list{};

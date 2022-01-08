@@ -1592,7 +1592,6 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 	uint64_t change_num;
 	PROPTAG_ARRAY *pindices;
 	PROBLEM_ARRAY tmp_problems;
-	PROPERTY_GROUPINFO *pgpinfo;
 	TPROPVAL_ARRAY tmp_propvals;
 	TAGGED_PROPVAL propval_buff[2];
 	PROPTAG_ARRAY *pungroup_proptags;
@@ -1614,6 +1613,7 @@ BOOL common_util_save_message_ics(logon_object *plogon,
 	if (!exmdb_client_get_message_group_id(plogon->get_dir(),
 	    message_id, &pgroup_id))
 		return FALSE;	
+	const property_groupinfo *pgpinfo;
 	if (NULL == pgroup_id) {
 		pgpinfo = plogon->get_last_property_groupinfo();
 		if (NULL == pgpinfo) {

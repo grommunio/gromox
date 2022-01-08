@@ -278,7 +278,6 @@ gxerr_t message_object::save()
 	INDEX_ARRAY tmp_indices;
 	TAGGED_PROPVAL tmp_propval;
 	TPROPVAL_ARRAY tmp_propvals;
-	PROPERTY_GROUPINFO *pgpinfo;
 	PROPTAG_ARRAY *pungroup_proptags;
 	
 	
@@ -397,6 +396,7 @@ gxerr_t message_object::save()
 		proptag_array_clear(pmessage->premoved_proptags);
 		return GXERR_SUCCESS;
 	}
+	const property_groupinfo *pgpinfo = nullptr;
 	if (is_new)
 		goto SAVE_FULL_CHANGE;
 	if (!exmdb_client::get_message_group_id(

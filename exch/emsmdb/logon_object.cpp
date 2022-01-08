@@ -402,7 +402,7 @@ static BOOL gnpwrap(void *obj, BOOL create, const PROPERTY_NAME *pn, uint16_t *p
 	return static_cast<logon_object *>(obj)->get_named_propid(create, pn, pid);
 }
 
-PROPERTY_GROUPINFO *logon_object::get_last_property_groupinfo()
+const property_groupinfo *logon_object::get_last_property_groupinfo()
 {
 	auto plogon = this;
 	if (m_gpinfo == nullptr)
@@ -411,7 +411,8 @@ PROPERTY_GROUPINFO *logon_object::get_last_property_groupinfo()
 	return m_gpinfo;
 }
 
-PROPERTY_GROUPINFO *logon_object::get_property_groupinfo(uint32_t group_id)
+const property_groupinfo *
+logon_object::get_property_groupinfo(uint32_t group_id)
 {
 	auto plogon = this;
 	DOUBLE_LIST_NODE *pnode;

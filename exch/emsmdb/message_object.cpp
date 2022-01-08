@@ -381,7 +381,6 @@ gxerr_t message_object::save()
 	PROBLEM_ARRAY tmp_problems;
 	TAGGED_PROPVAL tmp_propval;
 	TPROPVAL_ARRAY tmp_propvals;
-	PROPERTY_GROUPINFO *pgpinfo;
 	PROPTAG_ARRAY *pungroup_proptags;
 	
 	
@@ -569,6 +568,7 @@ gxerr_t message_object::save()
 		return GXERR_SUCCESS;
 	}
 	
+	const property_groupinfo *pgpinfo = nullptr;
 	if (is_new || pmessage->pstate != nullptr)
 		goto SAVE_FULL_CHANGE;
 	if (!exmdb_client_get_message_group_id(pmessage->plogon->get_dir(),

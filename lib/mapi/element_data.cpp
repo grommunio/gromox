@@ -352,7 +352,7 @@ MESSAGE_CONTENT *message_content_dup(const MESSAGE_CONTENT *pmsgctnt)
 	return pmsgctnt1;
 }
 
-BOOL property_groupinfo_init_internal(
+static BOOL property_groupinfo_init_internal(
 	PROPERTY_GROUPINFO *pgpinfo, uint32_t group_id)
 {
 	pgpinfo->group_id = group_id;
@@ -400,7 +400,7 @@ BOOL property_groupinfo_append_internal(
 	return TRUE;
 }
 
-BOOL property_groupinfo_get_partial_index(PROPERTY_GROUPINFO *pgpinfo,
+BOOL property_groupinfo_get_partial_index(const PROPERTY_GROUPINFO *pgpinfo,
 	uint32_t proptag, uint32_t *pindex)
 {
 	for (size_t i = 0; i < pgpinfo->count; ++i)
