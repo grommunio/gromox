@@ -352,31 +352,20 @@ MESSAGE_CONTENT *message_content_dup(const MESSAGE_CONTENT *pmsgctnt)
 	return pmsgctnt1;
 }
 
-static BOOL property_groupinfo_init_internal(
-	PROPERTY_GROUPINFO *pgpinfo, uint32_t group_id)
+property_groupinfo::property_groupinfo(uint32_t gid) :
+	group_id(gid)
 {
-	pgpinfo->group_id = group_id;
-	pgpinfo->reserved = 0;
-	pgpinfo->count = 0;
-	auto count = strange_roundup(pgpinfo->count, SR_GROW_PROPTAG_ARRAY);
-	pgpinfo->pgroups = static_cast<PROPTAG_ARRAY *>(malloc(sizeof(PROPTAG_ARRAY) * count));
-	if (NULL == pgpinfo->pgroups) {
-		return FALSE;
-	}
-	return TRUE;
+	auto z = strange_roundup(0, SR_GROW_PROPTAG_ARRAY);
+	pgroups = static_cast<PROPTAG_ARRAY *>(malloc(sizeof(PROPTAG_ARRAY) * z));
+	if (pgroups == nullptr)
+		throw std::bad_alloc();
 }
 
-PROPERTY_GROUPINFO* property_groupinfo_init(uint32_t group_id)
+property_groupinfo::property_groupinfo(property_groupinfo &&o) :
+	group_id(o.group_id), reserved(o.reserved), count(o.count),
+	pgroups(std::move(o.pgroups))
 {
-	auto pgpinfo = static_cast<PROPERTY_GROUPINFO *>(malloc(sizeof(PROPERTY_GROUPINFO)));
-	if (NULL == pgpinfo) {
-		return NULL;
-	}
-	if (FALSE == property_groupinfo_init_internal(pgpinfo, group_id)) {
-		free(pgpinfo);
-		return NULL;
-	}
-	return pgpinfo;
+	o.pgroups = nullptr;
 }
 
 bool property_groupinfo::append_internal(PROPTAG_ARRAY *pgroup)
@@ -413,17 +402,12 @@ bool property_groupinfo::get_partial_index(uint32_t proptag,
 	return false;
 }
 
-void property_groupinfo_free_internal(PROPERTY_GROUPINFO *pgpinfo)
+property_groupinfo::~property_groupinfo()
 {
+	auto pgpinfo = this;
 	for (size_t i = 0; i < pgpinfo->count; ++i)
 		proptag_array_free_internal(pgpinfo->pgroups + i);
 	free(pgpinfo->pgroups);
-}
-
-void property_groupinfo_free(PROPERTY_GROUPINFO *pgpinfo)
-{
-	property_groupinfo_free_internal(pgpinfo);
-	free(pgpinfo);
 }
 
 PROPERTY_XNAME::PROPERTY_XNAME(const PROPERTY_NAME &o) :

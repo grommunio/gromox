@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <vector>
 #include <gromox/mapi_types.hpp>
 #include <gromox/str_hash.hpp>
 
@@ -39,8 +40,8 @@ struct store_object {
 	char account[UADDR_SIZE]{};
 	char dir[256]{};
 	GUID mailbox_guid{};
-	property_groupinfo *m_gpinfo = nullptr;
+	std::unique_ptr<property_groupinfo> m_gpinfo;
+	std::vector<property_groupinfo> group_list;
 	std::unique_ptr<INT_HASH_TABLE> ppropid_hash;
 	std::unique_ptr<STR_HASH_TABLE> ppropname_hash = nullptr;
-	DOUBLE_LIST group_list{};
 };

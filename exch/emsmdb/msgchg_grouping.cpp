@@ -389,9 +389,9 @@ uint32_t msgchg_grouping_get_last_group_id()
 	return ((INFO_NODE*)pnode->pdata)->group_id;
 }
 
-PROPERTY_GROUPINFO *msgchg_grouping_get_groupinfo(
-    BOOL (*get_named_propid)(void *, BOOL, const PROPERTY_NAME *, uint16_t *),
-    void *stororlogin, uint32_t group_id)
+std::unique_ptr<property_groupinfo>
+    msgchg_grouping_get_groupinfo(get_named_propid_t get_named_propid,
+    void *stororlogin, uint32_t group_id) try
 {
 	uint16_t propid;
 	uint32_t proptag;
@@ -401,7 +401,6 @@ PROPERTY_GROUPINFO *msgchg_grouping_get_groupinfo(
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
 	PROPTAG_ARRAY *pproptags;
-	PROPERTY_GROUPINFO *pinfo;
 	
 	for (pnode=double_list_get_head(&g_info_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_info_list, pnode)) {
@@ -413,7 +412,7 @@ PROPERTY_GROUPINFO *msgchg_grouping_get_groupinfo(
 	if (NULL == pnode) {
 		return NULL;
 	}
-	pinfo = property_groupinfo_init(group_id);
+	auto pinfo = std::make_unique<property_groupinfo>(group_id);
 	if (NULL == pinfo) {
 		return NULL;
 	}
@@ -429,25 +428,25 @@ PROPERTY_GROUPINFO *msgchg_grouping_get_groupinfo(
 			} else {
 				if (!get_named_propid(stororlogin, TRUE,
 				    ptag_node->ppropname, &propid) || propid == 0) {
-					property_groupinfo_free(pinfo);
 					proptag_array_free(pproptags);
 					return NULL;
 				}
 				proptag = PROP_TAG(ptag_node->type, propid);
 			}
 			if (!proptag_array_append(pproptags, proptag)) {
-				property_groupinfo_free(pinfo);
 				proptag_array_free(pproptags);
 				return NULL;
 			}
 		}
 		if (!pinfo->append_internal(pproptags)) {
-			property_groupinfo_free(pinfo);
 			proptag_array_free(pproptags);
 			return NULL;
 		}
 	}
 	return pinfo;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1632: ENOMEM\n");
+	return nullptr;
 }
 
 void msgchg_grouping_stop()

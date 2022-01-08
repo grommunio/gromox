@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <algorithm>
 #include <cctype>
 #include <cstdint>
 #include <memory>
@@ -127,11 +128,6 @@ static BOOL logon_object_cache_propname(logon_object *plogon,
 	return TRUE;
 }
 
-logon_object::logon_object()
-{
-	double_list_init(&group_list);
-}
-
 std::unique_ptr<logon_object> logon_object::create(uint8_t logon_flags,
 	uint32_t open_flags, int logon_mode, int account_id,
 	const char *account, const char *dir, GUID mailbox_guid)
@@ -154,17 +150,9 @@ std::unique_ptr<logon_object> logon_object::create(uint8_t logon_flags,
 
 logon_object::~logon_object()
 {
-	DOUBLE_LIST_NODE *pnode;
 	PROPERTY_NAME *ppropname;
 
 	auto plogon = this;
-	if (m_gpinfo != nullptr)
-		property_groupinfo_free(m_gpinfo);
-	while ((pnode = double_list_pop_front(&plogon->group_list)) != nullptr) {
-		property_groupinfo_free(static_cast<PROPERTY_GROUPINFO *>(pnode->pdata));
-		free(pnode);
-	}
-	double_list_free(&plogon->group_list);
 	if (NULL != plogon->ppropid_hash) {
 		auto piter = plogon->ppropid_hash->make_iter();
 		for (int_hash_iter_begin(piter); !int_hash_iter_done(piter);
@@ -408,38 +396,30 @@ const property_groupinfo *logon_object::get_last_property_groupinfo()
 	if (m_gpinfo == nullptr)
 		m_gpinfo = msgchg_grouping_get_groupinfo(gnpwrap,
 		           plogon, msgchg_grouping_get_last_group_id());
-	return m_gpinfo;
+	return m_gpinfo.get();
 }
 
 const property_groupinfo *
-logon_object::get_property_groupinfo(uint32_t group_id)
+logon_object::get_property_groupinfo(uint32_t group_id) try
 {
 	auto plogon = this;
-	DOUBLE_LIST_NODE *pnode;
-	PROPERTY_GROUPINFO *pgpinfo;
 	
 	if (group_id == msgchg_grouping_get_last_group_id()) {
 		return get_last_property_groupinfo();
 	}
-	for (pnode=double_list_get_head(&plogon->group_list); NULL!=pnode;
-		pnode=double_list_get_after(&plogon->group_list, pnode)) {
-		pgpinfo = (PROPERTY_GROUPINFO*)pnode->pdata;
-		if (pgpinfo->group_id == group_id) {
-			return pgpinfo;
-		}
-	}
-	pnode = me_alloc<DOUBLE_LIST_NODE>();
-	if (NULL == pnode) {
-		return NULL;
-	}
-	pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap, plogon, group_id);
+	auto node = std::find_if(group_list.begin(), group_list.end(),
+	            [&](const property_groupinfo &p) { return p.group_id == group_id; });
+	if (node != group_list.end())
+		return &*node;
+	auto pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap, plogon, group_id);
 	if (NULL == pgpinfo) {
-		free(pnode);
 		return NULL;
 	}
-	pnode->pdata = pgpinfo;
-	double_list_append_as_tail(&plogon->group_list, pnode);
-	return pgpinfo;
+	group_list.push_back(std::move(*pgpinfo));
+	return &group_list.back();
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1631: ENOMEM\n");
+	return nullptr;
 }
 
 BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags)

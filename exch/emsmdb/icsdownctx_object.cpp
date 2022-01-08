@@ -761,7 +761,8 @@ static void icsdownctx_object_adjust_msgctnt(MESSAGE_CONTENT *pmsgctnt,
 		pmsgctnt->children.pattachments = NULL;
 }
 
-static constexpr property_groupinfo fake_gpinfo = {0xffffffff};
+static const property_groupinfo fake_gpinfo = {0xffffffff};
+
 static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
     MESSAGE_CONTENT *pmsgctnt, uint32_t group_id, const INDEX_ARRAY *pindices,
 	const PROPTAG_ARRAY *pproptags, MSGCHG_PARTIAL *pmsg)

@@ -2,6 +2,7 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <algorithm>
 #include <cctype>
 #include <cstdint>
 #include <memory>
@@ -181,25 +182,14 @@ std::unique_ptr<store_object> store_object::create(BOOL b_private,
 	gx_strlcpy(pstore->account, account, GX_ARRAY_SIZE(pstore->account));
 	gx_strlcpy(pstore->dir, dir, GX_ARRAY_SIZE(pstore->dir));
 	pstore->mailbox_guid = rop_util_binary_to_guid(static_cast<BINARY *>(pvalue));
-	pstore->m_gpinfo = nullptr;
-	pstore->ppropid_hash = NULL;
-	double_list_init(&pstore->group_list);
 	return pstore;
 }
 
 store_object::~store_object()
 {
-	DOUBLE_LIST_NODE *pnode;
 	PROPERTY_NAME *ppropname;
 
 	auto pstore = this;
-	if (m_gpinfo != nullptr)
-		property_groupinfo_free(m_gpinfo);
-	while ((pnode = double_list_pop_front(&pstore->group_list)) != nullptr) {
-		property_groupinfo_free(static_cast<PROPERTY_GROUPINFO *>(pnode->pdata));
-		free(pnode);
-	}
-	double_list_free(&pstore->group_list);
 	if (NULL != pstore->ppropid_hash) {
 		auto piter = pstore->ppropid_hash->make_iter();
 		for (int_hash_iter_begin(piter); !int_hash_iter_done(piter);
@@ -453,36 +443,30 @@ const property_groupinfo *store_object::get_last_property_groupinfo()
 	if (m_gpinfo == nullptr)
 		m_gpinfo = msgchg_grouping_get_groupinfo(gnpwrap,
 		           pstore, msgchg_grouping_get_last_group_id());
-	return m_gpinfo;
+	return m_gpinfo.get();
 }
 
 const property_groupinfo *
-store_object::get_property_groupinfo(uint32_t group_id)
+store_object::get_property_groupinfo(uint32_t group_id) try
 {
 	auto pstore = this;
 	
 	if (group_id == msgchg_grouping_get_last_group_id()) {
 		return get_last_property_groupinfo();
 	}
-	for (auto pnode = double_list_get_head(&pstore->group_list); pnode != nullptr;
-	     pnode = double_list_get_after(&pstore->group_list, pnode)) {
-		auto pgpinfo = static_cast<PROPERTY_GROUPINFO *>(pnode->pdata);
-		if (pgpinfo->group_id == group_id) {
-			return pgpinfo;
-		}
-	}
-	auto pnode = me_alloc<DOUBLE_LIST_NODE>();
-	if (NULL == pnode) {
-		return NULL;
-	}
+	auto node = std::find_if(group_list.begin(), group_list.end(),
+	            [&](const property_groupinfo &p) { return p.group_id == group_id; });
+	if (node != group_list.end())
+		return &*node;
 	auto pgpinfo = msgchg_grouping_get_groupinfo(gnpwrap, pstore, group_id);
 	if (NULL == pgpinfo) {
-		free(pnode);
 		return NULL;
 	}
-	pnode->pdata = pgpinfo;
-	double_list_append_as_tail(&pstore->group_list, pnode);
-	return pgpinfo;
+	group_list.push_back(std::move(*pgpinfo));
+	return &group_list.back();
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1630: ENOMEM\n");
+	return nullptr;
 }
 
 static BOOL store_object_check_readonly_property(store_object *pstore, uint32_t proptag)
