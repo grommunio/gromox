@@ -199,17 +199,13 @@ int main(int argc, const char **argv) try
 	mysql_free_result(pmyres);
 	mysql_close(pmysql);
 	
-	auto temp_path = dir + "/exmdb"s;
-	if (mkdir(temp_path.c_str(), 0777) && errno != EEXIST) {
-		fprintf(stderr, "E-1398: mkdir %s: %s\n", temp_path.c_str(), strerror(errno));
+	if (!make_mailbox_hierarchy(dir))
 		return EXIT_FAILURE;
-	}
-	adjust_rights(temp_path.c_str());
-	temp_path += "/exchange.sqlite3";
 	/*
 	 * sqlite3_open does not expose O_EXCL, so let's create the file under
 	 * EXCL semantics ahead of time.
 	 */
+	auto temp_path = dir + "/exmdb/exchange.sqlite3";
 	auto tfd = open(temp_path.c_str(), O_RDWR | O_CREAT | O_EXCL, 0600);
 	if (tfd >= 0) {
 		adjust_rights(tfd);

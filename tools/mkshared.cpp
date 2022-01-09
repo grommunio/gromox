@@ -62,6 +62,23 @@ void adjust_rights(const char *file)
 	close(fd);
 }
 
+bool make_mailbox_hierarchy(const std::string &base) try
+{
+	for (const auto &subdir : {"", "/config", "/cid", "/eml", "/exmdb",
+	     "/ext", "/tmp", "/tmp/imap.rfc822", "/tmp/faststream"}) {
+		auto p = base + subdir;
+		if (mkdir(p.c_str(), 0777) && errno != EEXIST) {
+			fprintf(stderr, "E-1420: mkdir %s: %s\n", p.c_str(), strerror(errno));
+			return false;
+		}
+		adjust_rights(p.c_str());
+	}
+	return true;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1421: ENOMEM\n");
+	return false;
+}
+
 bool add_folderprop_iv(sqlite3_stmt *stmt, uint32_t art_num, bool add_next)
 {
 	const std::pair<uint32_t, uint32_t> tagvals[] = {
