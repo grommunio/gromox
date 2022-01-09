@@ -24,10 +24,14 @@ void adjust_rights(int fd)
 	gid_t gid = -1;
 	unsigned int mode = S_IRUSR | S_IWUSR;
 	auto sp = getpwnam("gromox");
-	if (sp != nullptr)
+	if (sp == nullptr)
+		fprintf(stderr, "No \"gromox\" user in system. Not changing UID of mailbox.\n");
+	else
 		uid = sp->pw_uid;
 	auto gr = getgrnam("gromox");
-	if (gr != nullptr) {
+	if (gr == nullptr) {
+		fprintf(stderr, "No \"gromox\" group in system. Not changing GID of mailbox.\n");
+	} else {
 		gid = gr->gr_gid;
 		mode |= S_IRGRP | S_IWGRP;
 	}
