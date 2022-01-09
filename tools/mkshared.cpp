@@ -75,7 +75,7 @@ bool make_mailbox_hierarchy(const std::string &base) try
 	}
 	return true;
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1421: ENOMEM\n");
+	fprintf(stderr, "E-1625: ENOMEM\n");
 	return false;
 }
 

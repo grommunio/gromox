@@ -1598,7 +1598,7 @@ static std::string cu_cid_path(const char *dir, uint64_t id) try
 		dir = exmdb_server_get_dir();
 	return dir + "/cid/"s + std::to_string(id);
 } catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1606: ENOMEM\n");
+	fprintf(stderr, "E-1608: ENOMEM\n");
 	return {};
 }
 

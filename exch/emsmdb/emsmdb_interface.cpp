@@ -1218,7 +1218,7 @@ static void *emsi_scanwork(void *pparam)
 			if (cur_time - phandle->last_time > HANDLE_VALID_INTERVAL) try {
 				temp_list.push_back(guid);
 			} catch (const std::bad_alloc &) {
-				fprintf(stderr, "E-1579: ENOMEM\n");
+				fprintf(stderr, "E-1624: ENOMEM\n");
 				continue;
 			}
 		}

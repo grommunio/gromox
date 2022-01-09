@@ -199,7 +199,7 @@ db_item_ptr db_engine_get_db(const char *path)
 			return NULL;
 		}
 		if (refs > 0 && static_cast<unsigned int>(refs) > g_mbox_contention_warning)
-			fprintf(stderr, "W-1593: contention on %s (%u uses)\n", path, refs);
+			fprintf(stderr, "W-1620: contention on %s (%u uses)\n", path, refs);
 	}
 	pdb->reference ++;
 	hhold.unlock();
