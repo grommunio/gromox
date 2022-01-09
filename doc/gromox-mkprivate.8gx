@@ -20,7 +20,7 @@ config file.
 Display option summary.
 .SH Files
 .IP \(bu 4
-\fIdata_file_path\fP/folder_lang.txt: Translations for essential folders in a
+\fIdata_file_path\fP/folder_names.txt: Translations for essential folders in a
 message store.
 .IP \(bu 4
 \fIdata_file_path\fP/propnames.txt: Initial set of named properties to add to

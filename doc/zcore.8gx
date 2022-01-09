@@ -210,7 +210,7 @@ The TCP port number of the server
 \fIconfig_file_path\fP/exmdb_list.txt: exmdb multiserver selection map, see
 exmdb_provider(4gx) for details.
 .IP \(bu 4
-\fIdata_file_path\fP/folder_lang.txt: Translations for essential folders in a
+\fIdata_file_path\fP/folder_names.txt: Translations for essential folders in a
 message store.
 .IP \(bu 4
 \fIdata_file_path\fP/msgchg_grouping/: Data files for exchange_emsmdb(4gx)
