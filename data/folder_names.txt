@@ -382,6 +382,7 @@
 1a=Conflicts
 1b=Local Failures
 1c=Server Failures
+1d=Conversation Action Settings
 80=Public Folders
 
 [es]
