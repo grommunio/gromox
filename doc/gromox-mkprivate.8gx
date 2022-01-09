@@ -31,8 +31,6 @@ of a private store.
 .IP \(bu 4
 \fIdata_file_path\fP/sqlite3_private.txt: SQLite instructions to generate part
 of a private store.
-.SH Config file directives
-The config file is shared with other programs. See \fBsa.cfg\fP(5gx).
 .SH See also
 \fBgromox\fP(7), \fBgromox\-mkmidb\fP(8gx), \fBgromox\-mkpublic\fP(8gx),
 \fBmysql_adaptor\fP(4gx), \fBsa.cfg\fP(5gx)
