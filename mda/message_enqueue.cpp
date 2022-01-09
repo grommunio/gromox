@@ -90,7 +90,6 @@ static int (*get_extra_num)(int);
 static const char *(*get_extra_tag)(int, int);
 static const char *(*get_extra_value)(int, int);
 static BOOL (*set_flush_ID)(int);
-static BOOL (*check_domain)(const char *);
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
 
@@ -441,7 +440,6 @@ static BOOL flh_message_enqueue(int reason, void** ppdata)
 		query_service1(get_extra_num);
 		query_service1(get_extra_tag);
 		query_service1(get_extra_value);
-		query_service2("domain_list_query", check_domain);
 		std::string plugname, filename;
 		try {
 			plugname = get_plugin_name();
