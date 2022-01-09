@@ -7,8 +7,6 @@ AM_INIT_AUTOMAKE([1.10 foreign subdir-objects])
 LT_INIT([disable-static])
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
 
-AC_PROG_CC
-AM_PROG_CC_C_O
 AC_PROG_CXX
 
 saved_CPPFLAGS="$CPPFLAGS"
@@ -22,7 +20,8 @@ my_CFLAGS="-Wall -Wmissing-declarations -Wwrite-strings"
 my_CXXFLAGS="-Wall -Wmissing-declarations"
 AC_MSG_CHECKING([available C++ standard])
 cxxmode=""
-for i in "c++17"; do
+for i in "c++20" "c++17"; do
+	AS_IF([test "$i" = "c++20" && test -n "$COVERITY"], [continue])
 	CXXFLAGS="$saved_CXXFLAGS -std=$i"
 	AC_COMPILE_IFELSE([AC_LANG_SOURCE([])], [cxxmode="$i"])
 	AS_IF([test -n "$cxxmode"], [break])

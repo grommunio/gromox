@@ -1,5 +1,15 @@
+/*
+ * Symbols required by mapi.so are not provided by any library, which is why
+ * the dynamic link check with lddcheck does not work on mapi.so. Instead, the
+ * symbols are provided by the php main program (export via -rdynamic). To
+ * replicate lddcheck functionality, we can do a static link with this fake
+ * program providing the same symbols and mapi.so code constituents (hence
+ * libmapi4zf.la).
+ */
 int main() { return 0; }
-__attribute__((unused)) char
+using voidp = void *;
+extern "C" {
+__attribute__((unused,visibility("default"))) voidp
 __zend_malloc,
 _call_user_function_ex,
 _call_user_function_impl,
@@ -53,3 +63,4 @@ zval_get_double_func,
 zval_get_long_func,
 zval_get_string_func,
 zval_ptr_dtor;
+}
