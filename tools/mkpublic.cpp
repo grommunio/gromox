@@ -102,7 +102,7 @@ static BOOL create_generic_folder(sqlite3 *psqlite,
 	return TRUE;
 }
 
-int main(int argc, const char **argv)
+int main(int argc, const char **argv) try
 {
 	int i;
 	MYSQL *pmysql;
@@ -351,4 +351,6 @@ int main(int argc, const char **argv)
 	pstmt.finalize();
 	sql_transact.commit();
 	return EXIT_SUCCESS;
+} catch (const cfg_error &) {
+	return EXIT_FAILURE;
 }

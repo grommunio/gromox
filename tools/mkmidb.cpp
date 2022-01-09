@@ -38,7 +38,7 @@ static constexpr HXoption g_options_table[] = {
 	HXOPT_TABLEEND,
 };
 
-int main(int argc, const char **argv)
+int main(int argc, const char **argv) try
 {
 	MYSQL *pmysql;
 	MYSQL_ROW myrow;
@@ -195,4 +195,6 @@ int main(int argc, const char **argv)
 	pstmt.finalize();
 	sql_transact.commit();
 	return EXIT_SUCCESS;
+} catch (const cfg_error &) {
+	return EXIT_FAILURE;
 }

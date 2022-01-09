@@ -183,7 +183,7 @@ static BOOL create_search_folder(sqlite3 *psqlite, uint64_t folder_id,
 	return TRUE;
 }
 
-int main(int argc, const char **argv)
+int main(int argc, const char **argv) try
 {
 	MYSQL *pmysql;
 	GUID tmp_guid;
@@ -500,4 +500,6 @@ int main(int argc, const char **argv)
 	pstmt.finalize();
 	sql_transact.commit();
 	return EXIT_SUCCESS;
+} catch (const cfg_error &) {
+	return EXIT_FAILURE;
 }
