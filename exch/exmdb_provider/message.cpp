@@ -3754,6 +3754,41 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 	return true;
 }
 
+static bool op_process(BOOL b_oof, const char *from_address,
+    const char *account, uint32_t cpid, sqlite3 *psqlite, uint64_t folder_id,
+    uint64_t message_id, const char *pdigest, DOUBLE_LIST *pfolder_list,
+    DOUBLE_LIST *pmsg_list, const RULE_NODE *prnode, BOOL &b_del, BOOL &b_exit,
+    std::list<DAM_NODE> &dam_list)
+{
+	if (TRUE == b_exit && 0 == (prnode->state
+		& RULE_STATE_ONLY_WHEN_OOF)) {
+		return true;
+	}
+	void *pvalue = nullptr;
+	if (!common_util_get_rule_property(prnode->id, psqlite,
+	    PR_RULE_CONDITION, &pvalue))
+		return FALSE;
+	if (pvalue == nullptr || !common_util_evaluate_message_restriction(psqlite,
+	    0, message_id, static_cast<RESTRICTION *>(pvalue)))
+		return true;
+	if (prnode->state & RULE_STATE_EXIT_LEVEL) {
+		b_exit = TRUE;
+	}
+	RULE_ACTIONS *pactions = nullptr;
+	if (!common_util_get_rule_property(prnode->id, psqlite,
+	    PR_RULE_ACTIONS, reinterpret_cast<void **>(&pactions)))
+		return false;
+	if (NULL == pactions) {
+		return true;
+	}
+	for (size_t i = 0; i < pactions->count; ++i)
+		if (!op_switcheroo(b_oof, from_address, account, cpid, psqlite,
+		    folder_id, message_id, pdigest, pfolder_list,
+		    pmsg_list, pactions->pblock[i], i, prnode, b_del, dam_list))
+			return false;
+	return true;
+}
+
 static bool opx_move_private(const char *account, sqlite3 *psqlite,
     const RULE_NODE *prnode, const EXT_MOVECOPY_ACTION *pextmvcp)
 {
@@ -4220,35 +4255,11 @@ static BOOL message_rule_new_message(BOOL b_oof,
 	    !message_load_folder_ext_rules(b_oof, psqlite, folder_id, ext_rule_list))
 		return FALSE;
 	BOOL b_del = false, b_exit = false;
-	for (const auto &rnode : rule_list) {
-		auto prnode = &rnode;
-		if (TRUE == b_exit && 0 == (prnode->state
-			& RULE_STATE_ONLY_WHEN_OOF)) {
-			continue;
-		}
-		void *pvalue = nullptr;
-		if (!common_util_get_rule_property(prnode->id, psqlite,
-		    PR_RULE_CONDITION, &pvalue))
-			return FALSE;
-		if (pvalue == nullptr || !common_util_evaluate_message_restriction(psqlite,
-		    0, message_id, static_cast<RESTRICTION *>(pvalue)))
-			continue;
-		if (prnode->state & RULE_STATE_EXIT_LEVEL) {
-			b_exit = TRUE;
-		}
-		RULE_ACTIONS *pactions = nullptr;
-		if (!common_util_get_rule_property(prnode->id, psqlite,
-		    PR_RULE_ACTIONS, reinterpret_cast<void **>(&pactions)))
-			return FALSE;
-		if (NULL == pactions) {
-			continue;
-		}
-		for (size_t i = 0; i < pactions->count; ++i)
-			if (!op_switcheroo(b_oof, from_address, account, cpid, psqlite,
-			    folder_id, message_id, pdigest, pfolder_list,
-			    pmsg_list, pactions->pblock[i], i, prnode, b_del, dam_list))
-				return false;
-	}
+	for (const auto &rnode : rule_list)
+		if (!op_process(b_oof, from_address, account, cpid, psqlite,
+		    folder_id, message_id, pdigest, pfolder_list, pmsg_list,
+		    &rnode, b_del, b_exit, dam_list))
+			return false;
 	if (dam_list.size() > 0 && !message_make_deferred_action_messages(account,
 	    psqlite, folder_id, message_id, std::move(dam_list), pmsg_list))
 		return FALSE;
