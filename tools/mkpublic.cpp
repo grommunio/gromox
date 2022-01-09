@@ -204,6 +204,7 @@ int main(int argc, const char **argv) try
 		fprintf(stderr, "E-1398: mkdir %s: %s\n", temp_path.c_str(), strerror(errno));
 		return EXIT_FAILURE;
 	}
+	adjust_rights(temp_path.c_str());
 	temp_path += "/exchange.sqlite3";
 	/*
 	 * sqlite3_open does not expose O_EXCL, so let's create the file under

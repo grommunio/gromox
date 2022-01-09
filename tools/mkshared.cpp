@@ -23,6 +23,14 @@ void adjust_rights(int fd)
 	uid_t uid = -1;
 	gid_t gid = -1;
 	unsigned int mode = S_IRUSR | S_IWUSR;
+	struct stat sb;
+
+	if (fstat(fd, &sb) != 0) {
+		perror("fstat");
+		return;
+	}
+	if (S_ISDIR(sb.st_mode))
+		mode |= S_IXUSR;
 	auto sp = getpwnam("gromox");
 	if (sp == nullptr)
 		fprintf(stderr, "No \"gromox\" user in system. Not changing UID of mailbox.\n");
@@ -34,6 +42,8 @@ void adjust_rights(int fd)
 	} else {
 		gid = gr->gr_gid;
 		mode |= S_IRGRP | S_IWGRP;
+		if (S_ISDIR(sb.st_mode))
+			mode |= S_IXGRP;
 	}
 	if (fchown(fd, uid, gid) < 0)
 		perror("fchown");
@@ -43,9 +53,9 @@ void adjust_rights(int fd)
 
 void adjust_rights(const char *file)
 {
-	int fd = open(file, O_RDWR);
+	int fd = open(file, O_RDONLY);
 	if (fd < 0) {
-		fprintf(stderr, "open %s O_RDWR: %s\n", file, strerror(errno));
+		fprintf(stderr, "open %s: %s\n", file, strerror(errno));
 		return;
 	}
 	adjust_rights(fd);
