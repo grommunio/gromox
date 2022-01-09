@@ -9,9 +9,9 @@
 .SH Description
 gromox\-kdb2mt reads one store from a Zarafa/Kopano SQL database and, for
 attachments, the associated filesystem. The data is then re-exported in a
-Gromox-specific mailbox transfer format to stdout for consumption by pipe by
-the gromox-mt2exm(8gx) program. Optionally, kdb2mt can print a summary of the
-hierarchy during extraction.
+Gromox-specific mailbox transfer format to stdout, intended for consumption by
+pipe by the gromox-mt2exm(8gx) program. Optionally, kdb2mt can print a summary
+of the hierarchy during extraction.
 .PP
 The SQL server that carries the Zarafa/Kopano database for the home server
 of the user must be active. Databases with a schema version \fBn61\fP or
@@ -132,11 +132,11 @@ local/remote SQL and local filesystem, while sending its export stream to
 another machine.
 .PP
 gromox\-kdb2mt \-\-src\-at /var/lib/kopano/attachments \-\-src\-mbox jdoe |
-ssh -Tenone root@gromox.lan "gromox\-mt2exm \-u target@domain.de"
+ssh \-T \-e none root@gromox.lan "gromox\-mt2exm \-u target@domain.de"
 .PP
 It is also possible to copy the attachment directory beforehand, or to store
-the MT data stream, though additional disk space for these intermediate objects
-and representation would be required.
+the MT data stream generated on stdout to a file, though doing so would
+naturally require additional disk space.
 .SH Store lookup using Kopano tools
 If kdb2mt's built-in heuristic \-\-src\-mbox resolution mechanism is not
 adequate enough, you can use utilities from the Kopano installation, provided
@@ -145,14 +145,14 @@ that is still active.
 `kopano\-storeadm \-M` is the gold standard. This dumps the entire store list,
 in JSON representation. The GUIDs can then be used together with \-\-src\-guid.
 .IP \(bu 4
-The global "SYSTEM" user object has a private store titled "Inbox \- SYSTEM".
-Not that you will ever need it; this store is practically empty all the time.
-Alternatively, the GUID can also be shown with `kopano\-admin \-\-details
-SYSTEM`.
+The global "SYSTEM" user object in Kopano also happens to have a private store,
+titled "Inbox \- SYSTEM". This store however is practically empty and it is
+unlikely it will ever need extraction. Alternatively, its GUID can also be
+shown with `kopano\-admin \-\-details SYSTEM`.
 .IP \(bu 4
-The global public store, if it exists, is owned by the "Everyone" \fIgroup
-object\fP. In kopano\-storeadm output, it can be found by looking for the
-display name "Public Folders". There is no way to see the GUID via
+The global public store in Kopano, if it exists, is owned by the "Everyone"
+\fIgroup object\fP. In kopano\-storeadm output, it can be found by looking for
+the display name "Public Folders". There is no way to see the GUID via
 kopano\-admin.
 .IP \(bu 4
 Just for completeness: There is no per-company SYSTEM user (and hence no
@@ -174,7 +174,7 @@ field was intended for orphaned stores and has informational value only. The
 MRO field is not always updated by Kopano services, which can lead to
 \-\-src\-mbox not necessarily finding an expected match. In particular,
 kopano\-server misses doing the MRO update on store detach, and on changes to
-the username as provided by LDAP.
+the username in LDAP.
 .PP
 Furthermore, because it is possible to detach/orphan and create a new store for
 a user (and repeatedly so), the MRO field value is \fBnot unique\fP across the
