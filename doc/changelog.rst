@@ -1,5 +1,5 @@
-1.11.159
-========
+1.12 (2021-01-09)
+=================
 
 Enhancements:
 
@@ -10,6 +10,11 @@ Enhancements:
   in ``/etc/pam.d/xyz`` to test for the CHAT privilege bit.
 * doc: document more MRO field caveats for gromox-kdb2mt
 * kdb2mt: analyze Receive Folder Table and map inbox to inbox when -s is used
+* kdb2mt: recognize PT_MV_SHORT and PT_MV_CLSID properties
+* pff2mt: display NID type in verbose tree view
+* zcore: support emission of PR_ACCESS in content tables
+* mkprivate, mkpublic: generate mailbox directory structure if
+  it does not exist yet
 
 Fixes:
 
@@ -18,6 +23,8 @@ Fixes:
 * Recognize config directives with intervals of value "0" without unit
 * pff2mt: recipient objects were erroneously skipped
 * pff2mt: scan all available record sets for named properties
+* mkprivate: a base translation for Conversation Action Settings was restored;
+  the folder is no longer named "FLG-ERR-2".
 
 Changes:
 
