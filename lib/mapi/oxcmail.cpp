@@ -507,7 +507,7 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 	} else {
 		return TRUE;
 	}
-	if (!pset->append_move(pproplist)) {
+	if (pset->append_move(pproplist) != 0) {
 		tpropval_array_free(pproplist);
 		return FALSE;
 	}
@@ -3064,7 +3064,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 	if (NULL == pproplist) {
 		return false;
 	}
-	if (!pinfo->prcpts->append_move(pproplist)) {
+	if (pinfo->prcpts->append_move(pproplist) != 0) {
 		tpropval_array_free(pproplist);
 		return false;
 	}

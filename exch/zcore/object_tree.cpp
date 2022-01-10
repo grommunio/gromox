@@ -390,7 +390,7 @@ TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)
 		return NULL;
 	}
 	if (pproplist->set(PROP_TAG_PROPFILESECLSID, &sec_guid) != 0 ||
-	    !prootobj->pprof_set->append_move(pproplist)) {
+	    prootobj->pprof_set->append_move(pproplist) != 0) {
 		tpropval_array_free(pproplist);
 		return NULL;
 	}

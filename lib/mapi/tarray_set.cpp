@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cerrno>
 #include <cstdlib>
 #include <cstring>
 #include <gromox/mapidefs.h>
@@ -46,26 +47,26 @@ void tarray_set::erase(uint32_t index)
 	tpropval_array_free(parray);
 }
 
-bool tarray_set::append_move(TPROPVAL_ARRAY *pproplist)
+int tarray_set::append_move(TPROPVAL_ARRAY *pproplist)
 {
 	auto pset = this;
 	TPROPVAL_ARRAY **pparray;
 	
 	if (pset->count >= 0xFF00) {
-		return false;
+		return ENOSPC;
 	}
 	auto count = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
 	if (pset->count + 1 >= count) {
 		count += SR_GROW_TPROPVAL_ARRAY;
 		pparray = static_cast<TPROPVAL_ARRAY **>(realloc(pset->pparray, count * sizeof(TPROPVAL_ARRAY *)));
 		if (NULL == pparray) {
-			return false;
+			return ENOMEM;
 		}
 		pset->pparray = pparray;
 	}
 	pset->pparray[pset->count] = pproplist;
 	pset->count ++;
-	return true;
+	return 0;
 }
 
 tarray_set *tarray_set::dup() const
@@ -83,9 +84,11 @@ tarray_set *tarray_set::dup() const
 			tarray_set_free(pset1);
 			return NULL;
 		}
-		if (!pset1->append_move(pproplist)) {
+		auto ret = pset1->append_move(pproplist);
+		if (ret != 0) {
 			tpropval_array_free(pproplist);
 			tarray_set_free(pset1);
+			errno = ret;
 			return NULL;
 		}
 	}

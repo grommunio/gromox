@@ -836,7 +836,7 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 		if (NULL == pproplist) {
 			return FALSE;
 		}
-		if (!prcpts->append_move(pproplist)) {
+		if (prcpts->append_move(pproplist) != 0) {
 			tpropval_array_free(pproplist);
 			return FALSE;
 		}

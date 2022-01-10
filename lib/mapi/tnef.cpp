@@ -1379,7 +1379,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				if (NULL == pproplist) {
 					return NULL;
 				}
-				if (!prcpts->append_move(pproplist)) {
+				if (prcpts->append_move(pproplist) != 0) {
 					tpropval_array_free(pproplist);
 					return NULL;
 				}

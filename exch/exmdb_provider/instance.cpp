@@ -199,7 +199,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		if (NULL == pproplist) {
 			return FALSE;
 		}
-		if (!prcpts->append_move(pproplist)) {
+		if (prcpts->append_move(pproplist) != 0) {
 			tpropval_array_free(pproplist);
 			return FALSE;
 		}
@@ -2991,7 +2991,7 @@ BOOL exmdb_server_update_message_instance_rcpts(
 		if (NULL == prcpt) {
 			return FALSE;
 		}
-		if (!pmsgctnt->children.prcpts->append_move(prcpt)) {
+		if (pmsgctnt->children.prcpts->append_move(prcpt) != 0) {
 			tpropval_array_free(prcpt);
 			return FALSE;
 		}

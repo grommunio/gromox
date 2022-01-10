@@ -844,7 +844,7 @@ static int do_message(driver &drv, unsigned int depth, const parent_desc &parent
 static int do_recip(driver &drv, unsigned int depth, const parent_desc &parent, kdb_item &item)
 {
 	auto props = item.get_props();
-	if (!parent.message->children.prcpts->append_move(props))
+	if (parent.message->children.prcpts->append_move(props) == ENOMEM)
 		throw std::bad_alloc();
 	item.m_props.release();
 	return 0;
