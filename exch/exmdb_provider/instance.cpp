@@ -19,7 +19,6 @@
 #include <gromox/scope.hpp>
 #include "exmdb_server.h"
 #include "common_util.h"
-#include <gromox/tarray_set.hpp>
 #include "db_engine.h"
 #include <gromox/mail_func.hpp>
 #include <gromox/rop_util.hpp>

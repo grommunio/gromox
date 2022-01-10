@@ -8,7 +8,6 @@
 #include <memory>
 #include <vector>
 #include <gromox/mapidefs.h>
-#include <gromox/tarray_set.hpp>
 #include "object_tree.h"
 #include <gromox/restriction.hpp>
 #include "exmdb_client.h"

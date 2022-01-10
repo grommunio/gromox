@@ -22,8 +22,8 @@
 #include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
+#include <gromox/mapidefs.h>
 #include <gromox/scope.hpp>
-#include <gromox/tarray_set.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <gromox/tarray_set.hpp>
 #include <cstdlib>
 #include <cstring>
+#include <gromox/mapidefs.h>
 
 TARRAY_SET* tarray_set_init()
 {

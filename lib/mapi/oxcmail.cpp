@@ -30,7 +30,6 @@
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/mail_func.hpp>
-#include <gromox/tarray_set.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/apple_util.hpp>
 #include <unistd.h>

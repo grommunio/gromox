@@ -7,7 +7,6 @@
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
-#include <gromox/tarray_set.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/int_hash.hpp>

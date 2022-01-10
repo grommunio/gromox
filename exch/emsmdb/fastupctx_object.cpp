@@ -16,7 +16,6 @@
 #include "folder_object.h"
 #include "exmdb_client.h"
 #include "common_util.h"
-#include <gromox/tarray_set.hpp>
 #include <gromox/rop_util.hpp>
 #include <cstdlib>
 

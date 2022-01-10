@@ -4,10 +4,10 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
+#include <gromox/mapidefs.h>
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/scope.hpp>
-#include <gromox/tarray_set.hpp>
 #include <gromox/ext_buffer.hpp>
 #include "common_util.h"
 #include "object_tree.h"

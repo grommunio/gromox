@@ -19,7 +19,7 @@
 #include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
-#include <gromox/tarray_set.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/tie.hpp>
 #include <gromox/util.hpp>
 #include "genimport.hpp"
