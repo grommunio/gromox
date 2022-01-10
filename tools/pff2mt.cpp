@@ -454,6 +454,7 @@ static void recordset_to_tpropval_a(libpff_record_set_t *rset, TPROPVAL_ARRAY *p
 	}
 }
 
+/* Collect all recordsets' properties into one TPROPVAL_ARRAY */
 static tpropval_array_ptr item_to_tpropval_a(libpff_item_t *item)
 {
 	tpropval_array_ptr props(tpropval_array_init());
@@ -474,12 +475,41 @@ static tpropval_array_ptr item_to_tpropval_a(libpff_item_t *item)
 	return props;
 }
 
+/* Collect each recordset as its own TPROPVAL_ARRAY */
+static tarray_set_ptr item_to_tarray_set(libpff_item_t *item)
+{
+	tarray_set_ptr tset(tarray_set_init());
+	if (tset == nullptr)
+		throw std::bad_alloc();
+	int nsets = 0;
+	libpff_error_ptr err;
+	if (libpff_item_get_number_of_record_sets(item, &nsets, &unique_tie(err)) < 1 ||
+	    nsets == 0)
+		return tset;
+	for (int n = 0; n < nsets; ++n) {
+		libpff_record_set_ptr rset;
+		if (libpff_item_get_record_set_by_index(item, n,
+		    &unique_tie(rset), &~unique_tie(err)) < 1)
+			throw az_error("PF-1043", err);
+		tpropval_array_ptr tprops(tpropval_array_init());
+		if (tprops == nullptr)
+			throw std::bad_alloc();
+		recordset_to_tpropval_a(rset.get(), tprops.get());
+		auto ret = tset->append_move(tprops.get());
+		if (ret == ENOMEM)
+			throw std::bad_alloc();
+		tprops.release();
+	}
+	return tset;
+}
+
 static int do_folder(unsigned int depth, const parent_desc &parent,
     libpff_item_t *item)
 {
 	auto props = item_to_tpropval_a(item);
 	if (g_show_tree) {
-		gi_dump_tpropval_a(depth, *props);
+		auto tset = item_to_tarray_set(item);
+		gi_dump_tarray_set(depth, *tset);
 	} else {
 		auto name = props->get<char>(PR_DISPLAY_NAME);
 		if (name != nullptr)
@@ -652,23 +682,6 @@ static void do_print(unsigned int depth, libpff_item_t *item)
 		nsets, static_cast<unsigned long>(nent));
 }
 
-static void do_print_rset(unsigned int depth, libpff_item_t *item)
-{
-	int nsets = 0;
-	if (libpff_item_get_number_of_record_sets(item, &nsets, nullptr) <= 0)
-		return;
-	for (int s = 0; s < nsets; ++s) {
-		libpff_record_set_ptr rset;
-		if (libpff_item_get_record_set_by_index(item, s, &unique_tie(rset), nullptr) < 1)
-			throw YError("PF-1054");
-		tpropval_array_ptr props(tpropval_array_init());
-		if (props == nullptr)
-			throw std::bad_alloc();
-		recordset_to_tpropval_a(rset.get(), props.get());
-		gi_dump_tpropval_a(depth, *props);
-	}
-}
-
 static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t *item)
 {
 	uint32_t ident = 0;
@@ -695,7 +708,8 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 		ret = do_attach(depth, parent, item);
 	} else if (g_show_tree && ident == 0x62b) {
 		do_print(depth++, item);
-		do_print_rset(depth, item);
+		auto tset = item_to_tarray_set(item);
+		gi_dump_tarray_set(depth, *tset);
 	}
 
 	if (ret != 0)

@@ -253,6 +253,15 @@ void gi_dump_tpropval_a(unsigned int depth, const TPROPVAL_ARRAY &props)
 	}
 }
 
+void gi_dump_tarray_set(unsigned int depth, const tarray_set &tset)
+{
+	for (size_t i = 0; i < tset.count; ++i) {
+		tree(depth);
+		tlog("set %zu\n", i);
+		gi_dump_tpropval_a(depth + 1, *tset.pparray[i]);
+	}
+}
+
 void gi_dump_msgctnt(unsigned int depth, const MESSAGE_CONTENT &ctnt)
 {
 	gi_dump_tpropval_a(depth, ctnt.proplist);
