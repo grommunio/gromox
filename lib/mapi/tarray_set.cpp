@@ -29,8 +29,9 @@ void tarray_set_free(TARRAY_SET *pset)
 	free(pset);
 }
 
-void tarray_set_remove(TARRAY_SET *pset, uint32_t index)
+void tarray_set::erase(uint32_t index)
 {
+	auto pset = this;
 	TPROPVAL_ARRAY *parray;
 	
 	if (index >= pset->count) {
@@ -45,8 +46,9 @@ void tarray_set_remove(TARRAY_SET *pset, uint32_t index)
 	tpropval_array_free(parray);
 }
 
-bool tarray_set_append_internal(TARRAY_SET *pset, TPROPVAL_ARRAY *pproplist)
+bool tarray_set::append_move(TPROPVAL_ARRAY *pproplist)
 {
+	auto pset = this;
 	TPROPVAL_ARRAY **pparray;
 	
 	if (pset->count >= 0xFF00) {
@@ -66,8 +68,9 @@ bool tarray_set_append_internal(TARRAY_SET *pset, TPROPVAL_ARRAY *pproplist)
 	return true;
 }
 
-TARRAY_SET* tarray_set_dup(TARRAY_SET *pset)
+tarray_set *tarray_set::dup() const
 {
+	auto pset = this;
 	TARRAY_SET *pset1;
 	
 	pset1 = tarray_set_init();
@@ -80,7 +83,7 @@ TARRAY_SET* tarray_set_dup(TARRAY_SET *pset)
 			tarray_set_free(pset1);
 			return NULL;
 		}
-		if (!tarray_set_append_internal(pset1, pproplist)) {
+		if (!pset1->append_move(pproplist)) {
 			tpropval_array_free(pproplist);
 			tarray_set_free(pset1);
 			return NULL;

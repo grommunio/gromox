@@ -200,7 +200,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		if (NULL == pproplist) {
 			return FALSE;
 		}
-		if (!tarray_set_append_internal(prcpts, pproplist)) {
+		if (!prcpts->append_move(pproplist)) {
 			tpropval_array_free(pproplist);
 			return FALSE;
 		}
@@ -1178,7 +1178,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 	}
 	if (NULL != pmsgctnt->children.prcpts) {
 		if (b_force || ict->children.prcpts == nullptr) {
-			prcpts = tarray_set_dup(pmsgctnt->children.prcpts);
+			prcpts = pmsgctnt->children.prcpts->dup();
 			if (NULL == prcpts) {
 				return FALSE;
 			}
@@ -2970,7 +2970,7 @@ BOOL exmdb_server_update_message_instance_rcpts(
 			did_match = true;
 			if (mod.count == 1) {
 				/* contains just ROWID */
-				tarray_set_remove(pmsgctnt->children.prcpts, j);
+				pmsgctnt->children.prcpts->erase(j);
 				break;
 			}
 			auto prcpt = mod.dup();
@@ -2992,7 +2992,7 @@ BOOL exmdb_server_update_message_instance_rcpts(
 		if (NULL == prcpt) {
 			return FALSE;
 		}
-		if (!tarray_set_append_internal(pmsgctnt->children.prcpts, prcpt)) {
+		if (!pmsgctnt->children.prcpts->append_move(prcpt)) {
 			tpropval_array_free(prcpt);
 			return FALSE;
 		}
@@ -3025,7 +3025,7 @@ BOOL exmdb_server_copy_instance_rcpts(
 		*pb_result = FALSE;
 		return TRUE;	
 	}
-	auto prcpts = tarray_set_dup(static_cast<MESSAGE_CONTENT *>(pinstance_src->pcontent)->children.prcpts);
+	auto prcpts = static_cast<MESSAGE_CONTENT *>(pinstance_src->pcontent)->children.prcpts->dup();
 	if (NULL == prcpts) {
 		return FALSE;
 	}

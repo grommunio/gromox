@@ -604,7 +604,7 @@ static int do_recips(unsigned int depth, const parent_desc &parent, libpff_item_
 		if (props == nullptr)
 			throw std::bad_alloc();
 		recordset_to_tpropval_a(rset.get(), props.get());
-		if (!tarray_set_append_internal(parent.message->children.prcpts, props.get()))
+		if (!parent.message->children.prcpts->append_move(props.get()))
 			throw std::bad_alloc();
 		props.release();
 	}

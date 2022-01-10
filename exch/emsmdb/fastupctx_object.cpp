@@ -443,7 +443,7 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 				return GXERR_CALL_FAILED;
 			}
 			pmsgctnt = static_cast<MESSAGE_CONTENT *>(pnode->data.pelement);
-			if (!tarray_set_append_internal(pmsgctnt->children.prcpts, prcpt)) {
+			if (!pmsgctnt->children.prcpts->append_move(prcpt)) {
 				tpropval_array_free(prcpt);
 				return GXERR_CALL_FAILED;
 			}

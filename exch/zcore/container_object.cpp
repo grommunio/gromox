@@ -475,7 +475,7 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 				tpropval_array_free(ppropvals);
 				continue;
 			}
-			if (!tarray_set_append_internal(pcontainer->contents.prow_set, ppropvals)) {
+			if (!pcontainer->contents.prow_set->append_move(ppropvals)) {
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}

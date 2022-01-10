@@ -334,8 +334,7 @@ MESSAGE_CONTENT *message_content_dup(const MESSAGE_CONTENT *pmsgctnt)
 		}
 	}
 	if (NULL != pmsgctnt->children.prcpts) {
-		pmsgctnt1->children.prcpts =
-			tarray_set_dup(pmsgctnt->children.prcpts);
+		pmsgctnt1->children.prcpts = pmsgctnt->children.prcpts->dup();
 		if (NULL == pmsgctnt1->children.prcpts) {
 			message_content_free(pmsgctnt1);
 			return NULL;

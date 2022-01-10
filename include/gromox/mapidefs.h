@@ -1518,11 +1518,14 @@ struct TAGGED_PROPVAL {
 	void *pvalue;
 };
 
+struct tarray_set;
 struct TPROPVAL_ARRAY;
 extern GX_EXPORT TPROPVAL_ARRAY *tpropval_array_init();
 extern GX_EXPORT void tpropval_array_free(TPROPVAL_ARRAY *);
 extern GX_EXPORT bool tpropval_array_init_internal(TPROPVAL_ARRAY *);
 extern GX_EXPORT void tpropval_array_free_internal(TPROPVAL_ARRAY *);
+extern GX_EXPORT tarray_set *tarray_set_init();
+extern GX_EXPORT void tarray_set_free(tarray_set *);
 
 struct TPROPVAL_ARRAY {
 	TAGGED_PROPVAL *find(uint32_t tag) const {
@@ -1551,10 +1554,15 @@ struct LTPROPVAL_ARRAY {
 	TAGGED_PROPVAL *propval;
 };
 
-struct TARRAY_SET {
+struct tarray_set {
+	void erase(uint32_t index);
+	bool append_move(TPROPVAL_ARRAY *);
+	tarray_set *dup() const;
+
 	uint32_t count;
 	TPROPVAL_ARRAY **pparray;
 };
+using TARRAY_SET = tarray_set;
 
 struct NEWMAIL_ZNOTIFICATION {
 	BINARY entryid;

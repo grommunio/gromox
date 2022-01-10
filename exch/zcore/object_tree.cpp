@@ -124,7 +124,7 @@ static root_object *object_tree_init_root(const char *maildir)
 		return NULL;
 	}
 	free(pbuff);
-	prootobj->pprof_set = tarray_set_dup(&prof_set);
+	prootobj->pprof_set = prof_set.dup();
 	if (NULL == prootobj->pprof_set) {
 		tpropval_array_free(prootobj->pprivate_proplist);
 		free(prootobj->maildir);
@@ -390,7 +390,7 @@ TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)
 		return NULL;
 	}
 	if (pproplist->set(PROP_TAG_PROPFILESECLSID, &sec_guid) != 0 ||
-	    !tarray_set_append_internal(prootobj->pprof_set, pproplist)) {
+	    !prootobj->pprof_set->append_move(pproplist)) {
 		tpropval_array_free(pproplist);
 		return NULL;
 	}
