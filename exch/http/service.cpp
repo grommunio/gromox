@@ -9,7 +9,6 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/paths.h>
-#include <gromox/double_list.hpp>
 #include "resource.h"
 #include "service.h"
 #include <gromox/util.hpp>
@@ -24,34 +23,32 @@ using namespace gromox;
 
 namespace {
 
-struct REFERENCE_NODE {
-	DOUBLE_LIST_NODE	node;
-	char				module_name[256];
-	int					ref_count;
+struct reference_node {
+	std::string module_name;
+	int ref_count;
+};
+
+struct SVC_PLUG_ENTITY;
+struct service_entry {
+	std::string service_name;
+	void *service_addr;
+	SVC_PLUG_ENTITY *plib;
+	const std::type_info *type_info;
+	std::vector<reference_node> list_reference;
 };
 
 struct SVC_PLUG_ENTITY {
-	SVC_PLUG_ENTITY();
+	SVC_PLUG_ENTITY() = default;
 	SVC_PLUG_ENTITY(SVC_PLUG_ENTITY &&);
 	~SVC_PLUG_ENTITY();
 	void operator=(SVC_PLUG_ENTITY &&) = delete;
 
-	DOUBLE_LIST list_service{};
+	std::vector<std::shared_ptr<service_entry>> list_service;
 	std::atomic<int> ref_count = 0;
 	void *handle = nullptr;
 	PLUGIN_MAIN lib_main = nullptr;
 	std::string file_name, full_path;
 	bool completed_init = false;
-};
-
-struct SERVICE_ENTRY {
-	DOUBLE_LIST_NODE	node_service;
-	DOUBLE_LIST_NODE	node_lib;
-    char				service_name[256];
-    void				*service_addr;
-	SVC_PLUG_ENTITY *plib;	
-	const std::type_info *type_info;
-	DOUBLE_LIST			list_reference;
 };
 
 }
@@ -66,7 +63,7 @@ static const char *service_get_host_ID();
 
 static char g_init_path[256], g_config_dir[256], g_data_dir[256], g_state_dir[256];
 static std::list<SVC_PLUG_ENTITY> g_list_plug;
-static DOUBLE_LIST		g_list_service;
+static std::vector<std::shared_ptr<service_entry>> g_list_service;
 static SVC_PLUG_ENTITY *g_cur_plug;
 static unsigned int g_context_num;
 static const char *const *g_plugin_names, *g_program_identifier;
@@ -89,8 +86,6 @@ void service_init(const struct service_init_param &parm)
 	g_plugin_names = parm.plugin_list;
 	g_ign_loaderr = parm.plugin_ignloaderr;
 	g_program_identifier = parm.prog_id;
-	double_list_init(&g_list_service);
-	double_list_init(&g_system_image.list_service);
 }
 
 static void *const server_funcs[] = {(void *)service_query_service};
@@ -194,23 +189,12 @@ static int service_load_library(const char *path)
 	return PLUGIN_LOAD_OK;
 }
 
-SVC_PLUG_ENTITY::SVC_PLUG_ENTITY()
-{
-	/*  for all plugins, there's should be a read-write lock for controlling
-	 *  its modification. ervery time, the service function is invoked,
-	 *  the read lock is acquired. when the plugin is going to be modified,
-	 *  acquire the write lock.
-	 */
-	double_list_init(&list_service);
-}
-
 SVC_PLUG_ENTITY::SVC_PLUG_ENTITY(SVC_PLUG_ENTITY &&o) :
-	list_service(o.list_service), ref_count(o.ref_count.load()),
+	list_service(std::move(o.list_service)), ref_count(o.ref_count.load()),
 	handle(o.handle), lib_main(o.lib_main),
 	file_name(std::move(o.file_name)), full_path(std::move(o.full_path)),
 	completed_init(o.completed_init)
 {
-	o.list_service = {};
 	o.ref_count = 0;
 	o.handle = nullptr;
 	o.completed_init = false;
@@ -218,7 +202,6 @@ SVC_PLUG_ENTITY::SVC_PLUG_ENTITY(SVC_PLUG_ENTITY &&o) :
 
 SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
 {
-	DOUBLE_LIST_NODE *pnode;
 	PLUGIN_MAIN func;
 	auto plib = this;
 	if (plib->ref_count > 0) {
@@ -231,20 +214,6 @@ SVC_PLUG_ENTITY::~SVC_PLUG_ENTITY()
 	if (func != nullptr && plib->completed_init)
 		/* notify the plugin that it will be unloaded */
 		func(PLUGIN_FREE, NULL);
-	/* check if the there rests service(s) that has not been unrigstered */
-	if (0 != double_list_get_nodes_num(&plib->list_service)) {
-		for (pnode=double_list_get_head(&plib->list_service); NULL!=pnode;
-			 pnode=double_list_get_after(&plib->list_service, pnode)) {
-			double_list_remove(&g_list_service,
-				&((SERVICE_ENTRY*)(pnode->pdata))->node_service);
-		}
-		/* free lib's service list */
-		while ((pnode = double_list_pop_front(&plib->list_service)) != nullptr) {
-			free(pnode->pdata);
-			pnode = NULL;
-		}
-		double_list_free(&plib->list_service);
-	}
 	if (handle != nullptr)
 		dlclose(handle);
 }
@@ -330,11 +299,9 @@ static const char* service_get_host_ID()
  *  @return
  *      TRUE or FALSE
  */
-BOOL service_register_service(const char *func_name, void *addr, const std::type_info &ti)
+BOOL service_register_service(const char *func_name, void *addr,
+    const std::type_info &ti) try
 {
-	 DOUBLE_LIST_NODE *pnode;
-	 SERVICE_ENTRY *pservice;
-
 	if (NULL == func_name) {
 		return FALSE;
 	}
@@ -344,32 +311,21 @@ BOOL service_register_service(const char *func_name, void *addr, const std::type
 		plug = &g_system_image;
 
 	/* check if the service is already registered in service list */
-	for (pnode=double_list_get_head(&g_list_service); NULL!=pnode;
-		 pnode=double_list_get_after(&g_list_service, pnode)) {
-		if (strcmp(((SERVICE_ENTRY*)(pnode->pdata))->service_name, 
-			func_name) == 0) {
-			break;
-		}
-	}
-	if (NULL != pnode) {
+	auto it = std::find_if(g_list_service.begin(), g_list_service.end(),
+	          [&](const std::shared_ptr<service_entry> &e) { return e->service_name == func_name; });
+	if (it != g_list_service.end())
 		return FALSE;
-	}
-	pservice = static_cast<decltype(pservice)>(malloc(sizeof(*pservice)));
-	if (NULL == pservice) {
-		return FALSE;
-	}
-	memset(pservice, 0, sizeof(SERVICE_ENTRY));
-	pservice->node_service.pdata	= pservice;
-	pservice->node_lib.pdata		= pservice;
-	pservice->service_addr			= addr;
-	pservice->type_info = &ti;
-	pservice->plib = plug;
-	double_list_init(&pservice->list_reference);
-	gx_strlcpy(pservice->service_name, func_name, GX_ARRAY_SIZE(pservice->service_name));
-	double_list_append_as_tail(&g_list_service, &pservice->node_service);
-	/* append also the service into service list */
-	double_list_append_as_tail(&plug->list_service, &pservice->node_lib);
+	auto e = std::make_shared<service_entry>();
+	e->service_name = func_name;
+	e->service_addr = addr;
+	e->type_info = &ti;
+	e->plib = plug;
+	g_list_service.push_back(e);
+	plug->list_service.push_back(std::move(e));
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1637: ENOMEM\n");
+	return false;
 }
 
 /*
@@ -380,19 +336,10 @@ BOOL service_register_service(const char *func_name, void *addr, const std::type
  */
 void *service_query(const char *service_name, const char *module, const std::type_info &ti)
 {
-	DOUBLE_LIST_NODE *pnode;
-	SERVICE_ENTRY	 *pservice;
-	REFERENCE_NODE	 *pmodule;
-	
 	/* first find out the service node in global service list */
-	for (pnode=double_list_get_head(&g_list_service); NULL!=pnode;
-		 pnode=double_list_get_after(&g_list_service, pnode)) {
-		pservice = (SERVICE_ENTRY*)(pnode->pdata);
-		if (strcmp(pservice->service_name, service_name) == 0) {
-			break;
-		}
-	}
-	if (NULL == pnode) {
+	auto node = std::find_if(g_list_service.begin(), g_list_service.end(),
+	                [&](const std::shared_ptr<service_entry> &e) { return e->service_name == service_name; });
+	if (node == g_list_service.end()) {
 		static constexpr const char *excl[] =
 			{"ip_container_add", "ip_container_remove",
 			"ip_filter_add", "ip_filter_judge", "ndr_stack_alloc"};
@@ -401,6 +348,7 @@ void *service_query(const char *service_name, const char *module, const std::typ
 			printf("[service]: dlname \"%s\" not found\n", service_name);
 		return NULL;
 	}
+	auto &pservice = *node;
 	if (strcmp(ti.name(), pservice->type_info->name()) != 0)
 		printf("[service]: type mismatch on dlname \"%s\" (%s VS %s)\n",
 			service_name, pservice->type_info->name(), ti.name());
@@ -411,23 +359,12 @@ void *service_query(const char *service_name, const char *module, const std::typ
 	 * the module name, if the module already exists in the list, just add
 	 *  reference cout of module
 	 */
-	for (pnode=double_list_get_head(&pservice->list_reference); NULL!=pnode;
-		 pnode=double_list_get_after(&pservice->list_reference, pnode)) {
-		pmodule = (REFERENCE_NODE*)(pnode->pdata);
-		if (strcmp(pmodule->module_name, module) == 0) {
-			break;
-		}
-	}
-	if (NULL == pnode) {
-		pmodule = static_cast<decltype(pmodule)>(malloc(sizeof(*pmodule)));
-		if (NULL == pmodule) {
-			printf("[service]: Failed to allocate memory for module node\n");
-			return NULL;
-		}
-		memset(pmodule, 0, sizeof(REFERENCE_NODE));
-		pmodule->node.pdata = pmodule;
-		gx_strlcpy(pmodule->module_name, module, GX_ARRAY_SIZE(pmodule->module_name));
-		double_list_append_as_tail(&pservice->list_reference, &pmodule->node);
+	auto pmodule = std::find_if(pservice->list_reference.begin(),
+	               pservice->list_reference.end(),
+	               [&](const reference_node &m) { return m.module_name == module; });
+	if (pmodule == pservice->list_reference.end()) {
+		pservice->list_reference.push_back(reference_node{module});
+		pmodule = std::prev(pservice->list_reference.end());
 	}
 	/*
 	 * whatever add one reference to ref_count of PLUG_ENTITY
@@ -446,37 +383,21 @@ void *service_query(const char *service_name, const char *module, const std::typ
  */
 void service_release(const char *service_name, const char *module)
 {
-	DOUBLE_LIST_NODE *pnode;
-	SERVICE_ENTRY	 *pservice;
-	REFERENCE_NODE	 *pmodule;
-	
-	
-	for (pnode=double_list_get_head(&g_list_service); NULL!=pnode;
-		 pnode=double_list_get_after(&g_list_service, pnode)) {
-		pservice = (SERVICE_ENTRY*)(pnode->pdata);
-		if (strcmp(pservice->service_name, service_name) == 0) {
-			break;
-		}
-	}
-	if (NULL == pnode) {
+	auto node = std::find_if(g_list_service.begin(), g_list_service.end(),
+	            [&](const std::shared_ptr<service_entry> &e) { return e->service_name == service_name; });
+	if (node == g_list_service.end())
 		return;
-	}
+	auto &pservice = *node;
 	/* find out the module node in service's reference list */
-	for (pnode=double_list_get_head(&pservice->list_reference); NULL!=pnode;
-		 pnode=double_list_get_after(&pservice->list_reference, pnode)) {
-		pmodule = (REFERENCE_NODE*)(pnode->pdata);
-		if (strcmp(pmodule->module_name, module) == 0) {
-			break;
-		}
-	}
-	if (NULL == pnode) {
+	auto pmodule = std::find_if(pservice->list_reference.begin(),
+	               pservice->list_reference.end(),
+	               [&](const reference_node &m) { return m.module_name == module; });
+	if (pmodule == pservice->list_reference.end())
 		return;
-	}
 	pmodule->ref_count --;
 	/* if reference count of module node is 0, free this node */ 
 	if (0 == pmodule->ref_count) {
-		double_list_remove(&pservice->list_reference, &pmodule->node);
-		free(pmodule);
+		pservice->list_reference.erase(pmodule);
 	}
 	pservice->plib->ref_count --;
 }
