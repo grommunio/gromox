@@ -554,67 +554,68 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 			}
 			size = STREAM_BLOCK_SIZE;
 		}
-	} else {
+		phttp->stream_in.clear();
+		return TRUE;
+	}
  CHUNK_BEGIN:
-		if (phpm_ctx->chunk_size == phpm_ctx->chunk_offset) {
-			size = phttp->stream_in.peek_buffer(tmp_buff, 1024);
-			if (size < 5) {
-				return TRUE;
-			}
-			if (0 == strncmp("0\r\n\r\n", tmp_buff, 5)) {
-				phttp->stream_in.fwd_read_ptr(5);
-				phpm_ctx->b_end = TRUE;
-				return TRUE;
-			}
-			ptoken = static_cast<char *>(memmem(tmp_buff, size, "\r\n", 2));
-			if (NULL == ptoken) {
-				if (1024 == size) {
-					http_parser_log_info(phttp, LV_DEBUG, "fail to "
-						"parse chunked block for hpm_processor");
-					return FALSE;
-				}
-				return TRUE;
-			}
-			*ptoken = '\0';
-			phpm_ctx->chunk_size = strtol(tmp_buff, NULL, 16);
-			if (0 == phpm_ctx->chunk_size) {
+	if (phpm_ctx->chunk_size == phpm_ctx->chunk_offset) {
+		size = phttp->stream_in.peek_buffer(tmp_buff, 1024);
+		if (size < 5) {
+			return TRUE;
+		}
+		if (0 == strncmp("0\r\n\r\n", tmp_buff, 5)) {
+			phttp->stream_in.fwd_read_ptr(5);
+			phpm_ctx->b_end = TRUE;
+			return TRUE;
+		}
+		ptoken = static_cast<char *>(memmem(tmp_buff, size, "\r\n", 2));
+		if (NULL == ptoken) {
+			if (1024 == size) {
 				http_parser_log_info(phttp, LV_DEBUG, "fail to "
 					"parse chunked block for hpm_processor");
 				return FALSE;
 			}
-			phpm_ctx->chunk_offset = 0;
-			tmp_len = ptoken + 2 - tmp_buff;
-			phttp->stream_in.fwd_read_ptr(tmp_len);
+			return TRUE;
 		}
-		size = STREAM_BLOCK_SIZE;
-		while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
-			if (phpm_ctx->chunk_size >= size + phpm_ctx->chunk_offset) {
-				if (size != write(phpm_ctx->cache_fd, pbuff, size)) {
-					http_parser_log_info(phttp, LV_DEBUG, "fail to "
-						"write cache file for hpm_processor");
-					return FALSE;
-				}
-				phpm_ctx->chunk_offset += size;
-				phpm_ctx->cache_size += size;
-			} else {
-				tmp_len = phpm_ctx->chunk_size - phpm_ctx->chunk_offset;
-				if (tmp_len != write(phpm_ctx->cache_fd, pbuff, tmp_len)) {
-					http_parser_log_info(phttp, LV_DEBUG, "fail to"
-						" write cache file for hpm_processor");
-					return FALSE;
-				}
-				phttp->stream_in.rewind_read_ptr(size - tmp_len);
-				phpm_ctx->cache_size += tmp_len;
-				phpm_ctx->chunk_offset = phpm_ctx->chunk_size;
-			}
-			if (phpm_ctx->cache_size > g_max_size) {
-				http_parser_log_info(phttp, LV_DEBUG, "chunked content"
-						" length is too long for hpm_processor");
+		*ptoken = '\0';
+		phpm_ctx->chunk_size = strtol(tmp_buff, NULL, 16);
+		if (0 == phpm_ctx->chunk_size) {
+			http_parser_log_info(phttp, LV_DEBUG, "fail to "
+				"parse chunked block for hpm_processor");
+			return FALSE;
+		}
+		phpm_ctx->chunk_offset = 0;
+		tmp_len = ptoken + 2 - tmp_buff;
+		phttp->stream_in.fwd_read_ptr(tmp_len);
+	}
+	size = STREAM_BLOCK_SIZE;
+	while ((pbuff = phttp->stream_in.get_read_buf(reinterpret_cast<unsigned int *>(&size))) != nullptr) {
+		if (phpm_ctx->chunk_size >= size + phpm_ctx->chunk_offset) {
+			if (size != write(phpm_ctx->cache_fd, pbuff, size)) {
+				http_parser_log_info(phttp, LV_DEBUG, "fail to "
+					"write cache file for hpm_processor");
 				return FALSE;
 			}
-			if (phpm_ctx->chunk_offset == phpm_ctx->chunk_size) {
-				goto CHUNK_BEGIN;	
+			phpm_ctx->chunk_offset += size;
+			phpm_ctx->cache_size += size;
+		} else {
+			tmp_len = phpm_ctx->chunk_size - phpm_ctx->chunk_offset;
+			if (tmp_len != write(phpm_ctx->cache_fd, pbuff, tmp_len)) {
+				http_parser_log_info(phttp, LV_DEBUG, "fail to"
+					" write cache file for hpm_processor");
+				return FALSE;
 			}
+			phttp->stream_in.rewind_read_ptr(size - tmp_len);
+			phpm_ctx->cache_size += tmp_len;
+			phpm_ctx->chunk_offset = phpm_ctx->chunk_size;
+		}
+		if (phpm_ctx->cache_size > g_max_size) {
+			http_parser_log_info(phttp, LV_DEBUG, "chunked content"
+				" length is too long for hpm_processor");
+			return FALSE;
+		}
+		if (phpm_ctx->chunk_offset == phpm_ctx->chunk_size) {
+			goto CHUNK_BEGIN;
 		}
 	}
 	phttp->stream_in.clear();
