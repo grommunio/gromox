@@ -444,61 +444,61 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 	auto phpm_ctx = &g_context_list[phttp->context_id];
 	for (const auto &p : g_plugin_list) {
 		auto pplugin = &p;
-		if (pplugin->interface.preproc(phttp->context_id)) {
-			tmp_len = phttp->request.f_content_length.get_total_length();
-			if (0 == tmp_len) {
-				content_length = 0;
-			} else {
-				if (tmp_len >= 32) {
-					phpm_ctx->b_preproc = FALSE;
-					http_parser_log_info(phttp, LV_DEBUG, "length of "
-						"content-length is too long for hpm_processor");
-					return FALSE;
-				}
-				phttp->request.f_content_length.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-				phttp->request.f_content_length.read(tmp_buff, tmp_len);
-				tmp_buff[tmp_len] = '\0';
-				content_length = strtoull(tmp_buff, nullptr, 0);
-			}
-			if (content_length > g_max_size) {
+		if (!pplugin->interface.preproc(phttp->context_id))
+			continue;
+		tmp_len = phttp->request.f_content_length.get_total_length();
+		if (0 == tmp_len) {
+			content_length = 0;
+		} else {
+			if (tmp_len >= 32) {
 				phpm_ctx->b_preproc = FALSE;
-				http_parser_log_info(phttp, LV_DEBUG, "content-length"
-					" is too long for hpm_processor");
+				http_parser_log_info(phttp, LV_DEBUG, "length of "
+					"content-length is too long for hpm_processor");
 				return FALSE;
 			}
-			b_chunked = FALSE;
-			tmp_len = phttp->request.f_transfer_encoding.get_total_length();
-			if (tmp_len > 0 && static_cast<size_t>(tmp_len) < GX_ARRAY_SIZE(tmp_buff)) {
-				phttp->request.f_transfer_encoding.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-				phttp->request.f_transfer_encoding.read(tmp_buff, tmp_len);
-				tmp_buff[tmp_len] = '\0';
-				if (0 == strcasecmp(tmp_buff, "chunked")) {
-					b_chunked = TRUE;
-				}
-			}
-			if (TRUE == b_chunked || content_length > g_cache_size) {
-				snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "/tmp/http-%u", phttp->context_id);
-				phpm_ctx->cache_fd = open(tmp_buff,
-					O_CREAT|O_TRUNC|O_RDWR, 0666);
-				if (-1 == phpm_ctx->cache_fd) {
-					phpm_ctx->b_preproc = FALSE;
-					return FALSE;
-				}
-				phpm_ctx->cache_size = 0;
-			} else {
-				phpm_ctx->cache_fd = -1;
-			}
-			phpm_ctx->b_chunked = b_chunked;
-			if (TRUE == b_chunked) {
-				phpm_ctx->chunk_size = 0;
-				phpm_ctx->chunk_offset = 0;
-			}
-			phpm_ctx->content_length = content_length;
-			phpm_ctx->b_end = FALSE;
-			phpm_ctx->b_preproc = TRUE;
-			phpm_ctx->pinterface = &pplugin->interface;
-			return TRUE;
+			phttp->request.f_content_length.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+			phttp->request.f_content_length.read(tmp_buff, tmp_len);
+			tmp_buff[tmp_len] = '\0';
+			content_length = strtoull(tmp_buff, nullptr, 0);
 		}
+		if (content_length > g_max_size) {
+			phpm_ctx->b_preproc = FALSE;
+			http_parser_log_info(phttp, LV_DEBUG, "content-length"
+				" is too long for hpm_processor");
+			return FALSE;
+		}
+		b_chunked = FALSE;
+		tmp_len = phttp->request.f_transfer_encoding.get_total_length();
+		if (tmp_len > 0 && static_cast<size_t>(tmp_len) < GX_ARRAY_SIZE(tmp_buff)) {
+			phttp->request.f_transfer_encoding.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+			phttp->request.f_transfer_encoding.read(tmp_buff, tmp_len);
+			tmp_buff[tmp_len] = '\0';
+			if (0 == strcasecmp(tmp_buff, "chunked")) {
+				b_chunked = TRUE;
+			}
+		}
+		if (TRUE == b_chunked || content_length > g_cache_size) {
+			snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "/tmp/http-%u", phttp->context_id);
+			phpm_ctx->cache_fd = open(tmp_buff,
+				O_CREAT|O_TRUNC|O_RDWR, 0666);
+			if (-1 == phpm_ctx->cache_fd) {
+				phpm_ctx->b_preproc = FALSE;
+				return FALSE;
+			}
+			phpm_ctx->cache_size = 0;
+		} else {
+			phpm_ctx->cache_fd = -1;
+		}
+		phpm_ctx->b_chunked = b_chunked;
+		if (TRUE == b_chunked) {
+			phpm_ctx->chunk_size = 0;
+			phpm_ctx->chunk_offset = 0;
+		}
+		phpm_ctx->content_length = content_length;
+		phpm_ctx->b_end = FALSE;
+		phpm_ctx->b_preproc = TRUE;
+		phpm_ctx->pinterface = &pplugin->interface;
+		return TRUE;
 	}
 	phpm_ctx->b_preproc = FALSE;
 	return FALSE;
