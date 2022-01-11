@@ -36,11 +36,6 @@ enum {
 namespace {
 
 /* structure for describing service reference */
-struct hpm_service_node {
-	DOUBLE_LIST_NODE node;
-	void *service_addr;
-	char *service_name;
-};
 
 struct HPM_CONTEXT {
 	const HPM_INTERFACE *pinterface;
@@ -222,7 +217,6 @@ static void hpm_processor_activate_context(unsigned int context_id)
 static void *hpm_processor_queryservice(const char *service, const std::type_info &ti)
 {
 	void *ret_addr;
-	DOUBLE_LIST_NODE *pnode;
 
 	if (NULL == g_cur_plugin) {
 		return NULL;
@@ -286,53 +280,32 @@ static void *hpm_processor_queryservice(const char *service, const std::type_inf
 		return reinterpret_cast<void *>(pdu_processor_rpc_free_environment);
 	}
 	/* check if already exists in the reference list */
-	for (pnode=double_list_get_head(&g_cur_plugin->list_reference);
-		NULL!=pnode; pnode=double_list_get_after(
-		&g_cur_plugin->list_reference, pnode)) {
-		auto pservice = static_cast<hpm_service_node *>(pnode->pdata);
-		if (0 == strcmp(service, pservice->service_name)) {
-			return pservice->service_addr;
-		}
-	}
+	for (const auto &nd : g_cur_plugin->list_reference)
+		if (nd.service_name == service)
+			return nd.service_addr;
 	auto fn = g_cur_plugin->file_name.c_str();
 	ret_addr = service_query(service, fn, ti);
 	if (NULL == ret_addr) {
 		return NULL;
 	}
-	auto pservice = static_cast<hpm_service_node *>(malloc(sizeof(hpm_service_node)));
-	if (NULL == pservice) {
-		debug_info("[hpm_processor]: fail to "
-			"allocate memory for service node\n");
+	try {
+		hpm_service_node nd;
+		nd.service_name = service;
+		nd.service_addr = ret_addr;
+		g_cur_plugin->list_reference.push_back(std::move(nd));
+	} catch (const std::bad_alloc &) {
 		service_release(service, fn);
-		return NULL;
+		fprintf(stderr, "E-1636: ENOMEM\n");
+		return nullptr;
 	}
-	pservice->service_name = (char*)malloc(strlen(service) + 1);
-	if (NULL == pservice->service_name) {
-		debug_info("[hpm_processor]: fail to "
-			"allocate memory for service name\n");
-		service_release(service, fn);
-		free(pservice);
-		return NULL;
-	}
-	strcpy(pservice->service_name, service);
-	pservice->node.pdata = pservice;
-	pservice->service_addr = ret_addr;
-	double_list_append_as_tail(
-		&g_cur_plugin->list_reference, &pservice->node);
 	return ret_addr;
 }
 
-HPM_PLUGIN::HPM_PLUGIN()
-{
-	double_list_init(&list_reference);
-}
-
 HPM_PLUGIN::HPM_PLUGIN(HPM_PLUGIN &&o) :
-	list_reference(o.list_reference), interface(o.interface),
+	list_reference(std::move(o.list_reference)), interface(o.interface),
 	handle(o.handle), lib_main(o.lib_main),
 	file_name(std::move(o.file_name)), completed_init(o.completed_init)
 {
-	o.list_reference = {};
 	o.handle = nullptr;
 	o.completed_init = false;
 }
@@ -340,7 +313,6 @@ HPM_PLUGIN::HPM_PLUGIN(HPM_PLUGIN &&o) :
 HPM_PLUGIN::~HPM_PLUGIN()
 {
 	PLUGIN_MAIN func;
-	DOUBLE_LIST_NODE *pnode;
 	auto pplugin = this;
 	if (pplugin->file_name.size() > 0)
 		printf("[hpm_processor]: unloading %s\n", pplugin->file_name.c_str());
@@ -350,13 +322,8 @@ HPM_PLUGIN::~HPM_PLUGIN()
 		func(PLUGIN_FREE, NULL);
 
 	/* free the reference list */
-	while ((pnode = double_list_pop_front(&pplugin->list_reference)) != nullptr) {
-		service_release(static_cast<hpm_service_node *>(pnode->pdata)->service_name,
-			pplugin->file_name.c_str());
-		free(static_cast<hpm_service_node *>(pnode->pdata)->service_name);
-		free(pnode->pdata);
-	}
-	double_list_free(&pplugin->list_reference);
+	for (const auto &nd : list_reference)
+		service_release(nd.service_name.c_str(), pplugin->file_name.c_str());
 	if (handle != nullptr)
 		dlclose(handle);
 }

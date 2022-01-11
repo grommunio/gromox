@@ -1,19 +1,24 @@
 #pragma once
 #include <string>
+#include <vector>
 #include <gromox/plugin.hpp>
-#include <gromox/double_list.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/hpm_common.h>
 
 struct HTTP_CONTEXT;
 
+struct hpm_service_node {
+	void *service_addr;
+	std::string service_name;
+};
+
 struct HPM_PLUGIN {
-	HPM_PLUGIN();
+	HPM_PLUGIN() = default;
 	HPM_PLUGIN(HPM_PLUGIN &&);
 	~HPM_PLUGIN();
 	void operator=(HPM_PLUGIN &&) = delete;
 
-	DOUBLE_LIST list_reference{};
+	std::vector<hpm_service_node> list_reference;
 	HPM_INTERFACE interface{};
 	void *handle = nullptr;
 	PLUGIN_MAIN lib_main = nullptr;
