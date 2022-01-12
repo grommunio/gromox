@@ -946,23 +946,23 @@ BOOL common_util_propvals_to_row(
 	}
 	for (i=0; i<pcolumns->count; i++) {
 		prow->pppropval[i] = ppropvals->getval(pcolumns->pproptag[i]);
-		if (PROPERTY_ROW_FLAG_FLAGGED == prow->flag) {
-			auto pflagged_val = cu_alloc<FLAGGED_PROPVAL>();
-			if (NULL == pflagged_val) {
-				return FALSE;
-			}
-			if (NULL == prow->pppropval[i]) {
-				pflagged_val->flag = FLAGGED_PROPVAL_FLAG_ERROR;
-				pflagged_val->pvalue = ppropvals->getval(CHANGE_PROP_TYPE(pcolumns->pproptag[i], PT_ERROR));
-				if (NULL == pflagged_val->pvalue) {
-					pflagged_val->pvalue = deconst(&errcode);
-				}
-			} else {
-				pflagged_val->flag = FLAGGED_PROPVAL_FLAG_AVAILABLE;
-				pflagged_val->pvalue = prow->pppropval[i];
-			}
-			prow->pppropval[i] = pflagged_val;
+		if (prow->flag != PROPERTY_ROW_FLAG_FLAGGED)
+			continue;
+		auto pflagged_val = cu_alloc<FLAGGED_PROPVAL>();
+		if (NULL == pflagged_val) {
+			return FALSE;
 		}
+		if (NULL == prow->pppropval[i]) {
+			pflagged_val->flag = FLAGGED_PROPVAL_FLAG_ERROR;
+			pflagged_val->pvalue = ppropvals->getval(CHANGE_PROP_TYPE(pcolumns->pproptag[i], PT_ERROR));
+			if (NULL == pflagged_val->pvalue) {
+				pflagged_val->pvalue = deconst(&errcode);
+			}
+		} else {
+			pflagged_val->flag = FLAGGED_PROPVAL_FLAG_AVAILABLE;
+			pflagged_val->pvalue = prow->pppropval[i];
+		}
+		prow->pppropval[i] = pflagged_val;
 	}
 	return TRUE;
 }
@@ -985,20 +985,19 @@ BOOL common_util_convert_unspecified(uint32_t cpid,
 			return FALSE;	
 		ptyped->pvalue = pvalue;
 		return TRUE;
-	} else {
-		if (ptyped->type != PT_UNICODE)
-			return TRUE;
-		tmp_len = 2 * strlen(static_cast<char *>(ptyped->pvalue)) + 1;
-		auto pvalue = common_util_alloc(tmp_len);
-		if (NULL == pvalue) {
-			return FALSE;
-		}
-		if (common_util_mb_from_utf8(cpid, static_cast<char *>(ptyped->pvalue),
-		    static_cast<char *>(pvalue), tmp_len) < 0)
-			return FALSE;	
-		ptyped->pvalue = pvalue;
-		return TRUE;
 	}
+	if (ptyped->type != PT_UNICODE)
+		return TRUE;
+	tmp_len = 2 * strlen(static_cast<char *>(ptyped->pvalue)) + 1;
+	auto pvalue = common_util_alloc(tmp_len);
+	if (NULL == pvalue) {
+		return FALSE;
+	}
+	if (common_util_mb_from_utf8(cpid, static_cast<char *>(ptyped->pvalue),
+	    static_cast<char *>(pvalue), tmp_len) < 0)
+		return FALSE;
+	ptyped->pvalue = pvalue;
+	return TRUE;
 }
 
 BOOL common_util_propvals_to_row_ex(uint32_t cpid,
@@ -1025,23 +1024,23 @@ BOOL common_util_propvals_to_row_ex(uint32_t cpid,
 			    static_cast<TYPED_PROPVAL *>(prow->pppropval[i])))
 				return FALSE;
 		}
-		if (PROPERTY_ROW_FLAG_FLAGGED == prow->flag) {
-			auto pflagged_val = cu_alloc<FLAGGED_PROPVAL>();
-			if (NULL == pflagged_val) {
-				return FALSE;
-			}
-			if (NULL == prow->pppropval[i]) {
-				pflagged_val->flag = FLAGGED_PROPVAL_FLAG_ERROR;
-				pflagged_val->pvalue = ppropvals->getval(CHANGE_PROP_TYPE(pcolumns->pproptag[i], PT_ERROR));
-				if (NULL == pflagged_val->pvalue) {
-					pflagged_val->pvalue = deconst(&errcode);
-				}
-			} else {
-				pflagged_val->flag = FLAGGED_PROPVAL_FLAG_AVAILABLE;
-				pflagged_val->pvalue = prow->pppropval[i];
-			}
-			prow->pppropval[i] = pflagged_val;
+		if (prow->flag != PROPERTY_ROW_FLAG_FLAGGED)
+			continue;
+		auto pflagged_val = cu_alloc<FLAGGED_PROPVAL>();
+		if (NULL == pflagged_val) {
+			return FALSE;
 		}
+		if (NULL == prow->pppropval[i]) {
+			pflagged_val->flag = FLAGGED_PROPVAL_FLAG_ERROR;
+			pflagged_val->pvalue = ppropvals->getval(CHANGE_PROP_TYPE(pcolumns->pproptag[i], PT_ERROR));
+			if (NULL == pflagged_val->pvalue) {
+				pflagged_val->pvalue = deconst(&errcode);
+			}
+		} else {
+			pflagged_val->flag = FLAGGED_PROPVAL_FLAG_AVAILABLE;
+			pflagged_val->pvalue = prow->pppropval[i];
+		}
+		prow->pppropval[i] = pflagged_val;
 	}
 	return TRUE;
 }
