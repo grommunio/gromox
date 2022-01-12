@@ -416,7 +416,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		    PR_MESSAGE_SIZE_EXTENDED, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
-		**reinterpret_cast<uint32_t **>(ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		*static_cast<uint32_t *>(*ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
 	case PR_ASSOC_MESSAGE_SIZE:
 		*ppvalue = cu_alloc<uint32_t>();
@@ -426,7 +426,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		if (!exmdb_client_get_store_property(plogon->dir, 0,
 		    PR_ASSOC_MESSAGE_SIZE_EXTENDED, &pvalue) || pvalue == nullptr)
 			return FALSE;	
-		**reinterpret_cast<uint32_t **>(ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		*static_cast<uint32_t *>(*ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
 	case PR_NORMAL_MESSAGE_SIZE:
 		*ppvalue = cu_alloc<uint32_t>();
@@ -437,7 +437,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		    PR_NORMAL_MESSAGE_SIZE_EXTENDED, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
-		**reinterpret_cast<uint32_t **>(ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		*static_cast<uint32_t *>(*ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A: {
