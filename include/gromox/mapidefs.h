@@ -578,6 +578,7 @@ enum {
 	PR_DELETED_COUNT_TOTAL = PROP_TAG(PT_LONG, 0x670B), /* PidTagDeletedCountTotal */
 	// PR_FLAT_URL_NAME = PROP_TAG(PT_UNICODE, 0x670E), /* PidTagFlatUrlName */
 	PR_EC_MESSAGE_BCC_ME = PROP_TAG(PT_BOOLEAN, 0x6725),
+	PidTagSentMailSvrEID = PROP_TAG(PT_SVREID, 0x6740),
 	PR_DAM_ORIG_MSG_SVREID = PROP_TAG(PT_BINARY, 0x6741), /* PidTagDeferredActionMessageOriginalEntryId */
 	PR_RULE_FOLDER_FID = PROP_TAG(PT_I8, 0x6742), /* Gromox-specific */
 	PidTagFolderId = PROP_TAG(PT_I8, 0x6748),

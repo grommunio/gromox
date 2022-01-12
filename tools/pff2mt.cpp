@@ -337,8 +337,12 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 	}
 
 	union {
-		GUID guid;
 		BINARY bin;
+		GUID guid;
+		struct {
+			BINARY svbin;
+			SVREID svreid;
+		};
 		SHORT_ARRAY sa;
 		LONG_ARRAY la;
 		LONGLONG_ARRAY lla;
@@ -400,6 +404,15 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 			throw YError("PF-1040: GUID size incorrect: " + std::to_string(dsize));
 		memcpy(&u.guid, buf.get(), sizeof(u.guid));
 		pv.pvalue = &u.guid;
+		break;
+	case PT_SVREID:
+		pv.pvalue = &u.svreid;
+		u.svbin.cb = dsize;
+		u.svbin.pv = buf.get();
+		u.svreid.pbin = &u.svbin;
+		u.svreid.folder_id = 0;
+		u.svreid.message_id = 0;
+		u.svreid.instance = 0;
 		break;
 	case PT_MV_SHORT:
 		if (dsize != mvnum * sizeof(uint16_t))
