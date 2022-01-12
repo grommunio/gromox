@@ -802,67 +802,67 @@ static BOOL icsdownctx_object_get_changepartial(icsdownctx_object *pctx,
 		index = pindices->pproptag[i];
 		pmsg->pchanges[i].index = index;
 		pchangetags = pgpinfo->pgroups + index;
-		pmsg->pchanges[i].proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pchangetags->count);
+		auto &pl = pmsg->pchanges[i].proplist;
+		pl.ppropval = cu_alloc<TAGGED_PROPVAL>(pchangetags->count);
 		count = 0;
 		for (j=0; j<pchangetags->count; j++) {
 			proptag = pchangetags->pproptag[j];
 			switch (proptag) {
 			case PR_MESSAGE_RECIPIENTS:
-				pmsg->pchanges[i].proplist.ppropval[count].proptag = PR_MESSAGE_RECIPIENTS;
-				pmsg->pchanges[i].proplist.ppropval[count++].pvalue = deconst(&fake_bin);
+				pl.ppropval[count].proptag = PR_MESSAGE_RECIPIENTS;
+				pl.ppropval[count++].pvalue = deconst(&fake_bin);
 				pmsg->children.prcpts = pmsgctnt->children.prcpts;
 				break;
 			case PR_MESSAGE_ATTACHMENTS:
-				pmsg->pchanges[i].proplist.ppropval[count].proptag = PR_MESSAGE_ATTACHMENTS;
-				pmsg->pchanges[i].proplist.ppropval[count++].pvalue = deconst(&fake_bin);
+				pl.ppropval[count].proptag = PR_MESSAGE_ATTACHMENTS;
+				pl.ppropval[count++].pvalue = deconst(&fake_bin);
 				pmsg->children.pattachments =
 					pmsgctnt->children.pattachments;
 				break;
 			default: {
 				auto pvalue = pmsgctnt->proplist.getval(proptag);
 				if (NULL != pvalue) {
-					pmsg->pchanges[i].proplist.ppropval[
-								count].proptag = proptag;
-					pmsg->pchanges[i].proplist.ppropval[count++].pvalue = pvalue;
+					pl.ppropval[count].proptag = proptag;
+					pl.ppropval[count++].pvalue = pvalue;
 				}
 				break;
 			}
 			}
 		}
-		pmsg->pchanges[i].proplist.count = count;
+		pl.count = count;
 	}
 	if (0 == pproptags->count) {
 		return TRUE;
 	}
+	auto &pl = pmsg->pchanges[i].proplist;
 	pmsg->pchanges[i].index = 0xFFFFFFFF;
-	pmsg->pchanges[i].proplist.ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
+	pl.ppropval = cu_alloc<TAGGED_PROPVAL>(pproptags->count);
 	count = 0;
 	for (j=0; j<pproptags->count; j++) {
 		proptag = pproptags->pproptag[j];
 		switch (proptag) {
 		case PR_MESSAGE_RECIPIENTS:
-			pmsg->pchanges[i].proplist.ppropval[count].proptag = PR_MESSAGE_RECIPIENTS;
-			pmsg->pchanges[i].proplist.ppropval[count++].pvalue = deconst(&fake_bin);
+			pl.ppropval[count].proptag = PR_MESSAGE_RECIPIENTS;
+			pl.ppropval[count++].pvalue = deconst(&fake_bin);
 			pmsg->children.prcpts = pmsgctnt->children.prcpts;
 			break;
 		case PR_MESSAGE_ATTACHMENTS:
-			pmsg->pchanges[i].proplist.ppropval[count].proptag = PR_MESSAGE_ATTACHMENTS;
-			pmsg->pchanges[i].proplist.ppropval[count++].pvalue = deconst(&fake_bin);
+			pl.ppropval[count].proptag = PR_MESSAGE_ATTACHMENTS;
+			pl.ppropval[count++].pvalue = deconst(&fake_bin);
 			pmsg->children.pattachments =
 				pmsgctnt->children.pattachments;
 			break;
 		default: {
 			auto pvalue = pmsgctnt->proplist.getval(proptag);
 			if (NULL != pvalue) {
-				pmsg->pchanges[i].proplist.ppropval[
-							count].proptag = proptag;
-				pmsg->pchanges[i].proplist.ppropval[count++].pvalue = pvalue;
+				pl.ppropval[count].proptag = proptag;
+				pl.ppropval[count++].pvalue = pvalue;
 			}
 			break;
 		}
 		}
 	}
-	pmsg->pchanges[i].proplist.count = count;
+	pl.count = count;
 	return TRUE;
 }
 
