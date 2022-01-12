@@ -2314,20 +2314,15 @@ static BOOL table_get_hierarchy_row_property(
 	HIERARCHY_ROW_PARAM *prow_param;
 	
 	prow_param = (HIERARCHY_ROW_PARAM*)pparam;
-	if (PROP_TAG_DEPTH == proptag) {
-		auto v = cu_alloc<uint32_t>();
-		*ppvalue = v;
-		if (NULL == *ppvalue) {
-			return FALSE;
-		}
-		*v = sqlite3_column_int64(prow_param->pstmt, 2);
-	} else {
-		if (!cu_get_property(db_table::folder_props, prow_param->folder_id,
-			prow_param->cpid, prow_param->psqlite, proptag,
-			ppvalue)) {
-			return FALSE;
-		}
+	if (proptag != PROP_TAG_DEPTH)
+		return cu_get_property(db_table::folder_props, prow_param->folder_id,
+		       prow_param->cpid, prow_param->psqlite, proptag, ppvalue);
+	auto v = cu_alloc<uint32_t>();
+	*ppvalue = v;
+	if (NULL == *ppvalue) {
+		return FALSE;
 	}
+	*v = sqlite3_column_int64(prow_param->pstmt, 2);
 	return TRUE;
 }
 
@@ -3315,19 +3310,19 @@ static BOOL table_traverse_sub_contents(uint32_t step,
 			}
 			*pcount += sqlite3_column_int64(pstmt, 0);
 			sqlite3_reset(pstmt);
-		} else {
-			auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
-			if (NULL == pnode) {
-				return FALSE;
-			}
-			auto v = cu_alloc<uint64_t>();
-			pnode->pdata = v;
-			if (NULL == pnode->pdata) {
-				return FALSE;
-			}
-			*v = row_id;
-			double_list_append_as_tail(&tmp_list, pnode);
+			continue;
 		}
+		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
+		if (NULL == pnode) {
+			return FALSE;
+		}
+		auto v = cu_alloc<uint64_t>();
+		pnode->pdata = v;
+		if (NULL == pnode->pdata) {
+			return FALSE;
+		}
+		*v = row_id;
+		double_list_append_as_tail(&tmp_list, pnode);
 	}
 	sqlite3_reset(pstmt1);
 	if (1 == step) {

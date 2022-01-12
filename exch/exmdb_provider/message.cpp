@@ -1949,25 +1949,25 @@ static BOOL message_rectify_message(const char *account,
 		if (NULL == pmsgctnt->children.pattachments->pplist[i]->pembedded) {
 			pmsgctnt1->children.pattachments->pplist[i] =
 				pmsgctnt->children.pattachments->pplist[i];
-		} else {
-			pmsgctnt1->children.pattachments->pplist[i] = cu_alloc<ATTACHMENT_CONTENT>();
-			if (NULL == pmsgctnt1->children.pattachments->pplist[i]) {
-				return FALSE;
-			}
-			pmsgctnt1->children.pattachments->pplist[i]->proplist =
-				pmsgctnt->children.pattachments->pplist[i]->proplist;
-			auto pembedded = cu_alloc<MESSAGE_CONTENT>();
-			if (NULL == pembedded) {
-				return FALSE;
-			}
-			if (FALSE == message_rectify_message(account,
-				pmsgctnt->children.pattachments->pplist[i]->pembedded,
-				pembedded)) {
-				return FALSE;	
-			}
-			pmsgctnt1->children.pattachments->pplist[i]->pembedded =
-															pembedded;
+			continue;
 		}
+		pmsgctnt1->children.pattachments->pplist[i] = cu_alloc<ATTACHMENT_CONTENT>();
+		if (NULL == pmsgctnt1->children.pattachments->pplist[i]) {
+			return FALSE;
+		}
+		pmsgctnt1->children.pattachments->pplist[i]->proplist =
+			pmsgctnt->children.pattachments->pplist[i]->proplist;
+		auto pembedded = cu_alloc<MESSAGE_CONTENT>();
+		if (NULL == pembedded) {
+			return FALSE;
+		}
+		if (FALSE == message_rectify_message(account,
+		    pmsgctnt->children.pattachments->pplist[i]->pembedded,
+		    pembedded)) {
+			return FALSE;
+		}
+		pmsgctnt1->children.pattachments->pplist[i]->pembedded =
+			pembedded;
 	}
 	return TRUE;
 }
@@ -4263,30 +4263,7 @@ static BOOL message_rule_new_message(BOOL b_oof,
 		    &rnode, b_del, b_exit))
 			return false;
 
-	if (TRUE == b_del) {
-		void *pvalue = nullptr;
-		if (!cu_get_property(db_table::msg_props,
-		    message_id, 0, psqlite, PR_MESSAGE_SIZE, &pvalue) ||
-		    pvalue == nullptr)
-			return FALSE;
-		auto message_size = *static_cast<uint32_t *>(pvalue);
-		char sql_string[128];
-		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages"
-		        " WHERE message_id=%llu", LLU(message_id));
-		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
-			return FALSE;
-		if (FALSE == common_util_decrease_store_size(
-			psqlite, message_size, 0)) {
-			return FALSE;
-		}
-		if (NULL != pdigest) {
-			char mid_string1[128], tmp_path1[256];
-			get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
-			snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
-				exmdb_server_get_dir(), mid_string1);
-			remove(tmp_path1);
-		}
-	} else {
+	if (!b_del) {
 		auto pmnode = cu_alloc<MESSAGE_NODE>();
 		if (NULL == pmnode) {
 			return FALSE;
@@ -4295,6 +4272,29 @@ static BOOL message_rule_new_message(BOOL b_oof,
 		pmnode->folder_id = folder_id;
 		pmnode->message_id = message_id;
 		double_list_append_as_tail(pmsg_list, &pmnode->node);
+		return TRUE;
+	}
+	void *pvalue = nullptr;
+	if (!cu_get_property(db_table::msg_props,
+	    message_id, 0, psqlite, PR_MESSAGE_SIZE, &pvalue) ||
+	    pvalue == nullptr)
+		return FALSE;
+	auto message_size = *static_cast<uint32_t *>(pvalue);
+	char sql_string[128];
+	snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages"
+		" WHERE message_id=%llu", LLU(message_id));
+	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
+		return FALSE;
+	if (FALSE == common_util_decrease_store_size(
+	    psqlite, message_size, 0)) {
+		return FALSE;
+	}
+	if (NULL != pdigest) {
+		char mid_string1[128], tmp_path1[256];
+		get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
+		snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
+		         exmdb_server_get_dir(), mid_string1);
+		remove(tmp_path1);
 	}
 	return TRUE;
 }
