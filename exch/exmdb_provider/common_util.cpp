@@ -109,10 +109,10 @@ void common_util_set_propvals(TPROPVAL_ARRAY *parray,
 	int i;
 	
 	for (i=0; i<parray->count; i++) {
-		if (ppropval->proptag == parray->ppropval[i].proptag) {
-			parray->ppropval[i].pvalue = ppropval->pvalue;
-			return;
-		}
+		if (ppropval->proptag != parray->ppropval[i].proptag)
+			continue;
+		parray->ppropval[i].pvalue = ppropval->pvalue;
+		return;
 	}
 	parray->ppropval[parray->count++] = *ppropval;
 }
@@ -123,14 +123,14 @@ void common_util_remove_propvals(
 	int i;
 	
 	for (i=0; i<parray->count; i++) {
-		if (proptag == parray->ppropval[i].proptag) {
-			parray->count --;
-			if (i < parray->count) {
-				memmove(parray->ppropval + i, parray->ppropval + i + 1,
-					(parray->count - i) * sizeof(TAGGED_PROPVAL));
-			}
-			return;
+		if (proptag != parray->ppropval[i].proptag)
+			continue;
+		parray->count--;
+		if (i < parray->count) {
+			memmove(parray->ppropval + i, parray->ppropval + i + 1,
+				(parray->count - i) * sizeof(TAGGED_PROPVAL));
 		}
+		return;
 	}
 }
 
