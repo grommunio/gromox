@@ -135,7 +135,6 @@ BOOL exmdb_server_get_folder_class_table(
 {
 	int total_count;
 	char sql_string[256];
-	TPROPVAL_ARRAY *ppropvals;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -164,7 +163,7 @@ BOOL exmdb_server_get_folder_class_table(
 	}
 	ptable->count = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		ppropvals = cu_alloc<TPROPVAL_ARRAY>();
+		auto ppropvals = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == ppropvals) {
 			return FALSE;
 		}
@@ -174,12 +173,12 @@ BOOL exmdb_server_get_folder_class_table(
 			return FALSE;
 		}
 		ppropvals->ppropval[0].proptag = PidTagFolderId;
-		ppropvals->ppropval[0].pvalue = cu_alloc<uint64_t>();
+		auto v = cu_alloc<uint64_t>();
+		ppropvals->ppropval[0].pvalue = v;
 		if (NULL == ppropvals->ppropval[0].pvalue) {
 			return FALSE;
 		}
-		*(uint64_t*)ppropvals->ppropval[0].pvalue =
-			rop_util_make_eid_ex(1, sqlite3_column_int64(pstmt, 1));
+		*v = rop_util_make_eid_ex(1, sqlite3_column_int64(pstmt, 1));
 		ppropvals->ppropval[1].proptag = PR_MESSAGE_CLASS_A;
 		ppropvals->ppropval[1].pvalue =
 			common_util_dup(reinterpret_cast<const char *>(sqlite3_column_text(pstmt, 0)));
@@ -187,12 +186,12 @@ BOOL exmdb_server_get_folder_class_table(
 			return FALSE;
 		}
 		ppropvals->ppropval[2].proptag = PR_LAST_MODIFICATION_TIME;
-		ppropvals->ppropval[2].pvalue = cu_alloc<uint64_t>();
+		v = cu_alloc<uint64_t>();
+		ppropvals->ppropval[2].pvalue = v;
 		if (NULL == ppropvals->ppropval[2].pvalue) {
 			return FALSE;
 		}
-		*(uint64_t*)ppropvals->ppropval[2].pvalue =
-					sqlite3_column_int64(pstmt, 2);
+		*v = sqlite3_column_int64(pstmt, 2);
 		ptable->pparray[ptable->count++] = ppropvals;
 	}
 	return TRUE;
@@ -218,7 +217,6 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 	uint64_t message_id;
 	char sql_string[256];
 	uint32_t message_flags;
-	TPROPVAL_ARRAY *ppropvals;
 	
 	if (FALSE == exmdb_server_check_private()) {
 		return FALSE;
@@ -268,7 +266,7 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		if (SQLITE_ROW != sqlite3_step(pstmt)) {
 			return FALSE;
 		}
-		ppropvals = cu_alloc<TPROPVAL_ARRAY>();
+		auto ppropvals = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == ppropvals) {
 			return FALSE;
 		}
@@ -281,11 +279,12 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		message_id = sqlite3_column_int64(pstmt, 0);
 		auto *pv = &ppropvals->ppropval[ppropvals->count];
 		pv->proptag = PidTagMid;
-		pv->pvalue = cu_alloc<uint64_t>();
+		auto uv = cu_alloc<uint64_t>();
+		pv->pvalue = uv;
 		if (pv->pvalue == nullptr) {
 			return FALSE;
 		}
-		*static_cast<uint64_t *>(pv->pvalue) = rop_util_make_eid_ex(1, message_id);
+		*uv = rop_util_make_eid_ex(1, message_id);
 		ppropvals->count ++;
 		++pv;
 		if (SQLITE_NULL != sqlite3_column_type(pstmt, 2)) {
@@ -309,11 +308,12 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 				message_flags |= MSGFLAG_READ;
 			}
 			pv->proptag = PR_MESSAGE_FLAGS;
-			pv->pvalue = cu_alloc<uint32_t>();
+			auto iv = cu_alloc<uint32_t>();
+			pv->pvalue = iv;
 			if (pv->pvalue == nullptr) {
 				return FALSE;
 			}
-			*static_cast<uint32_t *>(pv->pvalue) = message_flags;
+			*iv = message_flags;
 			ppropvals->count ++;
 			++pv;
 		}
@@ -322,11 +322,12 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		sqlite3_bind_int64(pstmt1, 2, PR_LAST_MODIFICATION_TIME);
 		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
 			pv->proptag = PR_LAST_MODIFICATION_TIME;
-			pv->pvalue = cu_alloc<uint64_t>();
+			uv = cu_alloc<uint64_t>();
+			pv->pvalue = uv;
 			if (pv->pvalue == nullptr) {
 				return FALSE;
 			}
-			*static_cast<uint64_t *>(pv->pvalue) = sqlite3_column_int64(pstmt1, 0);
+			*uv = sqlite3_column_int64(pstmt1, 0);
 			ppropvals->count ++;
 			++pv;
 		}
@@ -335,11 +336,12 @@ BOOL exmdb_server_query_folder_messages(const char *dir,
 		sqlite3_bind_int64(pstmt1, 2, PR_LAST_MODIFICATION_TIME);
 		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
 			pv->proptag = PROP_TAG_MESSAGEDELIVERYTIME;
-			pv->pvalue = cu_alloc<uint64_t>();
+			uv = cu_alloc<uint64_t>();
+			pv->pvalue = uv;
 			if (pv->pvalue == nullptr) {
 				return FALSE;
 			}
-			*static_cast<uint64_t *>(pv->pvalue) = sqlite3_column_int64(pstmt1, 0);
+			*uv = sqlite3_column_int64(pstmt1, 0);
 			ppropvals->count ++;
 			++pv;
 		}

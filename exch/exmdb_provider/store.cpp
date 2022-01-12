@@ -452,7 +452,6 @@ static BOOL table_check_address_in_contact_folder(
 	sqlite3_stmt *pstmt_subfolder, sqlite3_stmt *pstmt_search,
 	uint64_t folder_id, const char *paddress, BOOL *pb_found)
 {
-	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST folder_list;
 	
 	sqlite3_reset(pstmt_search);
@@ -466,18 +465,19 @@ static BOOL table_check_address_in_contact_folder(
 	sqlite3_reset(pstmt_subfolder);
 	sqlite3_bind_int64(pstmt_subfolder, 1, folder_id);
 	while (SQLITE_ROW == sqlite3_step(pstmt_subfolder)) {
-		pnode = cu_alloc<DOUBLE_LIST_NODE>();
+		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode) {
 			return FALSE;
 		}
-		pnode->pdata = cu_alloc<uint64_t>();
+		auto uv = cu_alloc<uint64_t>();
+		pnode->pdata = uv;
 		if (NULL == pnode->pdata) {
 			return FALSE;
 		}
-		*(uint64_t*)pnode->pdata =
-			sqlite3_column_int64(pstmt_subfolder, 0);
+		*uv = sqlite3_column_int64(pstmt_subfolder, 0);
 		double_list_append_as_tail(&folder_list, pnode);
 	}
+	DOUBLE_LIST_NODE *pnode;
 	while ((pnode = double_list_pop_front(&folder_list)) != nullptr) {
 		if (FALSE == table_check_address_in_contact_folder(pstmt_subfolder,
 			pstmt_search, *(uint64_t*)pnode->pdata, paddress, pb_found)) {

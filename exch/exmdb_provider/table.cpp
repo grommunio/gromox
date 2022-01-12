@@ -1759,10 +1759,10 @@ static BOOL table_column_content_tmptbl(
 	switch (proptag) {
 	case PidTagFolderId:
 		if (CONTENT_ROW_HEADER == row_type) {
-			*ppvalue = cu_alloc<uint64_t>();
+			auto v = cu_alloc<uint64_t>();
+			*ppvalue = v;
 			if (NULL != *ppvalue) {
-				*(uint64_t*)*ppvalue =
-					rop_util_make_eid_ex(1, folder_id);
+				*v = rop_util_make_eid_ex(1, folder_id);
 			}
 			return TRUE;
 		}
@@ -1778,21 +1778,21 @@ static BOOL table_column_content_tmptbl(
 	case PROP_TAG_INSTANCENUM:
 		*ppvalue = common_util_column_sqlite_statement(pstmt, 10, PT_LONG);
 		return TRUE;
-	case PROP_TAG_ROWTYPE:
+	case PROP_TAG_ROWTYPE: {
 		if (NULL == psorts || 0 == psorts->ccategories) {
 			*ppvalue = NULL;
 			return TRUE;
 		}
-		*ppvalue = cu_alloc<uint32_t>();
-		if (NULL == *ppvalue) {
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
+		if (v == nullptr)
 			return TRUE;
-		}
-		*static_cast<uint32_t *>(*ppvalue) =
-			row_type == CONTENT_ROW_MESSAGE ? ROW_TYPE_LEAF_ROW :
+		*v = row_type == CONTENT_ROW_MESSAGE ? ROW_TYPE_LEAF_ROW :
 			sqlite3_column_int64(pstmt, 8) == 0 ? ROW_TYPE_EMPTY_CATEGORY :
 			sqlite3_column_int64(pstmt, 5) == 0 ? ROW_TYPE_COLLAPSED_CATEGORY :
 			ROW_TYPE_EXPANDED_CATEGORY;
 		return TRUE;
+	}
 	case PROP_TAG_DEPTH:
 		if (NULL == psorts || 0 == psorts->ccategories) {
 			*ppvalue = NULL;
@@ -1802,9 +1802,10 @@ static BOOL table_column_content_tmptbl(
 		return TRUE;
 	case PROP_TAG_CONTENTCOUNT:
 		if (CONTENT_ROW_MESSAGE == row_type) {
-			*ppvalue = cu_alloc<uint32_t>();
+			auto v = cu_alloc<uint32_t>();
+			*ppvalue = v;
 			if (NULL != *ppvalue) {
-				*(uint32_t*)*ppvalue = 0;
+				*v = 0;
 			}
 		} else {
 			*ppvalue = common_util_column_sqlite_statement(pstmt, 8, PT_LONG);
@@ -1812,9 +1813,10 @@ static BOOL table_column_content_tmptbl(
 		return TRUE;
 	case PROP_TAG_CONTENTUNREADCOUNT:
 		if (CONTENT_ROW_MESSAGE == row_type) {
-			*ppvalue = cu_alloc<uint32_t>();
+			auto v = cu_alloc<uint32_t>();
+			*ppvalue = v;
 			if (NULL != *ppvalue) {
-				*(uint32_t*)*ppvalue = 0;
+				*v = 0;
 			}
 		} else {
 			*ppvalue = common_util_column_sqlite_statement(pstmt, 9, PT_LONG);
@@ -1986,11 +1988,12 @@ BOOL exmdb_server_query_table(const char *dir, const char *username,
 			count = 0;
 			for (i=0; i<pproptags->count; i++) {
 				if (PROP_TAG_DEPTH == pproptags->pproptag[i]) {
-					pvalue = cu_alloc<uint32_t>();
+					auto v = cu_alloc<uint32_t>();
+					pvalue = v;
 					if (NULL == pvalue) {
 						return FALSE;
 					}
-					*(uint32_t*)pvalue = sqlite3_column_int64(pstmt, 1);
+					*v = sqlite3_column_int64(pstmt, 1);
 				} else {
 					if (!cu_get_property(db_table::folder_props, folder_id, cpid,
 						pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
@@ -2312,11 +2315,12 @@ static BOOL table_get_hierarchy_row_property(
 	
 	prow_param = (HIERARCHY_ROW_PARAM*)pparam;
 	if (PROP_TAG_DEPTH == proptag) {
-		*ppvalue = cu_alloc<uint32_t>();
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*(uint32_t*)*ppvalue = sqlite3_column_int64(prow_param->pstmt, 2);
+		*v = sqlite3_column_int64(prow_param->pstmt, 2);
 	} else {
 		if (!cu_get_property(db_table::folder_props, prow_param->folder_id,
 			prow_param->cpid, prow_param->psqlite, proptag,
@@ -2524,11 +2528,12 @@ static BOOL match_tbl_hier(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 		for (i = 0; i < pproptags->count; i++) {
 			void *pvalue;
 			if (PROP_TAG_DEPTH == pproptags->pproptag[i]) {
-				pvalue = cu_alloc<uint32_t>();
+				auto v = cu_alloc<uint32_t>();
+				pvalue = v;
 				if (NULL == pvalue) {
 					return FALSE;
 				}
-				*(uint32_t *)pvalue = sqlite3_column_int64(pstmt, 2);
+				*v = sqlite3_column_int64(pstmt, 2);
 			} else {
 				if (!cu_get_property(db_table::folder_props, folder_id, cpid,
 				    pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
@@ -2886,11 +2891,12 @@ static BOOL read_tblrow_hier(uint32_t cpid, uint32_t table_id,
 	}
 	for (i = 0; i < pproptags->count; i++) {
 		if (PROP_TAG_DEPTH == pproptags->pproptag[i]) {
-			pvalue = cu_alloc<uint32_t>();
+			auto v = cu_alloc<uint32_t>();
+			pvalue = v;
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			*(uint32_t *)pvalue = depth;
+			*v = depth;
 		} else {
 			if (!cu_get_property(db_table::folder_props, folder_id, cpid,
 			    pdb->psqlite, pproptags->pproptag[i], &pvalue)) {
@@ -3293,7 +3299,6 @@ static BOOL table_traverse_sub_contents(uint32_t step,
 {
 	uint64_t row_id;
 	DOUBLE_LIST tmp_list;
-	DOUBLE_LIST_NODE *pnode;
 	
 	double_list_init(&tmp_list);
 	sqlite3_bind_int64(pstmt1, 1, parent_id);
@@ -3311,15 +3316,16 @@ static BOOL table_traverse_sub_contents(uint32_t step,
 			*pcount += sqlite3_column_int64(pstmt, 0);
 			sqlite3_reset(pstmt);
 		} else {
-			pnode = cu_alloc<DOUBLE_LIST_NODE>();
+			auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
 			if (NULL == pnode) {
 				return FALSE;
 			}
-			pnode->pdata = cu_alloc<uint64_t>();
+			auto v = cu_alloc<uint64_t>();
+			pnode->pdata = v;
 			if (NULL == pnode->pdata) {
 				return FALSE;
 			}
-			*(uint64_t*)pnode->pdata = row_id;
+			*v = row_id;
 			double_list_append_as_tail(&tmp_list, pnode);
 		}
 	}
@@ -3327,6 +3333,7 @@ static BOOL table_traverse_sub_contents(uint32_t step,
 	if (1 == step) {
 		return TRUE;
 	}
+	DOUBLE_LIST_NODE *pnode;
 	while ((pnode = double_list_pop_front(&tmp_list)) != nullptr) {
 		if (FALSE == table_traverse_sub_contents(step - 1,
 			*(uint64_t*)pnode->pdata, pstmt, pstmt1, pcount)) {

@@ -1235,7 +1235,6 @@ static BINARY* common_util_to_folder_entryid(
 static BINARY* common_util_to_message_entryid(
 	sqlite3 *psqlite, uint64_t message_id)
 {
-	BINARY *pbin;
 	int account_id;
 	EXT_PUSH ext_push;
 	uint64_t folder_id;
@@ -1251,7 +1250,7 @@ static BINARY* common_util_to_message_entryid(
 	}
 	tmp_entryid.flags = 0;
 	if (TRUE == exmdb_server_check_private()) {
-		pbin = common_util_get_mailbox_guid(psqlite);
+		auto pbin = common_util_get_mailbox_guid(psqlite);
 		if (NULL == pbin) {
 			return NULL;
 		}
@@ -1272,7 +1271,7 @@ static BINARY* common_util_to_message_entryid(
 	tmp_entryid.pad1[1] = 0;
 	tmp_entryid.pad2[0] = 0;
 	tmp_entryid.pad2[1] = 0;
-	pbin = cu_alloc<BINARY>();
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -1450,7 +1449,6 @@ static BOOL common_util_get_message_subject(
 	sqlite3 *psqlite, uint32_t cpid, uint64_t message_id,
 	uint32_t proptag, void **ppvalue)
 {
-	char *pvalue;
 	const char *psubject_prefix, *pnormalized_subject;
 	
 	psubject_prefix = NULL;
@@ -1509,7 +1507,7 @@ static BOOL common_util_get_message_subject(
 	if (NULL == psubject_prefix) {
 		psubject_prefix = "";
 	}
-	pvalue = cu_alloc<char>(strlen(pnormalized_subject) + strlen(psubject_prefix) + 1);
+	auto pvalue = cu_alloc<char>(strlen(pnormalized_subject) + strlen(psubject_prefix) + 1);
 	if (NULL == pvalue) {
 		return FALSE;
 	}
@@ -1697,30 +1695,38 @@ static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
 	case PR_STORE_RECORD_KEY:
 		pv.pvalue = common_util_get_mailbox_guid(db);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
-	case PR_STORE_STATE:
-		pv.pvalue = cu_alloc<uint32_t>();
+	case PR_STORE_STATE: {
+		auto v = cu_alloc<uint32_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_store_state(db);
+		*v = common_util_get_store_state(db);
 		return GP_ADV;
-	case PROP_TAG_CONTENTCOUNT:
-		pv.pvalue = cu_alloc<uint32_t>();
+	}
+	case PROP_TAG_CONTENTCOUNT: {
+		auto v = cu_alloc<uint32_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_store_message_count(db, false);
+		*v = common_util_get_store_message_count(db, false);
 		return GP_ADV;
-	case PR_ASSOC_CONTENT_COUNT:
-		pv.pvalue = cu_alloc<uint32_t>();
+	}
+	case PR_ASSOC_CONTENT_COUNT: {
+		auto v = cu_alloc<uint32_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_store_message_count(db, TRUE);
+		*v = common_util_get_store_message_count(db, TRUE);
 		return GP_ADV;
-	case PR_INTERNET_ARTICLE_NUMBER:
-		pv.pvalue = cu_alloc<uint32_t>();
+	}
+	case PR_INTERNET_ARTICLE_NUMBER: {
+		auto v = cu_alloc<uint32_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_store_article_number(db);
+		*v = common_util_get_store_article_number(db);
 		return GP_ADV;
+	}
 	}
 	return GP_UNHANDLED;
 }
@@ -1733,23 +1739,25 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 	case PR_ENTRYID:
 		pv.pvalue = common_util_to_folder_entryid(db, id);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
-	case PidTagFolderId:
-		pv.pvalue = cu_alloc<uint64_t>();
+	case PidTagFolderId: {
+		auto v = cu_alloc<uint64_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint64_t *>(pv.pvalue) =
-			(id & 0xFF00000000000000ULL) == 0 ?
+		*v = (id & 0xFF00000000000000ULL) == 0 ?
 			rop_util_make_eid_ex(1, id) :
 			rop_util_make_eid_ex(id >> 48, id & 0x00FFFFFFFFFFFFFFULL);
 		return GP_ADV;
+	}
 	case PidTagParentFolderId: {
-		pv.pvalue = cu_alloc<uint64_t>();
+		auto v = cu_alloc<uint64_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
 		auto tmp_id = common_util_get_folder_parent_fid(db, id);
 		if (tmp_id == 0)
 			return GP_SKIP;
-		*static_cast<uint64_t *>(pv.pvalue) = rop_util_make_eid_ex(1, tmp_id);
+		*v = rop_util_make_eid_ex(1, tmp_id);
 		return GP_ADV;
 	}
 	case PR_PARENT_ENTRYID: {
@@ -1759,79 +1767,103 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 		pv.pvalue = common_util_to_folder_entryid(db, tmp_id);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
 	}
-	case PidTagChangeNumber:
-		pv.pvalue = cu_alloc<uint64_t>();
+	case PidTagChangeNumber: {
+		auto v = cu_alloc<uint64_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint64_t *>(pv.pvalue) = common_util_get_folder_changenum(db, id);
+		*v = common_util_get_folder_changenum(db, id);
 		return GP_ADV;
-	case PROP_TAG_FOLDERFLAGS:
-		pv.pvalue = cu_alloc<uint32_t>();
+	}
+	case PROP_TAG_FOLDERFLAGS: {
+		auto v = cu_alloc<uint32_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_folder_flags(db, id);
+		*v = common_util_get_folder_flags(db, id);
 		return GP_ADV;
-	case PROP_TAG_SUBFOLDERS:
-		pv.pvalue = cu_alloc<uint8_t>();
+	}
+	case PROP_TAG_SUBFOLDERS: {
+		auto v = cu_alloc<uint8_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint8_t *>(pv.pvalue) = !!common_util_check_subfolders(db, id);
+		*v = !!common_util_check_subfolders(db, id);
 		return GP_ADV;
-	case PROP_TAG_CONTENTCOUNT:
-		pv.pvalue = cu_alloc<uint32_t>();
+	}
+	case PROP_TAG_CONTENTCOUNT: {
+		auto v = cu_alloc<uint32_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_folder_count(db, id, false);
+		*v = common_util_get_folder_count(db, id, false);
 		return GP_ADV;
-	case PR_ASSOC_CONTENT_COUNT:
-		pv.pvalue = cu_alloc<uint32_t>();
+	}
+	case PR_ASSOC_CONTENT_COUNT: {
+		auto v = cu_alloc<uint32_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_folder_count(db, id, TRUE);
+		*v = common_util_get_folder_count(db, id, TRUE);
 		return GP_ADV;
-	case PROP_TAG_FOLDERCHILDCOUNT:
-		pv.pvalue = cu_alloc<uint32_t>();
+	}
+	case PROP_TAG_FOLDERCHILDCOUNT: {
+		auto v = cu_alloc<uint32_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint32_t *>(pv.pvalue) = common_util_calculate_childcount(id, db);
+		*v = common_util_calculate_childcount(id, db);
 		return GP_ADV;
-	case PROP_TAG_CONTENTUNREADCOUNT:
-		pv.pvalue = cu_alloc<uint32_t>();
+	}
+	case PROP_TAG_CONTENTUNREADCOUNT: {
+		auto v = cu_alloc<uint32_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_folder_unread_count(db, id);
+		*v = common_util_get_folder_unread_count(db, id);
 		return GP_ADV;
-	case PR_FOLDER_TYPE:
-		pv.pvalue = cu_alloc<uint32_t>();
+	}
+	case PR_FOLDER_TYPE: {
+		auto v = cu_alloc<uint32_t>();
+		pv.pvalue = v;
 		return pv.pvalue != nullptr && common_util_get_folder_type(db,
-		       id, static_cast<uint32_t *>(pv.pvalue)) ? GP_ADV : GP_ERR;
-	case PROP_TAG_HASRULES:
-		pv.pvalue = cu_alloc<uint8_t>();
+		       id, v) ? GP_ADV : GP_ERR;
+	}
+	case PROP_TAG_HASRULES: {
+		auto v = cu_alloc<uint8_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint8_t *>(pv.pvalue) = !!common_util_check_folder_rules(db, id);
+		*v = !!common_util_check_folder_rules(db, id);
 		return GP_ADV;
+	}
 	case PROP_TAG_FOLDERPATHNAME:
 		pv.pvalue = common_util_calculate_folder_path(id, db);
 		return pv.pvalue != nullptr ? GP_ADV : GP_ERR;
-	case PR_MESSAGE_SIZE_EXTENDED:
-		pv.pvalue = cu_alloc<uint64_t>();
+	case PR_MESSAGE_SIZE_EXTENDED: {
+		auto v = cu_alloc<uint64_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint64_t *>(pv.pvalue) = common_util_get_folder_message_size(db, id, TRUE, TRUE);
+		*v = common_util_get_folder_message_size(db, id, TRUE, TRUE);
 		return GP_ADV;
-	case PR_ASSOC_MESSAGE_SIZE_EXTENDED:
-		pv.pvalue = cu_alloc<uint64_t>();
+	}
+	case PR_ASSOC_MESSAGE_SIZE_EXTENDED: {
+		auto v = cu_alloc<uint64_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint64_t *>(pv.pvalue) = common_util_get_folder_message_size(db, id, false, TRUE);
+		*v = common_util_get_folder_message_size(db, id, false, TRUE);
 		return GP_ADV;
-	case PR_NORMAL_MESSAGE_SIZE_EXTENDED:
-		pv.pvalue = cu_alloc<uint64_t>();
+	}
+	case PR_NORMAL_MESSAGE_SIZE_EXTENDED: {
+		auto v = cu_alloc<uint64_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint64_t *>(pv.pvalue) = common_util_get_folder_message_size(db, id, TRUE, false);
+		*v = common_util_get_folder_message_size(db, id, TRUE, false);
 		return GP_ADV;
+	}
 	}
 	return GP_UNHANDLED;
 }
@@ -1856,10 +1888,11 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		uint64_t tmp_id;
 		if (!common_util_get_message_parent_folder(db, id, &tmp_id) || tmp_id == 0)
 			return GP_ERR;
-		pv.pvalue = cu_alloc<uint64_t>();
+		auto v = cu_alloc<uint64_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint64_t *>(pv.pvalue) = rop_util_make_eid_ex(1, tmp_id);
+		*v = rop_util_make_eid_ex(1, tmp_id);
 		return GP_ADV;
 	}
 	case PROP_TAG_INSTANCESVREID: {
@@ -1886,48 +1919,62 @@ static GP_RESULT gp_msgprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db,
 		pv.pvalue = common_util_convert_copy(false, cpid, pstring);
 		return pv.pvalue != nullptr ? GP_ADV : GP_UNHANDLED;
 	}
-	case PR_MESSAGE_SIZE:
-		pv.pvalue = cu_alloc<uint32_t>();
+	case PR_MESSAGE_SIZE: {
+		auto v = cu_alloc<uint32_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint32_t *>(pv.pvalue) = common_util_get_message_size(db, id);
+		*v = common_util_get_message_size(db, id);
 		return GP_ADV;
-	case PR_ASSOCIATED:
-		pv.pvalue = cu_alloc<uint8_t>();
+	}
+	case PR_ASSOCIATED: {
+		auto v = cu_alloc<uint8_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint8_t *>(pv.pvalue) = !!common_util_check_message_associated(db, id);
+		*v = !!common_util_check_message_associated(db, id);
 		return GP_ADV;
-	case PidTagChangeNumber:
-		pv.pvalue = cu_alloc<uint64_t>();
+	}
+	case PidTagChangeNumber: {
+		auto v = cu_alloc<uint64_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint64_t *>(pv.pvalue) = common_util_get_message_changenum(db, id);
+		*v = common_util_get_message_changenum(db, id);
 		return GP_ADV;
-	case PR_READ:
-		pv.pvalue = cu_alloc<uint8_t>();
+	}
+	case PR_READ: {
+		auto v = cu_alloc<uint8_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint8_t *>(pv.pvalue) = !!common_util_check_message_read(db, id);
+		*v = !!common_util_check_message_read(db, id);
 		return GP_ADV;
-	case PROP_TAG_HASNAMEDPROPERTIES:
-		pv.pvalue = cu_alloc<uint8_t>();
+	}
+	case PROP_TAG_HASNAMEDPROPERTIES: {
+		auto v = cu_alloc<uint8_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint8_t *>(pv.pvalue) = !!common_util_check_message_named_properties(db, id);
+		*v = !!common_util_check_message_named_properties(db, id);
 		return GP_ADV;
-	case PR_HASATTACH:
-		pv.pvalue = cu_alloc<uint8_t>();
+	}
+	case PR_HASATTACH: {
+		auto v = cu_alloc<uint8_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint8_t *>(pv.pvalue) = !!common_util_check_message_has_attachments(db, id);
+		*v = !!common_util_check_message_has_attachments(db, id);
 		return GP_ADV;
-	case PidTagMid:
-		pv.pvalue = cu_alloc<uint64_t>();
+	}
+	case PidTagMid: {
+		auto v = cu_alloc<uint64_t>();
+		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
 			return GP_ERR;
-		*static_cast<uint64_t *>(pv.pvalue) = rop_util_make_eid_ex(1, id);
+		*v = rop_util_make_eid_ex(1, id);
 		return GP_ADV;
+	}
 	case PR_MESSAGE_FLAGS:
 		if (!common_util_get_message_flags(db, id, false,
 		    reinterpret_cast<uint32_t **>(&pv.pvalue)))
@@ -1974,10 +2021,11 @@ static GP_RESULT gp_atxprop(uint32_t tag, TAGGED_PROPVAL &pv,
 		if (ptmp_bin == nullptr)
 			return GP_ERR;
 		ptmp_bin->cb = sizeof(uint64_t);
-		ptmp_bin->pv = common_util_alloc(ptmp_bin->cb);
+		auto v = cu_alloc<uint64_t>();
+		ptmp_bin->pv = v;
 		if (ptmp_bin->pv == nullptr)
 			return GP_ERR;
-		*static_cast<uint64_t *>(ptmp_bin->pv) = id;
+		*v = id;
 		pv.pvalue = ptmp_bin;
 		return GP_ADV;
 	}
@@ -2321,91 +2369,100 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 			pvalue = common_util_convert_copy(TRUE, cpid,
 				 S2A(sqlite3_column_text(pstmt, 1)));
 		break;
-	case PT_FLOAT:
-		pvalue = cu_alloc<float>();
-		if (pvalue == nullptr)
+	case PT_FLOAT: {
+		auto v = cu_alloc<float>();
+		if (v == nullptr)
 			return nullptr;
-		*(float *)pvalue = sqlite3_column_double(pstmt, 0);
-		break;
+		*v = sqlite3_column_double(pstmt, 0);
+		return v;
+	}
 	case PT_DOUBLE:
-	case PT_APPTIME:
-		pvalue = cu_alloc<double>();
-		if (pvalue == nullptr)
+	case PT_APPTIME: {
+		auto v = cu_alloc<double>();
+		if (v == nullptr)
 			return nullptr;
-		*(double *)pvalue = sqlite3_column_double(pstmt, 0);
-		break;
+		*v = sqlite3_column_double(pstmt, 0);
+		return v;
+	}
 	case PT_CURRENCY:
 	case PT_I8:
-	case PT_SYSTIME:
-		pvalue = cu_alloc<uint64_t>();
-		if (pvalue == nullptr)
+	case PT_SYSTIME: {
+		auto v = cu_alloc<uint64_t>();
+		if (v == nullptr)
 			return nullptr;
-		*(uint64_t *)pvalue = sqlite3_column_int64(pstmt, 0);
-		break;
-	case PT_SHORT:
-		pvalue = cu_alloc<uint16_t>();
-		if (pvalue == nullptr)
+		*v = sqlite3_column_int64(pstmt, 0);
+		return v;
+	}
+	case PT_SHORT: {
+		auto v = cu_alloc<uint16_t>();
+		if (v == nullptr)
 			return nullptr;
-		*(uint16_t *)pvalue = sqlite3_column_int64(pstmt, 0);
-		break;
-	case PT_LONG:
-		pvalue = cu_alloc<uint32_t>();
-		if (pvalue == nullptr)
+		*v = sqlite3_column_int64(pstmt, 0);
+		return v;
+	}
+	case PT_LONG: {
+		auto v = cu_alloc<uint32_t>();
+		if (v == nullptr)
 			return nullptr;
-		*(uint32_t *)pvalue = sqlite3_column_int64(pstmt, 0);
-		break;
-	case PT_BOOLEAN:
-		pvalue = cu_alloc<uint8_t>();
-		if (pvalue == nullptr)
+		*v = sqlite3_column_int64(pstmt, 0);
+		return v;
+	}
+	case PT_BOOLEAN: {
+		auto v = cu_alloc<uint8_t>();
+		if (v == nullptr)
 			return nullptr;
-		*(uint8_t *)pvalue = sqlite3_column_int64(pstmt, 0);
-		break;
-	case PT_CLSID:
-		pvalue = cu_alloc<GUID>();
-		if (pvalue == nullptr)
-			return nullptr;
-		ext_pull.init(sqlite3_column_blob(pstmt, 0),
-			sqlite3_column_bytes(pstmt, 0),
-			common_util_alloc, 0);
-		if (ext_pull.g_guid(static_cast<GUID *>(pvalue)) != EXT_ERR_SUCCESS)
-			return nullptr;
-		break;
-	case PT_SVREID:
-		pvalue = cu_alloc<SVREID>();
-		if (pvalue == nullptr)
+		*v = sqlite3_column_int64(pstmt, 0);
+		return v;
+	}
+	case PT_CLSID: {
+		auto v = cu_alloc<GUID>();
+		if (v == nullptr)
 			return nullptr;
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0),
 			common_util_alloc, 0);
-		if (ext_pull.g_svreid(static_cast<SVREID *>(pvalue)) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_guid(v) != EXT_ERR_SUCCESS)
 			return nullptr;
-		break;
-	case PT_SRESTRICTION:
-		pvalue = cu_alloc<RESTRICTION>();
-		if (pvalue == nullptr)
-			return nullptr;
-		ext_pull.init(sqlite3_column_blob(pstmt, 0),
-			sqlite3_column_bytes(pstmt, 0),
-			common_util_alloc, 0);
-		if (ext_pull.g_restriction(static_cast<RESTRICTION *>(pvalue)) != EXT_ERR_SUCCESS)
-			return nullptr;
-		break;
-	case PT_ACTIONS:
-		pvalue = cu_alloc<RULE_ACTIONS>();
-		if (pvalue == nullptr)
+		return v;
+	}
+	case PT_SVREID: {
+		auto v = cu_alloc<SVREID>();
+		if (v == nullptr)
 			return nullptr;
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0),
 			common_util_alloc, 0);
-		if (ext_pull.g_rule_actions(static_cast<RULE_ACTIONS *>(pvalue)) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_svreid(v) != EXT_ERR_SUCCESS)
 			return nullptr;
-		break;
+		return v;
+	}
+	case PT_SRESTRICTION: {
+		auto v = cu_alloc<RESTRICTION>();
+		if (v == nullptr)
+			return nullptr;
+		ext_pull.init(sqlite3_column_blob(pstmt, 0),
+			sqlite3_column_bytes(pstmt, 0),
+			common_util_alloc, 0);
+		if (ext_pull.g_restriction(v) != EXT_ERR_SUCCESS)
+			return nullptr;
+		return v;
+	}
+	case PT_ACTIONS: {
+		auto v = cu_alloc<RULE_ACTIONS>();
+		if (v == nullptr)
+			return nullptr;
+		ext_pull.init(sqlite3_column_blob(pstmt, 0),
+			sqlite3_column_bytes(pstmt, 0),
+			common_util_alloc, 0);
+		if (ext_pull.g_rule_actions(v) != EXT_ERR_SUCCESS)
+			return nullptr;
+		return v;
+	}
 	case PT_OBJECT:
 	case PT_BINARY: {
-		pvalue = cu_alloc<BINARY>();
-		if (pvalue == nullptr)
+		auto bv = cu_alloc<BINARY>();
+		if (bv == nullptr)
 			return nullptr;
-		auto bv = static_cast<BINARY *>(pvalue);
 		bv->cb = sqlite3_column_bytes(pstmt, 0);
 		bv->pv = common_util_alloc(bv->cb);
 		if (bv->pv == nullptr) {
@@ -2414,45 +2471,47 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		auto blob = sqlite3_column_blob(pstmt, 0);
 		if (bv->cb != 0 || blob != nullptr)
 			memcpy(bv->pv, blob, bv->cb);
-		break;
+		return bv;
 	}
-	case PT_MV_SHORT:
-		pvalue = cu_alloc<SHORT_ARRAY>();
-		if (pvalue == nullptr)
+	case PT_MV_SHORT: {
+		auto v = cu_alloc<SHORT_ARRAY>();
+		if (v == nullptr)
 			return nullptr;
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0),
 			common_util_alloc, 0);
-		if (ext_pull.g_uint16_a(static_cast<SHORT_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_uint16_a(v) != EXT_ERR_SUCCESS)
 			return nullptr;
-		break;
-	case PT_MV_LONG:
-		pvalue = cu_alloc<LONG_ARRAY>();
-		if (pvalue == nullptr)
+		return v;
+	}
+	case PT_MV_LONG: {
+		auto v = cu_alloc<LONG_ARRAY>();
+		if (v == nullptr)
 			return nullptr;
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0),
 			common_util_alloc, 0);
-		if (ext_pull.g_uint32_a(static_cast<LONG_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_uint32_a(v) != EXT_ERR_SUCCESS)
 			return nullptr;
-		break;
+		return v;
+	}
 	case PT_MV_CURRENCY:
 	case PT_MV_I8:
-	case PT_MV_SYSTIME:
-		pvalue = cu_alloc<LONGLONG_ARRAY>();
-		if (pvalue == nullptr)
+	case PT_MV_SYSTIME: {
+		auto v = cu_alloc<LONGLONG_ARRAY>();
+		if (v == nullptr)
 			return nullptr;
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0),
 			common_util_alloc, 0);
-		if (ext_pull.g_uint64_a(static_cast<LONGLONG_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_uint64_a(v) != EXT_ERR_SUCCESS)
 			return nullptr;
-		break;
+		return v;
+	}
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE: {
 		auto sa = cu_alloc<STRING_ARRAY>();
-		pvalue = sa;
-		if (pvalue == nullptr)
+		if (sa == nullptr)
 			return nullptr;
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0),
@@ -2460,7 +2519,7 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		if (ext_pull.g_wstr_a(sa) != EXT_ERR_SUCCESS)
 			return nullptr;
 		if (proptype != PT_MV_STRING8)
-			break;
+			return nullptr;
 		for (size_t j = 0; j < sa->count; ++j) {
 			auto pstring = common_util_convert_copy(false, cpid, sa->ppstr[j]);
 			if (NULL == pstring) {
@@ -2468,28 +2527,30 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 			}
 			sa->ppstr[j] = pstring;
 		}
-		break;
+		return sa;
 	}
-	case PT_MV_CLSID:
-		pvalue = cu_alloc<GUID_ARRAY>();
-		if (pvalue == nullptr)
+	case PT_MV_CLSID: {
+		auto v = cu_alloc<GUID_ARRAY>();
+		if (v == nullptr)
 			return nullptr;
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0),
 			common_util_alloc, 0);
-		if (ext_pull.g_guid_a(static_cast<GUID_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_guid_a(v) != EXT_ERR_SUCCESS)
 			return nullptr;
-		break;
-	case PT_MV_BINARY:
-		pvalue = cu_alloc<BINARY_ARRAY>();
-		if (pvalue == nullptr)
+		return v;
+	}
+	case PT_MV_BINARY: {
+		auto v = cu_alloc<BINARY_ARRAY>();
+		if (v == nullptr)
 			return nullptr;
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0),
 			common_util_alloc, 0);
-		if (ext_pull.g_bin_a(static_cast<BINARY_ARRAY *>(pvalue)) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_bin_a(v) != EXT_ERR_SUCCESS)
 			return nullptr;
-		break;
+		return v;
+	}
 	default:
 		assert(false);
 		return nullptr;
@@ -3376,13 +3437,15 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 	char sql_string[128];
 	
 	switch (proptag) {
-	case PR_RULE_ID:
-		*ppvalue = cu_alloc<uint64_t>();
+	case PR_RULE_ID: {
+		auto v = cu_alloc<uint64_t>();
+		*ppvalue = v;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*(uint64_t*)(*ppvalue) = rop_util_make_eid_ex(1, rule_id);
+		*v = rop_util_make_eid_ex(1, rule_id);
 		return TRUE;
+	}
 	case PR_RULE_SEQUENCE:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT sequence"
 		          " FROM rules WHERE rule_id=%llu", LLU(rule_id));
@@ -3435,13 +3498,15 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 	case PR_RULE_SEQUENCE:
 	case PR_RULE_STATE:
 	case PR_RULE_LEVEL:
-	case PR_RULE_USER_FLAGS:
-		*ppvalue = cu_alloc<uint32_t>();
+	case PR_RULE_USER_FLAGS: {
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*(uint32_t*)(*ppvalue) = sqlite3_column_int64(pstmt, 0);
+		*v = sqlite3_column_int64(pstmt, 0);
 		break;
+	}
 	case PR_RULE_NAME:
 	case PR_RULE_PROVIDER:
 		*ppvalue = common_util_dup(S2A(sqlite3_column_text(pstmt, 0)));
@@ -3450,11 +3515,11 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 		}
 		break;
 	case PR_RULE_PROVIDER_DATA: {
-		*ppvalue = cu_alloc<BINARY>();
+		auto bv = cu_alloc<BINARY>();
+		*ppvalue = bv;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		auto bv = static_cast<BINARY *>(*ppvalue);
 		bv->cb = sqlite3_column_bytes(pstmt, 0);
 		bv->pv = common_util_alloc(bv->cb);
 		if (bv->pv == nullptr) {
@@ -3463,30 +3528,34 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 		memcpy(bv->pv, sqlite3_column_blob(pstmt, 0), bv->cb);
 		break;
 	}
-	case PR_RULE_CONDITION:
-		*ppvalue = cu_alloc<RESTRICTION>();
+	case PR_RULE_CONDITION: {
+		auto v = cu_alloc<RESTRICTION>();
+		*ppvalue = v;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0), common_util_alloc, 0);
-		if (ext_pull.g_restriction(static_cast<RESTRICTION *>(*ppvalue)) != EXT_ERR_SUCCESS) {
+		if (ext_pull.g_restriction(v) != EXT_ERR_SUCCESS) {
 			*ppvalue = NULL;
 			return TRUE;
 		}
 		break;
-	case PR_RULE_ACTIONS:
-		*ppvalue = cu_alloc<RULE_ACTIONS>();
+	}
+	case PR_RULE_ACTIONS: {
+		auto v = cu_alloc<RULE_ACTIONS>();
+		*ppvalue = v;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		ext_pull.init(sqlite3_column_blob(pstmt, 0),
 			sqlite3_column_bytes(pstmt, 0), common_util_alloc, 0);
-		if (ext_pull.g_rule_actions(static_cast<RULE_ACTIONS *>(*ppvalue)) != EXT_ERR_SUCCESS) {
+		if (ext_pull.g_rule_actions(v) != EXT_ERR_SUCCESS) {
 			*ppvalue = NULL;
 			return TRUE;
 		}
 		break;
+	}
 	}
 	return TRUE;
 }
@@ -3522,11 +3591,12 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		break;
 	case PROP_TAG_MEMBERID:
 		if (0 == member_id || -1 == (int64_t)member_id) {
-			*ppvalue = cu_alloc<uint64_t>();
+			auto v = cu_alloc<uint64_t>();
+			*ppvalue = v;
 			if (NULL == *ppvalue) {
 				return FALSE;
 			}
-			*(uint64_t*)(*ppvalue) = member_id;
+			*v = member_id;
 			return TRUE;
 		}
 		snprintf(sql_string, arsizeof(sql_string), "SELECT username FROM"
@@ -3558,7 +3628,8 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		return TRUE;
 	}
 	if (proptag == PROP_TAG_MEMBERID) {
-		*ppvalue = cu_alloc<uint64_t>();
+		auto v = cu_alloc<uint64_t>();
+		*ppvalue = v;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -3568,11 +3639,11 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 		}
 		pusername = S2A(sqlite3_column_text(pstmt, 0));
 		if ('\0' == pusername[0]) {
-			*(int64_t*)(*ppvalue) = -1;
+			*v = UINT64_MAX;
 		} else if (0 == strcasecmp(pusername, "default")) {
-			*(uint64_t*)(*ppvalue) = 0;
+			*v = 0;
 		} else {
-			*(uint64_t*)(*ppvalue) = member_id;
+			*v = member_id;
 		}
 		return TRUE;
 	}
@@ -3609,13 +3680,15 @@ BOOL common_util_get_permission_property(uint64_t member_id,
 			return FALSE;
 		}
 		break;
-	case PROP_TAG_MEMBERRIGHTS:
-		*ppvalue = cu_alloc<uint32_t>();
+	case PROP_TAG_MEMBERRIGHTS: {
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*(uint32_t*)(*ppvalue) = sqlite3_column_int64(pstmt, 0);
+		*v = sqlite3_column_int64(pstmt, 0);
 		break;
+	}
 	}
 	return TRUE;
 }
@@ -3729,12 +3802,11 @@ BINARY* common_util_to_private_folder_entryid(
 	uint64_t folder_id)
 {
 	int user_id;
-	BINARY *pbin;
 	EXT_PUSH ext_push;
 	FOLDER_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	pbin = common_util_get_mailbox_guid(psqlite);
+	auto pbin = common_util_get_mailbox_guid(psqlite);
 	if (NULL == pbin) {
 		return nullptr;
 	}
@@ -3765,12 +3837,11 @@ BINARY* common_util_to_private_message_entryid(
 	uint64_t folder_id, uint64_t message_id)
 {
 	int user_id;
-	BINARY *pbin;
 	EXT_PUSH ext_push;
 	MESSAGE_ENTRYID tmp_entryid;
 	
 	tmp_entryid.flags = 0;
-	pbin = common_util_get_mailbox_guid(psqlite);
+	auto pbin = common_util_get_mailbox_guid(psqlite);
 	if (NULL == pbin) {
 		return nullptr;
 	}
@@ -3862,7 +3933,6 @@ BOOL common_util_check_folder_permission(
 BINARY* common_util_username_to_addressbook_entryid(
 	const char *username)
 {
-	BINARY *pbin;
 	char x500dn[1024];
 	EXT_PUSH ext_push;
 	ADDRESSBOOK_ENTRYID tmp_entryid;
@@ -3874,7 +3944,7 @@ BINARY* common_util_username_to_addressbook_entryid(
 	tmp_entryid.version = 1;
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = x500dn;
-	pbin = cu_alloc<BINARY>();
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -3939,7 +4009,6 @@ BOOL common_util_get_message_parent_folder(sqlite3 *psqlite,
 static BINARY* common_util_get_message_parent_svrid(
 	sqlite3 *psqlite, uint64_t message_id)
 {
-	BINARY *pbin;
 	EXT_PUSH ext_push;
 	uint64_t folder_id;
 	
@@ -3947,7 +4016,7 @@ static BINARY* common_util_get_message_parent_svrid(
 		psqlite, message_id, &folder_id)) {
 		return NULL;	
 	}
-	pbin = cu_alloc<BINARY>();
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -5157,10 +5226,9 @@ BOOL common_util_recipients_to_list(
 	TARRAY_SET *prcpts, DOUBLE_LIST *plist)
 {
 	void *pvalue;
-	DOUBLE_LIST_NODE *pnode;
 	
 	for (size_t i = 0; i < prcpts->count; ++i) {
-		pnode = cu_alloc<DOUBLE_LIST_NODE>();
+		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode) {
 			return FALSE;
 		}
@@ -5336,85 +5404,79 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 			return NULL;
 		}
 		return common_util_dup(static_cast<char *>(pvalue));
-	case PT_FLOAT:
-		pvalue = cu_alloc<float>();
-		if (NULL == pvalue) {
+	case PT_FLOAT: {
+		auto v = cu_alloc<float>();
+		if (v == nullptr)
 			return NULL;
-		}
-		*(float*)pvalue = sqlite3_column_double(
-							pstmt, column_index);
-		return pvalue;
+		*v = sqlite3_column_double(pstmt, column_index);
+		return v;
+	}
 	case PT_DOUBLE:
-	case PT_APPTIME:
-		pvalue = cu_alloc<double>();
-		if (NULL == pvalue) {
+	case PT_APPTIME: {
+		auto v = cu_alloc<double>();
+		if (v == nullptr)
 			return NULL;
-		}
-		*(double*)pvalue = sqlite3_column_double(
-							pstmt, column_index);
-		return pvalue;
+		*v = sqlite3_column_double(pstmt, column_index);
+		return v;
+	}
 	case PT_CURRENCY:
 	case PT_I8:
-	case PT_SYSTIME:
-		pvalue = cu_alloc<uint64_t>();
-		if (NULL == pvalue) {
+	case PT_SYSTIME: {
+		auto v = cu_alloc<uint64_t>();
+		if (v == nullptr)
 			return NULL;
-		}
-		*(uint64_t*)pvalue = sqlite3_column_int64(
-							pstmt, column_index);
-		return pvalue;
-	case PT_SHORT:
-		pvalue = cu_alloc<uint16_t>();
-		if (NULL == pvalue) {
+		*v = sqlite3_column_int64(pstmt, column_index);
+		return v;
+	}
+	case PT_SHORT: {
+		auto v = cu_alloc<uint16_t>();
+		if (v == nullptr)
 			return NULL;
-		}
-		*(uint16_t*)pvalue = sqlite3_column_int64(
-							pstmt, column_index);
-		return pvalue;
-	case PT_LONG:
-		pvalue = cu_alloc<uint32_t>();
-		if (NULL == pvalue) {
+		*v = sqlite3_column_int64(pstmt, column_index);
+		return v;
+	}
+	case PT_LONG: {
+		auto v = cu_alloc<uint32_t>();
+		if (v == nullptr)
 			return NULL;
-		}
-		*(uint32_t*)pvalue = sqlite3_column_int64(
-							pstmt, column_index);
-		return pvalue;
-	case PT_BOOLEAN:
-		pvalue = cu_alloc<uint8_t>();
-		if (NULL == pvalue) {
+		*v = sqlite3_column_int64(pstmt, column_index);
+		return v;
+	}
+	case PT_BOOLEAN: {
+		auto v = cu_alloc<uint8_t>();
+		if (v == nullptr)
 			return NULL;
-		}
-		*(uint8_t*)pvalue = sqlite3_column_int64(
-							pstmt, column_index);
-		return pvalue;
-	case PT_CLSID:
+		*v = sqlite3_column_int64(pstmt, column_index);
+		return v;
+	}
+	case PT_CLSID: {
 		pvalue = (void*)sqlite3_column_blob(pstmt, column_index);
 		if (NULL == pvalue) {
 			return NULL;
 		}
 		ext_pull.init(pvalue, sqlite3_column_bytes(pstmt, column_index),
 			common_util_alloc, 0);
-		pvalue = cu_alloc<GUID>();
-		if (NULL == pvalue) {
+		auto v = cu_alloc<GUID>();
+		if (v == nullptr)
 			return NULL;
-		}
-		if (ext_pull.g_guid(static_cast<GUID *>(pvalue)) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_guid(v) != EXT_ERR_SUCCESS)
 			return NULL;
-		return pvalue;
-	case PT_SVREID:
+		return v;
+	}
+	case PT_SVREID: {
 		pvalue = (void*)sqlite3_column_blob(pstmt, column_index);
 		if (NULL == pvalue) {
 			return NULL;
 		}
 		ext_pull.init(pvalue, sqlite3_column_bytes(pstmt, column_index),
 			common_util_alloc, 0);
-		pvalue = cu_alloc<SVREID>();
-		if (NULL == pvalue) {
+		auto v = cu_alloc<SVREID>();
+		if (v == nullptr)
 			return NULL;
-		}
-		if (ext_pull.g_svreid(static_cast<SVREID *>(pvalue)) != EXT_ERR_SUCCESS)
+		if (ext_pull.g_svreid(v) != EXT_ERR_SUCCESS)
 			return NULL;
-		return pvalue;
+		return v;
+	}
 	case PT_OBJECT:
 	case PT_BINARY: {
 		if (sqlite3_column_bytes(pstmt, column_index) > 512) {

@@ -732,7 +732,6 @@ static BOOL instance_read_attachment(
 	ATTACHMENT_CONTENT *pattachment)
 {
 	int i;
-	BINARY *pbin;
 	uint64_t cid;
 	
 	if (pattachment1->proplist.count > 1) {
@@ -749,8 +748,8 @@ static BOOL instance_read_attachment(
 	for (i=0; i<pattachment1->proplist.count; i++) {
 		switch (pattachment1->proplist.ppropval[i].proptag) {
 		case ID_TAG_ATTACHDATABINARY:
-		case ID_TAG_ATTACHDATAOBJECT:
-			pbin = cu_alloc<BINARY>();
+		case ID_TAG_ATTACHDATAOBJECT: {
+			auto pbin = cu_alloc<BINARY>();
 			if (NULL == pbin) {
 				return FALSE;
 			}
@@ -766,6 +765,7 @@ static BOOL instance_read_attachment(
 			}
 			pattachment->proplist.ppropval[pattachment->proplist.count++].pvalue = pbin;
 			break;
+		}
 		default:
 			pattachment->proplist.ppropval[pattachment->proplist.count++] =
 				pattachment1->proplist.ppropval[i];
@@ -791,13 +791,10 @@ static BOOL instance_read_message(
 	MESSAGE_CONTENT *pmsgctnt)
 {
 	void *pbuff;
-	BINARY *pbin;
 	uint64_t cid;
 	uint32_t length;
 	const char *psubject_prefix;
-	TPROPVAL_ARRAY *pproplist;
 	TPROPVAL_ARRAY *pproplist1;
-	ATTACHMENT_CONTENT *pattachment;
 	ATTACHMENT_CONTENT *pattachment1;
 	
 	pmsgctnt->proplist.count = pmsgctnt1->proplist.count;
@@ -831,7 +828,7 @@ static BOOL instance_read_message(
 			pmsgctnt->proplist.ppropval[i].pvalue = pbuff;
 			break;
 		case ID_TAG_HTML:
-		case ID_TAG_RTFCOMPRESSED:
+		case ID_TAG_RTFCOMPRESSED: {
 			cid = *(uint64_t*)pmsgctnt1->proplist.ppropval[i].pvalue;
 			pbuff = instance_read_cid_content(cid, &length, pmsgctnt1->proplist.ppropval[i].proptag);
 			if (NULL == pbuff) {
@@ -840,7 +837,7 @@ static BOOL instance_read_message(
 			pmsgctnt->proplist.ppropval[i].proptag =
 				pmsgctnt1->proplist.ppropval[i].proptag == ID_TAG_HTML ?
 				PR_HTML : PR_RTF_COMPRESSED;
-			pbin = cu_alloc<BINARY>();
+			auto pbin = cu_alloc<BINARY>();
 			if (NULL == pbin) {
 				return FALSE;
 			}
@@ -848,6 +845,7 @@ static BOOL instance_read_message(
 			pbin->pv = pbuff;
 			pmsgctnt->proplist.ppropval[i].pvalue = pbin;
 			break;
+		}
 		case ID_TAG_TRANSPORTMESSAGEHEADERS:
 			cid = *(uint64_t*)pmsgctnt1->proplist.ppropval[i].pvalue;
 			pbuff = instance_read_cid_content(cid, nullptr, ID_TAG_BODY);
@@ -943,7 +941,7 @@ static BOOL instance_read_message(
 			pmsgctnt->children.prcpts->pparray = NULL;
 		}
 		for (i=0; i<pmsgctnt1->children.prcpts->count; i++) {
-			pproplist = cu_alloc<TPROPVAL_ARRAY>();
+			auto pproplist = cu_alloc<TPROPVAL_ARRAY>();
 			if (NULL == pproplist) {
 				return FALSE;
 			}
@@ -983,7 +981,7 @@ static BOOL instance_read_message(
 			pmsgctnt->children.pattachments->pplist = NULL;
 		}
 		for (i=0; i<pmsgctnt1->children.pattachments->count; i++) {
-			pattachment = cu_alloc<ATTACHMENT_CONTENT>();
+			auto pattachment = cu_alloc<ATTACHMENT_CONTENT>();
 			if (NULL == pattachment) {
 				return FALSE;
 			}
@@ -2011,17 +2009,17 @@ static BOOL instance_get_attachment_properties(uint32_t cpid,
 				continue;
 			}
 			break;
-		case PR_ATTACH_SIZE:
+		case PR_ATTACH_SIZE: {
 			vc.proptag = pproptags->pproptag[i];
 			length = common_util_calculate_attachment_size(pattachment);
-			pvalue = cu_alloc<uint32_t>();
-			if (NULL == pvalue) {
+			auto uv = cu_alloc<uint32_t>();
+			if (uv == nullptr)
 				return FALSE;
-			}
-			*(uint32_t*)pvalue = length;
-			vc.pvalue = pvalue;
+			*uv = length;
+			vc.pvalue = uv;
 			ppropvals->count ++;
 			continue;
+		}
 		case PR_ATTACH_DATA_BIN_U: {
 			proptype = PT_BINARY;
 			auto pbin = pattachment->proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
@@ -2140,10 +2138,11 @@ BOOL exmdb_server_get_instance_properties(
 		auto &vc = ppropvals->ppropval[ppropvals->count];
 		if (pproptags->pproptag[i] == PR_MESSAGE_FLAGS) {
 			vc.proptag = pproptags->pproptag[i];
-			vc.pvalue = cu_alloc<uint32_t>();
+			auto uv = cu_alloc<uint32_t>();
+			vc.pvalue = uv;
 			if (vc.pvalue == nullptr)
 				return FALSE;
-			*static_cast<uint32_t *>(vc.pvalue) = instance_get_message_flags(pmsgctnt);
+			*uv = instance_get_message_flags(pmsgctnt);
 			ppropvals->count ++;
 			continue;
 		}
@@ -2193,11 +2192,12 @@ BOOL exmdb_server_get_instance_properties(
 				if (propid != PROP_ID(pmsgctnt->proplist.ppropval[j].proptag))
 					continue;
 				vc.proptag = pproptags->pproptag[i];
-				vc.pvalue = cu_alloc<TYPED_PROPVAL>();
+				auto tp = cu_alloc<TYPED_PROPVAL>();
+				vc.pvalue = tp;
 				if (vc.pvalue == nullptr)
 					return FALSE;
-				static_cast<TYPED_PROPVAL *>(vc.pvalue)->type = PROP_TYPE(pmsgctnt->proplist.ppropval[j].proptag);
-				static_cast<TYPED_PROPVAL *>(vc.pvalue)->pvalue = pmsgctnt->proplist.ppropval[j].pvalue;
+				tp->type = PROP_TYPE(pmsgctnt->proplist.ppropval[j].proptag);
+				tp->pvalue = pmsgctnt->proplist.ppropval[j].pvalue;
 				break;
 			}
 		}
@@ -2218,7 +2218,7 @@ BOOL exmdb_server_get_instance_properties(
 			}
 			break;
 		}
-		case PR_TRANSPORT_MESSAGE_HEADERS_U:
+		case PR_TRANSPORT_MESSAGE_HEADERS_U: {
 			pvalue = pmsgctnt->proplist.getval(ID_TAG_TRANSPORTMESSAGEHEADERS);
 			if (NULL != pvalue) {
 				pvalue = instance_read_cid_content(*static_cast<uint64_t *>(pvalue), nullptr, ID_TAG_BODY);
@@ -2226,11 +2226,12 @@ BOOL exmdb_server_get_instance_properties(
 					return FALSE;
 				}
 				vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS_U;
-				vc.pvalue = cu_alloc<TYPED_PROPVAL>();
+				auto tp = cu_alloc<TYPED_PROPVAL>();
+				vc.pvalue = tp;
 				if (vc.pvalue == nullptr)
 					return FALSE;
-				static_cast<TYPED_PROPVAL *>(vc.pvalue)->type = PT_UNICODE;
-				static_cast<TYPED_PROPVAL *>(vc.pvalue)->pvalue = static_cast<char *>(pvalue) + sizeof(uint32_t);
+				tp->type = PT_UNICODE;
+				tp->pvalue = static_cast<char *>(pvalue) + sizeof(uint32_t);
 				ppropvals->count ++;
 				continue;
 			}
@@ -2242,13 +2243,15 @@ BOOL exmdb_server_get_instance_properties(
 				return FALSE;
 			}
 			vc.proptag = PR_TRANSPORT_MESSAGE_HEADERS_U;
-			vc.pvalue = cu_alloc<TYPED_PROPVAL>();
+			auto tp = cu_alloc<TYPED_PROPVAL>();
+			vc.pvalue = tp;
 			if (vc.pvalue == nullptr)
 				return FALSE;
-			static_cast<TYPED_PROPVAL *>(vc.pvalue)->type = PT_STRING8;
-			static_cast<TYPED_PROPVAL *>(vc.pvalue)->pvalue = pvalue;
+			tp->type = PT_STRING8;
+			tp->pvalue = pvalue;
 			ppropvals->count ++;
 			continue;
+		}
 		case PR_SUBJECT:
 		case PR_SUBJECT_A:
 			if (FALSE == instance_get_message_subject(
@@ -2316,16 +2319,18 @@ BOOL exmdb_server_get_instance_properties(
 				continue;
 			}
 			break;
-		case PidTagFolderId:
+		case PidTagFolderId: {
 			if (pinstance->parent_id != 0)
 				break;
 			vc.proptag = pproptags->pproptag[i];
-			vc.pvalue = cu_alloc<uint64_t>();
+			auto uv = cu_alloc<uint64_t>();
+			vc.pvalue = uv;
 			if (vc.pvalue == nullptr)
 				return FALSE;
-			*static_cast<uint64_t *>(vc.pvalue) = rop_util_make_eid_ex(1, pinstance->folder_id);
+			*uv = rop_util_make_eid_ex(1, pinstance->folder_id);
 			ppropvals->count++;
 			continue;
+		}
 		case PROP_TAG_CODEPAGEID:
 			vc.proptag = pproptags->pproptag[i];
 			vc.pvalue = &pinstance->cpid;
@@ -2336,32 +2341,31 @@ BOOL exmdb_server_get_instance_properties(
 			vc.proptag = pproptags->pproptag[i];
 			length = common_util_calculate_message_size(pmsgctnt);
 			if (pproptags->pproptag[i] == PR_MESSAGE_SIZE) {
-				pvalue = cu_alloc<uint32_t>();
-				if (NULL == pvalue) {
+				auto uv = cu_alloc<uint32_t>();
+				if (uv == nullptr)
 					return FALSE;
-				}
-				*(uint32_t*)pvalue = length;
+				*uv = length;
+				vc.pvalue = uv;
 			} else {
-				pvalue = cu_alloc<uint64_t>();
-				if (NULL == pvalue) {
+				auto uv = cu_alloc<uint64_t>();
+				if (uv == nullptr)
 					return FALSE;
-				}
-				*(uint64_t*)pvalue = length;
+				*uv = length;
+				vc.pvalue = uv;
 			}
-			vc.pvalue = pvalue;
 			ppropvals->count ++;
 			continue;
-		case PR_HASATTACH:
+		case PR_HASATTACH: {
 			vc.proptag = pproptags->pproptag[i];
-			pvalue = cu_alloc<uint8_t>();
-			if (NULL == pvalue) {
+			auto uv = cu_alloc<uint8_t>();
+			if (uv == nullptr)
 				return FALSE;
-			}
-			vc.pvalue = pvalue;
+			vc.pvalue = uv;
 			ppropvals->count ++;
-			*static_cast<uint8_t *>(pvalue) = pmsgctnt->children.pattachments == nullptr ||
-				pmsgctnt->children.pattachments->count == 0 ? 0 : 1;
+			*uv = pmsgctnt->children.pattachments == nullptr ||
+			      pmsgctnt->children.pattachments->count == 0 ? 0 : 1;
 			continue;
+		}
 		case PR_DISPLAY_TO:
 		case PR_DISPLAY_TO_A:
 		case PR_DISPLAY_CC:

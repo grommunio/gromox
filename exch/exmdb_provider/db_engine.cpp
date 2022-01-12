@@ -542,7 +542,6 @@ static void db_engine_notify_search_completion(db_item_ptr &pdb, uint64_t folder
 	NSUB_NODE *pnsub;
 	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
-	DB_NOTIFY_SEARCH_COMPLETED *psearch_completed;
 	auto dir = exmdb_server_get_dir();
 	std::vector<ID_NODE> tmp_list;
 
@@ -567,7 +566,7 @@ static void db_engine_notify_search_completion(db_item_ptr &pdb, uint64_t folder
 	datagram.b_table = FALSE;
 	datagram.db_notify.type =
 		DB_NOTIFY_TYPE_SEARCH_COMPLETED;
-	psearch_completed = cu_alloc<DB_NOTIFY_SEARCH_COMPLETED>();
+	auto psearch_completed = cu_alloc<DB_NOTIFY_SEARCH_COMPLETED>();
 	if (NULL == psearch_completed) {
 		return;
 	}
@@ -1222,7 +1221,6 @@ static BOOL db_engine_insert_categories(sqlite3 *psqlite,
 	int i;
 	uint16_t type;
 	uint64_t row_id = 0, prev_id = 0, inst_id;
-	ROWINFO_NODE *prnode;
 	
 	if (0 != before_row_id) {
 		sqlite3_bind_null(pstmt_update, 1);
@@ -1264,7 +1262,7 @@ static BOOL db_engine_insert_categories(sqlite3 *psqlite,
 			return FALSE;
 		}
 		sqlite3_reset(pstmt_insert);
-		prnode = cu_alloc<ROWINFO_NODE>();
+		auto prnode = cu_alloc<ROWINFO_NODE>();
 		if (NULL == prnode) {
 			return FALSE;
 		}
@@ -1299,7 +1297,6 @@ static BOOL db_engine_insert_message(sqlite3 *psqlite,
 	uint64_t *plast_row_id)
 {
 	uint64_t row_id;
-	ROWINFO_NODE *prnode;
 	
 	if (0 != before_row_id) {
 		sqlite3_bind_null(pstmt_update, 1);
@@ -1340,7 +1337,7 @@ static BOOL db_engine_insert_message(sqlite3 *psqlite,
 		sqlite3_reset(pstmt_update);
 	}
 	sqlite3_reset(pstmt_insert);
-	prnode = cu_alloc<ROWINFO_NODE>();
+	auto prnode = cu_alloc<ROWINFO_NODE>();
 	if (NULL == prnode) {
 		return FALSE;
 	}
@@ -1355,17 +1352,16 @@ static BOOL db_engine_insert_message(sqlite3 *psqlite,
 static void db_engine_append_rowinfo_node(
 	DOUBLE_LIST *pnotify_list, uint64_t row_id)
 {
-	ROWINFO_NODE *prnode;
 	DOUBLE_LIST_NODE *pnode;
 	
 	for (pnode=double_list_get_head(pnotify_list); NULL!=pnode;
 		pnode=double_list_get_after(pnotify_list, pnode)) {
-		prnode = (ROWINFO_NODE*)pnode->pdata;
+		auto prnode = (ROWINFO_NODE*)pnode->pdata;
 		if (row_id == prnode->row_id) {
 			return;
 		}
 	}
-	prnode = cu_alloc<ROWINFO_NODE>();
+	auto prnode = cu_alloc<ROWINFO_NODE>();
 	if (NULL != prnode) {
 		prnode->node.pdata = prnode;
 		prnode->b_added = FALSE;
@@ -2117,7 +2113,6 @@ void db_engine_transport_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 	NSUB_NODE *pnsub;
 	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
-	DB_NOTIFY_NEW_MAIL *pnew_mail;
 	auto dir = exmdb_server_get_dir();
 	std::vector<ID_NODE> tmp_list;
 
@@ -2142,7 +2137,7 @@ void db_engine_transport_new_mail(db_item_ptr &pdb, uint64_t folder_id,
 	datagram.b_table = FALSE;
 	datagram.db_notify.type =
 		DB_NOTIFY_TYPE_NEW_MAIL;
-	pnew_mail = cu_alloc<DB_NOTIFY_NEW_MAIL>();
+	auto pnew_mail = cu_alloc<DB_NOTIFY_NEW_MAIL>();
 	if (NULL == pnew_mail) {
 		return;
 	}
@@ -2170,7 +2165,6 @@ void db_engine_notify_new_mail(db_item_ptr &pdb,
 	NSUB_NODE *pnsub;
 	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
-	DB_NOTIFY_NEW_MAIL *pnew_mail;
 	auto dir = exmdb_server_get_dir();
 	std::vector<ID_NODE> tmp_list;
 
@@ -2194,7 +2188,7 @@ void db_engine_notify_new_mail(db_item_ptr &pdb,
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_NEW_MAIL;
-		pnew_mail = cu_alloc<DB_NOTIFY_NEW_MAIL>();
+		auto pnew_mail = cu_alloc<DB_NOTIFY_NEW_MAIL>();
 		if (NULL == pnew_mail) {
 			return;
 		}
@@ -2235,7 +2229,6 @@ void db_engine_notify_message_creation(db_item_ptr &pdb,
 	NSUB_NODE *pnsub;
 	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
-	DB_NOTIFY_MESSAGE_CREATED *pcreated_mail;
 	auto dir = exmdb_server_get_dir();
 	std::vector<ID_NODE> tmp_list;
 
@@ -2259,7 +2252,7 @@ void db_engine_notify_message_creation(db_item_ptr &pdb,
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_MESSAGE_CREATED;
-		pcreated_mail = cu_alloc<DB_NOTIFY_MESSAGE_CREATED>();
+		auto pcreated_mail = cu_alloc<DB_NOTIFY_MESSAGE_CREATED>();
 		if (NULL == pcreated_mail) {
 			return;
 		}
@@ -2292,7 +2285,6 @@ void db_engine_notify_link_creation(db_item_ptr &pdb,
 	uint64_t folder_id;
 	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
-	DB_NOTIFY_LINK_CREATED *plinked_mail;
 	
 	if (FALSE == common_util_get_message_parent_folder(
 		pdb->psqlite, message_id, &folder_id)) {
@@ -2321,7 +2313,7 @@ void db_engine_notify_link_creation(db_item_ptr &pdb,
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_LINK_CREATED;
-		plinked_mail = cu_alloc<DB_NOTIFY_LINK_CREATED>();
+		auto plinked_mail = cu_alloc<DB_NOTIFY_LINK_CREATED>();
 		if (NULL == plinked_mail) {
 			return;
 		}
@@ -2515,7 +2507,6 @@ void db_engine_notify_folder_creation(db_item_ptr &pdb,
 	NSUB_NODE *pnsub;
 	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
-	DB_NOTIFY_FOLDER_CREATED *pcreated_folder;
 	auto dir = exmdb_server_get_dir();
 	std::vector<ID_NODE> tmp_list;
 
@@ -2539,7 +2530,7 @@ void db_engine_notify_folder_creation(db_item_ptr &pdb,
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_FOLDER_CREATED;
-		pcreated_folder = cu_alloc<DB_NOTIFY_FOLDER_CREATED>();
+		auto pcreated_folder = cu_alloc<DB_NOTIFY_FOLDER_CREATED>();
 		if (NULL == pcreated_folder) {
 			return;
 		}
@@ -3157,7 +3148,6 @@ void db_engine_notify_message_deletion(db_item_ptr &pdb,
 	NSUB_NODE *pnsub;
 	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
-	DB_NOTIFY_MESSAGE_DELETED *pdeleted_mail;
 	auto dir = exmdb_server_get_dir();
 	std::vector<ID_NODE> tmp_list;
 
@@ -3181,7 +3171,7 @@ void db_engine_notify_message_deletion(db_item_ptr &pdb,
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_MESSAGE_DELETED;
-		pdeleted_mail = cu_alloc<DB_NOTIFY_MESSAGE_DELETED>();
+		auto pdeleted_mail = cu_alloc<DB_NOTIFY_MESSAGE_DELETED>();
 		if (NULL == pdeleted_mail) {
 			return;
 		}
@@ -3213,7 +3203,6 @@ void db_engine_notify_link_deletion(db_item_ptr &pdb,
 	uint64_t folder_id;
 	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
-	DB_NOTIFY_LINK_DELETED *punlinked_mail;
 	
 	if (FALSE == common_util_get_message_parent_folder(
 		pdb->psqlite, message_id, &folder_id)) {
@@ -3242,7 +3231,7 @@ void db_engine_notify_link_deletion(db_item_ptr &pdb,
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_LINK_DELETED;
-		punlinked_mail = cu_alloc<DB_NOTIFY_LINK_DELETED>();
+		auto punlinked_mail = cu_alloc<DB_NOTIFY_LINK_DELETED>();
 		if (NULL == punlinked_mail) {
 			return;
 		}
@@ -3350,7 +3339,6 @@ void db_engine_notify_folder_deletion(db_item_ptr &pdb,
 	NSUB_NODE *pnsub;
 	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
-	DB_NOTIFY_FOLDER_DELETED *pdeleted_folder;
 	auto dir = exmdb_server_get_dir();
 	std::vector<ID_NODE> tmp_list;
 
@@ -3374,7 +3362,7 @@ void db_engine_notify_folder_deletion(db_item_ptr &pdb,
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_FOLDER_DELETED;
-		pdeleted_folder = cu_alloc<DB_NOTIFY_FOLDER_DELETED>();
+		auto pdeleted_folder = cu_alloc<DB_NOTIFY_FOLDER_DELETED>();
 		if (NULL == pdeleted_folder) {
 			return;
 		}
@@ -3411,9 +3399,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 	uint32_t inst_num, multi_num = 0;
 	uint64_t parent_id;
 	TABLE_NODE *ptable;
-	TABLE_NODE *ptnode;
 	int8_t unread_delta;
-	ROWINFO_NODE *prnode;
 	DOUBLE_LIST tmp_list;
 	DOUBLE_LIST tmp_list1;
 	char sql_string[1024];
@@ -3928,7 +3914,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 						b_error = TRUE;
 						break;
 					}
-					prnode = cu_alloc<ROWINFO_NODE>();
+					auto prnode = cu_alloc<ROWINFO_NODE>();
 					if (NULL == prnode) {
 						return;
 					}
@@ -3940,7 +3926,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				if (TRUE == b_error) {
 					break;
 				}
-				prnode = cu_alloc<ROWINFO_NODE>();
+				auto prnode = cu_alloc<ROWINFO_NODE>();
 				if (NULL == prnode) {
 					return;
 				}
@@ -4030,7 +4016,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 		}
 		continue;
  REFRESH_TABLE:
-		ptnode = cu_alloc<TABLE_NODE>();
+		auto ptnode = cu_alloc<TABLE_NODE>();
 		if (NULL == ptnode) {
 			return;
 		}
@@ -4057,7 +4043,7 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 		     &pdb->tables.table_list); NULL != pnode1;
 		     pnode1 = double_list_get_after(
 		     &pdb->tables.table_list, pnode1)) {
-			ptnode = (TABLE_NODE *)pnode1->pdata;
+			auto ptnode = (TABLE_NODE *)pnode1->pdata;
 			if (ptable->table_id != ptnode->table_id)
 				continue;
 			ptnode->header_id = ptable->header_id;
@@ -4086,7 +4072,6 @@ void db_engine_notify_message_modification(db_item_ptr &pdb,
 	NSUB_NODE *pnsub;
 	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
-	DB_NOTIFY_MESSAGE_MODIFIED *pmodified_mail;
 	auto dir = exmdb_server_get_dir();
 	std::vector<ID_NODE> tmp_list;
 
@@ -4110,7 +4095,7 @@ void db_engine_notify_message_modification(db_item_ptr &pdb,
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_MESSAGE_MODIFIED;
-		pmodified_mail = cu_alloc<DB_NOTIFY_MESSAGE_MODIFIED>();
+		auto pmodified_mail = cu_alloc<DB_NOTIFY_MESSAGE_MODIFIED>();
 		if (NULL == pmodified_mail) {
 			return;
 		}
@@ -4316,7 +4301,6 @@ void db_engine_notify_folder_modification(db_item_ptr &pdb,
 	NSUB_NODE *pnsub;
 	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
-	DB_NOTIFY_FOLDER_MODIFIED *pmodified_folder;
 	auto dir = exmdb_server_get_dir();
 	std::vector<ID_NODE> tmp_list;
 
@@ -4340,7 +4324,7 @@ void db_engine_notify_folder_modification(db_item_ptr &pdb,
 		datagram.b_table = FALSE;
 		datagram.db_notify.type =
 			DB_NOTIFY_TYPE_FOLDER_MODIFIED;
-		pmodified_folder = cu_alloc<DB_NOTIFY_FOLDER_MODIFIED>();
+		auto pmodified_folder = cu_alloc<DB_NOTIFY_FOLDER_MODIFIED>();
 		if (NULL == pmodified_folder) {
 			return;
 		}
@@ -4371,7 +4355,6 @@ void db_engine_notify_message_movecopy(db_item_ptr &pdb,
 	NSUB_NODE *pnsub;
 	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
-	DB_NOTIFY_MESSAGE_MVCP *pmvcp_mail;
 	auto dir = exmdb_server_get_dir();
 	std::vector<ID_NODE> tmp_list;
 
@@ -4407,7 +4390,7 @@ void db_engine_notify_message_movecopy(db_item_ptr &pdb,
 			datagram.db_notify.type =
 				DB_NOTIFY_TYPE_MESSAGE_MOVED;
 		}
-		pmvcp_mail = cu_alloc<DB_NOTIFY_MESSAGE_MVCP>();
+		auto pmvcp_mail = cu_alloc<DB_NOTIFY_MESSAGE_MVCP>();
 		if (NULL == pmvcp_mail) {
 			return;
 		}
@@ -4448,7 +4431,6 @@ void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
 	NSUB_NODE *pnsub;
 	DOUBLE_LIST_NODE *pnode;
 	DB_NOTIFY_DATAGRAM datagram;
-	DB_NOTIFY_FOLDER_MVCP *pmvcp_folder;
 	auto dir = exmdb_server_get_dir();
 	std::vector<ID_NODE> tmp_list;
 
@@ -4485,7 +4467,7 @@ void db_engine_notify_folder_movecopy(db_item_ptr &pdb,
 			datagram.db_notify.type =
 				DB_NOTIFY_TYPE_FOLDER_MOVED;
 		}
-		pmvcp_folder = cu_alloc<DB_NOTIFY_FOLDER_MVCP>();
+		auto pmvcp_folder = cu_alloc<DB_NOTIFY_FOLDER_MVCP>();
 		if (NULL == pmvcp_folder) {
 			return;
 		}

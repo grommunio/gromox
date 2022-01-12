@@ -599,7 +599,6 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite,
 	uint64_t change_num;
 	uint32_t permission;
 	DOUBLE_LIST tmp_list;
-	DOUBLE_LIST_NODE *pnode;
 	
 	double_list_init(&tmp_list);
 	sqlite3_reset(pstmt);
@@ -615,15 +614,16 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite,
 			if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
 				continue;
 		}
-		pnode = cu_alloc<DOUBLE_LIST_NODE>();
+		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode) {
 			return FALSE;
 		}
-		pnode->pdata = cu_alloc<uint64_t>();
+		auto uv = cu_alloc<uint64_t>();
+		pnode->pdata = uv;
 		if (NULL == pnode->pdata) {
 			return FALSE;
 		}
-		*(uint64_t*)pnode->pdata = fid_val;
+		*uv = fid_val;
 		double_list_append_as_tail(&tmp_list, pnode);
 		sqlite3_reset(stm_insert_exist);
 		sqlite3_bind_int64(stm_insert_exist, 1, fid_val);
@@ -640,6 +640,7 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite,
 		if (sqlite3_step(stm_insert_chg) != SQLITE_DONE)
 			return FALSE;
 	}
+	DOUBLE_LIST_NODE *pnode;
 	while ((pnode = double_list_pop_front(&tmp_list)) != nullptr) {
 		if (!ics_load_folder_changes(psqlite,
 		    *static_cast<uint64_t *>(pnode->pdata), username, pgiven,

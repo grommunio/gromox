@@ -721,11 +721,12 @@ static BOOL message_get_message_rcpts(sqlite3 *psqlite,
 		ppropval = pset->pparray[pset->count]->ppropval;
 		pset->pparray[pset->count]->count ++;
 		ppropval->proptag = PR_ROWID;
-		ppropval->pvalue = cu_alloc<uint32_t>();
+		auto uv = cu_alloc<uint32_t>();
+		ppropval->pvalue = uv;
 		if (NULL == ppropval->pvalue) {
 			return FALSE;
 		}
-		*(uint32_t*)ppropval->pvalue = row_id++;
+		*uv = row_id++;
 		auto &drcpt = *pset->pparray[pset->count];
 		auto ptr = drcpt.find(PR_RECIPIENT_TYPE);
 		if (ptr == nullptr) {
@@ -765,7 +766,6 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 	PROPTAG_ARRAY proptags;
 	uint64_t attachment_id;
 	uint32_t proptag_buff[16];
-	ATTACHMENT_CONTENT *pattachment;
 	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
@@ -835,7 +835,7 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 	proptag_buff[0] = PR_ATTACH_LONG_FILENAME;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		attachment_id = sqlite3_column_int64(pstmt, 0);
-		pattachment = cu_alloc<ATTACHMENT_CONTENT>();
+		auto pattachment = cu_alloc<ATTACHMENT_CONTENT>();
 		if (NULL == pattachment) {
 			return FALSE;
 		}
@@ -1561,7 +1561,6 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 	TAGGED_PROPVAL *ppropval;
 	PROPTAG_ARRAY tmp_proptags;
 	uint32_t proptag_buff[0x8000];
-	ATTACHMENT_CONTENT *pattachment;
 	
 	snprintf(sql_string, arsizeof(sql_string), "SELECT message_id FROM"
 	          " messages WHERE message_id=%llu", LLU(message_id));
@@ -1641,7 +1640,7 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 			psqlite, &tmp_proptags)) {
 			return FALSE;
 		}
-		pattachment = cu_alloc<ATTACHMENT_CONTENT>();
+		auto pattachment = cu_alloc<ATTACHMENT_CONTENT>();
 		if (NULL == pattachment) {
 			return FALSE;
 		}
@@ -1707,12 +1706,10 @@ static BOOL message_rectify_message(const char *account,
 	const MESSAGE_CONTENT *pmsgctnt, MESSAGE_CONTENT *pmsgctnt1)
 {
 	int i;
-	BINARY *pbin;
 	GUID tmp_guid;
 	uint64_t nt_time;
 	EXT_PUSH ext_push;
 	char cid_string[256];
-	MESSAGE_CONTENT *pembedded;
 	static constexpr uint8_t fake_true = true;
 	static constexpr uint32_t fake_int32 = 0;
 	static uint32_t fake_flags = MSGFLAG_UNMODIFIED; /* modified by cu_set_properties */
@@ -1769,7 +1766,7 @@ static BOOL message_rectify_message(const char *account,
 		++vc;
 	}
 	if (!pmsgctnt->proplist.has(PR_SEARCH_KEY)) {
-		pbin = cu_alloc<BINARY>();
+		auto pbin = cu_alloc<BINARY>();
 		if (NULL == pbin) {
 			return FALSE;
 		}
@@ -1858,7 +1855,7 @@ static BOOL message_rectify_message(const char *account,
 		}
 	}
 	auto pbin1 = pmsgctnt->proplist.get<BINARY>(PROP_TAG_CONVERSATIONINDEX);
-	pbin = cu_alloc<BINARY>();
+	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return FALSE;
 	}
@@ -1959,7 +1956,7 @@ static BOOL message_rectify_message(const char *account,
 			}
 			pmsgctnt1->children.pattachments->pplist[i]->proplist =
 				pmsgctnt->children.pattachments->pplist[i]->proplist;
-			pembedded = cu_alloc<MESSAGE_CONTENT>();
+			auto pembedded = cu_alloc<MESSAGE_CONTENT>();
 			if (NULL == pembedded) {
 				return FALSE;
 			}
@@ -2618,7 +2615,6 @@ static BOOL message_make_deferred_error_message(const char *username,
 	uint64_t tmp_eid;
 	uint64_t mid_val;
 	uint64_t nt_time;
-	MESSAGE_NODE *pmnode;
 	MESSAGE_CONTENT *pmsg;
 	
 	if (FALSE == exmdb_server_check_private()) {
@@ -2671,7 +2667,7 @@ static BOOL message_make_deferred_error_message(const char *username,
 	cu_set_property(db_table::folder_props,
 		PRIVATE_FID_DEFERRED_ACTION, 0, psqlite,
 		&propval, &b_result);
-	pmnode = cu_alloc<MESSAGE_NODE>();
+	auto pmnode = cu_alloc<MESSAGE_NODE>();
 	if (NULL == pmnode) {
 		return FALSE;
 	}
@@ -2757,7 +2753,6 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	void *pvalue;
 	GUID tmp_guid;
 	BINARY tmp_bin;
-	TARRAY_SET *prcpts;
 	DOUBLE_LIST tmp_list;
 	char content_type[128];
 	TAGGED_PROPVAL propval;
@@ -2835,7 +2830,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 			return TRUE;
 		}
 	} else {
-		prcpts = cu_alloc<TARRAY_SET>();
+		auto prcpts = cu_alloc<TARRAY_SET>();
 		if (NULL == prcpts) {
 			return FALSE;
 		}
@@ -2859,12 +2854,11 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		(*prcpts->pparray)->ppropval[0].pvalue = pvalue == nullptr ?
 			deconst(from_address) : pvalue;
 		(*prcpts->pparray)->ppropval[1].proptag = PR_RECIPIENT_TYPE;
-		pvalue = cu_alloc<uint32_t>();
-		if (NULL == pvalue) {
+		auto uv = cu_alloc<uint32_t>();
+		if (uv == nullptr)
 			return FALSE;
-		}
-		*static_cast<uint32_t *>(pvalue) = MAPI_TO;
-		(*prcpts->pparray)->ppropval[1].pvalue = pvalue; 
+		*uv = MAPI_TO;
+		(*prcpts->pparray)->ppropval[1].pvalue = uv;
 		if (!cu_get_property(db_table::msg_props, message_id,
 		    0, psqlite, PR_SENT_REPRESENTING_NAME, &pvalue))
 			return FALSE;
@@ -2942,7 +2936,6 @@ static BOOL message_bounce_message(const char *from_address,
 	int bounce_type;
 	char tmp_buff[256];
 	DOUBLE_LIST tmp_list;
-	DOUBLE_LIST_NODE *pnode;
 	
 	if (0 == strcasecmp(from_address, "none@none") ||
 		NULL == strchr(account, '@')) {
@@ -2962,7 +2955,7 @@ static BOOL message_bounce_message(const char *from_address,
 		return TRUE;
 	}
 	double_list_init(&tmp_list);
-	pnode = cu_alloc<DOUBLE_LIST_NODE>();
+	auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		return FALSE;
 	}
@@ -3199,7 +3192,6 @@ static BOOL message_make_deferred_action_message(const char *username,
 	uint64_t nt_time;
 	uint8_t tmp_byte;
 	EXT_PUSH ext_push;
-	MESSAGE_NODE *pmnode;
 	RULE_ACTIONS actions;
 	MESSAGE_CONTENT *pmsg;
 	uint64_t tmp_ids[MAX_DAMS_PER_RULE_FOLDER];
@@ -3291,7 +3283,7 @@ static BOOL message_make_deferred_action_message(const char *username,
 	cu_set_property(db_table::folder_props,
 		PRIVATE_FID_DEFERRED_ACTION, 0, psqlite,
 		&propval, &b_result);
-	pmnode = cu_alloc<MESSAGE_NODE>();
+	auto pmnode = cu_alloc<MESSAGE_NODE>();
 	if (NULL == pmnode) {
 		return FALSE;
 	}
@@ -3420,11 +3412,12 @@ static bool op_move_same(BOOL b_oof, const char *from_address,
 	if (NULL == pnode1) {
 		return FALSE;
 	}
-	pnode1->pdata = cu_alloc<uint64_t>();
+	auto uv = cu_alloc<uint64_t>();
+	pnode1->pdata = uv;
 	if (NULL == pnode1->pdata) {
 		return FALSE;
 	}
-	*(uint64_t *)pnode1->pdata = dst_fid;
+	*uv = dst_fid;
 	double_list_append_as_tail(pfolder_list, pnode1);
 	char tmp_buff[MAX_DIGLEN];
 	char *pmid_string = nullptr, *pdigest1 = nullptr;
@@ -3898,11 +3891,12 @@ static bool opx_move(BOOL b_oof, const char *from_address,
 	if (NULL == pnode1) {
 		return FALSE;
 	}
-	pnode1->pdata = cu_alloc<uint64_t>();
+	auto uv = cu_alloc<uint64_t>();
+	pnode1->pdata = uv;
 	if (NULL == pnode1->pdata) {
 		return FALSE;
 	}
-	*(uint64_t *)pnode1->pdata = dst_fid;
+	*uv = dst_fid;
 	double_list_append_as_tail(pfolder_list, pnode1);
 	char tmp_buff[MAX_DIGLEN];
 	char *pmid_string = nullptr, *pdigest1 = nullptr;
@@ -4329,7 +4323,6 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	TAGGED_PROPVAL propval;
 	char display_name[1024];
 	DOUBLE_LIST folder_list;
-	DOUBLE_LIST_NODE *pnode;
 	MESSAGE_CONTENT tmp_msg;
 	char digest_buff[MAX_DIGLEN];
 	static const uint8_t fake_true = 1;
@@ -4394,15 +4387,16 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	}
 	double_list_init(&msg_list);
 	double_list_init(&folder_list);
-	pnode = cu_alloc<DOUBLE_LIST_NODE>();
+	auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		return FALSE;
 	}
-	pnode->pdata = cu_alloc<uint64_t>();
+	auto uv = cu_alloc<uint64_t>();
+	pnode->pdata = uv;
 	if (NULL == pnode->pdata) {
 		return FALSE;
 	}
-	*(uint64_t*)pnode->pdata = fid_val;
+	*uv = fid_val;
 	double_list_append_as_tail(&folder_list, pnode);
 	tmp_msg = *pmsg;
 	if (TRUE == exmdb_server_check_private()) {
@@ -4643,7 +4637,6 @@ BOOL exmdb_server_rule_new_message(const char *dir,
 	DOUBLE_LIST msg_list;
 	MESSAGE_NODE *pmnode;
 	DOUBLE_LIST folder_list;
-	DOUBLE_LIST_NODE *pnode;
 	char digest_buff[MAX_DIGLEN];
 	
 	auto pdb = db_engine_get_db(dir);
@@ -4674,15 +4667,16 @@ BOOL exmdb_server_rule_new_message(const char *dir,
 	}
 	double_list_init(&msg_list);
 	double_list_init(&folder_list);
-	pnode = cu_alloc<DOUBLE_LIST_NODE>();
+	auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		return FALSE;
 	}
-	pnode->pdata = cu_alloc<uint64_t>();
+	auto uv = cu_alloc<uint64_t>();
+	pnode->pdata = uv;
 	if (NULL == pnode->pdata) {
 		return FALSE;
 	}
-	*(uint64_t*)pnode->pdata = fid_val;
+	*uv = fid_val;
 	double_list_append_as_tail(&folder_list, pnode);
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (FALSE == message_rule_new_message(FALSE, "none@none",
