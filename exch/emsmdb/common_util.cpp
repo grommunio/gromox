@@ -155,10 +155,9 @@ static char* common_util_dup_mb_to_utf8(
 	uint32_t cpid, const char *src)
 {
 	int len;
-	char *pdst;
 	
 	len = 2*strlen(src) + 1;
-	pdst = cu_alloc<char>(len);
+	auto pdst = cu_alloc<char>(len);
 	if (NULL == pdst) {
 		return NULL;
 	}
@@ -934,7 +933,6 @@ BOOL common_util_propvals_to_row(
 	const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *prow)
 {
 	int i;
-	FLAGGED_PROPVAL *pflagged_val;
 	static const uint32_t errcode = ecNotFound;
 	
 	for (i=0; i<pcolumns->count; i++) {
@@ -949,7 +947,7 @@ BOOL common_util_propvals_to_row(
 	for (i=0; i<pcolumns->count; i++) {
 		prow->pppropval[i] = ppropvals->getval(pcolumns->pproptag[i]);
 		if (PROPERTY_ROW_FLAG_FLAGGED == prow->flag) {
-			pflagged_val = cu_alloc<FLAGGED_PROPVAL>();
+			auto pflagged_val = cu_alloc<FLAGGED_PROPVAL>();
 			if (NULL == pflagged_val) {
 				return FALSE;
 			}
@@ -1008,7 +1006,6 @@ BOOL common_util_propvals_to_row_ex(uint32_t cpid,
 	const PROPTAG_ARRAY *pcolumns, PROPERTY_ROW *prow)
 {
 	int i;
-	FLAGGED_PROPVAL *pflagged_val;
 	static const uint32_t errcode = ecNotFound;
 	
 	for (i=0; i<pcolumns->count; i++) {
@@ -1029,7 +1026,7 @@ BOOL common_util_propvals_to_row_ex(uint32_t cpid,
 				return FALSE;
 		}
 		if (PROPERTY_ROW_FLAG_FLAGGED == prow->flag) {
-			pflagged_val = cu_alloc<FLAGGED_PROPVAL>();
+			auto pflagged_val = cu_alloc<FLAGGED_PROPVAL>();
 			if (NULL == pflagged_val) {
 				return FALSE;
 			}
@@ -1308,11 +1305,12 @@ BOOL common_util_modifyrecipient_to_propvals(
 	propval.pvalue = (void*)&prow->row_id;
 	common_util_set_propvals(ppropvals, &propval);
 	propval.proptag = PR_RECIPIENT_TYPE;
-	propval.pvalue = cu_alloc<uint32_t>();
+	auto rcpttype = cu_alloc<uint32_t>();
+	propval.pvalue = rcpttype;
 	if (NULL == propval.pvalue) {
 		return FALSE;
 	}
-	*(uint32_t*)propval.pvalue = prow->recipient_type;
+	*rcpttype = prow->recipient_type;
 	common_util_set_propvals(ppropvals, &propval);
 	if (NULL == prow->precipient_row) {
 		return TRUE;
@@ -1340,13 +1338,11 @@ static void common_util_convert_proptag(BOOL to_unicode, uint32_t *pproptag)
 BOOL common_util_convert_tagged_propval(
 	BOOL to_unicode, TAGGED_PROPVAL *ppropval)
 {
-	char *pstring;
-	
 	if (TRUE == to_unicode) {
 		switch (PROP_TYPE(ppropval->proptag)) {
 		case PT_STRING8: {
 			auto len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 1;
-			pstring = cu_alloc<char>(len);
+			auto pstring = cu_alloc<char>(len);
 			if (NULL == pstring) {
 				return FALSE;
 			}
@@ -1362,7 +1358,7 @@ BOOL common_util_convert_tagged_propval(
 			auto sa = static_cast<STRING_ARRAY *>(ppropval->pvalue);
 			for (size_t i = 0; i < sa->count; ++i) {
 				auto len = 2 * strlen(sa->ppstr[i]) + 1;
-				pstring = cu_alloc<char>(len);
+				auto pstring = cu_alloc<char>(len);
 				if (NULL == pstring) {
 					return FALSE;
 				}
@@ -1388,7 +1384,7 @@ BOOL common_util_convert_tagged_propval(
 		switch (PROP_TYPE(ppropval->proptag)) {
 		case PT_UNICODE: {
 			auto len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 1;
-			pstring = cu_alloc<char>(len);
+			auto pstring = cu_alloc<char>(len);
 			if (NULL == pstring) {
 				return FALSE;
 			}
@@ -1403,7 +1399,7 @@ BOOL common_util_convert_tagged_propval(
 			auto sa = static_cast<STRING_ARRAY *>(ppropval->pvalue);
 			for (size_t i = 0; i < sa->count; ++i) {
 				auto len = 2 * strlen(sa->ppstr[i]) + 1;
-				pstring = cu_alloc<char>(len);
+				auto pstring = cu_alloc<char>(len);
 				if (NULL == pstring) {
 					return FALSE;
 				}
@@ -1951,8 +1947,6 @@ BOOL common_util_send_message(logon_object *plogon,
 	TARRAY_SET *prcpts;
 	DOUBLE_LIST temp_list;
 	uint32_t message_flags;
-	DOUBLE_LIST_NODE *pnode;
-	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT *pmsgctnt;
 #define LLU(x) static_cast<unsigned long long>(x)
 	
@@ -1970,7 +1964,7 @@ BOOL common_util_send_message(logon_object *plogon,
 		return FALSE;
 	}
 	if (!pmsgctnt->proplist.has(PR_INTERNET_CPID)) {
-		ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
+		auto ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 1);
 		if (NULL == ppropval) {
 			return FALSE;
 		}
@@ -1994,7 +1988,7 @@ BOOL common_util_send_message(logon_object *plogon,
 	}
 	double_list_init(&temp_list);
 	for (size_t i = 0; i < prcpts->count; ++i) {
-		pnode = cu_alloc<DOUBLE_LIST_NODE>();
+		auto pnode = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode) {
 			return FALSE;
 		}

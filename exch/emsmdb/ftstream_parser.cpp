@@ -62,8 +62,6 @@ static BOOL ftstream_parser_read_uint64(
 static char* ftstream_parser_read_wstring(
 	FTSTREAM_PARSER *pstream, BOOL *pb_continue)
 {
-	char *pbuff;
-	char *pbuff1;
 	uint32_t len;
 	uint32_t tmp_len;
 	uint32_t origin_offset;
@@ -84,7 +82,7 @@ static char* ftstream_parser_read_wstring(
 		return NULL;
 	}
 	tmp_len = 2*len;
-	pbuff = me_alloc<char>(len + 2);
+	auto pbuff = me_alloc<char>(len + 2);
 	if (NULL == pbuff) {
 		return NULL;
 	}
@@ -99,7 +97,7 @@ static char* ftstream_parser_read_wstring(
 		pbuff[len + 1] = 0;
 		len += 2;
 	}
-	pbuff1 = cu_alloc<char>(tmp_len);
+	auto pbuff1 = cu_alloc<char>(tmp_len);
 	if (NULL == pbuff1) {
 		free(pbuff);
 		return NULL;
@@ -116,7 +114,6 @@ static char* ftstream_parser_read_wstring(
 static char* ftstream_parser_read_string(
 	FTSTREAM_PARSER *pstream, BOOL *pb_continue)
 {
-	char *pbuff;
 	uint32_t len;
 	uint32_t origin_offset;
 	
@@ -135,7 +132,7 @@ static char* ftstream_parser_read_string(
 		*pb_continue = TRUE;
 		return NULL;
 	}
-	pbuff = cu_alloc<char>(len + 1);
+	auto pbuff = cu_alloc<char>(len + 1);
 	if (NULL == pbuff) {
 		return NULL;
 	}
@@ -153,7 +150,6 @@ static char* ftstream_parser_read_string(
 static char* ftstream_parser_read_naked_wstring(
 	FTSTREAM_PARSER *pstream)
 {
-	char *pbuff;
 	uint32_t len;
 	char buff[1024];
 	uint32_t offset;
@@ -173,7 +169,7 @@ static char* ftstream_parser_read_naked_wstring(
 	}
 	len = offset + 2;
 	pstream->offset += len;
-	pbuff = cu_alloc<char>(2 * len);
+	auto pbuff = cu_alloc<char>(2 * len);
 	if (NULL == pbuff) {
 		return NULL;
 	}

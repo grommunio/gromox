@@ -23,7 +23,6 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	uint8_t rop_id;
 	uint16_t max_rop;
 	EXT_PUSH ext_push;
-	void *perr_response;
 	EMSMDB_INFO *pemsmdb_info;
 	uint8_t partial_completion;
 	
@@ -47,22 +46,20 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	switch (prequest->rop_id) {
 	case ropLogon: {
 		(*ppresponse)->hindex = prequest->hindex;
-		perr_response = cu_alloc<LOGON_REDIRECT_RESPONSE>();
-		if (NULL == perr_response) {
-			return ecMAPIOOM;
-		}
 		auto rq = static_cast<LOGON_REQUEST *>(prequest->ppayload);
-		auto rdr = static_cast<LOGON_REDIRECT_RESPONSE *>(perr_response);
+		auto rdr = cu_alloc<LOGON_REDIRECT_RESPONSE>();
+		if (rdr == nullptr)
+			return ecMAPIOOM;
 		if (rq->pessdn != nullptr)
 			gx_strlcpy(rdr->pserver_name, rq->pessdn, GX_ARRAY_SIZE(rdr->pserver_name));
 		else
 			rdr->pserver_name[0] = '\0';
 		if (rq->logon_flags & LOGON_FLAG_PRIVATE) {
-			(*ppresponse)->ppayload = cu_alloc<LOGON_PMB_RESPONSE>();
+			auto pmb = cu_alloc<LOGON_PMB_RESPONSE>();
+			(*ppresponse)->ppayload = pmb;
 			if (NULL == (*ppresponse)->ppayload) {
 				return ecMAPIOOM;
 			}
-			auto pmb = static_cast<LOGON_PMB_RESPONSE *>((*ppresponse)->ppayload);
 			pmb->logon_flags = rq->logon_flags;
 			(*ppresponse)->result = rop_logon_pmb(rq->logon_flags,
 				rq->open_flags, rq->store_stat,
@@ -73,11 +70,11 @@ int rop_dispatch(ROP_REQUEST *prequest,
 				&pmb->store_stat,
 				pemsmdb_info->plogmap, prequest->logon_id, phandles + prequest->hindex);
 		} else {
-			(*ppresponse)->ppayload = cu_alloc<LOGON_PF_RESPONSE>();
+			auto pfr = cu_alloc<LOGON_PF_RESPONSE>();
+			(*ppresponse)->ppayload = pfr;
 			if (NULL == (*ppresponse)->ppayload) {
 				return ecMAPIOOM;
 			}
-			auto pfr = static_cast<LOGON_PF_RESPONSE *>((*ppresponse)->ppayload);
 			pfr->logon_flags = rq->logon_flags;
 			(*ppresponse)->result = rop_logon_pf(rq->logon_flags,
 				rq->open_flags, rq->store_stat,
@@ -88,18 +85,18 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		}
 		if ((*ppresponse)->result == ecWrongServer) {
 			rdr->logon_flags = rq->logon_flags;
-			(*ppresponse)->ppayload = perr_response;
+			(*ppresponse)->ppayload = rdr;
 		}
 		break;
 	}
 	case ropGetReceiveFolder: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETRECEIVEFOLDER_RESPONSE>();
+		auto rsp = cu_alloc<GETRECEIVEFOLDER_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<GETRECEIVEFOLDER_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<GETRECEIVEFOLDER_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_getreceivefolder(rq->pstr_class,
 			&rsp->folder_id, &rsp->pstr_class,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -115,34 +112,34 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetReceiveFolderTable: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETRECEIVEFOLDERTABLE_RESPONSE>();
+		auto rsp = cu_alloc<GETRECEIVEFOLDERTABLE_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<GETRECEIVEFOLDERTABLE_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_getreceivefoldertable(&rsp->rows,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetStoreState: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETSTORESTAT_RESPONSE>();
+		auto rsp = cu_alloc<GETSTORESTAT_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<GETSTORESTAT_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_getstorestat(&rsp->stat,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetOwningServers: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETOWNINGSERVERS_RESPONSE>();
+		auto rsp = cu_alloc<GETOWNINGSERVERS_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<GETOWNINGSERVERS_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<GETOWNINGSERVERS_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_getowningservers(
 			rq->folder_id, &rsp->ghost,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -150,12 +147,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropPublicFolderIsGhosted: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<PUBLICFOLDERISGHOSTED_RESPONSE>();
+		auto rsp = cu_alloc<PUBLICFOLDERISGHOSTED_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<PUBLICFOLDERISGHOSTED_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<PUBLICFOLDERISGHOSTED_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_publicfolderisghosted(
 			rq->folder_id, &rsp->pghost,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -163,12 +160,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropLongTermIdFromId: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<LONGTERMIDFROMID_RESPONSE>();
+		auto rsp = cu_alloc<LONGTERMIDFROMID_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<LONGTERMIDFROMID_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<LONGTERMIDFROMID_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_longtermidfromid(
 			rq->id, &rsp->long_term_id,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -176,12 +173,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropIdFromLongTermId: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<IDFROMLONGTERMID_RESPONSE>();
+		auto rsp = cu_alloc<IDFROMLONGTERMID_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<IDFROMLONGTERMID_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<IDFROMLONGTERMID_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_idfromlongtermid(
 			&rq->long_term_id, &rsp->id,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -189,12 +186,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetPerUserLongTermIds: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETPERUSERLONGTERMIDS_RESPONSE>();
+		auto rsp = cu_alloc<GETPERUSERLONGTERMIDS_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<GETPERUSERLONGTERMIDS_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<GETPERUSERLONGTERMIDS_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_getperuserlongtermids(
 			&rq->guid, &rsp->ids,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -202,12 +199,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetPerUserGuid: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETPERUSERGUID_RESPONSE>();
+		auto rsp = cu_alloc<GETPERUSERGUID_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<GETPERUSERGUID_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<GETPERUSERGUID_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_getperuserguid(
 			&rq->long_term_id, &rsp->guid,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -215,12 +212,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropReadPerUserInformation: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<READPERUSERINFORMATION_RESPONSE>();
+		auto rsp = cu_alloc<READPERUSERINFORMATION_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<READPERUSERINFORMATION_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<READPERUSERINFORMATION_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_readperuserinformation(
 			&rq->long_folder_id, rq->reserved, rq->data_offset,
 			rq->max_data_size, &rsp->has_finished, &rsp->data,
@@ -242,11 +239,11 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			return ecInvalidObject;
 		}
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = cu_alloc<OPENFOLDER_RESPONSE>();
+		auto rsp = cu_alloc<OPENFOLDER_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<OPENFOLDER_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_openfolder(rq->folder_id,
 			rq->open_flags, &rsp->has_rules, &rsp->pghost,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
@@ -259,11 +256,11 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			return ecInvalidObject;
 		}
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = cu_alloc<CREATEFOLDER_RESPONSE>();
+		auto rsp = cu_alloc<CREATEFOLDER_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<CREATEFOLDER_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_createfolder(rq->folder_type,
 			rq->use_unicode, rq->open_existing, rq->reserved,
 			rq->pfolder_name, rq->pfolder_comment,
@@ -275,12 +272,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropDeleteFolder: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<DELETEFOLDER_RESPONSE>();
+		auto rsp = cu_alloc<DELETEFOLDER_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<DELETEFOLDER_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<DELETEFOLDER_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_deletefolder(rq->flags,
 			rq->folder_id, &rsp->partial_completion,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -296,12 +293,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetSearchCriteria: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETSEARCHCRITERIA_RESPONSE>();
+		auto rsp = cu_alloc<GETSEARCHCRITERIA_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<GETSEARCHCRITERIA_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<GETSEARCHCRITERIA_RESPONSE *>((*ppresponse)->ppayload);
 		rsp->logon_id = prequest->logon_id;
 		(*ppresponse)->result = rop_getsearchcriteria(rq->use_unicode,
 			rq->include_restriction, rq->include_folders,
@@ -314,25 +311,23 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<MOVECOPYMESSAGES_RESPONSE>();
+		auto rsp = cu_alloc<MOVECOPYMESSAGES_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<MOVECOPYMESSAGES_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_movecopymessages(&rq->message_ids,
 			rq->want_asynchronous, rq->want_copy,
 			&rsp->partial_completion,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->hindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
-			perr_response = cu_alloc<NULL_DST_RESPONSE>();
-			if (NULL == perr_response) {
+			auto nr = cu_alloc<NULL_DST_RESPONSE>();
+			if (nr == nullptr)
 				return ecMAPIOOM;
-			}
-			auto nr = static_cast<NULL_DST_RESPONSE *>(perr_response);
 			nr->hindex = rq->hindex;
 			nr->partial_completion = rsp->partial_completion;
-			(*ppresponse)->ppayload = perr_response;
+			(*ppresponse)->ppayload = nr;
 		}
 		break;
 	}
@@ -341,25 +336,23 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<MOVEFOLDER_RESPONSE>();
+		auto rsp = cu_alloc<MOVEFOLDER_RESPONSE>();;
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<MOVEFOLDER_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_movefolder(rq->want_asynchronous,
 			rq->use_unicode, rq->folder_id, rq->pnew_name,
 			&rsp->partial_completion,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->hindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
-			perr_response = cu_alloc<NULL_DST_RESPONSE>();
-			if (NULL == perr_response) {
+			auto nr = cu_alloc<NULL_DST_RESPONSE>();
+			if (nr == nullptr)
 				return ecMAPIOOM;
-			}
-			auto nr = static_cast<NULL_DST_RESPONSE *>(perr_response);
 			nr->hindex = rq->hindex;
 			nr->partial_completion = rsp->partial_completion;
-			(*ppresponse)->ppayload = perr_response;
+			(*ppresponse)->ppayload = nr;
 		}
 		break;
 	}
@@ -368,36 +361,34 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<COPYFOLDER_RESPONSE>();
+		auto rsp = cu_alloc<COPYFOLDER_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<COPYFOLDER_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_copyfolder(rq->want_asynchronous,
 			rq->want_recursive, rq->use_unicode, rq->folder_id,
 			rq->pnew_name, &rsp->partial_completion,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->hindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
-			perr_response = cu_alloc<NULL_DST_RESPONSE>();
-			if (NULL == perr_response) {
+			auto nr = cu_alloc<NULL_DST_RESPONSE>();
+			if (nr == nullptr)
 				return ecMAPIOOM;
-			}
-			auto nr = static_cast<NULL_DST_RESPONSE *>(perr_response);
 			nr->hindex = rq->hindex;
 			nr->partial_completion = rsp->partial_completion;
-			(*ppresponse)->ppayload = perr_response;
+			(*ppresponse)->ppayload = nr;
 		}
 		break;
 	}
 	case ropEmptyFolder: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<EMPTYFOLDER_RESPONSE>();
+		auto rsp = cu_alloc<EMPTYFOLDER_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<EMPTYFOLDER_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<EMPTYFOLDER_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_emptyfolder(rq->want_asynchronous,
 			rq->want_delete_associated, &rsp->partial_completion,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -405,12 +396,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropHardDeleteMessagesAndSubfolders: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<EMPTYFOLDER_RESPONSE>();
+		auto rsp = cu_alloc<EMPTYFOLDER_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<HARDDELETEMESSAGESANDSUBFOLDERS_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<HARDDELETEMESSAGESANDSUBFOLDERS_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_harddeletemessagesandsubfolders(
 			rq->want_asynchronous, rq->want_delete_associated,
 			&rsp->partial_completion,
@@ -419,12 +410,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropDeleteMessages: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<DELETEMESSAGES_RESPONSE>();
+		auto rsp = cu_alloc<DELETEMESSAGES_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<DELETEMESSAGES_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<DELETEMESSAGES_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_deletemessages(rq->want_asynchronous,
 			rq->notify_non_read, &rq->message_ids,
 			&rsp->partial_completion,
@@ -433,12 +424,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropHardDeleteMessages: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<HARDDELETEMESSAGES_RESPONSE>();
+		auto rsp = cu_alloc<HARDDELETEMESSAGES_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<HARDDELETEMESSAGES_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<HARDDELETEMESSAGES_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_harddeletemessages(
 			rq->want_asynchronous, rq->notify_non_read,
 			&rq->message_ids, &rsp->partial_completion,
@@ -450,11 +441,11 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex > hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETHIERARCHYTABLE_RESPONSE>();
+		auto rsp = cu_alloc<GETHIERARCHYTABLE_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<GETHIERARCHYTABLE_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_gethierarchytable(
 			rq->table_flags, &rsp->row_count,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
@@ -466,11 +457,11 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETCONTENTSTABLE_RESPONSE>();
+		auto rsp = cu_alloc<GETCONTENTSTABLE_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<GETCONTENTSTABLE_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_getcontentstable(rq->table_flags,
 			&rsp->row_count,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
@@ -479,12 +470,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSetColumns: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<SETCOLUMNS_RESPONSE>();
+		auto rsp = cu_alloc<SETCOLUMNS_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<SETCOLUMNS_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<SETCOLUMNS_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_setcolumns(rq->table_flags,
 			&rq->proptags, &rsp->table_status,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -492,12 +483,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSortTable: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<SORTTABLE_RESPONSE>();
+		auto rsp = cu_alloc<SORTTABLE_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<SORTTABLE_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<SORTTABLE_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_sorttable(rq->table_flags,
 			&rq->sort_criteria, &rsp->table_status,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -505,12 +496,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropRestrict: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<RESTRICT_RESPONSE>();
+		auto rsp = cu_alloc<RESTRICT_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<RESTRICT_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<RESTRICT_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_restrict(rq->res_flags, rq->pres,
 			&rsp->table_status,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -518,7 +509,8 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropQueryRows: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<QUERYROWS_RESPONSE>();
+		auto rsp = cu_alloc<QUERYROWS_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -532,7 +524,6 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		    !ext_push.init(pdata, max_rop, EXT_FLAG_UTF16 | EXT_FLAG_TBLLMT))
 			return ecMAPIOOM;
 		auto rq = static_cast<QUERYROWS_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<QUERYROWS_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_queryrows(rq->flags,
 			rq->forward_read, rq->row_count, &rsp->seek_pos,
 			&rsp->count,
@@ -546,33 +537,33 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropAbort: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<ABORT_RESPONSE>();
+		auto rsp = cu_alloc<ABORT_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<ABORT_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_abort(&rsp->table_status,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropGetStatus: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETSTATUS_RESPONSE>();
+		auto rsp = cu_alloc<GETSTATUS_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<GETSTATUS_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_getstatus(&rsp->table_status,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropQueryPosition: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<QUERYPOSITION_RESPONSE>();
+		auto rsp = cu_alloc<QUERYPOSITION_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<QUERYPOSITION_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_queryposition(
 			&rsp->numerator, &rsp->denominator,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -580,12 +571,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSeekRow: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<QUERYPOSITION_RESPONSE>();
+		auto rsp = cu_alloc<SEEKROW_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<SEEKROW_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<SEEKROW_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_seekrow(rq->seek_pos, rq->offset,
 			rq->want_moved_count, &rsp->has_soughtless,
 			&rsp->offset_sought,
@@ -594,12 +585,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSeekRowBookmark: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<SEEKROWBOOKMARK_RESPONSE>();
+		auto rsp = cu_alloc<SEEKROWBOOKMARK_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<SEEKROWBOOKMARK_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<SEEKROWBOOKMARK_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_seekrowbookmark(&rq->bookmark,
 			rq->offset, rq->want_moved_count, &rsp->row_invisible,
 			&rsp->has_soughtless, &rsp->offset_sought,
@@ -615,34 +606,34 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropCreateBookmark: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<CREATEBOOKMARK_RESPONSE>();
+		auto rsp = cu_alloc<CREATEBOOKMARK_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<CREATEBOOKMARK_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_createbookmark(&rsp->bookmark,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropQueryColumnsAll: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<QUERYCOLUMNSALL_RESPONSE>();
+		auto rsp = cu_alloc<QUERYCOLUMNSALL_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<QUERYCOLUMNSALL_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_querycolumnsall(&rsp->proptags,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropFindRow: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<FINDROW_RESPONSE>();
+		auto rsp = cu_alloc<FINDROW_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<FINDROW_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<FINDROW_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_findrow(rq->flags, rq->pres,
 			rq->seek_pos, &rq->bookmark, &rsp->bookmark_invisible,
 			&rsp->prow, &rsp->pcolumns,
@@ -663,7 +654,8 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		break;
 	case ropExpandRow: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<EXPANDROW_RESPONSE>();
+		auto rsp = cu_alloc<EXPANDROW_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -677,7 +669,6 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		    !ext_push.init(pdata, max_rop, EXT_FLAG_UTF16))
 			return ecMAPIOOM;
 		auto rq = static_cast<EXPANDROW_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<EXPANDROW_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_expandrow(rq->max_count,
 			rq->category_id, &rsp->expanded_count,
 			&rsp->count, &ext_push,
@@ -690,12 +681,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropCollapseRow: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<COLLAPSEROW_RESPONSE>();
+		auto rsp = cu_alloc<COLLAPSEROW_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<COLLAPSEROW_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<COLLAPSEROW_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_collapserow(
 			rq->category_id, &rsp->collapsed_count,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -703,12 +694,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetCollapseState: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETCOLLAPSESTATE_RESPONSE>();
+		auto rsp = cu_alloc<GETCOLLAPSESTATE_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<GETCOLLAPSESTATE_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<GETCOLLAPSESTATE_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_getcollapsestate(rq->row_id,
 			rq->row_instance, &rsp->collapse_state,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -716,12 +707,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSetCollapseState: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<SETCOLLAPSESTATE_RESPONSE>();
+		auto rsp = cu_alloc<SETCOLLAPSESTATE_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<SETCOLLAPSESTATE_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<SETCOLLAPSESTATE_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_setcollapsestate(
 			&rq->collapse_state, &rsp->bookmark,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -732,11 +723,11 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = cu_alloc<OPENMESSAGE_RESPONSE>();
+		auto rsp = cu_alloc<OPENMESSAGE_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<OPENMESSAGE_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_openmessage(rq->cpid, rq->folder_id,
 			rq->open_mode_flags, rq->message_id,
 			&rsp->has_named_properties, &rsp->subject_prefix,
@@ -752,11 +743,11 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = cu_alloc<CREATEMESSAGE_RESPONSE>();
+		auto rsp = cu_alloc<CREATEMESSAGE_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<CREATEMESSAGE_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_createmessage(rq->cpid,
 			rq->folder_id, rq->associated_flag, &rsp->pmessage_id,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
@@ -765,12 +756,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSaveChangesMessage: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<SAVECHANGESMESSAGE_RESPONSE>();
+		auto rsp = cu_alloc<SAVECHANGESMESSAGE_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<SAVECHANGESMESSAGE_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<SAVECHANGESMESSAGE_RESPONSE *>((*ppresponse)->ppayload);
 		rsp->hindex = rq->hindex;
 		(*ppresponse)->result = rop_savechangesmessage(rq->save_flags,
 			&rsp->message_id,
@@ -795,7 +786,8 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropReadRecipients: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<READRECIPIENTS_RESPONSE>();
+		auto rsp = cu_alloc<READRECIPIENTS_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
@@ -809,7 +801,6 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		    !ext_push.init(pdata, max_rop, EXT_FLAG_UTF16))
 			return ecMAPIOOM;
 		auto rq = static_cast<READRECIPIENTS_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<READRECIPIENTS_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_readrecipients(rq->row_id,
 			rq->reserved, &rsp->count,
 			&ext_push, pemsmdb_info->plogmap, prequest->logon_id,
@@ -822,12 +813,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropReloadCachedInformation: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<RELOADCACHEDINFORMATION_RESPONSE>();
+		auto rsp = cu_alloc<RELOADCACHEDINFORMATION_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<RELOADCACHEDINFORMATION_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<RELOADCACHEDINFORMATION_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_reloadcachedinformation(rq->reserved,
 			&rsp->has_named_properties, &rsp->subject_prefix,
 			&rsp->normalized_subject, &rsp->recipient_count,
@@ -838,12 +829,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSetMessageStatus: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<SETMESSAGESTATUS_RESPONSE>();
+		auto rsp = cu_alloc<SETMESSAGESTATUS_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<SETMESSAGESTATUS_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<SETMESSAGESTATUS_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_setmessagestatus(rq->message_id,
 			rq->message_status, rq->status_mask,
 			&rsp->message_status,
@@ -852,12 +843,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetMessageStatus: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETMESSAGESTATUS_RESPONSE>();
+		auto rsp = cu_alloc<GETMESSAGESTATUS_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<GETMESSAGESTATUS_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<GETMESSAGESTATUS_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_getmessagestatus(
 			rq->message_id, &rsp->message_status,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -865,12 +856,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSetReadFlags: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<SETREADFLAGS_RESPONSE>();
+		auto rsp = cu_alloc<SETREADFLAGS_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<SETREADFLAGS_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<SETREADFLAGS_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_setreadflags(rq->want_asynchronous,
 			rq->read_flags, &rq->message_ids,
 			&rsp->partial_completion,
@@ -883,11 +874,11 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			return ecInvalidObject;
 		}
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<SETMESSAGEREADFLAG_RESPONSE>();
+		auto rsp = cu_alloc<SETMESSAGEREADFLAG_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<SETMESSAGEREADFLAG_RESPONSE *>((*ppresponse)->ppayload);
 		rsp->logon_id = prequest->logon_id;
 		rsp->pclient_data = rq->pclient_data;
 		(*ppresponse)->result = rop_setmessagereadflag(
@@ -913,11 +904,11 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = cu_alloc<CREATEATTACHMENT_RESPONSE>();
+		auto rsp = cu_alloc<CREATEATTACHMENT_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<CREATEATTACHMENT_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_createattachment(
 			&rsp->attachment_id,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
@@ -947,11 +938,11 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = cu_alloc<OPENEMBEDDEDMESSAGE_RESPONSE>();
+		auto rsp = cu_alloc<OPENEMBEDDEDMESSAGE_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<OPENEMBEDDEDMESSAGE_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_openembeddedmessage(rq->cpid,
 			rq->open_embedded_flags, &rsp->reserved,
 			&rsp->message_id, &rsp->has_named_properties,
@@ -975,11 +966,11 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetValidAttachments: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETVALIDATTACHMENTS_RESPONSE>();
+		auto rsp = cu_alloc<GETVALIDATTACHMENTS_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<GETVALIDATTACHMENTS_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_getvalidattachments(&rsp->attachment_ids,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
@@ -1001,11 +992,11 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetAddressTypes: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETADDRESSTYPES_RESPONSE>();
+		auto rsp = cu_alloc<GETADDRESSTYPES_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<GETADDRESSTYPES_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_getaddresstypes(&rsp->address_types,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
@@ -1025,11 +1016,11 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropTransportSend: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<TRANSPORTSEND_RESPONSE>();
+		auto rsp = cu_alloc<TRANSPORTSEND_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<TRANSPORTSEND_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_transportsend(&rsp->ppropvals,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
@@ -1044,23 +1035,23 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetTransportFolder: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETTRANSPORTFOLDER_RESPONSE>();
+		auto rsp = cu_alloc<GETTRANSPORTFOLDER_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<GETTRANSPORTFOLDER_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_gettransportfolder(&rsp->folder_id,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropOptionsData: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<OPTIONSDATA_RESPONSE>();
+		auto rsp = cu_alloc<OPTIONSDATA_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<OPTIONSDATA_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<OPTIONSDATA_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_optionsdata(rq->paddress_type,
 			rq->want_win32, &rsp->reserved, &rsp->options_info,
 			&rsp->help_file, &rsp->pfile_name,
@@ -1069,12 +1060,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetPropertyIdsFromNames: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETPROPERTYIDSFROMNAMES_RESPONSE>();
+		auto rsp = cu_alloc<GETPROPERTYIDSFROMNAMES_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<GETPROPERTYIDSFROMNAMES_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<GETPROPERTYIDSFROMNAMES_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_getpropertyidsfromnames(
 			rq->flags, &rq->propnames, &rsp->propids,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -1082,12 +1073,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetNamesFromPropertyIds: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETNAMESFROMPROPERTYIDS_RESPONSE>();
+		auto rsp = cu_alloc<GETNAMESFROMPROPERTYIDS_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<GETNAMESFROMPROPERTYIDS_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<GETNAMESFROMPROPERTYIDS_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_getnamesfrompropertyids(
 			&rq->propids, &rsp->propnames,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -1095,12 +1086,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetPropertiesSpecific: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETPROPERTIESSPECIFIC_RESPONSE>();
+		auto rsp = cu_alloc<GETPROPERTIESSPECIFIC_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<GETPROPERTIESSPECIFIC_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<GETPROPERTIESSPECIFIC_RESPONSE *>((*ppresponse)->ppayload);
 		rsp->pproptags = &rq->proptags;
 		(*ppresponse)->result = rop_getpropertiesspecific(
 			rq->size_limit, rq->want_unicode, &rq->proptags, &rsp->row,
@@ -1109,12 +1100,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetPropertiesAll: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETPROPERTIESALL_RESPONSE>();
+		auto rsp = cu_alloc<GETPROPERTIESALL_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<GETPROPERTIESALL_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<GETPROPERTIESALL_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_getpropertiesall(rq->size_limit,
 			rq->want_unicode, &rsp->propvals,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -1122,23 +1113,23 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetPropertiesList: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETPROPERTIESLIST_RESPONSE>();
+		auto rsp = cu_alloc<GETPROPERTIESLIST_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<GETPROPERTIESLIST_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_getpropertieslist(&rsp->proptags,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
 	}
 	case ropSetProperties: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<SETPROPERTIES_RESPONSE>();
+		auto rsp = cu_alloc<SETPROPERTIES_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<SETPROPERTIES_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<SETPROPERTIES_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_setproperties(
 			&rq->propvals, &rsp->problems,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -1146,12 +1137,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSetPropertiesNoReplicate: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<SETPROPERTIESNOREPLICATE_RESPONSE>();
+		auto rsp = cu_alloc<SETPROPERTIESNOREPLICATE_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<SETPROPERTIESNOREPLICATE_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<SETPROPERTIESNOREPLICATE_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_setpropertiesnoreplicate(
 			&rq->propvals, &rsp->problems,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -1159,12 +1150,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropDeleteProperties: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<DELETEPROPERTIES_RESPONSE>();
+		auto rsp = cu_alloc<DELETEPROPERTIES_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<DELETEPROPERTIES_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<DELETEPROPERTIES_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_deleteproperties(
 			&rq->proptags, &rsp->problems,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -1172,12 +1163,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropDeletePropertiesNoReplicate: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<DELETEPROPERTIESNOREPLICATE_RESPONSE>();
+		auto rsp = cu_alloc<DELETEPROPERTIESNOREPLICATE_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<DELETEPROPERTIESNOREPLICATE_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<DELETEPROPERTIESNOREPLICATE_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_deletepropertiesnoreplicate(
 			&rq->proptags, &rsp->problems,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -1185,12 +1176,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropQueryNamedProperties: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<QUERYNAMEDPROPERTIES_RESPONSE>();
+		auto rsp = cu_alloc<QUERYNAMEDPROPERTIES_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<QUERYNAMEDPROPERTIES_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<QUERYNAMEDPROPERTIES_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_querynamedproperties(
 			rq->query_flags, rq->pguid, &rsp->propidnames,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -1202,22 +1193,23 @@ int rop_dispatch(ROP_REQUEST *prequest,
 			return ecInvalidObject;
 		}
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<COPYPROPERTIES_RESPONSE>();
+		auto rsp = cu_alloc<COPYPROPERTIES_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<COPYPROPERTIES_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_copyproperties(
 			rq->want_asynchronous, rq->copy_flags, &rq->proptags,
 			&rsp->problems,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->hindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
-			(*ppresponse)->ppayload = cu_alloc<uint32_t>();
+			auto v = cu_alloc<uint32_t>();
+			(*ppresponse)->ppayload = v;
 			if (NULL == (*ppresponse)->ppayload) {
 				return ecMAPIOOM;
 			}
-			*static_cast<uint32_t *>((*ppresponse)->ppayload) = rq->hindex;
+			*v = rq->hindex;
 		}
 		break;
 	}
@@ -1226,33 +1218,34 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<COPYTO_RESPONSE>();
+		auto rsp = cu_alloc<COPYTO_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<COPYTO_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_copyto(rq->want_asynchronous,
 			rq->want_subobjects, rq->copy_flags,
 			&rq->excluded_proptags, &rsp->problems,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->hindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
-			(*ppresponse)->ppayload = cu_alloc<uint32_t>();
+			auto v = cu_alloc<uint32_t>();
+			(*ppresponse)->ppayload = v;
 			if (NULL == (*ppresponse)->ppayload) {
 				return ecMAPIOOM;
 			}
-			*static_cast<uint32_t *>((*ppresponse)->ppayload) = rq->hindex;
+			*v = rq->hindex;
 		}
 		break;
 	}
 	case ropProgress: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<PROGRESS_RESPONSE>();
+		auto rsp = cu_alloc<PROGRESS_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<PROGRESS_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<PROGRESS_RESPONSE *>((*ppresponse)->ppayload);
 		rsp->logon_id = prequest->logon_id;
 		(*ppresponse)->result = rop_progress(rq->want_cancel,
 			&rsp->completed_count, &rsp->total_count,
@@ -1265,11 +1258,11 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = cu_alloc<OPENSTREAM_RESPONSE>();
+		auto rsp = cu_alloc<OPENSTREAM_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<OPENSTREAM_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_openstream(rq->proptag,
 			rq->flags, &rsp->stream_size,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
@@ -1278,12 +1271,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropReadStream: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<READSTREAM_RESPONSE>();
+		auto rsp = cu_alloc<READSTREAM_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<READSTREAM_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<READSTREAM_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_readstream(rq->byte_count,
 			rq->max_byte_count, &rsp->data,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -1291,12 +1284,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropWriteStream: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<WRITESTREAM_RESPONSE>();
+		auto rsp = cu_alloc<WRITESTREAM_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<WRITESTREAM_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<WRITESTREAM_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_writestream(
 			&rq->data, &rsp->written_size,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -1309,11 +1302,11 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		break;
 	case ropGetStreamSize: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETSTREAMSIZE_RESPONSE>();
+		auto rsp = cu_alloc<GETSTREAMSIZE_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<GETSTREAMSIZE_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_getstreamsize(&rsp->stream_size,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
 		break;
@@ -1327,12 +1320,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSeekStream: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<SEEKSTREAM_RESPONSE>();
+		auto rsp = cu_alloc<SEEKSTREAM_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<SEEKSTREAM_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<SEEKSTREAM_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_seekstream(rq->seek_pos,
 			rq->offset, &rsp->new_pos,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -1343,26 +1336,24 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex >= hnum) {
 			return ecInvalidObject;
 		}
-		(*ppresponse)->ppayload = cu_alloc<COPYTOSTREAM_RESPONSE>();
+		auto rsp = cu_alloc<COPYTOSTREAM_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<COPYTOSTREAM_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->hindex = prequest->hindex;
 		(*ppresponse)->result = rop_copytostream(rq->byte_count,
 			&rsp->read_bytes, &rsp->written_bytes,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
 			phandles[rq->hindex]);
 		if ((*ppresponse)->result == ecDstNullObject) {
-			perr_response = cu_alloc<COPYTOSTREAM_NULL_DEST_RESPONSE>();
-			if (NULL == perr_response) {
+			auto nr = cu_alloc<COPYTOSTREAM_NULL_DEST_RESPONSE>();
+			if (nr == nullptr)
 				return ecMAPIOOM;
-			}
-			auto nr = static_cast<COPYTOSTREAM_NULL_DEST_RESPONSE *>(perr_response);
 			nr->hindex = rq->hindex;
 			nr->read_bytes = 0;
 			nr->written_bytes = 0;
-			(*ppresponse)->ppayload = perr_response;
+			(*ppresponse)->ppayload = nr;
 		}
 		break;
 	}
@@ -1384,12 +1375,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropWriteAndCommitStream: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<WRITEANDCOMMITSTREAM_RESPONSE>();
+		auto rsp = cu_alloc<WRITEANDCOMMITSTREAM_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<WRITEANDCOMMITSTREAM_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<WRITEANDCOMMITSTREAM_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_writeandcommitstream(
 			&rq->data, &rsp->written_size,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -1462,12 +1453,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropFastTransferDestinationPutBuffer: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<FASTTRANSFERDESTPUTBUFFER_RESPONSE>();
+		auto rsp = cu_alloc<FASTTRANSFERDESTPUTBUFFER_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<FASTTRANSFERDESTPUTBUFFER_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<FASTTRANSFERDESTPUTBUFFER_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_fasttransferdestputbuffer(
 			&rq->transfer_data, &rsp->transfer_status,
 			&rsp->in_progress_count, &rsp->total_step_count,
@@ -1477,12 +1468,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropFastTransferSourceGetBuffer: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<FASTTRANSFERSOURCEGETBUFFER_RESPONSE>();
+		auto rsp = cu_alloc<FASTTRANSFERSOURCEGETBUFFER_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<FASTTRANSFERSOURCEGETBUFFER_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<FASTTRANSFERSOURCEGETBUFFER_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_fasttransfersourcegetbuffer(
 			rq->buffer_size, rq->max_buffer_size,
 			&rsp->transfer_status, &rsp->in_progress_count,
@@ -1561,11 +1552,11 @@ int rop_dispatch(ROP_REQUEST *prequest,
 		if (rq->hindex > hnum)
 			return ecInvalidObject;
 		(*ppresponse)->hindex = rq->hindex;
-		(*ppresponse)->ppayload = cu_alloc<SYNCIMPORTMESSAGECHANGE_RESPONSE>();
+		auto rsp = cu_alloc<SYNCIMPORTMESSAGECHANGE_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
-		auto rsp = static_cast<SYNCIMPORTMESSAGECHANGE_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_syncimportmessagechange(
 			rq->import_flags, &rq->propvals, &rsp->message_id,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex],
@@ -1582,12 +1573,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSynchronizationImportHierarchyChange: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<SYNCIMPORTHIERARCHYCHANGE_RESPONSE>();
+		auto rsp = cu_alloc<SYNCIMPORTHIERARCHYCHANGE_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<SYNCIMPORTHIERARCHYCHANGE_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<SYNCIMPORTHIERARCHYCHANGE_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_syncimporthierarchychange(
 			&rq->hichyvals, &rq->propvals, &rsp->folder_id,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);
@@ -1603,12 +1594,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropSynchronizationImportMessageMove: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<SYNCIMPORTMESSAGEMOVE_RESPONSE>();
+		auto rsp = cu_alloc<SYNCIMPORTMESSAGEMOVE_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<SYNCIMPORTMESSAGEMOVE_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<SYNCIMPORTMESSAGEMOVE_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_syncimportmessagemove(
 			&rq->src_folder_id, &rq->src_message_id,
 			&rq->change_list, &rq->dst_message_id,
@@ -1667,12 +1658,12 @@ int rop_dispatch(ROP_REQUEST *prequest,
 	}
 	case ropGetLocalReplicaIds: {
 		(*ppresponse)->hindex = prequest->hindex;
-		(*ppresponse)->ppayload = cu_alloc<GETLOCALREPLICAIDS_RESPONSE>();
+		auto rsp = cu_alloc<GETLOCALREPLICAIDS_RESPONSE>();
+		(*ppresponse)->ppayload = rsp;
 		if (NULL == (*ppresponse)->ppayload) {
 			return ecMAPIOOM;
 		}
 		auto rq = static_cast<GETLOCALREPLICAIDS_REQUEST *>(prequest->ppayload);
-		auto rsp = static_cast<GETLOCALREPLICAIDS_RESPONSE *>((*ppresponse)->ppayload);
 		(*ppresponse)->result = rop_getlocalreplicaids(
 			rq->count, &rsp->guid, &rsp->global_count,
 			pemsmdb_info->plogmap, prequest->logon_id, phandles[prequest->hindex]);

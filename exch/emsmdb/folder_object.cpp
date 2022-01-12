@@ -150,7 +150,6 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	void *pvalue;
 	EXT_PUSH ext_push;
 	char temp_buff[1024];
-	PERSISTDATA *ppersistdata;
 	static constexpr uint8_t bin_buff[22]{};
 	static constexpr uint32_t fake_del = 0;
 	PERSISTDATA_ARRAY persistdatas;
@@ -159,70 +158,79 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	switch (proptag) {
 	case PROP_TAG_CONTENTUNREADCOUNT:
 		if (!pfolder->plogon->check_private()) {
-			*outvalue = cu_alloc<uint32_t>();
+			auto v = cu_alloc<uint32_t>();
+			*outvalue = v;
 			if (*outvalue == nullptr)
 				return FALSE;
 			auto rpc_info = get_rpc_info();
 			return exmdb_client_get_public_folder_unread_count(
 			       pfolder->plogon->get_dir(),
-			       rpc_info.username, pfolder->folder_id,
-			       static_cast<uint32_t *>(*outvalue));
+			       rpc_info.username, pfolder->folder_id, v);
 		}
 		return FALSE;
-	case PR_MESSAGE_SIZE:
-		*outvalue = cu_alloc<uint32_t>();
+	case PR_MESSAGE_SIZE: {
+		auto v = cu_alloc<uint32_t>();
+		*outvalue = v;
 		if (*outvalue == nullptr)
 			return FALSE;
 		if (!exmdb_client_get_folder_property(pfolder->plogon->get_dir(),
 		    0, pfolder->folder_id, PR_MESSAGE_SIZE_EXTENDED, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
-		*static_cast<uint32_t *>(*outvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
-	case PR_ASSOC_MESSAGE_SIZE:
-		*outvalue = cu_alloc<uint32_t>();
+	}
+	case PR_ASSOC_MESSAGE_SIZE: {
+		auto v = cu_alloc<uint32_t>();
+		*outvalue = v;
 		if (*outvalue == nullptr)
 			return FALSE;
 		if (!exmdb_client_get_folder_property(pfolder->plogon->get_dir(),
 		    0, pfolder->folder_id, PR_ASSOC_MESSAGE_SIZE_EXTENDED,
 		    &pvalue) || pvalue == nullptr)
 			return FALSE;	
-		*static_cast<uint32_t *>(*outvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
-	case PR_NORMAL_MESSAGE_SIZE:
-		*outvalue = cu_alloc<uint32_t>();
+	}
+	case PR_NORMAL_MESSAGE_SIZE: {
+		auto v = cu_alloc<uint32_t>();
+		*outvalue = v;
 		if (*outvalue == nullptr)
 			return FALSE;
 		if (!exmdb_client_get_folder_property(pfolder->plogon->get_dir(),
 		    0, pfolder->folder_id, PR_NORMAL_MESSAGE_SIZE_EXTENDED,
 		    &pvalue) || pvalue == nullptr)
 			return FALSE;	
-		*static_cast<uint32_t *>(*outvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
+	}
 	case PR_ACCESS:
 		*outvalue = &pfolder->tag_access;
 		return TRUE;
-	case PidTagFolderId:
-		*outvalue = cu_alloc<uint64_t>();
+	case PidTagFolderId: {
+		auto v = cu_alloc<uint64_t>();
+		*outvalue = v;
 		if (*outvalue == nullptr)
 			return FALSE;
-		*static_cast<uint64_t *>(*outvalue) = pfolder->folder_id;
+		*v = pfolder->folder_id;
 		return TRUE;
-	case PR_RIGHTS:
-		*outvalue = cu_alloc<uint32_t>();
+	}
+	case PR_RIGHTS: {
+		auto v = cu_alloc<uint32_t>();
+		*outvalue = v;
 		if (*outvalue == nullptr)
 			return FALSE;
 		if (pfolder->plogon->logon_mode == LOGON_MODE_OWNER) {
-			*static_cast<uint32_t *>(*outvalue) = rightsAll | frightsContact;
+			*v = rightsAll | frightsContact;
 		} else {
 			auto rpc_info = get_rpc_info();
 			if (!exmdb_client_check_folder_permission(
 			    pfolder->plogon->get_dir(),
-			    pfolder->folder_id, rpc_info.username,
-			    static_cast<uint32_t *>(*outvalue)))
+			    pfolder->folder_id, rpc_info.username, v))
 				return FALSE;
 		}
 		return TRUE;
+	}
 	case PR_ENTRYID:
 		*outvalue = common_util_to_folder_entryid(
 			pfolder->plogon, pfolder->folder_id);
@@ -359,8 +367,8 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			*outvalue = pvalue;
 			return TRUE;
 		}
-		*outvalue = cu_alloc<BINARY_ARRAY>();
-		auto ba = static_cast<BINARY_ARRAY *>(*outvalue);
+		auto ba = cu_alloc<BINARY_ARRAY>();
+		*outvalue = ba;
 		if (*outvalue == nullptr)
 			return FALSE;
 		ba->count = 5;
@@ -416,8 +424,8 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			*outvalue = pvalue;
 			return TRUE;
 		}
-		*outvalue = cu_alloc<BINARY>();
-		auto bv = static_cast<BINARY *>(*outvalue);
+		auto bv = cu_alloc<BINARY>();
+		*outvalue = bv;
 		if (*outvalue == nullptr)
 			return FALSE;
 		persistdatas.count = 3;
@@ -425,7 +433,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 		if (NULL == persistdatas.ppitems) {
 			return FALSE;
 		}
-		ppersistdata = cu_alloc<PERSISTDATA>(persistdatas.count);
+		auto ppersistdata = cu_alloc<PERSISTDATA>(persistdatas.count);
 		if (NULL == ppersistdata) {
 			return FALSE;
 		}
@@ -472,8 +480,8 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			*outvalue = pvalue;
 			return TRUE;
 		}
-		*outvalue = cu_alloc<BINARY_ARRAY>();
-		auto ba = static_cast<BINARY_ARRAY *>(*outvalue);
+		auto ba = cu_alloc<BINARY_ARRAY>();
+		*outvalue = ba;
 		if (*outvalue == nullptr)
 			return FALSE;
 		ba->count = 4;
@@ -572,7 +580,6 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	uint64_t change_num;
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
-	uint16_t *poriginal_indices;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
@@ -588,7 +595,7 @@ BOOL folder_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	if (NULL == tmp_propvals.ppropval) {
 		return FALSE;
 	}
-	poriginal_indices = cu_alloc<uint16_t>(ppropvals->count);
+	auto poriginal_indices = cu_alloc<uint16_t>(ppropvals->count);
 	if (NULL == poriginal_indices) {
 		return FALSE;
 	}

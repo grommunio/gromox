@@ -407,8 +407,9 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 	static constexpr BINARY test_bin = {arsizeof(test_buff), {deconst(test_buff)}};
 	
 	switch (proptag) {
-	case PR_MESSAGE_SIZE:
-		*ppvalue = cu_alloc<uint32_t>();
+	case PR_MESSAGE_SIZE: {
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -416,20 +417,24 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		    PR_MESSAGE_SIZE_EXTENDED, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
-		*static_cast<uint32_t *>(*ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
-	case PR_ASSOC_MESSAGE_SIZE:
-		*ppvalue = cu_alloc<uint32_t>();
+	}
+	case PR_ASSOC_MESSAGE_SIZE: {
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
 		if (!exmdb_client_get_store_property(plogon->dir, 0,
 		    PR_ASSOC_MESSAGE_SIZE_EXTENDED, &pvalue) || pvalue == nullptr)
 			return FALSE;	
-		*static_cast<uint32_t *>(*ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
-	case PR_NORMAL_MESSAGE_SIZE:
-		*ppvalue = cu_alloc<uint32_t>();
+	}
+	case PR_NORMAL_MESSAGE_SIZE: {
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
@@ -437,8 +442,9 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		    PR_NORMAL_MESSAGE_SIZE_EXTENDED, &pvalue) ||
 		    pvalue == nullptr)
 			return FALSE;	
-		*static_cast<uint32_t *>(*ppvalue) = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
+		*v = std::min(*static_cast<uint64_t *>(pvalue), static_cast<uint64_t>(0x7FFFFFFF));
 		return TRUE;
+	}
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A: {
 		if (!plogon->check_private())
@@ -492,14 +498,15 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		strcpy(tstr, temp_buff);
 		return TRUE;
 	}
-	case PROP_TAG_EXTENDEDRULESIZELIMIT:
-		*ppvalue = cu_alloc<uint32_t>();
+	case PROP_TAG_EXTENDEDRULESIZELIMIT: {
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*(uint32_t*)(*ppvalue) = common_util_get_param(
-						COMMON_UTIL_MAX_EXTRULE_LENGTH);
+		*v = common_util_get_param(COMMON_UTIL_MAX_EXTRULE_LENGTH);
 		return TRUE;
+	}
 	case PROP_TAG_HIERARCHYSERVER: {
 		if (plogon->check_private())
 			return FALSE;
@@ -567,14 +574,15 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 			strcpy(tstr, plogon->account);
 		return TRUE;
 	}
-	case PR_MAX_SUBMIT_MESSAGE_SIZE:
-		*ppvalue = cu_alloc<uint32_t>();
+	case PR_MAX_SUBMIT_MESSAGE_SIZE: {
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*(uint32_t*)(*ppvalue) = common_util_get_param(
-							COMMON_UTIL_MAX_MAIL_LENGTH);
+		*v = common_util_get_param(COMMON_UTIL_MAX_MAIL_LENGTH);
 		return TRUE;
+	}
 	case PROP_TAG_SORTLOCALEID: {
 		auto pinfo = emsmdb_interface_get_emsmdb_info();
 		*ppvalue = &pinfo->lcid_sort;
@@ -667,7 +675,6 @@ BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	int i;
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
-	uint16_t *poriginal_indices;
 	
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
@@ -682,7 +689,7 @@ BOOL logon_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	if (NULL == tmp_propvals.ppropval) {
 		return FALSE;
 	}
-	poriginal_indices = cu_alloc<uint16_t>(ppropvals->count);
+	auto poriginal_indices = cu_alloc<uint16_t>(ppropvals->count);
 	if (NULL == poriginal_indices) {
 		return FALSE;
 	}

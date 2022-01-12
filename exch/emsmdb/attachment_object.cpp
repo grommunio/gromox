@@ -65,11 +65,13 @@ BOOL attachment_object::init_attachment()
 	propvals.ppropval[propvals.count].proptag = PR_ATTACH_NUM;
 	propvals.ppropval[propvals.count++].pvalue = &pattachment->attachment_num;
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_RENDERINGPOSITION;
-	propvals.ppropval[propvals.count].pvalue = cu_alloc<uint32_t>();
+	auto rendpos = cu_alloc<uint32_t>();
+	propvals.ppropval[propvals.count].pvalue = rendpos;
 	if (NULL == propvals.ppropval[propvals.count].pvalue) {
 		return FALSE;
 	}
-	*static_cast<uint32_t *>(propvals.ppropval[propvals.count++].pvalue) = 0xFFFFFFFF;
+	*rendpos = 0xFFFFFFFF;
+	++propvals.count;
 	
 	auto modtime = cu_alloc<uint64_t>();
 	if (modtime == nullptr)
@@ -259,22 +261,25 @@ static BOOL attachment_object_get_calculated_property(
 	case PR_ACCESS:
 		*ppvalue = &pattachment->pparent->tag_access;
 		return TRUE;
-	case PR_ACCESS_LEVEL:
-		*ppvalue = cu_alloc<uint32_t>();
+	case PR_ACCESS_LEVEL: {
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*static_cast<uint32_t *>(*ppvalue) =
-			(pattachment->open_flags & OPEN_MODE_FLAG_READWRITE) ?
-			ACCESS_LEVEL_MODIFY : ACCESS_LEVEL_READ_ONLY;
+		*v = (pattachment->open_flags & OPEN_MODE_FLAG_READWRITE) ?
+		     ACCESS_LEVEL_MODIFY : ACCESS_LEVEL_READ_ONLY;
 		return TRUE;
-	case PR_OBJECT_TYPE:
-		*ppvalue = cu_alloc<uint32_t>();
+	}
+	case PR_OBJECT_TYPE: {
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*static_cast<uint32_t *>(*ppvalue) = MAPI_ATTACH;
+		*v = MAPI_ATTACH;
 		return TRUE;
+	}
 	case PR_STORE_RECORD_KEY:
 		*ppvalue = common_util_guid_to_binary(pattachment->pparent->plogon->mailbox_guid);
 		return TRUE;
@@ -376,7 +381,6 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	int i, j;
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
-	uint16_t *poriginal_indices;
 	
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(ppropvals->count);
@@ -388,7 +392,7 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	if (NULL == tmp_propvals.ppropval) {
 		return FALSE;
 	}
-	poriginal_indices = cu_alloc<uint16_t>(ppropvals->count);
+	auto poriginal_indices = cu_alloc<uint16_t>(ppropvals->count);
 	if (NULL == poriginal_indices) {
 		return FALSE;
 	}
@@ -439,7 +443,6 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	int i, j;
 	PROBLEM_ARRAY tmp_problems;
 	PROPTAG_ARRAY tmp_proptags;
-	uint16_t *poriginal_indices;
 	
 	pproblems->count = 0;
 	pproblems->pproblem = cu_alloc<PROPERTY_PROBLEM>(pproptags->count);
@@ -451,7 +454,7 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
-	poriginal_indices = cu_alloc<uint16_t>(pproptags->count);
+	auto poriginal_indices = cu_alloc<uint16_t>(pproptags->count);
 	if (NULL == poriginal_indices) {
 		return FALSE;
 	}

@@ -507,7 +507,6 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 	char ext_buff1[0x8000];
 	TPROPVAL_ARRAY propvals;
 	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *pnode1;
 	EMSMDB_INFO *pemsmdb_info;
 	DOUBLE_LIST *pnotify_list;
 	PENDING_RESPONSE tmp_pending;
@@ -526,7 +525,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 	pemsmdb_info = emsmdb_interface_get_emsmdb_info();
 	for (pnode=double_list_get_head(&prop_buff->rop_list); NULL!=pnode;
 		pnode=double_list_get_after(&prop_buff->rop_list, pnode)) {
-		pnode1 = cu_alloc<DOUBLE_LIST_NODE>();
+		auto pnode1 = cu_alloc<DOUBLE_LIST_NODE>();
 		if (NULL == pnode1) {
 			return ecMAPIOOM;
 		}

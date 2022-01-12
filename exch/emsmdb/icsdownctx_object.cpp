@@ -264,9 +264,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 	FOLDER_CHANGES fldchgs;
 	EID_ARRAY given_folders;
 	uint64_t last_changenum;
-	TAGGED_PROPVAL *ppropval;
 	EID_ARRAY deleted_folders;
-	PERSISTDATA *ppersistdata;
 	TAGGED_PROPVAL tmp_propval;
 	TPROPVAL_ARRAY tmp_proplist;
 	static constexpr uint8_t fake_byte = 0;
@@ -402,7 +400,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 		              folder_id == rop_util_make_eid_ex(1, PRIVATE_FID_INBOX));
 		if (!inboxy)
 			continue;
-		ppropval = cu_alloc<TAGGED_PROPVAL>(fldchgs.pfldchgs[i].count + 10);
+		auto ppropval = cu_alloc<TAGGED_PROPVAL>(fldchgs.pfldchgs[i].count + 10);
 		if (NULL == ppropval) {
 			return FALSE;
 		}
@@ -512,7 +510,7 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 			if (NULL == persistdatas.ppitems) {
 				return FALSE;
 			}
-			ppersistdata = cu_alloc<PERSISTDATA>(persistdatas.count);
+			auto ppersistdata = cu_alloc<PERSISTDATA>(persistdatas.count);
 			if (NULL == ppersistdata) {
 				return FALSE;
 			}
@@ -932,7 +930,6 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	INDEX_ARRAY indices;
 	uint32_t *pgroup_id;
 	PROPTAG_ARRAY proptags;
-	TAGGED_PROPVAL *ppropval;
 	PROGRESS_MESSAGE progmsg;
 	TPROPVAL_ARRAY chgheader;
 	MESSAGE_CONTENT *pmsgctnt;
@@ -997,7 +994,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 				return FALSE;
 			}
 			icsdownctx_object_trim_embedded(pembedded);
-			ppropval = cu_alloc<TAGGED_PROPVAL>(pembedded->proplist.count + 2);
+			auto ppropval = cu_alloc<TAGGED_PROPVAL>(pembedded->proplist.count + 2);
 			if (NULL == ppropval) {
 				return FALSE;
 			}
@@ -1031,15 +1028,15 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			common_util_remove_propvals(&pembedded->proplist, PR_CHANGE_KEY);
 			common_util_remove_propvals(
 				&pembedded->proplist, PROP_TAG_MESSAGESTATUS);
-			pvalue = pembedded->proplist.getval(PR_MESSAGE_FLAGS);
+			auto flags = pembedded->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
 			tmp_propval.proptag = PR_READ_RECEIPT_REQUESTED;
-			tmp_propval.pvalue = pvalue != nullptr &&
-			                     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_RN_PENDING) ?
+			tmp_propval.pvalue = flags != nullptr &&
+			                     (*flags & MSGFLAG_RN_PENDING) ?
 			                     deconst(&fake_true) : deconst(&fake_false);
 			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
 			tmp_propval.proptag = PR_NON_RECEIPT_NOTIFICATION_REQUESTED;
-			tmp_propval.pvalue = pvalue != nullptr &&
-			                     (*static_cast<uint32_t *>(pvalue) & MSGFLAG_NRN_PENDING) ?
+			tmp_propval.pvalue = flags != nullptr &&
+			                     (*flags & MSGFLAG_NRN_PENDING) ?
 			                     deconst(&fake_true) : deconst(&fake_false);
 			common_util_set_propvals(&pembedded->proplist, &tmp_propval);
 			if (!pctx->pstream->write_messagechangefull(&chgheader, pembedded))
@@ -1048,7 +1045,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 		return TRUE;
 	}
 	icsdownctx_object_trim_embedded(pmsgctnt);
-	ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 10);
+	auto ppropval = cu_alloc<TAGGED_PROPVAL>(pmsgctnt->proplist.count + 10);
 	if (NULL == ppropval) {
 		return FALSE;
 	}

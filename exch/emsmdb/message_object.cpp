@@ -1023,14 +1023,16 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 	case PR_ACCESS:
 		*ppvalue = &pmessage->tag_access;
 		return TRUE;
-	case PR_ACCESS_LEVEL:
-		*ppvalue = cu_alloc<uint32_t>();
+	case PR_ACCESS_LEVEL: {
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*static_cast<uint32_t *>(*ppvalue) = (pmessage->open_flags & OPEN_MODE_FLAG_READWRITE) ?
+		*v = (pmessage->open_flags & OPEN_MODE_FLAG_READWRITE) ?
 			ACCESS_LEVEL_MODIFY : ACCESS_LEVEL_READ_ONLY;
 		return TRUE;
+	}
 	case PR_ENTRYID:
 		if (0 == pmessage->message_id) {
 			return FALSE;
@@ -1038,13 +1040,15 @@ static BOOL message_object_get_calculated_property(message_object *pmessage,
 		*ppvalue = common_util_to_message_entryid(pmessage->plogon,
 						pmessage->folder_id, pmessage->message_id);
 		return TRUE;
-	case PR_OBJECT_TYPE:
-		*ppvalue = cu_alloc<uint32_t>();
+	case PR_OBJECT_TYPE: {
+		auto v = cu_alloc<uint32_t>();
+		*ppvalue = v;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*static_cast<uint32_t *>(*ppvalue) = MAPI_MESSAGE;
+		*v = MAPI_MESSAGE;
 		return TRUE;
+	}
 	case PR_PARENT_ENTRYID:
 		if (0 == pmessage->message_id) {
 			return FALSE;
@@ -1218,7 +1222,6 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 	uint8_t tmp_bytes[3];
 	PROBLEM_ARRAY tmp_problems;
 	TPROPVAL_ARRAY tmp_propvals;
-	uint16_t *poriginal_indices;
 	TPROPVAL_ARRAY tmp_propvals1;
 	TAGGED_PROPVAL propval_buff[3];
 	
@@ -1235,7 +1238,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 	if (NULL == tmp_propvals.ppropval) {
 		return FALSE;
 	}
-	poriginal_indices = cu_alloc<uint16_t>(ppropvals->count);
+	auto poriginal_indices = cu_alloc<uint16_t>(ppropvals->count);
 	if (NULL == poriginal_indices) {
 		return FALSE;
 	}
@@ -1343,7 +1346,6 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	uint32_t proptag;
 	PROBLEM_ARRAY tmp_problems;
 	PROPTAG_ARRAY tmp_proptags;
-	uint16_t *poriginal_indices;
 	
 	if (0 == (pmessage->open_flags & OPEN_MODE_FLAG_READWRITE)) {
 		return FALSE;
@@ -1358,7 +1360,7 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	if (NULL == tmp_proptags.pproptag) {
 		return FALSE;
 	}
-	poriginal_indices = cu_alloc<uint16_t>(pproptags->count);
+	auto poriginal_indices = cu_alloc<uint16_t>(pproptags->count);
 	if (NULL == poriginal_indices) {
 		return FALSE;
 	}
