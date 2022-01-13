@@ -2993,11 +2993,9 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	}
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (0 == folder_id) {
-		pidb.reset();
 		return MIDB_E_NO_FOLDER;
 	}
 	if (!system_services_get_id_from_username(pidb->username.c_str(), &user_id)) {
-		pidb.reset();
 		return MIDB_E_NO_MEMORY;
 	}
 	if (!system_services_get_user_lang(pidb->username.c_str(), lang,
@@ -4751,15 +4749,13 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 	ptree = mail_engine_ct_build(tmp_argc, tmp_argv);
 	if (ptree == nullptr)
 		return MIDB_E_PARAMETER_ERROR;
+	auto cl_tree = make_scope_exit([&]() { mail_engine_ct_destroy(ptree); });
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr) {
-		mail_engine_ct_destroy(ptree);
 		return MIDB_E_HASHTABLE_FULL;
 	}
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (0 == folder_id) {
-		pidb.reset();
-		mail_engine_ct_destroy(ptree);
 		return MIDB_E_NO_FOLDER;
 	}
 	pidb.reset();
@@ -4767,14 +4763,12 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 	auto ret = sqlite3_open_v2(temp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "E-1439: sqlite3_open %s: %s\n", temp_path, sqlite3_errstr(ret));
-		mail_engine_ct_destroy(ptree);
 		return MIDB_E_HASHTABLE_FULL;
 	}
 	presult = mail_engine_ct_match(argv[3],
 		psqlite, folder_id, ptree, FALSE);
 	if (NULL == presult) {
 		sqlite3_close(psqlite);
-		mail_engine_ct_destroy(ptree);
 		return MIDB_E_NO_MEMORY;
 	}
 	sqlite3_close(psqlite);
@@ -4790,6 +4784,7 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
     }
     mail_engine_ct_free_result(presult);
     mail_engine_ct_destroy(ptree);
+	cl_tree.release();
     list_buff[tmp_len] = '\r';
 	tmp_len ++;
     list_buff[tmp_len] = '\n';
@@ -4831,15 +4826,13 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 	auto ptree = mail_engine_ct_build(tmp_argc, tmp_argv);
 	if (ptree == nullptr)
 		return MIDB_E_PARAMETER_ERROR;
+	auto cl_tree = make_scope_exit([&]() { mail_engine_ct_destroy(ptree); });
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr) {
-		mail_engine_ct_destroy(ptree);
 		return MIDB_E_HASHTABLE_FULL;
 	}
 	auto folder_id = mail_engine_get_folder_id(pidb.get(), argv[2]);
 	if (0 == folder_id) {
-		pidb.reset();
-		mail_engine_ct_destroy(ptree);
 		return MIDB_E_NO_FOLDER;
 	}
 	pidb.reset();
@@ -4847,14 +4840,12 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 	auto ret = sqlite3_open_v2(temp_path, &psqlite, SQLITE_OPEN_READWRITE, nullptr);
 	if (ret != SQLITE_OK) {
 		fprintf(stderr, "E-1505: sqlite3_open %s: %s\n", temp_path, sqlite3_errstr(ret));
-		mail_engine_ct_destroy(ptree);
 		return MIDB_E_HASHTABLE_FULL;
 	}
 	presult = mail_engine_ct_match(argv[3],
 		psqlite, folder_id, ptree, TRUE);
 	if (NULL == presult) {
 		sqlite3_close(psqlite);
-		mail_engine_ct_destroy(ptree);
 		return MIDB_E_NO_MEMORY;
 	}
 	sqlite3_close(psqlite);
@@ -4870,6 +4861,7 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
     }
     mail_engine_ct_free_result(presult);
     mail_engine_ct_destroy(ptree);
+	cl_tree.release();
     list_buff[tmp_len] = '\r';
 	tmp_len ++;
     list_buff[tmp_len] = '\n';
