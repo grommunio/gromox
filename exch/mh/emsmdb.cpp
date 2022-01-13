@@ -789,10 +789,10 @@ static BOOL emsmdb_preproc(int context_id)
 	if (tmp_len == MEM_END_OF_FILE)
 		return false;
 	tmp_uri[tmp_len] = '\0';
-	if (strncasecmp(tmp_uri, "/mapi/emsmdb/?MailboxId=", 22) != 0)
+	if (strncasecmp(tmp_uri, "/mapi/emsmdb/?MailboxId=", 24) != 0)
 		return false;
 	auto pconnection = get_connection(context_id);
-	set_ep_info(context_id, tmp_uri + 22, pconnection->server_port);
+	set_ep_info(context_id, tmp_uri + 24, pconnection->server_port);
 	return TRUE;
 }
 
