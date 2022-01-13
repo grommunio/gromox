@@ -53,9 +53,6 @@
 #define P2TM(x) static_cast<time_t>(reinterpret_cast<intptr_t>(x))
 
 #define FILENUM_PER_MIME				8
-
-#define CONFIG_ID_USERNAME				1
-
 #define MAX_DIGLEN						256*1024
 
 #define CONDITION_TREE					DOUBLE_LIST
@@ -65,6 +62,10 @@
 
 using namespace std::string_literals;
 using namespace gromox;
+
+enum {
+	CONFIG_ID_USERNAME = 1, /* obsolete */
+};
 
 enum class midb_cond {
 	all, answered, bcc, before, body, cc, deleted, draft, flagged, from,
@@ -2526,27 +2527,22 @@ static IDB_REF mail_engine_get_idb(const char *path)
 			gx_sql_exec(pidb->psqlite, sql_string);
 		}
 		gx_sql_exec(pidb->psqlite, "DELETE FROM mapping");
-		snprintf(sql_string, arsizeof(sql_string), "SELECT config_value FROM "
-			"configurations WHERE config_id=%u", CONFIG_ID_USERNAME);
-		auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
-		if (pstmt == nullptr) {
-			g_hash_table.erase(xp.first);
-			return {};
-		}
-		if (SQLITE_ROW != sqlite3_step(pstmt)) {
-			pstmt.finalize();
-			sqlite3_close(pidb->psqlite);
-			g_hash_table.erase(xp.first);
-			return {};
-		}
+		/* Delete obsolete field */
+		gx_sql_exec(pidb->psqlite, "DELETE FROM configurations WHERE config_id=1");
+
 		try {
-			pidb->username = S2A(sqlite3_column_text(pstmt, 0));
+			int user_id = 0;
+			pidb->username.resize(UADDR_SIZE);
+			if (!system_services_get_id_from_maildir(path, &user_id) ||
+			    !system_services_get_username_from_id(user_id, pidb->username.data(), pidb->username.size())) {
+				g_hash_table.erase(xp.first);
+				return {};
+			}
+			pidb->username.resize(strlen(pidb->username.c_str()));
 		} catch (const std::bad_alloc &) {
-			pstmt.finalize();
 			g_hash_table.erase(xp.first);
 			return {};
 		}
-		pstmt.finalize();
 		b_load = TRUE;
 	} else if (pidb->reference > MAX_DB_WAITING_THREADS) {
 		hhold.unlock();

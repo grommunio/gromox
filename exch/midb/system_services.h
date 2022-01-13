@@ -12,6 +12,7 @@ E(get_timezone)
 E(get_user_ids)
 E(get_user_lang)
 E(get_username_from_id)
+E(get_id_from_maildir)
 #undef E
 extern BOOL (*system_services_lang_to_charset)(const char*, char*);
 extern const char* (*system_services_cpid_to_charset)(uint32_t);

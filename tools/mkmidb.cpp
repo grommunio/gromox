@@ -25,10 +25,12 @@
 #include <mysql.h>
 #include "exch/mysql_adaptor/mysql_adaptor.h"
 #include "mkshared.hpp"
-#define CONFIG_ID_USERNAME				1
-
 using namespace std::string_literals;
 using namespace gromox;
+
+enum {
+	CONFIG_ID_USERNAME = 1, /* obsolete */
+};
 
 static char *opt_config_file, *opt_datadir;
 static constexpr HXoption g_options_table[] = {
@@ -181,19 +183,6 @@ int main(int argc, const char **argv) try
 	if (gx_sql_exec(psqlite, slurp_data.get()) != SQLITE_OK)
 		return EXIT_FAILURE;
 	slurp_data.reset();
-	
-	auto pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");
-	if (pstmt == nullptr)
-		return EXIT_FAILURE;
-	
-	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_USERNAME);
-	sqlite3_bind_text(pstmt, 2, argv[1], -1, SQLITE_STATIC);
-	if (sqlite3_step(pstmt) != SQLITE_DONE) {
-		printf("fail to step sql inserting\n");
-		return EXIT_FAILURE;
-	}
-	
-	pstmt.finalize();
 	sql_transact.commit();
 	return EXIT_SUCCESS;
 } catch (const cfg_error &) {

@@ -8,6 +8,7 @@ bool (*system_services_get_user_lang)(const char *, char *, size_t);
 bool (*system_services_get_timezone)(const char *, char *, size_t);
 decltype(system_services_get_username_from_id) system_services_get_username_from_id;
 BOOL (*system_services_get_id_from_username)(const char*, int*);
+decltype(system_services_get_id_from_maildir) system_services_get_id_from_maildir;
 BOOL (*system_services_get_user_ids)(const char *, int *, int *, enum display_type *);
 BOOL (*system_services_lang_to_charset)(const char*, char*);
 const char* (*system_services_cpid_to_charset)(uint32_t);
@@ -32,6 +33,7 @@ int system_services_run()
 	E(system_services_get_timezone, "get_timezone");
 	E(system_services_get_username_from_id, "get_username_from_id");
 	E(system_services_get_id_from_username, "get_id_from_username");
+	E(system_services_get_id_from_maildir, "get_id_from_maildir");
 	E(system_services_get_user_ids, "get_user_ids");
 	E(system_services_lang_to_charset, "lang_to_charset");
 	E(system_services_cpid_to_charset, "cpid_to_charset");
@@ -51,6 +53,7 @@ void system_services_stop()
 	service_release("get_timezone", "system");
 	service_release("get_username_from_id", "system");
 	service_release("get_id_from_username", "system");
+	service_release("get_id_from_maildir", "system");
 	service_release("get_user_ids", "system");
 	service_release("lang_to_charset", "system");
 	service_release("cpid_to_charset", "system");

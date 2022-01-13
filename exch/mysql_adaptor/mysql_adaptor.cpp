@@ -32,6 +32,13 @@
 #define MLIST_RESULT_PRIVIL_SPECIFIED	4
 #define JOIN_WITH_DISPLAYTYPE "LEFT JOIN user_properties AS dt ON u.id=dt.user_id AND dt.proptag=956628995" /* PR_DISPLAY_TYPE_EX */
 
+/*
+ * Terminology you might encounter in this file
+ *
+ * "maildir": a private store's location
+ * "homedir": a public store's location
+ */
+
 using namespace std::string_literals;
 using namespace gromox;
 
