@@ -74,3 +74,5 @@ int pop3_parser_threads_event_proc(int action);
 int pop3_parser_retrieve(POP3_CONTEXT *pcontext);
 extern void pop3_parser_log_info(POP3_CONTEXT *pcontext, int level, const char *format, ...);
 extern char *pop3_parser_cdn_path();
+
+extern unsigned int g_popcmd_debug;

@@ -41,6 +41,7 @@ static int pop3_parser_dispatch_cmd(const char *cmd_line, int line_length,
 
 static void pop3_parser_context_clear(POP3_CONTEXT *pcontext);
 
+unsigned int g_popcmd_debug;
 static size_t g_context_num, g_retrieving_size;
 static unsigned int g_timeout;
 static int g_max_auth_times;
@@ -714,6 +715,16 @@ static int pop3_parser_dispatch_cmd(const char *line, int len, POP3_CONTEXT *ctx
 {
 	auto ret = pop3_parser_dispatch_cmd2(line, len, ctx);
 	auto code = ret & DISPATCH_VALMASK;
+	if (g_popcmd_debug >= 2 || (g_popcmd_debug >= 1 && code != 0 && code != 1700)) {
+		if (strncasecmp(line, "PASS", 4) == 0)
+			fprintf(stderr, "< PASS ****: ret=%xh code=%u\n", ret, code);
+		else
+			fprintf(stderr, "< %s: ret=%xh code=%u\n", line, ret, code);
+	}
+	/*
+	 * 1700 is not an error in itself; but it indicates (over code 0) that
+	 * there is text to be returned to the client.
+	 */
 	if (code == 0)
 		return ret & DISPATCH_ACTMASK;
 	size_t zlen = 0;

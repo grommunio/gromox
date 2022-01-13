@@ -95,6 +95,7 @@ int main(int argc, const char **argv) try
 		{"listen_port", "110"},
 		{"listen_ssl_port", "0"},
 		{"pop3_auth_times", "10", CFG_SIZE, "1"},
+		{"pop3_cmd_debug", "0"},
 		{"pop3_conn_timeout", "3min", CFG_TIME, "1s"},
 		{"pop3_force_stls", "false", CFG_BOOL},
 		{"pop3_support_stls", "false", CFG_BOOL},
@@ -131,6 +132,7 @@ int main(int argc, const char **argv) try
 	}
 	printf("[system]: default domain is %s\n", str_val);
 
+	g_popcmd_debug = g_config_file->get_ll("pop3_cmd_debug");
 	unsigned int context_num = g_config_file->get_ll("context_num");
 	unsigned int thread_charge_num = g_config_file->get_ll("thread_charge_num");
 	if (thread_charge_num % 4 != 0) {
