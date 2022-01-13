@@ -62,6 +62,24 @@ static void exchange_async_emsmdb_reclaim(uint32_t async_id);
 DECLARE_PROC_API();
 static DCERPC_ENDPOINT *ep_6001;
 
+static constexpr cfg_directive cfg_default_values[] = {
+	{"async_threads_num", "4", CFG_SIZE, "1", "20"},
+	{"average_handles", "1000", CFG_SIZE, "100"},
+	{"average_mem", "4K", CFG_SIZE, "4K"},
+	{"mailbox_ping_interval", "5min", CFG_TIME, "60s", "1h"},
+	{"max_ext_rule_length", "510K", CFG_SIZE, "1"},
+	{"max_mail_length", "64M", CFG_SIZE, "1"},
+	{"max_mail_num", "1000000", CFG_SIZE, "1"},
+	{"max_rcpt_num", "256", CFG_SIZE, "1"},
+	{"rop_debug", "0"},
+	{"separator_for_bounce", " "},
+	{"submit_command", "/usr/bin/php " PKGDATADIR "/sa/submit.php"},
+	{"smtp_server_ip", "::1"},
+	{"smtp_server_port", "25"},
+	{"x500_org_name", "Gromox default"},
+	CFG_TABLE_END,
+};
+
 static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 {
 	if (pconfig == nullptr)
@@ -71,6 +89,7 @@ static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 		       strerror(errno));
 		return false;
 	}
+	config_file_apply(*pconfig, cfg_default_values);
 	g_rop_debug = pconfig->get_ll("rop_debug");
 	return true;
 } catch (const cfg_error &) {
@@ -131,24 +150,8 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 			       cfg_path.c_str(), strerror(errno));
 			return FALSE;
 		}
-		static constexpr cfg_directive cfg_default_values[] = {
-			{"async_threads_num", "4", CFG_SIZE, "1", "20"},
-			{"average_handles", "1000", CFG_SIZE, "100"},
-			{"average_mem", "4K", CFG_SIZE, "4K"},
-			{"mailbox_ping_interval", "5min", CFG_TIME, "60s", "1h"},
-			{"max_ext_rule_length", "510K", CFG_SIZE, "1"},
-			{"max_mail_length", "64M", CFG_SIZE, "1"},
-			{"max_mail_num", "1000000", CFG_SIZE, "1"},
-			{"max_rcpt_num", "256", CFG_SIZE, "1"},
-			{"rop_debug", "0"},
-			{"separator_for_bounce", " "},
-			{"submit_command", "/usr/bin/php " PKGDATADIR "/sa/submit.php"},
-			{"smtp_server_ip", "::1"},
-			{"smtp_server_port", "25"},
-			{"x500_org_name", "Gromox default"},
-			CFG_TABLE_END,
-		};
-		config_file_apply(*pfile, cfg_default_values);
+		if (!exch_emsmdb_reload(pfile))
+			return false;
 		gx_strlcpy(separator, pfile->get_value("separator_for_bounce"), arsizeof(separator));
 		gx_strlcpy(org_name, pfile->get_value("x500_org_name"), arsizeof(org_name));
 		printf("[exchange_emsmdb]: x500 org name is \"%s\"\n", org_name);
@@ -178,8 +181,6 @@ static BOOL proc_exchange_emsmdb(int reason, void **ppdata) try
 		gx_strlcpy(submit_command, pfile->get_value("submit_command"), arsizeof(submit_command));
 		async_num = pfile->get_ll("async_threads_num");
 		printf("[exchange_emsmdb]: async threads number is %d\n", async_num);
-		if (!exch_emsmdb_reload(pfile))
-			return false;
 		
 #define regsvr(f) register_service(#f, f)
 		if (!regsvr(asyncemsmdb_interface_async_wait) ||
