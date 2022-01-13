@@ -387,6 +387,7 @@ static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> cfg) try
 		       strerror(errno));
 		return false;
 	}
+	config_file_apply(*cfg, cfg_default_values);
 	mysql_adaptor_init_param par;
 	par.conn_num = cfg->get_ll("connection_num");
 	par.host = cfg->get_value("mysql_host");
@@ -440,7 +441,6 @@ static BOOL svc_mysql_adaptor(int reason, void **data)
 		       strerror(errno));
 		return false;
 	}
-	config_file_apply(*cfg, cfg_default_values);
 	if (!mysql_adaptor_reload_config(cfg))
 		return false;
 	if (mysql_adaptor_run() != 0) {
