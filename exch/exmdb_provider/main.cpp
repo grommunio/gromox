@@ -57,7 +57,7 @@ static constexpr cfg_directive cfg_default_values[] = {
 unsigned int g_dbg_synth_content;
 unsigned int g_mbox_contention_warning, g_mbox_contention_reject;
 
-static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig)
+static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 {
 	if (pconfig == nullptr) {
 		pconfig = config_file_initd("exmdb_provider.cfg", get_config_path());
@@ -69,16 +69,15 @@ static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig)
 		       strerror(errno));
 		return false;
 	}
-	try {
-		g_exrpc_debug = pconfig->get_ll("exrpc_debug");
-		g_dbg_synth_content = pconfig->get_ll("dbg_synthesize_content");
-		g_enable_dam = parse_bool(pconfig->get_value("enable_dam"));
-		g_mbox_contention_warning = pconfig->get_ll("mbox_contention_warning");
-		g_mbox_contention_reject = pconfig->get_ll("mbox_contention_reject");
-	} catch (const cfg_error &) {
-		return false;
-	}
+	config_file_apply(*pconfig, cfg_default_values);
+	g_exrpc_debug = pconfig->get_ll("exrpc_debug");
+	g_dbg_synth_content = pconfig->get_ll("dbg_synthesize_content");
+	g_enable_dam = parse_bool(pconfig->get_value("enable_dam"));
+	g_mbox_contention_warning = pconfig->get_ll("mbox_contention_warning");
+	g_mbox_contention_reject = pconfig->get_ll("mbox_contention_reject");
 	return true;
+} catch (const cfg_error &) {
+	return false;
 }
 
 static BOOL svc_exmdb_provider(int reason, void **ppdata) try
@@ -105,8 +104,9 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 			       cfg_path.c_str(), strerror(errno));
 			return FALSE;
 		}
+		if (!exmdb_provider_reload(pconfig))
+			return false;
 
-		config_file_apply(*pconfig, cfg_default_values);
 		auto listen_ip = pconfig->get_value("listen_ip");
 		uint16_t listen_port = pconfig->get_ll("listen_port");
 		printf("[exmdb_provider]: listen address is [%s]:%hu\n",
@@ -171,8 +171,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		int populating_num = pconfig->get_ll("populating_threads_num");
 		printf("[exmdb_provider]: populating threads"
 				" number is %d\n", populating_num);
-		if (!exmdb_provider_reload(pconfig))
-			return false;
 		
 		common_util_init(org_name, max_msg_count, max_rule, max_ext_rule);
 		bounce_producer_init(separator);
