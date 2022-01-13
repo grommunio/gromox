@@ -457,6 +457,8 @@ gxerr_t message_object::save()
 				}
 				tmp_propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
 				tmp_propval.pvalue = pbin_pcl;
+				tmp_propvals.count = 1;
+				tmp_propvals.ppropval = &tmp_propval;
 				if (FALSE == message_object_set_properties_internal(
 					pmessage, FALSE, &tmp_propvals, &tmp_problems)) {
 					return GXERR_CALL_FAILED;
