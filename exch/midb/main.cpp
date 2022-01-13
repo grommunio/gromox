@@ -54,6 +54,29 @@ static constexpr const char *g_dfl_svc_plugins[] = {
 	NULL,
 };
 
+static constexpr cfg_directive cfg_default_values[] = {
+	{"config_file_path", PKGSYSCONFDIR "/midb:" PKGSYSCONFDIR},
+	{"data_path", PKGDATADIR "/midb:" PKGDATADIR},
+	{"default_charset", "windows-1252"},
+	{"default_timezone", "Asia/Shanghai"},
+	{"midb_cache_interval", "30min", CFG_TIME, "1min", "30min"},
+	{"midb_cmd_debug", "0"},
+	{"midb_listen_ip", "::1"},
+	{"midb_listen_port", "5555"},
+	{"midb_mime_number", "4096", CFG_SIZE, "1024"},
+	{"midb_table_size", "5000", CFG_SIZE, "100", "50000"},
+	{"midb_threads_num", "100", CFG_SIZE, "20", "1000"},
+	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "200"},
+	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "200"},
+	{"service_plugin_path", PKGLIBDIR},
+	{"sqlite_mmap_size", "0", CFG_SIZE},
+	{"sqlite_synchronous", "off", CFG_BOOL},
+	{"sqlite_wal_mode", "true", CFG_BOOL},
+	{"state_path", PKGSTATEDIR},
+	{"x500_org_name", "Gromox default"},
+	CFG_TABLE_END,
+};
+
 static void term_handler(int signo)
 {
 	g_notify_stop = true;
@@ -67,6 +90,7 @@ static bool midb_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return false;
 	}
+	config_file_apply(*pconfig, cfg_default_values);
 	g_cmd_debug = pconfig->get_ll("midb_cmd_debug");
 	return true;
 }
@@ -101,30 +125,9 @@ int main(int argc, const char **argv) try
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
 		return 2;
+	if (!midb_reload_config(pconfig))
+		return EXIT_FAILURE;
 
-	static constexpr cfg_directive cfg_default_values[] = {
-		{"config_file_path", PKGSYSCONFDIR "/midb:" PKGSYSCONFDIR},
-		{"data_path", PKGDATADIR "/midb:" PKGDATADIR},
-		{"default_charset", "windows-1252"},
-		{"default_timezone", "Asia/Shanghai"},
-		{"midb_cache_interval", "30min", CFG_TIME, "1min", "30min"},
-		{"midb_cmd_debug", "0"},
-		{"midb_listen_ip", "::1"},
-		{"midb_listen_port", "5555"},
-		{"midb_mime_number", "4096", CFG_SIZE, "1024"},
-		{"midb_table_size", "5000", CFG_SIZE, "100", "50000"},
-		{"midb_threads_num", "100", CFG_SIZE, "20", "1000"},
-		{"notify_stub_threads_num", "10", CFG_SIZE, "1", "200"},
-		{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "200"},
-		{"service_plugin_path", PKGLIBDIR},
-		{"sqlite_mmap_size", "0", CFG_SIZE},
-		{"sqlite_synchronous", "off", CFG_BOOL},
-		{"sqlite_wal_mode", "true", CFG_BOOL},
-		{"state_path", PKGSTATEDIR},
-		{"x500_org_name", "Gromox default"},
-		CFG_TABLE_END,
-	};
-	config_file_apply(*g_config_file, cfg_default_values);
 	auto str_value = pconfig->get_value("SERVICE_PLUGIN_LIST");
 	char **service_plugin_list = nullptr;
 	auto cl_0c = make_scope_exit([&]() { HX_zvecfree(service_plugin_list); });
@@ -136,8 +139,6 @@ int main(int argc, const char **argv) try
 		}
 	}
 
-	if (!midb_reload_config(pconfig))
-		return EXIT_FAILURE;
 	int proxy_num = pconfig->get_ll("rpc_proxy_connection_num");
 	printf("[system]: exmdb proxy connection number is %d\n", proxy_num);
 	
