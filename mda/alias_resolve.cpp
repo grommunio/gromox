@@ -170,6 +170,7 @@ static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> mcfg, std::shared_ptr<
 		       strerror(errno));
 		return false;
 	}
+	config_file_apply(*mcfg, mysql_directives);
 	g_parm.host = mcfg->get_value("mysql_host");
 	g_parm.port = mcfg->get_ll("mysql_port");
 	g_parm.user = mcfg->get_value("mysql_username");
@@ -190,6 +191,7 @@ static bool xa_reload_config(std::shared_ptr<CONFIG_FILE> mcfg, std::shared_ptr<
 		       strerror(errno));
 		return false;
 	}
+	config_file_apply(*acfg, xa_directives);
 	g_cache_lifetime = std::chrono::seconds(acfg->get_ll("cache_lifetime"));
 	return true;
 }
@@ -222,8 +224,6 @@ static BOOL xa_main(int reason, void **data)
 		       strerror(errno));
 		return false;
 	}
-	config_file_apply(*mcfg, mysql_directives);
-	config_file_apply(*acfg, xa_directives);
 	if (!xa_reload_config(mcfg, acfg) ||
 	    !register_hook(xa_alias_subst))
 		return false;
