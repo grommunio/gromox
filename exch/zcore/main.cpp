@@ -61,6 +61,38 @@ static constexpr const char *g_dfl_svc_plugins[] = {
 	NULL,
 };
 
+static constexpr cfg_directive cfg_default_values[] = {
+	{"address_cache_interval", "5min", CFG_TIME, "1min", "1day"},
+	{"address_item_num", "100000", CFG_SIZE, "1"},
+	{"address_table_size", "3000", CFG_SIZE, "1"},
+	{"config_file_path", PKGSYSCONFDIR "/zcore:" PKGSYSCONFDIR},
+	{"data_file_path", PKGDATADIR "/zcore:" PKGDATADIR},
+	{"default_charset", "windows-1252"},
+	{"default_timezone", "Asia/Shanghai"},
+	{"freebusy_tool_path", PKGLIBEXECDIR "/freebusy"},
+	{"mail_max_length", "64M", CFG_SIZE, "1"},
+	{"mailbox_ping_interval", "5min", CFG_TIME, "1min", "1h"},
+	{"max_ext_rule_length", "510K", CFG_SIZE, "1"},
+	{"max_mail_num", "1000000", CFG_SIZE, "1"},
+	{"max_rcpt_num", "256", CFG_SIZE, "1"},
+	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "100"},
+	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "100"},
+	{"separator_for_bounce", ";"},
+	{"service_plugin_path", PKGLIBDIR},
+	{"smtp_server_ip", "::1"},
+	{"smtp_server_port", "25"},
+	{"state_path", PKGSTATEDIR},
+	{"submit_command", "/usr/bin/php " PKGDATADIR "/sa/submit.php"},
+	{"user_cache_interval", "1h", CFG_TIME, "1min", "1day"},
+	{"user_table_size", "5000", CFG_SIZE, "100", "50000"},
+	{"x500_org_name", "Gromox default"},
+	{"zarafa_mime_number", "4096", CFG_SIZE, "1024"},
+	{"zarafa_threads_num", "100", CFG_SIZE, "20", "1000"},
+	{"zcore_listen", PKGRUNDIR "/zcore.sock"},
+	{"zrpc_debug", "0"},
+	CFG_TABLE_END,
+};
+
 static void term_handler(int signo)
 {
 	g_notify_stop = true;
@@ -75,6 +107,7 @@ static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 		       opt_config_file, strerror(errno));
 		return false;
 	}
+	config_file_apply(*pconfig, cfg_default_values);
 	g_zrpc_debug = pconfig->get_ll("zrpc_debug");
 	return true;
 }
@@ -110,39 +143,8 @@ int main(int argc, const char **argv) try
 		printf("[system]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
 		return 2;
-
-	static constexpr cfg_directive cfg_default_values[] = {
-		{"address_cache_interval", "5min", CFG_TIME, "1min", "1day"},
-		{"address_item_num", "100000", CFG_SIZE, "1"},
-		{"address_table_size", "3000", CFG_SIZE, "1"},
-		{"config_file_path", PKGSYSCONFDIR "/zcore:" PKGSYSCONFDIR},
-		{"data_file_path", PKGDATADIR "/zcore:" PKGDATADIR},
-		{"default_charset", "windows-1252"},
-		{"default_timezone", "Asia/Shanghai"},
-		{"freebusy_tool_path", PKGLIBEXECDIR "/freebusy"},
-		{"mail_max_length", "64M", CFG_SIZE, "1"},
-		{"mailbox_ping_interval", "5min", CFG_TIME, "1min", "1h"},
-		{"max_ext_rule_length", "510K", CFG_SIZE, "1"},
-		{"max_mail_num", "1000000", CFG_SIZE, "1"},
-		{"max_rcpt_num", "256", CFG_SIZE, "1"},
-		{"notify_stub_threads_num", "10", CFG_SIZE, "1", "100"},
-		{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "100"},
-		{"separator_for_bounce", ";"},
-		{"service_plugin_path", PKGLIBDIR},
-		{"smtp_server_ip", "::1"},
-		{"smtp_server_port", "25"},
-		{"state_path", PKGSTATEDIR},
-		{"submit_command", "/usr/bin/php " PKGDATADIR "/sa/submit.php"},
-		{"user_cache_interval", "1h", CFG_TIME, "1min", "1day"},
-		{"user_table_size", "5000", CFG_SIZE, "100", "50000"},
-		{"x500_org_name", "Gromox default"},
-		{"zarafa_mime_number", "4096", CFG_SIZE, "1024"},
-		{"zarafa_threads_num", "100", CFG_SIZE, "20", "1000"},
-		{"zcore_listen", PKGRUNDIR "/zcore.sock"},
-		{"zrpc_debug", "0"},
-		CFG_TABLE_END,
-	};
-	config_file_apply(*g_config_file, cfg_default_values);
+	if (!zcore_reload_config(pconfig))
+		return EXIT_FAILURE;
 
 	str_value = pconfig->get_value("HOST_ID");
 	if (NULL == str_value) {
@@ -163,9 +165,6 @@ int main(int argc, const char **argv) try
 			return 2;
 		}
 	}
-
-	if (!zcore_reload_config(pconfig))
-		return EXIT_FAILURE;
 	
 	msgchg_grouping_init(g_config_file->get_value("data_file_path"));
 	auto cl_0c = make_scope_exit([&]() { msgchg_grouping_free(); });
