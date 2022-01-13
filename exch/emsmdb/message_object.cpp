@@ -369,18 +369,12 @@ void message_object::set_open_flags(uint8_t f)
 gxerr_t message_object::save()
 {
 	auto pmessage = this;
-	int i;
 	uint32_t result;
-	BINARY *pbin_pcl;
-	BINARY *pbin_pcl1;
+	BINARY *pbin_pcl = nullptr;
 	uint32_t tmp_index;
 	uint32_t *pgroup_id;
 	INDEX_ARRAY *pindices;
-	INDEX_ARRAY tmp_indices;
 	MESSAGE_CONTENT *pmsgctnt;
-	PROBLEM_ARRAY tmp_problems;
-	TAGGED_PROPVAL tmp_propval;
-	TPROPVAL_ARRAY tmp_propvals;
 	PROPTAG_ARRAY *pungroup_proptags;
 	
 	
@@ -399,6 +393,8 @@ gxerr_t message_object::save()
 	BOOL b_fai = assoc == nullptr || *static_cast<uint8_t *>(assoc) == 0 ? false : TRUE;
 	if (NULL != pmessage->pstate) {
 		if (FALSE == pmessage->b_new) {
+			BINARY *pbin_pcl1 = nullptr;
+
 			if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
 			    pmessage->instance_id, PR_PREDECESSOR_CHANGE_LIST,
 			    reinterpret_cast<void **>(&pbin_pcl)) ||
@@ -441,10 +437,13 @@ gxerr_t message_object::save()
 						    pmessage->instance_id, pmsgctnt))
 							return GXERR_CALL_FAILED;
 						auto tmp_status = *mstatus | MESSAGE_STATUS_IN_CONFLICT;
-						tmp_propvals.count = 1;
-						tmp_propvals.ppropval = &tmp_propval;
+						TAGGED_PROPVAL tmp_propval;
+						TPROPVAL_ARRAY tmp_propvals;
+						PROBLEM_ARRAY tmp_problems;
 						tmp_propval.proptag = PROP_TAG_MESSAGESTATUS;
 						tmp_propval.pvalue = &tmp_status;
+						tmp_propvals.count = 1;
+						tmp_propvals.ppropval = &tmp_propval;
 						if (FALSE == message_object_set_properties_internal(
 							pmessage, FALSE, &tmp_propvals, &tmp_problems)) {
 							return GXERR_CALL_FAILED;
@@ -455,6 +454,9 @@ gxerr_t message_object::save()
 				if (NULL == pbin_pcl) {
 					return GXERR_CALL_FAILED;
 				}
+				TAGGED_PROPVAL tmp_propval;
+				TPROPVAL_ARRAY tmp_propvals;
+				PROBLEM_ARRAY tmp_problems;
 				tmp_propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
 				tmp_propval.pvalue = pbin_pcl;
 				tmp_propvals.count = 1;
@@ -478,6 +480,7 @@ gxerr_t message_object::save()
 	if (!flush_streams())
 		return GXERR_CALL_FAILED;
 	
+	TPROPVAL_ARRAY tmp_propvals;
 	tmp_propvals.count = 0;
 	tmp_propvals.ppropval = cu_alloc<TAGGED_PROPVAL>(8);
 	if (NULL == tmp_propvals.ppropval) {
@@ -531,6 +534,7 @@ gxerr_t message_object::save()
 		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_pcl;
 	}
 	
+	PROBLEM_ARRAY tmp_problems;
 	if (FALSE == message_object_set_properties_internal(
 		pmessage, FALSE, &tmp_propvals, &tmp_problems)) {
 		return GXERR_CALL_FAILED;
@@ -540,6 +544,7 @@ gxerr_t message_object::save()
 		modification's check when the  rop_savechangesmessage
 		is called, it is useless for ICS!
 	*/
+	TAGGED_PROPVAL tmp_propval;
 	tmp_propval.proptag = PidTagChangeNumber;
 	tmp_propval.pvalue = &pmessage->change_num;
 	if (!exmdb_client_set_instance_property(pmessage->plogon->get_dir(),
@@ -610,7 +615,7 @@ gxerr_t message_object::save()
 		proptag_array_free(pungroup_proptags);
 		return GXERR_CALL_FAILED;
 	}
-	for (i=0; i<pmessage->pchanged_proptags->count; i++) {
+	for (size_t i = 0; i < pmessage->pchanged_proptags->count; ++i) {
 		if (!pgpinfo->get_partial_index(pmessage->pchanged_proptags->pproptag[i], &tmp_index)) {
 			if (!proptag_array_append(pungroup_proptags,
 			    pmessage->pchanged_proptags->pproptag[i])) {
@@ -626,7 +631,7 @@ gxerr_t message_object::save()
 			}
 		}
 	}
-	for (i=0; i<pmessage->premoved_proptags->count; i++) {
+	for (size_t i = 0; i < pmessage->premoved_proptags->count; ++i) {
 		if (!pgpinfo->get_partial_index(pmessage->premoved_proptags->pproptag[i], &tmp_index)) {
 			proptag_array_free(pindices);
 			proptag_array_free(pungroup_proptags);
@@ -654,6 +659,7 @@ gxerr_t message_object::save()
  SAVE_FULL_CHANGE:
 	proptag_array_clear(pmessage->pchanged_proptags);
 	proptag_array_clear(pmessage->premoved_proptags);
+	INDEX_ARRAY tmp_indices;
 	tmp_indices.count = 0;
 	tmp_indices.pproptag = NULL;
 	if (!exmdb_client_save_change_indices(pmessage->plogon->get_dir(),
