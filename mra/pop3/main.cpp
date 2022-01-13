@@ -51,7 +51,48 @@ static constexpr const char *g_dfl_svc_plugins[] = {
 	NULL,
 };
 
-static void term_handler(int signo);
+static constexpr cfg_directive cfg_default_values[] = {
+	{"block_interval_auths", "1min", CFG_TIME, "1s"},
+	{"cdn_cache_path", "/cdn"},
+	{"config_file_path", PKGSYSCONFDIR "/pop3:" PKGSYSCONFDIR},
+	{"context_average_mem", "512K", CFG_SIZE, "128K"},
+	{"context_average_units", "5000", CFG_SIZE, "256"},
+	{"context_max_mem", "2M", CFG_SIZE},
+	{"context_num", "400", CFG_SIZE},
+	{"data_file_path", PKGDATADIR "/pop3:" PKGDATADIR},
+	{"listen_port", "110"},
+	{"listen_ssl_port", "0"},
+	{"pop3_auth_times", "10", CFG_SIZE, "1"},
+	{"pop3_cmd_debug", "0"},
+	{"pop3_conn_timeout", "3min", CFG_TIME, "1s"},
+	{"pop3_force_stls", "false", CFG_BOOL},
+	{"pop3_support_stls", "false", CFG_BOOL},
+	{"running_identity", "gromox"},
+	{"service_plugin_ignore_errors", "false", CFG_BOOL},
+	{"service_plugin_path", PKGLIBDIR},
+	{"state_path", PKGSTATEDIR},
+	{"thread_charge_num", "20", CFG_SIZE, "4"},
+	{"thread_init_num", "5", CFG_SIZE},
+	CFG_TABLE_END,
+};
+
+static void term_handler(int signo)
+{
+	g_notify_stop = true;
+}
+
+static bool pop3_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
+{
+	if (pconfig == nullptr)
+		pconfig = config_file_prg(opt_config_file, "pop3.cfg");
+	if (opt_config_file != nullptr && pconfig == nullptr) {
+		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
+		return false;
+	}
+	config_file_apply(*pconfig, cfg_default_values);
+	g_popcmd_debug = pconfig->get_ll("pop3_cmd_debug");
+	return true;
+}
 
 int main(int argc, const char **argv) try
 { 
@@ -82,32 +123,8 @@ int main(int argc, const char **argv) try
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
-
-	static constexpr cfg_directive cfg_default_values[] = {
-		{"block_interval_auths", "1min", CFG_TIME, "1s"},
-		{"cdn_cache_path", "/cdn"},
-		{"config_file_path", PKGSYSCONFDIR "/pop3:" PKGSYSCONFDIR},
-		{"context_average_mem", "512K", CFG_SIZE, "128K"},
-		{"context_average_units", "5000", CFG_SIZE, "256"},
-		{"context_max_mem", "2M", CFG_SIZE},
-		{"context_num", "400", CFG_SIZE},
-		{"data_file_path", PKGDATADIR "/pop3:" PKGDATADIR},
-		{"listen_port", "110"},
-		{"listen_ssl_port", "0"},
-		{"pop3_auth_times", "10", CFG_SIZE, "1"},
-		{"pop3_cmd_debug", "0"},
-		{"pop3_conn_timeout", "3min", CFG_TIME, "1s"},
-		{"pop3_force_stls", "false", CFG_BOOL},
-		{"pop3_support_stls", "false", CFG_BOOL},
-		{"running_identity", "gromox"},
-		{"service_plugin_ignore_errors", "false", CFG_BOOL},
-		{"service_plugin_path", PKGLIBDIR},
-		{"state_path", PKGSTATEDIR},
-		{"thread_charge_num", "20", CFG_SIZE, "4"},
-		{"thread_init_num", "5", CFG_SIZE},
-		CFG_TABLE_END,
-	};
-	config_file_apply(*g_config_file, cfg_default_values);
+	if (!pop3_reload_config(g_config_file))
+		return EXIT_FAILURE;
 
 	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {
@@ -132,7 +149,6 @@ int main(int argc, const char **argv) try
 	}
 	printf("[system]: default domain is %s\n", str_val);
 
-	g_popcmd_debug = g_config_file->get_ll("pop3_cmd_debug");
 	unsigned int context_num = g_config_file->get_ll("context_num");
 	unsigned int thread_charge_num = g_config_file->get_ll("thread_charge_num");
 	if (thread_charge_num % 4 != 0) {
@@ -345,9 +361,4 @@ int main(int argc, const char **argv) try
 	return retcode;
 } catch (const cfg_error &) {
 	return EXIT_FAILURE;
-}
-
-static void term_handler(int signo)
-{
-	g_notify_stop = true;
 }
