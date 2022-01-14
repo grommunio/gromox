@@ -2538,7 +2538,7 @@ static void *gp_fetch(sqlite3 *psqlite, sqlite3_stmt *pstmt,
 		if (ext_pull.g_wstr_a(sa) != EXT_ERR_SUCCESS)
 			return nullptr;
 		if (proptype != PT_MV_STRING8)
-			return nullptr;
+			return sa;
 		for (size_t j = 0; j < sa->count; ++j) {
 			auto pstring = common_util_convert_copy(false, cpid, sa->ppstr[j]);
 			if (NULL == pstring) {
