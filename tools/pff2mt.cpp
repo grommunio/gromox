@@ -402,6 +402,8 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 		SHORT_ARRAY sa;
 		LONG_ARRAY la;
 		LONGLONG_ARRAY lla;
+		FLOAT_ARRAY fa;
+		DOUBLE_ARRAY da;
 		GUID_ARRAY ga;
 	} u;
 	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> uextra;
@@ -485,6 +487,17 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 		u.la.pl = reinterpret_cast<uint32_t *>(buf.get());
 		pv.pvalue = &u.la;
 		break;
+	case PT_MV_FLOAT:
+		u.fa.count = dsize / sizeof(float);
+		u.fa.mval = reinterpret_cast<float *>(buf.get());
+		pv.pvalue = &u.fa;
+		break;
+	case PT_MV_DOUBLE:
+	case PT_MV_APPTIME:
+		u.da.count = dsize / sizeof(double);
+		u.da.mval = reinterpret_cast<double *>(buf.get());
+		pv.pvalue = &u.da;
+		break;
 	case PT_MV_I8:
 	case PT_MV_SYSTIME:
 	case PT_MV_CURRENCY:
@@ -513,13 +526,6 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 			return; /* Embedded message, which separately handled. */
 		throw YError("PF-1039: Unsupported proptag %xh (datasize %zu). Implement me!\n",
 		        pv.proptag, dsize);
-	case PT_MV_FLOAT:
-	case PT_MV_DOUBLE:
-	case PT_MV_APPTIME:
-		/*
-		 * This is a larger undertaking, there is no support for these
-		 * three in the MAPI layer (struct TPROPVAL_ARRAY).
-		 */
 	default:
 		throw YError("PF-1042: Unsupported proptype %xh (datasize %zu). Implement me!\n",
 		        pv.proptag, dsize);

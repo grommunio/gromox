@@ -20,3 +20,6 @@ extern uint64_t rop_util_current_nttime();
 GUID rop_util_binary_to_guid(const BINARY *pbin);
 void rop_util_guid_to_binary(GUID guid, BINARY *pbin);
 void rop_util_free_binary(BINARY *pbin);
+namespace gromox {
+extern GX_EXPORT uint64_t apptime_to_nttime_approx(double);
+}

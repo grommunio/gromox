@@ -4,6 +4,7 @@
 #define _GNU_SOURCE 1
 #include <algorithm>
 #include <cerrno>
+#include <cmath>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -97,9 +98,17 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 		tlog("%f", *static_cast<float *>(tp.pvalue));
 		break;
 	case PT_DOUBLE:
-	case PT_APPTIME:
 		tlog("%f", *static_cast<double *>(tp.pvalue));
 		break;
+	case PT_APPTIME: {
+		auto ut = rop_util_nttime_to_unix(apptime_to_nttime_approx(*static_cast<double *>(tp.pvalue)));
+		char buf[80]{};
+		auto tm = localtime(&ut);
+		if (tm != nullptr)
+			strftime(buf, arsizeof(buf), "~%F %T", tm);
+		tlog("%s (raw %f), ", buf, *static_cast<double *>(tp.pvalue));
+		break;
+	}
 	case PT_I8: {
 		unsigned long long v = *static_cast<uint64_t *>(tp.pvalue);
 		tlog("%llu/%llxh", v, v);
@@ -170,6 +179,45 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 		tlog("}");
 		break;
 	}
+	case PT_MV_FLOAT: {
+		auto &xa = *static_cast<FLOAT_ARRAY *>(tp.pvalue);
+		tlog("mvflt[%zu]", static_cast<size_t>(xa.count));
+		if (!g_show_props)
+			break;
+		tlog("={");
+		for (size_t i = 0; i < xa.count; ++i)
+			tlog("%f,", xa.mval[i]);
+		tlog("}");
+		break;
+	}
+	case PT_MV_DOUBLE: {
+		auto &xa = *static_cast<DOUBLE_ARRAY *>(tp.pvalue);
+		tlog("mvdbl[%zu]", static_cast<size_t>(xa.count));
+		if (!g_show_props)
+			break;
+		tlog("={");
+		for (size_t i = 0; i < xa.count; ++i)
+			tlog("%f,", xa.mval[i]);
+		tlog("}");
+		break;
+	}
+	case PT_MV_APPTIME: {
+		auto &xa = *static_cast<DOUBLE_ARRAY *>(tp.pvalue);
+		tlog("mvapt[%zu]", static_cast<size_t>(xa.count));
+		if (!g_show_props)
+			break;
+		tlog("={");
+		for (size_t i = 0; i < xa.count; ++i) {
+			auto ut = rop_util_nttime_to_unix(apptime_to_nttime_approx(xa.mval[i]));
+			char buf[80]{};
+			auto tm = localtime(&ut);
+			if (tm != nullptr)
+				strftime(buf, arsizeof(buf), "~%F %T", tm);
+			tlog("%s (raw %f), ", buf, xa.mval[i]);
+		}
+		tlog("}");
+		break;
+	}
 	case PT_MV_CURRENCY: {
 		auto &sl = *static_cast<LONGLONG_ARRAY *>(tp.pvalue);
 		tlog("mvcur[%zu]", static_cast<size_t>(sl.count));
@@ -196,7 +244,7 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 	}
 	case PT_MV_SYSTIME: {
 		auto &sl = *static_cast<LONGLONG_ARRAY *>(tp.pvalue);
-		tlog("mvi8[%zu]", static_cast<size_t>(sl.count));
+		tlog("mvsystime[%zu]", static_cast<size_t>(sl.count));
 		if (!g_show_props)
 			break;
 		tlog("={");

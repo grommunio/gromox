@@ -1,15 +1,34 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
 // SPDX-FileCopyrightText: 2020 grommunio GmbH
 // This file is part of Gromox.
+#include <cmath>
 #include <cstring>
 #include <string>
 #include <iconv.h>
 #include <gromox/binrdwr.hpp>
 #include <gromox/scope.hpp>
+#include <gromox/rop_util.hpp>
 
 using namespace std::string_literals;
 
 namespace gromox {
+
+/**
+ * This function gives an approximation only, and it is only used for debug
+ * prints because of that. apptimes are timezoneless, so the conversion to
+ * nttime is necessarily off by as much as timezone you are on.
+ */
+uint64_t apptime_to_nttime_approx(double v)
+{
+	uint64_t s = std::modf(v, &v) * 86400;
+	uint64_t d = v;
+	s += 9435312000;
+	if (d < 61)
+		s += 86400;
+	s += d * 86400;
+	s *= 10000000;
+	return s;
+}
 
 std::string iconvtext(const char *src, size_t src_size,
     const char *from, const char *to)
