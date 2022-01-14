@@ -37,12 +37,25 @@ struct COMPRESS_HEADER {
 	uint32_t crc;
 };
 
+struct DICTIONARYREF {
+	uint8_t length;
+	uint16_t offset;
+};
+
 struct DECOMPRESSION_STATE {
 	uint8_t dict[RTF_DICTLENGTH];
 	uint32_t dict_writeoffset;
 	uint8_t *compressed_data;
 	uint32_t in_size;
 	uint32_t in_pos;
+
+	constexpr inline bool overflow_check() const { return in_pos <= in_size; }
+	uint8_t get_next_byte();
+	DICTIONARYREF get_next_dict_ref();
+	inline uint8_t get_next_ctrl() { return get_next_byte(); }
+	inline uint8_t get_next_literal() { return get_next_byte(); }
+	void append_to_dict(char);
+	inline char get_dict_entry(uint32_t i) const { return dict[i % RTF_DICTLENGTH]; }
 };
 
 struct OUTPUT_STATE {
@@ -50,11 +63,9 @@ struct OUTPUT_STATE {
 	uint32_t out_pos;
 	char *pbuff_out;
 	size_t max_length;
-};
 
-struct DICTIONARYREF {
-	uint8_t length;
-	uint16_t offset;
+	constexpr inline bool overflow_check() const { return out_pos <= out_size; }
+	void append(char);
 };
 
 }
@@ -95,8 +106,9 @@ static bool rtfcp_verify_header(uint8_t *header_data,
 	return true;
 }
 
-static uint8_t rtfcp_get_next_byte(DECOMPRESSION_STATE *pstate)
+uint8_t DECOMPRESSION_STATE::get_next_byte()
 {
+	auto pstate = this;
 	uint8_t next_byte;
 	
 	if (pstate->in_pos > pstate->in_size) {
@@ -107,25 +119,11 @@ static uint8_t rtfcp_get_next_byte(DECOMPRESSION_STATE *pstate)
 	return next_byte;
 }
 
-static uint8_t rtfcp_get_next_control(DECOMPRESSION_STATE *pstate)
+DICTIONARYREF DECOMPRESSION_STATE::get_next_dict_ref()
 {
-	return rtfcp_get_next_byte(pstate);
-}
-
-static uint8_t rtf_get_next_literal(DECOMPRESSION_STATE *pstate)
-{
-	return rtfcp_get_next_byte(pstate);
-}
-
-static DICTIONARYREF rtfcp_get_next_dictionary_reference(
-	DECOMPRESSION_STATE *pstate)
-{
-	uint8_t lowbyte;
-	uint8_t highbyte;
 	DICTIONARYREF reference;
-	
-	highbyte = rtfcp_get_next_byte(pstate);
-	lowbyte = rtfcp_get_next_byte(pstate);
+	auto highbyte = get_next_byte();
+	auto lowbyte = get_next_byte();
 	reference.length = lowbyte & 0x0F;
 	reference.length += 2;
 	reference.offset = ((highbyte << 8) + lowbyte);
@@ -134,40 +132,19 @@ static DICTIONARYREF rtfcp_get_next_dictionary_reference(
 	return reference;
 }
 
-static void rtfcp_append_to_dictionary(
-	DECOMPRESSION_STATE *pstate, char c)
+void DECOMPRESSION_STATE::append_to_dict(char c)
 {
+	auto pstate = this;
 	pstate->dict[pstate->dict_writeoffset] = c;
 	pstate->dict_writeoffset =
 		(pstate->dict_writeoffset + 1)%RTF_DICTLENGTH;
 }
 
-static void rtfcp_append_to_output(OUTPUT_STATE *poutput, char c)
+void OUTPUT_STATE::append(char c)
 {
+	auto poutput = this;
 	poutput->pbuff_out[poutput->out_pos] = c;
 	poutput->out_pos ++;
-}
-
-static char rtfcp_get_dictionary_entry(
-	DECOMPRESSION_STATE *pstate, uint32_t index)
-{
-	return pstate->dict[index%RTF_DICTLENGTH];
-}
-
-static bool rtfcp_check_output_overflow(OUTPUT_STATE *poutput)
-{
-	if (poutput->out_pos > poutput->out_size) {
-		return false;
-	}
-	return true;
-}
-
-static bool rtfcp_check_input_overflow(DECOMPRESSION_STATE *state)
-{
-	if (state->in_pos > state->in_size) {
-		return false;
-	}
-	return true;
 }
 
 bool rtfcp_uncompress(const BINARY *prtf_bin, char *pbuff_out, size_t *plength)
@@ -198,30 +175,29 @@ bool rtfcp_uncompress(const BINARY *prtf_bin, char *pbuff_out, size_t *plength)
 	rtfcp_init_output_state(&output,
 		header.rawsize, pbuff_out, *plength);
 	while (state.in_pos + 1 < state.in_size) {
-		control = rtfcp_get_next_control(&state);
+		control = state.get_next_ctrl();
 		for (bitmask_pos=0; bitmask_pos<8; bitmask_pos++) {
 			if (control & (1 << bitmask_pos)) {
-				dictref = rtfcp_get_next_dictionary_reference(&state);
+				dictref = state.get_next_dict_ref();
 				if (dictref.offset == state.dict_writeoffset) {
 					*plength = output.out_pos;
 					return true;
 				}
 				for (i =0; i<dictref.length; i++) {
-					if (!rtfcp_check_output_overflow(&output))
+					if (!output.overflow_check())
 						return false;
-					c = rtfcp_get_dictionary_entry(
-						&state, (dictref.offset + i));
-					rtfcp_append_to_output(&output, c);
-					rtfcp_append_to_dictionary(&state, c);
+					c = state.get_dict_entry(dictref.offset + i);
+					output.append(c);
+					state.append_to_dict(c);
 				}
 			} else { /* its a literal */
-				if (!rtfcp_check_output_overflow(&output))
+				if (!output.overflow_check())
 					return false;
-				c = rtf_get_next_literal(&state);
-				if (!rtfcp_check_input_overflow(&state))
+				c = state.get_next_literal();
+				if (!state.overflow_check())
 					return false;
-				rtfcp_append_to_output(&output, c);
-				rtfcp_append_to_dictionary(&state, c);
+				output.append(c);
+				state.append_to_dict(c);
 			}
 		}
 	}
