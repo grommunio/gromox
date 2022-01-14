@@ -1231,7 +1231,7 @@ static BOOL oxcmail_parse_classified(char *field, uint16_t *plast_propid,
 	uint8_t tmp_byte;
 	PROPERTY_NAME propname;
 	
-	if (0 == strcasecmp(field, "true")) {
+	if (strcasecmp(field, "true") == 0 || strcasecmp(field, "false") == 0) {
 		propname.guid = PSETID_COMMON;
 		propname.kind = MNID_ID;
 		propname.lid = PidLidClassified;
@@ -1626,13 +1626,10 @@ static BOOL oxcmail_enum_mail_head(
 		if (penum_param->pmsg->proplist.set(PROP_TAG_CONTENTFILTERSPAMCONFIDENCELEVEL, &tmp_int32) != 0)
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "X-Microsoft-Classified")) {
-		if (0 == strcasecmp(field, "true") ||
-			0 == strcasecmp(field, "false")) {
-			if (FALSE == oxcmail_parse_classified(field,
-				&penum_param->last_propid, penum_param->phash,
-				&penum_param->pmsg->proplist)) {
-				return FALSE;
-			}
+		if (FALSE == oxcmail_parse_classified(field,
+		    &penum_param->last_propid, penum_param->phash,
+		    &penum_param->pmsg->proplist)) {
+			return FALSE;
 		}
 	} else if (0 == strcasecmp(tag, "X-Microsoft-ClassKeep")) {
 		if (TRUE == penum_param->b_classified) {
