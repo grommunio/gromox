@@ -533,19 +533,18 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	auto pfolder = this;
 	for (i=0; i<pproptags->count; i++) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
-		if (TRUE == folder_object_get_calculated_property(
-			pfolder, pproptags->pproptag[i], &pvalue)) {
-			if (NULL != pvalue) {
-				pv.proptag = pproptags->pproptag[i];
-				pv.pvalue = pvalue;
-			} else {
-				pv.proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_ERROR);
-				pv.pvalue = deconst(&err_code);
-			}
-			ppropvals->count ++;
-		} else {
+		if (!folder_object_get_calculated_property(pfolder, pproptags->pproptag[i], &pvalue)) {
 			tmp_proptags.pproptag[tmp_proptags.count++] = pproptags->pproptag[i];
+			continue;
 		}
+		if (NULL != pvalue) {
+			pv.proptag = pproptags->pproptag[i];
+			pv.pvalue = pvalue;
+		} else {
+			pv.proptag = CHANGE_PROP_TYPE(pproptags->pproptag[i], PT_ERROR);
+			pv.pvalue = deconst(&err_code);
+		}
+		ppropvals->count++;
 	}
 	if (0 == tmp_proptags.count) {
 		return TRUE;
