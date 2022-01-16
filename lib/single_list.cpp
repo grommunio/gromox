@@ -200,7 +200,7 @@ SINGLE_LIST_NODE* single_list_get_after(SINGLE_LIST* plist,
  *	@return
  *		the number of nodes in the list
  */
-size_t single_list_get_nodes_num(SINGLE_LIST* plist)
+size_t single_list_get_nodes_num(const SINGLE_LIST *plist)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == plist) {
@@ -211,3 +211,17 @@ size_t single_list_get_nodes_num(SINGLE_LIST* plist)
 	return plist->cur_size;
 }
 
+const SINGLE_LIST_NODE *single_list_get_head(const SINGLE_LIST *l)
+{
+	return single_list_get_head(deconst(l));
+}
+
+const SINGLE_LIST_NODE *single_list_get_tail(const SINGLE_LIST *l)
+{
+	return single_list_get_tail(deconst(l));
+}
+
+const SINGLE_LIST_NODE *single_list_get_after(const SINGLE_LIST *l, const SINGLE_LIST_NODE *bn)
+{
+	return single_list_get_after(deconst(l), deconst(bn));
+}
