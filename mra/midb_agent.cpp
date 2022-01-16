@@ -1615,7 +1615,7 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 						if (NULL != strchr(pspace1, 'R')) {
 							mitem.flag_bits |= FLAG_RECENT;
 						}
-						xarray_append(pxarray, &mitem, mitem.uid);
+						pxarray->append(&mitem, mitem.uid);
 					} else {
 						b_format_error = TRUE;
 					}
@@ -1640,7 +1640,7 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 			sv_hold.unlock();
 			if (TRUE == b_format_error) {
 				*perrno = -1;
-				xarray_clear(pxarray);
+				pxarray->clear();
 				return MIDB_RESULT_ERROR;
 			} else {
 				return MIDB_RESULT_OK;
@@ -1670,7 +1670,7 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
 	sv_hold.unlock();
-	xarray_clear(pxarray);
+	pxarray->clear();
 	return MIDB_RDWR_ERROR;
 }
 
@@ -1768,7 +1768,7 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 						mitem.id = strtol(temp_line, nullptr, 0) + 1;
 						mitem.uid = strtol(pspace1, nullptr, 0);
 						mitem.flag_bits = FLAG_DELETED;
-						xarray_append(pxarray, &mitem, mitem.uid);
+						pxarray->append(&mitem, mitem.uid);
 					} else {
 						b_format_error = TRUE;
 					}
@@ -1793,7 +1793,7 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 			sv_hold.unlock();
 			if (TRUE == b_format_error) {
 				*perrno = -1;
-				xarray_clear(pxarray);
+				pxarray->clear();
 				return MIDB_RESULT_ERROR;
 			} else {
 				return MIDB_RESULT_OK;
@@ -1823,7 +1823,7 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
 	sv_hold.unlock();
-	xarray_clear(pxarray);
+	pxarray->clear();
 	return MIDB_RDWR_ERROR;
 }
 
@@ -1948,7 +1948,7 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 					
 					mem_file_init(&mitem.f_digest, g_file_allocator);
 					mitem.f_digest.write(temp_line, line_pos);
-					xarray_append(pxarray, &mitem, mitem.uid);
+					pxarray->append(&mitem, mitem.uid);
 				} else {
 					b_format_error = TRUE;
 				}
@@ -1969,15 +1969,15 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
 			sv_hold.unlock();
 			if (TRUE == b_format_error) {
-				auto num = xarray_get_capacity(pxarray);
+				auto num = pxarray->get_capacity();
 				for (size_t i = 0; i < num; ++i) {
-					auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
+					auto pitem = static_cast<MITEM *>(pxarray->get_item(i));
 					if (NULL != pitem) {
 						mem_file_free(&pitem->f_digest);
 					}
 				}
 				*perrno = -1;
-				xarray_clear(pxarray);
+				pxarray->clear();
 				return MIDB_RESULT_ERROR;
 			} else {
 				return MIDB_RESULT_OK;
@@ -2008,22 +2008,22 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
 	sv_hold.unlock();
-	auto num = xarray_get_capacity(pxarray);
+	auto num = pxarray->get_capacity();
 	for (size_t i = 0; i < num; ++i) {
-		auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
+		auto pitem = static_cast<MITEM *>(pxarray->get_item(i));
 		if (NULL != pitem) {
 			mem_file_free(&pitem->f_digest);
 		}
 	}
-	xarray_clear(pxarray);
+	pxarray->clear();
 	return MIDB_RDWR_ERROR;
 }
 
 static void free_result(XARRAY *pxarray)
 {
-	auto num = xarray_get_capacity(pxarray);
+	auto num = pxarray->get_capacity();
 	for (size_t i = 0; i < num; ++i) {
-		auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
+		auto pitem = static_cast<MITEM *>(pxarray->get_item(i));
 		if (NULL != pitem) {
 			mem_file_free(&pitem->f_digest);
 		}
@@ -2138,10 +2138,10 @@ static int fetch_simple(const char *path, const char *folder,
 							pspace ++;
 							pspace1 ++;
 							int uid = strtol(pspace, nullptr, 0);
-							if (xarray_append(pxarray, &mitem, uid) >= 0) {
-								auto num = xarray_get_capacity(pxarray);
+							if (pxarray->append(&mitem, uid) >= 0) {
+								auto num = pxarray->get_capacity();
 								assert(num > 0);
-								auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, num - 1));
+								auto pitem = static_cast<MITEM *>(pxarray->get_item(num - 1));
 								pitem->uid = uid;
 								pitem->id = pseq->min + count - 1;
 								gx_strlcpy(pitem->mid, temp_line, arsizeof(pitem->mid));
@@ -2312,12 +2312,12 @@ static int fetch_detail(const char *path, const char *folder,
 							&pback->node);
 						sv_hold.unlock();
 						*perrno = strtol(buff + 6, nullptr, 0);
-						auto num = xarray_get_capacity(pxarray);
+						auto num = pxarray->get_capacity();
 						for (size_t j = 0; j < num; ++j) {
-							auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, j));
+							auto pitem = static_cast<MITEM *>(pxarray->get_item(j));
 							mem_file_free(&pitem->f_digest);
 						}
-						xarray_clear(pxarray);
+						pxarray->clear();
 						return MIDB_RESULT_ERROR;
 					}
 				}
@@ -2336,10 +2336,10 @@ static int fetch_detail(const char *path, const char *folder,
 					if (TRUE == get_digest_string(temp_line, line_pos, "file",
 						mitem.mid, sizeof(mitem.mid)) && TRUE == get_digest_integer(
 						temp_line, line_pos, "uid", &mitem.uid)) {
-						if (xarray_append(pxarray, &mitem, mitem.uid) >= 0) {
-							auto num = xarray_get_capacity(pxarray);
+						if (pxarray->append(&mitem, mitem.uid) >= 0) {
+							auto num = pxarray->get_capacity();
 							assert(num > 0);
-							auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, num - 1));
+							auto pitem = static_cast<MITEM *>(pxarray->get_item(num - 1));
 							pitem->id = pseq->min + count - 1;
 							pitem->flag_bits = FLAG_LOADED;
 							if (TRUE == get_digest_integer(temp_line, line_pos,
@@ -2393,9 +2393,9 @@ static int fetch_detail(const char *path, const char *folder,
 					double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
 					sv_hold.unlock();
 					*perrno = -1;
-					auto num = xarray_get_capacity(pxarray);
+					auto num = pxarray->get_capacity();
 					for (size_t i = 0; i < num; ++i) {
-						auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
+						auto pitem = static_cast<MITEM *>(pxarray->get_item(i));
 						mem_file_free(&pitem->f_digest);
 					}
 					return MIDB_RESULT_ERROR;
@@ -2433,12 +2433,12 @@ static int fetch_detail(const char *path, const char *folder,
 	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
 	sv_hold.unlock();
-	auto num = xarray_get_capacity(pxarray);
+	auto num = pxarray->get_capacity();
 	for (size_t i = 0; i < num; ++i) {
-		auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
+		auto pitem = static_cast<MITEM *>(pxarray->get_item(i));
 		mem_file_free(&pitem->f_digest);
 	}
-	xarray_clear(pxarray);
+	pxarray->clear();
 	return MIDB_RDWR_ERROR;
 }
 
@@ -2543,10 +2543,10 @@ static int fetch_simple_uid(const char *path, const char *folder,
 								pspace1 ++;
 								pspace2 ++;
 								int uid = strtol(pspace1, nullptr, 0);
-								if (xarray_append(pxarray, &mitem, uid) >= 0) {
-									auto num = xarray_get_capacity(pxarray);
+								if (pxarray->append(&mitem, uid) >= 0) {
+									auto num = pxarray->get_capacity();
 									assert(num > 0);
-									auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, num - 1));
+									auto pitem = static_cast<MITEM *>(pxarray->get_item(num - 1));
 									pitem->uid = uid;
 									pitem->id = strtol(temp_line, nullptr, 0) + 1;
 									gx_strlcpy(pitem->mid, pspace, arsizeof(pitem->mid));
@@ -2709,12 +2709,12 @@ static int fetch_detail_uid(const char *path, const char *folder,
 							&pback->node);
 						sv_hold.unlock();
 						*perrno = strtol(buff + 6, nullptr, 0);
-						auto num = xarray_get_capacity(pxarray);
+						auto num = pxarray->get_capacity();
 						for (size_t j = 0; j < num; ++j) {
-							auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, j));
+							auto pitem = static_cast<MITEM *>(pxarray->get_item(j));
 							mem_file_free(&pitem->f_digest);
 						}
-						xarray_clear(pxarray);
+						pxarray->clear();
 						return MIDB_RESULT_ERROR;
 					}
 				}
@@ -2738,10 +2738,10 @@ static int fetch_detail_uid(const char *path, const char *folder,
 						&mitem.uid)) {
 						*pspace = '\0';
 						pspace ++;
-						if (xarray_append(pxarray, &mitem, mitem.uid) >= 0) {
-							auto num = xarray_get_capacity(pxarray);
+						if (pxarray->append(&mitem, mitem.uid) >= 0) {
+							auto num = pxarray->get_capacity();
 							assert(num > 0);
-							auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, num - 1));
+							auto pitem = static_cast<MITEM *>(pxarray->get_item(num - 1));
 							pitem->id = strtol(temp_line, nullptr, 0) + 1;
 							pitem->flag_bits = FLAG_LOADED;
 							if (TRUE == get_digest_integer(pspace, temp_len,
@@ -2796,9 +2796,9 @@ static int fetch_detail_uid(const char *path, const char *folder,
 					double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
 					sv_hold.unlock();
 					*perrno = -1;
-					auto num = xarray_get_capacity(pxarray);
+					auto num = pxarray->get_capacity();
 					for (size_t i = 0; i < num; ++i) {
-						auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
+						auto pitem = static_cast<MITEM *>(pxarray->get_item(i));
 						mem_file_free(&pitem->f_digest);
 					}
 					return MIDB_RESULT_ERROR;
@@ -2836,12 +2836,12 @@ static int fetch_detail_uid(const char *path, const char *folder,
 	std::unique_lock sv_hold(g_server_lock);
 	double_list_append_as_tail(&g_lost_list, &pback->node);
 	sv_hold.unlock();
-	auto num = xarray_get_capacity(pxarray);
+	auto num = pxarray->get_capacity();
 	for (size_t i = 0; i < num; ++i) {
-		auto pitem = static_cast<MITEM *>(xarray_get_item(pxarray, i));
+		auto pitem = static_cast<MITEM *>(pxarray->get_item(i));
 		mem_file_free(&pitem->f_digest);
 	}
-	xarray_clear(pxarray);
+	pxarray->clear();
 	return MIDB_RDWR_ERROR;
 }
 

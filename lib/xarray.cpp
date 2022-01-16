@@ -43,13 +43,7 @@ void xarray_init(XARRAY *pxarray, LIB_BUFFER *pbuf_pool, size_t data_size)
 
 void xarray_free(XARRAY* pxarray)
 {
-#ifdef _DEBUG_UMTA
-	if (NULL == pxarray) {
-		debug_info("[xarray]: NULL pointer found in xarray_free");
-		return;
-	}
-#endif
-	xarray_clear(pxarray);
+	pxarray->clear();
 	double_list_free(&pxarray->mlist);
 }
 
@@ -66,18 +60,16 @@ void xarray_free(XARRAY* pxarray)
  *		<0				fail to append
  *		>=0				index of the item
  */
-int xarray_append(XARRAY* pxarray, void* pdata, unsigned int xtag)
+int XARRAY::append(void *pdata, unsigned int xtag)
 {
+	auto pxarray = this;
 	int ret_index;
 #ifdef _DEBUG_UMTA
-	if (NULL == pxarray || NULL == pdata) {	   
-		debug_info("[xarray]: NULL pointer found in xarray_append");
-	}
+	if (pdata == nullptr)
+		debug_info("[xarray]: NULL pointer found in XARRAY::append");
 #endif
-
-	if (0 == xtag || NULL != xarray_get_itemx(pxarray, xtag)) {
+	if (xtag == 0 || get_itemx(xtag))
 		return -1;
-	}
 	auto punit = lib_buffer_get<XARRAY_UNIT>(pxarray->mbuf_pool);
 	if (NULL == punit) {
 		return -1;
@@ -111,16 +103,9 @@ int xarray_append(XARRAY* pxarray, void* pdata, unsigned int xtag)
  *	@return
  *		pointer to the item data
  */
-void *xarray_get_item(XARRAY* pxarray, size_t index)
+void *XARRAY::get_item(size_t index)
 {
-#ifdef _DEBUG_UMTA
-	if (NULL == pxarray) {
-		debug_info("[xarray]: NULL pointer found in xarray_get_item");
-	}
-#endif
-	if (NULL == pxarray) {
-		return NULL;
-	}
+	auto pxarray = this;
 	if (index + 1 > pxarray->cur_size)
 		return NULL;
 	if (index < XARRAY_CACHEITEM_NUMBER) {
@@ -142,21 +127,13 @@ void *xarray_get_item(XARRAY* pxarray, size_t index)
  *	@return
  *		pointer to the item data
  */
-void* xarray_get_itemx(XARRAY* pxarray, unsigned int xtag)
+void *XARRAY::get_itemx(unsigned int xtag)
 {
+	auto pxarray = this;
 	DOUBLE_LIST_NODE   *pnode;
 	XARRAY_UNIT *punit;
 	DOUBLE_LIST		   *plist;
 	
-#ifdef _DEBUG_UMTA
-	if (NULL == pxarray) {
-		debug_info("[xarray]: NULL pointer found in xarray_get_itemx");
-	}
-#endif
-	if (NULL == pxarray) {
-		return NULL;
-	}
-
 	plist = &pxarray->hash_lists[xtag%XARRAY_HASHITEM_NUMBER];
 	for (pnode=double_list_get_head(plist); NULL!=pnode;
 		pnode=double_list_get_after(plist, pnode)) {
@@ -171,41 +148,16 @@ void* xarray_get_itemx(XARRAY* pxarray, unsigned int xtag)
 }
 
 /*
- *	get items of xarray
- *
- *	@param	
- *		pxarray [in]	 the xarray object
- *
- *	@return
- *		number of items
- */
-size_t xarray_get_capacity(XARRAY* pxarray)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pxarray) {
-		debug_info("[xarray]: NULL pointer found in xarray_get_capacity");
-		return 0;
-	}
-#endif
-	return pxarray->cur_size;
-}
-
-/*
  *	clear the items in the xarray and free 
  *	the memory it allocates
  *
  *	@param
  *		pxarray [in]	 the cleared xarray
  */
-
-void xarray_clear(XARRAY* pxarray)
+void XARRAY::clear()
 {
+	auto pxarray = this;
 	DOUBLE_LIST_NODE *pnode;
-#ifdef _DEBUG_UMTA
-	if (NULL == pxarray) {
-		debug_info("[xarray]: NULL pointer found in xarray_clear");
-	}
-#endif
 	while ((pnode = double_list_pop_front(&pxarray->mlist)) != nullptr)
 		lib_buffer_put(pxarray->mbuf_pool, pnode->pdata);
 	pxarray->cur_size = 0;
