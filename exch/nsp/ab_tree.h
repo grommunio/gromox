@@ -63,25 +63,23 @@ extern void ab_tree_init(const char *org_name, size_t base_size, int cache_inter
 extern int ab_tree_run();
 extern void ab_tree_stop();
 extern AB_BASE_REF ab_tree_get_base(int base_id);
-uint32_t ab_tree_get_leaves_num(SIMPLE_TREE_NODE *pnode);
-extern bool ab_tree_node_to_guid(SIMPLE_TREE_NODE *, GUID *) __attribute__((warn_unused_result));
-BOOL ab_tree_node_to_dn(SIMPLE_TREE_NODE *pnode, char *pbuff, int length);
-SIMPLE_TREE_NODE* ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn);
-SIMPLE_TREE_NODE* ab_tree_uid_to_node(AB_BASE *pbase, int user_id);
-SIMPLE_TREE_NODE* ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid);
-uint32_t ab_tree_get_node_minid(SIMPLE_TREE_NODE *pnode);
-uint8_t ab_tree_get_node_type(SIMPLE_TREE_NODE *pnode);
-extern void ab_tree_get_display_name(SIMPLE_TREE_NODE *, uint32_t codepage, char *str_dname, size_t dn_size);
-extern std::vector<std::string> ab_tree_get_object_aliases(SIMPLE_TREE_NODE *, unsigned int type);
-extern void ab_tree_get_user_info(SIMPLE_TREE_NODE *, int type, char *value, size_t vsize);
-void ab_tree_get_mlist_info(SIMPLE_TREE_NODE *pnode,
-	char *mail_address, char *create_day, int *plist_privilege);
+extern uint32_t ab_tree_get_leaves_num(const SIMPLE_TREE_NODE *);
+extern bool ab_tree_node_to_guid(const SIMPLE_TREE_NODE *, GUID *) __attribute__((warn_unused_result));
+extern BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *, char *buf, int len);
+extern const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *, const char *dn);
+extern const SIMPLE_TREE_NODE *ab_tree_uid_to_node(const AB_BASE *, int user_id);
+extern const SIMPLE_TREE_NODE *ab_tree_minid_to_node(const AB_BASE *, uint32_t minid);
+extern const SIMPLE_TREE_NODE *ab_tree_minid_to_node(const AB_BASE *, uint32_t minid);
+extern uint32_t ab_tree_get_node_minid(const SIMPLE_TREE_NODE *);
+extern uint8_t ab_tree_get_node_type(const SIMPLE_TREE_NODE *);
+extern void ab_tree_get_display_name(const SIMPLE_TREE_NODE *, uint32_t codepage, char *str_dname, size_t dn_size);
+extern std::vector<std::string> ab_tree_get_object_aliases(const SIMPLE_TREE_NODE *, unsigned int type);
+extern void ab_tree_get_user_info(const SIMPLE_TREE_NODE *, int type, char *value, size_t vsize);
+extern void ab_tree_get_mlist_info(const SIMPLE_TREE_NODE *, char *mail_address, char *create_day, int *list_priv);
 void ab_tree_get_mlist_title(uint32_t codepage, char *str_title);
-void ab_tree_get_company_info(SIMPLE_TREE_NODE *pnode,
-	char *str_name, char *str_address);
-void ab_tree_get_department_name(SIMPLE_TREE_NODE *pnode,
-	char *str_name);
-void ab_tree_get_server_dn(SIMPLE_TREE_NODE *pnode, char *dn, int length);
+extern void ab_tree_get_company_info(const SIMPLE_TREE_NODE *, char *name, char *address);
+extern void ab_tree_get_department_name(const SIMPLE_TREE_NODE *, char *name);
+extern void ab_tree_get_server_dn(const SIMPLE_TREE_NODE *, char *dn, int len);
 int ab_tree_get_guid_base_id(GUID guid);
-extern ec_error_t ab_tree_fetchprop(SIMPLE_TREE_NODE *, unsigned int codepage, unsigned int proptag, PROPERTY_VALUE *);
+extern ec_error_t ab_tree_fetchprop(const SIMPLE_TREE_NODE *, unsigned int codepage, unsigned int proptag, PROPERTY_VALUE *);
 extern void ab_tree_invalidate_cache();
