@@ -498,7 +498,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	mime_set_content_type(pmime, tmp_buff);
 	rd_hold.unlock();
 	mime_set_content_param(pmime, "charset", "\"utf-8\"");
-	if (FALSE == mime_write_content(pmime, original_ptr,
+	if (!pmime->write_content(original_ptr,
 		ptr - original_ptr, MIME_ENCODING_BASE64)) {
         printf("[mlist_expand]: fatal error, fail to write content\n");
         return;
@@ -525,7 +525,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
 		if (NULL != pmime) {
 			mime_set_content_type(pmime, "message/delivery-status");
-			mime_write_content(pmime, original_ptr,
+			pmime->write_content(original_ptr,
 				strlen(original_ptr), MIME_ENCODING_NONE);
 		}
 	}

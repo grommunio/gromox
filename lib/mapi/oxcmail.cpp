@@ -1729,7 +1729,7 @@ static BOOL oxcmail_parse_transport_message_header(
 	char tmp_buff[1024*1024];
 	
 	tmp_len = sizeof(tmp_buff) - 1;
-	if (!mime_read_head(pmime, tmp_buff, &tmp_len))
+	if (!pmime->read_head(tmp_buff, &tmp_len))
 		return TRUE;
 	tmp_buff[tmp_len + 1] = '\0';
 	uint32_t tag = oxcmail_check_ascii(tmp_buff) ?
@@ -1759,7 +1759,7 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 	if (NULL == pcontent) {
 		return FALSE;
 	}
-	if (FALSE == mime_read_content(pmime, pcontent, &length)) {
+	if (!pmime->read_content(pcontent, &length)) {
 		free(pcontent);
 		return TRUE;
 	}
@@ -1897,11 +1897,8 @@ static BOOL oxcmail_parse_binhex(MIME *pmime, ATTACHMENT_CONTENT *pattachment,
 	if (NULL == pcontent) {
 		return FALSE;
 	}
-	if (FALSE == mime_read_content(pmime, pcontent, &content_len)) {
-		free(pcontent);
-		return FALSE;
-	}
-	if (!binhex_deserialize(&binhex, pcontent, content_len)) {
+	if (!pmime->read_content(pcontent, &content_len) ||
+	    !binhex_deserialize(&binhex, pcontent, content_len)) {
 		free(pcontent);
 		return FALSE;
 	}
@@ -2015,7 +2012,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 	if (NULL == pcontent) {
 		return FALSE;
 	}
-	if (FALSE == mime_read_content(phmime, pcontent, &content_len)) {
+	if (!phmime->read_content(pcontent, &content_len)) {
 		free(pcontent);
 		return FALSE;
 	}
@@ -2074,7 +2071,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 		free(pcontent);
 		return FALSE;
 	}
-	if (FALSE == mime_read_content(pdmime, pcontent1, &content_len1)) {
+	if (!pdmime->read_content(pcontent1, &content_len1)) {
 		free(pcontent1);
 		free(pcontent);
 		return FALSE;
@@ -2119,7 +2116,7 @@ static BOOL oxcmail_parse_macbinary(MIME *pmime,
 	if (NULL == pcontent) {
 		return FALSE;
 	}
-	if (FALSE == mime_read_content(pmime, pcontent, &content_len)) {
+	if (!pmime->read_content(pcontent, &content_len)) {
 		free(pcontent);
 		return FALSE;
 	}
@@ -2201,7 +2198,7 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 	if (NULL == pcontent) {
 		return FALSE;
 	}
-	if (FALSE == mime_read_content(pmime, pcontent, &content_len)) {
+	if (!pmime->read_content(pcontent, &content_len)) {
 		free(pcontent);
 		return FALSE;
 	}
@@ -2516,7 +2513,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 				pmime_enum->b_result = FALSE;
 				return;
 			}
-			if (!mime_read_content(pmime, pcontent.get(), &content_len)) {
+			if (!pmime->read_content(pcontent.get(), &content_len)) {
 				pmime_enum->b_result = FALSE;
 				return;
 			}
@@ -2568,7 +2565,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			pmime_enum->b_result = FALSE;
 			return;
 		}
-		if (!mime_read_content(pmime, pcontent.get(), &content_len)) {
+		if (!pmime->read_content(pcontent.get(), &content_len)) {
 			pmime_enum->b_result = FALSE;
 			return;
 		}
@@ -2676,7 +2673,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		pmime_enum->b_result = FALSE;
 		return;
 	}
-	if (!mime_read_content(pmime, pcontent.get(), &content_len)) {
+	if (!pmime->read_content(pcontent.get(), &content_len)) {
 		pmime_enum->b_result = FALSE;
 		return;
 	}
@@ -2702,7 +2699,7 @@ static MESSAGE_CONTENT* oxcmail_parse_tnef(MIME *pmime,
 	if (NULL == pcontent) {
 		return NULL;
 	}
-	if (!mime_read_content(pmime, static_cast<char *>(pcontent), &content_len)) {
+	if (!pmime->read_content(static_cast<char *>(pcontent), &content_len)) {
 		free(pcontent);
 		return NULL;
 	}
@@ -3245,9 +3242,8 @@ static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 	if (mgl < 0 || static_cast<size_t>(mgl) > sizeof(tmp_buff))
 		return NULL;
 	content_len = sizeof(tmp_buff);
-	if (FALSE == mime_read_content(pmime, tmp_buff, &content_len)) {
+	if (!pmime->read_content(tmp_buff, &content_len))
 		return NULL;
-	}
 	dsn_init(&dsn);
 	if (!dsn_retrieve(&dsn, tmp_buff, content_len)) {
 		dsn_free(&dsn);
@@ -3381,9 +3377,8 @@ static MIME* oxcmail_parse_mdn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 	if (mgl < 0 || static_cast<size_t>(mgl) > sizeof(tmp_buff))
 		return NULL;
 	content_len = sizeof(tmp_buff);
-	if (FALSE == mime_read_content(pmime, tmp_buff, &content_len)) {
+	if (!pmime->read_content(tmp_buff, &content_len))
 		return NULL;
-	}
 	dsn_init(&dsn);
 	if (!dsn_retrieve(&dsn, tmp_buff, content_len)) {
 		dsn_free(&dsn);
@@ -3459,15 +3454,13 @@ static BOOL oxcmail_parse_smime_message(
 		offset += strlen(pcontent + offset);
 		memcpy(pcontent + offset, "\r\n\r\n", 4);
 		offset += 4;
-		if (FALSE == mime_read_content(phead,
-			pcontent + offset, &content_len)) {
+		if (!phead->read_content(pcontent + offset, &content_len)) {
 			free(pcontent);
 			return FALSE;
 		}
 		offset += content_len;
 	} else {
-		if (FALSE == mime_read_content(phead,
-			pcontent, &content_len)) {
+		if (!phead->read_content(pcontent, &content_len)) {
 			free(pcontent);
 			return FALSE;
 		}
@@ -3867,8 +3860,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			message_content_free(pmsg);
 			return NULL;
 		}
-		if (FALSE == mime_read_content(mime_enum.pcalendar,
-			pcontent, &content_len)) {
+		if (!mime_enum.pcalendar->read_content(pcontent, &content_len)) {
 			free(pcontent);
 			message_content_free(pmsg);
 			return NULL;
@@ -5559,14 +5551,13 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 		if (NULL == pbin) {
 			return FALSE;
 		}
-		if (FALSE == mime_write_content(pmime1, pbin->pc,
-			pbin->cb, MIME_ENCODING_BASE64)) {
+		if (!pmime1->write_content(pbin->pc, pbin->cb, MIME_ENCODING_BASE64)) {
 			rop_util_free_binary(pbin);
 			return FALSE;
 		}
 		rop_util_free_binary(pbin);
 	} else {
-		if (FALSE == mime_write_content(pmime1, pbin->pc,
+		if (!pmime1->write_content(pbin->pc,
 			pbin->cb, MIME_ENCODING_BASE64)) {
 			return FALSE;
 		}
@@ -5613,7 +5604,7 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 			}
 		}
 	}
-	return mime_write_content(pmime2, reinterpret_cast<const char *>(macbin.pdata),
+	return pmime2->write_content(reinterpret_cast<const char *>(macbin.pdata),
 			macbin.header.data_len, MIME_ENCODING_BASE64);
 }
 
@@ -5780,7 +5771,8 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		std::unique_ptr<char[], stdlib_delete> pbuff(static_cast<char *>(malloc(VCARD_MAX_BUFFER_LEN)));
 		if (pbuff != nullptr && vcard_serialize(&vcard, pbuff.get(),
 		    VCARD_MAX_BUFFER_LEN)) {
-			if (!mime_write_content(pmime, pbuff.get(), strlen(pbuff.get()), MIME_ENCODING_BASE64)) {
+			if (!pmime->write_content(pbuff.get(),
+			    strlen(pbuff.get()), MIME_ENCODING_BASE64)) {
 				vcard_free(&vcard);
 				return FALSE;
 			}
@@ -5828,12 +5820,12 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 			size = STREAM_BLOCK_SIZE;
 		}
 		tmp_stream.clear();
-		return mime_write_content(pmime, pbuff.get(), mail_len, MIME_ENCODING_NONE);
+		return pmime->write_content(pbuff.get(), mail_len, MIME_ENCODING_NONE);
 	}
 	pvalue = pattachment->proplist.getval(PR_ATTACH_DATA_BIN);
 	auto bv = static_cast<BINARY *>(pvalue);
 	if (bv != nullptr && bv->cb != 0)
-		if (!mime_write_content(pmime, bv->pc, bv->cb, MIME_ENCODING_BASE64))
+		if (!pmime->write_content(bv->pc, bv->cb, MIME_ENCODING_BASE64))
 			return FALSE;
 	return TRUE;
 }
@@ -6014,10 +6006,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 		if (NULL == pbin) {
 			goto EXPORT_FAILURE;
 		}
-		if (FALSE == mime_write_content(pmime, pbin->pc,
-			pbin->cb, MIME_ENCODING_BASE64)) {
+		if (!pmime->write_content(pbin->pc, pbin->cb, MIME_ENCODING_BASE64))
 			goto EXPORT_FAILURE;
-		}
 		return TRUE;
 	} else if (MAIL_TYPE_SIGNED == mime_skeleton.mail_type) {
 		/* make fake "Content-Type" to avoid produce boundary string */
@@ -6045,7 +6035,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 			mime_field.field_value)) {
 			goto EXPORT_FAILURE;
 		}
-		if (FALSE == mime_write_content(pmime, pbin->pc + tmp_len + 2,
+		if (!pmime->write_content(pbin->pc + tmp_len + 2,
 			pbin->cb - tmp_len - 2, MIME_ENCODING_NONE)) {
 			return FALSE;
 		}
@@ -6057,10 +6047,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 	if (NULL != pplain) {
 		if (NULL == mime_skeleton.pplain ||
 			'\0' == mime_skeleton.pplain[0]) {
-			if (FALSE == mime_write_content(pplain,
-				"\r\n", 2, MIME_ENCODING_BASE64)) {
+			if (!pplain->write_content("\r\n", 2, MIME_ENCODING_BASE64))
 				goto EXPORT_FAILURE;
-			}
 		} else {
 			auto alloc_size = worst_encoding_overhead(strlen(mime_skeleton.pplain)) + 1;
 			std::unique_ptr<char[]> pbuff;
@@ -6073,15 +6061,14 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 			if (!string_from_utf8(mime_skeleton.charset,
 			    mime_skeleton.pplain, pbuff.get(), alloc_size)) {
 				pbuff.reset();
-				if (FALSE == mime_write_content(
-					pplain, mime_skeleton.pplain,
+				if (!pplain->write_content(mime_skeleton.pplain,
 					strlen(mime_skeleton.pplain),
 					MIME_ENCODING_BASE64)) {
 					goto EXPORT_FAILURE;
 				}
 				strcpy(tmp_charset, "\"utf-8\"");
 			} else {
-				if (!mime_write_content(pplain, pbuff.get(),
+				if (!pplain->write_content(pbuff.get(),
 				    strlen(pbuff.get()), MIME_ENCODING_BASE64))
 					goto EXPORT_FAILURE;
 				snprintf(tmp_charset, arsizeof(tmp_charset), "\"%s\"", mime_skeleton.charset);
@@ -6101,8 +6088,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 			tnef_serialize(pmsg, alloc, get_propname))) {
 			goto EXPORT_FAILURE;
 		}
-		if (FALSE == mime_write_content(pmime, pbin->pc,
-			pbin->cb, MIME_ENCODING_BASE64)) {
+		if (!pmime->write_content(pbin->pc, pbin->cb, MIME_ENCODING_BASE64)) {
 			rop_util_free_binary(pbin);
 			goto EXPORT_FAILURE;
 		}
@@ -6118,7 +6104,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 	}
 	
 	if (NULL != phtml) {
-		if (FALSE == mime_write_content(phtml, mime_skeleton.phtml->pc,
+		if (!phtml->write_content(mime_skeleton.phtml->pc,
 			mime_skeleton.phtml->cb,
 			MIME_ENCODING_BASE64)) {
 			goto EXPORT_FAILURE;
@@ -6149,7 +6135,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 		}
 		if (!ical_serialize(&ical, tmp_buff, sizeof(tmp_buff)))
 			goto EXPORT_FAILURE;
-		if (FALSE == mime_write_content(pcalendar, tmp_buff,
+		if (!pcalendar->write_content(tmp_buff,
 			strlen(tmp_buff), MIME_ENCODING_BASE64)) {
 			goto EXPORT_FAILURE;
 		}
@@ -6176,7 +6162,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 		if (!oxcmail_export_dsn(pmsg, mime_skeleton.charset,
 		    mime_skeleton.pmessage_class, alloc, tmp_buff, sizeof(tmp_buff)))
 			goto EXPORT_FAILURE;
-		if (FALSE == mime_write_content(pmime, tmp_buff,
+		if (!pmime->write_content(tmp_buff,
 			strlen(tmp_buff), MIME_ENCODING_NONE)) {
 			goto EXPORT_FAILURE;
 		}
@@ -6195,7 +6181,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 		    mime_skeleton.pmessage_class, alloc, tmp_buff,
 		    arsizeof(tmp_buff)))
 			goto EXPORT_FAILURE;
-		if (FALSE == mime_write_content(pmime, tmp_buff,
+		if (!pmime->write_content(tmp_buff,
 			strlen(tmp_buff), MIME_ENCODING_NONE)) {
 			goto EXPORT_FAILURE;
 		}

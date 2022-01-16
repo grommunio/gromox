@@ -192,7 +192,7 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 	offset++;
 	memcpy(tmp_buff + offset, HTML_02, sizeof(HTML_02) - 1);
 	offset += sizeof(HTML_02) - 1;
-	mime_write_content(pmime_child, tmp_buff, offset, MIME_ENCODING_NONE);
+	pmime_child->write_content(tmp_buff, offset, MIME_ENCODING_NONE);
 	mime_set_field(pmime, "Received", "from unknown (helo localhost) "
 		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
 	mime_set_field(pmime, "From", pcontext->pcontrol->from);

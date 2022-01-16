@@ -221,7 +221,7 @@ void auto_response_reply(const char *user_home,
 		localtime_r(&cur_time, &tm_buff));
 	mime_set_field(pmime, "Date", date_buff);
 	mime_set_field(pmime, "Subject", subject);
-	if (FALSE == mime_write_content(pmime, pcontent,
+	if (!pmime->write_content(pcontent,
 		new_buff + j - pcontent, MIME_ENCODING_BASE64)) {
 		put_context(pcontext);
 		return;

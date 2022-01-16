@@ -3150,7 +3150,7 @@ static BOOL message_forward_message(const char *from_address,
 		strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z", 
 			localtime_r(&cur_time, &time_buff));
 		mime_set_field(pmime, "Date", tmp_buff);
-		mime_write_mail(pmime, &imail);
+		pmime->write_mail(&imail);
 		if (action_flavor & ACTION_FLAVOR_PR) {
 			strcpy(tmp_buff, from_address);
 		} else {

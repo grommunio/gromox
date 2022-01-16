@@ -21,7 +21,14 @@ enum{
 
 using MIME_FIELD_ENUM = BOOL (*)(const char *, char *, void *);
 
+struct MAIL;
 struct GX_EXPORT MIME {
+	BOOL retrieve(MIME *parent, char *in_buf, size_t len);
+	void clear();
+	BOOL write_content(const char *content, size_t len, int encoding_type);
+	BOOL write_mail(MAIL *);
+	BOOL read_head(char *out_buf, size_t *len);
+	BOOL read_content(char *out_buf, size_t *len);
 	inline size_t get_children_num() const { return simple_tree_node_get_children_num(&node); }
 
 	SIMPLE_TREE_NODE node;
@@ -41,18 +48,8 @@ struct GX_EXPORT MIME {
 	char		*last_boundary;
 };
 
-struct MAIL;
-
 void mime_init(MIME *pmime, LIB_BUFFER *palloc);
 void mime_free(MIME *pmime);
-BOOL mime_retrieve(MIME *pmime_parent,
-	MIME *pmime, char* in_buff, size_t length);
-void mime_clear(MIME *pmime);
-extern BOOL mime_write_content(MIME *pmime, const char *pcontent, size_t length,
-	int encoding_type);
-extern GX_EXPORT BOOL mime_write_mail(MIME *, MAIL *);
-BOOL mime_read_head(MIME *pmime, char *out_buff, size_t *plength);
-BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength);
 BOOL mime_set_content_type(MIME *pmime, const char *content_type);
 BOOL mime_enum_field(MIME *pmime, MIME_FIELD_ENUM enum_func, void *pparam);
 BOOL mime_get_field(MIME *pmime, const char *tag, char *value, int length);

@@ -2,8 +2,8 @@
 /*
  * normally, MIME object does'n maintain its own content buffer, it just take
  * the reference of a mail object buffer, mark the begin, end and the content
- * point. if user uses mime_write_content function, the mime will then maintain
- * its own buffer
+ * point. if the user uses the MIME::write_content function, the MIME object
+ * will then maintain its own buffer.
  */
 #include <algorithm>
 #include <libHX/string.h>
@@ -116,20 +116,20 @@ void mime_free(MIME *pmime)
  *		TRUE				OK to parse mime buffer
  *		FALSE				fail to parse mime buffer, there's error inside
  */
-BOOL mime_retrieve(MIME *pmime_parent,
-	MIME *pmime, char* in_buff, size_t length)
+BOOL MIME::retrieve(MIME *pmime_parent, char *in_buff, size_t length)
 {
+	auto pmime = this;
 	size_t current_offset = 0;
 	MIME_FIELD mime_field;
 
 #ifdef _DEBUG_UMTA
-	if (NULL == pmime || NULL == in_buff) {
-		debug_info("[mime]: NULL pointer found in mime_retrieve");
+	if (in_buff == nullptr) {
+		debug_info("[mime]: NULL pointer found in MIME::retrieve");
 		return FALSE;
 	}
 #endif
 	
-	mime_clear(pmime);
+	pmime->clear();
 	if (0 == length) {
 		/* in case of NULL content, we think such MIME
 		 * is a NULL application/octet-stream
@@ -175,7 +175,7 @@ BOOL mime_retrieve(MIME *pmime_parent,
 			 */
 			current_offset += 2;
 			if (current_offset > length) {
-				mime_clear(pmime);
+				pmime->clear();
 				return FALSE;
 			} else if (current_offset == length) {
 				pmime->content_begin = NULL;
@@ -218,7 +218,7 @@ BOOL mime_retrieve(MIME *pmime_parent,
 		 * content \r\n
 		 */
 		if (current_offset > length) {
-			mime_clear(pmime);
+			pmime->clear();
 			return FALSE;
 		} else if (current_offset == length) {
 			pmime->content_begin = NULL;
@@ -247,19 +247,13 @@ BOOL mime_retrieve(MIME *pmime_parent,
 		}
 		return TRUE;
 	}
-	mime_clear(pmime);
+	pmime->clear();
 	return FALSE;
 }
 
-void mime_clear(MIME *pmime)
+void MIME::clear()
 {
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mime]: NULL pointer found in mime_clear");
-		return;
-	}
-#endif
-	
+	auto pmime = this;
 	if (SINGLE_MIME == pmime->mime_type && TRUE == pmime->content_touched
 		&& NULL != pmime->content_begin) {
 		if (0 != pmime->content_length) {
@@ -294,17 +288,18 @@ void mime_clear(MIME *pmime)
  *		length				length of the object
  *		encoding_type		
  */
-BOOL mime_write_content(MIME *pmime, const char *pcontent, size_t length,
+BOOL MIME::write_content(const char *pcontent, size_t length,
 	int encoding_type)
 {
+	auto pmime = this;
 	size_t i, j;
 	char *pbuff;
 	/* align the buffer with 64K */
 	BOOL added_crlf;
 	
 #ifdef _DEBUG_UMTA
-	if (NULL == pmime || (NULL == pcontent && 0 != length)) {
-		debug_info("[mime]: NULL pointer found in mime_write_content");
+	if (pcontent == nullptr && length != 0) {
+		debug_info("[mime]: NULL pointer found in MIME::write_content");
 		return FALSE;
 	}
 #endif
@@ -438,11 +433,12 @@ BOOL mime_write_content(MIME *pmime, const char *pcontent, size_t length,
  *		TRUE				OK
  *		FALSE				fail
  */
-BOOL mime_write_mail(MIME *pmime, MAIL *pmail)
+BOOL MIME::write_mail(MAIL *pmail)
 {
+	auto pmime = this;
 #ifdef _DEBUG_UMTA
-    if (NULL == pmime || NULL == pmail) {
-        debug_info("[mime]: NULL pointer found in mime_write_mail");
+	if (pmail == nullptr) {
+		debug_info("[mime]: NULL pointer found in MIME::write_mail");
         return FALSE;
     }
 #endif
@@ -1225,18 +1221,13 @@ static BOOL mime_read_multipart_content(MIME *pmime,
  *		TRUE			OK
  *		FALSE			fail
  */
-BOOL mime_read_head(MIME *pmime, char *out_buff, size_t *plength)
+BOOL MIME::read_head(char *out_buff, size_t *plength)
 {
+	auto pmime = this;
 	uint32_t tag_len, val_len;
 	size_t	len, offset;
 	char	tmp_buff[MIME_FIELD_LEN + MIME_NAME_LEN + 4];
 	
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mime]: NULL pointer found in mime_read_head");
-		return FALSE;
-	}
-#endif
 	if (NONE_MIME == pmime->mime_type) {
 #ifdef _DEBUG_UMTA
 		debug_info("[mime]: mime content type is not set");
@@ -1328,8 +1319,9 @@ BOOL mime_read_head(MIME *pmime, char *out_buff, size_t *plength)
  *		TRUE			OK
  *		FALSE			fail
  */
-BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
+BOOL MIME::read_content(char *out_buff, size_t *plength)
 {
+	auto pmime = this;
 	void *ptr;
 	int encoding_type;
 	char encoding[256], *pbuff;
@@ -1338,8 +1330,8 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 	unsigned int buff_size;
 	
 #ifdef _DEBUG_UMTA
-	if (NULL == pmime || NULL == out_buff || NULL == plength) {
-		debug_info("[mime]: NULL pointer found in mime_read_content");
+	if (out_buff == nullptr || plength == nullptr) {
+		debug_info("[mime]: NULL pointer found in MIME::read_content");
 		return FALSE;
 	}
 #endif
@@ -1364,8 +1356,7 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 	if (0 == pmime->content_length) {
 		auto mail_len = reinterpret_cast<MAIL *>(pmime->content_begin)->get_length();
 		if (mail_len <= 0) {
-			debug_info("[mime]: fail to get mail"
-				" length in mime_read_content");
+			debug_info("[mime]: Failed to get mail length in MIME::read_content");
 			*plength = 0;
 			return FALSE;
 		}
@@ -1376,8 +1367,7 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 		pallocator = lib_buffer_init(STREAM_ALLOC_SIZE,
 				mail_len / STREAM_BLOCK_SIZE + 1, FALSE);
 		if (NULL == pallocator) {
-			debug_info("[mime]: Failed to init lib"
-				" buffer in mime_read_content");
+			debug_info("[mime]: Failed to init lib buffer in MIME::read_content");
 			*plength = 0;
 			return FALSE;
 		}
@@ -1419,7 +1409,7 @@ BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength)
 	
 	pbuff = static_cast<char *>(malloc(((pmime->content_length - 1) / (64 * 1024) + 1) * 64 * 1024));
 	if (NULL == pbuff) {
-		debug_info("[mime]: Failed to allocate memory in mime_read_content");
+		debug_info("[mime]: Failed to allocate memory in MIME::read_content");
 		*plength = 0;
 		return FALSE;
 	}
@@ -2720,7 +2710,7 @@ void mime_copy(MIME *pmime_src, MIME *pmime_dst)
 		return;
 	}
 #endif
-	mime_clear(pmime_dst);
+	pmime_dst->clear();
 	if (NONE_MIME == pmime_src->mime_type) {
 		return;
 	}

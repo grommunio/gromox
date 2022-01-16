@@ -493,7 +493,7 @@ BOOL bounce_producer_make(const char *from, const char *rcpt,
 	}
 	mime_set_content_type(pmime, content_type);
 	mime_set_content_param(pmime, "charset", "\"utf-8\"");
-	if (FALSE == mime_write_content(pmime, content_buff,
+	if (!pmime->write_content(content_buff,
 		strlen(content_buff), MIME_ENCODING_BASE64)) {
 		return FALSE;
 	}
@@ -520,7 +520,7 @@ BOOL bounce_producer_make(const char *from, const char *rcpt,
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
 		if (NULL != pmime) {
 			mime_set_content_type(pmime, "message/delivery-status");
-			mime_write_content(pmime, content_buff,
+			pmime->write_content(content_buff,
 				strlen(content_buff), MIME_ENCODING_NONE);
 		}
 	}

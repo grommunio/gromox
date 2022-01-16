@@ -72,7 +72,7 @@ BOOL MAIL::retrieve(char *in_buff, size_t length)
 		debug_info("[mail]: fail to get mime from pool");
 		return FALSE;
 	}
-	if (FALSE == mime_retrieve(NULL, pmime, in_buff, length)) {
+	if (!pmime->retrieve(nullptr, in_buff, length)) {
 		pmail->pmime_pool->put_mime(pmime);
 		return FALSE;
 	}
@@ -96,7 +96,7 @@ BOOL MAIL::retrieve(char *in_buff, size_t length)
 		debug_info("[mail]: fail to get mime from pool");
 		return FALSE;
 	}
-	if (FALSE == mime_retrieve(NULL, pmime, in_buff, length)) {
+	if (!pmime->retrieve(nullptr, in_buff, length)) {
 		pmail->pmime_pool->put_mime(pmime);
 		return FALSE;
 	}
@@ -136,8 +136,7 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 				debug_info("[mail]: fail to get mime from pool");
 				return FALSE;
 			}
-			if (FALSE == mime_retrieve(pmime_parent,
-				pmime, ptr_last, ptr - ptr_last)) {
+			if (!pmime->retrieve(pmime_parent, ptr_last, ptr - ptr_last)) {
 				pmail->pmime_pool->put_mime(pmime);
 				return FALSE;
 			}
@@ -185,8 +184,7 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		debug_info("[mail]: fail to get mime from pool");
 		return FALSE;
 	}
-	if (FALSE == mime_retrieve(pmime_parent,
-		pmime, ptr_last, ptr_end - ptr_last)) {
+	if (!pmime->retrieve(pmime_parent, ptr_last, ptr_end - ptr_last)) {
 		pmail->pmime_pool->put_mime(pmime);
 		return FALSE;
 	}
@@ -342,7 +340,7 @@ MIME *MAIL::add_head()
 	if (NULL == pmime) {
 		return NULL;
 	}
-	mime_clear(pmime);
+	pmime->clear();
 	simple_tree_set_root(&pmail->tree, &pmime->node);
 	return pmime;
 }
@@ -720,7 +718,7 @@ static void mail_enum_html_charset(MIME *pmime, void *param)
 		return;
 	}
 	length = 128*1024;
-	if (TRUE == mime_read_content(pmime, buff, &length)) {
+	if (pmime->read_content(buff, &length)) {
 		if (length > 4096) {
 			length = 4096;
 		}
@@ -773,7 +771,7 @@ MIME *MAIL::add_child(MIME *pmime_base, int opt)
     if (NULL == pmime) {
         return NULL;
     }
-    mime_clear(pmime);
+	pmime->clear();
     if (FALSE == simple_tree_add_child(&pmail->tree,
         &pmime_base->node, &pmime->node, opt)) {
 		pmail->pmime_pool->put_mime(pmime);
@@ -814,7 +812,7 @@ static void mail_enum_delete(SIMPLE_TREE_NODE *pnode)
 	}
 #endif
 	auto pmime = static_cast<MIME *>(pnode->pdata);
-	mime_clear(pmime);
+	pmime->clear();
 	MIME_POOL::put_mime(pmime);
 }
 
