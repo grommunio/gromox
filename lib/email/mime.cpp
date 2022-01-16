@@ -515,7 +515,7 @@ BOOL mime_set_content_type(MIME *pmime, const char *content_type)
  *	@return
  *		content type string
  */
-const char *mime_get_content_type(MIME *pmime)
+const char *mime_get_content_type(const MIME *pmime)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime) {
@@ -2620,7 +2620,7 @@ ssize_t mime_get_structure_digest(MIME *pmime, const char *id_string,
 	}
 }
 
-int mime_get_type(MIME *pmime)
+int mime_get_type(const MIME *pmime)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime) {
@@ -2855,7 +2855,7 @@ MIME *mime_get_sibling(MIME *pmime)
 	return (MIME*)pnode->pdata;
 }
 
-size_t mime_get_children_num(MIME *pmime)
+size_t mime_get_children_num(const MIME *pmime)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime) {
