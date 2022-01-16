@@ -96,7 +96,7 @@ static int connect_midb(const char *host, uint16_t port);
 static BOOL get_digest_string(const char *src, int length, const char *tag, char *buff, int buff_len);
 static BOOL get_digest_integer(const char *src, int length, const char *tag, int *pinteger);
 static int list_mail(const char *path, const char *folder, std::deque<MSG_UNIT> &, int *num, uint64_t *size);
-static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist);
+static int delete_mail(const char *path, const char *folder, const SINGLE_LIST *);
 static int get_mail_id(const char *path, const char *folder, const char *mid_string, unsigned int *id);
 static int get_mail_uid(const char *path, const char *folder, const char *mid_string, unsigned int *uid);
 static int summary_folder(const char *path, const char *folder, int *exists, int *recent, int *unseen, unsigned long *uidvalid, unsigned int *uidnext, int *first_seen, int *perrno);
@@ -109,15 +109,15 @@ static int unsubscribe_folder(const char *path, const char *folder, int *perrno)
 static int enum_folders(const char *path, MEM_FILE *, int *perrno);
 static int enum_subscriptions(const char *path, MEM_FILE *, int *perrno);
 static int insert_mail(const char *path, const char *folder, const char *file_name, const char *flags_string, long time_stamp, int *perrno);
-static int remove_mail(const char *path, const char *folder, SINGLE_LIST *, int *perrno);
+static int remove_mail(const char *path, const char *folder, const SINGLE_LIST *, int *perrno);
 static int list_simple(const char *path, const char *folder, XARRAY *, int *perrno);
 static int list_deleted(const char *path, const char *folder, XARRAY *, int *perrno);
 static int list_detail(const char *path, const char *folder, XARRAY *pxarray, int *perrno);
 static void free_result(XARRAY *pxarray);
-static int fetch_simple(const char *path, const char *folder, DOUBLE_LIST *, XARRAY *, int *perrno);
-static int fetch_detail(const char *path, const char *folder, DOUBLE_LIST *, XARRAY *, int *perrno);
-static int fetch_simple_uid(const char *path, const char *folder, DOUBLE_LIST *, XARRAY *, int *perrno);
-static int fetch_detail_uid(const char *path, const char *folder, DOUBLE_LIST *, XARRAY *, int *perrno);
+static int fetch_simple(const char *path, const char *folder, const DOUBLE_LIST *, XARRAY *, int *perrno);
+static int fetch_detail(const char *path, const char *folder, const DOUBLE_LIST *, XARRAY *, int *perrno);
+static int fetch_simple_uid(const char *path, const char *folder, const DOUBLE_LIST *, XARRAY *, int *perrno);
+static int fetch_detail_uid(const char *path, const char *folder, const DOUBLE_LIST *, XARRAY *, int *perrno);
 static int set_mail_flags(const char *path, const char *folder, const char *mid_string, int flag_bits, int *perrno);
 static int unset_mail_flags(const char *path, const char *folder, const char *mid_string, int flag_bits, int *perrno);
 static int get_mail_flags(const char *path, const char *folder, const char *mid_string, int *pflag_bits, int *perrno);
@@ -599,14 +599,12 @@ static int rw_command(int fd, char *buff, size_t olen, size_t ilen)
 	return 0;
 }
 
-static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist)
+static int delete_mail(const char *path, const char *folder,
+    const SINGLE_LIST *plist)
 {
 	int cmd_len;
 	int temp_len;
-	MSG_UNIT *pmsg;
 	char buff[128*1025];
-	SINGLE_LIST_NODE *pnode;
-
 
 	if (0 == single_list_get_nodes_num(plist)) {
 		return MIDB_RESULT_OK;
@@ -618,9 +616,9 @@ static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist)
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
 	cmd_len = length;
 	
-	for (pnode=single_list_get_head(plist); NULL!=pnode;
+	for (auto pnode = single_list_get_head(plist); pnode != nullptr;
 		pnode=single_list_get_after(plist, pnode)) {
-		pmsg = (MSG_UNIT*)pnode->pdata;
+		auto pmsg = static_cast<const MSG_UNIT *>(pnode->pdata);
 		buff[length] = ' ';
 		length ++;
 		temp_len = strlen(pmsg->file_name);
@@ -1425,13 +1423,11 @@ static int insert_mail(const char *path, const char *folder,
 }
 
 static int remove_mail(const char *path, const char *folder,
-    SINGLE_LIST *plist, int *perrno)
+    const SINGLE_LIST *plist, int *perrno)
 {
 	int cmd_len;
 	int temp_len;
-	MITEM *pitem;
 	char buff[128*1025];
-	SINGLE_LIST_NODE *pnode;
 
 	if (0 == single_list_get_nodes_num(plist)) {
 		return MIDB_RESULT_OK;
@@ -1443,9 +1439,9 @@ static int remove_mail(const char *path, const char *folder,
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
 	cmd_len = length;
 	
-	for (pnode=single_list_get_head(plist); NULL!=pnode;
+	for (auto pnode = single_list_get_head(plist); pnode != nullptr;
 		pnode=single_list_get_after(plist, pnode)) {
-		pitem = (MITEM*)pnode->pdata;
+		auto pitem = static_cast<const MITEM *>(pnode->pdata);
 		buff[length] = ' ';
 		length ++;
 		temp_len = strlen(pitem->mid);
@@ -2031,7 +2027,7 @@ static void free_result(XARRAY *pxarray)
 }
 
 static int fetch_simple(const char *path, const char *folder,
-    DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
+    const DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
 {
 	int lines;
 	int count;
@@ -2049,16 +2045,15 @@ static int fetch_simple(const char *path, const char *folder,
 	char temp_line[1024];
 	BOOL b_format_error;
 	struct pollfd pfd_read;
-	DOUBLE_LIST_NODE *pnode;
 
 	auto pback = get_connection(path);
 	if (NULL == pback) {
 		return MIDB_NO_SERVER;
 	}
 	
-	for (pnode=double_list_get_head(plist); NULL!=pnode;
+	for (auto pnode = double_list_get_head(plist); pnode != nullptr;
 		pnode=double_list_get_after(plist, pnode)) {
-		auto pseq = static_cast<SEQUENCE_NODE *>(pnode->pdata);
+		auto pseq = static_cast<const SEQUENCE_NODE *>(pnode->pdata);
 		if (pseq->max == -1) {
 			if (pseq->min == -1)
 				length = gx_snprintf(buff, arsizeof(buff), "P-SIML %s %s UID ASC -1 1\r\n",
@@ -2226,7 +2221,7 @@ static int fetch_simple(const char *path, const char *folder,
 }
 
 static int fetch_detail(const char *path, const char *folder,
-    DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
+    const DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
 {
 	int value;
 	int lines;
@@ -2242,7 +2237,6 @@ static int fetch_detail(const char *path, const char *folder,
 	char buff[64*1025];
 	char temp_line[257*1024];
 	BOOL b_format_error;
-	DOUBLE_LIST_NODE *pnode;
 	struct pollfd pfd_read;
 
 	if (NULL == g_file_allocator) {
@@ -2254,9 +2248,9 @@ static int fetch_detail(const char *path, const char *folder,
 		return MIDB_NO_SERVER;
 	}
 	
-	for (pnode=double_list_get_head(plist); NULL!=pnode;
+	for (auto pnode = double_list_get_head(plist); pnode != nullptr;
 		pnode=double_list_get_after(plist, pnode)) {
-		auto pseq = static_cast<SEQUENCE_NODE *>(pnode->pdata);
+		auto pseq = static_cast<const SEQUENCE_NODE *>(pnode->pdata);
 		if (pseq->max == -1) {
 			if (pseq->min == -1)
 				length = gx_snprintf(buff, arsizeof(buff), "M-LIST %s %s UID ASC -1 1\r\n",
@@ -2443,7 +2437,7 @@ static int fetch_detail(const char *path, const char *folder,
 }
 
 static int fetch_simple_uid(const char *path, const char *folder,
-    DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
+    const DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
 {
 	int lines;
 	int count;
@@ -2460,7 +2454,6 @@ static int fetch_simple_uid(const char *path, const char *folder,
 	char buff[1024];
 	char temp_line[1024];
 	BOOL b_format_error;
-	DOUBLE_LIST_NODE *pnode;
 	struct pollfd pfd_read;
 
 	auto pback = get_connection(path);
@@ -2468,9 +2461,9 @@ static int fetch_simple_uid(const char *path, const char *folder,
 		return MIDB_NO_SERVER;
 	}
 	
-	for (pnode=double_list_get_head(plist); NULL!=pnode;
+	for (auto pnode = double_list_get_head(plist); pnode != nullptr;
 		pnode=double_list_get_after(plist, pnode)) {
-		auto pseq = static_cast<SEQUENCE_NODE *>(pnode->pdata);
+		auto pseq = static_cast<const SEQUENCE_NODE *>(pnode->pdata);
 		auto length = gx_snprintf(buff, arsizeof(buff), "P-SIMU %s %s UID ASC %d %d\r\n", path, folder,
 					pseq->min, pseq->max);
 		if (length != write(pback->sockd, buff, length)) {
@@ -2634,7 +2627,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 }
 
 static int fetch_detail_uid(const char *path, const char *folder,
-    DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
+    const DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
 {
 	int value;
 	int lines;
@@ -2651,7 +2644,6 @@ static int fetch_detail_uid(const char *path, const char *folder,
 	char buff[64*1025];
 	char temp_line[257*1024];
 	BOOL b_format_error;
-	DOUBLE_LIST_NODE *pnode;
 	struct pollfd pfd_read;
 
 	if (NULL == g_file_allocator) {
@@ -2663,9 +2655,9 @@ static int fetch_detail_uid(const char *path, const char *folder,
 		return MIDB_NO_SERVER;
 	}
 	
-	for (pnode=double_list_get_head(plist); NULL!=pnode;
+	for (auto pnode = double_list_get_head(plist); pnode != nullptr;
 		pnode=double_list_get_after(plist, pnode)) {
-		auto pseq = static_cast<SEQUENCE_NODE *>(pnode->pdata);
+		auto pseq = static_cast<const SEQUENCE_NODE *>(pnode->pdata);
 		auto length = gx_snprintf(buff, arsizeof(buff), "P-DTLU %s %s UID ASC %d %d\r\n", path,
 					folder, pseq->min, pseq->max);
 		if (length != write(pback->sockd, buff, length)) {
