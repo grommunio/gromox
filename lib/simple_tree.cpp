@@ -191,7 +191,7 @@ BOOL simple_tree_add_child(SIMPLE_TREE *ptree,
  *	@return
  *		all nodes number of tree
  */
-size_t simple_tree_get_nodes_num(SIMPLE_TREE *ptree)
+size_t simple_tree_get_nodes_num(const SIMPLE_TREE *ptree)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == ptree) {
@@ -210,7 +210,7 @@ size_t simple_tree_get_nodes_num(SIMPLE_TREE *ptree)
  *	@return
  *		children nbumber
  */
-size_t simple_tree_node_get_children_num(SIMPLE_TREE_NODE *pnode)
+size_t simple_tree_node_get_children_num(const SIMPLE_TREE_NODE *pnode)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == pnode) {
@@ -229,7 +229,7 @@ size_t simple_tree_node_get_children_num(SIMPLE_TREE_NODE *pnode)
  *	@return
  *		depth of node in the tree
  */
-size_t simple_tree_node_get_depth(SIMPLE_TREE_NODE *pnode)
+size_t simple_tree_node_get_depth(const SIMPLE_TREE_NODE *pnode)
 {
 #ifdef _DEBUG_UMTA
 	if (NULL == pnode) {
@@ -720,3 +720,22 @@ void simple_tree_free(SIMPLE_TREE *ptree)
 	memset(ptree, 0, sizeof(SIMPLE_TREE));
 }
 
+const SIMPLE_TREE_NODE *simple_tree_get_root(const SIMPLE_TREE *t)
+{
+	return simple_tree_get_root(deconst(t));
+}
+
+const SIMPLE_TREE_NODE *simple_tree_node_get_child(const SIMPLE_TREE_NODE *n)
+{
+	return simple_tree_node_get_child(deconst(n));
+}
+
+const SIMPLE_TREE_NODE *simple_tree_node_get_parent(const SIMPLE_TREE_NODE *n)
+{
+	return simple_tree_node_get_parent(deconst(n));
+}
+
+const SIMPLE_TREE_NODE *simple_tree_node_get_sibling(const SIMPLE_TREE_NODE *n)
+{
+	return simple_tree_node_get_sibling(deconst(n));
+}

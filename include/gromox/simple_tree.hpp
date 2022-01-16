@@ -26,13 +26,17 @@ using SIMPLE_TREE_DUPLICATE = SIMPLE_TREE_NODE *(*)(SIMPLE_TREE_NODE *, void *);
 
 void simple_tree_init(SIMPLE_TREE *ptree);
 SIMPLE_TREE_NODE* simple_tree_get_root(SIMPLE_TREE *ptree);
+extern GX_EXPORT const SIMPLE_TREE_NODE *simple_tree_get_root(const SIMPLE_TREE *);
 BOOL simple_tree_set_root(SIMPLE_TREE *ptree, SIMPLE_TREE_NODE *pnode);
-size_t simple_tree_get_nodes_num(SIMPLE_TREE *ptree);
-size_t simple_tree_node_get_children_num(SIMPLE_TREE_NODE *pnode);
-size_t simple_tree_node_get_depth(SIMPLE_TREE_NODE *pnode);
+extern GX_EXPORT size_t simple_tree_get_nodes_num(const SIMPLE_TREE *);
+extern GX_EXPORT size_t simple_tree_node_get_children_num(const SIMPLE_TREE_NODE *);
+extern GX_EXPORT size_t simple_tree_node_get_depth(const SIMPLE_TREE_NODE *);
 SIMPLE_TREE_NODE* simple_tree_node_get_child(SIMPLE_TREE_NODE *pnode);
+extern GX_EXPORT const SIMPLE_TREE_NODE *simple_tree_node_get_child(const SIMPLE_TREE_NODE *);
 SIMPLE_TREE_NODE* simple_tree_node_get_parent(SIMPLE_TREE_NODE *pnode);
+extern GX_EXPORT const SIMPLE_TREE_NODE *simple_tree_node_get_parent(const SIMPLE_TREE_NODE *);
 extern SIMPLE_TREE_NODE *simple_tree_node_get_sibling(SIMPLE_TREE_NODE *);
+extern GX_EXPORT const SIMPLE_TREE_NODE *simple_tree_node_get_sibling(const SIMPLE_TREE_NODE *);
 extern BOOL simple_tree_insert_sibling(SIMPLE_TREE *, SIMPLE_TREE_NODE *base, SIMPLE_TREE_NODE *pnode, int opt);
 BOOL simple_tree_add_child(SIMPLE_TREE *ptree,
 	SIMPLE_TREE_NODE *pnode_base, SIMPLE_TREE_NODE *pnode, int opt);
