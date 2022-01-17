@@ -321,12 +321,12 @@ mv_decode_str(uint32_t proptag, const uint8_t *data, size_t dsize)
 		return nullptr;
 	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> tp(static_cast<TPROPVAL_ARRAY *>(malloc(sizeof(TPROPVAL_ARRAY))));
 	if (tp == nullptr)
-		return nullptr;
+		throw std::bad_alloc();
 	auto pv = static_cast<TAGGED_PROPVAL *>(malloc(sizeof(TAGGED_PROPVAL)));
 	tp->count = 1;
 	tp->ppropval = pv;
 	if (tp->ppropval == nullptr)
-		return nullptr;
+		throw std::bad_alloc();
 	auto ba = static_cast<STRING_ARRAY *>(malloc(sizeof(STRING_ARRAY)));
 	if (ba == nullptr)
 		throw std::bad_alloc();
@@ -364,7 +364,7 @@ mv_decode_str(uint32_t proptag, const uint8_t *data, size_t dsize)
 		}
 		if (next_ofs < ofs) {
 			fprintf(stderr, "PF-1069: broken MV data\n");
-			return nullptr;
+			break;
 		}
 		if (PROP_TYPE(proptag) == PT_MV_STRING8)
 			ba->ppstr[i] = strndup(reinterpret_cast<const char *>(&data[ofs]), next_ofs - ofs);
@@ -383,27 +383,49 @@ mv_decode_bin(uint32_t proptag, const uint8_t *data, size_t dsize)
 		return nullptr;
 	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> tp(static_cast<TPROPVAL_ARRAY *>(malloc(sizeof(TPROPVAL_ARRAY))));
 	if (tp == nullptr)
-		return nullptr;
+		throw std::bad_alloc();
 	auto pv = static_cast<TAGGED_PROPVAL *>(malloc(sizeof(TAGGED_PROPVAL)));
 	tp->count = 1;
 	tp->ppropval = pv;
 	if (tp->ppropval == nullptr)
-		return nullptr;
+		throw std::bad_alloc();
 	auto ba = static_cast<BINARY_ARRAY *>(malloc(sizeof(BINARY_ARRAY)));
 	if (ba == nullptr)
 		throw std::bad_alloc();
 	pv->proptag = proptag;
 	pv->pvalue = ba;
-	ba->count = le32p_to_cpu(data);
-	ba->pbin = static_cast<BINARY *>(calloc(ba->count, sizeof(BINARY)));
+	auto nelem = le32p_to_cpu(data);
+	ba->count = 0;
+	ba->pbin = static_cast<BINARY *>(calloc(nelem, sizeof(BINARY)));
 	if (ba->pbin == nullptr)
 		throw std::bad_alloc();
-	for (size_t i = 0; i < ba->count; ++i) {
-		auto ofs = le32p_to_cpu(&data[4*(i+1)]);
-		auto next_ofs = i == ba->count - 1 ? dsize : le32p_to_cpu(&data[4*(i+2)]);
+	for (; ba->count < nelem; ++ba->count) {
+		auto i = ba->count;
+		uint32_t ofs = 4 * (i + 1), next_ofs = 4 * (i + 2);
+		if (dsize < next_ofs) {
+			fprintf(stderr, "PF-1074: broken MV data\n");
+			break;
+		}
+		ofs = le32p_to_cpu(&data[ofs]);
+		if (dsize < ofs) {
+			fprintf(stderr, "PF-1075: broken MV data\n");
+			break;
+		}
+		if (i == nelem - 1) {
+			next_ofs = dsize;
+		} else if (dsize < next_ofs + 4) {
+			fprintf(stderr, "PF-1076: broken MV data\n");
+			break;
+		} else {
+			next_ofs = le32p_to_cpu(&data[next_ofs]);
+		}
+		if (dsize < next_ofs) {
+			fprintf(stderr, "PF-1077: broken MV data\n");
+			break;
+		}
 		if (next_ofs < ofs) {
 			fprintf(stderr, "PF-1068: broken MV data\n");
-			return nullptr;
+			break;
 		}
 		ba->pbin[i].cb = next_ofs - ofs;
 		ba->pbin[i].pv = malloc(ba->pbin[i].cb);
@@ -557,13 +579,11 @@ static void recordent_to_tpropval(libpff_record_entry_t *rent, TPROPVAL_ARRAY *a
 	case PT_MV_STRING8:
 	case PT_MV_UNICODE:
 		uextra = mv_decode_str(pv.proptag, buf.get(), dsize);
-		if (uextra != nullptr)
-			pv.pvalue = uextra->ppropval[0].pvalue;
+		pv.pvalue = uextra != nullptr ? uextra->ppropval[0].pvalue : nullptr;
 		break;
 	case PT_MV_BINARY:
 		uextra = mv_decode_bin(pv.proptag, buf.get(), dsize);
-		if (uextra != nullptr)
-			pv.pvalue = uextra->ppropval[0].pvalue;
+		pv.pvalue = uextra != nullptr ? uextra->ppropval[0].pvalue : nullptr;
 		break;
 	case PT_MV_CLSID:
 		u.ga.count = dsize / sizeof(GUID);
