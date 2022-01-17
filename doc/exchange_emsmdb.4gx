@@ -76,6 +76,11 @@ Default: (unspecified)
 delivered
 .IP \(bu 4
 \fIdata_file_path\fP/msgchg_grouping/\fI*\fP.txt
+.SH Outlook notes
+Outlook can be started with the \fB/rpcinfo\fP command-line parameter to
+display a status table about the RPC connections it has open. Alternatively,
+one can Ctrl-MouseBtn3 (right button) on the status tray icon to call up a
+context menu, from which "Connection status..." can be selected for the same.
 .SH Normative references
 .IP \(bu 4
 DCERPC / C706: Technical Standard DCE 1.1: Remote Procedure Call by The Open
