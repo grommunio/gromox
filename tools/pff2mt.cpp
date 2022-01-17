@@ -319,7 +319,7 @@ mv_decode_str(uint32_t proptag, const uint8_t *data, size_t dsize)
 {
 	if (dsize < 4)
 		return nullptr;
-	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> tp(tpropval_array_init());
+	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> tp(static_cast<TPROPVAL_ARRAY *>(malloc(sizeof(TPROPVAL_ARRAY))));
 	if (tp == nullptr)
 		return nullptr;
 	auto pv = static_cast<TAGGED_PROPVAL *>(malloc(sizeof(TAGGED_PROPVAL)));
@@ -381,7 +381,7 @@ mv_decode_bin(uint32_t proptag, const uint8_t *data, size_t dsize)
 {
 	if (dsize < 4)
 		return nullptr;
-	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> tp(tpropval_array_init());
+	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> tp(static_cast<TPROPVAL_ARRAY *>(malloc(sizeof(TPROPVAL_ARRAY))));
 	if (tp == nullptr)
 		return nullptr;
 	auto pv = static_cast<TAGGED_PROPVAL *>(malloc(sizeof(TAGGED_PROPVAL)));
