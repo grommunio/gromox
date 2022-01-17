@@ -36,5 +36,22 @@ Show a diagnostic tree view of the source data as it is being read.
 Import of a PFF-compatible file into a Gromox mailbox via exmdb transport:
 .PP
 gromox\-pff2mt sample.pst | gromox\-mt2exm \-u target@mailbox.de
+.SH Bugs
+Embedded messages are treated as subitems by libpff. Luckily, the only
+consequence is that the tree view (-t) shows duplicate NID visits.
+.PP
+.RS 4
+.nf
+\\_ [id=21cee4h ntyp=unknown-4h type=appointment nset=1 nent=161]
+    \\_ [id=8005h ntyp=atx type=attachment nset=1 nent=19]
+        \\_ [attachment type=i embedded_msg]
+            \\_ [id=21cf04h ntyp=unknown-4h type=appointment nset=1
+    \\_ [id=21cf04h ntyp=unknown-4h type=appointment nset=1 nent=50]
+    \\_ [id=8025h ntyp=atx type=attachment nset=1 nent=19]
+        \\_ [attachment type=i embedded_msg]
+            \\_ [id=21cf24h ntyp=unknown-4h type=appointment nset=1
+    \\_ [id=21cf24h ntyp=unknown-4h type=appointment nset=1 nent=49]
+.fi
+.RE
 .SH See also
 \fBgromox\fP(7), \fBgromox\-mt2exm\fP(8gx)
