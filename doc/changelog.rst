@@ -1,3 +1,26 @@
+1.13 (2022-01-17)
+=================
+
+Enhancements:
+
+* pff2mt: support reading multi-value variable-length property types,
+  and obscure single-value types.
+* pff2mt: support reading receivefolders for Inbox mapping
+  (only OST files have the desired info)
+
+Fixes:
+
+* midb: Avoid storing the primary email address in midb.sqlite3, and instead
+  derive it from SQL.
+  (pop3 used to reject DELE commands after the email address of a user was
+  changed.)
+
+Changes:
+
+* The adaptor(8gx) daemon has been removed following its earlier obsoletion.
+* telnet console support has been removed.
+
+
 1.12 (2022-01-09)
 =================
 
