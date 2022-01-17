@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <iconv.h>
 #include <memory>
 #include <string>
 #include <unistd.h>
@@ -290,6 +291,29 @@ static bool tpropval_subject_handler(const uint8_t *buf, TPROPVAL_ARRAY *ar, TAG
 	return true;
 }
 
+static char *u16convert(const uint8_t *data, size_t inbytes)
+{
+	size_t bytes = inbytes * 3 / 2 + 1;
+	auto outbuf = static_cast<char *>(malloc(bytes));
+	if (outbuf == nullptr)
+		return nullptr;
+	auto cd = iconv_open("UTF-8", "UTF-16LE");
+	if (cd == iconv_t(-1)) {
+		free(outbuf);
+		return nullptr;
+	}
+	auto icv_in = reinterpret_cast<char *>(const_cast<uint8_t *>(data));
+	auto icv_out = outbuf;
+	auto icv_obytes = bytes;
+	iconv(cd, &icv_in, &inbytes, &icv_out, &icv_obytes);
+	iconv_close(cd);
+	if (icv_obytes > 0)
+		*icv_out = '\0';
+	else
+		outbuf[bytes-1] = '\0';
+	return outbuf;
+}
+
 static std::unique_ptr<TPROPVAL_ARRAY, gi_delete>
 mv_decode_str(uint32_t proptag, const uint8_t *data, size_t dsize)
 {
@@ -308,23 +332,48 @@ mv_decode_str(uint32_t proptag, const uint8_t *data, size_t dsize)
 		throw std::bad_alloc();
 	pv->proptag = proptag;
 	pv->pvalue = ba;
-	ba->count = le32p_to_cpu(data);
-	ba->ppstr = static_cast<char **>(calloc(ba->count, sizeof(char *)));
+	/* PST v9 §2.3.3.4.2 */
+	auto nelem = le32p_to_cpu(data);
+	ba->count = 0;
+	ba->ppstr = static_cast<char **>(calloc(nelem, sizeof(char *)));
 	if (ba->ppstr == nullptr)
 		throw std::bad_alloc();
-	for (size_t i = 0; i < ba->count; ++i) {
-		auto ofs = le32p_to_cpu(&data[4*(i+1)]);
-		auto next_ofs = i == ba->count - 1 ? dsize : le32p_to_cpu(&data[4*(i+2)]);
+	for (; ba->count < nelem; ++ba->count) {
+		auto i = ba->count;
+		uint32_t ofs = 4 * (i + 1), next_ofs = 4 * (i + 2);
+		if (dsize < next_ofs) {
+			fprintf(stderr, "PF-1070: broken MV data\n");
+			break;
+		}
+		ofs = le32p_to_cpu(&data[ofs]);
+		if (dsize < ofs) {
+			fprintf(stderr, "PF-1071: broken MV data\n");
+			break;
+		}
+		if (i == nelem - 1) {
+			next_ofs = dsize;
+		} else if (dsize < next_ofs + 4) {
+			fprintf(stderr, "PF-1072: broken MV data\n");
+			break;
+		} else {
+			next_ofs = le32p_to_cpu(&data[next_ofs]);
+		}
+		if (dsize < next_ofs) {
+			fprintf(stderr, "PF-1073: broken MV data\n");
+			break;
+		}
 		if (next_ofs < ofs) {
 			fprintf(stderr, "PF-1069: broken MV data\n");
 			return nullptr;
 		}
-		ba->ppstr[i] = strndup(reinterpret_cast<const char *>(&data[ofs]), next_ofs - ofs);
+		if (PROP_TYPE(proptag) == PT_MV_STRING8)
+			ba->ppstr[i] = strndup(reinterpret_cast<const char *>(&data[ofs]), next_ofs - ofs);
+		else
+			ba->ppstr[i] = u16convert(&data[ofs], next_ofs - ofs);
 		if (ba->ppstr[i] == nullptr)
 			throw std::bad_alloc();
 	}
 	return tp;
-
 }
 
 static std::unique_ptr<TPROPVAL_ARRAY, gi_delete>
