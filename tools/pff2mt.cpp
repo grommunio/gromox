@@ -1055,10 +1055,8 @@ static void npg_set(gi_name_map &map, libpff_record_set_t *rset)
 
 static void npg_item(gi_name_map &map, libpff_item_t *item)
 {
-	uint8_t item_type = LIBPFF_ITEM_TYPE_UNDEFINED;
 	uint32_t ident = 0;
 	libpff_item_get_identifier(item, &ident, nullptr);
-	libpff_item_get_type(item, &item_type, nullptr);
 	int nsets = 0;
 	if (libpff_item_get_number_of_record_sets(item, &nsets, nullptr) > 0) {
 		for (int n = 0; n < nsets; ++n) {
@@ -1069,7 +1067,7 @@ static void npg_item(gi_name_map &map, libpff_item_t *item)
 		}
 	}
 
-	int nsub = 0;
+	int nsub = 0, atype = 0;
 	if (libpff_item_get_number_of_sub_items(item, &nsub, nullptr) > 0) {
 		for (int i = 0; i < nsub; ++i) {
 			libpff_item_ptr subitem;
@@ -1084,6 +1082,12 @@ static void npg_item(gi_name_map &map, libpff_item_t *item)
 			if (libpff_message_get_attachment(item, i, &unique_tie(subitem), nullptr) > 0)
 				npg_item(map, subitem.get());
 		}
+	}
+	if (libpff_attachment_get_type(item, &atype, nullptr) > 0 &&
+	    atype == LIBPFF_ATTACHMENT_TYPE_ITEM) {
+		libpff_item_ptr subitem;
+		if (libpff_attachment_get_item(item, &unique_tie(subitem), nullptr) > 0)
+			npg_item(map, subitem.get());
 	}
 	libpff_item_ptr subitem;
 	if (libpff_message_get_recipients(item, &unique_tie(subitem), nullptr) > 0)
