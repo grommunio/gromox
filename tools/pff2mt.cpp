@@ -152,7 +152,7 @@ static const char *az_nid_type_to_str(uint8_t t)
 	case NID_TYPE_RECIPIENT_TABLE: return "rcpttbl";
 	case NID_TYPE_SEARCH_TABLE_INDEX: return "srchtblidx";
 	case NID_TYPE_LTP: return "ltp";
-	default: snprintf(buf, sizeof(buf), "unknown-%xh", t); return buf;
+	default: snprintf(buf, sizeof(buf), "unknown-%xh", t & NID_TYPE_MASK); return buf;
 	}
 }
 
