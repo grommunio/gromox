@@ -89,6 +89,11 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 	tlog("%08xh:", tp.proptag);
 
 	switch (PROP_TYPE(tp.proptag)) {
+	case PT_SHORT: {
+		unsigned int v = *static_cast<uint16_t *>(tp.pvalue);
+		tlog("%u/%xh", v, v);
+		break;
+	}
 	case PT_LONG: {
 		unsigned long v = *static_cast<uint32_t *>(tp.pvalue);
 		tlog("%lu/%lxh", v, v);
