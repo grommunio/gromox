@@ -157,6 +157,22 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 			tlog("bin(%zu)", static_cast<size_t>(b.cb));
 		break;
 	}
+	case PT_SVREID: {
+		auto &e = *static_cast<SVREID *>(tp.pvalue);
+		if (e.pbin == nullptr) {
+			tlog("svreid={fid=%llxh, mid=%llxh, ins=%lxh}",
+			     static_cast<unsigned long long>(e.folder_id),
+			     static_cast<unsigned long long>(e.message_id),
+			     static_cast<unsigned long>(e.instance));
+			break;
+		}
+		auto &b = *e.pbin;
+		if (g_show_props)
+			tlog("svreid(%zu)=%s", static_cast<size_t>(b.cb), bin2hex(b.pv, b.cb).c_str());
+		else
+			tlog("svreid(%zu)", static_cast<size_t>(b.cb));
+		break;
+	}
 	case PT_MV_SHORT: {
 		auto &sl = *static_cast<SHORT_ARRAY *>(tp.pvalue);
 		tlog("mvshort[%zu]", static_cast<size_t>(sl.count));
