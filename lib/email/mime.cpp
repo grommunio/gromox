@@ -166,95 +166,91 @@ BOOL mime_retrieve(MIME *pmime_parent,
 				pmime->f_other_fields.write(&mime_field.field_value_len, sizeof(mime_field.field_value_len));
 				pmime->f_other_fields.write(mime_field.field_value, mime_field.field_value_len);
 			}
-			if ('\r' == in_buff[current_offset]) {
-				pmime->head_begin = in_buff;
-				pmime->head_length = current_offset;
-				/*
-				 * if a empty line is meet, end of mail head parse
-				 * skip the empty line, which separate the head and 
-				 * content \r\n 
-				 */
-				current_offset += 2;
-
-				if (current_offset > length) {
-					mime_clear(pmime);
-					return FALSE;
-				} else if (current_offset == length) {
-					pmime->content_begin = NULL;
-					pmime->content_length = 0;
-					if (MULTIPLE_MIME == pmime->mime_type) {
-						pmime->mime_type = SINGLE_MIME;
-					}
-				} else {
-					pmime->content_begin = in_buff + current_offset;
-					pmime->content_length = length - current_offset;
-				}
+			if ('\r' != in_buff[current_offset])
+				continue;
+			pmime->head_begin = in_buff;
+			pmime->head_length = current_offset;
+			/*
+			 * if a empty line is meet, end of mail head parse
+			 * skip the empty line, which separate the head and
+			 * content \r\n
+			 */
+			current_offset += 2;
+			if (current_offset > length) {
+				mime_clear(pmime);
+				return FALSE;
+			} else if (current_offset == length) {
+				pmime->content_begin = NULL;
+				pmime->content_length = 0;
 				if (MULTIPLE_MIME == pmime->mime_type) {
-					if (FALSE  == mime_get_content_param(pmime, "boundary",
-						pmime->boundary_string, VALUE_LEN - 1)) {
-						pmime->mime_type = SINGLE_MIME;
-					}
-					if (FALSE == mime_parse_multiple(pmime)) {
-						pmime->mime_type = SINGLE_MIME;
-					}
-				} else if (NONE_MIME == pmime->mime_type) {
-					/* old simplest unix style mail */
-					strcpy(pmime->content_type, "text/plain");
 					pmime->mime_type = SINGLE_MIME;
 				}
-				return TRUE;
+			} else {
+				pmime->content_begin = in_buff + current_offset;
+				pmime->content_length = length - current_offset;
 			}
-		} else {
-			if (0 == current_offset) {
-				pmime->head_touched = TRUE;
-				pmime->content_begin = in_buff;
-				pmime->content_length = length;
+			if (MULTIPLE_MIME == pmime->mime_type) {
+				if (FALSE  == mime_get_content_param(pmime, "boundary",
+				    pmime->boundary_string, VALUE_LEN - 1)) {
+					pmime->mime_type = SINGLE_MIME;
+				}
+				if (FALSE == mime_parse_multiple(pmime)) {
+					pmime->mime_type = SINGLE_MIME;
+				}
+			} else if (NONE_MIME == pmime->mime_type) {
 				/* old simplest unix style mail */
 				strcpy(pmime->content_type, "text/plain");
 				pmime->mime_type = SINGLE_MIME;
-				return TRUE;
-			} else {
-				pmime->head_begin = in_buff;
-				pmime->head_length = current_offset;
-				/*
-				 * there's not empty line, which separate the head and 
-				 * content \r\n 
-				 */
-
-				if (current_offset > length) {
-					mime_clear(pmime);
-					return FALSE;
-				} else if (current_offset == length) {
-					pmime->content_begin = NULL;
-					pmime->content_length = 0;
-					if (MULTIPLE_MIME == pmime->mime_type) {
-						pmime->mime_type = SINGLE_MIME;
-					}
-				} else {
-					pmime->content_begin = in_buff + current_offset;
-					pmime->content_length = length - current_offset;
-				}
-				if (MULTIPLE_MIME == pmime->mime_type) {
-					if (FALSE  == mime_get_content_param(pmime, "boundary",
-						pmime->boundary_string, VALUE_LEN - 1)) {
-						pmime->mime_type = SINGLE_MIME;
-					}
-					if (FALSE == mime_parse_multiple(pmime)) {
-						pmime->mime_type = SINGLE_MIME;
-					}
-				} else if (NONE_MIME == pmime->mime_type) {
-					if (NULL != pmime_parent && 0 == strcasecmp(
-						"multipart/digest", pmime->content_type)) {
-						strcpy(pmime->content_type, "message/rfc822");
-					} else {
-						/* old simplest unix style mail */
-						strcpy(pmime->content_type, "text/plain");
-					}
-					pmime->mime_type = SINGLE_MIME;
-				}
-				return TRUE;
 			}
+			return TRUE;
 		}
+		if (0 == current_offset) {
+			pmime->head_touched = TRUE;
+			pmime->content_begin = in_buff;
+			pmime->content_length = length;
+			/* old simplest unix style mail */
+			strcpy(pmime->content_type, "text/plain");
+			pmime->mime_type = SINGLE_MIME;
+			return TRUE;
+		}
+		pmime->head_begin = in_buff;
+		pmime->head_length = current_offset;
+		/*
+		 * there's not empty line, which separate the head and
+		 * content \r\n
+		 */
+		if (current_offset > length) {
+			mime_clear(pmime);
+			return FALSE;
+		} else if (current_offset == length) {
+			pmime->content_begin = NULL;
+			pmime->content_length = 0;
+			if (MULTIPLE_MIME == pmime->mime_type) {
+				pmime->mime_type = SINGLE_MIME;
+			}
+		} else {
+			pmime->content_begin = in_buff + current_offset;
+			pmime->content_length = length - current_offset;
+		}
+		if (MULTIPLE_MIME == pmime->mime_type) {
+			if (FALSE  == mime_get_content_param(pmime, "boundary",
+			    pmime->boundary_string, VALUE_LEN - 1)) {
+				pmime->mime_type = SINGLE_MIME;
+			}
+			if (FALSE == mime_parse_multiple(pmime)) {
+				pmime->mime_type = SINGLE_MIME;
+			}
+		} else if (NONE_MIME == pmime->mime_type) {
+			if (NULL != pmime_parent && 0 == strcasecmp(
+			    "multipart/digest", pmime->content_type)) {
+				strcpy(pmime->content_type, "message/rfc822");
+			} else {
+				/* old simplest unix style mail */
+				strcpy(pmime->content_type, "text/plain");
+			}
+			pmime->mime_type = SINGLE_MIME;
+		}
+		return TRUE;
 	}
 	mime_clear(pmime);
 	return FALSE;
