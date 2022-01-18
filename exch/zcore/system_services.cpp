@@ -37,6 +37,7 @@ E(get_username_from_id)
 E(setpasswd)
 E(set_timezone)
 E(set_user_lang)
+E(scndstore_hints)
 #undef E
 BOOL (*system_services_get_lang)(uint32_t, const char*, char*, int);
 int (*system_services_add_timer)(const char *, int);
@@ -86,6 +87,7 @@ int system_services_run()
 	E(system_services_setpasswd, "set_password");
 	E(system_services_get_user_privilege_bits, "get_user_privilege_bits");
 	E(system_services_add_timer, "add_timer");
+	E(system_services_scndstore_hints, "scndstore_hints");
 	return 0;
 #undef E
 }

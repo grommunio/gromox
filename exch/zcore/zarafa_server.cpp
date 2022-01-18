@@ -2762,6 +2762,7 @@ uint32_t zarafa_server_queryrows(
 			break;
 		case ATTACHMENT_TABLE:
 		case RECIPIENT_TABLE:
+		case STORE_TABLE:
 		case USER_TABLE:
 			if (!ptable->filter_rows(count, prestriction, pproptags, prowset))
 				return ecError;
@@ -3045,6 +3046,7 @@ uint32_t zarafa_server_restricttable(GUID hsession, uint32_t htable,
 	case HIERARCHY_TABLE:
 	case CONTENT_TABLE:
 	case RULE_TABLE:
+	case STORE_TABLE:
 	case USER_TABLE:
 		break;
 	default:

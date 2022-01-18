@@ -23,8 +23,10 @@
 #include <cstdlib>
 #include <cstring>
 #include "common_util.h"
+#include "system_services.h"
 
 static void table_object_reset(table_object *);
+static BOOL table_object_get_store_table_all_proptags(PROPTAG_ARRAY *);
 
 static void table_object_set_table_id(table_object *ptable, uint32_t table_id)
 {
@@ -34,6 +36,49 @@ static void table_object_set_table_id(table_object *ptable, uint32_t table_id)
 	ptable->table_id = table_id;
 }
 
+static int storetbl_add_row(table_object *tbl, const USER_INFO &info,
+    const PROPTAG_ARRAY &tags, bool is_private, unsigned int user_id)
+{
+	uint32_t handle = info.ptree->get_store_handle(is_private ? TRUE : false, user_id);
+	uint8_t mapi_type = 0;
+	auto store = info.ptree->get_object<store_object>(handle, &mapi_type);
+	if (store == nullptr || mapi_type != ZMG_STORE)
+		return ENOENT;
+	auto props = cu_alloc<TPROPVAL_ARRAY>();
+	if (props == nullptr)
+		return ENOMEM;
+	if (!store->get_properties(&tags, props))
+		return 0;
+	auto pdup = props->dup(); /* move from cu_alloc space to me_alloc */
+	if (pdup == nullptr)
+		return ENOMEM;
+	return tbl->fixed_data->append_move(pdup);
+}
+
+static int storetbl_refresh(table_object *tbl)
+{
+	auto info = zarafa_server_get_info();
+	if (info == nullptr)
+		return EIO;
+	if (tbl->fixed_data != nullptr)
+		tarray_set_free(tbl->fixed_data);
+	tbl->fixed_data = tarray_set_init();
+	if (tbl->fixed_data == nullptr)
+		return ENOMEM;
+
+	PROPTAG_ARRAY tags{};
+	if (!table_object_get_store_table_all_proptags(&tags))
+		return EIO;
+	storetbl_add_row(tbl, *info, tags, true, info->user_id);
+	storetbl_add_row(tbl, *info, tags, false, info->domain_id);
+	std::vector<int> hints;
+	if (system_services_scndstore_hints(info->user_id, hints) == 0)
+		for (const auto &uid : hints)
+			storetbl_add_row(tbl, *info, tags, true, uid);
+	/* Table now contains _validated_ entries. */
+	return 0;
+}
+
 BOOL table_object::check_to_load()
 {
 	auto ptable = this;
@@ -41,9 +86,10 @@ BOOL table_object::check_to_load()
 	
 	if (ATTACHMENT_TABLE == ptable->table_type ||
 		RECIPIENT_TABLE == ptable->table_type ||
-		CONTAINER_TABLE == ptable->table_type ||
-		STORE_TABLE == ptable->table_type) {
+	    ptable->table_type == CONTAINER_TABLE) {
 		return TRUE;
+	} else if (ptable->table_type == STORE_TABLE) {
+		return storetbl_refresh(this) == 0 ? TRUE : false;
 	} else if (USER_TABLE == ptable->table_type) {
 		auto ct = static_cast<container_object *>(ptable->pparent_obj);
 		return ct->load_user_table(ptable->prestriction);
@@ -283,29 +329,21 @@ static BOOL storetbl_query_rows(const table_object *ptable,
     uint32_t row_needed)
 {
 	uint32_t end_pos = ptable->position + row_needed;
-	if (end_pos >= 2) {
-		end_pos = 1;
-	}
+	if (ptable->fixed_data == nullptr)
+		end_pos = 0;
+	else if (end_pos >= ptable->fixed_data->count)
+		end_pos = ptable->fixed_data->count;
 	pset->count = 0;
 	pset->pparray = cu_alloc<TPROPVAL_ARRAY *>(end_pos - ptable->position + 1);
 	if (NULL == pset->pparray) {
 		return FALSE;
 	}
-	for (size_t i = ptable->position; i <= end_pos; ++i) {
+	for (size_t i = ptable->position; i < end_pos; ++i) {
 		pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == pset->pparray[pset->count]) {
 			return FALSE;
 		}
-		uint32_t handle = i == 0 ?
-			pinfo->ptree->get_store_handle(TRUE, pinfo->user_id) :
-			pinfo->ptree->get_store_handle(false, pinfo->domain_id);
-		uint8_t mapi_type = 0;
-		auto pstore = pinfo->ptree->get_object<store_object>(handle, &mapi_type);
-		if (pstore == nullptr || mapi_type != ZMG_STORE)
-			return FALSE;
-		if (!pstore->get_properties(pcolumns, pset->pparray[pset->count]))
-			return FALSE;
-		pset->count ++;
+		pset->pparray[pset->count++] = ptable->fixed_data->pparray[i];;
 	}
 	return TRUE;
 }
@@ -685,7 +723,7 @@ uint32_t table_object::get_total()
 		ct->get_user_table_num(&num1);
 		return num1;
 	} else if (STORE_TABLE == ptable->table_type) {
-		return 2;
+		return fixed_data != nullptr ? fixed_data->count : 0;
 	}
 	exmdb_client::sum_table(ptable->pstore->get_dir(),
 		ptable->table_id, &total_rows);
@@ -726,6 +764,8 @@ table_object::~table_object()
 {
 	auto ptable = this;
 	table_object_reset(ptable);
+	if (fixed_data != nullptr)
+		tarray_set_free(fixed_data);
 	if (RULE_TABLE == ptable->table_type) {
 		free(ptable->pparent_obj);
 	}
@@ -988,6 +1028,10 @@ BOOL table_object::filter_rows(uint32_t count, const RESTRICTION *pres,
 		if (!static_cast<message_object *>(ptable->pparent_obj)->
 		    read_recipients(0, 0xFFFF, &tmp_set))
 			return FALSE;	
+		break;
+	case STORE_TABLE:
+		if (storetbl_refresh(this) != 0)
+			return false;
 		break;
 	case USER_TABLE:
 		container_object_get_user_table_all_proptags(&proptags);

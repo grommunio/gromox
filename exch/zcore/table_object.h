@@ -22,6 +22,10 @@ struct bookmark_node {
 	uint64_t inst_id = 0;
 };
 
+/**
+ * @fixed_data:		in case @pparent_obj (i.e. the provider of table data)
+ *  			is nullptr, data can be statically placed in fixed_data.
+ */
 struct table_object {
 	protected:
 	table_object() = default;
@@ -55,6 +59,7 @@ struct table_object {
 	void *pparent_obj = nullptr;
 	enum zcore_table_type table_type{};
 	uint32_t table_flags = 0;
+	tarray_set *fixed_data = nullptr;
 	PROPTAG_ARRAY *pcolumns = nullptr;
 	SORTORDER_SET *psorts = nullptr;
 	RESTRICTION *prestriction = nullptr;

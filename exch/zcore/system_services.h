@@ -3,6 +3,7 @@
 #include <gromox/defs.h>
 #include "../authmgr.hpp"
 #include "../mysql_adaptor/mysql_adaptor.h"
+#include "../mysql_adaptor/sql2.hpp"
 
 extern int system_services_run();
 extern void system_services_stop();
@@ -39,6 +40,7 @@ E(get_username_from_id)
 E(set_timezone)
 E(set_user_lang)
 E(setpasswd)
+E(scndstore_hints)
 #undef E
 extern BOOL (*system_services_get_lang)(uint32_t, const char*, char*, int);
 extern int (*system_services_add_timer)(const char *, int);
