@@ -870,7 +870,7 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 		tmp_byte = 1;
 		if (pproplist->set(PR_RESPONSIBILITY, &tmp_byte) != 0)
 			return FALSE;
-		tmp_int32 = 1;
+		tmp_int32 = recipSendable;
 		if (pproplist->set(PR_RECIPIENT_FLAGS, &tmp_int32) != 0)
 			return FALSE;
 	}
@@ -3298,14 +3298,11 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 		if (NULL == pvalue) {
 			continue;
 		}
-		if ((*(uint32_t*)pvalue) & 0x00000020 ||
-			(*(uint32_t*)pvalue) & 0x00000002) {
+		if (*static_cast<uint32_t *>(pvalue) & (recipExceptionalDeleted | recipOrganizer))
 			continue;
-		}
 		pvalue = pmsg->children.prcpts->pparray[i]->getval(PR_RECIPIENT_TYPE);
-		if (NULL != pvalue && 0 == *(uint32_t*)pvalue) {
+		if (pvalue != nullptr && *static_cast<uint32_t *>(pvalue) == MAPI_ORIG)
 			continue;
-		}
 		piline = ical_new_line("ATTENDEE");
 		if (NULL == piline) {
 			return FALSE;

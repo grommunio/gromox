@@ -1818,10 +1818,10 @@ static BOOL table_column_content_tmptbl(
 		*ppvalue = v;
 		if (v == nullptr)
 			return TRUE;
-		*v = row_type == CONTENT_ROW_MESSAGE ? ROW_TYPE_LEAF_ROW :
-			sqlite3_column_int64(pstmt, 8) == 0 ? ROW_TYPE_EMPTY_CATEGORY :
-			sqlite3_column_int64(pstmt, 5) == 0 ? ROW_TYPE_COLLAPSED_CATEGORY :
-			ROW_TYPE_EXPANDED_CATEGORY;
+		*v = row_type == CONTENT_ROW_MESSAGE ? TBL_LEAF_ROW :
+			sqlite3_column_int64(pstmt, 8) == 0 ? TBL_EMPTY_CATEGORY :
+			sqlite3_column_int64(pstmt, 5) == 0 ? TBL_COLLAPSED_CATEGORY :
+			TBL_EXPANDED_CATEGORY;
 		return TRUE;
 	}
 	case PROP_TAG_DEPTH:

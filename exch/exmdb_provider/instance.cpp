@@ -3251,11 +3251,8 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 	auto pmsg = static_cast<MESSAGE_CONTENT *>(pinstance->pcontent);
 	auto pvalue = pmsg->proplist.getval(PROP_TAG_MESSAGESTATUS);
 	b_inconflict = FALSE;
-	if (NULL != pvalue) {
-		if (*(uint32_t*)pvalue & MESSAGE_STATUS_IN_CONFLICT) {
-			b_inconflict = TRUE;
-		}
-	}
+	if (pvalue != nullptr && *static_cast<uint32_t *>(pvalue) & MSGSTATUS_IN_CONFLICT)
+		b_inconflict = TRUE;
 	if (FALSE == b_inconflict) {
 		if (FALSE == instance_read_message(pmsg, &msgctnt)) {
 			return FALSE;
@@ -3319,9 +3316,9 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 	pvalue = pmsg->proplist.getval(PROP_TAG_MESSAGESTATUS);
 	if (NULL == pvalue) {
 		pvalue = &tmp_status;
-		tmp_status = MESSAGE_STATUS_IN_CONFLICT;
+		tmp_status = MSGSTATUS_IN_CONFLICT;
 	} else {
-		*(uint32_t*)pvalue |= MESSAGE_STATUS_IN_CONFLICT;
+		*static_cast<uint32_t *>(pvalue) |= MSGSTATUS_IN_CONFLICT;
 	}
 	if (pmsg->proplist.set(PROP_TAG_MESSAGESTATUS, pvalue) != 0)
 		/* ignore; reevaluate */;

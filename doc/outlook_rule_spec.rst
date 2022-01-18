@@ -866,7 +866,7 @@ SRestriction:
 .. code-block:: c
 
 	{RES_AND, {
-		{RES_PROPERTY, RELOP_EQ, PR_FLAG_STATUS, 2},
+		{RES_PROPERTY, RELOP_EQ, PR_FLAG_STATUS, followupFlagged},
 		{RES_PROPERTY, RELOP_EQ,
 			PROP_TAG(PT_TSTRING, 0x802A), "action"},
 	}}

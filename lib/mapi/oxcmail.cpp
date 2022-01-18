@@ -588,14 +588,14 @@ static BOOL oxcmail_parse_recipient(const char *charset,
 		tmp_int32 = static_cast<uint32_t>(dtypx);
 		if (pproplist->set(PR_DISPLAY_TYPE, &tmp_int32) != 0)
 			return FALSE;
-		tmp_int32 = 1;
+		tmp_int32 = recipSendable;
 		if (pproplist->set(PR_RECIPIENT_FLAGS, &tmp_int32) != 0)
 			return FALSE;
 	}
 	tmp_byte = 1;
 	if (pproplist->set(PR_RESPONSIBILITY, &tmp_byte) != 0)
 		return FALSE;
-	tmp_int32 = 1;
+	tmp_int32 = recipSendable;
 	if (pproplist->set(PR_RECIPIENT_FLAGS, &tmp_int32) != 0)
 		return FALSE;
 	return pproplist->set(PR_RECIPIENT_TYPE, &rcpt_type) == 0 ? TRUE : false;
@@ -1212,7 +1212,7 @@ static BOOL oxcmail_parse_message_flag(char *field, uint16_t *plast_propid,
 	if (pproplist->set(tag, field) != 0)
 		return FALSE;
 	(*plast_propid) ++;
-	tmp_int32 = FLAG_STATUS_FOLLOWUPFLAGGED;
+	tmp_int32 = followupFlagged;
 	if (pproplist->set(PR_FLAG_STATUS, &tmp_int32) != 0)
 		return FALSE;
 	
@@ -1264,7 +1264,7 @@ static BOOL oxcmail_parse_message_flag(char *field, uint16_t *plast_propid,
 	if (pproplist->set(PROP_TAG(PT_DOUBLE, *plast_propid), &tmp_double) != 0)
 		return FALSE;
 	(*plast_propid) ++;
-	tmp_int32 = TODO_ITEM_RECIPIENTFLAGGED;
+	tmp_int32 = todoRecipientFlagged;
 	return pproplist->set(PR_TODO_ITEM_FLAGS, &tmp_int32) == 0 ? TRUE : false;
 }
 
@@ -2901,12 +2901,9 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 	BINARY tmp_bin;
 	char essdn[1280];
 	char tmp_buff[1280];
-	uint32_t status_code;
 	DSN_ENUM_INFO *pinfo;
-	uint32_t reason_code;
 	DSN_FILEDS_INFO f_info;
 	char display_name[512];
-	uint32_t diagnostic_code;
 	TPROPVAL_ARRAY *pproplist;
 	
 	pinfo = (DSN_ENUM_INFO*)pparam;
@@ -3022,7 +3019,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 	tmp_int32 = static_cast<uint32_t>(dtypx);
 	if (pproplist->set(PR_DISPLAY_TYPE, &tmp_int32) != 0)
 		return false;
-	tmp_int32 = 1;
+	tmp_int32 = recipSendable;
 	if (pproplist->set(PR_RECIPIENT_FLAGS, &tmp_int32) != 0)
 		return false;
 	if (f_info.remote_mta[0] != '\0' &&
@@ -3045,45 +3042,44 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 		if (pproplist->set(PR_SUPPLEMENTARY_INFO, tmp_buff) != 0)
 			return false;
 	}
-	status_code = 100*kind + 10*subject + detail;
+	uint32_t status_code = 100 * kind + 10 * subject + detail;
 	if (pproplist->set(PR_NDR_STATUS_CODE, &status_code) != 0)
 		return false;
-	reason_code = 0;
-	diagnostic_code = -1;
+	uint32_t diagnostic_code = MAPI_DIAG_NO_DIAGNOSTIC, reason_code = 0;
 	switch (subject) {
 	case 1:
 		switch (detail) {
 		case 1:
-			diagnostic_code = 35;
+			diagnostic_code = MAPI_DIAG_MAIL_RECIPIENT_UNKNOWN;
 			reason_code = 1;
 			break;
 		case 2:
-			diagnostic_code = 48;
+			diagnostic_code = MAPI_DIAG_48;
 			break;
 		case 3:
-			diagnostic_code = 32;
+			diagnostic_code = MAPI_DIAG_MAIL_ADDRESS_INCORRECT;
 			break;
 		case 4:
-			diagnostic_code = 1;
+			diagnostic_code = MAPI_DIAG_OR_NAME_AMBIGUOUS;
 			break;
 		case 6:
-			diagnostic_code = 40;
+			diagnostic_code = MAPI_DIAG_MAIL_RECIPIENT_MOVED;
 			break;
 		default:
-			diagnostic_code = 0;
+			diagnostic_code = MAPI_DIAG_OR_NAME_UNRECOGNIZED;
 		}
 		break;
 	case 2:
 		switch (detail) {
 		case 2:
 		case 3:
-			diagnostic_code = 13;
+			diagnostic_code = MAPI_DIAG_LENGTH_CONSTRAINT_VIOLATD;
 			break;
 		case 4:
-			diagnostic_code = 30;
+			diagnostic_code = MAPI_DIAG_EXPANSION_FAILED;
 			break;
 		default:
-			diagnostic_code = 38;
+			diagnostic_code = MAPI_DIAG_MAIL_REFUSED;
 			break;
 		}
 		break;
@@ -3093,13 +3089,13 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 			break;
 		case 3:
 		case 5:
-			diagnostic_code = 18;
+			diagnostic_code = MAPI_DIAG_CRITICAL_FUNC_UNSUPPORTED;
 			break;
 		case 4:
-			diagnostic_code = 13;
+			diagnostic_code = MAPI_DIAG_LENGTH_CONSTRAINT_VIOLATD;
 			break;
 		default:
-			diagnostic_code = 38;
+			diagnostic_code = MAPI_DIAG_MAIL_REFUSED;
 			break;
 		}
 		break;
@@ -3113,45 +3109,45 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 			break;
 		case 6:
 		case 8:
-			diagnostic_code = 3;
+			diagnostic_code = MAPI_DIAG_LOOP_DETECTED;
 			break;
 		case 7:
-			diagnostic_code = 5;
+			diagnostic_code = MAPI_DIAG_MAXIMUM_TIME_EXPIRED;
 			break;
 		default:
-			diagnostic_code = 2;
+			diagnostic_code = MAPI_DIAG_MTS_CONGESTED;
 			break;
 		}
 		break;
 	case 5:
 		switch (detail) {
 		case 3:
-			diagnostic_code = 16;
+			diagnostic_code = MAPI_DIAG_TOO_MANY_RECIPIENTS;
 			break;
 		case 4:
-			diagnostic_code = 11;
+			diagnostic_code = MAPI_DIAG_PARAMETERS_INVALID;
 			break;
 		default:
-			diagnostic_code = 17;
+			diagnostic_code = MAPI_DIAG_NO_BILATERAL_AGREEMENT;
 			break;
 		}
 		break;
 	case 6:
 		switch (detail) {
 		case 2:
-			diagnostic_code = 9;
+			diagnostic_code = MAPI_DIAG_PROHIBITED_TO_CONVERT;
 			break;
 		case 3:
-			diagnostic_code = 8;
+			diagnostic_code = MAPI_DIAG_IMPRACTICAL_TO_CONVERT;
 			break;
 		case 4:
-			diagnostic_code = 25;
+			diagnostic_code = MAPI_DIAG_MULTIPLE_INFO_LOSSES;
 			break;
 		case 5:
 			reason_code = 2;
 			break;
 		default:
-			diagnostic_code = 15;
+			diagnostic_code = MAPI_DIAG_CONTENT_TYPE_UNSUPPORTED;
 			break;
 			
 		}
@@ -3159,16 +3155,16 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 	case 7:
 		switch (detail) {
 		case 1:
-			diagnostic_code = 29;
+			diagnostic_code = MAPI_DIAG_SUBMISSION_PROHIBITED;
 			break;
 		case 2:
-			diagnostic_code = 28;
+			diagnostic_code = MAPI_DIAG_EXPANSION_PROHIBITED;
 			break;
 		case 3:
-			diagnostic_code = 26;
+			diagnostic_code = MAPI_DIAG_REASSIGNMENT_PROHIBITED;
 			break;
 		default:
-			diagnostic_code = 46;
+			diagnostic_code = MAPI_DIAG_SECURE_MESSAGING_ERROR;
 			break;
 		}
 		break;
@@ -4899,7 +4895,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			}
 		} else {
 			tmp_len = 0;
-			if (*(uint32_t*)pvalue & 0x00000001) {
+			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_DR) {
 				if (0 != tmp_len) {
 					strcpy(tmp_field + tmp_len, ", ");
 					tmp_len += 2;
@@ -4907,7 +4903,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 				strcpy(tmp_field + tmp_len, "DR");
 				tmp_len += 2;
 			}
-			if (*(uint32_t*)pvalue & 0x00000002) {
+			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_NDR) {
 				if (0 != tmp_len) {
 					strcpy(tmp_field + tmp_len, ", ");
 					tmp_len += 2;
@@ -4915,7 +4911,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 				strcpy(tmp_field + tmp_len, "NDR");
 				tmp_len += 3;
 			}
-			if (*(uint32_t*)pvalue & 0x00000004) {
+			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_RN) {
 				if (0 != tmp_len) {
 					strcpy(tmp_field + tmp_len, ", ");
 					tmp_len += 2;
@@ -4923,7 +4919,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 				strcpy(tmp_field + tmp_len, "RN");
 				tmp_len += 2;
 			}
-			if (*(uint32_t*)pvalue & 0x00000008) {
+			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_NRN) {
 				if (0 != tmp_len) {
 					strcpy(tmp_field + tmp_len, ", ");
 					tmp_len += 2;
@@ -4931,7 +4927,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 				strcpy(tmp_field + tmp_len, "NRN");
 				tmp_len += 3;
 			}
-			if (*(uint32_t*)pvalue & 0x00000010) {
+			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_OOF) {
 				if (0 != tmp_len) {
 					strcpy(tmp_field + tmp_len, ", ");
 					tmp_len += 2;
@@ -4939,7 +4935,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 				strcpy(tmp_field + tmp_len, "OOF");
 				tmp_len += 3;
 			}
-			if (*(uint32_t*)pvalue & 0x00000020) {
+			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_AUTOREPLY) {
 				if (0 != tmp_len) {
 					strcpy(tmp_field + tmp_len, ", ");
 					tmp_len += 2;

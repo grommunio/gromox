@@ -436,7 +436,7 @@ gxerr_t message_object::save()
 						    pmessage->plogon->get_dir(),
 						    pmessage->instance_id, pmsgctnt))
 							return GXERR_CALL_FAILED;
-						auto tmp_status = *mstatus | MESSAGE_STATUS_IN_CONFLICT;
+						auto tmp_status = *mstatus | MSGSTATUS_IN_CONFLICT;
 						TAGGED_PROPVAL tmp_propval;
 						TPROPVAL_ARRAY tmp_propvals;
 						PROBLEM_ARRAY tmp_problems;

@@ -520,9 +520,8 @@ uint32_t rop_setmessagestatus(uint64_t message_id, uint32_t message_status,
 	}
 	original_status = *(uint32_t*)pvalue;
 	new_status = message_status & status_mask;
-	if (new_status & MESSAGE_STATUS_IN_CONFLICT) {
+	if (new_status & MSGSTATUS_IN_CONFLICT)
 		return ecAccessDenied;
-	}
 	new_status |= original_status & ~(status_mask & ~new_status);
 	*pmessage_status = new_status;
 	propval.proptag = PROP_TAG_MESSAGESTATUS;

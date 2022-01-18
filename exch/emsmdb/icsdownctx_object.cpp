@@ -941,7 +941,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	if (NULL == pstatus) {
 		return FALSE;
 	}
-	if (*pstatus & MESSAGE_STATUS_IN_CONFLICT) {
+	if (*pstatus & MSGSTATUS_IN_CONFLICT) {
 		if (0 == (pctx->sync_flags & SYNC_FLAG_NOFOREIGNIDENTIFIERS)) {
 			if (!exmdb_client_get_folder_property(pctx->pstream->plogon->get_dir(),
 			    0, folder_id, PR_SOURCE_KEY, &pvalue))
