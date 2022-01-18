@@ -237,10 +237,7 @@ BOOL MAIL::serialize(STREAM *pstream)
 #endif
 	
 	pnode = simple_tree_get_root(&pmail->tree);
-	if (NULL == pnode) {
-		return FALSE;
-	}
-	return mime_serialize((MIME*)(pnode->pdata), pstream);
+	return pnode != nullptr ? mime_serialize(static_cast<MIME *>(pnode->pdata), pstream) : false;
 }
 
 /*
@@ -257,10 +254,7 @@ BOOL MAIL::to_file(int fd)
 	auto pmail = this;
 	SIMPLE_TREE_NODE *pnode;
 	pnode = simple_tree_get_root(&pmail->tree);
-	if (NULL == pnode) {
-		return FALSE;
-	}
-	return mime_to_file((MIME*)(pnode->pdata), fd);
+	return pnode != nullptr ? mime_to_file(static_cast<MIME *>(pnode->pdata), fd) : false;
 }
 
 /*
@@ -283,10 +277,7 @@ BOOL MAIL::to_ssl(SSL *ssl)
 #endif
 	
 	pnode = simple_tree_get_root(&pmail->tree);
-	if (NULL == pnode) {
-		return FALSE;
-	}
-	return mime_to_ssl((MIME*)(pnode->pdata), ssl);
+	return pnode != nullptr ? mime_to_ssl(static_cast<MIME *>(pnode->pdata), ssl) : false;
 }
 
 /*
@@ -302,10 +293,7 @@ BOOL MAIL::check_dot()
 	auto pmail = this;
 	SIMPLE_TREE_NODE *pnode;
 	pnode = simple_tree_get_root(&pmail->tree);
-	if (NULL == pnode) {
-		return FALSE;
-	}
-	return mime_check_dot((MIME*)(pnode->pdata));
+	return pnode != nullptr ? mime_check_dot(static_cast<MIME *>(pnode->pdata)) : false;
 }
 
 /*
@@ -320,10 +308,7 @@ ssize_t MAIL::get_length()
 	auto pmail = this;
 	SIMPLE_TREE_NODE *pnode;
 	pnode = simple_tree_get_root(&pmail->tree);
-	if (NULL == pnode) {
-		return -1;
-	}
-	return mime_get_length((MIME*)(pnode->pdata));
+	return pnode != nullptr ? mime_get_length(static_cast<MIME *>(pnode->pdata)) : -1;
 }
 
 MAIL::~MAIL()
@@ -371,10 +356,7 @@ MIME *MAIL::get_head()
 	auto pmail = this;
 	SIMPLE_TREE_NODE *pnode;
 	pnode = simple_tree_get_root(&pmail->tree);
-	if (NULL == pnode) {
-		return NULL;
-	}
-	return (MIME*)(pnode->pdata);
+	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata) : nullptr;
 }
 
 static BOOL mail_check_ascii_printable(const char *astring)
