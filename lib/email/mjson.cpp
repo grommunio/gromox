@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 #include <libHX/ctype_helper.h>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -75,10 +76,6 @@ struct BUILD_PARAM {
 }
 
 static void mjson_enum_delete(SIMPLE_TREE_NODE *pnode);
-
-static void mjson_enum_id(SIMPLE_TREE_NODE *pnode, void *param);
-
-static void mjson_enum_none(SIMPLE_TREE_NODE *pnode, void *param);
 static BOOL mjson_record_value(MJSON *pjson, char *tag, char *value, size_t length);
 static BOOL mjson_parse_array(MJSON *pjson, char *value, int length, int type);
 
@@ -410,7 +407,10 @@ BOOL MJSON::retrieve(char *digest_buff,
 	}
 	/* check for NONE mime in tree */
 	b_none = FALSE;
-	simple_tree_enum_from_node(pnode, mjson_enum_none, &b_none);
+	simple_tree_enum_from_node(pnode, [&](const SIMPLE_TREE_NODE *pnode) {
+		if (static_cast<MJSON_MIME *>(pnode->pdata)->mime_type == MJSON_MIME_NONE)
+			b_none = TRUE;
+	});
 	if (TRUE == b_none) {
 		return FALSE;
 	}
@@ -419,20 +419,6 @@ BOOL MJSON::retrieve(char *digest_buff,
 		strcpy(pjson->path, path);
 	}
 	return TRUE;
-}
-
-static void mjson_enum_none(SIMPLE_TREE_NODE *pnode, void *param)
-{
-	
-#ifdef _DEBUG_UMTA
-    if (NULL == pnode || NULL == param) {
-		debug_info("[mail]: NULL pointer in mjson_enum_none");
-        return;
-    }
-#endif
-	if (MJSON_MIME_NONE == ((MJSON_MIME*)pnode->pdata)->mime_type) {
-		*(BOOL*)param = TRUE;
-	}
 }
 
 void MJSON::enum_mime(MJSON_MIME_ENUM enum_func, void *param)
@@ -444,8 +430,11 @@ void MJSON::enum_mime(MJSON_MIME_ENUM enum_func, void *param)
         return;
     }
 #endif
-    simple_tree_enum_from_node(simple_tree_get_root(&pjson->tree),
-        (SIMPLE_TREE_ENUM)enum_func, param);
+	simple_tree_enum_from_node(simple_tree_get_root(&pjson->tree),
+	[&](SIMPLE_TREE_NODE *stn) {
+		auto m = containerof(stn, MJSON_MIME, node);
+		enum_func(m, param);
+	});
 }
 
 size_t MJSON_MIME::get_length(unsigned int param) const
@@ -530,32 +519,14 @@ int MJSON::seek_fd(const char *id, int whence)
 MJSON_MIME *MJSON::get_mime(const char *id)
 {
 	ENUM_PARAM enum_param = {id};
-	simple_tree_enum_from_node(simple_tree_get_root(&tree), mjson_enum_id, &enum_param);
+	simple_tree_enum_from_node(simple_tree_get_root(&tree), [&](const SIMPLE_TREE_NODE *nd) {
+		if (enum_param.pmime != nullptr)
+			return;
+		auto m = static_cast<MJSON_MIME *>(nd->pdata);
+		if (strcmp(m->id, enum_param.id) == 0)
+			enum_param.pmime = m;
+	});
 	return enum_param.pmime;
-}
-
-static void mjson_enum_id(SIMPLE_TREE_NODE *pnode, void *param)
-{
-	MJSON_MIME *pmime;
-	ENUM_PARAM *penum_param;
-
-#ifdef _DEBUG_UMTA
-    if (NULL == pnode || NULL == param) {
-        debug_info("[mail]: NULL pointer in mjson_enum_id");
-        return;
-    }
-#endif
-	
-	penum_param = (ENUM_PARAM*)param;
-	if (NULL != penum_param->pmime) {
-		return;
-	}
-	
-	pmime = (MJSON_MIME*)pnode->pdata;
-	
-	if (0 == strcmp(pmime->id, penum_param->id)) {
-		penum_param->pmime = pmime;
-	}
 }
 
 static BOOL mjson_record_value(MJSON *pjson, char *tag,

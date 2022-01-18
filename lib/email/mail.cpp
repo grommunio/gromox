@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <memory>
 #include <utility>
+#include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/mail.hpp>
@@ -21,8 +22,6 @@ enum {
 
 static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME* pmime_parent,
 	char *ptr_begin, char *ptr_end);
-
-static void mail_enum_tags(SIMPLE_TREE_NODE *pnode, void *param);
 static void mail_enum_delete(SIMPLE_TREE_NODE *pnode);
 static BOOL mail_check_ascii_printable(const char *astring);
 static void mail_enum_text_mime_charset(MIME *, void *);
@@ -627,8 +626,14 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
 	b_tags[TAG_ENCRYPT] = FALSE;
 	
 	simple_tree_enum_from_node(simple_tree_get_root(&pmail->tree),
-		mail_enum_tags, b_tags);
-	
+	[&](SIMPLE_TREE_NODE *n) {
+		char temp_buff[1024];
+		auto m = static_cast<MIME *>(n->pdata);
+		if (strcasecmp("multipart/signed", mime_get_content_type(m)) == 0)
+			b_tags[TAG_SIGNED] = TRUE;
+		if (mime_get_content_param(m, "smime-type", temp_buff, arsizeof(temp_buff)))
+			b_tags[TAG_ENCRYPT] = TRUE;
+	});
 	
 	if (TRUE == b_tags[TAG_SIGNED]) {
 		memcpy(pbuff + buff_len, ",\"signed\":1", 11);
@@ -741,31 +746,6 @@ static void mail_enum_html_charset(MIME *pmime, void *param)
 	}
 }
 
-static void mail_enum_tags(SIMPLE_TREE_NODE *pnode, void *param)
-{
-	MIME *pmime;
-	BOOL *b_tags;
-	char temp_buff[1024];
-
-#ifdef _DEBUG_UMTA
-	if (param == nullptr) {
-		debug_info("[mail]: NULL pointer in mail_enum_tags");
-		return;
-	}
-#endif
-	
-	b_tags = (BOOL*)param;
-	pmime = (MIME*)(pnode->pdata);
-
-	if (0 == strcasecmp("multipart/signed", mime_get_content_type(pmime))) {
-		b_tags[TAG_SIGNED] = TRUE;
-	}
-	if (TRUE == mime_get_content_param(pmime, "smime-type", temp_buff, 1024)) {
-		b_tags[TAG_ENCRYPT] = TRUE;
-	}
-
-}
-
 /*
  *  add a child mime to pbase_mime
  *  @param
@@ -818,8 +798,11 @@ void MAIL::enum_mime(MAIL_MIME_ENUM enum_func, void *param)
         return;
     }
 #endif
-    simple_tree_enum_from_node(simple_tree_get_root(&pmail->tree),
-        (SIMPLE_TREE_ENUM)enum_func, param);
+	simple_tree_enum_from_node(simple_tree_get_root(&pmail->tree),
+	[&](SIMPLE_TREE_NODE *stn) {
+		auto m = containerof(stn, MIME, node);
+		enum_func(m, param);
+	});
 }
 
 static void mail_enum_delete(SIMPLE_TREE_NODE *pnode)

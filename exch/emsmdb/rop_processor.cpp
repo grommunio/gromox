@@ -87,17 +87,6 @@ LOGMAP *rop_processor_create_logmap()
 	return plogmap;
 }
 
-static void rop_processor_enum_objnode(SIMPLE_TREE_NODE *pnode,
-	void *pparam)
-{
-	LOGON_ITEM *plogitem;
-	OBJECT_NODE *pobjnode;
-	
-	plogitem = (LOGON_ITEM*)pparam;
-	pobjnode = (OBJECT_NODE*)pnode->pdata;
-	plogitem->phash->remove(pobjnode->handle);
-}
-
 static void rop_processor_free_object(void *pobject, int type)
 {
 	switch (type) {
@@ -173,8 +162,9 @@ static void rop_processor_release_objnode(
 	} else {
 		b_root = FALSE;
 	}
-	simple_tree_enum_from_node(&pobjnode->node,
-		rop_processor_enum_objnode, plogitem);
+	simple_tree_enum_from_node(&pobjnode->node, [&](const SIMPLE_TREE_NODE *pnode) {
+		plogitem->phash->remove(static_cast<const OBJECT_NODE *>(pnode->pdata)->handle);
+	});
 	simple_tree_destroy_node(&plogitem->tree,
 		&pobjnode->node, rop_processor_free_objnode);
 	if (TRUE == b_root) {

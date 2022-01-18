@@ -158,17 +158,6 @@ static void object_tree_free_root(root_object *prootobj)
 	free(prootobj);
 }
 
-static void object_tree_enum_objnode(
-	SIMPLE_TREE_NODE *pnode, void *pparam)
-{
-	OBJECT_TREE *pobjtree;
-	OBJECT_NODE *pobjnode;
-	
-	pobjtree = (OBJECT_TREE*)pparam;
-	pobjnode = (OBJECT_NODE*)pnode->pdata;
-	pobjtree->m_hash.erase(pobjnode->handle);
-}
-
 static void object_tree_free_object(void *pobject, uint8_t type)
 {
 	switch (type) {
@@ -222,8 +211,9 @@ static void object_tree_free_objnode(SIMPLE_TREE_NODE *pnode)
 static void object_tree_release_objnode(
 	OBJECT_TREE *pobjtree, OBJECT_NODE *pobjnode)
 {	
-	simple_tree_enum_from_node(&pobjnode->node,
-		object_tree_enum_objnode, pobjtree);
+	simple_tree_enum_from_node(&pobjnode->node, [&](const SIMPLE_TREE_NODE *n) {
+		pobjtree->m_hash.erase(static_cast<const OBJECT_NODE *>(n->pdata)->handle);
+	});
 	simple_tree_destroy_node(&pobjtree->tree,
 		&pobjnode->node, object_tree_free_objnode);
 }

@@ -601,26 +601,6 @@ static BOOL ab_tree_load_tree(int domain_id,
 	return FALSE;
 }
 
-static void ab_tree_enum_nodes(SIMPLE_TREE_NODE *pnode, void *pparam)
-{
-	uint8_t node_type;
-	SINGLE_LIST_NODE *psnode;
-	
-	node_type = ab_tree_get_node_type(pnode);
-	if (node_type > 0x80) {
-		return;
-	}
-	if (NULL != pnode->pdata) {
-		return;	
-	}
-	psnode = ab_tree_get_snode();
-	if (NULL == psnode) {
-		return;
-	}
-	psnode->pdata = pnode;
-	single_list_append_as_tail((SINGLE_LIST*)pparam, psnode);
-}
-
 static BOOL ab_tree_load_base(AB_BASE *pbase)
 {
 	int i, num;
@@ -674,8 +654,16 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 		if (NULL == proot) {
 			continue;
 		}
-		simple_tree_enum_from_node(proot,
-			ab_tree_enum_nodes, &pbase->gal_list);
+		simple_tree_enum_from_node(proot, [&](SIMPLE_TREE_NODE *pnode) {
+			auto node_type = ab_tree_get_node_type(pnode);
+			if (node_type > 0x80 || pnode->pdata != nullptr)
+				return;
+			auto psnode = ab_tree_get_snode();
+			if (psnode == nullptr)
+				return;
+			psnode->pdata = pnode;
+			single_list_append_as_tail(&pbase->gal_list, psnode);
+		});
 	}
 	num = single_list_get_nodes_num(&pbase->gal_list);
 	if (num <= 1) {
@@ -905,31 +893,6 @@ static bool ab_tree_md5_path(const char *path, uint64_t *pdgt)
 	return true;
 }
 
-static void ab_tree_enum_guid(SIMPLE_TREE_NODE *pnode, void *pparam)
-{
-	uint64_t dgt;
-	GUID_ENUM *penum;
-	char temp_path[512];
-	auto pabnode = containerof(pnode, AB_NODE, stree);
-	
-	penum = (GUID_ENUM*)pparam;
-	if (NULL != penum->pabnode) {
-		return;
-	}
-	if (pabnode->node_type != penum->node_type) {
-		return;
-	}
-	if (pabnode->id != penum->item_id) {
-		return;
-	}
-	ab_tree_node_to_path(pnode, temp_path, sizeof(temp_path));
-	if (!ab_tree_md5_path(temp_path, &dgt))
-		return;
-	if (dgt == penum->dgt) {
-		penum->pabnode = pabnode;
-	}
-}
-
 const SIMPLE_TREE_NODE *ab_tree_guid_to_node(AB_BASE *pbase, GUID guid)
 {
 	int domain_id;
@@ -966,7 +929,18 @@ const SIMPLE_TREE_NODE *ab_tree_guid_to_node(AB_BASE *pbase, GUID guid)
 	if (NULL == ptnode) {
 		return NULL;
 	}
-	simple_tree_enum_from_node(ptnode, ab_tree_enum_guid, &tmp_enum);
+	simple_tree_enum_from_node(ptnode, [&](SIMPLE_TREE_NODE *pnode) {
+		char temp_path[512];
+		auto abn = containerof(pnode, AB_NODE, stree);
+		if (tmp_enum.pabnode != nullptr ||
+		    abn->node_type != tmp_enum.node_type ||
+		    abn->id != tmp_enum.item_id)
+			return;
+		ab_tree_node_to_path(pnode, temp_path, arsizeof(temp_path));
+		uint64_t dgt;
+		if (ab_tree_md5_path(temp_path, &dgt) && dgt == tmp_enum.dgt)
+			tmp_enum.pabnode = abn;
+	});
 	return &tmp_enum.pabnode->stree;
 }
 

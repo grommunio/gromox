@@ -647,26 +647,6 @@ static BOOL ab_tree_load_tree(int domain_id,
 	return FALSE;
 }
 
-static void ab_tree_enum_nodes(SIMPLE_TREE_NODE *pnode, void *pparam)
-{
-	uint8_t node_type;
-	SINGLE_LIST_NODE *psnode;
-	
-	node_type = ab_tree_get_node_type(pnode);
-	if (node_type > 0x80) {
-		return;
-	}
-	if (NULL != pnode->pdata) {
-		return;	
-	}
-	psnode = ab_tree_get_snode();
-	if (NULL == psnode) {
-		return;
-	}
-	psnode->pdata = pnode;
-	single_list_append_as_tail((SINGLE_LIST*)pparam, psnode);
-}
-
 static BOOL ab_tree_load_base(AB_BASE *pbase)
 {
 	int i, num;
@@ -719,8 +699,16 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 		if (NULL == proot) {
 			continue;
 		}
-		simple_tree_enum_from_node(proot,
-			ab_tree_enum_nodes, &pbase->gal_list);
+		simple_tree_enum_from_node(proot, [&](SIMPLE_TREE_NODE *pnode) {
+			auto node_type = ab_tree_get_node_type(pnode);
+			if (node_type > 0x80 || pnode->pdata != nullptr)
+				return;
+			auto psnode = ab_tree_get_snode();
+			if (psnode == nullptr)
+				return;
+			psnode->pdata = pnode;
+			single_list_append_as_tail(&pbase->gal_list, psnode);
+		});
 	}
 	num = single_list_get_nodes_num(&pbase->gal_list);
 	if (num <= 1) {

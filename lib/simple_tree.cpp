@@ -4,9 +4,6 @@
 #include <gromox/simple_tree.hpp>
 #include <cstring>
 
-static void simple_tree_node_enum(SIMPLE_TREE_NODE *pnode, 
-	SIMPLE_TREE_ENUM enum_func, void *param);
-
 static void simple_tree_destroy_group(SIMPLE_TREE *ptree, 
 	SIMPLE_TREE_NODE *pnode, SIMPLE_TREE_DELETE del_func);
 
@@ -404,52 +401,6 @@ static void simple_tree_destroy_group(SIMPLE_TREE *ptree,
 		pnode_temp->node_children  = 0;
 		del_func(pnode_temp);
 		ptree->nodes_num --;
-	} while (NULL != pnode);
-}
-
-/*
- *	enumerating the nodes in the tree, from pnode on
- *	@param
- *		pnode [in]		the node where we begin from
- *		enum_func		callback function
- *		param [in]		parameter pointer for callback function
- */
-void simple_tree_enum_from_node(SIMPLE_TREE_NODE *pnode,
-	SIMPLE_TREE_ENUM enum_func, void *param)
-{
-	SIMPLE_TREE_NODE *pnode_child;
-
-#ifdef _DEBUG_UMTA
-	if (NULL == pnode || NULL == enum_func) {	
-		debug_info("[simple_tree]: NULL pointer in "
-					"simple_tree_enum_from_node");
-		return;
-	}
-#endif
-	enum_func(pnode, param);
-	pnode_child = pnode->pnode_child;
-	if (NULL != pnode_child) {
-		simple_tree_node_enum(pnode_child, enum_func, param);
-	}
-
-}
-
-static void simple_tree_node_enum(SIMPLE_TREE_NODE *pnode, 
-	SIMPLE_TREE_ENUM enum_func, void *param)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pnode || NULL == enum_func) {	
-		debug_info("[simple_tree]: NULL pointer in "
-					"simple_tree_node_enum");
-		return;
-	}
-#endif
-	do {
-		enum_func(pnode, param);
-		if (NULL != pnode->pnode_child) {
-			simple_tree_node_enum(pnode->pnode_child, enum_func, param);
-		}
-		pnode = pnode->pnode_sibling;
 	} while (NULL != pnode);
 }
 

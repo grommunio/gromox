@@ -42,8 +42,21 @@ BOOL simple_tree_add_child(SIMPLE_TREE *ptree,
 	SIMPLE_TREE_NODE *pnode_base, SIMPLE_TREE_NODE *pnode, int opt);
 void simple_tree_destroy_node(SIMPLE_TREE *ptree,
 	SIMPLE_TREE_NODE *pnode, SIMPLE_TREE_DELETE del_func);
-void simple_tree_enum_from_node(SIMPLE_TREE_NODE *pnode,
-	SIMPLE_TREE_ENUM enum_func, void *param);
+template<typename C, typename F> void simple_tree_node_enum(C *n, F &&f)
+{
+	do {
+		f(n);
+		if (n->pnode_child != nullptr)
+			simple_tree_node_enum(n->pnode_child, f);
+		n = n->pnode_sibling;
+	} while (n != nullptr);
+}
+template<typename C, typename F> void simple_tree_enum_from_node(C *n, F &&f)
+{
+	f(n);
+	if (n->pnode_child != nullptr)
+		simple_tree_node_enum(n->pnode_child, f);
+}
 BOOL simple_tree_move_node_to_child(SIMPLE_TREE *ptree_dst, 
 	SIMPLE_TREE_NODE *pnode_dst, SIMPLE_TREE *ptree_src,
 	SIMPLE_TREE_NODE *pnode_src, int opt);
