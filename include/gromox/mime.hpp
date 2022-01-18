@@ -21,7 +21,9 @@ enum{
 
 using MIME_FIELD_ENUM = BOOL (*)(const char *, char *, void *);
 
-struct MIME {
+struct GX_EXPORT MIME {
+	inline size_t get_children_num() const { return simple_tree_node_get_children_num(&node); }
+
 	SIMPLE_TREE_NODE node;
 	int			mime_type;
 	char 		content_type[VALUE_LEN];
@@ -52,7 +54,6 @@ extern GX_EXPORT BOOL mime_write_mail(MIME *, MAIL *);
 BOOL mime_read_head(MIME *pmime, char *out_buff, size_t *plength);
 BOOL mime_read_content(MIME *pmime, char *out_buff, size_t *plength);
 BOOL mime_set_content_type(MIME *pmime, const char *content_type);
-extern GX_EXPORT const char *mime_get_content_type(const MIME *);
 BOOL mime_enum_field(MIME *pmime, MIME_FIELD_ENUM enum_func, void *pparam);
 BOOL mime_get_field(MIME *pmime, const char *tag, char *value, int length);
 int mime_get_field_num(MIME *pmime, const char *tag);
@@ -71,10 +72,8 @@ BOOL mime_to_file(MIME *pmime, int fd);
 BOOL mime_to_ssl(MIME *pmime, SSL *ssl);
 BOOL mime_check_dot(MIME *pmime);
 extern ssize_t mime_get_length(MIME *);
-extern GX_EXPORT int mime_get_type(const MIME *);
 BOOL mime_get_filename(MIME *pmime, char *file_name);
 void mime_copy(MIME *pmime_src, MIME *pmime_dst);
 MIME* mime_get_child(MIME *pmime);
 MIME* mime_get_parent(MIME *pmime);
 extern MIME *mime_get_sibling(MIME *);
-extern GX_EXPORT size_t mime_get_children_num(const MIME *);

@@ -1115,50 +1115,44 @@ static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
 	
 	if (0 == strcasecmp(field, "fax")) {
 		auto pmime = pmail->get_head();
-		if (0 != strcasecmp("multipart/mixed",
-			mime_get_content_type(pmime))) {
+		if (strcasecmp(pmime->content_type, "multipart/mixed") != 0)
 			return TRUE;
-		}
 		pmime = mime_get_child(pmime);
 		if (NULL == pmime) {
 			return TRUE;
 		}
-		if (0 != strcasecmp("text/html",
-			mime_get_content_type(pmime))) {
+		if (strcasecmp(pmime->content_type, "text/html") != 0)
 			return TRUE;
-		}
 		pmime = mime_get_sibling(pmime);
 		if (NULL == pmime) {
 			return TRUE;
 		}
-		if (0 != strcasecmp("image/tiff",
-			mime_get_content_type(pmime))) {
+		if (strcasecmp(pmime->content_type, "image/tiff") != 0)
 			return TRUE;
-		}
 		mclass = "IPM.Note.Microsoft.Fax";
 	} else if (0 == strcasecmp(field, "fax-ca")) {
 		mclass = "IPM.Note.Microsoft.Fax.CA";
 	} else if (0 == strcasecmp(field, "missedcall")) {
 		auto pmime = pmail->get_head();
-		auto cttype = mime_get_content_type(pmime);
+		auto cttype = pmime->content_type;
 		if (!cttype_is_voiceaudio(cttype))
 			return TRUE;
 		mclass = "IPM.Note.Microsoft.Missed.Voice";
 	} else if (0 == strcasecmp(field, "voice-uc")) {
 		auto pmime = pmail->get_head();
-		auto cttype = mime_get_content_type(pmime);
+		auto cttype = pmime->content_type;
 		if (!cttype_is_voiceaudio(cttype))
 			return TRUE;
 		mclass = "IPM.Note.Microsoft.Conversation.Voice";
 	} else if (0 == strcasecmp(field, "voice-ca")) {
 		auto pmime = pmail->get_head();
-		auto cttype = mime_get_content_type(pmime);
+		auto cttype = pmime->content_type;
 		if (!cttype_is_voiceaudio(cttype))
 			return TRUE;
 		mclass = "IPM.Note.Microsoft.Voicemail.UM.CA";
 	} else if (0 == strcasecmp(field, "voice")) {
 		auto pmime = pmail->get_head();
-		auto cttype = mime_get_content_type(pmime);
+		auto cttype = pmime->content_type;
 		if (!cttype_is_voiceaudio(cttype))
 			return TRUE;
 		mclass = "IPM.Note.Microsoft.Voicemail.UM";
@@ -1775,7 +1769,7 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 	} else {
 		gx_strlcpy(best_charset, charset, GX_ARRAY_SIZE(best_charset));
 	}
-	content_type = mime_get_content_type(pmime);
+	content_type = pmime->content_type;
 	if (0 == strcasecmp(content_type, "text/html")) {
 		tmp_int32 = oxcmail_charset_to_cpid(best_charset);
 		if (pproplist->set(PR_INTERNET_CPID, &tmp_int32) != 0) {
@@ -1983,23 +1977,21 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 	if (NULL == psub) {
 		return FALSE;
 	}
-	if (0 == strcasecmp("application/applefile",
-		mime_get_content_type(psub))) {
+	if (strcasecmp(psub->content_type, "application/applefile") == 0)
 		phmime = psub;
-	} else {
+	else
 		pdmime = psub;
-	}
 	psub = mime_get_sibling(psub);
 	if (NULL == psub) {
 		return FALSE;
 	}
-	if (phmime != nullptr) {
+	if (phmime != nullptr)
 		pdmime = psub;
-	} else if (strcasecmp("application/applefile", mime_get_content_type(psub)) == 0) {
+	else if (strcasecmp(psub->content_type, "application/applefile") == 0)
 		phmime = psub;
-	} else {
+	else
 		return FALSE;
-	}
+
 	tmp_bin.cb = sizeof(MACBINARY_ENCODING);
 	tmp_bin.pb = deconst(MACBINARY_ENCODING);
 	if (pattachment->proplist.set(PR_ATTACH_ENCODING, &tmp_bin) != 0)
@@ -2009,7 +2001,8 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 	propname.pname = deconst(PidNameAttachmentMacContentType);
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 		return FALSE;
-	if (pattachment->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid), mime_get_content_type(pdmime)) != 0)
+	if (pattachment->proplist.set(PROP_TAG(PT_UNICODE, *plast_propid),
+	    pdmime->content_type) != 0)
 		return FALSE;
 	(*plast_propid) ++;
 	auto rdlength = mime_get_length(phmime);
@@ -2319,16 +2312,12 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		pmime == pmime_enum->preport) {
 		return;
 	}
-	if (NULL != mime_get_parent(pmime) && 0 == strcasecmp(
-		"multipart/appledouble", mime_get_content_type(
-		mime_get_parent(pmime)))) {
+	if (mime_get_parent(pmime) != nullptr &&
+	    strcasecmp(mime_get_parent(pmime)->content_type, "multipart/appledouble") == 0)
 		return;
-	}
-	if (MULTIPLE_MIME == mime_get_type(pmime)) {
-		if (0 != strcasecmp("multipart/appledouble",
-			mime_get_content_type(pmime))) {
+	if (pmime->mime_type == MULTIPLE_MIME) {
+		if (strcasecmp(pmime->content_type, "multipart/appledouble") != 0)
 			return;
-		}
 		pmime1 = pmime;
 		pmime = mime_get_child(pmime);
 		if (NULL == pmime) {
@@ -2350,7 +2339,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		pmime_enum->b_result = FALSE;
 		return;
 	}
-	auto cttype = mime_get_content_type(pmime);
+	auto cttype = pmime->content_type;
 	auto newval = strcasecmp(cttype, "application/ms-tnef") == 0 ?
 	              "application/octet-stream" : cttype;
 	if (pattachment->proplist.set(PR_ATTACH_MIME_TAG, newval) != 0) {
@@ -2488,13 +2477,10 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	if (b_inline && !cttype_is_image(cttype))
 		b_inline = false;
 	if (b_inline) {
-		if (NULL == mime_get_parent(pmime) ||
-			(0 != strcasecmp(mime_get_content_type(
-			mime_get_parent(pmime)), "multipart/related") &&
-			0 != strcasecmp(mime_get_content_type(
-			mime_get_parent(pmime)), "multipart/mixed"))) {
+		if (mime_get_parent(pmime) == nullptr ||
+		    (strcasecmp(mime_get_parent(pmime)->content_type, "multipart/related") != 0 &&
+		    strcasecmp(mime_get_parent(pmime)->content_type, "multipart/mixed") != 0))
 			b_inline = false;
-		}
 	}
 	if (b_inline) {
 		tmp_int32 = ATT_MHTML_REF;
@@ -3249,10 +3235,8 @@ static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 		return NULL;
 	}
 	do {
-		if (0 == strcasecmp("message/delivery-status",
-			mime_get_content_type(pmime))) {
+		if (strcasecmp(pmime->content_type, "message/delivery-status") == 0)
 			break;
-		}
 	} while ((pmime = mime_get_sibling(pmime)) != nullptr);
 	if (NULL == pmime) {
 		return NULL;
@@ -3380,17 +3364,14 @@ static MIME* oxcmail_parse_mdn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 	char tmp_buff[256*1024];
 	
 	auto pmime = pmail->get_head();
-	if (0 != strcasecmp("message/disposition-notification",
-		mime_get_content_type(pmime))) {
+	if (strcasecmp(pmime->content_type, "message/disposition-notification") != 0) {
 		pmime = mime_get_child(pmime);
 		if (NULL == pmime) {
 			return NULL;
 		}
 		do {
-			if (0 == strcasecmp("message/disposition-notification",
-				mime_get_content_type(pmime))) {
+			if (strcasecmp(pmime->content_type, "message/disposition-notification") == 0)
 				break;
-			}
 		} while ((pmime = mime_get_sibling(pmime)) != nullptr);
 	}
 	if (NULL == pmime) {
@@ -3450,7 +3431,6 @@ static BOOL oxcmail_parse_smime_message(
 	size_t offset;
 	BINARY tmp_bin;
 	uint32_t tmp_int32;
-	const char *content_type;
 	ATTACHMENT_CONTENT *pattachment;
 	
 	auto phead = pmail->get_head();
@@ -3467,7 +3447,7 @@ static BOOL oxcmail_parse_smime_message(
 	if (NULL == pcontent) {
 		return FALSE;
 	}
-	content_type = mime_get_content_type(phead);
+	auto content_type = phead->content_type;
 	if (0 == strcasecmp(content_type, "multipart/signed")) {
 		memcpy(pcontent, "Content-Type: ", 14);
 		offset = 14;
@@ -3700,7 +3680,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		return NULL;
 	}
 
-	auto head_ct = mime_get_content_type(phead);
+	auto head_ct = phead->content_type;
 	if (strcasecmp(head_ct, "application/ms-tnef") == 0 &&
 	    tnef_vfy_get_field(phead, tmp_buff, arsizeof(tmp_buff))) {
 	auto pmsg1 = oxcmail_parse_tnef(phead, alloc, get_propids);
@@ -3744,11 +3724,11 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	    strcasecmp("message/disposition-notification", head_ct) == 0)
 		mime_enum.preport = oxcmail_parse_mdn(pmail, pmsg);
 	if (strcasecmp(head_ct, "multipart/mixed") == 0) {
-		if (mime_get_children_num(phead) == 2 &&
+		if (phead->get_children_num() == 2 &&
 		    (pmime = mime_get_child(phead)) != nullptr &&
 		    (pmime1 = mime_get_sibling(pmime)) != nullptr &&
-		    strcasecmp("text/plain", mime_get_content_type(pmime)) == 0 &&
-		    strcasecmp("application/ms-tnef", mime_get_content_type(pmime1)) == 0 &&
+		    strcasecmp(pmime->content_type, "text/plain") == 0 &&
+		    strcasecmp(pmime1->content_type, "application/ms-tnef") == 0 &&
 		    tnef_vfy_get_field(phead, tmp_buff, arsizeof(tmp_buff))) {
 		auto pmsg1 = oxcmail_parse_tnef(pmime1, alloc, get_propids);
 		if (pmsg1 != nullptr) {
@@ -3814,13 +3794,11 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	}
 	b_alternative = FALSE;
 	pmime1 = mime_get_parent(pmime);
-	if (NULL != pmime1 && 0 == strcasecmp(
-		"multipart/alternative",
-		mime_get_content_type(pmime1))) {
+	if (pmime1 != nullptr &&
+	    strcasecmp(pmime1->content_type, "multipart/alternative") == 0)
 		b_alternative = TRUE;
-	}
 	do {
-		auto cttype = mime_get_content_type(pmime);
+		auto cttype = pmime->content_type;
 		if (strcasecmp(cttype, "text/plain") == 0 &&
 		    mime_enum.pplain == nullptr)
 			mime_enum.pplain = pmime;
@@ -3833,11 +3811,10 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		if (strcasecmp(cttype, "text/calendar") == 0 &&
 		    mime_enum.pcalendar == nullptr)
 			mime_enum.pcalendar = pmime;
-		if (TRUE == b_alternative &&
-			MULTIPLE_MIME == mime_get_type(pmime)) {
+		if (b_alternative && pmime->mime_type == MULTIPLE_MIME) {
 			pmime1 = mime_get_child(pmime);
 			while (NULL != pmime1) {
-				cttype = mime_get_content_type(pmime1);
+				cttype = pmime1->content_type;
 				if (strcasecmp(cttype, "text/plain") == 0 &&
 				    mime_enum.pplain == nullptr)
 					mime_enum.pplain = pmime1;

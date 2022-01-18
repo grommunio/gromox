@@ -504,24 +504,6 @@ BOOL mime_set_content_type(MIME *pmime, const char *content_type)
 }
 
 /*
- *	get the content type of the MIME object
- *	@param
- *		pmime [in,out]		indicate the mime object
- *	@return
- *		content type string
- */
-const char *mime_get_content_type(const MIME *pmime)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mime]: NULL pointer found in mime_get_content_type");
-		return NULL;
-	}
-#endif
-	return pmime->content_type;
-}
-
-/*
  *	enumerate the field of MIME object
  *	@param
  *		pmime [in,out]		indicate the MIME object
@@ -2267,8 +2249,7 @@ ssize_t mime_get_mimes_digest(MIME *pmime, const char *id_string,
 			pbuff[buff_len] = ',';
 			buff_len ++;
 		}
-		
-		strcpy(content_type, mime_get_content_type(pmime));
+		strcpy(content_type, pmime->content_type);
 		if (FALSE == mime_check_ascii_printable(content_type)) {
 			strcpy(content_type, "application/octet-stream");
 		}
@@ -2540,7 +2521,7 @@ ssize_t mime_get_structure_digest(MIME *pmime, const char *id_string,
 			pbuff[buff_len] = ',';
 			buff_len ++;
 		}
-		strcpy(content_type, mime_get_content_type(pmime));
+		strcpy(content_type, pmime->content_type);
 		if (FALSE == mime_check_ascii_printable(content_type)) {
 			strcpy(content_type, "multipart/mixed");
 		}
@@ -2613,17 +2594,6 @@ ssize_t mime_get_structure_digest(MIME *pmime, const char *id_string,
 		}
 		return buff_len;
 	}
-}
-
-int mime_get_type(const MIME *pmime)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mime]: NULL pointer found in mime_get_type");
-		return NONE_MIME;
-	}
-#endif
-	return pmime->mime_type;
 }
 
 static BOOL mime_parse_multiple(MIME *pmime)
@@ -2831,15 +2801,4 @@ MIME *mime_get_sibling(MIME *pmime)
 #endif
 	pnode = simple_tree_node_get_sibling(&pmime->node);
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata) : nullptr;
-}
-
-size_t mime_get_children_num(const MIME *pmime)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mime]: NULL pointer found in mime_get_children_num");
-		return 0;
-	}
-#endif
-	return simple_tree_node_get_children_num(&pmime->node);
 }

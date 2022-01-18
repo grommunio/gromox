@@ -629,7 +629,7 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
 	[&](SIMPLE_TREE_NODE *n) {
 		char temp_buff[1024];
 		auto m = static_cast<MIME *>(n->pdata);
-		if (strcasecmp("multipart/signed", mime_get_content_type(m)) == 0)
+		if (strcasecmp(m->content_type, "multipart/signed") == 0)
 			b_tags[TAG_SIGNED] = TRUE;
 		if (mime_get_content_param(m, "smime-type", temp_buff, arsizeof(temp_buff)))
 			b_tags[TAG_ENCRYPT] = TRUE;
