@@ -644,9 +644,9 @@ static BOOL oxcmail_parse_addresses(const char *charset,
 }
 
 static BOOL oxcmail_parse_address(const char *charset,
-	EMAIL_ADDR *paddr, uint32_t proptag1, uint32_t proptag2,
-	uint32_t proptag3, uint32_t proptag4, uint32_t proptag5,
-	 uint32_t proptag6, TPROPVAL_ARRAY *pproplist)
+    EMAIL_ADDR *paddr, uint32_t pr_name, uint32_t pr_addrtype,
+    uint32_t pr_emaddr, uint32_t pr_smtpaddr, uint32_t pr_searchkey,
+    uint32_t pr_entryid, TPROPVAL_ARRAY *pproplist)
 {
 	BINARY tmp_bin;
 	char essdn[1024];
@@ -657,16 +657,17 @@ static BOOL oxcmail_parse_address(const char *charset,
 	if ('\0' != paddr->display_name[0]) {
 		if (TRUE == mime_string_to_utf8(charset,
 			paddr->display_name, utf8_field)) {
-			if (pproplist->set(proptag1, utf8_field) != 0)
+			if (pproplist->set(pr_name, utf8_field) != 0)
 				return false;
 		} else {
-			if (pproplist->set(CHANGE_PROP_TYPE(proptag1, PT_STRING8), paddr->display_name) != 0)
+			if (pproplist->set(CHANGE_PROP_TYPE(pr_name, PT_STRING8),
+			    paddr->display_name) != 0)
 				return false;
 		}
 	} else if ('\0' != paddr->local_part[0] && '\0' != paddr->domain[0]) {
 		snprintf(username, GX_ARRAY_SIZE(username), "%s@%s", paddr->local_part, paddr->domain);
-		uint32_t tag = oxcmail_check_ascii(username) ? proptag1 :
-		                  CHANGE_PROP_TYPE(proptag1, PT_STRING8);
+		uint32_t tag = oxcmail_check_ascii(username) ? pr_name :
+		               CHANGE_PROP_TYPE(pr_name, PT_STRING8);
 		if (pproplist->set(tag, username) != 0)
 			return FALSE;
 	}
@@ -676,9 +677,9 @@ static BOOL oxcmail_parse_address(const char *charset,
 	if (!ok)
 		return TRUE;
 	snprintf(username, GX_ARRAY_SIZE(username), "%s@%s", paddr->local_part, paddr->domain);
-	if (pproplist->set(proptag2, "SMTP") != 0 ||
-	    pproplist->set(proptag3, username) != 0 ||
-	    pproplist->set(proptag4, username) != 0)
+	if (pproplist->set(pr_addrtype, "SMTP") != 0 ||
+	    pproplist->set(pr_emaddr, username) != 0 ||
+	    pproplist->set(pr_smtpaddr, username) != 0)
 		return FALSE;
 	if (FALSE == oxcmail_username_to_essdn(username, essdn, NULL)) {
 		essdn[0] = '\0';
@@ -688,7 +689,7 @@ static BOOL oxcmail_parse_address(const char *charset,
 		tmp_bin.cb = snprintf(tmp_buff, arsizeof(tmp_buff), "EX:%s", essdn) + 1;
 	}
 	tmp_bin.pc = tmp_buff;
-	if (pproplist->set(proptag5, &tmp_bin) != 0)
+	if (pproplist->set(pr_searchkey, &tmp_bin) != 0)
 		return FALSE;
 	tmp_bin.cb = 0;
 	tmp_bin.pc = tmp_buff;
@@ -702,9 +703,7 @@ static BOOL oxcmail_parse_address(const char *charset,
 			return FALSE;
 		}
 	}
-	if (pproplist->set(proptag6, &tmp_bin) != 0)
-		return FALSE;
-	return TRUE;
+	return pproplist->set(pr_entryid, &tmp_bin) == 0 ? TRUE : false;
 }
 
 static BOOL oxcmail_parse_reply_to(const char *charset,
@@ -3474,17 +3473,15 @@ static BOOL oxcmail_parse_smime_message(
 }
 
 static BOOL oxcmail_try_assign_propval(TPROPVAL_ARRAY *pproplist,
-	uint32_t proptag1, uint32_t proptag2)
+    uint32_t pr_normal, uint32_t pr_representing)
 {
-	void *pvalue;
-	
-	if (pproplist->has(proptag1))
+	if (pproplist->has(pr_normal))
 		return TRUE;
-	pvalue = pproplist->getval(proptag2);
+	auto pvalue = pproplist->getval(pr_representing);
 	if (NULL == pvalue) {
 		return TRUE;
 	}
-	return pproplist->set(proptag1, pvalue) == 0 ? TRUE : false;
+	return pproplist->set(pr_normal, pvalue) == 0 ? TRUE : false;
 }
 
 static bool atx_is_hidden(const TPROPVAL_ARRAY &props)
@@ -4066,27 +4063,27 @@ static size_t oxcmail_encode_mime_string(const char *charset,
 }
 
 static BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY *pproplist,
-    EXT_BUFFER_ALLOC alloc, uint32_t proptag1, uint32_t proptag2,
-    uint32_t proptag3, uint32_t proptag4, char *username, size_t ulen)
+    EXT_BUFFER_ALLOC alloc, uint32_t pr_smtpaddr, uint32_t pr_addrtype,
+    uint32_t pr_emaddr, uint32_t pr_entryid, char *username, size_t ulen)
 {
-	auto pvalue = pproplist->getval(proptag1);
+	auto pvalue = pproplist->getval(pr_smtpaddr);
 	if (pvalue != nullptr) {
 		gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
 		return TRUE;
 	}
-	pvalue = pproplist->getval(proptag2);
+	pvalue = pproplist->getval(pr_addrtype);
 	if (NULL == pvalue) {
  FIND_ENTRYID:
-		pvalue = pproplist->getval(proptag4);
+		pvalue = pproplist->getval(pr_entryid);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
 		return oxcmail_entryid_to_username(static_cast<BINARY *>(pvalue), alloc, username, ulen);
 	}
 	if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-		pvalue = pproplist->getval(proptag3);
+		pvalue = pproplist->getval(pr_emaddr);
 	} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
-		pvalue = pproplist->getval(proptag3);
+		pvalue = pproplist->getval(pr_emaddr);
 		if (pvalue != nullptr &&
 		    oxcmail_essdn_to_username(static_cast<char *>(pvalue), username, ulen))
 			return TRUE;	
@@ -4208,15 +4205,15 @@ static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 }
 
 static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
-	EXT_BUFFER_ALLOC alloc, uint32_t proptag1, uint32_t proptag2,
-	uint32_t proptag3, uint32_t proptag4, uint32_t proptag5,
+    EXT_BUFFER_ALLOC alloc, uint32_t pr_name, uint32_t pr_addrtype,
+    uint32_t pr_emaddr, uint32_t pr_smtpaddr, uint32_t pr_entryid,
     const char *charset, char *field, size_t fdsize)
 {
 	int offset;
 	char address[UADDR_SIZE];
 	
 	offset = 0;
-	auto pvalue = pmsg->proplist.get<char>(proptag1);
+	auto pvalue = pmsg->proplist.get<char>(pr_name);
 	if (NULL != pvalue) {
 		if (strlen(pvalue) >= GX_ARRAY_SIZE(address)) {
 			goto EXPORT_ADDRESS;
@@ -4230,8 +4227,8 @@ static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
 		field[offset] = '\0';
 	}
  EXPORT_ADDRESS:
-	if (oxcmail_get_smtp_address(&pmsg->proplist, alloc, proptag4, proptag2,
-	    proptag3, proptag5, address, GX_ARRAY_SIZE(address))) {
+	if (oxcmail_get_smtp_address(&pmsg->proplist, alloc, pr_smtpaddr, pr_addrtype,
+	    pr_emaddr, pr_entryid, address, GX_ARRAY_SIZE(address))) {
 		if (0 == offset) {
 			offset = gx_snprintf(field, fdsize, "<%s>", address);
 		} else {
