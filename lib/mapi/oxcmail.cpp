@@ -3609,8 +3609,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	}
 	field_param.b_classified = mime_get_field(phead,
 		"X-Microsoft-Classified", tmp_buff, 16);
-	if (FALSE == mime_enum_field(phead,
-		oxcmail_enum_mail_head, &field_param)) {
+	if (!phead->enum_field(oxcmail_enum_mail_head, &field_param)) {
 		message_content_free(pmsg);
 		return NULL;
 	}
@@ -5528,23 +5527,19 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 		    strncasecmp(pvs, "multipart/", 10) == 0)
 			pvalue = "application/octet-stream";
 	}
-	if (FALSE == mime_set_content_type(
-		pmime, "multipart/appledouble")) {
+	if (!pmime->set_content_type("multipart/appledouble"))
 		return FALSE;
-	}
 	auto pmime1 = pmail->add_child(pmime, MIME_ADD_LAST);
 	if (NULL == pmime1) {
 		return FALSE;
 	}
-	if (FALSE == mime_set_content_type(
-		pmime1, "application/applefile")) {
+	if (!pmime1->set_content_type("application/applefile"))
 		return FALSE;
-	}
 	auto pmime2 = pmail->add_child(pmime, MIME_ADD_LAST);
 	if (NULL == pmime2) {
 		return FALSE;
 	}
-	if (!mime_set_content_type(pmime2, static_cast<const char *>(pvalue)))
+	if (!pmime2->set_content_type(static_cast<const char *>(pvalue)))
 		return FALSE;
 	if (NULL == pbin) {
 		pbin = apple_util_macbinary_to_appledouble(&macbin);
@@ -5661,9 +5656,8 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		if (0 == strncasecmp(pcontent_type, "multipart/", 10)) {
 			pcontent_type = "application/octet-stream";
 		}
-		if (FALSE == mime_set_content_type(pmime, pcontent_type)) {
+		if (!pmime->set_content_type(pcontent_type))
 			return FALSE;
-		}
 		if (NULL != pfile_name) {
 			tmp_field[0] = '"';
 			tmp_len = oxcmail_encode_mime_string(
@@ -5682,10 +5676,8 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		if (NULL == pfile_name) {
 			pfile_name = pattachment->proplist.get<char>(PR_ATTACH_FILENAME);
 		}
-		if (FALSE == mime_set_content_type(
-			pmime, "text/directory")) {
+		if (!pmime->set_content_type("text/directory"))
 			return FALSE;
-		}
 		if (FALSE == mime_set_content_param(
 			pmime, "charset", "\"utf-8\"") ||
 			FALSE == mime_set_content_param(
@@ -5693,10 +5685,8 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 			return FALSE;
 		}
 	} else {
-		if (FALSE == mime_set_content_type(
-			pmime, "message/rfc822")) {
+		if (!pmime->set_content_type("message/rfc822"))
 			return FALSE;
-		}
 	}
 	
 	auto pvalue = pattachment->proplist.getval(PR_DISPLAY_NAME);
@@ -5880,95 +5870,76 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 	case MAIL_TYPE_CALENDAR:
 		if (MAIL_TYPE_DSN == mime_skeleton.mail_type) {
 			pmixed = pmime;
-			if (!mime_set_content_type(pmime, "multipart/report") ||
+			if (!pmime->set_content_type("multipart/report") ||
 			    !mime_set_content_param(pmime, "report-type", "delivery-status") ||
 			    (pmime = pmail->add_child(pmime, MIME_ADD_LAST)) == nullptr)
 				goto EXPORT_FAILURE;
 		} else if (MAIL_TYPE_MDN == mime_skeleton.mail_type) {
 			pmixed = pmime;
-			if (!mime_set_content_type(pmime, "multipart/report") ||
+			if (!pmime->set_content_type("multipart/report") ||
 			    !mime_set_content_param(pmime, "report-type", "disposition-notification") ||
 			    (pmime = pmail->add_child(pmime, MIME_ADD_LAST)) == nullptr)
 				goto EXPORT_FAILURE;
 		} else {
 			if (TRUE == mime_skeleton.b_attachment) {
 				pmixed = pmime;
-				if (!mime_set_content_type(pmime, "multipart/mixed") ||
+				if (!pmime->set_content_type("multipart/mixed") ||
 				    (pmime = pmail->add_child(pmime, MIME_ADD_LAST)) == nullptr)
 					goto EXPORT_FAILURE;
 			}
 		}
 		if (TRUE == mime_skeleton.b_inline) {
 			prelated = pmime;
-			if (!mime_set_content_type(pmime, "multipart/related") ||
+			if (!pmime->set_content_type("multipart/related") ||
 			    (pmime = pmail->add_child(pmime, MIME_ADD_LAST)) == nullptr)
 				goto EXPORT_FAILURE;
 		}
 		if (OXCMAIL_BODY_PLAIN_AND_HTML == mime_skeleton.body_type &&
 			NULL != mime_skeleton.pplain && NULL != mime_skeleton.phtml) {
-			if (FALSE == mime_set_content_type(
-				pmime, "multipart/alternative")) {
+			if (!pmime->set_content_type("multipart/alternative"))
 				goto EXPORT_FAILURE;
-			}
 			pplain = pmail->add_child(pmime, MIME_ADD_LAST);
 			phtml = pmail->add_child(pmime, MIME_ADD_LAST);
-			if (NULL == pplain || FALSE == mime_set_content_type(
-				pplain, "text/plain") || NULL == phtml ||
-				FALSE == mime_set_content_type(phtml, "text/html")) {
+			if (pplain == nullptr || !pplain->set_content_type("text/plain") ||
+			    phtml == nullptr || !phtml->set_content_type("text/html"))
 				goto EXPORT_FAILURE;
-			}
 			if (MAIL_TYPE_CALENDAR == mime_skeleton.mail_type) {
 				pcalendar = pmail->add_child(pmime, MIME_ADD_LAST);
-				if (NULL == pcalendar || FALSE == mime_set_content_type(
-					pcalendar, "text/calendar")) {
+				if (pcalendar == nullptr ||
+				    !pcalendar->set_content_type("text/calendar"))
 					goto EXPORT_FAILURE;
-				}
 			}
 		} else if (OXCMAIL_BODY_PLAIN_ONLY == mime_skeleton.body_type
 			&& NULL != mime_skeleton.pplain) {
  PLAIN_ONLY:
 			if (MAIL_TYPE_CALENDAR != mime_skeleton.mail_type) {
-				if (FALSE ==  mime_set_content_type(
-					pmime, "text/plain")) {
+				if (!pmime->set_content_type("text/plain"))
 					goto EXPORT_FAILURE;
-				}
 				pplain = pmime;
 			} else {
-				if (FALSE == mime_set_content_type(
-					pmime, "multipart/alternative")) {
+				if (!pmime->set_content_type("multipart/alternative"))
 					goto EXPORT_FAILURE;
-				}
 				pplain = pmail->add_child(pmime, MIME_ADD_LAST);
 				pcalendar = pmail->add_child(pmime, MIME_ADD_LAST);
-				if (NULL == pplain || FALSE == mime_set_content_type(
-					pplain, "text/plain") || NULL == pcalendar ||
-					FALSE == mime_set_content_type(pcalendar,
-					"text/calendar")) {
+				if (pplain == nullptr || !pplain->set_content_type("text/plain") ||
+				    pcalendar == nullptr || !pcalendar->set_content_type("text/calendar"))
 					goto EXPORT_FAILURE;
-				}
 			}
 		} else if (OXCMAIL_BODY_HTML_ONLY == mime_skeleton.body_type
 			&& NULL != mime_skeleton.phtml) {
  HTML_ONLY:
 			if (MAIL_TYPE_CALENDAR != mime_skeleton.mail_type) {
-				if (FALSE ==  mime_set_content_type(
-					pmime, "text/html")) {
+				if (!pmime->set_content_type("text/html"))
 					goto EXPORT_FAILURE;
-				}
 				phtml = pmime;
 			} else {
-				if (FALSE == mime_set_content_type(
-					pmime, "multipart/alternative")) {
+				if (!pmime->set_content_type("multipart/alternative"))
 					goto EXPORT_FAILURE;
-				}
 				phtml = pmail->add_child(pmime, MIME_ADD_LAST);
 				pcalendar = pmail->add_child(pmime, MIME_ADD_LAST);
-				if (NULL == phtml || FALSE == mime_set_content_type(
-					phtml, "text/html") || NULL == pcalendar ||
-					FALSE == mime_set_content_type(pcalendar,
-					"text/calendar")) {
+				if (phtml == nullptr || !phtml->set_content_type("text/html") ||
+				    pcalendar == nullptr || !pcalendar->set_content_type("text/calendar"))
 					goto EXPORT_FAILURE;
-				}
 			}
 		} else if (NULL != mime_skeleton.phtml) {
 			mime_skeleton.body_type = OXCMAIL_BODY_HTML_ONLY;
@@ -5979,12 +5950,10 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 		}
 		break;
 	case MAIL_TYPE_TNEF:
-		if (FALSE == mime_set_content_type(
-			pmime, "multipart/mixed")) {
+		if (!pmime->set_content_type("multipart/mixed"))
 			goto EXPORT_FAILURE;
-		}
 		if ((pplain = pmail->add_child(pmime, MIME_ADD_LAST)) == nullptr ||
-		    !mime_set_content_type(pplain, "text/plain"))
+		    !pplain->set_content_type("text/plain"))
 			goto EXPORT_FAILURE;
 		break;
 	}
@@ -5994,10 +5963,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 		goto EXPORT_FAILURE;
 	
 	if (MAIL_TYPE_ENCRYPTED == mime_skeleton.mail_type) {
-		if (FALSE == mime_set_content_type(
-			pmime, "application/pkcs7-mime")) {
+		if (!pmime->set_content_type("application/pkcs7-mime"))
 			goto EXPORT_FAILURE;
-		}
 		if (NULL == pmsg->children.pattachments ||
 			1 != pmsg->children.pattachments->count) {
 			goto EXPORT_FAILURE;
@@ -6011,7 +5978,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 		return TRUE;
 	} else if (MAIL_TYPE_SIGNED == mime_skeleton.mail_type) {
 		/* make fake "Content-Type" to avoid produce boundary string */
-		mime_set_content_type(pmime, "fake-part/signed");
+		pmime->set_content_type("fake-part/signed");
 		if (NULL == pmsg->children.pattachments ||
 			1 != pmsg->children.pattachments->count) {
 			goto EXPORT_FAILURE;
@@ -6083,11 +6050,11 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 	if (MAIL_TYPE_TNEF == mime_skeleton.mail_type) {
 		pmime = pmail->add_child(pmime, MIME_ADD_LAST);
 		BINARY *pbin = nullptr;
-		if (NULL == pmime || FALSE == mime_set_content_type(pmime,
-			"application/ms-tnef") || NULL == (pbin =
-			tnef_serialize(pmsg, alloc, get_propname))) {
+		if (pmime == nullptr || !pmime->set_content_type("application/ms-tnef"))
 			goto EXPORT_FAILURE;
-		}
+		pbin = tnef_serialize(pmsg, alloc, get_propname);
+		if (pbin == nullptr)
+			goto EXPORT_FAILURE;
 		if (!pmime->write_content(pbin->pc, pbin->cb, MIME_ENCODING_BASE64)) {
 			rop_util_free_binary(pbin);
 			goto EXPORT_FAILURE;
@@ -6155,10 +6122,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 		if (NULL == pmime) {
 			goto EXPORT_FAILURE;
 		}
-		if (FALSE == mime_set_content_type(pmime,
-			"message/delivery-status")) {
+		if (!pmime->set_content_type("message/delivery-status"))
 			goto EXPORT_FAILURE;
-		}
 		if (!oxcmail_export_dsn(pmsg, mime_skeleton.charset,
 		    mime_skeleton.pmessage_class, alloc, tmp_buff, sizeof(tmp_buff)))
 			goto EXPORT_FAILURE;
@@ -6173,10 +6138,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 		if (NULL == pmime) {
 			goto EXPORT_FAILURE;
 		}
-		if (FALSE == mime_set_content_type(pmime,
-			"message/disposition-notification")) {
+		if (!pmime->set_content_type("message/disposition-notification"))
 			goto EXPORT_FAILURE;
-		}
 		if (!oxcmail_export_mdn(pmsg, mime_skeleton.charset,
 		    mime_skeleton.pmessage_class, alloc, tmp_buff,
 		    arsizeof(tmp_buff)))

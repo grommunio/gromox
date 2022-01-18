@@ -466,12 +466,13 @@ BOOL MIME::write_mail(MAIL *pmail)
  *		pmime [in,out]		indicate the MIME object
  *		content_type [in]	buffer containing content type
  */
-BOOL mime_set_content_type(MIME *pmime, const char *content_type)
+BOOL MIME::set_content_type(const char *content_type)
 {
+	auto pmime = this;
 	BOOL b_multiple;
 
 #ifdef _DEBUG_UMTA
-	if (NULL == pmime || NULL == content_type) {
+	if (content_type == nullptr) {
 		debug_info("[mime]: NULL pointer found in mime_set_content_type");
 		return FALSE;
 	}
@@ -509,18 +510,13 @@ BOOL mime_set_content_type(MIME *pmime, const char *content_type)
  *		TRUE				OK to enumerate
  *		FALSE				fail to enumerate
  */		
-BOOL mime_enum_field(MIME *pmime, MIME_FIELD_ENUM enum_func, void *pparam)
+BOOL MIME::enum_field(MIME_FIELD_ENUM enum_func, void *pparam)
 {
+	auto pmime = this;
 	int	tag_len, val_len;
 	char tmp_tag[MIME_NAME_LEN];
 	char tmp_value[MIME_FIELD_LEN];
 	
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mime]: NULL pointer found in mime_enum_field");
-		return FALSE;
-	}
-#endif
 	if (FALSE == enum_func("Content-Type", pmime->content_type, pparam)) {
 		return FALSE;
 	}
@@ -742,7 +738,7 @@ BOOL mime_set_field(MIME *pmime, const char *tag, const char *value)
 		pmime->f_type_params.clear();
 		parse_field_value(value, strlen(value), tmp_buff, 256,
 			&pmime->f_type_params);
-		if (FALSE == mime_set_content_type(pmime, tmp_buff)) {
+		if (!pmime->set_content_type(tmp_buff)) {
 			pmime->f_type_params.clear();
 			return FALSE;
 		}

@@ -29,6 +29,8 @@ struct GX_EXPORT MIME {
 	BOOL write_mail(MAIL *);
 	BOOL read_head(char *out_buf, size_t *len);
 	BOOL read_content(char *out_buf, size_t *len);
+	BOOL set_content_type(const char *);
+	BOOL enum_field(MIME_FIELD_ENUM, void *);
 	inline size_t get_children_num() const { return simple_tree_node_get_children_num(&node); }
 
 	SIMPLE_TREE_NODE node;
@@ -50,8 +52,6 @@ struct GX_EXPORT MIME {
 
 void mime_init(MIME *pmime, LIB_BUFFER *palloc);
 void mime_free(MIME *pmime);
-BOOL mime_set_content_type(MIME *pmime, const char *content_type);
-BOOL mime_enum_field(MIME *pmime, MIME_FIELD_ENUM enum_func, void *pparam);
 BOOL mime_get_field(MIME *pmime, const char *tag, char *value, int length);
 int mime_get_field_num(MIME *pmime, const char *tag);
 BOOL mime_search_field(MIME *pmime, const char *tag, int order, char *value,

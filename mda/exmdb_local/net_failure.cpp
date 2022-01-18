@@ -158,14 +158,14 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 		put_context(pcontext);
 		return;
 	}
-	mime_set_content_type(pmime, "multipart/related");
+	pmime->set_content_type("multipart/related");
 	auto pmime_child = pcontext->pmail->add_child(pmime, MIME_ADD_LAST);
 	if (NULL == pmime_child) {
 		put_context(pcontext);
 		return;
 	}
 
-	mime_set_content_type(pmime_child, "text/html");
+	pmime_child->set_content_type("text/html");
 	mime_set_content_param(pmime_child, "charset", "\"us-ascii\"");
 	memcpy(tmp_buff, HTML_01, sizeof(HTML_01) - 1);
 	offset = sizeof(HTML_01) - 1;

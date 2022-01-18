@@ -3123,7 +3123,7 @@ static BOOL message_forward_message(const char *from_address,
 		if (NULL == pmime) {
 			return FALSE;
 		}
-		mime_set_content_type(pmime, "message/rfc822");
+		pmime->set_content_type("message/rfc822");
 		if (action_flavor & ACTION_FLAVOR_PR) {
 			snprintf(tmp_buff, arsizeof(tmp_buff), "<%s>", from_address);
 		} else {

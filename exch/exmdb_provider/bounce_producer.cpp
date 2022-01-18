@@ -473,7 +473,7 @@ BOOL bounce_producer_make(const char *from, const char *rcpt,
 		return FALSE;
 	}
 	pmime = phead;
-	mime_set_content_type(pmime, "multipart/report");
+	pmime->set_content_type("multipart/report");
 	mime_set_content_param(pmime, "report-type", "delivery-status");
 	mime_set_field(pmime, "Received", "from unknown (helo localhost) "
 		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
@@ -491,7 +491,7 @@ BOOL bounce_producer_make(const char *from, const char *rcpt,
 	if (NULL == pmime) {
 		return FALSE;
 	}
-	mime_set_content_type(pmime, content_type);
+	pmime->set_content_type(content_type);
 	mime_set_content_param(pmime, "charset", "\"utf-8\"");
 	if (!pmime->write_content(content_buff,
 		strlen(content_buff), MIME_ENCODING_BASE64)) {
@@ -519,7 +519,7 @@ BOOL bounce_producer_make(const char *from, const char *rcpt,
 	if (dsn_serialize(&dsn, content_buff, GX_ARRAY_SIZE(content_buff))) {
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
 		if (NULL != pmime) {
-			mime_set_content_type(pmime, "message/delivery-status");
+			pmime->set_content_type("message/delivery-status");
 			pmime->write_content(content_buff,
 				strlen(content_buff), MIME_ENCODING_NONE);
 		}

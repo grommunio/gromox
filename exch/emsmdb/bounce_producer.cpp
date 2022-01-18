@@ -497,7 +497,7 @@ BOOL bounce_producer_make(const char *username,
 		return FALSE;
 	}
 	pmime = phead;
-	mime_set_content_type(pmime, "multipart/report");
+	pmime->set_content_type("multipart/report");
 	mime_set_content_param(pmime, "report-type", "disposition-notification");
 	auto pvalue = pbrief->proplist.getval(PROP_TAG_CONVERSATIONINDEX);
 	if (pvalue != nullptr) {
@@ -546,7 +546,7 @@ BOOL bounce_producer_make(const char *username,
 	if (NULL == pmime) {
 		return FALSE;
 	}
-	mime_set_content_type(pmime, content_type);
+	pmime->set_content_type(content_type);
 	mime_set_content_param(pmime, "charset", "\"utf-8\"");
 	if (!pmime->write_content(content_buff,
 		strlen(content_buff), MIME_ENCODING_BASE64)) {
@@ -587,7 +587,7 @@ BOOL bounce_producer_make(const char *username,
 	if (dsn_serialize(&dsn, content_buff, GX_ARRAY_SIZE(content_buff))) {
 		pmime = pmail->add_child(phead, MIME_ADD_LAST);
 		if (NULL != pmime) {
-			mime_set_content_type(pmime, "message/disposition-notification");
+			pmime->set_content_type("message/disposition-notification");
 			pmime->write_content(content_buff,
 				strlen(content_buff), MIME_ENCODING_NONE);
 		}

@@ -207,7 +207,7 @@ void auto_response_reply(const char *user_home,
 		put_context(pcontext);
 		return;
 	}
-	mime_set_content_type(pmime, content_type);
+	pmime->set_content_type(content_type);
 	if ('\0' != charset[0]) {
 		mime_set_content_param(pmime, "charset", charset);
 	}
