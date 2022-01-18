@@ -32,12 +32,12 @@ BOOL user_object::check_valid()
 		return FALSE;
 	auto pnode = ab_tree_minid_to_node(pbase.get(), puser->minid);
 	pbase.reset();
-	if (NULL == pnode) {
-		if (ab_tree_get_minid_type(puser->minid) != MINID_TYPE_ADDRESS ||
-		    !system_services_get_username_from_id(ab_tree_get_minid_value(puser->minid),
-		    username, GX_ARRAY_SIZE(username)))
-			return FALSE;
-	}
+	if (pnode != nullptr)
+		return TRUE;
+	if (ab_tree_get_minid_type(puser->minid) != MINID_TYPE_ADDRESS ||
+	    !system_services_get_username_from_id(ab_tree_get_minid_value(puser->minid),
+	    username, GX_ARRAY_SIZE(username)))
+		return FALSE;
 	return TRUE;
 }
 
