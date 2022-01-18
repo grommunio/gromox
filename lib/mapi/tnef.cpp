@@ -1339,7 +1339,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				return NULL;
 			break;
 		case ATTRIBUTE_ID_DATESENT:
-			if (pmsg->proplist.set(PROP_TAG_CLIENTSUBMITTIME,
+			if (pmsg->proplist.set(PR_CLIENT_SUBMIT_TIME,
 			    attribute.pvalue) != 0)
 				return NULL;
 			break;
@@ -2414,7 +2414,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		tmp_proptags.count ++;
 	}
 	/* ATTRIBUTE_ID_DATESENT */
-	pvalue = pmsg->proplist.getval(PROP_TAG_CLIENTSUBMITTIME);
+	pvalue = pmsg->proplist.getval(PR_CLIENT_SUBMIT_TIME);
 	if (NULL != pvalue) {
 		attribute.attr_id = ATTRIBUTE_ID_DATESENT;
 		attribute.lvl = LVL_MESSAGE;

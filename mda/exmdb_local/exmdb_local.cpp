@@ -496,7 +496,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	
 	if (FALSE == pcontext->pcontrol->need_bounce) {
 		tmp_int32 = 0xFFFFFFFF;
-		pmsg->proplist.set(PROP_TAG_AUTORESPONSESUPPRESS, &tmp_int32);
+		pmsg->proplist.set(PR_AUTO_RESPONSE_SUPPRESS, &tmp_int32);
 	}
 	
 	pmsg->proplist.erase(PidTagChangeNumber);
@@ -504,13 +504,13 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		home_dir, pcontext->pcontrol->from,
 		address, 0, pmsg, temp_buff);
 	if (EXMDB_RESULT_OK == result) {
-		pvalue = pmsg->proplist.getval(PROP_TAG_AUTORESPONSESUPPRESS);
+		pvalue = pmsg->proplist.getval(PR_AUTO_RESPONSE_SUPPRESS);
 		if (NULL == pvalue) {
 			suppress_mask = 0;
 		} else {
 			suppress_mask = *(uint32_t*)pvalue;
 		}
-		pvalue = pmsg->proplist.getval(PROP_TAG_ORIGINATORDELIVERYREPORTREQUESTED);
+		pvalue = pmsg->proplist.getval(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED);
 		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 			b_bounce_delivered = TRUE;
 			if (suppress_mask & AUTO_RESPONSE_SUPPRESS_DR) {

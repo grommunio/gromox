@@ -272,7 +272,7 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	propvals.ppropval[propvals.count].proptag = PROP_TAG_ORIGINALDISPLAYCC;
 	propvals.ppropval[propvals.count++].pvalue  = deconst("");
 	
-	propvals.ppropval[propvals.count].proptag = PROP_TAG_ORIGINALDISPLAYTO;
+	propvals.ppropval[propvals.count].proptag = PR_ORIGINAL_DISPLAY_TO;
 	propvals.ppropval[propvals.count++].pvalue  = deconst("");
 	
 	propvals.ppropval[propvals.count].proptag = PR_MESSAGE_FLAGS;
@@ -994,7 +994,7 @@ BOOL message_object::check_readonly_property(uint32_t proptag) const
 	case PR_LAST_MODIFIER_ENTRYID:
 	case PidTagMid:
 	case PROP_TAG_MIMESKELETON:
-	case PROP_TAG_NATIVEBODY:
+	case PR_NATIVE_BODY_INFO:
 	case PR_OBJECT_TYPE:
 	case PR_PARENT_ENTRYID:
 	case PR_PARENT_SOURCE_KEY:

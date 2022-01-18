@@ -791,12 +791,12 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 	proptag_buff[0] = PR_SUBJECT;
 	proptag_buff[1] = PR_SENT_REPRESENTING_NAME;
 	proptag_buff[2] = PR_SENT_REPRESENTING_SMTP_ADDRESS;
-	proptag_buff[3] = PROP_TAG_CLIENTSUBMITTIME;
+	proptag_buff[3] = PR_CLIENT_SUBMIT_TIME;
 	proptag_buff[4] = PR_MESSAGE_SIZE;
 	proptag_buff[5] = PR_INTERNET_CPID;
 	proptag_buff[6] = PR_INTERNET_MESSAGE_ID;
 	proptag_buff[7] = PR_PARENT_KEY;
-	proptag_buff[8] = PROP_TAG_CONVERSATIONINDEX;
+	proptag_buff[8] = PR_CONVERSATION_INDEX;
 	if (!cu_get_properties(db_table::msg_props, mid_val, cpid,
 		pdb->psqlite, &proptags, &(*ppbrief)->proplist)) {
 		return FALSE;
@@ -1783,7 +1783,7 @@ static BOOL message_rectify_message(const char *account,
 		pmsgctnt1->proplist.count ++;
 		++vc;
 	}
-	if (!pmsgctnt->proplist.has(PROP_TAG_BODYCONTENTID)) {
+	if (!pmsgctnt->proplist.has(PR_BODY_CONTENT_ID)) {
 		tmp_guid = guid_random_new();
 		if (!ext_push.init(cid_string, 256, 0) ||
 		    ext_push.p_guid(&tmp_guid) != EXT_ERR_SUCCESS)
@@ -1801,7 +1801,7 @@ static BOOL message_rectify_message(const char *account,
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		vc->proptag = PROP_TAG_BODYCONTENTID;
+		vc->proptag = PR_BODY_CONTENT_ID;
 		vc->pvalue = pvalue;
 		pmsgctnt1->proplist.count ++;
 		++vc;
@@ -1854,7 +1854,7 @@ static BOOL message_rectify_message(const char *account,
 			++vc;
 		}
 	}
-	auto pbin1 = pmsgctnt->proplist.get<BINARY>(PROP_TAG_CONVERSATIONINDEX);
+	auto pbin1 = pmsgctnt->proplist.get<BINARY>(PR_CONVERSATION_INDEX);
 	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return FALSE;
@@ -1866,7 +1866,7 @@ static BOOL message_rectify_message(const char *account,
 		pbin->pv = common_util_alloc(16);
 		if (pbin->pv == nullptr)
 			return FALSE;
-		auto pvalue = pmsgctnt->proplist.get<char>(PROP_TAG_CONVERSATIONTOPIC);
+		auto pvalue = pmsgctnt->proplist.get<char>(PR_CONVERSATION_TOPIC);
 		if (pvalue != nullptr && *pvalue != '\0') {
 			if (!message_md5_string(pvalue, pbin->pb))
 				return false;
@@ -1903,27 +1903,27 @@ static BOOL message_rectify_message(const char *account,
 		    ext_push.p_uint8(nt_time & 0xFF))
 			return false;
 		pbin1->cb = 27;
-		vc->proptag = PROP_TAG_CONVERSATIONINDEX;
+		vc->proptag = PR_CONVERSATION_INDEX;
 		vc->pvalue = pbin1;
 		pmsgctnt1->proplist.count ++;
 		++vc;
 	}
-	auto pvalue = pmsgctnt->proplist.get<char>(PROP_TAG_CONVERSATIONTOPIC);
+	auto pvalue = pmsgctnt->proplist.get<char>(PR_CONVERSATION_TOPIC);
 	if (NULL == pvalue) {
-		pvalue = pmsgctnt->proplist.get<char>(PROP_TAG_CONVERSATIONTOPIC_STRING8);
+		pvalue = pmsgctnt->proplist.get<char>(PR_CONVERSATION_TOPIC_A);
 	}
 	if (NULL == pvalue) {
 		pvalue = pmsgctnt->proplist.get<char>(PR_NORMALIZED_SUBJECT);
 		if (NULL == pvalue) {
 			pvalue = pmsgctnt->proplist.get<char>(PR_NORMALIZED_SUBJECT_A);
 			if (NULL != pvalue) {
-				vc->proptag = PROP_TAG_CONVERSATIONTOPIC_STRING8;
+				vc->proptag = PR_CONVERSATION_TOPIC_A;
 				vc->pvalue = pvalue;
 				pmsgctnt1->proplist.count ++;
 				++vc;
 			}
 		} else {
-			vc->proptag = PROP_TAG_CONVERSATIONTOPIC;
+			vc->proptag = PR_CONVERSATION_TOPIC;
 			vc->pvalue = pvalue;
 			pmsgctnt1->proplist.count ++;
 			++vc;
@@ -2625,7 +2625,7 @@ static BOOL message_make_deferred_error_message(const char *username,
 		return FALSE;
 	}
 	nt_time = rop_util_current_nttime();
-	if (pmsg->proplist.set(PROP_TAG_CLIENTSUBMITTIME, &nt_time) != 0 ||
+	if (pmsg->proplist.set(PR_CLIENT_SUBMIT_TIME, &nt_time) != 0 ||
 	    pmsg->proplist.set(PR_CREATION_TIME, &nt_time) != 0 ||
 	    pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &nt_time) != 0 ||
 	    pmsg->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME, &nt_time) != 0 ||
@@ -2764,9 +2764,8 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		return TRUE;
 	}
 	if (!cu_get_property(db_table::msg_props, message_id, 0,
-		psqlite, PROP_TAG_AUTORESPONSESUPPRESS, &pvalue)) {
+	    psqlite, PR_AUTO_RESPONSE_SUPPRESS, &pvalue))
 		return FALSE;
-	}
 	if (NULL != pvalue) {
 		if (action_type == OP_REPLY) {
 			if ((*(uint32_t*)pvalue) &
@@ -3198,7 +3197,7 @@ static BOOL message_make_deferred_action_message(const char *username,
 	}
 	nt_time = rop_util_current_nttime();
 	tmp_byte = 0;
-	if (pmsg->proplist.set(PROP_TAG_CLIENTSUBMITTIME, &nt_time) != 0 ||
+	if (pmsg->proplist.set(PR_CLIENT_SUBMIT_TIME, &nt_time) != 0 ||
 	    pmsg->proplist.set(PR_CREATION_TIME, &nt_time) != 0 ||
 	    pmsg->proplist.set(PR_LAST_MODIFICATION_TIME, &nt_time) != 0 ||
 	    pmsg->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME, &nt_time) != 0 ||

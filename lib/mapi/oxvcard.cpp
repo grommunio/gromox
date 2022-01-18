@@ -183,7 +183,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			if (pmsg->proplist.set(PR_DISPLAY_NAME, pstring) != 0 ||
 			    pmsg->proplist.set(PR_NORMALIZED_SUBJECT, tmp_buff) != 0 ||
-			    pmsg->proplist.set(PROP_TAG_CONVERSATIONTOPIC, tmp_buff) != 0)
+			    pmsg->proplist.set(PR_CONVERSATION_TOPIC, tmp_buff) != 0)
 				goto IMPORT_FAILURE;
 		} else if (0 == strcasecmp(pvline->name, "N")) {
 			count = 0;

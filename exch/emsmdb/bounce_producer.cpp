@@ -360,7 +360,7 @@ static BOOL bounce_producer_make_content(const char *username,
 	ptr = pcontent;
 	charset[0] = '\0';
 	time_zone[0] = '\0';
-	auto pvalue = pbrief->proplist.getval(PROP_TAG_CLIENTSUBMITTIME);
+	auto pvalue = pbrief->proplist.getval(PR_CLIENT_SUBMIT_TIME);
 	tmp_time = pvalue == nullptr ? time(nullptr) :
 	           rop_util_nttime_to_unix(*static_cast<uint64_t *>(pvalue));
 	auto from = pbrief->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
@@ -499,7 +499,7 @@ BOOL bounce_producer_make(const char *username,
 	pmime = phead;
 	pmime->set_content_type("multipart/report");
 	mime_set_content_param(pmime, "report-type", "disposition-notification");
-	auto pvalue = pbrief->proplist.getval(PROP_TAG_CONVERSATIONINDEX);
+	auto pvalue = pbrief->proplist.getval(PR_CONVERSATION_INDEX);
 	if (pvalue != nullptr) {
 		auto bv = static_cast<const BINARY *>(pvalue);
 		if (encode64(bv->pb, bv->cb, tmp_buff, arsizeof(tmp_buff), &out_len) == 0)

@@ -232,15 +232,15 @@ gxerr_t common_util_rectify_message(message_object *pmessage,
 	propval_buff[0].proptag = PR_READ;
 	propval_buff[0].pvalue = &tmp_byte;
 	tmp_byte = 1;
-	propval_buff[1].proptag = PROP_TAG_CLIENTSUBMITTIME;
+	propval_buff[1].proptag = PR_CLIENT_SUBMIT_TIME;
 	propval_buff[1].pvalue = &nt_time;
 	nt_time = rop_util_current_nttime();
 	propval_buff[2].proptag = PROP_TAG_MESSAGEDELIVERYTIME;
 	propval_buff[2].pvalue = &nt_time;
-	propval_buff[3].proptag = PROP_TAG_CONTENTFILTERSPAMCONFIDENCELEVEL;
+	propval_buff[3].proptag = PR_CONTENT_FILTER_SCL;
 	propval_buff[3].pvalue = &tmp_level;
 	tmp_level = -1;
-	propval_buff[4].proptag = PROP_TAG_SENDERSMTPADDRESS;
+	propval_buff[4].proptag = PR_SENDER_SMTP_ADDRESS;
 	propval_buff[4].pvalue = deconst(account);
 	propval_buff[5].proptag = PR_SENDER_ADDRTYPE;
 	propval_buff[5].pvalue  = deconst("EX");
@@ -2194,7 +2194,7 @@ static BOOL common_util_create_folder(store_object *pstore, uint64_t parent_id,
 		PROP_TAG_FOLDERCHILDCOUNT, PROP_TAG_FOLDERFLAGS, PidTagFolderId,
 		PR_FOLDER_TYPE, PROP_TAG_HASRULES, PR_HIERARCHY_CHANGE_NUM,
 		PROP_TAG_LOCALCOMMITTIME, PR_LOCAL_COMMIT_TIME_MAX,
-		PR_MESSAGE_SIZE, PR_MESSAGE_SIZE_EXTENDED, PROP_TAG_NATIVEBODY,
+		PR_MESSAGE_SIZE, PR_MESSAGE_SIZE_EXTENDED, PR_NATIVE_BODY_INFO,
 		PR_OBJECT_TYPE, PR_PARENT_ENTRYID, PR_RECORD_KEY,
 		PR_SEARCH_KEY, PR_STORE_ENTRYID, PR_STORE_RECORD_KEY,
 		PR_SOURCE_KEY, PR_PARENT_SOURCE_KEY,

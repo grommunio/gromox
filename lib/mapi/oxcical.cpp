@@ -1415,7 +1415,7 @@ static BOOL oxcical_parse_organizer(std::shared_ptr<ical_component> main_event,
 	    pmsg->proplist.set(PR_SENT_REPRESENTING_ENTRYID, &tmp_bin) != 0 ||
 	    pmsg->proplist.set(PR_SENDER_ADDRTYPE, "SMTP") != 0 ||
 	    pmsg->proplist.set(PR_SENDER_EMAIL_ADDRESS, paddress) != 0 ||
-	    pmsg->proplist.set(PROP_TAG_SENDERSMTPADDRESS, paddress) != 0 ||
+	    pmsg->proplist.set(PR_SENDER_SMTP_ADDRESS, paddress) != 0 ||
 	    pmsg->proplist.set(PR_SENDER_ENTRYID, &tmp_bin) != 0)
 		return FALSE;
 	return TRUE;

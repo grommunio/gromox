@@ -900,9 +900,9 @@ static BOOL oxcmail_parse_thread_topic(const char *charset,
 	
 	if (TRUE == mime_string_to_utf8(
 		charset, field, utf8_field)) {
-		return pproplist->set(PROP_TAG_CONVERSATIONTOPIC, utf8_field) == 0 ? TRUE : false;
+		return pproplist->set(PR_CONVERSATION_TOPIC, utf8_field) == 0 ? TRUE : false;
 	}
-	return pproplist->set(PROP_TAG_CONVERSATIONTOPIC_STRING8, field) == 0 ? TRUE : false;
+	return pproplist->set(PR_CONVERSATION_TOPIC_A, field) == 0 ? TRUE : false;
 }
 
 static BOOL oxcmail_parse_thread_index(
@@ -926,7 +926,7 @@ static BOOL oxcmail_parse_thread_index(
 	}
 	tmp_bin.pc = tmp_buff;
 	tmp_bin.cb = len;
-	return pproplist->set(PROP_TAG_CONVERSATIONINDEX, &tmp_bin) == 0 ? TRUE : false;
+	return pproplist->set(PR_CONVERSATION_INDEX, &tmp_bin) == 0 ? TRUE : false;
 }
 
 static BOOL oxcmail_parse_keywords(const char *charset,
@@ -987,7 +987,7 @@ static BOOL oxcmail_parse_response_suppress(
 		return TRUE;
 	} else if (0 == strcasecmp(field, "ALL")) {
 		tmp_int32 = 0xFFFFFFFF;
-		return pproplist->set(PROP_TAG_AUTORESPONSESUPPRESS, &tmp_int32) == 0 ? TRUE : false;
+		return pproplist->set(PR_AUTO_RESPONSE_SUPPRESS, &tmp_int32) == 0 ? TRUE : false;
 	}
 	len = strlen(field);
 	field[len] = ';';
@@ -1023,7 +1023,7 @@ static BOOL oxcmail_parse_response_suppress(
 	if (0 == tmp_int32) {
 		return TRUE;
 	}
-	return pproplist->set(PROP_TAG_AUTORESPONSESUPPRESS, &tmp_int32) == 0 ? TRUE : false;
+	return pproplist->set(PR_AUTO_RESPONSE_SUPPRESS, &tmp_int32) == 0 ? TRUE : false;
 }
 
 static inline bool cttype_is_voiceaudio(const char *s)
@@ -1213,7 +1213,7 @@ static BOOL oxcmail_parse_message_flag(char *field, uint16_t *plast_propid,
 		return FALSE;
 	(*plast_propid) ++;
 	tmp_int32 = FLAG_STATUS_FOLLOWUPFLAGGED;
-	if (pproplist->set(PROP_TAG_FLAGSTATUS, &tmp_int32) != 0)
+	if (pproplist->set(PR_FLAG_STATUS, &tmp_int32) != 0)
 		return FALSE;
 	
 	pvalue = pproplist->getval(PR_SUBJECT);
@@ -1265,7 +1265,7 @@ static BOOL oxcmail_parse_message_flag(char *field, uint16_t *plast_propid,
 		return FALSE;
 	(*plast_propid) ++;
 	tmp_int32 = TODO_ITEM_RECIPIENTFLAGGED;
-	return pproplist->set(PROP_TAG_TODOITEMFLAGS, &tmp_int32) == 0 ? TRUE : false;
+	return pproplist->set(PR_TODO_ITEM_FLAGS, &tmp_int32) == 0 ? TRUE : false;
 }
 
 static BOOL oxcmail_parse_classified(char *field, uint16_t *plast_propid,
@@ -1388,7 +1388,7 @@ static BOOL oxcmail_enum_mail_head(
 		parse_mime_addr(&email_addr, field);
 		if (!oxcmail_parse_address(penum_param->charset, &email_addr,
 		    PR_SENDER_NAME, PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS,
-		    PROP_TAG_SENDERSMTPADDRESS, PR_SENDER_SEARCH_KEY,
+		    PR_SENDER_SMTP_ADDRESS, PR_SENDER_SEARCH_KEY,
 		    PR_SENDER_ENTRYID, &penum_param->pmsg->proplist))
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "Reply-To")) {
@@ -1411,7 +1411,7 @@ static BOOL oxcmail_enum_mail_head(
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "Return-Receipt-To")) {
 		tmp_byte = 1;
-		if (penum_param->pmsg->proplist.set(PROP_TAG_ORIGINATORDELIVERYREPORTREQUESTED, &tmp_byte) != 0)
+		if (penum_param->pmsg->proplist.set(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED, &tmp_byte) != 0)
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "Disposition-Notification-To")) {
 		tmp_byte = 1;
@@ -1435,7 +1435,7 @@ static BOOL oxcmail_enum_mail_head(
 	} else if (0 == strcasecmp(tag, "Date")) {
 		if (TRUE == parse_rfc822_timestamp(field, &tmp_time)) {
 			tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-			if (penum_param->pmsg->proplist.set(PROP_TAG_CLIENTSUBMITTIME, &tmp_int64) != 0)
+			if (penum_param->pmsg->proplist.set(PR_CLIENT_SUBMIT_TIME, &tmp_int64) != 0)
 				return FALSE;
 		}
 	} else if (0 == strcasecmp(tag, "References")) {
@@ -1537,7 +1537,7 @@ static BOOL oxcmail_enum_mail_head(
 		0 == strcasecmp(tag, "Expiry-Date")) {
 		if (TRUE == parse_rfc822_timestamp(field, &tmp_time)) {
 			tmp_int64 = rop_util_unix_to_nttime(tmp_time);
-			if (penum_param->pmsg->proplist.set(PROP_TAG_EXPIRYTIME, &tmp_int64) != 0)
+			if (penum_param->pmsg->proplist.set(PR_EXPIRY_TIME, &tmp_int64) != 0)
 				return FALSE;
 		}
 	} else if (0 == strcasecmp(tag, "X-Auto-Response-Suppress")) {
@@ -1583,8 +1583,7 @@ static BOOL oxcmail_enum_mail_head(
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "X-MS-Exchange-Organization-PRD")) {
 		uint32_t tag = oxcmail_check_ascii(field) ?
-		                  PROP_TAG_PURPORTEDSENDERDOMAIN :
-		                  PROP_TAG_PURPORTEDSENDERDOMAIN_STRING8;
+		               PR_PURPORTED_SENDER_DOMAIN : PR_PURPORTED_SENDER_DOMAIN_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
 	} else if (0 == strcasecmp(tag,
@@ -1595,7 +1594,7 @@ static BOOL oxcmail_enum_mail_head(
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "X-MS-Exchange-Organization-SCL")) {
 		tmp_int32 = strtol(field, nullptr, 0);
-		if (penum_param->pmsg->proplist.set(PROP_TAG_CONTENTFILTERSPAMCONFIDENCELEVEL, &tmp_int32) != 0)
+		if (penum_param->pmsg->proplist.set(PR_CONTENT_FILTER_SCL, &tmp_int32) != 0)
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "X-Microsoft-Classified")) {
 		if (FALSE == oxcmail_parse_classified(field,
@@ -1647,7 +1646,7 @@ static BOOL oxcmail_enum_mail_head(
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "X-CallID")) {
 		uint32_t tag = oxcmail_check_ascii(field) ?
-		                  PROP_TAG_CALLID : PROP_TAG_CALLID_STRING8;
+		               PidTagCallId : PidTagCallId_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "X-VoiceMessageDuration")) {
@@ -1656,7 +1655,7 @@ static BOOL oxcmail_enum_mail_head(
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "X-FaxNumverOfPages")) {
 		tmp_int32 = strtol(field, nullptr, 0);
-		if (penum_param->pmsg->proplist.set(PROP_TAG_FAXNUMBEROFPAGES, &tmp_int32) != 0)
+		if (penum_param->pmsg->proplist.set(PidTagFaxNumberOfPages, &tmp_int32) != 0)
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "Content-ID")) {
 		tmp_int32 = strlen(field);
@@ -1666,8 +1665,7 @@ static BOOL oxcmail_enum_mail_head(
 			}
 			pvalue = field[0] == '<' ? field + 1 : field;
 			uint32_t tag = oxcmail_check_ascii(static_cast<char *>(pvalue)) ?
-			                  PROP_TAG_BODYCONTENTID :
-			                  PROP_TAG_BODYCONTENTID_STRING8;
+			               PR_BODY_CONTENT_ID : PR_BODY_CONTENT_ID_A;
 			if (penum_param->pmsg->proplist.set(tag, pvalue) != 0)
 				return FALSE;
 		}
@@ -1684,8 +1682,7 @@ static BOOL oxcmail_enum_mail_head(
 		penum_param->last_propid ++;
 	} else if (0 == strcasecmp(tag, "Content-Location")) {
 		uint32_t tag = oxcmail_check_ascii(field) ?
-		                  PROP_TAG_BODYCONTENTLOCATION :
-		                  PROP_TAG_BODYCONTENTLOCATION_STRING8;
+		               PR_BODY_CONTENT_LOCATION : PR_BODY_CONTENT_LOCATION_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
 	} else if (0 == strcasecmp(tag, "X-MS-Exchange-Organization-AuthAs") ||
@@ -2641,8 +2638,8 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	if (strncasecmp(cttype, "text/", 5) == 0 &&
 	    oxcmail_get_content_param(pmime, "charset", tmp_buff, 32)) {
 		uint32_t tag = oxcmail_check_ascii(tmp_buff) ?
-		               PROP_TAG_TEXTATTACHMENTCHARSET :
-		               PROP_TAG_TEXTATTACHMENTCHARSET_STRING8;
+		               PidTagTextAttachmentCharset :
+		               PidTagTextAttachmentCharset_A;
 		if (pattachment->proplist.set(tag, tmp_buff) != 0) {
 			pmime_enum->b_result = FALSE;
 			return;
@@ -2770,7 +2767,7 @@ static void oxcmail_remove_flag_propties(
 	PROPERTY_NAME propname_buff[3];
 	PROPNAME_ARRAY propnames;
 	
-	pmsg->proplist.erase(PROP_TAG_FLAGCOMPLETETIME);
+	pmsg->proplist.erase(PR_FLAG_COMPLETE_TIME);
 	for (size_t i = 0; i < arsizeof(propname_buff); ++i) {
 		propname_buff[i].guid = PSETID_TASK;
 		propname_buff[i].kind = MNID_ID;
@@ -3249,7 +3246,7 @@ static MIME* oxcmail_parse_dsn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 		dsn_free(&dsn);
 		return NULL;
 	}
-	pvalue = pmsg->proplist.getval(PROP_TAG_CLIENTSUBMITTIME);
+	pvalue = pmsg->proplist.getval(PR_CLIENT_SUBMIT_TIME);
 	if (NULL == pvalue) {
 		dsn_info.submit_time = rop_util_unix_to_nttime(time(NULL));
 	} else {
@@ -3290,12 +3287,12 @@ static bool oxcmail_enum_mdn(const char *tag,
 	
 	if (0 == strcasecmp(tag, "Original-Recipient")) {
 		if (strncasecmp(value, "rfc822;", 7) == 0 &&
-		    mcparam->proplist.set(PROP_TAG_ORIGINALDISPLAYTO, value + 7) != 0)
+		    mcparam->proplist.set(PR_ORIGINAL_DISPLAY_TO, value + 7) != 0)
 			return false;
 	} else if (0 == strcasecmp(tag, "Final-Recipient")) {
 		if (strncasecmp(value, "rfc822;", 7) == 0 &&
-		    !static_cast<MESSAGE_CONTENT *>(pparam)->proplist.has(PROP_TAG_ORIGINALDISPLAYTO))
-			return mcparam->proplist.set(PROP_TAG_ORIGINALDISPLAYTO, value + 7) == 0;
+		    !static_cast<MESSAGE_CONTENT *>(pparam)->proplist.has(PR_ORIGINAL_DISPLAY_TO))
+			return mcparam->proplist.set(PR_ORIGINAL_DISPLAY_TO, value + 7) == 0;
 	} else if (0 == strcasecmp(tag, "Disposition")) {
 		auto ptoken2 = strchr(value, ';');
 		if (ptoken2 == nullptr)
@@ -3328,7 +3325,7 @@ static bool oxcmail_enum_mdn(const char *tag,
 			return mcparam->proplist.set(PR_PARENT_KEY, &tmp_bin) == 0;
 		}
 	} else if (0 == strcasecmp(tag, "Original-Message-ID")) {
-		return mcparam->proplist.set(PROP_TAG_ORIGINALMESSAGEID, value) == 0 &&
+		return mcparam->proplist.set(PidTagOriginalMessageId, value) == 0 &&
 		       mcparam->proplist.set(PR_INTERNET_REFERENCES, value) == 0;
 	} else if (0 == strcasecmp(tag, "X-Display-Name")) {
 		if (TRUE == mime_string_to_utf8("utf-8", value, tmp_buff)) {
@@ -3377,8 +3374,8 @@ static MIME* oxcmail_parse_mdn(MAIL *pmail, MESSAGE_CONTENT *pmsg)
 		return NULL;
 	}
 	dsn_free(&dsn);
-	pvalue = pmsg->proplist.getval(PROP_TAG_CLIENTSUBMITTIME);
-	if (pmsg->proplist.set(PROP_TAG_ORIGINALDELIVERYTIME, pvalue) != 0 ||
+	pvalue = pmsg->proplist.getval(PR_CLIENT_SUBMIT_TIME);
+	if (pmsg->proplist.set(PR_ORIGINAL_DELIVERY_TIME, pvalue) != 0 ||
 	    pmsg->proplist.set(PR_RECEIPT_TIME, pvalue) != 0)
 		return NULL;
 	for (size_t i = 0; i < pmsg->children.prcpts->count; ++i)
@@ -3597,9 +3594,9 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		return NULL;
 	}
 	if (!pmsg->proplist.has(PR_SENDER_NAME) &&
-	    !pmsg->proplist.has(PROP_TAG_SENDERSMTPADDRESS)) {
+	    !pmsg->proplist.has(PR_SENDER_SMTP_ADDRESS)) {
 		if (!oxcmail_try_assign_propval(&pmsg->proplist, PR_SENDER_NAME, PR_SENT_REPRESENTING_NAME) ||
-		    !oxcmail_try_assign_propval(&pmsg->proplist, PROP_TAG_SENDERSMTPADDRESS, PR_SENT_REPRESENTING_SMTP_ADDRESS) ||
+		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENDER_SMTP_ADDRESS, PR_SENT_REPRESENTING_SMTP_ADDRESS) ||
 		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENDER_ADDRTYPE, PR_SENT_REPRESENTING_ADDRTYPE) ||
 		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENDER_EMAIL_ADDRESS, PR_SENT_REPRESENTING_EMAIL_ADDRESS) ||
 		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENDER_SEARCH_KEY, PR_SENT_REPRESENTING_SEARCH_KEY) ||
@@ -3610,7 +3607,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	} else if (!pmsg->proplist.has(PR_SENT_REPRESENTING_NAME) &&
 	    !pmsg->proplist.has(PR_SENT_REPRESENTING_SMTP_ADDRESS)) {
 		if (!oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_NAME, PR_SENDER_NAME) ||
-		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_SMTP_ADDRESS, PROP_TAG_SENDERSMTPADDRESS) ||
+		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENDER_SMTP_ADDRESS) ||
 		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_ADDRTYPE, PR_SENDER_ADDRTYPE) ||
 		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENDER_EMAIL_ADDRESS) ||
 		    !oxcmail_try_assign_propval(&pmsg->proplist, PR_SENT_REPRESENTING_SEARCH_KEY, PR_SENDER_SEARCH_KEY) ||
@@ -3638,10 +3635,10 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		message_content_free(pmsg);
 		return NULL;
 	}
-	pvalue = pmsg->proplist.getval(PROP_TAG_CLIENTSUBMITTIME);
+	pvalue = pmsg->proplist.getval(PR_CLIENT_SUBMIT_TIME);
 	if (NULL == pvalue) {
 		mime_enum.nttime_stamp = rop_util_unix_to_nttime(time(NULL));
-		if (pmsg->proplist.set(PROP_TAG_CLIENTSUBMITTIME,
+		if (pmsg->proplist.set(PR_CLIENT_SUBMIT_TIME,
 		    &mime_enum.nttime_stamp) != 0) {
 			message_content_free(pmsg);
 			return NULL;
@@ -4369,7 +4366,7 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 		MAIL_TYPE_TNEF == pskeleton->mail_type) {
 		/* do nothing */
 	} else {
-		auto pvalue = pmsg->proplist.get<uint32_t>(PROP_TAG_NATIVEBODY);
+		auto pvalue = pmsg->proplist.get<uint32_t>(PR_NATIVE_BODY_INFO);
 		if (NULL != pvalue && NATIVE_BODY_RTF == *pvalue &&
 		    ((pvalue = pmsg->proplist.get<uint32_t>(PR_RTF_IN_SYNC)) == nullptr ||
 		    *pvalue == 0)) {
@@ -4477,13 +4474,13 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		return FALSE;
 	}
 	
-	auto pvalue = pmsg->proplist.getval(PROP_TAG_SENDERSMTPADDRESS);
+	auto pvalue = pmsg->proplist.getval(PR_SENDER_SMTP_ADDRESS);
 	auto pvalue1 = pmsg->proplist.getval(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (NULL != pvalue && NULL != pvalue1) {
 		if (strcasecmp(static_cast<char *>(pvalue), static_cast<char *>(pvalue1)) != 0) {
 			oxcmail_export_address(pmsg, alloc, PR_SENDER_NAME,
 				PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS,
-				PROP_TAG_SENDERSMTPADDRESS, PR_SENDER_ENTRYID,
+				PR_SENDER_SMTP_ADDRESS, PR_SENDER_ENTRYID,
 				pskeleton->charset, tmp_field,
 				GX_ARRAY_SIZE(tmp_field));
 			if (FALSE == mime_set_field(phead,
@@ -4505,7 +4502,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 					PR_SENDER_NAME,
 					PR_SENDER_ADDRTYPE,
 					PR_SENDER_EMAIL_ADDRESS,
-					PROP_TAG_SENDERSMTPADDRESS,
+					PR_SENDER_SMTP_ADDRESS,
 					PR_SENDER_ENTRYID,
 					pskeleton->charset, tmp_field,
 					GX_ARRAY_SIZE(tmp_field));
@@ -4526,12 +4523,12 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		}
 	} else if (oxcmail_export_address(pmsg, alloc, PR_SENDER_NAME,
 	    PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS,
-	    PROP_TAG_SENDERSMTPADDRESS, PR_SENDER_ENTRYID,
+	    PR_SENDER_SMTP_ADDRESS, PR_SENDER_ENTRYID,
 	    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field)) &&
 	    !mime_set_field(phead, "Sender", tmp_field)) {
 		return FALSE;
 	}
-	pvalue = pmsg->proplist.getval(PROP_TAG_ORIGINATORDELIVERYREPORTREQUESTED);
+	pvalue = pmsg->proplist.getval(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		if (TRUE == oxcmail_export_address(pmsg, alloc,
 		    PidTagReadReceiptName, PidTagReadReceiptAddressType,
@@ -4541,7 +4538,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 
 		    oxcmail_export_address(pmsg, alloc, PR_SENDER_NAME,
 		    PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS,
-		    PROP_TAG_SENDERSMTPADDRESS, PR_SENDER_ENTRYID,
+		    PR_SENDER_SMTP_ADDRESS, PR_SENDER_ENTRYID,
 		    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field)) ||
 
 		    oxcmail_export_address(pmsg, alloc, PR_SENT_REPRESENTING_NAME,
@@ -4650,7 +4647,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	pvalue = pmsg->proplist.getval(PidTagVoiceMessageSenderName);
 	if (pvalue != nullptr && !mime_set_field(phead, "X-VoiceMessageSenderName", static_cast<char *>(pvalue)))
 		return FALSE;
-	pvalue = pmsg->proplist.getval(PROP_TAG_FAXNUMBEROFPAGES);
+	pvalue = pmsg->proplist.getval(PidTagFaxNumberOfPages);
 	if (NULL != pvalue) {
 		snprintf(tmp_field, arsizeof(tmp_field), "%u", *(uint32_t*)pvalue);
 		if (FALSE == mime_set_field(phead,
@@ -4661,7 +4658,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	pvalue = pmsg->proplist.getval(PidTagVoiceMessageAttachmentOrder);
 	if (pvalue != nullptr && !mime_set_field(phead, "X-AttachmentOrder", static_cast<char *>(pvalue)))
 		return FALSE;
-	pvalue = pmsg->proplist.getval(PROP_TAG_CALLID);
+	pvalue = pmsg->proplist.getval(PidTagCallId);
 	if (pvalue != nullptr && !mime_set_field(phead, "X-CallID", static_cast<char *>(pvalue)))
 		return FALSE;
 	
@@ -4720,7 +4717,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	pvalue = pmsg->proplist.getval(PROP_TAG_CLIENTSUBMITTIME);
+	pvalue = pmsg->proplist.getval(PR_CLIENT_SUBMIT_TIME);
 	if (NULL == pvalue) {
 		time(&tmp_time);
 	} else {
@@ -4749,12 +4746,12 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		    !mime_set_field(phead, "Subject", tmp_field))
 			return FALSE;
 	}
-	pvalue = pmsg->proplist.getval(PROP_TAG_CONVERSATIONTOPIC);
+	pvalue = pmsg->proplist.getval(PR_CONVERSATION_TOPIC);
 	if (pvalue != nullptr && oxcmail_encode_mime_string(pskeleton->charset,
 	    static_cast<char *>(pvalue), tmp_field, arsizeof(tmp_field)) > 0 &&
 	    !mime_set_field(phead, "Thread-Topic", tmp_field))
 		return FALSE;
-	pvalue = pmsg->proplist.getval(PROP_TAG_CONVERSATIONINDEX);
+	pvalue = pmsg->proplist.getval(PR_CONVERSATION_INDEX);
 	if (NULL != pvalue) {
 		auto bv = static_cast<BINARY *>(pvalue);
 		if (encode64(bv->pb, bv->cb, tmp_field, 1024, &base64_len) == 0 &&
@@ -4893,7 +4890,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	pvalue = pmsg->proplist.getval(PROP_TAG_AUTORESPONSESUPPRESS);
+	pvalue = pmsg->proplist.getval(PR_AUTO_RESPONSE_SUPPRESS);
 	if (NULL != pvalue && 0 != *(uint32_t*)pvalue) {
 		if (0xFFFFFFFF == *(uint32_t*)pvalue) {
 			if (FALSE == mime_set_field(phead,
@@ -4955,7 +4952,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			return FALSE;
 	}
 	
-	pvalue = pmsg->proplist.getval(PROP_TAG_AUTOFORWARDED);
+	pvalue = pmsg->proplist.getval(PR_AUTO_FORWARDED);
 	if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 &&
 	    !mime_set_field(phead, "X-MS-Exchange-Organization-AutoForwarded", "true"))
 		return FALSE;
@@ -5015,11 +5012,11 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	pvalue = pmsg->proplist.getval(PROP_TAG_PURPORTEDSENDERDOMAIN);
+	pvalue = pmsg->proplist.getval(PR_PURPORTED_SENDER_DOMAIN);
 	if (pvalue != nullptr && !mime_set_field(phead, "X-MS-Exchange-Organization-PRD", static_cast<char *>(pvalue)))
 		return FALSE;
 	
-	pvalue = pmsg->proplist.getval(PROP_TAG_CONTENTFILTERSPAMCONFIDENCELEVEL);
+	pvalue = pmsg->proplist.getval(PR_CONTENT_FILTER_SCL);
 	if (NULL != pvalue) {
 		snprintf(tmp_field, arsizeof(tmp_field), "%d", *(int32_t*)pvalue);
 		if (FALSE == mime_set_field(phead,
@@ -5079,7 +5076,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	pvalue = pmsg->proplist.getval(PROP_TAG_BODYCONTENTID);
+	pvalue = pmsg->proplist.getval(PR_BODY_CONTENT_ID);
 	if (NULL != pvalue) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "<%s>",
 		         static_cast<const char *>(pvalue));
@@ -5089,7 +5086,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	
-	pvalue = pmsg->proplist.getval(PROP_TAG_BODYCONTENTLOCATION);
+	pvalue = pmsg->proplist.getval(PR_BODY_CONTENT_LOCATION);
 	if (pvalue != nullptr && !mime_set_field(phead, "Content-Location", static_cast<char *>(pvalue)))
 		return FALSE;
 	
@@ -5279,7 +5276,7 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg,
 	DSN_FIELDS *pdsn_fields;
 	
 	tmp_address[0] = '\0';
-	auto pvalue = pmsg->proplist.getval(PROP_TAG_SENDERSMTPADDRESS);
+	auto pvalue = pmsg->proplist.getval(PR_SENDER_SMTP_ADDRESS);
 	auto pdisplay_name = pmsg->proplist.get<const char>(PR_SENDER_NAME);
 	if (NULL != pvalue) {
 		gx_strlcpy(tmp_address, static_cast<char *>(pvalue), GX_ARRAY_SIZE(tmp_address));
@@ -5339,7 +5336,7 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg,
 			}
 		}
 	}
-	pvalue = pmsg->proplist.getval(PROP_TAG_ORIGINALMESSAGEID);
+	pvalue = pmsg->proplist.getval(PidTagOriginalMessageId);
 	if (NULL != pvalue) {
 		if (!dsn_append_field(pdsn_fields, "Original-Message-ID",
 		    static_cast<char *>(pvalue))) {

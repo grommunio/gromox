@@ -2563,7 +2563,7 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 			body_type = NATIVE_BODY_RTF;
 			break;
 		}
-		if (pmsgctnt->proplist.set(PROP_TAG_NATIVEBODY, &body_type) != 0)
+		if (pmsgctnt->proplist.set(PR_NATIVE_BODY_INFO, &body_type) != 0)
 			return FALSE;
 	}
 	return TRUE;
@@ -2679,7 +2679,7 @@ BOOL exmdb_server_remove_instance_properties(
 			case PR_BODY_U:
 				pmsgctnt->proplist.erase(ID_TAG_BODY);
 				pmsgctnt->proplist.erase(ID_TAG_BODY_STRING8);
-				if ((pvalue = pmsgctnt->proplist.getval(PROP_TAG_NATIVEBODY)) != nullptr &&
+				if ((pvalue = pmsgctnt->proplist.getval(PR_NATIVE_BODY_INFO)) != nullptr &&
 				    *static_cast<uint32_t *>(pvalue) == NATIVE_BODY_PLAIN)
 					*(uint32_t*)pvalue = NATIVE_BODY_UNDEFINED;	
 				break;
@@ -2690,12 +2690,12 @@ BOOL exmdb_server_remove_instance_properties(
 				pmsgctnt->proplist.erase(PR_BODY_HTML);
 				pmsgctnt->proplist.erase(PR_BODY_HTML_A);
 				pmsgctnt->proplist.erase(ID_TAG_HTML);
-				if ((pvalue = pmsgctnt->proplist.getval(PROP_TAG_NATIVEBODY)) != nullptr &&
+				if ((pvalue = pmsgctnt->proplist.getval(PR_NATIVE_BODY_INFO)) != nullptr &&
 				    *static_cast<uint32_t *>(pvalue) == NATIVE_BODY_HTML)
 					*(uint32_t*)pvalue = NATIVE_BODY_UNDEFINED;	
 				break;
 			case PR_RTF_COMPRESSED:
-				if ((pvalue = pmsgctnt->proplist.getval(PROP_TAG_NATIVEBODY)) != nullptr &&
+				if ((pvalue = pmsgctnt->proplist.getval(PR_NATIVE_BODY_INFO)) != nullptr &&
 				    *static_cast<uint32_t *>(pvalue) == NATIVE_BODY_RTF)
 					*(uint32_t*)pvalue = NATIVE_BODY_UNDEFINED;	
 				pmsgctnt->proplist.erase(ID_TAG_RTFCOMPRESSED);
