@@ -1088,19 +1088,19 @@ static inline unsigned int om_parse_xpriority(const char *s)
 static inline unsigned int om_parse_senderidresult(const char *s)
 {
 	if (strcasecmp(s, "Neutral") == 0)
-		return 1;
+		return SENDER_ID_NEUTRAL;
 	if (strcasecmp(s, "Pass") == 0)
-		return 2;
+		return SENDER_ID_PASS;
 	if (strcasecmp(s, "Fail") == 0)
-		return 3;
+		return SENDER_ID_FAIL;
 	if (strcasecmp(s, "SoftFail") == 0)
-		return 4;
+		return SENDER_ID_SOFT_FAIL;
 	if (strcasecmp(s, "None") == 0)
-		return 5;
+		return SENDER_ID_NONE;
 	if (strcasecmp(s, "TempError") == 0)
-		return 6;
+		return SENDER_ID_TEMP_ERROR;
 	if (strcasecmp(s, "PermError") == 0)
-		return 7;
+		return SENDER_ID_PERM_ERROR;
 	return 0;
 }
 
@@ -3046,6 +3046,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 	if (pproplist->set(PR_NDR_STATUS_CODE, &status_code) != 0)
 		return false;
 	uint32_t diagnostic_code = MAPI_DIAG_NO_DIAGNOSTIC, reason_code = 0;
+	/* cf. IANA list for SMTP Enhanced Status Codes */
 	switch (subject) {
 	case 1:
 		switch (detail) {
@@ -4956,49 +4957,49 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	pvalue = pmsg->proplist.getval(PR_SENDER_ID_STATUS);
 	if (NULL != pvalue) {
 		switch (*(uint32_t*)pvalue) {
-		case 1:
+		case SENDER_ID_NEUTRAL:
 			if (FALSE == mime_set_field(phead,
 				"X-MS-Exchange-Organization-SenderIdResult",
 				"Neutral")) {
 				return FALSE;
 			}
 			break;
-		case 2:
+		case SENDER_ID_PASS:
 			if (FALSE == mime_set_field(phead,
 				"X-MS-Exchange-Organization-SenderIdResult",
 				"Pass")) {
 				return FALSE;
 			}
 			break;
-		case 3:
+		case SENDER_ID_FAIL:
 			if (FALSE == mime_set_field(phead,
 				"X-MS-Exchange-Organization-SenderIdResult",
 				"Fail")) {
 				return FALSE;
 			}
 			break;
-		case 4:
+		case SENDER_ID_SOFT_FAIL:
 			if (FALSE == mime_set_field(phead,
 				"X-MS-Exchange-Organization-SenderIdResult",
 				"SoftFail")) {
 				return FALSE;
 			}
 			break;
-		case 5:
+		case SENDER_ID_NONE:
 			if (FALSE == mime_set_field(phead,
 				"X-MS-Exchange-Organization-SenderIdResult",
 				"None")) {
 				return FALSE;
 			}
 			break;
-		case 6:
+		case SENDER_ID_TEMP_ERROR:
 			if (FALSE == mime_set_field(phead,
 				"X-MS-Exchange-Organization-SenderIdResult",
 				"TempError")) {
 				return FALSE;
 			}
 			break;
-		case 7:
+		case SENDER_ID_PERM_ERROR:
 			if (FALSE == mime_set_field(phead,
 				"X-MS-Exchange-Organization-SenderIdResult",
 				"PermError")) {
