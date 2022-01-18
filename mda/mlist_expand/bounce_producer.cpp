@@ -577,7 +577,7 @@ static int bounce_producer_get_mail_subject(MAIL *pmail, char *subject,
 {
 	char tmp_buff[1024];
 	auto pmime = pmail->get_head();
-	if (FALSE == mime_get_field(pmime, "Subject", tmp_buff, 1024)) {
+	if (!pmime->get_field("Subject", tmp_buff, 1024)) {
 		*subject = '\0';
 		return 0;
 	}
@@ -646,6 +646,6 @@ static BOOL bounce_producer_get_mail_thread_index(MAIL *pmail, char *pbuff)
 	if (NULL == phead) {
 		return FALSE;
 	}
-	return mime_get_field(phead, "Thread-Index", pbuff, 128);
+	return phead->get_field("Thread-Index", pbuff, 128);
 }
 

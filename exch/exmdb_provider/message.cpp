@@ -3028,7 +3028,6 @@ static BOOL message_forward_message(const char *from_address,
 	BOOL b_extended, uint32_t count, void *pblock)
 {
 	int i;
-	int num;
 	int offset;
 	void *pvalue;
 	int body_type;
@@ -3080,14 +3079,11 @@ static BOOL message_forward_message(const char *from_address,
 		if (NULL == pmime) {
 			return FALSE;
 		}
-		num = mime_get_field_num(pmime, "Delivered-To");
+		auto num = pmime->get_field_num("Delivered-To");
 		for (i=0; i<num; i++) {
-			if (TRUE == mime_search_field(pmime,
-				"Delivered-To", i, tmp_buff, 256)) {
-				if (0 == strcasecmp(tmp_buff, username)) {
-					return TRUE;
-				}
-			}
+			if (pmime->search_field("Delivered-To", i, tmp_buff, 256) &&
+			    strcasecmp(tmp_buff, username) == 0)
+				return TRUE;
 		}
 	} else {
 		if (FALSE == message_read_message(psqlite, cpid,

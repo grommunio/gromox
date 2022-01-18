@@ -2284,7 +2284,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 	time_t tmp_time;
 	uint64_t tmp_int64;
 	uint32_t tmp_int32;
-	BOOL b_description;
 	char extension[16];
 	char mode_buff[32];
 	char dir_buff[256];
@@ -2386,8 +2385,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		pmime_enum->b_result = FALSE;
 		return;
 	}
-	b_description = mime_get_field(pmime,
-		"Content-Description", tmp_buff, 256);
+	auto b_description = pmime->get_field("Content-Description", tmp_buff, 256);
 	if (TRUE == b_description) {
 		uint32_t tag;
 		if (TRUE == mime_string_to_utf8(
@@ -2404,8 +2402,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		}
 	}
 	bool b_inline = false;
-	if (TRUE == mime_get_field(pmime,
-		"Content-Disposition", tmp_buff, 1024)) {
+	if (pmime->get_field("Content-Disposition", tmp_buff, 1024)) {
 		b_inline = strcmp(tmp_buff, "inline") == 0 || strncasecmp(tmp_buff, "inline;", 7) == 0;
 		if (oxcmail_get_field_param(tmp_buff, "create-date", date_buff, 128) &&
 		    parse_rfc822_timestamp(date_buff, &tmp_time)) {
@@ -2434,7 +2431,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		pmime_enum->b_result = FALSE;
 		return;
 	}
-	if (TRUE == mime_get_field(pmime, "Content-ID", tmp_buff, 128)) {
+	if (pmime->get_field("Content-ID", tmp_buff, 128)) {
 		tmp_int32 = strlen(tmp_buff);
 		if (tmp_int32 > 0) {
 			if ('>' == tmp_buff[tmp_int32 - 1]) {
@@ -2454,7 +2451,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			}
 		}
 	}
-	if (TRUE == mime_get_field(pmime, "Content-Location", tmp_buff, 1024)) {
+	if (pmime->get_field("Content-Location", tmp_buff, 1024)) {
 		uint32_t tag = oxcmail_check_ascii(tmp_buff) ?
 		                  PR_ATTACH_CONTENT_LOCATION :
 		                  PR_ATTACH_CONTENT_LOCATION_A;
@@ -2463,7 +2460,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			return;
 		}
 	}
-	if (TRUE == mime_get_field(pmime, "Content-Base", tmp_buff, 1024)) {
+	if (pmime->get_field("Content-Base", tmp_buff, 1024)) {
 		uint32_t tag = oxcmail_check_ascii(tmp_buff) ?
 		                  PR_ATTACH_CONTENT_BASE : PR_ATTACH_CONTENT_BASE_A;
 		if (pattachment->proplist.set(tag, tmp_buff) != 0) {
@@ -2576,7 +2573,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			pattachment->proplist.erase(PR_ATTACH_EXTENSION);
 			pattachment->proplist.erase(PR_ATTACH_EXTENSION_A);
 			if (!b_description &&
-			    mime_get_field(mail.get_head(), "Subject", tmp_buff, 256) &&
+			    mail.get_head()->get_field("Subject", tmp_buff, 256) &&
 			    mime_string_to_utf8(pmime_enum->charset, tmp_buff, file_name) &&
 			    pattachment->proplist.set(PR_DISPLAY_NAME, file_name) != 0) {
 				pmime_enum->b_result = FALSE;
@@ -3406,10 +3403,8 @@ static BOOL oxcmail_parse_encrypted(MIME *phead, uint16_t *plast_propid,
 	char tmp_buff[1024];
 	PROPERTY_NAME propname;
 	
-	if (FALSE == mime_get_field(phead,
-		"Content-Type", tmp_buff, 1024)) {
+	if (!phead->get_field("Content-Type", tmp_buff, arsizeof(tmp_buff)))
 		return FALSE;
-	}
 	propname.guid = PS_INTERNET_HEADERS;
 	propname.kind = MNID_STRING;
 	propname.pname = deconst("Content-Type");
@@ -3446,8 +3441,7 @@ static BOOL oxcmail_parse_smime_message(
 	if (0 == strcasecmp(content_type, "multipart/signed")) {
 		memcpy(pcontent, "Content-Type: ", 14);
 		offset = 14;
-		if (FALSE == mime_get_field(phead, "Content-Type",
-			pcontent + offset, 1024 - offset)) {
+		if (!phead->get_field("Content-Type", pcontent + offset, 1024 - offset)) {
 			free(pcontent);
 			return FALSE;
 		}
@@ -3533,7 +3527,7 @@ static bool atxlist_all_hidden(const ATTACHMENT_LIST *atl)
 static inline bool tnef_vfy_get_field(MIME *head, char *buf, size_t z)
 {
 #ifdef VERIFY_TNEF_CORRELATOR
-	return mime_get_field(head, "X-MS-TNEF-Correlator", buf, z);
+	return head->get_field("X-MS-TNEF-Correlator", buf, z);
 #else
 	return true;
 #endif
@@ -3607,8 +3601,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		message_content_free(pmsg);
 		return NULL;
 	}
-	field_param.b_classified = mime_get_field(phead,
-		"X-Microsoft-Classified", tmp_buff, 16);
+	field_param.b_classified = phead->get_field("X-Microsoft-Classified", tmp_buff, 16);
 	if (!phead->enum_field(oxcmail_enum_mail_head, &field_param)) {
 		message_content_free(pmsg);
 		return NULL;

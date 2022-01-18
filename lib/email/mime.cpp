@@ -585,14 +585,15 @@ static BOOL mime_get_content_type_field(MIME *pmime, char *value, int length)
  *		TRUE				OK to get value
  *		FALSE				no such tag in fields
  */		
-BOOL mime_get_field(MIME *pmime, const char *tag, char *value, int length)
+BOOL MIME::get_field(const char *tag, char *value, int length)
 {
+	auto pmime = this;
 	int tag_len, val_len;
 	char tmp_buff[MIME_NAME_LEN];
 	
 #ifdef _DEBUG_UMTA
-	if (NULL == pmime || NULL == tag || NULL == value) {
-		debug_info("[mime]: NULL pointer found in mime_get_field");
+	if (tag == nullptr || value == nullptr) {
+		debug_info("[mime]: NULL pointer found in MIME::get_field");
 		return FALSE;
 	}
 #endif
@@ -623,15 +624,16 @@ BOOL mime_get_field(MIME *pmime, const char *tag, char *value, int length)
  *	@return
  *		number of same tags "XXX"
  */
-int mime_get_field_num(MIME *pmime, const char *tag)
+int MIME::get_field_num(const char *tag)
 {
+	auto pmime = this;
 	int i;
 	int	tag_len, val_len;
 	char tmp_buff[MIME_NAME_LEN];
 
 #ifdef _DEBUG_UMTA
-	if (NULL == pmime || NULL == tag) {
-		debug_info("[mime]: NULL pointer found in mime_get_field_num");
+	if (tag == nullptr) {
+		debug_info("[mime]: NULL pointer found in MIME::get_field_num");
 		return 0;
 	}
 #endif
@@ -665,16 +667,17 @@ int mime_get_field_num(MIME *pmime, const char *tag)
  *		TRUE				OK to get value
  *		FALSE				no such tag in fields
  */		
-BOOL mime_search_field(MIME *pmime, const char *tag, int order, char *value,
+BOOL MIME::search_field(const char *tag, int order, char *value,
 	int length)
 {
+	auto pmime = this;
 	int i;
 	int	tag_len, val_len;
 	char tmp_buff[MIME_FIELD_LEN];
 	
 #ifdef _DEBUG_UMTA
-	if (NULL == pmime || NULL == tag || NULL == value) {
-		debug_info("[mime]: NULL pointer found in mime_search_field");
+	if (tag == nullptr || value == nullptr) {
+		debug_info("[mime]: NULL pointer found in MIME::search_field");
 		return FALSE;
 	}
 #endif
@@ -1383,8 +1386,7 @@ BOOL MIME::read_content(char *out_buff, size_t *plength)
 		*plength = offset;
 		return TRUE;
 	}
-	if (FALSE == mime_get_field(pmime, "Content-Transfer-Encoding",
-		encoding, 256)) {
+	if (!pmime->get_field("Content-Transfer-Encoding", encoding, 256)) {
 		encoding_type = MIME_ENCODING_NONE;
 	} else {
 		HX_strrtrim(encoding);
@@ -2080,8 +2082,7 @@ BOOL mime_get_filename(MIME *pmime, char *file_name)
 	
 	if (TRUE == mime_get_content_param(pmime, "name", file_name, 256)) {
 		goto FIND_FILENAME;
-	} else if (TRUE == mime_get_field(pmime, "Content-Disposition",
-		file_name, 256)) {
+	} else if (pmime->get_field("Content-Disposition", file_name, 256)) {
 		tmp_len = strlen(file_name);
 		pbegin = search_string(file_name, "filename=", tmp_len);
 		if (NULL != pbegin) {
@@ -2095,8 +2096,7 @@ BOOL mime_get_filename(MIME *pmime, char *file_name)
 			file_name[tmp_len] = '\0';
 			goto FIND_FILENAME;
 		}
-	} else if (TRUE == mime_get_field(pmime,
-		"Content-Transfer-Encoding", encoding, 256)) {
+	} else if (pmime->get_field("Content-Transfer-Encoding", encoding, 256)) {
 		if (0 == strcasecmp(encoding, "uue") ||
 			0 == strcasecmp(encoding, "x-uue") ||
 			0 == strcasecmp(encoding, "uuencode") ||
@@ -2248,9 +2248,8 @@ ssize_t mime_get_mimes_digest(MIME *pmime, const char *id_string,
 		HX_strrtrim(content_type);
 		HX_strltrim(content_type);
 		
-		if (FALSE == mime_get_field(pmime, "Content-Transfer-Encoding",
-			encoding_buff, 128) || FALSE == mime_check_ascii_printable(
-			encoding_buff)) {
+		if (!pmime->get_field("Content-Transfer-Encoding", encoding_buff, 128) ||
+		    !mime_check_ascii_printable(encoding_buff)) {
 			buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 						"{\"id\":\"%s\",\"ctype\":\"%s\","
 						"\"encoding\":\"8bit\",\"head\":%zu,\"begin\":%zu,",
@@ -2322,8 +2321,7 @@ ssize_t mime_get_mimes_digest(MIME *pmime, const char *id_string,
 			buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 							",\"filename\":\"%s\"", temp_buff);
 		}
-		if (TRUE == mime_get_field(pmime,
-			"Content-Disposition", content_disposition, 256)) {
+		if (pmime->get_field("Content-Disposition", content_disposition, 256)) {
 			ptoken = strchr(content_disposition, ';');
 			if (NULL != ptoken) {
 				*ptoken = '\0';
@@ -2347,8 +2345,7 @@ ssize_t mime_get_mimes_digest(MIME *pmime, const char *id_string,
 		if (buff_len >= length - 1) {
 			return -1;
 		}
-
-		if (TRUE == mime_get_field(pmime, "Content-ID", content_ID, 128)) {
+		if (pmime->get_field("Content-ID", content_ID, 128)) {
 			tmp_len = strlen(content_ID);
 			encode64(content_ID, tmp_len, temp_buff, 256, &tmp_len);
 			buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
@@ -2357,9 +2354,7 @@ ssize_t mime_get_mimes_digest(MIME *pmime, const char *id_string,
 				return -1;
 			}
 		}
-
-		if (TRUE == mime_get_field(pmime, "Content-Location",
-			content_location, 256)) {
+		if (pmime->get_field("Content-Location", content_location, 256)) {
 			tmp_len = strlen(content_location);
 			encode64(content_location, tmp_len, temp_buff, 512, &tmp_len);
 			buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,

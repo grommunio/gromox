@@ -55,8 +55,7 @@ HOOK_ENTRY(hook_mlist_expand);
 
 static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 {
-	int result;
-	int i, num;
+	int result, i;
 	BOOL b_touched;
 	char rcpt_to[UADDR_SIZE], delivered_to[UADDR_SIZE];
 	std::vector<std::string> temp_file1;
@@ -71,9 +70,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 		return FALSE;
 	}
 
-	num = mime_get_field_num(phead, "Delivered-To");
-
-
+	auto num = phead->get_field_num("Delivered-To");
 	b_touched = FALSE;
 	while (pcontext->pcontrol->f_rcpt_to.readline(rcpt_to,
 	       arsizeof(rcpt_to)) != MEM_END_OF_FILE) {
@@ -223,7 +220,8 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 	if (NULL == pcontext_expand) {
 		for (const auto &recip : temp_file1) {
 			for (i = 0; i < num; ++i)
-				if (mime_search_field(phead, "Delivered-To", i, delivered_to, arsizeof(delivered_to)) &&
+				if (phead->search_field("Delivered-To", i,
+				    delivered_to, arsizeof(delivered_to)) &&
 				    strcasecmp(delivered_to, recip.c_str()) == 0)
 					break;
 			if (i == num) {
@@ -238,7 +236,8 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 
 	for (auto &&recip : temp_file1) {
 		for (i = 0; i < num; ++i)
-			if (mime_search_field(phead, "Delivered-To", i, delivered_to, arsizeof(delivered_to)) &&
+			if (phead->search_field("Delivered-To", i,
+			    delivered_to, arsizeof(delivered_to)) &&
 			    strcasecmp(delivered_to, recip.c_str()) == 0)
 				break;
 		if (i == num) {

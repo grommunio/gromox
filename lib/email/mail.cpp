@@ -387,7 +387,7 @@ BOOL MAIL::get_charset(char *charset)
 		return FALSE;
 	}
 	pmime = (MIME*)pnode->pdata;
-	if (TRUE == mime_get_field(pmime, "Subject", temp_buff, 512)) {
+	if (pmime->get_field("Subject", temp_buff, 512)) {
 		parse_mime_encode_string(temp_buff, strlen(temp_buff),
 			&encode_string);
 		if (0 != strcmp(encode_string.charset, "default")) {
@@ -395,7 +395,7 @@ BOOL MAIL::get_charset(char *charset)
 			return TRUE;
 		}
 	}
-	if (TRUE == mime_get_field(pmime, "From", temp_buff, 512)) {
+	if (pmime->get_field("From", temp_buff, 512)) {
 		parse_mime_encode_string(temp_buff, strlen(temp_buff),
 			&encode_string);
 		if (0 != strcmp(encode_string.charset, "default")) {
@@ -471,57 +471,47 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
 	}
 
 	pmime = (MIME*)pnode->pdata;
-
-	if (FALSE == mime_get_field(pmime, "Message-ID", temp_buff, 128)) {
+	if (!pmime->get_field("Message-ID", temp_buff, 128))
 		mime_msgid[0] = '\0';
-	} else {
+	else
 		encode64(temp_buff, strlen(temp_buff), mime_msgid, 256, NULL);
-	}
 
-	if (FALSE == mime_get_field(pmime, "Date", temp_buff, 128)) {
+	if (!pmime->get_field("Date", temp_buff, 128))
 		mime_date[0] = '\0';
-	} else {
+	else
 		encode64(temp_buff, strlen(temp_buff), mime_date, 256, NULL);
-	}
 
-	if (FALSE == mime_get_field(pmime, "From", temp_buff, 512)) {
+	if (!pmime->get_field("From", temp_buff, 512))
 		mime_from[0] = '\0';
-	} else {
+	else
 		encode64(temp_buff, strlen(temp_buff), mime_from, 1024, NULL);
-	}
 
-	if (FALSE == mime_get_field(pmime, "Sender", temp_buff, 512)) {
+	if (!pmime->get_field("Sender", temp_buff, 512))
 		mime_sender[0] = '\0';
-	} else {
+	else
 		encode64(temp_buff, strlen(temp_buff), mime_sender, 1024, NULL);
-	}
 	
-	if (FALSE == mime_get_field(pmime, "Reply-To", temp_buff, 512)) {
+	if (!pmime->get_field("Reply-To", temp_buff, 512))
 		mime_reply_to[0] = '\0';
-	} else {
+	else
 		encode64(temp_buff, strlen(temp_buff), mime_reply_to, 1024, NULL);
-	}
 
-	if (FALSE == mime_get_field(pmime, "To", temp_buff, 1024)) {
+	if (!pmime->get_field("To", temp_buff, 1024))
 		mime_to[0] = '\0';
-	} else {
+	else
 		encode64(temp_buff, strlen(temp_buff), mime_to, 2048, NULL);
-	}
 
-	if (FALSE == mime_get_field(pmime, "Cc", temp_buff, 1024)) {
+	if (!pmime->get_field("Cc", temp_buff, 1024))
 		mime_cc[0] = '\0';
-	} else {
+	else
 		encode64(temp_buff, strlen(temp_buff), mime_cc, 2048, NULL);
-	}
 
-	if (FALSE == mime_get_field(pmime, "In-Reply-To", temp_buff, 512)) {
+	if (!pmime->get_field("In-Reply-To", temp_buff, 512))
 		mime_in_reply_to[0] = '\0';
-	} else {
+	else
 		encode64(temp_buff, strlen(temp_buff), mime_in_reply_to, 1024, NULL);
-	}
-	
 
-	if (FALSE == mime_get_field(pmime, "X-Priority", mime_priority, 32)) {
+	if (!pmime->get_field("X-Priority", mime_priority, 32)) {
 		priority = 3;
 	} else {
 		priority = strtol(mime_priority, nullptr, 0);
@@ -530,13 +520,12 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
 		}
 	}
 
-	if (FALSE == mime_get_field(pmime, "Subject", temp_buff, 512)) {
+	if (!pmime->get_field("Subject", temp_buff, 512))
 		mime_subject[0] = '\0';
-	} else {
+	else
 		encode64(temp_buff, strlen(temp_buff), mime_subject, 1024, NULL);
-	}
 	
-	if (FALSE == mime_get_field(pmime, "Received", temp_buff, 256)) {
+	if (!pmime->get_field("Received", temp_buff, 256)) {
 		strcpy(mime_received, mime_date);
 	} else {
 		ptr = strrchr(temp_buff, ';');
@@ -603,8 +592,7 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
 		}
 	}
 
-	if (TRUE == mime_get_field(pmime, "Disposition-Notification-To",
-		temp_buff, 1024)) {
+	if (pmime->get_field("Disposition-Notification-To", temp_buff, 1024)) {
 		encode64(temp_buff, strlen(temp_buff), mime_notification, 1024, NULL);
 		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 					",\"notification\":\"%s\"", mime_notification);
@@ -614,7 +602,7 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
 		}
 	}
 
-	if (TRUE == mime_get_field(pmime, "References", temp_buff, 1024)) {
+	if (pmime->get_field("References", temp_buff, 1024)) {
 		encode64(temp_buff, strlen(temp_buff), mime_reference, 2048, NULL);
 		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 					",\"ref\":\"%s\"", mime_reference);
