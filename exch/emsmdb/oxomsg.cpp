@@ -18,6 +18,16 @@
 using namespace std::string_literals;
 using namespace gromox;
 
+enum { /* for RopSubmitMessage */
+	ROP_SUBMIT_FLAG_PREPROCESS = 0x1U,
+	ROP_SUBMIT_FLAG_NEEDS_SPOOLER = 0x2U,
+};
+
+enum { /* for PR_SUBMIT_FLAGS (unused in Gromox) */
+	SUBMITFLAG_LOCKED = 0x1U,
+	SUBMITFLAG_PREPROCESS = 0x2U,
+};
+
 static gxerr_t oxomsg_rectify_message(message_object *pmessage,
     const char *representing_username)
 {
@@ -282,7 +292,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (NULL != pvalue) {
 		max_length = *(int32_t*)pvalue;
 	}
-	tmp_proptags.count = (submit_flags & SUBMIT_FLAG_NEEDS_SPOOLER) ? 2 : 6;
+	tmp_proptags.count = (submit_flags & ROP_SUBMIT_FLAG_NEEDS_SPOOLER) ? 2 : 6;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PR_MESSAGE_SIZE;
 	proptag_buff[1] = PR_MESSAGE_FLAGS;
@@ -319,7 +329,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (TRUE == b_exist) {
 		return ecAccessDenied;
 	}
-	if (submit_flags & SUBMIT_FLAG_NEEDS_SPOOLER) {
+	if (submit_flags & ROP_SUBMIT_FLAG_NEEDS_SPOOLER) {
 		if (!exmdb_client_link_message(plogon->get_dir(), pinfo->cpid,
 		    fid_spooler, pmessage->get_id(), &b_result) || !b_result)
 			return ecError;
