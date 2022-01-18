@@ -626,23 +626,23 @@ static int delete_mail(const char *path, const char *folder, SINGLE_LIST *plist)
 		temp_len = strlen(pmsg->file_name);
 		memcpy(buff + length, pmsg->file_name, temp_len);
 		length += temp_len;
-		if (length > 128*1024) {
-			buff[length] = '\r';
-			length ++;
-			buff[length] = '\n';
-			length ++;
-			if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-				goto DELETE_ERROR;
-			if (0 == strncmp(buff, "TRUE", 4)) {
-				length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
-			} else if (0 == strncmp(buff, "FALSE ", 6)) {
-				std::unique_lock sv_hold(g_server_lock);
-				double_list_append_as_tail(&pback->psvr->conn_list,
-					&pback->node);
-				return MIDB_RESULT_ERROR;
-			} else {
-				goto DELETE_ERROR;
-			}
+		if (length <= 128 * 1024)
+			continue;
+		buff[length] = '\r';
+		length ++;
+		buff[length] = '\n';
+		length ++;
+		if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
+			goto DELETE_ERROR;
+		if (0 == strncmp(buff, "TRUE", 4)) {
+			length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
+		} else if (0 == strncmp(buff, "FALSE ", 6)) {
+			std::unique_lock sv_hold(g_server_lock);
+			double_list_append_as_tail(&pback->psvr->conn_list,
+				&pback->node);
+			return MIDB_RESULT_ERROR;
+		} else {
+			goto DELETE_ERROR;
 		}
 	}
 
@@ -1451,24 +1451,24 @@ static int remove_mail(const char *path, const char *folder,
 		temp_len = strlen(pitem->mid);
 		memcpy(buff + length, pitem->mid, temp_len);
 		length += temp_len;
-		if (length > 128*1024) {
-			buff[length] = '\r';
-			length ++;
-			buff[length] = '\n';
-			length ++;
-			if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-				goto RDWR_ERROR;
-			if (0 == strncmp(buff, "TRUE", 4)) {
-				length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
-			} else if (0 == strncmp(buff, "FALSE ", 6)) {
-				std::unique_lock sv_hold(g_server_lock);
-				double_list_append_as_tail(&pback->psvr->conn_list,
-					&pback->node);
-				*perrno = strtol(buff + 6, nullptr, 0);
-				return MIDB_RESULT_ERROR;
-			} else {
-				goto RDWR_ERROR;
-			}
+		if (length <= 128*1024)
+			continue;
+		buff[length] = '\r';
+		length ++;
+		buff[length] = '\n';
+		length ++;
+		if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
+			goto RDWR_ERROR;
+		if (0 == strncmp(buff, "TRUE", 4)) {
+			length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
+		} else if (0 == strncmp(buff, "FALSE ", 6)) {
+			std::unique_lock sv_hold(g_server_lock);
+			double_list_append_as_tail(&pback->psvr->conn_list,
+				&pback->node);
+			*perrno = strtol(buff + 6, nullptr, 0);
+			return MIDB_RESULT_ERROR;
+		} else {
+			goto RDWR_ERROR;
 		}
 	}
 
