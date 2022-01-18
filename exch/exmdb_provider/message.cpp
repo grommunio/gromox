@@ -794,7 +794,7 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 	proptag_buff[3] = PROP_TAG_CLIENTSUBMITTIME;
 	proptag_buff[4] = PR_MESSAGE_SIZE;
 	proptag_buff[5] = PR_INTERNET_CPID;
-	proptag_buff[6] = PROP_TAG_INTERNETMESSAGEID;
+	proptag_buff[6] = PR_INTERNET_MESSAGE_ID;
 	proptag_buff[7] = PR_PARENT_KEY;
 	proptag_buff[8] = PROP_TAG_CONVERSATIONINDEX;
 	if (!cu_get_properties(db_table::msg_props, mid_val, cpid,

@@ -1073,7 +1073,7 @@ static BOOL common_util_propvals_to_recipient(uint32_t cpid,
 {
 	memset(prow, 0, sizeof(RECIPIENT_ROW));
 	prow->flags |= RECIPIENT_ROW_FLAG_UNICODE;
-	auto pvalue = ppropvals->getval(PROP_TAG_RESPONSIBILITY);
+	auto pvalue = ppropvals->getval(PR_RESPONSIBILITY);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
 		prow->flags |= RECIPIENT_ROW_FLAG_RESPONSIBLE;
 	}
@@ -1170,7 +1170,7 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 	PROPTAG_ARRAY tmp_columns;
 	BOOL b_unicode = (prow->flags & RECIPIENT_ROW_FLAG_UNICODE) ? TRUE : false;
 	
-	cu_set_propval(ppropvals, PROP_TAG_RESPONSIBILITY, (prow->flags & RECIPIENT_ROW_FLAG_RESPONSIBLE) ? &persist_true : &persist_false);
+	cu_set_propval(ppropvals, PR_RESPONSIBILITY, (prow->flags & RECIPIENT_ROW_FLAG_RESPONSIBLE) ? &persist_true : &persist_false);
 	cu_set_propval(ppropvals, PR_SEND_RICH_INFO, (prow->flags & RECIPIENT_ROW_FLAG_NONRICH) ? &persist_true : &persist_false);
 	if (NULL != prow->ptransmittable_name) {
 		void *pvalue;
@@ -1982,7 +1982,7 @@ BOOL common_util_send_message(logon_object *plogon,
 		}
 		/*
 		if (FALSE == b_submit) {
-			pvalue = prcpts->pparray[i]->getval(PROP_TAG_RESPONSIBILITY);
+			pvalue = prcpts->pparray[i]->getval(PR_RESPONSIBILITY);
 			if (NULL == pvalue || 0 != *(uint8_t*)pvalue) {
 				continue;
 			}

@@ -2547,7 +2547,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		tnef_proplist.count ++;
 	}
 	if (FALSE == b_key) {
-		pvalue = pmsg->proplist.getval(PROP_TAG_INTERNETMESSAGEID);
+		pvalue = pmsg->proplist.getval(PR_INTERNET_MESSAGE_ID);
 		if (NULL != pvalue) {
 			tnef_proplist.ppropval[tnef_proplist.count].propid =
 				PROP_ID(PR_TNEF_CORRELATION_KEY);

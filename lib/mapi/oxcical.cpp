@@ -868,10 +868,10 @@ static BOOL oxcical_parse_recipients(std::shared_ptr<ICAL_COMPONENT> pmain_event
 		if (pproplist->set(PR_DISPLAY_TYPE, &tmp_int32) != 0)
 			return FALSE;
 		tmp_byte = 1;
-		if (pproplist->set(PROP_TAG_RESPONSIBILITY, &tmp_byte) != 0)
+		if (pproplist->set(PR_RESPONSIBILITY, &tmp_byte) != 0)
 			return FALSE;
 		tmp_int32 = 1;
-		if (pproplist->set(PROP_TAG_RECIPIENTFLAGS, &tmp_int32) != 0)
+		if (pproplist->set(PR_RECIPIENT_FLAGS, &tmp_int32) != 0)
 			return FALSE;
 	}
 	/*
@@ -3294,7 +3294,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 		b_rsvp = FALSE;
 	}
 	for (size_t i = 0; i < pmsg->children.prcpts->count; ++i) {
-		pvalue = pmsg->children.prcpts->pparray[i]->getval(PROP_TAG_RECIPIENTFLAGS);
+		pvalue = pmsg->children.prcpts->pparray[i]->getval(PR_RECIPIENT_FLAGS);
 		if (NULL == pvalue) {
 			continue;
 		}

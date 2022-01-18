@@ -576,7 +576,7 @@ BOOL bounce_producer_make(const char *username,
 			"manual-action/MDN-sent-automatically; deleted");
 		break;
 	}
-	pvalue = pbrief->proplist.getval(PROP_TAG_INTERNETMESSAGEID);
+	pvalue = pbrief->proplist.getval(PR_INTERNET_MESSAGE_ID);
 	if (NULL != pvalue) {
 		dsn_append_field(pdsn_fields, "Original-Message-ID", static_cast<char *>(pvalue));
 	}

@@ -44,7 +44,7 @@ static BOOL message_object_get_recipient_all_proptags(message_object *pmessage,
 	}
 	for (i=0; i<tmp_proptags.count; i++) {
 		switch (tmp_proptags.pproptag[i]) {
-		case PROP_TAG_RESPONSIBILITY:
+		case PR_RESPONSIBILITY:
 		case PR_ADDRTYPE:
 		case PR_DISPLAY_NAME:
 		case PR_DISPLAY_NAME_A:
@@ -351,7 +351,7 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	id_string[0] = '<';
 	memmove(id_string + 1, id_string + 16, 32);
 	snprintf(id_string + 33, 128, "@%s>", get_host_ID());
-	propvals.ppropval[propvals.count].proptag = PROP_TAG_INTERNETMESSAGEID;
+	propvals.ppropval[propvals.count].proptag = PR_INTERNET_MESSAGE_ID;
 	propvals.ppropval[propvals.count++].pvalue = id_string;
 	
 	if (!exmdb_client_set_instance_properties(pmessage->plogon->get_dir(),
@@ -759,7 +759,7 @@ BOOL message_object::set_rcpts(const TARRAY_SET *pset)
 	for (size_t i = 0; i < pset->count; ++i) {
 		for (size_t j = 0; j < pset->pparray[i]->count; ++j) {
 			switch (pset->pparray[i]->ppropval[j].proptag) {
-			case PROP_TAG_RESPONSIBILITY:
+			case PR_RESPONSIBILITY:
 			case PR_ADDRTYPE:
 			case PR_DISPLAY_NAME:
 			case PR_DISPLAY_NAME_A:

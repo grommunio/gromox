@@ -1766,7 +1766,7 @@ BOOL common_util_send_message(store_object *pstore,
 		}
 		/*
 		if (FALSE == b_submit) {
-			pvalue = prcpts->pparray[i]->getval(PROP_TAG_RESPONSIBILITY);
+			pvalue = prcpts->pparray[i]->getval(PR_RESPONSIBILITY);
 			if (NULL == pvalue || 0 != *(uint8_t*)pvalue) {
 				continue;
 			}
