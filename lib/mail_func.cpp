@@ -290,7 +290,7 @@ void parse_mime_addr(EMAIL_ADDR *e_addr, const char *input) try
  *		  end of mime field information, including the last "\r\n", if the last
  *		  two byte in buff_in is "\r\n", it is also considered as a mime field 
  */
-size_t parse_mime_field(char *in_buff, size_t buff_len,
+size_t parse_mime_field(const char *in_buff, size_t buff_len,
     MIME_FIELD *pmime_field) try
 {
 	BOOL meet_slash;
