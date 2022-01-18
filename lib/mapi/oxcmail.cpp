@@ -4756,7 +4756,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	if (pvalue != nullptr && !mime_set_field(phead, "Message-ID", static_cast<char *>(pvalue)))
 		return FALSE;
 	pvalue = pmsg->proplist.getval(PR_INTERNET_REFERENCES);
-	if (pvalue != nullptr && !mime_set_field(phead, "References", tmp_field))
+	if (pvalue != nullptr && !mime_set_field(phead, "References", static_cast<char *>(pvalue)))
 		return FALSE;
 	propname.guid = PS_PUBLIC_STRINGS;
 	propname.kind = MNID_STRING;
