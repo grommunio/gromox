@@ -341,12 +341,9 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 				if (0 == i) {
 					pmime->content_begin[j] = '.';
 					j ++;
-				} else {
-					if (i > 2 && '\n' == pcontent[i - 1] &&
-						'\r' == pcontent[i - 2]) {
-						pmime->content_begin[j] = '.';
-						j ++;
-					}
+				} else if (i > 2 && pcontent[i-1] == '\n' && pcontent[i-2] == '\r') {
+					pmime->content_begin[j] = '.';
+					j++;
 				}
 			}
 			pmime->content_begin[j] = pcontent[i];
