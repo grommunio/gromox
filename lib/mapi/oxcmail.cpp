@@ -3629,7 +3629,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 	field_param.charset = default_charset;
 	field_param.last_propid = 0x8000;
 	field_param.b_flag_del = FALSE;
-	auto phead = pmail->get_head();
+	const auto phead = pmail->get_head();
 	if (NULL == phead) {
 		message_content_free(pmsg);
 		return NULL;
@@ -3700,7 +3700,8 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		return NULL;
 	}
 
-	if (strcasecmp("application/ms-tnef", mime_get_content_type(phead)) == 0 &&
+	auto head_ct = mime_get_content_type(phead);
+	if (strcasecmp(head_ct, "application/ms-tnef") == 0 &&
 	    tnef_vfy_get_field(phead, tmp_buff, arsizeof(tmp_buff))) {
 	auto pmsg1 = oxcmail_parse_tnef(phead, alloc, get_propids);
 	if (pmsg1 != nullptr) {
@@ -3730,23 +3731,19 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 		}
 	}
 	}
-	if (0 == strcasecmp("multipart/report",
-		mime_get_content_type(phead)) &&
+	if (strcasecmp(head_ct, "multipart/report") == 0 &&
 		TRUE == oxcmail_get_content_param(
 		phead, "report-type", tmp_buff, 128) &&
 		0 == strcasecmp("delivery-status", tmp_buff)) {
 		mime_enum.preport = oxcmail_parse_dsn(pmail, pmsg);
 	}
-	if ((0 == strcasecmp("multipart/report",
-		mime_get_content_type(phead)) &&
+	if ((strcasecmp(head_ct, "multipart/report") == 0 &&
 		TRUE == oxcmail_get_content_param(
 		phead, "report-type", tmp_buff, 128) &&
 		0 == strcasecmp("disposition-notification", tmp_buff)) ||
-		0 == strcasecmp("message/disposition-notification",
-		mime_get_content_type(phead))) {
+	    strcasecmp("message/disposition-notification", head_ct) == 0)
 		mime_enum.preport = oxcmail_parse_mdn(pmail, pmsg);
-	}		
-	if (0 == strcasecmp("multipart/mixed", mime_get_content_type(phead))) {
+	if (strcasecmp(head_ct, "multipart/mixed") == 0) {
 		if (mime_get_children_num(phead) == 2 &&
 		    (pmime = mime_get_child(phead)) != nullptr &&
 		    (pmime1 = mime_get_sibling(pmime)) != nullptr &&
@@ -3783,17 +3780,14 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			}
 		}
 		}
-	} else if (0 == strcasecmp("multipart/signed",
-		mime_get_content_type(phead))) {
+	} else if (strcasecmp(head_ct, "multipart/signed") == 0) {
 		if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Note.SMIME.MultipartSigned") != 0) {
 			message_content_free(pmsg);
 			return NULL;
 		}
 		b_smime = TRUE;
-	} else if (0 == strcasecmp("application/pkcs7-mime",
-		mime_get_content_type(phead)) ||
-		0 == strcasecmp("application/x-pkcs7-mime",
-		mime_get_content_type(phead))) {
+	} else if (strcasecmp(head_ct, "application/pkcs7-mime") == 0 ||
+	    strcasecmp(head_ct, "application/x-pkcs7-mime") == 0) {
 		if (pmsg->proplist.set(PR_MESSAGE_CLASS, "IPM.Note.SMIME") != 0 ||
 		    !oxcmail_parse_encrypted(phead, &field_param.last_propid, phash, pmsg)) {
 			message_content_free(pmsg);
