@@ -356,6 +356,27 @@ int mysql_adaptor_get_group_users(int group_id, std::vector<sql_user> &pfile) tr
 	return false;
 }
 
+int mysql_adaptor_scndstore_hints(int pri, std::vector<int> &hints) try
+{
+	char query[76];
+	snprintf(query, arsizeof(query), "SELECT `secondary` "
+	         "FROM `secondary_store_hints` WHERE `primary`=%u", pri);
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr || !conn.res.query(query))
+		return EIO;
+	DB_RESULT result = mysql_store_result(conn.res.get());
+	if (result == nullptr)
+		return ENOMEM;
+	DB_ROW row;
+	while ((row = result.fetch_row()) != nullptr)
+		if (row[0] != nullptr)
+			hints.push_back(strtoul(row[0], nullptr, 0));
+	return 0;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1638: ENOMEM\n");
+	return ENOMEM;
+}
+
 void mysql_adaptor_init(mysql_adaptor_init_param &&parm)
 {
 	g_parm = std::move(parm);
@@ -486,6 +507,7 @@ static BOOL svc_mysql_adaptor(int reason, void **data)
 	E(check_user, "check_user");
 	E(get_mlist, "get_mail_list");
 	E(get_user_info, "get_user_info");
+	E(scndstore_hints, "scndstore_hints");
 #undef E
 	return TRUE;
 }

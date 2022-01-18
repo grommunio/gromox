@@ -1,6 +1,7 @@
 #pragma once
 #include <cstring>
 #include <string>
+#include <vector>
 #include <mysql.h>
 #include <gromox/resource_pool.hpp>
 #include "mysql_adaptor.h"
@@ -39,6 +40,7 @@ struct sqlconnpool final : public gromox::resource_pool<sqlconn> {
 	resource_pool::token get_wait();
 };
 
+extern int mysql_adaptor_scndstore_hints(int, std::vector<int> &);
 extern bool mysql_adaptor_reload_config(const char *path, const char *hostid, const char *progid);
 extern bool db_upgrade_check();
 extern MYSQL *sql_make_conn();
