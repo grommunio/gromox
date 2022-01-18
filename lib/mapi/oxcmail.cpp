@@ -2891,6 +2891,78 @@ static bool oxcmail_enum_dsn_rcpt_field(const char *tag,
 	return true;
 }
 
+static std::pair<uint32_t, uint32_t>
+status_code_to_diag(unsigned int subject, unsigned int detail)
+{
+	static constexpr std::pair<uint32_t, uint32_t> noaction = {MAPI_DIAG_NO_DIAGNOSTIC, 0};
+	/* cf. IANA list for SMTP Enhanced Status Codes */
+	switch (subject) {
+	case 1:
+		switch (detail) {
+		case 1: return {MAPI_DIAG_MAIL_RECIPIENT_UNKNOWN, 1};
+		case 2: return {MAPI_DIAG_48, 0};
+		case 3: return {MAPI_DIAG_MAIL_ADDRESS_INCORRECT, 0};
+		case 4: return {MAPI_DIAG_OR_NAME_AMBIGUOUS, 0};
+		case 6: return {MAPI_DIAG_MAIL_RECIPIENT_MOVED, 0};
+		default: return {MAPI_DIAG_OR_NAME_UNRECOGNIZED, 0};
+		}
+		break;
+	case 2:
+		switch (detail) {
+		case 2: [[fallthrough]];
+		case 3: return {MAPI_DIAG_LENGTH_CONSTRAINT_VIOLATD, 0};
+		case 4: return {MAPI_DIAG_EXPANSION_FAILED, 0};
+		default: return {MAPI_DIAG_MAIL_REFUSED, 0};
+		}
+		break;
+	case 3:
+		switch (detail) {
+		case 2: return noaction;
+		case 3: [[fallthrough]];
+		case 5: return {MAPI_DIAG_CRITICAL_FUNC_UNSUPPORTED, 0};
+		case 4: return {MAPI_DIAG_LENGTH_CONSTRAINT_VIOLATD, 0};
+		default: return {MAPI_DIAG_MAIL_REFUSED, 0};
+		}
+		break;
+	case 4:
+		switch (detail) {
+		case 0: [[fallthrough]];
+		case 4: return noaction;
+		case 3: return {MAPI_DIAG_NO_DIAGNOSTIC, 6};
+		case 6: [[fallthrough]];
+		case 8: return {MAPI_DIAG_LOOP_DETECTED, 0};
+		case 7: return {MAPI_DIAG_MAXIMUM_TIME_EXPIRED, 0};
+		default: return {MAPI_DIAG_MTS_CONGESTED, 0};
+		}
+		break;
+	case 5:
+		switch (detail) {
+		case 3: return {MAPI_DIAG_TOO_MANY_RECIPIENTS, 0};
+		case 4: return {MAPI_DIAG_PARAMETERS_INVALID, 0};
+		default: return {MAPI_DIAG_NO_BILATERAL_AGREEMENT, 0};
+		}
+		break;
+	case 6:
+		switch (detail) {
+		case 2: return {MAPI_DIAG_PROHIBITED_TO_CONVERT, 0};
+		case 3: return {MAPI_DIAG_IMPRACTICAL_TO_CONVERT, 0};
+		case 4: return {MAPI_DIAG_MULTIPLE_INFO_LOSSES, 0};
+		case 5: return {MAPI_DIAG_NO_DIAGNOSTIC, 2};
+		default: return {MAPI_DIAG_CONTENT_TYPE_UNSUPPORTED, 0};
+		}
+		break;
+	case 7:
+		switch (detail) {
+		case 1: return {MAPI_DIAG_SUBMISSION_PROHIBITED, 0};
+		case 2: return {MAPI_DIAG_EXPANSION_PROHIBITED, 0};
+		case 3: return {MAPI_DIAG_REASSIGNMENT_PROHIBITED, 0};
+		default: return {MAPI_DIAG_SECURE_MESSAGING_ERROR, 0};
+		}
+		break;
+	}
+	return noaction;
+}
+
 static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 {
 	int kind;
@@ -3044,131 +3116,7 @@ static bool oxcmail_enum_dsn_rcpt_fields(DSN_FIELDS *pfields, void *pparam)
 	uint32_t status_code = 100 * kind + 10 * subject + detail;
 	if (pproplist->set(PR_NDR_STATUS_CODE, &status_code) != 0)
 		return false;
-	uint32_t diagnostic_code = MAPI_DIAG_NO_DIAGNOSTIC, reason_code = 0;
-	/* cf. IANA list for SMTP Enhanced Status Codes */
-	switch (subject) {
-	case 1:
-		switch (detail) {
-		case 1:
-			diagnostic_code = MAPI_DIAG_MAIL_RECIPIENT_UNKNOWN;
-			reason_code = 1;
-			break;
-		case 2:
-			diagnostic_code = MAPI_DIAG_48;
-			break;
-		case 3:
-			diagnostic_code = MAPI_DIAG_MAIL_ADDRESS_INCORRECT;
-			break;
-		case 4:
-			diagnostic_code = MAPI_DIAG_OR_NAME_AMBIGUOUS;
-			break;
-		case 6:
-			diagnostic_code = MAPI_DIAG_MAIL_RECIPIENT_MOVED;
-			break;
-		default:
-			diagnostic_code = MAPI_DIAG_OR_NAME_UNRECOGNIZED;
-		}
-		break;
-	case 2:
-		switch (detail) {
-		case 2:
-		case 3:
-			diagnostic_code = MAPI_DIAG_LENGTH_CONSTRAINT_VIOLATD;
-			break;
-		case 4:
-			diagnostic_code = MAPI_DIAG_EXPANSION_FAILED;
-			break;
-		default:
-			diagnostic_code = MAPI_DIAG_MAIL_REFUSED;
-			break;
-		}
-		break;
-	case 3:
-		switch (detail) {
-		case 2:
-			break;
-		case 3:
-		case 5:
-			diagnostic_code = MAPI_DIAG_CRITICAL_FUNC_UNSUPPORTED;
-			break;
-		case 4:
-			diagnostic_code = MAPI_DIAG_LENGTH_CONSTRAINT_VIOLATD;
-			break;
-		default:
-			diagnostic_code = MAPI_DIAG_MAIL_REFUSED;
-			break;
-		}
-		break;
-	case 4:
-		switch (detail) {
-		case 0:
-		case 4:
-			break;
-		case 3:
-			reason_code = 6;
-			break;
-		case 6:
-		case 8:
-			diagnostic_code = MAPI_DIAG_LOOP_DETECTED;
-			break;
-		case 7:
-			diagnostic_code = MAPI_DIAG_MAXIMUM_TIME_EXPIRED;
-			break;
-		default:
-			diagnostic_code = MAPI_DIAG_MTS_CONGESTED;
-			break;
-		}
-		break;
-	case 5:
-		switch (detail) {
-		case 3:
-			diagnostic_code = MAPI_DIAG_TOO_MANY_RECIPIENTS;
-			break;
-		case 4:
-			diagnostic_code = MAPI_DIAG_PARAMETERS_INVALID;
-			break;
-		default:
-			diagnostic_code = MAPI_DIAG_NO_BILATERAL_AGREEMENT;
-			break;
-		}
-		break;
-	case 6:
-		switch (detail) {
-		case 2:
-			diagnostic_code = MAPI_DIAG_PROHIBITED_TO_CONVERT;
-			break;
-		case 3:
-			diagnostic_code = MAPI_DIAG_IMPRACTICAL_TO_CONVERT;
-			break;
-		case 4:
-			diagnostic_code = MAPI_DIAG_MULTIPLE_INFO_LOSSES;
-			break;
-		case 5:
-			reason_code = 2;
-			break;
-		default:
-			diagnostic_code = MAPI_DIAG_CONTENT_TYPE_UNSUPPORTED;
-			break;
-			
-		}
-		break;
-	case 7:
-		switch (detail) {
-		case 1:
-			diagnostic_code = MAPI_DIAG_SUBMISSION_PROHIBITED;
-			break;
-		case 2:
-			diagnostic_code = MAPI_DIAG_EXPANSION_PROHIBITED;
-			break;
-		case 3:
-			diagnostic_code = MAPI_DIAG_REASSIGNMENT_PROHIBITED;
-			break;
-		default:
-			diagnostic_code = MAPI_DIAG_SECURE_MESSAGING_ERROR;
-			break;
-		}
-		break;
-	}
+	auto [diagnostic_code, reason_code] = status_code_to_diag(subject, detail);
 	if (pproplist->set(PR_NDR_DIAG_CODE, &diagnostic_code) != 0 ||
 	    pproplist->set(PR_NDR_REASON_CODE, &reason_code) != 0)
 		return false;
@@ -4445,6 +4393,47 @@ static void oxcmail_free_mime_skeleton(MIME_SKELETON *pskeleton)
 	}
 }
 
+static inline const char *importance_to_text(const uint32_t *v)
+{
+	if (v == nullptr)
+		return nullptr;
+	switch (*v) {
+	case IMPORTANCE_LOW: return "Low";
+	case IMPORTANCE_NORMAL: return "Normal";
+	case IMPORTANCE_HIGH: return "High";
+	default: return nullptr;
+	}
+}
+
+static const char *sensitivity_to_text(const uint32_t *v)
+{
+	if (v == nullptr)
+		return nullptr;
+	switch (*v) {
+	case SENSITIVITY_NONE: return "Normal";
+	case SENSITIVITY_PERSONAL: return "Personal";
+	case SENSITIVITY_PRIVATE: return "Private";
+	case SENSITIVITY_COMPANY_CONFIDENTIAL: return "Company-Confidential";
+	default: return nullptr;
+	}
+}
+
+static const char *sender_id_to_text(const uint32_t *v)
+{
+	if (v == nullptr)
+		return nullptr;
+	switch (*v) {
+	case SENDER_ID_NEUTRAL: return "Neutral";
+	case SENDER_ID_PASS: return "Pass";
+	case SENDER_ID_FAIL: return "Fail";
+	case SENDER_ID_SOFT_FAIL: return "SoftFail";
+	case SENDER_ID_NONE: return "None";
+	case SENDER_ID_TEMP_ERROR: return "TempError";
+	case SENDER_ID_PERM_ERROR: return "PermError";
+	default: return nullptr;
+	}
+}
+
 static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	MIME_SKELETON *pskeleton, EXT_BUFFER_ALLOC alloc,
 	GET_PROPIDS get_propids, GET_PROPNAME get_propname,
@@ -4655,61 +4644,12 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	pvalue = pmsg->proplist.getval(PidTagCallId);
 	if (pvalue != nullptr && !mime_set_field(phead, "X-CallID", static_cast<char *>(pvalue)))
 		return FALSE;
-	
-	pvalue = pmsg->proplist.getval(PR_IMPORTANCE);
-	if (NULL != pvalue) {
-		switch (*(uint32_t*)pvalue) {
-		case IMPORTANCE_LOW:
-			if (FALSE == mime_set_field(phead,
-				"Importance", "Low")) {
-				return FALSE;
-			}
-			break;
-		case IMPORTANCE_NORMAL:
-			if (FALSE == mime_set_field(phead,
-				"Importance", "Normal")) {
-				return FALSE;
-			}
-			break;
-		case IMPORTANCE_HIGH:
-			if (FALSE == mime_set_field(phead,
-				"Importance", "High")) {
-				return FALSE;
-			}
-			break;
-		}
-	}
-	
-	pvalue = pmsg->proplist.getval(PR_SENSITIVITY);
-	if (NULL != pvalue) {
-		switch (*(uint32_t*)pvalue) {
-		case SENSITIVITY_NONE:
-			if (FALSE == mime_set_field(phead,
-				"Sensitivity", "Normal")) {
-				return FALSE;
-			}
-			break;
-		case SENSITIVITY_PERSONAL:
-			if (FALSE == mime_set_field(phead,
-				"Sensitivity", "Personal")) {
-				return FALSE;
-			}
-			break;
-		case SENSITIVITY_PRIVATE:
-			if (FALSE == mime_set_field(phead,
-				"Sensitivity", "Private")) {
-				return FALSE;
-			}
-			break;
-		case SENSITIVITY_COMPANY_CONFIDENTIAL:
-			if (FALSE == mime_set_field(
-				phead, "Sensitivity",
-				"Company-Confidential")) {
-				return FALSE;
-			}
-			break;
-		}
-	}
+	auto str = importance_to_text(pmsg->proplist.get<const uint32_t>(PR_IMPORTANCE));
+	if (str != nullptr && !mime_set_field(phead, "Importance", str))
+		return false;
+	str = sensitivity_to_text(pmsg->proplist.get<const uint32_t>(PR_SENSITIVITY));
+	if (str != nullptr && !mime_set_field(phead, "Sensitivity", str))
+		return false;
 	
 	pvalue = pmsg->proplist.getval(PR_CLIENT_SUBMIT_TIME);
 	if (NULL == pvalue) {
@@ -4950,61 +4890,10 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0 &&
 	    !mime_set_field(phead, "X-MS-Exchange-Organization-AutoForwarded", "true"))
 		return FALSE;
-	
-	pvalue = pmsg->proplist.getval(PR_SENDER_ID_STATUS);
-	if (NULL != pvalue) {
-		switch (*(uint32_t*)pvalue) {
-		case SENDER_ID_NEUTRAL:
-			if (FALSE == mime_set_field(phead,
-				"X-MS-Exchange-Organization-SenderIdResult",
-				"Neutral")) {
-				return FALSE;
-			}
-			break;
-		case SENDER_ID_PASS:
-			if (FALSE == mime_set_field(phead,
-				"X-MS-Exchange-Organization-SenderIdResult",
-				"Pass")) {
-				return FALSE;
-			}
-			break;
-		case SENDER_ID_FAIL:
-			if (FALSE == mime_set_field(phead,
-				"X-MS-Exchange-Organization-SenderIdResult",
-				"Fail")) {
-				return FALSE;
-			}
-			break;
-		case SENDER_ID_SOFT_FAIL:
-			if (FALSE == mime_set_field(phead,
-				"X-MS-Exchange-Organization-SenderIdResult",
-				"SoftFail")) {
-				return FALSE;
-			}
-			break;
-		case SENDER_ID_NONE:
-			if (FALSE == mime_set_field(phead,
-				"X-MS-Exchange-Organization-SenderIdResult",
-				"None")) {
-				return FALSE;
-			}
-			break;
-		case SENDER_ID_TEMP_ERROR:
-			if (FALSE == mime_set_field(phead,
-				"X-MS-Exchange-Organization-SenderIdResult",
-				"TempError")) {
-				return FALSE;
-			}
-			break;
-		case SENDER_ID_PERM_ERROR:
-			if (FALSE == mime_set_field(phead,
-				"X-MS-Exchange-Organization-SenderIdResult",
-				"PermError")) {
-				return FALSE;
-			}
-			break;
-		}
-	}
+	str = sender_id_to_text(pmsg->proplist.get<const uint32_t>(PR_SENDER_ID_STATUS));
+	if (str != nullptr &&
+	    !mime_set_field(phead, "X-MS-Exchange-Organization-SenderIdResult", str))
+		return false;
 	
 	pvalue = pmsg->proplist.getval(PR_PURPORTED_SENDER_DOMAIN);
 	if (pvalue != nullptr && !mime_set_field(phead, "X-MS-Exchange-Organization-PRD", static_cast<char *>(pvalue)))
