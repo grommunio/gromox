@@ -440,8 +440,9 @@ static char* mail_engine_ct_decode_mime(
 
 }
 
-static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, KEYWORD_ENUM *penum)
+static void mail_engine_ct_enum_mime(MJSON_MIME *pmime, void *param)
 {
+	auto penum = static_cast<KEYWORD_ENUM *>(param);
 	char *pbuff;
 	size_t length;
 	size_t temp_len;
@@ -648,7 +649,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					keyword_enum.b_result = FALSE;
 					keyword_enum.charset = charset;
 					keyword_enum.keyword = (const char*)ptree_node->pstatment;
-					temp_mjson.enum_mime(reinterpret_cast<MJSON_MIME_ENUM>(mail_engine_ct_enum_mime), &keyword_enum);
+					temp_mjson.enum_mime(mail_engine_ct_enum_mime, &keyword_enum);
 					if (keyword_enum.b_result)
 						b_result1 = TRUE;
 				}
@@ -948,7 +949,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					keyword_enum.b_result = FALSE;
 					keyword_enum.charset = charset;
 					keyword_enum.keyword = (const char*)ptree_node->pstatment;
-					temp_mjson.enum_mime(reinterpret_cast<MJSON_MIME_ENUM>(mail_engine_ct_enum_mime), &keyword_enum);
+					temp_mjson.enum_mime(mail_engine_ct_enum_mime, &keyword_enum);
 					if (TRUE == keyword_enum.b_result) {
 						b_result1 = TRUE;
 					}

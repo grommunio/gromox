@@ -104,11 +104,8 @@ BOOL (*bounce_producer_check_domain)(const char *domainname);
 bool (*bounce_producer_get_lang)(const char *username, char *lang, size_t);
 bool (*bounce_producer_get_timezone)(const char *username, char *timezone, size_t);
 BOOL (*bounce_producer_lang_to_charset)(const char *lang, char *charset);
-
-static void bounce_producer_enum_parts(MIME *pmime, ENUM_PARTS *penum);
-
-static void bounce_producer_enum_charset(MIME *pmime, ENUM_CHARSET *penum);
-
+static void bounce_producer_enum_parts(MIME *, void *);
+static void bounce_producer_enum_charset(MIME *, void *);
 static BOOL bounce_producer_get_mail_thread_index(MAIL *pmail, char *pbuff);
 
 static int bounce_producer_get_mail_subject(MAIL *pmail, char *subject,
@@ -544,15 +541,16 @@ static int bounce_producer_get_mail_parts(MAIL *pmail, char *parts,
 	enum_parts.offset = 0;
 	enum_parts.charset = charset;
 	enum_parts.b_first = FALSE;
-	pmail->enum_mime(reinterpret_cast<MAIL_MIME_ENUM>(bounce_producer_enum_parts), &enum_parts);
+	pmail->enum_mime(bounce_producer_enum_parts, &enum_parts);
 	return enum_parts.offset;
 }
 
 /*
  *	enum the mail attachement
  */
-static void bounce_producer_enum_parts(MIME *pmime, ENUM_PARTS *penum)
+static void bounce_producer_enum_parts(MIME *pmime, void *param)
 {
+	auto penum = static_cast<ENUM_PARTS *>(param);
 	int attach_len;
 	char name[256];
 	char temp_name[512];
@@ -604,15 +602,16 @@ static int bounce_producer_get_mail_charset(MAIL *pmail, char *charset)
 
 	enum_charset.b_found = FALSE;
 	enum_charset.charset = charset;
-	pmail->enum_mime(reinterpret_cast<MAIL_MIME_ENUM>(bounce_producer_enum_charset), &enum_charset);
+	pmail->enum_mime(bounce_producer_enum_charset, &enum_charset);
 	if (FALSE == enum_charset.b_found) {
 		strcpy(charset, "ascii");
 	}
 	return strlen(charset);
 }
 
-static void bounce_producer_enum_charset(MIME *pmime, ENUM_CHARSET *penum)
+static void bounce_producer_enum_charset(MIME *pmime, void *param)
 {
+	auto penum = static_cast<ENUM_CHARSET *>(param);
 	char charset[32];
 	char *begin, *end;
 	int len;

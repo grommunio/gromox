@@ -25,11 +25,8 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME* pmime_parent,
 static void mail_enum_tags(SIMPLE_TREE_NODE *pnode, void *param);
 static void mail_enum_delete(SIMPLE_TREE_NODE *pnode);
 static BOOL mail_check_ascii_printable(const char *astring);
-
-static void  mail_enum_text_mime_charset(
-	MIME *pmime, char *email_charset);
-
-static void mail_enum_html_charset(MIME *pmime, char *email_charset);
+static void mail_enum_text_mime_charset(MIME *, void *);
+static void mail_enum_html_charset(MIME *, void *);
 
 MAIL::MAIL(std::shared_ptr<MIME_POOL> p) : pmime_pool(std::move(p))
 {
@@ -409,11 +406,11 @@ BOOL MAIL::get_charset(char *charset)
 			return TRUE;
 		}
 	}
-	pmail->enum_mime(reinterpret_cast<MAIL_MIME_ENUM>(mail_enum_text_mime_charset), charset);
+	pmail->enum_mime(mail_enum_text_mime_charset, charset);
 	if ('\0' != charset[0]) {
 		return TRUE;
 	}
-	pmail->enum_mime(reinterpret_cast<MAIL_MIME_ENUM>(mail_enum_html_charset), charset);
+	pmail->enum_mime(mail_enum_html_charset, charset);
 	if ('\0' != charset[0]) {
 		return TRUE;
 	}
@@ -680,9 +677,9 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
 	return 0;
 }
 
-static void mail_enum_text_mime_charset(
-	MIME *pmime, char *email_charset)
+static void mail_enum_text_mime_charset(MIME *pmime, void *param)
 {
+	auto email_charset = static_cast<char *>(param);
 	int i, tmp_len;
 	
 	if ('\0' != email_charset[0]) {
@@ -703,9 +700,9 @@ static void mail_enum_text_mime_charset(
 	}
 }
 
-static void mail_enum_html_charset(
-	MIME *pmime, char *email_charset)
+static void mail_enum_html_charset(MIME *pmime, void *param)
 {
+	auto email_charset = static_cast<char *>(param);
 	int i;
 	char *ptr;
 	size_t length;

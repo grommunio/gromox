@@ -95,11 +95,8 @@ static BOOL mjson_check_ascii_printable(const char *astring);
 
 static void mjson_convert_quoted_printable(const char *astring,
 	char *out_stirng);
-
-static void mjson_emum_rfc822(MJSON_MIME *pmime, BOOL *pb_found);
-
-static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild);
-
+static void mjson_emum_rfc822(MJSON_MIME *, void *);
+static void mjson_enum_build(MJSON_MIME *, void *);
 static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
 	const char *charset, BOOL b_ext, char *buff, int length);
 
@@ -1672,8 +1669,9 @@ static void mjson_convert_quoted_printable(const char *astring,
 
 }
 
-static void mjson_emum_rfc822(MJSON_MIME *pmime, BOOL *pb_found)
+static void mjson_emum_rfc822(MJSON_MIME *pmime, void *param)
 {
+	auto pb_found = static_cast<BOOL *>(param);
 	if (FALSE == *pb_found && 0 == strcasecmp(pmime->ctype,
 		"message/rfc822")) {
 		*pb_found = TRUE;
@@ -1683,12 +1681,13 @@ static void mjson_emum_rfc822(MJSON_MIME *pmime, BOOL *pb_found)
 BOOL MJSON::rfc822_check()
 {
 	BOOL b_found = false;
-	enum_mime(reinterpret_cast<MJSON_MIME_ENUM>(mjson_emum_rfc822), &b_found);
+	enum_mime(mjson_emum_rfc822, &b_found);
 	return b_found;
 }
 
-static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
+static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 {
+	auto pbuild = static_cast<BUILD_PARAM *>(param);
 	int fd;
 	size_t length1;
 	char msg_path[256];
@@ -1848,7 +1847,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, BUILD_PARAM *pbuild)
 		build_param.ppool = pbuild->ppool;
 		build_param.build_result = TRUE;
 		
-		temp_mjson.enum_mime(reinterpret_cast<MJSON_MIME_ENUM>(mjson_enum_build), &build_param);
+		temp_mjson.enum_mime(mjson_enum_build, &build_param);
 		if (FALSE == build_param.build_result) {
 			if (remove(dgt_path) < 0 && errno != ENOENT)
 				fprintf(stderr, "W-1379: remove %s: %s\n", dgt_path, strerror(errno));
@@ -1883,7 +1882,7 @@ BOOL MJSON::rfc822_build(std::shared_ptr<MIME_POOL> ppool, const char *storage_p
 	build_param.depth = 1;
 	build_param.ppool = ppool;
 	build_param.build_result = TRUE;
-	pjson->enum_mime(reinterpret_cast<MJSON_MIME_ENUM>(mjson_enum_build), &build_param);
+	pjson->enum_mime(mjson_enum_build, &build_param);
 	if (FALSE == build_param.build_result) {
 		rmdir(temp_path);
 	}
