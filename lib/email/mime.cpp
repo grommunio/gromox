@@ -5,6 +5,7 @@
  * point. if user uses mime_write_content function, the mime will then maintain
  * its own buffer
  */
+#include <algorithm>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/mail.hpp>
@@ -153,11 +154,8 @@ BOOL mime_retrieve(MIME *pmime_parent,
 				parse_field_value(mime_field.field_value,
 						mime_field.field_value_len, pmime->content_type, 256,
 						&pmime->f_type_params);
-				if (0 == strncasecmp(pmime->content_type, "multipart/", 10)) {
-					pmime->mime_type = MULTIPLE_MIME;
-				} else {
-					pmime->mime_type = SINGLE_MIME;
-				}
+				pmime->mime_type = strncasecmp(pmime->content_type, "multipart/", 10) == 0 ?
+				                   MULTIPLE_MIME : SINGLE_MIME;
 			} else {
 				static_assert(sizeof(mime_field.field_name_len) == sizeof(uint32_t));
 				static_assert(sizeof(mime_field.field_value_len) == sizeof(uint32_t));
@@ -241,13 +239,10 @@ BOOL mime_retrieve(MIME *pmime_parent,
 				pmime->mime_type = SINGLE_MIME;
 			}
 		} else if (NONE_MIME == pmime->mime_type) {
-			if (NULL != pmime_parent && 0 == strcasecmp(
-			    "multipart/digest", pmime->content_type)) {
-				strcpy(pmime->content_type, "message/rfc822");
-			} else {
-				/* old simplest unix style mail */
-				strcpy(pmime->content_type, "text/plain");
-			}
+			strcpy(pmime->content_type,
+			       pmime_parent != nullptr &&
+			       strcasecmp("multipart/digest", pmime->content_type) == 0 ?
+			       "message/rfc822" : "text/plain");
 			pmime->mime_type = SINGLE_MIME;
 		}
 		return TRUE;
@@ -2792,16 +2787,8 @@ void mime_copy(MIME *pmime_src, MIME *pmime_dst)
 
 static BOOL mime_check_ascii_printable(const char *astring)
 {
-	size_t i, len;
-	
-	len = strlen(astring);
-	
-	for (i=0; i<len; i++) {
-		if (astring[i] < 0x20 || astring[i] > 0x7E) {
-			return FALSE;
-		}
-	}
-	return TRUE;
+	return std::all_of(astring, astring + strlen(astring),
+	       [&](uint8_t c) { return c >= 0x20 && c <= 0x7E; });
 }
 
 MIME* mime_get_child(MIME *pmime)
@@ -2815,10 +2802,7 @@ MIME* mime_get_child(MIME *pmime)
 	}
 #endif
 	pnode = simple_tree_node_get_child(&pmime->node);
-	if (NULL == pnode) {
-		return NULL;
-	}
-	return (MIME*)pnode->pdata;
+	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata) : nullptr;
 }
 
 MIME* mime_get_parent(MIME *pmime)
@@ -2832,10 +2816,7 @@ MIME* mime_get_parent(MIME *pmime)
 	}
 #endif
 	pnode = simple_tree_node_get_parent(&pmime->node);
-	if (NULL == pnode) {
-		return NULL;
-	}
-	return (MIME*)pnode->pdata;
+	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata) : nullptr;
 }
 
 MIME *mime_get_sibling(MIME *pmime)
@@ -2849,10 +2830,7 @@ MIME *mime_get_sibling(MIME *pmime)
 	}
 #endif
 	pnode = simple_tree_node_get_sibling(&pmime->node);
-	if (NULL == pnode) {
-		return NULL;
-	}
-	return (MIME*)pnode->pdata;
+	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata) : nullptr;
 }
 
 size_t mime_get_children_num(const MIME *pmime)
