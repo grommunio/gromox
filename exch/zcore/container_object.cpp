@@ -718,26 +718,7 @@ BOOL container_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	auto pcontainer = this;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
-		if (0 == pcontainer->id.abtree_id.minid) {
-			return container_object_fetch_special_properties(
-				SPECIAL_CONTAINER_PROVIDER, pproptags, ppropvals);
-		}
-		auto pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
-		if (pbase == nullptr)
-			return FALSE;
-		auto pnode = ab_tree_minid_to_node(pbase.get(),
-			pcontainer->id.abtree_id.minid);
-		if (NULL == pnode) {
-			ppropvals->count = 0;
-			return TRUE;
-		}
-		if (FALSE == ab_tree_fetch_node_properties(
-			pnode, pproptags, ppropvals)) {
-			return FALSE;
-		}
-		return TRUE;
-	} else {
+	if (pcontainer->type != CONTAINER_TYPE_ABTREE) {
 		auto pinfo = zarafa_server_get_info();
 		if (!exmdb_client::get_folder_properties(pinfo->get_maildir(),
 		    pinfo->cpid, pcontainer->id.exmdb_id.folder_id,
@@ -746,6 +727,24 @@ BOOL container_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		return container_object_fetch_folder_properties(
 					&tmp_propvals, pproptags, ppropvals);
 	}
+	if (0 == pcontainer->id.abtree_id.minid) { return
+		container_object_fetch_special_properties(
+			SPECIAL_CONTAINER_PROVIDER, pproptags, ppropvals);
+	}
+	auto pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
+	if (pbase == nullptr)
+		return FALSE;
+	auto pnode = ab_tree_minid_to_node(pbase.get(),
+	             pcontainer->id.abtree_id.minid);
+	if (NULL == pnode) {
+		ppropvals->count = 0;
+		return TRUE;
+	}
+	if (FALSE == ab_tree_fetch_node_properties(
+	    pnode, pproptags, ppropvals)) {
+		return FALSE;
+	}
+	return TRUE;
 }
 
 BOOL container_object::get_container_table_num(BOOL b_depth, uint32_t *pnum)
