@@ -141,21 +141,20 @@ static void rop_processor_release_objnode(
 	LOGON_ITEM *plogitem, OBJECT_NODE *pobjnode)
 {
 	BOOL b_root;
-	void *pobject;
-	SIMPLE_TREE_NODE *proot;
+	const SIMPLE_TREE_NODE *proot;
 	
 	/* root is the logon object, free logon object
 		will cause the logon item to be released
 	*/
 	if (simple_tree_get_root(&plogitem->tree) == &pobjnode->node) {
 		proot = simple_tree_get_root(&plogitem->tree);
-		pobject = ((OBJECT_NODE*)proot->pdata)->pobject;
+		auto pobject = static_cast<const logon_object *>(static_cast<const OBJECT_NODE *>(proot->pdata)->pobject);
 		std::lock_guard hl_hold(g_hash_lock);
-		auto pref = g_logon_hash->query<uint32_t>(static_cast<logon_object *>(pobject)->get_dir());
+		auto pref = g_logon_hash->query<uint32_t>(pobject->get_dir());
 		if (pref != nullptr) {
 			(*pref) --;
 			if (0 == *pref) {
-				g_logon_hash->remove(static_cast<logon_object *>(pobject)->get_dir());
+				g_logon_hash->remove(pobject->get_dir());
 			}
 		}
 		b_root = TRUE;

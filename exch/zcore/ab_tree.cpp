@@ -82,7 +82,7 @@ struct GUID_ENUM {
 	int item_id;
 	int node_type;
 	uint64_t dgt;
-	AB_NODE *pabnode;
+	const AB_NODE *pabnode;
 };
 
 struct SORT_ITEM {
@@ -898,7 +898,6 @@ const SIMPLE_TREE_NODE *ab_tree_guid_to_node(AB_BASE *pbase, GUID guid)
 	int domain_id;
 	GUID_ENUM tmp_enum;
 	DOMAIN_NODE *pdomain;
-	SIMPLE_TREE_NODE *ptnode;
 	SINGLE_LIST_NODE *psnode;
 	
 	domain_id = guid.time_low & 0xFFFFFF;
@@ -925,11 +924,11 @@ const SIMPLE_TREE_NODE *ab_tree_guid_to_node(AB_BASE *pbase, GUID guid)
 		(((uint64_t)guid.clock_seq[1]) << 56);
 	
 	tmp_enum.pabnode = NULL;
-	ptnode = simple_tree_get_root(&pdomain->tree);
+	const SIMPLE_TREE_NODE *ptnode = simple_tree_get_root(&pdomain->tree);
 	if (NULL == ptnode) {
 		return NULL;
 	}
-	simple_tree_enum_from_node(ptnode, [&](SIMPLE_TREE_NODE *pnode) {
+	simple_tree_enum_from_node(ptnode, [&](const SIMPLE_TREE_NODE *pnode) {
 		char temp_path[512];
 		auto abn = containerof(pnode, AB_NODE, stree);
 		if (tmp_enum.pabnode != nullptr ||
