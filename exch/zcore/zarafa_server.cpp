@@ -1151,7 +1151,6 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	char essdn[1024];
 	char tmp_buff[16];
 	uint32_t address_type;
-	SIMPLE_TREE_NODE *pnode;
 	CONTAINER_ID container_id;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
@@ -1237,7 +1236,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			auto pbase = ab_tree_get_base(base_id);
 			if (pbase == nullptr)
 				return ecError;
-			pnode = ab_tree_guid_to_node(pbase.get(), guid);
+			auto pnode = ab_tree_guid_to_node(pbase.get(), guid);
 			if (pnode == nullptr)
 				return ecNotFound;
 			minid = ab_tree_get_node_minid(pnode);

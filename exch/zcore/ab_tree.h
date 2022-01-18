@@ -74,14 +74,12 @@ extern AB_BASE_REF ab_tree_get_base(int base_id);
 uint32_t ab_tree_make_minid(uint8_t type, int value);
 uint8_t ab_tree_get_minid_type(uint32_t minid);
 int ab_tree_get_minid_value(uint32_t minid);
-SIMPLE_TREE_NODE* ab_tree_minid_to_node(AB_BASE *pbase, uint32_t minid);
-SIMPLE_TREE_NODE* ab_tree_guid_to_node(
-	AB_BASE *pbase, GUID guid);
-uint32_t ab_tree_get_node_minid(SIMPLE_TREE_NODE *pnode);
-uint8_t ab_tree_get_node_type(SIMPLE_TREE_NODE *pnode);
-BOOL ab_tree_has_child(SIMPLE_TREE_NODE *pnode);
-BOOL ab_tree_fetch_node_properties(SIMPLE_TREE_NODE *pnode,
-	const PROPTAG_ARRAY *pproptags, TPROPVAL_ARRAY *ppropvals);
+extern const SIMPLE_TREE_NODE *ab_tree_minid_to_node(const AB_BASE *, uint32_t minid);
+extern const SIMPLE_TREE_NODE *ab_tree_guid_to_node(AB_BASE *, GUID);
+extern uint32_t ab_tree_get_node_minid(const SIMPLE_TREE_NODE *);
+extern uint8_t ab_tree_get_node_type(const SIMPLE_TREE_NODE *);
+extern BOOL ab_tree_has_child(const SIMPLE_TREE_NODE *);
+extern BOOL ab_tree_fetch_node_properties(const SIMPLE_TREE_NODE *, const PROPTAG_ARRAY *tags, TPROPVAL_ARRAY *vals);
 BOOL ab_tree_resolvename(AB_BASE *pbase, uint32_t codepage,
 	char *pstr, SINGLE_LIST *presult_list);
 BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,

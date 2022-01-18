@@ -716,7 +716,6 @@ BOOL container_object::get_properties(const PROPTAG_ARRAY *pproptags,
     TPROPVAL_ARRAY *ppropvals)
 {
 	auto pcontainer = this;
-	SIMPLE_TREE_NODE *pnode;
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
@@ -727,7 +726,7 @@ BOOL container_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		auto pbase = ab_tree_get_base(pcontainer->id.abtree_id.base_id);
 		if (pbase == nullptr)
 			return FALSE;
-		pnode = ab_tree_minid_to_node(pbase.get(),
+		auto pnode = ab_tree_minid_to_node(pbase.get(),
 			pcontainer->id.abtree_id.minid);
 		if (NULL == pnode) {
 			ppropvals->count = 0;
@@ -776,9 +775,9 @@ void container_object_get_container_table_all_proptags(
 	pproptags->pproptag = deconst(proptag_buff);
 }
 
-static BOOL container_object_get_specialtables_from_node(
-	SIMPLE_TREE_NODE *pnode, const PROPTAG_ARRAY *pproptags,
-	BOOL b_depth, TARRAY_SET *pset)
+static BOOL
+container_object_get_specialtables_from_node(const SIMPLE_TREE_NODE *pnode,
+    const PROPTAG_ARRAY *pproptags, BOOL b_depth, TARRAY_SET *pset)
 {
 	TPROPVAL_ARRAY **pparray;
 	auto count = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
@@ -874,9 +873,6 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 {
 	auto pcontainer = this;
 	TARRAY_SET tmp_set;
-	DOMAIN_NODE *pdnode;
-	SINGLE_LIST_NODE *psnode;
-	SIMPLE_TREE_NODE *ptnode;
 	TPROPVAL_ARRAY tmp_propvals;
 	
 	if (0 == row_needed) {
@@ -939,18 +935,17 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 			    rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
 			    pproptags, TRUE, &tmp_set))
 				return FALSE;
-			for (psnode=single_list_get_head(&pbase->list); NULL!=psnode;
+			for (auto psnode = single_list_get_head(&pbase->list); psnode != nullptr;
 				psnode=single_list_get_after(&pbase->list, psnode)) {
-				pdnode = (DOMAIN_NODE*)psnode->pdata;
-				ptnode = simple_tree_get_root(&pdnode->tree);
+				auto pdnode = static_cast<const DOMAIN_NODE *>(psnode->pdata);
+				auto ptnode = simple_tree_get_root(&pdnode->tree);
 				if (FALSE == container_object_get_specialtables_from_node(
 					ptnode, pproptags, b_depth, &tmp_set)) {
 					return FALSE;
 				}
 			}
 		} else {
-			ptnode = ab_tree_minid_to_node(pbase.get(),
-				pcontainer->id.abtree_id.minid);
+			auto ptnode = ab_tree_minid_to_node(pbase.get(), pcontainer->id.abtree_id.minid);
 			if (NULL == ptnode) {
 				pset->count = 0;
 				pset->pparray = NULL;
@@ -998,7 +993,6 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 BOOL container_object::get_user_table_num(uint32_t *pnum)
 {
 	auto pcontainer = this;
-	SIMPLE_TREE_NODE *pnode;
 	
 	if (CONTAINER_TYPE_ABTREE == pcontainer->type) {
 		if (NULL != pcontainer->contents.pminid_array) {
@@ -1014,7 +1008,7 @@ BOOL container_object::get_user_table_num(uint32_t *pnum)
 		} else if (0 == pcontainer->id.abtree_id.minid) {
 			*pnum = 0;
 		} else {
-			pnode = ab_tree_minid_to_node(pbase.get(),
+			auto pnode = ab_tree_minid_to_node(pbase.get(),
 				pcontainer->id.abtree_id.minid);
 			if (NULL == pnode || NULL == (pnode =
 				simple_tree_node_get_child(pnode))) {
@@ -1064,8 +1058,6 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 	BOOL b_forward;
 	uint32_t first_pos;
 	uint32_t row_count;
-	SINGLE_LIST_NODE *psnode;
-	SIMPLE_TREE_NODE *ptnode;
 	TPROPVAL_ARRAY *ppropvals;
 	
 	if (0 == row_needed) {
@@ -1104,7 +1096,7 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 		if (NULL != pcontainer->contents.pminid_array) {
 			for (size_t i = first_pos; i < first_pos+row_count &&
 			     i < pcontainer->contents.pminid_array->count; ++i) {
-				ptnode = ab_tree_minid_to_node(pbase.get(),
+				auto ptnode = ab_tree_minid_to_node(pbase.get(),
 					pcontainer->contents.pminid_array->pl[i]);
 				if (NULL == ptnode) {
 					continue;
@@ -1122,7 +1114,7 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 		} else {
 			if (0xFFFFFFFF == pcontainer->id.abtree_id.minid) {
 				size_t i = 0;
-				for (psnode = single_list_get_head(&pbase->gal_list);
+				for (auto psnode = single_list_get_head(&pbase->gal_list);
 				     psnode != nullptr;
 				     psnode = single_list_get_after(&pbase->gal_list, psnode), ++i) {
 					if (i < first_pos) {
@@ -1144,8 +1136,7 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 			} else if (0 == pcontainer->id.abtree_id.minid) {
 				return TRUE;
 			} else {
-				ptnode = ab_tree_minid_to_node(pbase.get(),
-					pcontainer->id.abtree_id.minid);
+				auto ptnode = ab_tree_minid_to_node(pbase.get(), pcontainer->id.abtree_id.minid);
 				if (NULL == ptnode || NULL == (ptnode =
 					simple_tree_node_get_child(ptnode))) {
 					return TRUE;

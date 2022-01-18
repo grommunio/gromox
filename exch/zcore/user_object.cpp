@@ -27,11 +27,10 @@ BOOL user_object::check_valid()
 {
 	auto puser = this;
 	char username[UADDR_SIZE];
-	SIMPLE_TREE_NODE *pnode;
 	auto pbase = ab_tree_get_base(puser->base_id);
 	if (pbase == nullptr)
 		return FALSE;
-	pnode = ab_tree_minid_to_node(pbase.get(), puser->minid);
+	auto pnode = ab_tree_minid_to_node(pbase.get(), puser->minid);
 	pbase.reset();
 	if (NULL == pnode) {
 		if (ab_tree_get_minid_type(puser->minid) != MINID_TYPE_ADDRESS ||
@@ -48,13 +47,12 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	auto puser = this;
 	char username[UADDR_SIZE];
 	char tmp_buff[1024];
-	SIMPLE_TREE_NODE *pnode;
 	static const uint32_t fake_type = MAPI_MAILUSER;
 	
 	auto pbase = ab_tree_get_base(puser->base_id);
 	if (pbase == nullptr)
 		return FALSE;
-	pnode = ab_tree_minid_to_node(pbase.get(), puser->minid);
+	auto pnode = ab_tree_minid_to_node(pbase.get(), puser->minid);
 	if (NULL == pnode) {
 		pbase.reset();
 		/* if user is hidden from addressbook tree, we simply
