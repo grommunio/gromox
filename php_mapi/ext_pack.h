@@ -14,85 +14,22 @@ extern void *ext_pack_alloc(size_t);
 extern const struct EXT_BUFFER_MGT ext_buffer_mgt;
 
 struct PULL_CTX : public EXT_PULL {
+	inline void init(void *d, uint32_t s) {
+		return EXT_PULL::init(d, s, ext_pack_alloc,
+		       EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE);
+	}
 	int g_perm_set(PERMISSION_SET *);
 	int g_state_a(STATE_ARRAY *);
 	int g_znotif_a(ZNOTIFICATION_ARRAY *);
 };
 
-#define ext_pack_pull_init(c, d, s) ((c)->init((d), (s), ext_pack_alloc, EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE))
-#define ext_pack_pull_advance(c, s) ((c)->advance(s) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_uint8(c, v) ((c)->g_uint8(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_uint16(c, v) ((c)->g_uint16(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_uint32(c, v) ((c)->g_uint32(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_uint64(c, v) ((c)->g_uint64(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_float(c, v) ((c)->g_float(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_double(c, v) ((c)->g_double(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_bytes(c, v, z) ((c)->g_bytes((v), (z)) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_guid(c, v) ((c)->g_guid(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_string(c, v) ((c)->g_str(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_wstring(c, v) ((c)->g_wstr(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_binary(c, v) ((c)->g_bin(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_short_array(c, v) ((c)->g_uint16_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_long_array(c, v) ((c)->g_uint32_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_longlong_array(c, v) ((c)->g_uint64_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_binary_array(c, v) ((c)->g_bin_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_string_array(c, v) ((c)->g_str_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_guid_array(c, v) ((c)->g_guid_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_proptag_array(c, v) ((c)->g_proptag_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_restriction(c, v) ((c)->g_restriction(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_rule_actions(c, v) ((c)->g_rule_actions(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_tagged_propval(c, v) ((c)->g_tagged_pv(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_propval(c, v) ((c)->g_propval(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_property_name(c, v) ((c)->g_property_name(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_propname_array(c, v) ((c)->g_propname_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_propid_array(c, v) ((c)->g_propid_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_tpropval_array(c, v) ((c)->g_tpropval_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_tarray_set(c, v) ((c)->g_tarray_set(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_oneoff_entryid(c, v) ((c)->g_oneoff_eid(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_permission_set(c, v) ((c)->g_perm_set(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_state_array(c, v) ((c)->g_state_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_pull_znotification_array(c, v) ((c)->g_znotif_a(v) == EXT_ERR_SUCCESS)
-
 struct PUSH_CTX : public EXT_PUSH {
+	inline bool init() {
+		return EXT_PUSH::init(nullptr, 0,
+		       EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE, &ext_buffer_mgt);
+	}
 	int p_perm_set(const PERMISSION_SET *);
 	int p_rule_data(const RULE_DATA *);
 	int p_rule_list(const RULE_LIST *);
 	int p_state_a(const STATE_ARRAY *);
 };
-
-#define ext_pack_push_init(c) ((c)->init(nullptr, 0, EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE, &ext_buffer_mgt))
-#define ext_pack_push_advance(c, v) ((c)->advance(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_bytes(c, v, z) ((c)->p_bytes((v), (z)) == EXT_ERR_SUCCESS)
-#define ext_pack_push_uint8(c, v) ((c)->p_uint8(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_uint16(c, v) ((c)->p_uint16(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_int32(c, v) ((c)->p_int32(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_uint32(c, v) ((c)->p_uint32(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_uint64(c, v) ((c)->p_uint64(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_float(c, v) ((c)->p_float(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_double(c, v) ((c)->p_double(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_binary(c, v) ((c)->p_bin(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_guid(c, v) ((c)->p_guid(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_string(c, v) ((c)->p_str(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_wstring(c, v) ((c)->p_wstr(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_short_array(c, v) ((c)->p_uint16_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_long_array(c, v) ((c)->p_uint32_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_longlong_array(c, v) ((c)->p_uint64_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_binary_array(c, v) ((c)->p_bin_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_string_array(c, v) ((c)->p_str_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_guid_array(c, v) ((c)->p_guid_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_proptag_array(c, v) ((c)->p_proptag_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_restriction(c, v) ((c)->p_restriction(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_rule_actions(c, v) ((c)->p_rule_actions(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_tagged_propval(c, v) ((c)->p_tagged_pv(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_property_name(c, v) ((c)->p_propname(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_propname_array(c, v) ((c)->p_propname_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_propid_array(c, v) ((c)->p_propid_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_tpropval_array(c, v) ((c)->p_tpropval_a(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_tarray_set(c, v) ((c)->p_tarray_set(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_sort_order(c, v) ((c)->p_sort_order(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_sortorder_set(c, v) ((c)->p_sortorder_set(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_oneoff_entryid(c, v) ((c)->p_oneoff_eid(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_permission_set(c, v) ((c)->p_perm_set(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_rule_data(c, v) ((c)->p_rule_data(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_rule_list(c, v) ((c)->p_rule_list(v) == EXT_ERR_SUCCESS)
-#define ext_pack_push_state_array(c, v) ((c)->p_state_a(v) == EXT_ERR_SUCCESS)

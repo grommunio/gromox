@@ -770,8 +770,8 @@ ZEND_FUNCTION(mapi_createoneoff)
 	tmp_entry.pdisplay_name = pdisplayname;
 	tmp_entry.paddress_type = ptype;
 	tmp_entry.pmail_address = paddress;
-	if (!ext_pack_push_init(&push_ctx) ||
-	    !ext_pack_push_oneoff_entryid(&push_ctx, &tmp_entry)) {
+	if (push_ctx.init() != EXT_ERR_SUCCESS ||
+	    push_ctx.p_oneoff_eid(&tmp_entry) != EXT_ERR_SUCCESS) {
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
@@ -791,8 +791,8 @@ ZEND_FUNCTION(mapi_parseoneoff)
 		MAPI_G(hr) = ecInvalidParam;
 		THROW_EXCEPTION;
 	}
-	ext_pack_pull_init(&pull_ctx, reinterpret_cast<const uint8_t *>(pentryid), cbentryid);
-	if (!ext_pack_pull_oneoff_entryid(&pull_ctx, &oneoff_entry)) {
+	pull_ctx.init(pentryid, cbentryid);
+	if (pull_ctx.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS) {
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
@@ -3332,7 +3332,7 @@ ZEND_FUNCTION(mapi_openproperty)
 			MAPI_G(hr) = ecInvalidParam;
 			THROW_EXCEPTION;
 		}
-		ext_pack_pull_init(&pull_ctx, reinterpret_cast<const uint8_t *>(guidstr), sizeof(GUID));
+		pull_ctx.init(guidstr, sizeof(GUID));
 		if (pull_ctx.g_guid(&iid_guid) != EXT_ERR_SUCCESS) {
 			MAPI_G(hr) = ecInvalidParam;
 			THROW_EXCEPTION;
@@ -5245,11 +5245,11 @@ ZEND_FUNCTION(kc_session_save)
 		RETVAL_LONG(ecInvalidParam);
 		return;	
 	}
-	if (!ext_pack_push_init(&push_ctx)) {
+	if (push_ctx.init() != EXT_ERR_SUCCESS ||
+	    push_ctx.p_guid(&psession->hsession) != EXT_ERR_SUCCESS) {
 		RETVAL_LONG(ecMAPIOOM);
 		return;	
 	}
-	ext_pack_push_guid(&push_ctx, &psession->hsession);
 	ZVAL_STRINGL(pzoutstr, reinterpret_cast<const char *>(push_ctx.m_vdata), push_ctx.m_offset);
 	RETVAL_LONG(ecSuccess);
 }
@@ -5272,8 +5272,8 @@ ZEND_FUNCTION(kc_session_restore)
 	}
 	data_bin.pb = reinterpret_cast<uint8_t *>(Z_STRVAL_P(pzdata));
 	data_bin.cb = Z_STRLEN_P(pzdata);
-	ext_pack_pull_init(&pull_ctx, data_bin.pb, data_bin.cb);
-	if (!ext_pack_pull_guid(&pull_ctx, &hsession)) {
+	pull_ctx.init(data_bin.pb, data_bin.cb);
+	if (pull_ctx.g_guid(&hsession) != EXT_ERR_SUCCESS) {
 		RETVAL_LONG(ecInvalidParam);
 		return;
 	}
