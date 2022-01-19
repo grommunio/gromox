@@ -173,17 +173,17 @@ struct EXT_PUSH {
 	int advance(uint32_t);
 	int p_bytes(const void *, uint32_t);
 	int p_uint8(uint8_t);
-	int p_int8(int8_t v) { return p_uint8(v); }
+	inline int p_int8(int8_t v) { return p_uint8(v); }
 	int p_uint16(uint16_t);
-	int p_int16(int16_t v) { return p_uint16(v); }
+	inline int p_int16(int16_t v) { return p_uint16(v); }
 	int p_uint32(uint32_t);
-	int p_int32(int32_t v) { return p_uint32(v); }
+	inline int p_int32(int32_t v) { return p_uint32(v); }
 	int p_uint64(uint64_t);
-	int p_int64(int64_t v) { return p_uint64(v); }
+	inline int p_int64(int64_t v) { return p_uint64(v); }
 	int p_float(float);
 	int p_double(double);
 	int p_bool(BOOL);
-	int p_blob(DATA_BLOB);
+	inline int p_blob(DATA_BLOB b) { return p_bytes(b.data, b.length); }
 	int p_bin(const BINARY *);
 	int p_bin_s(const BINARY *);
 	int p_bin_ex(const BINARY *);

@@ -2246,11 +2246,6 @@ int EXT_PUSH::p_bool(BOOL v)
 	
 }
 
-int EXT_PUSH::p_blob(DATA_BLOB blob)
-{
-	return p_bytes(blob.data, blob.length);
-}
-
 int EXT_PUSH::p_bin(const BINARY *r)
 {
 	if (m_flags & EXT_FLAG_WCOUNT) {
