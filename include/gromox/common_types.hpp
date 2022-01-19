@@ -30,12 +30,3 @@ static constexpr BOOL TRUE{-1};
 #ifndef NULL
 #define NULL    0
 #endif
-
-struct DATA_BLOB {
-	union {
-		uint8_t *data;
-		char *cdata;
-		void *vdata;
-	};
-	uint32_t length;
-};

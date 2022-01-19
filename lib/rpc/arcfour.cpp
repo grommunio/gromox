@@ -21,6 +21,7 @@
 */
 #include <gromox/arcfour.hpp>
 #include <cstdint>
+#include <gromox/mapidefs.h>
 
 /* initialise the arcfour sbox with key */
 void arcfour_init(ARCFOUR_STATE *pstate, const DATA_BLOB *pkey) 

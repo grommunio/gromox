@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-#include <gromox/common_types.hpp>
+#include <gromox/mapidefs.h>
 
 struct ARCFOUR_STATE {
 	uint8_t sbox[256];

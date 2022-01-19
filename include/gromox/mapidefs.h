@@ -1529,13 +1529,22 @@ struct ADVISE_INFO {
  * @pv:		may legitimately be nullptr (only if cb==0)
  */
 struct BINARY {
-	uint32_t cb;
 	union {
-		uint8_t *pb;
-		char *pc;
-		void *pv;
+		uint32_t cb, length;
+	};
+	union {
+		union {
+			uint8_t *pb, *data;
+		};
+		union {
+			char *pc, *cdata;
+		};
+		union {
+			void *pv, *vdata;
+		};
 	};
 };
+using DATA_BLOB = BINARY;
 
 struct BINARY_ARRAY {
 	uint32_t count;
