@@ -364,17 +364,10 @@ static BOOL oxcmail_username_to_entryid(const char *username,
 	       username, pdisplay_name, pbin);
 }
 
-static bool oxcmail_check_ascii(const char *pstring)
+static inline bool oxcmail_check_ascii(const char *s)
 {
-	int i, len;
-	
-	len = strlen(pstring);
-	for (i=0; i<len; i++) {
-		if (0 == isascii(pstring[i])) {
-			return false;
-		}
-	}
-	return true;
+	return std::all_of(s, s + strlen(s),
+	       [](unsigned char c) { return isascii(c); });
 }
 
 static unsigned int pick_strtype(const char *token)
@@ -382,17 +375,10 @@ static unsigned int pick_strtype(const char *token)
 	return oxcmail_check_ascii(token) ? PT_UNICODE : PT_STRING8;
 }
 
-static BOOL oxcmail_check_crlf(const char *pstring)
+static inline bool oxcmail_check_crlf(const char *s)
 {
-	int i, len;
-	
-	len = strlen(pstring);
-	for (i=0; i<len; i++) {
-		if ('\r' == pstring[i] || '\n' == pstring[i]) {
-			return TRUE;
-		}
-	}
-	return FALSE;
+	return std::any_of(s, s + strlen(s),
+	       [](char c) { return c == '\n' || c == '\r'; });
 }
 
 static BOOL oxcmail_get_content_param(MIME *pmime,
@@ -2709,10 +2695,8 @@ static BOOL oxcmail_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 		return FALSE;
 	}
 	for (const auto &pair : phash) {
-		propids.ppropid[propids.count] = pair.first;
-		propnames.ppropname[propnames.count] = pair.second;
-		propids.count ++;
-		propnames.count ++;
+		propids.ppropid[propids.count++] = pair.first;
+		propnames.ppropname[propnames.count++] = pair.second;
 	}
 	if (FALSE == get_propids(&propnames, &propids1)) {
 		return FALSE;
@@ -4725,54 +4709,34 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 				return FALSE;
 			}
 		} else {
-			tmp_len = 0;
+			*tmp_field = '\0';
 			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_DR) {
-				if (0 != tmp_len) {
-					strcpy(tmp_field + tmp_len, ", ");
-					tmp_len += 2;
-				}
-				strcpy(tmp_field + tmp_len, "DR");
-				tmp_len += 2;
+				strcat(tmp_field, "DR");
 			}
 			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_NDR) {
-				if (0 != tmp_len) {
-					strcpy(tmp_field + tmp_len, ", ");
-					tmp_len += 2;
-				}
-				strcpy(tmp_field + tmp_len, "NDR");
-				tmp_len += 3;
+				if (*tmp_field != '\0')
+					strcat(tmp_field, ", ");
+				strcat(tmp_field, "NDR");
 			}
 			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_RN) {
-				if (0 != tmp_len) {
-					strcpy(tmp_field + tmp_len, ", ");
-					tmp_len += 2;
-				}
-				strcpy(tmp_field + tmp_len, "RN");
-				tmp_len += 2;
+				if (*tmp_field != '\0')
+					strcat(tmp_field, ", ");
+				strcat(tmp_field, "RN");
 			}
 			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_NRN) {
-				if (0 != tmp_len) {
-					strcpy(tmp_field + tmp_len, ", ");
-					tmp_len += 2;
-				}
-				strcpy(tmp_field + tmp_len, "NRN");
-				tmp_len += 3;
+				if (*tmp_field != '\0')
+					strcat(tmp_field, ", ");
+				strcat(tmp_field, "NRN");
 			}
 			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_OOF) {
-				if (0 != tmp_len) {
-					strcpy(tmp_field + tmp_len, ", ");
-					tmp_len += 2;
-				}
-				strcpy(tmp_field + tmp_len, "OOF");
-				tmp_len += 3;
+				if (*tmp_field != '\0')
+					strcat(tmp_field, ", ");
+				strcat(tmp_field, "OOF");
 			}
 			if (*static_cast<uint32_t *>(pvalue) & AUTO_RESPONSE_SUPPRESS_AUTOREPLY) {
-				if (0 != tmp_len) {
-					strcpy(tmp_field + tmp_len, ", ");
-					tmp_len += 2;
-				}
-				strcpy(tmp_field + tmp_len, "AutoReply");
-				tmp_len += 9;
+				if (*tmp_field != '\0')
+					strcat(tmp_field, ", ");
+				strcat(tmp_field, "AutoReply");
 			}
 		}
 		if (tmp_len != 0 && !mime_set_field(phead, "X-Auto-Response-Suppress", tmp_field))
@@ -4823,19 +4787,16 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	}
 	
 	if (MAIL_TYPE_TNEF == pskeleton->mail_type) {
+		*tmp_field = '\0';
 		pvalue = pmsg->proplist.getval(PR_TNEF_CORRELATION_KEY);
 		if (NULL == pvalue) {
 			pvalue = pmsg->proplist.getval(PR_INTERNET_MESSAGE_ID);
 			if (NULL != pvalue) {
 				strncpy(tmp_field, static_cast<char *>(pvalue), 1024);
-			} else {
-				tmp_field[0] = '\0';
 			}
 		} else {
 			auto bv = static_cast<BINARY *>(pvalue);
-			if (bv->cb >= 1024) {
-				tmp_field[0] = '\0';
-			} else {
+			if (bv->cb < 1024) {
 				memcpy(tmp_field, bv->pb, bv->cb);
 				tmp_field[bv->cb] = '\0';
 			}
@@ -4969,12 +4930,8 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 			if (0xFFFFFFFF == *(uint32_t*)pvalue) {
 				pvalue = prcpts->pparray[i]->getval(PR_NDR_REASON_CODE);
 				if (NULL != pvalue) {
-					if (*(uint32_t*)pvalue > 6) {
-						strcpy(tmp_buff, "5.4.0");
-					} else {
-						strcpy(tmp_buff,
-							status_strings1[*(uint32_t*)pvalue]);
-					}
+					strcpy(tmp_buff, *static_cast<uint32_t *>(pvalue) > 6 ? "5.4.0" :
+					       status_strings1[*static_cast<uint32_t *>(pvalue)]);
 					if (!dsn_append_field(pdsn_fields, "Status", tmp_buff)) {
 						dsn_free(&dsn);
 						return FALSE;
@@ -4983,12 +4940,8 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 			} else {
 				pvalue = prcpts->pparray[i]->getval(PR_NDR_REASON_CODE);
 				if (NULL != pvalue) {
-					if (*(uint32_t*)pvalue > 48) {
-						strcpy(tmp_buff, "5.0.0");
-					} else {
-						strcpy(tmp_buff,
-							status_strings2[*(uint32_t*)pvalue]);
-					}
+					strcpy(tmp_buff, *static_cast<uint32_t *>(pvalue) > 48 ? "5.0.0" :
+					       status_strings2[*static_cast<uint32_t *>(pvalue)]);
 					if (!dsn_append_field(pdsn_fields, "Status", tmp_buff)) {
 						dsn_free(&dsn);
 						return FALSE;
@@ -5085,11 +5038,9 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg,
 		return FALSE;
 	}
 	tmp_len = strlen(pmessage_class);
-	if (0 == strcasecmp(pmessage_class + tmp_len - 6, ".IPNRN")) {
-		strcpy(tmp_buff, "manual-action/MDN-sent-automatically; displayed");
-	} else {
-		strcpy(tmp_buff, "manual-action/MDN-sent-automatically; deleted");
-	}
+	strcpy(tmp_buff, strcasecmp(pmessage_class + tmp_len - 6, ".IPNRN") == 0 ?
+	       "manual-action/MDN-sent-automatically; displayed" :
+	       "manual-action/MDN-sent-automatically; deleted");
 	if (!dsn_append_field(pdsn_fields, "Disposition", tmp_buff)) {
 		dsn_free(&dsn);
 		return FALSE;
@@ -5130,6 +5081,14 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg,
 	return TRUE;
 }
 
+static bool select_octet_stream(const char *s)
+{
+	return s == nullptr || strcasecmp(s, "message/rfc822") == 0 ||
+	       strcasecmp(s, "application/applefile") == 0 ||
+	       strcasecmp(s, "application/mac-binhex40") == 0 ||
+	       strncasecmp(s, "multipart/", 10) == 0;
+}
+
 static BOOL oxcmail_export_appledouble(MAIL *pmail,
 	BOOL b_inline, ATTACHMENT_CONTENT *pattachment,
 	MIME_SKELETON *pskeleton, EXT_BUFFER_ALLOC alloc,
@@ -5161,16 +5120,8 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 	}
 	pbin = pattachment->proplist.get<BINARY>(PROP_TAG(PT_BINARY, propids.ppropid[0]));
 	pvalue = pattachment->proplist.getval(PROP_TAG(PT_UNICODE, propids.ppropid[1]));
-	if (NULL == pvalue) {
+	if (select_octet_stream(static_cast<const char *>(pvalue)))
 		pvalue = "application/octet-stream";
-	} else {
-		auto pvs = static_cast<const char *>(pvalue);
-		if (strcasecmp(pvs, "message/rfc822") == 0 ||
-		    strcasecmp(pvs, "application/applefile") == 0 ||
-		    strcasecmp(pvs, "application/mac-binhex40") == 0 ||
-		    strncasecmp(pvs, "multipart/", 10) == 0)
-			pvalue = "application/octet-stream";
-	}
 	if (!pmime->set_content_type("multipart/appledouble"))
 		return FALSE;
 	auto pmime1 = pmail->add_child(pmime, MIME_ADD_LAST);
@@ -5249,7 +5200,6 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
     std::shared_ptr<MIME_POOL> ppool, MIME *pmime)
 {
 	void *ptr;
-	BOOL b_tnef;
 	int tmp_len;
 	VCARD vcard;
 	BOOL b_vcard;
@@ -5407,14 +5357,10 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 	}
 	
 	if (NULL != pattachment->pembedded) {
-		if (MAIL_TYPE_TNEF == pskeleton->mail_type) {
-			b_tnef = TRUE;
-		} else {
-			b_tnef = FALSE;
-		}
+		auto b_tnef = pskeleton->mail_type == MAIL_TYPE_TNEF;
 		MAIL imail;
 		if (FALSE == oxcmail_export(pattachment->pembedded,
-			b_tnef, pskeleton->body_type, ppool, &imail,
+		    b_tnef ? TRUE : false, pskeleton->body_type, ppool, &imail,
 			alloc, get_propids, get_propname)) {
 			return FALSE;
 		}
