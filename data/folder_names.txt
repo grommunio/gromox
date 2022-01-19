@@ -16,6 +16,7 @@
 1b=Plaaslike Falings
 1c=Bedienerfalings
 80=Openbare omslae
+ff=Afrikaans
 
 [am]
 07=የጋራ እይታዎች
@@ -37,6 +38,7 @@
 1b=አካባቢያው ውድቀት
 1c=የአገልጋይ መሳኖች
 80=የወል አቃፊዎች
+ff=አማርኛ
 
 [ar_SA]
 07=طرق عرض عامة
@@ -58,6 +60,7 @@
 1b=حالات فشل عامة
 1c=حالات فشل الخادم
 80=مجلدات عمومية
+ff=العَرَبِيَّة
 
 [as]
 0a=আইটেম প্ৰেৰণ কৰক
@@ -77,6 +80,7 @@
 1b=স্থানীয় বিফলতা
 1c=ছাৰ্ভাৰ বিফলতা
 80=ৰাজহুৱা ফ'ল্ডাৰ
+ff=অসমীয়া
 
 [az_AZ]
 0a=Göndərilmişlər
@@ -96,6 +100,7 @@
 1b=Lokal Xətalar
 1c=Server Xətaları
 80=Ümumi Qovluqlar
+ff=Azərbaycan (Latın)
 
 [be]
 0a=Адпраўленыя элементы
@@ -115,6 +120,7 @@
 1b=Лакальныя памылкі
 1c=Памылка сервера
 80=Агульнадаступныя папкі
+ff=беларуская
 
 [bg]
 06=Изгледи
@@ -137,6 +143,7 @@
 1b=Локални грешки
 1c=Грешки в сървър
 80=Публични папки
+ff=български
 
 [bn_BD]
 0a=প্রেরিত বিষয়োপকরণসমূহ
@@ -156,6 +163,7 @@
 1b=স্থানীয় ব্যর্থতা
 1c=সার্ভারের ব্যর্থতা
 80=সর্বজনীন ফোল্ডার
+ff=Bangla (Bangladesh)
 
 [bn_IN]
 07=সাধারণ দর্শনগুলি
@@ -177,6 +185,7 @@
 1b=স্থানীয় ব্যর্থতাগুলি
 1c=গুরুত্বপূর্ণ ব্যর্থতাগুলি
 80=সর্বজনীন ফোল্ডার
+ff=Bengali (India)
 
 [bs]
 0a=Poslane stavke
@@ -196,6 +205,7 @@
 1b=Lokalni neuspjesi
 1c=Neuspjesi servera
 80=Javne fascikle
+ff=Bosanski (latinica)
 
 [ca]
 06=Vistes
@@ -218,6 +228,7 @@
 1b=Errors locals
 1c=Errors del servidor
 80=Carpetes públiques
+ff=català
 
 [ca_ES@valencia]
 06=Vistes
@@ -240,6 +251,7 @@
 1b=Errors locals
 1c=Errors del servidor
 80=Carpetes públiques
+ff=Valencià
 
 [cs]
 06=Zobrazení
@@ -262,6 +274,7 @@
 1b=Místní selhání
 1c=Selhání serveru
 80=Veřejné složky
+ff=Čeština
 
 [cy]
 06=Gweddau
@@ -284,6 +297,7 @@
 1b=Methiannau Lleol
 1c=Methiannau Gweinydd
 80=Ffolderi Cyhoeddus
+ff=Cymraeg
 
 [da]
 06=Visninger
@@ -306,6 +320,7 @@
 1b=Lokale fejl
 1c=Serverfejl
 80=Offentlige mapper
+ff=Dansk
 
 [de]
 01=Stamm
@@ -330,6 +345,7 @@
 1b=Lokale Fehler
 1c=Serverfehler
 80=Öffentliche Ordner
+ff=Deutsch
 
 [el]
 06=Προβολές
@@ -352,6 +368,7 @@
 1b=Τοπικές αποτυχίες
 1c=Αποτυχίες server
 80=Δημόσιοι φάκελοι
+ff=Eλληνικά
 
 [en]
 01=Root Container
@@ -384,6 +401,7 @@
 1c=Server Failures
 1d=Conversation Action Settings
 80=Public Folders
+ff=English
 
 [es]
 06=Vistas
@@ -406,6 +424,7 @@
 1b=Error local
 1c=Errores del servidor
 80=Carpetas públicas
+ff=Español
 
 [et]
 06=Vaated
@@ -428,6 +447,7 @@
 1b=Kohalikud nurjumised
 1c=Serveritõrked
 80=Avalikud kaustad
+ff=Eesti
 
 [eu]
 06=Ikuspegi
@@ -450,6 +470,7 @@
 1b=Hutsegite lokalak
 1c=Zerbitzariaren hutsegiteak
 80=Karpeta publikoak
+ff=Euskara
 
 [fa]
 07=نماهای معمول
@@ -471,6 +492,7 @@
 1b=خطاهای محلی
 1c=خطاهای سرور
 80=پوشه های عمومی
+ff=فارسی
 
 [fi]
 06=Näkymät
@@ -493,6 +515,7 @@
 1b=Paikalliset virheet
 1c=Palvelinvirheet
 80=Yleiset kansiot
+ff=Suomi
 
 [fil]
 06=Mga View
@@ -515,6 +538,7 @@
 1b=Mga Lokal na Pagkabigo
 1c=Mga Pagkabigo sa Server
 80=Mga Pampublikong Folder
+ff=Filipino
 
 [fr]
 06=Affichages
@@ -537,6 +561,7 @@
 1b=Échecs locaux
 1c=Échecs du serveur
 80=Dossiers publics
+ff=Français
 
 [ga]
 0a=Míreanna seolta
@@ -556,6 +581,7 @@
 1b=Teipeanna logánta
 1c=Teipeanna freastalaí
 80=Fillteáin phoiblí
+ff=Gaeilge
 
 [gd]
 0a=Am post cuirte
@@ -574,6 +600,7 @@
 1a=Fàilligidhean ionadail
 1b=Fàilligidhean an fhrithealaiche
 80=Pasgain phoblach
+ff=Gàidhlig na h-Alba
 
 [gl]
 06=Visualizacións
@@ -596,6 +623,7 @@
 1b=Erros locais
 1c=Erros do servidor
 80=Cartafoles públicos
+ff=Galego
 
 [gu]
 07=સામાન્ય દ્રશ્યો
@@ -617,6 +645,7 @@
 1b=સ્થાનિક નિષ્ફળતાઓ
 1c=સર્વર નિષ્ફળતાઓ
 80=સાર્વજનિક ફોલ્ડર
+ff=ગુજરાતી
 
 [he]
 07=תצוגות נפוצות
@@ -638,6 +667,7 @@
 1b=כשלים מקומיים
 1c=כשלים בשרת
 80=תיקיות ציבוריות
+ff=עִבְרִית
 
 [hi]
 07=सामान्य दृश्य
@@ -659,6 +689,7 @@
 1b=स्थानीय विफलताएँ
 1c=सर्वर विफल
 80=सार्वजनिक फ़ोल्डर
+ff=हिन्दी
 
 [hr]
 06=Pregledi
@@ -681,6 +712,7 @@
 1b=Lokalne greške
 1c=Greške poslužitelja
 80=Javne mape
+ff=Hrvatski
 
 [hu]
 06=Nézetek
@@ -703,6 +735,7 @@
 1b=Helyi hibák
 1c=Kiszolgálóhibák
 80=Nyilvános mappák
+ff=Magyar
 
 [hy]
 0a=Ուղարկված միույթներ
@@ -722,6 +755,7 @@
 1b=Տեղային ձախողումներ
 1c=Սպասարկչի ձախողումներ
 80=Հանրային պանակներ
+ff=հայերեն
 
 [id]
 07=Tampilan Umum
@@ -743,6 +777,7 @@
 1b=Kegagalan Lokal
 1c=Kegagalan Server
 80=Folder Publik
+ff=Bahasa Indonesia
 
 [is]
 06=Yfirlit
@@ -765,6 +800,7 @@
 1b=Staðbundnar villur
 1c=Þjónsvillur
 80=Almenningsmöppur
+ff=Íslenska
 
 [it]
 06=Visualizzazioni
@@ -787,6 +823,7 @@
 1b=Errori in locale
 1c=Errori del server
 80=Cartelle pubbliche
+ff=Italiano
 
 [ja]
 06=ビュー
@@ -809,6 +846,7 @@
 1b=ローカルの失敗
 1c=サーバーの失敗
 80=パブリック フォルダー
+ff=日本語
 
 [ka]
 0a=ელემენტების გაგზავნა
@@ -828,6 +866,7 @@
 1b=ლოკალური მარცხი
 1c=სერვერის მარცხი
 80=საჯარო საქაღალდეები
+ff=ქართული
 
 [kk]
 06=Көріністер
@@ -850,6 +889,7 @@
 1b=Жергілікті қателер
 1c=Сервер қатесі
 80=Жалпы қалталар
+ff=қазақ
 
 [km]
 0a=ធាតុដែលបានផ្ញើ
@@ -869,6 +909,7 @@
 1b=កំហុសមូលដ្ឋាន
 1c=កំហុសម៉ាស៊ីនបម្រើ
 80=សឺមីសាធារណៈ
+ff=ខ្មែរ
 
 [kn]
 07=ಸಾಮಾನ್ಯ ವೀಕ್ಷಣೆಗಳು
@@ -890,6 +931,7 @@
 1b=ಸ್ಥಳೀಯ ವಿಫಲತೆಗಳು
 1c=ಸರ್ವರ್ ವೈಫಲ್ಯಗಳು
 80=ಸಾರ್ವಜನಿಕ ಫೋಲ್ಡರ್‌ಗಳು
+ff=ಕನ್ನಡ
 
 [ko]
 07=공통 보기
@@ -911,6 +953,7 @@
 1b=로컬 실패
 1c=서버 오류
 80=공용 폴더
+ff=한국어
 
 [kok]
 0a=धाडिल्ले नग
@@ -930,6 +973,7 @@
 1b=स्थानीय अपेस
 1c=सर्वर अपेस
 80=भौशीक फोल्डर
+ff=Konkani
 
 [ky]
 0a=Жөнөтүлгөн элементтер
@@ -949,6 +993,7 @@
 1b=Локалдык Уроолор
 1c=Сервердин каталары
 80=Коомдук папкалар
+ff=кыргызча
 
 [lb]
 0a=Geschéckten Elementer
@@ -968,6 +1013,7 @@
 1b=Lokal Feeler
 1c=Feeler um Serveur
 80=Ëffentlech Dossieren
+ff=Lëtzebuergesch
 
 [lt]
 06=Rodiniai
@@ -990,6 +1036,7 @@
 1b=Vietinės klaidos
 1c=Serverio klaidos
 80=Viešieji aplankai
+ff=lietuvių
 
 [lv]
 06=Skati
@@ -1012,6 +1059,7 @@
 1b=Lokālas kļūmes
 1c=Servera kļūmes
 80=Publiskās mapes
+ff=latviešu
 
 [mi]
 0a=Tūemi Kua Tukua
@@ -1031,6 +1079,7 @@
 1b=Ngā Rahunga Paetata
 1c=Ngā Rahunga Tūmau
 80=Ngā Kōpaki Tūmatanui
+ff=Te reo Māori
 
 [mk]
 0a=Испратени ставки
@@ -1050,6 +1099,7 @@
 1b=Локални неуспеси
 1c=Неуспеси на серверот
 80=Јавни папки
+ff=македонски
 
 [ml]
 07=സാധാരണ കാഴ്‌ചകള്‍
@@ -1071,6 +1121,7 @@
 1b=പ്രാദേശിക പരാജയങ്ങള്‍
 1c=സെര്‍വര്‍ പരാജയങ്ങള്‍
 80=പൊതു ഫോള്‍ഡറുകള്‍
+ff=മലയാളം
 
 [mn]
 0a=Илгээсэн зүйлс
@@ -1090,6 +1141,7 @@
 1b=Дотоод гэмтэл
 1c=Серверийн гэмтэл
 80=Нийтийн хавтас
+ff=монгол
 
 [mr]
 07=सामान्य दृश्ये
@@ -1111,6 +1163,7 @@
 1b=स्थानिक बिघाड
 1c=सर्व्हर बिघाड
 80=सार्वजनिक फोल्डर्स
+ff=मराठी
 
 [ms]
 07=Pandangan Biasa
@@ -1132,6 +1185,7 @@
 1b=Kegagalan Setempat
 1c=Kegagalan Pelayan
 80=Folder Awam
+ff=Melayu
 
 [mt]
 0a=Posta Mhux Mixtieqa
@@ -1151,6 +1205,7 @@
 1b=Fallimenti Lokali
 1c=Fallimenti tas-Server
 80=Fowlders Pubbliċi
+ff=Malti
 
 [nb]
 06=Visninger
@@ -1173,6 +1228,7 @@
 1b=Lokale feil
 1c=Serverfeil
 80=Fellesmapper
+ff=Norsk (bokmål)
 
 [ne]
 0a=पठाउने वस्तुहरू
@@ -1192,6 +1248,7 @@
 1b=स्थानीय असफलता
 1c=सर्भर असफलता
 80=सार्वजनिक फोल्डरहरू
+ff=नेपाली
 
 [nl]
 06=Weergaven
@@ -1214,6 +1271,7 @@
 1b=Lokale fouten
 1c=Serverfouten
 80=Openbare mappen
+ff=Nederlands
 
 [nn]
 06=Visningar
@@ -1236,6 +1294,7 @@
 1b=Lokale feil
 1c=Tenarfeil
 80=Fellesmapper
+ff=Norsk (nynorsk)
 
 [or]
 07=ସାଧାରଣ ଦର୍ଶନସମୂହ
@@ -1257,6 +1316,7 @@
 1b=ସ୍ଥାନିୟ ବିଫଳତାଗୁଡିକ
 1c=ସର୍ଭର ବିଫଳତା
 80=ସର୍ବସାଧାରଣ ଫୋଲ୍ଡର
+ff=ଓଡ଼ିଆ
 
 [pa_IN]
 0a=ਘੱਲੀਆਂ ਗਈਆਂ ਆਈਟਮਾਂ
@@ -1276,6 +1336,7 @@
 1b=ਸਥਾਨਕ ਅਸਫਲਤਾਵਾਂ
 1c=ਸਰਵਰ ਦੀ ਅਸਫਲਤਾਵਾਂ
 80=ਪਬਲਿਕ ਫੋਲਡਰਸ
+ff=ਪੰਜਾਬੀ
 
 [pl]
 06=Widoki
@@ -1298,6 +1359,7 @@
 1b=Lokalne awarie
 1c=Awarie serwera
 80=Foldery publiczne
+ff=Polski
 
 [pt_BR]
 06=Exibições
@@ -1320,6 +1382,7 @@
 1b=Falhas Locais
 1c=Falhas do Servidor
 80=Pastas Públicas
+ff=Português brasileiro
 
 [pt_PT]
 06=Vistas
@@ -1342,6 +1405,7 @@
 1b=Falhas Locais
 1c=Falhas do Servidor
 80=Pastas Públicas
+ff=Português europeu
 
 [prs]
 0a=عناصر ارسال شده
@@ -1361,6 +1425,7 @@
 1b=ناکامی های محلی
 1c=ناکامی های سرور
 80=دوسیه های مردمی
+ff=دری
 
 [quz]
 0a=Apachisqa kaqnikuna
@@ -1380,6 +1445,7 @@
 1b=Wasinpi Pantaykuna
 1c=Haywaqpa pantayninkuna
 80=Reqsisqa waqaychana
+ff=Runasimi
 
 [ro]
 06=Vizualizări
@@ -1402,6 +1468,7 @@
 1b=Defecţiuni locale
 1c=Defecţiuni server
 80=Foldere publice
+ff=Română
 
 [ru]
 06=Представления
@@ -1424,6 +1491,7 @@
 1b=Локальные ошибки
 1c=Ошибки сервера
 80=Общедоступные папки
+ff=русский
 
 [sd]
 0a=موڪليل شئيون
@@ -1443,6 +1511,7 @@
 1b=مقامي ناڪاميون
 1c=سرور جو ناڪاميون
 80=پبلڪ فولڊر
+ff=سنڌي
 
 [si]
 0a=යැවූ ලිපි
@@ -1462,6 +1531,7 @@
 1b=ප්‍රාදේශීය බිඳවැටීම්
 1c=සේවාදායක බිඳවැටීම්
 80=පොදු ෆෝල්ඩර
+ff=සිංහල
 
 [sk]
 06=Zobrazenia
@@ -1484,6 +1554,7 @@
 1b=Lokálne zlyhania
 1c=Zlyhania servera
 80=Verejné priečinky
+ff=Slovenčina
 
 [sl]
 06=Pogledi
@@ -1506,6 +1577,7 @@
 1b=Lokalne napake
 1c=Napake strežnika
 80=Javne mape
+ff=slovenščina
 
 [sq_AL]
 0a=Njësitë e dërguara
@@ -1525,6 +1597,7 @@
 1b=Dështimet lokale
 1c=Dështimet e serverit
 80=Dosjet publike
+ff=shqip
 
 [sr_BA]
 0a=Послате ставке
@@ -1544,6 +1617,7 @@
 1b=Локални неуспјеси
 1c=Локални неуспјеси
 80=Јавне фасцикле
+ff=српски (ћирилица, Бозна и Херцеговина)
 
 [sr_RS]
 05=Фасцикле за претрагу
@@ -1567,6 +1641,7 @@
 1b=Локални неуспеси
 1c=Неуспеси сервера
 80=Јавне фасцикле
+ff=српски (ћирилица)
 
 [sr_RS@latin]
 05=Fascikle sa pretragu
@@ -1590,6 +1665,7 @@
 1b=Lokalni neuspesi
 1c=Neuspesi servera
 80=Javne fascikle
+ff=srpski (latinica)
 
 [sv]
 06=Vyer
@@ -1612,6 +1688,7 @@
 1b=Lokala fel
 1c=Serverfel
 80=Gemensamma mappar
+ff=Svenska
 
 [sw_KE]
 07=Mionekano ya Kawaida
@@ -1633,6 +1710,7 @@
 1b=Kushindwa kwa Ndani
 1c=Kushindwa Seva
 80=Kabrasha lawote
+ff=Swahili (Kenya)
 
 [ta]
 07=பொதுவான பார்வைகள்
@@ -1654,6 +1732,7 @@
 1b=உள்ளக தோல்விகள்
 1c=சேவையக தோல்விகள்
 80=பொதுக் கோப்புறைகள்
+ff=தமிழ்
 
 [te]
 07=సాధారణ వీక్షణలు
@@ -1675,6 +1754,7 @@
 1b=స్థానిక వైఫల్యాలు
 1c=సర్వర్ వైఫల్యాలు
 80=సార్వజనీన సంచికలు
+ff=తెలుగు
 
 [th]
 07=มุมมองปกติ
@@ -1696,6 +1776,7 @@
 1b=ความล้มเหลวภายใน
 1c=ความล้มเหลวของเซิร์ฟเวอร์
 80=โฟลเดอร์สาธารณะ
+ff=ไทย
 
 [tk]
 0a=Iberilen elementler
@@ -1715,6 +1796,7 @@
 1b=Ýerli näsazlyklar
 1c=Serwer Näsazlyklary
 80=Umumy Bukjalar
+ff=Türkmen dili
 
 [tr]
 06=Görünümler
@@ -1737,6 +1819,7 @@
 1b=Yerel Hatalar
 1c=Sunucu Hataları
 80=Ortak Klasörler
+ff=Türkçe
 
 [tt]
 0a=Җибәрелгәннәр
@@ -1756,6 +1839,7 @@
 1b=Локаль хаталар
 1c=Сервер хаталары
 80=Уртак папкалар
+ff=татар
 
 [ug]
 0a=يوللانمىلار
@@ -1775,6 +1859,7 @@
 1b=يەرلىك كاشىلىلار
 1c=مۇلازىمىتىر مەغلۇبىيەتلىرى
 80=ئاممىۋى قىسقۇچلار
+ff=ئۇيغۇر
 
 [uk]
 06=Подання
@@ -1797,6 +1882,7 @@
 1b=Локальні помилки
 1c=Помилки сервера
 80=Загальнодоступні папки
+ff=Украї́нська
 
 [ur_PK]
 07=عام مناظر
@@ -1818,6 +1904,7 @@
 1b=مقامی ناکامیاں
 1c=سرور کی ناکامیاں
 80=ظاہر پوشے
+ff=اُردُو
 
 [uz]
 0a=Yuborilgan elementlar
@@ -1837,6 +1924,7 @@
 1b=Mahalliy xatolar
 1c=Server xatolari
 80=Umumiy jildlar
+ff=Oʻzbekcha (Lotincha)
 
 [vi]
 07=Dạng xem Chung
@@ -1858,6 +1946,7 @@
 1b=Lỗi Cục bộ
 1c=Lỗi Máy chủ
 80=Thư mục Công cộng
+ff=Tiếng Việt
 
 [zh_CN]
 07=公用视图
@@ -1879,6 +1968,7 @@
 1b=本地故障
 1c=服务器故障
 80=公用文件夹
+ff=中文(简体)
 
 [zh_TW]
 07=一般檢視
@@ -1900,3 +1990,4 @@
 1b=本機失敗
 1c=伺服器失敗
 80=公用資料夾
+ff=繁體中文
