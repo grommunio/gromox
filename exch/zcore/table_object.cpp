@@ -1006,7 +1006,7 @@ BOOL table_object::filter_rows(uint32_t count, const RESTRICTION *pres,
 	const PROPTAG_ARRAY *cols, TARRAY_SET *pset)
 {
 	auto ptable = this;
-	TARRAY_SET tmp_set;
+	TARRAY_SET tmp_set{};
 	uint32_t tmp_proptag;
 	PROPTAG_ARRAY proptags;
 	PROPTAG_ARRAY tmp_proptags;
