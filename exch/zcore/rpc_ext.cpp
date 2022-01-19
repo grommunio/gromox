@@ -683,28 +683,28 @@ static BOOL rpc_ext_push_openstore_response(
 	return TRUE;
 }
 
-static BOOL rpc_ext_pull_openpropfilesec_request(
+static BOOL rpc_ext_pull_openprofilesec_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
 	uint8_t tmp_byte;
 	
-	QRF(pext->g_guid(&ppayload->openpropfilesec.hsession));
+	QRF(pext->g_guid(&ppayload->openprofilesec.hsession));
 	QRF(pext->g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
-		ppayload->openpropfilesec.puid = NULL;
+		ppayload->openprofilesec.puid = nullptr;
 	} else {
-		ppayload->openpropfilesec.puid = pext->anew<FLATUID>();
-		if (ppayload->openpropfilesec.puid == nullptr)
+		ppayload->openprofilesec.puid = pext->anew<FLATUID>();
+		if (ppayload->openprofilesec.puid == nullptr)
 			return FALSE;
-		QRF(pext->g_bytes(deconst(ppayload->openpropfilesec.puid), sizeof(FLATUID)));
+		QRF(pext->g_bytes(deconst(ppayload->openprofilesec.puid), sizeof(FLATUID)));
 	}
 	return TRUE;
 }
 
-static BOOL rpc_ext_push_openpropfilesec_response(
+static BOOL rpc_ext_push_openprofilesec_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	QRF(pext->p_uint32(ppayload->openpropfilesec.hobject));
+	QRF(pext->p_uint32(ppayload->openprofilesec.hobject));
 	return TRUE;
 }
 
@@ -1853,8 +1853,8 @@ BOOL rpc_ext_pull_request(const BINARY *pbin_in,
 	case zcore_callid::OPENSTORE:
 		return rpc_ext_pull_openstore_request(
 				&ext_pull, &prequest->payload);
-	case zcore_callid::OPENPROPFILESEC:
-		return rpc_ext_pull_openpropfilesec_request(
+	case zcore_callid::OPENPROFILESEC:
+		return rpc_ext_pull_openprofilesec_request(
 					&ext_pull, &prequest->payload);
 	case zcore_callid::LOADHIERARCHYTABLE:
 		return rpc_ext_pull_loadhierarchytable_request(
@@ -2139,8 +2139,8 @@ BOOL rpc_ext_push_response(const RPC_RESPONSE *presponse,
 		b_result = rpc_ext_push_openstore_response(
 					&ext_push, &presponse->payload);
 		break;
-	case zcore_callid::OPENPROPFILESEC:
-		b_result = rpc_ext_push_openpropfilesec_response(
+	case zcore_callid::OPENPROFILESEC:
+		b_result = rpc_ext_push_openprofilesec_response(
 						&ext_push, &presponse->payload);
 		break;
 	case zcore_callid::LOADHIERARCHYTABLE:

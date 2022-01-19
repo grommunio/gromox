@@ -32,7 +32,7 @@ ZCIDL(modifyrules, (GUID hsession, uint32_t hfolder, uint32_t flags, const RULE_
 ZCIDL(getabgal, (GUID hsession, IDLOUT BINARY *entryid))
 ZCIDL(loadstoretable, (GUID hsession, IDLOUT uint32_t *hobject))
 ZCIDL(openstore, (GUID hsession, BINARY entryid, IDLOUT uint32_t *hobject))
-ZCIDL(openpropfilesec, (GUID hsession, const FLATUID *puid, IDLOUT uint32_t *hobject))
+ZCIDL(openprofilesec, (GUID hsession, const FLATUID *puid, IDLOUT uint32_t *hobject))
 ZCIDL(loadhierarchytable, (GUID hsession, uint32_t hfolder, uint32_t flags, IDLOUT uint32_t *hobject))
 ZCIDL(loadcontenttable, (GUID hsession, uint32_t hfolder, uint32_t flags, IDLOUT uint32_t *hobject))
 ZCIDL(loadrecipienttable, (GUID hsession, uint32_t hmessage, IDLOUT uint32_t *hobject))

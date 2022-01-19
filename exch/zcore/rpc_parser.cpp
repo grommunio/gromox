@@ -158,11 +158,11 @@ static int rpc_parser_dispatch(const RPC_REQUEST *prequest,
 			prequest->payload.openstore.entryid,
 			&presponse->payload.openstore.hobject);
 		break;
-	case zcore_callid::OPENPROPFILESEC:
-		presponse->result = zarafa_server_openpropfilesec(
-			prequest->payload.openpropfilesec.hsession,
-			prequest->payload.openpropfilesec.puid,
-			&presponse->payload.openpropfilesec.hobject);
+	case zcore_callid::OPENPROFILESEC:
+		presponse->result = zarafa_server_openprofilesec(
+			prequest->payload.openprofilesec.hsession,
+			prequest->payload.openprofilesec.puid,
+			&presponse->payload.openprofilesec.hobject);
 		break;
 	case zcore_callid::LOADHIERARCHYTABLE:
 		presponse->result = zarafa_server_loadhierarchytable(

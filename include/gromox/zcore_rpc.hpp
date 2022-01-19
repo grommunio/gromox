@@ -26,7 +26,7 @@ enum {
 	GETABGAL = 0x0a,
 	LOADSTORETABLE = 0x0b,
 	OPENSTORE = 0x0c,
-	OPENPROPFILESEC = 0x0d,
+	OPENPROFILESEC = 0x0d,
 	LOADHIERARCHYTABLE = 0x0e,
 	LOADCONTENTTABLE = 0x0f,
 	LOADRECIPIENTTABLE = 0x10,
@@ -174,7 +174,7 @@ struct ZCREQ_OPENSTORE {
 	BINARY entryid;
 };
 
-struct ZCREQ_OPENPROPFILESEC {
+struct ZCREQ_OPENPROFILESEC {
 	GUID hsession;
 	const FLATUID *puid;
 };
@@ -624,7 +624,7 @@ union ZCORE_REQUEST_PAYLOAD {
 	ZCREQ_GETABGAL getabgal;
 	ZCREQ_LOADSTORETABLE loadstoretable;
 	ZCREQ_OPENSTORE openstore;
-	ZCREQ_OPENPROPFILESEC openpropfilesec;
+	ZCREQ_OPENPROFILESEC openprofilesec;
 	ZCREQ_LOADHIERARCHYTABLE loadhierarchytable;
 	ZCREQ_LOADCONTENTTABLE loadcontenttable;
 	ZCREQ_LOADRECIPIENTTABLE loadrecipienttable;
@@ -747,7 +747,7 @@ struct ZCRESP_OPENSTORE {
 	uint32_t hobject;
 };
 
-struct ZCRESP_OPENPROPFILESEC {
+struct ZCRESP_OPENPROFILESEC {
 	uint32_t hobject;
 };
 
@@ -933,7 +933,7 @@ union ZCORE_RESPONSE_PAYLOAD {
 	ZCRESP_GETABGAL getabgal;
 	ZCRESP_LOADSTORETABLE loadstoretable;
 	ZCRESP_OPENSTORE openstore;
-	ZCRESP_OPENPROPFILESEC openpropfilesec;
+	ZCRESP_OPENPROFILESEC openprofilesec;
 	ZCRESP_LOADHIERARCHYTABLE loadhierarchytable;
 	ZCRESP_LOADCONTENTTABLE loadcontenttable;
 	ZCRESP_LOADRECIPIENTTABLE loadrecipienttable;

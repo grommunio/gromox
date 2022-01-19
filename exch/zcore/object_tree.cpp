@@ -32,7 +32,9 @@
 /* maximum handle number per session */
 #define MAX_HANDLE_NUM					500
 
-#define PROP_TAG_PROPFILESECLSID		0x00480048
+enum {
+	PROP_TAG_PROFILESCLSID = PROP_TAG(PT_CLSID, 0x0048),
+};
 
 using namespace gromox;
 
@@ -368,7 +370,7 @@ TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)
 	}
 	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	for (size_t i = 0; i < prootobj->pprof_set->count; ++i) {
-		auto pguid = prootobj->pprof_set->pparray[i]->get<GUID>(PROP_TAG_PROPFILESECLSID);
+		auto pguid = prootobj->pprof_set->pparray[i]->get<GUID>(PROP_TAG_PROFILESCLSID);
 		if (NULL == pguid) {
 			continue;
 		}
@@ -379,7 +381,7 @@ TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)
 	if (NULL == pproplist) {
 		return NULL;
 	}
-	if (pproplist->set(PROP_TAG_PROPFILESECLSID, &sec_guid) != 0 ||
+	if (pproplist->set(PROP_TAG_PROFILESCLSID, &sec_guid) != 0 ||
 	    prootobj->pprof_set->append_move(pproplist) != 0) {
 		tpropval_array_free(pproplist);
 		return NULL;

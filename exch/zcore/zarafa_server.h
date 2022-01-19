@@ -70,8 +70,7 @@ uint32_t zarafa_server_loadstoretable(
 	GUID hsession, uint32_t *phobject);
 uint32_t zarafa_server_openstore(GUID hsession,
 	BINARY entryid, uint32_t *phobject);
-uint32_t zarafa_server_openpropfilesec(GUID hsession,
-	const FLATUID *puid, uint32_t *phobject);
+extern uint32_t zarafa_server_openprofilesec(GUID sess, const FLATUID *, uint32_t *obj);
 uint32_t zarafa_server_loadhierarchytable(GUID hsession,
 	uint32_t hfolder, uint32_t flags, uint32_t *phobject);
 uint32_t zarafa_server_loadcontenttable(GUID hsession,

@@ -189,24 +189,24 @@ static zend_bool rpc_ext_pull_openstore_response(
 	return ext_pack_pull_uint32(pctx, &ppayload->openstore.hobject);
 }
 
-static zend_bool rpc_ext_push_openpropfilesec_request(
+static zend_bool rpc_ext_push_openprofilesec_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	TRY(ext_pack_push_guid(pctx, &ppayload->openpropfilesec.hsession));
-	if (NULL == ppayload->openpropfilesec.puid) {
+	TRY(ext_pack_push_guid(pctx, &ppayload->openprofilesec.hsession));
+	if (ppayload->openprofilesec.puid == nullptr) {
 		return ext_pack_push_uint8(pctx, 0);
 	} else {
 		TRY(ext_pack_push_uint8(pctx, 1));
 		return ext_pack_push_bytes(pctx,
-			(void*)ppayload->openpropfilesec.puid,
+		       ppayload->openprofilesec.puid,
 			sizeof(FLATUID));
 	}
 }
 
-static zend_bool rpc_ext_pull_openpropfilesec_response(
+static zend_bool rpc_ext_pull_openprofilesec_response(
 	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
 {
-	return ext_pack_pull_uint32(pctx, &ppayload->openpropfilesec.hobject);
+	return ext_pack_pull_uint32(pctx, &ppayload->openprofilesec.hobject);
 }
 
 static zend_bool rpc_ext_push_loadhierarchytable_request(
@@ -1209,8 +1209,8 @@ zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 		b_result = rpc_ext_push_openstore_request(
 					&push_ctx, &prequest->payload);
 		break;
-	case zcore_callid::OPENPROPFILESEC:
-		b_result = rpc_ext_push_openpropfilesec_request(
+	case zcore_callid::OPENPROFILESEC:
+		b_result = rpc_ext_push_openprofilesec_request(
 						&push_ctx, &prequest->payload);
 		break;
 	case zcore_callid::LOADHIERARCHYTABLE:
@@ -1549,8 +1549,8 @@ zend_bool rpc_ext_pull_response(const BINARY *pbin_in,
 	case zcore_callid::OPENSTORE:
 		return rpc_ext_pull_openstore_response(
 				&pull_ctx, &presponse->payload);
-	case zcore_callid::OPENPROPFILESEC:
-		return rpc_ext_pull_openpropfilesec_response(
+	case zcore_callid::OPENPROFILESEC:
+		return rpc_ext_pull_openprofilesec_response(
 					&pull_ctx, &presponse->payload);
 	case zcore_callid::LOADHIERARCHYTABLE:
 		return rpc_ext_pull_loadhierarchytable_response(

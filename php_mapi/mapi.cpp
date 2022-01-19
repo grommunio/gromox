@@ -1210,7 +1210,6 @@ ZEND_FUNCTION(mapi_openprofilesection)
 {
 	size_t uidlen = 0;
 	FLATUID *puid;
-	uint32_t result;
 	uint32_t hobject;
 	zval *pzresource;
 	MAPI_RESOURCE *psession;
@@ -1236,7 +1235,7 @@ ZEND_FUNCTION(mapi_openprofilesection)
 			THROW_EXCEPTION;
 		}
 	}
-	result = zarafa_client_openpropfilesec(
+	auto result = zarafa_client_openprofilesec(
 		psession->hsession, puid, &hobject);
 	if (result != ecSuccess) {
 		MAPI_G(hr) = result;

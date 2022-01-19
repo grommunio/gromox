@@ -1477,7 +1477,7 @@ uint32_t zarafa_server_openstore(GUID hsession,
 	return *phobject != INVALID_HANDLE ? ecSuccess : ecError;
 }
 
-uint32_t zarafa_server_openpropfilesec(GUID hsession,
+uint32_t zarafa_server_openprofilesec(GUID hsession,
 	const FLATUID *puid, uint32_t *phobject)
 {
 	GUID guid;
