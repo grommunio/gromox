@@ -10,11 +10,14 @@
 #undef vasprintf
 #undef asprintf
 
-using PULL_CTX = EXT_PULL;
-using PUSH_CTX = EXT_PUSH;
-
 extern void *ext_pack_alloc(size_t);
 extern const struct EXT_BUFFER_MGT ext_buffer_mgt;
+
+struct PULL_CTX : public EXT_PULL {
+	int g_perm_set(PERMISSION_SET *);
+	int g_state_a(STATE_ARRAY *);
+	int g_znotif_a(ZNOTIFICATION_ARRAY *);
+};
 
 #define ext_pack_pull_init(c, d, s) ((c)->init((d), (s), ext_pack_alloc, EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE))
 #define ext_pack_pull_advance(c, s) ((c)->advance(s) == EXT_ERR_SUCCESS)
@@ -46,11 +49,16 @@ extern const struct EXT_BUFFER_MGT ext_buffer_mgt;
 #define ext_pack_pull_tpropval_array(c, v) ((c)->g_tpropval_a(v) == EXT_ERR_SUCCESS)
 #define ext_pack_pull_tarray_set(c, v) ((c)->g_tarray_set(v) == EXT_ERR_SUCCESS)
 #define ext_pack_pull_oneoff_entryid(c, v) ((c)->g_oneoff_eid(v) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_permission_set(c, v) ((c)->g_perm_set(v) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_state_array(c, v) ((c)->g_state_a(v) == EXT_ERR_SUCCESS)
+#define ext_pack_pull_znotification_array(c, v) ((c)->g_znotif_a(v) == EXT_ERR_SUCCESS)
 
-zend_bool ext_pack_pull_permission_set(PULL_CTX *pctx, PERMISSION_SET *r);
-zend_bool ext_pack_pull_state_array(PULL_CTX *pctx, STATE_ARRAY *r);
-zend_bool ext_pack_pull_znotification_array(
-	PULL_CTX *pctx, ZNOTIFICATION_ARRAY *r);
+struct PUSH_CTX : public EXT_PUSH {
+	int p_perm_set(const PERMISSION_SET *);
+	int p_rule_data(const RULE_DATA *);
+	int p_rule_list(const RULE_LIST *);
+	int p_state_a(const STATE_ARRAY *);
+};
 
 #define ext_pack_push_init(c) ((c)->init(nullptr, 0, EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE, &ext_buffer_mgt))
 #define ext_pack_push_advance(c, v) ((c)->advance(v) == EXT_ERR_SUCCESS)
@@ -84,11 +92,7 @@ zend_bool ext_pack_pull_znotification_array(
 #define ext_pack_push_sort_order(c, v) ((c)->p_sort_order(v) == EXT_ERR_SUCCESS)
 #define ext_pack_push_sortorder_set(c, v) ((c)->p_sortorder_set(v) == EXT_ERR_SUCCESS)
 #define ext_pack_push_oneoff_entryid(c, v) ((c)->p_oneoff_eid(v) == EXT_ERR_SUCCESS)
-zend_bool ext_pack_push_permission_set(
-	PUSH_CTX *pctx, const PERMISSION_SET *r);
-zend_bool ext_pack_push_rule_data(
-	PUSH_CTX *pctx, const RULE_DATA *r);
-zend_bool ext_pack_push_rule_list(
-	PUSH_CTX *pctx, const RULE_LIST *r);
-zend_bool ext_pack_push_state_array(
-	PUSH_CTX *pctx, const STATE_ARRAY *r);
+#define ext_pack_push_permission_set(c, v) ((c)->p_perm_set(v) == EXT_ERR_SUCCESS)
+#define ext_pack_push_rule_data(c, v) ((c)->p_rule_data(v) == EXT_ERR_SUCCESS)
+#define ext_pack_push_rule_list(c, v) ((c)->p_rule_list(v) == EXT_ERR_SUCCESS)
+#define ext_pack_push_state_array(c, v) ((c)->p_state_a(v) == EXT_ERR_SUCCESS)
