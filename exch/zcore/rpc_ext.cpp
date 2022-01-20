@@ -291,43 +291,43 @@ static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 		QRF(pext->p_guid(*static_cast<const GUID *>(pval)));
 		return TRUE;
 	case PT_SRESTRICTION:
-		QRF(pext->p_restriction(static_cast<const RESTRICTION *>(pval)));
+		QRF(pext->p_restriction(*static_cast<const RESTRICTION *>(pval)));
 		return TRUE;
 	case PT_ACTIONS:
-		QRF(pext->p_rule_actions(static_cast<const RULE_ACTIONS *>(pval)));
+		QRF(pext->p_rule_actions(*static_cast<const RULE_ACTIONS *>(pval)));
 		return TRUE;
 	case PT_BINARY:
 		QRF(pext->p_bin(*static_cast<const BINARY *>(pval)));
 		return TRUE;
 	case PT_MV_SHORT:
-		QRF(pext->p_uint16_a(static_cast<const SHORT_ARRAY *>(pval)));
+		QRF(pext->p_uint16_a(*static_cast<const SHORT_ARRAY *>(pval)));
 		return TRUE;
 	case PT_MV_LONG:
-		QRF(pext->p_uint32_a(static_cast<const LONG_ARRAY *>(pval)));
+		QRF(pext->p_uint32_a(*static_cast<const LONG_ARRAY *>(pval)));
 		return TRUE;
 	case PT_MV_CURRENCY:
 	case PT_MV_I8:
 	case PT_MV_SYSTIME:
-		QRF(pext->p_uint64_a(static_cast<const LONGLONG_ARRAY *>(pval)));
+		QRF(pext->p_uint64_a(*static_cast<const LONGLONG_ARRAY *>(pval)));
 		return TRUE;
 	case PT_MV_FLOAT:
-		QRF(pext->p_float_a(static_cast<const FLOAT_ARRAY *>(pval)));
+		QRF(pext->p_float_a(*static_cast<const FLOAT_ARRAY *>(pval)));
 		return TRUE;
 	case PT_MV_DOUBLE:
 	case PT_MV_APPTIME:
-		QRF(pext->p_double_a(static_cast<const DOUBLE_ARRAY *>(pval)));
+		QRF(pext->p_double_a(*static_cast<const DOUBLE_ARRAY *>(pval)));
 		return TRUE;
 	case PT_MV_STRING8:
-		QRF(pext->p_str_a(static_cast<const STRING_ARRAY *>(pval)));
+		QRF(pext->p_str_a(*static_cast<const STRING_ARRAY *>(pval)));
 		return TRUE;
 	case PT_MV_UNICODE:
-		QRF(pext->p_wstr_a(static_cast<const STRING_ARRAY *>(pval)));
+		QRF(pext->p_wstr_a(*static_cast<const STRING_ARRAY *>(pval)));
 		return TRUE;
 	case PT_MV_CLSID:
-		QRF(pext->p_guid_a(static_cast<const GUID_ARRAY *>(pval)));
+		QRF(pext->p_guid_a(*static_cast<const GUID_ARRAY *>(pval)));
 		return TRUE;
 	case PT_MV_BINARY:
-		QRF(pext->p_bin_a(static_cast<const BINARY_ARRAY *>(pval)));
+		QRF(pext->p_bin_a(*static_cast<const BINARY_ARRAY *>(pval)));
 		return TRUE;
 	default:
 		return FALSE;
@@ -441,7 +441,7 @@ static BOOL rpc_ext_push_object_znotification(
 		QRF(pext->p_uint8(0));
 	} else {
 		QRF(pext->p_uint8(1));
-		QRF(pext->p_proptag_a(r->pproptags));
+		QRF(pext->p_proptag_a(*r->pproptags));
 	}
 	return TRUE;
 }
@@ -1509,7 +1509,7 @@ static BOOL rpc_ext_pull_syncdeletions_request(
 static BOOL rpc_ext_push_syncdeletions_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	QRF(pext->p_bin_a(&ppayload->syncdeletions.bins));
+	QRF(pext->p_bin_a(ppayload->syncdeletions.bins));
 	return TRUE;
 }
 
@@ -1644,12 +1644,12 @@ static BOOL rpc_ext_pull_getsearchcriteria_request(
 static BOOL rpc_ext_push_getsearchcriteria_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {	
-	QRF(pext->p_bin_a(&ppayload->getsearchcriteria.folder_array));
+	QRF(pext->p_bin_a(ppayload->getsearchcriteria.folder_array));
 	if (NULL == ppayload->getsearchcriteria.prestriction) {
 		QRF(pext->p_uint8(0));
 	} else {
 		QRF(pext->p_uint8(1));
-		QRF(pext->p_restriction(ppayload->getsearchcriteria.prestriction));
+		QRF(pext->p_restriction(*ppayload->getsearchcriteria.prestriction));
 	}
 	QRF(pext->p_uint32(ppayload->getsearchcriteria.search_stat));
 	return TRUE;

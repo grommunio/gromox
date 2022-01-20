@@ -310,7 +310,7 @@ static zend_bool rpc_ext_push_deletemessages_request(
 {
 	TRY(pctx->p_guid(ppayload->deletemessages.hsession));
 	TRY(pctx->p_uint32(ppayload->deletemessages.hfolder));
-	TRY(pctx->p_bin_a(ppayload->deletemessages.pentryids));
+	TRY(pctx->p_bin_a(*ppayload->deletemessages.pentryids));
 	TRY(pctx->p_uint32(ppayload->deletemessages.flags));
 	return true;
 }
@@ -321,7 +321,7 @@ static zend_bool rpc_ext_push_copymessages_request(
 	TRY(pctx->p_guid(ppayload->copymessages.hsession));
 	TRY(pctx->p_uint32(ppayload->copymessages.hsrcfolder));
 	TRY(pctx->p_uint32(ppayload->copymessages.hdstfolder));
-	TRY(pctx->p_bin_a(ppayload->copymessages.pentryids));
+	TRY(pctx->p_bin_a(*ppayload->copymessages.pentryids));
 	TRY(pctx->p_uint32(ppayload->copymessages.flags));
 	return true;
 }
@@ -331,7 +331,7 @@ static zend_bool rpc_ext_push_setreadflags_request(
 {
 	TRY(pctx->p_guid(ppayload->setreadflags.hsession));
 	TRY(pctx->p_uint32(ppayload->setreadflags.hfolder));
-	TRY(pctx->p_bin_a(ppayload->setreadflags.pentryids));
+	TRY(pctx->p_bin_a(*ppayload->setreadflags.pentryids));
 	TRY(pctx->p_uint32(ppayload->setreadflags.flags));
 	return true;
 }
@@ -492,14 +492,14 @@ static zend_bool rpc_ext_push_queryrows_request(
 		TRY(pctx->p_uint8(0));
 	} else {
 		TRY(pctx->p_uint8(1));
-		TRY(pctx->p_restriction(ppayload->queryrows.prestriction));
+		TRY(pctx->p_restriction(*ppayload->queryrows.prestriction));
 	}
 	if (NULL == ppayload->queryrows.pproptags) {
 		TRY(pctx->p_uint8(0));
 	return true;
 	} else {
 		TRY(pctx->p_uint8(1));
-		TRY(pctx->p_proptag_a(ppayload->queryrows.pproptags));
+		TRY(pctx->p_proptag_a(*ppayload->queryrows.pproptags));
 	return true;
 	}
 }
@@ -516,7 +516,7 @@ static zend_bool rpc_ext_push_setcolumns_request(
 {
 	TRY(pctx->p_guid(ppayload->setcolumns.hsession));
 	TRY(pctx->p_uint32(ppayload->setcolumns.htable));
-	TRY(pctx->p_proptag_a(ppayload->setcolumns.pproptags));
+	TRY(pctx->p_proptag_a(*ppayload->setcolumns.pproptags));
 	TRY(pctx->p_uint32(ppayload->setcolumns.flags));
 	return true;
 }
@@ -560,7 +560,7 @@ static zend_bool rpc_ext_push_restricttable_request(
 {
 	TRY(pctx->p_guid(ppayload->restricttable.hsession));
 	TRY(pctx->p_uint32(ppayload->restricttable.htable));
-	TRY(pctx->p_restriction(ppayload->restricttable.prestriction));
+	TRY(pctx->p_restriction(*ppayload->restricttable.prestriction));
 	TRY(pctx->p_uint32(ppayload->restricttable.flags));
 	return true;
 }
@@ -571,7 +571,7 @@ static zend_bool rpc_ext_push_findrow_request(
 	TRY(pctx->p_guid(ppayload->findrow.hsession));
 	TRY(pctx->p_uint32(ppayload->findrow.htable));
 	TRY(pctx->p_uint32(ppayload->findrow.bookmark));
-	TRY(pctx->p_restriction(ppayload->findrow.prestriction));
+	TRY(pctx->p_restriction(*ppayload->findrow.prestriction));
 	TRY(pctx->p_uint32(ppayload->findrow.flags));
 	return true;
 }
@@ -722,7 +722,7 @@ static zend_bool rpc_ext_push_getpropvals_request(
 	return true;
 	} else {
 		TRY(pctx->p_uint8(1));
-		TRY(pctx->p_proptag_a(ppayload->getpropvals.pproptags));
+		TRY(pctx->p_proptag_a(*ppayload->getpropvals.pproptags));
 		return true;
 	}
 }
@@ -739,7 +739,7 @@ static zend_bool rpc_ext_push_deletepropvals_request(
 {
 	TRY(pctx->p_guid(ppayload->deletepropvals.hsession));
 	TRY(pctx->p_uint32(ppayload->deletepropvals.hobject));
-	TRY(pctx->p_proptag_a(ppayload->deletepropvals.pproptags));
+	TRY(pctx->p_proptag_a(*ppayload->deletepropvals.pproptags));
 	return true;
 }
 
@@ -805,7 +805,7 @@ static zend_bool rpc_ext_push_copyto_request(
 {
 	TRY(pctx->p_guid(ppayload->copyto.hsession));
 	TRY(pctx->p_uint32(ppayload->copyto.hsrcobject));
-	TRY(pctx->p_proptag_a(ppayload->copyto.pexclude_proptags));
+	TRY(pctx->p_proptag_a(*ppayload->copyto.pexclude_proptags));
 	TRY(pctx->p_uint32(ppayload->copyto.hdstobject));
 	TRY(pctx->p_uint32(ppayload->copyto.flags));
 	return true;
@@ -861,7 +861,7 @@ static zend_bool rpc_ext_push_configsync_request(
 	return true;
 	} else {
 		TRY(pctx->p_uint8(1));
-		TRY(pctx->p_restriction(ppayload->configsync.prestriction));
+		TRY(pctx->p_restriction(*ppayload->configsync.prestriction));
 	return true;
 	}
 }
@@ -1040,7 +1040,7 @@ static zend_bool rpc_ext_push_importdeletion_request(
 	TRY(pctx->p_guid(ppayload->importdeletion.hsession));
 	TRY(pctx->p_uint32(ppayload->importdeletion.hctx));
 	TRY(pctx->p_uint32(ppayload->importdeletion.flags));
-	TRY(pctx->p_bin_a(ppayload->importdeletion.pbins));
+	TRY(pctx->p_bin_a(*ppayload->importdeletion.pbins));
 	return true;
 }
 
@@ -1087,13 +1087,13 @@ static zend_bool rpc_ext_push_setsearchcriteria_request(
 	TRY(pctx->p_guid(ppayload->setsearchcriteria.hsession));
 	TRY(pctx->p_uint32(ppayload->setsearchcriteria.hfolder));
 	TRY(pctx->p_uint32(ppayload->setsearchcriteria.flags));
-	TRY(pctx->p_bin_a(ppayload->setsearchcriteria.pfolder_array));
+	TRY(pctx->p_bin_a(*ppayload->setsearchcriteria.pfolder_array));
 	if (NULL == ppayload->setsearchcriteria.prestriction) {
 		TRY(pctx->p_uint8(0));
 	return true;
 	} else {
 		TRY(pctx->p_uint8(1));
-		TRY(pctx->p_restriction(ppayload->setsearchcriteria.prestriction));
+		TRY(pctx->p_restriction(*ppayload->setsearchcriteria.prestriction));
 	return true;
 	}
 }

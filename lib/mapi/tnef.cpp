@@ -1735,7 +1735,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 	case PT_CLSID:
 		return pext->p_guid(*static_cast<GUID *>(r->pvalue));
 	case PT_SVREID:
-		return pext->p_svreid(static_cast<SVREID *>(r->pvalue));
+		return pext->p_svreid(*static_cast<SVREID *>(r->pvalue));
 	case PT_OBJECT: {
 		TRY(pext->p_uint32(1));
 		auto bv = static_cast<BINARY *>(r->pvalue);

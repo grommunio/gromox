@@ -2033,7 +2033,7 @@ BINARY *common_util_to_store_entryid(store_object *pstore)
 	pbin->pv = common_util_alloc(1024);
 	if (pbin->pb == nullptr ||
 	    !ext_push.init(pbin->pv, 1024, EXT_FLAG_UTF16) ||
-	    ext_push.p_store_eid(&store_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_store_eid(store_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -2053,7 +2053,7 @@ static ZMOVECOPY_ACTION *common_util_convert_to_zmovecopy(store_object *pstore,
 		pmovecopy1->store_eid.pv = common_util_alloc(1024);
 		if (pmovecopy1->store_eid.pv == nullptr ||
 		    !ext_push.init(pmovecopy1->store_eid.pv, 1024, EXT_FLAG_UTF16) ||
-		    ext_push.p_store_eid(pmovecopy->pstore_eid) != EXT_ERR_SUCCESS)
+		    ext_push.p_store_eid(*pmovecopy->pstore_eid) != EXT_ERR_SUCCESS)
 			return NULL;	
 		pmovecopy1->store_eid.cb = ext_push.m_offset;
 		pmovecopy1->folder_eid = *(BINARY*)pmovecopy->pfolder_eid;

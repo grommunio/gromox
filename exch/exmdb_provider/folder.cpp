@@ -2208,7 +2208,7 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 		return false;
 	if (NULL != prestriction) {
 		if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
-		    ext_push.p_restriction(prestriction) != EXT_ERR_SUCCESS)
+		    ext_push.p_restriction(*prestriction) != EXT_ERR_SUCCESS)
 			return false;
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET "
 		          "search_criteria=? WHERE folder_id=%llu", LLU(fid_val));
@@ -2639,7 +2639,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 				continue;
 			}
 			if (!ext_push.init(condition_buff, sizeof(condition_buff), 0) ||
-			    ext_push.p_restriction(pcondition) != EXT_ERR_SUCCESS)
+			    ext_push.p_restriction(*pcondition) != EXT_ERR_SUCCESS)
 				return false;
 			int condition_len = ext_push.m_offset;
 			auto paction = prow[i].propvals.get<RULE_ACTIONS>(PR_RULE_ACTIONS);
@@ -2647,7 +2647,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 				continue;
 			}
 			if (!ext_push.init(action_buff, sizeof(action_buff), 0) ||
-			    ext_push.p_rule_actions(paction) != EXT_ERR_SUCCESS)
+			    ext_push.p_rule_actions(*paction) != EXT_ERR_SUCCESS)
 				return false;
 			int action_len = ext_push.m_offset;
 			if (NULL == pstmt) {
@@ -2764,7 +2764,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			auto pcondition = prow[i].propvals.get<RESTRICTION>(PR_RULE_CONDITION);
 			if (NULL != pcondition) {
 				if (!ext_push.init(condition_buff, sizeof(condition_buff), 0) ||
-				    ext_push.p_restriction(pcondition) != EXT_ERR_SUCCESS)
+				    ext_push.p_restriction(*pcondition) != EXT_ERR_SUCCESS)
 					return false;
 				int condition_len = ext_push.m_offset;
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE rules SET "
@@ -2783,7 +2783,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 			auto paction = prow[i].propvals.get<RULE_ACTIONS>(PR_RULE_ACTIONS);
 			if (NULL != paction) {
 				if (!ext_push.init(action_buff, sizeof(action_buff), 0) ||
-				    ext_push.p_rule_actions(paction) != EXT_ERR_SUCCESS)
+				    ext_push.p_rule_actions(*paction) != EXT_ERR_SUCCESS)
 					return false;
 				int action_len = ext_push.m_offset;
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE rules SET "

@@ -149,7 +149,7 @@ static int exmdb_client_push_load_content_table_request(
 		TRY(pext->p_uint8(0));
 	} else {
 		TRY(pext->p_uint8(1));
-		TRY(pext->p_restriction(r->prestriction));
+		TRY(pext->p_restriction(*r->prestriction));
 	}
 	if (r->psorts == nullptr)
 		return pext->p_uint8(0);
@@ -176,7 +176,7 @@ static int exmdb_client_push_query_table_request(
 	}
 	TRY(pext->p_uint32(r->cpid));
 	TRY(pext->p_uint32(r->table_id));
-	TRY(pext->p_proptag_a(r->pproptags));
+	TRY(pext->p_proptag_a(*r->pproptags));
 	TRY(pext->p_uint32(r->start_pos));
 	return pext->p_int32(r->row_needed);
 }

@@ -762,7 +762,7 @@ BINARY* common_util_to_folder_replica(
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 1024, 0) ||
 	    ext_push.p_uint32(0) != EXT_ERR_SUCCESS ||
 	    ext_push.p_uint32(0) != EXT_ERR_SUCCESS ||
-	    ext_push.p_longterm(plongid) != EXT_ERR_SUCCESS ||
+	    ext_push.p_longterm(*plongid) != EXT_ERR_SUCCESS ||
 	    ext_push.p_uint32(1) != EXT_ERR_SUCCESS ||
 	    ext_push.p_uint32(1) != EXT_ERR_SUCCESS ||
 	    ext_push.p_str(essdn) != EXT_ERR_SUCCESS)

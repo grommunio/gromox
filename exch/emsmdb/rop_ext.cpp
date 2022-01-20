@@ -217,7 +217,7 @@ static int rop_ext_pull_longtermidfromid_request(
 static int rop_ext_push_longtermidfromid_response(
 	EXT_PUSH *pext, const LONGTERMIDFROMID_RESPONSE *r)
 {
-	return pext->p_longterm(&r->long_term_id);
+	return pext->p_longterm(r->long_term_id);
 }
 
 static int rop_ext_pull_idfromlongtermid_request(
@@ -241,7 +241,7 @@ static int rop_ext_pull_getperuserlongtermids_request(
 static int rop_ext_push_getperuserlongtermids_response(
 	EXT_PUSH *pext, const GETPERUSERLONGTERMIDS_RESPONSE *r)
 {	
-	return pext->p_longterm_a(&r->ids);
+	return pext->p_longterm_a(r->ids);
 }
 
 static int rop_ext_pull_getperuserguid_request(
@@ -396,7 +396,7 @@ static int rop_ext_push_getsearchcriteria_response(
 	} else {
 		uint32_t offset1 = ext.m_offset;
 		TRY(pext->advance(sizeof(uint16_t)));
-		TRY(pext->p_restriction(r->pres));
+		TRY(pext->p_restriction(*r->pres));
 		uint16_t res_size = ext.m_offset - (offset1 + sizeof(uint16_t));
 		uint32_t offset2 = ext.m_offset;
 		ext.m_offset = offset1;
@@ -404,7 +404,7 @@ static int rop_ext_push_getsearchcriteria_response(
 		ext.m_offset = offset2;
 	}
 	TRY(pext->p_uint8(r->logon_id));
-	TRY(pext->p_uint64_sa(&r->folder_ids));
+	TRY(pext->p_uint64_sa(r->folder_ids));
 	return pext->p_uint32(r->search_status);
 }
 
@@ -678,7 +678,7 @@ static int rop_ext_push_createbookmark_response(
 static int rop_ext_push_querycolumnsall_response(
 	EXT_PUSH *pext, const QUERYCOLUMNSALL_RESPONSE *r)
 {
-	return pext->p_proptag_a(&r->proptags);
+	return pext->p_proptag_a(r->proptags);
 }
 
 static int rop_ext_pull_findrow_request(EXT_PULL *pext, FINDROW_REQUEST *r)
@@ -795,7 +795,7 @@ static int rop_ext_push_openmessage_response(
 	TRY(pext->p_typed_str(&r->subject_prefix));
 	TRY(pext->p_typed_str(&r->normalized_subject));
 	TRY(pext->p_uint16(r->recipient_count));
-	TRY(pext->p_proptag_a(&r->recipient_columns));
+	TRY(pext->p_proptag_a(r->recipient_columns));
 	if (r->row_count == 0)
 		return pext->p_uint8(0);
 	uint32_t offset = ext.m_offset;
@@ -907,7 +907,7 @@ static int rop_ext_push_reloadcachedinformation_response(
 	TRY(pext->p_typed_str(&r->subject_prefix));
 	TRY(pext->p_typed_str(&r->normalized_subject));
 	TRY(pext->p_uint16(r->recipient_count));
-	TRY(pext->p_proptag_a(&r->recipient_columns));
+	TRY(pext->p_proptag_a(r->recipient_columns));
 	if (r->row_count == 0)
 		return pext->p_uint8(0);
 	uint32_t offset = ext.m_offset;
@@ -992,7 +992,7 @@ static int rop_ext_push_setmessagereadflag_response(
 	if (0 != r->read_changed && NULL != r->pclient_data) {
 		TRY(pext->p_uint8(1));
 		TRY(pext->p_uint8(r->logon_id));
-		return pext->p_longterm(r->pclient_data);
+		return pext->p_longterm(*r->pclient_data);
 	}
 	return pext->p_uint8(0);
 }
@@ -1050,7 +1050,7 @@ static int rop_ext_push_openembeddedmessage_response(
 	TRY(pext->p_typed_str(&r->subject_prefix));
 	TRY(pext->p_typed_str(&r->normalized_subject));
 	TRY(pext->p_uint16(r->recipient_count));
-	TRY(pext->p_proptag_a(&r->recipient_columns));
+	TRY(pext->p_proptag_a(r->recipient_columns));
 	if (r->row_count == 0)
 		return pext->p_uint8(0);
 	uint32_t offset = ext.m_offset;
@@ -1083,7 +1083,7 @@ static int rop_ext_pull_getattachmenttable_request(
 static int rop_ext_push_getvalidattachments_response(
 	EXT_PUSH *pext, const GETVALIDATTACHMENTS_RESPONSE *r)
 {	
-	return pext->p_uint32_a(&r->attachment_ids);
+	return pext->p_uint32_a(r->attachment_ids);
 }
 
 static int rop_ext_pull_submitmessage_request(
@@ -1223,7 +1223,7 @@ static int rop_ext_push_getpropertiesall_response(
 static int rop_ext_push_getpropertieslist_response(
 	EXT_PUSH *pext, const GETPROPERTIESLIST_RESPONSE *r)
 {
-	return pext->p_proptag_a(&r->proptags);
+	return pext->p_proptag_a(r->proptags);
 }
 
 static int rop_ext_pull_setproperties_request(
@@ -1855,7 +1855,7 @@ static int rop_ext_push_notification_data(
 	if (r->pold_parent_id != nullptr)
 		TRY(pext->p_uint64(*r->pold_parent_id));
 	if (r->pproptags != nullptr)
-		TRY(pext->p_proptag_a(r->pproptags));
+		TRY(pext->p_proptag_a(*r->pproptags));
 	if (r->ptotal_count != nullptr)
 		TRY(pext->p_uint32(*r->ptotal_count));
 	if (r->punread_count != nullptr)

@@ -687,7 +687,7 @@ static int nsp_ext_p_stat(nsp_ext_push &ext, const STAT &s)
 
 static int nsp_ext_p_colrow(nsp_ext_push &ext, const nsp_rowset2 *colrow)
 {
-	TRY(ext.p_proptag_a(&colrow->columns));
+	TRY(ext.p_proptag_a(colrow->columns));
 	TRY(ext.p_uint32(colrow->row_count));
 	for (size_t i = 0; i < colrow->row_count; ++i)
 		TRY(ext.p_proprow(&colrow->columns, &colrow->rows[i]));
@@ -725,7 +725,7 @@ int nsp_ext_push::p_nsp_response(const dntomid_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_proptag_a(rsp.outmids));
+		TRY(p_proptag_a(*rsp.outmids));
 	}
 	return p_uint32(0);
 }
@@ -745,7 +745,7 @@ int nsp_ext_push::p_nsp_response(const getmatches_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_proptag_a(rsp.mids));
+		TRY(p_proptag_a(*rsp.mids));
 	}
 	if (rsp.result != ecSuccess) {
 		TRY(p_uint8(0));
@@ -765,7 +765,7 @@ int nsp_ext_push::p_nsp_response(const getproplist_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_proptag_a(rsp.proptags));
+		TRY(p_proptag_a(*rsp.proptags));
 	}
 	return p_uint32(0);
 }
@@ -866,7 +866,7 @@ int nsp_ext_push::p_nsp_response(const querycolumns_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_proptag_a(rsp.columns));
+		TRY(p_proptag_a(*rsp.columns));
 	}
 	return p_uint32(0);
 }
@@ -881,7 +881,7 @@ int nsp_ext_push::p_nsp_response(const resolvenames_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_proptag_a(rsp.mids));
+		TRY(p_proptag_a(*rsp.mids));
 	}
 	if (rsp.result != ecSuccess) {
 		TRY(p_uint8(0));
@@ -906,7 +906,7 @@ int nsp_ext_push::p_nsp_response(const resortrestriction_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_proptag_a(rsp.outmids));
+		TRY(p_proptag_a(*rsp.outmids));
 	}
 	return p_uint32(0);
 }
