@@ -4950,30 +4950,23 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 			}
 		}
 		pvalue = prcpts->pparray[i]->getval(PR_DSN_REMOTE_MTA);
-		if (NULL != pvalue) {
-			if (!dsn_append_field(pdsn_fields, "Remote-MTA",
-			    static_cast<char *>(pvalue))) {
-				dsn_free(&dsn);
-				return FALSE;
-			}
+		if (pvalue != nullptr && !dsn_append_field(pdsn_fields,
+		    "Remote-MTA", static_cast<char *>(pvalue))) {
+			dsn_free(&dsn);
+			return FALSE;
 		}
 		pvalue = prcpts->pparray[i]->getval(PR_SUPPLEMENTARY_INFO);
-		if (NULL != pvalue) {
-			if (!dsn_append_field(pdsn_fields, "X-Supplementary-Info",
-			    static_cast<char *>(pvalue))) {
-				dsn_free(&dsn);
-				return FALSE;
-			}
+		if (pvalue != nullptr && !dsn_append_field(pdsn_fields,
+		    "X-Supplementary-Info", static_cast<char *>(pvalue))) {
+			dsn_free(&dsn);
+			return FALSE;
 		}
 		pvalue = prcpts->pparray[i]->getval(PR_DISPLAY_NAME);
-		if (NULL != pvalue) {
-			if (oxcmail_encode_mime_string(charset,
-			    static_cast<char *>(pvalue), tmp_buff, GX_ARRAY_SIZE(tmp_buff)) > 0) {
-				if (!dsn_append_field(pdsn_fields, "X-Display-Name", tmp_buff)) {
-					dsn_free(&dsn);
-					return FALSE;
-				}
-			}
+		if (pvalue != nullptr && oxcmail_encode_mime_string(charset,
+		    static_cast<char *>(pvalue), tmp_buff, GX_ARRAY_SIZE(tmp_buff)) > 0 &&
+		    !dsn_append_field(pdsn_fields, "X-Display-Name", tmp_buff)) {
+			dsn_free(&dsn);
+			return FALSE;
 		}
 	}
  SERIALIZE_DSN:
@@ -5057,21 +5050,17 @@ static BOOL oxcmail_export_mdn(const MESSAGE_CONTENT *pmsg,
 		}
 	}
 	pvalue = pmsg->proplist.getval(PidTagOriginalMessageId);
-	if (NULL != pvalue) {
-		if (!dsn_append_field(pdsn_fields, "Original-Message-ID",
-		    static_cast<char *>(pvalue))) {
-			dsn_free(&dsn);
-			return FALSE;
-		}
+	if (pvalue != nullptr &&
+	    !dsn_append_field(pdsn_fields, "Original-Message-ID",
+	    static_cast<char *>(pvalue))) {
+		dsn_free(&dsn);
+		return FALSE;
 	}
-	if (NULL != pdisplay_name) {
-		if (oxcmail_encode_mime_string(charset, pdisplay_name,
-		    tmp_buff, GX_ARRAY_SIZE(tmp_buff)) > 0) {
-			if (!dsn_append_field(pdsn_fields, "X-Display-Name", tmp_buff)) {
-				dsn_free(&dsn);
-				return FALSE;
-			}
-		}
+	if (pdisplay_name != nullptr && oxcmail_encode_mime_string(charset,
+	    pdisplay_name, tmp_buff, arsizeof(tmp_buff)) > 0 &&
+	    !dsn_append_field(pdsn_fields, "X-Display-Name", tmp_buff)) {
+		dsn_free(&dsn);
+		return FALSE;
 	}
 	if (!dsn_serialize(&dsn, pmdn_content, max_length)) {
 		dsn_free(&dsn);
@@ -5394,9 +5383,9 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 	}
 	pvalue = pattachment->proplist.getval(PR_ATTACH_DATA_BIN);
 	auto bv = static_cast<BINARY *>(pvalue);
-	if (bv != nullptr && bv->cb != 0)
-		if (!pmime->write_content(bv->pc, bv->cb, MIME_ENCODING_BASE64))
-			return FALSE;
+	if (bv != nullptr && bv->cb != 0 &&
+	    !pmime->write_content(bv->pc, bv->cb, MIME_ENCODING_BASE64))
+		return FALSE;
 	return TRUE;
 }
 
