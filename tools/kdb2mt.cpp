@@ -863,7 +863,7 @@ static int do_message(driver &drv, unsigned int depth, const parent_desc &parent
 	    ep.p_uint32(item.m_hid) != EXT_ERR_SUCCESS ||
 	    ep.p_uint32(parent.type) != EXT_ERR_SUCCESS ||
 	    ep.p_uint64(parent.folder_id) != EXT_ERR_SUCCESS ||
-	    ep.p_msgctnt(ctnt.get()) != EXT_ERR_SUCCESS)
+	    ep.p_msgctnt(*ctnt) != EXT_ERR_SUCCESS)
 		throw YError("PF-1058");
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
 	write(STDOUT_FILENO, &xsize, sizeof(xsize));

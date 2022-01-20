@@ -128,7 +128,7 @@ static int exmdb_client_push_delivery_message_request(
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = pext->p_msgctnt(r->pmsg);
+	status = pext->p_msgctnt(*r->pmsg);
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}

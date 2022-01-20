@@ -240,10 +240,10 @@ struct EXT_PUSH {
 	int p_systime(const SYSTEMTIME &);
 	int p_tzstruct(const TIMEZONESTRUCT &);
 	int p_tzdef(const TIMEZONEDEFINITION &);
-	int p_apptrecpat(const APPOINTMENT_RECUR_PAT *);
-	int p_goid(const GLOBALOBJECTID *);
-	int p_msgctnt(const MESSAGE_CONTENT *);
-	int p_rpchdr(const RPC_HEADER_EXT *);
+	int p_apptrecpat(const APPOINTMENT_RECUR_PAT &);
+	int p_goid(const GLOBALOBJECTID &);
+	int p_msgctnt(const MESSAGE_CONTENT &);
+	int p_rpchdr(const RPC_HEADER_EXT &);
 
 	BOOL b_alloc = false;
 	union {

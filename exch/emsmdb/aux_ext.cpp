@@ -1111,6 +1111,6 @@ int aux_ext_push_aux_info(EXT_PUSH *pext, AUX_INFO *r)
 	}
 	if (rpc_header_ext.flags & RHE_FLAG_XORMAGIC)
 		rpc_header_ext.flags &= ~RHE_FLAG_XORMAGIC;
-	TRY(pext->p_rpchdr(&rpc_header_ext));
+	TRY(pext->p_rpchdr(rpc_header_ext));
 	return pext->p_bytes(ext_buff, rpc_header_ext.size);
 }

@@ -2123,12 +2123,12 @@ EXT_PUSH::~EXT_PUSH()
 		m_mgt.free(m_udata);
 }
 
-int EXT_PUSH::p_rpchdr(const RPC_HEADER_EXT *r)
+int EXT_PUSH::p_rpchdr(const RPC_HEADER_EXT &r)
 {
-	TRY(p_uint16(r->version));
-	TRY(p_uint16(r->flags));
-	TRY(p_uint16(r->size));
-	return p_uint16(r->size_actual);
+	TRY(p_uint16(r.version));
+	TRY(p_uint16(r.flags));
+	TRY(p_uint16(r.size));
+	return p_uint16(r.size_actual);
 }
 
 /* FALSE: overflow, TRUE: not overflow */
@@ -3434,35 +3434,35 @@ static int ext_buffer_push_extendedexception(
 	return EXT_ERR_SUCCESS;
 }
 
-int EXT_PUSH::p_apptrecpat(const APPOINTMENT_RECUR_PAT *r)
+int EXT_PUSH::p_apptrecpat(const APPOINTMENT_RECUR_PAT &r)
 {
-	TRY(ext_buffer_push_recurrencepattern(this, &r->recur_pat));
-	TRY(p_uint32(r->readerversion2));
-	TRY(p_uint32(r->writerversion2));
-	TRY(p_uint32(r->starttimeoffset));
-	TRY(p_uint32(r->endtimeoffset));
-	TRY(p_uint16(r->exceptioncount));
-	for (size_t i = 0; i < r->exceptioncount; ++i)
-		TRY(ext_buffer_push_exceptioninfo(this, &r->pexceptioninfo[i]));
-	TRY(p_uint32(r->reservedblock1size));
-	for (size_t i = 0; i < r->exceptioncount; ++i)
-		TRY(ext_buffer_push_extendedexception(this, r->writerversion2, r->pexceptioninfo[i].overrideflags, &r->pextendedexception[i]));
-	TRY(p_uint32(r->reservedblock2size));
-	if (r->reservedblock2size == 0)
+	TRY(ext_buffer_push_recurrencepattern(this, &r.recur_pat));
+	TRY(p_uint32(r.readerversion2));
+	TRY(p_uint32(r.writerversion2));
+	TRY(p_uint32(r.starttimeoffset));
+	TRY(p_uint32(r.endtimeoffset));
+	TRY(p_uint16(r.exceptioncount));
+	for (size_t i = 0; i < r.exceptioncount; ++i)
+		TRY(ext_buffer_push_exceptioninfo(this, &r.pexceptioninfo[i]));
+	TRY(p_uint32(r.reservedblock1size));
+	for (size_t i = 0; i < r.exceptioncount; ++i)
+		TRY(ext_buffer_push_extendedexception(this, r.writerversion2, r.pexceptioninfo[i].overrideflags, &r.pextendedexception[i]));
+	TRY(p_uint32(r.reservedblock2size));
+	if (r.reservedblock2size == 0)
 		return EXT_ERR_SUCCESS;
-	return p_bytes(r->preservedblock2, r->reservedblock2size);
+	return p_bytes(r.preservedblock2, r.reservedblock2size);
 }
 
-int EXT_PUSH::p_goid(const GLOBALOBJECTID *r)
+int EXT_PUSH::p_goid(const GLOBALOBJECTID &r)
 {
-	TRY(p_guid(r->arrayid));
-	TRY(p_uint8(r->year >> 8));
-	TRY(p_uint8(r->year & 0xFF));
-	TRY(p_uint8(r->month));
-	TRY(p_uint8(r->day));
-	TRY(p_uint64(r->creationtime));
-	TRY(p_bytes(r->x, 8));
-	return p_bin_ex(r->data);
+	TRY(p_guid(r.arrayid));
+	TRY(p_uint8(r.year >> 8));
+	TRY(p_uint8(r.year & 0xFF));
+	TRY(p_uint8(r.month));
+	TRY(p_uint8(r.day));
+	TRY(p_uint64(r.creationtime));
+	TRY(p_bytes(r.x, 8));
+	return p_bin_ex(r.data);
 }
 
 
@@ -3476,7 +3476,7 @@ static int ext_buffer_push_attachment_list(
 		TRY(pext->p_tpropval_a(r->pplist[i]->proplist));
 		if (NULL != r->pplist[i]->pembedded) {
 			TRY(pext->p_uint8(1));
-			TRY(pext->p_msgctnt(r->pplist[i]->pembedded));
+			TRY(pext->p_msgctnt(*r->pplist[i]->pembedded));
 		} else {
 			TRY(pext->p_uint8(0));
 		}
@@ -3484,18 +3484,18 @@ static int ext_buffer_push_attachment_list(
 	return EXT_ERR_SUCCESS;
 }
 
-int EXT_PUSH::p_msgctnt(const MESSAGE_CONTENT *r)
+int EXT_PUSH::p_msgctnt(const MESSAGE_CONTENT &r)
 {
-	TRY(p_tpropval_a(r->proplist));
-	if (NULL != r->children.prcpts) {
+	TRY(p_tpropval_a(r.proplist));
+	if (r.children.prcpts != nullptr) {
 		TRY(p_uint8(1));
-		TRY(p_tarray_set(*r->children.prcpts));
+		TRY(p_tarray_set(*r.children.prcpts));
 	} else {
 		TRY(p_uint8(0));
 	}
-	if (NULL != r->children.pattachments) {
+	if (r.children.pattachments != nullptr) {
 		TRY(p_uint8(1));
-		return ext_buffer_push_attachment_list(this, r->children.pattachments);
+		return ext_buffer_push_attachment_list(this, r.children.pattachments);
 	} else {
 		return p_uint8(0);
 	}

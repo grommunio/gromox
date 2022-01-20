@@ -1115,7 +1115,7 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 			globalobjectid.month = 0;
 			globalobjectid.day = 0;
 			if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
-			    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
+			    ext_push.p_goid(globalobjectid) != EXT_ERR_SUCCESS)
 				return false;
 			if (!encode_hex_binary(tmp_buff, ext_push.m_offset,
 			    tmp_buff1, sizeof(tmp_buff1)))
@@ -1134,7 +1134,7 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 		if (!ext_push.init(tmp_buff1, 16, 0) ||
 		    ext_push.p_guid(guid) != EXT_ERR_SUCCESS ||
 		    !ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
-		    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
+		    ext_push.p_goid(globalobjectid) != EXT_ERR_SUCCESS)
 			return false;
 		if (!encode_hex_binary(tmp_buff, ext_push.m_offset, tmp_buff1,
 		    sizeof(tmp_buff1)))

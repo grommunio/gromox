@@ -1264,7 +1264,7 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ical_component> main_event,
 	memcpy(globalobjectid.data.pb + 12, pvalue, tmp_len);
  MAKE_GLOBALOBJID:
 	if (!ext_push.init(tmp_buff, 1024, 0) ||
-	    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
+	    ext_push.p_goid(globalobjectid) != EXT_ERR_SUCCESS)
 		return false;
 	tmp_bin.cb = ext_push.m_offset;
 	tmp_bin.pc = tmp_buff;
@@ -1280,7 +1280,7 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ical_component> main_event,
 	globalobjectid.month = 0;
 	globalobjectid.day = 0;
 	if (!ext_push.init(tmp_buff, 1024, 0) ||
-	    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
+	    ext_push.p_goid(globalobjectid) != EXT_ERR_SUCCESS)
 		return false;
 	tmp_bin.cb = ext_push.m_offset;
 	tmp_bin.pc = tmp_buff;
@@ -1725,7 +1725,7 @@ static BOOL oxcical_parse_appointment_recurrence(APPOINTMENT_RECUR_PAT *apr,
 	PROPERTY_NAME propname;
 	
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_UTF16) ||
-	    ext_push.p_apptrecpat(apr) != EXT_ERR_SUCCESS)
+	    ext_push.p_apptrecpat(*apr) != EXT_ERR_SUCCESS)
 		return FALSE;
 	tmp_bin.cb = ext_push.m_offset;
 	tmp_bin.pb = ext_push.m_udata;
@@ -4417,7 +4417,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			globalobjectid.month = 0;
 			globalobjectid.day = 0;
 			if (!ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
-			    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
+			    ext_push.p_goid(globalobjectid) != EXT_ERR_SUCCESS)
 				return false;
 			if (!encode_hex_binary(tmp_buff, ext_push.m_offset,
 			    tmp_buff1, sizeof(tmp_buff1)))
@@ -4441,7 +4441,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		if (!ext_push.init(tmp_buff1, 16, 0) ||
 		    ext_push.p_guid(guid) != EXT_ERR_SUCCESS ||
 		    !ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
-		    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
+		    ext_push.p_goid(globalobjectid) != EXT_ERR_SUCCESS)
 			return false;
 		if (!encode_hex_binary(tmp_buff, ext_push.m_offset, tmp_buff1,
 		    sizeof(tmp_buff1)))

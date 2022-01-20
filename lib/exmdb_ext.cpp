@@ -1226,7 +1226,7 @@ static int exmdb_ext_push_write_message_instance_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
 {
 	TRY(pext->p_uint32(ppayload->write_message_instance.instance_id));
-	TRY(pext->p_msgctnt(ppayload->write_message_instance.pmsgctnt));
+	TRY(pext->p_msgctnt(*ppayload->write_message_instance.pmsgctnt));
 	return pext->p_bool(ppayload->write_message_instance.b_force);
 }
 
@@ -1299,7 +1299,7 @@ static int exmdb_ext_push_write_attachment_instance_request(
 		TRY(pext->p_uint8(0));
 	} else {
 		TRY(pext->p_uint8(1));
-		TRY(pext->p_msgctnt(ppayload->write_attachment_instance.pattctnt->pembedded));
+		TRY(pext->p_msgctnt(*ppayload->write_attachment_instance.pattctnt->pembedded));
 	}
 	return pext->p_bool(ppayload->write_attachment_instance.b_force);
 }
@@ -1605,7 +1605,7 @@ static int exmdb_ext_push_set_message_instance_conflict_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
 {
 	TRY(pext->p_uint32(ppayload->set_message_instance_conflict.instance_id));
-	return pext->p_msgctnt(ppayload->set_message_instance_conflict.pmsgctnt);
+	return pext->p_msgctnt(*ppayload->set_message_instance_conflict.pmsgctnt);
 }
 
 static int exmdb_ext_pull_get_message_rcpts_request(
@@ -2036,7 +2036,7 @@ static int exmdb_ext_push_delivery_message_request(
 	TRY(pext->p_str(ppayload->delivery_message.from_address));
 	TRY(pext->p_str(ppayload->delivery_message.account));
 	TRY(pext->p_uint32(ppayload->delivery_message.cpid));
-	TRY(pext->p_msgctnt(ppayload->delivery_message.pmsg));
+	TRY(pext->p_msgctnt(*ppayload->delivery_message.pmsg));
 	return pext->p_str(ppayload->delivery_message.pdigest);
 }
 
@@ -2058,7 +2058,7 @@ static int exmdb_ext_push_write_message_request(
 	TRY(pext->p_str(ppayload->write_message.account));
 	TRY(pext->p_uint32(ppayload->write_message.cpid));
 	TRY(pext->p_uint64(ppayload->write_message.folder_id));
-	return pext->p_msgctnt(ppayload->write_message.pmsgctnt);
+	return pext->p_msgctnt(*ppayload->write_message.pmsgctnt);
 }
 	
 static int exmdb_ext_pull_read_message_request(
@@ -3744,7 +3744,7 @@ static int exmdb_ext_push_get_message_brief_response(
 	if (ppayload->get_message_brief.pbrief == nullptr)
 		return pext->p_uint8(0);
 	TRY(pext->p_uint8(1));
-	return pext->p_msgctnt(ppayload->get_message_brief.pbrief);
+	return pext->p_msgctnt(*ppayload->get_message_brief.pbrief);
 }
 
 static int exmdb_ext_pull_sum_hierarchy_response(
@@ -4069,7 +4069,7 @@ static int exmdb_ext_pull_read_message_instance_response(
 static int exmdb_ext_push_read_message_instance_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_msgctnt(&ppayload->read_message_instance.msgctnt);
+	return pext->p_msgctnt(ppayload->read_message_instance.msgctnt);
 }
 
 static int exmdb_ext_pull_write_message_instance_response(
@@ -4136,7 +4136,7 @@ static int exmdb_ext_push_read_attachment_instance_response(
 	if (ppayload->read_attachment_instance.attctnt.pembedded == nullptr)
 		return pext->p_uint8(0);
 	TRY(pext->p_uint8(1));
-	return pext->p_msgctnt(ppayload->read_attachment_instance.attctnt.pembedded);
+	return pext->p_msgctnt(*ppayload->read_attachment_instance.attctnt.pembedded);
 }
 
 static int exmdb_ext_pull_write_attachment_instance_response(
@@ -4537,7 +4537,7 @@ static int exmdb_ext_push_read_message_response(
 	if (ppayload->read_message.pmsgctnt == nullptr)
 		return pext->p_uint8(0);
 	TRY(pext->p_uint8(1));
-	return pext->p_msgctnt(ppayload->read_message.pmsgctnt);
+	return pext->p_msgctnt(*ppayload->read_message.pmsgctnt);
 }
 
 static int exmdb_ext_pull_get_content_sync_response(

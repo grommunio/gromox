@@ -3108,7 +3108,7 @@ int rop_ext_make_rpc_ext(const void *pbuff_in, uint32_t in_len,
 		rpc_header_ext.flags &= ~RHE_FLAG_XORMAGIC;
 	if (!ext_push.init(pbuff_out, *pout_len, EXT_FLAG_UTF16))
 		return EXT_ERR_ALLOC;
-	TRY(ext_push.p_rpchdr(&rpc_header_ext));
+	TRY(ext_push.p_rpchdr(rpc_header_ext));
 	TRY(ext_push.p_bytes(ext_buff, rpc_header_ext.size));
 	*pout_len = ext_push.m_offset;
 	return EXT_ERR_SUCCESS;
