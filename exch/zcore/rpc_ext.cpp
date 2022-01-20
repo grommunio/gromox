@@ -15,139 +15,54 @@ using RESPONSE_PAYLOAD = ZCORE_RESPONSE_PAYLOAD;
 static BOOL rpc_ext_pull_propval(
 	EXT_PULL *pext, uint16_t type, void **ppval)
 {
+#define CASE(mt, ct, fu) \
+	case (mt): \
+		*ppval = pext->anew<ct>(); \
+		if (*ppval == nullptr) \
+			return false; \
+		QRF(pext->fu(static_cast<ct *>(*ppval))); \
+		return TRUE;
+
 	/* convert multi-value instance into single value */
 	if ((type & MVI_FLAG) == MVI_FLAG)
 		type &= ~MVI_FLAG;
 	switch (type) {
-	case PT_SHORT:
-		*ppval = pext->anew<uint16_t>();
-		if (*ppval == nullptr)
-			return FALSE;
-		QRF(pext->g_uint16(static_cast<uint16_t *>(*ppval)));
-		return TRUE;
-	case PT_LONG:
+	CASE(PT_SHORT, uint16_t, g_uint16);
 	case PT_ERROR:
-		*ppval = pext->anew<uint32_t>();
-		if (*ppval == nullptr)
-			return FALSE;
-		QRF(pext->g_uint32(static_cast<uint32_t *>(*ppval)));
-		return TRUE;
-	case PT_FLOAT:
-		*ppval = pext->anew<float>();
-		if (*ppval == nullptr)
-			return FALSE;
-		QRF(pext->g_float(static_cast<float *>(*ppval)));
-		return TRUE;
-	case PT_DOUBLE:
+	CASE(PT_LONG, uint32_t, g_uint32);
+	CASE(PT_FLOAT, float, g_float);
 	case PT_APPTIME:
-		*ppval = pext->anew<double>();
-		if (*ppval == nullptr)
-			return FALSE;
-		QRF(pext->g_double(static_cast<double *>(*ppval)));
-		return TRUE;
-	case PT_BOOLEAN:
-		*ppval = pext->anew<uint8_t>();
-		if (*ppval == nullptr)
-			return FALSE;
-		QRF(pext->g_uint8(static_cast<uint8_t *>(*ppval)));
-		return TRUE;
-	case PT_I8:
+	CASE(PT_DOUBLE, double, g_double);
+	CASE(PT_BOOLEAN, uint8_t, g_uint8);
+	case PT_CURRENCY:
 	case PT_SYSTIME:
-		*ppval = pext->anew<uint64_t>();
-		if (*ppval == nullptr)
-			return FALSE;
-		QRF(pext->g_uint64(static_cast<uint64_t *>(*ppval)));
-		return TRUE;
+	CASE(PT_I8, uint64_t, g_uint64);
 	case PT_STRING8:
 		QRF(pext->g_str(reinterpret_cast<char **>(ppval)));
 		return TRUE;
 	case PT_UNICODE:
 		QRF(pext->g_wstr(reinterpret_cast<char **>(ppval)));
 		return TRUE;
-	case PT_CLSID:
-		*ppval = pext->anew<GUID>();
-		if (*ppval == nullptr)
-			return FALSE;
-		QRF(pext->g_guid(static_cast<GUID *>(*ppval)));
-		return TRUE;
-	case PT_SRESTRICTION:
-		*ppval = pext->anew<RESTRICTION>();
-		if (*ppval == nullptr)
-			return FALSE;
-		QRF(pext->g_restriction(static_cast<RESTRICTION *>(*ppval)));
-		return TRUE;
-	case PT_ACTIONS:
-		*ppval = pext->anew<RULE_ACTIONS>();
-		if (*ppval == nullptr)
-			return FALSE;
-		QRF(pext->g_rule_actions(static_cast<RULE_ACTIONS *>(*ppval)));
-		return TRUE;
-	case PT_BINARY:
-		*ppval = pext->anew<BINARY>();
-		if (*ppval == nullptr)
-			return FALSE;
-		QRF(pext->g_bin(static_cast<BINARY *>(*ppval)));
-		return TRUE;
-	case PT_MV_SHORT:
-		*ppval = pext->anew<SHORT_ARRAY>();
-		if (*ppval == nullptr)
-			return FALSE;
-		QRF(pext->g_uint16_a(static_cast<SHORT_ARRAY *>(*ppval)));
-		return TRUE;
-	case PT_MV_LONG:
-		*ppval = pext->anew<LONG_ARRAY>();
-		if (*ppval == nullptr)
-			return FALSE;
-		QRF(pext->g_uint32_a(static_cast<LONG_ARRAY *>(*ppval)));
-		return TRUE;
+	CASE(PT_CLSID, GUID, g_guid);
+	CASE(PT_SRESTRICTION, RESTRICTION, g_restriction);
+	CASE(PT_ACTIONS, RULE_ACTIONS, g_rule_actions);
+	CASE(PT_BINARY, BINARY, g_bin);
+	CASE(PT_MV_SHORT, SHORT_ARRAY, g_uint16_a);
+	CASE(PT_MV_LONG, LONG_ARRAY, g_uint32_a);
 	case PT_MV_CURRENCY:
-	case PT_MV_I8:
 	case PT_MV_SYSTIME:
-		*ppval = pext->anew<LONGLONG_ARRAY>();
-		if (*ppval == nullptr)
-			return FALSE;
-		QRF(pext->g_uint64_a(static_cast<LONGLONG_ARRAY *>(*ppval)));
-		return TRUE;
-	case PT_MV_FLOAT:
-		*ppval = pext->anew<FLOAT_ARRAY>();
-		if (*ppval == nullptr)
-			return false;
-		QRF(pext->g_float_a(static_cast<FLOAT_ARRAY *>(*ppval)));
-		return TRUE;
-	case PT_MV_DOUBLE:
+	CASE(PT_MV_I8, LONGLONG_ARRAY, g_uint64_a);
+	CASE(PT_MV_FLOAT, FLOAT_ARRAY, g_float_a);
 	case PT_MV_APPTIME:
-		*ppval = pext->anew<DOUBLE_ARRAY>();
-		if (*ppval == nullptr)
-			return false;
-		QRF(pext->g_double_a(static_cast<DOUBLE_ARRAY *>(*ppval)));
-		return TRUE;
-	case PT_MV_STRING8:
-		*ppval = pext->anew<STRING_ARRAY>();
-		if (*ppval == nullptr)
-			return FALSE;
-		QRF(pext->g_str_a(static_cast<STRING_ARRAY *>(*ppval)));
-		return TRUE;
-	case PT_MV_UNICODE:
-		*ppval = pext->anew<STRING_ARRAY>();
-		if (*ppval == nullptr)
-			return FALSE;
-		QRF(pext->g_wstr_a(static_cast<STRING_ARRAY *>(*ppval)));
-		return TRUE;
-	case PT_MV_CLSID:
-		*ppval = pext->anew<GUID_ARRAY>();
-		if (*ppval == nullptr)
-			return FALSE;
-		QRF(pext->g_guid_a(static_cast<GUID_ARRAY *>(*ppval)));
-		return TRUE;
-	case PT_MV_BINARY:
-		*ppval = pext->anew<BINARY_ARRAY>();
-		if (*ppval == nullptr)
-			return FALSE;
-		QRF(pext->g_bin_a(static_cast<BINARY_ARRAY *>(*ppval)));
-		return TRUE;
+	CASE(PT_MV_DOUBLE, DOUBLE_ARRAY, g_double_a);
+	CASE(PT_MV_STRING8, STRING_ARRAY, g_str_a);
+	CASE(PT_MV_UNICODE, STRING_ARRAY, g_wstr_a);
+	CASE(PT_MV_CLSID, GUID_ARRAY, g_guid_a);
+	CASE(PT_MV_BINARY, BINARY_ARRAY, g_bin_a);
 	default:
 		return FALSE;
 	}
+#undef CASE
 }
 
 static BOOL rpc_ext_pull_tagged_propval(
@@ -256,82 +171,51 @@ static BOOL rpc_ext_pull_state_array(
 static BOOL rpc_ext_push_propval(EXT_PUSH *pext,
 	uint16_t type, const void *pval)
 {
+#define CASE(mt, ct, fu) \
+	case (mt): \
+		QRF(pext->fu(*static_cast<const ct *>(pval))); \
+		return TRUE;
+
 	/* convert multi-value instance into single value */
 	if ((type & MVI_FLAG) == MVI_FLAG)
 		type &= ~MVI_FLAG;
 	switch (type) {
-	case PT_SHORT:
-		QRF(pext->p_uint16(*static_cast<const uint16_t *>(pval)));
-		return TRUE;
-	case PT_LONG:
+	CASE(PT_SHORT, uint16_t, p_uint16);
 	case PT_ERROR:
-		QRF(pext->p_uint32(*static_cast<const uint32_t *>(pval)));
-		return TRUE;
-	case PT_FLOAT:
-		QRF(pext->p_float(*static_cast<const float *>(pval)));
-		return TRUE;
-	case PT_DOUBLE:
+	CASE(PT_LONG, uint32_t, p_uint32);
+	CASE(PT_FLOAT, float, p_float);
 	case PT_APPTIME:
-		QRF(pext->p_double(*static_cast<const double *>(pval)));
-		return TRUE;
-	case PT_BOOLEAN:
-		QRF(pext->p_uint8(*static_cast<const uint8_t *>(pval)));
-		return TRUE;
-	case PT_I8:
+	CASE(PT_DOUBLE, double, p_double);
+	CASE(PT_BOOLEAN, uint8_t, p_uint8);
+	case PT_CURRENCY:
 	case PT_SYSTIME:
-		QRF(pext->p_uint64(*static_cast<const uint64_t *>(pval)));
-		return TRUE;
+	CASE(PT_I8, uint64_t, p_uint64);
 	case PT_STRING8:
 		QRF(pext->p_str(static_cast<const char *>(pval)));
 		return TRUE;
 	case PT_UNICODE:
 		QRF(pext->p_wstr(static_cast<const char *>(pval)));
 		return TRUE;
-	case PT_CLSID:
-		QRF(pext->p_guid(*static_cast<const GUID *>(pval)));
-		return TRUE;
-	case PT_SRESTRICTION:
-		QRF(pext->p_restriction(*static_cast<const RESTRICTION *>(pval)));
-		return TRUE;
-	case PT_ACTIONS:
-		QRF(pext->p_rule_actions(*static_cast<const RULE_ACTIONS *>(pval)));
-		return TRUE;
-	case PT_BINARY:
-		QRF(pext->p_bin(*static_cast<const BINARY *>(pval)));
-		return TRUE;
-	case PT_MV_SHORT:
-		QRF(pext->p_uint16_a(*static_cast<const SHORT_ARRAY *>(pval)));
-		return TRUE;
-	case PT_MV_LONG:
-		QRF(pext->p_uint32_a(*static_cast<const LONG_ARRAY *>(pval)));
-		return TRUE;
+	CASE(PT_CLSID, GUID, p_guid);
+	CASE(PT_SRESTRICTION, RESTRICTION, p_restriction);
+	CASE(PT_ACTIONS, RULE_ACTIONS, p_rule_actions);
+	CASE(PT_BINARY, BINARY, p_bin);
+	CASE(PT_MV_SHORT, SHORT_ARRAY, p_uint16_a);
+	CASE(PT_MV_LONG, LONG_ARRAY, p_uint32_a);
 	case PT_MV_CURRENCY:
-	case PT_MV_I8:
 	case PT_MV_SYSTIME:
-		QRF(pext->p_uint64_a(*static_cast<const LONGLONG_ARRAY *>(pval)));
-		return TRUE;
-	case PT_MV_FLOAT:
-		QRF(pext->p_float_a(*static_cast<const FLOAT_ARRAY *>(pval)));
-		return TRUE;
-	case PT_MV_DOUBLE:
+	CASE(PT_MV_I8, LONGLONG_ARRAY, p_uint64_a);
+	CASE(PT_MV_FLOAT, FLOAT_ARRAY, p_float_a);
 	case PT_MV_APPTIME:
-		QRF(pext->p_double_a(*static_cast<const DOUBLE_ARRAY *>(pval)));
-		return TRUE;
-	case PT_MV_STRING8:
-		QRF(pext->p_str_a(*static_cast<const STRING_ARRAY *>(pval)));
-		return TRUE;
-	case PT_MV_UNICODE:
-		QRF(pext->p_wstr_a(*static_cast<const STRING_ARRAY *>(pval)));
-		return TRUE;
-	case PT_MV_CLSID:
-		QRF(pext->p_guid_a(*static_cast<const GUID_ARRAY *>(pval)));
-		return TRUE;
-	case PT_MV_BINARY:
-		QRF(pext->p_bin_a(*static_cast<const BINARY_ARRAY *>(pval)));
-		return TRUE;
+	CASE(PT_MV_DOUBLE, DOUBLE_ARRAY, p_double_a);
+	CASE(PT_MV_STRING8, STRING_ARRAY, p_str_a);
+	CASE(PT_MV_UNICODE, STRING_ARRAY, p_wstr_a);
+	CASE(PT_MV_CLSID, GUID_ARRAY, p_guid_a);
+	CASE(PT_MV_BINARY, BINARY_ARRAY, p_bin_a);
 	default:
 		return FALSE;
 	}
+#undef CASE
 }
 
 static BOOL rpc_ext_push_tagged_propval(

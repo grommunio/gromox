@@ -909,127 +909,51 @@ int EXT_PULL::g_propval(uint16_t type, void **ppval)
 	/* convert multi-value instance into single value */
 		type &= ~MVI_FLAG;
 	}
+#define CASE(mt, ct, fu) \
+	case (mt): \
+		*ppval = anew<ct>(); \
+		if (*ppval == nullptr) \
+			return EXT_ERR_ALLOC; \
+		return fu(static_cast<ct *>(*ppval));
+
 	switch (type) {
-	case PT_UNSPECIFIED:
-		*ppval = anew<TYPED_PROPVAL>();
-		if ((*ppval) == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_typed_pv(static_cast<TYPED_PROPVAL *>(*ppval));
-	case PT_SHORT:
-		*ppval = anew<uint16_t>();
-		if ((*ppval) == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_uint16(static_cast<uint16_t *>(*ppval));
-	case PT_LONG:
+	CASE(PT_UNSPECIFIED, TYPED_PROPVAL, g_typed_pv);
+	CASE(PT_SHORT, uint16_t, g_uint16);
 	case PT_ERROR:
-		*ppval = anew<uint32_t>();
-		if ((*ppval) == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_uint32(static_cast<uint32_t *>(*ppval));
-	case PT_FLOAT:
-		*ppval = anew<float>();
-		if ((*ppval) == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_float(static_cast<float *>(*ppval));
-	case PT_DOUBLE:
+	CASE(PT_LONG, uint32_t, g_uint32);
+	CASE(PT_FLOAT, float, g_float);
 	case PT_APPTIME:
-		*ppval = anew<double>();
-		if ((*ppval) == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_double(static_cast<double *>(*ppval));
-	case PT_BOOLEAN:
-		*ppval = anew<uint8_t>();
-		if ((*ppval) == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_uint8(static_cast<uint8_t *>(*ppval));
+	CASE(PT_DOUBLE, double, g_double);
+	CASE(PT_BOOLEAN, uint8_t, g_uint8);
 	case PT_CURRENCY:
-	case PT_I8:
 	case PT_SYSTIME:
-		*ppval = anew<uint64_t>();
-		if ((*ppval) == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_uint64(static_cast<uint64_t *>(*ppval));
+	CASE(PT_I8, uint64_t, g_uint64);
 	case PT_STRING8:
 		return g_str(reinterpret_cast<char **>(ppval));
 	case PT_UNICODE:
 		return g_wstr(reinterpret_cast<char **>(ppval));
-	case PT_SVREID:
-		*ppval = anew<SVREID>();
-		if ((*ppval) == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_svreid(static_cast<SVREID *>(*ppval));
-	case PT_CLSID:
-		*ppval = anew<GUID>();
-		if ((*ppval) == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_guid(static_cast<GUID *>(*ppval));
-	case PT_SRESTRICTION:
-		*ppval = anew<RESTRICTION>();
-		if ((*ppval) == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_restriction(static_cast<RESTRICTION *>(*ppval));
-	case PT_ACTIONS:
-		*ppval = anew<RULE_ACTIONS>();
-		if ((*ppval) == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_rule_actions(static_cast<RULE_ACTIONS *>(*ppval));
-	case PT_BINARY:
+	CASE(PT_SVREID, SVREID, g_svreid);
+	CASE(PT_CLSID, GUID, g_guid);
+	CASE(PT_SRESTRICTION, RESTRICTION, g_restriction);
+	CASE(PT_ACTIONS, RULE_ACTIONS, g_rule_actions);
 	case PT_OBJECT:
-		*ppval = anew<BINARY>();
-		if ((*ppval) == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_bin(static_cast<BINARY *>(*ppval));
-	case PT_MV_SHORT:
-		*ppval = anew<SHORT_ARRAY>();
-		if ((*ppval) == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_uint16_a(static_cast<SHORT_ARRAY *>(*ppval));
-	case PT_MV_LONG:
-		*ppval = anew<LONG_ARRAY>();
-		if ((*ppval) == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_uint32_a(static_cast<LONG_ARRAY *>(*ppval));
+	CASE(PT_BINARY, BINARY, g_bin);
+	CASE(PT_MV_SHORT, SHORT_ARRAY, g_uint16_a);
+	CASE(PT_MV_LONG, LONG_ARRAY, g_uint32_a);
 	case PT_MV_CURRENCY:
-	case PT_MV_I8:
 	case PT_MV_SYSTIME:
-		*ppval = anew<LONGLONG_ARRAY>();
-		if ((*ppval) == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_uint64_a(static_cast<LONGLONG_ARRAY *>(*ppval));
-	case PT_MV_FLOAT:
-		*ppval = anew<FLOAT_ARRAY>();
-		if (*ppval == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_float_a(static_cast<FLOAT_ARRAY *>(*ppval));
-	case PT_MV_DOUBLE:
+	CASE(PT_MV_I8, LONGLONG_ARRAY, g_uint64_a);
+	CASE(PT_MV_FLOAT, FLOAT_ARRAY, g_float_a);
 	case PT_MV_APPTIME:
-		*ppval = anew<DOUBLE_ARRAY>();
-		if (*ppval == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_double_a(static_cast<DOUBLE_ARRAY *>(*ppval));
-	case PT_MV_STRING8:
-		*ppval = anew<STRING_ARRAY>();
-		if ((*ppval) == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_str_a(static_cast<STRING_ARRAY *>(*ppval));
-	case PT_MV_UNICODE:
-		*ppval = anew<STRING_ARRAY>();
-		if ((*ppval) == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_wstr_a(static_cast<STRING_ARRAY *>(*ppval));
-	case PT_MV_CLSID:
-		*ppval = anew<GUID_ARRAY>();
-		if ((*ppval) == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_guid_a(static_cast<GUID_ARRAY *>(*ppval));
-	case PT_MV_BINARY:
-		*ppval = anew<BINARY_ARRAY>();
-		if ((*ppval) == nullptr)
-			return EXT_ERR_ALLOC;
-		return g_bin_a(static_cast<BINARY_ARRAY *>(*ppval));
+	CASE(PT_MV_DOUBLE, DOUBLE_ARRAY, g_double_a);
+	CASE(PT_MV_STRING8, STRING_ARRAY, g_str_a);
+	CASE(PT_MV_UNICODE, STRING_ARRAY, g_wstr_a);
+	CASE(PT_MV_CLSID, GUID_ARRAY, g_guid_a);
+	CASE(PT_MV_BINARY, BINARY_ARRAY, g_bin_a);
 	default:
 		return m_flags & EXT_FLAG_ABK ? EXT_ERR_FORMAT : EXT_ERR_BAD_SWITCH;
 	}
+#undef CASE
 }
 
 int EXT_PULL::g_typed_pv(TYPED_PROPVAL *r)
@@ -2733,64 +2657,47 @@ int EXT_PUSH::p_propval(uint16_t type, const void *pval)
 		/* convert multi-value instance into single value */
 		type &= ~MVI_FLAG;
 	}
+#define CASE(mt, ct, fu) \
+	case (mt): return fu(*static_cast<const ct *>(pval));
+
 	switch (type) {
-	case PT_UNSPECIFIED:
-		return p_typed_pv(*static_cast<const TYPED_PROPVAL *>(pval));
-	case PT_SHORT:
-		return p_uint16(*static_cast<const uint16_t *>(pval));
-	case PT_LONG:
+	CASE(PT_UNSPECIFIED, TYPED_PROPVAL, p_typed_pv);
+	CASE(PT_SHORT, uint16_t, p_uint16);
 	case PT_ERROR:
-		return p_uint32(*static_cast<const uint32_t *>(pval));
-	case PT_FLOAT:
-		return p_float(*static_cast<const float *>(pval));
-	case PT_DOUBLE:
+	CASE(PT_LONG, uint32_t, p_uint32);
+	CASE(PT_FLOAT, float, p_float);
 	case PT_APPTIME:
-		return p_double(*static_cast<const double *>(pval));
-	case PT_BOOLEAN:
-		return p_uint8(*static_cast<const uint8_t *>(pval));
+	CASE(PT_DOUBLE, double, p_double);
+	CASE(PT_BOOLEAN, uint8_t, p_uint8);
 	case PT_CURRENCY:
-	case PT_I8:
 	case PT_SYSTIME:
-		return p_uint64(*static_cast<const uint64_t *>(pval));
+	CASE(PT_I8, uint64_t, p_uint64);
 	case PT_STRING8:
 		return p_str(static_cast<const char *>(pval));
 	case PT_UNICODE:
 		return p_wstr(static_cast<const char *>(pval));
-	case PT_CLSID:
-		return p_guid(*static_cast<const GUID *>(pval));
-	case PT_SVREID:
-		return p_svreid(*static_cast<const SVREID *>(pval));
-	case PT_SRESTRICTION:
-		return p_restriction(*static_cast<const RESTRICTION *>(pval));
-	case PT_ACTIONS:
-		return p_rule_actions(*static_cast<const RULE_ACTIONS *>(pval));
-	case PT_BINARY:
+	CASE(PT_CLSID, GUID, p_guid);
+	CASE(PT_SVREID, SVREID, p_svreid);
+	CASE(PT_SRESTRICTION, RESTRICTION, p_restriction);
+	CASE(PT_ACTIONS, RULE_ACTIONS, p_rule_actions);
 	case PT_OBJECT:
-		return p_bin(*static_cast<const BINARY *>(pval));
-	case PT_MV_SHORT:
-		return p_uint16_a(*static_cast<const SHORT_ARRAY *>(pval));
-	case PT_MV_LONG:
-		return p_uint32_a(*static_cast<const LONG_ARRAY *>(pval));
+	CASE(PT_BINARY, BINARY, p_bin);
+	CASE(PT_MV_SHORT, SHORT_ARRAY, p_uint16_a);
+	CASE(PT_MV_LONG, LONG_ARRAY, p_uint32_a);
 	case PT_MV_CURRENCY:
-	case PT_MV_I8:
 	case PT_MV_SYSTIME:
-		return p_uint64_a(*static_cast<const LONGLONG_ARRAY *>(pval));
-	case PT_MV_FLOAT:
-		return p_float_a(*static_cast<const FLOAT_ARRAY *>(pval));
-	case PT_MV_DOUBLE:
+	CASE(PT_MV_I8, LONGLONG_ARRAY, p_uint64_a);
+	CASE(PT_MV_FLOAT, FLOAT_ARRAY, p_float_a);
 	case PT_MV_APPTIME:
-		return p_double_a(*static_cast<const DOUBLE_ARRAY *>(pval));
-	case PT_MV_STRING8:
-		return p_str_a(*static_cast<const STRING_ARRAY *>(pval));
-	case PT_MV_UNICODE:
-		return p_wstr_a(*static_cast<const STRING_ARRAY *>(pval));
-	case PT_MV_CLSID:
-		return p_guid_a(*static_cast<const GUID_ARRAY *>(pval));
-	case PT_MV_BINARY:
-		return p_bin_a(*static_cast<const BINARY_ARRAY *>(pval));
+	CASE(PT_MV_DOUBLE, DOUBLE_ARRAY, p_double_a);
+	CASE(PT_MV_STRING8, STRING_ARRAY, p_str_a);
+	CASE(PT_MV_UNICODE, STRING_ARRAY, p_wstr_a);
+	CASE(PT_MV_CLSID, GUID_ARRAY, p_guid_a);
+	CASE(PT_MV_BINARY, BINARY_ARRAY, p_bin_a);
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
+#undef CASE
 }
 
 int EXT_PUSH::p_typed_pv(const TYPED_PROPVAL &r)
