@@ -1132,7 +1132,7 @@ static BOOL make_ical_uid(BINARY *pglobal_obj, char *uid_buff)
 		globalobjectid.data.pv = tmp_buff1;
 		guid = guid_random_new();
 		if (!ext_push.init(tmp_buff1, 16, 0) ||
-		    ext_push.p_guid(&guid) != EXT_ERR_SUCCESS ||
+		    ext_push.p_guid(guid) != EXT_ERR_SUCCESS ||
 		    !ext_push.init(tmp_buff, sizeof(tmp_buff), 0) ||
 		    ext_push.p_goid(&globalobjectid) != EXT_ERR_SUCCESS)
 			return false;

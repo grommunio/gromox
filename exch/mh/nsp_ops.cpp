@@ -698,7 +698,7 @@ int nsp_ext_push::p_nsp_response(const bind_response &rsp)
 {
 	TRY(p_uint32(rsp.status));
 	TRY(p_uint32(rsp.result));
-	TRY(p_guid(&rsp.server_guid));
+	TRY(p_guid(rsp.server_guid));
 	return p_uint32(0);
 }
 

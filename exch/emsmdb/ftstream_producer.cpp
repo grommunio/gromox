@@ -296,7 +296,7 @@ static int ftstream_producer_write_propdef(FTSTREAM_PRODUCER *pstream,
 		return 0;
 	}
 	if (!ext_push.init(tmp_buff, sizeof(tmp_buff), EXT_FLAG_UTF16) ||
-	    ext_push.p_guid(&propname.guid) != EXT_ERR_SUCCESS ||
+	    ext_push.p_guid(propname.guid) != EXT_ERR_SUCCESS ||
 	    ext_push.p_uint8(propname.kind) != EXT_ERR_SUCCESS)
 		return -1;
 	switch (propname.kind) {
@@ -697,7 +697,7 @@ static BOOL ftstream_producer_write_groupinfo(
 				continue;
 			if (!pstream->plogon->get_named_propname(propid, &propname))
 				return FALSE;
-			if (ext_push.p_guid(&propname.guid) != EXT_ERR_SUCCESS ||
+			if (ext_push.p_guid(propname.guid) != EXT_ERR_SUCCESS ||
 			    ext_push.p_uint32(propname.kind) != EXT_ERR_SUCCESS)
 				return FALSE;
 			switch (propname.kind) {

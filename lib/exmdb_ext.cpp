@@ -116,7 +116,7 @@ static int exmdb_ext_pull_get_mapping_replid_request(
 static int exmdb_ext_push_get_mapping_replid_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
 {
-	return pext->p_guid(&ppayload->get_mapping_replid.guid);
+	return pext->p_guid(ppayload->get_mapping_replid.guid);
 }
 
 static int exmdb_ext_pull_get_store_properties_request(
@@ -2191,7 +2191,7 @@ static int exmdb_ext_push_get_content_sync_request(
 	auto pbin = ppayload->get_content_sync.pgiven->serialize_replid();
 	if (pbin == nullptr)
 		return EXT_ERR_ALLOC;
-	status = pext->p_bin_ex(pbin);
+	status = pext->p_bin_ex(*pbin);
 	if (EXT_ERR_SUCCESS != status) {
 		rop_util_free_binary(pbin);
 		return status;
@@ -2204,7 +2204,7 @@ static int exmdb_ext_push_get_content_sync_request(
 		pbin = ppayload->get_content_sync.pseen->serialize_replid();
 		if (pbin == nullptr)
 			return EXT_ERR_ALLOC;
-		status = pext->p_bin_ex(pbin);
+		status = pext->p_bin_ex(*pbin);
 		if (EXT_ERR_SUCCESS != status) {
 			rop_util_free_binary(pbin);
 			return status;
@@ -2218,7 +2218,7 @@ static int exmdb_ext_push_get_content_sync_request(
 		pbin = ppayload->get_content_sync.pseen_fai->serialize_replid();
 		if (pbin == nullptr)
 			return EXT_ERR_ALLOC;
-		status = pext->p_bin_ex(pbin);
+		status = pext->p_bin_ex(*pbin);
 		if (EXT_ERR_SUCCESS != status) {
 			rop_util_free_binary(pbin);
 			return status;
@@ -2232,7 +2232,7 @@ static int exmdb_ext_push_get_content_sync_request(
 		pbin = ppayload->get_content_sync.pread->serialize_replid();
 		if (pbin == nullptr)
 			return EXT_ERR_ALLOC;
-		status = pext->p_bin_ex(pbin);
+		status = pext->p_bin_ex(*pbin);
 		if (EXT_ERR_SUCCESS != status) {
 			rop_util_free_binary(pbin);
 			return status;
@@ -2309,7 +2309,7 @@ static int exmdb_ext_push_get_hierarchy_sync_request(
 	auto pbin = ppayload->get_hierarchy_sync.pgiven->serialize_replid();
 	if (pbin == nullptr)
 		return EXT_ERR_ALLOC;
-	status = pext->p_bin_ex(pbin);
+	status = pext->p_bin_ex(*pbin);
 	if (EXT_ERR_SUCCESS != status) {
 		rop_util_free_binary(pbin);
 		return status;
@@ -2322,7 +2322,7 @@ static int exmdb_ext_push_get_hierarchy_sync_request(
 		pbin = ppayload->get_hierarchy_sync.pseen->serialize_replid();
 		if (pbin == nullptr)
 			return EXT_ERR_ALLOC;
-		status = pext->p_bin_ex(pbin);
+		status = pext->p_bin_ex(*pbin);
 		if (EXT_ERR_SUCCESS != status) {
 			rop_util_free_binary(pbin);
 			return status;
@@ -3367,7 +3367,7 @@ static int exmdb_ext_push_get_mapping_guid_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
 	TRY(pext->p_bool(ppayload->get_mapping_guid.b_found));
-	return pext->p_guid(&ppayload->get_mapping_guid.guid);
+	return pext->p_guid(ppayload->get_mapping_guid.guid);
 }
 
 static int exmdb_ext_pull_get_mapping_replid_response(

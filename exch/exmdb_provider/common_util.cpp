@@ -3189,7 +3189,7 @@ BOOL cu_set_properties(db_table table_type,
 		case PT_CLSID: {
 			EXT_PUSH ext_push;
 			if (!ext_push.init(temp_buff, 16, 0) ||
-			    ext_push.p_guid(static_cast<GUID *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
+			    ext_push.p_guid(*static_cast<GUID *>(ppropvals->ppropval[i].pvalue)) != EXT_ERR_SUCCESS)
 				return FALSE;
 			sqlite3_bind_blob(pstmt, 2, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 			s_result = sqlite3_step(pstmt);
@@ -5400,7 +5400,7 @@ BOOL common_util_bind_sqlite_statement(sqlite3_stmt *pstmt,
 		break;
 	case PT_CLSID:
 		if (!ext_push.init(temp_buff, 16, 0) ||
-		    ext_push.p_guid(static_cast<GUID *>(pvalue)) != EXT_ERR_SUCCESS)
+		    ext_push.p_guid(*static_cast<GUID *>(pvalue)) != EXT_ERR_SUCCESS)
 			return FALSE;
 		sqlite3_bind_blob(pstmt, bind_index, ext_push.m_udata, ext_push.m_offset, SQLITE_STATIC);
 		break;

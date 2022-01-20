@@ -2246,45 +2246,45 @@ int EXT_PUSH::p_bool(BOOL v)
 	
 }
 
-int EXT_PUSH::p_bin(const BINARY *r)
+int EXT_PUSH::p_bin(const BINARY &r)
 {
 	if (m_flags & EXT_FLAG_WCOUNT) {
-		TRY(p_uint32(r->cb));
+		TRY(p_uint32(r.cb));
 	} else {
-		if (r->cb > 0xFFFF)
+		if (r.cb > 0xFFFF)
 			return EXT_ERR_FORMAT;
-		TRY(p_uint16(r->cb));
+		TRY(p_uint16(r.cb));
 	}
-	if (r->cb == 0)
+	if (r.cb == 0)
 		return EXT_ERR_SUCCESS;
-	return p_bytes(r->pb, r->cb);
+	return p_bytes(r.pb, r.cb);
 }
 
-int EXT_PUSH::p_bin_s(const BINARY *r)
+int EXT_PUSH::p_bin_s(const BINARY &r)
 {
-	if (r->cb > 0xFFFF)
+	if (r.cb > 0xFFFF)
 		return EXT_ERR_FORMAT;
-	TRY(p_uint16(r->cb));
-	if (r->cb == 0)
+	TRY(p_uint16(r.cb));
+	if (r.cb == 0)
 		return EXT_ERR_SUCCESS;
-	return p_bytes(r->pb, r->cb);
+	return p_bytes(r.pb, r.cb);
 }
 
-int EXT_PUSH::p_bin_ex(const BINARY *r)
+int EXT_PUSH::p_bin_ex(const BINARY &r)
 {
-	TRY(p_uint32(r->cb));
-	if (r->cb == 0)
+	TRY(p_uint32(r.cb));
+	if (r.cb == 0)
 		return EXT_ERR_SUCCESS;
-	return p_bytes(r->pb, r->cb);
+	return p_bytes(r.pb, r.cb);
 }
 
-int EXT_PUSH::p_guid(const GUID *r)
+int EXT_PUSH::p_guid(const GUID &r)
 {
-	TRY(p_uint32(r->time_low));
-	TRY(p_uint16(r->time_mid));
-	TRY(p_uint16(r->time_hi_and_version));
-	TRY(p_bytes(r->clock_seq, 2));
-	return p_bytes(r->node, 6);
+	TRY(p_uint32(r.time_low));
+	TRY(p_uint16(r.time_mid));
+	TRY(p_uint16(r.time_hi_and_version));
+	TRY(p_bytes(r.clock_seq, 2));
+	return p_bytes(r.node, 6);
 }
 
 int EXT_PUSH::p_str(const char *pstr)
@@ -2389,7 +2389,7 @@ int EXT_PUSH::p_bin_a(const BINARY_ARRAY *r)
 			}
 			TRY(p_uint8(0xFF));
 		}
-		TRY(p_bin(&r->pbin[i]));
+		TRY(p_bin(r->pbin[i]));
 	}
 	return EXT_ERR_SUCCESS;
 }
@@ -2430,7 +2430,7 @@ int EXT_PUSH::p_guid_a(const GUID_ARRAY *r)
 {
 	TRY(p_uint32(r->count));
 	for (size_t i = 0; i < r->count; ++i)
-		TRY(p_guid(&r->pguid[i]));
+		TRY(p_guid(r->pguid[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2578,12 +2578,12 @@ int EXT_PUSH::p_svreid(const SVREID *r)
 int EXT_PUSH::p_store_eid(const STORE_ENTRYID *r)
 {
 	TRY(p_uint32(r->flags));
-	TRY(p_guid(&r->provider_uid));
+	TRY(p_guid(r->provider_uid));
 	TRY(p_uint8(r->version));
 	TRY(p_uint8(r->flag));
 	TRY(p_bytes(r->dll_name, 14));
 	TRY(p_uint32(r->wrapped_flags));
-	TRY(p_guid(&r->wrapped_provider_uid));
+	TRY(p_guid(r->wrapped_provider_uid));
 	TRY(p_uint32(r->wrapped_type));
 	TRY(p_str(r->pserver_name));
 	return p_str(r->pmailbox_dn);
@@ -2592,8 +2592,8 @@ int EXT_PUSH::p_store_eid(const STORE_ENTRYID *r)
 static int ext_buffer_push_zmovecopy_action(EXT_PUSH *e,
     const ZMOVECOPY_ACTION *r)
 {
-	TRY(e->p_bin(&r->store_eid));
-	return e->p_bin(&r->folder_eid);
+	TRY(e->p_bin(r->store_eid));
+	return e->p_bin(r->folder_eid);
 }
 
 static int ext_buffer_push_movecopy_action(EXT_PUSH *pext,
@@ -2621,13 +2621,13 @@ static int ext_buffer_push_movecopy_action(EXT_PUSH *pext,
 	if (r->same_store != 0)
 		return pext->p_svreid(static_cast<SVREID *>(r->pfolder_eid));
 	else
-		return pext->p_bin(static_cast<BINARY *>(r->pfolder_eid));
+		return pext->p_bin(*static_cast<BINARY *>(r->pfolder_eid));
 }
 
 static int ext_buffer_push_zreply_action(EXT_PUSH *e, const ZREPLY_ACTION *r)
 {
-	TRY(e->p_bin(&r->message_eid));
-	return e->p_guid(&r->template_guid);
+	TRY(e->p_bin(r->message_eid));
+	return e->p_guid(r->template_guid);
 }
 
 static int ext_buffer_push_reply_action(
@@ -2635,7 +2635,7 @@ static int ext_buffer_push_reply_action(
 {
 	TRY(pext->p_uint64(r->template_folder_id));
 	TRY(pext->p_uint64(r->template_message_id));
-	return pext->p_guid(&r->template_guid);
+	return pext->p_guid(r->template_guid);
 }
 
 static int ext_buffer_push_recipient_block(
@@ -2757,7 +2757,7 @@ int EXT_PUSH::p_propval(uint16_t type, const void *pval)
 	case PT_UNICODE:
 		return p_wstr(static_cast<const char *>(pval));
 	case PT_CLSID:
-		return p_guid(static_cast<const GUID *>(pval));
+		return p_guid(*static_cast<const GUID *>(pval));
 	case PT_SVREID:
 		return p_svreid(static_cast<const SVREID *>(pval));
 	case PT_SRESTRICTION:
@@ -2766,7 +2766,7 @@ int EXT_PUSH::p_propval(uint16_t type, const void *pval)
 		return p_rule_actions(static_cast<const RULE_ACTIONS *>(pval));
 	case PT_BINARY:
 	case PT_OBJECT:
-		return p_bin(static_cast<const BINARY *>(pval));
+		return p_bin(*static_cast<const BINARY *>(pval));
 	case PT_MV_SHORT:
 		return p_uint16_a(static_cast<const SHORT_ARRAY *>(pval));
 	case PT_MV_LONG:
@@ -2807,7 +2807,7 @@ int EXT_PUSH::p_tagged_pv(const TAGGED_PROPVAL *r)
 
 int EXT_PUSH::p_longterm(const LONG_TERM_ID *r)
 {
-	TRY(p_guid(&r->guid));
+	TRY(p_guid(r->guid));
 	TRY(p_bytes(r->global_counter.ab, 6));
 	return p_uint16(r->padding);
 }
@@ -2839,7 +2839,7 @@ int EXT_PUSH::p_proptag_a(const LPROPTAG_ARRAY *r)
 int EXT_PUSH::p_propname(const PROPERTY_NAME *r)
 {
 	TRY(p_uint8(r->kind));
-	TRY(p_guid(&r->guid));
+	TRY(p_guid(r->guid));
 	if (r->kind == MNID_ID) {
 		TRY(p_uint32(r->lid));
 	} else if (r->kind == MNID_STRING) {
@@ -2915,16 +2915,16 @@ int EXT_PUSH::p_xid(const XID &xid)
 {
 	if (xid.size < 17 || xid.size > 24)
 		return EXT_ERR_FORMAT;
-	TRY(p_guid(&xid.guid));
+	TRY(p_guid(xid.guid));
 	return p_bytes(xid.local_id, xid.size - 16);
 }
 
 int EXT_PUSH::p_folder_eid(const FOLDER_ENTRYID *r)
 {
 	TRY(p_uint32(r->flags));
-	TRY(p_guid(&r->provider_uid));
+	TRY(p_guid(r->provider_uid));
 	TRY(p_uint16(r->folder_type));
-	TRY(p_guid(&r->database_guid));
+	TRY(p_guid(r->database_guid));
 	TRY(p_bytes(r->global_counter.ab, 6));
 	return p_bytes(r->pad, 2);
 }
@@ -2932,12 +2932,12 @@ int EXT_PUSH::p_folder_eid(const FOLDER_ENTRYID *r)
 int EXT_PUSH::p_msg_eid(const MESSAGE_ENTRYID *r)
 {
 	TRY(p_uint32(r->flags));
-	TRY(p_guid(&r->provider_uid));
+	TRY(p_guid(r->provider_uid));
 	TRY(p_uint16(r->message_type));
-	TRY(p_guid(&r->folder_database_guid));
+	TRY(p_guid(r->folder_database_guid));
 	TRY(p_bytes(r->folder_global_counter.ab, 6));
 	TRY(p_bytes(r->pad1, 2));
-	TRY(p_guid(&r->message_database_guid));
+	TRY(p_guid(r->message_database_guid));
 	TRY(p_bytes(r->message_global_counter.ab, 6));
 	return p_bytes(r->pad2, 2);
 }
@@ -3060,9 +3060,9 @@ int EXT_PUSH::p_recipient_row(const PROPTAG_ARRAY *pproptags, const RECIPIENT_RO
 	if (r->px500dn != nullptr)
 		TRY(p_str(r->px500dn));
 	if (r->pentry_id != nullptr)
-		TRY(p_bin(r->pentry_id));
+		TRY(p_bin(*r->pentry_id));
 	if (r->psearch_key != nullptr)
-		TRY(p_bin(r->psearch_key));
+		TRY(p_bin(*r->psearch_key));
 	if (r->paddress_type != nullptr)
 		TRY(p_str(r->paddress_type));
 	if (NULL != r->pmail_address) {
@@ -3145,7 +3145,7 @@ int EXT_PUSH::p_rule_data(const RULE_DATA *r)
 int EXT_PUSH::p_abk_eid(const ADDRESSBOOK_ENTRYID *r)
 {
 	TRY(p_uint32(r->flags));
-	TRY(p_guid(&r->provider_uid));
+	TRY(p_guid(r->provider_uid));
 	TRY(p_uint32(r->version));
 	TRY(p_uint32(r->type));
 	return p_str(r->px500dn);
@@ -3154,7 +3154,7 @@ int EXT_PUSH::p_abk_eid(const ADDRESSBOOK_ENTRYID *r)
 int EXT_PUSH::p_oneoff_eid(const ONEOFF_ENTRYID *r)
 {
 	TRY(p_uint32(r->flags));
-	TRY(p_guid(&r->provider_uid));
+	TRY(p_guid(r->provider_uid));
 	TRY(p_uint16(r->version));
 	TRY(p_uint16(r->ctrl_flags));
 	if (r->ctrl_flags & CTRL_FLAG_UNICODE) {
@@ -3177,7 +3177,7 @@ static int ext_buffer_push_persistelement(
 		TRY(pext->p_uint16(4));
 		return pext->p_uint32(0);
 	case RSF_ELID_ENTRYID:
-		return pext->p_bin(r->pentry_id);
+		return pext->p_bin(*r->pentry_id);
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
@@ -3456,14 +3456,14 @@ int EXT_PUSH::p_apptrecpat(const APPOINTMENT_RECUR_PAT *r)
 
 int EXT_PUSH::p_goid(const GLOBALOBJECTID *r)
 {
-	TRY(p_guid(&r->arrayid));
+	TRY(p_guid(r->arrayid));
 	TRY(p_uint8(r->year >> 8));
 	TRY(p_uint8(r->year & 0xFF));
 	TRY(p_uint8(r->month));
 	TRY(p_uint8(r->day));
 	TRY(p_uint64(r->creationtime));
 	TRY(p_bytes(r->x, 8));
-	return p_bin_ex(&r->data);
+	return p_bin_ex(r->data);
 }
 
 

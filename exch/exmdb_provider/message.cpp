@@ -1776,7 +1776,7 @@ static BOOL message_rectify_message(const char *account,
 			return FALSE;
 		tmp_guid = guid_random_new();
 		if (!ext_push.init(pbin->pb, 16, 0) ||
-		    ext_push.p_guid(&tmp_guid) != EXT_ERR_SUCCESS)
+		    ext_push.p_guid(tmp_guid) != EXT_ERR_SUCCESS)
 			return false;
 		vc->proptag = PR_SEARCH_KEY;
 		vc->pvalue = pbin;
@@ -1786,7 +1786,7 @@ static BOOL message_rectify_message(const char *account,
 	if (!pmsgctnt->proplist.has(PR_BODY_CONTENT_ID)) {
 		tmp_guid = guid_random_new();
 		if (!ext_push.init(cid_string, 256, 0) ||
-		    ext_push.p_guid(&tmp_guid) != EXT_ERR_SUCCESS)
+		    ext_push.p_guid(tmp_guid) != EXT_ERR_SUCCESS)
 			return false;
 		encode_hex_binary(cid_string, 16, cid_string + 16, 64);
 		memmove(cid_string, cid_string + 16, 32);
@@ -1873,7 +1873,7 @@ static BOOL message_rectify_message(const char *account,
 		} else {
 			tmp_guid = guid_random_new();
 			if (!ext_push.init(pbin->pb, 16, 0) ||
-			    ext_push.p_guid(&tmp_guid) != EXT_ERR_SUCCESS)
+			    ext_push.p_guid(tmp_guid) != EXT_ERR_SUCCESS)
 				return false;
 		}
 	}

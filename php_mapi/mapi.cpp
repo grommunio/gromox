@@ -5246,7 +5246,7 @@ ZEND_FUNCTION(kc_session_save)
 		return;	
 	}
 	if (push_ctx.init() != EXT_ERR_SUCCESS ||
-	    push_ctx.p_guid(&psession->hsession) != EXT_ERR_SUCCESS) {
+	    push_ctx.p_guid(psession->hsession) != EXT_ERR_SUCCESS) {
 		RETVAL_LONG(ecMAPIOOM);
 		return;	
 	}

@@ -108,9 +108,9 @@ static int rop_ext_push_logon_pmb_response(
 	for (size_t i = 0; i < 13; ++i)
 		TRY(pext->p_uint64(r->folder_ids[i]));
 	TRY(pext->p_uint8(r->response_flags));
-	TRY(pext->p_guid(&r->mailbox_guid));
+	TRY(pext->p_guid(r->mailbox_guid));
 	TRY(pext->p_uint16(r->replica_id));
-	TRY(pext->p_guid(&r->replica_guid));
+	TRY(pext->p_guid(r->replica_guid));
 	TRY(rop_ext_push_logon_time(pext, &r->logon_time));
 	TRY(pext->p_uint64(r->gwart_time));
 	return pext->p_uint32(r->store_stat);
@@ -123,8 +123,8 @@ static int rop_ext_push_logon_pf_response(
 	for (size_t i = 0; i < 13; ++i)
 		TRY(pext->p_uint64(r->folder_ids[i]));
 	TRY(pext->p_uint16(r->replica_id));
-	TRY(pext->p_guid(&r->replica_guid));
-	return pext->p_guid(&r->per_user_guid);
+	TRY(pext->p_guid(r->replica_guid));
+	return pext->p_guid(r->per_user_guid);
 }
 
 static int rop_ext_push_logon_redirect_response(
@@ -253,7 +253,7 @@ static int rop_ext_pull_getperuserguid_request(
 static int rop_ext_push_getperuserguid_response(
 	EXT_PUSH *pext, const GETPERUSERGUID_RESPONSE *r)
 {
-	return pext->p_guid(&r->guid);
+	return pext->p_guid(r->guid);
 }
 
 static int rop_ext_pull_readperuserinformation_request(
@@ -269,7 +269,7 @@ static int rop_ext_push_readperuserinformation_response(
 	EXT_PUSH *pext, const READPERUSERINFORMATION_RESPONSE *r)
 {
 	TRY(pext->p_uint8(r->has_finished));
-	return pext->p_bin_s(&r->data);
+	return pext->p_bin_s(r->data);
 }
 
 static int rop_ext_pull_writeperuserinformation_request(EXT_PULL *pext,
@@ -672,7 +672,7 @@ static int rop_ext_pull_seekrowfractional_request(
 static int rop_ext_push_createbookmark_response(
 	EXT_PUSH *pext, const CREATEBOOKMARK_RESPONSE *r)
 {
-	return pext->p_bin_s(&r->bookmark);
+	return pext->p_bin_s(r->bookmark);
 }
 
 static int rop_ext_push_querycolumnsall_response(
@@ -760,7 +760,7 @@ static int rop_ext_pull_getcollapsestate_request(EXT_PULL *pext,
 static int rop_ext_push_getcollapsestate_response(EXT_PUSH *pext,
 	const GETCOLLAPSESTATE_RESPONSE *r)
 {
-	return pext->p_bin_s(&r->collapse_state);
+	return pext->p_bin_s(r->collapse_state);
 }
 
 static int rop_ext_pull_setcollapsestate_request(EXT_PULL *pext,
@@ -772,7 +772,7 @@ static int rop_ext_pull_setcollapsestate_request(EXT_PULL *pext,
 static int rop_ext_push_setcollapsestate_response(EXT_PUSH *pext,
 	const SETCOLLAPSESTATE_RESPONSE *r)
 {
-	return pext->p_bin_s(&r->bookmark);
+	return pext->p_bin_s(r->bookmark);
 }
 
 static int rop_ext_pull_openmessage_request(
@@ -1161,8 +1161,8 @@ static int rop_ext_push_optionsdata_response(
 	EXT_PUSH *pext, const OPTIONSDATA_RESPONSE *r)
 {
 	TRY(pext->p_uint8(r->reserved));
-	TRY(pext->p_bin_s(&r->options_info));
-	TRY(pext->p_bin_s(&r->help_file));
+	TRY(pext->p_bin_s(r->options_info));
+	TRY(pext->p_bin_s(r->help_file));
 	if (r->help_file.cb > 0)
 		return pext->p_str(r->pfile_name);
 	return EXT_ERR_SUCCESS;
@@ -1388,7 +1388,7 @@ static int rop_ext_pull_readstream_request(
 static int rop_ext_push_readstream_response(
 	EXT_PUSH *pext, const READSTREAM_RESPONSE *r)
 {
-	return pext->p_bin_s(&r->data);
+	return pext->p_bin_s(r->data);
 }
 
 static int rop_ext_pull_writestream_request(
@@ -1584,7 +1584,7 @@ static int rop_ext_push_fasttransfersourcegetbuffer_response(
 	TRY(pext->p_uint16(r->in_progress_count));
 	TRY(pext->p_uint16(r->total_step_count));
 	TRY(pext->p_uint8(r->reserved));
-	return pext->p_bin_s(&r->transfer_data);
+	return pext->p_bin_s(r->transfer_data);
 }
 
 static int rop_ext_pull_fasttransfersourcecopyfolder_request(
@@ -1795,7 +1795,7 @@ static int rop_ext_pull_getlocalreplicaids_request(
 static int rop_ext_push_getlocalreplicaids_response(
 	EXT_PUSH *pext, const GETLOCALREPLICAIDS_RESPONSE *r)
 {
-	TRY(pext->p_guid(&r->guid));
+	TRY(pext->p_guid(r->guid));
 	return pext->p_bytes(r->global_count.ab, 6);
 }
 
@@ -1841,7 +1841,7 @@ static int rop_ext_push_notification_data(
 	if (r->pafter_instance != nullptr)
 		TRY(pext->p_uint32(*r->pafter_instance));
 	if (r->prow_data != nullptr)
-		TRY(pext->p_bin_s(r->prow_data));
+		TRY(pext->p_bin_s(*r->prow_data));
 	if (r->pfolder_id != nullptr)
 		TRY(pext->p_uint64(*r->pfolder_id));
 	if (r->pmessage_id != nullptr)

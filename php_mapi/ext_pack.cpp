@@ -192,7 +192,7 @@ static int ext_pack_push_permission_row(
 	PUSH_CTX *pctx, const PERMISSION_ROW *r)
 {
 	TRY(pctx->p_uint32(r->flags));
-	TRY(pctx->p_bin(&r->entryid));
+	TRY(pctx->p_bin(r->entryid));
 	return pctx->p_uint32(r->member_rights);
 }
 
@@ -227,7 +227,7 @@ int PUSH_CTX::p_rule_list(const RULE_LIST *r)
 static int ext_pack_push_message_state(
 	PUSH_CTX *pctx, const MESSAGE_STATE *r)
 {
-	TRY(pctx->p_bin(&r->source_key));
+	TRY(pctx->p_bin(r->source_key));
 	return pctx->p_uint32(r->message_flags);
 }
 

@@ -345,7 +345,7 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	
 	auto tmp_guid = guid_random_new();
 	if (!ext_push.init(id_string, 256, 0) ||
-	    ext_push.p_guid(&tmp_guid) != EXT_ERR_SUCCESS)
+	    ext_push.p_guid(tmp_guid) != EXT_ERR_SUCCESS)
 		return false;
 	encode_hex_binary(id_string, 16, id_string + 16, 64);
 	id_string[0] = '<';

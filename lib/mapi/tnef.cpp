@@ -1657,7 +1657,7 @@ static int tnef_push_property_name(EXT_PUSH *pext, const PROPERTY_NAME *r)
 {
 	auto &ext = *pext;
 	
-	TRY(pext->p_guid(&r->guid));
+	TRY(pext->p_guid(r->guid));
 	if (r->kind != MNID_ID && r->kind != MNID_STRING)
 		return EXT_ERR_FORMAT;
 	uint32_t tmp_int = r->kind;
@@ -1733,7 +1733,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 		return pext->p_bytes(g_pad_bytes, tnef_align(tmp_int));
 	}
 	case PT_CLSID:
-		return pext->p_guid(static_cast<GUID *>(r->pvalue));
+		return pext->p_guid(*static_cast<GUID *>(r->pvalue));
 	case PT_SVREID:
 		return pext->p_svreid(static_cast<SVREID *>(r->pvalue));
 	case PT_OBJECT: {
@@ -1741,14 +1741,14 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 		auto bv = static_cast<BINARY *>(r->pvalue);
 		if (bv->cb != 0xFFFFFFFF) {
 			TRY(pext->p_uint32(bv->cb + 16));
-			TRY(pext->p_guid(&IID_IStorage));
+			TRY(pext->p_guid(IID_IStorage));
 			TRY(pext->p_bytes(bv->pb, bv->cb));
 			return pext->p_bytes(g_pad_bytes,
 			       tnef_align(bv->cb + 16));
 		}
 		uint32_t offset = ext.m_offset;
 		TRY(pext->advance(sizeof(uint32_t)));
-		TRY(pext->p_guid(&IID_IMessage));
+		TRY(pext->p_guid(IID_IMessage));
 		if (FALSE == tnef_serialize_internal(pext, TRUE,
 		    static_cast<MESSAGE_CONTENT *>(bv->pv), alloc, get_propname))
 			return EXT_ERR_FORMAT;
@@ -1842,7 +1842,7 @@ static int tnef_push_propval(EXT_PUSH *pext, const TNEF_PROPVAL *r,
 		auto ga = static_cast<GUID_ARRAY *>(r->pvalue);
 		TRY(pext->p_uint32(ga->count));
 		for (size_t i = 0; i < ga->count; ++i)
-			TRY(pext->p_guid(ga->pguid + i));
+			TRY(pext->p_guid(ga->pguid[i]));
 		return EXT_ERR_SUCCESS;
 	}
 	case PT_MV_BINARY: {

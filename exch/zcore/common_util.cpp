@@ -1207,7 +1207,7 @@ BINARY *common_util_calculate_folder_sourcekey(store_object *pstore,
 	}
 	longid.global_counter = rop_util_get_gc_array(folder_id);
 	if (!ext_push.init(pbin->pv, 22, 0) ||
-	    ext_push.p_guid(&longid.guid) != EXT_ERR_SUCCESS ||
+	    ext_push.p_guid(longid.guid) != EXT_ERR_SUCCESS ||
 	    ext_push.p_bytes(longid.global_counter.ab, 6) != EXT_ERR_SUCCESS)
 		return NULL;
 	return pbin;
@@ -1316,7 +1316,7 @@ BINARY *common_util_calculate_message_sourcekey(store_object *pstore,
 	longid.guid = pstore->guid();
 	longid.global_counter = rop_util_get_gc_array(message_id);
 	if (!ext_push.init(pbin->pv, 22, 0) ||
-	    ext_push.p_guid(&longid.guid) != EXT_ERR_SUCCESS ||
+	    ext_push.p_guid(longid.guid) != EXT_ERR_SUCCESS ||
 	    ext_push.p_bytes(longid.global_counter.ab, 6) != EXT_ERR_SUCCESS)
 		return NULL;
 	return pbin;
