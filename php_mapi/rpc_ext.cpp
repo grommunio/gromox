@@ -119,7 +119,7 @@ static zend_bool rpc_ext_push_resolvename_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
 	TRY(pctx->p_guid(ppayload->resolvename.hsession));
-	TRY(pctx->p_tarray_set(ppayload->resolvename.pcond_set));
+	TRY(pctx->p_tarray_set(*ppayload->resolvename.pcond_set));
 	return true;
 }
 
@@ -636,7 +636,7 @@ static zend_bool rpc_ext_push_modifyrecipients_request(
 	TRY(pctx->p_guid(ppayload->modifyrecipients.hsession));
 	TRY(pctx->p_uint32(ppayload->modifyrecipients.hmessage));
 	TRY(pctx->p_uint32(ppayload->modifyrecipients.flags));
-	TRY(pctx->p_tarray_set(ppayload->modifyrecipients.prcpt_list));
+	TRY(pctx->p_tarray_set(*ppayload->modifyrecipients.prcpt_list));
 	return true;
 }
 
@@ -708,7 +708,7 @@ static zend_bool rpc_ext_push_setpropvals_request(
 {
 	TRY(pctx->p_guid(ppayload->setpropvals.hsession));
 	TRY(pctx->p_uint32(ppayload->setpropvals.hobject));
-	TRY(pctx->p_tpropval_a(ppayload->setpropvals.ppropvals));
+	TRY(pctx->p_tpropval_a(*ppayload->setpropvals.ppropvals));
 	return true;
 }
 
@@ -773,7 +773,7 @@ static zend_bool rpc_ext_push_getnamedpropids_request(
 {
 	TRY(pctx->p_guid(ppayload->getnamedpropids.hsession));
 	TRY(pctx->p_uint32(ppayload->getnamedpropids.hstore));
-	TRY(pctx->p_propname_a(ppayload->getnamedpropids.ppropnames));
+	TRY(pctx->p_propname_a(*ppayload->getnamedpropids.ppropnames));
 	return true;
 }
 
@@ -789,7 +789,7 @@ static zend_bool rpc_ext_push_getpropnames_request(
 {
 	TRY(pctx->p_guid(ppayload->getpropnames.hsession));
 	TRY(pctx->p_uint32(ppayload->getpropnames.hstore));
-	TRY(pctx->p_propid_a(ppayload->getpropnames.ppropids));
+	TRY(pctx->p_propid_a(*ppayload->getpropnames.ppropids));
 	return true;
 }
 
@@ -1014,7 +1014,7 @@ static zend_bool rpc_ext_push_importmessage_request(
 	TRY(pctx->p_guid(ppayload->importmessage.hsession));
 	TRY(pctx->p_uint32(ppayload->importmessage.hctx));
 	TRY(pctx->p_uint32(ppayload->importmessage.flags));
-	TRY(pctx->p_tpropval_a(ppayload->importmessage.pproplist));
+	TRY(pctx->p_tpropval_a(*ppayload->importmessage.pproplist));
 	return true;
 }
 
@@ -1030,7 +1030,7 @@ static zend_bool rpc_ext_push_importfolder_request(
 {
 	TRY(pctx->p_guid(ppayload->importfolder.hsession));
 	TRY(pctx->p_uint32(ppayload->importfolder.hctx));
-	TRY(pctx->p_tpropval_a(ppayload->importfolder.pproplist));
+	TRY(pctx->p_tpropval_a(*ppayload->importfolder.pproplist));
 	return true;
 }
 

@@ -210,7 +210,7 @@ int PUSH_CTX::p_perm_set(const PERMISSION_SET *r)
 int PUSH_CTX::p_rule_data(const RULE_DATA *r)
 {
 	TRY(p_uint8(r->flags));
-	return p_tpropval_a(&r->propvals);
+	return p_tpropval_a(r->propvals);
 }
 
 int PUSH_CTX::p_rule_list(const RULE_LIST *r)

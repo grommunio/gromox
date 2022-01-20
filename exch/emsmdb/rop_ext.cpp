@@ -69,7 +69,7 @@ static int rop_ext_push_propidname_array(
 	for (size_t i = 0; i < r->count; ++i)
 		TRY(pext->p_uint16(r->ppropid[i]));
 	for (size_t i = 0; i < r->count; ++i)
-		TRY(pext->p_propname(&r->ppropname[i]));
+		TRY(pext->p_propname(r->ppropname[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -169,7 +169,7 @@ static int rop_ext_push_getreceivefoldertable_response(
 	columns.pproptag = deconst(proptags);
 	TRY(pext->p_uint32(r->rows.count));
 	for (size_t i = 0; i < r->rows.count; ++i)
-		TRY(pext->p_proprow(&columns, &r->rows.prows[i]));
+		TRY(pext->p_proprow(columns, r->rows.prows[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -710,7 +710,7 @@ static int rop_ext_push_findrow_response(
 	TRY(pext->p_uint8(r->bookmark_invisible));
 	if (NULL != r->prow) {
 		TRY(pext->p_uint8(1));
-		TRY(pext->p_proprow(r->pcolumns, r->prow));
+		TRY(pext->p_proprow(*r->pcolumns, *r->prow));
 		return EXT_ERR_SUCCESS;
 	} else {
 		return pext->p_uint8(0);
@@ -1131,7 +1131,7 @@ static int rop_ext_push_transportsend_response(
 		return pext->p_uint8(1);
 	} else {
 		TRY(pext->p_uint8(0));
-		return pext->p_tpropval_a(r->ppropvals);
+		return pext->p_tpropval_a(*r->ppropvals);
 	}
 }
 
@@ -1178,7 +1178,7 @@ static int rop_ext_pull_getpropertyidsfromnames_request(
 static int rop_ext_push_getpropertyidsfromnames_response(
 	EXT_PUSH *pext, const GETPROPERTYIDSFROMNAMES_RESPONSE *r)
 {
-	return pext->p_propid_a(&r->propids);
+	return pext->p_propid_a(r->propids);
 }
 
 static int rop_ext_pull_getnamesfrompropertyids_request(
@@ -1190,7 +1190,7 @@ static int rop_ext_pull_getnamesfrompropertyids_request(
 static int rop_ext_push_getnamesfrompropertyids_response(
 	EXT_PUSH *pext, const GETNAMESFROMPROPERTYIDS_RESPONSE *r)
 {
-	return pext->p_propname_a(&r->propnames);
+	return pext->p_propname_a(r->propnames);
 }
 
 static int rop_ext_pull_getpropertiesspecific_request(
@@ -1204,7 +1204,7 @@ static int rop_ext_pull_getpropertiesspecific_request(
 static int rop_ext_push_getpropertiesspecific_response(
 	EXT_PUSH *pext, const GETPROPERTIESSPECIFIC_RESPONSE *r)
 {
-	return pext->p_proprow(r->pproptags, &r->row);
+	return pext->p_proprow(*r->pproptags, r->row);
 }
 
 static int rop_ext_pull_getpropertiesall_request(
@@ -1217,7 +1217,7 @@ static int rop_ext_pull_getpropertiesall_request(
 static int rop_ext_push_getpropertiesall_response(
 	EXT_PUSH *pext, const GETPROPERTIESALL_RESPONSE *r)
 {
-	return pext->p_tpropval_a(&r->propvals);
+	return pext->p_tpropval_a(r->propvals);
 }
 
 static int rop_ext_push_getpropertieslist_response(

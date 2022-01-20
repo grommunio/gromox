@@ -1226,7 +1226,7 @@ static BINARY* common_util_to_folder_entryid(
 	}
 	pbin->pv = common_util_alloc(256);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
-	    ext_push.p_folder_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_folder_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -1277,7 +1277,7 @@ static BINARY* common_util_to_message_entryid(
 	}
 	pbin->pv = common_util_alloc(256);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
-	    ext_push.p_msg_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_msg_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;	
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -3864,7 +3864,7 @@ BINARY* common_util_to_private_folder_entryid(
 	}
 	pbin->pv = common_util_alloc(256);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
-	    ext_push.p_folder_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_folder_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -3903,7 +3903,7 @@ BINARY* common_util_to_private_message_entryid(
 	}
 	pbin->pv = common_util_alloc(256);
 	if (pbin->pv == nullptr || !ext_push.init(pbin->pv, 256, 0) ||
-	    ext_push.p_msg_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_msg_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
 	pbin->cb = ext_push.m_offset;
 	return pbin;

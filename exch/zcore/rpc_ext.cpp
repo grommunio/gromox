@@ -596,7 +596,7 @@ static BOOL rpc_ext_pull_resolvename_request(
 static BOOL rpc_ext_push_resolvename_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	QRF(pext->p_tarray_set(&ppayload->resolvename.result_set));
+	QRF(pext->p_tarray_set(ppayload->resolvename.result_set));
 	return TRUE;
 }
 
@@ -1273,7 +1273,7 @@ static BOOL rpc_ext_pull_getpropvals_request(
 static BOOL rpc_ext_push_getpropvals_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	QRF(pext->p_tpropval_a(&ppayload->getpropvals.propvals));
+	QRF(pext->p_tpropval_a(ppayload->getpropvals.propvals));
 	return TRUE;
 }
 
@@ -1329,7 +1329,7 @@ static BOOL rpc_ext_pull_getnamedpropids_request(
 static BOOL rpc_ext_push_getnamedpropids_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	QRF(pext->p_propid_a(&ppayload->getnamedpropids.propids));
+	QRF(pext->p_propid_a(ppayload->getnamedpropids.propids));
 	return TRUE;
 }
 
@@ -1348,7 +1348,7 @@ static BOOL rpc_ext_pull_getpropnames_request(
 static BOOL rpc_ext_push_getpropnames_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	QRF(pext->p_propname_a(&ppayload->getpropnames.propnames));
+	QRF(pext->p_propname_a(ppayload->getpropnames.propnames));
 	return TRUE;
 }
 
@@ -1463,7 +1463,7 @@ static BOOL rpc_ext_push_syncmessagechange_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
 	QRF(pext->p_uint8(ppayload->syncmessagechange.b_new));
-	QRF(pext->p_tpropval_a(&ppayload->syncmessagechange.proplist));
+	QRF(pext->p_tpropval_a(ppayload->syncmessagechange.proplist));
 	return TRUE;
 }
 
@@ -1478,7 +1478,7 @@ static BOOL rpc_ext_pull_syncfolderchange_request(
 static BOOL rpc_ext_push_syncfolderchange_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	QRF(pext->p_tpropval_a(&ppayload->syncfolderchange.proplist));
+	QRF(pext->p_tpropval_a(ppayload->syncfolderchange.proplist));
 	return TRUE;
 }
 

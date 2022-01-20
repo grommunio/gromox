@@ -690,7 +690,7 @@ static int nsp_ext_p_colrow(nsp_ext_push &ext, const nsp_rowset2 *colrow)
 	TRY(ext.p_proptag_a(colrow->columns));
 	TRY(ext.p_uint32(colrow->row_count));
 	for (size_t i = 0; i < colrow->row_count; ++i)
-		TRY(ext.p_proprow(&colrow->columns, &colrow->rows[i]));
+		TRY(ext.p_proprow(colrow->columns, colrow->rows[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -780,7 +780,7 @@ int nsp_ext_push::p_nsp_response(const getprops_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_tpropval_a(rsp.row));
+		TRY(p_tpropval_a(*rsp.row));
 	}
 	return p_uint32(0);
 }
@@ -803,7 +803,7 @@ int nsp_ext_push::p_nsp_response(const getspecialtable_response &rsp)
 		TRY(p_uint8(0xFF));
 		TRY(p_uint32(rsp.count));
 		for (size_t i = 0; i < rsp.count; ++i)
-			TRY(p_tpropval_a(&rsp.row[i]));
+			TRY(p_tpropval_a(rsp.row[i]));
 	}
 	return p_uint32(0);
 }
@@ -818,7 +818,7 @@ int nsp_ext_push::p_nsp_response(const gettemplateinfo_response &rsp)
 		TRY(p_uint8(0));
 	} else {
 		TRY(p_uint8(0xFF));
-		TRY(p_tpropval_a(rsp.row));
+		TRY(p_tpropval_a(*rsp.row));
 	}
 	return p_uint32(0);
 }

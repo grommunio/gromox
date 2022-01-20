@@ -77,7 +77,7 @@ static int exmdb_ext_push_get_named_propids_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
 {
 	TRY(pext->p_bool(ppayload->get_named_propids.b_create));
-	return pext->p_propname_a(ppayload->get_named_propids.ppropnames);
+	return pext->p_propname_a(*ppayload->get_named_propids.ppropnames);
 }
 
 static int exmdb_ext_pull_get_named_propnames_request(
@@ -92,7 +92,7 @@ static int exmdb_ext_pull_get_named_propnames_request(
 static int exmdb_ext_push_get_named_propnames_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
 {
-	return pext->p_propid_a(ppayload->get_named_propnames.ppropids);
+	return pext->p_propid_a(*ppayload->get_named_propnames.ppropids);
 }
 
 static int exmdb_ext_pull_get_mapping_guid_request(
@@ -150,7 +150,7 @@ static int exmdb_ext_push_set_store_properties_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
 {
 	TRY(pext->p_uint32(ppayload->get_store_properties.cpid));
-	return pext->p_tpropval_a(ppayload->set_store_properties.ppropvals);
+	return pext->p_tpropval_a(*ppayload->set_store_properties.ppropvals);
 }
 
 static int exmdb_ext_pull_remove_store_properties_request(
@@ -284,7 +284,7 @@ static int exmdb_ext_push_create_folder_by_properties_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
 {
 	TRY(pext->p_uint32(ppayload->create_folder_by_properties.cpid));
-	return pext->p_tpropval_a(ppayload->create_folder_by_properties.pproperties);
+	return pext->p_tpropval_a(*ppayload->create_folder_by_properties.pproperties);
 }
 
 static int exmdb_ext_pull_get_folder_all_proptags_request(
@@ -334,7 +334,7 @@ static int exmdb_ext_push_set_folder_properties_request(
 {
 	TRY(pext->p_uint32(ppayload->set_folder_properties.cpid));
 	TRY(pext->p_uint64(ppayload->set_folder_properties.folder_id));
-	return pext->p_tpropval_a(ppayload->set_folder_properties.pproperties);
+	return pext->p_tpropval_a(*ppayload->set_folder_properties.pproperties);
 }
 
 static int exmdb_ext_pull_remove_folder_properties_request(
@@ -1294,7 +1294,7 @@ static int exmdb_ext_push_write_attachment_instance_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
 {
 	TRY(pext->p_uint32(ppayload->write_attachment_instance.instance_id));
-	TRY(pext->p_tpropval_a(&ppayload->write_attachment_instance.pattctnt->proplist));
+	TRY(pext->p_tpropval_a(ppayload->write_attachment_instance.pattctnt->proplist));
 	if (NULL == ppayload->write_attachment_instance.pattctnt->pembedded) {
 		TRY(pext->p_uint8(0));
 	} else {
@@ -1399,7 +1399,7 @@ static int exmdb_ext_push_set_instance_properties_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
 {
 	TRY(pext->p_uint32(ppayload->set_instance_properties.instance_id));
-	return pext->p_tpropval_a(ppayload->set_instance_properties.pproperties);
+	return pext->p_tpropval_a(*ppayload->set_instance_properties.pproperties);
 }
 
 static int exmdb_ext_pull_remove_instance_properties_request(
@@ -1499,7 +1499,7 @@ static int exmdb_ext_push_update_message_instance_rcpts_request(
 	EXT_PUSH *pext, const REQUEST_PAYLOAD *ppayload)
 {
 	TRY(pext->p_uint32(ppayload->update_message_instance_rcpts.instance_id));
-	return pext->p_tarray_set(ppayload->update_message_instance_rcpts.pset);
+	return pext->p_tarray_set(*ppayload->update_message_instance_rcpts.pset);
 }
 
 static int exmdb_ext_pull_copy_instance_rcpts_request(
@@ -1681,7 +1681,7 @@ static int exmdb_ext_push_set_message_properties_request(
 	}
 	TRY(pext->p_uint32(ppayload->set_message_properties.cpid));
 	TRY(pext->p_uint64(ppayload->set_message_properties.message_id));
-	return pext->p_tpropval_a(ppayload->set_message_properties.pproperties);
+	return pext->p_tpropval_a(*ppayload->set_message_properties.pproperties);
 }
 
 static int exmdb_ext_pull_set_message_read_state_request(
@@ -3329,7 +3329,7 @@ static int exmdb_ext_pull_get_all_named_propids_response(
 static int exmdb_ext_push_get_all_named_propids_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_propid_a(&ppayload->get_all_named_propids.propids);
+	return pext->p_propid_a(ppayload->get_all_named_propids.propids);
 }
 
 static int exmdb_ext_pull_get_named_propids_response(
@@ -3341,7 +3341,7 @@ static int exmdb_ext_pull_get_named_propids_response(
 static int exmdb_ext_push_get_named_propids_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_propid_a(&ppayload->get_named_propids.propids);
+	return pext->p_propid_a(ppayload->get_named_propids.propids);
 }
 
 static int exmdb_ext_pull_get_named_propnames_response(
@@ -3353,7 +3353,7 @@ static int exmdb_ext_pull_get_named_propnames_response(
 static int exmdb_ext_push_get_named_propnames_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_propname_a(&ppayload->get_named_propnames.propnames);
+	return pext->p_propname_a(ppayload->get_named_propnames.propnames);
 }
 
 static int exmdb_ext_pull_get_mapping_guid_response(
@@ -3405,7 +3405,7 @@ static int exmdb_ext_pull_get_store_properties_response(
 static int exmdb_ext_push_get_store_properties_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_tpropval_a(&ppayload->get_store_properties.propvals);
+	return pext->p_tpropval_a(ppayload->get_store_properties.propvals);
 }
 
 static int exmdb_ext_pull_set_store_properties_response(
@@ -3417,7 +3417,7 @@ static int exmdb_ext_pull_set_store_properties_response(
 static int exmdb_ext_push_set_store_properties_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_problem_a(&ppayload->set_store_properties.problems);
+	return pext->p_problem_a(ppayload->set_store_properties.problems);
 }
 
 static int exmdb_ext_pull_check_mailbox_permission_response(
@@ -3467,7 +3467,7 @@ static int exmdb_ext_pull_get_folder_class_table_response(
 static int exmdb_ext_push_get_folder_class_table_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_tarray_set(&ppayload->get_folder_class_table.table);
+	return pext->p_tarray_set(ppayload->get_folder_class_table.table);
 }
 
 static int exmdb_ext_pull_check_folder_id_response(
@@ -3491,7 +3491,7 @@ static int exmdb_ext_pull_query_folder_messages_response(
 static int exmdb_ext_push_query_folder_messages_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_tarray_set(&ppayload->query_folder_messages.set);
+	return pext->p_tarray_set(ppayload->query_folder_messages.set);
 }
 
 static int exmdb_ext_pull_check_folder_deleted_response(
@@ -3563,7 +3563,7 @@ static int exmdb_ext_pull_get_folder_properties_response(
 static int exmdb_ext_push_get_folder_properties_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_tpropval_a(&ppayload->get_folder_properties.propvals);
+	return pext->p_tpropval_a(ppayload->get_folder_properties.propvals);
 }
 
 static int exmdb_ext_pull_set_folder_properties_response(
@@ -3575,7 +3575,7 @@ static int exmdb_ext_pull_set_folder_properties_response(
 static int exmdb_ext_push_set_folder_properties_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_problem_a(&ppayload->set_folder_properties.problems);
+	return pext->p_problem_a(ppayload->set_folder_properties.problems);
 }
 
 static int exmdb_ext_pull_delete_folder_response(
@@ -3848,7 +3848,7 @@ static int exmdb_ext_pull_query_table_response(
 static int exmdb_ext_push_query_table_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_tarray_set(&ppayload->query_table.set);
+	return pext->p_tarray_set(ppayload->query_table.set);
 }
 
 static int exmdb_ext_pull_match_table_response(
@@ -3862,7 +3862,7 @@ static int exmdb_ext_push_match_table_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
 	TRY(pext->p_int32(ppayload->match_table.position));
-	return pext->p_tpropval_a(&ppayload->match_table.propvals);
+	return pext->p_tpropval_a(ppayload->match_table.propvals);
 }
 
 static int exmdb_ext_pull_locate_table_response(
@@ -3888,7 +3888,7 @@ static int exmdb_ext_pull_read_table_row_response(
 static int exmdb_ext_push_read_table_row_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_tpropval_a(&ppayload->read_table_row.propvals);
+	return pext->p_tpropval_a(ppayload->read_table_row.propvals);
 }
 
 static int exmdb_ext_pull_mark_table_response(
@@ -4083,7 +4083,7 @@ static int exmdb_ext_push_write_message_instance_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
 	TRY(pext->p_proptag_a(ppayload->write_message_instance.proptags));
-	return pext->p_problem_a(&ppayload->write_message_instance.problems);
+	return pext->p_problem_a(ppayload->write_message_instance.problems);
 }
 
 static int exmdb_ext_pull_load_attachment_instance_response(
@@ -4132,7 +4132,7 @@ static int exmdb_ext_pull_read_attachment_instance_response(
 static int exmdb_ext_push_read_attachment_instance_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	TRY(pext->p_tpropval_a(&ppayload->read_attachment_instance.attctnt.proplist));
+	TRY(pext->p_tpropval_a(ppayload->read_attachment_instance.attctnt.proplist));
 	if (ppayload->read_attachment_instance.attctnt.pembedded == nullptr)
 		return pext->p_uint8(0);
 	TRY(pext->p_uint8(1));
@@ -4148,7 +4148,7 @@ static int exmdb_ext_pull_write_attachment_instance_response(
 static int exmdb_ext_push_write_attachment_instance_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_problem_a(&ppayload->write_attachment_instance.problems);
+	return pext->p_problem_a(ppayload->write_attachment_instance.problems);
 }
 
 static int exmdb_ext_pull_flush_instance_response(
@@ -4184,7 +4184,7 @@ static int exmdb_ext_pull_get_instance_properties_response(
 static int exmdb_ext_push_get_instance_properties_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_tpropval_a(&ppayload->get_instance_properties.propvals);
+	return pext->p_tpropval_a(ppayload->get_instance_properties.propvals);
 }
 
 static int exmdb_ext_pull_set_instance_properties_response(
@@ -4196,7 +4196,7 @@ static int exmdb_ext_pull_set_instance_properties_response(
 static int exmdb_ext_push_set_instance_properties_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_problem_a(&ppayload->set_instance_properties.problems);
+	return pext->p_problem_a(ppayload->set_instance_properties.problems);
 }
 
 static int exmdb_ext_pull_remove_instance_properties_response(
@@ -4208,7 +4208,7 @@ static int exmdb_ext_pull_remove_instance_properties_response(
 static int exmdb_ext_push_remove_instance_properties_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_problem_a(&ppayload->remove_instance_properties.problems);
+	return pext->p_problem_a(ppayload->remove_instance_properties.problems);
 }
 
 static int exmdb_ext_pull_check_instance_cycle_response(
@@ -4256,7 +4256,7 @@ static int exmdb_ext_pull_get_message_instance_rcpts_response(
 static int exmdb_ext_push_get_message_instance_rcpts_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_tarray_set(&ppayload->get_message_instance_rcpts.set);
+	return pext->p_tarray_set(ppayload->get_message_instance_rcpts.set);
 }
 
 static int exmdb_ext_pull_copy_instance_rcpts_response(
@@ -4304,7 +4304,7 @@ static int exmdb_ext_pull_query_message_instance_attachment_table_response(
 static int exmdb_ext_push_query_message_instance_attachment_table_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_tarray_set(&ppayload->query_message_instance_attachment_table.set);
+	return pext->p_tarray_set(ppayload->query_message_instance_attachment_table.set);
 }
 
 static int exmdb_ext_pull_copy_instance_attachments_response(
@@ -4328,7 +4328,7 @@ static int exmdb_ext_pull_get_message_rcpts_response(
 static int exmdb_ext_push_get_message_rcpts_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_tarray_set(&ppayload->get_message_rcpts.set);
+	return pext->p_tarray_set(ppayload->get_message_rcpts.set);
 }
 
 static int exmdb_ext_pull_get_message_properties_response(
@@ -4340,7 +4340,7 @@ static int exmdb_ext_pull_get_message_properties_response(
 static int exmdb_ext_push_get_message_properties_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_tpropval_a(&ppayload->get_message_properties.propvals);
+	return pext->p_tpropval_a(ppayload->get_message_properties.propvals);
 }
 
 static int exmdb_ext_pull_set_message_properties_response(
@@ -4352,7 +4352,7 @@ static int exmdb_ext_pull_set_message_properties_response(
 static int exmdb_ext_push_set_message_properties_response(
 	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
 {
-	return pext->p_problem_a(&ppayload->set_message_properties.problems);
+	return pext->p_problem_a(ppayload->set_message_properties.problems);
 }
 
 static int exmdb_ext_pull_set_message_read_state_response(
@@ -4602,7 +4602,7 @@ static int exmdb_ext_push_get_hierarchy_sync_response(
 {
 	TRY(pext->p_uint32(ppayload->get_hierarchy_sync.fldchgs.count));
 	for (size_t i = 0; i < ppayload->get_hierarchy_sync.fldchgs.count; ++i)
-		TRY(pext->p_tpropval_a(ppayload->get_hierarchy_sync.fldchgs.pfldchgs + i));
+		TRY(pext->p_tpropval_a(ppayload->get_hierarchy_sync.fldchgs.pfldchgs[i]));
 	TRY(pext->p_uint64(ppayload->get_hierarchy_sync.last_cn));
 	TRY(pext->p_eid_a(&ppayload->get_hierarchy_sync.given_fids));
 	return pext->p_eid_a(&ppayload->get_hierarchy_sync.deleted_fids);

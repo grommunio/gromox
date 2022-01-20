@@ -281,7 +281,7 @@ uint32_t rop_queryrows(uint8_t flags, uint8_t forward_read, uint16_t row_count,
 			    ptable->get_columns(), &tmp_row))
 				return ecMAPIOOM;
 			uint32_t last_offset = ext.m_offset;
-			if (pext->p_proprow(ptable->get_columns(), &tmp_row) != EXT_ERR_SUCCESS) {
+			if (pext->p_proprow(*ptable->get_columns(), tmp_row) != EXT_ERR_SUCCESS) {
 				ext.m_offset = last_offset;
 				break;
 			}
@@ -666,7 +666,7 @@ uint32_t rop_expandrow(uint16_t max_count, uint64_t category_id,
 		    ptable->get_columns(), &tmp_row))
 			return ecMAPIOOM;
 		uint32_t last_offset = ext.m_offset;
-		if (pext->p_proprow(ptable->get_columns(), &tmp_row) != EXT_ERR_SUCCESS) {
+		if (pext->p_proprow(*ptable->get_columns(), tmp_row) != EXT_ERR_SUCCESS) {
 			ext.m_offset = last_offset;
 			break;
 		}

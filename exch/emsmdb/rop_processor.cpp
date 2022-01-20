@@ -639,7 +639,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 				}
 				if (FALSE == common_util_propvals_to_row(
 					&propvals, pcolumns, &tmp_row) ||
-				    ext_push1.p_proprow(pcolumns, &tmp_row) != EXT_ERR_SUCCESS)
+				    ext_push1.p_proprow(*pcolumns, tmp_row) != EXT_ERR_SUCCESS)
 					goto NEXT_NOTIFY;
 				tmp_bin.cb = ext_push1.m_offset;
 				tmp_bin.pb = ext_push1.m_udata;

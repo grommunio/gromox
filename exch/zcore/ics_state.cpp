@@ -107,7 +107,7 @@ BINARY *ics_state::serialize()
 			return NULL;
 	}
 	if (!ext_push.init(nullptr, 0, 0) ||
-	    ext_push.p_tpropval_a(pproplist.get()) != EXT_ERR_SUCCESS)
+	    ext_push.p_tpropval_a(*pproplist) != EXT_ERR_SUCCESS)
 		return NULL;
 	pproplist.reset();
 	auto pbin = cu_alloc<BINARY>();

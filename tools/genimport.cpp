@@ -503,7 +503,7 @@ void gi_name_map_write(const gi_name_map &map)
 			{xn.kind, xn.guid, xn.lid,
 			deconst(xn.kind == MNID_STRING ? xn.name.c_str() : nullptr)};
 		if (ep.p_uint32(propid) != EXT_ERR_SUCCESS ||
-		    ep.p_propname(&propname) != EXT_ERR_SUCCESS)
+		    ep.p_propname(propname) != EXT_ERR_SUCCESS)
 			throw YError("PG-1111");
 	}
 	uint64_t xsize = cpu_to_le64(ep.m_offset);

@@ -121,7 +121,7 @@ static int exmdb_client_push_get_named_propids(
 {
 	TRY(pext->p_str(r->dir));
 	TRY(pext->p_bool(r->b_create));
-	return pext->p_propname_a(r->ppropnames);
+	return pext->p_propname_a(*r->ppropnames);
 }
 
 static int exmdb_client_push_check_folder_permission_request(

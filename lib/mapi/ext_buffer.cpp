@@ -2458,7 +2458,7 @@ static int ext_buffer_push_restriction_content(
 {
 	TRY(pext->p_uint32(r->fuzzy_level));
 	TRY(pext->p_uint32(r->proptag));
-	return pext->p_tagged_pv(&r->propval);
+	return pext->p_tagged_pv(r->propval);
 }
 
 static int ext_buffer_push_restriction_property(
@@ -2466,7 +2466,7 @@ static int ext_buffer_push_restriction_property(
 {
 	TRY(pext->p_uint8(r->relop));
 	TRY(pext->p_uint32(r->proptag));
-	return pext->p_tagged_pv(&r->propval);
+	return pext->p_tagged_pv(r->propval);
 }
 
 static int ext_buffer_push_restriction_propcompare(
@@ -2513,7 +2513,7 @@ static int ext_buffer_push_restriction_comment(
 		return EXT_ERR_FORMAT;
 	TRY(pext->p_uint8(r->count));
 	for (size_t i = 0; i < r->count; ++i)
-		TRY(pext->p_tagged_pv(&r->ppropval[i]));
+		TRY(pext->p_tagged_pv(r->ppropval[i]));
 	if (NULL != r->pres) {
 		TRY(pext->p_uint8(1));
 		return pext->p_restriction(*r->pres);
@@ -2646,7 +2646,7 @@ static int ext_buffer_push_recipient_block(
 	TRY(pext->p_uint8(r->reserved));
 	TRY(pext->p_uint16(r->count));
 	for (size_t i = 0; i < r->count; ++i)
-		TRY(pext->p_tagged_pv(&r->ppropval[i]));
+		TRY(pext->p_tagged_pv(r->ppropval[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2697,7 +2697,7 @@ static int ext_buffer_push_action_block(
 		TRY(ext_buffer_push_forwarddelegate_action(pext, static_cast<FORWARDDELEGATE_ACTION *>(r->pdata)));
 		break;
 	case OP_TAG:
-		TRY(pext->p_tagged_pv(static_cast<TAGGED_PROPVAL *>(r->pdata)));
+		TRY(pext->p_tagged_pv(*static_cast<TAGGED_PROPVAL *>(r->pdata)));
 	case OP_DELETE:
 	case OP_MARK_AS_READ:
 		break;
@@ -2735,7 +2735,7 @@ int EXT_PUSH::p_propval(uint16_t type, const void *pval)
 	}
 	switch (type) {
 	case PT_UNSPECIFIED:
-		return p_typed_pv(static_cast<const TYPED_PROPVAL *>(pval));
+		return p_typed_pv(*static_cast<const TYPED_PROPVAL *>(pval));
 	case PT_SHORT:
 		return p_uint16(*static_cast<const uint16_t *>(pval));
 	case PT_LONG:
@@ -2793,16 +2793,16 @@ int EXT_PUSH::p_propval(uint16_t type, const void *pval)
 	}
 }
 
-int EXT_PUSH::p_typed_pv(const TYPED_PROPVAL *r)
+int EXT_PUSH::p_typed_pv(const TYPED_PROPVAL &r)
 {
-	TRY(p_uint16(r->type));
-	return p_propval(r->type, r->pvalue);
+	TRY(p_uint16(r.type));
+	return p_propval(r.type, r.pvalue);
 }
 
-int EXT_PUSH::p_tagged_pv(const TAGGED_PROPVAL *r)
+int EXT_PUSH::p_tagged_pv(const TAGGED_PROPVAL &r)
 {
-	TRY(p_uint32(r->proptag));
-	return p_propval(PROP_TYPE(r->proptag), r->pvalue);
+	TRY(p_uint32(r.proptag));
+	return p_propval(PROP_TYPE(r.proptag), r.pvalue);
 }
 
 int EXT_PUSH::p_longterm(const LONG_TERM_ID &r)
@@ -2836,16 +2836,16 @@ int EXT_PUSH::p_proptag_a(const LPROPTAG_ARRAY &r)
 	return EXT_ERR_SUCCESS;
 }
 
-int EXT_PUSH::p_propname(const PROPERTY_NAME *r)
+int EXT_PUSH::p_propname(const PROPERTY_NAME &r)
 {
-	TRY(p_uint8(r->kind));
-	TRY(p_guid(r->guid));
-	if (r->kind == MNID_ID) {
-		TRY(p_uint32(r->lid));
-	} else if (r->kind == MNID_STRING) {
+	TRY(p_uint8(r.kind));
+	TRY(p_guid(r.guid));
+	if (r.kind == MNID_ID) {
+		TRY(p_uint32(r.lid));
+	} else if (r.kind == MNID_STRING) {
 		uint32_t offset = m_offset;
 		TRY(advance(sizeof(uint8_t)));
-		TRY(p_wstr(r->pname));
+		TRY(p_wstr(r.pname));
 		uint8_t name_size = m_offset - (offset + sizeof(uint8_t));
 		uint32_t offset1 = m_offset;
 		m_offset = offset;
@@ -2855,59 +2855,59 @@ int EXT_PUSH::p_propname(const PROPERTY_NAME *r)
 	return EXT_ERR_SUCCESS;
 }
 
-int EXT_PUSH::p_propname_a(const PROPNAME_ARRAY *r)
+int EXT_PUSH::p_propname_a(const PROPNAME_ARRAY &r)
 {
-	TRY(p_uint16(r->count));
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(p_propname(&r->ppropname[i]));
+	TRY(p_uint16(r.count));
+	for (size_t i = 0; i < r.count; ++i)
+		TRY(p_propname(r.ppropname[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-int EXT_PUSH::p_propid_a(const PROPID_ARRAY *r)
+int EXT_PUSH::p_propid_a(const PROPID_ARRAY &r)
 {
-	TRY(p_uint16(r->count));
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(p_uint16(r->ppropid[i]));
+	TRY(p_uint16(r.count));
+	for (size_t i = 0; i < r.count; ++i)
+		TRY(p_uint16(r.ppropid[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-int EXT_PUSH::p_tpropval_a(const TPROPVAL_ARRAY *r)
+int EXT_PUSH::p_tpropval_a(const TPROPVAL_ARRAY &r)
 {
-	TRY(p_uint16(r->count));
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(p_tagged_pv(&r->ppropval[i]));
+	TRY(p_uint16(r.count));
+	for (size_t i = 0; i < r.count; ++i)
+		TRY(p_tagged_pv(r.ppropval[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-int EXT_PUSH::p_tpropval_a(const LTPROPVAL_ARRAY *r)
+int EXT_PUSH::p_tpropval_a(const LTPROPVAL_ARRAY &r)
 {
-	TRY(p_uint32(r->count));
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(p_tagged_pv(&r->propval[i]));
+	TRY(p_uint32(r.count));
+	for (size_t i = 0; i < r.count; ++i)
+		TRY(p_tagged_pv(r.propval[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-int EXT_PUSH::p_tarray_set(const TARRAY_SET *r)
+int EXT_PUSH::p_tarray_set(const TARRAY_SET &r)
 {
-	TRY(p_uint32(r->count));
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(p_tpropval_a(r->pparray[i]));
+	TRY(p_uint32(r.count));
+	for (size_t i = 0; i < r.count; ++i)
+		TRY(p_tpropval_a(*r.pparray[i]));
 	return EXT_ERR_SUCCESS;
 }
 
 
-static int ext_buffer_push_property_problem(EXT_PUSH *pext, const PROPERTY_PROBLEM *r)
+static int ext_buffer_push_property_problem(EXT_PUSH *pext, const PROPERTY_PROBLEM &r)
 {
-	TRY(pext->p_uint16(r->index));
-	TRY(pext->p_uint32(r->proptag));
-	return pext->p_uint32(r->err);
+	TRY(pext->p_uint16(r.index));
+	TRY(pext->p_uint32(r.proptag));
+	return pext->p_uint32(r.err);
 }
 
-int EXT_PUSH::p_problem_a(const PROBLEM_ARRAY *r)
+int EXT_PUSH::p_problem_a(const PROBLEM_ARRAY &r)
 {
-	TRY(p_uint16(r->count));
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(ext_buffer_push_property_problem(this, &r->pproblem[i]));
+	TRY(p_uint16(r.count));
+	for (size_t i = 0; i < r.count; ++i)
+		TRY(ext_buffer_push_property_problem(this, r.pproblem[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2919,49 +2919,49 @@ int EXT_PUSH::p_xid(const XID &xid)
 	return p_bytes(xid.local_id, xid.size - 16);
 }
 
-int EXT_PUSH::p_folder_eid(const FOLDER_ENTRYID *r)
+int EXT_PUSH::p_folder_eid(const FOLDER_ENTRYID &r)
 {
-	TRY(p_uint32(r->flags));
-	TRY(p_guid(r->provider_uid));
-	TRY(p_uint16(r->folder_type));
-	TRY(p_guid(r->database_guid));
-	TRY(p_bytes(r->global_counter.ab, 6));
-	return p_bytes(r->pad, 2);
+	TRY(p_uint32(r.flags));
+	TRY(p_guid(r.provider_uid));
+	TRY(p_uint16(r.folder_type));
+	TRY(p_guid(r.database_guid));
+	TRY(p_bytes(r.global_counter.ab, 6));
+	return p_bytes(r.pad, 2);
 }
 
-int EXT_PUSH::p_msg_eid(const MESSAGE_ENTRYID *r)
+int EXT_PUSH::p_msg_eid(const MESSAGE_ENTRYID &r)
 {
-	TRY(p_uint32(r->flags));
-	TRY(p_guid(r->provider_uid));
-	TRY(p_uint16(r->message_type));
-	TRY(p_guid(r->folder_database_guid));
-	TRY(p_bytes(r->folder_global_counter.ab, 6));
-	TRY(p_bytes(r->pad1, 2));
-	TRY(p_guid(r->message_database_guid));
-	TRY(p_bytes(r->message_global_counter.ab, 6));
-	return p_bytes(r->pad2, 2);
+	TRY(p_uint32(r.flags));
+	TRY(p_guid(r.provider_uid));
+	TRY(p_uint16(r.message_type));
+	TRY(p_guid(r.folder_database_guid));
+	TRY(p_bytes(r.folder_global_counter.ab, 6));
+	TRY(p_bytes(r.pad1, 2));
+	TRY(p_guid(r.message_database_guid));
+	TRY(p_bytes(r.message_global_counter.ab, 6));
+	return p_bytes(r.pad2, 2);
 }
 
-int EXT_PUSH::p_flagged_pv(uint16_t type, const FLAGGED_PROPVAL *r)
+int EXT_PUSH::p_flagged_pv(uint16_t type, const FLAGGED_PROPVAL &r)
 {
 	void *pvalue = nullptr;
 	
 	if (type == PT_UNSPECIFIED && !(m_flags & EXT_FLAG_ABK)) {
-		if (FLAGGED_PROPVAL_FLAG_UNAVAILABLE == r->flag) {
+		if (FLAGGED_PROPVAL_FLAG_UNAVAILABLE == r.flag) {
 			type = 0;
-		} else if (FLAGGED_PROPVAL_FLAG_ERROR == r->flag) {
+		} else if (FLAGGED_PROPVAL_FLAG_ERROR == r.flag) {
 			type = PT_ERROR;
-			pvalue = r->pvalue;
+			pvalue = r.pvalue;
 		} else {
-			type = ((TYPED_PROPVAL*)r->pvalue)->type;
-			pvalue = ((TYPED_PROPVAL*)r->pvalue)->pvalue;
+			type = static_cast<TYPED_PROPVAL *>(r.pvalue)->type;
+			pvalue = static_cast<TYPED_PROPVAL *>(r.pvalue)->pvalue;
 		}
 		TRY(p_uint16(type));
 	} else {
-		pvalue = r->pvalue;
+		pvalue = r.pvalue;
 	}
-	TRY(p_uint8(r->flag));
-	switch (r->flag) {
+	TRY(p_uint8(r.flag));
+	switch (r.flag) {
 	case FLAGGED_PROPVAL_FLAG_AVAILABLE:
 		return p_propval(type, pvalue);
 	case FLAGGED_PROPVAL_FLAG_UNAVAILABLE:
@@ -2973,33 +2973,33 @@ int EXT_PUSH::p_flagged_pv(uint16_t type, const FLAGGED_PROPVAL *r)
 	}
 }
 
-int EXT_PUSH::p_proprow(const PROPTAG_ARRAY *pcolumns, const PROPERTY_ROW *r)
+int EXT_PUSH::p_proprow(const PROPTAG_ARRAY &cols, const PROPERTY_ROW &r)
 {
-	TRY(p_uint8(r->flag));
-	if (PROPERTY_ROW_FLAG_NONE == r->flag) {
-		for (size_t i = 0; i < pcolumns->count; ++i)
-			TRY(p_propval(PROP_TYPE(pcolumns->pproptag[i]), r->pppropval[i]));
+	TRY(p_uint8(r.flag));
+	if (PROPERTY_ROW_FLAG_NONE == r.flag) {
+		for (size_t i = 0; i < cols.count; ++i)
+			TRY(p_propval(PROP_TYPE(cols.pproptag[i]), r.pppropval[i]));
 		return EXT_ERR_SUCCESS;
-	} else if (PROPERTY_ROW_FLAG_FLAGGED == r->flag) {
-		for (size_t i = 0; i < pcolumns->count; ++i)
-			TRY(p_flagged_pv(PROP_TYPE(pcolumns->pproptag[i]),
-			         static_cast<FLAGGED_PROPVAL *>(r->pppropval[i])));
+	} else if (PROPERTY_ROW_FLAG_FLAGGED == r.flag) {
+		for (size_t i = 0; i < cols.count; ++i)
+			TRY(p_flagged_pv(PROP_TYPE(cols.pproptag[i]),
+			         *static_cast<FLAGGED_PROPVAL *>(r.pppropval[i])));
 		return EXT_ERR_SUCCESS;
 	}
 	return EXT_ERR_BAD_SWITCH;
 }
 
-int EXT_PUSH::p_proprow(const LPROPTAG_ARRAY *cols, const PROPERTY_ROW *r)
+int EXT_PUSH::p_proprow(const LPROPTAG_ARRAY &cols, const PROPERTY_ROW &r)
 {
-	TRY(p_uint8(r->flag));
-	if (r->flag == PROPERTY_ROW_FLAG_NONE) {
-		for (size_t i = 0; i < cols->cvalues; ++i)
-			TRY(p_propval(PROP_TYPE(cols->pproptag[i]), r->pppropval[i]));
+	TRY(p_uint8(r.flag));
+	if (r.flag == PROPERTY_ROW_FLAG_NONE) {
+		for (size_t i = 0; i < cols.cvalues; ++i)
+			TRY(p_propval(PROP_TYPE(cols.pproptag[i]), r.pppropval[i]));
 		return EXT_ERR_SUCCESS;
-	} else if (r->flag == PROPERTY_ROW_FLAG_FLAGGED) {
-		for (size_t i = 0; i < cols->cvalues; ++i)
-			TRY(p_flagged_pv(PROP_TYPE(cols->pproptag[i]),
-			         static_cast<FLAGGED_PROPVAL *>(r->pppropval[i])));
+	} else if (r.flag == PROPERTY_ROW_FLAG_FLAGGED) {
+		for (size_t i = 0; i < cols.cvalues; ++i)
+			TRY(p_flagged_pv(PROP_TYPE(cols.pproptag[i]),
+			         *static_cast<FLAGGED_PROPVAL *>(r.pppropval[i])));
 		return EXT_ERR_SUCCESS;
 	}
 	return EXT_ERR_BAD_SWITCH;
@@ -3094,7 +3094,7 @@ int EXT_PUSH::p_recipient_row(const PROPTAG_ARRAY *pproptags, const RECIPIENT_RO
 		return EXT_ERR_FORMAT;
 	proptags.count = r->count;
 	proptags.pproptag = (uint32_t*)pproptags->pproptag;
-	return p_proprow(&proptags, &r->properties);
+	return p_proprow(proptags, r->properties);
 }
 
 int EXT_PUSH::p_openrecipient_row(const PROPTAG_ARRAY *pproptags, const OPENRECIPIENT_ROW *r)
@@ -3133,13 +3133,13 @@ int EXT_PUSH::p_readrecipient_row(const PROPTAG_ARRAY *pproptags, const READRECI
 int EXT_PUSH::p_permission_data(const PERMISSION_DATA *r)
 {
 	TRY(p_uint8(r->flags));
-	return p_tpropval_a(&r->propvals);
+	return p_tpropval_a(r->propvals);
 }
 
 int EXT_PUSH::p_rule_data(const RULE_DATA *r)
 {
 	TRY(p_uint8(r->flags));
-	return p_tpropval_a(&r->propvals);
+	return p_tpropval_a(r->propvals);
 }
 
 int EXT_PUSH::p_abk_eid(const ADDRESSBOOK_ENTRYID *r)
@@ -3474,7 +3474,7 @@ static int ext_buffer_push_attachment_list(
 	
 	TRY(pext->p_uint16(r->count));
 	for (i=0; i<r->count; i++) {
-		TRY(pext->p_tpropval_a(&r->pplist[i]->proplist));
+		TRY(pext->p_tpropval_a(r->pplist[i]->proplist));
 		if (NULL != r->pplist[i]->pembedded) {
 			TRY(pext->p_uint8(1));
 			TRY(pext->p_msgctnt(r->pplist[i]->pembedded));
@@ -3487,10 +3487,10 @@ static int ext_buffer_push_attachment_list(
 
 int EXT_PUSH::p_msgctnt(const MESSAGE_CONTENT *r)
 {
-	TRY(p_tpropval_a(&r->proplist));
+	TRY(p_tpropval_a(r->proplist));
 	if (NULL != r->children.prcpts) {
 		TRY(p_uint8(1));
-		TRY(p_tarray_set(r->children.prcpts));
+		TRY(p_tarray_set(*r->children.prcpts));
 	} else {
 		TRY(p_uint8(0));
 	}

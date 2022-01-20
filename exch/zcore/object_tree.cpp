@@ -144,8 +144,8 @@ static void object_tree_free_root(root_object *prootobj)
 	
 	if (prootobj->b_touched &&
 	    ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT) &&
-	    ext_push.p_tpropval_a(prootobj->pprivate_proplist) == EXT_ERR_SUCCESS &&
-	    ext_push.p_tarray_set(prootobj->pprof_set) == EXT_ERR_SUCCESS) {
+	    ext_push.p_tpropval_a(*prootobj->pprivate_proplist) == EXT_ERR_SUCCESS &&
+	    ext_push.p_tarray_set(*prootobj->pprof_set) == EXT_ERR_SUCCESS) {
 		snprintf(tmp_path, arsizeof(tmp_path), "%s/config/zarafa.dat",
 			prootobj->maildir);
 		fd = open(tmp_path, O_CREAT|O_WRONLY|O_TRUNC, 0666);

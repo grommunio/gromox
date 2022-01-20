@@ -715,7 +715,7 @@ static int do_folder(unsigned int depth, const parent_desc &parent,
 	ep.p_uint32(ident);
 	ep.p_uint32(parent.type);
 	ep.p_uint64(parent.folder_id);
-	ep.p_tpropval_a(props.get());
+	ep.p_tpropval_a(*props);
 	uint64_t xsize = cpu_to_le64(ep.m_offset);
 	write(STDOUT_FILENO, &xsize, sizeof(xsize));
 	write(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
