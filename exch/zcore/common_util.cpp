@@ -932,7 +932,7 @@ BINARY* common_util_username_to_addressbook_entryid(
 	pbin->pv = common_util_alloc(1280);
 	if (pbin->pv == nullptr ||
 	    !ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
-	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_abk_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
 	pbin->cb = ext_push.m_offset;
 	return pbin;
@@ -952,7 +952,7 @@ BOOL common_util_essdn_to_entryid(const char *essdn, BINARY *pbin)
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = deconst(essdn);
 	if (!ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
-	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_abk_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return false;
 	pbin->cb = ext_push.m_offset;
 	return TRUE;
@@ -1004,10 +1004,10 @@ static BOOL common_util_username_to_entryid(const char *username,
 	oneoff_entry.pmail_address = deconst(username);
 	if (!ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16))
 		return false;
-	status = ext_push.p_oneoff_eid(&oneoff_entry);
+	status = ext_push.p_oneoff_eid(oneoff_entry);
 	if (EXT_ERR_CHARCNV == status) {
 		oneoff_entry.ctrl_flags = CTRL_FLAG_NORICH;
-		status = ext_push.p_oneoff_eid(&oneoff_entry);
+		status = ext_push.p_oneoff_eid(oneoff_entry);
 	}
 	if (status != EXT_ERR_SUCCESS)
 		return FALSE;

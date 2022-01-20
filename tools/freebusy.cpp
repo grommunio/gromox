@@ -154,7 +154,7 @@ static int exmdb_client_push_load_content_table_request(
 	if (r->psorts == nullptr)
 		return pext->p_uint8(0);
 	TRY(pext->p_uint8(1));
-	return pext->p_sortorder_set(r->psorts);
+	return pext->p_sortorder_set(*r->psorts);
 }
 
 static int exmdb_client_push_unload_table_request(

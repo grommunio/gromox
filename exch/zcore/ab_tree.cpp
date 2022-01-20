@@ -1606,7 +1606,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		ab_entryid.px500dn = dn;
 		bv->pv = common_util_alloc(1280);
 		if (bv->pv == nullptr || !ext_push.init(bv->pv, 1280, 0) ||
-		    ext_push.p_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS)
+		    ext_push.p_abk_eid(ab_entryid) != EXT_ERR_SUCCESS)
 			return FALSE;
 		bv->cb = ext_push.m_offset;
 		*ppvalue = pvalue;

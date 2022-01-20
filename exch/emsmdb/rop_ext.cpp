@@ -792,8 +792,8 @@ static int rop_ext_push_openmessage_response(
 	uint8_t i;
 	
 	TRY(pext->p_uint8(r->has_named_properties));
-	TRY(pext->p_typed_str(&r->subject_prefix));
-	TRY(pext->p_typed_str(&r->normalized_subject));
+	TRY(pext->p_typed_str(r->subject_prefix));
+	TRY(pext->p_typed_str(r->normalized_subject));
 	TRY(pext->p_uint16(r->recipient_count));
 	TRY(pext->p_proptag_a(r->recipient_columns));
 	if (r->row_count == 0)
@@ -802,7 +802,7 @@ static int rop_ext_push_openmessage_response(
 	TRY(pext->advance(sizeof(uint8_t)));
 	for (i=0; i<r->row_count; i++) {
 		uint32_t last_offset = ext.m_offset;
-		auto status = pext->p_openrecipient_row(&r->recipient_columns, &r->precipient_row[i]);
+		auto status = pext->p_openrecipient_row(r->recipient_columns, r->precipient_row[i]);
 		if (EXT_ERR_SUCCESS != status ||
 		    ext.m_alloc_size - ext.m_offset < 256) {
 			ext.m_offset = last_offset;
@@ -904,8 +904,8 @@ static int rop_ext_push_reloadcachedinformation_response(
 	uint8_t i;
 	
 	TRY(pext->p_uint8(r->has_named_properties));
-	TRY(pext->p_typed_str(&r->subject_prefix));
-	TRY(pext->p_typed_str(&r->normalized_subject));
+	TRY(pext->p_typed_str(r->subject_prefix));
+	TRY(pext->p_typed_str(r->normalized_subject));
 	TRY(pext->p_uint16(r->recipient_count));
 	TRY(pext->p_proptag_a(r->recipient_columns));
 	if (r->row_count == 0)
@@ -914,7 +914,7 @@ static int rop_ext_push_reloadcachedinformation_response(
 	TRY(pext->advance(sizeof(uint8_t)));
 	for (i=0; i<r->row_count; i++) {
 		uint32_t last_offset = ext.m_offset;
-		auto status = pext->p_openrecipient_row(&r->recipient_columns, &r->precipient_row[i]);
+		auto status = pext->p_openrecipient_row(r->recipient_columns, r->precipient_row[i]);
 		if (EXT_ERR_SUCCESS != status ||
 		    ext.m_alloc_size - ext.m_offset < 256) {
 			ext.m_offset = last_offset;
@@ -1047,8 +1047,8 @@ static int rop_ext_push_openembeddedmessage_response(
 	TRY(pext->p_uint8(r->reserved));
 	TRY(pext->p_uint64(r->message_id));
 	TRY(pext->p_uint8(r->has_named_properties));
-	TRY(pext->p_typed_str(&r->subject_prefix));
-	TRY(pext->p_typed_str(&r->normalized_subject));
+	TRY(pext->p_typed_str(r->subject_prefix));
+	TRY(pext->p_typed_str(r->normalized_subject));
 	TRY(pext->p_uint16(r->recipient_count));
 	TRY(pext->p_proptag_a(r->recipient_columns));
 	if (r->row_count == 0)
@@ -1057,7 +1057,7 @@ static int rop_ext_push_openembeddedmessage_response(
 	TRY(pext->advance(sizeof(uint8_t)));
 	for (i=0; i<r->row_count; i++) {
 		uint32_t last_offset = ext.m_offset;
-		auto status = pext->p_openrecipient_row(&r->recipient_columns, &r->precipient_row[i]);
+		auto status = pext->p_openrecipient_row(r->recipient_columns, r->precipient_row[i]);
 		if (EXT_ERR_SUCCESS != status ||
 		    ext.m_alloc_size - ext.m_offset < 256) {
 			ext.m_offset = last_offset;

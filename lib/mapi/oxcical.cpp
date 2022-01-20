@@ -299,7 +299,7 @@ static BOOL oxcical_tzdefinition_to_binary(
 	for (i=0; i<ptz_definition->crules; i++) {
 		ptz_definition->prules[i].flags = tzrule_flags;
 	}
-	if (ext_push.p_tzdef(ptz_definition) != EXT_ERR_SUCCESS)
+	if (ext_push.p_tzdef(*ptz_definition) != EXT_ERR_SUCCESS)
 		return FALSE;
 	pbin->cb = ext_push.m_offset;
 	return TRUE;
@@ -311,7 +311,7 @@ static BOOL oxcical_timezonestruct_to_binary(
 	EXT_PUSH ext_push;
 	
 	if (!ext_push.init(pbin->pb, 256, 0) ||
-	    ext_push.p_tzstruct(ptzstruct) != EXT_ERR_SUCCESS)
+	    ext_push.p_tzstruct(*ptzstruct) != EXT_ERR_SUCCESS)
 		return false;
 	pbin->cb = ext_push.m_offset;
 	return TRUE;

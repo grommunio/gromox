@@ -536,7 +536,7 @@ static zend_bool rpc_ext_push_sorttable_request(
 {
 	TRY(pctx->p_guid(ppayload->sorttable.hsession));
 	TRY(pctx->p_uint32(ppayload->sorttable.htable));
-	TRY(pctx->p_sortorder_set(ppayload->sorttable.psortset));
+	TRY(pctx->p_sortorder_set(*ppayload->sorttable.psortset));
 	return true;
 }
 

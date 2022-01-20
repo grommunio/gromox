@@ -299,10 +299,10 @@ static BOOL oxcmail_username_to_oneoff(const char *username,
 	tmp_entry.pmail_address = deconst(username);
 	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16))
 		return false;
-	status = ext_push.p_oneoff_eid(&tmp_entry);
+	status = ext_push.p_oneoff_eid(tmp_entry);
 	if (EXT_ERR_CHARCNV == status) {
 		tmp_entry.ctrl_flags = CTRL_FLAG_NORICH;
-		status = ext_push.p_oneoff_eid(&tmp_entry);
+		status = ext_push.p_oneoff_eid(tmp_entry);
 	}
 	if (EXT_ERR_SUCCESS != status) {
 		return FALSE;
@@ -322,7 +322,7 @@ static BOOL oxcmail_essdn_to_entryid(const char *pessdn, BINARY *pbin)
 	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
 	tmp_entryid.px500dn = deconst(pessdn);
 	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16) ||
-	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_abk_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return false;
 	pbin->cb = ext_push.m_offset;
 	return TRUE;
@@ -786,11 +786,11 @@ static BOOL oxcmail_parse_reply_to(const char *charset,
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%s@%s",
 			         email_addr.local_part, email_addr.domain);
 			tmp_entry.ctrl_flags = CTRL_FLAG_NORICH | CTRL_FLAG_UNICODE;
-			status = ext_push.p_oneoff_eid(&tmp_entry);
+			status = ext_push.p_oneoff_eid(tmp_entry);
 			if (EXT_ERR_CHARCNV == status) {
 				ext_push.m_offset = offset1 + sizeof(uint32_t);
 				tmp_entry.ctrl_flags = CTRL_FLAG_NORICH;
-				status = ext_push.p_oneoff_eid(&tmp_entry);
+				status = ext_push.p_oneoff_eid(tmp_entry);
 			}
 			if (EXT_ERR_SUCCESS != status) {
 				return FALSE;

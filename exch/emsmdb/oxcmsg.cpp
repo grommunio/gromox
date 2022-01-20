@@ -416,8 +416,8 @@ uint32_t rop_readrecipients(uint32_t row_id, uint16_t reserved, uint8_t *pcount,
 		    tmp_set.pparray[i], pmessage->get_rcpt_columns(), &tmp_row))
 			return ecMAPIOOM;
 		uint32_t last_offset = ext.m_offset;
-		if (pext->p_readrecipient_row(pmessage->get_rcpt_columns(),
-		    &tmp_row) != EXT_ERR_SUCCESS) {
+		if (pext->p_readrecipient_row(*pmessage->get_rcpt_columns(),
+		    tmp_row) != EXT_ERR_SUCCESS) {
 			ext.m_offset = last_offset;
 			break;
 		}

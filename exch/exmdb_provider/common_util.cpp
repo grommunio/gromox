@@ -3989,7 +3989,7 @@ BINARY* common_util_username_to_addressbook_entryid(
 	pbin->pv = common_util_alloc(1280);
 	if (pbin->pv == nullptr ||
 	    !ext_push.init(pbin->pv, 1280, EXT_FLAG_UTF16) ||
-	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_abk_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
 	pbin->cb = ext_push.m_offset;
 	return pbin;

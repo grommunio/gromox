@@ -853,7 +853,7 @@ uint32_t zarafa_server_uinfo(const char *username, BINARY *pentryid,
 	pentryid->pv = common_util_alloc(1280);
 	if (pentryid->pv == nullptr ||
 	    !ext_push.init(pentryid->pb, 1280, EXT_FLAG_UTF16) ||
-	    ext_push.p_abk_eid(&tmp_entryid) != EXT_ERR_SUCCESS)
+	    ext_push.p_abk_eid(tmp_entryid) != EXT_ERR_SUCCESS)
 		return ecError;
 	pentryid->cb = ext_push.m_offset;
 	*ppdisplay_name = common_util_dup(display_name);

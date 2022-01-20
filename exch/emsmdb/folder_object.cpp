@@ -456,7 +456,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 			common_util_to_folder_entryid(pfolder->plogon,
 			rop_util_make_eid_ex(1, PRIVATE_FID_QUICKCONTACTS));
 		if (!ext_push.init(temp_buff, sizeof(temp_buff), 0) ||
-		    ext_push.p_persistdata_a(&persistdatas) != EXT_ERR_SUCCESS)
+		    ext_push.p_persistdata_a(persistdatas) != EXT_ERR_SUCCESS)
 			return false;
 		bv->cb = ext_push.m_offset;
 		bv->pv = common_util_alloc(bv->cb);

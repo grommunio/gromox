@@ -771,7 +771,7 @@ ZEND_FUNCTION(mapi_createoneoff)
 	tmp_entry.paddress_type = ptype;
 	tmp_entry.pmail_address = paddress;
 	if (push_ctx.init() != EXT_ERR_SUCCESS ||
-	    push_ctx.p_oneoff_eid(&tmp_entry) != EXT_ERR_SUCCESS) {
+	    push_ctx.p_oneoff_eid(tmp_entry) != EXT_ERR_SUCCESS) {
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}

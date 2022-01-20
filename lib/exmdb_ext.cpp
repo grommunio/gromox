@@ -567,7 +567,7 @@ static int exmdb_ext_push_movecopy_messages_request(
 	TRY(pext->p_uint64(ppayload->movecopy_messages.src_fid));
 	TRY(pext->p_uint64(ppayload->movecopy_messages.dst_fid));
 	TRY(pext->p_bool(ppayload->movecopy_messages.b_copy));
-	return pext->p_eid_a(ppayload->movecopy_messages.pmessage_ids);
+	return pext->p_eid_a(*ppayload->movecopy_messages.pmessage_ids);
 }
 
 static int exmdb_ext_pull_movecopy_folder_request(
@@ -641,7 +641,7 @@ static int exmdb_ext_push_delete_messages_request(
 		TRY(pext->p_str(ppayload->delete_messages.username));
 	}
 	TRY(pext->p_uint64(ppayload->delete_messages.folder_id));
-	TRY(pext->p_eid_a(ppayload->delete_messages.pmessage_ids));
+	TRY(pext->p_eid_a(*ppayload->delete_messages.pmessage_ids));
 	return pext->p_bool(ppayload->delete_messages.b_hard);
 }
 
@@ -797,7 +797,7 @@ static int exmdb_ext_push_load_content_table_request(
 	if (ppayload->load_content_table.psorts == nullptr)
 		return pext->p_uint8(0);
 	TRY(pext->p_uint8(1));
-	return pext->p_sortorder_set(ppayload->load_content_table.psorts);
+	return pext->p_sortorder_set(*ppayload->load_content_table.psorts);
 }
 
 static int exmdb_ext_pull_reload_content_table_request(
@@ -1972,7 +1972,7 @@ static int exmdb_ext_push_update_folder_permission_request(
 	TRY(pext->p_bool(ppayload->update_folder_permission.b_freebusy));
 	TRY(pext->p_uint16(ppayload->update_folder_permission.count));
 	for (size_t i = 0; i < ppayload->update_folder_permission.count; ++i)
-		TRY(pext->p_permission_data(&ppayload->update_folder_permission.prow[i]));
+		TRY(pext->p_permission_data(ppayload->update_folder_permission.prow[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -2013,7 +2013,7 @@ static int exmdb_ext_push_update_folder_rule_request(
 	TRY(pext->p_uint64(ppayload->update_folder_rule.folder_id));
 	TRY(pext->p_uint16(ppayload->update_folder_rule.count));
 	for (size_t i = 0; i < ppayload->update_folder_rule.count; ++i)
-		TRY(pext->p_rule_data(&ppayload->update_folder_rule.prow[i]));
+		TRY(pext->p_rule_data(ppayload->update_folder_rule.prow[i]));
 	return EXT_ERR_SUCCESS;
 }
 
@@ -4566,14 +4566,14 @@ static int exmdb_ext_push_get_content_sync_response(
 	TRY(pext->p_uint64(ppayload->get_content_sync.fai_total));
 	TRY(pext->p_uint32(ppayload->get_content_sync.normal_count));
 	TRY(pext->p_uint64(ppayload->get_content_sync.normal_total));
-	TRY(pext->p_eid_a(&ppayload->get_content_sync.updated_mids));
-	TRY(pext->p_eid_a(&ppayload->get_content_sync.chg_mids));
+	TRY(pext->p_eid_a(ppayload->get_content_sync.updated_mids));
+	TRY(pext->p_eid_a(ppayload->get_content_sync.chg_mids));
 	TRY(pext->p_uint64(ppayload->get_content_sync.last_cn));
-	TRY(pext->p_eid_a(&ppayload->get_content_sync.given_mids));
-	TRY(pext->p_eid_a(&ppayload->get_content_sync.deleted_mids));
-	TRY(pext->p_eid_a(&ppayload->get_content_sync.nolonger_mids));
-	TRY(pext->p_eid_a(&ppayload->get_content_sync.read_mids));
-	TRY(pext->p_eid_a(&ppayload->get_content_sync.unread_mids));
+	TRY(pext->p_eid_a(ppayload->get_content_sync.given_mids));
+	TRY(pext->p_eid_a(ppayload->get_content_sync.deleted_mids));
+	TRY(pext->p_eid_a(ppayload->get_content_sync.nolonger_mids));
+	TRY(pext->p_eid_a(ppayload->get_content_sync.read_mids));
+	TRY(pext->p_eid_a(ppayload->get_content_sync.unread_mids));
 	return pext->p_uint64(ppayload->get_content_sync.last_readcn);
 }
 
@@ -4604,8 +4604,8 @@ static int exmdb_ext_push_get_hierarchy_sync_response(
 	for (size_t i = 0; i < ppayload->get_hierarchy_sync.fldchgs.count; ++i)
 		TRY(pext->p_tpropval_a(ppayload->get_hierarchy_sync.fldchgs.pfldchgs[i]));
 	TRY(pext->p_uint64(ppayload->get_hierarchy_sync.last_cn));
-	TRY(pext->p_eid_a(&ppayload->get_hierarchy_sync.given_fids));
-	return pext->p_eid_a(&ppayload->get_hierarchy_sync.deleted_fids);
+	TRY(pext->p_eid_a(ppayload->get_hierarchy_sync.given_fids));
+	return pext->p_eid_a(ppayload->get_hierarchy_sync.deleted_fids);
 }
 
 static int exmdb_ext_pull_allocate_ids_response(

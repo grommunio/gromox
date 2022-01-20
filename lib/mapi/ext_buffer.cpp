@@ -3005,106 +3005,106 @@ int EXT_PUSH::p_proprow(const LPROPTAG_ARRAY &cols, const PROPERTY_ROW &r)
 	return EXT_ERR_BAD_SWITCH;
 }
 
-int EXT_PUSH::p_sortorder(const SORT_ORDER *r)
+int EXT_PUSH::p_sortorder(const SORT_ORDER &r)
 {
-	if ((r->type & MVI_FLAG) == MV_FLAG)
+	if ((r.type & MVI_FLAG) == MV_FLAG)
 		/* MV_FLAG set without MV_INSTANCE */
 		return EXT_ERR_FORMAT;
-	TRY(p_uint16(r->type));
-	TRY(p_uint16(r->propid));
-	return p_uint8(r->table_sort);
+	TRY(p_uint16(r.type));
+	TRY(p_uint16(r.propid));
+	return p_uint8(r.table_sort);
 }
 
-int EXT_PUSH::p_sortorder_set(const SORTORDER_SET *r)
+int EXT_PUSH::p_sortorder_set(const SORTORDER_SET &r)
 {
-	if (r->count == 0 || r->ccategories > r->count || r->cexpanded > r->ccategories)
+	if (r.count == 0 || r.ccategories > r.count || r.cexpanded > r.ccategories)
 		return EXT_ERR_FORMAT;
-	TRY(p_uint16(r->count));
-	TRY(p_uint16(r->ccategories));
-	TRY(p_uint16(r->cexpanded));
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(p_sortorder(&r->psort[i]));
+	TRY(p_uint16(r.count));
+	TRY(p_uint16(r.ccategories));
+	TRY(p_uint16(r.cexpanded));
+	for (size_t i = 0; i < r.count; ++i)
+		TRY(p_sortorder(r.psort[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-int EXT_PUSH::p_typed_str(const TYPED_STRING *r)
+int EXT_PUSH::p_typed_str(const TYPED_STRING &r)
 {
-	TRY(p_uint8(r->string_type));
-	switch(r->string_type) {
+	TRY(p_uint8(r.string_type));
+	switch (r.string_type) {
 	case STRING_TYPE_NONE:
 	case STRING_TYPE_EMPTY:
 		return EXT_ERR_SUCCESS;
 	case STRING_TYPE_STRING8:
 	case STRING_TYPE_UNICODE_REDUCED:
-		return p_str(r->pstring);
+		return p_str(r.pstring);
 	case STRING_TYPE_UNICODE:
-		return p_wstr(r->pstring);
+		return p_wstr(r.pstring);
 	default:
 		return EXT_ERR_BAD_SWITCH;
 	}
 }
 
-int EXT_PUSH::p_recipient_row(const PROPTAG_ARRAY *pproptags, const RECIPIENT_ROW *r)
+int EXT_PUSH::p_recipient_row(const PROPTAG_ARRAY &pproptags, const RECIPIENT_ROW &r)
 {
 	BOOL b_unicode;
 	PROPTAG_ARRAY proptags;
 	
 	b_unicode = FALSE;
-	if (r->flags & RECIPIENT_ROW_FLAG_UNICODE)
+	if (r.flags & RECIPIENT_ROW_FLAG_UNICODE)
 		b_unicode = TRUE;
-	TRY(p_uint16(r->flags));
-	if (r->pprefix_used != nullptr)
-		TRY(p_uint8(*r->pprefix_used));
-	if (r->have_display_type)
-		TRY(p_uint8(r->display_type));
-	if (r->px500dn != nullptr)
-		TRY(p_str(r->px500dn));
-	if (r->pentry_id != nullptr)
-		TRY(p_bin(*r->pentry_id));
-	if (r->psearch_key != nullptr)
-		TRY(p_bin(*r->psearch_key));
-	if (r->paddress_type != nullptr)
-		TRY(p_str(r->paddress_type));
-	if (NULL != r->pmail_address) {
+	TRY(p_uint16(r.flags));
+	if (r.pprefix_used != nullptr)
+		TRY(p_uint8(*r.pprefix_used));
+	if (r.have_display_type)
+		TRY(p_uint8(r.display_type));
+	if (r.px500dn != nullptr)
+		TRY(p_str(r.px500dn));
+	if (r.pentry_id != nullptr)
+		TRY(p_bin(*r.pentry_id));
+	if (r.psearch_key != nullptr)
+		TRY(p_bin(*r.psearch_key));
+	if (r.paddress_type != nullptr)
+		TRY(p_str(r.paddress_type));
+	if (r.pmail_address != nullptr) {
 		if (b_unicode)
-			TRY(p_wstr(r->pmail_address));
+			TRY(p_wstr(r.pmail_address));
 		else
-			TRY(p_str(r->pmail_address));
+			TRY(p_str(r.pmail_address));
 	}
-	if (NULL != r->pdisplay_name) {
+	if (r.pdisplay_name != nullptr) {
 		if (b_unicode)
-			TRY(p_wstr(r->pdisplay_name));
+			TRY(p_wstr(r.pdisplay_name));
 		else
-			TRY(p_str(r->pdisplay_name));
+			TRY(p_str(r.pdisplay_name));
 	}
-	if (NULL != r->psimple_name) {
+	if (r.psimple_name != nullptr) {
 		if (b_unicode)
-			TRY(p_wstr(r->psimple_name));
+			TRY(p_wstr(r.psimple_name));
 		else
-			TRY(p_str(r->psimple_name));
+			TRY(p_str(r.psimple_name));
 	}
-	if (NULL != r->ptransmittable_name) {
+	if (r.ptransmittable_name != nullptr) {
 		if (b_unicode)
-			TRY(p_wstr(r->ptransmittable_name));
+			TRY(p_wstr(r.ptransmittable_name));
 		else
-			TRY(p_str(r->ptransmittable_name));
+			TRY(p_str(r.ptransmittable_name));
 	}
-	TRY(p_uint16(r->count));
-	if (r->count > pproptags->count)
+	TRY(p_uint16(r.count));
+	if (r.count > pproptags.count)
 		return EXT_ERR_FORMAT;
-	proptags.count = r->count;
-	proptags.pproptag = (uint32_t*)pproptags->pproptag;
-	return p_proprow(proptags, r->properties);
+	proptags.count = r.count;
+	proptags.pproptag = static_cast<uint32_t *>(pproptags.pproptag);
+	return p_proprow(proptags, r.properties);
 }
 
-int EXT_PUSH::p_openrecipient_row(const PROPTAG_ARRAY *pproptags, const OPENRECIPIENT_ROW *r)
+int EXT_PUSH::p_openrecipient_row(const PROPTAG_ARRAY &pproptags, const OPENRECIPIENT_ROW &r)
 {
-	TRY(p_uint8(r->recipient_type));
-	TRY(p_uint16(r->cpid));
-	TRY(p_uint16(r->reserved));
+	TRY(p_uint8(r.recipient_type));
+	TRY(p_uint16(r.cpid));
+	TRY(p_uint16(r.reserved));
 	uint32_t offset = m_offset;
 	TRY(advance(sizeof(uint16_t)));
-	TRY(p_recipient_row(pproptags, &r->recipient_row));
+	TRY(p_recipient_row(pproptags, r.recipient_row));
 	uint16_t row_size = m_offset - (offset + sizeof(uint16_t));
 	uint32_t offset1 = m_offset;
 	m_offset = offset;
@@ -3113,15 +3113,15 @@ int EXT_PUSH::p_openrecipient_row(const PROPTAG_ARRAY *pproptags, const OPENRECI
 	return EXT_ERR_SUCCESS;
 }
 
-int EXT_PUSH::p_readrecipient_row(const PROPTAG_ARRAY *pproptags, const READRECIPIENT_ROW *r)
+int EXT_PUSH::p_readrecipient_row(const PROPTAG_ARRAY &pproptags, const READRECIPIENT_ROW &r)
 {
-	TRY(p_uint32(r->row_id));
-	TRY(p_uint8(r->recipient_type));
-	TRY(p_uint16(r->cpid));
-	TRY(p_uint16(r->reserved));
+	TRY(p_uint32(r.row_id));
+	TRY(p_uint8(r.recipient_type));
+	TRY(p_uint16(r.cpid));
+	TRY(p_uint16(r.reserved));
 	uint32_t offset = m_offset;
 	TRY(advance(sizeof(uint16_t)));
-	TRY(p_recipient_row(pproptags, &r->recipient_row));
+	TRY(p_recipient_row(pproptags, r.recipient_row));
 	uint16_t row_size = m_offset - (offset + sizeof(uint16_t));
 	uint32_t offset1 = m_offset;
 	m_offset = offset;
@@ -3130,41 +3130,41 @@ int EXT_PUSH::p_readrecipient_row(const PROPTAG_ARRAY *pproptags, const READRECI
 	return EXT_ERR_SUCCESS;
 }
 
-int EXT_PUSH::p_permission_data(const PERMISSION_DATA *r)
+int EXT_PUSH::p_permission_data(const PERMISSION_DATA &r)
 {
-	TRY(p_uint8(r->flags));
-	return p_tpropval_a(r->propvals);
+	TRY(p_uint8(r.flags));
+	return p_tpropval_a(r.propvals);
 }
 
-int EXT_PUSH::p_rule_data(const RULE_DATA *r)
+int EXT_PUSH::p_rule_data(const RULE_DATA &r)
 {
-	TRY(p_uint8(r->flags));
-	return p_tpropval_a(r->propvals);
+	TRY(p_uint8(r.flags));
+	return p_tpropval_a(r.propvals);
 }
 
-int EXT_PUSH::p_abk_eid(const ADDRESSBOOK_ENTRYID *r)
+int EXT_PUSH::p_abk_eid(const ADDRESSBOOK_ENTRYID &r)
 {
-	TRY(p_uint32(r->flags));
-	TRY(p_guid(r->provider_uid));
-	TRY(p_uint32(r->version));
-	TRY(p_uint32(r->type));
-	return p_str(r->px500dn);
+	TRY(p_uint32(r.flags));
+	TRY(p_guid(r.provider_uid));
+	TRY(p_uint32(r.version));
+	TRY(p_uint32(r.type));
+	return p_str(r.px500dn);
 }
 
-int EXT_PUSH::p_oneoff_eid(const ONEOFF_ENTRYID *r)
+int EXT_PUSH::p_oneoff_eid(const ONEOFF_ENTRYID &r)
 {
-	TRY(p_uint32(r->flags));
-	TRY(p_guid(r->provider_uid));
-	TRY(p_uint16(r->version));
-	TRY(p_uint16(r->ctrl_flags));
-	if (r->ctrl_flags & CTRL_FLAG_UNICODE) {
-		TRY(p_wstr(r->pdisplay_name));
-		TRY(p_wstr(r->paddress_type));
-		return p_wstr(r->pmail_address);
+	TRY(p_uint32(r.flags));
+	TRY(p_guid(r.provider_uid));
+	TRY(p_uint16(r.version));
+	TRY(p_uint16(r.ctrl_flags));
+	if (r.ctrl_flags & CTRL_FLAG_UNICODE) {
+		TRY(p_wstr(r.pdisplay_name));
+		TRY(p_wstr(r.paddress_type));
+		return p_wstr(r.pmail_address);
 	} else {
-		TRY(p_str(r->pdisplay_name));
-		TRY(p_str(r->paddress_type));
-		return p_str(r->pmail_address);
+		TRY(p_str(r.pdisplay_name));
+		TRY(p_str(r.paddress_type));
+		return p_str(r.pmail_address);
 	}
 }
 
@@ -3200,47 +3200,47 @@ static int ext_buffer_push_persistdata(EXT_PUSH *pext, const PERSISTDATA *r)
 	return EXT_ERR_SUCCESS;
 }
 
-int EXT_PUSH::p_persistdata_a(const PERSISTDATA_ARRAY *r)
+int EXT_PUSH::p_persistdata_a(const PERSISTDATA_ARRAY &r)
 {
 	PERSISTDATA last_data;
 	
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(ext_buffer_push_persistdata(this, r->ppitems[i]));
+	for (size_t i = 0; i < r.count; ++i)
+		TRY(ext_buffer_push_persistdata(this, r.ppitems[i]));
 	last_data.persist_id = PERSIST_SENTINEL;
 	last_data.element.element_id = ELEMENT_SENTINEL;
 	last_data.element.pentry_id = NULL;
 	return ext_buffer_push_persistdata(this, &last_data);
 }
 
-int EXT_PUSH::p_eid_a(const EID_ARRAY *r)
+int EXT_PUSH::p_eid_a(const EID_ARRAY &r)
 {
-	TRY(p_uint32(r->count));
-	for (size_t i = 0; i < r->count; ++i)
-		TRY(p_uint64(r->pids[i]));
+	TRY(p_uint32(r.count));
+	for (size_t i = 0; i < r.count; ++i)
+		TRY(p_uint64(r.pids[i]));
 	return EXT_ERR_SUCCESS;
 }
 
-int EXT_PUSH::p_systime(const SYSTEMTIME *r)
+int EXT_PUSH::p_systime(const SYSTEMTIME &r)
 {
-	TRY(p_int16(r->year));
-	TRY(p_int16(r->month));
-	TRY(p_int16(r->dayofweek));
-	TRY(p_int16(r->day));
-	TRY(p_int16(r->hour));
-	TRY(p_int16(r->minute));
-	TRY(p_int16(r->second));
-	return p_int16(r->milliseconds);
+	TRY(p_int16(r.year));
+	TRY(p_int16(r.month));
+	TRY(p_int16(r.dayofweek));
+	TRY(p_int16(r.day));
+	TRY(p_int16(r.hour));
+	TRY(p_int16(r.minute));
+	TRY(p_int16(r.second));
+	return p_int16(r.milliseconds);
 }
 
-int EXT_PUSH::p_tzstruct(const TIMEZONESTRUCT *r)
+int EXT_PUSH::p_tzstruct(const TIMEZONESTRUCT &r)
 {
-	TRY(p_int32(r->bias));
-	TRY(p_int32(r->standardbias));
-	TRY(p_int32(r->daylightbias));
-	TRY(p_int16(r->standardyear));
-	TRY(p_systime(&r->standarddate));
-	TRY(p_int16(r->daylightyear));
-	return p_systime(&r->daylightdate);
+	TRY(p_int32(r.bias));
+	TRY(p_int32(r.standardbias));
+	TRY(p_int32(r.daylightbias));
+	TRY(p_int16(r.standardyear));
+	TRY(p_systime(r.standarddate));
+	TRY(p_int16(r.daylightyear));
+	return p_systime(r.daylightdate);
 }
 
 static int ext_buffer_push_tzrule(EXT_PUSH *pext, const TZRULE *r)
@@ -3254,30 +3254,29 @@ static int ext_buffer_push_tzrule(EXT_PUSH *pext, const TZRULE *r)
 	TRY(pext->p_int32(r->bias));
 	TRY(pext->p_int32(r->standardbias));
 	TRY(pext->p_int32(r->daylightbias));
-	TRY(pext->p_systime(&r->standarddate));
-	return pext->p_systime(&r->daylightdate);
+	TRY(pext->p_systime(r->standarddate));
+	return pext->p_systime(r->daylightdate);
 }
 
-int EXT_PUSH::p_tzdef(const TIMEZONEDEFINITION *r)
+int EXT_PUSH::p_tzdef(const TIMEZONEDEFINITION &r)
 {
-	int len;
 	uint16_t cbheader;
 	char tmp_buff[262];
 	
-	TRY(p_uint8(r->major));
-	TRY(p_uint8(r->minor));
-	len = utf8_to_utf16le(r->keyname, tmp_buff, 262);
+	TRY(p_uint8(r.major));
+	TRY(p_uint8(r.minor));
+	int len = utf8_to_utf16le(r.keyname, tmp_buff, 262);
 	if (len < 2)
 		return EXT_ERR_CHARCNV;
 	len -= 2;
 	cbheader = 6 + len;
 	TRY(p_uint16(cbheader));
-	TRY(p_uint16(r->reserved));
+	TRY(p_uint16(r.reserved));
 	TRY(p_uint16(len / 2));
 	TRY(p_bytes(tmp_buff, len));
-	TRY(p_uint16(r->crules));
-	for (size_t i = 0; i < r->crules; ++i)
-		TRY(ext_buffer_push_tzrule(this, &r->prules[i]));
+	TRY(p_uint16(r.crules));
+	for (size_t i = 0; i < r.crules; ++i)
+		TRY(ext_buffer_push_tzrule(this, &r.prules[i]));
 	return EXT_ERR_SUCCESS;
 }
 

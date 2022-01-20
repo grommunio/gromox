@@ -170,7 +170,7 @@ static BOOL tnef_username_to_oneoff(const char *username,
 	tmp_entry.paddress_type = deconst("SMTP");
 	tmp_entry.pmail_address = deconst(username);
 	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16) ||
-	    ext_push.p_oneoff_eid(&tmp_entry) != EXT_ERR_SUCCESS)
+	    ext_push.p_oneoff_eid(tmp_entry) != EXT_ERR_SUCCESS)
 		return false;
 	pbin->cb = ext_push.m_offset;
 	return TRUE;
