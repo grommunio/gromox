@@ -498,7 +498,7 @@ BOOL bounce_producer_make(const char *username,
 	}
 	pmime = phead;
 	pmime->set_content_type("multipart/report");
-	mime_set_content_param(pmime, "report-type", "disposition-notification");
+	pmime->set_content_param("report-type", "disposition-notification");
 	auto pvalue = pbrief->proplist.getval(PR_CONVERSATION_INDEX);
 	if (pvalue != nullptr) {
 		auto bv = static_cast<const BINARY *>(pvalue);
@@ -547,7 +547,7 @@ BOOL bounce_producer_make(const char *username,
 		return FALSE;
 	}
 	pmime->set_content_type(content_type);
-	mime_set_content_param(pmime, "charset", "\"utf-8\"");
+	pmime->set_content_param("charset", "\"utf-8\"");
 	if (!pmime->write_content(content_buff,
 		strlen(content_buff), MIME_ENCODING_BASE64)) {
 		return FALSE;

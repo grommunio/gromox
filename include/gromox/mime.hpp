@@ -35,6 +35,12 @@ struct GX_EXPORT MIME {
 	int get_field_num(const char *tag);
 	BOOL search_field(const char *tag, int order, char *value, int len);
 	BOOL set_field(const char *tag, const char *value);
+	BOOL append_field(const char *tag, const char *value);
+	BOOL remove_field(const char *tag);
+	BOOL get_content_param(const char *tag, char *value, int len);
+	BOOL set_content_param(const char *tag, const char *value);
+	ssize_t get_mimes_digest(const char *, size_t *, size_t *, char *, size_t);
+	ssize_t get_structure_digest(const char *, size_t *, size_t *, char *, size_t);
 	inline size_t get_children_num() const { return simple_tree_node_get_children_num(&node); }
 
 	SIMPLE_TREE_NODE node;
@@ -56,20 +62,12 @@ struct GX_EXPORT MIME {
 
 void mime_init(MIME *pmime, LIB_BUFFER *palloc);
 void mime_free(MIME *pmime);
-BOOL mime_append_field(MIME *pmime, const char *tag, const char *value);
-BOOL mime_remove_field(MIME *pmime, const char *tag);
-BOOL mime_get_content_param(MIME *pmime, const char *tag, char *value, 
-	int length);
-BOOL mime_set_content_param(MIME *pmime, const char *tag, const char *value);
-extern GX_EXPORT ssize_t mime_get_mimes_digest(MIME *, const char *, size_t *, size_t *, char *, size_t);
-extern GX_EXPORT ssize_t mime_get_structure_digest(MIME *, const char *, size_t *, size_t *, char *, size_t);
 BOOL mime_serialize(MIME *pmime, STREAM *pstream);
 BOOL mime_to_file(MIME *pmime, int fd);
 BOOL mime_to_ssl(MIME *pmime, SSL *ssl);
 BOOL mime_check_dot(MIME *pmime);
 extern ssize_t mime_get_length(MIME *);
 BOOL mime_get_filename(MIME *pmime, char *file_name);
-void mime_copy(MIME *pmime_src, MIME *pmime_dst);
 MIME* mime_get_child(MIME *pmime);
 MIME* mime_get_parent(MIME *pmime);
 extern MIME *mime_get_sibling(MIME *);

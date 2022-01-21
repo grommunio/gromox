@@ -209,7 +209,7 @@ void auto_response_reply(const char *user_home,
 	}
 	pmime->set_content_type(content_type);
 	if ('\0' != charset[0]) {
-		mime_set_content_param(pmime, "charset", charset);
+		pmime->set_content_param("charset", charset);
 	}
 	pmime->set_field("Received", "from unknown (helo localhost) "
 		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");

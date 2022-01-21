@@ -188,7 +188,7 @@ BOOL MIME::retrieve(MIME *pmime_parent, char *in_buff, size_t length)
 				pmime->content_length = length - current_offset;
 			}
 			if (MULTIPLE_MIME == pmime->mime_type) {
-				if (FALSE  == mime_get_content_param(pmime, "boundary",
+				if (!pmime->get_content_param("boundary",
 				    pmime->boundary_string, VALUE_LEN - 1)) {
 					pmime->mime_type = SINGLE_MIME;
 				}
@@ -231,7 +231,7 @@ BOOL MIME::retrieve(MIME *pmime_parent, char *in_buff, size_t length)
 			pmime->content_length = length - current_offset;
 		}
 		if (MULTIPLE_MIME == pmime->mime_type) {
-			if (FALSE  == mime_get_content_param(pmime, "boundary",
+			if (!pmime->get_content_param("boundary",
 			    pmime->boundary_string, VALUE_LEN - 1)) {
 				pmime->mime_type = SINGLE_MIME;
 			}
@@ -320,7 +320,7 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 	pmime->content_begin = NULL;
 	pmime->content_length = 0;
 	pmime->content_touched = TRUE;
-	mime_remove_field(pmime, "Content-Transfer-Encoding");
+	pmime->remove_field("Content-Transfer-Encoding");
 	if (0 == length) {
 		pmime->set_field("Content-Transfer-Encoding",
 			encoding_type == MIME_ENCODING_QP ?
@@ -800,13 +800,14 @@ BOOL MIME::set_field(const char *tag, const char *value)
  *		TRUE				OK
  *		FALSE				fail to det
  */
-BOOL mime_append_field(MIME *pmime, const char *tag, const char *value)
+BOOL MIME::append_field(const char *tag, const char *value)
 {
+	auto pmime = this;
 	int	tag_len, val_len;
 	
 #ifdef _DEBUG_UMTA
-	if (NULL == pmime || NULL == tag || NULL == value) {
-		debug_info("[mime]: NULL pointer found in mime_append_field");
+	if (tag == nullptr || value == nullptr) {
+		debug_info("[mime]: NULL pointer found in MIME::append_field");
 		return FALSE;
 	}
 #endif
@@ -832,8 +833,9 @@ BOOL mime_append_field(MIME *pmime, const char *tag, const char *value)
  *		TRUE				OK
  *		FALSE				not found
  */
-BOOL mime_remove_field(MIME *pmime, const char *tag)
+BOOL MIME::remove_field(const char *tag)
 {
+	auto pmime = this;
 	BOOL found_tag = false;
 	MEM_FILE file_tmp;
 	char tmp_buff[MIME_FIELD_LEN];
@@ -875,16 +877,17 @@ BOOL mime_remove_field(MIME *pmime, const char *tag)
  *		value [out]			buffer for retrieving value
  *		length				length of value
  */
-BOOL mime_get_content_param(MIME *pmime, const char *tag, char *value,
+BOOL MIME::get_content_param(const char *tag, char *value,
 	int length)
 {
+	auto pmime = this;
 	int	tag_len, val_len;
 	char	tmp_buff[MIME_FIELD_LEN];
 	int		distance;
 	
 #ifdef _DEBUG_UMTA
-	if (NULL == pmime || NULL == tag || NULL == value) {
-		debug_info("[mime]: NULL pointer found in mime_get_content_param");
+	if (tag == nullptr || value == nullptr) {
+		debug_info("[mime]: NULL pointer found in MIME::get_content_param");
 		return FALSE;
 	}
 #endif
@@ -912,8 +915,9 @@ BOOL mime_get_content_param(MIME *pmime, const char *tag, char *value,
  *		tag [in]			tag string
  *		value [in]			value string
  */
-BOOL mime_set_content_param(MIME *pmime, const char *tag, const char *value)
+BOOL MIME::set_content_param(const char *tag, const char *value)
 {
+	auto pmime = this;
 	MEM_FILE file_tmp;
 	int	tag_len, val_len;
 	char	tmp_buff[MIME_FIELD_LEN];
@@ -921,8 +925,8 @@ BOOL mime_set_content_param(MIME *pmime, const char *tag, const char *value)
 	int		i, mark, boundary_len;
 	
 #ifdef _DEBUG_UMTA
-	if (NULL == pmime || NULL == tag || NULL == value) {
-		debug_info("[mime]: NULL pointer found in mime_set_field");
+	if (tag == nullptr || value == nullptr) {
+		debug_info("[mime]: NULL pointer found in MIME::set_content_param");
 		return FALSE;
 	}
 #endif
@@ -2069,7 +2073,7 @@ BOOL mime_get_filename(MIME *pmime, char *file_name)
 	char *pbegin;
 	char encoding[256];
 	
-	if (TRUE == mime_get_content_param(pmime, "name", file_name, 256)) {
+	if (pmime->get_content_param("name", file_name, 256)) {
 		goto FIND_FILENAME;
 	} else if (pmime->get_field("Content-Disposition", file_name, 256)) {
 		tmp_len = strlen(file_name);
@@ -2151,9 +2155,10 @@ BOOL mime_get_filename(MIME *pmime, char *file_name)
  *  @return
  *      string length in pbuff
  */
-ssize_t mime_get_mimes_digest(MIME *pmime, const char *id_string,
+ssize_t MIME::get_mimes_digest(const char *id_string,
     size_t *poffset, size_t *pcount, char *pbuff, size_t length)
 {
+	auto pmime = this;
 	int		count;
 	int		tag_len, val_len;
 	size_t	i, content_len;
@@ -2174,8 +2179,8 @@ ssize_t mime_get_mimes_digest(MIME *pmime, const char *id_string,
 	char    *ptoken;
 	
 #ifdef _DEBUG_UMTA
-	if (NULL == pmime || NULL == pbuff || NULL == poffset || NULL == pcount) {
-		debug_info("[mime]: NULL pointer found in mime_get_mimes_digest");
+	if (pbuff == nullptr || poffset == nullptr || pcount == nullptr) {
+		debug_info("[mime]: NULL pointer found in MIME::get_mimes_digest");
 		return -1;
 	}
 #endif
@@ -2287,9 +2292,8 @@ ssize_t mime_get_mimes_digest(MIME *pmime, const char *id_string,
 			return -1;
 		}
 
-		if (TRUE == mime_get_content_param(pmime, "charset",
-			charset_buff, 32) && TRUE == mime_check_ascii_printable(
-			charset_buff)) {
+		if (pmime->get_content_param("charset", charset_buff, 32) &&
+		    mime_check_ascii_printable(charset_buff)) {
 			tmp_len = strlen(charset_buff);
 			for (i=0; i<tmp_len; i++) {
 				if ('"' == charset_buff[i] || '\\' == charset_buff[i]) {
@@ -2373,7 +2377,7 @@ ssize_t mime_get_mimes_digest(MIME *pmime, const char *id_string,
 			} else {
 				snprintf(temp_id, 64, "%s.%d", id_string, count);
 			}
-			auto gmd = mime_get_mimes_digest(pmime_child, temp_id, poffset,
+			auto gmd = pmime_child->get_mimes_digest(temp_id, poffset,
 			           pcount, pbuff + buff_len, length - buff_len);
 			if (gmd < 0 || buff_len + gmd >= length - 1) {
 				return -1;
@@ -2413,9 +2417,10 @@ ssize_t mime_get_mimes_digest(MIME *pmime, const char *id_string,
  *  @return
  *      string length in pbuff
  */
-ssize_t mime_get_structure_digest(MIME *pmime, const char *id_string,
+ssize_t MIME::get_structure_digest(const char *id_string,
     size_t *poffset, size_t *pcount, char *pbuff, size_t length)
 {
+	auto pmime = this;
 	int		tag_len, val_len;
 	size_t count = 0, i, buff_len, tmp_len;
 	size_t  head_offset;
@@ -2426,8 +2431,8 @@ ssize_t mime_get_structure_digest(MIME *pmime, const char *id_string,
 	char    content_type[256];
 	
 #ifdef _DEBUG_UMTA
-	if (NULL == pmime || NULL == pbuff || NULL == poffset || NULL == pcount) {
-		debug_info("[mime]: NULL pointer found in mime_get_structure_digest");
+	if (pbuff == nullptr || poffset == nullptr || pcount == nulllptr) {
+		debug_info("[mime]: NULL pointer found in MIME::get_structure_digest");
 		return -1;
 	}
 #endif
@@ -2534,7 +2539,7 @@ ssize_t mime_get_structure_digest(MIME *pmime, const char *id_string,
 			} else {
 				snprintf(temp_id, 64, "%s.%zu", id_string, count);
 			}
-			auto gsd = mime_get_structure_digest(pmime_child, temp_id, poffset,
+			auto gsd = pmime_child->get_structure_digest(temp_id, poffset,
 			           pcount, pbuff + buff_len, length - buff_len);
 			if (gsd < 0 || buff_len + gsd >= length - 1)
 				return -1;
@@ -2677,52 +2682,7 @@ static void mime_produce_boundary(MIME *pmime)
     memcpy(temp_boundary + 1, pmime->boundary_string, boundary_len);
     temp_boundary[boundary_len] = '"';
     temp_boundary[boundary_len + 1] = '\0';
-    mime_set_content_param(pmime, "boundary", temp_boundary);
-}
-
-void mime_copy(MIME *pmime_src, MIME *pmime_dst)
-{
-	size_t buff_length;
-
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime_dst || NULL == pmime_dst) {
-		debug_info("[mime]: NULL pointer found in mime_copy");
-		return;
-	}
-#endif
-	pmime_dst->clear();
-	if (NONE_MIME == pmime_src->mime_type) {
-		return;
-	}
-	pmime_dst->mime_type = pmime_src->mime_type;
-	strcpy(pmime_dst->content_type, pmime_src->content_type);
-	if (0 == pmime_src->boundary_len) {
-		pmime_dst->boundary_string[0] = '\0';
-		pmime_dst->boundary_len = 0;
-	} else {
-		strcpy(pmime_dst->boundary_string, pmime_src->boundary_string);
-		pmime_dst->boundary_len = pmime_src->boundary_len;
-	}
-	if (SINGLE_MIME == pmime_src->mime_type &&
-		NULL != pmime_src->content_begin) {
-		buff_length = ((pmime_src->content_length - 1) /
-					  (64 * 1024) + 1) * 64 * 1024;
-		pmime_dst->content_begin = static_cast<char *>(malloc(buff_length));
-    	if (NULL != pmime_dst->content_begin) {
-    		memcpy(pmime_dst->content_begin, pmime_src->content_begin,
-					pmime_src->content_length);
-    		pmime_dst->content_length = pmime_src->content_length;
-		} else {
-			pmime_dst->content_length = 0;
-		}
-	} else {
-		pmime_dst->content_begin = NULL;
-		pmime_dst->content_length = 0;
-	}
-	pmime_src->f_type_params.copy_to(pmime_dst->f_type_params);
-	pmime_src->f_other_fields.copy_to(pmime_dst->f_other_fields);
-	pmime_dst->head_touched = TRUE;
-	pmime_dst->content_touched = TRUE;
+	pmime->set_content_param("boundary", temp_boundary);
 }
 
 static BOOL mime_check_ascii_printable(const char *astring)

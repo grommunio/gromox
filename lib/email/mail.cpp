@@ -617,7 +617,7 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
 		auto m = static_cast<MIME *>(n->pdata);
 		if (strcasecmp(m->content_type, "multipart/signed") == 0)
 			b_tags[TAG_SIGNED] = TRUE;
-		if (mime_get_content_param(m, "smime-type", temp_buff, arsizeof(temp_buff)))
+		if (m->get_content_param("smime-type", temp_buff, arsizeof(temp_buff)))
 			b_tags[TAG_ENCRYPT] = TRUE;
 	});
 	
@@ -634,7 +634,7 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
 	memcpy(pbuff + buff_len, ",\"structure\":[", 14);
 	buff_len += 14;
 	*poffset = 0;
-	gmd = mime_get_structure_digest(pmail->get_head(), "",
+	gmd = pmail->get_head()->get_structure_digest("",
 	      poffset, &count, pbuff + buff_len, length - buff_len);
 	if (gmd < 0 || buff_len + gmd > length - 2) {
 		goto PARSE_FAILURE;
@@ -648,7 +648,7 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
 	memcpy(pbuff + buff_len, ",\"mimes\":[", 10);
 	buff_len += 10;
 	*poffset = 0;
-	gmd = mime_get_mimes_digest(pmail->get_head(), "", poffset, &count,
+	gmd = pmail->get_head()->get_mimes_digest("", poffset, &count,
 	      pbuff + buff_len, length - buff_len);
 	if (gmd < 0 || buff_len + gmd > length - 20) {
 		goto PARSE_FAILURE;
@@ -677,8 +677,7 @@ static void mail_enum_text_mime_charset(MIME *pmime, void *param)
 		return;
 	}
 	if (0 == strncasecmp(pmime->content_type, "text/", 5) &&
-		TRUE == mime_get_content_param(pmime, "charset",
-		email_charset, 32)) {
+	    pmime->get_content_param("charset", email_charset, 32)) {
 		tmp_len = strlen(email_charset);
 		for (i=0; i<tmp_len; i++) {
 			if ('"' == email_charset[i] || '\'' == email_charset[i] ||

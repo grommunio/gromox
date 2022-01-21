@@ -3136,7 +3136,7 @@ static BOOL message_forward_message(const char *from_address,
 				          GX_ARRAY_SIZE(tmp_buff) - offset, ", <%s>",
 				          static_cast<const char *>(pnode->pdata));
 			}
-			mime_append_field(pmime, "Delivered-To", static_cast<char *>(pnode->pdata));
+			pmime->append_field("Delivered-To", static_cast<char *>(pnode->pdata));
 		}
 		pmime->set_field("To", tmp_buff);
 		snprintf(tmp_buff, arsizeof(tmp_buff), "Automatic forwarded message from %s", username);
@@ -3159,7 +3159,7 @@ static BOOL message_forward_message(const char *from_address,
 		}
 		for (pnode=double_list_get_head(&rcpt_list); NULL!=pnode;
 			pnode=double_list_get_after(&rcpt_list, pnode)) {
-			mime_append_field(pmime, "Delivered-To", static_cast<char *>(pnode->pdata));
+			pmime->append_field("Delivered-To", static_cast<char *>(pnode->pdata));
 		}
 		if (action_flavor & ACTION_FLAVOR_PR) {
 			strcpy(tmp_buff, from_address);

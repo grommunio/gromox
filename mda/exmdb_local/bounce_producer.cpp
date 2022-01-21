@@ -455,7 +455,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	}
 	pmime = phead;
 	pmime->set_content_type("multipart/report");
-	mime_set_content_param(pmime, "report-type", "delivery-status");
+	pmime->set_content_param("report-type", "delivery-status");
 	pmime->set_field("Received", "from unknown (helo localhost) "
 		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
 	if (TRUE == bounce_producer_get_mail_thread_index(
@@ -484,7 +484,7 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 		tmp_buff, 256, &pmime->f_type_params);
 	pmime->set_content_type(tmp_buff);
 	rd_hold.unlock();
-	mime_set_content_param(pmime, "charset", "\"utf-8\"");
+	pmime->set_content_param("charset", "\"utf-8\"");
 	if (!pmime->write_content(original_ptr,
 		ptr - original_ptr, MIME_ENCODING_BASE64)) {
         printf("[exmdb_local]: fatal error, fail to write content\n");
@@ -609,7 +609,7 @@ static void bounce_producer_enum_charset(MIME *pmime, void *param)
 	if (TRUE == penum->b_found) {
 		return;
 	}
-	if (TRUE == mime_get_content_param(pmime, "charset", charset, 32)) {
+	if (pmime->get_content_param("charset", charset, 32)) {
 		len = strlen(charset);
 		if (len <= 2) {
 			return;

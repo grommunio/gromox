@@ -386,10 +386,8 @@ static BOOL oxcmail_get_content_param(MIME *pmime,
 {
 	int tmp_len;
 	
-	if (FALSE == mime_get_content_param(
-		pmime, tag, value, length)) {
+	if (!pmime->get_content_param(tag, value, length))
 		return FALSE;
-	}
 	tmp_len = strlen(value);
 	if (('"' == value[0] && '"' == value[tmp_len - 1]) ||
 		('\'' == value[0] && '\'' == value[tmp_len - 1])) {
@@ -5084,10 +5082,8 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 		          str, tmp_field + 1, 512);
 		if (tmp_len > 0) {
 			memcpy(tmp_field + 1 + tmp_len, "\"", 2);
-			if (FALSE == mime_set_content_param(
-				pmime2, "name", tmp_field)) {
+			if (!pmime2->set_content_param("name", tmp_field))
 				return FALSE;
-			}
 		}
 		if (FALSE == b_inline) {
 			strcpy(tmp_field, "attachment; filename=\"");
@@ -5171,10 +5167,8 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 				tmp_field + 1, 512);
 			if (tmp_len > 0) {
 				memcpy(tmp_field + 1 + tmp_len, "\"", 2);
-				if (FALSE == mime_set_content_param(
-					pmime, "name", tmp_field)) {
+				if (!pmime->set_content_param("name", tmp_field))
 					return FALSE;
-				}
 			}
 		}
 	} else if (b_vcard) {
@@ -5184,12 +5178,9 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		}
 		if (!pmime->set_content_type("text/directory"))
 			return FALSE;
-		if (FALSE == mime_set_content_param(
-			pmime, "charset", "\"utf-8\"") ||
-			FALSE == mime_set_content_param(
-			pmime, "profile", "vCard")) {
+		if (!pmime->set_content_param("charset", "\"utf-8\"") ||
+		    !pmime->set_content_param("profile", "vCard"))
 			return FALSE;
-		}
 	} else {
 		if (!pmime->set_content_type("message/rfc822"))
 			return FALSE;
@@ -5362,13 +5353,13 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 		if (MAIL_TYPE_DSN == mime_skeleton.mail_type) {
 			pmixed = pmime;
 			if (!pmime->set_content_type("multipart/report") ||
-			    !mime_set_content_param(pmime, "report-type", "delivery-status") ||
+			    !pmime->set_content_param("report-type", "delivery-status") ||
 			    (pmime = pmail->add_child(pmime, MIME_ADD_LAST)) == nullptr)
 				goto EXPORT_FAILURE;
 		} else if (MAIL_TYPE_MDN == mime_skeleton.mail_type) {
 			pmixed = pmime;
 			if (!pmime->set_content_type("multipart/report") ||
-			    !mime_set_content_param(pmime, "report-type", "disposition-notification") ||
+			    !pmime->set_content_param("report-type", "disposition-notification") ||
 			    (pmime = pmail->add_child(pmime, MIME_ADD_LAST)) == nullptr)
 				goto EXPORT_FAILURE;
 		} else {
@@ -5529,10 +5520,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 					goto EXPORT_FAILURE;
 				snprintf(tmp_charset, arsizeof(tmp_charset), "\"%s\"", mime_skeleton.charset);
 			}
-			if (FALSE == mime_set_content_param(
-				pplain, "charset", tmp_charset)) {
+			if (!pplain->set_content_param("charset", tmp_charset))
 				goto EXPORT_FAILURE;
-			}
 		}
 	}
 	
@@ -5549,8 +5538,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 			goto EXPORT_FAILURE;
 		}
 		rop_util_free_binary(pbin);
-		if (FALSE == mime_set_content_param(
-			pmime, "name", "\"winmail.dat\"") ||
+		if (!pmime->set_content_param("name", "\"winmail.dat\"") ||
 		    !pmime->set_field("Content-Disposition",
 			"attachment; filename=\"winmail.dat\""))
 			goto EXPORT_FAILURE;
@@ -5565,10 +5553,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 			goto EXPORT_FAILURE;
 		}
 		snprintf(tmp_charset, arsizeof(tmp_charset), "\"%s\"", mime_skeleton.charset);
-		if (FALSE == mime_set_content_param(
-			phtml, "charset", tmp_charset)) {
+		if (!phtml->set_content_param("charset", tmp_charset))
 			goto EXPORT_FAILURE;
-		}
 	}
 	
 	if (NULL != pcalendar) {
@@ -5593,12 +5579,10 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 			strlen(tmp_buff), MIME_ENCODING_BASE64)) {
 			goto EXPORT_FAILURE;
 		}
-		if (FALSE == mime_set_content_param(
-			pcalendar, "charset", "\"utf-8\"")) {
+		if (!pcalendar->set_content_param("charset", "\"utf-8\""))
 			goto EXPORT_FAILURE;
-		}
 		if ('\0' != tmp_method[0]) {
-			mime_set_content_param(pcalendar, "method", tmp_method);
+			pcalendar->set_content_param("method", tmp_method);
 		}
 	}
 	

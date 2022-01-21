@@ -474,7 +474,7 @@ BOOL bounce_producer_make(const char *from, const char *rcpt,
 	}
 	pmime = phead;
 	pmime->set_content_type("multipart/report");
-	mime_set_content_param(pmime, "report-type", "delivery-status");
+	pmime->set_content_param("report-type", "delivery-status");
 	pmime->set_field("Received", "from unknown (helo localhost) "
 		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
 	pmime->set_field("From", mime_from);
@@ -492,7 +492,7 @@ BOOL bounce_producer_make(const char *from, const char *rcpt,
 		return FALSE;
 	}
 	pmime->set_content_type(content_type);
-	mime_set_content_param(pmime, "charset", "\"utf-8\"");
+	pmime->set_content_param("charset", "\"utf-8\"");
 	if (!pmime->write_content(content_buff,
 		strlen(content_buff), MIME_ENCODING_BASE64)) {
 		return FALSE;

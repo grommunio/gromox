@@ -166,7 +166,7 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 	}
 
 	pmime_child->set_content_type("text/html");
-	mime_set_content_param(pmime_child, "charset", "\"us-ascii\"");
+	pmime_child->set_content_param("charset", "\"us-ascii\"");
 	memcpy(tmp_buff, HTML_01, sizeof(HTML_01) - 1);
 	offset = sizeof(HTML_01) - 1;
 
