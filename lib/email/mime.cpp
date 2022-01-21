@@ -1009,8 +1009,9 @@ BOOL MIME::set_content_param(const char *tag, const char *value)
  *		TRUE			OK to copy out the MIME
  *		FALSE			buffer is too short
  */
-BOOL mime_serialize(MIME *pmime, STREAM *pstream)
+BOOL MIME::serialize(STREAM *pstream)
 {
+	auto pmime = this;
 	int		tag_len, val_len;
 	long	len, tmp_len;
 	char	tmp_buff[MIME_FIELD_LEN];
@@ -1019,8 +1020,8 @@ BOOL mime_serialize(MIME *pmime, STREAM *pstream)
 	SIMPLE_TREE_NODE *pnode;
 	
 #ifdef _DEBUG_UMTA
-	if (NULL == pmime || NULL == pstream) {
-		debug_info("[mime]: NULL pointer found in mime_serialize");
+	if (pstream == nullptr) {
+		debug_info("[mime]: NULL pointer found in MIME::serialize");
 		return FALSE;
 	}
 #endif
@@ -1097,9 +1098,8 @@ BOOL mime_serialize(MIME *pmime, STREAM *pstream)
 			pstream->write(pmime->boundary_string, pmime->boundary_len);
 			pstream->write("\r\n", 2);
 			pmime_child = (MIME*)pnode->pdata;
-			if (FALSE == mime_serialize(pmime_child, pstream)) {
+			if (!pmime_child->serialize(pstream))
 				return FALSE;
-			}
 			pnode = simple_tree_node_get_sibling(pnode);
 		}
 		if (FALSE == has_submime) {
@@ -1120,7 +1120,7 @@ BOOL mime_serialize(MIME *pmime, STREAM *pstream)
 			} else if (0 == tmp_len) {
 				pstream->write("\r\n", 2);
 			} else {
-				debug_info("[mime]: fatal error in mime_serialize");
+				debug_info("[mime]: fatal error in MIME::serialize");
 			}
 		}
 	}
@@ -1138,7 +1138,7 @@ static BOOL mime_read_multipart_content(MIME *pmime,
 	SIMPLE_TREE_NODE *pnode;
 	LIB_BUFFER *pallocator;
 	
-	auto tmp_size = mime_get_length(pmime);
+	auto tmp_size = pmime->get_length();
 	if (tmp_size < 0) {
 		*plength = 0;
 		return false;
@@ -1166,9 +1166,8 @@ static BOOL mime_read_multipart_content(MIME *pmime,
 		tmp_stream.write(pmime->boundary_string, pmime->boundary_len);
 		tmp_stream.write("\r\n", 2);
 		pmime_child = (MIME*)pnode->pdata;
-		if (FALSE == mime_serialize(pmime_child, &tmp_stream)) {
+		if (!pmime_child->serialize(&tmp_stream))
 			return FALSE;
-		}
 		pnode = simple_tree_node_get_sibling(pnode);
 	}
 	if (FALSE == has_submime) {
@@ -1478,8 +1477,9 @@ BOOL MIME::read_content(char *out_buff, size_t *plength)
  *		TRUE			OK to copy out the MIME
  *		FALSE			buffer is too short
  */
-BOOL mime_to_file(MIME *pmime, int fd)
+BOOL MIME::to_file(int fd)
 {
+	auto pmime = this;
 	BOOL has_submime;
 	MIME *pmime_child;
 	size_t len, tmp_len;
@@ -1487,13 +1487,6 @@ BOOL mime_to_file(MIME *pmime, int fd)
 	SIMPLE_TREE_NODE *pnode;
 	char tmp_buff[MIME_FIELD_LEN + MIME_NAME_LEN + 4];
 	
-	
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mime]: NULL pointer found in mime_to_file");
-		return FALSE;
-	}
-#endif
 	if (NONE_MIME == pmime->mime_type) {
 #ifdef _DEBUG_UMTA
 		debug_info("[mime]: mime content type is not set");
@@ -1618,9 +1611,8 @@ BOOL mime_to_file(MIME *pmime, int fd)
 			if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
 				return FALSE;
 			pmime_child = (MIME*)pnode->pdata;
-			if (FALSE == mime_to_file(pmime_child, fd)) {
+			if (!pmime_child->to_file(fd))
 				return FALSE;
-			}
 			pnode = simple_tree_node_get_sibling(pnode);
 		}
 		if (FALSE == has_submime) {
@@ -1654,7 +1646,7 @@ BOOL mime_to_file(MIME *pmime, int fd)
 				memcpy(tmp_buff + len, "\r\n", 2);
 				len += 2;
 			} else {
-				debug_info("[mime]: fatal error in mime_to_file");
+				debug_info("[mime]: E-1640");
 				return FALSE;
 			}
 		}
@@ -1674,8 +1666,9 @@ BOOL mime_to_file(MIME *pmime, int fd)
  *		TRUE			OK to copy out the MIME
  *		FALSE			buffer is too short
  */
-BOOL mime_to_ssl(MIME *pmime, SSL *ssl)
+BOOL MIME::to_tls(SSL *ssl)
 {
+	auto pmime = this;
 	BOOL has_submime;
 	MIME *pmime_child;
 	size_t len, tmp_len;
@@ -1683,10 +1676,9 @@ BOOL mime_to_ssl(MIME *pmime, SSL *ssl)
 	SIMPLE_TREE_NODE *pnode;
 	char tmp_buff[MIME_FIELD_LEN + MIME_NAME_LEN + 4];
 	
-	
 #ifdef _DEBUG_UMTA
-	if (NULL == pmime || NULL == ssl) {
-		debug_info("[mime]: NULL pointer found in mime_to_ssl");
+	if (tls == nullptr) {
+		debug_info("[mime]: NULL pointer found in MIME::to_tls");
 		return FALSE;
 	}
 #endif
@@ -1813,9 +1805,8 @@ BOOL mime_to_ssl(MIME *pmime, SSL *ssl)
 			if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
 				return FALSE;
 			pmime_child = (MIME*)pnode->pdata;
-			if (FALSE == mime_to_ssl(pmime_child, ssl)) {
+			if (!pmime_child->to_tls(ssl))
 				return FALSE;
-			}
 			pnode = simple_tree_node_get_sibling(pnode);
 		}
 		if (FALSE == has_submime) {
@@ -1849,7 +1840,7 @@ BOOL mime_to_ssl(MIME *pmime, SSL *ssl)
 				memcpy(tmp_buff + len, "\r\n", 2);
 				len += 2;
 			} else {
-				debug_info("[mime]: fatal error in mime_to_ssl");
+				debug_info("[mime]: E-1641");
 				return FALSE;
 			}
 		}
@@ -1868,20 +1859,15 @@ BOOL mime_to_ssl(MIME *pmime, SSL *ssl)
  *		TRUE			dot-stuffing in MIME
  *		FALSE			no dot-stuffing in MIME
  */
-BOOL mime_check_dot(MIME *pmime)
+BOOL MIME::check_dot()
 {
+	auto pmime = this;
 	size_t	tmp_len;
 	int		tag_len, val_len;
 	char	tmp_buff[MIME_FIELD_LEN + MIME_NAME_LEN + 4];
 	MIME	*pmime_child;
 	SIMPLE_TREE_NODE *pnode;
 	
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mime]: NULL pointer found in mime_check_dot");
-		return FALSE;
-	}
-#endif
 	if (NONE_MIME == pmime->mime_type) {
 #ifdef _DEBUG_UMTA
 		debug_info("[mime]: mime content type is not set");
@@ -1933,9 +1919,8 @@ BOOL mime_check_dot(MIME *pmime)
 		pnode = simple_tree_node_get_child(&pmime->node);
         while (NULL != pnode) {
 			pmime_child = (MIME*)pnode->pdata;
-			if (TRUE == mime_check_dot(pmime_child)) {
+			if (pmime_child->check_dot())
 				return TRUE;
-			}
 			pnode = simple_tree_node_get_sibling(pnode);
 		}
 		
@@ -1960,19 +1945,14 @@ BOOL mime_check_dot(MIME *pmime)
  *	@return
  *		length of mime object
  */
-ssize_t mime_get_length(MIME *pmime)
+ssize_t MIME::get_length()
 {
+	auto pmime = this;
 	int		tag_len, val_len;
 	MIME	*pmime_child;
 	BOOL	has_submime;
 	SIMPLE_TREE_NODE *pnode;
 	
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mime]: NULL pointer found in mime_get_length");
-		return -1;
-	}
-#endif
 	if (NONE_MIME == pmime->mime_type) {
 		return -1;
 	}
@@ -2037,7 +2017,7 @@ ssize_t mime_get_length(MIME *pmime)
 			has_submime = TRUE;
 			mime_len += pmime->boundary_len + 4;
 			pmime_child = (MIME*)pnode->pdata;
-			auto mgl = mime_get_length(pmime_child);
+			auto mgl = pmime_child->get_length();
 			if (mgl < 0)
 				return -1;
 			mime_len += mgl;
@@ -2063,8 +2043,9 @@ ssize_t mime_get_length(MIME *pmime)
 	return mime_len;
 }
 
-BOOL mime_get_filename(MIME *pmime, char *file_name)
+BOOL MIME::get_filename(char *file_name)
 {
+	auto pmime = this;
 	int i;
 	int mode;
 	char *ptr;
@@ -2309,7 +2290,7 @@ ssize_t MIME::get_mimes_digest(const char *id_string,
 			}
 		}
 		
-		if (TRUE == mime_get_filename(pmime, file_name)) {
+		if (pmime->get_filename(file_name)) {
 			encode64(file_name, strlen(file_name), temp_buff, 512, &tmp_len);
 			buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
 							",\"filename\":\"%s\"", temp_buff);
@@ -2508,7 +2489,7 @@ ssize_t MIME::get_structure_digest(const char *id_string,
 		}
 		HX_strrtrim(content_type);
 		HX_strltrim(content_type);
-		auto mgl = mime_get_length(pmime);
+		auto mgl = pmime->get_length();
 		if (mgl < 0)
 			return -1;
 		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
@@ -2691,44 +2672,26 @@ static BOOL mime_check_ascii_printable(const char *astring)
 	       [&](uint8_t c) { return c >= 0x20 && c <= 0x7E; });
 }
 
-MIME* mime_get_child(MIME *pmime)
+MIME *MIME::get_child()
 {
+	auto pmime = this;
 	SIMPLE_TREE_NODE *pnode;
-	
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mime]: NULL pointer found in mime_get_child");
-		return NULL;
-	}
-#endif
 	pnode = simple_tree_node_get_child(&pmime->node);
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata) : nullptr;
 }
 
-MIME* mime_get_parent(MIME *pmime)
+MIME *MIME::get_parent()
 {
+	auto pmime = this;
 	SIMPLE_TREE_NODE *pnode;
-	
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mime]: NULL pointer found in mime_get_parent");
-		return NULL;
-	}
-#endif
 	pnode = simple_tree_node_get_parent(&pmime->node);
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata) : nullptr;
 }
 
-MIME *mime_get_sibling(MIME *pmime)
+MIME *MIME::get_sibling()
 {
+	auto pmime = this;
 	SIMPLE_TREE_NODE *pnode;
-	
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mime]: NULL pointer found in mime_get_sibling");
-		return NULL;
-	}
-#endif
 	pnode = simple_tree_node_get_sibling(&pmime->node);
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata) : nullptr;
 }

@@ -545,9 +545,8 @@ static void bounce_producer_enum_parts(MIME *pmime, void *param)
 	char name[256];
 	char temp_name[512];
 	
-	if (FALSE == mime_get_filename(pmime, name)) {
+	if (!pmime->get_filename(name))
 		return;
-	}
 	if (TRUE == mime_string_to_utf8(penum->charset, name, temp_name)) {
 		attach_len = strlen(temp_name);
 		if (penum->offset + attach_len < 128*1024) {

@@ -231,7 +231,7 @@ BOOL MAIL::serialize(STREAM *pstream)
 #endif
 	
 	pnode = simple_tree_get_root(&pmail->tree);
-	return pnode != nullptr ? mime_serialize(static_cast<MIME *>(pnode->pdata), pstream) : false;
+	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata)->serialize(pstream) : false;
 }
 
 /*
@@ -248,7 +248,7 @@ BOOL MAIL::to_file(int fd)
 	auto pmail = this;
 	SIMPLE_TREE_NODE *pnode;
 	pnode = simple_tree_get_root(&pmail->tree);
-	return pnode != nullptr ? mime_to_file(static_cast<MIME *>(pnode->pdata), fd) : false;
+	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata)->to_file(fd) : false;
 }
 
 /*
@@ -271,7 +271,7 @@ BOOL MAIL::to_ssl(SSL *ssl)
 #endif
 	
 	pnode = simple_tree_get_root(&pmail->tree);
-	return pnode != nullptr ? mime_to_ssl(static_cast<MIME *>(pnode->pdata), ssl) : false;
+	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata)->to_tls(ssl) : false;
 }
 
 /*
@@ -287,7 +287,7 @@ BOOL MAIL::check_dot()
 	auto pmail = this;
 	SIMPLE_TREE_NODE *pnode;
 	pnode = simple_tree_get_root(&pmail->tree);
-	return pnode != nullptr ? mime_check_dot(static_cast<MIME *>(pnode->pdata)) : false;
+	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata)->check_dot() : false;
 }
 
 /*
@@ -302,7 +302,7 @@ ssize_t MAIL::get_length()
 	auto pmail = this;
 	SIMPLE_TREE_NODE *pnode;
 	pnode = simple_tree_get_root(&pmail->tree);
-	return pnode != nullptr ? mime_get_length(static_cast<MIME *>(pnode->pdata)) : -1;
+	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata)->get_length() : -1;
 }
 
 MAIL::~MAIL()
