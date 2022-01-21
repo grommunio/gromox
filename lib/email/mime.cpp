@@ -33,7 +33,7 @@ bool MAIL::set_header(const char *hdr, const char *val)
 	SIMPLE_TREE_NODE *node = simple_tree_get_root(&mail->tree);
 	if (node == nullptr)
 		return false;
-	return mime_set_field(static_cast<MIME *>(node->pdata), hdr, val);
+	return static_cast<MIME *>(node->pdata)->set_field(hdr, val);
 }
 
 void mime_init(MIME *pmime, LIB_BUFFER *palloc)
@@ -322,7 +322,7 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 	pmime->content_touched = TRUE;
 	mime_remove_field(pmime, "Content-Transfer-Encoding");
 	if (0 == length) {
-		mime_set_field(pmime, "Content-Transfer-Encoding",
+		pmime->set_field("Content-Transfer-Encoding",
 			encoding_type == MIME_ENCODING_QP ?
 			"quoted-printable" : "base64");
 		return TRUE;
@@ -394,7 +394,7 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 		}
 		free(pbuff);
 		pmime->content_length = j;
-		mime_set_field(pmime, "Content-Transfer-Encoding", "quoted-printable");
+		pmime->set_field("Content-Transfer-Encoding", "quoted-printable");
 		return TRUE;
 	}
 	case MIME_ENCODING_BASE64: {
@@ -405,7 +405,7 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 		}
 		encode64_ex(pcontent, length, pmime->content_begin, buff_length,
 				&pmime->content_length);
-		mime_set_field(pmime, "Content-Transfer-Encoding", "base64");
+		pmime->set_field("Content-Transfer-Encoding", "base64");
 		return TRUE;
 	}
 	}
@@ -444,7 +444,7 @@ BOOL MIME::write_mail(MAIL *pmail)
 	pmime->content_begin = reinterpret_cast<char *>(pmail);
 	pmime->content_length = 0;
 	pmime->content_touched = TRUE;
-	mime_set_field(pmime, "Content-Transfer-Encoding", "8bit");
+	pmime->set_field("Content-Transfer-Encoding", "8bit");
 	return TRUE;
 }
 
@@ -711,8 +711,9 @@ BOOL MIME::search_field(const char *tag, int order, char *value,
  *		TRUE				OK
  *		FALSE				fail to det
  */
-BOOL mime_set_field(MIME *pmime, const char *tag, const char *value)
+BOOL MIME::set_field(const char *tag, const char *value)
 {
+	auto pmime = this;
 	MEM_FILE file_tmp;
 	int		tag_len, val_len;
 	char	tmp_buff[MIME_FIELD_LEN];
@@ -720,8 +721,8 @@ BOOL mime_set_field(MIME *pmime, const char *tag, const char *value)
 	int		i, mark;
 	
 #ifdef _DEBUG_UMTA
-	if (NULL == pmime || NULL == tag || NULL == value) {
-		debug_info("[mime]: NULL pointer found in mime_set_field");
+	if (tag == nullptr || value == nullptr) {
+		debug_info("[mime]: NULL pointer found in MIME::set_field");
 		return FALSE;
 	}
 #endif

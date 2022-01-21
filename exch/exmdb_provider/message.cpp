@@ -2914,7 +2914,7 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	if (NULL == pmime) {
 		return FALSE;
 	}
-	mime_set_field(pmime, "X-Auto-Response-Suppress", "All");
+	pmime->set_field("X-Auto-Response-Suppress", "All");
 	const char *pvalue2 = strchr(from_address, '@');
 	snprintf(tmp_buff, sizeof(tmp_buff), "auto-reply@%s", pvalue2 == nullptr ? "system.mail" : pvalue2 + 1);
 	double_list_init(&tmp_list);
@@ -3124,7 +3124,7 @@ static BOOL message_forward_message(const char *from_address,
 		} else {
 			snprintf(tmp_buff, arsizeof(tmp_buff), "\"Forwarder\"<forwarder@%s>", pdomain);
 		}
-		mime_set_field(pmime, "From", tmp_buff);
+		pmime->set_field("From", tmp_buff);
 		offset = 0;
 		for (pnode=double_list_get_head(&rcpt_list); NULL!=pnode;
 			pnode=double_list_get_after(&rcpt_list, pnode)) {
@@ -3138,13 +3138,13 @@ static BOOL message_forward_message(const char *from_address,
 			}
 			mime_append_field(pmime, "Delivered-To", static_cast<char *>(pnode->pdata));
 		}
-		mime_set_field(pmime, "To", tmp_buff);
+		pmime->set_field("To", tmp_buff);
 		snprintf(tmp_buff, arsizeof(tmp_buff), "Automatic forwarded message from %s", username);
-		mime_set_field(pmime, "Subject", tmp_buff);
+		pmime->set_field("Subject", tmp_buff);
 		time(&cur_time);
 		strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z", 
 			localtime_r(&cur_time, &time_buff));
-		mime_set_field(pmime, "Date", tmp_buff);
+		pmime->set_field("Date", tmp_buff);
 		pmime->write_mail(&imail);
 		if (action_flavor & ACTION_FLAVOR_PR) {
 			strcpy(tmp_buff, from_address);

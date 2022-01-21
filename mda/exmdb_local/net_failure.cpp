@@ -193,15 +193,15 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 	memcpy(tmp_buff + offset, HTML_02, sizeof(HTML_02) - 1);
 	offset += sizeof(HTML_02) - 1;
 	pmime_child->write_content(tmp_buff, offset, MIME_ENCODING_NONE);
-	mime_set_field(pmime, "Received", "from unknown (helo localhost) "
+	pmime->set_field("Received", "from unknown (helo localhost) "
 		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
-	mime_set_field(pmime, "From", pcontext->pcontrol->from);
-	mime_set_field(pmime, "To", get_admin_mailbox());
+	pmime->set_field("From", pcontext->pcontrol->from);
+	pmime->set_field("To", get_admin_mailbox());
 	strftime(tmp_buff, 128, "%a, %d %b %Y %H:%M:%S %z",
 	         localtime_r(&current_time, &time_buff));
-	mime_set_field(pmime, "Date", tmp_buff);
+	pmime->set_field("Date", tmp_buff);
 	snprintf(tmp_buff, arsizeof(tmp_buff), "Local Delivery Alarm from %s", get_host_ID());
-	mime_set_field(pmime, "Subject", tmp_buff);
+	pmime->set_field("Subject", tmp_buff);
 	enqueue_context(pcontext);
 }
 

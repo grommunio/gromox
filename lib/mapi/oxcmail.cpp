@@ -4384,10 +4384,8 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	char tmp_buff[MIME_FIELD_LEN];
 	char tmp_field[MIME_FIELD_LEN];
 	
-	
-	if (FALSE == mime_set_field(phead, "MIME-Version", "1.0")) {
+	if (!phead->set_field("MIME-Version", "1.0"))
 		return FALSE;
-	}
 	
 	auto str  = pmsg->proplist.get<const char>(PR_SENDER_SMTP_ADDRESS);
 	auto str1 = pmsg->proplist.get<const char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
@@ -4396,10 +4394,8 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			oxcmail_export_address(pmsg, alloc, tags_sender,
 				pskeleton->charset, tmp_field,
 				GX_ARRAY_SIZE(tmp_field));
-			if (FALSE == mime_set_field(phead,
-				"Sender", tmp_field)) {
+			if (!phead->set_field("Sender", tmp_field))
 				return FALSE;
-			}
 		}
 	} else {
 		str  = pmsg->proplist.get<char>(PR_SENDER_ADDRTYPE);
@@ -4414,22 +4410,18 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 				oxcmail_export_address(pmsg, alloc, tags_sender,
 					pskeleton->charset, tmp_field,
 					GX_ARRAY_SIZE(tmp_field));
-				if (FALSE == mime_set_field(phead,
-				    "Sender", tmp_field)) {
+				if (!phead->set_field("Sender", tmp_field))
 					return FALSE;
-				}
 			}
 		}
 	}
 	if (oxcmail_export_address(pmsg, alloc, tags_sent_repr,
 	    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field))) {
-		if (FALSE == mime_set_field(phead,
-			"From", tmp_field)) {
+		if (!phead->set_field("From", tmp_field))
 			return FALSE;
-		}
 	} else if (oxcmail_export_address(pmsg, alloc, tags_sender,
 	    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field)) &&
-	    !mime_set_field(phead, "Sender", tmp_field)) {
+	    !phead->set_field("Sender", tmp_field)) {
 		return FALSE;
 	}
 	auto flag = pmsg->proplist.get<uint8_t>(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED);
@@ -4442,10 +4434,8 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 
 		    oxcmail_export_address(pmsg, alloc, tags_sent_repr,
 		    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field))) {
-			if (FALSE == mime_set_field(phead,
-				"Return-Receipt-To", tmp_field)) {
+			if (!phead->set_field("Return-Receipt-To", tmp_field))
 				return FALSE;
-			}	
 		}
 	}
 	
@@ -4456,27 +4446,24 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 
 		    oxcmail_export_address(pmsg, alloc, tags_sent_repr,
 		    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field))) {
-			if (FALSE == mime_set_field(phead,
-				"Disposition-Notification-To",
-				tmp_field)) {
+			if (!phead->set_field("Disposition-Notification-To", tmp_field))
 				return FALSE;
-			}
 		}
 	}
 	
 	if (oxcmail_export_reply_to(pmsg, pskeleton->charset, alloc, tmp_field) &&
-	    !mime_set_field(phead, "Reply-To", tmp_field))
+	    !phead->set_field("Reply-To", tmp_field))
 		return FALSE;
 	if (NULL == pmsg->children.prcpts) {
 		goto EXPORT_CONTENT_CLASS;
 	}
 	if (oxcmail_export_addresses(pskeleton->charset, pmsg->children.prcpts,
 	    MAPI_TO, alloc, tmp_field, arsizeof(tmp_field)) &&
-	    !mime_set_field(phead, "To", tmp_field))
+	    !phead->set_field("To", tmp_field))
 		return FALSE;
 	if (oxcmail_export_addresses(pskeleton->charset, pmsg->children.prcpts,
 	    MAPI_CC, alloc, tmp_field, arsizeof(tmp_field)) &&
-	    !mime_set_field(phead, "Cc", tmp_field))
+	    !phead->set_field("Cc", tmp_field))
 		return FALSE;
 	
 	if (0 == strncasecmp(pskeleton->pmessage_class,
@@ -4487,17 +4474,15 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		if (oxcmail_export_addresses(pskeleton->charset,
 		    pmsg->children.prcpts, MAPI_BCC, alloc,
 		    tmp_field, arsizeof(tmp_field)) &&
-		    !mime_set_field(phead, "Bcc", tmp_field))
+		    !phead->set_field("Bcc", tmp_field))
 			return FALSE;
 	}
 	
  EXPORT_CONTENT_CLASS:
 	if (TRUE == oxcmail_export_content_class(
 		pskeleton->pmessage_class, tmp_field)) {
-		if (FALSE == mime_set_field(phead,
-			"Content-Class", tmp_field)) {
+		if (!phead->set_field("Content-Class", tmp_field))
 			return FALSE;
-		}
 	} else if (0 == strncasecmp(
 		pskeleton->pmessage_class,
 		"IPM.InfoPathForm.", 17)) {
@@ -4512,45 +4497,39 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			if (str1 != nullptr)
 				str = str1 + 1;
 			snprintf(tmp_field, 1024, "InfoPathForm.%s", str);
-			if (FALSE == mime_set_field(phead,
-				"Content-Class", tmp_field)) {
+			if (!phead->set_field("Content-Class", tmp_field))
 				return FALSE;
-			}
 		}
 	}
 	str = pmsg->proplist.get<char>(PR_SENDER_TELEPHONE_NUMBER);
-	if (str != nullptr && !mime_set_field(phead, "X-CallingTelephoneNumber", str))
+	if (str != nullptr && !phead->set_field("X-CallingTelephoneNumber", str))
 		return FALSE;
 	auto num = pmsg->proplist.get<const uint32_t>(PidTagVoiceMessageDuration);
 	if (num != nullptr) {
 		snprintf(tmp_field, arsizeof(tmp_field), "%ld", static_cast<long>(*num));
-		if (FALSE == mime_set_field(phead,
-			"X-VoiceMessageDuration", tmp_field)) {
+		if (!phead->set_field("X-VoiceMessageDuration", tmp_field))
 			return FALSE;
-		}
 	}
 	str = pmsg->proplist.get<char>(PidTagVoiceMessageSenderName);
-	if (str != nullptr && !mime_set_field(phead, "X-VoiceMessageSenderName", str))
+	if (str != nullptr && !phead->set_field("X-VoiceMessageSenderName", str))
 		return FALSE;
 	num = pmsg->proplist.get<uint32_t>(PidTagFaxNumberOfPages);
 	if (num != nullptr) {
 		snprintf(tmp_field, arsizeof(tmp_field), "%lu", static_cast<unsigned long>(*num));
-		if (FALSE == mime_set_field(phead,
-			"X-FaxNumverOfPages", tmp_field)) {
+		if (!phead->set_field("X-FaxNumverOfPages", tmp_field))
 			return FALSE;
-		}
 	}
 	str = pmsg->proplist.get<char>(PidTagVoiceMessageAttachmentOrder);
-	if (str != nullptr && !mime_set_field(phead, "X-AttachmentOrder", str))
+	if (str != nullptr && !phead->set_field("X-AttachmentOrder", str))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PidTagCallId);
-	if (str != nullptr && !mime_set_field(phead, "X-CallID", str))
+	if (str != nullptr && !phead->set_field("X-CallID", str))
 		return FALSE;
 	str = importance_to_text(pmsg->proplist.get<const uint32_t>(PR_IMPORTANCE));
-	if (str != nullptr && !mime_set_field(phead, "Importance", str))
+	if (str != nullptr && !phead->set_field("Importance", str))
 		return false;
 	str = sensitivity_to_text(pmsg->proplist.get<const uint32_t>(PR_SENSITIVITY));
-	if (str != nullptr && !mime_set_field(phead, "Sensitivity", str))
+	if (str != nullptr && !phead->set_field("Sensitivity", str))
 		return false;
 	
 	auto lnum = pmsg->proplist.get<const uint64_t>(PR_CLIENT_SUBMIT_TIME);
@@ -4560,9 +4539,8 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		tmp_time = rop_util_nttime_to_unix(*lnum);
 	strftime(tmp_field, 128, "%a, %d %b %Y %H:%M:%S %z",
 					localtime_r(&tmp_time, &time_buff));
-	if (FALSE == mime_set_field(phead, "Date", tmp_field)) {
+	if (!phead->set_field("Date", tmp_field))
 		return FALSE;
-	}
 	
 	str  = pmsg->proplist.get<char>(PR_SUBJECT_PREFIX);
 	str1 = pmsg->proplist.get<char>(PR_NORMALIZED_SUBJECT);
@@ -4570,30 +4548,30 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		snprintf(tmp_buff, MIME_FIELD_LEN, "%s%s", str, str1);
 		if (oxcmail_encode_mime_string(pskeleton->charset,
 		    tmp_buff, tmp_field, arsizeof(tmp_field)) > 0 &&
-		    !mime_set_field(phead, "Subject", tmp_field))
+		    !phead->set_field("Subject", tmp_field))
 			return FALSE;
 	} else {
 		str = pmsg->proplist.get<char>(PR_SUBJECT);
 		if (str != nullptr && oxcmail_encode_mime_string(pskeleton->charset,
 		    str, tmp_field, arsizeof(tmp_field)) > 0 &&
-		    !mime_set_field(phead, "Subject", tmp_field))
+		    !phead->set_field("Subject", tmp_field))
 			return FALSE;
 	}
 	str = pmsg->proplist.get<char>(PR_CONVERSATION_TOPIC);
 	if (str != nullptr && oxcmail_encode_mime_string(pskeleton->charset,
 	    str, tmp_field, arsizeof(tmp_field)) > 0 &&
-	    !mime_set_field(phead, "Thread-Topic", tmp_field))
+	    !phead->set_field("Thread-Topic", tmp_field))
 		return FALSE;
 	auto bv = pmsg->proplist.get<BINARY>(PR_CONVERSATION_INDEX);
 	if (bv != nullptr &&
 	    encode64(bv->pb, bv->cb, tmp_field, 1024, &base64_len) == 0 &&
-	    !mime_set_field(phead, "Thread-Index", tmp_field))
+	    !phead->set_field("Thread-Index", tmp_field))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PR_INTERNET_MESSAGE_ID);
-	if (str != nullptr && !mime_set_field(phead, "Message-ID", str))
+	if (str != nullptr && !phead->set_field("Message-ID", str))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PR_INTERNET_REFERENCES);
-	if (str != nullptr && !mime_set_field(phead, "References", str))
+	if (str != nullptr && !phead->set_field("References", str))
 		return FALSE;
 	PROPERTY_NAME propname = {MNID_STRING, PS_PUBLIC_STRINGS, 0, deconst(PidNameKeywords)};
 	const PROPNAME_ARRAY propnames = {1, &propname};
@@ -4616,25 +4594,25 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 					tmp_field + tmp_len, MIME_FIELD_LEN - tmp_len);
 		}
 		if (tmp_len > 0 && tmp_len < MIME_FIELD_LEN &&
-		    !mime_set_field(phead, "Keywords", tmp_field))
+		    !phead->set_field("Keywords", tmp_field))
 			return FALSE;
 	}
 	str = pmsg->proplist.get<char>(PR_IN_REPLY_TO_ID);
-	if (str != nullptr && !mime_set_field(phead, "In-Reply-To", str))
+	if (str != nullptr && !phead->set_field("In-Reply-To", str))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PR_LIST_HELP);
-	if (str != nullptr && !mime_set_field(phead, "List-Help", str))
+	if (str != nullptr && !phead->set_field("List-Help", str))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PR_LIST_SUBSCRIBE);
-	if (str != nullptr && !mime_set_field(phead, "List-Subscribe", str))
+	if (str != nullptr && !phead->set_field("List-Subscribe", str))
 		return FALSE;
 	str = pmsg->proplist.get<char>(PR_LIST_UNSUBSCRIBE);
-	if (str != nullptr && !mime_set_field(phead, "List-Unsubscribe", str))
+	if (str != nullptr && !phead->set_field("List-Unsubscribe", str))
 		return FALSE;
 	num = pmsg->proplist.get<uint32_t>(PR_MESSAGE_LOCALE_ID);
 	if (num != nullptr) {
 		str = deconst(oxcmail_lcid_to_ltag(*num));
-		if (str != nullptr && !mime_set_field(phead, "Content-Language", str))
+		if (str != nullptr && !phead->set_field("Content-Language", str))
 			return FALSE;
 	}
 	propname = {MNID_ID, PSETID_COMMON, PidLidClassified};
@@ -4643,7 +4621,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	}
 	flag = pmsg->proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
 	if (flag != nullptr && *flag != 0 &&
-	    !mime_set_field(phead, "X-Microsoft-Classified", "true"))
+	    !phead->set_field("X-Microsoft-Classified", "true"))
 		return FALSE;
 	propname = {MNID_ID, PSETID_COMMON, PidLidClassificationKeep};
 	if (FALSE == get_propids(&propnames, &propids)) {
@@ -4651,47 +4629,43 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	}
 	flag = pmsg->proplist.get<uint8_t>(PROP_TAG(PT_BOOLEAN, propids.ppropid[0]));
 	if (flag != nullptr && *flag != 0 &&
-	    !mime_set_field(phead, "X-Microsoft-ClassKeep", "true"))
+	    !phead->set_field("X-Microsoft-ClassKeep", "true"))
 		return FALSE;
 	propname = {MNID_ID, PSETID_COMMON, PidLidClassification};
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
 	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
-	if (str != nullptr && !mime_set_field(phead, "X-Microsoft-Classification", str))
+	if (str != nullptr && !phead->set_field("X-Microsoft-Classification", str))
 		return FALSE;
 	propname = {MNID_ID, PSETID_COMMON, PidLidClassificationDescription};
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
 	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
-	if (str != nullptr && !mime_set_field(phead, "X-Microsoft-ClassDesc", str))
+	if (str != nullptr && !phead->set_field("X-Microsoft-ClassDesc", str))
 		return FALSE;
 	propname = {MNID_ID, PSETID_COMMON, PidLidClassificationGuid};
 	if (FALSE == get_propids(&propnames, &propids)) {
 		return FALSE;
 	}
 	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
-	if (str != nullptr && !mime_set_field(phead, "X-Microsoft-ClassID", str))
+	if (str != nullptr && !phead->set_field("X-Microsoft-ClassID", str))
 		return FALSE;
 	
 	if ((NULL != pmsg->children.pattachments &&
 		pmsg->children.pattachments->count) > 0 ||
 		(NULL != pskeleton->pattachments &&
 		pskeleton->pattachments->count > 0)) {
-		if (FALSE == mime_set_field(phead,
-			"X-MS-Has-Attach", "yes")) {
+		if (!phead->set_field("X-MS-Has-Attach", "yes"))
 			return FALSE;
-		}
 	}
 	
 	num = pmsg->proplist.get<uint32_t>(PR_AUTO_RESPONSE_SUPPRESS);
 	if (num != nullptr && *num != 0) {
 		if (*num == 0xFFFFFFFF) {
-			if (FALSE == mime_set_field(phead,
-				"X-Auto-Response-Suppress", "ALL")) {
+			if (!phead->set_field("X-Auto-Response-Suppress", "ALL"))
 				return FALSE;
-			}
 		} else {
 			*tmp_field = '\0';
 			if (*num & AUTO_RESPONSE_SUPPRESS_DR)
@@ -4722,30 +4696,28 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 				strcat(tmp_field, "AutoReply");
 			}
 		}
-		if (tmp_len != 0 && !mime_set_field(phead, "X-Auto-Response-Suppress", tmp_field))
+		if (tmp_len != 0 && !phead->set_field("X-Auto-Response-Suppress", tmp_field))
 			return FALSE;
 	}
 	
 	flag = pmsg->proplist.get<uint8_t>(PR_AUTO_FORWARDED);
 	if (flag != nullptr && *flag != 0 &&
-	    !mime_set_field(phead, "X-MS-Exchange-Organization-AutoForwarded", "true"))
+	    !phead->set_field("X-MS-Exchange-Organization-AutoForwarded", "true"))
 		return FALSE;
 	str = sender_id_to_text(pmsg->proplist.get<const uint32_t>(PR_SENDER_ID_STATUS));
 	if (str != nullptr &&
-	    !mime_set_field(phead, "X-MS-Exchange-Organization-SenderIdResult", str))
+	    !phead->set_field("X-MS-Exchange-Organization-SenderIdResult", str))
 		return false;
 	
 	str = pmsg->proplist.get<char>(PR_PURPORTED_SENDER_DOMAIN);
-	if (str != nullptr && !mime_set_field(phead, "X-MS-Exchange-Organization-PRD", str))
+	if (str != nullptr && !phead->set_field("X-MS-Exchange-Organization-PRD", str))
 		return FALSE;
 	
 	auto inum = pmsg->proplist.get<const int32_t>(PR_CONTENT_FILTER_SCL);
 	if (inum != nullptr) {
 		snprintf(tmp_field, arsizeof(tmp_field), "%ld", static_cast<long>(*inum));
-		if (FALSE == mime_set_field(phead,
-			"X-MS-Exchange-Organization-SCL", tmp_field)) {
+		if (!phead->set_field("X-MS-Exchange-Organization-SCL", tmp_field))
 			return FALSE;
-		}
 	}
 	
 	propname = {MNID_ID, PSETID_COMMON, PidLidFlagRequest};
@@ -4754,17 +4726,15 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	}
 	str = pmsg->proplist.get<char>(PROP_TAG(PT_UNICODE, propids.ppropid[0]));
 	if (str != nullptr && *str != '\0') {
-		if (!mime_set_field(phead, "X-Message-Flag", str))
+		if (!phead->set_field("X-Message-Flag", str))
 			return FALSE;
 		lnum = pmsg->proplist.get<uint64_t>(PR_REPLY_TIME);
 		if (lnum != nullptr) {
 			tmp_time = rop_util_nttime_to_unix(*lnum);
 			strftime(tmp_field, 128, "%a, %d %b %Y %H:%M:%S %z",
 							localtime_r(&tmp_time, &time_buff));
-			if (FALSE == mime_set_field(phead,
-				"Reply-By", tmp_field)) {
+			if (!phead->set_field("Reply-By", tmp_field))
 				return FALSE;
-			}
 		}
 	}
 	
@@ -4781,26 +4751,22 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 				tmp_field[bv->cb] = '\0';
 			}
 		}
-		if (FALSE == mime_set_field(phead,
-			"X-MS-TNEF-Correlator", tmp_field)) {
+		if (!phead->set_field("X-MS-TNEF-Correlator", tmp_field))
 			return FALSE;
-		}
 	}
 	
 	str = pmsg->proplist.get<char>(PR_BODY_CONTENT_ID);
 	if (str != nullptr) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "<%s>", str);
-		if (FALSE == mime_set_field(phead,
-			"Content-ID", tmp_buff)) {
+		if (!phead->set_field("Content-ID", tmp_buff))
 			return FALSE;
-		}
 	}
 	
 	str = pmsg->proplist.get<char>(PR_BODY_CONTENT_LOCATION);
-	if (str != nullptr && !mime_set_field(phead, "Content-Location", str))
+	if (str != nullptr && !phead->set_field("Content-Location", str))
 		return FALSE;
 	
-	mime_set_field(phead, "X-Mailer", "gromox-oxcmail " PACKAGE_VERSION);
+	phead->set_field("X-Mailer", "gromox-oxcmail " PACKAGE_VERSION);
 	auto guid = PS_INTERNET_HEADERS;
 	for (size_t i = 0; i < pmsg->proplist.count; ++i) {
 		uint16_t propid = PROP_ID(pmsg->proplist.ppropval[i].proptag);
@@ -4815,7 +4781,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 		if (ppropname->kind != MNID_STRING ||
 		    strcasecmp(ppropname->pname, "Content-Type") == 0)
 			continue;
-		if (!mime_set_field(phead, ppropname->pname,
+		if (!phead->set_field(ppropname->pname,
 		    static_cast<char *>(pmsg->proplist.ppropval[i].pvalue)))
 			return FALSE;
 	}
@@ -5133,16 +5099,14 @@ static BOOL oxcmail_export_appledouble(MAIL *pmail,
 		tmp_len += oxcmail_encode_mime_string(pskeleton->charset,
 		           str, tmp_field + tmp_len, arsizeof(tmp_field) - tmp_len);
 		memcpy(tmp_field + tmp_len, "\"", 2);
-		if (FALSE == mime_set_field(pmime2,
-			"Content-Disposition", tmp_field)) {
+		if (!pmime2->set_field("Content-Disposition", tmp_field))
 			return FALSE;
-		}
 	}
 	str = pattachment->proplist.get<char>(PR_DISPLAY_NAME);
 	if (str != nullptr) {
 		tmp_len = oxcmail_encode_mime_string(pskeleton->charset,
 		          str, tmp_field, arsizeof(tmp_field));
-		if (tmp_len > 0 && !mime_set_field(pmime2, "Content-Description", tmp_field))
+		if (tmp_len > 0 && !pmime2->set_field("Content-Description", tmp_field))
 			return FALSE;
 	}
 	return pmime2->write_content(reinterpret_cast<const char *>(macbin.pdata),
@@ -5235,7 +5199,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 	if (str != nullptr) {
 		tmp_len = oxcmail_encode_mime_string(pskeleton->charset,
 		          str, tmp_field, arsizeof(tmp_field));
-		if (tmp_len > 0 && !mime_set_field(pmime, "Content-Description", tmp_field))
+		if (tmp_len > 0 && !pmime->set_field("Content-Description", tmp_field))
 			return FALSE;
 	}
 	
@@ -5272,24 +5236,20 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		"modification-date=\"%a, %d %b %Y %H:%M:%S GMT\"",
 		&time_buff);
 	tmp_field[tmp_len] = '\0';
-	if (FALSE == mime_set_field(pmime,
-		"Content-Disposition", tmp_field)) {
+	if (!pmime->set_field("Content-Disposition", tmp_field))
 		return FALSE;
-	}
 	
 	str = pattachment->proplist.get<char>(PR_ATTACH_CONTENT_ID);
 	if (str != nullptr) {
 		snprintf(tmp_field, sizeof(tmp_field), "<%s>", str);
-		if (FALSE == mime_set_field(pmime,
-			"Content-ID", tmp_field)) {
+		if (!pmime->set_field("Content-ID", tmp_field))
 			return FALSE;
-		}
 	}
 	str = pattachment->proplist.get<char>(PR_ATTACH_CONTENT_LOCATION);
-	if (str != nullptr && !mime_set_field(pmime, "Content-Location", str))
+	if (str != nullptr && !pmime->set_field("Content-Location", str))
 		return FALSE;
 	str = pattachment->proplist.get<char>(PR_ATTACH_CONTENT_BASE);
-	if (str != nullptr && !mime_set_field(pmime, "Content-Base", str))
+	if (str != nullptr && !pmime->set_field("Content-Base", str))
 		return FALSE;
 	
 	if (b_vcard && oxvcard_export(pattachment->pembedded, &vcard, get_propids)) {
@@ -5529,10 +5489,8 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 		}
 		memcpy(mime_field.field_value, "fake-part/signed", 16);
 		mime_field.field_value[mime_field.field_value_len] = '\0';
-		if (FALSE == mime_set_field(pmime, "Content-Type",
-			mime_field.field_value)) {
+		if (!pmime->set_field("Content-Type", mime_field.field_value))
 			goto EXPORT_FAILURE;
-		}
 		if (!pmime->write_content(pbin->pc + tmp_len + 2,
 			pbin->cb - tmp_len - 2, MIME_ENCODING_NONE)) {
 			return FALSE;
@@ -5593,10 +5551,9 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 		rop_util_free_binary(pbin);
 		if (FALSE == mime_set_content_param(
 			pmime, "name", "\"winmail.dat\"") ||
-			FALSE == mime_set_field(pmime, "Content-Disposition",
-			"attachment; filename=\"winmail.dat\"")) {
+		    !pmime->set_field("Content-Disposition",
+			"attachment; filename=\"winmail.dat\""))
 			goto EXPORT_FAILURE;
-		}
 		oxcmail_free_mime_skeleton(&mime_skeleton);
 		return TRUE;
 	}

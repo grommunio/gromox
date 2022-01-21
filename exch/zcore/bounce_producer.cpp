@@ -508,12 +508,12 @@ BOOL bounce_producer_make(const char *username,
 	if (pvalue != nullptr) {
 		auto bv = static_cast<const BINARY *>(pvalue);
 		if (encode64(bv->pb, bv->cb, tmp_buff, sizeof(tmp_buff), &out_len) == 0)
-			mime_set_field(pmime, "Thread-Index", tmp_buff);
+			pmime->set_field("Thread-Index", tmp_buff);
 	}
 	std::string t_addr;
 	try {
 		t_addr = "\""s + mime_from + "\" <" + username + ">";
-		mime_set_field(pmime, "From", t_addr.c_str());
+		pmime->set_field("From", t_addr.c_str());
 		t_addr = "<"s + username + ">";
 	} catch (const std::bad_alloc &) {
 		fprintf(stderr, "E-1479: ENOMEM\n");
@@ -538,15 +538,15 @@ BOOL bounce_producer_make(const char *username,
 		         static_cast<const char *>(pvalue));
 	}
 	if ('\0' != mime_to[0]) {
-		mime_set_field(pmime, "To", mime_to);
+		pmime->set_field("To", mime_to);
 	}
-	mime_set_field(pmime, "MIME-Version", "1.0");
-	mime_set_field(pmime, "X-Auto-Response-Suppress", "All");
+	pmime->set_field("MIME-Version", "1.0");
+	pmime->set_field("X-Auto-Response-Suppress", "All");
 	time(&cur_time);
 	localtime_r(&cur_time, &time_buff);
 	strftime(date_buff, 128, "%a, %d %b %Y %H:%M:%S %z", &time_buff);
-	mime_set_field(pmime, "Date", date_buff);
-	mime_set_field(pmime, "Subject", subject);
+	pmime->set_field("Date", date_buff);
+	pmime->set_field("Subject", subject);
 	pmime = pmail->add_child(phead, MIME_ADD_FIRST);
 	if (NULL == pmime) {
 		return FALSE;

@@ -34,6 +34,7 @@ struct GX_EXPORT MIME {
 	BOOL get_field(const char *tag, char *value, int len);
 	int get_field_num(const char *tag);
 	BOOL search_field(const char *tag, int order, char *value, int len);
+	BOOL set_field(const char *tag, const char *value);
 	inline size_t get_children_num() const { return simple_tree_node_get_children_num(&node); }
 
 	SIMPLE_TREE_NODE node;
@@ -55,7 +56,6 @@ struct GX_EXPORT MIME {
 
 void mime_init(MIME *pmime, LIB_BUFFER *palloc);
 void mime_free(MIME *pmime);
-BOOL mime_set_field(MIME *pmime, const char *tag, const char *value);
 BOOL mime_append_field(MIME *pmime, const char *tag, const char *value);
 BOOL mime_remove_field(MIME *pmime, const char *tag);
 BOOL mime_get_content_param(MIME *pmime, const char *tag, char *value, 

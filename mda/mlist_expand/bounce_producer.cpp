@@ -471,20 +471,20 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	pmime = phead;
 	pmime->set_content_type("multipart/report");
 	mime_set_content_param(pmime, "report-type", "delivery-status");
-	mime_set_field(pmime, "Received", "from unknown (helo localhost) "
+	pmime->set_field("Received", "from unknown (helo localhost) "
 		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
 	if (TRUE == bounce_producer_get_mail_thread_index(
 		pmail_original, tmp_buff)) {
-		mime_set_field(pmime, "Thread-Index", tmp_buff);
+		pmime->set_field("Thread-Index", tmp_buff);
 	}
-	mime_set_field(pmime, "From", presource->from[bounce_type]);
+	pmime->set_field("From", presource->from[bounce_type]);
 	snprintf(tmp_buff, 256, "<%s>", from);
-	mime_set_field(pmime, "To", tmp_buff);
-	mime_set_field(pmime, "MIME-Version", "1.0");
+	pmime->set_field("To", tmp_buff);
+	pmime->set_field("MIME-Version", "1.0");
 	localtime_r(&cur_time, &time_buff);
 	strftime(date_buff, 128, "%a, %d %b %Y %H:%M:%S %z", &time_buff);
-	mime_set_field(pmime, "Date", date_buff);
-	mime_set_field(pmime, "Subject", presource->subject[bounce_type]);
+	pmime->set_field("Date", date_buff);
+	pmime->set_field("Subject", presource->subject[bounce_type]);
 	
 	pmime = pmail->add_child(phead, MIME_ADD_FIRST);
 	if (NULL == pmime) {

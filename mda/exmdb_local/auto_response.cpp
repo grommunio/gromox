@@ -211,16 +211,16 @@ void auto_response_reply(const char *user_home,
 	if ('\0' != charset[0]) {
 		mime_set_content_param(pmime, "charset", charset);
 	}
-	mime_set_field(pmime, "Received", "from unknown (helo localhost) "
+	pmime->set_field("Received", "from unknown (helo localhost) "
 		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
-	mime_set_field(pmime, "From", from);
-	mime_set_field(pmime, "To", rcpt);
-	mime_set_field(pmime, "MIME-Version", "1.0");
-	mime_set_field(pmime, "X-Auto-Response-Suppress", "All");
+	pmime->set_field("From", from);
+	pmime->set_field("To", rcpt);
+	pmime->set_field("MIME-Version", "1.0");
+	pmime->set_field("X-Auto-Response-Suppress", "All");
 	strftime(date_buff, 128, "%a, %d %b %Y %H:%M:%S %z",
 		localtime_r(&cur_time, &tm_buff));
-	mime_set_field(pmime, "Date", date_buff);
-	mime_set_field(pmime, "Subject", subject);
+	pmime->set_field("Date", date_buff);
+	pmime->set_field("Subject", subject);
 	if (!pmime->write_content(pcontent,
 		new_buff + j - pcontent, MIME_ENCODING_BASE64)) {
 		put_context(pcontext);
