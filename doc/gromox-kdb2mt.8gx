@@ -36,7 +36,9 @@ Show properties in detail (enhances \fB\-t\fP).
 Map the source mailbox folder hierarchy (and its subobjects) to the target
 mailbox's hierarchy and splice objects accordingly. Only use \-s when both the
 source side and the target side are private stores. See the section "Splice
-mode" below for more information.
+mode" below for more information. When \-\-with\-hidden is not selected, \-s
+will imply \-\-without\-hidden by default to avoid polluting e.g. "QuickStep
+settings" (which may already have settings).
 .TP
 \fB\-t\fP
 Show a diagnostic tree view of the source data as it is being read.
@@ -89,6 +91,9 @@ Extract just the object with the given hierarchy id. This option may be
 specified multiple times. In the output stream, the objects will have an
 unspecified location given as their parent folder. (mt2exm will use the
 drafts folder because it is expectedly less crowded than one's inbox.)
+.TP
+\fB\-\-with\-hidden\fP, \fB\-\-without\-hidden\fP
+This option controls the import of folders that have PR_ATTR_HIDDEN=1.
 .SH Splice mode
 Normally, kdb2mt will have a folder mapping table that specifies one entry,
 which is "(Source root)" to "(Target root)\\Top of Information Store\\Import of

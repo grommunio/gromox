@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2022 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
 #include <cerrno>
@@ -108,6 +108,7 @@ static int do_item(driver &, unsigned int, const parent_desc &, kdb_item &);
 static char *g_sqlhost, *g_sqlport, *g_sqldb, *g_sqluser, *g_atxdir;
 static char *g_srcguid, *g_srcmbox;
 static unsigned int g_splice, g_level1_fan = 10, g_level2_fan = 20, g_verbose;
+static int g_with_hidden = -1;
 static std::vector<uint32_t> g_only_objs;
 
 static void cb_only_obj(const HXoptcb *cb) {
@@ -129,6 +130,8 @@ static constexpr HXoption g_options_table[] = {
 	{"src-guid", 0, HXTYPE_STRING, &g_srcguid, nullptr, nullptr, 0, "Mailbox to extract from SQL", "GUID"},
 	{"src-mbox", 0, HXTYPE_STRING, &g_srcmbox, nullptr, nullptr, 0, "Mailbox to extract from SQL", "USERNAME"},
 	{"only-obj", 0, HXTYPE_ULONG, nullptr, nullptr, cb_only_obj, 0, "Extract specific object only", "OBJID"},
+	{"with-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 1, "Do import folders with PR_ATTR_HIDDEN"},
+	{"without-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 0, "Do skip folders with PR_ATTR_HIDDEN [default: dependent upon -s]"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -788,6 +791,11 @@ static int do_folder(driver &drv, unsigned int depth, const parent_desc &parent,
 		fprintf(stderr, "Processing folder \"%s\" (%zu elements)...\n",
 		        znul(dn), item.m_sub_hids.size());
 	}
+	auto hidden_flag = props->get<const uint8_t>(PR_ATTR_HIDDEN);
+	if (hidden_flag != nullptr && *hidden_flag != 0 && !g_with_hidden) {
+		fprintf(stderr, " - skipped due to PR_ATTR_HIDDEN=1\n");
+		return 1;
+	}
 
 	bool b_create = false;
 	auto iter = drv.m_folder_map.find(item.m_hid);
@@ -1006,6 +1014,8 @@ static int do_item(driver &drv, unsigned int depth, const parent_desc &parent, k
 	}
 	if (ret < 0)
 		return ret;
+	if (ret == 1)
+		return 0; /* skip item */
 
 	auto istty = isatty(STDERR_FILENO);
 	auto last_ts = std::chrono::steady_clock::now();
@@ -1072,6 +1082,8 @@ int main(int argc, const char **argv)
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	if (g_with_hidden < 0)
+		g_with_hidden = !g_splice;
 	if ((g_srcguid != nullptr) == (g_srcmbox != nullptr)) {
 		fprintf(stderr, "Exactly one of --src-guid or --src-mbox must be specified.\n");
 		return EXIT_FAILURE;
