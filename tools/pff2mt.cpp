@@ -110,10 +110,13 @@ using namespace gromox;
 
 static gi_folder_map_t g_folder_map;
 static unsigned int g_splice;
+static int g_with_hidden = -1;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'p', HXTYPE_NONE, &g_show_props, nullptr, nullptr, 0, "Show properties in detail (if -t)"},
 	{nullptr, 's', HXTYPE_NONE, &g_splice, nullptr, nullptr, 0, "Splice PFF objects into existing store hierarchy"},
 	{nullptr, 't', HXTYPE_NONE, &g_show_tree, nullptr, nullptr, 0, "Show tree-based analysis of the archive"},
+	{"with-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 1, "Do import folders with PR_ATTR_HIDDEN"},
+	{"without-hidden", 0, HXTYPE_VAL, &g_with_hidden, nullptr, nullptr, 0, "Do skip folders with PR_ATTR_HIDDEN [default: dependent upon -s]"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -691,6 +694,12 @@ static int do_folder(unsigned int depth, const parent_desc &parent,
 		throw YError("PF-1051");
 	if (!g_wet_run)
 		return 0;
+	auto hidden_flag = props->get<const uint8_t>(PR_ATTR_HIDDEN);
+	if (hidden_flag != nullptr && *hidden_flag != 0 && !g_with_hidden) {
+		fprintf(stderr, " - skipped due to PR_ATTR_HIDDEN=1\n");
+		return 1;
+	}
+
 	bool b_create = false;
 	auto iter = g_folder_map.find(ident);
 	if (iter == g_folder_map.end() && parent.type == MAPI_FOLDER) {
@@ -884,8 +893,10 @@ static int do_item(unsigned int depth, const parent_desc &parent, libpff_item_t 
 		gi_dump_tarray_set(depth, *tset);
 	}
 
-	if (ret != 0)
+	if (ret < 0)
 		return ret;
+	if (ret == 1)
+		return 0;
 	int nsub = 0;
 	if (libpff_item_get_number_of_sub_items(item, &nsub, &~unique_tie(err)) < 1)
 		throw az_error("PF-1003", err);
@@ -1161,6 +1172,8 @@ int main(int argc, const char **argv)
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
+	if (g_with_hidden < 0)
+		g_with_hidden = !g_splice;
 	if (argc != 2) {
 		fprintf(stderr, "Usage: gromox-pff2mt [-pst] input.pst | gromox-mt2.... \n");
 		return EXIT_FAILURE;

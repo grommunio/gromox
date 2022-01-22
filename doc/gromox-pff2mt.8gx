@@ -2,7 +2,7 @@
 .SH Name
 gromox\-pff2mt(8gx) \(em Utility for analysis of PFF/PST/OST files
 .SH Synopsis
-\fBgromox\-pff2mt\fP [\fB\-pst\fP] \fIinput.pst\fP
+\fBgromox\-pff2mt\fP [\fB\-pst\fP] [...] \fIinput.pst\fP
 .SH Description
 gromox\-pff2mt reads a file that conforms to the Personal Folder File (PFF) and
 the Offline Folder File (OFF) format and re-exports the data in a
@@ -28,10 +28,15 @@ Show properties in detail (enhances \fB\-t\fP).
 Splice objects from the PFF into existing folders. Specifically, the PFF root
 is mapped to the store root, and special folders (Sent Items, Deleted Items,
 etc.) are mapped to special folders in the store if the PFF has the necessary
-information. PST files have no such mapping hint for Inbox; only OST do.
+information. PST files have no such mapping hint for Inbox; only OST do. When
+\-\-with\-hidden is not selected, \-s will imply \-\-without\-hidden by default
+to avoid polluting e.g. "QuickStep settings" (which may already have settings).
 .TP
 \fB\-t\fP
 Show a diagnostic tree view of the source data as it is being read.
+.TP
+\fB\-\-with\-hidden\fP, \fB\-\-without\-hidden\fP
+This option controls the import of folders that have PR_ATTR_HIDDEN=1.
 .SH Examples
 Import of a PFF-compatible file into a Gromox mailbox via exmdb transport:
 .PP
