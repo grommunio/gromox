@@ -104,6 +104,29 @@ struct DSN_FILEDS_INFO {
 	const char *x_display_name;
 };
 
+struct addr_tags {
+	uint32_t pr_name, pr_addrtype, pr_emaddr, pr_smtpaddr, pr_entryid;
+};
+
+static constexpr addr_tags tags_self = {
+	PR_DISPLAY_NAME, PR_SMTP_ADDRESS, PR_ADDRTYPE, PR_EMAIL_ADDRESS,
+	PR_ENTRYID,
+};
+static constexpr addr_tags tags_sender = {
+	PR_SENDER_NAME, PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS,
+	PR_SENDER_SMTP_ADDRESS, PR_SENDER_ENTRYID,
+};
+static constexpr addr_tags tags_sent_repr = {
+	PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE,
+	PR_SENT_REPRESENTING_EMAIL_ADDRESS, PR_SENT_REPRESENTING_SMTP_ADDRESS,
+	PR_SENT_REPRESENTING_ENTRYID,
+};
+static constexpr addr_tags tags_read_rcpt = {
+	PidTagReadReceiptName, PidTagReadReceiptAddressType,
+	PidTagReadReceiptEmailAddress, PidTagReadReceiptSmtpAddress,
+	PR_READ_RECEIPT_ENTRYID,
+};
+
 }
 
 enum {
@@ -3951,27 +3974,27 @@ static size_t oxcmail_encode_mime_string(const char *charset,
 }
 
 static BOOL oxcmail_get_smtp_address(const TPROPVAL_ARRAY *pproplist,
-    EXT_BUFFER_ALLOC alloc, uint32_t pr_smtpaddr, uint32_t pr_addrtype,
-    uint32_t pr_emaddr, uint32_t pr_entryid, char *username, size_t ulen)
+    EXT_BUFFER_ALLOC alloc, const addr_tags &tags,
+    char *username, size_t ulen)
 {
-	auto pvalue = pproplist->getval(pr_smtpaddr);
+	auto pvalue = pproplist->getval(tags.pr_smtpaddr);
 	if (pvalue != nullptr) {
 		gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
 		return TRUE;
 	}
-	pvalue = pproplist->getval(pr_addrtype);
+	pvalue = pproplist->getval(tags.pr_addrtype);
 	if (NULL == pvalue) {
  FIND_ENTRYID:
-		pvalue = pproplist->getval(pr_entryid);
+		pvalue = pproplist->getval(tags.pr_entryid);
 		if (NULL == pvalue) {
 			return FALSE;
 		}
 		return oxcmail_entryid_to_username(static_cast<BINARY *>(pvalue), alloc, username, ulen);
 	}
 	if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-		pvalue = pproplist->getval(pr_emaddr);
+		pvalue = pproplist->getval(tags.pr_emaddr);
 	} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
-		pvalue = pproplist->getval(pr_emaddr);
+		pvalue = pproplist->getval(tags.pr_emaddr);
 		if (pvalue != nullptr &&
 		    oxcmail_essdn_to_username(static_cast<char *>(pvalue), username, ulen))
 			return TRUE;	
@@ -4020,8 +4043,7 @@ static BOOL oxcmail_export_addresses(const char *charset, TARRAY_SET *prcpts,
 			if (offset >= fdsize)
 				return FALSE;
 		}
-		if (oxcmail_get_smtp_address(prcpt, alloc, PR_SMTP_ADDRESS,
-		    PR_ADDRTYPE, PR_EMAIL_ADDRESS, PR_ENTRYID,
+		if (oxcmail_get_smtp_address(prcpt, alloc, tags_self,
 		    username, GX_ARRAY_SIZE(username))) {
 			offset += std::max(0, gx_snprintf(field + offset, fdsize - offset,
 			          pdisplay_name != nullptr ? " <%s>" : "<%s>", username));
@@ -4093,15 +4115,14 @@ static BOOL oxcmail_export_reply_to(const MESSAGE_CONTENT *pmsg,
 }
 
 static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
-    EXT_BUFFER_ALLOC alloc, uint32_t pr_name, uint32_t pr_addrtype,
-    uint32_t pr_emaddr, uint32_t pr_smtpaddr, uint32_t pr_entryid,
-    const char *charset, char *field, size_t fdsize)
+    EXT_BUFFER_ALLOC alloc, const addr_tags &tags, const char *charset,
+    char *field, size_t fdsize)
 {
 	int offset;
 	char address[UADDR_SIZE];
 	
 	offset = 0;
-	auto pvalue = pmsg->proplist.get<char>(pr_name);
+	auto pvalue = pmsg->proplist.get<char>(tags.pr_name);
 	if (NULL != pvalue) {
 		if (strlen(pvalue) >= GX_ARRAY_SIZE(address)) {
 			goto EXPORT_ADDRESS;
@@ -4115,8 +4136,8 @@ static BOOL oxcmail_export_address(const MESSAGE_CONTENT *pmsg,
 		field[offset] = '\0';
 	}
  EXPORT_ADDRESS:
-	if (oxcmail_get_smtp_address(&pmsg->proplist, alloc, pr_smtpaddr, pr_addrtype,
-	    pr_emaddr, pr_entryid, address, GX_ARRAY_SIZE(address))) {
+	if (oxcmail_get_smtp_address(&pmsg->proplist, alloc, tags,
+	    address, arsizeof(address))) {
 		if (0 == offset) {
 			offset = gx_snprintf(field, fdsize, "<%s>", address);
 		} else {
@@ -4396,9 +4417,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	auto pvalue1 = pmsg->proplist.getval(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 	if (NULL != pvalue && NULL != pvalue1) {
 		if (strcasecmp(static_cast<char *>(pvalue), static_cast<char *>(pvalue1)) != 0) {
-			oxcmail_export_address(pmsg, alloc, PR_SENDER_NAME,
-				PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS,
-				PR_SENDER_SMTP_ADDRESS, PR_SENDER_ENTRYID,
+			oxcmail_export_address(pmsg, alloc, tags_sender,
 				pskeleton->charset, tmp_field,
 				GX_ARRAY_SIZE(tmp_field));
 			if (FALSE == mime_set_field(phead,
@@ -4416,12 +4435,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			pvalue1 = pmsg->proplist.getval(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 			if (pvalue != nullptr && pvalue1 != nullptr &&
 			    strcasecmp(static_cast<char *>(pvalue), static_cast<char *>(pvalue1)) != 0) {
-				oxcmail_export_address(pmsg, alloc,
-					PR_SENDER_NAME,
-					PR_SENDER_ADDRTYPE,
-					PR_SENDER_EMAIL_ADDRESS,
-					PR_SENDER_SMTP_ADDRESS,
-					PR_SENDER_ENTRYID,
+				oxcmail_export_address(pmsg, alloc, tags_sender,
 					pskeleton->charset, tmp_field,
 					GX_ARRAY_SIZE(tmp_field));
 				if (FALSE == mime_set_field(phead,
@@ -4431,37 +4445,26 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 			}
 		}
 	}
-	if (oxcmail_export_address(pmsg, alloc, PR_SENT_REPRESENTING_NAME,
-	    PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS,
-	    PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_ENTRYID,
+	if (oxcmail_export_address(pmsg, alloc, tags_sent_repr,
 	    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field))) {
 		if (FALSE == mime_set_field(phead,
 			"From", tmp_field)) {
 			return FALSE;
 		}
-	} else if (oxcmail_export_address(pmsg, alloc, PR_SENDER_NAME,
-	    PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS,
-	    PR_SENDER_SMTP_ADDRESS, PR_SENDER_ENTRYID,
+	} else if (oxcmail_export_address(pmsg, alloc, tags_sender,
 	    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field)) &&
 	    !mime_set_field(phead, "Sender", tmp_field)) {
 		return FALSE;
 	}
 	pvalue = pmsg->proplist.getval(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-		if (TRUE == oxcmail_export_address(pmsg, alloc,
-		    PidTagReadReceiptName, PidTagReadReceiptAddressType,
-		    PidTagReadReceiptEmailAddress, PidTagReadReceiptSmtpAddress,
-			PR_READ_RECEIPT_ENTRYID,
+		if (oxcmail_export_address(pmsg, alloc, tags_read_rcpt,
 		    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field)) ||
 
-		    oxcmail_export_address(pmsg, alloc, PR_SENDER_NAME,
-		    PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS,
-		    PR_SENDER_SMTP_ADDRESS, PR_SENDER_ENTRYID,
+		    oxcmail_export_address(pmsg, alloc, tags_sender,
 		    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field)) ||
 
-		    oxcmail_export_address(pmsg, alloc, PR_SENT_REPRESENTING_NAME,
-		    PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS,
-		    PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_ENTRYID,
+		    oxcmail_export_address(pmsg, alloc, tags_sent_repr,
 		    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field))) {
 			if (FALSE == mime_set_field(phead,
 				"Return-Receipt-To", tmp_field)) {
@@ -4472,15 +4475,10 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	
 	pvalue = pmsg->proplist.getval(PR_READ_RECEIPT_REQUESTED);
 	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
-		if (TRUE == oxcmail_export_address(pmsg, alloc,
-		    PidTagReadReceiptName, PidTagReadReceiptAddressType,
-		    PidTagReadReceiptEmailAddress, PidTagReadReceiptSmtpAddress,
-			PR_READ_RECEIPT_ENTRYID,
+		if (oxcmail_export_address(pmsg, alloc, tags_read_rcpt,
 		    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field)) ||
 
-		    oxcmail_export_address(pmsg, alloc, PR_SENT_REPRESENTING_NAME,
-		    PR_SENT_REPRESENTING_ADDRTYPE, PR_SENT_REPRESENTING_EMAIL_ADDRESS,
-		    PR_SENT_REPRESENTING_SMTP_ADDRESS, PR_SENT_REPRESENTING_ENTRYID,
+		    oxcmail_export_address(pmsg, alloc, tags_sent_repr,
 		    pskeleton->charset, tmp_field, GX_ARRAY_SIZE(tmp_field))) {
 			if (FALSE == mime_set_field(phead,
 				"Disposition-Notification-To",
@@ -4957,9 +4955,7 @@ static BOOL oxcmail_export_dsn(const MESSAGE_CONTENT *pmsg,
 		}
 		strcpy(tmp_buff, "rfc822;");
 		if (!oxcmail_get_smtp_address(prcpts->pparray[i], alloc,
-		    PR_SMTP_ADDRESS, PR_ADDRTYPE,
-		    PR_EMAIL_ADDRESS, PR_ENTRYID, tmp_buff + 7,
-		    GX_ARRAY_SIZE(tmp_buff) - 7)) {
+		    tags_self, tmp_buff + 7, arsizeof(tmp_buff) - 7)) {
 			dsn_free(&dsn);
 			return FALSE;
 		}
