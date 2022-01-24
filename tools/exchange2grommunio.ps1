@@ -34,9 +34,9 @@
 #
 # You may see this error:
 #
-# 	New-MailboxExportRequest : The term 'New-MailboxExportRequest' is not
-# 	recognized as the name of a cmdlet, function, script file, or operable
-# 	program.
+#	New-MailboxExportRequest : The term 'New-MailboxExportRequest' is not
+#	recognized as the name of a cmdlet, function, script file, or operable
+#	program.
 #
 # Resolution:
 #
@@ -88,6 +88,10 @@ $DeletePST = $true
 # Wait after each mailbox import and allow exiting.
 $WaitAfterImport = $true
 
+# Stops the script if a mailbox creation or import error occurs
+# For unattended import $WaitAfterImport = $false and $StopOnError = $false must be set.
+$StopOnError = $true
+
 # Only needed if the script should automount the Windows share on Linux.
 # Make sure that the cifs-utils package is installed.
 $AutoMount = $true
@@ -104,8 +108,12 @@ $WindowsPassword = "<Windows user password>"
 # LDAP must be configured and also be working. Do test LDAP before import.
 $CreateGrommunioMailbox = $true
 
-# From here on, no code or variables need changing by the user of this script.
+# The language with which all mailboxes are created.
+# The languages can be found in: /usr/share/grommunio-admin-api/res/storelangs.json
+$MailboxLanguage = "de_DE"
 
+
+# From here on, no code or variables need changing by the user of this script.
 
 
 # Mount the Windows shared folder via CIFS
@@ -186,12 +194,16 @@ Linux-mount
 
 # Statistics
 #
-$MailboxesMigrated = 0
+$MailboxesTotal = 0
 $MailboxesSkipped = 0
 $MailboxesCreated = 0
-$MailboxesFailed = 0
-$ImportErrors = 0
+$MailboxesCreateFailed = 0
+$MailboxesImported = 0
+$MailboxesImportFailed = 0
+$MailboxesMB = 0
+$CreateErrorsMBX = ""
 $ImportErrorsMBX = ""
+$ScriptStartDate = (GET-DATE)
 
 # If we get a create error, do not import the mailbox.
 #
@@ -204,6 +216,7 @@ foreach ($Mailbox in (Get-Mailbox)) {
 	$MigMBox = $Mailbox.PrimarySmtpAddress.ToString()
 	if ($IgnoreMboxes.contains($MigMBox)) {
 		$MailboxesSkipped++
+		$MailboxesTotal++
 		Write-Host "Ignoring mailbox: $MigMBox" -fore yellow
 		continue
 	}
@@ -242,6 +255,7 @@ foreach ($Mailbox in (Get-Mailbox)) {
 	#
 	New-MailboxExportRequest -Mailbox $Mailbox -FilePath $WinSharedFolder\$MigMBox.pst | ft -HideTableHeaders
 	Write-Host -NoNewline "[Wait] " -fore yellow
+	$MailboxesTotal++
 
 	# Wait until the .pst file is created.
 	# We probably should include a timeout to detect hanging exports.
@@ -265,25 +279,28 @@ foreach ($Mailbox in (Get-Mailbox)) {
 		if ((Get-Item $WinSharedFolder\$MigMBox.pst).length -gt 0mb) {
 			$size = [math]::ceiling($(Get-Item $WinSharedFolder\$MigMBox.pst).length/(1024*1024))
 			Write-Host "Size of $MigMBox.pst is $size MB" -fore green
-			$MailboxesMB += $size
 		}
 	}
 
 	Write-Host ""
 
-	# Wait for release of $WinSharedFolder\$MigMBox.pst
+	# Wait for release of $WinSharedFolder\$MigMBox.pst.
 	Start-Sleep -s 10
 
-	# If requested, create the grommunio mailbox
+	# If requested, create the grommunio mailbox.
 	if ($CreateGrommunioMailbox) {
 		Write-Host "Create grommunio mailbox: $MigMBox." -fore green
-		.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "grommunio-admin ldap downsync -a $MigMBox"
+		.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "grommunio-admin ldap downsync -l $MailboxLanguage -a $MigMBox"
 		if ($lastexitcode -eq 0) {
 			Write-Host "Mailbox: $MigMBox created successfully." -fore green
 			$MailboxesCreated++
 		} else {
 			Write-Host "Creation of mailbox: $MigMBox failed." -fore red
-			$MailboxesFailed++
+			$MailboxesCreateFailed++
+			$CreateErrorsMBX += $MigMBox + ", "
+			if ($StopOnError) {
+				$WaitAfterImport = $true
+			}
 			$SkipImportCreateError = $true
 		}
 	}
@@ -298,16 +315,19 @@ foreach ($Mailbox in (Get-Mailbox)) {
 		.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "gromox-pff2mt -s $LinuxSharedFolder/$MigMBox.pst | gromox-mt2exm -u $MigMBox; if test \`${PIPESTATUS[0]} != 0 || test \`${PIPESTATUS[1]} != 0; then false; fi"
 		if ($lastexitcode -eq 0) {
 			Write-Host "Import of mailbox: $MigMBox done." -fore green
-			$MailboxesMigrated++
+			$MailboxesImported++
+			$MailboxesMB += $size
 		} else {
 			Write-Host "Mailbox: $MigMBox imported with errors." -fore red
-			$ImportErrors++
+			$MailboxesImportFailed++
 			$ImportErrorsMBX += $MigMBox + ", "
-			# Wait for admin to make a decision
-			$WaitAfterImport = $true
+			# Wait for admin to make a decision.
+			if ($StopOnError) {
+				$WaitAfterImport = $true
+			}
 		}
-		# Show import time in seconds
-		$ImportEndDate=(GET-DATE)
+		# Show import time in seconds.
+		$ImportEndDate = (GET-DATE)
 		$Duration = [math]::ceiling($(NEW-TIMESPAN -Start $ImportStartDate -End $ImportEndDate).TotalSeconds)
 		Write-Host "Import of mailbox $MigMBox took $Duration seconds." -fore green
 	}
@@ -323,9 +343,9 @@ foreach ($Mailbox in (Get-Mailbox)) {
 			Write-Host "Error .pst file: $WinSharedFolder\$MigMBox.pst not found." -fore red
 		}
 	}
-
 	Write-Host ""
-	Write-Host "Status: $MailboxesMigrated mailboxes processed, $MailboxesSkipped mailboxes skipped, ($ImportErrors imports failed)" -fore yellow
+	Write-Host "Total of $MailboxesTotal mailboxes processed, $MailboxesSkipped mailboxes skipped, $MailboxesCreated mailboxes created, $MailboxesImported mailboxes imported, " -fore yellow
+	Write-Host "$MailboxesCreateFailed mailboxes creation failed, $MailboxesImportFailed imports failed. $MailboxesMB MB of mailbox data imported." -fore yellow
 	Write-Host ""
 
 	if (!$WaitAfterImport) {
@@ -335,7 +355,7 @@ foreach ($Mailbox in (Get-Mailbox)) {
 	$decision = "Y"
 	$OK = $false
 	while (!$OK) {
-		$decision = $(Write-Host "Are you sure you want to proceed with next mailbox [Y]es [A]bort [C]ontinue? " -fore yellow -NoNewLine; Read-Host)
+		$decision = $(Write-Host "Do you want to proceed with the next mailbox [Y]es [A]bort [C]ontinue? " -fore yellow -NoNewLine; Read-Host)
 		$decision = $decision.ToUpper()
 		switch ($decision) {
 		"Y" {
@@ -347,7 +367,7 @@ foreach ($Mailbox in (Get-Mailbox)) {
 			$OK = $true
 		}
 		"C" {
-			Write-Host "Continue without" -fore green
+			Write-Host "Continue without future questions until errors" -fore green
 			$WaitAfterImport = $false
 			$OK = $true
 		}
@@ -360,23 +380,52 @@ foreach ($Mailbox in (Get-Mailbox)) {
 
 Linux-umount
 
-# Remove all "Completed" MailboxExportRequests
+# Remove all "Completed" MailboxExportRequests.
 #
 Get-MailboxExportRequest | where {$_.status -eq "Completed"} | Remove-MailboxExportRequest -Confirm:$false
+
+# Calculate script run time
+#
+$ScriptEndDate = (GET-DATE)
+$ScriptDuration = [math]::ceiling($(NEW-TIMESPAN -Start $ScriptStartDate -End $ScriptEndDate).TotalMinutes)
 
 # Print summary
 #
 Write-Host ""
-Write-Host "Total of $MailboxesMigrated mailboxes migrated, $MailboxesSkipped mailboxes skipped." -fore green
+Write-Host "Total of $MailboxesTotal mailboxes processed" -fore green
+Write-Host "$MailboxesSkipped mailboxes skipped" -fore yellow
 if ($CreateGrommunioMailbox) {
-	Write-Host "$MailboxesCreated mailboxes created, $MailboxesFailed mailboxes skipped." -fore green
+	Write-Host "$MailboxesCreated mailboxes created" -fore green
+	if ($MailboxesCreateFailed -ne 0) {
+		Write-Host "$MailboxesCreateFailed mailboxes creation failed" -fore red
+		Write-Host "Affected mailboxes: $CreateErrorsMBX" -fore red
+	}
 }
-if ($ImportErrors -ne 0) {
-	Write-Host "$ImportErrors mailboxes imported with errors." -fore red
+Write-Host "$MailboxesImported mailboxes imported" -fore green
+if ($MailboxesImportFailed -ne 0) {
+	Write-Host "$MailboxesImportFailed mailboxes imported with errors or import failed" -fore red
 	Write-Host "Affected mailboxes: $ImportErrorsMBX" -fore red
 }
-Write-host "Imported a total of $MailboxesMB MB of mailbox data." -fore green
+Write-host "Imported a total of $MailboxesMB MB of mailbox data" -fore green
+Write-Host "Total run time $ScriptDuration minutes, Start: $ScriptStartDate, End: $ScriptEndDate" -fore green
 Write-Host ""
-Write-Host "Remove orphaned .pst files from $WinSharedFolder." -fore green
+Write-Host "Remove possibly orphaned .pst files from $WinSharedFolder" -fore yellow
 Write-Host "Finished import." -fore green
 Write-Host ""
+
+$LogFile = $WinSharedFolder + "\exchange2grommunio.log"
+Add-Content -Path $LogFile -Value ""
+Add-Content -Path $LogFile -Value "Total of $MailboxesTotal mailboxes processed"
+Add-Content -Path $LogFile -Value "$MailboxesSkipped mailboxes skipped"
+Add-Content -Path $LogFile -Value "$MailboxesCreated mailboxes created"
+Add-Content -Path $LogFile -Value "$MailboxesCreateFailed mailboxes creation failed"
+Add-Content -Path $LogFile -Value "Affected mailboxes: $CreateErrorsMBX"
+Add-Content -Path $LogFile -Value "$MailboxesImported mailboxes imported"
+Add-Content -Path $LogFile -Value "$MailboxesImportFailed mailboxes imported with errors or import failed"
+Add-Content -Path $LogFile -Value "Affected mailboxes: $ImportErrorsMBX"
+Add-Content -Path $LogFile -Value "Imported a total of $MailboxesMB MB of mailbox data"
+Add-Content -Path $LogFile -Value "Total run time $ScriptDuration minutes, Start: $ScriptStartDate, End: $ScriptEndDate"
+Add-Content -Path $LogFile -Value ""
+Add-Content -Path $LogFile -Value "Remove possibly orphaned .pst files from $WinSharedFolder"
+Add-Content -Path $LogFile -Value "Finished import."
+Add-Content -Path $LogFile -Value ""
