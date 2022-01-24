@@ -5283,6 +5283,30 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 	return TRUE;
 }
 
+static bool fake_mpsigned_and_write(MIME &m, const BINARY *hdrs, MIME_FIELD &f)
+{
+	if (hdrs == nullptr || hdrs->cb == 0)
+		return false;
+	size_t len = parse_mime_field(hdrs->pc, hdrs->cb, &f);
+	if (len == 0 || strncmp(hdrs->pc + len, "\r\n", 2) != 0 ||
+	    f.field_name_len != 12 ||
+	    strncasecmp(f.field_name, "Content-Type", 12) != 0)
+		return false;
+	if (f.field_value_len > 1024 ||
+	    strncasecmp(f.field_value, "multipart/signed", 16) != 0)
+		return false;
+	memcpy(f.field_value, "fake-part/signed", 16);
+	f.field_value[f.field_value_len] = '\0';
+	if (!m.set_field("Content-Type", f.field_value))
+		return false;
+	if (!m.write_content(hdrs->pc + len + 2, hdrs->cb - len - 2,
+	    MIME_ENCODING_NONE))
+		return false;
+	/* replace "Content-Type" back to the real one */
+	strcpy(m.content_type, "multipart/signed");
+	return true;
+}
+
 BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
     std::shared_ptr<MIME_POOL> ppool, MAIL *pmail, EXT_BUFFER_ALLOC alloc,
     GET_PROPIDS get_propids, GET_PROPNAME get_propname)
@@ -5442,33 +5466,12 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 	} else if (MAIL_TYPE_SIGNED == mime_skeleton.mail_type) {
 		/* make fake "Content-Type" to avoid produce boundary string */
 		pmime->set_content_type("fake-part/signed");
-		if (NULL == pmsg->children.pattachments ||
-			1 != pmsg->children.pattachments->count) {
+		auto a = pmsg->children.pattachments;
+		if (a == nullptr || a->count != 1)
 			goto EXPORT_FAILURE;
-		}
-		auto pbin = pmsg->children.pattachments->pplist[0]->proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
-		if (NULL == pbin || 0 == pbin->cb) {
+		auto pbin = a->pplist[0]->proplist.get<const BINARY>(PR_ATTACH_DATA_BIN);
+		if (!fake_mpsigned_and_write(*pmime, pbin, mime_field))
 			goto EXPORT_FAILURE;
-		}
-		auto tmp_len = parse_mime_field(pbin->pc, pbin->cb, &mime_field);
-		if (0 == tmp_len || 0 != strncmp(pbin->pc + tmp_len,
-			"\r\n", 2) || 12 != mime_field.field_name_len
-			|| 0 != strncasecmp( mime_field.field_name,
-			"Content-Type", 12) || mime_field.field_value_len > 1024
-			|| mime_field.field_value_len < 16 || 0 != strncasecmp(
-			mime_field.field_value, "multipart/signed", 16)) {
-			goto EXPORT_FAILURE;
-		}
-		memcpy(mime_field.field_value, "fake-part/signed", 16);
-		mime_field.field_value[mime_field.field_value_len] = '\0';
-		if (!pmime->set_field("Content-Type", mime_field.field_value))
-			goto EXPORT_FAILURE;
-		if (!pmime->write_content(pbin->pc + tmp_len + 2,
-			pbin->cb - tmp_len - 2, MIME_ENCODING_NONE)) {
-			return FALSE;
-		}
-		/* replace "Content-Type" back to the real one */
-		strcpy(pmime->content_type, "multipart/signed");
 		return TRUE;
 	}
 	
