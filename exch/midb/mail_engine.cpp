@@ -71,7 +71,7 @@ enum class midb_cond {
 	all, answered, bcc, before, body, cc, deleted, draft, flagged, from,
 	header, id, keyword, larger, is_new, old, on, recent, seen,
 	sent_before, sent_on, sent_since, since, smaller, subject, text, to,
-	unanswered, uid, undeleted, undraft, unflagged, unkeyword, unseen,
+	uid, unanswered, undeleted, undraft, unflagged, unkeyword, unseen,
 	x_none,
 };
 
@@ -1204,21 +1204,40 @@ static enum midb_cond cond_str_to_cond(const char *s)
 {
 #define E(kw) if (strcasecmp(s, #kw) == 0) return midb_cond::kw
 #define E2(a, kw) if (strcasecmp(s, #a) == 0) return midb_cond::kw
+	E(all);
+	E(answered);
 	E(bcc);
+	E(before);
 	E(body);
 	E(cc);
+	E(deleted);
+	E(draft);
+	E(flagged);
 	E(from);
+	E(header);
+	E(id);
 	E(keyword);
-	E(subject);
-	E(text);
-	E(to);
-	E(unkeyword);
-	E(before);
+	E(larger);
+	E2(new, is_new);
+	E(old);
 	E(on);
+	E(recent);
+	E(seen);
 	E2(sentbefore, sent_before);
 	E2(senton, sent_on);
 	E2(sentsince, sent_since);
 	E(since);
+	E(smaller);
+	E(subject);
+	E(text);
+	E(to);
+	E(uid);
+	E(unanswered);
+	E(undeleted);
+	E(undraft);
+	E(unflagged);
+	E(unkeyword);
+	E(unseen);
 #undef E2
 #undef E
 	return midb_cond::x_none;
