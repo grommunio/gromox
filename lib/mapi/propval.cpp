@@ -399,7 +399,7 @@ static uint32_t propval_utf16_len(const char *putf8_string)
 	size_t len;
 	if (!utf8_count_codepoints(putf8_string, &len))
 		return 0;
-	return len;
+	return 2 * len;
 }
 
 uint32_t propval_size(uint16_t type, void *pvalue)
