@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <gromox/defs.h>
-#include "rops.h"
 #include <gromox/rop_util.hpp>
 #include <gromox/ext_buffer.hpp>
 #include "common_util.h"
@@ -10,6 +9,7 @@
 #include "logon_object.h"
 #include "table_object.h"
 #include "folder_object.h"
+#include "rop_funcs.hpp"
 #include "rop_ids.h"
 #include "rop_processor.h"
 #include "processor_types.h"

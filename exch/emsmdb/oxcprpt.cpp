@@ -7,7 +7,6 @@
 #include <utility>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
-#include "rops.h"
 #include <gromox/propval.hpp>
 #include "common_util.h"
 #include <gromox/proc_common.h>
@@ -15,6 +14,7 @@
 #include "logon_object.h"
 #include "folder_object.h"
 #include "stream_object.h"
+#include "rop_funcs.hpp"
 #include "rop_processor.h"
 #include "message_object.h"
 #include "processor_types.h"

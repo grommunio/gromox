@@ -7,7 +7,6 @@
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
-#include "rops.h"
 #include <gromox/guid.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/rop_util.hpp>
@@ -17,6 +16,7 @@
 #include <gromox/proc_common.h>
 #include "exmdb_client.h"
 #include "folder_object.h"
+#include "rop_funcs.hpp"
 #include "rop_processor.h"
 #include "message_object.h"
 #include "icsupctx_object.h"

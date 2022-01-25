@@ -12,8 +12,8 @@
 #include "common_util.h"
 #include <gromox/list_file.hpp>
 #include <gromox/rop_util.hpp>
-#include "rops.h"
 #include <cstdio>
+#include "rop_funcs.hpp"
 
 using namespace std::string_literals;
 using namespace gromox;

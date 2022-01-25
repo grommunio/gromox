@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <gromox/defs.h>
-#include "rops.h"
 #include "common_util.h"
 #include "exmdb_client.h"
 #include "logon_object.h"
+#include "rop_funcs.hpp"
 #include "rop_processor.h"
 #include "subscription_object.h"
 

@@ -7,7 +7,7 @@
 #include "rop_dispatch.h"
 #include "common_util.h"
 #include <gromox/ext_buffer.hpp>
-#include "rops.h"
+#include "rop_funcs.hpp"
 #include "rop_ids.h"
 #include <gromox/util.hpp>
 
