@@ -2528,8 +2528,8 @@ static IDB_REF mail_engine_get_idb(const char *path)
 			gx_sql_exec(pidb->psqlite, sql_string);
 		}
 		gx_sql_exec(pidb->psqlite, "DELETE FROM mapping");
-		/* Delete obsolete field */
-		gx_sql_exec(pidb->psqlite, "DELETE FROM configurations WHERE config_id=1");
+		/* Delete obsolete field (old midb versions cannot use the db then however) */
+		// gx_sql_exec(pidb->psqlite, "DELETE FROM configurations WHERE config_id=1");
 
 		try {
 			int user_id = 0;
