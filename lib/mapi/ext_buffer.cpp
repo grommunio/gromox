@@ -3417,3 +3417,39 @@ uint8_t *EXT_PUSH::release()
 	m_offset = 0;
 	return t;
 }
+
+bool emsab_to_parts(EXT_PULL &ser, char *type, size_t tsize,
+    char *addr, size_t asize)
+{
+	ADDRESSBOOK_ENTRYID eid;
+	if (ser.g_abk_eid(&eid) != EXT_ERR_SUCCESS ||
+	    eid.type != ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER)
+		return false;
+	if (type != nullptr)
+		gx_strlcpy(type, "EX", tsize);
+	gx_strlcpy(addr, eid.px500dn, asize);
+	return true;
+}
+
+bool emsab_to_email(EXT_PULL &ser, ESSDN_TO_USERNAME e2u,
+    char *addr, size_t asize)
+{
+	ADDRESSBOOK_ENTRYID eid;
+	if (ser.g_abk_eid(&eid) != EXT_ERR_SUCCESS ||
+	    eid.type != ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER)
+		return false;
+	return e2u(eid.px500dn, addr, asize);
+}
+
+bool oneoff_to_parts(EXT_PULL &ser, char *type, size_t tsize,
+    char *addr, size_t asize)
+{
+	ONEOFF_ENTRYID eid;
+	if (ser.g_oneoff_eid(&eid) != EXT_ERR_SUCCESS ||
+	    strcasecmp(eid.paddress_type, "SMTP") != 0)
+		return false;
+	if (type != nullptr)
+		gx_strlcpy(type, "SMTP", tsize);
+	gx_strlcpy(addr, eid.pmail_address, asize);
+	return true;
+}

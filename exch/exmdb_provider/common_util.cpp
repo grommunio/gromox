@@ -3762,8 +3762,6 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 	uint32_t flags;
 	EXT_PULL ext_pull;
 	FLATUID provider_uid;
-	ONEOFF_ENTRYID oneoff_entry;
-	ADDRESSBOOK_ENTRYID ab_entryid;
 	
 	if (pbin->cb < 20) {
 		return FALSE;
@@ -3772,23 +3770,11 @@ BOOL common_util_entryid_to_username(const BINARY *pbin,
 	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
 	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
 		return FALSE;
-	if (provider_uid == muidEMSAB) {
-		if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS)
-			return FALSE;
-		if (ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER != ab_entryid.type) {
-			return FALSE;
-		}
-		return common_util_essdn_to_username(ab_entryid.px500dn, username, ulen);
-	}
-	if (provider_uid == muidOOP) {
-		if (ext_pull.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS)
-			return FALSE;
-		if (0 != strcasecmp(oneoff_entry.paddress_type, "SMTP")) {
-			return FALSE;
-		}
-		gx_strlcpy(username, oneoff_entry.pmail_address, ulen);
-		return TRUE;
-	}
+	if (provider_uid == muidEMSAB)
+		return emsab_to_email(ext_pull, common_util_essdn_to_username,
+		       username, ulen) ? TRUE : false;
+	if (provider_uid == muidOOP)
+		return oneoff_to_parts(ext_pull, nullptr, 0, username, ulen) ? TRUE : false;
 	return FALSE;
 }
 
@@ -3798,8 +3784,6 @@ BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
 	uint32_t flags;
 	EXT_PULL ext_pull;
 	FLATUID provider_uid;
-	ONEOFF_ENTRYID oneoff_entry;
-	ADDRESSBOOK_ENTRYID ab_entryid;
 	
 	if (pbin->cb < 20) {
 		return FALSE;
@@ -3808,26 +3792,12 @@ BOOL common_util_parse_addressbook_entryid(const BINARY *pbin,
 	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
 	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
 		return FALSE;
-	if (provider_uid == muidEMSAB) {
-		if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS)
-			return FALSE;
-		if (ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER != ab_entryid.type) {
-			return FALSE;
-		}
-		gx_strlcpy(address_type, "EX", atsize);
-		gx_strlcpy(email_address, ab_entryid.px500dn, emsize);
-		return TRUE;
-	}
-	if (provider_uid == muidOOP) {
-		if (ext_pull.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS)
-			return FALSE;
-		if (0 != strcasecmp(oneoff_entry.paddress_type, "SMTP")) {
-			return FALSE;
-		}
-		gx_strlcpy(address_type, "SMTP", atsize);
-		gx_strlcpy(email_address, oneoff_entry.pmail_address, emsize);
-		return TRUE;
-	}
+	if (provider_uid == muidEMSAB)
+		return emsab_to_parts(ext_pull, address_type,
+		       atsize, email_address, emsize) ? TRUE : false;
+	if (provider_uid == muidOOP)
+		return oneoff_to_parts(ext_pull, address_type,
+		       atsize, email_address, emsize) ? TRUE : false;
 	return FALSE;
 }
 

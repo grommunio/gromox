@@ -4,6 +4,7 @@
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
+#include <gromox/mapi_types.hpp>
 
 #define EXT_ERR_SUCCESS						0
 #define EXT_ERR_FORMAT						1
@@ -254,3 +255,7 @@ struct EXT_PUSH {
 	uint32_t m_alloc_size = 0, m_offset = 0, m_flags = 0;
 	EXT_BUFFER_MGT m_mgt{};
 };
+
+extern bool emsab_to_parts(EXT_PULL &, char *type, size_t tsize, char *addr, size_t asize);
+extern bool emsab_to_email(EXT_PULL &, ESSDN_TO_USERNAME, char *addr, size_t adsize);
+extern bool oneoff_to_parts(EXT_PULL &, char *type, size_t tsize, char *addr, size_t asize);

@@ -875,8 +875,6 @@ static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
 	uint32_t flags;
 	EXT_PULL ext_pull;
 	FLATUID provider_uid;
-	ONEOFF_ENTRYID oneoff_entry;
-	ADDRESSBOOK_ENTRYID ab_entryid;
 	
 	if (pbin->cb < 20)
 		return FALSE;
@@ -884,22 +882,11 @@ static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
 	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
 	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
 		return FALSE;
-	if (provider_uid == muidEMSAB) {
-		if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS)
-			return FALSE;
-		if (ab_entryid.type != ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER)
-			return FALSE;
-		return common_util_essdn_to_username(ab_entryid.px500dn,
-		       username, ulen);
-	}
-	if (provider_uid == muidOOP) {
-		if (ext_pull.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS)
-			return FALSE;
-		if (strcasecmp(oneoff_entry.paddress_type, "SMTP") != 0)
-			return FALSE;
-		gx_strlcpy(username, oneoff_entry.pmail_address, ulen);
-		return TRUE;
-	}
+	if (provider_uid == muidEMSAB)
+		return emsab_to_email(ext_pull, common_util_essdn_to_username,
+		       username, ulen) ? TRUE : false;
+	if (provider_uid == muidOOP)
+		return oneoff_to_parts(ext_pull, nullptr, 0, username, ulen) ? TRUE : false;
 	return FALSE;
 }
 
