@@ -107,6 +107,28 @@ bool utf8_count_codepoints(const char *str, size_t *plen)
 	return true;
 }
 
+bool utf16_count_codepoints(const char *str, size_t *plen)
+{
+	size_t len = 0;
+	auto ptr = reinterpret_cast<const unsigned char *>(str);
+	auto clen = strlen(str);
+
+	while (*ptr != '\0' && len < clen) {
+		auto byte_num = utf8_byte_num(*ptr);
+		if (byte_num == 0)
+			return false;
+		else if (byte_num < 4)
+			++len;
+		else if (byte_num == 4)
+			len += 2; /* UTF-16 surrogate pair */
+		else
+			; /* iconv won't emit anything upon conversion */
+		ptr += byte_num;
+	}
+	*plen = len;
+	return true;
+}
+
 BOOL utf8_truncate(char *str, int length)
 {
 	int len = 0;

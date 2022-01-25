@@ -5584,11 +5584,19 @@ static uint32_t common_util_get_cid_string_length(uint64_t cid)
 {
 	struct stat node_stat;
 	wrapfd fd = open(cu_cid_path(exmdb_server_get_dir(), cid).c_str(), O_RDONLY);
-	uint32_t length = 0;
-	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0 ||
-	    read(fd.get(), &length, sizeof(uint32_t)) != sizeof(uint32_t))
+	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0)
 		return 0;
-	return 2 * le32_to_cpu(length);
+	auto buf = cu_alloc<char>(node_stat.st_size + 1);
+	if (buf == nullptr ||
+	    read(fd.get(), buf, node_stat.st_size) != node_stat.st_size)
+		return 0;
+	buf[node_stat.st_size] = '\0';
+	/*
+	 * Skip over the UTF-8 codepoint counter (which is useless when
+	 * determining UTF-16 codepoint count).
+	 */
+	size_t ncp = 0;
+	return utf16_count_codepoints(buf + sizeof(uint32_t), &ncp) ? 2 * ncp : 0;
 }
 
 /**

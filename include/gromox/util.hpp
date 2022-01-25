@@ -11,6 +11,7 @@ enum {
 
 BOOL utf8_check(const char *str);
 extern GX_EXPORT bool utf8_count_codepoints(const char *str, size_t *numpoints);
+extern GX_EXPORT bool utf16_count_codepoints(const char *str, size_t *numpoints);
 BOOL utf8_truncate(char *str, int length);
 void utf8_filter(char *string);
 extern void wchar_to_utf8(uint32_t wchar, char *string);
