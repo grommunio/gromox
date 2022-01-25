@@ -17,6 +17,7 @@
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
+#include <gromox/mime_pool.hpp>
 #include <gromox/dsn.hpp>
 #include <gromox/rtf.hpp>
 #include <gromox/html.hpp>
@@ -5283,27 +5284,41 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 	return TRUE;
 }
 
-static bool fake_mpsigned_and_write(MIME &m, const BINARY *hdrs, MIME_FIELD &f)
+static bool smime_signed_writeout(MAIL &origmail, MIME &origmime,
+    const BINARY *hdrs, MIME_FIELD &f)
 {
 	if (hdrs == nullptr || hdrs->cb == 0)
 		return false;
-	size_t len = parse_mime_field(hdrs->pc, hdrs->cb, &f);
-	if (len == 0 || strncmp(hdrs->pc + len, "\r\n", 2) != 0 ||
-	    f.field_name_len != 12 ||
-	    strncasecmp(f.field_name, "Content-Type", 12) != 0)
+	auto sec = origmail.pmime_pool->get_mime();
+	if (sec == nullptr)
 		return false;
-	if (f.field_value_len > 1024 ||
-	    strncasecmp(f.field_value, "multipart/signed", 16) != 0)
+	auto cl_0 = make_scope_exit([&]() { origmail.pmime_pool->put_mime(sec); });
+	char buf[512];
+	if (!sec->retrieve(nullptr, hdrs->pc, hdrs->cb))
 		return false;
-	memcpy(f.field_value, "fake-part/signed", 16);
-	f.field_value[f.field_value_len] = '\0';
-	if (!m.set_field("Content-Type", f.field_value))
+	if (!sec->get_field("Content-Type", buf, arsizeof(buf)))
 		return false;
-	if (!m.write_content(hdrs->pc + len + 2, hdrs->cb - len - 2,
-	    MIME_ENCODING_NONE))
+	if (strncasecmp(buf, "multipart/signed", 16) != 0)
 		return false;
-	/* replace "Content-Type" back to the real one */
-	strcpy(m.content_type, "multipart/signed");
+	if (buf[16] != '\0' && buf[16] != ';')
+		return false;
+	sec->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	ssize_t rd;
+	while ((rd = sec->f_type_params.read(buf, arsizeof(buf))) != MEM_END_OF_FILE)
+		origmime.f_type_params.write(buf, rd);
+	sec->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	while ((rd = sec->f_other_fields.read(buf, arsizeof(buf))) != MEM_END_OF_FILE)
+		origmime.f_other_fields.write(buf, rd);
+
+	auto content = static_cast<char *>(HX_memdup(sec->content_begin, sec->content_length));
+	if (content == nullptr)
+		return false;
+	free(origmime.content_begin);
+	origmime.content_begin = content;
+	origmime.content_length = sec->content_length;
+	origmime.mime_type = SINGLE_MIME;
+	gx_strlcpy(origmime.content_type, "multipart/signed", arsizeof(origmime.content_type));
+	origmime.head_touched = origmime.content_touched = TRUE;
 	return true;
 }
 
@@ -5464,13 +5479,11 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 			goto EXPORT_FAILURE;
 		return TRUE;
 	} else if (MAIL_TYPE_SIGNED == mime_skeleton.mail_type) {
-		/* make fake "Content-Type" to avoid produce boundary string */
-		pmime->set_content_type("fake-part/signed");
 		auto a = pmsg->children.pattachments;
 		if (a == nullptr || a->count != 1)
 			goto EXPORT_FAILURE;
 		auto pbin = a->pplist[0]->proplist.get<const BINARY>(PR_ATTACH_DATA_BIN);
-		if (!fake_mpsigned_and_write(*pmime, pbin, mime_field))
+		if (!smime_signed_writeout(*pmail, *pmime, pbin, mime_field))
 			goto EXPORT_FAILURE;
 		return TRUE;
 	}
