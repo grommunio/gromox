@@ -5121,7 +5121,6 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 	struct tm time_buff;
 	char tmp_field[1024];
 	const char *pfile_name = nullptr;
-	LIB_BUFFER *pallocator;
 	
 	b_vcard = FALSE;
 	if (NULL != pattachment->pembedded) {
@@ -5268,12 +5267,11 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		auto mail_len = imail.get_length();
 		if (mail_len < 0)
 			return false;
-		pallocator = lib_buffer_init(STREAM_ALLOC_SIZE,
-				mail_len / STREAM_BLOCK_SIZE + 1, FALSE);
+		std::unique_ptr<LIB_BUFFER> pallocator(LIB_BUFFER::create(STREAM_ALLOC_SIZE,
+		             mail_len / STREAM_BLOCK_SIZE + 1, false));
 		if (pallocator == nullptr)
 			return FALSE;
-		auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
-		STREAM tmp_stream(pallocator);
+		STREAM tmp_stream(pallocator.get());
 		if (!imail.serialize(&tmp_stream)) {
 			return FALSE;
 		}

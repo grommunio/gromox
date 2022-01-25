@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <memory>
 #include <gromox/svc_common.h>
 #include "exmdb_server.h"
 #include "common_util.h"
@@ -21,7 +22,7 @@ struct ENVIRONMENT_CONTEXT {
 
 static pthread_key_t g_id_key;
 static pthread_key_t g_env_key;
-static LIB_BUFFER *g_ctx_allocator;
+static std::unique_ptr<LIB_BUFFER> g_ctx_allocator;
 static pthread_key_t g_public_username_key;
 
 void (*exmdb_server_event_proc)(const char *dir,
@@ -36,8 +37,8 @@ void exmdb_server_init()
 
 int exmdb_server_run()
 {
-	g_ctx_allocator = lib_buffer_init(sizeof(ENVIRONMENT_CONTEXT),
-										2*get_context_num(), TRUE);
+	g_ctx_allocator.reset(LIB_BUFFER::create(sizeof(ENVIRONMENT_CONTEXT),
+		2 * get_context_num(), TRUE));
 	if (NULL == g_ctx_allocator) {
 		printf("[exmdb_provider]: Failed to init environment allocator\n");
 		return -1;
@@ -47,10 +48,7 @@ int exmdb_server_run()
 
 void exmdb_server_stop()
 {
-	if (NULL != g_ctx_allocator) {
-		lib_buffer_free(g_ctx_allocator);
-		g_ctx_allocator = NULL;
-	}
+	g_ctx_allocator.reset();
 }
 
 void exmdb_server_free()
@@ -64,7 +62,7 @@ void exmdb_server_build_environment(BOOL b_local,
 	BOOL b_private, const char *dir)
 {
 	common_util_build_tls();
-	auto pctx = lib_buffer_get<ENVIRONMENT_CONTEXT>(g_ctx_allocator);
+	auto pctx = g_ctx_allocator->get<ENVIRONMENT_CONTEXT>();
 	pctx->b_local = b_local;
 	if (FALSE == b_local) {
 		alloc_context_init(&pctx->alloc_ctx);
@@ -82,7 +80,7 @@ void exmdb_server_free_environment()
 		alloc_context_free(&pctx->alloc_ctx);
 	}
 	pthread_setspecific(g_env_key, NULL);
-	lib_buffer_put(g_ctx_allocator, pctx);
+	g_ctx_allocator->put(pctx);
 }
 
 void exmdb_server_set_remote_id(const char *remote_id)

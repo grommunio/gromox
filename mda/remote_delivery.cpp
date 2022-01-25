@@ -34,7 +34,6 @@ using namespace gromox;
 
 namespace {
 struct rd_delete {
-	void operator()(LIB_BUFFER *x) { lib_buffer_free(x); }
 	void operator()(SSL *x) { SSL_free(x); }
 	void operator()(SSL_CTX *x) { SSL_CTX_free(x); }
 };
@@ -54,7 +53,7 @@ static int rd_starttls(rd_connection &&, MESSAGE_CONTEXT *, std::string &);
 static constexpr unsigned int network_timeout = 180;
 static std::unique_ptr<SSL_CTX, rd_delete> g_tls_ctx;
 static std::unique_ptr<std::mutex[]> g_tls_mutex_buf;
-static std::unique_ptr<LIB_BUFFER, rd_delete> g_files_allocator;
+static std::unique_ptr<LIB_BUFFER> g_files_allocator;
 static std::string g_mx_host;
 static uint16_t g_mx_port;
 static bool g_enable_tls;
@@ -414,7 +413,7 @@ static BOOL remote_delivery_entry(int request, void **apidata) try
 		CFG_TABLE_END,
 	};
 	config_file_apply(*cfg_file, cfg_default_values);
-	g_files_allocator.reset(lib_buffer_init(FILE_ALLOC_SIZE, 256 * get_threads_num(), TRUE));
+	g_files_allocator.reset(LIB_BUFFER::create(FILE_ALLOC_SIZE, 256 * get_threads_num(), TRUE));
 	if (g_files_allocator == nullptr)
 		return false;
 	g_mx_host = cfg_file->get_value("mx_host");

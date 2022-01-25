@@ -3,6 +3,7 @@
 #include <condition_variable>
 #include <csignal>
 #include <cstring>
+#include <memory>
 #include <mutex>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
@@ -32,7 +33,7 @@ struct THR_DATA {
 static pthread_t g_scan_id;
 static gromox::atomic_bool g_notify_stop{true};
 static unsigned int g_threads_pool_min_num, g_threads_pool_max_num, g_threads_pool_cur_thr_num;
-static LIB_BUFFER* g_threads_data_buff;
+static std::unique_ptr<LIB_BUFFER> g_threads_data_buff;
 static DOUBLE_LIST g_threads_data_list;
 static THREADS_EVENT_PROC g_threads_event_proc;
 static std::mutex g_threads_pool_data_lock, g_threads_pool_cond_mutex;
@@ -59,7 +60,7 @@ void threads_pool_init(unsigned int init_pool_num, int (*process_func)(SCHEDULE_
 		g_threads_pool_min_num = g_threads_pool_max_num;
 	}
 	g_threads_pool_cur_thr_num = 0;
-	g_threads_data_buff = NULL;
+	g_threads_data_buff.reset();
 	g_threads_event_proc = NULL;
 	double_list_init(&g_threads_data_list);
 }
@@ -70,8 +71,8 @@ int threads_pool_run()
 	pthread_attr_t attr;
 	
 	/* g_threads_data_buff is protected by g_threads_pool_data_lock */
-	g_threads_data_buff = lib_buffer_init(sizeof(THR_DATA), 
-							g_threads_pool_max_num, FALSE);
+	g_threads_data_buff.reset(LIB_BUFFER::create(sizeof(THR_DATA),
+		g_threads_pool_max_num, false));
 	if (NULL == g_threads_data_buff) {
 		printf("[threads_pool]: Failed to allocate memory for threads pool\n");
 		return -1;
@@ -81,15 +82,14 @@ int threads_pool_run()
 	auto ret = pthread_create(&g_scan_id, nullptr, tpol_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[threads_pool]: failed to create scan thread: %s\n", strerror(ret));
-		lib_buffer_free(g_threads_data_buff);
-		g_threads_data_buff = NULL;
+		g_threads_data_buff.reset();
 		return -2;
 	}
 	pthread_setname_np(g_scan_id, "ep_pool/scan");
 	pthread_attr_init(&attr);
 	created_thr_num = 0;
 	for (size_t i = 0; i < g_threads_pool_min_num; ++i) {
-		auto pdata = lib_buffer_get<THR_DATA>(g_threads_data_buff);
+		auto pdata = g_threads_data_buff->get<THR_DATA>();
 		pdata->node.pdata = pdata;
 		pdata->id = (pthread_t)-1;
 		pdata->notify_stop = FALSE;
@@ -140,12 +140,12 @@ void threads_pool_stop()
 			break;
 		}
 	}
-	lib_buffer_free(g_threads_data_buff);
+	g_threads_data_buff.reset();
 }
 
 void threads_pool_free()
 {
-	g_threads_data_buff = NULL;
+	g_threads_data_buff.reset();
 	g_threads_pool_min_num = 0;
 	g_threads_pool_max_num = 0;
 	g_threads_pool_cur_thr_num = 0;
@@ -193,7 +193,7 @@ static void *tpol_thrwork(void *pparam)
 				    (gpr = contexts_pool_get_param(CUR_VALID_CONTEXTS)) >= 0 &&
 				    g_threads_pool_cur_thr_num * contexts_per_threads > static_cast<size_t>(gpr)) {
 					double_list_remove(&g_threads_data_list, &pdata->node);
-					lib_buffer_put(g_threads_data_buff, pdata);
+					g_threads_data_buff->put(pdata);
 					g_threads_pool_cur_thr_num --;
 					tpd_hold.unlock();
 					if (NULL != g_threads_event_proc) {
@@ -245,7 +245,7 @@ static void *tpol_thrwork(void *pparam)
 	
 	std::unique_lock tpd_hold(g_threads_pool_data_lock);
 	double_list_remove(&g_threads_data_list, &pdata->node);
-	lib_buffer_put(g_threads_data_buff, pdata);
+	g_threads_data_buff->put(pdata);
 	g_threads_pool_cur_thr_num --;
 	tpd_hold.unlock();
 	if (NULL != g_threads_event_proc) {
@@ -286,7 +286,7 @@ static void *tpol_scanwork(void *pparam)
 			if (g_threads_pool_cur_thr_num >= g_threads_pool_max_num) {
 				continue;
 			}
-			pdata = lib_buffer_get<THR_DATA>(g_threads_data_buff);
+			pdata = g_threads_data_buff->get<THR_DATA>();
 			if (NULL != pdata) {
 				pdata->node.pdata = pdata;
 				pdata->id = (pthread_t)-1;
@@ -296,7 +296,7 @@ static void *tpol_scanwork(void *pparam)
 				auto ret = pthread_create(&pdata->id, &attr, tpol_thrwork, pdata);
 				if (ret != 0) {
 					debug_info("[threads_pool]: W-1445: failed to increase pool threads: %s\n", strerror(ret));
-					lib_buffer_put(g_threads_data_buff, pdata);
+					g_threads_data_buff->put(pdata);
 				} else {
 					pthread_setname_np(pdata->id, "ep_pool/+");
 					double_list_append_as_tail(

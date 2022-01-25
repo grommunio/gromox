@@ -23,7 +23,8 @@ MIME_POOL::MIME_POOL(size_t number, int ratio) :
 	} else if (ratio > 256) {
 		ratio = 256;
 	}
-	pmime_pool->allocator = lib_buffer_init(FILE_ALLOC_SIZE, number * ratio, TRUE);
+	pmime_pool->allocator.reset(LIB_BUFFER::create(FILE_ALLOC_SIZE,
+		number * ratio, TRUE));
 	if (NULL == pmime_pool->allocator) {
 		throw std::bad_alloc();
 	}
@@ -32,7 +33,7 @@ MIME_POOL::MIME_POOL(size_t number, int ratio) :
 		auto ptemp_mime = &pmime_pool->pbegin[i];
 		ptemp_mime->node.pdata = ptemp_mime;
 		ptemp_mime->pool = pmime_pool;
-		mime_init(&ptemp_mime->mime, pmime_pool->allocator);
+		mime_init(&ptemp_mime->mime, pmime_pool->allocator.get());
 		single_list_append_as_tail(&pmime_pool->free_list, &ptemp_mime->node);
 	}
 	pmime_pool->number = number;
@@ -48,9 +49,6 @@ MIME_POOL::~MIME_POOL()
 	if (NULL != pmime_pool->pbegin) {
 		for (size_t i = 0; i < pmime_pool->number; ++i)
 			mime_free(&pmime_pool->pbegin[i].mime);
-	}
-	if (NULL != pmime_pool->allocator) {
-		lib_buffer_free(pmime_pool->allocator);
 	}
 }
 

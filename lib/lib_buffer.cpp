@@ -20,7 +20,7 @@ static constexpr auto wsize_al = roundup(WSIZE, sizeof(std::max_align_t));
  *		pointer to LIB_BUFFER	structure
  *		NULL if error happened
  */
-LIB_BUFFER* lib_buffer_init(size_t item_size, size_t item_num, BOOL is_thread_safe)
+LIB_BUFFER *LIB_BUFFER::create(size_t item_size, size_t item_num, BOOL is_thread_safe)
 {
 	void*	head_listp		= NULL;
 	
@@ -28,8 +28,10 @@ LIB_BUFFER* lib_buffer_init(size_t item_size, size_t item_num, BOOL is_thread_sa
 		debug_info("[lib_buffer]: lib_buffer_init, invalid parameter");
 		return NULL;
 	}
-	auto lib_buffer = static_cast<LIB_BUFFER *>(malloc(sizeof(LIB_BUFFER)));
-	if (lib_buffer == nullptr) {
+	LIB_BUFFER *lib_buffer;
+	try {
+		lib_buffer = new LIB_BUFFER;
+	} catch (const std::bad_alloc &) {
 		debug_info("[lib_buffer]: lib_buffer_init, malloc lib_buffer fail");
 		return NULL;
 	}
@@ -38,7 +40,7 @@ LIB_BUFFER* lib_buffer_init(size_t item_size, size_t item_num, BOOL is_thread_sa
 	head_listp = malloc((item_size_al + wsize_al) * item_num);
 	if (head_listp == nullptr) {
 		debug_info("[lib_buffer]: lib_buffer_init, malloc head_listp fail");
-		free(lib_buffer);
+		delete lib_buffer;
 		return NULL;
 	}
 
@@ -63,17 +65,11 @@ LIB_BUFFER* lib_buffer_init(size_t item_size, size_t item_num, BOOL is_thread_sa
  *		m_buf [in]	the buffer pool to release
  *
  */
-void lib_buffer_free(LIB_BUFFER* m_buf)
+LIB_BUFFER::~LIB_BUFFER()
 {
-#ifdef _DEBUG_UMTA
-	if (NULL == m_buf) {
-		debug_info("[lib_buffer]: lib_buffer_free, param NULL");
-		return;
-	}
-#endif
+	auto m_buf = this;
 	pthread_mutex_destroy(&m_buf->m_mutex);
 	free(m_buf->heap_list_head);
-	free(m_buf);
 }
 
 /*
@@ -87,17 +83,12 @@ void lib_buffer_free(LIB_BUFFER* m_buf)
  *		the pointer to the new allocated buffer NULL if we allocate
  *		more buffers than specified in lib_buffer_init.
  */
-void *lib_buffer_get1(LIB_BUFFER *m_buf)
+void *LIB_BUFFER::get_raw()
 {
+	auto m_buf = this;
 	void	*ret_buf	= NULL;
 	char	*phead		= NULL;
 
-#ifdef _DEBUG_UMTA
-	if (NULL == m_buf) {
-		debug_info("[lib_buffer]: lib_buffer_get, param NULL");
-		return NULL;
-	}
-#endif
 	if (TRUE == m_buf->is_thread_safe) {
 		pthread_mutex_lock(&m_buf->m_mutex);
 	}
@@ -152,17 +143,15 @@ void *lib_buffer_get1(LIB_BUFFER *m_buf)
  *		item  [in]	the buffer to return
  *
  */
-void lib_buffer_put1(LIB_BUFFER *m_buf, void *item)
+void LIB_BUFFER::put_raw(void *item)
 {
+	auto m_buf = this;
 	char *pcur_item = NULL;
 #ifdef _DEBUG_UMTA
 	void *pzero;
 #endif
-
-	if (NULL == m_buf || NULL == item) {
-		debug_info("[lib_buffer]: lib_buffer_put, param NULL");
+	if (item == nullptr)
 		return;
-	}
 	pcur_item	= (char *)item;
 	auto item_size_al = roundup(m_buf->item_size, sizeof(std::max_align_t));
 	memset(pcur_item, 0, item_size_al);
@@ -186,16 +175,10 @@ void lib_buffer_put1(LIB_BUFFER *m_buf, void *item)
 	}
 }
 
-size_t lib_buffer_get_param(LIB_BUFFER* m_buf, PARAM_TYPE type) {
-
+size_t LIB_BUFFER::get_param(PARAM_TYPE type)
+{
+	auto m_buf = this;
 	size_t	ret_val = 0xFFFFFFFF;
-
-#ifdef _DEBUG_UMTA
-	if (NULL == m_buf) {
-		debug_info("[lib_buffer]: lib_buffer_get_param, param NULL");
-		return ret_val;
-	}
-#endif
 	if (TRUE == m_buf->is_thread_safe) {
 		pthread_mutex_lock(&m_buf->m_mutex);
 	}

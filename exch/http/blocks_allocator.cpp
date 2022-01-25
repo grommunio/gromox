@@ -2,12 +2,14 @@
 /*
  *  blocks allocator is a memory pool for stream
  */
+#include <memory>
 #include <gromox/common_types.hpp>
+#include <gromox/lib_buffer.hpp>
 #include <gromox/stream.hpp>
 #include "blocks_allocator.h"
 
 static size_t g_blocks_num;
-static LIB_BUFFER *g_allocator;
+static std::unique_ptr<LIB_BUFFER> g_allocator;
 
 void blocks_allocator_init(size_t blocks)
 {
@@ -16,7 +18,7 @@ void blocks_allocator_init(size_t blocks)
 
 int blocks_allocator_run() 
 {
-    g_allocator = lib_buffer_init(STREAM_ALLOC_SIZE, g_blocks_num, TRUE);
+	g_allocator.reset(LIB_BUFFER::create(STREAM_ALLOC_SIZE, g_blocks_num, TRUE));
     if (NULL == g_allocator) {
         return -1;
     }
@@ -25,11 +27,7 @@ int blocks_allocator_run()
 
 void blocks_allocator_stop()
 {
-    if (NULL == g_allocator) {
-		return;
-    }
-    lib_buffer_free(g_allocator);
-	g_allocator = nullptr;
+	g_allocator.reset();
 }
 
 void blocks_allocator_free()
@@ -39,6 +37,5 @@ void blocks_allocator_free()
 
 LIB_BUFFER* blocks_allocator_get_allocator()
 {
-    return g_allocator;
+	return g_allocator.get();
 }
-

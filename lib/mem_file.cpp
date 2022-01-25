@@ -24,8 +24,7 @@ void mem_file_init(MEM_FILE *pfile, LIB_BUFFER *palloc)
 	double_list_init(&pfile->list);
 
 #ifdef _DEBUG_UMTA
-	if (lib_buffer_get_param(palloc, MEM_ITEM_SIZE) - 
-		sizeof(DOUBLE_LIST_NODE) < FILE_BLOCK_SIZE) {
+	if (palloc->get_param(MEM_ITEM_SIZE) - sizeof(DOUBLE_LIST_NODE) < FILE_BLOCK_SIZE) {
 		debug_info("[mem_file]: item size in allocator is too small");
 		return;
 	}
@@ -626,7 +625,7 @@ void MEM_FILE::clear()
 		} else {
 			break;
 		}
-		lib_buffer_put(pfile->allocator, pnode);
+		pfile->allocator->put(pnode);
 		pnode = double_list_get_tail(&pfile->list);
 	}
  CLEAR_RETRUN:
@@ -650,7 +649,7 @@ void mem_file_free(MEM_FILE *pfile)
 #endif
 	pfile->clear();
 	phead = double_list_pop_front(&pfile->list);
-	lib_buffer_put(pfile->allocator, phead);
+	pfile->allocator->put(phead);
 	pfile->allocator = NULL;
 	double_list_free(&pfile->list);
 }
@@ -672,7 +671,7 @@ static DOUBLE_LIST_NODE* mem_file_append_node(MEM_FILE *pfile)
 		return NULL;
 	}
 #endif
-	auto pnode = lib_buffer_get<DOUBLE_LIST_NODE>(pfile->allocator);
+	auto pnode = pfile->allocator->get<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		return NULL;
 	}

@@ -99,7 +99,7 @@ static pthread_t g_scan_id;
 static char g_zcab_org_name[256];
 static std::unordered_map<int, AB_BASE> g_base_hash;
 static std::mutex g_base_lock;
-static LIB_BUFFER *g_file_allocator;
+static std::unique_ptr<LIB_BUFFER> g_file_allocator;
 
 static void *zcoreab_scanwork(void *);
 static void ab_tree_get_display_name(const SIMPLE_TREE_NODE *, uint32_t codepage, char *str_dname, size_t dn_size);
@@ -205,8 +205,8 @@ int ab_tree_run()
 	AB_NODE *pabnode;
 	SINGLE_LIST_NODE *psnode;
 
-	g_file_allocator = lib_buffer_init(
-		FILE_ALLOC_SIZE, g_file_blocks, TRUE);
+	g_file_allocator.reset(LIB_BUFFER::create(FILE_ALLOC_SIZE,
+		g_file_blocks, TRUE));
 	if (NULL == g_file_allocator) {
 		printf("[exchange_nsp]: Failed to allocate file blocks\n");
 		return -2;
@@ -268,10 +268,7 @@ void ab_tree_stop()
 		pthread_join(g_scan_id, NULL);
 	}
 	g_base_hash.clear();
-	if (NULL != g_file_allocator) {
-		lib_buffer_free(g_file_allocator);
-		g_file_allocator = NULL;
-	}
+	g_file_allocator.reset();
 }
 
 static BOOL ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode) try

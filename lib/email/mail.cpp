@@ -814,7 +814,6 @@ BOOL MAIL::dup(MAIL *pmail_dst)
 	auto pmail_src = this;
 	unsigned int size;
 	void *ptr;
-	LIB_BUFFER *pallocator;
 	
 #ifdef _DEBUG_UMTA
 	if (pmail_dst == nullptr) {
@@ -826,14 +825,13 @@ BOOL MAIL::dup(MAIL *pmail_dst)
 	auto mail_len = get_length();
 	if (mail_len < 0)
 		return false;
-	pallocator = lib_buffer_init(STREAM_ALLOC_SIZE,
-			                mail_len / STREAM_BLOCK_SIZE + 1, FALSE);
+	std::unique_ptr<LIB_BUFFER> pallocator(LIB_BUFFER::create(STREAM_ALLOC_SIZE,
+		mail_len / STREAM_BLOCK_SIZE + 1, FALSE));
 	if (NULL == pallocator) {
 		debug_info("[mail]: Failed to init lib buffer in mail_dup");
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
-	STREAM tmp_stream(pallocator);
+	STREAM tmp_stream(pallocator.get());
 	if (!pmail_src->serialize(&tmp_stream)) {
 		return FALSE;
 	}
@@ -871,7 +869,6 @@ BOOL MAIL::transfer_dot(MAIL *pmail_dst)
 	auto pmail_src = this;
 	unsigned int size;
 	char *pbuff;
-	LIB_BUFFER *pallocator;
 	
 #ifdef _DEBUG_UMTA
 	if (pmail_dst == nullptr) {
@@ -883,14 +880,13 @@ BOOL MAIL::transfer_dot(MAIL *pmail_dst)
 	auto mail_len = get_length();
 	if (mail_len < 0)
 		return false;
-	pallocator = lib_buffer_init(STREAM_ALLOC_SIZE,
-			                mail_len / STREAM_BLOCK_SIZE + 1, FALSE);
+	std::unique_ptr<LIB_BUFFER> pallocator(LIB_BUFFER::create(STREAM_ALLOC_SIZE,
+		mail_len / STREAM_BLOCK_SIZE + 1, FALSE));
 	if (NULL == pallocator) {
 		debug_info("[mail]: Failed to init lib buffer in mail_dup");
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
-	STREAM tmp_stream(pallocator);
+	STREAM tmp_stream(pallocator.get());
 	if (!pmail_src->serialize(&tmp_stream)) {
 		return FALSE;
 	}

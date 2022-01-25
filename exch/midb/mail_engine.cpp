@@ -177,7 +177,7 @@ static pthread_t g_scan_tid;
 static int g_cache_interval;          /* maximum living interval in table */
 static char g_org_name[256];
 static std::shared_ptr<MIME_POOL> g_mime_pool;
-static LIB_BUFFER *g_alloc_mjson;      /* mjson allocator */
+static std::unique_ptr<LIB_BUFFER> g_alloc_mjson;
 static char g_default_charset[32];
 static char g_default_timezone[64];
 static std::mutex g_hash_lock;
@@ -641,7 +641,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 						break;
 					b_loaded = TRUE;
 				}
-				MJSON temp_mjson(g_alloc_mjson);
+				MJSON temp_mjson(g_alloc_mjson.get());
 				snprintf(temp_buff, 256, "%s/eml",
 						common_util_get_maildir());
 				if (temp_mjson.retrieve(digest_buff, strlen(digest_buff), temp_buff)) {
@@ -941,7 +941,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				if (TRUE == b_result1) {
 					break;
 				}
-				MJSON temp_mjson(g_alloc_mjson);
+				MJSON temp_mjson(g_alloc_mjson.get());
 				snprintf(temp_buff, 256, "%s/eml",
 						common_util_get_maildir());
 				if (temp_mjson.retrieve(digest_buff, strlen(digest_buff), temp_buff)) {
@@ -5482,7 +5482,7 @@ int mail_engine_run()
 		printf("[mail_engine]: Failed to init MIME pool\n");
 		return -3;
 	}
-	g_alloc_mjson = mjson_allocator_init(g_table_size * 10);
+	g_alloc_mjson.reset(mjson_allocator_init(g_table_size * 10));
 	if (NULL == g_alloc_mjson) {
 		printf("[mail_engine]: Failed to init buffer pool for mjson\n");
 		return -4;
@@ -5490,7 +5490,7 @@ int mail_engine_run()
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_tid, nullptr, midbme_scanwork, nullptr);
 	if (ret != 0) {
-		lib_buffer_free(g_alloc_mjson);
+		g_alloc_mjson.reset();
 		printf("[mail_engine]: failed to create scan thread: %s\n", strerror(ret));
 		return -5;
 	}
@@ -5532,7 +5532,7 @@ void mail_engine_stop()
 	pthread_join(g_scan_tid, NULL);
 	g_hash_table.clear();
 	g_mime_pool.reset();
-	lib_buffer_free(g_alloc_mjson);
+	g_alloc_mjson.reset();
 }
 
 int mail_engine_get_param(int param)

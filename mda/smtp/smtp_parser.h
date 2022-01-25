@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <optional>
 #include <string>
 #include <gromox/common_types.hpp>
@@ -185,4 +186,4 @@ int smtp_parser_threads_event_proc(int action);
 extern void smtp_parser_reset_context_envelope(SMTP_CONTEXT *);
 extern void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, const char *format, ...);
 
-extern LIB_BUFFER *g_files_allocator;
+extern std::unique_ptr<LIB_BUFFER> g_files_allocator;

@@ -99,12 +99,7 @@ static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
 
 LIB_BUFFER *mjson_allocator_init(size_t max_size)
 {
-	return lib_buffer_init(sizeof(MJSON_MIME), max_size, TRUE);
-}
-
-void mjson_allocator_free(LIB_BUFFER *pallocator)
-{
-	lib_buffer_free(pallocator);
+	return LIB_BUFFER::create(sizeof(MJSON_MIME), max_size, TRUE);
 }
 
 /*
@@ -171,7 +166,7 @@ static void mjson_enum_delete(SIMPLE_TREE_NODE *pnode)
 		return;
 	}
 #endif
-	lib_buffer_put(((MJSON_MIME*)pnode->pdata)->ppool, pnode->pdata);
+	static_cast<MJSON_MIME *>(pnode->pdata)->ppool->put_raw(pnode->pdata);
 }
 
 MJSON::~MJSON()
@@ -901,7 +896,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 	
 	pnode = simple_tree_get_root(&pjson->tree);
 	if (NULL == pnode) {
-		auto pmime = lib_buffer_get<MJSON_MIME>(pjson->ppool);
+		auto pmime = pjson->ppool->get<MJSON_MIME>();
 		pmime->node.pdata = pmime;
 		pmime->ppool = pjson->ppool;
 		pmime->mime_type = MJSON_MIME_NONE;
@@ -932,13 +927,13 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 				pnode = simple_tree_node_get_child(&pmime->node);
 				if (NULL == pnode) {
 					pnode = &pmime->node;
-					pmime = lib_buffer_get<MJSON_MIME>(pjson->ppool);
+					pmime = pjson->ppool->get<MJSON_MIME>();
 					pmime->node.pdata = pmime;
 					pmime->ppool = pjson->ppool;
 					pmime->mime_type = MJSON_MIME_NONE;
 					if (FALSE == simple_tree_add_child(&pjson->tree,
 						pnode, &pmime->node, SIMPLE_TREE_ADD_LAST)) {
-						lib_buffer_put(pjson->ppool, pmime);
+						pjson->ppool->put(pmime);
 						return FALSE;
 					}
 				} else {
@@ -949,13 +944,13 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 					pnode = simple_tree_node_get_sibling(&pmime->node);
 					if (NULL == pnode) {
 						pnode = &pmime->node;
-						pmime = lib_buffer_get<MJSON_MIME>(pjson->ppool);
+						pmime = pjson->ppool->get<MJSON_MIME>();
 						pmime->node.pdata = pmime;
 						pmime->ppool = pjson->ppool;
 						pmime->mime_type = MJSON_MIME_NONE;
 						if (!simple_tree_insert_sibling(&pjson->tree,
 							pnode, &pmime->node, SIMPLE_TREE_INSERT_AFTER)) {
-							lib_buffer_put(pjson->ppool, pmime);
+							pjson->ppool->put(pmime);
 							return FALSE;
 						}
 					} else {

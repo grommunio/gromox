@@ -882,17 +882,17 @@ SMTP_CONTEXT::SMTP_CONTEXT() :
 	auto pcontext = this;
 	auto &palloc_file = g_files_allocator;
 	pcontext->connection.sockd = -1;
-	mem_file_init(&pcontext->block_info.f_last_blkmime, palloc_file);
-	mem_file_init(&pcontext->mail.envelope.f_rcpt_to, palloc_file);
-	mem_file_init(&pcontext->mail.head.f_mime_to, palloc_file);
-	mem_file_init(&pcontext->mail.head.f_mime_from, palloc_file);
-	mem_file_init(&pcontext->mail.head.f_mime_cc, palloc_file);
-	mem_file_init(&pcontext->mail.head.f_mime_delivered_to, palloc_file);
-	mem_file_init(&pcontext->mail.head.f_xmailer, palloc_file);
-	mem_file_init(&pcontext->mail.head.f_subject, palloc_file);
-	mem_file_init(&pcontext->mail.head.f_content_type, palloc_file);
-	mem_file_init(&pcontext->mail.head.f_others, palloc_file);
-	mem_file_init(&pcontext->mail.body.f_mail_parts, palloc_file);
+	mem_file_init(&pcontext->block_info.f_last_blkmime, palloc_file.get());
+	mem_file_init(&pcontext->mail.envelope.f_rcpt_to, palloc_file.get());
+	mem_file_init(&pcontext->mail.head.f_mime_to, palloc_file.get());
+	mem_file_init(&pcontext->mail.head.f_mime_from, palloc_file.get());
+	mem_file_init(&pcontext->mail.head.f_mime_cc, palloc_file.get());
+	mem_file_init(&pcontext->mail.head.f_mime_delivered_to, palloc_file.get());
+	mem_file_init(&pcontext->mail.head.f_xmailer, palloc_file.get());
+	mem_file_init(&pcontext->mail.head.f_subject, palloc_file.get());
+	mem_file_init(&pcontext->mail.head.f_content_type, palloc_file.get());
+	mem_file_init(&pcontext->mail.head.f_others, palloc_file.get());
+	mem_file_init(&pcontext->mail.body.f_mail_parts, palloc_file.get());
 }
 
 static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext)

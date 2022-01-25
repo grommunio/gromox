@@ -89,4 +89,3 @@ enum {
 };
 
 extern GX_EXPORT LIB_BUFFER *mjson_allocator_init(size_t max_size);
-void mjson_allocator_free(LIB_BUFFER *pallocator);

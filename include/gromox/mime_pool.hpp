@@ -25,5 +25,5 @@ struct GX_EXPORT MIME_POOL {
 	std::mutex mutex;
 	std::unique_ptr<MIME_POOL_NODE[]> pbegin;
 	size_t number = 0;
-	LIB_BUFFER *allocator = nullptr;
+	std::unique_ptr<LIB_BUFFER> allocator;
 };

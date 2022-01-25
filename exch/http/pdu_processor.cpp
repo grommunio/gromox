@@ -121,13 +121,10 @@ static std::mutex g_list_lock, g_async_lock;
 static std::list<DCERPC_ENDPOINT> g_endpoint_list;
 static bool g_ign_loaderr;
 static std::unique_ptr<INT_HASH_TABLE> g_async_hash;
-static LIB_BUFFER *g_call_allocator;
 static std::list<PDU_PROCESSOR *> g_processor_list; /* ptrs owned by VIRTUAL_CONNECTION */
-static LIB_BUFFER *g_auth_allocator;
-static LIB_BUFFER *g_async_allocator;
-static LIB_BUFFER *g_bnode_allocator;
-static LIB_BUFFER *g_stack_allocator;
-static LIB_BUFFER *g_context_allocator;
+static std::unique_ptr<LIB_BUFFER> g_call_allocator, g_auth_allocator,
+	g_async_allocator, g_bnode_allocator, g_stack_allocator,
+	g_context_allocator;
 static const char *const *g_plugin_names;
 static const SYNTAX_ID g_transfer_syntax_ndr = 
 	/* {8a885d04-1ceb-11c9-9fe8-08002b104860} */
@@ -141,7 +138,7 @@ static int pdu_processor_load_library(const char* plugin_name);
 
 static NDR_STACK_ROOT* pdu_processor_new_stack_root()
 {
-	auto pstack_root = lib_buffer_get<NDR_STACK_ROOT>(g_stack_allocator);
+	auto pstack_root = g_stack_allocator->get<NDR_STACK_ROOT>();
 	if (NULL == pstack_root) {
 		return NULL;
 	}
@@ -170,7 +167,7 @@ static void pdu_processor_free_stack_root(NDR_STACK_ROOT *pstack_root)
 {
 	alloc_context_free(&pstack_root->in_stack);
 	alloc_context_free(&pstack_root->out_stack);
-	lib_buffer_put(g_stack_allocator, pstack_root);
+	g_stack_allocator->put(pstack_root);
 }
 
 static size_t pdu_processor_ndr_stack_size(NDR_STACK_ROOT *pstack_root, int type)
@@ -219,34 +216,34 @@ int pdu_processor_run()
 	pthread_key_create(&g_call_key, NULL);
 	pthread_key_create(&g_stack_key, NULL);
 	
-	g_call_allocator = lib_buffer_init(sizeof(DCERPC_CALL),
-				g_connection_num*g_connection_ratio, TRUE);
+	g_call_allocator.reset(LIB_BUFFER::create(sizeof(DCERPC_CALL),
+		g_connection_num*g_connection_ratio, TRUE));
 	if (NULL == g_call_allocator) {
 		return -1;
 	}
 	context_num = g_connection_num*g_connection_ratio;
-	g_context_allocator = lib_buffer_init(
-		sizeof(DCERPC_CONTEXT), context_num, TRUE);
+	g_context_allocator.reset(LIB_BUFFER::create(sizeof(DCERPC_CONTEXT),
+		context_num, TRUE));
 	if (NULL == g_context_allocator) {
 		return -2;
 	}
-	g_auth_allocator = lib_buffer_init(
-		sizeof(DCERPC_AUTH_CONTEXT), context_num, TRUE);
+	g_auth_allocator.reset(LIB_BUFFER::create(sizeof(DCERPC_AUTH_CONTEXT),
+		context_num, TRUE));
 	if (NULL == g_auth_allocator) {
 		return -3;
 	}
-	g_bnode_allocator = lib_buffer_init(
-		sizeof(BLOB_NODE), g_connection_num*32, TRUE);
+	g_bnode_allocator.reset(LIB_BUFFER::create(sizeof(BLOB_NODE),
+		g_connection_num * 32, TRUE));
 	if (NULL == g_bnode_allocator) {
 		return -5;
 	}
-	g_async_allocator = lib_buffer_init(
-		sizeof(ASYNC_NODE), context_num*2, TRUE);
+	g_async_allocator.reset(LIB_BUFFER::create(sizeof(ASYNC_NODE),
+		context_num * 2, TRUE));
 	if (NULL == g_async_allocator) {
 		return -6;
 	}
-	g_stack_allocator = lib_buffer_init(
-		sizeof(NDR_STACK_ROOT), context_num*4, TRUE);
+	g_stack_allocator.reset(LIB_BUFFER::create(sizeof(NDR_STACK_ROOT),
+		context_num * 4, TRUE));
 	if (NULL == g_stack_allocator) {
 		return -7;
 	}
@@ -274,10 +271,10 @@ void pdu_processor_free_call(DCERPC_CALL *pcall)
 	while ((pnode = double_list_pop_front(&pcall->reply_list)) != nullptr) {
 		pblob_node = (BLOB_NODE*)pnode->pdata;
 		free(pblob_node->blob.data);
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 	}
 	double_list_free(&pcall->reply_list);
-	lib_buffer_put(g_call_allocator, pcall);
+	g_call_allocator->put(pcall);
 }
 
 static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
@@ -299,10 +296,10 @@ static void pdu_processor_free_context(DCERPC_CONTEXT *pcontext)
 		}
 		pdu_processor_free_stack_root(pasync_node->pstack_root);
 		pdu_processor_free_call(pasync_node->pcall);
-		lib_buffer_put(g_async_allocator, pasync_node);
+		g_async_allocator->put(pasync_node);
 	}
 	double_list_free(&pcontext->async_list);
-	lib_buffer_put(g_context_allocator, pcontext);
+	g_context_allocator->put(pcontext);
 }
 
 void pdu_processor_stop()
@@ -317,30 +314,12 @@ void pdu_processor_stop()
 
 	g_plugin_list.clear();
 	g_endpoint_list.clear();
-	if (NULL != g_stack_allocator) {
-		lib_buffer_free(g_stack_allocator);
-		g_stack_allocator = NULL;
-	}
-	if (NULL != g_async_allocator) {
-		lib_buffer_free(g_async_allocator);
-		g_async_allocator = NULL;
-	}
-	if (NULL != g_bnode_allocator) {
-		lib_buffer_free(g_bnode_allocator);
-		g_bnode_allocator = NULL;
-	}
-	if (NULL != g_call_allocator) {
-		lib_buffer_free(g_call_allocator);
-		g_call_allocator = NULL;
-	}
-	if (NULL != g_context_allocator) {
-		lib_buffer_free(g_context_allocator);
-		g_context_allocator = NULL;
-	}
-	if (NULL != g_auth_allocator) {
-		lib_buffer_free(g_auth_allocator);
-		g_auth_allocator = NULL;
-	}
+	g_stack_allocator.reset();
+	g_async_allocator.reset();
+	g_bnode_allocator.reset();
+	g_call_allocator.reset();
+	g_context_allocator.reset();
+	g_auth_allocator.reset();
 	g_async_hash.reset();
 	pthread_key_delete(g_call_key);
 	pthread_key_delete(g_stack_key);
@@ -435,7 +414,7 @@ PDU_PROCESSOR::~PDU_PROCESSOR()
 			ntlmssp_destroy(pauth_ctx->pntlmssp);
 			pauth_ctx->pntlmssp = NULL;
 		}
-		lib_buffer_put(g_auth_allocator, pauth_ctx);
+		g_auth_allocator->put(pauth_ctx);
 	}
 	double_list_free(&pprocessor->auth_list);
 	
@@ -493,7 +472,7 @@ void pdu_processor_output_stream(DCERPC_CALL *pcall, STREAM *pstream)
 		pblob_node = (BLOB_NODE*)pnode->pdata;
 		pstream->write(pblob_node->blob.data, pblob_node->blob.length);
 		free(pblob_node->blob.data);
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 	}
 }
 
@@ -507,7 +486,7 @@ void pdu_processor_output_pdu(DCERPC_CALL *pcall, DOUBLE_LIST *ppdu_list)
 
 void pdu_processor_free_blob(BLOB_NODE *pbnode)
 {
-	lib_buffer_put(g_bnode_allocator, pbnode);
+	g_bnode_allocator->put(pbnode);
 }
 
 static DCERPC_CALL* pdu_processor_get_fragmented_call(
@@ -799,7 +778,7 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code)
 	pkt.payload.fault.pad.data = deconst(zeros);
 	pkt.payload.fault.pad.length = sizeof(zeros);
 
-	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
+	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -808,7 +787,7 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code)
 	
 	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
 	double_list_append_as_tail(&pcall->reply_list, &pblob_node->node);
@@ -833,7 +812,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 			" number of connection reached\n");
 		return FALSE;
 	}
-	auto pauth_ctx = lib_buffer_get<DCERPC_AUTH_CONTEXT>(g_auth_allocator);
+	auto pauth_ctx = g_auth_allocator->get<DCERPC_AUTH_CONTEXT>();
 	if (NULL == pauth_ctx) {
 		return FALSE;
 	}
@@ -850,14 +829,14 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 	
 	if (FALSE == pdu_processor_pull_auth_trailer(ppkt, &pbind->auth_info,
 		&pauth_ctx->auth_info, &auth_length, FALSE)) {
-		lib_buffer_put(g_auth_allocator, pauth_ctx);
+		g_auth_allocator->put(pauth_ctx);
 		return FALSE;
 	}
 	
 	if (NULL != pdu_processor_find_auth_context(pcall->pprocessor,
 		pauth_ctx->auth_info.auth_context_id)) {
 		pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
-		lib_buffer_put(g_auth_allocator, pauth_ctx);
+		g_auth_allocator->put(pauth_ctx);
 		return FALSE;
 	}
 	
@@ -886,7 +865,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 		}
 		if (NULL == pauth_ctx->pntlmssp) {
 			pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
-			lib_buffer_put(g_auth_allocator, pauth_ctx);
+			g_auth_allocator->put(pauth_ctx);
 			return FALSE;
 		}
 		double_list_append_as_tail(&pcall->pprocessor->auth_list,
@@ -894,7 +873,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 		return TRUE;
 	}
 	pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
-	lib_buffer_put(g_auth_allocator, pauth_ctx);
+	g_auth_allocator->put(pauth_ctx);
 	debug_info("[pdu_processor]: unsupported authentication type\n");
 	return FALSE;
 }
@@ -946,7 +925,7 @@ static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason)
 	pkt.payload.bind_nak.reject_reason = reason;
 	pkt.payload.bind_nak.num_versions = 0;
 
-	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
+	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -955,7 +934,7 @@ static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason)
 	
 	if (FALSE == pdu_processor_ncacn_push_with_auth(
 		&pblob_node->blob, &pkt, NULL)) {
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
 
@@ -1059,7 +1038,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		pcontext = NULL;
 	} else {
 		/* add this context to the list of available context_ids */
-		pcontext = lib_buffer_get<DCERPC_CONTEXT>(g_context_allocator);
+		pcontext = g_context_allocator->get<DCERPC_CONTEXT>();
 		if (NULL == pcontext) {
 			return pdu_processor_bind_nak(pcall, 0);
 		}
@@ -1202,7 +1181,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		return pdu_processor_bind_nak(pcall, 0);
 	}
 	pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
-	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
+	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 	if (NULL == pblob_node) {
 		pdu_ndr_free_ncacnpkt(&pkt);
 		if (NULL != pcontext) {
@@ -1217,7 +1196,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, &pauth_ctx->auth_info)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		if (NULL != pcontext) {
 			pdu_processor_free_context(pcontext);
 		}
@@ -1284,7 +1263,7 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 		ntlmssp_destroy(pauth_ctx->pntlmssp);
 		pauth_ctx->pntlmssp = NULL;
 	}
-	lib_buffer_put(g_auth_allocator, pauth_ctx);
+	g_auth_allocator->put(pauth_ctx);
 	return TRUE;
 }
 
@@ -1394,7 +1373,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 			goto ALTER_ACK;
 		}
 		/* add this context to the list of available context_ids */
-		pcontext = lib_buffer_get<DCERPC_CONTEXT>(g_context_allocator);
+		pcontext = g_context_allocator->get<DCERPC_CONTEXT>();
 		if (NULL == pcontext) {
 			result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
 			reason = DECRPC_BIND_REASON_LOCAL_LIMIT_EXCEEDED;
@@ -1497,7 +1476,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	}
 	pauth_ctx = (DCERPC_AUTH_CONTEXT*)pnode->pdata;
 	
-	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
+	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 	if (NULL == pblob_node) {
 		pdu_ndr_free_ncacnpkt(&pkt);
 		if (NULL != pcontext) {
@@ -1514,7 +1493,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 		if (NULL != pcontext) {
 			pdu_processor_free_context(pcontext);
 		}
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
 	
@@ -1727,7 +1706,7 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	chunk_size -= chunk_size % 16;
 
 	do {
-		auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
+		auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 		if (NULL == pblob_node) {
 			free(pdata);
 			return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
@@ -1763,7 +1742,7 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 
 		if (FALSE == pdu_processor_auth_response(pcall,
 			&pblob_node->blob, sig_size, &pkt)) {
-			lib_buffer_put(g_bnode_allocator, pblob_node);
+			g_bnode_allocator->put(pblob_node);
 			free(pdata);
 			return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
 		}
@@ -1807,7 +1786,7 @@ static uint32_t pdu_processor_apply_async_id()
 		return 0;
 	}
 	pchannel_in = (RPC_IN_CHANNEL*)pcontext->pchannel;
-	auto pasync_node = lib_buffer_get<ASYNC_NODE>(g_async_allocator);
+	auto pasync_node = g_async_allocator->get<ASYNC_NODE>();
 	if (NULL == pasync_node) {
 		return 0;
 	}
@@ -1828,7 +1807,7 @@ static uint32_t pdu_processor_apply_async_id()
 	pfake_async = NULL;
 	if (g_async_hash->add(async_id, &pfake_async) != 1) {
 		as_hold.unlock();
-		lib_buffer_put(g_async_allocator, pasync_node);
+		g_async_allocator->put(pasync_node);
 		return 0;
 	}
 	pasync_node->async_id = async_id;
@@ -1888,7 +1867,7 @@ static void pdu_processor_cancel_async_id(uint32_t async_id)
 	}
 	as_hold.unlock();
 	if (NULL != pnode) {
-		lib_buffer_put(g_async_allocator, pasync_node);
+		g_async_allocator->put(pasync_node);
 	}
 }
 
@@ -1972,7 +1951,7 @@ static void pdu_processor_async_reply(uint32_t async_id, void *pout)
 		as_hold.unlock();
 		pdu_processor_free_stack_root(pasync_node->pstack_root);
 		pdu_processor_free_call(pasync_node->pcall);
-		lib_buffer_put(g_async_allocator, pasync_node);
+		g_async_allocator->put(pasync_node);
 		return;
 	}
 	pcall->pprocessor->async_num ++;
@@ -1991,7 +1970,7 @@ static void pdu_processor_async_reply(uint32_t async_id, void *pout)
 		as_hold.unlock();
 	}
 	pdu_processor_free_call(pasync_node->pcall);
-	lib_buffer_put(g_async_allocator, pasync_node);
+	g_async_allocator->put(pasync_node);
 }
 
 static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_aync)
@@ -2118,7 +2097,7 @@ static void pdu_processor_process_cancel(DCERPC_CALL *pcall)
 		}
 		pdu_processor_free_stack_root(pasync_node->pstack_root);
 		pdu_processor_free_call(pasync_node->pcall);
-		lib_buffer_put(g_async_allocator, pasync_node);
+		g_async_allocator->put(pasync_node);
 	}
 }
 
@@ -2173,7 +2152,7 @@ BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 0;
 	pkt.payload.rts.commands = NULL;
 
-	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
+	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2182,7 +2161,7 @@ BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall)
 
 	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
 
@@ -2466,7 +2445,7 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 {
 	DCERPC_NCACN_PACKET pkt;
 
-	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
+	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2482,7 +2461,7 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 1;
 	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(sizeof(RTS_CMD)));
 	if (NULL == pkt.payload.rts.commands) {
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
 	
@@ -2493,7 +2472,7 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
 	
@@ -2508,7 +2487,7 @@ BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 {
 	DCERPC_NCACN_PACKET pkt;
 	
-	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
+	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2524,7 +2503,7 @@ BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 	pkt.payload.rts.num = 3;
 	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(3 * sizeof(RTS_CMD)));
 	if (NULL == pkt.payload.rts.commands) {
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
 	
@@ -2539,7 +2518,7 @@ BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
 	
@@ -2554,7 +2533,7 @@ static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 {
 	DCERPC_NCACN_PACKET pkt;
 	
-	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
+	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2570,7 +2549,7 @@ static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 1;
 	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(sizeof(RTS_CMD)));
 	if (NULL == pkt.payload.rts.commands) {
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
 	
@@ -2580,7 +2559,7 @@ static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
 	
@@ -2595,7 +2574,7 @@ BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
 {
 	DCERPC_NCACN_PACKET pkt;
 	
-	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
+	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2611,7 +2590,7 @@ BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 1;
 	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(sizeof(RTS_CMD)));
 	if (NULL == pkt.payload.rts.commands) {
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
 	
@@ -2621,7 +2600,7 @@ BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
 	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
 	
@@ -2636,7 +2615,7 @@ BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
 {
 	DCERPC_NCACN_PACKET pkt;
 	
-	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
+	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2652,7 +2631,7 @@ BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 2;
 	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(2 * sizeof(RTS_CMD)));
 	if (NULL == pkt.payload.rts.commands) {
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
 	
@@ -2664,7 +2643,7 @@ BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
 	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
 	
@@ -2679,7 +2658,7 @@ BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall)
 {
 	DCERPC_NCACN_PACKET pkt;
 	
-	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
+	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2695,7 +2674,7 @@ BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall)
 	pkt.payload.rts.num = 1;
 	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(sizeof(RTS_CMD)));
 	if (NULL == pkt.payload.rts.commands) {
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
 	
@@ -2704,7 +2683,7 @@ BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall)
 	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
 	
@@ -2721,7 +2700,7 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 {
 	DCERPC_NCACN_PACKET pkt;
 	
-	auto pblob_node = lib_buffer_get<BLOB_NODE>(g_bnode_allocator);
+	auto pblob_node = g_bnode_allocator->get<BLOB_NODE>();
 	if (NULL == pblob_node) {
 		return FALSE;
 	}
@@ -2737,7 +2716,7 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 	pkt.payload.rts.num = 2;
 	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(2 * sizeof(RTS_CMD)));
 	if (NULL == pkt.payload.rts.commands) {
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
 	
@@ -2750,13 +2729,13 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 	fc.available_window = available_window;
 	if (!guid_from_string(&fc.channel_cookie, channel_cookie)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
 	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
-		lib_buffer_put(g_bnode_allocator, pblob_node);
+		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
 	
@@ -2796,7 +2775,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	}
 	
 	ndr_pull_init(&ndr, (uint8_t *)pbuff, length, flags);
-	auto pcall = lib_buffer_get<DCERPC_CALL>(g_call_allocator);
+	auto pcall = g_call_allocator->get<DCERPC_CALL>();
 	if (NULL == pcall) {
 		return PDU_PROCESSOR_ERROR;
 	}
@@ -3070,7 +3049,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 		flags |= NDR_FLAG_OBJECT_PRESENT;
 	ndr_pull_init(&ndr, (uint8_t *)pbuff, length, flags);
 	
-	auto pcall = lib_buffer_get<DCERPC_CALL>(g_call_allocator);
+	auto pcall = g_call_allocator->get<DCERPC_CALL>();
 	if (NULL == pcall) {
 		return PDU_PROCESSOR_ERROR;
 	}

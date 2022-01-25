@@ -3,6 +3,7 @@
 #	include "config.h"
 #endif
 #include <cstdint>
+#include <memory>
 #include <mutex>
 #include <utility>
 #include <libHX/ctype_helper.h>
@@ -64,7 +65,7 @@ static std::mutex g_id_lock;
 static char g_submit_command[1024];
 static unsigned int g_max_mail_len;
 static unsigned int g_max_rule_len;
-static LIB_BUFFER *g_file_allocator;
+static std::unique_ptr<LIB_BUFFER> g_file_allocator;
 
 #define E(s) decltype(common_util_ ## s) common_util_ ## s;
 E(get_maildir)
@@ -2113,7 +2114,7 @@ BOOL common_util_send_message(logon_object *plogon,
 
 LIB_BUFFER* common_util_get_allocator()
 {
-	return g_file_allocator;
+	return g_file_allocator.get();
 }
 
 void common_util_init(const char *org_name, int average_blocks,
@@ -2183,8 +2184,8 @@ int common_util_run()
 		printf("[exchange_emsmdb]: Failed to init oxcmail library\n");
 		return -2;
 	}
-	g_file_allocator = lib_buffer_init(FILE_ALLOC_SIZE,
-						g_average_blocks*context_num, TRUE);
+	g_file_allocator.reset(LIB_BUFFER::create(FILE_ALLOC_SIZE,
+		g_average_blocks*context_num, TRUE));
 	if (NULL == g_file_allocator) {
 		printf("[exchange_emsmdb]: Failed to init mem file allocator\n");
 		return -3;
@@ -2205,10 +2206,7 @@ int common_util_run()
 
 void common_util_stop()
 {
-	if (NULL != g_file_allocator) {
-		lib_buffer_free(g_file_allocator);
-		g_file_allocator = NULL;
-	}
+	g_file_allocator.reset();
 	g_mime_pool.reset();
 }
 

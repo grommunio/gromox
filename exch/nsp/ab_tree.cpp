@@ -95,7 +95,7 @@ static pthread_t g_scan_id;
 static char g_nsp_org_name[256];
 static std::unordered_map<int, AB_BASE> g_base_hash;
 static std::mutex g_base_lock, g_remote_lock;
-static LIB_BUFFER *g_file_allocator;
+static std::unique_ptr<LIB_BUFFER> g_file_allocator;
 
 static decltype(mysql_adaptor_get_org_domains) *get_org_domains;
 static decltype(mysql_adaptor_get_domain_info) *get_domain_info;
@@ -239,8 +239,8 @@ int ab_tree_run()
 	E(get_mlist_ids, "get_mlist_ids");
 	E(get_lang, "get_lang");
 #undef E
-	g_file_allocator = lib_buffer_init(
-		FILE_ALLOC_SIZE, g_file_blocks, TRUE);
+	g_file_allocator.reset(LIB_BUFFER::create(FILE_ALLOC_SIZE,
+		g_file_blocks, TRUE));
 	if (NULL == g_file_allocator) {
 		printf("[exchange_nsp]: Failed to allocate file blocks\n");
 		return -3;
@@ -302,10 +302,7 @@ void ab_tree_stop()
 		pthread_join(g_scan_id, NULL);
 	}
 	g_base_hash.clear();
-	if (NULL != g_file_allocator) {
-		lib_buffer_free(g_file_allocator);
-		g_file_allocator = NULL;
-	}
+	g_file_allocator.reset();
 }
 
 static BOOL ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode) try

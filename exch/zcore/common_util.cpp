@@ -2375,7 +2375,6 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 	void *ptr;
 	void *pvalue;
 	int body_type;
-	LIB_BUFFER *pallocator;
 	TAGGED_PROPVAL *ppropval;
 	MESSAGE_CONTENT *pmsgctnt;
 	
@@ -2427,13 +2426,12 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 	if (mail_len < 0) {
 		return false;
 	}
-	pallocator = lib_buffer_init(STREAM_ALLOC_SIZE,
-			mail_len / STREAM_BLOCK_SIZE + 1, FALSE);
+	std::unique_ptr<LIB_BUFFER> pallocator(LIB_BUFFER::create(STREAM_ALLOC_SIZE,
+		mail_len / STREAM_BLOCK_SIZE + 1, FALSE));
 	if (NULL == pallocator) {
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
-	STREAM tmp_stream(pallocator);
+	STREAM tmp_stream(pallocator.get());
 	if (!imail.serialize(&tmp_stream)) {
 		return FALSE;
 	}

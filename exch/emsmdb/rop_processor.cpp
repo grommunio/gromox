@@ -74,13 +74,11 @@ static int g_average_handles;
 static gromox::atomic_bool g_notify_stop{true};
 static std::mutex g_hash_lock;
 static std::unique_ptr<STR_HASH_TABLE> g_logon_hash;
-static LIB_BUFFER *g_logmap_allocator;
-static LIB_BUFFER *g_handle_allocator;
-static LIB_BUFFER *g_logitem_allocator;
+static std::unique_ptr<LIB_BUFFER> g_logmap_allocator, g_handle_allocator, g_logitem_allocator;
 
 LOGMAP *rop_processor_create_logmap()
 {
-	auto plogmap = lib_buffer_get<LOGMAP>(g_logmap_allocator);
+	auto plogmap = g_logmap_allocator->get<LOGMAP>();
 	if (NULL != plogmap) {
 		memset(plogmap, 0, sizeof(LOGMAP));
 	}
@@ -134,7 +132,7 @@ static void rop_processor_free_objnode(SIMPLE_TREE_NODE *pnode)
 	rop_processor_free_object(pobjnode->pobject, pobjnode->type);
 	pobjnode->type = 0;
 	pobjnode->pobject = NULL;
-	lib_buffer_put(g_handle_allocator, pobjnode);
+	g_handle_allocator->put(pobjnode);
 }
 
 static void rop_processor_release_objnode(
@@ -169,7 +167,7 @@ static void rop_processor_release_objnode(
 	if (TRUE == b_root) {
 		simple_tree_free(&plogitem->tree);
 		plogitem->phash.reset();
-		lib_buffer_put_u<LOGON_ITEM>(g_logitem_allocator, plogitem);
+		g_logitem_allocator->destroy_and_put(plogitem);
 	}
 }
 
@@ -196,7 +194,7 @@ void rop_processor_release_logmap(LOGMAP *plogmap)
 			plogmap->p[i] = nullptr;
 		}
 	}
-	lib_buffer_put(g_logmap_allocator, plogmap);
+	g_logmap_allocator->put(plogmap);
 }
 
 int rop_processor_create_logon_item(LOGMAP *plogmap,
@@ -210,14 +208,14 @@ int rop_processor_create_logon_item(LOGMAP *plogmap,
 		rop_processor_release_logon_item(plogitem);
 		plogmap->p[logon_id] = nullptr;
 	}
-	plogitem = lib_buffer_get_u<LOGON_ITEM>(g_logitem_allocator);
+	plogitem = g_logitem_allocator->get_unconstructed<LOGON_ITEM>();
 	if (NULL == plogitem) {
 		return -1;
 	}
 	new(plogitem) LOGON_ITEM;
 	plogitem->phash = INT_HASH_TABLE::create(HGROWING_SIZE, sizeof(OBJECT_NODE *));
 	if (NULL == plogitem->phash) {
-		lib_buffer_put_u(g_logitem_allocator, plogitem);
+		g_logitem_allocator->destroy_and_put(plogitem);
 		return -2;
 	}
 	simple_tree_init(&plogitem->tree);
@@ -225,7 +223,7 @@ int rop_processor_create_logon_item(LOGMAP *plogmap,
 	handle = rop_processor_add_object_handle(plogmap,
 				logon_id, -1, OBJECT_TYPE_LOGON, plogon);
 	if (handle < 0) {
-		lib_buffer_put_u(g_logitem_allocator, plogitem);
+		g_logitem_allocator->destroy_and_put(plogitem);
 		return -3;
 	}
 	std::lock_guard hl_hold(g_hash_lock);
@@ -267,7 +265,7 @@ int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	} else {
 		return -6;
 	}
-	auto pobjnode = lib_buffer_get<OBJECT_NODE>(g_handle_allocator);
+	auto pobjnode = g_handle_allocator->get<OBJECT_NODE>();
 	if (NULL == pobjnode) {
 		return -7;
 	}
@@ -280,7 +278,7 @@ int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 		auto phash = INT_HASH_TABLE::create(plogitem->phash->capacity +
 		                        HGROWING_SIZE, sizeof(OBJECT_NODE *));
 		if (NULL == phash) {
-			lib_buffer_put(g_handle_allocator, pobjnode);
+			g_handle_allocator->put(pobjnode);
 			return -8;
 		}
 		auto iter = plogitem->phash->make_iter();
@@ -421,20 +419,20 @@ int rop_processor_run()
 	int context_num;
 	
 	context_num = get_context_num();
-	g_logmap_allocator = lib_buffer_init(256*sizeof(LOGON_ITEM*),
-							context_num*MAX_HANDLES_ON_CONTEXT, TRUE);
+	g_logmap_allocator.reset(LIB_BUFFER::create(256 * sizeof(LOGON_ITEM *),
+		context_num * MAX_HANDLES_ON_CONTEXT, TRUE));
 	if (NULL == g_logmap_allocator) {
 		printf("[exchange_emsmdb]: Failed to init logon map allocator\n");
 		return -1;
 	}
-	g_logitem_allocator = lib_buffer_init(sizeof(LOGON_ITEM),
-									256*context_num, TRUE);
+	g_logitem_allocator.reset(LIB_BUFFER::create(sizeof(LOGON_ITEM),
+		256 * context_num, TRUE));
 	if (NULL == g_logitem_allocator) {
 		printf("[exchange_emsmdb]: Failed to init object map allocator\n");
 		return -2;
 	}
-	g_handle_allocator = lib_buffer_init(sizeof(OBJECT_NODE),
-							g_average_handles*context_num, TRUE);
+	g_handle_allocator.reset(LIB_BUFFER::create(sizeof(OBJECT_NODE),
+		g_average_handles*context_num, TRUE));
 	if (NULL == g_handle_allocator) {
 		printf("[exchange_emsmdb]: Failed to init object handle allocator\n");
 		return -3;
@@ -463,18 +461,9 @@ void rop_processor_stop()
 		pthread_kill(g_scan_id, SIGALRM);
 		pthread_join(g_scan_id, NULL);
 	}
-	if (NULL != g_logmap_allocator) {
-		lib_buffer_free(g_logmap_allocator);
-		g_logmap_allocator = NULL;
-	}
-	if (NULL != g_logitem_allocator) {
-		lib_buffer_free(g_logitem_allocator);
-		g_logitem_allocator = NULL;
-	}
-	if (NULL != g_handle_allocator) {
-		lib_buffer_free(g_handle_allocator);
-		g_handle_allocator = NULL;
-	}
+	g_logmap_allocator.reset();
+	g_logitem_allocator.reset();
+	g_handle_allocator.reset();
 	g_logon_hash.reset();
 }
 

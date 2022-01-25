@@ -35,7 +35,7 @@ STREAM::STREAM(LIB_BUFFER *palloc) :
 	double_list_init(&pstream->list);
 
 #ifdef _DEBUG_UMTA
-	if (lib_buffer_get_param(palloc, MEM_ITEM_SIZE) - sizeof(DOUBLE_LIST_NODE) <
+	if (palloc->get_param(MEM_ITEM_SIZE) - sizeof(DOUBLE_LIST_NODE) <
 		STREAM_BLOCK_SIZE) {
 		throw std::invalid_parameter("[stream]: item size in stream allocator is too "
 					"small in stream_init");
@@ -212,7 +212,7 @@ void STREAM::clear()
 		} else {
 			break;
 		}
-		lib_buffer_put(pstream->allocator, pnode);
+		pstream->allocator->put(pnode);
 		pnode = double_list_get_tail(&pstream->list);
 	}
 
@@ -247,7 +247,7 @@ void stream_free(STREAM *pstream)
 	pstream->clear();
 	phead = double_list_pop_front(&pstream->list);
 	if (phead != nullptr)
-		lib_buffer_put(pstream->allocator, phead);
+		pstream->allocator->put(phead);
 	pstream->allocator = NULL;
 	double_list_free(&pstream->list);
 }
@@ -273,7 +273,7 @@ static BOOL stream_append_node(STREAM *pstream)
 		pnode = double_list_get_after(&pstream->list,
 			pstream->pnode_wr);
 	} else {
-		pnode = lib_buffer_get<DOUBLE_LIST_NODE>(pstream->allocator);
+		pnode = pstream->allocator->get<DOUBLE_LIST_NODE>();
 		if (NULL == pnode) {
 			return FALSE;
 		}

@@ -27,8 +27,7 @@ void xarray_init(XARRAY *pxarray, LIB_BUFFER *pbuf_pool, size_t data_size)
 	pxarray->cur_size	 = 0;
 	pxarray->data_size	 = data_size;
    
-	if (data_size > lib_buffer_get_param(pbuf_pool, 
-		MEM_ITEM_SIZE) - EXTRA_XARRAYNODE_SIZE) {
+	if (data_size > pbuf_pool->get_param(MEM_ITEM_SIZE) - EXTRA_XARRAYNODE_SIZE) {
 		debug_info("[xarray]: xarray_init warning: xarray data"
 			" size larger than allocator item size");
 	}
@@ -70,7 +69,7 @@ int XARRAY::append(void *pdata, unsigned int xtag)
 #endif
 	if (xtag == 0 || get_itemx(xtag))
 		return -1;
-	auto punit = lib_buffer_get<XARRAY_UNIT>(pxarray->mbuf_pool);
+	auto punit = pxarray->mbuf_pool->get<XARRAY_UNIT>();
 	if (NULL == punit) {
 		return -1;
 	}
@@ -159,7 +158,7 @@ void XARRAY::clear()
 	auto pxarray = this;
 	DOUBLE_LIST_NODE *pnode;
 	while ((pnode = double_list_pop_front(&pxarray->mlist)) != nullptr)
-		lib_buffer_put(pxarray->mbuf_pool, pnode->pdata);
+		pxarray->mbuf_pool->put_raw(pnode->pdata);
 	pxarray->cur_size = 0;
 	memset(pxarray->cache_ptrs, 0, sizeof(pxarray->cache_ptrs));
 	memset(pxarray->hash_lists, 0, sizeof(pxarray->hash_lists));

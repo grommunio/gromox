@@ -11,7 +11,7 @@ static void dir_tree_enum_delete(SIMPLE_TREE_NODE *pnode)
 	DIR_NODE *pdir;
 
 	pdir = (DIR_NODE*)pnode->pdata;
-	lib_buffer_put(pdir->ppool, pdir);
+	pdir->ppool->put(pdir);
 }
 
 void dir_tree_init(DIR_TREE *ptree, LIB_BUFFER *pallocator)
@@ -29,7 +29,7 @@ void dir_tree_retrieve(DIR_TREE *ptree, MEM_FILE *pfile)
 
 	proot = simple_tree_get_root(&ptree->tree);
 	if (NULL == proot) {
-		auto pdir = lib_buffer_get<DIR_NODE>(ptree->ppool);
+		auto pdir = ptree->ppool->get<DIR_NODE>();
 		pdir->node.pdata = pdir;
 		pdir->name[0] = '\0';
 		pdir->b_loaded = TRUE;
@@ -63,7 +63,7 @@ void dir_tree_retrieve(DIR_TREE *ptree, MEM_FILE *pfile)
 			}
 
 			if (NULL == pnode) {
-				auto pdir = lib_buffer_get<DIR_NODE>(ptree->ppool);
+				auto pdir = ptree->ppool->get<DIR_NODE>();
 				pdir->node.pdata = pdir;
 				gx_strlcpy(pdir->name, ptr1, gromox::arsizeof(pdir->name));
 				pdir->b_loaded = FALSE;

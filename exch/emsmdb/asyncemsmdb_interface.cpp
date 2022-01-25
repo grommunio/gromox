@@ -2,6 +2,7 @@
 #include <condition_variable>
 #include <csignal>
 #include <cstring>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <unordered_map>
@@ -54,7 +55,7 @@ static size_t g_tag_hash_max;
 static std::mutex g_list_lock, g_async_lock;
 static std::condition_variable g_waken_cond;
 static std::unique_ptr<INT_HASH_TABLE> g_async_hash;
-static LIB_BUFFER *g_wait_allocator;
+static std::unique_ptr<LIB_BUFFER> g_wait_allocator;
 
 static void *aemsi_scanwork(void *);
 static void *aemsi_thrwork(void *);
@@ -90,8 +91,8 @@ int asyncemsmdb_interface_run()
 		printf("[exchange_emsmdb]: Failed to init async ID hash table\n");
 		return -2;
 	}
-	g_wait_allocator = lib_buffer_init(
-		sizeof(ASYNC_WAIT), 2*context_num, TRUE);
+	g_wait_allocator.reset(LIB_BUFFER::create(sizeof(ASYNC_WAIT),
+		2 * context_num, TRUE));
 	if (NULL == g_wait_allocator) {
 		printf("[exchange_emsmdb]: Failed to init async wait allocator\n");
 		return -3;
@@ -140,10 +141,7 @@ void asyncemsmdb_interface_stop()
 		g_thread_ids = NULL;
 	}
 	g_tag_hash.clear();
-	if (NULL != g_wait_allocator) {
-		lib_buffer_free(g_wait_allocator);
-		g_wait_allocator = NULL;
-	}
+	g_wait_allocator.reset();
 	g_async_hash.reset();
 }
 
@@ -157,7 +155,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 {
 	char tmp_tag[TAG_SIZE];
 	
-	auto pwait = lib_buffer_get<ASYNC_WAIT>(g_wait_allocator);
+	auto pwait = g_wait_allocator->get<ASYNC_WAIT>();
 	if (NULL == pwait) {
 		pout->flags_out = 0;
 		pout->result = ecRejected;
@@ -167,13 +165,13 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	if (FALSE == emsmdb_interface_check_acxh(
 		&pin->acxh, pwait->username, &pwait->cxr, TRUE) ||
 		0 != strcasecmp(rpc_info.username, pwait->username)) {
-		lib_buffer_put(g_wait_allocator, pwait);
+		g_wait_allocator->put(pwait);
 		pout->flags_out = 0;
 		pout->result = ecRejected;
 		return DISPATCH_SUCCESS;
 	}
 	if (TRUE == emsmdb_interface_check_notify(&pin->acxh)) {
-		lib_buffer_put(g_wait_allocator, pwait);
+		g_wait_allocator->put(pwait);
 		pout->flags_out = FLAG_NOTIFICATION_PENDING;
 		pout->result = ecSuccess;
 		return DISPATCH_SUCCESS;
@@ -193,7 +191,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	if (0 != async_id) {
 		if (g_async_hash->add(async_id, &pwait) != 1) {
 			as_hold.unlock();
-			lib_buffer_put(g_wait_allocator, pwait);
+			g_wait_allocator->put(pwait);
 			pout->flags_out = 0;
 			pout->result = ecRejected;
 			return DISPATCH_SUCCESS;
@@ -209,7 +207,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 	if (async_id != 0)
 		g_async_hash->remove(async_id);
 	as_hold.unlock();
-	lib_buffer_put(g_wait_allocator, pwait);
+	g_wait_allocator->put(pwait);
 	pout->flags_out = 0;
 	pout->result = ecRejected;
 	return DISPATCH_SUCCESS;
@@ -232,7 +230,7 @@ void asyncemsmdb_interface_reclaim(uint32_t async_id)
 	g_tag_hash.erase(tmp_tag);
 	g_async_hash->remove(async_id);
 	as_hold.unlock();
-	lib_buffer_put(g_wait_allocator, pwait);
+	g_wait_allocator->put(pwait);
 }
 
 /* called by moh_emsmdb module */
@@ -258,7 +256,7 @@ void asyncemsmdb_interface_remove(ACXH *pacxh)
 	}
 	g_tag_hash.erase(iter);
 	as_hold.unlock();
-	lib_buffer_put(g_wait_allocator, pwait);
+	g_wait_allocator->put(pwait);
 }
 
 static void asyncemsmdb_interface_activate(
@@ -271,7 +269,7 @@ static void asyncemsmdb_interface_activate(
 		pwait->out_payload.pout->flags_out = b_pending ? FLAG_NOTIFICATION_PENDING : 0;
 		async_reply(pwait->async_id, pwait->out_payload.pout);
 	}
-	lib_buffer_put(g_wait_allocator, pwait);
+	g_wait_allocator->put(pwait);
 }
 
 void asyncemsmdb_interface_wakeup(const char *username, uint16_t cxr)

@@ -96,15 +96,14 @@ static int g_max_auth_times;
 static int g_block_auth_fail;
 static unsigned int g_timeout, g_http_debug;
 static pthread_key_t g_context_key;
-static LIB_BUFFER *g_file_allocator;
+static std::unique_ptr<LIB_BUFFER> g_file_allocator;
+static std::unique_ptr<LIB_BUFFER> g_inchannel_allocator, g_outchannel_allocator;
 static std::unique_ptr<HTTP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static char g_certificate_path[256];
 static char g_private_key_path[256];
 static char g_certificate_passwd[1024];
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
-static LIB_BUFFER *g_inchannel_allocator;
-static LIB_BUFFER *g_outchannel_allocator;
 static std::mutex g_vconnection_lock;
 
 static void http_parser_context_clear(HTTP_CONTEXT *pcontext);
@@ -204,8 +203,8 @@ int http_parser_run()
 		CRYPTO_set_locking_callback(http_parser_ssl_locking);
 #endif
 	}
-	g_file_allocator = lib_buffer_init(FILE_ALLOC_SIZE,
-							g_context_num * 16, TRUE);
+	g_file_allocator.reset(LIB_BUFFER::create(FILE_ALLOC_SIZE,
+		g_context_num * 16, TRUE));
 	if (NULL == g_file_allocator) {
 		printf("[http_parser]: Failed to init mem file allocator\n");
 		return -6;
@@ -221,13 +220,13 @@ int http_parser_run()
 		printf("[http_parser]: Failed to allocate HTTP contexts\n");
         return -8;
     }
-	g_inchannel_allocator = lib_buffer_init(
-		sizeof(RPC_IN_CHANNEL), g_context_num, TRUE);
+	g_inchannel_allocator.reset(LIB_BUFFER::create(sizeof(RPC_IN_CHANNEL),
+		g_context_num, TRUE));
 	if (NULL == g_inchannel_allocator) {
 		return -9;
 	}
-	g_outchannel_allocator = lib_buffer_init(
-		sizeof(RPC_OUT_CHANNEL), g_context_num, TRUE);
+	g_outchannel_allocator.reset(LIB_BUFFER::create(sizeof(RPC_OUT_CHANNEL),
+		g_context_num, TRUE));
 	if (NULL == g_outchannel_allocator) {
 		return -10;
 	}
@@ -236,21 +235,12 @@ int http_parser_run()
 
 void http_parser_stop()
 {
-	if (NULL != g_inchannel_allocator) {
-		lib_buffer_free(g_inchannel_allocator);
-		g_inchannel_allocator = NULL;
-	}
-	if (NULL != g_outchannel_allocator) {
-		lib_buffer_free(g_outchannel_allocator);
-		g_outchannel_allocator = NULL;
-	}
+	g_inchannel_allocator.reset();
+	g_outchannel_allocator.reset();
 	g_context_list2.clear();
 	g_context_list.reset();
 	g_vconnection_hash.clear();
-	if (NULL != g_file_allocator) {
-		lib_buffer_free(g_file_allocator);
-		g_file_allocator = NULL;
-	}
+	g_file_allocator.reset();
 	if (TRUE == g_support_ssl && NULL != g_ssl_ctx) {
 		SSL_CTX_free(g_ssl_ctx);
 		g_ssl_ctx = NULL;
@@ -461,8 +451,7 @@ static int http_end(HTTP_CONTEXT *ctx)
 					conn->pcontext_in = nullptr;
 				conn.put();
 			}
-			chan->~RPC_IN_CHANNEL();
-			lib_buffer_put(g_inchannel_allocator, ctx->pchannel);
+			g_inchannel_allocator->destroy_and_put(chan);
 		} else {
 			auto chan = static_cast<RPC_OUT_CHANNEL *>(ctx->pchannel);
 			auto conn = http_parser_get_vconnection(ctx->host,
@@ -472,8 +461,7 @@ static int http_end(HTTP_CONTEXT *ctx)
 					conn->pcontext_out = nullptr;
 				conn.put();
 			}
-			chan->~RPC_OUT_CHANNEL();
-			lib_buffer_put(g_outchannel_allocator, ctx->pchannel);
+			g_outchannel_allocator->destroy_and_put(chan);
 		}
 		ctx->pchannel = nullptr;
 	}
@@ -808,7 +796,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 	if (pcontext->total_length > 0x10) {
 		if (0 == strcmp(pcontext->request.method, "RPC_IN_DATA")) {
 			pcontext->channel_type = CHANNEL_TYPE_IN;
-			auto ch = lib_buffer_get_u<RPC_IN_CHANNEL>(g_inchannel_allocator);
+			auto ch = g_inchannel_allocator->get_unconstructed<RPC_IN_CHANNEL>();
 			pcontext->pchannel = ch;
 			if (NULL == pcontext->pchannel) {
 				http_5xx(pcontext, "Resources exhausted", 503);
@@ -817,7 +805,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 			new(ch) RPC_IN_CHANNEL;
 		} else {
 			pcontext->channel_type = CHANNEL_TYPE_OUT;
-			auto ch = lib_buffer_get_u<RPC_OUT_CHANNEL>(g_outchannel_allocator);
+			auto ch = g_outchannel_allocator->get_unconstructed<RPC_OUT_CHANNEL>();
 			pcontext->pchannel = ch;
 			if (NULL == pcontext->pchannel) {
 				http_5xx(pcontext, "Resources exhausted", 503);
@@ -1957,17 +1945,17 @@ HTTP_CONTEXT::HTTP_CONTEXT() :
 {
 	auto pcontext = this;
     pcontext->connection.sockd = -1;
-	mem_file_init(&pcontext->request.f_request_uri, g_file_allocator);
-	mem_file_init(&pcontext->request.f_host, g_file_allocator);
-	mem_file_init(&pcontext->request.f_user_agent, g_file_allocator);
-	mem_file_init(&pcontext->request.f_accept, g_file_allocator);
-	mem_file_init(&pcontext->request.f_accept_language, g_file_allocator);
-	mem_file_init(&pcontext->request.f_accept_encoding, g_file_allocator);
-	mem_file_init(&pcontext->request.f_content_type, g_file_allocator);
-	mem_file_init(&pcontext->request.f_content_length, g_file_allocator);
-	mem_file_init(&pcontext->request.f_transfer_encoding, g_file_allocator);
-	mem_file_init(&pcontext->request.f_cookie, g_file_allocator);
-	mem_file_init(&pcontext->request.f_others, g_file_allocator);
+	mem_file_init(&pcontext->request.f_request_uri, g_file_allocator.get());
+	mem_file_init(&pcontext->request.f_host, g_file_allocator.get());
+	mem_file_init(&pcontext->request.f_user_agent, g_file_allocator.get());
+	mem_file_init(&pcontext->request.f_accept, g_file_allocator.get());
+	mem_file_init(&pcontext->request.f_accept_language, g_file_allocator.get());
+	mem_file_init(&pcontext->request.f_accept_encoding, g_file_allocator.get());
+	mem_file_init(&pcontext->request.f_content_type, g_file_allocator.get());
+	mem_file_init(&pcontext->request.f_content_length, g_file_allocator.get());
+	mem_file_init(&pcontext->request.f_transfer_encoding, g_file_allocator.get());
+	mem_file_init(&pcontext->request.f_cookie, g_file_allocator.get());
+	mem_file_init(&pcontext->request.f_others, g_file_allocator.get());
 	pcontext->node.pdata = pcontext;
 }
 

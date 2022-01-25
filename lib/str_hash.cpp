@@ -57,7 +57,8 @@ STR_HASH_TABLE::STR_HASH_TABLE(size_t max_items, size_t item_size, PSTR_HASH_FUN
 		double_list_init(&hash_map[i]);
 	}
 
-	table->buf_pool = lib_buffer_init(strhashitem_al + item_size, max_items, false);
+	table->buf_pool.reset(LIB_BUFFER::create(strhashitem_al + item_size,
+		max_items, false));
 	if (NULL == table->buf_pool) {
 		throw std::bad_alloc();
 	}
@@ -80,10 +81,6 @@ STR_HASH_TABLE::~STR_HASH_TABLE()
 		for (i = 0; i < ptbl->entry_num; i++) {
 			double_list_free(&(ptbl->hash_map[i]));
 		}
-	}
-
-	if (NULL != ptbl->buf_pool) {
-		lib_buffer_free(ptbl->buf_pool);
 	}
 }
 
@@ -134,7 +131,7 @@ int STR_HASH_TABLE::add(const char *key, const void *value)
 	if (ptbl->item_num >= ptbl->capacity) {
 		return -2;
 	}
-	auto list_node = lib_buffer_get<STR_HASH_ITEM>(ptbl->buf_pool);
+	auto list_node = ptbl->buf_pool->get<STR_HASH_ITEM>();
 	if (NULL == list_node) {
 		debug_info("[str_hash]: str_hash_add, lib_buffer_get fail");
 		return -3;
@@ -159,14 +156,14 @@ int STR_HASH_TABLE::add(const char *key, const void *value)
 		 the same key twice.
 		 */
 		if (0 == strcmp(((STR_HASH_ITEM*)dlist->phead->pdata)->key, key)) {
-			lib_buffer_put(ptbl->buf_pool, list_node);
+			ptbl->buf_pool->put(list_node);
 			return -4;
 		}
 		
 		next = dlist->phead->pnext;
 		while (next != dlist->phead) {
 			if (0 == strcmp(((STR_HASH_ITEM*)next->pdata)->key, key)) {
-				lib_buffer_put(ptbl->buf_pool, list_node);
+				ptbl->buf_pool->put(list_node);
 				return -4;
 			}
 			next = next->pnext;
@@ -275,7 +272,7 @@ int STR_HASH_TABLE::remove(const char *key)
 	double_list_remove(&(ptbl->hash_map[index]), next);
 	double_list_remove(&(ptbl->iter_list), 
 				&(((STR_HASH_ITEM*)next->pdata)->iter_node));
-	lib_buffer_put(ptbl->buf_pool, next->pdata);
+	ptbl->buf_pool->put_raw(next->pdata);
 	ptbl->item_num -= 1;
 	return 1;
 }
@@ -471,7 +468,7 @@ int str_hash_iter_remove(STR_HASH_ITER *piter)
 	list_item = (STR_HASH_ITEM*)node->pdata;
 	double_list_remove(&(hash_map[list_item->map_index]), &(list_item->list_node));
 	double_list_remove(&(piter->ptable->iter_list), node);
-	lib_buffer_put(piter->ptable->buf_pool, node->pdata);
+	piter->ptable->buf_pool->put_raw(node->pdata);
 	piter->ptable->item_num -= 1;
 	piter->iter_curr_pos	-= 1;
 	return 1;

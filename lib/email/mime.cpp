@@ -1136,23 +1136,21 @@ static BOOL mime_read_multipart_content(MIME *pmime,
 	BOOL has_submime;
 	MIME *pmime_child;
 	SIMPLE_TREE_NODE *pnode;
-	LIB_BUFFER *pallocator;
 	
 	auto tmp_size = pmime->get_length();
 	if (tmp_size < 0) {
 		*plength = 0;
 		return false;
 	}
-	pallocator = lib_buffer_init(STREAM_ALLOC_SIZE,
-			tmp_size / STREAM_BLOCK_SIZE + 1, FALSE);
+	std::unique_ptr<LIB_BUFFER> pallocator(LIB_BUFFER::create(STREAM_ALLOC_SIZE,
+		tmp_size / STREAM_BLOCK_SIZE + 1, FALSE));
 	if (NULL == pallocator) {
 		debug_info("[mime]: Failed to init lib buffer"
 		           " in mime_read_multipart_content");
 		*plength = 0;
 		return FALSE;
 	}
-	auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
-	STREAM tmp_stream(pallocator);
+	STREAM tmp_stream(pallocator.get());
 	if (NULL == pmime->first_boundary) {
 		tmp_stream.write("This is a multi-part message in MIME format.\r\n\r\n", 48);
 	} else {
@@ -1316,7 +1314,6 @@ BOOL MIME::read_content(char *out_buff, size_t *plength)
 	void *ptr;
 	int encoding_type;
 	char encoding[256], *pbuff;
-	LIB_BUFFER *pallocator;
 	size_t i, offset, max_length;
 	unsigned int buff_size;
 	
@@ -1355,15 +1352,14 @@ BOOL MIME::read_content(char *out_buff, size_t *plength)
 			*plength = 0;
 			return FALSE;
 		}
-		pallocator = lib_buffer_init(STREAM_ALLOC_SIZE,
-				mail_len / STREAM_BLOCK_SIZE + 1, FALSE);
+		std::unique_ptr<LIB_BUFFER> pallocator(LIB_BUFFER::create(STREAM_ALLOC_SIZE,
+			mail_len / STREAM_BLOCK_SIZE + 1, FALSE));
 		if (NULL == pallocator) {
 			debug_info("[mime]: Failed to init lib buffer in MIME::read_content");
 			*plength = 0;
 			return FALSE;
 		}
-		auto cl_0 = make_scope_exit([&]() { lib_buffer_free(pallocator); });
-		STREAM tmp_stream(pallocator);
+		STREAM tmp_stream(pallocator.get());
 		if (!reinterpret_cast<MAIL *>(pmime->content_begin)->serialize(&tmp_stream)) {
 			*plength = 0;
 			return FALSE;

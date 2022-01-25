@@ -84,10 +84,7 @@ static pthread_t g_scan_id;
 static gromox::atomic_bool g_notify_stop;
 static std::unique_ptr<IMAP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
-static LIB_BUFFER *g_alloc_file;
-static LIB_BUFFER *g_alloc_mjson;
-static LIB_BUFFER *g_alloc_xarray;
-static LIB_BUFFER *g_alloc_dir;
+static std::unique_ptr<LIB_BUFFER> g_alloc_file, g_alloc_mjson, g_alloc_xarray, g_alloc_dir;
 static std::shared_ptr<MIME_POOL> g_mime_pool;
 static std::unique_ptr<STR_HASH_TABLE> g_select_hash;
 static std::mutex g_hash_lock, g_list_lock;
@@ -102,12 +99,12 @@ static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 
 LIB_BUFFER* imap_parser_get_xpool()
 {
-	return g_alloc_xarray;
+	return g_alloc_xarray.get();
 }
 
 LIB_BUFFER* imap_parser_get_dpool()
 {
-	return g_alloc_dir;
+	return g_alloc_dir.get();
 }
 
 void imap_parser_init(int context_num, int average_num, size_t cache_size,
@@ -221,7 +218,7 @@ int imap_parser_run()
 	if (num < 1024*1024) {
 		num = 1024*1024;
 	}
-	g_alloc_file = lib_buffer_init(FILE_ALLOC_SIZE, num, TRUE);
+	g_alloc_file.reset(LIB_BUFFER::create(FILE_ALLOC_SIZE, num, TRUE));
 	if (NULL == g_alloc_file) {
 		printf("[imap_parser]: Failed to init mem file allocator\n");
 		return -5;
@@ -240,8 +237,8 @@ int imap_parser_run()
 		printf("[imap_parser]: Failed to init MIME pool\n");
 		return -6;
 	}
-	g_alloc_xarray = lib_buffer_init(sizeof(MITEM) + EXTRA_XARRAYNODE_SIZE,
-	                 g_average_num * g_context_num, TRUE);
+	g_alloc_xarray.reset(LIB_BUFFER::create(sizeof(MITEM) + EXTRA_XARRAYNODE_SIZE,
+		g_average_num * g_context_num, TRUE));
 	if (NULL == g_alloc_xarray) {
 		printf("[imap_parser]: Failed to init mem file allocator\n");
 		return -7;
@@ -251,7 +248,7 @@ int imap_parser_run()
 	if (num < 1000) {
 		num = 1000;
 	}
-	g_alloc_dir = lib_buffer_init(sizeof(DIR_NODE), num, TRUE);
+	g_alloc_dir.reset(LIB_BUFFER::create(sizeof(DIR_NODE), num, TRUE));
 	if (NULL == g_alloc_dir) {
 		printf("[imap_parser]: Failed to init dir node allocator\n");
 		return -8;
@@ -261,7 +258,7 @@ int imap_parser_run()
 	if (num < 400) {
 		num = 400;
 	}
-	g_alloc_mjson = mjson_allocator_init(num);
+	g_alloc_mjson.reset(mjson_allocator_init(num));
 	if (NULL == g_alloc_mjson) {
 		printf("[imap_parser]: Failed to init mjson allocator\n");
 		return -9;
@@ -316,24 +313,11 @@ void imap_parser_stop()
 	
 	g_context_list2.clear();
 	g_context_list.reset();
-	if (NULL != g_alloc_file) {
-		lib_buffer_free(g_alloc_file);
-		g_alloc_file = NULL;
-	}
+	g_alloc_file.reset();
 	g_mime_pool.reset();
-	if (NULL != g_alloc_xarray) {
-		lib_buffer_free(g_alloc_xarray);
-		g_alloc_xarray = NULL;
-	}
-	if (NULL != g_alloc_dir) {
-		lib_buffer_free(g_alloc_dir);
-		g_alloc_dir = NULL;
-	}
-	
-	if (NULL != g_alloc_mjson) {
-		lib_buffer_free(g_alloc_mjson);
-		g_alloc_mjson = NULL;
-	}
+	g_alloc_xarray.reset();
+	g_alloc_dir.reset();
+	g_alloc_mjson.reset();
 	g_select_hash.reset();
 	if (TRUE == g_support_starttls && NULL != g_ssl_ctx) {
 		SSL_CTX_free(g_ssl_ctx);
@@ -1386,7 +1370,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 	char mid_string[256];
 	MEM_FILE temp_file;
 	
-	mem_file_init(&temp_file, g_alloc_file);
+	mem_file_init(&temp_file, g_alloc_file.get());
 	std::unique_lock hl_hold(g_hash_lock);
 	b_modify = pcontext->b_modify;
 	pcontext->b_modify = FALSE;
@@ -1651,7 +1635,7 @@ IMAP_CONTEXT::IMAP_CONTEXT() :
 	pcontext->hash_node.pdata = pcontext;
 	pcontext->sleeping_node.pdata = pcontext;
     pcontext->connection.sockd = -1;
-	mem_file_init(&pcontext->f_flags, g_alloc_file);
+	mem_file_init(&pcontext->f_flags, g_alloc_file.get());
 }
 
 static void imap_parser_context_clear(IMAP_CONTEXT *pcontext)
@@ -1891,7 +1875,7 @@ static void *imps_scanwork(void *argp)
 		
 		i = 0;
 		
-		mem_file_init(&temp_file, g_alloc_file);
+		mem_file_init(&temp_file, g_alloc_file.get());
 		std::unique_lock hl_hold(g_hash_lock);
 		time(&cur_time);
 		auto iter = g_select_hash->make_iter();
@@ -1925,7 +1909,7 @@ static void *imps_scanwork(void *argp)
 
 LIB_BUFFER* imap_parser_get_allocator()
 {
-	return g_alloc_file;
+	return g_alloc_file.get();
 }
 
 std::shared_ptr<MIME_POOL> imap_parser_get_mpool()
@@ -1935,7 +1919,7 @@ std::shared_ptr<MIME_POOL> imap_parser_get_mpool()
 
 LIB_BUFFER* imap_parser_get_jpool()
 {
-	return g_alloc_mjson;
+	return g_alloc_mjson.get();
 }
 
 int imap_parser_get_sequence_ID()

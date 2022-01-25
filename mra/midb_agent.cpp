@@ -132,7 +132,7 @@ static pthread_t g_scan_id;
 static DOUBLE_LIST g_lost_list;
 static DOUBLE_LIST g_server_list;
 static std::mutex g_server_lock;
-static LIB_BUFFER *g_file_allocator;
+static std::unique_ptr<LIB_BUFFER> g_file_allocator;
 static int g_file_ratio;
 
 static bool list_file_read_midb(const char *filename)
@@ -248,9 +248,8 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 		if (!list_file_read_midb("midb_list.txt"))
 			return false;
 		if (g_file_ratio > 0) {
-			g_file_allocator = lib_buffer_init(FILE_ALLOC_SIZE, 
-								get_context_num()*g_file_ratio, TRUE);
-			
+			g_file_allocator.reset(LIB_BUFFER::create(FILE_ALLOC_SIZE, 
+				get_context_num() * g_file_ratio, TRUE));
 			if (NULL == g_file_allocator) {
 				printf("[midb_agent]: failed to init memory pool\n");
 				return FALSE;
@@ -308,11 +307,7 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 
 		double_list_free(&g_lost_list);
 		double_list_free(&g_server_list);
-		if (NULL != g_file_allocator) {
-			lib_buffer_free(g_file_allocator);
-			g_file_allocator = NULL;
-		}
-
+		g_file_allocator.reset();
 		return TRUE;
 	}
 	return TRUE;
@@ -1942,7 +1937,7 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 						mitem.flag_bits |= FLAG_RECENT;
 					}
 					
-					mem_file_init(&mitem.f_digest, g_file_allocator);
+					mem_file_init(&mitem.f_digest, g_file_allocator.get());
 					mitem.f_digest.write(temp_line, line_pos);
 					pxarray->append(&mitem, mitem.uid);
 				} else {
@@ -2366,7 +2361,7 @@ static int fetch_detail(const char *path, const char *folder,
 								pitem->flag_bits |= FLAG_RECENT;
 							}
 							
-							mem_file_init(&pitem->f_digest, g_file_allocator);
+							mem_file_init(&pitem->f_digest, g_file_allocator.get());
 							pitem->f_digest.write(temp_line, line_pos);
 						}
 					} else {
@@ -2766,7 +2761,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 								pitem->flag_bits |= FLAG_RECENT;
 							}
 							
-							mem_file_init(&pitem->f_digest, g_file_allocator);
+							mem_file_init(&pitem->f_digest, g_file_allocator.get());
 							pitem->f_digest.write(pspace, temp_len);
 						}
 					} else {

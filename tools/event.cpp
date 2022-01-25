@@ -98,8 +98,7 @@ struct HOST_NODE {
 
 static gromox::atomic_bool g_notify_stop;
 static unsigned int g_threads_num;
-static LIB_BUFFER *g_fifo_alloc;
-static LIB_BUFFER *g_file_alloc;
+static std::unique_ptr<LIB_BUFFER> g_fifo_alloc, g_file_alloc;
 static std::vector<std::string> g_acl_list;
 static std::list<ENQUEUE_NODE> g_enqueue_list, g_enqueue_list1;
 static std::vector<std::shared_ptr<DEQUEUE_NODE>> g_dequeue_list1;
@@ -149,7 +148,7 @@ BOOL FIFO::enqueue(void *pdata)
 #endif
 	if (cur_size >= max_size)
 		return false;
-	auto node = lib_buffer_get<SINGLE_LIST_NODE>(mbuf_pool);
+	auto node = mbuf_pool->get<SINGLE_LIST_NODE>();
 	node->pdata = reinterpret_cast<char *>(node) + sizeof(SINGLE_LIST_NODE);
 	memcpy(node->pdata, pdata, data_size);
 	single_list_append_as_tail(&mlist, node);
@@ -166,7 +165,7 @@ void FIFO::dequeue()
 	if (cur_size <= 0)
 		return;
 	auto node = single_list_pop_front(&mlist);
-	lib_buffer_put(mbuf_pool, node);
+	mbuf_pool->put(node);
 	--cur_size;
 }
 
@@ -239,20 +238,20 @@ int main(int argc, const char **argv) try
 		return 7;
 	
 	g_threads_num ++;
-	g_fifo_alloc = lib_buffer_init(sizeof(MEM_FILE) + EXTRA_FIFOITEM_SIZE,
-	               g_threads_num * FIFO_AVERAGE_LENGTH, TRUE);
+	g_fifo_alloc.reset(LIB_BUFFER::create(sizeof(MEM_FILE) + EXTRA_FIFOITEM_SIZE,
+		g_threads_num * FIFO_AVERAGE_LENGTH, TRUE));
 	if (NULL == g_fifo_alloc) {
 		printf("[system]: Failed to init queue allocator\n");
 		return 3;
 	}
-	auto cl_0 = make_scope_exit([&]() { lib_buffer_free(g_fifo_alloc); });
-	g_file_alloc = lib_buffer_init(FILE_ALLOC_SIZE,
-					g_threads_num*FIFO_AVERAGE_LENGTH, TRUE);
+	auto cl_0 = make_scope_exit([&]() { g_fifo_alloc.reset(); });
+	g_file_alloc.reset(LIB_BUFFER::create(FILE_ALLOC_SIZE,
+		g_threads_num * FIFO_AVERAGE_LENGTH, TRUE));
 	if (NULL == g_file_alloc) {
 		printf("[system]: Failed to init file allocator\n");
 		return 4;
 	}
-	auto cl_1 = make_scope_exit([&]() { lib_buffer_free(g_file_alloc); });
+	auto cl_1 = make_scope_exit([&]() { g_file_alloc.reset(); });
 	g_dequeue_list1.reserve(g_threads_num);
 	pthread_attr_init(&thr_attr);
 	auto cl_3 = make_scope_exit([&]() { pthread_attr_destroy(&thr_attr); });
@@ -489,7 +488,7 @@ static void *ev_enqwork(void *param)
 				continue;
 			}
 			strncpy(pdequeue->res_id, penqueue->line + 7, 128);
-			pdequeue->fifo = FIFO(g_fifo_alloc, sizeof(MEM_FILE), FIFO_AVERAGE_LENGTH);
+			pdequeue->fifo = FIFO(g_fifo_alloc.get(), sizeof(MEM_FILE), FIFO_AVERAGE_LENGTH);
 			std::unique_lock hl_hold(g_host_lock);
 			auto host_it = std::find_if(g_host_list.begin(), g_host_list.end(),
 			               [&](const HOST_NODE &h) { return strcmp(h.res_id, penqueue->line + 7) == 0; });
@@ -633,7 +632,7 @@ static void *ev_enqwork(void *param)
 				if (phost->list.size() > 0) {
 					auto pdequeue = phost->list.front();
 					phost->list.erase(phost->list.begin());
-					mem_file_init(&temp_file, g_file_alloc);
+					mem_file_init(&temp_file, g_file_alloc.get());
 					temp_file.write(penqueue->line, strlen(penqueue->line));
 					std::unique_lock dl_hold(pdequeue->lock);
 					b_result = pdequeue->fifo.enqueue(&temp_file);
