@@ -880,12 +880,11 @@ static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
 	
 	if (pbin->cb < 20)
 		return FALSE;
-	ext_pull.init(pbin->pb, 20, alloc, 0);
+	ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
 	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
 	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
 		return FALSE;
 	if (provider_uid == muidEMSAB) {
-		ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
 		if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS)
 			return FALSE;
 		if (ab_entryid.type != ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER)
@@ -894,7 +893,6 @@ static BOOL common_util_entryid_to_username_internal(const BINARY *pbin,
 		       username, ulen);
 	}
 	if (provider_uid == muidOOP) {
-		ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
 		if (ext_pull.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS)
 			return FALSE;
 		if (strcasecmp(oneoff_entry.paddress_type, "SMTP") != 0)

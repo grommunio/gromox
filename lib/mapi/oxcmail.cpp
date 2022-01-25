@@ -279,12 +279,11 @@ static BOOL oxcmail_entryid_to_username(const BINARY *pbin,
 	if (pbin->cb < 20) {
 		return FALSE;
 	}
-	ext_pull.init(pbin->pb, 20, alloc, 0);
+	ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
 	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
 	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
 		return FALSE;
 	if (provider_uid == muidEMSAB) {
-		ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
 		if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS)
 			return FALSE;
 		if (ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER != ab_entryid.type) {
@@ -293,7 +292,6 @@ static BOOL oxcmail_entryid_to_username(const BINARY *pbin,
 		return oxcmail_essdn_to_username(ab_entryid.px500dn, username, ulen);
 	}
 	if (provider_uid == muidOOP) {
-		ext_pull.init(pbin->pb, pbin->cb, alloc, EXT_FLAG_UTF16);
 		if (ext_pull.g_oneoff_eid(&oneoff_entry) != EXT_ERR_SUCCESS)
 			return FALSE;
 		if (0 != strcasecmp(oneoff_entry.paddress_type, "SMTP")) {
