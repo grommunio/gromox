@@ -4684,7 +4684,7 @@ BOOL common_util_check_search_result(sqlite3 *psqlite,
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return FALSE;
-	*pb_exist = sqlite3_step(pstmt) == SQLITE_ROW;
+	*pb_exist = sqlite3_step(pstmt) == SQLITE_ROW ? TRUE : false;
 	return TRUE;
 }
 
