@@ -2013,30 +2013,28 @@ BOOL common_util_send_message(logon_object *plogon,
 				return FALSE;
 			}
 			memcpy(pnode->pdata, username, tmp_len);
-		} else {
-			if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-				pnode->pdata = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
-				if (NULL == pnode->pdata) {
-					log_err("W-1283: Cannot get email address of recipient of SMTP address type while sending mid:0x%llx", LLU(message_id));
-					return FALSE;
-				}
-			} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
-				pvalue = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
-				if (NULL == pvalue) {
-					goto CONVERT_ENTRYID;
-				}
-				if (!common_util_essdn_to_username(static_cast<char *>(pvalue),
-				    username, GX_ARRAY_SIZE(username)))
-					goto CONVERT_ENTRYID;
-				auto tmp_len = strlen(username) + 1;
-				pnode->pdata = common_util_alloc(tmp_len);
-				if (NULL == pnode->pdata) {
-					return FALSE;
-				}
-				memcpy(pnode->pdata, username, tmp_len);
-			} else {
+		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
+			pnode->pdata = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
+			if (NULL == pnode->pdata) {
+				log_err("W-1283: Cannot get email address of recipient of SMTP address type while sending mid:0x%llx", LLU(message_id));
+				return FALSE;
+			}
+		} else if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
+			pvalue = prcpts->pparray[i]->getval(PR_EMAIL_ADDRESS);
+			if (NULL == pvalue) {
 				goto CONVERT_ENTRYID;
 			}
+			if (!common_util_essdn_to_username(static_cast<char *>(pvalue),
+			    username, GX_ARRAY_SIZE(username)))
+				goto CONVERT_ENTRYID;
+			auto tmp_len = strlen(username) + 1;
+			pnode->pdata = common_util_alloc(tmp_len);
+			if (NULL == pnode->pdata) {
+				return FALSE;
+			}
+			memcpy(pnode->pdata, username, tmp_len);
+		} else {
+			goto CONVERT_ENTRYID;
 		}
 		double_list_append_as_tail(&temp_list, pnode);
 	}
