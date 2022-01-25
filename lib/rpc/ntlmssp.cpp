@@ -784,7 +784,7 @@ static bool ntlmssp_server_negotiate(NTLMSSP_CTX *pntlmssp,
 		memcpy(cryptkey, pntlmssp->challenge.blob.data, 8);
 	} else {
 		/* produce cryptkey and copy it to challenge */
-		randstring(cryptkey, 9);
+		randstring(cryptkey, 8);
 		pntlmssp->challenge.blob.data = pntlmssp->challenge.blob_buff;
 		memcpy(pntlmssp->challenge.blob_buff, cryptkey, 8);
 		pntlmssp->challenge.blob.length = 8;
