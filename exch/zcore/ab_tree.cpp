@@ -1592,11 +1592,11 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		ab_entryid.provider_uid = muidEMSAB;
 		ab_entryid.version = 1;
 		if (node_type > 0x80) {
-			ab_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;
+			ab_entryid.type = DT_CONTAINER;
 		} else if (NODE_TYPE_MLIST == node_type) {
-			ab_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_DLIST;
+			ab_entryid.type = DT_DISTLIST;
 		} else {
-			ab_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
+			ab_entryid.type = DT_MAILUSER;
 		}
 		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 			return FALSE;

@@ -848,7 +848,7 @@ uint32_t zarafa_server_uinfo(const char *username, BINARY *pentryid,
 	tmp_entryid.flags = 0;
 	tmp_entryid.provider_uid = muidEMSAB;
 	tmp_entryid.version = 1;
-	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
+	tmp_entryid.type = DT_MAILUSER;
 	tmp_entryid.px500dn = x500dn;
 	pentryid->pv = common_util_alloc(1280);
 	if (pentryid->pv == nullptr ||
@@ -925,7 +925,7 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 		gx_strlcpy(essdn, entryid.pc, sizeof(essdn));
 	} else if (common_util_parse_addressbook_entryid(entryid, &address_type,
 	    essdn, GX_ARRAY_SIZE(essdn)) && strncmp(essdn, "/exmdb=", 7) == 0 &&
-	    ADDRESSBOOK_ENTRYID_TYPE_REMOTE_USER == address_type) {
+	    address_type == DT_REMOTE_MAILUSER) {
 		/* do nothing */	
 	} else {
 		return ecInvalidParam;
@@ -1012,7 +1012,7 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 		} else if (common_util_parse_addressbook_entryid(entryid,
 		     &address_type, essdn, GX_ARRAY_SIZE(essdn)) &&
 		     strncmp(essdn, "/exmdb=", 7) == 0 &&
-		     ADDRESSBOOK_ENTRYID_TYPE_REMOTE_USER == address_type) {
+		     address_type == DT_REMOTE_MAILUSER) {
 			/* do nothing */	
 		} else {
 			return ecInvalidParam;
@@ -1177,7 +1177,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 
 	std::unique_ptr<container_object> contobj;
 	std::unique_ptr<user_object> userobj;
-	if (ADDRESSBOOK_ENTRYID_TYPE_CONTAINER == address_type) {
+	if (address_type == DT_CONTAINER) {
 		HX_strlower(essdn);
 		if ('\0' == essdn[0]) {
 			type = CONTAINER_TYPE_ABTREE;
@@ -1249,8 +1249,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		if (pobject == nullptr)
 			return ecError;
 		*pmapi_type = ZMG_ABCONT;
-	} else if (ADDRESSBOOK_ENTRYID_TYPE_DLIST == address_type ||
-	    ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER == address_type) {
+	} else if (address_type == DT_DISTLIST || address_type == DT_MAILUSER) {
 		if (FALSE == common_util_essdn_to_ids(
 		    essdn, &domain_id, &user_id)) {
 			return ecNotFound;
@@ -1267,7 +1266,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			return ecError;
 		if (!userobj->check_valid())
 			return ecNotFound;
-		*pmapi_type = address_type == ADDRESSBOOK_ENTRYID_TYPE_DLIST ?
+		*pmapi_type = address_type == DT_DISTLIST ?
 			      ZMG_DISTLIST : ZMG_MAILUSER;
 	} else {
 		return ecInvalidParam;
@@ -3282,12 +3281,9 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 				continue;
 			if (provider_uid == muidEMSAB) {
 				ext_pull.init(pbin->pb, pbin->cb, common_util_alloc, EXT_FLAG_UTF16);
-				if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS)
+				if (ext_pull.g_abk_eid(&ab_entryid) != EXT_ERR_SUCCESS ||
+				    ab_entryid.type != DT_MAILUSER)
 					continue;
-				if (ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER
-					!= ab_entryid.type) {
-					continue;
-				}
 				ppropval = cu_alloc<TAGGED_PROPVAL>(prcpt->count + 4);
 				if (ppropval == nullptr)
 					return ecError;

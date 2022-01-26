@@ -326,7 +326,7 @@ static BOOL oxcmail_essdn_to_entryid(const char *pessdn, BINARY *pbin)
 	tmp_entryid.flags = 0;
 	tmp_entryid.provider_uid = muidEMSAB;
 	tmp_entryid.version = 1;
-	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
+	tmp_entryid.type = DT_MAILUSER;
 	tmp_entryid.px500dn = deconst(pessdn);
 	if (!ext_push.init(pbin->pb, 1280, EXT_FLAG_UTF16) ||
 	    ext_push.p_abk_eid(tmp_entryid) != EXT_ERR_SUCCESS)

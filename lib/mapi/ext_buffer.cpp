@@ -3422,8 +3422,7 @@ bool emsab_to_parts(EXT_PULL &ser, char *type, size_t tsize,
     char *addr, size_t asize)
 {
 	ADDRESSBOOK_ENTRYID eid;
-	if (ser.g_abk_eid(&eid) != EXT_ERR_SUCCESS ||
-	    eid.type != ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER)
+	if (ser.g_abk_eid(&eid) != EXT_ERR_SUCCESS || eid.type != DT_MAILUSER)
 		return false;
 	if (type != nullptr)
 		gx_strlcpy(type, "EX", tsize);
@@ -3435,8 +3434,7 @@ bool emsab_to_email(EXT_PULL &ser, ESSDN_TO_USERNAME e2u,
     char *addr, size_t asize)
 {
 	ADDRESSBOOK_ENTRYID eid;
-	if (ser.g_abk_eid(&eid) != EXT_ERR_SUCCESS ||
-	    eid.type != ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER)
+	if (ser.g_abk_eid(&eid) != EXT_ERR_SUCCESS || eid.type != DT_MAILUSER)
 		return false;
 	return e2u(eid.px500dn, addr, asize);
 }

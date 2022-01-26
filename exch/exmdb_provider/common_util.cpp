@@ -3946,7 +3946,7 @@ BINARY* common_util_username_to_addressbook_entryid(
 	tmp_entryid.flags = 0;
 	tmp_entryid.provider_uid = muidEMSAB;
 	tmp_entryid.version = 1;
-	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_LOCAL_USER;
+	tmp_entryid.type = DT_MAILUSER;
 	tmp_entryid.px500dn = x500dn;
 	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {

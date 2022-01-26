@@ -229,7 +229,7 @@ static BINARY* container_object_folder_to_addressbook_entryid(
 	tmp_entryid.flags = 0;
 	tmp_entryid.provider_uid = muidEMSAB;
 	tmp_entryid.version = 1;
-	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;
+	tmp_entryid.type = DT_CONTAINER;
 	tmp_entryid.px500dn = x500dn;
 	pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
@@ -262,7 +262,7 @@ static BINARY* container_object_message_to_addressbook_entryid(
 	tmp_entryid.flags = 0;
 	tmp_entryid.provider_uid = muidZCSAB;
 	tmp_entryid.version = 1;
-	tmp_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_REMOTE_USER;
+	tmp_entryid.type = DT_REMOTE_MAILUSER;
 	tmp_entryid.px500dn = x500dn;
 	pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
@@ -509,7 +509,7 @@ BOOL container_object_fetch_special_property(
 		ab_entryid.flags = 0;
 		ab_entryid.provider_uid = muidEMSAB;
 		ab_entryid.version = 1;
-		ab_entryid.type = ADDRESSBOOK_ENTRYID_TYPE_CONTAINER;
+		ab_entryid.type = DT_CONTAINER;
 		ab_entryid.px500dn = special_type == SPECIAL_CONTAINER_GAL ?
 		                     deconst("") : deconst("/");
 		bv->pv = common_util_alloc(128);
