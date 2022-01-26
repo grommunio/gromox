@@ -18,6 +18,7 @@
 #include <unordered_map>
 #include <utility>
 #include <libHX/ctype_helper.h>
+#include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/cookie_parser.hpp>
 #include <gromox/ext_buffer.hpp>
