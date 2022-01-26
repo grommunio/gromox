@@ -1,4 +1,4 @@
-1.13.75
+1.13.80
 =======
 
 Enhancements:
@@ -18,6 +18,11 @@ Fixes:
   due to propval_utf16_len giving the wrong codepoint count
 * emsmdb/rpclib: fix crash during NTLM negotiation
 * exmdb_provider: cure "INSERT INTO search_result" SQL collision warnings
+
+Changes:
+
+* delivery: replace domain_list text file plugin by an implementation
+  searching SQL directly
 
 
 1.13 (2022-01-17)
