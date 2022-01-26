@@ -32,14 +32,12 @@ mta_plugins = \
 	libgxm_alias_resolve.la \
 	libgxm_exmdb_local.la \
 	libgxm_mlist_expand.la \
-	libgxm_remote_delivery.la \
-	libgxs_domain_list.la
+	libgxm_remote_delivery.la
 noinst_DATA += \
 	libgxm_alias_resolve.ldd \
 	libgxm_exmdb_local.ldd \
 	libgxm_mlist_expand.ldd \
-	libgxm_remote_delivery.ldd \
-	libgxs_domain_list.ldd
+	libgxm_remote_delivery.ldd
 mra_plugins = \
 	libgxs_event_proxy.la \
 	libgxs_event_stub.la \
@@ -134,10 +132,6 @@ libgxm_remote_delivery_la_SOURCES = mda/remote_delivery.cpp
 libgxm_remote_delivery_la_LDFLAGS = ${plugin_LDFLAGS}
 libgxm_remote_delivery_la_LIBADD = -lpthread libgromox_common.la libgromox_email.la
 EXTRA_libgxm_remote_delivery_la_DEPENDENCIES = ${default_sym}
-libgxs_domain_list_la_SOURCES = exch/str_table.cpp
-libgxs_domain_list_la_LDFLAGS = ${plugin_LDFLAGS}
-libgxs_domain_list_la_LIBADD = -lpthread ${HX_LIBS} libgromox_common.la
-EXTRA_libgxs_domain_list_la_DEPENDENCIES = ${default_sym}
 
 pop3_SOURCES = exch/http/blocks_allocator.cpp exch/http/service.cpp mra/pop3/listener.cpp mra/pop3/main.cpp mra/pop3/pop3_cmd_handler.cpp mra/pop3/pop3_parser.cpp mra/pop3/resource.cpp mra/pop3/system_services.cpp
 pop3_LDADD = -ldl -lpthread -lresolv ${crypto_LIBS} ${HX_LIBS} ${ssl_LIBS} libgromox_common.la libgromox_epoll.la
@@ -299,7 +293,6 @@ man_MANS = \
 	doc/alias_resolve.4gx doc/at_client.4gx \
 	doc/authmgr.4gx doc/autodiscover.4gx \
 	doc/cgkrepair.8gx doc/delivery.8gx doc/delivery-queue.8gx \
-	doc/domain_list.4gx \
 	doc/event.8gx doc/event_stub.4gx doc/event_proxy.4gx \
 	doc/exchange_emsmdb.4gx \
 	doc/exchange_nsp.4gx doc/exchange_rfr.4gx \
@@ -317,7 +310,7 @@ man_MANS = \
 	doc/mysql_adaptor.4gx \
 	doc/pam_gromox.8gx doc/pop3.8gx \
 	doc/rtf2html.1gx doc/sa.cfg.5gx \
-	doc/str_table.4gx doc/textmaps.4gx doc/user_filter.4gx \
+	doc/textmaps.4gx doc/user_filter.4gx \
 	doc/timer.8gx doc/timer_agent.4gx doc/zcore.8gx
 if HAVE_PFF
 man_MANS += doc/gromox-pff2mt.8gx
