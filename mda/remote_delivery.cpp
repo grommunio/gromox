@@ -374,9 +374,9 @@ static BOOL remote_delivery_hook(MESSAGE_CONTEXT *ctx)
 	}
 
 	char rcpt[UADDR_SIZE];
-	fprintf(stderr, "[remote_delivery]: Local code: %s. "
+	fprintf(stderr, "[remote_delivery]: Local code: %s (ret=%d). "
 	        "SMTP reason string: %s. Recipient(s) affected:\n",
-	        strerror(ret), errstr.c_str());
+	        strerror(ret), ret, errstr.c_str());
 	l_ctrl.f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (l_ctrl.f_rcpt_to.readline(rcpt, arsizeof(rcpt)) != MEM_END_OF_FILE)
 		fprintf(stderr, "[remote_delivery]:\t%s\n", rcpt);
