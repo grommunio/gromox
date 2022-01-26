@@ -28,3 +28,9 @@ extern zend_bool state_array_to_php(const STATE_ARRAY *, zval *);
 extern zend_bool php_to_state_array(zval *, STATE_ARRAY *);
 extern zend_bool znotification_array_to_php(ZNOTIFICATION_ARRAY *, zval *);
 extern zend_bool php_to_propname_array(zval *names, zval *guids, PROPNAME_ARRAY *);
+
+/* Wrap this so cov-scan only complains once (hopefully) */
+static inline void zarray_init(zval *x)
+{
+	array_init(x);
+}

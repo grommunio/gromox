@@ -796,7 +796,7 @@ ZEND_FUNCTION(mapi_parseoneoff)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	array_init(return_value);
+	zarray_init(return_value);
 	add_assoc_string(return_value, "name", oneoff_entry.pdisplay_name);
 	add_assoc_string(return_value, "type", oneoff_entry.paddress_type);
 	add_assoc_string(return_value, "address", oneoff_entry.pmail_address);
@@ -2732,7 +2732,7 @@ ZEND_FUNCTION(mapi_stream_stat)
 	ZEND_FETCH_RESOURCE(pstream, STREAM_OBJECT*,
 		&pzresource, -1, name_stream, le_stream);
 	stream_size = stream_object_get_length(pstream);
-	array_init(return_value);
+	zarray_init(return_value);
 	add_assoc_long(return_value, "cb", stream_size);
 	MAPI_G(hr) = ecSuccess;
 }
@@ -2991,7 +2991,7 @@ ZEND_FUNCTION(mapi_getidsfromnames)
 		MAPI_G(hr) = result;
 		THROW_EXCEPTION;
 	}
-	array_init(return_value);
+	zarray_init(return_value);
 	for (i=0; i<propids.count; i++) {
 		add_next_index_long(return_value, PROP_TAG(PT_UNSPECIFIED, propids.ppropid[i]));
 	}
@@ -3706,14 +3706,14 @@ ZEND_FUNCTION(mapi_getnamesfromids)
 		MAPI_G(hr) = result;
 		THROW_EXCEPTION;
 	}
-	array_init(return_value);
+	zarray_init(return_value);
 	for (i=0; i<propnames.count; i++) {
 		if (KIND_NONE == propnames.ppropname[i].kind) {
 			continue;
 		}
 		snprintf(num_buff, 20, "%i", proptag_to_phptag(proptags.pproptag[i]));
 		zval prop, *pzprop = &prop;
-		array_init(pzprop);
+		zarray_init(pzprop);
 		add_assoc_stringl(pzprop, "guid",
 			(char*)&propnames.ppropname[i].guid,
 			sizeof(GUID));
@@ -3894,7 +3894,7 @@ ZEND_FUNCTION(mapi_folder_getsearchcriteria)
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
 	}
-	array_init(return_value);
+	zarray_init(return_value);
 	add_assoc_zval(return_value, "restriction", &pzrestriction);
 	add_assoc_zval(return_value, "folderlist", &pzfolderlist);
 	add_assoc_long(return_value, "searchstate", search_state);
@@ -4041,10 +4041,10 @@ ZEND_FUNCTION(mapi_zarafa_getpermissionrules)
 		MAPI_G(hr) = result;
 		THROW_EXCEPTION;
 	}
-	array_init(return_value);
+	zarray_init(return_value);
 	for (i=0; i<perm_set.count; i++) {
 		zval pzdata_value;
-		array_init(&pzdata_value);
+		zarray_init(&pzdata_value);
 		add_assoc_stringl(&pzdata_value, "userid",
 			reinterpret_cast<const char *>(perm_set.prows[i].entryid.pb),
 			perm_set.prows[i].entryid.cb);
@@ -4535,7 +4535,7 @@ ZEND_FUNCTION(mapi_exportchanges_synchronize)
 	if (pctx->progress >= pctx->total_steps) {
 		RETVAL_TRUE;
 	} else {
-		array_init(return_value);
+		zarray_init(return_value);
 		add_next_index_long(return_value, pctx->total_steps);
 		add_next_index_long(return_value, pctx->progress);
 	}
@@ -5316,7 +5316,7 @@ ZEND_FUNCTION(nsp_getuserinfo)
 		MAPI_G(hr) = result;
 		THROW_EXCEPTION;
 	}
-	array_init(return_value);
+	zarray_init(return_value);
 	add_assoc_stringl(return_value, "userid", reinterpret_cast<const char *>(entryid.pb), entryid.cb);
 	add_assoc_string(return_value, "username", username);
 	add_assoc_string(return_value, "fullname", pdisplay_name);
