@@ -89,7 +89,6 @@ int main(int argc, const char **argv) try
 		{"data_file_path", PKGDATADIR "/delivery:" PKGDATADIR},
 		{"dequeue_maximum_mem", "1G", CFG_SIZE, "1"},
 		{"dequeue_path", PKGSTATEQUEUEDIR},
-		{"domain_list_valid", "true", CFG_BOOL},
 		{"mpc_plugin_ignore_errors", "false", CFG_BOOL},
 		{"mpc_plugin_path", PKGLIBDIR},
 		{"running_identity", "gromox"},
@@ -218,7 +217,6 @@ int main(int argc, const char **argv) try
 		mpc_plugin_list != nullptr ? mpc_plugin_list : g_dfl_mpc_plugins,
 		threads_min, threads_max,
 		free_contexts, mime_ratio,
-		parse_bool(g_config_file->get_value("domain_list_valid")) ? TRUE : false,
 		parse_bool(g_config_file->get_value("mpc_plugin_ignore_errors")));
 
 	printf("--------------------------- mpc plugins begin"

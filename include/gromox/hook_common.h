@@ -49,8 +49,7 @@ using HOOK_FUNCTION = BOOL (*)(MESSAGE_CONTEXT *);
 	x MESSAGE_CONTEXT *(*get_context)(); \
 	x void (*put_context)(MESSAGE_CONTEXT *); \
 	x void (*enqueue_context)(MESSAGE_CONTEXT *); \
-	x BOOL (*throw_context)(MESSAGE_CONTEXT *); \
-	x BOOL (*is_domainlist_valid)();
+	x BOOL (*throw_context)(MESSAGE_CONTEXT *);
 #define query_service2(n, f) ((f) = reinterpret_cast<decltype(f)>(query_serviceF((n), typeid(decltype(*(f))))))
 #define query_service1(n) query_service2(#n, n)
 #ifdef DECLARE_HOOK_API_STATIC
@@ -78,8 +77,7 @@ DECLARE_HOOK_API(extern);
 	query_service1(get_context); \
 	query_service1(put_context); \
 	query_service1(enqueue_context); \
-	query_service1(throw_context); \
-	query_service1(is_domainlist_valid);
+	query_service1(throw_context);
 #define HOOK_ENTRY(s) BOOL HOOK_LibMain(int r, void **p) { return (s)((r), (p)); }
 
 extern "C" { /* dlsym */

@@ -108,7 +108,6 @@ static char g_local_path[256], g_remote_path[256];
 static HOOK_FUNCTION g_local_hook, g_remote_hook;
 static unsigned int g_threads_max, g_threads_min, g_mime_num, g_free_num;
 static gromox::atomic_bool g_notify_stop;
-static BOOL             g_domainlist_valid;
 static DOUBLE_LIST		g_threads_list;
 static DOUBLE_LIST		g_free_threads;
 static SINGLE_LIST		g_free_list;
@@ -174,7 +173,7 @@ ANTI_LOOP::ANTI_LOOP()
  */
 void transporter_init(const char *path, const char *const *names,
     unsigned int threads_min, unsigned int threads_max, unsigned int free_num,
-    unsigned int mime_radito, BOOL dm_valid, bool ignerr)
+    unsigned int mime_radito, bool ignerr)
 {
 	gx_strlcpy(g_path, path, GX_ARRAY_SIZE(g_path));
 	g_plugin_names = names;
@@ -185,7 +184,6 @@ void transporter_init(const char *path, const char *const *names,
 	g_threads_max = threads_max;
 	g_free_num = free_num;
 	g_mime_num = mime_radito*(threads_max + free_num);
-	g_domainlist_valid = dm_valid;
 	g_ign_loaderr = ignerr;
 	single_list_init(&g_free_list);
 	double_list_init(&g_hook_list);
@@ -858,7 +856,6 @@ static void *transporter_queryservice(const char *service, const std::type_info 
 	E("put_context", transporter_put_context);
 	E("enqueue_context", transporter_enqueue_context);
 	E("throw_context", transporter_throw_context);
-	E("is_domainlist_valid", transporter_domainlist_valid);
 #undef E
 	/* check if already exists in the reference list */
     for (pnode=double_list_get_head(&g_cur_lib->list_reference); NULL!=pnode;
@@ -1238,14 +1235,4 @@ int transporter_get_param(int param)
 		return double_list_get_nodes_num(&g_threads_list); 
 	}
 	return 0;
-}
-
-void transporter_validate_domainlist(BOOL b_valid)
-{
-	g_domainlist_valid = b_valid;
-}
-
-BOOL transporter_domainlist_valid()
-{
-	return g_domainlist_valid;
 }

@@ -40,9 +40,6 @@ Default: \fI1024M\fP
 \fBdequeue_path\fP
 Default: \fI/var/lib/gromox/queue\fP
 .TP
-\fBdomain_list_valid\fP
-Default: \fItrue\fP
-.TP
 \fBfree_context_num\fP
 Default: \fI512\fP
 .TP
