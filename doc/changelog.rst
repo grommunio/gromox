@@ -1,3 +1,25 @@
+1.13.75
+=======
+
+Enhancements:
+
+* Add powershell script for Exchange to grommunio/Gromox migration
+  (source tree only)
+* zcore: enhance mapi_getmsgstoretable to show all stores with
+  access permissions
+* pff2mt: add --with-hidden/--without-hidden
+* kdb2mt: add --with-hidden/--without-hidden
+
+Fixes:
+
+* pff2mt: scan attachments for named property info too
+* midb/imap: add back recognition for condition keywords
+* emsmdb: MAPI bodies between 4K and 8K were not displayed correctly
+  due to propval_utf16_len giving the wrong codepoint count
+* emsmdb/rpclib: fix crash during NTLM negotiation
+* exmdb_provider: cure "INSERT INTO search_result" SQL collision warnings
+
+
 1.13 (2022-01-17)
 =================
 
