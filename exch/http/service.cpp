@@ -4,6 +4,7 @@
 #include <list>
 #include <string>
 #include <typeinfo>
+#include <unistd.h>
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
@@ -349,9 +350,15 @@ void *service_query(const char *service_name, const char *module, const std::typ
 		return NULL;
 	}
 	auto &pservice = *node;
-	if (strcmp(ti.name(), pservice->type_info->name()) != 0)
-		printf("[service]: type mismatch on dlname \"%s\" (%s VS %s)\n",
+	if (strcmp(ti.name(), pservice->type_info->name()) != 0) {
+		if (isatty(STDERR_FILENO))
+			fprintf(stderr, "\e[33m");
+		fprintf(stderr, "[service]: type mismatch on dlname \"%s\" (%s VS %s)",
 			service_name, pservice->type_info->name(), ti.name());
+		if (isatty(STDERR_FILENO))
+			fprintf(stderr, "\e[0m");
+		fprintf(stderr, "\n");
+	}
 	if (module == nullptr)
 		/* untracked user */
 		return pservice->service_addr;
