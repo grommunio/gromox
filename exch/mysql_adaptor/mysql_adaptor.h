@@ -113,3 +113,4 @@ extern BOOL mysql_adaptor_check_same_org2(const char *domainname1, const char *d
 extern bool mysql_adaptor_check_user(const char *username, char *path, size_t);
 extern BOOL mysql_adaptor_get_mlist(const char *username, const char *from, int *presult, std::vector<std::string> &);
 extern bool mysql_adaptor_get_user_info(const char *username, char *maildir, size_t msize, char *lang, size_t lsize, char *timezone, size_t tsize);
+extern void mysql_adaptor_encode_squote(const char *in, char *out);

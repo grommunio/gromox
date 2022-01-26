@@ -57,12 +57,14 @@ void auto_response_reply(const char *user_home,
 	if (0 == strcasecmp(ptoken, ptoken1)) {
 		b_internal = TRUE;
 	} else {
-		if (FALSE == exmdb_local_check_domain(ptoken + 1)) {
-			b_internal = FALSE;
-		} else {
-			b_internal = exmdb_local_check_same_org2(
-							ptoken + 1, ptoken1 + 1);
+		auto lcldom = exmdb_local_check_domain(ptoken + 1);
+		if (lcldom < 0) {
+			fprintf(stderr, "auto_response: check_domain: %s\n",
+			        strerror(-lcldom));
+			return;
 		}
+		b_internal = lcldom < 1 ? false :
+		             exmdb_local_check_same_org2(ptoken + 1, ptoken1 + 1);
 	}
 	
 	snprintf(temp_path, 256, "%s/config/autoreply.cfg", user_home);

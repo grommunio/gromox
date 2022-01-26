@@ -44,7 +44,7 @@ static char g_default_charset[32];
 static char g_default_timezone[64];
 static std::atomic<int> g_sequence_id;
 
-BOOL (*exmdb_local_check_domain)(const char *domainname);
+int (*exmdb_local_check_domain)(const char *domainname);
 
 static bool (*exmdb_local_get_user_info)(const char *username, char *home_dir, size_t dsize, char *lang, size_t lsize, char *timezone, size_t tsize);
 bool (*exmdb_local_get_lang)(const char *username, char *lang, size_t);
@@ -176,7 +176,10 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			continue;
 		}
 		pdomain ++;
-		if (!exmdb_local_check_domain(pdomain)) {
+		auto lcldom = exmdb_local_check_domain(pdomain);
+		if (lcldom < 0)
+			continue;
+		if (lcldom == 0) {
 			remote_found = TRUE;
 			remote_file.writeline(rcpt_buff);
 			continue;

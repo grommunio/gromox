@@ -100,7 +100,7 @@ static constexpr TAG_ITEM g_tags[] = {
 	{"<length>", 8}
 };
 
-BOOL (*bounce_producer_check_domain)(const char *domainname);
+int (*bounce_producer_check_domain)(const char *domainname);
 bool (*bounce_producer_get_lang)(const char *username, char *lang, size_t);
 bool (*bounce_producer_get_timezone)(const char *username, char *timezone, size_t);
 BOOL (*bounce_producer_lang_to_charset)(const char *lang, char *charset);
@@ -385,7 +385,13 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	auto pdomain = strchr(from, '@');
 	if (NULL != pdomain) {
 		pdomain ++;
-		if (TRUE == bounce_producer_check_domain(pdomain)) {
+		auto lcldom = bounce_producer_check_domain(pdomain);
+		if (lcldom < 0) {
+			fprintf(stderr, "bounce_producer: check_domain: %s\n",
+			        strerror(-lcldom));
+			return;
+		}
+		if (lcldom > 0) {
 			if (bounce_producer_get_lang(from, lang, arsizeof(lang)))
 				bounce_producer_lang_to_charset(lang, charset);
 			bounce_producer_get_timezone(from, time_zone, arsizeof(time_zone));

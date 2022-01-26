@@ -377,6 +377,24 @@ int mysql_adaptor_scndstore_hints(int pri, std::vector<int> &hints) try
 	return ENOMEM;
 }
 
+static int mysql_adaptor_domain_list_query(const char *domain) try
+{
+	char qdom[UDOM_SIZE*2];
+	mysql_adaptor_encode_squote(domain, qdom);
+	char query[576];
+	snprintf(query, arsizeof(query), "SELECT 1 FROM domains WHERE domain_status=0 AND domainname='%s'", qdom);
+	auto conn = g_sqlconn_pool.get_wait();
+	if (conn.res == nullptr || !conn.res.query(query))
+		return -EIO;
+	DB_RESULT res = mysql_store_result(conn.res.get());
+	if (res == nullptr)
+		return -ENOMEM;
+	return res.fetch_row() != nullptr;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1647: ENOMEM\n");
+	return -ENOMEM;
+}
+
 void mysql_adaptor_init(mysql_adaptor_init_param &&parm)
 {
 	g_parm = std::move(parm);
@@ -508,6 +526,7 @@ static BOOL svc_mysql_adaptor(int reason, void **data)
 	E(get_mlist, "get_mail_list");
 	E(get_user_info, "get_user_info");
 	E(scndstore_hints, "scndstore_hints");
+	E(domain_list_query, "domain_list_query");
 #undef E
 	return TRUE;
 }

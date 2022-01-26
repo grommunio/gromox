@@ -44,8 +44,6 @@ using namespace gromox;
 
 static std::mutex g_crypt_lock;
 
-static void mysql_adaptor_encode_squote(const char *in, char *out);
-
 int mysql_adaptor_run()
 {
 	if (!db_upgrade_check())
@@ -931,7 +929,7 @@ BOOL mysql_adaptor_check_mlist_include(const char *mlist_name,
 	return false;
 }
 
-static void mysql_adaptor_encode_squote(const char *in, char *out)
+void mysql_adaptor_encode_squote(const char *in, char *out)
 {
 	int len, i, j;
 

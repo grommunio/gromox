@@ -4,7 +4,7 @@
 #include <cstdio>
 
 void (*system_services_log_info)(unsigned int, const char *, ...);
-BOOL (*system_services_check_domain)(const char*);
+int (*system_services_check_domain)(const char *);
 
 int system_services_run()
 {

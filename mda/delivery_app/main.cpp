@@ -42,7 +42,6 @@ static constexpr const char *g_dfl_mpc_plugins[] = {
 	NULL,
 };
 static constexpr const char *g_dfl_svc_plugins[] = {
-	"libgxs_domain_list.so",
 	"libgxs_logthru.so",
 	"libgxs_ldap_adaptor.so",
 	"libgxs_mysql_adaptor.so",
