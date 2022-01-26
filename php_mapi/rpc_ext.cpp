@@ -4,7 +4,7 @@
 #include <gromox/zcore_rpc.hpp>
 #include "ext.hpp"
 #include "rpc_ext.h"
-#define TRY(expr) do { if (!(expr)) return 0; } while (false)
+#define TRY(expr) do { if ((expr) != EXT_ERR_SUCCESS) return false; } while (false)
 
 using RPC_REQUEST = ZCORE_RPC_REQUEST;
 using RPC_RESPONSE = ZCORE_RPC_RESPONSE;
@@ -213,11 +213,11 @@ static zend_bool rpc_ext_push_openprofilesec_request(
 	TRY(pctx->p_guid(ppayload->openprofilesec.hsession));
 	if (ppayload->openprofilesec.puid == nullptr) {
 		TRY(pctx->p_uint8(0));
-	return true;
 	} else {
 		TRY(pctx->p_uint8(1));
-		return pctx->p_bytes(ppayload->openprofilesec.puid, sizeof(FLATUID));
+		TRY(pctx->p_bytes(ppayload->openprofilesec.puid, sizeof(FLATUID)));
 	}
+	return true;
 }
 
 static zend_bool rpc_ext_pull_openprofilesec_response(
@@ -1218,7 +1218,8 @@ zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 	PUSH_CTX push_ctx;
 	zend_bool b_result;
 
-	TRY(push_ctx.init());
+	if (!push_ctx.init())
+		return false;
 	TRY(push_ctx.advance(sizeof(uint32_t)));
 	TRY(push_ctx.p_uint8(prequest->call_id));
 	switch (prequest->call_id) {
