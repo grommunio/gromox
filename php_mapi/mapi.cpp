@@ -770,7 +770,7 @@ ZEND_FUNCTION(mapi_createoneoff)
 	tmp_entry.pdisplay_name = pdisplayname;
 	tmp_entry.paddress_type = ptype;
 	tmp_entry.pmail_address = paddress;
-	if (push_ctx.init() != EXT_ERR_SUCCESS ||
+	if (!push_ctx.init() ||
 	    push_ctx.p_oneoff_eid(tmp_entry) != EXT_ERR_SUCCESS) {
 		MAPI_G(hr) = ecError;
 		THROW_EXCEPTION;
@@ -5245,7 +5245,7 @@ ZEND_FUNCTION(kc_session_save)
 		RETVAL_LONG(ecInvalidParam);
 		return;	
 	}
-	if (push_ctx.init() != EXT_ERR_SUCCESS ||
+	if (!push_ctx.init() ||
 	    push_ctx.p_guid(psession->hsession) != EXT_ERR_SUCCESS) {
 		RETVAL_LONG(ecMAPIOOM);
 		return;	
