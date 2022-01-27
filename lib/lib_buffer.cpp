@@ -89,10 +89,8 @@ void *LIB_BUFFER::get_raw()
 	void	*ret_buf	= NULL;
 	char	*phead		= NULL;
 
-	if (TRUE == m_buf->is_thread_safe) {
+	if (m_buf->is_thread_safe)
 		pthread_mutex_lock(&m_buf->m_mutex);
-	}
-
 	auto item_size_al = roundup(m_buf->item_size, sizeof(std::max_align_t));
 	if (m_buf->free_list_size > 0) {
 		phead	= (char *)m_buf->free_list_head;
@@ -106,9 +104,8 @@ void *LIB_BUFFER::get_raw()
 		m_buf->free_list_head  = (void*)phead;
 		m_buf->free_list_size -= 1;
 		m_buf->allocated_num  += 1;
-		if (TRUE == m_buf->is_thread_safe) {
+		if (m_buf->is_thread_safe)
 			pthread_mutex_unlock(&m_buf->m_mutex);
-		}
 		return ret_buf;
 		
 	} 
@@ -117,9 +114,8 @@ void *LIB_BUFFER::get_raw()
 	if (m_buf->allocated_num >= m_buf->item_num) {
 		debug_info("[lib_buffer]: the total allocated buffer num"
 			" is larger than the initializing");
-		if (TRUE == m_buf->is_thread_safe) {
+		if (m_buf->is_thread_safe)
 			pthread_mutex_unlock(&m_buf->m_mutex);
-		}
 		return NULL;
 	}
 
@@ -130,9 +126,8 @@ void *LIB_BUFFER::get_raw()
 	m_buf->cur_heap_head	= (void*)phead;
 	m_buf->allocated_num	+= 1;
 
-	if (TRUE == m_buf->is_thread_safe) {
+	if (m_buf->is_thread_safe)
 		pthread_mutex_unlock(&m_buf->m_mutex);
-	}
 	return ret_buf;
 }
 /*
@@ -163,26 +158,22 @@ void LIB_BUFFER::put_raw(void *item)
 	}
 #endif
 
-	if (TRUE == m_buf->is_thread_safe) {
+	if (m_buf->is_thread_safe)
 		pthread_mutex_lock(&m_buf->m_mutex);
-	}
 	memcpy(pcur_item + item_size_al, &m_buf->free_list_head, sizeof(void *));
 	m_buf->free_list_head = item;
 	m_buf->free_list_size += 1;
 	m_buf->allocated_num  -= 1;
-	if (TRUE == m_buf->is_thread_safe) {
+	if (m_buf->is_thread_safe)
 		pthread_mutex_unlock(&m_buf->m_mutex);
-	}
 }
 
 size_t LIB_BUFFER::get_param(PARAM_TYPE type)
 {
 	auto m_buf = this;
 	size_t	ret_val = 0xFFFFFFFF;
-	if (TRUE == m_buf->is_thread_safe) {
+	if (m_buf->is_thread_safe)
 		pthread_mutex_lock(&m_buf->m_mutex);
-	}
-
 	switch (type) {
 
 	case FREE_LIST_SIZE:
@@ -200,9 +191,8 @@ size_t LIB_BUFFER::get_param(PARAM_TYPE type)
 	default:
 		debug_info("[lib_buffer]: unknown type %d", type);
 	}
-	if (TRUE == m_buf->is_thread_safe) {
+	if (m_buf->is_thread_safe)
 		pthread_mutex_unlock(&m_buf->m_mutex);
-	}
 	return ret_val;
 }
 
