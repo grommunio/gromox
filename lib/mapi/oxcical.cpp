@@ -1474,6 +1474,7 @@ static BOOL oxcical_parse_busystatus(std::shared_ptr<ICAL_LINE> piline,
 	if (it == std::cend(busy_status_names))
 		return TRUE;
 	uint32_t busy_status = it->first;
+	propname.guid = PSETID_APPOINTMENT;
 	propname.kind = MNID_ID;
 	propname.lid = pidlid;
 	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
