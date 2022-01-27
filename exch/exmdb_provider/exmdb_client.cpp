@@ -553,7 +553,7 @@ BOOL exmdb_client_relay_delivery(const char *dir,
 	EXMDB_RESPONSE response;
 	const char *orignal_dir;
 	
-	if (TRUE == exmdb_client_check_local(dir, &b_private)) {
+	if (exmdb_client_check_local(dir, &b_private)) {
 		orignal_dir = exmdb_server_get_dir();
 		exmdb_server_set_dir(dir);
 		b_result = exmdb_server_delivery_message(

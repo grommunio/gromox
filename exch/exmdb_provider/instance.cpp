@@ -350,7 +350,7 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 			return FALSE;
 		}
 	}
-	if (TRUE == b_new) {
+	if (b_new) {
 		/* message_id MUST NOT exist in messages table */
 		pinstance->b_new = TRUE;
 		pinstance->pcontent = message_content_init();
@@ -499,7 +499,7 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 		*pinstance_id = instance_id;
 		return TRUE;
 	}
-	if (TRUE == b_new) {
+	if (b_new) {
 		*pinstance_id = 0;
 		return TRUE;
 	}
@@ -576,7 +576,7 @@ BOOL exmdb_server_reload_message_instance(
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
 		return FALSE;
 	}
-	if (TRUE == pinstance->b_new) {
+	if (pinstance->b_new) {
 		*pb_result = FALSE;
 		return TRUE;
 	}
@@ -1094,9 +1094,8 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 		proptag = pmsgctnt->proplist.ppropval[i].proptag;
 		switch (proptag) {
 		case PR_ASSOCIATED:
-			if (TRUE == pinstance->b_new) {
+			if (pinstance->b_new)
 				break;
-			}
 		case PidTagMid:
 		case PR_ENTRYID:
 		case PidTagFolderId:
@@ -1502,7 +1501,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 		if (NULL == pattachment) {
 			return FALSE;
 		}
-		if (TRUE == pinstance->b_new) {
+		if (pinstance->b_new) {
 			if (NULL == pmsgctnt->children.pattachments) {
 				pmsgctnt->children.pattachments = attachment_list_init();
 				if (NULL == pmsgctnt->children.pattachments) {
@@ -2402,9 +2401,8 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 	for (size_t i = 0; i < pproperties->count; ++i) {
 		switch (pproperties->ppropval[i].proptag) {
 		case PR_ASSOCIATED:
-			if (TRUE == pinstance->b_new) {
+			if (pinstance->b_new)
 				break;
-			}
 		case ID_TAG_BODY:
 		case ID_TAG_BODY_STRING8:
 		case ID_TAG_HTML:

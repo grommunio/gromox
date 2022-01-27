@@ -314,16 +314,15 @@ BOOL exmdb_server_sum_content(const char *dir, uint64_t folder_id,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
-	if (TRUE == exmdb_server_check_private()) {
+	if (exmdb_server_check_private())
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
 			" FROM messages WHERE parent_fid=%llu AND "
 			"is_associated=%u", LLU(fid_val), !!b_fai);
-	} else {
+	else
 		snprintf(sql_string, GX_ARRAY_SIZE(sql_string), "SELECT count(*)"
 			" FROM messages WHERE parent_fid=%llu AND "
 			"(is_associated=%u AND is_deleted=%u)",
 			LLU(fid_val), !!b_fai, !!b_deleted);
-	}
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return FALSE;
@@ -883,7 +882,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 		if (pstmt1 == nullptr)
 			return false;
 	}
-	if (TRUE == exmdb_server_check_private()) {
+	if (exmdb_server_check_private()) {
 		if ((table_flags & TABLE_FLAG_SOFTDELETES) ||
 		    (!g_enable_dam && fid_val == PRIVATE_FID_DEFERRED_ACTION)) {
 			strcpy(sql_string, "SELECT message_id FROM messages WHERE 0");
@@ -901,7 +900,7 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 				        " AND messages.is_associated=1", LLU(fid_val));
 			}
 		} else if (table_flags & TABLE_FLAG_CONVERSATIONMEMBERS) {
-			if (TRUE == b_conversation) {
+			if (b_conversation) {
 				encode_hex_binary(static_cast<BINARY *>(pres->propval.pvalue)->pb,
 					16, tmp_string, sizeof(tmp_string));
 				snprintf(sql_string, arsizeof(sql_string), "SELECT message_id "
@@ -957,11 +956,9 @@ static BOOL table_load_content_table(db_item_ptr &pdb, uint32_t cpid,
 	last_row_id = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		mid_val = sqlite3_column_int64(pstmt, 0);
-		if (TRUE == b_conversation) {
-			if (TRUE == common_util_check_message_associated(
-				pdb->psqlite, mid_val)) {
+		if (b_conversation) {
+			if (common_util_check_message_associated(pdb->psqlite, mid_val))
 				continue;
-			}
 			if (FALSE == common_util_get_message_parent_folder(
 				pdb->psqlite, mid_val, &parent_fid)) {
 				return false;
@@ -2505,15 +2502,14 @@ static BOOL match_tbl_hier(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 	char sql_string[1024];
 	int i, count, idx = 0;
 
-	if (TRUE == b_forward) {
+	if (b_forward)
 		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id,"
 		         " idx, depth FROM t%u WHERE idx>=%u ORDER BY"
 		         " idx ASC", table_id, start_pos + 1);
-	} else {
+	else
 		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id,"
 		         " idx, depth FROM t%u WHERE idx<=%u ORDER BY"
 		         " idx DESC", table_id, start_pos + 1);
-	}
 	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
@@ -2588,15 +2584,14 @@ static BOOL match_tbl_ctnt(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 	int i, count, row_type, idx = 0;
 	uint64_t inst_id;
 
-	if (TRUE == b_forward) {
+	if (b_forward)
 		snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM t%u"
 		         " WHERE idx>=%u ORDER BY idx ASC", table_id,
 		         start_pos + 1);
-	} else {
+	else
 		snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM t%u"
 		         " WHERE idx<=%u ORDER BY idx DESC", table_id,
 		         start_pos + 1);
-	}
 	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;
@@ -2700,15 +2695,14 @@ static BOOL match_tbl_rule(uint32_t cpid, uint32_t table_id, BOOL b_forward,
 	int i, count, idx = 0;
 	uint64_t rule_id;
 
-	if (TRUE == b_forward) {
+	if (b_forward)
 		snprintf(sql_string, arsizeof(sql_string), "SELECT rule_id"
 		         " idx FROM t%u WHERE idx>=%u ORDER BY"
 		         " idx ASC", table_id, start_pos + 1);
-	} else {
+	else
 		snprintf(sql_string, arsizeof(sql_string), "SELECT rule_id,"
 		         " idx FROM t%u WHERE idx<=%u ORDER BY"
 		         " idx DESC", table_id, start_pos + 1);
-	}
 	auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;

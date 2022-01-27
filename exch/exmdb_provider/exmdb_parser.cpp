@@ -777,7 +777,7 @@ static void *mdpps_thrwork(void *pparam)
 	is_writing = FALSE;
 	is_connected = FALSE;
 	while (!pconnection->b_stop) {
-		if (TRUE == is_writing) {
+		if (is_writing) {
 			written_len = write(pconnection->sockd,
 			              static_cast<char *>(pbuff) + offset, buff_len - offset);
 			if (written_len <= 0) {
