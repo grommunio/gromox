@@ -170,7 +170,7 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 	memcpy(tmp_buff, HTML_01, sizeof(HTML_01) - 1);
 	offset = sizeof(HTML_01) - 1;
 
-	if (TRUE == need_alarm_one) {
+	if (need_alarm_one) {
 		offset += sprintf(tmp_buff + offset, "  The local delivery of %s "
 		          "failed %d times in a row.\r\n"
 		          "<P></P><BR><P></P><BR><P></P><BR>Alarm time: ",

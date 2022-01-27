@@ -479,10 +479,8 @@ void bounce_producer_make(const char *from, const char *rcpt_to,
 	pmime->set_content_param("report-type", "delivery-status");
 	pmime->set_field("Received", "from unknown (helo localhost) "
 		"(unknown@127.0.0.1)\r\n\tby herculiz with SMTP");
-	if (TRUE == bounce_producer_get_mail_thread_index(
-		pmail_original, tmp_buff)) {
+	if (bounce_producer_get_mail_thread_index(pmail_original, tmp_buff))
 		pmime->set_field("Thread-Index", tmp_buff);
-	}
 	pmime->set_field("From", presource->from[bounce_type]);
 	snprintf(tmp_buff, 256, "<%s>", from);
 	pmime->set_field("To", tmp_buff);
@@ -563,10 +561,10 @@ static void bounce_producer_enum_parts(MIME *pmime, void *param)
 	
 	if (!pmime->get_filename(name))
 		return;
-	if (TRUE == mime_string_to_utf8(penum->charset, name, temp_name)) {
+	if (mime_string_to_utf8(penum->charset, name, temp_name)) {
 		attach_len = strlen(temp_name);
 		if (penum->offset + attach_len < 128*1024) {
-			if (TRUE == penum->b_first) {
+			if (penum->b_first) {
 				strcpy(penum->ptr + penum->offset, g_separator);
 				penum->offset += strlen(g_separator);
 			}
@@ -621,9 +619,8 @@ static void bounce_producer_enum_charset(MIME *pmime, void *param)
 	char *begin, *end;
 	int len;
 	
-	if (TRUE == penum->b_found) {
+	if (penum->b_found)
 		return;
-	}
 	if (pmime->get_content_param("charset", charset, 32)) {
 		len = strlen(charset);
 		if (len <= 2) {

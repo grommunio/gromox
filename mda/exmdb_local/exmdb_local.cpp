@@ -314,7 +314,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 			break;
 		}
 	}
-	if (TRUE == remote_found) {
+	if (remote_found) {
 		remote_file.copy_to(pcontext->pcontrol->f_rcpt_to);
 		mem_file_free(&remote_file);
 		return FALSE;
@@ -528,14 +528,12 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	case EXMDB_RESULT_OK:
 		exmdb_local_log_info(pcontext, address, LV_DEBUG,
 			"message %s was delivered OK", eml_path.c_str());
-		if (TRUE == pcontext->pcontrol->need_bounce &&
-			0 != strcmp(pcontext->pcontrol->from, "none@none") &&
-			0 == (suppress_mask & AUTO_RESPONSE_SUPPRESS_OOF)) {
+		if (pcontext->pcontrol->need_bounce &&
+		    strcmp(pcontext->pcontrol->from, "none@none") != 0&&
+		    !(suppress_mask & AUTO_RESPONSE_SUPPRESS_OOF))
 			auto_response_reply(home_dir, address, pcontext->pcontrol->from);
-		}
-		if (TRUE == b_bounce_delivered) {
+		if (b_bounce_delivered)
 			return DELIVERY_OPERATION_DELIVERED;
-		}
 		return DELIVERY_OPERATION_OK;
 	case EXMDB_RUNTIME_ERROR:
 		exmdb_local_log_info(pcontext, address, LV_ERR,

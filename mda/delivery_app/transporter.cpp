@@ -427,7 +427,7 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 		pnode=double_list_get_after(&g_hook_list, pnode)) {
 		phook = (HOOK_ENTRY*)(pnode->pdata);
 		/* check if this hook is valid, if it is, execute the function */
-		if (TRUE == phook->valid) {
+		if (phook->valid) {
 			if (pthr_data->last_thrower == phook->hook_addr) {
 				goto NEXT_LOOP;
 			}
@@ -440,9 +440,8 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 			ct_hold.lock();
 			phook->count --;
 			ct_hold.unlock();
-			if (TRUE == hook_result) {
+			if (hook_result)
 				break;
-			}
 		}
  NEXT_LOOP:
 		if (pnode == ptail) {
@@ -453,9 +452,8 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 		if (pthr_data->last_thrower != g_local_hook) {
 			pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 			pthr_data->last_hook = g_local_hook;
-			if (TRUE == g_local_hook(pcontext)) {
+			if (g_local_hook(pcontext))
 				return TRUE;	
-			}
 		}
 		if (pthr_data->last_thrower != g_remote_hook) {
 			pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
@@ -487,7 +485,7 @@ static void *dxp_thrwork(void *arg)
 		((PLUGIN_MAIN)plib->lib_main)(PLUGIN_THREAD_CREATE, NULL);
 	}
 	cannot_served_times = 0;
-	if (TRUE == pthr_data->wait_on_event) {
+	if (pthr_data->wait_on_event) {
 		std::unique_lock cm_hold(g_cond_mutex);
 		g_waken_cond.wait(cm_hold);
 	}
@@ -784,7 +782,7 @@ static void transporter_clean_up_unloading()
 				can_clean = FALSE;
 			}
 		}
-		if (TRUE == can_clean) {
+		if (can_clean) {
 			try {
 				stack.push_back(pnode);
 			} catch (...) {
@@ -1061,9 +1059,8 @@ static BOOL transporter_register_hook(HOOK_FUNCTION func)
     for (pnode=double_list_get_head(&g_hook_list); NULL!=pnode;
         pnode=double_list_get_after(&g_hook_list, pnode)) {
 		phook = (HOOK_ENTRY*)(pnode->pdata);
-        if (TRUE == phook->valid && phook->hook_addr == func) {
-            break;
-        }
+		if (phook->valid && phook->hook_addr == func)
+			break;
     }
     if (NULL != pnode) {
         return FALSE;
