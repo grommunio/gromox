@@ -245,10 +245,7 @@ BOOL attachment_object::check_readonly_property(uint32_t proptag) const
 	case PR_ATTACH_SIZE:
 	case PR_CREATION_TIME:
 	case PR_LAST_MODIFICATION_TIME:
-		if (TRUE == pattachment->b_new) {
-			return FALSE;
-		}
-		return TRUE;
+		return !pattachment->b_new ? TRUE : false;
 	}
 	return FALSE;
 }
@@ -323,7 +320,7 @@ BOOL attachment_object::get_properties(uint32_t size_limit,
 	ppropvals->count = 0;
 	for (i=0; i<pproptags->count; i++) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
-		if (TRUE == attachment_object_get_calculated_property(
+		if (attachment_object_get_calculated_property(
 			pattachment, pproptags->pproptag[i], &pvalue)) {
 			if (NULL != pvalue) {
 				pv.proptag = pproptags->pproptag[i];
@@ -398,7 +395,7 @@ BOOL attachment_object::set_properties(const TPROPVAL_ARRAY *ppropvals,
 	}
 	for (i=0; i<ppropvals->count; i++) {
 		if (check_readonly_property(ppropvals->ppropval[i].proptag) ||
-			TRUE == attachment_object_check_stream_property(
+		    attachment_object_check_stream_property(
 			pattachment, ppropvals->ppropval[i].proptag)) {
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
@@ -460,7 +457,7 @@ BOOL attachment_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	}
 	for (i=0; i<pproptags->count; i++) {
 		if (check_readonly_property(pproptags->pproptag[i]) ||
-			TRUE == attachment_object_check_stream_property(
+		    attachment_object_check_stream_property(
 			pattachment, pproptags->pproptag[i])) {
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
@@ -509,9 +506,8 @@ BOOL attachment_object::copy_properties(attachment_object *pattachment_src,
 	if (!exmdb_client_check_instance_cycle(pattachment->pparent->plogon->get_dir(),
 	    pattachment_src->instance_id, pattachment->instance_id, pb_cycle))
 		return FALSE;	
-	if (TRUE == *pb_cycle) {
+	if (*pb_cycle)
 		return TRUE;
-	}
 	if (!pattachment_src->flush_streams())
 		return FALSE;
 	if (!exmdb_client_read_attachment_instance(pattachment_src->pparent->plogon->get_dir(),

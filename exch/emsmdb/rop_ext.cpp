@@ -279,7 +279,7 @@ static int rop_ext_pull_writeperuserinformation_request(EXT_PULL *pext,
 	TRY(pext->g_uint8(&r->has_finished));
 	TRY(pext->g_uint32(&r->offset));
 	TRY(pext->g_sbin(&r->data));
-	if (0 == r->offset && TRUE == b_private) {
+	if (r->offset == 0 && b_private) {
 		r->pguid = pext->anew<GUID>();
 		if (r->pguid == nullptr)
 			return EXT_ERR_ALLOC;
@@ -975,7 +975,7 @@ static int rop_ext_pull_setmessagereadflag_request(EXT_PULL *pext,
 {
 	TRY(pext->g_uint8(&r->hindex));
 	TRY(pext->g_uint8(&r->flags));
-	if (TRUE == b_private) {
+	if (b_private) {
 		r->pclient_data = NULL;
 		return EXT_ERR_SUCCESS;
 	} else {

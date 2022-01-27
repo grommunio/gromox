@@ -164,7 +164,7 @@ static void rop_processor_release_objnode(
 	});
 	simple_tree_destroy_node(&plogitem->tree,
 		&pobjnode->node, rop_processor_free_objnode);
-	if (TRUE == b_root) {
+	if (b_root) {
 		simple_tree_free(&plogitem->tree);
 		plogitem->phash.reset();
 		g_logitem_allocator->destroy_and_put(plogitem);
@@ -587,9 +587,8 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 		}
 	}
 	
-	if (FALSE == b_notify || TRUE == b_icsup) {
+	if (!b_notify || b_icsup)
 		goto MAKE_RPC_EXT;
-	}
 	while (true) {
 		pnotify_list = emsmdb_interface_get_notify_list();
 		if (NULL == pnotify_list) {

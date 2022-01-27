@@ -325,19 +325,16 @@ stream_object::~stream_object()
 	}
 	switch (pstream->object_type) {
 	case OBJECT_TYPE_FOLDER:
-		if (TRUE == pstream->b_touched) {
+		if (pstream->b_touched)
 			commit();
-		}
 		break;
 	case OBJECT_TYPE_ATTACHMENT:
-		if (TRUE == pstream->b_touched) {
+		if (pstream->b_touched)
 			static_cast<attachment_object *>(pstream->pparent)->commit_stream_object(pstream);
-		}
 		break;
 	case OBJECT_TYPE_MESSAGE:
-		if (TRUE == pstream->b_touched) {
+		if (pstream->b_touched)
 			static_cast<message_object *>(pstream->pparent)->commit_stream_object(pstream);
-		}
 		break;
 	}
 	free(pstream->content_bin.pb);

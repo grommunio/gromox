@@ -118,9 +118,8 @@ BOOL emsmdb_interface_check_acxh(ACXH *pacxh,
 	if (iter == g_handle_hash.end())
 		return false;
 	auto phandle = &iter->second;
-	if (TRUE == b_touch) {
+	if (b_touch)
 		phandle->last_time = time_point::clock::now();
-	}
 	strcpy(username, phandle->username);
 	*pcxr = phandle->cxr;
 	return TRUE;
@@ -162,7 +161,7 @@ static HANDLE_DATA* emsmdb_interface_get_handle_data(CXH *pcxh)
 		if (iter == g_handle_hash.end())
 			return NULL;
 		auto phandle = &iter->second;
-		if (TRUE == phandle->b_processing) {
+		if (phandle->b_processing) {
 			gl_hold.unlock();
 			usleep(100000);
 		} else {
@@ -189,7 +188,7 @@ static HANDLE_DATA* emsmdb_interface_get_handle_notify_list(CXH *pcxh)
 		if (iter == g_handle_hash.end())
 			return NULL;
 		auto phandle = &iter->second;
-		if (TRUE == phandle->b_occupied) {
+		if (phandle->b_occupied) {
 			gl_hold.unlock();
 			usleep(100000);
 		} else {
@@ -329,13 +328,12 @@ static void emsmdb_interface_remove_handle(CXH *pcxh)
 		if (iter == g_handle_hash.end())
 			return;
 		phandle = &iter->second;
-		if (TRUE == phandle->b_processing) {
+		if (phandle->b_processing)
 			/* this means handle is being processed
 			   in emsmdb_interface_rpc_ext2 by another
 			   rpc connection, can not be released! */
 			return;
-		}
-		if (TRUE == phandle->b_occupied) {
+		if (phandle->b_occupied) {
 			gl_hold.unlock();
 			usleep(100000);
 		} else {
@@ -446,7 +444,7 @@ static BOOL emsmdb_interface_decode_version(const uint16_t pvers[3],
 static void emsmdb_interface_encode_version(BOOL high_bit,
 	const uint16_t pnormal_vers[4], uint16_t pvers[3])
 {
-	if (TRUE == high_bit) {
+	if (high_bit) {
 		pvers[0] = (pnormal_vers[0] << 8) | pnormal_vers[1];
 		pvers[1] = pnormal_vers[2] | 0x8000;
 		pvers[2] = pnormal_vers[3];
@@ -687,9 +685,8 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 	cxr = phandle->cxr;
 	BOOL b_wakeup = double_list_get_nodes_num(&phandle->notify_list) == 0 ? false : TRUE;
 	emsmdb_interface_put_handle_data(phandle);
-	if (TRUE == b_wakeup) {
+	if (b_wakeup)
 		asyncemsmdb_interface_wakeup(username, cxr);
-	}
 	pthread_setspecific(g_handle_key, NULL);
 	if (result == ecSuccess) {
 		*pflags = 0;
@@ -749,7 +746,7 @@ DOUBLE_LIST* emsmdb_interface_get_notify_list()
 	}
 	while (true) {
 		std::unique_lock gl_hold(g_lock);
-		if (TRUE == phandle->b_occupied) {
+		if (phandle->b_occupied) {
 			gl_hold.unlock();
 			usleep(100000);
 		} else {
@@ -1114,7 +1111,7 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	}
 	switch (pdb_notify->type) {
 	case DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_DELETED:
-		if (TRUE == emsmdb_interface_merge_content_row_deleted(
+		if (emsmdb_interface_merge_content_row_deleted(
 			obj_handle, logon_id, &phandle->notify_list)) {
 			emsmdb_interface_put_handle_notify_list(phandle);
 			return;
@@ -1211,10 +1208,8 @@ static void *emsi_scanwork(void *pparam)
 		std::unique_lock gl_hold(g_lock);
 		for (const auto &[guid, handle] : g_handle_hash) {
 			auto phandle = &handle;
-			if (TRUE == phandle->b_processing ||
-				TRUE == phandle->b_occupied) {
+			if (phandle->b_processing || phandle->b_occupied)
 				continue;
-			}
 			if (cur_time - phandle->last_time > HANDLE_VALID_INTERVAL) try {
 				temp_list.push_back(guid);
 			} catch (const std::bad_alloc &) {

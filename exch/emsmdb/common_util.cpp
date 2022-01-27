@@ -792,7 +792,7 @@ BOOL common_util_mapping_replica(BOOL to_guid,
 	BOOL b_found;
 	auto plogon = *static_cast<logon_object **>(pparam);
 
-	if (TRUE == to_guid) {
+	if (to_guid) {
 		if (plogon->check_private()) {
 			if (1 != *preplid) {
 				return FALSE;
@@ -956,7 +956,7 @@ BOOL common_util_convert_unspecified(uint32_t cpid,
 {
 	size_t tmp_len;
 	
-	if (TRUE == b_unicode) {
+	if (b_unicode) {
 		if (ptyped->type != PT_STRING8)
 			return TRUE;
 		tmp_len = 2 * strlen(static_cast<char *>(ptyped->pvalue)) + 1;
@@ -1158,7 +1158,7 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 	cu_set_propval(ppropvals, PR_SEND_RICH_INFO, (prow->flags & RECIPIENT_ROW_FLAG_NONRICH) ? &persist_true : &persist_false);
 	if (NULL != prow->ptransmittable_name) {
 		void *pvalue;
-		if (TRUE == b_unicode) {
+		if (b_unicode) {
 			pvalue = prow->ptransmittable_name;
 		} else {
 			pvalue = common_util_dup_mb_to_utf8(cpid,
@@ -1176,7 +1176,7 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 	}
 	if (NULL != prow->pmail_address) {
 		void *pvalue;
-		if (TRUE == b_unicode) {
+		if (b_unicode) {
 			pvalue = prow->pmail_address;
 		} else {
 			pvalue = common_util_dup_mb_to_utf8(
@@ -1285,7 +1285,7 @@ BOOL common_util_modifyrecipient_to_propvals(
 
 static void common_util_convert_proptag(BOOL to_unicode, uint32_t *pproptag)
 {
-	if (TRUE == to_unicode) {
+	if (to_unicode) {
 		if (PROP_TYPE(*pproptag) == PT_STRING8)
 			*pproptag = CHANGE_PROP_TYPE(*pproptag, PT_UNICODE);
 		else if (PROP_TYPE(*pproptag) == PT_MV_STRING8)
@@ -1302,7 +1302,7 @@ static void common_util_convert_proptag(BOOL to_unicode, uint32_t *pproptag)
 BOOL common_util_convert_tagged_propval(
 	BOOL to_unicode, TAGGED_PROPVAL *ppropval)
 {
-	if (TRUE == to_unicode) {
+	if (to_unicode) {
 		switch (PROP_TYPE(ppropval->proptag)) {
 		case PT_STRING8: {
 			auto len = 2 * strlen(static_cast<char *>(ppropval->pvalue)) + 1;
@@ -1956,7 +1956,7 @@ BOOL common_util_send_message(logon_object *plogon,
 		if (NULL == pnode) {
 			return FALSE;
 		}
-		if (TRUE == b_resend) {
+		if (b_resend) {
 			pvalue = prcpts->pparray[i]->getval(PR_RECIPIENT_TYPE);
 			if (NULL == pvalue) {
 				continue;
@@ -2071,7 +2071,7 @@ BOOL common_util_send_message(logon_object *plogon,
 			log_err("W-1277: Failed to move to target folder while sending mid:0x%llx", LLU(message_id));
 			return FALSE;
 		}
-	} else if (TRUE == b_delete) {
+	} else if (b_delete) {
 		exmdb_client_delete_message(plogon->get_dir(),
 			plogon->account_id, cpid, parent_id, message_id,
 			TRUE, &b_result);

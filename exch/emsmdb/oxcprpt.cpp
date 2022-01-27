@@ -824,9 +824,8 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 			if (!exmdb_client_check_folder_cycle(plogon->get_dir(),
 			    fldsrc->folder_id, flddst->folder_id, &b_cycle))
 				return ecError;
-			if (TRUE == b_cycle) {
+			if (b_cycle)
 				return MAPI_E_FOLDER_CYCLE;
-			}
 			b_sub = TRUE;
 		} else {
 			b_sub = FALSE;
@@ -854,7 +853,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 		}
 		if (!fldsrc->get_properties(&tmp_proptags, &propvals))
 			return ecError;
-		if (TRUE == b_sub || TRUE == b_normal || TRUE == b_fai) {
+		if (b_sub || b_normal || b_fai) {
 			auto pinfo = emsmdb_interface_get_emsmdb_info();
 			BOOL b_guest = username == nullptr ? false : TRUE;
 			if (!exmdb_client_copy_folder_internal(plogon->get_dir(),
@@ -863,9 +862,8 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 			    b_normal, b_fai, b_sub, flddst->folder_id,
 			    &b_collid, &b_partial))
 				return ecError;
-			if (TRUE == b_collid) {
+			if (b_collid)
 				return ecDuplicateName;
-			}
 			if (!flddst->set_properties(&propvals, pproblems))
 				return ecError;
 			return ecSuccess;
@@ -882,9 +880,8 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 		if (!msgdst->copy_to(static_cast<message_object *>(pobject),
 		    pexcluded_proptags, b_force, &b_cycle, pproblems))
 			return ecError;
-		if (TRUE == b_cycle) {
+		if (b_cycle)
 			return ecMsgCycle;
-		}
 		return ecSuccess;
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
@@ -895,9 +892,8 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 		if (!atdst->copy_properties(static_cast<attachment_object *>(pobject),
 		    pexcluded_proptags, b_force, &b_cycle, pproblems))
 			return ecError;
-		if (TRUE == b_cycle) {
+		if (b_cycle)
 			return ecMsgCycle;
-		}
 		return ecSuccess;
 	}
 	default:
@@ -936,7 +932,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags, uint32_t *pstream_size,
 			return ecNotSupported;
 		if (PROP_TYPE(proptag) != PT_BINARY)
 			return ecNotSupported;
-		if (TRUE == b_write) {
+		if (b_write) {
 			auto rpc_info = get_rpc_info();
 			if (plogon->logon_mode != LOGON_MODE_OWNER) {
 				if (!exmdb_client_check_folder_permission(plogon->get_dir(),
@@ -963,7 +959,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags, uint32_t *pstream_size,
 		default:
 			return ecNotSupported;
 		}
-		if (TRUE == b_write) {
+		if (b_write) {
 			auto tag_access = object_type == OBJECT_TYPE_MESSAGE ?
 				static_cast<message_object *>(pobject)->get_tag_access() :
 				static_cast<attachment_object *>(pobject)->get_tag_access();

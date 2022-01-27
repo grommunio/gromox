@@ -66,10 +66,8 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 	folder_id = *(uint64_t*)pvalue;
 	if (!exmdb_client_check_message_deleted(plogon->get_dir(), message_id, &b_del))
 		return ecError;
-	if (TRUE == b_del && 0 == (open_mode_flags &
-		OPEN_MODE_FLAG_OPENSOFTDELETE)) {
+	if (b_del && !(open_mode_flags & OPEN_MODE_FLAG_OPENSOFTDELETE))
 		return ecNotFound;
-	}
 	
 	tag_access = 0;
 	auto rpc_info = get_rpc_info();
@@ -287,9 +285,8 @@ uint32_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
 	if (SAVE_FLAG_FORCESAVE != save_flags) {
 		if (!pmessage->check_orignal_touched(&b_touched))
 			return ecError;
-		if (TRUE == b_touched) {
+		if (b_touched)
 			return ecObjectModified;
-		}
 	}
 	uint32_t tmp_proptag = PidTagMid;
 	proptags.count = 1;

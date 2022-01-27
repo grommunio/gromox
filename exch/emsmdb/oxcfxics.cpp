@@ -139,7 +139,7 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 			return NULL;
 		return pfldctnt;
 	}
-	if (TRUE == b_fai) {
+	if (b_fai) {
 		pmessage_ids = oxcfxics_load_folder_messages(
 					plogon, folder_id, username, TRUE);
 		if (NULL == pmessage_ids) {
@@ -147,7 +147,7 @@ oxcfxics_load_folder_content(logon_object *plogon, uint64_t folder_id,
 		}
 		pfldctnt->append_failist_internal(pmessage_ids);
 	}
-	if (TRUE == b_normal) {
+	if (b_normal) {
 		pmessage_ids = oxcfxics_load_folder_messages(
 					plogon, folder_id, username, FALSE);
 		if (NULL == pmessage_ids) {
@@ -938,7 +938,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	} else {
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 	}
-	if (TRUE == b_exist) {
+	if (b_exist) {
 		if (!exmdb_client_get_message_property(plogon->get_dir(),
 		    nullptr, 0, message_id, PR_ASSOCIATED, &pvalue))
 			return ecError;
@@ -961,7 +961,7 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	                OPEN_MODE_FLAG_READWRITE, pctx->pstate);
 	if (pmessage == nullptr)
 		return ecError;
-	if (TRUE == b_exist) {
+	if (b_exist) {
 		proptags.count = 1;
 		proptags.pproptag = &tmp_proptag;
 		tmp_proptag = PR_PREDECESSOR_CHANGE_LIST;
@@ -1310,12 +1310,10 @@ uint32_t rop_syncimporthierarchychange(const TPROPVAL_ARRAY *phichyvals,
 			&b_exist, &b_partial)) {
 			return ecError;
 		}
-		if (TRUE == b_exist) {
+		if (b_exist)
 			return ecDuplicateName;
-		}
-		if (TRUE == b_partial) {
+		if (b_partial)
 			return ecError;
-		}
 	}
 	if (!exmdb_client_allocate_cn(plogon->get_dir(), &change_num))
 		return ecError;
@@ -1602,7 +1600,7 @@ uint32_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 	    plogon->account_id, pinfo->cpid, src_mid, folder_id, dst_mid,
 	    TRUE, &b_result) || !b_result)
 		return ecError;
-	if (TRUE == b_newer) {
+	if (b_newer) {
 		uint32_t result_unused;
 		tmp_propval.proptag = PR_PREDECESSOR_CHANGE_LIST;
 		tmp_propval.pvalue = pvalue;
@@ -1616,9 +1614,8 @@ uint32_t rop_syncimportmessagemove(const BINARY *psrc_folder_id,
 	s->append(*static_cast<uint64_t *>(pvalue));
 	pctx->pstate->pgiven->append(dst_mid);
 	*pmessage_id = 0;
-	if (TRUE == b_newer) {
+	if (b_newer)
 		return SYNC_W_CLIENT_CHANGE_NEWER;
-	}
 	return ecSuccess;
 }
 

@@ -170,7 +170,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 		pout->result = ecRejected;
 		return DISPATCH_SUCCESS;
 	}
-	if (TRUE == emsmdb_interface_check_notify(&pin->acxh)) {
+	if (emsmdb_interface_check_notify(&pin->acxh)) {
 		g_wait_allocator->put(pwait);
 		pout->flags_out = FLAG_NOTIFICATION_PENDING;
 		pout->result = ecSuccess;
