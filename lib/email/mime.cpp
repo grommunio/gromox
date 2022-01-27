@@ -74,7 +74,7 @@ void mime_free(MIME *pmime)
 	}
 #endif
 	if (SINGLE_MIME == pmime->mime_type) {
-		if (TRUE == pmime->content_touched && NULL != pmime->content_begin) {
+		if (pmime->content_touched && NULL != pmime->content_begin) {
 			if (0 != pmime->content_length) {
 				free(pmime->content_begin);
 			}
@@ -254,8 +254,8 @@ BOOL MIME::retrieve(MIME *pmime_parent, char *in_buff, size_t length)
 void MIME::clear()
 {
 	auto pmime = this;
-	if (SINGLE_MIME == pmime->mime_type && TRUE == pmime->content_touched
-		&& NULL != pmime->content_begin) {
+	if (pmime->mime_type == SINGLE_MIME && pmime->content_touched &&
+	    pmime->content_begin != nullptr) {
 		if (0 != pmime->content_length) {
 			free(pmime->content_begin);
 		}
@@ -431,7 +431,7 @@ BOOL MIME::write_mail(MAIL *pmail)
     if (SINGLE_MIME != pmime->mime_type) {
         return FALSE;
     }
-    if (TRUE == pmime->content_touched && NULL != pmime->content_begin) {
+	if (pmime->content_touched && pmime->content_begin != nullptr) {
 		if (0 != pmime->content_length) {
 			free(pmime->content_begin);
 		}
@@ -469,11 +469,10 @@ BOOL MIME::set_content_type(const char *content_type)
 		b_multiple = TRUE;
 	}
 	if (SINGLE_MIME == pmime->mime_type) {
-		if (TRUE == b_multiple) {
+		if (b_multiple)
 			return FALSE;
-		}
 	} else if (NONE_MIME == pmime->mime_type) {
-		if (TRUE == b_multiple) {
+		if (b_multiple) {
 			mime_produce_boundary(pmime);
 			pmime->mime_type = MULTIPLE_MIME;
 		} else {
@@ -860,9 +859,8 @@ BOOL MIME::remove_field(const char *tag)
 			file_tmp.write(tmp_buff, val_len);
 		}
 	}
-	if (TRUE == found_tag) {
+	if (found_tag)
 		file_tmp.copy_to(pmime->f_other_fields);
-	}
 	mem_file_free(&file_tmp);
 	return found_tag;
 }
@@ -2297,7 +2295,7 @@ ssize_t MIME::get_mimes_digest(const char *id_string,
 			HX_strrtrim(content_disposition);
 			HX_strltrim(content_disposition);
 			if ('\0' != content_disposition[0] &&
-				TRUE == mime_check_ascii_printable(content_disposition)) {
+			    mime_check_ascii_printable(content_disposition)) {
 				tmp_len = strlen(content_disposition);
 				for (i=0; i<tmp_len; i++) {
 					if ('"' == content_disposition[i] ||

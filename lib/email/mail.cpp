@@ -553,8 +553,7 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
 		goto PARSE_FAILURE;
 	}
 	
-	if ('\0' != email_charset[0] &&
-		TRUE == mail_check_ascii_printable(email_charset)) {
+	if (email_charset[0] != '\0' && mail_check_ascii_printable(email_charset)) {
 		auto tmp_len = strlen(email_charset);
 		for (size_t i = 0; i < tmp_len; ++i) {
 			if ('"' == email_charset[i] || '\\' == email_charset[i]) {
@@ -620,12 +619,11 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
 		if (m->get_content_param("smime-type", temp_buff, arsizeof(temp_buff)))
 			b_tags[TAG_ENCRYPT] = TRUE;
 	});
-	
-	if (TRUE == b_tags[TAG_SIGNED]) {
+	if (b_tags[TAG_SIGNED]) {
 		memcpy(pbuff + buff_len, ",\"signed\":1", 11);
 		buff_len += 11;
 	}
-	if (TRUE == b_tags[TAG_ENCRYPT]) {
+	if (b_tags[TAG_ENCRYPT]) {
 		memcpy(pbuff + buff_len, ",\"encrypt\":1", 12);
 		buff_len += 12;
 	}

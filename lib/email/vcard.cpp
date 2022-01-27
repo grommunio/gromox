@@ -129,9 +129,8 @@ static BOOL vcard_retrieve_line_item(char *pline, LINE_ITEM *pitem)
 	
 	b_value = FALSE;
 	while ('\0' != *pline) {
-		if ((NULL == pitem->ptag ||
-			(TRUE == b_value && NULL == pitem->pvalue))
-			&& (' ' == *pline || '\t' == *pline)) {
+		if ((pitem->ptag == nullptr || (b_value && pitem->pvalue == nullptr)) &&
+		    (*pline == ' ' || *pline == '\t')) {
 			pline ++;
 			continue;
 		}
@@ -178,7 +177,7 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 					b_quoted = FALSE;
 				}
 			}
-			if (TRUE == b_quoted) {
+			if (b_quoted) {
 				if ('=' == pbuff[i - 1]) {
 					memmove(pbuff + i - 1, pbuff + i, max_length - i);
 					pbuff[max_length-1] = '\0';
@@ -199,7 +198,7 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 			}
 			if (i + 1 < max_length && '\n' == pbuff[i + 1]) {
 				pnext = pbuff + i + 2;
-				if (TRUE == b_quoted) {
+				if (b_quoted) {
 					memmove(pbuff + i, pnext, pbuff + max_length - pnext);
 					size_t bytes = pbuff + max_length - pnext;
 					pbuff[i+bytes] = '\0';
@@ -221,7 +220,7 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 				}
 			} else {
 				pnext = pbuff + i + 1;
-				if (TRUE == b_quoted) {
+				if (b_quoted) {
 					memmove(pbuff + i, pnext, pbuff + max_length - pnext);
 					size_t bytes = pbuff + max_length - pnext;
 					pbuff[i+bytes] = '\0';
@@ -253,7 +252,7 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 					b_quoted = FALSE;
 				}
 			}
-			if (TRUE == b_quoted) {
+			if (b_quoted) {
 				if ('=' == pbuff[i - 1]) {
 					memmove(pbuff + i - 1, pbuff + i, max_length - i);
 					pbuff[max_length-1] = '\0';
@@ -266,7 +265,7 @@ static char* vcard_get_line(char *pbuff, size_t max_length)
 				}
 			}
 			pnext = pbuff + i + 1;
-			if (TRUE == b_quoted) {
+			if (b_quoted) {
 				memmove(pbuff + i, pnext, pbuff + max_length - pnext);
 				size_t bytes = pbuff + max_length - pnext;
 				pbuff[i+bytes] = '\0';
@@ -430,9 +429,8 @@ BOOL vcard_retrieve(VCARD *pvcard, char *in_buff)
 	length = strlen(in_buff);
 	do {
 		pnext = vcard_get_line(pline, length - (pline - in_buff));
-		if (TRUE == vcard_check_empty_line(pline)) {
+		if (vcard_check_empty_line(pline))
 			continue;
-		}
 		if (FALSE == vcard_retrieve_line_item(pline, &tmp_item)) {
 			break;
 		}
@@ -718,7 +716,7 @@ BOOL vcard_append_paramval(VCARD_PARAM *pvparam, const char *paramval)
 	}
 	auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
 	if (NULL == pnode) {
-		if (TRUE == b_list) {
+		if (b_list) {
 			double_list_free(pvparam->pparamval_list);
 			free(pvparam->pparamval_list);
 			pvparam->pparamval_list = NULL;
@@ -728,7 +726,7 @@ BOOL vcard_append_paramval(VCARD_PARAM *pvparam, const char *paramval)
 	pnode->pdata = strdup(paramval);
 	if (NULL == pnode->pdata) {
 		free(pnode);
-		if (TRUE == b_list) {
+		if (b_list) {
 			double_list_free(pvparam->pparamval_list);
 			free(pvparam->pparamval_list);
 			pvparam->pparamval_list = NULL;
