@@ -198,12 +198,9 @@ uint32_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteria,
 		}
 	}
 	auto pcolumns = ptable->get_columns();
-	if (TRUE == b_multi_inst && NULL != pcolumns) {
-		if (FALSE == oxctable_verify_columns_and_sorts(
-			pcolumns, psort_criteria)) {
-			return ecNotSupported;
-		}
-	}
+	if (b_multi_inst && pcolumns != nullptr && 
+	    !oxctable_verify_columns_and_sorts(pcolumns, psort_criteria))
+		return ecNotSupported;
 	if (!ptable->set_sorts(psort_criteria))
 		return ecMAPIOOM;
 	*ptable_status = TABLE_STATUS_COMPLETE;
