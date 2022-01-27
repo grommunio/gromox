@@ -1487,6 +1487,43 @@ static int remove_mail(const char *path, const char *folder,
 	return MIDB_RDWR_ERROR;
 }
 
+static unsigned int s_to_flagbits(const char *s)
+{
+	unsigned int fl = 0;
+	if (strchr(s, 'A') != nullptr)
+		fl |= FLAG_ANSWERED;
+	if (strchr(s, 'U') != nullptr)
+		fl |= FLAG_DRAFT;
+	if (strchr(s, 'F') != nullptr)
+		fl |= FLAG_FLAGGED;
+	if (strchr(s, 'D') != nullptr)
+		fl |= FLAG_DELETED;
+	if (strchr(s, 'S') != nullptr)
+		fl |= FLAG_SEEN;
+	if (strchr(s, 'R') != nullptr)
+		fl |= FLAG_RECENT;
+	return fl;
+}
+
+static unsigned int di_to_flagbits(const char *ln, int pos)
+{
+	unsigned int fl = 0;
+	int v;
+	if (get_digest_integer(ln, pos, "replied", &v) && v == 1)
+		fl |= FLAG_ANSWERED;
+	if (get_digest_integer(ln, pos, "unsent", &v) && v == 1)
+		fl |= FLAG_DRAFT;
+	if (get_digest_integer(ln, pos, "flag", &v) && v == 1)
+		fl |= FLAG_FLAGGED;
+	if (get_digest_integer(ln, pos, "deleted", &v) && v == 1)
+		fl |= FLAG_DELETED;
+	if (get_digest_integer(ln, pos, "read", &v) && v == 1)
+		fl |= FLAG_SEEN;
+	if (get_digest_integer(ln, pos, "recent", &v) && v == 1)
+		fl |= FLAG_RECENT;
+	return fl;
+}
+
 static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 	int *perrno)
 {
@@ -1580,25 +1617,7 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 						gx_strlcpy(mitem.mid, temp_line, arsizeof(mitem.mid));
 						mitem.id = count;
 						mitem.uid = strtol(pspace, nullptr, 0);
-						mitem.flag_bits = 0;
-						if (NULL != strchr(pspace1, 'A')) {
-							mitem.flag_bits |= FLAG_ANSWERED;
-						}
-						if (NULL != strchr(pspace1, 'U')) {
-							mitem.flag_bits |= FLAG_DRAFT;
-						}
-						if (NULL != strchr(pspace1, 'F')) {
-							mitem.flag_bits |= FLAG_FLAGGED;
-						}
-						if (NULL != strchr(pspace1, 'D')) {
-							mitem.flag_bits |= FLAG_DELETED;
-						}
-						if (NULL != strchr(pspace1, 'S')) {
-							mitem.flag_bits |= FLAG_SEEN;
-						}
-						if (NULL != strchr(pspace1, 'R')) {
-							mitem.flag_bits |= FLAG_RECENT;
-						}
+						mitem.flag_bits = s_to_flagbits(pspace1);
 						pxarray->append(&mitem, mitem.uid);
 					} else {
 						b_format_error = TRUE;
@@ -1806,7 +1825,6 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 	int *perrno)
 {
-	int value;
 	int lines;
 	int count;
 	int offset;
@@ -1891,37 +1909,7 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 					mitem.mid, sizeof(mitem.mid)) && TRUE == get_digest_integer(
 					temp_line, line_pos, "uid", &mitem.uid)) {
 					mitem.id = count;
-					mitem.flag_bits = FLAG_LOADED;
-					if (TRUE == get_digest_integer(temp_line, line_pos,
-						"replied", &value) && 1 == value) {
-						mitem.flag_bits |= FLAG_ANSWERED;
-					}
-					
-					if (TRUE == get_digest_integer(temp_line, line_pos,
-						"unsent", &value) && 1 == value) {
-						mitem.flag_bits |= FLAG_DRAFT;
-					}
-					
-					if (TRUE == get_digest_integer(temp_line, line_pos,
-						"flag", &value) && 1 == value) {
-						mitem.flag_bits |= FLAG_FLAGGED;
-					}
-					
-					if (TRUE == get_digest_integer(temp_line, line_pos,
-						"deleted", &value) && 1 == value) {
-						mitem.flag_bits |= FLAG_DELETED;
-					}
-					
-					if (TRUE == get_digest_integer(temp_line, line_pos,
-						"read", &value) && 1 == value) {
-						mitem.flag_bits |= FLAG_SEEN;
-					}
-					
-					if (TRUE == get_digest_integer(temp_line, line_pos,
-						"recent", &value) && 1 == value) {
-						mitem.flag_bits |= FLAG_RECENT;
-					}
-					
+					mitem.flag_bits = FLAG_LOADED | di_to_flagbits(temp_line, line_pos);
 					mem_file_init(&mitem.f_digest, g_file_allocator.get());
 					mitem.f_digest.write(temp_line, line_pos);
 					pxarray->append(&mitem, mitem.uid);
@@ -2115,25 +2103,7 @@ static int fetch_simple(const char *path, const char *folder,
 								pitem->uid = uid;
 								pitem->id = pseq->min + count - 1;
 								gx_strlcpy(pitem->mid, temp_line, arsizeof(pitem->mid));
-								pitem->flag_bits = 0;
-								if (NULL != strchr(pspace1, 'A')) {
-									pitem->flag_bits |= FLAG_ANSWERED;
-								}
-								if (NULL != strchr(pspace1, 'U')) {
-									pitem->flag_bits |= FLAG_DRAFT;
-								}
-								if (NULL != strchr(pspace1, 'F')) {
-									pitem->flag_bits |= FLAG_FLAGGED;
-								}
-								if (NULL != strchr(pspace1, 'D')) {
-									pitem->flag_bits |= FLAG_DELETED;
-								}
-								if (NULL != strchr(pspace1, 'S')) {
-									pitem->flag_bits |= FLAG_SEEN;
-								}
-								if (NULL != strchr(pspace1, 'R')) {
-									pitem->flag_bits |= FLAG_RECENT;
-								}
+								pitem->flag_bits = s_to_flagbits(pspace1);
 							}
 						} else {
 							b_format_error = TRUE;
@@ -2195,7 +2165,6 @@ static int fetch_simple(const char *path, const char *folder,
 static int fetch_detail(const char *path, const char *folder,
     const DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
 {
-	int value;
 	int lines;
 	int count;
 	int offset;
@@ -2307,37 +2276,7 @@ static int fetch_detail(const char *path, const char *folder,
 							assert(num > 0);
 							auto pitem = static_cast<MITEM *>(pxarray->get_item(num - 1));
 							pitem->id = pseq->min + count - 1;
-							pitem->flag_bits = FLAG_LOADED;
-							if (TRUE == get_digest_integer(temp_line, line_pos,
-								"replied", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_ANSWERED;
-							}
-							
-							if (TRUE == get_digest_integer(temp_line, line_pos,
-								"unsent", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_DRAFT;
-							}
-							
-							if (TRUE == get_digest_integer(temp_line, line_pos,
-								"flag", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_FLAGGED;
-							}
-							
-							if (TRUE == get_digest_integer(temp_line, line_pos,
-								"deleted", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_DELETED;
-							}
-							
-							if (TRUE == get_digest_integer(temp_line, line_pos,
-								"read", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_SEEN;
-							}
-							
-							if (TRUE == get_digest_integer(temp_line, line_pos,
-								"recent", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_RECENT;
-							}
-							
+							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(temp_line, line_pos);
 							mem_file_init(&pitem->f_digest, g_file_allocator.get());
 							pitem->f_digest.write(temp_line, line_pos);
 						}
@@ -2515,25 +2454,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 									pitem->uid = uid;
 									pitem->id = strtol(temp_line, nullptr, 0) + 1;
 									gx_strlcpy(pitem->mid, pspace, arsizeof(pitem->mid));
-									pitem->flag_bits = 0;
-									if (NULL != strchr(pspace2, 'A')) {
-										pitem->flag_bits |= FLAG_ANSWERED;
-									}
-									if (NULL != strchr(pspace2, 'U')) {
-										pitem->flag_bits |= FLAG_DRAFT;
-									}
-									if (NULL != strchr(pspace2, 'F')) {
-										pitem->flag_bits |= FLAG_FLAGGED;
-									}
-									if (NULL != strchr(pspace2, 'D')) {
-										pitem->flag_bits |= FLAG_DELETED;
-									}
-									if (NULL != strchr(pspace2, 'S')) {
-										pitem->flag_bits |= FLAG_SEEN;
-									}
-									if (NULL != strchr(pspace2, 'R')) {
-										pitem->flag_bits |= FLAG_RECENT;
-									}
+									pitem->flag_bits = s_to_flagbits(pspace2);
 								}
 							} else {
 								b_format_error = TRUE;
@@ -2598,7 +2519,6 @@ static int fetch_simple_uid(const char *path, const char *folder,
 static int fetch_detail_uid(const char *path, const char *folder,
     const DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
 {
-	int value;
 	int lines;
 	int count;
 	int offset;
@@ -2704,37 +2624,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 							assert(num > 0);
 							auto pitem = static_cast<MITEM *>(pxarray->get_item(num - 1));
 							pitem->id = strtol(temp_line, nullptr, 0) + 1;
-							pitem->flag_bits = FLAG_LOADED;
-							if (TRUE == get_digest_integer(pspace, temp_len,
-								"replied", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_ANSWERED;
-							}
-							
-							if (TRUE == get_digest_integer(pspace, temp_len,
-								"unsent", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_DRAFT;
-							}
-							
-							if (TRUE == get_digest_integer(pspace, temp_len,
-								"flag", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_FLAGGED;
-							}
-							
-							if (TRUE == get_digest_integer(pspace, temp_len,
-								"deleted", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_DELETED;
-							}
-							
-							if (TRUE == get_digest_integer(pspace, temp_len,
-								"read", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_SEEN;
-							}
-							
-							if (TRUE == get_digest_integer(pspace, temp_len,
-								"recent", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_RECENT;
-							}
-							
+							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(pspace, temp_len);
 							mem_file_init(&pitem->f_digest, g_file_allocator.get());
 							pitem->f_digest.write(pspace, temp_len);
 						}
@@ -2963,25 +2853,7 @@ static int get_mail_flags(const char *path, const char *folder,
 		double_list_append_as_tail(&pback->psvr->conn_list,
 			&pback->node);
 		sv_hold.unlock();
-		*pflag_bits = 0;
-		if (NULL != strchr(buff + 5, 'A')) {
-			*pflag_bits |= FLAG_ANSWERED;
-		}
-		if (NULL != strchr(buff + 5, 'U')) {
-			*pflag_bits |= FLAG_DRAFT;
-		}
-		if (NULL != strchr(buff + 5, 'F')) {
-			*pflag_bits |= FLAG_FLAGGED;
-		}
-		if (NULL != strchr(buff + 5, 'D')) {
-			*pflag_bits |= FLAG_DELETED;
-		}
-		if (NULL != strchr(buff + 5, 'S')) {
-			*pflag_bits |= FLAG_SEEN;
-		}
-		if (NULL != strchr(buff + 5, 'R')) {
-			*pflag_bits |= FLAG_RECENT;
-		}
+		*pflag_bits = s_to_flagbits(buff + 5);
 		return MIDB_RESULT_OK;
 	} else if (0 == strncmp(buff, "FALSE ", 6)) {
 		std::unique_lock sv_hold(g_server_lock);
