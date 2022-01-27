@@ -444,7 +444,7 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 				b_chunked = TRUE;
 			}
 		}
-		if (TRUE == b_chunked || content_length > g_cache_size) {
+		if (b_chunked || content_length > g_cache_size) {
 			snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "/tmp/http-%u", phttp->context_id);
 			phpm_ctx->cache_fd = open(tmp_buff,
 				O_CREAT|O_TRUNC|O_RDWR, 0666);
@@ -457,7 +457,7 @@ BOOL hpm_processor_get_context(HTTP_CONTEXT *phttp)
 			phpm_ctx->cache_fd = -1;
 		}
 		phpm_ctx->b_chunked = b_chunked;
-		if (TRUE == b_chunked) {
+		if (b_chunked) {
 			phpm_ctx->chunk_size = 0;
 			phpm_ctx->chunk_offset = 0;
 		}
@@ -486,9 +486,8 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 	char tmp_buff[1024];
 	
 	auto phpm_ctx = &g_context_list[phttp->context_id];
-	if (TRUE == phpm_ctx->b_end) {
+	if (phpm_ctx->b_end)
 		return TRUE;
-	}
 	if (-1 == phpm_ctx->cache_fd) {
 		if (phpm_ctx->content_length <= phttp->stream_in.get_total_length())
 			phpm_ctx->b_end = TRUE;	

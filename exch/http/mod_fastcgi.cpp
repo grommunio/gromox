@@ -505,7 +505,7 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 	auto pcontext = &g_context_list[phttp->context_id];
 	time(&pcontext->last_time);
 	pcontext->pfnode = pfnode;
-	if (TRUE == b_chunked || content_length > g_cache_size) {
+	if (b_chunked || content_length > g_cache_size) {
 		snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "/tmp/http-%u", phttp->context_id);
 		pcontext->cache_fd = open(tmp_buff,
 			O_CREAT|O_TRUNC|O_RDWR, 0666);
@@ -517,7 +517,7 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 	}
 	pcontext->b_index = b_index;
 	pcontext->b_chunked = b_chunked;
-	if (TRUE == b_chunked) {
+	if (b_chunked) {
 		pcontext->chunk_size = 0;
 		pcontext->chunk_offset = 0;
 	}
@@ -556,7 +556,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	QRF(mod_fastcgi_push_params_begin(&ndr_push));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "GATEWAY_INTERFACE", "CGI/1.1"));
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "SERVER_SOFTWARE", SERVER_SOFTWARE));
-	if (TRUE == phttp->b_authed) {
+	if (phttp->b_authed) {
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "REMOTE_USER", phttp->username));
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "USER_HOME", phttp->maildir));
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "USER_LANG", phttp->lang));
@@ -631,7 +631,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "PATH_TRANSLATED", tmp_buff));
 	}
 	tmp_len = pfnode->path.size();
-	if (TRUE == phttp->pfast_context->b_index) {
+	if (phttp->pfast_context->b_index) {
 		snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%s%s", uri_path, pfnode->index.c_str());
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "SCRIPT_NAME", tmp_buff));
 		snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "%s%s%s", pfnode->dir.c_str(),
@@ -1097,7 +1097,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 	FCGI_STDSTREAM std_stream;
 	FCGI_ENDREQUESTBODY end_request;
 	
-	if (TRUE == phttp->pfast_context->b_header &&
+	if (phttp->pfast_context->b_header &&
 		0 == strcasecmp(phttp->request.method, "HEAD")) {
 		mod_fastcgi_put_context(phttp);
 		return FALSE;	
@@ -1187,14 +1187,14 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 					phttp->pfast_context->pfnode->sock_path.c_str());
 				continue;
 			}
-			if (TRUE == phttp->pfast_context->b_header) {
+			if (phttp->pfast_context->b_header) {
 				if (0 == std_stream.length) {
 					http_parser_log_info(phttp, LV_DEBUG, "empty stdout "
 						"record is not supported by mod_fastcgi");
 					mod_fastcgi_put_context(phttp);
 					return FALSE;
 				}
-				if (TRUE == phttp->pfast_context->b_chunked) {
+				if (phttp->pfast_context->b_chunked) {
 					tmp_len = snprintf(tmp_buff, arsizeof(tmp_buff), "%x\r\n", std_stream.length);
 					if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK ||
 					    phttp->stream_out.write(std_stream.buffer, std_stream.length) != STREAM_WRITE_OK ||
@@ -1294,7 +1294,7 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				return TRUE;
 			response_offset = response_buff + response_offset - pbody;
 			if (response_offset > 0) {
-				if (TRUE == phttp->pfast_context->b_chunked) {
+				if (phttp->pfast_context->b_chunked) {
 					tmp_len = snprintf(tmp_buff, arsizeof(tmp_buff), "%x\r\n", response_offset);
 					if (phttp->stream_out.write(tmp_buff, tmp_len) != STREAM_WRITE_OK ||
 					    phttp->stream_out.write(pbody, response_offset) != STREAM_WRITE_OK ||

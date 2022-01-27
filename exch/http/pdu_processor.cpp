@@ -265,9 +265,8 @@ void pdu_processor_free_call(DCERPC_CALL *pcall)
 	BLOB_NODE *pblob_node;
 	DOUBLE_LIST_NODE *pnode;
 	
-	if (TRUE == pcall->pkt_loaded) {
+	if (pcall->pkt_loaded)
 		pdu_ndr_free_ncacnpkt(&pcall->pkt);
-	}
 	while ((pnode = double_list_pop_front(&pcall->reply_list)) != nullptr) {
 		pblob_node = (BLOB_NODE*)pnode->pdata;
 		free(pblob_node->blob.data);
@@ -555,11 +554,10 @@ static void pdu_processor_init_hdr(DCERPC_NCACN_PACKET *ppkt, BOOL bigendian)
 {
 	ppkt->rpc_vers = 5;
 	ppkt->rpc_vers_minor = 0;
-	if (TRUE == bigendian) {
+	if (bigendian)
 		ppkt->drep[0] = 0;
-	} else {
+	else
 		ppkt->drep[0] = DCERPC_DREP_LE;
-	}
 	ppkt->drep[1] = 0;
 	ppkt->drep[2] = 0;
 	ppkt->drep[3] = 0;
@@ -595,7 +593,7 @@ static BOOL pdu_processor_pull_auth_trailer(DCERPC_NCACN_PACKET *ppkt,
 		return FALSE;
 	}
 
-	if (TRUE == auth_data_only && data_and_pad != pauth->auth_pad_length) {
+	if (auth_data_only && data_and_pad != pauth->auth_pad_length) {
 		debug_info("[pdu_processor]: WARNING: pad length mismatch, "
 			"calculated %u got %u\n", data_and_pad, pauth->auth_pad_length);
 		pdu_ndr_free_dcerpc_auth(pauth);
@@ -1071,7 +1069,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 
 	extra_flags = 0;
 	if (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN &&
-		TRUE == g_header_signing) {
+	    g_header_signing) {
 		if (NULL != pcontext) {
 			pcontext->stat_flags |= DCERPC_CALL_STAT_FLAG_HEADER_SIGNING;
 		}
@@ -1396,7 +1394,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	extra_flags = 0;
 	if (0 == result) {
 		if (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_SUPPORT_HEADER_SIGN &&
-			TRUE == g_header_signing) {
+		    g_header_signing) {
 			if (NULL != pcontext) {
 				pcontext->stat_flags |= DCERPC_CALL_STAT_FLAG_HEADER_SIGNING;
 			}
@@ -1546,9 +1544,8 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	if (pcall->b_bigendian) {
 		flags |= NDR_FLAG_BIGENDIAN;
 	}
-	if (TRUE == pcall->pcontext->b_ndr64) {
+	if (pcall->pcontext->b_ndr64)
 		flags |= NDR_FLAG_NDR64;
-	}
 	ndr_push_init(&ndr, ndr_buff, DCERPC_BASE_MARSHALL_SIZE, flags);
 	
 	if (NDR_ERR_SUCCESS != pdu_ndr_push_ncacnpkt(&ndr, ppkt)) {
@@ -1573,10 +1570,8 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 	pauth_ctx->auth_info.credentials.length = 0;
 	
 	/* change back into NDR */
-	if (TRUE == pcall->pcontext->b_ndr64) {
+	if (pcall->pcontext->b_ndr64)
 		ndr.flags &= ~NDR_FLAG_NDR64;
-	}
-
 	/* add the auth verifier */
 	if (NDR_ERR_SUCCESS != pdu_ndr_push_dcerpc_auth(&ndr,
 		&pauth_ctx->auth_info)) {
@@ -1652,13 +1647,10 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	
 	
 	flags = 0;
-	if (TRUE == pcall->b_bigendian) {
+	if (pcall->b_bigendian)
 		flags |= NDR_FLAG_BIGENDIAN;
-	}
-	if (TRUE == pcall->pcontext->b_ndr64) {
+	if (pcall->pcontext->b_ndr64)
 		flags |= NDR_FLAG_NDR64;
-	}
-	
 	prequest = &pcall->pkt.payload.request;
 	
 	alloc_size = pdu_processor_ndr_stack_size(pstack_root, NDR_STACK_OUT);
@@ -1946,8 +1938,7 @@ static void pdu_processor_async_reply(uint32_t async_id, void *pout)
 	if (pnode == nullptr || pasync_node == nullptr)
 		return;
 	double_list_remove(&pcall->pcontext->async_list, pnode);
-	if (pcall->pprocessor->async_num < 0 ||
-		TRUE == pasync_node->b_cancelled) {
+	if (pcall->pprocessor->async_num < 0 || pasync_node->b_cancelled) {
 		as_hold.unlock();
 		pdu_processor_free_stack_root(pasync_node->pstack_root);
 		pdu_processor_free_call(pasync_node->pcall);
@@ -1957,7 +1948,7 @@ static void pdu_processor_async_reply(uint32_t async_id, void *pout)
 	pcall->pprocessor->async_num ++;
 	as_hold.unlock();
 	/* stack root will be freed in pdu_processor_reply_request */
-	if (TRUE == pdu_processor_reply_request(pcall, pasync_node->pstack_root, pout)) {
+	if (pdu_processor_reply_request(pcall, pasync_node->pstack_root, pout)) {
 		as_hold.lock();
 		pcall->pprocessor->async_num --;
 		as_hold.unlock();
@@ -2003,12 +1994,10 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_aync)
 	pthread_setspecific(g_stack_key, (const void*)pstack_root);
 	
 	flags = 0;
-	if (TRUE == pcall->b_bigendian) {
+	if (pcall->b_bigendian)
 		flags |= NDR_FLAG_BIGENDIAN;
-	}
-	if (TRUE == pcontext->b_ndr64) {
+	if (pcontext->b_ndr64)
 		flags |= NDR_FLAG_NDR64;
-	}
 	ndr_pull_init(&ndr_pull, prequest->stub_and_verifier.data,
 		prequest->stub_and_verifier.length, flags);
 	
@@ -2091,7 +2080,7 @@ static void pdu_processor_process_cancel(DCERPC_CALL *pcall)
 		}
 	}
 	as_hold.unlock();
-	if (TRUE == b_cancel) {
+	if (b_cancel) {
 		if (NULL != pcontext->pinterface->reclaim) {
 			pcontext->pinterface->reclaim(async_id);
 		}
@@ -2128,11 +2117,10 @@ void pdu_processor_rts_echo(char *pbuff)
 	pkt.payload.rts.num = 0;
 	pkt.payload.rts.commands = NULL;
 	
-	if (TRUE == g_bigendian) {
+	if (g_bigendian)
 		flags = NDR_FLAG_BIGENDIAN;
-	} else {
+	else
 		flags = 0;
-	}
 	ndr_push_init(&ndr, pbuff, 20, flags);
 	pdu_ndr_push_ncacnpkt(&ndr, &pkt);
 	ndr_push_destroy(&ndr);
@@ -2971,10 +2959,8 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				return PDU_PROCESSOR_ERROR;
 			}
 			pdu_processor_free_call(pcall);
-			if (TRUE == http_parser_activate_inrecycling(pcontext,
-				channel_cookie)) {
+			if (http_parser_activate_inrecycling(pcontext, channel_cookie))
 				return PDU_PROCESSOR_TERMINATE;
-			}
 			return PDU_PROCESSOR_INPUT;
 		} else if (56 == length) {
 			if (CHANNEL_STAT_OPENED != pchannel_in->channel_stat) {
@@ -3232,7 +3218,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 		break;
 	case DCERPC_PKT_AUTH3:
 		b_result = pdu_processor_process_auth3(pcall);
-		if (TRUE == b_result) {
+		if (b_result) {
 			pdu_processor_free_call(pcall);
 			return PDU_PROCESSOR_INPUT;
 		}
@@ -3243,9 +3229,8 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	case DCERPC_PKT_REQUEST: {
 		BOOL b_async = false;
 		b_result = pdu_processor_process_request(pcall, &b_async);
-		if (TRUE == b_result && TRUE == b_async) {
+		if (b_result && b_async)
 			return PDU_PROCESSOR_INPUT;
-		}
 		break;
 	}
 	case DCERPC_PKT_CO_CANCEL:

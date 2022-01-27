@@ -90,9 +90,8 @@ void str_filter_stop()
  */                                                                                        
 BOOL str_filter_judge(const char *str)
 {
-    if (TRUE == temp_list_query(str)) {
-        return FALSE;
-    }
+	if (temp_list_query(str))
+		return FALSE;
     switch (grey_list_query(str, TRUE)) {
     case GREY_LIST_ALLOW:
         return TRUE;
@@ -114,9 +113,8 @@ BOOL str_filter_judge(const char *str)
  */                                                                                        
 BOOL str_filter_query(const char *str)
 {	
-    if (TRUE == temp_list_query(str)) {
-        return TRUE;
-    }
+	if (temp_list_query(str))
+		return TRUE;
     switch (grey_list_query(str, FALSE)) {
     case GREY_LIST_ALLOW:
         return FALSE;

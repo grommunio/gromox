@@ -132,7 +132,7 @@ void cmd_parser_stop()
 	for (pnode=double_list_get_head(&g_connection_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_connection_list, pnode)) {
 		pconnection = static_cast<MIDB_CONNECTION *>(pnode->pdata);
-		if (TRUE == pconnection->is_selecting) {
+		if (pconnection->is_selecting) {
 			pthread_kill(pconnection->thr_id, SIGALRM);
 		} else {
 			close(pconnection->sockd);

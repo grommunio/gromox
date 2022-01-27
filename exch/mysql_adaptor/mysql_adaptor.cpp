@@ -1101,7 +1101,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		if (pmyres == nullptr)
 			return false;
 		rows = pmyres.num_rows();
-		if (TRUE == b_chkintl) {
+		if (b_chkintl) {
 			for (i = 0; i < rows; i++) {
 				myrow = pmyres.fetch_row();
 				if (0 == strcasecmp(myrow[0], from)) {
@@ -1110,8 +1110,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 				}
 			}
 		}
-
-		if (TRUE == b_chkintl) {
+		if (b_chkintl) {
 			*presult = MLIST_RESULT_PRIVIL_INTERNAL;
 			return TRUE;
 		}
@@ -1183,7 +1182,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		if (pmyres == nullptr)
 			return false;
 		rows = pmyres.num_rows();
-		if (TRUE == b_chkintl) {
+		if (b_chkintl) {
 			for (i = 0; i < rows; i++) {
 				myrow = pmyres.fetch_row();
 				auto dtypx = DT_MAILUSER;
@@ -1195,8 +1194,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 				}
 			}
 		}
-
-		if (TRUE == b_chkintl) {
+		if (b_chkintl) {
 			*presult = MLIST_RESULT_PRIVIL_INTERNAL;
 			return TRUE;
 		}
@@ -1273,7 +1271,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 		if (pmyres == nullptr)
 			return false;
 		rows = pmyres.num_rows();
-		if (TRUE == b_chkintl) {
+		if (b_chkintl) {
 			for (i = 0; i < rows; i++) {
 				myrow = pmyres.fetch_row();
 				auto dtypx = DT_MAILUSER;
@@ -1285,8 +1283,7 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 				}
 			}
 		}
-
-		if (TRUE == b_chkintl) {
+		if (b_chkintl) {
 			*presult = MLIST_RESULT_PRIVIL_INTERNAL;
 			return TRUE;
 		}
@@ -1378,10 +1375,9 @@ BOOL mysql_adaptor_get_mlist(const char *username,  const char *from,
 				file_temp1.emplace(myrow[0]);
 			}
 		}
-
-		if (TRUE == b_chkintl)
+		if (b_chkintl)
 			b_chkintl = file_temp1.find(from) == file_temp1.cend();
-		if (TRUE == b_chkintl) {
+		if (b_chkintl) {
 			*presult = MLIST_RESULT_PRIVIL_INTERNAL;
 			return TRUE;
 		}

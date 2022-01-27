@@ -703,8 +703,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	}
 	if (mod_cache_get_others_field(&phttp->request.f_others,
 	    "If-None-Match", tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
-		TRUE == mod_cache_retrieve_etag(
-		tmp_buff, &ino, &size, &mtime)) {
+	    mod_cache_retrieve_etag(tmp_buff, &ino, &size, &mtime)) {
 		if (ino == node_stat.st_ino &&
 			size == node_stat.st_size &&
 			mtime == node_stat.st_mtime) {
@@ -713,8 +712,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	} else {
 		if (mod_cache_get_others_field(&phttp->request.f_others,
 		    "If-Modified-Since", tmp_buff, GX_ARRAY_SIZE(tmp_buff)) &&
-			TRUE == mod_cache_parse_rfc1123_dstring(
-			tmp_buff, &mtime)) {
+		    mod_cache_parse_rfc1123_dstring(tmp_buff, &mtime)) {
 			if (mtime == node_stat.st_mtime) {
 				return mod_cache_response_unmodified(phttp);
 			}

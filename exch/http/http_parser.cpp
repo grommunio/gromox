@@ -162,7 +162,7 @@ VIRTUAL_CONNECTION::~VIRTUAL_CONNECTION()
 int http_parser_run()
 {
 	pthread_key_create(&g_context_key, NULL);
-	if (TRUE == g_support_ssl) {
+	if (g_support_ssl) {
 		SSL_library_init();
 		OpenSSL_add_all_algorithms();
 		SSL_load_error_strings();
@@ -241,11 +241,11 @@ void http_parser_stop()
 	g_context_list.reset();
 	g_vconnection_hash.clear();
 	g_file_allocator.reset();
-	if (TRUE == g_support_ssl && NULL != g_ssl_ctx) {
+	if (g_support_ssl && g_ssl_ctx != nullptr) {
 		SSL_CTX_free(g_ssl_ctx);
 		g_ssl_ctx = NULL;
 	}
-	if (TRUE == g_support_ssl && NULL != g_ssl_mutex_buf) {
+	if (g_support_ssl && g_ssl_mutex_buf != nullptr) {
 		CRYPTO_set_id_callback(NULL);
 		CRYPTO_set_locking_callback(NULL);
 		g_ssl_mutex_buf.reset();
@@ -956,16 +956,13 @@ static int htparse_rdhead_st(HTTP_CONTEXT *pcontext, ssize_t actual_read)
 			return htp_delegate_rpc(pcontext, stream_1_written);
 		}
 		/* try to make hpm_processor take over the request */
-		if (TRUE == hpm_processor_get_context(pcontext)) {
+		if (hpm_processor_get_context(pcontext))
 			return htp_delegate_hpm(pcontext);
-		}
 		/* try to make mod_fastcgi process the request */
-		if (TRUE == mod_fastcgi_get_context(pcontext)) {
+		if (mod_fastcgi_get_context(pcontext))
 			return htp_delegate_fcgi(pcontext);
-		}
-		if (TRUE == mod_cache_get_context(pcontext)) {
+		if (mod_cache_get_context(pcontext))
 			return htp_delegate_cache(pcontext);
-		}
 		/* other http request here if wanted */
 		char dstring[128], response_buff[1024];
 		rfc1123_dstring(dstring, arsizeof(dstring));
@@ -1033,7 +1030,7 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 
 static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 {
-	if (TRUE == hpm_processor_check_context(pcontext)) {
+	if (hpm_processor_check_context(pcontext)) {
 		switch (hpm_processor_retrieve_response(pcontext)) {
 		case HPM_RETRIEVE_ERROR:
 			http_5xx(pcontext);
@@ -1046,9 +1043,8 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 			pcontext->sched_stat = SCHED_STAT_WAIT;
 			return PROCESS_IDLE;
 		case HPM_RETRIEVE_DONE:
-			if (TRUE == pcontext->b_close) {
+			if (pcontext->b_close)
 				return X_RUNOFF;
-			}
 			http_parser_request_clear(&pcontext->request);
 			hpm_processor_put_context(pcontext);
 			pcontext->sched_stat = SCHED_STAT_RDHEAD;
@@ -1083,12 +1079,11 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 			http_5xx(pcontext, "FastCGI Timeout", 504);
 			return X_LOOP;
 		}
-		if (TRUE == mod_fastcgi_check_responded(pcontext)) {
+		if (mod_fastcgi_check_responded(pcontext)) {
 			if (!mod_fastcgi_read_response(pcontext) &&
 			    pcontext->stream_out.get_total_length() == 0) {
-				if (TRUE == pcontext->b_close) {
+				if (pcontext->b_close)
 					return X_RUNOFF;
-				}
 				http_parser_request_clear(&pcontext->request);
 				pcontext->sched_stat = SCHED_STAT_RDHEAD;
 				pcontext->stream_out.clear();
@@ -1105,9 +1100,8 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 			return X_LOOP;
 		}
 		if (pcontext->stream_out.get_total_length() == 0) {
-			if (TRUE == pcontext->b_close) {
+			if (pcontext->b_close)
 				return X_RUNOFF;
-			}
 			http_parser_request_clear(&pcontext->request);
 			pcontext->sched_stat = SCHED_STAT_RDHEAD;
 			pcontext->stream_out.clear();
@@ -1277,14 +1271,13 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 			out channel handshaking */
 		pcontext->sched_stat = SCHED_STAT_WAIT;
 	} else if (NULL != pcontext->pfast_context ||
-	    TRUE == hpm_processor_check_context(pcontext)
-	    || TRUE == mod_cache_check_caching(pcontext)) {
+	    hpm_processor_check_context(pcontext) ||
+	    mod_cache_check_caching(pcontext)) {
 		pcontext->stream_out.clear();
 		return PROCESS_CONTINUE;
 	} else {
-		if (TRUE == pcontext->b_close) {
+		if (pcontext->b_close)
 			return X_RUNOFF;
-		}
 		http_parser_request_clear(&pcontext->request);
 		pcontext->sched_stat = SCHED_STAT_RDHEAD;
 	}
@@ -1312,7 +1305,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 	} else if (actual_read > 0) {
 		pcontext->connection.last_timestamp = current_time;
 		pcontext->stream_in.fwd_write_ptr(actual_read);
-		if (TRUE == hpm_processor_check_context(pcontext)) {
+		if (hpm_processor_check_context(pcontext)) {
 			if (FALSE == hpm_processor_write_request(pcontext)) {
 				http_5xx(pcontext);
 				return X_LOOP;
@@ -1727,9 +1720,8 @@ static int htparse_waitrecycled(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchanne
 
 static int htparse_wait(HTTP_CONTEXT *pcontext)
 {
-	if (TRUE == hpm_processor_check_context(pcontext)) {
+	if (hpm_processor_check_context(pcontext))
 		return PROCESS_IDLE;
-	}
 	/* only hpm_processor or out channel can be set to SCHED_STAT_WAIT */
 	auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
 	if (CHANNEL_STAT_WAITINCHANNEL == pchannel_out->channel_stat) {
@@ -2027,13 +2019,12 @@ HTTP_CONTEXT::~HTTP_CONTEXT()
 	if (-1 != pcontext->connection.sockd) {
 		close(pcontext->connection.sockd);
 	}
-	if (TRUE == hpm_processor_check_context(pcontext)) {
+	if (hpm_processor_check_context(pcontext))
 		hpm_processor_put_context(pcontext);
-	} else if (NULL != pcontext->pfast_context) {
+	else if (pcontext->pfast_context != nullptr)
 		mod_fastcgi_put_context(pcontext);
-	} else if (TRUE == mod_cache_check_caching(pcontext)) {
+	else if (mod_cache_check_caching(pcontext))
 		mod_cache_put_context(pcontext);
-	}
 }
 
 void http_parser_log_info(HTTP_CONTEXT *pcontext, int level,

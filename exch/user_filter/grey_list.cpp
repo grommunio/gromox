@@ -116,9 +116,8 @@ int grey_list_query(const char *str, BOOL b_count)
 		pentry->last_access = current_time;
 		pentry->current_times = 0;
 	}
-	if (TRUE == b_count) {
+	if (b_count)
 		pentry->current_times ++;
-	}
 	return pentry->current_times <= pentry->allowed_times ?
 	       GREY_LIST_ALLOW : GREY_LIST_DENY;
 }
