@@ -122,15 +122,15 @@ void http_parser_init(size_t context_num, unsigned int timeout,
 	g_async_stop = false;
 	g_http_debug = xdebug;
 	
-	if (TRUE == support_ssl) {
-		gx_strlcpy(g_certificate_path, certificate_path, GX_ARRAY_SIZE(g_certificate_path));
-		if (NULL != cb_passwd) {
-			gx_strlcpy(g_certificate_passwd, cb_passwd, GX_ARRAY_SIZE(g_certificate_passwd));
-		} else {
-			g_certificate_passwd[0] = '\0';
-		}
-		gx_strlcpy(g_private_key_path, key_path, GX_ARRAY_SIZE(g_private_key_path));
+	if (!support_ssl)
+		return;
+	gx_strlcpy(g_certificate_path, certificate_path, GX_ARRAY_SIZE(g_certificate_path));
+	if (NULL != cb_passwd) {
+		gx_strlcpy(g_certificate_passwd, cb_passwd, GX_ARRAY_SIZE(g_certificate_passwd));
+	} else {
+		g_certificate_passwd[0] = '\0';
 	}
+	gx_strlcpy(g_private_key_path, key_path, GX_ARRAY_SIZE(g_private_key_path));
 }
 
 #ifdef OLD_SSL

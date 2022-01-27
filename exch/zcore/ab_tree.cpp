@@ -2057,14 +2057,14 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 		pgal_list = &pbase->gal_list;
 		for (auto psnode = single_list_get_head(pgal_list); psnode != nullptr;
 			psnode=single_list_get_after(pgal_list, psnode)) {
-			if (ab_tree_match_node(static_cast<const SIMPLE_TREE_NODE *>(psnode->pdata), codepage, pfilter)) {
-				psnode1 = cu_alloc<SINGLE_LIST_NODE>();
-				if (NULL == psnode1) {
-					return FALSE;
-				}
-				psnode1->pdata = psnode->pdata;
-				single_list_append_as_tail(&temp_list, psnode1);
+			if (!ab_tree_match_node(static_cast<const SIMPLE_TREE_NODE *>(psnode->pdata), codepage, pfilter))
+				continue;
+			psnode1 = cu_alloc<SINGLE_LIST_NODE>();
+			if (NULL == psnode1) {
+				return FALSE;
 			}
+			psnode1->pdata = psnode->pdata;
+			single_list_append_as_tail(&temp_list, psnode1);
 		}
 	} else {
 		auto pnode = ab_tree_minid_to_node(pbase, container_id);
@@ -2078,14 +2078,14 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 			if (ab_tree_get_node_type(pnode) > 0x80) {
 				continue;
 			}
-			if (TRUE == ab_tree_match_node(pnode, codepage, pfilter)) {
-				psnode1 = cu_alloc<SINGLE_LIST_NODE>();
-				if (NULL == psnode1) {
-					return FALSE;
-				}
-				psnode1->pdata = const_cast<SIMPLE_TREE_NODE *>(pnode);
-				single_list_append_as_tail(&temp_list, psnode1);
+			if (!ab_tree_match_node(pnode, codepage, pfilter))
+				continue;
+			psnode1 = cu_alloc<SINGLE_LIST_NODE>();
+			if (NULL == psnode1) {
+				return FALSE;
 			}
+			psnode1->pdata = const_cast<SIMPLE_TREE_NODE *>(pnode);
+			single_list_append_as_tail(&temp_list, psnode1);
 		} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
 	}
 	pminids->count = single_list_get_nodes_num(&temp_list);

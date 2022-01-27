@@ -2931,35 +2931,33 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			if (NULL == pnode) {
 				if (TRUE == b_ambiguous) {
 					*pproptag = MID_AMBIGUOUS;
-				} else {
-					if (strncasecmp(pstrs->ppstr[i], "=SMTP:", 6) == 0) {
-						prow = common_util_proprowset_enlarge(*pprows);
-						if (NULL == prow || NULL ==
-							common_util_propertyrow_init(prow)) {
-							result = ecMAPIOOM;
-							goto EXIT_RESOLVE_NAMESW;
-						}
-						result = nsp_interface_fetch_smtp_row(pstrs->ppstr[i] + 6, pproptags, prow);
-						if (result != ecSuccess)
-							goto EXIT_RESOLVE_NAMESW;
-						*pproptag = MID_RESOLVED;
-					} else {
-						*pproptag = MID_UNRESOLVED;
+				} else if (strncasecmp(pstrs->ppstr[i], "=SMTP:", 6) == 0) {
+					prow = common_util_proprowset_enlarge(*pprows);
+					if (NULL == prow || NULL ==
+					    common_util_propertyrow_init(prow)) {
+						result = ecMAPIOOM;
+						goto EXIT_RESOLVE_NAMESW;
 					}
+					result = nsp_interface_fetch_smtp_row(pstrs->ppstr[i] + 6, pproptags, prow);
+					if (result != ecSuccess)
+						goto EXIT_RESOLVE_NAMESW;
+					*pproptag = MID_RESOLVED;
+				} else {
+					*pproptag = MID_UNRESOLVED;
 				}
-			} else {
-				*pproptag = MID_RESOLVED;
-				prow = common_util_proprowset_enlarge(*pprows);
-				if (NULL == prow || NULL ==
-					common_util_propertyrow_init(prow)) {
-					result = ecMAPIOOM;
-					goto EXIT_RESOLVE_NAMESW;
-				}
-				result = nsp_interface_fetch_row(pnode, TRUE,
-							pstat->codepage, pproptags, prow);
-				if (result != ecSuccess)
-					goto EXIT_RESOLVE_NAMESW;
-			}		
+				continue;
+			}
+			*pproptag = MID_RESOLVED;
+			prow = common_util_proprowset_enlarge(*pprows);
+			if (NULL == prow || NULL ==
+			    common_util_propertyrow_init(prow)) {
+				result = ecMAPIOOM;
+				goto EXIT_RESOLVE_NAMESW;
+			}
+			result = nsp_interface_fetch_row(pnode, TRUE,
+			         pstat->codepage, pproptags, prow);
+			if (result != ecSuccess)
+				goto EXIT_RESOLVE_NAMESW;
 		}
 	} else {
 		auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);

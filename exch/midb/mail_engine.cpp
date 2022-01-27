@@ -2579,15 +2579,13 @@ static IDB_REF mail_engine_get_idb(const char *path)
 	}
 	if (TRUE == b_load) {
 		mail_engine_sync_mailbox(pidb);
-	} else {
-		if (NULL == pidb->psqlite) {
-			pidb->last_time = 0;
-			pidb->lock.unlock();
-			hhold.lock();
-			pidb->reference --;
-			hhold.unlock();
-			return {};
-		}
+	} else if (pidb->psqlite == nullptr) {
+		pidb->last_time = 0;
+		pidb->lock.unlock();
+		hhold.lock();
+		pidb->reference--;
+		hhold.unlock();
+		return {};
 	}
 	return IDB_REF(pidb);
 }

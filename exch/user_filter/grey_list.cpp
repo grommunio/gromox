@@ -111,12 +111,10 @@ int grey_list_query(const char *str, BOOL b_count)
     gettimeofday(&current_time, NULL);
 	if (CALCULATE_INTERVAL(current_time, pentry->last_access) >
 		pentry->interval) {
-		if (TRUE == b_count) { 
-			pentry->last_access = current_time;
-			pentry->current_times = 0;
-		} else {
+		if (!b_count)
 			return GREY_LIST_ALLOW;
-		}
+		pentry->last_access = current_time;
+		pentry->current_times = 0;
 	}
 	if (TRUE == b_count) {
 		pentry->current_times ++;
