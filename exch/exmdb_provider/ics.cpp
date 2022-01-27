@@ -173,11 +173,10 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	if (gx_sql_exec(psqlite, "CREATE TABLE existence "
 	    "(message_id INTEGER PRIMARY KEY)") != SQLITE_OK)
 		return FALSE;
-	if (NULL != pread) {
-		if (gx_sql_exec(psqlite, "CREATE TABLE reads "
-		    "(message_id INTEGER PRIMARY KEY, read_state INTEGER)") != SQLITE_OK)
-			return FALSE;
-	}
+	if (pread != nullptr &&
+	    gx_sql_exec(psqlite, "CREATE TABLE reads "
+	    "(message_id INTEGER PRIMARY KEY, read_state INTEGER)") != SQLITE_OK)
+		return FALSE;
 	if (TRUE == b_ordered) {
 		if (gx_sql_exec(psqlite, "CREATE TABLE changes"
 		    " (message_id INTEGER PRIMARY KEY, "
@@ -302,33 +301,31 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			if (cache.hint(mid_val) &&
 			    const_cast<IDSET *>(pseen_fai)->hint(rop_util_make_eid_ex(1, change_num)))
 				continue;
-		} else {
-			if (cache.hint(mid_val) &&
-			    const_cast<IDSET *>(pseen)->hint(rop_util_make_eid_ex(1, change_num))) {
-				if (NULL == pread) {
-					continue;
-				}
-				if (read_cn == 0 ||
-				    const_cast<IDSET *>(pread)->hint(rop_util_make_eid_ex(1, read_cn))) {
-					continue;	
-				}
-				int read_state;
-				if (TRUE == b_private) {
-					read_state = sqlite3_column_int64(stm_select_msg, 4);
-				} else {
-					sqlite3_reset(stm_select_rst);
-					sqlite3_bind_int64(stm_select_rst, 1, mid_val);
-					sqlite3_bind_text(stm_select_rst, 2,
-						username, -1 , SQLITE_STATIC);
-					read_state = sqlite3_step(stm_select_rst) == SQLITE_ROW;
-				}
-				sqlite3_reset(stm_insert_reads);
-				sqlite3_bind_int64(stm_insert_reads, 1, mid_val);
-				sqlite3_bind_int64(stm_insert_reads, 2, read_state);
-				if (sqlite3_step(stm_insert_reads) != SQLITE_DONE)
-					return false;
+		} else if (cache.hint(mid_val) &&
+		    const_cast<IDSET *>(pseen)->hint(rop_util_make_eid_ex(1, change_num))) {
+			if (NULL == pread) {
 				continue;
 			}
+			if (read_cn == 0 ||
+			    const_cast<IDSET *>(pread)->hint(rop_util_make_eid_ex(1, read_cn))) {
+				continue;
+			}
+			int read_state;
+			if (TRUE == b_private) {
+				read_state = sqlite3_column_int64(stm_select_msg, 4);
+			} else {
+				sqlite3_reset(stm_select_rst);
+				sqlite3_bind_int64(stm_select_rst, 1, mid_val);
+				sqlite3_bind_text(stm_select_rst, 2,
+					username, -1 , SQLITE_STATIC);
+				read_state = sqlite3_step(stm_select_rst) == SQLITE_ROW;
+			}
+			sqlite3_reset(stm_insert_reads);
+			sqlite3_bind_int64(stm_insert_reads, 1, mid_val);
+			sqlite3_bind_int64(stm_insert_reads, 2, read_state);
+			if (sqlite3_step(stm_insert_reads) != SQLITE_DONE)
+				return false;
+			continue;
 		}
 		uint64_t dtime = 0, mtime = 0;
 		if (TRUE == b_ordered) {

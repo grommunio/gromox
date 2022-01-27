@@ -2311,13 +2311,9 @@ BOOL exmdb_server_set_search_criteria(const char *dir,
 		db_engine_delete_dynamic(pdb, fid_val);
 	}
 	pdb.reset();
-	if (TRUE == b_populate) {
-		if (FALSE == db_engine_enqueue_populating_criteria(
-			dir, cpid, fid_val, b_recursive, prestriction,
-			&folder_ids))  {
-			return FALSE;
-		}
-	}
+	if (b_populate && !db_engine_enqueue_populating_criteria(dir,
+	    cpid, fid_val, b_recursive, prestriction, &folder_ids))
+		return FALSE;
 	*pb_result = TRUE;
 	return TRUE;
 }

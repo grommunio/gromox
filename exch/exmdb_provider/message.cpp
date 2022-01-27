@@ -285,18 +285,16 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 	dst_val = rop_util_get_gc_value(dst_fid);
 	if (!common_util_get_folder_type(pdb->psqlite, src_val, &folder_type, dir))
 		return FALSE;
-	if (TRUE == b_guest) {
-		if (folder_type != FOLDER_SEARCH) {
-			if (FALSE == common_util_check_folder_permission(
-				pdb->psqlite, src_val, username, &permission)) {
-				return FALSE;
-			}
-			b_check = (permission & (frightsOwner | frightsReadAny)) ? false : TRUE;
-		} else {
-			b_check = TRUE;
-		}
-	} else {
+	if (!b_guest) {
 		b_check = FALSE;
+	} else if (folder_type != FOLDER_SEARCH) {
+		if (FALSE == common_util_check_folder_permission(
+		    pdb->psqlite, src_val, username, &permission)) {
+			return FALSE;
+		}
+		b_check = (permission & (frightsOwner | frightsReadAny)) ? false : TRUE;
+	} else {
+		b_check = TRUE;
 	}
 	BOOL b_batch = pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM ? TRUE : false;
 	if (TRUE == b_batch) {
@@ -415,12 +413,9 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 	if (FALSE == b_copy) {
 		pstmt1.finalize();
 	}
-	if (TRUE == b_update && normal_size + fai_size > 0) {
-		if (FALSE == common_util_increase_store_size(
-			pdb->psqlite, normal_size, fai_size)) {
-			return FALSE;
-		}
-	}
+	if (b_update && normal_size + fai_size > 0 &&
+	    !common_util_increase_store_size(pdb->psqlite, normal_size, fai_size))
+		return FALSE;
 	nt_time = rop_util_current_nttime();
 	if (FALSE == b_copy) {
 		propvals.count = 5;
