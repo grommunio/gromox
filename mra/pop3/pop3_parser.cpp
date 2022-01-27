@@ -70,7 +70,7 @@ void pop3_parser_init(int context_num, size_t retrieving_size, int timeout,
 	g_block_auth_fail       = block_auth_fail;
 	g_support_stls          = support_stls;
 	g_ssl_mutex_buf         = NULL;
-	if (TRUE == support_stls) {
+	if (support_stls) {
 		g_force_stls = force_stls;
 		gx_strlcpy(g_certificate_path, certificate_path, arsizeof(g_certificate_path));
 		if (NULL != cb_passwd) {
@@ -106,7 +106,7 @@ static void pop3_parser_ssl_id(CRYPTO_THREADID* id)
  */
 int pop3_parser_run()
 {
-	if (TRUE == g_support_stls) {
+	if (g_support_stls) {
 		SSL_library_init();
 		OpenSSL_add_all_algorithms();
 		SSL_load_error_strings();
@@ -174,12 +174,11 @@ void pop3_parser_stop()
 {
 	g_context_list2.clear();
 	g_context_list.reset();
-	if (TRUE == g_support_stls && NULL != g_ssl_ctx) {
+	if (g_support_stls && g_ssl_ctx != nullptr) {
 		SSL_CTX_free(g_ssl_ctx);
 		g_ssl_ctx = NULL;
 	}
-
-	if (TRUE == g_support_stls && NULL != g_ssl_mutex_buf) {
+	if (g_support_stls && g_ssl_mutex_buf != nullptr) {
 		CRYPTO_set_id_callback(NULL);
 		CRYPTO_set_locking_callback(NULL);
 		g_ssl_mutex_buf.reset();
@@ -222,7 +221,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
     struct timeval current_time;
 	size_t ub, string_length = 0;
 	
-	if (TRUE == pcontext->is_stls) {
+	if (pcontext->is_stls) {
 		if (NULL == pcontext->connection.ssl) {
 			pcontext->connection.ssl = SSL_new(g_ssl_ctx);
 			if (NULL == pcontext->connection.ssl) {
@@ -274,7 +273,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		}
 	}
 	
-	if (TRUE == pcontext->data_stat) {
+	if (pcontext->data_stat) {
 		if (NULL != pcontext->connection.ssl) {
 			written_len = SSL_write(pcontext->connection.ssl,
 							pcontext->write_buff + pcontext->write_offset,
@@ -327,7 +326,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		return PROCESS_CONTINUE;
 	}
 
-	if (TRUE == pcontext->list_stat) {
+	if (pcontext->list_stat) {
 		if (NULL != pcontext->connection.ssl) {
 			written_len = SSL_write(pcontext->connection.ssl,
 							pcontext->write_buff + pcontext->write_offset,
@@ -650,9 +649,8 @@ int pop3_parser_set_param(int param, int value)
 		g_block_auth_fail = value;
 		break;
 	case POP3_FORCE_STLS:
-		if (TRUE == g_support_stls) {
+		if (g_support_stls)
 			g_force_stls = value;
-		}
 		break;
     default:
         return -1;

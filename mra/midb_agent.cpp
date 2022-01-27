@@ -1875,9 +1875,10 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 			if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
 				count ++;
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
-				if (TRUE == get_digest_string(temp_line, line_pos, "file",
-					mitem.mid, sizeof(mitem.mid)) && TRUE == get_digest_integer(
-					temp_line, line_pos, "uid", &mitem.uid)) {
+				if (get_digest_string(temp_line, line_pos,
+				    "file", mitem.mid, sizeof(mitem.mid)) &&
+				    get_digest_integer(temp_line, line_pos,
+				    "uid", &mitem.uid)) {
 					mitem.id = count;
 					mitem.flag_bits = FLAG_LOADED | di_to_flagbits(temp_line, line_pos);
 					mem_file_init(&mitem.f_digest, g_file_allocator.get());
@@ -2226,9 +2227,10 @@ static int fetch_detail(const char *path, const char *folder,
 				if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
 					count ++;
 				} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
-					if (TRUE == get_digest_string(temp_line, line_pos, "file",
-						mitem.mid, sizeof(mitem.mid)) && TRUE == get_digest_integer(
-						temp_line, line_pos, "uid", &mitem.uid)) {
+					if (get_digest_string(temp_line, line_pos,
+					    "file", mitem.mid, sizeof(mitem.mid)) &&
+					    get_digest_integer(temp_line, line_pos,
+					    "uid", &mitem.uid)) {
 						if (pxarray->append(&mitem, mitem.uid) >= 0) {
 							auto num = pxarray->get_capacity();
 							assert(num > 0);
@@ -2251,7 +2253,7 @@ static int fetch_detail(const char *path, const char *folder,
 				}
 			}
 
-				if (TRUE == b_format_error) {
+				if (b_format_error) {
 					std::unique_lock sv_hold(g_server_lock);
 					double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
 					sv_hold.unlock();
@@ -2559,10 +2561,10 @@ static int fetch_detail_uid(const char *path, const char *folder,
 				} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 					pspace = search_string(temp_line, " ", 16);
 					temp_len = line_pos - (pspace + 1 - temp_line);
-					if (NULL != pspace && TRUE == get_digest_string(pspace,
-						temp_len, "file", mitem.mid, sizeof(mitem.mid)) && 
-						TRUE == get_digest_integer(pspace, temp_len, "uid",
-						&mitem.uid)) {
+					if (pspace != nullptr && get_digest_string(pspace,
+					    temp_len, "file", mitem.mid, sizeof(mitem.mid)) && 
+					    get_digest_integer(pspace, temp_len, "uid",
+					    &mitem.uid)) {
 						*pspace = '\0';
 						pspace ++;
 						if (pxarray->append(&mitem, mitem.uid) >= 0) {
@@ -3052,7 +3054,7 @@ static BOOL get_digest_integer(const char *src, int length, const char *tag, int
 {
 	char num_buff[32];
 	
-	if (TRUE == get_digest_string(src, length, tag, num_buff, 32)) {
+	if (get_digest_string(src, length, tag, num_buff, 32)) {
 		*pinteger = strtol(num_buff, nullptr, 0);
 		return TRUE;
 	}

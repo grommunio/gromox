@@ -78,10 +78,8 @@ int pop3_cmd_handler_stls(const char *cmd_line, int line_length,
 	if (FALSE == pop3_parser_get_param(POP3_SUPPORT_STLS)) {
 		return 1703;
 	}
-
-	if (TRUE == pcontext->is_login) {
+	if (pcontext->is_login)
 		return 1725;
-	}
 	pcontext->is_stls = TRUE;
 	return 1724;
 }
@@ -93,12 +91,10 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
 	size_t string_length = 0;
 	char buff[1024];
     
-	if (TRUE == pop3_parser_get_param(POP3_SUPPORT_STLS) &&
-		TRUE == pop3_parser_get_param(POP3_FORCE_STLS) &&
-		NULL == pcontext->connection.ssl) {
+	if (pop3_parser_get_param(POP3_SUPPORT_STLS) &&
+	    pop3_parser_get_param(POP3_FORCE_STLS) &&
+	    pcontext->connection.ssl == nullptr)
 		return 1726;
-	}
-
 	if (line_length <= 5 || line_length > 255 + 1 + 4) {
 		return 1704;
 	}
@@ -107,9 +103,8 @@ int pop3_cmd_handler_user(const char* cmd_line, int line_length,
     if (cmd_line[4] != ' ') {
 		return 1703;
 	} else {
-		if (TRUE == pcontext->is_login) {
+		if (pcontext->is_login)
 			return 1720;
-		}
 		auto umx = std::min(static_cast<size_t>(line_length - 5), arsizeof(pcontext->username) - 1);
 		memcpy(pcontext->username, cmd_line + 5, umx);
 		pcontext->username[umx] = '\0';
@@ -147,11 +142,8 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
     if (cmd_line[4] != ' ') {
 		return 1703;
 	}
-	
-	if (TRUE == pcontext->is_login) {
+	if (pcontext->is_login)
 		return 1720;
-	}
-	
 	if ('\0' == pcontext->username[0]) {
 		return 1705;
 	}
@@ -509,8 +501,7 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 	if (4 != line_length) {
 		return 1704;
 	}
-	
-	if (TRUE == pcontext->is_login) {
+	if (pcontext->is_login) {
 		if (single_list_get_nodes_num(&pcontext->list) > 0) {
 			switch (system_services_delete_mail(pcontext->maildir, "inbox",
 				&pcontext->list)) {
@@ -565,13 +556,9 @@ int pop3_cmd_handler_rset(const char* cmd_line, int line_length,
 	if (4 != line_length) {
 		return 1704;
 	}
-
-	if (TRUE == pcontext->is_login) {
-		while ((pnode = single_list_pop_front(&pcontext->list)) != nullptr) {
-			auto punit = static_cast<MSG_UNIT *>(pnode->pdata);
-			punit->b_deleted = FALSE;
-		}
-	}
+	if (pcontext->is_login)
+		while ((pnode = single_list_pop_front(&pcontext->list)) != nullptr)
+			static_cast<MSG_UNIT *>(pnode->pdata)->b_deleted = false;
 	return 1700;
 }    
 
