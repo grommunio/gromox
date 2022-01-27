@@ -121,7 +121,7 @@ static BOOL create_generic_folder1(sqlite3 *psqlite, uint64_t folder_id,
 	    !add_folderprop_tv(pstmt) ||
 	    !add_changenum(pstmt, CN_USER, user_id, change_num))
 		return false;
-	if (TRUE == b_hidden) {
+	if (b_hidden) {
 		sqlite3_bind_int64(pstmt, 1, PR_ATTR_HIDDEN);
 		sqlite3_bind_int64(pstmt, 2, 1);
 		if (sqlite3_step(pstmt) != SQLITE_DONE)
