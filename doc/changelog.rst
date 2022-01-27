@@ -18,6 +18,8 @@ Fixes:
   due to propval_utf16_len giving the wrong codepoint count
 * emsmdb/rpclib: fix crash during NTLM negotiation
 * exmdb_provider: cure "INSERT INTO search_result" SQL collision warnings
+* mapi_lib: make conversion of S/MIME MAPI objects to RFC5322 independent
+  of the number of header lines
 
 Changes:
 
