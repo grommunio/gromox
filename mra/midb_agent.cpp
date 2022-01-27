@@ -553,13 +553,7 @@ static int list_mail(const char *path, const char *folder,
 			parray.clear();
 			return MIDB_RESULT_ERROR;
 		}
-
-		if ('\r' == buff[offset - 1]) {
-			last_pos = offset - 1;
-		} else {
-			last_pos = offset;
-		}
-
+		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 		if (256*1024 == offset) {
 			if ('\r' != buff[offset - 1]) {
 				offset = 0;
@@ -1227,13 +1221,7 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
 			return MIDB_RESULT_OK;
 		}
-
-		if ('\r' == buff[offset - 1]) {
-			last_pos = offset - 1;
-		} else {
-			last_pos = offset;
-		}
-
+		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 		if (256*1024 == offset) {
 			if ('\r' != buff[offset - 1]) {
 				offset = 0;
@@ -1348,13 +1336,7 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
 			return MIDB_RESULT_OK;
 		}
-
-		if ('\r' == buff[offset - 1]) {
-			last_pos = offset - 1;
-		} else {
-			last_pos = offset;
-		}
-
+		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 		if (256*1024 == offset) {
 			if ('\r' != buff[offset - 1]) {
 				offset = 0;
@@ -1645,13 +1627,7 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 			pxarray->clear();
 			return MIDB_RESULT_ERROR;
 		}
-
-		if ('\r' == buff[offset - 1]) {
-			last_pos = offset - 1;
-		} else {
-			last_pos = offset;
-		}
-
+		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 		if (256*1024 == offset) {
 			if ('\r' != buff[offset - 1]) {
 				offset = 0;
@@ -1794,13 +1770,7 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 			pxarray->clear();
 			return MIDB_RESULT_ERROR;
 		}
-
-		if ('\r' == buff[offset - 1]) {
-			last_pos = offset - 1;
-		} else {
-			last_pos = offset;
-		}
-
+		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 		if (256*1024 == offset) {
 			if ('\r' != buff[offset - 1]) {
 				offset = 0;
@@ -1943,13 +1913,7 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 			pxarray->clear();
 			return MIDB_RESULT_ERROR;
 		}
-
-		if ('\r' == buff[offset - 1]) {
-			last_pos = offset - 1;
-		} else {
-			last_pos = offset;
-		}
-
+		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 		if (64*1024 == offset) {
 			if ('\r' != buff[offset - 1]) {
 				offset = 0;
@@ -2129,13 +2093,7 @@ static int fetch_simple(const char *path, const char *folder,
 				*perrno = -1;
 				return MIDB_RESULT_ERROR;
 			}
-
-			if ('\r' == buff[offset - 1]) {
-				last_pos = offset - 1;
-			} else {
-				last_pos = offset;
-			}
-
+			last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 			if (1024 == offset) {
 				if ('\r' != buff[offset - 1]) {
 					offset = 0;
@@ -2307,13 +2265,7 @@ static int fetch_detail(const char *path, const char *folder,
 				}
 			if (count >= lines)
 				break;
-
-			if ('\r' == buff[offset - 1]) {
-				last_pos = offset - 1;
-			} else {
-				last_pos = offset;
-			}
-
+			last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 			if (64*1024 == offset) {
 				if ('\r' != buff[offset - 1]) {
 					offset = 0;
@@ -2483,13 +2435,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 				*perrno = -1;
 				return MIDB_RESULT_ERROR;
 			}
-
-			if ('\r' == buff[offset - 1]) {
-				last_pos = offset - 1;
-			} else {
-				last_pos = offset;
-			}
-
+			last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 			if (1024 == offset) {
 				if ('\r' != buff[offset - 1]) {
 					offset = 0;
@@ -2655,13 +2601,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 				}
 				return MIDB_RESULT_ERROR;
 			}
-
-			if ('\r' == buff[offset - 1]) {
-				last_pos = offset - 1;
-			} else {
-				last_pos = offset;
-			}
-
+			last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 			if (64*1024 == offset) {
 				if ('\r' != buff[offset - 1]) {
 					offset = 0;
