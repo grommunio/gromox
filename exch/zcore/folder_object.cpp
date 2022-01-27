@@ -536,7 +536,7 @@ BOOL folder_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	ppropvals->count = 0;
 	auto pfolder = this;
 	for (i=0; i<pproptags->count; i++) {
-		if (TRUE == folder_object_get_calculated_property(
+		if (folder_object_get_calculated_property(
 			pfolder, pproptags->pproptag[i], &pvalue)) {
 			if (NULL == pvalue) {
 				return FALSE;
@@ -918,8 +918,8 @@ BOOL folder_object::updaterules(uint32_t flags, const RULE_LIST *plist)
 		}
 	}
 	if (pfolder->pstore->b_private &&
-		PRIVATE_FID_INBOX == rop_util_get_gc_value(pfolder->folder_id)
-		&& ((flags & MODIFY_RULES_FLAG_REPLACE) || TRUE == b_delegate)) {
+	    rop_util_get_gc_value(pfolder->folder_id) == PRIVATE_FID_INBOX &&
+	    ((flags & MODIFY_RULES_FLAG_REPLACE) || b_delegate)) {
 		int fd = -1;
 		try {
 			auto dlg_path = pfolder->pstore->get_dir() + "/config/delegates.txt"s;
@@ -928,7 +928,7 @@ BOOL folder_object::updaterules(uint32_t flags, const RULE_LIST *plist)
 			fprintf(stderr, "E-1491: ENOMEM\n");
 		}
 		if (-1 != fd) {
-			if (TRUE == b_delegate) {
+			if (b_delegate) {
 				for (i=0; i<pactions->count; i++) {
 					if (pactions->pblock[i].type == OP_DELEGATE &&
 					    !folder_object_flush_delegates(fd, static_cast<FORWARDDELEGATE_ACTION *>(pactions->pblock[i].pdata))) {

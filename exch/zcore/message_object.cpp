@@ -109,7 +109,7 @@ BOOL message_object::check_orignal_touched(BOOL *pb_touched)
 	auto pmessage = this;
 	uint64_t *pchange_num;
 	
-	if (TRUE == pmessage->b_new) {
+	if (pmessage->b_new) {
 		*pb_touched = FALSE;
 		return TRUE;
 	}
@@ -389,7 +389,7 @@ gxerr_t message_object::save()
 		}
 	}
 	
-	if (0 == pmessage->message_id || TRUE == b_fai) {
+	if (pmessage->message_id == 0 || b_fai) {
 		proptag_array_clear(pmessage->pchanged_proptags);
 		proptag_array_clear(pmessage->premoved_proptags);
 		return GXERR_SUCCESS;
@@ -882,7 +882,7 @@ BOOL message_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	}
 	ppropvals->count = 0;
 	for (i=0; i<pproptags->count; i++) {
-		if (TRUE == message_object_get_calculated_property(
+		if (message_object_get_calculated_property(
 			pmessage, pproptags->pproptag[i], &pvalue)) {
 			if (NULL == pvalue) {
 				return FALSE;
@@ -950,7 +950,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 		return FALSE;
 	}
 	for (i=0; i<ppropvals->count; i++) {
-		if (TRUE == b_check) {
+		if (b_check) {
 			if (msgo_check_readonly_property(pmessage, ppropvals->ppropval[i].proptag)) {
 				problems.pproblem[problems.count++].index = i;
 				continue;
@@ -1276,7 +1276,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 	default:
 		return TRUE;
 	}
-	if (TRUE == *pb_changed) {
+	if (*pb_changed) {
 		if (!exmdb_client::set_message_read_state(
 			dir, username, pmessage->message_id, tmp_byte,
 			&read_cn)) {
@@ -1292,7 +1292,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 			return TRUE;
 		}
 	}
-	if (TRUE == b_notify) {
+	if (b_notify) {
 		if (!exmdb_client::get_message_brief(
 			dir, pmessage->cpid, pmessage->message_id,
 			&pbrief)) {

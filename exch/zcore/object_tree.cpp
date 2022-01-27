@@ -423,7 +423,7 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 		} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
 	}
 	auto pinfo = zarafa_server_get_info();
-	if (TRUE == b_private) {
+	if (b_private) {
 		if (account_id == pinfo->user_id) {
 			gx_strlcpy(dir, pinfo->get_maildir(), arsizeof(dir));
 			gx_strlcpy(account, pinfo->get_username(), arsizeof(account));

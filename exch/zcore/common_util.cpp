@@ -1431,16 +1431,15 @@ static int common_util_get_response(int sockd,
 	}
 	response[read_len] = '\0';
 	if (FALSE == expect_3xx && '2' == response[0] &&
-	    HX_isdigit(response[1]) && HX_isdigit(response[2])) {
+	    HX_isdigit(response[1]) && HX_isdigit(response[2]))
 		return SMTP_SEND_OK;
-	} else if(TRUE == expect_3xx && '3' == response[0] &&
-	    HX_isdigit(response[1]) && HX_isdigit(response[2])) {
+	else if (expect_3xx && response[0] == '3' &&
+	    HX_isdigit(response[1]) && HX_isdigit(response[2]))
 		return SMTP_SEND_OK;
-	} else if (response[0] == '4') {
+	else if (response[0] == '4')
 		return SMTP_TEMP_ERROR;
-	} else if (response[0] == '5') {
+	else if (response[0] == '5')
 		return SMTP_PERMANENT_ERROR;
-	}
 	return SMTP_UNKOWN_RESPONSE;
 }
 
@@ -1741,7 +1740,7 @@ BOOL common_util_send_message(store_object *pstore,
 		if (NULL == pnode) {
 			return FALSE;
 		}
-		if (TRUE == b_resend) {
+		if (b_resend) {
 			pvalue = prcpts->pparray[i]->getval(PR_RECIPIENT_TYPE);
 			if (NULL == pvalue) {
 				return FALSE;
@@ -1843,7 +1842,7 @@ BOOL common_util_send_message(store_object *pstore,
 		    pstore->account_id, cpid, message_id, folder_id, new_id,
 		    TRUE, &b_result))
 			return FALSE;
-	} else if (TRUE == b_delete) {
+	} else if (b_delete) {
 		exmdb_client_delete_message(pstore->get_dir(),
 			pstore->account_id, cpid, parent_id, message_id,
 			TRUE, &b_result);

@@ -1835,10 +1835,8 @@ static BOOL ab_tree_resolve_node(SIMPLE_TREE_NODE *pnode,
 	if (NULL != strcasestr(dn, pstr)) {
 		return TRUE;
 	}
-	if (TRUE == ab_tree_node_to_dn(pnode, dn, sizeof(dn))
-		&& 0 == strcasecmp(dn, pstr)) {
+	if (ab_tree_node_to_dn(pnode, dn, sizeof(dn)) && strcasecmp(dn, pstr) == 0)
 		return TRUE;
-	}
 	ab_tree_get_department_name(pnode, dn);
 	if (NULL != strcasestr(dn, pstr)) {
 		return TRUE;

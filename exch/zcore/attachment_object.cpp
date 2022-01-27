@@ -219,7 +219,7 @@ BOOL attachment_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	}
 	ppropvals->count = 0;
 	for (i=0; i<pproptags->count; i++) {
-		if (TRUE == attachment_object_get_calculated_property(
+		if (attachment_object_get_calculated_property(
 			pattachment, pproptags->pproptag[i], &pvalue)) {
 			if (NULL == pvalue) {
 				return FALSE;

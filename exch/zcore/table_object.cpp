@@ -620,7 +620,7 @@ void table_object::seek_current(BOOL b_forward, uint32_t row_count)
 	auto ptable = this;
 	uint32_t total_rows;
 	
-	if (TRUE == b_forward) {
+	if (b_forward) {
 		ptable->position += row_count;
 		total_rows = get_total();
 		if (ptable->position > total_rows) {
