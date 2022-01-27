@@ -212,7 +212,7 @@ static BOOL oxcical_parse_tzdefinition(std::shared_ptr<ICAL_COMPONENT> pvt_compo
 			ptz_definition->prules[i].reserved = 0x003E;
 			ptz_definition->prules[i].year = year;
 		}
-		if (TRUE == b_daylight) {
+		if (b_daylight) {
 			ptz_definition->prules[i].daylightbias = bias;
 			ptz_definition->prules[i].daylightdate = date;
 		} else {
@@ -1029,7 +1029,7 @@ static BOOL oxcical_parse_start_end(BOOL b_start, BOOL b_proposal,
 	uint64_t tmp_int64;
 	
 	tmp_int64 = rop_util_unix_to_nttime(unix_time);
-	if (TRUE == b_proposal) {
+	if (b_proposal) {
 		PROPERTY_NAME pn = {MNID_ID, PSETID_APPOINTMENT, b_start ?
 			PidLidAppointmentProposedStartWhole :
 			PidLidAppointmentProposedEndWhole};
@@ -3236,7 +3236,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 			if (!piparam->append_paramval(partstat))
 				return FALSE;
 		}
-		if (TRUE == b_rsvp) {
+		if (b_rsvp) {
 			piparam = ical_new_param("RSVP");
 			if (NULL == piparam) {
 				return FALSE;
@@ -3719,7 +3719,7 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 	}
 	if (piline->append_value(pivalue) < 0)
 		return false;
-	if (TRUE == b_date) {
+	if (b_date) {
 		piparam = ical_new_param("VALUE");
 		if (NULL == piparam) {
 			return FALSE;
@@ -3750,12 +3750,11 @@ static BOOL oxcical_export_exdate(const char *tzid, BOOL b_date,
 				break;
 			}
 		}
-		if (TRUE == b_found) {
+		if (b_found)
 			continue;
-		}
 		auto tmp_int64 = (apr->recur_pat.pdeletedinstancedates[i] + apr->starttimeoffset) * 600000000ULL;
 		ical_utc_to_datetime(nullptr, rop_util_nttime_to_unix(tmp_int64), &itime);
-		if (TRUE == b_date) {
+		if (b_date) {
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
 				itime.year, itime.month, itime.day);
 		} else {
@@ -3820,7 +3819,7 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 	}
 	if (piline->append_value(pivalue) < 0)
 		return false;
-	if (TRUE == b_date) {
+	if (b_date) {
 		piparam = ical_new_param("VALUE");
 		if (NULL == piparam) {
 			return FALSE;
@@ -3851,12 +3850,11 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 				break;
 			}
 		}
-		if (TRUE == b_found) {
+		if (b_found)
 			continue;
-		}
 		auto tmp_int64 = apr->recur_pat.pmodifiedinstancedates[i] * 600000000ULL;
 		ical_utc_to_datetime(nullptr, rop_util_nttime_to_unix(tmp_int64), &itime);
-		if (TRUE == b_date) {
+		if (b_date) {
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
 				itime.year, itime.month, itime.day);
 		} else {
@@ -4012,9 +4010,8 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	}
 	
 	std::shared_ptr<ICAL_LINE> piline;
-	if (TRUE == b_exceptional) {
+	if (b_exceptional)
 		goto EXPORT_VEVENT;
-	}
 	
 	piline = ical_new_simple_line("METHOD", method);
 	if (NULL == piline) {
@@ -4052,7 +4049,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		b_recurrence = TRUE;
 	}
 	
-	if (TRUE == b_recurrence) {
+	if (b_recurrence) {
 		auto it = std::lower_bound(cal_scale_names, std::end(cal_scale_names),
 		          apprecurr.recur_pat.calendartype,
 		          [&](const auto &p, unsigned int v) { return p.first < v; });
@@ -4079,7 +4076,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	tzid = NULL;
 	ptz_component = NULL;
-	if (TRUE == b_recurrence) {
+	if (b_recurrence) {
 		PROPERTY_NAME propname = {MNID_ID, PSETID_APPOINTMENT, PidLidTimeZoneStruct};
 		if (FALSE == get_propids(&propnames, &propids)) {
 			return FALSE;
@@ -4247,18 +4244,18 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 	
-	if (FALSE == b_exceptional && TRUE == b_recurrence) {
+	if (!b_exceptional && b_recurrence) {
 		if (FALSE == oxcical_export_rrule(
 			ptz_component, pcomponent, &apprecurr)) {
 			return FALSE;
 		}
-		if (TRUE == oxcical_check_exdate(&apprecurr)) {
+		if (oxcical_check_exdate(&apprecurr)) {
 			if (FALSE == oxcical_export_exdate(tzid,
 				b_allday, pcomponent, &apprecurr)) {
 				return FALSE;
 			}
 		}
-		if (TRUE == oxcical_check_rdate(&apprecurr)) {
+		if (oxcical_check_rdate(&apprecurr)) {
 			if (FALSE == oxcical_export_rdate(tzid,
 				b_allday, pcomponent, &apprecurr)) {
 				return FALSE;
@@ -4422,9 +4419,8 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 				return false;
 		}
 	} else {
-		if (TRUE == b_exceptional) {
+		if (b_exceptional)
 			return FALSE;
-		}
 	}
 	
 	pvalue = pmsg->proplist.getval(PR_SUBJECT);
@@ -4452,14 +4448,13 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		return FALSE;
 	}
 	if (NULL == ptz_component) {
-		if (TRUE == b_allday) {
+		if (b_allday)
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
 				itime.year, itime.month, itime.day);
-		} else {
+		else
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
 					itime.year, itime.month, itime.day,
 					itime.hour, itime.minute, itime.second);
-		}
 	} else {
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
 			itime.year, itime.month, itime.day,
@@ -4471,7 +4466,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	}
 	if (pcomponent->append_line(piline) < 0)
 		return false;
-	if (NULL == ptz_component && TRUE == b_allday) {
+	if (ptz_component == nullptr && b_allday) {
 		piparam = ical_new_param("VALUE");
 		if (NULL == piparam) {
 			return FALSE;
@@ -4498,14 +4493,13 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			return FALSE;
 		}
 		if (NULL == ptz_component) {
-			if (TRUE == b_allday) {
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
-				itime.year, itime.month, itime.day);
-			} else {
+			if (b_allday)
+				snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
+					itime.year, itime.month, itime.day);
+			else
 				snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
 						itime.year, itime.month, itime.day,
 						itime.hour, itime.minute, itime.second);
-			}
 		} else {
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
 				itime.year, itime.month, itime.day,
@@ -4517,7 +4511,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		}
 		if (pcomponent->append_line(piline) < 0)
 			return false;
-		if (NULL == ptz_component && TRUE == b_allday) {
+		if (ptz_component == nullptr && b_allday) {
 			piparam = ical_new_param("VALUE");
 			if (NULL == piparam) {
 				return FALSE;
@@ -4757,13 +4751,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	    "X-MICROSOFT-CDO-INTENDEDSTATUS", pcomponent.get()))
 		return false;
 
-	if (TRUE == b_allday) {
-		piline = ical_new_simple_line(
-			"X-MICROSOFT-CDO-ALLDAYEVENT", "TRUE");
-	} else {
-		piline = ical_new_simple_line(
-			"X-MICROSOFT-CDO-ALLDAYEVENT", "FALSE");
-	}
+	piline = ical_new_simple_line("X-MICROSOFT-CDO-ALLDAYEVENT", b_allday ? "TRUE" : "FALSE");
 	if (NULL == piline) {
 		return FALSE;
 	}
@@ -4803,15 +4791,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		}
 	}
 	
-	if (TRUE == b_exceptional) {
-		piline = ical_new_simple_line("X-MICROSOFT-CDO-INSTTYPE", "3");
-	} else {
-		if (TRUE == b_recurrence) {
-			piline = ical_new_simple_line("X-MICROSOFT-CDO-INSTTYPE", "1");
-		} else {
-			piline = ical_new_simple_line("X-MICROSOFT-CDO-INSTTYPE", "0");
-		}
-	}
+	piline = ical_new_simple_line("X-MICROSOFT-CDO-INSTTYPE", b_exceptional ? "3" : b_recurrence ? "1" : "0");
 	if (NULL == piline) {
 		return FALSE;
 	}

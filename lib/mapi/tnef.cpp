@@ -1266,7 +1266,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 				return NULL;
 			}
 		}
-		if (TRUE == b_props) {
+		if (b_props) {
 			debug_info("[tnef]: attMsgProps should be "
 				"the last attribute in message level");
 			return NULL;
@@ -1493,8 +1493,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	}
 	message_content_set_attachments_internal(pmsg, pattachments);
 	while (true) {
-		if (TRUE == b_props && attribute.attr_id !=
-			ATTRIBUTE_ID_ATTACHRENDDATA) {
+		if (b_props && attribute.attr_id != ATTRIBUTE_ID_ATTACHRENDDATA) {
 			debug_info("[tnef]: attAttachment should be "
 				"the last attribute in attachment level");
 			return NULL;
@@ -2146,7 +2145,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		return FALSE;
 	}
 	/* ATTRIBUTE_ID_MESSAGESTATUS */
-	if (TRUE == b_embedded) {
+	if (b_embedded) {
 		tmp_byte = 0;
 		pvalue = pmsg->proplist.getval(PR_MESSAGE_FLAGS);
 		if (NULL != pvalue) {
@@ -2181,7 +2180,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	tmp_proptags.pproptag[tmp_proptags.count] = PR_MESSAGE_FLAGS;
 	tmp_proptags.count ++;
 	/* ATTRIBUTE_ID_FROM */
-	if (TRUE == b_embedded) {
+	if (b_embedded) {
 		pvalue = pmsg->proplist.getval(PR_SENDER_NAME_A);
 		auto pvalue1 = pmsg->proplist.getval(PR_SENDER_ADDRTYPE_A);
 		auto pvalue2 = pmsg->proplist.getval(PR_SENDER_EMAIL_ADDRESS_A);
@@ -2247,7 +2246,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		}
 	}
 	/* ATTRIBUTE_ID_BODY */
-	if (TRUE == b_embedded) {
+	if (b_embedded) {
 		pvalue = pmsg->proplist.getval(PR_BODY_A);
 		if (NULL != pvalue) {
 			attribute.attr_id = ATTRIBUTE_ID_BODY;
@@ -2482,7 +2481,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	}
 	/* ATTRIBUTE_ID_RECIPTABLE */
 	/* do not generate this attribute for top-level message */
-	if (TRUE == b_embedded && NULL != pmsg->children.prcpts) {
+	if (b_embedded && pmsg->children.prcpts != nullptr) {
 		tnef_propset.count = 0;
 		if (0 != pmsg->children.prcpts->count) {
 			tnef_propset.pplist = static_cast<TNEF_PROPLIST **>(alloc(sizeof(TNEF_PROPLIST *) *

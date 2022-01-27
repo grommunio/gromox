@@ -593,14 +593,14 @@ static BOOL html_write_style(RTF_WRITER *pwriter, GumboElement *pelement)
 	if (NULL == pattribute) {
 		return TRUE;
 	}
-	if (TRUE == html_match_style(pattribute->value,
+	if (html_match_style(pattribute->value,
 		"font-family", value, sizeof(value))) {
 		html_trim_style_value(value);
 		if (FALSE == html_write_style_font_family(pwriter, value)) {
 			return FALSE;
 		}
 	}
-	if (TRUE == html_match_style(pattribute->value,
+	if (html_match_style(pattribute->value,
 		"font-size", value, sizeof(value))) {
 		value_len = strlen(value);
 		if (0 == strcasecmp(value + value_len - 2, "pt")) {
@@ -612,7 +612,7 @@ static BOOL html_write_style(RTF_WRITER *pwriter, GumboElement *pelement)
 		    strtol(value, nullptr, 0), unit_point))
 			return FALSE;	
 	}
-	if (TRUE == html_match_style(pattribute->value,
+	if (html_match_style(pattribute->value,
 		"line-height", value, sizeof(value))) {
 		value_len = strlen(value);
 		if (0 == strcasecmp(value + value_len - 2, "px")) {
@@ -621,7 +621,7 @@ static BOOL html_write_style(RTF_WRITER *pwriter, GumboElement *pelement)
 				return FALSE;	
 		}
 	}
-	if (TRUE == html_match_style(pattribute->value,
+	if (html_match_style(pattribute->value,
 		"margin-top", value, sizeof(value))) {
 		value_len = strlen(value);
 		if (0 == strcasecmp(value + value_len - 2, "px")) {
@@ -630,7 +630,7 @@ static BOOL html_write_style(RTF_WRITER *pwriter, GumboElement *pelement)
 				return FALSE;	
 		}
 	}
-	if (TRUE == html_match_style(pattribute->value,
+	if (html_match_style(pattribute->value,
 		"text-indent", value, sizeof(value))) {
 		value_len = strlen(value);
 		if (0 == strcasecmp(value + value_len - 2, "px")) {
@@ -639,7 +639,7 @@ static BOOL html_write_style(RTF_WRITER *pwriter, GumboElement *pelement)
 				return FALSE;
 		}
 	}
-	if (TRUE == html_match_style(pattribute->value,
+	if (html_match_style(pattribute->value,
 		"color", value, sizeof(value))) {
 		color = html_convert_color(value);
 		if (-1 != color) {
@@ -1201,9 +1201,8 @@ static BOOL html_enum_write(RTF_WRITER *pwriter, GumboNode *pnode)
 			}
 			return html_write_center_end(pwriter);
 		case GUMBO_TAG_TABLE:
-			if (TRUE == html_check_parent_type(pnode, GUMBO_TAG_TABLE)) {
+			if (html_check_parent_type(pnode, GUMBO_TAG_TABLE))
 				return TRUE;
-			}
 			if (FALSE == html_write_table_begin(pwriter)) {
 				return FALSE;
 			}
@@ -1348,12 +1347,12 @@ static void html_enum_tables(RTF_WRITER *pwriter, GumboNode *pnode)
 	pattribute = gumbo_get_attribute(
 		&pnode->v.element.attributes, "style");
 	if (NULL != pattribute) {
-		if (TRUE == html_match_style(pattribute->value,
+		if (html_match_style(pattribute->value,
 			"font-family", value, sizeof(value))) {
 			html_trim_style_value(value);
 			html_set_fonttable(pwriter, value);
 		}
-		if (TRUE == html_match_style(pattribute->value,
+		if (html_match_style(pattribute->value,
 			"color", value, sizeof(value))) {
 			color = html_convert_color(value);
 			if (-1 != color) {
