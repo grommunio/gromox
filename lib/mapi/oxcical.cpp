@@ -1233,21 +1233,20 @@ static BOOL oxcical_parse_uid(std::shared_ptr<ical_component> main_event,
 		return TRUE;
 	}
 	auto tmp_len = strlen(pvalue);
-	if (strncasecmp(pvalue, EncodedGlobalId_hex, 32) == 0) {
-		if (TRUE == decode_hex_binary(pvalue, tmp_buff, 1024)) {
-			ext_pull.init(tmp_buff, tmp_len / 2, alloc, 0);
-			if (ext_pull.g_goid(&globalobjectid) == EXT_ERR_SUCCESS &&
-			    ext_pull.m_offset == tmp_len / 2) {
-				if (globalobjectid.year < 1601 || globalobjectid.year > 4500 ||
-					globalobjectid.month > 12 || 0 == globalobjectid.month ||
-					globalobjectid.day > ical_get_monthdays(
-					globalobjectid.year, globalobjectid.month)) {
-					globalobjectid.year = effective_itime.year;
-					globalobjectid.month = effective_itime.month;
-					globalobjectid.day = effective_itime.day;
-				}
-				goto MAKE_GLOBALOBJID;
+	if (strncasecmp(pvalue, EncodedGlobalId_hex, 32) == 0 &&
+	    decode_hex_binary(pvalue, tmp_buff, arsizeof(tmp_buff))) {
+		ext_pull.init(tmp_buff, tmp_len / 2, alloc, 0);
+		if (ext_pull.g_goid(&globalobjectid) == EXT_ERR_SUCCESS &&
+		    ext_pull.m_offset == tmp_len / 2) {
+			if (globalobjectid.year < 1601 || globalobjectid.year > 4500 ||
+				globalobjectid.month > 12 || 0 == globalobjectid.month ||
+				globalobjectid.day > ical_get_monthdays(
+				globalobjectid.year, globalobjectid.month)) {
+				globalobjectid.year = effective_itime.year;
+				globalobjectid.month = effective_itime.month;
+				globalobjectid.day = effective_itime.day;
 			}
+			goto MAKE_GLOBALOBJID;
 		}
 	}
 	memset(&globalobjectid, 0, sizeof(GLOBALOBJECTID));
@@ -2242,13 +2241,8 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	
 	last_propid = 0x8000;
 	namemap phash;
-	if (TRUE == b_proposal) {
-		if (FALSE == oxcical_parse_proposal(
-			phash, &last_propid, pmsg)) {
-			return FALSE;
-		}
-	}
-	
+	if (b_proposal && !oxcical_parse_proposal(phash, &last_propid, pmsg))
+		return FALSE;
 	if (!oxcical_parse_categories(pmain_event, phash, &last_propid, pmsg) ||
 	    !oxcical_parse_class(pmain_event, pmsg) ||
 	    !oxcical_parse_body(pmain_event, method, pmsg) ||
@@ -2295,17 +2289,15 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	piline = pmain_event->get_line("DTEND");
 	if (NULL != piline) {
 		pvalue = piline->get_first_paramval("TZID");
-		if ((NULL == pvalue && NULL == ptzid) ||
-			(NULL != pvalue && NULL != ptzid &&
-			0 == strcasecmp(pvalue, ptzid))) {
-			if (FALSE == oxcical_parse_dtvalue(ptz_component,
-				piline, &b_utc_end, &end_itime, &end_time)) {
-				return FALSE;
-			}
-		} else {
+		bool parse_dtv = (pvalue == nullptr && ptzid == nullptr) ||
+		                 (pvalue != nullptr && ptzid != nullptr &&
+		                 strcasecmp(pvalue, ptzid) == 0);
+		if (!parse_dtv)
+			return FALSE;
+		if (FALSE == oxcical_parse_dtvalue(ptz_component,
+		    piline, &b_utc_end, &end_itime, &end_time)) {
 			return FALSE;
 		}
-		
 		if (end_time < start_time) {
 			fprintf(stderr, "GW-2795: ical not imported due to end_time < start_time\n");
 			return FALSE;
@@ -2338,12 +2330,9 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	if (NULL != pend_itime) {
 		*pend_itime = end_itime;
 	}
-	if (NULL != ptz_component) {
-		if (FALSE == oxcical_parse_tzdisplay(FALSE,
-			ptz_component, phash, &last_propid, pmsg)) {
-			return FALSE;
-		}
-	}
+	if (ptz_component != nullptr && !oxcical_parse_tzdisplay(false,
+	    ptz_component, phash, &last_propid, pmsg))
+		return FALSE;
 	if (FALSE == oxcical_parse_start_end(FALSE, b_proposal,
 		pmain_event, end_time, phash, &last_propid, pmsg)) {
 		return FALSE;
@@ -2354,31 +2343,21 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		return FALSE;
 	}
 	
-	if (FALSE == b_allday) {
-		if (!b_utc_start && !b_utc_end &&
-			0 == start_itime.hour && 0 == start_itime.minute &&
-			0 == start_itime.second && 0 == end_itime.hour &&
-			0 == end_itime.minute && 0 == end_itime.second &&
-		    end_itime.delta_day(start_itime) == 1)
-			b_allday = TRUE;
-	}
-	
-	if (TRUE == b_allday) {
-		if (FALSE == oxcical_parse_subtype(phash,
-			&last_propid, pmsg, pexception)) {
-			return FALSE;
-		}
-	}
+	if (!b_allday && !b_utc_start && !b_utc_end && start_itime.hour == 0 &&
+	    start_itime.minute == 0 && start_itime.second == 0 &&
+	    end_itime.hour == 0 && end_itime.minute == 0 &&
+	    end_itime.second == 0 && end_itime.delta_day(start_itime) == 1)
+		b_allday = TRUE;
+	if (b_allday && !oxcical_parse_subtype(phash, &last_propid, pmsg, pexception))
+		return FALSE;
 	
 	memset(&itime, 0, sizeof(ICAL_TIME));
 	piline = pmain_event->get_line("RECURRENCE-ID");
 	if (NULL != piline) {
-		if (NULL != pexception && NULL != pext_exception) {
-			if (FALSE == oxcical_parse_recurrence_id(ptz_component,
-				piline, phash, &last_propid, pmsg)) {
-				return FALSE;
-			}
-		}
+		if (pexception != nullptr && pext_exception != nullptr &&
+		    !oxcical_parse_recurrence_id(ptz_component, piline,
+		    phash, &last_propid, pmsg))
+			return FALSE;
 		pvalue = piline->get_first_paramval("TZID");
 		if ((NULL != pvalue && NULL != ptzid &&
 			0 != strcasecmp(pvalue, ptzid))) {
@@ -2467,12 +2446,10 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		piline = pmain_event->get_line("X-MICROSOFT-RRULE");
 	}
 	if (NULL != piline) {
-		if (NULL != ptz_component) {
-			if (FALSE == oxcical_parse_recurring_timezone(
-				ptz_component, phash, &last_propid, pmsg)) {
-				return FALSE;
-			}
-		}
+		if (ptz_component != nullptr &&
+		    !oxcical_parse_recurring_timezone(ptz_component,
+		    phash, &last_propid, pmsg))
+			return FALSE;
 		memset(&apr, 0, sizeof(apr));
 		apr.recur_pat.deletedinstancecount = 0;
 		apr.recur_pat.pdeletedinstancedates = deleted_dates;

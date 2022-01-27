@@ -312,11 +312,9 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 			"MIME_ENCODING_NONE, MIME_ENCODING_BASE64, MIME_ENCODING_QP");
 		return FALSE;
 	}
-	if (TRUE == pmime->content_touched && NULL != pmime->content_begin) {
-		if (0 != pmime->content_length) {
-			free(pmime->content_begin);
-		}
-	}
+	if (pmime->content_touched && pmime->content_begin != nullptr &&
+	    pmime->content_length != 0)
+		free(pmime->content_begin);
 	pmime->content_begin = NULL;
 	pmime->content_length = 0;
 	pmime->content_touched = TRUE;
