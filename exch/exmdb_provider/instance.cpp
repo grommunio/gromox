@@ -1029,30 +1029,21 @@ static BOOL instance_identify_attachments(ATTACHMENT_LIST *pattachments)
 	for (i=0; i<pattachments->count; i++) {
 		if (pattachments->pplist[i]->proplist.set(PR_ATTACH_NUM, &i) != 0)
 			return FALSE;	
-		if (NULL != pattachments->pplist[i]->pembedded) {
-			if (FALSE == instance_identify_message(
-				pattachments->pplist[i]->pembedded)) {
-				return FALSE;	
-			}
-		}
+		if (pattachments->pplist[i]->pembedded != nullptr &&
+		    !instance_identify_message(pattachments->pplist[i]->pembedded))
+			return FALSE;	
 	}
 	return TRUE;
 }
 
 static BOOL instance_identify_message(MESSAGE_CONTENT *pmsgctnt)
 {
-	if (NULL != pmsgctnt->children.prcpts) {
-		if (FALSE == instance_identify_rcpts(
-			pmsgctnt->children.prcpts)) {
-			return FALSE;	
-		}
-	}
-	if (NULL != pmsgctnt->children.pattachments) {
-		if (FALSE == instance_identify_attachments(
-			pmsgctnt->children.pattachments)) {
-			return FALSE;	
-		}
-	}
+	if (pmsgctnt->children.prcpts != nullptr &&
+	    !instance_identify_rcpts(pmsgctnt->children.prcpts))
+		return FALSE;
+	if (pmsgctnt->children.pattachments != nullptr &&
+	    !instance_identify_attachments(pmsgctnt->children.pattachments))
+		return FALSE;
 	return TRUE;
 }
 
@@ -1412,19 +1403,17 @@ BOOL exmdb_server_write_attachment_instance(const char *dir,
 		if (pproplist->set(pattctnt->proplist.ppropval[i]) != 0)
 			return FALSE;
 	}
-	if (NULL != pattctnt->pembedded) {
-		if (FALSE == b_force || NULL == ((ATTACHMENT_CONTENT*)
-			pinstance->pcontent)->pembedded) {
-			pmsgctnt = message_content_dup(pattctnt->pembedded);
-			if (NULL == pmsgctnt) {
-				return FALSE;
-			}
-			if (FALSE == instance_identify_message(pmsgctnt)) {
-				message_content_free(pmsgctnt);
-				return FALSE;
-			}
-			attachment_content_set_embedded_internal(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent), pmsgctnt);
+	if (pattctnt->pembedded != nullptr &&
+	    (!b_force || static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent)->pembedded == nullptr)) {
+		pmsgctnt = message_content_dup(pattctnt->pembedded);
+		if (NULL == pmsgctnt) {
+			return FALSE;
 		}
+		if (FALSE == instance_identify_message(pmsgctnt)) {
+			message_content_free(pmsgctnt);
+			return FALSE;
+		}
+		attachment_content_set_embedded_internal(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent), pmsgctnt);
 	}
 	return TRUE;
 }
@@ -1534,12 +1523,9 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 				attachment_content_free(
 					pmsgctnt->children.pattachments->pplist[i]);
 				pmsgctnt->children.pattachments->pplist[i] = pattachment;
-			} else {
-				if (FALSE == attachment_list_append_internal(
-					pmsgctnt->children.pattachments, pattachment)) {
-					attachment_content_free(pattachment);
-					return FALSE;
-				}
+			} else if (!attachment_list_append_internal(pmsgctnt->children.pattachments, pattachment)) {
+				attachment_content_free(pattachment);
+				return FALSE;
 			}
 		}
 		*pe_result = GXERR_SUCCESS;

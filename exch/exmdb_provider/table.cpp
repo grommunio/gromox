@@ -472,11 +472,9 @@ static BOOL table_load_content(db_item_ptr &pdb, sqlite3 *psqlite,
 				pvalue = common_util_column_sqlite_statement(pstmt, 3, type);
 				if (NULL == pvalue) {
 					sqlite3_bind_null(pstmt_insert, 8);
-				} else {
-					if (FALSE == common_util_bind_sqlite_statement(
-						pstmt_insert, 8, type, pvalue)) {
-						return FALSE;
-					}
+				} else if (!common_util_bind_sqlite_statement(pstmt_insert,
+				    8, type, pvalue)) {
+					return FALSE;
 				}
 			} else {
 				sqlite3_bind_int64(pstmt_insert, 7, 0);
@@ -1601,12 +1599,9 @@ static BOOL table_load_rules(sqlite3 *psqlite, uint64_t folder_id,
 		return FALSE;
 	while (SQLITE_ROW == sqlite3_step(pstmt1)) {
 		rule_id = sqlite3_column_int64(pstmt1, 0);
-		if (NULL != prestriction) {
-			if (FALSE == table_evaluate_rule_restriction(
-				psqlite, rule_id, prestriction)) {
-				continue;
-			}
-		}
+		if (prestriction != nullptr &&
+		    !table_evaluate_rule_restriction(psqlite, rule_id, prestriction))
+			continue;
 		sqlite3_bind_int64(pstmt, 1, rule_id);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			return FALSE;
@@ -3366,12 +3361,10 @@ static BOOL table_expand_sub_contents(int depth,
 			return FALSE;
 		}
 		sqlite3_reset(pstmt1);
-		if (depth > 0 && 0 != row_stat) {
-			if (FALSE == table_expand_sub_contents(
-				depth - 1, row_id, pstmt, pstmt1, pidx)) {
-				return FALSE;
-			}
-		}
+		if (depth > 0 && row_stat != 0 &&
+		    !table_expand_sub_contents(depth - 1, row_id,
+		    pstmt, pstmt1, pidx))
+			return FALSE;
 		sqlite3_bind_int64(pstmt, 1, row_id);
 	} while (SQLITE_ROW == sqlite3_step(pstmt));
 	sqlite3_reset(pstmt);
@@ -3872,11 +3865,8 @@ BOOL exmdb_server_store_table_state(const char *dir,
 			sqlite3_reset(pstmt3);
 			if (NULL == pvalue) {
 				sqlite3_bind_null(pstmt1, i + 2);
-			} else {
-				if (FALSE == common_util_bind_sqlite_statement(
-					pstmt1, i + 2, type, pvalue)) {
-					return FALSE;	
-				}
+			} else if (!common_util_bind_sqlite_statement(pstmt1, i + 2, type, pvalue)) {
+				return FALSE;
 			}
 			if (0 == i) {
 				break;
@@ -4136,13 +4126,10 @@ BOOL exmdb_server_restore_table_state(const char *dir,
 	}
 	idx = 0;
 	sqlite3_bind_int64(pstmt, 1, 0);
-	if (SQLITE_ROW == sqlite3_step(pstmt)) {
-		if (FALSE == common_util_indexing_sub_contents(
-			ptnode->psorts->ccategories, pstmt,
-			pstmt1, &idx)) {
-			return FALSE;
-		}
-	}
+	if (sqlite3_step(pstmt) == SQLITE_ROW &&
+	    !common_util_indexing_sub_contents(ptnode->psorts->ccategories,
+	    pstmt, pstmt1, &idx))
+		return FALSE;
 	pstmt.finalize();
 	pstmt1.finalize();
 	table_transact.commit();

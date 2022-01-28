@@ -1193,16 +1193,12 @@ static BINARY* common_util_to_folder_entryid(
 	} else {
 		tmp_entryid.provider_uid = pbLongTermNonPrivateGuid;
 		replid = folder_id >> 48;
-		if (0 != replid) {
-			if (FALSE == common_util_get_mapping_guid(psqlite,
-				replid, &b_found, &tmp_entryid.database_guid)
-				|| FALSE == b_found) {
-				return NULL;	
-			}
-		} else {
+		if (replid == 0)
 			tmp_entryid.database_guid =
 				rop_util_make_domain_guid(account_id);
-		}
+		else if (!common_util_get_mapping_guid(psqlite, replid,
+		    &b_found, &tmp_entryid.database_guid) || !b_found)
+			return NULL;
 		tmp_entryid.folder_type = EITLT_PUBLIC_FOLDER;
 	}
 	tmp_entryid.global_counter = rop_util_value_to_gc(folder_id);
@@ -4877,11 +4873,10 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 		sqlite3_reset(pstmt2);
 		sqlite3_bind_int64(pstmt3, 1, tmp_id);
 		if (SQLITE_ROW == sqlite3_step(pstmt3)) {
-			if (FALSE == common_util_copy_message_internal(
-				psqlite, TRUE, sqlite3_column_int64(pstmt3, 0),
-				last_id, &tmp_mid, &b_result, NULL, NULL)) {
+			if (!common_util_copy_message_internal(psqlite, TRUE,
+			    sqlite3_column_int64(pstmt3, 0), last_id, &tmp_mid,
+			    &b_result, nullptr, nullptr))
 				return FALSE;
-			}
 			if (FALSE == b_result) {
 				*pb_result = FALSE;
 				return TRUE;
@@ -5474,12 +5469,9 @@ BOOL common_util_indexing_sub_contents(
 		if (step > 0 && 0 != sqlite3_column_int64(pstmt, 1)) {
 			sqlite3_reset(pstmt);
 			sqlite3_bind_int64(pstmt, 1, -row_id);
-			if (SQLITE_ROW == sqlite3_step(pstmt)) {
-				if (FALSE == common_util_indexing_sub_contents(
-					step - 1, pstmt, pstmt1, pidx)) {
-					return FALSE;	
-				}
-			}
+			if (sqlite3_step(pstmt) == SQLITE_ROW &&
+			    !common_util_indexing_sub_contents(step - 1, pstmt, pstmt1, pidx))
+				return FALSE;
 		}
 		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, row_id);

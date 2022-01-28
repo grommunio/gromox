@@ -1634,16 +1634,12 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 		*(uint32_t*)ppropval->pvalue = attach_num;
 		attach_num ++;
 		sqlite3_bind_int64(pstmt1, 1, attachment_id);
-		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
-			if (FALSE == message_read_message(psqlite, cpid,
-				sqlite3_column_int64(pstmt1, 0),
-				&pattachment->pembedded) ||
-				NULL == pattachment->pembedded) {
-				return FALSE;
-			}
-		} else {
+		if (sqlite3_step(pstmt1) != SQLITE_ROW)
 			pattachment->pembedded = NULL;
-		}
+		else if (!message_read_message(psqlite, cpid,
+		    sqlite3_column_int64(pstmt1, 0), &pattachment->pembedded) ||
+		    pattachment->pembedded == nullptr)
+			return FALSE;
 		sqlite3_reset(pstmt1);
 		auto &ats = *(*ppmsgctnt)->children.pattachments;
 		ats.pplist[ats.count++] = pattachment;
@@ -2120,16 +2116,13 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			b_exist = TRUE;
 		}
 		pstmt.finalize();
-		if (FALSE == b_exist) {
-			if (FALSE == common_util_allocate_eid(
-				psqlite, pmessage_id)) {
-				return FALSE;
-			}
-		} else {
+		if (b_exist) {
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages"
 			        " WHERE message_id=%llu", LLU(*pmessage_id));
 			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
+		} else if (!common_util_allocate_eid(psqlite, pmessage_id)) {
+			return FALSE;
 		}
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO messages (message_id,"
 			" parent_fid, parent_attid, change_number, "
@@ -2197,17 +2190,17 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 				&tmp_problems)) {
 				return FALSE;
 			}
-			if (NULL != pmsgctnt->children.pattachments->pplist[i]->pembedded) {
-				if (FALSE == message_write_message(TRUE,
-					psqlite, account, cpid, TRUE, tmp_id,
-					pmsgctnt->children.pattachments->pplist[i]->pembedded,
-					&message_id)) {
-					return FALSE;
-				}
-				if (0 == message_id) {
-					*pmessage_id = 0;
-					return TRUE;
-				}
+			if (pmsgctnt->children.pattachments->pplist[i]->pembedded == nullptr)
+				continue;
+			if (FALSE == message_write_message(TRUE,
+			    psqlite, account, cpid, TRUE, tmp_id,
+			    pmsgctnt->children.pattachments->pplist[i]->pembedded,
+			    &message_id)) {
+				return FALSE;
+			}
+			if (0 == message_id) {
+				*pmessage_id = 0;
+				return TRUE;
 			}
 		}
 	}
@@ -2538,14 +2531,11 @@ static BOOL message_replace_actions_propid(sqlite3 *psqlite,
 	BOOL b_replaced;
 	
 	for (size_t i = 0; i < pactions->count; ++i)
-		if (pactions->pblock[i].type == OP_TAG) {
-			if (FALSE == message_get_real_propid(
-				psqlite, ppropname_info, &((TAGGED_PROPVAL*)
-				pactions->pblock[i].pdata)->proptag,
-				&b_replaced)) {
-				return FALSE;
-			}
-		}
+		if (pactions->pblock[i].type == OP_TAG &&
+		    !message_get_real_propid(psqlite, ppropname_info,
+		    &static_cast<TAGGED_PROPVAL *>(pactions->pblock[i].pdata)->proptag,
+		    &b_replaced))
+			return FALSE;
 	return TRUE;
 }
 

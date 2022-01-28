@@ -1107,13 +1107,11 @@ void db_engine_proc_dynamic_event(db_item_ptr &pdb, uint32_t cpid,
 	DYNAMIC_NODE *pdynamic;
 	DOUBLE_LIST_NODE *pnode;
 	
-	if (DYNAMIC_EVENT_MOVE_FOLDER == event_type) {
-		if (FALSE == common_util_get_folder_type(
-			pdb->psqlite, id3, &folder_type)) {
-			debug_info("[db_engine]: fatal error in"
-				" common_util_get_folder_type\n");
-			return;
-		}
+	if (event_type == DYNAMIC_EVENT_MOVE_FOLDER &&
+	    !common_util_get_folder_type(pdb->psqlite, id3, &folder_type)) {
+		debug_info("[db_engine]: fatal error in"
+			" common_util_get_folder_type\n");
+		return;
 	}
 	for (pnode=double_list_get_head(&pdb->dynamic_list); NULL!=pnode;
 		pnode=double_list_get_after(&pdb->dynamic_list, pnode)) {
@@ -1242,14 +1240,11 @@ static BOOL db_engine_insert_categories(sqlite3 *psqlite,
 		type = psorts->psort[i].type;
 		if ((type & MVI_FLAG) == MVI_FLAG)
 			type &= ~MVI_FLAG;
-		if (NULL == ppropvals[i].pvalue) {
+		if (ppropvals[i].pvalue == nullptr)
 			sqlite3_bind_null(pstmt_insert, 9);
-		} else {
-			if (FALSE == common_util_bind_sqlite_statement(
-				pstmt_insert, 9, type, ppropvals[i].pvalue)) {
-				return FALSE;	
-			}
-		}
+		else if (!common_util_bind_sqlite_statement(pstmt_insert,
+		    9, type, ppropvals[i].pvalue))
+			return FALSE;
 		sqlite3_bind_null(pstmt_insert, 10);
 		if (i == depth && 0 != after_row_id) {
 			sqlite3_bind_int64(pstmt_insert, 11, after_row_id);
@@ -1312,14 +1307,10 @@ static BOOL db_engine_insert_message(sqlite3 *psqlite,
 	sqlite3_bind_null(pstmt_insert, 6);
 	sqlite3_bind_null(pstmt_insert, 7);
 	sqlite3_bind_int64(pstmt_insert, 8, inst_num);
-	if (NULL == pvalue) {
+	if (pvalue == nullptr)
 		sqlite3_bind_null(pstmt_insert, 9);
-	} else {
-		if (FALSE == common_util_bind_sqlite_statement(
-			pstmt_insert, 9, type, pvalue)) {
-			return FALSE;
-		}
-	}
+	else if (!common_util_bind_sqlite_statement(pstmt_insert, 9, type, pvalue))
+		return FALSE;
 	sqlite3_bind_int64(pstmt_insert, 10, !!b_read);
 	sqlite3_bind_int64(pstmt_insert, 11, after_row_id == 0 ? -parent_id : after_row_id);
 	if (SQLITE_DONE != sqlite3_step(pstmt_insert)) {
@@ -1539,15 +1530,11 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			padded_row->row_instance = 0;
 			padded_row->after_row_id = inst_id;
 			padded_row->after_instance = 0;
-			if (0 == padded_row->after_row_id) {
+			if (padded_row->after_row_id == 0)
 				padded_row->after_folder_id = 0;
-			} else {
-				if (FALSE == common_util_get_message_parent_folder(
-					pdb->psqlite, padded_row->after_row_id,
-					&padded_row->after_folder_id)) {
-					continue;
-				}
-			}
+			else if (!common_util_get_message_parent_folder(pdb->psqlite,
+			    padded_row->after_row_id, &padded_row->after_folder_id))
+				continue;
 			datagram.id_array.pl = &ptable->table_id;
 			datagram.db_notify.type = ptable->b_search ?
 			                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_ADDED :
@@ -1651,15 +1638,11 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			if (ptable->table_flags & TABLE_FLAG_NONOTIFICATIONS) {
 				continue;
 			}
-			if (0 == padded_row->after_row_id) {
+			if (padded_row->after_row_id == 0)
 				padded_row->after_folder_id = 0;
-			} else {
-				if (FALSE == common_util_get_message_parent_folder(
-					pdb->psqlite, padded_row->after_row_id,
-					&padded_row->after_folder_id)) {
-					continue;
-				}
-			}
+			else if (!common_util_get_message_parent_folder(pdb->psqlite,
+			    padded_row->after_row_id, &padded_row->after_folder_id))
+				continue;
 			padded_row->row_instance = 0;
 			padded_row->after_instance = 0;
 			datagram.id_array.pl = &ptable->table_id;
@@ -2901,14 +2884,10 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 				type, pvalue, pvalue1)) {
 				continue;
 			}
-			if (NULL == pvalue1) {
+			if (pvalue1 == nullptr)
 				sqlite3_bind_null(pstmt2, 1);
-			} else {
-				if (FALSE == common_util_bind_sqlite_statement(
-					pstmt2, 1, type, pvalue1)) {
-					break;
-				}
-			}
+			else if (!common_util_bind_sqlite_statement(pstmt2, 1, type, pvalue1))
+				break;
 			sqlite3_bind_int64(pstmt2, 2, row_id);
 			if (SQLITE_DONE != sqlite3_step(pstmt2)) {
 				break;
@@ -3014,12 +2993,10 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			}
 			idx = 0;
 			sqlite3_bind_int64(pstmt, 1, 0);
-			if (SQLITE_ROW == sqlite3_step(pstmt)) {
-				if (FALSE == common_util_indexing_sub_contents(
-					ptable->psorts->ccategories, pstmt, pstmt1, &idx)) {
-					continue;
-				}
-			}
+			if (sqlite3_step(pstmt) == SQLITE_ROW &&
+			    !common_util_indexing_sub_contents(ptable->psorts->ccategories,
+			    pstmt, pstmt1, &idx))
+				continue;
 			pstmt.finalize();
 			pstmt1.finalize();
 		}
@@ -3034,87 +3011,85 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			                           DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram1);
-		} else {
-			for (pnode1=double_list_get_head(&tmp_list); NULL!=pnode1;
-				pnode1=double_list_get_after(&tmp_list, pnode1)) {
-				pdelnode = (ROWDEL_NODE*)pnode1->pdata;
-				if (0 == pdelnode->idx) {
-					continue;
-				}
-				datagram.id_array.pl = &ptable->table_id;
-				if (FALSE == ptable->b_search) {
-					pdeleted_row->row_folder_id = folder_id;
-				} else {
-					if (0 == (0xFF00000000000000ULL & pdelnode->inst_id)) {
-						if (FALSE == common_util_get_message_parent_folder(
-							pdb->psqlite, pdelnode->inst_id,
-							&pdeleted_row->row_folder_id)) {
-							continue;	
-						}
-					} else {
-						pdeleted_row->row_folder_id = folder_id;
-					}
-				}
-				pdeleted_row->row_message_id = pdelnode->inst_id;
-				pdeleted_row->row_instance = pdelnode->inst_num;
-				datagram.db_notify.type = ptable->b_search ?
-				                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_DELETED :
-				                          DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_DELETED;
-				notification_agent_backward_notify(
-					ptable->remote_id, &datagram);
-			}
-			if (0 == double_list_get_nodes_num(&notify_list)) {
+			continue;
+		}
+		for (pnode1 = double_list_get_head(&tmp_list); NULL != pnode1;
+		     pnode1 = double_list_get_after(&tmp_list, pnode1)) {
+			pdelnode = (ROWDEL_NODE *)pnode1->pdata;
+			if (0 == pdelnode->idx) {
 				continue;
 			}
-			snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM"
-					" t%u WHERE idx=?", ptable->table_id);
-			pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
-			if (pstmt == nullptr)
-				continue;
-			snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM "
-					"t%u WHERE row_id=?", ptable->table_id);
-			pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
-			if (pstmt1 == nullptr) {
-				continue;
+			datagram.id_array.pl = &ptable->table_id;
+			if (FALSE == ptable->b_search) {
+				pdeleted_row->row_folder_id = folder_id;
+			} else if ((pdelnode->inst_id & 0xFF00000000000000ULL) == 0) {
+				if (FALSE == common_util_get_message_parent_folder(
+				    pdb->psqlite, pdelnode->inst_id,
+				    &pdeleted_row->row_folder_id)) {
+					continue;
+				}
+			} else {
+				pdeleted_row->row_folder_id = folder_id;
 			}
-			while ((pnode1 = double_list_pop_front(&notify_list)) != nullptr) {
-				row_id = ((ROWINFO_NODE*)pnode1->pdata)->row_id;
-				sqlite3_bind_int64(pstmt1, 1, row_id);
-				if (SQLITE_ROW != sqlite3_step(pstmt1)) {
-					sqlite3_reset(pstmt1);
-					continue;
-				}
-				if (SQLITE_NULL == sqlite3_column_type(pstmt1, 1)) {
-					sqlite3_reset(pstmt1);
-					continue;
-				}
-				idx = sqlite3_column_int64(pstmt1, 1);
-				if (1 == idx) {
-					inst_id = 0;
-					inst_num = 0;
-				} else {
-					sqlite3_bind_int64(pstmt, 1, idx - 1);
-					if (SQLITE_ROW != sqlite3_step(pstmt)) {
-						sqlite3_reset(pstmt);
-						sqlite3_reset(pstmt1);
-						continue;
-					}
-					inst_id = sqlite3_column_int64(pstmt, 3);
-					inst_num = sqlite3_column_int64(pstmt, 10);
-					sqlite3_reset(pstmt);
-				}
-				datagram1.id_array.pl = &ptable->table_id;
-				pmodified_row->row_message_id =
-					sqlite3_column_int64(pstmt1, 3);
-				pmodified_row->after_row_id = inst_id;
-				pmodified_row->after_instance = inst_num;
-				datagram1.db_notify.type = ptable->b_search ?
-				                           DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED :
-				                           DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED;
-				notification_agent_backward_notify(
-					ptable->remote_id, &datagram1);
+			pdeleted_row->row_message_id = pdelnode->inst_id;
+			pdeleted_row->row_instance = pdelnode->inst_num;
+			datagram.db_notify.type = ptable->b_search ?
+			                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_DELETED :
+			                          DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_DELETED;
+			notification_agent_backward_notify(
+				ptable->remote_id, &datagram);
+		}
+		if (0 == double_list_get_nodes_num(&notify_list)) {
+			continue;
+		}
+		snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM"
+		         " t%u WHERE idx=?", ptable->table_id);
+		pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		if (pstmt == nullptr)
+			continue;
+		snprintf(sql_string, arsizeof(sql_string), "SELECT * FROM "
+		         "t%u WHERE row_id=?", ptable->table_id);
+		pstmt1 = gx_sql_prep(pdb->tables.psqlite, sql_string);
+		if (pstmt1 == nullptr) {
+			continue;
+		}
+		while ((pnode1 = double_list_pop_front(&notify_list)) != nullptr) {
+			row_id = ((ROWINFO_NODE *)pnode1->pdata)->row_id;
+			sqlite3_bind_int64(pstmt1, 1, row_id);
+			if (SQLITE_ROW != sqlite3_step(pstmt1)) {
 				sqlite3_reset(pstmt1);
+				continue;
 			}
+			if (SQLITE_NULL == sqlite3_column_type(pstmt1, 1)) {
+				sqlite3_reset(pstmt1);
+				continue;
+			}
+			idx = sqlite3_column_int64(pstmt1, 1);
+			if (1 == idx) {
+				inst_id = 0;
+				inst_num = 0;
+			} else {
+				sqlite3_bind_int64(pstmt, 1, idx - 1);
+				if (SQLITE_ROW != sqlite3_step(pstmt)) {
+					sqlite3_reset(pstmt);
+					sqlite3_reset(pstmt1);
+					continue;
+				}
+				inst_id = sqlite3_column_int64(pstmt, 3);
+				inst_num = sqlite3_column_int64(pstmt, 10);
+				sqlite3_reset(pstmt);
+			}
+			datagram1.id_array.pl = &ptable->table_id;
+			pmodified_row->row_message_id =
+				sqlite3_column_int64(pstmt1, 3);
+			pmodified_row->after_row_id = inst_id;
+			pmodified_row->after_instance = inst_num;
+			datagram1.db_notify.type = ptable->b_search ?
+			                           DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED :
+			                           DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED;
+			notification_agent_backward_notify(
+				ptable->remote_id, &datagram1);
+			sqlite3_reset(pstmt1);
 		}
 	}
 }
@@ -3809,11 +3784,10 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				} else {
 					unread_delta = 0;
 				}
-				if (0 != unread_delta) {
-					if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK) {
-						b_error = TRUE;
-						break;
-					}
+				if (unread_delta != 0 &&
+				    gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK) {
+					b_error = TRUE;
+					break;
 				}
 				row_id = row_id1;
 				while (0 != unread_delta) {
@@ -3911,17 +3885,15 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				pmodified_row->after_row_id = inst_id;
 				if (0 == inst_id) {
 					pmodified_row->after_folder_id = 0;
-				} else {
-					if (CONTENT_ROW_MESSAGE == row_type) {
-						if (FALSE == common_util_get_message_parent_folder(
-							pdb->psqlite, pmodified_row->after_row_id,
-							&pmodified_row->after_folder_id)) {
-							sqlite3_reset(pstmt1);
-							continue;
-						}
-					} else {
-						pmodified_row->after_folder_id = folder_id;
+				} else if (row_type == CONTENT_ROW_MESSAGE) {
+					if (FALSE == common_util_get_message_parent_folder(
+						pdb->psqlite, pmodified_row->after_row_id,
+						&pmodified_row->after_folder_id)) {
+						sqlite3_reset(pstmt1);
+						continue;
 					}
+				} else {
+					pmodified_row->after_folder_id = folder_id;
 				}
 				pmodified_row->after_instance = inst_num;
 				datagram.db_notify.type = ptable->b_search ?

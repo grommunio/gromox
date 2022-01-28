@@ -2074,12 +2074,9 @@ BOOL exmdb_server_get_search_criteria(
 			return FALSE;
 	}
 	pstmt.finalize();
-	if (NULL != pfolder_ids) {
-		if (FALSE == common_util_load_search_scopes(
-			pdb->psqlite, fid_val, pfolder_ids)) {
-			return FALSE;
-		}
-	}
+	if (pfolder_ids != nullptr &&
+	    !common_util_load_search_scopes(pdb->psqlite, fid_val, pfolder_ids))
+		return FALSE;
 	pdb.reset();
 	if (NULL != pfolder_ids) {
 		for (size_t i = 0; i < pfolder_ids->count; ++i)
