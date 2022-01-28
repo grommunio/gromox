@@ -840,10 +840,8 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 		if (NULL == tmp_proptags.pproptag) {
 			return ecMAPIOOM;
 		}
-		if (FALSE == b_force) {
-			if (!flddst->get_all_proptags(&proptags1))
-				return ecError;
-		}
+		if (!b_force && !flddst->get_all_proptags(&proptags1))
+			return ecError;
 		for (i=0; i<proptags.count; i++) {
 			if (flddst->check_readonly_property(proptags.pproptag[i]))
 				continue;

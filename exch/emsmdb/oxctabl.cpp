@@ -105,12 +105,8 @@ uint32_t rop_setcolumns(uint8_t table_flags, const PROPTAG_ARRAY *pproptags,
 			return ecInvalidParam;
 	}
 	auto psorts = ptable->get_sorts();
-	if (NULL != psorts) {
-		if (FALSE == oxctable_verify_columns_and_sorts(
-			pproptags, psorts)) {
-			return ecNotSupported;
-		}
-	}
+	if (psorts != nullptr && !oxctable_verify_columns_and_sorts(pproptags, psorts))
+		return ecNotSupported;
 	if (!ptable->set_columns(pproptags))
 		return ecMAPIOOM;
 	*ptable_status = TABLE_STATUS_COMPLETE;
@@ -209,7 +205,7 @@ uint32_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteria,
 	return ecSuccess;
 }
 
-uint32_t rop_restrict(uint8_t res_flags, const RESTRICTION *pres,
+uint32_t rop_restrict(uint8_t res_flags, RESTRICTION *pres,
     uint8_t *ptable_status, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
 	int object_type;
@@ -227,12 +223,8 @@ uint32_t rop_restrict(uint8_t res_flags, const RESTRICTION *pres,
 	default:
 		return ecNotSupported;
 	}
-	if (NULL != pres) {
-		if (FALSE == common_util_convert_restriction(
-			TRUE, (RESTRICTION*)pres)) {
-			return ecError;
-		}
-	}
+	if (pres != nullptr && !common_util_convert_restriction(TRUE, pres))
+		return ecError;
 	if (!ptable->set_restriction(pres))
 		return ecMAPIOOM;
 	*ptable_status = TABLE_STATUS_COMPLETE;
@@ -494,7 +486,7 @@ uint32_t rop_querycolumnsall(PROPTAG_ARRAY *pproptags, LOGMAP *plogmap,
 	return ecSuccess;
 }
 
-uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres, uint8_t seek_pos,
+uint32_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
     const BINARY *pbookmark, uint8_t *pbookmark_invisible, PROPERTY_ROW **pprow,
     PROPTAG_ARRAY **ppcolumns, LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)
 {
@@ -547,12 +539,8 @@ uint32_t rop_findrow(uint8_t flags, const RESTRICTION *pres, uint8_t seek_pos,
 	default:
 		return ecInvalidParam;
 	}
-	if (NULL != pres) {
-		if (FALSE == common_util_convert_restriction(
-			TRUE, (RESTRICTION*)pres)) {
-			return ecError;
-		}
-	}
+	if (pres != nullptr && !common_util_convert_restriction(TRUE, pres))
+		return ecError;
 	if (!ptable->match_row(b_forward, pres, &position, &propvals))
 		return ecError;
 	*ppcolumns = deconst(ptable->get_columns());

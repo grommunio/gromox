@@ -261,13 +261,11 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (!oxomsg_check_delegate(pmessage, username, GX_ARRAY_SIZE(username)))
 		return ecError;
 	auto account = plogon->get_account();
-	if ('\0' == username[0]) {
+	if (*username == '\0')
 		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
-	} else {
-		if (FALSE == oxomsg_check_permission(account, username)) {
-			return ecAccessDenied;
-		}
-	}
+	else if (!oxomsg_check_permission(account, username))
+		return ecAccessDenied;
+
 	gxerr_t err = oxomsg_rectify_message(pmessage, username);
 	if (err != GXERR_SUCCESS)
 		return gxerr_to_hresult(err);
@@ -441,11 +439,8 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 		if (!exmdb_client_get_message_timer(plogon->get_dir(),
 		    message_id, &ptimer_id))
 			return ecError;
-		if (NULL != ptimer_id) {
-			if (FALSE == common_util_cancel_timer(*ptimer_id)) {
-				return ecUnableToAbort;
-			}
-		}
+		if (ptimer_id != nullptr && !common_util_cancel_timer(*ptimer_id))
+			return ecUnableToAbort;
 		if (!exmdb_client_clear_submit(plogon->get_dir(), message_id, TRUE))
 			return ecError;
 		if (FALSE == common_util_save_message_ics(
@@ -604,13 +599,11 @@ uint32_t rop_transportsend(TPROPVAL_ARRAY **pppropvals, LOGMAP *plogmap,
 	if (!oxomsg_check_delegate(pmessage, username, GX_ARRAY_SIZE(username)))
 		return ecError;
 	auto account = plogon->get_account();
-	if ('\0' == username[0]) {
+	if (*username == '\0')
 		gx_strlcpy(username, account, GX_ARRAY_SIZE(username));
-	} else {
-		if (FALSE == oxomsg_check_permission(account, username)) {
-			return ecAccessDenied;
-		}
-	}
+	else if (!oxomsg_check_permission(account, username))
+		return ecAccessDenied;
+
 	gxerr_t err = oxomsg_rectify_message(pmessage, username);
 	if (err != GXERR_SUCCESS)
 		return gxerr_to_hresult(err);

@@ -22,7 +22,7 @@ extern uint32_t rop_writeperuserinformation(const LONG_TERM_ID *, uint8_t has_fi
 extern uint32_t rop_openfolder(uint64_t folder_id, uint8_t open_flags, uint8_t *has_rules, GHOST_SERVER **, LOGMAP *, uint8_t logon_id, uint32_t hin, uint32_t *hout);
 extern uint32_t rop_createfolder(uint8_t folder_type, uint8_t use_unicode, uint8_t open_existing, uint8_t reserved, const char *fld_name, const char *fld_comment, uint64_t *fld_id, uint8_t *is_existing, uint8_t *has_rules, GHOST_SERVER **, LOGMAP *, uint8_t logon_id,  uint32_t hin, uint32_t *hout);
 extern uint32_t rop_deletefolder(uint8_t flags, uint64_t folder_id, uint8_t *partial_completion, LOGMAP *, uint8_t logon_id, uint32_t hin);
-extern uint32_t rop_setsearchcriteria(const RESTRICTION *, const LONGLONG_ARRAY *folder_ids, uint32_t search_flags, LOGMAP *, uint8_t logon_id, uint32_t hin);
+extern uint32_t rop_setsearchcriteria(RESTRICTION *, const LONGLONG_ARRAY *folder_ids, uint32_t search_flags, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern uint32_t rop_getsearchcriteria(uint8_t use_unicode, uint8_t include_restriction, uint8_t include_folders, RESTRICTION **, LONGLONG_ARRAY *folder_ids, uint32_t *search_flags, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern uint32_t rop_movecopymessages(const LONGLONG_ARRAY *msg_ids, uint8_t want_async, uint8_t want_copy, uint8_t *partial_completion, LOGMAP *, uint8_t logon_id, uint32_t hsrc, uint32_t hdst);
 extern uint32_t rop_movefolder(uint8_t want_async, uint8_t use_unicode, uint64_t folder_id, const char *new_name, uint8_t *partial_completion, LOGMAP *, uint8_t logon_id, uint32_t hsrc, uint32_t hdst);
@@ -35,7 +35,7 @@ extern uint32_t rop_gethierarchytable(uint8_t tbl_flags, uint32_t *row_count, LO
 extern uint32_t rop_getcontentstable(uint8_t tbl_flags, uint32_t *row_count, LOGMAP *, uint8_t logon_id, uint32_t hin, uint32_t *hout);
 extern uint32_t rop_setcolumns(uint8_t tbl_flags, const PROPTAG_ARRAY *, uint8_t *tbl_status, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern uint32_t rop_sorttable(uint8_t tbl_flags, const SORTORDER_SET *criteria, uint8_t *tbl_status, LOGMAP *, uint8_t logon_id, uint32_t hin);
-extern uint32_t rop_restrict(uint8_t res_flags, const RESTRICTION *, uint8_t *tbl_status, LOGMAP *, uint8_t logon_id, uint32_t hin);
+extern uint32_t rop_restrict(uint8_t res_flags, RESTRICTION *, uint8_t *tbl_status, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern uint32_t rop_queryrows(uint8_t flags, uint8_t forward_read, uint16_t row_count, uint8_t *seek_pos, uint16_t *count, EXT_PUSH *, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern uint32_t rop_abort(uint8_t *tbl_status, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern uint32_t rop_getstatus(uint8_t *tbl_status, LOGMAP *, uint8_t logon_id, uint32_t hin);
@@ -45,7 +45,7 @@ extern uint32_t rop_seekrowbookmark(const BINARY *bookmark, int32_t offset, uint
 extern uint32_t rop_seekrowfractional(uint32_t numerator, uint32_t denominator, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern uint32_t rop_createbookmark(BINARY *bookmark, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern uint32_t rop_querycolumnsall(PROPTAG_ARRAY *, LOGMAP *, uint8_t logon_id, uint32_t hin);
-extern uint32_t rop_findrow(uint8_t flags, const RESTRICTION *, uint8_t seek_pos, const BINARY *bookmark, uint8_t *bookmark_invisible, PROPERTY_ROW **row, PROPTAG_ARRAY **cols, LOGMAP *, uint8_t logon_id, uint32_t hin);
+extern uint32_t rop_findrow(uint8_t flags, RESTRICTION *, uint8_t seek_pos, const BINARY *bookmark, uint8_t *bookmark_invisible, PROPERTY_ROW **row, PROPTAG_ARRAY **cols, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern uint32_t rop_freebookmark(const BINARY *bookmark, LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern uint32_t rop_resettable(LOGMAP *, uint8_t logon_id, uint32_t hin);
 extern uint32_t rop_expandrow(uint16_t max_count, uint64_t category_id, uint32_t *expanded_count, uint16_t *count, EXT_PUSH *, LOGMAP *, uint8_t logon_id, uint32_t hin);

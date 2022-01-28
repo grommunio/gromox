@@ -358,7 +358,7 @@ uint32_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 	return ecSuccess;
 }
 
-uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
+uint32_t rop_setsearchcriteria(RESTRICTION *pres,
     const LONGLONG_ARRAY *pfolder_ids, uint32_t search_flags, LOGMAP *plogmap,
     uint8_t logon_id, uint32_t hin)
 {
@@ -424,12 +424,8 @@ uint32_t rop_setsearchcriteria(const RESTRICTION *pres,
 				return ecAccessDenied;
 		}
 	}
-	if (NULL != pres) {
-		if (FALSE == common_util_convert_restriction(
-			TRUE, (RESTRICTION*)pres)) {
-			return ecError;
-		}
-	}
+	if (pres != nullptr && !common_util_convert_restriction(TRUE, pres))
+		return ecError;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client_set_search_criteria(plogon->get_dir(), pinfo->cpid,
 	    pfolder->folder_id, search_flags, pres, pfolder_ids, &b_result))
@@ -469,11 +465,9 @@ uint32_t rop_getsearchcriteria(uint8_t use_unicode, uint8_t include_restriction,
 	if (!exmdb_client_get_search_criteria(plogon->get_dir(),
 	    pfolder->folder_id, psearch_flags, ppres, pfolder_ids))
 		return ecError;
-	if (0 == use_unicode && NULL != ppres && NULL != *ppres) {
-		if (FALSE == common_util_convert_restriction(FALSE, *ppres)) {
-			return ecError;
-		}
-	}
+	if (use_unicode == 0 && ppres != nullptr && *ppres != nullptr &&
+	    !common_util_convert_restriction(false, *ppres))
+		return ecError;
 	return ecSuccess;
 }
 
