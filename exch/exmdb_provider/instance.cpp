@@ -252,8 +252,7 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		if (NULL == pattachment) {
 			return FALSE;
 		}
-		if (FALSE == attachment_list_append_internal(
-			pattachments, pattachment)) {
+		if (!attachment_list_append_internal(pattachments, pattachment)) {
 			attachment_content_free(pattachment);
 			return FALSE;
 		}
@@ -303,10 +302,9 @@ static BOOL instance_load_message(sqlite3 *psqlite,
 		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
 			message_id1 = sqlite3_column_int64(pstmt1, 0);
 			last_id = 0;
-			if (FALSE == instance_load_message(psqlite,
-				message_id1, &last_id, &pmsgctnt1)) {
+			if (!instance_load_message(psqlite, message_id1,
+			    &last_id, &pmsgctnt1))
 				return FALSE;
-			}
 			attachment_content_set_embedded_internal(pattachment, pmsgctnt1);
 		}
 		sqlite3_reset(pstmt1);
@@ -343,7 +341,7 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 	pinstance->cpid = cpid;
 	mid_val = rop_util_get_gc_value(message_id);
 	pinstance->type = INSTANCE_TYPE_MESSAGE;
-	if (FALSE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private()) {
 		pinstance->username = strdup(username);
 		if (NULL == pinstance->username) {
 			free(pinstance);
@@ -382,13 +380,11 @@ BOOL exmdb_server_load_message_instance(const char *dir,
 		*pinstance_id = instance_id;
 		return TRUE;
 	}
-	if (FALSE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private())
 		exmdb_server_set_public_username(username);
-	}
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	if (FALSE == common_util_begin_message_optimize(pdb->psqlite)) {
+	if (!common_util_begin_message_optimize(pdb->psqlite))
 		return FALSE;
-	}
 	if (!instance_load_message(pdb->psqlite, mid_val, &pinstance->last_id,
 	    reinterpret_cast<MESSAGE_CONTENT **>(&pinstance->pcontent))) {
 		common_util_end_message_optimize();
@@ -452,13 +448,12 @@ BOOL exmdb_server_load_embedded_instance(const char *dir,
 	}
 	pmsgctnt = ((ATTACHMENT_CONTENT*)pinstance1->pcontent)->pembedded;
 	if (NULL == pmsgctnt) {
-		if (FALSE == b_new) {
+		if (!b_new) {
 			*pinstance_id = 0;
 			return TRUE;
 		}
-		if (FALSE == common_util_allocate_eid(pdb->psqlite, &mid_val)) {
+		if (!common_util_allocate_eid(pdb->psqlite, &mid_val))
 			return FALSE;
-		}
 		message_id = rop_util_make_eid_ex(1, mid_val);
 		pinstance = me_alloc<INSTANCE_NODE>();
 		if (NULL == pinstance) {
@@ -587,10 +582,9 @@ BOOL exmdb_server_reload_message_instance(
 			return FALSE;
 		}
 		last_id = 0;
-		if (FALSE == instance_load_message(pdb->psqlite,
-			*(uint64_t*)pvalue, &last_id, &pmsgctnt)) {
+		if (!instance_load_message(pdb->psqlite,
+		    *static_cast<uint64_t *>(pvalue), &last_id, &pmsgctnt))
 			return FALSE;	
-		}
 		if (NULL == pmsgctnt) {
 			*pb_result = FALSE;
 			return TRUE;
@@ -988,10 +982,8 @@ static BOOL instance_read_message(
 			memset(pattachment, 0 ,sizeof(ATTACHMENT_CONTENT));
 			pmsgctnt->children.pattachments->pplist[i] = pattachment;
 			pattachment1 = pmsgctnt1->children.pattachments->pplist[i];
-			if (FALSE == instance_read_attachment(
-				pattachment1, pattachment)) {
+			if (!instance_read_attachment(pattachment1, pattachment))
 				return FALSE;	
-			}
 		}
 	}
 	return TRUE;
@@ -1105,7 +1097,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 		default:
 			break;
 		}
-		if (FALSE == b_force) {
+		if (!b_force) {
 			switch (proptag) {
 			case PR_BODY:
 			case PR_BODY_A:	
@@ -1165,7 +1157,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 			if (NULL == prcpts) {
 				return FALSE;
 			}
-			if (FALSE == instance_identify_rcpts(prcpts)) {
+			if (!instance_identify_rcpts(prcpts)) {
 				tarray_set_free(prcpts);
 				return FALSE;
 			}
@@ -1180,7 +1172,7 @@ BOOL exmdb_server_write_message_instance(const char *dir,
 			if (NULL == pattachments) {
 				return FALSE;
 			}
-			if (FALSE == instance_identify_attachments(pattachments)) {
+			if (!instance_identify_attachments(pattachments)) {
 				attachment_list_free(pattachments);
 				return FALSE;
 			}
@@ -1371,7 +1363,7 @@ BOOL exmdb_server_write_attachment_instance(const char *dir,
 			pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
 			continue;
 		}
-		if (FALSE == b_force) {
+		if (!b_force) {
 			switch (proptag) {
 			case PR_ATTACH_DATA_BIN:
 				if (pproplist->has(ID_TAG_ATTACHDATABINARY))
@@ -1409,7 +1401,7 @@ BOOL exmdb_server_write_attachment_instance(const char *dir,
 		if (NULL == pmsgctnt) {
 			return FALSE;
 		}
-		if (FALSE == instance_identify_message(pmsgctnt)) {
+		if (!instance_identify_message(pmsgctnt)) {
 			message_content_free(pmsgctnt);
 			return FALSE;
 		}
@@ -1490,8 +1482,7 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 					return FALSE;
 				}
 			}
-			if (FALSE == attachment_list_append_internal(
-				pmsgctnt->children.pattachments, pattachment)) {
+			if (!attachment_list_append_internal(pmsgctnt->children.pattachments, pattachment)) {
 				attachment_content_free(pattachment);
 				return FALSE;
 			}
@@ -1622,9 +1613,8 @@ BOOL exmdb_server_flush_instance(const char *dir, uint32_t instance_id,
 	}
 	pinstance->b_new = FALSE;
 	folder_id = rop_util_make_eid_ex(1, pinstance->folder_id);
-	if (FALSE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private())
 		exmdb_server_set_public_username(pinstance->username);
-	}
 	pdb.reset();
 	common_util_set_tls_var(pmsgctnt);
 	BOOL b_result = exmdb_server_write_message(dir, account, 0, folder_id,
@@ -2231,11 +2221,9 @@ BOOL exmdb_server_get_instance_properties(
 		}
 		case PR_SUBJECT:
 		case PR_SUBJECT_A:
-			if (FALSE == instance_get_message_subject(
-				&pmsgctnt->proplist, pinstance->cpid,
-				pproptags->pproptag[i], &pvalue)) {
+			if (!instance_get_message_subject(&pmsgctnt->proplist,
+			    pinstance->cpid, pproptags->pproptag[i], &pvalue))
 				return FALSE;
-			}
 			if (pvalue == nullptr)
 				break;
 			vc.proptag = pproptags->pproptag[i];
@@ -2351,11 +2339,9 @@ BOOL exmdb_server_get_instance_properties(
 		case PR_DISPLAY_BCC_A:
 			if (pmsgctnt->children.prcpts == nullptr)
 				break;
-			if (FALSE == instance_get_message_display_recipients(
-				pmsgctnt->children.prcpts, pinstance->cpid,
-				pproptags->pproptag[i], &pvalue)) {
+			if (!instance_get_message_display_recipients(pmsgctnt->children.prcpts,
+			    pinstance->cpid, pproptags->pproptag[i], &pvalue))
 				return FALSE;
-			}
 			vc.proptag = pproptags->pproptag[i];
 			vc.pvalue = pvalue;
 			ppropvals->count++;
@@ -2421,7 +2407,7 @@ static BOOL set_xns_props_msg(INSTANCE_NODE *pinstance,
 				set by RopSetMessageStatus */
 			continue;
 		case PR_MESSAGE_FLAGS: {
-			if (FALSE == pinstance->b_new) {
+			if (!pinstance->b_new) {
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 								pproperties->ppropval[i].proptag;
@@ -3171,12 +3157,11 @@ BOOL exmdb_server_query_message_instance_attachment_table(
 			if (NULL == pset->pparray[pset->count]) {
 				return FALSE;
 			}
-			if (FALSE == instance_get_attachment_properties(
+			if (!instance_get_attachment_properties(
 			    pinstance->cpid, static_cast<uint64_t *>(pvalue),
-			    pattachments->pplist[i],
-				pproptags, pset->pparray[pset->count])) {
+			    pattachments->pplist[i], pproptags,
+			    pset->pparray[pset->count]))
 				return FALSE;
-			}
 			pset->count ++;
 		}
 	} else {
@@ -3194,12 +3179,11 @@ BOOL exmdb_server_query_message_instance_attachment_table(
 			if (NULL == pset->pparray[pset->count]) {
 				return FALSE;
 			}
-			if (FALSE == instance_get_attachment_properties(
+			if (!instance_get_attachment_properties(
 			    pinstance->cpid, static_cast<uint64_t *>(pvalue),
 			    pattachments->pplist[i],
-				pproptags, pset->pparray[pset->count])) {
+			    pproptags, pset->pparray[pset->count]))
 				return FALSE;
-			}
 			pset->count ++;
 		}
 	}
@@ -3229,10 +3213,9 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 	b_inconflict = FALSE;
 	if (pvalue != nullptr && *static_cast<uint32_t *>(pvalue) & MSGSTATUS_IN_CONFLICT)
 		b_inconflict = TRUE;
-	if (FALSE == b_inconflict) {
-		if (FALSE == instance_read_message(pmsg, &msgctnt)) {
+	if (!b_inconflict) {
+		if (!instance_read_message(pmsg, &msgctnt))
 			return FALSE;
-		}
 		if (NULL == pmsg->children.pattachments) {
 			pattachments = attachment_list_init();
 			if (NULL == pattachments) {
@@ -3253,8 +3236,7 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 		}
 		pembedded->proplist.erase(PidTagMid);
 		attachment_content_set_embedded_internal(pattachment, pembedded);
-		if (FALSE == attachment_list_append_internal(
-			pattachments, pattachment)) {
+		if (!attachment_list_append_internal(pattachments, pattachment)) {
 			attachment_content_free(pattachment);
 			return FALSE;
 		}
@@ -3281,8 +3263,7 @@ BOOL exmdb_server_set_message_instance_conflict(const char *dir,
 	}
 	pembedded->proplist.erase(PidTagMid);
 	attachment_content_set_embedded_internal(pattachment, pembedded);
-	if (FALSE == attachment_list_append_internal(
-		pattachments, pattachment)) {
+	if (!attachment_list_append_internal(pattachments, pattachment)) {
 		attachment_content_free(pattachment);
 		return FALSE;
 	}

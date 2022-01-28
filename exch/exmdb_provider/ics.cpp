@@ -125,9 +125,8 @@ static void ics_enum_content_idset(void *vparam, uint64_t message_id)
 	auto pparam = static_cast<ENUM_PARAM *>(vparam);
 	uint64_t mid_val;
 	
-	if (FALSE == pparam->b_result) {
+	if (!pparam->b_result)
 		return;
-	}
 	mid_val = rop_util_get_gc_value(message_id);
 	sqlite3_reset(pparam->stm_exist);
 	sqlite3_bind_int64(pparam->stm_exist, 1, mid_val);
@@ -230,7 +229,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		return false;
 	xstmt stm_insert_reads, stm_select_rcn, stm_select_rst;
 	if (NULL != pread) {
-		if (FALSE == b_private) {
+		if (!b_private) {
 			stm_select_rcn = gx_sql_prep(pdb->psqlite, "SELECT read_cn FROM "
 			                 "read_cns WHERE message_id=? AND username=?");
 			if (stm_select_rcn == nullptr)
@@ -267,11 +266,10 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			if (!b_fai)
 				continue;
 		}
-		if (NULL != prestriction && FALSE ==
-			common_util_evaluate_message_restriction(
-			pdb->psqlite, cpid, mid_val, prestriction)) {
+		if (prestriction != nullptr &&
+		    !common_util_evaluate_message_restriction(pdb->psqlite,
+		    cpid, mid_val, prestriction))
 			continue;	
-		}
 		sqlite3_reset(stm_insert_exist);
 		sqlite3_bind_int64(stm_insert_exist, 1, mid_val);
 		if (sqlite3_step(stm_insert_exist) != SQLITE_DONE)
@@ -559,9 +557,8 @@ static void ics_enum_hierarchy_idset(void *vparam, uint64_t folder_id)
 	uint16_t replid;
 	uint64_t fid_val;
 	
-	if (FALSE == pparam->b_result) {
+	if (!pparam->b_result)
 		return;
-	}
 	replid = rop_util_get_replid(folder_id);
 	fid_val = rop_util_get_gc_value(folder_id);
 	if (1 != replid) {
@@ -601,10 +598,9 @@ static BOOL ics_load_folder_changes(sqlite3 *psqlite,
 		fid_val = sqlite3_column_int64(pstmt, 0);
 		change_num = sqlite3_column_int64(pstmt, 1);
 		if (NULL != username) {
-			if (FALSE == common_util_check_folder_permission(
-				psqlite, fid_val, username, &permission)) {
+			if (!common_util_check_folder_permission(psqlite,
+			    fid_val, username, &permission))
 				return FALSE;
-			}
 			if (!(permission & (frightsReadAny | frightsVisible | frightsOwner)))
 				continue;
 		}

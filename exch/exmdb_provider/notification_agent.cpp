@@ -105,9 +105,8 @@ void notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter
 		}
 	}
  EXIT_THREAD:
-	while (FALSE == exmdb_parser_remove_router(prouter)) {
+	while (!exmdb_parser_remove_router(prouter))
 		sleep(1);
-	}
 	close(prouter->sockd);
 	prouter->sockd = -1;
 	for (auto &&bin : prouter->datagram_list)

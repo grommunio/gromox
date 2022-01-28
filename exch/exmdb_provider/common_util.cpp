@@ -1224,10 +1224,8 @@ static BINARY* common_util_to_message_entryid(
 	uint64_t folder_id;
 	MESSAGE_ENTRYID tmp_entryid;
 	
-	if (FALSE == common_util_get_message_parent_folder(
-		psqlite, message_id, &folder_id)) {
+	if (!common_util_get_message_parent_folder(psqlite, message_id, &folder_id))
 		return NULL;	
-	}
 	account_id = exmdb_server_get_account_id();
 	if (account_id < 0) {
 		return NULL;
@@ -1316,7 +1314,7 @@ static BOOL common_util_check_message_read(
 	char sql_string[128];
 	const char *username;
 	
-	if (FALSE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private()) {
 		username = exmdb_server_get_public_username();
 		if (NULL == username) {
 			return FALSE;
@@ -1374,7 +1372,7 @@ BOOL common_util_get_message_flags(sqlite3 *psqlite,
 	                         sqlite3_column_int64(pstmt, 0) : 0;
 	message_flags &= ~(MSGFLAG_READ | MSGFLAG_HASATTACH | MSGFLAG_FROMME |
 	                 MSGFLAG_ASSOCIATED | MSGFLAG_RN_PENDING | MSGFLAG_NRN_PENDING);
-	if (FALSE == b_native) {
+	if (!b_native) {
 		if (common_util_check_message_read(psqlite, message_id))
 			message_flags |= MSGFLAG_READ;
 		if (common_util_check_message_has_attachments(psqlite, message_id))
@@ -1413,10 +1411,8 @@ static void* common_util_get_message_parent_display(
 	void *pvalue;
 	uint64_t folder_id;
 	
-	if (FALSE == common_util_get_message_parent_folder(
-		psqlite, message_id, &folder_id)) {
+	if (!common_util_get_message_parent_folder(psqlite, message_id, &folder_id))
 		return NULL;	
-	}
 	if (!cu_get_property(db_table::folder_props, folder_id, 0,
 	    psqlite, PR_DISPLAY_NAME, &pvalue))
 		return NULL;	
@@ -2715,9 +2711,8 @@ static BOOL common_util_set_message_body(
 		return FALSE;
 	}
 	uint64_t cid = 0;
-	if (FALSE == common_util_allocate_cid(psqlite, &cid)) {
+	if (!common_util_allocate_cid(psqlite, &cid))
 		return FALSE;
-	}
 	auto path = cu_cid_path(dir, cid);
 	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
 	if (fd.get() < 0) {
@@ -2768,9 +2763,8 @@ static BOOL cu_set_object_cid_value(sqlite3 *psqlite, db_table table_type,
 		return FALSE;
 	}
 	uint64_t cid = 0;
-	if (FALSE == common_util_allocate_cid(psqlite, &cid)) {
+	if (!common_util_allocate_cid(psqlite, &cid))
 		return FALSE;
-	}
 	auto path = cu_cid_path(dir, cid);
 	wrapfd fd = open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, 0666);
 	if (fd.get() < 0) {
@@ -2984,10 +2978,9 @@ BOOL cu_set_properties(db_table table_type,
 				if (!cu_remove_property(db_table::msg_props,
 				    id, psqlite, PR_SUBJECT_PREFIX))
 					return FALSE;	
-				if (FALSE == common_util_set_message_subject(
-					cpid, id, pstmt, ppropvals->ppropval + i)) {
+				if (!common_util_set_message_subject(cpid,
+				    id, pstmt, &ppropvals->ppropval[i]))
 					return FALSE;	
-				}
 				continue;
 			case ID_TAG_BODY:
 				if (NULL == common_util_get_tls_var()) {
@@ -3793,10 +3786,8 @@ BINARY* common_util_to_private_folder_entryid(
 		return nullptr;
 	}
 	memcpy(&tmp_entryid.provider_uid, pbin->pb, 16);
-	if (FALSE == common_util_get_id_from_username(
-		username, &user_id)) {
+	if (!common_util_get_id_from_username(username, &user_id))
 		return nullptr;
-	}
 	tmp_entryid.database_guid = rop_util_make_user_guid(user_id);
 	tmp_entryid.folder_type = EITLT_PRIVATE_FOLDER;
 	tmp_entryid.global_counter = rop_util_get_gc_array(folder_id);
@@ -3828,10 +3819,8 @@ BINARY* common_util_to_private_message_entryid(
 		return nullptr;
 	}
 	memcpy(&tmp_entryid.provider_uid, pbin->pb, 16);
-	if (FALSE == common_util_get_id_from_username(
-		username, &user_id)) {
+	if (!common_util_get_id_from_username(username, &user_id))
 		return nullptr;
-	}
 	tmp_entryid.folder_database_guid = rop_util_make_user_guid(user_id);
 	tmp_entryid.message_type = EITLT_PRIVATE_MESSAGE;
 	tmp_entryid.message_database_guid = tmp_entryid.folder_database_guid;
@@ -3994,10 +3983,8 @@ static BINARY* common_util_get_message_parent_svrid(
 	EXT_PUSH ext_push;
 	uint64_t folder_id;
 	
-	if (FALSE == common_util_get_message_parent_folder(
-		psqlite, message_id, &folder_id)) {
+	if (!common_util_get_message_parent_folder(psqlite, message_id, &folder_id))
 		return NULL;	
-	}
 	auto pbin = cu_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
@@ -4710,16 +4697,15 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 	uint32_t message_size;
 	auto b_private = exmdb_server_check_private();
 	
-	if (FALSE == b_embedded) {
+	if (!b_embedded) {
 		if (*pdst_mid == 0 &&
 		    !common_util_allocate_eid_from_folder(psqlite, parent_id, pdst_mid))
 			return FALSE;
 	} else if (!common_util_allocate_eid(psqlite, pdst_mid)) {
 		return FALSE;
 	}
-	if (FALSE == common_util_allocate_cn(psqlite, &change_num)) {
+	if (!common_util_allocate_cn(psqlite, &change_num))
 		return FALSE;
-	}
 	if (NULL != pchange_num) {
 		*pchange_num = change_num;
 	}
@@ -4877,7 +4863,7 @@ static BOOL common_util_copy_message_internal(sqlite3 *psqlite,
 			    sqlite3_column_int64(pstmt3, 0), last_id, &tmp_mid,
 			    &b_result, nullptr, nullptr))
 				return FALSE;
-			if (FALSE == b_result) {
+			if (!b_result) {
 				*pb_result = FALSE;
 				return TRUE;
 			}
@@ -4903,11 +4889,10 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 	static const uint32_t fake_uid = 1;
 	TAGGED_PROPVAL propval_buff[4];
 	
-	if (FALSE == common_util_copy_message_internal(psqlite, 
-		FALSE, message_id, folder_id, pdst_mid, pb_result,
-		&change_num, pmessage_size)) {
+	if (!common_util_copy_message_internal(psqlite,
+	    FALSE, message_id, folder_id, pdst_mid, pb_result,
+	    &change_num, pmessage_size))
 		return FALSE;
-	}
 	if (*pb_result) {
 		if (!cu_get_property(db_table::folder_props,
 			folder_id, 0, psqlite, PROP_TAG_ARTICLENUMBERNEXT, &pvalue)) {
@@ -5066,10 +5051,8 @@ BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 			goto NOT_FOUND_PROPNAME;
 		}
 		*ptoken++ = '\0';
-		if (FALSE == guid_from_string(
-			&ppropnames->ppropname[i].guid, temp_name + 5)) {
+		if (!guid_from_string(&ppropnames->ppropname[i].guid, temp_name + 5))
 			goto NOT_FOUND_PROPNAME;
-		}
 		if (0 == strncasecmp(ptoken, "LID=", 4)) {
 			ppropnames->ppropname[i].kind = MNID_ID;
 			ppropnames->ppropname[i].lid = strtol(ptoken + 4, nullptr, 0);

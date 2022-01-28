@@ -816,9 +816,8 @@ static void *mdpps_thrwork(void *pparam)
 			if (NULL == pbuff) {
 				tmp_byte = exmdb_response::LACK_MEMORY;
 				write(pconnection->sockd, &tmp_byte, 1);
-				if (FALSE == is_connected) {
+				if (!is_connected)
 					break;
-				}
 				buff_len = 0;
 			}
 			offset = 0;
@@ -843,7 +842,7 @@ static void *mdpps_thrwork(void *pparam)
 			tmp_byte = exmdb_response::PULL_ERROR;
 		} else if (!is_connected) {
 			if (request.call_id == exmdb_callid::CONNECT) {
-				if (FALSE == exmdb_parser_check_local(
+				if (!exmdb_parser_check_local(
 					request.payload.connect.prefix, &b_private)) {
 					tmp_byte = exmdb_response::MISCONFIG_PREFIX;
 				} else if (b_private != request.payload.connect.b_private) {
