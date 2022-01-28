@@ -1008,11 +1008,7 @@ BOOL exmdb_server_read_message_instance(const char *dir,
 	if (NULL == pinstance || INSTANCE_TYPE_MESSAGE != pinstance->type) {
 		return FALSE;
 	}
-	if (FALSE == instance_read_message(
-	    static_cast<MESSAGE_CONTENT *>(pinstance->pcontent), pmsgctnt)) {
-		return FALSE;
-	}
-	return TRUE;
+	return instance_read_message(static_cast<MESSAGE_CONTENT *>(pinstance->pcontent), pmsgctnt);
 }
 
 static BOOL instance_identify_rcpts(TARRAY_SET *prcpts)
@@ -1350,11 +1346,7 @@ BOOL exmdb_server_read_attachment_instance(const char *dir,
 	if (NULL == pinstance || INSTANCE_TYPE_ATTACHMENT != pinstance->type) {
 		return FALSE;
 	}
-	if (FALSE == instance_read_attachment(
-	    static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent), pattctnt)) {
-		return FALSE;
-	}
-	return TRUE;
+	return instance_read_attachment(static_cast<ATTACHMENT_CONTENT *>(pinstance->pcontent), pattctnt);
 }
 
 BOOL exmdb_server_write_attachment_instance(const char *dir,

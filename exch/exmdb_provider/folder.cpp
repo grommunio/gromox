@@ -203,11 +203,8 @@ BOOL exmdb_server_check_folder_id(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (FALSE == common_util_check_folder_id(pdb->psqlite,
-		rop_util_get_gc_value(folder_id), pb_exist)) {
-		return FALSE;
-	}
-	return TRUE;
+	return common_util_check_folder_id(pdb->psqlite,
+	       rop_util_get_gc_value(folder_id), pb_exist);
 }
 
 /* this function is only used by midb for query */

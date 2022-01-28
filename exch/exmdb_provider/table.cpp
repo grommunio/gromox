@@ -1265,12 +1265,8 @@ BOOL exmdb_server_load_content_table(const char *dir, uint32_t cpid,
 		return FALSE;
 	*ptable_id = 0;
 	fid_val = rop_util_get_gc_value(folder_id);
-	if (FALSE == table_load_content_table(pdb, cpid,
-		fid_val, username, table_flags, prestriction,
-		psorts, ptable_id, prow_count)) {
-		return FALSE;	
-	}
-	return TRUE;
+	return table_load_content_table(pdb, cpid, fid_val, username,
+	       table_flags, prestriction, psorts, ptable_id, prow_count);
 }
 
 BOOL exmdb_server_reload_content_table(const char *dir, uint32_t table_id)
@@ -1754,10 +1750,7 @@ BOOL exmdb_server_sum_table(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (FALSE == table_sum_table_count(pdb, table_id, prows)) {
-		return FALSE;
-	}
-	return TRUE;
+	return table_sum_table_count(pdb, table_id, prows);
 }
 
 static BOOL table_column_content_tmptbl(
@@ -3507,12 +3500,8 @@ BOOL exmdb_server_expand_table(const char *dir,
 	if (pstmt1 == nullptr) {
 		return FALSE;
 	}
-	if (FALSE == table_expand_sub_contents(
-		ptnode->psorts->ccategories - depth - 1,
-		row_id, pstmt, pstmt1, &idx)) {
-		return false;
-	}
-	return TRUE;
+	return table_expand_sub_contents(ptnode->psorts->ccategories - depth - 1,
+	       row_id, pstmt, pstmt1, &idx);
 }
 
 BOOL exmdb_server_collapse_table(const char *dir,

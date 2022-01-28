@@ -904,11 +904,7 @@ BOOL exmdb_server_get_message_rcpts(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	mid_val = rop_util_get_gc_value(message_id);
-	if (FALSE == message_get_message_rcpts(
-		pdb->psqlite, mid_val, pset)) {
-		return FALSE;
-	}
-	return TRUE;
+	return message_get_message_rcpts(pdb->psqlite, mid_val, pset);
 }
 
 BOOL exmdb_server_get_message_properties(const char *dir,
@@ -921,12 +917,9 @@ BOOL exmdb_server_get_message_properties(const char *dir,
 	if (FALSE == exmdb_server_check_private()) {
 		exmdb_server_set_public_username(username);
 	}
-	if (!cu_get_properties(db_table::msg_props,
-		rop_util_get_gc_value(message_id), cpid, pdb->psqlite,
-		pproptags, ppropvals)) {
-		return FALSE;
-	}
-	return TRUE;
+	return cu_get_properties(db_table::msg_props,
+	       rop_util_get_gc_value(message_id), cpid, pdb->psqlite,
+	       pproptags, ppropvals);
 }
 
 /* message_size will not be updated in the function! */
@@ -2675,11 +2668,7 @@ static BOOL message_get_propids(const PROPNAME_ARRAY *ppropnames,
 	if (NULL == psqlite) {
 		return FALSE;
 	}
-	if (FALSE == common_util_get_named_propids(
-		psqlite, FALSE, ppropnames, ppropids)) {
-		return FALSE;
-	}
-	return TRUE;
+	return common_util_get_named_propids(psqlite, false, ppropnames, ppropids);
 }
 
 static BOOL message_get_propname(uint16_t propid,
@@ -3486,12 +3475,9 @@ static bool op_forward(const char *from_address, const char *account,
 			block.type, rule_idx, prnode->provider.c_str(), pmsg_list);
 		return message_disable_rule(psqlite, false, prnode->id);
 	}
-	if (FALSE == message_forward_message(from_address,
-	    account, psqlite, cpid, message_id, pdigest,
-	    block.flavor, false,
-	    pfwddlgt->count, pfwddlgt->pblock))
-		return FALSE;
-	return true;
+	return message_forward_message(from_address, account, psqlite, cpid,
+	       message_id, pdigest, block.flavor, false, pfwddlgt->count,
+	       pfwddlgt->pblock);
 }
 
 static bool op_delegate(const char *from_address, const char *account,

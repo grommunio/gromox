@@ -97,11 +97,7 @@ BOOL exmdb_server_get_named_propnames(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (FALSE == common_util_get_named_propnames(
-		pdb->psqlite, ppropids, ppropnames)) {
-		return FALSE;
-	}
-	return TRUE;
+	return common_util_get_named_propnames(pdb->psqlite, ppropids, ppropnames);
 }
 
 /* public only */
