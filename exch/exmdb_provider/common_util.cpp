@@ -872,13 +872,9 @@ static uint32_t common_util_get_store_message_count(
 {
 	char sql_string[64];
 	
-	if (FALSE == b_associated) {
-		snprintf(sql_string, arsizeof(sql_string), "SELECT count(*)"
-				" FROM messages WHERE is_associated=0");
-	} else {
-		snprintf(sql_string, arsizeof(sql_string), "SELECT count(*)"
-				" FROM messages WHERE is_associated=1");
-	}
+	snprintf(sql_string, arsizeof(sql_string), b_associated ?
+	         "SELECT count(*) FROM messages WHERE is_associated=1" :
+	         "SELECT count(*) FROM messages WHERE is_associated=0");
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
 	       sqlite3_column_int64(pstmt, 0);

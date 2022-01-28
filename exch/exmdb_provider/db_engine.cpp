@@ -1856,13 +1856,10 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				if (0 == parent_id) {
 					parent_id = row_id;
 				}
-				if (b_read)
-					snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET count=count+1 "
-					         "WHERE row_id=%llu", ptable->table_id, LLU(row_id));
-				else
-					snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET count=count+1,"
-					         " unread=unread+1 WHERE row_id=%llu",
-					         ptable->table_id, LLU(row_id));
+				snprintf(sql_string, arsizeof(sql_string), b_read ?
+				         "UPDATE t%u SET count=count+1 WHERE row_id=%llu" :
+				         "UPDATE t%u SET count=count+1, unread=unread+1 WHERE row_id=%llu",
+				         ptable->table_id, LLU(row_id));
 				if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 					return;
 				db_engine_append_rowinfo_node(&notify_list, row_id);
@@ -2738,13 +2735,9 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 			}
 			pdeleted_row->row_message_id = message_id;
 			pdeleted_row->row_instance = 0;
-			if (FALSE == ptable->b_search) {
-				datagram.db_notify.type =
-					DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_DELETED;
-			} else {
-				datagram.db_notify.type =
-					DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_DELETED;
-			}
+			datagram.db_notify.type = ptable->b_search ?
+			                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_DELETED :
+			                          DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_DELETED;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 			continue;
@@ -2871,14 +2864,10 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 				sqlite3_reset(pstmt);
 				continue;
 			}
-			if (pdelnode->b_read)
-				snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET count=count-1"
-							" WHERE row_id=%llu", ptable->table_id,
-							LLU(pdelnode->parent_id));
-			else
-				snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET count=count-1,"
-							" unread=unread-1 WHERE row_id=%llu",
-							ptable->table_id, LLU(pdelnode->parent_id));
+			snprintf(sql_string, arsizeof(sql_string), pdelnode->b_read ?
+			         "UPDATE t%u SET count=count-1 WHERE row_id=%llu" :
+			         "UPDATE t%u SET count=count-1, unread=unread-1 WHERE row_id=%llu",
+			         ptable->table_id, LLU(pdelnode->parent_id));
 			if (gx_sql_exec(pdb->tables.psqlite, sql_string) != SQLITE_OK)
 				break;
 			prnode = cu_alloc<ROWINFO_NODE>();
@@ -3040,13 +3029,9 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 		}
 		if (b_resorted) {
 			datagram1.id_array.pl = &ptable->table_id;
-			if (FALSE == ptable->b_search) {
-				datagram1.db_notify.type =
-					DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED;
-			} else {
-				datagram1.db_notify.type =
-					DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED;
-			}
+			datagram1.db_notify.type = ptable->b_search ?
+			                           DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED :
+			                           DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram1);
 		} else {
@@ -3072,13 +3057,9 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 				}
 				pdeleted_row->row_message_id = pdelnode->inst_id;
 				pdeleted_row->row_instance = pdelnode->inst_num;
-				if (FALSE == ptable->b_search) {
-					datagram.db_notify.type =
-						DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_DELETED;
-				} else {
-					datagram.db_notify.type =
-						DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_DELETED;
-				}
+				datagram.db_notify.type = ptable->b_search ?
+				                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_DELETED :
+				                          DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_DELETED;
 				notification_agent_backward_notify(
 					ptable->remote_id, &datagram);
 			}
@@ -3127,13 +3108,9 @@ static void db_engine_notify_content_table_delete_row(db_item_ptr &pdb,
 					sqlite3_column_int64(pstmt1, 3);
 				pmodified_row->after_row_id = inst_id;
 				pmodified_row->after_instance = inst_num;
-				if (FALSE == ptable->b_search) {
-					datagram1.db_notify.type =
-						DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED;
-				} else {
-					datagram1.db_notify.type =
-						DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED;
-				}
+				datagram1.db_notify.type = ptable->b_search ?
+				                           DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED :
+				                           DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED;
 				notification_agent_backward_notify(
 					ptable->remote_id, &datagram1);
 				sqlite3_reset(pstmt1);
@@ -3484,13 +3461,9 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				pstmt.finalize();
 			}
 			pmodified_row->after_instance = 0;
-			if (FALSE == ptable->b_search) {
-				datagram.db_notify.type =
-					DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED;
-			} else {
-				datagram.db_notify.type =
-					DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED;
-			}
+			datagram.db_notify.type = ptable->b_search ?
+			                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED :
+			                          DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 		} else if (0 == ptable->psorts->ccategories) {
@@ -3586,13 +3559,9 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 				continue;
 			}
 			pmodified_row->after_instance = 0;
-			if (FALSE == ptable->b_search) {
-				datagram.db_notify.type =
-					DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED;
-			} else {
-				datagram.db_notify.type =
-					DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED;
-			}
+			datagram.db_notify.type = ptable->b_search ?
+			                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED :
+			                          DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);
 		} else {
@@ -3955,13 +3924,9 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 					}
 				}
 				pmodified_row->after_instance = inst_num;
-				if (FALSE == ptable->b_search) {
-					datagram.db_notify.type =
-						DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED;
-				} else {
-					datagram.db_notify.type =
-						DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED;
-				}
+				datagram.db_notify.type = ptable->b_search ?
+				                          DB_NOTIFY_TYPE_SEARCH_TABLE_ROW_MODIFIED :
+				                          DB_NOTIFY_TYPE_CONTENT_TABLE_ROW_MODIFIED;
 				notification_agent_backward_notify(
 					ptable->remote_id, &datagram);
 				sqlite3_reset(pstmt1);
@@ -4003,13 +3968,9 @@ static void db_engine_notify_content_table_modify_row(db_item_ptr &pdb,
 			if (ptable->psorts->ccategories == 0 ||
 			    (ptnode->table_flags & TABLE_FLAG_NONOTIFICATIONS))
 				break;
-			if (FALSE == ptnode->b_search) {
-				datagram.db_notify.type =
-					DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED;
-			} else {
-				datagram.db_notify.type =
-					DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED;
-			}
+			datagram.db_notify.type = ptnode->b_search ?
+			                          DB_NOTIFY_TYPE_SEARCH_TABLE_CHANGED :
+			                          DB_NOTIFY_TYPE_CONTENT_TABLE_CHANGED;
 			datagram.id_array.pl = &ptable->table_id;
 			notification_agent_backward_notify(
 				ptable->remote_id, &datagram);

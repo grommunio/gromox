@@ -160,13 +160,8 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 	}
 	db_engine_proc_dynamic_event(pdb, cpid,
 		DYNAMIC_EVENT_NEW_MESSAGE, fid_val, dst_val, 0);
-	if (FALSE == b_move) {
-		db_engine_notify_message_movecopy(pdb, TRUE,
-				fid_val, dst_val, parent_fid, mid_val);
-	} else {
-		db_engine_notify_message_movecopy(pdb, FALSE,
-				fid_val, dst_val, parent_fid, mid_val);
-	}
+	db_engine_notify_message_movecopy(pdb, !b_move ? TRUE : false,
+		fid_val, dst_val, parent_fid, mid_val);
 	b_update = TRUE;
 	if (b_move) {
 		if (exmdb_server_check_private()) {
@@ -2020,13 +2015,11 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	message_size = common_util_calculate_message_size(pmsgctnt);
 	if (FALSE == b_embedded) {
 		pvalue = pproplist->getval(PR_ASSOCIATED);
-		is_associated = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? 0 : 1;
-		if (exmdb_server_check_private())
-			snprintf(sql_string, arsizeof(sql_string), "SELECT is_search FROM "
-			          "folders WHERE folder_id=%llu", LLU(parent_id));
-		else
-			snprintf(sql_string, arsizeof(sql_string), "SELECT is_deleted FROM"
-			          " folders WHERE folder_id=%llu", LLU(parent_id));
+		is_associated = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0;
+		snprintf(sql_string, arsizeof(sql_string), exmdb_server_check_private() ?
+		         "SELECT is_search FROM folders WHERE folder_id=%llu" :
+		         "SELECT is_deleted FROM folders WHERE folder_id=%llu",
+		         LLU(parent_id));
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
