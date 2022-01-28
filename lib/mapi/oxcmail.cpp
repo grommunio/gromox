@@ -110,7 +110,7 @@ struct addr_tags {
 };
 
 static constexpr addr_tags tags_self = {
-	PR_DISPLAY_NAME, PR_SMTP_ADDRESS, PR_ADDRTYPE, PR_EMAIL_ADDRESS,
+	PR_DISPLAY_NAME, PR_ADDRTYPE, PR_EMAIL_ADDRESS, PR_SMTP_ADDRESS,
 	PR_ENTRYID,
 };
 static constexpr addr_tags tags_sender = {
