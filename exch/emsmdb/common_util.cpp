@@ -1852,8 +1852,8 @@ BOOL common_util_send_mail(MAIL *pmail,
 	case SMTP_SEND_OK:
 		common_util_send_command(sockd, "quit\r\n", 6);
 		close(sockd);
-		log_err("emsmdb: succesfully sent mail %s -> SMTP [%s]:%hu",
-		        sender, g_smtp_ip, g_smtp_port);
+		log_err("emsmdb: outgoing SMTP [%s]:%hu: from=<%s> OK",
+		        g_smtp_ip, g_smtp_port, sender);
 		return TRUE;
 	}
 	return false;
