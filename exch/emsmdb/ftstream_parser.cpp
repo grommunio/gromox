@@ -85,10 +85,8 @@ static char* ftstream_parser_read_wstring(
 	
 	*pb_continue = FALSE;
 	origin_offset = pstream->offset;
-	if (FALSE == ftstream_parser_read_uint32(
-		pstream, &len)) {
+	if (!ftstream_parser_read_uint32(pstream, &len))
 		return NULL;
-	}
 	if (len >= common_util_get_param(
 		COMMON_UTIL_MAX_MAIL_LENGTH)) {
 		return NULL;	
@@ -119,8 +117,7 @@ static char* ftstream_parser_read_wstring(
 		free(pbuff);
 		return NULL;
 	}
-	if (FALSE == utf16le_to_utf8(
-		pbuff, len, pbuff1, tmp_len)) {
+	if (!utf16le_to_utf8(pbuff, len, pbuff1, tmp_len)) {
 		free(pbuff);
 		return NULL;
 	}
@@ -136,10 +133,8 @@ static char* ftstream_parser_read_string(
 	
 	*pb_continue = FALSE;
 	origin_offset = pstream->offset;
-	if (FALSE == ftstream_parser_read_uint32(
-		pstream, &len)) {
+	if (!ftstream_parser_read_uint32(pstream, &len))
 		return NULL;
-	}
 	if (len >= common_util_get_param(
 		COMMON_UTIL_MAX_MAIL_LENGTH)) {
 		return nullptr;
@@ -190,28 +185,20 @@ static char* ftstream_parser_read_naked_wstring(
 	if (NULL == pbuff) {
 		return NULL;
 	}
-	if (FALSE == utf16le_to_utf8(
-		buff, len, pbuff, 2*len)) {
+	if (!utf16le_to_utf8(buff, len, pbuff, 2 * len))
 		return NULL;
-	}
 	return pbuff;
 }
 
 static BOOL ftstream_parser_read_guid(
 	FTSTREAM_PARSER *pstream, GUID *pguid)
 {
-	if (FALSE == ftstream_parser_read_uint32(
-		pstream, &pguid->time_low)) {
+	if (!ftstream_parser_read_uint32(pstream, &pguid->time_low))
 		return FALSE;
-	}
-	if (FALSE == ftstream_parser_read_uint16(
-		pstream, &pguid->time_mid)) {
+	if (!ftstream_parser_read_uint16(pstream, &pguid->time_mid))
 		return FALSE;
-	}
-	if (FALSE == ftstream_parser_read_uint16(
-		pstream, &pguid->time_hi_and_version)) {
+	if (!ftstream_parser_read_uint16(pstream, &pguid->time_hi_and_version))
 		return FALSE;
-	}
 	if (2 != read(pstream->fd, pguid->clock_seq, 2)) {
 		return FALSE;
 	}
@@ -233,10 +220,8 @@ static BOOL ftstream_parser_read_svreid(
 	
 	*pb_continue = FALSE;
 	origin_offset = pstream->offset;
-	if (FALSE == ftstream_parser_read_uint32(
-		pstream, &len)) {
+	if (!ftstream_parser_read_uint32(pstream, &len))
 		return FALSE;
-	}
 	if (origin_offset + sizeof(uint32_t) + len >
 		pstream->st_size) {
 		*pb_continue = TRUE;
@@ -268,18 +253,12 @@ static BOOL ftstream_parser_read_svreid(
 		return FALSE;
 	}
 	psvreid->pbin = NULL;
-	if (FALSE == ftstream_parser_read_uint64(
-		pstream, &psvreid->folder_id)) {
+	if (!ftstream_parser_read_uint64(pstream, &psvreid->folder_id))
 		return FALSE;
-	}
-	if (FALSE == ftstream_parser_read_uint64(
-		pstream, &psvreid->message_id)) {
+	if (!ftstream_parser_read_uint64(pstream, &psvreid->message_id))
 		return FALSE;
-	}
-	if (FALSE == ftstream_parser_read_uint32(
-		pstream, &psvreid->instance)) {
+	if (!ftstream_parser_read_uint32(pstream, &psvreid->instance))
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -291,10 +270,8 @@ static BOOL ftstream_parser_read_binary(
 	
 	*pb_continue = FALSE;
 	origin_offset = pstream->offset;
-	if (FALSE == ftstream_parser_read_uint32(
-		pstream, &pbin->cb)) {
+	if (!ftstream_parser_read_uint32(pstream, &pbin->cb))
 		return FALSE;
-	}
 	if (pbin->cb >= common_util_get_param(
 		COMMON_UTIL_MAX_MAIL_LENGTH)) {
 		return FALSE;	
@@ -324,10 +301,8 @@ static PROPERTY_NAME* ftstream_parser_read_property_name(
 	if (NULL == pname) {
 		return NULL;
 	}
-	if (FALSE == ftstream_parser_read_guid(
-		pstream, &pname->guid)) {
+	if (!ftstream_parser_read_guid(pstream, &pname->guid))
 		return NULL;	
-	}
 	if (sizeof(uint8_t) != read(pstream->fd,
 		&pname->kind, sizeof(uint8_t))) {
 		return NULL;
@@ -363,10 +338,8 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 	if (origin_offset == pstream->st_size) {
 		return FTSTREAM_PARSER_READ_CONTINUE;
 	}
-	if (FALSE == ftstream_parser_read_uint32(
-		pstream, &atom_element)) {
+	if (!ftstream_parser_read_uint32(pstream, &atom_element))
 		return FTSTREAM_PARSER_READ_FAIL;
-	}
 	switch (atom_element) {
 	case STARTTOPFLD:
 	case STARTSUBFLD:
@@ -474,10 +447,8 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 			return FTSTREAM_PARSER_READ_FAIL;
 		propval.pvalue = v;
 		uint16_t fake_byte = 0;
-		if (FALSE == ftstream_parser_read_uint16(
-			pstream, &fake_byte)) {
+		if (!ftstream_parser_read_uint16(pstream, &fake_byte))
 			return FTSTREAM_PARSER_READ_FAIL;	
-		}
 		*v = fake_byte;
 		return FTSTREAM_PARSER_READ_OK;
 	}
@@ -541,10 +512,8 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 		propval.pvalue = sa;
 		if (sa == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		if (FALSE == ftstream_parser_read_uint32(
-			pstream, &count)) {
+		if (!ftstream_parser_read_uint32(pstream, &count))
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
 		if (count*sizeof(uint16_t) > 0x10000) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
@@ -571,10 +540,8 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 		propval.pvalue = la;
 		if (la == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		if (FALSE == ftstream_parser_read_uint32(
-			pstream, &count)) {
+		if (!ftstream_parser_read_uint32(pstream, &count))
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
 		if (count*sizeof(uint32_t) > 0x10000) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
@@ -603,10 +570,8 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 		propval.pvalue = la;
 		if (la == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		if (FALSE == ftstream_parser_read_uint32(
-			pstream, &count)) {
+		if (!ftstream_parser_read_uint32(pstream, &count))
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
 		if (count*sizeof(uint64_t) > 0x10000) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
@@ -678,10 +643,8 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 		propval.pvalue = sa;
 		if (sa == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		if (FALSE == ftstream_parser_read_uint32(
-			pstream, &count)) {
+		if (!ftstream_parser_read_uint32(pstream, &count))
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
 		if (pstream->st_size == pstream->offset) {
 			goto CONTINUE_WAITING;
 		}
@@ -717,10 +680,8 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 		propval.pvalue = sa;
 		if (sa == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		if (FALSE == ftstream_parser_read_uint32(
-			pstream, &count)) {
+		if (!ftstream_parser_read_uint32(pstream, &count))
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
 		if (pstream->st_size == pstream->offset) {
 			goto CONTINUE_WAITING;
 		}
@@ -756,10 +717,8 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 		propval.pvalue = ga;
 		if (ga == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		if (FALSE == ftstream_parser_read_uint32(
-			pstream, &count)) {
+		if (!ftstream_parser_read_uint32(pstream, &count))
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
 		if (16*count > 0x10000) {
 			return FTSTREAM_PARSER_READ_FAIL;
 		}
@@ -785,10 +744,8 @@ static int ftstream_parser_read_element(FTSTREAM_PARSER &stream,
 		propval.pvalue = ba;
 		if (ba == nullptr)
 			return FTSTREAM_PARSER_READ_FAIL;
-		if (FALSE == ftstream_parser_read_uint32(
-			pstream, &count)) {
+		if (!ftstream_parser_read_uint32(pstream, &count))
 			return FTSTREAM_PARSER_READ_FAIL;
-		}
 		if (pstream->st_size == pstream->offset) {
 			goto CONTINUE_WAITING;
 		}

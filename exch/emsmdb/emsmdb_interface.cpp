@@ -603,11 +603,9 @@ int emsmdb_interface_connect_ex(uint64_t hrpc, CXH *pcxh,
 	if (0xFFFFFFFF == cxr_link) {
 		*ptimestamp = emsmdb_interface_get_timestamp();
 	}
-	if (FALSE == emsmdb_interface_create_handle(
-		rpc_info.username, client_version, client_mode,
-		cpid, lcid_string, lcid_sort, pcxr, pcxh)) {
+	if (!emsmdb_interface_create_handle(rpc_info.username, client_version,
+	    client_mode, cpid, lcid_string, lcid_sort, pcxr, pcxh))
 		return ecLoginFailure;
-	}
 	is_success = true;
 	return ecSuccess;
 }
@@ -1094,16 +1092,14 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 	DOUBLE_LIST_NODE *pnode;
 	
 	cxh.handle_type = HANDLE_EXCHANGE_EMSMDB;
-	if (FALSE == b_table) {
-		if (FALSE == emsmdb_interface_get_subscription_notify(
-			dir, notify_id, &obj_handle, &logon_id, &cxh.guid)) {
+	if (!b_table) {
+		if (!emsmdb_interface_get_subscription_notify(dir,
+		    notify_id, &obj_handle, &logon_id, &cxh.guid))
 			return;
-		}
 	} else {
-		if (FALSE == emsmdb_interface_get_table_notify(dir,
-			notify_id, &obj_handle, &logon_id, &cxh.guid)) {
+		if (!emsmdb_interface_get_table_notify(dir,
+		    notify_id, &obj_handle, &logon_id, &cxh.guid))
 			return;
-		}
 	}
 	phandle = emsmdb_interface_get_handle_notify_list(&cxh);
 	if (NULL == phandle) {
@@ -1122,14 +1118,13 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		    static_cast<const DB_NOTIFY_HIERARCHY_TABLE_ROW_MODIFIED *>(pdb_notify->pdata),
 		    obj_handle, logon_id, &phandle->notify_list)) {
 			b_processing = phandle->b_processing;
-			if (FALSE == b_processing) {
+			if (!b_processing) {
 				cxr = phandle->cxr;
 				gx_strlcpy(username, phandle->username, GX_ARRAY_SIZE(username));
 			}
 			emsmdb_interface_put_handle_notify_list(phandle);
-			if (FALSE == b_processing) {
+			if (!b_processing)
 				asyncemsmdb_interface_wakeup(username, cxr);
-			}
 			return;
 		}
 		break;
@@ -1193,9 +1188,8 @@ void emsmdb_interface_event_proc(const char *dir, BOOL b_table,
 		free(pnode->pdata);
 		free(pnode);
 	}
-	if (FALSE == b_processing) {
+	if (!b_processing)
 		asyncemsmdb_interface_wakeup(username, cxr);
-	}
 }
 
 static void *emsi_scanwork(void *pparam)

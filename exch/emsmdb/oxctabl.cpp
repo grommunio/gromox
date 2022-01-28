@@ -552,10 +552,8 @@ uint32_t rop_findrow(uint8_t flags, RESTRICTION *pres, uint8_t seek_pos,
 	if (NULL == *pprow) {
 		return ecMAPIOOM;
 	}
-	if (FALSE == common_util_propvals_to_row(
-		&propvals, *ppcolumns, *pprow)) {
+	if (!common_util_propvals_to_row(&propvals, *ppcolumns, *pprow))
 		return ecMAPIOOM;
-	}
 	return ecSuccess;
 }
 
@@ -625,11 +623,10 @@ uint32_t rop_expandrow(uint16_t max_count, uint64_t category_id,
 		return ecError;
 	if (!ptable->expand(category_id, &b_found, &position, pexpanded_count))
 		return ecError;
-	if (FALSE == b_found) {
+	if (!b_found)
 		return ecNotFound;
-	} else if (position < 0) {
+	else if (position < 0)
 		return ecNotCollapsed;
-	}
 	if (0 == *pexpanded_count || 0 == max_count) {
 		*pcount = 0;
 		return ecSuccess;
@@ -678,13 +675,12 @@ uint32_t rop_collapserow(uint64_t category_id, uint32_t *pcollapsed_count,
 		return ecError;
 	if (!ptable->collapse(category_id, &b_found, &position, pcollapsed_count))
 		return ecError;
-	if (FALSE == b_found) {
+	if (!b_found)
 		return ecNotFound;
-	} else if (position < 0) {
+	else if (position < 0)
 		return ecNotExpanded;
-	} else if (0 == *pcollapsed_count) {
+	else if (*pcollapsed_count == 0)
 		return ecSuccess;
-	}
 	auto table_position = ptable->get_position();
 	if (table_position > static_cast<uint32_t>(position)) {
 		table_position -= *pcollapsed_count;

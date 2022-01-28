@@ -43,19 +43,17 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	}
 	if (!common_util_essdn_to_username(pessdn, username, GX_ARRAY_SIZE(username)))
 		return ecUnknownUser;
-	if (FALSE == common_util_get_id_from_username(username, &user_id)) {
+	if (!common_util_get_id_from_username(username, &user_id))
 		return ecUnknownUser;
-	}
 	if (0 != strcasecmp(username, rpc_info.username)) {
 		if (open_flags & LOGON_OPEN_FLAG_USE_ADMIN_PRIVILEGE) {
 			return ecLoginPerm;
 		}
 		if (!common_util_get_maildir(username, maildir, arsizeof(maildir)))
 			return ecError;
-		if (FALSE == exmdb_client_check_mailbox_permission(maildir,
-			rpc_info.username, &permission)) {
+		if (!exmdb_client_check_mailbox_permission(maildir,
+		    rpc_info.username, &permission))
 			return ecError;
-		}
 		if (permission == rightsNone)
 			return ecLoginPerm;
 		*presponse_flags = RESPONSE_FLAG_RESERVED;
@@ -81,10 +79,8 @@ uint32_t rop_logon_pmb(uint8_t logon_flags, uint32_t open_flags,
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PR_STORE_RECORD_KEY;
 	proptag_buff[1] = PR_OOF_STATE;
-	if (FALSE == exmdb_client_get_store_properties(
-		maildir, 0, &proptags, &propvals)) {
+	if (!exmdb_client_get_store_properties(maildir, 0, &proptags, &propvals))
 		return ecError;
-	}
 	auto pvalue = propvals.getval(PR_STORE_RECORD_KEY);
 	if (NULL == pvalue) {
 		return ecError;
@@ -177,19 +173,16 @@ uint32_t rop_logon_pf(uint8_t logon_flags, uint32_t open_flags,
 		return ecUnknownUser;
 	}
 	pdomain ++;
-	if (FALSE == common_util_get_domain_ids(pdomain, &domain_id, &org_id)) {
+	if (!common_util_get_domain_ids(pdomain, &domain_id, &org_id))
 		return ecUnknownUser;
-	}
 	if (NULL != pessdn) {
 		pdomain1 = common_util_essdn_to_domain(pessdn);
 		if (NULL != pdomain1 && 0 != strcasecmp(pdomain, pdomain1)) {
 			if (0 == org_id) {
 				return ecLoginFailure;
 			}
-			if (FALSE == common_util_get_domain_ids(
-				pdomain1, &domain_id1, &org_id1)) {
+			if (!common_util_get_domain_ids(pdomain1, &domain_id1, &org_id1))
 				return ecError;
-			}
 			if (org_id != org_id1) {
 				return ecLoginFailure;
 			}
@@ -255,9 +248,8 @@ uint32_t rop_getreceivefolder(const char *pstr_class, uint64_t *pfolder_id,
 {
 	int object_type;
 	
-	if (FALSE == common_util_check_message_class(pstr_class)) {
+	if (!common_util_check_message_class(pstr_class))
 		return ecInvalidParam;
-	}
 	auto plogon = rop_proc_get_obj<logon_object>(plogmap, logon_id, hin, &object_type);
 	if (plogon == nullptr)
 		return ecNullObject;
@@ -282,9 +274,8 @@ uint32_t rop_setreceivefolder(uint64_t folder_id, const char *pstr_class,
 	BOOL b_result;
 	int object_type;
 	
-	if (FALSE == common_util_check_message_class(pstr_class)) {
+	if (!common_util_check_message_class(pstr_class))
 		return ecInvalidParam;
-	}
 	if ('\0' == pstr_class[0] && 0 == folder_id) {
 		return ecError;
 	}
@@ -314,9 +305,8 @@ uint32_t rop_setreceivefolder(uint64_t folder_id, const char *pstr_class,
 	if (!exmdb_client_set_folder_by_class(plogon->get_dir(),
 	    folder_id, pstr_class, &b_result))
 		return ecError;
-	if (FALSE == b_result) {
+	if (!b_result)
 		return ecNotFound;
-	}
 	return ecSuccess;
 }
 
@@ -348,10 +338,9 @@ uint32_t rop_getreceivefoldertable(PROPROW_SET *prows, LOGMAP *plogmap,
 		return ecMAPIOOM;
 	}
 	for (size_t i = 0; i < class_table.count; ++i) {
-		if (FALSE == common_util_propvals_to_row(
-			class_table.pparray[i], &columns, prows->prows + i)) {
+		if (!common_util_propvals_to_row(class_table.pparray[i],
+		    &columns, &prows->prows[i]))
 			return ecMAPIOOM;
-		}
 	}
 	return ecSuccess;
 }
@@ -390,9 +379,8 @@ uint32_t rop_getowningservers(uint64_t folder_id, GHOST_SERVER *pghost,
 		if (!exmdb_client_get_mapping_guid(plogon->get_dir(), replid,
 		    &b_found, &guid))
 			return ecError;
-		if (FALSE == b_found) {
+		if (!b_found)
 			return ecNotFound;
-		}
 		auto domain_id = rop_util_get_domain_id(guid);
 		if (-1 == domain_id) {
 			return ecNotFound;
@@ -466,9 +454,8 @@ uint32_t rop_longtermidfromid(uint64_t id, LONG_TERM_ID *plong_term_id,
 			if (!exmdb_client_get_mapping_guid(plogon->get_dir(),
 			    replid, &b_found, &plong_term_id->guid))
 				return ecError;
-			if (FALSE == b_found) {
+			if (!b_found)
 				return ecNotFound;
-			}
 		}	
 	}
 	plong_term_id->global_counter = rop_util_get_gc_array(id);
@@ -507,9 +494,8 @@ uint32_t rop_idfromlongtermid(const LONG_TERM_ID *plong_term_id, uint64_t *pid,
 		if (!exmdb_client_get_mapping_replid(plogon->get_dir(),
 		    plong_term_id->guid, &b_found, &replid))
 			return ecError;
-		if (FALSE == b_found) {
+		if (!b_found)
 			return ecNotFound;
-		}
 	}
 	*pid = rop_util_make_eid(replid, plong_term_id->global_counter);
 	return ecSuccess;

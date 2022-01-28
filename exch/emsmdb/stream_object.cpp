@@ -300,9 +300,8 @@ BOOL stream_object::commit()
 	if (OPENSTREAM_FLAG_READONLY == pstream->object_type) {
 		return FALSE;
 	}
-	if (FALSE == pstream->b_touched) {
+	if (!pstream->b_touched)
 		return TRUE;
-	}
 	propvals.count = 1;
 	propvals.ppropval = &propval;
 	propval.proptag = pstream->proptag;

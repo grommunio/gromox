@@ -18,9 +18,8 @@ subscription_object::create(logon_object *plogon, uint8_t logon_id,
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
-	if (FALSE == emsmdb_interface_get_cxh(&psub->cxh)) {
+	if (!emsmdb_interface_get_cxh(&psub->cxh))
 		return NULL;
-	}
 	psub->plogon = plogon;
 	psub->logon_id = logon_id;
 	if (!exmdb_client_subscribe_notification(plogon->get_dir(),

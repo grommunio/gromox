@@ -337,9 +337,8 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (!exmdb_client_try_mark_submit(plogon->get_dir(),
 	    pmessage->get_id(), &b_marked))
 		return ecError;
-	if (FALSE == b_marked) {
+	if (!b_marked)
 		return ecAccessDenied;
-	}
 	
 	deferred_time = 0;
 	time(&cur_time);
@@ -392,11 +391,10 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	
 	if (!common_util_send_message(plogon, pmessage->get_id(), TRUE))
 		goto SUBMIT_FAIL;
-	if (FALSE == b_delete) {
+	if (!b_delete)
 		pmessage->reload();
-	} else {
+	else
 		pmessage->clear_unsent();
-	}
 	return ecSuccess;
 
  SUBMIT_FAIL:
@@ -425,9 +423,8 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 	if (!exmdb_client_check_message(plogon->get_dir(), folder_id,
 	    message_id, &b_exist))
 		return ecError;
-	if (FALSE == b_exist) {
+	if (!b_exist)
 		return ecNotFound;
-	}
 	if (!exmdb_client_get_message_property(plogon->get_dir(),
 	    nullptr, 0, message_id, PR_MESSAGE_FLAGS,
 	    reinterpret_cast<void **>(&pmessage_flags)))
@@ -443,19 +440,16 @@ uint32_t rop_abortsubmit(uint64_t folder_id, uint64_t message_id,
 			return ecUnableToAbort;
 		if (!exmdb_client_clear_submit(plogon->get_dir(), message_id, TRUE))
 			return ecError;
-		if (FALSE == common_util_save_message_ics(
-			plogon, message_id, NULL)) {
+		if (!common_util_save_message_ics(plogon, message_id, nullptr))
 			return ecError;
-		}
 		return ecSuccess;
 	}
 	fid_spooler = rop_util_make_eid_ex(1, PRIVATE_FID_SPOOLER_QUEUE);
 	if (!exmdb_client_check_message(plogon->get_dir(), fid_spooler,
 	    message_id, &b_exist))
 		return ecError;
-	if (FALSE == b_exist) {
+	if (!b_exist)
 		return ecNotInQueue;
-	}
 	/* unlink the message in spooler queue */
 	if (!exmdb_client_unlink_message(plogon->get_dir(), pinfo->cpid,
 	    fid_spooler, message_id))
@@ -519,9 +513,8 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	if (!exmdb_client_check_message(plogon->get_dir(), fid_spooler,
 	    message_id, &b_exist))
 		return ecError;
-	if (FALSE == b_exist) {
+	if (!b_exist)
 		return ecNotInQueue;
-	}
 	/* unlink the message in spooler queue */
 	if (!exmdb_client_unlink_message(plogon->get_dir(), pinfo->cpid,
 	    fid_spooler, message_id))
@@ -549,10 +542,9 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 	    static_cast<BINARY *>(pvalue), &parent_id))
 		return ecError;
 	if (NULL != ptarget) {
-		if (FALSE == common_util_from_message_entryid(
-			plogon, ptarget, &folder_id, &new_id)) {
+		if (!common_util_from_message_entryid(plogon, ptarget,
+		    &folder_id, &new_id))
 			return ecError;
-		}
 		if (!exmdb_client_movecopy_message(plogon->get_dir(),
 		    plogon->account_id, pinfo->cpid, message_id, folder_id,
 		    new_id, b_delete, &b_result))

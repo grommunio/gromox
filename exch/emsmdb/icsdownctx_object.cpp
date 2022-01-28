@@ -600,13 +600,11 @@ BOOL icsdownctx_object::make_sync()
 	if (pctx->b_started)
 		return FALSE;
 	if (SYNC_TYPE_CONTENTS == pctx->sync_type) {
-		if (FALSE == icsdownctx_object_make_content(pctx)) {
+		if (!icsdownctx_object_make_content(pctx))
 			return FALSE;
-		}
 	} else {
-		if (FALSE == icsdownctx_object_make_hierarchy(pctx)) {
+		if (!icsdownctx_object_make_hierarchy(pctx))
 			return FALSE;
-		}
 	}
 	pctx->b_started = TRUE;
 	return TRUE;
@@ -979,10 +977,9 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 					return FALSE;
 				cu_set_propval(&pembedded->proplist, PR_SOURCE_KEY, psk);
 			}
-			if (FALSE == icsdownctx_object_extract_msgctntinfo(
-				pembedded, pctx->extra_flags, &chgheader, &progmsg)) {
+			if (!icsdownctx_object_extract_msgctntinfo(pembedded,
+			    pctx->extra_flags, &chgheader, &progmsg))
 				return FALSE;
-			}
 			icsdownctx_object_adjust_msgctnt(pembedded, pctx->pproptags, !(pctx->sync_flags & SYNC_FLAG_ONLYSPECIFIEDPROPERTIES));
 			if (pctx->sync_flags & SYNC_FLAG_PROGRESS &&
 			    !pctx->pstream->write_progresspermessage(&progmsg))
@@ -1037,10 +1034,9 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 			return FALSE;
 		cu_set_propval(&pmsgctnt->proplist, PR_SOURCE_KEY, pvalue);
 	}
-	if (FALSE == icsdownctx_object_extract_msgctntinfo(
-		pmsgctnt, pctx->extra_flags, &chgheader, &progmsg)) {
+	if (!icsdownctx_object_extract_msgctntinfo(pmsgctnt,
+	    pctx->extra_flags, &chgheader, &progmsg))
 		return FALSE;
-	}
 	auto cond1 = !(pctx->sync_flags & SYNC_FLAG_ONLYSPECIFIEDPROPERTIES);
 	if (!(pctx->sync_flags & SYNC_FLAG_IGNORESPECIFIEDONFAI) ||
 	    cond1 || !progmsg.b_fai)
@@ -1268,8 +1264,7 @@ static BOOL icsdownctx_object_get_buffer_internal(icsdownctx_object *pctx,
 		len = *plen;
 		if (!pctx->pstream->read_buffer(pbuff, &len, &b_last))
 			return FALSE;	
-		if (FALSE == b_last || *plen - len <
-			2*FTSTREAM_PRODUCER_POINT_LENGTH) {
+		if (!b_last || *plen - len < 2 * FTSTREAM_PRODUCER_POINT_LENGTH) {
 			*plen = len;
 			*pb_last = FALSE;
 			return TRUE;
@@ -1293,34 +1288,29 @@ static BOOL icsdownctx_object_get_buffer_internal(icsdownctx_object *pctx,
 			break;
 		case FUNC_ID_UPDATED_MESSAGE: {
 			auto message_id = *static_cast<const uint64_t *>(pparam);
-			if (FALSE == icsdownctx_object_write_message_change(
-				pctx, message_id, TRUE, &partial_count)) {
+			if (!icsdownctx_object_write_message_change(pctx,
+			    message_id, TRUE, &partial_count))
 				return FALSE;
-			}
 			break;
 		}
 		case FUNC_ID_NEW_MESSAGE: {
 			auto message_id = *static_cast<const uint64_t *>(pparam);
-			if (FALSE == icsdownctx_object_write_message_change(
-				pctx, message_id, FALSE, &partial_count)) {
+			if (!icsdownctx_object_write_message_change(pctx,
+			    message_id, FALSE, &partial_count))
 				return FALSE;
-			}
 			break;
 		}
 		case FUNC_ID_DELETIONS:
-			if (FALSE == icsdownctx_object_write_deletions(pctx)) {
+			if (!icsdownctx_object_write_deletions(pctx))
 				return FALSE;
-			}
 			break;
 		case FUNC_ID_READSTATECHANGES:
-			if (FALSE == icsdownctx_object_write_readstate_changes(pctx)) {
+			if (!icsdownctx_object_write_readstate_changes(pctx))
 				return FALSE;
-			}
 			break;
 		case FUNC_ID_STATE:
-			if (FALSE == icsdownctx_object_write_state(pctx)) {
+			if (!icsdownctx_object_write_state(pctx))
 				return FALSE;
-			}
 			break;
 		default:
 			return FALSE;
@@ -1344,10 +1334,8 @@ BOOL icsdownctx_object::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
 	if (0 == *ptotal) {
 		*ptotal = 1;
 	}
-	if (FALSE == icsdownctx_object_get_buffer_internal(
-		pctx, pbuff, plen, pb_last)) {
+	if (!icsdownctx_object_get_buffer_internal(pctx, pbuff, plen, pb_last))
 		return FALSE;	
-	}
 	if (*pb_last)
 		*pprogress = *ptotal;
 	return TRUE;

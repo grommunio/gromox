@@ -117,9 +117,8 @@ std::unique_ptr<message_object> message_object::create(logon_object *plogon,
 		/* cannot find embedded message in attachment, return
 			immediately to caller and the caller check the
 			result by calling message_object_get_instance_id */
-		if (FALSE == b_new && 0 == pmessage->instance_id) {
+		if (!b_new && pmessage->instance_id == 0)
 			return pmessage;
-		}
 	} else {
 		pmessage->folder_id = *(uint64_t*)pparent;
 		if (pmessage->plogon->check_private()) {
@@ -146,7 +145,7 @@ std::unique_ptr<message_object> message_object::create(logon_object *plogon,
 	if (NULL == pmessage->premoved_proptags) {
 		return NULL;
 	}
-	if (FALSE == b_new) {
+	if (!b_new) {
 		if (!exmdb_client_get_instance_property(plogon->get_dir(),
 		    pmessage->instance_id, PidTagChangeNumber,
 		    reinterpret_cast<void **>(&pchange_num)))
@@ -228,10 +227,8 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
 	
-	
-	if (FALSE == pmessage->b_new) {
+	if (!pmessage->b_new)
 		return FALSE;
-	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (pinfo == nullptr)
 		return FALSE;
@@ -377,11 +374,8 @@ gxerr_t message_object::save()
 	MESSAGE_CONTENT *pmsgctnt;
 	PROPTAG_ARRAY *pungroup_proptags;
 	
-	
-	if (FALSE == pmessage->b_new &&
-		FALSE == pmessage->b_touched) {
+	if (!pmessage->b_new && !pmessage->b_touched)
 		return GXERR_SUCCESS;
-	}
 	auto rpc_info = get_rpc_info();
 	if (!exmdb_client_allocate_cn(pmessage->plogon->get_dir(), &pmessage->change_num))
 		return GXERR_CALL_FAILED;
@@ -392,7 +386,7 @@ gxerr_t message_object::save()
 
 	BOOL b_fai = assoc == nullptr || *static_cast<uint8_t *>(assoc) == 0 ? false : TRUE;
 	if (NULL != pmessage->pstate) {
-		if (FALSE == pmessage->b_new) {
+		if (!pmessage->b_new) {
 			BINARY *pbin_pcl1 = nullptr;
 
 			if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
@@ -405,10 +399,8 @@ gxerr_t message_object::save()
 			    reinterpret_cast<void **>(&pbin_pcl1)) ||
 			    pbin_pcl1 == nullptr)
 				return GXERR_CALL_FAILED;
-			if (FALSE == common_util_pcl_compare(
-				pbin_pcl, pbin_pcl1, &result)) {
+			if (!common_util_pcl_compare(pbin_pcl, pbin_pcl1, &result))
 				return GXERR_CALL_FAILED;
-			}
 			if (PCL_CONFLICT == result) {
 				void *rv;
 				if (!exmdb_client_get_folder_property(pmessage->plogon->get_dir(),
@@ -416,8 +408,7 @@ gxerr_t message_object::save()
 					return GXERR_CALL_FAILED;
 				uint32_t resolve_method = rv == nullptr ? RESOLVE_METHOD_DEFAULT :
 				                          *static_cast<uint32_t *>(rv);
-				if (FALSE == b_fai &&
-					RESOLVE_METHOD_DEFAULT == resolve_method) {
+				if (!b_fai && resolve_method == RESOLVE_METHOD_DEFAULT) {
 					if (pmessage->plogon->check_private()) {
 						if (!exmdb_client_read_message(pmessage->plogon->get_dir(),
 						    nullptr, pmessage->cpid,
@@ -444,10 +435,9 @@ gxerr_t message_object::save()
 						tmp_propval.pvalue = &tmp_status;
 						tmp_propvals.count = 1;
 						tmp_propvals.ppropval = &tmp_propval;
-						if (FALSE == message_object_set_properties_internal(
-							pmessage, FALSE, &tmp_propvals, &tmp_problems)) {
+						if (!message_object_set_properties_internal(pmessage,
+						    false, &tmp_propvals, &tmp_problems))
 							return GXERR_CALL_FAILED;
-						}
 					}
 				}
 				pbin_pcl = common_util_pcl_merge(pbin_pcl, pbin_pcl1);
@@ -461,10 +451,9 @@ gxerr_t message_object::save()
 				tmp_propval.pvalue = pbin_pcl;
 				tmp_propvals.count = 1;
 				tmp_propvals.ppropval = &tmp_propval;
-				if (FALSE == message_object_set_properties_internal(
-					pmessage, FALSE, &tmp_propvals, &tmp_problems)) {
+				if (!message_object_set_properties_internal(pmessage,
+				    false, &tmp_propvals, &tmp_problems))
 					return GXERR_CALL_FAILED;
-				}
 			}
 		}
 	} else if (0 != pmessage->message_id) {
@@ -472,9 +461,8 @@ gxerr_t message_object::save()
 		    pmessage->instance_id, PR_PREDECESSOR_CHANGE_LIST,
 		    reinterpret_cast<void **>(&pbin_pcl)))
 			return GXERR_CALL_FAILED;
-		if (FALSE == pmessage->b_new && NULL == pbin_pcl) {
+		if (!pmessage->b_new && pbin_pcl == nullptr)
 			return GXERR_CALL_FAILED;
-		}
 	}
 	
 	if (!flush_streams())
@@ -535,10 +523,9 @@ gxerr_t message_object::save()
 	}
 	
 	PROBLEM_ARRAY tmp_problems;
-	if (FALSE == message_object_set_properties_internal(
-		pmessage, FALSE, &tmp_propvals, &tmp_problems)) {
+	if (!message_object_set_properties_internal(pmessage,
+	    false, &tmp_propvals, &tmp_problems))
 		return GXERR_CALL_FAILED;
-	}
 	
 	/* change number of embedding message is used for message
 		modification's check when the  rop_savechangesmessage
@@ -690,13 +677,10 @@ BOOL message_object::reload()
 	if (!exmdb_client_reload_message_instance(pmessage->plogon->get_dir(),
 	    pmessage->instance_id, &b_result))
 		return FALSE;	
-	if (FALSE == b_result) {
+	if (!b_result)
 		return FALSE;
-	}
-	if (FALSE == message_object_get_recipient_all_proptags(
-		pmessage, &tmp_columns)) {
+	if (!message_object_get_recipient_all_proptags(pmessage, &tmp_columns))
 		return FALSE;
-	}
 	pcolumns = proptag_array_dup(&tmp_columns);
 	if (NULL == pcolumns) {
 		return FALSE;
@@ -709,7 +693,7 @@ BOOL message_object::reload()
 	while ((pnode = double_list_pop_front(&pmessage->stream_list)) != nullptr)
 		free(pnode);
 	pmessage->change_num = 0;
-	if (FALSE == pmessage->b_new) {
+	if (!pmessage->b_new) {
 		if (!exmdb_client_get_instance_property(pmessage->plogon->get_dir(),
 		    pmessage->instance_id, PidTagChangeNumber,
 		    reinterpret_cast<void **>(&pchange_num)) ||
@@ -830,7 +814,7 @@ BOOL message_object::append_stream_object(stream_object *pstream)
 			return TRUE;
 		}
 	}
-	if (FALSE == pmessage->b_new && 0 != pmessage->message_id) {
+	if (!pmessage->b_new && pmessage->message_id != 0) {
 		auto proptag = message_object_rectify_proptag(pstream->get_proptag());
 		if (!proptag_array_append(pmessage->pchanged_proptags, proptag))
 			return FALSE;

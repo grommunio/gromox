@@ -381,9 +381,8 @@ BINARY *common_util_to_folder_entryid(logon_object *plogon, uint64_t folder_id)
 			if (!exmdb_client_get_mapping_guid(plogon->get_dir(),
 			    replid, &b_found, &tmp_entryid.database_guid))
 				return NULL;	
-			if (FALSE == b_found) {
+			if (!b_found)
 				return NULL;
-			}
 		} else {
 			tmp_entryid.database_guid = rop_util_make_domain_guid(plogon->account_id);
 		}
@@ -429,9 +428,8 @@ BINARY *common_util_calculate_folder_sourcekey(logon_object *plogon, uint64_t fo
 			if (!exmdb_client_get_mapping_guid(plogon->get_dir(),
 			    replid, &b_found, &longid.guid))
 				return NULL;	
-			if (FALSE == b_found) {
+			if (!b_found)
 				return NULL;
-			}
 		}	
 	}
 	longid.global_counter = rop_util_get_gc_array(folder_id);
@@ -465,9 +463,8 @@ BINARY *common_util_to_message_entryid(logon_object *plogon,
 			if (!exmdb_client_get_mapping_guid(plogon->get_dir(),
 			    replid, &b_found, &tmp_entryid.folder_database_guid))
 				return NULL;	
-			if (FALSE == b_found) {
+			if (!b_found)
 				return NULL;
-			}
 		} else {
 			tmp_entryid.folder_database_guid = rop_util_make_domain_guid(plogon->account_id);
 		}
@@ -1208,10 +1205,8 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 	}
 	tmp_columns.count = prow->count;
 	tmp_columns.pproptag = pcolumns->pproptag;
-	if (FALSE == common_util_row_to_propvals(
-		&prow->properties, &tmp_columns, ppropvals)) {
+	if (!common_util_row_to_propvals(&prow->properties, &tmp_columns, ppropvals))
 		return FALSE;	
-	}
 	auto pvalue = ppropvals->get<char>(PR_DISPLAY_NAME);
 	if (pvalue == nullptr || *pvalue == '\0' || strcmp(pvalue, "''") == 0 ||
 	    strcmp(pvalue, "\"\"") == 0) {
@@ -1456,10 +1451,8 @@ static BOOL common_util_convert_recipient_block(
 	int i;
 	
 	for (i=0; i<prcpt->count; i++) {
-		if (FALSE == common_util_convert_tagged_propval(
-			to_unicode, prcpt->ppropval + i)) {
+		if (!common_util_convert_tagged_propval(to_unicode, &prcpt->ppropval[i]))
 			return FALSE;	
-		}
 	}
 	return TRUE;
 }
@@ -1470,10 +1463,8 @@ static BOOL common_util_convert_forwarddelegate_action(
 	int i;
 	
 	for (i=0; i<pfwd->count; i++) {
-		if (FALSE == common_util_convert_recipient_block(
-			to_unicode, pfwd->pblock + i)) {
+		if (!common_util_convert_recipient_block(to_unicode, &pfwd->pblock[i]))
 			return FALSE;	
-		}
 	}
 	return TRUE;
 }
@@ -1516,10 +1507,8 @@ BOOL common_util_convert_rule_actions(BOOL to_unicode, RULE_ACTIONS *pactions)
 	int i;
 	
 	for (i=0; i<pactions->count; i++) {
-		if (FALSE == common_util_convert_action_block(
-			to_unicode, pactions->pblock + i)) {
+		if (!common_util_convert_action_block(to_unicode, &pactions->pblock[i]))
 			return FALSE;	
-		}
 	}
 	return TRUE;
 }
@@ -1718,8 +1707,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 	/* send helo xxx to server */
 	snprintf(last_command, 1024, "helo %s\r\n", get_host_ID());
 	command_len = strlen(last_command);
-	if (FALSE == common_util_send_command(
-		sockd, last_command, command_len)) {
+	if (!common_util_send_command(sockd, last_command, command_len)) {
 		close(sockd);
 		log_err("Failed to send \"HELO\" command");
 		return FALSE;
@@ -1743,9 +1731,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 	}
 
 	command_len = sprintf(last_command, "mail from:<%s>\r\n", sender);
-	
-	if (FALSE == common_util_send_command(
-		sockd, last_command, command_len)) {
+	if (!common_util_send_command(sockd, last_command, command_len)) {
 		close(sockd);
 		log_err("Failed to send \"MAIL FROM\" command");
 		return FALSE;
@@ -1774,8 +1760,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 		bool have_at = strchr(static_cast<char *>(pnode->pdata), '@') != nullptr;
 		command_len = sprintf(last_command, have_at ? "rcpt to:<%s>\r\n" :
 		              "rcpt to:<%s@none>\r\n", static_cast<const char *>(pnode->pdata));
-		if (FALSE == common_util_send_command(
-			sockd, last_command, command_len)) {
+		if (!common_util_send_command(sockd, last_command, command_len)) {
 			close(sockd);
 			log_err("Failed to send \"RCPT TO\" command");
 			return FALSE;
@@ -1801,8 +1786,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 	/* send data */
 	strcpy(last_command, "data\r\n");
 	command_len = strlen(last_command);
-	if (FALSE == common_util_send_command(
-		sockd, last_command, command_len)) {
+	if (!common_util_send_command(sockd, last_command, command_len)) {
 		close(sockd);
 		log_err("Sender %s: Failed "
 			"to send \"DATA\" command", sender);
@@ -1829,7 +1813,7 @@ BOOL common_util_send_mail(MAIL *pmail,
 
 	pmail->set_header("X-Mailer", "gromox-emsmdb " PACKAGE_VERSION);
 	if (!pmail->to_file(sockd) ||
-		FALSE == common_util_send_command(sockd, ".\r\n", 3)) {
+	    !common_util_send_command(sockd, ".\r\n", 3)) {
 		close(sockd);
 		log_err("Sender %s: Failed to send mail content", sender);
 		return FALSE;
@@ -1886,10 +1870,9 @@ static BOOL common_util_get_propname(
 	
 	propids.count = 1;
 	propids.ppropid = &propid;
-	if (FALSE == exmdb_client_get_named_propnames(
-		common_util_get_dir(), &propids, &propnames)) {
+	if (!exmdb_client_get_named_propnames(common_util_get_dir(),
+	    &propids, &propnames))
 		return FALSE;
-	}
 	*pppropname = propnames.count != 1 ? nullptr : propnames.ppropname;
 	return TRUE;
 }
@@ -1965,7 +1948,7 @@ BOOL common_util_send_message(logon_object *plogon,
 				continue;	
 		}
 		/*
-		if (FALSE == b_submit) {
+		if (!b_submit) {
 			pvalue = prcpts->pparray[i]->getval(PR_RESPONSIBILITY);
 			if (NULL == pvalue || 0 != *(uint8_t*)pvalue) {
 				continue;
@@ -2056,8 +2039,8 @@ BOOL common_util_send_message(logon_object *plogon,
 							PROP_TAG_SENTMAILSVREID);
 	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
-		if (FALSE == common_util_from_message_entryid(
-			plogon, ptarget, &folder_id, &new_id)) {
+		if (!common_util_from_message_entryid(plogon,
+		    ptarget, &folder_id, &new_id)) {
 			log_err("W-1279: Failed to retrieve target entryid while sending mid:0x%llx", LLU(message_id));
 			return FALSE;	
 		}

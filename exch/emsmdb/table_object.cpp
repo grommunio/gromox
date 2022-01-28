@@ -262,9 +262,8 @@ std::unique_ptr<table_object> table_object::create(logon_object *plogon,
 	} catch (const std::bad_alloc &) {
 		return NULL;
 	}
-	if (FALSE == emsmdb_interface_get_cxh(&ptable->cxh)) {
+	if (!emsmdb_interface_get_cxh(&ptable->cxh))
 		return NULL;
-	}
 	ptable->plogon = plogon;
 	ptable->pparent_obj = pparent_obj;
 	ptable->rop_id = rop_id;

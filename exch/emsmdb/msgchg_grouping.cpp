@@ -211,8 +211,7 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 					"loading property group info\n");
 				return NULL;
 			}
-			if (FALSE == msgchg_grouping_append_group_list(
-				pinfo_node, pgp_node)) {
+			if (!msgchg_grouping_append_group_list(pinfo_node, pgp_node)) {
 				msgchg_grouping_free_group_node(pgp_node);
 				printf("[exchange_emsmdb]: index %d "
 							"duplicated\n", index);
@@ -288,8 +287,7 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 					"loading property group info\n");
 				return NULL;
 			}
-			if (FALSE == guid_from_string(
-				&ptag_node->ppropname->guid, pline + 5)) {
+			if (!guid_from_string(&ptag_node->ppropname->guid, pline + 5)) {
 				free(ptag_node->ppropname);
 				free(ptag_node);
 				printf("[exchange_emsmdb]: guid string"
