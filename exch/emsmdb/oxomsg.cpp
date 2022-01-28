@@ -204,14 +204,10 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	int timer_id;
 	BOOL b_marked;
 	int object_type;
-	time_t cur_time;
-	uint32_t tmp_num;
 	uint16_t rcpt_num;
 	char username[UADDR_SIZE];
 	int32_t max_length;
 	uint32_t mail_length;
-	uint64_t submit_time;
-	uint32_t deferred_time;
 	uint32_t message_flags;
 	char command_buff[1024];
 	uint32_t proptag_buff[6];
@@ -296,9 +292,9 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PR_MESSAGE_SIZE;
 	proptag_buff[1] = PR_MESSAGE_FLAGS;
-	proptag_buff[2] = PROP_TAG_DEFERREDSENDTIME;
-	proptag_buff[3] = PROP_TAG_DEFERREDSENDNUMBER;
-	proptag_buff[4] = PROP_TAG_DEFERREDSENDUNITS;
+	proptag_buff[2] = PR_DEFERRED_SEND_TIME;
+	proptag_buff[3] = PR_DEFERRED_SEND_NUMBER;
+	proptag_buff[4] = PR_DEFERRED_SEND_UNITS;
 	proptag_buff[5] = PROP_TAG_DELETEAFTERSUBMIT;
 	if (!pmessage->get_properties(0, &tmp_proptags, &tmp_propvals))
 		return ecError;
@@ -344,39 +340,7 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 		return ecAccessDenied;
 	}
 	
-	deferred_time = 0;
-	time(&cur_time);
-	submit_time = rop_util_unix_to_nttime(cur_time);
-	pvalue = tmp_propvals.getval(PROP_TAG_DEFERREDSENDTIME);
-	if (NULL != pvalue) {
-		if (submit_time < *(uint64_t*)pvalue) {
-			deferred_time = rop_util_nttime_to_unix(
-						*(uint64_t*)pvalue) - cur_time;
-		}
-	} else {
-		pvalue = tmp_propvals.getval(PROP_TAG_DEFERREDSENDNUMBER);
-		if (NULL != pvalue) {
-			tmp_num = *(uint32_t*)pvalue;
-			pvalue = tmp_propvals.getval(PROP_TAG_DEFERREDSENDUNITS);
-			if (NULL != pvalue) {
-				switch (*(uint32_t*)pvalue) {
-				case 0:
-					deferred_time = tmp_num*60;
-					break;
-				case 1:
-					deferred_time = tmp_num*60*60;
-					break;
-				case 2:
-					deferred_time = tmp_num*60*60*24;
-					break;
-				case 3:
-					deferred_time = tmp_num*60*60*24*7;
-					break;
-				}
-			}
-		}
-	}
-	
+	auto deferred_time = props_to_defer_interval(tmp_propvals);
 	if (deferred_time > 0) {
 		snprintf(command_buff, 1024, "%s %s %llu",
 		         common_util_get_submit_command(),

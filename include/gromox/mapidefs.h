@@ -476,8 +476,11 @@ enum {
 	PR_AUTO_RESPONSE_SUPPRESS = PROP_TAG(PT_LONG, 0x3FDF), /* PidTagAutoResponseSuppress */
 	// PR_ACL_DATA = PROP_TAG(PT_BINARY, 0x3FE0), /* PidTagAccessControlListData */
 	// PR_HAS_DAMS = PROP_TAG(PT_BOOLEAN, 0x3FEA), /* PidTagHasDeferredActionMessages */
+	PR_DEFERRED_SEND_NUMBER = PROP_TAG(PT_LONG, 0x3FEB), /* PidTagDeferredSendNumber */
+	PR_DEFERRED_SEND_UNITS = PROP_TAG(PT_LONG, 0x3FEC), /* PidTagDeferredSendUnits */
 	// PR_EXPIRY_NUMBER = PROP_TAG(PT_LONG, 0x3FED), /* PidTagExpiryNumber */
 	// PR_EXPIRY_UNITS = PROP_TAG(PT_LONG, 0x3FEE), /* PidTagExpiryUnits */
+	PR_DEFERRED_SEND_TIME = PROP_TAG(PT_SYSTIME, 0x3FEF), /* PidTagDeferredSendTime */
 	// PR_CONFLICT_ENTRYID = PROP_TAG(PT_BINARY, 0x3FF0), /* PidTagConflictEntryId */
 	PR_MESSAGE_LOCALE_ID = PROP_TAG(PT_LONG, 0x3FF1), /* PidTagMessageLocaleId */
 	PR_STORAGE_QUOTA_LIMIT = PROP_TAG(PT_LONG, 0x3FF5),

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <sys/time.h>
 #include <gromox/endian.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/rop_util.hpp>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <sys/time.h>
 #define TIME_FIXUP_CONSTANT_INT				11644473600LL
 
 using namespace gromox;
@@ -264,4 +265,33 @@ void rop_util_free_binary(BINARY *pbin)
 XID::XID(GUID g, uint64_t change_num) : guid(g), size(22)
 {
 	memcpy(local_id, rop_util_get_gc_array(change_num).ab, 6);
+}
+
+namespace gromox {
+
+uint32_t props_to_defer_interval(const TPROPVAL_ARRAY &pv)
+{
+	auto cur_time = time(nullptr);
+	auto submit_time = rop_util_unix_to_nttime(cur_time);
+	auto send_time = pv.get<const uint64_t>(PR_DEFERRED_SEND_TIME);
+	if (send_time != nullptr) {
+		if (*send_time < submit_time)
+			return 0;
+		return rop_util_nttime_to_unix(*send_time) - cur_time;
+	}
+	auto num = pv.get<const uint32_t>(PR_DEFERRED_SEND_NUMBER);
+	if (num == nullptr)
+		return 0;
+	auto unit = pv.get<const uint32_t>(PR_DEFERRED_SEND_UNITS);
+	if (unit == nullptr)
+		return 0;
+	switch (*unit) {
+	case 0: return *num * 60;
+	case 1: return *num * 3600;
+	case 2: return *num * 86400;
+	case 3: return *num * 86400 * 7;
+	default: return 0;
+	}
+}
+
 }
