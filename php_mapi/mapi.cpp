@@ -5319,6 +5319,7 @@ ZEND_FUNCTION(nsp_getuserinfo)
 	zarray_init(return_value);
 	add_assoc_stringl(return_value, "userid", reinterpret_cast<const char *>(entryid.pb), entryid.cb);
 	add_assoc_string(return_value, "username", username);
+	add_assoc_string(return_value, "primary_email", username);
 	add_assoc_string(return_value, "fullname", pdisplay_name);
 	add_assoc_string(return_value, "essdn", px500dn);
 	add_assoc_long(return_value, "privilege", privilege_bits);
