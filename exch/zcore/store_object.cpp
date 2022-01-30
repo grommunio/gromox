@@ -1419,10 +1419,6 @@ BOOL store_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	auto pstore = this;
 	int i;
 	auto pinfo = zarafa_server_get_info();
-	if (FALSE == pstore->b_private ||
-		pinfo->user_id != pstore->account_id) {
-		return TRUE;
-	}
 	for (i=0; i<pproptags->count; i++) {
 		if (store_object_check_readonly_property(pstore, pproptags->pproptag[i]))
 			continue;
