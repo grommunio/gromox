@@ -91,9 +91,8 @@ void exmdb_server_set_remote_id(const char *remote_id)
 ALLOC_CONTEXT* exmdb_server_get_alloc_context()
 {
 	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
-	if (NULL == pctx || TRUE == pctx->b_local) {
+	if (pctx == nullptr || pctx->b_local)
 		return NULL;
-	}
 	return &pctx->alloc_ctx;
 }
 
@@ -142,16 +141,12 @@ int exmdb_server_get_account_id()
 	
 	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
 	if (pctx->account_id < 0) {
-		if (TRUE == pctx->b_private) {
-			if (TRUE == common_util_get_id_from_maildir(
-				pctx->dir, &account_id)) {
+		if (pctx->b_private) {
+			if (common_util_get_id_from_maildir(pctx->dir, &account_id))
 				pctx->account_id = account_id;	
-			}
 		} else {
-			if (TRUE == common_util_get_id_from_homedir(
-				pctx->dir, &account_id)) {
+			if (common_util_get_id_from_homedir(pctx->dir, &account_id))
 				pctx->account_id = account_id;	
-			}
 		}
 	}
 	return pctx->account_id;

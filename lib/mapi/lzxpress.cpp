@@ -71,7 +71,7 @@ uint32_t lzxpress_compress(const uint8_t *uncompressed,
 			break;
 		}
 		
-		if (TRUE == b_found) {
+		if (b_found) {
 			metadata_size = 0;
 			pdest = (uint16_t *)&compressed[compressed_pos];
 			if (length <= CLASSIC_MATCH_LENGTH) {

@@ -638,7 +638,7 @@ BOOL logon_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	auto plogon = this;
 	for (i=0; i<pproptags->count; i++) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
-		if (TRUE == logon_object_get_calculated_property(
+		if (logon_object_get_calculated_property(
 			plogon, pproptags->pproptag[i], &pvalue)) {
 			if (NULL != pvalue) {
 				pv.proptag = pproptags->pproptag[i];

@@ -358,11 +358,10 @@ void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type)
 			}
 		}
 	} else if (CONTEXT_FREE == type && CONTEXT_TURNING == orignal_type) {
-		if (TRUE == pcontext->b_waiting) {
+		if (pcontext->b_waiting)
 			/* socket was removed by "close()" function automatically,
 				no need to call epoll_ctl with EPOLL_CTL_DEL */
 			pcontext->b_waiting = FALSE;
-		}
 	}
 	double_list_append_as_tail(&g_context_lists[type], 
 									&pcontext->node);

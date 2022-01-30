@@ -136,9 +136,8 @@ void threads_pool_stop()
 		g_threads_pool_waken_cond.notify_all();
 		pthread_kill(thr_id, SIGALRM); /* may be in nanosleep */
 		pthread_join(thr_id, NULL);
-		if (TRUE == b_should_exit) {
+		if (b_should_exit)
 			break;
-		}
 	}
 	g_threads_data_buff.reset();
 }

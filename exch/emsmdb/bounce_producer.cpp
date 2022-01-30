@@ -305,7 +305,7 @@ static int bounce_producer_get_mail_parts(
 		}
 		tmp_len = strlen(static_cast<char *>(pvalue));
 		if (offset + tmp_len < 128*1024) {
-			if (TRUE == b_first) {
+			if (b_first) {
 				strcpy(parts + offset, g_separator);
 				offset += strlen(g_separator);
 			}
@@ -330,7 +330,7 @@ static size_t bounce_producer_get_rcpts(TARRAY_SET *prcpts, char *rcpts)
 		}
 		auto tmp_len = strlen(static_cast<char *>(pvalue));
 		if (offset + tmp_len < 128*1024) {
-			if (TRUE == b_first) {
+			if (b_first) {
 				strcpy(rcpts + offset, g_separator);
 				offset += strlen(g_separator);
 			}

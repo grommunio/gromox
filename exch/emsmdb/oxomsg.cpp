@@ -322,9 +322,8 @@ uint32_t rop_submitmessage(uint8_t submit_flags, LOGMAP *plogmap,
 	if (!exmdb_client_check_message(plogon->get_dir(), fid_spooler,
 	    pmessage->get_id(), &b_exist))
 		return ecError;
-	if (TRUE == b_exist) {
+	if (b_exist)
 		return ecAccessDenied;
-	}
 	if (submit_flags & ROP_SUBMIT_FLAG_NEEDS_SPOOLER) {
 		if (!exmdb_client_link_message(plogon->get_dir(), pinfo->cpid,
 		    fid_spooler, pmessage->get_id(), &b_result) || !b_result)
@@ -527,7 +526,7 @@ uint32_t rop_spoolerlockmessage(uint64_t message_id, uint8_t lock_stat,
 		    plogon->account_id, pinfo->cpid, message_id, folder_id,
 		    new_id, b_delete, &b_result))
 			return ecError;
-	} else if (TRUE == b_delete) {
+	} else if (b_delete) {
 		exmdb_client_delete_message(plogon->get_dir(),
 			plogon->account_id, pinfo->cpid,
 			parent_id, message_id, TRUE, &b_result);

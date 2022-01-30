@@ -238,7 +238,7 @@ static void *meq_thrwork(void *arg)
             continue;
         }
 		auto pentity = &entlist.front();
-		if (TRUE == message_enqueue_try_save_mess(pentity)) {
+		if (message_enqueue_try_save_mess(pentity)) {
 			if (FLUSH_WHOLE_MAIL == pentity->pflusher->flush_action) {
     			msg.msg_type = MESSAGE_MESS;
     			msg.msg_content = pentity->pflusher->flush_ID;

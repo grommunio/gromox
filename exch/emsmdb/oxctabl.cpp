@@ -180,9 +180,8 @@ uint32_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteria,
 				return ecNotSupported;
 			type &= ~MV_INSTANCE;
 			/* MUST NOT contain more than one multivalue property! */
-			if (TRUE == b_multi_inst) {
+			if (b_multi_inst)
 				return ecInvalidParam;
-			}
 			b_multi_inst = TRUE;
 		}
 		if (!table_acceptable_type(type))
@@ -191,19 +190,15 @@ uint32_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteria,
 			psort_criteria->psort[i].table_sort ||
 			TABLE_SORT_MINIMUM_CATEGORY ==
 			psort_criteria->psort[i].table_sort) {
-			if (TRUE == b_max || i != psort_criteria->ccategories) {
+			if (b_max || i != psort_criteria->ccategories)
 				return ecInvalidParam;
-			}
 			b_max = TRUE;
 		}
 	}
 	auto pcolumns = ptable->get_columns();
-	if (TRUE == b_multi_inst && NULL != pcolumns) {
-		if (FALSE == oxctable_verify_columns_and_sorts(
-			pcolumns, psort_criteria)) {
-			return ecNotSupported;
-		}
-	}
+	if (b_multi_inst && pcolumns != nullptr && 
+	    !oxctable_verify_columns_and_sorts(pcolumns, psort_criteria))
+		return ecNotSupported;
 	if (!ptable->set_sorts(psort_criteria))
 		return ecMAPIOOM;
 	*ptable_status = TABLE_STATUS_COMPLETE;
@@ -295,7 +290,7 @@ uint32_t rop_queryrows(uint8_t flags, uint8_t forward_read, uint16_t row_count,
 		ptable->seek_current(b_forward, *pcount);
 	}
 	*pseek_pos = BOOKMARK_CURRENT;
-	if (TRUE == b_forward) {
+	if (b_forward) {
 		if (ptable->get_position() >= ptable->get_total())
 			*pseek_pos = BOOKMARK_END;
 	} else {

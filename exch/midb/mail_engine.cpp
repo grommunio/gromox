@@ -890,9 +890,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 						free(ret_string);
 					}
 				}
-				if (TRUE == b_result1) {
+				if (b_result1)
 					break;
-				}
 				if (get_digest(digest_buff, "from", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
@@ -906,9 +905,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 						free(ret_string);
 					}
 				}
-				if (TRUE == b_result1) {
+				if (b_result1)
 					break;
-				}
 				if (get_digest(digest_buff, "subject", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
@@ -922,9 +920,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 						free(ret_string);
 					}
 				}
-				if (TRUE == b_result1) {
+				if (b_result1)
 					break;
-				}
 				if (get_digest(digest_buff, "to", temp_buff, arsizeof(temp_buff)) &&
 				    decode64(temp_buff, strlen(temp_buff), temp_buff1, &temp_len) == 0) {
 					temp_buff1[temp_len] = '\0';
@@ -938,9 +935,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 						free(ret_string);
 					}
 				}
-				if (TRUE == b_result1) {
+				if (b_result1)
 					break;
-				}
 				MJSON temp_mjson(g_alloc_mjson.get());
 				snprintf(temp_buff, 256, "%s/eml",
 						common_util_get_maildir());
@@ -950,9 +946,8 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					keyword_enum.charset = charset;
 					keyword_enum.keyword = (const char*)ptree_node->pstatment;
 					temp_mjson.enum_mime(mail_engine_ct_enum_mime, &keyword_enum);
-					if (TRUE == keyword_enum.b_result) {
+					if (keyword_enum.b_result)
 						b_result1 = TRUE;
-					}
 				}
 				break;
 			}
@@ -1652,7 +1647,7 @@ static CONDITION_RESULT* mail_engine_ct_match(const char *charset,
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		mid_string = S2A(sqlite3_column_text(pstmt, 0));
 		uid = sqlite3_column_int64(pstmt, 1);
-		if (TRUE == mail_engine_ct_match_mail(psqlite,
+		if (mail_engine_ct_match_mail(psqlite,
 			charset, pstmt_message, mid_string, i + 1,
 			total_mail, uidnext, ptree)) {
 			pnode = me_alloc<SINGLE_LIST_NODE>();
@@ -2577,17 +2572,15 @@ static IDB_REF mail_engine_get_idb(const char *path)
 		hhold.unlock();
 		return {};
 	}
-	if (TRUE == b_load) {
+	if (b_load) {
 		mail_engine_sync_mailbox(pidb);
-	} else {
-		if (NULL == pidb->psqlite) {
-			pidb->last_time = 0;
-			pidb->lock.unlock();
-			hhold.lock();
-			pidb->reference --;
-			hhold.unlock();
-			return {};
-		}
+	} else if (pidb->psqlite == nullptr) {
+		pidb->last_time = 0;
+		pidb->lock.unlock();
+		hhold.lock();
+		pidb->reference--;
+		hhold.unlock();
+		return {};
 	}
 	return IDB_REF(pidb);
 }
@@ -2819,7 +2812,7 @@ static int mail_engine_mlist(int argc, char **argv, int sockd)
 	}
 	total_mail = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
-	if (TRUE == b_asc) {
+	if (b_asc) {
 		if (offset < 0) {
 			idx1 = total_mail + 1 + offset;
 			if (idx1 < 1) {
@@ -3444,12 +3437,10 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 			ptoken, FALSE, &b_exist, &b_partial)) {
 			return MIDB_E_NO_MEMORY;
 		}
-		if (TRUE == b_exist) {
+		if (b_exist)
 			return MIDB_E_FOLDER_EXISTS;
-		}
-		if (TRUE == b_partial) {
+		if (b_partial)
 			return MIDB_E_NO_MEMORY;
-		}
 	}
 	proptags.count = 1;
 	proptags.pproptag = &tmp_proptag;
@@ -3584,13 +3575,12 @@ static int mail_engine_mremf(int argc, char **argv, int sockd)
 	pidb.reset();
 	folder_id = rop_util_make_eid_ex(1, folder_id);
 	if (!exmdb_client::empty_folder(argv[1], 0, NULL, folder_id,
-		TRUE, TRUE, TRUE, FALSE, &b_partial) || TRUE == b_partial ||
-		!exmdb_client::empty_folder(argv[1], 0, NULL, folder_id,
-		TRUE, FALSE, FALSE, TRUE, &b_partial) || TRUE == b_partial ||
-		!exmdb_client::delete_folder(argv[1], 0, folder_id, TRUE,
-		&b_result) || FALSE == b_result) {
+	    TRUE, TRUE, TRUE, FALSE, &b_partial) || b_partial ||
+	    !exmdb_client::empty_folder(argv[1], 0, NULL, folder_id,
+	    TRUE, FALSE, FALSE, TRUE, &b_partial) || b_partial ||
+	    !exmdb_client::delete_folder(argv[1], 0, folder_id, TRUE,
+	    &b_result) || !b_result)
 		return MIDB_E_NO_MEMORY;
-	}
 	cmd_write(sockd, "TRUE\r\n", 6);
 	return 0;
 }
@@ -3961,7 +3951,7 @@ static int mail_engine_psiml(int argc, char **argv, int sockd)
 	}
 	total_mail = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
-	if (TRUE == b_asc) {
+	if (b_asc) {
 		if (offset < 0) {
 			idx1 = total_mail + 1 + offset;
 			if (idx1 < 1) {
@@ -4126,7 +4116,7 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	}
 	if (!mail_engine_sort_folder(pidb.get(), argv[2], sort_field))
 		return MIDB_E_NO_MEMORY;
-	if (TRUE == b_asc) {
+	if (b_asc) {
 		if (-1 == first && -1 == last) {
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string, uid, "
 				"replied, unsent, flagged, deleted, read, recent, forwarded "
@@ -4416,7 +4406,7 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 		return MIDB_E_NO_FOLDER;
 	if (!mail_engine_sort_folder(pidb.get(), argv[2], sort_field))
 		return MIDB_E_NO_MEMORY;
-	if (TRUE == b_asc) {
+	if (b_asc) {
 		if (first == -1 && last ==- 1)
 			snprintf(sql_string, arsizeof(sql_string), "SELECT idx, mid_string"
 				" FROM messages WHERE folder_id=%llu ORDER BY idx",

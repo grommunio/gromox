@@ -37,9 +37,8 @@ icsupctx_object::~icsupctx_object()
 BOOL icsupctx_object::begin_state_stream(uint32_t new_state_prop)
 {
 	auto pctx = this;
-	if (TRUE == pctx->b_started) {
+	if (pctx->b_started)
 		return FALSE;
-	}
 	if (0 != pctx->state_property) {
 		return FALSE;
 	}
@@ -65,9 +64,8 @@ BOOL icsupctx_object::begin_state_stream(uint32_t new_state_prop)
 BOOL icsupctx_object::continue_state_stream(const BINARY *pstream_data)
 {
 	auto pctx = this;
-	if (TRUE == pctx->b_started) {
+	if (pctx->b_started)
 		return FALSE;
-	}
 	if (0 == pctx->state_property) {
 		return FALSE;
 	}
@@ -83,9 +81,8 @@ BOOL icsupctx_object::end_state_stream()
 	auto pctx = this;
 	BINARY tmp_bin;
 	
-	if (TRUE == pctx->b_started) {
+	if (pctx->b_started)
 		return FALSE;
-	}
 	if (0 == pctx->state_property) {
 		return FALSE;
 	}

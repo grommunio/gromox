@@ -187,9 +187,8 @@ static BOOL fastupctx_object_empty_folder(fastupctx_object *pctx,
 	    pinfo->cpid, username, folder_id, TRUE, b_normal, b_fai,
 	    b_sub, &b_partial))
 		return FALSE;	
-	if (TRUE == b_partial) {
+	if (b_partial)
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -858,9 +857,8 @@ gxerr_t fastupctx_object::write_buffer(const BINARY *ptransfer_data)
 {
 	auto pctx = this;
 	/* check if the fast stream is marked as ended */
-	if (TRUE == pctx->b_ended) {
+	if (pctx->b_ended)
 		return GXERR_CALL_FAILED;
-	}
 	if (!pstream->write_buffer(ptransfer_data))
 		return GXERR_CALL_FAILED;
 	return pstream->process(fastupctx_object_record_marker,

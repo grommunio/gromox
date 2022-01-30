@@ -173,12 +173,11 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 	if (gx_sql_exec(psqlite, "CREATE TABLE existence "
 	    "(message_id INTEGER PRIMARY KEY)") != SQLITE_OK)
 		return FALSE;
-	if (NULL != pread) {
-		if (gx_sql_exec(psqlite, "CREATE TABLE reads "
-		    "(message_id INTEGER PRIMARY KEY, read_state INTEGER)") != SQLITE_OK)
-			return FALSE;
-	}
-	if (TRUE == b_ordered) {
+	if (pread != nullptr &&
+	    gx_sql_exec(psqlite, "CREATE TABLE reads "
+	    "(message_id INTEGER PRIMARY KEY, read_state INTEGER)") != SQLITE_OK)
+		return FALSE;
+	if (b_ordered) {
 		if (gx_sql_exec(psqlite, "CREATE TABLE changes"
 		    " (message_id INTEGER PRIMARY KEY, "
 		    "delivery_time INTEGER, mod_time INTEGER)") != SQLITE_OK)
@@ -208,17 +207,16 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		transact2 = gx_sql_begin_trans(pdb->psqlite);
 	}
 	char sql_string[256];
-	if (TRUE == b_private) {
+	if (b_private)
 		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
 			" change_number, is_associated, message_size,"
 			" read_state, read_cn FROM messages WHERE "
 			"parent_fid=%llu", static_cast<unsigned long long>(fid_val));
-	} else {
+	else
 		snprintf(sql_string, arsizeof(sql_string), "SELECT message_id,"
 			" change_number, is_associated, message_size "
 			"FROM messages WHERE parent_fid=%llu AND "
 			"is_deleted=0", static_cast<unsigned long long>(fid_val));
-	}
 	auto stm_select_msg = gx_sql_prep(pdb->psqlite, sql_string);
 	if (stm_select_msg == nullptr)
 		return false;
@@ -247,7 +245,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			return false;
 	}
 	xstmt stm_select_mp;
-	if (TRUE == b_ordered) {
+	if (b_ordered) {
 		stm_select_mp = gx_sql_prep(pdb->psqlite, "SELECT propval FROM "
 		                "message_properties WHERE proptag=? AND message_id=?");
 		if (stm_select_mp == nullptr)
@@ -263,13 +261,11 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		if (NULL == pseen && NULL == pseen_fai) {
 			continue;
 		} else if (NULL != pseen && NULL == pseen_fai) {
-			if (TRUE == b_fai) {
+			if (b_fai)
 				continue;
-			}
 		} else if (NULL == pseen && NULL != pseen_fai) {
-			if (FALSE == b_fai) {
+			if (!b_fai)
 				continue;
-			}
 		}
 		if (NULL != prestriction && FALSE ==
 			common_util_evaluate_message_restriction(
@@ -284,7 +280,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			*plast_cn = change_num;
 		}
 		uint64_t read_cn;
-		if (TRUE == b_private) {
+		if (b_private) {
 			read_cn = sqlite3_column_type(stm_select_msg, 5) == SQLITE_NULL ? 0 :
 			          sqlite3_column_int64(stm_select_msg, 5);
 		} else {
@@ -298,40 +294,38 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		if (read_cn > *plast_readcn) {
 			*plast_readcn = read_cn;
 		}
-		if (TRUE == b_fai) {
+		if (b_fai) {
 			if (cache.hint(mid_val) &&
 			    const_cast<IDSET *>(pseen_fai)->hint(rop_util_make_eid_ex(1, change_num)))
 				continue;
-		} else {
-			if (cache.hint(mid_val) &&
-			    const_cast<IDSET *>(pseen)->hint(rop_util_make_eid_ex(1, change_num))) {
-				if (NULL == pread) {
-					continue;
-				}
-				if (read_cn == 0 ||
-				    const_cast<IDSET *>(pread)->hint(rop_util_make_eid_ex(1, read_cn))) {
-					continue;	
-				}
-				int read_state;
-				if (TRUE == b_private) {
-					read_state = sqlite3_column_int64(stm_select_msg, 4);
-				} else {
-					sqlite3_reset(stm_select_rst);
-					sqlite3_bind_int64(stm_select_rst, 1, mid_val);
-					sqlite3_bind_text(stm_select_rst, 2,
-						username, -1 , SQLITE_STATIC);
-					read_state = sqlite3_step(stm_select_rst) == SQLITE_ROW;
-				}
-				sqlite3_reset(stm_insert_reads);
-				sqlite3_bind_int64(stm_insert_reads, 1, mid_val);
-				sqlite3_bind_int64(stm_insert_reads, 2, read_state);
-				if (sqlite3_step(stm_insert_reads) != SQLITE_DONE)
-					return false;
+		} else if (cache.hint(mid_val) &&
+		    const_cast<IDSET *>(pseen)->hint(rop_util_make_eid_ex(1, change_num))) {
+			if (NULL == pread) {
 				continue;
 			}
+			if (read_cn == 0 ||
+			    const_cast<IDSET *>(pread)->hint(rop_util_make_eid_ex(1, read_cn))) {
+				continue;
+			}
+			int read_state;
+			if (b_private) {
+				read_state = sqlite3_column_int64(stm_select_msg, 4);
+			} else {
+				sqlite3_reset(stm_select_rst);
+				sqlite3_bind_int64(stm_select_rst, 1, mid_val);
+				sqlite3_bind_text(stm_select_rst, 2,
+					username, -1 , SQLITE_STATIC);
+				read_state = sqlite3_step(stm_select_rst) == SQLITE_ROW;
+			}
+			sqlite3_reset(stm_insert_reads);
+			sqlite3_bind_int64(stm_insert_reads, 1, mid_val);
+			sqlite3_bind_int64(stm_insert_reads, 2, read_state);
+			if (sqlite3_step(stm_insert_reads) != SQLITE_DONE)
+				return false;
+			continue;
 		}
 		uint64_t dtime = 0, mtime = 0;
-		if (TRUE == b_ordered) {
+		if (b_ordered) {
 			sqlite3_reset(stm_select_mp);
 			sqlite3_bind_int64(stm_select_mp, 1, PROP_TAG_MESSAGEDELIVERYTIME);
 			sqlite3_bind_int64(stm_select_mp, 2, mid_val);
@@ -343,7 +337,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 			mtime = sqlite3_step(stm_select_mp) == SQLITE_ROW ?
 			        sqlite3_column_int64(stm_select_mp, 0) : 0;
 		}
-		if (TRUE == b_fai) {
+		if (b_fai) {
 			(*pfai_count) ++;
 			*pfai_total += message_size;
 		} else {
@@ -352,7 +346,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		}
 		sqlite3_reset(stm_insert_chg);
 		sqlite3_bind_int64(stm_insert_chg, 1, mid_val);
-		if (TRUE == b_ordered) {
+		if (b_ordered) {
 			sqlite3_bind_int64(stm_insert_chg, 2, dtime);
 			sqlite3_bind_int64(stm_insert_chg, 3, mtime);
 		}

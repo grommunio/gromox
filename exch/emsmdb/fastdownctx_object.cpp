@@ -162,7 +162,7 @@ BOOL fastdownctx_object::make_foldercontent(BOOL b_subfolders,
 	if (!flow_list.record_node(FUNC_ID_PROPLIST, &fc->proplist) ||
 	    !flow_list.record_foldermessages(&fc->fldmsgs))
 		return FALSE;	
-	if (TRUE == b_subfolders) {
+	if (b_subfolders) {
 		if (!flow_list.record_tag(MetaTagFXDelProp) ||
 		    !flow_list.record_tag(PROP_TAG_CONTAINERHIERARCHY))
 			return FALSE;
@@ -311,9 +311,8 @@ BOOL fastdownctx_object::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
 	if (!fastdownctx_object_get_buffer_internal(this, pbuff, plen, pb_last))
 		return FALSE;	
 	*pprogress = pctx->progress_steps / ratio;
-	if (TRUE == *pb_last) {
+	if (*pb_last)
 		*pprogress = *ptotal;
-	}
 	return TRUE;
 }
 

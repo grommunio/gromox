@@ -480,24 +480,24 @@ static int list_mail(const char *path, const char *folder,
 		
 		if (-1 == lines) {
 			for (i=0; i<offset-1&&i<36; i++) {
-				if ('\r' == buff[i] && '\n' == buff[i + 1]) {
-					if (0 == strncmp(buff, "TRUE ", 5)) {
-						memcpy(num_buff, buff + 5, i - 5);
-						num_buff[i - 5] = '\0';
-						lines = strtol(num_buff, nullptr, 0);
-						if (lines < 0) {
-							goto RDWR_ERROR;
-						}
-						*pnum = lines;
-						last_pos = i + 2;
-						line_pos = 0;
-						break;
-					} else if (0 == strncmp(buff, "FALSE ", 6)) {
-						std::unique_lock sv_hold(g_server_lock);
-						double_list_append_as_tail(&pback->psvr->conn_list,
-							&pback->node);
-						return MIDB_RESULT_ERROR;
+				if (buff[i] != '\r' || buff[i+1] != '\n')
+					continue;
+				if (0 == strncmp(buff, "TRUE ", 5)) {
+					memcpy(num_buff, buff + 5, i - 5);
+					num_buff[i-5] = '\0';
+					lines = strtol(num_buff, nullptr, 0);
+					if (lines < 0) {
+						goto RDWR_ERROR;
 					}
+					*pnum = lines;
+					last_pos = i + 2;
+					line_pos = 0;
+					break;
+				} else if (0 == strncmp(buff, "FALSE ", 6)) {
+					std::unique_lock sv_hold(g_server_lock);
+					double_list_append_as_tail(&pback->psvr->conn_list,
+						&pback->node);
+					return MIDB_RESULT_ERROR;
 				}
 			}
 			if (-1 == lines) {
@@ -511,6 +511,7 @@ static int list_mail(const char *path, const char *folder,
 		for (i=last_pos; i<offset; i++) {
 			if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
 				count ++;
+				continue;
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 				pspace = static_cast<char *>(memchr(temp_line, ' ', line_pos));
 				if (NULL == pspace) {
@@ -534,13 +535,11 @@ static int list_mail(const char *path, const char *folder,
 					b_fail = TRUE;
 				}
 				line_pos = 0;
-			} else {
-				if ('\r' != buff[i] || i != offset - 1) {
-					temp_line[line_pos] = buff[i];
-					line_pos ++;
-					if (line_pos >= 256) {
-						goto RDWR_ERROR;
-					}
+			} else if (buff[i] != '\r' || i != offset - 1) {
+				temp_line[line_pos] = buff[i];
+				line_pos++;
+				if (line_pos >= 256) {
+					goto RDWR_ERROR;
 				}
 			}
 		}
@@ -549,20 +548,12 @@ static int list_mail(const char *path, const char *folder,
 			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
 			sv_hold.unlock();
-			if (TRUE == b_fail) {
-				parray.clear();
-				return MIDB_RESULT_ERROR;
-			} else {
+			if (!b_fail)
 				return MIDB_RESULT_OK;
-			}
+			parray.clear();
+			return MIDB_RESULT_ERROR;
 		}
-
-		if ('\r' == buff[offset - 1]) {
-			last_pos = offset - 1;
-		} else {
-			last_pos = offset;
-		}
-
+		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 		if (256*1024 == offset) {
 			if ('\r' != buff[offset - 1]) {
 				offset = 0;
@@ -1179,26 +1170,26 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 		
 		if (-1 == lines) {
 			for (i=0; i<offset-1&&i<36; i++) {
-				if ('\r' == buff[i] && '\n' == buff[i + 1]) {
-					if (0 == strncmp(buff, "TRUE ", 5)) {
-						memcpy(num_buff, buff + 5, i - 5);
-						num_buff[i - 5] = '\0';
-						lines = strtol(num_buff, nullptr, 0);
-						if (lines < 0) {
-							goto RDWR_ERROR;
-						}
-						last_pos = i + 2;
-						line_pos = 0;
-						break;
-					} else if (0 == strncmp(buff, "FALSE ", 6)) {
-						std::unique_lock sv_hold(g_server_lock);
-						double_list_append_as_tail(&pback->psvr->conn_list,
-							&pback->node);
-						*perrno = strtol(buff + 6, nullptr, 0);
-						return MIDB_RESULT_ERROR;
-					} else {
+				if (buff[i] != '\r' || buff[i+1] != '\n')
+					continue;
+				if (0 == strncmp(buff, "TRUE ", 5)) {
+					memcpy(num_buff, buff + 5, i - 5);
+					num_buff[i-5] = '\0';
+					lines = strtol(num_buff, nullptr, 0);
+					if (lines < 0) {
 						goto RDWR_ERROR;
 					}
+					last_pos = i + 2;
+					line_pos = 0;
+					break;
+				} else if (0 == strncmp(buff, "FALSE ", 6)) {
+					std::unique_lock sv_hold(g_server_lock);
+					double_list_append_as_tail(&pback->psvr->conn_list,
+						&pback->node);
+					*perrno = strtol(buff + 6, nullptr, 0);
+					return MIDB_RESULT_ERROR;
+				} else {
+					goto RDWR_ERROR;
 				}
 			}
 			if (-1 == lines) {
@@ -1216,13 +1207,11 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 				temp_line[line_pos] = '\0';
 				pfile->writeline(temp_line);
 				line_pos = 0;
-			} else {
-				if ('\r' != buff[i] || i != offset - 1) {
-					temp_line[line_pos] = buff[i];
-					line_pos ++;
-					if (line_pos >= 512) {
-						goto RDWR_ERROR;
-					}
+			} else if (buff[i] != '\r' || i != offset - 1) {
+				temp_line[line_pos] = buff[i];
+				line_pos ++;
+				if (line_pos >= 512) {
+					goto RDWR_ERROR;
 				}
 			}
 		}
@@ -1232,13 +1221,7 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
 			return MIDB_RESULT_OK;
 		}
-
-		if ('\r' == buff[offset - 1]) {
-			last_pos = offset - 1;
-		} else {
-			last_pos = offset;
-		}
-
+		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 		if (256*1024 == offset) {
 			if ('\r' != buff[offset - 1]) {
 				offset = 0;
@@ -1302,26 +1285,26 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 		
 		if (-1 == lines) {
 			for (i=0; i<offset-1&&i<36; i++) {
-				if ('\r' == buff[i] && '\n' == buff[i + 1]) {
-					if (0 == strncmp(buff, "TRUE ", 5)) {
-						memcpy(num_buff, buff + 5, i - 5);
-						num_buff[i - 5] = '\0';
-						lines = strtol(num_buff, nullptr, 0);
-						if (lines < 0) {
-							goto RDWR_ERROR;
-						}
-						last_pos = i + 2;
-						line_pos = 0;
-						break;
-					} else if (0 == strncmp(buff, "FALSE ", 6)) {
-						std::unique_lock sv_hold(g_server_lock);
-						double_list_append_as_tail(&pback->psvr->conn_list,
-							&pback->node);
-						*perrno = strtol(buff + 6, nullptr, 0);
-						return MIDB_RESULT_ERROR;
-					} else {
+				if (buff[i] != '\r' || buff[i+1] != '\n')
+					continue;
+				if (0 == strncmp(buff, "TRUE ", 5)) {
+					memcpy(num_buff, buff + 5, i - 5);
+					num_buff[i-5] = '\0';
+					lines = strtol(num_buff, nullptr, 0);
+					if (lines < 0) {
 						goto RDWR_ERROR;
 					}
+					last_pos = i + 2;
+					line_pos = 0;
+					break;
+				} else if (0 == strncmp(buff, "FALSE ", 6)) {
+					std::unique_lock sv_hold(g_server_lock);
+					double_list_append_as_tail(&pback->psvr->conn_list,
+						&pback->node);
+					*perrno = strtol(buff + 6, nullptr, 0);
+					return MIDB_RESULT_ERROR;
+				} else {
+					goto RDWR_ERROR;
 				}
 			}
 			if (-1 == lines) {
@@ -1339,13 +1322,11 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 				temp_line[line_pos] = '\0';
 				pfile->writeline(temp_line);
 				line_pos = 0;
-			} else {
-				if ('\r' != buff[i] || i != offset - 1) {
-					temp_line[line_pos] = buff[i];
-					line_pos ++;
-					if (line_pos > 150) {
-						goto RDWR_ERROR;
-					}
+			} else if (buff[i] != '\r' || i != offset - 1) {
+				temp_line[line_pos] = buff[i];
+				line_pos ++;
+				if (line_pos > 150) {
+					goto RDWR_ERROR;
 				}
 			}
 		}
@@ -1355,13 +1336,7 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
 			return MIDB_RESULT_OK;
 		}
-
-		if ('\r' == buff[offset - 1]) {
-			last_pos = offset - 1;
-		} else {
-			last_pos = offset;
-		}
-
+		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 		if (256*1024 == offset) {
 			if ('\r' != buff[offset - 1]) {
 				offset = 0;
@@ -1494,6 +1469,43 @@ static int remove_mail(const char *path, const char *folder,
 	return MIDB_RDWR_ERROR;
 }
 
+static unsigned int s_to_flagbits(const char *s)
+{
+	unsigned int fl = 0;
+	if (strchr(s, 'A') != nullptr)
+		fl |= FLAG_ANSWERED;
+	if (strchr(s, 'U') != nullptr)
+		fl |= FLAG_DRAFT;
+	if (strchr(s, 'F') != nullptr)
+		fl |= FLAG_FLAGGED;
+	if (strchr(s, 'D') != nullptr)
+		fl |= FLAG_DELETED;
+	if (strchr(s, 'S') != nullptr)
+		fl |= FLAG_SEEN;
+	if (strchr(s, 'R') != nullptr)
+		fl |= FLAG_RECENT;
+	return fl;
+}
+
+static unsigned int di_to_flagbits(const char *ln, int pos)
+{
+	unsigned int fl = 0;
+	int v;
+	if (get_digest_integer(ln, pos, "replied", &v) && v == 1)
+		fl |= FLAG_ANSWERED;
+	if (get_digest_integer(ln, pos, "unsent", &v) && v == 1)
+		fl |= FLAG_DRAFT;
+	if (get_digest_integer(ln, pos, "flag", &v) && v == 1)
+		fl |= FLAG_FLAGGED;
+	if (get_digest_integer(ln, pos, "deleted", &v) && v == 1)
+		fl |= FLAG_DELETED;
+	if (get_digest_integer(ln, pos, "read", &v) && v == 1)
+		fl |= FLAG_SEEN;
+	if (get_digest_integer(ln, pos, "recent", &v) && v == 1)
+		fl |= FLAG_RECENT;
+	return fl;
+}
+
 static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 	int *perrno)
 {
@@ -1543,24 +1555,24 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 		
 		if (-1 == lines) {
 			for (i=0; i<offset-1&&i<36; i++) {
-				if ('\r' == buff[i] && '\n' == buff[i + 1]) {
-					if (0 == strncmp(buff, "TRUE ", 5)) {
-						memcpy(num_buff, buff + 5, i - 5);
-						num_buff[i - 5] = '\0';
-						lines = strtol(num_buff, nullptr, 0);
-						if (lines < 0) {
-							goto RDWR_ERROR;
-						}
-						last_pos = i + 2;
-						line_pos = 0;
-						break;
-					} else if (0 == strncmp(buff, "FALSE ", 6)) {
-						std::unique_lock sv_hold(g_server_lock);
-						double_list_append_as_tail(&pback->psvr->conn_list,
-							&pback->node);
-						*perrno = strtol(buff + 6, nullptr, 0);
-						return MIDB_RESULT_ERROR;
+				if (buff[i] != '\r' || buff[i+1] != '\n')
+					continue;
+				if (0 == strncmp(buff, "TRUE ", 5)) {
+					memcpy(num_buff, buff + 5, i - 5);
+					num_buff[i-5] = '\0';
+					lines = strtol(num_buff, nullptr, 0);
+					if (lines < 0) {
+						goto RDWR_ERROR;
 					}
+					last_pos = i + 2;
+					line_pos = 0;
+					break;
+				} else if (0 == strncmp(buff, "FALSE ", 6)) {
+					std::unique_lock sv_hold(g_server_lock);
+					double_list_append_as_tail(&pback->psvr->conn_list,
+						&pback->node);
+					*perrno = strtol(buff + 6, nullptr, 0);
+					return MIDB_RESULT_ERROR;
 				}
 			}
 			if (-1 == lines) {
@@ -1587,25 +1599,7 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 						gx_strlcpy(mitem.mid, temp_line, arsizeof(mitem.mid));
 						mitem.id = count;
 						mitem.uid = strtol(pspace, nullptr, 0);
-						mitem.flag_bits = 0;
-						if (NULL != strchr(pspace1, 'A')) {
-							mitem.flag_bits |= FLAG_ANSWERED;
-						}
-						if (NULL != strchr(pspace1, 'U')) {
-							mitem.flag_bits |= FLAG_DRAFT;
-						}
-						if (NULL != strchr(pspace1, 'F')) {
-							mitem.flag_bits |= FLAG_FLAGGED;
-						}
-						if (NULL != strchr(pspace1, 'D')) {
-							mitem.flag_bits |= FLAG_DELETED;
-						}
-						if (NULL != strchr(pspace1, 'S')) {
-							mitem.flag_bits |= FLAG_SEEN;
-						}
-						if (NULL != strchr(pspace1, 'R')) {
-							mitem.flag_bits |= FLAG_RECENT;
-						}
+						mitem.flag_bits = s_to_flagbits(pspace1);
 						pxarray->append(&mitem, mitem.uid);
 					} else {
 						b_format_error = TRUE;
@@ -1614,13 +1608,11 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 					b_format_error = TRUE;
 				}
 				line_pos = 0;
-			} else {
-				if ('\r' != buff[i] || i != offset - 1) {
-					temp_line[line_pos] = buff[i];
-					line_pos ++;
-					if (line_pos >= 128) {
-						goto RDWR_ERROR;
-					}
+			} else if (buff[i] != '\r' || i != offset - 1) {
+				temp_line[line_pos] = buff[i];
+				line_pos ++;
+				if (line_pos >= 128) {
+					goto RDWR_ERROR;
 				}
 			}
 		}
@@ -1629,21 +1621,13 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
 			sv_hold.unlock();
-			if (TRUE == b_format_error) {
-				*perrno = -1;
-				pxarray->clear();
-				return MIDB_RESULT_ERROR;
-			} else {
+			if (!b_format_error)
 				return MIDB_RESULT_OK;
-			}
+			*perrno = -1;
+			pxarray->clear();
+			return MIDB_RESULT_ERROR;
 		}
-
-		if ('\r' == buff[offset - 1]) {
-			last_pos = offset - 1;
-		} else {
-			last_pos = offset;
-		}
-
+		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 		if (256*1024 == offset) {
 			if ('\r' != buff[offset - 1]) {
 				offset = 0;
@@ -1714,24 +1698,24 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 		
 		if (-1 == lines) {
 			for (i=0; i<offset-1&&i<36; i++) {
-				if ('\r' == buff[i] && '\n' == buff[i + 1]) {
-					if (0 == strncmp(buff, "TRUE ", 5)) {
-						memcpy(num_buff, buff + 5, i - 5);
-						num_buff[i - 5] = '\0';
-						lines = strtol(num_buff, nullptr, 0);
-						if (lines < 0) {
-							goto RDWR_ERROR;
-						}
-						last_pos = i + 2;
-						line_pos = 0;
-						break;
-					} else if (0 == strncmp(buff, "FALSE ", 6)) {
-						std::unique_lock sv_hold(g_server_lock);
-						double_list_append_as_tail(&pback->psvr->conn_list,
-							&pback->node);
-						*perrno = strtol(buff + 6, nullptr, 0);
-						return MIDB_RESULT_ERROR;
+				if (buff[i] != '\r' || buff[i+1] != '\n')
+					continue;
+				if (0 == strncmp(buff, "TRUE ", 5)) {
+					memcpy(num_buff, buff + 5, i - 5);
+					num_buff[i-5] = '\0';
+					lines = strtol(num_buff, nullptr, 0);
+					if (lines < 0) {
+						goto RDWR_ERROR;
 					}
+					last_pos = i + 2;
+					line_pos = 0;
+					break;
+				} else if (0 == strncmp(buff, "FALSE ", 6)) {
+					std::unique_lock sv_hold(g_server_lock);
+					double_list_append_as_tail(&pback->psvr->conn_list,
+						&pback->node);
+					*perrno = strtol(buff + 6, nullptr, 0);
+					return MIDB_RESULT_ERROR;
 				}
 			}
 			if (-1 == lines) {
@@ -1767,13 +1751,11 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 					b_format_error = TRUE;
 				}
 				line_pos = 0;
-			} else {
-				if ('\r' != buff[i] || i != offset - 1) {
-					temp_line[line_pos] = buff[i];
-					line_pos ++;
-					if (line_pos >= 128) {
-						goto RDWR_ERROR;
-					}
+			} else if (buff[i] != '\r' || i != offset - 1) {
+				temp_line[line_pos] = buff[i];
+				line_pos ++;
+				if (line_pos >= 128) {
+					goto RDWR_ERROR;
 				}
 			}
 		}
@@ -1782,21 +1764,13 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
 			sv_hold.unlock();
-			if (TRUE == b_format_error) {
-				*perrno = -1;
-				pxarray->clear();
-				return MIDB_RESULT_ERROR;
-			} else {
+			if (!b_format_error)
 				return MIDB_RESULT_OK;
-			}
+			*perrno = -1;
+			pxarray->clear();
+			return MIDB_RESULT_ERROR;
 		}
-
-		if ('\r' == buff[offset - 1]) {
-			last_pos = offset - 1;
-		} else {
-			last_pos = offset;
-		}
-
+		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 		if (256*1024 == offset) {
 			if ('\r' != buff[offset - 1]) {
 				offset = 0;
@@ -1821,7 +1795,6 @@ static int list_deleted(const char *path, const char *folder, XARRAY *pxarray,
 static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 	int *perrno)
 {
-	int value;
 	int lines;
 	int count;
 	int offset;
@@ -1870,24 +1843,24 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 		
 		if (-1 == lines) {
 			for (int i = 0; i < offset - 1 && i < 36; ++i) {
-				if ('\r' == buff[i] && '\n' == buff[i + 1]) {
-					if (0 == strncmp(buff, "TRUE ", 5)) {
-						memcpy(num_buff, buff + 5, i - 5);
-						num_buff[i - 5] = '\0';
-						lines = strtol(num_buff, nullptr, 0);
-						if (lines < 0) {
-							goto RDWR_ERROR;
-						}
-						last_pos = i + 2;
-						line_pos = 0;
-						break;
-					} else if (0 == strncmp(buff, "FALSE ", 6)) {
-						std::unique_lock sv_hold(g_server_lock);
-						double_list_append_as_tail(&pback->psvr->conn_list,
-							&pback->node);
-						*perrno = strtol(buff + 6, nullptr, 0);
-						return MIDB_RESULT_ERROR;
+				if (buff[i] != '\r' || buff[i+1] != '\n')
+					continue;
+				if (0 == strncmp(buff, "TRUE ", 5)) {
+					memcpy(num_buff, buff + 5, i - 5);
+					num_buff[i-5] = '\0';
+					lines = strtol(num_buff, nullptr, 0);
+					if (lines < 0) {
+						goto RDWR_ERROR;
 					}
+					last_pos = i + 2;
+					line_pos = 0;
+					break;
+				} else if (0 == strncmp(buff, "FALSE ", 6)) {
+					std::unique_lock sv_hold(g_server_lock);
+					double_list_append_as_tail(&pback->psvr->conn_list,
+						&pback->node);
+					*perrno = strtol(buff + 6, nullptr, 0);
+					return MIDB_RESULT_ERROR;
 				}
 			}
 			if (-1 == lines) {
@@ -1902,41 +1875,12 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 			if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
 				count ++;
 			} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
-				if (TRUE == get_digest_string(temp_line, line_pos, "file",
-					mitem.mid, sizeof(mitem.mid)) && TRUE == get_digest_integer(
-					temp_line, line_pos, "uid", &mitem.uid)) {
+				if (get_digest_string(temp_line, line_pos,
+				    "file", mitem.mid, sizeof(mitem.mid)) &&
+				    get_digest_integer(temp_line, line_pos,
+				    "uid", &mitem.uid)) {
 					mitem.id = count;
-					mitem.flag_bits = FLAG_LOADED;
-					if (TRUE == get_digest_integer(temp_line, line_pos,
-						"replied", &value) && 1 == value) {
-						mitem.flag_bits |= FLAG_ANSWERED;
-					}
-					
-					if (TRUE == get_digest_integer(temp_line, line_pos,
-						"unsent", &value) && 1 == value) {
-						mitem.flag_bits |= FLAG_DRAFT;
-					}
-					
-					if (TRUE == get_digest_integer(temp_line, line_pos,
-						"flag", &value) && 1 == value) {
-						mitem.flag_bits |= FLAG_FLAGGED;
-					}
-					
-					if (TRUE == get_digest_integer(temp_line, line_pos,
-						"deleted", &value) && 1 == value) {
-						mitem.flag_bits |= FLAG_DELETED;
-					}
-					
-					if (TRUE == get_digest_integer(temp_line, line_pos,
-						"read", &value) && 1 == value) {
-						mitem.flag_bits |= FLAG_SEEN;
-					}
-					
-					if (TRUE == get_digest_integer(temp_line, line_pos,
-						"recent", &value) && 1 == value) {
-						mitem.flag_bits |= FLAG_RECENT;
-					}
-					
+					mitem.flag_bits = FLAG_LOADED | di_to_flagbits(temp_line, line_pos);
 					mem_file_init(&mitem.f_digest, g_file_allocator.get());
 					mitem.f_digest.write(temp_line, line_pos);
 					pxarray->append(&mitem, mitem.uid);
@@ -1944,13 +1888,11 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 					b_format_error = TRUE;
 				}
 				line_pos = 0;
-			} else {
-				if ('\r' != buff[i] || i != offset - 1) {
-					temp_line[line_pos] = buff[i];
-					line_pos ++;
-					if (line_pos >= 257*1024) {
-						goto RDWR_ERROR;
-					}
+			} else if (buff[i] != '\r' || i != offset - 1) {
+				temp_line[line_pos] = buff[i];
+				line_pos ++;
+				if (line_pos >= 257*1024) {
+					goto RDWR_ERROR;
 				}
 			}
 		}
@@ -1959,29 +1901,20 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 			std::unique_lock sv_hold(g_server_lock);
 			double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
 			sv_hold.unlock();
-			if (TRUE == b_format_error) {
-				auto num = pxarray->get_capacity();
-				for (size_t i = 0; i < num; ++i) {
-					auto pitem = static_cast<MITEM *>(pxarray->get_item(i));
-					if (NULL != pitem) {
-						mem_file_free(&pitem->f_digest);
-					}
-				}
-				*perrno = -1;
-				pxarray->clear();
-				return MIDB_RESULT_ERROR;
-			} else {
+			if (!b_format_error)
 				return MIDB_RESULT_OK;
-				
+			auto num = pxarray->get_capacity();
+			for (size_t i = 0; i < num; ++i) {
+				auto pitem = static_cast<MITEM *>(pxarray->get_item(i));
+				if (NULL != pitem) {
+					mem_file_free(&pitem->f_digest);
+				}
 			}
+			*perrno = -1;
+			pxarray->clear();
+			return MIDB_RESULT_ERROR;
 		}
-
-		if ('\r' == buff[offset - 1]) {
-			last_pos = offset - 1;
-		} else {
-			last_pos = offset;
-		}
-
+		last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 		if (64*1024 == offset) {
 			if ('\r' != buff[offset - 1]) {
 				offset = 0;
@@ -2086,24 +2019,24 @@ static int fetch_simple(const char *path, const char *folder,
 			
 			if (-1 == lines) {
 				for (int i = 0; i < offset - 1 && i < 36; ++i) {
-					if ('\r' == buff[i] && '\n' == buff[i + 1]) {
-						if (0 == strncmp(buff, "TRUE ", 5)) {
-							memcpy(num_buff, buff + 5, i - 5);
-							num_buff[i - 5] = '\0';
-							lines = strtol(num_buff, nullptr, 0);
-							if (lines < 0) {
-								goto RDWR_ERROR;
-							}
-							last_pos = i + 2;
-							line_pos = 0;
-							break;
-						} else if (0 == strncmp(buff, "FALSE ", 6)) {
-							std::unique_lock sv_hold(g_server_lock);
-							double_list_append_as_tail(&pback->psvr->conn_list,
-								&pback->node);
-							*perrno = strtol(buff + 6, nullptr, 0);
-							return MIDB_RESULT_ERROR;
+					if (buff[i] != '\r' || buff[i+1] != '\n')
+						continue;
+					if (0 == strncmp(buff, "TRUE ", 5)) {
+						memcpy(num_buff, buff + 5, i - 5);
+						num_buff[i-5] = '\0';
+						lines = strtol(num_buff, nullptr, 0);
+						if (lines < 0) {
+							goto RDWR_ERROR;
 						}
+						last_pos = i + 2;
+						line_pos = 0;
+						break;
+					} else if (0 == strncmp(buff, "FALSE ", 6)) {
+						std::unique_lock sv_hold(g_server_lock);
+						double_list_append_as_tail(&pback->psvr->conn_list,
+							&pback->node);
+						*perrno = strtol(buff + 6, nullptr, 0);
+						return MIDB_RESULT_ERROR;
 					}
 				}
 				if (-1 == lines) {
@@ -2135,25 +2068,7 @@ static int fetch_simple(const char *path, const char *folder,
 								pitem->uid = uid;
 								pitem->id = pseq->min + count - 1;
 								gx_strlcpy(pitem->mid, temp_line, arsizeof(pitem->mid));
-								pitem->flag_bits = 0;
-								if (NULL != strchr(pspace1, 'A')) {
-									pitem->flag_bits |= FLAG_ANSWERED;
-								}
-								if (NULL != strchr(pspace1, 'U')) {
-									pitem->flag_bits |= FLAG_DRAFT;
-								}
-								if (NULL != strchr(pspace1, 'F')) {
-									pitem->flag_bits |= FLAG_FLAGGED;
-								}
-								if (NULL != strchr(pspace1, 'D')) {
-									pitem->flag_bits |= FLAG_DELETED;
-								}
-								if (NULL != strchr(pspace1, 'S')) {
-									pitem->flag_bits |= FLAG_SEEN;
-								}
-								if (NULL != strchr(pspace1, 'R')) {
-									pitem->flag_bits |= FLAG_RECENT;
-								}
+								pitem->flag_bits = s_to_flagbits(pspace1);
 							}
 						} else {
 							b_format_error = TRUE;
@@ -2162,33 +2077,24 @@ static int fetch_simple(const char *path, const char *folder,
 						b_format_error = TRUE;
 					}
 					line_pos = 0;
-				} else {
-					if ('\r' != buff[i] || i != offset - 1) {
-						temp_line[line_pos] = buff[i];
-						line_pos ++;
-						if (line_pos >= 128) {
-							goto RDWR_ERROR;
-						}
+				} else if (buff[i] != '\r' || i != offset - 1) {
+					temp_line[line_pos] = buff[i];
+					line_pos ++;
+					if (line_pos >= 128) {
+						goto RDWR_ERROR;
 					}
 				}
 			}
 
 			if (count >= lines) {
-				if (TRUE == b_format_error) {	
-					std::unique_lock sv_hold(g_server_lock);
-					double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-					*perrno = -1;
-					return MIDB_RESULT_ERROR;
-				}
-				break;
+				if (!b_format_error)
+					break;
+				std::unique_lock sv_hold(g_server_lock);
+				double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
+				*perrno = -1;
+				return MIDB_RESULT_ERROR;
 			}
-
-			if ('\r' == buff[offset - 1]) {
-				last_pos = offset - 1;
-			} else {
-				last_pos = offset;
-			}
-
+			last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 			if (1024 == offset) {
 				if ('\r' != buff[offset - 1]) {
 					offset = 0;
@@ -2218,7 +2124,6 @@ static int fetch_simple(const char *path, const char *folder,
 static int fetch_detail(const char *path, const char *folder,
     const DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
 {
-	int value;
 	int lines;
 	int count;
 	int offset;
@@ -2322,45 +2227,16 @@ static int fetch_detail(const char *path, const char *folder,
 				if ('\r' == buff[i] && i < offset - 1 && '\n' == buff[i + 1]) {
 					count ++;
 				} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
-					if (TRUE == get_digest_string(temp_line, line_pos, "file",
-						mitem.mid, sizeof(mitem.mid)) && TRUE == get_digest_integer(
-						temp_line, line_pos, "uid", &mitem.uid)) {
+					if (get_digest_string(temp_line, line_pos,
+					    "file", mitem.mid, sizeof(mitem.mid)) &&
+					    get_digest_integer(temp_line, line_pos,
+					    "uid", &mitem.uid)) {
 						if (pxarray->append(&mitem, mitem.uid) >= 0) {
 							auto num = pxarray->get_capacity();
 							assert(num > 0);
 							auto pitem = static_cast<MITEM *>(pxarray->get_item(num - 1));
 							pitem->id = pseq->min + count - 1;
-							pitem->flag_bits = FLAG_LOADED;
-							if (TRUE == get_digest_integer(temp_line, line_pos,
-								"replied", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_ANSWERED;
-							}
-							
-							if (TRUE == get_digest_integer(temp_line, line_pos,
-								"unsent", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_DRAFT;
-							}
-							
-							if (TRUE == get_digest_integer(temp_line, line_pos,
-								"flag", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_FLAGGED;
-							}
-							
-							if (TRUE == get_digest_integer(temp_line, line_pos,
-								"deleted", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_DELETED;
-							}
-							
-							if (TRUE == get_digest_integer(temp_line, line_pos,
-								"read", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_SEEN;
-							}
-							
-							if (TRUE == get_digest_integer(temp_line, line_pos,
-								"recent", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_RECENT;
-							}
-							
+							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(temp_line, line_pos);
 							mem_file_init(&pitem->f_digest, g_file_allocator.get());
 							pitem->f_digest.write(temp_line, line_pos);
 						}
@@ -2377,7 +2253,7 @@ static int fetch_detail(const char *path, const char *folder,
 				}
 			}
 
-				if (TRUE == b_format_error) {
+				if (b_format_error) {
 					std::unique_lock sv_hold(g_server_lock);
 					double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
 					sv_hold.unlock();
@@ -2391,13 +2267,7 @@ static int fetch_detail(const char *path, const char *folder,
 				}
 			if (count >= lines)
 				break;
-
-			if ('\r' == buff[offset - 1]) {
-				last_pos = offset - 1;
-			} else {
-				last_pos = offset;
-			}
-
+			last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 			if (64*1024 == offset) {
 				if ('\r' != buff[offset - 1]) {
 					offset = 0;
@@ -2485,24 +2355,24 @@ static int fetch_simple_uid(const char *path, const char *folder,
 
 			if (-1 == lines) {
 				for (int i = 0; i < offset - 1 && i < 36; ++i) {
-					if ('\r' == buff[i] && '\n' == buff[i + 1]) {
-						if (0 == strncmp(buff, "TRUE ", 5)) {
-							memcpy(num_buff, buff + 5, i - 5);
-							num_buff[i - 5] = '\0';
-							lines = strtol(num_buff, nullptr, 0);
-							if (lines < 0) {
-								goto RDWR_ERROR;
-							}
-							last_pos = i + 2;
-							line_pos = 0;
-							break;
-						} else if (0 == strncmp(buff, "FALSE ", 6)) {
-							std::unique_lock sv_hold(g_server_lock);
-							double_list_append_as_tail(&pback->psvr->conn_list,
-								&pback->node);
-							*perrno = strtol(buff + 6, nullptr, 0);
-							return MIDB_RESULT_ERROR;
+					if (buff[i] != '\r' || buff[i+1] != '\n')
+						continue;
+					if (0 == strncmp(buff, "TRUE ", 5)) {
+						memcpy(num_buff, buff + 5, i - 5);
+						num_buff[i-5] = '\0';
+						lines = strtol(num_buff, nullptr, 0);
+						if (lines < 0) {
+							goto RDWR_ERROR;
 						}
+						last_pos = i + 2;
+						line_pos = 0;
+						break;
+					} else if (0 == strncmp(buff, "FALSE ", 6)) {
+						std::unique_lock sv_hold(g_server_lock);
+						double_list_append_as_tail(&pback->psvr->conn_list,
+							&pback->node);
+						*perrno = strtol(buff + 6, nullptr, 0);
+						return MIDB_RESULT_ERROR;
 					}
 				}
 				if (-1 == lines) {
@@ -2538,25 +2408,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 									pitem->uid = uid;
 									pitem->id = strtol(temp_line, nullptr, 0) + 1;
 									gx_strlcpy(pitem->mid, pspace, arsizeof(pitem->mid));
-									pitem->flag_bits = 0;
-									if (NULL != strchr(pspace2, 'A')) {
-										pitem->flag_bits |= FLAG_ANSWERED;
-									}
-									if (NULL != strchr(pspace2, 'U')) {
-										pitem->flag_bits |= FLAG_DRAFT;
-									}
-									if (NULL != strchr(pspace2, 'F')) {
-										pitem->flag_bits |= FLAG_FLAGGED;
-									}
-									if (NULL != strchr(pspace2, 'D')) {
-										pitem->flag_bits |= FLAG_DELETED;
-									}
-									if (NULL != strchr(pspace2, 'S')) {
-										pitem->flag_bits |= FLAG_SEEN;
-									}
-									if (NULL != strchr(pspace2, 'R')) {
-										pitem->flag_bits |= FLAG_RECENT;
-									}
+									pitem->flag_bits = s_to_flagbits(pspace2);
 								}
 							} else {
 								b_format_error = TRUE;
@@ -2568,33 +2420,24 @@ static int fetch_simple_uid(const char *path, const char *folder,
 						b_format_error = TRUE;
 					}
 					line_pos = 0;
-				} else {
-					if ('\r' != buff[i] || i != offset - 1) {
-						temp_line[line_pos] = buff[i];
-						line_pos ++;
-						if (line_pos >= 128) {
-							goto RDWR_ERROR;
-						}
+				} else if (buff[i] != '\r' || i != offset - 1) {
+					temp_line[line_pos] = buff[i];
+					line_pos ++;
+					if (line_pos >= 128) {
+						goto RDWR_ERROR;
 					}
 				}
 			}
 
 			if (count >= lines) {
-				if (TRUE == b_format_error) {	
-					std::unique_lock sv_hold(g_server_lock);
-					double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-					*perrno = -1;
-					return MIDB_RESULT_ERROR;
-				}
-				break;
+				if (!b_format_error)
+					break;
+				std::unique_lock sv_hold(g_server_lock);
+				double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
+				*perrno = -1;
+				return MIDB_RESULT_ERROR;
 			}
-
-			if ('\r' == buff[offset - 1]) {
-				last_pos = offset - 1;
-			} else {
-				last_pos = offset;
-			}
-
+			last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 			if (1024 == offset) {
 				if ('\r' != buff[offset - 1]) {
 					offset = 0;
@@ -2624,7 +2467,6 @@ static int fetch_simple_uid(const char *path, const char *folder,
 static int fetch_detail_uid(const char *path, const char *folder,
     const DOUBLE_LIST *plist, XARRAY *pxarray, int *perrno)
 {
-	int value;
 	int lines;
 	int count;
 	int offset;
@@ -2719,10 +2561,10 @@ static int fetch_detail_uid(const char *path, const char *folder,
 				} else if ('\n' == buff[i] && '\r' == buff[i - 1]) {
 					pspace = search_string(temp_line, " ", 16);
 					temp_len = line_pos - (pspace + 1 - temp_line);
-					if (NULL != pspace && TRUE == get_digest_string(pspace,
-						temp_len, "file", mitem.mid, sizeof(mitem.mid)) && 
-						TRUE == get_digest_integer(pspace, temp_len, "uid",
-						&mitem.uid)) {
+					if (pspace != nullptr && get_digest_string(pspace,
+					    temp_len, "file", mitem.mid, sizeof(mitem.mid)) && 
+					    get_digest_integer(pspace, temp_len, "uid",
+					    &mitem.uid)) {
 						*pspace = '\0';
 						pspace ++;
 						if (pxarray->append(&mitem, mitem.uid) >= 0) {
@@ -2730,37 +2572,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 							assert(num > 0);
 							auto pitem = static_cast<MITEM *>(pxarray->get_item(num - 1));
 							pitem->id = strtol(temp_line, nullptr, 0) + 1;
-							pitem->flag_bits = FLAG_LOADED;
-							if (TRUE == get_digest_integer(pspace, temp_len,
-								"replied", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_ANSWERED;
-							}
-							
-							if (TRUE == get_digest_integer(pspace, temp_len,
-								"unsent", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_DRAFT;
-							}
-							
-							if (TRUE == get_digest_integer(pspace, temp_len,
-								"flag", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_FLAGGED;
-							}
-							
-							if (TRUE == get_digest_integer(pspace, temp_len,
-								"deleted", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_DELETED;
-							}
-							
-							if (TRUE == get_digest_integer(pspace, temp_len,
-								"read", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_SEEN;
-							}
-							
-							if (TRUE == get_digest_integer(pspace, temp_len,
-								"recent", &value) && 1 == value) {
-								pitem->flag_bits |= FLAG_RECENT;
-							}
-							
+							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(pspace, temp_len);
 							mem_file_init(&pitem->f_digest, g_file_allocator.get());
 							pitem->f_digest.write(pspace, temp_len);
 						}
@@ -2778,27 +2590,20 @@ static int fetch_detail_uid(const char *path, const char *folder,
 			}
 
 			if (count >= lines) {
-				if (TRUE == b_format_error) {
-					std::unique_lock sv_hold(g_server_lock);
-					double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
-					sv_hold.unlock();
-					*perrno = -1;
-					auto num = pxarray->get_capacity();
-					for (size_t i = 0; i < num; ++i) {
-						auto pitem = static_cast<MITEM *>(pxarray->get_item(i));
-						mem_file_free(&pitem->f_digest);
-					}
-					return MIDB_RESULT_ERROR;
+				if (!b_format_error)
+					break;
+				std::unique_lock sv_hold(g_server_lock);
+				double_list_append_as_tail(&pback->psvr->conn_list, &pback->node);
+				sv_hold.unlock();
+				*perrno = -1;
+				auto num = pxarray->get_capacity();
+				for (size_t i = 0; i < num; ++i) {
+					auto pitem = static_cast<MITEM *>(pxarray->get_item(i));
+					mem_file_free(&pitem->f_digest);
 				}
-				break;
+				return MIDB_RESULT_ERROR;
 			}
-
-			if ('\r' == buff[offset - 1]) {
-				last_pos = offset - 1;
-			} else {
-				last_pos = offset;
-			}
-
+			last_pos = buff[offset-1] == '\r' ? offset - 1 : offset;
 			if (64*1024 == offset) {
 				if ('\r' != buff[offset - 1]) {
 					offset = 0;
@@ -2990,25 +2795,7 @@ static int get_mail_flags(const char *path, const char *folder,
 		double_list_append_as_tail(&pback->psvr->conn_list,
 			&pback->node);
 		sv_hold.unlock();
-		*pflag_bits = 0;
-		if (NULL != strchr(buff + 5, 'A')) {
-			*pflag_bits |= FLAG_ANSWERED;
-		}
-		if (NULL != strchr(buff + 5, 'U')) {
-			*pflag_bits |= FLAG_DRAFT;
-		}
-		if (NULL != strchr(buff + 5, 'F')) {
-			*pflag_bits |= FLAG_FLAGGED;
-		}
-		if (NULL != strchr(buff + 5, 'D')) {
-			*pflag_bits |= FLAG_DELETED;
-		}
-		if (NULL != strchr(buff + 5, 'S')) {
-			*pflag_bits |= FLAG_SEEN;
-		}
-		if (NULL != strchr(buff + 5, 'R')) {
-			*pflag_bits |= FLAG_RECENT;
-		}
+		*pflag_bits = s_to_flagbits(buff + 5);
 		return MIDB_RESULT_OK;
 	} else if (0 == strncmp(buff, "FALSE ", 6)) {
 		std::unique_lock sv_hold(g_server_lock);
@@ -3267,7 +3054,7 @@ static BOOL get_digest_integer(const char *src, int length, const char *tag, int
 {
 	char num_buff[32];
 	
-	if (TRUE == get_digest_string(src, length, tag, num_buff, 32)) {
+	if (get_digest_string(src, length, tag, num_buff, 32)) {
 		*pinteger = strtol(num_buff, nullptr, 0);
 		return TRUE;
 	}

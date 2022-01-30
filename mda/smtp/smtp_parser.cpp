@@ -619,11 +619,7 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 		return PROCESS_CLOSE;
 	}
 	smtp_parser_reset_stream_reading(pcontext);
-	if (TRUE == is_whole) {
-		pcontext->flusher.flush_action = FLUSH_WHOLE_MAIL;
-	} else {
-		pcontext->flusher.flush_action = FLUSH_PART_MAIL;
-	}
+	pcontext->flusher.flush_action = is_whole ? FLUSH_WHOLE_MAIL : FLUSH_PART_MAIL;
 	/* a mail is recieved pass it in anti-spamming auditor&filter&statistic */
 	if (is_whole && !smtp_parser_pass_statistic(pcontext, buff, 1024)) {
 		if (NULL != pcontext->connection.ssl) {

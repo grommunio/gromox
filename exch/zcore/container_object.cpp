@@ -799,7 +799,7 @@ container_object_get_specialtables_from_node(const SIMPLE_TREE_NODE *pnode,
 		return FALSE;	
 	}
 	pset->count ++;
-	if (TRUE == b_depth && TRUE == ab_tree_has_child(pnode)) {
+	if (b_depth && ab_tree_has_child(pnode)) {
 		pnode = simple_tree_node_get_child(pnode);
 		do {
 			if (ab_tree_get_node_type(pnode) < 0x80) {

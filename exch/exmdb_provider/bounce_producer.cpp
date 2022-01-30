@@ -319,7 +319,7 @@ static int bounce_producer_get_mail_parts(sqlite3 *psqlite,
 		}
 		tmp_len = strlen(static_cast<char *>(pvalue));
 		if (offset + tmp_len < 128*1024) {
-			if (TRUE == b_first) {
+			if (b_first) {
 				strcpy(parts + offset, g_separator);
 				offset += strlen(g_separator);
 			}

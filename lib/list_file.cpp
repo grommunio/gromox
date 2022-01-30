@@ -225,7 +225,7 @@ static BOOL list_file_construct_list(LIST_FILE* list_file)
 		}
 		/* prevent line exceed maximum length ---MAX_LEN */
 		line[sizeof(line) - 1] = '\0';
-		if (TRUE == list_file_parse_line(list_file, ptr, line)) {
+		if (list_file_parse_line(list_file, ptr, line)) {
 			list_file->item_num ++;
 			ptr += list_file->item_size;
 		}
@@ -335,9 +335,8 @@ static BOOL list_file_parse_line(LIST_FILE* list_file, char* pfile, char* line)
 			}
 			break;
 		}
-		if (TRUE == b_terminate && i != list_file->type_num - 1) {
+		if (b_terminate && i != list_file->type_num - 1)
 			return FALSE;
-		}
 	}
 	return b_terminate;
 }

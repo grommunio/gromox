@@ -574,10 +574,9 @@ static void* store_object_get_oof_property(
 			if (0 == strncasecmp("Subject", mime_field.field_name, 7)
 				&& mime_field.field_value_len < sizeof(subject)) {
 				mime_field.field_value[mime_field.field_value_len] = '\0';
-				if (TRUE == mime_string_to_utf8("utf-8",
-					mime_field.field_value, subject)) {
+				if (mime_string_to_utf8("utf-8",
+				    mime_field.field_value, subject))
 					return common_util_dup(subject);
-				}
 			}
 			if ('\r' == pbuff[offset] && '\n' == pbuff[offset + 1]) {
 				return NULL;
@@ -661,7 +660,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (TRUE == pstore->b_private) {
+		if (pstore->b_private) {
 			if (!system_services_get_user_displayname(pstore->account,
 			    dispname, dsize))
 				gx_strlcpy(dispname, pstore->account, dsize);
@@ -741,7 +740,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return TRUE;
 		}
 		auto pinfo = zarafa_server_get_info();
-		if (TRUE == pstore->b_private) {
+		if (pstore->b_private) {
 			if (!exmdb_client::check_mailbox_permission(pstore->dir,
 			    pinfo->get_username(), &permission))
 				return FALSE;
@@ -752,7 +751,7 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		return TRUE;
 	}
 	case PR_EMAIL_ADDRESS: {
-		if (TRUE == pstore->b_private) {
+		if (pstore->b_private) {
 			if (!common_util_username_to_essdn(pstore->account,
 			    temp_buff, GX_ARRAY_SIZE(temp_buff)))
 				return FALSE;	
@@ -1060,8 +1059,7 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 		return TRUE;
 	}
 	auto pinfo = zarafa_server_get_info();
-	if (TRUE == pstore->b_private &&
-		pinfo->user_id == pstore->account_id) {
+	if (pstore->b_private && pinfo->user_id == pstore->account_id) {
 		for (i=0; i<tmp_proptags.count; i++) {
 			auto pvalue = pinfo->ptree->get_zstore_propval(tmp_proptags.pproptag[i]);
 			if (pvalue == nullptr)
@@ -1366,10 +1364,9 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 		return TRUE;
 	}
 	for (i=0; i<ppropvals->count; i++) {
-		if (TRUE == store_object_check_readonly_property(
-			pstore, ppropvals->ppropval[i].proptag)) {
+		if (store_object_check_readonly_property(
+		    pstore, ppropvals->ppropval[i].proptag))
 			continue;
-		}
 		switch (ppropvals->ppropval[i].proptag) {
 		case PR_EC_OUTOFOFFICE:
 		case PR_EC_OUTOFOFFICE_FROM:
@@ -1429,10 +1426,8 @@ BOOL store_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 		return TRUE;
 	}
 	for (i=0; i<pproptags->count; i++) {
-		if (TRUE == store_object_check_readonly_property(
-			pstore, pproptags->pproptag[i])) {
+		if (store_object_check_readonly_property(pstore, pproptags->pproptag[i]))
 			continue;
-		}
 		pinfo->ptree->remove_zstore_propval(pproptags->pproptag[i]);
 	}
 	return TRUE;

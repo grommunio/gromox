@@ -589,7 +589,7 @@ static BOOL ftstream_producer_write_messagechildren(
 	FTSTREAM_PRODUCER *pstream, BOOL b_delprop,
 	const MESSAGE_CHILDREN *pchildren)
 {
-	if (TRUE == b_delprop) {
+	if (b_delprop) {
 		if (!pstream->write_uint32(MetaTagFXDelProp))
 			return FALSE;
 		if (!pstream->write_uint32(PR_MESSAGE_RECIPIENTS))
@@ -603,7 +603,7 @@ static BOOL ftstream_producer_write_messagechildren(
 			}
 		}
 	}
-	if (TRUE == b_delprop) {
+	if (b_delprop) {
 		if (!pstream->write_uint32(MetaTagFXDelProp))
 			return FALSE;
 		if (!pstream->write_uint32(PR_MESSAGE_ATTACHMENTS))

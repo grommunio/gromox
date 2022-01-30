@@ -39,7 +39,7 @@ static char* ical_get_tag_comma(char *pstring)
 	b_quote = FALSE;
 	tmp_len = strlen(pstring);
 	for (i=0; i<tmp_len; i++) {
-		if (TRUE == b_quote) {
+		if (b_quote) {
 			if ('"' == pstring[i]) {
 				memmove(pstring + i, pstring + i + 1, tmp_len - i);
 				pstring[tmp_len] = '\0';
@@ -72,7 +72,7 @@ static char* ical_get_tag_semicolon(char *pstring)
 	b_quote = FALSE;
 	tmp_len = strlen(pstring);
 	for (i=0; i<tmp_len; i++) {
-		if (TRUE == b_quote) {
+		if (b_quote) {
 			if ('"' == pstring[i]) {
 				b_quote = FALSE;
 			}
@@ -169,9 +169,8 @@ static bool ical_retrieve_line_item(char *pline, LINE_ITEM *pitem)
 	b_value = FALSE;
 	b_quote = FALSE;
 	while ('\0' != *pline) {
-		if ((NULL == pitem->ptag ||
-			(TRUE == b_value && NULL == pitem->pvalue))
-			&& (' ' == *pline || '\t' == *pline)) {
+		if ((pitem->ptag == nullptr || (b_value && pitem->pvalue == nullptr)) &&
+		    (*pline == ' ' || *pline == '\t')) {
 			pline ++;
 			continue;
 		}
@@ -188,7 +187,7 @@ static bool ical_retrieve_line_item(char *pline, LINE_ITEM *pitem)
 					b_quote = FALSE;
 				}
 			}
-			if (TRUE == b_quote) {
+			if (b_quote) {
 				pline ++;
 				continue;
 			}
@@ -525,7 +524,7 @@ static size_t ical_serialize_tag_string(char *pbuff,
 			b_quote = TRUE;
 		}
 	}
-	if (TRUE == b_quote) {
+	if (b_quote) {
 		if (tmp_len + 2 >= max_length) {
 			return max_length;
 		}
@@ -1275,9 +1274,8 @@ bool ical_parse_byday(const char *str_byday, int *pdayofweek, int *pweekorder)
 	if (*pweekorder < 1 || *pweekorder > 53) {
 		return false;
 	}
-	if (TRUE == b_negative) {
+	if (b_negative)
 		*pweekorder *= -1;
-	}
  PARSE_WEEKDAY:
 	if (0 == strcasecmp(pbegin, "SU")) {
 		*pdayofweek = 0;
@@ -1338,25 +1336,22 @@ bool ical_parse_duration(const char *str_duration, long *pseconds)
 	for (ptoken1=ptoken; '\0'!=*ptoken1; ptoken1++) {
 		switch (*ptoken1) {
 		case 'W':
-			if (ptoken1 == ptoken || -1 != week || TRUE == b_time) {
+			if (ptoken1 == ptoken || week != -1 || b_time)
 				return false;
-			}
 			*ptoken1 = '\0';
 			week = strtol(ptoken, nullptr, 0);
 			ptoken = ptoken1 + 1;
 			break;
 		case 'D':
-			if (ptoken1 == ptoken || -1 != day || TRUE == b_time) {
+			if (ptoken1 == ptoken || day != -1 || b_time)
 				return false;
-			}
 			*ptoken1 = '\0';
 			day = strtol(ptoken, nullptr, 0);
 			ptoken = ptoken1 + 1;
 			break;
 		case 'T':
-			if (ptoken != ptoken1 || TRUE == b_time) {
+			if (ptoken != ptoken1 || b_time)
 				return false;
-			}
 			b_time = TRUE;
 			ptoken = ptoken1 + 1;
 			break;
@@ -1609,19 +1604,16 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 			else
 				itime_daylight.year = itime.year;
 		}
-		if (TRUE == b_standard && TRUE == b_daylight) {
+		if (b_standard && b_daylight)
 			break;
-		}
 	}
 	if (FALSE == b_standard && FALSE == b_daylight) {
 		return NULL;
 	}
-	if (TRUE == b_standard && FALSE == b_daylight) {
+	if (b_standard && !b_daylight)
 		return standard_offset;
-	}
-	if (FALSE == b_standard && TRUE == b_daylight) {
+	if (!b_standard && b_daylight)
 		return daylight_offset;
-	}
 	if (itime.year != itime_standard.year ||
 		itime.year != itime_daylight.year) {
 		return NULL;
@@ -1813,17 +1805,13 @@ static int ical_hint_rrule(ICAL_RRULE *pirrule, ICAL_TIME itime)
 	if (pirrule->by_mask[RRULE_BY_WEEKNO]) {
 		weekorder = ical_get_weekofyear(itime.year, itime.month,
 					itime.day, pirrule->weekstart, &b_yeargap);
-		if (TRUE == b_yeargap && ICAL_FREQUENCY_YEAR
-			== pirrule->frequency) {
+		if (b_yeargap && pirrule->frequency == ICAL_FREQUENCY_YEAR)
 			return RRULE_BY_WEEKNO;
-		}
 		nweekorder = ical_get_negative_weekofyear(
 				itime.year, itime.month, itime.day,
 				pirrule->weekstart, &b_yeargap);
-		if (TRUE == b_yeargap && ICAL_FREQUENCY_YEAR
-			== pirrule->frequency) {
+		if (b_yeargap && pirrule->frequency == ICAL_FREQUENCY_YEAR)
 			return RRULE_BY_WEEKNO;
-		}
 		if (!ical_hint_bitmap(pirrule->week_bitmap, weekorder - 1) &&
 		    !ical_hint_bitmap(pirrule->nweek_bitmap, -nweekorder - 1))
 			return RRULE_BY_WEEKNO;

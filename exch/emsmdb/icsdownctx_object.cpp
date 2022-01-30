@@ -597,9 +597,8 @@ static BOOL icsdownctx_object_make_hierarchy(icsdownctx_object *pctx)
 BOOL icsdownctx_object::make_sync()
 {
 	auto pctx = this;
-	if (TRUE == pctx->b_started) {
+	if (pctx->b_started)
 		return FALSE;
-	}
 	if (SYNC_TYPE_CONTENTS == pctx->sync_type) {
 		if (FALSE == icsdownctx_object_make_content(pctx)) {
 			return FALSE;
@@ -923,7 +922,7 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	}
 	if (NULL == pmsgctnt) {
 		pctx->pstate->pgiven->remove(message_id);
-		if (TRUE == b_downloaded) {
+		if (b_downloaded) {
 			if (0 == (SYNC_FLAG_NODELETIONS & pctx->sync_flags)) {
 				if (!eid_array_append(pctx->pdeleted_messages, message_id))
 					return FALSE;	
@@ -1046,15 +1045,15 @@ static BOOL icsdownctx_object_write_message_change(icsdownctx_object *pctx,
 	if (!(pctx->sync_flags & SYNC_FLAG_IGNORESPECIFIEDONFAI) ||
 	    cond1 || !progmsg.b_fai)
 		icsdownctx_object_adjust_msgctnt(pmsgctnt, pctx->pproptags, cond1);
-	if (FALSE == b_downloaded || TRUE == progmsg.b_fai) {
+	if (!b_downloaded || progmsg.b_fai) {
 		b_full = TRUE;
 	} else {
 		if (!exmdb_client_get_message_group_id(pctx->pstream->plogon->get_dir(),
 		    message_id, &pgroup_id))
 			return FALSE;
-		if (0 == (pctx->send_options & SEND_OPTIONS_PARTIAL) ||
-			 TRUE == progmsg.b_fai || NULL == pgroup_id ||
-			 *ppartial_count > MAX_PARTIAL_ON_ROP) {
+		if (!(pctx->send_options & SEND_OPTIONS_PARTIAL) ||
+		    progmsg.b_fai || pgroup_id == nullptr ||
+		    *ppartial_count > MAX_PARTIAL_ON_ROP) {
 			b_full = TRUE;
 		} else {
 			auto &ps = progmsg.b_fai ? pctx->pstate->pseen_fai : pctx->pstate->pseen;
@@ -1349,9 +1348,8 @@ BOOL icsdownctx_object::get_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last,
 		pctx, pbuff, plen, pb_last)) {
 		return FALSE;	
 	}
-	if (TRUE == *pb_last) {
+	if (*pb_last)
 		*pprogress = *ptotal;
-	}
 	return TRUE;
 }
 
@@ -1388,9 +1386,8 @@ icsdownctx_object::~icsdownctx_object()
 BOOL icsdownctx_object::begin_state_stream(uint32_t new_state_prop)
 {
 	auto pctx = this;
-	if (TRUE == pctx->b_started) {
+	if (pctx->b_started)
 		return FALSE;
-	}
 	if (0 != pctx->state_property) {
 		return FALSE;
 	}
@@ -1416,9 +1413,8 @@ BOOL icsdownctx_object::begin_state_stream(uint32_t new_state_prop)
 BOOL icsdownctx_object::continue_state_stream(const BINARY *pstream_data)
 {
 	auto pctx = this;
-	if (TRUE == pctx->b_started) {
+	if (pctx->b_started)
 		return FALSE;
-	}
 	if (0 == pctx->state_property) {
 		return FALSE;
 	}
@@ -1431,9 +1427,8 @@ BOOL icsdownctx_object::end_state_stream()
 	auto pctx = this;
 	BINARY tmp_bin;
 	
-	if (TRUE == pctx->b_started) {
+	if (pctx->b_started)
 		return FALSE;
-	}
 	if (0 == pctx->state_property) {
 		return FALSE;
 	}

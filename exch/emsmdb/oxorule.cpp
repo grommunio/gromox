@@ -62,9 +62,8 @@ uint32_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 	if (!exmdb_client_update_folder_rule(plogon->get_dir(),
 	    pfolder->folder_id, count, prow, &b_exceed))
 		return ecError;
-	if (TRUE == b_exceed) {
+	if (b_exceed)
 		return ecMAPIOOM;
-	}
 	return ecSuccess;
 }
 

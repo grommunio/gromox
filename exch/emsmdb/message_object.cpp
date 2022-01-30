@@ -178,7 +178,7 @@ BOOL message_object::check_orignal_touched(BOOL *pb_touched)
 	auto pmessage = this;
 	uint64_t *pchange_num;
 	
-	if (TRUE == pmessage->b_new) {
+	if (pmessage->b_new) {
 		*pb_touched = FALSE;
 		return TRUE;
 	}
@@ -568,8 +568,7 @@ gxerr_t message_object::save()
 		auto s = b_fai ? pmessage->pstate->pseen_fai.get() : pmessage->pstate->pseen.get();
 		s->append(pmessage->change_num);
 	}
-	
-	if (0 == pmessage->message_id || TRUE == b_fai) {
+	if (pmessage->message_id == 0 || b_fai) {
 		proptag_array_clear(pmessage->pchanged_proptags);
 		proptag_array_clear(pmessage->premoved_proptags);
 		return GXERR_SUCCESS;
@@ -686,9 +685,8 @@ BOOL message_object::reload()
 	DOUBLE_LIST_NODE *pnode;
 	PROPTAG_ARRAY tmp_columns;
 	
-	if (TRUE == pmessage->b_new) {
+	if (pmessage->b_new)
 		return TRUE;
-	}
 	if (!exmdb_client_reload_message_instance(pmessage->plogon->get_dir(),
 	    pmessage->instance_id, &b_result))
 		return FALSE;	
@@ -743,9 +741,8 @@ BOOL message_object::empty_rcpts()
 	    pmessage->instance_id))
 		return FALSE;	
 	pmessage->b_touched = TRUE;
-	if (TRUE == pmessage->b_new || 0 == pmessage->message_id) {
+	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	}
 	proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS);
 	return TRUE;
 }
@@ -780,9 +777,8 @@ BOOL message_object::set_rcpts(const TARRAY_SET *pset)
 		}
 	}
 	pmessage->b_touched = TRUE;
-	if (TRUE == pmessage->b_new || 0 == pmessage->message_id) {
+	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	}
 	proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS);
 	return TRUE;
 }
@@ -801,9 +797,8 @@ BOOL message_object::delete_attachment(uint32_t attachment_num)
 	    pmessage->plogon->get_dir(), pmessage->instance_id, attachment_num))
 		return FALSE;
 	pmessage->b_touched = TRUE;
-	if (TRUE == pmessage->b_new || 0 == pmessage->message_id) {
+	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	}
 	proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_ATTACHMENTS);
 	return TRUE;
 }
@@ -1011,9 +1006,8 @@ BOOL message_object::check_readonly_property(uint32_t proptag) const
 	case PR_LAST_MODIFICATION_TIME:
 	case PR_PREDECESSOR_CHANGE_LIST:
 	case PR_SOURCE_KEY:
-		if (TRUE == pmessage->b_new || NULL != pmessage->pstate) {
+		if (pmessage->b_new || pmessage->pstate != nullptr)
 			return FALSE;
-		}
 		return TRUE;
 	case PR_READ:
 		if (NULL == pmessage->pembedding) {
@@ -1141,7 +1135,7 @@ BOOL message_object::get_properties(uint32_t size_limit,
 	ppropvals->count = 0;
 	for (i=0; i<pproptags->count; i++) {
 		auto &pv = ppropvals->ppropval[ppropvals->count];
-		if (TRUE == message_object_get_calculated_property(
+		if (message_object_get_calculated_property(
 			pmessage, pproptags->pproptag[i], &pvalue)) {
 			if (NULL != pvalue) {
 				pv.proptag = pproptags->pproptag[i];
@@ -1253,10 +1247,9 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 	
 	for (i=0; i<ppropvals->count; i++) {
 		/* if property is being open as stream object, can not be modified */
-		if (TRUE == b_check) {
+		if (b_check) {
 			if (pmessage->check_readonly_property(ppropvals->ppropval[i].proptag) ||
-				TRUE == message_object_check_stream_property(
-				pmessage, ppropvals->ppropval[i].proptag)) {
+			    message_object_check_stream_property(pmessage, ppropvals->ppropval[i].proptag)) {
 				pproblems->pproblem[pproblems->count].index = i;
 				pproblems->pproblem[pproblems->count].proptag =
 								ppropvals->ppropval[i].proptag;
@@ -1315,7 +1308,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 		tmp_problems.transform(poriginal_indices);
 		*pproblems += std::move(tmp_problems);
 	}
-	if (TRUE == pmessage->b_new || 0 == pmessage->message_id) {
+	if (pmessage->b_new || pmessage->message_id == 0) {
 		pmessage->b_touched = TRUE;
 		return TRUE;
 	}
@@ -1375,8 +1368,7 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 	/* if property is being open as stream object, can not be removed */
 	for (i=0; i<pproptags->count; i++) {
 		if (check_readonly_property(pproptags->pproptag[i]) ||
-			TRUE == message_object_check_stream_property(
-			pmessage, pproptags->pproptag[i])) {
+		    message_object_check_stream_property(pmessage, pproptags->pproptag[i])) {
 			pproblems->pproblem[pproblems->count].index = i;
 			pproblems->pproblem[pproblems->count].proptag =
 									pproptags->pproptag[i];
@@ -1397,7 +1389,7 @@ BOOL message_object::remove_properties(const PROPTAG_ARRAY *pproptags,
 		tmp_problems.transform(poriginal_indices);
 		*pproblems += std::move(tmp_problems);
 	}
-	if (TRUE == pmessage->b_new || 0 == pmessage->message_id) {
+	if (pmessage->b_new || pmessage->message_id == 0) {
 		pmessage->b_touched = TRUE;
 		return TRUE;
 	}
@@ -1434,9 +1426,8 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 	if (!exmdb_client_check_instance_cycle(pmessage->plogon->get_dir(),
 	    pmessage_src->instance_id, pmessage->instance_id, pb_cycle))
 		return FALSE;	
-	if (TRUE == *pb_cycle) {
+	if (*pb_cycle)
 		return TRUE;
-	}
 	if (!pmessage_src->flush_streams())
 		return FALSE;
 	if (!exmdb_client_read_message_instance(pmessage_src->plogon->get_dir(),
@@ -1472,9 +1463,8 @@ BOOL message_object::copy_to(message_object *pmessage_src,
 		proptag_array_free(pmessage->precipient_columns);
 		pmessage->precipient_columns = pcolumns;
 	}
-	if (TRUE == pmessage->b_new || 0 == pmessage->message_id) {
+	if (pmessage->b_new || pmessage->message_id == 0)
 		return TRUE;
-	}
 	for (i=0; i<proptags.count; i++) {
 		proptag = message_object_rectify_proptag(proptags.pproptag[i]);
 		proptag_array_append(pmessage->pchanged_proptags, proptag);
@@ -1489,9 +1479,8 @@ BOOL message_object::copy_rcpts(message_object *pmessage_src,
 	if (!exmdb_client_copy_instance_rcpts(pmessage->plogon->get_dir(),
 	    b_force, pmessage_src->instance_id, pmessage->instance_id, pb_result))
 		return FALSE;	
-	if (TRUE == *pb_result) {
+	if (*pb_result)
 		proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_ATTACHMENTS);
-	}
 	return TRUE;
 }
 	
@@ -1502,9 +1491,8 @@ BOOL message_object::copy_attachments(message_object *pmessage_src,
 	if (!exmdb_client_copy_instance_attachments(pmessage->plogon->get_dir(),
 	    b_force, pmessage_src->instance_id, pmessage->instance_id, pb_result))
 		return FALSE;	
-	if (TRUE == *pb_result) {
+	if (*pb_result)
 		proptag_array_append(pmessage->pchanged_proptags, PR_MESSAGE_RECIPIENTS);
-	}
 	return TRUE;
 }
 
@@ -1613,7 +1601,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 	default:
 		return TRUE;
 	}
-	if (TRUE == *pb_changed) {
+	if (*pb_changed) {
 		if (!exmdb_client_set_message_read_state(pmessage->plogon->get_dir(),
 		    username, pmessage->message_id, tmp_byte, &read_cn))
 			return FALSE;
@@ -1626,7 +1614,7 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 			return TRUE;
 		}
 	}
-	if (TRUE == b_notify) {
+	if (b_notify) {
 		if (!exmdb_client_get_message_brief(pmessage->plogon->get_dir(),
 		    pmessage->cpid, pmessage->message_id, &pbrief))
 			return FALSE;	

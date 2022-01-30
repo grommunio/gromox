@@ -406,10 +406,8 @@ BOOL MJSON::retrieve(char *digest_buff,
 		if (static_cast<MJSON_MIME *>(pnode->pdata)->mime_type == MJSON_MIME_NONE)
 			b_none = TRUE;
 	});
-	if (TRUE == b_none) {
+	if (b_none)
 		return FALSE;
-	}
-	
 	if (NULL != path) {
 		strcpy(pjson->path, path);
 	}
@@ -805,16 +803,10 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 			}
 			break;
 		case RETRIEVE_VALUE_FOUND:
-			if (( FALSE == b_digit && 
-				('"' == value[i] && '\\' != value[i - 1])) ||
-				(TRUE == b_digit && 
-				(' ' == value[i] || '\t' == value[i] || 
-				',' == value[i] || i == length - 1))) {
-				if (FALSE == b_digit) {
-					temp_len = i - last_pos;
-				} else {
-					temp_len = i + 1 - last_pos;
-				}
+			if ((!b_digit && (value[i] == '"' && value[i-1] != '\\')) ||
+			    (b_digit && (value[i] == ' ' || value[i] == '\t' ||
+			    value[i] == ',' || i == length - 1))) {
+				temp_len = !b_digit ? i - last_pos : i + 1 - last_pos;
 				if (0 == strcasecmp(temp_tag, "id") && temp_len < 64) {
 					memcpy(temp_mime.id, value + last_pos, temp_len);
 					temp_mime.id[temp_len] = '\0';
@@ -862,11 +854,8 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 					temp_buff[temp_len] = '\0';
 					temp_mime.length = strtoull(temp_buff, nullptr, 0);
 				}
-				if (TRUE == b_digit && ',' == value[i]) {
-					rstat = RETRIEVE_TAG_FINDING;
-				} else {
-					rstat = RETRIEVE_VALUE_END;
-				}
+				rstat = b_digit && value[i] == ',' ?
+				        RETRIEVE_TAG_FINDING : RETRIEVE_VALUE_END;
 			}
 			break;
 		case RETRIEVE_VALUE_END:
@@ -1057,11 +1046,11 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			}
 			
 			if ( '\0' != pmime->filename[0]) {
-				if (TRUE == b_space) {
+				if (b_space) {
 					buff[offset] = ' ';
 					offset ++;
 				}
-				if (TRUE == mjson_check_ascii_printable(pmime->filename)) {
+				if (mjson_check_ascii_printable(pmime->filename)) {
 					mjson_convert_quoted_printable(pmime->filename, temp_buff);
 					offset += gx_snprintf(buff + offset, length - offset,
 								"\"NAME\" \"%s\"", temp_buff);
@@ -1087,7 +1076,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		}
 		
 		if ('\0' != pmime->cid[0] &&
-			TRUE == mjson_check_ascii_printable(pmime->cid)) {
+		    mjson_check_ascii_printable(pmime->cid)) {
 			mjson_convert_quoted_printable(pmime->cid, temp_buff);
 			offset += gx_snprintf(buff + offset, length - offset,
 						" \"%s\"", temp_buff);
@@ -1219,8 +1208,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		}
 		
  RFC822_FAILURE:
-		if (TRUE == b_ext) {
-
+		if (b_ext) {
 			/* body MD5 */
 			
 			
@@ -1242,7 +1230,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 			offset += 4;
 			
 			if ('\0' != pmime->cntl[0] &&
-				TRUE == mjson_check_ascii_printable(pmime->cntl)) {
+			    mjson_check_ascii_printable(pmime->cntl)) {
 				mjson_convert_quoted_printable(pmime->cntl, temp_buff);
 				offset += gx_snprintf(buff + offset, length - offset,
 							" \"%s\"", temp_buff);
@@ -1271,7 +1259,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 		offset += ret_len;
 		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\"", psubtype);
-		if (TRUE == b_ext) {
+		if (b_ext) {
 			memcpy(buff + offset, " NIL NIL NIL", 12);
 			offset += 12;
 		}
@@ -1333,7 +1321,7 @@ static int mjson_convert_address(char *address, const char *charset,
 	
 	parse_mime_addr(&email_addr, temp_address);
 	if ('\0' != email_addr.display_name[0]) {
-		if (TRUE == mjson_check_ascii_printable(email_addr.display_name)) {
+		if (mjson_check_ascii_printable(email_addr.display_name)) {
 			mjson_convert_quoted_printable(email_addr.display_name, temp_buff);
 			offset += gx_snprintf(buff + offset, length - offset,
 						"(\"%s\"", temp_buff);
@@ -1359,7 +1347,7 @@ static int mjson_convert_address(char *address, const char *charset,
 	offset += 4;
 	
 	if ('\0' != email_addr.local_part[0] &&
-		TRUE == mjson_check_ascii_printable(email_addr.local_part)) {
+	    mjson_check_ascii_printable(email_addr.local_part)) {
 		mjson_convert_quoted_printable(email_addr.local_part, temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\"", temp_buff);
@@ -1369,7 +1357,7 @@ static int mjson_convert_address(char *address, const char *charset,
 	}
 
 	if ('\0' != email_addr.domain[0] &&
-		TRUE == mjson_check_ascii_printable(email_addr.domain)) {
+	    mjson_check_ascii_printable(email_addr.domain)) {
 		mjson_convert_quoted_printable(email_addr.domain, temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\")", temp_buff);
@@ -1411,7 +1399,7 @@ int MJSON::fetch_envelope(const char *charset, char *buff, int length)
 	offset = 1;
 	
 	if ('\0' != pjson->date[0] &&
-		TRUE == mjson_check_ascii_printable(pjson->date)) {
+	    mjson_check_ascii_printable(pjson->date)) {
 		mjson_convert_quoted_printable(pjson->date, temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 					"\"%s\"", temp_buff);
@@ -1421,7 +1409,7 @@ int MJSON::fetch_envelope(const char *charset, char *buff, int length)
 	}
 	
 	if ('\0' != pjson->subject[0]) {
-		if (TRUE == mjson_check_ascii_printable(pjson->subject)) {
+		if (mjson_check_ascii_printable(pjson->subject)) {
 			mjson_convert_quoted_printable(pjson->subject, temp_buff);
 			offset += gx_snprintf(buff + offset, length - offset,
 						" \"%s\"", temp_buff);
@@ -1574,7 +1562,7 @@ int MJSON::fetch_envelope(const char *charset, char *buff, int length)
 	offset += 4;
 	
 	if ('\0' != pjson->inreply[0] &&
-		TRUE == mjson_check_ascii_printable(pjson->inreply)) {
+	    mjson_check_ascii_printable(pjson->inreply)) {
 		mjson_convert_quoted_printable(pjson->inreply, temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\"", temp_buff);
@@ -1584,7 +1572,7 @@ int MJSON::fetch_envelope(const char *charset, char *buff, int length)
 	}
 	
 	if ('\0' != pjson->msgid[0] &&
-		TRUE == mjson_check_ascii_printable(pjson->msgid)) {
+	    mjson_check_ascii_printable(pjson->msgid)) {
 		mjson_convert_quoted_printable(pjson->msgid, temp_buff);
 		offset += gx_snprintf(buff + offset, length - offset,
 					" \"%s\"", temp_buff);

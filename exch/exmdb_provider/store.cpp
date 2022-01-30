@@ -108,9 +108,8 @@ BOOL exmdb_server_get_named_propnames(const char *dir,
 BOOL exmdb_server_get_mapping_guid(const char *dir,
 	uint16_t replid, BOOL *pb_found, GUID *pguid)
 {
-	if (TRUE == exmdb_server_check_private()) {
+	if (exmdb_server_check_private())
 		return FALSE;
-	}
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
@@ -126,10 +125,8 @@ BOOL exmdb_server_get_mapping_guid(const char *dir,
 BOOL exmdb_server_get_mapping_replid(const char *dir,
 	GUID guid, BOOL *pb_found, uint16_t *preplid)
 {
-	
-	if (TRUE == exmdb_server_check_private()) {
+	if (exmdb_server_check_private())
 		return FALSE;
-	}
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
@@ -483,9 +480,8 @@ static BOOL table_check_address_in_contact_folder(
 			pstmt_search, *(uint64_t*)pnode->pdata, paddress, pb_found)) {
 			return FALSE;	
 		}
-		if (TRUE == *pb_found) {
+		if (*pb_found)
 			return TRUE;
-		}
 	}
 	*pb_found = FALSE;
 	return TRUE;

@@ -61,10 +61,8 @@ uint32_t rop_openfolder(uint64_t folder_id, uint8_t open_flags,
 		if (!exmdb_client_check_folder_deleted(plogon->get_dir(),
 		    folder_id, &b_del))
 			return ecError;
-		if (TRUE == b_del && 0 == (open_flags &
-			OPEN_FOLDER_FLAG_OPENSOFTDELETED)) {
+		if (b_del && !(open_flags & OPEN_FOLDER_FLAG_OPENSOFTDELETED))
 			return ecNotFound;
-		}
 	}
 	if (!exmdb_client_get_folder_property(plogon->get_dir(), 0, folder_id,
 	    PR_FOLDER_TYPE, &pvalue) || pvalue == nullptr)
@@ -341,12 +339,12 @@ uint32_t rop_deletefolder(uint8_t flags, uint64_t folder_id,
 		if (*static_cast<uint32_t *>(pvalue) == FOLDER_SEARCH)
 			goto DELETE_FOLDER;
 	}
-	if (TRUE == b_sub || TRUE == b_normal || TRUE == b_fai) {
+	if (b_sub || b_normal || b_fai) {
 		if (!exmdb_client_empty_folder(plogon->get_dir(), pinfo->cpid,
 		    username, folder_id, b_hard, b_normal, b_fai,
 		    b_sub, &b_partial))
 			return ecError;
-		if (TRUE == b_partial) {
+		if (b_partial) {
 			/* failure occurs, stop deleting folder */
 			*ppartial_completion = 1;
 			return ecSuccess;
@@ -604,9 +602,8 @@ uint32_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 	if (!exmdb_client_check_folder_cycle(plogon->get_dir(), folder_id,
 	    pdst_folder->folder_id, &b_cycle))
 		return ecError;
-	if (TRUE == b_cycle) {
+	if (b_cycle)
 		return MAPI_E_FOLDER_CYCLE;
-	}
 	if (!exmdb_client_allocate_cn(plogon->get_dir(), &change_num))
 		return ecError;
 	if (!exmdb_client_get_folder_property(plogon->get_dir(), 0,
@@ -628,9 +625,8 @@ uint32_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 	    psrc_parent->folder_id, folder_id, pdst_folder->folder_id,
 	    new_name, FALSE, &b_exist, &b_partial))
 		return ecError;
-	if (TRUE == b_exist) {
+	if (b_exist)
 		return ecDuplicateName;
-	}
 	*ppartial_completion = !!b_partial;
 	nt_time = rop_util_current_nttime();
 	propvals.count = 4;
@@ -715,18 +711,16 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 	if (!exmdb_client_check_folder_cycle(plogon->get_dir(), folder_id,
 	    pdst_folder->folder_id, &b_cycle))
 		return ecError;
-	if (TRUE == b_cycle) {
+	if (b_cycle)
 		return MAPI_E_FOLDER_CYCLE;
-	}
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client_movecopy_folder(plogon->get_dir(),
 	    plogon->account_id, pinfo->cpid, b_guest, rpc_info.username,
 	    psrc_parent->folder_id, folder_id, pdst_folder->folder_id, new_name,
 	    TRUE, &b_exist, &b_partial))
 		return ecError;
-	if (TRUE == b_exist) {
+	if (b_exist)
 		return ecDuplicateName;
-	}
 	*ppartial_completion = !!b_partial;
 	return ecSuccess;
 }

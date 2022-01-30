@@ -89,7 +89,7 @@ void auto_response_reply(const char *user_home,
 		if (str_value != nullptr && cur_time > strtoll(str_value, nullptr, 0))
 			return;
 	}
-	if (TRUE == b_internal) {
+	if (b_internal) {
 		snprintf(template_path, 256, "%s/config/internal-reply", user_home);
 	} else {
 		str_value = pconfig->get_value("ALLOW_EXTERNAL_OOF");

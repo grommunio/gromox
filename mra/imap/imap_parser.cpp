@@ -124,7 +124,7 @@ void imap_parser_init(int context_num, int average_num, size_t cache_size,
 	g_notify_stop = true;
 	double_list_init(&g_sleeping_list);
 	g_sequence_id = 0;
-	if (TRUE == support_starttls) {
+	if (support_starttls) {
 		g_force_starttls = force_starttls;
 		gx_strlcpy(g_certificate_path, certificate_path, arsizeof(g_certificate_path));
 		if (NULL != cb_passwd) {
@@ -161,7 +161,7 @@ int imap_parser_run()
 {
 	int num;
 	
-	if (TRUE == g_support_starttls) {
+	if (g_support_starttls) {
 		SSL_library_init();
 		OpenSSL_add_all_algorithms();
 		SSL_load_error_strings();
@@ -319,12 +319,11 @@ void imap_parser_stop()
 	g_alloc_dir.reset();
 	g_alloc_mjson.reset();
 	g_select_hash.reset();
-	if (TRUE == g_support_starttls && NULL != g_ssl_ctx) {
+	if (g_support_starttls && g_ssl_ctx != nullptr) {
 		SSL_CTX_free(g_ssl_ctx);
 		g_ssl_ctx = NULL;
 	}
-
-	if (TRUE == g_support_starttls && NULL != g_ssl_mutex_buf) {
+	if (g_support_starttls && g_ssl_mutex_buf != nullptr) {
 		CRYPTO_set_id_callback(NULL);
 		CRYPTO_set_locking_callback(NULL);
 		g_ssl_mutex_buf.reset();
@@ -1378,9 +1377,9 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 	pcontext->f_flags.clear();
 	hl_hold.unlock();
 	
-	if (TRUE == b_modify && MIDB_RESULT_OK == system_services_summary_folder(
-		pcontext->maildir, pcontext->selected_folder, &exists, &recent, 
-		NULL, NULL, NULL, NULL, &err)) {
+	if (b_modify && system_services_summary_folder(pcontext->maildir,
+	    pcontext->selected_folder, &exists, &recent, nullptr, nullptr,
+	    nullptr, nullptr, &err) == MIDB_RESULT_OK) {
 		tmp_len = gx_snprintf(buff, arsizeof(buff), "* %d RECENT\r\n"
 									   "* %d EXISTS\r\n",
 									   recent, exists);
@@ -1415,7 +1414,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_ANSWERED) {
-			if (TRUE == b_first) {
+			if (b_first) {
 				buff[tmp_len] = ' ';
 				tmp_len++;
 			}
@@ -1423,7 +1422,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_FLAGGED) {
-			if (TRUE == b_first) {
+			if (b_first) {
 				buff[tmp_len] = ' ';
 				tmp_len++;
 			}
@@ -1431,7 +1430,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_DELETED) {
-			if (TRUE == b_first) {
+			if (b_first) {
 				buff[tmp_len] = ' ';
 				tmp_len++;
 			}
@@ -1439,7 +1438,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_SEEN) {
-			if (TRUE == b_first) {
+			if (b_first) {
 				buff[tmp_len] = ' ';
 				tmp_len++;
 			}
@@ -1447,7 +1446,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 			b_first = TRUE;
 		}
 		if (flag_bits & FLAG_DRAFT) {
-			if (TRUE == b_first) {
+			if (b_first) {
 				buff[tmp_len] = ' ';
 				tmp_len++;
 			}
@@ -1523,9 +1522,8 @@ int imap_parser_set_param(int param, int value)
 		g_block_auth_fail = value;
 		break;
 	case IMAP_FORCE_STARTTLS:
-		if (TRUE == g_support_starttls) {
+		if (g_support_starttls)
 			g_force_starttls = value;
-		}
 		break;
     default:
         return -1;
@@ -1719,7 +1717,7 @@ static void *imps_thrwork(void *argp)
 			pcontext = (IMAP_CONTEXT*)pnode->pdata;
 			if (SCHED_STAT_IDLING == pcontext->sched_stat) {
 				std::unique_lock hl_hold(g_hash_lock);
-				if (TRUE == pcontext->b_modify) {
+				if (pcontext->b_modify) {
 					pcontext->b_modify = FALSE;
 					hl_hold.unlock();
 					pcontext->sched_stat = SCHED_STAT_NOTIFYING;
@@ -1848,9 +1846,8 @@ void imap_parser_remove_select(IMAP_CONTEXT *pcontext)
 		}
 	}
 	hl_hold.unlock();
-	if (TRUE == should_remove) {
+	if (should_remove)
 		system_services_broadcast_unselect(pcontext->username, pcontext->selected_folder);
-	}
 }
 
 static void *imps_scanwork(void *argp)

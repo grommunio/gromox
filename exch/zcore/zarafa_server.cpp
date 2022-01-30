@@ -282,8 +282,7 @@ static void *zcorezs_scanwork(void *param)
 		}
 		while ((pnode = double_list_pop_front(&temp_list1)) != nullptr) {
 			psink_node = (SINK_NODE*)pnode->pdata;
-			if (TRUE == rpc_ext_push_response(
-				&response, &tmp_bin)) {
+			if (rpc_ext_push_response(&response, &tmp_bin)) {
 				tv_msec = SOCKET_TIMEOUT * 1000;
 				fdpoll.fd = psink_node->clifd;
 				fdpoll.events = POLLOUT|POLLWRBAND;
@@ -992,19 +991,17 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 		switch (type) {
 		case EITLT_PRIVATE_FOLDER:
 		case EITLT_PUBLIC_FOLDER:
-			if (TRUE == common_util_from_folder_entryid(
-				entryid, &b_private, &account_id, &folder_id)) {
+			if (common_util_from_folder_entryid(entryid,
+			    &b_private, &account_id, &folder_id)) {
 				message_id = 0;
 				goto CHECK_LOC;
 			}
 			break;
 		case EITLT_PRIVATE_MESSAGE:
 		case EITLT_PUBLIC_MESSAGE:
-			if (TRUE == common_util_from_message_entryid(
-				entryid, &b_private, &account_id, &folder_id,
-				&message_id)) {
+			if (common_util_from_message_entryid(entryid,
+			    &b_private, &account_id, &folder_id, &message_id))
 				goto CHECK_LOC;
-			}
 			break;
 		}
 		if (strncmp(entryid.pc, "/exmdb=", 7) == 0) {
@@ -1876,7 +1873,7 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 				return gxerr_to_hresult(err);
 			}
 			if (FALSE == b_copy) {
-				if (TRUE == b_guest) {
+				if (b_guest) {
 					if (!exmdb_client_check_message_owner(pstore->get_dir(),
 					    message_id, pinfo->get_username(), &b_owner))
 						return ecError;
@@ -2034,7 +2031,7 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 		if (b_changed && !exmdb_client::set_message_read_state(pstore->get_dir(),
 		    username, message_id, tmp_byte, &read_cn))
 			return ecError;
-		if (TRUE == b_notify) {
+		if (b_notify) {
 			if (!exmdb_client::get_message_brief(pstore->get_dir(),
 			    pinfo->cpid, message_id, &pbrief))
 				return ecError;
@@ -2246,7 +2243,7 @@ uint32_t zarafa_server_deletefolder(GUID hsession,
 		if (*static_cast<uint32_t *>(pvalue) == FOLDER_SEARCH)
 			goto DELETE_FOLDER;
 	}
-	if (TRUE == b_sub || TRUE == b_normal || TRUE == b_fai) {
+	if (b_sub || b_normal || b_fai) {
 		if (!exmdb_client::empty_folder(pstore->get_dir(), pinfo->cpid,
 		    username, folder_id, b_hard, b_normal, b_fai, b_sub, &b_partial))
 			return ecError;
@@ -4006,7 +4003,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 		}
 		if (!folder->get_properties(&tmp_proptags, &propvals))
 			return ecError;
-		if (TRUE == b_sub || TRUE == b_normal || TRUE == b_fai) {
+		if (b_sub || b_normal || b_fai) {
 			BOOL b_guest = username == nullptr ? false : TRUE;
 			if (!exmdb_client::copy_folder_internal(pstore->get_dir(),
 			    pstore->account_id, pinfo->cpid, b_guest,
@@ -4393,7 +4390,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 		if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 		    folder_id, pinfo->get_username(), &permission))
 			return ecError;
-		if (TRUE == b_new) {
+		if (b_new) {
 			if (!(permission & frightsCreate))
 				return ecAccessDenied;
 			tag_access = MAPI_ACCESS_READ;
@@ -4425,7 +4422,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 		if (!exmdb_client_get_message_property(pstore->get_dir(),
 		    nullptr, 0, message_id, PR_ASSOCIATED, &pvalue))
 			return ecError;
-		if (TRUE == b_fai) {
+		if (b_fai) {
 			if (pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0)
 				return ecInvalidParam;
 		} else {
