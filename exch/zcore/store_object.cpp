@@ -517,7 +517,7 @@ static void* store_object_get_oof_property(
 		return pvalue;
 	}
 	case PR_EC_OUTOFOFFICE_MSG:
-	case PR_EC_EXTERNAL_REPLY:
+	case PR_EC_EXTERNAL_REPLY: {
 		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
 		         proptag == PR_EC_OUTOFOFFICE_MSG ?
 		         "%s/config/internal-reply" : "%s/config/external-reply",
@@ -542,7 +542,9 @@ static void* store_object_get_oof_property(
 		}
 		close(fd);
 		pbuff[buff_len] = '\0';
-		return strstr(pbuff, "\r\n\r\n");
+		auto ptr = strstr(pbuff, "\r\n\r\n");
+		return ptr != nullptr ? ptr + 4 : nullptr;
+	}
 	case PR_EC_OUTOFOFFICE_SUBJECT:
 	case PR_EC_EXTERNAL_SUBJECT: {
 		snprintf(temp_path, GX_ARRAY_SIZE(temp_path),
