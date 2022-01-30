@@ -5137,42 +5137,12 @@ BOOL common_util_increase_deleted_count(sqlite3 *psqlite,
 	return TRUE;
 }
 
-BOOL common_util_increase_store_size(sqlite3 *psqlite,
-	uint64_t normal_size, uint64_t fai_size)
+BOOL cu_adjust_store_size(sqlite3 *psqlite, bool subtract,
+    uint64_t normal_size, uint64_t fai_size)
 {
-	auto pstmt = gx_sql_prep(psqlite, "UPDATE store_properties"
-	             " SET propval=propval+? WHERE proptag=?");
-	if (pstmt == nullptr)
-		return FALSE;
-	sqlite3_bind_int64(pstmt, 1, normal_size + fai_size);
-	sqlite3_bind_int64(pstmt, 2, PR_MESSAGE_SIZE_EXTENDED);
-	if (SQLITE_DONE != sqlite3_step(pstmt)) {
-		return FALSE;
-	}
-	if (0 != normal_size) {
-		sqlite3_reset(pstmt);
-		sqlite3_bind_int64(pstmt, 1, normal_size);
-		sqlite3_bind_int64(pstmt, 2, PR_NORMAL_MESSAGE_SIZE_EXTENDED);
-		if (SQLITE_DONE != sqlite3_step(pstmt)) {
-			return FALSE;
-		}
-	}
-	if (0 != fai_size) {
-		sqlite3_reset(pstmt);
-		sqlite3_bind_int64(pstmt, 1, fai_size);
-		sqlite3_bind_int64(pstmt, 2, PR_ASSOC_MESSAGE_SIZE_EXTENDED);
-		if (SQLITE_DONE != sqlite3_step(pstmt)) {
-			return FALSE;
-		}
-	}
-	return TRUE;
-}
-
-BOOL common_util_decrease_store_size(sqlite3 *psqlite,
-	uint64_t normal_size, uint64_t fai_size)
-{
-	auto pstmt = gx_sql_prep(psqlite, "UPDATE store_properties"
-	             " SET propval=MAX(0,propval-?) WHERE proptag=?");
+	auto pstmt = gx_sql_prep(psqlite, subtract ?
+	             "UPDATE store_properties SET propval=MAX(0,propval-?) WHERE proptag=?" :
+	             "UPDATE store_properties SET propval=propval+? WHERE proptag=?");
 	if (pstmt == nullptr)
 		return FALSE;
 	sqlite3_bind_int64(pstmt, 1, normal_size + fai_size);

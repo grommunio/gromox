@@ -1162,10 +1162,8 @@ BOOL exmdb_server_delete_folder(const char *dir, uint32_t cpid,
 		    NULL, fid_val, TRUE, TRUE, TRUE, TRUE,
 		    &b_partial, &normal_size, &fai_size,
 		    NULL, NULL) || b_partial ||
-		    FALSE == common_util_decrease_store_size(
-		    pdb->psqlite, normal_size, fai_size)) {
+		    !cu_adjust_store_size(pdb->psqlite, ADJ_DECREASE, normal_size, fai_size))
 			return FALSE;
-		}
 		snprintf(sql_string, arsizeof(sql_string), "DELETE FROM folders"
 			" WHERE folder_id=%llu", LLU(fid_val));
 	} else {
@@ -1268,10 +1266,8 @@ BOOL exmdb_server_empty_folder(const char *dir, uint32_t cpid,
 		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 	}
-	if (FALSE == common_util_decrease_store_size(
-		pdb->psqlite, normal_size, fai_size)) {
+	if (!cu_adjust_store_size(pdb->psqlite, ADJ_DECREASE, normal_size, fai_size))
 		return FALSE;
-	}
 	sql_transact.commit();
 	return TRUE;
 }
@@ -1853,11 +1849,9 @@ BOOL exmdb_server_copy_folder_internal(const char *dir,
 		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 	}
-	if (FALSE == common_util_increase_store_size(
-		pdb->psqlite, normal_size, fai_size)) {
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
-			return FALSE;
-	}
+	if (!cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE, normal_size, fai_size) &&
+	    gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		return FALSE;
 	sql_transact.commit();
 	return TRUE;
 }
@@ -2006,11 +2000,9 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 				fid_val, &b_partial, &normal_size, &fai_size, NULL)) {
 				return FALSE;
 			}
-			if (FALSE == common_util_increase_store_size(
-				pdb->psqlite, normal_size, fai_size)) {
-				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
-					return FALSE;
-			}
+			if (!cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE, normal_size, fai_size) &&
+			    gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+				return FALSE;
 		}
 	}
 	nt_time = rop_util_current_nttime();

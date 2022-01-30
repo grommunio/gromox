@@ -186,19 +186,9 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 				return FALSE;
 		}
 	}
-	if (b_update) {
-		if (0 == is_associated) {
-			if (FALSE == common_util_increase_store_size(
-				pdb->psqlite, message_size, 0)) {
-				return FALSE;
-			}
-		} else {
-			if (FALSE == common_util_increase_store_size(
-				pdb->psqlite, 0, message_size)) {
-				return FALSE;
-			}
-		}
-	}
+	if (b_update && !cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE,
+	    is_associated ? 0 : message_size, is_associated ? message_size : 0))
+		return FALSE;
 	nt_time = rop_util_current_nttime();
 	if (b_move) {
 		propvals.count = 5;
@@ -412,7 +402,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		pstmt1.finalize();
 	}
 	if (b_update && normal_size + fai_size > 0 &&
-	    !common_util_increase_store_size(pdb->psqlite, normal_size, fai_size))
+	    !cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE, normal_size, fai_size))
 		return FALSE;
 	nt_time = rop_util_current_nttime();
 	if (FALSE == b_copy) {
@@ -603,7 +593,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	}
 	pstmt.finalize();
 	pstmt1.finalize();
-	if (b_hard && !common_util_decrease_store_size(pdb->psqlite,
+	if (b_hard && !cu_adjust_store_size(pdb->psqlite, ADJ_DECREASE,
 	    normal_size, fai_size))
 		return FALSE;
 	propvals.count = 5;
@@ -2285,29 +2275,15 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		}
 	}
 	if (original_size > message_size) {
-		if (0 == is_associated) {
-			if (FALSE == common_util_decrease_store_size(
-				psqlite, original_size - message_size, 0)) {
-				return FALSE;	
-			}
-		} else {
-			if (FALSE == common_util_decrease_store_size(
-				psqlite, 0, original_size - message_size)) {
-				return FALSE;	
-			}
-		}
+		auto d = original_size - message_size;
+		if (!cu_adjust_store_size(psqlite, ADJ_DECREASE,
+		    is_associated ? 0 : d, is_associated ? d : 0))
+			return FALSE;
 	} else {
-		if (0 == is_associated) {
-			if (FALSE == common_util_increase_store_size(
-				psqlite, message_size - original_size, 0)) {
-				return FALSE;	
-			}
-		} else {
-			if (FALSE == common_util_increase_store_size(
-				psqlite, 0, message_size - original_size)) {
-				return FALSE;	
-			}
-		}
+		auto d = message_size - original_size;
+		if (!cu_adjust_store_size(psqlite, ADJ_INCREASE,
+		    is_associated ? 0 : d, is_associated ? d : 0))
+			return FALSE;
 	}
 	if (b_embedded)
 		return TRUE;
@@ -3382,10 +3358,8 @@ static bool op_move_same(BOOL b_oof, const char *from_address,
 	propval.pvalue = &nt_time;
 	cu_set_property(db_table::folder_props,
 		dst_fid, 0, psqlite, &propval, &b_result);
-	if (FALSE == common_util_increase_store_size(
-	    psqlite, message_size, 0)) {
+	if (!cu_adjust_store_size(psqlite, ADJ_INCREASE, message_size, 0))
 		return FALSE;
-	}
 	pnode1 = cu_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode1) {
 		return FALSE;
@@ -3859,10 +3833,8 @@ static bool opx_move(BOOL b_oof, const char *from_address,
 	propval.pvalue = &nt_time;
 	cu_set_property(db_table::folder_props,
 		dst_fid, 0, psqlite, &propval, &b_result);
-	if (FALSE == common_util_increase_store_size(
-	    psqlite, message_size, 0)) {
+	if (!cu_adjust_store_size(psqlite, ADJ_INCREASE, message_size, 0))
 		return FALSE;
-	}
 	pnode1 = cu_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode1) {
 		return FALSE;
@@ -4259,10 +4231,8 @@ static BOOL message_rule_new_message(BOOL b_oof,
 		" WHERE message_id=%llu", LLU(message_id));
 	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	if (FALSE == common_util_decrease_store_size(
-	    psqlite, message_size, 0)) {
+	if (!cu_adjust_store_size(psqlite, ADJ_DECREASE, message_size, 0))
 		return FALSE;
-	}
 	if (NULL != pdigest) {
 		char mid_string1[128], tmp_path1[256];
 		get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
