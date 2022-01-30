@@ -1037,11 +1037,10 @@ BOOL message_object::set_properties(TPROPVAL_ARRAY *ppropvals)
 		if (NULL == pnormalized_subject) {
 			pnormalized_subject = ppropvals->get<char>(PR_NORMALIZED_SUBJECT_A);
 		}
-		if (NULL != pnormalized_subject) {
-			if ('\0' == pnormalized_subject[0] && '\0' != psubject[0]) {
-				common_util_remove_propvals(ppropvals, PR_NORMALIZED_SUBJECT);
-				common_util_remove_propvals(ppropvals, PR_NORMALIZED_SUBJECT_A);
-			}
+		if (pnormalized_subject != nullptr &&
+		    pnormalized_subject[0] == '\0' && *psubject != '\0') {
+			common_util_remove_propvals(ppropvals, PR_NORMALIZED_SUBJECT);
+			common_util_remove_propvals(ppropvals, PR_NORMALIZED_SUBJECT_A);
 		}
 	}
 	return message_object_set_properties_internal(

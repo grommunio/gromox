@@ -662,13 +662,11 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		if (pstore->b_private) {
-			if (!system_services_get_user_displayname(pstore->account,
-			    dispname, dsize))
-				gx_strlcpy(dispname, pstore->account, dsize);
-		} else {
+		if (!pstore->b_private)
 			snprintf(dispname, dsize, "Public Folders - %s", pstore->account);
-		}
+		else if (!system_services_get_user_displayname(pstore->account,
+		    dispname, dsize))
+			gx_strlcpy(dispname, pstore->account, dsize);
 		return TRUE;
 	}
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE: {
@@ -685,13 +683,13 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 			return FALSE;	
 		auto temp_len = strlen(dispname);
 		for (size_t i = 0; i < temp_len; ++i) {
-			if (!isascii(dispname[i])) {
-				gx_strlcpy(dispname, pstore->account, dsize);
-				auto p = strchr(dispname, '@');
-				if (p != nullptr)
-					*p = '\0';
-				break;
-			}
+			if (!isascii(dispname[i]))
+				continue;
+			gx_strlcpy(dispname, pstore->account, dsize);
+			auto p = strchr(dispname, '@');
+			if (p != nullptr)
+				*p = '\0';
+			break;
 		}
 		return TRUE;
 	}
