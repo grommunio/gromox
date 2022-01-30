@@ -4723,13 +4723,15 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	phead->set_field("X-Mailer", "gromox-oxcmail " PACKAGE_VERSION);
 	auto guid = PS_INTERNET_HEADERS;
 	for (size_t i = 0; i < pmsg->proplist.count; ++i) {
-		uint16_t propid = PROP_ID(pmsg->proplist.ppropval[i].proptag);
-		if (!is_nameprop_id(propid))
+		auto proptag = pmsg->proplist.ppropval[i].proptag;
+		if (!is_nameprop_id(PROP_ID(proptag)))
+			continue;
+		if (PROP_TYPE(proptag) != PT_STRING8 &&
+		    PROP_TYPE(proptag) != PT_UNICODE)
 			continue;
 		PROPERTY_NAME *ppropname = nullptr;
-		if (FALSE == get_propname(propid, &ppropname)) {
+		if (!get_propname(PROP_ID(proptag), &ppropname))
 			return FALSE;
-		}
 		if (ppropname->guid != guid)
 			continue;
 		if (ppropname->kind != MNID_STRING ||
