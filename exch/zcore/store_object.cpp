@@ -1359,10 +1359,6 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	int i;
 	auto pinfo = zarafa_server_get_info();
 	auto pstore = this;
-	if (FALSE == pstore->b_private ||
-		pinfo->user_id != pstore->account_id) {
-		return TRUE;
-	}
 	for (i=0; i<ppropvals->count; i++) {
 		if (store_object_check_readonly_property(
 		    pstore, ppropvals->ppropval[i].proptag))
