@@ -142,9 +142,13 @@ static BOOL oxomsg_check_delegate(message_object *pmessage, char *username, size
 	if (str != nullptr) {
 		if (strcasecmp(str, "EX") == 0) {
 			str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
-			if (str != nullptr)
-				return common_util_essdn_to_username(str,
-				       username, ulen);
+			if (str != nullptr) {
+				auto ret = common_util_essdn_to_username(str, username, ulen);
+				if (!ret)
+					fprintf(stderr, "W-1642: Rejecting submission of msgid %llxh because user <%s> is not from this system\n",
+					        static_cast<unsigned long long>(pmessage->message_id), str);
+				return ret;
+			}
 		} else if (strcasecmp(str, "SMTP") == 0) {
 			str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
 			if (str != nullptr) {
@@ -159,8 +163,13 @@ static BOOL oxomsg_check_delegate(message_object *pmessage, char *username, size
 		return TRUE;
 	}
 	auto eid = tmp_propvals.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID);
-	if (eid != nullptr)
-		return common_util_entryid_to_username(eid, username, ulen);
+	if (eid != nullptr) {
+		auto ret = common_util_entryid_to_username(eid, username, ulen);
+		if (!ret)
+			fprintf(stderr, "W-1643: rejecting submission of msgid %llxh because its PR_SENT_REPRESENTING_ENTRYID does not reference a user in the local system\n",
+			        static_cast<unsigned long long>(pmessage->message_id));
+		return ret;
+	}
 	username[0] = '\0';
 	return TRUE;
 }
