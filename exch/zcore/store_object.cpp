@@ -231,10 +231,9 @@ static BOOL store_object_get_named_propid(store_object *pstore,
 		*ppropid = iter->second;
 		return TRUE;
 	}
-	if (FALSE == exmdb_client_get_named_propid(
-		pstore->dir, b_create, ppropname, ppropid)) {
+	if (!exmdb_client_get_named_propid(pstore->dir,
+	    b_create, ppropname, ppropid))
 		return FALSE;
-	}
 	if (0 == *ppropid) {
 		return TRUE;
 	}
@@ -1359,10 +1358,8 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 	int i;
 	auto pinfo = zarafa_server_get_info();
 	auto pstore = this;
-	if (FALSE == pstore->b_private ||
-		pinfo->user_id != pstore->account_id) {
+	if (!pstore->b_private || pinfo->user_id != pstore->account_id)
 		return TRUE;
-	}
 	for (i=0; i<ppropvals->count; i++) {
 		if (store_object_check_readonly_property(
 		    pstore, ppropvals->ppropval[i].proptag))
@@ -1421,10 +1418,8 @@ BOOL store_object::remove_properties(const PROPTAG_ARRAY *pproptags)
 	auto pstore = this;
 	int i;
 	auto pinfo = zarafa_server_get_info();
-	if (FALSE == pstore->b_private ||
-		pinfo->user_id != pstore->account_id) {
+	if (!pstore->b_private || pinfo->user_id != pstore->account_id)
 		return TRUE;
-	}
 	for (i=0; i<pproptags->count; i++) {
 		if (store_object_check_readonly_property(pstore, pproptags->pproptag[i]))
 			continue;

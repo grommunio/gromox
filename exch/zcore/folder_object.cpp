@@ -902,10 +902,8 @@ BOOL folder_object::updaterules(uint32_t flags, const RULE_LIST *plist)
 		return FALSE;	
 	b_delegate = FALSE;
 	for (i=0; i<plist->count; i++) {
-		if (FALSE == common_util_convert_from_zrule(
-			&plist->prule[i].propvals)) {
+		if (!common_util_convert_from_zrule(&plist->prule[i].propvals))
 			return FALSE;	
-		}
 		auto pprovider = plist->prule[i].propvals.get<char>(PR_RULE_PROVIDER);
 		if (NULL == pprovider || 0 != strcasecmp(
 			pprovider, "Schedule+ EMS Interface")) {

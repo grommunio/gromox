@@ -555,10 +555,8 @@ BOOL table_object::query_rows(const PROPTAG_ARRAY *cols,
 		if (NULL != ptable->pcolumns) {
 			cols = ptable->pcolumns;
 		} else {
-			if (FALSE == table_object_get_all_columns(
-			    ptable, &tmp_columns)) {
+			if (!table_object_get_all_columns(ptable, &tmp_columns))
 				return FALSE;
-			}
 			cols = &tmp_columns;
 		}
 	}
@@ -596,10 +594,9 @@ BOOL table_object::query_rows(const PROPTAG_ARRAY *cols,
 		    ptable->position, row_count, pset))
 			return FALSE;
 		for (size_t i = 0; i < pset->count; ++i) {
-			if (FALSE == common_util_convert_to_zrule_data(
-				ptable->pstore, pset->pparray[i])) {
+			if (!common_util_convert_to_zrule_data(
+			    ptable->pstore, pset->pparray[i]))
 				return FALSE;
-			}
 		}
 		return TRUE;
 	} else if (STORE_TABLE == ptable->table_type) {
@@ -1048,10 +1045,8 @@ BOOL table_object::filter_rows(uint32_t count, const RESTRICTION *pres,
 		return FALSE;
 	}
 	for (size_t i = 0; i < tmp_set.count && pset->count < count; ++i) {
-		if (FALSE == table_object_evaluate_restriction(
-			tmp_set.pparray[i], pres)) {
+		if (!table_object_evaluate_restriction(tmp_set.pparray[i], pres))
 			continue;	
-		}
 		pset->pparray[pset->count] = tmp_set.pparray[i];
 		pset->count ++;
 	}

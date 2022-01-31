@@ -493,10 +493,9 @@ BOOL bounce_producer_make(const char *username,
 	} else {
 		mime_from[0] = '\0';
 	}
-	if (FALSE == bounce_producer_make_content(username, pbrief,
-		bounce_type, subject, content_type, content_buff)) {
+	if (!bounce_producer_make_content(username, pbrief,
+	    bounce_type, subject, content_type, content_buff))
 		return FALSE;
-	}
 	auto phead = pmail->add_head();
 	if (NULL == phead) {
 		return FALSE;

@@ -136,9 +136,5 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 	if (NULL == ppropvals->ppropval) {
 		return FALSE;
 	}
-	if (FALSE == ab_tree_fetch_node_properties(
-		pnode, pproptags, ppropvals)) {
-		return FALSE;	
-	}
-	return TRUE;
+	return ab_tree_fetch_node_properties(pnode, pproptags, ppropvals);
 }

@@ -429,9 +429,8 @@ static BOOL ab_tree_load_tree(int domain_id,
 	pabnode->node_type = NODE_TYPE_DOMAIN;
 	pabnode->id = domain_id;
 	pabnode->minid = ab_tree_make_minid(MINID_TYPE_DOMAIN, domain_id);
-	if (FALSE == ab_tree_cache_node(pbase, pabnode)) {
+	if (!ab_tree_cache_node(pbase, pabnode))
 		return FALSE;
-	}
 	if (!utf8_check(dinfo.name.c_str()))
 		utf8_filter(dinfo.name.data());
 	if (!utf8_check(dinfo.title.c_str()))
@@ -455,9 +454,8 @@ static BOOL ab_tree_load_tree(int domain_id,
 		pabnode->node_type = NODE_TYPE_GROUP;
 		pabnode->id = grp.id;
 		pabnode->minid = ab_tree_make_minid(MINID_TYPE_GROUP, grp.id);
-		if (FALSE == ab_tree_cache_node(pbase, pabnode)) {
+		if (!ab_tree_cache_node(pbase, pabnode))
 			return FALSE;
-		}
 		auto grp_id = grp.id;
 		pabnode->d_info = new(std::nothrow) sql_group(std::move(grp));
 		if (pabnode->d_info == nullptr)
@@ -619,8 +617,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 			pdomain->node.pdata = pdomain;
 			pdomain->domain_id = domain_id;
 			simple_tree_init(&pdomain->tree);
-			if (FALSE == ab_tree_load_tree(
-				domain_id, &pdomain->tree, pbase)) {
+			if (!ab_tree_load_tree(domain_id, &pdomain->tree, pbase)) {
 				ab_tree_destruct_tree(&pdomain->tree);
 				free(pdomain);
 				return FALSE;
@@ -636,8 +633,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 		int domain_id = -pbase->base_id;
 		pdomain->domain_id = domain_id;
 		simple_tree_init(&pdomain->tree);
-		if (FALSE == ab_tree_load_tree(
-			domain_id, &pdomain->tree, pbase)) {
+		if (!ab_tree_load_tree(domain_id, &pdomain->tree, pbase)) {
 			ab_tree_destruct_tree(&pdomain->tree);
 			free(pdomain);
 			return FALSE;
@@ -725,7 +721,7 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 		single_list_init(&pbase->list);
 		single_list_init(&pbase->gal_list);
 		bl_hold.unlock();
-		if (FALSE == ab_tree_load_base(pbase)) {
+		if (!ab_tree_load_base(pbase)) {
 			pbase->unload();
 			bl_hold.lock();
 			g_base_hash.erase(it);
@@ -785,7 +781,7 @@ static void *zcoreab_scanwork(void *param)
 		while ((pnode = single_list_pop_front(&pbase->gal_list)) != nullptr)
 			ab_tree_put_snode(pnode);
 		pbase->phash.clear();
-		if (FALSE == ab_tree_load_base(pbase)) {
+		if (!ab_tree_load_base(pbase)) {
 			pbase->unload();
 			bl_hold.lock();
 			g_base_hash.erase(pbase->base_id);
@@ -1145,9 +1141,9 @@ static void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode,
 			snprintf(str_dname, dn_size, "%s(%s)", obj->username.c_str(), lang_string);
 			break;
 		case MLIST_TYPE_GROUP:
-			if (FALSE == system_services_get_lang(codepage, "mlist1", lang_string, 256)) {
+			if (!system_services_get_lang(codepage, "mlist1",
+			    lang_string, arsizeof(lang_string)))
 				strcpy(lang_string, "all users in department of %s");
-			}
 			snprintf(str_dname, dn_size, lang_string, it != obj->propvals.cend() ? it->second.c_str() : "");
 			break;
 		case MLIST_TYPE_DOMAIN:
@@ -1155,9 +1151,9 @@ static void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode,
 				gx_strlcpy(str_dname, "all users in domain", dn_size);
 			break;
 		case MLIST_TYPE_CLASS:
-			if (FALSE == system_services_get_lang(codepage, "mlist3", lang_string, 256)) {
+			if (!system_services_get_lang(codepage, "mlist3",
+			    lang_string, arsizeof(lang_string)))
 				strcpy(lang_string, "all users in group of %s");
-			}
 			snprintf(str_dname, dn_size, lang_string, it != obj->propvals.cend() ? it->second.c_str() : "");
 			break;
 		default:
@@ -1811,10 +1807,9 @@ BOOL ab_tree_fetch_node_properties(const SIMPLE_TREE_NODE *pnode,
 	auto pinfo = zarafa_server_get_info();
 	ppropvals->count = 0;
 	for (i=0; i<pproptags->count; i++) {
-		if (FALSE == ab_tree_fetch_node_property(pnode,
-			pinfo->cpid, pproptags->pproptag[i], &pvalue)) {
+		if (!ab_tree_fetch_node_property(pnode,
+		    pinfo->cpid, pproptags->pproptag[i], &pvalue))
 			return FALSE;	
-		}
 		if (NULL == pvalue) {
 			continue;
 		}
