@@ -282,6 +282,8 @@ static BOOL oxcmail_entryid_to_username(const BINARY *pbin,
 	if (ext_pull.g_uint32(&flags) != EXT_ERR_SUCCESS || flags != 0 ||
 	    ext_pull.g_guid(&provider_uid) != EXT_ERR_SUCCESS)
 		return FALSE;
+	/* Tail functions will use EXT_PULL::*_eid, which parse a full EID */
+	ext_pull.m_offset = 0;
 	if (provider_uid == muidEMSAB)
 		return emsab_to_email(ext_pull, oxcmail_essdn_to_username,
 		       username, ulen) ? TRUE : false;
