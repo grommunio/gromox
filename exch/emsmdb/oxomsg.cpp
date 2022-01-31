@@ -138,32 +138,29 @@ static BOOL oxomsg_check_delegate(message_object *pmessage, char *username, size
 		username[0] = '\0';
 		return TRUE;
 	}
-	auto pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_ADDRTYPE);
-	if (NULL != pvalue) {
-		if (strcasecmp(static_cast<char *>(pvalue), "EX") == 0) {
-			pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
-			if (NULL != pvalue) {
-				return common_util_essdn_to_username(static_cast<char *>(pvalue),
+	auto str = tmp_propvals.get<const char>(PR_SENT_REPRESENTING_ADDRTYPE);
+	if (str != nullptr) {
+		if (strcasecmp(str, "EX") == 0) {
+			str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+			if (str != nullptr)
+				return common_util_essdn_to_username(str,
 				       username, ulen);
-			}
-		} else if (strcasecmp(static_cast<char *>(pvalue), "SMTP") == 0) {
-			pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
-			if (NULL != pvalue) {
-				gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
+		} else if (strcasecmp(str, "SMTP") == 0) {
+			str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_EMAIL_ADDRESS);
+			if (str != nullptr) {
+				gx_strlcpy(username, str, ulen);
 				return TRUE;
 			}
 		}
 	}
-	pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_SMTP_ADDRESS);
-	if (NULL != pvalue) {
-		gx_strlcpy(username, static_cast<char *>(pvalue), ulen);
+	str = tmp_propvals.get<char>(PR_SENT_REPRESENTING_SMTP_ADDRESS);
+	if (str != nullptr) {
+		gx_strlcpy(username, str, ulen);
 		return TRUE;
 	}
-	pvalue = tmp_propvals.getval(PR_SENT_REPRESENTING_ENTRYID);
-	if (NULL != pvalue) {
-		return common_util_entryid_to_username(static_cast<BINARY *>(pvalue),
-		       username, ulen);
-	}
+	auto eid = tmp_propvals.get<const BINARY>(PR_SENT_REPRESENTING_ENTRYID);
+	if (eid != nullptr)
+		return common_util_entryid_to_username(eid, username, ulen);
 	username[0] = '\0';
 	return TRUE;
 }
