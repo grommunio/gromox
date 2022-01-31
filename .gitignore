@@ -29,6 +29,7 @@ Makefile.in
 /freebusy
 /gromox-abktconv
 /gromox-dbop
+/gromox-e2ghelper
 /gromox-kdb2mt
 /gromox-mailq
 /gromox-mkmidb

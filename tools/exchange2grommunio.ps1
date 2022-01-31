@@ -312,7 +312,7 @@ foreach ($Mailbox in (Get-Mailbox)) {
 		# Using plink, start importing this mailbox and .pst
 		# file on the grommunio host.
 		Write-Host "Starting import of mailbox: $MigMBox in grommunio." -fore green
-		.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "gromox-pff2mt -s $LinuxSharedFolder/$MigMBox.pst | gromox-mt2exm -u $MigMBox; if test \`${PIPESTATUS[0]} != 0 || test \`${PIPESTATUS[1]} != 0; then false; fi"
+		.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "gromox-e2ghelper -s $LinuxSharedFolder/$MigMBox.pst -u $MigMBox"
 		if ($lastexitcode -eq 0) {
 			Write-Host "Import of mailbox: $MigMBox done." -fore green
 			$MailboxesImported++
