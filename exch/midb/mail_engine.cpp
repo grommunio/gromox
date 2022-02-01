@@ -5518,8 +5518,10 @@ int mail_engine_run()
 void mail_engine_stop()
 {
 	g_notify_stop = true;
-	pthread_kill(g_scan_tid, SIGALRM);
-	pthread_join(g_scan_tid, NULL);
+	if (!pthread_equal(g_scan_tid, {})) {
+		pthread_kill(g_scan_tid, SIGALRM);
+		pthread_join(g_scan_tid, NULL);
+	}
 	g_hash_table.clear();
 	g_mime_pool.reset();
 	g_alloc_mjson.reset();

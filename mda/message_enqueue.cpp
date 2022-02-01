@@ -169,8 +169,10 @@ static int message_enqueue_stop()
 {
 	if (!g_notify_stop) {
 		g_notify_stop = true;
-		pthread_kill(g_flushing_thread, SIGALRM);
-		pthread_join(g_flushing_thread, NULL);
+		if (!pthread_equal(g_flushing_thread, {})) {
+			pthread_kill(g_flushing_thread, SIGALRM);
+			pthread_join(g_flushing_thread, NULL);
+		}
 	}
     return 0;
 }

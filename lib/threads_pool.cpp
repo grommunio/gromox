@@ -118,8 +118,10 @@ void threads_pool_stop()
 	BOOL b_should_exit = FALSE;
 	
 	g_notify_stop = true;
-	pthread_kill(g_scan_id, SIGALRM);
-	pthread_join(g_scan_id, NULL);
+	if (!pthread_equal(g_scan_id, {})) {
+		pthread_kill(g_scan_id, SIGALRM);
+		pthread_join(g_scan_id, NULL);
+	}
 	while (true) {
 		/* get a thread from list */
 		std::unique_lock tpd_hold(g_threads_pool_data_lock);

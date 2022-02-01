@@ -373,8 +373,10 @@ void transporter_stop()
 		pthread_join(id, nullptr);
 	}
 	tl_hold.unlock();
-	pthread_kill(g_scan_id, SIGALRM);
-	pthread_join(g_scan_id, nullptr);
+	if (!pthread_equal(g_scan_id, {})) {
+		pthread_kill(g_scan_id, SIGALRM);
+		pthread_join(g_scan_id, nullptr);
+	}
 	transporter_collect_hooks();
 	transporter_collect_resource();
 }

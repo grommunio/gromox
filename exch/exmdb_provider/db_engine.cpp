@@ -750,8 +750,10 @@ void db_engine_stop()
 	
 	if (!g_notify_stop) {
 		g_notify_stop = true;
-		pthread_kill(g_scan_tid, SIGALRM);
-		pthread_join(g_scan_tid, NULL);
+		if (!pthread_equal(g_scan_tid, {})) {
+			pthread_kill(g_scan_tid, SIGALRM);
+			pthread_join(g_scan_tid, NULL);
+		}
 		g_waken_cond.notify_all();
 		for (i=0; i<g_threads_num; i++) {
 			pthread_kill(g_thread_ids[i], SIGALRM);

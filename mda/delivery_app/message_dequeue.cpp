@@ -250,9 +250,10 @@ void message_dequeue_put(MESSAGE *pmessage) try
 void message_dequeue_stop()
 {
 	g_notify_stop = true;
-	pthread_kill(g_thread_id, SIGALRM);
-	pthread_join(g_thread_id, NULL);
-
+	if (!pthread_equal(g_thread_id, {})) {
+		pthread_kill(g_thread_id, SIGALRM);
+		pthread_join(g_thread_id, NULL);
+	}
 	message_dequeue_collect_resource();
 }
 

@@ -225,8 +225,10 @@ void mod_cache_stop()
 	
 	if (!g_notify_stop) {
 		g_notify_stop = true;
-		pthread_kill(g_scan_tid, SIGALRM);
-		pthread_join(g_scan_tid, NULL);
+		if (!pthread_equal(g_scan_tid, {})) {
+			pthread_kill(g_scan_tid, SIGALRM);
+			pthread_join(g_scan_tid, NULL);
+		}
 	}
 	g_directory_list.clear();
 	if (NULL != g_context_list) {

@@ -232,8 +232,10 @@ int contexts_pool_run()
 	if (ret != 0) {
 		printf("[contexts_pool]: failed to create scan thread: %s\n", strerror(ret));
 		g_notify_stop = true;
-		pthread_kill(g_thread_id, SIGALRM);
-		pthread_join(g_thread_id, NULL);
+		if (!pthread_equal(g_thread_id, {})) {
+			pthread_kill(g_thread_id, SIGALRM);
+			pthread_join(g_thread_id, NULL);
+		}
 		close(g_epoll_fd);
 		g_epoll_fd = -1;
 		free(g_events);
@@ -247,10 +249,14 @@ int contexts_pool_run()
 void contexts_pool_stop()
 {
 	g_notify_stop = true;
-	pthread_kill(g_thread_id, SIGALRM);
-	pthread_kill(g_scan_id, SIGALRM);
-	pthread_join(g_thread_id, NULL);
-	pthread_join(g_scan_id, NULL);
+	if (!pthread_equal(g_thread_id, {}))
+		pthread_kill(g_thread_id, SIGALRM);
+	if (!pthread_equal(g_scan_id, {}))
+		pthread_kill(g_scan_id, SIGALRM);
+	if (!pthread_equal(g_thread_id, {}))
+		pthread_join(g_thread_id, NULL);
+	if (!pthread_equal(g_scan_id, {}))
+		pthread_join(g_scan_id, NULL);
 	close(g_epoll_fd);
 	g_epoll_fd = -1;
 	free(g_events);

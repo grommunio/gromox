@@ -287,8 +287,10 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 	case PLUGIN_FREE:
 		if (!g_notify_stop) {
 			g_notify_stop = true;
-			pthread_kill(g_scan_id, SIGALRM);
-			pthread_join(g_scan_id, NULL);
+			if (!pthread_equal(g_scan_id, {})) {
+				pthread_kill(g_scan_id, SIGALRM);
+				pthread_join(g_scan_id, NULL);
+			}
 		}
 
 		while ((pnode = double_list_pop_front(&g_lost_list)) != nullptr)

@@ -465,8 +465,10 @@ void exmdb_client_stop()
 {
 	if (g_conn_num != 0 && !g_notify_stop) {
 		g_notify_stop = true;
-		pthread_kill(g_scan_id, SIGALRM);
-		pthread_join(g_scan_id, NULL);
+		if (!pthread_equal(g_scan_id, {})) {
+			pthread_kill(g_scan_id, SIGALRM);
+			pthread_join(g_scan_id, NULL);
+		}
 	}
 	g_notify_stop = true;
 	for (auto &ag : g_agent_list) {

@@ -129,8 +129,10 @@ void asyncemsmdb_interface_stop()
 	if (!g_notify_stop) {
 		g_notify_stop = true;
 		g_waken_cond.notify_all();
-		pthread_kill(g_scan_id, SIGALRM);
-		pthread_join(g_scan_id, NULL);
+		if (!pthread_equal(g_scan_id, {})) {
+			pthread_kill(g_scan_id, SIGALRM);
+			pthread_join(g_scan_id, NULL);
+		}
 		for (i=0; i<g_threads_num; i++) {
 			pthread_kill(g_thread_ids[i], SIGALRM);
 			pthread_join(g_thread_ids[i], NULL);

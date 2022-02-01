@@ -255,8 +255,10 @@ MhNspPlugin::~MhNspPlugin()
 {
 	if (!stop) {
 		stop = true;
-		pthread_kill(scan, SIGALRM);
-		pthread_join(scan, nullptr);
+		if (!pthread_equal(scan, {})) {
+			pthread_kill(scan, SIGALRM);
+			pthread_join(scan, nullptr);
+		}
 	}
 }
 

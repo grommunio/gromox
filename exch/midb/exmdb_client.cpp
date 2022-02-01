@@ -467,9 +467,9 @@ int exmdb_client_run(const char *configdir)
 
 void exmdb_client_stop()
 {
-	if (0 != g_conn_num) {
-		if (!g_notify_stop) {
-			g_notify_stop = true;
+	if (g_conn_num != 0 && !g_notify_stop) {
+		g_notify_stop = true;
+		if (!pthread_equal(g_scan_id, {})) {
 			pthread_kill(g_scan_id, SIGALRM);
 			pthread_join(g_scan_id, NULL);
 		}

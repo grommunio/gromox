@@ -95,8 +95,10 @@ void cache_queue_stop()
 {
 	if (!g_notify_stop) {
 		g_notify_stop = true;
-		pthread_kill(g_thread_id, SIGALRM);
-		pthread_join(g_thread_id, NULL);
+		if (!pthread_equal(g_thread_id, {})) {
+			pthread_kill(g_thread_id, SIGALRM);
+			pthread_join(g_thread_id, NULL);
+		}
 	}
 }
 

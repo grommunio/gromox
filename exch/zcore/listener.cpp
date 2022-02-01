@@ -94,8 +94,10 @@ void listener_stop()
 {
 	g_notify_stop = true;
 	shutdown(g_listen_sockd, SHUT_RDWR);
-	pthread_kill(g_listener_id, SIGALRM);
-	pthread_join(g_listener_id, NULL);
+	if (!pthread_equal(g_listener_id, {})) {
+		pthread_kill(g_listener_id, SIGALRM);
+		pthread_join(g_listener_id, NULL);
+	}
 	close(g_listen_sockd);
 	g_listen_sockd = -1;
 }

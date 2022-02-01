@@ -291,8 +291,10 @@ int imap_parser_run()
 	if (ret != 0) {
 		printf("[imap_parser]: failed to create select hash scanning thread: %s\n", strerror(ret));
 		g_notify_stop = true;
-		pthread_kill(g_thr_id, SIGALRM);
-		pthread_join(g_thr_id, NULL);
+		if (!pthread_equal(g_thr_id, {})) {
+			pthread_kill(g_thr_id, SIGALRM);
+			pthread_join(g_thr_id, NULL);
+		}
 		return -12;
 	}
 	pthread_setname_np(g_scan_id, "parser/scan");
@@ -305,10 +307,14 @@ void imap_parser_stop()
 	system_services_install_event_stub(nullptr);
 	if (!g_notify_stop) {
 		g_notify_stop = true;
-		pthread_kill(g_thr_id, SIGALRM);
-		pthread_kill(g_scan_id, SIGALRM);
-		pthread_join(g_thr_id, NULL);
-		pthread_join(g_scan_id, NULL);
+		if (!pthread_equal(g_thr_id, {}))
+			pthread_kill(g_thr_id, SIGALRM);
+		if (!pthread_equal(g_scan_id, {}))
+			pthread_kill(g_scan_id, SIGALRM);
+		if (!pthread_equal(g_thr_id, {}))
+			pthread_join(g_thr_id, NULL);
+		if (!pthread_equal(g_scan_id, {}))
+			pthread_join(g_scan_id, NULL);
 	}
 	
 	g_context_list2.clear();
