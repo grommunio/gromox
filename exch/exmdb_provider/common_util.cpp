@@ -69,8 +69,8 @@ struct prepared_statements {
 
 static char g_exmdb_org_name[256];
 static unsigned int g_max_msg;
-static pthread_key_t g_var_key;
-static pthread_key_t g_opt_key;
+static thread_local const void *g_var_key;
+static thread_local prepared_statements *g_opt_key;
 static unsigned int g_max_rule_num;
 static unsigned int g_max_ext_rule_num;
 static std::atomic<int> g_sequence_id;
@@ -224,30 +224,22 @@ void common_util_init(const char *org_name, uint32_t max_msg,
 	g_max_msg = max_msg;
 	g_max_rule_num = max_rule_num;
 	g_max_ext_rule_num = max_ext_rule_num;
-	pthread_key_create(&g_var_key, NULL);
-	pthread_key_create(&g_opt_key, NULL);
-}
-
-void common_util_free()
-{
-	pthread_key_delete(g_var_key);
-	pthread_key_delete(g_opt_key);
 }
 
 void common_util_build_tls()
 {
-	pthread_setspecific(g_var_key, NULL);
-	pthread_setspecific(g_opt_key, NULL);
+	g_var_key = nullptr;
+	g_opt_key = nullptr;
 }
 
 void common_util_set_tls_var(const void *pvar)
 {
-	pthread_setspecific(g_var_key, pvar);
+	g_var_key = pvar;
 }
 
 const void* common_util_get_tls_var()
 {
-	return pthread_getspecific(g_var_key);
+	return g_var_key;
 }
 
 int common_util_sequence_ID()
@@ -563,16 +555,16 @@ BOOL common_util_begin_message_optimize(sqlite3 *psqlite)
 	               " AND (proptag=? OR proptag=?)");
 	if (op->rcpt_str == nullptr)
 		return FALSE;
-	pthread_setspecific(g_opt_key, op.release());
+	g_opt_key = op.release();
 	return TRUE;
 }
 
 void common_util_end_message_optimize()
 {
-	auto op = static_cast<prepared_statements *>(pthread_getspecific(g_opt_key));
+	auto op = g_opt_key;
 	if (op == nullptr)
 		return;
-	pthread_setspecific(g_opt_key, NULL);
+	g_opt_key = nullptr;
 	delete op;
 }
 
@@ -581,7 +573,7 @@ static sqlite3_stmt *cu_get_optimize_stmt(db_table table_type, bool b_normal)
 	if (table_type != db_table::msg_props &&
 	    table_type != db_table::rcpt_props)
 		return NULL;	
-	auto op = static_cast<prepared_statements *>(pthread_getspecific(g_opt_key));
+	auto op = g_opt_key;
 	if (op == nullptr)
 		return NULL;
 	if (table_type == db_table::msg_props)

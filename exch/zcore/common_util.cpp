@@ -83,8 +83,8 @@ static char g_smtp_ip[40];
 static char g_org_name[256];
 static char g_hostname[UDOM_SIZE];
 static std::shared_ptr<MIME_POOL> g_mime_pool;
-static pthread_key_t g_dir_key;
-static pthread_key_t g_env_key;
+static thread_local const char *g_dir_key;
+static thread_local ENVIRONMENT_CONTEXT *g_env_key;
 static char g_default_zone[64];
 static char g_freebusy_path[256];
 static char g_default_charset[32];
@@ -505,8 +505,6 @@ void common_util_init(const char *org_name, const char *hostname,
 	g_smtp_port = smtp_port;
 	gx_strlcpy(g_freebusy_path, freebusy_path, GX_ARRAY_SIZE(g_freebusy_path));
 	gx_strlcpy(g_submit_command, submit_command, GX_ARRAY_SIZE(g_submit_command));
-	pthread_key_create(&g_dir_key, NULL);
-	pthread_key_create(&g_env_key, NULL);
 }
 
 int common_util_run(const char *data_path)
@@ -529,12 +527,6 @@ int common_util_run(const char *data_path)
 		return -2;
 	}
 	return 0;
-}
-
-void common_util_free()
-{
-	pthread_key_delete(g_dir_key);
-	pthread_key_delete(g_env_key);
 }
 
 unsigned int common_util_get_param(int param)
@@ -569,14 +561,14 @@ BOOL common_util_build_environment()
 		return FALSE;
 	alloc_context_init(&pctx->allocator);
 	pctx->clifd = -1;
-	pthread_setspecific(g_env_key, pctx);
+	g_env_key = pctx;
 	return TRUE;
 }
 
 void common_util_free_environment()
 {
-	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
-	pthread_setspecific(g_env_key, NULL);
+	auto pctx = g_env_key;
+	g_env_key = nullptr;
 	if (pctx == nullptr)
 		return;
 	alloc_context_free(&pctx->allocator);
@@ -585,20 +577,20 @@ void common_util_free_environment()
 
 void* common_util_alloc(size_t size)
 {
-	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
+	auto pctx = g_env_key;
 	return alloc_context_alloc(&pctx->allocator, size);
 }
 
 void common_util_set_clifd(int clifd)
 {
-	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
+	auto pctx = g_env_key;
 	if (pctx != nullptr)
 		pctx->clifd = clifd;
 }
 
 int common_util_get_clifd()
 {
-	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
+	auto pctx = g_env_key;
 	return pctx == nullptr ? -1 : pctx->clifd;
 }
 
@@ -1642,12 +1634,12 @@ static BOOL common_util_send_mail(MAIL *pmail,
 
 static void common_util_set_dir(const char *dir)
 {
-	pthread_setspecific(g_dir_key, dir);
+	g_dir_key = dir;
 }
 
 static const char* common_util_get_dir()
 {
-	return static_cast<char *>(pthread_getspecific(g_dir_key));
+	return g_dir_key;
 }
 
 static BOOL common_util_get_propids(

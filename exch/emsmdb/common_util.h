@@ -142,7 +142,6 @@ extern LIB_BUFFER *common_util_get_allocator();
 extern void common_util_init(const char *org_name, int avg_blocks, int max_rcpt, int max_msg, unsigned int max_mail_len, unsigned int max_rule_len, const char *smtp_host, uint16_t smtp_port, const char *submit_cmd);
 extern int common_util_run();
 extern void common_util_stop();
-extern void common_util_free();
 unsigned int common_util_get_param(int param);
 void common_util_set_param(int param, unsigned int value);
 extern const char *common_util_get_submit_command();

@@ -8,8 +8,6 @@
 #define SOCKET_TIMEOUT										60
 #define MAX_DIGLEN											256*1024
 
-extern void common_util_init();
-extern void common_util_free();
 BOOL common_util_build_environment(const char *maildir);
 extern void common_util_free_environment();
 void* common_util_alloc(size_t size);

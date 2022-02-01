@@ -93,7 +93,7 @@ static time_point g_start_time;
 static pthread_t g_scan_id;
 static std::mutex g_lock, g_notify_lock;
 static gromox::atomic_bool g_notify_stop{true};
-static pthread_key_t g_handle_key;
+static thread_local HANDLE_DATA *g_handle_key;
 static std::unordered_map<GUID, HANDLE_DATA> g_handle_hash;
 static std::unordered_map<std::string, std::vector<HANDLE_DATA *>> g_user_hash;
 static std::unordered_map<std::string, NOTIFY_ITEM> g_notify_hash;
@@ -365,7 +365,6 @@ static void emsmdb_interface_remove_handle(CXH *pcxh)
 void emsmdb_interface_init()
 {
 	g_start_time = decltype(g_start_time)::clock::now();
-	pthread_key_create(&g_handle_key, NULL);
 }
 
 int emsmdb_interface_run()
@@ -397,11 +396,6 @@ void emsmdb_interface_stop()
 	g_notify_hash.clear();
 	g_user_hash.clear();
 	g_handle_hash.clear();
-}
-
-void emsmdb_interface_free()
-{
-	pthread_key_delete(g_handle_key);
 }
 
 int emsmdb_interface_disconnect(CXH *pcxh)
@@ -672,7 +666,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 		return ecError;
 	}
 	phandle->last_time = time_point::clock::now();
-	pthread_setspecific(g_handle_key, (const void*)phandle);
+	g_handle_key = phandle;
 	if (cb_auxin > 0) {
 		ext_pull.init(pauxin, cb_auxin, common_util_alloc, EXT_FLAG_UTF16);
 		if (EXT_ERR_SUCCESS != aux_ext_pull_aux_info(&ext_pull, &aux_in)) {
@@ -687,7 +681,7 @@ int emsmdb_interface_rpc_ext2(CXH *pcxh, uint32_t *pflags,
 	emsmdb_interface_put_handle_data(phandle);
 	if (b_wakeup)
 		asyncemsmdb_interface_wakeup(username, cxr);
-	pthread_setspecific(g_handle_key, NULL);
+	g_handle_key = nullptr;
 	if (result == ecSuccess) {
 		*pflags = 0;
 		*pcb_auxout = 0;
@@ -716,9 +710,7 @@ void emsmdb_interface_unbind_rpc_handle(uint64_t hrpc)
 
 const GUID* emsmdb_interface_get_handle()
 {
-	HANDLE_DATA *phandle;
-	
-	phandle = (HANDLE_DATA*)pthread_getspecific(g_handle_key);
+	auto phandle = g_handle_key;
 	if (NULL == phandle) {
 		return NULL;
 	}
@@ -727,9 +719,7 @@ const GUID* emsmdb_interface_get_handle()
 
 EMSMDB_INFO* emsmdb_interface_get_emsmdb_info()
 {
-	HANDLE_DATA *phandle;
-	
-	phandle = (HANDLE_DATA*)pthread_getspecific(g_handle_key);
+	auto phandle = g_handle_key;
 	if (NULL == phandle) {
 		return NULL;
 	}
@@ -738,9 +728,7 @@ EMSMDB_INFO* emsmdb_interface_get_emsmdb_info()
 
 DOUBLE_LIST* emsmdb_interface_get_notify_list()
 {
-	HANDLE_DATA *phandle;
-	
-	phandle = (HANDLE_DATA*)pthread_getspecific(g_handle_key);
+	auto phandle = g_handle_key;
 	if (NULL == phandle) {
 		return NULL;
 	}
@@ -758,9 +746,7 @@ DOUBLE_LIST* emsmdb_interface_get_notify_list()
 
 void emsmdb_interface_put_notify_list()
 {
-	HANDLE_DATA *phandle;
-	
-	phandle = (HANDLE_DATA*)pthread_getspecific(g_handle_key);
+	auto phandle = g_handle_key;
 	if (NULL == phandle) {
 		return;
 	}
@@ -769,9 +755,7 @@ void emsmdb_interface_put_notify_list()
 
 BOOL emsmdb_interface_get_cxr(uint16_t *pcxr)
 {
-	HANDLE_DATA *phandle;
-	
-	phandle = (HANDLE_DATA*)pthread_getspecific(g_handle_key);
+	auto phandle = g_handle_key;
 	if (NULL == phandle) {
 		return FALSE;
 	}
@@ -781,9 +765,7 @@ BOOL emsmdb_interface_get_cxr(uint16_t *pcxr)
 
 BOOL emsmdb_interface_alloc_handle_number(uint32_t *pnum)
 {
-	HANDLE_DATA *phandle;
-	
-	phandle = (HANDLE_DATA*)pthread_getspecific(g_handle_key);
+	auto phandle = g_handle_key;
 	if (NULL == phandle) {
 		return FALSE;
 	}
@@ -793,9 +775,7 @@ BOOL emsmdb_interface_alloc_handle_number(uint32_t *pnum)
 
 BOOL emsmdb_interface_get_cxh(CXH *pcxh)
 {
-	HANDLE_DATA *phandle;
-	
-	phandle = (HANDLE_DATA*)pthread_getspecific(g_handle_key);
+	auto phandle = g_handle_key;
 	if (NULL == phandle) {
 		return FALSE;
 	}
@@ -806,9 +786,7 @@ BOOL emsmdb_interface_get_cxh(CXH *pcxh)
 
 BOOL emsmdb_interface_get_rop_left(uint16_t *psize)
 {
-	HANDLE_DATA *phandle;
-	
-	phandle = (HANDLE_DATA*)pthread_getspecific(g_handle_key);
+	auto phandle = g_handle_key;
 	if (NULL == phandle) {
 		return FALSE;
 	}
@@ -818,9 +796,7 @@ BOOL emsmdb_interface_get_rop_left(uint16_t *psize)
 
 BOOL emsmdb_interface_set_rop_left(uint16_t size)
 {
-	HANDLE_DATA *phandle;
-	
-	phandle = (HANDLE_DATA*)pthread_getspecific(g_handle_key);
+	auto phandle = g_handle_key;
 	if (NULL == phandle) {
 		return FALSE;
 	}
@@ -830,9 +806,7 @@ BOOL emsmdb_interface_set_rop_left(uint16_t size)
 
 BOOL emsmdb_interface_get_rop_num(int *pnum)
 {
-	HANDLE_DATA *phandle;
-	
-	phandle = (HANDLE_DATA*)pthread_getspecific(g_handle_key);
+	auto phandle = g_handle_key;
 	if (NULL == phandle) {
 		return FALSE;
 	}
@@ -842,9 +816,7 @@ BOOL emsmdb_interface_get_rop_num(int *pnum)
 
 BOOL emsmdb_interface_set_rop_num(int num)
 {
-	HANDLE_DATA *phandle;
-	
-	phandle = (HANDLE_DATA*)pthread_getspecific(g_handle_key);
+	auto phandle = g_handle_key;
 	if (NULL == phandle) {
 		return FALSE;
 	}

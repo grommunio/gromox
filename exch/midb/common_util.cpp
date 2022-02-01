@@ -25,17 +25,7 @@ struct COMMAND_CONTEXT {
 };
 }
 
-static pthread_key_t g_ctx_key;
-
-void common_util_init()
-{
-	pthread_key_create(&g_ctx_key, NULL);
-}
-
-void common_util_free()
-{
-	pthread_key_delete(g_ctx_key);
-}
+static thread_local COMMAND_CONTEXT *g_ctx_key;
 
 BOOL common_util_build_environment(const char *maildir)
 {
@@ -46,13 +36,13 @@ BOOL common_util_build_environment(const char *maildir)
 	alloc_context_init(&pctx->alloc_ctx);
 	pctx->ptmp_ctx = NULL;
 	gx_strlcpy(pctx->maildir, maildir, GX_ARRAY_SIZE(pctx->maildir));
-	pthread_setspecific(g_ctx_key, pctx);
+	g_ctx_key = pctx;
 	return TRUE;
 }
 
 void common_util_free_environment()
 {
-	auto pctx = static_cast<COMMAND_CONTEXT *>(pthread_getspecific(g_ctx_key));
+	auto pctx = g_ctx_key;
 	if (NULL == pctx) {
 		return;
 	}
@@ -63,12 +53,12 @@ void common_util_free_environment()
 		pctx->ptmp_ctx = NULL;
 	}
 	free(pctx);
-	pthread_setspecific(g_ctx_key, NULL);
+	g_ctx_key = nullptr;
 }
 
 void* common_util_alloc(size_t size)
 {
-	auto pctx = static_cast<COMMAND_CONTEXT *>(pthread_getspecific(g_ctx_key));
+	auto pctx = g_ctx_key;
 	if (NULL == pctx) {
 		return NULL;
 	}
@@ -80,7 +70,7 @@ void* common_util_alloc(size_t size)
 
 BOOL common_util_switch_allocator()
 {
-	auto pctx = static_cast<COMMAND_CONTEXT *>(pthread_getspecific(g_ctx_key));
+	auto pctx = g_ctx_key;
 	if (NULL == pctx) {
 		return FALSE;
 	}
@@ -100,7 +90,7 @@ BOOL common_util_switch_allocator()
 
 void common_util_set_maildir(const char *maildir)
 {
-	auto pctx = static_cast<COMMAND_CONTEXT *>(pthread_getspecific(g_ctx_key));
+	auto pctx = g_ctx_key;
 	if (NULL != pctx) {
 		gx_strlcpy(pctx->maildir, maildir, GX_ARRAY_SIZE(pctx->maildir));
 	}
@@ -108,7 +98,7 @@ void common_util_set_maildir(const char *maildir)
 
 const char* common_util_get_maildir()
 {
-	auto pctx = static_cast<COMMAND_CONTEXT *>(pthread_getspecific(g_ctx_key));
+	auto pctx = g_ctx_key;
 	if (NULL == pctx) {
 		return NULL;
 	}

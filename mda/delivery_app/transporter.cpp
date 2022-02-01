@@ -118,7 +118,7 @@ static DOUBLE_LIST		 g_unloading_list;
 static std::mutex g_free_threads_mutex, g_threads_list_mutex, g_context_lock;
 static std::mutex g_queue_lock, g_cond_mutex, g_mpc_list_lock, g_count_lock;
 static std::condition_variable g_waken_cond;
-static pthread_key_t	 g_tls_key;
+static thread_local THREAD_DATA *g_tls_key;
 static pthread_t		 g_scan_id;
 static std::unique_ptr<LIB_BUFFER> g_file_allocator;
 static std::shared_ptr<MIME_POOL> g_mime_pool;
@@ -189,7 +189,6 @@ void transporter_init(const char *path, const char *const *names,
 	double_list_init(&g_hook_list);
 	double_list_init(&g_lib_list);
 	double_list_init(&g_unloading_list);
-	pthread_key_create(&g_tls_key, NULL);
 	double_list_init(&g_threads_list);
 	double_list_init(&g_free_threads);
 }
@@ -390,7 +389,6 @@ void transporter_free()
 	double_list_free(&g_hook_list);
 	double_list_free(&g_lib_list);
 	double_list_free(&g_unloading_list);
-	pthread_key_delete(g_tls_key);
 	double_list_free(&g_threads_list);
 	double_list_free(&g_free_threads);
 }
@@ -478,7 +476,7 @@ static void *dxp_thrwork(void *arg)
 	MESSAGE_CONTEXT *pcontext;
 	
 	pthr_data = (THREAD_DATA*)arg;
-	pthread_setspecific(g_tls_key, (const void*) pthr_data);
+	g_tls_key = pthr_data;
 	for (pnode=double_list_get_head(&g_lib_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_lib_list, pnode)) {
 		auto plib = static_cast<HOOK_PLUG_ENTITY *>(pnode->pdata);
@@ -979,7 +977,6 @@ static MESSAGE_CONTEXT* transporter_dequeue_context()
 static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 {
 	BOOL ret_val, pass_result;
-	THREAD_DATA *pthr_data;
 	DOUBLE_LIST_NODE *pnode;
 	CIRCLE_NODE *pcircle;
 	HOOK_FUNCTION last_thrower, last_hook;
@@ -990,7 +987,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 				"plugin try to throw message context\n");
 		return FALSE;
 	}
-	pthr_data = (THREAD_DATA*)pthread_getspecific(g_tls_key);
+	auto pthr_data = g_tls_key;
 	if (NULL == pthr_data) {
 		transporter_put_context(pcontext);
 		return FALSE;

@@ -82,7 +82,7 @@ static gromox::atomic_bool g_notify_stop;
 static int g_ping_interval;
 static pthread_t g_scan_id;
 static int g_cache_interval;
-static pthread_key_t g_info_key;
+static thread_local USER_INFO *g_info_key;
 static std::mutex g_table_lock, g_notify_lock;
 static std::unordered_map<std::string, int> g_user_table;
 static std::unordered_map<std::string, NOTIFY_ITEM> g_notify_table;
@@ -146,13 +146,13 @@ static USER_INFO_REF zarafa_server_query_session(GUID hsession)
 	time(&pinfo->last_time);
 	tl_hold.unlock();
 	pinfo->lock.lock();
-	pthread_setspecific(g_info_key, pinfo);
+	g_info_key = pinfo;
 	return USER_INFO_REF(pinfo);
 }
 
 USER_INFO *zarafa_server_get_info()
 {
-	return static_cast<USER_INFO *>(pthread_getspecific(g_info_key));
+	return g_info_key;
 }
 
 void user_info_del::operator()(USER_INFO *pinfo)
@@ -161,7 +161,7 @@ void user_info_del::operator()(USER_INFO *pinfo)
 	std::unique_lock tl_hold(g_table_lock);
 	pinfo->reference --;
 	tl_hold.unlock();
-	pthread_setspecific(g_info_key, NULL);
+	g_info_key = nullptr;
 }
 
 NOTIFY_ITEM::NOTIFY_ITEM(const GUID &ses, uint32_t store) :
@@ -677,7 +677,6 @@ void zarafa_server_init(size_t table_size, int cache_interval,
 	g_table_size = table_size;
 	g_cache_interval = cache_interval;
 	g_ping_interval = ping_interval;
-	pthread_key_create(&g_info_key, NULL);
 }
 
 int zarafa_server_run()
@@ -701,11 +700,6 @@ void zarafa_server_stop()
 	g_session_table.clear();
 	g_user_table.clear();
 	g_notify_table.clear();
-}
-
-void zarafa_server_free()
-{
-	pthread_key_delete(g_info_key);
 }
 
 int zarafa_server_get_param(int param)

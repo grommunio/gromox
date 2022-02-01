@@ -95,7 +95,7 @@ static SSL_CTX *g_ssl_ctx;
 static int g_max_auth_times;
 static int g_block_auth_fail;
 static unsigned int g_timeout, g_http_debug;
-static pthread_key_t g_context_key;
+static thread_local HTTP_CONTEXT *g_context_key;
 static std::unique_ptr<LIB_BUFFER> g_file_allocator;
 static std::unique_ptr<LIB_BUFFER> g_inchannel_allocator, g_outchannel_allocator;
 static std::unique_ptr<HTTP_CONTEXT[]> g_context_list;
@@ -161,7 +161,6 @@ VIRTUAL_CONNECTION::~VIRTUAL_CONNECTION()
  */
 int http_parser_run()
 {
-	pthread_key_create(&g_context_key, NULL);
 	if (g_support_ssl) {
 		SSL_library_init();
 		OpenSSL_add_all_algorithms();
@@ -250,7 +249,6 @@ void http_parser_stop()
 		CRYPTO_set_locking_callback(NULL);
 		g_ssl_mutex_buf.reset();
 	}
-	pthread_key_delete(g_context_key);
 }
 
 int http_parser_threads_event_proc(int action)
@@ -1488,7 +1486,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 		return PROCESS_CONTINUE;
 	}
 
-	pthread_setspecific(g_context_key, (const void*)pcontext);
+	g_context_key = pcontext;
 	DCERPC_CALL *pcall = nullptr;
 	auto result = pdu_processor_rts_input(static_cast<char *>(pbuff),
 		 frag_length, &pcall);
@@ -2050,16 +2048,16 @@ void http_parser_log_info(HTTP_CONTEXT *pcontext, int level,
 
 HTTP_CONTEXT* http_parser_get_context()
 {
-	return (HTTP_CONTEXT*)pthread_getspecific(g_context_key);
+	return g_context_key;
 }
 
 void http_parser_set_context(int context_id)
 {
 	if (context_id < 0 ||
 	    static_cast<size_t>(context_id) >= g_context_num)
-		pthread_setspecific(g_context_key, nullptr);
+		g_context_key = nullptr;
 	else
-		pthread_setspecific(g_context_key, &g_context_list[context_id]);
+		g_context_key = &g_context_list[context_id];
 }
 
 bool http_parser_get_password(const char *username, char *password)

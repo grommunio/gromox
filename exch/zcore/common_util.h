@@ -101,7 +101,6 @@ struct store_object;
 
 extern void common_util_init(const char *org_name, const char *hostname, const char *default_charset, const char *default_zone, int mime_num, int max_rcpt, int max_msg, unsigned int max_mail_len, unsigned int max_rule_len, const char *smtp_ip, uint16_t smtp_port, const char *freebusy_path, const char *submit_cmd);
 extern int common_util_run(const char *data_path);
-extern void common_util_free();
 unsigned int common_util_get_param(int param);
 extern const char *common_util_get_hostname();
 extern const char *common_util_get_freebusy_path();

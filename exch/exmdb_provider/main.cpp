@@ -176,7 +176,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		bounce_producer_init(separator);
 		db_engine_init(table_size, cache_interval,
 			b_async ? TRUE : false, b_wal ? TRUE : false, mmap_size, populating_num);
-		exmdb_server_init();
 		uint16_t listen_port = pconfig->get_ll("listen_port");
 		if (0 == listen_port) {
 			exmdb_parser_init(0, 0);
@@ -187,33 +186,25 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		
 		if (bounce_producer_run(get_data_path()) != 0) {
 			printf("[exmdb_provider]: failed to run bounce producer\n");
-			exmdb_server_free();
 			db_engine_free();
-			common_util_free();
 			return FALSE;
 		}
 		if (0 != db_engine_run()) {
 			printf("[exmdb_provider]: failed to run db engine\n");
-			exmdb_server_free();
 			db_engine_free();
-			common_util_free();
 			return FALSE;
 		}
 		if (0 != exmdb_server_run()) {
 			printf("[exmdb_provider]: failed to run exmdb server\n");
 			db_engine_stop();
-			exmdb_server_free();
 			db_engine_free();
-			common_util_free();
 			return FALSE;
 		}
 		if (exmdb_parser_run(get_config_path()) != 0) {
 			printf("[exmdb_provider]: failed to run exmdb parser\n");
 			exmdb_server_stop();
 			db_engine_stop();
-			exmdb_server_free();
 			db_engine_free();
-			common_util_free();
 			return FALSE;
 		}
 		if (0 != exmdb_listener_trigger_accept()) {
@@ -222,9 +213,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 			exmdb_parser_stop();
 			exmdb_server_stop();
 			db_engine_stop();
-			exmdb_server_free();
 			db_engine_free();
-			common_util_free();
 			return FALSE;
 		}
 		if (exmdb_client_run(get_config_path()) != 0) {
@@ -233,9 +222,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 			exmdb_parser_stop();
 			exmdb_server_stop();
 			db_engine_stop();
-			exmdb_server_free();
 			db_engine_free();
-			common_util_free();
 			return FALSE;
 		}
 
@@ -254,9 +241,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		exmdb_parser_stop();
 		exmdb_server_stop();
 		db_engine_stop();
-		exmdb_server_free();
 		db_engine_free();
-		common_util_free();
 		return TRUE;
 	}
 	return TRUE;

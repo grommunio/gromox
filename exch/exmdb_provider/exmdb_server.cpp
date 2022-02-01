@@ -20,20 +20,13 @@ struct ENVIRONMENT_CONTEXT {
 
 }
 
-static pthread_key_t g_id_key;
-static pthread_key_t g_env_key;
+static thread_local const char *g_id_key;
+static thread_local const char *g_public_username_key;
+static thread_local ENVIRONMENT_CONTEXT *g_env_key;
 static std::unique_ptr<LIB_BUFFER> g_ctx_allocator;
-static pthread_key_t g_public_username_key;
 
 void (*exmdb_server_event_proc)(const char *dir,
 	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify);
-
-void exmdb_server_init()
-{
-	pthread_key_create(&g_id_key, NULL);
-	pthread_key_create(&g_env_key, NULL);
-	pthread_key_create(&g_public_username_key, NULL);
-}
 
 int exmdb_server_run()
 {
@@ -51,13 +44,6 @@ void exmdb_server_stop()
 	g_ctx_allocator.reset();
 }
 
-void exmdb_server_free()
-{
-	pthread_key_delete(g_id_key);
-	pthread_key_delete(g_env_key);
-	pthread_key_delete(g_public_username_key);
-}
-
 void exmdb_server_build_environment(BOOL b_local,
 	BOOL b_private, const char *dir)
 {
@@ -70,27 +56,27 @@ void exmdb_server_build_environment(BOOL b_local,
 	pctx->b_private = b_private;
 	pctx->dir = dir;
 	pctx->account_id = -1;
-	pthread_setspecific(g_env_key, pctx);
+	g_env_key = pctx;
 }
 
 void exmdb_server_free_environment()
 {
-	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
+	auto pctx = g_env_key;
 	if (FALSE == pctx->b_local) {
 		alloc_context_free(&pctx->alloc_ctx);
 	}
-	pthread_setspecific(g_env_key, NULL);
+	g_env_key = nullptr;
 	g_ctx_allocator->put(pctx);
 }
 
 void exmdb_server_set_remote_id(const char *remote_id)
 {
-	pthread_setspecific(g_id_key, remote_id);
+	g_id_key = remote_id;
 }
 
 ALLOC_CONTEXT* exmdb_server_get_alloc_context()
 {
-	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
+	auto pctx = g_env_key;
 	if (pctx == nullptr || pctx->b_local)
 		return NULL;
 	return &pctx->alloc_ctx;
@@ -98,24 +84,24 @@ ALLOC_CONTEXT* exmdb_server_get_alloc_context()
 
 const char* exmdb_server_get_remote_id()
 {
-	return static_cast<char *>(pthread_getspecific(g_id_key));
+	return g_id_key;
 }
 
 void exmdb_server_set_public_username(const char *username)
 {
-	pthread_setspecific(g_public_username_key, username);
+	g_public_username_key = username;
 }
 
 const char* exmdb_server_get_public_username()
 {
-	return static_cast<char *>(pthread_getspecific(g_public_username_key));
+	return g_public_username_key;
 }
 
 /* can not be called in local rpc thread without
 	invoking exmdb_server_build_environment before! */
 BOOL exmdb_server_check_private()
 {
-	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
+	auto pctx = g_env_key;
 	return pctx->b_private;
 }
 
@@ -123,7 +109,7 @@ BOOL exmdb_server_check_private()
 	invoking exmdb_server_build_environment before! */
 const char* exmdb_server_get_dir()
 {
-	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
+	auto pctx = g_env_key;
 	return pctx->dir;
 }
 
@@ -131,7 +117,7 @@ const char* exmdb_server_get_dir()
 	invoking exmdb_server_build_environment before! */
 void exmdb_server_set_dir(const char *dir)
 {
-	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
+	auto pctx = g_env_key;
 	pctx->dir = dir;
 }
 
@@ -139,7 +125,7 @@ int exmdb_server_get_account_id()
 {
 	int account_id;
 	
-	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
+	auto pctx = g_env_key;
 	if (pctx->account_id < 0) {
 		if (pctx->b_private) {
 			if (common_util_get_id_from_maildir(pctx->dir, &account_id))
@@ -154,7 +140,7 @@ int exmdb_server_get_account_id()
 
 const GUID* exmdb_server_get_handle()
 {
-	auto pctx = static_cast<ENVIRONMENT_CONTEXT *>(pthread_getspecific(g_env_key));
+	auto pctx = g_env_key;
 	if (NULL == pctx || FALSE == pctx->b_local) {
 		return NULL;
 	}

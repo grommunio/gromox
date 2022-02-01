@@ -65,7 +65,6 @@ extern BOOL common_util_username_to_essdn(const char *username, char *dn, size_t
 void common_util_pass_service(int service_id, void *func);
 void common_util_init(const char *org_name, unsigned int max_msg,
 	unsigned int max_rule_num, unsigned int max_ext_rule_num);
-extern void common_util_free();
 extern void common_util_build_tls();
 void common_util_set_tls_var(const void *pvar);
 extern const void *common_util_get_tls_var();

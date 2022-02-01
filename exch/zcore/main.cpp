@@ -221,7 +221,6 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("smtp_server_ip"), smtp_port,
 		g_config_file->get_value("freebusy_tool_path"),
 		g_config_file->get_value("submit_command"));
-	auto cl_0b = make_scope_exit([&]() { common_util_free(); });
 	
 	int proxy_num = pconfig->get_ll("rpc_proxy_connection_num");
 	printf("[system]: exmdb proxy connection number is %d\n", proxy_num);
@@ -243,8 +242,6 @@ int main(int argc, const char **argv) try
 	printf("[system]: mailbox ping interval is %s\n", temp_buff);
 	
 	zarafa_server_init(table_size, cache_interval, ping_interval);
-	auto cleanup_2 = make_scope_exit(zarafa_server_free);
-	
 	listener_init();
 	if (listener_run(g_config_file->get_value("zcore_listen")) != 0) {
 		printf("[system]: failed to run listener\n");

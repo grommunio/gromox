@@ -60,7 +60,7 @@ static char g_smtp_ip[40], g_emsmdb_org_name[256];
 static int g_faststream_id;
 static int g_average_blocks;
 static std::shared_ptr<MIME_POOL> g_mime_pool;
-static pthread_key_t g_dir_key;
+static thread_local const char *g_dir_key;
 static std::mutex g_id_lock;
 static char g_submit_command[1024];
 static unsigned int g_max_mail_len;
@@ -1863,12 +1863,12 @@ BOOL common_util_send_mail(MAIL *pmail,
 
 static void common_util_set_dir(const char *dir)
 {
-	pthread_setspecific(g_dir_key, dir);
+	g_dir_key = dir;
 }
 
 static const char* common_util_get_dir()
 {
-	return static_cast<char *>(pthread_getspecific(g_dir_key));
+	return g_dir_key;
 }
 
 static BOOL common_util_get_propids(
@@ -2115,7 +2115,6 @@ void common_util_init(const char *org_name, int average_blocks,
 	g_smtp_port = smtp_port;
 	gx_strlcpy(g_submit_command, submit_command, GX_ARRAY_SIZE(g_submit_command));
 	g_faststream_id = 0;
-	pthread_key_create(&g_dir_key, NULL);
 }
 
 int common_util_run()
@@ -2191,11 +2190,6 @@ void common_util_stop()
 {
 	g_file_allocator.reset();
 	g_mime_pool.reset();
-}
-
-void common_util_free()
-{
-	pthread_key_delete(g_dir_key);
 }
 
 unsigned int common_util_get_param(int param)

@@ -38,7 +38,7 @@
 using namespace gromox;
 
 static char g_org_name[256];
-static pthread_key_t g_alloc_key;
+static thread_local ALLOC_CONTEXT *g_alloc_key;
 static std::unique_ptr<STR_HASH_TABLE> g_str_hash;
 static char g_default_charset[32];
 static char g_default_timezone[64];
@@ -85,7 +85,6 @@ void exmdb_local_init(const char *org_name, const char *default_charset,
 	gx_strlcpy(g_org_name, org_name, GX_ARRAY_SIZE(g_org_name));
 	gx_strlcpy(g_default_charset, default_charset, GX_ARRAY_SIZE(g_default_charset));
 	gx_strlcpy(g_default_timezone, default_timezone, GX_ARRAY_SIZE(g_default_timezone));
-	pthread_key_create(&g_alloc_key, NULL);
 }
 
 int exmdb_local_run()
@@ -146,11 +145,6 @@ int exmdb_local_run()
 		last_propid ++;
 	}
 	return 0;
-}
-
-void exmdb_local_free()
-{
-	pthread_key_delete(g_alloc_key);
 }
 
 BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
@@ -325,7 +319,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 
 static void* exmdb_local_alloc(size_t size)
 {
-	auto pctx = static_cast<ALLOC_CONTEXT *>(pthread_getspecific(g_alloc_key));
+	auto pctx = g_alloc_key;
 	if (NULL == pctx) {
 		return NULL;
 	}
@@ -475,7 +469,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	temp_buff[tmp_len] = '\0';
 	
 	alloc_context_init(&alloc_ctx);
-	pthread_setspecific(g_alloc_key, &alloc_ctx);
+	g_alloc_key = &alloc_ctx;
 	auto pmsg = oxcmail_import(charset, tmzone, pmail, exmdb_local_alloc,
 	            exmdb_local_get_propids);
 	if (NULL != pcontext1) {
@@ -483,7 +477,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	}
 	if (NULL == pmsg) {
 		alloc_context_free(&alloc_ctx);
-		pthread_setspecific(g_alloc_key, NULL);
+		g_alloc_key = nullptr;
 		if (remove(eml_path.c_str()) < 0 && errno != ENOENT)
 			fprintf(stderr, "W-1388: remove %s: %s\n",
 			        eml_path.c_str(), strerror(errno));
@@ -492,8 +486,8 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		return DELIVERY_OPERATION_ERROR;
 	}
 	alloc_context_free(&alloc_ctx);
-	pthread_setspecific(g_alloc_key, NULL);
-	
+	g_alloc_key = nullptr;
+
 	nt_time = rop_util_current_nttime();
 	pmsg->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME, &nt_time);
 	

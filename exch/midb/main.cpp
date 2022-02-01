@@ -193,8 +193,6 @@ int main(int argc, const char **argv) try
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
 		threads_num});
-	common_util_init();
-	auto cl_0a = make_scope_exit([&]() { common_util_free(); });
 	
 	exmdb_client_init(proxy_num, stub_num);
 	listener_init(listen_ip, listen_port);

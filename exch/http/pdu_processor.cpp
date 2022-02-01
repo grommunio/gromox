@@ -113,8 +113,8 @@ static char g_netbios_name[128];
 static char g_plugins_path[256];
 static size_t g_max_request_mem;
 static uint32_t g_last_async_id;
-static pthread_key_t g_call_key;
-static pthread_key_t g_stack_key;
+static thread_local DCERPC_CALL *g_call_key;
+static thread_local NDR_STACK_ROOT *g_stack_key;
 static PROC_PLUGIN *g_cur_plugin;
 static std::list<PROC_PLUGIN> g_plugin_list;
 static std::mutex g_list_lock, g_async_lock;
@@ -149,9 +149,7 @@ static NDR_STACK_ROOT* pdu_processor_new_stack_root()
 
 void* pdu_processor_ndr_stack_alloc(int type, size_t size)
 {
-	NDR_STACK_ROOT *proot;
-	
-	proot = (NDR_STACK_ROOT*)pthread_getspecific(g_stack_key);
+	auto proot = g_stack_key;
 	if (NULL == proot) {
 		return NULL;
 	}
@@ -212,9 +210,6 @@ void pdu_processor_init(int connection_num, int connection_ratio,
 int pdu_processor_run()
 {
 	int context_num;
-	
-	pthread_key_create(&g_call_key, NULL);
-	pthread_key_create(&g_stack_key, NULL);
 	
 	g_call_allocator.reset(LIB_BUFFER::create(sizeof(DCERPC_CALL),
 		g_connection_num*g_connection_ratio, TRUE));
@@ -320,8 +315,6 @@ void pdu_processor_stop()
 	g_context_allocator.reset();
 	g_auth_allocator.reset();
 	g_async_hash.reset();
-	pthread_key_delete(g_call_key);
-	pthread_key_delete(g_stack_key);
 }
 
 void pdu_processor_free()
@@ -395,12 +388,12 @@ PDU_PROCESSOR::~PDU_PROCESSOR()
 		if (NULL != pcontext->pinterface->unbind) {
 			fake_call.pprocessor = pprocessor;
 			fake_call.pcontext = pcontext;
-			pthread_setspecific(g_call_key, (const void*)&fake_call);
+			g_call_key = &fake_call;
 			handle = pcontext->assoc_group_id;
 			handle <<= 32;
 			handle |= pcontext->context_id;
 			pcontext->pinterface->unbind(handle);
-			pthread_setspecific(g_call_key, nullptr);
+			g_call_key = nullptr;
 		}
 		pdu_processor_free_context(pcontext);
 	}
@@ -1627,7 +1620,7 @@ static BOOL pdu_processor_auth_response(DCERPC_CALL *pcall,
 
 static DCERPC_CALL* pdu_processor_get_call()
 {
-	return (DCERPC_CALL*)pthread_getspecific(g_call_key);
+	return g_call_key;
 }
 
 static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
@@ -1754,14 +1747,13 @@ static uint32_t pdu_processor_apply_async_id()
 	DCERPC_CALL *pcall;
 	HTTP_CONTEXT *pcontext;
 	ASYNC_NODE *pfake_async;
-	NDR_STACK_ROOT *pstack_root;
 	RPC_IN_CHANNEL *pchannel_in;
 	
 	pcall = pdu_processor_get_call();
 	if (NULL == pcall) {
 		return 0;
 	}
-	pstack_root = (NDR_STACK_ROOT*)pthread_getspecific(g_stack_key);
+	auto pstack_root = g_stack_key;
 	if (NULL == pstack_root) {
 		return 0;
 	}
@@ -1884,10 +1876,8 @@ static BOOL pdu_processor_rpc_build_environment(int async_id)
 		cancel pdu while async replying */
 	g_async_hash->remove(async_id);
 	as_hold.unlock();
-	pthread_setspecific(g_call_key,
-			(const void*)pasync_node->pcall);
-	pthread_setspecific(g_stack_key,
-			(const void*)pasync_node->pstack_root);
+	g_call_key = pasync_node->pcall;
+	g_stack_key = pasync_node->pstack_root;
 	return TRUE;
 }
 
@@ -1900,18 +1890,16 @@ BOOL pdu_processor_rpc_new_environment()
 	if (NULL == pstack_root) {
 		return FALSE;
 	}
-	pthread_setspecific(g_stack_key, pstack_root);
+	g_stack_key = pstack_root;
 	return TRUE;
 }
 
 /* only can be invoked in non-rpc thread */
 void pdu_processor_rpc_free_environment()
 {
-	NDR_STACK_ROOT *pstack_root;
-	
-	pstack_root = (NDR_STACK_ROOT*)pthread_getspecific(g_stack_key);
+	auto pstack_root = g_stack_key;
 	if (NULL != pstack_root) {
-		pthread_setspecific(g_stack_key, NULL);
+		g_stack_key = nullptr;
 		pdu_processor_free_stack_root(pstack_root);
 	}
 }
@@ -1990,9 +1978,8 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_aync)
 		return pdu_processor_fault(pcall, DCERPC_FAULT_OTHER);
 	}
 	
-	pthread_setspecific(g_call_key, (const void*)pcall);
-	pthread_setspecific(g_stack_key, (const void*)pstack_root);
-	
+	g_call_key = pcall;
+	g_stack_key = pstack_root;
 	flags = 0;
 	if (pcall->b_bigendian)
 		flags |= NDR_FLAG_BIGENDIAN;

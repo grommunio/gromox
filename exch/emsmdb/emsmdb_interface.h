@@ -18,7 +18,6 @@ extern const char* (*emsmdb_interface_cpid_to_charset)(uint32_t cpid);
 extern void emsmdb_interface_init();
 extern int emsmdb_interface_run();
 extern void emsmdb_interface_stop();
-extern void emsmdb_interface_free();
 int emsmdb_interface_disconnect(CXH *pcxh);
 int emsmdb_interface_register_push_notification(CXH *pcxh, uint32_t rpc,
 	uint8_t *pctx, uint16_t cb_ctx, uint32_t advise_bits, uint8_t *paddr,
