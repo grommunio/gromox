@@ -93,11 +93,13 @@ int listener_run(const char *CS_PATH)
 void listener_stop()
 {
 	g_notify_stop = true;
-	shutdown(g_listen_sockd, SHUT_RDWR);
+	if (g_listen_sockd >= 0)
+		shutdown(g_listen_sockd, SHUT_RDWR);
 	if (!pthread_equal(g_listener_id, {})) {
 		pthread_kill(g_listener_id, SIGALRM);
 		pthread_join(g_listener_id, NULL);
 	}
-	close(g_listen_sockd);
+	if (g_listen_sockd >= 0)
+		close(g_listen_sockd);
 	g_listen_sockd = -1;
 }
