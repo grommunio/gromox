@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <libHX/string.h>
 #include <gromox/arcfour.hpp>
 #include <gromox/defs.h>
@@ -76,8 +77,8 @@ union NTLMSSP_CRYPT_STATE {
 }
 
 struct NTLMSSP_CTX {
-	pthread_mutex_t lock;
-	uint32_t expected_state;
+	std::mutex lock;
+	uint32_t expected_state = NTLMSSP_PROCESS_NEGOTIATE;
 	bool unicode;
 	bool allow_lm_key; /* The LM_KEY code is not very secure... */
 
@@ -100,7 +101,9 @@ struct NTLMSSP_CTX {
 	DATA_BLOB session_key;
 	uint8_t session_key_buff[32];
 
-	uint32_t neg_flags; /* the current state of negotiation with the NTLMSSP partner */
+	uint32_t neg_flags = /* the current state of negotiation with the NTLMSSP partner */
+		NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_NEGOTIATE_VERSION |
+		NTLMSSP_NEGOTIATE_SIGN | NTLMSSP_NEGOTIATE_SEAL;
 
 	NTLMSSP_CRYPT_STATE crypt;
 	NTLM_AUTH_CHALLENGE challenge;
@@ -646,29 +649,19 @@ static bool ntlmssp_parse_packet(const DATA_BLOB blob, const char *format, ...)
 */
 NTLMSSP_CTX *ntlmssp_init(const char *netbios_name, const char *dns_name,
     const char *dns_domain, bool allow_lm_key, uint32_t neg_flags,
-    NTLMSSP_GET_PASSWORD get_password)
+    NTLMSSP_GET_PASSWORD get_password) try
 {
-	NTLMSSP_CTX *pntlmssp;
-	
-	pntlmssp = (NTLMSSP_CTX*)malloc(sizeof(NTLMSSP_CTX));
-	if (NULL == pntlmssp) {
-		return NULL;
-	}
-	memset(pntlmssp, 0, sizeof(NTLMSSP_CTX));
-	pthread_mutex_init(&pntlmssp->lock, NULL);
-	pntlmssp->expected_state = NTLMSSP_PROCESS_NEGOTIATE;
+	auto pntlmssp = new NTLMSSP_CTX;
 	pntlmssp->allow_lm_key = allow_lm_key;
-	pntlmssp->neg_flags = NTLMSSP_NEGOTIATE_NTLM | NTLMSSP_NEGOTIATE_VERSION;
 	pntlmssp->neg_flags |= neg_flags;
-	pntlmssp->neg_flags |= NTLMSSP_NEGOTIATE_SIGN;
-	pntlmssp->neg_flags |= NTLMSSP_NEGOTIATE_SEAL;
-	
 	gx_strlcpy(pntlmssp->netbios_name, netbios_name, GX_ARRAY_SIZE(pntlmssp->netbios_name));
 	gx_strlcpy(pntlmssp->dns_name, dns_name, GX_ARRAY_SIZE(pntlmssp->dns_name));
 	gx_strlcpy(pntlmssp->dns_domain, dns_domain, GX_ARRAY_SIZE(pntlmssp->dns_domain));
 	pntlmssp->get_password = get_password;
 	return pntlmssp;
-	
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1645: ENOMEM\n");
+	return nullptr;
 }
 
 static void ntlmssp_handle_neg_flags(NTLMSSP_CTX *pntlmssp, uint32_t neg_flags)
@@ -1601,18 +1594,15 @@ bool ntlmssp_sign_packet(NTLMSSP_CTX *pntlmssp, const uint8_t *pdata,
 	size_t length, const uint8_t *pwhole_pdu, size_t pdu_length,
 	DATA_BLOB *psig)
 {
-	pthread_mutex_lock(&pntlmssp->lock);
+	std::lock_guard lk(pntlmssp->lock);
 	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_SIGN) ||
 		0 == pntlmssp->session_key.length) {
-		pthread_mutex_unlock(&pntlmssp->lock);
 		return false;
 	}
 	if (!ntlmssp_make_packet_signature(pntlmssp, pdata, length, pwhole_pdu,
 	    pdu_length, NTLMSSP_DIRECTION_SEND, psig, true)) {
-		pthread_mutex_unlock(&pntlmssp->lock);
 		return false;
 	}
-	pthread_mutex_unlock(&pntlmssp->lock);
 	return true;
 }
 
@@ -1663,13 +1653,11 @@ bool ntlmssp_check_packet(NTLMSSP_CTX *pntlmssp, const uint8_t *pdata,
 	size_t length, const uint8_t *pwhole_pdu, size_t pdu_length,
 	const DATA_BLOB *psig)
 {
-	pthread_mutex_lock(&pntlmssp->lock);
+	std::lock_guard lk(pntlmssp->lock);
 	if (!ntlmssp_check_packet_internal(pntlmssp, pdata, length, pwhole_pdu,
 	    pdu_length, psig)) {
-		pthread_mutex_unlock(&pntlmssp->lock);
 		return false;
 	}
-	pthread_mutex_unlock(&pntlmssp->lock);
 	return true;
 }
 
@@ -1682,16 +1670,14 @@ bool ntlmssp_seal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata, size_t length,
 		return false;
 	if (!(pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_SIGN))
 		return false;
-	pthread_mutex_lock(&pntlmssp->lock);
+	std::lock_guard lk(pntlmssp->lock);
 	if (0 == pntlmssp->session_key.length) {
-		pthread_mutex_unlock(&pntlmssp->lock);
 		debug_info("[ntlm]: no session key, cannot seal packet\n");
 		return false;
 	}
 	if (pntlmssp->neg_flags & NTLMSSP_NEGOTIATE_NTLM2) {
 		if (!ntlmssp_make_packet_signature(pntlmssp, pdata, length,
 		    pwhole_pdu, pdu_length, NTLMSSP_DIRECTION_SEND, psig, false)) {
-			pthread_mutex_unlock(&pntlmssp->lock);
 			return false;
 		}
 
@@ -1705,7 +1691,6 @@ bool ntlmssp_seal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata, size_t length,
 		crc = crc32_calc_buffer(pdata, length);
 		if (!ntlmssp_gen_packet(psig, "dddd", NTLMSSP_SIGN_VERSION,
 		    0, crc, pntlmssp->crypt.ntlm.seq_num)) {
-			pthread_mutex_unlock(&pntlmssp->lock);
 			return false;
 		}
 		
@@ -1714,7 +1699,6 @@ bool ntlmssp_seal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata, size_t length,
 			psig->data + 4, psig->length - 4);
 		pntlmssp->crypt.ntlm.seq_num ++;
 	}
-	pthread_mutex_unlock(&pntlmssp->lock);
 	return true;
 }
 	
@@ -1722,9 +1706,8 @@ bool ntlmssp_unseal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata,
 	size_t length, const uint8_t *pwhole_pdu, size_t pdu_length,
 	const DATA_BLOB *psig)
 {
-	pthread_mutex_lock(&pntlmssp->lock);
+	std::lock_guard lk(pntlmssp->lock);
 	if (0 == pntlmssp->session_key.length) {
-		pthread_mutex_unlock(&pntlmssp->lock);
 		debug_info("[ntlm]: no session key, cannot unseal packet\n");
 		return false;
 	}
@@ -1737,10 +1720,8 @@ bool ntlmssp_unseal_packet(NTLMSSP_CTX *pntlmssp, uint8_t *pdata,
 	}
 	if (!ntlmssp_check_packet_internal(pntlmssp, pdata, length, pwhole_pdu,
 	    pdu_length, psig)) {
-		pthread_mutex_unlock(&pntlmssp->lock);
 		return false;
 	}
-	pthread_mutex_unlock(&pntlmssp->lock);
 	return true;
 }
 
@@ -1773,6 +1754,5 @@ bool ntlmssp_session_info(NTLMSSP_CTX *pntlmssp, NTLMSSP_SESSION_INFO *psession)
 
 void ntlmssp_destroy(NTLMSSP_CTX *pntlmssp)
 {
-	pthread_mutex_destroy(&pntlmssp->lock);
-	free(pntlmssp);
+	delete pntlmssp;
 }
