@@ -7,9 +7,10 @@
 #include <utility>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
-#include <gromox/defs.h>
 #include <gromox/common_types.hpp>
+#include <gromox/defs.h>
 #include <gromox/double_list.hpp>
+#include <gromox/scope.hpp>
 #include "common_util.h"
 #include "cmd_parser.h"
 #include <poll.h>
@@ -31,7 +32,7 @@ using namespace gromox;
 static size_t g_threads_num;
 static gromox::atomic_bool g_notify_stop;
 static int g_timeout_interval;
-static pthread_t *g_thread_ids;
+static std::unique_ptr<pthread_t[]> g_thread_ids;
 static std::mutex g_connection_lock, g_cond_mutex;
 static std::condition_variable g_waken_cond;
 static DOUBLE_LIST g_connection_list;
@@ -88,12 +89,17 @@ int cmd_parser_run()
 {
 	size_t i;
 	pthread_attr_t thr_attr;
-
+	pthread_attr_init(&thr_attr);
+	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&thr_attr); });
 
 	cmd_parser_register_command("PING", cmd_parser_ping);
-
-	g_thread_ids = me_alloc<pthread_t>(g_threads_num);
-	pthread_attr_init(&thr_attr);
+	try {
+		g_thread_ids = std::make_unique<pthread_t[]>(g_threads_num);
+	} catch (const std::bad_alloc &) {
+		fprintf(stderr, "E-1646: ENOMEM\n");
+		return -1;
+	}
+	memset(g_thread_ids.get(), 0, sizeof(pthread_t) * g_threads_num);
 	g_notify_stop = false;
 
 	for (i=0; i<g_threads_num; i++) {
@@ -101,24 +107,13 @@ int cmd_parser_run()
 		          midcp_thrwork, nullptr);
 		if (ret != 0) {
 			printf("[cmd_parser]: failed to create pool thread: %s\n", strerror(ret));
-			goto FAILURE_EXIT;
+			return -1;
 		}
 		char buf[32];
 		snprintf(buf, sizeof(buf), "cmd_parser/%zu", i);
 		pthread_setname_np(g_thread_ids[i], buf);
 	}
-
-	pthread_attr_destroy(&thr_attr);
-
 	return 0;
-
- FAILURE_EXIT:
-	while (i > 0) {
-		pthread_kill(g_thread_ids[--i], SIGALRM);
-		pthread_join(g_thread_ids[i], nullptr);
-	}
-	pthread_attr_destroy(&thr_attr);
-	return -1;
 }
 
 void cmd_parser_stop()
@@ -140,8 +135,12 @@ void cmd_parser_stop()
 		}	
 	}
 	chold.unlock();
-	for (size_t i = 0; i < g_threads_num; ++i)
-		pthread_join(g_thread_ids[i], NULL);
+	if (g_thread_ids != nullptr)
+		for (size_t i = 0; i < g_threads_num; ++i)
+			if (!pthread_equal(g_thread_ids[i], {})) {
+				pthread_kill(g_thread_ids[i], SIGALRM);
+				pthread_join(g_thread_ids[i], NULL);
+			}
 	while ((pnode = double_list_pop_front(&g_connection_list)) != nullptr) {
 		pconnection = static_cast<MIDB_CONNECTION *>(pnode->pdata);
 		if (-1 != pconnection->sockd) {
