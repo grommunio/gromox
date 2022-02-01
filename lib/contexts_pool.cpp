@@ -262,10 +262,6 @@ void contexts_pool_stop()
 	g_epoll_fd = -1;
 	free(g_events);
 	g_events = NULL;
-}
-
-void contexts_pool_free()
-{
 	for (size_t i = 0; i < g_context_num; ++i)
 		context_free(g_context_list[i]);
 	for (size_t i = CONTEXT_BEGIN; i < CONTEXT_TYPES; ++i)

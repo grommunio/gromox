@@ -80,14 +80,6 @@ void flusher_init(size_t queue_len)
 	g_max_queue_len = queue_len;
 }
 
-void flusher_free()
-{
-	if (NULL != g_flusher_plug) {
-		free(g_flusher_plug);
-		g_flusher_plug = NULL;
-	}
-}
-
 int flusher_run()
 {
 	if (NULL == g_flusher_plug) {
@@ -209,6 +201,11 @@ void flusher_stop()
 			free(pnode->pdata);
 			pnode = NULL;
 		}
+	}
+
+	if (NULL != g_flusher_plug) {
+		free(g_flusher_plug);
+		g_flusher_plug = NULL;
 	}
 }
 

@@ -308,7 +308,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: can not run blocks allocator\n"); 
 		return EXIT_FAILURE;
 	}
-	auto cleanup_11 = make_scope_exit(blocks_allocator_free);
 	auto cleanup_12 = make_scope_exit(blocks_allocator_stop);
 
 	pop3_parser_init(context_num, context_max_mem, pop3_conn_timeout,
@@ -320,7 +319,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run pop3 parser\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_13 = make_scope_exit(pop3_parser_free);
 	auto cleanup_14 = make_scope_exit(pop3_parser_stop);
 	
 	contexts_pool_init(pop3_parser_get_contexts_list(), context_num,
@@ -332,7 +330,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run contexts pool\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_15 = make_scope_exit(contexts_pool_free);
 	auto cleanup_16 = make_scope_exit(contexts_pool_stop);
 
 	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(pop3_parser_process));
@@ -341,7 +338,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run threads pool\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_19 = make_scope_exit(threads_pool_free);
 	auto cleanup_20 = make_scope_exit(threads_pool_stop);
 
 	/* accept the connection */

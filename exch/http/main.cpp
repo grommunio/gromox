@@ -363,14 +363,12 @@ int main(int argc, const char **argv) try
 	auto cleanup_8 = make_scope_exit(system_services_stop);
 
 	blocks_allocator_init(context_num * context_aver_mem);     
-	auto cleanup_8b = make_scope_exit(blocks_allocator_free);
+	auto cleanup_8b = make_scope_exit(blocks_allocator_stop);
  
 	if (0 != blocks_allocator_run()) { 
 		printf("[system]: can not run blocks allocator\n"); 
 		return EXIT_FAILURE;
 	}
-	auto cleanup_9 = make_scope_exit(blocks_allocator_free);
-	auto cleanup_10 = make_scope_exit(blocks_allocator_stop);
 
 	pdu_processor_init(context_num, PDU_PROCESSOR_RATIO, netbios_name,
 		dns_name, dns_domain, TRUE, max_request_mem,
@@ -388,7 +386,6 @@ int main(int argc, const char **argv) try
 		printf("----------------------------- proc plugins end "
 		   "-----------------------------\n");
 	}
-	auto cleanup_11 = make_scope_exit(pdu_processor_free);
 	auto cleanup_12 = make_scope_exit(pdu_processor_stop);
 
 	hpm_processor_init(context_num, g_config_file->get_value("hpm_plugin_path"),
@@ -406,7 +403,6 @@ int main(int argc, const char **argv) try
 		printf("----------------------------- hpm plugins end "
 		   "-----------------------------\n");
 	}
-	auto cleanup_13 = make_scope_exit(hpm_processor_free);
 	auto cleanup_14 = make_scope_exit(hpm_processor_stop);
 
 	if (mod_rewrite_run(resource_get_string("config_file_path")) != 0) {
@@ -427,7 +423,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run mod cache\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_19 = make_scope_exit(mod_cache_free);
 	auto cleanup_20 = make_scope_exit(mod_cache_stop);
 
 	http_parser_init(context_num, http_conn_timeout,
@@ -451,7 +446,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run contexts pool\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_23 = make_scope_exit(contexts_pool_free);
 	auto cleanup_24 = make_scope_exit(contexts_pool_stop);
  
 	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(http_parser_process));
@@ -460,7 +454,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run threads pool\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_27 = make_scope_exit(threads_pool_free);
 	auto cleanup_28 = make_scope_exit(threads_pool_stop);
 
 	/* accept the connection */

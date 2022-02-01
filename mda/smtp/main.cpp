@@ -331,7 +331,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: can not run blocks allocator\n"); 
 		return EXIT_FAILURE;
 	}
-	auto cleanup_11 = make_scope_exit(blocks_allocator_free);
 	auto cleanup_12 = make_scope_exit(blocks_allocator_stop);
 
 	smtp_parser_init(std::move(scfg));
@@ -339,7 +338,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run smtp parser\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_15 = make_scope_exit(smtp_parser_free);
 	auto cleanup_16 = make_scope_exit(smtp_parser_stop);
 	
 	contexts_pool_init(smtp_parser_get_contexts_list(), scfg.context_num,
@@ -351,7 +349,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run contexts pool\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_17 = make_scope_exit(contexts_pool_free);
 	auto cleanup_18 = make_scope_exit(contexts_pool_stop);
 
 	flusher_init(scfg.context_num);
@@ -359,7 +356,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run flusher\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_19 = make_scope_exit(flusher_free);
 	auto cleanup_20 = make_scope_exit(flusher_stop);
 
 	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(smtp_parser_process));
@@ -368,7 +364,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run threads pool\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_25 = make_scope_exit(threads_pool_free);
 	auto cleanup_26 = make_scope_exit(threads_pool_stop);
 
 	/* accept the connection */

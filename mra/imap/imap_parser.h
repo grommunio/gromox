@@ -109,7 +109,6 @@ void imap_parser_init(int context_num, int average_num, size_t cache_size,
 extern int imap_parser_run();
 int imap_parser_process(IMAP_CONTEXT *pcontext);
 extern void imap_parser_stop();
-extern void imap_parser_free();
 extern int imap_parser_get_context_socket(SCHEDULE_CONTEXT *);
 extern struct timeval imap_parser_get_context_timestamp(SCHEDULE_CONTEXT *);
 int imap_parser_get_param(int param);

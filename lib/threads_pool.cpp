@@ -142,10 +142,6 @@ void threads_pool_stop()
 			break;
 	}
 	g_threads_data_buff.reset();
-}
-
-void threads_pool_free()
-{
 	g_threads_data_buff.reset();
 	g_threads_pool_min_num = 0;
 	g_threads_pool_max_num = 0;

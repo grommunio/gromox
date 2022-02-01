@@ -29,7 +29,6 @@ using THREADS_EVENT_PROC = int (*)(int);
 extern GX_EXPORT void threads_pool_init(unsigned int init_pool_num, int (*process_func)(SCHEDULE_CONTEXT *));
 extern int threads_pool_run();
 extern void threads_pool_stop();
-extern void threads_pool_free();
 int threads_pool_get_param(int type);
 THREADS_EVENT_PROC threads_pool_register_event_proc(THREADS_EVENT_PROC proc);
 extern void threads_pool_wakeup_thread();

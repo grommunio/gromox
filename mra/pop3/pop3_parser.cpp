@@ -183,10 +183,6 @@ void pop3_parser_stop()
 		CRYPTO_set_locking_callback(NULL);
 		g_ssl_mutex_buf.reset();
 	}
-}
-
-void pop3_parser_free()
-{
     g_context_num		= 0;
 	g_retrieving_size	= 0;
     g_timeout           = 0x7FFFFFFF;

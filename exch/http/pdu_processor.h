@@ -100,7 +100,6 @@ extern void pdu_processor_init(int connection_num, int connection_ratio,
 	const char *const *names, bool ignerr);
 extern int pdu_processor_run();
 extern void pdu_processor_stop();
-extern void pdu_processor_free();
 extern std::unique_ptr<PDU_PROCESSOR> pdu_processor_create(const char *host, uint16_t tcp_port);
 extern void pdu_processor_destroy(std::unique_ptr<PDU_PROCESSOR> &&);
 int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,

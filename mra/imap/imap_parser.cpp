@@ -334,10 +334,6 @@ void imap_parser_stop()
 		CRYPTO_set_locking_callback(NULL);
 		g_ssl_mutex_buf.reset();
 	}
-}
-
-void imap_parser_free()
-{
 	double_list_free(&g_sleeping_list);
     g_context_num		= 0;
 	g_cache_size	    = 0;

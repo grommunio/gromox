@@ -393,10 +393,6 @@ void hpm_processor_stop()
 		free(g_context_list);
 		g_context_list = NULL;
 	}
-}
-
-void hpm_processor_free()
-{
 	g_plugins_path[0] = '\0';
 	g_plugin_names = NULL;
 }

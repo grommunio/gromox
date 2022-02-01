@@ -173,7 +173,6 @@ extern void smtp_parser_init(smtp_param &&);
 extern int smtp_parser_run();
 int smtp_parser_process(SMTP_CONTEXT *pcontext);
 extern void smtp_parser_stop();
-extern void smtp_parser_free();
 long smtp_parser_get_param(int param);
 int smtp_parser_set_param(int param, long value);
 extern int smtp_parser_get_context_socket(SCHEDULE_CONTEXT *);

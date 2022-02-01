@@ -64,7 +64,6 @@ void pop3_parser_init(int context_num, size_t retrieving_size, int timeout,
 extern int pop3_parser_run();
 int pop3_parser_process(POP3_CONTEXT *pcontext);
 extern void pop3_parser_stop();
-extern void pop3_parser_free();
 extern int pop3_parser_get_context_socket(SCHEDULE_CONTEXT *);
 extern struct timeval pop3_parser_get_context_timestamp(SCHEDULE_CONTEXT *);
 int pop3_parser_get_param(int param);

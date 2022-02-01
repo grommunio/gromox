@@ -379,10 +379,6 @@ void transporter_stop()
 	}
 	transporter_collect_hooks();
 	transporter_collect_resource();
-}
-
-void transporter_free()
-{
 	g_path[0] = '\0';
 	g_plugin_names = NULL;
 	g_threads_min = 0;

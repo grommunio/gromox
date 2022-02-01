@@ -28,10 +28,6 @@ int blocks_allocator_run()
 void blocks_allocator_stop()
 {
 	g_allocator.reset();
-}
-
-void blocks_allocator_free()
-{
     g_blocks_num = 0;
 }
 

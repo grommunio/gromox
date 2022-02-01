@@ -209,7 +209,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run message dequeue\n");
 		return EXIT_FAILURE;
     }
-	auto cleanup_7 = make_scope_exit(message_dequeue_free);
 	auto cleanup_8 = make_scope_exit(message_dequeue_stop);
 
 	transporter_init(g_config_file->get_value("mpc_plugin_path"),
@@ -229,7 +228,6 @@ int main(int argc, const char **argv) try
 		printf("----------------------------- mpc plugins end"
 			"-----------------------------\n");
     }
-	auto cleanup_11 = make_scope_exit(transporter_free);
 	auto cleanup_12 = make_scope_exit(transporter_stop);
 
 	retcode = EXIT_SUCCESS;

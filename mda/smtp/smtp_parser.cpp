@@ -185,10 +185,6 @@ void smtp_parser_stop()
 		CRYPTO_set_locking_callback(NULL);
 		g_ssl_mutex_buf.reset();
 	}
-}
-
-void smtp_parser_free()
-{
 	g_param = {};
 }
 

@@ -315,10 +315,6 @@ void pdu_processor_stop()
 	g_context_allocator.reset();
 	g_auth_allocator.reset();
 	g_async_hash.reset();
-}
-
-void pdu_processor_free()
-{
 	g_plugins_path[0] = '\0';
 	g_plugin_names = NULL;
 }

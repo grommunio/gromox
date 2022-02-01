@@ -9,7 +9,6 @@ enum {
 };
 
 extern void flusher_init(size_t queue_len);
-extern void flusher_free();
 extern int flusher_run();
 extern void flusher_stop();
 BOOL flusher_put_to_queue(SMTP_CONTEXT *pcontext);

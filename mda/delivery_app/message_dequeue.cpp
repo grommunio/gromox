@@ -255,10 +255,6 @@ void message_dequeue_stop()
 		pthread_join(g_thread_id, NULL);
 	}
 	message_dequeue_collect_resource();
-}
-
-void message_dequeue_free()
-{
     g_max_memory = 0;
 	g_current_mem  = 0;
     g_msg_id = -1;

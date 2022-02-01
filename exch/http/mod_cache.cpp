@@ -251,10 +251,6 @@ void mod_cache_stop()
 		free(pitem->blob.data);
 		free(pitem);
 	}
-}
-
-void mod_cache_free()
-{
 	double_list_free(&g_item_list);
 }
 

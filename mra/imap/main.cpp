@@ -296,7 +296,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: can not run blocks allocator\n"); 
 		return EXIT_FAILURE;
 	}
-	auto cleanup_9 = make_scope_exit(blocks_allocator_free);
 	auto cleanup_10 = make_scope_exit(blocks_allocator_stop);
 
 	imap_parser_init(context_num, context_aver_mitem, context_max_mem,
@@ -309,7 +308,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run imap parser\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_11 = make_scope_exit(imap_parser_free);
 	auto cleanup_12 = make_scope_exit(imap_parser_stop);
 	
 	contexts_pool_init(imap_parser_get_contexts_list(),  
@@ -322,7 +320,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run contexts pool\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_13 = make_scope_exit(contexts_pool_free);
 	auto cleanup_14 = make_scope_exit(contexts_pool_stop);
 
 	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(imap_parser_process));
@@ -331,7 +328,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run threads pool\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_17 = make_scope_exit(threads_pool_free);
 	auto cleanup_18 = make_scope_exit(threads_pool_stop);
 
 	/* accept the connection */
