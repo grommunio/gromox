@@ -37,10 +37,9 @@ static void *htls_thrworkssl(void *);
 static int g_mss_size;
 static gromox::atomic_bool g_stop_accept;
 static pthread_t g_thr_id;
-static int g_listener_sock;
+static int g_listener_sock = -1, g_listener_ssl_sock = -1;
 static uint16_t g_listener_port, g_listener_ssl_port;
 static pthread_t g_ssl_thr_id;
-static int g_listener_ssl_sock;
 
 void listener_init(uint16_t port, uint16_t ssl_port, int mss_size)
 {
@@ -361,12 +360,10 @@ static void *htls_thrworkssl(void *arg)
 
 void listener_stop()
 {
-	if (g_listener_sock > 2) {
+	if (g_listener_sock >= 0)
 		close(g_listener_sock);
-	}
-	if (g_listener_ssl_port > 0 && g_listener_ssl_port > 2) {
+	if (g_listener_ssl_sock >= 0)
 		close(g_listener_ssl_sock);
-	}
 }
 
 void listener_free()

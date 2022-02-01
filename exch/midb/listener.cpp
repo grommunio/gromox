@@ -28,7 +28,7 @@ using namespace gromox;
 
 static uint16_t g_listen_port;
 static char g_listen_ip[40];
-static int g_listen_sockd;
+static int g_listen_sockd = -1;
 static gromox::atomic_bool g_notify_stop;
 static std::vector<std::string> g_acl_list;
 
@@ -84,7 +84,7 @@ int listener_trigger_accept()
 
 void listener_stop() {
 	g_notify_stop = true;
-	if (g_listen_sockd > 0) {
+	if (g_listen_sockd >= 0) {
 		close(g_listen_sockd);
 		g_listen_sockd = -1;
 	}
