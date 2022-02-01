@@ -303,12 +303,11 @@ int main(int argc, const char **argv) try
 	unsigned int mss_size = g_config_file->get_ll("tcp_max_segment");
 	listener_init(listen_port, listen_ssl_port, mss_size);
 	auto cleanup_3 = make_scope_exit(listener_free);
-																			
+	auto cleanup_4 = make_scope_exit(listener_stop);
 	if (0 != listener_run()) {
 		printf("[system]: fail to start listener\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_4 = make_scope_exit(listener_stop);
 
 	if (0 != getrlimit(RLIMIT_NOFILE, &rl)) {
 		printf("[system]: fail to get file limitation\n");
@@ -330,6 +329,7 @@ int main(int argc, const char **argv) try
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
 		context_num, "http"});
+	auto cleanup_6 = make_scope_exit(service_stop);
 	if (!service_register_service("ndr_stack_alloc",
 	    reinterpret_cast<void *>(pdu_processor_ndr_stack_alloc),
 	    typeid(*pdu_processor_ndr_stack_alloc))) {
@@ -354,13 +354,12 @@ int main(int argc, const char **argv) try
 		printf("---------------------------- service plugins end"
 		   "----------------------------\n");
 	}
-	auto cleanup_6 = make_scope_exit(service_stop);
 
+	auto cleanup_8 = make_scope_exit(system_services_stop);
 	if (0 != system_services_run()) { 
 		printf("[system]: failed to run system service\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_8 = make_scope_exit(system_services_stop);
 
 	blocks_allocator_init(context_num * context_aver_mem);     
 	auto cleanup_8b = make_scope_exit(blocks_allocator_stop);
@@ -375,6 +374,7 @@ int main(int argc, const char **argv) try
 		g_config_file->get_value("proc_plugin_path"),
 		proc_plugin_list != NULL ? proc_plugin_list : g_dfl_proc_plugins,
 		parse_bool(g_config_file->get_value("proc_plugin_ignore_errors")));
+	auto cleanup_12 = make_scope_exit(pdu_processor_stop);
 	printf("---------------------------- proc plugins begin "
 		   "----------------------------\n");
 	if (0 != pdu_processor_run()) {
@@ -386,12 +386,12 @@ int main(int argc, const char **argv) try
 		printf("----------------------------- proc plugins end "
 		   "-----------------------------\n");
 	}
-	auto cleanup_12 = make_scope_exit(pdu_processor_stop);
 
 	hpm_processor_init(context_num, g_config_file->get_value("hpm_plugin_path"),
 		hpm_plugin_list != NULL ? hpm_plugin_list : g_dfl_hpm_plugins,
 		hpm_cache_size, hpm_max_size,
 		parse_bool(g_config_file->get_value("hpm_plugin_ignore_errors")));
+	auto cleanup_14 = make_scope_exit(hpm_processor_stop);
 	printf("---------------------------- hpm plugins begin "
 		   "----------------------------\n");
 	if (0 != hpm_processor_run()) {
@@ -403,7 +403,6 @@ int main(int argc, const char **argv) try
 		printf("----------------------------- hpm plugins end "
 		   "-----------------------------\n");
 	}
-	auto cleanup_14 = make_scope_exit(hpm_processor_stop);
 
 	if (mod_rewrite_run(resource_get_string("config_file_path")) != 0) {
 		printf("[system]: failed to run mod rewrite\n");
@@ -411,50 +410,47 @@ int main(int argc, const char **argv) try
 	}
 	mod_fastcgi_init(context_num, fastcgi_cache_size,
 		fastcgi_max_size, fastcgi_exec_timeout); 
- 
+	auto cleanup_18 = make_scope_exit(mod_fastcgi_stop);
 	if (0 != mod_fastcgi_run()) { 
 		printf("[system]: failed to run mod fastcgi\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_18 = make_scope_exit(mod_fastcgi_stop);
 
 	mod_cache_init(context_num);
+	auto cleanup_20 = make_scope_exit(mod_cache_stop);
 	if (0 != mod_cache_run()) {
 		printf("[system]: failed to run mod cache\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_20 = make_scope_exit(mod_cache_stop);
 
 	http_parser_init(context_num, http_conn_timeout,
 		http_auth_times, block_interval_auth, http_support_ssl ? TRUE : false,
 		certificate_path, cb_passwd, private_key_path,
 		g_config_file->get_ll("http_debug"));
- 
+	auto cleanup_22 = make_scope_exit(http_parser_stop);
 	if (0 != http_parser_run()) { 
 		printf("[system]: failed to run http parser\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_22 = make_scope_exit(http_parser_stop);
 
 	contexts_pool_init(http_parser_get_contexts_list(),
 		context_num,
 		http_parser_get_context_socket,
 		http_parser_get_context_timestamp,
 		thread_charge_num, http_conn_timeout); 
- 
+	auto cleanup_24 = make_scope_exit(contexts_pool_stop);
 	if (0 != contexts_pool_run()) { 
 		printf("[system]: failed to run contexts pool\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_24 = make_scope_exit(contexts_pool_stop);
  
 	threads_pool_init(thread_init_num, reinterpret_cast<int (*)(SCHEDULE_CONTEXT *)>(http_parser_process));
+	auto cleanup_28 = make_scope_exit(threads_pool_stop);
 	threads_pool_register_event_proc(http_parser_threads_event_proc);
 	if (0 != threads_pool_run()) {
 		printf("[system]: failed to run threads pool\n");
 		return EXIT_FAILURE;
 	}
-	auto cleanup_28 = make_scope_exit(threads_pool_stop);
 
 	/* accept the connection */
 	if (listener_trigger_accept() != 0) {

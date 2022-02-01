@@ -168,6 +168,7 @@ int main(int argc, const char **argv) try
 	
 	msgchg_grouping_init(g_config_file->get_value("data_file_path"));
 	auto cl_0c = make_scope_exit([&]() { msgchg_grouping_free(); });
+	auto cl_4 = make_scope_exit(msgchg_grouping_stop);
 	unsigned int threads_num = pconfig->get_ll("zarafa_threads_num");
 	printf("[system]: connection threads number is %d\n", threads_num);
 
@@ -178,6 +179,7 @@ int main(int argc, const char **argv) try
 		service_plugin_list != NULL ? service_plugin_list : g_dfl_svc_plugins,
 		parse_bool(g_config_file->get_value("service_plugin_ignore_errors")),
 		threads_num});
+	auto cl_0 = make_scope_exit(service_stop);
 	
 	unsigned int table_size = pconfig->get_ll("address_table_size");
 	printf("[system]: address table size is %d\n", table_size);
@@ -191,6 +193,7 @@ int main(int argc, const char **argv) try
 	printf("[system]: maximum item number is %d\n", max_item_num);
 	
 	ab_tree_init(g_config_file->get_value("x500_org_name"), table_size, cache_interval, max_item_num);
+	auto cl_5 = make_scope_exit(ab_tree_stop);
 	bounce_producer_init(g_config_file->get_value("separator_for_bounce"));
 
 	int mime_num = pconfig->get_ll("zarafa_mime_number");
@@ -229,7 +232,9 @@ int main(int argc, const char **argv) try
 	printf("[system]: exmdb notify stub threads number is %d\n", stub_num);
 	
 	exmdb_client_init(proxy_num, stub_num);
+	auto cl_8 = make_scope_exit(exmdb_client_stop);
 	rpc_parser_init(threads_num);
+	auto cl_6 = make_scope_exit(rpc_parser_stop);
 	table_size = pconfig->get_ll("user_table_size");
 	printf("[system]: hash table size is %d\n", table_size);
 
@@ -242,12 +247,13 @@ int main(int argc, const char **argv) try
 	printf("[system]: mailbox ping interval is %s\n", temp_buff);
 	
 	zarafa_server_init(table_size, cache_interval, ping_interval);
+	auto cl_7 = make_scope_exit(zarafa_server_stop);
 	listener_init();
+	auto cl_10 = make_scope_exit(listener_stop);
 	if (listener_run(g_config_file->get_value("zcore_listen")) != 0) {
 		printf("[system]: failed to run listener\n");
 		return 13;
 	}
-	auto cl_10 = make_scope_exit(listener_stop);
 
 	if (service_run_early() != 0) {
 		printf("[system]: failed to run PLUGIN_EARLY_INIT\n");
@@ -260,12 +266,11 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run service\n");
 		return 3;
 	}
-	auto cl_0 = make_scope_exit(service_stop);
+	auto cl_1 = make_scope_exit(system_services_stop);
 	if (0 != system_services_run()) {
 		printf("[system]: failed to run system services\n");
 		return 4;
 	}
-	auto cl_1 = make_scope_exit(system_services_stop);
 	if (common_util_run(g_config_file->get_value("data_file_path")) != 0) {
 		printf("[system]: failed to run common util\n");
 		return 5;
@@ -278,27 +283,22 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run msgchg grouping\n");
 		return 7;
 	}
-	auto cl_4 = make_scope_exit(msgchg_grouping_stop);
 	if (0 != ab_tree_run()) {
 		printf("[system]: failed to run address book tree\n");
 		return 8;
 	}
-	auto cl_5 = make_scope_exit(ab_tree_stop);
 	if (0 != rpc_parser_run()) {
 		printf("[system]: failed to run rpc parser\n");
 		return 9;
 	}
-	auto cl_6 = make_scope_exit(rpc_parser_stop);
 	if (0 != zarafa_server_run()) {
 		printf("[system]: failed to run zarafa server\n");
 		return 10;
 	}
-	auto cl_7 = make_scope_exit(zarafa_server_stop);
 	if (exmdb_client_run(g_config_file->get_value("config_file_path")) != 0) {
 		printf("[system]: failed to run exmdb client\n");
 		return 11;
 	}
-	auto cl_8 = make_scope_exit(exmdb_client_stop);
 	sact.sa_handler = term_handler;
 	sact.sa_flags   = SA_RESETHAND;
 	sigaction(SIGINT, &sact, nullptr);
