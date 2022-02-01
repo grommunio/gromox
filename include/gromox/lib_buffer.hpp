@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdlib>
 #include <cstring>
+#include <mutex>
 #include <type_traits>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
@@ -49,5 +50,5 @@ struct GX_EXPORT LIB_BUFFER {
 	void *heap_list_head = nullptr, *free_list_head = nullptr, *cur_heap_head = nullptr;
 	size_t free_list_size = 0, allocated_num = 0, item_size = 0, item_num = 0;
 	BOOL is_thread_safe = false;
-	pthread_mutex_t m_mutex;
+	std::mutex m_mutex;
 };

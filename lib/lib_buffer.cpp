@@ -2,7 +2,6 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
-#include <pthread.h>
 #include <gromox/defs.h>
 #include <gromox/util.hpp>
 #include <gromox/lib_buffer.hpp>
@@ -44,7 +43,6 @@ LIB_BUFFER *LIB_BUFFER::create(size_t item_size, size_t item_num, BOOL is_thread
 		return NULL;
 	}
 
-	pthread_mutex_init(&lib_buffer->m_mutex, NULL);
 	memset(head_listp, 0, (item_size_al + wsize_al) * item_num);
 	lib_buffer->heap_list_head	= head_listp;
 	lib_buffer->cur_heap_head	= head_listp;
@@ -68,7 +66,6 @@ LIB_BUFFER *LIB_BUFFER::create(size_t item_size, size_t item_num, BOOL is_thread
 LIB_BUFFER::~LIB_BUFFER()
 {
 	auto m_buf = this;
-	pthread_mutex_destroy(&m_buf->m_mutex);
 	free(m_buf->heap_list_head);
 }
 
@@ -89,8 +86,9 @@ void *LIB_BUFFER::get_raw()
 	void	*ret_buf	= NULL;
 	char	*phead		= NULL;
 
+	std::unique_lock tlock(m_buf->m_mutex, std::defer_lock_t{});
 	if (m_buf->is_thread_safe)
-		pthread_mutex_lock(&m_buf->m_mutex);
+		tlock.lock();
 	auto item_size_al = roundup(m_buf->item_size, sizeof(std::max_align_t));
 	if (m_buf->free_list_size > 0) {
 		phead	= (char *)m_buf->free_list_head;
@@ -104,18 +102,12 @@ void *LIB_BUFFER::get_raw()
 		m_buf->free_list_head  = (void*)phead;
 		m_buf->free_list_size -= 1;
 		m_buf->allocated_num  += 1;
-		if (m_buf->is_thread_safe)
-			pthread_mutex_unlock(&m_buf->m_mutex);
 		return ret_buf;
-		
 	} 
-
 	
 	if (m_buf->allocated_num >= m_buf->item_num) {
 		debug_info("[lib_buffer]: the total allocated buffer num"
 			" is larger than the initializing");
-		if (m_buf->is_thread_safe)
-			pthread_mutex_unlock(&m_buf->m_mutex);
 		return NULL;
 	}
 
@@ -125,9 +117,6 @@ void *LIB_BUFFER::get_raw()
 	phead  += item_size_al + wsize_al;
 	m_buf->cur_heap_head	= (void*)phead;
 	m_buf->allocated_num	+= 1;
-
-	if (m_buf->is_thread_safe)
-		pthread_mutex_unlock(&m_buf->m_mutex);
 	return ret_buf;
 }
 /*
@@ -158,24 +147,23 @@ void LIB_BUFFER::put_raw(void *item)
 	}
 #endif
 
+	std::unique_lock tlock(m_buf->m_mutex, std::defer_lock_t{});
 	if (m_buf->is_thread_safe)
-		pthread_mutex_lock(&m_buf->m_mutex);
+		tlock.lock();
 	memcpy(pcur_item + item_size_al, &m_buf->free_list_head, sizeof(void *));
 	m_buf->free_list_head = item;
 	m_buf->free_list_size += 1;
 	m_buf->allocated_num  -= 1;
-	if (m_buf->is_thread_safe)
-		pthread_mutex_unlock(&m_buf->m_mutex);
 }
 
 size_t LIB_BUFFER::get_param(PARAM_TYPE type)
 {
 	auto m_buf = this;
 	size_t	ret_val = 0xFFFFFFFF;
+	std::unique_lock tlock(m_buf->m_mutex, std::defer_lock_t{});
 	if (m_buf->is_thread_safe)
-		pthread_mutex_lock(&m_buf->m_mutex);
+		tlock.lock();
 	switch (type) {
-
 	case FREE_LIST_SIZE:
 		ret_val = m_buf->free_list_size;
 		break;
@@ -191,8 +179,6 @@ size_t LIB_BUFFER::get_param(PARAM_TYPE type)
 	default:
 		debug_info("[lib_buffer]: unknown type %d", type);
 	}
-	if (m_buf->is_thread_safe)
-		pthread_mutex_unlock(&m_buf->m_mutex);
 	return ret_val;
 }
 
