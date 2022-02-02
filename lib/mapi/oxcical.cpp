@@ -1416,6 +1416,32 @@ static ol_busy_status lookup_busy_by_name(std::shared_ptr<ICAL_LINE> l)
 	return v != nullptr ? lookup_busy_by_name(v) : olIndeterminate;
 }
 
+static ol_busy_status lookup_busy_by_transp(std::shared_ptr<ICAL_LINE> l)
+{
+	if (l == nullptr)
+		return olIndeterminate;
+	auto v = l->get_first_subvalue();
+	if (strcasecmp(v, "TRANSPARENT") == 0)
+		return olFree;
+	if (strcasecmp(v, "OPAQUE") == 0)
+		return olBusy;
+	return olIndeterminate;
+}
+
+static ol_busy_status lookup_busy_by_status(std::shared_ptr<ICAL_LINE> l)
+{
+	if (l == nullptr)
+		return olIndeterminate;
+	auto v = l->get_first_subvalue();
+	if (strcasecmp(v, "CANCELLED") == 0)
+		return olFree;
+	if (strcasecmp(v, "TENTATIVE") == 0)
+		return olTentative;
+	if (strcasecmp(v, "CONFIRMED") == 0)
+		return olBusy;
+	return olIndeterminate;
+}
+
 static BOOL oxcical_set_busystatus(ol_busy_status busy_status,
     uint32_t pidlid, namemap &phash, uint16_t *plast_propid,
     MESSAGE_CONTENT *pmsg, EXCEPTIONINFO *pexception)
@@ -1432,92 +1458,6 @@ static BOOL oxcical_set_busystatus(ol_busy_status busy_status,
 		pexception->overrideflags |= ARO_BUSYSTATUS;
 		pexception->busystatus = busy_status;
 	}
-	return TRUE;
-}
-
-static BOOL oxcical_parse_transp(std::shared_ptr<ICAL_LINE> piline,
-    uint32_t intended_val, namemap &phash, uint16_t *plast_propid,
-    MESSAGE_CONTENT *pmsg, EXCEPTIONINFO *pexception)
-{
-	uint32_t tmp_int32;
-	const char *pvalue;
-	
-	pvalue = piline->get_first_subvalue();
-	if (NULL == pvalue) {
-		return TRUE;
-	}
-	if (0 == strcasecmp(pvalue, "TRANSPARENT")) {
-		tmp_int32 = 0;
-	} else if (0 == strcasecmp(pvalue, "OPAQUE")) {
-		tmp_int32 = 2;
-	} else {
-		return TRUE;
-	}
-	PROPERTY_NAME propname = {MNID_ID, PSETID_APPOINTMENT, PidLidBusyStatus};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
-		return FALSE;
-	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &tmp_int32) != 0)
-		return FALSE;
-	(*plast_propid) ++;
-	if (NULL != pexception) {
-		pexception->overrideflags |= ARO_BUSYSTATUS;
-		pexception->busystatus = tmp_int32;
-	}
-
-	if (intended_val == 0)
-		return TRUE;
-	else if (intended_val == 2)
-		intended_val = tmp_int32;
-	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidIntendedBusyStatus};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
-		return FALSE;
-	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &intended_val) != 0)
-		return FALSE;
-	(*plast_propid) ++;
-	return TRUE;
-}
-
-static BOOL oxcical_parse_status(std::shared_ptr<ICAL_LINE> piline,
-    uint32_t intended_val, namemap &phash, uint16_t *plast_propid,
-    MESSAGE_CONTENT *pmsg, EXCEPTIONINFO *pexception)
-{
-	uint32_t tmp_int32;
-	const char *pvalue;
-	
-	pvalue = piline->get_first_subvalue();
-	if (NULL == pvalue) {
-		return TRUE;
-	}
-	if (0 == strcasecmp(pvalue, "CANCELLED")) {
-		tmp_int32 = 0;
-	} else if (0 == strcasecmp(pvalue, "TENTATIVE")) {
-		tmp_int32 = 1;
-	}  else if (0 == strcasecmp(pvalue, "CONFIRMED")) {
-		tmp_int32 = 2;
-	} else {
-		return TRUE;
-	}
-	PROPERTY_NAME propname = {MNID_ID, PSETID_APPOINTMENT, PidLidBusyStatus};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
-		return FALSE;
-	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &tmp_int32) != 0)
-		return FALSE;
-	(*plast_propid) ++;
-	if (NULL != pexception) {
-		pexception->overrideflags |= ARO_BUSYSTATUS;
-		pexception->busystatus = tmp_int32;
-	}
-
-	if (intended_val == 0)
-		return TRUE;
-	else if (intended_val == 2)
-		intended_val = tmp_int32;
-	propname = {MNID_ID, PSETID_APPOINTMENT, PidLidIntendedBusyStatus};
-	if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
-		return FALSE;
-	if (pmsg->proplist.set(PROP_TAG(PT_LONG, *plast_propid), &intended_val) != 0)
-		return FALSE;
-	(*plast_propid) ++;
 	return TRUE;
 }
 
@@ -2329,6 +2269,10 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			}
 		}
 	}
+	if (busy_status == olIndeterminate)
+		busy_status = lookup_busy_by_transp(pmain_event->get_line("TRANSP"));
+	if (busy_status == olIndeterminate)
+		busy_status = lookup_busy_by_status(pmain_event->get_line("STATUS"));
 	/*
 	 * N.B.: This edits the MAPI message destined for the Inbox folder; it is not
 	 * editing the Calendar folder MAPI message (this does not exist yet).
@@ -2340,24 +2284,6 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	    &last_propid, pmsg, nullptr))
 		return false;
 
-	if (busy_status == olIndeterminate && intent_status == olIndeterminate) {
-		piline = pmain_event->get_line("TRANSP");
-		if (NULL != piline) {
-			if (FALSE == oxcical_parse_transp(piline,
-				tmp_int32, phash, &last_propid, pmsg, pexception)) {
-				return FALSE;
-			}
-		} else {
-			piline = pmain_event->get_line("STATUS");
-			if (NULL != piline) {
-				if (FALSE == oxcical_parse_status(piline,
-					tmp_int32, phash, &last_propid, pmsg, pexception)) {
-					return FALSE;
-				}
-			}
-		}
-	}
-	
 	if (!oxcical_parse_ownerapptid(pmain_event, pmsg) ||
 	    !oxcical_parse_disallow_counter(pmain_event, phash,
 	    &last_propid, pmsg) ||
