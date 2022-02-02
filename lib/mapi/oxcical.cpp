@@ -2014,7 +2014,7 @@ static bool oxcical_parse_importance(std::shared_ptr<ical_component> main_event,
 		auto str = line->get_first_subvalue();
 		if (str == nullptr)
 			return true;
-		auto imp = strtol(str, nullptr, 0);
+		uint32_t imp = strtol(str, nullptr, 0);
 		if (imp >= IMPORTANCE_LOW && imp <= IMPORTANCE_HIGH &&
 		    msg->proplist.set(PR_IMPORTANCE, &imp) != 0)
 			return false;
