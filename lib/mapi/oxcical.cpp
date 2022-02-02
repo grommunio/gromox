@@ -2306,7 +2306,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		apr.pexceptioninfo = exceptions;
 		apr.pextendedexception = ext_exceptions;
 		if (!oxcical_parse_rrule(ptz_component, piline, calendartype,
-		    start_time, 60 * duration_min, &apr))
+		    start_time, duration_min, &apr))
 			return FALSE;
 		piline = pmain_event->get_line("EXDATE");
 		if (NULL == piline) {
