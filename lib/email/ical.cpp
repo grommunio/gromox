@@ -2684,11 +2684,6 @@ bool ical_rrule_iterate(ICAL_RRULE *pirrule)
 	}
 }
 
-int ical_rrule_weekstart(const ICAL_RRULE *pirrule)
-{
-	return pirrule->weekstart;
-}
-
 bool ical_rrule_endless(const ICAL_RRULE *pirrule)
 {
 	if (pirrule->total_count == 0 && !pirrule->b_until)
@@ -2704,39 +2699,9 @@ const ICAL_TIME *ical_rrule_until_itime(const ICAL_RRULE *pirrule)
 		return &pirrule->until_itime;
 }
 
-int ical_rrule_total_count(const ICAL_RRULE *pirrule)
-{
-	return pirrule->total_count;
-}
-
-bool ical_rrule_exceptional(const ICAL_RRULE *pirrule)
-{
-	return pirrule->b_start_exceptional;
-}
-
-ICAL_TIME ical_rrule_base_itime(const ICAL_RRULE *pirrule)
-{
-	return pirrule->base_itime;
-}
-
 int ical_rrule_sequence(const ICAL_RRULE *pirrule)
 {
 	return pirrule->current_instance;
-}
-
-ICAL_TIME ical_rrule_instance_itime(const ICAL_RRULE *pirrule)
-{
-	return pirrule->instance_itime;
-}
-
-int ical_rrule_interval(const ICAL_RRULE *pirrule)
-{
-	return pirrule->interval;
-}
-
-int ical_rrule_frequency(const ICAL_RRULE *pirrule)
-{
-	return pirrule->frequency;
 }
 
 bool ical_rrule_check_bymask(const ICAL_RRULE *pirrule, unsigned int rrule_by)

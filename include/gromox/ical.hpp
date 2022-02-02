@@ -157,14 +157,7 @@ extern GX_EXPORT bool ical_datetime_to_utc(std::shared_ptr<ICAL_COMPONENT>, cons
 extern GX_EXPORT bool ical_utc_to_datetime(std::shared_ptr<ICAL_COMPONENT>, time_t utc_time, ICAL_TIME *);
 extern GX_EXPORT bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT>, time_t start, const ical_vlist *value_list, ICAL_RRULE *);
 extern GX_EXPORT bool ical_rrule_iterate(ICAL_RRULE *);
-extern GX_EXPORT int ical_rrule_weekstart(const ICAL_RRULE *);
 extern GX_EXPORT bool ical_rrule_endless(const ICAL_RRULE *);
 extern GX_EXPORT const ICAL_TIME *ical_rrule_until_itime(const ICAL_RRULE *);
-extern GX_EXPORT int ical_rrule_total_count(const ICAL_RRULE *);
-extern GX_EXPORT bool ical_rrule_exceptional(const ICAL_RRULE *);
-extern GX_EXPORT ICAL_TIME ical_rrule_base_itime(const ICAL_RRULE *);
 extern GX_EXPORT int ical_rrule_sequence(const ICAL_RRULE *);
-extern GX_EXPORT ICAL_TIME ical_rrule_instance_itime(const ICAL_RRULE *);
-extern GX_EXPORT int ical_rrule_interval(const ICAL_RRULE *);
-extern GX_EXPORT int ical_rrule_frequency(const ICAL_RRULE *);
 extern GX_EXPORT bool ical_rrule_check_bymask(const ICAL_RRULE *, unsigned int rrule_by);

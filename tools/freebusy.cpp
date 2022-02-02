@@ -1026,7 +1026,6 @@ static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	time_t start_time, time_t end_time, DOUBLE_LIST *plist)
 {
 	int i;
-	ICAL_TIME itime;
 	time_t tmp_time;
 	time_t tmp_time1;
 	uint64_t nt_time;
@@ -1038,7 +1037,7 @@ static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		return FALSE;	
 	double_list_init(plist);
 	do {
-		itime = ical_rrule_instance_itime(&irrule);
+		auto itime = irrule.instance_itime;
 		ical_itime_to_utc(ptz_component, itime, &tmp_time);
 		if (tmp_time < start_time)
 			continue;
@@ -1065,6 +1064,7 @@ static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		nt_time = apr->pexceptioninfo[i].startdatetime;
 		nt_time *= 600000000;
 		tmp_time = rop_util_nttime_to_unix(nt_time);
+		ICAL_TIME itime;
 		ical_utc_to_datetime(NULL, tmp_time, &itime);
 		ical_itime_to_utc(ptz_component, itime, &tmp_time);
 		if (tmp_time >= start_time && tmp_time <= end_time) {

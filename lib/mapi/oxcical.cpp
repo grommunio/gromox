@@ -323,13 +323,10 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
     uint32_t duration_minutes, APPOINTMENT_RECUR_PAT *apr)
 {
 	time_t tmp_time;
-	ICAL_TIME itime;
 	ICAL_TIME itime1;
 	ICAL_RRULE irrule;
 	const char *pvalue;
 	uint32_t patterntype = 0;
-	ICAL_TIME itime_base;
-	ICAL_TIME itime_first;
 	const ICAL_TIME *pitime;
 	
 	if (piline->get_subval_list("BYYEARDAY") != nullptr ||
@@ -351,19 +348,19 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	}
 	if (!ical_parse_rrule(ptz_component, start_time, &piline->value_list, &irrule))
 		return FALSE;
-	auto b_exceptional = ical_rrule_exceptional(&irrule);
+	auto b_exceptional = irrule.b_start_exceptional;
 	if (b_exceptional)
 		if (!ical_rrule_iterate(&irrule))
 			return FALSE;
-	itime_base = ical_rrule_base_itime(&irrule);
-	itime_first = ical_rrule_instance_itime(&irrule);
+	auto itime_base = irrule.base_itime;
+	auto itime_first = irrule.instance_itime;
 	apr->readerversion2 = 0x3006;
 	apr->writerversion2 = 0x3009;
 	apr->recur_pat.readerversion = 0x3004;
 	apr->recur_pat.writerversion = 0x3004;
 	apr->recur_pat.slidingflag = 0;
-	apr->recur_pat.firstdow = ical_rrule_weekstart(&irrule);
-	itime = ical_rrule_instance_itime(&irrule);
+	apr->recur_pat.firstdow = irrule.weekstart;
+	auto itime = irrule.instance_itime;
 	apr->starttimeoffset = 60 * itime.hour + itime.minute;
 	apr->endtimeoffset = apr->starttimeoffset + duration_minutes;
 	itime.hour = 0;
@@ -377,9 +374,9 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		apr->recur_pat.occurrencecount = 10;
 		apr->recur_pat.enddate = ENDDATE_MISSING;
 	} else {
-		itime = ical_rrule_instance_itime(&irrule);
+		itime = irrule.instance_itime;
 		while (ical_rrule_iterate(&irrule)) {
-			itime1 = ical_rrule_instance_itime(&irrule);
+			itime1 = irrule.instance_itime;
 			if (itime1.year > 4500) {
 				goto SET_INFINITE;
 			}
@@ -391,9 +388,9 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			}
 			itime = itime1;
 		}
-		if (0 != ical_rrule_total_count(&irrule)) {
+		if (irrule.total_count != 0) {
 			apr->recur_pat.endtype = ENDTYPE_AFTER_N_OCCURRENCES;
-			apr->recur_pat.occurrencecount = ical_rrule_total_count(&irrule);
+			apr->recur_pat.occurrencecount = irrule.total_count;
 		} else {
 			apr->recur_pat.endtype = ENDTYPE_AFTER_DATE;
 			apr->recur_pat.occurrencecount = ical_rrule_sequence(&irrule);
@@ -401,18 +398,14 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (b_exceptional)
 			--apr->recur_pat.occurrencecount;
 		pitime = ical_rrule_until_itime(&irrule);
-		if (NULL != pitime) {
-			itime = *pitime;
-		} else {
-			itime = ical_rrule_instance_itime(&irrule);
-		}
+		itime = pitime != nullptr ? *pitime : irrule.instance_itime;
 		itime.hour = 0;
 		itime.minute = 0;
 		itime.second = 0;
 		ical_itime_to_utc(ptz_component, itime, &tmp_time);
 		apr->recur_pat.enddate = rop_util_unix_to_nttime(tmp_time) / 600000000;
 	}
-	switch (ical_rrule_frequency(&irrule)) {
+	switch (irrule.frequency) {
 	case ICAL_FREQUENCY_SECOND:
 	case ICAL_FREQUENCY_MINUTE:
 	case ICAL_FREQUENCY_HOUR:
@@ -423,10 +416,9 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		    piline->get_subval_list("BYSETPOS") != nullptr)
 			return FALSE;
 		apr->recur_pat.recurfrequency = RECURFREQUENCY_DAILY;
-		if (ical_rrule_interval(&irrule) > 999) {
+		if (irrule.interval > 999)
 			return FALSE;
-		}
-		apr->recur_pat.period = ical_rrule_interval(&irrule) * 1440;
+		apr->recur_pat.period = irrule.interval * 1440;
 		apr->recur_pat.firstdatetime = apr->recur_pat.startdate % apr->recur_pat.period;
 		patterntype = PATTERNTYPE_DAY;
 		break;
@@ -435,10 +427,9 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		    piline->get_subval_list("BYSETPOS") != nullptr)
 			return FALSE;
 		apr->recur_pat.recurfrequency = RECURFREQUENCY_WEEKLY;
-		if (ical_rrule_interval(&irrule) > 99) {
+		if (irrule.interval > 99)
 			return FALSE;
-		}
-		apr->recur_pat.period = ical_rrule_interval(&irrule);
+		apr->recur_pat.period = irrule.interval;
 		itime = itime_base;
 		itime.hour = 0;
 		itime.minute = 0;
@@ -447,7 +438,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		ical_itime_to_utc(NULL, itime, &tmp_time);
 		apr->recur_pat.firstdatetime =
 			(rop_util_unix_to_nttime(tmp_time)/600000000)%
-			(10080*ical_rrule_interval(&irrule));
+			(10080 * irrule.interval);
 		patterntype = PATTERNTYPE_WEEK;
 		if (ical_rrule_check_bymask(&irrule, RRULE_BY_DAY)) {
 			psubval_list = piline->get_subval_list("BYDAY");
@@ -479,14 +470,13 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		if (piline->get_subval_list("BYMONTH") != nullptr)
 			return FALSE;
 		apr->recur_pat.recurfrequency = RECURFREQUENCY_MONTHLY;
-		if (ical_rrule_interval(&irrule) > 99) {
+		if (irrule.interval > 99)
 			return FALSE;
-		}
-		apr->recur_pat.period = ical_rrule_interval(&irrule);
+		apr->recur_pat.period = irrule.interval;
 		memset(&itime, 0, sizeof(ICAL_TIME));
 		itime.year = 1601;
-		itime.month = ((itime_base.year - 1601)*12 + itime_base.month - 1)
-										%ical_rrule_interval(&irrule) + 1;
+		itime.month = ((itime_base.year - 1601) * 12 + itime_base.month - 1) %
+		              irrule.interval + 1;
 		itime.year += itime.month/12;
 		itime.month %= 12;
 		itime.day = 1;
@@ -549,14 +539,12 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		break;
 	case ICAL_FREQUENCY_YEAR:
 		apr->recur_pat.recurfrequency = RECURFREQUENCY_YEARLY;
-		if (ical_rrule_interval(&irrule) > 8) {
+		if (irrule.interval > 8)
 			return FALSE;
-		}
-		apr->recur_pat.period = 12 * ical_rrule_interval(&irrule);
+		apr->recur_pat.period = 12 * irrule.interval;
 		memset(&itime, 0, sizeof(ICAL_TIME));
 		itime.year = 1601;
-		itime.month = (itime_first.month - 1)
-			%(12*ical_rrule_interval(&irrule)) + 1;
+		itime.month = (itime_first.month - 1) % (12 * irrule.interval) + 1;
 		itime.year += itime.month/12;
 		itime.month %= 12;
 		itime.day = 1;
