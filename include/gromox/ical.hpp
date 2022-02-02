@@ -72,8 +72,12 @@ struct GX_EXPORT ical_component {
 };
 using ICAL_COMPONENT = ical_component;
 
-struct GX_EXPORT ICAL : public ical_component {
+struct GX_EXPORT ical : public ical_component {
+	int init();
+	bool retrieve(char *in_buff);
+	bool serialize(char *out_buff, size_t maxlen);
 };
+using ICAL = ical;
 
 struct ICAL_TIME {
 	int twcompare(const ICAL_TIME &other) const;
@@ -137,9 +141,6 @@ struct GX_EXPORT ical_rrule {
 };
 using ICAL_RRULE = ical_rrule;
 
-extern GX_EXPORT int ical_init(ICAL *pical);
-extern GX_EXPORT bool ical_retrieve(ICAL *, char *in_buff);
-extern GX_EXPORT bool ical_serialize(ICAL *, char *out_buff, size_t maxlen);
 extern GX_EXPORT std::shared_ptr<ICAL_COMPONENT> ical_new_component(const char *name);
 extern GX_EXPORT std::shared_ptr<ICAL_LINE> ical_new_line(const char *name);
 extern GX_EXPORT std::shared_ptr<ICAL_PARAM> ical_new_param(const char *name);

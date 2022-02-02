@@ -154,9 +154,9 @@ std::shared_ptr<ICAL_COMPONENT> ical_new_component(const char *name)
 	return nullptr;
 }
 
-int ical_init(ICAL *pical)
+int ical::init()
 {
-	return ical_init_component(pical, "VCALENDAR");
+	return ical_init_component(this, "VCALENDAR");
 }
 
 static bool ical_retrieve_line_item(char *pline, LINE_ITEM *pitem)
@@ -476,8 +476,9 @@ static bool ical_retrieve_component(ICAL_COMPONENT *pcomponent,
 	return false;
 }
 
-bool ical_retrieve(ICAL *pical, char *in_buff)
+bool ical::retrieve(char *in_buff)
 {
+	auto pical = this;
 	char *pline;
 	char *pnext;
 	size_t length;
@@ -713,12 +714,9 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 	return offset;
 }
 
-bool ical_serialize(ICAL *pical, char *out_buff, size_t max_length)
+bool ical::serialize(char *out_buff, size_t max_length)
 {
-	if (0 == ical_serialize_component(pical, out_buff, max_length)) {
-		return false;
-	}
-	return true;
+	return ical_serialize_component(this, out_buff, max_length) != 0;
 }
 
 bool ICAL_PARAM::append_paramval(const char *paramval)

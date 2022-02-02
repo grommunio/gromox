@@ -3705,12 +3705,12 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			if (FALSE == utf8_check(pcontent + content_len + 1)) {
 				utf8_filter(pcontent + content_len + 1);
 			}
-			if (ical_init(&ical) < 0) {
+			if (ical.init() < 0) {
 				free(pcontent);
 				message_content_free(pmsg);
 				return nullptr;
 			}
-			if (!ical_retrieve(&ical, pcontent + content_len + 1) ||
+			if (!ical.retrieve(pcontent + content_len + 1) ||
 				NULL == (pmsg1 = oxcical_import(
 				str_zone, &ical, alloc, get_propids,
 				oxcmail_username_to_entryid))) {
@@ -5533,7 +5533,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 	if (NULL != pcalendar) {
 		char tmp_buff[1024*1024];
 		
-		if (ical_init(&ical) < 0)
+		if (ical.init() < 0)
 			goto EXPORT_FAILURE;
 		if (FALSE == oxcical_export(pmsg, &ical, alloc,
 		    get_propids, oxcmail_entryid_to_username,
@@ -5546,7 +5546,7 @@ BOOL oxcmail_export(const MESSAGE_CONTENT *pmsg, BOOL b_tnef, int body_type,
 			if (str != nullptr)
 				gx_strlcpy(tmp_method, str, arsizeof(tmp_method));
 		}
-		if (!ical_serialize(&ical, tmp_buff, sizeof(tmp_buff)))
+		if (!ical.serialize(tmp_buff, arsizeof(tmp_buff)))
 			goto EXPORT_FAILURE;
 		if (!pcalendar->write_content(tmp_buff,
 			strlen(tmp_buff), MIME_ENCODING_BASE64)) {

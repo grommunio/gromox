@@ -2462,7 +2462,7 @@ BOOL common_util_message_to_ical(store_object *pstore,
 	if (!exmdb_client::read_message(pstore->get_dir(), nullptr, cpid,
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
-	if (ical_init(&ical) < 0)
+	if (ical.init() < 0)
 		return false;
 	common_util_set_dir(pstore->get_dir());
 	if (FALSE == oxcical_export(pmsgctnt, &ical,
@@ -2472,7 +2472,7 @@ BOOL common_util_message_to_ical(store_object *pstore,
 		system_services_lcid_to_ltag)) {
 		return FALSE;
 	}
-	if (!ical_serialize(&ical, tmp_buff, sizeof(tmp_buff)))
+	if (!ical.serialize(tmp_buff, arsizeof(tmp_buff)))
 		return FALSE;	
 	pical_bin->cb = strlen(tmp_buff);
 	pical_bin->pc = common_util_dup(tmp_buff);
@@ -2495,9 +2495,7 @@ MESSAGE_CONTENT *common_util_ical_to_message(store_object *pstore,
 	}
 	memcpy(pbuff, pical_bin->pb, pical_bin->cb);
 	pbuff[pical_bin->cb] = '\0';
-	if (ical_init(&ical) < 0)
-		return nullptr;
-	if (!ical_retrieve(&ical, pbuff))
+	if (ical.init() < 0 || !ical.retrieve(pbuff))
 		return NULL;
 	common_util_set_dir(pstore->get_dir());
 	return oxcical_import(tmzone, &ical, common_util_alloc,

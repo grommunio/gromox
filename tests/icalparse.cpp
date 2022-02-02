@@ -36,11 +36,11 @@ int main(int argc, const char **argv)
 	else
 		data.reset(HX_slurp_fd(STDIN_FILENO, nullptr));
 	ICAL ical;
-	if (ical_init(&ical) < 0) {
+	if (ical.init() < 0) {
 		printf("BAD ical_init\n");
 		return EXIT_FAILURE;
 	}
-	if (!ical_retrieve(&ical, data.get()))
+	if (!ical.retrieve(data.get()))
 		printf("BAD retrieve\n");
 	auto msg = oxcical_import("UTC", &ical, malloc, get_propids, un_to_eid);
 	if (msg == nullptr)
