@@ -4749,7 +4749,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	
 	pvalue = pmsg->proplist.getval(PR_IMPORTANCE);
 	if (NULL != pvalue) {
-		switch (*(uint32_t*)pvalue) {
+		switch (static_cast<mapi_importance>(*static_cast<uint32_t *>(pvalue))) {
 		case IMPORTANCE_LOW:
 			piline = ical_new_simple_line(
 				"X-MICROSOFT-CDO-IMPORTANCE", "0");
@@ -4776,6 +4776,8 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			}
 			if (pcomponent->append_line(piline) < 0)
 				return false;
+			break;
+		default:
 			break;
 		}
 	}
