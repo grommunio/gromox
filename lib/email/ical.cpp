@@ -2684,19 +2684,19 @@ bool ical_rrule_iterate(ICAL_RRULE *pirrule)
 	}
 }
 
-int ical_rrule_weekstart(ICAL_RRULE *pirrule)
+int ical_rrule_weekstart(const ICAL_RRULE *pirrule)
 {
 	return pirrule->weekstart;
 }
 
-bool ical_rrule_endless(ICAL_RRULE *pirrule)
+bool ical_rrule_endless(const ICAL_RRULE *pirrule)
 {
 	if (pirrule->total_count == 0 && !pirrule->b_until)
 		return true;
 	return false;
 }
 
-const ICAL_TIME* ical_rrule_until_itime(ICAL_RRULE *pirrule)
+const ICAL_TIME *ical_rrule_until_itime(const ICAL_RRULE *pirrule)
 {
 	if (!pirrule->b_until)
 		return nullptr;
@@ -2704,42 +2704,42 @@ const ICAL_TIME* ical_rrule_until_itime(ICAL_RRULE *pirrule)
 		return &pirrule->until_itime;
 }
 
-int ical_rrule_total_count(ICAL_RRULE *pirrule)
+int ical_rrule_total_count(const ICAL_RRULE *pirrule)
 {
 	return pirrule->total_count;
 }
 
-bool ical_rrule_exceptional(ICAL_RRULE *pirrule)
+bool ical_rrule_exceptional(const ICAL_RRULE *pirrule)
 {
 	return pirrule->b_start_exceptional;
 }
 
-ICAL_TIME ical_rrule_base_itime(ICAL_RRULE *pirrule)
+ICAL_TIME ical_rrule_base_itime(const ICAL_RRULE *pirrule)
 {
 	return pirrule->base_itime;
 }
 
-int ical_rrule_sequence(ICAL_RRULE *pirrule)
+int ical_rrule_sequence(const ICAL_RRULE *pirrule)
 {
 	return pirrule->current_instance;
 }
 
-ICAL_TIME ical_rrule_instance_itime(ICAL_RRULE *pirrule)
+ICAL_TIME ical_rrule_instance_itime(const ICAL_RRULE *pirrule)
 {
 	return pirrule->instance_itime;
 }
 
-int ical_rrule_interval(ICAL_RRULE *pirrule)
+int ical_rrule_interval(const ICAL_RRULE *pirrule)
 {
 	return pirrule->interval;
 }
 
-int ical_rrule_frequency(ICAL_RRULE *pirrule)
+int ical_rrule_frequency(const ICAL_RRULE *pirrule)
 {
 	return pirrule->frequency;
 }
 
-bool ical_rrule_check_bymask(ICAL_RRULE *pirrule, int rrule_by)
+bool ical_rrule_check_bymask(const ICAL_RRULE *pirrule, unsigned int rrule_by)
 {
 	return pirrule->by_mask[rrule_by];
 }
