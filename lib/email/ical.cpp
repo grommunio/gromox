@@ -1834,18 +1834,16 @@ static int ical_hint_rrule(ICAL_RRULE *pirrule, ICAL_TIME itime)
 		if (ICAL_FREQUENCY_WEEK == pirrule->frequency) {
 			weekorder = itime.delta_day(pirrule->base_itime) / 7 + 1;
 			nweekorder = -(itime.delta_day(pirrule->next_base_itime) - 1) / 7 - 1;
+		} else if (pirrule->frequency == ICAL_FREQUENCY_MONTH ||
+		    pirrule->by_mask[RRULE_BY_MONTH]) {
+			weekorder = ical_get_monthweekorder(itime.day);
+			nweekorder = ical_get_negative_monthweekorder(
+			             itime.year, itime.month, itime.day);
 		} else {
-			if (ICAL_FREQUENCY_MONTH == pirrule->frequency ||
-			    pirrule->by_mask[RRULE_BY_MONTH]) {
-				weekorder = ical_get_monthweekorder(itime.day);
-				nweekorder = ical_get_negative_monthweekorder(
-							itime.year, itime.month, itime.day);
-			} else {
-				weekorder = ical_get_yearweekorder(
-					itime.year, itime.month, itime.day);
-				nweekorder = ical_get_negative_yearweekorder(
-							itime.year, itime.month, itime.day);
-			}
+			weekorder = ical_get_yearweekorder(
+			            itime.year, itime.month, itime.day);
+			nweekorder = ical_get_negative_yearweekorder(
+			             itime.year, itime.month, itime.day);
 		}
 		if (!ical_hint_bitmap(pirrule->wday_bitmap, 7 * (weekorder - 1) + dayofweek) &&
 		    !ical_hint_bitmap(pirrule->nwday_bitmap, 7 * (-nweekorder - 1) + dayofweek))
