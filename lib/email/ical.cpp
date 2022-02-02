@@ -2671,16 +2671,16 @@ bool ical_rrule_iterate(ICAL_RRULE *pirrule)
 				ical_calculate_setpos(pirrule);
 		}
 		hint_result = ical_hint_rrule(pirrule, itime);
-		if (0 == hint_result) {
-			if (pirrule->by_mask[RRULE_BY_SETPOS]) {
-				pirrule->cur_setpos ++;
-				if (!ical_hint_setpos(pirrule))
-					continue;
-			}
-			pirrule->current_instance ++;
-			pirrule->instance_itime = itime;
-			return true;
+		if (hint_result != 0)
+			continue;
+		if (pirrule->by_mask[RRULE_BY_SETPOS]) {
+			pirrule->cur_setpos++;
+			if (!ical_hint_setpos(pirrule))
+				continue;
 		}
+		pirrule->current_instance++;
+		pirrule->instance_itime = itime;
+		return true;
 	}
 }
 
