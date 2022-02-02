@@ -2063,7 +2063,6 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	ICAL_TIME itime;
 	const char *ptzid;
 	time_t start_time;
-	uint32_t tmp_int32;
 	const char *pvalue;
 	const char *pvalue1;
 	ICAL_TIME end_itime;
@@ -2193,11 +2192,9 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		pmain_event, end_time, phash, &last_propid, pmsg)) {
 		return FALSE;
 	}
-	tmp_int32 = (end_time - start_time)/60;
-	if (FALSE == oxcical_parse_duration(tmp_int32,
-		phash, &last_propid, pmsg)) {
+	uint32_t duration_min = (end_time - start_time) / 60;
+	if (!oxcical_parse_duration(duration_min, phash, &last_propid, pmsg))
 		return FALSE;
-	}
 	
 	if (!b_allday && !b_utc_start && !b_utc_end && start_itime.hour == 0 &&
 	    start_itime.minute == 0 && start_itime.second == 0 &&
@@ -2244,7 +2241,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	    !oxcical_parse_importance(pmain_event, pmsg))
 		return FALSE;
 	if (!pmsg->proplist.has(PR_IMPORTANCE)) {
-		tmp_int32 = IMPORTANCE_NORMAL;
+		int32_t tmp_int32 = IMPORTANCE_NORMAL;
 		if (pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
 			return FALSE;
 	}
@@ -2309,7 +2306,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		apr.pexceptioninfo = exceptions;
 		apr.pextendedexception = ext_exceptions;
 		if (!oxcical_parse_rrule(ptz_component, piline, calendartype,
-		    start_time, 60 * tmp_int32, &apr))
+		    start_time, 60 * duration_min, &apr))
 			return FALSE;
 		piline = pmain_event->get_line("EXDATE");
 		if (NULL == piline) {
@@ -2388,31 +2385,28 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 				piline, &b_utc, &itime, &tmp_time)) {
 				return FALSE;
 			}
-			tmp_int32 = rop_util_unix_to_nttime(tmp_time)/600000000;
+			auto minutes = rop_util_unix_to_nttime(tmp_time) / 600000000U;
 			size_t i;
 			for (i = 0; i < apr.recur_pat.deletedinstancecount; ++i) {
-				if (tmp_int32 == deleted_dates[i]) {
+				if (deleted_dates[i] == minutes)
 					break;
-				}
 			}
 			if (i < apr.recur_pat.deletedinstancecount)
 				continue;
-			deleted_dates[apr.recur_pat.deletedinstancecount] = tmp_int32;
-			++apr.recur_pat.deletedinstancecount;
+			deleted_dates[apr.recur_pat.deletedinstancecount++] = minutes;
 			if (apr.recur_pat.deletedinstancecount >= 1024)
 				return FALSE;
-			exceptions[apr.exceptioncount].originalstartdate = tmp_int32;
-			ext_exceptions[apr.exceptioncount].originalstartdate = tmp_int32;
+			exceptions[apr.exceptioncount].originalstartdate = minutes;
+			ext_exceptions[apr.exceptioncount].originalstartdate = minutes;
 			ical_itime_to_utc(NULL, start_itime, &tmp_time);
-			tmp_int32 = rop_util_unix_to_nttime(tmp_time)/600000000;
-			modified_dates[apr.recur_pat.modifiedinstancecount] = tmp_int32; 
-			++apr.recur_pat.modifiedinstancecount;
-			exceptions[apr.exceptioncount].startdatetime = tmp_int32;
-			ext_exceptions[apr.exceptioncount].startdatetime = tmp_int32;
+			minutes = rop_util_unix_to_nttime(tmp_time)/600000000;
+			modified_dates[apr.recur_pat.modifiedinstancecount++] = minutes;
+			exceptions[apr.exceptioncount].startdatetime = minutes;
+			ext_exceptions[apr.exceptioncount].startdatetime = minutes;
 			ical_itime_to_utc(NULL, end_itime, &tmp_time);
-			tmp_int32 = rop_util_unix_to_nttime(tmp_time)/600000000;
-			exceptions[apr.exceptioncount].enddatetime = tmp_int32;
-			ext_exceptions[apr.exceptioncount].enddatetime = tmp_int32;
+			minutes = rop_util_unix_to_nttime(tmp_time)/600000000;
+			exceptions[apr.exceptioncount].enddatetime = minutes;
+			ext_exceptions[apr.exceptioncount].enddatetime = minutes;
 			++apr.exceptioncount;
 		}
 		qsort(deleted_dates, apr.recur_pat.deletedinstancecount, sizeof(uint32_t), oxcical_cmp_date);
@@ -2434,6 +2428,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	}
 	
 	b_alarm = FALSE;
+	uint32_t alarmdelta = 0;
 	if (pmain_event->component_list.size() > 0) {
 		auto palarm_component = pmain_event->component_list.front();
 		if (strcasecmp(palarm_component->m_name.c_str(), "VALARM") == 0) {
@@ -2441,26 +2436,25 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			piline = palarm_component->get_line("TRIGGER");
 			if (piline == nullptr ||
 			    (pvalue = piline->get_first_subvalue()) == nullptr) {
-				tmp_int32 = dfl_alarm_offset(b_allday);
+				alarmdelta = dfl_alarm_offset(b_allday);
 			} else {
 				pvalue1 = piline->get_first_paramval("RELATED");
 				if (NULL == pvalue1) {
 					pvalue1 = piline->get_first_paramval("VALUE");
-					tmp_int32 = (pvalue1 == nullptr || strcasecmp(pvalue1, "DATE-TIME") == 0) &&
+					alarmdelta = (pvalue1 == nullptr || strcasecmp(pvalue1, "DATE-TIME") == 0) &&
 					            ical_datetime_to_utc(ptz_component, pvalue, &tmp_time) ?
 					            llabs(start_time - tmp_time) / 60 :
 					            dfl_alarm_offset(b_allday);
 				} else {
-					tmp_int32 = strcasecmp(pvalue1, "START") == 0 &&
+					alarmdelta = strcasecmp(pvalue1, "START") == 0 &&
 					            ical_parse_duration(pvalue, &duration) ?
 					            labs(duration) / 60 :
 					            dfl_alarm_offset(b_allday);
 				}
 			}
-			if (FALSE == oxcical_parse_valarm(tmp_int32,
-				start_time, phash, &last_propid, pmsg)) {
+			if (!oxcical_parse_valarm(alarmdelta, start_time,
+			    phash, &last_propid, pmsg))
 				return FALSE;
-			}
 		}
 	}
 	
@@ -2470,7 +2464,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 			pexception->reminderset = 0;
 		} else {
 			pexception->overrideflags |= ARO_REMINDERDELTA;
-			pexception->reminderdelta = tmp_int32;
+			pexception->reminderdelta = alarmdelta;
 		}
 	}
 	
