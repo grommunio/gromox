@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
+#include <cassert>
 #include <cerrno>
 #include <cstdint>
 #include <list>
@@ -1400,23 +1401,27 @@ static constexpr std::pair<enum ol_busy_status, const char *> busy_status_names[
 	{olWorkingElsewhere, "WORKINGELSEWHERE"},
 };
 
-static BOOL oxcical_parse_busystatus(std::shared_ptr<ICAL_LINE> piline,
+static ol_busy_status lookup_busy_by_name(const char *s)
+{
+	auto it = std::find_if(std::cbegin(busy_status_names), std::cend(busy_status_names),
+	          [&](const auto &p) { return strcasecmp(p.second, s) == 0; });
+	return it != std::cend(busy_status_names) ? it->first : olIndeterminate;
+}
+
+static ol_busy_status lookup_busy_by_name(std::shared_ptr<ICAL_LINE> l)
+{
+	if (l == nullptr)
+		return olIndeterminate;
+	auto v = l->get_first_subvalue();
+	return v != nullptr ? lookup_busy_by_name(v) : olIndeterminate;
+}
+
+static BOOL oxcical_set_busystatus(ol_busy_status busy_status,
     uint32_t pidlid, namemap &phash, uint16_t *plast_propid,
     MESSAGE_CONTENT *pmsg, EXCEPTIONINFO *pexception)
 {
-	if (piline == nullptr)
+	if (busy_status == olIndeterminate)
 		return TRUE;
-	const char *pvalue;
-	
-	pvalue = piline->get_first_subvalue();
-	if (NULL == pvalue) {
-		return TRUE;
-	}
-	auto it = std::find_if(std::cbegin(busy_status_names), std::cend(busy_status_names),
-	          [&](const auto &p) { return strcasecmp(p.second, pvalue) == 0; });
-	if (it == std::cend(busy_status_names))
-		return TRUE;
-	uint32_t busy_status = it->first;
 	PROPERTY_NAME pn = {MNID_ID, PSETID_APPOINTMENT, pidlid};
 	if (namemap_add(phash, *plast_propid, std::move(pn)) != 0)
 		return FALSE;
@@ -2306,28 +2311,36 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 	if (!oxcical_parse_sequence(pmain_event, phash, &last_propid, pmsg))
 		return FALSE;
 	
-	auto busy_line = pmain_event->get_line("X-MICROSOFT-CDO-BUSYSTATUS");
-	if (busy_line == nullptr)
-		busy_line = pmain_event->get_line("X-MICROSOFT-MSNCALENDAR-BUSYSTATUS");
-	decltype(busy_line) intent_line;
+	piline = pmain_event->get_line("X-MICROSOFT-CDO-BUSYSTATUS");
+	if (piline == nullptr)
+		piline = pmain_event->get_line("X-MICROSOFT-MSNCALENDAR-BUSYSTATUS");
+	auto busy_status = lookup_busy_by_name(piline);
+	piline = pmain_event->get_line("X-MICROSOFT-CDO-INTENDEDSTATUS");
+	if (piline == nullptr)
+		piline = pmain_event->get_line("X-MICROSOFT-MSNCALENDAR-INTENDEDSTATUS");
+	auto intent_status = lookup_busy_by_name(piline);
 	if (method != nullptr && strcasecmp(method, "REQUEST") == 0) {
-		intent_line = pmain_event->get_line("X-MICROSOFT-CDO-INTENDEDSTATUS");
-		if (intent_line == nullptr)
-			intent_line = pmain_event->get_line("X-MICROSOFT-MSNCALENDAR-INTENDEDSTATUS");
+		/* OXCICAL v11 pg 73 */
+		if (intent_status == olIndeterminate) {
+			intent_status = busy_status;
+			if (intent_status == olIndeterminate) {
+				intent_status = olBusy;
+				busy_status = olTentative;
+			}
+		}
 	}
-	if (busy_line != nullptr || intent_line != nullptr) {
-		/*
-		 * This is just the import to a mail object; this is not a
-		 * "calendar object" yet and so OXCICAL v11 pg 73 with the
-		 * property juggling does not apply.
-		 */
-		if (!oxcical_parse_busystatus(busy_line, PidLidBusyStatus,
-		    phash, &last_propid, pmsg, pexception))
-			return FALSE;
-		if (!oxcical_parse_busystatus(intent_line, PidLidIntendedBusyStatus,
-		    phash, &last_propid, pmsg, nullptr))
-			return false;
-	} else {
+	/*
+	 * N.B.: This edits the MAPI message destined for the Inbox folder; it is not
+	 * editing the Calendar folder MAPI message (this does not exist yet).
+	 */
+	if (!oxcical_set_busystatus(busy_status, PidLidBusyStatus, phash,
+	    &last_propid, pmsg, pexception))
+		return false;
+	if (!oxcical_set_busystatus(intent_status, PidLidIntendedBusyStatus, phash,
+	    &last_propid, pmsg, nullptr))
+		return false;
+
+	if (busy_status == olIndeterminate && intent_status == olIndeterminate) {
 		piline = pmain_event->get_line("TRANSP");
 		if (NULL != piline) {
 			if (FALSE == oxcical_parse_transp(piline,

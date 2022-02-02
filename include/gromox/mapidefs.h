@@ -1266,6 +1266,7 @@ enum ol_busy_status {
 	olBusy = 2,
 	olOutOfOffice = 3,
 	olWorkingElsewhere = 4,
+	olIndeterminate = 0xffff, /* gromox internal */
 };
 
 enum { /* for PR_RECIPIENT_FLAGS */
