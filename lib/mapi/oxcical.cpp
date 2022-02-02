@@ -2324,7 +2324,7 @@ static BOOL oxcical_import_internal(const char *str_zone, const char *method,
 		    phash, &last_propid, pmsg, pexception))
 			return FALSE;
 		if (!oxcical_parse_busystatus(intent_line, PidLidIntendedBusyStatus,
-		    phash, &last_propid, pmsg, pexception))
+		    phash, &last_propid, pmsg, nullptr))
 			return false;
 	} else {
 		piline = pmain_event->get_line("TRANSP");
