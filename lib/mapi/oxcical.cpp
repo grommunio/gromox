@@ -1396,6 +1396,7 @@ static constexpr std::pair<enum ol_busy_status, const char *> busy_status_names[
 	{olFree, "FREE"},
 	{olTentative, "TENTATIVE"},
 	{olBusy, "BUSY"},
+	{olOutOfOffice, "OOF"},
 	{olWorkingElsewhere, "WORKINGELSEWHERE"},
 };
 
