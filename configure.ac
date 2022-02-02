@@ -81,6 +81,7 @@ AC_CHECK_HEADERS([sys/random.h])
 AC_CHECK_HEADERS([security/pam_modules.h], [have_pamheader="yes"])
 AM_CONDITIONAL([HAVE_PAM], [test "$have_pamheader" = yes])
 AM_CONDITIONAL([HAVE_PFF], [test "$have_pff" = 1])
+AC_CHECK_HEADERS([ldap.h], [], [AC_MSG_ERROR([ldap.h is required])])
 AC_SEARCH_LIBS([ldap_init], [ldap_r ldap], [libldap_LIBS="$LIBS"; LIBS=""])
 AC_SUBST([libldap_LIBS])
 AC_DEFUN([MYSQL_WITH_MYSQL_CONFIG],[
