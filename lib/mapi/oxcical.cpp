@@ -3861,12 +3861,12 @@ static BOOL oxcical_export_rdate(const char *tzid, BOOL b_date,
 	return TRUE;
 }
 
-static bool busystatus_to_line(uint32_t status, const char *key,
+static bool busystatus_to_line(ol_busy_status status, const char *key,
     ICAL_COMPONENT *com)
 {
 	auto it = std::lower_bound(std::cbegin(busy_status_names),
 	          std::cend(busy_status_names), status,
-	          [&](const auto &p, uint32_t v) { return p.first < v; });
+	          [](const auto &p, ol_busy_status v) { return p.first < v; });
 	if (it == std::cend(busy_status_names))
 		return true;
 	auto line = ical_new_simple_line(key, it->second);
@@ -4621,9 +4621,9 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	proptag = PROP_TAG(PT_LONG, propids.ppropid[0]);
 	auto pbusystatus = pmsg->proplist.get<uint32_t>(proptag);
 	if (NULL != pbusystatus) {
-		switch (*pbusystatus) {
-		case 0:
-		case 4:
+		switch (static_cast<ol_busy_status>(*pbusystatus)) {
+		case olFree:
+		case olWorkingElsewhere:
 			piline = ical_new_simple_line("TRANSP", "TRANSPARENT");
 			if (NULL == piline) {
 				return FALSE;
@@ -4631,15 +4631,17 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			if (pcomponent->append_line(piline) < 0)
 				return false;
 			break;
-		case 1:
-		case 2:
-		case 3:
+		case olTentative:
+		case olBusy:
+		case olOutOfOffice:
 			piline = ical_new_simple_line("TRANSP", "OPAQUE");
 			if (NULL == piline) {
 				return FALSE;
 			}
 			if (pcomponent->append_line(piline) < 0)
 				return false;
+			break;
+		default:
 			break;
 		}
 	}
@@ -4724,7 +4726,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			return false;
 	}
 	
-	if (pbusystatus != nullptr && !busystatus_to_line(*pbusystatus,
+	if (pbusystatus != nullptr && !busystatus_to_line(static_cast<ol_busy_status>(*pbusystatus),
 	    "X-MICROSOFT-CDO-BUSYSTATUS", pcomponent.get()))
 		return false;
 
@@ -4734,7 +4736,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	}
 	proptag = PROP_TAG(PT_LONG, propids.ppropid[0]);
 	pvalue = pmsg->proplist.getval(proptag);
-	if (pvalue != nullptr && !busystatus_to_line(*static_cast<uint32_t *>(pvalue),
+	if (pvalue != nullptr && !busystatus_to_line(static_cast<ol_busy_status>(*static_cast<uint32_t *>(pvalue)),
 	    "X-MICROSOFT-CDO-INTENDEDSTATUS", pcomponent.get()))
 		return false;
 
