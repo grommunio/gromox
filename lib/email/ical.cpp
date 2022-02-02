@@ -2623,7 +2623,7 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	itime = pirrule->instance_itime;
 	pirrule->current_instance = 1;
 	pirrule->instance_itime = pirrule->next_base_itime;
-	if (!ical_rrule_iterate(pirrule)) {
+	if (!pirrule->iterate()) {
 		pirrule->total_count = 1;
 		pirrule->instance_itime = itime;
 	} else {
@@ -2637,8 +2637,9 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	return true;
 }
 
-bool ical_rrule_iterate(ICAL_RRULE *pirrule)
+bool ical_rrule::iterate()
 {
+	auto pirrule = this;
 	ICAL_TIME itime;
 	int hint_result;
 	
@@ -2682,29 +2683,4 @@ bool ical_rrule_iterate(ICAL_RRULE *pirrule)
 		pirrule->instance_itime = itime;
 		return true;
 	}
-}
-
-bool ical_rrule_endless(const ICAL_RRULE *pirrule)
-{
-	if (pirrule->total_count == 0 && !pirrule->b_until)
-		return true;
-	return false;
-}
-
-const ICAL_TIME *ical_rrule_until_itime(const ICAL_RRULE *pirrule)
-{
-	if (!pirrule->b_until)
-		return nullptr;
-	else
-		return &pirrule->until_itime;
-}
-
-int ical_rrule_sequence(const ICAL_RRULE *pirrule)
-{
-	return pirrule->current_instance;
-}
-
-bool ical_rrule_check_bymask(const ICAL_RRULE *pirrule, unsigned int rrule_by)
-{
-	return pirrule->by_mask[rrule_by];
 }

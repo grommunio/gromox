@@ -99,7 +99,13 @@ struct ICAL_TIME {
 	int leap_second;
 };
 
-struct ICAL_RRULE {
+struct GX_EXPORT ical_rrule {
+	bool iterate();
+	inline bool endless() const { return total_count == 0 && !b_until; }
+	inline const ICAL_TIME *get_until_itime() const { return b_until ? &until_itime : nullptr; }
+	inline int sequence() const { return current_instance; }
+	inline bool check_bymask(unsigned int rrule_by) const { return by_mask[rrule_by]; }
+
 	int total_count;
 	int current_instance;
 	ICAL_TIME base_itime;
@@ -129,6 +135,7 @@ struct ICAL_RRULE {
 	unsigned char setpos_bitmap[46];
 	unsigned char nsetpos_bitmap[46];
 };
+using ICAL_RRULE = ical_rrule;
 
 extern GX_EXPORT int ical_init(ICAL *pical);
 extern GX_EXPORT bool ical_retrieve(ICAL *, char *in_buff);
@@ -156,8 +163,3 @@ extern GX_EXPORT bool ical_itime_to_utc(std::shared_ptr<ICAL_COMPONENT>, ICAL_TI
 extern GX_EXPORT bool ical_datetime_to_utc(std::shared_ptr<ICAL_COMPONENT>, const char *datetime, time_t *);
 extern GX_EXPORT bool ical_utc_to_datetime(std::shared_ptr<ICAL_COMPONENT>, time_t utc_time, ICAL_TIME *);
 extern GX_EXPORT bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT>, time_t start, const ical_vlist *value_list, ICAL_RRULE *);
-extern GX_EXPORT bool ical_rrule_iterate(ICAL_RRULE *);
-extern GX_EXPORT bool ical_rrule_endless(const ICAL_RRULE *);
-extern GX_EXPORT const ICAL_TIME *ical_rrule_until_itime(const ICAL_RRULE *);
-extern GX_EXPORT int ical_rrule_sequence(const ICAL_RRULE *);
-extern GX_EXPORT bool ical_rrule_check_bymask(const ICAL_RRULE *, unsigned int rrule_by);

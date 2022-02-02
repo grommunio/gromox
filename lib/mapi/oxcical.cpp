@@ -349,9 +349,8 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	if (!ical_parse_rrule(ptz_component, start_time, &piline->value_list, &irrule))
 		return FALSE;
 	auto b_exceptional = irrule.b_start_exceptional;
-	if (b_exceptional)
-		if (!ical_rrule_iterate(&irrule))
-			return FALSE;
+	if (b_exceptional && !irrule.iterate())
+		return FALSE;
 	auto itime_base = irrule.base_itime;
 	auto itime_first = irrule.instance_itime;
 	apr->readerversion2 = 0x3006;
@@ -368,14 +367,14 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	itime.second = 0;
 	ical_itime_to_utc(ptz_component, itime, &tmp_time);
 	apr->recur_pat.startdate = rop_util_unix_to_nttime(tmp_time) / 600000000;
-	if (ical_rrule_endless(&irrule)) {
+	if (irrule.endless()) {
  SET_INFINITE:
 		apr->recur_pat.endtype = ENDTYPE_NEVER_END;
 		apr->recur_pat.occurrencecount = 10;
 		apr->recur_pat.enddate = ENDDATE_MISSING;
 	} else {
 		itime = irrule.instance_itime;
-		while (ical_rrule_iterate(&irrule)) {
+		while (irrule.iterate()) {
 			itime1 = irrule.instance_itime;
 			if (itime1.year > 4500) {
 				goto SET_INFINITE;
@@ -393,11 +392,11 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			apr->recur_pat.occurrencecount = irrule.total_count;
 		} else {
 			apr->recur_pat.endtype = ENDTYPE_AFTER_DATE;
-			apr->recur_pat.occurrencecount = ical_rrule_sequence(&irrule);
+			apr->recur_pat.occurrencecount = irrule.sequence();
 		}
 		if (b_exceptional)
 			--apr->recur_pat.occurrencecount;
-		pitime = ical_rrule_until_itime(&irrule);
+		pitime = irrule.get_until_itime();
 		itime = pitime != nullptr ? *pitime : irrule.instance_itime;
 		itime.hour = 0;
 		itime.minute = 0;
@@ -440,7 +439,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			(rop_util_unix_to_nttime(tmp_time)/600000000)%
 			(10080 * irrule.interval);
 		patterntype = PATTERNTYPE_WEEK;
-		if (ical_rrule_check_bymask(&irrule, RRULE_BY_DAY)) {
+		if (irrule.check_bymask(RRULE_BY_DAY)) {
 			psubval_list = piline->get_subval_list("BYDAY");
 			apr->recur_pat.pts.weekrecur = 0;
 			for (const auto &pnv2 : *psubval_list) {
@@ -485,8 +484,8 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		itime1.month = 1;
 		itime1.day = 1;
 		apr->recur_pat.firstdatetime = itime.delta_day(itime1) * 1440;
-		if (ical_rrule_check_bymask(&irrule, RRULE_BY_DAY) &&
-		    ical_rrule_check_bymask(&irrule, RRULE_BY_SETPOS)) {
+		if (irrule.check_bymask(RRULE_BY_DAY) &&
+		    irrule.check_bymask(RRULE_BY_SETPOS)) {
 			patterntype = PATTERNTYPE_MONTHNTH;
 			psubval_list = piline->get_subval_list("BYDAY");
 			apr->recur_pat.pts.monthnth.weekrecur = 0;
@@ -517,8 +516,8 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			}
 			apr->recur_pat.pts.monthnth.recurnum = tmp_int;
 		} else {
-			if (ical_rrule_check_bymask(&irrule, RRULE_BY_DAY) ||
-			    ical_rrule_check_bymask(&irrule, RRULE_BY_SETPOS))
+			if (irrule.check_bymask(RRULE_BY_DAY) ||
+			    irrule.check_bymask(RRULE_BY_SETPOS))
 				return FALSE;
 			int tmp_int;
 			patterntype = PATTERNTYPE_MONTH;
@@ -553,10 +552,10 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		itime1.month = 1;
 		itime1.day = 1;
 		apr->recur_pat.firstdatetime = itime.delta_day(itime1) * 1440;
-		if (ical_rrule_check_bymask(&irrule, RRULE_BY_DAY) &&
-		    ical_rrule_check_bymask(&irrule, RRULE_BY_SETPOS) &&
-		    ical_rrule_check_bymask(&irrule, RRULE_BY_MONTH)) {
-			if (ical_rrule_check_bymask(&irrule, RRULE_BY_MONTHDAY))
+		if (irrule.check_bymask(RRULE_BY_DAY) &&
+		    irrule.check_bymask(RRULE_BY_SETPOS) &&
+		    irrule.check_bymask(RRULE_BY_MONTH)) {
+			if (irrule.check_bymask(RRULE_BY_MONTHDAY))
 				return FALSE;
 			patterntype = PATTERNTYPE_MONTHNTH;
 			psubval_list = piline->get_subval_list("BYDAY");
@@ -588,8 +587,8 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			}
 			apr->recur_pat.pts.monthnth.recurnum = tmp_int;
 		} else {
-			if (ical_rrule_check_bymask(&irrule, RRULE_BY_DAY) ||
-			    ical_rrule_check_bymask(&irrule, RRULE_BY_SETPOS))
+			if (irrule.check_bymask(RRULE_BY_DAY) ||
+			    irrule.check_bymask(RRULE_BY_SETPOS))
 				return FALSE;
 			int tmp_int;
 			patterntype = PATTERNTYPE_MONTH;

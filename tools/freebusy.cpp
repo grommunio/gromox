@@ -1059,7 +1059,7 @@ static BOOL find_recurrence_times(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		double_list_append_as_tail(plist, &pevnode->node);
 		if (tmp_time >= end_time)
 			break;
-	} while (ical_rrule_iterate(&irrule));
+	} while (irrule.iterate());
 	for (i = 0; i < apr->exceptioncount; ++i) {
 		nt_time = apr->pexceptioninfo[i].startdatetime;
 		nt_time *= 600000000;
