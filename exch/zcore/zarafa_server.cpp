@@ -145,8 +145,8 @@ static USER_INFO_REF zarafa_server_query_session(GUID hsession)
 	pinfo->reference ++;
 	time(&pinfo->last_time);
 	tl_hold.unlock();
-	pinfo->lock.lock();
 	g_info_key = pinfo;
+	pinfo->lock.lock();
 	return USER_INFO_REF(pinfo);
 }
 
