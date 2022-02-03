@@ -406,11 +406,11 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		apr->recur_pat.enddate = rop_util_unix_to_nttime(tmp_time) / 600000000;
 	}
 	switch (irrule.frequency) {
-	case ICAL_FREQUENCY_SECOND:
-	case ICAL_FREQUENCY_MINUTE:
-	case ICAL_FREQUENCY_HOUR:
+	case ical_frequency::second:
+	case ical_frequency::minute:
+	case ical_frequency::hour:
 		return FALSE;
-	case ICAL_FREQUENCY_DAY:
+	case ical_frequency::day:
 		if (piline->get_subval_list("BYDAY") != nullptr ||
 		    piline->get_subval_list("BYMONTH") != nullptr ||
 		    piline->get_subval_list("BYSETPOS") != nullptr)
@@ -422,7 +422,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		apr->recur_pat.firstdatetime = apr->recur_pat.startdate % apr->recur_pat.period;
 		patterntype = PATTERNTYPE_DAY;
 		break;
-	case ICAL_FREQUENCY_WEEK:
+	case ical_frequency::week:
 		if (piline->get_subval_list("BYMONTH") != nullptr ||
 		    piline->get_subval_list("BYSETPOS") != nullptr)
 			return FALSE;
@@ -466,7 +466,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			apr->recur_pat.pts.weekrecur = 1U << ical_get_dayofweek(itime.year, itime.month, itime.day);
 		}
 		break;
-	case ICAL_FREQUENCY_MONTH:
+	case ical_frequency::month:
 		if (piline->get_subval_list("BYMONTH") != nullptr)
 			return FALSE;
 		apr->recur_pat.recurfrequency = RECURFREQUENCY_MONTHLY;
@@ -537,7 +537,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			apr->recur_pat.pts.dayofmonth = tmp_int;
 		}
 		break;
-	case ICAL_FREQUENCY_YEAR:
+	case ical_frequency::year:
 		apr->recur_pat.recurfrequency = RECURFREQUENCY_YEARLY;
 		if (irrule.interval > 8)
 			return FALSE;

@@ -8,13 +8,9 @@
 #include <gromox/defs.h>
 #define ICAL_NAME_LEN					64
 
-#define ICAL_FREQUENCY_SECOND			1
-#define ICAL_FREQUENCY_MINUTE			2
-#define ICAL_FREQUENCY_HOUR				3
-#define ICAL_FREQUENCY_DAY				4
-#define ICAL_FREQUENCY_WEEK				5
-#define ICAL_FREQUENCY_MONTH			6
-#define ICAL_FREQUENCY_YEAR				7
+enum class ical_frequency {
+	second, minute, hour, day, week, month, year,
+};
 
 #define RRULE_BY_SETPOS					0
 #define RRULE_BY_SECOND					1
@@ -119,8 +115,7 @@ struct GX_EXPORT ical_rrule {
 	ICAL_TIME real_start_itime;
 	bool b_until, b_start_exceptional, by_mask[9];
 	int interval;
-	int frequency;
-	int real_frequency;
+	ical_frequency frequency, real_frequency;
 	int weekstart;
 	int cur_setpos;
 	int setpos_count;

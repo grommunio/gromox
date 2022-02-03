@@ -1803,12 +1803,12 @@ static int ical_hint_rrule(ICAL_RRULE *pirrule, ICAL_TIME itime)
 	if (pirrule->by_mask[RRULE_BY_WEEKNO]) {
 		weekorder = ical_get_weekofyear(itime.year, itime.month,
 					itime.day, pirrule->weekstart, &b_yeargap);
-		if (b_yeargap && pirrule->frequency == ICAL_FREQUENCY_YEAR)
+		if (b_yeargap && pirrule->frequency == ical_frequency::year)
 			return RRULE_BY_WEEKNO;
 		nweekorder = ical_get_negative_weekofyear(
 				itime.year, itime.month, itime.day,
 				pirrule->weekstart, &b_yeargap);
-		if (b_yeargap && pirrule->frequency == ICAL_FREQUENCY_YEAR)
+		if (b_yeargap && pirrule->frequency == ical_frequency::year)
 			return RRULE_BY_WEEKNO;
 		if (!ical_hint_bitmap(pirrule->week_bitmap, weekorder - 1) &&
 		    !ical_hint_bitmap(pirrule->nweek_bitmap, -nweekorder - 1))
@@ -1829,10 +1829,10 @@ static int ical_hint_rrule(ICAL_RRULE *pirrule, ICAL_TIME itime)
 	if (pirrule->by_mask[RRULE_BY_DAY]) {
 		dayofweek = ical_get_dayofweek(itime.year,
 						itime.month, itime.day);
-		if (ICAL_FREQUENCY_WEEK == pirrule->frequency) {
+		if (ical_frequency::week == pirrule->frequency) {
 			weekorder = itime.delta_day(pirrule->base_itime) / 7 + 1;
 			nweekorder = -(itime.delta_day(pirrule->next_base_itime) - 1) / 7 - 1;
-		} else if (pirrule->frequency == ICAL_FREQUENCY_MONTH ||
+		} else if (pirrule->frequency == ical_frequency::month ||
 		    pirrule->by_mask[RRULE_BY_MONTH]) {
 			weekorder = ical_get_monthweekorder(itime.day);
 			nweekorder = ical_get_negative_monthweekorder(
@@ -1874,45 +1874,45 @@ static ICAL_TIME ical_next_rrule_itime(ICAL_RRULE *pirrule,
 	
 	if (0 == hint_result) {
 		switch (pirrule->real_frequency) {
-		case ICAL_FREQUENCY_YEAR:
+		case ical_frequency::year:
 			itime.add_year(pirrule->interval);
 			break;
-		case ICAL_FREQUENCY_MONTH:
+		case ical_frequency::month:
 			if (pirrule->real_frequency == pirrule->frequency) {
 				itime.add_month(pirrule->interval);
 			} else {
 				itime.add_month(1);
 			}
 			break;
-		case ICAL_FREQUENCY_WEEK:
+		case ical_frequency::week:
 			if (pirrule->real_frequency == pirrule->frequency) {
 				itime.add_day(7 * pirrule->interval);
 			} else {
 				itime.add_day(7);
 			}
 			break;
-		case ICAL_FREQUENCY_DAY:
+		case ical_frequency::day:
 			if (pirrule->real_frequency == pirrule->frequency) {
 				itime.add_day(pirrule->interval);
 			} else {
 				itime.add_day(1);
 			}
 			break;
-		case ICAL_FREQUENCY_HOUR:
+		case ical_frequency::hour:
 			if (pirrule->real_frequency == pirrule->frequency) {
 				itime.add_hour(pirrule->interval);
 			} else {
 				itime.add_hour(1);
 			}
 			break;
-		case ICAL_FREQUENCY_MINUTE:
+		case ical_frequency::minute:
 			if (pirrule->real_frequency == pirrule->frequency) {
 				itime.add_minute(pirrule->interval);
 			} else {
 				itime.add_minute(1);
 			}
 			break;
-		case ICAL_FREQUENCY_SECOND:
+		case ical_frequency::second:
 			if (pirrule->real_frequency == pirrule->frequency) {
 				itime.add_second(pirrule->interval);
 			} else {
@@ -1923,8 +1923,8 @@ static ICAL_TIME ical_next_rrule_itime(ICAL_RRULE *pirrule,
 		return itime;
 	}
 	switch (pirrule->frequency) {
-	case ICAL_FREQUENCY_YEAR:
-	case ICAL_FREQUENCY_MONTH:
+	case ical_frequency::year:
+	case ical_frequency::month:
 		switch (hint_result) {
 		case RRULE_BY_MONTH:
 			dayofweek = ical_get_dayofweek(itime.year,
@@ -1992,7 +1992,7 @@ static ICAL_TIME ical_next_rrule_itime(ICAL_RRULE *pirrule,
 			break;
 		}
 		break;
-	case ICAL_FREQUENCY_WEEK:
+	case ical_frequency::week:
 		switch (hint_result) {
 		case RRULE_BY_YEARDAY:
 		case RRULE_BY_MONTHDAY:
@@ -2013,7 +2013,7 @@ static ICAL_TIME ical_next_rrule_itime(ICAL_RRULE *pirrule,
 			break;
 		}
 		break;
-	case ICAL_FREQUENCY_DAY:
+	case ical_frequency::day:
 		switch (hint_result) {
 		case RRULE_BY_HOUR:
 			itime.add_hour(1);
@@ -2029,7 +2029,7 @@ static ICAL_TIME ical_next_rrule_itime(ICAL_RRULE *pirrule,
 			break;
 		}
 		break;
-	case ICAL_FREQUENCY_HOUR:
+	case ical_frequency::hour:
 		switch (hint_result) {
 		case RRULE_BY_MINUTE:
 			itime.add_minute(1);
@@ -2042,7 +2042,7 @@ static ICAL_TIME ical_next_rrule_itime(ICAL_RRULE *pirrule,
 			break;
 		}
 		break;
-	case ICAL_FREQUENCY_MINUTE:
+	case ical_frequency::minute:
 		switch (hint_result) {
 		case RRULE_BY_SECOND:
 			itime.add_second(1);
@@ -2052,41 +2052,41 @@ static ICAL_TIME ical_next_rrule_itime(ICAL_RRULE *pirrule,
 			break;
 		}
 		break;
-	case ICAL_FREQUENCY_SECOND:
+	case ical_frequency::second:
 		itime.add_second(1);
 		break;
 	}
 	switch (pirrule->frequency) {
-	case ICAL_FREQUENCY_YEAR:
+	case ical_frequency::year:
 		if (itime.year > pirrule->base_itime.year) {
 			itime = pirrule->next_base_itime;
 		}
 		break;
-	case ICAL_FREQUENCY_MONTH:
+	case ical_frequency::month:
 		if (itime.month > pirrule->base_itime.month) {
 			itime = pirrule->next_base_itime;
 		}
 		break;
-	case ICAL_FREQUENCY_WEEK:
+	case ical_frequency::week:
 		if (itime.delta_day(pirrule->base_itime) >= 7)
 			itime = pirrule->next_base_itime;
 		break;
-	case ICAL_FREQUENCY_DAY:
+	case ical_frequency::day:
 		if (itime.day > pirrule->base_itime.day) {
 			itime = pirrule->next_base_itime;
 		}
 		break;
-	case ICAL_FREQUENCY_HOUR:
+	case ical_frequency::hour:
 		if (itime.hour > pirrule->base_itime.hour) {
 			itime = pirrule->next_base_itime;
 		}
 		break;
-	case ICAL_FREQUENCY_MINUTE:
+	case ical_frequency::minute:
 		if (itime.minute > pirrule->base_itime.minute) {
 			itime = pirrule->next_base_itime;
 		}
 		break;
-	case ICAL_FREQUENCY_SECOND:
+	case ical_frequency::second:
 		if (itime.second > pirrule->base_itime.second) {
 			itime = pirrule->next_base_itime;
 		}
@@ -2116,25 +2116,25 @@ static void ical_next_rrule_base_itime(ICAL_RRULE *pirrule)
 {
 	pirrule->next_base_itime = pirrule->base_itime;
 	switch (pirrule->frequency) {
-	case ICAL_FREQUENCY_YEAR:
+	case ical_frequency::year:
 		pirrule->next_base_itime.add_year(pirrule->interval);
 		break;
-	case ICAL_FREQUENCY_MONTH:
+	case ical_frequency::month:
 		pirrule->next_base_itime.add_month(pirrule->interval);
 		break;
-	case ICAL_FREQUENCY_WEEK:
+	case ical_frequency::week:
 		pirrule->next_base_itime.add_day(7 * pirrule->interval);
 		break;
-	case ICAL_FREQUENCY_DAY:
+	case ical_frequency::day:
 		pirrule->next_base_itime.add_day(pirrule->interval);
 		break;
-	case ICAL_FREQUENCY_HOUR:
+	case ical_frequency::hour:
 		pirrule->next_base_itime.add_hour(pirrule->interval);
 		break;
-	case ICAL_FREQUENCY_MINUTE:
+	case ical_frequency::minute:
 		pirrule->next_base_itime.add_minute(pirrule->interval);
 		break;
-	case ICAL_FREQUENCY_SECOND:
+	case ical_frequency::second:
 		pirrule->next_base_itime.add_second(pirrule->interval);
 		break;
 	}
@@ -2162,19 +2162,19 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		return false;
 	}
 	if (0 == strcasecmp(pvalue, "SECONDLY")) {
-		pirrule->frequency = ICAL_FREQUENCY_SECOND;
+		pirrule->frequency = ical_frequency::second;
 	} else if (0 == strcasecmp(pvalue, "MINUTELY")) {
-		pirrule->frequency = ICAL_FREQUENCY_MINUTE;
+		pirrule->frequency = ical_frequency::minute;
 	} else if (0 == strcasecmp(pvalue, "HOURLY")) {
-		pirrule->frequency = ICAL_FREQUENCY_HOUR;
+		pirrule->frequency = ical_frequency::hour;
 	} else if (0 == strcasecmp(pvalue, "DAILY")) {
-		pirrule->frequency = ICAL_FREQUENCY_DAY;
+		pirrule->frequency = ical_frequency::day;
 	} else if (0 == strcasecmp(pvalue, "WEEKLY")) {
-		pirrule->frequency = ICAL_FREQUENCY_WEEK;
+		pirrule->frequency = ical_frequency::week;
 	} else if (0 == strcasecmp(pvalue, "MONTHLY")) {
-		pirrule->frequency = ICAL_FREQUENCY_MONTH;
+		pirrule->frequency = ical_frequency::month;
 	} else if (0 == strcasecmp(pvalue, "YEARLY")) {
-		pirrule->frequency = ICAL_FREQUENCY_YEAR;
+		pirrule->frequency = ical_frequency::year;
 	} else {
 		return false;
 	}
@@ -2227,8 +2227,8 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			}
 			ical_set_bitmap(pirrule->second_bitmap, tmp_int);
 		}
-		if (pirrule->real_frequency > ICAL_FREQUENCY_SECOND) {
-			pirrule->real_frequency = ICAL_FREQUENCY_SECOND;
+		if (pirrule->real_frequency > ical_frequency::second) {
+			pirrule->real_frequency = ical_frequency::second;
 		}
 		pirrule->by_mask[RRULE_BY_SECOND] = true;
 	}
@@ -2243,8 +2243,8 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			}
 			ical_set_bitmap(pirrule->minute_bitmap, tmp_int);
 		}
-		if (pirrule->real_frequency > ICAL_FREQUENCY_MINUTE) {
-			pirrule->real_frequency = ICAL_FREQUENCY_MINUTE;
+		if (pirrule->real_frequency > ical_frequency::minute) {
+			pirrule->real_frequency = ical_frequency::minute;
 		}
 		pirrule->by_mask[RRULE_BY_MINUTE] = true;
 	}
@@ -2259,8 +2259,8 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			}
 			ical_set_bitmap(pirrule->hour_bitmap, tmp_int);
 		}
-		if (pirrule->real_frequency > ICAL_FREQUENCY_HOUR) {
-			pirrule->real_frequency = ICAL_FREQUENCY_HOUR;
+		if (pirrule->real_frequency > ical_frequency::hour) {
+			pirrule->real_frequency = ical_frequency::hour;
 		}
 		pirrule->by_mask[RRULE_BY_HOUR] = true;
 	}
@@ -2279,8 +2279,8 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				ical_set_bitmap(pirrule->nmday_bitmap, -tmp_int - 1);
 			}
 		}
-		if (pirrule->real_frequency > ICAL_FREQUENCY_DAY) {
-			pirrule->real_frequency = ICAL_FREQUENCY_DAY;
+		if (pirrule->real_frequency > ical_frequency::day) {
+			pirrule->real_frequency = ical_frequency::day;
 		}
 		pirrule->by_mask[RRULE_BY_MONTHDAY] = true;
 	}
@@ -2299,16 +2299,16 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				ical_set_bitmap(pirrule->nyday_bitmap, -tmp_int - 1);
 			}
 		}
-		if (pirrule->real_frequency > ICAL_FREQUENCY_DAY) {
-			pirrule->real_frequency = ICAL_FREQUENCY_DAY;
+		if (pirrule->real_frequency > ical_frequency::day) {
+			pirrule->real_frequency = ical_frequency::day;
 		}
 		pirrule->by_mask[RRULE_BY_YEARDAY] = true;
 	}
 	auto pbywday_list = ical_get_subval_list_internal(pvalue_list, "BYDAY");
 	if (NULL != pbywday_list) {
-		if (ICAL_FREQUENCY_WEEK != pirrule->frequency &&
-			ICAL_FREQUENCY_MONTH != pirrule->frequency &&
-			ICAL_FREQUENCY_YEAR != pirrule->frequency) {
+		if (ical_frequency::week != pirrule->frequency &&
+			ical_frequency::month != pirrule->frequency &&
+			ical_frequency::year != pirrule->frequency) {
 			return false;
 		}
 		for (const auto &pnv2 : *pbywday_list) {
@@ -2316,7 +2316,7 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				return false;
 			if (!ical_parse_byday(pnv2->c_str(), &dayofweek, &weekorder))
 				return false;
-			if (ICAL_FREQUENCY_MONTH == pirrule->frequency) {
+			if (ical_frequency::month == pirrule->frequency) {
 				if (weekorder > 5 || weekorder < -5) {
 					return false;
 				} else if (weekorder > 0) {
@@ -2330,7 +2330,7 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 						ical_set_bitmap(pirrule->wday_bitmap, 7*i + dayofweek); 
 					}
 				}
-			} else if (ICAL_FREQUENCY_YEAR == pirrule->frequency) {
+			} else if (ical_frequency::year == pirrule->frequency) {
 				if (weekorder > 0) {
 					ical_set_bitmap(pirrule->wday_bitmap,
 						7*(weekorder - 1) + dayofweek);
@@ -2349,8 +2349,8 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				ical_set_bitmap(pirrule->wday_bitmap, dayofweek);
 			}
 		}
-		if (pirrule->real_frequency > ICAL_FREQUENCY_DAY) {
-			pirrule->real_frequency = ICAL_FREQUENCY_DAY;
+		if (pirrule->real_frequency > ical_frequency::day) {
+			pirrule->real_frequency = ical_frequency::day;
 		}
 		pirrule->by_mask[RRULE_BY_DAY] = true;
 	}
@@ -2369,8 +2369,8 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				ical_set_bitmap(pirrule->nweek_bitmap, -tmp_int - 1);
 			}
 		}
-		if (pirrule->real_frequency > ICAL_FREQUENCY_WEEK) {
-			pirrule->real_frequency = ICAL_FREQUENCY_WEEK;
+		if (pirrule->real_frequency > ical_frequency::week) {
+			pirrule->real_frequency = ical_frequency::week;
 		}
 		pirrule->by_mask[RRULE_BY_WEEKNO] = true;
 	}
@@ -2385,56 +2385,56 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			}
 			ical_set_bitmap(pirrule->month_bitmap, tmp_int - 1);
 		}
-		if (pirrule->real_frequency > ICAL_FREQUENCY_MONTH) {
-			pirrule->real_frequency = ICAL_FREQUENCY_MONTH;
+		if (pirrule->real_frequency > ical_frequency::month) {
+			pirrule->real_frequency = ical_frequency::month;
 		}
 		pirrule->by_mask[RRULE_BY_MONTH] = true;
 	}
 	auto psetpos_list = ical_get_subval_list_internal(pvalue_list, "BYSETPOS");
 	if (NULL != psetpos_list) {
 		switch (pirrule->frequency) {
-		case ICAL_FREQUENCY_SECOND:
+		case ical_frequency::second:
 			return false;
-		case ICAL_FREQUENCY_MINUTE:
-			if (pirrule->real_frequency != ICAL_FREQUENCY_SECOND) {
+		case ical_frequency::minute:
+			if (pirrule->real_frequency != ical_frequency::second) {
 				return false;
 			}
 			if (60*pirrule->interval > 366) {
 				return false;
 			}
 			break;
-		case ICAL_FREQUENCY_HOUR:
-			if (pirrule->real_frequency != ICAL_FREQUENCY_MINUTE) {
+		case ical_frequency::hour:
+			if (pirrule->real_frequency != ical_frequency::minute) {
 				return false;
 			}
 			if (60*pirrule->interval > 366) {
 				return false;
 			}
 			break;
-		case ICAL_FREQUENCY_DAY:
-			if (pirrule->real_frequency != ICAL_FREQUENCY_HOUR) {
+		case ical_frequency::day:
+			if (pirrule->real_frequency != ical_frequency::hour) {
 				return false;
 			}
 			if (24*pirrule->interval > 366) {
 				return false;
 			}
 			break;
-		case ICAL_FREQUENCY_WEEK:
-			if (pirrule->real_frequency == ICAL_FREQUENCY_DAY) {
+		case ical_frequency::week:
+			if (pirrule->real_frequency == ical_frequency::day) {
 				break;
-			} else if (pirrule->real_frequency == ICAL_FREQUENCY_HOUR) {
+			} else if (pirrule->real_frequency == ical_frequency::hour) {
 				if (7*24*pirrule->interval > 366) {
 					return false;
 				}
 				break;
 			}
 			return false;
-		case ICAL_FREQUENCY_MONTH:
-			if (pirrule->real_frequency == ICAL_FREQUENCY_DAY) {
+		case ical_frequency::month:
+			if (pirrule->real_frequency == ical_frequency::day) {
 				if (31*pirrule->interval > 366) {
 					return false;
 				}
-			} else if (pirrule->real_frequency == ICAL_FREQUENCY_WEEK) {
+			} else if (pirrule->real_frequency == ical_frequency::week) {
 				if (5*pirrule->interval > 366) {
 					return false;
 				}
@@ -2442,16 +2442,16 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 				return false;
 			}
 			break;
-		case ICAL_FREQUENCY_YEAR:
-			if (pirrule->real_frequency == ICAL_FREQUENCY_DAY) {
+		case ical_frequency::year:
+			if (pirrule->real_frequency == ical_frequency::day) {
 				if (pirrule->interval > 1) {
 					return false;
 				}
-			} else if (pirrule->real_frequency == ICAL_FREQUENCY_WEEK) {
+			} else if (pirrule->real_frequency == ical_frequency::week) {
 				if (pirrule->interval > 8) {
 					return false;
 				}
-			} else if (pirrule->real_frequency == ICAL_FREQUENCY_MONTH) {
+			} else if (pirrule->real_frequency == ical_frequency::month) {
 				if (pirrule->interval > 30) {
 					return false;
 				}
@@ -2504,12 +2504,14 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	}
 	itime = pirrule->instance_itime;
 	switch (pirrule->frequency) {
-	case ICAL_FREQUENCY_MINUTE:
+	case ical_frequency::second:
+		break;
+	case ical_frequency::minute:
 		if (NULL != pbysecond_list) {
 			itime.second = 0;
 		}
 		break;
-	case ICAL_FREQUENCY_HOUR:
+	case ical_frequency::hour:
 		if (NULL != pbyminute_list) {
 			itime.minute = 0;
 		}
@@ -2517,7 +2519,7 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			itime.second = 0;
 		}
 		break;
-	case ICAL_FREQUENCY_DAY:
+	case ical_frequency::day:
 		if (NULL != pbyhour_list) {
 			itime.hour = 0;
 		}
@@ -2528,7 +2530,7 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			itime.second = 0;
 		}
 		break;
-	case ICAL_FREQUENCY_WEEK:
+	case ical_frequency::week:
 		if (NULL != pbywday_list) {
 			dayofweek = ical_get_dayofweek(itime.year,
 								itime.month, itime.day);
@@ -2548,7 +2550,7 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			itime.second = 0;
 		}
 		break;
-	case ICAL_FREQUENCY_MONTH:
+	case ical_frequency::month:
 		if (NULL != pbyyday_list ||
 			NULL != pbymday_list ||
 			NULL != pbywday_list) {
@@ -2564,7 +2566,7 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			itime.second = 0;
 		}
 		break;
-	case ICAL_FREQUENCY_YEAR:
+	case ical_frequency::year:
 		if (NULL != pbymonth_list) {
 			itime.month = 1;
 		}
