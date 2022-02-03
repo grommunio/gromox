@@ -71,7 +71,7 @@ int main(int argc, const char **argv) try
 	}
 	if (pfd[1] != STDOUT_FILENO) {
 		if (posix_spawn_file_actions_adddup2(&p1fa, pfd[1], STDOUT_FILENO) != 0 ||
-		    posix_spawn_file_actions_addclose(&p2fa, pfd[0]) != 0 ||
+		    posix_spawn_file_actions_addclose(&p1fa, pfd[0]) != 0 ||
 		    posix_spawn_file_actions_addclose(&p1fa, pfd[1]) != 0) {
 			perror("file_actions");
 			return EXIT_FAILURE;
