@@ -181,11 +181,7 @@ static bool ical_retrieve_line_item(char *pline, LINE_ITEM *pitem)
 		}
 		if (FALSE == b_value) {
 			if ('"' == *pline) {
-				if (FALSE == b_quote) {
-					b_quote = TRUE;
-				} else {
-					b_quote = FALSE;
-				}
+				b_quote = b_quote ? false : TRUE;
 			}
 			if (b_quote) {
 				pline ++;
@@ -363,13 +359,8 @@ static BOOL ical_retrieve_value(ICAL_LINE *piline, char *pvalue)
 			return false;
 		do {
 			pnext1 = ical_get_value_sep(ptr1, ',');
-			if ('\0' == *ptr1) {
-				if (!pivalue->append_subval(nullptr))
-					return FALSE;
-			} else {
-				if (!pivalue->append_subval(ptr1))
-					return FALSE;
-			}
+			if (!pivalue->append_subval(*ptr1 == '\0' ? nullptr : ptr1))
+				return FALSE;
 		} while ((ptr1 = pnext1) != NULL);
 	} while ((ptr = pnext) != NULL);
 	return TRUE;
@@ -1632,11 +1623,7 @@ bool ical_itime_to_utc(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	int minute_offset;
 	const char *str_offset;
 	
-	if (itime.leap_second >= 60) {
-		tmp_tm.tm_sec = itime.leap_second;
-	} else {
-		tmp_tm.tm_sec = itime.second;
-	}
+	tmp_tm.tm_sec = itime.leap_second >= 60 ? itime.leap_second : itime.second;
 	tmp_tm.tm_min = itime.minute;
 	tmp_tm.tm_hour = itime.hour;
 	tmp_tm.tm_mday = itime.day;
@@ -1668,11 +1655,7 @@ bool ical_datetime_to_utc(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	
 	if (!ical_parse_datetime(str_datetime, &b_utc, &itime))
 		return false;
-	if (itime.leap_second >= 60) {
-		tmp_tm.tm_sec = itime.leap_second;
-	} else {
-		tmp_tm.tm_sec = itime.second;
-	}
+	tmp_tm.tm_sec = itime.leap_second >= 60 ? itime.leap_second : itime.second;
 	if (b_utc) {
 		tmp_tm.tm_min = itime.minute;
 		tmp_tm.tm_hour = itime.hour;
@@ -1873,51 +1856,28 @@ static ICAL_TIME ical_next_rrule_itime(ICAL_RRULE *pirrule,
 	int dayofweek;
 	
 	if (0 == hint_result) {
+		auto req = pirrule->real_frequency == pirrule->frequency;
 		switch (pirrule->real_frequency) {
 		case ical_frequency::year:
 			itime.add_year(pirrule->interval);
 			break;
 		case ical_frequency::month:
-			if (pirrule->real_frequency == pirrule->frequency) {
-				itime.add_month(pirrule->interval);
-			} else {
-				itime.add_month(1);
-			}
+			itime.add_month(req ? pirrule->interval : 1);
 			break;
 		case ical_frequency::week:
-			if (pirrule->real_frequency == pirrule->frequency) {
-				itime.add_day(7 * pirrule->interval);
-			} else {
-				itime.add_day(7);
-			}
+			itime.add_day(req ? 7 * pirrule->interval : 7);
 			break;
 		case ical_frequency::day:
-			if (pirrule->real_frequency == pirrule->frequency) {
-				itime.add_day(pirrule->interval);
-			} else {
-				itime.add_day(1);
-			}
+			itime.add_day(req ? pirrule->interval : 1);
 			break;
 		case ical_frequency::hour:
-			if (pirrule->real_frequency == pirrule->frequency) {
-				itime.add_hour(pirrule->interval);
-			} else {
-				itime.add_hour(1);
-			}
+			itime.add_hour(req ? pirrule->interval : 1);
 			break;
 		case ical_frequency::minute:
-			if (pirrule->real_frequency == pirrule->frequency) {
-				itime.add_minute(pirrule->interval);
-			} else {
-				itime.add_minute(1);
-			}
+			itime.add_minute(req ? pirrule->interval : 1);
 			break;
 		case ical_frequency::second:
-			if (pirrule->real_frequency == pirrule->frequency) {
-				itime.add_second(pirrule->interval);
-			} else {
-				itime.add_second(1);
-			}
+			itime.add_second(req ? pirrule->interval : 1);
 			break;
 		}
 		return itime;
