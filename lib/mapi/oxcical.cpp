@@ -406,11 +406,11 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		apr->recur_pat.enddate = rop_util_unix_to_nttime(tmp_time) / 600000000;
 	}
 	switch (irrule.frequency) {
-	case ICAL_FREQUENCY_SECOND:
-	case ICAL_FREQUENCY_MINUTE:
-	case ICAL_FREQUENCY_HOUR:
+	case ical_frequency::second:
+	case ical_frequency::minute:
+	case ical_frequency::hour:
 		return FALSE;
-	case ICAL_FREQUENCY_DAY:
+	case ical_frequency::day:
 		if (piline->get_subval_list("BYDAY") != nullptr ||
 		    piline->get_subval_list("BYMONTH") != nullptr ||
 		    piline->get_subval_list("BYSETPOS") != nullptr)
@@ -422,7 +422,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		apr->recur_pat.firstdatetime = apr->recur_pat.startdate % apr->recur_pat.period;
 		patterntype = PATTERNTYPE_DAY;
 		break;
-	case ICAL_FREQUENCY_WEEK:
+	case ical_frequency::week:
 		if (piline->get_subval_list("BYMONTH") != nullptr ||
 		    piline->get_subval_list("BYSETPOS") != nullptr)
 			return FALSE;
@@ -444,29 +444,17 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			psubval_list = piline->get_subval_list("BYDAY");
 			apr->recur_pat.pts.weekrecur = 0;
 			for (const auto &pnv2 : *psubval_list) {
-				auto wd = pnv2.has_value() ? pnv2->c_str() : "";
-				if (strcasecmp(wd, "SU") == 0) {
-					apr->recur_pat.pts.weekrecur |= week_recur_bit::sun;
-				} else if (strcasecmp(wd, "MO") == 0) {
-					apr->recur_pat.pts.weekrecur |= week_recur_bit::mon;
-				} else if (strcasecmp(wd, "TU") == 0) {
-					apr->recur_pat.pts.weekrecur |= week_recur_bit::tue;
-				} else if (strcasecmp(wd, "WE") == 0) {
-					apr->recur_pat.pts.weekrecur |= week_recur_bit::wed;
-				} else if (strcasecmp(wd, "TH") == 0) {
-					apr->recur_pat.pts.weekrecur |= week_recur_bit::thu;
-				} else if (strcasecmp(wd, "FR") == 0) {
-					apr->recur_pat.pts.weekrecur |= week_recur_bit::fri;
-				} else if (strcasecmp(wd, "SA") == 0) {
-					apr->recur_pat.pts.weekrecur |= week_recur_bit::sat;
-				}
+				auto wd = weekday_to_int(pnv2.has_value() ? pnv2->c_str() : "");
+				if (wd < 0)
+					continue;
+				apr->recur_pat.pts.weekrecur |= 1 << wd;
 			}
 		} else {
 			ical_utc_to_datetime(ptz_component, start_time, &itime);
 			apr->recur_pat.pts.weekrecur = 1U << ical_get_dayofweek(itime.year, itime.month, itime.day);
 		}
 		break;
-	case ICAL_FREQUENCY_MONTH:
+	case ical_frequency::month:
 		if (piline->get_subval_list("BYMONTH") != nullptr)
 			return FALSE;
 		apr->recur_pat.recurfrequency = RECURFREQUENCY_MONTHLY;
@@ -491,22 +479,10 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			psubval_list = piline->get_subval_list("BYDAY");
 			apr->recur_pat.pts.monthnth.weekrecur = 0;
 			for (const auto &pnv2 : *psubval_list) {
-				auto wd = pnv2.has_value() ? pnv2->c_str() : "";
-				if (strcasecmp(wd, "SU") == 0) {
-					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::sun;
-				} else if (strcasecmp(wd, "MO") == 0) {
-					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::mon;
-				} else if (strcasecmp(wd, "TU") == 0) {
-					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::tue;
-				} else if (strcasecmp(wd, "WE") == 0) {
-					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::wed;
-				} else if (strcasecmp(wd, "TH") == 0) {
-					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::thu;
-				} else if (strcasecmp(wd, "FR") == 0) {
-					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::fri;
-				} else if (strcasecmp(wd, "SA") == 0) {
-					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::sat;
-				}
+				auto wd = weekday_to_int(pnv2.has_value() ? pnv2->c_str() : "");
+				if (wd < 0)
+					continue;
+				apr->recur_pat.pts.monthnth.weekrecur |= 1 << wd;
 			}
 			pvalue = piline->get_first_subvalue_by_name("BYSETPOS");
 			int tmp_int = strtol(pvalue, nullptr, 0);
@@ -537,7 +513,7 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			apr->recur_pat.pts.dayofmonth = tmp_int;
 		}
 		break;
-	case ICAL_FREQUENCY_YEAR:
+	case ical_frequency::year:
 		apr->recur_pat.recurfrequency = RECURFREQUENCY_YEARLY;
 		if (irrule.interval > 8)
 			return FALSE;
@@ -562,22 +538,10 @@ static BOOL oxcical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			psubval_list = piline->get_subval_list("BYDAY");
 			apr->recur_pat.pts.monthnth.weekrecur = 0;
 			for (const auto &pnv2 : *psubval_list) {
-				auto wd = pnv2.has_value() ? pnv2->c_str() : "";
-				if (strcasecmp(wd, "SU") == 0) {
-					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::sun;
-				} else if (strcasecmp(wd, "MO") == 0) {
-					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::mon;
-				} else if (strcasecmp(wd, "TU") == 0) {
-					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::tue;
-				} else if (strcasecmp(wd, "WE") == 0) {
-					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::wed;
-				} else if (strcasecmp(wd, "TH") == 0) {
-					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::thu;
-				} else if (strcasecmp(wd, "FR") == 0) {
-					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::fri;
-				} else if (strcasecmp(wd, "SA") == 0) {
-					apr->recur_pat.pts.monthnth.weekrecur |= week_recur_bit::sat;
-				}
+				auto wd = weekday_to_int(pnv2.has_value() ? pnv2->c_str() : "");
+				if (wd < 0)
+					continue;
+				apr->recur_pat.pts.monthnth.weekrecur |= 1 << wd;
 			}
 			pvalue = piline->get_first_subvalue_by_name("BYSETPOS");
 			int tmp_int = strtol(pvalue, nullptr, 0);
@@ -3296,27 +3260,10 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
-		if (apr->recur_pat.pts.weekrecur & week_recur_bit::sun &&
-		    !pivalue->append_subval("SU"))
-			return false;
-		if (apr->recur_pat.pts.weekrecur & week_recur_bit::mon &&
-		    !pivalue->append_subval("MO"))
-			return false;
-		if (apr->recur_pat.pts.weekrecur & week_recur_bit::tue &&
-		    !pivalue->append_subval("TU"))
-			return false;
-		if (apr->recur_pat.pts.weekrecur & week_recur_bit::wed &&
-		    !pivalue->append_subval("WE"))
-			return false;
-		if (apr->recur_pat.pts.weekrecur & week_recur_bit::thu &&
-		    !pivalue->append_subval("TH"))
-			return false;
-		if (apr->recur_pat.pts.weekrecur & week_recur_bit::fri &&
-		    !pivalue->append_subval("FR"))
-			return false;
-		if (apr->recur_pat.pts.weekrecur & week_recur_bit::sat &&
-		    !pivalue->append_subval("SA"))
-			return false;
+		for (unsigned int wd = 0; wd < 7; ++wd)
+			if (apr->recur_pat.pts.weekrecur & (1 << wd) &&
+			    !pivalue->append_subval(weekday_to_str(wd)))
+				return false;
 		break;
 	case PATTERNTYPE_MONTH:
 	case PATTERNTYPE_HJMONTH:
@@ -3412,27 +3359,10 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::sun &&
-			    !pivalue->append_subval("SU"))
-				return false;
-			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::mon &&
-			    !pivalue->append_subval("MO"))
-				return false;
-			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::tue &&
-			    !pivalue->append_subval("TU"))
-				return false;
-			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::wed &&
-			    !pivalue->append_subval("WE"))
-				return false;
-			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::thu &&
-			    !pivalue->append_subval("TH"))
-				return false;
-			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::fri &&
-			    !pivalue->append_subval("FR"))
-				return false;
-			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::sat &&
-			    !pivalue->append_subval("SA"))
-				return false;
+			for (unsigned int wd = 0; wd < 7; ++wd)
+				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd) &&
+				    !pivalue->append_subval(weekday_to_str(wd)))
+					return false;
 			pivalue = ical_new_value("BYSETPOS");
 			if (NULL == pivalue) {
 				return FALSE;
@@ -3463,27 +3393,10 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 			}
 			if (piline->append_value(pivalue) < 0)
 				return false;
-			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::sun &&
-			    !pivalue->append_subval("SU"))
-				return false;
-			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::mon &&
-			    !pivalue->append_subval("MO"))
-				return false;
-			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::tue &&
-			    !pivalue->append_subval("TU"))
-				return false;
-			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::wed &&
-			    !pivalue->append_subval("WE"))
-				return false;
-			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::thu &&
-			    !pivalue->append_subval("TH"))
-				return false;
-			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::fri &&
-			    !pivalue->append_subval("FR"))
-				return false;
-			if (apr->recur_pat.pts.monthnth.weekrecur & week_recur_bit::sat &&
-			    !pivalue->append_subval("SA"))
-				return false;
+			for (unsigned int wd = 0; wd < 7; ++wd)
+				if (apr->recur_pat.pts.monthnth.weekrecur & (1 << wd) &&
+				    !pivalue->append_subval(weekday_to_str(wd)))
+					return false;
 			pivalue = ical_new_value("BYSETPOS");
 			if (NULL == pivalue) {
 				return FALSE;
@@ -3551,38 +3464,9 @@ static BOOL oxcical_export_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 		}
 		if (piline->append_value(pivalue) < 0)
 			return false;
-		switch (apr->recur_pat.firstdow) {
-		case 0:
-			if (!pivalue->append_subval("SU"))
-				return FALSE;
-			break;
-		case 1:
-			if (!pivalue->append_subval("MO"))
-				return FALSE;
-			break;
-		case 2:
-			if (!pivalue->append_subval("TU"))
-				return FALSE;
-			break;
-		case 3:
-			if (!pivalue->append_subval("WE"))
-				return FALSE;
-			break;
-		case 4:
-			if (!pivalue->append_subval("TH"))
-				return FALSE;
-			break;
-		case 5:
-			if (!pivalue->append_subval("FR"))
-				return FALSE;
-			break;
-		case 6:
-			if (!pivalue->append_subval("SA"))
-				return FALSE;
-			break;
-		default:
+		auto wd = weekday_to_str(apr->recur_pat.firstdow);
+		if (wd == nullptr || !pivalue->append_subval(wd))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }

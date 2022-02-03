@@ -8,13 +8,9 @@
 #include <gromox/defs.h>
 #define ICAL_NAME_LEN					64
 
-#define ICAL_FREQUENCY_SECOND			1
-#define ICAL_FREQUENCY_MINUTE			2
-#define ICAL_FREQUENCY_HOUR				3
-#define ICAL_FREQUENCY_DAY				4
-#define ICAL_FREQUENCY_WEEK				5
-#define ICAL_FREQUENCY_MONTH			6
-#define ICAL_FREQUENCY_YEAR				7
+enum class ical_frequency {
+	second, minute, hour, day, week, month, year,
+};
 
 #define RRULE_BY_SETPOS					0
 #define RRULE_BY_SECOND					1
@@ -119,8 +115,7 @@ struct GX_EXPORT ical_rrule {
 	ICAL_TIME real_start_itime;
 	bool b_until, b_start_exceptional, by_mask[9];
 	int interval;
-	int frequency;
-	int real_frequency;
+	ical_frequency frequency, real_frequency;
 	int weekstart;
 	int cur_setpos;
 	int setpos_count;
@@ -164,3 +159,5 @@ extern GX_EXPORT bool ical_itime_to_utc(std::shared_ptr<ICAL_COMPONENT>, ICAL_TI
 extern GX_EXPORT bool ical_datetime_to_utc(std::shared_ptr<ICAL_COMPONENT>, const char *datetime, time_t *);
 extern GX_EXPORT bool ical_utc_to_datetime(std::shared_ptr<ICAL_COMPONENT>, time_t utc_time, ICAL_TIME *);
 extern GX_EXPORT bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT>, time_t start, const ical_vlist *value_list, ICAL_RRULE *);
+extern GX_EXPORT int weekday_to_int(const char *);
+extern GX_EXPORT const char *weekday_to_str(unsigned int);
