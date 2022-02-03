@@ -259,11 +259,10 @@ static char* ical_get_string_line(char *pbuff, size_t max_length)
 
 static bool ical_check_empty_line(const char *pline)
 {	
-	while ('\0' != *pline) {
+	for (; *pline != '\0'; ++pline)
 		if (' ' != *pline && '\t' != *pline) {
 			return false;
 		}
-	}
 	return true;
 }
 
