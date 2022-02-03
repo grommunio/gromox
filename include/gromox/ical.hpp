@@ -159,3 +159,5 @@ extern GX_EXPORT bool ical_itime_to_utc(std::shared_ptr<ICAL_COMPONENT>, ICAL_TI
 extern GX_EXPORT bool ical_datetime_to_utc(std::shared_ptr<ICAL_COMPONENT>, const char *datetime, time_t *);
 extern GX_EXPORT bool ical_utc_to_datetime(std::shared_ptr<ICAL_COMPONENT>, time_t utc_time, ICAL_TIME *);
 extern GX_EXPORT bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT>, time_t start, const ical_vlist *value_list, ICAL_RRULE *);
+extern GX_EXPORT int weekday_to_int(const char *);
+extern GX_EXPORT const char *weekday_to_str(unsigned int);

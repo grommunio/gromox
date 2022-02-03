@@ -1227,6 +1227,33 @@ void ICAL_TIME::add_second(int seconds)
 	}
 }
 
+int weekday_to_int(const char *s)
+{
+	if (strcasecmp(s, "SU") == 0) return 0;
+	if (strcasecmp(s, "MO") == 0) return 1;
+	if (strcasecmp(s, "TU") == 0) return 2;
+	if (strcasecmp(s, "WE") == 0) return 3;
+	if (strcasecmp(s, "TH") == 0) return 4;
+	if (strcasecmp(s, "FR") == 0) return 5;
+	if (strcasecmp(s, "SA") == 0) return 6;
+	return -1;
+}
+
+const char *weekday_to_str(unsigned int n)
+{
+	switch (n) {
+	case 7:
+	case 0: return "SU";
+	case 1: return "MO";
+	case 2: return "TU";
+	case 3: return "WE";
+	case 4: return "TH";
+	case 5: return "FR";
+	case 6: return "SA";
+	default: return nullptr;
+	}
+}
+
 bool ical_parse_byday(const char *str_byday, int *pdayofweek, int *pweekorder)
 {
 	char *pbegin;
@@ -1266,23 +1293,10 @@ bool ical_parse_byday(const char *str_byday, int *pdayofweek, int *pweekorder)
 	if (b_negative)
 		*pweekorder *= -1;
  PARSE_WEEKDAY:
-	if (0 == strcasecmp(pbegin, "SU")) {
-		*pdayofweek = 0;
-	} else if (0 == strcasecmp(pbegin, "MO")) {
-		*pdayofweek = 1;
-	} else if (0 == strcasecmp(pbegin, "TU")) {
-		*pdayofweek = 2;
-	} else if (0 == strcasecmp(pbegin, "WE")) {
-		*pdayofweek = 3;
-	} else if (0 == strcasecmp(pbegin, "TH")) {
-		*pdayofweek = 4;
-	} else if (0 == strcasecmp(pbegin, "FR")) {
-		*pdayofweek = 5;
-	} else if (0 == strcasecmp(pbegin, "SA")) {
-		*pdayofweek = 6;
-	} else {
+	auto dow = weekday_to_int(pbegin);
+	if (dow < 0)
 		return false;
-	}
+	*pdayofweek = dow;
 	return true;
 }
 
@@ -2438,23 +2452,10 @@ bool ical_parse_rrule(std::shared_ptr<ICAL_COMPONENT> ptz_component,
 	pvalue = ical_get_first_subvalue_by_name_internal(
 								pvalue_list, "WKST");
 	if (NULL != pvalue) {
-		if (0 == strcasecmp(pvalue, "SU")) {
-			pirrule->weekstart = 0;
-		} else if (0 == strcasecmp(pvalue, "MO")) {
-			pirrule->weekstart = 1;
-		} else if (0 == strcasecmp(pvalue, "TU")) {
-			pirrule->weekstart = 2;
-		} else if (0 == strcasecmp(pvalue, "WE")) {
-			pirrule->weekstart = 3;
-		} else if (0 == strcasecmp(pvalue, "TH")) {
-			pirrule->weekstart = 4;
-		} else if (0 == strcasecmp(pvalue, "FR")) {
-			pirrule->weekstart = 5;
-		} else if (0 == strcasecmp(pvalue, "SA")) {
-			pirrule->weekstart = 6;
-		} else {
+		auto dow = weekday_to_int(pvalue);
+		if (dow < 0)
 			return false;
-		}
+		pirrule->weekstart = dow;
 	} else {
 		if (NULL != pbywnum_list) {
 			pirrule->weekstart = 1;
