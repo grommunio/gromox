@@ -2857,14 +2857,15 @@ static int copy_mail(const char *path, const char *src_folder,
 }
 
 
-static BOOL read_line(int sockd, char *buff, int length)
+static BOOL read_line(int sockd, char *buff, size_t length)
 {
-	int offset;
+	if (length == 0)
+		return TRUE;
+	size_t reallen = length, offset = 0;
+	--length;
 	int tv_msec;
-	int read_len;
 	struct pollfd pfd_read;
 
-	offset = 0;
 	while (true) {
 		tv_msec = SOCKET_TIMEOUT * 1000;
 		pfd_read.fd = sockd;
@@ -2872,10 +2873,13 @@ static BOOL read_line(int sockd, char *buff, int length)
 		if (1 != poll(&pfd_read, 1, tv_msec)) {
 			return FALSE;
 		}
-		read_len = read(sockd, buff + offset,  length - offset);
-		if (read_len <= 0) {
+		auto read_len = read(sockd, buff + offset,  length - offset);
+		if (read_len < 0) {
 			return FALSE;
 		}
+		buff[offset+read_len] = '\0';
+		if (read_len == 0)
+			return false;
 		offset += read_len;
 		if (offset >= 2 && '\r' == buff[offset - 2] &&
 			'\n' == buff[offset - 1]) {
