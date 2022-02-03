@@ -53,7 +53,9 @@ Default: \fImail\fP
 Default: (libldap default)
 .TP
 \fBldap_start_tls\fP
-Use the STARTTLS mechanism on LDAP connections.
+Use the STARTTLS mechanism on LDAP connections. If possible, use Explicit TLS
+(ldaps:// in the URI field) in favor of STARTTLS; see Internet blog posts
+"STARTTLS considered harmful" for details.
 .br
 Default: \fIoff\fP
 .br
