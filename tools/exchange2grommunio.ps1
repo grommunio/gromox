@@ -115,6 +115,27 @@ $MailboxLanguage = "de_DE"
 
 # From here on, no code or variables need changing by the user of this script.
 
+# Check lock of file by Windows
+#
+function check-Lock
+{
+	Param(
+		[parameter(Mandatory=$true)]
+		$filename
+	)
+	$file = gi (Resolve-Path $filename) -Force
+	if ($file -is [IO.FileInfo]) {
+		trap {
+			return $true
+			continue
+		}
+		$stream = New-Object system.IO.StreamReader $file
+		if ($stream) {
+			$stream.Close()
+		}
+	}
+	return $false
+}
 
 # Mount the Windows shared folder via CIFS
 #
@@ -283,9 +304,21 @@ foreach ($Mailbox in (Get-Mailbox)) {
 	}
 
 	Write-Host ""
+	Write-Host "Waiting on PST file lock release." -fore yellow
 
-	# Wait for release of $WinSharedFolder\$MigMBox.pst.
-	Start-Sleep -s 10
+	$LockTimeout = new-timespan -Minutes 2
+	$sw = [diagnostics.stopwatch]::StartNew()
+	While ($sw.elapsed -lt $LockTimeout) {
+		if ((check-Lock $WinSharedFolder\$MigMBox.pst) -eq $true) {
+			Write-Host -NoNewline "." -fore yellow
+		} else {
+			Write-Host "PST lock cleared." -fore green
+			continue
+		}
+		start-sleep -seconds 2
+	}
+
+	Write-Host ""
 
 	# If requested, create the grommunio mailbox.
 	if ($CreateGrommunioMailbox) {
