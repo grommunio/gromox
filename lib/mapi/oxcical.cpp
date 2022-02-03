@@ -1385,6 +1385,8 @@ static ol_busy_status lookup_busy_by_transp(std::shared_ptr<ICAL_LINE> l)
 	if (l == nullptr)
 		return olIndeterminate;
 	auto v = l->get_first_subvalue();
+	if (v == nullptr)
+		return olIndeterminate;
 	if (strcasecmp(v, "TRANSPARENT") == 0)
 		return olFree;
 	if (strcasecmp(v, "OPAQUE") == 0)
@@ -1397,6 +1399,8 @@ static ol_busy_status lookup_busy_by_status(std::shared_ptr<ICAL_LINE> l)
 	if (l == nullptr)
 		return olIndeterminate;
 	auto v = l->get_first_subvalue();
+	if (v == nullptr)
+		return olIndeterminate;
 	if (strcasecmp(v, "CANCELLED") == 0)
 		return olFree;
 	if (strcasecmp(v, "TENTATIVE") == 0)
