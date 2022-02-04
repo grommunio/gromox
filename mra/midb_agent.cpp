@@ -90,8 +90,7 @@ struct BACK_CONN {
 }
 
 static void *midbag_scanwork(void *);
-static BOOL read_line(int sockd, char *buff, int length);
-
+static BOOL read_line(int sockd, char *buff, size_t length);
 static int connect_midb(const char *host, uint16_t port);
 static BOOL get_digest_string(const char *src, int length, const char *tag, char *buff, int buff_len);
 static BOOL get_digest_integer(const char *src, int length, const char *tag, int *pinteger);
@@ -2797,7 +2796,9 @@ static int get_mail_flags(const char *path, const char *folder,
 		double_list_append_as_tail(&pback->psvr->conn_list,
 			&pback->node);
 		sv_hold.unlock();
-		*pflag_bits = s_to_flagbits(buff + 5);
+		*pflag_bits = 0;
+		if (buff[4] == ' ')
+			*pflag_bits = s_to_flagbits(buff + 5);
 		return MIDB_RESULT_OK;
 	} else if (0 == strncmp(buff, "FALSE ", 6)) {
 		std::unique_lock sv_hold(g_server_lock);
@@ -2856,12 +2857,11 @@ static int copy_mail(const char *path, const char *src_folder,
 
 }
 
-
 static BOOL read_line(int sockd, char *buff, size_t length)
 {
 	if (length == 0)
 		return TRUE;
-	size_t reallen = length, offset = 0;
+	size_t offset = 0;
 	--length;
 	int tv_msec;
 	struct pollfd pfd_read;
