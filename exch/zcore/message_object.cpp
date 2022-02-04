@@ -147,7 +147,6 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 {
 	auto pmessage = this;
 	EXT_PUSH ext_push;
-	char id_string[256];
 	PROBLEM_ARRAY problems;
 	TPROPVAL_ARRAY propvals;
 	
@@ -247,14 +246,9 @@ BOOL message_object::init_message(BOOL b_fai, uint32_t new_cpid)
 	if (abk_eid == nullptr)
 		return FALSE;
 	propvals.ppropval[propvals.count++].pvalue = abk_eid;
-	auto tmp_guid = guid_random_new();
-	if (!ext_push.init(id_string, 256, 0) ||
-	    ext_push.p_guid(tmp_guid) != EXT_ERR_SUCCESS)
+	char id_string[UADDR_SIZE+2];
+	if (make_inet_msgid(id_string, arsizeof(id_string), 0x5a54) != 0)
 		return false;
-	encode_hex_binary(id_string, 16, id_string + 16, 64);
-	id_string[0] = '<';
-	memmove(id_string + 1, id_string + 16, 32);
-	snprintf(id_string + 33, 128, "@%s>", common_util_get_hostname());
 	propvals.ppropval[propvals.count].proptag = PR_INTERNET_MESSAGE_ID;
 	propvals.ppropval[propvals.count++].pvalue = id_string;
 	if (!exmdb_client::set_instance_properties(pmessage->pstore->get_dir(),

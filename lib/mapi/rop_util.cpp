@@ -6,9 +6,11 @@
 #include <ctime>
 #include <sys/time.h>
 #include <gromox/endian.hpp>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/pcl.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/util.hpp>
 #define TIME_FIXUP_CONSTANT_INT				11644473600LL
 
 using namespace gromox;
@@ -292,6 +294,38 @@ uint32_t props_to_defer_interval(const TPROPVAL_ARRAY &pv)
 	case 3: return *num * 86400 * 7;
 	default: return 0;
 	}
+}
+
+int make_inet_msgid(char *id, size_t bufsize, uint32_t lcid)
+{
+	if (bufsize < 77)
+		return ENOSPC;
+	char pack[32];
+	strcpy(id, "<gxxx.");
+	id[3] = lcid >> 8;
+	id[4] = lcid;
+	EXT_PUSH ep;
+	if (!ep.init(pack, arsizeof(pack), 0) ||
+	    ep.p_guid(guid_random_new()) != EXT_ERR_SUCCESS)
+		return ENOMEM;
+	unsigned int ofs = 6;
+	encode64(pack, 16, id + ofs, bufsize - ofs, nullptr);
+	ofs += 22;
+	id[ofs++] = '@';
+	ep.m_offset = 0;
+	if (ep.p_guid(guid_random_new()) != EXT_ERR_SUCCESS ||
+	    ep.p_guid(guid_random_new()) != EXT_ERR_SUCCESS)
+		return ENOMEM;
+	encode64(pack, 32, id + ofs, bufsize - ofs, nullptr);
+	ofs += 43;
+	strcpy(&id[ofs], ".xz>");
+	for (ofs = 0; ofs < 76; ++ofs) {
+		if (id[ofs] == '+')
+			id[ofs] = '-';
+		else if (id[ofs] == '/')
+			id[ofs] = '_';
+	}
+	return 0;
 }
 
 }

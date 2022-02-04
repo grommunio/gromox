@@ -3349,6 +3349,8 @@ static gxerr_t rectify_message(message_object *pmessage,
 	}
 	search_bin1.cb = gx_snprintf(search_buff1, arsizeof(search_buff1), "EX:%s", essdn1) + 1;
 	search_bin1.pv = search_buff1;
+	char msgid[UADDR_SIZE+2];
+	make_inet_msgid(msgid, arsizeof(msgid), 0x5a53);
 	TAGGED_PROPVAL pv[] = {
 		{PR_READ, &tmp_byte},
 		{PR_CLIENT_SUBMIT_TIME, &nt_time},
@@ -3366,6 +3368,7 @@ static gxerr_t rectify_message(message_object *pmessage,
 		{PR_SENT_REPRESENTING_NAME, dispname1},
 		{PR_SENT_REPRESENTING_ENTRYID, entryid},
 		{PR_SENT_REPRESENTING_SEARCH_KEY, &search_bin1},
+		{PR_INTERNET_MESSAGE_ID, msgid},
 	};
 	TPROPVAL_ARRAY tmp_propvals = {arsizeof(pv), pv};
 	if (!pmessage->set_properties(&tmp_propvals))
