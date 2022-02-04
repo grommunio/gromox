@@ -189,14 +189,14 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 			db_engine_free();
 			return FALSE;
 		}
-		if (0 != db_engine_run()) {
-			printf("[exmdb_provider]: failed to run db engine\n");
-			db_engine_free();
-			return FALSE;
-		}
 		if (0 != exmdb_server_run()) {
 			printf("[exmdb_provider]: failed to run exmdb server\n");
 			db_engine_stop();
+			db_engine_free();
+			return FALSE;
+		}
+		if (0 != db_engine_run()) {
+			printf("[exmdb_provider]: failed to run db engine\n");
 			db_engine_free();
 			return FALSE;
 		}
@@ -239,9 +239,9 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		exmdb_client_stop();
 		exmdb_listener_stop();
 		exmdb_parser_stop();
-		exmdb_server_stop();
 		db_engine_stop();
 		db_engine_free();
+		exmdb_server_stop();
 		return TRUE;
 	}
 	return TRUE;
