@@ -2994,7 +2994,6 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	uint16_t length, DCERPC_CALL **ppcall)
 {
-	void *pdata;
 	NDR_PULL ndr;
 	BOOL b_result;
 	uint32_t flags;
@@ -3085,7 +3084,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 					return PDU_PROCESSOR_OUTPUT;
 				}
 				alloc_size = strange_roundup(alloc_size - 1, 16 * 1024);
-				pdata = malloc(alloc_size);
+				auto pdata = static_cast<uint8_t *>(malloc(alloc_size));
 				if (NULL == pdata) {
 					if (FALSE == pdu_processor_fault(pcall,
 						DCERPC_FAULT_OTHER)) {
@@ -3099,7 +3098,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 				memcpy(pdata, prequest->stub_and_verifier.data,
 					prequest->stub_and_verifier.length);
 				free(prequest->stub_and_verifier.data);
-				prequest->stub_and_verifier.vdata = pdata;
+				prequest->stub_and_verifier.data = pdata;
 				pcall->alloc_size = alloc_size;
 			}
 		} else {
@@ -3145,7 +3144,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 					return PDU_PROCESSOR_OUTPUT;
 				}	
 				alloc_size = strange_roundup(alloc_size - 1, 16 * 1024);
-				pdata = malloc(alloc_size);
+				auto pdata = static_cast<uint8_t *>(malloc(alloc_size));
 				if (NULL == pdata) {
 					pdu_processor_free_call(pcallx);
 					if (FALSE == pdu_processor_fault(pcall,
@@ -3159,7 +3158,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 				memcpy(pdata, prequestx->stub_and_verifier.data,
 					prequestx->stub_and_verifier.length);
 				free(prequestx->stub_and_verifier.data);
-				prequestx->stub_and_verifier.vdata = pdata;
+				prequestx->stub_and_verifier.data = pdata;
 				pcallx->alloc_size = alloc_size;
 			}
 				
