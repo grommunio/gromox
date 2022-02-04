@@ -1,3 +1,25 @@
+1.15 (2022-02-04)
+=================
+
+Fixes:
+
+* oxcical: repair import of ICAL recurrences being 60x longer than projected
+* oxcical: rerecognize busy status type "OOF"
+* mapi_lib: cease emission of InTransitMessageCorrelator property to RFC5322
+  header as garbage / stop emitting non-string PS_INTERNET_HEADERS properties
+  completely.
+* imap/pop3: resolve dlname type mismatch warnings
+* email_lib: fix infinite loop in ical_check_empty_line
+* midb: fix nullptr deref when startup has aborted
+* http: fix double free when startup has aborted
+
+Enhancements:
+
+* emsmdb: add log messages for failed delegate lookup
+* exchange2grommunio: replace PIPESTATUS test by something workable
+* zcore: allow setting Out Of Office status of other mailboxes
+
+
 1.14 (2022-01-29)
 =================
 
