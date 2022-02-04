@@ -853,7 +853,7 @@ static uint32_t oxcfold_deletemessages(BOOL b_hard, uint8_t want_asynchronous,
 		auto pvalue = tmp_propvals.get<uint8_t>(PR_NON_RECEIPT_NOTIFICATION_REQUESTED);
 		if (pvalue != nullptr && *pvalue != 0) {
 			pvalue = tmp_propvals.get<uint8_t>(PR_READ);
-			if (pvalue == nullptr || *pvalue == 0 ||
+			if ((pvalue == nullptr || *pvalue == 0) &&
 			    !exmdb_client_get_message_brief(plogon->get_dir(),
 			     pinfo->cpid, pmessage_ids->pll[i], &pbrief))
 				return ecError;
