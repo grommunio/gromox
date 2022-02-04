@@ -267,10 +267,9 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 		uint64_t parent_id = pnode == pctx->marker_stack.begin() ?
 		                     static_cast<folder_object *>(pctx->pobject)->folder_id :
 		                     std::prev(pnode)->data.folder_id;
-		if (FALSE == fastupctx_object_create_folder(pctx,
-			parent_id, pctx->pproplist, &folder_id)) {
+		if (!fastupctx_object_create_folder(pctx, parent_id,
+		    pctx->pproplist, &folder_id))
 			return GXERR_CALL_FAILED;
-		}
 		tpropval_array_free(pctx->pproplist);
 		pctx->pproplist = NULL;
 		pnode->data.folder_id = folder_id;
@@ -507,8 +506,7 @@ static gxerr_t fastupctx_object_record_marker(fastupctx_object *pctx,
 				return GXERR_CALL_FAILED;
 			}
 			pmsgctnt = static_cast<MESSAGE_CONTENT *>(pnode->data.pelement);
-			if (FALSE == attachment_list_append_internal(
-				pmsgctnt->children.pattachments, pattachment)) {
+			if (!attachment_list_append_internal(pmsgctnt->children.pattachments, pattachment)) {
 				attachment_content_free(pattachment);
 				return GXERR_CALL_FAILED;
 			}

@@ -164,8 +164,7 @@ int asyncemsmdb_interface_async_wait(uint32_t async_id,
 		return DISPATCH_SUCCESS;
 	}
 	auto rpc_info = get_rpc_info();
-	if (FALSE == emsmdb_interface_check_acxh(
-		&pin->acxh, pwait->username, &pwait->cxr, TRUE) ||
+	if (!emsmdb_interface_check_acxh(&pin->acxh, pwait->username, &pwait->cxr, TRUE) ||
 		0 != strcasecmp(rpc_info.username, pwait->username)) {
 		g_wait_allocator->put(pwait);
 		pout->flags_out = 0;
@@ -242,10 +241,8 @@ void asyncemsmdb_interface_remove(ACXH *pacxh)
 	char tmp_tag[TAG_SIZE];
 	char username[UADDR_SIZE];
 
-	if (FALSE == emsmdb_interface_check_acxh(
-		pacxh, username, &cxr, FALSE)) {
+	if (!emsmdb_interface_check_acxh(pacxh, username, &cxr, false))
 		return;
-	}
 	snprintf(tmp_tag, GX_ARRAY_SIZE(tmp_tag), "%s:%d", username, cxr);
 	HX_strlower(tmp_tag);
 	std::unique_lock as_hold(g_async_lock);

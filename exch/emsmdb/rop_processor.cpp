@@ -382,7 +382,7 @@ static void *emsrop_scanwork(void *param)
 		}
 		std::unique_lock hl_hold(g_hash_lock);
 		auto iter = g_logon_hash->make_iter();
-		for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
+		for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
 			str_hash_iter_get_value(iter, tmp_dir);
 			pnode = me_alloc<DOUBLE_LIST_NODE>();
@@ -627,8 +627,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 					    0, &propvals) || propvals.count == 0)
 						goto NEXT_NOTIFY;
 				}
-				if (FALSE == common_util_propvals_to_row(
-					&propvals, pcolumns, &tmp_row) ||
+				if (!common_util_propvals_to_row(&propvals, pcolumns, &tmp_row) ||
 				    ext_push1.p_proprow(*pcolumns, tmp_row) != EXT_ERR_SUCCESS)
 					goto NEXT_NOTIFY;
 				tmp_bin.cb = ext_push1.m_offset;

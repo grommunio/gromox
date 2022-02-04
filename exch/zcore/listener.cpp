@@ -33,9 +33,8 @@ static void *zcls_thrwork(void *param)
 		if (-1 == clifd) {
 			continue;
 		}
-		if (FALSE == rpc_parser_activate_connection(clifd)) {
+		if (!rpc_parser_activate_connection(clifd))
 			close(clifd);
-		}
     }
 	return NULL;
 }

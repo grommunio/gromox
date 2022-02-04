@@ -53,10 +53,9 @@ uint32_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
 	}
 	for (i=0; i<count; i++) {
 		for (j=0; j<prow[i].propvals.count; j++) {
-			if (FALSE == common_util_convert_tagged_propval(
-				TRUE, prow[i].propvals.ppropval + j)) {
+			if (!common_util_convert_tagged_propval(TRUE,
+			    &prow[i].propvals.ppropval[j]))
 				return ecError;
-			}
 		}
 	}
 	if (!exmdb_client_update_folder_rule(plogon->get_dir(),

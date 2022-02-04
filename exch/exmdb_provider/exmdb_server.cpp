@@ -50,9 +50,8 @@ void exmdb_server_build_environment(BOOL b_local,
 	common_util_build_tls();
 	auto pctx = g_ctx_allocator->get<ENVIRONMENT_CONTEXT>();
 	pctx->b_local = b_local;
-	if (FALSE == b_local) {
+	if (!b_local)
 		alloc_context_init(&pctx->alloc_ctx);
-	}
 	pctx->b_private = b_private;
 	pctx->dir = dir;
 	pctx->account_id = -1;
@@ -62,9 +61,8 @@ void exmdb_server_build_environment(BOOL b_local,
 void exmdb_server_free_environment()
 {
 	auto pctx = g_env_key;
-	if (FALSE == pctx->b_local) {
+	if (!pctx->b_local)
 		alloc_context_free(&pctx->alloc_ctx);
-	}
 	g_env_key = nullptr;
 	g_ctx_allocator->put(pctx);
 }
@@ -141,9 +139,8 @@ int exmdb_server_get_account_id()
 const GUID* exmdb_server_get_handle()
 {
 	auto pctx = g_env_key;
-	if (NULL == pctx || FALSE == pctx->b_local) {
+	if (pctx == nullptr || !pctx->b_local)
 		return NULL;
-	}
 	return common_util_get_handle();
 }
 

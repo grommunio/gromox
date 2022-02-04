@@ -122,7 +122,7 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 	str_host = get_host_ID();
 	process_id = getpid();
 	sprintf(remote_id, "%s:%d", str_host, process_id);
-	if (FALSE == b_listen) {
+	if (!b_listen) {
 		request.call_id = exmdb_callid::CONNECT;
 		request.payload.connect.prefix = deconst(pserver->prefix.c_str());
 		request.payload.connect.remote_id = remote_id;
@@ -569,9 +569,8 @@ BOOL exmdb_client_relay_delivery(const char *dir,
 	request.payload.delivery_message.cpid = cpid;
 	request.payload.delivery_message.pmsg = deconst(pmsg);
 	request.payload.delivery_message.pdigest = deconst(pdigest);
-	if (FALSE == exmdb_client_do_rpc(dir, &request, &response)) {
+	if (!exmdb_client_do_rpc(dir, &request, &response))
 		return FALSE;
-	}
 	*presult = response.payload.delivery_message.result;
 	return TRUE;
 }

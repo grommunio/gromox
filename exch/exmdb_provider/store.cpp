@@ -83,10 +83,9 @@ BOOL exmdb_server_get_named_propids(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto transact = gx_sql_begin_trans(pdb->psqlite);
-	if (FALSE == common_util_get_named_propids(
-		pdb->psqlite, b_create, ppropnames, ppropids)) {
+	if (!common_util_get_named_propids(pdb->psqlite,
+	    b_create, ppropnames, ppropids))
 		return FALSE;
-	}
 	transact.commit();
 	return TRUE;
 }
@@ -97,11 +96,7 @@ BOOL exmdb_server_get_named_propnames(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (FALSE == common_util_get_named_propnames(
-		pdb->psqlite, ppropids, ppropnames)) {
-		return FALSE;
-	}
-	return TRUE;
+	return common_util_get_named_propnames(pdb->psqlite, ppropids, ppropnames);
 }
 
 /* public only */
@@ -113,10 +108,8 @@ BOOL exmdb_server_get_mapping_guid(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (FALSE == common_util_get_mapping_guid(
-		pdb->psqlite, replid, pb_found, pguid)) {
+	if (!common_util_get_mapping_guid(pdb->psqlite, replid, pb_found, pguid))
 		return FALSE;
-	}
 	*pb_found = TRUE;
 	return TRUE;
 }
@@ -211,9 +204,8 @@ BOOL exmdb_server_check_mailbox_permission(const char *dir,
 	char temp_path[256];
 	char sql_string[128];
 	
-	if (FALSE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private())
 		return FALSE;
-	}
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
@@ -280,9 +272,8 @@ BOOL exmdb_server_allocate_cn(const char *dir, uint64_t *pcn)
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (FALSE == common_util_allocate_cn(pdb->psqlite, &change_num)) {
+	if (!common_util_allocate_cn(pdb->psqlite, &change_num))
 		return FALSE;
-	}
 	*pcn = rop_util_make_eid_ex(1, change_num);
 	return TRUE;
 }
@@ -476,10 +467,10 @@ static BOOL table_check_address_in_contact_folder(
 	}
 	DOUBLE_LIST_NODE *pnode;
 	while ((pnode = double_list_pop_front(&folder_list)) != nullptr) {
-		if (FALSE == table_check_address_in_contact_folder(pstmt_subfolder,
-			pstmt_search, *(uint64_t*)pnode->pdata, paddress, pb_found)) {
+		if (!table_check_address_in_contact_folder(pstmt_subfolder,
+		    pstmt_search, *static_cast<uint64_t *>(pnode->pdata),
+		    paddress, pb_found))
 			return FALSE;	
-		}
 		if (*pb_found)
 			return TRUE;
 	}
@@ -508,10 +499,9 @@ BOOL exmdb_server_check_contact_address(const char *dir,
 	propname_buff[0].lid = PidLidEmail1EmailAddress;
 	propname_buff[1].lid = PidLidEmail2EmailAddress;
 	propname_buff[2].lid = PidLidEmail3EmailAddress;
-	if (FALSE == common_util_get_named_propids(pdb->psqlite,
-		FALSE, &propnames, &propids) || 3 != propids.count) {
+	if (!common_util_get_named_propids(pdb->psqlite,
+	    false, &propnames, &propids) || 3 != propids.count)
 		return FALSE;	
-	}
 	proptags[0] = PROP_TAG(PT_UNICODE, propids.ppropid[0]);
 	proptags[1] = PROP_TAG(PT_UNICODE, propids.ppropid[1]);
 	proptags[2] = PROP_TAG(PT_UNICODE, propids.ppropid[2]);

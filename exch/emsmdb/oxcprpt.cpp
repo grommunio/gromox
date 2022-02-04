@@ -178,10 +178,9 @@ uint32_t rop_getpropertiesspecific(uint16_t size_limit, uint16_t want_unicode,
 			}
 		}
 	}
-	if (FALSE == common_util_propvals_to_row_ex(
-		cpid, b_unicode, &propvals, pproptags, prow)) {
+	if (!common_util_propvals_to_row_ex(cpid, b_unicode,
+	    &propvals, pproptags, prow))
 		return ecMAPIOOM;
-	}
 	return ecSuccess;
 }
 
@@ -655,7 +654,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 			if (pproptags->pproptag[i] == PR_MESSAGE_ATTACHMENTS) {
 				if (!msgdst->copy_attachments(msgsrc, b_force, &b_result))
 					return ecError;
-				if (FALSE == b_result) {
+				if (!b_result) {
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag = PR_MESSAGE_ATTACHMENTS;
 					pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
@@ -664,7 +663,7 @@ uint32_t rop_copyproperties(uint8_t want_asynchronous, uint8_t copy_flags,
 			} else if (pproptags->pproptag[i] == PR_MESSAGE_RECIPIENTS) {
 				if (!msgdst->copy_rcpts(msgsrc, b_force, &b_result))
 					return ecError;
-				if (FALSE == b_result) {
+				if (!b_result) {
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag = PR_MESSAGE_RECIPIENTS;
 					pproblems->pproblem[pproblems->count++].err = ecAccessDenied;
@@ -840,10 +839,8 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 		if (NULL == tmp_proptags.pproptag) {
 			return ecMAPIOOM;
 		}
-		if (FALSE == b_force) {
-			if (!flddst->get_all_proptags(&proptags1))
-				return ecError;
-		}
+		if (!b_force && !flddst->get_all_proptags(&proptags1))
+			return ecError;
 		for (i=0; i<proptags.count; i++) {
 			if (flddst->check_readonly_property(proptags.pproptag[i]))
 				continue;

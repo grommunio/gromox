@@ -514,8 +514,7 @@ int common_util_run(const char *data_path)
 		printf("[common_util]: Failed to init MIME pool\n");
 		return -1;
 	}
-	if (FALSE == oxcmail_init_library(
-		g_org_name, system_services_get_user_ids,
+	if (!oxcmail_init_library(g_org_name, system_services_get_user_ids,
 		system_services_get_username_from_id,
 		system_services_ltag_to_lcid,
 		system_services_lcid_to_ltag,
@@ -638,7 +637,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 	if (EVENT_TYPE_NEWMAIL == pnotification->event_type) {
 		pnew_notify1 = (NEWMAIL_ZNOTIFICATION*)
 			pnotification->pnotification_data;
-		if (FALSE == b_temp) {
+		if (!b_temp) {
 			pnew_notify = me_alloc<NEWMAIL_ZNOTIFICATION>();
 			if (NULL == pnew_notify) {
 				free(pnotification1);
@@ -652,7 +651,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 		memset(pnew_notify, 0, sizeof(NEWMAIL_ZNOTIFICATION));
 		pnotification1->pnotification_data = pnew_notify;
 		pnew_notify->entryid.cb = pnew_notify1->entryid.cb;
-		if (FALSE == b_temp) {
+		if (!b_temp) {
 			pnew_notify->entryid.pv = malloc(pnew_notify->entryid.cb);
 			if (pnew_notify->entryid.pv == nullptr) {
 				pnew_notify->entryid.cb = 0;
@@ -669,7 +668,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 		memcpy(pnew_notify->entryid.pv, pnew_notify1->entryid.pv,
 			pnew_notify->entryid.cb);
 		pnew_notify->parentid.cb = pnew_notify1->parentid.cb;
-		if (FALSE == b_temp) {
+		if (!b_temp) {
 			pnew_notify->parentid.pv = malloc(pnew_notify->parentid.cb);
 			if (pnew_notify->parentid.pv == nullptr) {
 				pnew_notify->parentid.cb = 0;
@@ -686,7 +685,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 		memcpy(pnew_notify->parentid.pv, pnew_notify1->parentid.pv,
 			pnew_notify->parentid.cb);
 		pnew_notify->flags = pnew_notify1->flags;
-		if (FALSE == b_temp) {
+		if (!b_temp) {
 			pnew_notify->message_class = strdup(pnew_notify1->message_class);
 			if (NULL == pnew_notify->message_class) {
 				common_util_free_znotification(pnotification1);
@@ -703,7 +702,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 	}
 	pobj_notify1 = (OBJECT_ZNOTIFICATION *)
 	               pnotification->pnotification_data;
-	if (FALSE == b_temp) {
+	if (!b_temp) {
 		pobj_notify = me_alloc<OBJECT_ZNOTIFICATION>();
 		if (NULL == pobj_notify) {
 			free(pnotification1);
@@ -719,7 +718,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 	pnotification1->pnotification_data = pobj_notify;
 	pobj_notify->object_type = pobj_notify1->object_type;
 	if (NULL != pobj_notify1->pentryid) {
-		if (FALSE == b_temp) {
+		if (!b_temp) {
 			pobj_notify->pentryid = static_cast<BINARY *>(propval_dup(PT_BINARY,
 			                        pobj_notify1->pentryid));
 			if (NULL == pobj_notify->pentryid) {
@@ -734,7 +733,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 		}
 	}
 	if (NULL != pobj_notify1->pparentid) {
-		if (FALSE == b_temp) {
+		if (!b_temp) {
 			pobj_notify->pparentid = static_cast<BINARY *>(propval_dup(PT_BINARY,
 			                         pobj_notify1->pparentid));
 			if (NULL == pobj_notify->pparentid) {
@@ -749,7 +748,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 		}
 	}
 	if (NULL != pobj_notify1->pold_entryid) {
-		if (FALSE == b_temp) {
+		if (!b_temp) {
 			pobj_notify->pold_entryid = static_cast<BINARY *>(propval_dup(PT_BINARY,
 			                            pobj_notify1->pold_entryid));
 			if (NULL == pobj_notify->pold_entryid) {
@@ -764,7 +763,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 		}
 	}
 	if (NULL != pobj_notify->pold_parentid) {
-		if (FALSE == b_temp) {
+		if (!b_temp) {
 			pobj_notify->pold_parentid = static_cast<BINARY *>(propval_dup(PT_BINARY,
 			                             pobj_notify1->pold_parentid));
 			if (NULL == pobj_notify->pold_parentid) {
@@ -779,7 +778,7 @@ ZNOTIFICATION* common_util_dup_znotification(
 		}
 	}
 	if (NULL != pobj_notify->pproptags) {
-		if (FALSE == b_temp) {
+		if (!b_temp) {
 			pobj_notify1->pproptags = proptag_array_dup(
 			                          pobj_notify->pproptags);
 			if (NULL == pobj_notify1->pproptags) {
@@ -1424,7 +1423,7 @@ static int common_util_get_response(int sockd,
 		read_len -= 2;
 	}
 	response[read_len] = '\0';
-	if (FALSE == expect_3xx && '2' == response[0] &&
+	if (!expect_3xx && response[0] == '2' &&
 	    HX_isdigit(response[1]) && HX_isdigit(response[2]))
 		return SMTP_SEND_OK;
 	else if (expect_3xx && response[0] == '3' &&
@@ -1490,8 +1489,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 	/* send helo xxx to server */
 	snprintf(last_command, 1024, "helo %s\r\n", g_hostname);
 	command_len = strlen(last_command);
-	if (FALSE == common_util_send_command(
-		sockd, last_command, command_len)) {
+	if (!common_util_send_command(sockd, last_command, command_len)) {
 		close(sockd);
 		log_err("Failed to send \"HELO\" command");
 		return FALSE;
@@ -1514,9 +1512,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 	}
 
 	command_len = sprintf(last_command, "mail from:<%s>\r\n", sender);
-	
-	if (FALSE == common_util_send_command(
-		sockd, last_command, command_len)) {
+	if (!common_util_send_command(sockd, last_command, command_len)) {
 		close(sockd);
 		log_err("Failed to send \"MAIL FROM\" command");
 		return FALSE;
@@ -1550,8 +1546,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 				"rcpt to:<%s>\r\n",
 			              static_cast<const char *>(pnode->pdata));
 		}
-		if (FALSE == common_util_send_command(
-			sockd, last_command, command_len)) {
+		if (!common_util_send_command(sockd, last_command, command_len)) {
 			close(sockd);
 			log_err("Failed to send \"RCPT TO\" command");
 			return FALSE;
@@ -1576,8 +1571,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 	/* send data */
 	strcpy(last_command, "data\r\n");
 	command_len = strlen(last_command);
-	if (FALSE == common_util_send_command(
-		sockd, last_command, command_len)) {
+	if (!common_util_send_command(sockd, last_command, command_len)) {
 		close(sockd);
 		log_err("Sender %s: failed to send \"DATA\" command", sender);
 		return FALSE;
@@ -1603,7 +1597,7 @@ static BOOL common_util_send_mail(MAIL *pmail,
 
 	pmail->set_header("X-Mailer", "gromox-zcore " PACKAGE_VERSION);
 	if (!pmail->to_file(sockd) ||
-		FALSE == common_util_send_command(sockd, ".\r\n", 3)) {
+	    !common_util_send_command(sockd, ".\r\n", 3)) {
 		close(sockd);
 		log_err("Sender %s: Failed to send mail content", sender);
 		return FALSE;
@@ -1743,7 +1737,7 @@ BOOL common_util_send_message(store_object *pstore,
 				continue;	
 		}
 		/*
-		if (FALSE == b_submit) {
+		if (!b_submit) {
 			pvalue = prcpts->pparray[i]->getval(PR_RESPONSIBILITY);
 			if (NULL == pvalue || 0 != *(uint8_t*)pvalue) {
 				continue;
@@ -1826,10 +1820,9 @@ BOOL common_util_send_message(store_object *pstore,
 							PROP_TAG_SENTMAILSVREID);
 	auto ptarget = pmsgctnt->proplist.get<BINARY>(PR_TARGET_ENTRYID);
 	if (NULL != ptarget) {
-		if (FALSE == common_util_from_message_entryid(*ptarget,
-			&b_private, &accound_id, &folder_id, &new_id)) {
+		if (!common_util_from_message_entryid(*ptarget,
+		    &b_private, &accound_id, &folder_id, &new_id))
 			return FALSE;	
-		}
 		if (!exmdb_client::clear_submit(pstore->get_dir(), message_id, false))
 			return FALSE;
 		if (!exmdb_client::movecopy_message(pstore->get_dir(),
@@ -1867,10 +1860,8 @@ void common_util_notify_receipt(const char *username,
 	double_list_append_as_tail(&rcpt_list, &node);
 	MAIL imail(g_mime_pool);
 	int bounce_type = type == NOTIFY_RECEIPT_READ ? BOUNCE_NOTIFY_READ : BOUNCE_NOTIFY_NON_READ;
-	if (FALSE == bounce_producer_make(username,
-		pbrief, bounce_type, &imail)) {
+	if (!bounce_producer_make(username, pbrief, bounce_type, &imail))
 		return;
-	}
 	common_util_send_mail(&imail, username, &rcpt_list);
 }
 
@@ -1895,10 +1886,8 @@ static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
 		common_util_alloc, EXT_FLAG_UTF16);
 	if (ext_pull.g_store_eid(pstore_entryid) != EXT_ERR_SUCCESS)
 		return NULL;
-	if (FALSE == common_util_essdn_to_uid(
-		pstore_entryid->pmailbox_dn, &user_id)) {
+	if (!common_util_essdn_to_uid(pstore_entryid->pmailbox_dn, &user_id))
 		return NULL;	
-	}
 	auto pinfo = zarafa_server_get_info();
 	if (user_id != pinfo->user_id) {
 		pmovecopy1->same_store = 0;
@@ -1912,11 +1901,9 @@ static MOVECOPY_ACTION* common_util_convert_from_zmovecopy(
 			return NULL;
 		}
 		psvreid->pbin = NULL;
-		if (FALSE == common_util_from_folder_entryid(
-			pmovecopy->folder_eid, &b_private, &db_id,
-			&psvreid->folder_id)) {
+		if (!common_util_from_folder_entryid(pmovecopy->folder_eid,
+		    &b_private, &db_id, &psvreid->folder_id))
 			return NULL;	
-		}
 		psvreid->message_id = 0;
 		psvreid->instance = 0;
 		pmovecopy1->pfolder_eid = psvreid;
@@ -1933,12 +1920,9 @@ static REPLY_ACTION* common_util_convert_from_zreply(ZREPLY_ACTION *preply)
 	if (NULL == preply1) {
 		return NULL;
 	}
-	if (FALSE == common_util_from_message_entryid(
-		preply->message_eid, &b_private, &db_id,
-		&preply1->template_folder_id,
-		&preply1->template_message_id)) {
+	if (!common_util_from_message_entryid(preply->message_eid, &b_private,
+	    &db_id, &preply1->template_folder_id, &preply1->template_message_id))
 		return NULL;	
-	}
 	preply1->template_guid = preply->template_guid;
 	return preply1;
 }
@@ -2296,10 +2280,8 @@ gxerr_t common_util_remote_copy_folder(store_object *pstore, uint64_t folder_id,
 		propval.pvalue = deconst(new_name);
 		common_util_set_propvals(&tmp_propvals, &propval);
 	}
-	if (FALSE == common_util_create_folder(pstore1,
-		folder_id1, &tmp_propvals, &new_fid)) {
+	if (!common_util_create_folder(pstore1, folder_id1, &tmp_propvals, &new_fid))
 		return GXERR_CALL_FAILED;
-	}
 	auto pinfo = zarafa_server_get_info();
 	const char *username = nullptr;
 	if (!pstore->check_owner_mode()) {
@@ -2465,13 +2447,12 @@ BOOL common_util_message_to_ical(store_object *pstore,
 	if (ical.init() < 0)
 		return false;
 	common_util_set_dir(pstore->get_dir());
-	if (FALSE == oxcical_export(pmsgctnt, &ical,
+	if (!oxcical_export(pmsgctnt, &ical,
 		common_util_alloc, common_util_get_propids,
 		common_util_entryid_to_username_internal,
 		common_util_essdn_to_username,
-		system_services_lcid_to_ltag)) {
+		system_services_lcid_to_ltag))
 		return FALSE;
-	}
 	if (!ical.serialize(tmp_buff, arsizeof(tmp_buff)))
 		return FALSE;	
 	pical_bin->cb = strlen(tmp_buff);
@@ -2515,10 +2496,8 @@ BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
 	common_util_set_dir(pstore->get_dir());
-	if (FALSE == oxvcard_export(pmsgctnt,
-		&vcard, common_util_get_propids)) {
+	if (!oxvcard_export(pmsgctnt, &vcard, common_util_get_propids))
 		return FALSE;
-	}
 	pvcf_bin->pv = common_util_alloc(VCARD_MAX_BUFFER_LEN);
 	if (pvcf_bin->pv == nullptr) {
 		vcard_free(&vcard);
@@ -2548,7 +2527,7 @@ MESSAGE_CONTENT *common_util_vcf_to_message(store_object *pstore,
 	memcpy(pbuff, pvcf_bin->pb, pvcf_bin->cb);
 	pbuff[pvcf_bin->cb] = '\0';
 	vcard_init(&vcard);
-	if (FALSE == vcard_retrieve(&vcard, pbuff)) {
+	if (!vcard_retrieve(&vcard, pbuff)) {
 		vcard_free(&vcard);
 		return nullptr;
 	}

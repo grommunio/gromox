@@ -463,11 +463,10 @@ BOOL bounce_producer_make(const char *from, const char *rcpt,
 	DSN_FIELDS *pdsn_fields;
 	char content_buff[256*1024];
 	
-	if (FALSE == bounce_producer_make_content(from, rcpt,
-		psqlite, message_id, bounce_type, mime_from,
-		subject, content_type, content_buff)) {
+	if (!bounce_producer_make_content(from, rcpt,
+	    psqlite, message_id, bounce_type, mime_from,
+	    subject, content_type, content_buff))
 		return FALSE;
-	}
 	auto phead = pmail->add_head();
 	if (NULL == phead) {
 		return FALSE;

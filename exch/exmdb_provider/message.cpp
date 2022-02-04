@@ -103,7 +103,7 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (FALSE == b_move &&
+	if (!b_move &&
 	    cu_check_msgsize_overflow(pdb->psqlite, PR_STORAGE_QUOTA_LIMIT) &&
 	    common_util_check_msgcnt_overflow(pdb->psqlite)) {
 		*pb_result = FALSE;
@@ -112,11 +112,9 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 	mid_val = rop_util_get_gc_value(message_id);
 	fid_val = rop_util_get_gc_value(dst_fid);
 	dst_val = rop_util_get_gc_value(dst_id);
-	if (FALSE == common_util_check_allocated_eid(
-		pdb->psqlite, dst_val, &b_result)) {
+	if (!common_util_check_allocated_eid(pdb->psqlite, dst_val, &b_result))
 		return FALSE;
-	}
-	if (FALSE == b_result) {
+	if (!b_result) {
 		*pb_result = FALSE;
 		return TRUE;
 	}
@@ -149,24 +147,17 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 		db_engine_proc_dynamic_event(pdb, cpid,
 			DYNAMIC_EVENT_DELETE_MESSAGE,
 			parent_fid, mid_val, 0);
-	if (FALSE == common_util_copy_message(
-		pdb->psqlite, account_id, mid_val,
-		fid_val, &dst_val, &b_result, &message_size)) {
+	if (!common_util_copy_message(pdb->psqlite, account_id, mid_val,
+	    fid_val, &dst_val, &b_result, &message_size))
 		return FALSE;
-	}
-	if (FALSE == b_result) {
+	if (!b_result) {
 		*pb_result = FALSE;
 		return TRUE;
 	}
 	db_engine_proc_dynamic_event(pdb, cpid,
 		DYNAMIC_EVENT_NEW_MESSAGE, fid_val, dst_val, 0);
-	if (FALSE == b_move) {
-		db_engine_notify_message_movecopy(pdb, TRUE,
-				fid_val, dst_val, parent_fid, mid_val);
-	} else {
-		db_engine_notify_message_movecopy(pdb, FALSE,
-				fid_val, dst_val, parent_fid, mid_val);
-	}
+	db_engine_notify_message_movecopy(pdb, !b_move ? TRUE : false,
+		fid_val, dst_val, parent_fid, mid_val);
 	b_update = TRUE;
 	if (b_move) {
 		if (exmdb_server_check_private()) {
@@ -186,26 +177,15 @@ BOOL exmdb_server_movecopy_message(const char *dir,
 				return FALSE;
 		}
 	}
-	if (b_update) {
-		if (0 == is_associated) {
-			if (FALSE == common_util_increase_store_size(
-				pdb->psqlite, message_size, 0)) {
-				return FALSE;
-			}
-		} else {
-			if (FALSE == common_util_increase_store_size(
-				pdb->psqlite, 0, message_size)) {
-				return FALSE;
-			}
-		}
-	}
+	if (b_update && !cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE,
+	    is_associated ? 0 : message_size, is_associated ? message_size : 0))
+		return FALSE;
 	nt_time = rop_util_current_nttime();
 	if (b_move) {
 		propvals.count = 5;
 		propvals.ppropval = tmp_propvals;
-		if (FALSE == common_util_allocate_cn(pdb->psqlite, &change_num)) {
+		if (!common_util_allocate_cn(pdb->psqlite, &change_num))
 			return FALSE;
-		}
 		tmp_cn = rop_util_make_eid_ex(1, change_num);
 		tmp_propvals[0].proptag = PidTagChangeNumber;
 		tmp_propvals[0].pvalue = &tmp_cn;
@@ -287,10 +267,9 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 	if (!b_guest) {
 		b_check = FALSE;
 	} else if (folder_type != FOLDER_SEARCH) {
-		if (FALSE == common_util_check_folder_permission(
-		    pdb->psqlite, src_val, username, &permission)) {
+		if (!common_util_check_folder_permission(pdb->psqlite,
+		    src_val, username, &permission))
 			return FALSE;
-		}
 		b_check = (permission & (frightsOwner | frightsReadAny)) ? false : TRUE;
 	} else {
 		b_check = TRUE;
@@ -309,7 +288,7 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		return FALSE;
 	}
 	b_update = TRUE;
-	if (FALSE == b_copy) {
+	if (!b_copy) {
 		if (exmdb_server_check_private()) {
 			strcpy(sql_string, "DELETE FROM messages WHERE message_id=?");
 			b_update = FALSE;
@@ -336,16 +315,14 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		sqlite3_reset(pstmt);
 		if (folder_type == FOLDER_SEARCH) {
 			if (b_check) {
-				if (FALSE == common_util_check_folder_permission(
-					pdb->psqlite, parent_fid, username, &permission)) {
+				if (!common_util_check_folder_permission(pdb->psqlite,
+				    parent_fid, username, &permission))
 					goto MVCP_FAILURE;
-				}
 				if (!(permission & (frightsOwner | frightsReadAny))) {
-					if (FALSE == common_util_check_message_owner(
-						pdb->psqlite, tmp_val, username, &b_owner)) {
+					if (!common_util_check_message_owner(pdb->psqlite,
+					    tmp_val, username, &b_owner))
 						goto MVCP_FAILURE;
-					}
-					if (FALSE == b_owner) {
+					if (!b_owner) {
 						*pb_partial = TRUE;
 						continue;
 					}
@@ -357,28 +334,24 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 				continue;
 			}
 			if (b_check) {
-				if (FALSE == common_util_check_message_owner(
-					pdb->psqlite, tmp_val, username, &b_owner)) {
+				if (!common_util_check_message_owner(pdb->psqlite,
+				    tmp_val, username, &b_owner))
 					goto MVCP_FAILURE;
-				}
-				if (FALSE == b_owner) {
+				if (!b_owner) {
 					*pb_partial = TRUE;
 					continue;
 				}
 			}
 		}
-		if (FALSE == b_copy) {
+		if (!b_copy)
 			db_engine_proc_dynamic_event(pdb, cpid,
 				DYNAMIC_EVENT_DELETE_MESSAGE,
 				parent_fid, tmp_val, 0);
-		}
 		tmp_val1 = 0;
-		if (FALSE == common_util_copy_message(
-			pdb->psqlite, account_id, tmp_val, dst_val,
-			&tmp_val1, &b_result, &message_size)) {
+		if (!common_util_copy_message(pdb->psqlite, account_id, tmp_val,
+		    dst_val, &tmp_val1, &b_result, &message_size))
 			return FALSE;
-		}
-		if (FALSE == b_result) {
+		if (!b_result) {
 			*pb_partial = TRUE;
 			continue;
 		}
@@ -392,14 +365,14 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 			dst_val, tmp_val1, 0);
 		db_engine_notify_message_movecopy(pdb, b_copy,
 				dst_val, tmp_val1, src_val, tmp_val);
-		if (FALSE == b_copy) {
+		if (!b_copy) {
 			del_count ++;
 			sqlite3_bind_int64(pstmt1, 1, tmp_val);
 			if (SQLITE_DONE != sqlite3_step(pstmt1)) {
 				goto MVCP_FAILURE;
 			}
 			sqlite3_reset(pstmt1);
-			if (FALSE == exmdb_server_check_private()) {
+			if (!exmdb_server_check_private()) {
 				snprintf(sql_string, arsizeof(sql_string), "DELETE FROM read_states"
 				        " WHERE message_id=%llu", LLU(tmp_val));
 				if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
@@ -408,19 +381,17 @@ BOOL exmdb_server_movecopy_messages(const char *dir,
 		}
 	}
 	pstmt.finalize();
-	if (FALSE == b_copy) {
+	if (!b_copy)
 		pstmt1.finalize();
-	}
 	if (b_update && normal_size + fai_size > 0 &&
-	    !common_util_increase_store_size(pdb->psqlite, normal_size, fai_size))
+	    !cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE, normal_size, fai_size))
 		return FALSE;
 	nt_time = rop_util_current_nttime();
-	if (FALSE == b_copy) {
+	if (!b_copy) {
 		propvals.count = 5;
 		propvals.ppropval = tmp_propvals;
-		if (FALSE == common_util_allocate_cn(pdb->psqlite, &change_num)) {
+		if (!common_util_allocate_cn(pdb->psqlite, &change_num))
 			return FALSE;
-		}
 		tmp_cn = rop_util_make_eid_ex(1, change_num);
 		tmp_propvals[0].proptag = PidTagChangeNumber;
 		tmp_propvals[0].pvalue = &tmp_cn;
@@ -498,19 +469,16 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	if (exmdb_server_check_private())
 		b_hard = TRUE;
 	src_val = rop_util_get_gc_value(folder_id);
-	if (FALSE == common_util_get_folder_type(
-		pdb->psqlite, src_val, &folder_type)) {
+	if (!common_util_get_folder_type(pdb->psqlite, src_val, &folder_type))
 		return FALSE;
-	}
 	if (username == nullptr) {
 		b_check = FALSE;
 	} else if (folder_type == FOLDER_SEARCH) {
 		b_check = TRUE;
 	} else {
-		if (FALSE == common_util_check_folder_permission(
-			pdb->psqlite, src_val, username, &permission)) {
+		if (!common_util_check_folder_permission(pdb->psqlite,
+		    src_val, username, &permission))
 			return FALSE;
-		}
 		b_check = (permission & (frightsOwner | frightsDeleteAny)) ? false : TRUE;
 	}
 	BOOL b_batch = pmessage_ids->count >= MIN_BATCH_MESSAGE_NUM ? TRUE : false;
@@ -550,16 +518,14 @@ BOOL exmdb_server_delete_messages(const char *dir,
 		sqlite3_reset(pstmt);
 		if (folder_type == FOLDER_SEARCH) {
 			if (b_check) {
-				if (FALSE == common_util_check_folder_permission(
-					pdb->psqlite, parent_fid, username, &permission)) {
+				if (!common_util_check_folder_permission(pdb->psqlite,
+				    parent_fid, username, &permission))
 					return FALSE;
-				}
 				if (!(permission & (frightsOwner | frightsDeleteAny))) {
-					if (FALSE == common_util_check_message_owner(
-						pdb->psqlite, tmp_val, username, &b_owner)) {
+					if (!common_util_check_message_owner(pdb->psqlite,
+					    tmp_val, username, &b_owner))
 						return FALSE;
-					}
-					if (FALSE == b_owner) {
+					if (!b_owner) {
 						*pb_partial = TRUE;
 						continue;
 					}
@@ -571,11 +537,10 @@ BOOL exmdb_server_delete_messages(const char *dir,
 				continue;
 			}
 			if (b_check) {
-				if (FALSE == common_util_check_message_owner(
-					pdb->psqlite, tmp_val, username, &b_owner)) {
+				if (!common_util_check_message_owner(pdb->psqlite,
+				    tmp_val, username, &b_owner))
 					return FALSE;
-				}
-				if (FALSE == b_owner) {
+				if (!b_owner) {
 					*pb_partial = TRUE;
 					continue;
 				}
@@ -594,7 +559,7 @@ BOOL exmdb_server_delete_messages(const char *dir,
 			return FALSE;
 		}
 		sqlite3_reset(pstmt1);
-		if (FALSE == b_hard) {
+		if (!b_hard) {
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM read_states"
 			        " WHERE message_id=%llu", LLU(tmp_val));
 			if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
@@ -603,14 +568,13 @@ BOOL exmdb_server_delete_messages(const char *dir,
 	}
 	pstmt.finalize();
 	pstmt1.finalize();
-	if (b_hard && !common_util_decrease_store_size(pdb->psqlite,
+	if (b_hard && !cu_adjust_store_size(pdb->psqlite, ADJ_DECREASE,
 	    normal_size, fai_size))
 		return FALSE;
 	propvals.count = 5;
 	propvals.ppropval = tmp_propvals;
-	if (FALSE == common_util_allocate_cn(pdb->psqlite, &change_num)) {
+	if (!common_util_allocate_cn(pdb->psqlite, &change_num))
 		return FALSE;
-	}
 	tmp_cn = rop_util_make_eid_ex(1, change_num);
 	tmp_propvals[0].proptag = PidTagChangeNumber;
 	tmp_propvals[0].pvalue = &tmp_cn;
@@ -796,10 +760,9 @@ BOOL exmdb_server_get_message_brief(const char *dir, uint32_t cpid,
 	if (NULL == (*ppbrief)->children.prcpts) {
 		return FALSE;
 	}
-	if (FALSE == message_get_message_rcpts(pdb->psqlite,
-		mid_val, (*ppbrief)->children.prcpts)) {
+	if (!message_get_message_rcpts(pdb->psqlite, mid_val,
+	    (*ppbrief)->children.prcpts))
 		return FALSE;
-	}
 	(*ppbrief)->children.pattachments = cu_alloc<ATTACHMENT_LIST>();
 	if (NULL == (*ppbrief)->children.pattachments) {
 		return FALSE;
@@ -855,10 +818,8 @@ BOOL exmdb_server_check_message(const char *dir,
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
 	mid_val = rop_util_get_gc_value(message_id);
-	if (FALSE == common_util_get_folder_type(
-		pdb->psqlite, fid_val, &folder_type)) {
+	if (!common_util_get_folder_type(pdb->psqlite, fid_val, &folder_type))
 		return FALSE;
-	}
 	if (folder_type == FOLDER_SEARCH)
 		snprintf(sql_string, arsizeof(sql_string), "SELECT folder_id FROM"
 					" search_result WHERE folder_id=%llu AND"
@@ -914,11 +875,7 @@ BOOL exmdb_server_get_message_rcpts(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	mid_val = rop_util_get_gc_value(message_id);
-	if (FALSE == message_get_message_rcpts(
-		pdb->psqlite, mid_val, pset)) {
-		return FALSE;
-	}
-	return TRUE;
+	return message_get_message_rcpts(pdb->psqlite, mid_val, pset);
 }
 
 BOOL exmdb_server_get_message_properties(const char *dir,
@@ -928,15 +885,11 @@ BOOL exmdb_server_get_message_properties(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (FALSE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private())
 		exmdb_server_set_public_username(username);
-	}
-	if (!cu_get_properties(db_table::msg_props,
-		rop_util_get_gc_value(message_id), cpid, pdb->psqlite,
-		pproptags, ppropvals)) {
-		return FALSE;
-	}
-	return TRUE;
+	return cu_get_properties(db_table::msg_props,
+	       rop_util_get_gc_value(message_id), cpid, pdb->psqlite,
+	       pproptags, ppropvals);
 }
 
 /* message_size will not be updated in the function! */
@@ -953,19 +906,17 @@ BOOL exmdb_server_set_message_properties(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (FALSE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private())
 		exmdb_server_set_public_username(username);
-	}
 	mid_val = rop_util_get_gc_value(message_id);
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
 	if (!cu_set_properties(db_table::msg_props, mid_val, cpid,
 		pdb->psqlite, pproperties, pproblems)) {
 		return FALSE;
 	}
-	if (FALSE == common_util_get_message_parent_folder(
-		pdb->psqlite, mid_val, &fid_val) || 0 == fid_val) {
+	if (!common_util_get_message_parent_folder(pdb->psqlite,
+	    mid_val, &fid_val) || fid_val == 0)
 		return FALSE;
-	}
 	nt_time = rop_util_current_nttime();
 	tmp_propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	tmp_propval.pvalue = &nt_time;
@@ -999,10 +950,9 @@ BOOL exmdb_server_remove_message_properties(
 		pdb->psqlite, pproptags)) {
 		return FALSE;
 	}
-	if (FALSE == common_util_get_message_parent_folder(
-		pdb->psqlite, mid_val, &fid_val) || 0 == fid_val) {
+	if (!common_util_get_message_parent_folder(pdb->psqlite,
+	    mid_val, &fid_val) || fid_val == 0)
 		return FALSE;
-	}
 	nt_time = rop_util_current_nttime();
 	tmp_propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	tmp_propval.pvalue = &nt_time;
@@ -1034,10 +984,9 @@ BOOL exmdb_server_set_message_read_state(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	if (FALSE == common_util_allocate_cn(pdb->psqlite, &read_cn)) {
+	if (!common_util_allocate_cn(pdb->psqlite, &read_cn))
 		return false;
-	}
-	if (FALSE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private()) {
 		exmdb_server_set_public_username(username);
 		common_util_set_message_read(pdb->psqlite,
 			mid_val, mark_as_read);
@@ -1061,10 +1010,9 @@ BOOL exmdb_server_set_message_read_state(const char *dir,
 		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 	}
-	if (FALSE == common_util_get_message_parent_folder(
-		pdb->psqlite, mid_val, &fid_val)) {
+	if (!common_util_get_message_parent_folder(pdb->psqlite,
+	    mid_val, &fid_val))
 		return FALSE;
-	}
 	nt_time = rop_util_current_nttime();
 	tmp_propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	tmp_propval.pvalue = &nt_time;
@@ -1090,18 +1038,14 @@ BOOL exmdb_server_allocate_message_id(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	if (0 == folder_id) {
-		if (FALSE == common_util_allocate_eid(
-			pdb->psqlite, &eid_val)) {
+		if (!common_util_allocate_eid(pdb->psqlite, &eid_val))
 			return FALSE;
-		}
 		*pmessage_id = rop_util_make_eid_ex(1, eid_val);
 		return TRUE;
 	}
 	fid_val = rop_util_get_gc_value(folder_id);
-	if (FALSE == common_util_allocate_eid_from_folder(
-		pdb->psqlite, fid_val, &eid_val)) {
+	if (!common_util_allocate_eid_from_folder(pdb->psqlite, fid_val, &eid_val))
 		return FALSE;
-	}
 	*pmessage_id = rop_util_make_eid_ex(1, eid_val);
 	return TRUE;
 }
@@ -1311,10 +1255,9 @@ BOOL exmdb_server_mark_modified(const char *dir, uint64_t message_id)
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	mid_val = rop_util_get_gc_value(message_id);
-	if (FALSE == common_util_get_message_flags(
-		pdb->psqlite, mid_val, TRUE, &pmessage_flags)) {
+	if (!common_util_get_message_flags(pdb->psqlite,
+	    mid_val, TRUE, &pmessage_flags))
 		return FALSE;
-	}
 	if (!(*pmessage_flags & MSGFLAG_UNMODIFIED))
 		return TRUE;
 	*pmessage_flags &= ~MSGFLAG_UNMODIFIED;
@@ -1340,10 +1283,9 @@ BOOL exmdb_server_try_mark_submit(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	mid_val = rop_util_get_gc_value(message_id);
-	if (FALSE == common_util_get_message_flags(
-		pdb->psqlite, mid_val, TRUE, &pmessage_flags)) {
+	if (!common_util_get_message_flags(pdb->psqlite,
+	    mid_val, TRUE, &pmessage_flags))
 		return FALSE;
-	}
 	if (*pmessage_flags & MSGFLAG_SUBMITTED) {
 		*pb_marked = FALSE;
 		return TRUE;
@@ -1375,10 +1317,9 @@ BOOL exmdb_server_clear_submit(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	mid_val = rop_util_get_gc_value(message_id);
-	if (FALSE == common_util_get_message_flags(
-		pdb->psqlite, mid_val, TRUE, &pmessage_flags)) {
+	if (!common_util_get_message_flags(pdb->psqlite,
+	    mid_val, TRUE, &pmessage_flags))
 		return FALSE;
-	}
 	*pmessage_flags &= ~MSGFLAG_SUBMITTED;
 	if (b_unsent)
 		*pmessage_flags |= MSGFLAG_UNSENT;
@@ -1391,9 +1332,8 @@ BOOL exmdb_server_clear_submit(const char *dir,
 		mid_val, 0, pdb->psqlite, &propval, &b_result)) {
 		return FALSE;
 	}
-	if (FALSE == b_result) {
+	if (!b_result)
 		return TRUE;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "UPDATE messages SET"
 	          " timer_id=? WHERE message_id=%llu", LLU(mid_val));
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
@@ -1418,18 +1358,15 @@ BOOL exmdb_server_link_message(const char *dir, uint32_t cpid,
 	char sql_string[256];
 	uint32_t folder_type;
 	
-	if (FALSE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private())
 		return FALSE;
-	}
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	fid_val = rop_util_get_gc_value(folder_id);
 	mid_val = rop_util_get_gc_value(message_id);
-	if (FALSE == common_util_get_folder_type(
-		pdb->psqlite, fid_val, &folder_type)) {
+	if (!common_util_get_folder_type(pdb->psqlite, fid_val, &folder_type))
 		return FALSE;
-	}
 	if (folder_type != FOLDER_SEARCH) {
 		*pb_result = FALSE;
 		return TRUE;
@@ -1465,9 +1402,8 @@ BOOL exmdb_server_unlink_message(const char *dir,
 	uint64_t mid_val;
 	char sql_string[256];
 	
-	if (FALSE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private())
 		return FALSE;
-	}
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
@@ -1491,9 +1427,8 @@ BOOL exmdb_server_set_message_timer(const char *dir,
 {
 	char sql_string[256];
 	
-	if (FALSE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private())
 		return FALSE;
-	}
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
@@ -1512,9 +1447,8 @@ BOOL exmdb_server_get_message_timer(const char *dir,
 	uint64_t mid_val;
 	char sql_string[256];
 	
-	if (FALSE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private())
 		return FALSE;
-	}
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
@@ -1592,10 +1526,9 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 	if (NULL == (*ppmsgctnt)->children.prcpts) {
 		return FALSE;
 	}
-	if (FALSE == message_get_message_rcpts(psqlite,
-		message_id, (*ppmsgctnt)->children.prcpts)) {
+	if (!message_get_message_rcpts(psqlite, message_id,
+	    (*ppmsgctnt)->children.prcpts))
 		return FALSE;
-	}
 	(*ppmsgctnt)->children.pattachments = cu_alloc<ATTACHMENT_LIST>();
 	if (NULL == (*ppmsgctnt)->children.pattachments) {
 		return FALSE;
@@ -1656,16 +1589,12 @@ static BOOL message_read_message(sqlite3 *psqlite, uint32_t cpid,
 		*(uint32_t*)ppropval->pvalue = attach_num;
 		attach_num ++;
 		sqlite3_bind_int64(pstmt1, 1, attachment_id);
-		if (SQLITE_ROW == sqlite3_step(pstmt1)) {
-			if (FALSE == message_read_message(psqlite, cpid,
-				sqlite3_column_int64(pstmt1, 0),
-				&pattachment->pembedded) ||
-				NULL == pattachment->pembedded) {
-				return FALSE;
-			}
-		} else {
+		if (sqlite3_step(pstmt1) != SQLITE_ROW)
 			pattachment->pembedded = NULL;
-		}
+		else if (!message_read_message(psqlite, cpid,
+		    sqlite3_column_int64(pstmt1, 0), &pattachment->pembedded) ||
+		    pattachment->pembedded == nullptr)
+			return FALSE;
 		sqlite3_reset(pstmt1);
 		auto &ats = *(*ppmsgctnt)->children.pattachments;
 		ats.pplist[ats.count++] = pattachment;
@@ -1950,11 +1879,10 @@ static BOOL message_rectify_message(const char *account,
 		if (NULL == pembedded) {
 			return FALSE;
 		}
-		if (FALSE == message_rectify_message(account,
+		if (!message_rectify_message(account,
 		    pmsgctnt->children.pattachments->pplist[i]->pembedded,
-		    pembedded)) {
+		    pembedded))
 			return FALSE;
-		}
 		pmsgctnt1->children.pattachments->pplist[i]->pembedded =
 			pembedded;
 	}
@@ -1988,32 +1916,25 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	pproplist = &pmsgctnt->proplist;
 	auto pvalue = pproplist->getval(PidTagChangeNumber);
 	if (NULL == pvalue) {
-		if (FALSE == common_util_allocate_cn(psqlite, &change_num)) {
+		if (!common_util_allocate_cn(psqlite, &change_num))
 			return FALSE;
-		}
 		b_cn = FALSE;
 	} else {
 		change_num = rop_util_get_gc_value(*(uint64_t*)pvalue);
 		b_cn = TRUE;
 	}
-	if (FALSE == b_internal) {
-		if (FALSE == message_rectify_message(
-			account, pmsgctnt, &msgctnt)) {
+	if (!b_internal) {
+		if (!message_rectify_message(account, pmsgctnt, &msgctnt))
 			return FALSE;
-		}
-		if (FALSE == b_embedded && FALSE == b_cn) {
+		if (!b_embedded && !b_cn) {
 			XID tmp_xid;
 			if (exmdb_server_check_private()) {
-				if (FALSE == common_util_get_id_from_username(
-					account, &tmp_int)) {
+				if (!common_util_get_id_from_username(account, &tmp_int))
 					return FALSE;
-				}
 				tmp_xid.guid = rop_util_make_user_guid(tmp_int);
 			} else {
-				if (FALSE == common_util_get_domain_ids(
-					account, &tmp_int, &tmp_int1)) {
+				if (!common_util_get_domain_ids(account, &tmp_int, &tmp_int1))
 					return FALSE;
-				}
 				tmp_xid.guid = rop_util_make_domain_guid(tmp_int);
 			}
 			memcpy(tmp_xid.local_id, rop_util_value_to_gc(change_num).ab, 6);
@@ -2035,15 +1956,13 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 	}
 	original_size = 0;
 	message_size = common_util_calculate_message_size(pmsgctnt);
-	if (FALSE == b_embedded) {
+	if (!b_embedded) {
 		pvalue = pproplist->getval(PR_ASSOCIATED);
-		is_associated = pvalue == nullptr || *static_cast<uint8_t *>(pvalue) == 0 ? 0 : 1;
-		if (exmdb_server_check_private())
-			snprintf(sql_string, arsizeof(sql_string), "SELECT is_search FROM "
-			          "folders WHERE folder_id=%llu", LLU(parent_id));
-		else
-			snprintf(sql_string, arsizeof(sql_string), "SELECT is_deleted FROM"
-			          " folders WHERE folder_id=%llu", LLU(parent_id));
+		is_associated = pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0;
+		snprintf(sql_string, arsizeof(sql_string), exmdb_server_check_private() ?
+		         "SELECT is_search FROM folders WHERE folder_id=%llu" :
+		         "SELECT is_deleted FROM folders WHERE folder_id=%llu",
+		         LLU(parent_id));
 		auto pstmt = gx_sql_prep(psqlite, sql_string);
 		if (pstmt == nullptr)
 			return FALSE;
@@ -2060,10 +1979,9 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		b_exist = FALSE;
 		pvalue = pproplist->getval(PidTagMid);
 		if (NULL == pvalue) {
-			if (FALSE == common_util_allocate_eid_from_folder(
-				psqlite, parent_id, pmessage_id)) {
+			if (!common_util_allocate_eid_from_folder(psqlite,
+			    parent_id, pmessage_id))
 				return FALSE;
-			}
 		} else {
 			*pmessage_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
 			snprintf(sql_string, arsizeof(sql_string), "SELECT parent_fid, message_size"
@@ -2072,11 +1990,10 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			if (pstmt == nullptr)
 				return FALSE;
 			if (SQLITE_ROW != sqlite3_step(pstmt)) {
-				if (FALSE == common_util_check_allocated_eid(
-					psqlite, *pmessage_id, &b_result)) {
+				if (!common_util_check_allocated_eid(psqlite,
+				    *pmessage_id, &b_result))
 					return FALSE;
-				}
-				if (FALSE == b_result) {
+				if (!b_result) {
 					*pmessage_id = 0;
 					return TRUE;
 				}
@@ -2144,16 +2061,13 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 			b_exist = TRUE;
 		}
 		pstmt.finalize();
-		if (FALSE == b_exist) {
-			if (FALSE == common_util_allocate_eid(
-				psqlite, pmessage_id)) {
-				return FALSE;
-			}
-		} else {
+		if (b_exist) {
 			snprintf(sql_string, arsizeof(sql_string), "DELETE FROM messages"
 			        " WHERE message_id=%llu", LLU(*pmessage_id));
 			if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 				return FALSE;
+		} else if (!common_util_allocate_eid(psqlite, pmessage_id)) {
+			return FALSE;
 		}
 		snprintf(sql_string, arsizeof(sql_string), "INSERT INTO messages (message_id,"
 			" parent_fid, parent_attid, change_number, "
@@ -2166,7 +2080,7 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		psqlite, &pmsgctnt->proplist, &tmp_problems)) {
 		return FALSE;
 	}
-	if (FALSE == b_embedded) {
+	if (!b_embedded) {
 		if (!cu_get_property(db_table::folder_props,
 			parent_id, 0, psqlite, PROP_TAG_ARTICLENUMBERNEXT, &pvalue)) {
 			return FALSE;
@@ -2221,17 +2135,16 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 				&tmp_problems)) {
 				return FALSE;
 			}
-			if (NULL != pmsgctnt->children.pattachments->pplist[i]->pembedded) {
-				if (FALSE == message_write_message(TRUE,
-					psqlite, account, cpid, TRUE, tmp_id,
-					pmsgctnt->children.pattachments->pplist[i]->pembedded,
-					&message_id)) {
-					return FALSE;
-				}
-				if (0 == message_id) {
-					*pmessage_id = 0;
-					return TRUE;
-				}
+			if (pmsgctnt->children.pattachments->pplist[i]->pembedded == nullptr)
+				continue;
+			if (!message_write_message(TRUE,
+			    psqlite, account, cpid, TRUE, tmp_id,
+			    pmsgctnt->children.pattachments->pplist[i]->pembedded,
+			    &message_id))
+				return FALSE;
+			if (0 == message_id) {
+				*pmessage_id = 0;
+				return TRUE;
 			}
 		}
 	}
@@ -2285,29 +2198,15 @@ static BOOL message_write_message(BOOL b_internal, sqlite3 *psqlite,
 		}
 	}
 	if (original_size > message_size) {
-		if (0 == is_associated) {
-			if (FALSE == common_util_decrease_store_size(
-				psqlite, original_size - message_size, 0)) {
-				return FALSE;	
-			}
-		} else {
-			if (FALSE == common_util_decrease_store_size(
-				psqlite, 0, original_size - message_size)) {
-				return FALSE;	
-			}
-		}
+		auto d = original_size - message_size;
+		if (!cu_adjust_store_size(psqlite, ADJ_DECREASE,
+		    is_associated ? 0 : d, is_associated ? d : 0))
+			return FALSE;
 	} else {
-		if (0 == is_associated) {
-			if (FALSE == common_util_increase_store_size(
-				psqlite, message_size - original_size, 0)) {
-				return FALSE;	
-			}
-		} else {
-			if (FALSE == common_util_increase_store_size(
-				psqlite, 0, message_size - original_size)) {
-				return FALSE;	
-			}
-		}
+		auto d = message_size - original_size;
+		if (!cu_adjust_store_size(psqlite, ADJ_INCREASE,
+		    is_associated ? 0 : d, is_associated ? d : 0))
+			return FALSE;
 	}
 	if (b_embedded)
 		return TRUE;
@@ -2338,9 +2237,8 @@ static BOOL message_load_folder_rules(BOOL b_oof, sqlite3 *psqlite,
 		if (state & RULE_STATE_ENABLED) {
 			/* do nothing */
 		} else if (state & RULE_STATE_ONLY_WHEN_OOF) {
-			if (FALSE == b_oof) {
+			if (!b_oof)
 				continue;
-			}
 		} else {
 			continue;
 		}
@@ -2407,9 +2305,8 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof, sqlite3 *psqlite,
 		if (state & RULE_STATE_ENABLED) {
 			/* do nothing */
 		} else if (state & RULE_STATE_ONLY_WHEN_OOF) {
-			if (FALSE == b_oof) {
+			if (!b_oof)
 				continue;
-			}
 		} else {
 			continue;
 		}
@@ -2464,10 +2361,8 @@ static BOOL message_get_real_propid(sqlite3 *psqlite,
 	}
 	propnames.count = 1;
 	propnames.ppropname = &ppropname_info->ppropname[i];
-	if (FALSE == common_util_get_named_propids(
-		psqlite, TRUE, &propnames, &propids)) {
+	if (!common_util_get_named_propids(psqlite, TRUE, &propnames, &propids))
 		return FALSE;
-	}
 	if (1 != propids.count) {
 		return TRUE;
 	}
@@ -2576,14 +2471,11 @@ static BOOL message_replace_actions_propid(sqlite3 *psqlite,
 	BOOL b_replaced;
 	
 	for (size_t i = 0; i < pactions->count; ++i)
-		if (pactions->pblock[i].type == OP_TAG) {
-			if (FALSE == message_get_real_propid(
-				psqlite, ppropname_info, &((TAGGED_PROPVAL*)
-				pactions->pblock[i].pdata)->proptag,
-				&b_replaced)) {
-				return FALSE;
-			}
-		}
+		if (pactions->pblock[i].type == OP_TAG &&
+		    !message_get_real_propid(psqlite, ppropname_info,
+		    &static_cast<TAGGED_PROPVAL *>(pactions->pblock[i].pdata)->proptag,
+		    &b_replaced))
+			return FALSE;
 	return TRUE;
 }
 
@@ -2600,9 +2492,8 @@ static BOOL message_make_deferred_error_message(const char *username,
 	uint64_t nt_time;
 	MESSAGE_CONTENT *pmsg;
 	
-	if (FALSE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private())
 		return TRUE;
-	}
 	pmsg = message_content_init();
 	if (NULL == pmsg) {
 		return FALSE;
@@ -2638,8 +2529,8 @@ static BOOL message_make_deferred_error_message(const char *username,
 		message_content_free(pmsg);
 		return FALSE;
 	}
-	if (FALSE == message_write_message(FALSE, psqlite, username,
-		0, FALSE, PRIVATE_FID_DEFERRED_ACTION, pmsg, &mid_val)) {
+	if (!message_write_message(false, psqlite, username, 0, false,
+	    PRIVATE_FID_DEFERRED_ACTION, pmsg, &mid_val)) {
 		message_content_free(pmsg);
 		return FALSE;
 	}
@@ -2669,7 +2560,7 @@ static BOOL message_disable_rule(sqlite3 *psqlite,
 	char sql_string[128];
 	TAGGED_PROPVAL propval;
 	
-	if (FALSE == b_extended) {
+	if (!b_extended) {
 		snprintf(sql_string, arsizeof(sql_string), "UPDATE rules SET state=state|%u "
 		        "WHERE rule_id=%llu", RULE_STATE_ERROR, LLU(id));
 		if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
@@ -2699,11 +2590,7 @@ static BOOL message_get_propids(const PROPNAME_ARRAY *ppropnames,
 	if (NULL == psqlite) {
 		return FALSE;
 	}
-	if (FALSE == common_util_get_named_propids(
-		psqlite, FALSE, ppropnames, ppropids)) {
-		return FALSE;
-	}
-	return TRUE;
+	return common_util_get_named_propids(psqlite, false, ppropnames, ppropids);
 }
 
 static BOOL message_get_propname(uint16_t propid,
@@ -2719,10 +2606,8 @@ static BOOL message_get_propname(uint16_t propid,
 	}
 	propids.count = 1;
 	propids.ppropid = &propid;
-	if (FALSE == common_util_get_named_propnames(
-		psqlite, &propids, &propnames)) {
+	if (!common_util_get_named_propnames(psqlite, &propids, &propnames))
 		return FALSE;
-	}
 	*pppropname = propnames.count != 1 ? nullptr : propnames.ppropname;
 	return TRUE;
 }
@@ -2764,10 +2649,8 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 			}
 		}
 	}
-	if (FALSE == message_read_message(psqlite,
-		0, template_message_id, &pmsgctnt)) {
+	if (!message_read_message(psqlite, 0, template_message_id, &pmsgctnt))
 		return FALSE;
-	}
 	if (NULL == pmsgctnt) {
 		*pb_result = FALSE;
 		return TRUE;
@@ -2854,12 +2737,10 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 		pmsgctnt->children.prcpts = prcpts;
 	}
 	if (action_flavor & ACTION_FLAVOR_ST) {
-		if (FALSE == bounce_producer_make_content(
-			from_address, account, psqlite,
-			message_id, BOUNCE_AUTO_RESPONSE, NULL,
-			NULL, content_type, tmp_buff)) {
+		if (!bounce_producer_make_content(from_address, account,
+		    psqlite, message_id, BOUNCE_AUTO_RESPONSE, nullptr,
+		    nullptr, content_type, tmp_buff))
 			return FALSE;
-		}
 		common_util_remove_propvals(&pmsgctnt->proplist, PR_ASSOCIATED);
 		common_util_remove_propvals(&pmsgctnt->proplist, PidTagMid);
 		common_util_remove_propvals(&pmsgctnt->proplist, PR_BODY);
@@ -2885,10 +2766,9 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	}
 	common_util_set_tls_var(psqlite);
 	MAIL imail;
-	if (FALSE == oxcmail_export(pmsgctnt, FALSE,
-		OXCMAIL_BODY_PLAIN_AND_HTML, common_util_get_mime_pool(),
-		&imail, common_util_alloc, message_get_propids,
-		message_get_propname)) {
+	if (!oxcmail_export(pmsgctnt, false, OXCMAIL_BODY_PLAIN_AND_HTML,
+	    common_util_get_mime_pool(), &imail, common_util_alloc,
+	    message_get_propids, message_get_propname)) {
 		common_util_set_tls_var(NULL);
 		return FALSE;
 	}
@@ -2901,10 +2781,8 @@ static BOOL message_auto_reply(sqlite3 *psqlite,
 	const char *pvalue2 = strchr(from_address, '@');
 	snprintf(tmp_buff, sizeof(tmp_buff), "auto-reply@%s", pvalue2 == nullptr ? "system.mail" : pvalue2 + 1);
 	double_list_init(&tmp_list);
-	if (FALSE == common_util_recipients_to_list(
-		pmsgctnt->children.prcpts, &tmp_list)) {
+	if (!common_util_recipients_to_list(pmsgctnt->children.prcpts, &tmp_list))
 		return FALSE;
-	}
 	common_util_send_mail(&imail, tmp_buff, &tmp_list);
 	*pb_result = TRUE;
 	return TRUE;
@@ -2948,11 +2826,9 @@ static BOOL message_bounce_message(const char *from_address,
 	pnode->pdata = pvalue == nullptr ? deconst(from_address) : pvalue;
 
 	MAIL imail(common_util_get_mime_pool());
-	if (FALSE == bounce_producer_make(from_address,
-		account, psqlite, message_id, bounce_type,
-		&imail)) {
+	if (!bounce_producer_make(from_address, account, psqlite, message_id,
+	    bounce_type, &imail))
 		return FALSE;
-	}
 	const char *pvalue2 = strchr(account, '@');
 	snprintf(tmp_buff, sizeof(tmp_buff), "postmaster@%s",
 	         pvalue2 == nullptr ? "system.mail" : pvalue2 + 1);
@@ -3030,7 +2906,7 @@ static BOOL message_forward_message(const char *from_address,
 	} else {
 		pdomain = "system.mail";
 	}
-	if (FALSE == b_extended) {
+	if (!b_extended) {
 		if (!message_recipient_blocks_to_list(count,
 		    static_cast<RECIPIENT_BLOCK *>(pblock), &rcpt_list))
 			return FALSE;
@@ -3068,10 +2944,9 @@ static BOOL message_forward_message(const char *from_address,
 				return TRUE;
 		}
 	} else {
-		if (FALSE == message_read_message(psqlite, cpid,
-			message_id, &pmsgctnt) || NULL == pmsgctnt) {
+		if (!message_read_message(psqlite, cpid, message_id,
+		    &pmsgctnt) || pmsgctnt == nullptr)
 			return FALSE;
-		}
 		pvalue = pmsgctnt->proplist.getval(PROP_TAG_INTERNETMAILOVERRIDEFORMAT);
 		if (NULL == pvalue) {
 			body_type = OXCMAIL_BODY_PLAIN_AND_HTML;
@@ -3086,10 +2961,9 @@ static BOOL message_forward_message(const char *from_address,
 		}
 		/* try to avoid TNEF message */
 		common_util_set_tls_var(psqlite);
-		if (FALSE == oxcmail_export(pmsgctnt, FALSE,
-			body_type, common_util_get_mime_pool(), &imail,
-			common_util_alloc, message_get_propids,
-			message_get_propname)) {
+		if (!oxcmail_export(pmsgctnt, false, body_type,
+		    common_util_get_mime_pool(), &imail, common_util_alloc,
+		    message_get_propids, message_get_propname)) {
 			common_util_set_tls_var(NULL);
 			return FALSE;
 		}
@@ -3280,9 +3154,8 @@ static BOOL message_make_deferred_action_messages(const char *username,
 		return TRUE;
 	const char *provider;
 	
-	if (FALSE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private())
 		return TRUE;
-	}
 	if (dam_list.size() > MAX_DAMS_PER_RULE_FOLDER) {
 		common_util_log_info(LV_NOTICE, "user=%s host=unknown  "
 			"DAM error: Too many Deferred Actions "
@@ -3339,11 +3212,9 @@ static bool op_move_same(BOOL b_oof, const char *from_address,
 		return true;
 	}
 	BOOL b_exist = false;
-	if (FALSE == common_util_check_folder_id(
-	    psqlite, dst_fid, &b_exist)) {
+	if (!common_util_check_folder_id(psqlite, dst_fid, &b_exist))
 		return FALSE;
-	}
-	if (FALSE == b_exist) {
+	if (!b_exist) {
 		message_make_deferred_error_message(account,
 			psqlite, folder_id, message_id, prnode->id,
 			RULE_ERROR_MOVECOPY, block.type,
@@ -3352,25 +3223,19 @@ static bool op_move_same(BOOL b_oof, const char *from_address,
 	}
 	int tmp_id = 0, tmp_id1 = 0;
 	if (exmdb_server_check_private()) {
-		if (FALSE == common_util_get_id_from_username(
-		    account, &tmp_id)) {
+		if (!common_util_get_id_from_username(account, &tmp_id))
 			return FALSE;
-		}
 	} else {
-		if (FALSE == common_util_get_domain_ids(
-		    account, &tmp_id, &tmp_id1)) {
+		if (!common_util_get_domain_ids(account, &tmp_id, &tmp_id1))
 			return FALSE;
-		}
 	}
 	uint64_t dst_mid = 0;
 	uint32_t message_size = 0;
 	BOOL b_result = false;
-	if (FALSE == common_util_copy_message(
-	    psqlite, tmp_id, message_id, dst_fid,
-	    &dst_mid, &b_result, &message_size)) {
+	if (!common_util_copy_message(psqlite, tmp_id, message_id, dst_fid,
+	    &dst_mid, &b_result, &message_size))
 		return FALSE;
-	}
-	if (FALSE == b_result) {
+	if (!b_result) {
 		message_make_deferred_error_message(account, psqlite, folder_id,
 			message_id, prnode->id, RULE_ERROR_MOVECOPY, block.type,
 			rule_idx, prnode->provider.c_str(), pmsg_list);
@@ -3382,10 +3247,8 @@ static bool op_move_same(BOOL b_oof, const char *from_address,
 	propval.pvalue = &nt_time;
 	cu_set_property(db_table::folder_props,
 		dst_fid, 0, psqlite, &propval, &b_result);
-	if (FALSE == common_util_increase_store_size(
-	    psqlite, message_size, 0)) {
+	if (!cu_adjust_store_size(psqlite, ADJ_INCREASE, message_size, 0))
 		return FALSE;
-	}
 	pnode1 = cu_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode1) {
 		return FALSE;
@@ -3409,12 +3272,11 @@ static bool op_move_same(BOOL b_oof, const char *from_address,
 	} else {
 		pdigest1 = NULL;
 	}
-	if (FALSE == message_rule_new_message(b_oof,
+	if (!message_rule_new_message(b_oof,
 	    from_address, account, cpid, psqlite,
 	    dst_fid, dst_mid, pdigest1, pfolder_list,
-	    pmsg_list)) {
+	    pmsg_list))
 		return FALSE;
-	}
 	if (block.type == OP_MOVE) {
 		b_del = TRUE;
 		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
@@ -3439,9 +3301,8 @@ static bool op_move_across(uint64_t folder_id, uint64_t message_id,
     const RULE_NODE *prnode, const ACTION_BLOCK &block,
     std::list<DAM_NODE> &dam_list) try
 {
-	if (FALSE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private())
 		return true;
-	}
 	dam_list.emplace_back();
 	auto pdnode = &dam_list.back();
 	pdnode->rule_id = prnode->id;
@@ -3461,14 +3322,13 @@ static bool op_reply(const char *from_address, const char *account,
 {
 	auto preply = static_cast<REPLY_ACTION *>(block.pdata);
 	BOOL b_result = false;
-	if (FALSE == message_auto_reply(psqlite, message_id,
+	if (!message_auto_reply(psqlite, message_id,
 	    from_address, account, block.type,
 	    block.flavor, rop_util_get_gc_value(
 	    preply->template_message_id), preply->template_guid,
-	    &b_result)) {
+	    &b_result))
 		return FALSE;
-	}
-	if (FALSE == b_result) {
+	if (!b_result) {
 		message_make_deferred_error_message(account, psqlite, folder_id,
 			message_id, prnode->id, RULE_ERROR_RETRIEVE_TEMPLATE,
 			block.type, rule_idx, prnode->provider.c_str(),
@@ -3482,9 +3342,8 @@ static bool op_defer(uint64_t folder_id, uint64_t message_id,
     const ACTION_BLOCK &block, const RULE_NODE *prnode,
     std::list<DAM_NODE> &dam_list) try
 {
-	if (FALSE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private())
 		return true;
-	}
 	dam_list.emplace_back();
 	auto pdnode = &dam_list.back();
 	pdnode->rule_id = prnode->id;
@@ -3502,9 +3361,8 @@ static bool op_forward(const char *from_address, const char *account,
     const char *pdigest, DOUBLE_LIST *pmsg_list, const ACTION_BLOCK &block,
     size_t rule_idx, const RULE_NODE *prnode)
 {
-	if (FALSE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private())
 		return true;
-	}
 	auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
 	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
 		message_make_deferred_error_message(account, psqlite, folder_id,
@@ -3512,12 +3370,9 @@ static bool op_forward(const char *from_address, const char *account,
 			block.type, rule_idx, prnode->provider.c_str(), pmsg_list);
 		return message_disable_rule(psqlite, false, prnode->id);
 	}
-	if (FALSE == message_forward_message(from_address,
-	    account, psqlite, cpid, message_id, pdigest,
-	    block.flavor, false,
-	    pfwddlgt->count, pfwddlgt->pblock))
-		return FALSE;
-	return true;
+	return message_forward_message(from_address, account, psqlite, cpid,
+	       message_id, pdigest, block.flavor, false, pfwddlgt->count,
+	       pfwddlgt->pblock);
 }
 
 static bool op_delegate(const char *from_address, const char *account,
@@ -3526,10 +3381,9 @@ static bool op_delegate(const char *from_address, const char *account,
     size_t rule_idx, const RULE_NODE *prnode)
 {
 	auto pfwddlgt = static_cast<FORWARDDELEGATE_ACTION *>(block.pdata);
-	if (FALSE == exmdb_server_check_private() ||
-		NULL == pdigest || 0 == pfwddlgt->count) {
+	if (!exmdb_server_check_private() ||
+	    pdigest == nullptr || pfwddlgt->count == 0)
 		return true;
-	}
 	if (pfwddlgt->count > MAX_RULE_RECIPIENTS) {
 		message_make_deferred_error_message(account, psqlite, folder_id,
 			message_id, prnode->id, RULE_ERROR_TOO_MANY_RCPTS,
@@ -3537,10 +3391,9 @@ static bool op_delegate(const char *from_address, const char *account,
 		return message_disable_rule(psqlite, false, prnode->id);
 	}
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
-	if (FALSE == message_read_message(psqlite, cpid,
-	    message_id, &pmsgctnt) || NULL == pmsgctnt) {
+	if (!message_read_message(psqlite, cpid, message_id, &pmsgctnt) ||
+	    pmsgctnt == nullptr)
 		return FALSE;
-	}
 	if (pmsgctnt->proplist.has(PROP_TAG_DELEGATEDBYRULE)) {
 		common_util_log_info(LV_DEBUG, "user=%s host=unkonwn  Delegated"
 			" message %llu in folder %llu cannot be delegated"
@@ -3600,10 +3453,9 @@ static bool op_delegate(const char *from_address, const char *account,
 	propval.pvalue = deconst(&fake_true);
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	DOUBLE_LIST rcpt_list;
-	if (FALSE == message_recipient_blocks_to_list(
-	    pfwddlgt->count, pfwddlgt->pblock, &rcpt_list)) {
+	if (!message_recipient_blocks_to_list(pfwddlgt->count,
+	    pfwddlgt->pblock, &rcpt_list))
 		return FALSE;
-	}
 	char mid_string1[128], tmp_path1[256];
 	get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
 	snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
@@ -3670,9 +3522,8 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 			return false;
 		break;
 	case OP_BOUNCE:
-		if (FALSE == message_bounce_message(
-		    from_address, account, psqlite, message_id,
-		    *static_cast<uint32_t *>(block.pdata)))
+		if (!message_bounce_message(from_address, account, psqlite,
+		    message_id, *static_cast<uint32_t *>(block.pdata)))
 			return FALSE;
 		b_del = TRUE;
 		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
@@ -3708,9 +3559,8 @@ static bool op_switcheroo(BOOL b_oof, const char *from_address,
 			LLU(message_id), LLU(folder_id));
 		break;
 	case OP_MARK_AS_READ: {
-		if (FALSE == exmdb_server_check_private()) {
+		if (!exmdb_server_check_private())
 			return true;
-		}
 		TAGGED_PROPVAL propval;
 		propval.proptag = PR_READ;
 		propval.pvalue = deconst(&fake_true);
@@ -3766,10 +3616,8 @@ static bool opx_move_private(const char *account, sqlite3 *psqlite,
 		return message_disable_rule(psqlite, TRUE, prnode->id);
 	}
 	int tmp_id = 0;
-	if (FALSE == common_util_get_id_from_username(
-	    account, &tmp_id)) {
+	if (!common_util_get_id_from_username(account, &tmp_id))
 		return true;
-	}
 	auto tmp_guid = rop_util_make_user_guid(tmp_id);
 	if (tmp_guid != pextmvcp->folder_eid.database_guid)
 		return message_disable_rule(psqlite, TRUE, prnode->id);
@@ -3823,46 +3671,34 @@ static bool opx_move(BOOL b_oof, const char *from_address,
 		return true;
 	}
 	BOOL b_exist = false;
-	if (FALSE == common_util_check_folder_id(
-	    psqlite, dst_fid, &b_exist)) {
+	if (!common_util_check_folder_id(psqlite, dst_fid, &b_exist))
 		return FALSE;
-	}
-	if (FALSE == b_exist) {
+	if (!b_exist)
 		return message_disable_rule(psqlite, TRUE, prnode->id);
-	}
 	int tmp_id = 0, tmp_id1 = 0;
 	if (exmdb_server_check_private()) {
-		if (FALSE == common_util_get_id_from_username(
-		    account, &tmp_id)) {
+		if (!common_util_get_id_from_username(account, &tmp_id))
 			return FALSE;
-		}
 	} else {
-		if (FALSE == common_util_get_domain_ids(
-		    account, &tmp_id, &tmp_id1)) {
+		if (!common_util_get_domain_ids(account, &tmp_id, &tmp_id1))
 			return FALSE;
-		}
 	}
 	uint64_t dst_mid = 0;
 	uint32_t message_size = 0;
 	BOOL b_result = 0;
-	if (FALSE == common_util_copy_message(
-	    psqlite, tmp_id, message_id, dst_fid,
-	    &dst_mid, &b_result, &message_size)) {
+	if (!common_util_copy_message(psqlite, tmp_id, message_id, dst_fid,
+	    &dst_mid, &b_result, &message_size))
 		return FALSE;
-	}
-	if (FALSE == b_result) {
+	if (!b_result)
 		return true;
-	}
 	auto nt_time = rop_util_current_nttime();
 	TAGGED_PROPVAL propval;
 	propval.proptag = PR_LOCAL_COMMIT_TIME_MAX;
 	propval.pvalue = &nt_time;
 	cu_set_property(db_table::folder_props,
 		dst_fid, 0, psqlite, &propval, &b_result);
-	if (FALSE == common_util_increase_store_size(
-	    psqlite, message_size, 0)) {
+	if (!cu_adjust_store_size(psqlite, ADJ_INCREASE, message_size, 0))
 		return FALSE;
-	}
 	pnode1 = cu_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode1) {
 		return FALSE;
@@ -3886,12 +3722,11 @@ static bool opx_move(BOOL b_oof, const char *from_address,
 	} else {
 		pdigest1 = NULL;
 	}
-	if (FALSE == message_rule_new_message(b_oof,
+	if (!message_rule_new_message(b_oof,
 	    from_address, account, cpid, psqlite,
 	    dst_fid, dst_mid, pdigest1, pfolder_list,
-	    pmsg_list)) {
+	    pmsg_list))
 		return FALSE;
-	}
 	if (block.type == OP_MOVE) {
 		b_del = TRUE;
 		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
@@ -3916,10 +3751,8 @@ static bool opx_reply(const char *from_address, const char *account,
 	auto pextreply = static_cast<EXT_REPLY_ACTION *>(block.pdata);
 	if (exmdb_server_check_private()) {
 		int tmp_id = 0;
-		if (FALSE == common_util_get_id_from_username(
-		    account, &tmp_id)) {
+		if (!common_util_get_id_from_username(account, &tmp_id))
 			return true;
-		}
 		auto tmp_guid = rop_util_make_user_guid(tmp_id);
 		if (tmp_guid != pextreply->message_eid.message_database_guid)
 			return message_disable_rule(psqlite, TRUE, prnode->id);
@@ -3938,14 +3771,12 @@ static bool opx_reply(const char *from_address, const char *account,
 	auto dst_mid = rop_util_gc_to_value(
 		       pextreply->message_eid.message_global_counter);
 	BOOL b_result = false;
-	if (FALSE == message_auto_reply(
-	    psqlite, message_id, from_address, account,
+	if (!message_auto_reply(psqlite, message_id, from_address, account,
 	    block.type, block.flavor,
 	    dst_mid, pextreply->template_guid, &b_result))
 		return FALSE;
-	if (FALSE == b_result) {
+	if (!b_result)
 		return message_disable_rule(psqlite, TRUE, prnode->id);
-	}
 	return true;
 }
 
@@ -3954,18 +3785,16 @@ static bool opx_delegate(const char *from_address, const char *account,
     const char *pdigest, const EXT_ACTION_BLOCK &block, const RULE_NODE *prnode)
 {
 	auto pextfwddlgt = static_cast<EXT_FORWARDDELEGATE_ACTION *>(block.pdata);
-	if (FALSE == exmdb_server_check_private() ||
-	    NULL == pdigest || 0 == pextfwddlgt->count) {
+	if (!exmdb_server_check_private() ||
+	    pdigest == nullptr || pextfwddlgt->count == 0)
 		return true;
-	}
 	if (pextfwddlgt->count > MAX_RULE_RECIPIENTS) {
 		return message_disable_rule(psqlite, TRUE, prnode->id);
 	}
 	MESSAGE_CONTENT *pmsgctnt = nullptr;
-	if (FALSE == message_read_message(psqlite, cpid,
-	    message_id, &pmsgctnt) || NULL == pmsgctnt) {
+	if (!message_read_message(psqlite, cpid,
+	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
-	}
 	if (pmsgctnt->proplist.has(PROP_TAG_DELEGATEDBYRULE)) {
 		common_util_log_info(LV_DEBUG, "user=%s host=unkonwn  Delegated"
 			" message %llu in folder %llu cannot be delegated"
@@ -4024,10 +3853,9 @@ static bool opx_delegate(const char *from_address, const char *account,
 	propval.pvalue = deconst(&fake_true);
 	common_util_set_propvals(&pmsgctnt->proplist, &propval);
 	DOUBLE_LIST rcpt_list;
-	if (FALSE == message_ext_recipient_blocks_to_list(
-	    pextfwddlgt->count, pextfwddlgt->pblock, &rcpt_list)) {
+	if (!message_ext_recipient_blocks_to_list(pextfwddlgt->count,
+	    pextfwddlgt->pblock, &rcpt_list))
 		return FALSE;
-	}
 	char mid_string1[128], tmp_path1[256];
 	get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
 	snprintf(tmp_path1, arsizeof(tmp_path1), "%s/eml/%s",
@@ -4087,9 +3915,8 @@ static bool opx_switcheroo(BOOL b_oof, const char *from_address,
 	case OP_DEFER_ACTION:
 		break;
 	case OP_BOUNCE:
-		if (FALSE == message_bounce_message(
-		    from_address, account, psqlite, message_id,
-		    *static_cast<uint32_t *>(block.pdata)))
+		if (!message_bounce_message(from_address, account, psqlite,
+		    message_id, *static_cast<uint32_t *>(block.pdata)))
 			return FALSE;
 		b_del = TRUE;
 		common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
@@ -4102,7 +3929,7 @@ static bool opx_switcheroo(BOOL b_oof, const char *from_address,
 		if (pextfwddlgt->count > MAX_RULE_RECIPIENTS) {
 			return message_disable_rule(psqlite, TRUE, prnode->id);
 		}
-		if (FALSE == message_forward_message(from_address,
+		if (!message_forward_message(from_address,
 		    account, psqlite, cpid, message_id, pdigest,
 		    block.flavor, TRUE,
 		    pextfwddlgt->count, pextfwddlgt->pblock))
@@ -4131,9 +3958,8 @@ static bool opx_switcheroo(BOOL b_oof, const char *from_address,
 			LLU(message_id), LLU(folder_id));
 		break;
 	case OP_MARK_AS_READ: {
-		if (FALSE == exmdb_server_check_private()) {
+		if (!exmdb_server_check_private())
 			return true;
-		}
 		TAGGED_PROPVAL propval;
 		propval.proptag = PR_READ;
 		propval.pvalue = deconst(&fake_true);
@@ -4171,14 +3997,11 @@ static bool opx_process(BOOL b_oof, const char *from_address,
 	if (ext_pull.g_namedprop_info(&propname_info) != EXT_ERR_SUCCESS ||
 	    ext_pull.g_restriction(&restriction) != EXT_ERR_SUCCESS)
 		return true;
-	if (FALSE == message_replace_restriction_propid(
-	    psqlite, &propname_info, &restriction)) {
+	if (!message_replace_restriction_propid(psqlite, &propname_info, &restriction))
 		return FALSE;
-	}
-	if (FALSE == common_util_evaluate_message_restriction(
-	    psqlite, 0, message_id, &restriction)) {
+	if (!common_util_evaluate_message_restriction(psqlite,
+	    0, message_id, &restriction))
 		return true;
-	}
 	if (prnode->state & RULE_STATE_EXIT_LEVEL) {
 		b_exit = TRUE;
 	}
@@ -4198,10 +4021,8 @@ static bool opx_process(BOOL b_oof, const char *from_address,
 	    version != 1 ||
 	    ext_pull.g_ext_rule_actions(&ext_actions) != EXT_ERR_SUCCESS)
 		return true;
-	if (FALSE == message_replace_actions_propid(
-	    psqlite, &propname_info, &ext_actions)) {
+	if (!message_replace_actions_propid(psqlite, &propname_info, &ext_actions))
 		return FALSE;
-	}
 	for (size_t i = 0; i < ext_actions.count; ++i)
 		if (!opx_switcheroo(b_oof, from_address, account, cpid, psqlite,
 		    folder_id, message_id, pdigest, pfolder_list,
@@ -4259,10 +4080,8 @@ static BOOL message_rule_new_message(BOOL b_oof,
 		" WHERE message_id=%llu", LLU(message_id));
 	if (gx_sql_exec(psqlite, sql_string) != SQLITE_OK)
 		return FALSE;
-	if (FALSE == common_util_decrease_store_size(
-	    psqlite, message_size, 0)) {
+	if (!cu_adjust_store_size(psqlite, ADJ_DECREASE, message_size, 0))
 		return FALSE;
-	}
 	if (NULL != pdigest) {
 		char mid_string1[128], tmp_path1[256];
 		get_digest(pdigest, "file", mid_string1, arsizeof(mid_string1));
@@ -4449,10 +4268,9 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		*(uint64_t*)pvalue = nt_time;
 	}
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	if (FALSE == message_write_message(FALSE, pdb->psqlite,
-		paccount, cpid, FALSE, fid_val, &tmp_msg, &message_id)) {
+	if (!message_write_message(FALSE, pdb->psqlite,
+	    paccount, cpid, false, fid_val, &tmp_msg, &message_id))
 		return FALSE;
-	}
 	if (0 == message_id) {
 		*presult = 2;
 		return TRUE;
@@ -4466,20 +4284,17 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		if (-1 != fd) {
 			write(fd, digest_buff, strlen(digest_buff));
 			close(fd);
-			if (FALSE == common_util_set_mid_string(
-				pdb->psqlite, message_id, mid_string)) {
+			if (!common_util_set_mid_string(pdb->psqlite,
+			    message_id, mid_string))
 				return FALSE;
-			}
 		}
 	}
 	common_util_log_info(LV_DEBUG, "user=%s host=unknown  "
 		"Message %llu is delivered into folder "
 		"%llu", account, LLU(message_id), LLU(fid_val));
-	if (FALSE == message_rule_new_message(b_oof,
-		from_address, account, cpid, pdb->psqlite,
-		fid_val, message_id, pdigest, &folder_list, &msg_list)) {
+	if (!message_rule_new_message(b_oof, from_address, account, cpid,
+	    pdb->psqlite, fid_val, message_id, pdigest, &folder_list, &msg_list))
 		return FALSE;
-	}
 	sql_transact.commit();
 	for (pnode=double_list_get_head(&msg_list); NULL!=pnode;
 		pnode=double_list_get_after(&msg_list, pnode)) {
@@ -4527,10 +4342,9 @@ BOOL exmdb_server_write_message(const char *dir, const char *account,
 	}
 	fid_val = rop_util_get_gc_value(folder_id);
 	if (NULL != pmid) {
-		if (FALSE == common_util_get_message_parent_folder(
-			pdb->psqlite, rop_util_get_gc_value(*pmid), &fid_val1)) {
+		if (!common_util_get_message_parent_folder(pdb->psqlite,
+		    rop_util_get_gc_value(*pmid), &fid_val1))
 			return FALSE;	
-		}
 		if (0 != fid_val1) {
 			b_exist = TRUE;
 			if (fid_val != fid_val1) {
@@ -4546,10 +4360,9 @@ BOOL exmdb_server_write_message(const char *dir, const char *account,
 	}
 	{
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	if (FALSE == message_write_message(FALSE, pdb->psqlite,
-		account, cpid, FALSE, fid_val, pmsgctnt, &mid_val)) {
+	if (!message_write_message(FALSE, pdb->psqlite,
+	    account, cpid, false, fid_val, pmsgctnt, &mid_val))
 		return FALSE;
-	}
 	if (0 == mid_val) {
 		// auto rollback at end of scope
 		*pe_result = GXERR_CALL_FAILED;
@@ -4579,16 +4392,13 @@ BOOL exmdb_server_read_message(const char *dir, const char *username,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (FALSE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private())
 		exmdb_server_set_public_username(username);
-	}
 	mid_val = rop_util_get_gc_value(message_id);
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	if (FALSE == common_util_begin_message_optimize(pdb->psqlite)) {
+	if (!common_util_begin_message_optimize(pdb->psqlite))
 		return FALSE;
-	}
-	if (FALSE == message_read_message(
-		pdb->psqlite, cpid, mid_val, ppmsgctnt)) {
+	if (!message_read_message(pdb->psqlite, cpid, mid_val, ppmsgctnt)) {
 		common_util_end_message_optimize();
 		return FALSE;
 	}
@@ -4615,16 +4425,13 @@ BOOL exmdb_server_rule_new_message(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (FALSE == exmdb_server_check_private()) {
+	if (!exmdb_server_check_private())
 		exmdb_server_set_public_username(username);
-	}
 	fid_val = rop_util_get_gc_value(folder_id);
 	mid_val = rop_util_get_gc_value(message_id);
 	pdigest = NULL;
-	if (FALSE == common_util_get_mid_string(
-		pdb->psqlite, mid_val, &pmid_string)) {
+	if (!common_util_get_mid_string(pdb->psqlite, mid_val, &pmid_string))
 		return FALSE;
-	}
 	if (NULL != pmid_string) {
 		snprintf(tmp_path, arsizeof(tmp_path), "%s/ext/%s",
 			exmdb_server_get_dir(), pmid_string);
@@ -4652,11 +4459,10 @@ BOOL exmdb_server_rule_new_message(const char *dir,
 	*uv = fid_val;
 	double_list_append_as_tail(&folder_list, pnode);
 	auto sql_transact = gx_sql_begin_trans(pdb->psqlite);
-	if (FALSE == message_rule_new_message(FALSE, "none@none",
-		account, cpid, pdb->psqlite, fid_val, mid_val,
-		pdigest, &folder_list, &msg_list)) {
+	if (!message_rule_new_message(false, "none@none",
+	    account, cpid, pdb->psqlite, fid_val, mid_val,
+	    pdigest, &folder_list, &msg_list))
 		return FALSE;
-	}
 	sql_transact.commit();
 	for (pnode=double_list_get_head(&msg_list); NULL!=pnode;
 		pnode=double_list_get_after(&msg_list, pnode)) {

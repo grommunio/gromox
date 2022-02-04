@@ -31,6 +31,11 @@ enum class db_table {
 };
 
 enum {
+	ADJ_INCREASE = false,
+	ADJ_DECREASE = true,
+};
+
+enum {
 	COMMON_UTIL_MAX_RULE_NUMBER,
 	COMMON_UTIL_MAX_EXT_RULE_NUMBER
 };
@@ -170,10 +175,7 @@ BOOL common_util_check_folder_id(sqlite3 *psqlite,
 	uint64_t folder_id, BOOL *pb_exist);
 BOOL common_util_increase_deleted_count(sqlite3 *psqlite,
 	uint64_t folder_id, uint32_t del_count);
-BOOL common_util_increase_store_size(sqlite3 *psqlite,
-	uint64_t normal_size, uint64_t fai_size);
-BOOL common_util_decrease_store_size(sqlite3 *psqlite,
-	uint64_t normal_size, uint64_t fai_size);
+extern BOOL cu_adjust_store_size(sqlite3 *psqlite, bool sub, uint64_t normal_size, uint64_t fai_size);
 BOOL common_util_recipients_to_list(
 	TARRAY_SET *prcpts, DOUBLE_LIST *plist);
 extern BINARY *cu_xid_to_bin(const XID &);

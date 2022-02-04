@@ -92,7 +92,7 @@ std::unique_ptr<message_object> message_object::create(store_object *pstore,
 	if (NULL == pmessage->premoved_proptags) {
 		return NULL;
 	}
-	if (FALSE == b_new) {
+	if (!b_new) {
 		if (!exmdb_client_get_instance_property(pstore->get_dir(),
 		    pmessage->instance_id, PidTagChangeNumber,
 		    reinterpret_cast<void **>(&pchange_num)))
@@ -279,10 +279,8 @@ gxerr_t message_object::save()
 	PROPTAG_ARRAY *pungroup_proptags;
 	
 	
-	if (FALSE == pmessage->b_new &&
-		FALSE == pmessage->b_touched) {
+	if (!pmessage->b_new && !pmessage->b_touched)
 		return GXERR_SUCCESS;
-	}
 	auto dir = pmessage->pstore->get_dir();
 	auto pinfo = zarafa_server_get_info();
 	if (!exmdb_client::allocate_cn(
@@ -350,10 +348,8 @@ gxerr_t message_object::save()
 		tmp_propvals.ppropval[tmp_propvals.count++].pvalue = pbin_pcl;	
 	}
 	
-	if (FALSE == message_object_set_properties_internal(
-		pmessage, FALSE, &tmp_propvals)) {
+	if (!message_object_set_properties_internal(pmessage, false, &tmp_propvals))
 		return GXERR_CALL_FAILED;
-	}
 	
 	/* change number of embedding message is used for message
 		modification's check when the rop_savechangesmessage
@@ -361,10 +357,9 @@ gxerr_t message_object::save()
 	*/
 	tmp_propval.proptag = PidTagChangeNumber;
 	tmp_propval.pvalue = &pmessage->change_num;
-	if (FALSE == exmdb_client_set_instance_property(dir,
-		pmessage->instance_id, &tmp_propval, &result)) {
+	if (!exmdb_client_set_instance_property(dir,
+	    pmessage->instance_id, &tmp_propval, &result))
 		return GXERR_CALL_FAILED;
-	}
 	
 	gxerr_t e_result = GXERR_CALL_FAILED;
 	if (!exmdb_client::flush_instance(dir, pmessage->instance_id,
@@ -382,11 +377,10 @@ gxerr_t message_object::save()
 	
 	if (NULL != pmessage->pstate) {
 		pmessage->pstate->pgiven->append(pmessage->message_id);
-		if (FALSE == b_fai) {
+		if (!b_fai)
 			pmessage->pstate->pseen->append(pmessage->change_num);
-		} else {
+		else
 			pmessage->pstate->pseen_fai->append(pmessage->change_num);
-		}
 	}
 	
 	if (pmessage->message_id == 0 || b_fai) {
@@ -515,7 +509,7 @@ BOOL message_object::reload()
 	proptag_array_clear(pmessage->premoved_proptags);
 	pmessage->b_touched = FALSE;
 	pmessage->change_num = 0;
-	if (FALSE == pmessage->b_new) {
+	if (!pmessage->b_new) {
 		if (!exmdb_client_get_instance_property(pmessage->pstore->get_dir(),
 		    pmessage->instance_id, PidTagChangeNumber,
 		    reinterpret_cast<void **>(&pchange_num)) ||
@@ -1262,10 +1256,9 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 			*static_cast<uint32_t *>(pvalue) &= ~MSGFLAG_UNMODIFIED;
 			propval.proptag = PR_MESSAGE_FLAGS;
 			propval.pvalue = pvalue;
-			if (FALSE == exmdb_client_set_instance_property(
-				dir, pmessage->instance_id, &propval, &result)) {
+			if (!exmdb_client_set_instance_property(dir,
+			    pmessage->instance_id, &propval, &result))
 				return FALSE;
-			}
 			if (!exmdb_client::mark_modified(
 				dir, pmessage->message_id)) {
 				return FALSE;
@@ -1283,10 +1276,9 @@ BOOL message_object::set_readflag(uint8_t read_flag, BOOL *pb_changed)
 		}
 		propval.proptag = PR_READ;
 		propval.pvalue = &tmp_byte;
-		if (FALSE == exmdb_client_set_instance_property(
-			dir, pmessage->instance_id, &propval, &result)) {
+		if (!exmdb_client_set_instance_property(dir,
+		    pmessage->instance_id, &propval, &result))
 			return FALSE;	
-		}
 		if (0 != result) {
 			return TRUE;
 		}

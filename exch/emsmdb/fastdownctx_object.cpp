@@ -224,8 +224,7 @@ static BOOL fastdownctx_object_get_buffer_internal(fastdownctx_object *pctx,
 		len = *plen;
 		if (!pctx->pstream->read_buffer(pbuff, &len, &b_last))
 			return FALSE;	
-		if (FALSE == b_last || *plen - len <
-			2*FTSTREAM_PRODUCER_POINT_LENGTH) {
+		if (!b_last || *plen - len < 2 * FTSTREAM_PRODUCER_POINT_LENGTH) {
 			*plen = len;
 			*pb_last = FALSE;
 			return TRUE;

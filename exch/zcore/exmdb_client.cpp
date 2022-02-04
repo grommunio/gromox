@@ -120,7 +120,7 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 	}
 	process_id = getpid();
 	sprintf(remote_id, "zcore:%d", process_id);
-	if (FALSE == b_listen) {
+	if (!b_listen) {
 		request.call_id = exmdb_callid::CONNECT;
 		request.payload.connect.prefix = deconst(pserver->prefix.c_str());
 		request.payload.connect.remote_id = remote_id;
@@ -133,7 +133,7 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 		close(sockd);
 		return -1;
 	}
-	if (FALSE == exmdb_client_write_socket(sockd, &tmp_bin)) {
+	if (!exmdb_client_write_socket(sockd, &tmp_bin)) {
 		free(tmp_bin.pb);
 		close(sockd);
 		return -1;
@@ -495,7 +495,7 @@ BOOL exmdb_client_do_rpc(const char *dir,
 		free(tmp_bin.pb);
 		return FALSE;
 	}
-	if (FALSE == exmdb_client_write_socket(pconn->sockd, &tmp_bin)) {
+	if (!exmdb_client_write_socket(pconn->sockd, &tmp_bin)) {
 		free(tmp_bin.pb);
 		return FALSE;
 	}

@@ -147,10 +147,8 @@ static BOOL ftstream_producer_write_uint64(
 static BOOL ftstream_producer_write_float(
 	FTSTREAM_PRODUCER *pstream, float v)
 {
-	if (FALSE == ftstream_producer_write_internal(
-		pstream, &v, sizeof(float))) {
+	if (!ftstream_producer_write_internal(pstream, &v, sizeof(float)))
 		return FALSE;	
-	}
 	ftstream_producer_try_recode_nbp(pstream);
 	return TRUE;
 }
@@ -158,10 +156,8 @@ static BOOL ftstream_producer_write_float(
 static BOOL ftstream_producer_write_double(
 	FTSTREAM_PRODUCER *pstream, double v)
 {
-	if (FALSE == ftstream_producer_write_internal(
-		pstream, &v, sizeof(double))) {
+	if (!ftstream_producer_write_internal(pstream, &v, sizeof(double)))
 		return FALSE;	
-	}
 	ftstream_producer_try_recode_nbp(pstream);
 	return TRUE;
 }
@@ -188,8 +184,7 @@ static BOOL ftstream_producer_write_wstring(
 		return FALSE;
 	}
 	position = pstream->offset;
-	if (FALSE == ftstream_producer_write_internal(
-		pstream, pbuff, len)) {
+	if (!ftstream_producer_write_internal(pstream, pbuff, len)) {
 		free(pbuff);
 		return FALSE;
 	}
@@ -212,10 +207,8 @@ static BOOL ftstream_producer_write_string(
 	if (!pstream->write_uint32(len))
 		return FALSE;
 	position = pstream->offset;
-	if (FALSE == ftstream_producer_write_internal(
-		pstream, pstr, len)) {
+	if (!ftstream_producer_write_internal(pstream, pstr, len))
 		return FALSE;
-	}
 	if (len >= FTSTREAM_PRODUCER_POINT_LENGTH) {
 		ftstream_producer_record_lvp(pstream, position, len);
 	} else {
@@ -233,10 +226,8 @@ static BOOL ftstream_producer_write_guid(
 	if (NULL == pbin) {
 		return FALSE;
 	}
-	if (FALSE == ftstream_producer_write_internal(
-		pstream, pbin->pb, 16)) {
+	if (!ftstream_producer_write_internal(pstream, pbin->pb, 16))
 		return FALSE;
-	}
 	ftstream_producer_try_recode_nbp(pstream);
 	return TRUE;
 }
@@ -282,15 +273,11 @@ static int ftstream_producer_write_propdef(FTSTREAM_PRODUCER *pstream,
 	}
 	
 	tmp_val = cpu_to_le16(proptype);
-	if (FALSE == ftstream_producer_write_internal(
-		pstream, &tmp_val, sizeof(uint16_t))) {
+	if (!ftstream_producer_write_internal(pstream, &tmp_val, sizeof(uint16_t)))
 		return -1;
-	}
 	tmp_val = cpu_to_le16(propid);
-	if (FALSE == ftstream_producer_write_internal(
-		pstream, &tmp_val, sizeof(uint16_t))) {
+	if (!ftstream_producer_write_internal(pstream, &tmp_val, sizeof(uint16_t)))
 		return -1;
-	}
 	if (!is_nameprop_id(propid)) {
 		ftstream_producer_try_recode_nbp(pstream);
 		return 0;
@@ -423,10 +410,9 @@ static BOOL ftstream_producer_write_propvalue(
 		if (!pstream->write_uint32(count))
 			return FALSE;
 		for (size_t i = 0; i < count; ++i) {
-			if (FALSE == ftstream_producer_write_uint16(pstream,
-				((SHORT_ARRAY*)ppropval->pvalue)->ps[i])) {
+			if (!ftstream_producer_write_uint16(pstream,
+			    static_cast<SHORT_ARRAY *>(ppropval->pvalue)->ps[i]))
 				return FALSE;
-			}
 		}
 		return TRUE;
 	case PT_MV_LONG:
@@ -445,10 +431,9 @@ static BOOL ftstream_producer_write_propvalue(
 		if (!pstream->write_uint32(count))
 			return FALSE;
 		for (size_t i = 0; i < count; ++i) {
-			if (FALSE == ftstream_producer_write_uint64(pstream,
-				((LONGLONG_ARRAY*)ppropval->pvalue)->pll[i])) {
+			if (!ftstream_producer_write_uint64(pstream,
+			    static_cast<LONGLONG_ARRAY *>(ppropval->pvalue)->pll[i]))
 				return FALSE;
-			}
 		}
 		return TRUE;
 	case PT_MV_FLOAT: {
@@ -475,10 +460,9 @@ static BOOL ftstream_producer_write_propvalue(
 		if (!pstream->write_uint32(count))
 			return FALSE;
 		for (size_t i = 0; i < count; ++i) {
-			if (FALSE == ftstream_producer_write_string(pstream,
-				((STRING_ARRAY*)ppropval->pvalue)->ppstr[i])) {
+			if (!ftstream_producer_write_string(pstream,
+			    static_cast<STRING_ARRAY *>(ppropval->pvalue)->ppstr[i]))
 				return FALSE;
-			}
 		}
 		return TRUE;
 	case PT_MV_UNICODE:
@@ -486,10 +470,9 @@ static BOOL ftstream_producer_write_propvalue(
 		if (!pstream->write_uint32(count))
 			return FALSE;
 		for (size_t i = 0; i < count; ++i) {
-			if (FALSE == ftstream_producer_write_wstring(pstream,
-				((STRING_ARRAY*)ppropval->pvalue)->ppstr[i])) {
+			if (!ftstream_producer_write_wstring(pstream,
+			    static_cast<STRING_ARRAY *>(ppropval->pvalue)->ppstr[i]))
 				return FALSE;
-			}
 		}
 		return TRUE;
 	case PT_MV_CLSID:
@@ -497,10 +480,9 @@ static BOOL ftstream_producer_write_propvalue(
 		if (!pstream->write_uint32(count))
 			return FALSE;
 		for (size_t i = 0; i < count; ++i) {
-			if (FALSE == ftstream_producer_write_guid(pstream,
-				((GUID_ARRAY*)ppropval->pvalue)->pguid + i)) {
+			if (!ftstream_producer_write_guid(pstream,
+			    &static_cast<GUID_ARRAY *>(ppropval->pvalue)->pguid[i]))
 				return FALSE;
-			}
 		}
 		return TRUE;
 	case PT_MV_BINARY:
@@ -508,10 +490,9 @@ static BOOL ftstream_producer_write_propvalue(
 		if (!pstream->write_uint32(count))
 			return FALSE;
 		for (size_t i = 0; i < count; ++i) {
-			if (FALSE == ftstream_producer_write_binary(pstream,
-				((BINARY_ARRAY*)ppropval->pvalue)->pbin + i)) {
+			if (!ftstream_producer_write_binary(pstream,
+			    &static_cast<BINARY_ARRAY *>(ppropval->pvalue)->pbin[i]))
 				return FALSE;
-			}
 		}
 		return TRUE;
 	}
@@ -524,10 +505,8 @@ BOOL ftstream_producer::write_proplist(const TPROPVAL_ARRAY *pproplist)
 	int i;
 	
 	for (i=0; i<pproplist->count; i++) {
-		if (FALSE == ftstream_producer_write_propvalue(
-			pstream, pproplist->ppropval + i)) {
+		if (!ftstream_producer_write_propvalue(pstream, &pproplist->ppropval[i]))
 			return FALSE;	
-		}
 	}
 	return TRUE;
 }
@@ -552,10 +531,9 @@ BOOL ftstream_producer::write_attachmentcontent(BOOL b_delprop,
 	if (!write_proplist(&pattachment->proplist))
 		return FALSE;	
 	if (NULL != pattachment->pembedded) {
-		if (FALSE == ftstream_producer_write_embeddedmessage(
-			pstream, b_delprop, pattachment->pembedded)) {
+		if (!ftstream_producer_write_embeddedmessage(pstream,
+		    b_delprop, pattachment->pembedded))
 			return FALSE;	
-		}
 	}
 	return TRUE;
 }
@@ -597,10 +575,9 @@ static BOOL ftstream_producer_write_messagechildren(
 	}
 	if (NULL != pchildren->prcpts) {
 		for (size_t i = 0; i < pchildren->prcpts->count; ++i) {
-			if (FALSE == ftstream_producer_write_recipient(
-				pstream, pchildren->prcpts->pparray[i])) {
+			if (!ftstream_producer_write_recipient(pstream,
+			    pchildren->prcpts->pparray[i]))
 				return FALSE;
-			}
 		}
 	}
 	if (b_delprop) {
@@ -612,10 +589,9 @@ static BOOL ftstream_producer_write_messagechildren(
 	if (pchildren->pattachments == nullptr)
 		return TRUE;
 	for (size_t i = 0; i < pchildren->pattachments->count; ++i) {
-		if (FALSE == ftstream_producer_write_attachment(pstream,
-		    b_delprop, pchildren->pattachments->pplist[i])) {
+		if (!ftstream_producer_write_attachment(pstream,
+		    b_delprop, pchildren->pattachments->pplist[i]))
 			return FALSE;
-		}
 	}
 	return TRUE;
 }
@@ -656,10 +632,8 @@ BOOL ftstream_producer::write_messagechangefull(
 	auto pstream = this;
 	if (!write_uint32(INCRSYNCCHG))
 		return FALSE;
-	if (FALSE == ftstream_producer_write_messagechangeheader(
-		pstream, pchgheader)) {
+	if (!ftstream_producer_write_messagechangeheader(pstream, pchgheader))
 		return FALSE;	
-	}
 	if (!write_uint32(INCRSYNCMESSAGE))
 		return FALSE;
 	if (!write_proplist(&pmessage->proplist))
@@ -735,20 +709,16 @@ BOOL ftstream_producer::write_messagechangepartial(
 {
 	auto pstream = this;
 	
-	if (FALSE == ftstream_producer_write_groupinfo(
-		pstream, pmsg->pgpinfo)) {
+	if (!ftstream_producer_write_groupinfo(pstream, pmsg->pgpinfo))
 		return FALSE;
-	}
 	if (!write_uint32(MetaTagIncrSyncGroupId))
 		return FALSE;
 	if (!write_uint32(pmsg->group_id))
 		return FALSE;	
 	if (!write_uint32(INCRSYNCCHGPARTIAL))
 		return FALSE;
-	if (FALSE == ftstream_producer_write_messagechangeheader(
-		pstream, pchgheader)) {
+	if (!ftstream_producer_write_messagechangeheader(pstream, pchgheader))
 		return FALSE;	
-	}
 	for (size_t i = 0; i < pmsg->count; ++i) {
 		if (!write_uint32(MetaTagIncrementalSyncMessagePartial))
 			return FALSE;
@@ -765,10 +735,9 @@ BOOL ftstream_producer::write_messagechangepartial(
 				if (!write_uint32(PR_MESSAGE_RECIPIENTS))
 					return FALSE;
 				for (size_t k = 0; k < pmsg->children.prcpts->count; ++k) {
-					if (FALSE == ftstream_producer_write_recipient(
-						pstream, pmsg->children.prcpts->pparray[k])) {
+					if (!ftstream_producer_write_recipient(pstream,
+					    pmsg->children.prcpts->pparray[k]))
 						return FALSE;
-					}
 				}
 				break;
 			case PR_MESSAGE_ATTACHMENTS:
@@ -780,17 +749,15 @@ BOOL ftstream_producer::write_messagechangepartial(
 				if (!write_uint32(PR_MESSAGE_ATTACHMENTS))
 					return FALSE;
 				for (size_t k = 0; k < pmsg->children.pattachments->count; ++k) {
-					if (FALSE == ftstream_producer_write_attachment(pstream,
-						TRUE, pmsg->children.pattachments->pplist[k])) {
+					if (!ftstream_producer_write_attachment(pstream,
+					    TRUE, pmsg->children.pattachments->pplist[k]))
 						return FALSE;
-					}
 				}
 				break;
 			default:
-				if (FALSE == ftstream_producer_write_propvalue(pstream,
-					pmsg->pchanges[i].proplist.ppropval + j)) {
+				if (!ftstream_producer_write_propvalue(pstream,
+				    &pmsg->pchanges[i].proplist.ppropval[j]))
 					return FALSE;	
-				}
 				break;
 			}
 		}
@@ -837,10 +804,8 @@ BOOL ftstream_producer::write_progresspermessage(const PROGRESS_MESSAGE *pprogms
 	if (!write_uint32(PT_BOOLEAN))
 		return FALSE;
 	uint16_t b_fai = !!pprogmsg->b_fai;
-	if (FALSE == ftstream_producer_write_uint16(
-		pstream, b_fai)) {
+	if (!ftstream_producer_write_uint16(pstream, b_fai))
 		return FALSE;
-	}
 	return TRUE;
 }
 
@@ -854,20 +819,14 @@ BOOL ftstream_producer::write_progresstotal(const PROGRESS_INFORMATION *pprogtot
 	/* binary length */
 	if (!write_uint32(32))
 		return FALSE;
-	if (FALSE == ftstream_producer_write_uint16(
-		pstream, pprogtotal->version)) {
+	if (!ftstream_producer_write_uint16(pstream, pprogtotal->version))
 		return FALSE;
-	}
-	if (FALSE == ftstream_producer_write_uint16(
-		pstream, pprogtotal->padding1)) {
+	if (!ftstream_producer_write_uint16(pstream, pprogtotal->padding1))
 		return FALSE;
-	}
 	if (!write_uint32(pprogtotal->fai_count))
 		return FALSE;
-	if (FALSE == ftstream_producer_write_uint64(
-		pstream, pprogtotal->fai_size)) {
+	if (!ftstream_producer_write_uint64(pstream, pprogtotal->fai_size))
 		return FALSE;
-	}
 	if (!write_uint32(pprogtotal->normal_count))
 		return FALSE;
 	if (!write_uint32(pprogtotal->padding2))
@@ -890,10 +849,9 @@ BOOL ftstream_producer::write_hierarchysync(
 {
 	auto pstream = this;
 	for (size_t i = 0; i < pfldchgs->count; ++i) {
-		if (FALSE == ftstream_producer_write_folderchange(
-			pstream, pfldchgs->pfldchgs + i)) {
+		if (!ftstream_producer_write_folderchange(pstream,
+		    &pfldchgs->pfldchgs[i]))
 			return FALSE;
-		}
 	}
 	if (pdels != nullptr && !write_deletions(pdels))
 		return FALSE;
@@ -946,7 +904,7 @@ BOOL ftstream_producer::read_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last)
 	auto pstream = this;
 	uint32_t cur_offset;
 	
-	if (FALSE == pstream->b_read) {
+	if (!pstream->b_read) {
 		auto pnode = pstream->bp_list.rbegin();
 		if (pnode == pstream->bp_list.rend() ||
 		    pnode->offset != pstream->offset)

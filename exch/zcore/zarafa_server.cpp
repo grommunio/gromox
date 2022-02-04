@@ -633,8 +633,7 @@ static void zarafa_server_notification_proc(const char *dir,
 			tv_msec = SOCKET_TIMEOUT * 1000;
 			fdpoll.fd = psink_node->clifd;
 			fdpoll.events = POLLOUT | POLLWRBAND;
-			if (FALSE == rpc_ext_push_response(
-				&response, &tmp_bin)) {
+			if (!rpc_ext_push_response(&response, &tmp_bin)) {
 				tmp_byte = zcore_response::PUSH_ERROR;
 				if (1 == poll(&fdpoll, 1, tv_msec)) {
 					write(psink_node->clifd, &tmp_byte, 1);
@@ -755,13 +754,10 @@ uint32_t zarafa_server_logon(const char *username,
 		g_user_table.erase(iter);
 	}
 	tl_hold.unlock();
-	if (FALSE == system_services_get_id_from_username(
-		username, &user_id) ||
+	if (!system_services_get_id_from_username(username, &user_id) ||
 	    !system_services_get_homedir(pdomain, homedir, arsizeof(homedir)) ||
-		FALSE == system_services_get_domain_ids(
-		pdomain, &domain_id, &org_id)) {
+	    !system_services_get_domain_ids(pdomain, &domain_id, &org_id))
 		return ecError;
-	}
 	if (password == nullptr &&
 	    (!system_services_get_maildir(username, maildir, arsizeof(maildir)) ||
 	    !system_services_get_user_lang(username, lang, arsizeof(lang))))
@@ -836,9 +832,8 @@ uint32_t zarafa_server_uinfo(const char *username, BINARY *pentryid,
 	
 	if (!system_services_get_user_displayname(username,
 	    display_name, arsizeof(display_name)) ||
-		FALSE == system_services_get_user_privilege_bits(
-		username, pprivilege_bits) || FALSE ==
-	    common_util_username_to_essdn(username, x500dn, GX_ARRAY_SIZE(x500dn)))
+	    !system_services_get_user_privilege_bits(username, pprivilege_bits) ||
+	    !common_util_username_to_essdn(username, x500dn, arsizeof(x500dn)))
 		return ecNotFound;
 	tmp_entryid.flags = 0;
 	tmp_entryid.provider_uid = muidEMSAB;
@@ -890,10 +885,9 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 	switch (type) {
 	case EITLT_PRIVATE_FOLDER:
 	case EITLT_PUBLIC_FOLDER: {
-		if (FALSE == common_util_from_folder_entryid(
-			entryid, &b_private, &account_id, &folder_id)) {
+		if (!common_util_from_folder_entryid(entryid,
+		    &b_private, &account_id, &folder_id))
 			break;
-		}
 		auto handle = pinfo->ptree->get_store_handle(b_private, account_id);
 		if (handle == INVALID_HANDLE)
 			return ecNullObject;
@@ -903,11 +897,9 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 	}
 	case EITLT_PRIVATE_MESSAGE:
 	case EITLT_PUBLIC_MESSAGE: {
-		if (FALSE == common_util_from_message_entryid(
-			entryid, &b_private, &account_id, &folder_id,
-			&message_id)) {
+		if (!common_util_from_message_entryid(entryid,
+		    &b_private, &account_id, &folder_id, &message_id))
 			break;
-		}
 		auto handle = pinfo->ptree->get_store_handle(b_private, account_id);
 		if (handle == INVALID_HANDLE)
 			return ecNullObject;
@@ -925,10 +917,9 @@ uint32_t zarafa_server_openentry(GUID hsession, BINARY entryid,
 	} else {
 		return ecInvalidParam;
 	}
-	if (FALSE == common_util_exmdb_locinfo_from_string(
-		essdn + 7, &loc_type, &user_id, &eid)) {
+	if (!common_util_exmdb_locinfo_from_string(essdn + 7,
+	    &loc_type, &user_id, &eid))
 		return ecNotFound;
-	}
 	switch (loc_type) {
 	case LOC_TYPE_PRIVATE_FOLDER:
 	case LOC_TYPE_PRIVATE_MESSAGE:
@@ -1010,10 +1001,9 @@ uint32_t zarafa_server_openstoreentry(GUID hsession,
 		} else {
 			return ecInvalidParam;
 		}
-		if (FALSE == common_util_exmdb_locinfo_from_string(
-			essdn + 7, &loc_type, &account_id, &eid)) {
+		if (!common_util_exmdb_locinfo_from_string(essdn + 7,
+		    &loc_type, &account_id, &eid))
 			return ecNotFound;
-		}
 		switch (loc_type) {
 		case LOC_TYPE_PRIVATE_FOLDER:
 			b_private = TRUE;
@@ -1181,12 +1171,11 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			container_id.abtree_id.base_id = base_id;
 			container_id.abtree_id.minid = 0;
 		} else if (strncmp(essdn, "/exmdb=", 7) == 0) {
-			if (FALSE == common_util_exmdb_locinfo_from_string(
+			if (!common_util_exmdb_locinfo_from_string(
 			    essdn + 7, &loc_type, &user_id,
 			    &container_id.exmdb_id.folder_id) ||
-			    LOC_TYPE_PRIVATE_FOLDER != loc_type) {
+			    loc_type != LOC_TYPE_PRIVATE_FOLDER)
 				return ecNotFound;
-			}
 			container_id.exmdb_id.b_private = TRUE;
 			type = CONTAINER_TYPE_FOLDER;
 		} else {
@@ -1243,10 +1232,8 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			return ecError;
 		*pmapi_type = ZMG_ABCONT;
 	} else if (address_type == DT_DISTLIST || address_type == DT_MAILUSER) {
-		if (FALSE == common_util_essdn_to_ids(
-		    essdn, &domain_id, &user_id)) {
+		if (!common_util_essdn_to_ids(essdn, &domain_id, &user_id))
 			return ecNotFound;
-		}
 		if (domain_id != pinfo->domain_id && FALSE ==
 		    system_services_check_same_org(domain_id,
 		    pinfo->domain_id)) {
@@ -1443,10 +1430,8 @@ uint32_t zarafa_server_openstore(GUID hsession,
 	if (store_entryid.wrapped_provider_uid == g_muidStorePublic) {
 		*phobject = pinfo->ptree->get_store_handle(false, pinfo->domain_id);
 	} else {
-		if (FALSE == common_util_essdn_to_uid(
-			store_entryid.pmailbox_dn, &user_id)) {
+		if (!common_util_essdn_to_uid(store_entryid.pmailbox_dn, &user_id))
 			return ecNotFound;
-		}
 		if (pinfo->user_id != user_id) {
 			if (!system_services_get_username_from_id(user_id,
 			    username, GX_ARRAY_SIZE(username)) ||
@@ -1740,11 +1725,9 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 	if (ids.pids == nullptr)
 		return ecError;
 	for (size_t i = 0; i < pentryids->count; ++i) {
-		if (FALSE == common_util_from_message_entryid(
-			pentryids->pbin[i], &b_private, &account_id,
-			&folder_id, &message_id)) {
+		if (!common_util_from_message_entryid(pentryids->pbin[i],
+		    &b_private, &account_id, &folder_id, &message_id))
 			return ecError;
-		}
 		if (b_private != pstore->b_private ||
 		    account_id != pstore->account_id ||
 		    folder_id != pfolder->folder_id)
@@ -1752,7 +1735,7 @@ uint32_t zarafa_server_deletemessages(GUID hsession,
 		ids.pids[ids.count++] = message_id;
 	}
 	BOOL b_hard = (flags & FLAG_HARD_DELETE) ? false : TRUE; /* XXX */
-	if (FALSE == notify_non_read) {
+	if (!notify_non_read) {
 		if (!exmdb_client::delete_messages(pstore->get_dir(),
 		    pstore->account_id, pinfo->cpid, username,
 		    pfolder->folder_id, &ids, b_hard, &b_partial))
@@ -1832,7 +1815,7 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 	auto pstore1 = pdst_folder->pstore;
 	BOOL b_copy = (flags & FLAG_MOVE) ? false : TRUE;
 	if (pstore != pstore1) {
-		if (FALSE == b_copy) {
+		if (!b_copy) {
 			b_guest = FALSE;
 			if (!pstore->check_owner_mode()) {
 				if (!exmdb_client::check_folder_permission(pstore->get_dir(),
@@ -1854,11 +1837,9 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 				return ecAccessDenied;
 		}
 		for (size_t i = 0; i < pentryids->count; ++i) {
-			if (FALSE == common_util_from_message_entryid(
-				pentryids->pbin[i], &b_private, &account_id,
-				&folder_id, &message_id)) {
+			if (!common_util_from_message_entryid(pentryids->pbin[i],
+			    &b_private, &account_id, &folder_id, &message_id))
 				return ecError;
-			}
 			if (b_private != pstore->b_private ||
 			    account_id != pstore->account_id ||
 			    folder_id != psrc_folder->folder_id)
@@ -1868,7 +1849,7 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 			if (err != GXERR_SUCCESS) {
 				return gxerr_to_hresult(err);
 			}
-			if (FALSE == b_copy) {
+			if (!b_copy) {
 				if (b_guest) {
 					if (!exmdb_client_check_message_owner(pstore->get_dir(),
 					    message_id, pinfo->get_username(), &b_owner))
@@ -1889,11 +1870,9 @@ uint32_t zarafa_server_copymessages(GUID hsession,
 	if (ids.pids == nullptr)
 		return ecError;
 	for (size_t i = 0; i < pentryids->count; ++i) {
-		if (FALSE == common_util_from_message_entryid(
-			pentryids->pbin[i], &b_private, &account_id,
-			&folder_id, &message_id)) {
+		if (!common_util_from_message_entryid(pentryids->pbin[i],
+		    &b_private, &account_id, &folder_id, &message_id))
 			return ecError;
-		}
 		if (b_private != pstore->b_private ||
 		    account_id != pstore->account_id ||
 		    folder_id != psrc_folder->folder_id)
@@ -1990,11 +1969,9 @@ uint32_t zarafa_server_setreadflags(GUID hsession,
 		}
 	}
 	for (size_t i = 0; i < pentryids->count; ++i) {
-		if (FALSE == common_util_from_message_entryid(
-			pentryids->pbin[i], &b_private, &account_id,
-			&folder_id, &message_id)) {
+		if (!common_util_from_message_entryid(pentryids->pbin[i],
+		    &b_private, &account_id, &folder_id, &message_id))
 			return ecError;
-		}
 		if (b_private != pstore->b_private ||
 		    account_id != pstore->account_id ||
 		    folder_id != pfolder->folder_id)
@@ -2196,10 +2173,9 @@ uint32_t zarafa_server_deletefolder(GUID hsession,
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	auto pstore = pfolder->pstore;
-	if (FALSE == common_util_from_folder_entryid(
-		entryid, &b_private, &account_id, &folder_id)) {
+	if (!common_util_from_folder_entryid(entryid,
+	    &b_private, &account_id, &folder_id))
 		return ecError;
-	}
 	if (b_private != pstore->b_private || account_id != pstore->account_id)
 		return ecInvalidParam;
 	if (pstore->b_private) {
@@ -2317,10 +2293,9 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 	if (mapi_type != ZMG_FOLDER)
 		return ecNotSupported;
 	auto pstore = psrc_parent->pstore;
-	if (FALSE == common_util_from_folder_entryid(
-		entryid, &b_private, &account_id, &folder_id)) {
+	if (!common_util_from_folder_entryid(entryid,
+	    &b_private, &account_id, &folder_id))
 		return ecError;
-	}
 	if (b_private != pstore->b_private || account_id != pstore->account_id)
 		return ecInvalidParam;
 	auto pdst_folder = pinfo->ptree->get_object<folder_object>(hdst_folder, &mapi_type);
@@ -2367,7 +2342,7 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 		if (err != GXERR_SUCCESS) {
 			return gxerr_to_hresult(err);
 		}
-		if (FALSE == b_copy) {
+		if (!b_copy) {
 			if (!exmdb_client::empty_folder(pstore->get_dir(),
 			    pinfo->cpid, username, folder_id, false, TRUE,
 			    TRUE, TRUE, &b_partial))
@@ -2456,10 +2431,8 @@ uint32_t zarafa_server_entryidfromsourcekey(
 		return ecNullObject;
 	if (mapi_type != ZMG_STORE)
 		return ecNotSupported;
-	if (FALSE == common_util_binary_to_xid(
-		&folder_key, &tmp_xid)) {
+	if (!common_util_binary_to_xid(&folder_key, &tmp_xid))
 		return ecNotSupported;
-	}
 	if (pstore->b_private) {
 		auto tmp_guid = rop_util_make_user_guid(pstore->account_id);
 		if (0 != memcmp(&tmp_guid, &tmp_xid.guid, sizeof(GUID))) {
@@ -2487,10 +2460,8 @@ uint32_t zarafa_server_entryidfromsourcekey(
 		folder_id = rop_util_make_eid(replid, tmp_xid.local_to_gc());
 	}
 	if (NULL != pmessage_key) {
-		if (FALSE == common_util_binary_to_xid(
-			pmessage_key, &tmp_xid)) {
+		if (!common_util_binary_to_xid(pmessage_key, &tmp_xid))
 			return ecNotSupported;
-		}
 		if (pstore->b_private) {
 			auto tmp_guid = rop_util_make_user_guid(pstore->account_id);
 			if (0 != memcmp(&tmp_guid, &tmp_xid.guid, sizeof(GUID))) {
@@ -2544,18 +2515,15 @@ uint32_t zarafa_server_storeadvise(GUID hsession,
 		switch (type) {
 		case EITLT_PRIVATE_FOLDER:
 		case EITLT_PUBLIC_FOLDER:
-			if (FALSE == common_util_from_folder_entryid(
-				*pentryid, &b_private, &account_id, &folder_id)) {
+			if (!common_util_from_folder_entryid(*pentryid,
+			    &b_private, &account_id, &folder_id))
 				return ecError;
-			}
 			break;
 		case EITLT_PRIVATE_MESSAGE:
 		case EITLT_PUBLIC_MESSAGE:
-			if (FALSE == common_util_from_message_entryid(
-				*pentryid, &b_private, &account_id,
-				&folder_id, &message_id)) {
+			if (!common_util_from_message_entryid(*pentryid,
+			    &b_private, &account_id, &folder_id, &message_id))
 				return ecError;
-			}
 			break;
 		default:
 			return ecNotFound;
@@ -3160,9 +3128,8 @@ uint32_t zarafa_server_getreceivefolder(GUID hsession,
 	
 	if (pstrclass == nullptr)
 		pstrclass = "";
-	if (FALSE == common_util_check_message_class(pstrclass)) {
+	if (!common_util_check_message_class(pstrclass))
 		return ecInvalidParam;
-	}
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
 		return ecError;
@@ -4364,14 +4331,13 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	if (pctx->get_type() != SYNC_TYPE_CONTENTS)
 		return ecNotSupported;
 	auto folder_id = pctx->get_parent_folder_id();
-	if (FALSE == b_new) {
+	if (!b_new) {
 		pbin = pproplist->get<BINARY>(PR_SOURCE_KEY);
 		if (pbin == nullptr || pbin->cb != 22) {
 			return ecInvalidParam;
 		}
-		if (FALSE == common_util_binary_to_xid(pbin, &tmp_xid)) {
+		if (!common_util_binary_to_xid(pbin, &tmp_xid))
 			return ecError;
-		}
 		auto tmp_guid = pstore->guid();
 		if (tmp_guid != tmp_xid.guid)
 			return ecInvalidParam;
@@ -4414,7 +4380,7 @@ uint32_t zarafa_server_importmessage(GUID hsession, uint32_t hctx,
 	} else {
 		tag_access = MAPI_ACCESS_MODIFY | MAPI_ACCESS_READ | MAPI_ACCESS_DELETE;
 	}
-	if (FALSE == b_new) {
+	if (!b_new) {
 		if (!exmdb_client_get_message_property(pstore->get_dir(),
 		    nullptr, 0, message_id, PR_ASSOCIATED, &pvalue))
 			return ecError;
@@ -4515,9 +4481,8 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 		if (pbin == nullptr || pbin->cb != 22) {
 			return ecInvalidParam;
 		}
-		if (FALSE == common_util_binary_to_xid(pbin, &tmp_xid)) {
+		if (!common_util_binary_to_xid(pbin, &tmp_xid))
 			return ecError;
-		}
 		if (pstore->b_private) {
 			auto tmp_guid = rop_util_make_user_guid(pstore->account_id);
 			if (tmp_guid != tmp_xid.guid)
@@ -4538,9 +4503,8 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 	if (pbin == nullptr || pbin->cb != 22) {
 		return ecInvalidParam;
 	}
-	if (FALSE == common_util_binary_to_xid(pbin, &tmp_xid)) {
+	if (!common_util_binary_to_xid(pbin, &tmp_xid))
 		return ecError;
-	}
 	if (pstore->b_private) {
 		auto tmp_guid = rop_util_make_user_guid(pstore->account_id);
 		if (tmp_guid != tmp_xid.guid)
@@ -4567,7 +4531,7 @@ uint32_t zarafa_server_importfolder(GUID hsession,
 	}
 	if (!exmdb_client::check_folder_id(pstore->get_dir(), folder_id, &b_exist))
 		return ecError;
-	if (FALSE == b_exist) {
+	if (!b_exist) {
 		if (!pstore->check_owner_mode()) {
 			if (!exmdb_client::check_folder_permission(pstore->get_dir(),
 			    parent_id1, pinfo->get_username(), &permission))
@@ -4730,10 +4694,8 @@ uint32_t zarafa_server_importdeletion(GUID hsession,
 		if (22 != pbins->pbin[i].cb) {
 			return ecInvalidParam;
 		}
-		if (FALSE == common_util_binary_to_xid(
-			pbins->pbin + i, &tmp_xid)) {
+		if (!common_util_binary_to_xid(&pbins->pbin[i], &tmp_xid))
 			return ecError;
-		}
 		if (pstore->b_private) {
 			auto tmp_guid = rop_util_make_user_guid(pstore->account_id);
 			if (tmp_guid != tmp_xid.guid)
@@ -4851,10 +4813,9 @@ uint32_t zarafa_server_importreadstates(GUID hsession,
 			username = pinfo->get_username();
 	}
 	for (size_t i = 0; i < pstates->count; ++i) {
-		if (FALSE == common_util_binary_to_xid(
-			&pstates->pstate[i].source_key, &tmp_xid)) {
+		if (!common_util_binary_to_xid(
+		    &pstates->pstate[i].source_key, &tmp_xid))
 			return ecNotSupported;
-		}
 		auto tmp_guid = pstore->guid();
 		if (tmp_guid != tmp_xid.guid)
 			continue;
@@ -4993,11 +4954,9 @@ uint32_t zarafa_server_setsearchcriteria(
 	if (folder_ids.pll == nullptr)
 		return ecError;
 	for (size_t i = 0; i < pfolder_array->count; ++i) {
-		if (FALSE == common_util_from_folder_entryid(
-			pfolder_array->pbin[i], &b_private,
-			&db_id, &folder_ids.pll[i])) {
+		if (!common_util_from_folder_entryid(pfolder_array->pbin[i],
+		    &b_private, &db_id, &folder_ids.pll[i]))
 			return ecError;
-		}
 		if (!b_private || db_id != pstore->account_id)
 			return ecSearchFolderScopeViolation;
 		if (!pstore->check_owner_mode()) {

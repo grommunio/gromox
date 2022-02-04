@@ -57,9 +57,8 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 	if (!exmdb_client_check_message(plogon->get_dir(), folder_id,
 	    message_id, &b_exist))
 		return ecError;
-	if (FALSE == b_exist) {
+	if (!b_exist)
 		return ecNotFound;
-	}
 	if (!exmdb_client_get_message_property(plogon->get_dir(), nullptr, 0,
 	    message_id, PidTagFolderId, &pvalue) || pvalue == nullptr)
 		return ecError;
@@ -150,11 +149,9 @@ uint32_t rop_openmessage(uint16_t cpid, uint64_t folder_id,
 		}
 	}
 	for (size_t i = 0; i < rcpts.count; ++i) {
-		if (FALSE == common_util_propvals_to_openrecipient(
-			cpid, rcpts.pparray[i], pcolumns,
-			(*pprecipient_row) + i)) {
+		if (!common_util_propvals_to_openrecipient(cpid,
+		    rcpts.pparray[i], pcolumns, &(*pprecipient_row)[i]))
 			return ecMAPIOOM;
-		}
 	}
 	auto hnd = rop_processor_add_object_handle(plogmap,
 	           logon_id, hin, OBJECT_TYPE_MESSAGE, pmessage.get());
@@ -377,10 +374,9 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
 			ppropvals->ppropval->proptag = PR_ROWID;
 			ppropvals->ppropval->pvalue = (void*)&prow[i].row_id;
 		} else {
-			if (FALSE == common_util_modifyrecipient_to_propvals(
-				pinfo->cpid, prow + i, pproptags, ppropvals)) {
+			if (!common_util_modifyrecipient_to_propvals(pinfo->cpid,
+			    &prow[i], pproptags, ppropvals))
 				return ecMAPIOOM;
-			}
 		}
 		tmp_set.pparray[i] = ppropvals;
 	}
@@ -674,10 +670,8 @@ uint32_t rop_setreadflags(uint8_t want_asynchronous, uint8_t read_flags,
 		return ecNotSupported;
 	b_partial = FALSE;
 	for (size_t i = 0; i < pmessage_ids->count; ++i) {
-		if (FALSE == oxcmsg_setreadflag(plogon,
-			pmessage_ids->pll[i], read_flags)) {
+		if (!oxcmsg_setreadflag(plogon, pmessage_ids->pll[i], read_flags))
 			b_partial = TRUE;	
-		}
 	}
 	*ppartial_completion = !!b_partial;
 	return ecSuccess;

@@ -94,10 +94,8 @@ gxerr_t attachment_object::save()
 	TAGGED_PROPVAL tmp_propval;
 	TPROPVAL_ARRAY tmp_propvals;
 	
-	if (FALSE == pattachment->b_writable ||
-		FALSE == pattachment->b_touched) {
+	if (!pattachment->b_writable || !pattachment->b_touched)
 		return GXERR_SUCCESS;
-	}
 	tmp_propvals.count = 1;
 	tmp_propvals.ppropval = &tmp_propval;
 	tmp_propval.proptag = PR_LAST_MODIFICATION_TIME;

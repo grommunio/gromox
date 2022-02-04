@@ -231,10 +231,9 @@ static BOOL store_object_get_named_propid(store_object *pstore,
 		*ppropid = iter->second;
 		return TRUE;
 	}
-	if (FALSE == exmdb_client_get_named_propid(
-		pstore->dir, b_create, ppropname, ppropid)) {
+	if (!exmdb_client_get_named_propid(pstore->dir,
+	    b_create, ppropname, ppropid))
 		return FALSE;
-	}
 	if (0 == *ppropid) {
 		return TRUE;
 	}
