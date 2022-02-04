@@ -626,43 +626,41 @@ static void *mdpeng_thrwork(void *param)
 			    pfolder_ids->pids[i], psearch->prestriction))
 				break;	
 		}
-		if (!g_notify_stop) {
-			auto pdb = db_engine_get_db(psearch->dir);
-			if (NULL != pdb) {
-				if (NULL != pdb->psqlite) {
-					exmdb_server_build_environment(
-						FALSE, TRUE, psearch->dir);
-					auto cl_2 = make_scope_exit([&]() { exmdb_server_free_environment(); });
-					db_engine_notify_search_completion(
-						pdb, psearch->folder_id);
-					db_engine_notify_folder_modification(pdb,
-						common_util_get_folder_parent_fid(
-						pdb->psqlite, psearch->folder_id),
-						psearch->folder_id);
-					std::vector<uint32_t> table_ids;
-					try {
-						table_ids.reserve(double_list_get_nodes_num(&pdb->tables.table_list));
-					} catch (const std::bad_alloc &) {
-						fprintf(stderr, "E-1649: ENOMEM\n");
-					}
-					DOUBLE_LIST_NODE *pnode;
-							for (pnode=double_list_get_head(
-								&pdb->tables.table_list); NULL!=pnode;
-								pnode=double_list_get_after(
-								&pdb->tables.table_list, pnode)) {
-								ptable = (TABLE_NODE*)pnode->pdata;
-								if (TABLE_TYPE_CONTENT == ptable->type &&
-									psearch->folder_id == ptable->folder_id) {
-									table_ids.push_back(ptable->table_id);
-								}
-							}
-					pdb.reset();
-					while (table_ids.size() > 0) {
-						exmdb_server_reload_content_table(psearch->dir, table_ids.back());
-						table_ids.pop_back();
-					}
-				}
+		if (g_notify_stop)
+			break;
+		auto pdb = db_engine_get_db(psearch->dir);
+		if (pdb == nullptr || pdb->psqlite == nullptr)
+			goto NEXT_SEARCH;
+		exmdb_server_build_environment(
+			FALSE, TRUE, psearch->dir);
+		auto cl_2 = make_scope_exit([&]() { exmdb_server_free_environment(); });
+		db_engine_notify_search_completion(
+			pdb, psearch->folder_id);
+		db_engine_notify_folder_modification(pdb,
+			common_util_get_folder_parent_fid(
+			pdb->psqlite, psearch->folder_id),
+			psearch->folder_id);
+		std::vector<uint32_t> table_ids;
+		try {
+			table_ids.reserve(double_list_get_nodes_num(&pdb->tables.table_list));
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1649: ENOMEM\n");
+		}
+		DOUBLE_LIST_NODE *pnode;
+		for (pnode = double_list_get_head(
+		     &pdb->tables.table_list); NULL != pnode;
+		     pnode = double_list_get_after(
+		     &pdb->tables.table_list, pnode)) {
+			ptable = (TABLE_NODE *)pnode->pdata;
+			if (TABLE_TYPE_CONTENT == ptable->type &&
+			    psearch->folder_id == ptable->folder_id) {
+				table_ids.push_back(ptable->table_id);
 			}
+		}
+		pdb.reset();
+		while (table_ids.size() > 0) {
+			exmdb_server_reload_content_table(psearch->dir, table_ids.back());
+			table_ids.pop_back();
 		}
 		goto NEXT_SEARCH;
 	}
