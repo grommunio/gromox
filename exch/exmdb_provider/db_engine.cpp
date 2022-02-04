@@ -579,9 +579,7 @@ static void db_engine_notify_search_completion(db_item_ptr &pdb, uint64_t folder
 
 static void *mdpeng_thrwork(void *param)
 {
-	int table_num;
 	TABLE_NODE *ptable;
-	uint32_t *ptable_ids = nullptr;
 	DOUBLE_LIST_NODE *pnode;
 	
 	while (!g_notify_stop) {
@@ -641,12 +639,13 @@ static void *mdpeng_thrwork(void *param)
 						common_util_get_folder_parent_fid(
 						pdb->psqlite, psearch->folder_id),
 						psearch->folder_id);
-					table_num = double_list_get_nodes_num(
-								&pdb->tables.table_list);
-					if (table_num > 0) {
-						ptable_ids = cu_alloc<uint32_t>(table_num);
-						if (NULL != ptable_ids) {
-							table_num = 0;
+					std::vector<uint32_t> table_ids;
+					try {
+						table_ids.reserve(double_list_get_nodes_num(&pdb->tables.table_list));
+					} catch (const std::bad_alloc &) {
+						fprintf(stderr, "E-1649: ENOMEM\n");
+					}
+					DOUBLE_LIST_NODE *pnode;
 							for (pnode=double_list_get_head(
 								&pdb->tables.table_list); NULL!=pnode;
 								pnode=double_list_get_after(
@@ -654,16 +653,13 @@ static void *mdpeng_thrwork(void *param)
 								ptable = (TABLE_NODE*)pnode->pdata;
 								if (TABLE_TYPE_CONTENT == ptable->type &&
 									psearch->folder_id == ptable->folder_id) {
-									ptable_ids[table_num++] = ptable->table_id;
+									table_ids.push_back(ptable->table_id);
 								}
 							}
-						}
-					}
 					pdb.reset();
-					if (ptable_ids != nullptr) while (table_num > 0) {
-						table_num --;
-						exmdb_server_reload_content_table(
-							psearch->dir, ptable_ids[table_num]);
+					while (table_ids.size() > 0) {
+						exmdb_server_reload_content_table(psearch->dir, table_ids.back());
+						table_ids.pop_back();
 					}
 				}
 			}
