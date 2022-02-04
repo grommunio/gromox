@@ -377,8 +377,6 @@ static BOOL db_engine_search_folder(const char *dir,
 	const RESTRICTION *prestriction)
 {
 	char sql_string[128];
-	EID_ARRAY *pmessage_ids;
-	
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
@@ -405,19 +403,20 @@ static BOOL db_engine_search_folder(const char *dir,
 	if (pstmt == nullptr) {
 		return FALSE;
 	}
-	pmessage_ids = eid_array_init();
+	auto pmessage_ids = eid_array_init();
 	if (NULL == pmessage_ids) {
 		return FALSE;
 	}
+	auto cl_0 = make_scope_exit([&]() { eid_array_free(pmessage_ids); });
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
 		if (!eid_array_append(pmessage_ids,
 		    sqlite3_column_int64(pstmt, 0))) {
-			eid_array_free(pmessage_ids);
 			return FALSE;
 		}
 	}
 	pstmt.finalize();
 	exmdb_server_build_environment(FALSE, TRUE, dir);
+	auto cl_2 = make_scope_exit([&]() { exmdb_server_free_environment(); });
 	for (size_t i = 0, count = 0; i < pmessage_ids->count; ++i, ++count) {
 		if (g_notify_stop)
 			break;
@@ -427,7 +426,6 @@ static BOOL db_engine_search_folder(const char *dir,
 			sleep(1);
 			pdb = db_engine_get_db(dir);
 			if (pdb == nullptr || pdb->psqlite == nullptr) {
-				eid_array_free(pmessage_ids);
 				return FALSE;
 			}
 			exmdb_server_build_environment(FALSE, TRUE, dir);
@@ -444,9 +442,6 @@ static BOOL db_engine_search_folder(const char *dir,
 					pmessage_ids->pids[i], 0);
 		}
 	}
-	pdb.reset();
-	exmdb_server_free_environment();
-	eid_array_free(pmessage_ids);
 	return TRUE;
 }
 
@@ -587,9 +582,7 @@ static void *mdpeng_thrwork(void *param)
 	int table_num;
 	TABLE_NODE *ptable;
 	uint32_t *ptable_ids = nullptr;
-	EID_ARRAY *pfolder_ids;
 	DOUBLE_LIST_NODE *pnode;
-	POPULATING_NODE *psearch;
 	
 	while (!g_notify_stop) {
 		std::unique_lock chold(g_cond_mutex);
@@ -607,17 +600,16 @@ static void *mdpeng_thrwork(void *param)
 		if (NULL == pnode) {
 			continue;
 		}
-		psearch = (POPULATING_NODE*)pnode->pdata;
-		pfolder_ids = eid_array_init();
+		auto psearch = static_cast<POPULATING_NODE *>(pnode->pdata);
+		auto cl_0 = make_scope_exit([&]() { db_engine_free_populating_node(psearch); });
+		auto pfolder_ids = eid_array_init();
 		if (NULL == pfolder_ids) {
-			db_engine_free_populating_node(psearch);
 			goto NEXT_SEARCH;	
 		}
+		auto cl_1 = make_scope_exit([&]() { eid_array_free(pfolder_ids); });
 		for (size_t i = 0; i < psearch->folder_ids.count; ++i) {
 			if (!eid_array_append(pfolder_ids,
 			    psearch->folder_ids.pll[i])) {
-				eid_array_free(pfolder_ids);
-				db_engine_free_populating_node(psearch);
 				goto NEXT_SEARCH;	
 			}
 			if (!psearch->b_recursive)
@@ -625,8 +617,6 @@ static void *mdpeng_thrwork(void *param)
 			if (!db_engine_load_folder_descendant(
 				psearch->dir, psearch->b_recursive,
 				psearch->folder_ids.pll[i], pfolder_ids)) {
-				eid_array_free(pfolder_ids);
-				db_engine_free_populating_node(psearch);
 				goto NEXT_SEARCH;
 			}
 		}
@@ -644,6 +634,7 @@ static void *mdpeng_thrwork(void *param)
 				if (NULL != pdb->psqlite) {
 					exmdb_server_build_environment(
 						FALSE, TRUE, psearch->dir);
+					auto cl_2 = make_scope_exit([&]() { exmdb_server_free_environment(); });
 					db_engine_notify_search_completion(
 						pdb, psearch->folder_id);
 					db_engine_notify_folder_modification(pdb,
@@ -674,14 +665,9 @@ static void *mdpeng_thrwork(void *param)
 						exmdb_server_reload_content_table(
 							psearch->dir, ptable_ids[table_num]);
 					}
-					exmdb_server_free_environment();
-				} else {
-					pdb.reset();
 				}
 			}
 		}
-		eid_array_free(pfolder_ids);
-		db_engine_free_populating_node(psearch);
 		goto NEXT_SEARCH;
 	}
 	return nullptr;

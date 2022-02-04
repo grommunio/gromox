@@ -61,6 +61,8 @@ void exmdb_server_build_environment(BOOL b_local,
 void exmdb_server_free_environment()
 {
 	auto pctx = g_env_key;
+	if (pctx == nullptr)
+		return;
 	if (!pctx->b_local)
 		alloc_context_free(&pctx->alloc_ctx);
 	g_env_key = nullptr;
