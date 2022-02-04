@@ -415,8 +415,6 @@ static BOOL db_engine_search_folder(const char *dir,
 		}
 	}
 	pstmt.finalize();
-	exmdb_server_build_environment(FALSE, TRUE, dir);
-	auto cl_2 = make_scope_exit([&]() { exmdb_server_free_environment(); });
 	for (size_t i = 0, count = 0; i < pmessage_ids->count; ++i, ++count) {
 		if (g_notify_stop)
 			break;
@@ -424,11 +422,11 @@ static BOOL db_engine_search_folder(const char *dir,
 			pdb.reset();
 			exmdb_server_free_environment();
 			sleep(1);
+			exmdb_server_build_environment(FALSE, TRUE, dir);
 			pdb = db_engine_get_db(dir);
 			if (pdb == nullptr || pdb->psqlite == nullptr) {
 				return FALSE;
 			}
-			exmdb_server_build_environment(FALSE, TRUE, dir);
 			count = 0;
 		}
 		if (common_util_evaluate_message_restriction(
@@ -605,6 +603,8 @@ static void *mdpeng_thrwork(void *param)
 			goto NEXT_SEARCH;	
 		}
 		auto cl_1 = make_scope_exit([&]() { eid_array_free(pfolder_ids); });
+		exmdb_server_build_environment(false, TRUE, psearch->dir);
+		auto cl_2 = make_scope_exit([&]() { exmdb_server_free_environment(); });
 		for (size_t i = 0; i < psearch->folder_ids.count; ++i) {
 			if (!eid_array_append(pfolder_ids,
 			    psearch->folder_ids.pll[i])) {
@@ -631,9 +631,6 @@ static void *mdpeng_thrwork(void *param)
 		auto pdb = db_engine_get_db(psearch->dir);
 		if (pdb == nullptr || pdb->psqlite == nullptr)
 			goto NEXT_SEARCH;
-		exmdb_server_build_environment(
-			FALSE, TRUE, psearch->dir);
-		auto cl_2 = make_scope_exit([&]() { exmdb_server_free_environment(); });
 		db_engine_notify_search_completion(
 			pdb, psearch->folder_id);
 		db_engine_notify_folder_modification(pdb,
