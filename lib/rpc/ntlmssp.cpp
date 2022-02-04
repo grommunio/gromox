@@ -325,19 +325,19 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 	va_start(ap, format);
 	for (i=0; format[i]; i++) {
 		switch (format[i]) {
-		case 'U':
+		case 'U': {
 			s = va_arg(ap, char*);
 			head_size += 8;
-			blobs[i].length = ntlmssp_utf8_to_utf16le(s, buffs[i],
-								sizeof(buffs[i]));
-			if (blobs[i].length < 0) {
+			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], arsizeof(buffs[i]));
+			if (ret < 0) {
 				va_end(ap);
 				return false;
 			}
-			
+			blobs[i].length = ret;
 			blobs[i].data = buffs[i];
 			data_size += blobs[i].length;
 			break;
+		}
 		case 'A':
 			s = va_arg(ap, char*);
 			head_size += 8;
@@ -345,19 +345,20 @@ static bool ntlmssp_gen_packet(DATA_BLOB *pblob, const char *format, ...)
 			blobs[i].length = strlen(s);
 			data_size += blobs[i].length;
 			break;
-		case 'a':
+		case 'a': {
 			j = va_arg(ap, int);
 			intargs[i] = j;
 			s = va_arg(ap, char*);
-			blobs[i].length = ntlmssp_utf8_to_utf16le(s, buffs[i],
-								sizeof(buffs[i]));
-			if (blobs[i].length < 0) {
+			auto ret = ntlmssp_utf8_to_utf16le(s, buffs[i], arsizeof(buffs[i]));
+			if (ret < 0) {
 				va_end(ap);
 				return false;
 			}
+			blobs[i].length = ret;
 			blobs[i].data = buffs[i];
 			data_size += blobs[i].length + 4;
 			break;
+		}
 		case 'B':
 			b = va_arg(ap, uint8_t*);
 			head_size += 8;
