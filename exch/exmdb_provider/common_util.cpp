@@ -4889,46 +4889,46 @@ BOOL common_util_copy_message(sqlite3 *psqlite, int account_id,
 	    FALSE, message_id, folder_id, pdst_mid, pb_result,
 	    &change_num, pmessage_size))
 		return FALSE;
-	if (*pb_result) {
-		if (!cu_get_property(db_table::folder_props,
-			folder_id, 0, psqlite, PROP_TAG_ARTICLENUMBERNEXT, &pvalue)) {
-			return FALSE;
-		}
-		if (NULL == pvalue) {
-			pvalue = deconst(&fake_uid);
-		}
-		next = *(uint32_t*)pvalue + 1;
-		tmp_propval.proptag = PROP_TAG_ARTICLENUMBERNEXT;
-		tmp_propval.pvalue = &next;
-		if (!cu_set_property(db_table::folder_props,
-			folder_id, 0, psqlite, &tmp_propval, &b_result)) {
-			return FALSE;	
-		}
-		propval_buff[0].proptag = PR_CHANGE_KEY;
-		propval_buff[0].pvalue = cu_xid_to_bin({
-			exmdb_server_check_private() ?
-				rop_util_make_user_guid(account_id) :
-				rop_util_make_domain_guid(account_id),
-			change_num});
-		if (NULL == propval_buff[0].pvalue) {
-			return FALSE;
-		}
-		propval_buff[1].proptag = PR_PREDECESSOR_CHANGE_LIST;
-		propval_buff[1].pvalue = common_util_pcl_append(nullptr, static_cast<BINARY *>(propval_buff[0].pvalue));
-		if (NULL == propval_buff[1].pvalue) {
-			return FALSE;
-		}
-		propval_buff[2].proptag = PR_INTERNET_ARTICLE_NUMBER;
-		propval_buff[2].pvalue = pvalue;
-		nt_time = rop_util_current_nttime();
-		propval_buff[3].proptag = PR_LAST_MODIFICATION_TIME;
-		propval_buff[3].pvalue = &nt_time;
-		propvals.count = 4;
-		propvals.ppropval = propval_buff;
-		if (!cu_set_properties(db_table::msg_props, *pdst_mid, 0,
-			psqlite, &propvals, &tmp_problems)) {
-			return FALSE;
-		}
+	if (!*pb_result)
+		return TRUE;
+	if (!cu_get_property(db_table::folder_props,
+	    folder_id, 0, psqlite, PROP_TAG_ARTICLENUMBERNEXT, &pvalue)) {
+		return FALSE;
+	}
+	if (NULL == pvalue) {
+		pvalue = deconst(&fake_uid);
+	}
+	next = *(uint32_t *)pvalue + 1;
+	tmp_propval.proptag = PROP_TAG_ARTICLENUMBERNEXT;
+	tmp_propval.pvalue = &next;
+	if (!cu_set_property(db_table::folder_props,
+	    folder_id, 0, psqlite, &tmp_propval, &b_result)) {
+		return FALSE;
+	}
+	propval_buff[0].proptag = PR_CHANGE_KEY;
+	propval_buff[0].pvalue = cu_xid_to_bin({
+		exmdb_server_check_private() ?
+			rop_util_make_user_guid(account_id) :
+			rop_util_make_domain_guid(account_id),
+		change_num});
+	if (NULL == propval_buff[0].pvalue) {
+		return FALSE;
+	}
+	propval_buff[1].proptag = PR_PREDECESSOR_CHANGE_LIST;
+	propval_buff[1].pvalue = common_util_pcl_append(nullptr, static_cast<BINARY *>(propval_buff[0].pvalue));
+	if (NULL == propval_buff[1].pvalue) {
+		return FALSE;
+	}
+	propval_buff[2].proptag = PR_INTERNET_ARTICLE_NUMBER;
+	propval_buff[2].pvalue = pvalue;
+	nt_time = rop_util_current_nttime();
+	propval_buff[3].proptag = PR_LAST_MODIFICATION_TIME;
+	propval_buff[3].pvalue = &nt_time;
+	propvals.count = 4;
+	propvals.ppropval = propval_buff;
+	if (!cu_set_properties(db_table::msg_props, *pdst_mid, 0,
+		psqlite, &propvals, &tmp_problems)) {
+		return FALSE;
 	}
 	return TRUE;
 }
