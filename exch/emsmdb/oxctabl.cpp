@@ -370,10 +370,8 @@ uint32_t rop_seekrow(uint8_t seek_pos, int32_t offset, uint8_t want_moved_count,
 	case BOOKMARK_CURRENT: {
 		original_position = ptable->get_position();
 		auto newpos = safe_add_s(original_position, offset, &clamped);
-		if (newpos > ptable->get_total()) {
-			newpos = ptable->get_total();
-			clamped = 1;
-		}
+		clamped = newpos > ptable->get_total();
+		ptable->set_position(newpos);
 		break;
 	}
 	default:
