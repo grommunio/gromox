@@ -5326,12 +5326,12 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 	}
 	switch (proptype) {
 	case PT_STRING8:
-	case PT_UNICODE:
-		pvalue = (void*)sqlite3_column_text(pstmt, column_index);
-		if (NULL == pvalue) {
+	case PT_UNICODE: {
+		auto s = reinterpret_cast<const char *>(sqlite3_column_text(pstmt, column_index));
+		if (s == nullptr)
 			return NULL;
-		}
-		return common_util_dup(static_cast<char *>(pvalue));
+		return common_util_dup(s);
+	}
 	case PT_FLOAT: {
 		auto v = cu_alloc<float>();
 		if (v == nullptr)
@@ -5378,11 +5378,10 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		return v;
 	}
 	case PT_CLSID: {
-		pvalue = (void*)sqlite3_column_blob(pstmt, column_index);
-		if (NULL == pvalue) {
+		auto blob = sqlite3_column_blob(pstmt, column_index);
+		if (blob == nullptr)
 			return NULL;
-		}
-		ext_pull.init(pvalue, sqlite3_column_bytes(pstmt, column_index),
+		ext_pull.init(blob, sqlite3_column_bytes(pstmt, column_index),
 			common_util_alloc, 0);
 		auto v = cu_alloc<GUID>();
 		if (v == nullptr)
@@ -5392,11 +5391,10 @@ void* common_util_column_sqlite_statement(sqlite3_stmt *pstmt,
 		return v;
 	}
 	case PT_SVREID: {
-		pvalue = (void*)sqlite3_column_blob(pstmt, column_index);
-		if (NULL == pvalue) {
+		auto blob = sqlite3_column_blob(pstmt, column_index);
+		if (blob == nullptr)
 			return NULL;
-		}
-		ext_pull.init(pvalue, sqlite3_column_bytes(pstmt, column_index),
+		ext_pull.init(blob, sqlite3_column_bytes(pstmt, column_index),
 			common_util_alloc, 0);
 		auto v = cu_alloc<SVREID>();
 		if (v == nullptr)

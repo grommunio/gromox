@@ -1263,7 +1263,7 @@ BOOL common_util_modifyrecipient_to_propvals(
 		return FALSE;
 	}
 	propval.proptag = PR_ROWID;
-	propval.pvalue = (void*)&prow->row_id;
+	propval.pvalue = deconst(&prow->row_id);
 	common_util_set_propvals(ppropvals, &propval);
 	propval.proptag = PR_RECIPIENT_TYPE;
 	auto rcpttype = cu_alloc<uint32_t>();

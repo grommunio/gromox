@@ -628,7 +628,7 @@ static void *dxp_scanwork(void *arg)
  */
 int transporter_load_library(const char* path)
 {
-	static void *const server_funcs[] = {(void *)transporter_queryservice};
+	static void *const server_funcs[] = {reinterpret_cast<void *>(transporter_queryservice)};
 	const char *fake_path = path;
     DOUBLE_LIST_NODE *pnode;
     PLUGIN_MAIN func;

@@ -372,7 +372,7 @@ uint32_t rop_modifyrecipients(const PROPTAG_ARRAY *pproptags, uint16_t count,
 				return ecMAPIOOM;
 			}
 			ppropvals->ppropval->proptag = PR_ROWID;
-			ppropvals->ppropval->pvalue = (void*)&prow[i].row_id;
+			ppropvals->ppropval->pvalue = deconst(&prow[i].row_id);
 		} else {
 			if (!common_util_modifyrecipient_to_propvals(pinfo->cpid,
 			    &prow[i], pproptags, ppropvals))

@@ -3593,7 +3593,7 @@ static void *pdu_processor_queryservice(const char *service, const std::type_inf
  */
 static int pdu_processor_load_library(const char* plugin_name)
 {
-	static void *const server_funcs[] = {(void *)pdu_processor_queryservice};
+	static void *const server_funcs[] = {reinterpret_cast<void *>(pdu_processor_queryservice)};
 	const char *fake_path = plugin_name;
 	PROC_PLUGIN plug;
 

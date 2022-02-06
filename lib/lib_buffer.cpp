@@ -99,7 +99,7 @@ void *LIB_BUFFER::get_raw()
 		memset(ret_buf + item_size_al, 0, sizeof(void *));
 #endif
 
-		m_buf->free_list_head  = (void*)phead;
+		m_buf->free_list_head  = phead;
 		m_buf->free_list_size -= 1;
 		m_buf->allocated_num  += 1;
 		return ret_buf;
@@ -115,7 +115,7 @@ void *LIB_BUFFER::get_raw()
 	ret_buf = m_buf->cur_heap_head;
 	memset(phead + item_size_al, 0, sizeof(void *));
 	phead  += item_size_al + wsize_al;
-	m_buf->cur_heap_head	= (void*)phead;
+	m_buf->cur_heap_head	= phead;
 	m_buf->allocated_num	+= 1;
 	return ret_buf;
 }

@@ -132,7 +132,7 @@ uint32_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	res_property.relop = RELOP_EQ;
 	res_property.proptag = PR_DAM_ORIG_MSG_SVREID;
 	res_property.propval.proptag = res_property.proptag;
-	res_property.propval.pvalue = (void*)pserver_entry_id;
+	res_property.propval.pvalue = deconst(pserver_entry_id);
 	if (!exmdb_client_load_content_table(plogon->get_dir(), 0, fid_deferred,
 	    nullptr, TABLE_FLAG_NONOTIFICATIONS, &restriction, nullptr,
 	    &table_id, &row_count))
@@ -150,7 +150,7 @@ uint32_t rop_updatedeferredactionmessages(const BINARY *pserver_entry_id,
 	propvals.count = 2;
 	propvals.ppropval = propval_buff;
 	propval_buff[0].proptag = PR_DAM_ORIG_MSG_SVREID;
-	propval_buff[0].pvalue = (void*)pclient_entry_id;
+	propval_buff[0].pvalue = deconst(pclient_entry_id);
 	propval_buff[1].proptag = PROP_TAG_DAMBACKPATCHED;
 	propval_buff[1].pvalue = &tmp_byte;
 	tmp_byte = 1;

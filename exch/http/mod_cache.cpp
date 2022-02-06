@@ -295,20 +295,17 @@ static BOOL mod_cache_retrieve_etag(const char *etag,
 	}
 	*ptoken = '\0';
 	ptoken ++;
-	if (FALSE == decode_hex_binary(tmp_buff, (void*)pino, sizeof(ino_t))) {
+	if (!decode_hex_binary(tmp_buff, pino, sizeof(ino_t)))
 		return FALSE;
-	}
 	ptoken1 = strchr(ptoken, '-');
 	if (NULL == ptoken1) {
 		return FALSE;
 	}
 	*ptoken1 = '\0';
 	ptoken1 ++;
-	if (FALSE == decode_hex_binary(ptoken,
-		(void*)plength, sizeof(uint32_t))) {
+	if (!decode_hex_binary(ptoken, plength, sizeof(uint32_t)))
 		return FALSE;
-	}
-	return decode_hex_binary(ptoken1, (void*)pmtime, sizeof(time_t));
+	return decode_hex_binary(ptoken1, pmtime, sizeof(time_t));
 }
 
 static void mod_cache_serialize_etag(ino_t ino,
@@ -317,15 +314,15 @@ static void mod_cache_serialize_etag(ino_t ino,
 	int offset;
 	
 	offset = 0;
-	encode_hex_binary((void*)&ino, sizeof(ino_t), etag + offset, 32);
+	encode_hex_binary(&ino, sizeof(ino_t), etag + offset, 32);
 	offset += 2*sizeof(ino_t);
 	etag[offset] = '-';
 	offset ++;
-	encode_hex_binary((void*)&length, sizeof(uint32_t), etag + offset, 32);
+	encode_hex_binary(&length, sizeof(uint32_t), etag + offset, 32);
 	offset += 2*sizeof(uint32_t);
 	etag[offset] = '-';
 	offset ++;
-	encode_hex_binary((void*)&mtime, sizeof(time_t), etag + offset, 32);
+	encode_hex_binary(&mtime, sizeof(time_t), etag + offset, 32);
 	offset += 2*sizeof(time_t);
 	etag[offset] = '\0';
 }

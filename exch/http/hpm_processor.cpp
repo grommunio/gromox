@@ -330,7 +330,7 @@ HPM_PLUGIN::~HPM_PLUGIN()
 
 static int hpm_processor_load_library(const char *plugin_name)
 {
-	static void *const server_funcs[] = {(void *)hpm_processor_queryservice};
+	static void *const server_funcs[] = {reinterpret_cast<void *>(hpm_processor_queryservice)};
 	const char *fake_path = plugin_name;
 	HPM_PLUGIN plug;
 

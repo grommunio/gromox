@@ -89,7 +89,7 @@ void service_init(const struct service_init_param &parm)
 	g_program_identifier = parm.prog_id;
 }
 
-static void *const server_funcs[] = {(void *)service_query_service};
+static void *const server_funcs[] = {reinterpret_cast<void *>(service_query_service)};
 
 int service_run_early()
 {
