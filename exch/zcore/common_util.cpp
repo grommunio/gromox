@@ -224,10 +224,10 @@ gxerr_t common_util_rectify_message(message_object *pmessage,
 	char search_buff[1024];
 	char search_buff1[1024];
 	TPROPVAL_ARRAY tmp_propvals;
-	TAGGED_PROPVAL propval_buff[20];
+	TAGGED_PROPVAL propval_buff[16];
 	
 	auto account = pmessage->pstore->get_account();
-	tmp_propvals.count = 15;
+	tmp_propvals.count = 16;
 	tmp_propvals.ppropval = propval_buff;
 	propval_buff[0].proptag = PR_READ;
 	propval_buff[0].pvalue = &tmp_byte;
