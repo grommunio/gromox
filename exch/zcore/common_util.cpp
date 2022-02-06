@@ -223,27 +223,11 @@ gxerr_t common_util_rectify_message(message_object *pmessage,
 	char tmp_display1[256];
 	char search_buff[1024];
 	char search_buff1[1024];
-	TPROPVAL_ARRAY tmp_propvals;
-	TAGGED_PROPVAL propval_buff[16];
 	
 	auto account = pmessage->pstore->get_account();
-	tmp_propvals.count = 16;
-	tmp_propvals.ppropval = propval_buff;
-	propval_buff[0].proptag = PR_READ;
-	propval_buff[0].pvalue = &tmp_byte;
 	tmp_byte = 1;
-	propval_buff[1].proptag = PR_CLIENT_SUBMIT_TIME;
-	propval_buff[1].pvalue = &nt_time;
 	nt_time = rop_util_current_nttime();
-	propval_buff[2].proptag = PROP_TAG_MESSAGEDELIVERYTIME;
-	propval_buff[2].pvalue = &nt_time;
-	propval_buff[3].proptag = PR_CONTENT_FILTER_SCL;
-	propval_buff[3].pvalue = &tmp_level;
 	tmp_level = -1;
-	propval_buff[4].proptag = PR_SENDER_SMTP_ADDRESS;
-	propval_buff[4].pvalue = deconst(account);
-	propval_buff[5].proptag = PR_SENDER_ADDRTYPE;
-	propval_buff[5].pvalue  = deconst("EX");
 	if (!common_util_username_to_essdn(account, essdn_buff, GX_ARRAY_SIZE(essdn_buff)))
 		return GXERR_CALL_FAILED;
 	if (!system_services_get_user_displayname(account,
@@ -254,14 +238,6 @@ gxerr_t common_util_rectify_message(message_object *pmessage,
 		return GXERR_CALL_FAILED;
 	search_bin.cb = gx_snprintf(search_buff, GX_ARRAY_SIZE(search_buff), "EX:%s", essdn_buff) + 1;
 	search_bin.pv = search_buff;
-	propval_buff[6].proptag = PR_SENDER_EMAIL_ADDRESS;
-	propval_buff[6].pvalue = essdn_buff;
-	propval_buff[7].proptag = PR_SENDER_NAME;
-	propval_buff[7].pvalue = tmp_display;
-	propval_buff[8].proptag = PR_SENDER_ENTRYID;
-	propval_buff[8].pvalue = pentryid;
-	propval_buff[9].proptag = PR_SENDER_SEARCH_KEY;
-	propval_buff[9].pvalue = &search_bin;
 	if (0 != strcasecmp(account, representing_username)) {
 		if (!common_util_username_to_essdn(representing_username,
 		    essdn_buff1, GX_ARRAY_SIZE(essdn_buff1)))
@@ -279,18 +255,25 @@ gxerr_t common_util_rectify_message(message_object *pmessage,
 	}
 	search_bin1.cb = gx_snprintf(search_buff1, GX_ARRAY_SIZE(search_buff1), "EX:%s", essdn_buff1) + 1;
 	search_bin1.pv = search_buff1;
-	propval_buff[10].proptag = PR_SENT_REPRESENTING_SMTP_ADDRESS;
-	propval_buff[10].pvalue = deconst(representing_username);
-	propval_buff[11].proptag = PR_SENT_REPRESENTING_ADDRTYPE;
-	propval_buff[11].pvalue  = deconst("EX");
-	propval_buff[12].proptag = PR_SENT_REPRESENTING_EMAIL_ADDRESS;
-	propval_buff[12].pvalue = essdn_buff1;
-	propval_buff[13].proptag = PR_SENT_REPRESENTING_NAME;
-	propval_buff[13].pvalue = tmp_display1;
-	propval_buff[14].proptag = PR_SENT_REPRESENTING_ENTRYID;
-	propval_buff[14].pvalue = pentryid;
-	propval_buff[15].proptag = PR_SENT_REPRESENTING_SEARCH_KEY;
-	propval_buff[15].pvalue = &search_bin1;
+	TAGGED_PROPVAL pv[] = {
+		{PR_READ, &tmp_byte},
+		{PR_CLIENT_SUBMIT_TIME, &nt_time},
+		{PROP_TAG_MESSAGEDELIVERYTIME, &nt_time},
+		{PR_CONTENT_FILTER_SCL, &tmp_level},
+		{PR_SENDER_SMTP_ADDRESS, deconst(account)},
+		{PR_SENDER_ADDRTYPE, deconst("EX")},
+		{PR_SENDER_EMAIL_ADDRESS, essdn_buff},
+		{PR_SENDER_NAME, tmp_display},
+		{PR_SENDER_ENTRYID, pentryid},
+		{PR_SENDER_SEARCH_KEY, &search_bin},
+		{PR_SENT_REPRESENTING_SMTP_ADDRESS, deconst(representing_username)},
+		{PR_SENT_REPRESENTING_ADDRTYPE, deconst("EX")},
+		{PR_SENT_REPRESENTING_EMAIL_ADDRESS, essdn_buff1},
+		{PR_SENT_REPRESENTING_NAME, tmp_display1},
+		{PR_SENT_REPRESENTING_ENTRYID, pentryid},
+		{PR_SENT_REPRESENTING_SEARCH_KEY, &search_bin1},
+	};
+	TPROPVAL_ARRAY tmp_propvals = {arsizeof(pv), pv};
 	if (!pmessage->set_properties(&tmp_propvals))
 		return GXERR_CALL_FAILED;
 	return pmessage->save();
