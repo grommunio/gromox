@@ -3023,6 +3023,13 @@ static BOOL oxcical_get_smtp_address(TPROPVAL_ARRAY *prcpt,
 	return TRUE;
 }
 
+static bool is_meeting_response(const char *s)
+{
+	return strcasecmp(s, "IPM.Schedule.Meeting.Resp.Pos") == 0 ||
+	       strcasecmp(s, "IPM.Schedule.Meeting.Resp.Neg") == 0 ||
+	       strcasecmp(s, "IPM.Schedule.Meeting.Resp.Tent") == 0;
+}
+
 static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> pevent_component,
     ENTRYID_TO_USERNAME entryid_to_username, ESSDN_TO_USERNAME essdn_to_username,
     EXT_BUFFER_ALLOC alloc, const char *partstat, const MESSAGE_CONTENT *pmsg)
@@ -3047,9 +3054,7 @@ static BOOL oxcical_export_recipient_table(std::shared_ptr<ICAL_COMPONENT> peven
 	/* ignore ATTENDEE when METHOD is "PUBLIC" */
 	if (strcasecmp(static_cast<char *>(pvalue), "IPM.Appointment") == 0)
 		return TRUE;
-	if (strcasecmp(static_cast<char *>(pvalue), "IPM.Schedule.Meeting.Resp.Pos") == 0 ||
-	    strcasecmp(static_cast<char *>(pvalue), "IPM.Schedule.Meeting.Resp.Tent") == 0 ||
-	    strcasecmp(static_cast<char *>(pvalue), "IPM.Schedule.Meeting.Resp.Neg") == 0) {
+	if (is_meeting_response(static_cast<char *>(pvalue))) {
 		pvalue = pmsg->proplist.getval(PR_SENT_REPRESENTING_SMTP_ADDRESS);
 		if (NULL == pvalue) {
 			return FALSE;

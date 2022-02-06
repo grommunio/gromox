@@ -1178,6 +1178,19 @@ static int rec_ptobj(EXT_BUFFER_ALLOC alloc, GET_PROPIDS get_propids,
 	return X_CONTINUE;
 }
 
+static bool is_meeting_request(const char *s)
+{
+	return strcasecmp(s, "IPM.Schedule.Meeting.Request") == 0 ||
+	       strcasecmp(s, "IPM.Schedule.Meeting.Canceled") == 0;
+}
+
+static bool is_meeting_response(const char *s)
+{
+	return strcasecmp(s, "IPM.Schedule.Meeting.Resp.Pos") == 0 ||
+	       strcasecmp(s, "IPM.Schedule.Meeting.Resp.Neg") == 0 ||
+	       strcasecmp(s, "IPM.Schedule.Meeting.Resp.Tent") == 0;
+}
+
 static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	uint32_t length, BOOL b_embedded, EXT_BUFFER_ALLOC alloc,
 	GET_PROPIDS get_propids, USERNAME_TO_ENTRYID username_to_entryid)
@@ -1457,22 +1470,14 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	} while (ext_pull.m_offset < length);
 	
 	if (NULL != powner && NULL != message_class) {
-		if (0 == strcasecmp(message_class,
-			"IPM.Schedule.Meeting.Request") ||
-			0 == strcasecmp(message_class,
-			"IPM.Schedule.Meeting.Canceled")) {
+		if (is_meeting_request(message_class)) {
 			if (!tnef_set_attribute_address(&pmsg->proplist,
 			    PR_SENT_REPRESENTING_NAME_A,
 			    PR_SENT_REPRESENTING_ADDRTYPE_A,
 			    PR_SENT_REPRESENTING_EMAIL_ADDRESS_A, powner)) {
 				return NULL;
 			}
-		} else if (0 == strcasecmp(message_class,
-			"IPM.Schedule.Meeting.Resp.Pos") ||
-			0 == strcasecmp(message_class,
-			"IPM.Schedule.Meeting.Resp.Neg") ||
-			0 == strcasecmp(message_class,
-			"IPM.Schedule.Meeting.Resp.Tent")) {
+		} else if (is_meeting_response(message_class)) {
 			if (!tnef_set_attribute_address(&pmsg->proplist,
 			    PR_RCVD_REPRESENTING_NAME_A,
 			    PR_RCVD_REPRESENTING_ADDRTYPE_A,
@@ -2277,10 +2282,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 		tmp_proptags.count ++;
 	}
 	/* ATTRIBUTE_ID_OWNER */
-	if (0 == strcasecmp(message_class,
-		"IPM.Schedule.Meeting.Request") ||
-		0 == strcasecmp(message_class,
-		"IPM.Schedule.Meeting.Canceled")) {
+	if (is_meeting_request(message_class)) {
 		pvalue = pmsg->proplist.getval(PR_SENT_REPRESENTING_NAME_A);
 		auto pvalue1 = pmsg->proplist.getval(PR_SENT_REPRESENTING_ADDRTYPE_A);
 		auto pvalue2 = pmsg->proplist.getval(PR_SENT_REPRESENTING_EMAIL_ADDRESS_A);
@@ -2299,12 +2301,7 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 			}
 			/* keep these properties for attMsgProps */
 		}
-	} else if (0 == strcasecmp(message_class,
-		"IPM.Schedule.Meeting.Resp.Pos") ||
-		0 == strcasecmp(message_class,
-		"IPM.Schedule.Meeting.Resp.Neg") ||
-		0 == strcasecmp(message_class,
-		"IPM.Schedule.Meeting.Resp.Tent")) {
+	} else if (is_meeting_response(message_class)) {
 		pvalue = pmsg->proplist.getval(PR_RCVD_REPRESENTING_NAME_A);
 		auto pvalue1 = pmsg->proplist.getval(PR_RCVD_REPRESENTING_ADDRTYPE_A);
 		auto pvalue2 = pmsg->proplist.getval(PR_RCVD_REPRESENTING_EMAIL_ADDRESS_A);
