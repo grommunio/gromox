@@ -113,7 +113,6 @@ BOOL common_util_check_delegate_permission(
 	const char *account, const char *maildir);
 BOOL common_util_check_delegate_permission_ex(
 	const char *account, const char *account_representing);
-extern gxerr_t common_util_rectify_message(message_object *, const char *representing_username);
 void common_util_set_propvals(TPROPVAL_ARRAY *parray,
 	const TAGGED_PROPVAL *ppropval);
 void common_util_remove_propvals(

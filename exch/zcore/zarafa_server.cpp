@@ -3313,6 +3313,66 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 	return pmessage->set_rcpts(prcpt_list) ? ecSuccess : ecError;
 }
 
+static gxerr_t rectify_message(message_object *pmessage,
+    const char *representing_username)
+{
+	auto account = pmessage->pstore->get_account();
+	uint8_t tmp_byte = 1;
+	auto nt_time = rop_util_current_nttime();
+	int32_t tmp_level = -1;
+	char essdn[1024], essdn1[1024];
+	if (!common_util_username_to_essdn(account, essdn, arsizeof(essdn)))
+		return GXERR_CALL_FAILED;
+	char dispname[256], dispname1[256], search_buff[1024], search_buff1[1024];
+	if (!system_services_get_user_displayname(account,
+	    dispname, arsizeof(dispname)))
+		return GXERR_CALL_FAILED;
+	auto entryid = common_util_username_to_addressbook_entryid(account);
+	if (entryid == nullptr)
+		return GXERR_CALL_FAILED;
+	BINARY search_bin, search_bin1;
+	search_bin.cb = gx_snprintf(search_buff, arsizeof(search_buff), "EX:%s", essdn) + 1;
+	search_bin.pv = search_buff;
+	if (0 != strcasecmp(account, representing_username)) {
+		if (!common_util_username_to_essdn(representing_username,
+		    essdn1, arsizeof(essdn1)))
+			return GXERR_CALL_FAILED;
+		if (!system_services_get_user_displayname(representing_username,
+		    dispname1, arsizeof(dispname1)))
+			return GXERR_CALL_FAILED;
+		entryid = common_util_username_to_addressbook_entryid(representing_username);
+		if (entryid == nullptr)
+			return GXERR_CALL_FAILED;
+	} else {
+		strcpy(essdn1, essdn);
+		strcpy(dispname1, dispname);
+	}
+	search_bin1.cb = gx_snprintf(search_buff1, arsizeof(search_buff1), "EX:%s", essdn1) + 1;
+	search_bin1.pv = search_buff1;
+	TAGGED_PROPVAL pv[] = {
+		{PR_READ, &tmp_byte},
+		{PR_CLIENT_SUBMIT_TIME, &nt_time},
+		{PROP_TAG_MESSAGEDELIVERYTIME, &nt_time},
+		{PR_CONTENT_FILTER_SCL, &tmp_level},
+		{PR_SENDER_SMTP_ADDRESS, deconst(account)},
+		{PR_SENDER_ADDRTYPE, deconst("EX")},
+		{PR_SENDER_EMAIL_ADDRESS, essdn},
+		{PR_SENDER_NAME, dispname},
+		{PR_SENDER_ENTRYID, entryid},
+		{PR_SENDER_SEARCH_KEY, &search_bin},
+		{PR_SENT_REPRESENTING_SMTP_ADDRESS, deconst(representing_username)},
+		{PR_SENT_REPRESENTING_ADDRTYPE, deconst("EX")},
+		{PR_SENT_REPRESENTING_EMAIL_ADDRESS, essdn1},
+		{PR_SENT_REPRESENTING_NAME, dispname1},
+		{PR_SENT_REPRESENTING_ENTRYID, entryid},
+		{PR_SENT_REPRESENTING_SEARCH_KEY, &search_bin1},
+	};
+	TPROPVAL_ARRAY tmp_propvals = {arsizeof(pv), pv};
+	if (!pmessage->set_properties(&tmp_propvals))
+		return GXERR_CALL_FAILED;
+	return pmessage->save();
+}
+
 uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 {
 	int timer_id;
@@ -3375,7 +3435,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		        account, username);
 		return ecAccessDenied;
 	}
-	gxerr_t err = common_util_rectify_message(pmessage, username);
+	auto err = rectify_message(pmessage, username);
 	if (err != GXERR_SUCCESS) {
 		return gxerr_to_hresult(err);
 	}
