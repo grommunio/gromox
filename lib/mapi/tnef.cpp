@@ -82,6 +82,7 @@
 #define FMS_LOCAL								0x02
 #define FMS_HASATTACH							0x80
 
+using namespace std::string_literals;
 using namespace gromox;
 using propmap_t = std::unordered_map<std::string, uint16_t>;
 
@@ -2092,6 +2093,25 @@ static TNEF_PROPLIST* tnef_convert_recipient(TPROPVAL_ARRAY *pproplist,
 	return ptnef_proplist;
 }
 
+static bool serialize_rcpt(EXT_PUSH &ep, const MESSAGE_CONTENT &msg,
+    EXT_BUFFER_ALLOC alloc, GET_PROPNAME get_propname, uint32_t disptag,
+    uint32_t addrtag, uint32_t mailtag, uint32_t tnefattr) try
+{
+	auto dispname = msg.proplist.get<const char>(disptag);
+	auto addrtype = msg.proplist.get<const char>(addrtag);
+	auto mailaddr = msg.proplist.get<const char>(mailtag);
+	if (dispname == nullptr || addrtype != nullptr || mailaddr != nullptr)
+		return true;
+	auto joint = addrtype + ":"s + mailaddr;
+	ATTR_ADDR addr = {deconst(dispname), deconst(joint.c_str())};
+	TNEF_ATTRIBUTE attr = {LVL_MESSAGE, ATTRIBUTE_ID_FROM, &addr};
+	return tnef_push_attribute(&ep, &attr, alloc, get_propname) == EXT_ERR_SUCCESS;
+	/* keep these properties for attMsgProps */
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1648: ENOMEM\n");
+	return false;
+}
+
 static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	const MESSAGE_CONTENT *pmsg, EXT_BUFFER_ALLOC alloc,
 	GET_PROPNAME get_propname)
@@ -2101,7 +2121,6 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	BINARY key_bin;
 	uint8_t tmp_byte;
 	REND_DATA tmp_rend;
-	ATTR_ADDR tmp_addr;
 	uint16_t tmp_int16;
 	uint32_t tmp_int32;
 	char tmp_buff[4096];
@@ -2184,27 +2203,12 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	}
 	tmp_proptags.pproptag[tmp_proptags.count] = PR_MESSAGE_FLAGS;
 	tmp_proptags.count ++;
+
 	/* ATTRIBUTE_ID_FROM */
-	if (b_embedded) {
-		pvalue = pmsg->proplist.getval(PR_SENDER_NAME_A);
-		auto pvalue1 = pmsg->proplist.getval(PR_SENDER_ADDRTYPE_A);
-		auto pvalue2 = pmsg->proplist.getval(PR_SENDER_EMAIL_ADDRESS_A);
-		if (NULL != pvalue && NULL != pvalue1 && NULL != pvalue2) {
-			attribute.attr_id = ATTRIBUTE_ID_FROM;
-			attribute.lvl = LVL_MESSAGE;
-			snprintf(tmp_buff, sizeof(tmp_buff), "%s:%s",
-			         static_cast<const char *>(pvalue1),
-			         static_cast<const char *>(pvalue2));
-			tmp_addr.displayname = static_cast<char *>(pvalue);
-			tmp_addr.address = tmp_buff;
-			attribute.pvalue = &tmp_addr;
-			if (EXT_ERR_SUCCESS != tnef_push_attribute(
-				pext, &attribute, alloc, get_propname)) {
-				return FALSE;
-			}
-			/* keep these properties for attMsgProps */
-		}
-	}
+	if (b_embedded && !serialize_rcpt(*pext, *pmsg, alloc, get_propname,
+	    PR_SENDER_NAME_A, PR_SENDER_ADDRTYPE_A, PR_SENDER_EMAIL_ADDRESS_A,
+	    ATTRIBUTE_ID_FROM))
+		return false;
 	/* ATTRIBUTE_ID_MESSAGECLASS */
 	auto message_class = pmsg->proplist.get<const char>(PR_MESSAGE_CLASS_A);
 	if (NULL == message_class) {
@@ -2283,63 +2287,21 @@ static BOOL tnef_serialize_internal(EXT_PUSH *pext, BOOL b_embedded,
 	}
 	/* ATTRIBUTE_ID_OWNER */
 	if (is_meeting_request(message_class)) {
-		pvalue = pmsg->proplist.getval(PR_SENT_REPRESENTING_NAME_A);
-		auto pvalue1 = pmsg->proplist.getval(PR_SENT_REPRESENTING_ADDRTYPE_A);
-		auto pvalue2 = pmsg->proplist.getval(PR_SENT_REPRESENTING_EMAIL_ADDRESS_A);
-		if (NULL != pvalue && NULL != pvalue1 && NULL != pvalue2) {
-			attribute.attr_id = ATTRIBUTE_ID_OWNER;
-			attribute.lvl = LVL_MESSAGE;
-			snprintf(tmp_buff, sizeof(tmp_buff), "%s:%s",
-			         static_cast<const char *>(pvalue1),
-			         static_cast<const char *>(pvalue2));
-			tmp_addr.displayname = static_cast<char *>(pvalue);
-			tmp_addr.address = tmp_buff;
-			attribute.pvalue = &tmp_addr;
-			if (EXT_ERR_SUCCESS != tnef_push_attribute(
-				pext, &attribute, alloc, get_propname)) {
-				return FALSE;
-			}
-			/* keep these properties for attMsgProps */
-		}
+		if (!serialize_rcpt(*pext, *pmsg, alloc, get_propname,
+		    PR_SENT_REPRESENTING_NAME_A, PR_SENT_REPRESENTING_ADDRTYPE_A,
+		    PR_SENT_REPRESENTING_EMAIL_ADDRESS_A, ATTRIBUTE_ID_OWNER))
+			return false;
 	} else if (is_meeting_response(message_class)) {
-		pvalue = pmsg->proplist.getval(PR_RCVD_REPRESENTING_NAME_A);
-		auto pvalue1 = pmsg->proplist.getval(PR_RCVD_REPRESENTING_ADDRTYPE_A);
-		auto pvalue2 = pmsg->proplist.getval(PR_RCVD_REPRESENTING_EMAIL_ADDRESS_A);
-		if (NULL != pvalue && NULL != pvalue1 && NULL != pvalue2) {
-			attribute.attr_id = ATTRIBUTE_ID_OWNER;
-			attribute.lvl = LVL_MESSAGE;
-			snprintf(tmp_buff, sizeof(tmp_buff), "%s:%s",
-			         static_cast<const char *>(pvalue1),
-			         static_cast<const char *>(pvalue2));
-			tmp_addr.displayname = static_cast<char *>(pvalue);
-			tmp_addr.address = tmp_buff;
-			attribute.pvalue = &tmp_addr;
-			if (EXT_ERR_SUCCESS != tnef_push_attribute(
-				pext, &attribute, alloc, get_propname)) {
-				return FALSE;
-			}
-			/* keep these properties for attMsgProps */
-		}
+		if (!serialize_rcpt(*pext, *pmsg, alloc, get_propname,
+		    PR_RCVD_REPRESENTING_NAME_A, PR_RCVD_REPRESENTING_ADDRTYPE_A,
+		    PR_RCVD_REPRESENTING_EMAIL_ADDRESS_A, ATTRIBUTE_ID_OWNER))
+			return false;
 	}
 	/* ATTRIBUTE_ID_SENTFOR */
-	pvalue = pmsg->proplist.getval(PR_SENT_REPRESENTING_NAME_A);
-	auto pvalue1 = pmsg->proplist.getval(PR_SENT_REPRESENTING_ADDRTYPE_A);
-	auto pvalue2 = pmsg->proplist.getval(PR_SENT_REPRESENTING_EMAIL_ADDRESS_A);
-	if (NULL != pvalue && NULL != pvalue1 && NULL != pvalue2) {
-		attribute.attr_id = ATTRIBUTE_ID_SENTFOR;
-		attribute.lvl = LVL_MESSAGE;
-		snprintf(tmp_buff, sizeof(tmp_buff), "%s:%s",
-		         static_cast<const char *>(pvalue1),
-		         static_cast<const char *>(pvalue2));
-		tmp_addr.displayname = static_cast<char *>(pvalue);
-		tmp_addr.address = tmp_buff;
-		attribute.pvalue = &tmp_addr;
-		if (EXT_ERR_SUCCESS != tnef_push_attribute(
-			pext, &attribute, alloc, get_propname)) {
-			return FALSE;
-		}
-		/* keep these properties for attMsgProps */
-	}
+	if (!serialize_rcpt(*pext, *pmsg, alloc, get_propname,
+	    PR_SENT_REPRESENTING_NAME_A, PR_SENT_REPRESENTING_ADDRTYPE_A,
+	    PR_SENT_REPRESENTING_EMAIL_ADDRESS_A, ATTRIBUTE_ID_SENTFOR))
+		return false;
 	/* ATTRIBUTE_ID_DELEGATE */
 	pvalue = pmsg->proplist.getval(PR_RCVD_REPRESENTING_ENTRYID);
 	if (NULL != pvalue) {
