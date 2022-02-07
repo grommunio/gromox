@@ -1616,7 +1616,7 @@ static void *cu_get_object_text(sqlite3 *psqlite,
 	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size)
 		return NULL;
 	pbuff[node_stat.st_size] = 0;
-	if (PROP_TYPE(proptag) == PT_BINARY) {
+	if (PROP_TYPE(proptag) == PT_BINARY || PROP_TYPE(proptag) == PT_OBJECT) {
 		auto bin = cu_alloc<BINARY>();
 		if (bin == nullptr)
 			return nullptr;
