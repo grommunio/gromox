@@ -2151,12 +2151,12 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 	    &tmp_larray) != EXT_ERR_SUCCESS)
 		return FALSE;
 	/* ATTRIBUTE_ID_OEMCODEPAGE */
-	auto pvalue = pmsg->proplist.getval(PR_INTERNET_CPID);
-	if (NULL == pvalue) {
+	auto num = pmsg->proplist.get<const uint32_t>(PR_INTERNET_CPID);
+	if (num == nullptr) {
 		debug_info("[tnef]: cannot find PR_INTERNET_CPID");
 		return FALSE;
 	}
-	uint32_t tmp_cpids[] = {*static_cast<uint32_t *>(pvalue), 0};
+	uint32_t tmp_cpids[] = {*num, 0};
 	tmp_larray = {2, tmp_cpids};
 	if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_OEMCODEPAGE,
 	    &tmp_larray) != EXT_ERR_SUCCESS)
@@ -2164,23 +2164,20 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 	/* ATTRIBUTE_ID_MESSAGESTATUS */
 	if (b_embedded) {
 		tmp_byte = 0;
-		pvalue = pmsg->proplist.getval(PR_MESSAGE_FLAGS);
-		if (NULL != pvalue) {
-			if (*static_cast<uint32_t *>(pvalue) & MSGFLAG_UNSENT)
+		num = pmsg->proplist.get<uint32_t>(PR_MESSAGE_FLAGS);
+		if (num != nullptr) {
+			if (*num & MSGFLAG_UNSENT)
 				tmp_byte |= FMS_LOCAL;
-			if (*static_cast<uint32_t *>(pvalue) & MSGFLAG_SUBMITTED)
+			if (*num & MSGFLAG_SUBMITTED)
 				tmp_byte |= FMS_SUBMITTED;
 		}
-		pvalue = pmsg->proplist.getval(PR_READ);
-		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+		auto flag = pmsg->proplist.get<const uint8_t>(PR_READ);
+		if (flag != nullptr && *flag != 0)
 			tmp_byte |= FMS_READ;
-		}
-		pvalue = pmsg->proplist.getval(PR_CREATION_TIME);
-		auto pvalue1 = pmsg->proplist.getval(PR_LAST_MODIFICATION_TIME);
-		if (NULL != pvalue && NULL != pvalue1 &&
-			*(uint64_t*)pvalue1 > *(uint64_t*)pvalue) {
+		auto stamp  = pmsg->proplist.get<const uint64_t>(PR_CREATION_TIME);
+		auto stamp1 = pmsg->proplist.get<const uint64_t>(PR_LAST_MODIFICATION_TIME);
+		if (stamp != nullptr && stamp1 != nullptr && *stamp1 > *stamp)
 			tmp_byte |= FMS_MODIFIED;
-		}
 		if (NULL != pmsg->children.pattachments) {
 			tmp_byte |= FMS_HASATTACH;
 		}
@@ -2213,38 +2210,35 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 	tmp_proptags.pproptag[tmp_proptags.count++] = PR_MESSAGE_CLASS_A;
 	tmp_proptags.pproptag[tmp_proptags.count++] = PR_MESSAGE_CLASS;
 	/* ATTRIBUTE_ID_ORIGNINALMESSAGECLASS */
-	pvalue = pmsg->proplist.getval(PR_ORIG_MESSAGE_CLASS_A);
-	if (NULL != pvalue) {
+	auto str = pmsg->proplist.get<const char>(PR_ORIG_MESSAGE_CLASS_A);
+	if (str != nullptr) {
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_ORIGNINALMESSAGECLASS,
-		    deconst(tnef_from_msgclass(static_cast<char *>(pvalue)))) != EXT_ERR_SUCCESS)
+		    deconst(tnef_from_msgclass(str))) != EXT_ERR_SUCCESS)
 			return FALSE;
 		tmp_proptags.pproptag[tmp_proptags.count++] = PR_ORIG_MESSAGE_CLASS_A;
 		tmp_proptags.pproptag[tmp_proptags.count++] = PR_ORIG_MESSAGE_CLASS;
 	}
 	/* ATTRIBUTE_ID_SUBJECT */
 	if (FALSE == b_embedded) {
-		pvalue = pmsg->proplist.getval(PR_SUBJECT_A);
-		if (NULL != pvalue) {
-			if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_SUBJECT,
-			    pvalue) != EXT_ERR_SUCCESS)
-				return FALSE;
-			/* keep this property for attMsgProps */
-		}
+		str = pmsg->proplist.get<char>(PR_SUBJECT_A);
+		if (str != nullptr && ext.p_attr(LVL_MESSAGE,
+		    ATTRIBUTE_ID_SUBJECT, str) != EXT_ERR_SUCCESS)
+			return FALSE;
+		/* keep this property for attMsgProps */
 	}
 	/* ATTRIBUTE_ID_BODY */
 	if (b_embedded) {
-		pvalue = pmsg->proplist.getval(PR_BODY_A);
-		if (NULL != pvalue) {
+		str = pmsg->proplist.get<char>(PR_BODY_A);
+		if (str != nullptr) {
 			if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_BODY,
-			    pvalue) != EXT_ERR_SUCCESS)
+			    str) != EXT_ERR_SUCCESS)
 				return FALSE;
 			tmp_proptags.pproptag[tmp_proptags.count++] = PR_BODY_A;
 		}
 	}
 	/* ATTRIBUTE_ID_MESSAGEID */
-	pvalue = pmsg->proplist.getval(PR_SEARCH_KEY);
-	if (NULL != pvalue) {
-		auto bv = static_cast<BINARY *>(pvalue);
+	auto bv = pmsg->proplist.get<const BINARY>(PR_SEARCH_KEY);
+	if (bv != nullptr) {
 		if (!encode_hex_binary(bv->pb, bv->cb, tmp_buff, arsizeof(tmp_buff)))
 			return FALSE;
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_MESSAGEID,
@@ -2270,40 +2264,40 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 	    PR_SENT_REPRESENTING_EMAIL_ADDRESS_A, ATTRIBUTE_ID_SENTFOR))
 		return false;
 	/* ATTRIBUTE_ID_DELEGATE */
-	pvalue = pmsg->proplist.getval(PR_RCVD_REPRESENTING_ENTRYID);
-	if (NULL != pvalue) {
+	bv = pmsg->proplist.get<BINARY>(PR_RCVD_REPRESENTING_ENTRYID);
+	if (bv != nullptr) {
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_DELEGATE,
-		    pvalue) != EXT_ERR_SUCCESS)
+		    bv) != EXT_ERR_SUCCESS)
 			return FALSE;
 		tmp_proptags.pproptag[tmp_proptags.count++] = PR_RCVD_REPRESENTING_ENTRYID;
 	}
 	/* ATTRIBUTE_ID_DATESTART */
-	pvalue = pmsg->proplist.getval(PROP_TAG_STARTDATE);
-	if (NULL != pvalue) {
+	auto stamp = pmsg->proplist.get<const uint64_t>(PROP_TAG_STARTDATE);
+	if (stamp != nullptr) {
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_DATESTART,
-		    pvalue) != EXT_ERR_SUCCESS)
+		    stamp) != EXT_ERR_SUCCESS)
 			return FALSE;
 		tmp_proptags.pproptag[tmp_proptags.count++] = PROP_TAG_STARTDATE;
 	}
 	/* ATTRIBUTE_ID_DATEEND */
-	pvalue = pmsg->proplist.getval(PROP_TAG_ENDDATE);
-	if (NULL != pvalue) {
+	stamp = pmsg->proplist.get<uint64_t>(PROP_TAG_ENDDATE);
+	if (stamp != nullptr) {
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_DATEEND,
-		    pvalue) != EXT_ERR_SUCCESS)
+		    stamp) != EXT_ERR_SUCCESS)
 			return FALSE;
 		tmp_proptags.pproptag[tmp_proptags.count++] = PROP_TAG_ENDDATE;
 	}
 	/* ATTRIBUTE_ID_AIDOWNER */
-	pvalue = pmsg->proplist.getval(PROP_TAG_OWNERAPPOINTMENTID);
-	if (NULL != pvalue) {
+	num = pmsg->proplist.get<uint32_t>(PROP_TAG_OWNERAPPOINTMENTID);
+	if (num != nullptr) {
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_AIDOWNER,
-		    pvalue) != EXT_ERR_SUCCESS)
+		    num) != EXT_ERR_SUCCESS)
 			return FALSE;
 		tmp_proptags.pproptag[tmp_proptags.count++] = PROP_TAG_OWNERAPPOINTMENTID;
 	}
 	/* ATTRIBUTE_ID_REQUESTRES */
-	pvalue = pmsg->proplist.getval(PROP_TAG_RESPONSEREQUESTED);
-	if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+	auto flag = pmsg->proplist.get<const uint8_t>(PROP_TAG_RESPONSEREQUESTED);
+	if (flag != nullptr && *flag != 0) {
 		uint16_t tmp_int16 = 1;
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_REQUESTRES,
 		    &tmp_int16) != EXT_ERR_SUCCESS)
@@ -2311,26 +2305,24 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 		tmp_proptags.pproptag[tmp_proptags.count++] = PROP_TAG_RESPONSEREQUESTED;
 	}
 	/* ATTRIBUTE_ID_DATESENT */
-	pvalue = pmsg->proplist.getval(PR_CLIENT_SUBMIT_TIME);
-	if (NULL != pvalue) {
-		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_DATESENT,
-		    pvalue) != EXT_ERR_SUCCESS)
-			return FALSE;
-		/* keep this property for attMsgProps */
-	}
+	stamp = pmsg->proplist.get<uint64_t>(PR_CLIENT_SUBMIT_TIME);
+	if (stamp != nullptr && ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_DATESENT,
+	    stamp) != EXT_ERR_SUCCESS)
+		return FALSE;
+	/* ^ keep this property for attMsgProps */
 	/* ATTRIBUTE_ID_DATERECD */
-	pvalue = pmsg->proplist.getval(PROP_TAG_MESSAGEDELIVERYTIME);
-	if (NULL != pvalue) {
+	stamp = pmsg->proplist.get<uint64_t>(PROP_TAG_MESSAGEDELIVERYTIME);
+	if (stamp != nullptr) {
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_DATERECD,
-		    pvalue) != EXT_ERR_SUCCESS)
+		    stamp) != EXT_ERR_SUCCESS)
 			return FALSE;
 		tmp_proptags.pproptag[tmp_proptags.count++] = PROP_TAG_MESSAGEDELIVERYTIME;
 	}
 	/* ATTRIBUTE_ID_PRIORITY */
-	pvalue = pmsg->proplist.getval(PR_IMPORTANCE);
-	if (NULL != pvalue) {
+	num = pmsg->proplist.get<uint32_t>(PR_IMPORTANCE);
+	if (num != nullptr) {
 		uint16_t tmp_int16;
-		switch (*(uint32_t*)pvalue) {
+		switch (*num) {
 		case IMPORTANCE_LOW:
 			tmp_int16 = 3;
 			break;
@@ -2350,10 +2342,10 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 		tmp_proptags.pproptag[tmp_proptags.count++] = PROP_TAG_MESSAGEDELIVERYTIME;
 	}
 	/* ATTRIBUTE_ID_DATEMODIFY */
-	pvalue = pmsg->proplist.getval(PR_LAST_MODIFICATION_TIME);
-	if (NULL != pvalue) {
+	stamp = pmsg->proplist.get<uint64_t>(PR_LAST_MODIFICATION_TIME);
+	if (stamp != nullptr) {
 		if (ext.p_attr(LVL_MESSAGE, ATTRIBUTE_ID_DATEMODIFY,
-		    pvalue) != EXT_ERR_SUCCESS)
+		    stamp) != EXT_ERR_SUCCESS)
 			return FALSE;
 		tmp_proptags.pproptag[tmp_proptags.count++] = PR_LAST_MODIFICATION_TIME;
 	}
@@ -2370,9 +2362,9 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 			}
 		}
 		for (size_t i = 0; i < pmsg->children.prcpts->count; ++i) {
-			pvalue = pmsg->children.prcpts->pparray[i]->getval(PR_RECIPIENT_TYPE);
+			num = pmsg->children.prcpts->pparray[i]->get<uint32_t>(PR_RECIPIENT_TYPE);
 			/* BCC recipients must be excluded */
-			if (pvalue != nullptr && *static_cast<uint32_t *>(pvalue) == MAPI_BCC)
+			if (num != nullptr && *num == MAPI_BCC)
 				continue;
 			tnef_propset.pplist[tnef_propset.count] =
 				tnef_convert_recipient(pmsg->children.prcpts->pparray[i],
@@ -2419,15 +2411,15 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 							pmsg->proplist.ppropval[i].pvalue;
 	}
 	if (FALSE == b_key) {
-		pvalue = pmsg->proplist.getval(PR_INTERNET_MESSAGE_ID);
-		if (NULL != pvalue) {
+		str = pmsg->proplist.get<char>(PR_INTERNET_MESSAGE_ID);
+		if (str != nullptr) {
 			tnef_proplist.ppropval[tnef_proplist.count].propid =
 				PROP_ID(PR_TNEF_CORRELATION_KEY);
 			tnef_proplist.ppropval[tnef_proplist.count].proptype = PT_BINARY;
 			tnef_proplist.ppropval[tnef_proplist.count].ppropname = NULL;
 			tnef_proplist.ppropval[tnef_proplist.count++].pvalue = &key_bin;
-			key_bin.cb = strlen(static_cast<char *>(pvalue)) + 1;
-			key_bin.pv = pvalue;
+			key_bin.cb = strlen(str) + 1;
+			key_bin.pv = deconst(str);
 		}
 	}
 	if (tnef_proplist.count > 0 &&
@@ -2461,12 +2453,8 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 				return FALSE;
 			}
 		}
-		pvalue = pattachment->proplist.getval(PROP_TAG_RENDERINGPOSITION);
-		if (NULL == pvalue) {
-			tmp_rend.attach_position = 0xFFFFFFFF;
-		} else {
-			tmp_rend.attach_position = *(uint32_t*)pvalue;
-		}
+		num = pattachment->proplist.get<uint32_t>(PROP_TAG_RENDERINGPOSITION);
+		tmp_rend.attach_position = num != nullptr ? *num : 0xFFFFFFFF;
 		auto bv = pattachment->proplist.get<BINARY>(PR_ATTACH_ENCODING);
 		tmp_rend.data_flags = bv != nullptr && bv->cb == sizeof(MACBINARY_ENCODING) &&
 		                      memcmp(bv->pb, MACBINARY_ENCODING, sizeof(MACBINARY_ENCODING)) == 0 ?
@@ -2478,59 +2466,59 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 			return FALSE;
 		/* ATTRIBUTE_ID_ATTACHDATA */
 		if (pmethod != nullptr && *pmethod == ATTACH_BY_VALUE) {
-			pvalue = pattachment->proplist.getval(PR_ATTACH_DATA_BIN);
-			if (NULL != pvalue) {
+			bv = pattachment->proplist.get<BINARY>(PR_ATTACH_DATA_BIN);
+			if (bv != nullptr) {
 				if (ext.p_attr(LVL_ATTACHMENT, ATTRIBUTE_ID_ATTACHDATA,
-				    pvalue) != EXT_ERR_SUCCESS)
+				    bv) != EXT_ERR_SUCCESS)
 					return FALSE;
 				tmp_proptags.pproptag[tmp_proptags.count++] = PR_ATTACH_DATA_BIN;
 			}
 		}
 		/* ATTRIBUTE_ID_ATTACHTITLE */
-		pvalue = pattachment->proplist.getval(PR_ATTACH_LONG_FILENAME_A);
-		if (NULL != pvalue) {
+		str = pattachment->proplist.get<char>(PR_ATTACH_LONG_FILENAME_A);
+		if (str != nullptr) {
 			if (ext.p_attr(LVL_ATTACHMENT, ATTRIBUTE_ID_ATTACHTITLE,
-			    pvalue) != EXT_ERR_SUCCESS)
+			    str) != EXT_ERR_SUCCESS)
 				return FALSE;
 			tmp_proptags.pproptag[tmp_proptags.count++] = PR_ATTACH_LONG_FILENAME_A;
 		} else {
-			pvalue = pattachment->proplist.getval(PR_ATTACH_FILENAME_A);
-			if (NULL != pvalue) {
+			str = pattachment->proplist.get<char>(PR_ATTACH_FILENAME_A);
+			if (str != nullptr) {
 				if (ext.p_attr(LVL_ATTACHMENT, ATTRIBUTE_ID_ATTACHTITLE,
-				    pvalue) != EXT_ERR_SUCCESS)
+				    str) != EXT_ERR_SUCCESS)
 					return FALSE;
 				tmp_proptags.pproptag[tmp_proptags.count++] = PR_ATTACH_FILENAME_A;
 			}
 		}
 		/* ATTRIBUTE_ID_ATTACHMETAFILE */
-		pvalue = pattachment->proplist.getval(PR_ATTACH_RENDERING);
-		if (NULL != pvalue) {
+		bv = pattachment->proplist.get<BINARY>(PR_ATTACH_RENDERING);
+		if (bv != nullptr) {
 			if (ext.p_attr(LVL_ATTACHMENT, ATTRIBUTE_ID_ATTACHMETAFILE,
-			    pvalue) != EXT_ERR_SUCCESS)
+			    bv) != EXT_ERR_SUCCESS)
 				return FALSE;
 			tmp_proptags.pproptag[tmp_proptags.count++] = PR_ATTACH_RENDERING;
 		}
 		/* ATTRIBUTE_ID_ATTACHCREATEDATE */
-		pvalue = pattachment->proplist.getval(PR_CREATION_TIME);
-		if (NULL != pvalue) {
+		stamp = pattachment->proplist.get<uint64_t>(PR_CREATION_TIME);
+		if (stamp != nullptr) {
 			if (ext.p_attr(LVL_ATTACHMENT, ATTRIBUTE_ID_ATTACHCREATEDATE,
-			    pvalue) != EXT_ERR_SUCCESS)
+			    stamp) != EXT_ERR_SUCCESS)
 				return FALSE;
 			tmp_proptags.pproptag[tmp_proptags.count++] = PR_CREATION_TIME;
 		}
 		/* ATTRIBUTE_ID_ATTACHMODIFYDATE */
-		pvalue = pattachment->proplist.getval(PR_LAST_MODIFICATION_TIME);
-		if (NULL != pvalue) {
+		stamp = pattachment->proplist.get<uint64_t>(PR_LAST_MODIFICATION_TIME);
+		if (stamp != nullptr) {
 			if (ext.p_attr(LVL_ATTACHMENT, ATTRIBUTE_ID_ATTACHMODIFYDATE,
-			    pvalue) != EXT_ERR_SUCCESS)
+			    stamp) != EXT_ERR_SUCCESS)
 				return FALSE;
 			tmp_proptags.pproptag[tmp_proptags.count++] = PR_LAST_MODIFICATION_TIME;
 		}
 		/* ATTRIBUTE_ID_ATTACHTRANSPORTFILENAME */
-		pvalue = pattachment->proplist.getval(PR_ATTACH_TRANSPORT_NAME_A);
-		if (NULL != pvalue) {
+		str = pattachment->proplist.get<char>(PR_ATTACH_TRANSPORT_NAME_A);
+		if (str != nullptr) {
 			if (ext.p_attr(LVL_ATTACHMENT, ATTRIBUTE_ID_ATTACHTRANSPORTFILENAME,
-			    pvalue) != EXT_ERR_SUCCESS)
+			    str) != EXT_ERR_SUCCESS)
 				return FALSE;
 			tmp_proptags.pproptag[tmp_proptags.count++] = PR_ATTACH_TRANSPORT_NAME_A;
 		}
