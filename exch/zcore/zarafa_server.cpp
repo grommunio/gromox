@@ -2763,9 +2763,8 @@ uint32_t zarafa_server_queryrows(
 		memcpy(ppropvals, prowset->pparray[i]->ppropval,
 			sizeof(TAGGED_PROPVAL)*prowset->pparray[i]->count);
 		ppropvals[prowset->pparray[i]->count].proptag = PR_OBJECT_TYPE;
-		ppropvals[prowset->pparray[i]->count].pvalue = pobject_type;
+		ppropvals[prowset->pparray[i]->count++].pvalue = pobject_type;
 		prowset->pparray[i]->ppropval = ppropvals;
-		prowset->pparray[i]->count ++;
 	}
 	return ecSuccess;
 }
@@ -3225,9 +3224,8 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			ppropval[prcpt->count].pvalue = cu_alloc<uint32_t>();
 			if (ppropval[prcpt->count].pvalue == nullptr)
 				return ecError;
-			*(uint32_t*)ppropval[prcpt->count].pvalue = last_rowid;
+			*static_cast<uint32_t *>(ppropval[prcpt->count++].pvalue) = last_rowid;
 			prcpt->ppropval = ppropval;
-			prcpt->count ++;
 			auto pbin = prcpt->get<BINARY>(PR_ENTRYID);
 			if (pbin == nullptr ||
 			    (prcpt->has(PR_EMAIL_ADDRESS) &&

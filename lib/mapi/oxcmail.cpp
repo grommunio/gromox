@@ -951,8 +951,7 @@ static BOOL oxcmail_parse_keywords(const char *charset,
 		b_start = TRUE;
 		if (',' == tmp_buff[i] || ';' == tmp_buff[i]) {
 			tmp_buff[i] = '\0';
-			strings.ppstr[strings.count] = ptoken_prev;
-			strings.count ++;
+			strings.ppstr[strings.count++] = ptoken_prev;
 			b_start = FALSE;
 			ptoken_prev = tmp_buff + i + 1;
 		}

@@ -130,8 +130,7 @@ BOOL attachment_list_append_internal(ATTACHMENT_LIST *plist,
 		}
 		plist->pplist = pplist;
 	}
-	plist->pplist[plist->count] = pattachment;
-	plist->count ++;
+	plist->pplist[plist->count++] = pattachment;
 	return TRUE;
 }
 
@@ -381,9 +380,8 @@ bool property_groupinfo::append_internal(PROPTAG_ARRAY *pgroup)
 		pgpinfo->pgroups = pgroups;
 	}
 	pgpinfo->pgroups[pgpinfo->count].count = pgroup->count;
-	pgpinfo->pgroups[pgpinfo->count].pproptag = pgroup->pproptag;
+	pgpinfo->pgroups[pgpinfo->count++].pproptag = pgroup->pproptag;
 	free(pgroup);
-	pgpinfo->count ++;
 	return TRUE;
 }
 

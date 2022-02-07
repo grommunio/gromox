@@ -1801,8 +1801,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 			*ppoutmids = NULL;
 			return ecMAPIOOM;
 		}
-		strcpy(parray[count].string, temp_buff);
-		count ++;
+		strcpy(parray[count++].string, temp_buff);
 	}
 	qsort(parray, count, sizeof(nsp_sort_item), nsp_interface_cmpstring);
 	(*ppoutmids)->cvalues = count;

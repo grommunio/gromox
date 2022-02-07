@@ -40,8 +40,7 @@ bool eid_array_append(EID_ARRAY *parray, uint64_t id)
 		}
 		parray->pids = pids;
 	}
-	parray->pids[parray->count] = id;
-	parray->count ++;
+	parray->pids[parray->count++] = id;
 	return true;
 }
 

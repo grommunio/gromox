@@ -3125,9 +3125,8 @@ static int mail_engine_mdele(int argc, char **argv, int sockd)
 		if (SQLITE_ROW != sqlite3_step(pstmt) ||
 		    gx_sql_col_uint64(pstmt, 1) != folder_id)
 			continue;
-		message_ids.pids[message_ids.count] = rop_util_make_eid_ex(
-								1, sqlite3_column_int64(pstmt, 0));
-		message_ids.count ++;
+		message_ids.pids[message_ids.count++] =
+			rop_util_make_eid_ex(1, sqlite3_column_int64(pstmt, 0));
 	}
 	pstmt.finalize();
 	pidb.reset();

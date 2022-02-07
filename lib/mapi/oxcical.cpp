@@ -842,8 +842,7 @@ static BOOL oxcical_parse_categories(std::shared_ptr<ical_component> main_event,
 	for (const auto &pnv2 : pivalue->subval_list) {
 		if (!pnv2.has_value())
 			continue;
-		strings_array.ppstr[strings_array.count] = deconst(pnv2->c_str());
-		strings_array.count ++;
+		strings_array.ppstr[strings_array.count++] = deconst(pnv2->c_str());
 		if (strings_array.count >= 128) {
 			break;
 		}
@@ -1654,10 +1653,8 @@ static BOOL oxcical_fetch_propname(MESSAGE_CONTENT *pmsg, namemap &phash,
 		return FALSE;
 	}
 	for (const auto &pair : phash) {
-		propids.ppropid[propids.count] = pair.first;
-		propnames.ppropname[propnames.count] = pair.second;
-		propids.count ++;
-		propnames.count ++;
+		propids.ppropid[propids.count++] = pair.first;
+		propnames.ppropname[propnames.count++] = pair.second;
 	}
 	if (FALSE == get_propids(&propnames, &propids1)) {
 		return FALSE;

@@ -576,8 +576,7 @@ static BOOL container_object_fetch_special_properties(
 		}
 		ppropvals->ppropval[ppropvals->count].proptag =
 									pproptags->pproptag[i];
-		ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
-		ppropvals->count ++;
+		ppropvals->ppropval[ppropvals->count++].pvalue = pvalue;
 	}
 	return TRUE;
 }
@@ -636,8 +635,7 @@ static BOOL container_object_fetch_folder_properties(
 			if (NULL == pvalue) {
 				return FALSE;
 			}
-			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
-			pout_propvals->count ++;
+			pout_propvals->ppropval[pout_propvals->count++].pvalue = pvalue;
 			break;
 		}
 		case PROP_TAG_CONTAINERFLAGS: {
@@ -650,8 +648,7 @@ static BOOL container_object_fetch_folder_properties(
 			*pvalue = b_sub ?
 				AB_RECIPIENTS | AB_UNMODIFIABLE :
 				AB_RECIPIENTS | AB_SUBCONTAINERS | AB_UNMODIFIABLE;
-			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
-			pout_propvals->count ++;
+			pout_propvals->ppropval[pout_propvals->count++].pvalue = pvalue;
 			break;
 		}
 		case PROP_TAG_DEPTH: {
@@ -671,8 +668,7 @@ static BOOL container_object_fetch_folder_properties(
 				return FALSE;
 			}
 			*pvalue = count;
-			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
-			pout_propvals->count ++;
+			pout_propvals->ppropval[pout_propvals->count++].pvalue = pvalue;
 			break;
 		}
 		case PR_DISPLAY_NAME: {
@@ -690,8 +686,7 @@ static BOOL container_object_fetch_folder_properties(
 				return FALSE;
 			}
 			*pvalue = 0;
-			pout_propvals->ppropval[pout_propvals->count].pvalue = pvalue;
-			pout_propvals->count ++;
+			pout_propvals->ppropval[pout_propvals->count++].pvalue = pvalue;
 			break;
 		}
 		}
@@ -956,16 +951,14 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 			end_pos = tmp_set.count;
 		}
 		for (ssize_t i = start_pos; i < end_pos; ++i) {
-			pset->pparray[pset->count] = tmp_set.pparray[i];
-			pset->count ++;
+			pset->pparray[pset->count++] = tmp_set.pparray[i];
 		}
 	} else {
 		if (end_pos < -1) {
 			end_pos = -1;
 		}
 		for (ssize_t i = start_pos; i > end_pos; --i) {
-			pset->pparray[pset->count] = tmp_set.pparray[i];
-			pset->count ++;
+			pset->pparray[pset->count++] = tmp_set.pparray[i];
 		}
 	}
 	return TRUE;
@@ -1153,9 +1146,8 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 			for (size_t i = first_pos;
 			     i < pcontainer->contents.prow_set->count &&
 			     i < first_pos+row_count; ++i) {
-				pset->pparray[pset->count] =
+				pset->pparray[pset->count++] =
 					pcontainer->contents.prow_set->pparray[i];
-				pset->count++;
 			}
 		}
 	}

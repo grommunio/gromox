@@ -455,8 +455,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				if (NULL == pnode2->pdata) {
 					continue;
 				}
-				strings_array.ppstr[strings_array.count] = static_cast<char *>(pnode2->pdata);
-				strings_array.count ++;
+				strings_array.ppstr[strings_array.count++] = static_cast<char *>(pnode2->pdata);
 			}
 			if (strings_array.count != 0 && strings_array.count < 128 &&
 			    pmsg->proplist.set(g_categories_proptag, &strings_array) != 0)
@@ -564,8 +563,7 @@ MESSAGE_CONTENT* oxvcard_import(
 			}
 			if (child_strings.count >= GX_ARRAY_SIZE(child_buff))
 				goto IMPORT_FAILURE;
-			child_strings.ppstr[child_strings.count] = deconst(pstring);
-			child_strings.count ++;
+			child_strings.ppstr[child_strings.count++] = deconst(pstring);
 		} else if (0 == strcasecmp(pvline->name, "X-MS-TEXT")) {
 			pstring = vcard_get_first_subvalue(pvline);
 			if (NULL == pstring) {
@@ -693,8 +691,7 @@ MESSAGE_CONTENT* oxvcard_import(
 				if (NULL == pnode2->pdata) {
 					continue;
 				}
-				strings_array.ppstr[strings_array.count] = static_cast<char *>(pnode2->pdata);
-				strings_array.count ++;
+				strings_array.ppstr[strings_array.count++] = static_cast<char *>(pnode2->pdata);
 			}
 			if (strings_array.count != 0 && strings_array.count < 128 &&
 			    pmsg->proplist.set(PROP_TAG_HOBBIES, &strings_array) != 0)

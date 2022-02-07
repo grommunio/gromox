@@ -1065,8 +1065,7 @@ BOOL store_object::get_properties(const PROPTAG_ARRAY *pproptags,
 				continue;
 			ppropvals->ppropval[ppropvals->count].proptag =
 				tmp_proptags.pproptag[i];
-			ppropvals->ppropval[ppropvals->count].pvalue = pvalue;
-			ppropvals->count++;
+			ppropvals->ppropval[ppropvals->count++].pvalue = pvalue;
 			tmp_proptags.count--;
 			if (i < tmp_proptags.count) {
 				memmove(tmp_proptags.pproptag + i,

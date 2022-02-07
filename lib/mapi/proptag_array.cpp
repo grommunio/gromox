@@ -58,8 +58,7 @@ bool proptag_array_append(PROPTAG_ARRAY *pproptags, uint32_t proptag)
 		}
 		pproptags->pproptag = pproptag;
 	}
-	pproptags->pproptag[pproptags->count] = proptag;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = proptag;
 	return true;
 }
 

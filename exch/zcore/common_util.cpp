@@ -219,8 +219,7 @@ void common_util_set_propvals(TPROPVAL_ARRAY *parray,
 			return;
 		}
 	}
-	parray->ppropval[parray->count] = *ppropval;
-	parray->count ++;
+	parray->ppropval[parray->count++] = *ppropval;
 }
 
 void common_util_remove_propvals(
@@ -1617,9 +1616,8 @@ BOOL common_util_send_message(store_object *pstore,
 		memcpy(ppropval, pmsgctnt->proplist.ppropval,
 			sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 		ppropval[pmsgctnt->proplist.count].proptag = PR_INTERNET_CPID;
-		ppropval[pmsgctnt->proplist.count].pvalue = &cpid;
+		ppropval[pmsgctnt->proplist.count++].pvalue = &cpid;
 		pmsgctnt->proplist.ppropval = ppropval;
-		pmsgctnt->proplist.count ++;
 	}
 	pvalue = pmsgctnt->proplist.getval(PR_MESSAGE_FLAGS);
 	if (NULL == pvalue) {
@@ -2162,8 +2160,7 @@ static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
 		if (NULL == pmid) {
 			return NULL;
 		}
-		pmessage_ids->pids[pmessage_ids->count] = *pmid;
-		pmessage_ids->count ++;
+		pmessage_ids->pids[pmessage_ids->count++] = *pmid;
 	}
 	return pmessage_ids;
 }
@@ -2272,9 +2269,8 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 		memcpy(ppropval, pmsgctnt->proplist.ppropval,
 			sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 		ppropval[pmsgctnt->proplist.count].proptag = PR_INTERNET_CPID;
-		ppropval[pmsgctnt->proplist.count].pvalue = &cpid;
+		ppropval[pmsgctnt->proplist.count++].pvalue = &cpid;
 		pmsgctnt->proplist.ppropval = ppropval;
-		pmsgctnt->proplist.count ++;
 	}
 	pvalue = pmsgctnt->proplist.getval(PROP_TAG_INTERNETMAILOVERRIDEFORMAT);
 	if (NULL == pvalue) {

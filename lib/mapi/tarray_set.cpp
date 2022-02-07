@@ -64,8 +64,7 @@ int tarray_set::append_move(TPROPVAL_ARRAY *pproplist)
 		}
 		pset->pparray = pparray;
 	}
-	pset->pparray[pset->count] = pproplist;
-	pset->count ++;
+	pset->pparray[pset->count++] = pproplist;
 	return 0;
 }
 
