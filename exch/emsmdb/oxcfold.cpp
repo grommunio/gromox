@@ -595,7 +595,7 @@ uint32_t rop_movefolder(uint8_t want_asynchronous, uint8_t use_unicode,
 	    pdst_folder->folder_id, &b_cycle))
 		return ecError;
 	if (b_cycle)
-		return MAPI_E_FOLDER_CYCLE;
+		return ecRootFolder;
 	if (!exmdb_client_allocate_cn(plogon->get_dir(), &change_num))
 		return ecError;
 	if (!exmdb_client_get_folder_property(plogon->get_dir(), 0,
@@ -704,7 +704,7 @@ uint32_t rop_copyfolder(uint8_t want_asynchronous, uint8_t want_recursive,
 	    pdst_folder->folder_id, &b_cycle))
 		return ecError;
 	if (b_cycle)
-		return MAPI_E_FOLDER_CYCLE;
+		return ecRootFolder;
 	auto pinfo = emsmdb_interface_get_emsmdb_info();
 	if (!exmdb_client_movecopy_folder(plogon->get_dir(),
 	    plogon->account_id, pinfo->cpid, b_guest, rpc_info.username,

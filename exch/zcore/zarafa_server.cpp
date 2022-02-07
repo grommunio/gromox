@@ -2360,7 +2360,7 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 	    pdst_folder->folder_id, &b_cycle))
 		return ecError;
 	if (b_cycle)
-		return MAPI_E_FOLDER_CYCLE;
+		return ecRootFolder;
 	if (!exmdb_client::movecopy_folder(pstore->get_dir(),
 	    pstore->account_id, pinfo->cpid, b_guest, pinfo->get_username(),
 	    psrc_parent->folder_id, folder_id, pdst_folder->folder_id,
@@ -4002,7 +4002,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 			    folder->folder_id, fdst->folder_id, &b_cycle))
 				return ecError;
 			if (b_cycle)
-				return MAPI_E_FOLDER_CYCLE;
+				return ecRootFolder;
 			b_sub = TRUE;
 		} else {
 			b_sub = FALSE;

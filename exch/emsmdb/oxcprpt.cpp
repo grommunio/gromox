@@ -824,7 +824,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 			    fldsrc->folder_id, flddst->folder_id, &b_cycle))
 				return ecError;
 			if (b_cycle)
-				return MAPI_E_FOLDER_CYCLE;
+				return ecRootFolder;
 			b_sub = TRUE;
 		} else {
 			b_sub = FALSE;
