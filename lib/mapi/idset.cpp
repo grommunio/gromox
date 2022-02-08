@@ -506,7 +506,8 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 						prange_node.reset();
 					}
 				} else if (!prange_node.has_value()) {
-					prange_node.emplace(low_value + i + 1, prange_node->low_value);
+					auto x = low_value + i + 1;
+					prange_node.emplace(x, x);
 				} else {
 					prange_node->high_value ++;
 				}
