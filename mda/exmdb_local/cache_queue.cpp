@@ -467,21 +467,19 @@ static void *mdl_thrwork(void *arg)
 				if (NULL == pbounce_context) {
 					exmdb_local_log_info(pcontext, ptr, LV_ERR, "fail to get one "
 						"context for bounce mail");
+				} else if (!bounce_audit_check(temp_rcpt)) {
+					exmdb_local_log_info(pcontext, ptr, LV_ERR, "will not "
+						"produce bounce message, because of too many "
+						"mails to %s", temp_rcpt);
+					put_context(pbounce_context);
 				} else {
-					if (FALSE == bounce_audit_check(temp_rcpt)) {
-						exmdb_local_log_info(pcontext, ptr, LV_ERR, "will not "
-							"produce bounce message, because of too many "
-							"mails to %s", temp_rcpt);
-						put_context(pbounce_context);
-					} else {
-						bounce_producer_make(temp_from, temp_rcpt,
-							pcontext->pmail, original_time, bounce_type,
-							pbounce_context->pmail);
-						sprintf(pbounce_context->pcontrol->from,
-							"postmaster@%s", get_default_domain());
-						pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
-						enqueue_context(pbounce_context);
-					}
+					bounce_producer_make(temp_from, temp_rcpt,
+						pcontext->pmail, original_time, bounce_type,
+						pbounce_context->pmail);
+					sprintf(pbounce_context->pcontrol->from,
+					        "postmaster@%s", get_default_domain());
+					pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
+					enqueue_context(pbounce_context);
 				}
 			}
 			free(pbuff);

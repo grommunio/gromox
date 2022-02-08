@@ -114,17 +114,15 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 		need_alarm_one = TRUE;
 	}
 	g_fail_accumulating += temp_fail;
-	if (current_time - g_last_check_point <= g_interval) {
-		if (g_fail_accumulating > g_times) {
-			if (FALSE == g_turnoff_alarm) {
-				need_alarm_two = TRUE;
-			}
-			g_fail_accumulating = 0;
-			g_last_check_point = current_time;
-		}
-	} else {
+	if (current_time - g_last_check_point > g_interval) {
 		g_fail_accumulating = 0;
-        g_last_check_point = current_time;
+	        g_last_check_point = current_time;
+	} else if (g_fail_accumulating > g_times) {
+		if (FALSE == g_turnoff_alarm) {
+			need_alarm_two = TRUE;
+		}
+		g_fail_accumulating = 0;
+		g_last_check_point = current_time;
 	}
 	hold.unlock();
 	

@@ -444,23 +444,21 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 			break;
 		}
 	}
-	if (FALSE == hook_result) {
-		if (pthr_data->last_thrower != g_local_hook) {
-			pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-			pthr_data->last_hook = g_local_hook;
-			if (g_local_hook(pcontext))
-				return TRUE;	
-		}
-		if (pthr_data->last_thrower != g_remote_hook) {
-			pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-			pthr_data->last_hook = g_remote_hook;
-			if (g_remote_hook(pcontext))
-				return TRUE;
-		}
-		return FALSE;
-	} else {
+	if (!hook_result)
 		return TRUE;
+	if (pthr_data->last_thrower != g_local_hook) {
+		pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		pthr_data->last_hook = g_local_hook;
+		if (g_local_hook(pcontext))
+			return TRUE;
 	}
+	if (pthr_data->last_thrower != g_remote_hook) {
+		pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		pthr_data->last_hook = g_remote_hook;
+		if (g_remote_hook(pcontext))
+			return TRUE;
+	}
+	return FALSE;
 }
 
 static void *dxp_thrwork(void *arg)
