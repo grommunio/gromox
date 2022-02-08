@@ -458,6 +458,10 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 		case 0x4:
 		case 0x5:
 		case 0x6: { /* push */
+			if (offset + command >= pbin->cb) {
+				debug_info("[idset]: E-1651: not enough bytes left\n");
+				return 0;
+			}
 			GLOBCNT common_bytes;
 			memcpy(common_bytes.ab, &pbin->pb[offset], command);
 			offset += command;
@@ -484,6 +488,10 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 			break;
 		}
 		case 0x42: { /* bitmask */
+			if (offset + 2 >= pbin->cb) {
+				debug_info("[idset]: E-1652: not enough bytes left\n");
+				return 0;
+			}
 			GLOBCNT common_bytes;
 			uint8_t start_value = pbin->pb[offset++];
 			uint8_t bitmask = pbin->pb[offset++];
@@ -528,6 +536,10 @@ static uint32_t idset_decode_globset(const BINARY *pbin,
 				debug_info("[idset]: range command error when "
 					"deserializing, length of common bytes in "
 					"stack should be less than 5");
+				return 0;
+			}
+			if (offset + 6 - stack_length >= pbin->cb) {
+				debug_info("[idset]: E-1653: not enough bytes left\n");
 				return 0;
 			}
 			memcpy(&common_bytes.ab[stack_length],
