@@ -4060,18 +4060,12 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			ptz_component, pcomponent, &apprecurr)) {
 			return FALSE;
 		}
-		if (oxcical_check_exdate(&apprecurr)) {
-			if (FALSE == oxcical_export_exdate(tzid,
-				b_allday, pcomponent, &apprecurr)) {
-				return FALSE;
-			}
-		}
-		if (oxcical_check_rdate(&apprecurr)) {
-			if (FALSE == oxcical_export_rdate(tzid,
-				b_allday, pcomponent, &apprecurr)) {
-				return FALSE;
-			}
-		}
+		if (oxcical_check_exdate(&apprecurr) &&
+		    !oxcical_export_exdate(tzid, b_allday, pcomponent, &apprecurr))
+			return FALSE;
+		if (oxcical_check_rdate(&apprecurr) &&
+		    !oxcical_export_rdate(tzid, b_allday, pcomponent, &apprecurr))
+			return FALSE;
 	}
 	
 	propname = {MNID_ID, PSETID_MEETING, PidLidGlobalObjectId};
@@ -4192,46 +4186,44 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			return FALSE;
 		}
 	}
-	if (NULL != pvalue) {
-		if (FALSE == b_allday) {
-			if (NULL == ptz_component) {
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
-						itime.year, itime.month, itime.day,
-						itime.hour, itime.minute, itime.second);
-			} else {
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
-					itime.year, itime.month, itime.day,
-					itime.hour, itime.minute, itime.second);
-			}
-			piline = ical_new_simple_line("RECURRENCE-ID", tmp_buff);
-			if (NULL == piline) {
-				return FALSE;
-			}
-			if (pcomponent->append_line(piline) < 0)
-				return false;
-			if (NULL != ptz_component) {
-				piparam = ical_new_param("TZID");
-				if (NULL == piparam) {
-					return FALSE;
-				}
-				if (piline->append_param(piparam) < 0)
-					return false;
-				if (!piparam->append_paramval(tzid))
-					return FALSE;
-			}
-		} else {
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
-				itime.year, itime.month, itime.day);
-			piline = ical_new_simple_line("RECURRENCE-ID", tmp_buff);
-			if (NULL == piline) {
-				return FALSE;
-			}
-			if (pcomponent->append_line(piline) < 0)
-				return false;
-		}
-	} else {
+	if (pvalue == nullptr) {
 		if (b_exceptional)
 			return FALSE;
+	} else if (!b_allday) {
+		if (NULL == ptz_component) {
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
+			         itime.year, itime.month, itime.day,
+			         itime.hour, itime.minute, itime.second);
+		} else {
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
+			         itime.year, itime.month, itime.day,
+			         itime.hour, itime.minute, itime.second);
+		}
+		piline = ical_new_simple_line("RECURRENCE-ID", tmp_buff);
+		if (NULL == piline) {
+			return FALSE;
+		}
+		if (pcomponent->append_line(piline) < 0)
+			return false;
+		if (NULL != ptz_component) {
+			piparam = ical_new_param("TZID");
+			if (NULL == piparam) {
+				return FALSE;
+			}
+			if (piline->append_param(piparam) < 0)
+				return false;
+			if (!piparam->append_paramval(tzid))
+				return FALSE;
+		}
+	} else {
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
+		         itime.year, itime.month, itime.day);
+		piline = ical_new_simple_line("RECURRENCE-ID", tmp_buff);
+		if (NULL == piline) {
+			return FALSE;
+		}
+		if (pcomponent->append_line(piline) < 0)
+			return false;
 	}
 	
 	pvalue = pmsg->proplist.getval(PR_SUBJECT);
@@ -4258,19 +4250,18 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 		ptz_component, start_time, &itime)) {
 		return FALSE;
 	}
-	if (NULL == ptz_component) {
-		if (b_allday)
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
-				itime.year, itime.month, itime.day);
-		else
-			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
-					itime.year, itime.month, itime.day,
-					itime.hour, itime.minute, itime.second);
-	} else {
+	if (ptz_component != nullptr)
 		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
-			itime.year, itime.month, itime.day,
-			itime.hour, itime.minute, itime.second);
-	}
+		         itime.year, itime.month, itime.day,
+		         itime.hour, itime.minute, itime.second);
+	else if (b_allday)
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
+		         itime.year, itime.month, itime.day);
+	else
+		snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
+		         itime.year, itime.month, itime.day,
+		         itime.hour, itime.minute, itime.second);
+
 	piline = ical_new_simple_line("DTSTART", tmp_buff);
 	if (NULL == piline) {
 		return FALSE;
@@ -4303,19 +4294,17 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 			ptz_component, end_time, &itime)) {
 			return FALSE;
 		}
-		if (NULL == ptz_component) {
-			if (b_allday)
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
-					itime.year, itime.month, itime.day);
-			else
-				snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
-						itime.year, itime.month, itime.day,
-						itime.hour, itime.minute, itime.second);
-		} else {
+		if (ptz_component != nullptr)
 			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02d",
-				itime.year, itime.month, itime.day,
-				itime.hour, itime.minute, itime.second);
-		}
+			         itime.year, itime.month, itime.day,
+			         itime.hour, itime.minute, itime.second);
+		else if (b_allday)
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02d",
+			         itime.year, itime.month, itime.day);
+		else
+			snprintf(tmp_buff, arsizeof(tmp_buff), "%04d%02d%02dT%02d%02d%02dZ",
+			         itime.year, itime.month, itime.day,
+			         itime.hour, itime.minute, itime.second);
 		piline = ical_new_simple_line("DTEND", tmp_buff);
 		if (NULL == piline) {
 			return FALSE;

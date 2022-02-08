@@ -704,22 +704,20 @@ static BOOL mjson_parse_array(MJSON *pjson, char *value, int length, int type)
 		case PARSE_STAT_PROCESSING:
 			if ('"' == value[i] && '\\' != value[i - 1]) {
 				b_quota = b_quota?FALSE:TRUE;
-			} else {
-				if (FALSE == b_quota) {
-					if ('{' == value[i]) {
-						bcount ++;
-					} else if ('}' == value[i]) {
-						bcount --;
-						if (0 == bcount) {
-							if (i < last_pos) {
-								return FALSE;
-							}
-							if (FALSE == mjson_record_node(pjson, 
-								value + last_pos, i - last_pos, type)) {
-								return FALSE;
-							}
-							rstat = PARSE_STAT_PROCESSED;
+			} else if (!b_quota) {
+				if ('{' == value[i]) {
+					bcount++;
+				} else if ('}' == value[i]) {
+					bcount--;
+					if (0 == bcount) {
+						if (i < last_pos) {
+							return FALSE;
 						}
+						if (FALSE == mjson_record_node(pjson,
+						    value + last_pos, i - last_pos, type)) {
+							return FALSE;
+						}
+						rstat = PARSE_STAT_PROCESSED;
 					}
 				}
 			}

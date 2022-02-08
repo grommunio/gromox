@@ -159,16 +159,15 @@ static FORWARDDELEGATE_ACTION* forwarddelegate_action_dup(
 		return NULL;
 	}
 	for (i=0; i<paction->count; i++) {
-		if (FALSE == recipient_block_dup_internal(
-			paction->pblock + i, pblock->pblock + i)) {
-			for (i-=1; i>=0; i--) {
-				recipient_block_free_internal(
-									pblock->pblock + i);
-			}
-			free(pblock->pblock);
-			free(pblock);
-			return NULL;
+		if (recipient_block_dup_internal(&paction->pblock[i], &pblock->pblock[i]))
+			continue;
+		for (i -= 1; i >= 0; i--) {
+			recipient_block_free_internal(
+				pblock->pblock + i);
 		}
+		free(pblock->pblock);
+		free(pblock);
+		return NULL;
 	}
 	return pblock;
 }
@@ -302,15 +301,14 @@ RULE_ACTIONS* rule_actions_dup(const RULE_ACTIONS *prule)
 		return NULL;
 	}
 	for (i=0; i<prule->count; i++) {
-		if (FALSE == action_block_dup_internal(
-			prule->pblock + i, paction->pblock + i)) {
-			for (i-=1; i>=0; i--) {
-				action_block_free_internal(paction->pblock + i);
-			}
-			free(paction->pblock);
-			free(paction);
-			return NULL;
+		if (action_block_dup_internal(&prule->pblock[i], &paction->pblock[i]))
+			continue;
+		for (i -= 1; i >= 0; i--) {
+			action_block_free_internal(paction->pblock + i);
 		}
+		free(paction->pblock);
+		free(paction);
+		return NULL;
 	}
 	return paction;
 }

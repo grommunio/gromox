@@ -633,21 +633,16 @@ static BOOL html_write_style(RTF_WRITER *pwriter, GumboElement *pelement)
 	if (html_match_style(pattribute->value,
 		"text-indent", value, sizeof(value))) {
 		value_len = strlen(value);
-		if (0 == strcasecmp(value + value_len - 2, "px")) {
-			if (!html_write_style_text_indent(pwriter,
-			    strtol(value, nullptr, 0)))
-				return FALSE;
-		}
+		if (strcasecmp(value + value_len - 2, "px") == 0 &&
+		    !html_write_style_text_indent(pwriter,
+		    strtol(value, nullptr, 0)))
+			return FALSE;
 	}
 	if (html_match_style(pattribute->value,
 		"color", value, sizeof(value))) {
 		color = html_convert_color(value);
-		if (-1 != color) {
-			if (FALSE == html_write_style_color(
-				pwriter, color)) {
-				return FALSE;	
-			}
-		}
+		if (color != -1 && !html_write_style_color(pwriter, color))
+			return FALSE;
 	}
 	return TRUE;
 }
@@ -1178,30 +1173,23 @@ static BOOL html_enum_write(RTF_WRITER *pwriter, GumboNode *pnode)
 			}
 			pattribute = gumbo_get_attribute(
 				&pnode->v.element.attributes, "face");
-			if (NULL != pattribute) {
-				if (FALSE == html_write_style_font_family(
-					pwriter, pattribute->value)) {
-					return FALSE;	
-				}
-			}
+			if (pattribute != nullptr &&
+			    !html_write_style_font_family(pwriter, pattribute->value))
+				return FALSE;
 			pattribute = gumbo_get_attribute(
 				&pnode->v.element.attributes, "color");
 			if (NULL != pattribute) {
 				color = html_convert_color(pattribute->value);
-				if (-1 != color) {
-					if (FALSE == html_write_style_color(
-						pwriter, color)) {
-						return FALSE;	
-					}
-				}
+				if (color != -1 &&
+				    !html_write_style_color(pwriter, color))
+					return FALSE;
 			}
 			pattribute = gumbo_get_attribute(
 				&pnode->v.element.attributes, "size");
-			if (NULL != pattribute) {
-				if (!html_write_style_font_size(pwriter,
-				    strtol(pattribute->value, nullptr, 0) * 3 + 8, false))
-					return FALSE;	
-			}
+			if (pattribute != nullptr &&
+			    !html_write_style_font_size(pwriter,
+			    strtol(pattribute->value, nullptr, 0) * 3 + 8, false))
+				return FALSE;
 			if (FALSE == html_write_children(pwriter, pnode)) {
 				return FALSE;
 			}

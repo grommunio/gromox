@@ -154,13 +154,11 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 					&pmime->node, SIMPLE_TREE_INSERT_AFTER);
             }
 			pmime_last = pmime;
-			if (MULTIPLE_MIME == pmime->mime_type) {
-				if (FALSE == mail_retrieve_to_mime(pmail, pmime,
-					pmime->first_boundary + pmime->boundary_len + 4,
-					pmime->last_boundary)) {
-					return FALSE;
-				}
-			}
+			if (pmime->mime_type == MULTIPLE_MIME &&
+			    !mail_retrieve_to_mime(pmail, pmime,
+			    pmime->first_boundary + pmime->boundary_len + 4,
+			    pmime->last_boundary))
+				return FALSE;
 			if ('-' == ptr[2 + pmime_parent->boundary_len] &&
 				'-' == ptr[3 + pmime_parent->boundary_len]) {
 				return TRUE;
@@ -201,13 +199,11 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		simple_tree_insert_sibling(&pmail->tree, &pmime_last->node,
 			&pmime->node, SIMPLE_TREE_INSERT_AFTER);
 	}
-	if (MULTIPLE_MIME == pmime->mime_type) {
-		if (FALSE == mail_retrieve_to_mime(pmail, pmime,
-			pmime->first_boundary + pmime->boundary_len + 4,
-			pmime->last_boundary)) {
-			return FALSE;
-		}
-	}
+	if (pmime->mime_type == MULTIPLE_MIME &&
+	    !mail_retrieve_to_mime(pmail, pmime,
+	    pmime->first_boundary + pmime->boundary_len + 4,
+	    pmime->last_boundary))
+		return FALSE;
 	return TRUE;
 }
 
