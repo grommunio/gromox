@@ -134,34 +134,46 @@ BOOL idset::append_range(uint16_t replid,
 	if (prepl_node == repl_list.end())
 		prepl_node = repl_list.emplace(repl_list.end(), replid);
 	auto &range_list = prepl_node->range_list;
-	auto prange_node1 = range_list.end();
-	for (auto prange_node = range_list.begin();
-	     prange_node != range_list.end(); ++prange_node) {
-		if (prange_node1 == range_list.end()) {
-			auto succ = std::next(prange_node);
-			if (low_value == prange_node->high_value) {
-				prange_node1 = prange_node;
-				prange_node1->high_value = high_value;
-			} else if (low_value > prange_node->high_value &&
-			    (succ == range_list.end() || high_value <= succ->low_value)) {
-				prange_node = prange_node1 = range_list.emplace(prange_node, low_value, high_value);
-			}
-			continue;
+	auto iter = range_list.begin();
+	bool merge = false;
+	/*
+	 * If newrange fills a gap between iter->high_value and
+	 * std::next(iter)->low_value precisely, then it will simply be
+	 * right-adjacent to iter now and gets merged; thus never showing up as
+	 * left-adjacent in subsequent iterations (not that there is any more
+	 * iteration - the loop exits anyway).
+	 */
+	for (; iter != range_list.end(); ++iter) {
+		bool nr_is_after  = low_value > iter->high_value + 1;
+		bool nr_is_before = high_value + 1 < iter->low_value;
+		merge = !nr_is_after && !nr_is_before;
+		if (merge) {
+			iter->low_value = std::min(iter->low_value, low_value);
+			iter->high_value = std::max(iter->high_value, high_value);
+			break;
 		}
-		if (high_value == prange_node->low_value) {
-			prange_node1->high_value = prange_node->high_value;
-			range_list.erase(prange_node);
-			return TRUE;
-		} else if (high_value < prange_node->low_value) {
-			return TRUE;
-		}
-		prange_node = range_list.erase(prange_node);
-		if (prange_node == range_list.end())
-			return TRUE;
+		if (nr_is_before)
+			break;
 	}
-	if (prange_node1 != range_list.end())
+	if (!merge) {
+		/* newrange is non-adjacent non-overlapping. */
+		range_list.emplace(iter, low_value, high_value);
 		return TRUE;
-	range_list.emplace_back(low_value, high_value);
+	}
+	/*
+	 * When a merge happened, new adjacencies/overlaps could have formed.
+	 * Because of the property that no left adjacencies could have been
+	 * introduced (see above), we only need to check to the right of @iter,
+	 * and also only on the high side.
+	 */
+	auto bigone = iter;
+	for (++iter; iter != range_list.end(); iter = range_list.erase(iter)) {
+		auto ext_right = iter->high_value > bigone->high_value &&
+		                 iter->low_value <= bigone->high_value + 1;
+		if (!ext_right)
+			break;
+		bigone->high_value = iter->high_value;
+	}
 	return TRUE;
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1614: ENOMEM\n");
