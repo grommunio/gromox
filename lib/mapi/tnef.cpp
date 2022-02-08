@@ -1006,9 +1006,8 @@ static BOOL tnef_convert_to_propname(const std::string &input_tag,
 		return FALSE;
 	}
 	*ptr = '\0';
-	if (FALSE == guid_from_string(&ppropname->guid, tag_string)) {
+	if (!guid_from_string(&ppropname->guid, tag_string))
 		return FALSE;
-	}
 	ptr ++;
 	if (0 == strncmp(ptr, "lid:", 4)) {
 		ppropname->kind = MNID_ID;
@@ -1058,7 +1057,7 @@ static char *tnef_duplicate_string_to_unicode(const char *charset,
 	if (NULL == pstr_out) {
 		return NULL;
 	}
-	if (FALSE == string_to_utf8(charset, pstring, pstr_out)) {
+	if (!string_to_utf8(charset, pstring, pstr_out)) {
 		free(pstr_out);
 		return NULL;
 	}
@@ -1571,8 +1570,7 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 			if (NULL == pattachment) {
 				return NULL;
 			}
-			if (FALSE == attachment_list_append_internal(
-				pattachments, pattachment)) {
+			if (!attachment_list_append_internal(pattachments, pattachment)) {
 				attachment_content_free(pattachment);
 				return NULL;
 			}
@@ -1627,9 +1625,8 @@ static MESSAGE_CONTENT* tnef_deserialize_internal(const void *pbuff,
 	}
 	phash.clear();
 	
-	if (FALSE == get_propids(&propnames, &propids1)) {
+	if (!get_propids(&propnames, &propids1))
 		return NULL;
-	}
 	auto phash1 = INT_HASH_TABLE::create(0x1000, sizeof(uint16_t));
 	if (NULL == phash1) {
 		return NULL;
@@ -2075,11 +2072,10 @@ static TNEF_PROPLIST* tnef_convert_recipient(TPROPVAL_ARRAY *pproplist,
 		if (psmtp != nullptr && pproplist->ppropval[i].proptag == PR_ENTRYID)
 			continue;
 		if (is_nameprop_id(ptnef_proplist->ppropval[ptnef_proplist->count].propid)) {
-			if (FALSE == get_propname(
-				ptnef_proplist->ppropval[ptnef_proplist->count].propid,
-				&ptnef_proplist->ppropval[ptnef_proplist->count].ppropname)) {
+			if (!get_propname(
+			    ptnef_proplist->ppropval[ptnef_proplist->count].propid,
+			    &ptnef_proplist->ppropval[ptnef_proplist->count].ppropname))
 				return NULL;
-			}
 		} else {
 			ptnef_proplist->ppropval[ptnef_proplist->count].ppropname = NULL;
 		}
@@ -2093,9 +2089,8 @@ static TNEF_PROPLIST* tnef_convert_recipient(TPROPVAL_ARRAY *pproplist,
 		}
 		tmp_bin.cb = 0;
 		tmp_bin.pb = tmp_buff;
-		if (FALSE == tnef_username_to_oneoff(psmtp, pdisplay_name, &tmp_bin)) {
+		if (!tnef_username_to_oneoff(psmtp, pdisplay_name, &tmp_bin))
 			return NULL;
-		}
 		pbin->cb = tmp_bin.cb;
 		pbin->pv = alloc(tmp_bin.cb);
 		if (pbin->pv == nullptr)
@@ -2219,7 +2214,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 		tmp_proptags.pproptag[tmp_proptags.count++] = PR_ORIG_MESSAGE_CLASS;
 	}
 	/* ATTRIBUTE_ID_SUBJECT */
-	if (FALSE == b_embedded) {
+	if (!b_embedded) {
 		str = pmsg->proplist.get<char>(PR_SUBJECT_A);
 		if (str != nullptr && ext.p_attr(LVL_MESSAGE,
 		    ATTRIBUTE_ID_SUBJECT, str) != EXT_ERR_SUCCESS)
@@ -2399,18 +2394,17 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 			tnef_proplist.ppropval[tnef_proplist.count].proptype = PROP_TYPE(pmsg->proplist.ppropval[i].proptag);
 		}
 		if (is_nameprop_id(tnef_proplist.ppropval[tnef_proplist.count].propid)) {
-			if (FALSE == get_propname(
-				tnef_proplist.ppropval[tnef_proplist.count].propid,
-				&tnef_proplist.ppropval[tnef_proplist.count].ppropname)) {
+			if (!get_propname(
+			    tnef_proplist.ppropval[tnef_proplist.count].propid,
+			    &tnef_proplist.ppropval[tnef_proplist.count].ppropname))
 				return FALSE;
-			}
 		} else {
 			tnef_proplist.ppropval[tnef_proplist.count].ppropname = NULL;
 		}
 		tnef_proplist.ppropval[tnef_proplist.count++].pvalue =
 							pmsg->proplist.ppropval[i].pvalue;
 	}
-	if (FALSE == b_key) {
+	if (!b_key) {
 		str = pmsg->proplist.get<char>(PR_INTERNET_MESSAGE_ID);
 		if (str != nullptr) {
 			tnef_proplist.ppropval[tnef_proplist.count].propid =
@@ -2539,11 +2533,10 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 				PROP_ID(pattachment->proplist.ppropval[j].proptag);
 			tnef_proplist.ppropval[tnef_proplist.count].proptype = PROP_TYPE(pattachment->proplist.ppropval[j].proptag);
 			if (is_nameprop_id(tnef_proplist.ppropval[tnef_proplist.count].propid)) {
-				if (FALSE == get_propname(
-					tnef_proplist.ppropval[tnef_proplist.count].propid,
-					&tnef_proplist.ppropval[tnef_proplist.count].ppropname)) {
+				if (!get_propname(
+				    tnef_proplist.ppropval[tnef_proplist.count].propid,
+				    &tnef_proplist.ppropval[tnef_proplist.count].ppropname))
 					return FALSE;
-				}
 			} else {
 				tnef_proplist.ppropval[tnef_proplist.count].ppropname = NULL;
 			}

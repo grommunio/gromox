@@ -150,8 +150,7 @@ ATTACHMENT_LIST* attachment_list_dup(ATTACHMENT_LIST *plist)
 			attachment_list_free(plist1);
 			return NULL;
 		}
-		if (FALSE == attachment_list_append_internal(
-			plist1, pattachment)) {
+		if (!attachment_list_append_internal(plist1, pattachment)) {
 			attachment_content_free(pattachment);
 			attachment_list_free(plist1);
 			return NULL;
@@ -235,7 +234,7 @@ MESSAGE_CONTENT* message_content_init()
 	if (NULL == pmsgctnt) {
 		return NULL;
 	}
-	if (FALSE == message_content_init_internal(pmsgctnt)) {
+	if (!message_content_init_internal(pmsgctnt)) {
 		free(pmsgctnt);
 		return nullptr;
 	}

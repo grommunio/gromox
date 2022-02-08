@@ -426,7 +426,7 @@ BINARY *idset::serialize_replguid()
 	for (auto &repl_node : repl_list) {
 		if (repl_node.range_list.size() == 0)
 			continue;
-		if (FALSE == pset->mapping(TRUE, pset->pparam,
+		if (!pset->mapping(TRUE, pset->pparam,
 		    &repl_node.replid, &tmp_guid) ||
 		    !idset_write_guid(pbin.get(), &tmp_guid) ||
 		    !idset_encode_globset(pbin.get(), repl_node.range_list))
@@ -609,7 +609,7 @@ BOOL idset::convert() try
 			return FALSE;
 		for (auto &replguid_node : repl_list) {
 			uint16_t replid;
-			if (FALSE == pset->mapping(FALSE, pset->pparam,
+			if (!pset->mapping(false, pset->pparam,
 			    &replid, &replguid_node.replguid))
 				return false;
 			repl_node repl_node;
@@ -675,7 +675,7 @@ BOOL idset::enum_replist(void *pparam, REPLIST_ENUM replist_enum)
 		return FALSE;
 	for (auto &replguid_node : repl_list) {
 		uint16_t tmp_replid;
-		if (FALSE == pset->mapping(FALSE, pset->pparam,
+		if (!pset->mapping(false, pset->pparam,
 		    &tmp_replid, &replguid_node.replguid))
 			return FALSE;
 		replist_enum(pparam, tmp_replid);
