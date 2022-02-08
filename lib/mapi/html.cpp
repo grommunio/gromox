@@ -1091,41 +1091,25 @@ static BOOL html_enum_write(RTF_WRITER *pwriter, GumboNode *pnode)
 		case GUMBO_TAG_A:
 			pattribute = gumbo_get_attribute(
 				&pnode->v.element.attributes, "href");
-			if (NULL == pattribute) {
-				pvalue = "";
-			} else {
-				pvalue = pattribute->value;
-			}
-			if (FALSE == html_write_a_begin(pwriter, pvalue)) {
+			pvalue = pattribute != nullptr ? pattribute->value : "";
+			if (!html_write_a_begin(pwriter, pvalue) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_a_end(pwriter);
 		case GUMBO_TAG_B:
-			if (FALSE == html_write_b_begin(pwriter)) {
+			if (!html_write_b_begin(pwriter) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_b_end(pwriter);
 		case GUMBO_TAG_I:
-			if (FALSE == html_write_i_begin(pwriter)) {
+			if (!html_write_i_begin(pwriter) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_i_end(pwriter);
 		case GUMBO_TAG_DIV:
-			if (FALSE == html_write_div_begin(pwriter)) {
+			if (!html_write_div_begin(pwriter) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_div_end(pwriter);
 		case GUMBO_TAG_H1:
 		case GUMBO_TAG_H2:
@@ -1133,90 +1117,60 @@ static BOOL html_enum_write(RTF_WRITER *pwriter, GumboNode *pnode)
 		case GUMBO_TAG_H4:
 		case GUMBO_TAG_H5:
 		case GUMBO_TAG_H6:
-			if (FALSE == html_write_h_begin(pwriter)) {
+			if (!html_write_h_begin(pwriter) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_h_end(pwriter);
 		case GUMBO_TAG_P:
-			if (FALSE == html_write_p_begin(pwriter)) {
+			if (!html_write_p_begin(pwriter) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_p_end(pwriter);
 		case GUMBO_TAG_S:
-			if (FALSE == html_write_s_begin(pwriter)) {
+			if (!html_write_s_begin(pwriter) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_s_end(pwriter);
 		case GUMBO_TAG_BR:
 			return html_write_br(pwriter);
 		case GUMBO_TAG_HR:
 			return html_write_hr(pwriter);
 		case GUMBO_TAG_EM:
-			if (FALSE == html_write_em_begin(pwriter)) {
+			if (!html_write_em_begin(pwriter) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_em_end(pwriter);
 		case GUMBO_TAG_OL:
-			if (FALSE == html_write_ol_begin(pwriter)) {
+			if (!html_write_ol_begin(pwriter) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_ol_end(pwriter);
 		case GUMBO_TAG_UL:
-			if (FALSE == html_write_ul_begin(pwriter)) {
+			if (!html_write_ul_begin(pwriter) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_ul_end(pwriter);
 		case GUMBO_TAG_LI:
-			if (FALSE == html_write_li_begin(pwriter)) {
+			if (!html_write_li_begin(pwriter) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_li_end(pwriter);
 		case GUMBO_TAG_CENTER:
-			if (FALSE == html_write_center_begin(pwriter)) {
+			if (!html_write_center_begin(pwriter) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_center_end(pwriter);
 		case GUMBO_TAG_TABLE:
 			if (html_check_parent_type(pnode, GUMBO_TAG_TABLE))
 				return TRUE;
-			if (FALSE == html_write_table_begin(pwriter)) {
+			if (!html_write_table_begin(pwriter) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_table_end(pwriter);
 		case GUMBO_TAG_SPAN:
-			if (FALSE == html_write_span_begin(pwriter)) {
+			if (!html_write_span_begin(pwriter) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_span_end(pwriter);
 		case GUMBO_TAG_FONT:
 			if (FALSE == html_write_font_begin(pwriter)) {
@@ -1253,28 +1207,19 @@ static BOOL html_enum_write(RTF_WRITER *pwriter, GumboNode *pnode)
 			}
 			return html_write_font_end(pwriter);
 		case GUMBO_TAG_MARK:
-			if (FALSE == html_write_mark_begin(pwriter)) {
+			if (!html_write_mark_begin(pwriter) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_mark_end(pwriter);
 		case GUMBO_TAG_TD:
-			if (FALSE == html_write_td_begin(pwriter)) {
+			if (!html_write_td_begin(pwriter) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_td_end(pwriter);
 		case GUMBO_TAG_TH:
-			if (FALSE == html_write_th_begin(pwriter)) {
+			if (!html_write_th_begin(pwriter) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_th_end(pwriter);
 		case GUMBO_TAG_TR:
 			cell_num = 0;
@@ -1284,28 +1229,19 @@ static BOOL html_enum_write(RTF_WRITER *pwriter, GumboNode *pnode)
 					cell_num ++;
 				}
 			}
-			if (FALSE == html_write_tr_begin(pwriter, cell_num)) {
+			if (!html_write_tr_begin(pwriter, cell_num) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_tr_end(pwriter);
 		case GUMBO_TAG_SUB:
-			if (FALSE == html_write_sub_begin(pwriter)) {
+			if (!html_write_sub_begin(pwriter) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_sub_end(pwriter);
 		case GUMBO_TAG_SUP:
-			if (FALSE == html_write_sup_begin(pwriter)) {
+			if (!html_write_sup_begin(pwriter) ||
+			    !html_write_children(pwriter, pnode))
 				return FALSE;
-			}
-			if (FALSE == html_write_children(pwriter, pnode)) {
-				return FALSE;
-			}
 			return html_write_sup_end(pwriter);
 		default:
 			return html_write_children(pwriter, pnode);
