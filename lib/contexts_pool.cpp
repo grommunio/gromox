@@ -89,7 +89,7 @@ static void *ctxp_thrwork(void *pparam)
 				scan_work_func or context_pool_activate_context */
 				continue;
 			}
-			if (FALSE == pcontext->b_waiting) {
+			if (!pcontext->b_waiting) {
 				debug_info("[contexts_pool]: fatal error in context"
 					" queue! b_waiting mismatch in thread_work_func"
 					" conext: %p\n", pcontext);
@@ -127,7 +127,7 @@ static void *ctxp_scanwork(void *pparam)
 			&g_context_lists[CONTEXT_POLLING]);
 		while ((pnode = double_list_pop_front(&g_context_lists[CONTEXT_POLLING])) != nullptr) {
 			pcontext = (SCHEDULE_CONTEXT*)pnode->pdata;
-			if (FALSE == pcontext->b_waiting) {
+			if (!pcontext->b_waiting) {
 				pcontext->type = CONTEXT_SWITCHING;
 				double_list_append_as_tail(&temp_list, pnode);
 				goto CHECK_TAIL;
