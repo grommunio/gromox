@@ -64,9 +64,8 @@ BOOL temp_list_add_string(const char *str, int interval)
 	}
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
-	if (FALSE == g_case_sensitive) {
+	if (!g_case_sensitive)
 		HX_strlower(temp_string);
-	}
 	if (grey_list_query(temp_string, false) != GREY_LIST_NOT_FOUND)
 		return FALSE;
 
@@ -98,10 +97,8 @@ BOOL temp_list_remove_string(const char *str)
 	}
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
-	if (FALSE == g_case_sensitive) {
+	if (!g_case_sensitive)
 		HX_strlower(temp_string);
-	}
-
 	std::lock_guard sm_hold(g_string_mutex_lock);
 	if (g_string_hash->query1(temp_string) == nullptr)
 		return TRUE;
@@ -127,10 +124,8 @@ BOOL temp_list_query(const char *str)
 	}
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
-	if (FALSE == g_case_sensitive) {
+	if (!g_case_sensitive)
 		HX_strlower(temp_string);
-	}
-
 	std::lock_guard sm_hold(g_string_mutex_lock);
 	auto pwhen = g_string_hash->query<time_t>(temp_string);
 	if (NULL == pwhen) {
@@ -160,7 +155,7 @@ static int temp_list_collect_string_entry()
 	time(&current_time);
 	collected_num = 0;
 	auto iter = g_string_hash->make_iter();
-	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
+	for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
 		pwhen = (time_t*)str_hash_iter_get_value(iter, NULL);
 		if (current_time > *pwhen) {
@@ -190,10 +185,8 @@ BOOL temp_list_echo(const char *str, time_t *puntil)
 	}
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
-	if (FALSE == g_case_sensitive) {
+	if (!g_case_sensitive)
 		HX_strlower(temp_string);
-	}
-
 	std::lock_guard sm_hold(g_string_mutex_lock);
 	/* first remove the overdue items */
 	temp_list_collect_string_entry();
@@ -223,7 +216,7 @@ BOOL temp_list_dump(const char *path)
 	std::unique_lock sm_hold(g_string_mutex_lock);
 	time(&current_time);
 	auto iter = g_string_hash->make_iter();
-	for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
+	for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 		str_hash_iter_forward(iter)) {
 		auto pwhen = static_cast<time_t *>(str_hash_iter_get_value(iter, temp_string));
 		if (current_time >= *pwhen) {

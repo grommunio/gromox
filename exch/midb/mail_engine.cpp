@@ -636,7 +636,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				break;
 			case midb_cond::body: {
-				if (FALSE == b_loaded) {
+				if (!b_loaded) {
 					if (mail_engine_get_digest(psqlite, mid_string, digest_buff) == 0)
 						break;
 					b_loaded = TRUE;
@@ -656,7 +656,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				break;
 			}
 			case midb_cond::cc:
-				if (FALSE == b_loaded) {
+				if (!b_loaded) {
 					if (mail_engine_get_digest(psqlite, mid_string, digest_buff) == 0)
 						break;
 					b_loaded = TRUE;
@@ -701,7 +701,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				break;
 			case midb_cond::from:
-				if (FALSE == b_loaded) {
+				if (!b_loaded) {
 					if (mail_engine_get_digest(psqlite, mid_string, digest_buff) == 0)
 						break;
 					b_loaded = TRUE;
@@ -849,7 +849,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 					b_result1 = TRUE;
 				break;
 			case midb_cond::subject:
-				if (FALSE == b_loaded) {
+				if (!b_loaded) {
 					if (0 == mail_engine_get_digest(
 						psqlite, mid_string, digest_buff)) {
 						break;
@@ -870,7 +870,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				}
 				break;
 			case midb_cond::text: {
-				if (FALSE == b_loaded) {
+				if (!b_loaded) {
 					if (0 == mail_engine_get_digest(
 						psqlite, mid_string, digest_buff)) {
 						break;
@@ -952,7 +952,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				break;
 			}
 			case midb_cond::to:
-				if (FALSE == b_loaded) {
+				if (!b_loaded) {
 					if (0 == mail_engine_get_digest(
 						psqlite, mid_string, digest_buff)) {
 						break;
@@ -1848,9 +1848,8 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 			return;
 		temp_buff[node_stat.st_size] = '\0';
 	} else {
-		if (FALSE == common_util_switch_allocator()) {
+		if (!common_util_switch_allocator())
 			return;
-		}
 		if (!exmdb_client::read_message(dir, NULL, 0,
 			rop_util_make_eid_ex(1, message_id), &pmsgctnt)) {
 			common_util_switch_allocator();
@@ -2380,10 +2379,8 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 		}
 		parent_fid = sqlite3_column_int64(pstmt, 1);
 		commit_max = sqlite3_column_int64(pstmt, 2);
-		if (FALSE == mail_engine_get_encoded_name(
-			pstmt3, folder_id, encoded_name)) {
+		if (!mail_engine_get_encoded_name(pstmt3, folder_id, encoded_name))
 			continue;
-		}
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, folder_id);
 		if (SQLITE_ROW != sqlite3_step(pstmt1)) {
@@ -2412,10 +2409,9 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 				continue;	
 			b_new = FALSE;
 		}
-		if (FALSE == mail_engine_sync_contents(pidb, folder_id)) {
+		if (!mail_engine_sync_contents(pidb, folder_id))
 			return false;
-		}
-		if (FALSE == b_new) {
+		if (!b_new) {
 			snprintf(sql_string, arsizeof(sql_string), "UPDATE folders SET commit_max=%llu"
 			        " WHERE folder_id=%llu", LLU(commit_max), LLU(folder_id));
 			gx_sql_exec(pidb->psqlite, sql_string);
@@ -3009,10 +3005,9 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	}
 	if (!system_services_get_user_lang(pidb->username.c_str(), lang,
 	    arsizeof(lang)) || lang[0] == '\0' ||
-		FALSE == system_services_lang_to_charset(
-		lang, charset) || '\0' == charset[0]) {
+	    !system_services_lang_to_charset(lang, charset) ||
+	    *charset == '\0')
 		strcpy(charset, g_default_charset);
-	}
 	if (!system_services_get_timezone(pidb->username.c_str(), tmzone,
 	    arsizeof(tmzone)) || tmzone[0] == '\0')
 		strcpy(tmzone, g_default_timezone);
@@ -3239,10 +3234,9 @@ static int mail_engine_mcopy(int argc, char **argv, int sockd)
 	}
 	if (!system_services_get_user_lang(pidb->username.c_str(), lang,
 	    arsizeof(lang)) || lang[0] == '\0' ||
-		FALSE == system_services_lang_to_charset(
-		lang, charset) || '\0' == charset[0]) {
+	    !system_services_lang_to_charset(lang, charset) ||
+	    *charset == '\0')
 		strcpy(charset, g_default_charset);
-	}
 	if (!system_services_get_timezone(pidb->username.c_str(), tmzone,
 	    arsizeof(tmzone)) || tmzone[0] == '\0')
 		strcpy(tmzone, g_default_timezone);
@@ -3368,9 +3362,8 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 	}
 	if (array_find_str(special_folders, argv[2]))
 		return MIDB_E_PARAMETER_ERROR;
-	if (FALSE == decode_hex_binary(argv[3], decoded_name, 512)) {
+	if (!decode_hex_binary(argv[3], decoded_name, arsizeof(decoded_name)))
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -3414,11 +3407,10 @@ static int mail_engine_mrenf(int argc, char **argv, int sockd)
 				encoded_name, 1024);
 			folder_id2 = mail_engine_get_folder_id(pidb.get(), encoded_name);
 			if (0 == folder_id2) {
-				if (FALSE == common_util_create_folder(argv[1],
-					user_id, rop_util_make_eid_ex(1, folder_id1),
-					temp_name, &folder_id2)) {
+				if (!common_util_create_folder(argv[1],
+				    user_id, rop_util_make_eid_ex(1, folder_id1),
+				    temp_name, &folder_id2))
 					return MIDB_E_NO_MEMORY;
-				}
 				folder_id1 = rop_util_get_gc_value(folder_id2);
 			} else {
 				folder_id1 = folder_id2;
@@ -3496,9 +3488,8 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 	if (3 != argc || strlen(argv[1]) >= 256 || strlen(argv[2]) >= 1024) {
 		return MIDB_E_PARAMETER_ERROR;
 	}
-	if (FALSE == decode_hex_binary(argv[2], decoded_name, 512)) {
+	if (!decode_hex_binary(argv[2], decoded_name, arsizeof(decoded_name)))
 		return MIDB_E_PARAMETER_ERROR;
-	}
 	auto pidb = mail_engine_get_idb(argv[1]);
 	if (pidb == nullptr)
 		return MIDB_E_HASHTABLE_FULL;
@@ -3530,11 +3521,10 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 				encoded_name, 1024);
 			folder_id2 = mail_engine_get_folder_id(pidb.get(), encoded_name);
 			if (0 == folder_id2) {
-				if (FALSE == common_util_create_folder(argv[1],
-					user_id, rop_util_make_eid_ex(1, folder_id1),
-					temp_name, &folder_id2)) {
+				if (!common_util_create_folder(argv[1],
+				    user_id, rop_util_make_eid_ex(1, folder_id1),
+				    temp_name, &folder_id2))
 					return MIDB_E_NO_MEMORY;
-				}
 				folder_id1 = rop_util_get_gc_value(folder_id2);
 			} else {
 				folder_id1 = folder_id2;
@@ -3543,11 +3533,10 @@ static int mail_engine_mmakf(int argc, char **argv, int sockd)
 		ptoken = ptoken1 + 1;
 	}
 	pidb.reset();
-	if (FALSE == common_util_create_folder(argv[1],
-		user_id, rop_util_make_eid_ex(1, folder_id1),
-		ptoken, &folder_id2) || 0 == folder_id2) {
+	if (!common_util_create_folder(argv[1],
+	    user_id, rop_util_make_eid_ex(1, folder_id1),
+	    ptoken, &folder_id2) || folder_id2 == 0)
 		return MIDB_E_NO_MEMORY;
-	}
 	cmd_write(sockd, "TRUE\r\n", 6);
 	return 0;
 }
@@ -3645,7 +3634,7 @@ static int mail_engine_pofst(int argc, char **argv, int sockd)
 	}
 	idx = sqlite3_column_int64(pstmt, 1);
 	pstmt.finalize();
-	if (FALSE == b_asc) {
+	if (!b_asc) {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT count(message_id) "
 		          "FROM messages WHERE folder_id=%llu", LLU(folder_id));
 		pstmt = gx_sql_prep(pidb->psqlite, sql_string);
@@ -3774,11 +3763,10 @@ static int mail_engine_pfddt(int argc, char **argv, int sockd)
 	}
 	if (SQLITE_ROW == sqlite3_step(pstmt)) {
 		offset = sqlite3_column_int64(pstmt, 0);
-		if (FALSE == b_asc) {
+		if (!b_asc)
 			offset = total - offset;
-		} else {
+		else
 			offset --;
-		}
 	} else {
 		offset = -1;
 	}
@@ -5039,7 +5027,7 @@ static BOOL mail_engine_add_notification_folder(
 	if (pvalue != nullptr && *static_cast<uint8_t *>(pvalue) != 0)
 		return FALSE;
 	pvalue = propvals.getval(PR_CONTAINER_CLASS);
-	if (NULL == pvalue && FALSE == b_wait) {
+	if (pvalue == nullptr && !b_wait) {
 		/* outlook will set the PR_CONTAINER_CLASS
 			after RopCreateFolder, so try to wait! */
 		sleep(1);
@@ -5458,7 +5446,7 @@ int mail_engine_run()
 		printf("[mail_engine]: warning! fail to close"
 			" memory statistic for sqlite engine\n");
 	}
-	if (FALSE == oxcmail_init_library(g_org_name,
+	if (!oxcmail_init_library(g_org_name,
 		system_services_get_user_ids, system_services_get_username_from_id,
 		system_services_ltag_to_lcid, system_services_lcid_to_ltag,
 		system_services_charset_to_cpid, system_services_cpid_to_charset,

@@ -622,10 +622,9 @@ static BOOL pdu_processor_auth_request(DCERPC_CALL *pcall, DATA_BLOB *pblob)
 			return FALSE;
 		}
 	}
-	if (FALSE == pdu_processor_pull_auth_trailer(ppkt,
-		&prequest->stub_and_verifier, &auth, &auth_length, FALSE)) {
+	if (!pdu_processor_pull_auth_trailer(ppkt,
+	    &prequest->stub_and_verifier, &auth, &auth_length, false))
 		return FALSE;
-	}
 	pauth_ctx = pdu_processor_find_auth_context(
 				pcall->pprocessor, auth.auth_context_id);
 	if (NULL == pauth_ctx) {
@@ -771,8 +770,7 @@ static BOOL pdu_processor_fault(DCERPC_CALL *pcall, uint32_t fault_code)
 	}
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = FALSE;
-	
-	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
+	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		g_bnode_allocator->put(pblob_node);
 		return FALSE;
@@ -813,8 +811,7 @@ static BOOL pdu_processor_auth_bind(DCERPC_CALL *pcall)
 			&pauth_ctx->node);
 		return TRUE;
 	}
-	
-	if (FALSE == pdu_processor_pull_auth_trailer(ppkt, &pbind->auth_info,
+	if (!pdu_processor_pull_auth_trailer(ppkt, &pbind->auth_info,
 		&pauth_ctx->auth_info, &auth_length, FALSE)) {
 		g_auth_allocator->put(pauth_ctx);
 		return FALSE;
@@ -918,8 +915,7 @@ static BOOL pdu_processor_bind_nak(DCERPC_CALL *pcall, uint32_t reason)
 	}
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = FALSE;
-	
-	if (FALSE == pdu_processor_ncacn_push_with_auth(
+	if (!pdu_processor_ncacn_push_with_auth(
 		&pblob_node->blob, &pkt, NULL)) {
 		g_bnode_allocator->put(pblob_node);
 		return FALSE;
@@ -982,8 +978,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 			break;
 		}
 	}
-	
-	if (FALSE == b_found) {
+	if (!b_found) {
 		for (i=0; i<pbind->ctx_list[0].num_transfer_syntaxes; i++) {
 			if (g_transfer_syntax_ndr64.uuid == pbind->ctx_list[0].transfer_syntaxes[i].uuid &&
 				pbind->ctx_list[0].transfer_syntaxes[i].version ==
@@ -992,7 +987,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 				break;
 			}
 		}
-		if (FALSE == b_found) {
+		if (!b_found) {
 			debug_info("[pdu_processor]: only NDR or NDR64 transfer syntax "
 				"can be accepted by system\n");
 			return pdu_processor_bind_nak(pcall, 0);
@@ -1073,15 +1068,14 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	}
 
 	/* handle any authentication that is being requested */
-	if (FALSE == pdu_processor_auth_bind(pcall)) {
+	if (!pdu_processor_auth_bind(pcall)) {
 		if (NULL != pcontext) {
 			pdu_processor_free_context(pcontext);
 		}
 		return pdu_processor_bind_nak(pcall,
 					DCERPC_BIND_REASON_INVALID_AUTH_TYPE);
 	}
-	
-	if (FALSE == pdu_processor_auth_bind_ack(pcall)) {
+	if (!pdu_processor_auth_bind_ack(pcall)) {
 		if (NULL != pcontext) {
 			pdu_processor_free_context(pcontext);
 		}
@@ -1115,7 +1109,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		pkt.payload.bind_ack.secondary_address[0] = '\0';
 	}
 #ifdef SUPPORT_NEGOTIATE
-	if (FALSE == b_negotiate) {
+	if (!b_negotiate) {
 #endif
 		pkt.payload.bind_ack.num_contexts = 1;
 		pkt.payload.bind_ack.ctx_list = static_cast<DCERPC_ACK_CTX *>(malloc(sizeof(DCERPC_ACK_CTX)));
@@ -1137,11 +1131,10 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		}
 		pkt.payload.bind_ack.ctx_list[1].result =
 				DCERPC_BIND_RESULT_NEGOTIATE_ACK;
-		if (FALSE == pcall->b_bigendian) {
+		if (!pcall->b_bigendian)
 			bitmap = pbind->ctx_list[1].transfer_syntaxes[0].uuid.clock_seq[0];
-		} else {
+		else
 			bitmap = pbind->ctx_list[1].transfer_syntaxes[0].uuid.node[5];
-		}
 		if (DCERPC_SECURITY_CONTEXT_MULTIPLEXING & bitmap) {
 			pkt.payload.bind_ack.ctx_list[1].reason =
 				DCERPC_SECURITY_CONTEXT_MULTIPLEXING;
@@ -1179,8 +1172,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = FALSE;
-	
-	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
+	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, &pauth_ctx->auth_info)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
 		g_bnode_allocator->put(pblob_node);
@@ -1224,12 +1216,10 @@ static BOOL pdu_processor_process_auth3(DCERPC_CALL *pcall)
 	}
 	
 	pdu_ndr_free_dcerpc_auth(&pauth_ctx->auth_info);
-
-	if (FALSE == pdu_processor_pull_auth_trailer(ppkt,
-		&ppkt->payload.auth3.auth_info, &pauth_ctx->auth_info,
-		&auth_length, TRUE)) {
+	if (!pdu_processor_pull_auth_trailer(ppkt,
+	    &ppkt->payload.auth3.auth_info, &pauth_ctx->auth_info,
+	    &auth_length, TRUE))
 		goto AUTH3_FAIL;
-	}
 	if (!ntlmssp_update(pauth_ctx->pntlmssp, &pauth_ctx->auth_info.credentials))
 		goto AUTH3_FAIL;
 	if (!ntlmssp_session_info(pauth_ctx->pntlmssp, &pauth_ctx->session_info)) {
@@ -1319,8 +1309,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 				break;
 			}
 		}
-		
-		if (FALSE == b_found) {
+		if (!b_found) {
 			for (i=0; i<palter->ctx_list[0].num_transfer_syntaxes; i++) {
 				if (g_transfer_syntax_ndr64.uuid == palter->ctx_list[0].transfer_syntaxes[i].uuid &&
 					palter->ctx_list[0].transfer_syntaxes[i].version ==
@@ -1329,7 +1318,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 					break;
 				}
 			}
-			if (FALSE == b_found) {
+			if (!b_found) {
 				debug_info("[pdu_processor]: only NDR or NDR64 transfer syntax "
 					"can be accepted by system\n");
 				result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
@@ -1404,15 +1393,13 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 			}
 		}
 	}
-	
-	if (FALSE == pdu_processor_auth_alter(pcall)) {
+	if (!pdu_processor_auth_alter(pcall)) {
 		if (NULL != pcontext) {
 			pdu_processor_free_context(pcontext);
 		}
 		return FALSE;
 	}
-	
-	if (FALSE == pdu_processor_auth_alter_ack(pcall)) {
+	if (!pdu_processor_auth_alter_ack(pcall)) {
 		if (NULL != pcontext) {
 			pdu_processor_free_context(pcontext);
 		}
@@ -1473,8 +1460,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	}
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = FALSE;
-	
-	if (FALSE == pdu_processor_ncacn_push_with_auth(
+	if (!pdu_processor_ncacn_push_with_auth(
 		&pblob_node->blob, &pkt, &pauth_ctx->auth_info)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
 		if (NULL != pcontext) {
@@ -1721,7 +1707,7 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 		pkt.payload.response.stub_and_verifier.data = stub.data;
 		pkt.payload.response.stub_and_verifier.length = length;
 
-		if (FALSE == pdu_processor_auth_response(pcall,
+		if (!pdu_processor_auth_response(pcall,
 			&pblob_node->blob, sig_size, &pkt)) {
 			g_bnode_allocator->put(pblob_node);
 			free(pdata);
@@ -2129,8 +2115,7 @@ BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall)
 	}
 	pblob_node->node.pdata = pblob_node;
 	pblob_node->b_rts = TRUE;
-
-	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
+	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		g_bnode_allocator->put(pblob_node);
 		return FALSE;
@@ -2439,8 +2424,7 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 	pkt.payload.rts.commands[0].command_type = RTS_CMD_CONNECTION_TIMEOUT;
 	pkt.payload.rts.commands[0].command.connectiontimeout =
 							http_parser_get_param(HTTP_SESSION_TIMEOUT)*1000;
-	
-	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
+	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
 		g_bnode_allocator->put(pblob_node);
@@ -2485,8 +2469,7 @@ BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 	pkt.payload.rts.commands[2].command_type = RTS_CMD_CONNECTION_TIMEOUT;
 	pkt.payload.rts.commands[2].command.connectiontimeout =
 							http_parser_get_param(HTTP_SESSION_TIMEOUT)*1000;
-	
-	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
+	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
 		g_bnode_allocator->put(pblob_node);
@@ -2526,8 +2509,7 @@ static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 	
 	pkt.payload.rts.commands[0].command_type = RTS_CMD_DESTINATION;
 	pkt.payload.rts.commands[0].command.destination = FD_CLIENT;
-	
-	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
+	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
 		g_bnode_allocator->put(pblob_node);
@@ -2567,8 +2549,7 @@ BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
 	
 	pkt.payload.rts.commands[0].command_type = RTS_CMD_DESTINATION;
 	pkt.payload.rts.commands[0].command.destination = FD_CLIENT;
-	
-	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
+	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
 		g_bnode_allocator->put(pblob_node);
@@ -2610,8 +2591,7 @@ BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
 	pkt.payload.rts.commands[0].command.destination = FD_CLIENT;
 	
 	pkt.payload.rts.commands[1].command_type = RTS_CMD_ANCE;
-	
-	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
+	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
 		g_bnode_allocator->put(pblob_node);
@@ -2650,8 +2630,7 @@ BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall)
 	}
 	
 	pkt.payload.rts.commands[0].command_type = RTS_CMD_ANCE;
-	
-	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
+	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
 		g_bnode_allocator->put(pblob_node);
@@ -2703,7 +2682,7 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 		g_bnode_allocator->put(pblob_node);
 		return FALSE;
 	}
-	if (FALSE == pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
+	if (!pdu_processor_ncacn_push_with_auth(&pblob_node->blob,
 		&pkt, NULL)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
 		g_bnode_allocator->put(pblob_node);
@@ -2786,11 +2765,11 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				return PDU_PROCESSOR_ERROR;
 			}
 			pchannel_out->available_window = pchannel_out->window_size;
-			if (FALSE == http_parser_try_create_vconnection(pcontext)) {
+			if (!http_parser_try_create_vconnection(pcontext)) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
-			if (FALSE == pdu_processor_rts_conn_a3(pcall)) {
+			if (!pdu_processor_rts_conn_a3(pcall)) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2818,9 +2797,8 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			}
 			pchannel_out->available_window = pchannel_out->window_size;
 			pdu_processor_free_call(pcall);
-			if (FALSE == http_parser_recycle_outchannel(pcontext, channel_cookie)) {
+			if (!http_parser_recycle_outchannel(pcontext, channel_cookie))
 				return PDU_PROCESSOR_ERROR;
-			}
 			pchannel_out->channel_stat = CHANNEL_STAT_RECYCLING;
 			return PDU_PROCESSOR_INPUT;
 		} else if (24 == length) {
@@ -2832,7 +2810,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
-			if (FALSE == pdu_processor_retrieve_outr2_c1(pcall)) {
+			if (!pdu_processor_retrieve_outr2_c1(pcall)) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2863,9 +2841,8 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			}
 			pdu_processor_free_call(pcall);
 			/* notify out channel to send conn/c2 to client */
-			if (FALSE == http_parser_try_create_vconnection(pcontext)) {
+			if (!http_parser_try_create_vconnection(pcontext))
 				return PDU_PROCESSOR_ERROR;
-			}
 			pchannel_in->channel_stat = CHANNEL_STAT_OPENED;
 			return PDU_PROCESSOR_INPUT;
 		} else if (88 == length) {
@@ -2888,8 +2865,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
-			
-			if (FALSE == http_parser_recycle_inchannel(pcontext, channel_cookie)) {
+			if (!http_parser_recycle_inchannel(pcontext, channel_cookie)) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2908,9 +2884,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
-			
-			if (FALSE == pdu_processor_retrieve_keep_alive(pcall,
-				&keep_alive)) {
+			if (!pdu_processor_retrieve_keep_alive(pcall, &keep_alive)) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -2952,8 +2926,7 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 			}
 			
 			if (RTS_FLAG_OTHER_CMD == pcall->pkt.payload.rts.flags) {
-				if (FALSE == pdu_processor_retrieve_flowcontrolack_withdestination(
-					pcall)) {
+				if (!pdu_processor_retrieve_flowcontrolack_withdestination(pcall)) {
 					pdu_processor_free_call(pcall);
 					return PDU_PROCESSOR_ERROR;
 				}
@@ -3046,7 +3019,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 	if ((0 == (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_FIRST) ||
 		0 == (pcall->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) &&
 		pcall->pkt.pkt_type != DCERPC_PKT_REQUEST) {
-		if (FALSE == pdu_processor_fault(pcall, DCERPC_FAULT_OTHER)) {
+		if (!pdu_processor_fault(pcall, DCERPC_FAULT_OTHER)) {
 			pdu_processor_free_call(pcall);
 			return PDU_PROCESSOR_ERROR;
 		}
@@ -3058,9 +3031,8 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 		prequest = &pcall->pkt.payload.request;
 		tmp_blob.data = (uint8_t*)pbuff;
 		tmp_blob.length = length;
-		if (FALSE == pdu_processor_auth_request(pcall, &tmp_blob)) {
-			if (FALSE == pdu_processor_fault(pcall,
-				DCERPC_FAULT_ACCESS_DENIED)) {
+		if (!pdu_processor_auth_request(pcall, &tmp_blob)) {
+			if (!pdu_processor_fault(pcall, DCERPC_FAULT_ACCESS_DENIED)) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
@@ -3075,8 +3047,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 					alloc_size = prequest->stub_and_verifier.length * 8;
 				}
 				if (alloc_size > g_max_request_mem) {
-					if (FALSE == pdu_processor_fault(pcall,
-						DCERPC_FAULT_OTHER)) {
+					if (!pdu_processor_fault(pcall, DCERPC_FAULT_OTHER)) {
 						pdu_processor_free_call(pcall);
 						return PDU_PROCESSOR_ERROR;
 					}
@@ -3086,8 +3057,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 				alloc_size = strange_roundup(alloc_size - 1, 16 * 1024);
 				auto pdata = static_cast<uint8_t *>(malloc(alloc_size));
 				if (NULL == pdata) {
-					if (FALSE == pdu_processor_fault(pcall,
-						DCERPC_FAULT_OTHER)) {
+					if (!pdu_processor_fault(pcall, DCERPC_FAULT_OTHER)) {
 						pdu_processor_free_call(pcall);
 						return PDU_PROCESSOR_ERROR;
 					}
@@ -3105,7 +3075,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 			pcallx = pdu_processor_get_fragmented_call(
 						pprocessor, pcall->pkt.call_id);
 			if (NULL == pcallx) {
-				if (FALSE == pdu_processor_fault(pcall, DCERPC_FAULT_OTHER)) {
+				if (!pdu_processor_fault(pcall, DCERPC_FAULT_OTHER)) {
 					pdu_processor_free_call(pcall);
 					return PDU_PROCESSOR_ERROR;
 				}
@@ -3115,7 +3085,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 			
 			if (pcallx->pkt.pkt_type != pcall->pkt.pkt_type) {
 				pdu_processor_free_call(pcallx);
-				if (FALSE == pdu_processor_fault(pcall, DCERPC_FAULT_OTHER)) {
+				if (!pdu_processor_fault(pcall, DCERPC_FAULT_OTHER)) {
 					pdu_processor_free_call(pcall);
 					return PDU_PROCESSOR_ERROR;
 				}
@@ -3135,8 +3105,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 			if (pcallx->alloc_size < alloc_size) {
 				if (alloc_size > g_max_request_mem) {
 					pdu_processor_free_call(pcallx);
-					if (FALSE == pdu_processor_fault(pcall,
-						DCERPC_FAULT_OTHER)) {
+					if (!pdu_processor_fault(pcall, DCERPC_FAULT_OTHER)) {
 						pdu_processor_free_call(pcall);
 						return PDU_PROCESSOR_ERROR;
 					}
@@ -3147,8 +3116,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 				auto pdata = static_cast<uint8_t *>(malloc(alloc_size));
 				if (NULL == pdata) {
 					pdu_processor_free_call(pcallx);
-					if (FALSE == pdu_processor_fault(pcall,
-						DCERPC_FAULT_OTHER)) {
+					if (!pdu_processor_fault(pcall, DCERPC_FAULT_OTHER)) {
 						pdu_processor_free_call(pcall);
 						return PDU_PROCESSOR_ERROR;
 					}
@@ -3230,7 +3198,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 		break;
 	}
 	
-	if (FALSE == b_result) {
+	if (!b_result) {
 		pdu_processor_free_call(pcall);
 		return PDU_PROCESSOR_ERROR;
 	} else {

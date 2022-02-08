@@ -93,9 +93,8 @@ int grey_list_query(const char *str, BOOL b_count)
     }
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
-	if (FALSE == g_case_sensitive) {
+	if (!g_case_sensitive)
 		HX_strlower(temp_string);
-	}
 
 	std::shared_lock rd_hold(g_refresh_lock);
 	auto iter = g_grey_table.find(temp_string);
@@ -145,9 +144,8 @@ BOOL grey_list_echo(const char *str, int *ptimes, int *pinterval)
 	}
 	strncpy(temp_string, str, sizeof(temp_string));
 	temp_string[sizeof(temp_string) - 1] = '\0';
-	if (FALSE == g_case_sensitive) {
+	if (!g_case_sensitive)
 		HX_strlower(temp_string);
-	}
 
 	std::shared_lock rd_hold(g_refresh_lock);
 	gettimeofday(&current_time, NULL);
@@ -200,9 +198,8 @@ int grey_list_refresh()
 
     gettimeofday(&current_time, NULL);
 	for (decltype(list_len) i = 0; i < list_len; ++i, ++pitem) try {
-		if (FALSE == g_case_sensitive) {
+		if (!g_case_sensitive)
 			HX_strlower(pitem->string);
-		}
 		phash.emplace(pitem->string, GREY_LIST_ENTRY{0, pitem->allow_times,
 			static_cast<int>(atoitvl(pitem->interval)), current_time});
 	} catch (const std::bad_alloc &) {
@@ -240,9 +237,8 @@ BOOL grey_list_add_string(const char* str, int times, int interval)
 	}
 	strncpy(temp_string, str, 255);
 	temp_string[255] = '\0';
-	if (FALSE == g_case_sensitive) {
+	if (!g_case_sensitive)
 		HX_strlower(temp_string);
-	}
 	string_len = strlen(temp_string);
 	for (i=0, j=0; i<string_len; i++, j++) {
 		if (' ' == temp_string[i] || '\\' == temp_string[i] ||
@@ -308,9 +304,8 @@ BOOL grey_list_remove_string(const char* str)
 	}
 	strncpy(temp_string, str, 255);
 	temp_string[255] = '\0';
-	if (FALSE == g_case_sensitive) {
+	if (!g_case_sensitive)
 		HX_strlower(temp_string);
-	}
 	/* check first if the string is in hash table */
 	std::lock_guard wr_hold(g_refresh_lock);
 	if (g_grey_table.erase(temp_string) == 0)

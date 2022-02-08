@@ -660,7 +660,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	phttp->request.f_request_uri.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	phttp->request.f_request_uri.read(tmp_buff, tmp_len);
 	tmp_buff[tmp_len] = '\0';
-	if (FALSE == parse_uri(tmp_buff, request_uri)) {
+	if (!parse_uri(tmp_buff, request_uri)) {
 		http_parser_log_info(phttp, LV_DEBUG, "request"
 				" uri format error for mod_cache");
 		return FALSE;
@@ -717,8 +717,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	memset(pcontext, 0, sizeof(CACHE_CONTEXT));
 	if (mod_cache_get_others_field(&phttp->request.f_others, "Range",
 	    tmp_buff, GX_ARRAY_SIZE(tmp_buff))) {
-		if (FALSE == mod_cache_parse_range_value(
-			tmp_buff, node_stat.st_size, pcontext)) {
+		if (!mod_cache_parse_range_value(tmp_buff, node_stat.st_size, pcontext)) {
 			http_parser_log_info(phttp, LV_DEBUG, "\"range\""
 				" value in http request header format"
 				" error for mod_cache");
@@ -800,9 +799,8 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	ppitem = g_cache_hash->query<CACHE_ITEM *>(tmp_path);
 	if (NULL == ppitem) {
 		if (g_cache_hash->add(tmp_path, &pitem) != 1) {
-			if (FALSE == mod_cache_enlarge_hash()) {
+			if (!mod_cache_enlarge_hash())
 				goto INVALIDATE_ITEM;
-			}
 			g_cache_hash->add(tmp_path, &pitem);
 		}
 		pitem->b_expired = FALSE;
@@ -830,9 +828,8 @@ void mod_cache_put_context(HTTP_CONTEXT *phttp)
 	pcontext->pitem = NULL;
 	std::unique_lock hhold(g_hash_lock);
 	pitem->reference --;
-	if (0 != pitem->reference || FALSE == pitem->b_expired) {
+	if (pitem->reference != 0 || !pitem->b_expired)
 		return;
-	}
 	double_list_remove(&g_item_list, &pitem->node);
 	hhold.unlock();
 	free(pitem->blob.data);
@@ -862,14 +859,14 @@ BOOL mod_cache_read_response(HTTP_CONTEXT *phttp)
 	if (NULL == pcontext->pitem) {
 		return FALSE;
 	}
-	if (FALSE == pcontext->b_header) {
+	if (!pcontext->b_header) {
 		if (NULL == pcontext->prange) {
-			if (FALSE == mod_cache_response_single_header(phttp)) {
+			if (!mod_cache_response_single_header(phttp)) {
 				mod_cache_put_context(phttp);
 				return FALSE;
 			}
 		} else {
-			if (FALSE == mod_cache_response_multiple_header(phttp)) {
+			if (!mod_cache_response_multiple_header(phttp)) {
 				mod_cache_put_context(phttp);
 				return FALSE;
 			}

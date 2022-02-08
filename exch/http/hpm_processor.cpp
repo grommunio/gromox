@@ -489,7 +489,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 			phpm_ctx->b_end = TRUE;	
 		return TRUE;
 	}
-	if (FALSE == phpm_ctx->b_chunked) {
+	if (!phpm_ctx->b_chunked) {
 		if (phpm_ctx->cache_size + phttp->stream_in.get_total_length() < phpm_ctx->content_length &&
 		    phttp->stream_in.get_total_length() < g_cache_size)
 			return TRUE;	

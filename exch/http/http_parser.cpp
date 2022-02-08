@@ -553,10 +553,9 @@ static int htparse_rdhead_no(HTTP_CONTEXT *pcontext, char *line, unsigned int li
 		http_4xx(pcontext);
 		return X_LOOP;
 	}
-	if (FALSE == mod_rewrite_process(ptoken + 1,
-	    tmp_len1, &pcontext->request.f_request_uri)) {
+	if (!mod_rewrite_process(ptoken + 1,
+	    tmp_len1, &pcontext->request.f_request_uri))
 		pcontext->request.f_request_uri.write(ptoken + 1, tmp_len1);
-	}
 	memcpy(pcontext->request.version, ptoken1 + 6, tmp_len);
 	pcontext->request.version[tmp_len] = '\0';
 	return X_RUNOFF;
@@ -759,7 +758,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 	gx_strlcpy(pcontext->host, ptoken, GX_ARRAY_SIZE(pcontext->host));
 	pcontext->port = strtol(ptoken1, nullptr, 0);
 
-	if (FALSE == pcontext->b_authed) {
+	if (!pcontext->b_authed) {
 		char dstring[128], response_buff[1024];
 		rfc1123_dstring(dstring, arsizeof(dstring));
 		auto response_len = gx_snprintf(
@@ -823,7 +822,7 @@ static int htp_delegate_hpm(HTTP_CONTEXT *pcontext)
 	pcontext->bytes_rw = 0;
 	pcontext->total_length = 0;
 
-	if (FALSE == hpm_processor_write_request(pcontext)) {
+	if (!hpm_processor_write_request(pcontext)) {
 		http_5xx(pcontext);
 		return X_LOOP;
 	}
@@ -831,7 +830,7 @@ static int htp_delegate_hpm(HTTP_CONTEXT *pcontext)
 		pcontext->sched_stat = SCHED_STAT_RDBODY;
 		return X_LOOP;
 	}
-	if (FALSE == hpm_processor_proc(pcontext)) {
+	if (!hpm_processor_proc(pcontext)) {
 		http_5xx(pcontext);
 		return X_LOOP;
 	}
@@ -855,7 +854,7 @@ static int htp_delegate_fcgi(HTTP_CONTEXT *pcontext)
 	pcontext->bytes_rw = 0;
 	pcontext->total_length = 0;
 
-	if (FALSE == mod_fastcgi_write_request(pcontext)) {
+	if (!mod_fastcgi_write_request(pcontext)) {
 		http_5xx(pcontext);
 		return X_LOOP;
 	}
@@ -863,7 +862,7 @@ static int htp_delegate_fcgi(HTTP_CONTEXT *pcontext)
 		pcontext->sched_stat = SCHED_STAT_RDBODY;
 		return X_LOOP;
 	}
-	if (FALSE == mod_fastcgi_relay_content(pcontext)) {
+	if (!mod_fastcgi_relay_content(pcontext)) {
 		http_5xx(pcontext, "Bad FastCGI Gateway", 502);
 		return X_LOOP;
 	}
@@ -1093,7 +1092,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 		}
 	} else if (mod_cache_check_caching(pcontext) &&
 	    !mod_cache_read_response(pcontext)) {
-		if (FALSE == mod_cache_check_responded(pcontext)) {
+		if (!mod_cache_check_responded(pcontext)) {
 			http_5xx(pcontext);
 			return X_LOOP;
 		}
@@ -1209,7 +1208,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 		auto pvconnection = http_parser_get_vconnection(pcontext->host,
 				pcontext->port, pchannel_out->connection_cookie);
 		auto pnode = double_list_get_head(&pchannel_out->pdu_list);
-		if (FALSE == ((BLOB_NODE*)pnode->pdata)->b_rts) {
+		if (!static_cast<BLOB_NODE *>(pnode->pdata)->b_rts) {
 			pchannel_out->available_window -= written_len;
 			pchannel_out->bytes_sent += written_len;
 		}
@@ -1304,7 +1303,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 		pcontext->connection.last_timestamp = current_time;
 		pcontext->stream_in.fwd_write_ptr(actual_read);
 		if (hpm_processor_check_context(pcontext)) {
-			if (FALSE == hpm_processor_write_request(pcontext)) {
+			if (!hpm_processor_write_request(pcontext)) {
 				http_5xx(pcontext);
 				return X_LOOP;
 			}
@@ -1312,7 +1311,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 			    pcontext)) {
 				return PROCESS_CONTINUE;
 			}
-			if (FALSE == hpm_processor_proc(pcontext)) {
+			if (!hpm_processor_proc(pcontext)) {
 				http_5xx(pcontext);
 				return X_LOOP;
 			}
@@ -1329,14 +1328,14 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 			}
 			return PROCESS_CONTINUE;
 		} else if (NULL != pcontext->pfast_context) {
-			if (FALSE == mod_fastcgi_write_request(pcontext)) {
+			if (!mod_fastcgi_write_request(pcontext)) {
 				http_5xx(pcontext);
 				return X_LOOP;
 			}
 			if (!mod_fastcgi_check_end_of_read(pcontext)) {
 				return PROCESS_CONTINUE;
 			}
-			if (FALSE == mod_fastcgi_relay_content(pcontext)) {
+			if (!mod_fastcgi_relay_content(pcontext)) {
 				http_5xx(pcontext, "Bad FastCGI Gateway", 502);
 				return X_LOOP;
 			}
@@ -1650,7 +1649,7 @@ static int htparse_waitinchannel(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchann
 			pchannel_in->bytes_received = 0;
 			pchannel_out->client_keepalive =
 				pchannel_in->client_keepalive;
-			if (FALSE == pdu_processor_rts_conn_c2(
+			if (!pdu_processor_rts_conn_c2(
 			    pchannel_out->pcall, pchannel_out->window_size)) {
 				pvconnection.put();
 				http_parser_log_info(pcontext, LV_DEBUG,
@@ -1743,9 +1742,8 @@ static int htparse_wait(HTTP_CONTEXT *pcontext)
 		pchannel_out->client_keepalive/2000) {
 		return PROCESS_IDLE;
 	}
-	if (FALSE == pdu_processor_rts_ping(pchannel_out->pcall)) {
+	if (!pdu_processor_rts_ping(pchannel_out->pcall))
 		return PROCESS_IDLE;
-	}
 	/* stream_out is shared resource of vconnection,
 		lock it first before operating */
 	auto hch = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
@@ -1821,7 +1819,7 @@ static int htparse_socket(HTTP_CONTEXT *pcontext)
 		return X_RUNOFF;
 	} else if (actual_read > 0) {
 		pcontext->connection.last_timestamp = current_time;
-		if (FALSE == hpm_processor_send(
+		if (!hpm_processor_send(
 		    pcontext, tmp_buff, actual_read)) {
 			http_parser_log_info(pcontext, LV_DEBUG,
 				"connection closed by hpm");
@@ -2206,9 +2204,8 @@ BOOL http_parser_recycle_outchannel(
 	if (!och->b_obsolete)
 		return FALSE;
 	auto pcall = och->pcall;
-	if (FALSE == pdu_processor_rts_outr2_a6(pcall)) {
+	if (!pdu_processor_rts_outr2_a6(pcall))
 		return FALSE;
-	}
 	pdu_processor_output_pdu(pcall, &och->pdu_list);
 	pvconnection->pcontext_out->sched_stat = SCHED_STAT_WRREP;
 	contexts_pool_signal(pvconnection->pcontext_out);
@@ -2258,7 +2255,7 @@ BOOL http_parser_activate_outrecycling(
 	    strcmp(successor_cookie, static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_outsucc->pchannel)->channel_cookie) != 0)
 		return false;
 	auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_out->pchannel);
-	if (FALSE == pdu_processor_rts_outr2_b3(pchannel_out->pcall)) {
+	if (!pdu_processor_rts_outr2_b3(pchannel_out->pcall)) {
 		pvconnection.put();
 		http_parser_log_info(pcontext, LV_DEBUG,
 			"pdu process error! fail to setup r2/b3");
