@@ -110,13 +110,9 @@ BOOL IDSET_CACHE::hint(uint64_t id_val)
 	if (SQLITE_ROW == sqlite3_step(pcache->pstmt)) {
 		return TRUE;
 	}
-	for (const auto &range_node : pcache->range_list) {
-		auto prange_node = &range_node;
-		if (id_val >= prange_node->low_value &&
-			id_val <= prange_node->high_value) {
+	for (const auto &range_node : pcache->range_list)
+		if (range_node.contains(id_val))
 			return TRUE;	
-		}
-	}
 	return FALSE;
 }
 

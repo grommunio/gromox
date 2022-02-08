@@ -80,8 +80,7 @@ static BOOL idset_append_internal(IDSET *pset,
 	auto &range_list = prepl_node->range_list;
 	auto prange_node = range_list.begin();
 	for (; prange_node != range_list.end(); ++prange_node) {
-		if (value >= prange_node->low_value &&
-			value <= prange_node->high_value) {
+		if (prange_node->contains(value)) {
 			return TRUE;
 		} else if (value == prange_node->low_value - 1) {
 			prange_node->low_value = value;
@@ -242,7 +241,7 @@ BOOL idset::hint(uint64_t eid)
 	if (prepl_node == repl_list.end())
 		return FALSE;
 	for (const auto &range_node : prepl_node->range_list)
-		if (value >= range_node.low_value && value <= range_node.high_value)
+		if (range_node.contains(value))
 			return TRUE;
 	return FALSE;
 }
