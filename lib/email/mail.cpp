@@ -753,7 +753,7 @@ MIME *MAIL::add_child(MIME *pmime_base, int opt)
         return NULL;
     }
 	pmime->clear();
-    if (FALSE == simple_tree_add_child(&pmail->tree,
+	if (!simple_tree_add_child(&pmail->tree,
         &pmime_base->node, &pmime->node, opt)) {
 		pmail->pmime_pool->put_mime(pmime);
         return NULL;

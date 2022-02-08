@@ -179,7 +179,7 @@ static bool ical_retrieve_line_item(char *pline, LINE_ITEM *pitem)
 			pline ++;
 			continue;
 		}
-		if (FALSE == b_value) {
+		if (!b_value) {
 			if ('"' == *pline) {
 				b_quote = b_quote ? false : TRUE;
 			}
@@ -621,7 +621,7 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 			}
 			need_comma = FALSE;
 			for (const auto &pdata2 : piparam->paramval_list) {
-				if (FALSE == need_comma) {
+				if (!need_comma) {
 					need_comma = TRUE;
 				} else {
 					if (offset + 1 >= max_length) {
@@ -644,7 +644,7 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 		}
 		need_semicolon = FALSE;
 		for (const auto &pivalue : piline->value_list) {
-			if (FALSE == need_semicolon) {
+			if (!need_semicolon) {
 				need_semicolon = TRUE;
 			} else {
 				if (offset + 1 >= max_length) {
@@ -662,7 +662,7 @@ static size_t ical_serialize_component(ICAL_COMPONENT *pcomponent,
 			}
 			need_comma = FALSE;
 			for (const auto &pnv2 : pivalue->subval_list) {
-				if (FALSE == need_comma) {
+				if (!need_comma) {
 					need_comma = TRUE;
 				} else {
 					if (offset + 1 >= max_length) {
@@ -1358,25 +1358,22 @@ bool ical_parse_duration(const char *str_duration, long *pseconds)
 			ptoken = ptoken1 + 1;
 			break;
 		case 'H':
-			if (ptoken1 == ptoken || -1 != hour || FALSE == b_time) {
+			if (ptoken1 == ptoken || hour != -1 || !b_time)
 				return false;
-			}
 			*ptoken1 = '\0';
 			hour = strtol(ptoken, nullptr, 0);
 			ptoken = ptoken1 + 1;
 			break;
 		case 'M':
-			if (ptoken1 == ptoken || -1 != minute || FALSE == b_time) {
+			if (ptoken1 == ptoken || minute != -1 || !b_time)
 				return false;
-			}
 			*ptoken1 = '\0';
 			minute = strtol(ptoken, nullptr, 0);
 			ptoken = ptoken1 + 1;
 			break;
 		case 'S':
-			if (ptoken1 == ptoken || -1 != second || FALSE == b_time) {
+			if (ptoken1 == ptoken || second != -1 || !b_time)
 				return false;
-			}
 			*ptoken1 = '\0';
 			second = strtol(ptoken, nullptr, 0);
 			ptoken = ptoken1 + 1;
@@ -1609,9 +1606,8 @@ static const char *ical_get_datetime_offset(std::shared_ptr<ICAL_COMPONENT> ptz_
 		if (b_standard && b_daylight)
 			break;
 	}
-	if (FALSE == b_standard && FALSE == b_daylight) {
+	if (!b_standard && !b_daylight)
 		return NULL;
-	}
 	if (b_standard && !b_daylight)
 		return standard_offset;
 	if (!b_standard && b_daylight)
