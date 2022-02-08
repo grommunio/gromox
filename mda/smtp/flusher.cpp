@@ -168,7 +168,7 @@ static BOOL flusher_load_plugin()
 	g_can_register = true; /* so message_enqueue can set g_current_ID at start */
 	main_result = FLH_LibMain(PLUGIN_INIT, const_cast<void **>(server_funcs));
 	g_can_register = false;
-	if (FALSE == main_result) {
+	if (!main_result) {
 		printf("[flusher]: fail to execute init in flusher plugin\n");
 		return FALSE;
 	}

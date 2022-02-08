@@ -448,7 +448,7 @@ static void *mdl_thrwork(void *arg)
 				net_failure_statistic(0, 1, 0, 0);
 				break;
 			}
-			if (FALSE == need_remove) {
+			if (!need_remove) {
 				/* rewrite type and until time */
 				lseek(fd.get(), 0, SEEK_SET);
 				times = cpu_to_le32(times + 1);

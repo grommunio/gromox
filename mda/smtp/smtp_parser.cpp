@@ -559,11 +559,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			pcontext->last_cmd = T_END_MAIL;
 			return smtp_parser_try_flush_mail(pcontext, TRUE);
 		default:
-			if (FALSE == b_should_flush) {
-				return PROCESS_CONTINUE;
-			} else {
-				return smtp_parser_try_flush_mail(pcontext, FALSE);
-			}
+			return !b_should_flush ? PROCESS_CONTINUE :
+			       smtp_parser_try_flush_mail(pcontext, false);
 		}
 	}
 
@@ -647,7 +644,7 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 	 unfinished line into the clear stream. under the other conditions, always 
 	 ignore the last 4 bytes.
 	 */
-	if (FALSE == is_whole) {
+	if (!is_whole) {
 		if((PARSING_BLOCK_CONTENT != pcontext->block_info.state &&
 		   PARSING_NEST_MIME != pcontext->block_info.state) ||
 		   SINGLE_PART_MAIL == pcontext->mail.head.mail_part) {

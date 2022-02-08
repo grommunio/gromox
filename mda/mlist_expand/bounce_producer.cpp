@@ -584,10 +584,8 @@ static int bounce_producer_get_mail_subject(MAIL *pmail, char *subject,
 		*subject = '\0';
 		return 0;
 	}
-	if (FALSE == mime_string_to_utf8(charset, tmp_buff, subject)) {
+	if (!mime_string_to_utf8(charset, tmp_buff, subject))
 		return 0;
-	}
-	
 	return strlen(subject);
 }
 
@@ -606,9 +604,8 @@ static int bounce_producer_get_mail_charset(MAIL *pmail, char *charset)
 	enum_charset.b_found = FALSE;
 	enum_charset.charset = charset;
 	pmail->enum_mime(bounce_producer_enum_charset, &enum_charset);
-	if (FALSE == enum_charset.b_found) {
+	if (!enum_charset.b_found)
 		strcpy(charset, "ascii");
-	}
 	return strlen(charset);
 }
 

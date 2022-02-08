@@ -114,10 +114,8 @@ int smtp_cmd_handler_starttls(const char *cmd_line, int line_length,
 	if (NULL != pcontext->connection.ssl) {
 		return 506;
 	}
-
-	if (FALSE == smtp_parser_get_param(SMTP_SUPPORT_STARTTLS)) {
+	if (!smtp_parser_get_param(SMTP_SUPPORT_STARTTLS))
 		return 506;
-	}
 	pcontext->last_cmd = T_STARTTLS_CMD;
 	memset(pcontext->mail.envelope.hello_domain, 0, arsizeof(pcontext->mail.envelope.hello_domain));
 	smtp_parser_reset_context_envelope(pcontext);
@@ -252,7 +250,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
                 return DISPATCH_CONTINUE;		
             }
             if ('\0' != path[0] && NULL != system_services_check_full &&
-				FALSE == system_services_check_full(path)) {
+			    !system_services_check_full(path)) {
 				/* 550 Mailbox <email_addr> is full */
 				smtp_reply_str = resource_get_smtp_code(517, 1, &string_length);
 				smtp_reply_str2 = resource_get_smtp_code(517, 2, &string_length);
@@ -293,10 +291,8 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
         /* 503 bad sequence of command, RCPT first */
 		return 509;
     }    
-    if (FALSE == smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext)){
-        return DISPATCH_CONTINUE;
-    }
-
+	if (!smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext))
+		return DISPATCH_CONTINUE;
 	if (FALSE != smtp_parser_get_param(SMTP_SUPPORT_STARTTLS) &&
 		FALSE != smtp_parser_get_param(SMTP_FORCE_STARTTLS) &&
 		NULL == pcontext->connection.ssl) {
@@ -363,9 +359,8 @@ int smtp_cmd_handler_quit(const char* cmd_line, int line_length,
 	size_t string_length = 0;
     char buff[1024];
     
-    if (FALSE == smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext)){
-        return DISPATCH_CONTINUE;
-    }
+	if (!smtp_cmd_handler_check_onlycmd(cmd_line, line_length, pcontext))
+		return DISPATCH_CONTINUE;
     /* 221 <domain> Good-bye */
 	sprintf(buff, "%s%s%s",
 		resource_get_smtp_code(203, 1, &string_length),
@@ -382,9 +377,8 @@ int smtp_cmd_handler_quit(const char* cmd_line, int line_length,
 int smtp_cmd_handler_rset(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-    if (FALSE == smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext)){
-        return DISPATCH_CONTINUE;
-    }
+	if (!smtp_cmd_handler_check_onlycmd(cmd_line, line_length, pcontext))
+		return DISPATCH_CONTINUE;
     pcontext->last_cmd = T_RSET_CMD;
 	smtp_parser_reset_context_envelope(pcontext);
     /* 250 OK */
@@ -394,9 +388,8 @@ int smtp_cmd_handler_rset(const char* cmd_line, int line_length,
 int smtp_cmd_handler_noop(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-    if (FALSE == smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext)){
-        return DISPATCH_CONTINUE;
-    }
+	if (!smtp_cmd_handler_check_onlycmd(cmd_line, line_length, pcontext))
+		return DISPATCH_CONTINUE;
 	/* Caution: no need to mark the last_cmd */
     /* 250 OK */
 	return 205;
@@ -405,10 +398,8 @@ int smtp_cmd_handler_noop(const char* cmd_line, int line_length,
 int smtp_cmd_handler_help(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-    if (FALSE == smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext)){
-        return DISPATCH_CONTINUE;
-    }
-
+	if (!smtp_cmd_handler_check_onlycmd(cmd_line, line_length, pcontext))
+		return DISPATCH_CONTINUE;
 	if (FALSE != smtp_parser_get_param(SMTP_SUPPORT_STARTTLS) &&
 		FALSE != smtp_parser_get_param(SMTP_FORCE_STARTTLS) &&
 		NULL == pcontext->connection.ssl) {
@@ -422,10 +413,8 @@ int smtp_cmd_handler_help(const char* cmd_line, int line_length,
 int smtp_cmd_handler_vrfy(const char* cmd_line, int line_length,
     SMTP_CONTEXT *pcontext)
 {
-    if (FALSE == smtp_cmd_handler_check_onlycmd(cmd_line,line_length,pcontext)){
-        return DISPATCH_CONTINUE;
-    }
-
+	if (!smtp_cmd_handler_check_onlycmd(cmd_line, line_length, pcontext))
+		return DISPATCH_CONTINUE;
 	if (FALSE != smtp_parser_get_param(SMTP_SUPPORT_STARTTLS) &&
 		FALSE != smtp_parser_get_param(SMTP_FORCE_STARTTLS) &&
 		NULL == pcontext->connection.ssl) {

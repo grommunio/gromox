@@ -117,9 +117,8 @@ static int message_enqueue_run()
     char name[256];
     pthread_attr_t attr;
 
-    if (FALSE == message_enqueue_check()) {
-        return -1;
-    }
+	if (!message_enqueue_check())
+		return -1;
 	snprintf(name, GX_ARRAY_SIZE(name), "%s/token.ipc", g_path);
 	int fd = open(name, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 	if (fd >= 0)

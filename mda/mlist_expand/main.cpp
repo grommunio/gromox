@@ -35,8 +35,7 @@ static BOOL hook_mlist_expand(int reason, void **ppdata)
 			printf("[mlist_expand]: failed to run bounce producer\n");
 			return FALSE;
 		}
-
-        if (FALSE == register_hook(expand_process)) {
+		if (!register_hook(expand_process)) {
 			printf("[mlist_expand]: failed to register the hook function\n");
             return FALSE;
         }
@@ -204,7 +203,7 @@ static BOOL expand_process(MESSAGE_CONTEXT *pcontext)
 		}
 	}
 
-	if (FALSE == b_touched) {
+	if (!b_touched) {
 		mem_file_free(&temp_file2);
 		return FALSE;
 	}

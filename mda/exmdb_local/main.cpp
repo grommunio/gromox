@@ -170,7 +170,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 			printf("[exmdb_local]: failed to run exmdb local\n");
 			return FALSE;
 		}
-        if (FALSE == register_local(exmdb_local_hook)) {
+		if (!register_local(exmdb_local_hook)) {
 			printf("[exmdb_local]: failed to register the hook function\n");
             return FALSE;
         }

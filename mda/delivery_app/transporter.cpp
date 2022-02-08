@@ -547,14 +547,13 @@ static void *dxp_thrwork(void *arg)
 		pthr_data->last_hook = NULL;
 		pthr_data->last_thrower = NULL;
 		pass_result = transporter_pass_mpc_hooks(pcontext, pthr_data);
-		if (FALSE == pass_result) {
+		if (!pass_result) {
 			transporter_log_info(pcontext, LV_DEBUG, "Message cannot be processed by "
 				"any hook registered in MPC");
-			if (FALSE == b_self) {
+			if (!b_self)
 				message_dequeue_save(pmessage);
-			}
 		}
-		if (FALSE == b_self) {
+		if (!b_self) {
 			pcontext->pcontrol->f_rcpt_to.clear();
 			pcontext->pmail->clear();
 			message_dequeue_put(pmessage);
@@ -1018,7 +1017,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 	double_list_append_as_tail(&pthr_data->anti_loop.throwed_list,
 		&pcircle->node);
 	pass_result = transporter_pass_mpc_hooks(pcontext, pthr_data);
-	if (FALSE == pass_result) {
+	if (!pass_result) {
 		ret_val = FALSE;
 		transporter_log_info(pcontext, LV_DEBUG, "Message cannot be processed by any "
 			"hook registered in MPC");
@@ -1063,12 +1062,12 @@ static BOOL transporter_register_hook(HOOK_FUNCTION func)
     for (pnode=double_list_get_head(&g_hook_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_hook_list, pnode)) {
 		phook = (HOOK_ENTRY*)(pnode->pdata);
-		if (FALSE == phook->valid && 0 == phook->count) {
+		if (!phook->valid && phook->count == 0) {
 			found_hook = TRUE;
 			break;
         }
     }
-	if (FALSE == found_hook) {
+	if (!found_hook) {
 		phook = (HOOK_ENTRY*)malloc(sizeof(HOOK_ENTRY));
 		phook->node_hook.pdata = phook;
 		phook->node_lib.pdata = phook;
@@ -1081,7 +1080,7 @@ static BOOL transporter_register_hook(HOOK_FUNCTION func)
     phook->plib = g_cur_lib;
 	phook->hook_addr = func;
     double_list_append_as_tail(&g_cur_lib->list_hook, &phook->node_lib);
-	if (FALSE == found_hook) {
+	if (!found_hook) {
     	/* aquire write lock when to modify the hooks list */
 		std::lock_guard ml_hold(g_mpc_list_lock);
     	double_list_append_as_tail(&g_hook_list, &phook->node_hook);
