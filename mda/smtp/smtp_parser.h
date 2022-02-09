@@ -113,10 +113,6 @@ struct MAIL_INFO {
     MAIL_BODY       body;
 };
 
-struct CONNECTION : public CONNECTION_BASE {
-	SSL            *ssl;
-};
-
 struct PARSING_BLOCK {
     int             state;
     char            block_mime[MAX_BLOCK_MIME_LEN];
@@ -141,7 +137,7 @@ struct SMTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	~SMTP_CONTEXT();
 	NOMOVE(SMTP_CONTEXT);
 
-	CONNECTION connection{};
+	GENERIC_CONNECTION connection;
 	STREAM stream; /* stream accepted from smtp client */
 	std::optional<STREAM> stream_second; /* stream for recording splitted data */
 	unsigned int command_protocol = 0;

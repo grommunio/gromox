@@ -889,7 +889,7 @@ static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext)
 	if (NULL == pcontext) {
 		return;
 	}
-	memset(&pcontext->connection, 0, sizeof(CONNECTION));
+	pcontext->connection = GENERIC_CONNECTION();
 	pcontext->connection.sockd      = -1;
 	pcontext->session_num           = 0;
 	pcontext->stream_second.reset();
