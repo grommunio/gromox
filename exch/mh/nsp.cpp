@@ -13,7 +13,6 @@
 #include <unordered_map>
 #include <utility>
 #include <variant>
-#include <sys/time.h>
 #include <unistd.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>

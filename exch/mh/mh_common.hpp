@@ -5,7 +5,6 @@
 #include <cstddef>
 #include <cstdio>
 #include <utility>
-#include <sys/time.h>
 #include <gromox/clock.hpp>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>

@@ -22,7 +22,6 @@
 #include <gromox/list_file.hpp>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <sys/time.h>
 #include <pthread.h>
 #include <cstdlib>
 #include <cstring>

@@ -18,7 +18,6 @@
 #include <cstring>
 #include <cstdarg>
 #include <unistd.h>
-#include <sys/time.h>
 #if __linux__
 #	include <sys/random.h>
 #endif
