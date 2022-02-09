@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <utility>
 #include <sys/time.h>
+#include <gromox/clock.hpp>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/guid.hpp>
@@ -14,16 +15,15 @@
 
 namespace hpm_mh {
 
-using time_point = std::chrono::time_point<std::chrono::system_clock>;
-
 static constexpr auto
 	response_pending_period = std::chrono::seconds(30),
 	session_valid_interval = std::chrono::seconds(900);
 
 struct session_data {
 	session_data() = default;
-	session_data(const GUID& sesguid, const GUID& seqguid, const char* user, time_point exptime)
-	    : session_guid(sesguid), sequence_guid(seqguid), expire_time(exptime)
+	session_data(const GUID &sesguid, const GUID &seqguid,
+	    const char *user, gromox::time_point exptime) :
+		session_guid(sesguid), sequence_guid(seqguid), expire_time(exptime)
 	{
 		gx_strlcpy(username, user, UADDR_SIZE);
 		HX_strlower(username);
@@ -31,7 +31,7 @@ struct session_data {
 
 	GUID session_guid{}, sequence_guid{};
 	char username[UADDR_SIZE]{};
-	time_point expire_time{};
+	gromox::time_point expire_time;
 };
 
 enum {
@@ -81,8 +81,8 @@ static constexpr const char *g_error_text[] = {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-extern int render_content(char *, time_point, time_point);
-extern size_t commonHeader(char *, size_t, const char *, const char *, const char *, const char *, time_point);
+extern int render_content(char *, gromox::time_point, gromox::time_point);
+extern size_t commonHeader(char *, size_t, const char *, const char *, const char *, const char *, gromox::time_point);
 
 struct MhContext
 {
@@ -101,7 +101,7 @@ struct MhContext
 	HTTP_REQUEST& orig;
 	HTTP_AUTH_INFO auth_info{};
 
-	time_point start_time{};
+	gromox::time_point start_time;
 	GUID session_guid{}, sequence_guid{};
 	char request_id[256]{}, client_info[256]{};
 	char request_value[32]{}, session_string[64]{}, push_buff[0x80000];

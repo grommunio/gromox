@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <gromox/clock.hpp>
 #include <gromox/util.hpp>
 #include "mh_common.hpp"
 
@@ -124,7 +125,7 @@ size_t commonHeader(char *dest, size_t maxlen, const char *requestType,
         "Date: %s\r\n";
 	using namespace std::chrono;
 	char dstring[128];
-	rfc1123_dstring(dstring, arsizeof(dstring), time_point::clock::to_time_t(date));
+	rfc1123_dstring(dstring, arsizeof(dstring), gromox::time_point::clock::to_time_t(date));
 	return snprintf(dest, maxlen, templ, requestType, requestId, clientInfo,
 	                static_cast<long long>(duration_cast<milliseconds>(response_pending_period).count()),
 	                static_cast<long long>(duration_cast<milliseconds>(session_valid_interval).count()),
