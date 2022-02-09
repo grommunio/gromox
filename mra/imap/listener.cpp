@@ -232,7 +232,7 @@ static void *imls_thrwork(void *arg)
 			  imap_reply_str2);
 		write(sockd2, buff, len);
 		/* construct the context object */
-		gettimeofday(&pcontext->connection.last_timestamp, NULL);
+		pcontext->connection.last_timestamp = time_point::clock::now();
 		pcontext->connection.sockd          = sockd2;
 		pcontext->connection.client_port    = client_port;
 		pcontext->connection.server_port    = g_listener_port;
@@ -353,7 +353,7 @@ static void *imls_thrworkssl(void *arg)
 		}
 
 		/* construct the context object */
-		gettimeofday(&pcontext->connection.last_timestamp, NULL);
+		pcontext->connection.last_timestamp = time_point::clock::now();
 		pcontext->connection.sockd          = sockd2;
 		pcontext->sched_stat                = SCHED_STAT_STLS;
 		pcontext->connection.client_port    = client_port;

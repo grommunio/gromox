@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
@@ -24,7 +25,6 @@
 #include <unistd.h>
 #include <csignal>
 #include <sys/types.h>
-#include <sys/time.h>
 #include <sys/resource.h>
 
 using namespace gromox;
@@ -189,8 +189,8 @@ int main(int argc, const char **argv) try
 	unsigned int context_aver_units = g_config_file->get_ll("context_average_units");
 	printf("[pop3]: context average units number is %d\n", context_aver_units);
 	
-	int pop3_conn_timeout = g_config_file->get_ll("pop3_conn_timeout");
-	itvltoa(pop3_conn_timeout, temp_buff);
+	std::chrono::seconds pop3_conn_timeout(g_config_file->get_ll("pop3_conn_timeout"));
+	itvltoa(pop3_conn_timeout.count(), temp_buff);
 	printf("[pop3]: pop3 socket read write time out is %s\n", temp_buff);
  
 	int pop3_auth_times = g_config_file->get_ll("pop3_auth_times");

@@ -1,8 +1,8 @@
 #pragma once
+#include <chrono>
 #include <ctime>
 #include <memory>
 #include <string>
-#include <sys/time.h>
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/generic_connection.hpp>
@@ -23,6 +23,11 @@ means mem_file is not initialized. */
 #define MIDB_RDWR_ERROR          2
 #define MIDB_NO_SERVER           1
 #define MIDB_RESULT_OK           0
+
+namespace gromox {
+using time_duration = std::chrono::steady_clock::duration;
+using time_point = std::chrono::time_point<std::chrono::system_clock>;
+}
 
 /* enumeration of imap_parser */
 enum{
@@ -100,15 +105,12 @@ struct IMAP_CONTEXT final : public SCHEDULE_CONTEXT {
 	char username[UADDR_SIZE]{}, maildir[256]{}, lang[32]{};
 };
 
-void imap_parser_init(int context_num, int average_num, size_t cache_size,
-	unsigned int timeout, unsigned int autologout_time, int max_auth_times,
-	int block_auth_fail, BOOL support_starttls, BOOL force_starttls,
-	const char *certificate_path, const char *cb_passwd, const char *key_path);
+extern void imap_parser_init(int context_num, int average_num, size_t cache_size, gromox::time_duration timeout, gromox::time_duration autologout_time, int max_auth_times, int block_auth_fail, BOOL support_starttls, BOOL force_starttls, const char *certificate_path, const char *cb_passwd, const char *key_path);
 extern int imap_parser_run();
 int imap_parser_process(IMAP_CONTEXT *pcontext);
 extern void imap_parser_stop();
 extern int imap_parser_get_context_socket(SCHEDULE_CONTEXT *);
-extern struct timeval imap_parser_get_context_timestamp(SCHEDULE_CONTEXT *);
+extern gromox::time_point imap_parser_get_context_timestamp(schedule_context *);
 int imap_parser_get_param(int param);
 int imap_parser_set_param(int param, int value);
 extern SCHEDULE_CONTEXT **imap_parser_get_contexts_list();

@@ -12,9 +12,12 @@
 #include <gromox/stream.hpp>
 #include <gromox/mem_file.hpp>
 #include <ctime>
-#include <sys/time.h>
 #include <openssl/ssl.h>
-#define OUT_CHANNEL_MAX_WAIT						10
+
+namespace gromox {
+using time_duration = std::chrono::steady_clock::duration;
+using time_point = std::chrono::time_point<std::chrono::system_clock>;
+}
 
 /* enumeration of http_parser */
 enum {
@@ -79,7 +82,8 @@ struct RPC_IN_CHANNEL {
 
 	uint16_t frag_length = 0; /* indicating in coming PDU length */
 	char channel_cookie[GUIDSTR_SIZE]{}, connection_cookie[GUIDSTR_SIZE]{};
-	uint32_t life_time = 0, client_keepalive = 0, available_window = 0;
+	gromox::time_duration client_keepalive{};
+	uint32_t life_time = 0, available_window = 0;
 	uint32_t bytes_received = 0;
 	char assoc_group_id[64]{};
 	DOUBLE_LIST pdu_list{};
@@ -94,7 +98,7 @@ struct RPC_OUT_CHANNEL {
 	uint16_t frag_length = 0;
 	char channel_cookie[64]{}, connection_cookie[64]{};
 	BOOL b_obsolete = false; /* out channel is obsolte, wait for new out channel */
-	uint32_t client_keepalive = 0; /* get from in channel */
+	gromox::time_duration client_keepalive{}; /* get from in channel */
 	std::atomic<uint32_t> available_window{0};
 	uint32_t window_size = 0;
 	uint32_t bytes_sent = 0; /* length of sent data including RPC and RTS PDU, chunk data */
@@ -103,13 +107,13 @@ struct RPC_OUT_CHANNEL {
 	int channel_stat = 0;
 };
 
-extern void http_parser_init(size_t context_num, unsigned int timeout, int max_auth_times, int block_auth_fail, BOOL support_ssl, const char *certificate_path, const char *cb_passwd, const char *key_path, unsigned int xdebug);
+extern void http_parser_init(size_t context_num, gromox::time_duration timeout, int max_auth_times, int block_auth_fail, BOOL support_ssl, const char *certificate_path, const char *cb_passwd, const char *key_path, unsigned int xdebug);
 extern int http_parser_run();
 int http_parser_process(HTTP_CONTEXT *pcontext);
 extern void http_parser_stop();
 extern int http_parser_get_context_socket(SCHEDULE_CONTEXT *);
 void http_parser_set_context(int context_id);
-extern struct timeval http_parser_get_context_timestamp(SCHEDULE_CONTEXT *);
+extern gromox::time_point http_parser_get_context_timestamp(schedule_context *);
 int http_parser_get_param(int param);
 int http_parser_set_param(int param, int value);
 extern SCHEDULE_CONTEXT **http_parser_get_contexts_list();
@@ -128,5 +132,5 @@ extern HTTP_CONTEXT *http_parser_get_context();
 extern void http_parser_shutdown_async();
 void http_parser_vconnection_async_reply(const char *host,
 	int port, const char *connection_cookie, DCERPC_CALL *pcall);
-void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, uint32_t keepalive);
+extern void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, gromox::time_duration keepalive);
 extern void http_parser_log_info(HTTP_CONTEXT *pcontext, int level, const char *format, ...) __attribute__((format(printf, 3, 4)));

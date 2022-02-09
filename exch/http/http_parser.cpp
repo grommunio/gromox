@@ -7,6 +7,7 @@
 #include <atomic>
 #include <cassert>
 #include <cerrno>
+#include <chrono>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -47,6 +48,7 @@
 #define	MAX_RECLYING_REMAINING						0x4000000
 
 #define OUT_CHANNEL_MAX_LENGTH						0x40000000
+#define TOSEC(x) static_cast<long>(std::chrono::duration_cast<std::chrono::seconds>(x).count())
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -66,6 +68,7 @@ struct VIRTUAL_CONNECTION {
 };
 }
 
+static constexpr time_duration OUT_CHANNEL_MAX_WAIT = std::chrono::seconds(10);
 static std::unordered_map<std::string, VIRTUAL_CONNECTION> g_vconnection_hash;
 
 namespace {
@@ -94,7 +97,8 @@ static BOOL g_support_ssl;
 static SSL_CTX *g_ssl_ctx;
 static int g_max_auth_times;
 static int g_block_auth_fail;
-static unsigned int g_timeout, g_http_debug;
+static time_duration g_timeout;
+static unsigned int g_http_debug;
 static thread_local HTTP_CONTEXT *g_context_key;
 static std::unique_ptr<LIB_BUFFER> g_file_allocator;
 static std::unique_ptr<LIB_BUFFER> g_inchannel_allocator, g_outchannel_allocator;
@@ -109,7 +113,7 @@ static std::mutex g_vconnection_lock;
 static void http_parser_context_clear(HTTP_CONTEXT *pcontext);
 static void http_parser_request_clear(HTTP_REQUEST *prequest);
 
-void http_parser_init(size_t context_num, unsigned int timeout,
+void http_parser_init(size_t context_num, time_duration timeout,
 	int max_auth_times, int block_auth_fail, BOOL support_ssl,
 	const char *certificate_path, const char *cb_passwd,
 	const char *key_path, unsigned int xdebug)
@@ -261,7 +265,7 @@ int http_parser_get_context_socket(SCHEDULE_CONTEXT *ctx)
 	return static_cast<HTTP_CONTEXT *>(ctx)->connection.sockd;
 }
 
-struct timeval http_parser_get_context_timestamp(SCHEDULE_CONTEXT *ctx)
+time_point http_parser_get_context_timestamp(SCHEDULE_CONTEXT *ctx)
 {
 	return static_cast<HTTP_CONTEXT *>(ctx)->connection.last_timestamp;
 }
@@ -511,8 +515,7 @@ static int htparse_initssl(HTTP_CONTEXT *pcontext)
 				" SSL connection, errno is %d", ssl_errno);
 		return X_RUNOFF;
 	}
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
+	auto current_time = time_point::clock::now();
 	if (CALCULATE_INTERVAL(current_time,
 	    pcontext->connection.last_timestamp) < g_timeout) {
 		return PROCESS_POLLING_RDONLY;
@@ -661,10 +664,10 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 				"HTTP/1.1 401 Unauthorized\r\n"
 				"Date: %s\r\n"
 				"Content-Length: 0\r\n"
-				"Keep-Alive: timeout=%d\r\n"
+				"Keep-Alive: timeout=%ld\r\n"
 				"Connection: close\r\n"
 				"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
-				"\r\n", dstring, g_timeout);
+				"\r\n", dstring, TOSEC(g_timeout));
 			pcontext->stream_out.write(response_buff, response_len);
 			pcontext->total_length = response_len;
 			pcontext->bytes_rw = 0;
@@ -696,12 +699,12 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 		response_buff, GX_ARRAY_SIZE(response_buff),
 		"HTTP/1.1 401 Unauthorized\r\n"
 		"Date: %s\r\n"
-		"Keep-Alive: timeout=%d\r\n"
+		"Keep-Alive: timeout=%ld\r\n"
 		"Connection: close\r\n"
 		"Content-Type: text/plain; charset=ascii\r\n"
 		"Content-Length: 2\r\n"
 		"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
-		"\r\n\r\n", dstring, g_timeout);
+		"\r\n\r\n", dstring, TOSEC(g_timeout));
 	pcontext->stream_out.write(response_buff, response_len);
 	pcontext->total_length = response_len;
 	pcontext->bytes_rw = 0;
@@ -766,10 +769,10 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 			"HTTP/1.1 401 Unauthorized\r\n"
 			"Date: %s\r\n"
 			"Content-Length: 0\r\n"
-			"Keep-Alive: timeout=%d\r\n"
+			"Keep-Alive: timeout=%ld\r\n"
 			"Connection: close\r\n"
 			"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
-			"\r\n", dstring, g_timeout);
+			"\r\n", dstring, TOSEC(g_timeout));
 		pcontext->stream_out.write(response_buff, response_len);
 		pcontext->total_length = response_len;
 		pcontext->bytes_rw = 0;
@@ -997,8 +1000,7 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 	ssize_t actual_read = pcontext->connection.ssl != nullptr ?
 			      SSL_read(pcontext->connection.ssl, pbuff, size) :
 			      read(pcontext->connection.sockd, pbuff, size);
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
+	auto current_time = time_point::clock::now();
 	if (0 == actual_read) {
 		http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return X_RUNOFF;
@@ -1180,9 +1182,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 			      reinterpret_cast<char *>(pcontext->write_buff) + pcontext->write_offset,
 			written_len);
 
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
-
+	auto current_time = time_point::clock::now();
 	if (0 == written_len) {
 		http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return X_RUNOFF;
@@ -1294,8 +1294,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 	ssize_t actual_read = pcontext->connection.ssl != nullptr ?
 			      SSL_read(pcontext->connection.ssl, pbuff, size) :
 			      read(pcontext->connection.sockd, pbuff, size);
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
+	auto current_time = time_point::clock::now();
 	if (0 == actual_read) {
 		http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return X_RUNOFF;
@@ -1428,8 +1427,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 		ssize_t actual_read = pcontext->connection.ssl != nullptr ?
 				      SSL_read(pcontext->connection.ssl, pbuff, size) :
 				      read(pcontext->connection.sockd, pbuff, size);
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
+		auto current_time = time_point::clock::now();
 		if (0 == actual_read) {
 			http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 			return X_RUNOFF;
@@ -1665,8 +1663,7 @@ static int htparse_waitinchannel(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchann
 		pvconnection.put();
 	}
 
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
+	auto current_time = time_point::clock::now();
 	/* check if context is timed out */
 	if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) <
 	    OUT_CHANNEL_MAX_WAIT) {
@@ -1703,8 +1700,7 @@ static int htparse_waitrecycled(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchanne
 		pvconnection.put();
 	}
 
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
+	auto current_time = time_point::clock::now();
 	/* check if context is timed out */
 	if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) <
 	    OUT_CHANNEL_MAX_WAIT) {
@@ -1735,13 +1731,11 @@ static int htparse_wait(HTTP_CONTEXT *pcontext)
 		return X_RUNOFF;
 	}
 
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
+	auto current_time = time_point::clock::now();
 	/* check keep alive */
 	if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) <
-		pchannel_out->client_keepalive/2000) {
+	    pchannel_out->client_keepalive / 2)
 		return PROCESS_IDLE;
-	}
 	if (!pdu_processor_rts_ping(pchannel_out->pcall))
 		return PROCESS_IDLE;
 	/* stream_out is shared resource of vconnection,
@@ -1782,9 +1776,7 @@ static int htparse_socket(HTTP_CONTEXT *pcontext)
 				written_len);
 		}
 
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
-
+		auto current_time = time_point::clock::now();
 		if (0 == written_len) {
 			http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 			return X_RUNOFF;
@@ -1812,8 +1804,7 @@ static int htparse_socket(HTTP_CONTEXT *pcontext)
 	ssize_t actual_read = pcontext->connection.ssl == nullptr ?
 			      read(pcontext->connection.sockd, tmp_buff, sizeof(tmp_buff)) :
 			      SSL_read(pcontext->connection.ssl, tmp_buff, sizeof(tmp_buff));
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
+	auto current_time = time_point::clock::now();
 	if (0 == actual_read) {
 		http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return X_RUNOFF;
@@ -1896,7 +1887,7 @@ int http_parser_get_param(int param)
     case BLOCK_AUTH_FAIL:
         return g_block_auth_fail;
     case HTTP_SESSION_TIMEOUT:
-        return g_timeout;
+		return std::chrono::duration_cast<std::chrono::seconds>(g_timeout).count();
 	case HTTP_SUPPORT_SSL:
 		return g_support_ssl;
     default:
@@ -1916,7 +1907,7 @@ int http_parser_set_param(int param, int value)
         g_max_auth_times = value;
         break;
     case HTTP_SESSION_TIMEOUT:
-        g_timeout = value;
+		g_timeout = std::chrono::seconds(value);
         break;
 	case BLOCK_AUTH_FAIL:
 		g_block_auth_fail = value;
@@ -2271,7 +2262,7 @@ BOOL http_parser_activate_outrecycling(
 	return TRUE;
 }
 
-void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, uint32_t keepalive)
+void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, time_duration keepalive)
 {
 	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
 	auto pvconnection = http_parser_get_vconnection(pcontext->host,

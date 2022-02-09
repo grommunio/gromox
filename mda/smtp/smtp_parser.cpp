@@ -34,10 +34,6 @@
 #define READ_BUFFER_SIZE    4096
 #define MAX_LINE_LENGTH     64*1024
 
-#define CALCULATE_INTERVAL(a, b) \
-	(((a).tv_usec >= (b).tv_usec) ? ((a).tv_sec - (b).tv_sec) : \
-	((a).tv_sec - (b).tv_sec - 1))
-
 /* the ratio must larger than 2 */
 #define TLS_BUFFER_RATIO    3
 #define TLS_BUFFER_BUS_ALLIN(size)                  \
@@ -193,7 +189,7 @@ int smtp_parser_get_context_socket(SCHEDULE_CONTEXT *ctx)
 	return static_cast<SMTP_CONTEXT *>(ctx)->connection.sockd;
 }
 
-struct timeval smtp_parser_get_context_timestamp(SCHEDULE_CONTEXT *ctx)
+time_point smtp_parser_get_context_timestamp(SCHEDULE_CONTEXT *ctx)
 {
 	return static_cast<SMTP_CONTEXT *>(ctx)->connection.last_timestamp;
 }
@@ -222,7 +218,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 	char *line, reply_buf[1024];
 	int actual_read, ssl_errno;
 	int size = READ_BUFFER_SIZE, len;
-	struct timeval current_time;
+	time_point current_time;
 	const char *host_ID;
 	char *pbuff = nullptr;
 	BOOL b_should_flush = FALSE;
@@ -344,7 +340,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			ssl_errno = SSL_get_error(pcontext->connection.ssl, -1);
 			if (SSL_ERROR_WANT_READ == ssl_errno ||
 				SSL_ERROR_WANT_WRITE == ssl_errno) {
-				gettimeofday(&current_time, NULL);
+				current_time = time_point::clock::now();
 				if (CALCULATE_INTERVAL(current_time,
 				    pcontext->connection.last_timestamp) < g_param.timeout)
 					return PROCESS_POLLING_RDONLY;
@@ -405,7 +401,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 	} else {
 		actual_read = read(pcontext->connection.sockd, pbuff, size);
 	}
-	gettimeofday(&current_time, NULL);
+	current_time = time_point::clock::now();
 	if (0 == actual_read) {
  LOST_READ:
 		if (0 != pcontext->flusher.flush_ID) {

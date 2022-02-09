@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
@@ -24,7 +25,6 @@
 #include <unistd.h>
 #include <csignal>
 #include <sys/types.h>
-#include <sys/time.h>
 #include <sys/resource.h>
 
 using namespace gromox;
@@ -177,12 +177,12 @@ int main(int argc, const char **argv) try
 	unsigned int context_aver_mitem = g_config_file->get_ll("context_average_mitem");
 	printf("[imap]: context average mitem number is %d\n", context_aver_mitem);
 	
-	long imap_conn_timeout = g_config_file->get_ll("imap_conn_timeout");
-	itvltoa(imap_conn_timeout, temp_buff);
+	std::chrono::seconds imap_conn_timeout(g_config_file->get_ll("imap_conn_timeout"));
+	itvltoa(imap_conn_timeout.count(), temp_buff);
 	printf("[imap]: imap socket read write time out is %s\n", temp_buff);
  
-	int autologout_time = g_config_file->get_ll("imap_autologout_time");
-	itvltoa(autologout_time, temp_buff);
+	std::chrono::seconds autologout_time(g_config_file->get_ll("imap_autologout_time"));
+	itvltoa(autologout_time.count(), temp_buff);
 	printf("[imap]: imap session autologout time is %s\n", temp_buff);
  
 	int imap_auth_times = g_config_file->get_ll("imap_auth_times");

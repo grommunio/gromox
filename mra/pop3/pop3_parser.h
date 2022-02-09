@@ -1,4 +1,5 @@
 #pragma once
+#include <chrono>
 #include <cstdint>
 #include <deque>
 #include <gromox/common_types.hpp>
@@ -7,9 +8,13 @@
 #include <gromox/msg_unit.hpp>
 #include <gromox/single_list.hpp>
 #include <gromox/stream.hpp>
-#include <sys/time.h>
 #include <openssl/ssl.h>
 #define MAX_LINE_LENGTH    64*1024
+
+namespace gromox {
+using time_duration = std::chrono::steady_clock::duration;
+using time_point = std::chrono::time_point<std::chrono::system_clock>;
+}
 
 /* enumeration of pop3_parser */
 enum{
@@ -56,15 +61,12 @@ struct POP3_CONTEXT final : public SCHEDULE_CONTEXT {
 	char maildir[256]{};
 };
 
-void pop3_parser_init(int context_num, size_t retrieving_size, int timeout,
-	int max_auth_times, int block_auth_fail, BOOL support_stls, BOOL force_stls,
-	const char *certificate_path, const char *cb_passwd, const char *key_path,
-	const char *cdn_path);
+extern void pop3_parser_init(int context_num, size_t retrieving_size, gromox::time_duration timeout, int max_auth_times, int block_auth_fail, BOOL support_stls, BOOL force_stls, const char *certificate_path, const char *cb_passwd, const char *key_path, const char *cdn_path);
 extern int pop3_parser_run();
 int pop3_parser_process(POP3_CONTEXT *pcontext);
 extern void pop3_parser_stop();
 extern int pop3_parser_get_context_socket(SCHEDULE_CONTEXT *);
-extern struct timeval pop3_parser_get_context_timestamp(SCHEDULE_CONTEXT *);
+extern gromox::time_point pop3_parser_get_context_timestamp(schedule_context *);
 int pop3_parser_get_param(int param);
 int pop3_parser_set_param(int param, int value);
 extern SCHEDULE_CONTEXT **pop3_parser_get_contexts_list();

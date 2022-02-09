@@ -27,6 +27,7 @@
 #include <dlfcn.h>
 #include <unistd.h>
 #include <cstring>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #define ASSOC_GROUP_HASH_SIZE			10000
@@ -2128,7 +2129,7 @@ BOOL pdu_processor_rts_ping(DCERPC_CALL *pcall)
 
 static BOOL pdu_processor_retrieve_conn_b1(DCERPC_CALL *pcall,
     char *conn_cookie, size_t conn_ck_size, char *chan_cookie,
-    size_t chan_ck_size, uint32_t *plife_time, uint32_t *pclient_keepalive,
+    size_t chan_ck_size, uint32_t *plife_time, time_duration *pclient_keepalive,
     char *associationgroupid, size_t gid_size)
 {
 	DCERPC_RTS *prts;
@@ -2160,8 +2161,7 @@ static BOOL pdu_processor_retrieve_conn_b1(DCERPC_CALL *pcall,
 	if (RTS_CMD_CLIENT_KEEPALIVE != prts->commands[4].command_type) {
 		return FALSE;
 	}
-	*pclient_keepalive = prts->commands[4].command.clientkeepalive;
-	
+	*pclient_keepalive = std::chrono::milliseconds(prts->commands[4].command.clientkeepalive);
 	if (RTS_CMD_ASSOCIATION_GROUP_ID !=
 		prts->commands[5].command_type) {
 		return FALSE;
@@ -2352,7 +2352,7 @@ static BOOL pdu_processor_retrieve_outr2_c1(DCERPC_CALL *pcall)
 }
 
 static BOOL pdu_processor_retrieve_keep_alive(DCERPC_CALL *pcall,
-	uint32_t *pkeep_alive)
+    time_duration *pkeep_alive)
 {
 	DCERPC_RTS *prts;
 	
@@ -2369,9 +2369,7 @@ static BOOL pdu_processor_retrieve_keep_alive(DCERPC_CALL *pcall,
 	if (RTS_CMD_CLIENT_KEEPALIVE != prts->commands[0].command_type) {
 		return FALSE;
 	}
-	
-	*pkeep_alive = prts->commands[0].command.clientkeepalive;
-	
+	*pkeep_alive = std::chrono::milliseconds(prts->commands[0].command.clientkeepalive);
 	return TRUE;
 }
 
@@ -2702,7 +2700,6 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 	NDR_PULL ndr;
 	uint32_t flags;
 	BOOL b_bigendian;
-	uint32_t keep_alive;
 	HTTP_CONTEXT *pcontext;
 	RPC_IN_CHANNEL *pchannel_in;
 	RPC_OUT_CHANNEL *pchannel_out;
@@ -2884,16 +2881,18 @@ int pdu_processor_rts_input(const char *pbuff, uint16_t length,
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
+
+			time_duration keep_alive;
 			if (!pdu_processor_retrieve_keep_alive(pcall, &keep_alive)) {
 				pdu_processor_free_call(pcall);
 				return PDU_PROCESSOR_ERROR;
 			}
 			/* MS-RPCH 2.2.3.5.6 */
-			if (0 == keep_alive) {
-				keep_alive = 300000;
-			} else if (keep_alive < 60000) {
-				keep_alive = 60000;
-			}
+			using namespace std::chrono_literals;
+			if (keep_alive == 0ms)
+				keep_alive = 300000ms;
+			else if (keep_alive < 60000ms)
+				keep_alive = 60000ms;
 			pchannel_in->client_keepalive = keep_alive;
 			http_parser_set_keep_alive(pcontext, keep_alive);
 			pdu_processor_free_call(pcall);

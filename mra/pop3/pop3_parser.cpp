@@ -3,6 +3,7 @@
  * commands and then do the corresponding action. 
  */ 
 #include <cerrno>
+#include <chrono>
 #include <memory>
 #include <mutex>
 #include <unistd.h>
@@ -27,11 +28,6 @@
     (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x1010000fL)
 #	define OLD_SSL 1
 #endif
-#define CALCULATE_INTERVAL(a, b) \
-    (((a).tv_usec >= (b).tv_usec) ? ((a).tv_sec - (b).tv_sec) : \
-    ((a).tv_sec - (b).tv_sec - 1))
-
-
 #define SLEEP_BEFORE_CLOSE    usleep(1000)
 
 using namespace gromox;
@@ -43,7 +39,7 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext);
 
 unsigned int g_popcmd_debug;
 static size_t g_context_num, g_retrieving_size;
-static unsigned int g_timeout;
+static time_duration g_timeout;
 static int g_max_auth_times;
 static int g_block_auth_fail;
 static int g_ssl_port;
@@ -58,10 +54,10 @@ static char g_certificate_passwd[1024];
 static SSL_CTX *g_ssl_ctx;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 
-void pop3_parser_init(int context_num, size_t retrieving_size, int timeout,
-	int max_auth_times, int block_auth_fail, BOOL support_stls, BOOL force_stls,
-	const char *certificate_path, const char *cb_passwd, const char *key_path,
-	const char *cdn_path)
+void pop3_parser_init(int context_num, size_t retrieving_size,
+    time_duration timeout, int max_auth_times, int block_auth_fail,
+    BOOL support_stls, BOOL force_stls, const char *certificate_path,
+    const char *cb_passwd, const char *key_path, const char *cdn_path)
 {
     g_context_num           = context_num;
 	g_retrieving_size       = retrieving_size;
@@ -185,7 +181,7 @@ void pop3_parser_stop()
 	}
     g_context_num		= 0;
 	g_retrieving_size	= 0;
-    g_timeout           = 0x7FFFFFFF;
+	g_timeout = std::chrono::seconds(INT32_MAX);
 	g_block_auth_fail   = 0;
 }
 
@@ -199,7 +195,7 @@ int pop3_parser_get_context_socket(SCHEDULE_CONTEXT *ctx)
 	return static_cast<POP3_CONTEXT *>(ctx)->connection.sockd;
 }
 
-struct timeval pop3_parser_get_context_timestamp(SCHEDULE_CONTEXT *ctx)
+time_point pop3_parser_get_context_timestamp(schedule_context *ctx)
 {
 	return static_cast<POP3_CONTEXT *>(ctx)->connection.last_timestamp;
 }
@@ -214,7 +210,6 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	const char *host_ID;
 	char temp_command[1024];
 	char reply_buf[1024];
-    struct timeval current_time;
 	size_t ub, string_length = 0;
 	
 	if (pcontext->is_stls) {
@@ -238,7 +233,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 			ssl_errno = SSL_get_error(pcontext->connection.ssl, -1);
 			if (SSL_ERROR_WANT_READ == ssl_errno ||
 				SSL_ERROR_WANT_WRITE == ssl_errno) {
-				gettimeofday(&current_time, NULL);
+				auto current_time = time_point::clock::now();
 				if (CALCULATE_INTERVAL(current_time,
 					pcontext->connection.last_timestamp) < g_timeout) {
 					return PROCESS_POLLING_RDONLY;
@@ -268,7 +263,8 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 			}
 		}
 	}
-	
+
+	time_point current_time;	
 	if (pcontext->data_stat) {
 		if (NULL != pcontext->connection.ssl) {
 			written_len = SSL_write(pcontext->connection.ssl,
@@ -279,9 +275,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 							pcontext->write_buff + pcontext->write_offset,
 							pcontext->write_length - pcontext->write_offset);
 		}
-			
-		gettimeofday(&current_time, NULL);
-			
+		current_time = time_point::clock::now();
 		if (0 == written_len) {
 			pop3_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 			goto END_TRANSPORT;
@@ -333,8 +327,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 							pcontext->write_length - pcontext->write_offset);
 		}
 			
-		gettimeofday(&current_time, NULL);
-			
+		auto current_time = time_point::clock::now();
 		if (0 == written_len) {
 			pop3_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 			goto END_TRANSPORT;
@@ -379,7 +372,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		read_len = read(pcontext->connection.sockd, pcontext->read_buffer +
 					pcontext->read_offset, 1024 - pcontext->read_offset);
 	}
-	gettimeofday(&current_time, NULL);
+	current_time = time_point::clock::now();
 	if (0 == read_len) {
  LOST_READ:
 		if (NULL != pcontext->connection.ssl) {

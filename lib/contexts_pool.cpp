@@ -15,7 +15,9 @@
 #include <cstdio>
 #include <cerrno>
 
-static int g_time_out;
+using namespace gromox;
+
+static time_duration g_time_out;
 static unsigned int g_context_num, g_contexts_per_thr;
 static int g_epoll_fd = -1;
 static pthread_t g_scan_id;
@@ -27,7 +29,7 @@ static DOUBLE_LIST g_context_lists[CONTEXT_TYPES];
 static std::mutex g_context_locks[CONTEXT_TYPES];
 
 static int (*contexts_pool_get_context_socket)(SCHEDULE_CONTEXT *);
-static struct timeval (*contexts_pool_get_context_timestamp)(SCHEDULE_CONTEXT *);
+static time_point (*contexts_pool_get_context_timestamp)(schedule_context *);
 
 static void context_init(SCHEDULE_CONTEXT *pcontext)
 {
@@ -117,12 +119,11 @@ static void *ctxp_scanwork(void *pparam)
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *ptail;
 	SCHEDULE_CONTEXT *pcontext;
-	struct timeval current_time;
 	
 	double_list_init(&temp_list);
 	while (!g_notify_stop) {
 		std::unique_lock poll_hold(g_context_locks[CONTEXT_POLLING]);
-		gettimeofday(&current_time, NULL);
+		auto current_time = time_point::clock::now();
 		ptail = double_list_get_tail(
 			&g_context_lists[CONTEXT_POLLING]);
 		while ((pnode = double_list_pop_front(&g_context_lists[CONTEXT_POLLING])) != nullptr) {
@@ -183,8 +184,8 @@ static void *ctxp_scanwork(void *pparam)
 
 void contexts_pool_init(SCHEDULE_CONTEXT **pcontexts, unsigned int context_num,
     int (*get_socket)(SCHEDULE_CONTEXT *),
-    struct timeval (*get_timestamp)(SCHEDULE_CONTEXT *),
-    unsigned int contexts_per_thr, int timeout)
+    time_point (*get_timestamp)(schedule_context *),
+    unsigned int contexts_per_thr, time_duration timeout)
 {
 	g_context_list = pcontexts;
 	g_context_num = context_num;

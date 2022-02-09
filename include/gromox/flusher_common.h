@@ -1,5 +1,5 @@
 #pragma once
-#include <sys/time.h>
+#include <cstdint>
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
 #include <gromox/generic_connection.hpp>

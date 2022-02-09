@@ -101,7 +101,7 @@ struct RECORD_HEADER {
 }
 
 static int g_context_num;
-static int g_exec_timeout;
+static time_duration g_exec_timeout;
 static uint64_t g_max_size;
 static uint64_t g_cache_size;
 static std::vector<FASTCGI_NODE> g_fastcgi_list;
@@ -133,7 +133,7 @@ static const FASTCGI_NODE *mod_fastcgi_find_backend(const char *domain,
 }
 
 void mod_fastcgi_init(int context_num, uint64_t cache_size, uint64_t max_size,
-    int exec_timeout)
+    time_duration exec_timeout)
 {
 	g_context_num = context_num;
 	g_unavailable_times = 0;
@@ -503,7 +503,7 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 			b_chunked = TRUE;
 	}
 	auto pcontext = &g_context_list[phttp->context_id];
-	time(&pcontext->last_time);
+	pcontext->last_time = time_point::clock::now();
 	pcontext->pfnode = pfnode;
 	if (b_chunked || content_length > g_cache_size) {
 		snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "/tmp/http-%u", phttp->context_id);
@@ -1053,7 +1053,7 @@ static BOOL mod_fastcgi_safe_read(FASTCGI_CONTEXT *pfast_context,
 			return FALSE;
 		offset += read_len;
 		if (length == offset) {
-			time(&pfast_context->last_time);
+			pfast_context->last_time = time_point::clock::now();
 			return TRUE;
 		}
 	}
@@ -1078,7 +1078,7 @@ int mod_fastcgi_check_response(HTTP_CONTEXT *phttp)
 		return RESPONSE_AVAILABLE;
 	}
 	g_unavailable_times ++;
-	if (time(nullptr) - phttp->pfast_context->last_time > g_exec_timeout)
+	if (time_point::clock::now() - phttp->pfast_context->last_time > g_exec_timeout)
 		return RESPONSE_TIMEOUT;
 	return RESPONSE_WAITING;
 }

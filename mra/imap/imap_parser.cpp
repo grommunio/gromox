@@ -12,6 +12,7 @@
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
+#include <gromox/clock.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
@@ -41,11 +42,6 @@
     (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x1010000fL)
 #	define OLD_SSL 1
 #endif
-#define CALCULATE_INTERVAL(a, b) \
-    (((a).tv_usec >= (b).tv_usec) ? ((a).tv_sec - (b).tv_sec) : \
-    ((a).tv_sec - (b).tv_sec - 1))
-
-
 #define SLEEP_BEFORE_CLOSE		usleep(1000)
 
 #define FILENUM_PER_MIME		8
@@ -74,8 +70,7 @@ static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *);
 static std::atomic<int> g_sequence_id;
 static int g_average_num;
 static size_t g_context_num, g_cache_size;
-static unsigned int g_timeout;
-static unsigned int g_autologout_time;
+static time_duration g_timeout, g_autologout_time;
 static int g_max_auth_times;
 static int g_block_auth_fail;
 static int g_ssl_port;
@@ -108,7 +103,7 @@ LIB_BUFFER* imap_parser_get_dpool()
 }
 
 void imap_parser_init(int context_num, int average_num, size_t cache_size,
-	unsigned int timeout, unsigned int autologout_time, int max_auth_times,
+    time_duration timeout, time_duration autologout_time, int max_auth_times,
 	int block_auth_fail, BOOL support_starttls, BOOL force_starttls,
 	const char *certificate_path, const char *cb_passwd, const char *key_path)
 {
@@ -337,8 +332,8 @@ void imap_parser_stop()
 	double_list_free(&g_sleeping_list);
     g_context_num		= 0;
 	g_cache_size	    = 0;
-	g_autologout_time   = 0;
-    g_timeout           = 0x7FFFFFFF;
+	g_autologout_time   = std::chrono::seconds(0);
+	g_timeout           = std::chrono::seconds(INT32_MAX);
 	g_block_auth_fail   = 0;
 }
 
@@ -347,7 +342,7 @@ int imap_parser_get_context_socket(SCHEDULE_CONTEXT *ctx)
 	return static_cast<IMAP_CONTEXT *>(ctx)->connection.sockd;
 }
 
-struct timeval imap_parser_get_context_timestamp(SCHEDULE_CONTEXT *ctx)
+time_point imap_parser_get_context_timestamp(SCHEDULE_CONTEXT *ctx)
 {
 	return static_cast<IMAP_CONTEXT *>(ctx)->connection.last_timestamp;
 }
@@ -419,8 +414,7 @@ static int ps_stat_stls(IMAP_CONTEXT *pcontext)
 	auto ssl_errno = SSL_get_error(pcontext->connection.ssl, -1);
 	if (SSL_ERROR_WANT_READ == ssl_errno ||
 	    SSL_ERROR_WANT_WRITE == ssl_errno) {
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
+		auto current_time = time_point::clock::now();
 		if (CALCULATE_INTERVAL(current_time,
 		    pcontext->connection.last_timestamp) < g_timeout) {
 			return PROCESS_POLLING_RDONLY;
@@ -474,8 +468,7 @@ static int ps_stat_rdcmd(IMAP_CONTEXT *pcontext)
 		read_len = read(pcontext->connection.sockd, pcontext->read_buffer +
 		           pcontext->read_offset, 64*1024 - pcontext->read_offset);
 	}
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
+	auto current_time = time_point::clock::now();
 	if (0 == read_len) {
 		imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return ps_end_processing(pcontext);
@@ -842,8 +835,7 @@ static int ps_stat_appending(IMAP_CONTEXT *pcontext)
 	} else {
 		read_len = read(pcontext->connection.sockd, pbuff, len);
 	}
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
+	auto current_time = time_point::clock::now();
 	if (0 == read_len) {
 		imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return ps_end_processing(pcontext);
@@ -911,9 +903,7 @@ static int ps_stat_wrdat(IMAP_CONTEXT *pcontext)
 			pcontext->write_length - pcontext->write_offset);
 	}
 
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
-
+	auto current_time = time_point::clock::now();
 	if (0 == written_len) {
 		imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return ps_end_processing(pcontext);
@@ -1010,9 +1000,7 @@ static int ps_stat_wrlst(IMAP_CONTEXT *pcontext)
 			pcontext->write_length - pcontext->write_offset);
 	}
 
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
-
+	auto current_time = time_point::clock::now();
 	if (0 == written_len) {
 		imap_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return ps_end_processing(pcontext);
@@ -1689,7 +1677,6 @@ static void *imps_thrwork(void *argp)
 	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *ptail;
 	IMAP_CONTEXT *pcontext;
-	struct timeval current_time;
 	
 	while (!g_notify_stop) {
 		std::unique_lock ll_hold(g_list_lock);
@@ -1725,7 +1712,7 @@ static void *imps_thrwork(void *argp)
 			if (1 == peek_len) {
 				contexts_pool_wakeup_context(pcontext, CONTEXT_TURNING);
 			} else if (peek_len < 0) {
-				gettimeofday(&current_time, NULL);
+				auto current_time = time_point::clock::now();
 				if (CALCULATE_INTERVAL(current_time,
 					pcontext->connection.last_timestamp) >= g_autologout_time) {
 					pcontext->sched_stat = SCHED_STAT_AUTOLOGOUT;

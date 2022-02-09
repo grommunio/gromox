@@ -1,10 +1,16 @@
 #pragma once
+#include <chrono>
 #include <cstdint>
 #include <ctime>
 #include <gromox/common_types.hpp>
 #define RESPONSE_TIMEOUT				-1
 #define RESPONSE_WAITING				0
 #define RESPONSE_AVAILABLE				1
+
+namespace gromox {
+using time_duration = std::chrono::steady_clock::duration;
+using time_point = std::chrono::time_point<std::chrono::system_clock>;
+}
 
 struct FASTCGI_NODE;
 
@@ -20,12 +26,12 @@ struct FASTCGI_CONTEXT {
 	uint64_t cache_size;
 	int cli_sockd;
 	BOOL b_header; /* is response header met */
-	time_t last_time;
+	gromox::time_point last_time;
 };
 
 struct HTTP_CONTEXT;
 
-extern void mod_fastcgi_init(int context_num, uint64_t cache_size, uint64_t max_size, int exec_timeout);
+extern void mod_fastcgi_init(int context_num, uint64_t cache_size, uint64_t max_size, gromox::time_duration exec_timeout);
 extern int mod_fastcgi_run();
 extern void mod_fastcgi_stop();
 BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp);
