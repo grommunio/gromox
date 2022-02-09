@@ -611,8 +611,6 @@ int pop3_parser_get_param(int param)
         return g_max_auth_times;
     case BLOCK_AUTH_FAIL:
         return g_block_auth_fail;
-    case POP3_SESSION_TIMEOUT:
-        return g_timeout;
 	case POP3_SUPPORT_STLS:
 		return g_support_stls;
 	case POP3_FORCE_STLS:
@@ -637,9 +635,6 @@ int pop3_parser_set_param(int param, int value)
     switch (param) {
     case MAX_AUTH_TIMES:
         g_max_auth_times = value;
-        break;
-    case POP3_SESSION_TIMEOUT:
-        g_timeout = value;
         break;
 	case BLOCK_AUTH_FAIL:
 		g_block_auth_fail = value;

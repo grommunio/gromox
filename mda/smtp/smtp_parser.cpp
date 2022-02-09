@@ -695,8 +695,6 @@ long smtp_parser_get_param(int param)
 		return g_param.auth_times;
 	case BLOCK_TIME_EXCEED_AUTHS:
 		return g_param.blktime_auths;
-	case SMTP_SESSION_TIMEOUT:
-		return g_param.timeout;
 	case SMTP_SUPPORT_PIPELINE:
 		return g_param.support_pipeline;
 	case SMTP_SUPPORT_STARTTLS:
@@ -731,9 +729,6 @@ int smtp_parser_set_param(int param, long value)
 	switch (param) {
 	case MAX_AUTH_TIMES:
 		g_param.auth_times = value;
-		break;
-	case SMTP_SESSION_TIMEOUT:
-		g_param.timeout = value;
 		break;
 	case BLOCK_TIME_EXCEED_SESSIONS:
 		g_param.blktime_sessions = value;

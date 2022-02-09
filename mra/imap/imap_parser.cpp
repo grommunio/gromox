@@ -1480,10 +1480,6 @@ int imap_parser_get_param(int param)
         return g_max_auth_times;
     case BLOCK_AUTH_FAIL:
         return g_block_auth_fail;
-    case IMAP_SESSION_TIMEOUT:
-        return g_timeout;
-	case IMAP_AUTOLOGOUT_TIME:
-		return g_autologout_time;
 	case IMAP_SUPPORT_STARTTLS:
 		return g_support_starttls;
 	case IMAP_FORCE_STARTTLS:
@@ -1514,12 +1510,6 @@ int imap_parser_set_param(int param, int value)
     case MAX_AUTH_TIMES:
         g_max_auth_times = value;
         break;
-    case IMAP_SESSION_TIMEOUT:
-        g_timeout = value;
-        break;
-	case IMAP_AUTOLOGOUT_TIME:
-		g_autologout_time = value;
-		break;
 	case BLOCK_AUTH_FAIL:
 		g_block_auth_fail = value;
 		break;
