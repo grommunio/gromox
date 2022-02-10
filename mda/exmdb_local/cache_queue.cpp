@@ -494,22 +494,3 @@ static void *mdl_thrwork(void *arg)
 	}
 	return NULL;
 }
-
-int cache_queue_get_param(int param)
-{
-	if (CACHE_QUEUE_SCAN_INTERVAL == param) {
-		return g_scan_interval;
-	} else if (CACHE_QUEUE_RETRYING_TIMES == param) {
-		return g_retrying_times;
-	}
-	return 0;
-}
-
-void cache_queue_set_param(int param, int val)
-{
-	if (CACHE_QUEUE_SCAN_INTERVAL == param) {
-		g_scan_interval = val;
-	} else if (CACHE_QUEUE_RETRYING_TIMES == param) {
-		g_retrying_times = val;
-	}
-}

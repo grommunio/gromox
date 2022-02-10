@@ -712,47 +712,6 @@ SCHEDULE_CONTEXT **smtp_parser_get_contexts_list()
 	return g_context_list2.data();
 }
 
-/*
- *    set smtp_parser's property
- *    @param
- *        param    indicate the pram type
- *    @return
- *         0        success
- *        <>0        fail
- */
-int smtp_parser_set_param(int param, long value)
-{
-	switch (param) {
-	case MAX_AUTH_TIMES:
-		g_param.auth_times = value;
-		break;
-	case BLOCK_TIME_EXCEED_SESSIONS:
-		g_param.blktime_sessions = value;
-		break;
-	case MAX_MAIL_LENGTH:
-		g_param.max_mail_length = value;
-		break;
-	case SMTP_NEED_AUTH:
-		g_param.need_auth = value != 0 ? TRUE : false;
-		break;
-	case BLOCK_TIME_EXCEED_AUTHS:
-		g_param.blktime_auths = value;
-		break;
-	case SMTP_MAX_MAILS:
-		g_param.max_mail_sessions = value;
-		break;
-	case SMTP_SUPPORT_PIPELINE:
-		g_param.support_pipeline = value != 0 ? TRUE : false;
-		break;
-	case SMTP_FORCE_STARTTLS:
-		g_param.force_starttls = value != 0 ? TRUE : false;
-		break;
-	default:
-		return -1;
-	}
-	return 0;
-}
-
 /* 
  *    dispatch the smtp command to the corresponding procedure
  *    @param

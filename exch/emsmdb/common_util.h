@@ -141,7 +141,6 @@ extern void common_util_init(const char *org_name, int avg_blocks, int max_rcpt,
 extern int common_util_run();
 extern void common_util_stop();
 unsigned int common_util_get_param(int param);
-void common_util_set_param(int param, unsigned int value);
 extern const char *common_util_get_submit_command();
 extern uint32_t common_util_get_ftstream_id();
 extern std::shared_ptr<MIME_POOL> common_util_get_mime_pool();

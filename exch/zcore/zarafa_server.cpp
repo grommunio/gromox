@@ -703,18 +703,6 @@ void zarafa_server_stop()
 	g_notify_table.clear();
 }
 
-int zarafa_server_get_param(int param)
-{
-	switch (param) {
-	case USER_TABLE_SIZE:
-		return g_table_size;
-	case USER_TABLE_USED:
-		return g_user_table.size();
-	default:
-		return -1;
-	}
-}
-
 uint32_t zarafa_server_logon(const char *username,
 	const char *password, uint32_t flags, GUID *phsession)
 {

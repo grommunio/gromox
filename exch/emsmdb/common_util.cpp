@@ -2190,24 +2190,6 @@ unsigned int common_util_get_param(int param)
 	return 0;
 }
 
-void common_util_set_param(int param, unsigned int value)
-{
-	switch (param) {
-	case COMMON_UTIL_MAX_RCPT:
-		g_max_rcpt = value;
-		break;
-	case COMMON_UTIL_MAX_MESSAGE:
-		g_max_message = value;
-		break;
-	case COMMON_UTIL_MAX_MAIL_LENGTH:
-		g_max_mail_len = value;
-		break;
-	case COMMON_UTIL_MAX_EXTRULE_LENGTH:
-		g_max_rule_len = value;
-		break;
-	}
-}
-
 const char* common_util_get_submit_command()
 {
 	return g_submit_command;

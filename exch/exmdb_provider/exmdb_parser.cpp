@@ -51,15 +51,6 @@ ROUTER_CONNECTION::~ROUTER_CONNECTION()
 		free(bin.pb);
 }
 
-int exmdb_parser_get_param(int param)
-{
-	switch (param) {
-	case ALIVE_ROUTER_CONNECTIONS:
-		return g_router_list.size();
-	}
-	return -1;
-}
-
 void exmdb_parser_init(size_t max_threads, size_t max_routers)
 {
 	g_max_threads = max_threads;

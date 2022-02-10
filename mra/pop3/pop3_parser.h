@@ -68,7 +68,6 @@ extern void pop3_parser_stop();
 extern int pop3_parser_get_context_socket(SCHEDULE_CONTEXT *);
 extern gromox::time_point pop3_parser_get_context_timestamp(schedule_context *);
 int pop3_parser_get_param(int param);
-int pop3_parser_set_param(int param, int value);
 extern SCHEDULE_CONTEXT **pop3_parser_get_contexts_list();
 int pop3_parser_threads_event_proc(int action);
 int pop3_parser_retrieve(POP3_CONTEXT *pcontext);

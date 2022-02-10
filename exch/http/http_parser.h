@@ -115,7 +115,6 @@ extern int http_parser_get_context_socket(SCHEDULE_CONTEXT *);
 void http_parser_set_context(int context_id);
 extern gromox::time_point http_parser_get_context_timestamp(schedule_context *);
 int http_parser_get_param(int param);
-int http_parser_set_param(int param, int value);
 extern SCHEDULE_CONTEXT **http_parser_get_contexts_list();
 int http_parser_threads_event_proc(int action);
 extern bool http_parser_get_password(const char *username, char *password);

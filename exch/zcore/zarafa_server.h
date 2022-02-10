@@ -9,11 +9,6 @@
 #include <pthread.h>
 #include <ctime>
 
-enum {
-	USER_TABLE_SIZE,
-	USER_TABLE_USED
-};
-
 struct OBJECT_TREE;
 
 struct USER_INFO {
@@ -41,7 +36,6 @@ struct USER_INFO {
 extern void zarafa_server_init(size_t table_size, int cache_interval, int ping_interval);
 extern int zarafa_server_run();
 extern void zarafa_server_stop();
-int zarafa_server_get_param(int param);
 extern USER_INFO *zarafa_server_get_info();
 uint32_t zarafa_server_logon(const char *username,
 	const char *password, uint32_t flags, GUID *phsession);

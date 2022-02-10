@@ -54,34 +54,6 @@ void audit_filter_init(BOOL case_sensitive, int audit_num, int audit_interval,
     g_max_within_interval   = audit_times;
 }
 
-int audit_filter_set_param(int type, int value)
-{
-    switch (type) {
-    case AUDIT_INTERVAL:
-        g_audit_interval = value;
-        break;
-    case AUDIT_TIMES:
-        g_max_within_interval = value;
-        break;
-    default:
-        return -1;
-    }
-    return 0;
-}
-
-int audit_filter_get_param(int type)
-{
-    switch (type) {
-	case AUDIT_CAPABILITY:
-		return g_audit_num;
-    case AUDIT_INTERVAL:
-        return g_audit_interval;
-    case AUDIT_TIMES:
-        return g_max_within_interval;
-    }
-    return -1;
-}
-
 void audit_filter_stop()
 {
 	g_audit_hash.clear();

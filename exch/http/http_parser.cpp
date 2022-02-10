@@ -1900,24 +1900,6 @@ SCHEDULE_CONTEXT **http_parser_get_contexts_list()
 	return g_context_list2.data();
 }
 
-int http_parser_set_param(int param, int value)
-{
-    switch (param) {
-    case MAX_AUTH_TIMES:
-        g_max_auth_times = value;
-        break;
-    case HTTP_SESSION_TIMEOUT:
-		g_timeout = std::chrono::seconds(value);
-        break;
-	case BLOCK_AUTH_FAIL:
-		g_block_auth_fail = value;
-		break;
-    default:
-        return -1;
-    }
-    return 0;
-}
-
 HTTP_CONTEXT::HTTP_CONTEXT() :
 	stream_in(blocks_allocator_get_allocator()),
 	stream_out(stream_in.allocator)

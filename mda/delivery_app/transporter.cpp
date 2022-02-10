@@ -1212,16 +1212,3 @@ static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level,
 		break;
 	}
 }
-
-int transporter_get_param(int param)
-{
-	switch (param) {
-	case TRANSPORTER_MIN_THREADS:
-		return g_threads_min;
-	case TRANSPORTER_MAX_THREADS:
-		return g_threads_max;
-	case TRANSPORTER_CREATED_THREADS:
-		return double_list_get_nodes_num(&g_threads_list); 
-	}
-	return 0;
-}

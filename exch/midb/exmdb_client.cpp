@@ -84,23 +84,6 @@ static void (*exmdb_client_event_proc)(const char *dir,
 
 static int cl_rd_sock(int fd, BINARY *b) { return exmdb_client_read_socket(fd, b, SOCKET_TIMEOUT * 1000); }
 
-int exmdb_client_get_param(int param)
-{
-	int total_num;
-	std::lock_guard sv_hold(g_server_lock);
-	
-	switch (param) {
-	case ALIVE_PROXY_CONNECTIONS:
-		total_num = 0;
-		for (const auto &srv : g_server_list)
-			total_num += srv.conn_list.size();
-		return total_num;
-	case LOST_PROXY_CONNECTIONS:
-		return g_lost_list.size();
-	}
-	return -1;
-}
-
 static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 {
 	int process_id;

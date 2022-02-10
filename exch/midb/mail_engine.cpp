@@ -5513,14 +5513,3 @@ void mail_engine_stop()
 	g_mime_pool.reset();
 	g_alloc_mjson.reset();
 }
-
-int mail_engine_get_param(int param)
-{
-	switch (param) {
-	case MIDB_TABLE_SIZE:
-	case MIDB_TABLE_USED:
-		return g_hash_table.size();
-	default:
-		return -1;
-	}
-}

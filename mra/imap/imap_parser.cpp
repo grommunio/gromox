@@ -1484,33 +1484,6 @@ SCHEDULE_CONTEXT **imap_parser_get_contexts_list()
 	return g_context_list2.data();
 }
 
-/*
- *    set imap_parser's property
- *    @param
- *        param    indicate the pram type
- *    @return
- *         0        success
- *        <>0        fail
- */
-int imap_parser_set_param(int param, int value)
-{
-    switch (param) {
-    case MAX_AUTH_TIMES:
-        g_max_auth_times = value;
-        break;
-	case BLOCK_AUTH_FAIL:
-		g_block_auth_fail = value;
-		break;
-	case IMAP_FORCE_STARTTLS:
-		if (g_support_starttls)
-			g_force_starttls = value;
-		break;
-    default:
-        return -1;
-    }
-    return 0;
-}
-
 static int imap_parser_dispatch_cmd2(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	size_t string_length;
