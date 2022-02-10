@@ -33,7 +33,7 @@ static int pdu_ndr_pull_dcerpc_ctx_list(NDR_PULL *pndr, DCERPC_CTX_LIST *r)
 	TRY(ndr_pull_syntax_id(pndr, &r->abstract_syntax));
 	
 	if (r->num_transfer_syntaxes > 0) {
-		r->transfer_syntaxes = static_cast<SYNTAX_ID *>(malloc(sizeof(SYNTAX_ID) * r->num_transfer_syntaxes));
+		r->transfer_syntaxes = me_alloc<SYNTAX_ID>(r->num_transfer_syntaxes);
 		if (NULL == r->transfer_syntaxes) {
 			r->num_transfer_syntaxes = 0;
 			return NDR_ERR_ALLOC;
@@ -94,7 +94,7 @@ static int pdu_ndr_pull_dcerpc_bind_nak(NDR_PULL *pndr, DCERPC_BIND_NAK *r)
 	if (DECRPC_BIND_REASON_VERSION_NOT_SUPPORTED == r->reject_reason) {
 		TRY(ndr_pull_uint32(pndr, &r->num_versions));
 		if (r->num_versions > 0) {
-			r->versions = (uint32_t*)malloc(sizeof(uint32_t)*r->num_versions);
+			r->versions = me_alloc<uint32_t>(r->num_versions);
 			if (NULL == r->versions) {
 				r->num_versions = 0;
 				return NDR_ERR_ALLOC;
@@ -261,7 +261,7 @@ static int pdu_ndr_pull_dcerpc_fack(NDR_PULL *pndr, DCERPC_FACK *r)
 	TRY(ndr_pull_uint16(pndr, &r->serial_no));
 	TRY(ndr_pull_uint16(pndr, &r->selack_size));
 	if (r->selack_size > 0) {
-		r->selack = (uint32_t*)malloc(sizeof(uint32_t)*r->selack_size);
+		r->selack = me_alloc<uint32_t>(r->selack_size);
 		if (NULL == r->selack) {
 			r->selack_size = 0;
 			return NDR_ERR_ALLOC;
@@ -323,8 +323,7 @@ static int pdu_ndr_pull_dcerpc_bind(NDR_PULL *pndr, DCERPC_BIND *r)
 	TRY(ndr_pull_uint8(pndr, &r->num_contexts));
 	
 	if (r->num_contexts > 0) {
-		r->ctx_list =
-			(DCERPC_CTX_LIST*)malloc(sizeof(DCERPC_CTX_LIST)*r->num_contexts);
+		r->ctx_list = me_alloc<DCERPC_CTX_LIST>(r->num_contexts);
 		if (NULL == r->ctx_list) {
 			r->num_contexts = 0;
 			return NDR_ERR_ALLOC;
@@ -415,8 +414,7 @@ static int pdu_ndr_pull_dcerpc_bind_ack(NDR_PULL *pndr, DCERPC_BIND_ACK *r)
 	}
 	TRY(ndr_pull_uint8(pndr, &r->num_contexts));
 	if (r->num_contexts > 0) {
-		r->ctx_list =
-			(DCERPC_ACK_CTX*)malloc(sizeof(DCERPC_ACK_CTX)*r->num_contexts);
+		r->ctx_list = me_alloc<DCERPC_ACK_CTX>(r->num_contexts);
 		if (NULL == r->ctx_list) {
 			r->num_contexts = 0;
 			ndr_free_data_blob(&r->pad);
@@ -734,7 +732,7 @@ static int pdu_ndr_pull_dcerpc_rts(NDR_PULL *pndr, DCERPC_RTS *r)
 	TRY(ndr_pull_uint16(pndr, &r->flags));
 	TRY(ndr_pull_uint16(pndr, &r->num));
 	if (r->num > 0) {
-		r->commands = static_cast<RTS_CMD *>(malloc(sizeof(RTS_CMD) * r->num));
+		r->commands = me_alloc<RTS_CMD>(r->num);
 		if (NULL == r->commands) {
 			r->num = 0;
 			return NDR_ERR_ALLOC;

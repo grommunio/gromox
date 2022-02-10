@@ -195,7 +195,7 @@ int mod_cache_run()
 	auto ret = mod_cache_read_txt();
 	if (ret < 0)
 		return ret;
-	g_context_list = static_cast<CACHE_CONTEXT *>(malloc(sizeof(CACHE_CONTEXT) * g_context_num));
+	g_context_list = me_alloc<CACHE_CONTEXT>(g_context_num);
 	if (NULL == g_context_list) {
 		printf("[mod_cache]: Failed to allocate context list\n");
 		return -2;
@@ -591,7 +591,7 @@ static BOOL mod_cache_parse_range_value(char *value,
 	pcontext->until = 0;
 	pcontext->range_pos = -1;
 	pcontext->range_num = range_num;
-	pcontext->prange = static_cast<RANGE *>(malloc(sizeof(RANGE) * range_num));
+	pcontext->prange = me_alloc<RANGE>(range_num);
 	if (NULL == pcontext->prange) {
 		return FALSE;
 	}
@@ -751,7 +751,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 		}
 	}
 	hhold.unlock();
-	pitem = static_cast<CACHE_ITEM *>(malloc(sizeof(*pitem)));
+	pitem = me_alloc<CACHE_ITEM>();
 	if (NULL == pitem) {
 		if (NULL != pcontext->prange) {
 			free(pcontext->prange);
@@ -764,7 +764,7 @@ BOOL mod_cache_get_context(HTTP_CONTEXT *phttp)
 	pitem->ino = node_stat.st_ino;
 	pitem->blob.length = node_stat.st_size;
 	pitem->mtime = node_stat.st_mtime;
-	pitem->blob.data = static_cast<uint8_t *>(malloc(node_stat.st_size));
+	pitem->blob.data = me_alloc<uint8_t>(node_stat.st_size);
 	if (NULL == pitem->blob.data) {
 		free(pitem);
 		if (NULL != pcontext->prange) {

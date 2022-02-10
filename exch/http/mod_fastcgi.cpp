@@ -208,7 +208,7 @@ int mod_fastcgi_run()
 	auto ret = mod_fastcgi_read_txt();
 	if (ret < 0)
 		return ret;
-	g_context_list = static_cast<FASTCGI_CONTEXT *>(malloc(sizeof(FASTCGI_CONTEXT) * g_context_num));
+	g_context_list = me_alloc<FASTCGI_CONTEXT>(g_context_num);
 	if (NULL == g_context_list) {
 		printf("[mod_fastcgi]: Failed to allocate context list\n");
 		return -ENOMEM;

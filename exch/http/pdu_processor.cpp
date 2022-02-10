@@ -1108,7 +1108,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	}
 	if (!b_negotiate) {
 		pkt.payload.bind_ack.num_contexts = 1;
-		pkt.payload.bind_ack.ctx_list = static_cast<DCERPC_ACK_CTX *>(malloc(sizeof(DCERPC_ACK_CTX)));
+		pkt.payload.bind_ack.ctx_list = me_alloc<DCERPC_ACK_CTX>(1);
 		if (NULL == pkt.payload.bind_ack.ctx_list) {
 			if (NULL != pcontext) {
 				pdu_processor_free_context(pcontext);
@@ -1117,7 +1117,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		}
 	} else {
 		pkt.payload.bind_ack.num_contexts = 2;
-		pkt.payload.bind_ack.ctx_list = static_cast<DCERPC_ACK_CTX *>(malloc(2 * sizeof(DCERPC_ACK_CTX)));
+		pkt.payload.bind_ack.ctx_list = me_alloc<DCERPC_ACK_CTX>(2);
 		if (NULL == pkt.payload.bind_ack.ctx_list) {
 			if (NULL != pcontext) {
 				pdu_processor_free_context(pcontext);
@@ -1412,7 +1412,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 	pkt.payload.alter_ack.secondary_address[0] = '\0';
 	
 	pkt.payload.alter_ack.num_contexts = 1;
-	pkt.payload.alter_ack.ctx_list = static_cast<DCERPC_ACK_CTX *>(malloc(sizeof(DCERPC_ACK_CTX)));
+	pkt.payload.alter_ack.ctx_list = me_alloc<DCERPC_ACK_CTX>(1);
 	if (NULL == pkt.payload.alter_ack.ctx_list) {
 		if (NULL != pcontext) {
 			pdu_processor_free_context(pcontext);
@@ -2399,7 +2399,7 @@ static BOOL pdu_processor_rts_conn_a3(DCERPC_CALL *pcall)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.payload.rts.flags = RTS_FLAG_NONE;
 	pkt.payload.rts.num = 1;
-	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(sizeof(RTS_CMD)));
+	pkt.payload.rts.commands = me_alloc<RTS_CMD>(1);
 	if (NULL == pkt.payload.rts.commands) {
 		g_bnode_allocator->put(pblob_node);
 		return FALSE;
@@ -2440,7 +2440,7 @@ BOOL pdu_processor_rts_conn_c2(DCERPC_CALL *pcall, uint32_t in_window_size)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.payload.rts.flags = RTS_FLAG_NONE;
 	pkt.payload.rts.num = 3;
-	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(3 * sizeof(RTS_CMD)));
+	pkt.payload.rts.commands = me_alloc<RTS_CMD>(3);
 	if (NULL == pkt.payload.rts.commands) {
 		g_bnode_allocator->put(pblob_node);
 		return FALSE;
@@ -2485,7 +2485,7 @@ static BOOL pdu_processor_rts_inr2_a4(DCERPC_CALL *pcall)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.payload.rts.flags = RTS_FLAG_NONE;
 	pkt.payload.rts.num = 1;
-	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(sizeof(RTS_CMD)));
+	pkt.payload.rts.commands = me_alloc<RTS_CMD>(1);
 	if (NULL == pkt.payload.rts.commands) {
 		g_bnode_allocator->put(pblob_node);
 		return FALSE;
@@ -2525,7 +2525,7 @@ BOOL pdu_processor_rts_outr2_a2(DCERPC_CALL *pcall)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.payload.rts.flags = RTS_FLAG_RECYCLE_CHANNEL;
 	pkt.payload.rts.num = 1;
-	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(sizeof(RTS_CMD)));
+	pkt.payload.rts.commands = me_alloc<RTS_CMD>(1);
 	if (NULL == pkt.payload.rts.commands) {
 		g_bnode_allocator->put(pblob_node);
 		return FALSE;
@@ -2565,7 +2565,7 @@ BOOL pdu_processor_rts_outr2_a6(DCERPC_CALL *pcall)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.payload.rts.flags = RTS_FLAG_NONE;
 	pkt.payload.rts.num = 2;
-	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(2 * sizeof(RTS_CMD)));
+	pkt.payload.rts.commands = me_alloc<RTS_CMD>(2);
 	if (NULL == pkt.payload.rts.commands) {
 		g_bnode_allocator->put(pblob_node);
 		return FALSE;
@@ -2607,7 +2607,7 @@ BOOL pdu_processor_rts_outr2_b3(DCERPC_CALL *pcall)
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.payload.rts.flags = RTS_FLAG_EOF;
 	pkt.payload.rts.num = 1;
-	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(sizeof(RTS_CMD)));
+	pkt.payload.rts.commands = me_alloc<RTS_CMD>(1);
 	if (NULL == pkt.payload.rts.commands) {
 		g_bnode_allocator->put(pblob_node);
 		return FALSE;
@@ -2648,7 +2648,7 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.payload.rts.flags = RTS_FLAG_OTHER_CMD;
 	pkt.payload.rts.num = 2;
-	pkt.payload.rts.commands = static_cast<RTS_CMD *>(malloc(2 * sizeof(RTS_CMD)));
+	pkt.payload.rts.commands = me_alloc<RTS_CMD>(2);
 	if (NULL == pkt.payload.rts.commands) {
 		g_bnode_allocator->put(pblob_node);
 		return FALSE;
@@ -3040,7 +3040,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 					return PDU_PROCESSOR_OUTPUT;
 				}
 				alloc_size = strange_roundup(alloc_size - 1, 16 * 1024);
-				auto pdata = static_cast<uint8_t *>(malloc(alloc_size));
+				auto pdata = me_alloc<uint8_t>(alloc_size);
 				if (NULL == pdata) {
 					if (!pdu_processor_fault(pcall, DCERPC_FAULT_OTHER)) {
 						pdu_processor_free_call(pcall);
@@ -3098,7 +3098,7 @@ int pdu_processor_input(PDU_PROCESSOR *pprocessor, const char *pbuff,
 					return PDU_PROCESSOR_OUTPUT;
 				}	
 				alloc_size = strange_roundup(alloc_size - 1, 16 * 1024);
-				auto pdata = static_cast<uint8_t *>(malloc(alloc_size));
+				auto pdata = me_alloc<uint8_t>(alloc_size);
 				if (NULL == pdata) {
 					pdu_processor_free_call(pcallx);
 					if (!pdu_processor_fault(pcall, DCERPC_FAULT_OTHER)) {
@@ -3509,14 +3509,14 @@ static void *pdu_processor_queryservice(const char *service, const std::type_inf
 	if (NULL == ret_addr) {
 		return NULL;
 	}
-	auto pservice = static_cast<pdu_service_node *>(malloc(sizeof(pdu_service_node)));
+	auto pservice = me_alloc<pdu_service_node>();
 	if (NULL == pservice) {
 		debug_info("[pdu_processor]: Failed to allocate memory "
 			"for service node\n");
 		service_release(service, fn);
 		return NULL;
 	}
-	pservice->service_name = (char*)malloc(strlen(service) + 1);
+	pservice->service_name = me_alloc<char>(strlen(service) + 1);
 	if (NULL == pservice->service_name) {
 		debug_info("[pdu_processor]: Failed to allocate memory "
 			"for service name\n");

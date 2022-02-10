@@ -371,7 +371,7 @@ static int hpm_processor_load_library(const char *plugin_name)
 
 int hpm_processor_run()
 {
-	g_context_list = static_cast<HPM_CONTEXT *>(malloc(sizeof(HPM_CONTEXT) * g_context_num));
+	g_context_list = me_alloc<HPM_CONTEXT>(g_context_num);
 	if (NULL == g_context_list) {
 		printf("[hpm_processor]: Failed to allocate context list\n");
 		return -1;

@@ -2423,7 +2423,6 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	char username[UADDR_SIZE];
 	char temp_path[256];
 	DOUBLE_LIST tmp_list;
-	DOUBLE_LIST_NODE *pnode;
 	std::unique_ptr<LIST_FILE> pfile;
 	size_t item_num = 0;
 	
@@ -2477,7 +2476,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		item_num = pfile->get_size();
 		auto pitem = static_cast<const dlgitem *>(pfile->get_list());
 		for (size_t i = 0; i < item_num; ++i) {
-			pnode = static_cast<decltype(pnode)>(malloc(sizeof(*pnode)));
+			auto pnode = me_alloc<DOUBLE_LIST_NODE>();
 			if (NULL == pnode) {
 				result = ecMAPIOOM;
 				goto EXIT_MOD_LINKATT;
@@ -2509,6 +2508,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		}
 		ab_tree_get_user_info(ptnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
 		if (flags & MOD_FLAG_DELETE) {
+			DOUBLE_LIST_NODE *pnode;
 			for (pnode=double_list_get_head(&tmp_list); NULL!=pnode;
 				pnode=double_list_get_after(&tmp_list, pnode)) {
 				if (strcasecmp(username, static_cast<char *>(pnode->pdata)) == 0) {
@@ -2519,13 +2519,14 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 				}
 			}
 		} else {
+			DOUBLE_LIST_NODE *pnode;
 			for (pnode=double_list_get_head(&tmp_list); NULL!=pnode;
 				pnode=double_list_get_after(&tmp_list, pnode)) {
 				if (strcasecmp(username, static_cast<char *>(pnode->pdata)) == 0)
 					break;
 			}
 			if (NULL == pnode) {
-				pnode = static_cast<decltype(pnode)>(malloc(sizeof(*pnode)));
+				pnode = me_alloc<DOUBLE_LIST_NODE>();
 				if (NULL == pnode) {
 					result = ecMAPIOOM;
 					goto EXIT_MOD_LINKATT;
@@ -2546,7 +2547,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 			result = ecError;
 			goto EXIT_MOD_LINKATT;
 		}
-		for (pnode=double_list_get_head(&tmp_list); NULL!=pnode;
+		for (auto pnode = double_list_get_head(&tmp_list); pnode != nullptr;
 			pnode=double_list_get_after(&tmp_list, pnode)) {
 			write(fd, pnode->pdata, strlen(static_cast<char *>(pnode->pdata)));
 			write(fd, "\r\n", 2);
@@ -2556,6 +2557,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	result = ecSuccess;
 	
  EXIT_MOD_LINKATT:
+	DOUBLE_LIST_NODE *pnode;
 	while ((pnode = double_list_pop_front(&tmp_list)) != nullptr) {
 		free(pnode->pdata);
 		free(pnode);

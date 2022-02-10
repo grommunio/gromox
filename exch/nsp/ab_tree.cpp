@@ -405,7 +405,7 @@ static BOOL ab_tree_load_class(
 	} else if (0 == rows) {
 		return TRUE;
 	}
-	auto parray = static_cast<ab_sort_item *>(malloc(sizeof(ab_sort_item) * rows));
+	auto parray = me_alloc<ab_sort_item>(rows);
 	if (NULL == parray) {
 		return FALSE;
 	}
@@ -544,7 +544,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		} else if (0 == rows) {
 			continue;
 		}
-		parray = static_cast<ab_sort_item *>(malloc(sizeof(ab_sort_item) * rows));
+		parray = me_alloc<ab_sort_item>(rows);
 		if (NULL == parray) {
 			return FALSE;
 		}
@@ -592,7 +592,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 	} else if (0 == rows) {
 		return TRUE;
 	}
-	parray = static_cast<ab_sort_item *>(malloc(sizeof(ab_sort_item) * rows));
+	parray = me_alloc<ab_sort_item>(rows);
 	if (NULL == parray) {
 		return FALSE;	
 	}
@@ -647,7 +647,6 @@ static BOOL ab_tree_load_tree(int domain_id,
 static BOOL ab_tree_load_base(AB_BASE *pbase)
 {
 	int i, num;
-	DOMAIN_NODE *pdomain;
 	char temp_buff[1024];
 	SIMPLE_TREE_NODE *proot;
 	SINGLE_LIST_NODE *pnode;
@@ -657,7 +656,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 		if (!get_org_domains(pbase->base_id, temp_file))
 			return FALSE;
 		for (auto domain_id : temp_file) {
-			pdomain = (DOMAIN_NODE*)malloc(sizeof(DOMAIN_NODE));
+			auto pdomain = me_alloc<DOMAIN_NODE>();
 			if (NULL == pdomain) {
 				return FALSE;
 			}
@@ -673,7 +672,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 			single_list_append_as_tail(&pbase->list, &pdomain->node);
 		}
 	} else {
-		pdomain = (DOMAIN_NODE*)malloc(sizeof(DOMAIN_NODE));
+		auto pdomain = me_alloc<DOMAIN_NODE>();
 		if (NULL == pdomain) {
 			return FALSE;
 		}
@@ -691,7 +690,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 	}
 	for (pnode=single_list_get_head(&pbase->list); NULL!=pnode;
 		pnode=single_list_get_after(&pbase->list, pnode)) {
-		pdomain = (DOMAIN_NODE*)pnode->pdata;
+		auto pdomain = static_cast<DOMAIN_NODE *>(pnode->pdata);
 		proot = simple_tree_get_root(&pdomain->tree);
 		if (NULL == proot) {
 			continue;
@@ -711,7 +710,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 	if (num <= 1) {
 		return TRUE;
 	}
-	auto parray = static_cast<ab_sort_item *>(malloc(sizeof(ab_sort_item) * num));
+	auto parray = me_alloc<ab_sort_item>(num);
 	if (NULL == parray) {
 		return TRUE;
 	}
