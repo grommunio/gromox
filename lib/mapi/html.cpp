@@ -1317,7 +1317,7 @@ BOOL html_to_rtf(const void *pbuff_in, size_t length, uint32_t cpid,
 	buff_inz[length] = '\0';
 
 	*pbuff_out = nullptr;
-	auto pbuffer = static_cast<char *>(malloc(3 * (length + 1)));
+	auto pbuffer = me_alloc<char>(3 * (length + 1));
 	if (NULL == pbuffer) {
 		return FALSE;
 	}
@@ -1342,7 +1342,7 @@ BOOL html_to_rtf(const void *pbuff_in, size_t length, uint32_t cpid,
 		}
 	}
 	*plength = writer.ext_push.m_offset;
-	*pbuff_out = static_cast<char *>(malloc(*plength));
+	*pbuff_out = me_alloc<char>(*plength);
 	if (*pbuff_out != nullptr)
 		memcpy(*pbuff_out, writer.ext_push.m_udata, *plength);
 	gumbo_destroy_output(&kGumboDefaultOptions, pgumbo_html);

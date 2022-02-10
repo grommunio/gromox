@@ -215,7 +215,7 @@ BINARY* rtfcp_compress(const char *pin_buff, const size_t in_length)
 	    ext_push.p_uint32(0) != EXT_ERR_SUCCESS ||
 	    ext_push.p_bytes(pin_buff, in_length) != EXT_ERR_SUCCESS)
 		return nullptr;
-	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
+	auto pbin = gromox::me_alloc<BINARY>();
 	if (pbin == nullptr) {
 		return nullptr;
 	}

@@ -11,6 +11,8 @@
 
 #define	GROWING_BLOCK_SIZE			64*1024
 
+using namespace gromox;
+
 namespace {
 struct READ_STAT {
 	uint8_t *pbuff = nullptr;
@@ -293,7 +295,7 @@ bool binhex_deserialize(BINHEX *pbinhex, void *pbuff, uint32_t length)
 	if (0 == pbinhex->data_len) {
 		pbinhex->pdata = NULL;
 	} else {
-		pbinhex->pdata = static_cast<uint8_t *>(malloc(pbinhex->data_len));
+		pbinhex->pdata = me_alloc<uint8_t>(pbinhex->data_len);
 		if (NULL == pbinhex->pdata) {
 			pbinhex->data_len = 0;
 			return false;
@@ -302,7 +304,7 @@ bool binhex_deserialize(BINHEX *pbinhex, void *pbuff, uint32_t length)
 	if (0 == pbinhex->res_len) {
 		pbinhex->presource = NULL;
 	} else {
-		pbinhex->presource = static_cast<uint8_t *>(malloc(pbinhex->res_len));
+		pbinhex->presource = me_alloc<uint8_t>(pbinhex->res_len);
 		if (NULL == pbinhex->presource) {
 			pbinhex->res_len = 0;
 			free(pbinhex->pdata);

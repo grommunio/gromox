@@ -78,13 +78,13 @@ bool tpropval_array_init_internal(TPROPVAL_ARRAY *parray)
 {
 	parray->count = 0;
 	auto count = strange_roundup(parray->count, SR_GROW_TAGGED_PROPVAL);
-	parray->ppropval = static_cast<TAGGED_PROPVAL *>(malloc(sizeof(TAGGED_PROPVAL) * count));
+	parray->ppropval = gromox::me_alloc<TAGGED_PROPVAL>(count);
 	return parray->ppropval != nullptr;
 }
 
 TPROPVAL_ARRAY* tpropval_array_init()
 {
-	auto parray = static_cast<TPROPVAL_ARRAY *>(malloc(sizeof(TPROPVAL_ARRAY)));
+	auto parray = gromox::me_alloc<TPROPVAL_ARRAY>();
 	if (NULL == parray) {
 		return NULL;
 	}

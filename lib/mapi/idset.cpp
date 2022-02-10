@@ -249,7 +249,7 @@ BOOL idset::hint(uint64_t eid)
 
 static std::unique_ptr<BINARY, mdel> idset_init_binary()
 {
-	std::unique_ptr<BINARY, mdel> pbin(static_cast<BINARY *>(malloc(sizeof(BINARY))));
+	std::unique_ptr<BINARY, mdel> pbin(gromox::me_alloc<BINARY>());
 	if (pbin == nullptr)
 		return NULL;
 	pbin->cb = 0;

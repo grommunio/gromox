@@ -11,9 +11,11 @@
 #include <cstdlib>
 #include <cstring>
 
+using namespace gromox;
+
 ATTACHMENT_CONTENT* attachment_content_init()
 {
-	auto pattachment = static_cast<ATTACHMENT_CONTENT *>(malloc(sizeof(ATTACHMENT_CONTENT)));
+	auto pattachment = me_alloc<ATTACHMENT_CONTENT>();
 	if (NULL == pattachment) {
 		return NULL;
 	}
@@ -72,13 +74,13 @@ ATTACHMENT_CONTENT* attachment_content_dup(
 
 ATTACHMENT_LIST* attachment_list_init()
 {
-	auto plist = static_cast<ATTACHMENT_LIST *>(malloc(sizeof(ATTACHMENT_LIST)));
+	auto plist = me_alloc<ATTACHMENT_LIST>();
 	if (NULL == plist) {
 		return NULL;
 	}
 	plist->count = 0;
 	auto count = strange_roundup(plist->count, SR_GROW_ATTACHMENT_CONTENT);
-	plist->pplist = static_cast<ATTACHMENT_CONTENT **>(malloc(sizeof(ATTACHMENT_CONTENT *) * count));
+	plist->pplist = me_alloc<ATTACHMENT_CONTENT *>(count);
 	if (NULL == plist->pplist) {
 		free(plist);
 		return NULL;
@@ -230,7 +232,7 @@ BOOL message_content_init_internal(MESSAGE_CONTENT *pmsgctnt)
 
 MESSAGE_CONTENT* message_content_init()
 {
-	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(malloc(sizeof(MESSAGE_CONTENT)));
+	auto pmsgctnt = me_alloc<MESSAGE_CONTENT>();
 	if (NULL == pmsgctnt) {
 		return NULL;
 	}
@@ -352,7 +354,7 @@ property_groupinfo::property_groupinfo(uint32_t gid) :
 	group_id(gid)
 {
 	auto z = strange_roundup(0, SR_GROW_PROPTAG_ARRAY);
-	pgroups = static_cast<PROPTAG_ARRAY *>(malloc(sizeof(PROPTAG_ARRAY) * z));
+	pgroups = me_alloc<PROPTAG_ARRAY>(z);
 	if (pgroups == nullptr)
 		throw std::bad_alloc();
 }

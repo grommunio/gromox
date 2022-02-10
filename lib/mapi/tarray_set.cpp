@@ -6,13 +6,13 @@
 
 TARRAY_SET* tarray_set_init()
 {
-	auto pset = static_cast<TARRAY_SET *>(malloc(sizeof(TARRAY_SET)));
+	auto pset = gromox::me_alloc<TARRAY_SET>();
 	if (NULL == pset) {
 		return NULL;
 	}
 	pset->count = 0;
 	auto count = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
-	pset->pparray = static_cast<TPROPVAL_ARRAY **>(malloc(sizeof(TPROPVAL_ARRAY *) * count));
+	pset->pparray = gromox::me_alloc<TPROPVAL_ARRAY *>(count);
 	if (NULL == pset->pparray) {
 		free(pset);
 		return NULL;

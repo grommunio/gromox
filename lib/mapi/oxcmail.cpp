@@ -1664,7 +1664,7 @@ static BOOL oxcmail_parse_message_body(const char *charset,
 		return false;
 	}
 	size_t length = rdlength;
-	auto pcontent = static_cast<char *>(malloc(3 * length + 2));
+	auto pcontent = me_alloc<char>(3 * length + 2);
 	if (NULL == pcontent) {
 		return FALSE;
 	}
@@ -1799,7 +1799,7 @@ static BOOL oxcmail_parse_binhex(MIME *pmime, ATTACHMENT_CONTENT *pattachment,
 		return false;
 	}
 	size_t content_len = rdlength;
-	auto pcontent = static_cast<char *>(malloc(content_len));
+	auto pcontent = me_alloc<char>(content_len);
 	if (NULL == pcontent) {
 		return FALSE;
 	}
@@ -1911,7 +1911,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 		return false;
 	}
 	size_t content_len = rdlength;
-	auto pcontent = static_cast<char *>(malloc(content_len));
+	auto pcontent = me_alloc<char>(content_len);
 	if (NULL == pcontent) {
 		return FALSE;
 	}
@@ -1966,7 +1966,7 @@ static BOOL oxcmail_parse_appledouble(MIME *pmime,
 		return false;
 	}
 	size_t content_len1 = rdlength;
-	auto pcontent1 = static_cast<char *>(malloc(content_len1));
+	auto pcontent1 = me_alloc<char>(content_len1);
 	if (NULL == pcontent1) {
 		free(pcontent);
 		return FALSE;
@@ -2011,7 +2011,7 @@ static BOOL oxcmail_parse_macbinary(MIME *pmime,
 		return false;
 	}
 	size_t content_len = rdlength;
-	auto pcontent = static_cast<char *>(malloc(content_len));
+	auto pcontent = me_alloc<char>(content_len);
 	if (NULL == pcontent) {
 		return FALSE;
 	}
@@ -2091,7 +2091,7 @@ static BOOL oxcmail_parse_applesingle(MIME *pmime,
 		return false;
 	}
 	size_t content_len = rdlength;
-	auto pcontent = static_cast<char *>(malloc(content_len));
+	auto pcontent = me_alloc<char>(content_len);
 	if (NULL == pcontent) {
 		return FALSE;
 	}
@@ -2394,7 +2394,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		}
 		size_t content_len = rdlength;
 		if (content_len < VCARD_MAX_BUFFER_LEN) {
-			std::unique_ptr<char[], stdlib_delete> pcontent(static_cast<char *>(malloc(3 * content_len + 2)));
+			std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(3 * content_len + 2));
 			if (NULL == pcontent) {
 				pmime_enum->b_result = FALSE;
 				return;
@@ -2445,7 +2445,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			return;
 		}
 		size_t content_len = rdlength;
-		std::unique_ptr<char[], stdlib_delete> pcontent(static_cast<char *>(malloc(content_len)));
+		std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(content_len));
 		if (NULL == pcontent) {
 			pmime_enum->b_result = FALSE;
 			return;
@@ -2548,7 +2548,7 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 		return;
 	}
 	size_t content_len = rdlength;
-	std::unique_ptr<char[], stdlib_delete> pcontent(static_cast<char *>(malloc(content_len)));
+	std::unique_ptr<char[], stdlib_delete> pcontent(me_alloc<char>(content_len));
 	if (NULL == pcontent) {
 		pmime_enum->b_result = FALSE;
 		return;
@@ -3241,7 +3241,7 @@ static BOOL oxcmail_parse_smime_message(
 		return false;
 	}
 	size_t content_len = rdlength;
-	auto pcontent = static_cast<char *>(malloc(content_len + 1024));
+	auto pcontent = me_alloc<char>(content_len + 1024);
 	if (NULL == pcontent) {
 		return FALSE;
 	}
@@ -3636,7 +3636,7 @@ MESSAGE_CONTENT* oxcmail_import(const char *charset,
 			return nullptr;
 		}
 		content_len = rdlength;
-		pcontent = static_cast<char *>(malloc(3 * content_len + 2));
+		pcontent = me_alloc<char>(3 * content_len + 2);
 		if (NULL == pcontent) {
 			message_content_free(pmsg);
 			return NULL;
@@ -4161,7 +4161,7 @@ static BOOL oxcmail_load_mime_skeleton(const MESSAGE_CONTENT *pmsg,
 				ssize_t unc_size = rtfcp_uncompressed_size(prtf);
 				pbuff = nullptr;
 				if (unc_size >= 0) {
-					pbuff = static_cast<char *>(malloc(unc_size));
+					pbuff = me_alloc<char>(unc_size);
 					if (pbuff == nullptr)
 						return false;
 				}
@@ -5143,7 +5143,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		return FALSE;
 	
 	if (b_vcard && oxvcard_export(pattachment->pembedded, &vcard, get_propids)) {
-		std::unique_ptr<char[], stdlib_delete> pbuff(static_cast<char *>(malloc(VCARD_MAX_BUFFER_LEN)));
+		std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(VCARD_MAX_BUFFER_LEN));
 		if (pbuff != nullptr && vcard_serialize(&vcard, pbuff.get(),
 		    VCARD_MAX_BUFFER_LEN)) {
 			if (!pmime->write_content(pbuff.get(),
@@ -5176,7 +5176,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 			return FALSE;
 		}
 		imail.clear();
-		std::unique_ptr<char[], stdlib_delete> pbuff(static_cast<char *>(malloc(mail_len + 128)));
+		std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(mail_len + 128));
 		if (NULL == pbuff) {
 			return FALSE;
 		}

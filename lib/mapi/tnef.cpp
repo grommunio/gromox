@@ -1053,7 +1053,7 @@ static void tnef_replace_propid(TPROPVAL_ARRAY *pproplist, INT_HASH_TABLE *phash
 static char *tnef_duplicate_string_to_unicode(const char *charset,
     const char *pstring)
 {
-	auto pstr_out = static_cast<char *>(malloc(2 * strlen(pstring) + 2));
+	auto pstr_out = me_alloc<char>(2 * strlen(pstring) + 2);
 	if (NULL == pstr_out) {
 		return NULL;
 	}
@@ -1067,13 +1067,13 @@ static char *tnef_duplicate_string_to_unicode(const char *charset,
 static STRING_ARRAY *tnef_duplicate_string_array_to_unicode(const char *charset,
     STRING_ARRAY *parray)
 {
-	auto parray_out = static_cast<STRING_ARRAY *>(malloc(sizeof(STRING_ARRAY)));
+	auto parray_out = me_alloc<STRING_ARRAY>();
 	if (NULL == parray_out) {
 		return NULL;
 	}
 	parray_out->count = parray->count;
 	if (parray->count > 0) {
-		parray_out->ppstr = static_cast<char **>(malloc(sizeof(char *) * parray->count));
+		parray_out->ppstr = me_alloc<char *>(parray->count);
 		if (NULL == parray_out->ppstr) {
 			free(parray_out);
 			return NULL;
@@ -2571,7 +2571,7 @@ BINARY* tnef_serialize(const MESSAGE_CONTENT *pmsg,
 	ext_push.tnef_getpropname = get_propname;
 	if (!tnef_serialize_internal(ext_push, false, pmsg))
 		return NULL;
-	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
+	auto pbin = me_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}

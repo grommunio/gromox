@@ -4,15 +4,17 @@
 #include <cstdlib>
 #include <cstring>
 
+using namespace gromox;
+
 EID_ARRAY* eid_array_init()
 {
-	auto parray = static_cast<EID_ARRAY *>(malloc(sizeof(EID_ARRAY)));
+	auto parray = me_alloc<EID_ARRAY>();
 	if (NULL == parray) {
 		return NULL;
 	}
 	parray->count = 0;
 	auto count = strange_roundup(parray->count, SR_GROW_EID_ARRAY);
-	parray->pids = static_cast<uint64_t *>(malloc(count * sizeof(uint64_t)));
+	parray->pids = me_alloc<uint64_t>(count);
 	if (NULL == parray->pids) {
 		free(parray);
 		return NULL;
@@ -67,13 +69,13 @@ bool eid_array_batch_append(EID_ARRAY *parray, uint32_t id_count, uint64_t *pids
 
 EID_ARRAY* eid_array_dup(const EID_ARRAY *parray)
 {
-	auto parray1 = static_cast<EID_ARRAY *>(malloc(sizeof(EID_ARRAY)));
+	auto parray1 = me_alloc<EID_ARRAY>();
 	if (NULL == parray1) {
 		return NULL;
 	}
 	parray1->count = parray->count;
 	auto count = strange_roundup(parray->count, SR_GROW_EID_ARRAY);
-	parray1->pids = static_cast<uint64_t *>(malloc(count * sizeof(uint64_t)));
+	parray1->pids = me_alloc<uint64_t>(count);
 	if (NULL == parray1->pids) {
 		free(parray1);
 		return NULL;
