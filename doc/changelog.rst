@@ -1,3 +1,22 @@
+1.15.37
+=======
+
+Enhancements:
+
+* exchange2grommunio: add robust file lock detection for exported PST
+* exch: avoid re-use of Message-Id when message is submitted twice
+* pff2mt: do not choke on NO_ATTACHMENT objects (resolves PF-1012 warning)
+
+Fixes:
+
+* emsmdb: oxcfold_deletemessages had incorrectly tested for PR_READ
+* emsmdb: fix OL entering infinite loop deleting messages with read receipt requests
+* zcore: PR_SENT_REPRESENTING_SEARCH_KEY was not set on submit
+* exmdb_provider: restore fxstream ability to read PT_OBJECT attachments
+* emsmdb: resolve a case of synchro repetition occurring in clients
+* rpc_lib: clear NTLMSSP_CTX and resolve a crash due to garbage pointers
+
+
 1.15 (2022-02-04)
 =================
 
