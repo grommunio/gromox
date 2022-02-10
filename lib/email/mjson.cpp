@@ -1153,7 +1153,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 				node_stat.st_size > MAX_DIGLEN) {
 				goto RFC822_FAILURE;
 			}
-			digest_buff = static_cast<char *>(malloc(MAX_DIGLEN));
+			digest_buff = me_alloc<char>(MAX_DIGLEN);
 			if (NULL == digest_buff) {
 				goto RFC822_FAILURE;
 			}
@@ -1659,7 +1659,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 	}
 	
 	auto length = pmime->get_length(MJSON_MIME_CONTENT);
-	std::unique_ptr<char[], stdlib_delete> pbuff(static_cast<char *>(malloc(strange_roundup(length - 1, 64 * 1024))));
+	std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(strange_roundup(length - 1, 64 * 1024)));
 	if (NULL == pbuff) {
 		close(fd);
 		pbuild->build_result = FALSE;
@@ -1677,7 +1677,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 	close(fd);
 	
 	if (0 == strcasecmp(pmime->encoding, "base64")) {
-		std::unique_ptr<char[], stdlib_delete> pbuff1(static_cast<char *>(malloc(strange_roundup(length - 1, 64 * 1024))));
+		std::unique_ptr<char[], stdlib_delete> pbuff1(me_alloc<char>(strange_roundup(length - 1, 64 * 1024)));
 		if (NULL == pbuff1) {
 			pbuild->build_result = FALSE;
 			return;
@@ -1689,7 +1689,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 		pbuff = std::move(pbuff1);
 		length = length1;
 	} else if (0 == strcasecmp(pmime->encoding, "quoted-printable")) {
-		std::unique_ptr<char[], stdlib_delete> pbuff1(static_cast<char *>(malloc(strange_roundup(length - 1, 64 * 1024))));
+		std::unique_ptr<char[], stdlib_delete> pbuff1(me_alloc<char>(strange_roundup(length - 1, 64 * 1024)));
 		if (NULL == pbuff1) {
 			pbuild->build_result = FALSE;
 			return;

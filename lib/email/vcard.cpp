@@ -667,7 +667,7 @@ BOOL vcard_serialize(VCARD *pvcard, char *out_buff, size_t max_length)
 
 VCARD_LINE* vcard_new_line(const char *name)
 {
-	auto pvline = static_cast<VCARD_LINE *>(malloc(sizeof(VCARD_LINE)));
+	auto pvline = me_alloc<VCARD_LINE>();
 	if (NULL == pvline) {
 		return NULL;
 	}
@@ -685,7 +685,7 @@ void vcard_append_line(VCARD *pvcard, VCARD_LINE *pvline)
 
 VCARD_PARAM* vcard_new_param(const char*name)
 {
-	auto pvparam = static_cast<VCARD_PARAM *>(malloc(sizeof(VCARD_PARAM)));
+	auto pvparam = me_alloc<VCARD_PARAM>();
 	if (NULL == pvparam) {
 		return NULL;
 	}
@@ -701,7 +701,7 @@ BOOL vcard_append_paramval(VCARD_PARAM *pvparam, const char *paramval)
 	
 	if (NULL == pvparam->pparamval_list) {
 		b_list = TRUE;
-		pvparam->pparamval_list = static_cast<DOUBLE_LIST *>(malloc(sizeof(DOUBLE_LIST)));
+		pvparam->pparamval_list = me_alloc<DOUBLE_LIST>();
 		if (NULL == pvparam->pparamval_list) {
 			return FALSE;
 		}
@@ -709,7 +709,7 @@ BOOL vcard_append_paramval(VCARD_PARAM *pvparam, const char *paramval)
 	} else {
 		b_list = FALSE;
 	}
-	auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
+	auto pnode = me_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		if (b_list) {
 			double_list_free(pvparam->pparamval_list);
@@ -739,7 +739,7 @@ void vcard_append_param(VCARD_LINE *pvline, VCARD_PARAM *pvparam)
 
 VCARD_VALUE* vcard_new_value()
 {
-	auto pvvalue = static_cast<VCARD_VALUE *>(malloc(sizeof(VCARD_VALUE)));
+	auto pvvalue = me_alloc<VCARD_VALUE>();
 	if (NULL == pvvalue) {
 		return NULL;
 	}
@@ -750,7 +750,7 @@ VCARD_VALUE* vcard_new_value()
 
 BOOL vcard_append_subval(VCARD_VALUE *pvvalue, const char *subval)
 {
-	auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
+	auto pnode = me_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		return FALSE;
 	}

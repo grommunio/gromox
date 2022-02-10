@@ -328,7 +328,7 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 		/* should add '\r\n' at the end of buffer if it misses */
 		bool added_crlf = pcontent[length-1] != '\n';
 		size_t buff_length = strange_roundup(2 * length, 64 * 1024);
-		pmime->content_begin = static_cast<char *>(malloc(buff_length));
+		pmime->content_begin = me_alloc<char>(buff_length);
 		if (NULL == pmime->content_begin) {
 			return FALSE;
 		}
@@ -354,11 +354,11 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 	}
 	case MIME_ENCODING_QP: {
 		size_t buff_length = strange_roundup(4 * length, 64 * 1024);
-		pbuff = static_cast<char *>(malloc(buff_length));
+		pbuff = me_alloc<char>(buff_length);
 		if (NULL == pbuff) {
 			return FALSE;
 		}
-		pmime->content_begin = static_cast<char *>(malloc(buff_length));
+		pmime->content_begin = me_alloc<char>(buff_length);
 		if (NULL == pmime->content_begin) {
 			free(pbuff);
 			return FALSE;
@@ -395,7 +395,7 @@ BOOL MIME::write_content(const char *pcontent, size_t length,
 	}
 	case MIME_ENCODING_BASE64: {
 		size_t buff_length = strange_roundup(2 * length, 64 * 1024);
-		pmime->content_begin = static_cast<char *>(malloc(buff_length));
+		pmime->content_begin = me_alloc<char>(buff_length);
 		if (NULL == pmime->content_begin) {
 			return FALSE;
 		}
@@ -1385,7 +1385,7 @@ BOOL MIME::read_content(char *out_buff, size_t *plength)
 		}
 	}
 	
-	pbuff = static_cast<char *>(malloc(((pmime->content_length - 1) / (64 * 1024) + 1) * 64 * 1024));
+	pbuff = me_alloc<char>(((pmime->content_length - 1) / (64 * 1024) + 1) * 64 * 1024);
 	if (NULL == pbuff) {
 		debug_info("[mime]: Failed to allocate memory in MIME::read_content");
 		*plength = 0;

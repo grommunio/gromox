@@ -829,7 +829,7 @@ BOOL MAIL::dup(MAIL *pmail_dst)
 	if (!pmail_src->serialize(&tmp_stream)) {
 		return FALSE;
 	}
-	auto pbuff = static_cast<char *>(malloc(strange_roundup(mail_len - 1, 64 * 1024)));
+	auto pbuff = me_alloc<char>(strange_roundup(mail_len - 1, 64 * 1024));
 	if (NULL == pbuff) {
 		debug_info("[mail]: Failed to allocate memory in mail_dup");
 		return FALSE;
@@ -884,7 +884,7 @@ BOOL MAIL::transfer_dot(MAIL *pmail_dst)
 	if (!pmail_src->serialize(&tmp_stream)) {
 		return FALSE;
 	}
-	pbuff = static_cast<char *>(malloc(((mail_len - 1) / (64 * 1024) + 1) * 64 * 1024));
+	pbuff = me_alloc<char>(((mail_len - 1) / (64 * 1024) + 1) * 64 * 1024);
 	if (NULL == pbuff) {
 		debug_info("[mail]: Failed to allocate memory in mail_dup");
 		return FALSE;
