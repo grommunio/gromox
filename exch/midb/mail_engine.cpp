@@ -1316,7 +1316,7 @@ static DOUBLE_LIST* mail_engine_ct_build_internal(
 				mail_engine_ct_destroy_internal(plist);
 				return NULL;
 			}
-			ptree_node->pstatment = reinterpret_cast<void *>(reinterpret_cast<intptr_t>(mktime(&tmp_tm)));
+			ptree_node->pstatment = reinterpret_cast<void *>(static_cast<intptr_t>(mktime(&tmp_tm)));
 		} else if ('(' == argv[i][0]) {
 			len = strlen(argv[i]);
 			argv[i][len - 1] = '\0';
