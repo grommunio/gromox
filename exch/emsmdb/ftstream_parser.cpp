@@ -97,7 +97,7 @@ static char* ftstream_parser_read_wstring(
 		return NULL;
 	}
 	tmp_len = 2*len;
-	auto pbuff = me_alloc<char>(len + 2);
+	auto pbuff = gromox::me_alloc<char>(len + 2);
 	if (NULL == pbuff) {
 		return NULL;
 	}

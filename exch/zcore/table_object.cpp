@@ -732,7 +732,7 @@ std::unique_ptr<table_object> table_object::create(store_object *pstore,
 	}
 	ptable->pstore = pstore;
 	if (RULE_TABLE == table_type) {
-		ptable->pparent_obj = me_alloc<uint64_t>();
+		ptable->pparent_obj = gromox::me_alloc<uint64_t>();
 		if (NULL == ptable->pparent_obj) {
 			return NULL;
 		}

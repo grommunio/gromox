@@ -169,7 +169,7 @@ static BOOL ftstream_producer_write_wstring(
 	uint32_t position;
 	
 	len = 2*strlen(pstr) + 2;
-	auto pbuff = me_alloc<char>(len);
+	auto pbuff = gromox::me_alloc<char>(len);
 	if (NULL == pbuff) {
 		return FALSE;
 	}

@@ -51,7 +51,7 @@ void rpc_parser_init(int thread_num)
 
 BOOL rpc_parser_activate_connection(int clifd)
 {
-	auto pclient = me_alloc<CLIENT_NODE>();
+	auto pclient = gromox::me_alloc<CLIENT_NODE>();
 	if (NULL == pclient) {
 		return FALSE;
 	}
@@ -779,7 +779,7 @@ int rpc_parser_run()
 {
 	int i;
 	
-	g_thread_ids = me_alloc<pthread_t>(g_thread_num);
+	g_thread_ids = gromox::me_alloc<pthread_t>(g_thread_num);
 	if (NULL == g_thread_ids) {
 		return -1;
 	}

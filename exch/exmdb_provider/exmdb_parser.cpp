@@ -987,7 +987,7 @@ void exmdb_parser_stop()
 	std::unique_lock chold(g_connection_lock);
 	size_t num = g_connection_list.size();
 	if (num > 0) {
-		pthr_ids = me_alloc<pthread_t>(num);
+		pthr_ids = gromox::me_alloc<pthread_t>(num);
 		if (NULL == pthr_ids) {
 			return;
 		}
@@ -1009,7 +1009,7 @@ void exmdb_parser_stop()
 	std::unique_lock rhold(g_router_lock);
 	num = g_router_list.size();
 	if (num > 0) {
-		pthr_ids = me_alloc<pthread_t>(num);
+		pthr_ids = gromox::me_alloc<pthread_t>(num);
 		if (NULL == pthr_ids) {
 			return;
 		}

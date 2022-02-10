@@ -85,8 +85,6 @@ template<typename T> T *cu_alloc(size_t elem)
 	static_assert(std::is_trivially_destructible_v<T>);
 	return static_cast<T *>(common_util_alloc(sizeof(T) * elem));
 }
-template<typename T> T *me_alloc() { return static_cast<T *>(malloc(sizeof(T))); }
-template<typename T> T *me_alloc(size_t elem) { return static_cast<T *>(malloc(sizeof(T) * elem)); }
 char* common_util_dup(const char *pstr);
 char* common_util_convert_copy(BOOL to_utf8,
 	uint32_t cpid, const char *pstring);
