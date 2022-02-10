@@ -468,6 +468,7 @@ enum {
 	PR_OTHER_ADDRESS_STREET = PROP_TAG(PT_UNICODE, 0x3A63), /* PidTagOtherAddressStreet */
 	PR_OTHER_ADDRESS_POST_OFFICE_BOX = PROP_TAG(PT_UNICODE, 0x3A64), /* PidTagOtherAddressPostOfficeBox */
 	// PR_SEND_INTERNET_ENCODING = PROP_TAG(PT_LONG, 0x3A71), /* PidTagSendInternetEncoding */
+	// PR_EMSMDB_SECTION_UID = PROP_TAG(PT_BINARY, 0x3D15), /* PidTagExchangeProfileSectionId */
 	PR_RESOURCE_TYPE = PROP_TAG(PT_LONG, 0x3E03), /* PidTagResourceType */
 	PR_CONTROL_FLAGS = PROP_TAG(PT_LONG, 0x3F00), /* PidTagControlFlags */
 	PR_CONTROL_TYPE = PROP_TAG(PT_LONG, 0x3F02), /* PidTagControlType */
