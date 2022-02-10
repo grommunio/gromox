@@ -47,7 +47,6 @@ static std::unique_ptr<POP3_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static BOOL g_support_stls;
 static BOOL g_force_stls;
-static char g_cdn_path[256];
 static char g_certificate_path[256];
 static char g_private_key_path[256];
 static char g_certificate_passwd[1024];
@@ -57,7 +56,7 @@ static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 void pop3_parser_init(int context_num, size_t retrieving_size,
     time_duration timeout, int max_auth_times, int block_auth_fail,
     BOOL support_stls, BOOL force_stls, const char *certificate_path,
-    const char *cb_passwd, const char *key_path, const char *cdn_path)
+    const char *cb_passwd, const char *key_path)
 {
     g_context_num           = context_num;
 	g_retrieving_size       = retrieving_size;
@@ -76,7 +75,6 @@ void pop3_parser_init(int context_num, size_t retrieving_size,
 		}
 		gx_strlcpy(g_private_key_path, key_path, arsizeof(g_private_key_path));
 	}
-	gx_strlcpy(g_cdn_path, cdn_path, arsizeof(g_cdn_path));
 }
 
 #ifdef OLD_SSL
@@ -621,11 +619,6 @@ int pop3_parser_get_param(int param)
 SCHEDULE_CONTEXT **pop3_parser_get_contexts_list()
 {
 	return g_context_list2.data();
-}
-
-char* pop3_parser_cdn_path()
-{
-	return g_cdn_path;
 }
 
 /* 

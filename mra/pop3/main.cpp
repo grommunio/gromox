@@ -53,7 +53,6 @@ static constexpr const char *g_dfl_svc_plugins[] = {
 
 static constexpr cfg_directive cfg_default_values[] = {
 	{"block_interval_auths", "1min", CFG_TIME, "1s"},
-	{"cdn_cache_path", "/cdn"},
 	{"config_file_path", PKGSYSCONFDIR "/pop3:" PKGSYSCONFDIR},
 	{"context_average_mem", "512K", CFG_SIZE, "128K"},
 	{"context_average_units", "5000", CFG_SIZE, "256"},
@@ -313,7 +312,7 @@ int main(int argc, const char **argv) try
 	pop3_parser_init(context_num, context_max_mem, pop3_conn_timeout,
 		pop3_auth_times, block_interval_auth, pop3_support_stls,
 		pop3_force_stls, certificate_path, cb_passwd,
-		private_key_path, g_config_file->get_value("cdn_cache_path"));
+		private_key_path);
  
 	if (0 != pop3_parser_run()) { 
 		printf("[system]: failed to run pop3 parser\n");
