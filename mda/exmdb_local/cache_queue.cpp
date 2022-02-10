@@ -329,7 +329,7 @@ static void *mdl_thrwork(void *arg)
 				fprintf(stderr, "W-1554: garbage in %s; review and delete\n", temp_path.c_str());
 				continue;
 			}
-			auto pbuff = static_cast<char *>(malloc(((size - 1) / (64 * 1024) + 1) * 64 * 1024));
+			auto pbuff = me_alloc<char>(((size - 1) / (64 * 1024) + 1) * 64 * 1024);
 			if (NULL == pbuff) {
 				printf("[exmdb_local]: Failed to allocate memory for %s "
 					"in timer queue thread\n", temp_path.c_str());

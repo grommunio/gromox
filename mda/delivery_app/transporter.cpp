@@ -674,7 +674,7 @@ int transporter_load_library(const char* path)
         dlclose(handle);
         return PLUGIN_NO_MAIN;
     }
-	auto plib = static_cast<HOOK_PLUG_ENTITY *>(malloc(sizeof(HOOK_PLUG_ENTITY)));
+	auto plib = me_alloc<HOOK_PLUG_ENTITY>();
     if (NULL == plib) {
 		printf("[transporter]: Failed to allocate memory for %s\n", fake_path);
         printf("[transporter]: the plugin %s is not loaded\n", fake_path);
@@ -860,13 +860,13 @@ static void *transporter_queryservice(const char *service, const std::type_info 
     if (NULL == ret_addr) {
         return NULL;
     }
-    pservice = (SERVICE_NODE*)malloc(sizeof(SERVICE_NODE));
+	pservice = me_alloc<SERVICE_NODE>();
     if (NULL == pservice) {
 		debug_info("[transporter]: Failed to allocate memory for service node");
         service_release(service, g_cur_lib->file_name);
         return NULL;
     }
-    pservice->service_name = (char*)malloc(strlen(service) + 1);
+	pservice->service_name = me_alloc<char>(strlen(service) + 1);
     if (NULL == pservice->service_name) {
 		debug_info("[transporter]: Failed to allocate memory for service name");
         service_release(service, g_cur_lib->file_name);
@@ -1068,7 +1068,7 @@ static BOOL transporter_register_hook(HOOK_FUNCTION func)
         }
     }
 	if (!found_hook) {
-		phook = (HOOK_ENTRY*)malloc(sizeof(HOOK_ENTRY));
+		phook = me_alloc<HOOK_ENTRY>();
 		phook->node_hook.pdata = phook;
 		phook->node_lib.pdata = phook;
 		phook->count = 0;

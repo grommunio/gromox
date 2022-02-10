@@ -67,7 +67,7 @@ static std::atomic<int> g_current_ID;
 void flusher_init(size_t queue_len)
 {
 	static constexpr char path[] = "libgxf_message_enqueue.so";
-	g_flusher_plug = static_cast<FLH_PLUG_ENTITY *>(malloc(sizeof(FLH_PLUG_ENTITY)));
+	g_flusher_plug = me_alloc<FLH_PLUG_ENTITY>();
 	if (NULL == g_flusher_plug) {
 		return;
 	}
@@ -267,13 +267,13 @@ static void *flusher_queryservice(const char *service, const std::type_info &ti)
 	if (NULL == ret_addr) {
 		return NULL;
 	}
-	pservice = static_cast<SERVICE_NODE *>(malloc(sizeof(SERVICE_NODE)));
+	pservice = me_alloc<SERVICE_NODE>();
 	if (NULL == pservice) {
 		debug_info("[flusher]: Failed to allocate memory for service node");
 		service_release(service, g_flusher_plug->file_name);
 		return NULL;
 	}
-	pservice->service_name = static_cast<char *>(malloc(strlen(service) + 1));
+	pservice->service_name = me_alloc<char>(strlen(service) + 1);
 	if (NULL == pservice->service_name) {
 		debug_info("[flusher]: Failed to allocate memory for service name");
 		service_release(service, g_flusher_plug->file_name);

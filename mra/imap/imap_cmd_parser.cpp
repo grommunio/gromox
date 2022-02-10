@@ -2714,7 +2714,7 @@ static int imap_cmd_parser_append_end2(int argc, char **argv, IMAP_CONTEXT *pcon
 		return 1909 | DISPATCH_TAG;
 	}
 	lseek(pcontext->message_fd, 0, SEEK_SET);
-	std::unique_ptr<char[], stdlib_delete> pbuff(static_cast<char *>(malloc(((node_stat.st_size - 1) / (64 * 1024) + 1) * 64 * 1024)));
+	std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(((node_stat.st_size - 1) / (64 * 1024) + 1) * 64 * 1024));
 	if (pbuff == nullptr || read(pcontext->message_fd, pbuff.get(),
 	    node_stat.st_size) != node_stat.st_size) {
 		pbuff.reset();
