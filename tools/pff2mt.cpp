@@ -297,7 +297,7 @@ static bool tpropval_subject_handler(const uint8_t *buf, TPROPVAL_ARRAY *ar, TAG
 static char *u16convert(const uint8_t *data, size_t inbytes)
 {
 	size_t bytes = inbytes * 3 / 2 + 1;
-	auto outbuf = static_cast<char *>(malloc(bytes));
+	auto outbuf = me_alloc<char>(bytes);
 	if (outbuf == nullptr)
 		return nullptr;
 	auto cd = iconv_open("UTF-8", "UTF-16LE");
@@ -322,15 +322,15 @@ mv_decode_str(uint32_t proptag, const uint8_t *data, size_t dsize)
 {
 	if (dsize < 4)
 		return nullptr;
-	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> tp(static_cast<TPROPVAL_ARRAY *>(malloc(sizeof(TPROPVAL_ARRAY))));
+	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> tp(me_alloc<TPROPVAL_ARRAY>());
 	if (tp == nullptr)
 		throw std::bad_alloc();
-	auto pv = static_cast<TAGGED_PROPVAL *>(malloc(sizeof(TAGGED_PROPVAL)));
+	auto pv = me_alloc<TAGGED_PROPVAL>();
 	tp->count = 1;
 	tp->ppropval = pv;
 	if (tp->ppropval == nullptr)
 		throw std::bad_alloc();
-	auto ba = static_cast<STRING_ARRAY *>(malloc(sizeof(STRING_ARRAY)));
+	auto ba = me_alloc<STRING_ARRAY>();
 	if (ba == nullptr)
 		throw std::bad_alloc();
 	pv->proptag = proptag;
@@ -384,15 +384,15 @@ mv_decode_bin(uint32_t proptag, const uint8_t *data, size_t dsize)
 {
 	if (dsize < 4)
 		return nullptr;
-	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> tp(static_cast<TPROPVAL_ARRAY *>(malloc(sizeof(TPROPVAL_ARRAY))));
+	std::unique_ptr<TPROPVAL_ARRAY, gi_delete> tp(me_alloc<TPROPVAL_ARRAY>());
 	if (tp == nullptr)
 		throw std::bad_alloc();
-	auto pv = static_cast<TAGGED_PROPVAL *>(malloc(sizeof(TAGGED_PROPVAL)));
+	auto pv = me_alloc<TAGGED_PROPVAL>();
 	tp->count = 1;
 	tp->ppropval = pv;
 	if (tp->ppropval == nullptr)
 		throw std::bad_alloc();
-	auto ba = static_cast<BINARY_ARRAY *>(malloc(sizeof(BINARY_ARRAY)));
+	auto ba = me_alloc<BINARY_ARRAY>();
 	if (ba == nullptr)
 		throw std::bad_alloc();
 	pv->proptag = proptag;
@@ -1041,7 +1041,7 @@ static void npg_ent(gi_name_map &map, libpff_record_entry_t *rent)
 		if (libpff_name_to_id_map_entry_get_utf8_string_size(nti_entry.get(), &dsize, nullptr) < 1)
 			return;
 		/* malloc: match up with allocator used by ext_buffer.cpp etc. */
-		pnstr.reset(static_cast<char *>(malloc(dsize + 1)));
+		pnstr.reset(me_alloc<char>(dsize + 1));
 		if (libpff_name_to_id_map_entry_get_utf8_string(nti_entry.get(), reinterpret_cast<uint8_t *>(pnstr.get()), dsize + 1, nullptr) < 1)
 			return;
 		pn_req.kind = MNID_STRING;
