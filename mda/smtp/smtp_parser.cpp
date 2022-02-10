@@ -68,7 +68,7 @@ static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static int g_block_ID;
 static SSL_CTX *g_ssl_ctx;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
-static smtp_param g_param;
+smtp_param g_param;
 
 /* 
  * construct a smtp parser object
@@ -665,41 +665,6 @@ static BOOL smtp_parser_pass_statistic(SMTP_CONTEXT *pcontext, char *reason,
 {
 	pcontext->mail.body.mail_length = pcontext->total_length;
 	return TRUE;
-}
-
-/*
- *    get smtp_parser's property
- *    @param
- *        param    indicate the parameter type
- *    @return
- *        value of property
- */
-long smtp_parser_get_param(int param)
-{
-	switch (param) {
-	case MAX_MAIL_LENGTH:
-		return g_param.max_mail_length;
-	case SMTP_MAX_MAILS:
-		return g_param.max_mail_sessions;
-	case BLOCK_TIME_EXCEED_SESSIONS:
-		return g_param.blktime_sessions;
-	case SMTP_NEED_AUTH:
-		return g_param.need_auth;
-	case MAX_FLUSHING_SIZE:
-		return g_param.flushing_size;
-	case MAX_AUTH_TIMES:
-		return g_param.auth_times;
-	case BLOCK_TIME_EXCEED_AUTHS:
-		return g_param.blktime_auths;
-	case SMTP_SUPPORT_PIPELINE:
-		return g_param.support_pipeline;
-	case SMTP_SUPPORT_STARTTLS:
-		return g_param.support_starttls;
-	case SMTP_FORCE_STARTTLS:
-		return g_param.force_starttls;
-	default:
-		return 0;
-	}
 }
 
 /* 

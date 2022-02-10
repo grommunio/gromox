@@ -38,15 +38,13 @@ static int pop3_parser_dispatch_cmd(const char *cmd_line, int line_length,
 static void pop3_parser_context_clear(POP3_CONTEXT *pcontext);
 
 unsigned int g_popcmd_debug;
+int g_max_auth_times, g_block_auth_fail;
+bool g_support_stls, g_force_stls;
 static size_t g_context_num, g_retrieving_size;
 static time_duration g_timeout;
-static int g_max_auth_times;
-static int g_block_auth_fail;
 static int g_ssl_port;
 static std::unique_ptr<POP3_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
-static BOOL g_support_stls;
-static BOOL g_force_stls;
 static char g_certificate_path[256];
 static char g_private_key_path[256];
 static char g_certificate_passwd[1024];
@@ -593,22 +591,6 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 		return POP3_RETRIEVE_ERROR;
 	}
 	return POP3_RETRIEVE_OK;
-}
-
-int pop3_parser_get_param(int param)
-{
-    switch (param) {
-    case MAX_AUTH_TIMES:
-        return g_max_auth_times;
-    case BLOCK_AUTH_FAIL:
-        return g_block_auth_fail;
-	case POP3_SUPPORT_STLS:
-		return g_support_stls;
-	case POP3_FORCE_STLS:
-		return g_force_stls;
-    default:
-        return 0;
-    }
 }
 
 /* 

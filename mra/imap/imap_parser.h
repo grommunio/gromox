@@ -29,15 +29,6 @@ using time_duration = std::chrono::steady_clock::duration;
 using time_point = std::chrono::time_point<std::chrono::system_clock>;
 }
 
-/* enumeration of imap_parser */
-enum{
-    MAX_AUTH_TIMES,
-	BLOCK_AUTH_FAIL,
-	IMAP_SUPPORT_STARTTLS,
-	IMAP_FORCE_STARTTLS,
-	IMAP_SUPPORT_RFC2971,
-};
-
 enum {
 	PROTO_STAT_NONE = 0,
 	PROTO_STAT_NOAUTH,
@@ -111,7 +102,6 @@ int imap_parser_process(IMAP_CONTEXT *pcontext);
 extern void imap_parser_stop();
 extern int imap_parser_get_context_socket(SCHEDULE_CONTEXT *);
 extern gromox::time_point imap_parser_get_context_timestamp(schedule_context *);
-int imap_parser_get_param(int param);
 extern SCHEDULE_CONTEXT **imap_parser_get_contexts_list();
 int imap_parser_threads_event_proc(int action);
 void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *folder);
@@ -128,3 +118,6 @@ extern LIB_BUFFER *imap_parser_get_xpool();
 extern LIB_BUFFER *imap_parser_get_dpool();
 extern int imap_parser_get_sequence_ID();
 extern void imap_parser_log_info(IMAP_CONTEXT *pcontext, int level, const char *format, ...);
+
+extern int g_max_auth_times, g_block_auth_fail;
+extern bool g_support_starttls, g_force_starttls;

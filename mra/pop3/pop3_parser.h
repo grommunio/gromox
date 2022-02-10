@@ -16,14 +16,6 @@ using time_duration = std::chrono::steady_clock::duration;
 using time_point = std::chrono::time_point<std::chrono::system_clock>;
 }
 
-/* enumeration of pop3_parser */
-enum{
-    MAX_AUTH_TIMES,
-	BLOCK_AUTH_FAIL,
-	POP3_SUPPORT_STLS,
-	POP3_FORCE_STLS
-};
-
 enum {
 	POP3_RETRIEVE_TERM,
 	POP3_RETRIEVE_OK,
@@ -67,10 +59,11 @@ int pop3_parser_process(POP3_CONTEXT *pcontext);
 extern void pop3_parser_stop();
 extern int pop3_parser_get_context_socket(SCHEDULE_CONTEXT *);
 extern gromox::time_point pop3_parser_get_context_timestamp(schedule_context *);
-int pop3_parser_get_param(int param);
 extern SCHEDULE_CONTEXT **pop3_parser_get_contexts_list();
 int pop3_parser_threads_event_proc(int action);
 int pop3_parser_retrieve(POP3_CONTEXT *pcontext);
 extern void pop3_parser_log_info(POP3_CONTEXT *pcontext, int level, const char *format, ...);
 
 extern unsigned int g_popcmd_debug;
+extern int g_max_auth_times, g_block_auth_fail;
+extern bool g_support_stls, g_force_stls;

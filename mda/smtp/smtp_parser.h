@@ -63,20 +63,6 @@ enum{
     PARSING_END
 };
 
-/* enumeration of smtp_parser */
-enum{
-    MAX_MAIL_LENGTH,
-    SMTP_NEED_AUTH,
-    BLOCK_TIME_EXCEED_AUTHS,
-    BLOCK_TIME_EXCEED_SESSIONS,
-    MAX_FLUSHING_SIZE,
-    MAX_AUTH_TIMES,
-    SMTP_MAX_MAILS,
-    SMTP_SUPPORT_PIPELINE,
-	SMTP_SUPPORT_STARTTLS,
-	SMTP_FORCE_STARTTLS,
-};
-
 enum {
     ENCODING_UNKNOWN    = 0,
     ENCODING_7BIT,
@@ -173,7 +159,6 @@ extern void smtp_parser_init(smtp_param &&);
 extern int smtp_parser_run();
 int smtp_parser_process(SMTP_CONTEXT *pcontext);
 extern void smtp_parser_stop();
-long smtp_parser_get_param(int param);
 extern int smtp_parser_get_context_socket(SCHEDULE_CONTEXT *);
 extern gromox::time_point smtp_parser_get_context_timestamp(schedule_context *);
 int smtp_parser_get_extra_num(SMTP_CONTEXT *pcontext);
@@ -185,3 +170,4 @@ extern void smtp_parser_reset_context_envelope(SMTP_CONTEXT *);
 extern void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, const char *format, ...);
 
 extern std::unique_ptr<LIB_BUFFER> g_files_allocator;
+extern smtp_param g_param;

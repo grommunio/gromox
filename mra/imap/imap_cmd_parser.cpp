@@ -1379,9 +1379,9 @@ int imap_cmd_parser_capability(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	/* IMAP_CODE_2170001: OK CAPABILITY completed */
 	auto imap_reply_str = resource_get_imap_code(1701, 1, &string_length);
 	char ext_str[16]{};
-	if (imap_parser_get_param(IMAP_SUPPORT_STARTTLS))
+	if (g_support_starttls)
 		HX_strlcat(ext_str, " STARTTLS", arsizeof(ext_str));
-	if (imap_parser_get_param(IMAP_SUPPORT_RFC2971))
+	if (parse_bool(resource_get_string("enable_rfc2971_commands")))
 		HX_strlcat(ext_str, " ID", arsizeof(ext_str));
 	string_length = gx_snprintf(buff, arsizeof(buff),
 	                "* CAPABILITY IMAP4rev1 XLIST SPECIAL-USE "
@@ -1399,7 +1399,7 @@ int imap_cmd_parser_id(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, NULL);
 	}
-	if (imap_parser_get_param(IMAP_SUPPORT_RFC2971)) {
+	if (parse_bool(resource_get_string("enable_rfc2971_commands"))) {
 		/* IMAP_CODE_2170029: OK ID completed */
 		auto imap_reply_str = resource_get_imap_code(1729, 1, &string_length);
 		snprintf(buff, sizeof(buff), "* ID (\"name\" \"gromox-imap\" "
@@ -1443,9 +1443,8 @@ int imap_cmd_parser_starttls(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (NULL != pcontext->connection.ssl) {
 		return 1800;
 	}
-	if (FALSE == imap_parser_get_param(IMAP_SUPPORT_STARTTLS)) {
+	if (!g_support_starttls)
 		return 1800;
-	}
 	if (pcontext->proto_stat > PROTO_STAT_NOAUTH) {
 		return 1801;
 	}
@@ -1458,8 +1457,7 @@ int imap_cmd_parser_authenticate(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char buff[1024];
 	size_t string_length = 0;
 	
-	if (imap_parser_get_param(IMAP_SUPPORT_STARTTLS) &&
-	    imap_parser_get_param(IMAP_FORCE_STARTTLS) &&
+	if (g_support_starttls && g_force_starttls &&
 	    pcontext->connection.ssl == nullptr)
 		return 1802;
 	if (3 != argc || 0 != strcasecmp(argv[2], "LOGIN")) {
@@ -1533,10 +1531,10 @@ static int imap_cmd_parser_password2(int argc, char **argv, IMAP_CONTEXT *pconte
 	}
 	imap_parser_log_info(pcontext, LV_WARN, "PASSWORD2 failed: %s", reason);
 	pcontext->auth_times ++;
-	if (pcontext->auth_times >= imap_parser_get_param(MAX_AUTH_TIMES)) {
+	if (pcontext->auth_times >= g_max_auth_times) {
 		if (system_services_add_user_into_temp_list != nullptr)
 			system_services_add_user_into_temp_list(pcontext->username,
-				imap_parser_get_param(BLOCK_AUTH_FAIL));
+				g_block_auth_fail);
 		return 1903 | DISPATCH_TAG | DISPATCH_SHOULD_CLOSE;
 	}
 	return 1904 | DISPATCH_CONTINUE | DISPATCH_TAG;
@@ -1553,8 +1551,7 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	char reason[256];
 	char temp_password[256];
     
-	if (imap_parser_get_param(IMAP_SUPPORT_STARTTLS) &&
-	    imap_parser_get_param(IMAP_FORCE_STARTTLS) &&
+	if (g_support_starttls && g_force_starttls &&
 	    pcontext->connection.ssl == nullptr)
 		return 1802;
 	if (argc != 4 || strlen(argv[2]) >= arsizeof(pcontext->username) ||
@@ -1588,10 +1585,10 @@ int imap_cmd_parser_login(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	imap_parser_log_info(pcontext, LV_WARN, "LOGIN failed: %s", reason);
 	pcontext->auth_times++;
-	if (pcontext->auth_times >= imap_parser_get_param(MAX_AUTH_TIMES)) {
+	if (pcontext->auth_times >= g_max_auth_times) {
 		if (system_services_add_user_into_temp_list != nullptr)
 			system_services_add_user_into_temp_list(pcontext->username,
-				imap_parser_get_param(BLOCK_AUTH_FAIL));
+				g_block_auth_fail);
 		return 1903 | DISPATCH_SHOULD_CLOSE;
 	}
 	gx_strlcpy(pcontext->tag_string, argv[0], arsizeof(pcontext->tag_string));

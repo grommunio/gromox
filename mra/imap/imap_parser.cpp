@@ -67,12 +67,12 @@ static int imap_parser_dispatch_cmd(int argc, char **argv, IMAP_CONTEXT *pcontex
 static void imap_parser_context_clear(IMAP_CONTEXT *pcontext);
 static int imap_parser_wrdat_retrieve(IMAP_CONTEXT *);
 
+int g_max_auth_times, g_block_auth_fail;
+bool g_support_starttls, g_force_starttls;
 static std::atomic<int> g_sequence_id;
 static int g_average_num;
 static size_t g_context_num, g_cache_size;
 static time_duration g_timeout, g_autologout_time;
-static int g_max_auth_times;
-static int g_block_auth_fail;
 static int g_ssl_port;
 static pthread_t g_thr_id;
 static pthread_t g_scan_id;
@@ -84,8 +84,6 @@ static std::shared_ptr<MIME_POOL> g_mime_pool;
 static std::unique_ptr<STR_HASH_TABLE> g_select_hash;
 static std::mutex g_hash_lock, g_list_lock;
 static DOUBLE_LIST g_sleeping_list;
-static BOOL g_support_starttls;
-static BOOL g_force_starttls;
 static char g_certificate_path[256];
 static char g_private_key_path[256];
 static char g_certificate_passwd[1024];
@@ -1451,32 +1449,6 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 			write(pcontext->connection.sockd, buff, tmp_len);
 	}
 	mem_file_free(&temp_file);
-}
-
-
-/*
- *    get imap_parser's property
- *    @param
- *        param    indicate the parameter type
- *    @return
- *        value of property
- */
-int imap_parser_get_param(int param)
-{
-    switch (param) {
-    case MAX_AUTH_TIMES:
-        return g_max_auth_times;
-    case BLOCK_AUTH_FAIL:
-        return g_block_auth_fail;
-	case IMAP_SUPPORT_STARTTLS:
-		return g_support_starttls;
-	case IMAP_FORCE_STARTTLS:
-		return g_force_starttls;
-	case IMAP_SUPPORT_RFC2971:
-		return parse_bool(resource_get_string("enable_rfc2971_commands"));
-    default:
-        return 0;
-    }
 }
 
 SCHEDULE_CONTEXT **imap_parser_get_contexts_list()
