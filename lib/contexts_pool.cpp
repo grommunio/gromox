@@ -210,7 +210,7 @@ int contexts_pool_run()
 		printf("[contexts_pool]: failed to create epoll instance: %s\n", strerror(errno));
 		return -1;
 	}
-	g_events = static_cast<epoll_event *>(malloc(sizeof(epoll_event) * g_context_num));
+	g_events = me_alloc<epoll_event>(g_context_num);
 	if (NULL == g_events) {
 		close(g_epoll_fd);
 		g_epoll_fd = -1;

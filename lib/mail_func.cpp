@@ -1947,7 +1947,8 @@ char *plain_to_html(const char *rbuf)
 	char *body = HX_strquote(rbuf, HXQUOTE_HTML, nullptr);
 	if (body == nullptr)
 		return nullptr;
-	auto out = static_cast<char *>(malloc(strlen(head) + strlen(body) + strlen(footer) + 1));
+	auto out = gromox::me_alloc<char>(strlen(head) + strlen(body) +
+	           strlen(footer) + 1);
 	if (out != nullptr) {
 		strcpy(out, head);
 		strcat(out, body);

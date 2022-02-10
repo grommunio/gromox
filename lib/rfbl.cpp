@@ -65,7 +65,7 @@ char **read_file_by_line(const char *file)
 		}
 		HXmc_free(line);
 		line = nullptr;
-		auto ret = static_cast<char **>(malloc(sizeof(char *) * (dq.size() + 1)));
+		auto ret = me_alloc<char *>(dq.size() + 1);
 		if (ret == nullptr)
 			return ret;
 		size_t i = 0;

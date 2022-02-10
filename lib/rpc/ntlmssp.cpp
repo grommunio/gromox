@@ -1512,7 +1512,7 @@ bool ntlmssp_update(NTLMSSP_CTX *pntlmssp, DATA_BLOB *pblob)
 	if (0 == tmp_blob.length) {
 		pblob->data = NULL;
 	} else {
-		pblob->data = static_cast<uint8_t *>(malloc(tmp_blob.length));
+		pblob->data = me_alloc<uint8_t>(tmp_blob.length);
 		if (NULL == pblob->data) {
 			return false;
 		}

@@ -264,7 +264,7 @@ int INT_HASH_TABLE::remove(int key)
 INT_HASH_ITER *INT_HASH_TABLE::make_iter()
 {
 	auto ptbl = this;
-	auto iter = static_cast<INT_HASH_ITER *>(malloc(sizeof(INT_HASH_ITER)));
+	auto iter = gromox::me_alloc<INT_HASH_ITER>();
 	if (iter == nullptr) {
 		debug_info("[int_hash]: can not alloc hash iter");
 		return NULL;
