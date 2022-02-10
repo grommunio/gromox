@@ -767,14 +767,15 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		strcpy(tstr, temp_buff);
 		return TRUE;
 	}
-	case PROP_TAG_EXTENDEDRULESIZELIMIT:
-		*ppvalue = cu_alloc<uint32_t>();
+	case PROP_TAG_EXTENDEDRULESIZELIMIT: {
+		auto r = cu_alloc<uint32_t>();
+		*ppvalue = r;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*(uint32_t*)(*ppvalue) = common_util_get_param(
-						COMMON_UTIL_MAX_EXTRULE_LENGTH);
+		*r = g_max_extrule_len;
 		return TRUE;
+	}
 	case PR_MAILBOX_OWNER_ENTRYID:
 		if (!pstore->b_private)
 			return FALSE;
@@ -807,14 +808,15 @@ static BOOL store_object_get_calculated_property(store_object *pstore,
 		strcpy(tstr, temp_buff);
 		return TRUE;
 	}
-	case PR_MAX_SUBMIT_MESSAGE_SIZE:
-		*ppvalue = cu_alloc<uint32_t>();
+	case PR_MAX_SUBMIT_MESSAGE_SIZE: {
+		auto r = cu_alloc<uint32_t>();
+		*ppvalue = r;
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*(uint32_t*)(*ppvalue) = common_util_get_param(
-							COMMON_UTIL_MAX_MAIL_LENGTH);
+		*r = g_max_mail_len;
 		return TRUE;
+	}
 	case PR_OBJECT_TYPE:
 		*ppvalue = cu_alloc<uint32_t>();
 		if (NULL == *ppvalue) {

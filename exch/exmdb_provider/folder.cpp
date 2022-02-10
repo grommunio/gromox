@@ -2501,8 +2501,7 @@ BOOL exmdb_server_update_folder_rule(const char *dir,
 	for (i=0; i<count; i++) {
 		switch (prow[i].flags) {
 		case ROW_ADD: {
-			if (rule_count >= common_util_get_param(
-				COMMON_UTIL_MAX_RULE_NUMBER)) {
+			if (rule_count >= g_max_rule_num) {
 				*pb_exceed = TRUE;
 				return TRUE;
 			}

@@ -10,13 +10,6 @@
 #define MAX_HANDLES_ON_CONTEXT						10
 #define MINIMUM_COMPRESS_SIZE						0x100
 
-enum {
-	COMMON_UTIL_MAX_RCPT,
-	COMMON_UTIL_MAX_MESSAGE,
-	COMMON_UTIL_MAX_MAIL_LENGTH,
-	COMMON_UTIL_MAX_EXTRULE_LENGTH
-};
-
 struct LIB_BUFFER;
 struct logon_object;
 struct MAIL;
@@ -137,10 +130,12 @@ extern int (*common_util_add_timer)(const char *command, int interval);
 extern BOOL (*common_util_cancel_timer)(int timer_id);
 
 extern LIB_BUFFER *common_util_get_allocator();
-extern void common_util_init(const char *org_name, int avg_blocks, int max_rcpt, int max_msg, unsigned int max_mail_len, unsigned int max_rule_len, const char *smtp_host, uint16_t smtp_port, const char *submit_cmd);
+extern void common_util_init(const char *org_name, int avg_blocks, unsigned int max_rcpt, unsigned int max_msg, unsigned int max_mail_len, unsigned int max_rule_len, const char *smtp_host, uint16_t smtp_port, const char *submit_cmd);
 extern int common_util_run();
 extern void common_util_stop();
-unsigned int common_util_get_param(int param);
 extern const char *common_util_get_submit_command();
 extern uint32_t common_util_get_ftstream_id();
 extern std::shared_ptr<MIME_POOL> common_util_get_mime_pool();
+
+extern unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
+extern unsigned int g_max_rule_len, g_max_extrule_len;

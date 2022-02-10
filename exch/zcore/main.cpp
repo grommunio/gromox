@@ -198,17 +198,17 @@ int main(int argc, const char **argv) try
 	int mime_num = pconfig->get_ll("zarafa_mime_number");
 	printf("[system]: mime number is %d\n", mime_num);
 	
-	int max_rcpt = pconfig->get_ll("max_rcpt_num");
-	printf("[system]: maximum rcpt number is %d\n", max_rcpt);
+	auto max_rcpt = pconfig->get_ll("max_rcpt_num");
+	printf("[system]: maximum rcpt number is %lld\n", max_rcpt);
 	
-	int max_mail = pconfig->get_ll("max_mail_num");
-	printf("[system]: maximum mail number is %d\n", max_mail);
+	auto max_mail = pconfig->get_ll("max_mail_num");
+	printf("[system]: maximum mail number is %lld\n", max_mail);
 	
-	int max_length = pconfig->get_ll("mail_max_length");
+	auto max_length = pconfig->get_ll("mail_max_length");
 	bytetoa(max_length, temp_buff);
 	printf("[system]: maximum mail length is %s\n", temp_buff);
 	
-	int max_rule_len = pconfig->get_ll("max_ext_rule_length");
+	auto max_rule_len = pconfig->get_ll("max_ext_rule_length");
 	bytetoa(max_rule_len, temp_buff);
 	printf("[system]: maximum extended rule length is %s\n", temp_buff);
 	

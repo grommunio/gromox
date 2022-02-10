@@ -2333,7 +2333,7 @@ static BOOL message_load_folder_ext_rules(BOOL b_oof, sqlite3 *psqlite,
 		auto it = std::find_if(plist.begin(), plist.end(),
 		          [&](const RULE_NODE &r) { return r.sequence == seq; });
 		plist.splice(it, std::move(rn));
-		if (++ext_count > common_util_get_param(COMMON_UTIL_MAX_EXT_RULE_NUMBER))
+		if (++ext_count > g_max_extrule_num)
 			break;
 	}
 	return TRUE;

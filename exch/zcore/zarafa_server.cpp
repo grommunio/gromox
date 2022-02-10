@@ -1641,10 +1641,8 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	pvalue = tmp_propvals.getval(PROP_TAG_CONTENTCOUNT);
 	if (pvalue != nullptr)
 		total_mail += *(uint32_t*)pvalue;
-	if (total_mail > common_util_get_param(
-		COMMON_UTIL_MAX_MESSAGE)) {
+	if (total_mail > g_max_message)
 		return ecQuotaExceeded;
-	}
 	if (!exmdb_client::allocate_message_id(pstore->get_dir(),
 	    folder_id, &message_id))
 		return ecError;
@@ -3401,9 +3399,9 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		return ecAccessDenied;
 	if (!pmessage->get_recipient_num(&rcpt_num))
 		return ecError;
-	if (rcpt_num > common_util_get_param(COMMON_UTIL_MAX_RCPT)) {
+	if (rcpt_num > g_max_rcpt)
 		return ecTooManyRecips;
-	}
+
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PR_ASSOCIATED;

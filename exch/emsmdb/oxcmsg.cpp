@@ -226,10 +226,8 @@ uint32_t rop_createmessage(uint16_t cpid, uint64_t folder_id,
 	if (NULL != pvalue) {
 		total_mail += *(uint32_t*)pvalue;
 	}
-	if (total_mail > common_util_get_param(
-		COMMON_UTIL_MAX_MESSAGE)) {
+	if (total_mail > g_max_message)
 		return ecQuotaExceeded;
-	}
 	*ppmessage_id = cu_alloc<uint64_t>();
 	if (NULL == *ppmessage_id) {
 		return ecMAPIOOM;

@@ -53,9 +53,9 @@ enum {
 	SMTP_PERMANENT_ERROR
 };
 
-static int g_max_rcpt;
+unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
+unsigned int g_max_rule_len, g_max_extrule_len;
 static uint16_t g_smtp_port;
-static int g_max_message;
 static char g_smtp_ip[40], g_emsmdb_org_name[256];
 static int g_faststream_id;
 static int g_average_blocks;
@@ -63,8 +63,6 @@ static std::shared_ptr<MIME_POOL> g_mime_pool;
 static thread_local const char *g_dir_key;
 static std::mutex g_id_lock;
 static char g_submit_command[1024];
-static unsigned int g_max_mail_len;
-static unsigned int g_max_rule_len;
 static std::unique_ptr<LIB_BUFFER> g_file_allocator;
 
 #define E(s) decltype(common_util_ ## s) common_util_ ## s;
@@ -2084,7 +2082,7 @@ LIB_BUFFER* common_util_get_allocator()
 }
 
 void common_util_init(const char *org_name, int average_blocks,
-	int max_rcpt, int max_message, unsigned int max_mail_len,
+    unsigned int max_rcpt, unsigned int max_message, unsigned int max_mail_len,
 	unsigned int max_rule_len, const char *smtp_ip, uint16_t smtp_port,
 	const char *submit_command)
 {
@@ -2093,7 +2091,7 @@ void common_util_init(const char *org_name, int average_blocks,
 	g_max_rcpt = max_rcpt;
 	g_max_message = max_message;
 	g_max_mail_len = max_mail_len;
-	g_max_rule_len = max_rule_len;
+	g_max_rule_len = g_max_extrule_len = max_rule_len;
 	gx_strlcpy(g_smtp_ip, smtp_ip, GX_ARRAY_SIZE(g_smtp_ip));
 	g_smtp_port = smtp_port;
 	gx_strlcpy(g_submit_command, submit_command, GX_ARRAY_SIZE(g_submit_command));
@@ -2173,21 +2171,6 @@ void common_util_stop()
 {
 	g_file_allocator.reset();
 	g_mime_pool.reset();
-}
-
-unsigned int common_util_get_param(int param)
-{
-	switch (param) {
-	case COMMON_UTIL_MAX_RCPT:
-		return g_max_rcpt;
-	case COMMON_UTIL_MAX_MESSAGE:
-		return g_max_message;
-	case COMMON_UTIL_MAX_MAIL_LENGTH:
-		return g_max_mail_len;
-	case COMMON_UTIL_MAX_EXTRULE_LENGTH:
-		return g_max_rule_len;
-	}
-	return 0;
 }
 
 const char* common_util_get_submit_command()
