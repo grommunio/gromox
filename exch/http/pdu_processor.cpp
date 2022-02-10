@@ -121,6 +121,7 @@ static std::list<PROC_PLUGIN> g_plugin_list;
 static std::mutex g_list_lock, g_async_lock;
 static std::list<DCERPC_ENDPOINT> g_endpoint_list;
 static bool g_ign_loaderr;
+static bool support_negotiate = false; /* possibly nonfunctional */
 static std::unique_ptr<INT_HASH_TABLE> g_async_hash;
 static std::list<PDU_PROCESSOR *> g_processor_list; /* ptrs owned by VIRTUAL_CONNECTION */
 static std::unique_ptr<LIB_BUFFER> g_call_allocator, g_auth_allocator,
@@ -943,9 +944,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	DCERPC_NCACN_PACKET pkt;
 	DCERPC_CONTEXT *pcontext;
 	DCERPC_AUTH_CONTEXT *pauth_ctx;
-#ifdef SUPPORT_NEGOTIATE
 	BOOL b_negotiate = FALSE;
-#endif
 
 	pbind = &pcall->pkt.payload.bind;
 
@@ -995,8 +994,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		}
 		b_ndr64 = TRUE;
 	}
-#ifdef SUPPORT_NEGOTIATE
-	if (b_found && pbind->num_contexts > 1 &&
+	if (support_negotiate && b_found && pbind->num_contexts > 1 &&
 	    memcmp(&pbind->ctx_list[0].abstract_syntax,
 	    &pbind->ctx_list[1].abstract_syntax, sizeof(SYNTAX_ID)) == 0 &&
 	    pbind->ctx_list[1].num_transfer_syntaxes > 0) {
@@ -1007,7 +1005,6 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 			b_negotiate = TRUE;
 		}
 	}
-#endif
 	auto pinterface = pdu_processor_find_interface_by_uuid(
 					pcall->pprocessor->pendpoint, &uuid, if_version);
 	if (NULL == pinterface) {
@@ -1109,9 +1106,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	} else {
 		pkt.payload.bind_ack.secondary_address[0] = '\0';
 	}
-#ifdef SUPPORT_NEGOTIATE
 	if (!b_negotiate) {
-#endif
 		pkt.payload.bind_ack.num_contexts = 1;
 		pkt.payload.bind_ack.ctx_list = static_cast<DCERPC_ACK_CTX *>(malloc(sizeof(DCERPC_ACK_CTX)));
 		if (NULL == pkt.payload.bind_ack.ctx_list) {
@@ -1120,10 +1115,9 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 			}
 			return pdu_processor_bind_nak(pcall, 0);
 		}
-#ifdef SUPPORT_NEGOTIATE
 	} else {
 		pkt.payload.bind_ack.num_contexts = 2;
-		pkt.payload.bind_ack.ctx_list = malloc(2*sizeof(DCERPC_ACK_CTX));
+		pkt.payload.bind_ack.ctx_list = static_cast<DCERPC_ACK_CTX *>(malloc(2 * sizeof(DCERPC_ACK_CTX)));
 		if (NULL == pkt.payload.bind_ack.ctx_list) {
 			if (NULL != pcontext) {
 				pdu_processor_free_context(pcontext);
@@ -1132,19 +1126,11 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 		}
 		pkt.payload.bind_ack.ctx_list[1].result =
 				DCERPC_BIND_RESULT_NEGOTIATE_ACK;
-		if (!pcall->b_bigendian)
-			bitmap = pbind->ctx_list[1].transfer_syntaxes[0].uuid.clock_seq[0];
-		else
-			bitmap = pbind->ctx_list[1].transfer_syntaxes[0].uuid.node[5];
-		if (DCERPC_SECURITY_CONTEXT_MULTIPLEXING & bitmap) {
-			pkt.payload.bind_ack.ctx_list[1].reason =
-				DCERPC_SECURITY_CONTEXT_MULTIPLEXING;
-		} else {
-			pkt.payload.bind_ack.ctx_list[1].reason = 0;
-		}
+		auto &u = pbind->ctx_list[1].transfer_syntaxes[0].uuid;
+		char bitmap = pcall->b_bigendian ? u.node[5] : u.clock_seq[0];
+		pkt.payload.bind_ack.ctx_list[1].reason = bitmap & DCERPC_SECURITY_CONTEXT_MULTIPLEXING;;
 		memset(&pkt.payload.bind_ack.ctx_list[1].syntax, 0, sizeof(SYNTAX_ID));
 	}
-#endif
 	pkt.payload.bind_ack.ctx_list[0].result = result;
 	pkt.payload.bind_ack.ctx_list[0].reason = reason;
 	pkt.payload.bind_ack.ctx_list[0].syntax = g_transfer_syntax_ndr;
