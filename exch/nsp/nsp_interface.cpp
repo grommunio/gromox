@@ -635,30 +635,27 @@ static void nsp_interface_position_in_list(const STAT *pstat,
 		if (row > last_row) {
 			row = last_row;
 		}
-	} else {
+	} else if (pstat->cur_rec == MID_BEGINNING_OF_TABLE) {
 		/* absolute positioning MS-OXNSPI 3.1.4.5.1 */
-		if (MID_BEGINNING_OF_TABLE == pstat->cur_rec) {
-			row = 0;
-		}
-		else if (MID_END_OF_TABLE ==  pstat->cur_rec) {
-			row = last_row + 1;
-		} else {
-			b_found = FALSE;
-			row = 0;
-			for (auto pnode = single_list_get_head(plist); pnode != nullptr;
-				pnode=single_list_get_after(plist, pnode)) {
-				auto minid = ab_tree_get_node_minid(static_cast<const SIMPLE_TREE_NODE *>(pnode->pdata));
-				if (0 != minid && minid == pstat->cur_rec) {
-					b_found = TRUE;
-					break;
-				}
-				row ++;
+		row = 0;
+	} else if (pstat->cur_rec == MID_END_OF_TABLE) {
+		row = last_row + 1;
+	} else {
+		b_found = FALSE;
+		row = 0;
+		for (auto pnode = single_list_get_head(plist); pnode != nullptr;
+		     pnode = single_list_get_after(plist, pnode)) {
+			auto minid = ab_tree_get_node_minid(static_cast<const SIMPLE_TREE_NODE *>(pnode->pdata));
+			if (0 != minid && minid == pstat->cur_rec) {
+				b_found = TRUE;
+				break;
 			}
-			if (!b_found)
-				/* In this case the position is undefined.
-				   To avoid problems we will use first row */
-				row = 0;
+			row++;
 		}
+		if (!b_found)
+			/* In this case the position is undefined.
+			   To avoid problems we will use first row */
+			row = 0;
 	}
 	*pout_row = row;
 	*pout_last_row = last_row;
@@ -680,34 +677,29 @@ static void nsp_interface_position_in_table(const STAT *pstat,
 		if (row > last_row) {
 			row = last_row;
 		}
-	} else {
+	} else if (pstat->cur_rec == MID_BEGINNING_OF_TABLE) {
 		/* absolute positioning MS-OXNSPI 3.1.4.5.1 */
-		if (MID_BEGINNING_OF_TABLE == pstat->cur_rec) {
-			row = 0;
-		}
-		else if (MID_END_OF_TABLE == pstat->cur_rec) {
-			row = last_row + 1;
-		} else {
-			b_found = FALSE;
-			row = 0;
-			pnode = simple_tree_node_get_child(pnode);
-			if (NULL != pnode) {
-				do {
-					if (ab_tree_get_node_type(pnode) < 0x80) {
-						minid = ab_tree_get_node_minid(pnode);
-						if (0 != minid && minid == pstat->cur_rec) {
-							b_found = TRUE;
-							break;
-						}
-						row ++;
-					}
-				} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
+		row = 0;
+	} else if (pstat->cur_rec == MID_END_OF_TABLE) {
+		row = last_row + 1;
+	} else {
+		b_found = FALSE;
+		row = 0;
+		pnode = simple_tree_node_get_child(pnode);
+		if (pnode != nullptr) do {
+			if (ab_tree_get_node_type(pnode) >= 0x80)
+				continue;
+			minid = ab_tree_get_node_minid(pnode);
+			if (0 != minid && minid == pstat->cur_rec) {
+				b_found = TRUE;
+				break;
 			}
-			if (!b_found)
-				/* In this case the position is undefined.
-				   To avoid problems we will use first row */
-				row = 0;
-		}
+			row++;
+		} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
+		if (!b_found)
+			/* In this case the position is undefined.
+			   To avoid problems we will use first row */
+			row = 0;
 	}
 	*pout_row = row;
 	*pout_last_row = last_row;
