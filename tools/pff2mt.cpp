@@ -235,14 +235,13 @@ static bool is_mapi_message(uint32_t nid)
 
 static int do_attach2(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t *atx)
 {
-	int atype = 0;
+	int atype = LIBPFF_ATTACHMENT_TYPE_UNDEFINED;
 	uint64_t asize = 0;
 	libpff_error_ptr err;
 
-	if (libpff_attachment_get_type(atx, &atype, &unique_tie(err)) < 1) {
-		fprintf(stderr, "%s\n", az_error("PF-1012: Attachment is corrupted", err).what());
-		return 0;
-	}
+	if (libpff_attachment_get_type(atx, &atype, &unique_tie(err)) < 1 &&
+	    atype != LIBPFF_ATTACHMENT_TYPE_UNDEFINED)
+		fprintf(stderr, "%s\n", az_error("PF-1012: Attachment is not fully recognized", err).what());
 	tree(depth);
 	if (atype == LIBPFF_ATTACHMENT_TYPE_DATA) {
 		if (libpff_attachment_get_data_size(atx, &asize, &~unique_tie(err)) < 1) {
@@ -268,6 +267,8 @@ static int do_attach2(unsigned int depth, ATTACHMENT_CONTENT *atc, libpff_item_t
 	} else if (atype == LIBPFF_ATTACHMENT_TYPE_REFERENCE) {
 		tlog("[attachment type=%c]\n", atype);
 		throw YError("PF-1005: EOPNOTSUPP");
+	} else if (atype == LIBPFF_ATTACHMENT_TYPE_UNDEFINED) {
+		tlog("[attachment type=0]\n");
 	} else {
 		tlog("[attachment type=unknown]\n");
 		throw YError("PF-1006: EOPNOTSUPP");
