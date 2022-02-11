@@ -405,7 +405,7 @@ static BOOL ab_tree_load_class(
 	} else if (0 == rows) {
 		return TRUE;
 	}
-	auto parray = static_cast<ab_sort_item *>(malloc(sizeof(ab_sort_item) * rows));
+	auto parray = me_alloc<ab_sort_item>(rows);
 	if (NULL == parray) {
 		return FALSE;
 	}
@@ -477,9 +477,8 @@ static BOOL ab_tree_load_tree(int domain_id,
 	pabnode->node_type = NODE_TYPE_DOMAIN;
 	pabnode->id = domain_id;
 	pabnode->minid = ab_tree_make_minid(MINID_TYPE_DOMAIN, domain_id);
-	if (FALSE == ab_tree_cache_node(pbase, pabnode)) {
+	if (!ab_tree_cache_node(pbase, pabnode))
 		return FALSE;
-	}
 	if (!utf8_check(dinfo.name.c_str()))
 		utf8_filter(dinfo.name.data());
 	if (!utf8_check(dinfo.title.c_str()))
@@ -503,9 +502,8 @@ static BOOL ab_tree_load_tree(int domain_id,
 		pabnode->node_type = NODE_TYPE_GROUP;
 		pabnode->id = grp.id;
 		pabnode->minid = ab_tree_make_minid(MINID_TYPE_GROUP, grp.id);
-		if (FALSE == ab_tree_cache_node(pbase, pabnode)) {
+		if (!ab_tree_cache_node(pbase, pabnode))
 			return FALSE;
-		}
 		auto grp_id = grp.id;
 		pabnode->d_info = new(std::nothrow) sql_group(std::move(grp));
 		if (pabnode->d_info == nullptr)
@@ -546,7 +544,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		} else if (0 == rows) {
 			continue;
 		}
-		parray = static_cast<ab_sort_item *>(malloc(sizeof(ab_sort_item) * rows));
+		parray = me_alloc<ab_sort_item>(rows);
 		if (NULL == parray) {
 			return FALSE;
 		}
@@ -594,7 +592,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 	} else if (0 == rows) {
 		return TRUE;
 	}
-	parray = static_cast<ab_sort_item *>(malloc(sizeof(ab_sort_item) * rows));
+	parray = me_alloc<ab_sort_item>(rows);
 	if (NULL == parray) {
 		return FALSE;	
 	}
@@ -649,7 +647,6 @@ static BOOL ab_tree_load_tree(int domain_id,
 static BOOL ab_tree_load_base(AB_BASE *pbase)
 {
 	int i, num;
-	DOMAIN_NODE *pdomain;
 	char temp_buff[1024];
 	SIMPLE_TREE_NODE *proot;
 	SINGLE_LIST_NODE *pnode;
@@ -659,14 +656,14 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 		if (!get_org_domains(pbase->base_id, temp_file))
 			return FALSE;
 		for (auto domain_id : temp_file) {
-			pdomain = (DOMAIN_NODE*)malloc(sizeof(DOMAIN_NODE));
+			auto pdomain = me_alloc<DOMAIN_NODE>();
 			if (NULL == pdomain) {
 				return FALSE;
 			}
 			pdomain->node.pdata = pdomain;
 			pdomain->domain_id = domain_id;
 			simple_tree_init(&pdomain->tree);
-			if (FALSE == ab_tree_load_tree(
+			if (!ab_tree_load_tree(
 				domain_id, &pdomain->tree, pbase)) {
 				ab_tree_destruct_tree(&pdomain->tree);
 				free(pdomain);
@@ -675,7 +672,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 			single_list_append_as_tail(&pbase->list, &pdomain->node);
 		}
 	} else {
-		pdomain = (DOMAIN_NODE*)malloc(sizeof(DOMAIN_NODE));
+		auto pdomain = me_alloc<DOMAIN_NODE>();
 		if (NULL == pdomain) {
 			return FALSE;
 		}
@@ -683,7 +680,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 		int domain_id = -pbase->base_id;
 		pdomain->domain_id = -pbase->base_id;
 		simple_tree_init(&pdomain->tree);
-		if (FALSE == ab_tree_load_tree(
+		if (!ab_tree_load_tree(
 			domain_id, &pdomain->tree, pbase)) {
 			ab_tree_destruct_tree(&pdomain->tree);
 			free(pdomain);
@@ -693,7 +690,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 	}
 	for (pnode=single_list_get_head(&pbase->list); NULL!=pnode;
 		pnode=single_list_get_after(&pbase->list, pnode)) {
-		pdomain = (DOMAIN_NODE*)pnode->pdata;
+		auto pdomain = static_cast<DOMAIN_NODE *>(pnode->pdata);
 		proot = simple_tree_get_root(&pdomain->tree);
 		if (NULL == proot) {
 			continue;
@@ -713,7 +710,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 	if (num <= 1) {
 		return TRUE;
 	}
-	auto parray = static_cast<ab_sort_item *>(malloc(sizeof(ab_sort_item) * num));
+	auto parray = me_alloc<ab_sort_item>(num);
 	if (NULL == parray) {
 		return TRUE;
 	}
@@ -774,7 +771,7 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 		memcpy(pbase->guid.node, &base_id, sizeof(uint32_t));
 		pbase->phash.clear();
 		bhold.unlock();
-		if (FALSE == ab_tree_load_base(pbase)) {
+		if (!ab_tree_load_base(pbase)) {
 			pbase->unload();
 			bhold.lock();
 			g_base_hash.erase(it);
@@ -842,7 +839,7 @@ static void *nspab_scanwork(void *param)
 			ab_tree_put_snode(pnode);
 		}
 		pbase->phash.clear();
-		if (FALSE == ab_tree_load_base(pbase)) {
+		if (!ab_tree_load_base(pbase)) {
 			pbase->unload();
 			bhold.lock();
 			g_base_hash.erase(pbase->base_id);
@@ -1227,15 +1224,15 @@ void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode, uint32_t codepage,
 		auto it = obj->propvals.find(PR_DISPLAY_NAME);
 		switch (obj->list_type) {
 		case MLIST_TYPE_NORMAL:
-			if (FALSE == get_lang(codepage, "mlist0", lang_string, 256)) {
+			if (!get_lang(codepage, "mlist0", lang_string,
+			    arsizeof(lang_string)))
 				strcpy(lang_string, "custom address list");
-			}
 			snprintf(str_dname, dn_size, "%s(%s)", obj->username.c_str(), lang_string);
 			break;
 		case MLIST_TYPE_GROUP:
-			if (FALSE == get_lang(codepage, "mlist1", lang_string, 256)) {
+			if (!get_lang(codepage, "mlist1", lang_string,
+			    arsizeof(lang_string)))
 				strcpy(lang_string, "all users in department of %s");
-			}
 			snprintf(str_dname, dn_size, lang_string, it != obj->propvals.cend() ? it->second.c_str() : "");
 			break;
 		case MLIST_TYPE_DOMAIN:
@@ -1243,9 +1240,9 @@ void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode, uint32_t codepage,
 				gx_strlcpy(str_dname, "all users in domain", dn_size);
 			break;
 		case MLIST_TYPE_CLASS:
-			if (FALSE == get_lang(codepage, "mlist3", lang_string, 256)) {
+			if (!get_lang(codepage, "mlist3", lang_string,
+			    arsizeof(lang_string)))
 				strcpy(lang_string, "all users in group of %s");
-			}
 			snprintf(str_dname, dn_size, lang_string, it != obj->propvals.cend() ? it->second.c_str() : "");
 			break;
 		default:
@@ -1323,9 +1320,8 @@ void ab_tree_get_mlist_info(const SIMPLE_TREE_NODE *pnode,
 
 void ab_tree_get_mlist_title(uint32_t codepage, char *str_title)
 {
-	if (FALSE == get_lang(codepage, "mlist", str_title, 256)) {
+	if (!get_lang(codepage, "mlist", str_title, 256))
 		strcpy(str_title, "Address List");
-	}
 }
 
 void ab_tree_get_server_dn(const SIMPLE_TREE_NODE *pnode, char *dn, int length)

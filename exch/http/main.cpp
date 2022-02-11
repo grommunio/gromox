@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <cassert>
 #include <cerrno>
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
@@ -35,7 +36,6 @@
 #include <unistd.h>
 #include <csignal>
 #include <sys/types.h>
-#include <sys/time.h>
 #include <sys/resource.h>
 #define PDU_PROCESSOR_RATIO			10
 
@@ -207,8 +207,8 @@ int main(int argc, const char **argv) try
 	bytetoa(context_aver_mem*64*1024, temp_buff);
 	printf("[http]: context average memory is %s\n", temp_buff);
 	
-	int http_conn_timeout = g_config_file->get_ll("http_conn_timeout");
-	itvltoa(http_conn_timeout, temp_buff);
+	std::chrono::seconds http_conn_timeout{g_config_file->get_ll("http_conn_timeout")};
+	itvltoa(http_conn_timeout.count(), temp_buff);
 	printf("[http]: http socket read write time out is %s\n", temp_buff);
  
 	int http_auth_times = g_config_file->get_ll("http_auth_times");
@@ -296,8 +296,8 @@ int main(int argc, const char **argv) try
 	bytetoa(fastcgi_max_size, temp_buff);
 	printf("[mod_fastcgi]: fastcgi maximum size is %s\n", temp_buff);
 	
-	int fastcgi_exec_timeout = g_config_file->get_ll("fastcgi_exec_timeout");
-	itvltoa(fastcgi_exec_timeout, temp_buff);
+	std::chrono::seconds fastcgi_exec_timeout{g_config_file->get_ll("fastcgi_exec_timeout")};
+	itvltoa(fastcgi_exec_timeout.count(), temp_buff);
 	printf("[http]: fastcgi excution time out is %s\n", temp_buff);
 	uint16_t listen_port = g_config_file->get_ll("listen_port");
 	unsigned int mss_size = g_config_file->get_ll("tcp_max_segment");

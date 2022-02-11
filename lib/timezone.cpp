@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <limits>
+#include <gromox/defs.h>
 #include <gromox/tzfile.hpp>
 #include <gromox/timezone.hpp>
 #include <sys/types.h>
@@ -1048,7 +1049,7 @@ static void tzsetwall(struct state *const sp)
 
 const struct state *tz_alloc(const char *name)
 {
-	auto sp = static_cast<state *>(malloc(sizeof(struct state)));
+	auto sp = gromox::me_alloc<state>();
 	if (sp == NULL) {
 		return sp;
 	}

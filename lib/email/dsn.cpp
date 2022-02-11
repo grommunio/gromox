@@ -93,7 +93,7 @@ DSN_FIELDS* dsn_get_message_fileds(DSN *pdsn)
 
 DSN_FIELDS* dsn_new_rcpt_fields(DSN *pdsn)
 {
-	auto pfields = static_cast<RCPT_DSN_FIELDS *>(malloc(sizeof(RCPT_DSN_FIELDS)));
+	auto pfields = gromox::me_alloc<RCPT_DSN_FIELDS>();
 	if (NULL == pfields) {
 		return NULL;
 	}
@@ -121,7 +121,7 @@ static void dsn_delete_rcpt_fields(DSN *pdsn, DSN_FIELDS *pfields)
 
 bool dsn_append_field(DSN_FIELDS *pfields, const char *tag, const char *value)
 {
-	auto pfield = static_cast<DSN_FIELD *>(malloc(sizeof(DSN_FIELD)));
+	auto pfield = gromox::me_alloc<DSN_FIELD>();
 	if (NULL == pfield) {
 		return false;
 	}

@@ -46,7 +46,7 @@ BINARY* apple_util_binhex_to_appledouble(const BINHEX *pbinhex)
 	if (EXT_ERR_SUCCESS != applefile_push_file(&ext_push, &applefile)) {
 		return nullptr;
 	}
-	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
+	auto pbin = me_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -71,19 +71,17 @@ BINARY* apple_util_macbinary_to_appledouble(const MACBINARY *pmacbin)
 	applefile.count = 0;
 	applefile.pentries = entry_buff;
 	entry_buff[applefile.count].entry_id = AS_REALNAME;
-	entry_buff[applefile.count].pentry = &tmp_bin;
+	entry_buff[applefile.count++].pentry = &tmp_bin;
 	tmp_bin.cb = strlen(pmacbin->header.file_name);
 	tmp_bin.pv = deconst(pmacbin->header.file_name);
-	applefile.count ++;
 	entry_buff[applefile.count].entry_id = AS_FILEDATES;
-	entry_buff[applefile.count].pentry = &entry_date;
+	entry_buff[applefile.count++].pentry = &entry_date;
 	entry_date.create = pmacbin->header.creat_time;
 	entry_date.modify = pmacbin->header.modify_time;
 	entry_date.backup = 0;
 	entry_date.access = 0;
-	applefile.count ++;
 	entry_buff[applefile.count].entry_id = AS_FINDERINFO;
-	entry_buff[applefile.count].pentry = &finder_entry;
+	entry_buff[applefile.count++].pentry = &finder_entry;
 	finder_entry.valid_count = 6;
 	finder_entry.finfo.fd_type = pmacbin->header.type;
 	finder_entry.finfo.fd_creator = pmacbin->header.creator;
@@ -93,26 +91,22 @@ BINARY* apple_util_macbinary_to_appledouble(const MACBINARY *pmacbin)
 	finder_entry.finfo.fd_folder = pmacbin->header.folder_id;
 	finder_entry.finfo.fd_location.v = pmacbin->header.point_v;
 	finder_entry.finfo.fd_location.h = pmacbin->header.point_h;
-	applefile.count ++;
 	entry_buff[applefile.count].entry_id = AS_MACINFO;
-
 	ASMACINFO mac_info{};
-	entry_buff[applefile.count].pentry = &mac_info;
+	entry_buff[applefile.count++].pentry = &mac_info;
 	mac_info.attribute = (pmacbin->header.protected_flag >> 1) & 0x01;
-	applefile.count ++;
 	if (0 != pmacbin->header.res_len) {
 		entry_buff[applefile.count].entry_id = AS_RESOURCE;
-		entry_buff[applefile.count].pentry = &tmp_bin1;
+		entry_buff[applefile.count++].pentry = &tmp_bin1;
 		tmp_bin1.cb = pmacbin->header.res_len;
 		tmp_bin1.pb = deconst(pmacbin->presource);
-		applefile.count ++;
 	}
 	if (!ext_push.init(nullptr, 0, 0))
 		return NULL;
 	if (EXT_ERR_SUCCESS != applefile_push_file(&ext_push, &applefile)) {
 		return NULL;
 	}
-	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
+	auto pbin = me_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -168,7 +162,7 @@ BINARY* apple_util_appledouble_to_macbinary(const APPLEFILE *papplefile,
 	if (EXT_ERR_SUCCESS != macbinary_push_binary(&ext_push, &macbin)) {
 		return NULL;
 	}
-	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
+	auto pbin = me_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -224,7 +218,7 @@ BINARY* apple_util_applesingle_to_macbinary(const APPLEFILE *papplefile)
 	if (EXT_ERR_SUCCESS != macbinary_push_binary(&ext_push, &macbin)) {
 		return NULL;
 	}
-	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
+	auto pbin = me_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -259,7 +253,7 @@ BINARY* apple_util_binhex_to_macbinary(const BINHEX *pbinhex)
 	if (EXT_ERR_SUCCESS != macbinary_push_binary(&ext_push, &macbin)) {
 		return NULL;
 	}
-	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
+	auto pbin = me_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}
@@ -277,7 +271,7 @@ BINARY* apple_util_applesingle_to_appledouble(const APPLEFILE *papplefile)
 	applefile.header = papplefile->header;
 	applefile.header.magic_num = APPLEDOUBLE_MAGIC;
 	applefile.count = 0;
-	applefile.pentries = static_cast<ENTRY_DATA *>(malloc(sizeof(ENTRY_DATA) * papplefile->count));
+	applefile.pentries = me_alloc<ENTRY_DATA>(papplefile->count);
 	if (NULL == applefile.pentries) {
 		return NULL;
 	}
@@ -285,8 +279,7 @@ BINARY* apple_util_applesingle_to_appledouble(const APPLEFILE *papplefile)
 		if (AS_DATA == papplefile->pentries[i].entry_id) {
 			continue;
 		}
-		applefile.pentries[applefile.count] = papplefile->pentries[i];
-		applefile.count ++;
+		applefile.pentries[applefile.count++] = papplefile->pentries[i];
 	}
 	if (!ext_push.init(nullptr, 0, 0)) {
 		free(applefile.pentries);
@@ -297,7 +290,7 @@ BINARY* apple_util_applesingle_to_appledouble(const APPLEFILE *papplefile)
 		return nullptr;
 	}
 	free(applefile.pentries);
-	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
+	auto pbin = me_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}

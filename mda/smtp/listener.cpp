@@ -231,7 +231,7 @@ static void *smls_thrwork(void *arg)
 			  smtp_reply_str2);
 		write(sockd2, buff, len);
 		/* construct the context object */
-		gettimeofday(&pcontext->connection.last_timestamp, NULL);
+		pcontext->connection.last_timestamp = time_point::clock::now();
 		pcontext->connection.sockd             = sockd2;
 		pcontext->connection.client_port    = client_port;
 		pcontext->connection.server_port    = g_listener_port;
@@ -350,7 +350,7 @@ static void *smls_thrworkssl(void *arg)
 			continue;
 		}
 		/* construct the context object */
-		gettimeofday(&pcontext->connection.last_timestamp, NULL);
+		pcontext->connection.last_timestamp = time_point::clock::now();
 		pcontext->connection.sockd             = sockd2;
 		pcontext->last_cmd                     = T_STARTTLS_CMD;
 		pcontext->connection.client_port    = client_port;

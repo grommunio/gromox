@@ -5,6 +5,8 @@
 #include <gromox/propval.hpp>
 #include <cstdlib>
 
+using namespace gromox;
+
 static void* restriction_dup_by_type(uint8_t rt, void *prestriction);
 
 static void restriction_free_by_type(uint8_t rt, void *prestriction);
@@ -12,12 +14,12 @@ static void restriction_free_by_type(uint8_t rt, void *prestriction);
 static RESTRICTION_AND_OR* restriction_dup_and_or(
 	const RESTRICTION_AND_OR *prestriction)
 {
-	auto pres = static_cast<RESTRICTION_AND_OR *>(malloc(sizeof(RESTRICTION_AND_OR)));
+	auto pres = me_alloc<RESTRICTION_AND_OR>();
 	if (NULL == pres) {
 		return NULL;
 	}
 	pres->count = prestriction->count;
-	pres->pres = static_cast<RESTRICTION *>(malloc(sizeof(RESTRICTION) * pres->count));
+	pres->pres = me_alloc<RESTRICTION>(pres->count);
 	if (NULL == pres->pres) {
 		free(pres);
 		return NULL;
@@ -52,7 +54,7 @@ static void restriction_free_and_or(RESTRICTION_AND_OR *prestriction)
 static RESTRICTION_NOT* restriction_dup_not(
 	const RESTRICTION_NOT *prestriction)
 {
-	auto pres = static_cast<RESTRICTION_NOT *>(malloc(sizeof(RESTRICTION_NOT)));
+	auto pres = me_alloc<RESTRICTION_NOT>();
 	if (NULL == pres) {
 		return NULL;
 	}
@@ -77,7 +79,7 @@ static void restriction_free_not(
 static RESTRICTION_CONTENT* restriction_dup_content(
 	const RESTRICTION_CONTENT *prestriction)
 {
-	auto pres = static_cast<RESTRICTION_CONTENT *>(malloc(sizeof(RESTRICTION_CONTENT)));
+	auto pres = me_alloc<RESTRICTION_CONTENT>();
 	if (NULL == pres) {
 		return NULL;
 	}
@@ -103,7 +105,7 @@ static void restriction_free_content(RESTRICTION_CONTENT *prestriction)
 static RESTRICTION_PROPERTY* restriction_dup_property(
 	const RESTRICTION_PROPERTY *prestriction)
 {
-	auto pres = static_cast<RESTRICTION_PROPERTY *>(malloc(sizeof(RESTRICTION_PROPERTY)));
+	auto pres = me_alloc<RESTRICTION_PROPERTY>();
 	if (NULL == pres) {
 		return NULL;
 	}
@@ -130,7 +132,7 @@ static void restriction_free_property(
 static RESTRICTION_PROPCOMPARE* restriction_dup_propcompare(
 	const RESTRICTION_PROPCOMPARE *prestriction)
 {
-	auto pres = static_cast<RESTRICTION_PROPCOMPARE *>(malloc(sizeof(RESTRICTION_PROPCOMPARE)));
+	auto pres = me_alloc<RESTRICTION_PROPCOMPARE>();
 	if (NULL == pres) {
 		return NULL;
 	}
@@ -149,7 +151,7 @@ static void restriction_free_propcompare(
 static RESTRICTION_BITMASK* restriction_dup_bitmask(
 	const RESTRICTION_BITMASK *prestriction)
 {
-	auto pres = static_cast<RESTRICTION_BITMASK *>(malloc(sizeof(RESTRICTION_BITMASK)));
+	auto pres = me_alloc<RESTRICTION_BITMASK>();
 	if (NULL == pres) {
 		return NULL;
 	}
@@ -168,7 +170,7 @@ static void restriction_free_bitmask(
 static RESTRICTION_SIZE* restriction_dup_size(
 	const RESTRICTION_SIZE *prestriction)
 {
-	auto pres = static_cast<RESTRICTION_SIZE *>(malloc(sizeof(RESTRICTION_SIZE)));
+	auto pres = me_alloc<RESTRICTION_SIZE>();
 	if (NULL == pres) {
 		return NULL;
 	}
@@ -187,7 +189,7 @@ static void restriction_free_size(
 static RESTRICTION_EXIST* restriction_dup_exist(
 	const RESTRICTION_EXIST *prestriction)
 {
-	auto pres = static_cast<RESTRICTION_EXIST *>(malloc(sizeof(RESTRICTION_EXIST)));
+	auto pres = me_alloc<RESTRICTION_EXIST>();
 	if (NULL == pres) {
 		return NULL;
 	}
@@ -203,7 +205,7 @@ static void restriction_free_exist(RESTRICTION_EXIST *prestriction)
 static RESTRICTION_SUBOBJ* restriction_dup_subobj(
 	const RESTRICTION_SUBOBJ *prestriction)
 {
-	auto pres = static_cast<RESTRICTION_SUBOBJ *>(malloc(sizeof(RESTRICTION_SUBOBJ)));
+	auto pres = me_alloc<RESTRICTION_SUBOBJ>();
 	if (NULL == pres) {
 		return NULL;
 	}
@@ -230,12 +232,12 @@ static RESTRICTION_COMMENT* restriction_dup_comment(
 	const RESTRICTION_COMMENT *prestriction)
 {
 	int i;
-	auto pres = static_cast<RESTRICTION_COMMENT *>(malloc(sizeof(RESTRICTION_COMMENT)));
+	auto pres = me_alloc<RESTRICTION_COMMENT>();
 	if (NULL == pres) {
 		return NULL;
 	}
 	pres->count = prestriction->count;
-	pres->ppropval = static_cast<TAGGED_PROPVAL *>(malloc(sizeof(TAGGED_PROPVAL) * pres->count));
+	pres->ppropval = me_alloc<TAGGED_PROPVAL>(pres->count);
 	if (NULL == pres->ppropval) {
 		free(pres);
 		return NULL;
@@ -290,7 +292,7 @@ static void restriction_free_comment(
 static RESTRICTION_COUNT* restriction_dup_count(
 	const RESTRICTION_COUNT *prestriction)
 {
-	auto pres = static_cast<RESTRICTION_COUNT *>(malloc(sizeof(RESTRICTION_COUNT)));
+	auto pres = me_alloc<RESTRICTION_COUNT>();
 	if (NULL == pres) {
 		return NULL;
 	}
@@ -378,7 +380,7 @@ static void restriction_free_by_type(
 
 RESTRICTION* restriction_dup(const RESTRICTION *prestriction)
 {
-	auto pres = static_cast<RESTRICTION *>(malloc(sizeof(RESTRICTION)));
+	auto pres = me_alloc<RESTRICTION>();
 	if (NULL == pres) {
 		return NULL;
 	}

@@ -20,7 +20,6 @@
 #include <unistd.h>
 #include <csignal>
 #include <pthread.h>
-#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #define MAX_ARGS			(32*1024)

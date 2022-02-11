@@ -35,11 +35,6 @@ enum {
 	ADJ_DECREASE = true,
 };
 
-enum {
-	COMMON_UTIL_MAX_RULE_NUMBER,
-	COMMON_UTIL_MAX_EXT_RULE_NUMBER
-};
-
 extern BOOL (*common_util_lang_to_charset)(
 	const char *lang, char *charset);
 extern const char* (*common_util_cpid_to_charset)(uint32_t cpid);
@@ -85,8 +80,6 @@ template<typename T> T *cu_alloc(size_t elem)
 	static_assert(std::is_trivially_destructible_v<T>);
 	return static_cast<T *>(common_util_alloc(sizeof(T) * elem));
 }
-template<typename T> T *me_alloc() { return static_cast<T *>(malloc(sizeof(T))); }
-template<typename T> T *me_alloc(size_t elem) { return static_cast<T *>(malloc(sizeof(T) * elem)); }
 char* common_util_dup(const char *pstr);
 char* common_util_convert_copy(BOOL to_utf8,
 	uint32_t cpid, const char *pstring);
@@ -193,5 +186,6 @@ uint32_t common_util_calculate_message_size(
 	const MESSAGE_CONTENT *pmsgctnt);
 uint32_t common_util_calculate_attachment_size(
 	const ATTACHMENT_CONTENT *pattachment);
-unsigned int common_util_get_param(int param);
 extern const char *exmdb_rpc_idtoname(unsigned int i);
+
+extern unsigned int g_max_rule_num, g_max_extrule_num;

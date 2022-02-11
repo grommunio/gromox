@@ -444,23 +444,21 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 			break;
 		}
 	}
-	if (FALSE == hook_result) {
-		if (pthr_data->last_thrower != g_local_hook) {
-			pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-			pthr_data->last_hook = g_local_hook;
-			if (g_local_hook(pcontext))
-				return TRUE;	
-		}
-		if (pthr_data->last_thrower != g_remote_hook) {
-			pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-			pthr_data->last_hook = g_remote_hook;
-			if (g_remote_hook(pcontext))
-				return TRUE;
-		}
-		return FALSE;
-	} else {
+	if (!hook_result)
 		return TRUE;
+	if (pthr_data->last_thrower != g_local_hook) {
+		pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		pthr_data->last_hook = g_local_hook;
+		if (g_local_hook(pcontext))
+			return TRUE;
 	}
+	if (pthr_data->last_thrower != g_remote_hook) {
+		pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+		pthr_data->last_hook = g_remote_hook;
+		if (g_remote_hook(pcontext))
+			return TRUE;
+	}
+	return FALSE;
 }
 
 static void *dxp_thrwork(void *arg)
@@ -549,14 +547,13 @@ static void *dxp_thrwork(void *arg)
 		pthr_data->last_hook = NULL;
 		pthr_data->last_thrower = NULL;
 		pass_result = transporter_pass_mpc_hooks(pcontext, pthr_data);
-		if (FALSE == pass_result) {
+		if (!pass_result) {
 			transporter_log_info(pcontext, LV_DEBUG, "Message cannot be processed by "
 				"any hook registered in MPC");
-			if (FALSE == b_self) {
+			if (!b_self)
 				message_dequeue_save(pmessage);
-			}
 		}
-		if (FALSE == b_self) {
+		if (!b_self) {
 			pcontext->pcontrol->f_rcpt_to.clear();
 			pcontext->pmail->clear();
 			message_dequeue_put(pmessage);
@@ -677,7 +674,7 @@ int transporter_load_library(const char* path)
         dlclose(handle);
         return PLUGIN_NO_MAIN;
     }
-	auto plib = static_cast<HOOK_PLUG_ENTITY *>(malloc(sizeof(HOOK_PLUG_ENTITY)));
+	auto plib = me_alloc<HOOK_PLUG_ENTITY>();
     if (NULL == plib) {
 		printf("[transporter]: Failed to allocate memory for %s\n", fake_path);
         printf("[transporter]: the plugin %s is not loaded\n", fake_path);
@@ -863,13 +860,13 @@ static void *transporter_queryservice(const char *service, const std::type_info 
     if (NULL == ret_addr) {
         return NULL;
     }
-    pservice = (SERVICE_NODE*)malloc(sizeof(SERVICE_NODE));
+	pservice = me_alloc<SERVICE_NODE>();
     if (NULL == pservice) {
 		debug_info("[transporter]: Failed to allocate memory for service node");
         service_release(service, g_cur_lib->file_name);
         return NULL;
     }
-    pservice->service_name = (char*)malloc(strlen(service) + 1);
+	pservice->service_name = me_alloc<char>(strlen(service) + 1);
     if (NULL == pservice->service_name) {
 		debug_info("[transporter]: Failed to allocate memory for service name");
         service_release(service, g_cur_lib->file_name);
@@ -1020,7 +1017,7 @@ static BOOL transporter_throw_context(MESSAGE_CONTEXT *pcontext)
 	double_list_append_as_tail(&pthr_data->anti_loop.throwed_list,
 		&pcircle->node);
 	pass_result = transporter_pass_mpc_hooks(pcontext, pthr_data);
-	if (FALSE == pass_result) {
+	if (!pass_result) {
 		ret_val = FALSE;
 		transporter_log_info(pcontext, LV_DEBUG, "Message cannot be processed by any "
 			"hook registered in MPC");
@@ -1065,13 +1062,13 @@ static BOOL transporter_register_hook(HOOK_FUNCTION func)
     for (pnode=double_list_get_head(&g_hook_list); NULL!=pnode;
 		pnode=double_list_get_after(&g_hook_list, pnode)) {
 		phook = (HOOK_ENTRY*)(pnode->pdata);
-		if (FALSE == phook->valid && 0 == phook->count) {
+		if (!phook->valid && phook->count == 0) {
 			found_hook = TRUE;
 			break;
         }
     }
-	if (FALSE == found_hook) {
-		phook = (HOOK_ENTRY*)malloc(sizeof(HOOK_ENTRY));
+	if (!found_hook) {
+		phook = me_alloc<HOOK_ENTRY>();
 		phook->node_hook.pdata = phook;
 		phook->node_lib.pdata = phook;
 		phook->count = 0;
@@ -1083,7 +1080,7 @@ static BOOL transporter_register_hook(HOOK_FUNCTION func)
     phook->plib = g_cur_lib;
 	phook->hook_addr = func;
     double_list_append_as_tail(&g_cur_lib->list_hook, &phook->node_lib);
-	if (FALSE == found_hook) {
+	if (!found_hook) {
     	/* aquire write lock when to modify the hooks list */
 		std::lock_guard ml_hold(g_mpc_list_lock);
     	double_list_append_as_tail(&g_hook_list, &phook->node_hook);
@@ -1214,17 +1211,4 @@ static void transporter_log_info(MESSAGE_CONTEXT *pcontext, int level,
 			"TO: %s %s", pcontext->pcontrol->from, rcpt_buff, log_buf);
 		break;
 	}
-}
-
-int transporter_get_param(int param)
-{
-	switch (param) {
-	case TRANSPORTER_MIN_THREADS:
-		return g_threads_min;
-	case TRANSPORTER_MAX_THREADS:
-		return g_threads_max;
-	case TRANSPORTER_CREATED_THREADS:
-		return double_list_get_nodes_num(&g_threads_list); 
-	}
-	return 0;
 }

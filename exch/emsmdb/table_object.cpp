@@ -289,7 +289,7 @@ BOOL table_object::create_bookmark(uint32_t *pindex)
 	if (!exmdb_client_mark_table(ptable->plogon->get_dir(), m_table_id,
 	    m_position, &inst_id, &inst_num, &row_type))
 		return FALSE;
-	auto pbookmark = me_alloc<BOOKMARK_NODE>();
+	auto pbookmark = gromox::me_alloc<BOOKMARK_NODE>();
 	if (NULL == pbookmark) {
 		return FALSE;
 	}

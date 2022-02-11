@@ -9,10 +9,6 @@
 #include <gromox/double_list.hpp>
 #include <pthread.h>
 
-enum {
-	ALIVE_ROUTER_CONNECTIONS
-};
-
 class EXMDB_CONNECTION : public std::enable_shared_from_this<EXMDB_CONNECTION> {
 	public:
 	EXMDB_CONNECTION() = default;
@@ -40,7 +36,6 @@ struct ROUTER_CONNECTION {
 	std::list<BINARY> datagram_list; /* manual (de)allocation of .pb */
 };
 
-int exmdb_parser_get_param(int param);
 extern void exmdb_parser_init(size_t max_threads, size_t max_routers);
 extern int exmdb_parser_run(const char *config_path);
 extern void exmdb_parser_stop();

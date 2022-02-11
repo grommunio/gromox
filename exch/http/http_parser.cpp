@@ -7,6 +7,7 @@
 #include <atomic>
 #include <cassert>
 #include <cerrno>
+#include <chrono>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -47,6 +48,7 @@
 #define	MAX_RECLYING_REMAINING						0x4000000
 
 #define OUT_CHANNEL_MAX_LENGTH						0x40000000
+#define TOSEC(x) static_cast<long>(std::chrono::duration_cast<std::chrono::seconds>(x).count())
 
 using namespace std::string_literals;
 using namespace gromox;
@@ -66,6 +68,7 @@ struct VIRTUAL_CONNECTION {
 };
 }
 
+static constexpr time_duration OUT_CHANNEL_MAX_WAIT = std::chrono::seconds(10);
 static std::unordered_map<std::string, VIRTUAL_CONNECTION> g_vconnection_hash;
 
 namespace {
@@ -94,7 +97,8 @@ static BOOL g_support_ssl;
 static SSL_CTX *g_ssl_ctx;
 static int g_max_auth_times;
 static int g_block_auth_fail;
-static unsigned int g_timeout, g_http_debug;
+static time_duration g_timeout;
+static unsigned int g_http_debug;
 static thread_local HTTP_CONTEXT *g_context_key;
 static std::unique_ptr<LIB_BUFFER> g_file_allocator;
 static std::unique_ptr<LIB_BUFFER> g_inchannel_allocator, g_outchannel_allocator;
@@ -109,7 +113,7 @@ static std::mutex g_vconnection_lock;
 static void http_parser_context_clear(HTTP_CONTEXT *pcontext);
 static void http_parser_request_clear(HTTP_REQUEST *prequest);
 
-void http_parser_init(size_t context_num, unsigned int timeout,
+void http_parser_init(size_t context_num, time_duration timeout,
 	int max_auth_times, int block_auth_fail, BOOL support_ssl,
 	const char *certificate_path, const char *cb_passwd,
 	const char *key_path, unsigned int xdebug)
@@ -261,7 +265,7 @@ int http_parser_get_context_socket(SCHEDULE_CONTEXT *ctx)
 	return static_cast<HTTP_CONTEXT *>(ctx)->connection.sockd;
 }
 
-struct timeval http_parser_get_context_timestamp(SCHEDULE_CONTEXT *ctx)
+time_point http_parser_get_context_timestamp(SCHEDULE_CONTEXT *ctx)
 {
 	return static_cast<HTTP_CONTEXT *>(ctx)->connection.last_timestamp;
 }
@@ -511,8 +515,7 @@ static int htparse_initssl(HTTP_CONTEXT *pcontext)
 				" SSL connection, errno is %d", ssl_errno);
 		return X_RUNOFF;
 	}
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
+	auto current_time = time_point::clock::now();
 	if (CALCULATE_INTERVAL(current_time,
 	    pcontext->connection.last_timestamp) < g_timeout) {
 		return PROCESS_POLLING_RDONLY;
@@ -553,10 +556,9 @@ static int htparse_rdhead_no(HTTP_CONTEXT *pcontext, char *line, unsigned int li
 		http_4xx(pcontext);
 		return X_LOOP;
 	}
-	if (FALSE == mod_rewrite_process(ptoken + 1,
-	    tmp_len1, &pcontext->request.f_request_uri)) {
+	if (!mod_rewrite_process(ptoken + 1,
+	    tmp_len1, &pcontext->request.f_request_uri))
 		pcontext->request.f_request_uri.write(ptoken + 1, tmp_len1);
-	}
 	memcpy(pcontext->request.version, ptoken1 + 6, tmp_len);
 	pcontext->request.version[tmp_len] = '\0';
 	return X_RUNOFF;
@@ -662,10 +664,10 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 				"HTTP/1.1 401 Unauthorized\r\n"
 				"Date: %s\r\n"
 				"Content-Length: 0\r\n"
-				"Keep-Alive: timeout=%d\r\n"
+				"Keep-Alive: timeout=%ld\r\n"
 				"Connection: close\r\n"
 				"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
-				"\r\n", dstring, g_timeout);
+				"\r\n", dstring, TOSEC(g_timeout));
 			pcontext->stream_out.write(response_buff, response_len);
 			pcontext->total_length = response_len;
 			pcontext->bytes_rw = 0;
@@ -697,12 +699,12 @@ static int htp_auth(HTTP_CONTEXT *pcontext)
 		response_buff, GX_ARRAY_SIZE(response_buff),
 		"HTTP/1.1 401 Unauthorized\r\n"
 		"Date: %s\r\n"
-		"Keep-Alive: timeout=%d\r\n"
+		"Keep-Alive: timeout=%ld\r\n"
 		"Connection: close\r\n"
 		"Content-Type: text/plain; charset=ascii\r\n"
 		"Content-Length: 2\r\n"
 		"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
-		"\r\n\r\n", dstring, g_timeout);
+		"\r\n\r\n", dstring, TOSEC(g_timeout));
 	pcontext->stream_out.write(response_buff, response_len);
 	pcontext->total_length = response_len;
 	pcontext->bytes_rw = 0;
@@ -759,7 +761,7 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 	gx_strlcpy(pcontext->host, ptoken, GX_ARRAY_SIZE(pcontext->host));
 	pcontext->port = strtol(ptoken1, nullptr, 0);
 
-	if (FALSE == pcontext->b_authed) {
+	if (!pcontext->b_authed) {
 		char dstring[128], response_buff[1024];
 		rfc1123_dstring(dstring, arsizeof(dstring));
 		auto response_len = gx_snprintf(
@@ -767,10 +769,10 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 			"HTTP/1.1 401 Unauthorized\r\n"
 			"Date: %s\r\n"
 			"Content-Length: 0\r\n"
-			"Keep-Alive: timeout=%d\r\n"
+			"Keep-Alive: timeout=%ld\r\n"
 			"Connection: close\r\n"
 			"WWW-Authenticate: Basic realm=\"msrpc realm\"\r\n"
-			"\r\n", dstring, g_timeout);
+			"\r\n", dstring, TOSEC(g_timeout));
 		pcontext->stream_out.write(response_buff, response_len);
 		pcontext->total_length = response_len;
 		pcontext->bytes_rw = 0;
@@ -823,7 +825,7 @@ static int htp_delegate_hpm(HTTP_CONTEXT *pcontext)
 	pcontext->bytes_rw = 0;
 	pcontext->total_length = 0;
 
-	if (FALSE == hpm_processor_write_request(pcontext)) {
+	if (!hpm_processor_write_request(pcontext)) {
 		http_5xx(pcontext);
 		return X_LOOP;
 	}
@@ -831,7 +833,7 @@ static int htp_delegate_hpm(HTTP_CONTEXT *pcontext)
 		pcontext->sched_stat = SCHED_STAT_RDBODY;
 		return X_LOOP;
 	}
-	if (FALSE == hpm_processor_proc(pcontext)) {
+	if (!hpm_processor_proc(pcontext)) {
 		http_5xx(pcontext);
 		return X_LOOP;
 	}
@@ -855,7 +857,7 @@ static int htp_delegate_fcgi(HTTP_CONTEXT *pcontext)
 	pcontext->bytes_rw = 0;
 	pcontext->total_length = 0;
 
-	if (FALSE == mod_fastcgi_write_request(pcontext)) {
+	if (!mod_fastcgi_write_request(pcontext)) {
 		http_5xx(pcontext);
 		return X_LOOP;
 	}
@@ -863,7 +865,7 @@ static int htp_delegate_fcgi(HTTP_CONTEXT *pcontext)
 		pcontext->sched_stat = SCHED_STAT_RDBODY;
 		return X_LOOP;
 	}
-	if (FALSE == mod_fastcgi_relay_content(pcontext)) {
+	if (!mod_fastcgi_relay_content(pcontext)) {
 		http_5xx(pcontext, "Bad FastCGI Gateway", 502);
 		return X_LOOP;
 	}
@@ -998,8 +1000,7 @@ static int htparse_rdhead(HTTP_CONTEXT *pcontext)
 	ssize_t actual_read = pcontext->connection.ssl != nullptr ?
 			      SSL_read(pcontext->connection.ssl, pbuff, size) :
 			      read(pcontext->connection.sockd, pbuff, size);
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
+	auto current_time = time_point::clock::now();
 	if (0 == actual_read) {
 		http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return X_RUNOFF;
@@ -1093,7 +1094,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 		}
 	} else if (mod_cache_check_caching(pcontext) &&
 	    !mod_cache_read_response(pcontext)) {
-		if (FALSE == mod_cache_check_responded(pcontext)) {
+		if (!mod_cache_check_responded(pcontext)) {
 			http_5xx(pcontext);
 			return X_LOOP;
 		}
@@ -1181,9 +1182,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 			      reinterpret_cast<char *>(pcontext->write_buff) + pcontext->write_offset,
 			written_len);
 
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
-
+	auto current_time = time_point::clock::now();
 	if (0 == written_len) {
 		http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return X_RUNOFF;
@@ -1209,7 +1208,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 		auto pvconnection = http_parser_get_vconnection(pcontext->host,
 				pcontext->port, pchannel_out->connection_cookie);
 		auto pnode = double_list_get_head(&pchannel_out->pdu_list);
-		if (FALSE == ((BLOB_NODE*)pnode->pdata)->b_rts) {
+		if (!static_cast<BLOB_NODE *>(pnode->pdata)->b_rts) {
 			pchannel_out->available_window -= written_len;
 			pchannel_out->bytes_sent += written_len;
 		}
@@ -1295,8 +1294,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 	ssize_t actual_read = pcontext->connection.ssl != nullptr ?
 			      SSL_read(pcontext->connection.ssl, pbuff, size) :
 			      read(pcontext->connection.sockd, pbuff, size);
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
+	auto current_time = time_point::clock::now();
 	if (0 == actual_read) {
 		http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return X_RUNOFF;
@@ -1304,7 +1302,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 		pcontext->connection.last_timestamp = current_time;
 		pcontext->stream_in.fwd_write_ptr(actual_read);
 		if (hpm_processor_check_context(pcontext)) {
-			if (FALSE == hpm_processor_write_request(pcontext)) {
+			if (!hpm_processor_write_request(pcontext)) {
 				http_5xx(pcontext);
 				return X_LOOP;
 			}
@@ -1312,7 +1310,7 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 			    pcontext)) {
 				return PROCESS_CONTINUE;
 			}
-			if (FALSE == hpm_processor_proc(pcontext)) {
+			if (!hpm_processor_proc(pcontext)) {
 				http_5xx(pcontext);
 				return X_LOOP;
 			}
@@ -1329,14 +1327,14 @@ static int htparse_rdbody_nochan2(HTTP_CONTEXT *pcontext)
 			}
 			return PROCESS_CONTINUE;
 		} else if (NULL != pcontext->pfast_context) {
-			if (FALSE == mod_fastcgi_write_request(pcontext)) {
+			if (!mod_fastcgi_write_request(pcontext)) {
 				http_5xx(pcontext);
 				return X_LOOP;
 			}
 			if (!mod_fastcgi_check_end_of_read(pcontext)) {
 				return PROCESS_CONTINUE;
 			}
-			if (FALSE == mod_fastcgi_relay_content(pcontext)) {
+			if (!mod_fastcgi_relay_content(pcontext)) {
 				http_5xx(pcontext, "Bad FastCGI Gateway", 502);
 				return X_LOOP;
 			}
@@ -1429,8 +1427,7 @@ static int htparse_rdbody(HTTP_CONTEXT *pcontext)
 		ssize_t actual_read = pcontext->connection.ssl != nullptr ?
 				      SSL_read(pcontext->connection.ssl, pbuff, size) :
 				      read(pcontext->connection.sockd, pbuff, size);
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
+		auto current_time = time_point::clock::now();
 		if (0 == actual_read) {
 			http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 			return X_RUNOFF;
@@ -1650,7 +1647,7 @@ static int htparse_waitinchannel(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchann
 			pchannel_in->bytes_received = 0;
 			pchannel_out->client_keepalive =
 				pchannel_in->client_keepalive;
-			if (FALSE == pdu_processor_rts_conn_c2(
+			if (!pdu_processor_rts_conn_c2(
 			    pchannel_out->pcall, pchannel_out->window_size)) {
 				pvconnection.put();
 				http_parser_log_info(pcontext, LV_DEBUG,
@@ -1666,8 +1663,7 @@ static int htparse_waitinchannel(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchann
 		pvconnection.put();
 	}
 
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
+	auto current_time = time_point::clock::now();
 	/* check if context is timed out */
 	if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) <
 	    OUT_CHANNEL_MAX_WAIT) {
@@ -1704,8 +1700,7 @@ static int htparse_waitrecycled(HTTP_CONTEXT *pcontext, RPC_OUT_CHANNEL *pchanne
 		pvconnection.put();
 	}
 
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
+	auto current_time = time_point::clock::now();
 	/* check if context is timed out */
 	if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) <
 	    OUT_CHANNEL_MAX_WAIT) {
@@ -1736,16 +1731,13 @@ static int htparse_wait(HTTP_CONTEXT *pcontext)
 		return X_RUNOFF;
 	}
 
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
+	auto current_time = time_point::clock::now();
 	/* check keep alive */
 	if (CALCULATE_INTERVAL(current_time, pcontext->connection.last_timestamp) <
-		pchannel_out->client_keepalive/2000) {
+	    pchannel_out->client_keepalive / 2)
 		return PROCESS_IDLE;
-	}
-	if (FALSE == pdu_processor_rts_ping(pchannel_out->pcall)) {
+	if (!pdu_processor_rts_ping(pchannel_out->pcall))
 		return PROCESS_IDLE;
-	}
 	/* stream_out is shared resource of vconnection,
 		lock it first before operating */
 	auto hch = static_cast<RPC_OUT_CHANNEL *>(pcontext->pchannel);
@@ -1784,9 +1776,7 @@ static int htparse_socket(HTTP_CONTEXT *pcontext)
 				written_len);
 		}
 
-		struct timeval current_time;
-		gettimeofday(&current_time, NULL);
-
+		auto current_time = time_point::clock::now();
 		if (0 == written_len) {
 			http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 			return X_RUNOFF;
@@ -1814,14 +1804,13 @@ static int htparse_socket(HTTP_CONTEXT *pcontext)
 	ssize_t actual_read = pcontext->connection.ssl == nullptr ?
 			      read(pcontext->connection.sockd, tmp_buff, sizeof(tmp_buff)) :
 			      SSL_read(pcontext->connection.ssl, tmp_buff, sizeof(tmp_buff));
-	struct timeval current_time;
-	gettimeofday(&current_time, NULL);
+	auto current_time = time_point::clock::now();
 	if (0 == actual_read) {
 		http_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 		return X_RUNOFF;
 	} else if (actual_read > 0) {
 		pcontext->connection.last_timestamp = current_time;
-		if (FALSE == hpm_processor_send(
+		if (!hpm_processor_send(
 		    pcontext, tmp_buff, actual_read)) {
 			http_parser_log_info(pcontext, LV_DEBUG,
 				"connection closed by hpm");
@@ -1898,7 +1887,7 @@ int http_parser_get_param(int param)
     case BLOCK_AUTH_FAIL:
         return g_block_auth_fail;
     case HTTP_SESSION_TIMEOUT:
-        return g_timeout;
+		return std::chrono::duration_cast<std::chrono::seconds>(g_timeout).count();
 	case HTTP_SUPPORT_SSL:
 		return g_support_ssl;
     default:
@@ -1909,24 +1898,6 @@ int http_parser_get_param(int param)
 SCHEDULE_CONTEXT **http_parser_get_contexts_list()
 {
 	return g_context_list2.data();
-}
-
-int http_parser_set_param(int param, int value)
-{
-    switch (param) {
-    case MAX_AUTH_TIMES:
-        g_max_auth_times = value;
-        break;
-    case HTTP_SESSION_TIMEOUT:
-        g_timeout = value;
-        break;
-	case BLOCK_AUTH_FAIL:
-		g_block_auth_fail = value;
-		break;
-    default:
-        return -1;
-    }
-    return 0;
 }
 
 HTTP_CONTEXT::HTTP_CONTEXT() :
@@ -2206,9 +2177,8 @@ BOOL http_parser_recycle_outchannel(
 	if (!och->b_obsolete)
 		return FALSE;
 	auto pcall = och->pcall;
-	if (FALSE == pdu_processor_rts_outr2_a6(pcall)) {
+	if (!pdu_processor_rts_outr2_a6(pcall))
 		return FALSE;
-	}
 	pdu_processor_output_pdu(pcall, &och->pdu_list);
 	pvconnection->pcontext_out->sched_stat = SCHED_STAT_WRREP;
 	contexts_pool_signal(pvconnection->pcontext_out);
@@ -2258,7 +2228,7 @@ BOOL http_parser_activate_outrecycling(
 	    strcmp(successor_cookie, static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_outsucc->pchannel)->channel_cookie) != 0)
 		return false;
 	auto pchannel_out = static_cast<RPC_OUT_CHANNEL *>(pvconnection->pcontext_out->pchannel);
-	if (FALSE == pdu_processor_rts_outr2_b3(pchannel_out->pcall)) {
+	if (!pdu_processor_rts_outr2_b3(pchannel_out->pcall)) {
 		pvconnection.put();
 		http_parser_log_info(pcontext, LV_DEBUG,
 			"pdu process error! fail to setup r2/b3");
@@ -2274,7 +2244,7 @@ BOOL http_parser_activate_outrecycling(
 	return TRUE;
 }
 
-void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, uint32_t keepalive)
+void http_parser_set_keep_alive(HTTP_CONTEXT *pcontext, time_duration keepalive)
 {
 	auto hch = static_cast<RPC_IN_CHANNEL *>(pcontext->pchannel);
 	auto pvconnection = http_parser_get_vconnection(pcontext->host,

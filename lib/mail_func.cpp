@@ -730,7 +730,7 @@ size_t parse_mime_field(char *in_buff, size_t buff_len, MIME_FIELD *pmime_field)
 				i ++;
 			}
 		}
-		if (*tmp_ptr != ' ' && *tmp_ptr != '\t' && FALSE == meet_slash) {
+		if (*tmp_ptr != ' ' && *tmp_ptr != '\t' && !meet_slash) {
 			pmime_field->field_value_len = value_length;
 			return i;
 		} else {
@@ -1255,14 +1255,13 @@ int parse_imap_args(char *cmdline, int cmdlen, char **argv, int argmax)
 		if (*ptr == ' ' && last_quote == nullptr &&
 			NULL == last_bracket && NULL == last_square) {
 			/* ignore leading spaces */
-			if (ptr == last_space && FALSE == is_quoted) {
+			if (ptr == last_space && !is_quoted) {
 				last_space ++;
 			} else {
 				argv[argc] = last_space;
 				*ptr = '\0';
-				if (FALSE == is_quoted && 0 == strcasecmp(argv[argc], "NIL")) {
+				if (!is_quoted && strcasecmp(argv[argc], "NIL") == 0)
 					*argv[argc] = '\0';
-				}
 				last_space = ptr + 1;
 				argc ++;
 				is_quoted = FALSE;
@@ -1476,10 +1475,8 @@ static BOOL encode_strings_to_utf8(
 		return FALSE;
 	} 
 	temp_buff[buff_offset] = '\0';
-	if (FALSE == string_to_utf8(last_charset,
-		temp_buff, out_string)) {
+	if (!string_to_utf8(last_charset, temp_buff, out_string))
 		return FALSE;	
-	}
 	return utf8_check(out_string);
 }
 
@@ -1503,10 +1500,8 @@ BOOL mime_string_to_utf8(const char *charset,
 				memcpy(temp_buff, in_buff + last_pos, begin_pos - last_pos);
 				temp_buff[begin_pos - last_pos] = '\0';
 				HX_strltrim(temp_buff);
-				if (FALSE == string_to_utf8(charset, temp_buff,
-					out_buff + offset)) {
+				if (!string_to_utf8(charset, temp_buff, out_buff + offset))
 					return FALSE;
-				}
 				offset += strlen(out_buff + offset);
 				last_pos = i;
 			}
@@ -1523,24 +1518,21 @@ BOOL mime_string_to_utf8(const char *charset,
 				decode_len = 0;
 				decode64(encode_string.title, tmp_len, temp_buff, &decode_len);
 				temp_buff[decode_len] = '\0';
-				if (FALSE == string_to_utf8(encode_string.charset, temp_buff,
-					out_buff + offset)) {
+				if (!string_to_utf8(encode_string.charset, temp_buff,
+				    out_buff + offset))
 					return encode_strings_to_utf8(mime_string, out_string);
-				}
 			} else if (0 == strcmp(encode_string.encoding,
 				"quoted-printable")){
 				decode_len = qp_decode(temp_buff, encode_string.title,
 				             tmp_len, QP_MIME_HEADER);
 				temp_buff[decode_len] = '\0';
-				if (FALSE == string_to_utf8(encode_string.charset, temp_buff,
-					out_buff + offset)) {
+				if (!string_to_utf8(encode_string.charset, temp_buff,
+				    out_buff + offset))
 					return encode_strings_to_utf8(mime_string, out_string);
-				}
 			} else {
-				if (FALSE == string_to_utf8(charset, encode_string.title,
-					out_buff + offset)) {
+				if (!string_to_utf8(charset, encode_string.title,
+				    out_buff + offset))
 					return FALSE;
-				}
 			}
 			
 			offset += strlen(out_buff + offset);
@@ -1553,10 +1545,9 @@ BOOL mime_string_to_utf8(const char *charset,
 		}
 	}
 	if (i > last_pos || 1 == buff_len) {
-		if (FALSE == string_to_utf8(charset, in_buff + last_pos,
-			out_buff + offset)) {
+		if (!string_to_utf8(charset, in_buff + last_pos,
+		    out_buff + offset))
 			return FALSE;
-		}
 		offset += strlen(out_buff + offset);
 	} 
 	out_buff[offset] = '\0';
@@ -1956,7 +1947,8 @@ char *plain_to_html(const char *rbuf)
 	char *body = HX_strquote(rbuf, HXQUOTE_HTML, nullptr);
 	if (body == nullptr)
 		return nullptr;
-	auto out = static_cast<char *>(malloc(strlen(head) + strlen(body) + strlen(footer) + 1));
+	auto out = gromox::me_alloc<char>(strlen(head) + strlen(body) +
+	           strlen(footer) + 1);
 	if (out != nullptr) {
 		strcpy(out, head);
 		strcat(out, body);

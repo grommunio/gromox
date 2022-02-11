@@ -154,13 +154,11 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 					&pmime->node, SIMPLE_TREE_INSERT_AFTER);
             }
 			pmime_last = pmime;
-			if (MULTIPLE_MIME == pmime->mime_type) {
-				if (FALSE == mail_retrieve_to_mime(pmail, pmime,
-					pmime->first_boundary + pmime->boundary_len + 4,
-					pmime->last_boundary)) {
-					return FALSE;
-				}
-			}
+			if (pmime->mime_type == MULTIPLE_MIME &&
+			    !mail_retrieve_to_mime(pmail, pmime,
+			    pmime->first_boundary + pmime->boundary_len + 4,
+			    pmime->last_boundary))
+				return FALSE;
 			if ('-' == ptr[2 + pmime_parent->boundary_len] &&
 				'-' == ptr[3 + pmime_parent->boundary_len]) {
 				return TRUE;
@@ -201,13 +199,11 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		simple_tree_insert_sibling(&pmail->tree, &pmime_last->node,
 			&pmime->node, SIMPLE_TREE_INSERT_AFTER);
 	}
-	if (MULTIPLE_MIME == pmime->mime_type) {
-		if (FALSE == mail_retrieve_to_mime(pmail, pmime,
-			pmime->first_boundary + pmime->boundary_len + 4,
-			pmime->last_boundary)) {
-			return FALSE;
-		}
-	}
+	if (pmime->mime_type == MULTIPLE_MIME &&
+	    !mail_retrieve_to_mime(pmail, pmime,
+	    pmime->first_boundary + pmime->boundary_len + 4,
+	    pmime->last_boundary))
+		return FALSE;
 	return TRUE;
 }
 
@@ -757,7 +753,7 @@ MIME *MAIL::add_child(MIME *pmime_base, int opt)
         return NULL;
     }
 	pmime->clear();
-    if (FALSE == simple_tree_add_child(&pmail->tree,
+	if (!simple_tree_add_child(&pmail->tree,
         &pmime_base->node, &pmime->node, opt)) {
 		pmail->pmime_pool->put_mime(pmime);
         return NULL;
@@ -833,7 +829,7 @@ BOOL MAIL::dup(MAIL *pmail_dst)
 	if (!pmail_src->serialize(&tmp_stream)) {
 		return FALSE;
 	}
-	auto pbuff = static_cast<char *>(malloc(strange_roundup(mail_len - 1, 64 * 1024)));
+	auto pbuff = me_alloc<char>(strange_roundup(mail_len - 1, 64 * 1024));
 	if (NULL == pbuff) {
 		debug_info("[mail]: Failed to allocate memory in mail_dup");
 		return FALSE;
@@ -888,7 +884,7 @@ BOOL MAIL::transfer_dot(MAIL *pmail_dst)
 	if (!pmail_src->serialize(&tmp_stream)) {
 		return FALSE;
 	}
-	pbuff = static_cast<char *>(malloc(((mail_len - 1) / (64 * 1024) + 1) * 64 * 1024));
+	pbuff = me_alloc<char>(((mail_len - 1) / (64 * 1024) + 1) * 64 * 1024);
 	if (NULL == pbuff) {
 		debug_info("[mail]: Failed to allocate memory in mail_dup");
 		return FALSE;

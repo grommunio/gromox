@@ -7,9 +7,11 @@
 #include <cstdlib>
 #include <cstring>
 
+using namespace gromox;
+
 static STORE_ENTRYID* store_entryid_dup(STORE_ENTRYID *peid)
 {
-	auto pstore = static_cast<STORE_ENTRYID *>(malloc(sizeof(STORE_ENTRYID)));
+	auto pstore = me_alloc<STORE_ENTRYID>();
 	if (NULL == pstore) {
 		return NULL;
 	}
@@ -37,7 +39,7 @@ static void store_entryid_free(STORE_ENTRYID *peid)
 
 static MOVECOPY_ACTION* movecopy_action_dup(const MOVECOPY_ACTION *paction)
 {
-	auto pmovecopy = static_cast<MOVECOPY_ACTION *>(malloc(sizeof(MOVECOPY_ACTION)));
+	auto pmovecopy = me_alloc<MOVECOPY_ACTION>();
 	if (NULL == pmovecopy) {
 		return NULL;
 	}
@@ -84,7 +86,7 @@ static void movecopy_action_free(MOVECOPY_ACTION *paction)
 
 static REPLY_ACTION* reply_action_dup(const REPLY_ACTION *paction)
 {
-	auto preply = static_cast<REPLY_ACTION *>(malloc(sizeof(REPLY_ACTION)));
+	auto preply = me_alloc<REPLY_ACTION>();
 	if (NULL == preply) {
 		return NULL;
 	}
@@ -109,7 +111,7 @@ static BOOL recipient_block_dup_internal(
 	}
 	precipient->reserved = pblock->reserved;
 	precipient->count = pblock->count;
-	precipient->ppropval = static_cast<TAGGED_PROPVAL *>(malloc(sizeof(TAGGED_PROPVAL) * pblock->count));
+	precipient->ppropval = me_alloc<TAGGED_PROPVAL>(pblock->count);
 	if (NULL == pblock->ppropval) {
 		return FALSE;
 	}
@@ -148,27 +150,26 @@ static FORWARDDELEGATE_ACTION* forwarddelegate_action_dup(
 	if (0 == paction->count) {
 		return NULL;
 	}
-	auto pblock = static_cast<FORWARDDELEGATE_ACTION *>(malloc(sizeof(FORWARDDELEGATE_ACTION)));
+	auto pblock = me_alloc<FORWARDDELEGATE_ACTION>();
 	if (NULL == pblock) {
 		return NULL;
 	}
 	pblock->count = paction->count;
-	pblock->pblock = static_cast<RECIPIENT_BLOCK *>(malloc(sizeof(RECIPIENT_BLOCK) * pblock->count));
+	pblock->pblock = me_alloc<RECIPIENT_BLOCK>(pblock->count);
 	if (NULL == pblock->pblock) {
 		free(pblock);
 		return NULL;
 	}
 	for (i=0; i<paction->count; i++) {
-		if (FALSE == recipient_block_dup_internal(
-			paction->pblock + i, pblock->pblock + i)) {
-			for (i-=1; i>=0; i--) {
-				recipient_block_free_internal(
-									pblock->pblock + i);
-			}
-			free(pblock->pblock);
-			free(pblock);
-			return NULL;
+		if (recipient_block_dup_internal(&paction->pblock[i], &pblock->pblock[i]))
+			continue;
+		for (i -= 1; i >= 0; i--) {
+			recipient_block_free_internal(
+				pblock->pblock + i);
 		}
+		free(pblock->pblock);
+		free(pblock);
+		return NULL;
 	}
 	return pblock;
 }
@@ -218,7 +219,7 @@ static BOOL action_block_dup_internal(
 		memcpy(pblock->pdata, paction->pdata, tmp_len); 
 		return TRUE;
 	case OP_BOUNCE:
-		pblock->pdata = malloc(sizeof(uint32_t));
+		pblock->pdata = me_alloc<uint32_t>();
 		if (NULL == pblock->pdata) {
 			return FALSE;
 		}
@@ -232,7 +233,7 @@ static BOOL action_block_dup_internal(
 		}
 		return TRUE;
 	case OP_TAG: {
-		pblock->pdata = malloc(sizeof(TAGGED_PROPVAL));
+		pblock->pdata = me_alloc<TAGGED_PROPVAL>();
 		auto s = static_cast<TAGGED_PROPVAL *>(paction->pdata);
 		auto d = static_cast<TAGGED_PROPVAL *>(pblock->pdata);
 		if (d == nullptr)
@@ -291,26 +292,25 @@ RULE_ACTIONS* rule_actions_dup(const RULE_ACTIONS *prule)
 	if (0 == prule->count) {
 		return NULL;
 	}
-	auto paction = static_cast<RULE_ACTIONS *>(malloc(sizeof(RULE_ACTIONS)));
+	auto paction = me_alloc<RULE_ACTIONS>();
 	if (NULL == paction) {
 		return NULL;
 	}
 	paction->count = prule->count;
-	paction->pblock = static_cast<ACTION_BLOCK *>(malloc(sizeof(ACTION_BLOCK) * paction->count));
+	paction->pblock = me_alloc<ACTION_BLOCK>(paction->count);
 	if (NULL == paction->pblock) {
 		free(paction);
 		return NULL;
 	}
 	for (i=0; i<prule->count; i++) {
-		if (FALSE == action_block_dup_internal(
-			prule->pblock + i, paction->pblock + i)) {
-			for (i-=1; i>=0; i--) {
-				action_block_free_internal(paction->pblock + i);
-			}
-			free(paction->pblock);
-			free(paction);
-			return NULL;
+		if (action_block_dup_internal(&prule->pblock[i], &paction->pblock[i]))
+			continue;
+		for (i -= 1; i >= 0; i--) {
+			action_block_free_internal(paction->pblock + i);
 		}
+		free(paction->pblock);
+		free(paction);
+		return NULL;
 	}
 	return paction;
 }

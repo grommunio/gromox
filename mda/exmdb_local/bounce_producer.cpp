@@ -19,7 +19,6 @@
 #include <gromox/dsn.hpp>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <cstdio>
@@ -125,10 +124,7 @@ void bounce_producer_init(const char *separator)
  */
 int bounce_producer_run()
 {
-	if (FALSE == bounce_producer_refresh()) {
-		return -1;
-	}
-	return 0;
+	return bounce_producer_refresh() ? 0 : -1;
 }
 
 /*
@@ -568,10 +564,8 @@ static int bounce_producer_get_mail_subject(MAIL *pmail, char *subject,
 		*subject = '\0';
 		return 0;
 	}
-	if (FALSE == mime_string_to_utf8(charset, tmp_buff, subject)) {
+	if (!mime_string_to_utf8(charset, tmp_buff, subject))
 		return 0;
-	}
-	
 	return strlen(subject);
 }
 
@@ -590,9 +584,8 @@ static int bounce_producer_get_mail_charset(MAIL *pmail, char *charset)
 	enum_charset.b_found = FALSE;
 	enum_charset.charset = charset;
 	pmail->enum_mime(bounce_producer_enum_charset, &enum_charset);
-	if (FALSE == enum_charset.b_found) {
+	if (!enum_charset.b_found)
 		strcpy(charset, "ascii");
-	}
 	return strlen(charset);
 }
 

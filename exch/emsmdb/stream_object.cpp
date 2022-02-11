@@ -46,10 +46,8 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 		if (!static_cast<message_object *>(pparent)->get_properties(0, &proptags, &propvals))
 			return NULL;
 		auto psize = propvals.get<uint32_t>(PR_MESSAGE_SIZE);
-		if (NULL != psize && *psize >= common_util_get_param(
-			COMMON_UTIL_MAX_MAIL_LENGTH)) {
+		if (psize != nullptr && *psize >= g_max_mail_len)
 			return NULL;
-		}
 		break;
 	}
 	case OBJECT_TYPE_ATTACHMENT: {
@@ -60,10 +58,8 @@ std::unique_ptr<stream_object> stream_object::create(void *pparent,
 		if (!static_cast<attachment_object *>(pparent)->get_properties(0, &proptags, &propvals))
 			return NULL;
 		auto psize = propvals.get<uint32_t>(PR_ATTACH_SIZE);
-		if (NULL != psize && *psize >= common_util_get_param(
-			COMMON_UTIL_MAX_MAIL_LENGTH)) {
+		if (psize != nullptr && *psize >= g_max_mail_len)
 			return NULL;
-		}
 		break;
 	}
 	case OBJECT_TYPE_FOLDER:

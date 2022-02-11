@@ -69,13 +69,6 @@
 #define LOC_TYPE_PUBLIC_MESSAGE						4
 
 enum {
-	COMMON_UTIL_MAX_RCPT,
-	COMMON_UTIL_MAX_MESSAGE,
-	COMMON_UTIL_MAX_MAIL_LENGTH,
-	COMMON_UTIL_MAX_EXTRULE_LENGTH
-};
-
-enum {
 	RES_ID_IPM,
 	RES_ID_INBOX,
 	RES_ID_DRAFT,
@@ -99,9 +92,8 @@ struct MESSAGE_CONTENT;
 struct message_object;
 struct store_object;
 
-extern void common_util_init(const char *org_name, const char *hostname, const char *default_charset, const char *default_zone, int mime_num, int max_rcpt, int max_msg, unsigned int max_mail_len, unsigned int max_rule_len, const char *smtp_ip, uint16_t smtp_port, const char *freebusy_path, const char *submit_cmd);
+extern void common_util_init(const char *org_name, const char *hostname, const char *default_charset, const char *default_zone, int mime_num, unsigned int max_rcpt, unsigned int max_msg, unsigned int max_mail_len, unsigned int max_rule_len, const char *smtp_ip, uint16_t smtp_port, const char *freebusy_path, const char *submit_cmd);
 extern int common_util_run(const char *data_path);
-unsigned int common_util_get_param(int param);
 extern const char *common_util_get_hostname();
 extern const char *common_util_get_freebusy_path();
 BOOL common_util_verify_columns_and_sorts(
@@ -148,8 +140,6 @@ template<typename T> T *cu_alloc(size_t elem)
 	static_assert(std::is_trivially_destructible_v<T>);
 	return static_cast<T *>(common_util_alloc(sizeof(T) * elem));
 }
-template<typename T> T *me_alloc() { return static_cast<T *>(malloc(sizeof(T))); }
-template<typename T> T *me_alloc(size_t elem) { return static_cast<T *>(malloc(sizeof(T) * elem)); }
 void common_util_set_clifd(int clifd);
 extern int common_util_get_clifd();
 char* common_util_dup(const char *pstr);
@@ -193,3 +183,6 @@ extern const char *common_util_get_default_timezone();
 extern const char *common_util_get_submit_command();
 void common_util_get_folder_lang(const char *lang, char **ppfolder_lang);
 extern const char *zcore_rpc_idtoname(unsigned int i);
+
+extern unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
+extern unsigned int g_max_rule_len, g_max_extrule_len;

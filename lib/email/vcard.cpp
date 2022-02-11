@@ -139,7 +139,7 @@ static BOOL vcard_retrieve_line_item(char *pline, LINE_ITEM *pitem)
 			pline ++;
 			continue;
 		}
-		if (FALSE == b_value) {
+		if (!b_value) {
 			if (':' == *pline) {
 				*pline = '\0';
 				b_value = TRUE;
@@ -320,7 +320,7 @@ static VCARD_PARAM* vcard_retrieve_param(char *ptag)
 	ptr ++;
 	do {
 		pnext = vcard_get_comma(ptr);
-		if (FALSE == vcard_append_paramval(pvparam, ptr)) {
+		if (!vcard_append_paramval(pvparam, ptr)) {
 			vcard_free_param(pvparam);
 			return nullptr;
 		}
@@ -377,13 +377,11 @@ static BOOL vcard_retrieve_value(VCARD_LINE *pvline, char *pvalue)
 		do {
 			pnext1 = vcard_get_comma(ptr1);
 			if ('\0' == *ptr1) {
-				if (FALSE == vcard_append_subval(pvvalue, NULL)) {
+				if (!vcard_append_subval(pvvalue, nullptr))
 					return FALSE;
-				}
 			} else {
-				if (FALSE == vcard_append_subval(pvvalue, ptr1)) {
+				if (!vcard_append_subval(pvvalue, ptr1))
 					return FALSE;
-				}
 			}
 		} while ((ptr1 = pnext1) != NULL);
 	} while ((ptr = pnext) != NULL);
@@ -431,10 +429,9 @@ BOOL vcard_retrieve(VCARD *pvcard, char *in_buff)
 		pnext = vcard_get_line(pline, length - (pline - in_buff));
 		if (vcard_check_empty_line(pline))
 			continue;
-		if (FALSE == vcard_retrieve_line_item(pline, &tmp_item)) {
+		if (!vcard_retrieve_line_item(pline, &tmp_item))
 			break;
-		}
-		if (FALSE == b_begin) {
+		if (!b_begin) {
 			if (0 == strcasecmp(tmp_item.ptag, "BEGIN") &&
 				(NULL != tmp_item.pvalue &&
 				0 == strcasecmp(tmp_item.pvalue, "VCARD"))) {
@@ -474,13 +471,11 @@ BOOL vcard_retrieve(VCARD *pvcard, char *in_buff)
 				}
 				vcard_append_value(pvline, pvvalue);
 				vcard_unescape_string(tmp_item.pvalue);
-				if (FALSE == vcard_append_subval(pvvalue, tmp_item.pvalue)) {
+				if (!vcard_append_subval(pvvalue, tmp_item.pvalue))
 					break;
-				}
 			} else {
-				if (FALSE == vcard_retrieve_value(pvline, tmp_item.pvalue)) {
+				if (!vcard_retrieve_value(pvline, tmp_item.pvalue))
 					break;
-				}
 			}
 		}
 		
@@ -598,7 +593,7 @@ BOOL vcard_serialize(VCARD *pvcard, char *out_buff, size_t max_length)
 			for (pnode2=double_list_get_head(pvparam->pparamval_list);
 				NULL!=pnode2; pnode2=double_list_get_after(
 				pvparam->pparamval_list, pnode2)) {
-				if (FALSE == need_comma) {
+				if (!need_comma) {
 					need_comma = TRUE;
 				} else {
 					if (offset + 1 >= max_length) {
@@ -623,7 +618,7 @@ BOOL vcard_serialize(VCARD *pvcard, char *out_buff, size_t max_length)
 		for (pnode1=double_list_get_head(&pvline->value_list); NULL!=pnode1;
 			pnode1=double_list_get_after(&pvline->value_list, pnode1)) {
 			pvvalue = (VCARD_VALUE*)pnode1->pdata;
-			if (FALSE == need_semicolon) {
+			if (!need_semicolon) {
 				need_semicolon = TRUE;
 			} else {
 				if (offset + 1 >= max_length) {
@@ -636,7 +631,7 @@ BOOL vcard_serialize(VCARD *pvcard, char *out_buff, size_t max_length)
 			for (pnode2=double_list_get_head(&pvvalue->subval_list);
 				NULL!=pnode2; pnode2=double_list_get_after(
 				&pvvalue->subval_list, pnode2)) {
-				if (FALSE == need_comma) {
+				if (!need_comma) {
 					need_comma = TRUE;
 				} else {
 					if (offset + 1 >= max_length) {
@@ -672,7 +667,7 @@ BOOL vcard_serialize(VCARD *pvcard, char *out_buff, size_t max_length)
 
 VCARD_LINE* vcard_new_line(const char *name)
 {
-	auto pvline = static_cast<VCARD_LINE *>(malloc(sizeof(VCARD_LINE)));
+	auto pvline = me_alloc<VCARD_LINE>();
 	if (NULL == pvline) {
 		return NULL;
 	}
@@ -690,7 +685,7 @@ void vcard_append_line(VCARD *pvcard, VCARD_LINE *pvline)
 
 VCARD_PARAM* vcard_new_param(const char*name)
 {
-	auto pvparam = static_cast<VCARD_PARAM *>(malloc(sizeof(VCARD_PARAM)));
+	auto pvparam = me_alloc<VCARD_PARAM>();
 	if (NULL == pvparam) {
 		return NULL;
 	}
@@ -706,7 +701,7 @@ BOOL vcard_append_paramval(VCARD_PARAM *pvparam, const char *paramval)
 	
 	if (NULL == pvparam->pparamval_list) {
 		b_list = TRUE;
-		pvparam->pparamval_list = static_cast<DOUBLE_LIST *>(malloc(sizeof(DOUBLE_LIST)));
+		pvparam->pparamval_list = me_alloc<DOUBLE_LIST>();
 		if (NULL == pvparam->pparamval_list) {
 			return FALSE;
 		}
@@ -714,7 +709,7 @@ BOOL vcard_append_paramval(VCARD_PARAM *pvparam, const char *paramval)
 	} else {
 		b_list = FALSE;
 	}
-	auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
+	auto pnode = me_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		if (b_list) {
 			double_list_free(pvparam->pparamval_list);
@@ -744,7 +739,7 @@ void vcard_append_param(VCARD_LINE *pvline, VCARD_PARAM *pvparam)
 
 VCARD_VALUE* vcard_new_value()
 {
-	auto pvvalue = static_cast<VCARD_VALUE *>(malloc(sizeof(VCARD_VALUE)));
+	auto pvvalue = me_alloc<VCARD_VALUE>();
 	if (NULL == pvvalue) {
 		return NULL;
 	}
@@ -755,7 +750,7 @@ VCARD_VALUE* vcard_new_value()
 
 BOOL vcard_append_subval(VCARD_VALUE *pvvalue, const char *subval)
 {
-	auto pnode = static_cast<DOUBLE_LIST_NODE *>(malloc(sizeof(DOUBLE_LIST_NODE)));
+	auto pnode = me_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		return FALSE;
 	}
@@ -810,7 +805,7 @@ VCARD_LINE* vcard_new_simple_line(const char *name, const char *value)
 		return NULL;
 	}
 	vcard_append_value(pvline, pvvalue);
-	if (FALSE == vcard_append_subval(pvvalue, value)) {
+	if (!vcard_append_subval(pvvalue, value)) {
 		vcard_free_line(pvline);
 		return NULL;
 	}

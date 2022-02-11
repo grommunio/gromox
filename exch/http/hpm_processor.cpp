@@ -371,7 +371,7 @@ static int hpm_processor_load_library(const char *plugin_name)
 
 int hpm_processor_run()
 {
-	g_context_list = static_cast<HPM_CONTEXT *>(malloc(sizeof(HPM_CONTEXT) * g_context_num));
+	g_context_list = me_alloc<HPM_CONTEXT>(g_context_num);
 	if (NULL == g_context_list) {
 		printf("[hpm_processor]: Failed to allocate context list\n");
 		return -1;
@@ -489,7 +489,7 @@ BOOL hpm_processor_write_request(HTTP_CONTEXT *phttp)
 			phpm_ctx->b_end = TRUE;	
 		return TRUE;
 	}
-	if (FALSE == phpm_ctx->b_chunked) {
+	if (!phpm_ctx->b_chunked) {
 		if (phpm_ctx->cache_size + phttp->stream_in.get_total_length() < phpm_ctx->content_length &&
 		    phttp->stream_in.get_total_length() < g_cache_size)
 			return TRUE;	

@@ -1,8 +1,8 @@
 #pragma once
+#include <chrono>
 #include <ctime>
 #include <memory>
 #include <string>
-#include <sys/time.h>
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/generic_connection.hpp>
@@ -24,16 +24,10 @@ means mem_file is not initialized. */
 #define MIDB_NO_SERVER           1
 #define MIDB_RESULT_OK           0
 
-/* enumeration of imap_parser */
-enum{
-    MAX_AUTH_TIMES,
-	BLOCK_AUTH_FAIL,
-    IMAP_SESSION_TIMEOUT,
-	IMAP_AUTOLOGOUT_TIME,
-	IMAP_SUPPORT_STARTTLS,
-	IMAP_FORCE_STARTTLS,
-	IMAP_SUPPORT_RFC2971,
-};
+namespace gromox {
+using time_duration = std::chrono::steady_clock::duration;
+using time_point = std::chrono::time_point<std::chrono::system_clock>;
+}
 
 enum {
 	PROTO_STAT_NONE = 0,
@@ -102,17 +96,12 @@ struct IMAP_CONTEXT final : public SCHEDULE_CONTEXT {
 	char username[UADDR_SIZE]{}, maildir[256]{}, lang[32]{};
 };
 
-void imap_parser_init(int context_num, int average_num, size_t cache_size,
-	unsigned int timeout, unsigned int autologout_time, int max_auth_times,
-	int block_auth_fail, BOOL support_starttls, BOOL force_starttls,
-	const char *certificate_path, const char *cb_passwd, const char *key_path);
+extern void imap_parser_init(int context_num, int average_num, size_t cache_size, gromox::time_duration timeout, gromox::time_duration autologout_time, int max_auth_times, int block_auth_fail, BOOL support_starttls, BOOL force_starttls, const char *certificate_path, const char *cb_passwd, const char *key_path);
 extern int imap_parser_run();
 int imap_parser_process(IMAP_CONTEXT *pcontext);
 extern void imap_parser_stop();
 extern int imap_parser_get_context_socket(SCHEDULE_CONTEXT *);
-extern struct timeval imap_parser_get_context_timestamp(SCHEDULE_CONTEXT *);
-int imap_parser_get_param(int param);
-int imap_parser_set_param(int param, int value);
+extern gromox::time_point imap_parser_get_context_timestamp(schedule_context *);
 extern SCHEDULE_CONTEXT **imap_parser_get_contexts_list();
 int imap_parser_threads_event_proc(int action);
 void imap_parser_touch_modify(IMAP_CONTEXT *pcontext, char *username, char *folder);
@@ -129,3 +118,6 @@ extern LIB_BUFFER *imap_parser_get_xpool();
 extern LIB_BUFFER *imap_parser_get_dpool();
 extern int imap_parser_get_sequence_ID();
 extern void imap_parser_log_info(IMAP_CONTEXT *pcontext, int level, const char *format, ...);
+
+extern int g_max_auth_times, g_block_auth_fail;
+extern bool g_support_starttls, g_force_starttls;

@@ -740,7 +740,7 @@ static void do_namemap_table(driver &drv, gi_name_map &map)
 			pn_req.lid  = strtoul(row[2], nullptr, 0);
 		} else {
 			pn_req.kind = MNID_STRING;
-			pnstr.reset(static_cast<char *>(malloc(rowlen[3] + 1)));
+			pnstr.reset(me_alloc<char>(rowlen[3] + 1));
 			memcpy(pnstr.get(), row[3], rowlen[3] + 1);
 			pn_req.pname = pnstr.get();
 		}

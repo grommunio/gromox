@@ -116,7 +116,7 @@ int exmdb_local_run()
 	E(exmdb_local_get_username, "get_username_from_id");
 #undef E
 
-	if (FALSE == oxcmail_init_library(g_org_name,
+	if (!oxcmail_init_library(g_org_name,
 		exmdb_local_get_user_ids, exmdb_local_get_username,
 		exmdb_local_ltag_to_lcid, exmdb_local_lcid_to_ltag,
 		exmdb_local_charset_to_cpid, exmdb_local_cpid_to_charset,
@@ -193,7 +193,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 					"fail to get bounce context");
 				break;
 			}
-			if (FALSE == bounce_audit_check(rcpt_buff)) {
+			if (!bounce_audit_check(rcpt_buff)) {
 				exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
 					"will not produce bounce message, "
 					"because of too many mails to %s", rcpt_buff);
@@ -221,7 +221,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 					"fail to get bounce context");
 				break;
 			}
-			if (FALSE == bounce_audit_check(rcpt_buff)) {
+			if (!bounce_audit_check(rcpt_buff)) {
 				exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
 					"will not produce bounce message, "
 					"because of too many mails to %s", rcpt_buff);
@@ -248,7 +248,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 					"fail to get bounce context");
 				break;
 			}
-			if (FALSE == bounce_audit_check(rcpt_buff)) {
+			if (!bounce_audit_check(rcpt_buff)) {
 				exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
 					"will not produce bounce message, "
 					"because of too many mails to %s", rcpt_buff);
@@ -276,7 +276,7 @@ BOOL exmdb_local_hook(MESSAGE_CONTEXT *pcontext)
 					"fail to get bounce context");
 				break;
 			}
-			if (FALSE == bounce_audit_check(rcpt_buff)) {
+			if (!bounce_audit_check(rcpt_buff)) {
 				exmdb_local_log_info(pcontext, rcpt_buff, LV_ERR,
 					"will not produce bounce message, "
 					"because of too many mails to %s", rcpt_buff);
@@ -490,8 +490,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 
 	nt_time = rop_util_current_nttime();
 	pmsg->proplist.set(PROP_TAG_MESSAGEDELIVERYTIME, &nt_time);
-	
-	if (FALSE == pcontext->pcontrol->need_bounce) {
+	if (!pcontext->pcontrol->need_bounce) {
 		tmp_int32 = 0xFFFFFFFF;
 		pmsg->proplist.set(PR_AUTO_RESPONSE_SUPPRESS, &tmp_int32);
 	}

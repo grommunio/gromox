@@ -212,7 +212,7 @@ static BOOL list_file_construct_list(LIST_FILE* list_file)
 	}
 	list_file->item_num = 0;
 	rewind(list_file->file_ptr.get());
-	auto ptr = static_cast<char *>(malloc(table_size * list_file->item_size));
+	auto ptr = gromox::me_alloc<char>(table_size * list_file->item_size);
 	if (NULL == ptr) {
 		printf("[list_file]: allocate memory fail\n");
 		return FALSE;

@@ -288,7 +288,7 @@ int STR_HASH_TABLE::remove(const char *key)
  */
 STR_HASH_ITER *STR_HASH_TABLE::make_iter()
 {
-	auto iter = static_cast<STR_HASH_ITER *>(malloc(sizeof(STR_HASH_ITER)));
+	auto iter = gromox::me_alloc<STR_HASH_ITER>();
 	if (iter == nullptr) {
 		debug_info("[str_hash]: can not alloc hash iter");
 		return NULL;

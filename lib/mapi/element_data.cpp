@@ -11,9 +11,11 @@
 #include <cstdlib>
 #include <cstring>
 
+using namespace gromox;
+
 ATTACHMENT_CONTENT* attachment_content_init()
 {
-	auto pattachment = static_cast<ATTACHMENT_CONTENT *>(malloc(sizeof(ATTACHMENT_CONTENT)));
+	auto pattachment = me_alloc<ATTACHMENT_CONTENT>();
 	if (NULL == pattachment) {
 		return NULL;
 	}
@@ -72,13 +74,13 @@ ATTACHMENT_CONTENT* attachment_content_dup(
 
 ATTACHMENT_LIST* attachment_list_init()
 {
-	auto plist = static_cast<ATTACHMENT_LIST *>(malloc(sizeof(ATTACHMENT_LIST)));
+	auto plist = me_alloc<ATTACHMENT_LIST>();
 	if (NULL == plist) {
 		return NULL;
 	}
 	plist->count = 0;
 	auto count = strange_roundup(plist->count, SR_GROW_ATTACHMENT_CONTENT);
-	plist->pplist = static_cast<ATTACHMENT_CONTENT **>(malloc(sizeof(ATTACHMENT_CONTENT *) * count));
+	plist->pplist = me_alloc<ATTACHMENT_CONTENT *>(count);
 	if (NULL == plist->pplist) {
 		free(plist);
 		return NULL;
@@ -130,8 +132,7 @@ BOOL attachment_list_append_internal(ATTACHMENT_LIST *plist,
 		}
 		plist->pplist = pplist;
 	}
-	plist->pplist[plist->count] = pattachment;
-	plist->count ++;
+	plist->pplist[plist->count++] = pattachment;
 	return TRUE;
 }
 
@@ -151,8 +152,7 @@ ATTACHMENT_LIST* attachment_list_dup(ATTACHMENT_LIST *plist)
 			attachment_list_free(plist1);
 			return NULL;
 		}
-		if (FALSE == attachment_list_append_internal(
-			plist1, pattachment)) {
+		if (!attachment_list_append_internal(plist1, pattachment)) {
 			attachment_content_free(pattachment);
 			attachment_list_free(plist1);
 			return NULL;
@@ -232,11 +232,11 @@ BOOL message_content_init_internal(MESSAGE_CONTENT *pmsgctnt)
 
 MESSAGE_CONTENT* message_content_init()
 {
-	auto pmsgctnt = static_cast<MESSAGE_CONTENT *>(malloc(sizeof(MESSAGE_CONTENT)));
+	auto pmsgctnt = me_alloc<MESSAGE_CONTENT>();
 	if (NULL == pmsgctnt) {
 		return NULL;
 	}
-	if (FALSE == message_content_init_internal(pmsgctnt)) {
+	if (!message_content_init_internal(pmsgctnt)) {
 		free(pmsgctnt);
 		return nullptr;
 	}
@@ -354,7 +354,7 @@ property_groupinfo::property_groupinfo(uint32_t gid) :
 	group_id(gid)
 {
 	auto z = strange_roundup(0, SR_GROW_PROPTAG_ARRAY);
-	pgroups = static_cast<PROPTAG_ARRAY *>(malloc(sizeof(PROPTAG_ARRAY) * z));
+	pgroups = me_alloc<PROPTAG_ARRAY>(z);
 	if (pgroups == nullptr)
 		throw std::bad_alloc();
 }
@@ -381,9 +381,8 @@ bool property_groupinfo::append_internal(PROPTAG_ARRAY *pgroup)
 		pgpinfo->pgroups = pgroups;
 	}
 	pgpinfo->pgroups[pgpinfo->count].count = pgroup->count;
-	pgpinfo->pgroups[pgpinfo->count].pproptag = pgroup->pproptag;
+	pgpinfo->pgroups[pgpinfo->count++].pproptag = pgroup->pproptag;
 	free(pgroup);
-	pgpinfo->count ++;
 	return TRUE;
 }
 

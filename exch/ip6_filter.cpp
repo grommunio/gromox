@@ -12,13 +12,13 @@
 #include <mutex>
 #include <string>
 #include <utility>
+#include <gromox/clock.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/config_file.hpp>
 #include <gromox/util.hpp>
 
 using namespace std::string_literals;
 using namespace gromox;
-using time_point = std::chrono::time_point<std::chrono::steady_clock>;
 using duration = decltype(time_point() - time_point());
 
 namespace {

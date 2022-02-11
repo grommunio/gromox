@@ -824,7 +824,7 @@ uint32_t rop_copyto(uint8_t want_asynchronous, uint8_t want_subobjects,
 			    fldsrc->folder_id, flddst->folder_id, &b_cycle))
 				return ecError;
 			if (b_cycle)
-				return MAPI_E_FOLDER_CYCLE;
+				return ecRootFolder;
 			b_sub = TRUE;
 		} else {
 			b_sub = FALSE;
@@ -963,7 +963,7 @@ uint32_t rop_openstream(uint32_t proptag, uint8_t flags, uint32_t *pstream_size,
 			if (!(tag_access & MAPI_ACCESS_MODIFY))
 				return ecAccessDenied;
 		}
-		max_length = common_util_get_param(COMMON_UTIL_MAX_MAIL_LENGTH);
+		max_length = g_max_mail_len;
 		break;
 	default:
 		return ecNotSupported;

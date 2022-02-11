@@ -22,9 +22,6 @@ many failed logins.
 .br
 Default: \fI1 minute\fP
 .TP
-\fBcdn_cache_path\fP
-Default: \fI/var/lib/gromox/cdn\fP
-.TP
 \fBconfig_file_path\fP
 Colon-separated list of directories in which further configuration files,
 especially those used by plugin instances, will be searched.

@@ -100,7 +100,7 @@ BINARY *PCL::serialize() const
 			return NULL;
 		pcl_push_sized_xid(tmp_bin, xid);
 	}
-	auto pbin = static_cast<BINARY *>(malloc(sizeof(BINARY)));
+	auto pbin = gromox::me_alloc<BINARY>();
 	if (NULL == pbin) {
 		return NULL;
 	}

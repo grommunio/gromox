@@ -83,22 +83,6 @@ static std::vector<EXMDB_ITEM> g_local_list;
 static std::list<REMOTE_SVR> g_server_list;
 static std::mutex g_server_lock;
 
-int exmdb_client_get_param(int param)
-{
-	int total_num;
-	
-	switch (param) {
-	case ALIVE_PROXY_CONNECTIONS:
-		total_num = 0;
-		for (const auto &srv : g_server_list)
-			total_num += srv.conn_list.size();
-		return total_num;
-	case LOST_PROXY_CONNECTIONS:
-		return g_lost_list.size();
-	}
-	return -1;
-}
-
 static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 {
 	int process_id;

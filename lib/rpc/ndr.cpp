@@ -264,7 +264,7 @@ int ndr_pull_data_blob(NDR_PULL *pndr, DATA_BLOB *pblob)
 		pndr->offset + length > pndr->data_size) {
 		return NDR_ERR_BUFSIZE;
 	}
-	pblob->data = static_cast<uint8_t *>(malloc(length));
+	pblob->data = gromox::me_alloc<uint8_t>(length);
 	if (NULL == pblob->data) {
 		return NDR_ERR_ALLOC;
 	}

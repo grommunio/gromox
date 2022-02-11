@@ -110,21 +110,17 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 	} else {
 		g_total_fail += temp_fail;
 	}
-	if (g_total_fail >= g_times && FALSE == g_turnoff_alarm) {
+	if (g_total_fail >= g_times && !g_turnoff_alarm)
 		need_alarm_one = TRUE;
-	}
 	g_fail_accumulating += temp_fail;
-	if (current_time - g_last_check_point <= g_interval) {
-		if (g_fail_accumulating > g_times) {
-			if (FALSE == g_turnoff_alarm) {
-				need_alarm_two = TRUE;
-			}
-			g_fail_accumulating = 0;
-			g_last_check_point = current_time;
-		}
-	} else {
+	if (current_time - g_last_check_point > g_interval) {
 		g_fail_accumulating = 0;
-        g_last_check_point = current_time;
+	        g_last_check_point = current_time;
+	} else if (g_fail_accumulating > g_times) {
+		if (!g_turnoff_alarm)
+			need_alarm_two = TRUE;
+		g_fail_accumulating = 0;
+		g_last_check_point = current_time;
 	}
 	hold.unlock();
 	
@@ -203,63 +199,4 @@ void net_failure_statistic(int OK_num, int temp_fail, int permanent_fail,
 	snprintf(tmp_buff, arsizeof(tmp_buff), "Local Delivery Alarm from %s", get_host_ID());
 	pmime->set_field("Subject", tmp_buff);
 	enqueue_context(pcontext);
-}
-
-int net_failure_get_param(int param)
-{
-	int ret_val;
-
-	switch(param) {
-	case NET_FAILURE_OK: {
-		std::unique_lock hold(g_lock);
-		ret_val = g_OK_num;
-		g_OK_num = 0;		
-		return ret_val;
-	}
-	case NET_FAILURE_TEMP: {
-		std::unique_lock hold(g_lock);
-		ret_val = g_temp_fail_num;
-		g_temp_fail_num = 0;
-		return ret_val;
-	}
-	case NET_FAILURE_PERMANENT: {
-		std::unique_lock hold(g_lock);
-		ret_val = g_permanent_fail_num;
-		g_permanent_fail_num = 0;
-		return ret_val;
-	}
-	case NET_FAILURE_NOUSER: {
-		std::unique_lock hold(g_lock);
-		ret_val = g_nouser_num;
-		g_nouser_num = 0;
-		return ret_val;
-	}
-	case NET_FAILURE_TURN_ALARM:
-		return g_turnoff_alarm;
-	case NET_FAILURE_STATISTIC_TIMES:
-		return g_times;
-	case NET_FAILURE_STATISTIC_INTERVAL:
-		return g_interval;
-	case NET_FAILURE_ALARM_INTERVAL:
-		return g_alarm_interval;
-	}
-	return -1;
-}
-
-void net_failure_set_param(int param, int val)
-{
-	switch (param) {
-	case NET_FAILURE_TURN_ALARM:
-		g_turnoff_alarm = (BOOL)val;
-		break;
-	case NET_FAILURE_STATISTIC_TIMES:
-		g_times = val;
-		break;
-	case NET_FAILURE_STATISTIC_INTERVAL:
-		g_interval = val;
-		break;
-	case NET_FAILURE_ALARM_INTERVAL:
-		g_alarm_interval = val;
-		break;
-	}
 }

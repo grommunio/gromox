@@ -143,7 +143,7 @@ BOOL attachment_object::append_stream_object(stream_object *pstream)
 			return TRUE;
 		}
 	}
-	pnode = me_alloc<DOUBLE_LIST_NODE>();
+	pnode = gromox::me_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		return FALSE;
 	}

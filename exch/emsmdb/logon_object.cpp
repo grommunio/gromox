@@ -497,7 +497,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*v = common_util_get_param(COMMON_UTIL_MAX_EXTRULE_LENGTH);
+		*v = g_max_extrule_len;
 		return TRUE;
 	}
 	case PROP_TAG_HIERARCHYSERVER: {
@@ -573,7 +573,7 @@ static BOOL logon_object_get_calculated_property(logon_object *plogon,
 		if (NULL == *ppvalue) {
 			return FALSE;
 		}
-		*v = common_util_get_param(COMMON_UTIL_MAX_MAIL_LENGTH);
+		*v = g_max_mail_len;
 		return TRUE;
 	}
 	case PROP_TAG_SORTLOCALEID: {

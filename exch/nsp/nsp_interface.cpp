@@ -171,33 +171,27 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		display_type = node_type == NODE_TYPE_MLIST ? DT_DISTLIST : DT_MAILUSER;
 		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 			return ecNotFound;
-		if (FALSE == common_util_set_permanententryid(
-			display_type, NULL, dn, &permeid) || FALSE ==
-			common_util_permanent_entryid_to_binary(
-			&permeid, &pprop->value.bin)) {
+		if (!common_util_set_permanententryid(display_type, nullptr, dn, &permeid) ||
+		    !common_util_permanent_entryid_to_binary(&permeid, &pprop->value.bin))
 			return ecMAPIOOM;
-		}
 		return ecSuccess;
 	case PR_ENTRYID:
 	case PR_RECORD_KEY:
 	case PR_ORIGINAL_ENTRYID:
 		display_type = node_type == NODE_TYPE_MLIST ? DT_DISTLIST : DT_MAILUSER;
-		if (FALSE == b_ephid) {
+		if (!b_ephid) {
 			if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 				return ecNotFound;
-			if (FALSE == common_util_set_permanententryid(
-				display_type, NULL, dn, &permeid) || FALSE ==
-				common_util_permanent_entryid_to_binary(
-				&permeid, &pprop->value.bin)) {
+			if (!common_util_set_permanententryid(display_type,
+			    nullptr, dn, &permeid) ||
+			    !common_util_permanent_entryid_to_binary(&permeid, &pprop->value.bin))
 				return ecMAPIOOM;
-			}
 		} else {
 			common_util_set_ephemeralentryid(display_type,
 				ab_tree_get_node_minid(pnode), &ephid);
-			if (FALSE == common_util_ephemeral_entryid_to_binary(
-				&ephid, &pprop->value.bin)) {
+			if (!common_util_ephemeral_entryid_to_binary(&ephid,
+			    &pprop->value.bin))
 				return ecMAPIOOM;
-			}
 		}
 		return ecSuccess;
 	case PR_SEARCH_KEY:
@@ -482,9 +476,8 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			return ecNotFound;
 		ab_tree_get_user_info(pnode, USER_STORE_PATH, dn, GX_ARRAY_SIZE(dn));
 		strcat(dn, "/config/portrait.jpg");
-		if (FALSE == common_util_load_file(dn, &pprop->value.bin)) {
+		if (!common_util_load_file(dn, &pprop->value.bin))
 			return ecNotFound;
-		}
 		return ecSuccess;
 	}
 	/* User-defined props */
@@ -588,7 +581,7 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
 		return ecLoginFailure;
 	}
 	pdomain ++;
-	if (FALSE == get_domain_ids(pdomain, &domain_id, &org_id)) {
+	if (!get_domain_ids(pdomain, &domain_id, &org_id)) {
 		phandle->handle_type = HANDLE_EXCHANGE_NSP;
 		memset(&phandle->guid, 0, sizeof(GUID));
 		return ecError;
@@ -642,31 +635,27 @@ static void nsp_interface_position_in_list(const STAT *pstat,
 		if (row > last_row) {
 			row = last_row;
 		}
-	} else {
+	} else if (pstat->cur_rec == MID_BEGINNING_OF_TABLE) {
 		/* absolute positioning MS-OXNSPI 3.1.4.5.1 */
-		if (MID_BEGINNING_OF_TABLE == pstat->cur_rec) {
-			row = 0;
-		}
-		else if (MID_END_OF_TABLE ==  pstat->cur_rec) {
-			row = last_row + 1;
-		} else {
-			b_found = FALSE;
-			row = 0;
-			for (auto pnode = single_list_get_head(plist); pnode != nullptr;
-				pnode=single_list_get_after(plist, pnode)) {
-				auto minid = ab_tree_get_node_minid(static_cast<const SIMPLE_TREE_NODE *>(pnode->pdata));
-				if (0 != minid && minid == pstat->cur_rec) {
-					b_found = TRUE;
-					break;
-				}
-				row ++;
+		row = 0;
+	} else if (pstat->cur_rec == MID_END_OF_TABLE) {
+		row = last_row + 1;
+	} else {
+		b_found = FALSE;
+		row = 0;
+		for (auto pnode = single_list_get_head(plist); pnode != nullptr;
+		     pnode = single_list_get_after(plist, pnode)) {
+			auto minid = ab_tree_get_node_minid(static_cast<const SIMPLE_TREE_NODE *>(pnode->pdata));
+			if (0 != minid && minid == pstat->cur_rec) {
+				b_found = TRUE;
+				break;
 			}
-			if (FALSE == b_found) {
-				/* In this case the position is undefined.
-				   To avoid problems we will use first row */
-				row = 0;
-			}
+			row++;
 		}
+		if (!b_found)
+			/* In this case the position is undefined.
+			   To avoid problems we will use first row */
+			row = 0;
 	}
 	*pout_row = row;
 	*pout_last_row = last_row;
@@ -688,36 +677,29 @@ static void nsp_interface_position_in_table(const STAT *pstat,
 		if (row > last_row) {
 			row = last_row;
 		}
-	} else {
+	} else if (pstat->cur_rec == MID_BEGINNING_OF_TABLE) {
 		/* absolute positioning MS-OXNSPI 3.1.4.5.1 */
-		if (MID_BEGINNING_OF_TABLE == pstat->cur_rec) {
-			row = 0;
-		}
-		else if (MID_END_OF_TABLE == pstat->cur_rec) {
-			row = last_row + 1;
-		} else {
-			b_found = FALSE;
-			row = 0;
-			pnode = simple_tree_node_get_child(pnode);
-			if (NULL != pnode) {
-				do {
-					if (ab_tree_get_node_type(pnode) < 0x80) {
-						minid = ab_tree_get_node_minid(pnode);
-						if (0 != minid && minid == pstat->cur_rec) {
-							b_found = TRUE;
-							break;
-						}
-						row ++;
-					}
-				} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
-				
+		row = 0;
+	} else if (pstat->cur_rec == MID_END_OF_TABLE) {
+		row = last_row + 1;
+	} else {
+		b_found = FALSE;
+		row = 0;
+		pnode = simple_tree_node_get_child(pnode);
+		if (pnode != nullptr) do {
+			if (ab_tree_get_node_type(pnode) >= 0x80)
+				continue;
+			minid = ab_tree_get_node_minid(pnode);
+			if (0 != minid && minid == pstat->cur_rec) {
+				b_found = TRUE;
+				break;
 			}
-			if (FALSE == b_found) {
-				/* In this case the position is undefined.
-				   To avoid problems we will use first row */
-				row = 0;
-			}
-		}
+			row++;
+		} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
+		if (!b_found)
+			/* In this case the position is undefined.
+			   To avoid problems we will use first row */
+			row = 0;
 	}
 	*pout_row = row;
 	*pout_last_row = last_row;
@@ -1253,10 +1235,9 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 	switch (pfilter->res_type) {
 	case RES_AND:
 		for (size_t i = 0; i < pfilter->res.res_andor.cres; ++i) {
-			if (FALSE == nsp_interface_match_node(pnode,
-				codepage, &pfilter->res.res_andor.pres[i])) {
+			if (!nsp_interface_match_node(pnode,
+			    codepage, &pfilter->res.res_andor.pres[i]))
 				return FALSE;
-			}
 		}
 		return TRUE;
 	case RES_OR:
@@ -1622,10 +1603,9 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 				NULL == (pnode = ab_tree_uid_to_node(pbase.get(), user_id))) {
 				continue;
 			}
-			if (NULL != pfilter && FALSE == nsp_interface_match_node(
-				pnode, pstat->codepage, pfilter)) {
+			if (pfilter != nullptr &&
+			    !nsp_interface_match_node(pnode, pstat->codepage, pfilter))
 				continue;	
-			}
 			auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 			if (NULL == pproptag) {
 				result = ecMAPIOOM;
@@ -1801,8 +1781,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 			*ppoutmids = NULL;
 			return ecMAPIOOM;
 		}
-		strcpy(parray[count].string, temp_buff);
-		count ++;
+		strcpy(parray[count++].string, temp_buff);
 	}
 	qsort(parray, count, sizeof(nsp_sort_item), nsp_interface_cmpstring);
 	(*ppoutmids)->cvalues = count;
@@ -1810,7 +1789,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 		(*ppoutmids)->pproptag[i] = parray[i].minid;
 	}
 	pstat->total_rec = count;
-	if (FALSE == b_found) {
+	if (!b_found) {
 		pstat->cur_rec = MID_BEGINNING_OF_TABLE;
 		pstat->num_pos = 0;
 	}
@@ -2103,7 +2082,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 					pstat->codepage, pproptags, *pprows);
 	}
 	if (result == ecSuccess) {
-		if (FALSE == b_proptags) {
+		if (!b_proptags) {
 			size_t count = 0;
 			for (size_t i = 0; i < (*pprows)->cvalues; ++i) {
 				if (PROP_TYPE((*pprows)->pprops[i].proptag) == PT_ERROR &&
@@ -2226,7 +2205,7 @@ static BOOL nsp_interface_build_specialtable(NSP_PROPROW *prow,
 	
 	prow->pprops[0].proptag = PR_ENTRYID;
 	prow->pprops[0].reserved = 0;
-	if (FALSE == common_util_permanent_entryid_to_binary(
+	if (!common_util_permanent_entryid_to_binary(
 		ppermeid, &prow->pprops[0].value.bin)) {
 		prow->pprops[0].proptag = CHANGE_PROP_TYPE(prow->pprops[0].proptag, PT_ERROR);
 		prow->pprops[0].value.err = ecMAPIOOM;
@@ -2281,7 +2260,7 @@ static BOOL nsp_interface_build_specialtable(NSP_PROPROW *prow,
 	if (0 != depth) {
 		prow->pprops[6].proptag = PR_EMS_AB_PARENT_ENTRYID;
 		prow->pprops[6].reserved = 0;
-		if (FALSE == common_util_permanent_entryid_to_binary(
+		if (!common_util_permanent_entryid_to_binary(
 			ppermeid_parent, &prow->pprops[6].value.bin)) {
 			prow->pprops[6].proptag = CHANGE_PROP_TYPE(prow->pprops[6].proptag, PT_ERROR);
 			prow->pprops[6].value.err = ecMAPIOOM;
@@ -2321,10 +2300,9 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 	}
 	if (!ab_tree_node_to_guid(pnode, &tmp_guid))
 		return ecMAPIOOM;
-	if (FALSE == common_util_set_permanententryid(
-		DT_CONTAINER, &tmp_guid, NULL, ppermeid)) {
+	if (!common_util_set_permanententryid(DT_CONTAINER, &tmp_guid,
+	    nullptr, ppermeid))
 		return ecMAPIOOM;
-	}
 	prow = common_util_proprowset_enlarge(prows);
 	if (NULL == prow) {
 		return ecMAPIOOM;
@@ -2335,12 +2313,10 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 		return ecError;
 	}
 	ab_tree_get_display_name(pnode, codepage, str_dname, arsizeof(str_dname));
-	if (FALSE == nsp_interface_build_specialtable(
-		prow, b_unicode, codepage, has_child,
-		simple_tree_node_get_depth(pnode), container_id,
-		str_dname, ppermeid_parent, ppermeid)) {
+	if (!nsp_interface_build_specialtable(prow, b_unicode, codepage, has_child,
+	    simple_tree_node_get_depth(pnode), container_id,
+	    str_dname, ppermeid_parent, ppermeid))
 		return ecMAPIOOM;
-	}
 	if (has_child) {
 		auto pnode1 = simple_tree_node_get_child(pnode);
 		do {
@@ -2384,7 +2360,7 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	BOOL b_unicode = (flags & FLAG_UNICODESTRINGS) ? TRUE : false;
 	uint32_t codepage = pstat == nullptr ? 1252 : pstat->codepage;
 	/* in MS-OXNSPI 3.1.4.1.3 server processing rules */
-	if (FALSE == b_unicode && CODEPAGE_UNICODE == codepage) {
+	if (!b_unicode && codepage == CODEPAGE_UNICODE) {
 		*pprows = NULL;
 		return ecNotSupported;
 	}
@@ -2408,15 +2384,13 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 		*pprows = NULL;
 		return ecMAPIOOM;
 	}
-	
-	if (FALSE == common_util_set_permanententryid(
-		DT_CONTAINER, NULL, NULL, &permeid)) {
+	if (!common_util_set_permanententryid(DT_CONTAINER,
+	    nullptr, nullptr, &permeid)) {
 		*pprows = NULL;
 		return ecMAPIOOM;
 	}
-	if (FALSE == nsp_interface_build_specialtable(prow,
-		b_unicode, codepage, FALSE, 0, 0, NULL, NULL,
-		&permeid)) {
+	if (!nsp_interface_build_specialtable(prow, b_unicode, codepage,
+	    false, 0, 0, nullptr, nullptr, &permeid)) {
 		*pprows = NULL;
 		return ecMAPIOOM;
 	}
@@ -2449,7 +2423,6 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	char username[UADDR_SIZE];
 	char temp_path[256];
 	DOUBLE_LIST tmp_list;
-	DOUBLE_LIST_NODE *pnode;
 	std::unique_ptr<LIST_FILE> pfile;
 	size_t item_num = 0;
 	
@@ -2503,7 +2476,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		item_num = pfile->get_size();
 		auto pitem = static_cast<const dlgitem *>(pfile->get_list());
 		for (size_t i = 0; i < item_num; ++i) {
-			pnode = static_cast<decltype(pnode)>(malloc(sizeof(*pnode)));
+			auto pnode = me_alloc<DOUBLE_LIST_NODE>();
 			if (NULL == pnode) {
 				result = ecMAPIOOM;
 				goto EXIT_MOD_LINKATT;
@@ -2535,6 +2508,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		}
 		ab_tree_get_user_info(ptnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
 		if (flags & MOD_FLAG_DELETE) {
+			DOUBLE_LIST_NODE *pnode;
 			for (pnode=double_list_get_head(&tmp_list); NULL!=pnode;
 				pnode=double_list_get_after(&tmp_list, pnode)) {
 				if (strcasecmp(username, static_cast<char *>(pnode->pdata)) == 0) {
@@ -2545,13 +2519,14 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 				}
 			}
 		} else {
+			DOUBLE_LIST_NODE *pnode;
 			for (pnode=double_list_get_head(&tmp_list); NULL!=pnode;
 				pnode=double_list_get_after(&tmp_list, pnode)) {
 				if (strcasecmp(username, static_cast<char *>(pnode->pdata)) == 0)
 					break;
 			}
 			if (NULL == pnode) {
-				pnode = static_cast<decltype(pnode)>(malloc(sizeof(*pnode)));
+				pnode = me_alloc<DOUBLE_LIST_NODE>();
 				if (NULL == pnode) {
 					result = ecMAPIOOM;
 					goto EXIT_MOD_LINKATT;
@@ -2572,7 +2547,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 			result = ecError;
 			goto EXIT_MOD_LINKATT;
 		}
-		for (pnode=double_list_get_head(&tmp_list); NULL!=pnode;
+		for (auto pnode = double_list_get_head(&tmp_list); pnode != nullptr;
 			pnode=double_list_get_after(&tmp_list, pnode)) {
 			write(fd, pnode->pdata, strlen(static_cast<char *>(pnode->pdata)));
 			write(fd, "\r\n", 2);
@@ -2582,6 +2557,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	result = ecSuccess;
 	
  EXIT_MOD_LINKATT:
+	DOUBLE_LIST_NODE *pnode;
 	while ((pnode = double_list_pop_front(&tmp_list)) != nullptr) {
 		free(pnode->pdata);
 		free(pnode);

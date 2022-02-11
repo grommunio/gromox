@@ -3,18 +3,20 @@
 #include <cstdlib>
 #include <cstring>
 
+using namespace gromox;
+
 static bool proptag_array_init_internal(PROPTAG_ARRAY *pproptags)
 {
 	
 	pproptags->count = 0;
 	auto count = strange_roundup(pproptags->count, SR_GROW_PROPTAG_ARRAY);
-	pproptags->pproptag = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * count));
+	pproptags->pproptag = me_alloc<uint32_t>(count);
 	return pproptags->pproptag != nullptr;
 }
 
 PROPTAG_ARRAY* proptag_array_init()
 {
-	auto pproptags = static_cast<PROPTAG_ARRAY *>(malloc(sizeof(PROPTAG_ARRAY)));
+	auto pproptags = me_alloc<PROPTAG_ARRAY>();
 	if (NULL == pproptags) {
 		return NULL;
 	}
@@ -58,8 +60,7 @@ bool proptag_array_append(PROPTAG_ARRAY *pproptags, uint32_t proptag)
 		}
 		pproptags->pproptag = pproptag;
 	}
-	pproptags->pproptag[pproptags->count] = proptag;
-	pproptags->count ++;
+	pproptags->pproptag[pproptags->count++] = proptag;
 	return true;
 }
 
@@ -84,7 +85,7 @@ static bool proptag_array_dup_internal(const PROPTAG_ARRAY *pproptags,
 {
 	auto count = strange_roundup(pproptags->count, SR_GROW_PROPTAG_ARRAY);
 	pproptags_dst->count = pproptags->count;
-	pproptags_dst->pproptag = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * count));
+	pproptags_dst->pproptag = me_alloc<uint32_t>(count);
 	if (NULL == pproptags_dst->pproptag) {
 		return false;
 	}
@@ -95,7 +96,7 @@ static bool proptag_array_dup_internal(const PROPTAG_ARRAY *pproptags,
 
 PROPTAG_ARRAY* proptag_array_dup(const PROPTAG_ARRAY *pproptags)
 {
-	auto pproptags1 = static_cast<PROPTAG_ARRAY *>(malloc(sizeof(PROPTAG_ARRAY)));
+	auto pproptags1 = me_alloc<PROPTAG_ARRAY>();
 	if (NULL == pproptags1) {
 		return NULL;
 	}

@@ -304,8 +304,7 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 		*pb_found = FALSE;
 		return TRUE;
 	}
-	uint64_t fid = pctx->pchg_eids->pids[pctx->eid_pos];
-	pctx->eid_pos ++;
+	uint64_t fid = pctx->pchg_eids->pids[pctx->eid_pos++];
 	pproplist->count = 0;
 	pproplist->ppropval = cu_alloc<TAGGED_PROPVAL>(8);
 	if (pproplist->ppropval == nullptr)
@@ -314,14 +313,13 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 	void *pvalue = common_util_calculate_folder_sourcekey(pctx->pstore, fid);
 	if (pvalue == nullptr)
 		return FALSE;
-	pproplist->ppropval[pproplist->count].pvalue = pvalue;
-	pproplist->count ++;
+	pproplist->ppropval[pproplist->count++].pvalue = pvalue;
+
 	pproplist->ppropval[pproplist->count].proptag = PR_ENTRYID;
 	pvalue = common_util_to_folder_entryid(pctx->pstore, fid);
 	if (pvalue == nullptr)
 		return FALSE;
-	pproplist->ppropval[pproplist->count].pvalue = pvalue;
-	pproplist->count ++;
+	pproplist->ppropval[pproplist->count++].pvalue = pvalue;
 	proptags.count = 6;
 	proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PidTagParentFolderId;
@@ -347,43 +345,35 @@ BOOL icsdownctx_object::sync_folder_change(BOOL *pb_found,
 								pctx->pstore, parent_fid);
 		if (pvalue == nullptr)
 			return FALSE;
-		pproplist->ppropval[pproplist->count].pvalue = pvalue;
-		pproplist->count ++;
+		pproplist->ppropval[pproplist->count++].pvalue = pvalue;
+
 		pproplist->ppropval[pproplist->count].proptag = PR_PARENT_ENTRYID;
 		pvalue = common_util_to_folder_entryid(
 						pctx->pstore, parent_fid);
 		if (pvalue == nullptr)
 			return FALSE;
-		pproplist->ppropval[pproplist->count].pvalue = pvalue;
-		pproplist->count ++;
+		pproplist->ppropval[pproplist->count++].pvalue = pvalue;
 	}
 	pproplist->ppropval[pproplist->count].proptag = PR_DISPLAY_NAME;
 	pvalue = tmp_propvals.getval(PR_DISPLAY_NAME);
 	if (NULL != pvalue) {
-		pproplist->ppropval[pproplist->count].pvalue = pvalue;
-		pproplist->count ++;
+		pproplist->ppropval[pproplist->count++].pvalue = pvalue;
 	}
 	pproplist->ppropval[pproplist->count].proptag = PR_CONTAINER_CLASS;
 	pvalue = tmp_propvals.getval(PR_CONTAINER_CLASS);
 	if (NULL != pvalue) {
-		pproplist->ppropval[pproplist->count].pvalue = pvalue;
-		pproplist->count ++;
+		pproplist->ppropval[pproplist->count++].pvalue = pvalue;
 	}
 	pproplist->ppropval[pproplist->count].proptag = PR_ATTR_HIDDEN;
 	pvalue = tmp_propvals.getval(PR_ATTR_HIDDEN);
-	if (NULL != pvalue) {
-		pproplist->ppropval[pproplist->count].pvalue = pvalue;
-		pproplist->count ++;
-	} else {
-		pproplist->ppropval[pproplist->count].pvalue = deconst(&fake_false);
-		pproplist->count ++;
-	}
+	pproplist->ppropval[pproplist->count++].pvalue =
+		pvalue != nullptr ? pvalue : deconst(&fake_false);
+
 	pproplist->ppropval[pproplist->count].proptag =
 						PROP_TAG_EXTENDEDFOLDERFLAGS;
 	pvalue = tmp_propvals.getval(PROP_TAG_EXTENDEDFOLDERFLAGS);
 	if (NULL != pvalue) {
-		pproplist->ppropval[pproplist->count].pvalue = pvalue;
-		pproplist->count ++;
+		pproplist->ppropval[pproplist->count++].pvalue = pvalue;
 	}
 	*pb_found = TRUE;
 	if (!pctx->pstate->pgiven->append(fid) ||
@@ -488,8 +478,7 @@ BOOL icsdownctx_object::sync_readstates(STATE_ARRAY *pstates)
 			if (pbin == nullptr)
 				return FALSE;
 			pstates->pstate[pstates->count].source_key = *pbin;
-			pstates->pstate[pstates->count].message_flags = MSGFLAG_READ;
-			pstates->count ++;
+			pstates->pstate[pstates->count++].message_flags = MSGFLAG_READ;
 		}
 		for (size_t i = 0; i < pctx->punread_messags->count; ++i) {
 			pbin = common_util_calculate_message_sourcekey(
@@ -497,8 +486,7 @@ BOOL icsdownctx_object::sync_readstates(STATE_ARRAY *pstates)
 			if (pbin == nullptr)
 				return FALSE;
 			pstates->pstate[pstates->count].source_key = *pbin;
-			pstates->pstate[pstates->count].message_flags = 0;
-			pstates->count ++;
+			pstates->pstate[pstates->count++].message_flags = 0;
 		}
 	}
 	eid_array_free(pctx->pread_messags);

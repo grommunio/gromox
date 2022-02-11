@@ -101,7 +101,7 @@ struct RECORD_HEADER {
 }
 
 static int g_context_num;
-static int g_exec_timeout;
+static time_duration g_exec_timeout;
 static uint64_t g_max_size;
 static uint64_t g_cache_size;
 static std::vector<FASTCGI_NODE> g_fastcgi_list;
@@ -133,7 +133,7 @@ static const FASTCGI_NODE *mod_fastcgi_find_backend(const char *domain,
 }
 
 void mod_fastcgi_init(int context_num, uint64_t cache_size, uint64_t max_size,
-    int exec_timeout)
+    time_duration exec_timeout)
 {
 	g_context_num = context_num;
 	g_unavailable_times = 0;
@@ -208,7 +208,7 @@ int mod_fastcgi_run()
 	auto ret = mod_fastcgi_read_txt();
 	if (ret < 0)
 		return ret;
-	g_context_list = static_cast<FASTCGI_CONTEXT *>(malloc(sizeof(FASTCGI_CONTEXT) * g_context_num));
+	g_context_list = me_alloc<FASTCGI_CONTEXT>(g_context_num);
 	if (NULL == g_context_list) {
 		printf("[mod_fastcgi]: Failed to allocate context list\n");
 		return -ENOMEM;
@@ -434,7 +434,7 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 	phttp->request.f_request_uri.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	phttp->request.f_request_uri.read(tmp_buff, tmp_len);
 	tmp_buff[tmp_len] = '\0';
-	if (FALSE == parse_uri(tmp_buff, request_uri)) {
+	if (!parse_uri(tmp_buff, request_uri)) {
 		http_parser_log_info(phttp, LV_DEBUG, "request"
 			" uri format error for mod_fastcgi");
 		return FALSE;
@@ -503,7 +503,7 @@ BOOL mod_fastcgi_get_context(HTTP_CONTEXT *phttp)
 			b_chunked = TRUE;
 	}
 	auto pcontext = &g_context_list[phttp->context_id];
-	time(&pcontext->last_time);
+	pcontext->last_time = time_point::clock::now();
 	pcontext->pfnode = pfnode;
 	if (b_chunked || content_length > g_cache_size) {
 		snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff), "/tmp/http-%u", phttp->context_id);
@@ -604,7 +604,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "REQUEST_URI", tmp_buff));
 	ptoken = strchr(tmp_buff, '?');
 	QRF(mod_fastcgi_push_name_value(&ndr_push, "QUERY_STRING", ptoken == nullptr ? "" : ++ptoken));
-	if (FALSE == parse_uri(tmp_buff, uri_path)) {
+	if (!parse_uri(tmp_buff, uri_path)) {
 		http_parser_log_info(phttp, LV_DEBUG, "request"
 			" uri format error for mod_fastcgi");
 		return FALSE;
@@ -745,7 +745,7 @@ static BOOL mod_fastcgi_build_params(HTTP_CONTEXT *phttp,
 		    hdr.c_str(), tmp_buff, GX_ARRAY_SIZE(tmp_buff)))
 			QRF(mod_fastcgi_push_name_value(&ndr_push,
 			    hdr.c_str(), tmp_buff));
-	if (FALSE == phttp->pfast_context->b_chunked) {
+	if (!phttp->pfast_context->b_chunked) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%llu",
 		         static_cast<unsigned long long>(phttp->pfast_context->content_length));
 		QRF(mod_fastcgi_push_name_value(&ndr_push, "CONTENT_LENGTH", tmp_buff));
@@ -928,7 +928,7 @@ BOOL mod_fastcgi_write_request(HTTP_CONTEXT *phttp)
 			phttp->pfast_context->b_end = TRUE;	
 		return TRUE;
 	}
-	if (FALSE == phttp->pfast_context->b_chunked) {
+	if (!phttp->pfast_context->b_chunked) {
 		if (phttp->pfast_context->cache_size + phttp->stream_in.get_total_length() < phttp->pfast_context->content_length &&
 		    phttp->stream_in.get_total_length() < g_cache_size)
 			return TRUE;	
@@ -1053,7 +1053,7 @@ static BOOL mod_fastcgi_safe_read(FASTCGI_CONTEXT *pfast_context,
 			return FALSE;
 		offset += read_len;
 		if (length == offset) {
-			time(&pfast_context->last_time);
+			pfast_context->last_time = time_point::clock::now();
 			return TRUE;
 		}
 	}
@@ -1078,7 +1078,7 @@ int mod_fastcgi_check_response(HTTP_CONTEXT *phttp)
 		return RESPONSE_AVAILABLE;
 	}
 	g_unavailable_times ++;
-	if (time(nullptr) - phttp->pfast_context->last_time > g_exec_timeout)
+	if (time_point::clock::now() - phttp->pfast_context->last_time > g_exec_timeout)
 		return RESPONSE_TIMEOUT;
 	return RESPONSE_WAITING;
 }
@@ -1104,8 +1104,8 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 	}
 	response_offset = 0;
 	while (true) {
-		if (FALSE == mod_fastcgi_safe_read(
-			phttp->pfast_context, header_buff, 8)) {
+		if (!mod_fastcgi_safe_read(phttp->pfast_context,
+		    header_buff, arsizeof(header_buff))) {
 			http_parser_log_info(phttp, LV_DEBUG, "fail to read"
 				" record header from fastcgi back-end %s",
 				phttp->pfast_context->pfnode->sock_path.c_str());
@@ -1131,9 +1131,8 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 				return FALSE;
 			}
 			tmp_len = header.padding_len + 8;
-			if (FALSE == mod_fastcgi_safe_read(
-				phttp->pfast_context, tmp_buff,
-				tmp_len)) {
+			if (!mod_fastcgi_safe_read(phttp->pfast_context,
+			    tmp_buff, tmp_len)) {
 				http_parser_log_info(phttp, LV_DEBUG, "fail to read"
 				" record header from fastcgi back-end %s",
 				phttp->pfast_context->pfnode->sock_path.c_str());
@@ -1160,9 +1159,8 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 		case RECORD_TYPE_STDOUT:
 		case RECORD_TYPE_STDERR:
 			tmp_len = header.content_len + header.padding_len;
-			if (FALSE == mod_fastcgi_safe_read(
-				phttp->pfast_context, tmp_buff,
-				tmp_len)) {
+			if (!mod_fastcgi_safe_read(phttp->pfast_context,
+			    tmp_buff, tmp_len)) {
 				http_parser_log_info(phttp, LV_DEBUG, "fail to read"
 					" record header from fastcgi back-end %s",
 					phttp->pfast_context->pfnode->sock_path.c_str());
@@ -1316,9 +1314,8 @@ BOOL mod_fastcgi_read_response(HTTP_CONTEXT *phttp)
 			return TRUE;
 		default:
 			tmp_len = header.content_len + header.padding_len;
-			if (FALSE == mod_fastcgi_safe_read(
-				phttp->pfast_context, tmp_buff,
-				tmp_len)) {
+			if (!mod_fastcgi_safe_read(phttp->pfast_context,
+			    tmp_buff, tmp_len)) {
 				http_parser_log_info(phttp, LV_DEBUG, "fail to read"
 				" record header from fastcgi back-end %s",
 				phttp->pfast_context->pfnode->sock_path.c_str());

@@ -98,16 +98,14 @@ void auto_response_reply(const char *user_home,
 		str_value = pconfig->get_value("EXTERNAL_AUDIENCE");
 		if (str_value != nullptr && strtol(str_value, nullptr, 0) != 0) {
 			if (EXMDB_RESULT_OK != exmdb_client_check_contact_address(
-				user_home, rcpt, &b_found) || FALSE == b_found) {
+			    user_home, rcpt, &b_found) || !b_found)
 				return;	
-			}
 		}
 		snprintf(template_path, 256, "%s/config/external-reply", user_home);
 	}
 	snprintf(audit_buff, arsizeof(audit_buff), "%s:%s", from, rcpt);
-	if (FALSE == bounce_audit_check(audit_buff)) {
+	if (!bounce_audit_check(audit_buff))
 		return;
-	}
 	fd = open(template_path, O_RDONLY);
 	if (-1 == fd) {
 		return;

@@ -199,16 +199,13 @@ static BOOL table_object_get_store_table_all_proptags(
 	for (size_t i = 0; i < tmp_proptags2.count; ++i) {
 		if (tmp_proptags1.has(tmp_proptags2.pproptag[i]))
 			continue;	
-		pproptags->pproptag[pproptags->count] =
-					tmp_proptags2.pproptag[i];
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = tmp_proptags2.pproptag[i];
 	}
 	for (size_t i = 0; i < gromox::arsizeof(proptag_buff); ++i) {
 		if (tmp_proptags1.has(proptag_buff[i]) ||
 		    tmp_proptags2.has(proptag_buff[i]))
 			continue;	
-		pproptags->pproptag[pproptags->count] = proptag_buff[i];
-		pproptags->count ++;
+		pproptags->pproptag[pproptags->count++] = proptag_buff[i];
 	}
 	return TRUE;
 }
@@ -287,8 +284,7 @@ static BOOL rcpttable_query_rows(const table_object *ptable,
 		return FALSE;
 	}
 	for (size_t i = ptable->position; i < end_pos; ++i) {
-		pset->pparray[pset->count] = rcpt_set.pparray[i];
-		pset->count++;
+		pset->pparray[pset->count++] = rcpt_set.pparray[i];
 	}
 	if (!pcolumns->has(PR_ENTRYID))
 		return TRUE;
@@ -317,9 +313,7 @@ static BOOL rcpttable_query_rows(const table_object *ptable,
 			sizeof(TAGGED_PROPVAL)*pset->pparray[i]->count);
 		pset->pparray[i]->ppropval = static_cast<TAGGED_PROPVAL *>(pvalue);
 		pset->pparray[i]->ppropval[pset->pparray[i]->count].proptag = PR_ENTRYID;
-		pset->pparray[i]->ppropval[pset->pparray[i]->count].pvalue =
-			pentryid;
-		pset->pparray[i]->count ++;
+		pset->pparray[i]->ppropval[pset->pparray[i]->count++].pvalue = pentryid;
 	}
 	return TRUE;
 }
@@ -738,7 +732,7 @@ std::unique_ptr<table_object> table_object::create(store_object *pstore,
 	}
 	ptable->pstore = pstore;
 	if (RULE_TABLE == table_type) {
-		ptable->pparent_obj = me_alloc<uint64_t>();
+		ptable->pparent_obj = gromox::me_alloc<uint64_t>();
 		if (NULL == ptable->pparent_obj) {
 			return NULL;
 		}
@@ -1047,8 +1041,7 @@ BOOL table_object::filter_rows(uint32_t count, const RESTRICTION *pres,
 	for (size_t i = 0; i < tmp_set.count && pset->count < count; ++i) {
 		if (!table_object_evaluate_restriction(tmp_set.pparray[i], pres))
 			continue;	
-		pset->pparray[pset->count] = tmp_set.pparray[i];
-		pset->count ++;
+		pset->pparray[pset->count++] = tmp_set.pparray[i];
 	}
 	return TRUE;
 }

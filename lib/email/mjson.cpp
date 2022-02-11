@@ -279,29 +279,27 @@ BOOL MJSON::retrieve(char *digest_buff,
 					if (i < last_pos) {
 						return FALSE;
 					}
-					if (FALSE == mjson_record_value(pjson, temp_tag,
-						digest_buff + last_pos, i - last_pos)) {
+					if (!mjson_record_value(pjson, temp_tag,
+					    digest_buff + last_pos, i - last_pos))
 						return FALSE;
-					}
 					rstat = RETRIEVE_VALUE_END;
 				}
 				break;
 			case RETRIEVE_TOKEN_SQUARE:
-				if (FALSE == b_quota && 0 == scount &&
+				if (!b_quota && scount == 0 &&
 					0 == bcount && ']' == digest_buff[i]) {
 					if (i + 1 < last_pos) {
 						return FALSE;
 					}
-					if (FALSE == mjson_record_value(pjson, temp_tag,
-						digest_buff + last_pos, i + 1 - last_pos)) {
+					if (!mjson_record_value(pjson, temp_tag,
+					    digest_buff + last_pos, i + 1 - last_pos))
 						return FALSE;
-					}
 					rstat = RETRIEVE_VALUE_END;
 				} 
 				if ('"' == digest_buff[i] && '\\' != digest_buff[i - 1]) {
 					b_quota = b_quota?FALSE:TRUE;
 				}
-				if (FALSE == b_quota) {
+				if (!b_quota) {
 					if ('{' == digest_buff[i]) {
 						bcount ++;
 					} else if ('}' == digest_buff[i]) {
@@ -314,21 +312,20 @@ BOOL MJSON::retrieve(char *digest_buff,
 				}
 				break;
 			case RETRIEVE_TOKEN_BRACKET:
-				if (FALSE == b_quota && 0 == bcount &&
+				if (!b_quota && bcount == 0 &&
 					0 == scount && '}' == digest_buff[i]) {
 					if (i + 1 < last_pos) {
 						return FALSE;
 					}
-					if (FALSE == mjson_record_value(pjson, temp_tag,
-						digest_buff + last_pos, i + 1 - last_pos)) {
+					if (!mjson_record_value(pjson, temp_tag,
+					    digest_buff + last_pos, i + 1 - last_pos))
 						return FALSE;
-					}
 					rstat = RETRIEVE_VALUE_END;
 				}
 				if ('"' == digest_buff[i] && '\\' != digest_buff[i - 1]) {
 					b_quota = b_quota?FALSE:TRUE;
 				}
-				if (FALSE == b_quota) {
+				if (!b_quota) {
 					if ('{' == digest_buff[i]) {
 						bcount ++;
 					} else if ('}' == digest_buff[i]) {
@@ -345,28 +342,25 @@ BOOL MJSON::retrieve(char *digest_buff,
 					if (i < last_pos) {
 						return FALSE;
 					}
-					if (FALSE == mjson_record_value(pjson, temp_tag,
-						digest_buff + last_pos, i - last_pos)) {
+					if (!mjson_record_value(pjson, temp_tag,
+					    digest_buff + last_pos, i - last_pos))
 						return FALSE;
-					}
 					rstat = RETRIEVE_TAG_FINDING;
 				} else if ('}' == digest_buff[i]) {
 					if (i < last_pos) {
 						return FALSE;
 					}
-					if (FALSE == mjson_record_value(pjson, temp_tag,
-						digest_buff + last_pos, i - last_pos)) {
+					if (!mjson_record_value(pjson, temp_tag,
+					    digest_buff + last_pos, i - last_pos))
 						return FALSE;
-					}
 					rstat = RETRIEVE_END;
 				} else if (' ' == digest_buff[i] || '\t' == digest_buff[i]) {
 					if (i < last_pos) {
 						return FALSE;
 					}
-					if (FALSE == mjson_record_value(pjson, temp_tag,
-						digest_buff + last_pos, i - last_pos)) {
+					if (!mjson_record_value(pjson, temp_tag,
+					    digest_buff + last_pos, i - last_pos))
 						return FALSE;
-					}
 					rstat = RETRIEVE_VALUE_END;
 				} else if (!HX_isdigit(digest_buff[i])) {
 					return FALSE;
@@ -655,13 +649,11 @@ static BOOL mjson_record_value(MJSON *pjson, char *tag,
 			}
 		}
 	} else if (0 == strcasecmp(tag, "structure")) {
-		if (FALSE == mjson_parse_array(pjson, value, length, TYPE_STRUCTURE)) {
+		if (!mjson_parse_array(pjson, value, length, TYPE_STRUCTURE))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "mimes")) {
-		if (FALSE == mjson_parse_array(pjson, value, length, TYPE_MIMES)) {
+		if (!mjson_parse_array(pjson, value, length, TYPE_MIMES))
 			return FALSE;
-		}
 	} else if (0 == strcasecmp(tag, "size")) {
 		if (0 == pjson->size && length <= 16) {
 			memcpy(temp_buff, value, length);
@@ -704,22 +696,19 @@ static BOOL mjson_parse_array(MJSON *pjson, char *value, int length, int type)
 		case PARSE_STAT_PROCESSING:
 			if ('"' == value[i] && '\\' != value[i - 1]) {
 				b_quota = b_quota?FALSE:TRUE;
-			} else {
-				if (FALSE == b_quota) {
-					if ('{' == value[i]) {
-						bcount ++;
-					} else if ('}' == value[i]) {
-						bcount --;
-						if (0 == bcount) {
-							if (i < last_pos) {
-								return FALSE;
-							}
-							if (FALSE == mjson_record_node(pjson, 
-								value + last_pos, i - last_pos, type)) {
-								return FALSE;
-							}
-							rstat = PARSE_STAT_PROCESSED;
+			} else if (!b_quota) {
+				if ('{' == value[i]) {
+					bcount++;
+				} else if ('}' == value[i]) {
+					bcount--;
+					if (0 == bcount) {
+						if (i < last_pos) {
+							return FALSE;
 						}
+						if (!mjson_record_node(pjson,
+						    value + last_pos, i - last_pos, type))
+							return FALSE;
+						rstat = PARSE_STAT_PROCESSED;
 					}
 				}
 			}
@@ -920,7 +909,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 					pmime->node.pdata = pmime;
 					pmime->ppool = pjson->ppool;
 					pmime->mime_type = MJSON_MIME_NONE;
-					if (FALSE == simple_tree_add_child(&pjson->tree,
+					if (!simple_tree_add_child(&pjson->tree,
 						pnode, &pmime->node, SIMPLE_TREE_ADD_LAST)) {
 						pjson->ppool->put(pmime);
 						return FALSE;
@@ -1164,7 +1153,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 				node_stat.st_size > MAX_DIGLEN) {
 				goto RFC822_FAILURE;
 			}
-			digest_buff = static_cast<char *>(malloc(MAX_DIGLEN));
+			digest_buff = me_alloc<char>(MAX_DIGLEN);
 			if (NULL == digest_buff) {
 				goto RFC822_FAILURE;
 			}
@@ -1488,10 +1477,10 @@ int MJSON::fetch_envelope(const char *charset, char *buff, int length)
 		} else if (',' == pjson->to[i] || ';' == pjson->to[i] ||
 			'\0' == pjson->to[i]) {
 			tmp_len = i - last_pos;
-			if (FALSE == b_quoted && tmp_len < 1024 && tmp_len > 0) {
+			if (!b_quoted && tmp_len < 1024 && tmp_len > 0) {
 				buff[offset] = ' ';
 				offset ++;
-				if (FALSE == b_bracket) {
+				if (!b_bracket) {
 					buff[offset] = '(';
 					offset ++;
 					b_bracket = TRUE;
@@ -1509,7 +1498,7 @@ int MJSON::fetch_envelope(const char *charset, char *buff, int length)
 		}
 	}
 	
-	if (FALSE == b_bracket) {
+	if (!b_bracket) {
 		memcpy(buff + offset, " NIL", 4);
 		offset += 4;
 	} else {
@@ -1528,10 +1517,10 @@ int MJSON::fetch_envelope(const char *charset, char *buff, int length)
 		} else if (',' == pjson->cc[i] || ';' == pjson->cc[i] ||
 			'\0' == pjson->cc[i]) {
 			tmp_len = i - last_pos;
-			if (FALSE == b_quoted && tmp_len < 1024 && tmp_len > 0) {
+			if (!b_quoted && tmp_len < 1024 && tmp_len > 0) {
 				buff[offset] = ' ';
 				offset ++;
-				if (FALSE == b_bracket) {
+				if (!b_bracket) {
 					buff[offset] = '(';
 					offset ++;
 					b_bracket = TRUE;
@@ -1549,7 +1538,7 @@ int MJSON::fetch_envelope(const char *charset, char *buff, int length)
 		}
 	}
 	
-	if (FALSE == b_bracket) {
+	if (!b_bracket) {
 		memcpy(buff + offset, " NIL", 4);
 		offset += 4;
 	} else {
@@ -1626,10 +1615,8 @@ static void mjson_convert_quoted_printable(const char *astring,
 static void mjson_emum_rfc822(MJSON_MIME *pmime, void *param)
 {
 	auto pb_found = static_cast<BOOL *>(param);
-	if (FALSE == *pb_found && 0 == strcasecmp(pmime->ctype,
-		"message/rfc822")) {
+	if (!*pb_found && strcasecmp(pmime->ctype, "message/rfc822") == 0)
 		*pb_found = TRUE;
-	}
 }
 
 BOOL MJSON::rfc822_check()
@@ -1648,10 +1635,9 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 	char dgt_path[256];
 	char temp_path[256];
 	
-	if (FALSE == pbuild->build_result || pbuild->depth > MAX_RFC822_DEPTH ||
-		0 != strcasecmp(pmime->ctype, "message/rfc822")) {
+	if (!pbuild->build_result || pbuild->depth > MAX_RFC822_DEPTH ||
+	    strcasecmp(pmime->ctype, "message/rfc822") != 0)
 		return;
-	}
 	
 	snprintf(temp_path, 256, "%s/%s", pbuild->msg_path, pbuild->filename);
 	if (1 == pbuild->depth) {
@@ -1673,7 +1659,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 	}
 	
 	auto length = pmime->get_length(MJSON_MIME_CONTENT);
-	std::unique_ptr<char[], stdlib_delete> pbuff(static_cast<char *>(malloc(strange_roundup(length - 1, 64 * 1024))));
+	std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(strange_roundup(length - 1, 64 * 1024)));
 	if (NULL == pbuff) {
 		close(fd);
 		pbuild->build_result = FALSE;
@@ -1691,7 +1677,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 	close(fd);
 	
 	if (0 == strcasecmp(pmime->encoding, "base64")) {
-		std::unique_ptr<char[], stdlib_delete> pbuff1(static_cast<char *>(malloc(strange_roundup(length - 1, 64 * 1024))));
+		std::unique_ptr<char[], stdlib_delete> pbuff1(me_alloc<char>(strange_roundup(length - 1, 64 * 1024)));
 		if (NULL == pbuff1) {
 			pbuild->build_result = FALSE;
 			return;
@@ -1703,7 +1689,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 		pbuff = std::move(pbuff1);
 		length = length1;
 	} else if (0 == strcasecmp(pmime->encoding, "quoted-printable")) {
-		std::unique_ptr<char[], stdlib_delete> pbuff1(static_cast<char *>(malloc(strange_roundup(length - 1, 64 * 1024))));
+		std::unique_ptr<char[], stdlib_delete> pbuff1(me_alloc<char>(strange_roundup(length - 1, 64 * 1024)));
 		if (NULL == pbuff1) {
 			pbuild->build_result = FALSE;
 			return;
@@ -1802,7 +1788,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 		build_param.build_result = TRUE;
 		
 		temp_mjson.enum_mime(mjson_enum_build, &build_param);
-		if (FALSE == build_param.build_result) {
+		if (!build_param.build_result) {
 			if (remove(dgt_path) < 0 && errno != ENOENT)
 				fprintf(stderr, "W-1379: remove %s: %s\n", dgt_path, strerror(errno));
 			if (remove(msg_path) < 0 && errno != ENOENT)
@@ -1837,9 +1823,8 @@ BOOL MJSON::rfc822_build(std::shared_ptr<MIME_POOL> ppool, const char *storage_p
 	build_param.ppool = ppool;
 	build_param.build_result = TRUE;
 	pjson->enum_mime(mjson_enum_build, &build_param);
-	if (FALSE == build_param.build_result) {
+	if (!build_param.build_result)
 		rmdir(temp_path);
-	}
 	return build_param.build_result;
 }
 

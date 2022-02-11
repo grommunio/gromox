@@ -10,6 +10,7 @@
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
+#include <gromox/clock.hpp>
 #include <gromox/defs.h>
 #include "asyncemsmdb_interface.h"
 #include "aux_types.h"
@@ -46,7 +47,6 @@
 #define FLAG_PRIVILEGE_ADMIN			0x00000001
 #define MAX_HANDLE_PER_USER				100
 
-using time_point = std::chrono::time_point<std::chrono::steady_clock>;
 using namespace gromox;
 
 template<> struct std::hash<GUID> {

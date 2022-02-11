@@ -21,8 +21,6 @@ template<typename T> T *cu_alloc(size_t elem)
 	static_assert(std::is_trivially_destructible_v<T>);
 	return static_cast<T *>(common_util_alloc(sizeof(T) * elem));
 }
-template<typename T> T *me_alloc() { return static_cast<T *>(malloc(sizeof(T))); }
-template<typename T> T *me_alloc(size_t elem) { return static_cast<T *>(malloc(sizeof(T) * elem)); }
 extern BOOL common_util_switch_allocator();
 void common_util_set_maildir(const char *maildir);
 extern const char* common_util_get_maildir();

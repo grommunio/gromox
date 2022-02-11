@@ -109,7 +109,7 @@ static BOOL icsdownctx_object_make_content(icsdownctx_object *pctx)
 	}
 	
 	if (pctx->sync_flags & SYNC_FLAG_PROGRESS) {
-		pctx->pprogtotal = me_alloc<PROGRESS_INFORMATION>();
+		pctx->pprogtotal = gromox::me_alloc<PROGRESS_INFORMATION>();
 		if (NULL == pctx->pprogtotal) {
 			return FALSE;
 		}

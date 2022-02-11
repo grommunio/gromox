@@ -71,8 +71,7 @@ static char g_exmdb_org_name[256];
 static unsigned int g_max_msg;
 static thread_local const void *g_var_key;
 static thread_local prepared_statements *g_opt_key;
-static unsigned int g_max_rule_num;
-static unsigned int g_max_ext_rule_num;
+unsigned int g_max_rule_num, g_max_extrule_num;
 static std::atomic<int> g_sequence_id;
 
 #define E(s) decltype(common_util_ ## s) common_util_ ## s;
@@ -223,7 +222,7 @@ void common_util_init(const char *org_name, uint32_t max_msg,
 	gx_strlcpy(g_exmdb_org_name, org_name, arsizeof(g_exmdb_org_name));
 	g_max_msg = max_msg;
 	g_max_rule_num = max_rule_num;
-	g_max_ext_rule_num = max_ext_rule_num;
+	g_max_extrule_num = max_ext_rule_num;
 }
 
 void common_util_build_tls()
@@ -5137,17 +5136,6 @@ BOOL cu_adjust_store_size(sqlite3 *psqlite, bool subtract,
 		}
 	}
 	return TRUE;
-}
-
-unsigned int common_util_get_param(int param)
-{
-	switch (param) {
-	case COMMON_UTIL_MAX_RULE_NUMBER:
-		return g_max_rule_num;
-	case COMMON_UTIL_MAX_EXT_RULE_NUMBER:
-		return g_max_ext_rule_num;
-	}
-	return 0;
 }
 
 BOOL common_util_recipients_to_list(

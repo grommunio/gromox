@@ -269,10 +269,8 @@ uint32_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags,
 		if (NULL != pvalue) {
 			total_mail += *(uint32_t*)pvalue;
 		}
-		if (total_mail > common_util_get_param(
-			COMMON_UTIL_MAX_MESSAGE)) {
+		if (total_mail > g_max_message)
 			return ecQuotaExceeded;
-		}
 	}
 	auto pctx = fastupctx_object::create(plogon, pobject, root_element);
 	if (pctx == nullptr)

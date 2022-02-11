@@ -87,17 +87,15 @@ static char* ftstream_parser_read_wstring(
 	origin_offset = pstream->offset;
 	if (!ftstream_parser_read_uint32(pstream, &len))
 		return NULL;
-	if (len >= common_util_get_param(
-		COMMON_UTIL_MAX_MAIL_LENGTH)) {
+	if (len >= g_max_mail_len)
 		return NULL;	
-	}
 	if (origin_offset + sizeof(uint32_t) + len >
 		pstream->st_size) {
 		*pb_continue = TRUE;
 		return NULL;
 	}
 	tmp_len = 2*len;
-	auto pbuff = me_alloc<char>(len + 2);
+	auto pbuff = gromox::me_alloc<char>(len + 2);
 	if (NULL == pbuff) {
 		return NULL;
 	}
@@ -135,10 +133,8 @@ static char* ftstream_parser_read_string(
 	origin_offset = pstream->offset;
 	if (!ftstream_parser_read_uint32(pstream, &len))
 		return NULL;
-	if (len >= common_util_get_param(
-		COMMON_UTIL_MAX_MAIL_LENGTH)) {
+	if (len >= g_max_mail_len)
 		return nullptr;
-	}
 	if (origin_offset + sizeof(uint32_t) + len >
 		pstream->st_size) {
 		*pb_continue = TRUE;
@@ -272,10 +268,8 @@ static BOOL ftstream_parser_read_binary(
 	origin_offset = pstream->offset;
 	if (!ftstream_parser_read_uint32(pstream, &pbin->cb))
 		return FALSE;
-	if (pbin->cb >= common_util_get_param(
-		COMMON_UTIL_MAX_MAIL_LENGTH)) {
+	if (pbin->cb >= g_max_mail_len)
 		return FALSE;	
-	}
 	if (origin_offset + sizeof(uint32_t) +
 		pbin->cb > pstream->st_size) {
 		*pb_continue = TRUE;

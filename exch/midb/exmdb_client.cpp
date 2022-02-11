@@ -84,23 +84,6 @@ static void (*exmdb_client_event_proc)(const char *dir,
 
 static int cl_rd_sock(int fd, BINARY *b) { return exmdb_client_read_socket(fd, b, SOCKET_TIMEOUT * 1000); }
 
-int exmdb_client_get_param(int param)
-{
-	int total_num;
-	std::lock_guard sv_hold(g_server_lock);
-	
-	switch (param) {
-	case ALIVE_PROXY_CONNECTIONS:
-		total_num = 0;
-		for (const auto &srv : g_server_list)
-			total_num += srv.conn_list.size();
-		return total_num;
-	case LOST_PROXY_CONNECTIONS:
-		return g_lost_list.size();
-	}
-	return -1;
-}
-
 static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 {
 	int process_id;
@@ -122,7 +105,7 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 	}
 	process_id = getpid();
 	sprintf(remote_id, "midb:%d", process_id);
-	if (FALSE == b_listen) {
+	if (!b_listen) {
 		request.call_id = exmdb_callid::CONNECT;
 		request.payload.connect.prefix = deconst(pserver->prefix.c_str());
 		request.payload.connect.remote_id = remote_id;
@@ -135,7 +118,7 @@ static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 		close(sockd);
 		return -1;
 	}
-	if (FALSE == exmdb_client_write_socket(sockd, &tmp_bin)) {
+	if (!exmdb_client_write_socket(sockd, &tmp_bin)) {
 		free(tmp_bin.pb);
 		close(sockd);
 		return -1;
@@ -498,7 +481,7 @@ BOOL exmdb_client_do_rpc(const char *dir,
 		free(tmp_bin.pb);
 		return FALSE;
 	}
-	if (FALSE == exmdb_client_write_socket(pconn->sockd, &tmp_bin)) {
+	if (!exmdb_client_write_socket(pconn->sockd, &tmp_bin)) {
 		free(tmp_bin.pb);
 		return FALSE;
 	}

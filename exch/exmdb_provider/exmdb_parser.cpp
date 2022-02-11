@@ -22,7 +22,6 @@
 #include <gromox/list_file.hpp>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <sys/time.h>
 #include <pthread.h>
 #include <cstdlib>
 #include <cstring>
@@ -50,15 +49,6 @@ ROUTER_CONNECTION::~ROUTER_CONNECTION()
 		close(sockd);
 	for (auto &&bin : datagram_list)
 		free(bin.pb);
-}
-
-int exmdb_parser_get_param(int param)
-{
-	switch (param) {
-	case ALIVE_ROUTER_CONNECTIONS:
-		return g_router_list.size();
-	}
-	return -1;
 }
 
 void exmdb_parser_init(size_t max_threads, size_t max_routers)
@@ -988,7 +978,7 @@ void exmdb_parser_stop()
 	std::unique_lock chold(g_connection_lock);
 	size_t num = g_connection_list.size();
 	if (num > 0) {
-		pthr_ids = me_alloc<pthread_t>(num);
+		pthr_ids = gromox::me_alloc<pthread_t>(num);
 		if (NULL == pthr_ids) {
 			return;
 		}
@@ -1010,7 +1000,7 @@ void exmdb_parser_stop()
 	std::unique_lock rhold(g_router_lock);
 	num = g_router_list.size();
 	if (num > 0) {
-		pthr_ids = me_alloc<pthread_t>(num);
+		pthr_ids = gromox::me_alloc<pthread_t>(num);
 		if (NULL == pthr_ids) {
 			return;
 		}

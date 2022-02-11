@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
@@ -24,7 +25,6 @@
 #include <unistd.h>
 #include <csignal>
 #include <sys/types.h>
-#include <sys/time.h>
 #include <sys/resource.h>
 
 using namespace gromox;
@@ -53,7 +53,6 @@ static constexpr const char *g_dfl_svc_plugins[] = {
 
 static constexpr cfg_directive cfg_default_values[] = {
 	{"block_interval_auths", "1min", CFG_TIME, "1s"},
-	{"cdn_cache_path", "/cdn"},
 	{"config_file_path", PKGSYSCONFDIR "/pop3:" PKGSYSCONFDIR},
 	{"context_average_mem", "512K", CFG_SIZE, "128K"},
 	{"context_average_units", "5000", CFG_SIZE, "256"},
@@ -189,8 +188,8 @@ int main(int argc, const char **argv) try
 	unsigned int context_aver_units = g_config_file->get_ll("context_average_units");
 	printf("[pop3]: context average units number is %d\n", context_aver_units);
 	
-	int pop3_conn_timeout = g_config_file->get_ll("pop3_conn_timeout");
-	itvltoa(pop3_conn_timeout, temp_buff);
+	std::chrono::seconds pop3_conn_timeout(g_config_file->get_ll("pop3_conn_timeout"));
+	itvltoa(pop3_conn_timeout.count(), temp_buff);
 	printf("[pop3]: pop3 socket read write time out is %s\n", temp_buff);
  
 	int pop3_auth_times = g_config_file->get_ll("pop3_auth_times");
@@ -313,7 +312,7 @@ int main(int argc, const char **argv) try
 	pop3_parser_init(context_num, context_max_mem, pop3_conn_timeout,
 		pop3_auth_times, block_interval_auth, pop3_support_stls,
 		pop3_force_stls, certificate_path, cb_passwd,
-		private_key_path, g_config_file->get_value("cdn_cache_path"));
+		private_key_path);
  
 	if (0 != pop3_parser_run()) { 
 		printf("[system]: failed to run pop3 parser\n");

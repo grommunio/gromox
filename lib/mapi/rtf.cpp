@@ -382,7 +382,7 @@ static bool rtf_flush_iconv_cache(RTF_READER *preader)
 		}
 	}
 	size_t tmp_len = 4 * preader->iconv_push.m_offset;
-	auto ptmp_buff = static_cast<char *>(malloc(tmp_len));
+	auto ptmp_buff = me_alloc<char>(tmp_len);
 	if (NULL == ptmp_buff) {
 		return false;
 	}
@@ -515,7 +515,7 @@ static bool rtf_add_to_collection(DOUBLE_LIST *plist, int nr, const char *text)
 			return true;
 		}
 	}
-	auto pcollection = static_cast<COLLECTION_NODE *>(malloc(sizeof(COLLECTION_NODE)));
+	auto pcollection = me_alloc<COLLECTION_NODE>();
 	if (NULL == pcollection) {
 		return false;
 	}
@@ -942,7 +942,7 @@ static bool rtf_attrstack_push_express(RTF_READER *preader, int attr, int param)
 
 static bool rtf_stack_list_new_node(RTF_READER *preader)
 {
-	auto pattrstack = static_cast<ATTRSTACK_NODE *>(malloc(sizeof(ATTRSTACK_NODE)));
+	auto pattrstack = me_alloc<ATTRSTACK_NODE>();
 	if (NULL == pattrstack) {
 		return false;
 	}
@@ -1320,7 +1320,7 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 	while ((input_word = rtf_read_element(preader)) != NULL) {
 		if (input_word[0] == '{') {
 			free(input_word);
-			pgroup = static_cast<GROUP_NODE *>(malloc(sizeof(GROUP_NODE)));
+			pgroup = me_alloc<GROUP_NODE>();
 			if (NULL == pgroup) {
 				debug_info("[rtf]: out of memory");
 				return false;
@@ -1366,7 +1366,7 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 				free(input_word);
 				return true;
 			}
-			pword = static_cast<SIMPLE_TREE_NODE *>(malloc(sizeof(SIMPLE_TREE_NODE)));
+			pword = me_alloc<SIMPLE_TREE_NODE>();
 			if (NULL == pword) {
 				free(input_word);
 				debug_info("[rtf]: out of memory");
@@ -1636,9 +1636,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 		if (-1 == cpid) {
 			cpid = 1252;
 		}
-		if (FALSE == string_to_utf8(
-			rtf_cpid_to_encoding(cpid),
-			tmp_buff, name)) {
+		if (!string_to_utf8(rtf_cpid_to_encoding(cpid), tmp_buff, name)) {
 			debug_info("[rtf]: invalid font name");
 			strcpy(name, DEFAULT_FONT_STR);
 		}
@@ -3134,8 +3132,7 @@ static int rtf_convert_group_node(RTF_READER *preader, SIMPLE_TREE_NODE *pnode)
 				free(tmp_bin.pv);
 				return -EINVAL;
 			}
-			if (FALSE == attachment_list_append_internal(
-				preader->pattachments, pattachment)) {
+			if (!attachment_list_append_internal(preader->pattachments, pattachment)) {
 				free(tmp_bin.pv);
 				return -EINVAL;
 			}
@@ -3226,7 +3223,7 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 	if (0 == strcasecmp(charset, "UTF-8") ||
 		0 == strcasecmp(charset, "ASCII") ||
 		0 == strcasecmp(charset, "US-ASCII")) {
-		*pbuff_out = static_cast<char *>(malloc(reader.ext_push.m_offset));
+		*pbuff_out = me_alloc<char>(reader.ext_push.m_offset);
 		if (*pbuff_out == nullptr) {
 			return false;
 		}
@@ -3244,7 +3241,7 @@ bool rtf_to_html(const char *pbuff_in, size_t length, const char *charset,
 	/* Assumption for 3x is that no codepage maps to points beyond BMP */
 	*plength = 3 * reader.ext_push.m_offset;
 	size_t out_len = *plength;
-	*pbuff_out = static_cast<char *>(malloc(out_len + 1));
+	*pbuff_out = me_alloc<char>(out_len + 1);
 	if (*pbuff_out == nullptr) {
 		iconv_close(conv_id);
 		return false;

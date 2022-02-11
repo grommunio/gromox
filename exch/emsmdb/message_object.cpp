@@ -1245,7 +1245,7 @@ static BOOL message_object_set_properties_internal(message_object *pmessage,
 					continue;
 				}
 				if (static_cast<BINARY *>(ppropvals->ppropval[i].pvalue)->cb >
-				    common_util_get_param(COMMON_UTIL_MAX_EXTRULE_LENGTH)) {
+				    g_max_extrule_len) {
 					pproblems->pproblem[pproblems->count].index = i;
 					pproblems->pproblem[pproblems->count].proptag =
 									ppropvals->ppropval[i].proptag;

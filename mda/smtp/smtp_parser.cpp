@@ -34,10 +34,6 @@
 #define READ_BUFFER_SIZE    4096
 #define MAX_LINE_LENGTH     64*1024
 
-#define CALCULATE_INTERVAL(a, b) \
-	(((a).tv_usec >= (b).tv_usec) ? ((a).tv_sec - (b).tv_sec) : \
-	((a).tv_sec - (b).tv_sec - 1))
-
 /* the ratio must larger than 2 */
 #define TLS_BUFFER_RATIO    3
 #define TLS_BUFFER_BUS_ALLIN(size)                  \
@@ -72,7 +68,7 @@ static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
 static int g_block_ID;
 static SSL_CTX *g_ssl_ctx;
 static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
-static smtp_param g_param;
+smtp_param g_param;
 
 /* 
  * construct a smtp parser object
@@ -193,7 +189,7 @@ int smtp_parser_get_context_socket(SCHEDULE_CONTEXT *ctx)
 	return static_cast<SMTP_CONTEXT *>(ctx)->connection.sockd;
 }
 
-struct timeval smtp_parser_get_context_timestamp(SCHEDULE_CONTEXT *ctx)
+time_point smtp_parser_get_context_timestamp(SCHEDULE_CONTEXT *ctx)
 {
 	return static_cast<SMTP_CONTEXT *>(ctx)->connection.last_timestamp;
 }
@@ -222,7 +218,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 	char *line, reply_buf[1024];
 	int actual_read, ssl_errno;
 	int size = READ_BUFFER_SIZE, len;
-	struct timeval current_time;
+	time_point current_time;
 	const char *host_ID;
 	char *pbuff = nullptr;
 	BOOL b_should_flush = FALSE;
@@ -344,7 +340,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			ssl_errno = SSL_get_error(pcontext->connection.ssl, -1);
 			if (SSL_ERROR_WANT_READ == ssl_errno ||
 				SSL_ERROR_WANT_WRITE == ssl_errno) {
-				gettimeofday(&current_time, NULL);
+				current_time = time_point::clock::now();
 				if (CALCULATE_INTERVAL(current_time,
 				    pcontext->connection.last_timestamp) < g_param.timeout)
 					return PROCESS_POLLING_RDONLY;
@@ -405,7 +401,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 	} else {
 		actual_read = read(pcontext->connection.sockd, pbuff, size);
 	}
-	gettimeofday(&current_time, NULL);
+	current_time = time_point::clock::now();
 	if (0 == actual_read) {
  LOST_READ:
 		if (0 != pcontext->flusher.flush_ID) {
@@ -559,11 +555,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			pcontext->last_cmd = T_END_MAIL;
 			return smtp_parser_try_flush_mail(pcontext, TRUE);
 		default:
-			if (FALSE == b_should_flush) {
-				return PROCESS_CONTINUE;
-			} else {
-				return smtp_parser_try_flush_mail(pcontext, FALSE);
-			}
+			return !b_should_flush ? PROCESS_CONTINUE :
+			       smtp_parser_try_flush_mail(pcontext, false);
 		}
 	}
 
@@ -647,7 +640,7 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 	 unfinished line into the clear stream. under the other conditions, always 
 	 ignore the last 4 bytes.
 	 */
-	if (FALSE == is_whole) {
+	if (!is_whole) {
 		if((PARSING_BLOCK_CONTENT != pcontext->block_info.state &&
 		   PARSING_NEST_MIME != pcontext->block_info.state) ||
 		   SINGLE_PART_MAIL == pcontext->mail.head.mail_part) {
@@ -674,43 +667,6 @@ static BOOL smtp_parser_pass_statistic(SMTP_CONTEXT *pcontext, char *reason,
 	return TRUE;
 }
 
-/*
- *    get smtp_parser's property
- *    @param
- *        param    indicate the parameter type
- *    @return
- *        value of property
- */
-long smtp_parser_get_param(int param)
-{
-	switch (param) {
-	case MAX_MAIL_LENGTH:
-		return g_param.max_mail_length;
-	case SMTP_MAX_MAILS:
-		return g_param.max_mail_sessions;
-	case BLOCK_TIME_EXCEED_SESSIONS:
-		return g_param.blktime_sessions;
-	case SMTP_NEED_AUTH:
-		return g_param.need_auth;
-	case MAX_FLUSHING_SIZE:
-		return g_param.flushing_size;
-	case MAX_AUTH_TIMES:
-		return g_param.auth_times;
-	case BLOCK_TIME_EXCEED_AUTHS:
-		return g_param.blktime_auths;
-	case SMTP_SESSION_TIMEOUT:
-		return g_param.timeout;
-	case SMTP_SUPPORT_PIPELINE:
-		return g_param.support_pipeline;
-	case SMTP_SUPPORT_STARTTLS:
-		return g_param.support_starttls;
-	case SMTP_FORCE_STARTTLS:
-		return g_param.force_starttls;
-	default:
-		return 0;
-	}
-}
-
 /* 
  *    get contexts list for contexts pool
  *    @return
@@ -719,50 +675,6 @@ long smtp_parser_get_param(int param)
 SCHEDULE_CONTEXT **smtp_parser_get_contexts_list()
 {
 	return g_context_list2.data();
-}
-
-/*
- *    set smtp_parser's property
- *    @param
- *        param    indicate the pram type
- *    @return
- *         0        success
- *        <>0        fail
- */
-int smtp_parser_set_param(int param, long value)
-{
-	switch (param) {
-	case MAX_AUTH_TIMES:
-		g_param.auth_times = value;
-		break;
-	case SMTP_SESSION_TIMEOUT:
-		g_param.timeout = value;
-		break;
-	case BLOCK_TIME_EXCEED_SESSIONS:
-		g_param.blktime_sessions = value;
-		break;
-	case MAX_MAIL_LENGTH:
-		g_param.max_mail_length = value;
-		break;
-	case SMTP_NEED_AUTH:
-		g_param.need_auth = value != 0 ? TRUE : false;
-		break;
-	case BLOCK_TIME_EXCEED_AUTHS:
-		g_param.blktime_auths = value;
-		break;
-	case SMTP_MAX_MAILS:
-		g_param.max_mail_sessions = value;
-		break;
-	case SMTP_SUPPORT_PIPELINE:
-		g_param.support_pipeline = value != 0 ? TRUE : false;
-		break;
-	case SMTP_FORCE_STARTTLS:
-		g_param.force_starttls = value != 0 ? TRUE : false;
-		break;
-	default:
-		return -1;
-	}
-	return 0;
 }
 
 /* 
@@ -892,7 +804,7 @@ static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext)
 	if (NULL == pcontext) {
 		return;
 	}
-	memset(&pcontext->connection, 0, sizeof(CONNECTION));
+	pcontext->connection = GENERIC_CONNECTION();
 	pcontext->connection.sockd      = -1;
 	pcontext->session_num           = 0;
 	pcontext->stream_second.reset();

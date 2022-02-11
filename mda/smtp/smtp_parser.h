@@ -1,4 +1,5 @@
 #pragma once
+#include <chrono>
 #include <memory>
 #include <optional>
 #include <string>
@@ -7,12 +8,15 @@
 #include <gromox/flusher_common.h>
 #include <gromox/stream.hpp>
 #include <gromox/mem_file.hpp>
-#include <sys/time.h>
 #include <openssl/ssl.h>
 #define MAX_BLOCK_MIME_LEN                  4096
 #define MAX_EXTRA_DATA_INDEX                8
 #define MAX_EXTRA_DATA_TAGLEN               16
 #define MAX_EXTRA_DATA_DATALEN              48
+
+namespace gromox {
+using time_point = std::chrono::time_point<std::chrono::system_clock>;
+}
 
 /* enum for state of context */
 enum{
@@ -59,21 +63,6 @@ enum{
     PARSING_END
 };
 
-/* enumeration of smtp_parser */
-enum{
-    MAX_MAIL_LENGTH,
-    SMTP_NEED_AUTH,
-    BLOCK_TIME_EXCEED_AUTHS,
-    BLOCK_TIME_EXCEED_SESSIONS,
-    MAX_FLUSHING_SIZE,
-    MAX_AUTH_TIMES,
-    SMTP_MAX_MAILS,
-    SMTP_SUPPORT_PIPELINE,
-	SMTP_SUPPORT_STARTTLS,
-	SMTP_FORCE_STARTTLS,
-    SMTP_SESSION_TIMEOUT
-};
-
 enum {
     ENCODING_UNKNOWN    = 0,
     ENCODING_7BIT,
@@ -113,10 +102,6 @@ struct MAIL_INFO {
     MAIL_BODY       body;
 };
 
-struct CONNECTION : public CONNECTION_BASE {
-	SSL            *ssl;
-};
-
 struct PARSING_BLOCK {
     int             state;
     char            block_mime[MAX_BLOCK_MIME_LEN];
@@ -141,7 +126,7 @@ struct SMTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	~SMTP_CONTEXT();
 	NOMOVE(SMTP_CONTEXT);
 
-	CONNECTION connection{};
+	GENERIC_CONNECTION connection;
 	STREAM stream; /* stream accepted from smtp client */
 	std::optional<STREAM> stream_second; /* stream for recording splitted data */
 	unsigned int command_protocol = 0;
@@ -164,7 +149,8 @@ struct smtp_param {
 	size_t max_mail_length = 64ULL * 1024 * 1024;
 	int max_mail_sessions = 0; /* max num of mails in any one session */
 	size_t flushing_size = 0;
-	int timeout = 0x7FFFFFFF, auth_times = 0, blktime_auths = 60, blktime_sessions = 60;
+	gromox::time_duration timeout{std::chrono::seconds{0x7fffffff}};
+	int auth_times = 0, blktime_auths = 60, blktime_sessions = 60;
 	unsigned int cmd_prot = HT_LMTP | HT_SMTP;
 	std::string cert_path, cert_passwd, key_path;
 };
@@ -173,10 +159,8 @@ extern void smtp_parser_init(smtp_param &&);
 extern int smtp_parser_run();
 int smtp_parser_process(SMTP_CONTEXT *pcontext);
 extern void smtp_parser_stop();
-long smtp_parser_get_param(int param);
-int smtp_parser_set_param(int param, long value);
 extern int smtp_parser_get_context_socket(SCHEDULE_CONTEXT *);
-extern struct timeval smtp_parser_get_context_timestamp(SCHEDULE_CONTEXT *);
+extern gromox::time_point smtp_parser_get_context_timestamp(schedule_context *);
 int smtp_parser_get_extra_num(SMTP_CONTEXT *pcontext);
 const char* smtp_parser_get_extra_tag(SMTP_CONTEXT *pcontext, int pos);
 const char* smtp_parser_get_extra_value(SMTP_CONTEXT *pcontext, int pos);
@@ -186,3 +170,4 @@ extern void smtp_parser_reset_context_envelope(SMTP_CONTEXT *);
 extern void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, const char *format, ...);
 
 extern std::unique_ptr<LIB_BUFFER> g_files_allocator;
+extern smtp_param g_param;

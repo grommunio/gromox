@@ -60,7 +60,7 @@ int main(int argc, const char **argv)
 	}
 	offset = 0;
 	buff_len = 64*1024;
-	auto pbuff = static_cast<char *>(malloc(buff_len));
+	auto pbuff = gromox::me_alloc<char>(buff_len);
 	if (NULL == pbuff) {
 		fprintf(stderr, "out of memory\n");
 		return 1;
@@ -83,7 +83,7 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "Input does not appear to be RTFCP\n");
 		return EXIT_FAILURE;
 	}
-	pbuff = static_cast<char *>(malloc(unc_size));
+	pbuff = gromox::me_alloc<char>(unc_size);
 	if (NULL == pbuff) {
 		fprintf(stderr, "out of memory\n");
 		return 1;

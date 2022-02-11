@@ -75,10 +75,10 @@ struct LANGMAP_ITEM {
 
 }
 
-static int g_max_rcpt;
+unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
+unsigned int g_max_rule_len, g_max_extrule_len;
 static int g_mime_num;
 static uint16_t g_smtp_port;
-static int g_max_message;
 static char g_smtp_ip[40];
 static char g_org_name[256];
 static char g_hostname[UDOM_SIZE];
@@ -89,8 +89,6 @@ static char g_default_zone[64];
 static char g_freebusy_path[256];
 static char g_default_charset[32];
 static char g_submit_command[1024];
-static unsigned int g_max_mail_len;
-static unsigned int g_max_rule_len;
 
 BOOL common_util_verify_columns_and_sorts(
 	const PROPTAG_ARRAY *pcolumns,
@@ -219,8 +217,7 @@ void common_util_set_propvals(TPROPVAL_ARRAY *parray,
 			return;
 		}
 	}
-	parray->ppropval[parray->count] = *ppropval;
-	parray->count ++;
+	parray->ppropval[parray->count++] = *ppropval;
 }
 
 void common_util_remove_propvals(
@@ -400,7 +397,7 @@ BOOL common_util_exmdb_locinfo_from_string(
 
 void common_util_init(const char *org_name, const char *hostname,
 	const char *default_charset, const char *default_zone, int mime_num,
-	int max_rcpt, int max_message, unsigned int max_mail_len,
+    unsigned int max_rcpt, unsigned int max_message, unsigned int max_mail_len,
     unsigned int max_rule_len, const char *smtp_ip, uint16_t smtp_port,
 	const char *freebusy_path, const char *submit_command)
 {
@@ -412,7 +409,7 @@ void common_util_init(const char *org_name, const char *hostname,
 	g_max_rcpt = max_rcpt;
 	g_max_message = max_message;
 	g_max_mail_len = max_mail_len;
-	g_max_rule_len = max_rule_len;
+	g_max_rule_len = g_max_extrule_len = max_rule_len;
 	gx_strlcpy(g_smtp_ip, smtp_ip, GX_ARRAY_SIZE(g_smtp_ip));
 	g_smtp_port = smtp_port;
 	gx_strlcpy(g_freebusy_path, freebusy_path, GX_ARRAY_SIZE(g_freebusy_path));
@@ -436,21 +433,6 @@ int common_util_run(const char *data_path)
 		system_services_extension_to_mime)) {
 		printf("[common_util]: Failed to init oxcmail library\n");
 		return -2;
-	}
-	return 0;
-}
-
-unsigned int common_util_get_param(int param)
-{
-	switch (param) {
-	case COMMON_UTIL_MAX_RCPT:
-		return g_max_rcpt;
-	case COMMON_UTIL_MAX_MESSAGE:
-		return g_max_message;
-	case COMMON_UTIL_MAX_MAIL_LENGTH:
-		return g_max_mail_len;
-	case COMMON_UTIL_MAX_EXTRULE_LENGTH:
-		return g_max_rule_len;
 	}
 	return 0;
 }
@@ -1617,9 +1599,8 @@ BOOL common_util_send_message(store_object *pstore,
 		memcpy(ppropval, pmsgctnt->proplist.ppropval,
 			sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 		ppropval[pmsgctnt->proplist.count].proptag = PR_INTERNET_CPID;
-		ppropval[pmsgctnt->proplist.count].pvalue = &cpid;
+		ppropval[pmsgctnt->proplist.count++].pvalue = &cpid;
 		pmsgctnt->proplist.ppropval = ppropval;
-		pmsgctnt->proplist.count ++;
 	}
 	pvalue = pmsgctnt->proplist.getval(PR_MESSAGE_FLAGS);
 	if (NULL == pvalue) {
@@ -2162,8 +2143,7 @@ static EID_ARRAY *common_util_load_folder_messages(store_object *pstore,
 		if (NULL == pmid) {
 			return NULL;
 		}
-		pmessage_ids->pids[pmessage_ids->count] = *pmid;
-		pmessage_ids->count ++;
+		pmessage_ids->pids[pmessage_ids->count++] = *pmid;
 	}
 	return pmessage_ids;
 }
@@ -2272,9 +2252,8 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 		memcpy(ppropval, pmsgctnt->proplist.ppropval,
 			sizeof(TAGGED_PROPVAL)*pmsgctnt->proplist.count);
 		ppropval[pmsgctnt->proplist.count].proptag = PR_INTERNET_CPID;
-		ppropval[pmsgctnt->proplist.count].pvalue = &cpid;
+		ppropval[pmsgctnt->proplist.count++].pvalue = &cpid;
 		pmsgctnt->proplist.ppropval = ppropval;
-		pmsgctnt->proplist.count ++;
 	}
 	pvalue = pmsgctnt->proplist.getval(PROP_TAG_INTERNETMAILOVERRIDEFORMAT);
 	if (NULL == pvalue) {

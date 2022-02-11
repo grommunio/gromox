@@ -26,29 +26,6 @@ void bounce_audit_init(int audit_num, int audit_interval)
     g_audit_interval        = audit_interval;
 }
 
-int bounce_audit_set_param(int type, int value)
-{
-    switch (type) {
-    case BOUNCE_AUDIT_INTERVAL:
-        g_audit_interval = value;
-        break;
-    default:
-        return -1;
-    }
-    return 0;
-}
-
-int bounce_audit_get_param(int type)
-{
-    switch (type) {
-	case BOUNCE_AUDIT_CAPABILITY:
-		return g_audit_num;
-    case BOUNCE_AUDIT_INTERVAL:
-        return g_audit_interval;
-    }
-    return -1;
-}
-
 static size_t bounce_audit_collect_entry(time_t current_time)
 {
 #if __cplusplus >= 202001L

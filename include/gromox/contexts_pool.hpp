@@ -1,14 +1,13 @@
 #pragma once
+#include <chrono>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
-#include <sys/time.h>
-
-
 #define MAX_TURN_COUNTS     0x7FFFFFFF
 
-#define CALCULATE_INTERVAL(a, b) \
-    (((a).tv_usec >= (b).tv_usec) ? ((a).tv_sec - (b).tv_sec) : \
-    ((a).tv_sec - (b).tv_sec - 1))
+namespace gromox {
+using time_duration = std::chrono::steady_clock::duration;
+using time_point = std::chrono::time_point<std::chrono::system_clock>;
+}
 
 enum{
 	CONTEXT_BEGIN = 0,
@@ -33,19 +32,22 @@ enum{
 	CUR_SCHEDUING_CONTEXTS
 };
 
-
 #define POLLING_READ						0x1
 #define POLLING_WRITE						0x2
 
-struct SCHEDULE_CONTEXT {
+struct schedule_context {
 	DOUBLE_LIST_NODE node{};
 	int type = CONTEXT_FREE;
 	BOOL b_waiting = false; /* is still in epoll queue */
 	int polling_mask = 0;
 	unsigned int context_id = 0;
 };
+using SCHEDULE_CONTEXT = schedule_context;
 
-extern GX_EXPORT void contexts_pool_init(SCHEDULE_CONTEXT **, unsigned int context_num, int (*get_socket)(SCHEDULE_CONTEXT *), struct timeval (*get_timestamp)(SCHEDULE_CONTEXT *), unsigned int contexts_per_thr, int timeout);
+template<typename T> static inline auto
+CALCULATE_INTERVAL(T a, T b) -> decltype(a-b) { return a - b; }
+
+extern GX_EXPORT void contexts_pool_init(schedule_context **, unsigned int context_num, int (*get_socket)(schedule_context *), gromox::time_point (*get_ts)(schedule_context *), unsigned int contexts_per_thr, gromox::time_duration timeout);
 extern int contexts_pool_run();
 extern void contexts_pool_stop();
 SCHEDULE_CONTEXT* contexts_pool_get_context(int type);

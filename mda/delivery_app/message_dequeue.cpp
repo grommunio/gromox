@@ -152,9 +152,8 @@ int message_dequeue_run()
 	MESSAGE *pmessage;
 	pthread_attr_t attr;
 
-	if (FALSE == message_dequeue_check()) {
+	if (!message_dequeue_check())
 		return -1;
-	}
 	std::string name;
 	try {
 		name = g_path + "/token.ipc"s;

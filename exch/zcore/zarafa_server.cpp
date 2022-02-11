@@ -703,18 +703,6 @@ void zarafa_server_stop()
 	g_notify_table.clear();
 }
 
-int zarafa_server_get_param(int param)
-{
-	switch (param) {
-	case USER_TABLE_SIZE:
-		return g_table_size;
-	case USER_TABLE_USED:
-		return g_user_table.size();
-	default:
-		return -1;
-	}
-}
-
 uint32_t zarafa_server_logon(const char *username,
 	const char *password, uint32_t flags, GUID *phsession)
 {
@@ -1653,10 +1641,8 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	pvalue = tmp_propvals.getval(PROP_TAG_CONTENTCOUNT);
 	if (pvalue != nullptr)
 		total_mail += *(uint32_t*)pvalue;
-	if (total_mail > common_util_get_param(
-		COMMON_UTIL_MAX_MESSAGE)) {
+	if (total_mail > g_max_message)
 		return ecQuotaExceeded;
-	}
 	if (!exmdb_client::allocate_message_id(pstore->get_dir(),
 	    folder_id, &message_id))
 		return ecError;
@@ -2360,7 +2346,7 @@ uint32_t zarafa_server_copyfolder(GUID hsession,
 	    pdst_folder->folder_id, &b_cycle))
 		return ecError;
 	if (b_cycle)
-		return MAPI_E_FOLDER_CYCLE;
+		return ecRootFolder;
 	if (!exmdb_client::movecopy_folder(pstore->get_dir(),
 	    pstore->account_id, pinfo->cpid, b_guest, pinfo->get_username(),
 	    psrc_parent->folder_id, folder_id, pdst_folder->folder_id,
@@ -2763,9 +2749,8 @@ uint32_t zarafa_server_queryrows(
 		memcpy(ppropvals, prowset->pparray[i]->ppropval,
 			sizeof(TAGGED_PROPVAL)*prowset->pparray[i]->count);
 		ppropvals[prowset->pparray[i]->count].proptag = PR_OBJECT_TYPE;
-		ppropvals[prowset->pparray[i]->count].pvalue = pobject_type;
+		ppropvals[prowset->pparray[i]->count++].pvalue = pobject_type;
 		prowset->pparray[i]->ppropval = ppropvals;
-		prowset->pparray[i]->count ++;
 	}
 	return ecSuccess;
 }
@@ -3225,9 +3210,8 @@ uint32_t zarafa_server_modifyrecipients(GUID hsession,
 			ppropval[prcpt->count].pvalue = cu_alloc<uint32_t>();
 			if (ppropval[prcpt->count].pvalue == nullptr)
 				return ecError;
-			*(uint32_t*)ppropval[prcpt->count].pvalue = last_rowid;
+			*static_cast<uint32_t *>(ppropval[prcpt->count++].pvalue) = last_rowid;
 			prcpt->ppropval = ppropval;
-			prcpt->count ++;
 			auto pbin = prcpt->get<BINARY>(PR_ENTRYID);
 			if (pbin == nullptr ||
 			    (prcpt->has(PR_EMAIL_ADDRESS) &&
@@ -3415,9 +3399,9 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 		return ecAccessDenied;
 	if (!pmessage->get_recipient_num(&rcpt_num))
 		return ecError;
-	if (rcpt_num > common_util_get_param(COMMON_UTIL_MAX_RCPT)) {
+	if (rcpt_num > g_max_rcpt)
 		return ecTooManyRecips;
-	}
+
 	tmp_proptags.count = 1;
 	tmp_proptags.pproptag = proptag_buff;
 	proptag_buff[0] = PR_ASSOCIATED;
@@ -4004,7 +3988,7 @@ uint32_t zarafa_server_copyto(GUID hsession, uint32_t hsrcobject,
 			    folder->folder_id, fdst->folder_id, &b_cycle))
 				return ecError;
 			if (b_cycle)
-				return MAPI_E_FOLDER_CYCLE;
+				return ecRootFolder;
 			b_sub = TRUE;
 		} else {
 			b_sub = FALSE;

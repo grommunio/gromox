@@ -385,7 +385,7 @@ static void *emsrop_scanwork(void *param)
 		for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
 			str_hash_iter_get_value(iter, tmp_dir);
-			pnode = me_alloc<DOUBLE_LIST_NODE>();
+			pnode = gromox::me_alloc<DOUBLE_LIST_NODE>();
 			if (NULL == pnode) {
 				continue;
 			}

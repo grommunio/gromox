@@ -1,7 +1,8 @@
 #pragma once
-#include <sys/time.h>
+#include <cstdint>
 #include <gromox/defs.h>
 #include <gromox/common_types.hpp>
+#include <gromox/generic_connection.hpp>
 #include <gromox/mem_file.hpp>
 
 enum {
@@ -32,15 +33,6 @@ struct ENVELOPE_INFO_BASE {
 	BOOL        is_login;          /* user is logged in */
 };
 
-struct CONNECTION_BASE {
-	char client_ip[40]; /* client ip address string */
-    int            client_port;        /* value of client port */
-	char server_ip[40]; /* server ip address */
-    int            server_port;        /* value of server port */
-    int            sockd;              /* context's socket file description */
-    struct timeval last_timestamp;     /* last time when system got data from */
-};
-
 struct FLUSH_INFO {
     int           flush_action; /* indicate flushing whole or part of mail */
     int           flush_result;
@@ -51,7 +43,7 @@ struct FLUSH_INFO {
 struct SMTP_CONTEXT;
 struct FLUSH_ENTITY final {
 	STREAM *pstream = nullptr;
-	CONNECTION_BASE *pconnection = nullptr;
+	GENERIC_CONNECTION *pconnection = nullptr;
 	FLUSH_INFO *pflusher = nullptr; /* the flusher for saving mail information */
 	ENVELOPE_INFO_BASE *penvelope = nullptr;
 	BOOL is_spam = false; /* whether the mail is spam */

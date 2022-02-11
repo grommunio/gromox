@@ -515,8 +515,7 @@ static zend_bool notif_sink_add_subscription(NOTIF_SINK *psink,
 		}
 	}
 	padvise[psink->count].hstore = hstore;
-	padvise[psink->count].sub_id = sub_id;
-	psink->count ++;
+	padvise[psink->count++].sub_id = sub_id;
 	psink->padvise = padvise;
 	return 1;
 }

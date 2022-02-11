@@ -329,7 +329,7 @@ static void *mdl_thrwork(void *arg)
 				fprintf(stderr, "W-1554: garbage in %s; review and delete\n", temp_path.c_str());
 				continue;
 			}
-			auto pbuff = static_cast<char *>(malloc(((size - 1) / (64 * 1024) + 1) * 64 * 1024));
+			auto pbuff = me_alloc<char>(((size - 1) / (64 * 1024) + 1) * 64 * 1024);
 			if (NULL == pbuff) {
 				printf("[exmdb_local]: Failed to allocate memory for %s "
 					"in timer queue thread\n", temp_path.c_str());
@@ -448,7 +448,7 @@ static void *mdl_thrwork(void *arg)
 				net_failure_statistic(0, 1, 0, 0);
 				break;
 			}
-			if (FALSE == need_remove) {
+			if (!need_remove) {
 				/* rewrite type and until time */
 				lseek(fd.get(), 0, SEEK_SET);
 				times = cpu_to_le32(times + 1);
@@ -467,21 +467,19 @@ static void *mdl_thrwork(void *arg)
 				if (NULL == pbounce_context) {
 					exmdb_local_log_info(pcontext, ptr, LV_ERR, "fail to get one "
 						"context for bounce mail");
+				} else if (!bounce_audit_check(temp_rcpt)) {
+					exmdb_local_log_info(pcontext, ptr, LV_ERR, "will not "
+						"produce bounce message, because of too many "
+						"mails to %s", temp_rcpt);
+					put_context(pbounce_context);
 				} else {
-					if (FALSE == bounce_audit_check(temp_rcpt)) {
-						exmdb_local_log_info(pcontext, ptr, LV_ERR, "will not "
-							"produce bounce message, because of too many "
-							"mails to %s", temp_rcpt);
-						put_context(pbounce_context);
-					} else {
-						bounce_producer_make(temp_from, temp_rcpt,
-							pcontext->pmail, original_time, bounce_type,
-							pbounce_context->pmail);
-						sprintf(pbounce_context->pcontrol->from,
-							"postmaster@%s", get_default_domain());
-						pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
-						enqueue_context(pbounce_context);
-					}
+					bounce_producer_make(temp_from, temp_rcpt,
+						pcontext->pmail, original_time, bounce_type,
+						pbounce_context->pmail);
+					sprintf(pbounce_context->pcontrol->from,
+					        "postmaster@%s", get_default_domain());
+					pbounce_context->pcontrol->f_rcpt_to.writeline(pcontext->pcontrol->from);
+					enqueue_context(pbounce_context);
 				}
 			}
 			free(pbuff);
@@ -495,23 +493,4 @@ static void *mdl_thrwork(void *arg)
 		i = 0;
 	}
 	return NULL;
-}
-
-int cache_queue_get_param(int param)
-{
-	if (CACHE_QUEUE_SCAN_INTERVAL == param) {
-		return g_scan_interval;
-	} else if (CACHE_QUEUE_RETRYING_TIMES == param) {
-		return g_retrying_times;
-	}
-	return 0;
-}
-
-void cache_queue_set_param(int param, int val)
-{
-	if (CACHE_QUEUE_SCAN_INTERVAL == param) {
-		g_scan_interval = val;
-	} else if (CACHE_QUEUE_RETRYING_TIMES == param) {
-		g_retrying_times = val;
-	}
 }
