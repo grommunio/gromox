@@ -1,4 +1,7 @@
 #pragma once
+#if defined(COMPILE_DIAG) || defined(DEBUG_UMTA)
+#	include <cassert>
+#endif
 #include <cstdint>
 #include <cstring>
 #include <memory>
@@ -744,7 +747,12 @@ using REPLIST_ENUM = void (*)(void *, uint16_t);
 using REPLICA_ENUM = void (*)(void *, uint64_t);
 
 struct range_node {
+#if defined(COMPILE_DIAG) || defined(DEBUG_UMTA)
+	range_node(uint64_t a, uint64_t b) noexcept : low_value(a), high_value(b) { assert(low_value <= high_value); }
+	~range_node() { assert(low_value <= high_value); }
+#else
 	range_node(uint64_t a, uint64_t b) noexcept : low_value(a), high_value(b) {}
+#endif
 	constexpr inline bool contains(uint64_t i) const
 		{ return low_value <= i && i <= high_value; }
 	uint64_t low_value, high_value;
@@ -788,6 +796,7 @@ class idset {
 	BOOL enum_replist(void *param, REPLIST_ENUM);
 	BOOL enum_repl(uint16_t replid, void *param, REPLICA_ENUM);
 	inline const std::vector<repl_node> &get_repl_list() const { return repl_list; }
+	void dump() const;
 
 	private:
 	BOOL append_internal(uint16_t, uint64_t);

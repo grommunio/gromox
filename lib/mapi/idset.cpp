@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
 #include <cassert>
+#include <cstdio>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -719,4 +720,21 @@ BOOL idset::enum_repl(uint16_t replid, void *p, REPLICA_ENUM repl_enum)
 		}
 	}
 	return TRUE;
+}
+
+void idset::dump() const
+{
+	fprintf(stderr, "idset@%p={\n", this);
+	for (const auto &repl_node : repl_list) {
+		for (const auto &range : repl_node.range_list) {
+			if (repl_type == REPL_TYPE_GUID)
+				fprintf(stderr, "\t%s ", gromox::bin2hex(repl_node.replguid).c_str());
+			else
+				fprintf(stderr, "\t#%u ", repl_node.replid);
+			using LLU = unsigned long long;
+			fprintf(stderr, "%llxh--%llxh\n", LLU(range.low_value),
+			        LLU(range.high_value));
+		}
+	}
+	fprintf(stderr, "}\n");
 }
