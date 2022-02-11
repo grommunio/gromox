@@ -72,10 +72,9 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 	if (NULL == prange_list) {
 		return TRUE;
 	}
-	auto pstmt = gx_sql_prep(pcache->psqlite, "INSERT INTO id_vals VALUES (?)");
-	if (pstmt == nullptr) {
+	auto stmt = gx_sql_prep(pcache->psqlite, "INSERT INTO id_vals VALUES (?)");
+	if (stmt == nullptr)
 		return FALSE;
-	}
 	for (const auto &range_node : *prange_list) {
 		if (range_node.high_value - range_node.low_value >= IDSET_CACHE_MIN_RANGE) try {
 			pcache->range_list.push_back(range_node);
@@ -86,11 +85,10 @@ BOOL IDSET_CACHE::init(const IDSET *pset)
 		}
 		for (auto ival = range_node.low_value;
 		     ival <= range_node.high_value; ++ival) {
-			sqlite3_reset(pstmt);
-			sqlite3_bind_int64(pstmt, 1, ival);
-			if (SQLITE_DONE != sqlite3_step(pstmt)) {
+			sqlite3_reset(stmt);
+			sqlite3_bind_int64(stmt, 1, ival);
+			if (sqlite3_step(stmt) != SQLITE_DONE)
 				return FALSE;
-			}
 		}
 	}
 	return TRUE;
@@ -772,14 +770,14 @@ BOOL exmdb_server_get_hierarchy_sync(const char *dir,
 		if (stm_select_ex == nullptr)
 			return FALSE;
 		while (sqlite3_step(stm_select_ex) == SQLITE_ROW) {
-			uint64_t fid_val = sqlite3_column_int64(stm_select_ex, 0);
-			if (0 == (fid_val & 0xFF00000000000000ULL)) {
+			uint64_t fv = sqlite3_column_int64(stm_select_ex, 0);
+			if ((fv & 0xFF00000000000000ULL) == 0) {
 				pgiven_fids->pids[pgiven_fids->count++] =
-						rop_util_make_eid_ex(1, fid_val);
+						rop_util_make_eid_ex(1, fv);
 			} else {
 				pgiven_fids->pids[pgiven_fids->count++] =
-					rop_util_make_eid_ex(fid_val >> 48,
-					fid_val & 0x00FFFFFFFFFFFFFFULL);
+					rop_util_make_eid_ex(fv >> 48,
+					fv & 0x00FFFFFFFFFFFFFFULL);
 			}
 		}
 	}

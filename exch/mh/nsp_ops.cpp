@@ -5,13 +5,13 @@
 #include "nsp_ops.hpp"
 #define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
 #define SCOPED_ABKFLAG(cls) \
-	auto saved_flags = (cls).m_flags; \
+	auto saved_flags_X1 = (cls).m_flags; \
 	(cls).m_flags |= EXT_FLAG_ABK; \
-	auto cl_flag = gromox::make_scope_exit([&]() { (cls).m_flags = saved_flags; });
+	auto cl_flag_X1 = gromox::make_scope_exit([&]() { (cls).m_flags = saved_flags_X1; });
 #define SCOPED_ABK_DISABLE(cls) \
-	auto saved_flags = (cls).m_flags; \
+	auto saved_flags_X2 = (cls).m_flags; \
 	(cls).m_flags &= ~EXT_FLAG_ABK; \
-	auto cl_flag = gromox::make_scope_exit([&]() { (cls).m_flags = saved_flags; });
+	auto cl_flag_X2 = gromox::make_scope_exit([&]() { (cls).m_flags = saved_flags_X2; });
 
 static int nsp_ext_g_stat(nsp_ext_pull &ext, STAT &s)
 {

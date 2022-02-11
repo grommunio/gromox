@@ -695,14 +695,14 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 		if (NULL == proot) {
 			continue;
 		}
-		simple_tree_enum_from_node(proot, [&](SIMPLE_TREE_NODE *pnode) {
-			auto node_type = ab_tree_get_node_type(pnode);
-			if (node_type > 0x80 || pnode->pdata != nullptr)
+		simple_tree_enum_from_node(proot, [&](SIMPLE_TREE_NODE *nd) {
+			auto node_type = ab_tree_get_node_type(nd);
+			if (node_type > 0x80 || nd->pdata != nullptr)
 				return;
 			auto psnode = ab_tree_get_snode();
 			if (psnode == nullptr)
 				return;
-			psnode->pdata = pnode;
+			psnode->pdata = nd;
 			single_list_append_as_tail(&pbase->gal_list, psnode);
 		});
 	}

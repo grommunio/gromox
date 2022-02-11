@@ -529,7 +529,6 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 				prop_buff->rhe_flags &= ~RHE_FLAG_COMPRESSED;
 			break;
 		case ecBufferTooSmall: {
-			auto rsp = static_cast<ROP_RESPONSE *>(pnode1->pdata);
 			rsp->rop_id = ropBufferTooSmall;
 			rsp->ppayload = cu_alloc<BUFFERTOOSMALL_RESPONSE>();
 			if (rsp->ppayload == nullptr)

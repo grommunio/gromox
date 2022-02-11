@@ -1207,15 +1207,15 @@ static BOOL common_util_recipient_to_propvals(uint32_t cpid,
 	tmp_columns.pproptag = pcolumns->pproptag;
 	if (!common_util_row_to_propvals(&prow->properties, &tmp_columns, ppropvals))
 		return FALSE;	
-	auto pvalue = ppropvals->get<char>(PR_DISPLAY_NAME);
-	if (pvalue == nullptr || *pvalue == '\0' || strcmp(pvalue, "''") == 0 ||
-	    strcmp(pvalue, "\"\"") == 0) {
-		auto pvalue = ppropvals->get<const char>(PROP_TAG_RECIPIENTDISPLAYNAME);
-		if (pvalue == nullptr)
-			pvalue = ppropvals->get<char>(PR_SMTP_ADDRESS);
-		if (pvalue == nullptr)
-			pvalue = "Undisclosed-Recipients";
-		cu_set_propval(ppropvals, PR_DISPLAY_NAME, pvalue);
+	auto str = ppropvals->get<const char>(PR_DISPLAY_NAME);
+	if (str == nullptr || *str == '\0' || strcmp(str, "''") == 0 ||
+	    strcmp(str, "\"\"") == 0) {
+		str = ppropvals->get<char>(PROP_TAG_RECIPIENTDISPLAYNAME);
+		if (str == nullptr)
+			str = ppropvals->get<char>(PR_SMTP_ADDRESS);
+		if (str == nullptr)
+			str = "Undisclosed-Recipients";
+		cu_set_propval(ppropvals, PR_DISPLAY_NAME, str);
 	}
 	return TRUE;
 }

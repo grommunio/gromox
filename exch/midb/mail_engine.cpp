@@ -251,7 +251,6 @@ static char* mail_engine_ct_to_utf8(const char *charset, const char *string)
 static uint64_t mail_engine_get_digest(sqlite3 *psqlite,
 	const char *mid_string, char *digest_buff)
 {
-	MAIL imail;
 	size_t size;
 	int tmp_len;
 	char *ptoken;

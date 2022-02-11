@@ -643,7 +643,6 @@ static void *mdpeng_thrwork(void *param)
 		} catch (const std::bad_alloc &) {
 			fprintf(stderr, "E-1649: ENOMEM\n");
 		}
-		DOUBLE_LIST_NODE *pnode;
 		for (pnode = double_list_get_head(
 		     &pdb->tables.table_list); NULL != pnode;
 		     pnode = double_list_get_after(
@@ -1517,7 +1516,7 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					return;
 				}
 			}
-			char sql_string[62];
+			char sql_string[148];
 			snprintf(sql_string, arsizeof(sql_string), "SELECT row_id, inst_id,"
 				" idx FROM t%u ORDER BY idx ASC", ptable->table_id);
 			auto pstmt = gx_sql_prep(pdb->tables.psqlite, sql_string);
@@ -1551,7 +1550,6 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 			}
 			pstmt.finalize();
 			if (0 == idx) {
-				char sql_string[120];
 				snprintf(sql_string, arsizeof(sql_string), "INSERT INTO t%u (inst_id, prev_id,"
 					" row_type, depth, inst_num, idx) VALUES (%llu, 0, "
 					"%u, 0, 0, 1)", ptable->table_id, LLU(message_id),
@@ -1560,7 +1558,6 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 					continue;
 				padded_row->after_row_id = 0;
 			} else if (!b_break) {
-				char sql_string[148];
 				snprintf(sql_string, arsizeof(sql_string), "INSERT INTO t%u (inst_id, prev_id, "
 					"row_type, depth, inst_num, idx) VALUES (%llu, %llu,"
 					" %u, 0, 0, %u)", ptable->table_id, LLU(message_id),
@@ -1570,7 +1567,6 @@ static void db_engine_notify_content_table_add_row(db_item_ptr &pdb,
 				padded_row->after_row_id = inst_id1;
 			} else {
 				auto sql_transact = gx_sql_begin_trans(pdb->tables.psqlite);
-				char sql_string[120];
 				snprintf(sql_string, arsizeof(sql_string), "UPDATE t%u SET idx=-(idx+1)"
 					" WHERE idx>=%u;UPDATE t%u SET idx=-idx WHERE"
 					" idx<0", ptable->table_id, idx, ptable->table_id);

@@ -178,7 +178,6 @@ static BOOL container_object_match_contact_message(
 
 static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 {
-	int i;
 	uint8_t mapi_type;
 	PROPID_ARRAY propids;
 	PROPERTY_NAME propname_buff[9];
@@ -207,9 +206,8 @@ static BOOL container_object_get_pidlids(PROPTAG_ARRAY *pproptags)
 	if (!pstore->get_named_propids(false, &propnames, &propids) ||
 	    propids.count != 9)
 		return FALSE;
-	for (i=0; i<9; i++) {
+	for (size_t i = 0; i < 9; ++i)
 		pproptags->pproptag[i] = PROP_TAG(PT_UNICODE, propids.ppropid[i]);
-	}
 	pproptags->count = 9;
 	return TRUE;
 }
