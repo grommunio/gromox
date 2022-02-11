@@ -348,6 +348,14 @@ static constexpr char tbl_taskqueue_102[] =
 "  KEY `updated` (`updated`)"
 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
 
+static constexpr char tbl_servers_103[] =
+"CREATE TABLE `servers` ("
+"  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+"  `hostname` varchar(255) CHARACTER SET ascii NOT NULL,"
+"  `extname` varchar(255) CHARACTER SET ascii NOT NULL,"
+"  PRIMARY KEY (`id`)"
+") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
 static constexpr struct tbl_init tbl_init_0[] = {
 	{"aliases", tbl_alias_0},
 	{"associations", tbl_assoc_0},
@@ -518,6 +526,11 @@ static constexpr char tbl_users_top[] =
 "  `password` varchar(136) CHARACTER SET ascii NOT NULL DEFAULT '',"
 "  `domain_id` int(10) unsigned NOT NULL,"
 "  `group_id` int(10) unsigned NOT NULL,"
+   /*
+    * exthost/inthost are unconstrained on purposes; don't want to lose the
+    * association on so many users when the server entry disappears by accident
+    */
+"  `homeserver` tinyint(5) unsigned NOT NULL DEFAULT 0,"
 "  `maildir` varchar(128) NOT NULL DEFAULT '',"
 "  `max_size` int(10) unsigned NOT NULL,"
 "  `lang` varchar(32) NOT NULL DEFAULT '',"
@@ -571,6 +584,7 @@ static constexpr struct tbl_init tbl_init_top[] = {
 	{"user_devices", tbl_userdev_92},
 	{"user_device_history", tbl_userdevhist_93},
 	{"task_queue", tbl_taskqueue_102},
+	{"servers", tbl_servers_103},
 	{nullptr},
 };
 
@@ -722,6 +736,8 @@ static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 	{100, "UPDATE `users` SET lang=\"sl\" where lang=\"si\""},
 	{101, "UPDATE `users` SET lang=\"zh_CN\" where lang=\"zh\""},
 	{102, tbl_taskqueue_102},
+	{103, tbl_servers_103},
+	{104, "ALTER TABLE `users` ADD COLUMN `homeserver` tinyint(5) unsigned NOT NULL DEFAULT 0 AFTER `group_id`"},
 	{0, nullptr},
 };
 
