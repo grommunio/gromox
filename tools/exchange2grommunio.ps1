@@ -117,24 +117,30 @@ $MailboxLanguage = "de_DE"
 
 # Check lock of file by Windows
 #
-function check-Lock
+function isLocked
 {
 	Param(
-		[parameter(Mandatory=$true)]
+		[parameter(Mandatory=$True)]
 		$filename
 	)
-	$file = gi (Resolve-Path $filename) -Force
-	if ($file -is [IO.FileInfo]) {
-		trap {
-			return $true
-			continue
+	$LockedFile = $False
+	$file = Get-Item (Resolve-Path $filename) -Force
+	if ($file.Exists) {
+		Try {
+			$stream = New-Object system.IO.StreamReader $file
 		}
-		$stream = New-Object system.IO.StreamReader $file
+		Catch {
+			$LockedFile = $True
+		}
+		if ($LockedFile) {
+			return $True
+		}
 		if ($stream) {
 			$stream.Close()
 		}
+		return $False
 	}
-	return $false
+	return $False
 }
 
 # Mount the Windows shared folder via CIFS
@@ -309,11 +315,11 @@ foreach ($Mailbox in (Get-Mailbox)) {
 	$LockTimeout = new-timespan -Minutes 2
 	$sw = [diagnostics.stopwatch]::StartNew()
 	While ($sw.elapsed -lt $LockTimeout) {
-		if ((check-Lock $WinSharedFolder\$MigMBox.pst) -eq $true) {
+		if (isLocked $WinSharedFolder\$MigMBox.pst) {
 			Write-Host -NoNewline "." -fore yellow
 		} else {
 			Write-Host "PST lock cleared." -fore green
-			continue
+			break
 		}
 		start-sleep -seconds 2
 	}
