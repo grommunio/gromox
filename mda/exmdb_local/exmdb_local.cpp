@@ -366,7 +366,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	uint64_t nt_time;
 	char lang[32], charset[32], tmzone[64], hostname[UDOM_SIZE], home_dir[256];
 	uint32_t tmp_int32;
-	uint32_t suppress_mask;
+	uint32_t suppress_mask = 0;
 	BOOL b_bounce_delivered = false;
 	ALLOC_CONTEXT alloc_ctx;
 	char temp_buff[MAX_DIGLEN];
@@ -501,9 +501,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		address, 0, pmsg, temp_buff);
 	if (EXMDB_RESULT_OK == result) {
 		pvalue = pmsg->proplist.getval(PR_AUTO_RESPONSE_SUPPRESS);
-		if (NULL == pvalue) {
-			suppress_mask = 0;
-		} else {
+		if (pvalue != nullptr) {
 			suppress_mask = *(uint32_t*)pvalue;
 		}
 		pvalue = pmsg->proplist.getval(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED);

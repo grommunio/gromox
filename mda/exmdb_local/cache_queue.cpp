@@ -268,7 +268,7 @@ static void *mdl_thrwork(void *arg)
 	char temp_from[UADDR_SIZE], temp_rcpt[UADDR_SIZE];
 	char *ptr;
 	MESSAGE_CONTEXT *pcontext, *pbounce_context;
-	BOOL need_bounce, need_remove;
+	BOOL need_bounce = false, need_remove = false;
 
 	pcontext = get_context();
 	if (NULL == pcontext) {
@@ -381,10 +381,12 @@ static void *mdl_thrwork(void *arg)
 			if (size == 0)
 				fprintf(stderr, "W-1559: garbage in %s; review and delete\n", temp_path.c_str());
 			auto zlen = strnlen(ptr, size);
+			if (zlen > INT32_MAX)
+				zlen = INT32_MAX;
 			snprintf(pcontext->pcontrol->from, arsizeof(pcontext->pcontrol->from),
-			         "%.*s", static_cast<int>(std::min(zlen, static_cast<size_t>(INT32_MAX))), ptr);
+			         "%.*s", static_cast<int>(zlen), ptr);
 			snprintf(temp_from, arsizeof(temp_from),
-			         "%.*s", static_cast<int>(std::min(zlen, static_cast<size_t>(INT32_MAX))), ptr);
+			         "%.*s", static_cast<int>(zlen), ptr);
 			ptr += zlen;
 			size -= zlen;
 			if (size == 0 || *ptr != '\0')

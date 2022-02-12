@@ -41,7 +41,7 @@ struct RFRGETFQDNFROMLEGACYDN_IN {
 };
 
 struct RFRGETFQDNFROMLEGACYDN_OUT {
-	char serverfqdn[256];
+	char serverfqdn[454];
 	uint32_t result;
 };
 

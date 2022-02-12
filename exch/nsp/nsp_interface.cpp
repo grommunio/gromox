@@ -2941,7 +2941,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			}
 			*pproptag = MID_UNRESOLVED;
 			size_t j;
-			const SIMPLE_TREE_NODE *pnode1, *pnode2;
+			const SIMPLE_TREE_NODE *pnode1, *pnode2 = nullptr;
 			for (j=0,pnode1=simple_tree_node_get_child(pnode);
 				NULL!=pnode1&&j>=start_pos&&j<=last_row;
 			     pnode1 = simple_tree_node_get_sibling(pnode1)) {
