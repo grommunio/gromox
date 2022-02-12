@@ -2111,6 +2111,9 @@ BOOL MIME::get_filename(char *file_name)
 	return TRUE;
 }
 
+static ssize_t mime_get_digest_single(MIME *, const char *id, size_t *ofs, size_t head_ofs, size_t *cnt, char *buf, size_t len);
+static ssize_t mime_get_digest_mul(MIME *, const char *id, size_t *ofs, size_t *cnt, char *buf, size_t len);
+
 /*
  *  get the digest string of mail mime
  *  @param
@@ -2173,148 +2176,160 @@ ssize_t MIME::get_mimes_digest(const char *id_string,
 		*poffset += 4;
 	}
 	if (SINGLE_MIME == pmime->mime_type)
-		return [](MIME *pmime, const char *id_string, size_t *poffset, size_t head_offset, size_t *pcount, char *pbuff, size_t length) -> ssize_t {
+		return mime_get_digest_single(this, id_string, poffset,
+		       head_offset, pcount, pbuff, length);
+	return mime_get_digest_mul(this, id_string, poffset, pcount,
+	       pbuff, length);
+}
+
+static ssize_t mime_get_digest_single(MIME *pmime, const char *id_string,
+    size_t *poffset, size_t head_offset, size_t *pcount, char *pbuff,
+    size_t length)
+{
 	size_t i, content_len, buff_len = 0, tmp_len;
 	char charset_buff[32], content_type[256], encoding_buff[128];
 	char file_name[256], temp_buff[512], content_ID[128];
 	char content_location[256], content_disposition[256], *ptoken;
 
-		if (*pcount > 0) {
-			pbuff[buff_len] = ',';
-			buff_len ++;
-		}
-		strcpy(content_type, pmime->content_type);
-		if (!mime_check_ascii_printable(content_type))
-			strcpy(content_type, "application/octet-stream");
-		tmp_len = strlen(content_type);
-		for (i=0; i<tmp_len; i++) {
-			if ('"' == content_type[i] || '\\' == content_type[i]) {
-				content_type[i] = ' ';
-			}
-		}
-		HX_strrtrim(content_type);
-		HX_strltrim(content_type);
-		
-		if (!pmime->get_field("Content-Transfer-Encoding", encoding_buff, 128) ||
-		    !mime_check_ascii_printable(encoding_buff)) {
-			buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-						"{\"id\":\"%s\",\"ctype\":\"%s\","
-						"\"encoding\":\"8bit\",\"head\":%zu,\"begin\":%zu,",
-						id_string, content_type, head_offset, *poffset);
-		} else {
-			tmp_len = strlen(encoding_buff);
-			for (i=0; i<tmp_len; i++) {
-				if ('"' == encoding_buff[i] || '\\' == encoding_buff[i]) {
-					encoding_buff[i] = ' ';
-				}
-			}
-			HX_strrtrim(encoding_buff);
-			HX_strltrim(encoding_buff);
-			buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-						"{\"id\":\"%s\",\"ctype\":\"%s\","
-						"\"encoding\":\"%s\",\"head\":%zu,\"begin\":%zu,",
-						id_string, content_type, encoding_buff, head_offset,
-						*poffset);
-		}
-
-		if (buff_len >= length - 1) {
-			return -1;
-		}
-
-		if (NULL != pmime->content_begin) {
-			if (0 != pmime->content_length) {
-				*poffset += pmime->content_length;
-				content_len = pmime->content_length;
-			} else {
-				auto mgl = reinterpret_cast<MAIL *>(pmime->content_begin)->get_length();
-				if (mgl < 0)
-					return -1;
-				*poffset += mgl;
-				content_len = mgl;
-			}
-		} else {
-			/* if there's nothing, just append an empty line */
-			*poffset += 2;
-			content_len = 0;
-		}
-
-		*pcount += 1;
-		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-		            "\"length\":%zu", content_len);
-		if (buff_len >= length - 1) {
-			return -1;
-		}
-
-		if (pmime->get_content_param("charset", charset_buff, 32) &&
-		    mime_check_ascii_printable(charset_buff)) {
-			tmp_len = strlen(charset_buff);
-			for (i=0; i<tmp_len; i++) {
-				if ('"' == charset_buff[i] || '\\' == charset_buff[i]) {
-					charset_buff[i] = ' ';
-				}
-			}
-			HX_strrtrim(charset_buff);
-			HX_strltrim(charset_buff);
-			buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-						",\"charset\":\"%s\"", charset_buff);
-			if (buff_len >= length - 1) {
-				return -1;
-			}
-		}
-		
-		if (pmime->get_filename(file_name)) {
-			encode64(file_name, strlen(file_name), temp_buff, 512, &tmp_len);
-			buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-							",\"filename\":\"%s\"", temp_buff);
-		}
-		if (pmime->get_field("Content-Disposition", content_disposition, 256)) {
-			ptoken = strchr(content_disposition, ';');
-			if (NULL != ptoken) {
-				*ptoken = '\0';
-			}
-			HX_strrtrim(content_disposition);
-			HX_strltrim(content_disposition);
-			if ('\0' != content_disposition[0] &&
-			    mime_check_ascii_printable(content_disposition)) {
-				tmp_len = strlen(content_disposition);
-				for (i=0; i<tmp_len; i++) {
-					if ('"' == content_disposition[i] ||
-						'\\' == content_disposition[i]) {
-						content_disposition[i] = ' ';
-					}
-				}
-				buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-								",\"cntdspn\":\"%s\"", content_disposition);
-			}
-		}
-
-		if (buff_len >= length - 1) {
-			return -1;
-		}
-		if (pmime->get_field("Content-ID", content_ID, 128)) {
-			tmp_len = strlen(content_ID);
-			encode64(content_ID, tmp_len, temp_buff, 256, &tmp_len);
-			buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-							",\"cid\":\"%s\"", temp_buff);
-			if (buff_len >= length - 1) {
-				return -1;
-			}
-		}
-		if (pmime->get_field("Content-Location", content_location, 256)) {
-			tmp_len = strlen(content_location);
-			encode64(content_location, tmp_len, temp_buff, 512, &tmp_len);
-			buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-							",\"cntl\":\"%s\"", temp_buff);
-			if (buff_len >= length - 1) {
-				return -1;
-			}
-		}
-		
-		pbuff[buff_len] = '}';
+	if (*pcount > 0) {
+		pbuff[buff_len] = ',';
 		buff_len ++;
-		return buff_len;
-	}(this, id_string, poffset, head_offset, pcount, pbuff, length);
-	return [](MIME *pmime, const char *id_string, size_t *poffset, size_t *pcount, char *pbuff, size_t length) -> ssize_t {
+	}
+	strcpy(content_type, pmime->content_type);
+	if (!mime_check_ascii_printable(content_type))
+		strcpy(content_type, "application/octet-stream");
+	tmp_len = strlen(content_type);
+	for (i = 0; i < tmp_len; i++) {
+		if ('"' == content_type[i] || '\\' == content_type[i]) {
+			content_type[i] = ' ';
+		}
+	}
+	HX_strrtrim(content_type);
+	HX_strltrim(content_type);
+
+	if (!pmime->get_field("Content-Transfer-Encoding", encoding_buff, 128) ||
+	    !mime_check_ascii_printable(encoding_buff)) {
+		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
+		            "{\"id\":\"%s\",\"ctype\":\"%s\","
+		            "\"encoding\":\"8bit\",\"head\":%zu,\"begin\":%zu,",
+		            id_string, content_type, head_offset, *poffset);
+	} else {
+		tmp_len = strlen(encoding_buff);
+		for (i = 0; i < tmp_len; i++) {
+			if ('"' == encoding_buff[i] || '\\' == encoding_buff[i]) {
+				encoding_buff[i] = ' ';
+			}
+		}
+		HX_strrtrim(encoding_buff);
+		HX_strltrim(encoding_buff);
+		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
+		            "{\"id\":\"%s\",\"ctype\":\"%s\","
+		            "\"encoding\":\"%s\",\"head\":%zu,\"begin\":%zu,",
+		            id_string, content_type, encoding_buff, head_offset,
+		            *poffset);
+	}
+
+	if (buff_len >= length - 1) {
+		return -1;
+	}
+
+	if (NULL != pmime->content_begin) {
+		if (0 != pmime->content_length) {
+			*poffset += pmime->content_length;
+			content_len = pmime->content_length;
+		} else {
+			auto mgl = reinterpret_cast<MAIL *>(pmime->content_begin)->get_length();
+			if (mgl < 0)
+				return -1;
+			*poffset += mgl;
+			content_len = mgl;
+		}
+	} else {
+		/* if there's nothing, just append an empty line */
+		*poffset += 2;
+		content_len = 0;
+	}
+
+	*pcount += 1;
+	buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
+	            "\"length\":%zu", content_len);
+	if (buff_len >= length - 1) {
+		return -1;
+	}
+
+	if (pmime->get_content_param("charset", charset_buff, 32) &&
+	    mime_check_ascii_printable(charset_buff)) {
+		tmp_len = strlen(charset_buff);
+		for (i = 0; i < tmp_len; i++) {
+			if ('"' == charset_buff[i] || '\\' == charset_buff[i]) {
+				charset_buff[i] = ' ';
+			}
+		}
+		HX_strrtrim(charset_buff);
+		HX_strltrim(charset_buff);
+		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
+		            ",\"charset\":\"%s\"", charset_buff);
+		if (buff_len >= length - 1) {
+			return -1;
+		}
+	}
+
+	if (pmime->get_filename(file_name)) {
+		encode64(file_name, strlen(file_name), temp_buff, 512, &tmp_len);
+		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
+		            ",\"filename\":\"%s\"", temp_buff);
+	}
+	if (pmime->get_field("Content-Disposition", content_disposition, 256)) {
+		ptoken = strchr(content_disposition, ';');
+		if (NULL != ptoken) {
+			*ptoken = '\0';
+		}
+		HX_strrtrim(content_disposition);
+		HX_strltrim(content_disposition);
+		if ('\0' != content_disposition[0] &&
+		    mime_check_ascii_printable(content_disposition)) {
+			tmp_len = strlen(content_disposition);
+			for (i = 0; i < tmp_len; i++) {
+				if ('"' == content_disposition[i] ||
+				    '\\' == content_disposition[i]) {
+					content_disposition[i] = ' ';
+				}
+			}
+			buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
+			            ",\"cntdspn\":\"%s\"", content_disposition);
+		}
+	}
+
+	if (buff_len >= length - 1) {
+		return -1;
+	}
+	if (pmime->get_field("Content-ID", content_ID, 128)) {
+		tmp_len = strlen(content_ID);
+		encode64(content_ID, tmp_len, temp_buff, 256, &tmp_len);
+		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
+		            ",\"cid\":\"%s\"", temp_buff);
+		if (buff_len >= length - 1) {
+			return -1;
+		}
+	}
+	if (pmime->get_field("Content-Location", content_location, 256)) {
+		tmp_len = strlen(content_location);
+		encode64(content_location, tmp_len, temp_buff, 512, &tmp_len);
+		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
+		            ",\"cntl\":\"%s\"", temp_buff);
+		if (buff_len >= length - 1) {
+			return -1;
+		}
+	}
+
+	pbuff[buff_len] = '}';
+	buff_len++;
+	return buff_len;
+}
+
+static ssize_t mime_get_digest_mul(MIME *pmime, const char *id_string,
+    size_t *poffset, size_t *pcount, char *pbuff, size_t length)
+{
 	int count;
 	size_t buff_len = 0, tmp_len;
 	MIME *pmime_child;
@@ -2322,48 +2337,47 @@ ssize_t MIME::get_mimes_digest(const char *id_string,
 	SIMPLE_TREE_NODE *pnode;
 	char temp_id[64];
 
-		if (NULL == pmime->first_boundary) {
-			*poffset += 48;
-		} else {
-			*poffset += pmime->first_boundary - pmime->content_begin;
-		}
-		pnode = simple_tree_node_get_child(&pmime->node);
-		has_submime = FALSE;
-		count = 1;
-        while (NULL != pnode) {
-			has_submime = TRUE;
-			*poffset += pmime->boundary_len + 4;
-			pmime_child = (MIME*)pnode->pdata;
-			if ('\0' == id_string[0]) {
-				snprintf(temp_id, 64, "%d", count);
-			} else {
-				snprintf(temp_id, 64, "%s.%d", id_string, count);
-			}
-			auto gmd = pmime_child->get_mimes_digest(temp_id, poffset,
-			           pcount, pbuff + buff_len, length - buff_len);
-			if (gmd < 0 || buff_len + gmd >= length - 1) {
-				return -1;
-			}
-			buff_len += gmd;
-			pnode = simple_tree_node_get_sibling(pnode);
-			count ++;
-		}
-		if (!has_submime)
-			*poffset += pmime->boundary_len + 6;
+	if (NULL == pmime->first_boundary) {
+		*poffset += 48;
+	} else {
+		*poffset += pmime->first_boundary - pmime->content_begin;
+	}
+	pnode = simple_tree_node_get_child(&pmime->node);
+	has_submime = FALSE;
+	count = 1;
+	while (NULL != pnode) {
+		has_submime = TRUE;
 		*poffset += pmime->boundary_len + 4;
-		if (NULL == pmime->last_boundary) {
-			*poffset += 4;
+		pmime_child = (MIME *)pnode->pdata;
+		if ('\0' == id_string[0]) {
+			snprintf(temp_id, 64, "%d", count);
 		} else {
-			tmp_len = pmime->content_length - (pmime->last_boundary - 
-					  pmime->content_begin);
-			if (tmp_len > 0) {
-				*poffset += tmp_len;
-			} else if (0 == tmp_len) {
-				*poffset += 2;
-			}
+			snprintf(temp_id, 64, "%s.%d", id_string, count);
 		}
-		return buff_len;
-	}(this, id_string, poffset, pcount, pbuff, length);
+		auto gmd = pmime_child->get_mimes_digest(temp_id, poffset,
+		           pcount, pbuff + buff_len, length - buff_len);
+		if (gmd < 0 || buff_len + gmd >= length - 1) {
+			return -1;
+		}
+		buff_len += gmd;
+		pnode = simple_tree_node_get_sibling(pnode);
+		count++;
+	}
+	if (!has_submime)
+		*poffset += pmime->boundary_len + 6;
+	*poffset += pmime->boundary_len + 4;
+	if (NULL == pmime->last_boundary) {
+		*poffset += 4;
+	} else {
+		tmp_len = pmime->content_length - (pmime->last_boundary -
+		          pmime->content_begin);
+		if (tmp_len > 0) {
+			*poffset += tmp_len;
+		} else if (0 == tmp_len) {
+			*poffset += 2;
+		}
+	}
+	return buff_len;
 }
 
 /*
