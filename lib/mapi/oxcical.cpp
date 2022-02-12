@@ -3844,7 +3844,7 @@ static BOOL oxcical_export_internal(const char *method, const char *tzid,
 	tzid = NULL;
 	ptz_component = NULL;
 	if (b_recurrence) {
-		PROPERTY_NAME propname = {MNID_ID, PSETID_APPOINTMENT, PidLidTimeZoneStruct};
+		propname = {MNID_ID, PSETID_APPOINTMENT, PidLidTimeZoneStruct};
 		if (!get_propids(&propnames, &propids))
 			return FALSE;
 		proptag = PROP_TAG(PT_BINARY, propids.ppropid[0]);

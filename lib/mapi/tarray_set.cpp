@@ -54,14 +54,13 @@ int tarray_set::append_move(TPROPVAL_ARRAY *pproplist)
 	if (pset->count >= 0xFF00) {
 		return ENOSPC;
 	}
-	auto count = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
-	if (pset->count + 1 >= count) {
-		count += SR_GROW_TPROPVAL_ARRAY;
-		auto pparray = gromox::re_alloc<TPROPVAL_ARRAY *>(pset->pparray, count);
-		if (NULL == pparray) {
+	auto z = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
+	if (pset->count + 1 >= z) {
+		z += SR_GROW_TPROPVAL_ARRAY;
+		auto list = gromox::re_alloc<TPROPVAL_ARRAY *>(pset->pparray, z);
+		if (list == nullptr)
 			return ENOMEM;
-		}
-		pset->pparray = pparray;
+		pset->pparray = list;
 	}
 	pset->pparray[pset->count++] = pproplist;
 	return 0;

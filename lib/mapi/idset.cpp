@@ -36,22 +36,22 @@ std::unique_ptr<idset> idset::create(bool ser, uint8_t type) try
 	return nullptr;
 }
 
-BOOL idset::register_mapping(BINARY *pparam, REPLICA_MAPPING mapping)
+BOOL idset::register_mapping(BINARY *p, REPLICA_MAPPING m)
 {
 	auto pset = this;
 	if (pset->pparam != nullptr || pset->mapping != nullptr)
 		return FALSE;
-	if (NULL == pparam) {
+	if (p == nullptr) {
 		pset->pparam = NULL;
-	} else if (pparam->cb == 0) {
+	} else if (p->cb == 0) {
 		pset->pparam = NULL;
 	} else {
-		pset->pparam = malloc(pparam->cb);
+		pset->pparam = malloc(p->cb);
 		if (pset->pparam == nullptr)
 			return FALSE;
-		memcpy(pset->pparam, pparam->pb, pparam->cb);
+		memcpy(pset->pparam, p->pb, p->cb);
 	}
-	pset->mapping = mapping;
+	pset->mapping = m;
 	return TRUE;
 }
 
@@ -222,9 +222,9 @@ BOOL idset::concatenate(const IDSET *pset_src)
 	
 	if (!pset_dst->b_serialize || !pset_src->b_serialize)
 		return FALSE;
-	auto &repl_list = pset_src->repl_list;
-	for (auto prepl_node = repl_list.begin();
-	     prepl_node != repl_list.end(); ++prepl_node) {
+	auto &src_list = pset_src->repl_list;
+	for (auto prepl_node = src_list.begin();
+	     prepl_node != src_list.end(); ++prepl_node) {
 		for (const auto &range_node : prepl_node->range_list) {
 			if (range_node.high_value == range_node.low_value) {
 				if (!idset_append_internal(pset_dst,
@@ -686,13 +686,13 @@ BOOL idset::get_repl_first_max(uint16_t replid, uint64_t *peid)
 	return TRUE;
 }
 
-BOOL idset::enum_replist(void *pparam, REPLIST_ENUM replist_enum)
+BOOL idset::enum_replist(void *p, REPLIST_ENUM replist_enum)
 {
 	auto pset = this;
 	
 	if (pset->b_serialize || pset->repl_type != REPL_TYPE_GUID) {
 		for (const auto &repl_node : repl_list)
-			replist_enum(pparam, repl_node.replid);
+			replist_enum(p, repl_node.replid);
 		return TRUE;
 	}
 	if (pset->mapping == nullptr)
@@ -702,12 +702,12 @@ BOOL idset::enum_replist(void *pparam, REPLIST_ENUM replist_enum)
 		if (!pset->mapping(false, pset->pparam,
 		    &tmp_replid, &replguid_node.replguid))
 			return FALSE;
-		replist_enum(pparam, tmp_replid);
+		replist_enum(p, tmp_replid);
 	}
 	return TRUE;
 }
 
-BOOL idset::enum_repl(uint16_t replid, void *pparam, REPLICA_ENUM repl_enum)
+BOOL idset::enum_repl(uint16_t replid, void *p, REPLICA_ENUM repl_enum)
 {
 	auto [succ, prange_list] = get_range_by_id(*this, replid);
 	if (!succ)
@@ -718,7 +718,7 @@ BOOL idset::enum_repl(uint16_t replid, void *pparam, REPLICA_ENUM repl_enum)
 		for (auto ival = range_node.low_value;
 		     ival <= range_node.high_value; ++ival) {
 			auto tmp_eid = rop_util_make_eid_ex(replid, ival);
-			repl_enum(pparam, tmp_eid);
+			repl_enum(p, tmp_eid);
 		}
 	}
 	return TRUE;

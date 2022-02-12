@@ -368,14 +368,13 @@ bool property_groupinfo::append_internal(PROPTAG_ARRAY *pgroup)
 {
 	auto pgpinfo = this;
 	/* allocate like proptag_array.cpp does */
-	auto count = strange_roundup(pgpinfo->count, SR_GROW_PROPTAG_ARRAY);
-	if (pgpinfo->count + 1 >= count) {
-		count += SR_GROW_PROPTAG_ARRAY;
-		auto pgroups = re_alloc<PROPTAG_ARRAY>(pgpinfo->pgroups, count);
-		if (NULL == pgroups) {
+	auto z = strange_roundup(pgpinfo->count, SR_GROW_PROPTAG_ARRAY);
+	if (pgpinfo->count + 1 >= z) {
+		z += SR_GROW_PROPTAG_ARRAY;
+		auto list = re_alloc<PROPTAG_ARRAY>(pgpinfo->pgroups, z);
+		if (list == nullptr)
 			return FALSE;
-		}
-		pgpinfo->pgroups = pgroups;
+		pgpinfo->pgroups = list;
 	}
 	pgpinfo->pgroups[pgpinfo->count].count = pgroup->count;
 	pgpinfo->pgroups[pgpinfo->count++].pproptag = pgroup->pproptag;

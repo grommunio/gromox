@@ -2449,7 +2449,7 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 		}
 		num = pattachment->proplist.get<uint32_t>(PROP_TAG_RENDERINGPOSITION);
 		tmp_rend.attach_position = num != nullptr ? *num : 0xFFFFFFFF;
-		auto bv = pattachment->proplist.get<BINARY>(PR_ATTACH_ENCODING);
+		bv = pattachment->proplist.get<BINARY>(PR_ATTACH_ENCODING);
 		tmp_rend.data_flags = bv != nullptr && bv->cb == sizeof(MACBINARY_ENCODING) &&
 		                      memcmp(bv->pb, MACBINARY_ENCODING, sizeof(MACBINARY_ENCODING)) == 0 ?
 		                      FILE_DATA_MACBINARY : FILE_DATA_DEFAULT;

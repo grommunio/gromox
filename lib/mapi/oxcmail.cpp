@@ -1195,7 +1195,7 @@ static BOOL oxcmail_parse_message_flag(char *field, uint16_t *plast_propid,
 		propname = {MNID_ID, PSETID_COMMON, PidLidFlagRequest};
 		if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)
 			return FALSE;
-		uint32_t tag = PROP_TAG(b_unicode ? PT_UNICODE : PT_STRING8, *plast_propid);
+		tag = PROP_TAG(b_unicode ? PT_UNICODE : PT_STRING8, *plast_propid);
 		if (pproplist->set(tag, str) != 0)
 			return FALSE;
 		(*plast_propid) ++;
@@ -1305,8 +1305,7 @@ static BOOL oxcmail_parse_classid(char *field, uint16_t *plast_propid,
 	return TRUE;
 }
 
-static BOOL oxcmail_enum_mail_head(
-	const char *tag, char *field, void *pparam)
+static BOOL oxcmail_enum_mail_head(const char *key, char *field, void *pparam)
 {
 	time_t tmp_time;
 	uint8_t tmp_byte;
@@ -1316,7 +1315,7 @@ static BOOL oxcmail_enum_mail_head(
 	FIELD_ENUM_PARAM *penum_param;
 	
 	penum_param = (FIELD_ENUM_PARAM*)pparam;
-	if (0 == strcasecmp(tag, "From")) {
+	if (strcasecmp(key, "From") == 0) {
 		parse_mime_addr(&email_addr, field);
 		if (!oxcmail_parse_address(penum_param->charset, &email_addr,
 		    PR_SENT_REPRESENTING_NAME, PR_SENT_REPRESENTING_ADDRTYPE,
@@ -1324,34 +1323,34 @@ static BOOL oxcmail_enum_mail_head(
 		    PR_SENT_REPRESENTING_SEARCH_KEY, PR_SENT_REPRESENTING_ENTRYID,
 		    &penum_param->pmsg->proplist))
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "Sender")) {
+	} else if (strcasecmp(key, "Sender") == 0) {
 		parse_mime_addr(&email_addr, field);
 		if (!oxcmail_parse_address(penum_param->charset, &email_addr,
 		    PR_SENDER_NAME, PR_SENDER_ADDRTYPE, PR_SENDER_EMAIL_ADDRESS,
 		    PR_SENDER_SMTP_ADDRESS, PR_SENDER_SEARCH_KEY,
 		    PR_SENDER_ENTRYID, &penum_param->pmsg->proplist))
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "Reply-To")) {
+	} else if (strcasecmp(key, "Reply-To") == 0) {
 		if (!oxcmail_parse_reply_to(penum_param->charset, field,
 		    &penum_param->pmsg->proplist))
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "To")) {
+	} else if (strcasecmp(key, "To") == 0) {
 		if (!oxcmail_parse_addresses(penum_param->charset, field, MAPI_TO,
 		    penum_param->pmsg->children.prcpts))
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "Cc")) {
+	} else if (strcasecmp(key, "Cc") == 0) {
 		if (!oxcmail_parse_addresses(penum_param->charset, field, MAPI_CC,
 		    penum_param->pmsg->children.prcpts))
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "Bcc")) {
+	} else if (strcasecmp(key, "Bcc") == 0) {
 		if (!oxcmail_parse_addresses(penum_param->charset, field, MAPI_BCC,
 		    penum_param->pmsg->children.prcpts))
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "Return-Receipt-To")) {
+	} else if (strcasecmp(key, "Return-Receipt-To") == 0) {
 		tmp_byte = 1;
 		if (penum_param->pmsg->proplist.set(PR_ORIGINATOR_DELIVERY_REPORT_REQUESTED, &tmp_byte) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "Disposition-Notification-To")) {
+	} else if (strcasecmp(key, "Disposition-Notification-To") == 0) {
 		tmp_byte = 1;
 		if (penum_param->pmsg->proplist.set(PR_READ_RECEIPT_REQUESTED, &tmp_byte) != 0)
 			return FALSE;
@@ -1365,40 +1364,40 @@ static BOOL oxcmail_enum_mail_head(
 		    PidTagReadReceiptSmtpAddress, PR_READ_RECEIPT_SEARCH_KEY,
 		    PR_READ_RECEIPT_ENTRYID, &penum_param->pmsg->proplist))
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "Message-ID")) {
+	} else if (strcasecmp(key, "Message-ID") == 0) {
 		uint32_t tag = oxcmail_check_ascii(field) ?
 		               PR_INTERNET_MESSAGE_ID : PR_INTERNET_MESSAGE_ID_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "Date")) {
+	} else if (strcasecmp(key, "Date") == 0) {
 		if (parse_rfc822_timestamp(field, &tmp_time)) {
 			tmp_int64 = rop_util_unix_to_nttime(tmp_time);
 			if (penum_param->pmsg->proplist.set(PR_CLIENT_SUBMIT_TIME, &tmp_int64) != 0)
 				return FALSE;
 		}
-	} else if (0 == strcasecmp(tag, "References")) {
+	} else if (strcasecmp(key, "References") == 0) {
 		uint32_t tag = oxcmail_check_ascii(field) ?
 		               PR_INTERNET_REFERENCES : PR_INTERNET_REFERENCES_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "Sensitivity")) {
+	} else if (strcasecmp(key, "Sensitivity") == 0) {
 		tmp_int32 = om_parse_sensitivity(field);
 		if (penum_param->pmsg->proplist.set(PR_SENSITIVITY, &tmp_int32) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "Importance") ||
-		0 == strcasecmp(tag, "X-MSMail-Priority")) {
+	} else if (strcasecmp(key, "Importance") == 0 ||
+		strcasecmp(key, "X-MSMail-Priority") == 0) {
 		tmp_int32 = om_parse_importance(field);
 		if (penum_param->pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "Priority")) {
+	} else if (strcasecmp(key, "Priority") == 0) {
 		tmp_int32 = om_parse_priority(field);
 		if (penum_param->pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "X-Priority")) {
+	} else if (strcasecmp(key, "X-Priority") == 0) {
 		tmp_int32 = om_parse_xpriority(field);
 		if (penum_param->pmsg->proplist.set(PR_IMPORTANCE, &tmp_int32) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "Subject")) {
+	} else if (strcasecmp(key, "Subject") == 0) {
 		if (!oxcmail_parse_subject(penum_param->charset, field,
 		    &penum_param->pmsg->proplist))
 			return FALSE;
@@ -1416,32 +1415,32 @@ static BOOL oxcmail_enum_mail_head(
 				return FALSE;
 			}
 		}
-	} else if (0 == strcasecmp(tag, "Thread-Topic")) {
+	} else if (strcasecmp(key, "Thread-Topic") == 0) {
 		if (!oxcmail_parse_thread_topic(penum_param->charset, field,
 		    &penum_param->pmsg->proplist))
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "Thread-Index")) {
+	} else if (strcasecmp(key, "Thread-Index") == 0) {
 		if (!oxcmail_parse_thread_index(field,
 		    &penum_param->pmsg->proplist))
 				return FALSE;
-	} else if (0 == strcasecmp(tag, "In-Reply-To")) {
+	} else if (strcasecmp(key, "In-Reply-To") == 0) {
 		uint32_t tag = oxcmail_check_ascii(field) ?
 		               PR_IN_REPLY_TO_ID : PR_IN_REPLY_TO_ID_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "Reply-By")) {
+	} else if (strcasecmp(key, "Reply-By") == 0) {
 		if (parse_rfc822_timestamp(field, &tmp_time)) {
 			tmp_int64 = rop_util_unix_to_nttime(tmp_time);
 			if (penum_param->pmsg->proplist.set(PR_REPLY_TIME, &tmp_int64) != 0)
 				return FALSE;
 		}
-	} else if (0 == strcasecmp(tag, "Content-Language")) {
+	} else if (strcasecmp(key, "Content-Language") == 0) {
 		tmp_int32 = oxcmail_ltag_to_lcid(field);
 		if (tmp_int32 != 0 &&
 		    penum_param->pmsg->proplist.set(PR_MESSAGE_LOCALE_ID, &tmp_int32) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "Accept-Language") ||
-		0 == strcasecmp(tag, "X-Accept-Language")) {
+	} else if (strcasecmp(key, "Accept-Language") == 0 ||
+		strcasecmp(key, "X-Accept-Language") == 0) {
 		PROPERTY_NAME propname = {MNID_STRING, PS_INTERNET_HEADERS,
 		                         0, deconst("Accept-Language")};
 		if (namemap_add(penum_param->phash, penum_param->last_propid,
@@ -1451,7 +1450,7 @@ static BOOL oxcmail_enum_mail_head(
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
 		penum_param->last_propid ++;
-	} else if (0 == strcasecmp(tag, "Keywords")) {
+	} else if (strcasecmp(key, "Keywords") == 0) {
 		PROPERTY_NAME propname = {MNID_STRING, PS_PUBLIC_STRINGS,
 		                         0, deconst(PidNameKeywords)};
 		if (namemap_add(penum_param->phash, penum_param->last_propid,
@@ -1461,127 +1460,126 @@ static BOOL oxcmail_enum_mail_head(
 		    penum_param->last_propid, &penum_param->pmsg->proplist))
 			return FALSE;
 		penum_param->last_propid ++;
-	} else if (0 == strcasecmp(tag, "Expires") ||
-		0 == strcasecmp(tag, "Expiry-Date")) {
+	} else if (strcasecmp(key, "Expires") == 0 ||
+		strcasecmp(key, "Expiry-Date") == 0) {
 		if (parse_rfc822_timestamp(field, &tmp_time)) {
 			tmp_int64 = rop_util_unix_to_nttime(tmp_time);
 			if (penum_param->pmsg->proplist.set(PR_EXPIRY_TIME, &tmp_int64) != 0)
 				return FALSE;
 		}
-	} else if (0 == strcasecmp(tag, "X-Auto-Response-Suppress")) {
+	} else if (strcasecmp(key, "X-Auto-Response-Suppress") == 0) {
 		if (!oxcmail_parse_response_suppress(field,
 		    &penum_param->pmsg->proplist))
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "Content-Class")) {
+	} else if (strcasecmp(key, "Content-Class") == 0) {
 		if (!oxcmail_parse_content_class(field,
 		    penum_param->pmail, &penum_param->last_propid,
 		    penum_param->phash, &penum_param->pmsg->proplist))
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "X-Message-Flag")) {
+	} else if (strcasecmp(key, "X-Message-Flag") == 0) {
 		if (!oxcmail_parse_message_flag(field,
 		    &penum_param->last_propid, penum_param->phash,
 		    &penum_param->pmsg->proplist))
 			return FALSE;
 		penum_param->b_flag_del = TRUE;
-	} else if (0 == strcasecmp(tag, "List-Help") ||
-		0 == strcasecmp(tag, "X-List-Help")) {
+	} else if (strcasecmp(key, "List-Help") == 0 ||
+		strcasecmp(key, "X-List-Help") == 0) {
 		uint32_t tag = oxcmail_check_ascii(field) ?
 		               PR_LIST_HELP : PR_LIST_HELP_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "List-Subscribe") ||
-		0 == strcasecmp(tag, "X-List-Subscribe")) {
+	} else if (strcasecmp(key, "List-Subscribe") == 0 ||
+		strcasecmp(key, "X-List-Subscribe") == 0) {
 		uint32_t tag = oxcmail_check_ascii(field) ?
 		               PR_LIST_SUBSCRIBE : PR_LIST_SUBSCRIBE_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "List-Unsubscribe") ||
-		0 == strcasecmp(tag, "X-List-Unsubscribe")) {
+	} else if (strcasecmp(key, "List-Unsubscribe") == 0 ||
+		strcasecmp(key, "X-List-Unsubscribe") == 0) {
 		uint32_t tag = oxcmail_check_ascii(field) ?
 		               PR_LIST_UNSUBSCRIBE : PR_LIST_UNSUBSCRIBE_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "X-Payload-Class")) {
+	} else if (strcasecmp(key, "X-Payload-Class") == 0) {
 		uint32_t tag = oxcmail_check_ascii(field) ?
 		               PR_ATTACH_PAYLOAD_CLASS : PR_ATTACH_PAYLOAD_CLASS_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "X-MS-Exchange-Organization-PRD")) {
+	} else if (strcasecmp(key, "X-MS-Exchange-Organization-PRD") == 0) {
 		uint32_t tag = oxcmail_check_ascii(field) ?
 		               PR_PURPORTED_SENDER_DOMAIN : PR_PURPORTED_SENDER_DOMAIN_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag,
-		"X-MS-Exchange-Organization-SenderIdResult")) {
+	} else if (strcasecmp(key, "X-MS-Exchange-Organization-SenderIdResult") == 0) {
 		tmp_int32 = om_parse_senderidresult(field);
 		if (tmp_int32 != 0 &&
 		    penum_param->pmsg->proplist.set(PR_SENDER_ID_STATUS, &tmp_int32) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "X-MS-Exchange-Organization-SCL")) {
+	} else if (strcasecmp(key, "X-MS-Exchange-Organization-SCL") == 0) {
 		tmp_int32 = strtol(field, nullptr, 0);
 		if (penum_param->pmsg->proplist.set(PR_CONTENT_FILTER_SCL, &tmp_int32) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "X-Microsoft-Classified")) {
+	} else if (strcasecmp(key, "X-Microsoft-Classified") == 0) {
 		if (!oxcmail_parse_classified(field,
 		    &penum_param->last_propid, penum_param->phash,
 		    &penum_param->pmsg->proplist))
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "X-Microsoft-ClassKeep")) {
+	} else if (strcasecmp(key, "X-Microsoft-ClassKeep") == 0) {
 		if (penum_param->b_classified &&
 		    !oxcmail_parse_classkeep(field,
 		    &penum_param->last_propid, penum_param->phash,
 		    &penum_param->pmsg->proplist))
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "X-Microsoft-Classification")) {
+	} else if (strcasecmp(key, "X-Microsoft-Classification") == 0) {
 		if (penum_param->b_classified &&
 		    !oxcmail_parse_classification(field,
 		    &penum_param->last_propid, penum_param->phash,
 		    &penum_param->pmsg->proplist))
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "X-Microsoft-ClassDesc")) {
+	} else if (strcasecmp(key, "X-Microsoft-ClassDesc") == 0) {
 		if (penum_param->b_classified &&
 		    !oxcmail_parse_classdesc(field,
 		    &penum_param->last_propid, penum_param->phash,
 		    &penum_param->pmsg->proplist))
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "X-Microsoft-ClassID")) {
+	} else if (strcasecmp(key, "X-Microsoft-ClassID") == 0) {
 		if (penum_param->b_classified &&
 		    !oxcmail_parse_classid(field,
 		    &penum_param->last_propid, penum_param->phash,
 		    &penum_param->pmsg->proplist))
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "X-CallingTelephoneNumber")) {
+	} else if (strcasecmp(key, "X-CallingTelephoneNumber") == 0) {
 		uint32_t tag = oxcmail_check_ascii(field) ?
 		               PR_SENDER_TELEPHONE_NUMBER :
 		               PR_SENDER_TELEPHONE_NUMBER_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "X-VoiceMessageSenderName")) {
+	} else if (strcasecmp(key, "X-VoiceMessageSenderName") == 0) {
 		uint32_t tag = oxcmail_check_ascii(field) ?
 		                  PidTagVoiceMessageSenderName :
 		                  PidTagVoiceMessageSenderName_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "X-AttachmentOrder")) {
+	} else if (strcasecmp(key, "X-AttachmentOrder") == 0) {
 		uint32_t tag = oxcmail_check_ascii(field) ?
 		               PidTagVoiceMessageAttachmentOrder :
 		               PidTagVoiceMessageAttachmentOrder_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "X-CallID")) {
+	} else if (strcasecmp(key, "X-CallID") == 0) {
 		uint32_t tag = oxcmail_check_ascii(field) ?
 		               PidTagCallId : PidTagCallId_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "X-VoiceMessageDuration")) {
+	} else if (strcasecmp(key, "X-VoiceMessageDuration") == 0) {
 		tmp_int32 = strtol(field, nullptr, 0);
 		if (penum_param->pmsg->proplist.set(PidTagVoiceMessageDuration, &tmp_int32) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "X-FaxNumverOfPages")) {
+	} else if (strcasecmp(key, "X-FaxNumverOfPages") == 0) {
 		tmp_int32 = strtol(field, nullptr, 0);
 		if (penum_param->pmsg->proplist.set(PidTagFaxNumberOfPages, &tmp_int32) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "Content-ID")) {
+	} else if (strcasecmp(key, "Content-ID") == 0) {
 		tmp_int32 = strlen(field);
 		if (tmp_int32 > 0) {
 			if ('>' == field[tmp_int32 - 1]) {
@@ -1593,7 +1591,7 @@ static BOOL oxcmail_enum_mail_head(
 			if (penum_param->pmsg->proplist.set(tag, str) != 0)
 				return FALSE;
 		}
-	} else if (0 == strcasecmp(tag, "Content-Base")) {
+	} else if (strcasecmp(key, "Content-Base") == 0) {
 		PROPERTY_NAME propname = {MNID_STRING, PS_INTERNET_HEADERS,
 		                         0, deconst("Content-Base")};
 		if (namemap_add(penum_param->phash, penum_param->last_propid,
@@ -1603,23 +1601,23 @@ static BOOL oxcmail_enum_mail_head(
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
 		penum_param->last_propid ++;
-	} else if (0 == strcasecmp(tag, "Content-Location")) {
+	} else if (strcasecmp(key, "Content-Location") == 0) {
 		uint32_t tag = oxcmail_check_ascii(field) ?
 		               PR_BODY_CONTENT_LOCATION : PR_BODY_CONTENT_LOCATION_A;
 		if (penum_param->pmsg->proplist.set(tag, field) != 0)
 			return FALSE;
-	} else if (0 == strcasecmp(tag, "X-MS-Exchange-Organization-AuthAs") ||
-		0 == strcasecmp(tag, "X-MS-Exchange-Organization-AuthDomain") ||
-		0 == strcasecmp(tag, "X-MS-Exchange-Organization-AuthMechanism") ||
-		0 == strcasecmp(tag, "X-MS-Exchange-Organization-AuthSource") ||
-		0 == strcasecmp(tag, "X-Mailer") ||
-		0 == strcasecmp(tag, "User-Agent")) {
+	} else if (strcasecmp(key, "X-MS-Exchange-Organization-AuthAs") == 0 ||
+		strcasecmp(key, "X-MS-Exchange-Organization-AuthDomain") == 0 ||
+		strcasecmp(key, "X-MS-Exchange-Organization-AuthMechanism") == 0 ||
+		strcasecmp(key, "X-MS-Exchange-Organization-AuthSource") == 0 ||
+		strcasecmp(key, "X-Mailer") == 0 ||
+		strcasecmp(key, "User-Agent") == 0) {
 		PROPERTY_NAME propname = {MNID_STRING, PS_INTERNET_HEADERS, 0,
-		                         static_cast<char *>(penum_param->alloc(strlen(tag) + 1))};
+		                         static_cast<char *>(penum_param->alloc(strlen(key) + 1))};
 		if (NULL == propname.pname) {
 			return FALSE;
 		}
-		strcpy(propname.pname, tag);
+		strcpy(propname.pname, key);
 		if (namemap_add(penum_param->phash, penum_param->last_propid,
 		    std::move(propname)) != 0)
 			return FALSE;
@@ -2326,7 +2324,6 @@ static void oxcmail_enum_attachment(MIME *pmime, void *pparam)
 			if ('>' == tmp_buff[tmp_int32 - 1]) {
 				tmp_buff[tmp_int32 - 1] = '\0';
 			}
-			const char *newval;
 			if ('<' == tmp_buff[0]) {
 				newval = tmp_buff + 1;
 			} else {
@@ -4637,7 +4634,7 @@ static BOOL oxcmail_export_mail_head(const MESSAGE_CONTENT *pmsg,
 	
 	if (MAIL_TYPE_TNEF == pskeleton->mail_type) {
 		*tmp_field = '\0';
-		auto bv = pmsg->proplist.get<BINARY>(PR_TNEF_CORRELATION_KEY);
+		bv = pmsg->proplist.get<BINARY>(PR_TNEF_CORRELATION_KEY);
 		if (bv == nullptr) {
 			str = pmsg->proplist.get<char>(PR_INTERNET_MESSAGE_ID);
 			if (str != nullptr)
