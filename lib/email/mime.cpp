@@ -2127,25 +2127,6 @@ ssize_t MIME::get_mimes_digest(const char *id_string,
     size_t *poffset, size_t *pcount, char *pbuff, size_t length)
 {
 	auto pmime = this;
-	int		count;
-	int		tag_len, val_len;
-	size_t	i, content_len;
-	size_t  buff_len, tmp_len;
-	size_t  head_offset;
-	MIME	*pmime_child;
-	BOOL	has_submime;
-	SIMPLE_TREE_NODE *pnode;
-	char    temp_id[64];
-	char    charset_buff[32];
-	char    content_type[256];
-	char    encoding_buff[128];
-	char    file_name[256];
-	char    temp_buff[512];
-	char    content_ID[128];
-	char    content_location[256];
-	char    content_disposition[256];
-	char    *ptoken;
-	
 #ifdef _DEBUG_UMTA
 	if (pbuff == nullptr || poffset == nullptr || pcount == nullptr) {
 		debug_info("[mime]: NULL pointer found in MIME::get_mimes_digest");
@@ -2155,12 +2136,12 @@ ssize_t MIME::get_mimes_digest(const char *id_string,
 	if (NONE_MIME == pmime->mime_type) {
 		return -1;
 	}
-	buff_len = 0;
-	head_offset = *poffset;
+	size_t head_offset = *poffset;
 	if (!pmime->head_touched) {
 		/* the original buffer contains \r\n */
 		*poffset += pmime->head_length + 2;
 	} else {	
+		uint32_t tag_len = 0, val_len = 0;
 		pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (pmime->f_other_fields.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
 			/* xxxxx: yyyyy */
@@ -2191,7 +2172,12 @@ ssize_t MIME::get_mimes_digest(const char *id_string,
 		/* \r\n for separate head and content */
 		*poffset += 4;
 	}
-	if (SINGLE_MIME == pmime->mime_type) {
+	if (SINGLE_MIME == pmime->mime_type)
+		return [](MIME *pmime, const char *id_string, size_t *poffset, size_t head_offset, size_t *pcount, char *pbuff, size_t length) -> ssize_t {
+	size_t i, content_len, buff_len = 0, tmp_len;
+	char charset_buff[32], content_type[256], encoding_buff[128];
+	char file_name[256], temp_buff[512], content_ID[128];
+	char content_location[256], content_disposition[256], *ptoken;
 
 		if (*pcount > 0) {
 			pbuff[buff_len] = ',';
@@ -2326,7 +2312,16 @@ ssize_t MIME::get_mimes_digest(const char *id_string,
 		
 		pbuff[buff_len] = '}';
 		buff_len ++;
-	} else {
+		return buff_len;
+	}(this, id_string, poffset, head_offset, pcount, pbuff, length);
+	return [](MIME *pmime, const char *id_string, size_t *poffset, size_t *pcount, char *pbuff, size_t length) -> ssize_t {
+	int count;
+	size_t buff_len = 0, tmp_len;
+	MIME *pmime_child;
+	BOOL has_submime;
+	SIMPLE_TREE_NODE *pnode;
+	char temp_id[64];
+
 		if (NULL == pmime->first_boundary) {
 			*poffset += 48;
 		} else {
@@ -2367,8 +2362,8 @@ ssize_t MIME::get_mimes_digest(const char *id_string,
 				*poffset += 2;
 			}
 		}
-	}
-	return buff_len;
+		return buff_len;
+	}(this, id_string, poffset, pcount, pbuff, length);
 }
 
 /*
