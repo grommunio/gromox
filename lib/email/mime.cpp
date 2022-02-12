@@ -2380,6 +2380,8 @@ static ssize_t mime_get_digest_mul(MIME *pmime, const char *id_string,
 	return buff_len;
 }
 
+static ssize_t mime_get_struct_mul(MIME *, const char *id, size_t *ofs, size_t head_ofs, size_t *cnt, char *buf, size_t len);
+
 /*
  *  get the digest string of mail struct
  *  @param
@@ -2396,15 +2398,6 @@ ssize_t MIME::get_structure_digest(const char *id_string,
     size_t *poffset, size_t *pcount, char *pbuff, size_t length)
 {
 	auto pmime = this;
-	int		tag_len, val_len;
-	size_t count = 0, i, buff_len, tmp_len;
-	size_t  head_offset;
-	MIME	*pmime_child;
-	BOOL	has_submime;
-	SIMPLE_TREE_NODE *pnode;
-	char    temp_id[64];
-	char    content_type[256];
-	
 #ifdef _DEBUG_UMTA
 	if (pbuff == nullptr || poffset == nullptr || pcount == nulllptr) {
 		debug_info("[mime]: NULL pointer found in MIME::get_structure_digest");
@@ -2414,12 +2407,12 @@ ssize_t MIME::get_structure_digest(const char *id_string,
 	if (NONE_MIME == pmime->mime_type) {
 		return -1;
 	}
-	buff_len = 0;
-	head_offset = *poffset;
+	size_t head_offset = *poffset;
 	if (!pmime->head_touched) {
 		/* the original buffer contains \r\n */
 		*poffset += pmime->head_length + 2;
 	} else {	
+		uint32_t tag_len = 0, val_len = 0;
 		pmime->f_other_fields.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (pmime->f_other_fields.read(&tag_len,
 		       sizeof(uint32_t)) != MEM_END_OF_FILE) {
@@ -2466,82 +2459,92 @@ ssize_t MIME::get_structure_digest(const char *id_string,
 			*poffset += 2;
 		}
 		return 0;
-	} else {
-		if (*pcount > 0) {
-			pbuff[buff_len] = ',';
-			buff_len ++;
-		}
-		strcpy(content_type, pmime->content_type);
-		if (!mime_check_ascii_printable(content_type))
-			strcpy(content_type, "multipart/mixed");
-		tmp_len = strlen(content_type);
-		for (i=0; i<tmp_len; i++) {
-			if ('"' == content_type[i] || '\\' == content_type[i]) {
-				content_type[i] = ' ';
-			}
-		}
-		HX_strrtrim(content_type);
-		HX_strltrim(content_type);
-		auto mgl = pmime->get_length();
-		if (mgl < 0)
-			return -1;
-		buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
-						"{\"id\":\"%s\",\"ctype\":\"%s\",\"head\":%zu,"
-						"\"begin\":%zu, \"length\":%zu}", id_string,
-						content_type, head_offset, *poffset,
-						head_offset + mgl - *poffset);
-		if (buff_len >= length - 1) {
-			return -1;
-		}
-		
-		*pcount += 1;
-		
-		if (NULL == pmime->first_boundary) {
-			*poffset += 48;
-		} else {
-			*poffset += pmime->first_boundary - pmime->content_begin;
-		}
-		pnode = simple_tree_node_get_child(&pmime->node);
-		has_submime = FALSE;
-		count = 1;
-        while (NULL != pnode) {
-			has_submime = TRUE;
-			*poffset += pmime->boundary_len + 4;
-			pmime_child = (MIME*)pnode->pdata;
-			if ('\0' == id_string[0]) {
-				snprintf(temp_id, 64, "%zu", count);
-			} else {
-				snprintf(temp_id, 64, "%s.%zu", id_string, count);
-			}
-			auto gsd = pmime_child->get_structure_digest(temp_id, poffset,
-			           pcount, pbuff + buff_len, length - buff_len);
-			if (gsd < 0 || buff_len + gsd >= length - 1)
-				return -1;
-			buff_len += gsd;
-			pnode = simple_tree_node_get_sibling(pnode);
-			count ++;
-		}
-		if (!has_submime)
-			*poffset += pmime->boundary_len + 6;
-		*poffset += pmime->boundary_len + 4;
-		if (NULL == pmime->last_boundary) {
-			*poffset += 4;
-		} else {
-			tmp_len = pmime->content_length - (pmime->last_boundary - 
-					  pmime->content_begin);
-			if (tmp_len > 0) {
-				*poffset += tmp_len;
-			} else if (0 == tmp_len) {
-				*poffset += 2;
-			}
-		}
-		
-
-		if (buff_len >= length - 1) {
-			return -1;
-		}
-		return buff_len;
 	}
+	return mime_get_struct_mul(this, id_string, poffset, head_offset,
+	       pcount, pbuff, length);;
+}
+
+static ssize_t mime_get_struct_mul(MIME *pmime, const char *id_string,
+    size_t *poffset, size_t head_offset, size_t *pcount, char *pbuff,
+    size_t length)
+{
+	size_t count = 0, i, buff_len = 0, tmp_len;
+	MIME	*pmime_child;
+	BOOL	has_submime;
+	SIMPLE_TREE_NODE *pnode;
+	char temp_id[64], content_type[256];
+
+	if (*pcount > 0) {
+		pbuff[buff_len] = ',';
+		buff_len++;
+	}
+	strcpy(content_type, pmime->content_type);
+	if (!mime_check_ascii_printable(content_type))
+		strcpy(content_type, "multipart/mixed");
+	tmp_len = strlen(content_type);
+	for (i = 0; i < tmp_len; i++) {
+		if ('"' == content_type[i] || '\\' == content_type[i]) {
+			content_type[i] = ' ';
+		}
+	}
+	HX_strrtrim(content_type);
+	HX_strltrim(content_type);
+	auto mgl = pmime->get_length();
+	if (mgl < 0)
+		return -1;
+	buff_len += gx_snprintf(pbuff + buff_len, length - buff_len,
+	            "{\"id\":\"%s\",\"ctype\":\"%s\",\"head\":%zu,"
+	            "\"begin\":%zu, \"length\":%zu}", id_string,
+	            content_type, head_offset, *poffset,
+	            head_offset + mgl - *poffset);
+	if (buff_len >= length - 1) {
+		return -1;
+	}
+
+	*pcount += 1;
+	if (NULL == pmime->first_boundary) {
+		*poffset += 48;
+	} else {
+		*poffset += pmime->first_boundary - pmime->content_begin;
+	}
+	pnode = simple_tree_node_get_child(&pmime->node);
+	has_submime = FALSE;
+	count = 1;
+	while (NULL != pnode) {
+		has_submime = TRUE;
+		*poffset += pmime->boundary_len + 4;
+		pmime_child = (MIME *)pnode->pdata;
+		if ('\0' == id_string[0]) {
+			snprintf(temp_id, 64, "%zu", count);
+		} else {
+			snprintf(temp_id, 64, "%s.%zu", id_string, count);
+		}
+		auto gsd = pmime_child->get_structure_digest(temp_id, poffset,
+		           pcount, pbuff + buff_len, length - buff_len);
+		if (gsd < 0 || buff_len + gsd >= length - 1)
+			return -1;
+		buff_len += gsd;
+		pnode = simple_tree_node_get_sibling(pnode);
+		count++;
+	}
+	if (!has_submime)
+		*poffset += pmime->boundary_len + 6;
+	*poffset += pmime->boundary_len + 4;
+	if (NULL == pmime->last_boundary) {
+		*poffset += 4;
+	} else {
+		tmp_len = pmime->content_length - (pmime->last_boundary -
+		          pmime->content_begin);
+		if (tmp_len > 0) {
+			*poffset += tmp_len;
+		} else if (0 == tmp_len) {
+			*poffset += 2;
+		}
+	}
+	if (buff_len >= length - 1) {
+		return -1;
+	}
+	return buff_len;
 }
 
 static BOOL mime_parse_multiple(MIME *pmime)
