@@ -263,7 +263,7 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
     time_t cur_time;
 	struct tm tm_buff;
 	FILE *fp;
-	size_t mess_len, write_len, utmp_len;
+	size_t write_len, utmp_len;
 	int j, tmp_len, copy_result;
 	unsigned int size;
 	static constexpr uint32_t smtp_type = SMTP_IN;
@@ -274,6 +274,7 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 		fprintf(stderr, "E-1529: ENOMEM\n");
 		return false;
 	}
+	uint64_t mess_len = 0;
 	if (NULL == pentity->pflusher->flush_ptr) {
 		fp = fopen(name.c_str(), "w");
         /* check if the file is created successfully */
@@ -282,7 +283,7 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
         }
 		pentity->pflusher->flush_ptr = fp;
 		/* write first 4(8) bytes in the file to indicate incomplete mess */
-		uint64_t mess_len = cpu_to_le64(0);
+		mess_len = cpu_to_le64(0);
 		if (fwrite(&mess_len, 1, sizeof(mess_len), fp) != sizeof(mess_len))
 			goto REMOVE_MESS;
         /* construct head information for mess file */
@@ -363,9 +364,8 @@ BOOL message_enqueue_try_save_mess(FLUSH_ENTITY *pentity)
 	*tmp_buff = 0;
 	fwrite(tmp_buff, 1, 1, fp);
 	fseek(fp, SEEK_SET, 0);
-	if (sizeof(size_t) != fwrite(&mess_len, 1, sizeof(size_t), fp)) {
+	if (fwrite(&mess_len, 1, sizeof(uint64_t), fp) != sizeof(uint64_t))
 		goto REMOVE_MESS;
-	}
     fclose(fp);
 	pentity->pflusher->flush_ptr = NULL;
 	return TRUE;

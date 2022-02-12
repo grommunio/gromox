@@ -266,7 +266,7 @@ int main(int argc, const char **argv) try
 		propid = 0x8001 + i++;
 		sqlite3_bind_int64(pstmt, 1, propid);
 		sqlite3_bind_text(pstmt, 2, name.c_str(), -1, SQLITE_STATIC);
-		auto ret = sqlite3_step(pstmt);
+		ret = sqlite3_step(pstmt);
 		if (ret != SQLITE_DONE) {
 			printf("sqlite3_step on namedprop \"%s\": %s\n",
 			       name.c_str(), sqlite3_errstr(ret));

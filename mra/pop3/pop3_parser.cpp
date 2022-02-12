@@ -323,7 +323,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 							pcontext->write_length - pcontext->write_offset);
 		}
 			
-		auto current_time = time_point::clock::now();
+		current_time = time_point::clock::now();
 		if (0 == written_len) {
 			pop3_parser_log_info(pcontext, LV_DEBUG, "connection lost");
 			goto END_TRANSPORT;

@@ -128,11 +128,9 @@ void STREAM::try_mark_line()
 	char temp1, temp2;
 	DOUBLE_LIST_NODE *pnode;
 
-	int line_result = has_newline();
-	if (STREAM_LINE_AVAILABLE == line_result ||
-		STREAM_LINE_FAIL == line_result) {
+	auto lr = has_newline();
+	if (lr == STREAM_LINE_AVAILABLE || lr == STREAM_LINE_FAIL)
 		return;
-	}
 	if (pstream->block_line_parse == STREAM_BLOCK_SIZE) {
 		pstream->line_result = STREAM_LINE_FAIL;
 		return;
