@@ -69,11 +69,12 @@ int main(int argc, const char **argv)
 		offset += read_len;
 		if (offset == buff_len) {
 			buff_len *= 2;
-			pbuff = static_cast<char *>(realloc(pbuff, buff_len));
+			auto nb = gromox::re_alloc<char>(pbuff, buff_len);
 			if (NULL == pbuff) {
 				fprintf(stderr, "out of memory\n");
 				return 1;
 			}
+			pbuff = nb;
 		}
 	}
 	rtf_bin.pv = pbuff;

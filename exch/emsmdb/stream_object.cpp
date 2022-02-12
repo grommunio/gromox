@@ -200,7 +200,6 @@ void *stream_object::get_content()
 BOOL stream_object::set_length(uint32_t length)
 {
 	auto pstream = this;
-	void *pdata;
 	
 	if (OPENSTREAM_FLAG_READONLY == pstream->open_flags) {
 		return FALSE;
@@ -209,11 +208,11 @@ BOOL stream_object::set_length(uint32_t length)
 		if (length > pstream->max_length) {
 			return FALSE;
 		}
-		pdata = realloc(pstream->content_bin.pb, length);
+		auto pdata = gromox::re_alloc<uint8_t>(pstream->content_bin.pb, length);
 		if (NULL == pdata) {
 			return FALSE;
 		}
-		pstream->content_bin.pv = pdata;
+		pstream->content_bin.pb = pdata;
 		memset(pstream->content_bin.pb + pstream->content_bin.cb,
 							0, length - pstream->content_bin.cb);
 	} else {

@@ -9,8 +9,6 @@
 static bool tpropval_array_append(TPROPVAL_ARRAY *parray, uint32_t proptag,
     const void *xpropval)
 {
-	TAGGED_PROPVAL *ppropvals;
-	
 	if (xpropval == nullptr) {
 		debug_info("[tpropval_array]: pvalue is"
 			" NULL in tpropval_array_append");
@@ -19,7 +17,7 @@ static bool tpropval_array_append(TPROPVAL_ARRAY *parray, uint32_t proptag,
 	auto count = strange_roundup(parray->count, SR_GROW_TAGGED_PROPVAL);
 	if (parray->count + 1U >= count) {
 		count += SR_GROW_TAGGED_PROPVAL;
-		ppropvals = static_cast<TAGGED_PROPVAL *>(realloc(parray->ppropval, count * sizeof(TAGGED_PROPVAL)));
+		auto ppropvals = gromox::re_alloc<TAGGED_PROPVAL>(parray->ppropval, count);
 		if (NULL == ppropvals) {
 			return false;
 		}

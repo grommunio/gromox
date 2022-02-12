@@ -118,15 +118,13 @@ void attachment_list_remove(ATTACHMENT_LIST *plist, uint16_t index)
 BOOL attachment_list_append_internal(ATTACHMENT_LIST *plist,
 	ATTACHMENT_CONTENT *pattachment)
 {
-	ATTACHMENT_CONTENT **pplist;
-	
 	if (plist->count >= 0x8000) {
 		return FALSE;
 	}
 	auto count = strange_roundup(plist->count, SR_GROW_ATTACHMENT_CONTENT);
 	if (plist->count + 1U >= count) {
 		count += SR_GROW_ATTACHMENT_CONTENT;
-		pplist = static_cast<ATTACHMENT_CONTENT **>(realloc(plist->pplist, count * sizeof(ATTACHMENT_CONTENT *)));
+		auto pplist = re_alloc<ATTACHMENT_CONTENT *>(plist->pplist, count);
 		if (NULL == pplist) {
 			return FALSE;
 		}
@@ -369,12 +367,11 @@ property_groupinfo::property_groupinfo(property_groupinfo &&o) :
 bool property_groupinfo::append_internal(PROPTAG_ARRAY *pgroup)
 {
 	auto pgpinfo = this;
-	PROPTAG_ARRAY *pgroups;
 	/* allocate like proptag_array.cpp does */
 	auto count = strange_roundup(pgpinfo->count, SR_GROW_PROPTAG_ARRAY);
 	if (pgpinfo->count + 1 >= count) {
 		count += SR_GROW_PROPTAG_ARRAY;
-		pgroups = static_cast<PROPTAG_ARRAY *>(realloc(pgpinfo->pgroups, sizeof(PROPTAG_ARRAY) * count));
+		auto pgroups = re_alloc<PROPTAG_ARRAY>(pgpinfo->pgroups, count);
 		if (NULL == pgroups) {
 			return FALSE;
 		}

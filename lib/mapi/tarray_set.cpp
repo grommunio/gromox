@@ -50,7 +50,6 @@ void tarray_set::erase(uint32_t index)
 int tarray_set::append_move(TPROPVAL_ARRAY *pproplist)
 {
 	auto pset = this;
-	TPROPVAL_ARRAY **pparray;
 	
 	if (pset->count >= 0xFF00) {
 		return ENOSPC;
@@ -58,7 +57,7 @@ int tarray_set::append_move(TPROPVAL_ARRAY *pproplist)
 	auto count = strange_roundup(pset->count, SR_GROW_TPROPVAL_ARRAY);
 	if (pset->count + 1 >= count) {
 		count += SR_GROW_TPROPVAL_ARRAY;
-		pparray = static_cast<TPROPVAL_ARRAY **>(realloc(pset->pparray, count * sizeof(TPROPVAL_ARRAY *)));
+		auto pparray = gromox::re_alloc<TPROPVAL_ARRAY *>(pset->pparray, count);
 		if (NULL == pparray) {
 			return ENOMEM;
 		}

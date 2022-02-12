@@ -1262,7 +1262,7 @@ static char* rtf_read_element(RTF_READER *preader)
 		ix ++;
 		if (ix == current_max_length) {
 			current_max_length *= 2;
-			auto input_new = static_cast<char *>(realloc(input_str, current_max_length));
+			auto input_new = re_alloc<char>(input_str, current_max_length);
 			if (NULL == input_new) {
 				free(input_str);
 				debug_info("[rtf]: out of memory");

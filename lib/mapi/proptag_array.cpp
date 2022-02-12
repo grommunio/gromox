@@ -45,8 +45,6 @@ void proptag_array_clear(PROPTAG_ARRAY *pproptags)
 
 bool proptag_array_append(PROPTAG_ARRAY *pproptags, uint32_t proptag)
 {
-	uint32_t *pproptag;
-	
 	for (size_t i = 0; i < pproptags->count; ++i)
 		if (pproptags->pproptag[i] == proptag) {
 			return true;
@@ -54,7 +52,7 @@ bool proptag_array_append(PROPTAG_ARRAY *pproptags, uint32_t proptag)
 	auto count = strange_roundup(pproptags->count, SR_GROW_PROPTAG_ARRAY);
 	if (pproptags->count + 1U >= count) {
 		count += SR_GROW_PROPTAG_ARRAY;
-		pproptag = static_cast<uint32_t *>(realloc(pproptags->pproptag, sizeof(uint32_t) * count));
+		auto pproptag = re_alloc<uint32_t>(pproptags->pproptag, count);
 		if (NULL == pproptag) {
 			return false;
 		}

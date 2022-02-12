@@ -275,10 +275,10 @@ static BOOL idset_write_to_binary(BINARY *pbin, const void *pb, uint8_t len)
 	uint32_t alloc_len = strange_roundup(pbin->cb, 4096);
 	if (pbin->cb + len >= alloc_len) {
 		alloc_len = strange_roundup(pbin->cb + len, 4096);
-		auto pdata = realloc(pbin->pb, alloc_len);
+		auto pdata = gromox::re_alloc<uint8_t>(pbin->pb, alloc_len);
 		if (pdata == nullptr)
 			return FALSE;
-		pbin->pv = pdata;
+		pbin->pb = pdata;
 	}
 	memcpy(pbin->pb + pbin->cb, pb, len);
 	pbin->cb += len;

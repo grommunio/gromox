@@ -32,11 +32,10 @@ void eid_array_free(EID_ARRAY *parray)
 
 bool eid_array_append(EID_ARRAY *parray, uint64_t id)
 {
-	uint64_t *pids;
 	auto count = strange_roundup(parray->count, SR_GROW_EID_ARRAY);
 	if (parray->count + 1 >= count) {
 		count += SR_GROW_EID_ARRAY;
-		pids = static_cast<uint64_t *>(realloc(parray->pids, count * sizeof(uint64_t)));
+		auto pids = re_alloc<uint64_t>(parray->pids, count);
 		if (NULL == pids) {
 			return false;
 		}
@@ -48,15 +47,13 @@ bool eid_array_append(EID_ARRAY *parray, uint64_t id)
 
 bool eid_array_batch_append(EID_ARRAY *parray, uint32_t id_count, uint64_t *pids)
 {
-	uint64_t *ptmp_ids;
-	
 	if (0 == id_count) {
 		return true;
 	}
 	auto count = strange_roundup(parray->count, SR_GROW_EID_ARRAY);
 	if (parray->count + id_count >= count) {
 		count = strange_roundup(parray->count + id_count, SR_GROW_EID_ARRAY);
-		ptmp_ids = static_cast<uint64_t *>(realloc(parray->pids, count * sizeof(uint64_t)));
+		auto ptmp_ids = re_alloc<uint64_t>(parray->pids, count);
 		if (NULL == ptmp_ids) {
 			return false;
 		}

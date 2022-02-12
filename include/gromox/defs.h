@@ -390,6 +390,8 @@ struct stdlib_delete {
 };
 template<typename T> static inline T *me_alloc() { return static_cast<T *>(malloc(sizeof(T))); }
 template<typename T> static inline T *me_alloc(size_t elem) { return static_cast<T *>(malloc(sizeof(T) * elem)); }
+template<typename T> static inline T *re_alloc(void *x) { return static_cast<T *>(realloc(x, sizeof(T))); }
+template<typename T> static inline T *re_alloc(void *x, size_t elem) { return static_cast<T *>(realloc(x, sizeof(T) * elem)); }
 static inline const char *snul(const std::string &s) { return s.size() != 0 ? s.c_str() : nullptr; }
 static inline const char *znul(const char *s) { return s != nullptr ? s : ""; }
 
