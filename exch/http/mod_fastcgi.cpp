@@ -105,7 +105,7 @@ static time_duration g_exec_timeout;
 static uint64_t g_max_size;
 static uint64_t g_cache_size;
 static std::vector<FASTCGI_NODE> g_fastcgi_list;
-static FASTCGI_CONTEXT *g_context_list;
+static std::unique_ptr<FASTCGI_CONTEXT[]> g_context_list;
 static std::atomic<int> g_unavailable_times;
 
 static const FASTCGI_NODE *mod_fastcgi_find_backend(const char *domain,
@@ -203,23 +203,21 @@ static int mod_fastcgi_read_txt() try
 	return -ENOMEM;
 }
 
-int mod_fastcgi_run()
+int mod_fastcgi_run() try
 {
 	auto ret = mod_fastcgi_read_txt();
 	if (ret < 0)
 		return ret;
-	g_context_list = me_alloc<FASTCGI_CONTEXT>(g_context_num);
-	if (NULL == g_context_list) {
-		printf("[mod_fastcgi]: Failed to allocate context list\n");
-		return -ENOMEM;
-	}
+	g_context_list = std::make_unique<FASTCGI_CONTEXT[]>(g_context_num);
 	return 0;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1654: ENOMEM\n");
+	return -ENOMEM;
 }
 
 void mod_fastcgi_stop()
 {
-	free(g_context_list);
-	g_context_list = NULL;
+	g_context_list.reset();
 }
 
 static int mod_fastcgi_push_name_value(NDR_PUSH *pndr,

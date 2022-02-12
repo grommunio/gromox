@@ -15,18 +15,14 @@ using time_point = std::chrono::time_point<std::chrono::system_clock>;
 struct FASTCGI_NODE;
 
 struct FASTCGI_CONTEXT {
-	BOOL b_index;
-	BOOL b_chunked;
-	uint32_t chunk_size;
-	uint32_t chunk_offset; 
-	BOOL b_end;
-	uint64_t content_length;
-	const FASTCGI_NODE *pfnode;
-	int cache_fd;
-	uint64_t cache_size;
-	int cli_sockd;
-	BOOL b_header; /* is response header met */
-	gromox::time_point last_time;
+	BOOL b_index = false, b_chunked = false, b_end = false;
+	BOOL b_header = false; /* is response header met */
+	uint32_t chunk_size = 0, chunk_offset = 0;
+	uint64_t content_length = 0;
+	const FASTCGI_NODE *pfnode = nullptr;
+	uint64_t cache_size = 0;
+	int cache_fd = -1, cli_sockd = -1;
+	gromox::time_point last_time{};
 };
 
 struct HTTP_CONTEXT;
