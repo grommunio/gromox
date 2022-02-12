@@ -186,8 +186,7 @@ MJSON::~MJSON()
  *                          or seek file discritor in
  *                          message, path cannot be NULL.
  */
-BOOL MJSON::retrieve(char *digest_buff,
-	int length, const char *path)
+BOOL MJSON::retrieve(char *digest_buff, int length, const char *inpath)
 {
 	auto pjson = this;
 	int bcount = 0, scount = 0;
@@ -396,15 +395,14 @@ BOOL MJSON::retrieve(char *digest_buff,
 	}
 	/* check for NONE mime in tree */
 	b_none = FALSE;
-	simple_tree_enum_from_node(pnode, [&](const SIMPLE_TREE_NODE *pnode) {
-		if (static_cast<MJSON_MIME *>(pnode->pdata)->mime_type == MJSON_MIME_NONE)
+	simple_tree_enum_from_node(pnode, [&](const SIMPLE_TREE_NODE *nd) {
+		if (static_cast<MJSON_MIME *>(nd->pdata)->mime_type == MJSON_MIME_NONE)
 			b_none = TRUE;
 	});
 	if (b_none)
 		return FALSE;
-	if (NULL != path) {
-		strcpy(pjson->path, path);
-	}
+	if (inpath != nullptr)
+		strcpy(pjson->path, inpath);
 	return TRUE;
 }
 
@@ -949,10 +947,9 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 	}	
 } 
 
-int MJSON::fetch_structure(const char *charset, BOOL b_ext, char *buff, int length)
+int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff, int length)
 {
 	auto pjson = this;
-	int ret_len;
 	MJSON_MIME *pmime;
 	SIMPLE_TREE_NODE *pnode;
 
@@ -970,7 +967,7 @@ int MJSON::fetch_structure(const char *charset, BOOL b_ext, char *buff, int leng
 	}
 	
 	pmime = (MJSON_MIME*)pnode->pdata;
-	ret_len = mjson_fetch_mime_structure(pmime, NULL, NULL, charset,
+	auto ret_len = mjson_fetch_mime_structure(pmime, nullptr, nullptr, cset,
 				pjson->charset, b_ext, buff, length);
 	if (ret_len == -1)
 		return -1;
@@ -1362,7 +1359,7 @@ static int mjson_convert_address(char *address, const char *charset,
 	return offset;
 }
 
-int MJSON::fetch_envelope(const char *charset, char *buff, int length)
+int MJSON::fetch_envelope(const char *cset, char *buff, int length)
 {
 	auto pjson = this;
 	int offset;
@@ -1404,7 +1401,7 @@ int MJSON::fetch_envelope(const char *charset, char *buff, int length)
 						" \"%s\"", temp_buff);
 		} else {
 			offset += gx_snprintf(buff + offset, length - offset, " \"=?%s?b?",
-						('\0' != pjson->charset[0])?pjson->charset:charset);
+			          *pjson->charset != '\0' ? pjson->charset : cset);
 			if (0 != encode64(pjson->subject, strlen(pjson->subject),
 				buff + offset, length - offset, &ecode_len)) {
 				return -1;
@@ -1799,7 +1796,7 @@ static void mjson_enum_build(MJSON_MIME *pmime, void *param)
 	return;
 }
 
-BOOL MJSON::rfc822_build(std::shared_ptr<MIME_POOL> ppool, const char *storage_path)
+BOOL MJSON::rfc822_build(std::shared_ptr<MIME_POOL> pool, const char *storage_path)
 {
 	auto pjson = this;
 	char temp_path[256];
@@ -1820,7 +1817,7 @@ BOOL MJSON::rfc822_build(std::shared_ptr<MIME_POOL> ppool, const char *storage_p
 	build_param.msg_path = pjson->path;
 	build_param.storage_path = temp_path;
 	build_param.depth = 1;
-	build_param.ppool = ppool;
+	build_param.ppool = pool;
 	build_param.build_result = TRUE;
 	pjson->enum_mime(mjson_enum_build, &build_param);
 	if (!build_param.build_result)
@@ -1881,11 +1878,10 @@ BOOL MJSON::rfc822_get(MJSON *pjson, const char *storage_path, const char *id,
 	return FALSE;
 }
 	
-int MJSON::rfc822_fetch(const char *storage_path,
-	const char *charset, BOOL b_ext, char *buff, int length)
+int MJSON::rfc822_fetch(const char *storage_path, const char *cset,
+    BOOL b_ext, char *buff, int length)
 {
 	auto pjson = this;
-	int ret_len;
 	MJSON_MIME *pmime;
 	char temp_path[256];
 	struct stat node_stat;
@@ -1913,7 +1909,7 @@ int MJSON::rfc822_fetch(const char *storage_path,
 	}
 	
 	pmime = (MJSON_MIME*)pnode->pdata;
-	ret_len = mjson_fetch_mime_structure(pmime, temp_path, "", charset,
+	auto ret_len = mjson_fetch_mime_structure(pmime, temp_path, "", cset,
 				pjson->charset, b_ext, buff, length);
 	if (ret_len == -1)
 		return -1;

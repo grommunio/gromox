@@ -608,11 +608,11 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
 	
 	simple_tree_enum_from_node(simple_tree_get_root(&pmail->tree),
 	[&](SIMPLE_TREE_NODE *n) {
-		char temp_buff[1024];
+		char buf[1024];
 		auto m = static_cast<MIME *>(n->pdata);
 		if (strcasecmp(m->content_type, "multipart/signed") == 0)
 			b_tags[TAG_SIGNED] = TRUE;
-		if (m->get_content_param("smime-type", temp_buff, arsizeof(temp_buff)))
+		if (m->get_content_param("smime-type", buf, arsizeof(buf)))
 			b_tags[TAG_ENCRYPT] = TRUE;
 	});
 	if (b_tags[TAG_SIGNED]) {

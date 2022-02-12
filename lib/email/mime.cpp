@@ -450,22 +450,21 @@ BOOL MIME::write_mail(MAIL *pmail)
  *		pmime [in,out]		indicate the MIME object
  *		content_type [in]	buffer containing content type
  */
-BOOL MIME::set_content_type(const char *content_type)
+BOOL MIME::set_content_type(const char *newtype)
 {
 	auto pmime = this;
 	BOOL b_multiple;
 
 #ifdef _DEBUG_UMTA
-	if (content_type == nullptr) {
+	if (newtype == nullptr) {
 		debug_info("[mime]: NULL pointer found in mime_set_content_type");
 		return FALSE;
 	}
 #endif
 	
 	b_multiple = FALSE;
-	if (0 == strncasecmp(content_type, "multipart/", 10)) {
+	if (strncasecmp(newtype, "multipart/", 10) == 0)
 		b_multiple = TRUE;
-	}
 	if (SINGLE_MIME == pmime->mime_type) {
 		if (b_multiple)
 			return FALSE;
@@ -477,8 +476,7 @@ BOOL MIME::set_content_type(const char *content_type)
 			pmime->mime_type = SINGLE_MIME;
 		}
 	}
-	strncpy(pmime->content_type, content_type, 255);
-	pmime->content_type[255] = '\0';
+	gx_strlcpy(content_type, newtype, arsizeof(content_type));
 	pmime->head_touched = TRUE;
 	return TRUE;
 }
@@ -914,7 +912,7 @@ BOOL MIME::set_content_param(const char *tag, const char *value)
 	int	tag_len, val_len;
 	char	tmp_buff[MIME_FIELD_LEN];
 	BOOL	found_tag = FALSE;
-	int		i, mark, boundary_len;
+	int i, mark;
 	
 #ifdef _DEBUG_UMTA
 	if (tag == nullptr || value == nullptr) {
@@ -923,21 +921,18 @@ BOOL MIME::set_content_param(const char *tag, const char *value)
 	}
 #endif
 	if (0 == strcasecmp(tag, "boundary")) {
-		boundary_len = strlen(value);
-		if (boundary_len > VALUE_LEN - 3 || boundary_len < 3) {
+		auto bdlen = strlen(value);
+		if (bdlen > VALUE_LEN - 3 || bdlen < 3)
 			return FALSE;
-		}
 		if ('"' == value[0]) {
-			if ('"' != value[boundary_len - 1]) {
+			if (value[bdlen-1] != '"')
 				return FALSE;
-			}
-			memcpy(pmime->boundary_string, value + 1, boundary_len - 1);
-			pmime->boundary_string[boundary_len - 1] = '\0';
-			pmime->boundary_len = boundary_len - 2;
+			gx_strlcpy(boundary_string, value + 1, bdlen - 1);
+			boundary_len = bdlen - 2;
 		} else {
-			memcpy(pmime->boundary_string, value, boundary_len);
-			pmime->boundary_string[boundary_len] = '\0';
-			pmime->boundary_len = boundary_len;
+			memcpy(boundary_string, value, bdlen);
+			boundary_string[bdlen] = '\0';
+			boundary_len = bdlen;
 		}
 	}
 	pmime->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
