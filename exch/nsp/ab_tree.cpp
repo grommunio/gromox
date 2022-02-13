@@ -239,8 +239,8 @@ int ab_tree_run()
 	E(get_mlist_ids, "get_mlist_ids");
 	E(get_lang, "get_lang");
 #undef E
-	g_file_allocator.reset(LIB_BUFFER::create(FILE_ALLOC_SIZE,
-		g_file_blocks, TRUE));
+	g_file_allocator = LIB_BUFFER::create(FILE_ALLOC_SIZE,
+	                   g_file_blocks, TRUE);
 	if (NULL == g_file_allocator) {
 		printf("[exchange_nsp]: Failed to allocate file blocks\n");
 		return -3;

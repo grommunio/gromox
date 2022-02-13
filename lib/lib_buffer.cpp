@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <gromox/defs.h>
 #include <gromox/util.hpp>
 #include <gromox/lib_buffer.hpp>
@@ -19,7 +20,8 @@ static constexpr auto wsize_al = roundup(WSIZE, sizeof(std::max_align_t));
  *		pointer to LIB_BUFFER	structure
  *		NULL if error happened
  */
-LIB_BUFFER *LIB_BUFFER::create(size_t item_size, size_t item_num, BOOL is_thread_safe)
+std::unique_ptr<LIB_BUFFER> LIB_BUFFER::create(size_t item_size,
+    size_t item_num, BOOL is_thread_safe) try
 {
 	void*	head_listp		= NULL;
 	
@@ -27,19 +29,11 @@ LIB_BUFFER *LIB_BUFFER::create(size_t item_size, size_t item_num, BOOL is_thread
 		debug_info("[lib_buffer]: lib_buffer_init, invalid parameter");
 		return NULL;
 	}
-	LIB_BUFFER *lib_buffer;
-	try {
-		lib_buffer = new LIB_BUFFER;
-	} catch (const std::bad_alloc &) {
-		debug_info("[lib_buffer]: lib_buffer_init, malloc lib_buffer fail");
-		return NULL;
-	}
-
+	auto lib_buffer = std::make_unique<LIB_BUFFER>();
 	auto item_size_al = roundup(item_size, sizeof(std::max_align_t));
 	head_listp = malloc((item_size_al + wsize_al) * item_num);
 	if (head_listp == nullptr) {
 		debug_info("[lib_buffer]: lib_buffer_init, malloc head_listp fail");
-		delete lib_buffer;
 		return NULL;
 	}
 
@@ -54,6 +48,10 @@ LIB_BUFFER *LIB_BUFFER::create(size_t item_size, size_t item_num, BOOL is_thread
 	lib_buffer->item_num		= item_num;
 	lib_buffer->is_thread_safe	= is_thread_safe;
 	return lib_buffer;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1568: ENOMEM\n");
+	debug_info("[lib_buffer]: lib_buffer_init, malloc lib_buffer fail");
+	return NULL;
 }
 
 /*

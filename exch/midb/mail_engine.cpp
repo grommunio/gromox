@@ -5458,7 +5458,7 @@ int mail_engine_run()
 		printf("[mail_engine]: Failed to init MIME pool\n");
 		return -3;
 	}
-	g_alloc_mjson.reset(mjson_allocator_init(g_table_size * 10));
+	g_alloc_mjson = mjson_allocator_init(g_table_size * 10);
 	if (NULL == g_alloc_mjson) {
 		printf("[mail_engine]: Failed to init buffer pool for mjson\n");
 		return -4;

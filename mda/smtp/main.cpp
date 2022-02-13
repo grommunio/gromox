@@ -319,7 +319,7 @@ int main(int argc, const char **argv) try
 	auto cleanup_8 = make_scope_exit(system_services_stop);
 
 	size_t fa_blocks_num = scfg.context_num * 128;
-	g_files_allocator.reset(LIB_BUFFER::create(FILE_ALLOC_SIZE, fa_blocks_num, TRUE));
+	g_files_allocator = LIB_BUFFER::create(FILE_ALLOC_SIZE, fa_blocks_num, TRUE);
 	if (g_files_allocator == nullptr) {
 		printf("[system]: can not run file allocator\n"); 
 		return EXIT_FAILURE;

@@ -233,8 +233,8 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 		if (!list_file_read_midb("midb_list.txt"))
 			return false;
 		if (g_file_ratio > 0) {
-			g_file_allocator.reset(LIB_BUFFER::create(FILE_ALLOC_SIZE, 
-				get_context_num() * g_file_ratio, TRUE));
+			g_file_allocator = LIB_BUFFER::create(FILE_ALLOC_SIZE,
+			                   get_context_num() * g_file_ratio, TRUE);
 			if (NULL == g_file_allocator) {
 				printf("[midb_agent]: failed to init memory pool\n");
 				return FALSE;

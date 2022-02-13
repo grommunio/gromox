@@ -18,7 +18,7 @@ void blocks_allocator_init(size_t blocks)
 
 int blocks_allocator_run() 
 {
-	g_allocator.reset(LIB_BUFFER::create(STREAM_ALLOC_SIZE, g_blocks_num, TRUE));
+	g_allocator = LIB_BUFFER::create(STREAM_ALLOC_SIZE, g_blocks_num, TRUE);
     if (NULL == g_allocator) {
         return -1;
     }

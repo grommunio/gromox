@@ -71,8 +71,8 @@ int threads_pool_run()
 	pthread_attr_t attr;
 	
 	/* g_threads_data_buff is protected by g_threads_pool_data_lock */
-	g_threads_data_buff.reset(LIB_BUFFER::create(sizeof(THR_DATA),
-		g_threads_pool_max_num, false));
+	g_threads_data_buff = LIB_BUFFER::create(sizeof(THR_DATA),
+	                      g_threads_pool_max_num, false);
 	if (NULL == g_threads_data_buff) {
 		printf("[threads_pool]: Failed to allocate memory for threads pool\n");
 		return -1;

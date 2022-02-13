@@ -419,20 +419,20 @@ int rop_processor_run()
 	int context_num;
 	
 	context_num = get_context_num();
-	g_logmap_allocator.reset(LIB_BUFFER::create(256 * sizeof(LOGON_ITEM *),
-		context_num * MAX_HANDLES_ON_CONTEXT, TRUE));
+	g_logmap_allocator = LIB_BUFFER::create(256 * sizeof(LOGON_ITEM *),
+	                     context_num * MAX_HANDLES_ON_CONTEXT, TRUE);
 	if (NULL == g_logmap_allocator) {
 		printf("[exchange_emsmdb]: Failed to init logon map allocator\n");
 		return -1;
 	}
-	g_logitem_allocator.reset(LIB_BUFFER::create(sizeof(LOGON_ITEM),
-		256 * context_num, TRUE));
+	g_logitem_allocator = LIB_BUFFER::create(sizeof(LOGON_ITEM),
+	                      256 * context_num, TRUE);
 	if (NULL == g_logitem_allocator) {
 		printf("[exchange_emsmdb]: Failed to init object map allocator\n");
 		return -2;
 	}
-	g_handle_allocator.reset(LIB_BUFFER::create(sizeof(OBJECT_NODE),
-		g_average_handles*context_num, TRUE));
+	g_handle_allocator = LIB_BUFFER::create(sizeof(OBJECT_NODE),
+	                     g_average_handles * context_num, TRUE);
 	if (NULL == g_handle_allocator) {
 		printf("[exchange_emsmdb]: Failed to init object handle allocator\n");
 		return -3;

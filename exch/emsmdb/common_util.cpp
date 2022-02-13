@@ -2147,8 +2147,8 @@ int common_util_run()
 		printf("[exchange_emsmdb]: Failed to init oxcmail library\n");
 		return -2;
 	}
-	g_file_allocator.reset(LIB_BUFFER::create(FILE_ALLOC_SIZE,
-		g_average_blocks*context_num, TRUE));
+	g_file_allocator = LIB_BUFFER::create(FILE_ALLOC_SIZE,
+	                   g_average_blocks * context_num, TRUE);
 	if (NULL == g_file_allocator) {
 		printf("[exchange_emsmdb]: Failed to init mem file allocator\n");
 		return -3;

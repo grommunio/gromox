@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <mutex>
 #include <type_traits>
 #include <gromox/common_types.hpp>
@@ -21,7 +22,7 @@ struct GX_EXPORT LIB_BUFFER {
 	LIB_BUFFER() = default;
 	~LIB_BUFFER();
 	NOMOVE(LIB_BUFFER);
-	static LIB_BUFFER *create(size_t item_size, size_t item_num, BOOL is_thread_safe);
+	static std::unique_ptr<LIB_BUFFER> create(size_t item_size, size_t item_num, BOOL is_thread_safe);
 	void *get_raw();
 	template<typename T> inline T *get()
 	{

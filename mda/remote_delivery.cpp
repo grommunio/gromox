@@ -413,7 +413,8 @@ static BOOL remote_delivery_entry(int request, void **apidata) try
 		CFG_TABLE_END,
 	};
 	config_file_apply(*cfg_file, cfg_default_values);
-	g_files_allocator.reset(LIB_BUFFER::create(FILE_ALLOC_SIZE, 256 * get_threads_num(), TRUE));
+	g_files_allocator = LIB_BUFFER::create(FILE_ALLOC_SIZE,
+	                    256 * get_threads_num(), TRUE);
 	if (g_files_allocator == nullptr)
 		return false;
 	g_mx_host = cfg_file->get_value("mx_host");

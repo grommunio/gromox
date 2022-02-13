@@ -30,8 +30,8 @@ void (*exmdb_server_event_proc)(const char *dir,
 
 int exmdb_server_run()
 {
-	g_ctx_allocator.reset(LIB_BUFFER::create(sizeof(ENVIRONMENT_CONTEXT),
-		2 * get_context_num(), TRUE));
+	g_ctx_allocator = LIB_BUFFER::create(sizeof(ENVIRONMENT_CONTEXT),
+	                  2 * get_context_num(), TRUE);
 	if (NULL == g_ctx_allocator) {
 		printf("[exmdb_provider]: Failed to init environment allocator\n");
 		return -1;

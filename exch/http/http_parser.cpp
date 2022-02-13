@@ -206,8 +206,8 @@ int http_parser_run()
 		CRYPTO_set_locking_callback(http_parser_ssl_locking);
 #endif
 	}
-	g_file_allocator.reset(LIB_BUFFER::create(FILE_ALLOC_SIZE,
-		g_context_num * 16, TRUE));
+	g_file_allocator = LIB_BUFFER::create(FILE_ALLOC_SIZE,
+	                   g_context_num * 16, TRUE);
 	if (NULL == g_file_allocator) {
 		printf("[http_parser]: Failed to init mem file allocator\n");
 		return -6;
@@ -223,13 +223,13 @@ int http_parser_run()
 		printf("[http_parser]: Failed to allocate HTTP contexts\n");
         return -8;
     }
-	g_inchannel_allocator.reset(LIB_BUFFER::create(sizeof(RPC_IN_CHANNEL),
-		g_context_num, TRUE));
+	g_inchannel_allocator = LIB_BUFFER::create(sizeof(RPC_IN_CHANNEL),
+	                        g_context_num, TRUE);
 	if (NULL == g_inchannel_allocator) {
 		return -9;
 	}
-	g_outchannel_allocator.reset(LIB_BUFFER::create(sizeof(RPC_OUT_CHANNEL),
-		g_context_num, TRUE));
+	g_outchannel_allocator = LIB_BUFFER::create(sizeof(RPC_OUT_CHANNEL),
+	                         g_context_num, TRUE);
 	if (NULL == g_outchannel_allocator) {
 		return -10;
 	}

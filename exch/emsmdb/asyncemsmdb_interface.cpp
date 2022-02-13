@@ -91,8 +91,8 @@ int asyncemsmdb_interface_run()
 		printf("[exchange_emsmdb]: Failed to init async ID hash table\n");
 		return -2;
 	}
-	g_wait_allocator.reset(LIB_BUFFER::create(sizeof(ASYNC_WAIT),
-		2 * context_num, TRUE));
+	g_wait_allocator = LIB_BUFFER::create(sizeof(ASYNC_WAIT),
+	                   2 * context_num, TRUE);
 	if (NULL == g_wait_allocator) {
 		printf("[exchange_emsmdb]: Failed to init async wait allocator\n");
 		return -3;

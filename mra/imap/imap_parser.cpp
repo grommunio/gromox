@@ -211,7 +211,7 @@ int imap_parser_run()
 	if (num < 1024*1024) {
 		num = 1024*1024;
 	}
-	g_alloc_file.reset(LIB_BUFFER::create(FILE_ALLOC_SIZE, num, TRUE));
+	g_alloc_file = LIB_BUFFER::create(FILE_ALLOC_SIZE, num, TRUE);
 	if (NULL == g_alloc_file) {
 		printf("[imap_parser]: Failed to init mem file allocator\n");
 		return -5;
@@ -230,8 +230,8 @@ int imap_parser_run()
 		printf("[imap_parser]: Failed to init MIME pool\n");
 		return -6;
 	}
-	g_alloc_xarray.reset(LIB_BUFFER::create(sizeof(MITEM) + EXTRA_XARRAYNODE_SIZE,
-		g_average_num * g_context_num, TRUE));
+	g_alloc_xarray = LIB_BUFFER::create(sizeof(MITEM) + EXTRA_XARRAYNODE_SIZE,
+	                 g_average_num * g_context_num, TRUE);
 	if (NULL == g_alloc_xarray) {
 		printf("[imap_parser]: Failed to init mem file allocator\n");
 		return -7;
@@ -241,7 +241,7 @@ int imap_parser_run()
 	if (num < 1000) {
 		num = 1000;
 	}
-	g_alloc_dir.reset(LIB_BUFFER::create(sizeof(DIR_NODE), num, TRUE));
+	g_alloc_dir = LIB_BUFFER::create(sizeof(DIR_NODE), num, TRUE);
 	if (NULL == g_alloc_dir) {
 		printf("[imap_parser]: Failed to init dir node allocator\n");
 		return -8;
@@ -251,7 +251,7 @@ int imap_parser_run()
 	if (num < 400) {
 		num = 400;
 	}
-	g_alloc_mjson.reset(mjson_allocator_init(num));
+	g_alloc_mjson = mjson_allocator_init(num);
 	if (NULL == g_alloc_mjson) {
 		printf("[imap_parser]: Failed to init mjson allocator\n");
 		return -9;
