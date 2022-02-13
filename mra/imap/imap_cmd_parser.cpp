@@ -2021,10 +2021,8 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int len;
 	int errnum;
-	DIR_NODE *pdir;
 	size_t string_length = 0;
 	MEM_FILE temp_file;
-	DIR_TREE temp_tree;
 	char buff[256*1024];
 	char temp_name[1024];
 	char search_pattern[1024];
@@ -2076,24 +2074,22 @@ int imap_cmd_parser_list(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		temp_file.writeline("trash");
 		temp_file.writeline("junk");
 		imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
-		dir_tree_init(&temp_tree, imap_parser_get_dpool());
-		dir_tree_retrieve(&temp_tree, &temp_file);
+		dir_tree temp_tree(imap_parser_get_dpool());
+		temp_tree.retrieve(&temp_file);
 		len = 0;
 		temp_file.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 		while (temp_file.readline(temp_name, arsizeof(temp_name)) != MEM_END_OF_FILE) {
 			if (!imap_cmd_parser_wildcard_match(temp_name, search_pattern))
 				continue;
-			pdir = dir_tree_match(&temp_tree, temp_name);
-			if (NULL != pdir && NULL != dir_tree_get_child(pdir)) {
+			auto pdir = temp_tree.match(temp_name);
+			if (pdir != nullptr && temp_tree.get_child(pdir) != nullptr)
 				len += gx_snprintf(buff + len, arsizeof(buff) - len,
 				       "* LIST (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
-			} else {
+			else
 				len += gx_snprintf(buff + len, arsizeof(buff) - len,
 				       "* LIST (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
-			}
 		}
 		mem_file_free(&temp_file);
-		dir_tree_free(&temp_tree);
 		pcontext->stream.clear();
 		if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 			imap_parser_echo_modify(pcontext, &pcontext->stream);
@@ -2155,10 +2151,8 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum;
 	int i, len;
-	DIR_NODE *pdir;
 	size_t string_length = 0;
 	MEM_FILE temp_file;
-	DIR_TREE temp_tree;
 	char buff[256*1024];
 	char temp_name[1024];
 	char search_pattern[1024];
@@ -2192,50 +2186,46 @@ int imap_cmd_parser_xlist(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	}
 	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file);
-	dir_tree_init(&temp_tree, imap_parser_get_dpool());
-	dir_tree_retrieve(&temp_tree, &temp_file);
+	dir_tree temp_tree(imap_parser_get_dpool());
+	temp_tree.retrieve(&temp_file);
 	len = 0;
 	if (imap_cmd_parser_wildcard_match("INBOX", search_pattern)) {
-		pdir = dir_tree_match(&temp_tree, "INBOX");
-		if (NULL != pdir && NULL != dir_tree_get_child(pdir)) {
+		auto pdir = temp_tree.match("INBOX");
+		if (pdir != nullptr && temp_tree.get_child(pdir) != nullptr)
 			len = gx_snprintf(buff + len, arsizeof(buff),
 				"* XLIST (\\Inbox \\HasChildren) \"/\" \"INBOX\"\r\n");
-		} else {
+		else
 			len = gx_snprintf(buff + len, arsizeof(buff),
 				"* XLIST (\\Inbox \\HasNoChildren) \"/\" \"INBOX\"\r\n");
-		}
 	}
 	for (i=0; i<4; i++) {
 		imap_cmd_parser_sysfolder_to_imapfolder(
 			pcontext->lang, g_folder_list[i], temp_name);
 		if (imap_cmd_parser_wildcard_match(temp_name, search_pattern)) {
-			pdir = dir_tree_match(&temp_tree, temp_name);
-			if (NULL != pdir && NULL != dir_tree_get_child(pdir)) {
+			auto pdir = temp_tree.match(temp_name);
+			if (pdir != nullptr && temp_tree.get_child(pdir) != nullptr)
 				len += gx_snprintf(buff + len, arsizeof(buff) - len,
 					"* XLIST (\\%s \\HasChildren) \"/\" \"%s\"\r\n",
 					g_xproperty_list[i], temp_name);
-			} else {
+			else
 				len += gx_snprintf(buff + len, arsizeof(buff) - len,
 					"* XLIST (\\%s \\HasNoChildren) \"/\" \"%s\"\r\n",
 					g_xproperty_list[i], temp_name);
-			}
 		}
 	}
 	temp_file.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	while (temp_file.readline(temp_name, arsizeof(temp_name)) != MEM_END_OF_FILE) {
 		if (!imap_cmd_parser_wildcard_match(temp_name, search_pattern))
 			continue;
-		pdir = dir_tree_match(&temp_tree, temp_name);
-		if (NULL != pdir && NULL != dir_tree_get_child(pdir)) {
+		auto pdir = temp_tree.match(temp_name);
+		if (pdir != nullptr && temp_tree.get_child(pdir) != nullptr)
 			len += gx_snprintf(buff + len, arsizeof(buff) - len,
 				"* XLIST (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
-		} else {
+		else
 			len += gx_snprintf(buff + len, arsizeof(buff) - len,
 				"* XLIST (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
-		}
 	}
 	mem_file_free(&temp_file);
-	dir_tree_free(&temp_tree);
 	pcontext->stream.clear();
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
@@ -2255,11 +2245,9 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int len;
 	int errnum;
-	DIR_NODE *pdir;
 	size_t string_length = 0;
 	MEM_FILE temp_file;
 	MEM_FILE temp_file1;
-	DIR_TREE temp_tree;
 	char buff[256*1024];
 	char temp_name[1024];
 	char search_pattern[1024];
@@ -2313,24 +2301,22 @@ int imap_cmd_parser_lsub(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	temp_file1.writeline("trash");
 	temp_file1.writeline("junk");
 	imap_cmd_parser_convert_folderlist(pcontext->lang, &temp_file1);
-	dir_tree_init(&temp_tree, imap_parser_get_dpool());
-	dir_tree_retrieve(&temp_tree, &temp_file1);
+	dir_tree temp_tree(imap_parser_get_dpool());
+	temp_tree.retrieve(&temp_file1);
 	mem_file_free(&temp_file1);
 	len = 0;
 	while (temp_file.readline(temp_name, arsizeof(temp_name)) != MEM_END_OF_FILE) {
 		if (!imap_cmd_parser_wildcard_match(temp_name, search_pattern))
 			continue;
-		pdir = dir_tree_match(&temp_tree, temp_name);
-		if (NULL != pdir && NULL != dir_tree_get_child(pdir)) {
+		auto pdir = temp_tree.match(temp_name);
+		if (pdir != nullptr && temp_tree.get_child(pdir) != nullptr)
 			len += gx_snprintf(buff + len, arsizeof(buff) - len,
 				"* LSUB (\\HasChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
-		} else {
+		else
 			len += gx_snprintf(buff + len, arsizeof(buff) - len,
 				"* LSUB (\\HasNoChildren) \"/\" {%zu}\r\n%s\r\n", strlen(temp_name), temp_name);
-		}
 	}
 	mem_file_free(&temp_file);
-	dir_tree_free(&temp_tree);
 	pcontext->stream.clear();
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_echo_modify(pcontext, &pcontext->stream);

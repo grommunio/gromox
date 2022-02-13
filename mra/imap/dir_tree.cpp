@@ -14,15 +14,15 @@ static void dir_tree_enum_delete(SIMPLE_TREE_NODE *pnode)
 	pdir->ppool->put(pdir);
 }
 
-void dir_tree_init(DIR_TREE *ptree, LIB_BUFFER *pallocator)
+dir_tree::dir_tree(LIB_BUFFER *a) : ppool(a)
 {
+	auto ptree = this;
 	simple_tree_init(&ptree->tree);
-	ptree->ppool = pallocator;
-	
 }
 
-void dir_tree_retrieve(DIR_TREE *ptree, MEM_FILE *pfile)
+void dir_tree::retrieve(MEM_FILE *pfile)
 {
+	auto ptree = this;
 	char *ptr1, *ptr2;
 	char temp_path[4096 + 1];
 	SIMPLE_TREE_NODE *pnode, *proot, *pnode_parent;
@@ -93,8 +93,9 @@ static void dir_tree_clear(DIR_TREE *ptree)
 
 }
 
-DIR_NODE* dir_tree_match(DIR_TREE *ptree, const char *path)
+DIR_NODE *dir_tree::match(const char *path)
 {
+	auto ptree = this;
 	int len;
 	DIR_NODE *pdir = nullptr;
 	char *ptr1, *ptr2;
@@ -145,7 +146,7 @@ DIR_NODE* dir_tree_match(DIR_TREE *ptree, const char *path)
 	return pdir;
 }
 
-DIR_NODE* dir_tree_get_child(DIR_NODE* pdir)
+DIR_NODE *dir_tree::get_child(DIR_NODE* pdir)
 {
 	SIMPLE_TREE_NODE *pnode;
 
@@ -157,8 +158,9 @@ DIR_NODE* dir_tree_get_child(DIR_NODE* pdir)
 	}
 }
 
-void dir_tree_free(DIR_TREE *ptree)
+dir_tree::~dir_tree()
 {
+	auto ptree = this;
 	dir_tree_clear(ptree);
 	simple_tree_free(&ptree->tree);
 	ptree->ppool = NULL;

@@ -10,15 +10,15 @@ struct DIR_NODE {
 	LIB_BUFFER *ppool;
 };
 
-struct DIR_TREE {
-	SIMPLE_TREE tree;
-	LIB_BUFFER  *ppool;
+struct dir_tree {
+	dir_tree(LIB_BUFFER *);
+	~dir_tree();
+	void retrieve(MEM_FILE *);
+	DIR_NODE *match(const char *path);
+	static DIR_NODE *get_child(DIR_NODE *);
+
+	SIMPLE_TREE tree{};
+	LIB_BUFFER *ppool = nullptr;
 };
-
+using DIR_TREE = dir_tree;
 using DIR_TREE_ENUM = void (*)(DIR_NODE *, void*);
-
-void dir_tree_init(DIR_TREE *ptree, LIB_BUFFER *pallocator);
-void dir_tree_retrieve(DIR_TREE *ptree, MEM_FILE *pfile);
-DIR_NODE* dir_tree_match(DIR_TREE *ptree, const char *path);
-DIR_NODE* dir_tree_get_child(DIR_NODE* pdir);
-void dir_tree_free(DIR_TREE *ptree);
