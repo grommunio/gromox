@@ -653,7 +653,7 @@ static int imap_search(const char *path, const char *folder,
 	length ++;
 	
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		length = strlen(buff + 4);
@@ -675,12 +675,8 @@ static int imap_search(const char *path, const char *folder,
 		pback.reset();
 		*perrno = strtol(buff + 6, nullptr, 0);
 		return MIDB_RESULT_ERROR;
-	} else {
-		goto RDWR_ERROR;
 	}
- RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
-
 }
 
 static int imap_search_uid(const char *path, const char *folder,
@@ -714,7 +710,7 @@ static int imap_search_uid(const char *path, const char *folder,
 	length ++;
 	
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		length = strlen(buff + 4);
@@ -736,12 +732,8 @@ static int imap_search_uid(const char *path, const char *folder,
 		pback.reset();
 		*perrno = strtol(buff + 6, nullptr, 0);
 		return MIDB_RESULT_ERROR;
-	} else {
-		goto RDWR_ERROR;
 	}
- RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
-
 }
 
 static int get_mail_id(const char *path, const char *folder,
@@ -755,7 +747,7 @@ static int get_mail_id(const char *path, const char *folder,
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-OFST %s %s %s UID ASC\r\n",
 				path, folder, mid_string);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		*pid = strtol(buff + 5, nullptr, 0) + 1;
 		pback.reset();
@@ -763,12 +755,8 @@ static int get_mail_id(const char *path, const char *folder,
 	} else if (0 == strncmp(buff, "FALSE ", 6)) {
 		pback.reset();
 		return MIDB_RESULT_ERROR;
-	} else {
-		goto RDWR_ERROR;
 	}
- RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
-
 }
 
 static int get_mail_uid(const char *path, const char *folder,
@@ -782,7 +770,7 @@ static int get_mail_uid(const char *path, const char *folder,
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-UNID %s %s %s\r\n",
 				path, folder, mid_string);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		*puid = strtol(buff + 5, nullptr, 0);
 		pback.reset();
@@ -790,10 +778,7 @@ static int get_mail_uid(const char *path, const char *folder,
 	} else if (0 == strncmp(buff, "FALSE ", 6)) {
 		pback.reset();
 		return MIDB_RESULT_ERROR;
-	} else {
-		goto RDWR_ERROR;
 	}
- RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
 }
 
@@ -812,7 +797,7 @@ static int summary_folder(const char *path, const char *folder, int *pexists,
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-FDDT %s %s UID ASC\r\n", path, folder);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		if (6 != sscanf(buff, "TRUE %d %d %d %lu %u %d", &exists,
 		    &recent, &unseen, &uidvalid, &uidnext, &first_unseen)) {
@@ -844,10 +829,7 @@ static int summary_folder(const char *path, const char *folder, int *pexists,
 		pback.reset();
 		*perrno = strtol(buff + 6, nullptr, 0);
 		return MIDB_RESULT_ERROR;
-	} else {
-		goto RDWR_ERROR;
 	}
- RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
 }
 	
@@ -860,7 +842,7 @@ static int make_folder(const char *path, const char *folder, int *perrno)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-MAKF %s %s\r\n", path, folder);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		return MIDB_RESULT_OK;
@@ -868,10 +850,7 @@ static int make_folder(const char *path, const char *folder, int *perrno)
 		pback.reset();
 		*perrno = strtol(buff + 6, nullptr, 0);
 		return MIDB_RESULT_ERROR;
-	} else {
-		goto RDWR_ERROR;
 	}
- RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
 }
 
@@ -884,7 +863,7 @@ static int remove_folder(const char *path, const char *folder, int *perrno)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-REMF %s %s\r\n", path, folder);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		return MIDB_RESULT_OK;
@@ -892,10 +871,7 @@ static int remove_folder(const char *path, const char *folder, int *perrno)
 		pback.reset();
 		*perrno = strtol(buff + 6, nullptr, 0);
 		return MIDB_RESULT_ERROR;
-	} else {
-		goto RDWR_ERROR;
 	}
- RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
 }
 
@@ -908,7 +884,7 @@ static int ping_mailbox(const char *path, int *perrno)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-PING %s\r\n", path);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		return MIDB_RESULT_OK;
@@ -916,10 +892,7 @@ static int ping_mailbox(const char *path, int *perrno)
 		pback.reset();
 		*perrno = strtol(buff + 6, nullptr, 0);
 		return MIDB_RESULT_ERROR;
-	} else {
-		goto RDWR_ERROR;
 	}
- RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
 }
 
@@ -934,7 +907,7 @@ static int rename_folder(const char *path, const char *src_name,
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-RENF %s %s %s\r\n", path,
 				src_name, dst_name);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		return MIDB_RESULT_OK;
@@ -942,10 +915,7 @@ static int rename_folder(const char *path, const char *src_name,
 		pback.reset();
 		*perrno = strtol(buff + 6, nullptr, 0);
 		return MIDB_RESULT_ERROR;
-	} else {
-		goto RDWR_ERROR;
 	}
- RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
 }
 
@@ -958,7 +928,7 @@ static int subscribe_folder(const char *path, const char *folder, int *perrno)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-SUBF %s %s\r\n", path, folder);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		return MIDB_RESULT_OK;
@@ -966,10 +936,7 @@ static int subscribe_folder(const char *path, const char *folder, int *perrno)
 		pback.reset();
 		*perrno = strtol(buff + 6, nullptr, 0);
 		return MIDB_RESULT_ERROR;
-	} else {
-		goto RDWR_ERROR;
 	}
- RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
 }
 
@@ -982,7 +949,7 @@ static int unsubscribe_folder(const char *path, const char *folder, int *perrno)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-UNSF %s %s\r\n", path, folder);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		return MIDB_RESULT_OK;
@@ -990,10 +957,7 @@ static int unsubscribe_folder(const char *path, const char *folder, int *perrno)
 		pback.reset();
 		*perrno = strtol(buff + 6, nullptr, 0);
 		return MIDB_RESULT_ERROR;
-	} else {
-		goto RDWR_ERROR;
 	}
- RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
 }
 
@@ -1017,7 +981,7 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-ENUM %s\r\n", path);
 	if (length != write(pback->sockd, buff, length)) {
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	}
 	
 	count = 0;
@@ -1028,11 +992,11 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
 		if (1 != poll(&pfd_read, 1, tv_msec)) {
-			goto RDWR_ERROR;
+			return MIDB_RDWR_ERROR;
 		}
 		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
 		if (read_len <= 0) {
-			goto RDWR_ERROR;
+			return MIDB_RDWR_ERROR;
 		}
 		offset += read_len;
 		
@@ -1045,7 +1009,7 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 					num_buff[i-5] = '\0';
 					lines = strtol(num_buff, nullptr, 0);
 					if (lines < 0) {
-						goto RDWR_ERROR;
+						return MIDB_RDWR_ERROR;
 					}
 					last_pos = i + 2;
 					line_pos = 0;
@@ -1054,13 +1018,12 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 					pback.reset();
 					*perrno = strtol(buff + 6, nullptr, 0);
 					return MIDB_RESULT_ERROR;
-				} else {
-					goto RDWR_ERROR;
 				}
+				return MIDB_RDWR_ERROR;
 			}
 			if (-1 == lines) {
 				if (offset > 1024) {
-					goto RDWR_ERROR;
+					return MIDB_RDWR_ERROR;
 				}
 				continue;
 			}
@@ -1077,7 +1040,7 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 				temp_line[line_pos] = buff[i];
 				line_pos ++;
 				if (line_pos >= 512) {
-					goto RDWR_ERROR;
+					return MIDB_RDWR_ERROR;
 				}
 			}
 		}
@@ -1097,10 +1060,7 @@ static int enum_folders(const char *path, MEM_FILE *pfile, int *perrno)
 			last_pos = 0;
 		}
 	}
-
- RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
-
 }
 
 static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
@@ -1123,7 +1083,7 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-SUBL %s\r\n", path);
 	if (length != write(pback->sockd, buff, length)) {
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	}
 	
 	
@@ -1135,11 +1095,11 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 		pfd_read.fd = pback->sockd;
 		pfd_read.events = POLLIN|POLLPRI;
 		if (1 != poll(&pfd_read, 1, tv_msec)) {
-			goto RDWR_ERROR;
+			return MIDB_RDWR_ERROR;
 		}
 		read_len = read(pback->sockd, buff + offset, 256*1024 - offset);
 		if (read_len <= 0) {
-			goto RDWR_ERROR;
+			return MIDB_RDWR_ERROR;
 		}
 		offset += read_len;
 		
@@ -1152,7 +1112,7 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 					num_buff[i-5] = '\0';
 					lines = strtol(num_buff, nullptr, 0);
 					if (lines < 0) {
-						goto RDWR_ERROR;
+						return MIDB_RDWR_ERROR;
 					}
 					last_pos = i + 2;
 					line_pos = 0;
@@ -1161,13 +1121,12 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 					pback.reset();
 					*perrno = strtol(buff + 6, nullptr, 0);
 					return MIDB_RESULT_ERROR;
-				} else {
-					goto RDWR_ERROR;
 				}
+				return MIDB_RDWR_ERROR;
 			}
 			if (-1 == lines) {
 				if (offset > 1024) {
-					goto RDWR_ERROR;
+					return MIDB_RDWR_ERROR;
 				}
 				continue;
 			}
@@ -1184,7 +1143,7 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 				temp_line[line_pos] = buff[i];
 				line_pos ++;
 				if (line_pos > 150) {
-					goto RDWR_ERROR;
+					return MIDB_RDWR_ERROR;
 				}
 			}
 		}
@@ -1204,10 +1163,7 @@ static int enum_subscriptions(const char *path, MEM_FILE *pfile, int *perrno)
 			last_pos = 0;
 		}
 	}
-
- RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
-
 }
 
 static int insert_mail(const char *path, const char *folder,
@@ -1222,7 +1178,7 @@ static int insert_mail(const char *path, const char *folder,
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-INST %s %s %s %s %ld\r\n",
 				path, folder, file_name, flags_string, time_stamp);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		return MIDB_RESULT_OK;
@@ -1230,10 +1186,7 @@ static int insert_mail(const char *path, const char *folder,
 		pback.reset();
 		*perrno = strtol(buff + 6, nullptr, 0);
 		return MIDB_RESULT_ERROR;
-	} else {
-		goto RDWR_ERROR;
 	}
- RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
 }
 
@@ -1268,16 +1221,15 @@ static int remove_mail(const char *path, const char *folder,
 		buff[length] = '\n';
 		length ++;
 		if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-			goto RDWR_ERROR;
+			return MIDB_RDWR_ERROR;
 		if (0 == strncmp(buff, "TRUE", 4)) {
 			length = gx_snprintf(buff, arsizeof(buff), "M-DELE %s %s", path, folder);
 		} else if (0 == strncmp(buff, "FALSE ", 6)) {
 			pback.reset();
 			*perrno = strtol(buff + 6, nullptr, 0);
 			return MIDB_RESULT_ERROR;
-		} else {
-			goto RDWR_ERROR;
 		}
+		return MIDB_RDWR_ERROR;
 	}
 
 	if (length > cmd_len) {
@@ -1286,7 +1238,7 @@ static int remove_mail(const char *path, const char *folder,
 		buff[length] = '\n';
 		length ++;
 		if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-			goto RDWR_ERROR;
+			return MIDB_RDWR_ERROR;
 		if (0 == strncmp(buff, "TRUE", 4)) {
 			pback.reset();
 			return MIDB_RESULT_OK;
@@ -1294,12 +1246,9 @@ static int remove_mail(const char *path, const char *folder,
 			pback.reset();
 			*perrno = strtol(buff + 6, nullptr, 0);
 			return MIDB_RESULT_ERROR;
-		} else {
-			goto RDWR_ERROR;
 		}
+		return MIDB_RDWR_ERROR;
 	}
-
- RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
 }
 
@@ -1365,7 +1314,7 @@ static int list_simple(const char *path, const char *folder, XARRAY *pxarray,
 		return MIDB_NO_SERVER;
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-SIML %s %s UID ASC\r\n", path, folder);
 	if (length != write(pback->sockd, buff, length)) {
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	}
 	
 	
@@ -1802,7 +1751,7 @@ static int fetch_simple(const char *path, const char *folder,
 						pseq->max - pseq->min + 1);
 		}
 		if (length != write(pback->sockd, buff, length)) {
-			goto RDWR_ERROR;
+			return MIDB_RDWR_ERROR;
 		}
 		
 		
@@ -1815,11 +1764,11 @@ static int fetch_simple(const char *path, const char *folder,
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
 			if (1 != poll(&pfd_read, 1, tv_msec)) {
-				goto RDWR_ERROR;
+				return MIDB_RDWR_ERROR;
 			}
 			read_len = read(pback->sockd, buff + offset, 1024 - offset);
 			if (read_len <= 0) {
-				goto RDWR_ERROR;
+				return MIDB_RDWR_ERROR;
 			}
 			offset += read_len;
 			
@@ -1832,7 +1781,7 @@ static int fetch_simple(const char *path, const char *folder,
 						num_buff[i-5] = '\0';
 						lines = strtol(num_buff, nullptr, 0);
 						if (lines < 0) {
-							goto RDWR_ERROR;
+							return MIDB_RDWR_ERROR;
 						}
 						last_pos = i + 2;
 						line_pos = 0;
@@ -1845,7 +1794,7 @@ static int fetch_simple(const char *path, const char *folder,
 				}
 				if (-1 == lines) {
 					if (offset > 1024) {
-						goto RDWR_ERROR;
+						return MIDB_RDWR_ERROR;
 					}
 					continue;
 				}
@@ -1885,7 +1834,7 @@ static int fetch_simple(const char *path, const char *folder,
 					temp_line[line_pos] = buff[i];
 					line_pos ++;
 					if (line_pos >= 128) {
-						goto RDWR_ERROR;
+						return MIDB_RDWR_ERROR;
 					}
 				}
 			}
@@ -1912,9 +1861,6 @@ static int fetch_simple(const char *path, const char *folder,
 	
 	pback.reset();
 	return MIDB_RESULT_OK;
-
- RDWR_ERROR:
-	return MIDB_RDWR_ERROR;
 }
 
 static int fetch_detail(const char *path, const char *folder,
@@ -2114,7 +2060,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 		auto length = gx_snprintf(buff, arsizeof(buff), "P-SIMU %s %s UID ASC %d %d\r\n", path, folder,
 					pseq->min, pseq->max);
 		if (length != write(pback->sockd, buff, length)) {
-			goto RDWR_ERROR;
+			return MIDB_RDWR_ERROR;
 		}
 		
 		
@@ -2127,11 +2073,11 @@ static int fetch_simple_uid(const char *path, const char *folder,
 			pfd_read.fd = pback->sockd;
 			pfd_read.events = POLLIN|POLLPRI;
 			if (1 != poll(&pfd_read, 1, tv_msec)) {
-				goto RDWR_ERROR;
+				return MIDB_RDWR_ERROR;
 			}
 			read_len = read(pback->sockd, buff + offset, 1024 - offset);
 			if (read_len <= 0) {
-				goto RDWR_ERROR;
+				return MIDB_RDWR_ERROR;
 			}
 			offset += read_len;
 
@@ -2144,7 +2090,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 						num_buff[i-5] = '\0';
 						lines = strtol(num_buff, nullptr, 0);
 						if (lines < 0) {
-							goto RDWR_ERROR;
+							return MIDB_RDWR_ERROR;
 						}
 						last_pos = i + 2;
 						line_pos = 0;
@@ -2157,7 +2103,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 				}
 				if (-1 == lines) {
 					if (offset > 1024) {
-						goto RDWR_ERROR;
+						return MIDB_RDWR_ERROR;
 					}
 					continue;
 				}
@@ -2204,7 +2150,7 @@ static int fetch_simple_uid(const char *path, const char *folder,
 					temp_line[line_pos] = buff[i];
 					line_pos ++;
 					if (line_pos >= 128) {
-						goto RDWR_ERROR;
+						return MIDB_RDWR_ERROR;
 					}
 				}
 			}
@@ -2231,9 +2177,6 @@ static int fetch_simple_uid(const char *path, const char *folder,
 
 	pback.reset();
 	return MIDB_RESULT_OK;
-
- RDWR_ERROR:
-	return MIDB_RDWR_ERROR;
 }
 
 static int fetch_detail_uid(const char *path, const char *folder,
@@ -2443,7 +2386,7 @@ static int set_mail_flags(const char *path, const char *folder,
 	length = gx_snprintf(buff, arsizeof(buff), "P-SFLG %s %s %s %s\r\n",
 				path, folder, mid_string, flags_string);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		return MIDB_RESULT_OK;
@@ -2451,10 +2394,7 @@ static int set_mail_flags(const char *path, const char *folder,
 		pback.reset();
 		*perrno = strtol(buff + 6, nullptr, 0);
 		return MIDB_RESULT_ERROR;
-	} else {
-		goto RDWR_ERROR;
 	}
- RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
 }
 	
@@ -2505,7 +2445,7 @@ static int unset_mail_flags(const char *path, const char *folder,
 	length = gx_snprintf(buff, arsizeof(buff), "P-RFLG %s %s %s %s\r\n",
 				path, folder, mid_string, flags_string);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		return MIDB_RESULT_OK;
@@ -2513,10 +2453,7 @@ static int unset_mail_flags(const char *path, const char *folder,
 		pback.reset();
 		*perrno = strtol(buff + 6, nullptr, 0);
 		return MIDB_RESULT_ERROR;
-	} else {
-		goto RDWR_ERROR;
 	}
- RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
 }
 	
@@ -2531,7 +2468,7 @@ static int get_mail_flags(const char *path, const char *folder,
 	auto length = gx_snprintf(buff, arsizeof(buff), "P-GFLG %s %s %s\r\n",
 				path, folder, mid_string);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		*pflag_bits = 0;
@@ -2542,13 +2479,8 @@ static int get_mail_flags(const char *path, const char *folder,
 		pback.reset();
 		*perrno = strtol(buff + 6, nullptr, 0);
 		return MIDB_RESULT_ERROR;
-	} else {
-		goto RDWR_ERROR;
 	}
- RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
-
-
 }
 	
 static int copy_mail(const char *path, const char *src_folder,
@@ -2562,7 +2494,7 @@ static int copy_mail(const char *path, const char *src_folder,
 	auto length = gx_snprintf(buff, arsizeof(buff), "M-COPY %s %s %s %s\r\n",
 				path, src_folder, mid_string, dst_folder);
 	if (rw_command(pback->sockd, buff, length, arsizeof(buff)) < 0)
-		goto RDWR_ERROR;
+		return MIDB_RDWR_ERROR;
 	if (0 == strncmp(buff, "TRUE", 4)) {
 		pback.reset();
 		strcpy(dst_mid, buff + 5);
@@ -2571,12 +2503,8 @@ static int copy_mail(const char *path, const char *src_folder,
 		pback.reset();
 		*perrno = strtol(buff + 6, nullptr, 0);
 		return MIDB_RESULT_ERROR;
-	} else {
-		goto RDWR_ERROR;
 	}
- RDWR_ERROR:
 	return MIDB_RDWR_ERROR;
-
 }
 
 static BOOL read_line(int sockd, char *buff, size_t length)
