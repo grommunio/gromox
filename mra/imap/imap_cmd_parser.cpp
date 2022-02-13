@@ -2877,7 +2877,6 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int errnum;
 	int result;
 	int del_num;
-	XARRAY xarray;
 	BOOL b_deleted;
 	size_t string_length = 0;
 	char buff[1024];
@@ -2889,22 +2888,19 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	if (pcontext->b_readonly)
 		return 1806;
 	b_deleted = FALSE;
-	xarray_init(&xarray, imap_parser_get_xpool(), sizeof(MITEM));
+	XARRAY xarray(imap_parser_get_xpool(), sizeof(MITEM));
 	result = system_services_list_deleted(pcontext->maildir,
 	         pcontext->selected_folder, &xarray, &errnum);
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
 	case MIDB_NO_SERVER: {
-		xarray_free(&xarray);
 		return 1905;
 	}
 	case MIDB_RDWR_ERROR: {
-		xarray_free(&xarray);
 		return 1906;
 	}
 	default: {
-		xarray_free(&xarray);
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
@@ -2940,7 +2936,6 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		} catch (const std::bad_alloc &) {
 			fprintf(stderr, "E-1459: ENOMEM\n");
 		}
-		xarray_free(&xarray);
 		if (b_deleted)
 			imap_parser_touch_modify(pcontext, pcontext->username,
 										pcontext->selected_folder);
@@ -2955,15 +2950,12 @@ int imap_cmd_parser_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_BREAK;
 	}
 	case MIDB_NO_SERVER: {
-		xarray_free(&xarray);
 		return 1905;
 	}
 	case MIDB_RDWR_ERROR: {
-		xarray_free(&xarray);
 		return 1906;
 	}
 	default: {
-		xarray_free(&xarray);
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
@@ -3038,7 +3030,6 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	BOOL b_data;
 	MITEM *pitem;
 	BOOL b_detail;
-	XARRAY xarray;
 	char buff[1024];
 	size_t string_length = 0;
 	char* tmp_argv[128];
@@ -3052,13 +3043,13 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	if (argc < 4 || !imap_cmd_parser_parse_sequence(&list_seq,
 	    sequence_nodes, argv[2]))
-		goto FETCH_PARAM_ERR;
+		return 1800;
 	if (FALSE == imap_cmd_parser_parse_fetch_args(
 		&list_data, nodes, &b_detail, &b_data, argv[3],
 		tmp_argv, sizeof(tmp_argv)/sizeof(char*))) {
-		goto FETCH_PARAM_ERR;
+		return 1800;
 	}
-	xarray_init(&xarray, imap_parser_get_xpool(), sizeof(MITEM));
+	XARRAY xarray(imap_parser_get_xpool(), sizeof(MITEM));
 	if (b_detail)
 		result = system_services_fetch_detail(pcontext->maildir,
 		         pcontext->selected_folder, &list_seq, &xarray, &errnum);
@@ -3069,15 +3060,12 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	case MIDB_RESULT_OK:
 		break;
 	case MIDB_NO_SERVER: {
-		xarray_free(&xarray);
 		return 1905;
 	}
 	case MIDB_RDWR_ERROR: {
-		xarray_free(&xarray);
 		return 1906;
 	}
 	default: {
-		xarray_free(&xarray);
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
@@ -3090,7 +3078,6 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	if (b_detail)
 		system_services_free_result(&xarray);
-	xarray_free(&xarray);
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170020: OK FETCH completed */
 	{
@@ -3108,15 +3095,12 @@ int imap_cmd_parser_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		pcontext->sched_stat = SCHED_STAT_WRLST;
 	}
 	return DISPATCH_BREAK;
- FETCH_PARAM_ERR:
-	return 1800;
 }
 
 int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum, result, i;
 	MITEM *pitem;
-	XARRAY xarray;
 	int flag_bits;
 	int temp_argc;
 	char *temp_argv[8];
@@ -3162,22 +3146,19 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			return 1807;
 		}
 	}
-	xarray_init(&xarray, imap_parser_get_xpool(), sizeof(MITEM));
+	XARRAY xarray(imap_parser_get_xpool(), sizeof(MITEM));
 	result = system_services_fetch_simple(pcontext->maildir,
 	         pcontext->selected_folder, &list_seq, &xarray, &errnum);
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
 	case MIDB_NO_SERVER: {
-		xarray_free(&xarray);
 		return 1905;
 	}
 	case MIDB_RDWR_ERROR: {
-		xarray_free(&xarray);
 		return 1906;
 	}
 	default: {
-		xarray_free(&xarray);
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
@@ -3188,7 +3169,6 @@ int imap_cmd_parser_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			pitem->id, 0, flag_bits, pcontext);
 		imap_parser_modify_flags(pcontext, pitem->mid);
 	}
-	xarray_free(&xarray);
 	imap_parser_echo_modify(pcontext, NULL);
 	return 1721;
 }
@@ -3201,7 +3181,6 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	MITEM *pitem;
 	BOOL b_first;
 	BOOL b_copied;
-	XARRAY xarray;
 	int i, j;
 	unsigned long uidvalidity;
 	size_t string_length = 0, string_length1 = 0;
@@ -3222,22 +3201,19 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		pcontext->lang, argv[3], temp_name)) {
 		return 1800;
 	}
-	xarray_init(&xarray, imap_parser_get_xpool(), sizeof(MITEM));
+	XARRAY xarray(imap_parser_get_xpool(), sizeof(MITEM));
 	result = system_services_fetch_simple(pcontext->maildir,
 	         pcontext->selected_folder, &list_seq, &xarray, &errnum);
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
 	case MIDB_NO_SERVER: {
-		xarray_free(&xarray);
 		return 1905;
 	}
 	case MIDB_RDWR_ERROR: {
-		xarray_free(&xarray);
 		return 1906;
 	}
 	default: {
-		xarray_free(&xarray);
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
@@ -3297,7 +3273,6 @@ int imap_cmd_parser_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		system_services_remove_mail(pcontext->maildir,
 			temp_name, &temp_list, &errnum);
 	}
-	xarray_free(&xarray);
 	pcontext->stream.clear();
 	if (b_copied) {
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
@@ -3385,7 +3360,6 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int result;
 	BOOL b_data;
 	MITEM *pitem;
-	XARRAY xarray;
 	BOOL b_detail;
 	char buff[1024];
 	size_t string_length = 0;
@@ -3401,11 +3375,11 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	if (argc < 5 || !imap_cmd_parser_parse_sequence(&list_seq,
 	    sequence_nodes, argv[3]))
-		goto UID_FETCH_PARAM_ERR;
+		return 1800;
 	if (FALSE == imap_cmd_parser_parse_fetch_args(
 		&list_data, nodes, &b_detail, &b_data, argv[4],
 		tmp_argv, sizeof(tmp_argv)/sizeof(char*))) {
-		goto UID_FETCH_PARAM_ERR;
+		return 1800;
 	}
 	for (pnode=double_list_get_head(&list_data); NULL!=pnode;
 		pnode=double_list_get_after(&list_data, pnode)) {
@@ -3417,7 +3391,7 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		nodes[1023].pdata = deconst("UID");
 		double_list_insert_as_head(&list_data, &nodes[1023]);
 	}
-	xarray_init(&xarray, imap_parser_get_xpool(), sizeof(MITEM));
+	XARRAY xarray(imap_parser_get_xpool(), sizeof(MITEM));
 	if (b_detail)
 		result = system_services_fetch_detail_uid(pcontext->maildir,
 		         pcontext->selected_folder, &list_seq, &xarray, &errnum);
@@ -3428,15 +3402,12 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	case MIDB_RESULT_OK:
 		break;
 	case MIDB_NO_SERVER: {
-		xarray_free(&xarray);
 		return 1905;
 	}
 	case MIDB_RDWR_ERROR: {
-		xarray_free(&xarray);
 		return 1906;
 	}
 	default: {
-		xarray_free(&xarray);
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
@@ -3449,7 +3420,6 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	}
 	if (b_detail)
 		system_services_free_result(&xarray);
-	xarray_free(&xarray);
 	imap_parser_echo_modify(pcontext, &pcontext->stream);
 	/* IMAP_CODE_2170028: OK UID FETCH completed */
 	{
@@ -3467,16 +3437,12 @@ int imap_cmd_parser_uid_fetch(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		pcontext->sched_stat = SCHED_STAT_WRLST;
 	}
 	return DISPATCH_BREAK;
-	
- UID_FETCH_PARAM_ERR:
-	return 1800;
 }
 
 int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 {
 	int errnum, i, result;
 	MITEM *pitem;
-	XARRAY xarray;
 	int flag_bits;
 	int temp_argc;
 	char *temp_argv[8];
@@ -3522,22 +3488,19 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			return 1807;
 		}
 	}
-	xarray_init(&xarray, imap_parser_get_xpool(), sizeof(MITEM));
+	XARRAY xarray(imap_parser_get_xpool(), sizeof(MITEM));
 	result = system_services_fetch_simple_uid(pcontext->maildir,
 	         pcontext->selected_folder, &list_seq, &xarray, &errnum);
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
 	case MIDB_NO_SERVER: {
-		xarray_free(&xarray);
 		return 1905;
 	}
 	case MIDB_RDWR_ERROR: {
-		xarray_free(&xarray);
 		return 1906;
 	}
 	default: {
-		xarray_free(&xarray);
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
@@ -3548,7 +3511,6 @@ int imap_cmd_parser_uid_store(int argc, char **argv, IMAP_CONTEXT *pcontext)
 			pitem->id, pitem->uid, flag_bits, pcontext);
 		imap_parser_modify_flags(pcontext, pitem->mid);
 	}
-	xarray_free(&xarray);
 	imap_parser_echo_modify(pcontext, NULL);
 	return 1724;
 }
@@ -3561,7 +3523,6 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	BOOL b_first;
 	MITEM *pitem;
 	BOOL b_copied;
-	XARRAY xarray;
 	int i, j;
 	unsigned long uidvalidity;
 	size_t string_length = 0, string_length1 = 0;
@@ -3581,22 +3542,19 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		pcontext->lang, argv[4], temp_name)) {
 		return 1800;
 	}
-	xarray_init(&xarray, imap_parser_get_xpool(), sizeof(MITEM));
+	XARRAY xarray(imap_parser_get_xpool(), sizeof(MITEM));
 	result = system_services_fetch_simple_uid(pcontext->maildir,
 	         pcontext->selected_folder, &list_seq, &xarray, &errnum);
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
 	case MIDB_NO_SERVER: {
-		xarray_free(&xarray);
 		return 1905;
 	}
 	case MIDB_RDWR_ERROR: {
-		xarray_free(&xarray);
 		return 1906;
 	}
 	default: {
-		xarray_free(&xarray);
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
@@ -3651,7 +3609,6 @@ int imap_cmd_parser_uid_copy(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		system_services_remove_mail(pcontext->maildir,
 			temp_name, &temp_list, &errnum);
 	}
-	xarray_free(&xarray);
 	pcontext->stream.clear();
 	if (b_copied) {
 		imap_parser_echo_modify(pcontext, &pcontext->stream);
@@ -3684,7 +3641,6 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 	int result;
 	int del_num;
 	int max_uid;
-	XARRAY xarray;
 	BOOL b_deleted;
 	char buff[1024];
 	size_t string_length = 0;
@@ -3702,28 +3658,24 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return 1800;
 	}
 	b_deleted = FALSE;
-	xarray_init(&xarray, imap_parser_get_xpool(), sizeof(MITEM));
+	XARRAY xarray(imap_parser_get_xpool(), sizeof(MITEM));
 	result = system_services_list_deleted(pcontext->maildir,
 	         pcontext->selected_folder, &xarray, &errnum);
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
 	case MIDB_NO_SERVER: {
-		xarray_free(&xarray);
 		return 1905;
 	}
 	case MIDB_RDWR_ERROR: {
-		xarray_free(&xarray);
 		return 1906;
 	}
 	default: {
-		xarray_free(&xarray);
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
 	auto num = xarray.get_capacity();
 	if (0 == num) {
-		xarray_free(&xarray);
 		imap_parser_echo_modify(pcontext, NULL);
 		return 1730;
 	}
@@ -3764,7 +3716,6 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		} catch (const std::bad_alloc &) {
 			fprintf(stderr, "E-1458: ENOMEM\n");
 		}
-		xarray_free(&xarray);
 		if (b_deleted)
 			imap_parser_touch_modify(pcontext, pcontext->username,
 										pcontext->selected_folder);
@@ -3779,15 +3730,12 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 		return DISPATCH_BREAK;
 	}
 	case MIDB_NO_SERVER: {
-		xarray_free(&xarray);
 		return 1905;
 	}
 	case MIDB_RDWR_ERROR: {
-		xarray_free(&xarray);
 		return 1906;
 	}
 	default: {
-		xarray_free(&xarray);
 		return static_cast<uint16_t>(errnum) | DISPATCH_MIDB;
 	}
 	}
@@ -3796,7 +3744,6 @@ int imap_cmd_parser_uid_expunge(int argc, char **argv, IMAP_CONTEXT *pcontext)
 void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 {
 	int errnum, result, i;
-	XARRAY xarray;
 	BOOL b_deleted;
 	char buff[1024];
 	char prev_selected[128];
@@ -3813,14 +3760,13 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 	pcontext->selected_folder[0] = '\0';
 	if (pcontext->b_readonly)
 		return;
-	xarray_init(&xarray, imap_parser_get_xpool(), sizeof(MITEM));
+	XARRAY xarray(imap_parser_get_xpool(), sizeof(MITEM));
 	result = system_services_list_deleted(pcontext->maildir,
 	         prev_selected, &xarray, &errnum);
 	switch(result) {
 	case MIDB_RESULT_OK:
 		break;
 	case MIDB_NO_SERVER: {
-		xarray_free(&xarray);
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
 		auto imap_reply_str = resource_get_imap_code(1905, 1, &string_length);
@@ -3829,7 +3775,6 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 		return;
 	}
 	case MIDB_RDWR_ERROR: {
-		xarray_free(&xarray);
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
 		auto imap_reply_str = resource_get_imap_code(1906, 1, &string_length);
@@ -3838,7 +3783,6 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 		return;
 	}
 	default: {
-		xarray_free(&xarray);
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		auto imap_reply_str = resource_get_imap_code(1907, 1, &string_length);
@@ -3877,7 +3821,6 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 		}
 		break;
 	case MIDB_NO_SERVER: {
-		xarray_free(&xarray);
 		/* IMAP_CODE_2190005: NO server internal
 			error, missing MIDB connection */
 		auto imap_reply_str = resource_get_imap_code(1905, 1, &string_length);
@@ -3886,7 +3829,6 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 		return;
 	}
 	case MIDB_RDWR_ERROR: {
-		xarray_free(&xarray);
 		/* IMAP_CODE_2190006: NO server internal
 		error, fail to communicate with MIDB */
 		auto imap_reply_str = resource_get_imap_code(1906, 1, &string_length);
@@ -3895,7 +3837,6 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 		return;
 	}
 	default: {
-		xarray_free(&xarray);
 		estring = resource_get_error_string(errnum);
 		/* IMAP_CODE_2190007: NO server internal error, */
 		auto imap_reply_str = resource_get_imap_code(1907, 1, &string_length);
@@ -3905,7 +3846,6 @@ void imap_cmd_parser_clsfld(IMAP_CONTEXT *pcontext)
 		return;
 	}
 	}
-	xarray_free(&xarray);
 	if (b_deleted)
 		imap_parser_touch_modify(pcontext,
 			pcontext->username, prev_selected);

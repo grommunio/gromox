@@ -12,36 +12,27 @@
  *							memory core
  *		data_size			the data elements size
  */
-void xarray_init(XARRAY *pxarray, LIB_BUFFER *pbuf_pool, size_t data_size)
+XARRAY::XARRAY(LIB_BUFFER *pbuf_pool, size_t data_size)
 {
+	auto pxarray = this;
 #ifdef _DEBUG_UMTA
-	if (NULL == pxarray || NULL == pbuf_pool) {
+	if (pbuf_pool == nullptr) {
 		debug_info("[xarray]: NULL pointer found in xarray_init");
 		return;
 	}
 #endif
-	memset(pxarray, 0, sizeof(XARRAY));
 	double_list_init(&pxarray->mlist);
-	
 	pxarray->mbuf_pool	 = pbuf_pool;
-	pxarray->cur_size	 = 0;
 	pxarray->data_size	 = data_size;
-   
 	if (data_size > pbuf_pool->get_param(MEM_ITEM_SIZE) - EXTRA_XARRAYNODE_SIZE) {
 		debug_info("[xarray]: xarray_init warning: xarray data"
 			" size larger than allocator item size");
 	}
 }
 
-/*
- *	free the specified xarray
- *
- *	@param
- *		pxarray [in]	 the xarray object to free
- */
-
-void xarray_free(XARRAY* pxarray)
+XARRAY::~XARRAY()
 {
+	auto pxarray = this;
 	pxarray->clear();
 	double_list_free(&pxarray->mlist);
 }
