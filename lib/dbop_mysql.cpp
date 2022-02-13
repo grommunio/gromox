@@ -428,6 +428,7 @@ static constexpr char tbl_domains_top[] =
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
 "  `org_id` int(10) unsigned NOT NULL DEFAULT 0,"
 "  `domainname` varchar(255) CHARACTER SET ascii NOT NULL,"
+"  `homeserver` tinyint(5) NOT NULL DEFAULT 0,"
 "  `homedir` varchar(128) NOT NULL DEFAULT '',"
 "  `max_user` int(10) unsigned NOT NULL,"
 "  `title` varchar(128) NOT NULL DEFAULT '',"
@@ -509,6 +510,15 @@ static constexpr char tbl_orgs_top[] =
 "  PRIMARY KEY (`id`)"
 ") DEFAULT CHARSET=utf8mb4";
 
+static constexpr char tbl_servers_top[] =
+"CREATE TABLE `servers` ("
+"  `id` tinyint(5) unsigned NOT NULL AUTO_INCREMENT,"
+"  `hostname` varchar(255) CHARACTER SET ascii NOT NULL,"
+"  `extname` varchar(255) CHARACTER SET ascii NOT NULL,"
+"  PRIMARY KEY (`id`),"
+"  UNIQUE KEY `hostname` (`hostname`)"
+") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+
 static constexpr char tbl_specifieds_top[] =
 "CREATE TABLE `specifieds` ("
 "  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
@@ -584,7 +594,7 @@ static constexpr struct tbl_init tbl_init_top[] = {
 	{"user_devices", tbl_userdev_92},
 	{"user_device_history", tbl_userdevhist_93},
 	{"task_queue", tbl_taskqueue_102},
-	{"servers", tbl_servers_103},
+	{"servers", tbl_servers_top},
 	{nullptr},
 };
 
@@ -738,6 +748,9 @@ static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 	{102, tbl_taskqueue_102},
 	{103, tbl_servers_103},
 	{104, "ALTER TABLE `users` ADD COLUMN `homeserver` tinyint(5) unsigned NOT NULL DEFAULT 0 AFTER `group_id`"},
+	{105, "ALTER TABLE `domains` ADD COLUMN `homeserver` tinyint(5) unsigned NOT NULL DEFAULT 0 AFTER `domainname`"},
+	{106, "ALTER TABLE `servers` ADD CONSTRAINT UNIQUE `hostname` (`hostname`)"},
+	{107, "ALTER TABLE `servers` CHANGE COLUMN `id` `id` tinyint(5) unsigned NOT NULL DEFAULT 0"},
 	{0, nullptr},
 };
 
