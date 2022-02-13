@@ -3,6 +3,7 @@
 #include <atomic>
 #include <csignal>
 #include <cstdint>
+#include <list>
 #include <mutex>
 #include <string>
 #include <libHX/string.h>
@@ -11,7 +12,6 @@
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include <gromox/svc_common.h>
-#include <gromox/double_list.hpp>
 #include <gromox/config_file.hpp>
 #include <cstdio>
 #include <cstdlib>
@@ -35,9 +35,8 @@ using namespace gromox;
 namespace {
 
 struct BACK_CONN {
-    DOUBLE_LIST_NODE node;
-    int sockd;
-	time_t last_time;
+	int sockd = -1;
+	time_t last_time = 0;
 };
 
 }
@@ -47,8 +46,7 @@ static char g_event_ip[40];
 static uint16_t g_event_port;
 static pthread_t g_scan_id;
 static std::mutex g_back_lock;
-static DOUBLE_LIST g_back_list;
-static DOUBLE_LIST g_lost_list;
+static std::list<BACK_CONN> g_back_list, g_lost_list;
 
 static void *evpx_scanwork(void *);
 static int read_line(int sockd, char *buff, int length);
@@ -62,15 +60,11 @@ static void broadcast_unselect(const char *username, const char *folder);
 static BOOL svc_event_proxy(int reason, void **ppdata)
 {
 	int i, conn_num;
-    BACK_CONN *pback;
-    DOUBLE_LIST_NODE *pnode;
 	
 	switch(reason) {
 	case PLUGIN_INIT: {
 		LINK_SVC_API(ppdata);
 		g_notify_stop = true;
-		double_list_init(&g_back_list);
-		double_list_init(&g_lost_list);
 		std::string plugname, filename;
 		try {
 			plugname = get_plugin_name();
@@ -112,21 +106,17 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 		printf("[event_proxy]: event address is [%s]:%hu\n",
 		       *g_event_ip == '\0' ? "*" : g_event_ip, g_event_port);
 
-		for (i=0; i<conn_num; i++) {
-			pback = (BACK_CONN*)malloc(sizeof(BACK_CONN));
-			if (NULL != pback) {
-		        pback->node.pdata = pback;
-				pback->sockd = -1;
-				double_list_append_as_tail(&g_lost_list, &pback->node);
-			}
+		for (i = 0; i < conn_num; ++i) try {
+			g_lost_list.emplace_back();
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1657: ENOMEM\n");
 		}
 
 		g_notify_stop = false;
 		auto ret = pthread_create(&g_scan_id, nullptr, evpx_scanwork, nullptr);
 		if (ret != 0) {
 			g_notify_stop = true;
-			while ((pnode = double_list_pop_front(&g_back_list)) != nullptr)
-				free(pnode->pdata);
+			g_back_list.clear();
 			printf("[event_proxy]: failed to create scan thread: %s\n", strerror(ret));
 			return FALSE;
 		}
@@ -146,19 +136,13 @@ static BOOL svc_event_proxy(int reason, void **ppdata)
 				pthread_kill(g_scan_id, SIGALRM);
 				pthread_join(g_scan_id, NULL);
 			}
-			while ((pnode = double_list_pop_front(&g_lost_list)) != nullptr)
-				free(pnode->pdata);
-
-			while ((pnode = double_list_pop_front(&g_back_list)) != nullptr) {
-				pback = (BACK_CONN*)pnode->pdata;
-				write(pback->sockd, "QUIT\r\n", 6);
-				close(pback->sockd);
-				free(pback);
+			for (auto &c : g_back_list) {
+				write(c.sockd, "QUIT\r\n", 6);
+				close(c.sockd);
 			}
 		}
-		double_list_free(&g_lost_list);
-		double_list_free(&g_back_list);
-
+		g_lost_list.clear();
+		g_back_list.clear();
 		return TRUE;
 	}
 	return TRUE;
@@ -169,35 +153,28 @@ static void *evpx_scanwork(void *param)
 {
 	int tv_msec;
 	time_t now_time;
-	BACK_CONN *pback;
 	char temp_buff[1024];
 	struct pollfd pfd_read;
-	DOUBLE_LIST temp_list;
-	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *ptail;
-
-	double_list_init(&temp_list);
+	std::list<BACK_CONN> temp_list;
 	
 	while (!g_notify_stop) {
 		std::unique_lock bl_hold(g_back_lock);
 		time(&now_time);
-		ptail = double_list_get_tail(&g_back_list);
-		while ((pnode = double_list_pop_front(&g_back_list)) != nullptr) {
-			pback = (BACK_CONN*)pnode->pdata;
+		auto tail = g_back_list.size() > 0 ? &g_back_list.back() : nullptr;
+		while (g_back_list.size() > 0) {
+			auto pback = &g_back_list.front();
 			if (now_time - pback->last_time >= SOCKET_TIMEOUT - 3) {
-				double_list_append_as_tail(&temp_list, &pback->node);
+				temp_list.splice(temp_list.end(), g_back_list, g_back_list.begin());
 			} else {
-				double_list_append_as_tail(&g_back_list, &pback->node);
+				g_back_list.splice(g_back_list.end(), g_back_list, g_back_list.begin());
 			}
-
-			if (pnode == ptail) {
+			if (pback == tail)
 				break;
-			}
 		}
 		bl_hold.unlock();
 
-		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
-			pback = (BACK_CONN*)pnode->pdata;
+		while (temp_list.size() > 0) {
+			auto pback = &temp_list.front();
 			write(pback->sockd, "PING\r\n", 6);
 			tv_msec = SOCKET_TIMEOUT * 1000;
 			pfd_read.fd = pback->sockd;
@@ -207,32 +184,32 @@ static void *evpx_scanwork(void *param)
 				close(pback->sockd);
 				pback->sockd = -1;
 				bl_hold.lock();
-				double_list_append_as_tail(&g_lost_list, &pback->node);
+				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
 				bl_hold.unlock();
 			} else {
 				time(&pback->last_time);
 				bl_hold.lock();
-				double_list_append_as_tail(&g_back_list, &pback->node);
+				g_back_list.splice(g_back_list.end(), temp_list, temp_list.begin());
 				bl_hold.unlock();
 			}
 		}
 
 		bl_hold.lock();
-		while ((pnode = double_list_pop_front(&g_lost_list)) != nullptr)
-			double_list_append_as_tail(&temp_list, pnode);
+		temp_list = std::move(g_lost_list);
+		g_lost_list.clear();
 		bl_hold.unlock();
 
-		while ((pnode = double_list_pop_front(&temp_list)) != nullptr) {
-			pback = (BACK_CONN*)pnode->pdata;
+		while (temp_list.size() > 0) {
+			auto pback = &temp_list.front();
 			pback->sockd = connect_event();
 			if (-1 != pback->sockd) {
 				time(&pback->last_time);
 				bl_hold.lock();
-				double_list_append_as_tail(&g_back_list, &pback->node);
+				g_back_list.splice(g_back_list.end(), temp_list, temp_list.begin());
 				bl_hold.unlock();
 			} else {
 				bl_hold.lock();
-				double_list_append_as_tail(&g_lost_list, &pback->node);
+				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
 				bl_hold.unlock();
 			}
 		}
@@ -259,30 +236,27 @@ static void broadcast_unselect(const char *username, const char *folder)
 
 static void broadcast_event(const char *event)
 {
-	BACK_CONN *pback;
-	DOUBLE_LIST_NODE *pnode;
 	char temp_buff[MAX_CMD_LENGTH];
+	std::list<BACK_CONN> hold;
 
 	std::unique_lock bl_hold(g_back_lock);
-	pnode = double_list_pop_front(&g_back_list);
-	bl_hold.unlock();
-	if (NULL == pnode) {
+	if (g_back_list.size() == 0)
 		return;
-	}
-
-	pback = (BACK_CONN*)pnode->pdata;
+	hold.splice(hold.end(), g_back_list, g_back_list.begin());
+	bl_hold.unlock();
+	auto pback = &hold.front();
 	auto len = gx_snprintf(temp_buff, arsizeof(temp_buff), "%s\r\n", event);
 	write(pback->sockd, temp_buff, len);
 	if (0 != read_line(pback->sockd, temp_buff, 1024)) {
 		close(pback->sockd);
 		pback->sockd = -1;
 		bl_hold.lock();
-		double_list_append_as_tail(&g_lost_list, &pback->node);
+		g_lost_list.splice(g_lost_list.end(), std::move(hold));
 		return;
 	}
 	time(&pback->last_time);
 	bl_hold.lock();
-	double_list_append_as_tail(&g_back_list, &pback->node);
+	g_back_list.splice(g_back_list.end(), std::move(hold));
 }
 
 static int read_line(int sockd, char *buff, int length)
