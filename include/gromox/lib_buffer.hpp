@@ -19,7 +19,7 @@ enum PARAM_TYPE {
 };
 
 struct GX_EXPORT LIB_BUFFER {
-	LIB_BUFFER() = default;
+	LIB_BUFFER(size_t size, size_t items, BOOL thr_safe);
 	~LIB_BUFFER();
 	NOMOVE(LIB_BUFFER);
 	static std::unique_ptr<LIB_BUFFER> create(size_t item_size, size_t item_num, BOOL is_thread_safe);

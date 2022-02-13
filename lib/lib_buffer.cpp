@@ -20,24 +20,26 @@ static constexpr auto wsize_al = roundup(WSIZE, sizeof(std::max_align_t));
  *		pointer to LIB_BUFFER	structure
  *		NULL if error happened
  */
-std::unique_ptr<LIB_BUFFER> LIB_BUFFER::create(size_t item_size,
-    size_t item_num, BOOL is_thread_safe) try
+LIB_BUFFER::LIB_BUFFER(size_t item_size, size_t item_num, BOOL is_thread_safe)
 {
 	void*	head_listp		= NULL;
 	
 	if (item_size <= 0 || item_num <= 0) {
-		debug_info("[lib_buffer]: lib_buffer_init, invalid parameter");
-		return NULL;
+		throw std::invalid_argument("[lib_buffer]: lib_buffer_init, invalid parameter");
 	}
-	auto lib_buffer = std::make_unique<LIB_BUFFER>();
 	auto item_size_al = roundup(item_size, sizeof(std::max_align_t));
 	head_listp = malloc((item_size_al + wsize_al) * item_num);
 	if (head_listp == nullptr) {
-		debug_info("[lib_buffer]: lib_buffer_init, malloc head_listp fail");
-		return NULL;
+		struct bad_alloc2 : public std::bad_alloc {
+			virtual const char *what() const noexcept {
+				return "[lib_buffer]: lib_buffer_init, malloc head_listp fail";
+			}
+		};
+		throw bad_alloc2();
 	}
 
 	memset(head_listp, 0, (item_size_al + wsize_al) * item_num);
+	auto lib_buffer = this;
 	lib_buffer->heap_list_head	= head_listp;
 	lib_buffer->cur_heap_head	= head_listp;
 
@@ -47,11 +49,20 @@ std::unique_ptr<LIB_BUFFER> LIB_BUFFER::create(size_t item_size,
 	lib_buffer->item_size		= item_size;
 	lib_buffer->item_num		= item_num;
 	lib_buffer->is_thread_safe	= is_thread_safe;
-	return lib_buffer;
-} catch (const std::bad_alloc &) {
-	fprintf(stderr, "E-1568: ENOMEM\n");
-	debug_info("[lib_buffer]: lib_buffer_init, malloc lib_buffer fail");
-	return NULL;
+}
+
+std::unique_ptr<LIB_BUFFER> LIB_BUFFER::create(size_t item_size,
+    size_t item_num, BOOL is_thread_safe) try
+{
+	if (item_size <= 0 || item_num <= 0) {
+		debug_info("[lib_buffer]: lib_buffer_init, invalid parameter");
+		return NULL;
+	}
+	return std::make_unique<LIB_BUFFER>(item_size, item_num, is_thread_safe);
+} catch (const std::bad_alloc &e) {
+	fprintf(stderr, "E-1658: ENOMEM\n");
+	debug_info(e.what());
+	return nullptr;
 }
 
 /*
