@@ -4,7 +4,11 @@
 #include <mutex>
 #include <pthread.h>
 #include <gromox/atomic.hpp>
+#include <gromox/common_types.hpp>
 #include <gromox/list_file.hpp>
+
+struct EXMDB_REQUEST;
+struct EXMDB_RESPONSE;
 
 namespace gromox {
 
@@ -72,5 +76,8 @@ extern GX_EXPORT pthread_t mdcl_scan_id;
 extern GX_EXPORT void exmdb_client_init(unsigned int conn_num, unsigned int threads_num);
 extern GX_EXPORT void exmdb_client_stop();
 extern GX_EXPORT int exmdb_client_run(const char *dir, unsigned int fl, void *(*)(void *), void *(*)(void *));
+extern GX_EXPORT bool exmdb_client_check_local(const char *pfx, BOOL *pvt);
+extern GX_EXPORT remote_conn_ref exmdb_client_get_connection(const char *dir);
+extern GX_EXPORT BOOL exmdb_client_do_rpc(const char *dir, const EXMDB_REQUEST *, EXMDB_RESPONSE *);
 
 }

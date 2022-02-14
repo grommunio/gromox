@@ -13,4 +13,3 @@ struct EXMDB_RESPONSE;
 
 extern int exmdb_client_run_front(const char *);
 void exmdb_client_register_proc(void *pproc);
-extern BOOL exmdb_client_do_rpc(const char *dir, const EXMDB_REQUEST *, EXMDB_RESPONSE *);

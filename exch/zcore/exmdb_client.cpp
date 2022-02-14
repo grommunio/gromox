@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
-#include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <list>
@@ -272,63 +271,10 @@ static void *zccl_thrwork(void *pparam)
 	return nullptr;
 }
 
-static REMOTE_CONN_floating exmdb_client_get_connection(const char *dir)
-{
-	REMOTE_CONN_floating fc;
-	auto i = std::find_if(g_server_list.begin(), g_server_list.end(),
-	         [&](const REMOTE_SVR &s) { return strncmp(dir, s.prefix.c_str(), s.prefix.size()) == 0; });
-	if (i == g_server_list.end()) {
-		printf("[exmdb_client]: cannot find remote server for %s\n", dir);
-		return fc;
-	}
-	std::unique_lock sv_hold(g_server_lock);
-	if (i->conn_list.size() == 0) {
-		sv_hold.unlock();
-		printf("[exmdb_client]: no alive connection for [%s]:%hu/%s\n",
-		       i->host.c_str(), i->port, i->prefix.c_str());
-		return fc;
-	}
-	fc.tmplist.splice(fc.tmplist.end(), i->conn_list, i->conn_list.begin());
-	return fc;
-}
-
 int exmdb_client_run_front(const char *dir)
 {
 	return exmdb_client_run(dir, EXMDB_CLIENT_NO_FLAGS,
 	       zccl_scanwork, zccl_thrwork);
-}
-
-BOOL exmdb_client_do_rpc(const char *dir,
-	const EXMDB_REQUEST *prequest, EXMDB_RESPONSE *presponse)
-{
-	BINARY tmp_bin;
-	
-	if (EXT_ERR_SUCCESS != exmdb_ext_push_request(prequest, &tmp_bin)) {
-		return FALSE;
-	}
-	auto pconn = exmdb_client_get_connection(dir);
-	if (pconn == nullptr) {
-		free(tmp_bin.pb);
-		return FALSE;
-	}
-	if (!exmdb_client_write_socket(pconn->sockd, &tmp_bin)) {
-		free(tmp_bin.pb);
-		return FALSE;
-	}
-	free(tmp_bin.pb);
-	if (!cl_rd_sock(pconn->sockd, &tmp_bin))
-		return FALSE;
-	time(&pconn->last_time);
-	pconn.reset();
-	if (tmp_bin.cb < 5 || tmp_bin.pb[0] != exmdb_response::SUCCESS)
-		return FALSE;
-	presponse->call_id = prequest->call_id;
-	tmp_bin.cb -= 5;
-	tmp_bin.pb += 5;
-	if (EXT_ERR_SUCCESS != exmdb_ext_pull_response(&tmp_bin, presponse)) {
-		return FALSE;
-	}
-	return TRUE;
 }
 
 BOOL exmdb_client_get_named_propid(const char *dir,

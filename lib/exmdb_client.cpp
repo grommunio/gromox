@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <csignal>
 #include <cstdio>
 #include <cstring>
@@ -11,11 +12,14 @@
 #include <unistd.h>
 #include <gromox/atomic.hpp>
 #include <gromox/exmdb_client.hpp>
+#include <gromox/exmdb_rpc.hpp>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/socket.h>
 
 namespace gromox {
 
+static constexpr unsigned int mdcl_socket_timeout = 60;
 std::vector<EXMDB_ITEM> mdcl_local_list;
 std::list<agent_thread> mdcl_agent_list;
 std::list<remote_conn> mdcl_lost_list;
@@ -167,6 +171,63 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 	}
 	pthread_setname_np(mdcl_scan_id, "exmdbcl/scan");
 	return 0;
+}
+
+bool exmdb_client_check_local(const char *prefix, BOOL *pvt)
+{
+	auto i = std::find_if(mdcl_local_list.cbegin(), mdcl_local_list.cend(),
+	         [&](const EXMDB_ITEM &s) { return strncmp(s.prefix.c_str(), prefix, s.prefix.size()) == 0; });
+	if (i == mdcl_local_list.cend())
+		return false;
+	*pvt = i->type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
+	return true;
+}
+
+remote_conn_ref exmdb_client_get_connection(const char *dir)
+{
+	remote_conn_ref fc;
+	std::lock_guard sv_hold(mdcl_server_lock);
+	auto i = std::find_if(mdcl_server_list.begin(), mdcl_server_list.end(),
+	         [&](const remote_svr &s) { return strncmp(dir, s.prefix.c_str(), s.prefix.size()) == 0; });
+	if (i == mdcl_server_list.end()) {
+		printf("exmdb_client: cannot find remote server for %s\n", dir);
+		return fc;
+	}
+	if (i->conn_list.size() == 0) {
+		printf("exmdb_client: no alive connection for [%s]:%hu/%s\n",
+		       i->host.c_str(), i->port, i->prefix.c_str());
+		return fc;
+	}
+	fc.tmplist.splice(fc.tmplist.end(), i->conn_list, i->conn_list.begin());
+	return fc;
+}
+
+BOOL exmdb_client_do_rpc(const char *dir,
+    const EXMDB_REQUEST *rq, EXMDB_RESPONSE *rsp)
+{
+	BINARY bin;
+
+	if (exmdb_ext_push_request(rq, &bin) != EXT_ERR_SUCCESS)
+		return false;
+	auto conn = exmdb_client_get_connection(dir);
+	if (conn == nullptr || !exmdb_client_write_socket(conn->sockd,
+	    &bin, mdcl_socket_timeout * 1000)) {
+		free(bin.pb);
+		return false;
+	}
+	free(bin.pb);
+	if (!exmdb_client_read_socket(conn->sockd, &bin, mdcl_socket_timeout * 1000))
+		return false;
+	time(&conn->last_time);
+	conn.reset();
+	if (bin.cb < 5 || bin.pb[0] != exmdb_response::SUCCESS)
+		return false;
+	rsp->call_id = rq->call_id;
+	bin.cb -= 5;
+	bin.pb += 5;
+	if (exmdb_ext_pull_response(&bin, rsp) != EXT_ERR_SUCCESS)
+		return false;
+	return TRUE;
 }
 
 }
