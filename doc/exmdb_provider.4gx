@@ -2,10 +2,12 @@
 .SH Name
 exmdb_provider(4gx) \(em http(8gx) service plugin for exmdb connections
 .SH Description
-exmdb_provider is a service plugin for http(8gx). It offers a plethora
-of individual functions (124 of them) for operating on mailbox stores.
-In addition, this functionality is also exposed by way of a Gromox-specific
-network protocol on port 5000.
+exmdb_provider is a service plugin for http(8gx). It offers a plethora of
+individual functions (124 of them) for operating on mailbox stores. This
+functionality is also exposed by way of a Gromox-specific network protocol on
+port 5000. The aforementioned RPC functions transparently operate over the
+network and may connect to a remote exmdb. In other words, this plugin contains
+a process-local function API, a network client, and a network server.
 .SH Configuration file directives
 .TP
 \fBcache_interval\fP
@@ -55,10 +57,18 @@ Default: \fI5000\fP
 Default: \fI20\fP
 .TP
 \fBmax_router_connections\fP
-Default: unlimited
+As a exmdb server, permit at most this many inbound connections for the purpose
+of sending notifications on these channels. Note that every incoming TCP
+connection starts as a data connection and only becomes re-classified as
+"notification" once the LISTEN_NOTIFICATION RPC has been issued by the client.
+.br
+Default: unlimited (only limited by ulimits)
 .TP
 \fBmax_rpc_stub_threads\fP
-Default: unlimited
+As a exmdb server, permit at most this many inbound connections
+for commands.
+.br
+Default: unlimited (only limited by ulimits)
 .TP
 \fBmax_rule_number\fP
 Default: \fI1000\fP
@@ -79,12 +89,18 @@ particular exmdb RPC that is executing. Use 0 to disable.
 Default: \fI5\fP
 .TP
 \fBnotify_stub_threads_num\fP
+For every remote exmdb server in exmdb_list.txt, establish and keep this many
+number of outbound connections for receiving notification RPCs.
+.br
 Default: \fI4\fP
 .TP
 \fBpopulating_threads_num\fP
 Default: \fI4\fP
 .TP
 \fBrpc_proxy_connection_num\fP
+For every remote exmdb server in exmdb_list.txt, establish and keep this
+many number of outbound connections for sending commands.
+.br
 Default: \fI10\fP
 .TP
 \fBseparator_for_bounce\fP
