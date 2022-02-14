@@ -8,7 +8,7 @@
 struct EXMDB_REQUEST;
 struct EXMDB_RESPONSE;
 
-extern int exmdb_client_run(const char *config_path);
+extern int exmdb_client_run_front(const char *);
 extern BOOL exmdb_client_check_local(const char *prefix, BOOL *b_private);
 extern BOOL exmdb_client_do_rpc(const char *dir, const EXMDB_REQUEST *, EXMDB_RESPONSE *);
 BOOL exmdb_client_relay_delivery(const char *dir,

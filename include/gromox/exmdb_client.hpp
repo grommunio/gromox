@@ -8,6 +8,21 @@
 
 namespace gromox {
 
+enum {
+	EXMDB_CLIENT_NO_FLAGS = 0,
+	/* Skip over public folders */
+	EXMDB_CLIENT_SKIP_PUBLIC = 0x1U,
+	/* Skip over exmdb_list.txt entries that are remote */
+	EXMDB_CLIENT_SKIP_REMOTE = 0x2U,
+	/* Go via filesystem instead of TCP */
+	EXMDB_CLIENT_ALLOW_DIRECT = 0x4U,
+	/*
+	 * N.B.: Combining EXMDB_CLIENT_SKIP_REMOTE +
+	 * !EXMDB_CLIENT_ALLOW_DIRECT means all "local" locations will be
+	 * accessed via TCP.
+	 */
+};
+
 struct remote_svr;
 
 struct agent_thread {
@@ -45,6 +60,7 @@ using REMOTE_CONN = remote_conn;
 using REMOTE_SVR = remote_svr;
 using REMOTE_CONN_floating = remote_conn_ref;
 
+extern GX_EXPORT std::vector<EXMDB_ITEM> mdcl_local_list;
 extern GX_EXPORT std::list<agent_thread> mdcl_agent_list;
 extern GX_EXPORT std::list<remote_conn> mdcl_lost_list;
 extern GX_EXPORT std::list<remote_svr> mdcl_server_list;
@@ -55,5 +71,6 @@ extern GX_EXPORT pthread_t mdcl_scan_id;
 
 extern GX_EXPORT void exmdb_client_init(unsigned int conn_num, unsigned int threads_num);
 extern GX_EXPORT void exmdb_client_stop();
+extern GX_EXPORT int exmdb_client_run(const char *dir, unsigned int fl, void *(*)(void *), void *(*)(void *));
 
 }

@@ -295,7 +295,7 @@ int main(int argc, const char **argv) try
 		printf("[system]: failed to run zarafa server\n");
 		return 10;
 	}
-	if (exmdb_client_run(g_config_file->get_value("config_file_path")) != 0) {
+	if (exmdb_client_run_front(g_config_file->get_value("config_file_path")) != 0) {
 		printf("[system]: failed to run exmdb client\n");
 		return 11;
 	}

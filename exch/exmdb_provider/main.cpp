@@ -217,7 +217,7 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 			db_engine_free();
 			return FALSE;
 		}
-		if (exmdb_client_run(get_config_path()) != 0) {
+		if (exmdb_client_run_front(get_config_path()) != 0) {
 			printf("[exmdb_provider]: failed to run exmdb client\n");
 			exmdb_listener_stop();
 			exmdb_parser_stop();

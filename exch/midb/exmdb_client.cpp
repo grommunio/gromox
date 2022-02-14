@@ -7,16 +7,13 @@
 #include <list>
 #include <mutex>
 #include <utility>
-#include <vector>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
 #include <gromox/socket.h>
 #include "exmdb_client.h"
 #include "common_util.h"
-#include <gromox/list_file.hpp>
 #include "exmdb_ext.h"
-#include <pthread.h>
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
@@ -26,12 +23,10 @@
 
 using namespace gromox;
 
-static auto &g_agent_list = mdcl_agent_list;
 static auto &g_lost_list = mdcl_lost_list;
 static auto &g_server_list = mdcl_server_list;
 static auto &g_server_lock = mdcl_server_lock;
 static auto &g_notify_stop = mdcl_notify_stop;
-static auto &g_scan_id = mdcl_scan_id;
 
 static void (*exmdb_client_event_proc)(const char *dir,
 	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify);
@@ -300,77 +295,10 @@ static REMOTE_CONN_floating exmdb_client_get_connection(const char *dir)
 	return fc;
 }
 
-int exmdb_client_run(const char *configdir)
+int exmdb_client_run_front(const char *dir)
 {
-	size_t i = 0;
-	std::vector<EXMDB_ITEM> xmlist;
-
-	auto ret = list_file_read_exmdb("exmdb_list.txt", configdir, xmlist);
-	if (ret < 0) {
-		printf("[exmdb_client]: list_file_read_exmdb: %s\n", strerror(-ret));
-		return 1;
-	}
-	g_notify_stop = false;
-	for (auto &&item : xmlist) {
-		if (item.type != EXMDB_ITEM::EXMDB_PRIVATE ||
-		    !gx_peer_is_local(item.host.c_str()))
-			continue;	
-		try {
-			g_server_list.emplace_back(std::move(item));
-		} catch (const std::bad_alloc &) {
-			printf("[exmdb_client]: Failed to allocate memory for exmdb\n");
-			g_notify_stop = true;
-			return 5;
-		}
-		auto &srv = g_server_list.back();
-		for (unsigned int j = 0; j < mdcl_conn_num; ++j) {
-			REMOTE_CONN conn;
-			conn.sockd = -1;
-			conn.psvr = &srv;
-			try {
-				g_lost_list.push_back(std::move(conn));
-			} catch (const std::bad_alloc &) {
-				printf("[exmdb_client]: fail to "
-					"allocate memory for exmdb\n");
-				g_notify_stop = true;
-				return 6;
-			}
-		}
-		for (unsigned int j = 0; j < mdcl_threads_num; ++j) {
-			try {
-				g_agent_list.push_back(AGENT_THREAD{});
-			} catch (const std::bad_alloc &) {
-				printf("[exmdb_client]: fail to "
-					"allocate memory for exmdb\n");
-				g_notify_stop = true;
-				return 7;
-			}
-			auto &ag = g_agent_list.back();
-			ag.pserver = &srv;
-			ag.sockd = -1;
-			ret = pthread_create(&ag.thr_id, nullptr, midcl_thrwork, &ag);
-			if (ret != 0) {
-				printf("[exmdb_client]: E-1441 pthread_create: %s\n", strerror(ret));
-				g_notify_stop = true;
-				g_agent_list.pop_back();
-				return 8;
-			}
-			char buf[32];
-			snprintf(buf, sizeof(buf), "mdclntfy/%zu-%u", i, j);
-			pthread_setname_np(ag.thr_id, buf);
-		}
-		++i;
-	}
-	if (mdcl_conn_num == 0)
-		return 0;
-	ret = pthread_create(&g_scan_id, nullptr, midcl_scanwork, nullptr);
-	if (ret != 0) {
-		printf("[exmdb_client]: failed to create proxy scan thread: %s\n", strerror(ret));
-		g_notify_stop = true;
-		return 9;
-	}
-	pthread_setname_np(g_scan_id, "scan");
-	return 0;
+	return exmdb_client_run(dir, EXMDB_CLIENT_SKIP_PUBLIC |
+	       EXMDB_CLIENT_SKIP_REMOTE, midcl_scanwork, midcl_thrwork);
 }
 
 BOOL exmdb_client_do_rpc(const char *dir,

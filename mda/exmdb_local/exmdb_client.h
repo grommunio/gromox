@@ -8,7 +8,7 @@
 #define EXMDB_RESULT_ERROR		4
 #define EXMDB_MAILBOX_FULL		5
 
-extern int exmdb_client_run();
+extern int exmdb_client_run_front();
 int exmdb_client_delivery_message(const char *dir,
 	const char *from_address, const char *account,
 	uint32_t cpid, const MESSAGE_CONTENT *pmsg,

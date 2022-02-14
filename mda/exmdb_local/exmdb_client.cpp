@@ -7,7 +7,6 @@
 #include <list>
 #include <mutex>
 #include <utility>
-#include <vector>
 #include <gromox/endian.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/fileio.h>
@@ -16,8 +15,6 @@
 #include <gromox/hook_common.h>
 #include <gromox/socket.h>
 #include <gromox/ext_buffer.hpp>
-#include <gromox/list_file.hpp>
-#include <pthread.h>
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
@@ -52,12 +49,11 @@ struct CHECK_CONTACT_ADDRESS_REQUEST {
 
 }
 
-static int g_conn_num;
-static gromox::atomic_bool g_notify_stop;
-static pthread_t g_scan_id;
 static auto &g_lost_list = mdcl_lost_list;
 static auto &g_server_list = mdcl_server_list;
 static auto &g_server_lock = mdcl_server_lock;
+static auto &g_notify_stop = mdcl_notify_stop;
+static auto &g_conn_num = mdcl_conn_num;
 
 static int cl_rd_sock(int fd, BINARY *b) { return exmdb_client_read_socket(fd, b, SOCKET_TIMEOUT * 1000); }
 static int cl_wr_sock(int fd, const BINARY *b) { return exmdb_client_write_socket(fd, b, SOCKET_TIMEOUT * 1000); }
@@ -331,46 +327,10 @@ static REMOTE_CONN_floating exmdb_client_get_connection(const char *dir)
 	return fc;
 }
 
-int exmdb_client_run()
+int exmdb_client_run_front()
 {
-	std::vector<EXMDB_ITEM> xmlist;
-	auto ret = list_file_read_exmdb("exmdb_list.txt", get_config_path(), xmlist);
-	if (ret < 0) {
-		printf("[exmdb_local]: list_file_read_exmdb: %s\n", strerror(-ret));
-		return 1;
-	}
-	g_notify_stop = false;
-	for (auto &&item : xmlist) {
-		try {
-			g_server_list.emplace_back(std::move(item));
-		} catch (const std::bad_alloc &) {
-			printf("[exmdb_local]: Failed to allocate memory for exmdb\n");
-			g_notify_stop = true;
-			return 3;
-		}
-		auto &srv = g_server_list.back();
-		for (decltype(g_conn_num) j = 0; j < g_conn_num; ++j) {
-			REMOTE_CONN conn;
-			conn.sockd = -1;
-			conn.psvr = &srv;
-			try {
-				g_lost_list.push_back(std::move(conn));
-			} catch (const std::bad_alloc &) {
-				printf("[exmdb_local]: fail to "
-					"allocate memory for exmdb\n");
-				g_notify_stop = true;
-				return 4;
-			}
-		}
-	}
-	ret = pthread_create(&g_scan_id, nullptr, exmlc_scanwork, nullptr);
-	if (ret != 0) {
-		printf("[exmdb_local]: failed to create proxy scan thread: %s\n", strerror(ret));
-		g_notify_stop = true;
-		return 5;
-	}
-	pthread_setname_np(g_scan_id, "mdbloc/scan");
-	return 0;
+	return exmdb_client_run(get_config_path(), EXMDB_CLIENT_NO_FLAGS,
+	       exmlc_scanwork, nullptr);
 }
 
 int exmdb_client_delivery_message(const char *dir,
