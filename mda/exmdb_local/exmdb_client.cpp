@@ -7,13 +7,11 @@
 #include <cstdint>
 #include <list>
 #include <mutex>
-#include <string>
 #include <utility>
 #include <vector>
-#include <libHX/string.h>
 #include <gromox/atomic.hpp>
-#include <gromox/defs.h>
 #include <gromox/endian.hpp>
+#include <gromox/exmdb_client.hpp>
 #include <gromox/fileio.h>
 #include "exmdb_client.h"
 #include <gromox/exmdb_rpc.hpp>
@@ -21,47 +19,19 @@
 #include <gromox/socket.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/list_file.hpp>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
 #include <pthread.h>
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
 #include <csignal>
-#include <cerrno>
 #include <cstdio>
 #include <ctime>
 
 #define SOCKET_TIMEOUT								60
 
+using namespace gromox;
+
 namespace {
-
-struct REMOTE_CONN;
-struct REMOTE_SVR : public EXMDB_ITEM {
-	REMOTE_SVR(EXMDB_ITEM &&o) : EXMDB_ITEM(std::move(o)) {}
-	std::list<REMOTE_CONN> conn_list;
-};
-
-struct REMOTE_CONN {
-	time_t last_time;
-	REMOTE_SVR *psvr;
-	int sockd;
-};
-
-struct REMOTE_CONN_floating {
-	REMOTE_CONN_floating() = default;
-	REMOTE_CONN_floating(REMOTE_CONN_floating &&);
-	~REMOTE_CONN_floating() { reset(true); }
-	void operator=(REMOTE_CONN_floating &&) = delete;
-	REMOTE_CONN *operator->() { return tmplist.size() != 0 ? &tmplist.front() : nullptr; }
-	bool operator==(std::nullptr_t) const { return tmplist.size() == 0; }
-	bool operator!=(std::nullptr_t) const { return tmplist.size() != 0; }
-	void reset(bool lost = false);
-
-	std::list<REMOTE_CONN> tmplist;
-};
 
 struct CONNECT_REQUEST {
 	char *prefix;
@@ -88,9 +58,9 @@ struct CHECK_CONTACT_ADDRESS_REQUEST {
 static int g_conn_num;
 static gromox::atomic_bool g_notify_stop;
 static pthread_t g_scan_id;
-static std::list<REMOTE_CONN> g_lost_list;
-static std::list<REMOTE_SVR> g_server_list;
-static std::mutex g_server_lock;
+static auto &g_lost_list = mdcl_lost_list;
+static auto &g_server_list = mdcl_server_list;
+static auto &g_server_lock = mdcl_server_lock;
 
 static int cl_rd_sock(int fd, BINARY *b) { return exmdb_client_read_socket(fd, b, SOCKET_TIMEOUT * 1000); }
 static int cl_wr_sock(int fd, const BINARY *b) { return exmdb_client_write_socket(fd, b, SOCKET_TIMEOUT * 1000); }
@@ -364,29 +334,6 @@ static REMOTE_CONN_floating exmdb_client_get_connection(const char *dir)
 	return fc;
 }
 
-void REMOTE_CONN_floating::reset(bool lost)
-{
-	if (tmplist.size() == 0)
-		return;
-	auto pconn = &tmplist.front();
-	if (!lost) {
-		std::unique_lock sv_hold(g_server_lock);
-		pconn->psvr->conn_list.splice(pconn->psvr->conn_list.end(), tmplist, tmplist.begin());
-	} else {
-		close(pconn->sockd);
-		pconn->sockd = -1;
-		std::unique_lock sv_hold(g_server_lock);
-		g_lost_list.splice(g_lost_list.end(), tmplist, tmplist.begin());
-	}
-	tmplist.clear();
-}
-
-REMOTE_CONN_floating::REMOTE_CONN_floating(REMOTE_CONN_floating &&o)
-{
-	reset(true);
-	tmplist = std::move(o.tmplist);
-}
-
 void exmdb_client_init(int conn_num)
 {
 	g_notify_stop = true;
@@ -414,8 +361,6 @@ int exmdb_client_run()
 		for (decltype(g_conn_num) j = 0; j < g_conn_num; ++j) {
 			REMOTE_CONN conn;
 			conn.sockd = -1;
-			static_assert(std::is_same_v<decltype(g_server_list), std::list<decltype(g_server_list)::value_type>>,
-				"addrof REMOTE_SVRs must not change; REMOTE_CONN/AGENT_THREAD has a pointer to it");
 			conn.psvr = &srv;
 			try {
 				g_lost_list.push_back(std::move(conn));
