@@ -63,6 +63,10 @@ std::unique_ptr<LIB_BUFFER> LIB_BUFFER::create(size_t item_size,
 	fprintf(stderr, "E-1658: ENOMEM\n");
 	debug_info(e.what());
 	return nullptr;
+} catch (const std::invalid_argument &e) {
+	fprintf(stderr, "E-1669: EINVAL: %s\n", e.what());
+	debug_info(e.what());
+	return nullptr;
 }
 
 /*

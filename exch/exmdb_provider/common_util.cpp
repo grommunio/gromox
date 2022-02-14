@@ -664,7 +664,6 @@ BOOL cu_get_proptags(db_table table_type, uint64_t id,
 	}
 	pstmt.finalize();
 	if (table_type == db_table::rcpt_props) {
-		auto oldcount = i;
 		if (std::find(proptags, proptags + i, PR_RECIPIENT_TYPE) == proptags + i)
 			proptags[i++] = PR_RECIPIENT_TYPE;
 		if (std::find(proptags, proptags + i, PR_DISPLAY_NAME) == proptags + i)
