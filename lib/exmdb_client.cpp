@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <atomic>
 #include <csignal>
 #include <cstdio>
 #include <cstring>
@@ -15,6 +16,7 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/list_file.hpp>
+#include <gromox/scope.hpp>
 #include <gromox/socket.h>
 
 namespace gromox {
@@ -78,6 +80,62 @@ void exmdb_client_stop()
 	for (auto &srv : mdcl_server_list)
 		for (auto &conn : srv.conn_list)
 			close(conn.sockd);
+}
+
+int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen, const char *prog_id,
+    void (*build_env)(const remote_svr &), void (*free_env)())
+{
+	int sockd = gx_inet_connect(srv.host.c_str(), srv.port, 0);
+	if (sockd < 0) {
+		static std::atomic<time_t> mdcl_lastwarn_time;
+		auto prev = mdcl_lastwarn_time.load();
+		auto next = prev + 60;
+		auto now = time(nullptr);
+		if (next <= now && mdcl_lastwarn_time.compare_exchange_strong(prev, now))
+			fprintf(stderr, "exmdb_client: gx_inet_connect to [%s]:%hu: %s\n",
+			        srv.host.c_str(), srv.port, strerror(-sockd));
+	        return -1;
+	}
+	auto cl_sock = make_scope_exit([&]() { close(sockd); });
+	char remote_id[128];
+	snprintf(remote_id, arsizeof(remote_id), "%s:%d", prog_id, getpid());
+	EXMDB_REQUEST rq;
+	if (!b_listen) {
+		rq.call_id = exmdb_callid::CONNECT;
+		rq.payload.connect.prefix = deconst(srv.prefix.c_str());
+		rq.payload.connect.remote_id = remote_id;
+		rq.payload.connect.b_private = srv.type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
+	} else {
+		rq.call_id = exmdb_callid::LISTEN_NOTIFICATION;
+		rq.payload.listen_notification.remote_id = remote_id;
+	}
+	BINARY bin;
+	if (exmdb_ext_push_request(&rq, &bin) != EXT_ERR_SUCCESS)
+		return -1;
+	if (!exmdb_client_write_socket(sockd, &bin, mdcl_socket_timeout * 1000)) {
+		free(bin.pb);
+		return -1;
+	}
+	free(bin.pb);
+	if (build_env != nullptr)
+		build_env(srv);
+	auto cl_0 = make_scope_exit([&]() { if (free_env != nullptr) free_env(); });
+	if (!exmdb_client_read_socket(sockd, &bin, mdcl_socket_timeout * 1000))
+		return -1;
+	auto response_code = bin.pb[0];
+	if (response_code != exmdb_response::SUCCESS) {
+		printf("exmdb_client: Failed to connect to [%s]:%hu/%s: %s\n",
+		       srv.host.c_str(), srv.port, srv.prefix.c_str(),
+		       exmdb_rpc_strerror(response_code));
+		return -1;
+	} else if (bin.cb != 5) {
+		printf("[exmdb_client]: response format error "
+		       "during connect to [%s]:%hu/%s\n",
+		       srv.host.c_str(), srv.port, srv.prefix.c_str());
+		return -1;
+	}
+	cl_sock.release();
+	return sockd;
 }
 
 int exmdb_client_run(const char *cfgdir, unsigned int flags,

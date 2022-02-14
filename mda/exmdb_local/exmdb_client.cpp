@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
-#include <atomic>
 #include <cstdint>
 #include <list>
 #include <mutex>
@@ -15,7 +14,6 @@
 #include <gromox/socket.h>
 #include <gromox/ext_buffer.hpp>
 #include <cstdlib>
-#include <cstring>
 #include <unistd.h>
 #include <cstdio>
 #include <ctime>
@@ -155,66 +153,6 @@ static int exmdb_client_push_request(uint8_t call_id,
 	return EXT_ERR_SUCCESS;
 }
 
-static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver)
-{
-	int process_id;
-	BINARY tmp_bin;
-	char remote_id[128];
-	const char *str_host;
-	uint8_t response_code;
-	CONNECT_REQUEST request;
-
-	int sockd = gx_inet_connect(pserver->host.c_str(), pserver->port, 0);
-	if (sockd < 0) {
-		static std::atomic<time_t> g_lastwarn_time;
-		auto prev = g_lastwarn_time.load();
-		auto next = prev + 60;
-		auto now = time(nullptr);
-		if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
-			fprintf(stderr, "gx_inet_connect exmdb_client@exmdb_local@[%s]:%hu: %s\n",
-			        pserver->host.c_str(), pserver->port, strerror(-sockd));
-		return -1;
-	}
-	str_host = get_host_ID();
-	process_id = getpid();
-	sprintf(remote_id, "%s:%d", str_host, process_id);
-	request.prefix = deconst(pserver->prefix.c_str());
-	request.remote_id = remote_id;
-	request.b_private = pserver->type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
-	if (exmdb_client_push_request(exmdb_callid::CONNECT, &request,
-	    &tmp_bin) != EXT_ERR_SUCCESS) {
-		close(sockd);
-		return -1;
-	}
-	if (!cl_wr_sock(sockd, &tmp_bin)) {
-		free(tmp_bin.pb);
-		close(sockd);
-		return -1;
-	}
-	free(tmp_bin.pb);
-	tmp_bin.pb = nullptr;
-	if (!cl_rd_sock(sockd, &tmp_bin) || tmp_bin.pb == nullptr) {
-		close(sockd);
-		return -1;
-	}
-	response_code = tmp_bin.pb[0];
-	if (response_code == exmdb_response::SUCCESS) {
-		if (tmp_bin.cb != 5) {
-			printf("[exmdb_local]: response format error "
-			       "during connect to [%s]:%hu/%s\n",
-			       pserver->host.c_str(), pserver->port, pserver->prefix.c_str());
-			close(sockd);
-			return -1;
-		}
-		return sockd;
-	}
-	printf("[exmdb_provider]: Failed to connect to [%s]:%hu/%s: %s\n",
-	       pserver->host.c_str(), pserver->port, pserver->prefix.c_str(),
-	       exmdb_rpc_strerror(response_code));
-	close(sockd);
-	return -1;
-}
-
 static void *exmlc_scanwork(void *pparam)
 {
 	fd_set myset;
@@ -289,7 +227,7 @@ static void *exmlc_scanwork(void *pparam)
 				temp_list.pop_front();
 				continue;
 			}
-			pconn->sockd = exmdb_client_connect_exmdb(pconn->psvr);
+			pconn->sockd = exmdb_client_connect_exmdb(*pconn->psvr, false, "exmdb_local", nullptr, nullptr);
 			if (-1 != pconn->sockd) {
 				time(&pconn->last_time);
 				sv_hold.lock();

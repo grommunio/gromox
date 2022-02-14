@@ -1,30 +1,21 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
-#include <atomic>
 #include <cstdint>
 #include <list>
 #include <mutex>
 #include <utility>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
-#include <gromox/socket.h>
-#include <gromox/svc_common.h>
 #include "exmdb_client.h"
 #include "exmdb_server.h"
 #include "common_util.h"
 #include "exmdb_ext.h"
-#include <cstdlib>
-#include <cstring>
 #include <unistd.h>
-#include <cstdio>
 #include <ctime>
 #include <poll.h>
 
 using namespace gromox;
-
-static int cl_rd_sock(int fd, BINARY *b) { return exmdb_client_read_socket(fd, b, SOCKET_TIMEOUT * 1000); }
-static int cl_wr_sock(int fd, const BINARY *b) { return exmdb_client_write_socket(fd, b, SOCKET_TIMEOUT * 1000); }
 
 static auto &g_local_list = mdcl_local_list;
 static auto &g_lost_list = mdcl_lost_list;
@@ -32,73 +23,10 @@ static auto &g_server_list = mdcl_server_list;
 static auto &g_server_lock = mdcl_server_lock;
 static auto &g_notify_stop = mdcl_notify_stop;
 
-static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
+static void buildenv(const remote_svr &s)
 {
-	int process_id;
-	BINARY tmp_bin;
-	char remote_id[128];
-	const char *str_host;
-	EXMDB_REQUEST request;
-	uint8_t response_code;
-
-	int sockd = gx_inet_connect(pserver->host.c_str(), pserver->port, 0);
-	if (sockd < 0) {
-		static std::atomic<time_t> g_lastwarn_time;
-		auto prev = g_lastwarn_time.load();
-		auto next = prev + 60;
-		auto now = time(nullptr);
-		if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
-			fprintf(stderr, "gx_inet_connect exmdb_client@exmdb_provider@[%s]:%hu: %s\n",
-			        pserver->host.c_str(), pserver->port, strerror(-sockd));
-	        return -1;
-	}
-	str_host = get_host_ID();
-	process_id = getpid();
-	sprintf(remote_id, "%s:%d", str_host, process_id);
-	if (!b_listen) {
-		request.call_id = exmdb_callid::CONNECT;
-		request.payload.connect.prefix = deconst(pserver->prefix.c_str());
-		request.payload.connect.remote_id = remote_id;
-		request.payload.connect.b_private = pserver->type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
-	} else {
-		request.call_id = exmdb_callid::LISTEN_NOTIFICATION;
-		request.payload.listen_notification.remote_id = remote_id;
-	}
-	if (EXT_ERR_SUCCESS != exmdb_ext_push_request(&request, &tmp_bin)) {
-		close(sockd);
-		return -1;
-	}
-	if (!cl_wr_sock(sockd, &tmp_bin)) {
-		free(tmp_bin.pb);
-		close(sockd);
-		return -1;
-	}
-	free(tmp_bin.pb);
-	exmdb_server_build_environment(false, pserver->type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false, nullptr);
-	if (!cl_rd_sock(sockd, &tmp_bin)) {
-		exmdb_server_free_environment();
-		close(sockd);
-		return -1;
-	}
-	response_code = tmp_bin.pb[0];
-	if (response_code == exmdb_response::SUCCESS) {
-		if (tmp_bin.cb != 5) {
-			exmdb_server_free_environment();
-			printf("[exmdb_client]: response format error "
-			       "during connect to [%s]:%hu/%s\n",
-			       pserver->host.c_str(), pserver->port, pserver->prefix.c_str());
-			close(sockd);
-			return -1;
-		}
-		exmdb_server_free_environment();
-		return sockd;
-	}
-	printf("[exmdb_provider]: Failed to connect to [%s]:%hu/%s: %s\n",
-	       pserver->host.c_str(), pserver->port, pserver->prefix.c_str(),
-	       exmdb_rpc_strerror(response_code));
-	exmdb_server_free_environment();
-	close(sockd);
-	return -1;
+	exmdb_server_build_environment(false,
+		s.type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false, nullptr);
 }
 
 static void *mdpcl_scanwork(void *pparam)
@@ -174,7 +102,9 @@ static void *mdpcl_scanwork(void *pparam)
 				temp_list.pop_front();
 				continue;
 			}
-			pconn->sockd = exmdb_client_connect_exmdb(pconn->psvr, FALSE);
+			pconn->sockd = exmdb_client_connect_exmdb(*pconn->psvr, false,
+			               "exmdb_provider", buildenv,
+			               exmdb_server_free_environment);
 			if (-1 != pconn->sockd) {
 				time(&pconn->last_time);
 				sv_hold.lock();
@@ -204,8 +134,9 @@ static void *mdpcl_thrwork(void *pparam)
 	
 	pagent = (AGENT_THREAD*)pparam;
 	while (!g_notify_stop) {
-		pagent->sockd = exmdb_client_connect_exmdb(
-							pagent->pserver, TRUE);
+		pagent->sockd = exmdb_client_connect_exmdb(*pagent->pserver, true,
+		                "mdclntfy", buildenv,
+		                exmdb_server_free_environment);
 		if (-1 == pagent->sockd) {
 			sleep(1);
 			continue;
