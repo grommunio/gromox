@@ -8,7 +8,6 @@
 #include <mutex>
 #include <utility>
 #include <vector>
-#include <gromox/atomic.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/socket.h>
@@ -22,7 +21,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
-#include <csignal>
 #include <cstdio>
 #include <ctime>
 #include <poll.h>
@@ -32,15 +30,14 @@ using namespace gromox;
 static int cl_rd_sock(int fd, BINARY *b) { return exmdb_client_read_socket(fd, b, SOCKET_TIMEOUT * 1000); }
 static int cl_wr_sock(int fd, const BINARY *b) { return exmdb_client_write_socket(fd, b, SOCKET_TIMEOUT * 1000); }
 
-static int g_conn_num;
-static int g_threads_num;
-static atomic_bool g_notify_stop;
-static pthread_t g_scan_id;
 static std::vector<EXMDB_ITEM> g_local_list;
 static auto &g_agent_list = mdcl_agent_list;
 static auto &g_lost_list = mdcl_lost_list;
 static auto &g_server_list = mdcl_server_list;
 static auto &g_server_lock = mdcl_server_lock;
+static auto &g_notify_stop = mdcl_notify_stop;
+static auto &g_conn_num = mdcl_conn_num;
+static auto &g_scan_id = mdcl_scan_id;
 
 static int exmdb_client_connect_exmdb(REMOTE_SVR *pserver, BOOL b_listen)
 {
@@ -302,13 +299,6 @@ static REMOTE_CONN_floating exmdb_client_get_connection(const char *dir)
 	return fc;
 }
 
-void exmdb_client_init(int conn_num, int threads_num)
-{
-	g_notify_stop = true;
-	g_conn_num = conn_num;
-	g_threads_num = threads_num;
-}
-
 int exmdb_client_run(const char *config_path)
 {
 	std::vector<EXMDB_ITEM> xmlist;
@@ -344,7 +334,7 @@ int exmdb_client_run(const char *config_path)
 			return 5;
 		}
 		auto &srv = g_server_list.back();
-		for (decltype(g_conn_num) j = 0; j < g_conn_num; ++j) {
+		for (unsigned int j = 0; j < mdcl_conn_num; ++j) {
 			REMOTE_CONN conn;
 			conn.sockd = -1;
 			conn.psvr = &srv;
@@ -357,7 +347,7 @@ int exmdb_client_run(const char *config_path)
 				return 6;
 			}
 		}
-		for (decltype(g_threads_num) j = 0; j < g_threads_num; ++j) {
+		for (unsigned int j = 0; j < mdcl_threads_num; ++j) {
 			try {
 				g_agent_list.push_back(AGENT_THREAD{});
 			} catch (const std::bad_alloc &) {
@@ -377,7 +367,7 @@ int exmdb_client_run(const char *config_path)
 				return 8;
 			}
 			char buf[32];
-			snprintf(buf, sizeof(buf), "exmdbcl/%zu", i);
+			snprintf(buf, sizeof(buf), "mdclntfy/%zu-%u", i, j);
 			pthread_setname_np(ag.thr_id, buf);
 		}
 		++i;
@@ -393,27 +383,6 @@ int exmdb_client_run(const char *config_path)
 	}
 	pthread_setname_np(g_scan_id, "exmdbcl/scan");
 	return 0;
-}
-
-void exmdb_client_stop()
-{
-	if (g_conn_num != 0 && !g_notify_stop) {
-		g_notify_stop = true;
-		if (!pthread_equal(g_scan_id, {})) {
-			pthread_kill(g_scan_id, SIGALRM);
-			pthread_join(g_scan_id, NULL);
-		}
-	}
-	g_notify_stop = true;
-	for (auto &ag : g_agent_list) {
-		pthread_kill(ag.thr_id, SIGALRM);
-		pthread_join(ag.thr_id, nullptr);
-		if (ag.sockd >= 0)
-			close(ag.sockd);
-	}
-	for (auto &srv : g_server_list)
-		for (auto &conn : srv.conn_list)
-			close(conn.sockd);
 }
 
 BOOL exmdb_client_check_local(const char *prefix, BOOL *pb_private)

@@ -9,6 +9,7 @@
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
+#include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>

@@ -5,6 +5,7 @@
 #include <utility>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/paths.h>
 #include "bounce_producer.h"

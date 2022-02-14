@@ -3,6 +3,7 @@
 #include <list>
 #include <mutex>
 #include <pthread.h>
+#include <gromox/atomic.hpp>
 #include <gromox/list_file.hpp>
 
 namespace gromox {
@@ -48,5 +49,11 @@ extern GX_EXPORT std::list<agent_thread> mdcl_agent_list;
 extern GX_EXPORT std::list<remote_conn> mdcl_lost_list;
 extern GX_EXPORT std::list<remote_svr> mdcl_server_list;
 extern GX_EXPORT std::mutex mdcl_server_lock;
+extern GX_EXPORT gromox::atomic_bool mdcl_notify_stop;
+extern GX_EXPORT unsigned int mdcl_conn_num, mdcl_threads_num;
+extern GX_EXPORT pthread_t mdcl_scan_id;
+
+extern GX_EXPORT void exmdb_client_init(unsigned int conn_num, unsigned int threads_num);
+extern GX_EXPORT void exmdb_client_stop();
 
 }

@@ -11,8 +11,6 @@ namespace exmdb_client = exmdb_client_remote;
 struct EXMDB_REQUEST;
 struct EXMDB_RESPONSE;
 
-extern void exmdb_client_init(int conn_num, int threads_num);
 extern int exmdb_client_run(const char *configdir);
-extern void exmdb_client_stop();
 void exmdb_client_register_proc(void *pproc);
 extern BOOL exmdb_client_do_rpc(const char *dir, const EXMDB_REQUEST *, EXMDB_RESPONSE *);

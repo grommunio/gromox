@@ -4,6 +4,7 @@
 #include <string>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/exmdb_client.hpp>
 #include <gromox/fileio.h>
 #include <gromox/hook_common.h>
 #include <gromox/config_file.hpp>
@@ -147,7 +148,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 		bounce_producer_init(separator);
 		bounce_audit_init(response_capacity, response_interval);
 		cache_queue_init(cache_path, cache_interval, retrying_times);
-		exmdb_client_init(conn_num);
+		exmdb_client_init(conn_num, 0);
 		exmdb_local_init(org_name, charset, tmzone);
 		
 		if (0 != net_failure_run()) {

@@ -3,13 +3,11 @@
 // This file is part of Gromox.
 #include <algorithm>
 #include <atomic>
-#include <csignal>
 #include <cstdint>
 #include <list>
 #include <mutex>
 #include <utility>
 #include <vector>
-#include <gromox/atomic.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/fileio.h>
@@ -23,7 +21,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
-#include <csignal>
 #include <cstdio>
 #include <ctime>
 
@@ -334,12 +331,6 @@ static REMOTE_CONN_floating exmdb_client_get_connection(const char *dir)
 	return fc;
 }
 
-void exmdb_client_init(int conn_num)
-{
-	g_notify_stop = true;
-	g_conn_num = conn_num;
-}
-
 int exmdb_client_run()
 {
 	std::vector<EXMDB_ITEM> xmlist;
@@ -380,21 +371,6 @@ int exmdb_client_run()
 	}
 	pthread_setname_np(g_scan_id, "mdbloc/scan");
 	return 0;
-}
-
-void exmdb_client_stop()
-{
-	if (!g_notify_stop) {
-		g_notify_stop = true;
-		if (!pthread_equal(g_scan_id, {})) {
-			pthread_kill(g_scan_id, SIGALRM);
-			pthread_join(g_scan_id, NULL);
-		}
-	}
-	g_notify_stop = true;
-	for (auto &srv : g_server_list)
-		for (auto &conn : srv.conn_list)
-			close(conn.sockd);
 }
 
 int exmdb_client_delivery_message(const char *dir,
