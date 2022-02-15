@@ -78,9 +78,15 @@ The maximum number of recipients that an e-mail is allowed to have.
 Default: \fI256\fP
 .TP
 \fBnotify_stub_threads_num\fP
+For every exmdb server in exmdb_list.txt, establish and keep this many number
+of outbound connections for receiving notification RPCs.
+.br
 Default: \fI10\fP
 .TP
 \fBrpc_proxy_connection_num\fP
+For every exmdb server in exmdb_list.txt, establish and keep this many number
+of outbound connections for sending commands.
+.br
 Default: \fI10\fP
 .TP
 \fBseparator_for_bounce\fP
