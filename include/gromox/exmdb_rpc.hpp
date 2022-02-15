@@ -1486,7 +1486,6 @@ extern GX_EXPORT BOOL exmdb_client_write_socket(int, const BINARY *, long timeou
 
 extern GX_EXPORT void *(*exmdb_rpc_alloc)(size_t);
 extern GX_EXPORT void (*exmdb_rpc_free)(void *);
-extern GX_EXPORT BOOL (*exmdb_rpc_exec)(const char *, const EXMDB_REQUEST *, EXMDB_RESPONSE *);
 
 namespace exmdb_client_remote {
 #define IDLOUT

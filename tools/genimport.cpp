@@ -785,7 +785,6 @@ int gi_setup()
 	sigemptyset(&sact.sa_mask);
 	sact.sa_handler = [](int) {};
 	sigaction(SIGALRM, &sact, nullptr);
-	exmdb_rpc_exec = exmdb_client_do_rpc;
 	exmdb_client_init(1, 0);
 	return exmdb_client_run(PKGSYSCONFDIR, EXMDB_CLIENT_NO_FLAGS, nullptr, nullptr, nullptr);
 }

@@ -22,8 +22,6 @@ using RESPONSE_PAYLOAD = EXMDB_RESPONSE_PAYLOAD;
 
 void *(*exmdb_rpc_alloc)(size_t) = malloc;
 void (*exmdb_rpc_free)(void *) = free;
-BOOL (*exmdb_rpc_exec)(const char *, const EXMDB_REQUEST *, EXMDB_RESPONSE *) =
-	[](const char *, const EXMDB_REQUEST *, EXMDB_RESPONSE *) -> BOOL { return false; };
 template<typename T> T *cu_alloc()
 {
 	static_assert(std::is_trivially_destructible_v<T>);

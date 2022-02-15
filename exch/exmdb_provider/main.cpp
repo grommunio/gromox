@@ -93,7 +93,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		LINK_SVC_API(ppdata);
 		exmdb_rpc_alloc = common_util_alloc;
 		exmdb_rpc_free = [](void *) {};
-		exmdb_rpc_exec = exmdb_client_do_rpc;
 		std::string cfg_path = get_plugin_name();
 		auto pos = cfg_path.find_last_of('.');
 		if (pos != cfg_path.npos)
