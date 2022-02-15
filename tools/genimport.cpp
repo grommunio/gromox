@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cerrno>
 #include <cmath>
+#include <csignal>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
@@ -20,6 +21,7 @@
 #include <gromox/config_file.hpp>
 #include <gromox/database_mysql.hpp>
 #include <gromox/endian.hpp>
+#include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
@@ -39,7 +41,6 @@ using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
 
 static std::string g_dstuser;
-static int g_socket = -1;
 static unsigned int g_user_id;
 static std::string g_storedir_s;
 const char *g_storedir;
@@ -538,84 +539,6 @@ uint16_t gi_resolve_namedprop(const PROPERTY_XNAME &xpn_req)
 	return pid_rsp.ppropid[0];
 }
 
-static BOOL exm_dorpc(const char *dir, const EXMDB_REQUEST *prequest, EXMDB_RESPONSE *presponse)
-{
-	BINARY tb;
-	if (exmdb_ext_push_request(prequest, &tb) != EXT_ERR_SUCCESS)
-		return false;
-	if (!exmdb_client_write_socket(g_socket, &tb)) {
-		free(tb.pb);
-		return false;
-	}
-	free(tb.pb);
-	if (!exmdb_client_read_socket(g_socket, &tb))
-		return false;
-	auto cl_0 = make_scope_exit([&]() { free(tb.pb); });
-	if (tb.cb < 5 || tb.pb[0] != exmdb_response::SUCCESS)
-		return false;
-	presponse->call_id = prequest->call_id;
-	BINARY tb2 = tb;
-	tb2.cb -= 5;
-	tb2.pb += 5;
-	return exmdb_ext_pull_response(&tb2, presponse) == EXT_ERR_SUCCESS ? TRUE : false;
-}
-
-static int exm_connect(const char *dir)
-{
-	std::vector<EXMDB_ITEM> exmlist;
-	auto ret = list_file_read_exmdb("exmdb_list.txt", PKGSYSCONFDIR, exmlist);
-	if (ret < 0) {
-		fprintf(stderr, "exm: list_file_read_exmdb: %s\n", strerror(-ret));
-		return ret;
-	}
-	auto xn = std::find_if(exmlist.begin(), exmlist.end(),
-	          [&](const EXMDB_ITEM &s) { return strncmp(s.prefix.c_str(), dir, s.prefix.size()) == 0; });
-	if (xn == exmlist.end()) {
-		fprintf(stderr, "exm: No target for %s\n", dir);
-		return -ENOENT;
-	}
-	wrapfd fd(gx_inet_connect(xn->host.c_str(), xn->port, 0));
-	if (fd.get() < 0) {
-		fprintf(stderr, "exm: gx_inet_connect genimport@[%s]:%hu: %s\n",
-		        xn->host.c_str(), xn->port, strerror(-fd.get()));
-		return -errno;
-	}
-	exmdb_rpc_exec = exm_dorpc;
-
-	char rid[64];
-	snprintf(rid, arsizeof(rid), "genimport:%ld", static_cast<long>(getpid()));
-	EXMDB_REQUEST rq;
-	rq.call_id = exmdb_callid::CONNECT;
-	rq.payload.connect.prefix    = deconst(xn->prefix.c_str());
-	rq.payload.connect.remote_id = rid;
-	rq.payload.connect.b_private = g_public_folder ? false : TRUE;
-	BINARY tb{};
-	if (exmdb_ext_push_request(&rq, &tb) != EXT_ERR_SUCCESS ||
-	    !exmdb_client_write_socket(fd.get(), &tb)) {
-		fprintf(stderr, "exm: Protocol failure\n");
-		return -1;
-	}
-	free(tb.pb);
-	if (!exmdb_client_read_socket(fd.get(), &tb)) {
-		fprintf(stderr, "exm: Protocol failure\n");
-		return -1;
-	}
-	auto cl_0 = make_scope_exit([&]() { free(tb.pb); });
-	auto response_code = tb.pb[0];
-	if (response_code == exmdb_response::SUCCESS) {
-		if (tb.cb != 5) {
-			fprintf(stderr, "exm: response format error during connect to "
-				"[%s]:%hu/%s\n", xn->host.c_str(),
-				xn->port, xn->prefix.c_str());
-			return -1;
-		}
-		return fd.release();
-	}
-	fprintf(stderr, "exm: Failed to connect to [%s]:%hu/%s: %s\n",
-	        xn->host.c_str(), xn->port, xn->prefix.c_str(), exmdb_rpc_strerror(response_code));
-	return -1;
-}
-
 int exm_set_change_keys(TPROPVAL_ARRAY *props, uint64_t change_num)
 {
 	/* Set the change key and initial PCL for the object */
@@ -858,8 +781,16 @@ int gi_setup()
 		return EXIT_FAILURE;
 	}
 	g_storedir = g_storedir_s.c_str();
-	g_socket = exm_connect(g_storedir);
-	if (g_socket < 0)
-		return EXIT_FAILURE;
-	return EXIT_SUCCESS;
+	struct sigaction sact{};
+	sigemptyset(&sact.sa_mask);
+	sact.sa_handler = [](int) {};
+	sigaction(SIGALRM, &sact, nullptr);
+	exmdb_rpc_exec = exmdb_client_do_rpc;
+	exmdb_client_init(1, 0);
+	return exmdb_client_run(PKGSYSCONFDIR, EXMDB_CLIENT_NO_FLAGS, nullptr, nullptr, nullptr);
+}
+
+void gi_shutdown()
+{
+	exmdb_client_stop();
 }

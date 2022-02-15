@@ -95,3 +95,4 @@ extern int exm_create_folder(uint64_t parent_fld, TPROPVAL_ARRAY *props, bool o_
 extern int exm_create_msg(uint64_t parent_fld, MESSAGE_CONTENT *);
 extern void gi_setup_early(const char *dstmbox);
 extern int gi_setup();
+extern void gi_shutdown();

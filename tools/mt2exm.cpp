@@ -382,6 +382,7 @@ int main(int argc, const char **argv) try
 	exm_read_base_maps();
 	if (gi_setup() != EXIT_SUCCESS)
 		return EXIT_FAILURE;
+	auto cl_0 = make_scope_exit(gi_shutdown);
 	while (true) {
 		uint64_t xsize = 0;
 		errno = 0;
