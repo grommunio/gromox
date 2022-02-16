@@ -892,11 +892,11 @@ ftstream_producer::create(logon_object *plogon, uint8_t string_option) try
 fxstream_producer::~fxstream_producer()
 {
 	auto pstream = this;
-	if (-1 != pstream->fd) {
-		close(pstream->fd);
-		if (remove(pstream->path.c_str()) < 0 && errno != ENOENT)
-			fprintf(stderr, "W-1371: remove %s: %s\n", pstream->path.c_str(), strerror(errno));
-	}
+	if (pstream->fd < 0)
+		return;
+	close(pstream->fd);
+	if (remove(pstream->path.c_str()) < 0 && errno != ENOENT)
+		fprintf(stderr, "W-1371: remove %s: %s\n", pstream->path.c_str(), strerror(errno));
 }
 
 BOOL ftstream_producer::read_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last)
