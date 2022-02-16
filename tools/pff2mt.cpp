@@ -1049,7 +1049,6 @@ static void npg_ent(gi_name_map &map, libpff_record_entry_t *rent)
 		pn_req.pname = pnstr.get();
 	}
 	map.emplace((etype << 16) | vtype, std::move(pn_req));
-	pnstr.release();
 }
 
 static void npg_set(gi_name_map &map, libpff_record_set_t *rset)
