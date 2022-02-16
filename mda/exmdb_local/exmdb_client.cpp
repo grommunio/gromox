@@ -364,21 +364,6 @@ static REMOTE_CONN_floating exmdb_client_get_connection(const char *dir)
 	return fc;
 }
 
-BOOL exmdb_client_get_exmdb_information(
-	const char *dir, char *ip_addr, int *pport,
-	int *pconn_num, int *palive_conn)
-{
-	auto i = std::find_if(g_server_list.begin(), g_server_list.end(),
-	         [&](const REMOTE_SVR &s) { return strncmp(dir, s.prefix.c_str(), s.prefix.size()) == 0; });
-	if (i == g_server_list.end())
-		return FALSE;
-	strcpy(ip_addr, i->host.c_str());
-	*pport = i->port;
-	*palive_conn = i->conn_list.size();
-	*pconn_num = g_conn_num;
-	return TRUE;
-}
-
 void REMOTE_CONN_floating::reset(bool lost)
 {
 	if (tmplist.size() == 0)
