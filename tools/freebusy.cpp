@@ -380,7 +380,7 @@ static int connect_exmdb(const char *dir)
 		close(sockd);
 		return -1;
 	}
-	if (FALSE == exmdb_client_write_socket(sockd, &tmp_bin)) {
+	if (!exmdb_client_write_socket(sockd, &tmp_bin)) {
 		close(sockd);
 		return -1;
 	}
@@ -1227,7 +1227,7 @@ static BOOL get_freebusy(const char *dir)
 	pidlidtimezonestruct = PROP_TAG(PT_BINARY, propids.ppropid[12]);
 	
 	if (NULL != g_username) {
-		if (FALSE == exmdb_client_check_folder_permission(
+		if (!exmdb_client_check_folder_permission(
 			sockd, dir, rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR),
 			g_username, &permission)) {
 			close(sockd);
@@ -1382,7 +1382,7 @@ static BOOL get_freebusy(const char *dir)
 	rprop->propval.pvalue = &end_nttime;
 	/* end of OR */
 	
-	if (FALSE == exmdb_client_load_content_table(sockd, dir,
+	if (!exmdb_client_load_content_table(sockd, dir,
 		0, rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR),
 		NULL, TABLE_FLAG_NONOTIFICATIONS, &restriction, NULL,
 		&table_id, &row_count)) {
@@ -1405,7 +1405,7 @@ static BOOL get_freebusy(const char *dir)
 	tmp_proptags[10] = pidlidglobalobjectid;
 	tmp_proptags[11] = pidlidtimezonestruct;
 	tmp_proptags[12] = PR_SUBJECT;
-	if (FALSE == exmdb_client_query_table(sockd, dir, NULL,
+	if (!exmdb_client_query_table(sockd, dir, NULL,
 		0, table_id, &proptags, 0, row_count, &tmp_set)) {
 		close(sockd);
 		cache_connection(dir, -1);
@@ -1513,7 +1513,7 @@ static BOOL get_freebusy(const char *dir)
 		}
 	}
 	printf("]}\n");
-	if (FALSE == exmdb_client_unload_table(sockd, dir, table_id)) {
+	if (!exmdb_client_unload_table(sockd, dir, table_id)) {
 		close(sockd);
 		cache_connection(dir, -1);
 		return FALSE;

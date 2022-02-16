@@ -142,7 +142,7 @@ static int connect_exmdb(const char *dir)
 		close(sockd);
 		return -1;
 	}
-	if (FALSE == exmdb_client_write_socket(sockd, &tmp_bin)) {
+	if (!exmdb_client_write_socket(sockd, &tmp_bin)) {
 		close(sockd);
 		return -1;
 	}
@@ -322,7 +322,7 @@ int main(int argc, const char **argv)
 		[&](const EXMDB_ITEM &s) { return s.type != EXMDB_ITEM::EXMDB_PRIVATE; }),
 		g_exmdb_list.end());
 #endif
-	if (FALSE == exmdb_client_unload_store(argv[1])) {
+	if (!exmdb_client_unload_store(argv[1])) {
 		printf("fail to unload store\n");
 		return 12;
 	}

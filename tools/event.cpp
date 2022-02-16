@@ -468,7 +468,7 @@ static void *ev_enqwork(void *param)
 	eq_hold.unlock();
 	
 	while (true) {
-		if (FALSE == read_mark(penqueue)) {
+		if (!read_mark(penqueue)) {
 			eq_hold.lock();
 			g_enqueue_list.erase(eq_node);
 			goto NEXT_LOOP;
@@ -698,7 +698,7 @@ static void *ev_deqwork(void *param)
 		if (NULL == pfile) {	
 			if (cur_time - last_time >= SOCKET_TIMEOUT - 3) {
 				if (6 != write(pdequeue->sockd, "PING\r\n", 6) ||
-					FALSE == read_response(pdequeue->sockd)) {
+				    !read_response(pdequeue->sockd)) {
 					hl_hold.lock();
 					auto it = std::find(phost->list.begin(), phost->list.end(), pdequeue);
 					if (it != phost->list.end())
@@ -727,7 +727,7 @@ static void *ev_deqwork(void *param)
 		len ++;
 		mem_file_free(&temp_file);
 		if (len != write(pdequeue->sockd, buff, len) ||
-			FALSE == read_response(pdequeue->sockd)) {
+		    !read_response(pdequeue->sockd)) {
 			hl_hold.lock();
 			auto it = std::find(phost->list.begin(), phost->list.end(), pdequeue);
 			if (it != phost->list.end())
