@@ -444,7 +444,7 @@ static BOOL transporter_pass_mpc_hooks(MESSAGE_CONTEXT *pcontext,
 			break;
 		}
 	}
-	if (!hook_result)
+	if (hook_result)
 		return TRUE;
 	if (pthr_data->last_thrower != g_local_hook) {
 		pcontext->pcontrol->f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
