@@ -532,7 +532,7 @@ int pop3_parser_retrieve(POP3_CONTEXT *pcontext)
 	}
 	b_stop = FALSE;
 	last_result = STREAM_COPY_OK;
-	while (FALSE == b_stop) {
+	while (!b_stop) {
 		line_length = MAX_LINE_LENGTH;
 		auto copy_result = temp_stream.copyline(line_buff, &line_length);
 		switch (copy_result) {

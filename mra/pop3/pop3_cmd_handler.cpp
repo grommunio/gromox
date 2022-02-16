@@ -204,11 +204,8 @@ int pop3_cmd_handler_stat(const char* cmd_line, int line_length,
 	if (4 != line_length) {
 		return 1704;
 	}
-
-	if (FALSE == pcontext->is_login) {
+	if (!pcontext->is_login)
 		return 1708;
-	}
-	
 	snprintf(temp_buff, sizeof(temp_buff), "+OK %d %llu\r\n",
 	         pcontext->total_mail, static_cast<unsigned long long>(pcontext->total_size));
 	string_length = strlen(temp_buff);
@@ -233,10 +230,8 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 	HX_strrtrim(temp_command);
 	
 	if (4 == strlen(temp_command)) {
-		
-		if (FALSE == pcontext->is_login) {
+		if (!pcontext->is_login)
 			return 1708;
-		}
 		pcontext->stream.clear();
 		pcontext->stream.write("+OK\r\n", 5);
 
@@ -262,10 +257,8 @@ int pop3_cmd_handler_uidl(const char* cmd_line, int line_length,
 	if (temp_command[4] != ' ') {
 		return 1703;
 	}
-	
-	if (FALSE == pcontext->is_login) {
+	if (!pcontext->is_login)
 		return 1708;
-	}
 	
 	int n = strtol(temp_command + 5, nullptr, 0);
 	if (n > 0 && static_cast<size_t>(n) <= pcontext->array.size()) {
@@ -295,10 +288,8 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 	HX_strrtrim(temp_command);
 	
 	if (4 == strlen(temp_command)) {
-		
-		if (FALSE == pcontext->is_login) {
+		if (!pcontext->is_login)
 			return 1708;
-		}
 		pcontext->stream.clear();
 		pcontext->stream.write("+OK\r\n", 5);
 		
@@ -323,10 +314,8 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 	if (temp_command[4] != ' ') {
 		return 1703;
 	}
-	
-	if (FALSE == pcontext->is_login) {
+	if (!pcontext->is_login)
 		return 1708;
-	}
 	
 	int n = strtol(temp_command + 5, nullptr, 0);
 	if (n > 0 && static_cast<size_t>(n) <= pcontext->array.size()) {
@@ -358,10 +347,8 @@ int pop3_cmd_handler_retr(const char* cmd_line, int line_length,
 	if (temp_command[4] != ' ') {
 		return 1703;
 	}
-	
-	if (FALSE == pcontext->is_login) {
+	if (!pcontext->is_login)
 		return 1708;
-	}
 	
 	int n = strtol(temp_command + 5, nullptr, 0);
 	pcontext->cur_line = -1;
@@ -411,15 +398,13 @@ int pop3_cmd_handler_dele(const char* cmd_line, int line_length,
 	if (temp_command[4] != ' ') {
 		return 1703;
 	}
-	
-	if (FALSE == pcontext->is_login) {
+	if (!pcontext->is_login)
 		return 1708;
-	}
 	
 	int n = strtol(temp_command + 5, nullptr, 0);
 	if (n > 0 && static_cast<size_t>(n) <= pcontext->array.size()) {
 		auto punit = sa_get_item(pcontext->array, n - 1);
-		if (FALSE == punit->b_deleted) {
+		if (!punit->b_deleted) {
 			punit->b_deleted = TRUE;
 			punit->node.pdata = punit;
 			single_list_append_as_tail(&pcontext->list, &punit->node);
@@ -448,10 +433,8 @@ int pop3_cmd_handler_top(const char* cmd_line, int line_length,
 	if (temp_command[3] != ' ') {
 		return 1703;
 	}
-	
-	if (FALSE == pcontext->is_login) {
+	if (!pcontext->is_login)
 		return 1708;
-	}
 	
 	gx_strlcpy(temp_buff, temp_command + 4, arsizeof(temp_buff));
 	HX_strltrim(temp_buff);
