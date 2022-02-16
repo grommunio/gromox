@@ -81,11 +81,9 @@ void notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter
 		rt_hold.unlock();
 		if (dg.pb == nullptr) {
 			ping_buff = 0;
-			if (sizeof(uint32_t) != write(prouter->sockd,
-				&ping_buff, sizeof(uint32_t)) || FALSE ==
-				notification_agent_read_response(prouter)) {
+			if (write(prouter->sockd, &ping_buff, sizeof(uint32_t)) != sizeof(uint32_t) ||
+			    !notification_agent_read_response(prouter))
 				goto EXIT_THREAD;
-			}
 			continue;
 		}
 		while (dg.pb != nullptr) {

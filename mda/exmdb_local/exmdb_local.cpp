@@ -378,11 +378,9 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 			"to get user information from data source!");
 		return DELIVERY_OPERATION_FAILURE;
 	}
-	if ('\0' == lang[0] || FALSE ==
-		exmdb_local_lang_to_charset(lang,
-		charset) || '\0' == charset[0]) {
+	if (*lang == '\0' ||
+	    !exmdb_local_lang_to_charset(lang, charset) || *charset == '\0')
 		strcpy(charset, g_default_charset);
-	}
 	if ('\0' == home_dir[0]) {
 		exmdb_local_log_info(pcontext, address, LV_ERR,
 			"<%s> has no mailbox here", address);

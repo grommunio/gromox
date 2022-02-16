@@ -1222,11 +1222,9 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	} else if (address_type == DT_DISTLIST || address_type == DT_MAILUSER) {
 		if (!common_util_essdn_to_ids(essdn, &domain_id, &user_id))
 			return ecNotFound;
-		if (domain_id != pinfo->domain_id && FALSE ==
-		    system_services_check_same_org(domain_id,
-		    pinfo->domain_id)) {
+		if (domain_id != pinfo->domain_id &&
+		    !system_services_check_same_org(domain_id, pinfo->domain_id))
 			base_id = -domain_id;
-		}
 		minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, user_id);
 		userobj = user_object::create(base_id, minid);
 		pobject = userobj.get();

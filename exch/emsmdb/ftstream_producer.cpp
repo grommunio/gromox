@@ -240,11 +240,9 @@ static BOOL ftstream_producer_write_binary(
 	if (!pstream->write_uint32(pbin->cb))
 		return FALSE;
 	position = pstream->offset;
-	if (0 != pbin->cb && FALSE ==
-		ftstream_producer_write_internal(
-		pstream, pbin->pb, pbin->cb)) {
+	if (pbin->cb != 0 &&
+	    !ftstream_producer_write_internal(pstream, pbin->pb, pbin->cb))
 		return FALSE;
-	}
 	if (pbin->cb >= FTSTREAM_PRODUCER_POINT_LENGTH) {
 		ftstream_producer_record_lvp(pstream, position, pbin->cb);
 	} else {

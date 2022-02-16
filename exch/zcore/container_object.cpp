@@ -465,9 +465,8 @@ BOOL container_object::load_user_table(const RESTRICTION *prestriction)
 				tpropval_array_free(ppropvals);
 				return FALSE;
 			}
-			if (NULL != prestriction && FALSE ==
-				container_object_match_contact_message(
-				ppropvals, prestriction)) {
+			if (prestriction != nullptr &&
+			    !container_object_match_contact_message(ppropvals, prestriction)) {
 				tpropval_array_free(ppropvals);
 				continue;
 			}
