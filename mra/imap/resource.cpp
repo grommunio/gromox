@@ -160,7 +160,7 @@ LANG_FOLDER::LANG_FOLDER(const LANG_FOLDER &o)
 
 int resource_run()
 {
-	if (FALSE == resource_load_imap_lang_list()) {
+	if (!resource_load_imap_lang_list()) {
 		printf("[resource]: Failed to load IMAP languages\n");
 		return -3;
 	}

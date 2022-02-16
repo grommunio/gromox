@@ -1800,7 +1800,7 @@ static void *imps_scanwork(void *argp)
 		std::unique_lock hl_hold(g_hash_lock);
 		time(&cur_time);
 		auto iter = g_select_hash->make_iter();
-		for (str_hash_iter_begin(iter); FALSE == str_hash_iter_done(iter);
+		for (str_hash_iter_begin(iter); !str_hash_iter_done(iter);
 			str_hash_iter_forward(iter)) {
 			plist = (DOUBLE_LIST*)str_hash_iter_get_value(iter, username);
 			for (pnode=double_list_get_head(plist); NULL!=pnode;
