@@ -218,13 +218,14 @@ static void cl_pinger2()
 		}
 		sv_hold.unlock();
 	}
-	sleep(1);
 }
 
 static void *cl_pinger(void *)
 {
-	while (!mdcl_notify_stop)
+	while (!mdcl_notify_stop) {
 		cl_pinger2();
+		sleep(1);
+	}
 	return nullptr;
 }
 
@@ -383,6 +384,8 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 	}
 	if (mdcl_conn_num == 0)
 		return 0;
+	if (!(flags & EXMDB_CLIENT_ASYNC_CONNECT))
+		cl_pinger2();
 	ret = pthread_create(&mdcl_scan_id, nullptr, cl_pinger, nullptr);
 	if (ret != 0) {
 		printf("exmdb_client: failed to create proxy scan thread: %s\n", strerror(ret));

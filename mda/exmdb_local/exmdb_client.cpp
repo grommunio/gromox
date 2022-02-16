@@ -154,7 +154,7 @@ static int exmdb_client_push_request(uint8_t call_id,
 
 int exmdb_client_run_front()
 {
-	return exmdb_client_run(get_config_path(), EXMDB_CLIENT_NO_FLAGS,
+	return exmdb_client_run(get_config_path(), EXMDB_CLIENT_ASYNC_CONNECT,
 	       nullptr, nullptr, nullptr);
 }
 

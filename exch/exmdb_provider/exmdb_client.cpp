@@ -25,8 +25,8 @@ static void buildenv(const remote_svr &s)
 
 int exmdb_client_run_front(const char *dir)
 {
-	return exmdb_client_run(dir, EXMDB_CLIENT_ALLOW_DIRECT, buildenv,
-	       exmdb_server_free_environment, exmdb_server_event_proc);
+	return exmdb_client_run(dir, EXMDB_CLIENT_ALLOW_DIRECT | EXMDB_CLIENT_ASYNC_CONNECT,
+	       buildenv, exmdb_server_free_environment, exmdb_server_event_proc);
 }
 
 /* Caution. This function is not a common exmdb service,
