@@ -672,8 +672,6 @@ BOOL cu_get_proptags(db_table table_type, uint64_t id,
 			proptags[i++] = PR_ADDRTYPE;
 		if (std::find(proptags, proptags + i, PR_EMAIL_ADDRESS) == proptags + i)
 			proptags[i++] = PR_EMAIL_ADDRESS;
-		if (i != oldcount)
-			fprintf(stderr, "W-1595: unobserved case\n");
 	}
 	pproptags->count = i;
 	pproptags->pproptag = cu_alloc<uint32_t>(i);
@@ -2086,7 +2084,6 @@ BOOL cu_get_properties(db_table table_type,
 			pstmt = own_stmt;
 			if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 				continue;
-			fprintf(stderr, "W-1596: unobserved case\n");
 		}
 		auto pvalue = gp_fetch(psqlite, pstmt, proptype, cpid);
 		if (NULL == pvalue) {
