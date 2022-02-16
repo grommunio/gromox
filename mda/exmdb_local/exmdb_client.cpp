@@ -49,7 +49,6 @@ struct CHECK_CONTACT_ADDRESS_REQUEST {
 static auto &g_lost_list = mdcl_lost_list;
 static auto &g_server_list = mdcl_server_list;
 static auto &g_server_lock = mdcl_server_lock;
-static auto &g_notify_stop = mdcl_notify_stop;
 static auto &g_conn_num = mdcl_conn_num;
 
 static int cl_rd_sock(int fd, BINARY *b) { return exmdb_client_read_socket(fd, b, SOCKET_TIMEOUT * 1000); }
@@ -153,101 +152,10 @@ static int exmdb_client_push_request(uint8_t call_id,
 	return EXT_ERR_SUCCESS;
 }
 
-static void *exmlc_scanwork(void *pparam)
-{
-	fd_set myset;
-	time_t now_time;
-	struct timeval tv;
-	uint8_t resp_buff;
-	uint32_t ping_buff;
-	std::list<REMOTE_CONN> temp_list;
-	
-	ping_buff = 0;
-	while (!g_notify_stop) {
-		std::unique_lock sv_hold(g_server_lock);
-		time(&now_time);
-		for (auto &srv : g_server_list) {
-			auto tail = srv.conn_list.size() > 0 ? &srv.conn_list.back() : nullptr;
-			while (srv.conn_list.size() > 0) {
-				auto pconn = &srv.conn_list.front();
-				if (now_time - pconn->last_time >= SOCKET_TIMEOUT - 3)
-					temp_list.splice(temp_list.end(), srv.conn_list, srv.conn_list.begin());
-				else
-					srv.conn_list.splice(srv.conn_list.end(), srv.conn_list, srv.conn_list.begin());
-				if (pconn == tail)
-					break;
-			}
-		}
-		sv_hold.unlock();
-
-		while (temp_list.size() > 0) {
-			auto pconn = &temp_list.front();
-			if (g_notify_stop) {
-				close(pconn->sockd);
-				temp_list.pop_front();
-				continue;
-			}
-			if (sizeof(uint32_t) != write(pconn->sockd,
-				&ping_buff, sizeof(uint32_t))) {
-				close(pconn->sockd);
-				pconn->sockd = -1;
-				sv_hold.lock();
-				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
-				continue;
-			}
-			tv.tv_usec = 0;
-			tv.tv_sec = SOCKET_TIMEOUT;
-			FD_ZERO(&myset);
-			FD_SET(pconn->sockd, &myset);
-			if (select(pconn->sockd + 1, &myset, NULL, NULL, &tv) <= 0 ||
-				1 != read(pconn->sockd, &resp_buff, 1) ||
-			    resp_buff != exmdb_response::SUCCESS) {
-				close(pconn->sockd);
-				pconn->sockd = -1;
-				sv_hold.lock();
-				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
-				sv_hold.unlock();
-			} else {
-				time(&pconn->last_time);
-				sv_hold.lock();
-				pconn->psvr->conn_list.splice(pconn->psvr->conn_list.end(), temp_list, temp_list.begin());
-				sv_hold.unlock();
-			}
-		}
-
-		sv_hold.lock();
-		temp_list = std::move(g_lost_list);
-		g_lost_list.clear();
-		sv_hold.unlock();
-
-		while (temp_list.size() > 0) {
-			auto pconn = &temp_list.front();
-			if (g_notify_stop) {
-				close(pconn->sockd);
-				temp_list.pop_front();
-				continue;
-			}
-			pconn->sockd = exmdb_client_connect_exmdb(*pconn->psvr, false, "exmdb_local", nullptr, nullptr);
-			if (-1 != pconn->sockd) {
-				time(&pconn->last_time);
-				sv_hold.lock();
-				pconn->psvr->conn_list.splice(pconn->psvr->conn_list.end(), temp_list, temp_list.begin());
-				sv_hold.unlock();
-			} else {
-				sv_hold.lock();
-				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
-				sv_hold.unlock();
-			}
-		}
-		sleep(1);
-	}
-	return NULL;
-}
-
 int exmdb_client_run_front()
 {
 	return exmdb_client_run(get_config_path(), EXMDB_CLIENT_NO_FLAGS,
-	       exmlc_scanwork, nullptr);
+	       nullptr, nullptr, nullptr);
 }
 
 int exmdb_client_delivery_message(const char *dir,

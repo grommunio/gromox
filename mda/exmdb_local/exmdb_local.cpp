@@ -5,13 +5,14 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cstring>
+#include <ctime>
+#include <memory>
 #include <string>
-#include <typeinfo>
 #include <unistd.h>
 #include <libHX/string.h>
-#include <gromox/defs.h>
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
+#include <gromox/mem_file.hpp>
 #include <gromox/oxcmail.hpp>
 #include <gromox/str_hash.hpp>
 #include <gromox/rop_util.hpp>
@@ -23,10 +24,6 @@
 #include "bounce_audit.h"
 #include "auto_response.h"
 #include <gromox/alloc_context.hpp>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <pthread.h>
-#include <cstdlib>
 #include <cstdio>
 #include <fcntl.h>
 
