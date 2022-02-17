@@ -11,1204 +11,1069 @@ using RPC_RESPONSE = ZCORE_RPC_RESPONSE;
 using REQUEST_PAYLOAD = ZCORE_REQUEST_PAYLOAD;
 using RESPONSE_PAYLOAD = ZCORE_RESPONSE_PAYLOAD;
 
-static zend_bool rpc_ext_push_logon_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_LOGON &d)
 {
-	TRY(pctx->p_str(ppayload->logon.username));
-	if (NULL == ppayload->logon.password) {
-		TRY(pctx->p_uint8(0));
+	TRY(x.p_str(d.username));
+	if (d.password == nullptr) {
+		TRY(x.p_uint8(0));
 	} else {
-		TRY(pctx->p_uint8(1));
-		TRY(pctx->p_str(ppayload->logon.password));
+		TRY(x.p_uint8(1));
+		TRY(x.p_str(d.password));
 	}
-	TRY(pctx->p_uint32(ppayload->logon.flags));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_logon_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_LOGON &d)
 {
-	TRY(pctx->g_guid(&ppayload->logon.hsession));
+	TRY(x.g_guid(&d.hsession));
 	return true;
 }
 
-static zend_bool rpc_ext_push_checksession_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_CHECKSESSION &d)
 {
-	TRY(pctx->p_guid(ppayload->checksession.hsession));
+	TRY(x.p_guid(d.hsession));
 	return true;
 }
 
-static zend_bool rpc_ext_push_uinfo_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_UINFO &d)
 {
-	TRY(pctx->p_str(ppayload->uinfo.username));
+	TRY(x.p_str(d.username));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_uinfo_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_UINFO &d)
 {
-	TRY(pctx->g_bin(&ppayload->uinfo.entryid));
-	TRY(pctx->g_str(&ppayload->uinfo.pdisplay_name));
-	TRY(pctx->g_str(&ppayload->uinfo.px500dn));
-	TRY(pctx->g_uint32(&ppayload->uinfo.privilege_bits));
+	TRY(x.g_bin(&d.entryid));
+	TRY(x.g_str(&d.pdisplay_name));
+	TRY(x.g_str(&d.px500dn));
+	TRY(x.g_uint32(&d.privilege_bits));
 	return true;
 }
 
-static zend_bool rpc_ext_push_unloadobject_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_UNLOADOBJECT &d)
 {
-	TRY(pctx->p_guid(ppayload->unloadobject.hsession));
-	TRY(pctx->p_uint32(ppayload->unloadobject.hobject));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_openentry_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_OPENENTRY &d)
 {
-	TRY(pctx->p_guid(ppayload->openentry.hsession));
-	TRY(pctx->p_bin(ppayload->openentry.entryid));
-	TRY(pctx->p_uint32(ppayload->openentry.flags));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_bin(d.entryid));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_openentry_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_OPENENTRY &d)
 {
-	TRY(pctx->g_uint8(&ppayload->openentry.mapi_type));
-	TRY(pctx->g_uint32(&ppayload->openentry.hobject));
+	TRY(x.g_uint8(&d.mapi_type));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_openstoreentry_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_OPENSTOREENTRY &d)
 {
-	TRY(pctx->p_guid(ppayload->openstoreentry.hsession));
-	TRY(pctx->p_uint32(ppayload->openstoreentry.hobject));
-	TRY(pctx->p_bin(ppayload->openstoreentry.entryid));
-	TRY(pctx->p_uint32(ppayload->openstoreentry.flags));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hobject));
+	TRY(x.p_bin(d.entryid));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_openstoreentry_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_OPENSTOREENTRY &d)
 {
-	TRY(pctx->g_uint8(&ppayload->openstoreentry.mapi_type));
-	TRY(pctx->g_uint32(&ppayload->openstoreentry.hxobject));
+	TRY(x.g_uint8(&d.mapi_type));
+	TRY(x.g_uint32(&d.hxobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_openabentry_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_OPENABENTRY &d)
 {
-	TRY(pctx->p_guid(ppayload->openabentry.hsession));
-	TRY(pctx->p_bin(ppayload->openabentry.entryid));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_bin(d.entryid));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_openabentry_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_OPENABENTRY &d)
 {
-	TRY(pctx->g_uint8(&ppayload->openabentry.mapi_type));
-	TRY(pctx->g_uint32(&ppayload->openabentry.hobject));
+	TRY(x.g_uint8(&d.mapi_type));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_resolvename_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_RESOLVENAME &d)
 {
-	TRY(pctx->p_guid(ppayload->resolvename.hsession));
-	TRY(pctx->p_tarray_set(*ppayload->resolvename.pcond_set));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_tarray_set(*d.pcond_set));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_resolvename_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_RESOLVENAME &d)
 {
-	TRY(pctx->g_tarray_set(&ppayload->resolvename.result_set));
+	TRY(x.g_tarray_set(&d.result_set));
 	return true;
 }
 
-static zend_bool rpc_ext_push_getpermissions_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_GETPERMISSIONS &d)
 {
-	TRY(pctx->p_guid(ppayload->getpermissions.hsession));
-	TRY(pctx->p_uint32(ppayload->getpermissions.hobject));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hobject));
 	return true; 
 }
 
-static zend_bool rpc_ext_pull_getpermissions_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_GETPERMISSIONS &d)
 {
-	TRY(pctx->g_perm_set(&ppayload->getpermissions.perm_set));
+	TRY(x.g_perm_set(&d.perm_set));
 	return true;
 }
 
-static zend_bool rpc_ext_push_modifypermissions_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_MODIFYPERMISSIONS &d)
 {
-	TRY(pctx->p_guid(ppayload->modifypermissions.hsession));
-	TRY(pctx->p_uint32(ppayload->modifypermissions.hfolder));
-	TRY(pctx->p_perm_set(ppayload->modifypermissions.pset));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hfolder));
+	TRY(x.p_perm_set(d.pset));
 	return true;
 }
 
-static zend_bool rpc_ext_push_modifyrules_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_MODIFYRULES &d)
 {
-	TRY(pctx->p_guid(ppayload->modifyrules.hsession));
-	TRY(pctx->p_uint32(ppayload->modifyrules.hfolder));
-	TRY(pctx->p_uint32(ppayload->modifyrules.flags));
-	TRY(pctx->p_rule_list(ppayload->modifyrules.plist));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hfolder));
+	TRY(x.p_uint32(d.flags));
+	TRY(x.p_rule_list(d.plist));
 	return true;
 }
 
-static zend_bool rpc_ext_push_getabgal_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_GETABGAL &d)
 {
-	TRY(pctx->p_guid(ppayload->getabgal.hsession));
+	TRY(x.p_guid(d.hsession));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_getabgal_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_GETABGAL &d)
 {
-	TRY(pctx->g_bin(&ppayload->getabgal.entryid));
+	TRY(x.g_bin(&d.entryid));
 	return true;
 }
 
-static zend_bool rpc_ext_push_loadstoretable_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_LOADSTORETABLE &d)
 {	
-	TRY(pctx->p_guid(ppayload->loadstoretable.hsession));
+	TRY(x.p_guid(d.hsession));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_loadstoretable_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_LOADSTORETABLE &d)
 {
-	TRY(pctx->g_uint32(&ppayload->loadstoretable.hobject));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_openstore_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_OPENSTORE &d)
 {
-	TRY(pctx->p_guid(ppayload->openstore.hsession));
-	TRY(pctx->p_bin(ppayload->openstore.entryid));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_bin(d.entryid));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_openstore_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_OPENSTORE &d)
 {
-	TRY(pctx->g_uint32(&ppayload->openstore.hobject));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_openprofilesec_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_OPENPROFILESEC &d)
 {
-	TRY(pctx->p_guid(ppayload->openprofilesec.hsession));
-	if (ppayload->openprofilesec.puid == nullptr) {
-		TRY(pctx->p_uint8(0));
+	TRY(x.p_guid(d.hsession));
+	if (d.puid == nullptr) {
+		TRY(x.p_uint8(0));
 	} else {
-		TRY(pctx->p_uint8(1));
-		TRY(pctx->p_bytes(ppayload->openprofilesec.puid, sizeof(FLATUID)));
+		TRY(x.p_uint8(1));
+		TRY(x.p_bytes(d.puid, sizeof(FLATUID)));
 	}
 	return true;
 }
 
-static zend_bool rpc_ext_pull_openprofilesec_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_OPENPROFILESEC &d)
 {
-	TRY(pctx->g_uint32(&ppayload->openprofilesec.hobject));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_loadhierarchytable_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_LOADHIERARCHYTABLE &d)
 {
-	TRY(pctx->p_guid(ppayload->loadhierarchytable.hsession));
-	TRY(pctx->p_uint32(ppayload->loadhierarchytable.hfolder));
-	TRY(pctx->p_uint32(ppayload->loadhierarchytable.flags));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hfolder));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_loadhierarchytable_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_LOADHIERARCHYTABLE &d)
 {
-	TRY(pctx->g_uint32(&ppayload->loadhierarchytable.hobject));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_loadcontenttable_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_LOADCONTENTTABLE &d)
 {
-	TRY(pctx->p_guid(ppayload->loadcontenttable.hsession));
-	TRY(pctx->p_uint32(ppayload->loadcontenttable.hfolder));
-	TRY(pctx->p_uint32(ppayload->loadcontenttable.flags));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hfolder));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_loadcontenttable_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_LOADCONTENTTABLE &d)
 {
-	TRY(pctx->g_uint32(&ppayload->loadcontenttable.hobject));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_loadrecipienttable_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_LOADRECIPIENTTABLE &d)
 {
-	TRY(pctx->p_guid(ppayload->loadrecipienttable.hsession));
-	TRY(pctx->p_uint32(ppayload->loadrecipienttable.hmessage));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hmessage));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_loadrecipienttable_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_LOADRECIPIENTTABLE &d)
 {
-	TRY(pctx->g_uint32(&ppayload->loadrecipienttable.hobject));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_loadruletable_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_LOADRULETABLE &d)
 {
-	TRY(pctx->p_guid(ppayload->loadruletable.hsession));
-	TRY(pctx->p_uint32(ppayload->loadruletable.hfolder));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hfolder));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_loadruletable_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_LOADRULETABLE &d)
 {
-	TRY(pctx->g_uint32(&ppayload->loadruletable.hobject));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_createmessage_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_CREATEMESSAGE &d)
 {
-	TRY(pctx->p_guid(ppayload->createmessage.hsession));
-	TRY(pctx->p_uint32(ppayload->createmessage.hfolder));
-	TRY(pctx->p_uint32(ppayload->createmessage.flags));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hfolder));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_createmessage_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_CREATEMESSAGE &d)
 {
-	TRY(pctx->g_uint32(&ppayload->createmessage.hobject));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_deletemessages_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_DELETEMESSAGES &d)
 {
-	TRY(pctx->p_guid(ppayload->deletemessages.hsession));
-	TRY(pctx->p_uint32(ppayload->deletemessages.hfolder));
-	TRY(pctx->p_bin_a(*ppayload->deletemessages.pentryids));
-	TRY(pctx->p_uint32(ppayload->deletemessages.flags));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hfolder));
+	TRY(x.p_bin_a(*d.pentryids));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_push_copymessages_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_COPYMESSAGES &d)
 {
-	TRY(pctx->p_guid(ppayload->copymessages.hsession));
-	TRY(pctx->p_uint32(ppayload->copymessages.hsrcfolder));
-	TRY(pctx->p_uint32(ppayload->copymessages.hdstfolder));
-	TRY(pctx->p_bin_a(*ppayload->copymessages.pentryids));
-	TRY(pctx->p_uint32(ppayload->copymessages.flags));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hsrcfolder));
+	TRY(x.p_uint32(d.hdstfolder));
+	TRY(x.p_bin_a(*d.pentryids));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_push_setreadflags_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_SETREADFLAGS &d)
 {
-	TRY(pctx->p_guid(ppayload->setreadflags.hsession));
-	TRY(pctx->p_uint32(ppayload->setreadflags.hfolder));
-	TRY(pctx->p_bin_a(*ppayload->setreadflags.pentryids));
-	TRY(pctx->p_uint32(ppayload->setreadflags.flags));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hfolder));
+	TRY(x.p_bin_a(*d.pentryids));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_push_createfolder_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_CREATEFOLDER &d)
 {
-	TRY(pctx->p_guid(ppayload->createfolder.hsession));
-	TRY(pctx->p_uint32(ppayload->createfolder.hparent_folder));
-	TRY(pctx->p_uint32(ppayload->createfolder.folder_type));
-	TRY(pctx->p_str(ppayload->createfolder.folder_name));
-	TRY(pctx->p_str(ppayload->createfolder.folder_comment));
-	TRY(pctx->p_uint32(ppayload->createfolder.flags));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hparent_folder));
+	TRY(x.p_uint32(d.folder_type));
+	TRY(x.p_str(d.folder_name));
+	TRY(x.p_str(d.folder_comment));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_createfolder_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_CREATEFOLDER &d)
 {
-	TRY(pctx->g_uint32(&ppayload->createfolder.hobject));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_deletefolder_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_DELETEFOLDER &d)
 {
-	TRY(pctx->p_guid(ppayload->deletefolder.hsession));
-	TRY(pctx->p_uint32(ppayload->deletefolder.hparent_folder));
-	TRY(pctx->p_bin(ppayload->deletefolder.entryid));
-	TRY(pctx->p_uint32(ppayload->deletefolder.flags));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hparent_folder));
+	TRY(x.p_bin(d.entryid));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_push_emptyfolder_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_EMPTYFOLDER &d)
 {
-	TRY(pctx->p_guid(ppayload->emptyfolder.hsession));
-	TRY(pctx->p_uint32(ppayload->emptyfolder.hfolder));
-	TRY(pctx->p_uint32(ppayload->emptyfolder.flags));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hfolder));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_push_copyfolder_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_COPYFOLDER &d)
 {
-	TRY(pctx->p_guid(ppayload->copyfolder.hsession));
-	TRY(pctx->p_uint32(ppayload->copyfolder.hsrc_folder));
-	TRY(pctx->p_bin(ppayload->copyfolder.entryid));
-	TRY(pctx->p_uint32(ppayload->copyfolder.hdst_folder));
-	if (NULL == ppayload->copyfolder.new_name) {
-		TRY(pctx->p_uint8(0));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hsrc_folder));
+	TRY(x.p_bin(d.entryid));
+	TRY(x.p_uint32(d.hdst_folder));
+	if (d.new_name == nullptr) {
+		TRY(x.p_uint8(0));
 	} else {
-		TRY(pctx->p_uint8(1));
-		TRY(pctx->p_str(ppayload->copyfolder.new_name));
+		TRY(x.p_uint8(1));
+		TRY(x.p_str(d.new_name));
 	}
-	TRY(pctx->p_uint32(ppayload->copyfolder.flags));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_push_getstoreentryid_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_GETSTOREENTRYID &d)
 {
-	TRY(pctx->p_str(ppayload->getstoreentryid.mailbox_dn));
+	TRY(x.p_str(d.mailbox_dn));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_getstoreentryid_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_GETSTOREENTRYID &d)
 {
-	TRY(pctx->g_bin(&ppayload->getstoreentryid.entryid));
+	TRY(x.g_bin(&d.entryid));
 	return true;
 }
 
-static zend_bool rpc_ext_push_entryidfromsourcekey_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_ENTRYIDFROMSOURCEKEY &d)
 {
-	TRY(pctx->p_guid(ppayload->entryidfromsourcekey.hsession));
-	TRY(pctx->p_uint32(ppayload->entryidfromsourcekey.hstore));
-	TRY(pctx->p_bin(ppayload->entryidfromsourcekey.folder_key));
-	if (NULL == ppayload->entryidfromsourcekey.pmessage_key) {
-		TRY(pctx->p_uint8(0));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hstore));
+	TRY(x.p_bin(d.folder_key));
+	if (d.pmessage_key == nullptr) {
+		TRY(x.p_uint8(0));
 	return true;
 	} else {
-		TRY(pctx->p_uint8(1));
-		TRY(pctx->p_bin(*ppayload->entryidfromsourcekey.pmessage_key));
+		TRY(x.p_uint8(1));
+		TRY(x.p_bin(*d.pmessage_key));
 	return true;
 	}
 }
 
-static zend_bool rpc_ext_pull_entryidfromsourcekey_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_ENTRYIDFROMSOURCEKEY &d)
 {
-	TRY(pctx->g_bin(&ppayload->entryidfromsourcekey.entryid));
+	TRY(x.g_bin(&d.entryid));
 	return true;
 }
 
-static zend_bool rpc_ext_push_storeadvise_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_STOREADVISE &d)
 {
-	TRY(pctx->p_guid(ppayload->storeadvise.hsession));
-	TRY(pctx->p_uint32(ppayload->storeadvise.hstore));
-	if (NULL == ppayload->storeadvise.pentryid) {
-		TRY(pctx->p_uint8(0));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hstore));
+	if (d.pentryid == nullptr) {
+		TRY(x.p_uint8(0));
 	} else {
-		TRY(pctx->p_uint8(1));
-		TRY(pctx->p_bin(*ppayload->storeadvise.pentryid));
+		TRY(x.p_uint8(1));
+		TRY(x.p_bin(*d.pentryid));
 	}
-	TRY(pctx->p_uint32(ppayload->storeadvise.event_mask));
+	TRY(x.p_uint32(d.event_mask));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_storeadvise_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_STOREADVISE &d)
 {
-	TRY(pctx->g_uint32(&ppayload->storeadvise.sub_id));
+	TRY(x.g_uint32(&d.sub_id));
 	return true;
 }
 
-static zend_bool rpc_ext_push_unadvise_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_UNADVISE &d)
 {
-	TRY(pctx->p_guid(ppayload->unadvise.hsession));
-	TRY(pctx->p_uint32(ppayload->unadvise.hstore));
-	TRY(pctx->p_uint32(ppayload->unadvise.sub_id));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hstore));
+	TRY(x.p_uint32(d.sub_id));
 	return true;
 }
 
-static zend_bool rpc_ext_push_notifdequeue_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_NOTIFDEQUEUE &d)
 {
 	int i;
 	
-	TRY(pctx->p_guid(ppayload->notifdequeue.psink->hsession));
-	TRY(pctx->p_uint16(ppayload->notifdequeue.psink->count));
-	for (i=0; i<ppayload->notifdequeue.psink->count; i++) {
-		TRY(pctx->p_uint32(ppayload->notifdequeue.psink->padvise[i].hstore));
-		TRY(pctx->p_uint32(ppayload->notifdequeue.psink->padvise[i].sub_id));
+	TRY(x.p_guid(d.psink->hsession));
+	TRY(x.p_uint16(d.psink->count));
+	for (i=0; i<d.psink->count; i++) {
+		TRY(x.p_uint32(d.psink->padvise[i].hstore));
+		TRY(x.p_uint32(d.psink->padvise[i].sub_id));
 	}
-	TRY(pctx->p_uint32(ppayload->notifdequeue.timeval));
+	TRY(x.p_uint32(d.timeval));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_notifdequeue_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_NOTIFDEQUEUE &d)
 {
-	TRY(pctx->g_znotif_a(&ppayload->notifdequeue.notifications));
+	TRY(x.g_znotif_a(&d.notifications));
 	return true;
 }
 
-static zend_bool rpc_ext_push_queryrows_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_QUERYROWS &d)
 {
-	TRY(pctx->p_guid(ppayload->queryrows.hsession));
-	TRY(pctx->p_uint32(ppayload->queryrows.htable));
-	TRY(pctx->p_uint32(ppayload->queryrows.start));
-	TRY(pctx->p_uint32(ppayload->queryrows.count));
-	if (NULL == ppayload->queryrows.prestriction) {
-		TRY(pctx->p_uint8(0));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.htable));
+	TRY(x.p_uint32(d.start));
+	TRY(x.p_uint32(d.count));
+	if (d.prestriction == nullptr) {
+		TRY(x.p_uint8(0));
 	} else {
-		TRY(pctx->p_uint8(1));
-		TRY(pctx->p_restriction(*ppayload->queryrows.prestriction));
+		TRY(x.p_uint8(1));
+		TRY(x.p_restriction(*d.prestriction));
 	}
-	if (NULL == ppayload->queryrows.pproptags) {
-		TRY(pctx->p_uint8(0));
+	if (d.pproptags == nullptr) {
+		TRY(x.p_uint8(0));
 	return true;
 	} else {
-		TRY(pctx->p_uint8(1));
-		TRY(pctx->p_proptag_a(*ppayload->queryrows.pproptags));
+		TRY(x.p_uint8(1));
+		TRY(x.p_proptag_a(*d.pproptags));
 	return true;
 	}
 }
 
-static zend_bool rpc_ext_pull_queryrows_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_QUERYROWS &d)
 {
-	TRY(pctx->g_tarray_set(&ppayload->queryrows.rowset));
+	TRY(x.g_tarray_set(&d.rowset));
 	return true;
 }
 
-static zend_bool rpc_ext_push_setcolumns_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_SETCOLUMNS &d)
 {
-	TRY(pctx->p_guid(ppayload->setcolumns.hsession));
-	TRY(pctx->p_uint32(ppayload->setcolumns.htable));
-	TRY(pctx->p_proptag_a(*ppayload->setcolumns.pproptags));
-	TRY(pctx->p_uint32(ppayload->setcolumns.flags));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.htable));
+	TRY(x.p_proptag_a(*d.pproptags));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_push_seekrow_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_SEEKROW &d)
 {
-	TRY(pctx->p_guid(ppayload->seekrow.hsession));
-	TRY(pctx->p_uint32(ppayload->seekrow.htable));
-	TRY(pctx->p_uint32(ppayload->seekrow.bookmark));
-	TRY(pctx->p_int32(ppayload->seekrow.seek_rows));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.htable));
+	TRY(x.p_uint32(d.bookmark));
+	TRY(x.p_int32(d.seek_rows));
 	return true;
 }
 
-static zend_bool rpc_ext_push_sorttable_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_SORTTABLE &d)
 {
-	TRY(pctx->p_guid(ppayload->sorttable.hsession));
-	TRY(pctx->p_uint32(ppayload->sorttable.htable));
-	TRY(pctx->p_sortorder_set(*ppayload->sorttable.psortset));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.htable));
+	TRY(x.p_sortorder_set(*d.psortset));
 	return true;
 }
 
-static zend_bool rpc_ext_push_getrowcount_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_GETROWCOUNT &d)
 {
-	TRY(pctx->p_guid(ppayload->getrowcount.hsession));
-	TRY(pctx->p_uint32(ppayload->getrowcount.htable));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.htable));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_getrowcount_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_GETROWCOUNT &d)
 {
-	TRY(pctx->g_uint32(&ppayload->getrowcount.count));
+	TRY(x.g_uint32(&d.count));
 	return true;
 }
 
-static zend_bool rpc_ext_push_restricttable_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_RESTRICTTABLE &d)
 {
-	TRY(pctx->p_guid(ppayload->restricttable.hsession));
-	TRY(pctx->p_uint32(ppayload->restricttable.htable));
-	TRY(pctx->p_restriction(*ppayload->restricttable.prestriction));
-	TRY(pctx->p_uint32(ppayload->restricttable.flags));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.htable));
+	TRY(x.p_restriction(*d.prestriction));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_push_findrow_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_FINDROW &d)
 {
-	TRY(pctx->p_guid(ppayload->findrow.hsession));
-	TRY(pctx->p_uint32(ppayload->findrow.htable));
-	TRY(pctx->p_uint32(ppayload->findrow.bookmark));
-	TRY(pctx->p_restriction(*ppayload->findrow.prestriction));
-	TRY(pctx->p_uint32(ppayload->findrow.flags));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.htable));
+	TRY(x.p_uint32(d.bookmark));
+	TRY(x.p_restriction(*d.prestriction));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_findrow_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_FINDROW &d)
 {
-	TRY(pctx->g_uint32(&ppayload->findrow.row_idx));
+	TRY(x.g_uint32(&d.row_idx));
 	return true;
 }
 
-static zend_bool rpc_ext_push_createbookmark_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_CREATEBOOKMARK &d)
 {
 	
-	TRY(pctx->p_guid(ppayload->createbookmark.hsession));
-	TRY(pctx->p_uint32(ppayload->createbookmark.htable));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.htable));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_createbookmark_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_CREATEBOOKMARK &d)
 {
-	TRY(pctx->g_uint32(&ppayload->createbookmark.bookmark));
+	TRY(x.g_uint32(&d.bookmark));
 	return true;
 }
 
-static zend_bool rpc_ext_push_freebookmark_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_FREEBOOKMARK &d)
 {
-	TRY(pctx->p_guid(ppayload->freebookmark.hsession));
-	TRY(pctx->p_uint32(ppayload->freebookmark.htable));
-	TRY(pctx->p_uint32(ppayload->freebookmark.bookmark));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.htable));
+	TRY(x.p_uint32(d.bookmark));
 	return true;
 }
 
-static zend_bool rpc_ext_push_getreceivefolder_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_GETRECEIVEFOLDER &d)
 {
-	TRY(pctx->p_guid(ppayload->getreceivefolder.hsession));
-	TRY(pctx->p_uint32(ppayload->getreceivefolder.hstore));
-	if (NULL == ppayload->getreceivefolder.pstrclass) {
-		TRY(pctx->p_uint8(0));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hstore));
+	if (d.pstrclass == nullptr) {
+		TRY(x.p_uint8(0));
 	return true;
 	} else {
-		TRY(pctx->p_uint8(1));
-		TRY(pctx->p_str(ppayload->getreceivefolder.pstrclass));
+		TRY(x.p_uint8(1));
+		TRY(x.p_str(d.pstrclass));
 	return true;
 	}
 }
 
-static zend_bool rpc_ext_pull_getreceivefolder_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_GETRECEIVEFOLDER &d)
 {
-	TRY(pctx->g_bin(&ppayload->getreceivefolder.entryid));
+	TRY(x.g_bin(&d.entryid));
 	return true;
 }
 
-static zend_bool rpc_ext_push_modifyrecipients_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_MODIFYRECIPIENTS &d)
 {
-	TRY(pctx->p_guid(ppayload->modifyrecipients.hsession));
-	TRY(pctx->p_uint32(ppayload->modifyrecipients.hmessage));
-	TRY(pctx->p_uint32(ppayload->modifyrecipients.flags));
-	TRY(pctx->p_tarray_set(*ppayload->modifyrecipients.prcpt_list));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hmessage));
+	TRY(x.p_uint32(d.flags));
+	TRY(x.p_tarray_set(*d.prcpt_list));
 	return true;
 }
 
-static zend_bool rpc_ext_push_submitmessage_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_SUBMITMESSAGE &d)
 {
-	TRY(pctx->p_guid(ppayload->submitmessage.hsession));
-	TRY(pctx->p_uint32(ppayload->submitmessage.hmessage));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hmessage));
 	return true;
 }
 
-static zend_bool rpc_ext_push_loadattachmenttable_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_LOADATTACHMENTTABLE &d)
 {
-	TRY(pctx->p_guid(ppayload->loadattachmenttable.hsession));
-	TRY(pctx->p_uint32(ppayload->loadattachmenttable.hmessage));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hmessage));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_loadattachmenttable_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_LOADATTACHMENTTABLE &d)
 {
-	TRY(pctx->g_uint32(&ppayload->loadattachmenttable.hobject));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_openattachment_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_OPENATTACHMENT &d)
 {
-	TRY(pctx->p_guid(ppayload->openattachment.hsession));
-	TRY(pctx->p_uint32(ppayload->openattachment.hmessage));
-	TRY(pctx->p_uint32(ppayload->openattachment.attach_id));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hmessage));
+	TRY(x.p_uint32(d.attach_id));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_openattachment_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_OPENATTACHMENT &d)
 {
-	TRY(pctx->g_uint32(&ppayload->openattachment.hobject));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_createattachment_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_CREATEATTACHMENT &d)
 {
-	TRY(pctx->p_guid(ppayload->createattachment.hsession));
-	TRY(pctx->p_uint32(ppayload->createattachment.hmessage));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hmessage));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_createattachment_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_CREATEATTACHMENT &d)
 {
-	TRY(pctx->g_uint32(&ppayload->createattachment.hobject));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_deleteattachment_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_DELETEATTACHMENT &d)
 {
-	TRY(pctx->p_guid(ppayload->deleteattachment.hsession));
-	TRY(pctx->p_uint32(ppayload->deleteattachment.hmessage));
-	TRY(pctx->p_uint32(ppayload->deleteattachment.attach_id));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hmessage));
+	TRY(x.p_uint32(d.attach_id));
 	return true;
 }
 
-static zend_bool rpc_ext_push_setpropvals_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_SETPROPVALS &d)
 {
-	TRY(pctx->p_guid(ppayload->setpropvals.hsession));
-	TRY(pctx->p_uint32(ppayload->setpropvals.hobject));
-	TRY(pctx->p_tpropval_a(*ppayload->setpropvals.ppropvals));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hobject));
+	TRY(x.p_tpropval_a(*d.ppropvals));
 	return true;
 }
 
-static zend_bool rpc_ext_push_getpropvals_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_GETPROPVALS &d)
 {	
-	TRY(pctx->p_guid(ppayload->getpropvals.hsession));
-	TRY(pctx->p_uint32(ppayload->getpropvals.hobject));
-	if (NULL == ppayload->getpropvals.pproptags) {
-		TRY(pctx->p_uint8(0));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hobject));
+	if (d.pproptags == nullptr) {
+		TRY(x.p_uint8(0));
 	return true;
 	} else {
-		TRY(pctx->p_uint8(1));
-		TRY(pctx->p_proptag_a(*ppayload->getpropvals.pproptags));
+		TRY(x.p_uint8(1));
+		TRY(x.p_proptag_a(*d.pproptags));
 		return true;
 	}
 }
 
-static zend_bool rpc_ext_pull_getpropvals_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_GETPROPVALS &d)
 {
-	TRY(pctx->g_tpropval_a(&ppayload->getpropvals.propvals));
+	TRY(x.g_tpropval_a(&d.propvals));
 	return true;
 }
 
-static zend_bool rpc_ext_push_deletepropvals_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_DELETEPROPVALS &d)
 {
-	TRY(pctx->p_guid(ppayload->deletepropvals.hsession));
-	TRY(pctx->p_uint32(ppayload->deletepropvals.hobject));
-	TRY(pctx->p_proptag_a(*ppayload->deletepropvals.pproptags));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hobject));
+	TRY(x.p_proptag_a(*d.pproptags));
 	return true;
 }
 
-static zend_bool rpc_ext_push_setmessagereadflag_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_SETMESSAGEREADFLAG &d)
 {
-	TRY(pctx->p_guid(ppayload->setmessagereadflag.hsession));
-	TRY(pctx->p_uint32(ppayload->setmessagereadflag.hmessage));
-	TRY(pctx->p_uint32(ppayload->setmessagereadflag.flags));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hmessage));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_push_openembedded_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_OPENEMBEDDED &d)
 {
-	TRY(pctx->p_guid(ppayload->openembedded.hsession));
-	TRY(pctx->p_uint32(ppayload->openembedded.hattachment));
-	TRY(pctx->p_uint32(ppayload->openembedded.flags));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hattachment));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_openembedded_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_OPENEMBEDDED &d)
 {
-	TRY(pctx->g_uint32(&ppayload->openembedded.hobject));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_getnamedpropids_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_GETNAMEDPROPIDS &d)
 {
-	TRY(pctx->p_guid(ppayload->getnamedpropids.hsession));
-	TRY(pctx->p_uint32(ppayload->getnamedpropids.hstore));
-	TRY(pctx->p_propname_a(*ppayload->getnamedpropids.ppropnames));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hstore));
+	TRY(x.p_propname_a(*d.ppropnames));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_getnamedpropids_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_GETNAMEDPROPIDS &d)
 {
-	TRY(pctx->g_propid_a(&ppayload->getnamedpropids.propids));
+	TRY(x.g_propid_a(&d.propids));
 	return true;
 }
 
-static zend_bool rpc_ext_push_getpropnames_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_GETPROPNAMES &d)
 {
-	TRY(pctx->p_guid(ppayload->getpropnames.hsession));
-	TRY(pctx->p_uint32(ppayload->getpropnames.hstore));
-	TRY(pctx->p_propid_a(*ppayload->getpropnames.ppropids));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hstore));
+	TRY(x.p_propid_a(*d.ppropids));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_getpropnames_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_GETPROPNAMES &d)
 {
-	TRY(pctx->g_propname_a(&ppayload->getpropnames.propnames));
+	TRY(x.g_propname_a(&d.propnames));
 	return true;
 }
 
-static zend_bool rpc_ext_push_copyto_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_COPYTO &d)
 {
-	TRY(pctx->p_guid(ppayload->copyto.hsession));
-	TRY(pctx->p_uint32(ppayload->copyto.hsrcobject));
-	TRY(pctx->p_proptag_a(*ppayload->copyto.pexclude_proptags));
-	TRY(pctx->p_uint32(ppayload->copyto.hdstobject));
-	TRY(pctx->p_uint32(ppayload->copyto.flags));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hsrcobject));
+	TRY(x.p_proptag_a(*d.pexclude_proptags));
+	TRY(x.p_uint32(d.hdstobject));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_push_savechanges_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_SAVECHANGES &d)
 {
-	TRY(pctx->p_guid(ppayload->savechanges.hsession));
-	TRY(pctx->p_uint32(ppayload->savechanges.hobject));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_hierarchysync_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_HIERARCHYSYNC &d)
 {
-	TRY(pctx->p_guid(ppayload->hierarchysync.hsession));
-	TRY(pctx->p_uint32(ppayload->hierarchysync.hfolder));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hfolder));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_hierarchysync_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_HIERARCHYSYNC &d)
 {
-	TRY(pctx->g_uint32(&ppayload->hierarchysync.hobject));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_contentsync_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_CONTENTSYNC &d)
 {
-	TRY(pctx->p_guid(ppayload->contentsync.hsession));
-	TRY(pctx->p_uint32(ppayload->contentsync.hfolder));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hfolder));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_contentsync_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_CONTENTSYNC &d)
 {
-	TRY(pctx->g_uint32(&ppayload->contentsync.hobject));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_configsync_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_CONFIGSYNC &d)
 {
-	TRY(pctx->p_guid(ppayload->configsync.hsession));
-	TRY(pctx->p_uint32(ppayload->configsync.hctx));
-	TRY(pctx->p_uint32(ppayload->configsync.flags));
-	TRY(pctx->p_bin(*ppayload->configsync.pstate));
-	if (NULL == ppayload->configsync.prestriction) {
-		TRY(pctx->p_uint8(0));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hctx));
+	TRY(x.p_uint32(d.flags));
+	TRY(x.p_bin(*d.pstate));
+	if (d.prestriction == nullptr) {
+		TRY(x.p_uint8(0));
 	return true;
 	} else {
-		TRY(pctx->p_uint8(1));
-		TRY(pctx->p_restriction(*ppayload->configsync.prestriction));
+		TRY(x.p_uint8(1));
+		TRY(x.p_restriction(*d.prestriction));
 	return true;
 	}
 }
 
-static zend_bool rpc_ext_pull_configsync_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_CONFIGSYNC &d)
 {
-	TRY(pctx->g_uint8(&ppayload->configsync.b_changed));
-	TRY(pctx->g_uint32(&ppayload->configsync.count));
+	TRY(x.g_uint8(&d.b_changed));
+	TRY(x.g_uint32(&d.count));
 	return true;
 }
 
-static zend_bool rpc_ext_push_statesync_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_STATESYNC &d)
 {
-	TRY(pctx->p_guid(ppayload->statesync.hsession));
-	TRY(pctx->p_uint32(ppayload->statesync.hctx));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hctx));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_statesync_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_STATESYNC &d)
 {
-	TRY(pctx->g_bin(&ppayload->statesync.state));
+	TRY(x.g_bin(&d.state));
 	return true;
 }
 
-static zend_bool rpc_ext_push_syncmessagechange_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_SYNCMESSAGECHANGE &d)
 {
-	TRY(pctx->p_guid(ppayload->syncmessagechange.hsession));
-	TRY(pctx->p_uint32(ppayload->syncmessagechange.hctx));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hctx));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_syncmessagechange_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_SYNCMESSAGECHANGE &d)
 {
 	uint8_t v = 0;
-	TRY(pctx->g_uint8(&v));
-	ppayload->syncmessagechange.b_new = v;
-	TRY(pctx->g_tpropval_a(&ppayload->syncmessagechange.proplist));
+	TRY(x.g_uint8(&v));
+	d.b_new = v;
+	TRY(x.g_tpropval_a(&d.proplist));
 	return true;
 }
 
-static zend_bool rpc_ext_push_syncfolderchange_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_SYNCFOLDERCHANGE &d)
 {
-	TRY(pctx->p_guid(ppayload->syncfolderchange.hsession));
-	TRY(pctx->p_uint32(ppayload->syncfolderchange.hctx));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hctx));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_syncfolderchange_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_SYNCFOLDERCHANGE &d)
 {
-	TRY(pctx->g_tpropval_a(&ppayload->syncfolderchange.proplist));
+	TRY(x.g_tpropval_a(&d.proplist));
 	return true;
 }
 
-static zend_bool rpc_ext_push_syncreadstatechanges_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_SYNCREADSTATECHANGES &d)
 {
-	TRY(pctx->p_guid(ppayload->syncreadstatechanges.hsession));
-	TRY(pctx->p_uint32(ppayload->syncreadstatechanges.hctx));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hctx));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_syncreadstatechanges_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_SYNCREADSTATECHANGES &d)
 {
-	TRY(pctx->g_state_a(&ppayload->syncreadstatechanges.states));
+	TRY(x.g_state_a(&d.states));
 	return true;
 }
 
-static zend_bool rpc_ext_push_syncdeletions_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_SYNCDELETIONS &d)
 {
-	TRY(pctx->p_guid(ppayload->syncdeletions.hsession));
-	TRY(pctx->p_uint32(ppayload->syncdeletions.hctx));
-	TRY(pctx->p_uint32(ppayload->syncdeletions.flags));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hctx));
+	TRY(x.p_uint32(d.flags));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_syncdeletions_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_SYNCDELETIONS &d)
 {
-	TRY(pctx->g_bin_a(&ppayload->syncdeletions.bins));
+	TRY(x.g_bin_a(&d.bins));
 	return true;
 }
 
-static zend_bool rpc_ext_push_hierarchyimport_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_HIERARCHYIMPORT &d)
 {
-	TRY(pctx->p_guid(ppayload->hierarchyimport.hsession));
-	TRY(pctx->p_uint32(ppayload->hierarchyimport.hfolder));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hfolder));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_hierarchyimport_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_HIERARCHYIMPORT &d)
 {
-	TRY(pctx->g_uint32(&ppayload->hierarchyimport.hobject));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_contentimport_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_CONTENTIMPORT &d)
 {
-	TRY(pctx->p_guid(ppayload->contentimport.hsession));
-	TRY(pctx->p_uint32(ppayload->contentimport.hfolder));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hfolder));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_contentimport_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_CONTENTIMPORT &d)
 {
-	TRY(pctx->g_uint32(&ppayload->contentimport.hobject));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_configimport_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_CONFIGIMPORT &d)
 {
-	TRY(pctx->p_guid(ppayload->configimport.hsession));
-	TRY(pctx->p_uint32(ppayload->configimport.hctx));
-	TRY(pctx->p_uint8(ppayload->configimport.sync_type));
-	TRY(pctx->p_bin(*ppayload->configimport.pstate));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hctx));
+	TRY(x.p_uint8(d.sync_type));
+	TRY(x.p_bin(*d.pstate));
 	return true;
 }
 
-static zend_bool rpc_ext_push_stateimport_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_STATEIMPORT &d)
 {
-	TRY(pctx->p_guid(ppayload->stateimport.hsession));
-	TRY(pctx->p_uint32(ppayload->stateimport.hctx));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hctx));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_stateimport_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_STATEIMPORT &d)
 {
-	TRY(pctx->g_bin(&ppayload->stateimport.state));
+	TRY(x.g_bin(&d.state));
 	return true;
 }
 
-static zend_bool rpc_ext_push_importmessage_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_IMPORTMESSAGE &d)
 {
-	TRY(pctx->p_guid(ppayload->importmessage.hsession));
-	TRY(pctx->p_uint32(ppayload->importmessage.hctx));
-	TRY(pctx->p_uint32(ppayload->importmessage.flags));
-	TRY(pctx->p_tpropval_a(*ppayload->importmessage.pproplist));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hctx));
+	TRY(x.p_uint32(d.flags));
+	TRY(x.p_tpropval_a(*d.pproplist));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_importmessage_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_IMPORTMESSAGE &d)
 {
-	TRY(pctx->g_uint32(&ppayload->importmessage.hobject));
+	TRY(x.g_uint32(&d.hobject));
 	return true;
 }
 
-static zend_bool rpc_ext_push_importfolder_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_IMPORTFOLDER &d)
 {
-	TRY(pctx->p_guid(ppayload->importfolder.hsession));
-	TRY(pctx->p_uint32(ppayload->importfolder.hctx));
-	TRY(pctx->p_tpropval_a(*ppayload->importfolder.pproplist));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hctx));
+	TRY(x.p_tpropval_a(*d.pproplist));
 	return true;
 }
 
-static zend_bool rpc_ext_push_importdeletion_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_IMPORTDELETION &d)
 {
-	TRY(pctx->p_guid(ppayload->importdeletion.hsession));
-	TRY(pctx->p_uint32(ppayload->importdeletion.hctx));
-	TRY(pctx->p_uint32(ppayload->importdeletion.flags));
-	TRY(pctx->p_bin_a(*ppayload->importdeletion.pbins));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hctx));
+	TRY(x.p_uint32(d.flags));
+	TRY(x.p_bin_a(*d.pbins));
 	return true;
 }
 
-static zend_bool rpc_ext_push_importreadstates_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_IMPORTREADSTATES &d)
 {
-	TRY(pctx->p_guid(ppayload->importreadstates.hsession));
-	TRY(pctx->p_uint32(ppayload->importreadstates.hctx));
-	TRY(pctx->p_state_a(ppayload->importreadstates.pstates));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hctx));
+	TRY(x.p_state_a(d.pstates));
 	return true;
 }
 
-static zend_bool rpc_ext_push_getsearchcriteria_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_GETSEARCHCRITERIA &d)
 {
-	TRY(pctx->p_guid(ppayload->getsearchcriteria.hsession));
-	TRY(pctx->p_uint32(ppayload->getsearchcriteria.hfolder));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hfolder));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_getsearchcriteria_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_GETSEARCHCRITERIA &d)
 {
 	uint8_t tmp_byte;
 	
-	TRY(pctx->g_bin_a(&ppayload->getsearchcriteria.folder_array));
-	TRY(pctx->g_uint8(&tmp_byte));
+	TRY(x.g_bin_a(&d.folder_array));
+	TRY(x.g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
-		ppayload->getsearchcriteria.prestriction = NULL;
+		d.prestriction = nullptr;
 	} else {
-		ppayload->getsearchcriteria.prestriction = st_malloc<RESTRICTION>();
-		if (NULL == ppayload->getsearchcriteria.prestriction) {
+		d.prestriction = st_malloc<RESTRICTION>();
+		if (d.prestriction == nullptr)
 			return 0;
-		}
-		TRY(pctx->g_restriction(ppayload->getsearchcriteria.prestriction));
+		TRY(x.g_restriction(d.prestriction));
 	}
-	TRY(pctx->g_uint32(&ppayload->getsearchcriteria.search_stat));
+	TRY(x.g_uint32(&d.search_stat));
 	return true;
 }
 
-static zend_bool rpc_ext_push_setsearchcriteria_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_SETSEARCHCRITERIA &d)
 {
-	TRY(pctx->p_guid(ppayload->setsearchcriteria.hsession));
-	TRY(pctx->p_uint32(ppayload->setsearchcriteria.hfolder));
-	TRY(pctx->p_uint32(ppayload->setsearchcriteria.flags));
-	TRY(pctx->p_bin_a(*ppayload->setsearchcriteria.pfolder_array));
-	if (NULL == ppayload->setsearchcriteria.prestriction) {
-		TRY(pctx->p_uint8(0));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hfolder));
+	TRY(x.p_uint32(d.flags));
+	TRY(x.p_bin_a(*d.pfolder_array));
+	if (d.prestriction == nullptr) {
+		TRY(x.p_uint8(0));
 	return true;
 	} else {
-		TRY(pctx->p_uint8(1));
-		TRY(pctx->p_restriction(*ppayload->setsearchcriteria.prestriction));
+		TRY(x.p_uint8(1));
+		TRY(x.p_restriction(*d.prestriction));
 	return true;
 	}
 }
 
-static zend_bool rpc_ext_push_messagetorfc822_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_MESSAGETORFC822 &d)
 {
-	TRY(pctx->p_guid(ppayload->messagetorfc822.hsession));
-	TRY(pctx->p_uint32(ppayload->messagetorfc822.hmessage));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hmessage));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_messagetorfc822_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_MESSAGETORFC822 &d)
 {
-	TRY(pctx->g_bin(&ppayload->messagetorfc822.eml_bin));
+	TRY(x.g_bin(&d.eml_bin));
 	return true;
 }
 
-static zend_bool rpc_ext_push_rfc822tomessage_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_RFC822TOMESSAGE &d)
 {
-	TRY(pctx->p_guid(ppayload->rfc822tomessage.hsession));
-	TRY(pctx->p_uint32(ppayload->rfc822tomessage.hmessage));
-	TRY(pctx->p_bin(*ppayload->rfc822tomessage.peml_bin));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hmessage));
+	TRY(x.p_bin(*d.peml_bin));
 	return true;
 }
 
-static zend_bool rpc_ext_push_messagetoical_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_MESSAGETOICAL &d)
 {
-	TRY(pctx->p_guid(ppayload->messagetoical.hsession));
-	TRY(pctx->p_uint32(ppayload->messagetoical.hmessage));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hmessage));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_messagetoical_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_MESSAGETOICAL &d)
 {
-	TRY(pctx->g_bin(&ppayload->messagetoical.ical_bin));
+	TRY(x.g_bin(&d.ical_bin));
 	return true;
 }
 
-static zend_bool rpc_ext_push_icaltomessage_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_ICALTOMESSAGE &d)
 {
-	TRY(pctx->p_guid(ppayload->icaltomessage.hsession));
-	TRY(pctx->p_uint32(ppayload->icaltomessage.hmessage));
-	TRY(pctx->p_bin(*ppayload->icaltomessage.pical_bin));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hmessage));
+	TRY(x.p_bin(*d.pical_bin));
 	return true;
 }
 
-static zend_bool rpc_ext_push_messagetovcf_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_MESSAGETOVCF &d)
 {
-	TRY(pctx->p_guid(ppayload->messagetovcf.hsession));
-	TRY(pctx->p_uint32(ppayload->messagetovcf.hmessage));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hmessage));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_messagetovcf_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_MESSAGETOVCF &d)
 {
-	TRY(pctx->g_bin(&ppayload->messagetovcf.vcf_bin));
+	TRY(x.g_bin(&d.vcf_bin));
 	return true;
 }
 
-static zend_bool rpc_ext_push_vcftomessage_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_VCFTOMESSAGE &d)
 {
-	TRY(pctx->p_guid(ppayload->vcftomessage.hsession));
-	TRY(pctx->p_uint32(ppayload->vcftomessage.hmessage));
-	TRY(pctx->p_bin(*ppayload->vcftomessage.pvcf_bin));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_uint32(d.hmessage));
+	TRY(x.p_bin(*d.pvcf_bin));
 	return true;
 }
 
-static zend_bool rpc_ext_push_getuseravailability_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_GETUSERAVAILABILITY &d)
 {
-	TRY(pctx->p_guid(ppayload->vcftomessage.hsession));
-	TRY(pctx->p_bin(ppayload->getuseravailability.entryid));
-	TRY(pctx->p_uint64(ppayload->getuseravailability.starttime));
-	TRY(pctx->p_uint64(ppayload->getuseravailability.endtime));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_bin(d.entryid));
+	TRY(x.p_uint64(d.starttime));
+	TRY(x.p_uint64(d.endtime));
 	return true;
 }
 
-static zend_bool rpc_ext_pull_getuseravailability_response(
-	PULL_CTX *pctx, RESPONSE_PAYLOAD *ppayload)
+static zend_bool zrpc_pull(PULL_CTX &x, ZCRESP_GETUSERAVAILABILITY &d)
 {
 	uint8_t tmp_byte;
 	
-	TRY(pctx->g_uint8(&tmp_byte));
+	TRY(x.g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
-		ppayload->getuseravailability.result_string = NULL;
+		d.result_string = nullptr;
 		return 1;
 	}
-	TRY(pctx->g_str(&ppayload->getuseravailability.result_string));
+	TRY(x.g_str(&d.result_string));
 	return true;
 }
 
-static zend_bool rpc_ext_push_setpasswd_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_SETPASSWD &d)
 {
-	TRY(pctx->p_str(ppayload->setpasswd.username));
-	TRY(pctx->p_str(ppayload->setpasswd.passwd));
-	TRY(pctx->p_str(ppayload->setpasswd.new_passwd));
+	TRY(x.p_str(d.username));
+	TRY(x.p_str(d.passwd));
+	TRY(x.p_str(d.new_passwd));
 	return true;
 }
 
-static zend_bool rpc_ext_push_linkmessage_request(
-	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
+static zend_bool zrpc_push(PUSH_CTX &x, const ZCREQ_LINKMESSAGE &d)
 {
-	TRY(pctx->p_guid(ppayload->linkmessage.hsession));
-	TRY(pctx->p_bin(ppayload->linkmessage.search_entryid));
-	TRY(pctx->p_bin(ppayload->linkmessage.message_entryid));
+	TRY(x.p_guid(d.hsession));
+	TRY(x.p_bin(d.search_entryid));
+	TRY(x.p_bin(d.message_entryid));
 	return true;
 }
 
@@ -1223,7 +1088,7 @@ zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 	TRY(push_ctx.advance(sizeof(uint32_t)));
 	TRY(push_ctx.p_uint8(static_cast<uint8_t>(prequest->call_id)));
 	switch (prequest->call_id) {
-#define E(t) case zcore_callid::t: b_result = rpc_ext_push_ ## t ## _request(&push_ctx, &prequest->payload); break;
+#define E(t) case zcore_callid::t: b_result = zrpc_push(push_ctx, prequest->payload.t); break;
 	E(logon)
 	E(checksession)
 	E(uinfo)
@@ -1367,7 +1232,7 @@ zend_bool rpc_ext_pull_response(const BINARY *pbin_in,
 	case zcore_callid::setpasswd:
 	case zcore_callid::linkmessage:
 		return 1;
-#define E(t) case zcore_callid::t: return rpc_ext_pull_ ## t ## _response(&pull_ctx, &presponse->payload);
+#define E(t) case zcore_callid::t: return zrpc_pull(pull_ctx, presponse->payload.t);
 	E(logon)
 	E(uinfo)
 	E(openentry)
