@@ -74,14 +74,14 @@ static void *mdpls_thrwork(void *param)
 		}
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
 		    client_hostip) == g_acl_list.cend()) {
-			auto tmp_byte = exmdb_response::ACCESS_DENY;
+			auto tmp_byte = exmdb_response::access_deny;
 			write(sockd, &tmp_byte, 1);
 			close(sockd);
 			continue;
 		}
 		auto pconnection = exmdb_parser_get_connection();
 		if (pconnection == nullptr) {
-			auto tmp_byte = exmdb_response::MAX_REACHED;
+			auto tmp_byte = exmdb_response::max_reached;
 			write(sockd, &tmp_byte, 1);
 			close(sockd);
 			continue;

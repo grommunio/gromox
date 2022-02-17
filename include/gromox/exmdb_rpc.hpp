@@ -6,16 +6,16 @@
 #include <gromox/mapi_types.hpp>
 
 enum class exmdb_response : uint8_t {
-	SUCCESS = 0x00,
-	ACCESS_DENY = 0x01,
-	MAX_REACHED = 0x02,
-	LACK_MEMORY = 0x03,
-	MISCONFIG_PREFIX = 0x04,
-	MISCONFIG_MODE = 0x05,
-	CONNECT_INCOMPLETE = 0x06,
-	PULL_ERROR = 0x07,
-	DISPATCH_ERROR = 0x08,
-	PUSH_ERROR = 0x09,
+	success = 0x00,
+	access_deny = 0x01,
+	max_reached = 0x02,
+	lack_memory = 0x03,
+	misconfig_prefix = 0x04,
+	misconfig_mode = 0x05,
+	connect_incomplete = 0x06,
+	pull_error = 0x07,
+	dispatch_error = 0x08,
+	push_error = 0x09,
 	invalid = 0xff,
 };
 

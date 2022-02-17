@@ -803,7 +803,7 @@ static void *mdpps_thrwork(void *pparam)
 			}
 			pbuff = malloc(buff_len);
 			if (NULL == pbuff) {
-				auto tmp_byte = exmdb_response::LACK_MEMORY;
+				auto tmp_byte = exmdb_response::lack_memory;
 				write(pconnection->sockd, &tmp_byte, 1);
 				if (!is_connected)
 					break;
@@ -829,14 +829,14 @@ static void *mdpps_thrwork(void *pparam)
 		pbuff = NULL;
 		exmdb_response tmp_byte;
 		if (EXT_ERR_SUCCESS != status) {
-			tmp_byte = exmdb_response::PULL_ERROR;
+			tmp_byte = exmdb_response::pull_error;
 		} else if (!is_connected) {
 			if (request.call_id == exmdb_callid::connect) {
 				if (!exmdb_parser_check_local(
 					request.payload.connect.prefix, &b_private)) {
-					tmp_byte = exmdb_response::MISCONFIG_PREFIX;
+					tmp_byte = exmdb_response::misconfig_prefix;
 				} else if (b_private != request.payload.connect.b_private) {
-					tmp_byte = exmdb_response::MISCONFIG_MODE;
+					tmp_byte = exmdb_response::misconfig_mode;
 				} else {
 					pconnection->remote_id = request.payload.connect.remote_id;
 					exmdb_server_free_environment();
@@ -857,9 +857,9 @@ static void *mdpps_thrwork(void *pparam)
 				} catch (const std::bad_alloc &) {
 				}
 				if (NULL == prouter) {
-					tmp_byte = exmdb_response::LACK_MEMORY;
+					tmp_byte = exmdb_response::lack_memory;
 				} else if (g_max_routers != 0 && g_router_list.size() >= g_max_routers) {
-					tmp_byte = exmdb_response::MAX_REACHED;
+					tmp_byte = exmdb_response::max_reached;
 				} else {
 					prouter->remote_id = request.payload.listen_notification.remote_id;
 					exmdb_server_free_environment();
@@ -881,12 +881,12 @@ static void *mdpps_thrwork(void *pparam)
 					}
 				}
 			} else {
-				tmp_byte = exmdb_response::CONNECT_INCOMPLETE;
+				tmp_byte = exmdb_response::connect_incomplete;
 			}
 		} else if (!exmdb_parser_dispatch(&request, &response)) {
-			tmp_byte = exmdb_response::DISPATCH_ERROR;
+			tmp_byte = exmdb_response::dispatch_error;
 		} else if (EXT_ERR_SUCCESS != exmdb_ext_push_response(&response, &tmp_bin)) {
-			tmp_byte = exmdb_response::PUSH_ERROR;
+			tmp_byte = exmdb_response::push_error;
 		} else {
 			exmdb_server_free_environment();
 			offset = 0;

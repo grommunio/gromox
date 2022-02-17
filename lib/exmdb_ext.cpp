@@ -4109,7 +4109,7 @@ int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse,
 	
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		return EXT_ERR_ALLOC;
-	status = ext_push.p_uint8(static_cast<uint8_t>(exmdb_response::SUCCESS));
+	status = ext_push.p_uint8(static_cast<uint8_t>(exmdb_response::success));
 	if (status != EXT_ERR_SUCCESS)
 		return status;
 	status = ext_push.advance(sizeof(uint32_t));
@@ -4518,15 +4518,15 @@ int exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *pnotify,
 const char *exmdb_rpc_strerror(exmdb_response v)
 {
 	switch (v) {
-	case exmdb_response::ACCESS_DENY: return "Access denied";
-	case exmdb_response::MAX_REACHED: return "Maximum connections reached in server";
-	case exmdb_response::LACK_MEMORY: return "mMximum connections reached in server";
-	case exmdb_response::MISCONFIG_PREFIX: return "Maximum connections reached in server";
-	case exmdb_response::MISCONFIG_MODE: return "Maximum connections reached in server";
-	case exmdb_response::CONNECT_INCOMPLETE: return "No prior CONNECT RPC made";
-	case exmdb_response::PULL_ERROR: return "Invalid request/Server-side deserializing error";
-	case exmdb_response::DISPATCH_ERROR: return "Dispatch error";
-	case exmdb_response::PUSH_ERROR: return "Server-side serialize error";
+	case exmdb_response::access_deny: return "Access denied";
+	case exmdb_response::max_reached: return "Maximum connections reached in server";
+	case exmdb_response::lack_memory: return "mMximum connections reached in server";
+	case exmdb_response::misconfig_prefix: return "Maximum connections reached in server";
+	case exmdb_response::misconfig_mode: return "Maximum connections reached in server";
+	case exmdb_response::connect_incomplete: return "No prior CONNECT RPC made";
+	case exmdb_response::pull_error: return "Invalid request/Server-side deserializing error";
+	case exmdb_response::dispatch_error: return "Dispatch error";
+	case exmdb_response::push_error: return "Server-side serialize error";
 	default: break;
 	}
 	thread_local char xbuf[32];

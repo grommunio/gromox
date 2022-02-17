@@ -54,7 +54,7 @@ static BOOL notification_agent_read_response(std::shared_ptr<ROUTER_CONNECTION> 
 	pfd_read.events = POLLIN|POLLPRI;
 	if (1 != poll(&pfd_read, 1, tv_msec) ||
 		1 != read(prouter->sockd, &resp_code, 1) ||
-	    resp_code != exmdb_response::SUCCESS)
+	    resp_code != exmdb_response::success)
 		return FALSE;
 	return TRUE;
 }

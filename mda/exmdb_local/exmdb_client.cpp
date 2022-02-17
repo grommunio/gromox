@@ -191,7 +191,7 @@ int exmdb_client_delivery_message(const char *dir,
 	time(&pconn->last_time);
 	pconn.reset();
 	if (5 + sizeof(uint32_t) != tmp_bin.cb ||
-	    static_cast<exmdb_response>(tmp_bin.pb[0]) != exmdb_response::SUCCESS)
+	    static_cast<exmdb_response>(tmp_bin.pb[0]) != exmdb_response::success)
 		return EXMDB_RUNTIME_ERROR;
 	result = le32p_to_cpu(&tmp_bin.pb[5]);
 	if (0 == result) {
@@ -229,7 +229,7 @@ int exmdb_client_check_contact_address(const char *dir,
 	time(&pconn->last_time);
 	pconn.reset();
 	if (5 + sizeof(uint8_t) != tmp_bin.cb ||
-	    static_cast<exmdb_response>(tmp_bin.pb[0]) != exmdb_response::SUCCESS)
+	    static_cast<exmdb_response>(tmp_bin.pb[0]) != exmdb_response::success)
 		return EXMDB_RUNTIME_ERROR;
 	if (0 == tmp_bin.pb[5]) {
 		*pb_found = FALSE;

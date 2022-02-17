@@ -150,7 +150,7 @@ static int connect_exmdb(const char *dir)
 		return -1;
 	}
 	auto response_code = static_cast<exmdb_response>(tmp_bin.pb[0]);
-	if (response_code == exmdb_response::SUCCESS) {
+	if (response_code == exmdb_response::success) {
 		if (tmp_bin.cb != 5) {
 			fprintf(stderr, "response format error during connect to "
 				"[%s]:%hu/%s\n", pexnode->host.c_str(),
@@ -182,7 +182,7 @@ static BOOL exmdb_client_unload_store(const char *dir)
 		return FALSE;
 	if (!exmdb_client_write_socket(sockd, &tmp_bin) ||
 	    !cl_rd_sock(sockd, &tmp_bin) || tmp_bin.cb != 5 ||
-	    static_cast<exmdb_response>(tmp_bin.pb[0]) != exmdb_response::SUCCESS) {
+	    static_cast<exmdb_response>(tmp_bin.pb[0]) != exmdb_response::success) {
 		close(sockd);
 		return FALSE;
 	}
