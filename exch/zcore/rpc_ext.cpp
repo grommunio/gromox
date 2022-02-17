@@ -386,7 +386,7 @@ static BOOL rpc_ext_push_logon_response(
 static BOOL rpc_ext_pull_checksession_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
-	QRF(pext->g_guid(&ppayload->unloadobject.hsession));
+	QRF(pext->g_guid(&ppayload->checksession.hsession));
 	return TRUE;
 }
 
@@ -1324,7 +1324,7 @@ static BOOL rpc_ext_pull_statesync_request(
 	EXT_PULL *pext, REQUEST_PAYLOAD *ppayload)
 {
 	QRF(pext->g_guid(&ppayload->statesync.hsession));
-	QRF(pext->g_uint32(&ppayload->configsync.hctx));
+	QRF(pext->g_uint32(&ppayload->statesync.hctx));
 	return TRUE;
 }
 

@@ -35,7 +35,7 @@ static zend_bool rpc_ext_pull_logon_response(
 static zend_bool rpc_ext_push_checksession_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
-	TRY(pctx->p_guid(ppayload->unloadobject.hsession));
+	TRY(pctx->p_guid(ppayload->checksession.hsession));
 	return true;
 }
 
@@ -878,7 +878,7 @@ static zend_bool rpc_ext_push_statesync_request(
 	PUSH_CTX *pctx, const REQUEST_PAYLOAD *ppayload)
 {
 	TRY(pctx->p_guid(ppayload->statesync.hsession));
-	TRY(pctx->p_uint32(ppayload->configsync.hctx));
+	TRY(pctx->p_uint32(ppayload->statesync.hctx));
 	return true;
 }
 
