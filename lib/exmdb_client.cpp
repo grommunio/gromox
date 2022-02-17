@@ -104,12 +104,12 @@ int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen, const char *prog_
 	snprintf(remote_id, arsizeof(remote_id), "%s:%d", prog_id, getpid());
 	EXMDB_REQUEST rq;
 	if (!b_listen) {
-		rq.call_id = exmdb_callid::CONNECT;
+		rq.call_id = exmdb_callid::connect;
 		rq.payload.connect.prefix = deconst(srv.prefix.c_str());
 		rq.payload.connect.remote_id = remote_id;
 		rq.payload.connect.b_private = srv.type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
 	} else {
-		rq.call_id = exmdb_callid::LISTEN_NOTIFICATION;
+		rq.call_id = exmdb_callid::listen_notification;
 		rq.payload.listen_notification.remote_id = remote_id;
 	}
 	BINARY bin;

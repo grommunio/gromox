@@ -52,7 +52,7 @@ BOOL exmdb_client_relay_delivery(const char *dir,
 		exmdb_server_set_dir(orignal_dir);
 		return b_result;
 	}
-	request.call_id = exmdb_callid::DELIVERY_MESSAGE;
+	request.call_id = exmdb_callid::delivery_message;
 	request.dir = deconst(dir);
 	request.payload.delivery_message.from_address = deconst(from_address);
 	request.payload.delivery_message.account = deconst(account);

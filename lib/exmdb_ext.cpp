@@ -2543,21 +2543,21 @@ int exmdb_ext_pull_request(const BINARY *pbin_in,
 	ext_pull.init(pbin_in->pb, pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
 	TRY(ext_pull.g_uint8(&call_id));
 	prequest->call_id = static_cast<exmdb_callid>(call_id);
-	if (prequest->call_id == exmdb_callid::CONNECT)
+	if (prequest->call_id == exmdb_callid::connect)
 		return exmdb_ext_pull_connect_request(
 				&ext_pull, &prequest->payload);
-	else if (prequest->call_id == exmdb_callid::LISTEN_NOTIFICATION)
+	else if (prequest->call_id == exmdb_callid::listen_notification)
 		return exmdb_ext_pull_listen_notification_request(
 							&ext_pull, &prequest->payload);
 
 	TRY(ext_pull.g_str(&prequest->dir));
 	switch (prequest->call_id) {
-	case exmdb_callid::PING_STORE:
-	case exmdb_callid::GET_ALL_NAMED_PROPIDS:
-	case exmdb_callid::GET_STORE_ALL_PROPTAGS:
-	case exmdb_callid::GET_FOLDER_CLASS_TABLE:
-	case exmdb_callid::ALLOCATE_CN:
-	case exmdb_callid::UNLOAD_STORE:
+	case exmdb_callid::ping_store:
+	case exmdb_callid::get_all_named_propids:
+	case exmdb_callid::get_store_all_proptags:
+	case exmdb_callid::get_folder_class_table:
+	case exmdb_callid::allocate_cn:
+	case exmdb_callid::unload_store:
 		return EXT_ERR_SUCCESS;
 #define E(t) case exmdb_callid::t: return exmdb_ext_pull_ ## t ## _request(&ext_pull, &prequest->payload);
 	RQ_WITH_ARGS
@@ -2581,10 +2581,10 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 	status = ext_push.p_uint8(static_cast<uint8_t>(prequest->call_id));
 	if (status != EXT_ERR_SUCCESS)
 		return status;
-	if (prequest->call_id == exmdb_callid::CONNECT) {
+	if (prequest->call_id == exmdb_callid::connect) {
 		status = exmdb_ext_push_connect_request(
 				&ext_push, &prequest->payload);
-	} else if (prequest->call_id == exmdb_callid::LISTEN_NOTIFICATION) {
+	} else if (prequest->call_id == exmdb_callid::listen_notification) {
 		status = exmdb_ext_push_listen_notification_request(
 							&ext_push, &prequest->payload);
 	} else {
@@ -2592,12 +2592,12 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 	if (status != EXT_ERR_SUCCESS)
 		return status;
 	switch (prequest->call_id) {
-	case exmdb_callid::PING_STORE:
-	case exmdb_callid::GET_ALL_NAMED_PROPIDS:
-	case exmdb_callid::GET_STORE_ALL_PROPTAGS:
-	case exmdb_callid::GET_FOLDER_CLASS_TABLE:
-	case exmdb_callid::ALLOCATE_CN:
-	case exmdb_callid::UNLOAD_STORE:
+	case exmdb_callid::ping_store:
+	case exmdb_callid::get_all_named_propids:
+	case exmdb_callid::get_store_all_proptags:
+	case exmdb_callid::get_folder_class_table:
+	case exmdb_callid::allocate_cn:
+	case exmdb_callid::unload_store:
 		status = EXT_ERR_SUCCESS;
 		break;
 #define E(t) case exmdb_callid::t: status = exmdb_ext_push_ ## t ## _request(&ext_push, &prequest->payload); break;
@@ -4080,7 +4080,7 @@ static int exmdb_ext_push_get_public_folder_unread_count_response(
 	E(check_contact_address) \
 	E(get_public_folder_unread_count)
 
-/* exmdb_callid::CONNECT, exmdb_callid::LISTEN_NOTIFICATION not included */
+/* exmdb_callid::connect, exmdb_callid::listen_notification not included */
 int exmdb_ext_pull_response(const BINARY *pbin_in,
 	EXMDB_RESPONSE *presponse)
 {
@@ -4100,7 +4100,7 @@ int exmdb_ext_pull_response(const BINARY *pbin_in,
 	}
 }
 
-/* exmdb_callid::CONNECT, exmdb_callid::LISTEN_NOTIFICATION not included */
+/* exmdb_callid::connect, exmdb_callid::listen_notification not included */
 int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse,
 	BINARY *pbin_out)
 {

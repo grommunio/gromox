@@ -121,19 +121,19 @@ static int exmdb_client_push_request(exmdb_callid call_id,
 		return status;
 	}
 	switch (call_id) {
-	case exmdb_callid::CONNECT:
+	case exmdb_callid::connect:
 		status = exmdb_client_push_connect_request(&ext_push, static_cast<CONNECT_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
 		break;
-	case exmdb_callid::DELIVERY_MESSAGE:
+	case exmdb_callid::delivery_message:
 		status = exmdb_client_push_delivery_message_request(&ext_push, static_cast<DELIVERY_MESSAGE_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
 		}
 		break;
-	case exmdb_callid::CHECK_CONTACT_ADDRESS:
+	case exmdb_callid::check_contact_address:
 		status = exmdb_client_push_check_contact_address_request(&ext_push, static_cast<CHECK_CONTACT_ADDRESS_REQUEST *>(prequest));
 		if (EXT_ERR_SUCCESS != status) {
 			return status;
@@ -173,7 +173,7 @@ int exmdb_client_delivery_message(const char *dir,
 	request.cpid = cpid;
 	request.pmsg = pmsg;
 	request.pdigest = pdigest;
-	if (exmdb_client_push_request(exmdb_callid::DELIVERY_MESSAGE,
+	if (exmdb_client_push_request(exmdb_callid::delivery_message,
 	    &request, &tmp_bin) != EXT_ERR_SUCCESS)
 		return EXMDB_RUNTIME_ERROR;
 	auto pconn = exmdb_client_get_connection(dir);
@@ -211,7 +211,7 @@ int exmdb_client_check_contact_address(const char *dir,
 	
 	request.dir = dir;
 	request.paddress = paddress;
-	if (exmdb_client_push_request(exmdb_callid::CHECK_CONTACT_ADDRESS,
+	if (exmdb_client_push_request(exmdb_callid::check_contact_address,
 	    &request, &tmp_bin) != EXT_ERR_SUCCESS)
 		return EXMDB_RUNTIME_ERROR;
 	auto pconn = exmdb_client_get_connection(dir);

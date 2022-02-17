@@ -91,12 +91,12 @@ static int exmdb_client_push_request(exmdb_callid call_id,
 	if (status != EXT_ERR_SUCCESS)
 		return status;
 	switch (call_id) {
-	case exmdb_callid::CONNECT:
+	case exmdb_callid::connect:
 		status = exmdb_client_push_connect_request(&ext_push, static_cast<CONNECT_REQUEST *>(prequest));
 		if (status != EXT_ERR_SUCCESS)
 			return status;
 		break;
-	case exmdb_callid::UNLOAD_STORE:
+	case exmdb_callid::unload_store:
 		status = exmdb_client_push_unload_store_request(&ext_push, static_cast<UNLOAD_STORE_REQUEST *>(prequest));
 		if (status != EXT_ERR_SUCCESS)
 			return status;
@@ -136,7 +136,7 @@ static int connect_exmdb(const char *dir)
 	request.prefix    = deconst(pexnode->prefix.c_str());
 	request.remote_id = remote_id;
 	request.b_private = TRUE;
-	if (exmdb_client_push_request(exmdb_callid::CONNECT, &request,
+	if (exmdb_client_push_request(exmdb_callid::connect, &request,
 	    &tmp_bin) != EXT_ERR_SUCCESS) {
 		close(sockd);
 		return -1;
@@ -174,7 +174,7 @@ static BOOL exmdb_client_unload_store(const char *dir)
 	UNLOAD_STORE_REQUEST request;
 	
 	request.dir = dir;
-	if (exmdb_client_push_request(exmdb_callid::UNLOAD_STORE,
+	if (exmdb_client_push_request(exmdb_callid::unload_store,
 	    &request, &tmp_bin) != EXT_ERR_SUCCESS)
 		return FALSE;
 	sockd = connect_exmdb(dir);

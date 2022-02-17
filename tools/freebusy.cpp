@@ -187,22 +187,22 @@ static int exmdb_client_push_request2(EXT_PUSH &ext_push, exmdb_callid call_id,
 	TRY(ext_push.advance(sizeof(uint32_t)));
 	TRY(ext_push.p_uint8(static_cast<uint8_t>(call_id)));
 	switch (call_id) {
-	case exmdb_callid::CONNECT:
+	case exmdb_callid::connect:
 		TRY(exmdb_client_push_connect_request(&ext_push, static_cast<CONNECT_REQUEST *>(prequest)));
 		break;
-	case exmdb_callid::GET_NAMED_PROPIDS:
+	case exmdb_callid::get_named_propids:
 		TRY(exmdb_client_push_get_named_propids(&ext_push, static_cast<GET_NAMED_PROPIDS_REQUEST *>(prequest)));
 		break;
-	case exmdb_callid::CHECK_FOLDER_PERMISSION:
+	case exmdb_callid::check_folder_permission:
 		TRY(exmdb_client_push_check_folder_permission_request(&ext_push, static_cast<CHECK_FOLDER_PERMISSION_REQUEST *>(prequest)));
 		break;
-	case exmdb_callid::LOAD_CONTENT_TABLE:
+	case exmdb_callid::load_content_table:
 		TRY(exmdb_client_push_load_content_table_request(&ext_push, static_cast<LOAD_CONTENT_TABLE_REQUEST *>(prequest)));
 		break;
-	case exmdb_callid::UNLOAD_TABLE:
+	case exmdb_callid::unload_table:
 		TRY(exmdb_client_push_unload_table_request(&ext_push, static_cast<UNLOAD_TABLE_REQUEST *>(prequest)));
 		break;
-	case exmdb_callid::QUERY_TABLE:
+	case exmdb_callid::query_table:
 		TRY(exmdb_client_push_query_table_request(&ext_push, static_cast<QUERY_TABLE_REQUEST *>(prequest)));
 		break;
 	default:
@@ -235,7 +235,7 @@ static BOOL exmdb_client_get_named_propids(int sockd, const char *dir,
 	request.dir = dir;
 	request.b_create = b_create;
 	request.ppropnames = ppropnames;
-	if (exmdb_client_push_request(exmdb_callid::GET_NAMED_PROPIDS,
+	if (exmdb_client_push_request(exmdb_callid::get_named_propids,
 	    &request, &tmp_bin) != EXT_ERR_SUCCESS ||
 	    !exmdb_client_write_socket(sockd, &tmp_bin) ||
 	    !cl_rd_sock(sockd, &tmp_bin) || tmp_bin.cb < 5 ||
@@ -255,7 +255,7 @@ static BOOL exmdb_client_check_folder_permission(int sockd,
 	request.dir = dir;
 	request.folder_id = folder_id;
 	request.username = username;
-	if (exmdb_client_push_request(exmdb_callid::CHECK_FOLDER_PERMISSION,
+	if (exmdb_client_push_request(exmdb_callid::check_folder_permission,
 	    &request, &tmp_bin) != EXT_ERR_SUCCESS ||
 	    !exmdb_client_write_socket(sockd, &tmp_bin) ||
 	    !cl_rd_sock(sockd, &tmp_bin) || tmp_bin.cb != 9 ||
@@ -280,7 +280,7 @@ static BOOL exmdb_client_load_content_table(int sockd, const char *dir,
 	request.table_flags = table_flags;
 	request.prestriction = prestriction;
 	request.psorts = psorts;
-	if (exmdb_client_push_request(exmdb_callid::LOAD_CONTENT_TABLE,
+	if (exmdb_client_push_request(exmdb_callid::load_content_table,
 	    &request, &tmp_bin) != EXT_ERR_SUCCESS ||
 	    !exmdb_client_write_socket(sockd, &tmp_bin) ||
 	    !cl_rd_sock(sockd, &tmp_bin) || tmp_bin.cb != 13 ||
@@ -299,7 +299,7 @@ static BOOL exmdb_client_unload_table(int sockd,
 	
 	request.dir = dir;
 	request.table_id = table_id;
-	if (exmdb_client_push_request(exmdb_callid::UNLOAD_TABLE,
+	if (exmdb_client_push_request(exmdb_callid::unload_table,
 	    &request, &tmp_bin) != EXT_ERR_SUCCESS ||
 	    !exmdb_client_write_socket(sockd, &tmp_bin) ||
 	    !cl_rd_sock(sockd, &tmp_bin) || tmp_bin.cb != 5 ||
@@ -324,7 +324,7 @@ static BOOL exmdb_client_query_table(int sockd, const char *dir,
 	request.pproptags = pproptags;
 	request.start_pos = start_pos;
 	request.row_needed = row_needed;
-	if (exmdb_client_push_request(exmdb_callid::QUERY_TABLE,
+	if (exmdb_client_push_request(exmdb_callid::query_table,
 	    &request, &tmp_bin) != EXT_ERR_SUCCESS ||
 	    !exmdb_client_write_socket(sockd, &tmp_bin) ||
 	    !cl_rd_sock(sockd, &tmp_bin) ||
@@ -374,7 +374,7 @@ static int connect_exmdb(const char *dir)
 	request.prefix    = deconst(pexnode->prefix.c_str());
 	request.remote_id = remote_id;
 	request.b_private = TRUE;
-	if (exmdb_client_push_request(exmdb_callid::CONNECT, &request,
+	if (exmdb_client_push_request(exmdb_callid::connect, &request,
 	    &tmp_bin) != EXT_ERR_SUCCESS) {
 		close(sockd);
 		return -1;
