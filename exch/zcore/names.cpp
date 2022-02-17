@@ -103,7 +103,7 @@ static constexpr const char *zcore_rpc_names[] = {
 const char *zcore_rpc_idtoname(zcore_callid i)
 {
 	auto j = static_cast<uint8_t>(i);
-	static_assert(arsizeof(zcore_rpc_names) == static_cast<uint8_t>(zcore_callid::LINKMESSAGE) + 1);
+	static_assert(arsizeof(zcore_rpc_names) == static_cast<uint8_t>(zcore_callid::linkmessage) + 1);
 	const char *s = j < arsizeof(zcore_rpc_names) ? zcore_rpc_names[j] : nullptr;
 	return znul(s);
 }

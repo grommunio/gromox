@@ -199,7 +199,7 @@ static void *zcorezs_scanwork(void *param)
 	count = 0;
 	double_list_init(&temp_list);
 	double_list_init(&temp_list1);
-	response.call_id = zcore_callid::NOTIFDEQUEUE;
+	response.call_id = zcore_callid::notifdequeue;
 	response.result = ecSuccess;
 	response.payload.notifdequeue.notifications.count = 0;
 	response.payload.notifdequeue.notifications.ppnotification = NULL;
@@ -624,7 +624,7 @@ static void zarafa_server_notification_proc(const char *dir,
 			    hstore != psink_node->sink.padvise[i].hstore)
 				continue;
 			double_list_remove(&pinfo->sink_list, pnode);
-			response.call_id = zcore_callid::NOTIFDEQUEUE;
+			response.call_id = zcore_callid::notifdequeue;
 			response.result = ecSuccess;
 			response.payload.notifdequeue.notifications.count = 1;
 			response.payload.notifdequeue.notifications.ppnotification =
