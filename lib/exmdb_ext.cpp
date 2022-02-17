@@ -2379,1340 +2379,1148 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 	return EXT_ERR_SUCCESS;
 }
 
-static int exmdb_ext_pull_get_all_named_propids_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_ALL_NAMED_PROPIDS &d)
 {
-	return pext->g_propid_a(&ppayload->get_all_named_propids.propids);
+	return x.g_propid_a(&d.propids);
 }
 
-static int exmdb_ext_push_get_all_named_propids_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_ALL_NAMED_PROPIDS &d)
 {
-	return pext->p_propid_a(ppayload->get_all_named_propids.propids);
+	return x.p_propid_a(d.propids);
 }
 
-static int exmdb_ext_pull_get_named_propids_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_NAMED_PROPIDS &d)
 {
-	return pext->g_propid_a(&ppayload->get_named_propids.propids);
+	return x.g_propid_a(&d.propids);
 }
 
-static int exmdb_ext_push_get_named_propids_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_NAMED_PROPIDS &d)
 {
-	return pext->p_propid_a(ppayload->get_named_propids.propids);
+	return x.p_propid_a(d.propids);
 }
 
-static int exmdb_ext_pull_get_named_propnames_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_NAMED_PROPNAMES &d)
 {
-	return pext->g_propname_a(&ppayload->get_named_propnames.propnames);
+	return x.g_propname_a(&d.propnames);
 }
 
-static int exmdb_ext_push_get_named_propnames_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_NAMED_PROPNAMES &d)
 {
-	return pext->p_propname_a(ppayload->get_named_propnames.propnames);
+	return x.p_propname_a(d.propnames);
 }
 
-static int exmdb_ext_pull_get_mapping_guid_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MAPPING_GUID &d)
 {
-	TRY(pext->g_bool(&ppayload->get_mapping_guid.b_found));
-	return pext->g_guid(&ppayload->get_mapping_guid.guid);
+	TRY(x.g_bool(&d.b_found));
+	return x.g_guid(&d.guid);
 }
 
-static int exmdb_ext_push_get_mapping_guid_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MAPPING_GUID &d)
 {
-	TRY(pext->p_bool(ppayload->get_mapping_guid.b_found));
-	return pext->p_guid(ppayload->get_mapping_guid.guid);
+	TRY(x.p_bool(d.b_found));
+	return x.p_guid(d.guid);
 }
 
-static int exmdb_ext_pull_get_mapping_replid_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MAPPING_REPLID &d)
 {
-	TRY(pext->g_bool(&ppayload->get_mapping_replid.b_found));
-	return pext->g_uint16(&ppayload->get_mapping_replid.replid);
+	TRY(x.g_bool(&d.b_found));
+	return x.g_uint16(&d.replid);
 }
 
-static int exmdb_ext_push_get_mapping_replid_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MAPPING_REPLID &d)
 {
-	TRY(pext->p_bool(ppayload->get_mapping_replid.b_found));
-	return pext->p_uint16(ppayload->get_mapping_replid.replid);
+	TRY(x.p_bool(d.b_found));
+	return x.p_uint16(d.replid);
 }
 
-static int exmdb_ext_pull_get_store_all_proptags_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_STORE_ALL_PROPTAGS &d)
 {
-	return pext->g_proptag_a(&ppayload->get_store_all_proptags.proptags);
+	return x.g_proptag_a(&d.proptags);
 }
 
-static int exmdb_ext_push_get_store_all_proptags_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_STORE_ALL_PROPTAGS &d)
 {
-	return pext->p_proptag_a(ppayload->get_store_all_proptags.proptags);
+	return x.p_proptag_a(d.proptags);
 }
 
-static int exmdb_ext_pull_get_store_properties_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_STORE_PROPERTIES &d)
 {
-	return pext->g_tpropval_a(&ppayload->get_store_properties.propvals);
+	return x.g_tpropval_a(&d.propvals);
 }
 
-static int exmdb_ext_push_get_store_properties_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_STORE_PROPERTIES &d)
 {
-	return pext->p_tpropval_a(ppayload->get_store_properties.propvals);
+	return x.p_tpropval_a(d.propvals);
 }
 
-static int exmdb_ext_pull_set_store_properties_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_SET_STORE_PROPERTIES &d)
 {
-	return pext->g_problem_a(&ppayload->set_store_properties.problems);
+	return x.g_problem_a(&d.problems);
 }
 
-static int exmdb_ext_push_set_store_properties_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_SET_STORE_PROPERTIES &d)
 {
-	return pext->p_problem_a(ppayload->set_store_properties.problems);
+	return x.p_problem_a(d.problems);
 }
 
-static int exmdb_ext_pull_check_mailbox_permission_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_CHECK_MAILBOX_PERMISSION &d)
 {
-	return pext->g_uint32(&ppayload->check_mailbox_permission.permission);
+	return x.g_uint32(&d.permission);
 }
 
-static int exmdb_ext_push_check_mailbox_permission_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_CHECK_MAILBOX_PERMISSION &d)
 {
-	return pext->p_uint32(ppayload->check_mailbox_permission.permission);
+	return x.p_uint32(d.permission);
 }
 
-static int exmdb_ext_pull_get_folder_by_class_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_FOLDER_BY_CLASS &d)
 {
-	TRY(pext->g_uint64(&ppayload->get_folder_by_class.id));
-	return pext->g_str(&ppayload->get_folder_by_class.str_explicit);
+	TRY(x.g_uint64(&d.id));
+	return x.g_str(&d.str_explicit);
 }
 
-static int exmdb_ext_push_get_folder_by_class_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_FOLDER_BY_CLASS &d)
 {
-	TRY(pext->p_uint64(ppayload->get_folder_by_class.id));
-	return pext->p_str(ppayload->get_folder_by_class.str_explicit);
+	TRY(x.p_uint64(d.id));
+	return x.p_str(d.str_explicit);
 }
 
-static int exmdb_ext_pull_set_folder_by_class_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_SET_FOLDER_BY_CLASS &d)
 {
-	return pext->g_bool(&ppayload->set_folder_by_class.b_result);
+	return x.g_bool(&d.b_result);
 }
 
-static int exmdb_ext_push_set_folder_by_class_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_SET_FOLDER_BY_CLASS &d)
 {
-	return pext->p_bool(ppayload->set_folder_by_class.b_result);
+	return x.p_bool(d.b_result);
 }
 
-static int exmdb_ext_pull_get_folder_class_table_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_FOLDER_CLASS_TABLE &d)
 {
-	return pext->g_tarray_set(&ppayload->get_folder_class_table.table);
+	return x.g_tarray_set(&d.table);
 }
 
-static int exmdb_ext_push_get_folder_class_table_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_FOLDER_CLASS_TABLE &d)
 {
-	return pext->p_tarray_set(ppayload->get_folder_class_table.table);
+	return x.p_tarray_set(d.table);
 }
 
-static int exmdb_ext_pull_check_folder_id_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_CHECK_FOLDER_ID &d)
 {
-	return pext->g_bool(&ppayload->check_folder_id.b_exist);
+	return x.g_bool(&d.b_exist);
 }
 
-static int exmdb_ext_push_check_folder_id_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_CHECK_FOLDER_ID &d)
 {
-	return pext->p_bool(ppayload->check_folder_id.b_exist);
+	return x.p_bool(d.b_exist);
 }
 
-static int exmdb_ext_pull_query_folder_messages_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_QUERY_FOLDER_MESSAGES &d)
 {
-	return pext->g_tarray_set(&ppayload->query_folder_messages.set);
+	return x.g_tarray_set(&d.set);
 }
 
-static int exmdb_ext_push_query_folder_messages_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_QUERY_FOLDER_MESSAGES &d)
 {
-	return pext->p_tarray_set(ppayload->query_folder_messages.set);
+	return x.p_tarray_set(d.set);
 }
 
-static int exmdb_ext_pull_check_folder_deleted_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_CHECK_FOLDER_DELETED &d)
 {
-	return pext->g_bool(&ppayload->check_folder_deleted.b_del);
+	return x.g_bool(&d.b_del);
 }
 
-static int exmdb_ext_push_check_folder_deleted_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_CHECK_FOLDER_DELETED &d)
 {
-	return pext->p_bool(ppayload->check_folder_deleted.b_del);
+	return x.p_bool(d.b_del);
 }
 
-static int exmdb_ext_pull_get_folder_by_name_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_FOLDER_BY_NAME &d)
 {
-	return pext->g_uint64(&ppayload->get_folder_by_name.folder_id);
+	return x.g_uint64(&d.folder_id);
 }
 
-static int exmdb_ext_push_get_folder_by_name_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_FOLDER_BY_NAME &d)
 {
-	return pext->p_uint64(ppayload->get_folder_by_name.folder_id);
+	return x.p_uint64(d.folder_id);
 }
 
-static int exmdb_ext_pull_check_folder_permission_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_CHECK_FOLDER_PERMISSION &d)
 {
-	return pext->g_uint32(&ppayload->check_folder_permission.permission);
+	return x.g_uint32(&d.permission);
 }
 
-static int exmdb_ext_push_check_folder_permission_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_CHECK_FOLDER_PERMISSION &d)
 {
-	return pext->p_uint32(ppayload->check_folder_permission.permission);
+	return x.p_uint32(d.permission);
 }
 
-static int exmdb_ext_pull_create_folder_by_properties_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_CREATE_FOLDER_BY_PROPERTIES &d)
 {
-	return pext->g_uint64(&ppayload->create_folder_by_properties.folder_id);
+	return x.g_uint64(&d.folder_id);
 }
 
-static int exmdb_ext_push_create_folder_by_properties_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_CREATE_FOLDER_BY_PROPERTIES &d)
 {
-	return pext->p_uint64(ppayload->create_folder_by_properties.folder_id);
+	return x.p_uint64(d.folder_id);
 }
 
-static int exmdb_ext_pull_get_folder_all_proptags_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_FOLDER_ALL_PROPTAGS &d)
 {
-	return pext->g_proptag_a(&ppayload->get_folder_all_proptags.proptags);
+	return x.g_proptag_a(&d.proptags);
 }
 
-static int exmdb_ext_push_get_folder_all_proptags_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_FOLDER_ALL_PROPTAGS &d)
 {
-	return pext->p_proptag_a(ppayload->get_folder_all_proptags.proptags);
+	return x.p_proptag_a(d.proptags);
 }
 
-static int exmdb_ext_pull_get_folder_properties_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_FOLDER_PROPERTIES &d)
 {
-	return pext->g_tpropval_a(&ppayload->get_folder_properties.propvals);
+	return x.g_tpropval_a(&d.propvals);
 }
 
-static int exmdb_ext_push_get_folder_properties_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_FOLDER_PROPERTIES &d)
 {
-	return pext->p_tpropval_a(ppayload->get_folder_properties.propvals);
+	return x.p_tpropval_a(d.propvals);
 }
 
-static int exmdb_ext_pull_set_folder_properties_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_SET_FOLDER_PROPERTIES &d)
 {
-	return pext->g_problem_a(&ppayload->set_folder_properties.problems);
+	return x.g_problem_a(&d.problems);
 }
 
-static int exmdb_ext_push_set_folder_properties_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_SET_FOLDER_PROPERTIES &d)
 {
-	return pext->p_problem_a(ppayload->set_folder_properties.problems);
+	return x.p_problem_a(d.problems);
 }
 
-static int exmdb_ext_pull_delete_folder_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_DELETE_FOLDER &d)
 {
-	return pext->g_bool(&ppayload->delete_folder.b_result);
+	return x.g_bool(&d.b_result);
 }
 
-static int exmdb_ext_push_delete_folder_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_DELETE_FOLDER &d)
 {
-	return pext->p_bool(ppayload->delete_folder.b_result);
+	return x.p_bool(d.b_result);
 }
 
-static int exmdb_ext_pull_empty_folder_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_EMPTY_FOLDER &d)
 {
-	return pext->g_bool(&ppayload->empty_folder.b_partial);
+	return x.g_bool(&d.b_partial);
 }
 
-static int exmdb_ext_push_empty_folder_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_EMPTY_FOLDER &d)
 {
-	return pext->p_bool(ppayload->empty_folder.b_partial);
+	return x.p_bool(d.b_partial);
 }
 
-static int exmdb_ext_pull_check_folder_cycle_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_CHECK_FOLDER_CYCLE &d)
 {
-	return pext->g_bool(&ppayload->check_folder_cycle.b_cycle);
+	return x.g_bool(&d.b_cycle);
 }
 
-static int exmdb_ext_push_check_folder_cycle_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_CHECK_FOLDER_CYCLE &d)
 {
-	return pext->p_bool(ppayload->check_folder_cycle.b_cycle);
+	return x.p_bool(d.b_cycle);
 }
 
-static int exmdb_ext_pull_copy_folder_internal_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_COPY_FOLDER_INTERNAL &d)
 {
-	TRY(pext->g_bool(&ppayload->copy_folder_internal.b_collid));
-	return pext->g_bool(&ppayload->copy_folder_internal.b_partial);
+	TRY(x.g_bool(&d.b_collid));
+	return x.g_bool(&d.b_partial);
 }
 
-static int exmdb_ext_push_copy_folder_internal_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_COPY_FOLDER_INTERNAL &d)
 {
-	TRY(pext->p_bool(ppayload->copy_folder_internal.b_collid));
-	return pext->p_bool(ppayload->copy_folder_internal.b_partial);
+	TRY(x.p_bool(d.b_collid));
+	return x.p_bool(d.b_partial);
 }
 
-static int exmdb_ext_pull_get_search_criteria_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_SEARCH_CRITERIA &d)
 {
 	uint8_t tmp_byte;
 	
-	TRY(pext->g_uint32(&ppayload->get_search_criteria.search_status));
-	TRY(pext->g_uint8(&tmp_byte));
+	TRY(x.g_uint32(&d.search_status));
+	TRY(x.g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
-		ppayload->get_search_criteria.prestriction = NULL;
+		d.prestriction = nullptr;
 	} else {
-		ppayload->get_search_criteria.prestriction = cu_alloc<RESTRICTION>();
-		if (ppayload->get_search_criteria.prestriction == nullptr)
+		d.prestriction = cu_alloc<RESTRICTION>();
+		if (d.prestriction == nullptr)
 			return EXT_ERR_ALLOC;
-		TRY(pext->g_restriction(ppayload->get_search_criteria.prestriction));
+		TRY(x.g_restriction(d.prestriction));
 	}
-	return pext->g_uint64_a(&ppayload->get_search_criteria.folder_ids);
+	return x.g_uint64_a(&d.folder_ids);
 }
 
-static int exmdb_ext_push_get_search_criteria_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_SEARCH_CRITERIA &d)
 {
-	TRY(pext->p_uint32(ppayload->get_search_criteria.search_status));
-	if (NULL == ppayload->get_search_criteria.prestriction) {
-		TRY(pext->p_uint8(0));
+	TRY(x.p_uint32(d.search_status));
+	if (d.prestriction == nullptr) {
+		TRY(x.p_uint8(0));
 	} else {
-		TRY(pext->p_uint8(1));
-		TRY(pext->p_restriction(*ppayload->get_search_criteria.prestriction));
+		TRY(x.p_uint8(1));
+		TRY(x.p_restriction(*d.prestriction));
 	}
-	return pext->p_uint64_a(ppayload->get_search_criteria.folder_ids);
+	return x.p_uint64_a(d.folder_ids);
 }
 
-static int exmdb_ext_pull_set_search_criteria_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_SET_SEARCH_CRITERIA &d)
 {
-	return pext->g_bool(&ppayload->set_search_criteria.b_result);
+	return x.g_bool(&d.b_result);
 }
 	
-static int exmdb_ext_push_set_search_criteria_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_SET_SEARCH_CRITERIA &d)
 {
-	return pext->p_bool(ppayload->set_search_criteria.b_result);
+	return x.p_bool(d.b_result);
 }
 
-static int exmdb_ext_pull_movecopy_message_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_MOVECOPY_MESSAGE &d)
 {
-	return pext->g_bool(&ppayload->movecopy_message.b_result);
+	return x.g_bool(&d.b_result);
 }
 
-static int exmdb_ext_push_movecopy_message_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_MOVECOPY_MESSAGE &d)
 {
-	return pext->p_bool(ppayload->movecopy_message.b_result);
+	return x.p_bool(d.b_result);
 }
 
-static int exmdb_ext_pull_movecopy_messages_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_MOVECOPY_MESSAGES &d)
 {
-	return pext->g_bool(&ppayload->movecopy_messages.b_partial);
+	return x.g_bool(&d.b_partial);
 }
 
-static int exmdb_ext_push_movecopy_messages_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_MOVECOPY_MESSAGES &d)
 {
-	return pext->p_bool(ppayload->movecopy_messages.b_partial);
+	return x.p_bool(d.b_partial);
 }
 
-static int exmdb_ext_pull_movecopy_folder_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_MOVECOPY_FOLDER &d)
 {
-	TRY(pext->g_bool(&ppayload->movecopy_folder.b_exist));
-	return pext->g_bool(&ppayload->movecopy_folder.b_partial);
+	TRY(x.g_bool(&d.b_exist));
+	return x.g_bool(&d.b_partial);
 }
 
-static int exmdb_ext_push_movecopy_folder_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_MOVECOPY_FOLDER &d)
 {
-	TRY(pext->p_bool(ppayload->movecopy_folder.b_exist));
-	return pext->p_bool(ppayload->movecopy_folder.b_partial);
+	TRY(x.p_bool(d.b_exist));
+	return x.p_bool(d.b_partial);
 }
 
-static int exmdb_ext_pull_delete_messages_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_DELETE_MESSAGES &d)
 {
-	return pext->g_bool(&ppayload->delete_messages.b_partial);
+	return x.g_bool(&d.b_partial);
 }
 
-static int exmdb_ext_push_delete_messages_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_DELETE_MESSAGES &d)
 {
-	return pext->p_bool(ppayload->delete_messages.b_partial);
+	return x.p_bool(d.b_partial);
 }
 
-static int exmdb_ext_pull_get_message_brief_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_BRIEF &d)
 {
 	int status;
 	uint8_t tmp_byte;
 	
-	status = pext->g_uint8(&tmp_byte);
+	status = x.g_uint8(&tmp_byte);
 	if (status != EXT_ERR_SUCCESS || tmp_byte == 0) {
-		ppayload->get_message_brief.pbrief = NULL;
+		d.pbrief = nullptr;
 		return EXT_ERR_SUCCESS;
 	}
-	ppayload->get_message_brief.pbrief = cu_alloc<MESSAGE_CONTENT>();
-	if (ppayload->get_message_brief.pbrief == nullptr)
+	d.pbrief = cu_alloc<MESSAGE_CONTENT>();
+	if (d.pbrief == nullptr)
 		return EXT_ERR_ALLOC;
-	return pext->g_msgctnt(ppayload->get_message_brief.pbrief);
+	return x.g_msgctnt(d.pbrief);
 }
 
-static int exmdb_ext_push_get_message_brief_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_BRIEF &d)
 {
-	if (ppayload->get_message_brief.pbrief == nullptr)
-		return pext->p_uint8(0);
-	TRY(pext->p_uint8(1));
-	return pext->p_msgctnt(*ppayload->get_message_brief.pbrief);
+	if (d.pbrief == nullptr)
+		return x.p_uint8(0);
+	TRY(x.p_uint8(1));
+	return x.p_msgctnt(*d.pbrief);
 }
 
-static int exmdb_ext_pull_sum_hierarchy_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_SUM_HIERARCHY &d)
 {
-	return pext->g_uint32(&ppayload->sum_hierarchy.count);
+	return x.g_uint32(&d.count);
 }
 
-static int exmdb_ext_push_sum_hierarchy_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_SUM_HIERARCHY &d)
 {
-	return pext->p_uint32(ppayload->sum_hierarchy.count);
+	return x.p_uint32(d.count);
 }
 
-static int exmdb_ext_pull_load_hierarchy_table_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_LOAD_HIERARCHY_TABLE &d)
 {
-	TRY(pext->g_uint32(&ppayload->load_hierarchy_table.table_id));
-	return pext->g_uint32(&ppayload->load_hierarchy_table.row_count);
+	TRY(x.g_uint32(&d.table_id));
+	return x.g_uint32(&d.row_count);
 }
 
-static int exmdb_ext_push_load_hierarchy_table_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_LOAD_HIERARCHY_TABLE &d)
 {
-	TRY(pext->p_uint32(ppayload->load_hierarchy_table.table_id));
-	return pext->p_uint32(ppayload->load_hierarchy_table.row_count);
+	TRY(x.p_uint32(d.table_id));
+	return x.p_uint32(d.row_count);
 }
 
-static int exmdb_ext_pull_sum_content_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_SUM_CONTENT &d)
 {
-	return pext->g_uint32(&ppayload->sum_content.count);
+	return x.g_uint32(&d.count);
 }
 
-static int exmdb_ext_push_sum_content_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_SUM_CONTENT &d)
 {
-	return pext->p_uint32(ppayload->sum_content.count);
+	return x.p_uint32(d.count);
 }
 
-static int exmdb_ext_pull_load_content_table_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_LOAD_CONTENT_TABLE &d)
 {
-	TRY(pext->g_uint32(&ppayload->load_content_table.table_id));
-	return pext->g_uint32(&ppayload->load_content_table.row_count);
+	TRY(x.g_uint32(&d.table_id));
+	return x.g_uint32(&d.row_count);
 }
 
-static int exmdb_ext_push_load_content_table_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_LOAD_CONTENT_TABLE &d)
 {
-	TRY(pext->p_uint32(ppayload->load_content_table.table_id));
-	return pext->p_uint32(ppayload->load_content_table.row_count);
+	TRY(x.p_uint32(d.table_id));
+	return x.p_uint32(d.row_count);
 }
 
-static int exmdb_ext_pull_load_permission_table_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_LOAD_PERMISSION_TABLE &d)
 {
-	TRY(pext->g_uint32(&ppayload->load_permission_table.table_id));
-	return pext->g_uint32(&ppayload->load_permission_table.row_count);
+	TRY(x.g_uint32(&d.table_id));
+	return x.g_uint32(&d.row_count);
 }
 
-static int exmdb_ext_push_load_permission_table_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_LOAD_PERMISSION_TABLE &d)
 {
-	TRY(pext->p_uint32(ppayload->load_permission_table.table_id));
-	return pext->p_uint32(ppayload->load_permission_table.row_count);
+	TRY(x.p_uint32(d.table_id));
+	return x.p_uint32(d.row_count);
 }
 
-static int exmdb_ext_pull_load_rule_table_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_LOAD_RULE_TABLE &d)
 {
-	TRY(pext->g_uint32(&ppayload->load_rule_table.table_id));
-	return pext->g_uint32(&ppayload->load_rule_table.row_count);
+	TRY(x.g_uint32(&d.table_id));
+	return x.g_uint32(&d.row_count);
 }
 
-static int exmdb_ext_push_load_rule_table_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_LOAD_RULE_TABLE &d)
 {
-	TRY(pext->p_uint32(ppayload->load_rule_table.table_id));
-	return pext->p_uint32(ppayload->load_rule_table.row_count);
+	TRY(x.p_uint32(d.table_id));
+	return x.p_uint32(d.row_count);
 }
 
-static int exmdb_ext_pull_sum_table_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_SUM_TABLE &d)
 {
-	return pext->g_uint32(&ppayload->sum_table.rows);
+	return x.g_uint32(&d.rows);
 }
 
-static int exmdb_ext_push_sum_table_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_SUM_TABLE &d)
 {
-	return pext->p_uint32(ppayload->sum_table.rows);
+	return x.p_uint32(d.rows);
 }
 
-static int exmdb_ext_pull_query_table_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_QUERY_TABLE &d)
 {
-	return pext->g_tarray_set(&ppayload->query_table.set);
+	return x.g_tarray_set(&d.set);
 }
 
-static int exmdb_ext_push_query_table_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_QUERY_TABLE &d)
 {
-	return pext->p_tarray_set(ppayload->query_table.set);
+	return x.p_tarray_set(d.set);
 }
 
-static int exmdb_ext_pull_match_table_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_MATCH_TABLE &d)
 {
-	TRY(pext->g_int32(&ppayload->match_table.position));
-	return pext->g_tpropval_a(&ppayload->match_table.propvals);
+	TRY(x.g_int32(&d.position));
+	return x.g_tpropval_a(&d.propvals);
 }
 
-static int exmdb_ext_push_match_table_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_MATCH_TABLE &d)
 {
-	TRY(pext->p_int32(ppayload->match_table.position));
-	return pext->p_tpropval_a(ppayload->match_table.propvals);
+	TRY(x.p_int32(d.position));
+	return x.p_tpropval_a(d.propvals);
 }
 
-static int exmdb_ext_pull_locate_table_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_LOCATE_TABLE &d)
 {
-	TRY(pext->g_int32(&ppayload->locate_table.position));
-	return pext->g_uint32(&ppayload->locate_table.row_type);
+	TRY(x.g_int32(&d.position));
+	return x.g_uint32(&d.row_type);
 }
 
-static int exmdb_ext_push_locate_table_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_LOCATE_TABLE &d)
 {
-	TRY(pext->p_int32(ppayload->locate_table.position));
-	return pext->p_uint32(ppayload->locate_table.row_type);
+	TRY(x.p_int32(d.position));
+	return x.p_uint32(d.row_type);
 }
 
-static int exmdb_ext_pull_read_table_row_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_READ_TABLE_ROW &d)
 {
-	return pext->g_tpropval_a(&ppayload->read_table_row.propvals);
+	return x.g_tpropval_a(&d.propvals);
 }
 
-static int exmdb_ext_push_read_table_row_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_READ_TABLE_ROW &d)
 {
-	return pext->p_tpropval_a(ppayload->read_table_row.propvals);
+	return x.p_tpropval_a(d.propvals);
 }
 
-static int exmdb_ext_pull_mark_table_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_MARK_TABLE &d)
 {
-	TRY(pext->g_uint64(&ppayload->mark_table.inst_id));
-	TRY(pext->g_uint32(&ppayload->mark_table.inst_num));
-	return pext->g_uint32(&ppayload->mark_table.row_type);
+	TRY(x.g_uint64(&d.inst_id));
+	TRY(x.g_uint32(&d.inst_num));
+	return x.g_uint32(&d.row_type);
 }
 
-static int exmdb_ext_push_mark_table_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_MARK_TABLE &d)
 {
-	TRY(pext->p_uint64(ppayload->mark_table.inst_id));
-	TRY(pext->p_uint32(ppayload->mark_table.inst_num));
-	return pext->p_uint32(ppayload->mark_table.row_type);
+	TRY(x.p_uint64(d.inst_id));
+	TRY(x.p_uint32(d.inst_num));
+	return x.p_uint32(d.row_type);
 }
 
-static int exmdb_ext_pull_get_table_all_proptags_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_TABLE_ALL_PROPTAGS &d)
 {
-	return pext->g_proptag_a(&ppayload->get_table_all_proptags.proptags);
+	return x.g_proptag_a(&d.proptags);
 }
 
-static int exmdb_ext_push_get_table_all_proptags_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_TABLE_ALL_PROPTAGS &d)
 {
-	return pext->p_proptag_a(ppayload->get_table_all_proptags.proptags);
+	return x.p_proptag_a(d.proptags);
 }
 
-static int exmdb_ext_pull_expand_table_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_EXPAND_TABLE &d)
 {
-	TRY(pext->g_bool(&ppayload->expand_table.b_found));
-	TRY(pext->g_int32(&ppayload->expand_table.position));
-	return pext->g_uint32(&ppayload->expand_table.row_count);
+	TRY(x.g_bool(&d.b_found));
+	TRY(x.g_int32(&d.position));
+	return x.g_uint32(&d.row_count);
 }
 
-static int exmdb_ext_push_expand_table_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_EXPAND_TABLE &d)
 {
-	TRY(pext->p_bool(ppayload->expand_table.b_found));
-	TRY(pext->p_int32(ppayload->expand_table.position));
-	return pext->p_uint32(ppayload->expand_table.row_count);
+	TRY(x.p_bool(d.b_found));
+	TRY(x.p_int32(d.position));
+	return x.p_uint32(d.row_count);
 }
 
-static int exmdb_ext_pull_collapse_table_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_COLLAPSE_TABLE &d)
 {
-	TRY(pext->g_bool(&ppayload->collapse_table.b_found));
-	TRY(pext->g_int32(&ppayload->collapse_table.position));
-	return pext->g_uint32(&ppayload->collapse_table.row_count);
+	TRY(x.g_bool(&d.b_found));
+	TRY(x.g_int32(&d.position));
+	return x.g_uint32(&d.row_count);
 }
 
-static int exmdb_ext_push_collapse_table_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_COLLAPSE_TABLE &d)
 {
-	TRY(pext->p_bool(ppayload->collapse_table.b_found));
-	TRY(pext->p_int32(ppayload->collapse_table.position));
-	return pext->p_uint32(ppayload->collapse_table.row_count);
+	TRY(x.p_bool(d.b_found));
+	TRY(x.p_int32(d.position));
+	return x.p_uint32(d.row_count);
 }
 
-static int exmdb_ext_pull_store_table_state_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_STORE_TABLE_STATE &d)
 {
-	return pext->g_uint32(&ppayload->store_table_state.state_id);
+	return x.g_uint32(&d.state_id);
 }
 
-static int exmdb_ext_push_store_table_state_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_STORE_TABLE_STATE &d)
 {
-	return pext->p_uint32(ppayload->store_table_state.state_id);
+	return x.p_uint32(d.state_id);
 }
 
-static int exmdb_ext_pull_restore_table_state_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_RESTORE_TABLE_STATE &d)
 {
-	return pext->g_int32(&ppayload->restore_table_state.position);
+	return x.g_int32(&d.position);
 }
 
-static int exmdb_ext_push_restore_table_state_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_RESTORE_TABLE_STATE &d)
 {
-	return pext->p_int32(ppayload->restore_table_state.position);
+	return x.p_int32(d.position);
 }
 
-static int exmdb_ext_pull_check_message_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_CHECK_MESSAGE &d)
 {
-	return pext->g_bool(&ppayload->check_message.b_exist);
+	return x.g_bool(&d.b_exist);
 }
 
-static int exmdb_ext_push_check_message_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_CHECK_MESSAGE &d)
 {
-	return pext->p_bool(ppayload->check_message.b_exist);
+	return x.p_bool(d.b_exist);
 }
 
-static int exmdb_ext_pull_check_message_deleted_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_CHECK_MESSAGE_DELETED &d)
 {
-	return pext->g_bool(&ppayload->check_message_deleted.b_del);
+	return x.g_bool(&d.b_del);
 }
 
-static int exmdb_ext_push_check_message_deleted_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_CHECK_MESSAGE_DELETED &d)
 {
-	return pext->p_bool(ppayload->check_message_deleted.b_del);
+	return x.p_bool(d.b_del);
 }
 
-static int exmdb_ext_pull_load_message_instance_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_LOAD_MESSAGE_INSTANCE &d)
 {
-	return pext->g_uint32(&ppayload->load_message_instance.instance_id);
+	return x.g_uint32(&d.instance_id);
 }
 
-static int exmdb_ext_push_load_message_instance_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_LOAD_MESSAGE_INSTANCE &d)
 {
-	return pext->p_uint32(ppayload->load_message_instance.instance_id);
+	return x.p_uint32(d.instance_id);
 }
 
-static int exmdb_ext_pull_load_embedded_instance_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_LOAD_EMBEDDED_INSTANCE &d)
 {
-	return pext->g_uint32(&ppayload->load_embedded_instance.instance_id);
+	return x.g_uint32(&d.instance_id);
 }
 
-static int exmdb_ext_push_load_embedded_instance_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_LOAD_EMBEDDED_INSTANCE &d)
 {
-	return pext->p_uint32(ppayload->load_embedded_instance.instance_id);
+	return x.p_uint32(d.instance_id);
 }
 
-static int exmdb_ext_pull_get_embedded_cn_response(EXT_PULL *pext,
-    RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_EMBEDDED_CN &d)
 {
 	uint8_t tmp_byte;
 	
-	TRY(pext->g_uint8(&tmp_byte));
+	TRY(x.g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
-		ppayload->get_embedded_cn.pcn = nullptr;
+		d.pcn = nullptr;
 		return EXT_ERR_SUCCESS;
 	}
-	ppayload->get_embedded_cn.pcn = cu_alloc<uint64_t>();
-	if (ppayload->get_embedded_cn.pcn == nullptr)
+	d.pcn = cu_alloc<uint64_t>();
+	if (d.pcn == nullptr)
 		return EXT_ERR_ALLOC;
-	return pext->g_uint64(ppayload->get_embedded_cn.pcn);
+	return x.g_uint64(d.pcn);
 }
 
-static int exmdb_ext_push_get_embedded_cn_response(EXT_PUSH *pext,
-    const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_EMBEDDED_CN &d)
 {
-	if (ppayload->get_embedded_cn.pcn == nullptr)
-		return pext->p_uint8(0);
-	TRY(pext->p_uint8(1));
-	return pext->p_uint64(*static_cast<uint64_t *>(ppayload->get_embedded_cn.pcn));
+	if (d.pcn == nullptr)
+		return x.p_uint8(0);
+	TRY(x.p_uint8(1));
+	return x.p_uint64(*static_cast<uint64_t *>(d.pcn));
 }
 
-static int exmdb_ext_pull_reload_message_instance_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_RELOAD_MESSAGE_INSTANCE &d)
 {
-	return pext->g_bool(&ppayload->reload_message_instance.b_result);
+	return x.g_bool(&d.b_result);
 }
 
-static int exmdb_ext_push_reload_message_instance_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_RELOAD_MESSAGE_INSTANCE &d)
 {
-	return pext->p_bool(ppayload->reload_message_instance.b_result);
+	return x.p_bool(d.b_result);
 }
 
-static int exmdb_ext_pull_read_message_instance_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_READ_MESSAGE_INSTANCE &d)
 {
-	return pext->g_msgctnt(&ppayload->read_message_instance.msgctnt);
+	return x.g_msgctnt(&d.msgctnt);
 }
 
-static int exmdb_ext_push_read_message_instance_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_READ_MESSAGE_INSTANCE &d)
 {
-	return pext->p_msgctnt(ppayload->read_message_instance.msgctnt);
+	return x.p_msgctnt(d.msgctnt);
 }
 
-static int exmdb_ext_pull_write_message_instance_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_WRITE_MESSAGE_INSTANCE &d)
 {
-	TRY(pext->g_proptag_a(&ppayload->write_message_instance.proptags));
-	return pext->g_problem_a(&ppayload->write_message_instance.problems);
+	TRY(x.g_proptag_a(&d.proptags));
+	return x.g_problem_a(&d.problems);
 }
 
-static int exmdb_ext_push_write_message_instance_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_WRITE_MESSAGE_INSTANCE &d)
 {
-	TRY(pext->p_proptag_a(ppayload->write_message_instance.proptags));
-	return pext->p_problem_a(ppayload->write_message_instance.problems);
+	TRY(x.p_proptag_a(d.proptags));
+	return x.p_problem_a(d.problems);
 }
 
-static int exmdb_ext_pull_load_attachment_instance_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_LOAD_ATTACHMENT_INSTANCE &d)
 {
-	return pext->g_uint32(&ppayload->load_attachment_instance.instance_id);
+	return x.g_uint32(&d.instance_id);
 }
 
-static int exmdb_ext_push_load_attachment_instance_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_LOAD_ATTACHMENT_INSTANCE &d)
 {
-	return pext->p_uint32(ppayload->load_attachment_instance.instance_id);
+	return x.p_uint32(d.instance_id);
 }
 
-static int exmdb_ext_pull_create_attachment_instance_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_CREATE_ATTACHMENT_INSTANCE &d)
 {
-	TRY(pext->g_uint32(&ppayload->create_attachment_instance.instance_id));
-	return pext->g_uint32(&ppayload->create_attachment_instance.attachment_num);
+	TRY(x.g_uint32(&d.instance_id));
+	return x.g_uint32(&d.attachment_num);
 }
 
-static int exmdb_ext_push_create_attachment_instance_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_CREATE_ATTACHMENT_INSTANCE &d)
 {
-	TRY(pext->p_uint32(ppayload->create_attachment_instance.instance_id));
-	return pext->p_uint32(ppayload->create_attachment_instance.attachment_num);
+	TRY(x.p_uint32(d.instance_id));
+	return x.p_uint32(d.attachment_num);
 }
 
-static int exmdb_ext_pull_read_attachment_instance_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_READ_ATTACHMENT_INSTANCE &d)
 {
 	uint8_t tmp_byte;
 	
-	TRY(pext->g_tpropval_a(&ppayload->read_attachment_instance.attctnt.proplist));
-	TRY(pext->g_uint8(&tmp_byte));
+	TRY(x.g_tpropval_a(&d.attctnt.proplist));
+	TRY(x.g_uint8(&tmp_byte));
 	if (tmp_byte == 0) {
-		ppayload->read_attachment_instance.attctnt.pembedded = NULL;
+		d.attctnt.pembedded = nullptr;
 		return EXT_ERR_SUCCESS;
 	}
-	ppayload->read_attachment_instance.attctnt.pembedded = cu_alloc<MESSAGE_CONTENT>();
-	if (ppayload->read_attachment_instance.attctnt.pembedded == nullptr)
+	d.attctnt.pembedded = cu_alloc<MESSAGE_CONTENT>();
+	if (d.attctnt.pembedded == nullptr)
 		return EXT_ERR_ALLOC;
-	return pext->g_msgctnt(ppayload->read_attachment_instance.attctnt.pembedded);
+	return x.g_msgctnt(d.attctnt.pembedded);
 }
 
-static int exmdb_ext_push_read_attachment_instance_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_READ_ATTACHMENT_INSTANCE &d)
 {
-	TRY(pext->p_tpropval_a(ppayload->read_attachment_instance.attctnt.proplist));
-	if (ppayload->read_attachment_instance.attctnt.pembedded == nullptr)
-		return pext->p_uint8(0);
-	TRY(pext->p_uint8(1));
-	return pext->p_msgctnt(*ppayload->read_attachment_instance.attctnt.pembedded);
+	TRY(x.p_tpropval_a(d.attctnt.proplist));
+	if (d.attctnt.pembedded == nullptr)
+		return x.p_uint8(0);
+	TRY(x.p_uint8(1));
+	return x.p_msgctnt(*d.attctnt.pembedded);
 }
 
-static int exmdb_ext_pull_write_attachment_instance_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_WRITE_ATTACHMENT_INSTANCE &d)
 {
-	return pext->g_problem_a(&ppayload->write_attachment_instance.problems);
+	return x.g_problem_a(&d.problems);
 }
 
-static int exmdb_ext_push_write_attachment_instance_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_WRITE_ATTACHMENT_INSTANCE &d)
 {
-	return pext->p_problem_a(ppayload->write_attachment_instance.problems);
+	return x.p_problem_a(d.problems);
 }
 
-static int exmdb_ext_pull_flush_instance_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_FLUSH_INSTANCE &d)
 {
-	return pext->g_uint32(reinterpret_cast<uint32_t *>(&ppayload->flush_instance.e_result));
+	return x.g_uint32(reinterpret_cast<uint32_t *>(&d.e_result));
 }
 
-static int exmdb_ext_push_flush_instance_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_FLUSH_INSTANCE &d)
 {
-	return pext->p_uint32(ppayload->flush_instance.e_result);
+	return x.p_uint32(d.e_result);
 }
 
-static int exmdb_ext_pull_get_instance_all_proptags_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_INSTANCE_ALL_PROPTAGS &d)
 {
-	return pext->g_proptag_a(&ppayload->get_instance_all_proptags.proptags);
+	return x.g_proptag_a(&d.proptags);
 }
 
-static int exmdb_ext_push_get_instance_all_proptags_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_INSTANCE_ALL_PROPTAGS &d)
 {
-	return pext->p_proptag_a(ppayload->get_instance_all_proptags.proptags);
+	return x.p_proptag_a(d.proptags);
 }
 
-static int exmdb_ext_pull_get_instance_properties_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_INSTANCE_PROPERTIES &d)
 {
-	return pext->g_tpropval_a(&ppayload->get_instance_properties.propvals);
+	return x.g_tpropval_a(&d.propvals);
 }
 
-static int exmdb_ext_push_get_instance_properties_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_INSTANCE_PROPERTIES &d)
 {
-	return pext->p_tpropval_a(ppayload->get_instance_properties.propvals);
+	return x.p_tpropval_a(d.propvals);
 }
 
-static int exmdb_ext_pull_set_instance_properties_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_SET_INSTANCE_PROPERTIES &d)
 {
-	return pext->g_problem_a(&ppayload->set_instance_properties.problems);
+	return x.g_problem_a(&d.problems);
 }
 
-static int exmdb_ext_push_set_instance_properties_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_SET_INSTANCE_PROPERTIES &d)
 {
-	return pext->p_problem_a(ppayload->set_instance_properties.problems);
+	return x.p_problem_a(d.problems);
 }
 
-static int exmdb_ext_pull_remove_instance_properties_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_REMOVE_INSTANCE_PROPERTIES &d)
 {
-	return pext->g_problem_a(&ppayload->remove_instance_properties.problems);
+	return x.g_problem_a(&d.problems);
 }
 
-static int exmdb_ext_push_remove_instance_properties_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_REMOVE_INSTANCE_PROPERTIES &d)
 {
-	return pext->p_problem_a(ppayload->remove_instance_properties.problems);
+	return x.p_problem_a(d.problems);
 }
 
-static int exmdb_ext_pull_check_instance_cycle_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_CHECK_INSTANCE_CYCLE &d)
 {
-	return pext->g_bool(&ppayload->check_instance_cycle.b_cycle);
+	return x.g_bool(&d.b_cycle);
 }
 
-static int exmdb_ext_push_check_instance_cycle_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_CHECK_INSTANCE_CYCLE &d)
 {
-	return pext->p_bool(ppayload->check_instance_cycle.b_cycle);
+	return x.p_bool(d.b_cycle);
 }
 
-static int exmdb_ext_pull_get_message_instance_rcpts_num_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_INSTANCE_RCPTS_NUM &d)
 {
-	return pext->g_uint16(&ppayload->get_message_instance_rcpts_num.num);
+	return x.g_uint16(&d.num);
 }
 
-static int exmdb_ext_push_get_message_instance_rcpts_num_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_INSTANCE_RCPTS_NUM &d)
 {
-	return pext->p_uint16(ppayload->get_message_instance_rcpts_num.num);
+	return x.p_uint16(d.num);
 }
 
-static int exmdb_ext_pull_get_message_instance_rcpts_all_proptags_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS &d)
 {
-	return pext->g_proptag_a(&ppayload->get_message_instance_rcpts_all_proptags.proptags);
+	return x.g_proptag_a(&d.proptags);
 }
 
-static int exmdb_ext_push_get_message_instance_rcpts_all_proptags_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_INSTANCE_RCPTS_ALL_PROPTAGS &d)
 {
-	return pext->p_proptag_a(ppayload->get_message_instance_rcpts_all_proptags.proptags);
+	return x.p_proptag_a(d.proptags);
 }
 
-static int exmdb_ext_pull_get_message_instance_rcpts_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_INSTANCE_RCPTS &d)
 {
-	return pext->g_tarray_set(&ppayload->get_message_instance_rcpts.set);
+	return x.g_tarray_set(&d.set);
 }
 
-static int exmdb_ext_push_get_message_instance_rcpts_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_INSTANCE_RCPTS &d)
 {
-	return pext->p_tarray_set(ppayload->get_message_instance_rcpts.set);
+	return x.p_tarray_set(d.set);
 }
 
-static int exmdb_ext_pull_copy_instance_rcpts_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_COPY_INSTANCE_RCPTS &d)
 {
-	return pext->g_bool(&ppayload->copy_instance_rcpts.b_result);
+	return x.g_bool(&d.b_result);
 }
 
-static int exmdb_ext_push_copy_instance_rcpts_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_COPY_INSTANCE_RCPTS &d)
 {
-	return pext->p_bool(ppayload->copy_instance_rcpts.b_result);
+	return x.p_bool(d.b_result);
 }
 
-static int exmdb_ext_pull_get_message_instance_attachments_num_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM &d)
 {
-	return pext->g_uint16(&ppayload->get_message_instance_attachments_num.num);
+	return x.g_uint16(&d.num);
 }
 
-static int exmdb_ext_push_get_message_instance_attachments_num_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_INSTANCE_ATTACHMENTS_NUM &d)
 {
-	return pext->p_uint16(ppayload->get_message_instance_attachments_num.num);
+	return x.p_uint16(d.num);
 }
 
-static int exmdb_ext_pull_get_message_instance_attachment_table_all_proptags_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS &d)
 {
-	return pext->g_proptag_a(&ppayload->get_message_instance_attachment_table_all_proptags.proptags);
+	return x.g_proptag_a(&d.proptags);
 }
 
-static int exmdb_ext_push_get_message_instance_attachment_table_all_proptags_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_INSTANCE_ATTACHMENT_TABLE_ALL_PROPTAGS &d)
 {
-	return pext->p_proptag_a(ppayload->get_message_instance_attachment_table_all_proptags.proptags);
+	return x.p_proptag_a(d.proptags);
 }
 
-static int exmdb_ext_pull_query_message_instance_attachment_table_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE &d)
 {
-	return pext->g_tarray_set(&ppayload->query_message_instance_attachment_table.set);
+	return x.g_tarray_set(&d.set);
 }
 
-static int exmdb_ext_push_query_message_instance_attachment_table_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_QUERY_MESSAGE_INSTANCE_ATTACHMENT_TABLE &d)
 {
-	return pext->p_tarray_set(ppayload->query_message_instance_attachment_table.set);
+	return x.p_tarray_set(d.set);
 }
 
-static int exmdb_ext_pull_copy_instance_attachments_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_COPY_INSTANCE_ATTACHMENTS &d)
 {
-	return pext->g_bool(&ppayload->copy_instance_attachments.b_result);
+	return x.g_bool(&d.b_result);
 }
 
-static int exmdb_ext_push_copy_instance_attachments_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_COPY_INSTANCE_ATTACHMENTS &d)
 {
-	return pext->p_bool(ppayload->copy_instance_attachments.b_result);
+	return x.p_bool(d.b_result);
 }
 
-static int exmdb_ext_pull_get_message_rcpts_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_RCPTS &d)
 {
-	return pext->g_tarray_set(&ppayload->get_message_rcpts.set);
+	return x.g_tarray_set(&d.set);
 }
 
-static int exmdb_ext_push_get_message_rcpts_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_RCPTS &d)
 {
-	return pext->p_tarray_set(ppayload->get_message_rcpts.set);
+	return x.p_tarray_set(d.set);
 }
 
-static int exmdb_ext_pull_get_message_properties_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_PROPERTIES &d)
 {
-	return pext->g_tpropval_a(&ppayload->get_message_properties.propvals);
+	return x.g_tpropval_a(&d.propvals);
 }
 
-static int exmdb_ext_push_get_message_properties_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_PROPERTIES &d)
 {
-	return pext->p_tpropval_a(ppayload->get_message_properties.propvals);
+	return x.p_tpropval_a(d.propvals);
 }
 
-static int exmdb_ext_pull_set_message_properties_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_SET_MESSAGE_PROPERTIES &d)
 {
-	return pext->g_problem_a(&ppayload->set_message_properties.problems);
+	return x.g_problem_a(&d.problems);
 }
 
-static int exmdb_ext_push_set_message_properties_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_SET_MESSAGE_PROPERTIES &d)
 {
-	return pext->p_problem_a(ppayload->set_message_properties.problems);
+	return x.p_problem_a(d.problems);
 }
 
-static int exmdb_ext_pull_set_message_read_state_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_SET_MESSAGE_READ_STATE &d)
 {
-	return pext->g_uint64(&ppayload->set_message_read_state.read_cn);
+	return x.g_uint64(&d.read_cn);
 }
 
-static int exmdb_ext_push_set_message_read_state_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_SET_MESSAGE_READ_STATE &d)
 {
-	return pext->p_uint64(ppayload->set_message_read_state.read_cn);
+	return x.p_uint64(d.read_cn);
 }
 
-static int exmdb_ext_pull_allocate_message_id_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_ALLOCATE_MESSAGE_ID &d)
 {
-	return pext->g_uint64(&ppayload->allocate_message_id.message_id);
+	return x.g_uint64(&d.message_id);
 }
 
-static int exmdb_ext_push_allocate_message_id_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_ALLOCATE_MESSAGE_ID &d)
 {
-	return pext->p_uint64(ppayload->allocate_message_id.message_id);
+	return x.p_uint64(d.message_id);
 }
 
-static int exmdb_ext_pull_allocate_cn_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_ALLOCATE_CN &d)
 {
-	return pext->g_uint64(&ppayload->allocate_cn.cn);
+	return x.g_uint64(&d.cn);
 }
 
-static int exmdb_ext_push_allocate_cn_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_ALLOCATE_CN &d)
 {
-	return pext->p_uint64(ppayload->allocate_cn.cn);
+	return x.p_uint64(d.cn);
 }
 
-static int exmdb_ext_pull_get_message_group_id_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_GROUP_ID &d)
 {
 	uint8_t tmp_byte;
 	
-	TRY(pext->g_uint8(&tmp_byte));
+	TRY(x.g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
-		ppayload->get_message_group_id.pgroup_id = NULL;
+		d.pgroup_id = nullptr;
 		return EXT_ERR_SUCCESS;
 	}
-	ppayload->get_message_group_id.pgroup_id = cu_alloc<uint32_t>();
-	if (ppayload->get_message_group_id.pgroup_id == nullptr)
+	d.pgroup_id = cu_alloc<uint32_t>();
+	if (d.pgroup_id == nullptr)
 		return EXT_ERR_ALLOC;
-	return pext->g_uint32(ppayload->get_message_group_id.pgroup_id);
+	return x.g_uint32(d.pgroup_id);
 }
 
-static int exmdb_ext_push_get_message_group_id_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_GROUP_ID &d)
 {
-	if (ppayload->get_message_group_id.pgroup_id == nullptr)
-		return pext->p_uint8(0);
-	TRY(pext->p_uint8(1));
-	return pext->p_uint32(*ppayload->get_message_group_id.pgroup_id);
+	if (d.pgroup_id == nullptr)
+		return x.p_uint8(0);
+	TRY(x.p_uint8(1));
+	return x.p_uint32(*d.pgroup_id);
 }
 
-static int exmdb_ext_pull_get_change_indices_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_CHANGE_INDICES &d)
 {
-	TRY(pext->g_proptag_a(&ppayload->get_change_indices.indices));
-	return pext->g_proptag_a(&ppayload->get_change_indices.ungroup_proptags);
+	TRY(x.g_proptag_a(&d.indices));
+	return x.g_proptag_a(&d.ungroup_proptags);
 }
 
-static int exmdb_ext_push_get_change_indices_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_CHANGE_INDICES &d)
 {
-	TRY(pext->p_proptag_a(ppayload->get_change_indices.indices));
-	return pext->p_proptag_a(ppayload->get_change_indices.ungroup_proptags);
+	TRY(x.p_proptag_a(d.indices));
+	return x.p_proptag_a(d.ungroup_proptags);
 }
 
-static int exmdb_ext_pull_try_mark_submit_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_TRY_MARK_SUBMIT &d)
 {
-	return pext->g_bool(&ppayload->try_mark_submit.b_marked);
+	return x.g_bool(&d.b_marked);
 }
 
-static int exmdb_ext_push_try_mark_submit_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_TRY_MARK_SUBMIT &d)
 {
-	return pext->p_bool(ppayload->try_mark_submit.b_marked);
+	return x.p_bool(d.b_marked);
 }
 
-static int exmdb_ext_pull_link_message_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_LINK_MESSAGE &d)
 {
-	return pext->g_bool(&ppayload->link_message.b_result);
+	return x.g_bool(&d.b_result);
 }
 
-static int exmdb_ext_push_link_message_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_LINK_MESSAGE &d)
 {
-	return pext->p_bool(ppayload->link_message.b_result);
+	return x.p_bool(d.b_result);
 }
 
-static int exmdb_ext_pull_get_message_timer_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_MESSAGE_TIMER &d)
 {
 	uint8_t tmp_byte;
 	
-	TRY(pext->g_uint8(&tmp_byte));
+	TRY(x.g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
-		ppayload->get_message_timer.ptimer_id = NULL;
+		d.ptimer_id = nullptr;
 		return EXT_ERR_SUCCESS;
 	}
-	ppayload->get_message_timer.ptimer_id = cu_alloc<uint32_t>();
-	if (ppayload->get_message_timer.ptimer_id == nullptr)
+	d.ptimer_id = cu_alloc<uint32_t>();
+	if (d.ptimer_id == nullptr)
 		return EXT_ERR_ALLOC;
-	return pext->g_uint32(ppayload->get_message_timer.ptimer_id);
+	return x.g_uint32(d.ptimer_id);
 }
 
-static int exmdb_ext_push_get_message_timer_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_MESSAGE_TIMER &d)
 {
-	if (ppayload->get_message_timer.ptimer_id == nullptr)
-		return pext->p_uint8(0);
-	TRY(pext->p_uint8(1));
-	return pext->p_uint32(*ppayload->get_message_timer.ptimer_id);
+	if (d.ptimer_id == nullptr)
+		return x.p_uint8(0);
+	TRY(x.p_uint8(1));
+	return x.p_uint32(*d.ptimer_id);
 }
 
-static int exmdb_ext_pull_update_folder_rule_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_UPDATE_FOLDER_RULE &d)
 {
-	return pext->g_bool(&ppayload->update_folder_rule.b_exceed);
+	return x.g_bool(&d.b_exceed);
 }
 
-static int exmdb_ext_push_update_folder_rule_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_UPDATE_FOLDER_RULE &d)
 {
-	return pext->p_bool(ppayload->update_folder_rule.b_exceed);
+	return x.p_bool(d.b_exceed);
 }
 
-static int exmdb_ext_pull_delivery_message_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_DELIVERY_MESSAGE &d)
 {
-	return pext->g_uint32(&ppayload->delivery_message.result);
+	return x.g_uint32(&d.result);
 }
 
-static int exmdb_ext_push_delivery_message_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_DELIVERY_MESSAGE &d)
 {
-	return pext->p_uint32(ppayload->delivery_message.result);
+	return x.p_uint32(d.result);
 }
 
-static int exmdb_ext_pull_write_message_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_WRITE_MESSAGE &d)
 {
-	return pext->g_uint32(reinterpret_cast<uint32_t *>(&ppayload->write_message.e_result));
+	return x.g_uint32(reinterpret_cast<uint32_t *>(&d.e_result));
 }
 
-static int exmdb_ext_push_write_message_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_WRITE_MESSAGE &d)
 {
-	return pext->p_uint32(ppayload->write_message.e_result);
+	return x.p_uint32(d.e_result);
 }
 
-static int exmdb_ext_pull_read_message_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_READ_MESSAGE &d)
 {
 	uint8_t tmp_byte;
 	
-	TRY(pext->g_uint8(&tmp_byte));
+	TRY(x.g_uint8(&tmp_byte));
 	if (0 == tmp_byte) {
-		ppayload->read_message.pmsgctnt = NULL;
+		d.pmsgctnt = nullptr;
 		return EXT_ERR_SUCCESS;
 	}
-	ppayload->read_message.pmsgctnt = cu_alloc<MESSAGE_CONTENT>();
-	if (ppayload->read_message.pmsgctnt == nullptr)
+	d.pmsgctnt = cu_alloc<MESSAGE_CONTENT>();
+	if (d.pmsgctnt == nullptr)
 		return EXT_ERR_ALLOC;
-	return pext->g_msgctnt(ppayload->read_message.pmsgctnt);
+	return x.g_msgctnt(d.pmsgctnt);
 }
 
-static int exmdb_ext_push_read_message_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_READ_MESSAGE &d)
 {
-	if (ppayload->read_message.pmsgctnt == nullptr)
-		return pext->p_uint8(0);
-	TRY(pext->p_uint8(1));
-	return pext->p_msgctnt(*ppayload->read_message.pmsgctnt);
+	if (d.pmsgctnt == nullptr)
+		return x.p_uint8(0);
+	TRY(x.p_uint8(1));
+	return x.p_msgctnt(*d.pmsgctnt);
 }
 
-static int exmdb_ext_pull_get_content_sync_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_CONTENT_SYNC &d)
 {
-	TRY(pext->g_uint32(&ppayload->get_content_sync.fai_count));
-	TRY(pext->g_uint64(&ppayload->get_content_sync.fai_total));
-	TRY(pext->g_uint32(&ppayload->get_content_sync.normal_count));
-	TRY(pext->g_uint64(&ppayload->get_content_sync.normal_total));
-	TRY(pext->g_eid_a(&ppayload->get_content_sync.updated_mids));
-	TRY(pext->g_eid_a(&ppayload->get_content_sync.chg_mids));
-	TRY(pext->g_uint64(&ppayload->get_content_sync.last_cn));
-	TRY(pext->g_eid_a(&ppayload->get_content_sync.given_mids));
-	TRY(pext->g_eid_a(&ppayload->get_content_sync.deleted_mids));
-	TRY(pext->g_eid_a(&ppayload->get_content_sync.nolonger_mids));
-	TRY(pext->g_eid_a(&ppayload->get_content_sync.read_mids));
-	TRY(pext->g_eid_a(&ppayload->get_content_sync.unread_mids));
-	return pext->g_uint64(&ppayload->get_content_sync.last_readcn);
+	TRY(x.g_uint32(&d.fai_count));
+	TRY(x.g_uint64(&d.fai_total));
+	TRY(x.g_uint32(&d.normal_count));
+	TRY(x.g_uint64(&d.normal_total));
+	TRY(x.g_eid_a(&d.updated_mids));
+	TRY(x.g_eid_a(&d.chg_mids));
+	TRY(x.g_uint64(&d.last_cn));
+	TRY(x.g_eid_a(&d.given_mids));
+	TRY(x.g_eid_a(&d.deleted_mids));
+	TRY(x.g_eid_a(&d.nolonger_mids));
+	TRY(x.g_eid_a(&d.read_mids));
+	TRY(x.g_eid_a(&d.unread_mids));
+	return x.g_uint64(&d.last_readcn);
 }
 
-static int exmdb_ext_push_get_content_sync_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_CONTENT_SYNC &d)
 {
 	
-	TRY(pext->p_uint32(ppayload->get_content_sync.fai_count));
-	TRY(pext->p_uint64(ppayload->get_content_sync.fai_total));
-	TRY(pext->p_uint32(ppayload->get_content_sync.normal_count));
-	TRY(pext->p_uint64(ppayload->get_content_sync.normal_total));
-	TRY(pext->p_eid_a(ppayload->get_content_sync.updated_mids));
-	TRY(pext->p_eid_a(ppayload->get_content_sync.chg_mids));
-	TRY(pext->p_uint64(ppayload->get_content_sync.last_cn));
-	TRY(pext->p_eid_a(ppayload->get_content_sync.given_mids));
-	TRY(pext->p_eid_a(ppayload->get_content_sync.deleted_mids));
-	TRY(pext->p_eid_a(ppayload->get_content_sync.nolonger_mids));
-	TRY(pext->p_eid_a(ppayload->get_content_sync.read_mids));
-	TRY(pext->p_eid_a(ppayload->get_content_sync.unread_mids));
-	return pext->p_uint64(ppayload->get_content_sync.last_readcn);
+	TRY(x.p_uint32(d.fai_count));
+	TRY(x.p_uint64(d.fai_total));
+	TRY(x.p_uint32(d.normal_count));
+	TRY(x.p_uint64(d.normal_total));
+	TRY(x.p_eid_a(d.updated_mids));
+	TRY(x.p_eid_a(d.chg_mids));
+	TRY(x.p_uint64(d.last_cn));
+	TRY(x.p_eid_a(d.given_mids));
+	TRY(x.p_eid_a(d.deleted_mids));
+	TRY(x.p_eid_a(d.nolonger_mids));
+	TRY(x.p_eid_a(d.read_mids));
+	TRY(x.p_eid_a(d.unread_mids));
+	return x.p_uint64(d.last_readcn);
 }
 
-static int exmdb_ext_pull_get_hierarchy_sync_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_HIERARCHY_SYNC &d)
 {
-	TRY(pext->g_uint32(&ppayload->get_hierarchy_sync.fldchgs.count));
-	if (0 == ppayload->get_hierarchy_sync.fldchgs.count) {
-		ppayload->get_hierarchy_sync.fldchgs.pfldchgs = NULL;
+	TRY(x.g_uint32(&d.fldchgs.count));
+	if (0 == d.fldchgs.count) {
+		d.fldchgs.pfldchgs = nullptr;
 	} else {
-		ppayload->get_hierarchy_sync.fldchgs.pfldchgs = cu_alloc<TPROPVAL_ARRAY>(ppayload->get_hierarchy_sync.fldchgs.count);
-		if (NULL == ppayload->get_hierarchy_sync.fldchgs.pfldchgs) {
-			ppayload->get_hierarchy_sync.fldchgs.count = 0;
+		d.fldchgs.pfldchgs = cu_alloc<TPROPVAL_ARRAY>(d.fldchgs.count);
+		if (d.fldchgs.pfldchgs == nullptr) {
+			d.fldchgs.count = 0;
 			return EXT_ERR_ALLOC;
 		}
-		for (size_t i = 0; i < ppayload->get_hierarchy_sync.fldchgs.count; ++i)
-			TRY(pext->g_tpropval_a(&ppayload->get_hierarchy_sync.fldchgs.pfldchgs[i]));
+		for (size_t i = 0; i < d.fldchgs.count; ++i)
+			TRY(x.g_tpropval_a(&d.fldchgs.pfldchgs[i]));
 	}
-	TRY(pext->g_uint64(&ppayload->get_hierarchy_sync.last_cn));
-	TRY(pext->g_eid_a(&ppayload->get_hierarchy_sync.given_fids));
-	return pext->g_eid_a(&ppayload->get_hierarchy_sync.deleted_fids);
+	TRY(x.g_uint64(&d.last_cn));
+	TRY(x.g_eid_a(&d.given_fids));
+	return x.g_eid_a(&d.deleted_fids);
 }
 
-static int exmdb_ext_push_get_hierarchy_sync_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_HIERARCHY_SYNC &d)
 {
-	TRY(pext->p_uint32(ppayload->get_hierarchy_sync.fldchgs.count));
-	for (size_t i = 0; i < ppayload->get_hierarchy_sync.fldchgs.count; ++i)
-		TRY(pext->p_tpropval_a(ppayload->get_hierarchy_sync.fldchgs.pfldchgs[i]));
-	TRY(pext->p_uint64(ppayload->get_hierarchy_sync.last_cn));
-	TRY(pext->p_eid_a(ppayload->get_hierarchy_sync.given_fids));
-	return pext->p_eid_a(ppayload->get_hierarchy_sync.deleted_fids);
+	TRY(x.p_uint32(d.fldchgs.count));
+	for (size_t i = 0; i < d.fldchgs.count; ++i)
+		TRY(x.p_tpropval_a(d.fldchgs.pfldchgs[i]));
+	TRY(x.p_uint64(d.last_cn));
+	TRY(x.p_eid_a(d.given_fids));
+	return x.p_eid_a(d.deleted_fids);
 }
 
-static int exmdb_ext_pull_allocate_ids_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_ALLOCATE_IDS &d)
 {
-	return pext->g_uint64(&ppayload->allocate_ids.begin_eid);
+	return x.g_uint64(&d.begin_eid);
 }
 
-static int exmdb_ext_push_allocate_ids_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_ALLOCATE_IDS &d)
 {
-	return pext->p_uint64(ppayload->allocate_ids.begin_eid);
+	return x.p_uint64(d.begin_eid);
 }
 
-static int exmdb_ext_pull_subscribe_notification_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_SUBSCRIBE_NOTIFICATION &d)
 {
-	return pext->g_uint32(&ppayload->subscribe_notification.sub_id);
+	return x.g_uint32(&d.sub_id);
 }
 
-static int exmdb_ext_push_subscribe_notification_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_SUBSCRIBE_NOTIFICATION &d)
 {
-	return pext->p_uint32(ppayload->subscribe_notification.sub_id);
+	return x.p_uint32(d.sub_id);
 }
 
-static int exmdb_ext_pull_check_contact_address_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_CHECK_CONTACT_ADDRESS &d)
 {
-	return pext->g_bool(&ppayload->check_contact_address.b_found);
+	return x.g_bool(&d.b_found);
 }
 
-static int exmdb_ext_push_check_contact_address_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_CHECK_CONTACT_ADDRESS &d)
 {
-	return pext->p_bool(ppayload->check_contact_address.b_found);
+	return x.p_bool(d.b_found);
 }
 
-static int exmdb_ext_pull_get_public_folder_unread_count_response(
-	EXT_PULL *pext, RESPONSE_PAYLOAD *ppayload)
+static int exmdb_pull(EXT_PULL &x, EXRESP_GET_PUBLIC_FOLDER_UNREAD_COUNT &d)
 {
-	return pext->g_uint32(&ppayload->get_public_folder_unread_count.count);
+	return x.g_uint32(&d.count);
 }
 
-static int exmdb_ext_push_get_public_folder_unread_count_response(
-	EXT_PUSH *pext, const RESPONSE_PAYLOAD *ppayload)
+static int exmdb_push(EXT_PUSH &x, const EXRESP_GET_PUBLIC_FOLDER_UNREAD_COUNT &d)
 {
-	return pext->p_uint32(ppayload->get_public_folder_unread_count.count);
+	return x.p_uint32(d.count);
 }
 
 #define RSP_WITHOUT_ARGS \
@@ -3852,7 +3660,7 @@ int exmdb_ext_pull_response(const BINARY *pbin_in,
 	RSP_WITHOUT_ARGS
 		return EXT_ERR_SUCCESS;
 #undef E
-#define E(t) case exmdb_callid::t: return exmdb_ext_pull_ ## t ## _response(&ext_pull, &presponse->payload);
+#define E(t) case exmdb_callid::t: return exmdb_pull(ext_pull, presponse->payload.t);
 	RSP_WITH_ARGS
 #undef E
 	default:
@@ -3882,7 +3690,7 @@ int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse,
 		status = EXT_ERR_SUCCESS;
 		break;
 #undef E
-#define E(t) case exmdb_callid::t: status = exmdb_ext_push_ ## t ## _response(&ext_push, &presponse->payload); break;
+#define E(t) case exmdb_callid::t: status = exmdb_push(ext_push, presponse->payload.t); break;
 	RSP_WITH_ARGS
 #undef E
 	default:
