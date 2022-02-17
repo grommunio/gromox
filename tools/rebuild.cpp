@@ -119,7 +119,6 @@ static int connect_exmdb(const char *dir)
 	int process_id;
 	BINARY tmp_bin;
 	char remote_id[128];
-	uint8_t response_code;
 	CONNECT_REQUEST request;
 	
 	auto pexnode = std::find_if(g_exmdb_list.cbegin(), g_exmdb_list.cend(),
@@ -150,7 +149,7 @@ static int connect_exmdb(const char *dir)
 		close(sockd);
 		return -1;
 	}
-	response_code = tmp_bin.pb[0];
+	auto response_code = static_cast<exmdb_response>(tmp_bin.pb[0]);
 	if (response_code == exmdb_response::SUCCESS) {
 		if (tmp_bin.cb != 5) {
 			fprintf(stderr, "response format error during connect to "
@@ -182,8 +181,8 @@ static BOOL exmdb_client_unload_store(const char *dir)
 	if (sockd < 0)
 		return FALSE;
 	if (!exmdb_client_write_socket(sockd, &tmp_bin) ||
-	    !cl_rd_sock(sockd, &tmp_bin) ||
-	    tmp_bin.cb != 5 || tmp_bin.pb[0] != exmdb_response::SUCCESS) {
+	    !cl_rd_sock(sockd, &tmp_bin) || tmp_bin.cb != 5 ||
+	    static_cast<exmdb_response>(tmp_bin.pb[0]) != exmdb_response::SUCCESS) {
 		close(sockd);
 		return FALSE;
 	}

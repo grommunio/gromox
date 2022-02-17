@@ -238,8 +238,8 @@ static BOOL exmdb_client_get_named_propids(int sockd, const char *dir,
 	if (exmdb_client_push_request(exmdb_callid::GET_NAMED_PROPIDS,
 	    &request, &tmp_bin) != EXT_ERR_SUCCESS ||
 	    !exmdb_client_write_socket(sockd, &tmp_bin) ||
-	    !cl_rd_sock(sockd, &tmp_bin) ||
-	    tmp_bin.cb < 5 || tmp_bin.pb[0] != exmdb_response::SUCCESS)
+	    !cl_rd_sock(sockd, &tmp_bin) || tmp_bin.cb < 5 ||
+	    static_cast<exmdb_response>(tmp_bin.pb[0]) != exmdb_response::SUCCESS)
 		return FALSE;
 	ext_pull.init(tmp_bin.pb + 5, tmp_bin.cb - 5, malloc, EXT_FLAG_WCOUNT);
 	return ext_pull.g_propid_a(ppropids) == EXT_ERR_SUCCESS ? TRUE : false;
@@ -258,8 +258,8 @@ static BOOL exmdb_client_check_folder_permission(int sockd,
 	if (exmdb_client_push_request(exmdb_callid::CHECK_FOLDER_PERMISSION,
 	    &request, &tmp_bin) != EXT_ERR_SUCCESS ||
 	    !exmdb_client_write_socket(sockd, &tmp_bin) ||
-	    !cl_rd_sock(sockd, &tmp_bin) ||
-	    tmp_bin.cb != 9 || tmp_bin.pb[0] != exmdb_response::SUCCESS)
+	    !cl_rd_sock(sockd, &tmp_bin) || tmp_bin.cb != 9 ||
+	    static_cast<exmdb_response>(tmp_bin.pb[0]) != exmdb_response::SUCCESS)
 		return FALSE;
 	*ppermission = le32p_to_cpu(tmp_bin.pb + 5);
 	return TRUE;
@@ -283,8 +283,8 @@ static BOOL exmdb_client_load_content_table(int sockd, const char *dir,
 	if (exmdb_client_push_request(exmdb_callid::LOAD_CONTENT_TABLE,
 	    &request, &tmp_bin) != EXT_ERR_SUCCESS ||
 	    !exmdb_client_write_socket(sockd, &tmp_bin) ||
-	    !cl_rd_sock(sockd, &tmp_bin) ||
-	    tmp_bin.cb != 13 || tmp_bin.pb[0] != exmdb_response::SUCCESS)
+	    !cl_rd_sock(sockd, &tmp_bin) || tmp_bin.cb != 13 ||
+	    static_cast<exmdb_response>(tmp_bin.pb[0]) != exmdb_response::SUCCESS)
 		return FALSE;
 	*ptable_id = le32p_to_cpu(tmp_bin.pb + 5);
 	*prow_count = le32p_to_cpu(tmp_bin.pb + 9);
@@ -302,8 +302,8 @@ static BOOL exmdb_client_unload_table(int sockd,
 	if (exmdb_client_push_request(exmdb_callid::UNLOAD_TABLE,
 	    &request, &tmp_bin) != EXT_ERR_SUCCESS ||
 	    !exmdb_client_write_socket(sockd, &tmp_bin) ||
-	    !cl_rd_sock(sockd, &tmp_bin) ||
-	    tmp_bin.cb != 5 || tmp_bin.pb[0] != exmdb_response::SUCCESS)
+	    !cl_rd_sock(sockd, &tmp_bin) || tmp_bin.cb != 5 ||
+	    static_cast<exmdb_response>(tmp_bin.pb[0]) != exmdb_response::SUCCESS)
 		return FALSE;
 	return TRUE;
 }
@@ -328,7 +328,7 @@ static BOOL exmdb_client_query_table(int sockd, const char *dir,
 	    &request, &tmp_bin) != EXT_ERR_SUCCESS ||
 	    !exmdb_client_write_socket(sockd, &tmp_bin) ||
 	    !cl_rd_sock(sockd, &tmp_bin) ||
-	    tmp_bin.pb[0] != exmdb_response::SUCCESS)
+	    static_cast<exmdb_response>(tmp_bin.pb[0]) != exmdb_response::SUCCESS)
 		return FALSE;
 	ext_pull.init(tmp_bin.pb + 5, tmp_bin.cb - 5, malloc, EXT_FLAG_WCOUNT);
 	return ext_pull.g_tarray_set(pset) == EXT_ERR_SUCCESS ? TRUE : false;
@@ -349,7 +349,6 @@ static int connect_exmdb(const char *dir)
 	int process_id;
 	BINARY tmp_bin;
 	char remote_id[128];
-	uint8_t response_code;
 	CONNECT_REQUEST request;
 	
 	auto pexnode = std::find_if(g_exmdb_list.begin(), g_exmdb_list.end(),
@@ -388,7 +387,7 @@ static int connect_exmdb(const char *dir)
 		close(sockd);
 		return -1;
 	}
-	response_code = tmp_bin.pb[0];
+	auto response_code = static_cast<exmdb_response>(tmp_bin.pb[0]);
 	if (response_code == exmdb_response::SUCCESS) {
 		if (tmp_bin.cb != 5) {
 			fprintf(stderr, "response format error during connect to "

@@ -5,8 +5,7 @@
 #include <gromox/element_data.hpp>
 #include <gromox/mapi_types.hpp>
 
-namespace exmdb_response {
-enum {
+enum class exmdb_response : uint8_t {
 	SUCCESS = 0x00,
 	ACCESS_DENY = 0x01,
 	MAX_REACHED = 0x02,
@@ -17,8 +16,8 @@ enum {
 	PULL_ERROR = 0x07,
 	DISPATCH_ERROR = 0x08,
 	PUSH_ERROR = 0x09,
+	invalid = 0xff,
 };
-}
 
 enum class exmdb_callid : uint8_t {
 	CONNECT = 0x00,
@@ -1478,7 +1477,7 @@ extern GX_EXPORT int exmdb_ext_pull_response(const BINARY *, EXMDB_RESPONSE *);
 extern GX_EXPORT int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse, BINARY *);
 extern GX_EXPORT int exmdb_ext_pull_db_notify(const BINARY *, DB_NOTIFY_DATAGRAM *);
 extern GX_EXPORT int exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *, BINARY *);
-extern GX_EXPORT const char *exmdb_rpc_strerror(unsigned int);
+extern GX_EXPORT const char *exmdb_rpc_strerror(exmdb_response);
 extern GX_EXPORT BOOL exmdb_client_read_socket(int, BINARY *, long timeout = -1);
 extern GX_EXPORT BOOL exmdb_client_write_socket(int, const BINARY *, long timeout = -1);
 

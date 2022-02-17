@@ -37,7 +37,6 @@ static pthread_t g_listener_id;
 static void *mdpls_thrwork(void *param)
 {
 	int sockd;
-	uint8_t tmp_byte;
 	socklen_t addrlen;
 	char client_hostip[40];
 	struct sockaddr_storage peer_name;
@@ -75,14 +74,14 @@ static void *mdpls_thrwork(void *param)
 		}
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
 		    client_hostip) == g_acl_list.cend()) {
-			tmp_byte = exmdb_response::ACCESS_DENY;
+			auto tmp_byte = exmdb_response::ACCESS_DENY;
 			write(sockd, &tmp_byte, 1);
 			close(sockd);
 			continue;
 		}
 		auto pconnection = exmdb_parser_get_connection();
 		if (pconnection == nullptr) {
-			tmp_byte = exmdb_response::MAX_REACHED;
+			auto tmp_byte = exmdb_response::MAX_REACHED;
 			write(sockd, &tmp_byte, 1);
 			close(sockd);
 			continue;

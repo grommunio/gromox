@@ -749,7 +749,6 @@ static void *mdpps_thrwork(void *pparam)
 	uint32_t offset;
 	int written_len;
 	BOOL is_writing;
-	uint8_t tmp_byte;
 	BOOL is_connected;
 	uint32_t buff_len;
 	uint8_t resp_buff[5]{};
@@ -804,7 +803,7 @@ static void *mdpps_thrwork(void *pparam)
 			}
 			pbuff = malloc(buff_len);
 			if (NULL == pbuff) {
-				tmp_byte = exmdb_response::LACK_MEMORY;
+				auto tmp_byte = exmdb_response::LACK_MEMORY;
 				write(pconnection->sockd, &tmp_byte, 1);
 				if (!is_connected)
 					break;
@@ -828,6 +827,7 @@ static void *mdpps_thrwork(void *pparam)
 		status = exmdb_ext_pull_request(&tmp_bin, &request);
 		free(pbuff);
 		pbuff = NULL;
+		exmdb_response tmp_byte;
 		if (EXT_ERR_SUCCESS != status) {
 			tmp_byte = exmdb_response::PULL_ERROR;
 		} else if (!is_connected) {

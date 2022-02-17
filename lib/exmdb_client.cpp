@@ -125,7 +125,7 @@ int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen, const char *prog_
 	auto cl_0 = make_scope_exit([&]() { if (free_env != nullptr) free_env(); });
 	if (!exmdb_client_read_socket(sockd, &bin, mdcl_socket_timeout * 1000))
 		return -1;
-	auto response_code = bin.pb[0];
+	auto response_code = static_cast<exmdb_response>(bin.pb[0]);
 	if (response_code != exmdb_response::SUCCESS) {
 		printf("exmdb_client: Failed to connect to [%s]:%hu/%s: %s\n",
 		       srv.host.c_str(), srv.port, srv.prefix.c_str(),
@@ -178,7 +178,7 @@ static void cl_pinger2()
 			continue;
 		}
 		struct pollfd pfd_read{conn->sockd, POLLIN | POLLPRI};
-		uint8_t resp_buff = 0xff;
+		auto resp_buff = exmdb_response::invalid;
 		if (poll(&pfd_read, 1, mdcl_socket_timeout * 1000) != 1 ||
 		    read(conn->sockd, &resp_buff, 1) != 1 ||
 		    resp_buff != exmdb_response::SUCCESS) {
@@ -239,7 +239,7 @@ static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
 			return -1;
 		/* ping packet */
 		if (buff_len == 0) {
-			uint8_t resp_code = exmdb_response::SUCCESS;
+			auto resp_code = exmdb_response::SUCCESS;
 			if (write(agent.sockd, &resp_code, 1) != 1)
 				return -1;
 		}
@@ -260,8 +260,8 @@ static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
 	agent.build_env(*agent.pserver);
 	auto cl_0 = make_scope_exit(*agent.free_env);
 	DB_NOTIFY_DATAGRAM notify;
-	uint8_t resp_code = exmdb_ext_pull_db_notify(&bin, &notify) == EXT_ERR_SUCCESS ?
-	                    exmdb_response::SUCCESS : exmdb_response::PULL_ERROR;
+	auto resp_code = exmdb_ext_pull_db_notify(&bin, &notify) == EXT_ERR_SUCCESS ?
+	                 exmdb_response::SUCCESS : exmdb_response::PULL_ERROR;
 	if (write(agent.sockd, &resp_code, 1) != 1)
 		return -1;
 	if (resp_code == exmdb_response::SUCCESS)
@@ -443,7 +443,7 @@ BOOL exmdb_client_do_rpc(const char *dir,
 		return false;
 	time(&conn->last_time);
 	conn.reset();
-	if (bin.cb < 5 || bin.pb[0] != exmdb_response::SUCCESS)
+	if (bin.cb < 5 || static_cast<exmdb_response>(bin.pb[0]) != exmdb_response::SUCCESS)
 		return false;
 	rsp->call_id = rq->call_id;
 	bin.cb -= 5;

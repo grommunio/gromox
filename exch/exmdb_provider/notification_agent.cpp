@@ -46,7 +46,7 @@ void notification_agent_backward_notify(const char *remote_id,
 static BOOL notification_agent_read_response(std::shared_ptr<ROUTER_CONNECTION> prouter)
 {
 	int tv_msec;
-	uint8_t resp_code;
+	exmdb_response resp_code;
 	struct pollfd pfd_read;
 	
 	tv_msec = SOCKET_TIMEOUT * 1000;

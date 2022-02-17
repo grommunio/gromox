@@ -5017,7 +5017,7 @@ int exmdb_ext_push_response(const EXMDB_RESPONSE *presponse,
 	
 	if (!ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT))
 		return EXT_ERR_ALLOC;
-	status = ext_push.p_uint8(exmdb_response::SUCCESS);
+	status = ext_push.p_uint8(static_cast<uint8_t>(exmdb_response::SUCCESS));
 	if (status != EXT_ERR_SUCCESS)
 		return status;
 	status = ext_push.advance(sizeof(uint32_t));
@@ -5876,7 +5876,7 @@ int exmdb_ext_push_db_notify(const DB_NOTIFY_DATAGRAM *pnotify,
 	return exmdb_ext_push_db_notify2(ext_push, pnotify, pbin_out);
 }
 
-const char *exmdb_rpc_strerror(unsigned int v)
+const char *exmdb_rpc_strerror(exmdb_response v)
 {
 	switch (v) {
 	case exmdb_response::ACCESS_DENY: return "Access denied";
@@ -5888,9 +5888,10 @@ const char *exmdb_rpc_strerror(unsigned int v)
 	case exmdb_response::PULL_ERROR: return "Invalid request/Server-side deserializing error";
 	case exmdb_response::DISPATCH_ERROR: return "Dispatch error";
 	case exmdb_response::PUSH_ERROR: return "Server-side serialize error";
+	default: break;
 	}
 	thread_local char xbuf[32];
-	snprintf(xbuf, GX_ARRAY_SIZE(xbuf), "Unknown error %u", v);
+	snprintf(xbuf, GX_ARRAY_SIZE(xbuf), "Unknown error %u", static_cast<unsigned int>(v));
 	return xbuf;
 }
 
