@@ -19,7 +19,7 @@ while (<STDIN>) {
 	my $rbsig = join(", ", @$iargf, @$oargf);
 	print "uint32_t zarafa_client_$func($rbsig)\n{\n";
 	print "\tZCORE_RPC_REQUEST request;\n\tZCORE_RPC_RESPONSE response;\n\n";
-	print "\trequest.call_id = zcore_callid::".uc($func).";\n";
+	print "\trequest.call_id = zcore_callid::".lc($func).";\n";
 	for (@$iargs) {
 		my($type, $field) = @$_;
 		if (substr($type, -1, 1) eq "*") {
