@@ -7,6 +7,7 @@
 #include <gromox/mail.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/element_data.hpp>
+#include <gromox/exmdb_rpc.hpp>
 #include <sqlite3.h>
 #include "../mysql_adaptor/mysql_adaptor.h"
 
@@ -186,6 +187,6 @@ uint32_t common_util_calculate_message_size(
 	const MESSAGE_CONTENT *pmsgctnt);
 uint32_t common_util_calculate_attachment_size(
 	const ATTACHMENT_CONTENT *pattachment);
-extern const char *exmdb_rpc_idtoname(unsigned int i);
+extern const char *exmdb_rpc_idtoname(exmdb_callid);
 
 extern unsigned int g_max_rule_num, g_max_extrule_num;

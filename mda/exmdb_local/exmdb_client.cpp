@@ -104,7 +104,7 @@ static int exmdb_client_push_check_contact_address_request(
 	return pext->p_str(r->paddress);
 }
 
-static int exmdb_client_push_request(uint8_t call_id,
+static int exmdb_client_push_request(exmdb_callid call_id,
 	void *prequest, BINARY *pbin_out)
 {
 	int status;
@@ -116,7 +116,7 @@ static int exmdb_client_push_request(uint8_t call_id,
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}
-	status = ext_push.p_uint8(call_id);
+	status = ext_push.p_uint8(static_cast<uint8_t>(call_id));
 	if (EXT_ERR_SUCCESS != status) {
 		return status;
 	}

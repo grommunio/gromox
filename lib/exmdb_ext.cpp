@@ -2420,9 +2420,11 @@ int exmdb_ext_pull_request(const BINARY *pbin_in,
 	EXMDB_REQUEST *prequest)
 {
 	EXT_PULL ext_pull;
+	uint8_t call_id;
 	
 	ext_pull.init(pbin_in->pb, pbin_in->cb, exmdb_rpc_alloc, EXT_FLAG_WCOUNT);
-	TRY(ext_pull.g_uint8(&prequest->call_id));
+	TRY(ext_pull.g_uint8(&call_id));
+	prequest->call_id = static_cast<exmdb_callid>(call_id);
 	if (prequest->call_id == exmdb_callid::CONNECT)
 		return exmdb_ext_pull_connect_request(
 				&ext_pull, &prequest->payload);
@@ -2807,7 +2809,7 @@ int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 	status = ext_push.advance(sizeof(uint32_t));
 	if (status != EXT_ERR_SUCCESS)
 		return status;
-	status = ext_push.p_uint8(prequest->call_id);
+	status = ext_push.p_uint8(static_cast<uint8_t>(prequest->call_id));
 	if (status != EXT_ERR_SUCCESS)
 		return status;
 	if (prequest->call_id == exmdb_callid::CONNECT) {

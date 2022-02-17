@@ -20,8 +20,7 @@ enum {
 };
 }
 
-namespace exmdb_callid {
-enum {
+enum class exmdb_callid : uint8_t {
 	CONNECT = 0x00,
 	LISTEN_NOTIFICATION = 0x01,
 	PING_STORE = 0x02,
@@ -147,7 +146,6 @@ enum {
 	GET_PUBLIC_FOLDER_UNREAD_COUNT = 0x7a,
 	UNLOAD_STORE = 0x80,
 };
-}
 
 struct EXREQ_CONNECT {
 	char *prefix;
@@ -929,7 +927,7 @@ union EXMDB_REQUEST_PAYLOAD {
 };
 
 struct EXMDB_REQUEST {
-	uint8_t call_id;
+	exmdb_callid call_id;
 	char *dir;
 	EXMDB_REQUEST_PAYLOAD payload;
 };
@@ -1455,7 +1453,7 @@ union EXMDB_RESPONSE_PAYLOAD {
 };
 
 struct EXMDB_RESPONSE {
-	uint8_t call_id;
+	exmdb_callid call_id;
 	EXMDB_RESPONSE_PAYLOAD payload;
 };
 

@@ -76,7 +76,7 @@ static int exmdb_client_push_unload_store_request(
 	return pext->p_str(r->dir);
 }
 
-static int exmdb_client_push_request(uint8_t call_id,
+static int exmdb_client_push_request(exmdb_callid call_id,
 	void *prequest, BINARY *pbin_out)
 {
 	int status;
@@ -87,7 +87,7 @@ static int exmdb_client_push_request(uint8_t call_id,
 	status = ext_push.advance(sizeof(uint32_t));
 	if (status != EXT_ERR_SUCCESS)
 		return status;
-	status = ext_push.p_uint8(call_id);
+	status = ext_push.p_uint8(static_cast<uint8_t>(call_id));
 	if (status != EXT_ERR_SUCCESS)
 		return status;
 	switch (call_id) {

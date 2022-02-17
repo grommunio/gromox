@@ -143,9 +143,10 @@ static constexpr const char *exmdb_rpc_names[] = {
 #undef E
 #undef EXP
 
-const char *exmdb_rpc_idtoname(unsigned int i)
+const char *exmdb_rpc_idtoname(exmdb_callid i)
 {
-	static_assert(GX_ARRAY_SIZE(exmdb_rpc_names) == exmdb_callid::UNLOAD_STORE + 1);
-	const char *s = i < GX_ARRAY_SIZE(exmdb_rpc_names) ? exmdb_rpc_names[i] : nullptr;
+	auto j = static_cast<uint8_t>(i);
+	static_assert(arsizeof(exmdb_rpc_names) == static_cast<uint8_t>(exmdb_callid::UNLOAD_STORE) + 1);
+	const char *s = j < arsizeof(exmdb_rpc_names) ? exmdb_rpc_names[j] : nullptr;
 	return znul(s);
 }
