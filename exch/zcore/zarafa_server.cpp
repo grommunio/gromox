@@ -329,7 +329,6 @@ static void zarafa_server_notification_proc(const char *dir,
 	GUID hsession;
 	BINARY tmp_bin;
 	uint32_t hstore;
-	uint8_t tmp_byte;
 	uint64_t old_eid;
 	uint8_t mapi_type;
 	char tmp_buff[256];
@@ -634,7 +633,7 @@ static void zarafa_server_notification_proc(const char *dir,
 			fdpoll.fd = psink_node->clifd;
 			fdpoll.events = POLLOUT | POLLWRBAND;
 			if (!rpc_ext_push_response(&response, &tmp_bin)) {
-				tmp_byte = zcore_response::PUSH_ERROR;
+				auto tmp_byte = zcore_response::PUSH_ERROR;
 				if (1 == poll(&fdpoll, 1, tv_msec)) {
 					write(psink_node->clifd, &tmp_byte, 1);
 				}

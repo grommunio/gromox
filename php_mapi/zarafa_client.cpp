@@ -137,7 +137,8 @@ zend_bool zarafa_client_do_rpc(
 		return 0;
 	}
 	close(sockd);
-	if (tmp_bin.cb < 5 || tmp_bin.pb[0] != zcore_response::SUCCESS) {
+	if (tmp_bin.cb < 5 ||
+	    static_cast<zcore_response>(tmp_bin.pb[0]) != zcore_response::SUCCESS) {
 		if (NULL != tmp_bin.pb) {
 			efree(tmp_bin.pb);
 		}

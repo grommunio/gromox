@@ -2,15 +2,13 @@
 #include <cstdint>
 #include <gromox/mapidefs.h>
 
-namespace zcore_response {
-enum {
+enum class zcore_response : uint8_t {
 	SUCCESS = 0x00,
 	LACK_MEMORY = 0x01,
 	PULL_ERROR = 0x02,
 	DISPATCH_ERROR = 0x03,
 	PUSH_ERROR = 0x04,
 };
-}
 
 enum class zcore_callid : uint8_t {
 	LOGON = 0x00,

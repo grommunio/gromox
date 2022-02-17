@@ -653,7 +653,6 @@ static void *zcrp_thrwork(void *param)
 	int read_len;
 	BINARY tmp_bin;
 	uint32_t offset;
-	uint8_t tmp_byte;
 	uint32_t buff_len;
 	RPC_REQUEST request;
 	struct pollfd fdpoll;
@@ -694,7 +693,7 @@ static void *zcrp_thrwork(void *param)
 	}
 	pbuff = malloc(buff_len);
 	if (NULL == pbuff) {
-		tmp_byte = zcore_response::LACK_MEMORY;
+		auto tmp_byte = zcore_response::LACK_MEMORY;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (1 == poll(&fdpoll, 1, tv_msec)) {
 			write(clifd, &tmp_byte, 1);
@@ -725,7 +724,7 @@ static void *zcrp_thrwork(void *param)
 	if (!rpc_ext_pull_request(&tmp_bin, &request)) {
 		free(pbuff);
 		common_util_free_environment();
-		tmp_byte = zcore_response::PULL_ERROR;
+		auto tmp_byte = zcore_response::PULL_ERROR;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (1 == poll(&fdpoll, 1, tv_msec)) {
 			write(clifd, &tmp_byte, 1);
@@ -738,15 +737,16 @@ static void *zcrp_thrwork(void *param)
 		common_util_set_clifd(clifd);
 	}
 	switch (rpc_parser_dispatch(&request, &response)) {
-	case DISPATCH_FALSE:
+	case DISPATCH_FALSE: {
 		common_util_free_environment();
-		tmp_byte = zcore_response::DISPATCH_ERROR;
+		auto tmp_byte = zcore_response::DISPATCH_ERROR;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (1 == poll(&fdpoll, 1, tv_msec)) {
 			write(clifd, &tmp_byte, 1);
 		}
 		close(clifd);
 		goto NEXT_CLIFD;
+	}
 	case DISPATCH_CONTINUE:
 		common_util_free_environment();
 		/* clifd will be maintained by zarafa_server */
@@ -754,7 +754,7 @@ static void *zcrp_thrwork(void *param)
 	}
 	if (!rpc_ext_push_response(&response, &tmp_bin)) {
 		common_util_free_environment();
-		tmp_byte = zcore_response::PUSH_ERROR;
+		auto tmp_byte = zcore_response::PUSH_ERROR;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (1 == poll(&fdpoll, 1, tv_msec)) {
 			write(clifd, &tmp_byte, 1);
@@ -768,6 +768,7 @@ static void *zcrp_thrwork(void *param)
 		write(clifd, tmp_bin.pb, tmp_bin.cb);
 	}
 	shutdown(clifd, SHUT_WR);
+	uint8_t tmp_byte;
 	if (read(clifd, &tmp_byte, 1))
 		/* ignore */;
 	close(clifd);
