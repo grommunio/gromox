@@ -693,7 +693,7 @@ static void *zcrp_thrwork(void *param)
 	}
 	pbuff = malloc(buff_len);
 	if (NULL == pbuff) {
-		auto tmp_byte = zcore_response::LACK_MEMORY;
+		auto tmp_byte = zcore_response::lack_memory;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (1 == poll(&fdpoll, 1, tv_msec)) {
 			write(clifd, &tmp_byte, 1);
@@ -724,7 +724,7 @@ static void *zcrp_thrwork(void *param)
 	if (!rpc_ext_pull_request(&tmp_bin, &request)) {
 		free(pbuff);
 		common_util_free_environment();
-		auto tmp_byte = zcore_response::PULL_ERROR;
+		auto tmp_byte = zcore_response::pull_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (1 == poll(&fdpoll, 1, tv_msec)) {
 			write(clifd, &tmp_byte, 1);
@@ -739,7 +739,7 @@ static void *zcrp_thrwork(void *param)
 	switch (rpc_parser_dispatch(&request, &response)) {
 	case DISPATCH_FALSE: {
 		common_util_free_environment();
-		auto tmp_byte = zcore_response::DISPATCH_ERROR;
+		auto tmp_byte = zcore_response::dispatch_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (1 == poll(&fdpoll, 1, tv_msec)) {
 			write(clifd, &tmp_byte, 1);
@@ -754,7 +754,7 @@ static void *zcrp_thrwork(void *param)
 	}
 	if (!rpc_ext_push_response(&response, &tmp_bin)) {
 		common_util_free_environment();
-		auto tmp_byte = zcore_response::PUSH_ERROR;
+		auto tmp_byte = zcore_response::push_error;
 		fdpoll.events = POLLOUT|POLLWRBAND;
 		if (1 == poll(&fdpoll, 1, tv_msec)) {
 			write(clifd, &tmp_byte, 1);

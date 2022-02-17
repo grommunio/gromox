@@ -633,7 +633,7 @@ static void zarafa_server_notification_proc(const char *dir,
 			fdpoll.fd = psink_node->clifd;
 			fdpoll.events = POLLOUT | POLLWRBAND;
 			if (!rpc_ext_push_response(&response, &tmp_bin)) {
-				auto tmp_byte = zcore_response::PUSH_ERROR;
+				auto tmp_byte = zcore_response::push_error;
 				if (1 == poll(&fdpoll, 1, tv_msec)) {
 					write(psink_node->clifd, &tmp_byte, 1);
 				}

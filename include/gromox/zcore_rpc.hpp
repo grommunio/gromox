@@ -3,11 +3,11 @@
 #include <gromox/mapidefs.h>
 
 enum class zcore_response : uint8_t {
-	SUCCESS = 0x00,
-	LACK_MEMORY = 0x01,
-	PULL_ERROR = 0x02,
-	DISPATCH_ERROR = 0x03,
-	PUSH_ERROR = 0x04,
+	success = 0x00,
+	lack_memory = 0x01,
+	pull_error = 0x02,
+	dispatch_error = 0x03,
+	push_error = 0x04,
 };
 
 enum class zcore_callid : uint8_t {
