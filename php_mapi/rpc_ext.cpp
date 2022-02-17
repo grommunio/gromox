@@ -1221,7 +1221,7 @@ zend_bool rpc_ext_push_request(const RPC_REQUEST *prequest,
 	if (!push_ctx.init())
 		return false;
 	TRY(push_ctx.advance(sizeof(uint32_t)));
-	TRY(push_ctx.p_uint8(prequest->call_id));
+	TRY(push_ctx.p_uint8(static_cast<uint8_t>(prequest->call_id)));
 	switch (prequest->call_id) {
 	case zcore_callid::LOGON:
 		b_result = rpc_ext_push_logon_request(

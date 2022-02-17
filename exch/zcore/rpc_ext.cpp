@@ -1691,9 +1691,11 @@ BOOL rpc_ext_pull_request(const BINARY *pbin_in,
 	RPC_REQUEST *prequest)
 {
 	EXT_PULL ext_pull;
+	uint8_t call_id;
 	
 	ext_pull.init(pbin_in->pb, pbin_in->cb, common_util_alloc, EXT_FLAG_WCOUNT | EXT_FLAG_ZCORE);
-	QRF(ext_pull.g_uint8(&prequest->call_id));
+	QRF(ext_pull.g_uint8(&call_id));
+	prequest->call_id = static_cast<zcore_callid>(call_id);
 	switch (prequest->call_id) {
 	case zcore_callid::LOGON:
 		return rpc_ext_pull_logon_request(

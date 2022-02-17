@@ -4,6 +4,7 @@
 #include <type_traits>
 #include <gromox/defs.h>
 #include <gromox/mapi_types.hpp>
+#include <gromox/zcore_rpc.hpp>
 #define SOCKET_TIMEOUT								60
 
 /* defined by zarafa */
@@ -182,7 +183,7 @@ extern MESSAGE_CONTENT *common_util_vcf_to_message(store_object *, const BINARY 
 extern const char *common_util_get_default_timezone();
 extern const char *common_util_get_submit_command();
 void common_util_get_folder_lang(const char *lang, char **ppfolder_lang);
-extern const char *zcore_rpc_idtoname(unsigned int i);
+extern const char *zcore_rpc_idtoname(zcore_callid);
 
 extern unsigned int g_max_rcpt, g_max_message, g_max_mail_len;
 extern unsigned int g_max_rule_len, g_max_extrule_len;

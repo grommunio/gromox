@@ -12,8 +12,7 @@ enum {
 };
 }
 
-namespace zcore_callid {
-enum {
+enum class zcore_callid : uint8_t {
 	LOGON = 0x00,
 	UNLOADOBJECT = 0x01,
 	OPENENTRY = 0x02,
@@ -99,7 +98,6 @@ enum {
 	SETPASSWD = 0x54,
 	LINKMESSAGE = 0x55,
 };
-}
 
 struct ZCREQ_LOGON {
 	char *username;
@@ -697,7 +695,7 @@ union ZCORE_REQUEST_PAYLOAD {
 };
 
 struct ZCORE_RPC_REQUEST {
-	uint8_t call_id;
+	zcore_callid call_id;
 	ZCORE_REQUEST_PAYLOAD payload;
 };
 
@@ -977,7 +975,7 @@ union ZCORE_RESPONSE_PAYLOAD {
 };
 
 struct ZCORE_RPC_RESPONSE {
-	uint8_t call_id;
+	zcore_callid call_id;
 	uint32_t result;
 	ZCORE_RESPONSE_PAYLOAD payload;
 };

@@ -100,9 +100,10 @@ static constexpr const char *zcore_rpc_names[] = {
 #undef E
 #undef EXP
 
-const char *zcore_rpc_idtoname(unsigned int i)
+const char *zcore_rpc_idtoname(zcore_callid i)
 {
-	static_assert(GX_ARRAY_SIZE(zcore_rpc_names) == zcore_callid::LINKMESSAGE + 1);
-	const char *s = i < GX_ARRAY_SIZE(zcore_rpc_names) ? zcore_rpc_names[i] : nullptr;
+	auto j = static_cast<uint8_t>(i);
+	static_assert(arsizeof(zcore_rpc_names) == static_cast<uint8_t>(zcore_callid::LINKMESSAGE) + 1);
+	const char *s = j < arsizeof(zcore_rpc_names) ? zcore_rpc_names[j] : nullptr;
 	return znul(s);
 }
