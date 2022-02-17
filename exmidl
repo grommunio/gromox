@@ -38,7 +38,7 @@ while (<STDIN>) {
 	print "BOOL exmdb_client_remote::$func($rbsig)\n{\n";
 	print "\tEXMDB_REQUEST request;\n\tEXMDB_RESPONSE response;\n";
 	print "\n";
-	print "\trequest.call_id = exmdb_callid::".uc($func).";\n";
+	print "\trequest.call_id = exmdb_callid::".lc($func).";\n";
 	print "\trequest.dir = deconst(dir);\n";
 	for (@$iargs) {
 		my($type, $field) = @$_;
