@@ -1301,6 +1301,12 @@ struct EXRESP_UPDATE_FOLDER_RULE {
 	BOOL b_exceed;
 };
 
+enum delivery_message_result {
+	result_ok = 0,
+	mailbox_full = 1,
+	result_error = 2,
+};
+
 struct EXRESP_DELIVERY_MESSAGE {
 	uint32_t result;
 };

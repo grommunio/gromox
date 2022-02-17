@@ -10,6 +10,7 @@
 #include <string>
 #include <unistd.h>
 #include <libHX/string.h>
+#include <gromox/exmdb_rpc.hpp>
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/mem_file.hpp>
@@ -20,7 +21,6 @@
 #include "cache_queue.h"
 #include "exmdb_local.h"
 #include "net_failure.h"
-#include "exmdb_client.h"
 #include "bounce_audit.h"
 #include "auto_response.h"
 #include <gromox/alloc_context.hpp>
@@ -491,10 +491,12 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	}
 	
 	pmsg->proplist.erase(PidTagChangeNumber);
-	result = exmdb_client_delivery_message(
-		home_dir, pcontext->pcontrol->from,
-		address, 0, pmsg, temp_buff);
-	if (EXMDB_RESULT_OK == result) {
+	uint32_t r32 = 0;
+	if (!exmdb_client_remote::delivery_message(home_dir,
+	    pcontext->pcontrol->from, address, 0, pmsg, temp_buff, &r32))
+		return DELIVERY_OPERATION_ERROR;
+	auto result_code = static_cast<delivery_message_result>(r32);
+	if (result_code == delivery_message_result::result_ok) {
 		pvalue = pmsg->proplist.getval(PR_AUTO_RESPONSE_SUPPRESS);
 		if (pvalue != nullptr) {
 			suppress_mask = *(uint32_t*)pvalue;
@@ -511,7 +513,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	}
 	message_content_free(pmsg);
 	switch (result) {
-	case EXMDB_RESULT_OK:
+	case delivery_message_result::result_ok:
 		exmdb_local_log_info(pcontext, address, LV_DEBUG,
 			"message %s was delivered OK", eml_path.c_str());
 		if (pcontext->pcontrol->need_bounce &&
@@ -521,29 +523,12 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		if (b_bounce_delivered)
 			return DELIVERY_OPERATION_DELIVERED;
 		return DELIVERY_OPERATION_OK;
-	case EXMDB_RUNTIME_ERROR:
-		exmdb_local_log_info(pcontext, address, LV_ERR,
-			"rpc run-time error when delivering "
-			"message into directory %s!", home_dir);
-		return DELIVERY_OPERATION_FAILURE;
-	case EXMDB_NO_SERVER:
-		exmdb_local_log_info(pcontext, address, LV_ERR,
-			"missing exmdb server connection when "
-			"delivering message into directory %s!",
-			home_dir);
-		return DELIVERY_OPERATION_FAILURE;
-	case EXMDB_RDWR_ERROR:
-		exmdb_local_log_info(pcontext, address, LV_ERR,
-			"read write error with exmdb server when"
-			" delivering message into directory %s!",
-			home_dir);
-		return DELIVERY_OPERATION_FAILURE;
-	case EXMDB_RESULT_ERROR:
+	case delivery_message_result::result_error:
 		exmdb_local_log_info(pcontext, address, LV_ERR,
 			"error result returned when delivering "
 			"message into directory %s!", home_dir);
 		return DELIVERY_OPERATION_FAILURE;
-	case EXMDB_MAILBOX_FULL:
+	case delivery_message_result::mailbox_full:
 		exmdb_local_log_info(pcontext, address,
 			LV_NOTICE, "user's mailbox is full");
 		return DELIVERY_MAILBOX_FULL;

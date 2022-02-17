@@ -5,9 +5,9 @@
 #include <gromox/defs.h>
 #include "auto_response.h"
 #include "bounce_audit.h"
-#include "exmdb_client.h"
 #include "exmdb_local.h"
 #include <gromox/config_file.hpp>
+#include <gromox/exmdb_rpc.hpp>
 #include <gromox/hook_common.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/util.hpp>
@@ -97,8 +97,8 @@ void auto_response_reply(const char *user_home,
 			return;
 		str_value = pconfig->get_value("EXTERNAL_AUDIENCE");
 		if (str_value != nullptr && strtol(str_value, nullptr, 0) != 0) {
-			if (EXMDB_RESULT_OK != exmdb_client_check_contact_address(
-			    user_home, rcpt, &b_found) || !b_found)
+			if (!exmdb_client_remote::check_contact_address(user_home, rcpt,
+			    &b_found) || !b_found)
 				return;	
 		}
 		snprintf(template_path, 256, "%s/config/external-reply", user_home);

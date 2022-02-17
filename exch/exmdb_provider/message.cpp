@@ -4161,7 +4161,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 		return FALSE;
 	if (cu_check_msgsize_overflow(pdb->psqlite, PR_PROHIBIT_RECEIVE_QUOTA) ||
 	    common_util_check_msgcnt_overflow(pdb->psqlite)) {
-		*presult = 1;
+		*presult = static_cast<uint32_t>(delivery_message_result::mailbox_full);
 		return TRUE;
 	}
 	if (exmdb_server_check_private()) {
@@ -4272,7 +4272,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 	    paccount, cpid, false, fid_val, &tmp_msg, &message_id))
 		return FALSE;
 	if (0 == message_id) {
-		*presult = 2;
+		*presult = static_cast<uint32_t>(delivery_message_result::result_error);
 		return TRUE;
 	}
 	if (pdigest != nullptr &&
@@ -4310,7 +4310,7 @@ BOOL exmdb_server_delivery_message(const char *dir,
 				pmnode->folder_id, pmnode->message_id);
 		}
 	}
-	*presult = 0;
+	*presult = static_cast<uint32_t>(delivery_message_result::result_ok);
 	return TRUE;
 }
 
