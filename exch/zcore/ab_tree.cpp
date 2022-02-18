@@ -246,6 +246,12 @@ static void ab_tree_destruct_tree(SIMPLE_TREE *ptree)
 	simple_tree_free(ptree);
 }
 
+AB_BASE::AB_BASE()
+{
+	single_list_init(&list);
+	single_list_init(&gal_list);
+}
+
 void AB_BASE::unload()
 {
 	auto pbase = this;
@@ -720,8 +726,6 @@ AB_BASE_REF ab_tree_get_base(int base_id)
 		}
 		pbase->base_id = base_id;
 		pbase->status = BASE_STATUS_CONSTRUCTING;
-		single_list_init(&pbase->list);
-		single_list_init(&pbase->gal_list);
 		bl_hold.unlock();
 		if (!ab_tree_load_base(pbase)) {
 			pbase->unload();

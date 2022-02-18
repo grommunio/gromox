@@ -48,7 +48,7 @@ struct DOMAIN_NODE {
 
 struct ZAB_NODE;
 struct AB_BASE {
-	AB_BASE() = default;
+	AB_BASE();
 	~AB_BASE() { unload(); }
 	NOMOVE(AB_BASE);
 	void unload();
