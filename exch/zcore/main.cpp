@@ -87,7 +87,7 @@ static constexpr cfg_directive cfg_default_values[] = {
 	{"user_table_size", "5000", CFG_SIZE, "100", "50000"},
 	{"x500_org_name", "Gromox default"},
 	{"zarafa_mime_number", "4096", CFG_SIZE, "1024"},
-	{"zarafa_threads_num", "100", CFG_SIZE, "20", "1000"},
+	{"zarafa_threads_num", "100", CFG_SIZE, "1", "1000"},
 	{"zcore_listen", PKGRUNDIR "/zcore.sock"},
 	{"zrpc_debug", "0"},
 	CFG_TABLE_END,
