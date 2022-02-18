@@ -277,10 +277,9 @@ void AB_BASE::unload()
 	SINGLE_LIST_NODE *pnode;
 	
 	gal_list.clear();
-	while ((pnode = single_list_pop_front(&pbase->list)) != nullptr) {
-		ab_tree_destruct_tree(&((DOMAIN_NODE*)pnode->pdata)->tree);
-		free(pnode->pdata);
-	}
+	for (auto &domain : domain_list)
+		ab_tree_destruct_tree(&domain.tree);
+	domain_list.clear();
 	while ((pnode = single_list_pop_front(&pbase->remote_list)) != nullptr) {
 		auto stn = static_cast<SIMPLE_TREE_NODE *>(pnode->pdata);
 		auto xab = containerof(stn, AB_NODE, stree);
@@ -291,8 +290,23 @@ void AB_BASE::unload()
 
 AB_BASE::AB_BASE()
 {
-	single_list_init(&list);
 	single_list_init(&remote_list);
+}
+
+domain_node::domain_node(int id) : domain_id(id)
+{
+	simple_tree_init(&tree);
+}
+
+domain_node::domain_node(domain_node &&o) :
+	domain_id(o.domain_id), tree(std::move(o.tree))
+{
+	o.tree = {};
+}
+
+domain_node::~domain_node()
+{
+	ab_tree_destruct_tree(&tree);
 }
 
 void ab_tree_stop()
@@ -608,48 +622,25 @@ static BOOL ab_tree_load_base(AB_BASE *pbase) try
 {
 	char temp_buff[1024];
 	SIMPLE_TREE_NODE *proot;
-	SINGLE_LIST_NODE *pnode;
 	
 	if (pbase->base_id > 0) {
 		std::vector<int> temp_file;
 		if (!get_org_domains(pbase->base_id, temp_file))
 			return FALSE;
 		for (auto domain_id : temp_file) {
-			auto pdomain = me_alloc<DOMAIN_NODE>();
-			if (NULL == pdomain) {
+			domain_node dnode(domain_id);
+			if (!ab_tree_load_tree(dnode.domain_id, &dnode.tree, pbase))
 				return FALSE;
-			}
-			pdomain->node.pdata = pdomain;
-			pdomain->domain_id = domain_id;
-			simple_tree_init(&pdomain->tree);
-			if (!ab_tree_load_tree(
-				domain_id, &pdomain->tree, pbase)) {
-				ab_tree_destruct_tree(&pdomain->tree);
-				free(pdomain);
-				return FALSE;
-			}
-			single_list_append_as_tail(&pbase->list, &pdomain->node);
+			pbase->domain_list.push_back(std::move(dnode));
 		}
 	} else {
-		auto pdomain = me_alloc<DOMAIN_NODE>();
-		if (NULL == pdomain) {
+		domain_node dnode(-pbase->base_id);
+		if (!ab_tree_load_tree(dnode.domain_id, &dnode.tree, pbase))
 			return FALSE;
-		}
-		pdomain->node.pdata = pdomain;
-		int domain_id = -pbase->base_id;
-		pdomain->domain_id = -pbase->base_id;
-		simple_tree_init(&pdomain->tree);
-		if (!ab_tree_load_tree(
-			domain_id, &pdomain->tree, pbase)) {
-			ab_tree_destruct_tree(&pdomain->tree);
-			free(pdomain);
-			return FALSE;
-		}
-		single_list_append_as_tail(&pbase->list, &pdomain->node);
+		pbase->domain_list.push_back(std::move(dnode));
 	}
-	for (pnode=single_list_get_head(&pbase->list); NULL!=pnode;
-		pnode=single_list_get_after(&pbase->list, pnode)) {
-		auto pdomain = static_cast<DOMAIN_NODE *>(pnode->pdata);
+	for (auto &domain : pbase->domain_list) {
+		auto pdomain = &domain;
 		proot = simple_tree_get_root(&pdomain->tree);
 		if (NULL == proot) {
 			continue;
@@ -763,10 +754,9 @@ static void *nspab_scanwork(void *param)
 			continue;
 		}
 		pbase->gal_list.clear();
-		while ((pnode = single_list_pop_front(&pbase->list)) != nullptr) {
-			ab_tree_destruct_tree(&((DOMAIN_NODE*)pnode->pdata)->tree);
-			free(pnode->pdata);
-		}
+		for (auto &domain : pbase->domain_list)
+			ab_tree_destruct_tree(&domain.tree);
+		pbase->domain_list.clear();
 		while ((pnode = single_list_pop_front(&pbase->remote_list)) != nullptr) {
 			auto stn = static_cast<SIMPLE_TREE_NODE *>(pnode->pdata);
 			auto xab = containerof(stn, AB_NODE, stree);
@@ -1036,9 +1026,8 @@ const SIMPLE_TREE_NODE *ab_tree_dn_to_node(AB_BASE *pbase, const char *pdn)
 			return stn;
 	}
 	rhold.unlock();
-	for (auto psnode = single_list_get_head(&pbase->list); psnode != nullptr;
-	     psnode = single_list_get_after(&pbase->list, psnode))
-		if (static_cast<const DOMAIN_NODE *>(psnode->pdata)->domain_id == domain_id)
+	for (auto &domain : pbase->domain_list)
+		if (domain.domain_id == domain_id)
 			return NULL;
 	auto pbase1 = ab_tree_get_base(-domain_id);
 	if (pbase1 == nullptr)

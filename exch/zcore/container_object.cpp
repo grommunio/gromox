@@ -910,14 +910,10 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 			    rop_util_make_eid_ex(1, PRIVATE_FID_CONTACTS),
 			    pproptags, TRUE, &tmp_set))
 				return FALSE;
-			for (auto psnode = single_list_get_head(&pbase->list); psnode != nullptr;
-				psnode=single_list_get_after(&pbase->list, psnode)) {
-				auto pdnode = static_cast<const DOMAIN_NODE *>(psnode->pdata);
-				auto ptnode = simple_tree_get_root(&pdnode->tree);
-				if (!container_object_get_specialtables_from_node(ptnode,
+			for (const auto &domain : pbase->domain_list)
+				if (!container_object_get_specialtables_from_node(simple_tree_get_root(&domain.tree),
 				    pproptags, b_depth, &tmp_set))
 					return FALSE;
-			}
 		} else {
 			auto ptnode = ab_tree_minid_to_node(pbase.get(), pcontainer->id.abtree_id.minid);
 			if (NULL == ptnode) {

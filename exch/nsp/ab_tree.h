@@ -32,11 +32,14 @@
 
 struct PROPERTY_VALUE;
 
-struct DOMAIN_NODE {
-	SINGLE_LIST_NODE node;
-	int domain_id;
-	SIMPLE_TREE tree;
+struct domain_node {
+	domain_node(int);
+	domain_node(domain_node &&);
+	~domain_node();
+	int domain_id = -1;
+	SIMPLE_TREE tree{};
 };
+using DOMAIN_NODE = domain_node;
 
 using gal_list_t = std::vector<SIMPLE_TREE_NODE *>;
 struct NSAB_NODE;
@@ -50,7 +53,8 @@ struct AB_BASE {
 	std::atomic<int> status{0}, reference{0};
 	time_t load_time = 0;
 	int base_id = 0;
-	SINGLE_LIST list, remote_list{};
+	std::vector<domain_node> domain_list;
+	SINGLE_LIST remote_list{};
 	gal_list_t gal_list;
 	std::unordered_map<int, NSAB_NODE *> phash;
 };

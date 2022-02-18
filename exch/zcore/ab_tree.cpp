@@ -249,22 +249,29 @@ static void ab_tree_destruct_tree(SIMPLE_TREE *ptree)
 	simple_tree_free(ptree);
 }
 
-AB_BASE::AB_BASE()
-{
-	single_list_init(&list);
-}
-
 void AB_BASE::unload()
 {
 	auto pbase = this;
-	SINGLE_LIST_NODE *pnode;
 	
 	gal_list.clear();
-	while ((pnode = single_list_pop_front(&pbase->list)) != nullptr) {
-		ab_tree_destruct_tree(&((DOMAIN_NODE*)pnode->pdata)->tree);
-		free(pnode->pdata);
-	}
+	domain_list.clear();
 	pbase->phash.clear();
+}
+
+domain_node::domain_node(int id) : domain_id(id)
+{
+	simple_tree_init(&tree);
+}
+
+domain_node::domain_node(domain_node &&o) :
+	domain_id(o.domain_id), tree(std::move(o.tree))
+{
+	o.tree = {};
+}
+
+domain_node::~domain_node()
+{
+	ab_tree_destruct_tree(&tree);
 }
 
 void ab_tree_stop()
@@ -570,49 +577,27 @@ static BOOL ab_tree_load_tree(int domain_id,
 
 static BOOL ab_tree_load_base(AB_BASE *pbase) try
 {
-	DOMAIN_NODE *pdomain;
 	char temp_buff[1024];
 	SIMPLE_TREE_NODE *proot;
-	SINGLE_LIST_NODE *pnode;
 	
 	if (pbase->base_id > 0) {
 		std::vector<int> temp_file;
 		if (!system_services_get_org_domains(pbase->base_id, temp_file))
 			return FALSE;
 		for (auto domain_id : temp_file) {
-			pdomain = me_alloc<DOMAIN_NODE>();
-			if (NULL == pdomain) {
+			domain_node dnode(domain_id);
+			if (!ab_tree_load_tree(domain_id, &dnode.tree, pbase))
 				return FALSE;
-			}
-			pdomain->node.pdata = pdomain;
-			pdomain->domain_id = domain_id;
-			simple_tree_init(&pdomain->tree);
-			if (!ab_tree_load_tree(domain_id, &pdomain->tree, pbase)) {
-				ab_tree_destruct_tree(&pdomain->tree);
-				free(pdomain);
-				return FALSE;
-			}
-			single_list_append_as_tail(&pbase->list, &pdomain->node);
+			pbase->domain_list.push_back(std::move(dnode));
 		}
 	} else {
-		pdomain = me_alloc<DOMAIN_NODE>();
-		if (NULL == pdomain) {
+		domain_node dnode(-pbase->base_id);
+		if (!ab_tree_load_tree(dnode.domain_id, &dnode.tree, pbase))
 			return FALSE;
-		}
-		pdomain->node.pdata = pdomain;
-		int domain_id = -pbase->base_id;
-		pdomain->domain_id = domain_id;
-		simple_tree_init(&pdomain->tree);
-		if (!ab_tree_load_tree(domain_id, &pdomain->tree, pbase)) {
-			ab_tree_destruct_tree(&pdomain->tree);
-			free(pdomain);
-			return FALSE;
-		}
-		single_list_append_as_tail(&pbase->list, &pdomain->node);
+		pbase->domain_list.push_back(std::move(dnode));
 	}
-	for (pnode=single_list_get_head(&pbase->list); NULL!=pnode;
-		pnode=single_list_get_after(&pbase->list, pnode)) {
-		pdomain = (DOMAIN_NODE*)pnode->pdata;
+	for (auto &domain : pbase->domain_list) {
+		auto pdomain = &domain;
 		proot = simple_tree_get_root(&pdomain->tree);
 		if (NULL == proot) {
 			continue;
@@ -700,8 +685,6 @@ void ab_tree_del::operator()(AB_BASE *pbase)
 
 static void *zcoreab_scanwork(void *param)
 {
-	SINGLE_LIST_NODE *pnode;
-	
 	while (!g_notify_stop) {
 		AB_BASE *pbase = nullptr;
 		auto now = time(nullptr);
@@ -721,10 +704,7 @@ static void *zcoreab_scanwork(void *param)
 			continue;
 		}
 		pbase->gal_list.clear();
-		while ((pnode = single_list_pop_front(&pbase->list)) != nullptr) {
-			ab_tree_destruct_tree(&((DOMAIN_NODE*)pnode->pdata)->tree);
-			free(pnode->pdata);
-		}
+		pbase->domain_list.clear();
 		pbase->phash.clear();
 		if (!ab_tree_load_base(pbase)) {
 			pbase->unload();
@@ -835,20 +815,12 @@ const SIMPLE_TREE_NODE *ab_tree_guid_to_node(AB_BASE *pbase, GUID guid)
 {
 	int domain_id;
 	GUID_ENUM tmp_enum;
-	DOMAIN_NODE *pdomain;
-	SINGLE_LIST_NODE *psnode;
 	
 	domain_id = guid.time_low & 0xFFFFFF;
-	for (psnode=single_list_get_head(&pbase->list); NULL!=psnode;
-		psnode=single_list_get_after(&pbase->list, psnode)) {
-		pdomain = (DOMAIN_NODE*)psnode->pdata;
-		if (pdomain->domain_id == domain_id) {
-			break;
-		}
-	}
-	if (NULL == psnode) {
+	auto pdomain = std::find_if(pbase->domain_list.begin(), pbase->domain_list.end(),
+	               [&](const domain_node &dnode) { return dnode.domain_id == domain_id; });
+	if (pdomain == pbase->domain_list.end())
 		return NULL;
-	}
 	tmp_enum.node_type = (guid.time_low & 0xFF000000) >> 24;
 	tmp_enum.item_id = (((int)guid.time_hi_and_version) << 16)
 											| guid.time_mid;

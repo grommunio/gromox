@@ -2310,7 +2310,6 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	int base_id;
 	uint32_t result;
 	NSP_PROPROW *prow;
-	DOMAIN_NODE *pdomain;
 	PERMANENT_ENTRYID permeid;
 	
 	
@@ -2362,9 +2361,8 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 		*pprows = NULL;
 		return ecError;
 	}
-	for (auto pnode = single_list_get_head(&pbase->list); pnode != nullptr;
-		pnode=single_list_get_after(&pbase->list, pnode)) {
-		pdomain = static_cast<decltype(pdomain)>(pnode->pdata);
+	for (auto &domain : pbase->domain_list) {
+		auto pdomain = &domain;
 		result = nsp_interface_get_tree_specialtables(
 			&pdomain->tree, b_unicode, codepage, *pprows);
 		if (result != ecSuccess) {
