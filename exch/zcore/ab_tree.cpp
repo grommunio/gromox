@@ -1794,23 +1794,19 @@ static BOOL ab_tree_resolve_node(SIMPLE_TREE_NODE *pnode,
 	return FALSE;
 }
 
-BOOL ab_tree_resolvename(AB_BASE *pbase, uint32_t codepage,
-	char *pstr, SINGLE_LIST *presult_list)
+bool ab_tree_resolvename(AB_BASE *pbase, uint32_t codepage, char *pstr,
+    stn_list_t &result_list) try
 {
-	SINGLE_LIST_NODE *prnode;
-	
-	single_list_init(presult_list);
+	result_list.clear();
 	for (auto ptr : pbase->gal_list) {
 		if (!ab_tree_resolve_node(ptr, codepage, pstr))
 			continue;
-		prnode = cu_alloc<SINGLE_LIST_NODE>();
-		if (NULL == prnode) {
-			return FALSE;
-		}
-		prnode->pdata = ptr;
-		single_list_append_as_tail(presult_list, prnode);
+		result_list.push_back(ptr);
 	}
 	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1678: ENOMEM\n");
+	return false;
 }
 
 static BOOL ab_tree_match_node(const SIMPLE_TREE_NODE *pnode,

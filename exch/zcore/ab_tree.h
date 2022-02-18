@@ -51,6 +51,7 @@ struct domain_node {
 };
 using DOMAIN_NODE = domain_node;
 
+using stn_list_t = std::vector<SIMPLE_TREE_NODE *>;
 struct ZAB_NODE;
 struct AB_BASE {
 	AB_BASE() = default;
@@ -62,7 +63,7 @@ struct AB_BASE {
 	time_t load_time = 0;
 	int base_id = 0;
 	std::vector<domain_node> domain_list;
-	std::vector<SIMPLE_TREE_NODE *> gal_list;
+	stn_list_t gal_list;
 	std::unordered_map<int, ZAB_NODE *> phash;
 };
 
@@ -86,8 +87,7 @@ extern uint32_t ab_tree_get_node_minid(const SIMPLE_TREE_NODE *);
 extern uint8_t ab_tree_get_node_type(const SIMPLE_TREE_NODE *);
 extern BOOL ab_tree_has_child(const SIMPLE_TREE_NODE *);
 extern BOOL ab_tree_fetch_node_properties(const SIMPLE_TREE_NODE *, const PROPTAG_ARRAY *tags, TPROPVAL_ARRAY *vals);
-BOOL ab_tree_resolvename(AB_BASE *pbase, uint32_t codepage,
-	char *pstr, SINGLE_LIST *presult_list);
+extern bool ab_tree_resolvename(AB_BASE *, uint32_t codepage, char *str, stn_list_t &result);
 BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 	uint32_t codepage, const RESTRICTION *pfilter, LONG_ARRAY *pminids);
 extern void ab_tree_invalidate_cache();

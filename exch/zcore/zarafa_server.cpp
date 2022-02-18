@@ -1247,10 +1247,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 uint32_t zarafa_server_resolvename(GUID hsession,
 	const TARRAY_SET *pcond_set, TARRAY_SET *presult_set)
 {
-	SINGLE_LIST temp_list;
 	PROPTAG_ARRAY proptags;
-	SINGLE_LIST result_list;
-	SINGLE_LIST_NODE *pnode;
 	
 	auto pinfo = zarafa_server_query_session(hsession);
 	if (pinfo == nullptr)
@@ -1259,7 +1256,7 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 	auto pbase = ab_tree_get_base(base_id);
 	if (pbase == nullptr)
 		return ecError;
-	single_list_init(&result_list);
+	stn_list_t result_list;
 	for (size_t i = 0; i < pcond_set->count; ++i) {
 		auto pstring = pcond_set->pparray[i]->get<char>(PR_DISPLAY_NAME);
 		if (NULL == pstring) {
@@ -1267,9 +1264,10 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 			presult_set->pparray = NULL;
 			return ecSuccess;
 		}
-		if (!ab_tree_resolvename(pbase.get(), pinfo->cpid, pstring, &temp_list))
+		stn_list_t temp_list;
+		if (!ab_tree_resolvename(pbase.get(), pinfo->cpid, pstring, temp_list))
 			return ecError;
-		switch (single_list_get_nodes_num(&temp_list)) {
+		switch (temp_list.size()) {
 		case 0:
 			return ecNotFound;
 		case 1:
@@ -1277,23 +1275,28 @@ uint32_t zarafa_server_resolvename(GUID hsession,
 		default:
 			return ecAmbiguousRecip;
 		}
-		while ((pnode = single_list_pop_front(&temp_list)) != nullptr)
-			single_list_append_as_tail(&result_list, pnode);
+		try {
+			result_list.insert(result_list.end(),
+				std::make_move_iterator(temp_list.begin()),
+				std::make_move_iterator(temp_list.end()));
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1679: ENOMEM\n");
+			return ecMAPIOOM;
+		}
 	}
 	presult_set->count = 0;
-	if (0 == single_list_get_nodes_num(&result_list)) {
+	if (result_list.size() == 0) {
 		presult_set->pparray = NULL;
 		return ecNotFound;
 	}
-	presult_set->pparray = cu_alloc<TPROPVAL_ARRAY *>(single_list_get_nodes_num(&result_list));
+	presult_set->pparray = cu_alloc<TPROPVAL_ARRAY *>(result_list.size());
 	if (presult_set->pparray == nullptr)
 		return ecError;
 	container_object_get_user_table_all_proptags(&proptags);
-	for (pnode=single_list_get_head(&result_list); NULL!=pnode;
-		pnode=single_list_get_after(&result_list, pnode)) {
+	for (auto ptr : result_list) {
 		presult_set->pparray[presult_set->count] = cu_alloc<TPROPVAL_ARRAY>();
 		if (NULL == presult_set->pparray[presult_set->count] ||
-		    !ab_tree_fetch_node_properties(static_cast<SIMPLE_TREE_NODE *>(pnode->pdata),
+		    !ab_tree_fetch_node_properties(ptr,
 		    &proptags, presult_set->pparray[presult_set->count])) {
 			return ecError;
 		}
