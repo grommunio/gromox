@@ -656,7 +656,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 			auto psnode = ab_tree_get_snode();
 			if (psnode == nullptr)
 				return;
-			psnode->pdata = pnode;
+			psnode->pdata = nd;
 			single_list_append_as_tail(&pbase->gal_list, psnode);
 		});
 	}
