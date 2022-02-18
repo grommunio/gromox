@@ -228,12 +228,6 @@ int ab_tree_run()
 			ab_tree_put_snode(psnode);
 		}
 	}
-	for (i=0; i<g_file_blocks; i++) {
-		pabnode = ab_tree_get_abnode();
-		if (NULL != pabnode) {
-			ab_tree_put_abnode(pabnode);
-		}
-	}
 	return 0;
 }
 
