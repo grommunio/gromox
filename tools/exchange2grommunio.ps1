@@ -30,6 +30,14 @@
 #
 # 6. Launch the script from an Exchange Admin shell.
 #
+#	Optional: Manually launch the Exchange Admin Shell for advanced functionality.
+#	The Exchange 2013 Management Shell reports an old PowerShell 2.0.
+#	Unfortunately, PowerShell 2.0 is missing some important commands
+#	which this script needs for advanced functionality.
+#	If you are migrating from Exchange 2013 and want to record the output of the
+#	Linux commands in the log, you need to start the PowerShell session with this command:
+#	C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -version 3.0 -noexit -command ". 'C:\Program Files\Microsoft\Exchange Server\V14\bin\RemoteExchange.ps1'; Connect-ExchangeServer -auto"
+#
 # 7. Test.
 #
 # You may see this error:
@@ -112,8 +120,46 @@ $CreateGrommunioMailbox = $true
 # The languages can be found in: /usr/share/grommunio-admin-api/res/storelangs.json
 $MailboxLanguage = "de_DE"
 
+# Write timestamps and summary to this log file.
+#
+$LogFile = $WinSharedFolder + "\exchange2grommunio.log"
+
+# New-MailboxExportRequest accepts the -Priority parameter.
+# Use "Normal" or "High" for Exchange 2013. We found "Normal" is much faster
+# than "High".
+#
+$MigrationPriority = "Normal"
 
 # From here on, no code or variables need changing by the user of this script.
+
+
+# Write a time stamp and the string to the log file, also write to screen with color.
+#
+function Write-MLog
+{
+	Param(
+		[parameter(Mandatory=$True)]
+		$LogString,
+		[parameter(Mandatory=$True)]
+		$Color
+	)
+	# $Color "none" writes to the log file only
+	if ($Color -Ne "none") {
+		Write-Host $LogString -fore $Color
+	}
+	# populate log file with error state
+	$Level = switch ($Color)
+	{
+		"green"  { "INFO" }
+		"yellow" { "WARN" }
+		"red"    { "FAIL" }
+		"white"  { "" }
+		"none"   { "LOG " }
+		default  { "????" }
+	}
+	# add line to log file
+	Add-Content -Path $LogFile -Value "$("[{0:dd/MM/yy} {0:HH:mm:ss}]" -f (Get-Date)) $Level $LogString"
+}
 
 # Check lock of file by Windows
 #
@@ -148,12 +194,28 @@ function isLocked
 function Linux-mount
 {
 	if ($AutoMount) {
-		Write-Host "mkdir -p $LinuxSharedFolder" -fore green
-		.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "mkdir -p $LinuxSharedFolder"
+		Write-MLog "mkdir -p $LinuxSharedFolder" green
+		if ($PowerShellOld) {
+			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "mkdir -p $LinuxSharedFolder"
+		} else {
+			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "mkdir -p $LinuxSharedFolder" 2>&1 | % ToString | Tee-Object -Variable TeeVar
+			# Save plink output to $LogFile
+			Write-MLog "---" none
+			Add-Content -Path $LogFile -Value $TeeVar
+			Write-MLog "---" none
+		}
 		$WinFolder = $WinSharedFolder.replace('\','/')
-		Write-Host "mount.cifs $LinuxSharedFolder" -fore green
-		.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "mount.cifs -v '$WinFolder' '$LinuxSharedFolder' -o user='$WindowsUser',password='$WindowsPassword',ro"
-		Write-Host ""
+		Write-MLog "mount.cifs $LinuxSharedFolder" green
+		if ($PowerShellOld) {
+			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "mount.cifs -v '$WinFolder' '$LinuxSharedFolder' -o user='$WindowsUser',password='$WindowsPassword',ro"
+		} else {
+			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "mount.cifs -v '$WinFolder' '$LinuxSharedFolder' -o user='$WindowsUser',password='$WindowsPassword',ro" 2>&1 | % ToString | Tee-Object -Variable TeeVar
+			# Save plink output to $LogFile
+			Write-MLog "---" none
+			Add-Content -Path $LogFile -Value $TeeVar
+			Write-MLog "---" none
+		}
+		Write-MLog "" white
 	}
 }
 
@@ -162,9 +224,17 @@ function Linux-mount
 function Linux-umount
 {
 	if ($AutoMount) {
-		Write-Host "umount $LinuxSharedFolder" -fore green
-		.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "umount $LinuxSharedFolder"
-		Write-Host ""
+		Write-MLog "umount $LinuxSharedFolder" green
+		if ($PowerShellOld) {
+			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "umount $LinuxSharedFolder"
+		} else {
+			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "umount $LinuxSharedFolder" 2>&1 | % ToString | Tee-Object -Variable TeeVar
+			# Save plink output to $LogFile
+			Write-MLog "---" none
+			Add-Content -Path $LogFile -Value $TeeVar
+			Write-MLog "---" none
+		}
+		Write-MLog "" white
 	}
 }
 
@@ -172,10 +242,10 @@ function Linux-umount
 #
 function Test-Plink
 {
-	Write-Host ""
+	Write-MLog "" white
 	# does plink.exe exist?
 	if (!(Test-Path -Path $PSScriptRoot\plink.exe)) {
-		Write-Host "Error: plink.exe not found, need plink.exe in $PSScriptRoot." -fore red
+		Write-MLog "Error: plink.exe not found, need plink.exe in $PSScriptRoot." red
 		exit 1
 	}
 }
@@ -198,16 +268,13 @@ function Test-Exchange
 		$Exchange_Cmdlets = $true
 	}
 	if (!$Exchange_Cmdlets) {
-		Write-Host "Error: the Exchange cmdlets are not loaded. Launch this script from an Exchange Admin shell." -fore red
+		Write-MLog "Error: the Exchange cmdlets are not loaded. Launch this script from an Exchange Admin shell." red
 		exit 1
 	}
 }
 
-# Check for prerequisites
-#
-Write-Host ""
-Write-Host ""
-Write-Host "***** Exchange to grommunio Migration *****" -fore green
+# Do we use an old PowerShell == Version 2.0?
+$PowerShellOld = ($PSVersionTable.PSVersion.Major -eq 2)
 
 # This construct works only in main. PS v2.0 does not provide $PSScriptRoot.
 #
@@ -215,11 +282,7 @@ if (!$PSScriptRoot) {
 	$PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
 }
 
-Test-Plink
-Test-Exchange
-Linux-mount
-
-# Statistics
+# Initialize variables for statistics
 #
 $MailboxesTotal = 0
 $MailboxesSkipped = 0
@@ -231,6 +294,51 @@ $MailboxesMB = 0
 $CreateErrorsMBX = ""
 $ImportErrorsMBX = ""
 $ScriptStartDate = (GET-DATE)
+
+# Create / append Log
+#
+Write-MLog "" none
+Write-MLog "" none
+Write-MLog "===========================================================================" none
+Write-MLog "" white
+Write-MLog "" white
+Write-Mlog "***** Exchange to grommunio Migration *****" green
+Write-MLog "" white
+
+if ($PowerShellOld) {
+	Write-Mlog "We use an old V2.x PowerShell" yellow
+} else {
+	Write-Mlog "We use a new PowerShell, V.: $($PSVersionTable.PSVersion.Major).$($PSVersionTable.PSVersion.Minor)" green
+}
+Write-MLog "" white
+
+# Document settings in log
+#
+Write-MLog "Settings" none
+Write-MLog "`$GrommunioServer ......: $GrommunioServer" none
+Write-MLog "`$WinSharedFolder ......: $WinSharedFolder" none
+Write-MLog "`$LinuxSharedFolder ....: $LinuxSharedFolder" none
+Write-MLog "`$LinuxUser ............: $LinuxUser" none
+Write-MLog "`$IgnoreMboxes .........: $IgnoreMboxes" none
+Write-MLog "`$DeletePST ............: $DeletePST" none
+Write-MLog "`$WaitAfterImport ......: $WaitAfterImport" none
+Write-MLog "`$StopOnError ..........: $StopOnError" none
+Write-MLog "`$AutoMount ............: $AutoMount" none
+Write-MLog "`$WindowsUser ..........: $WindowsUser" none
+Write-MLog "`$CreateGrommunioMailbox: $CreateGrommunioMailbox" none
+Write-MLog "`$MailboxLanguage ......: $MailboxLanguage" none
+Write-MLog "`$LogFile ..............: $$LogFile" none
+Write-MLog "`$MigrationPriority ....: $MigrationPriority" none
+Write-MLog "" none
+Write-MLog "`$PowerShellOld ........: $PowerShellOld" none
+Write-MLog "`$PSScriptRoot .........: $PSScriptRoot" none
+Write-MLog "" none
+
+# Check for prerequisites
+#
+Test-Plink
+Test-Exchange
+Linux-mount
 
 # If we get a create error, do not import the mailbox.
 #
@@ -244,26 +352,26 @@ foreach ($Mailbox in (Get-Mailbox)) {
 	if ($IgnoreMboxes.contains($MigMBox)) {
 		$MailboxesSkipped++
 		$MailboxesTotal++
-		Write-Host "Ignoring mailbox: $MigMBox" -fore yellow
+		Write-MLog "Ignoring mailbox: $MigMBox" yellow
 		continue
 	}
-	Write-Host ""
+	Write-MLog "" white
 	# Clean up before exporting a mailbox
 	# Remove all MailboxExportRequest, to make check for "Completed" more robust
 
-	Write-Host "Removing all MailboxExportRequests." -fore green
+	Write-MLog "Removing all MailboxExportRequests." green
 	Get-MailboxExportRequest | Remove-MailboxExportRequest -Confirm:$false
 
 	# Remove old / orphaned .pst file
 	if (Test-Path -Path $WinSharedFolder\$MigMBox.pst) {
 		Remove-Item -ErrorAction SilentlyContinue -Path $WinSharedFolder\$MigMBox.pst
-		Write-Host "Removing outdated $MigMBox.pst file." -fore yellow
+		Write-MLog "Removing outdated $MigMBox.pst file." yellow
 	}
-	Write-Host ""
+	Write-MLog "" white
 
 	# Create a .pst file for every mailbox found on system.
 	#
-	Write-Host "Exporting mailbox $MigMBox to file $MigMBox.pst..." -fore green
+	Write-MLog "Exporting mailbox $MigMBox to file $MigMBox.pst..." green
 
 	# -Mailbox
 	#
@@ -280,7 +388,9 @@ foreach ($Mailbox in (Get-Mailbox)) {
 	#
 	# https://docs.microsoft.com/en-us/powershell/module/exchange/new-mailboxexportrequest?view=exchange-ps
 	#
-	New-MailboxExportRequest -Mailbox $Mailbox -FilePath $WinSharedFolder\$MigMBox.pst | ft -HideTableHeaders
+	# Exchange 2010 only supports "Normal, High" for the -Priority parameter.
+	#
+	New-MailboxExportRequest -Mailbox $Mailbox -FilePath $WinSharedFolder\$MigMBox.pst -Priority $MigrationPriority | ft -HideTableHeaders
 	Write-Host -NoNewline "[Wait] " -fore yellow
 	$MailboxesTotal++
 
@@ -299,42 +409,60 @@ foreach ($Mailbox in (Get-Mailbox)) {
 		}
 	}
 
-	Write-Host ""
-	Write-Host "Export of mailbox $MigMBox took $nTimeout seconds." -fore green
+	Write-MLog "" white
+	Write-MLog "Export of mailbox $MigMBox took $nTimeout seconds." green
 
+	# Show size of exported mailbox in MB.
 	if (Test-Path $WinSharedFolder\$MigMBox.pst) {
 		if ((Get-Item $WinSharedFolder\$MigMBox.pst).length -gt 0mb) {
 			$size = [math]::ceiling($(Get-Item $WinSharedFolder\$MigMBox.pst).length/(1024*1024))
-			Write-Host "Size of $MigMBox.pst is $size MB" -fore green
+			Write-MLog "Size of mailbox $MigMBox.pst is $size MB" green
 		}
+	} else {
+		Write-MLog "Error mailbox $MigMBox.pst do not exist!" red
+		# Do not import this mailbox
+		$SkipImportCreateError = $true
 	}
 
-	Write-Host ""
-	Write-Host "Waiting on PST file lock release." -fore yellow
+	Write-MLog "" white
+	Write-Mlog "Wait until the file lock of .pst file is released." yellow
 
-	$LockTimeout = new-timespan -Minutes 2
-	$sw = [diagnostics.stopwatch]::StartNew()
-	While ($sw.elapsed -lt $LockTimeout) {
+	# Wait until the file lock of .pst file is released, Timeout is 300 seconds.
+	$nTimeout = 0
+	Write-Host -NoNewline "[Unlock] " -fore yellow
+	While ($nTimeout -lt 300) {
 		if (isLocked $WinSharedFolder\$MigMBox.pst) {
 			Write-Host -NoNewline "." -fore yellow
 		} else {
-			Write-Host "PST lock cleared." -fore green
+			Write-Host -NoNewline " "
+			Write-MLog "PST lock cleared, after $nTimeout seconds." green
 			break
 		}
 		start-sleep -seconds 2
+		$nTimeout += 2
 	}
 
-	Write-Host ""
+	Write-MLog "" white
 
 	# If requested, create the grommunio mailbox.
 	if ($CreateGrommunioMailbox) {
-		Write-Host "Create grommunio mailbox: $MigMBox." -fore green
-		.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "grommunio-admin ldap downsync -l $MailboxLanguage -a $MigMBox"
-		if ($lastexitcode -eq 0) {
-			Write-Host "Mailbox: $MigMBox created successfully." -fore green
+		Write-MLog "Create grommunio mailbox: $MigMBox." green
+		if ($PowerShellOld) {
+			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "grommunio-admin ldap downsync -l $MailboxLanguage -a $MigMBox"
+			$CMDExitCode = $lastexitcode
+		} else {
+			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "grommunio-admin ldap downsync -l $MailboxLanguage -a $MigMBox" 2>&1 | % ToString | Tee-Object -Variable TeeVar
+			$CMDExitCode = $lastexitcode
+			# Save plink output to $LogFile
+			Write-MLog "---" none
+			Add-Content -Path $LogFile -Value $TeeVar
+			Write-MLog "---" none
+		}
+		if ($CMDExitCode -eq 0) {
+			Write-Mlog "Mailbox: $MigMBox created successfully." green
 			$MailboxesCreated++
 		} else {
-			Write-Host "Creation of mailbox: $MigMBox failed." -fore red
+			Write-MLog "Creation of mailbox: $MigMBox failed." red
 			$MailboxesCreateFailed++
 			$CreateErrorsMBX += $MigMBox + ", "
 			if ($StopOnError) {
@@ -345,19 +473,31 @@ foreach ($Mailbox in (Get-Mailbox)) {
 	}
 
 	if (!$SkipImportCreateError) {
-		Write-Host ""
+		Write-MLog "" white
 		$ImportStartDate=(GET-DATE)
 
 		# Using plink, start importing this mailbox and .pst
 		# file on the grommunio host.
-		Write-Host "Starting import of mailbox: $MigMBox in grommunio." -fore green
-		.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "gromox-e2ghelper -s $LinuxSharedFolder/$MigMBox.pst -u $MigMBox"
-		if ($lastexitcode -eq 0) {
-			Write-Host "Import of mailbox: $MigMBox done." -fore green
+		Write-MLog "Starting import of mailbox: $MigMBox in grommunio." green
+		if ($PowerShellOld) {
+			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "gromox-e2ghelper -s $LinuxSharedFolder/$MigMBox.pst -u $MigMBox"
+			$CMDExitCode = $lastexitcode
+		} else {
+			.\plink.exe -ssh -batch $LinuxUser@$GrommunioServer -pw $LinuxUserPWD "gromox-e2ghelper -s $LinuxSharedFolder/$MigMBox.pst -u $MigMBox" 2>&1 | % ToString | Tee-Object -Variable TeeVar
+			$CMDExitCode = $lastexitcode
+			# Save plink output to $LogFile
+			Write-MLog "---" none
+			#$TeeVar = $TeeVar.replace("`r`n`r","`r`n")
+			#$TeeVar = $TeeVar.replace("`n`r`n","`r`n")
+			Add-Content -Path $LogFile -Value $TeeVar
+			Write-MLog "---" none
+		}
+		if ($CMDExitCode -eq 0) {
+			Write-MLog "Import of mailbox: $MigMBox done." green
 			$MailboxesImported++
 			$MailboxesMB += $size
 		} else {
-			Write-Host "Mailbox: $MigMBox imported with errors." -fore red
+			Write-MLog "Mailbox: $MigMBox imported with errors." red
 			$MailboxesImportFailed++
 			$ImportErrorsMBX += $MigMBox + ", "
 			# Wait for admin to make a decision.
@@ -368,45 +508,46 @@ foreach ($Mailbox in (Get-Mailbox)) {
 		# Show import time in seconds.
 		$ImportEndDate = (GET-DATE)
 		$Duration = [math]::ceiling($(NEW-TIMESPAN -Start $ImportStartDate -End $ImportEndDate).TotalSeconds)
-		Write-Host "Import of mailbox $MigMBox took $Duration seconds." -fore green
+		Write-MLog "Import of mailbox $MigMBox took $Duration seconds." green
 	}
 
 	# Try to import the next mailbox.
 	$SkipImportCreateError = $false
 
 	if ($DeletePST) {
-		Write-Host "Remove the imported .pst file: $WinSharedFolder\$MigMBox.pst to save disk space." -fore green
+		Write-MLog "Remove the imported .pst file: $WinSharedFolder\$MigMBox.pst to save disk space." green
 		if (Test-Path -Path $WinSharedFolder\$MigMBox.pst) {
 			Remove-Item -ErrorAction SilentlyContinue -Path $WinSharedFolder\$MigMBox.pst
 		} else {
-			Write-Host "Error .pst file: $WinSharedFolder\$MigMBox.pst not found." -fore red
+			Write-MLog "Error: $WinSharedFolder\$MigMBox.pst not found." red
 		}
 	}
-	Write-Host ""
-	Write-Host "Total of $MailboxesTotal mailboxes processed, $MailboxesSkipped mailboxes skipped, $MailboxesCreated mailboxes created, $MailboxesImported mailboxes imported, " -fore yellow
-	Write-Host "$MailboxesCreateFailed mailboxes creation failed, $MailboxesImportFailed imports failed. $MailboxesMB MB of mailbox data imported." -fore yellow
-	Write-Host ""
+	Write-MLog "" white
+	Write-MLog "Total of $MailboxesTotal mailboxes processed, $MailboxesSkipped mailboxes skipped, $MailboxesCreated mailboxes created, $MailboxesImported mailboxes imported, " yellow
+	Write-MLog "$MailboxesCreateFailed mailboxes creation failed, $MailboxesImportFailed imports failed. $MailboxesMB MB of mailbox data imported." yellow
+	Write-MLog "" white
 
 	if (!$WaitAfterImport) {
 		continue
 	}
-	Write-Host ""
+	Write-MLog "" white
 	$decision = "Y"
 	$OK = $false
 	while (!$OK) {
+		Write-MLog "Do you want to proceed with the next mailbox [Y]es [A]bort [C]ontinue? " none
 		$decision = $(Write-Host "Do you want to proceed with the next mailbox [Y]es [A]bort [C]ontinue? " -fore yellow -NoNewLine; Read-Host)
 		$decision = $decision.ToUpper()
 		switch ($decision) {
 		"Y" {
-			Write-Host "Import next mailbox" -fore green
+			Write-MLog "Import next mailbox" green
 			$OK = $true
 		}
 		"A" {
-			Write-Host "Exit on admin request." -fore red
+			Write-MLog "Exiting upon request." red
 			$OK = $true
 		}
 		"C" {
-			Write-Host "Continue without future questions until errors" -fore green
+			Write-MLog "Continue without prompts until an error" green
 			$WaitAfterImport = $false
 			$OK = $true
 		}
@@ -430,41 +571,24 @@ $ScriptDuration = [math]::ceiling($(NEW-TIMESPAN -Start $ScriptStartDate -End $S
 
 # Print summary
 #
-Write-Host ""
-Write-Host "Total of $MailboxesTotal mailboxes processed" -fore green
-Write-Host "$MailboxesSkipped mailboxes skipped" -fore yellow
+Write-MLog "" white
+Write-MLog "Total of $MailboxesTotal mailboxes processed" green
+Write-MLog "$MailboxesSkipped mailboxes skipped" yellow
 if ($CreateGrommunioMailbox) {
-	Write-Host "$MailboxesCreated mailboxes created" -fore green
+	Write-MLog "$MailboxesCreated mailboxes created" green
 	if ($MailboxesCreateFailed -ne 0) {
-		Write-Host "$MailboxesCreateFailed mailboxes creation failed" -fore red
-		Write-Host "Affected mailboxes: $CreateErrorsMBX" -fore red
+		Write-MLog "$MailboxesCreateFailed mailboxes creation failed" red
+		Write-MLog "Affected mailboxes: $CreateErrorsMBX" red
 	}
 }
-Write-Host "$MailboxesImported mailboxes imported" -fore green
+Write-MLog "$MailboxesImported mailboxes imported" green
 if ($MailboxesImportFailed -ne 0) {
-	Write-Host "$MailboxesImportFailed mailboxes imported with errors or import failed" -fore red
-	Write-Host "Affected mailboxes: $ImportErrorsMBX" -fore red
+	Write-MLog "$MailboxesImportFailed mailboxes imported with errors or import failed" red
+	Write-Mlog "Affected mailboxes: $ImportErrorsMBX" red
 }
-Write-host "Imported a total of $MailboxesMB MB of mailbox data" -fore green
-Write-Host "Total run time $ScriptDuration minutes, Start: $ScriptStartDate, End: $ScriptEndDate" -fore green
-Write-Host ""
-Write-Host "Remove possibly orphaned .pst files from $WinSharedFolder" -fore yellow
-Write-Host "Finished import." -fore green
-Write-Host ""
-
-$LogFile = $WinSharedFolder + "\exchange2grommunio.log"
-Add-Content -Path $LogFile -Value ""
-Add-Content -Path $LogFile -Value "Total of $MailboxesTotal mailboxes processed"
-Add-Content -Path $LogFile -Value "$MailboxesSkipped mailboxes skipped"
-Add-Content -Path $LogFile -Value "$MailboxesCreated mailboxes created"
-Add-Content -Path $LogFile -Value "$MailboxesCreateFailed mailboxes creation failed"
-Add-Content -Path $LogFile -Value "Affected mailboxes: $CreateErrorsMBX"
-Add-Content -Path $LogFile -Value "$MailboxesImported mailboxes imported"
-Add-Content -Path $LogFile -Value "$MailboxesImportFailed mailboxes imported with errors or import failed"
-Add-Content -Path $LogFile -Value "Affected mailboxes: $ImportErrorsMBX"
-Add-Content -Path $LogFile -Value "Imported a total of $MailboxesMB MB of mailbox data"
-Add-Content -Path $LogFile -Value "Total run time $ScriptDuration minutes, Start: $ScriptStartDate, End: $ScriptEndDate"
-Add-Content -Path $LogFile -Value ""
-Add-Content -Path $LogFile -Value "Remove possibly orphaned .pst files from $WinSharedFolder"
-Add-Content -Path $LogFile -Value "Finished import."
-Add-Content -Path $LogFile -Value ""
+Write-MLog "Imported a total of $MailboxesMB MB of mailbox data" green
+Write-MLog "Total run time: $ScriptDuration minutes. Started: $ScriptStartDate, ended: $ScriptEndDate." green
+Write-MLog "" white
+Write-MLog "Remove possibly orphaned .pst files from $WinSharedFolder" yellow
+Write-MLog "Import finished." green
+Write-MLog "" white
