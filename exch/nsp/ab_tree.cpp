@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2022 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -16,6 +17,7 @@
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
+#include <gromox/scope.hpp>
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/mapidefs.h>
@@ -81,9 +83,10 @@ using AB_NODE = NSAB_NODE;
 
 namespace {
 
-struct ab_sort_item {
-	SIMPLE_TREE_NODE *pnode;
-	char *string;
+struct sort_item {
+	SIMPLE_TREE_NODE *pnode = nullptr;
+	std::string str;
+	inline bool operator<(const sort_item &o) const { return strcasecmp(str.c_str(), o.str.c_str()) < 0; }
 };
 
 }
@@ -357,17 +360,10 @@ static BOOL ab_tree_load_mlist(AB_NODE *pabnode,
 	return TRUE;
 }
 
-static int ab_tree_cmpstring(const void *p1, const void *p2)
-{
-	return strcasecmp(static_cast<const ab_sort_item *>(p1)->string,
-	       static_cast<const ab_sort_item *>(p2)->string);
-}
-
 static BOOL ab_tree_load_class(
 	int class_id, SIMPLE_TREE *ptree,
 	SIMPLE_TREE_NODE *pnode, AB_BASE *pbase)
 {
-	int i;
 	int rows;
 	AB_NODE *pabnode;
 	char temp_buff[1024];
@@ -404,66 +400,51 @@ static BOOL ab_tree_load_class(
 	} else if (0 == rows) {
 		return TRUE;
 	}
-	auto parray = me_alloc<ab_sort_item>(rows);
-	if (NULL == parray) {
-		return FALSE;
-	}
-	i = 0;
+	std::vector<sort_item> parray;
+	auto cl_array = make_scope_exit([&parray]() {
+		for (const auto &e : parray)
+			ab_tree_put_abnode(containerof(e.pnode, AB_NODE, stree));
+	});
 	for (auto &&usr : file_user) {
 		pabnode = ab_tree_get_abnode();
 		if (NULL == pabnode) {
-			goto LOAD_FAIL;
+			return false;
 		}
 		if (usr.dtypx == DT_DISTLIST) {
 			if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
 				ab_tree_put_abnode(pabnode);
-				goto LOAD_FAIL;
+				return false;
 			}
 		} else {
 			if (!ab_tree_load_user(pabnode, std::move(usr), pbase)) {
 				ab_tree_put_abnode(pabnode);
-				goto LOAD_FAIL;
+				return false;
 			}
 		}
-		parray[i].pnode = &pabnode->stree;
-		ab_tree_get_display_name(parray[i].pnode, 1252, temp_buff, arsizeof(temp_buff));
-		parray[i].string = strdup(temp_buff);
-		if (NULL == parray[i].string) {
+		ab_tree_get_display_name(&pabnode->stree, 1252, temp_buff, arsizeof(temp_buff));
+		try {
+			parray.push_back(sort_item{&pabnode->stree, temp_buff});
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1676: ENOMEM\n");
 			ab_tree_put_abnode(pabnode);
-			goto LOAD_FAIL;
+			return false;
 		}
-		i ++;
 	}
-
-	qsort(parray, rows, sizeof(*parray), ab_tree_cmpstring);
-	for (i=0; i<rows; i++) {
+	std::sort(parray.begin(), parray.end());
+	for (int i = 0; i < rows; ++i)
 		simple_tree_add_child(ptree, pnode,
 			parray[i].pnode, SIMPLE_TREE_ADD_LAST);
-		free(parray[i].string);
-	}
-	free(parray);
+	cl_array.release();
 	return TRUE;
- LOAD_FAIL:
-	for (i-=1; i>=0; i--) {
-		free(parray[i].string);
-		auto stn = static_cast<SIMPLE_TREE_NODE *>(parray[i].pnode);
-		pabnode = containerof(stn, AB_NODE, stree);
-		ab_tree_put_abnode(pabnode);
-	}
-	free(parray);
-	return FALSE;
 }
 
 static BOOL ab_tree_load_tree(int domain_id,
 	SIMPLE_TREE *ptree, AB_BASE *pbase)
 {
-	int i;
 	int rows;
 	AB_NODE *pabnode;
-	ab_sort_item *parray = nullptr;
 	sql_domain dinfo;
 	
-    {
 	if (!get_domain_info(domain_id, dinfo))
 		return FALSE;
 	pabnode = ab_tree_get_abnode();
@@ -540,45 +521,42 @@ static BOOL ab_tree_load_tree(int domain_id,
 		} else if (0 == rows) {
 			continue;
 		}
-		parray = me_alloc<ab_sort_item>(rows);
-		if (NULL == parray) {
-			return FALSE;
-		}
-		i = 0;
+		std::vector<sort_item> parray;
+		auto cl_array = make_scope_exit([&parray]() {
+			for (const auto &e : parray)
+				ab_tree_put_abnode(containerof(e.pnode, AB_NODE, stree));
+		});
 		for (auto &&usr : file_user) {
 			pabnode = ab_tree_get_abnode();
 			if (NULL == pabnode) {
-				goto LOAD_FAIL;
+				return false;
 			}
 			if (usr.dtypx == DT_DISTLIST) {
 				if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
 					ab_tree_put_abnode(pabnode);
-					goto LOAD_FAIL;
+					return false;
 				}
 			} else {
 				if (!ab_tree_load_user(pabnode, std::move(usr), pbase)) {
 					ab_tree_put_abnode(pabnode);
-					goto LOAD_FAIL;
+					return false;
 				}
 			}
-			parray[i].pnode = &pabnode->stree;
 			char temp_buff[1024];
-			ab_tree_get_display_name(parray[i].pnode, 1252, temp_buff, arsizeof(temp_buff));
-			parray[i].string = strdup(temp_buff);
-			if (NULL == parray[i].string) {
+			ab_tree_get_display_name(&pabnode->stree, 1252, temp_buff, arsizeof(temp_buff));
+			try {
+				parray.push_back(sort_item{&pabnode->stree, temp_buff});
+			} catch (const std::bad_alloc &) {
+				fprintf(stderr, "E-1674: ENOMEM\n");
 				ab_tree_put_abnode(pabnode);
-				goto LOAD_FAIL;
+				return false;
 			}
-			i ++;
 		}
-		
-		qsort(parray, rows, sizeof(ab_sort_item), ab_tree_cmpstring);
-		for (i=0; i<rows; i++) {
+		std::sort(parray.begin(), parray.end());
+		for (int i = 0; i < rows; ++i)
 			simple_tree_add_child(ptree, pgroup,
 				parray[i].pnode, SIMPLE_TREE_ADD_LAST);
-			free(parray[i].string);
-		}
-		free(parray);
+		cl_array.release();
 	}
 	
 	std::vector<sql_user> file_user;
@@ -588,61 +566,48 @@ static BOOL ab_tree_load_tree(int domain_id,
 	} else if (0 == rows) {
 		return TRUE;
 	}
-	parray = me_alloc<ab_sort_item>(rows);
-	if (NULL == parray) {
-		return FALSE;	
-	}
-	i = 0;
+	std::vector<sort_item> parray;
+	auto cl_array = make_scope_exit([&parray]() {
+		for (const auto &e : parray)
+			ab_tree_put_abnode(containerof(e.pnode, AB_NODE, stree));
+	});
 	for (auto &&usr : file_user) {
 		pabnode = ab_tree_get_abnode();
 		if (NULL == pabnode) {
-			goto LOAD_FAIL;
+			return false;
 		}
 		if (usr.dtypx == DT_DISTLIST) {
 			if (!ab_tree_load_mlist(pabnode, std::move(usr), pbase)) {
 				ab_tree_put_abnode(pabnode);
-				goto LOAD_FAIL;
+				return false;
 			}
 		} else {
 			if (!ab_tree_load_user(pabnode, std::move(usr), pbase)) {
 				ab_tree_put_abnode(pabnode);
-				goto LOAD_FAIL;
+				return false;
 			}
 		}
-		parray[i].pnode = &pabnode->stree;
 		char temp_buff[1024];
-		ab_tree_get_display_name(parray[i].pnode, 1252, temp_buff, arsizeof(temp_buff));
-		parray[i].string = strdup(temp_buff);
-		if (NULL == parray[i].string) {
+		ab_tree_get_display_name(&pabnode->stree, 1252, temp_buff, arsizeof(temp_buff));
+		try {
+			parray.push_back(sort_item{&pabnode->stree, temp_buff});
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1675: ENOMEM\n");
 			ab_tree_put_abnode(pabnode);
-			goto LOAD_FAIL;
+			return false;
 		}
-		i ++;
+		cl_array.release();
 	}
-	
-	qsort(parray, rows, sizeof(*parray), ab_tree_cmpstring);
-	for (i=0; i<rows; i++) {
+	std::sort(parray.begin(), parray.end());
+	for (int i = 0; i < rows; ++i)
 		simple_tree_add_child(ptree, pdomain,
 			parray[i].pnode, SIMPLE_TREE_ADD_LAST);
-		free(parray[i].string);
-	}
-	free(parray);
+	cl_array.release();
 	return TRUE;
-    }
- LOAD_FAIL:
-	for (i-=1; i>=0; i--) {
-		free(parray[i].string);
-		auto stn = static_cast<SIMPLE_TREE_NODE *>(parray[i].pnode);
-		pabnode = containerof(stn, AB_NODE, stree);
-		ab_tree_put_abnode(pabnode);
-	}
-	free(parray);
-	return FALSE;
 }
 
 static BOOL ab_tree_load_base(AB_BASE *pbase)
 {
-	int i, num;
 	char temp_buff[1024];
 	SIMPLE_TREE_NODE *proot;
 	SINGLE_LIST_NODE *pnode;
@@ -702,39 +667,29 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 			single_list_append_as_tail(&pbase->gal_list, psnode);
 		});
 	}
-	num = single_list_get_nodes_num(&pbase->gal_list);
+	auto num = single_list_get_nodes_num(&pbase->gal_list);
 	if (num <= 1) {
 		return TRUE;
 	}
-	auto parray = me_alloc<ab_sort_item>(num);
-	if (NULL == parray) {
-		return TRUE;
-	}
-	i = 0;
+	std::vector<sort_item> parray;
 	for (pnode=single_list_get_head(&pbase->gal_list); NULL!=pnode;
 		pnode=single_list_get_after(&pbase->gal_list, pnode)) {
 		ab_tree_get_display_name(static_cast<SIMPLE_TREE_NODE *>(pnode->pdata),
 			1252, temp_buff, arsizeof(temp_buff));
-		parray[i].pnode = static_cast<SIMPLE_TREE_NODE *>(pnode->pdata);
-		parray[i].string = strdup(temp_buff);
-		if (NULL == parray[i].string) {
-			for (i-=1; i>=0; i--) {
-				free(parray[i].string);
-			}
-			free(parray);
+		try {
+			parray.push_back(sort_item{static_cast<SIMPLE_TREE_NODE *>(pnode->pdata), temp_buff});
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1677: ENOMEM\n");
 			return TRUE;
 		}
-		i ++;
 	}
-	qsort(parray, num, sizeof(ab_sort_item), ab_tree_cmpstring);
-	i = 0;
+	std::sort(parray.begin(), parray.end());
+	size_t i = 0;
 	for (pnode=single_list_get_head(&pbase->gal_list); NULL!=pnode;
 		pnode=single_list_get_after(&pbase->gal_list, pnode)) {
 		pnode->pdata = parray[i].pnode;
-		free(parray[i].string);
 		i ++;
 	}
-	free(parray);
 	return TRUE;
 }
 
