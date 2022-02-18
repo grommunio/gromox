@@ -4,6 +4,7 @@
 #include <ctime>
 #include <memory>
 #include <unordered_map>
+#include <vector>
 #include <gromox/simple_tree.hpp>
 #include <gromox/single_list.hpp>
 #include <gromox/mapi_types.hpp>
@@ -56,7 +57,8 @@ struct AB_BASE {
 	std::atomic<int> status{0}, reference{0};
 	time_t load_time = 0;
 	int base_id = 0;
-	SINGLE_LIST list{}, gal_list{};
+	SINGLE_LIST list{};
+	std::vector<SIMPLE_TREE_NODE *> gal_list;
 	std::unordered_map<int, ZAB_NODE *> phash;
 };
 

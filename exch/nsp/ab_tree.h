@@ -38,6 +38,7 @@ struct DOMAIN_NODE {
 	SIMPLE_TREE tree;
 };
 
+using gal_list_t = std::vector<SIMPLE_TREE_NODE *>;
 struct NSAB_NODE;
 struct AB_BASE {
 	AB_BASE();
@@ -49,7 +50,8 @@ struct AB_BASE {
 	std::atomic<int> status{0}, reference{0};
 	time_t load_time = 0;
 	int base_id = 0;
-	SINGLE_LIST list, gal_list, remote_list{};
+	SINGLE_LIST list, remote_list{};
+	gal_list_t gal_list;
 	std::unordered_map<int, NSAB_NODE *> phash;
 };
 

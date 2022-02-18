@@ -252,7 +252,6 @@ static void ab_tree_destruct_tree(SIMPLE_TREE *ptree)
 AB_BASE::AB_BASE()
 {
 	single_list_init(&list);
-	single_list_init(&gal_list);
 }
 
 void AB_BASE::unload()
@@ -260,12 +259,11 @@ void AB_BASE::unload()
 	auto pbase = this;
 	SINGLE_LIST_NODE *pnode;
 	
+	gal_list.clear();
 	while ((pnode = single_list_pop_front(&pbase->list)) != nullptr) {
 		ab_tree_destruct_tree(&((DOMAIN_NODE*)pnode->pdata)->tree);
 		free(pnode->pdata);
 	}
-	while ((pnode = single_list_pop_front(&pbase->gal_list)) != nullptr)
-		ab_tree_put_snode(pnode);
 	pbase->phash.clear();
 }
 
@@ -570,7 +568,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 	return TRUE;
 }
 
-static BOOL ab_tree_load_base(AB_BASE *pbase)
+static BOOL ab_tree_load_base(AB_BASE *pbase) try
 {
 	DOMAIN_NODE *pdomain;
 	char temp_buff[1024];
@@ -623,35 +621,23 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 			auto node_type = ab_tree_get_node_type(nd);
 			if (node_type > 0x80 || nd->pdata != nullptr)
 				return;
-			auto psnode = ab_tree_get_snode();
-			if (psnode == nullptr)
-				return;
-			psnode->pdata = nd;
-			single_list_append_as_tail(&pbase->gal_list, psnode);
+			pbase->gal_list.push_back(nd);
 		});
 	}
-	auto num = single_list_get_nodes_num(&pbase->gal_list);
-	if (num <= 1) {
+	if (pbase->gal_list.size() <= 1)
 		return TRUE;
-	}
 	std::vector<sort_item> parray;
-	for (pnode=single_list_get_head(&pbase->gal_list); NULL!=pnode;
-		pnode=single_list_get_after(&pbase->gal_list, pnode)) {
-		ab_tree_get_display_name(static_cast<SIMPLE_TREE_NODE *>(pnode->pdata), 1252, temp_buff, arsizeof(temp_buff));
-		try {
-			parray.push_back(sort_item{static_cast<SIMPLE_TREE_NODE *>(pnode->pdata), temp_buff});
-		} catch (const std::bad_alloc &) {
-			fprintf(stderr, "E-1673: ENOMEM\n");
-			return TRUE;
-		}
+	for (auto ptr : pbase->gal_list) {
+		ab_tree_get_display_name(ptr, 1252, temp_buff, arsizeof(temp_buff));
+		parray.push_back(sort_item{ptr, temp_buff});
 	}
 	std::sort(parray.begin(), parray.end());
 	size_t i = 0;
-	for (pnode=single_list_get_head(&pbase->gal_list); NULL!=pnode;
-		pnode=single_list_get_after(&pbase->gal_list, pnode)) {
-		pnode->pdata = parray[i].pnode;
-		i ++;
-	}
+	for (auto &ptr : pbase->gal_list)
+		ptr = parray[i++].pnode;
+	return TRUE;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1673: ENOMEM\n");
 	return TRUE;
 }
 
@@ -734,12 +720,11 @@ static void *zcoreab_scanwork(void *param)
 			sleep(1);
 			continue;
 		}
+		pbase->gal_list.clear();
 		while ((pnode = single_list_pop_front(&pbase->list)) != nullptr) {
 			ab_tree_destruct_tree(&((DOMAIN_NODE*)pnode->pdata)->tree);
 			free(pnode->pdata);
 		}
-		while ((pnode = single_list_pop_front(&pbase->gal_list)) != nullptr)
-			ab_tree_put_snode(pnode);
 		pbase->phash.clear();
 		if (!ab_tree_load_base(pbase)) {
 			pbase->unload();
@@ -1839,22 +1824,17 @@ static BOOL ab_tree_resolve_node(SIMPLE_TREE_NODE *pnode,
 BOOL ab_tree_resolvename(AB_BASE *pbase, uint32_t codepage,
 	char *pstr, SINGLE_LIST *presult_list)
 {
-	SINGLE_LIST *plist;
 	SINGLE_LIST_NODE *prnode;
-	SINGLE_LIST_NODE *psnode;
 	
-	plist = &pbase->gal_list;
 	single_list_init(presult_list);
-	for (psnode=single_list_get_head(plist); NULL!=psnode;
-		psnode=single_list_get_after(plist, psnode)) {
-		if (!ab_tree_resolve_node(static_cast<SIMPLE_TREE_NODE *>(psnode->pdata),
-		    codepage, pstr))
+	for (auto ptr : pbase->gal_list) {
+		if (!ab_tree_resolve_node(ptr, codepage, pstr))
 			continue;
 		prnode = cu_alloc<SINGLE_LIST_NODE>();
 		if (NULL == prnode) {
 			return FALSE;
 		}
-		prnode->pdata = psnode->pdata;
+		prnode->pdata = ptr;
 		single_list_append_as_tail(presult_list, prnode);
 	}
 	return TRUE;
@@ -2001,21 +1981,18 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 {
 	int count;
 	SINGLE_LIST temp_list;
-	SINGLE_LIST *pgal_list;
 	SINGLE_LIST_NODE *psnode1;
 	
 	single_list_init(&temp_list);
 	if (0xFFFFFFFF == container_id) {
-		pgal_list = &pbase->gal_list;
-		for (auto psnode = single_list_get_head(pgal_list); psnode != nullptr;
-			psnode=single_list_get_after(pgal_list, psnode)) {
-			if (!ab_tree_match_node(static_cast<const SIMPLE_TREE_NODE *>(psnode->pdata), codepage, pfilter))
+		for (auto ptr : pbase->gal_list) {
+			if (!ab_tree_match_node(ptr, codepage, pfilter))
 				continue;
 			psnode1 = cu_alloc<SINGLE_LIST_NODE>();
 			if (NULL == psnode1) {
 				return FALSE;
 			}
-			psnode1->pdata = psnode->pdata;
+			psnode1->pdata = ptr;
 			single_list_append_as_tail(&temp_list, psnode1);
 		}
 	} else {

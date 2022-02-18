@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
+#include <algorithm>
 #include <cassert>
 #include <memory>
 #include <stdexcept>
@@ -606,28 +607,21 @@ uint32_t nsp_interface_unbind(NSPI_HANDLE *phandle, uint32_t reserved)
 	return MAPI_E_UNBINDSUCCESS;
 }
 
-static uint32_t nsp_interface_minid_in_list(const SINGLE_LIST *plist, uint32_t row)
+static inline uint32_t
+nsp_interface_minid_in_list(const gal_list_t *plist, size_t row)
 {
-	size_t count = 0;
-	
-	for (auto pnode = single_list_get_head(plist); pnode != nullptr;
-		pnode=single_list_get_after(plist, pnode)) {
-		if (count == row) {
-			return ab_tree_get_node_minid(static_cast<const SIMPLE_TREE_NODE *>(pnode->pdata));
-		}
-		count ++;
-	}
-	return 0;
+	auto &list = *plist;
+	return row < list.size() ? ab_tree_get_node_minid(list[row]) : 0;
 }
 
 static void nsp_interface_position_in_list(const STAT *pstat,
-    const SINGLE_LIST *plist, uint32_t *pout_row, uint32_t *pout_last_row,
+    const gal_list_t *plist, uint32_t *pout_row, uint32_t *pout_last_row,
     uint32_t *pcount)
 {
-	BOOL b_found;
+	auto &list = *plist;
 	uint32_t row;
 
-	*pcount = single_list_get_nodes_num(plist);
+	*pcount = std::min(list.size(), static_cast<size_t>(UINT32_MAX));
 	uint32_t last_row = *pcount > 0 ? *pcount - 1 : 0;
 	if (MID_CURRENT == pstat->cur_rec) {
 		/* fractional positioning MS-OXNSPI 3.1.4.5.2 */
@@ -641,21 +635,16 @@ static void nsp_interface_position_in_list(const STAT *pstat,
 	} else if (pstat->cur_rec == MID_END_OF_TABLE) {
 		row = last_row + 1;
 	} else {
-		b_found = FALSE;
-		row = 0;
-		for (auto pnode = single_list_get_head(plist); pnode != nullptr;
-		     pnode = single_list_get_after(plist, pnode)) {
-			auto minid = ab_tree_get_node_minid(static_cast<const SIMPLE_TREE_NODE *>(pnode->pdata));
-			if (0 != minid && minid == pstat->cur_rec) {
-				b_found = TRUE;
-				break;
-			}
-			row++;
-		}
-		if (!b_found)
-			/* In this case the position is undefined.
-			   To avoid problems we will use first row */
-			row = 0;
+		auto it = std::find_if(list.cbegin(), list.cend(),
+		          [&pstat](SIMPLE_TREE_NODE *ptr) {
+		          	auto minid = ab_tree_get_node_minid(ptr);
+		          	return minid != 0 && minid == pstat->cur_rec;
+		          });
+		/*
+		 * When not found, the position is undefined.
+		 * To avoid problems we will use first row.
+		 */
+		row = it != list.cend() ? it - list.cbegin() : 0;
 	}
 	*pout_row = row;
 	*pout_last_row = last_row;
@@ -751,8 +740,7 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 		if (NULL == pnode) {
 			return ecInvalidBookmark;
 		}
-		nsp_interface_position_in_table(pstat,
-			pnode, &row, &last_row, &total);
+		nsp_interface_position_in_table(pstat, pnode, &row, &last_row, &total);
 	}
 	if (pstat->delta != 0) {
 		/* adjust row  by delta */
@@ -919,8 +907,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 		}
 		size_t i = 0;
 		if (0 == pstat->container_id) {
-			for (auto psnode = single_list_get_head(&pbase->gal_list); psnode != nullptr;
-			     psnode = single_list_get_after(&pbase->gal_list, psnode)) {
+			for (auto ptr : pbase->gal_list) {
 				if (i >= start_pos && i < start_pos + tmp_count) {
 					prow = common_util_proprowset_enlarge(*pprows);
 					if (NULL == prow || NULL ==
@@ -928,7 +915,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 						result = ecMAPIOOM;
 						goto EXIT_QUERY_ROWS;
 					}
-					result = nsp_interface_fetch_row(static_cast<SIMPLE_TREE_NODE *>(psnode->pdata),
+					result = nsp_interface_fetch_row(ptr,
 						b_ephid, pstat->codepage, pproptags, prow);
 					if (result != ecSuccess)
 						goto EXIT_QUERY_ROWS;
@@ -1143,13 +1130,9 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		}
 		size_t row = 0;
 		if (0 == pstat->container_id) {
-			const SINGLE_LIST_NODE *psnode;
-			for (psnode = single_list_get_head(&pbase->gal_list); psnode != nullptr;
-			     psnode = single_list_get_after(&pbase->gal_list, psnode), row++) {
-				if (row < start_pos) {
-					continue;
-				}
-				ab_tree_get_display_name(static_cast<SIMPLE_TREE_NODE *>(psnode->pdata),
+			for (row = start_pos; row < pbase->gal_list.size(); ++row) {
+				auto ptr = pbase->gal_list[row];
+				ab_tree_get_display_name(ptr,
 					pstat->codepage, temp_name, arsizeof(temp_name));
 				if (strcasecmp(temp_name, ptarget->value.pstr) >= 0) {
 					prow = common_util_proprowset_enlarge(*pprows);
@@ -1158,7 +1141,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 						result = ecMAPIOOM;
 						goto EXIT_SEEK_ENTRIES;
 					}
-					if (nsp_interface_fetch_row(static_cast<SIMPLE_TREE_NODE *>(psnode->pdata),
+					if (nsp_interface_fetch_row(ptr,
 					    TRUE, pstat->codepage, pproptags,
 					    prow) != ecSuccess) {
 						result = ecError;
@@ -1167,11 +1150,11 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 					break;
 				}
 			}
-			if (NULL == psnode) {
+			if (row == pbase->gal_list.size()) {
 				result = ecNotFound;
 				goto EXIT_SEEK_ENTRIES;
 			}
-			pstat->cur_rec = ab_tree_get_node_minid(static_cast<const SIMPLE_TREE_NODE *>(psnode->pdata));
+			pstat->cur_rec = ab_tree_get_node_minid(pbase->gal_list[row]);
 		} else {
 			pnode1 = simple_tree_node_get_child(pnode);
 			do {
@@ -1626,25 +1609,18 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		uint32_t start_pos, last_row, total;
 		nsp_interface_position_in_list(pstat,
 			&pbase->gal_list, &start_pos, &last_row, &total);
-		size_t i = 0;
-		for (auto psnode = single_list_get_head(&pbase->gal_list); psnode != nullptr;
-		     psnode = single_list_get_after(&pbase->gal_list, psnode)) {
-			if (i > last_row || (*ppoutmids)->cvalues > requested) {
-				break;
-			} else if (i < start_pos) {
-				i++;
-				continue;
-			}
-			if (nsp_interface_match_node(static_cast<SIMPLE_TREE_NODE *>(psnode->pdata),
-			    pstat->codepage, pfilter)) {
+		for (size_t i = start_pos; i <= last_row &&
+		     (*ppoutmids)->cvalues <= requested &&
+		     i < pbase->gal_list.size(); ++i) {
+			auto ptr = pbase->gal_list[i];
+			if (nsp_interface_match_node(ptr, pstat->codepage, pfilter)) {
 				auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 				if (NULL == pproptag) {
 					result = ecMAPIOOM;
 					goto EXIT_GET_MATCHES;
 				}
-				*pproptag = ab_tree_get_node_minid(static_cast<SIMPLE_TREE_NODE *>(psnode->pdata));
+				*pproptag = ab_tree_get_node_minid(ptr);
 			}
-			i++;
 		}
 	} else {
 		auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
@@ -1994,21 +1970,17 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	
 	if (pstat->cur_rec <= 0x10) {
 		if (0 == pstat->container_id) {
-			const SINGLE_LIST_NODE *psnode;
+			gal_list_t::const_iterator it;
 			if (MID_BEGINNING_OF_TABLE == pstat->cur_rec) {
-				psnode = single_list_get_head(&pbase->gal_list);
+				it = pbase->gal_list.cbegin();
 			} else if (MID_END_OF_TABLE == pstat->cur_rec) {
-				psnode = single_list_get_tail(&pbase->gal_list);
+				it = pbase->gal_list.cend();
 			} else {
 				nsp_interface_position_in_list(pstat,
 					&pbase->gal_list, &row, &last_row, &total);
-				size_t i;
-				for (i = 0, psnode = single_list_get_head(&pbase->gal_list);
-				     psnode != NULL && i < row; ++i)
-					psnode = single_list_get_after(&pbase->gal_list, psnode);
+				it = pbase->gal_list.cbegin() + row;
 			}
-			pnode1 = psnode == nullptr ? nullptr :
-			         static_cast<decltype(pnode1)>(psnode->pdata);
+			pnode1 = it == pbase->gal_list.cend() ? nullptr : *it;
 		} else {
 			auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 			if (NULL == pnode) {
@@ -2126,9 +2098,8 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 	pos2 = -1;
 	i = 0;
 	if (NULL == pstat || 0 == pstat->container_id) {
-		for (auto psnode = single_list_get_head(&pbase->gal_list); psnode != nullptr;
-		     psnode = single_list_get_after(&pbase->gal_list, psnode)) {
-			minid = ab_tree_get_node_minid(static_cast<const SIMPLE_TREE_NODE *>(psnode->pdata));
+		for (auto ptr : pbase->gal_list) {
+			minid = ab_tree_get_node_minid(ptr);
 			if (minid == mid1) {
 				pos1 = i;
 			}
@@ -2678,20 +2649,19 @@ static BOOL nsp_interface_resolve_node(const SIMPLE_TREE_NODE *pnode,
 	return FALSE;
 }
 
-static const SIMPLE_TREE_NODE *nsp_interface_resolve_gal(const SINGLE_LIST *plist,
+static const SIMPLE_TREE_NODE *nsp_interface_resolve_gal(const gal_list_t &plist,
 	uint32_t codepage, char *pstr, BOOL *pb_ambiguous)
 {
 	const SIMPLE_TREE_NODE *ptnode = nullptr;
 	
-	for (auto pnode = single_list_get_head(plist); pnode != nullptr;
-		pnode=single_list_get_after(plist, pnode)) {
-		if (!nsp_interface_resolve_node(static_cast<const SIMPLE_TREE_NODE *>(pnode->pdata), codepage, pstr))
+	for (auto ptr : plist) {
+		if (!nsp_interface_resolve_node(ptr, codepage, pstr))
 			continue;
 		if (NULL != ptnode) {
 			*pb_ambiguous = TRUE;
 			return NULL;
 		} else {
-			ptnode = static_cast<decltype(ptnode)>(pnode->pdata);
+			ptnode = ptr;
 		}
 	}
 	if (NULL == ptnode) {
@@ -2872,7 +2842,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			} else {
 				ptoken = pstrs->ppstr[i];
 			}
-			auto pnode = nsp_interface_resolve_gal(&pbase->gal_list,
+			auto pnode = nsp_interface_resolve_gal(pbase->gal_list,
 						pstat->codepage, ptoken, &b_ambiguous);
 			if (NULL == pnode) {
 				if (b_ambiguous) {
