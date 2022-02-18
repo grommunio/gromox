@@ -265,8 +265,9 @@ static void ab_tree_destruct_tree(SIMPLE_TREE *ptree)
 	
 	proot = simple_tree_get_root(ptree);
 	if (NULL != proot) {
-		simple_tree_destroy_node(ptree, proot,
-			(SIMPLE_TREE_DELETE)ab_tree_put_abnode);
+		simple_tree_destroy_node(ptree, proot, [](SIMPLE_TREE_NODE *nd) {
+			ab_tree_put_abnode(containerof(nd, AB_NODE, stree));
+		});
 	}
 	simple_tree_free(ptree);
 }
