@@ -695,7 +695,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 		if (NULL == proot) {
 			continue;
 		}
-		simple_tree_enum_from_node(proot, [&](SIMPLE_TREE_NODE *nd) {
+		simple_tree_enum_from_node(proot, [&pbase](SIMPLE_TREE_NODE *nd) {
 			auto node_type = ab_tree_get_node_type(nd);
 			if (node_type > 0x80 || nd->pdata != nullptr)
 				return;

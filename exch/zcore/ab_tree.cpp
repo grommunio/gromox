@@ -649,7 +649,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase)
 		if (NULL == proot) {
 			continue;
 		}
-		simple_tree_enum_from_node(proot, [&](SIMPLE_TREE_NODE *nd) {
+		simple_tree_enum_from_node(proot, [&pbase](SIMPLE_TREE_NODE *nd) {
 			auto node_type = ab_tree_get_node_type(nd);
 			if (node_type > 0x80 || nd->pdata != nullptr)
 				return;
@@ -923,7 +923,7 @@ const SIMPLE_TREE_NODE *ab_tree_guid_to_node(AB_BASE *pbase, GUID guid)
 	if (NULL == ptnode) {
 		return NULL;
 	}
-	simple_tree_enum_from_node(ptnode, [&](const SIMPLE_TREE_NODE *pnode) {
+	simple_tree_enum_from_node(ptnode, [&tmp_enum](const SIMPLE_TREE_NODE *pnode) {
 		char temp_path[512];
 		auto abn = containerof(pnode, AB_NODE, stree);
 		if (tmp_enum.pabnode != nullptr ||
