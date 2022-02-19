@@ -495,8 +495,8 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 	if (!exmdb_client_remote::delivery_message(home_dir,
 	    pcontext->pcontrol->from, address, 0, pmsg, temp_buff, &r32))
 		return DELIVERY_OPERATION_ERROR;
-	auto result_code = static_cast<delivery_message_result>(r32);
-	if (result_code == delivery_message_result::result_ok) {
+	auto dm_status = static_cast<delivery_message_result>(r32);
+	if (dm_status == delivery_message_result::result_ok) {
 		pvalue = pmsg->proplist.getval(PR_AUTO_RESPONSE_SUPPRESS);
 		if (pvalue != nullptr) {
 			suppress_mask = *(uint32_t*)pvalue;
@@ -512,7 +512,7 @@ int exmdb_local_deliverquota(MESSAGE_CONTEXT *pcontext, const char *address)
 		}
 	}
 	message_content_free(pmsg);
-	switch (result) {
+	switch (dm_status) {
 	case delivery_message_result::result_ok:
 		exmdb_local_log_info(pcontext, address, LV_DEBUG,
 			"message %s was delivered OK", eml_path.c_str());
