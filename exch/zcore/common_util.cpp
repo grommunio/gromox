@@ -84,6 +84,7 @@ static char g_org_name[256];
 static char g_hostname[UDOM_SIZE];
 static std::shared_ptr<MIME_POOL> g_mime_pool;
 static thread_local const char *g_dir_key;
+static thread_local unsigned int g_env_refcount;
 static thread_local ENVIRONMENT_CONTEXT *g_env_key;
 static char g_default_zone[64];
 static char g_freebusy_path[256];
@@ -449,6 +450,8 @@ const char* common_util_get_freebusy_path()
 
 BOOL common_util_build_environment()
 {
+	if (++g_env_refcount > 1)
+		return TRUE;
 	auto pctx = me_alloc<ENVIRONMENT_CONTEXT>();
 	if (pctx == nullptr)
 		return FALSE;
@@ -460,6 +463,8 @@ BOOL common_util_build_environment()
 
 void common_util_free_environment()
 {
+	if (--g_env_refcount > 0)
+		return;
 	auto pctx = g_env_key;
 	g_env_key = nullptr;
 	if (pctx == nullptr)

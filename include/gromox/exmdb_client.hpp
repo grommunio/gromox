@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include <ctime>
 #include <list>
 #include <mutex>
@@ -49,6 +50,7 @@ struct GX_EXPORT remote_svr : public EXMDB_ITEM {
 	void (*build_env)(const remote_svr &) = nullptr;
 	void (*free_env)() = nullptr;
 	void (*event_proc)(const char *, BOOL, uint32_t, const DB_NOTIFY *) = nullptr;
+	std::atomic<unsigned int> active_handles{0};
 };
 
 struct GX_EXPORT remote_conn_ref {

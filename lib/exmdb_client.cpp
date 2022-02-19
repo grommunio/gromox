@@ -27,7 +27,6 @@ namespace gromox {
 static constexpr unsigned int mdcl_socket_timeout = 60;
 static std::vector<EXMDB_ITEM> mdcl_local_list;
 static std::list<agent_thread> mdcl_agent_list;
-static std::list<remote_conn> mdcl_lost_list;
 static std::list<remote_svr> mdcl_server_list;
 static std::mutex mdcl_server_lock;
 static atomic_bool mdcl_notify_stop;
@@ -45,16 +44,16 @@ void remote_conn_ref::reset(bool lost)
 	if (tmplist.size() == 0)
 		return;
 	auto pconn = &tmplist.front();
-	if (!lost) {
+	if (pconn->sockd < 0) {
+		tmplist.clear();
+	} else if (!lost) {
 		std::lock_guard sv_hold(mdcl_server_lock);
 		pconn->psvr->conn_list.splice(pconn->psvr->conn_list.end(), tmplist, tmplist.begin());
 	} else {
 		close(pconn->sockd);
-		pconn->sockd = -1;
-		std::lock_guard sv_hold(mdcl_server_lock);
-		mdcl_lost_list.splice(mdcl_lost_list.end(), tmplist, tmplist.begin());
+		--pconn->psvr->active_handles;
+		tmplist.clear();
 	}
-	tmplist.clear();
 }
 
 void exmdb_client_init(unsigned int conn_num, unsigned int threads_num)
@@ -97,7 +96,7 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 		if (next <= now && mdcl_lastwarn_time.compare_exchange_strong(prev, now))
 			fprintf(stderr, "exmdb_client: gx_inet_connect to [%s]:%hu: %s\n",
 			        srv.host.c_str(), srv.port, strerror(-sockd));
-	        return -1;
+	        return -2;
 	}
 	auto cl_sock = make_scope_exit([&]() { close(sockd); });
 	char remote_id[128];
@@ -147,6 +146,7 @@ static void cl_pinger2()
 	std::list<REMOTE_CONN> temp_list;
 	std::unique_lock sv_hold(mdcl_server_lock);
 
+	/* Extract nodes to ping */
 	for (auto &srv : mdcl_server_list) {
 		auto tail = srv.conn_list.size() > 0 ? &srv.conn_list.back() : nullptr;
 		while (srv.conn_list.size() > 0) {
@@ -161,20 +161,20 @@ static void cl_pinger2()
 	}
 	sv_hold.unlock();
 
+	/* Ping and reinsert (or discard) */
 	while (temp_list.size() > 0) {
 		auto conn = &temp_list.front();
 		if (mdcl_notify_stop) {
 			close(conn->sockd);
+			--conn->psvr->active_handles;
 			temp_list.pop_front();
 			continue;
 		}
 		auto ping_buff = cpu_to_le32(0);
 		if (write(conn->sockd, &ping_buff, sizeof(uint32_t)) != sizeof(uint32_t)) {
 			close(conn->sockd);
-			conn->sockd = -1;
-			sv_hold.lock();
-			mdcl_lost_list.splice(mdcl_lost_list.end(), temp_list, temp_list.begin());
-			sv_hold.unlock();
+			--conn->psvr->active_handles;
+			temp_list.pop_front();
 			continue;
 		}
 		struct pollfd pfd_read{conn->sockd, POLLIN | POLLPRI};
@@ -183,39 +183,14 @@ static void cl_pinger2()
 		    read(conn->sockd, &resp_buff, 1) != 1 ||
 		    resp_buff != exmdb_response::success) {
 			close(conn->sockd);
-			conn->sockd = -1;
-			sv_hold.lock();
-			mdcl_lost_list.splice(mdcl_lost_list.end(), temp_list, temp_list.begin());
-		} else {
-			time(&conn->last_time);
-			sv_hold.lock();
-			conn->psvr->conn_list.splice(conn->psvr->conn_list.end(), temp_list, temp_list.begin());
-		}
-		sv_hold.unlock();
-	}
-
-	sv_hold.lock();
-	temp_list = std::move(mdcl_lost_list);
-	mdcl_lost_list.clear();
-	sv_hold.unlock();
-
-	while (temp_list.size() > 0) {
-		auto conn = &temp_list.front();
-		if (mdcl_notify_stop) {
-			close(conn->sockd);
+			--conn->psvr->active_handles;
 			temp_list.pop_front();
-			continue;
-		}
-		conn->sockd = exmdb_client_connect_exmdb(*conn->psvr, false, "mdcl");
-		if (conn->sockd >= 0) {
+		} else {
 			time(&conn->last_time);
 			sv_hold.lock();
 			conn->psvr->conn_list.splice(conn->psvr->conn_list.end(), temp_list, temp_list.begin());
-		} else {
-			sv_hold.lock();
-			mdcl_lost_list.splice(mdcl_lost_list.end(), temp_list, temp_list.begin());
+			sv_hold.unlock();
 		}
-		sv_hold.unlock();
 	}
 }
 
@@ -341,19 +316,6 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 		srv.build_env = build_env;
 		srv.free_env = free_env;
 		srv.event_proc = event_proc;
-		for (unsigned int j = 0; j < mdcl_conn_num; ++j) {
-			remote_conn conn;
-			conn.sockd = -1;
-			conn.psvr = &srv;
-			try {
-				mdcl_lost_list.push_back(std::move(conn));
-			} catch (const std::bad_alloc &) {
-				printf("exmdb_client: fail to "
-					"allocate memory for exmdb\n");
-				mdcl_notify_stop = true;
-				return 6;
-			}
-		}
 		for (unsigned int j = 0; event_proc != nullptr && j < mdcl_threads_num; ++j) {
 			try {
 				mdcl_agent_list.push_back(agent_thread{});
@@ -413,12 +375,26 @@ remote_conn_ref exmdb_client_get_connection(const char *dir)
 		printf("exmdb_client: cannot find remote server for %s\n", dir);
 		return fc;
 	}
-	if (i->conn_list.size() == 0) {
-		printf("exmdb_client: no alive connection for [%s]:%hu/%s\n",
-		       i->host.c_str(), i->port, i->prefix.c_str());
+	if (i->conn_list.size() > 0) {
+		fc.tmplist.splice(fc.tmplist.end(), i->conn_list, i->conn_list.begin());
 		return fc;
 	}
-	fc.tmplist.splice(fc.tmplist.end(), i->conn_list, i->conn_list.begin());
+	if (i->active_handles >= mdcl_conn_num) {
+		fprintf(stderr, "exmdb_client: reached maximum connections (%u) to [%s]:%hu/%s\n",
+		        mdcl_conn_num, i->host.c_str(), i->port, i->prefix.c_str());
+		return fc;
+	}
+	fc.tmplist.emplace_back(remote_conn{&*i});
+	auto &conn = fc.tmplist.back();
+	conn.sockd = exmdb_client_connect_exmdb(*i, false, "mdcl");
+	if (conn.sockd == -2) {
+		return fc;
+	} else if (conn.sockd < 0) {
+		fprintf(stderr, "exmdb_client: protocol error connecting to [%s]:%hu/%s failed\n",
+		        i->host.c_str(), i->port, i->prefix.c_str());
+		return fc;
+	}
+	++i->active_handles;
 	return fc;
 }
 
@@ -451,3 +427,64 @@ BOOL exmdb_client_do_rpc(const char *dir,
 }
 
 }
+
+#ifdef TEST1
+int main(int argc, const char **argv)
+{
+	struct sigaction sact{};
+	sigemptyset(&sact.sa_mask);
+	sact.sa_handler = [](int) {};
+	sigaction(SIGALRM, &sact, nullptr);
+	exmdb_client_init(2, 0);
+	auto cl_0 = make_scope_exit(exmdb_client_stop);
+	auto ret = exmdb_client_run(PKGSYSCONFDIR);
+	if (ret != 0)
+		return EXIT_FAILURE;
+	auto dir = argc >= 2 ? argv[1] : "/var/lib/gromox/user/test@";
+	{
+		auto fc1 = exmdb_client_get_connection(dir);
+		assert(fc1 != nullptr);
+		printf("C#1a: fd %d\n", fc1->sockd);
+		//sleep(1);
+		{
+			auto fc2 = exmdb_client_get_connection(dir);
+			assert(fc2 != nullptr);
+			printf("C#2a: fd %d\n", fc2->sockd);
+			auto fc3 = exmdb_client_get_connection(dir);
+			printf("C#3: fd %d\n", fc3 != nullptr ? fc3->sockd : -1);
+		}
+		auto fc2 = exmdb_client_get_connection(dir);
+		assert(fc2 != nullptr);
+		printf("C#2b: fd %d\n", fc2->sockd);
+		fc2.reset();
+		sleep(64);
+		// fc1 should now be dead (server-side timeout of 60)
+		// give it back into the hands of cl_pinger2
+		fc1.reset();
+		sleep(2);
+		auto fc3 = exmdb_client_get_connection(dir);
+		assert(fc3 != nullptr);
+		printf("C#3: fd %d\n", fc3->sockd);
+		auto fc4 = exmdb_client_get_connection(dir);
+		assert(fc4 != nullptr);
+		printf("C#4: fd %d\n", fc4->sockd);
+	}
+	return EXIT_SUCCESS;
+}
+#endif
+#ifdef TEST2
+int main()
+{
+	exmdb_client_init(2, 0);
+	exmdb_client_run(PKGSYSCONFDIR);
+	{
+		auto fc = exmdb_client_get_connection("/var/lib/gromox/user/test@grammm.com");
+		printf("%s\n", fc != nullptr ? "OK" : "FAIL");
+		printf("fd %d\n", fc != nullptr ? fc->sockd : -1);
+		fc.reset();
+	}
+	sleep(64);
+	printf("check state\n");
+	sleep(9000);
+}
+#endif
