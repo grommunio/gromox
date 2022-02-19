@@ -11,10 +11,6 @@
 
 using namespace gromox;
 
-static auto &g_lost_list = mdcl_lost_list;
-static auto &g_server_list = mdcl_server_list;
-static auto &g_server_lock = mdcl_server_lock;
-
 static void (*exmdb_client_event_proc)(const char *dir,
 	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify);
 

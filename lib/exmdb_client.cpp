@@ -25,14 +25,14 @@
 namespace gromox {
 
 static constexpr unsigned int mdcl_socket_timeout = 60;
-std::vector<EXMDB_ITEM> mdcl_local_list;
-std::list<agent_thread> mdcl_agent_list;
-std::list<remote_conn> mdcl_lost_list;
-std::list<remote_svr> mdcl_server_list;
-std::mutex mdcl_server_lock;
-atomic_bool mdcl_notify_stop;
-unsigned int mdcl_conn_num, mdcl_threads_num;
-pthread_t mdcl_scan_id;
+static std::vector<EXMDB_ITEM> mdcl_local_list;
+static std::list<agent_thread> mdcl_agent_list;
+static std::list<remote_conn> mdcl_lost_list;
+static std::list<remote_svr> mdcl_server_list;
+static std::mutex mdcl_server_lock;
+static atomic_bool mdcl_notify_stop;
+static unsigned int mdcl_conn_num, mdcl_threads_num;
+static pthread_t mdcl_scan_id;
 
 remote_conn_ref::remote_conn_ref(remote_conn_ref &&o)
 {
@@ -85,8 +85,8 @@ void exmdb_client_stop()
 			close(conn.sockd);
 }
 
-int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen, const char *prog_id,
-    void (*build_env)(const remote_svr &), void (*free_env)())
+static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
+    const char *prog_id, void (*build_env)(const remote_svr &), void (*free_env)())
 {
 	int sockd = gx_inet_connect(srv.host.c_str(), srv.port, 0);
 	if (sockd < 0) {

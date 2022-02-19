@@ -12,11 +12,6 @@
 
 using namespace gromox;
 
-static auto &g_local_list = mdcl_local_list;
-static auto &g_lost_list = mdcl_lost_list;
-static auto &g_server_list = mdcl_server_list;
-static auto &g_server_lock = mdcl_server_lock;
-
 static void buildenv(const remote_svr &s)
 {
 	exmdb_server_build_environment(false,
