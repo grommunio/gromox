@@ -120,7 +120,7 @@ gx_inet_lookup(const char *host, uint16_t port, unsigned int xflags)
 int gx_inet_connect(const char *host, uint16_t port, unsigned int oflags)
 {
 	auto aires = gx_inet_lookup(host, port, AI_ADDRCONFIG);
-	int saved_errno = EHOSTUNREACH;
+	int saved_errno = 0;
 	for (auto r = aires.get(); r != nullptr; r = r->ai_next) {
 		int fd = socket(r->ai_family, r->ai_socktype, r->ai_protocol);
 		if (fd < 0) {
@@ -148,6 +148,8 @@ int gx_inet_connect(const char *host, uint16_t port, unsigned int oflags)
 		saved_errno = errno;
 		close(fd);
 	}
+	if (aires.get() == nullptr && saved_errno == 0)
+		saved_errno = EHOSTUNREACH;
 	return -(errno = saved_errno);
 }
 

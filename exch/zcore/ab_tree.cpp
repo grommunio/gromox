@@ -205,7 +205,6 @@ void ab_tree_init(const char *org_name, int base_size,
 int ab_tree_run()
 {
 	int i;
-	AB_NODE *pabnode;
 	SINGLE_LIST_NODE *psnode;
 
 	g_file_allocator = LIB_BUFFER::create(FILE_ALLOC_SIZE,
