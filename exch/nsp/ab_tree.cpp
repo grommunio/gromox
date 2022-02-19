@@ -71,13 +71,11 @@
 using namespace gromox;
 
 struct NSAB_NODE {
-	union {
-		SIMPLE_TREE_NODE node, stree;
-	};
-	uint8_t node_type;
-	uint32_t minid;
-	void *d_info;
-	int id;
+	SIMPLE_TREE_NODE stree;
+	int id = 0;
+	uint32_t minid = 0;
+	void *d_info = nullptr;
+	uint8_t node_type = 0;
 };
 using AB_NODE = NSAB_NODE;
 
@@ -165,12 +163,7 @@ static void ab_tree_put_snode(SINGLE_LIST_NODE *psnode)
 
 static AB_NODE* ab_tree_get_abnode()
 {
-	auto n = new(std::nothrow) AB_NODE;
-	if (n == nullptr)
-		return nullptr;
-	n->d_info = nullptr;
-	n->minid = 0;
-	return n;
+	return new(std::nothrow) AB_NODE;
 }
 
 static void ab_tree_put_abnode(AB_NODE *pabnode)
