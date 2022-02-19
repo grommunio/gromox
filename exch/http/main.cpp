@@ -456,6 +456,7 @@ int main(int argc, const char **argv) try
 		printf("[system]: fail trigger accept\n");
 		return EXIT_FAILURE;
 	}
+	auto cleanup_29 = make_scope_exit(listener_stop_accept);
 	
 	retcode = EXIT_SUCCESS;
 	printf("[system]: HTTP DAEMON is now running\n");
@@ -467,7 +468,6 @@ int main(int argc, const char **argv) try
 			pdu_processor_reload();
 		}
 	}
-	listener_stop_accept();
 	return retcode;
 } catch (const cfg_error &) {
 	return EXIT_FAILURE;

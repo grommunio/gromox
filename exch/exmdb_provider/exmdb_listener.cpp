@@ -148,7 +148,8 @@ void exmdb_listener_stop()
 	}
 	if (!g_notify_stop) {
 		g_notify_stop = true;
-		shutdown(g_listen_sockd, SHUT_RDWR);
+		if (g_listen_sockd >= 0)
+			shutdown(g_listen_sockd, SHUT_RDWR);
 		if (!pthread_equal(g_listener_id, {})) {
 			pthread_kill(g_listener_id, SIGALRM);
 			pthread_join(g_listener_id, NULL);

@@ -985,7 +985,8 @@ void exmdb_parser_stop()
 	for (auto &pconnection : g_connection_list) {
 		pthr_ids[i++] = pconnection->thr_id;
 		pconnection->b_stop = true;
-		shutdown(pconnection->sockd, SHUT_RDWR);
+		if (pconnection->sockd >= 0)
+			shutdown(pconnection->sockd, SHUT_RDWR); /* closed in ~EXMDB_CONNECTION */
 		pthread_kill(pconnection->thr_id, SIGALRM);
 	}
 	chold.unlock();
