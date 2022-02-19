@@ -335,7 +335,7 @@ static void *midbag_scanwork(void *param)
 			} else {
 				time(&pback->last_time);
 				sv_hold.lock();
-				g_lost_list.splice(g_lost_list.end(), temp_list, temp_list.begin());
+				pback->psvr->conn_list.splice(pback->psvr->conn_list.end(), temp_list, temp_list.begin());
 				sv_hold.unlock();
 			}
 		}
