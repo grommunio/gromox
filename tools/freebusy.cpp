@@ -7,6 +7,7 @@
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/endian.hpp>
+#include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/scope.hpp>
@@ -35,58 +36,8 @@
 #include <cstdint>
 #include <gromox/cookie_parser.hpp>
 #define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
-#define SOCKET_TIMEOUT								60
 
 namespace {
-
-struct EXMDB_NODE : public EXMDB_ITEM {
-	EXMDB_NODE(EXMDB_ITEM &&o) : EXMDB_ITEM(std::move(o)) {}
-	int sockd = -1;
-	time_t last_time{};
-};
-
-struct CONNECT_REQUEST {
-	char *prefix;
-	char *remote_id;
-	BOOL b_private;
-};
-
-struct GET_NAMED_PROPIDS_REQUEST {
-	const char *dir;
-	BOOL b_create;
-	const PROPNAME_ARRAY *ppropnames;
-};
-
-struct CHECK_FOLDER_PERMISSION_REQUEST {
-	const char *dir;
-	uint64_t folder_id;
-	const char *username;
-};
-
-struct LOAD_CONTENT_TABLE_REQUEST {
-	const char *dir;
-	uint32_t cpid;
-	uint64_t folder_id;
-	const char *username;
-	uint8_t table_flags;
-	const RESTRICTION *prestriction;
-	const SORTORDER_SET *psorts;
-};
-
-struct UNLOAD_TABLE_REQUEST {
-	const char *dir;
-	uint32_t table_id;
-};
-
-struct QUERY_TABLE_REQUEST {
-	const char *dir;
-	const char *username;
-	uint32_t cpid;
-	uint32_t table_id;
-	const PROPTAG_ARRAY *pproptags;
-	uint32_t start_pos;
-	int32_t row_needed;
-};
 
 struct EVENT_NODE {
 	DOUBLE_LIST_NODE node;
@@ -99,311 +50,12 @@ struct EVENT_NODE {
 }
 
 using namespace gromox;
+namespace exmdb_client = exmdb_client_remote;
 
 static time_t g_end_time;
 static time_t g_start_time;
 static const char *g_username;
-static std::vector<EXMDB_NODE> g_exmdb_list;
 static std::shared_ptr<ICAL_COMPONENT> g_tz_component;
-
-static int cl_rd_sock(int fd, BINARY *b) { return exmdb_client_read_socket(fd, b, SOCKET_TIMEOUT * 1000); }
-
-static int exmdb_client_push_connect_request(
-	EXT_PUSH *pext, const CONNECT_REQUEST *r)
-{
-	TRY(pext->p_str(r->prefix));
-	TRY(pext->p_str(r->remote_id));
-	return pext->p_bool(r->b_private);
-}
-
-static int exmdb_client_push_get_named_propids(
-	EXT_PUSH *pext, const GET_NAMED_PROPIDS_REQUEST *r)
-{
-	TRY(pext->p_str(r->dir));
-	TRY(pext->p_bool(r->b_create));
-	return pext->p_propname_a(*r->ppropnames);
-}
-
-static int exmdb_client_push_check_folder_permission_request(
-	EXT_PUSH *pext, const CHECK_FOLDER_PERMISSION_REQUEST *r)
-{
-	TRY(pext->p_str(r->dir));
-	TRY(pext->p_uint64(r->folder_id));
-	return pext->p_str(r->username);
-}
-
-static int exmdb_client_push_load_content_table_request(
-	EXT_PUSH *pext, const LOAD_CONTENT_TABLE_REQUEST *r)
-{
-	TRY(pext->p_str(r->dir));
-	TRY(pext->p_uint32(r->cpid));
-	TRY(pext->p_uint64(r->folder_id));
-	if (NULL == r->username) {
-		TRY(pext->p_uint8(0));
-	} else {
-		TRY(pext->p_uint8(1));
-		TRY(pext->p_str(r->username));
-	}
-	TRY(pext->p_uint8(r->table_flags));
-	if (NULL == r->prestriction) {
-		TRY(pext->p_uint8(0));
-	} else {
-		TRY(pext->p_uint8(1));
-		TRY(pext->p_restriction(*r->prestriction));
-	}
-	if (r->psorts == nullptr)
-		return pext->p_uint8(0);
-	TRY(pext->p_uint8(1));
-	return pext->p_sortorder_set(*r->psorts);
-}
-
-static int exmdb_client_push_unload_table_request(
-	EXT_PUSH *pext, const UNLOAD_TABLE_REQUEST *r)
-{
-	TRY(pext->p_str(r->dir));
-	return pext->p_uint32(r->table_id);
-}
-
-static int exmdb_client_push_query_table_request(
-	EXT_PUSH *pext, const QUERY_TABLE_REQUEST *r)
-{
-	TRY(pext->p_str(r->dir));
-	if (NULL == r->username) {
-		TRY(pext->p_uint8(0));
-	} else {
-		TRY(pext->p_uint8(1));
-		TRY(pext->p_str(r->username));
-	}
-	TRY(pext->p_uint32(r->cpid));
-	TRY(pext->p_uint32(r->table_id));
-	TRY(pext->p_proptag_a(*r->pproptags));
-	TRY(pext->p_uint32(r->start_pos));
-	return pext->p_int32(r->row_needed);
-}
-
-static int exmdb_client_push_request2(EXT_PUSH &ext_push, exmdb_callid call_id,
-	void *prequest, BINARY *pbin_out)
-{
-	TRY(ext_push.advance(sizeof(uint32_t)));
-	TRY(ext_push.p_uint8(static_cast<uint8_t>(call_id)));
-	switch (call_id) {
-	case exmdb_callid::connect:
-		TRY(exmdb_client_push_connect_request(&ext_push, static_cast<CONNECT_REQUEST *>(prequest)));
-		break;
-	case exmdb_callid::get_named_propids:
-		TRY(exmdb_client_push_get_named_propids(&ext_push, static_cast<GET_NAMED_PROPIDS_REQUEST *>(prequest)));
-		break;
-	case exmdb_callid::check_folder_permission:
-		TRY(exmdb_client_push_check_folder_permission_request(&ext_push, static_cast<CHECK_FOLDER_PERMISSION_REQUEST *>(prequest)));
-		break;
-	case exmdb_callid::load_content_table:
-		TRY(exmdb_client_push_load_content_table_request(&ext_push, static_cast<LOAD_CONTENT_TABLE_REQUEST *>(prequest)));
-		break;
-	case exmdb_callid::unload_table:
-		TRY(exmdb_client_push_unload_table_request(&ext_push, static_cast<UNLOAD_TABLE_REQUEST *>(prequest)));
-		break;
-	case exmdb_callid::query_table:
-		TRY(exmdb_client_push_query_table_request(&ext_push, static_cast<QUERY_TABLE_REQUEST *>(prequest)));
-		break;
-	default:
-		return EXT_ERR_BAD_SWITCH;
-	}
-	pbin_out->cb = ext_push.m_offset;
-	ext_push.m_offset = 0;
-	TRY(ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t)));
-	/* memory referenced by ext_push.data will be freed outside */
-	pbin_out->pb = ext_push.release();
-	return EXT_ERR_SUCCESS;
-}
-
-static int exmdb_client_push_request(exmdb_callid call_id,
-	void *prequest, BINARY *pbin_out)
-{
-	EXT_PUSH ext_push;
-	if (!ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT))
-		return EXT_ERR_ALLOC;
-	return exmdb_client_push_request2(ext_push, call_id, prequest, pbin_out);
-}
-
-static BOOL exmdb_client_get_named_propids(int sockd, const char *dir,
-	BOOL b_create, const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids)
-{
-	BINARY tmp_bin;
-	EXT_PULL ext_pull;
-	GET_NAMED_PROPIDS_REQUEST request;
-	
-	request.dir = dir;
-	request.b_create = b_create;
-	request.ppropnames = ppropnames;
-	if (exmdb_client_push_request(exmdb_callid::get_named_propids,
-	    &request, &tmp_bin) != EXT_ERR_SUCCESS ||
-	    !exmdb_client_write_socket(sockd, &tmp_bin) ||
-	    !cl_rd_sock(sockd, &tmp_bin) || tmp_bin.cb < 5 ||
-	    static_cast<exmdb_response>(tmp_bin.pb[0]) != exmdb_response::success)
-		return FALSE;
-	ext_pull.init(tmp_bin.pb + 5, tmp_bin.cb - 5, malloc, EXT_FLAG_WCOUNT);
-	return ext_pull.g_propid_a(ppropids) == EXT_ERR_SUCCESS ? TRUE : false;
-}
-
-static BOOL exmdb_client_check_folder_permission(int sockd,
-	const char *dir, uint64_t folder_id, const char *username,
-	uint32_t *ppermission)
-{
-	BINARY tmp_bin;
-	CHECK_FOLDER_PERMISSION_REQUEST request;
-	
-	request.dir = dir;
-	request.folder_id = folder_id;
-	request.username = username;
-	if (exmdb_client_push_request(exmdb_callid::check_folder_permission,
-	    &request, &tmp_bin) != EXT_ERR_SUCCESS ||
-	    !exmdb_client_write_socket(sockd, &tmp_bin) ||
-	    !cl_rd_sock(sockd, &tmp_bin) || tmp_bin.cb != 9 ||
-	    static_cast<exmdb_response>(tmp_bin.pb[0]) != exmdb_response::success)
-		return FALSE;
-	*ppermission = le32p_to_cpu(tmp_bin.pb + 5);
-	return TRUE;
-}
-
-static BOOL exmdb_client_load_content_table(int sockd, const char *dir,
-	uint32_t cpid, uint64_t folder_id, const char *username,
-	uint8_t table_flags, const RESTRICTION *prestriction,
-	const SORTORDER_SET *psorts, uint32_t *ptable_id, uint32_t *prow_count)
-{
-	BINARY tmp_bin;
-	LOAD_CONTENT_TABLE_REQUEST request;
-	
-	request.dir = dir;
-	request.cpid = cpid;
-	request.folder_id = folder_id;
-	request.username = username;
-	request.table_flags = table_flags;
-	request.prestriction = prestriction;
-	request.psorts = psorts;
-	if (exmdb_client_push_request(exmdb_callid::load_content_table,
-	    &request, &tmp_bin) != EXT_ERR_SUCCESS ||
-	    !exmdb_client_write_socket(sockd, &tmp_bin) ||
-	    !cl_rd_sock(sockd, &tmp_bin) || tmp_bin.cb != 13 ||
-	    static_cast<exmdb_response>(tmp_bin.pb[0]) != exmdb_response::success)
-		return FALSE;
-	*ptable_id = le32p_to_cpu(tmp_bin.pb + 5);
-	*prow_count = le32p_to_cpu(tmp_bin.pb + 9);
-	return TRUE;
-}
-
-static BOOL exmdb_client_unload_table(int sockd,
-	const char *dir, uint32_t table_id)
-{
-	BINARY tmp_bin;
-	UNLOAD_TABLE_REQUEST request;
-	
-	request.dir = dir;
-	request.table_id = table_id;
-	if (exmdb_client_push_request(exmdb_callid::unload_table,
-	    &request, &tmp_bin) != EXT_ERR_SUCCESS ||
-	    !exmdb_client_write_socket(sockd, &tmp_bin) ||
-	    !cl_rd_sock(sockd, &tmp_bin) || tmp_bin.cb != 5 ||
-	    static_cast<exmdb_response>(tmp_bin.pb[0]) != exmdb_response::success)
-		return FALSE;
-	return TRUE;
-}
-
-static BOOL exmdb_client_query_table(int sockd, const char *dir,
-	const char *username, uint32_t cpid, uint32_t table_id,
-	const PROPTAG_ARRAY *pproptags, uint32_t start_pos,
-	int32_t row_needed, TARRAY_SET *pset)
-{
-	BINARY tmp_bin;
-	EXT_PULL ext_pull;
-	QUERY_TABLE_REQUEST request;
-	
-	request.dir = dir;
-	request.username = username;
-	request.cpid = cpid;
-	request.table_id = table_id;
-	request.pproptags = pproptags;
-	request.start_pos = start_pos;
-	request.row_needed = row_needed;
-	if (exmdb_client_push_request(exmdb_callid::query_table,
-	    &request, &tmp_bin) != EXT_ERR_SUCCESS ||
-	    !exmdb_client_write_socket(sockd, &tmp_bin) ||
-	    !cl_rd_sock(sockd, &tmp_bin) ||
-	    static_cast<exmdb_response>(tmp_bin.pb[0]) != exmdb_response::success)
-		return FALSE;
-	ext_pull.init(tmp_bin.pb + 5, tmp_bin.cb - 5, malloc, EXT_FLAG_WCOUNT);
-	return ext_pull.g_tarray_set(pset) == EXT_ERR_SUCCESS ? TRUE : false;
-}
-
-static void cache_connection(const char *dir, int sockd)
-{
-	auto i = std::find_if(g_exmdb_list.begin(), g_exmdb_list.end(),
-	         [&](const EXMDB_ITEM &s) { return strncmp(s.prefix.c_str(), dir, s.prefix.size()) == 0; });
-	if (i == g_exmdb_list.end())
-		return;
-	i->sockd = sockd;
-	time(&i->last_time);
-}
-
-static int connect_exmdb(const char *dir)
-{
-	int process_id;
-	BINARY tmp_bin;
-	char remote_id[128];
-	CONNECT_REQUEST request;
-	
-	auto pexnode = std::find_if(g_exmdb_list.begin(), g_exmdb_list.end(),
-	               [&](const EXMDB_ITEM &s) { return strncmp(s.prefix.c_str(), dir, s.prefix.size()) == 0; });
-	if (pexnode == g_exmdb_list.end())
-		return -1;
-	if (-1 != pexnode->sockd) {
-		if (time(NULL) - pexnode->last_time > SOCKET_TIMEOUT - 3) {
-			close(pexnode->sockd);
-			pexnode->sockd = -1;
-		} else {
-			return pexnode->sockd;
-		}
-	}
-	int sockd = gx_inet_connect(pexnode->host.c_str(), pexnode->port, 0);
-	if (sockd < 0) {
-		fprintf(stderr, "gx_inet_connect freebusy@[%s]:%hu: %s\n",
-		        pexnode->host.c_str(), pexnode->port, strerror(-sockd));
-	        return -1;
-	}
-	process_id = getpid();
-	sprintf(remote_id, "freebusy:%d", process_id);
-	request.prefix    = deconst(pexnode->prefix.c_str());
-	request.remote_id = remote_id;
-	request.b_private = TRUE;
-	if (exmdb_client_push_request(exmdb_callid::connect, &request,
-	    &tmp_bin) != EXT_ERR_SUCCESS) {
-		close(sockd);
-		return -1;
-	}
-	if (!exmdb_client_write_socket(sockd, &tmp_bin)) {
-		close(sockd);
-		return -1;
-	}
-	if (!cl_rd_sock(sockd, &tmp_bin)) {
-		close(sockd);
-		return -1;
-	}
-	auto response_code = static_cast<exmdb_response>(tmp_bin.pb[0]);
-	if (response_code == exmdb_response::success) {
-		if (tmp_bin.cb != 5) {
-			fprintf(stderr, "response format error during connect to "
-				"[%s]:%hu/%s\n", pexnode->host.c_str(),
-				pexnode->port, pexnode->prefix.c_str());
-			close(sockd);
-			return -1;
-		}
-		return sockd;
-	}
-	fprintf(stderr, "Failed to connect to [%s]:%hu/%s: %s\n",
-	        pexnode->host.c_str(), pexnode->port, pexnode->prefix.c_str(),
-	        exmdb_rpc_strerror(response_code));
-	close(sockd);
-	return -1;
-}
 
 static std::shared_ptr<ICAL_COMPONENT> tzstruct_to_vtimezone(int year,
 	const char *tzid, TIMEZONESTRUCT *ptzstruct)
@@ -1127,7 +779,6 @@ static void output_event(time_t start_time, time_t end_time,
 
 static BOOL get_freebusy(const char *dir)
 {
-	int sockd;
 	void *pvalue;
 	BOOL b_first;
 	BOOL b_private1 = false, b_meeting1;
@@ -1204,10 +855,7 @@ static BOOL get_freebusy(const char *dir)
 	tmp_propnames[12].guid = PSETID_APPOINTMENT;
 	tmp_propnames[12].lid = PidLidTimeZoneStruct;
 	
-	sockd = connect_exmdb(dir);
-	if (sockd < 0)
-		return FALSE;
-	if (!exmdb_client_get_named_propids(sockd, dir, FALSE, &propnames, &propids))
+	if (!exmdb_client::get_named_propids(dir, FALSE, &propnames, &propids))
 		return FALSE;
 	if (propids.count != propnames.count)
 		return FALSE;
@@ -1226,17 +874,13 @@ static BOOL get_freebusy(const char *dir)
 	pidlidtimezonestruct = PROP_TAG(PT_BINARY, propids.ppropid[12]);
 	
 	if (NULL != g_username) {
-		if (!exmdb_client_check_folder_permission(
-			sockd, dir, rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR),
-			g_username, &permission)) {
-			close(sockd);
-			cache_connection(dir, -1);
+		if (!exmdb_client::check_folder_permission(dir,
+		    rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR),
+		    g_username, &permission))
 			return FALSE;
-		}
 		if (!(permission & (frightsFreeBusySimple |
 		    frightsFreeBusyDetailed | frightsReadAny))) {
 			printf("{\"dir\":\"%s\", \"permission\":\"none\"}\n", dir);
-			cache_connection(dir, sockd);
 			return TRUE;
 		}
 	} else {
@@ -1381,14 +1025,11 @@ static BOOL get_freebusy(const char *dir)
 	rprop->propval.pvalue = &end_nttime;
 	/* end of OR */
 	
-	if (!exmdb_client_load_content_table(sockd, dir,
-		0, rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR),
-		NULL, TABLE_FLAG_NONOTIFICATIONS, &restriction, NULL,
-		&table_id, &row_count)) {
-		close(sockd);
-		cache_connection(dir, -1);
+	if (!exmdb_client::load_content_table(dir, 0,
+	    rop_util_make_eid_ex(1, PRIVATE_FID_CALENDAR),
+	    nullptr, TABLE_FLAG_NONOTIFICATIONS, &restriction, nullptr,
+	    &table_id, &row_count))
 		return FALSE;
-	}
 	proptags.count = 13;
 	proptags.pproptag = tmp_proptags;
 	tmp_proptags[0] = pidlidappointmentstartwhole;
@@ -1404,12 +1045,9 @@ static BOOL get_freebusy(const char *dir)
 	tmp_proptags[10] = pidlidglobalobjectid;
 	tmp_proptags[11] = pidlidtimezonestruct;
 	tmp_proptags[12] = PR_SUBJECT;
-	if (!exmdb_client_query_table(sockd, dir, NULL,
-		0, table_id, &proptags, 0, row_count, &tmp_set)) {
-		close(sockd);
-		cache_connection(dir, -1);
+	if (!exmdb_client::query_table(dir, nullptr, 0, table_id, &proptags,
+	    0, row_count, &tmp_set))
 		return FALSE;	
-	}
 	printf("{\"dir\":\"%s\", \"permission\":", dir);
 	printf((permission & (frightsFreeBusyDetailed | frightsReadAny)) ?
 	       "\"detailed\", " : "\"simple\", ");
@@ -1512,12 +1150,8 @@ static BOOL get_freebusy(const char *dir)
 		}
 	}
 	printf("]}\n");
-	if (!exmdb_client_unload_table(sockd, dir, table_id)) {
-		close(sockd);
-		cache_connection(dir, -1);
+	if (!exmdb_client::unload_table(dir, table_id))
 		return FALSE;
-	}
-	cache_connection(dir, sockd);
 	return TRUE;
 }
 
@@ -1550,20 +1184,11 @@ int main(int argc, const char **argv)
 	const char *pdtldayofweek;
 	
 	setvbuf(stdout, nullptr, _IOLBF, 0);
-	std::vector<EXMDB_ITEM> xmlist;
-	auto ret = list_file_read_exmdb("exmdb_list.txt", PKGSYSCONFDIR, xmlist);
-	if (ret < 0) {
-		fprintf(stderr, "list_file_read_exmdb: %s\n", strerror(-ret));
-		exit(1);
-	}
-	for (auto &&item : xmlist) try {
-		if (item.type != EXMDB_ITEM::EXMDB_PRIVATE)
-			continue;
-		auto &n = g_exmdb_list.emplace_back(std::move(item));
-		n.sockd = -1;
-	} catch (const std::bad_alloc &) {
-		return -ENOMEM;
-	}
+	exmdb_client_init(1, 0);
+	auto cl_0 = make_scope_exit(exmdb_client_stop);
+	auto ret = exmdb_client_run(PKGSYSCONFDIR, EXMDB_CLIENT_SKIP_PUBLIC);
+	if (ret != 0)
+		return EXIT_FAILURE;
 	
 	line = NULL;
 	if (-1 == getline(&line, &len, stdin)) {
