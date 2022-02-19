@@ -693,12 +693,12 @@ static BOOL container_object_fetch_folder_properties(
 
 static const PROPTAG_ARRAY* container_object_get_folder_proptags()
 {
-	static constexpr uint32_t proptag_buff[] = {
+	static constexpr uint32_t p[] = {
 		PidTagFolderId, PROP_TAG_SUBFOLDERS, PR_DISPLAY_NAME,
 		PR_CONTAINER_CLASS, PROP_TAG_FOLDERPATHNAME,
 		PidTagParentFolderId, PR_ATTR_HIDDEN,
 	};
-	static constexpr PROPTAG_ARRAY proptags = {.count = 7, .pproptag = deconst(proptag_buff)};
+	static constexpr PROPTAG_ARRAY proptags = {.count = arsizeof(p), .pproptag = deconst(p)};
 	return &proptags;
 }
 
@@ -751,13 +751,13 @@ BOOL container_object::get_container_table_num(BOOL b_depth, uint32_t *pnum)
 void container_object_get_container_table_all_proptags(
 	PROPTAG_ARRAY *pproptags)
 {
-	static constexpr uint32_t proptag_buff[] = {
+	static constexpr uint32_t p[] = {
 		PR_ENTRYID, PROP_TAG_CONTAINERFLAGS, PROP_TAG_DEPTH, PR_INSTANCE_KEY,
 		PR_EMS_AB_CONTAINERID, PR_DISPLAY_NAME, PR_EMS_AB_IS_MASTER,
 		PR_EMS_AB_PARENT_ENTRYID, PROP_TAG_ABPROVIDERID,
 	};
-	pproptags->count = 7;
-	pproptags->pproptag = deconst(proptag_buff);
+	pproptags->count = arsizeof(p);
+	pproptags->pproptag = deconst(p);
 }
 
 static BOOL
@@ -1002,10 +1002,12 @@ BOOL container_object::get_user_table_num(uint32_t *pnum)
 void container_object_get_user_table_all_proptags(
 	PROPTAG_ARRAY *pproptags)
 {
-	static constexpr uint32_t proptag_buff[] = {
-		PR_DISPLAY_NAME, PR_COMMENT, PR_COMPANY_NAME,
-		PR_DEPARTMENT_NAME, PR_OFFICE_LOCATION, PR_ADDRTYPE,
-		PR_SMTP_ADDRESS, PR_EMAIL_ADDRESS,
+	static constexpr uint32_t p[] = {
+		PR_DISPLAY_NAME, PR_NICKNAME, PR_SURNAME, PR_GIVEN_NAME,
+		PR_MIDDLE_NAME, PR_TITLE, PR_PRIMARY_TELEPHONE_NUMBER,
+		PR_MOBILE_TELEPHONE_NUMBER, PR_HOME_ADDRESS_STREET, PR_COMMENT,
+		PR_COMPANY_NAME, PR_DEPARTMENT_NAME, PR_OFFICE_LOCATION,
+		PR_ADDRTYPE, PR_SMTP_ADDRESS, PR_EMAIL_ADDRESS,
 		PR_EMS_AB_DISPLAY_NAME_PRINTABLE, PR_ACCOUNT,
 		PR_TRANSMITABLE_DISPLAY_NAME, PR_EMS_AB_PROXY_ADDRESSES,
 		PR_OBJECT_TYPE, PR_DISPLAY_TYPE, PR_DISPLAY_TYPE_EX,
@@ -1014,8 +1016,8 @@ void container_object_get_user_table_all_proptags(
 		PR_TEMPLATEID, PR_EMS_AB_OBJECT_GUID, PR_CREATION_TIME,
 		PROP_TAG_THUMBNAILPHOTO,
 	};
-	pproptags->count = 34;
-	pproptags->pproptag = deconst(proptag_buff);
+	pproptags->count = arsizeof(p);
+	pproptags->pproptag = deconst(p);
 }
 
 BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
