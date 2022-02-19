@@ -162,8 +162,7 @@ static BOOL hook_exmdb_local(int reason, void **ppdata)
 			printf("[exmdb_local]: failed to run cache queue\n");
 			return FALSE;
 		}
-		if (exmdb_client_run(get_config_path(), EXMDB_CLIENT_ASYNC_CONNECT,
-		    nullptr, nullptr, nullptr) != 0) {
+		if (exmdb_client_run(get_config_path(), EXMDB_CLIENT_ASYNC_CONNECT) != 0) {
 			printf("[exmdb_local]: failed to run exmdb client\n");
 			return FALSE;
 		}

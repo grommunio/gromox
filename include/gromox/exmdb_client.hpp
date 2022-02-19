@@ -83,7 +83,7 @@ extern GX_EXPORT pthread_t mdcl_scan_id;
 extern GX_EXPORT void exmdb_client_init(unsigned int conn_num, unsigned int threads_num);
 extern GX_EXPORT void exmdb_client_stop();
 extern GX_EXPORT int exmdb_client_connect_exmdb(remote_svr &, bool listen, const char *prog_id, void (*)(const remote_svr &), void (*)());
-extern GX_EXPORT int exmdb_client_run(const char *dir, unsigned int fl, void (*)(const remote_svr &), void (*)(), void (*)(const char *, BOOL, uint32_t, const DB_NOTIFY *));
+extern GX_EXPORT int exmdb_client_run(const char *dir, unsigned int fl = EXMDB_CLIENT_NO_FLAGS, void (*)(const remote_svr &) = nullptr, void (*)() = nullptr, void (*)(const char *, BOOL, uint32_t, const DB_NOTIFY *) = nullptr);
 extern GX_EXPORT bool exmdb_client_check_local(const char *pfx, BOOL *pvt);
 extern GX_EXPORT remote_conn_ref exmdb_client_get_connection(const char *dir);
 extern GX_EXPORT BOOL exmdb_client_do_rpc(const char *dir, const EXMDB_REQUEST *, EXMDB_RESPONSE *);

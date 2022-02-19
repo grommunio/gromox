@@ -786,7 +786,7 @@ int gi_setup()
 	sact.sa_handler = [](int) {};
 	sigaction(SIGALRM, &sact, nullptr);
 	exmdb_client_init(1, 0);
-	return exmdb_client_run(PKGSYSCONFDIR, EXMDB_CLIENT_NO_FLAGS, nullptr, nullptr, nullptr);
+	return exmdb_client_run(PKGSYSCONFDIR);
 }
 
 void gi_shutdown()
