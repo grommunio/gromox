@@ -72,7 +72,8 @@ Default: \fI0\fP.
 \fBtimezone\fP
 Default: (unspecified)
 .SS [system]
-.SH freebusy
+.TP
+\fBfreebusy\fP
 Program location of the freebusy binary.
 .br
 Default: \fI/usr/libexec/gromox/freebusy\fP
