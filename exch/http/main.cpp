@@ -302,7 +302,6 @@ int main(int argc, const char **argv) try
 	uint16_t listen_port = g_config_file->get_ll("listen_port");
 	unsigned int mss_size = g_config_file->get_ll("tcp_max_segment");
 	listener_init(listen_port, listen_ssl_port, mss_size);
-	auto cleanup_3 = make_scope_exit(listener_free);
 	auto cleanup_4 = make_scope_exit(listener_stop);
 	if (0 != listener_run()) {
 		printf("[system]: fail to start listener\n");

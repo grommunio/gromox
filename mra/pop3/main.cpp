@@ -247,8 +247,6 @@ int main(int argc, const char **argv) try
 	int listen_port = 110;
 	g_config_file->get_int("listen_port", &listen_port);
 	listener_init(listen_port, listen_ssl_port);
-	auto cleanup_3 = make_scope_exit(listener_free);
-																			
 	if (0 != listener_run()) {
 		printf("[system]: fail to start listener\n");
 		return EXIT_FAILURE;

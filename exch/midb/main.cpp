@@ -197,7 +197,6 @@ int main(int argc, const char **argv) try
 	exmdb_client_init(proxy_num, stub_num);
 	auto cl_6 = make_scope_exit(exmdb_client_stop);
 	listener_init(listen_ip, listen_port);
-	auto cl_0b = make_scope_exit([&]() { listener_free(); });
 	auto cl_3 = make_scope_exit(listener_stop);
 	mail_engine_init(g_config_file->get_value("default_charset"),
 		g_config_file->get_value("default_timezone"),

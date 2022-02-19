@@ -369,15 +369,12 @@ static void *smls_thrworkssl(void *arg)
 
 void listener_stop()
 {
-	if (g_listener_sock >= 0)
+	if (g_listener_sock >= 0) {
 		close(g_listener_sock);
-	if (g_listener_ssl_sock >= 0)
+		g_listener_sock = -1;
+	}
+	if (g_listener_ssl_sock >= 0) {
 		close(g_listener_ssl_sock);
+		g_listener_ssl_sock = -1;
+	}
 }
-
-void listener_free()
-{
-	g_listener_port = 0;
-	g_listener_ssl_port = 0;
-}
-

@@ -236,8 +236,6 @@ int main(int argc, const char **argv) try
 	}
 	auto cleanup_2 = make_scope_exit(resource_stop);
 	listener_init(listen_port, listen_ssl_port);
-	auto cleanup_3 = make_scope_exit(listener_free);
-																			
 	if (0 != listener_run()) {
 		printf("[system]: fail to start listener\n");
 		return EXIT_FAILURE;

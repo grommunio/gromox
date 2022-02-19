@@ -90,10 +90,6 @@ void listener_stop() {
 	}
 }
 
-void listener_free(){
-	g_listen_port = 0;
-}
-
 static void *midls_thrwork(void *param)
 {
 	int sockd;
