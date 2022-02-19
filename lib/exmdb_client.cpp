@@ -86,7 +86,7 @@ void exmdb_client_stop()
 }
 
 static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
-    const char *prog_id, void (*build_env)(const remote_svr &), void (*free_env)())
+    const char *prog_id)
 {
 	int sockd = gx_inet_connect(srv.host.c_str(), srv.port, 0);
 	if (sockd < 0) {
@@ -120,9 +120,9 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 		return -1;
 	}
 	free(bin.pb);
-	if (build_env != nullptr)
-		build_env(srv);
-	auto cl_0 = make_scope_exit([&]() { if (free_env != nullptr) free_env(); });
+	if (srv.build_env != nullptr)
+		srv.build_env(srv);
+	auto cl_0 = make_scope_exit([&]() { if (srv.free_env != nullptr) srv.free_env(); });
 	if (!exmdb_client_read_socket(sockd, &bin, mdcl_socket_timeout * 1000))
 		return -1;
 	auto response_code = static_cast<exmdb_response>(bin.pb[0]);
@@ -206,8 +206,7 @@ static void cl_pinger2()
 			temp_list.pop_front();
 			continue;
 		}
-		conn->sockd = exmdb_client_connect_exmdb(*conn->psvr, false,
-		              "mdcl", conn->build_env, conn->free_env);
+		conn->sockd = exmdb_client_connect_exmdb(*conn->psvr, false, "mdcl");
 		if (conn->sockd >= 0) {
 			time(&conn->last_time);
 			sv_hold.lock();
@@ -257,8 +256,8 @@ static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
 	BINARY bin;
 	bin.cb = buff_len;
 	bin.pb = buff;
-	agent.build_env(*agent.pserver);
-	auto cl_0 = make_scope_exit(*agent.free_env);
+	agent.pserver->build_env(*agent.pserver);
+	auto cl_0 = make_scope_exit(*agent.pserver->free_env);
 	DB_NOTIFY_DATAGRAM notify;
 	auto resp_code = exmdb_ext_pull_db_notify(&bin, &notify) == EXT_ERR_SUCCESS ?
 	                 exmdb_response::success : exmdb_response::pull_error;
@@ -266,7 +265,7 @@ static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
 		return -1;
 	if (resp_code == exmdb_response::success)
 		for (size_t i = 0; i < notify.id_array.count; ++i)
-			agent.event_proc(notify.dir, notify.b_table,
+			agent.pserver->event_proc(notify.dir, notify.b_table,
 				notify.id_array.pl[i], &notify.db_notify);
 	buff_len = 0;
 	return 0;
@@ -274,8 +273,7 @@ static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
 
 static void cl_notif_reader2(agent_thread &agent)
 {
-	agent.sockd = exmdb_client_connect_exmdb(*agent.pserver, true,
-	              "mdclntfy", agent.build_env, agent.free_env);
+	agent.sockd = exmdb_client_connect_exmdb(*agent.pserver, true, "mdclntfy");
 	if (agent.sockd < 0) {
 		sleep(1);
 		return;
@@ -340,12 +338,13 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 			return 5;
 		}
 		auto &srv = mdcl_server_list.back();
+		srv.build_env = build_env;
+		srv.free_env = free_env;
+		srv.event_proc = event_proc;
 		for (unsigned int j = 0; j < mdcl_conn_num; ++j) {
 			remote_conn conn;
 			conn.sockd = -1;
 			conn.psvr = &srv;
-			conn.build_env = build_env;
-			conn.free_env = free_env;
 			try {
 				mdcl_lost_list.push_back(std::move(conn));
 			} catch (const std::bad_alloc &) {
@@ -367,8 +366,6 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 			auto &ag = mdcl_agent_list.back();
 			ag.pserver = &srv;
 			ag.sockd = -1;
-			ag.build_env = build_env;
-			ag.free_env = free_env;
 			ret = pthread_create(&ag.thr_id, nullptr, cl_notif_reader, &ag);
 			if (ret != 0) {
 				printf("exmdb_client: E-1449: pthread_create: %s\n", strerror(ret));

@@ -33,17 +33,12 @@ struct remote_svr;
 
 struct agent_thread {
 	remote_svr *pserver = nullptr;
-	void (*build_env)(const remote_svr &) = nullptr;
-	void (*free_env)() = nullptr;
-	void (*event_proc)(const char *, BOOL, uint32_t, const DB_NOTIFY *) = nullptr;
 	pthread_t thr_id{};
 	int sockd = -1;
 };
 
 struct remote_conn {
 	remote_svr *psvr = nullptr;
-	void (*build_env)(const remote_svr &) = nullptr;
-	void (*free_env)() = nullptr;
 	time_t last_time = 0;
 	int sockd = -1;
 };
@@ -51,6 +46,9 @@ struct remote_conn {
 struct GX_EXPORT remote_svr : public EXMDB_ITEM {
 	remote_svr(EXMDB_ITEM &&o) : EXMDB_ITEM(std::move(o)) {}
 	std::list<remote_conn> conn_list;
+	void (*build_env)(const remote_svr &) = nullptr;
+	void (*free_env)() = nullptr;
+	void (*event_proc)(const char *, BOOL, uint32_t, const DB_NOTIFY *) = nullptr;
 };
 
 struct GX_EXPORT remote_conn_ref {
