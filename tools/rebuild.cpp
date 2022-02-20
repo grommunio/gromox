@@ -9,6 +9,7 @@
 #include <libHX/string.h>
 #include <gromox/config_file.hpp>
 #include <gromox/database.h>
+#include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
@@ -33,162 +34,14 @@
 #define SOCKET_TIMEOUT								60
 
 using namespace gromox;
+namespace exmdb_client = exmdb_client_remote;
 
-namespace {
-
-struct CONNECT_REQUEST {
-	char *prefix;
-	char *remote_id;
-	BOOL b_private;
-};
-
-struct UNLOAD_STORE_REQUEST {
-	const char *dir;
-};
-
-}
-
-static std::vector<EXMDB_ITEM> g_exmdb_list;
 static char *opt_config_file, *opt_datadir;
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
 	{nullptr, 'd', HXTYPE_STRING, &opt_datadir, nullptr, nullptr, 0, "Data directory", "DIR"},
 	HXOPT_TABLEEND,
 };
-
-static int cl_rd_sock(int fd, BINARY *b) { return ::exmdb_client_read_socket(fd, b, SOCKET_TIMEOUT * 1000); }
-
-static int exmdb_client_push_connect_request(
-	EXT_PUSH *pext, const CONNECT_REQUEST *r)
-{
-	auto status = pext->p_str(r->prefix);
-	if (status != EXT_ERR_SUCCESS)
-		return status;
-	status = pext->p_str(r->remote_id);
-	if (status != EXT_ERR_SUCCESS)
-		return status;
-	return pext->p_bool(r->b_private);
-}
-
-static int exmdb_client_push_unload_store_request(
-	EXT_PUSH *pext, const UNLOAD_STORE_REQUEST *r)
-{
-	return pext->p_str(r->dir);
-}
-
-static int exmdb_client_push_request(exmdb_callid call_id,
-	void *prequest, BINARY *pbin_out)
-{
-	int status;
-	EXT_PUSH ext_push;
-	
-	if (!ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT))
-		return EXT_ERR_ALLOC;
-	status = ext_push.advance(sizeof(uint32_t));
-	if (status != EXT_ERR_SUCCESS)
-		return status;
-	status = ext_push.p_uint8(static_cast<uint8_t>(call_id));
-	if (status != EXT_ERR_SUCCESS)
-		return status;
-	switch (call_id) {
-	case exmdb_callid::connect:
-		status = exmdb_client_push_connect_request(&ext_push, static_cast<CONNECT_REQUEST *>(prequest));
-		if (status != EXT_ERR_SUCCESS)
-			return status;
-		break;
-	case exmdb_callid::unload_store:
-		status = exmdb_client_push_unload_store_request(&ext_push, static_cast<UNLOAD_STORE_REQUEST *>(prequest));
-		if (status != EXT_ERR_SUCCESS)
-			return status;
-		break;
-	default:
-		return EXT_ERR_BAD_SWITCH;
-	}
-	pbin_out->cb = ext_push.m_offset;
-	ext_push.m_offset = 0;
-	status = ext_push.p_uint32(pbin_out->cb - sizeof(uint32_t));
-	if (status != EXT_ERR_SUCCESS)
-		return status;
-	/* memory referenced by ext_push.data will be freed outside */
-	pbin_out->pb = ext_push.release();
-	return EXT_ERR_SUCCESS;
-}
-
-static int connect_exmdb(const char *dir)
-{
-	int process_id;
-	BINARY tmp_bin;
-	char remote_id[128];
-	CONNECT_REQUEST request;
-	
-	auto pexnode = std::find_if(g_exmdb_list.cbegin(), g_exmdb_list.cend(),
-	               [&](const EXMDB_ITEM &s) { return strncmp(s.prefix.c_str(), dir, s.prefix.size()) == 0; });
-	if (pexnode == g_exmdb_list.cend())
-		return -1;
-	int sockd = gx_inet_connect(pexnode->host.c_str(), pexnode->port, 0);
-	if (sockd < 0) {
-		fprintf(stderr, "gx_inet_connect rebuild@[%s]:%hu: %s\n",
-		        pexnode->host.c_str(), pexnode->port, strerror(-sockd));
-	        return -1;
-	}
-	process_id = getpid();
-	sprintf(remote_id, "freebusy:%d", process_id);
-	request.prefix    = deconst(pexnode->prefix.c_str());
-	request.remote_id = remote_id;
-	request.b_private = TRUE;
-	if (exmdb_client_push_request(exmdb_callid::connect, &request,
-	    &tmp_bin) != EXT_ERR_SUCCESS) {
-		close(sockd);
-		return -1;
-	}
-	if (!exmdb_client_write_socket(sockd, &tmp_bin)) {
-		close(sockd);
-		return -1;
-	}
-	if (!cl_rd_sock(sockd, &tmp_bin)) {
-		close(sockd);
-		return -1;
-	}
-	auto response_code = static_cast<exmdb_response>(tmp_bin.pb[0]);
-	if (response_code == exmdb_response::success) {
-		if (tmp_bin.cb != 5) {
-			fprintf(stderr, "response format error during connect to "
-				"[%s]:%hu/%s\n", pexnode->host.c_str(),
-				pexnode->port, pexnode->prefix.c_str());
-			close(sockd);
-			return -1;
-		}
-		return sockd;
-	}
-	fprintf(stderr, "Failed to connect to [%s]:%hu/%s: %s\n",
-	        pexnode->host.c_str(), pexnode->port, pexnode->prefix.c_str(),
-	        exmdb_rpc_strerror(response_code));
-	close(sockd);
-	return -1;
-}
-
-static BOOL exmdb_client_unload_store(const char *dir)
-{
-	int sockd;
-	BINARY tmp_bin;
-	UNLOAD_STORE_REQUEST request;
-	
-	request.dir = dir;
-	if (exmdb_client_push_request(exmdb_callid::unload_store,
-	    &request, &tmp_bin) != EXT_ERR_SUCCESS)
-		return FALSE;
-	sockd = connect_exmdb(dir);
-	if (sockd < 0)
-		return FALSE;
-	if (!exmdb_client_write_socket(sockd, &tmp_bin) ||
-	    !cl_rd_sock(sockd, &tmp_bin) || tmp_bin.cb != 5 ||
-	    static_cast<exmdb_response>(tmp_bin.pb[0]) != exmdb_response::success) {
-		close(sockd);
-		return FALSE;
-	}
-	close(sockd);
-	return TRUE;
-}
 
 int main(int argc, const char **argv)
 {
@@ -308,20 +161,12 @@ int main(int argc, const char **argv)
 	}
 	}
 	
-	auto ret = list_file_read_exmdb("exmdb_list.txt", PKGSYSCONFDIR, g_exmdb_list);
-	if (ret < 0) {
-		fprintf(stderr, "list_file_read_exmdb: %s\n", strerror(-ret));
-		return 11;
-	}
-#if __cplusplus >= 202000L
-	std::erase_if(g_exmdb_list,
-		[&](const EXMDB_ITEM &s) { return s.type != EXMDB_ITEM::EXMDB_PRIVATE; });
-#else
-	g_exmdb_list.erase(std::remove_if(g_exmdb_list.begin(), g_exmdb_list.end(),
-		[&](const EXMDB_ITEM &s) { return s.type != EXMDB_ITEM::EXMDB_PRIVATE; }),
-		g_exmdb_list.end());
-#endif
-	if (!exmdb_client_unload_store(argv[1])) {
+	exmdb_client_init(1, 0);
+	auto cl_0 = make_scope_exit(exmdb_client_stop);
+	auto ret = exmdb_client_run(PKGSYSCONFDIR, EXMDB_CLIENT_SKIP_PUBLIC);
+	if (ret < 0)
+		return EXIT_FAILURE;
+	if (!exmdb_client::unload_store(argv[1])) {
 		printf("fail to unload store\n");
 		return 12;
 	}
