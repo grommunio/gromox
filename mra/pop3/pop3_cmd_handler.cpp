@@ -481,37 +481,36 @@ int pop3_cmd_handler_quit(const char* cmd_line, int line_length,
 	if (4 != line_length) {
 		return 1704;
 	}
-	if (pcontext->is_login) {
-		if (single_list_get_nodes_num(&pcontext->list) > 0) {
-			switch (system_services_delete_mail(pcontext->maildir, "inbox",
-				&pcontext->list)) {
-			case MIDB_RESULT_OK:
-				break;
-			case MIDB_NO_SERVER: {
-				return 1716 | DISPATCH_SHOULD_CLOSE;
-			}
-			case MIDB_RDWR_ERROR: {
-				pop3_parser_log_info(pcontext, LV_WARN, "failed RW I/O with midb server");
-				return 1721 | DISPATCH_SHOULD_CLOSE;
-			}
-			case MIDB_RESULT_ERROR: {
-				pop3_parser_log_info(pcontext, LV_WARN, "failed to execute delete command on midb server!");
-				return 1722 | DISPATCH_SHOULD_CLOSE;
-			}
-			}
-			string_length = gx_snprintf(temp_buff, arsizeof(temp_buff),
-				"FOLDER-TOUCH %s inbox", pcontext->username);
-			system_services_broadcast_event(temp_buff);
+	if (pcontext->is_login &&
+	    single_list_get_nodes_num(&pcontext->list) > 0) {
+		switch (system_services_delete_mail(pcontext->maildir, "inbox",
+			&pcontext->list)) {
+		case MIDB_RESULT_OK:
+			break;
+		case MIDB_NO_SERVER: {
+			return 1716 | DISPATCH_SHOULD_CLOSE;
+		}
+		case MIDB_RDWR_ERROR: {
+			pop3_parser_log_info(pcontext, LV_WARN, "failed RW I/O with midb server");
+			return 1721 | DISPATCH_SHOULD_CLOSE;
+		}
+		case MIDB_RESULT_ERROR: {
+			pop3_parser_log_info(pcontext, LV_WARN, "failed to execute delete command on midb server!");
+			return 1722 | DISPATCH_SHOULD_CLOSE;
+		}
+		}
+		string_length = gx_snprintf(temp_buff, arsizeof(temp_buff),
+			"FOLDER-TOUCH %s inbox", pcontext->username);
+		system_services_broadcast_event(temp_buff);
 
-			while ((pnode = single_list_pop_front(&pcontext->list)) != nullptr) try {
-				auto punit = static_cast<MSG_UNIT *>(pnode->pdata);
-				auto eml_path = std::string(pcontext->maildir) + "/eml/" + punit->file_name;
-				if (remove(eml_path.c_str()) == 0)
-					pop3_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted",
-						eml_path.c_str());
-			} catch (const std::bad_alloc &) {
-				fprintf(stderr, "E-1471: ENOMEM\n");
-			}
+		while ((pnode = single_list_pop_front(&pcontext->list)) != nullptr) try {
+			auto punit = static_cast<MSG_UNIT *>(pnode->pdata);
+			auto eml_path = std::string(pcontext->maildir) + "/eml/" + punit->file_name;
+			if (remove(eml_path.c_str()) == 0)
+				pop3_parser_log_info(pcontext, LV_DEBUG, "message %s has been deleted",
+					eml_path.c_str());
+		} catch (const std::bad_alloc &) {
+			fprintf(stderr, "E-1471: ENOMEM\n");
 		}
 	}
 
