@@ -127,7 +127,7 @@ void MJSON::clear()
 	auto pjson = this;
 	auto pnode = pjson->tree.get_root();
 	if (NULL != pnode) {
-		simple_tree_destroy_node(&pjson->tree, pnode, mjson_enum_delete);
+		pjson->tree.destroy_node(pnode, mjson_enum_delete);
 	}
 	
 	if (-1 != pjson->message_fd) {
@@ -871,7 +871,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 		pmime->node.pdata = pmime;
 		pmime->ppool = pjson->ppool;
 		pmime->mime_type = MJSON_MIME_NONE;
-		simple_tree_set_root(&pjson->tree, &pmime->node);
+		pjson->tree.set_root(&pmime->node);
 	}
 	pnode = pjson->tree.get_root();
 	if (NULL == pnode) {
@@ -902,7 +902,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 					pmime->node.pdata = pmime;
 					pmime->ppool = pjson->ppool;
 					pmime->mime_type = MJSON_MIME_NONE;
-					if (!simple_tree_add_child(&pjson->tree,
+					if (!pjson->tree.add_child(
 						pnode, &pmime->node, SIMPLE_TREE_ADD_LAST)) {
 						pjson->ppool->put(pmime);
 						return FALSE;
@@ -919,8 +919,8 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 						pmime->node.pdata = pmime;
 						pmime->ppool = pjson->ppool;
 						pmime->mime_type = MJSON_MIME_NONE;
-						if (!simple_tree_insert_sibling(&pjson->tree,
-							pnode, &pmime->node, SIMPLE_TREE_INSERT_AFTER)) {
+						if (!pjson->tree.insert_sibling(pnode,
+						    &pmime->node, SIMPLE_TREE_INSERT_AFTER)) {
 							pjson->ppool->put(pmime);
 							return FALSE;
 						}

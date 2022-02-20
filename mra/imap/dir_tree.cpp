@@ -34,7 +34,7 @@ void dir_tree::retrieve(MEM_FILE *pfile)
 		pdir->name[0] = '\0';
 		pdir->b_loaded = TRUE;
 		pdir->ppool = ptree->ppool;
-		simple_tree_set_root(&ptree->tree, &pdir->node);
+		ptree->tree.set_root(&pdir->node);
 		proot = &pdir->node;
 	}
 
@@ -69,7 +69,7 @@ void dir_tree::retrieve(MEM_FILE *pfile)
 				pdir->b_loaded = FALSE;
 				pdir->ppool = ptree->ppool;
 				pnode = &pdir->node;
-				simple_tree_add_child(&ptree->tree, pnode_parent, pnode,
+				ptree->tree.add_child(pnode_parent, pnode,
 					SIMPLE_TREE_ADD_LAST);
 			}
 			ptr1 = ptr2 + 1;
@@ -85,8 +85,7 @@ static void dir_tree_clear(DIR_TREE *ptree)
 {
 	auto pnode = ptree->tree.get_root();
 	if (NULL != pnode) {
-		simple_tree_destroy_node(&ptree->tree, pnode,
-			dir_tree_enum_delete);
+		ptree->tree.destroy_node(pnode, dir_tree_enum_delete);
 	}
 
 }

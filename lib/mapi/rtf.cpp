@@ -602,8 +602,7 @@ RTF_READER::~RTF_READER()
 	double_list_free(&preader->attr_stack_list);
 	auto proot = preader->element_tree.get_root();
 	if (NULL != proot) {
-		simple_tree_destroy_node(&preader->element_tree,
-			proot, rtf_delete_tree_node);
+		preader->element_tree.destroy_node(proot, rtf_delete_tree_node);
 	}
 	preader->element_tree.clear();
 	if ((iconv_t)-1 != preader->conv_id) {
@@ -1330,14 +1329,13 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 			pgroup->node.pdata = NULL;
 			double_list_init(&pgroup->collection_list);
 			if (NULL == plast_group) {
-				simple_tree_set_root(&preader->element_tree,
-					&pgroup->node);
+				preader->element_tree.set_root(&pgroup->node);
 			} else if (plast_node != nullptr) {
-				simple_tree_insert_sibling(&preader->element_tree,
+				preader->element_tree.insert_sibling(
 					plast_node, &pgroup->node,
 					SIMPLE_TREE_INSERT_AFTER);
 			} else {
-				simple_tree_add_child(&preader->element_tree,
+				preader->element_tree.add_child(
 					&plast_group->node,
 					&pgroup->node, SIMPLE_TREE_ADD_LAST);
 			}
@@ -1373,12 +1371,12 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 			}
 			pword->pdata = input_word;
 			if (NULL == plast_node) {
-				simple_tree_add_child(&preader->element_tree,
+				preader->element_tree.add_child(
 					&plast_group->node, pword,
 					SIMPLE_TREE_ADD_LAST);
 			} else {
-				simple_tree_insert_sibling(&preader->element_tree,
-					plast_node, pword, SIMPLE_TREE_INSERT_AFTER);
+				preader->element_tree.insert_sibling(plast_node,
+					pword, SIMPLE_TREE_INSERT_AFTER);
 			}
 			plast_node = pword;
 		}

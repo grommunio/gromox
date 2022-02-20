@@ -161,8 +161,7 @@ static void rop_processor_release_objnode(
 	simple_tree_enum_from_node(&pobjnode->node, [&](const SIMPLE_TREE_NODE *pnode) {
 		plogitem->phash->remove(static_cast<const OBJECT_NODE *>(pnode->pdata)->handle);
 	});
-	simple_tree_destroy_node(&plogitem->tree,
-		&pobjnode->node, rop_processor_free_objnode);
+	plogitem->tree.destroy_node(&pobjnode->node, rop_processor_free_objnode);
 	if (b_root) {
 		plogitem->tree.clear();
 		plogitem->phash.reset();
@@ -287,9 +286,9 @@ int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 		plogitem->phash->add(pobjnode->handle, &pobjnode);
 	}
 	if (NULL == ppparent) {
-		simple_tree_set_root(&plogitem->tree, &pobjnode->node);
+		plogitem->tree.set_root(&pobjnode->node);
 	} else {
-		simple_tree_add_child(&plogitem->tree, &(*ppparent)->node,
+		plogitem->tree.add_child(&(*ppparent)->node,
 			&pobjnode->node, SIMPLE_TREE_ADD_LAST);
 	}
 	if (OBJECT_TYPE_ICSUPCTX == type) {

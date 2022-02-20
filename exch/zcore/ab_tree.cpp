@@ -227,7 +227,7 @@ static void ab_tree_destruct_tree(SIMPLE_TREE *ptree)
 {
 	auto proot = ptree->get_root();
 	if (NULL != proot) {
-		simple_tree_destroy_node(ptree, proot, [](SIMPLE_TREE_NODE *nd) {
+		ptree->destroy_node(proot, [](SIMPLE_TREE_NODE *nd) {
 			ab_tree_put_abnode(containerof(nd, AB_NODE, stree));
 		});
 	}
@@ -342,8 +342,7 @@ static BOOL ab_tree_load_class(
 		if (pabnode->d_info == nullptr)
 			return false;
 		auto pclass = &pabnode->stree;
-		simple_tree_add_child(ptree, pnode,
-			pclass, SIMPLE_TREE_ADD_LAST);
+		ptree->add_child(pnode, pclass, SIMPLE_TREE_ADD_LAST);
 		if (!ab_tree_load_class(cls.child_id, ptree, pclass, pbase))
 			return FALSE;
 	}
@@ -387,8 +386,7 @@ static BOOL ab_tree_load_class(
 	}
 	std::sort(parray.begin(), parray.end());
 	for (int i = 0; i < rows; ++i)
-		simple_tree_add_child(ptree, pnode,
-			parray[i].pnode, SIMPLE_TREE_ADD_LAST);
+		ptree->add_child(pnode, parray[i].pnode, SIMPLE_TREE_ADD_LAST);
 	cl_array.release();
 	return TRUE;
 }
@@ -421,7 +419,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 	if (pabnode->d_info == nullptr)
 		return false;
 	auto pdomain = &pabnode->stree;
-	simple_tree_set_root(ptree, pdomain);
+	ptree->set_root(pdomain);
 
 	std::vector<sql_group> file_group;
 	if (!system_services_get_domain_groups(domain_id, file_group))
@@ -441,7 +439,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		if (pabnode->d_info == nullptr)
 			return false;
 		auto pgroup = &pabnode->stree;
-		simple_tree_add_child(ptree, pdomain, pgroup, SIMPLE_TREE_ADD_LAST);
+		ptree->add_child(pdomain, pgroup, SIMPLE_TREE_ADD_LAST);
 		
 		std::vector<sql_class> file_class;
 		if (!system_services_get_group_classes(grp_id, file_class))
@@ -463,8 +461,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 			if (pabnode->d_info == nullptr)
 				return false;
 			auto pclass = &pabnode->stree;
-			simple_tree_add_child(ptree, pgroup,
-				pclass, SIMPLE_TREE_ADD_LAST);
+			ptree->add_child(pgroup, pclass, SIMPLE_TREE_ADD_LAST);
 			if (!ab_tree_load_class(cls.child_id, ptree, pclass, pbase))
 				return FALSE;
 		}
@@ -509,8 +506,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 		}
 		std::sort(parray.begin(), parray.end());
 		for (int i = 0; i < rows; ++i)
-			simple_tree_add_child(ptree, pgroup,
-				parray[i].pnode, SIMPLE_TREE_ADD_LAST);
+			ptree->add_child(pgroup, parray[i].pnode, SIMPLE_TREE_ADD_LAST);
 		cl_array.release();
 	}
 
@@ -554,8 +550,7 @@ static BOOL ab_tree_load_tree(int domain_id,
 	}
 	std::sort(parray.begin(), parray.end());
 	for (int i = 0; i < rows; ++i)
-		simple_tree_add_child(ptree, pdomain,
-			parray[i].pnode, SIMPLE_TREE_ADD_LAST);
+		ptree->add_child(pdomain, parray[i].pnode, SIMPLE_TREE_ADD_LAST);
 	cl_array.release();
 	return TRUE;
 }

@@ -25,28 +25,26 @@ struct GX_EXPORT tree_node {
 };
 using SIMPLE_TREE_NODE = tree_node;
 
+using SIMPLE_TREE_ENUM = void (*)(SIMPLE_TREE_NODE *, void *);
+using SIMPLE_TREE_DELETE = void (*)(SIMPLE_TREE_NODE *);
+using SIMPLE_TREE_DUPLICATE = SIMPLE_TREE_NODE *(*)(SIMPLE_TREE_NODE *, void *);
+
 struct GX_EXPORT tree {
 	inline tree_node *get_root() { return root; }
 	inline const tree_node *get_root() const { return root; }
 	inline size_t get_nodes_num() const { return nodes_num; }
 	void clear() { root = nullptr; nodes_num = 0; }
+	BOOL set_root(tree_node *);
+	BOOL insert_sibling(tree_node *base, tree_node *, int opt);
+	BOOL add_child(tree_node *base, tree_node *, int opt);
+	void destroy_node(tree_node *, SIMPLE_TREE_DELETE);
 
 	SIMPLE_TREE_NODE *root;
 	size_t	nodes_num;
 };
 using SIMPLE_TREE = tree;
 
-using SIMPLE_TREE_ENUM = void (*)(SIMPLE_TREE_NODE *, void *);
-using SIMPLE_TREE_DELETE = void (*)(SIMPLE_TREE_NODE *);
-using SIMPLE_TREE_DUPLICATE = SIMPLE_TREE_NODE *(*)(SIMPLE_TREE_NODE *, void *);
-
 void simple_tree_init(SIMPLE_TREE *ptree);
-BOOL simple_tree_set_root(SIMPLE_TREE *ptree, SIMPLE_TREE_NODE *pnode);
-extern BOOL simple_tree_insert_sibling(SIMPLE_TREE *, SIMPLE_TREE_NODE *base, SIMPLE_TREE_NODE *pnode, int opt);
-BOOL simple_tree_add_child(SIMPLE_TREE *ptree,
-	SIMPLE_TREE_NODE *pnode_base, SIMPLE_TREE_NODE *pnode, int opt);
-void simple_tree_destroy_node(SIMPLE_TREE *ptree,
-	SIMPLE_TREE_NODE *pnode, SIMPLE_TREE_DELETE del_func);
 template<typename C, typename F> void simple_tree_node_enum(C *n, F &&f)
 {
 	do {

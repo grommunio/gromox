@@ -24,11 +24,12 @@ void simple_tree_init(SIMPLE_TREE *ptree)
 	memset(ptree, 0, sizeof(SIMPLE_TREE));
 }
 
-BOOL simple_tree_set_root(SIMPLE_TREE *ptree, SIMPLE_TREE_NODE *pnode)
+BOOL tree::set_root(SIMPLE_TREE_NODE *pnode)
 {
+	auto ptree = this;
 #ifdef _DEBUG_UMTA
-	if (NULL == ptree || NULL == pnode) {
-		debug_info("[simple_tree]: NULL pointer in simple_tree_set_root");
+	if (pnode == nullptr) {
+		debug_info("[simple_tree]: NULL pointer in tree::set_root");
 		return FALSE;
 	}
 #endif
@@ -58,13 +59,13 @@ BOOL simple_tree_set_root(SIMPLE_TREE *ptree, SIMPLE_TREE_NODE *pnode)
  *		TRUE			OK
  *		FALSE			fail
  */
-BOOL simple_tree_insert_sibling(SIMPLE_TREE *ptree,
-	SIMPLE_TREE_NODE *pnode_base, SIMPLE_TREE_NODE *pnode, int opt)
+BOOL tree::insert_sibling(tree_node *pnode_base, tree_node *pnode, int opt)
 {
+	auto ptree = this;
 	SIMPLE_TREE_NODE *pnode_temp;
 
 #ifdef _DEBUG_UMTA
-	if (NULL == ptree || NULL == pnode || NULL == pnode_base) {
+	if (pnode == nullptr || pnode_base == nullptr) {
 		debug_info("[simple_tree]: NULL pointer in simple_tree_add_sibling");
 		return FALSE;
 	}
@@ -117,16 +118,15 @@ BOOL simple_tree_insert_sibling(SIMPLE_TREE *ptree,
  *		FALSE				fail
  *
  */
-BOOL simple_tree_add_child(SIMPLE_TREE *ptree,
-	SIMPLE_TREE_NODE *pnode_base, SIMPLE_TREE_NODE *pnode, int opt)
+BOOL tree::add_child(tree_node *pnode_base, tree_node *pnode, int opt)
 {
+	auto ptree = this;
 	SIMPLE_TREE_NODE *pnode_temp;
 	SIMPLE_TREE_NODE *pnode_last;
 
 #ifdef _DEBUG_UMTA
-	if (NULL == ptree || NULL == pnode || NULL == pnode_base) {
-		debug_info("[simple_tree]: NULL pointer in "
-					"simple_tree_add_child");
+	if (pnode == nullptr || pnode_base == nullptr) {
+		debug_info("[simple_tree]: NULL pointer in tree::add_child");
 		return FALSE;
 	}
 #endif
@@ -177,16 +177,15 @@ BOOL simple_tree_add_child(SIMPLE_TREE *ptree,
  *		pnode [in]		node to be destroyed
  *		del_func		callback function to free held resouce
  */
-void simple_tree_destroy_node(SIMPLE_TREE *ptree,
-	SIMPLE_TREE_NODE *pnode, SIMPLE_TREE_DELETE del_func)
+void tree::destroy_node(tree_node *pnode, SIMPLE_TREE_DELETE del_func)
 {
+	auto ptree = this;
 	SIMPLE_TREE_NODE *pnode_temp;
 	SIMPLE_TREE_NODE *pnode_parent;
 
 #ifdef _DEBUG_UMTA
-	if (NULL == ptree || NULL == pnode || NULL == del_func) {	
-		debug_info("[simple_tree]: NULL pointer in "
-					"simple_tree_destroy_node");
+	if (pnode == nullptr || del_func == nullptr) {
+		debug_info("[simple_tree]: NULL pointer in tree::destroy_node");
 		return;
 	}
 #endif

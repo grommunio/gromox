@@ -37,7 +37,7 @@ void MAIL::clear()
 	auto pmail = this;
 	auto pnode = pmail->tree.get_root();
 	if (NULL != pnode) {
-		simple_tree_destroy_node(&pmail->tree, pnode, mail_enum_delete);
+		pmail->tree.destroy_node(pnode, mail_enum_delete);
 	}
 	if (NULL != pmail->buffer) {
 		free(pmail->buffer);
@@ -82,7 +82,7 @@ BOOL MAIL::retrieve(char *in_buff, size_t length)
 		pmail->pmime_pool->put_mime(pmime);
 		return FALSE;
 	}
-	simple_tree_set_root(&pmail->tree, &pmime->node);
+	pmail->tree.set_root(&pmime->node);
 	if (pmime->mime_type != MULTIPLE_MIME ||
 	    mail_retrieve_to_mime(pmail, pmime, pmime->first_boundary +
 	    pmime->boundary_len + 4, pmime->last_boundary))
@@ -100,7 +100,7 @@ BOOL MAIL::retrieve(char *in_buff, size_t length)
 		return FALSE;
 	}
 	pmime->mime_type = SINGLE_MIME;
-	simple_tree_set_root(&pmail->tree, &pmime->node);
+	pmail->tree.set_root(&pmime->node);
 	return TRUE;
 }
 
@@ -146,10 +146,10 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 				return FALSE;
 			}
 			if (NULL == pmime_last) {
-            	simple_tree_add_child(&pmail->tree, &pmime_parent->node,
+				pmail->tree.add_child(&pmime_parent->node,
 					&pmime->node,SIMPLE_TREE_ADD_LAST);
             } else {
-				simple_tree_insert_sibling(&pmail->tree, &pmime_last->node,
+				pmail->tree.insert_sibling(&pmime_last->node,
 					&pmime->node, SIMPLE_TREE_INSERT_AFTER);
             }
 			pmime_last = pmime;
@@ -192,10 +192,10 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 		return FALSE;
 	}
 	if (NULL == pmime_last) {
-        simple_tree_add_child(&pmail->tree, &pmime_parent->node,
+		pmail->tree.add_child(&pmime_parent->node,
 			&pmime->node,SIMPLE_TREE_ADD_LAST);
     } else {
-		simple_tree_insert_sibling(&pmail->tree, &pmime_last->node,
+		pmail->tree.insert_sibling(&pmime_last->node,
 			&pmime->node, SIMPLE_TREE_INSERT_AFTER);
 	}
 	if (pmime->mime_type == MULTIPLE_MIME &&
@@ -326,7 +326,7 @@ MIME *MAIL::add_head()
 		return NULL;
 	}
 	pmime->clear();
-	simple_tree_set_root(&pmail->tree, &pmime->node);
+	pmail->tree.set_root(&pmime->node);
 	return pmime;
 }
 
@@ -736,8 +736,7 @@ MIME *MAIL::add_child(MIME *pmime_base, int opt)
         return NULL;
     }
 	pmime->clear();
-	if (!simple_tree_add_child(&pmail->tree,
-        &pmime_base->node, &pmime->node, opt)) {
+	if (!pmail->tree.add_child(&pmime_base->node, &pmime->node, opt)) {
 		pmail->pmime_pool->put_mime(pmime);
         return NULL;
     }

@@ -216,8 +216,7 @@ static void object_tree_release_objnode(
 	simple_tree_enum_from_node(&pobjnode->node, [&](const SIMPLE_TREE_NODE *n) {
 		pobjtree->m_hash.erase(static_cast<const OBJECT_NODE *>(n->pdata)->handle);
 	});
-	simple_tree_destroy_node(&pobjtree->tree,
-		&pobjnode->node, object_tree_free_objnode);
+	pobjtree->tree.destroy_node(&pobjnode->node, object_tree_free_objnode);
 }
 
 OBJECT_TREE::~OBJECT_TREE()
@@ -269,9 +268,9 @@ uint32_t OBJECT_TREE::add_object_handle(int parent_handle, int type, void *pobje
 		return INVALID_HANDLE;
 	}
 	if (parent_iter == pobjtree->m_hash.end())
-		simple_tree_set_root(&pobjtree->tree, &pobjnode->node);
+		pobjtree->tree.set_root(&pobjnode->node);
 	else
-		simple_tree_add_child(&pobjtree->tree, &parent_iter->second->node,
+		pobjtree->tree.add_child(&parent_iter->second->node,
 			&pobjnode->node, SIMPLE_TREE_ADD_LAST);
 	return pobjnode->handle;
 }
