@@ -1330,16 +1330,14 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 			if (NULL == plast_group) {
 				simple_tree_set_root(&preader->element_tree,
 					(SIMPLE_TREE_NODE*)pgroup);
+			} else if (plast_node != nullptr) {
+				simple_tree_insert_sibling(&preader->element_tree,
+					plast_node, (SIMPLE_TREE_NODE *)pgroup,
+					SIMPLE_TREE_INSERT_AFTER);
 			} else {
-				if (NULL != plast_node) {
-					simple_tree_insert_sibling(&preader->element_tree,
-						plast_node, (SIMPLE_TREE_NODE*)pgroup,
-						SIMPLE_TREE_INSERT_AFTER);
-				} else {
-					simple_tree_add_child(&preader->element_tree,
-						(SIMPLE_TREE_NODE*)plast_group,
-						(SIMPLE_TREE_NODE*)pgroup, SIMPLE_TREE_ADD_LAST);
-				}
+				simple_tree_add_child(&preader->element_tree,
+					(SIMPLE_TREE_NODE *)plast_group,
+					(SIMPLE_TREE_NODE *)pgroup, SIMPLE_TREE_ADD_LAST);
 			}
 			plast_group = pgroup;
 			plast_node = NULL;
@@ -1572,6 +1570,7 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 					memcpy(tmp_buff + tmp_offset, string, tmp_len);
 					tmp_offset += tmp_len;
 				}
+				continue;
 			} else if (string[1] == '\'' && string[2] != '\0' && string[3] != '\0') {
 				if (tmp_offset + 1 > sizeof(tmp_buff) - 1) {
 					debug_info("[rtf]: invalid font name");
@@ -1579,41 +1578,44 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 				}
 				tmp_buff[tmp_offset] = rtf_decode_hex_char(string + 2);
 				tmp_offset ++;
-			} else {
-				ret = rtf_parse_control(string + 1, 
-						tmp_name, MAX_CONTROL_LEN, &param);
-				if (ret < 0) {
-					debug_info("[rtf]: illegal control word in font table");
-				} else if (ret > 0) {
-					if (0 == strcmp(tmp_name, "u")) {
-						wchar_to_utf8(param, tmp_name);
-						if (-1 != cpid) {
-							tmp_cpid = cpid;
-						} else if (-1 != fcharsetcp) {
-							tmp_cpid = fcharsetcp;
-						} else {
-							tmp_cpid = 1252;
-						}
-						if (!string_from_utf8(rtf_cpid_to_encoding(tmp_cpid),
-						    tmp_name, name, arsizeof(name))) {
-							debug_info("[rtf]: invalid font name");
-							return false;
-						} else {
-							auto tmp_len = strlen(name);
-							if (tmp_len + tmp_offset >
-								sizeof(tmp_buff) - 1) {
-								debug_info("[rtf]: invalid font name");
-								return false;
-							}
-							memcpy(tmp_buff + tmp_offset, name, tmp_len);
-							tmp_offset += tmp_len;
-						}
-					} else if (0 == strcmp(tmp_name, "fcharset")) {
-						fcharsetcp = rtf_fcharset_to_cpid(param);
-					} else if (0 == strcmp(tmp_name, "cpg")) {
-						cpid = param;
-					}
+				continue;
+			}
+			ret = rtf_parse_control(string + 1,
+			      tmp_name, MAX_CONTROL_LEN, &param);
+			if (ret < 0) {
+				debug_info("[rtf]: illegal control word in font table");
+				continue;
+			} else if (ret == 0) {
+				continue;
+			}
+			/* ret > 0 */
+			if (0 == strcmp(tmp_name, "u")) {
+				wchar_to_utf8(param, tmp_name);
+				if (-1 != cpid) {
+					tmp_cpid = cpid;
+				} else if (-1 != fcharsetcp) {
+					tmp_cpid = fcharsetcp;
+				} else {
+					tmp_cpid = 1252;
 				}
+				if (!string_from_utf8(rtf_cpid_to_encoding(tmp_cpid),
+				    tmp_name, name, arsizeof(name))) {
+					debug_info("[rtf]: invalid font name");
+					return false;
+				} else {
+					auto tmp_len = strlen(name);
+					if (tmp_len + tmp_offset >
+					    sizeof(tmp_buff) - 1) {
+						debug_info("[rtf]: invalid font name");
+						return false;
+					}
+					memcpy(tmp_buff + tmp_offset, name, tmp_len);
+					tmp_offset += tmp_len;
+				}
+			} else if (0 == strcmp(tmp_name, "fcharset")) {
+				fcharsetcp = rtf_fcharset_to_cpid(param);
+			} else if (0 == strcmp(tmp_name, "cpg")) {
+				cpid = param;
 			}
 		}
 		if (0 == tmp_offset) {
@@ -1624,15 +1626,12 @@ static bool rtf_build_font_table(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 		if (-1 == cpid) {
 			cpid = fcharsetcp;
 		}
-		if (-1 == cpid) {
-			if (NULL != strcasestr(name, "symbol")) {
-				tmp_entry.encoding[0] = '\0';
-			} else {
-				strcpy(tmp_entry.encoding, "windows-1252");
-			}
-		} else {
+		if (cpid != -1)
 			strcpy(tmp_entry.encoding, rtf_cpid_to_encoding(cpid));
-		}
+		else if (strcasestr(name, "symbol") != nullptr)
+			tmp_entry.encoding[0] = '\0';
+		else
+			strcpy(tmp_entry.encoding, "windows-1252");
 		if (-1 == cpid) {
 			cpid = 1252;
 		}
