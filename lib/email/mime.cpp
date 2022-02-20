@@ -955,34 +955,35 @@ BOOL MIME::set_content_param(const char *tag, const char *value)
 		pmime->f_type_params.write(tag, tag_len);
 		pmime->f_type_params.write(&val_len, sizeof(uint32_t));
 		pmime->f_type_params.write(value, val_len);
-	} else {
-		mem_file_init(&file_tmp, pmime->f_type_params.allocator);
-		pmime->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
-		i = 0;
-		while (pmime->f_type_params.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
-			pmime->f_type_params.read(tmp_buff, tag_len);
-			if (i != mark) {
-				file_tmp.write(&tag_len, sizeof(uint32_t));
-				file_tmp.write(tmp_buff, tag_len);
-			}
-			pmime->f_type_params.read(&val_len, sizeof(uint32_t));
-			pmime->f_type_params.read(tmp_buff, val_len);
-			if (i != mark) {
-				file_tmp.write(&val_len, sizeof(uint32_t));
-				file_tmp.write(tmp_buff, val_len);
-			}
-			i ++;
-		}
-		/* write the new tag-value at the end of mem file */
-		tag_len = strlen(tag);
-		val_len = strlen(value);
-		file_tmp.write(&tag_len, sizeof(uint32_t));
-		file_tmp.write(tag, tag_len);
-		file_tmp.write(&val_len, sizeof(uint32_t));
-		file_tmp.write(value, val_len);
-		file_tmp.copy_to(pmime->f_type_params);
-		mem_file_free(&file_tmp);
+		pmime->head_touched = TRUE;
+		return TRUE;
 	}
+	mem_file_init(&file_tmp, pmime->f_type_params.allocator);
+	pmime->f_type_params.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	i = 0;
+	while (pmime->f_type_params.read(&tag_len, sizeof(uint32_t)) != MEM_END_OF_FILE) {
+		pmime->f_type_params.read(tmp_buff, tag_len);
+		if (i != mark) {
+			file_tmp.write(&tag_len, sizeof(uint32_t));
+			file_tmp.write(tmp_buff, tag_len);
+		}
+		pmime->f_type_params.read(&val_len, sizeof(uint32_t));
+		pmime->f_type_params.read(tmp_buff, val_len);
+		if (i != mark) {
+			file_tmp.write(&val_len, sizeof(uint32_t));
+			file_tmp.write(tmp_buff, val_len);
+		}
+		i ++;
+	}
+	/* write the new tag-value at the end of mem file */
+	tag_len = strlen(tag);
+	val_len = strlen(value);
+	file_tmp.write(&tag_len, sizeof(uint32_t));
+	file_tmp.write(tag, tag_len);
+	file_tmp.write(&val_len, sizeof(uint32_t));
+	file_tmp.write(value, val_len);
+	file_tmp.copy_to(pmime->f_type_params);
+	mem_file_free(&file_tmp);
 	pmime->head_touched = TRUE;
 	return TRUE;
 }
@@ -1071,44 +1072,44 @@ BOOL MIME::serialize(STREAM *pstream)
 			/* if there's nothing, just append an empty line */
 			pstream->write("\r\n", 2);
 		}
+		return TRUE;
+	}
+	if (NULL == pmime->first_boundary) {
+		pstream->write("This is a multi-part message in MIME format.\r\n\r\n", 48);
 	} else {
-		if (NULL == pmime->first_boundary) {
-			pstream->write("This is a multi-part message in MIME format.\r\n\r\n", 48);
-		} else {
-			pstream->write(pmime->content_begin, pmime->first_boundary - pmime->content_begin);
-		}
-		pnode = simple_tree_node_get_child(&pmime->node);
-		has_submime = FALSE;
-        while (NULL != pnode) {
-			has_submime = TRUE;
-			pstream->write("--", 2);
-			pstream->write(pmime->boundary_string, pmime->boundary_len);
-			pstream->write("\r\n", 2);
-			pmime_child = (MIME*)pnode->pdata;
-			if (!pmime_child->serialize(pstream))
-				return FALSE;
-			pnode = simple_tree_node_get_sibling(pnode);
-		}
-		if (!has_submime) {
-			pstream->write("--", 2);
-			pstream->write(pmime->boundary_string, pmime->boundary_len);
-			pstream->write("\r\n\r\n", 4);
-		}
+		pstream->write(pmime->content_begin, pmime->first_boundary - pmime->content_begin);
+	}
+	pnode = simple_tree_node_get_child(&pmime->node);
+	has_submime = FALSE;
+	while (NULL != pnode) {
+		has_submime = TRUE;
 		pstream->write("--", 2);
 		pstream->write(pmime->boundary_string, pmime->boundary_len);
+		pstream->write("\r\n", 2);
+		pmime_child = (MIME*)pnode->pdata;
+		if (!pmime_child->serialize(pstream))
+			return FALSE;
+		pnode = simple_tree_node_get_sibling(pnode);
+	}
+	if (!has_submime) {
 		pstream->write("--", 2);
-		if (NULL == pmime->last_boundary) {
-			pstream->write("\r\n\r\n", 4);
+		pstream->write(pmime->boundary_string, pmime->boundary_len);
+		pstream->write("\r\n\r\n", 4);
+	}
+	pstream->write("--", 2);
+	pstream->write(pmime->boundary_string, pmime->boundary_len);
+	pstream->write("--", 2);
+	if (NULL == pmime->last_boundary) {
+		pstream->write("\r\n\r\n", 4);
+	} else {
+		tmp_len = pmime->content_length -
+		          (pmime->last_boundary - pmime->content_begin);
+		if (tmp_len > 0) {
+			pstream->write(pmime->last_boundary, tmp_len);
+		} else if (0 == tmp_len) {
+			pstream->write("\r\n", 2);
 		} else {
-			tmp_len = pmime->content_length -
-					(pmime->last_boundary - pmime->content_begin);
-			if (tmp_len > 0) {
-				pstream->write(pmime->last_boundary, tmp_len);
-			} else if (0 == tmp_len) {
-				pstream->write("\r\n", 2);
-			} else {
-				debug_info("[mime]: fatal error in MIME::serialize");
-			}
+			debug_info("[mime]: fatal error in MIME::serialize");
 		}
 	}
 	return TRUE;
@@ -1566,77 +1567,74 @@ BOOL MIME::to_file(int fd)
 				return FALSE;
 			}
 		}
-	} else {
-		if (NULL == pmime->first_boundary) {
-			if (48 != write(fd, "This is a multi-part message "
-						"in MIME format.\r\n\r\n", 48)) {
-				return FALSE;
-			}
-		} else {
-			if (pmime->first_boundary - pmime->content_begin != write(fd,
-				pmime->content_begin, pmime->first_boundary - 
-				pmime->content_begin)) {
-				return FALSE;
-			}
+		return TRUE;
+	}
+	if (NULL == pmime->first_boundary) {
+		if (48 != write(fd, "This is a multi-part message "
+		    "in MIME format.\r\n\r\n", 48)) {
+			return FALSE;
 		}
-		pnode = simple_tree_node_get_child(&pmime->node);
-		has_submime = FALSE;
-        while (NULL != pnode) {
-			has_submime = TRUE;
-			memcpy(tmp_buff, "--", 2);
-			len = 2;
-			memcpy(tmp_buff + len, pmime->boundary_string,
-									pmime->boundary_len);
-			len += pmime->boundary_len;
-			memcpy(tmp_buff + len, "\r\n", 2);
-			len += 2;
-			auto wrlen = write(fd, tmp_buff, len);
-			if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
-				return FALSE;
-			pmime_child = (MIME*)pnode->pdata;
-			if (!pmime_child->to_file(fd))
-				return FALSE;
-			pnode = simple_tree_node_get_sibling(pnode);
-		}
-		if (!has_submime) {
-			memcpy(tmp_buff, "--", 2);
-			len = 2;
-			memcpy(tmp_buff + len, pmime->boundary_string,
-									pmime->boundary_len);
-			len += pmime->boundary_len;
-			memcpy(tmp_buff + len, "\r\n\r\n", 4);
-			len += 4;
-			auto wrlen = write(fd, tmp_buff, len);
-			if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
-				return FALSE;
-		}
+	} else if (write(fd, pmime->content_begin, pmime->first_boundary - pmime->content_begin) !=
+	    pmime->first_boundary - pmime->content_begin) {
+		return FALSE;
+	}
+	pnode = simple_tree_node_get_child(&pmime->node);
+	has_submime = FALSE;
+	while (NULL != pnode) {
+		has_submime = TRUE;
 		memcpy(tmp_buff, "--", 2);
 		len = 2;
-		memcpy(tmp_buff + len, pmime->boundary_string, pmime->boundary_len);
+		memcpy(tmp_buff + len, pmime->boundary_string,
+		       pmime->boundary_len);
 		len += pmime->boundary_len;
-		memcpy(tmp_buff + len, "--", 2);
+		memcpy(tmp_buff + len, "\r\n", 2);
 		len += 2;
-		if (NULL == pmime->last_boundary) {
-			memcpy(tmp_buff + len, "\r\n\r\n", 4);
-			len += 4;
-		} else {
-			tmp_len = pmime->content_length -
-				(pmime->last_boundary - pmime->content_begin); 
-			if (tmp_len > 0 && tmp_len < sizeof(tmp_buff) - len) {
-				memcpy(tmp_buff + len, pmime->last_boundary, tmp_len);
-				len +=  tmp_len;
-			} else if (0 == tmp_len) {
-				memcpy(tmp_buff + len, "\r\n", 2);
-				len += 2;
-			} else {
-				debug_info("[mime]: E-1640");
-				return FALSE;
-			}
-		}
+		auto wrlen = write(fd, tmp_buff, len);
+		if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
+			return FALSE;
+		pmime_child = (MIME*)pnode->pdata;
+		if (!pmime_child->to_file(fd))
+			return FALSE;
+		pnode = simple_tree_node_get_sibling(pnode);
+	}
+	if (!has_submime) {
+		memcpy(tmp_buff, "--", 2);
+		len = 2;
+		memcpy(tmp_buff + len, pmime->boundary_string,
+		       pmime->boundary_len);
+		len += pmime->boundary_len;
+		memcpy(tmp_buff + len, "\r\n\r\n", 4);
+		len += 4;
 		auto wrlen = write(fd, tmp_buff, len);
 		if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
 			return FALSE;
 	}
+	memcpy(tmp_buff, "--", 2);
+	len = 2;
+	memcpy(tmp_buff + len, pmime->boundary_string, pmime->boundary_len);
+	len += pmime->boundary_len;
+	memcpy(tmp_buff + len, "--", 2);
+	len += 2;
+	if (NULL == pmime->last_boundary) {
+		memcpy(tmp_buff + len, "\r\n\r\n", 4);
+		len += 4;
+	} else {
+		tmp_len = pmime->content_length -
+		          (pmime->last_boundary - pmime->content_begin);
+		if (tmp_len > 0 && tmp_len < sizeof(tmp_buff) - len) {
+			memcpy(tmp_buff + len, pmime->last_boundary, tmp_len);
+			len +=  tmp_len;
+		} else if (0 == tmp_len) {
+			memcpy(tmp_buff + len, "\r\n", 2);
+			len += 2;
+		} else {
+			debug_info("[mime]: E-1640");
+			return FALSE;
+		}
+	}
+	auto wrlen = write(fd, tmp_buff, len);
+	if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
+		return FALSE;
 	return TRUE;
 }
 
@@ -1760,77 +1758,74 @@ BOOL MIME::to_tls(SSL *ssl)
 				return FALSE;
 			}
 		}
-	} else {
-		if (NULL == pmime->first_boundary) {
-			if (48 != SSL_write(ssl, "This is a multi-part message "
-				"in MIME format.\r\n\r\n", 48)) {
-				return FALSE;
-			}
-		} else {
-			if (pmime->first_boundary - pmime->content_begin != SSL_write(
-				ssl, pmime->content_begin, pmime->first_boundary - 
-				pmime->content_begin)) {
-				return FALSE;
-			}
+		return TRUE;
+	}
+	if (NULL == pmime->first_boundary) {
+		if (48 != SSL_write(ssl, "This is a multi-part message "
+		    "in MIME format.\r\n\r\n", 48)) {
+			return FALSE;
 		}
-		pnode = simple_tree_node_get_child(&pmime->node);
-		has_submime = FALSE;
-        while (NULL != pnode) {
-			has_submime = TRUE;
-			memcpy(tmp_buff, "--", 2);
-			len = 2;
-			memcpy(tmp_buff + len, pmime->boundary_string,
-									pmime->boundary_len);
-			len += pmime->boundary_len;
-			memcpy(tmp_buff + len, "\r\n", 2);
-			len += 2;
-			auto wrlen = SSL_write(ssl, tmp_buff, len);
-			if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
-				return FALSE;
-			pmime_child = (MIME*)pnode->pdata;
-			if (!pmime_child->to_tls(ssl))
-				return FALSE;
-			pnode = simple_tree_node_get_sibling(pnode);
-		}
-		if (!has_submime) {
-			memcpy(tmp_buff, "--", 2);
-			len = 2;
-			memcpy(tmp_buff + len, pmime->boundary_string,
-									pmime->boundary_len);
-			len += pmime->boundary_len;
-			memcpy(tmp_buff + len, "\r\n\r\n", 4);
-			len += 4;
-			auto wrlen = SSL_write(ssl, tmp_buff, len);
-			if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
-				return FALSE;
-		}
+	} else if (SSL_write(ssl, pmime->content_begin, pmime->first_boundary - pmime->content_begin) !=
+	    pmime->first_boundary - pmime->content_begin) {
+		return FALSE;
+	}
+	pnode = simple_tree_node_get_child(&pmime->node);
+	has_submime = FALSE;
+	while (NULL != pnode) {
+		has_submime = TRUE;
 		memcpy(tmp_buff, "--", 2);
 		len = 2;
-		memcpy(tmp_buff + len, pmime->boundary_string, pmime->boundary_len);
+		memcpy(tmp_buff + len, pmime->boundary_string,
+		       pmime->boundary_len);
 		len += pmime->boundary_len;
-		memcpy(tmp_buff + len, "--", 2);
+		memcpy(tmp_buff + len, "\r\n", 2);
 		len += 2;
-		if (NULL == pmime->last_boundary) {
-			memcpy(tmp_buff + len, "\r\n\r\n", 4);
-			len += 4;
-		} else {
-			tmp_len = pmime->content_length -
-				(pmime->last_boundary - pmime->content_begin); 
-			if (tmp_len > 0 && tmp_len < sizeof(tmp_buff) - len) {
-				memcpy(tmp_buff + len, pmime->last_boundary, tmp_len);
-				len +=  tmp_len;
-			} else if (0 == tmp_len) {
-				memcpy(tmp_buff + len, "\r\n", 2);
-				len += 2;
-			} else {
-				debug_info("[mime]: E-1641");
-				return FALSE;
-			}
-		}
+		auto wrlen = SSL_write(ssl, tmp_buff, len);
+		if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
+			return FALSE;
+		pmime_child = (MIME*)pnode->pdata;
+		if (!pmime_child->to_tls(ssl))
+			return FALSE;
+		pnode = simple_tree_node_get_sibling(pnode);
+	}
+	if (!has_submime) {
+		memcpy(tmp_buff, "--", 2);
+		len = 2;
+		memcpy(tmp_buff + len, pmime->boundary_string,
+		       pmime->boundary_len);
+		len += pmime->boundary_len;
+		memcpy(tmp_buff + len, "\r\n\r\n", 4);
+		len += 4;
 		auto wrlen = SSL_write(ssl, tmp_buff, len);
 		if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
 			return FALSE;
 	}
+	memcpy(tmp_buff, "--", 2);
+	len = 2;
+	memcpy(tmp_buff + len, pmime->boundary_string, pmime->boundary_len);
+	len += pmime->boundary_len;
+	memcpy(tmp_buff + len, "--", 2);
+	len += 2;
+	if (NULL == pmime->last_boundary) {
+		memcpy(tmp_buff + len, "\r\n\r\n", 4);
+		len += 4;
+	} else {
+		tmp_len = pmime->content_length -
+		          (pmime->last_boundary - pmime->content_begin);
+		if (tmp_len > 0 && tmp_len < sizeof(tmp_buff) - len) {
+			memcpy(tmp_buff + len, pmime->last_boundary, tmp_len);
+			len +=  tmp_len;
+		} else if (0 == tmp_len) {
+			memcpy(tmp_buff + len, "\r\n", 2);
+			len += 2;
+		} else {
+			debug_info("[mime]: E-1641");
+			return FALSE;
+		}
+	}
+	auto wrlen = SSL_write(ssl, tmp_buff, len);
+	if (wrlen < 0 || static_cast<size_t>(wrlen) != len)
+		return FALSE;
 	return TRUE;
 }
 
@@ -1890,35 +1885,33 @@ BOOL MIME::check_dot()
 				return TRUE;
 			}
 		} 
-	} else {
-		if (NULL != pmime->first_boundary) {
-			tmp_len = pmime->first_boundary - pmime->content_begin;
-			if (tmp_len >= 2 && (('.' == pmime->first_boundary[0] &&
-				'.' == pmime->first_boundary[1]) ||
-				NULL != memmem(pmime->first_boundary, tmp_len, "\r\n..", 4))) {
-				return TRUE;
-			}
+		return TRUE;
+	}
+	if (NULL != pmime->first_boundary) {
+		tmp_len = pmime->first_boundary - pmime->content_begin;
+		if (tmp_len >= 2 && (('.' == pmime->first_boundary[0] &&
+		    '.' == pmime->first_boundary[1]) ||
+		    NULL != memmem(pmime->first_boundary, tmp_len, "\r\n..", 4))) {
+			return TRUE;
 		}
-		pnode = simple_tree_node_get_child(&pmime->node);
-        while (NULL != pnode) {
-			pmime_child = (MIME*)pnode->pdata;
-			if (pmime_child->check_dot())
-				return TRUE;
-			pnode = simple_tree_node_get_sibling(pnode);
-		}
-		
-		if (NULL != pmime->last_boundary) {
-			tmp_len = pmime->content_length -
-						(pmime->last_boundary - pmime->content_begin); 
-			if (tmp_len >= 2 && (('.' == pmime->last_boundary[0] &&
-				'.' == pmime->last_boundary[1]) ||
-				NULL != memmem(pmime->last_boundary, tmp_len, "\r\n..", 4))) {
-				return TRUE;
-			}
+	}
+	pnode = simple_tree_node_get_child(&pmime->node);
+	while (NULL != pnode) {
+		pmime_child = (MIME *)pnode->pdata;
+		if (pmime_child->check_dot())
+			return TRUE;
+		pnode = simple_tree_node_get_sibling(pnode);
+	}
+	if (NULL != pmime->last_boundary) {
+		tmp_len = pmime->content_length -
+		          (pmime->last_boundary - pmime->content_begin);
+		if (tmp_len >= 2 && (('.' == pmime->last_boundary[0] &&
+		    '.' == pmime->last_boundary[1]) ||
+		    NULL != memmem(pmime->last_boundary, tmp_len, "\r\n..", 4))) {
+			return TRUE;
 		}
 	}
 	return FALSE;
-
 }
 
 /*
@@ -1988,38 +1981,37 @@ ssize_t MIME::get_length()
 			/* if there's nothing, just append an empty line */
 			mime_len += 2;
 		}
+		return mime_len;
+	}
+	if (NULL == pmime->first_boundary) {
+		mime_len += 48;
 	} else {
-		if (NULL == pmime->first_boundary) {
-			mime_len += 48;
-		} else {
-			mime_len += pmime->first_boundary - pmime->content_begin;
-		}
-		pnode = simple_tree_node_get_child(&pmime->node);
-		has_submime = FALSE;
-        while (NULL != pnode) {
-			has_submime = TRUE;
-			mime_len += pmime->boundary_len + 4;
-			pmime_child = (MIME*)pnode->pdata;
-			auto mgl = pmime_child->get_length();
-			if (mgl < 0)
-				return -1;
-			mime_len += mgl;
-			pnode = simple_tree_node_get_sibling(pnode);
-		}
-		if (!has_submime)
-			mime_len += pmime->boundary_len + 6;
+		mime_len += pmime->first_boundary - pmime->content_begin;
+	}
+	pnode = simple_tree_node_get_child(&pmime->node);
+	has_submime = FALSE;
+	while (NULL != pnode) {
+		has_submime = TRUE;
 		mime_len += pmime->boundary_len + 4;
-		if (NULL == pmime->last_boundary) {
-			mime_len += 4;
-		} else {
-			auto tmp_len = pmime->content_length - (pmime->last_boundary -
-					  pmime->content_begin);
-			if (tmp_len > 0) {
-				mime_len += tmp_len;
-			} else if (0 == tmp_len) {
-				mime_len += 2;
-			}
-			
+		pmime_child = (MIME*)pnode->pdata;
+		auto mgl = pmime_child->get_length();
+		if (mgl < 0)
+			return -1;
+		mime_len += mgl;
+		pnode = simple_tree_node_get_sibling(pnode);
+	}
+	if (!has_submime)
+		mime_len += pmime->boundary_len + 6;
+	mime_len += pmime->boundary_len + 4;
+	if (NULL == pmime->last_boundary) {
+		mime_len += 4;
+	} else {
+		auto tmp_len = pmime->content_length - (pmime->last_boundary -
+		               pmime->content_begin);
+		if (tmp_len > 0) {
+			mime_len += tmp_len;
+		} else if (0 == tmp_len) {
+			mime_len += 2;
 		}
 	}
 	return mime_len;
@@ -2052,6 +2044,7 @@ BOOL MIME::get_filename(char *file_name)
 			file_name[tmp_len] = '\0';
 			goto FIND_FILENAME;
 		}
+		return FALSE;
 	} else if (pmime->get_field("Content-Transfer-Encoding", encoding, 256)) {
 		if (0 == strcasecmp(encoding, "uue") ||
 			0 == strcasecmp(encoding, "x-uue") ||
