@@ -8,35 +8,40 @@ enum {
 	SIMPLE_TREE_ADD_LAST
 };
 
-struct SIMPLE_TREE_NODE {
-	SIMPLE_TREE_NODE *pnode_sibling, *pnode_child, *pnode_parent;
+struct GX_EXPORT tree_node {
+	inline size_t get_children_num() const { return node_children; }
+	inline size_t get_depth() const { return node_depth; }
+	inline tree_node *get_child() { return pnode_child; }
+	inline const tree_node *get_child() const { return pnode_child; }
+	inline tree_node *get_parent() { return pnode_parent; }
+	inline const tree_node *get_parent() const { return pnode_parent; }
+	inline tree_node *get_sibling() { return pnode_sibling; }
+	inline const tree_node *get_sibling() const { return pnode_sibling; }
+
+	tree_node *pnode_sibling, *pnode_child, *pnode_parent;
 	size_t						node_depth;
 	size_t						node_children;
 	void						*pdata;
 };
+using SIMPLE_TREE_NODE = tree_node;
 
-struct SIMPLE_TREE {
+struct GX_EXPORT tree {
+	inline tree_node *get_root() { return root; }
+	inline const tree_node *get_root() const { return root; }
+	inline size_t get_nodes_num() const { return nodes_num; }
+	void clear() { root = nullptr; nodes_num = 0; }
+
 	SIMPLE_TREE_NODE *root;
 	size_t	nodes_num;
 };
+using SIMPLE_TREE = tree;
 
 using SIMPLE_TREE_ENUM = void (*)(SIMPLE_TREE_NODE *, void *);
 using SIMPLE_TREE_DELETE = void (*)(SIMPLE_TREE_NODE *);
 using SIMPLE_TREE_DUPLICATE = SIMPLE_TREE_NODE *(*)(SIMPLE_TREE_NODE *, void *);
 
 void simple_tree_init(SIMPLE_TREE *ptree);
-SIMPLE_TREE_NODE* simple_tree_get_root(SIMPLE_TREE *ptree);
-extern GX_EXPORT const SIMPLE_TREE_NODE *simple_tree_get_root(const SIMPLE_TREE *);
 BOOL simple_tree_set_root(SIMPLE_TREE *ptree, SIMPLE_TREE_NODE *pnode);
-extern GX_EXPORT size_t simple_tree_get_nodes_num(const SIMPLE_TREE *);
-extern GX_EXPORT size_t simple_tree_node_get_children_num(const SIMPLE_TREE_NODE *);
-extern GX_EXPORT size_t simple_tree_node_get_depth(const SIMPLE_TREE_NODE *);
-SIMPLE_TREE_NODE* simple_tree_node_get_child(SIMPLE_TREE_NODE *pnode);
-extern GX_EXPORT const SIMPLE_TREE_NODE *simple_tree_node_get_child(const SIMPLE_TREE_NODE *);
-SIMPLE_TREE_NODE* simple_tree_node_get_parent(SIMPLE_TREE_NODE *pnode);
-extern GX_EXPORT const SIMPLE_TREE_NODE *simple_tree_node_get_parent(const SIMPLE_TREE_NODE *);
-extern SIMPLE_TREE_NODE *simple_tree_node_get_sibling(SIMPLE_TREE_NODE *);
-extern GX_EXPORT const SIMPLE_TREE_NODE *simple_tree_node_get_sibling(const SIMPLE_TREE_NODE *);
 extern BOOL simple_tree_insert_sibling(SIMPLE_TREE *, SIMPLE_TREE_NODE *base, SIMPLE_TREE_NODE *pnode, int opt);
 BOOL simple_tree_add_child(SIMPLE_TREE *ptree,
 	SIMPLE_TREE_NODE *pnode_base, SIMPLE_TREE_NODE *pnode, int opt);
@@ -61,4 +66,3 @@ BOOL simple_tree_move_node_to_child(SIMPLE_TREE *ptree_dst,
 	SIMPLE_TREE_NODE *pnode_dst, SIMPLE_TREE *ptree_src,
 	SIMPLE_TREE_NODE *pnode_src, int opt);
 extern BOOL simple_tree_move_node_to_sibling(SIMPLE_TREE *tdst, SIMPLE_TREE_NODE *ndst, SIMPLE_TREE *tsrc, SIMPLE_TREE_NODE *nsrc, int opt);
-void simple_tree_free(SIMPLE_TREE *ptree);

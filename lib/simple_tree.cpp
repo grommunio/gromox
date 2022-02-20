@@ -46,17 +46,6 @@ BOOL simple_tree_set_root(SIMPLE_TREE *ptree, SIMPLE_TREE_NODE *pnode)
 	return TRUE;
 }
 
-SIMPLE_TREE_NODE* simple_tree_get_root(SIMPLE_TREE *ptree)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == ptree) {
-		debug_info("[simple_tree]: NULL pointer in simple_tree_get_root");
-		return NULL;
-	}
-#endif
-	return ptree->root;
-}
-
 /*
  *	add a sibling node after pnode_base
  *	@param
@@ -179,120 +168,6 @@ BOOL simple_tree_add_child(SIMPLE_TREE *ptree,
 	}
 	return FALSE;
 
-}
-
-/*
- *	get the tree node's number
- *	@param
- *		ptree [in]		indicate the tree object
- *	@return
- *		all nodes number of tree
- */
-size_t simple_tree_get_nodes_num(const SIMPLE_TREE *ptree)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == ptree) {
-		debug_info("[simple_tree]: NULL pointer in "
-					"simple_tree_get_nodes_num");
-		return 0;
-	}
-#endif
-	return ptree->nodes_num;
-}
-
-/*
- *	get node's children node number
- *	@param
- *		pnode [in]	node object
- *	@return
- *		children nbumber
- */
-size_t simple_tree_node_get_children_num(const SIMPLE_TREE_NODE *pnode)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pnode) {
-		debug_info("[simple_tree]: NULL pointer in "
-					"simple_tree_node_get_children_num");
-		return 0;
-	}
-#endif
-	return pnode->node_children;
-}
-
-/*
- *	get node's depth in the tree
- *	@param
- *		pnode [in]	node object
- *	@return
- *		depth of node in the tree
- */
-size_t simple_tree_node_get_depth(const SIMPLE_TREE_NODE *pnode)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pnode) {
-		debug_info("[simple_tree]: NULL pointer in "
-					"simple_tree_node_get_depth");
-		return 0;
-	}
-#endif
-	return pnode->node_depth;
-}
-
-/*
- *	get the first child node of pnode
- *	@param
- *		pnode [in]		indicate the node object
- *	@return
- *		child node of pnode, NULL if there's no
- */
-SIMPLE_TREE_NODE* simple_tree_node_get_child(SIMPLE_TREE_NODE *pnode)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pnode) {
-		debug_info("[simple_tree]: NULL pointer in "
-					"simple_tree_node_get_child");
-		return NULL;
-	}
-#endif
-	return pnode->pnode_child;
-
-}
-
-/*
- *	get the parent node of pnode
- *	@param
- *		pnode [in]		indicate the node object
- *	@return
- *		parent node of pnode, NULL if the node is the root of tree
- */
-SIMPLE_TREE_NODE* simple_tree_node_get_parent(SIMPLE_TREE_NODE *pnode)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pnode) {
-		debug_info("[simple_tree]: NULL pointer in "
-					"simple_tree_node_get_parent");
-		return NULL;
-	}
-#endif
-	return pnode->pnode_parent;
-}
-
-/*
- *	get the sibling node of pnode
- *	@param
- *		pnode [in]		indicate the node object
- *	@return
- *		the sibling node of pnode, NULL if there's no sibling node
- */
-SIMPLE_TREE_NODE *simple_tree_node_get_sibling(SIMPLE_TREE_NODE *pnode)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == pnode) {
-		debug_info("[simple_tree]: NULL pointer in simple_tree_node_get_sibling");
-		return NULL;
-	}
-#endif
-	return pnode->pnode_sibling;
 }
 
 /*
@@ -658,35 +533,4 @@ BOOL simple_tree_move_node_to_sibling(SIMPLE_TREE *ptree_dst,
 	}
 	return TRUE;
 
-}
-
-void simple_tree_free(SIMPLE_TREE *ptree)
-{
-#ifdef _DEBUG_UMTA
-	if (NULL == ptree) {
-		debug_info("[simple_tree]: NULL pointer in simple_tree_free");
-		return;
-	}
-#endif
-	memset(ptree, 0, sizeof(SIMPLE_TREE));
-}
-
-const SIMPLE_TREE_NODE *simple_tree_get_root(const SIMPLE_TREE *t)
-{
-	return simple_tree_get_root(deconst(t));
-}
-
-const SIMPLE_TREE_NODE *simple_tree_node_get_child(const SIMPLE_TREE_NODE *n)
-{
-	return simple_tree_node_get_child(deconst(n));
-}
-
-const SIMPLE_TREE_NODE *simple_tree_node_get_parent(const SIMPLE_TREE_NODE *n)
-{
-	return simple_tree_node_get_parent(deconst(n));
-}
-
-const SIMPLE_TREE_NODE *simple_tree_node_get_sibling(const SIMPLE_TREE_NODE *n)
-{
-	return simple_tree_node_get_sibling(deconst(n));
 }

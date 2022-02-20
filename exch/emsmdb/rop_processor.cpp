@@ -139,13 +139,12 @@ static void rop_processor_release_objnode(
 	LOGON_ITEM *plogitem, OBJECT_NODE *pobjnode)
 {
 	BOOL b_root;
-	const SIMPLE_TREE_NODE *proot;
 	
 	/* root is the logon object, free logon object
 		will cause the logon item to be released
 	*/
-	if (simple_tree_get_root(&plogitem->tree) == &pobjnode->node) {
-		proot = simple_tree_get_root(&plogitem->tree);
+	if (plogitem->tree.get_root() == &pobjnode->node) {
+		auto proot = plogitem->tree.get_root();
 		auto pobject = static_cast<const logon_object *>(static_cast<const OBJECT_NODE *>(proot->pdata)->pobject);
 		std::lock_guard hl_hold(g_hash_lock);
 		auto pref = g_logon_hash->query<uint32_t>(pobject->get_dir());
@@ -165,7 +164,7 @@ static void rop_processor_release_objnode(
 	simple_tree_destroy_node(&plogitem->tree,
 		&pobjnode->node, rop_processor_free_objnode);
 	if (b_root) {
-		simple_tree_free(&plogitem->tree);
+		plogitem->tree.clear();
 		plogitem->phash.reset();
 		g_logitem_allocator->destroy_and_put(plogitem);
 	}
@@ -173,9 +172,7 @@ static void rop_processor_release_objnode(
 
 static void rop_processor_release_logon_item(LOGON_ITEM *plogitem)
 {
-	SIMPLE_TREE_NODE *proot;
-	
-	proot = simple_tree_get_root(&plogitem->tree);
+	auto proot = plogitem->tree.get_root();
 	if (NULL == proot) {
 		debug_info("[exchange_emsmdb]: fatal error in"
 				" rop_processor_release_logon_item\n");
@@ -249,13 +246,11 @@ int rop_processor_add_object_handle(LOGMAP *plogmap, uint8_t logon_id,
 	if (NULL == plogitem) {
 		return -1;
 	}
-	if (simple_tree_get_nodes_num(&plogitem->tree) > MAX_HANDLE_NUM) {
+	if (plogitem->tree.get_nodes_num() > MAX_HANDLE_NUM)
 		return -3;
-	}
 	if (parent_handle < 0) {
-		if (NULL != simple_tree_get_root(&plogitem->tree)) {
+		if (plogitem->tree.get_root() != nullptr)
 			return -4;
-		}
 		ppparent = NULL;
 	} else if (parent_handle >= 0 && parent_handle < 0x7FFFFFFF) {
 		ppparent = plogitem->phash->query<OBJECT_NODE *>(parent_handle);
@@ -350,12 +345,11 @@ void rop_processor_release_object_handle(LOGMAP *plogmap,
 
 logon_object *rop_processor_get_logon_object(LOGMAP *plogmap, uint8_t logon_id)
 {
-	SIMPLE_TREE_NODE *proot;
 	auto plogitem = plogmap->p[logon_id];
 	if (NULL == plogitem) {
 		return nullptr;
 	}
-	proot = simple_tree_get_root(&plogitem->tree);
+	auto proot = plogitem->tree.get_root();
 	if (NULL == proot) {
 		return nullptr;
 	}

@@ -138,7 +138,7 @@ uint32_t ab_tree_get_leaves_num(const SIMPLE_TREE_NODE *pnode)
 {
 	uint32_t count;
 	
-	pnode = simple_tree_node_get_child(pnode);
+	pnode = pnode->get_child();
 	if (NULL == pnode) {
 		return 0;
 	}
@@ -147,7 +147,7 @@ uint32_t ab_tree_get_leaves_num(const SIMPLE_TREE_NODE *pnode)
 		if (ab_tree_get_node_type(pnode) < 0x80) {
 			count ++;
 		}
-	} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
+	} while ((pnode = pnode->get_sibling()) != nullptr);
 	return count;
 }
 
@@ -254,15 +254,13 @@ int ab_tree_run()
 
 static void ab_tree_destruct_tree(SIMPLE_TREE *ptree)
 {
-	SIMPLE_TREE_NODE *proot;
-	
-	proot = simple_tree_get_root(ptree);
+	auto proot = ptree->get_root();
 	if (NULL != proot) {
 		simple_tree_destroy_node(ptree, proot, [](SIMPLE_TREE_NODE *nd) {
 			ab_tree_put_abnode(containerof(nd, AB_NODE, stree));
 		});
 	}
-	simple_tree_free(ptree);
+	ptree->clear();
 }
 
 void AB_BASE::unload()
@@ -615,7 +613,6 @@ static BOOL ab_tree_load_tree(int domain_id,
 static BOOL ab_tree_load_base(AB_BASE *pbase) try
 {
 	char temp_buff[1024];
-	SIMPLE_TREE_NODE *proot;
 	
 	if (pbase->base_id > 0) {
 		std::vector<int> temp_file;
@@ -635,7 +632,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase) try
 	}
 	for (auto &domain : pbase->domain_list) {
 		auto pdomain = &domain;
-		proot = simple_tree_get_root(&pdomain->tree);
+		auto proot = pdomain->tree.get_root();
 		if (NULL == proot) {
 			continue;
 		}
@@ -839,7 +836,7 @@ static BOOL ab_tree_node_to_path(const SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		}
 		offset += len;
-	} while ((pnode = simple_tree_node_get_parent(pnode)) != NULL);
+	} while ((pnode = pnode->get_parent()) != nullptr);
 	return TRUE;
 }
 
@@ -886,7 +883,7 @@ bool ab_tree_node_to_guid(const SIMPLE_TREE_NODE *pnode, GUID *pguid)
 	} else {
 		proot = pnode;
 		const SIMPLE_TREE_NODE *pnode1;
-		while ((pnode1 = simple_tree_node_get_parent(proot)) != NULL)
+		while ((pnode1 = proot->get_parent()) != nullptr)
 			proot = pnode1;
 		auto abroot = containerof(proot, AB_NODE, stree);
 		pguid->time_low |= abroot->id;
@@ -939,7 +936,7 @@ BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		if (NULL != ptoken) {
 			*ptoken = '\0';
 		}
-		while ((pnode = simple_tree_node_get_parent(pnode)) != NULL)
+		while ((pnode = pnode->get_parent()) != nullptr)
 			pabnode = containerof(pnode, AB_NODE, stree);
 		if (pabnode->node_type != NODE_TYPE_DOMAIN) {
 			return FALSE;
@@ -959,7 +956,7 @@ BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode, char *pbuff, int length)
 		auto pos = username.find('@');
 		if (pos != username.npos)
 			username.erase(pos);
-		while ((pnode = simple_tree_node_get_parent(pnode)) != NULL)
+		while ((pnode = pnode->get_parent()) != nullptr)
 			pabnode = containerof(pnode, AB_NODE, stree);
 		if (pabnode->node_type != NODE_TYPE_DOMAIN) {
 			return FALSE;
@@ -1291,7 +1288,7 @@ void ab_tree_get_company_info(const SIMPLE_TREE_NODE *pnode,
 		pabnode = iter->second;
 		pnode = &pabnode->stree;
 	}
-	while ((pnode = simple_tree_node_get_parent(pnode)) != NULL)
+	while ((pnode = pnode->get_parent()) != nullptr)
 		pabnode = containerof(pnode, AB_NODE, stree);
 	auto obj = static_cast<sql_domain *>(pabnode->d_info);
 	if (str_name != nullptr)
@@ -1324,7 +1321,7 @@ void ab_tree_get_department_name(const SIMPLE_TREE_NODE *pnode, char *str_name)
 		if (NODE_TYPE_GROUP == pabnode->node_type) {
 			break;
 		}
-	} while ((pnode = simple_tree_node_get_parent(pnode)) != NULL);
+	} while ((pnode = pnode->get_parent()) != nullptr);
 	if (NULL == pnode) {
 		str_name[0] = '\0';
 		return;

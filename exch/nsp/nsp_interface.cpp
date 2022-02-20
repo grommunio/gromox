@@ -121,7 +121,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		common_util_guid_to_binary(&temp_guid, &pprop->value.bin);
 		return ecSuccess;
 	case PR_EMS_AB_CONTAINERID:
-		pnode = simple_tree_node_get_parent(pnode);
+		pnode = pnode->get_parent();
 		pprop->value.l = pnode == nullptr ? 0 : ab_tree_get_node_minid(pnode);
 		return ecSuccess;
 	case PR_ADDRTYPE:
@@ -674,7 +674,7 @@ static void nsp_interface_position_in_table(const STAT *pstat,
 	} else {
 		b_found = FALSE;
 		row = 0;
-		pnode = simple_tree_node_get_child(pnode);
+		pnode = pnode->get_child();
 		if (pnode != nullptr) do {
 			if (ab_tree_get_node_type(pnode) >= 0x80)
 				continue;
@@ -684,7 +684,7 @@ static void nsp_interface_position_in_table(const STAT *pstat,
 				break;
 			}
 			row++;
-		} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
+		} while ((pnode = pnode->get_sibling()) != nullptr);
 		if (!b_found)
 			/* In this case the position is undefined.
 			   To avoid problems we will use first row */
@@ -697,7 +697,7 @@ static void nsp_interface_position_in_table(const STAT *pstat,
 static uint32_t nsp_interface_minid_in_table(const SIMPLE_TREE_NODE *pnode,
     uint32_t row)
 {
-	pnode = simple_tree_node_get_child(pnode);
+	pnode = pnode->get_child();
 	if (NULL == pnode) {
 		return 0;
 	}
@@ -709,7 +709,7 @@ static uint32_t nsp_interface_minid_in_table(const SIMPLE_TREE_NODE *pnode,
 		if (ab_tree_get_node_type(pnode) < 0x80) {
 			count ++;
 		}
-	} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
+	} while ((pnode = pnode->get_sibling()) != nullptr);
 	return 0;
 }
 
@@ -875,7 +875,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 			}
 			nsp_interface_position_in_table(pstat,
 				pnode, &start_pos, &last_row, &total);
-			pnode1 = simple_tree_node_get_child(pnode);
+			pnode1 = pnode->get_child();
 			if (NULL == pnode1) {
 				result = ecSuccess;
 				goto EXIT_QUERY_ROWS;
@@ -940,7 +940,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 						goto EXIT_QUERY_ROWS;
 				}
 				i ++;
-			} while ((pnode1 = simple_tree_node_get_sibling(pnode1)) != nullptr);
+			} while ((pnode1 = pnode1->get_sibling()) != nullptr);
 		}
 
 		if (start_pos + tmp_count == last_row + 1) {
@@ -1105,7 +1105,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		pstat->cur_rec = tmp_minid;
 		pstat->num_pos = row;
 	} else {
-		const SIMPLE_TREE_NODE *pnode = nullptr, *pnode1 = nullptr;
+		const SIMPLE_TREE_NODE *pnode = nullptr;
 		if (0 == pstat->container_id) {
 			nsp_interface_position_in_list(pstat,
 				&pbase->gal_list, &start_pos, &last_row, &total);
@@ -1117,7 +1117,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 			}
 			nsp_interface_position_in_table(pstat,
 				pnode, &start_pos, &last_row, &total);
-			pnode1 = simple_tree_node_get_child(pnode);
+			auto pnode1 = pnode->get_child();
 			if (NULL == pnode1) {
 				result = ecNotFound;
 				goto EXIT_SEEK_ENTRIES;
@@ -1156,7 +1156,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 			}
 			pstat->cur_rec = ab_tree_get_node_minid(pbase->gal_list[row]);
 		} else {
-			pnode1 = simple_tree_node_get_child(pnode);
+			auto pnode1 = pnode->get_child();
 			do {
 				if (ab_tree_get_node_type(pnode1) > 0x80) {
 					continue;
@@ -1183,7 +1183,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 					break;
 				}
 				row ++;
-			} while ((pnode1 = simple_tree_node_get_sibling(pnode1)) != nullptr);
+			} while ((pnode1 = pnode1->get_sibling()) != nullptr);
 			if (NULL == pnode1) {
 				result = ecNotFound;
 				goto EXIT_SEEK_ENTRIES;
@@ -1631,7 +1631,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		uint32_t start_pos, last_row, total;
 		nsp_interface_position_in_table(pstat,
 			pnode, &start_pos, &last_row, &total);
-		pnode = simple_tree_node_get_child(pnode);
+		pnode = pnode->get_child();
 		if (NULL == pnode) {
 			result = ecSuccess;
 			goto EXIT_GET_MATCHES;
@@ -1654,7 +1654,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 				*pproptag = ab_tree_get_node_minid(pnode);
 			}
 			i++;
-		} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
+		} while ((pnode = pnode->get_sibling()) != nullptr);
 	}
 
  FETCH_ROWS:
@@ -1989,7 +1989,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 			}
 			nsp_interface_position_in_table(pstat,
 					pnode, &row, &last_row, &total);
-			pnode1 = simple_tree_node_get_child(pnode);
+			pnode1 = pnode->get_child();
 			if (NULL != pnode1) {
 				size_t i = 0;
 				do {
@@ -2000,7 +2000,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 					if (i == row) {
 						break;
 					}
-				} while ((pnode1 = simple_tree_node_get_sibling(pnode1)) != nullptr);
+				} while ((pnode1 = pnode1->get_sibling()) != nullptr);
 			}
 		}
 	} else {
@@ -2114,7 +2114,7 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 			result = ecInvalidBookmark;
 			goto EXIT_COMPARE_MIDS;
 		}
-		pnode = simple_tree_node_get_child(pnode);
+		pnode = pnode->get_child();
 		if (NULL == pnode) {
 			result = ecInvalidBookmark;
 			goto EXIT_COMPARE_MIDS;
@@ -2128,7 +2128,7 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 				pos2 = i;
 			}
 			i ++;
-		} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
+		} while ((pnode = pnode->get_sibling()) != nullptr);
 	}
 	
 	if (-1 == pos1 || -1 == pos2) {
@@ -2233,7 +2233,7 @@ static BOOL nsp_interface_build_specialtable(NSP_PROPROW *prow,
 
 static BOOL nsp_interface_has_child(const SIMPLE_TREE_NODE *pnode)
 {
-	pnode = simple_tree_node_get_child(pnode);
+	pnode = pnode->get_child();
 	if (NULL == pnode) {
 		return FALSE;
 	}
@@ -2241,7 +2241,7 @@ static BOOL nsp_interface_has_child(const SIMPLE_TREE_NODE *pnode)
 		if (ab_tree_get_node_type(pnode) > 0x80) {
 			return TRUE;
 		}
-	} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
+	} while ((pnode = pnode->get_sibling()) != nullptr);
 	return FALSE;
 }
 
@@ -2276,11 +2276,11 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 	}
 	ab_tree_get_display_name(pnode, codepage, str_dname, arsizeof(str_dname));
 	if (!nsp_interface_build_specialtable(prow, b_unicode, codepage, has_child,
-	    simple_tree_node_get_depth(pnode), container_id,
+	    pnode->get_depth(), container_id,
 	    str_dname, ppermeid_parent, ppermeid))
 		return ecMAPIOOM;
 	if (has_child) {
-		auto pnode1 = simple_tree_node_get_child(pnode);
+		auto pnode1 = pnode->get_child();
 		do {
 			if (ab_tree_get_node_type(pnode1) > 0x80) {
 				result = nsp_interface_get_specialtables_from_node(
@@ -2288,7 +2288,7 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 				if (result != ecSuccess)
 					return result;
 			}
-		} while ((pnode1 = simple_tree_node_get_sibling(pnode1)) != nullptr);
+		} while ((pnode1 = pnode1->get_sibling()) != nullptr);
 	}
 	return ecSuccess;
 }
@@ -2296,7 +2296,7 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 static uint32_t nsp_interface_get_tree_specialtables(const SIMPLE_TREE *ptree,
     BOOL b_unicode, uint32_t codepage, NSP_ROWSET *prows)
 {
-	auto pnode = simple_tree_get_root(ptree);
+	auto pnode = ptree->get_root();
 	if (NULL == pnode) {
 		return ecError;
 	}
@@ -2901,9 +2901,9 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			*pproptag = MID_UNRESOLVED;
 			size_t j;
 			const SIMPLE_TREE_NODE *pnode1, *pnode2 = nullptr;
-			for (j=0,pnode1=simple_tree_node_get_child(pnode);
+			for (j = 0, pnode1 = pnode->get_child();
 				NULL!=pnode1&&j>=start_pos&&j<=last_row;
-			     pnode1 = simple_tree_node_get_sibling(pnode1)) {
+			     pnode1 = pnode1->get_sibling()) {
 				if (ab_tree_get_node_type(pnode1) > 0x80) {
 					continue;
 				}

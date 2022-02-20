@@ -50,7 +50,7 @@ struct GX_EXPORT MIME {
 	MIME *get_child();
 	MIME *get_parent();
 	MIME *get_sibling();
-	inline size_t get_children_num() const { return simple_tree_node_get_children_num(&node); }
+	inline size_t get_children_num() const { return node.get_children_num(); }
 
 	SIMPLE_TREE_NODE node;
 	int			mime_type;

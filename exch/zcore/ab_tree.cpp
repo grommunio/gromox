@@ -225,15 +225,13 @@ int ab_tree_run()
 
 static void ab_tree_destruct_tree(SIMPLE_TREE *ptree)
 {
-	SIMPLE_TREE_NODE *proot;
-	
-	proot = simple_tree_get_root(ptree);
+	auto proot = ptree->get_root();
 	if (NULL != proot) {
 		simple_tree_destroy_node(ptree, proot, [](SIMPLE_TREE_NODE *nd) {
 			ab_tree_put_abnode(containerof(nd, AB_NODE, stree));
 		});
 	}
-	simple_tree_free(ptree);
+	ptree->clear();
 }
 
 void AB_BASE::unload()
@@ -565,7 +563,6 @@ static BOOL ab_tree_load_tree(int domain_id,
 static BOOL ab_tree_load_base(AB_BASE *pbase) try
 {
 	char temp_buff[1024];
-	SIMPLE_TREE_NODE *proot;
 	
 	if (pbase->base_id > 0) {
 		std::vector<int> temp_file;
@@ -585,7 +582,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase) try
 	}
 	for (auto &domain : pbase->domain_list) {
 		auto pdomain = &domain;
-		proot = simple_tree_get_root(&pdomain->tree);
+		auto proot = pdomain->tree.get_root();
 		if (NULL == proot) {
 			continue;
 		}
@@ -774,7 +771,7 @@ static BOOL ab_tree_node_to_path(const SIMPLE_TREE_NODE *pnode,
 			return FALSE;
 		}
 		offset += len;
-	} while ((pnode = simple_tree_node_get_parent(pnode)) != NULL);
+	} while ((pnode = pnode->get_parent()) != nullptr);
 	return TRUE;
 }
 
@@ -821,7 +818,7 @@ const SIMPLE_TREE_NODE *ab_tree_guid_to_node(AB_BASE *pbase, GUID guid)
 		(((uint64_t)guid.clock_seq[1]) << 56);
 	
 	tmp_enum.pabnode = NULL;
-	const SIMPLE_TREE_NODE *ptnode = simple_tree_get_root(&pdomain->tree);
+	const SIMPLE_TREE_NODE *ptnode = pdomain->tree.get_root();
 	if (NULL == ptnode) {
 		return NULL;
 	}
@@ -846,7 +843,6 @@ static bool ab_tree_node_to_guid(const SIMPLE_TREE_NODE *pnode, GUID *pguid)
 	uint64_t dgt;
 	uint32_t tmp_id;
 	char temp_path[512];
-	const SIMPLE_TREE_NODE *proot;
 	auto pabnode = containerof(pnode, AB_NODE, stree);
 	
 	if (pabnode->node_type < 0x80 && NULL != pnode->pdata) {
@@ -860,9 +856,9 @@ static bool ab_tree_node_to_guid(const SIMPLE_TREE_NODE *pnode, GUID *pguid)
 		pguid->time_hi_and_version = (tmp_id & 0xFFFF0000) >> 16;
 		pguid->time_mid = tmp_id & 0xFFFF;
 	} else {
-		proot = pnode;
+		auto proot = pnode;
 		const SIMPLE_TREE_NODE *pnode1;
-		while ((pnode1 = simple_tree_node_get_parent(proot)) != NULL)
+		while ((pnode1 = proot->get_parent()) != nullptr)
 			proot = pnode1;
 		auto abroot = containerof(proot, AB_NODE, stree);
 		pguid->time_low |= abroot->id;
@@ -932,7 +928,7 @@ static BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode,
 		if (NULL != ptoken) {
 			*ptoken = '\0';
 		}
-		while ((pnode = simple_tree_node_get_parent(pnode)) != NULL)
+		while ((pnode = pnode->get_parent()) != nullptr)
 			pabnode = containerof(pnode, AB_NODE, stree);
 		if (pabnode->node_type != NODE_TYPE_DOMAIN) {
 			return FALSE;
@@ -952,7 +948,7 @@ static BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode,
 		auto pos = ustr.find('@');
 		if (pos != ustr.npos)
 			ustr.erase(pos);
-		while ((pnode = simple_tree_node_get_parent(pnode)) != NULL)
+		while ((pnode = pnode->get_parent()) != nullptr)
 			pabnode = containerof(pnode, AB_NODE, stree);
 		if (pabnode->node_type != NODE_TYPE_DOMAIN) {
 			return FALSE;
@@ -1185,7 +1181,7 @@ static void ab_tree_get_company_info(const SIMPLE_TREE_NODE *pnode,
 		pabnode = iter->second;
 		pnode = &pabnode->stree;
 	}
-	while ((pnode = simple_tree_node_get_parent(pnode)) != NULL)
+	while ((pnode = pnode->get_parent()) != nullptr)
 		pabnode = containerof(pnode, AB_NODE, stree);
 	auto obj = static_cast<sql_domain *>(pabnode->d_info);
 	if (str_name != nullptr)
@@ -1219,7 +1215,7 @@ ab_tree_get_department_name(const SIMPLE_TREE_NODE *pnode, char *str_name)
 		if (NODE_TYPE_GROUP == pabnode->node_type) {
 			break;
 		}
-	} while ((pnode = simple_tree_node_get_parent(pnode)) != NULL);
+	} while ((pnode = pnode->get_parent()) != nullptr);
 	if (NULL == pnode) {
 		str_name[0] = '\0';
 		return;
@@ -1230,7 +1226,7 @@ ab_tree_get_department_name(const SIMPLE_TREE_NODE *pnode, char *str_name)
 
 BOOL ab_tree_has_child(const SIMPLE_TREE_NODE *pnode)
 {
-	pnode = simple_tree_node_get_child(pnode);
+	pnode = pnode->get_child();
 	if (NULL == pnode) {
 		return FALSE;
 	}
@@ -1238,7 +1234,7 @@ BOOL ab_tree_has_child(const SIMPLE_TREE_NODE *pnode)
 		if (ab_tree_get_node_type(pnode) > 0x80) {
 			return TRUE;
 		}
-	} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
+	} while ((pnode = pnode->get_sibling()) != nullptr);
 	return FALSE;
 }
 
@@ -1349,17 +1345,17 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 			AB_RECIPIENTS | AB_SUBCONTAINERS | AB_UNMODIFIABLE;
 		*ppvalue = pvalue;
 		return TRUE;
-	case PROP_TAG_DEPTH:
+	case PROP_TAG_DEPTH: {
 		if (node_type < 0x80) {
 			return TRUE;
 		}
-		pvalue = cu_alloc<uint32_t>();
-		if (NULL == pvalue) {
+		auto v = cu_alloc<uint32_t>();
+		if (v == nullptr)
 			return FALSE;
-		}
-		*(uint32_t*)pvalue = simple_tree_node_get_depth(pnode) + 1;
-		*ppvalue = pvalue;
+		*v = pnode->get_depth() + 1;
+		*ppvalue = v;
 		return TRUE;
+	}
 	case PR_EMS_AB_IS_MASTER:
 		if (node_type < 0x80) {
 			return TRUE;
@@ -1400,7 +1396,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		if (node_type > 0x80) {
 			*(uint32_t*)pvalue = ab_tree_get_node_minid(pnode);
 		} else {
-			pnode = simple_tree_node_get_parent(pnode);
+			pnode = pnode->get_parent();
 			if (NULL == pnode) {
 				*(uint32_t*)pvalue = 0;
 			} else {
@@ -1473,7 +1469,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	}
 	case PR_PARENT_ENTRYID:
-		pnode = simple_tree_node_get_parent(pnode);
+		pnode = pnode->get_parent();
 		if (NULL == pnode) {
 			return TRUE;
 		}
@@ -1952,8 +1948,8 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 		}
 	} else {
 		auto pnode = ab_tree_minid_to_node(pbase, container_id);
-		if (NULL == pnode || NULL == (pnode =
-			simple_tree_node_get_child(pnode))) {
+		if (pnode == nullptr ||
+		    (pnode = pnode->get_child()) == nullptr) {
 			pminids->count = 0;
 			pminids->pl = NULL;
 			return TRUE;
@@ -1970,7 +1966,7 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 			}
 			psnode1->pdata = const_cast<SIMPLE_TREE_NODE *>(pnode);
 			single_list_append_as_tail(&temp_list, psnode1);
-		} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
+		} while ((pnode = pnode->get_sibling()) != nullptr);
 	}
 	pminids->count = single_list_get_nodes_num(&temp_list);
 	if (0 == pminids->count) {

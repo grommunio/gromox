@@ -25,9 +25,9 @@ void dir_tree::retrieve(MEM_FILE *pfile)
 	auto ptree = this;
 	char *ptr1, *ptr2;
 	char temp_path[4096 + 1];
-	SIMPLE_TREE_NODE *pnode, *proot, *pnode_parent;
+	SIMPLE_TREE_NODE *pnode, *pnode_parent;
 
-	proot = simple_tree_get_root(&ptree->tree);
+	auto proot = ptree->tree.get_root();
 	if (NULL == proot) {
 		auto pdir = ptree->ppool->get<DIR_NODE>();
 		pdir->node.pdata = pdir;
@@ -52,14 +52,14 @@ void dir_tree::retrieve(MEM_FILE *pfile)
 		while ((ptr2 = strchr(ptr1, '/')) != NULL) {
 			*ptr2 = '\0';
 			pnode_parent = pnode;
-			pnode = simple_tree_node_get_child(pnode);
+			pnode = pnode->get_child();
 			if (NULL != pnode) {
 				do {
 					auto pdir = static_cast<DIR_NODE *>(pnode->pdata);
 					if (0 == strcmp(pdir->name, ptr1)) {
 						break;
 					}
-				} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
+				} while ((pnode = pnode->get_sibling()) != nullptr);
 			}
 
 			if (NULL == pnode) {
@@ -83,9 +83,7 @@ void dir_tree::retrieve(MEM_FILE *pfile)
 
 static void dir_tree_clear(DIR_TREE *ptree)
 {
-	SIMPLE_TREE_NODE *pnode;
-
-	pnode = simple_tree_get_root(&ptree->tree);
+	auto pnode = ptree->tree.get_root();
 	if (NULL != pnode) {
 		simple_tree_destroy_node(&ptree->tree, pnode,
 			dir_tree_enum_delete);
@@ -100,9 +98,8 @@ DIR_NODE *dir_tree::match(const char *path)
 	DIR_NODE *pdir = nullptr;
 	char *ptr1, *ptr2;
 	char temp_path[4096 + 1];
-	SIMPLE_TREE_NODE *pnode;
 
-	pnode = simple_tree_get_root(&ptree->tree);
+	auto pnode = ptree->tree.get_root();
 	if (NULL == pnode) {
 		return NULL;
 	}
@@ -125,7 +122,7 @@ DIR_NODE *dir_tree::match(const char *path)
 	ptr1 = temp_path;
 	while ((ptr2 = strchr(ptr1, '/')) != NULL) {
 		*ptr2 = '\0';
-		pnode = simple_tree_node_get_child(pnode);
+		pnode = pnode->get_child();
 		if (NULL == pnode) {
 			return NULL;
 		}
@@ -134,8 +131,7 @@ DIR_NODE *dir_tree::match(const char *path)
 			if (0 == strcmp(pdir->name, ptr1)) {
 				break;
 			}
-		} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
-
+		} while ((pnode = pnode->get_sibling()) != nullptr);
 		if (NULL == pnode) {
 			return NULL;
 		}
@@ -148,9 +144,7 @@ DIR_NODE *dir_tree::match(const char *path)
 
 DIR_NODE *dir_tree::get_child(DIR_NODE* pdir)
 {
-	SIMPLE_TREE_NODE *pnode;
-
-	pnode = simple_tree_node_get_child(&pdir->node);
+	auto pnode = pdir->node.get_child();
 	if (NULL != pnode) {
 		return static_cast<DIR_NODE *>(pnode->pdata);
 	} else {
@@ -162,7 +156,7 @@ dir_tree::~dir_tree()
 {
 	auto ptree = this;
 	dir_tree_clear(ptree);
-	simple_tree_free(&ptree->tree);
+	ptree->tree.clear();
 	ptree->ppool = NULL;
 }
 

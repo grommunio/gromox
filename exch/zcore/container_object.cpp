@@ -785,7 +785,7 @@ container_object_get_specialtables_from_node(const SIMPLE_TREE_NODE *pnode,
 		return FALSE;	
 	pset->count ++;
 	if (b_depth && ab_tree_has_child(pnode)) {
-		pnode = simple_tree_node_get_child(pnode);
+		pnode = pnode->get_child();
 		do {
 			if (ab_tree_get_node_type(pnode) < 0x80) {
 				continue;
@@ -793,7 +793,7 @@ container_object_get_specialtables_from_node(const SIMPLE_TREE_NODE *pnode,
 			if (!container_object_get_specialtables_from_node(
 			    pnode, pproptags, TRUE, pset))
 				return FALSE;	
-		} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
+		} while ((pnode = pnode->get_sibling()) != nullptr);
 	}
 	return TRUE;
 }
@@ -911,7 +911,7 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 			    pproptags, TRUE, &tmp_set))
 				return FALSE;
 			for (const auto &domain : pbase->domain_list)
-				if (!container_object_get_specialtables_from_node(simple_tree_get_root(&domain.tree),
+				if (!container_object_get_specialtables_from_node(domain.tree.get_root(),
 				    pproptags, b_depth, &tmp_set))
 					return FALSE;
 		} else {
@@ -921,7 +921,8 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 				pset->pparray = NULL;
 				return TRUE;
 			}
-			if (NULL != (ptnode = simple_tree_node_get_child(ptnode))) {
+			ptnode = ptnode->get_child();
+			if (ptnode != nullptr) {
 				do {
 					if (ab_tree_get_node_type(ptnode) < 0x80) {
 						continue;
@@ -929,7 +930,7 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 					if (!container_object_get_specialtables_from_node(ptnode,
 					    pproptags, b_depth, &tmp_set))
 						return FALSE;	
-				} while ((ptnode = simple_tree_node_get_sibling(ptnode)) != nullptr);
+				} while ((ptnode = ptnode->get_sibling()) != nullptr);
 			}
 		}
 	}
@@ -977,16 +978,17 @@ BOOL container_object::get_user_table_num(uint32_t *pnum)
 		} else {
 			auto pnode = ab_tree_minid_to_node(pbase.get(),
 				pcontainer->id.abtree_id.minid);
-			if (NULL == pnode || NULL == (pnode =
-				simple_tree_node_get_child(pnode))) {
+			if (pnode == nullptr)
 				return TRUE;
-			}
+			pnode = pnode->get_child();
+			if (pnode == nullptr)
+				return TRUE;
 			do {
 				if (ab_tree_get_node_type(pnode) > 0x80) {
 					continue;
 				}
 				(*pnum) ++;
-			} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
+			} while ((pnode = pnode->get_sibling()) != nullptr);
 		}
 	} else {
 		if (NULL == pcontainer->contents.prow_set) {
@@ -1105,10 +1107,11 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 				return TRUE;
 			} else {
 				auto ptnode = ab_tree_minid_to_node(pbase.get(), pcontainer->id.abtree_id.minid);
-				if (NULL == ptnode || NULL == (ptnode =
-					simple_tree_node_get_child(ptnode))) {
+				if (ptnode == nullptr)
 					return TRUE;
-				}
+				ptnode = ptnode->get_child();
+				if (ptnode == nullptr)
+					return TRUE;
 				size_t i = 0;
 				do {
 					if (ab_tree_get_node_type(ptnode) > 0x80) {
@@ -1129,7 +1132,7 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 					if (pset->count == row_count) {
 						break;
 					}
-				} while ((ptnode = simple_tree_node_get_sibling(ptnode)) != nullptr);
+				} while ((ptnode = ptnode->get_sibling()) != nullptr);
 			}
 		}
 	} else {

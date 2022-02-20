@@ -30,7 +30,7 @@ static BOOL mime_check_ascii_printable(const char *astring);
 bool MAIL::set_header(const char *hdr, const char *val)
 {
 	auto mail = this;
-	SIMPLE_TREE_NODE *node = simple_tree_get_root(&mail->tree);
+	auto node = mail->tree.get_root();
 	if (node == nullptr)
 		return false;
 	return static_cast<MIME *>(node->pdata)->set_field(hdr, val);
@@ -66,7 +66,6 @@ void mime_init(MIME *pmime, LIB_BUFFER *palloc)
 void mime_free(MIME *pmime)
 {
 	MIME *pmime_child;
-	SIMPLE_TREE_NODE *pnode;
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime) {
 		debug_info("[mime]: NULL pointer found in mime_free");
@@ -82,11 +81,11 @@ void mime_free(MIME *pmime)
 			pmime->content_length = 0;
 		}
 	} else if (MULTIPLE_MIME == pmime->mime_type) {
-		pnode = simple_tree_node_get_child(&pmime->node);
+		auto pnode = pmime->node.get_child();
         while (NULL != pnode) {
 			pmime_child = (MIME*)pnode->pdata;
             mime_free(pmime_child);
-			pnode = simple_tree_node_get_sibling(pnode);
+			pnode = pnode->get_sibling();
         }
 	}
 	mem_file_free(&pmime->f_type_params);
@@ -1005,7 +1004,6 @@ BOOL MIME::serialize(STREAM *pstream)
 	char	tmp_buff[MIME_FIELD_LEN];
 	MIME	*pmime_child;
 	BOOL	has_submime;
-	SIMPLE_TREE_NODE *pnode;
 	
 #ifdef _DEBUG_UMTA
 	if (pstream == nullptr) {
@@ -1079,7 +1077,7 @@ BOOL MIME::serialize(STREAM *pstream)
 	} else {
 		pstream->write(pmime->content_begin, pmime->first_boundary - pmime->content_begin);
 	}
-	pnode = simple_tree_node_get_child(&pmime->node);
+	auto pnode = pmime->node.get_child();
 	has_submime = FALSE;
 	while (NULL != pnode) {
 		has_submime = TRUE;
@@ -1089,7 +1087,7 @@ BOOL MIME::serialize(STREAM *pstream)
 		pmime_child = (MIME*)pnode->pdata;
 		if (!pmime_child->serialize(pstream))
 			return FALSE;
-		pnode = simple_tree_node_get_sibling(pnode);
+		pnode = pnode->get_sibling();
 	}
 	if (!has_submime) {
 		pstream->write("--", 2);
@@ -1123,7 +1121,6 @@ static BOOL mime_read_multipart_content(MIME *pmime,
 	unsigned int buff_size;
 	BOOL has_submime;
 	MIME *pmime_child;
-	SIMPLE_TREE_NODE *pnode;
 	
 	auto tmp_size = pmime->get_length();
 	if (tmp_size < 0) {
@@ -1144,7 +1141,7 @@ static BOOL mime_read_multipart_content(MIME *pmime,
 	} else {
 		tmp_stream.write(pmime->content_begin, pmime->first_boundary - pmime->content_begin);
 	}
-	pnode = simple_tree_node_get_child(&pmime->node);
+	auto pnode = pmime->node.get_child();
 	has_submime = FALSE;
 	while (NULL != pnode) {
 		has_submime = TRUE;
@@ -1154,7 +1151,7 @@ static BOOL mime_read_multipart_content(MIME *pmime,
 		pmime_child = (MIME*)pnode->pdata;
 		if (!pmime_child->serialize(&tmp_stream))
 			return FALSE;
-		pnode = simple_tree_node_get_sibling(pnode);
+		pnode = pnode->get_sibling();
 	}
 	if (!has_submime) {
 		tmp_stream.write("--", 2);
@@ -1468,7 +1465,6 @@ BOOL MIME::to_file(int fd)
 	MIME *pmime_child;
 	size_t len, tmp_len;
 	int	tag_len, val_len;
-	SIMPLE_TREE_NODE *pnode;
 	char tmp_buff[MIME_FIELD_LEN + MIME_NAME_LEN + 4];
 	
 	if (NONE_MIME == pmime->mime_type) {
@@ -1578,7 +1574,7 @@ BOOL MIME::to_file(int fd)
 	    pmime->first_boundary - pmime->content_begin) {
 		return FALSE;
 	}
-	pnode = simple_tree_node_get_child(&pmime->node);
+	auto pnode = pmime->node.get_child();
 	has_submime = FALSE;
 	while (NULL != pnode) {
 		has_submime = TRUE;
@@ -1595,7 +1591,7 @@ BOOL MIME::to_file(int fd)
 		pmime_child = (MIME*)pnode->pdata;
 		if (!pmime_child->to_file(fd))
 			return FALSE;
-		pnode = simple_tree_node_get_sibling(pnode);
+		pnode = pnode->get_sibling();
 	}
 	if (!has_submime) {
 		memcpy(tmp_buff, "--", 2);
@@ -1654,7 +1650,6 @@ BOOL MIME::to_tls(SSL *ssl)
 	MIME *pmime_child;
 	size_t len, tmp_len;
 	int tag_len, val_len;
-	SIMPLE_TREE_NODE *pnode;
 	char tmp_buff[MIME_FIELD_LEN + MIME_NAME_LEN + 4];
 	
 #ifdef _DEBUG_UMTA
@@ -1769,7 +1764,7 @@ BOOL MIME::to_tls(SSL *ssl)
 	    pmime->first_boundary - pmime->content_begin) {
 		return FALSE;
 	}
-	pnode = simple_tree_node_get_child(&pmime->node);
+	auto pnode = pmime->node.get_child();
 	has_submime = FALSE;
 	while (NULL != pnode) {
 		has_submime = TRUE;
@@ -1786,7 +1781,7 @@ BOOL MIME::to_tls(SSL *ssl)
 		pmime_child = (MIME*)pnode->pdata;
 		if (!pmime_child->to_tls(ssl))
 			return FALSE;
-		pnode = simple_tree_node_get_sibling(pnode);
+		pnode = pnode->get_sibling();
 	}
 	if (!has_submime) {
 		memcpy(tmp_buff, "--", 2);
@@ -1844,7 +1839,6 @@ BOOL MIME::check_dot()
 	int		tag_len, val_len;
 	char	tmp_buff[MIME_FIELD_LEN + MIME_NAME_LEN + 4];
 	MIME	*pmime_child;
-	SIMPLE_TREE_NODE *pnode;
 	
 	if (NONE_MIME == pmime->mime_type) {
 #ifdef _DEBUG_UMTA
@@ -1895,12 +1889,12 @@ BOOL MIME::check_dot()
 			return TRUE;
 		}
 	}
-	pnode = simple_tree_node_get_child(&pmime->node);
+	auto pnode = pmime->node.get_child();
 	while (NULL != pnode) {
 		pmime_child = (MIME *)pnode->pdata;
 		if (pmime_child->check_dot())
 			return TRUE;
-		pnode = simple_tree_node_get_sibling(pnode);
+		pnode = pnode->get_sibling();
 	}
 	if (NULL != pmime->last_boundary) {
 		tmp_len = pmime->content_length -
@@ -1927,7 +1921,6 @@ ssize_t MIME::get_length()
 	int		tag_len, val_len;
 	MIME	*pmime_child;
 	BOOL	has_submime;
-	SIMPLE_TREE_NODE *pnode;
 	
 	if (NONE_MIME == pmime->mime_type) {
 		return -1;
@@ -1988,7 +1981,7 @@ ssize_t MIME::get_length()
 	} else {
 		mime_len += pmime->first_boundary - pmime->content_begin;
 	}
-	pnode = simple_tree_node_get_child(&pmime->node);
+	auto pnode = pmime->node.get_child();
 	has_submime = FALSE;
 	while (NULL != pnode) {
 		has_submime = TRUE;
@@ -1998,7 +1991,7 @@ ssize_t MIME::get_length()
 		if (mgl < 0)
 			return -1;
 		mime_len += mgl;
-		pnode = simple_tree_node_get_sibling(pnode);
+		pnode = pnode->get_sibling();
 	}
 	if (!has_submime)
 		mime_len += pmime->boundary_len + 6;
@@ -2322,7 +2315,6 @@ static ssize_t mime_get_digest_mul(MIME *pmime, const char *id_string,
 	size_t buff_len = 0, tmp_len;
 	MIME *pmime_child;
 	BOOL has_submime;
-	SIMPLE_TREE_NODE *pnode;
 	char temp_id[64];
 
 	if (NULL == pmime->first_boundary) {
@@ -2330,7 +2322,7 @@ static ssize_t mime_get_digest_mul(MIME *pmime, const char *id_string,
 	} else {
 		*poffset += pmime->first_boundary - pmime->content_begin;
 	}
-	pnode = simple_tree_node_get_child(&pmime->node);
+	auto pnode = pmime->node.get_child();
 	has_submime = FALSE;
 	count = 1;
 	while (NULL != pnode) {
@@ -2348,7 +2340,7 @@ static ssize_t mime_get_digest_mul(MIME *pmime, const char *id_string,
 			return -1;
 		}
 		buff_len += gmd;
-		pnode = simple_tree_node_get_sibling(pnode);
+		pnode = pnode->get_sibling();
 		count++;
 	}
 	if (!has_submime)
@@ -2459,7 +2451,6 @@ static ssize_t mime_get_struct_mul(MIME *pmime, const char *id_string,
 	size_t count = 0, i, buff_len = 0, tmp_len;
 	MIME	*pmime_child;
 	BOOL	has_submime;
-	SIMPLE_TREE_NODE *pnode;
 	char temp_id[64], content_type[256];
 
 	if (*pcount > 0) {
@@ -2495,7 +2486,7 @@ static ssize_t mime_get_struct_mul(MIME *pmime, const char *id_string,
 	} else {
 		*poffset += pmime->first_boundary - pmime->content_begin;
 	}
-	pnode = simple_tree_node_get_child(&pmime->node);
+	auto pnode = pmime->node.get_child();
 	has_submime = FALSE;
 	count = 1;
 	while (NULL != pnode) {
@@ -2512,7 +2503,7 @@ static ssize_t mime_get_struct_mul(MIME *pmime, const char *id_string,
 		if (gsd < 0 || buff_len + gsd >= length - 1)
 			return -1;
 		buff_len += gsd;
-		pnode = simple_tree_node_get_sibling(pnode);
+		pnode = pnode->get_sibling();
 		count++;
 	}
 	if (!has_submime)
@@ -2609,7 +2600,6 @@ static BOOL mime_parse_multiple(MIME *pmime)
 
 static void mime_produce_boundary(MIME *pmime)
 {
-	int length, depth;
 	char *begin, *end, *ptr, temp;
 	char temp_boundary[VALUE_LEN];
     int boundary_len;
@@ -2621,9 +2611,9 @@ static void mime_produce_boundary(MIME *pmime)
 		return;
 	}
 #endif
-	depth = simple_tree_node_get_depth(&pmime->node);
+	int depth = pmime->node.get_depth();
 	strcpy(pmime->boundary_string, "----=_NextPart_");
-	length = sprintf(pmime->boundary_string + 15, "00%d_000%d_", 
+	auto length = sprintf(pmime->boundary_string + 15, "00%d_000%d_",
 				depth, depth + 5);
 	begin = pmime->boundary_string + 15 + length;
 	end = begin + 8;
@@ -2658,23 +2648,20 @@ static BOOL mime_check_ascii_printable(const char *astring)
 MIME *MIME::get_child()
 {
 	auto pmime = this;
-	SIMPLE_TREE_NODE *pnode;
-	pnode = simple_tree_node_get_child(&pmime->node);
+	auto pnode = pmime->node.get_child();
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata) : nullptr;
 }
 
 MIME *MIME::get_parent()
 {
 	auto pmime = this;
-	SIMPLE_TREE_NODE *pnode;
-	pnode = simple_tree_node_get_parent(&pmime->node);
+	auto pnode = pmime->node.get_parent();
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata) : nullptr;
 }
 
 MIME *MIME::get_sibling()
 {
 	auto pmime = this;
-	SIMPLE_TREE_NODE *pnode;
-	pnode = simple_tree_node_get_sibling(&pmime->node);
+	auto pnode = pmime->node.get_sibling();
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata) : nullptr;
 }

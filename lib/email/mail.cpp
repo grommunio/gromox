@@ -35,8 +35,7 @@ MAIL::MAIL(std::shared_ptr<MIME_POOL> p) : pmime_pool(std::move(p))
 void MAIL::clear()
 {
 	auto pmail = this;
-	SIMPLE_TREE_NODE *pnode;
-	pnode = simple_tree_get_root(&pmail->tree);
+	auto pnode = pmail->tree.get_root();
 	if (NULL != pnode) {
 		simple_tree_destroy_node(&pmail->tree, pnode, mail_enum_delete);
 	}
@@ -219,14 +218,11 @@ static BOOL mail_retrieve_to_mime(MAIL *pmail, MIME *pmime_parent,
 BOOL MAIL::serialize(STREAM *pstream)
 {
 	auto pmail = this;
-	SIMPLE_TREE_NODE *pnode;
-
 #ifdef _DEBUG_UMTA
 	if (pstream == nullptr)
 		return FALSE;
 #endif
-	
-	pnode = simple_tree_get_root(&pmail->tree);
+	auto pnode = pmail->tree.get_root();
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata)->serialize(pstream) : false;
 }
 
@@ -242,8 +238,7 @@ BOOL MAIL::serialize(STREAM *pstream)
 BOOL MAIL::to_file(int fd)
 {
 	auto pmail = this;
-	SIMPLE_TREE_NODE *pnode;
-	pnode = simple_tree_get_root(&pmail->tree);
+	auto pnode = pmail->tree.get_root();
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata)->to_file(fd) : false;
 }
 
@@ -259,14 +254,11 @@ BOOL MAIL::to_file(int fd)
 BOOL MAIL::to_ssl(SSL *ssl)
 {
 	auto pmail = this;
-	SIMPLE_TREE_NODE *pnode;
-
 #ifdef _DEBUG_UMTA
 	if (ssl == nullptr)
 		return FALSE;
 #endif
-	
-	pnode = simple_tree_get_root(&pmail->tree);
+	auto pnode = pmail->tree.get_root();
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata)->to_tls(ssl) : false;
 }
 
@@ -281,8 +273,7 @@ BOOL MAIL::to_ssl(SSL *ssl)
 BOOL MAIL::check_dot()
 {
 	auto pmail = this;
-	SIMPLE_TREE_NODE *pnode;
-	pnode = simple_tree_get_root(&pmail->tree);
+	auto pnode = pmail->tree.get_root();
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata)->check_dot() : false;
 }
 
@@ -296,21 +287,20 @@ BOOL MAIL::check_dot()
 ssize_t MAIL::get_length()
 {
 	auto pmail = this;
-	SIMPLE_TREE_NODE *pnode;
-	pnode = simple_tree_get_root(&pmail->tree);
+	auto pnode = pmail->tree.get_root();
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata)->get_length() : -1;
 }
 
 MAIL::~MAIL()
 {
 	clear();
-	simple_tree_free(&tree);
+	tree.clear();
 }
 
 MAIL &MAIL::operator=(MAIL &&o)
 {
 	clear();
-	simple_tree_free(&tree);
+	tree.clear();
 	tree = o.tree;
 	o.tree = {};
 	pmime_pool = o.pmime_pool;
@@ -329,9 +319,8 @@ MAIL &MAIL::operator=(MAIL &&o)
 MIME *MAIL::add_head()
 {
 	auto pmail = this;
-	if (NULL != simple_tree_get_root(&pmail->tree)) {
+	if (pmail->tree.get_root() != nullptr)
 		return NULL;
-	}
 	auto pmime = pmail->pmime_pool->get_mime();
 	if (NULL == pmime) {
 		return NULL;
@@ -344,8 +333,7 @@ MIME *MAIL::add_head()
 MIME *MAIL::get_head()
 {
 	auto pmail = this;
-	SIMPLE_TREE_NODE *pnode;
-	pnode = simple_tree_get_root(&pmail->tree);
+	auto pnode = pmail->tree.get_root();
 	return pnode != nullptr ? static_cast<MIME *>(pnode->pdata) : nullptr;
 }
 
@@ -368,7 +356,6 @@ BOOL MAIL::get_charset(char *charset)
 	auto pmail = this;
 	MIME *pmime;
 	char temp_buff[1024];
-	SIMPLE_TREE_NODE *pnode;
 	ENCODE_STRING encode_string;
 	
 #ifdef _DEBUG_UMTA
@@ -378,7 +365,7 @@ BOOL MAIL::get_charset(char *charset)
 	}
 #endif
 	charset[0] = '\0';
-	pnode = simple_tree_get_root(&pmail->tree);
+	auto pnode = pmail->tree.get_root();
 	if (NULL == pnode) {
 		return FALSE;
 	}
@@ -446,8 +433,6 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
 	char mime_received[256];
 	char mime_reference[2048];
 	char mime_notification[1024];
-	SIMPLE_TREE_NODE *pnode;
-
 
 #ifdef _DEBUG_UMTA
 	if (poffset == nullptr || pbuff == nullptr) {
@@ -460,8 +445,7 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
 	if (length < 128) {
 		return -1;
 	}
-
-	pnode = simple_tree_get_root(&pmail->tree);
+	auto pnode = pmail->tree.get_root();
 	if (NULL == pnode) {
 		return -1;
 	}
@@ -606,8 +590,7 @@ int MAIL::get_digest(size_t *poffset, char *pbuff, int length)
 	b_tags[TAG_SIGNED] = FALSE;
 	b_tags[TAG_ENCRYPT] = FALSE;
 	
-	simple_tree_enum_from_node(simple_tree_get_root(&pmail->tree),
-	[&](SIMPLE_TREE_NODE *n) {
+	simple_tree_enum_from_node(pmail->tree.get_root(), [&](SIMPLE_TREE_NODE *n) {
 		char buf[1024];
 		auto m = static_cast<MIME *>(n->pdata);
 		if (strcasecmp(m->content_type, "multipart/signed") == 0)
@@ -777,8 +760,7 @@ void MAIL::enum_mime(MAIL_MIME_ENUM enum_func, void *param)
         return;
     }
 #endif
-	simple_tree_enum_from_node(simple_tree_get_root(&pmail->tree),
-	[&](SIMPLE_TREE_NODE *stn) {
+	simple_tree_enum_from_node(pmail->tree.get_root(), [&](SIMPLE_TREE_NODE *stn) {
 		auto m = containerof(stn, MIME, node);
 		enum_func(m, param);
 	});

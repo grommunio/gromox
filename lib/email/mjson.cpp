@@ -125,7 +125,7 @@ MJSON::MJSON(LIB_BUFFER *p) : ppool(p)
 void MJSON::clear()
 {
 	auto pjson = this;
-	auto pnode = simple_tree_get_root(&pjson->tree);
+	auto pnode = pjson->tree.get_root();
 	if (NULL != pnode) {
 		simple_tree_destroy_node(&pjson->tree, pnode, mjson_enum_delete);
 	}
@@ -172,7 +172,7 @@ static void mjson_enum_delete(SIMPLE_TREE_NODE *pnode)
 MJSON::~MJSON()
 {
 	clear();
-	simple_tree_free(&tree);
+	tree.clear();
 }
 
 /*
@@ -195,7 +195,6 @@ BOOL MJSON::retrieve(char *digest_buff, int length, const char *inpath)
 	int last_pos;
 	int token_type;
 	char temp_tag[128];
-	SIMPLE_TREE_NODE *pnode;
 	
 #ifdef _DEBUG_UMTA
 	if (digest_buff == nullptr) {
@@ -388,8 +387,7 @@ BOOL MJSON::retrieve(char *digest_buff, int length, const char *inpath)
 	if (RETRIEVE_END != rstat) {
 		return FALSE;
 	}
-	
-	pnode = simple_tree_get_root(&pjson->tree);
+	auto pnode = pjson->tree.get_root();
 	if (NULL == pnode) {
 		return FALSE;
 	}
@@ -415,8 +413,7 @@ void MJSON::enum_mime(MJSON_MIME_ENUM enum_func, void *param)
         return;
     }
 #endif
-	simple_tree_enum_from_node(simple_tree_get_root(&pjson->tree),
-	[&](SIMPLE_TREE_NODE *stn) {
+	simple_tree_enum_from_node(pjson->tree.get_root(), [&](SIMPLE_TREE_NODE *stn) {
 		auto m = containerof(stn, MJSON_MIME, node);
 		enum_func(m, param);
 	});
@@ -504,7 +501,7 @@ int MJSON::seek_fd(const char *id, int whence)
 MJSON_MIME *MJSON::get_mime(const char *id)
 {
 	ENUM_PARAM enum_param = {id};
-	simple_tree_enum_from_node(simple_tree_get_root(&tree), [&](const SIMPLE_TREE_NODE *nd) {
+	simple_tree_enum_from_node(tree.get_root(), [&](const SIMPLE_TREE_NODE *nd) {
 		if (enum_param.pmime != nullptr)
 			return;
 		auto m = static_cast<MJSON_MIME *>(nd->pdata);
@@ -739,7 +736,6 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 	char temp_tag[128];
 	char temp_buff[64];
 	MJSON_MIME temp_mime;
-	SIMPLE_TREE_NODE *pnode;
 	
 	memset(&temp_mime, 0, sizeof(temp_mime));
 	temp_mime.ppool = pjson->ppool;
@@ -869,8 +865,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 		".eml", 4) && 0 != strcasecmp(temp_mime.ctype, "message/rfc822")) {
         strcpy(temp_mime.ctype, "message/rfc822");
     }
-	
-	pnode = simple_tree_get_root(&pjson->tree);
+	auto pnode = pjson->tree.get_root();
 	if (NULL == pnode) {
 		auto pmime = pjson->ppool->get<MJSON_MIME>();
 		pmime->node.pdata = pmime;
@@ -878,7 +873,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 		pmime->mime_type = MJSON_MIME_NONE;
 		simple_tree_set_root(&pjson->tree, &pmime->node);
 	}
-	pnode = simple_tree_get_root(&pjson->tree);
+	pnode = pjson->tree.get_root();
 	if (NULL == pnode) {
 		return FALSE;
 	}
@@ -900,7 +895,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 			if ('.' == temp_buff[i] || '\0' == temp_buff[i]) {
 				temp_buff[i] = '\0';
 				int offset = strtol(temp_buff + last_pos, nullptr, 0);
-				pnode = simple_tree_node_get_child(&pmime->node);
+				pnode = pmime->node.get_child();
 				if (NULL == pnode) {
 					pnode = &pmime->node;
 					pmime = pjson->ppool->get<MJSON_MIME>();
@@ -917,7 +912,7 @@ static BOOL mjson_record_node(MJSON *pjson, char *value, int length, int type)
 				}
 				
 				for (j=1; j<offset; j++) {
-					pnode = simple_tree_node_get_sibling(&pmime->node);
+					pnode = pmime->node.get_sibling();
 					if (NULL == pnode) {
 						pnode = &pmime->node;
 						pmime = pjson->ppool->get<MJSON_MIME>();
@@ -951,7 +946,6 @@ int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff, int length)
 {
 	auto pjson = this;
 	MJSON_MIME *pmime;
-	SIMPLE_TREE_NODE *pnode;
 
 #ifdef _DEBUG_UMTA
 	if (buff == nullptr) {
@@ -959,9 +953,7 @@ int MJSON::fetch_structure(const char *cset, BOOL b_ext, char *buff, int length)
 		return -1;
 	}
 #endif
-
-
-	pnode = simple_tree_get_root(&pjson->tree);
+	auto pnode = pjson->tree.get_root();
 	if (NULL == pnode) {
 		return -1;
 	}
@@ -986,7 +978,6 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	char ctype[256];
 	char *psubtype;
 	char temp_buff[2048];
-	SIMPLE_TREE_NODE *pnode;
 
 #ifdef _DEBUG_UMTA
 	if (NULL == pmime || NULL == buff) {
@@ -1232,7 +1223,7 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	} else if (MJSON_MIME_MULTIPLE == pmime->mime_type) {
 		buff[offset] = '(';
 		offset ++;
-		pnode = simple_tree_node_get_child(&pmime->node);
+		auto pnode = pmime->node.get_child();
 		if (NULL == pnode) {
 			return -1;
 		}
@@ -1254,8 +1245,8 @@ static int mjson_fetch_mime_structure(MJSON_MIME *pmime,
 	} else {
 		return -1;
 	}
-	
-	pnode = simple_tree_node_get_sibling(&pmime->node);
+
+	auto pnode = pmime->node.get_sibling();
 	if (NULL != pnode) {
 		pmime = (MJSON_MIME*)pnode->pdata;
 		goto FETCH_STRUCTURE_LOOP;
@@ -1885,8 +1876,6 @@ int MJSON::rfc822_fetch(const char *storage_path, const char *cset,
 	MJSON_MIME *pmime;
 	char temp_path[256];
 	struct stat node_stat;
-	SIMPLE_TREE_NODE *pnode;
-	
 
 #ifdef _DEBUG_UMTA
 	if (storage_path == nullptr || buff == nullptr) {
@@ -1901,9 +1890,7 @@ int MJSON::rfc822_fetch(const char *storage_path, const char *cset,
 		0 == S_ISDIR(node_stat.st_mode)) {
 		return FALSE;
 	}
-
-
-	pnode = simple_tree_get_root(&pjson->tree);
+	auto pnode = pjson->tree.get_root();
 	if (NULL == pnode) {
 		return -1;
 	}
@@ -1922,7 +1909,6 @@ static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
 {
 	int ret_len;
 	MJSON_MIME *pmime;
-	SIMPLE_TREE_NODE *pnode;
 
 #ifdef _DEBUG_UMTA
 	if (NULL == pjson || NULL == storage_path || NULL == buff) {
@@ -1930,8 +1916,7 @@ static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
 		return -1;
 	}
 #endif
-
-	pnode = simple_tree_get_root(&pjson->tree);
+	auto pnode = pjson->tree.get_root();
 	if (NULL == pnode) {
 		return -1;
 	}

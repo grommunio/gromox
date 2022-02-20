@@ -223,11 +223,11 @@ static void object_tree_release_objnode(
 OBJECT_TREE::~OBJECT_TREE()
 {
 	auto pobjtree = this;
-	auto proot = simple_tree_get_root(&tree);
+	auto proot = tree.get_root();
 	if (NULL != proot) {
 		object_tree_release_objnode(pobjtree, static_cast<OBJECT_NODE *>(proot->pdata));
 	}
-	simple_tree_free(&pobjtree->tree);
+	pobjtree->tree.clear();
 }
 
 uint32_t OBJECT_TREE::add_object_handle(int parent_handle, int type, void *pobject)
@@ -235,13 +235,11 @@ uint32_t OBJECT_TREE::add_object_handle(int parent_handle, int type, void *pobje
 	auto pobjtree = this;
 	decltype(m_hash.end()) parent_iter;
 	
-	if (simple_tree_get_nodes_num(&pobjtree->tree) > MAX_HANDLE_NUM) {
+	if (pobjtree->tree.get_nodes_num() > MAX_HANDLE_NUM)
 		return INVALID_HANDLE;
-	}
 	if (parent_handle < 0) {
-		if (NULL != simple_tree_get_root(&pobjtree->tree)) {
+		if (pobjtree->tree.get_root() != nullptr)
 			return INVALID_HANDLE;
-		}
 		parent_iter = pobjtree->m_hash.end();
 	} else {
 		parent_iter = pobjtree->m_hash.find(parent_handle);
@@ -329,7 +327,7 @@ void OBJECT_TREE::release_object_handle(uint32_t obj_handle)
 void *OBJECT_TREE::get_zstore_propval(uint32_t proptag)
 {
 	auto pobjtree = this;
-	auto proot = simple_tree_get_root(&pobjtree->tree);
+	auto proot = pobjtree->tree.get_root();
 	if (NULL == proot) {
 		return NULL;
 	}
@@ -340,7 +338,7 @@ void *OBJECT_TREE::get_zstore_propval(uint32_t proptag)
 BOOL OBJECT_TREE::set_zstore_propval(const TAGGED_PROPVAL *ppropval)
 {
 	auto pobjtree = this;
-	auto proot = simple_tree_get_root(&pobjtree->tree);
+	auto proot = pobjtree->tree.get_root();
 	if (NULL == proot) {
 		return FALSE;
 	}
@@ -352,7 +350,7 @@ BOOL OBJECT_TREE::set_zstore_propval(const TAGGED_PROPVAL *ppropval)
 void OBJECT_TREE::remove_zstore_propval(uint32_t proptag)
 {
 	auto pobjtree = this;
-	auto proot = simple_tree_get_root(&pobjtree->tree);
+	auto proot = pobjtree->tree.get_root();
 	if (NULL == proot) {
 		return;
 	}
@@ -364,7 +362,7 @@ void OBJECT_TREE::remove_zstore_propval(uint32_t proptag)
 TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)
 {
 	auto pobjtree = this;
-	auto proot = simple_tree_get_root(&pobjtree->tree);
+	auto proot = pobjtree->tree.get_root();
 	if (NULL == proot) {
 		return NULL;
 	}
@@ -392,7 +390,7 @@ TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)
 void OBJECT_TREE::touch_profile_sec()
 {
 	auto pobjtree = this;
-	auto proot = simple_tree_get_root(&pobjtree->tree);
+	auto proot = pobjtree->tree.get_root();
 	if (NULL == proot) {
 		return;
 	}
@@ -406,13 +404,12 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 	char dir[256];
 	char account[UADDR_SIZE];
 	OBJECT_NODE *pobjnode;
-	SIMPLE_TREE_NODE *pnode;
 	
-	pnode = simple_tree_get_root(&pobjtree->tree);
+	auto pnode = pobjtree->tree.get_root();
 	if (NULL == pnode) {
 		return INVALID_HANDLE;
 	}
-	pnode = simple_tree_node_get_child(pnode);
+	pnode = pnode->get_child();
 	if (NULL != pnode) {
 		do {
 			pobjnode = (OBJECT_NODE*)pnode->pdata;
@@ -420,7 +417,7 @@ uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
 			    static_cast<store_object *>(pobjnode->pobject)->b_private == b_private &&
 			    static_cast<store_object *>(pobjnode->pobject)->account_id == account_id)
 				return pobjnode->handle;	
-		} while ((pnode = simple_tree_node_get_sibling(pnode)) != nullptr);
+		} while ((pnode = pnode->get_sibling()) != nullptr);
 	}
 	auto pinfo = zarafa_server_get_info();
 	if (b_private) {
