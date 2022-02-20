@@ -1718,83 +1718,83 @@ static bool rtf_process_info_group(RTF_READER *preader, SIMPLE_TREE_NODE *pword)
 
 	for (; pword != nullptr; pword = simple_tree_node_get_sibling(pword)) {
 		pchild = simple_tree_node_get_child(pword);
-		if (NULL != pchild) {
-			if (NULL == pchild->pdata) {
-				return true;
-			}
-			if (strcmp(static_cast<char *>(pchild->pdata), "\\title") == 0) {
-				QRF(preader->ext_push.p_bytes(TAG_DOCUMENT_TITLE_BEGIN, sizeof(TAG_DOCUMENT_TITLE_BEGIN) - 1));
-				for (pword2 = simple_tree_node_get_sibling(pchild);
-				     pword2 != nullptr;
-				     pword2 = simple_tree_node_get_sibling(pword2)) {
-					if (NULL != pword2->pdata) {
-						if ('\\' != ((char*)pword2->pdata)[0]) {
-							if (!rtf_flush_iconv_cache(preader))
-								return false;
-							if (!rtf_escape_output(preader, static_cast<char *>(pword2->pdata)))
-								return false;
-						} else if ('\'' == ((char*)pword2->pdata)[1]) {
-							ch = rtf_decode_hex_char(static_cast<char *>(pword2->pdata) + 2);
-							QRF(preader->iconv_push.p_uint8(ch));
-						}
-					}
+		if (pchild == nullptr)
+			continue;
+		if (NULL == pchild->pdata) {
+			return true;
+		}
+		if (strcmp(static_cast<char *>(pchild->pdata), "\\title") == 0) {
+			QRF(preader->ext_push.p_bytes(TAG_DOCUMENT_TITLE_BEGIN, sizeof(TAG_DOCUMENT_TITLE_BEGIN) - 1));
+			for (pword2 = simple_tree_node_get_sibling(pchild);
+			     pword2 != nullptr;
+			     pword2 = simple_tree_node_get_sibling(pword2)) {
+				if (pword2->pdata == nullptr)
+					continue;
+				if ('\\' != ((char *)pword2->pdata)[0]) {
+					if (!rtf_flush_iconv_cache(preader))
+						return false;
+					if (!rtf_escape_output(preader, static_cast<char *>(pword2->pdata)))
+						return false;
+				} else if ('\'' == ((char *)pword2->pdata)[1]) {
+					ch = rtf_decode_hex_char(static_cast<char *>(pword2->pdata) + 2);
+					QRF(preader->iconv_push.p_uint8(ch));
 				}
-				if (!rtf_flush_iconv_cache(preader))
-					return false;
-				QRF(preader->ext_push.p_bytes(TAG_DOCUMENT_TITLE_END, sizeof(TAG_DOCUMENT_TITLE_END) - 1));
-			} else if (strcmp(static_cast<char *>(pchild->pdata), "\\author") == 0) {
-				QRF(preader->ext_push.p_bytes(TAG_DOCUMENT_AUTHOR_BEGIN, sizeof(TAG_DOCUMENT_AUTHOR_BEGIN) - 1));
-				for (pword2 = simple_tree_node_get_sibling(pchild);
-				     pword2 != nullptr;
-				     pword2 = simple_tree_node_get_sibling(pword2)) {
-					if (NULL != pword2->pdata) {
-						if ('\\' != ((char*)pword2->pdata)[0]) {
-							if (!rtf_flush_iconv_cache(preader))
-								return false;
-							if (!rtf_escape_output(preader, static_cast<char *>(pword2->pdata)))
-								return false;
-						} else if ('\'' == ((char*)pword2->pdata)[1]) {
-							ch = rtf_decode_hex_char(static_cast<char *>(pword2->pdata) + 2);
-							QRF(preader->iconv_push.p_uint8(ch));
-						}
-					}
-				}
-				if (!rtf_flush_iconv_cache(preader))
-					return false;
-				QRF(preader->ext_push.p_bytes(TAG_DOCUMENT_AUTHOR_END, sizeof(TAG_DOCUMENT_AUTHOR_END) - 1));
-			} else if (strcmp(static_cast<char *>(pchild->pdata), "\\creatim") == 0) {
-				QRF(preader->ext_push.p_bytes(TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
-				QRF(preader->ext_push.p_bytes("creation date: ", 15));
-				if (simple_tree_node_get_sibling(pchild) != nullptr)
-					if (!rtf_word_output_date(preader,
-					    simple_tree_node_get_sibling(pchild)))
-						return false;
-				QRF(preader->ext_push.p_bytes(TAG_COMMENT_END, sizeof(TAG_COMMENT_END) - 1));
-			} else if (strcmp(static_cast<char *>(pchild->pdata), "\\printim") == 0) {
-				QRF(preader->ext_push.p_bytes(TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
-				QRF(preader->ext_push.p_bytes("last print date: ", 17));
-				if (simple_tree_node_get_sibling(pchild) != nullptr)
-					if (!rtf_word_output_date(preader,
-					    simple_tree_node_get_sibling(pchild)))
-						return false;
-				QRF(preader->ext_push.p_bytes(TAG_COMMENT_END, sizeof(TAG_COMMENT_END) - 1));
-			} else if (strcmp(static_cast<char *>(pchild->pdata), "\\buptim") == 0) {
-				QRF(preader->ext_push.p_bytes(TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
-				QRF(preader->ext_push.p_bytes("last backup date: ", 18));
-				if (simple_tree_node_get_sibling(pchild) != nullptr)
-					if (!rtf_word_output_date(preader,
-					    simple_tree_node_get_sibling(pchild)))
-						return false;
-				QRF(preader->ext_push.p_bytes(TAG_COMMENT_END, sizeof(TAG_COMMENT_END) - 1));
-			} else if (strcmp(static_cast<char *>(pchild->pdata), "\\revtim") == 0) {
-				QRF(preader->ext_push.p_bytes(TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
-				QRF(preader->ext_push.p_bytes("modified date: ", 15));
-				if (simple_tree_node_get_sibling(pchild) != nullptr)
-					if (!rtf_word_output_date(preader,
-					    simple_tree_node_get_sibling(pchild)))
-						return false;
-				QRF(preader->ext_push.p_bytes(TAG_COMMENT_END, sizeof(TAG_COMMENT_END) - 1));
 			}
+			if (!rtf_flush_iconv_cache(preader))
+				return false;
+			QRF(preader->ext_push.p_bytes(TAG_DOCUMENT_TITLE_END, sizeof(TAG_DOCUMENT_TITLE_END) - 1));
+		} else if (strcmp(static_cast<char *>(pchild->pdata), "\\author") == 0) {
+			QRF(preader->ext_push.p_bytes(TAG_DOCUMENT_AUTHOR_BEGIN, sizeof(TAG_DOCUMENT_AUTHOR_BEGIN) - 1));
+			for (pword2 = simple_tree_node_get_sibling(pchild);
+			     pword2 != nullptr;
+			     pword2 = simple_tree_node_get_sibling(pword2)) {
+				if (pword2->pdata == nullptr)
+					continue;
+				if ('\\' != ((char *)pword2->pdata)[0]) {
+					if (!rtf_flush_iconv_cache(preader))
+						return false;
+					if (!rtf_escape_output(preader, static_cast<char *>(pword2->pdata)))
+						return false;
+				} else if ('\'' == ((char *)pword2->pdata)[1]) {
+					ch = rtf_decode_hex_char(static_cast<char *>(pword2->pdata) + 2);
+					QRF(preader->iconv_push.p_uint8(ch));
+				}
+			}
+			if (!rtf_flush_iconv_cache(preader))
+				return false;
+			QRF(preader->ext_push.p_bytes(TAG_DOCUMENT_AUTHOR_END, sizeof(TAG_DOCUMENT_AUTHOR_END) - 1));
+		} else if (strcmp(static_cast<char *>(pchild->pdata), "\\creatim") == 0) {
+			QRF(preader->ext_push.p_bytes(TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
+			QRF(preader->ext_push.p_bytes("creation date: ", 15));
+			if (simple_tree_node_get_sibling(pchild) != nullptr)
+				if (!rtf_word_output_date(preader,
+				    simple_tree_node_get_sibling(pchild)))
+					return false;
+			QRF(preader->ext_push.p_bytes(TAG_COMMENT_END, sizeof(TAG_COMMENT_END) - 1));
+		} else if (strcmp(static_cast<char *>(pchild->pdata), "\\printim") == 0) {
+			QRF(preader->ext_push.p_bytes(TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
+			QRF(preader->ext_push.p_bytes("last print date: ", 17));
+			if (simple_tree_node_get_sibling(pchild) != nullptr)
+				if (!rtf_word_output_date(preader,
+				    simple_tree_node_get_sibling(pchild)))
+					return false;
+			QRF(preader->ext_push.p_bytes(TAG_COMMENT_END, sizeof(TAG_COMMENT_END) - 1));
+		} else if (strcmp(static_cast<char *>(pchild->pdata), "\\buptim") == 0) {
+			QRF(preader->ext_push.p_bytes(TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
+			QRF(preader->ext_push.p_bytes("last backup date: ", 18));
+			if (simple_tree_node_get_sibling(pchild) != nullptr)
+				if (!rtf_word_output_date(preader,
+				    simple_tree_node_get_sibling(pchild)))
+					return false;
+			QRF(preader->ext_push.p_bytes(TAG_COMMENT_END, sizeof(TAG_COMMENT_END) - 1));
+		} else if (strcmp(static_cast<char *>(pchild->pdata), "\\revtim") == 0) {
+			QRF(preader->ext_push.p_bytes(TAG_COMMENT_BEGIN, sizeof(TAG_COMMENT_BEGIN) - 1));
+			QRF(preader->ext_push.p_bytes("modified date: ", 15));
+			if (simple_tree_node_get_sibling(pchild) != nullptr)
+				if (!rtf_word_output_date(preader,
+				    simple_tree_node_get_sibling(pchild)))
+					return false;
+			QRF(preader->ext_push.p_bytes(TAG_COMMENT_END, sizeof(TAG_COMMENT_END) - 1));
 		}
 	}
 	return true;
@@ -1921,54 +1921,56 @@ static int rtf_cmd_field(RTF_READER *preader, SIMPLE_TREE_NODE *pword,
 		for (pword2 = simple_tree_node_get_sibling(pchild);
 		     pword2 != nullptr;
 		     pword2 = simple_tree_node_get_sibling(pword2)) {
-			if (pword2->pdata != nullptr &&
-			    strcmp(static_cast<char *>(pword2->pdata), "\\fldinst") == 0) {
-				pword3 = simple_tree_node_get_sibling(pword2);
-				if (pword3 != nullptr && pword3->pdata != nullptr &&
-				    strcmp(static_cast<char *>(pword3->pdata), "SYMBOL") == 0) {
-					pword4 = simple_tree_node_get_sibling(pword3);
-					while (pword4 != nullptr && pword4->pdata != nullptr &&
-					    strcmp(static_cast<char *>(pword4->pdata), " ") == 0)
-						pword4 = simple_tree_node_get_sibling(pword4);
-					if (NULL != pword4 && NULL != pword4->pdata) {
-						int ch = strtol(static_cast<char *>(pword4->pdata), nullptr, 0);
-						if (!rtf_attrstack_push_express(preader,
-						    ATTR_FONTFACE, -7))
-							return CMD_RESULT_ERROR;
-						tmp_len = snprintf(tmp_buff, arsizeof(tmp_buff), TAG_UNISYMBOL_PRINT, ch);
-						if (preader->ext_push.p_bytes(tmp_buff, tmp_len) != EXT_ERR_SUCCESS)
-							return CMD_RESULT_ERROR;
-					}
+			if (pword2->pdata == nullptr ||
+			    strcmp(static_cast<char *>(pword2->pdata), "\\fldinst") != 0)
+				continue;
+			pword3 = simple_tree_node_get_sibling(pword2);
+			if (pword3 != nullptr && pword3->pdata != nullptr &&
+			    strcmp(static_cast<char *>(pword3->pdata), "SYMBOL") == 0) {
+				pword4 = simple_tree_node_get_sibling(pword3);
+				while (pword4 != nullptr && pword4->pdata != nullptr &&
+				    strcmp(static_cast<char *>(pword4->pdata), " ") == 0)
+					pword4 = simple_tree_node_get_sibling(pword4);
+				if (NULL != pword4 && NULL != pword4->pdata) {
+					int ch = strtol(static_cast<char *>(pword4->pdata), nullptr, 0);
+					if (!rtf_attrstack_push_express(preader,
+					    ATTR_FONTFACE, -7))
+						return CMD_RESULT_ERROR;
+					tmp_len = snprintf(tmp_buff, arsizeof(tmp_buff), TAG_UNISYMBOL_PRINT, ch);
+					if (preader->ext_push.p_bytes(tmp_buff, tmp_len) != EXT_ERR_SUCCESS)
+						return CMD_RESULT_ERROR;
 				}
-				for (; pword3 != nullptr; pword3 = simple_tree_node_get_sibling(pword3)) {
-					if (NULL != simple_tree_node_get_child(pword3)) {
-						break;
-					}
+			}
+			for (; pword3 != nullptr; pword3 = simple_tree_node_get_sibling(pword3)) {
+				if (NULL != simple_tree_node_get_child(pword3)) {
+					break;
 				}
-				if (NULL != pword3) {
-					pword3 = simple_tree_node_get_child(pword3);
+			}
+			if (NULL != pword3) {
+				pword3 = simple_tree_node_get_child(pword3);
+			}
+			for (; pword3 != nullptr; pword3 = simple_tree_node_get_sibling(pword3)) {
+				if (NULL == pword3->pdata) {
+					return CMD_RESULT_CONTINUE;
 				}
-				for (; pword3 != nullptr; pword3 = simple_tree_node_get_sibling(pword3)) {
-					if (NULL == pword3->pdata) {
-						return CMD_RESULT_CONTINUE;
-					}
-					if (strcmp(static_cast<char *>(pword3->pdata), "EN.CITE") == 0) {
-						b_endnotecitations = true;
-					} else if (strcmp(static_cast<char *>(pword3->pdata), "HYPERLINK") == 0) {
-						if (!b_endnotecitations) {
-							pword4 = simple_tree_node_get_sibling(pword3);
-							while (pword4 != nullptr && pword4->pdata != nullptr &&
-							    strcmp(static_cast<char *>(pword4->pdata), " ") == 0)
-								pword4 = simple_tree_node_get_sibling(pword4);
-							if (NULL != pword4 && NULL != pword4->pdata) {
-								tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
-								          TAG_HYPERLINK_BEGIN, static_cast<const char *>(pword4->pdata));
-								if (preader->ext_push.p_bytes(tmp_buff, tmp_len) != EXT_ERR_SUCCESS)
-									return CMD_RESULT_ERROR;
-								return CMD_RESULT_HYPERLINKED;
-							}
-						}
-					}
+				if (strcmp(static_cast<char *>(pword3->pdata), "EN.CITE") == 0) {
+					b_endnotecitations = true;
+					continue;
+				} else if (strcmp(static_cast<char *>(pword3->pdata), "HYPERLINK") != 0) {
+					continue;
+				}
+				if (b_endnotecitations)
+					continue;
+				pword4 = simple_tree_node_get_sibling(pword3);
+				while (pword4 != nullptr && pword4->pdata != nullptr &&
+				    strcmp(static_cast<char *>(pword4->pdata), " ") == 0)
+					pword4 = simple_tree_node_get_sibling(pword4);
+				if (NULL != pword4 && NULL != pword4->pdata) {
+					tmp_len = gx_snprintf(tmp_buff, GX_ARRAY_SIZE(tmp_buff),
+						  TAG_HYPERLINK_BEGIN, static_cast<const char *>(pword4->pdata));
+					if (preader->ext_push.p_bytes(tmp_buff, tmp_len) != EXT_ERR_SUCCESS)
+						return CMD_RESULT_ERROR;
+					return CMD_RESULT_HYPERLINKED;
 				}
 			}
 		}
