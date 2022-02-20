@@ -21,6 +21,8 @@
 #include <iconv.h>
 #include <cstring>
 #include <cstdlib>
+#undef containerof
+#define containerof(var, T, member) reinterpret_cast<std::conditional<std::is_const<std::remove_pointer<decltype(var)>::type>::value, std::add_const<T>::type, T>::type *>(reinterpret_cast<std::conditional<std::is_const<std::remove_pointer<decltype(var)>::type>::value, const char, char>::type *>(var) - offsetof(T, member))
 #define QRF(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return false; } while (false)
 
 #define MAX_ATTRS						10000
@@ -579,8 +581,9 @@ static void rtf_delete_tree_node(SIMPLE_TREE_NODE *pnode)
 	if (NULL != pnode->pdata) {
 		free(pnode->pdata);
 	} else {
-		rtf_free_collection(&((GROUP_NODE*)pnode)->collection_list);
-		double_list_free(&((GROUP_NODE*)pnode)->collection_list);
+		auto gn = containerof(pnode, GROUP_NODE, node);
+		rtf_free_collection(&gn->collection_list);
+		double_list_free(&gn->collection_list);
 	}
 	free(pnode);
 }
@@ -1329,15 +1332,15 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 			double_list_init(&pgroup->collection_list);
 			if (NULL == plast_group) {
 				simple_tree_set_root(&preader->element_tree,
-					(SIMPLE_TREE_NODE*)pgroup);
+					&pgroup->node);
 			} else if (plast_node != nullptr) {
 				simple_tree_insert_sibling(&preader->element_tree,
-					plast_node, (SIMPLE_TREE_NODE *)pgroup,
+					plast_node, &pgroup->node,
 					SIMPLE_TREE_INSERT_AFTER);
 			} else {
 				simple_tree_add_child(&preader->element_tree,
-					(SIMPLE_TREE_NODE *)plast_group,
-					(SIMPLE_TREE_NODE *)pgroup, SIMPLE_TREE_ADD_LAST);
+					&plast_group->node,
+					&pgroup->node, SIMPLE_TREE_ADD_LAST);
 			}
 			plast_group = pgroup;
 			plast_node = NULL;
@@ -1348,9 +1351,8 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 				return false;
 			}
 			rtf_free_collection(&plast_group->collection_list);
-			plast_node = (SIMPLE_TREE_NODE*)plast_group;
-			plast_group = (GROUP_NODE*)simple_tree_node_get_parent(
-									(SIMPLE_TREE_NODE*)plast_group);
+			plast_node = &plast_group->node;
+			plast_group = containerof(simple_tree_node_get_parent(&plast_group->node), GROUP_NODE, node);
 			if (NULL == plast_group) {
 				return true;
 			}
@@ -1373,7 +1375,7 @@ static bool rtf_load_element_tree(RTF_READER *preader)
 			pword->pdata = input_word;
 			if (NULL == plast_node) {
 				simple_tree_add_child(&preader->element_tree,
-					(SIMPLE_TREE_NODE*)plast_group, pword,
+					&plast_group->node, pword,
 					SIMPLE_TREE_ADD_LAST);
 			} else {
 				simple_tree_insert_sibling(&preader->element_tree,
