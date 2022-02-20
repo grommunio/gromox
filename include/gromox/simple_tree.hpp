@@ -60,7 +60,3 @@ template<typename C, typename F> void simple_tree_enum_from_node(C *n, F &&f)
 	if (n->pnode_child != nullptr)
 		simple_tree_node_enum(n->pnode_child, f);
 }
-BOOL simple_tree_move_node_to_child(SIMPLE_TREE *ptree_dst, 
-	SIMPLE_TREE_NODE *pnode_dst, SIMPLE_TREE *ptree_src,
-	SIMPLE_TREE_NODE *pnode_src, int opt);
-extern BOOL simple_tree_move_node_to_sibling(SIMPLE_TREE *tdst, SIMPLE_TREE_NODE *ndst, SIMPLE_TREE *tsrc, SIMPLE_TREE_NODE *nsrc, int opt);
