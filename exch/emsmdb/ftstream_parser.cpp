@@ -9,6 +9,7 @@
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/paths.h>
 #include <gromox/proc_common.h>
 #include "common_util.h"
 #include <gromox/util.hpp>
@@ -871,18 +872,24 @@ gxerr_t FTSTREAM_PARSER::process(RECORD_MARKER record_marker,
 std::unique_ptr<ftstream_parser> ftstream_parser::create(logon_object *plogon) try
 {
 	auto stream_id = common_util_get_ftstream_id();
-	auto rpc_info = get_rpc_info();
-	auto path = rpc_info.maildir + "/tmp/faststream"s;
-	if (mkdir(path.c_str(), 0777) < 0 && errno != EEXIST) {
-		fprintf(stderr, "E-1428: mkdir %s: %s\n", path.c_str(), strerror(errno));
+	auto path = LOCAL_DISK_TMPDIR;
+	if (mkdir(path, 0777) < 0 && errno != EEXIST) {
+		fprintf(stderr, "E-1428: mkdir %s: %s\n", path, strerror(errno));
 		return nullptr;
 	}
 	std::unique_ptr<ftstream_parser> pstream(new ftstream_parser);
-	pstream->path = std::move(path) + "/" + std::to_string(stream_id) + "." + get_host_ID();
-	pstream->fd = open(pstream->path.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
-	if (-1 == pstream->fd) {
-		fprintf(stderr, "E-1429: open %s: %s\n", pstream->path.c_str(), strerror(errno));
-		return NULL;
+	pstream->fd = open(path, O_TMPFILE | O_RDWR | O_TRUNC, 0666);
+	if (pstream->fd < 0) {
+		if (errno != EISDIR && errno != EOPNOTSUPP) {
+			fprintf(stderr, "E-1668: open %s: %s\n", path, strerror(errno));
+			return nullptr;
+		}
+		pstream->path = path + "/"s + std::to_string(stream_id) + "." + get_host_ID();
+		pstream->fd = open(pstream->path.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
+		if (-1 == pstream->fd) {
+			fprintf(stderr, "E-1429: open %s: %s\n", pstream->path.c_str(), strerror(errno));
+			return NULL;
+		}
 	}
 	pstream->plogon = plogon;
 	return pstream;
@@ -895,6 +902,7 @@ fxstream_parser::~fxstream_parser()
 {
 	auto pstream = this;
 	close(pstream->fd);
-	if (remove(pstream->path.c_str()) < 0 && errno != ENOENT)
+	if (pstream->path.size() > 0 && remove(pstream->path.c_str()) < 0 &&
+	    errno != ENOENT)
 		fprintf(stderr, "W-1392: remove %s: %s\n", pstream->path.c_str(), strerror(errno));
 }

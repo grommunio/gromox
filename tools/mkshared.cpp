@@ -65,7 +65,7 @@ void adjust_rights(const char *file)
 bool make_mailbox_hierarchy(const std::string &base) try
 {
 	for (const auto &subdir : {"", "/config", "/cid", "/eml", "/exmdb",
-	     "/ext", "/tmp", "/tmp/imap.rfc822", "/tmp/faststream"}) {
+	     "/ext", "/tmp", "/tmp/imap.rfc822"}) {
 		auto p = base + subdir;
 		if (mkdir(p.c_str(), 0777) && errno != EEXIST) {
 			fprintf(stderr, "E-1420: mkdir %s: %s\n", p.c_str(), strerror(errno));

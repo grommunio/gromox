@@ -11,4 +11,5 @@
 #define PKGSTATEGATEWAYDIR PKGSTATEDIR "/gateway"
 #define PKGSTATEQUEUEDIR PKGSTATEDIR "/queue"
 #define PKGLOGDIR "/var/log/gromox"
+#define LOCAL_DISK_TMPDIR "/var/tmp/gromox" /* not RAM and not networked */
 #define DFL_LOGOLINK "https://gromox.com/"

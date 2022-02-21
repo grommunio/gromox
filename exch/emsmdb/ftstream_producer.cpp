@@ -10,6 +10,7 @@
 #include <gromox/element_data.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/paths.h>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
 #include <sys/stat.h>
@@ -82,6 +83,16 @@ static bool fxstream_producer_open(fxstream_producer &p)
 {
 	if (p.fd >= 0)
 		return true; /* already open */
+	auto path = LOCAL_DISK_TMPDIR;
+	p.fd = open(path, O_TMPFILE | O_RDWR | O_TRUNC, 0666);
+	if (p.fd >= 0) {
+		p.path.clear();
+		return true;
+	}
+	if (errno != EISDIR && errno != EOPNOTSUPP) {
+		fprintf(stderr, "E-1667: open %s: %s\n", path, strerror(errno));
+		return false;
+	}
 	p.fd = open(p.path.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
 	if (p.fd >= 0)
 		return true;
@@ -870,15 +881,9 @@ ftstream_producer::create(logon_object *plogon, uint8_t string_option) try
 	int stream_id;
 	
 	stream_id = common_util_get_ftstream_id();
-	auto rpc_info = get_rpc_info();
-	auto path = rpc_info.maildir + "/tmp"s;
-	if (mkdir(path.c_str(), 0777) < 0 && errno != EEXIST) {
-		fprintf(stderr, "E-1422: mkdir %s: %s\n", path.c_str(), strerror(errno));
-		return nullptr;
-	}
-	path = rpc_info.maildir + "/tmp/faststream"s;
-	if (mkdir(path.c_str(), 0777) < 0 && errno != EEXIST) {
-		fprintf(stderr, "E-1341: mkdir %s: %s\n", path.c_str(), strerror(errno));
+	auto path = LOCAL_DISK_TMPDIR;
+	if (mkdir(path, 0777) < 0 && errno != EEXIST) {
+		fprintf(stderr, "E-1422: mkdir %s: %s\n", path, strerror(errno));
 		return nullptr;
 	}
 	std::unique_ptr<ftstream_producer> pstream(new ftstream_producer);
@@ -897,7 +902,8 @@ fxstream_producer::~fxstream_producer()
 	if (pstream->fd < 0)
 		return;
 	close(pstream->fd);
-	if (remove(pstream->path.c_str()) < 0 && errno != ENOENT)
+	if (pstream->path.size() > 0 && remove(pstream->path.c_str()) < 0 &&
+	    errno != ENOENT)
 		fprintf(stderr, "W-1371: remove %s: %s\n", pstream->path.c_str(), strerror(errno));
 }
 
