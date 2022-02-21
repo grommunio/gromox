@@ -750,7 +750,9 @@ static constexpr tbl_upgradefn tbl_upgrade_list[] = {
 	{104, "ALTER TABLE `users` ADD COLUMN `homeserver` tinyint(5) unsigned NOT NULL DEFAULT 0 AFTER `group_id`"},
 	{105, "ALTER TABLE `domains` ADD COLUMN `homeserver` tinyint(5) unsigned NOT NULL DEFAULT 0 AFTER `domainname`"},
 	{106, "ALTER TABLE `servers` ADD CONSTRAINT UNIQUE `hostname` (`hostname`)"},
-	{107, "ALTER TABLE `servers` CHANGE COLUMN `id` `id` tinyint(5) unsigned NOT NULL DEFAULT 0"},
+	{107, "ALTER TABLE `servers` CHANGE COLUMN `id` `id` tinyint(5) unsigned NOT NULL AUTO_INCREMENT"},
+	/* 108: Fix up previous 107 (was: "DEFAULT 0") */
+	{108, "ALTER TABLE `servers` CHANGE COLUMN `id` `id` tinyint(5) unsigned NOT NULL AUTO_INCREMENT"},
 	{0, nullptr},
 };
 
