@@ -68,7 +68,7 @@ struct NSAB_NODE {
 	int id = 0;
 	uint32_t minid = 0;
 	void *d_info = nullptr;
-	uint8_t node_type = 0;
+	abnode_type node_type = NODE_TYPE_REMOTE;
 };
 using AB_NODE = NSAB_NODE;
 
@@ -176,6 +176,8 @@ static void ab_tree_put_abnode(AB_NODE *pabnode)
 		break;
 	case NODE_TYPE_CLASS:
 		delete static_cast<sql_class *>(pabnode->d_info);
+		break;
+	default:
 		break;
 	}
 	delete pabnode;
@@ -1066,7 +1068,7 @@ uint32_t ab_tree_get_node_minid(const SIMPLE_TREE_NODE *pnode)
 	return xab->minid;
 }
 
-uint8_t ab_tree_get_node_type(const SIMPLE_TREE_NODE *pnode)
+abnode_type ab_tree_get_node_type(const SIMPLE_TREE_NODE *pnode)
 {
 	auto pabnode = containerof(pnode, AB_NODE, stree);
 	if (pabnode->node_type != NODE_TYPE_REMOTE)
@@ -1152,6 +1154,8 @@ void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode, uint32_t codepage,
 		}
 		break;
 	}
+	default:
+		break;
 	}
 }
 

@@ -5,6 +5,7 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include <gromox/ab_tree.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/single_list.hpp>
 #include <gromox/mapi_types.hpp>
@@ -63,13 +64,13 @@ void ab_tree_init(const char *org_name, int base_size,
 extern int ab_tree_run();
 extern void ab_tree_stop();
 extern AB_BASE_REF ab_tree_get_base(int base_id);
-uint32_t ab_tree_make_minid(uint8_t type, int value);
-uint8_t ab_tree_get_minid_type(uint32_t minid);
+extern uint32_t ab_tree_make_minid(gromox::minid_type, int value);
+extern gromox::minid_type ab_tree_get_minid_type(uint32_t minid);
 int ab_tree_get_minid_value(uint32_t minid);
 extern const SIMPLE_TREE_NODE *ab_tree_minid_to_node(const AB_BASE *, uint32_t minid);
 extern const SIMPLE_TREE_NODE *ab_tree_guid_to_node(AB_BASE *, GUID);
 extern uint32_t ab_tree_get_node_minid(const SIMPLE_TREE_NODE *);
-extern uint8_t ab_tree_get_node_type(const SIMPLE_TREE_NODE *);
+extern gromox::abnode_type ab_tree_get_node_type(const SIMPLE_TREE_NODE *);
 extern BOOL ab_tree_has_child(const SIMPLE_TREE_NODE *);
 extern BOOL ab_tree_fetch_node_properties(const SIMPLE_TREE_NODE *, const PROPTAG_ARRAY *tags, TPROPVAL_ARRAY *vals);
 extern bool ab_tree_resolvename(AB_BASE *, uint32_t codepage, char *str, stn_list_t &result);

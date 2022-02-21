@@ -70,7 +70,7 @@ struct ZAB_NODE {
 	int id = 0;
 	uint32_t minid = 0;
 	void *d_info = nullptr;
-	uint8_t node_type = 0;
+	abnode_type node_type = NODE_TYPE_REMOTE;
 };
 using AB_NODE = ZAB_NODE;
 
@@ -104,27 +104,23 @@ static void *zcoreab_scanwork(void *);
 static void ab_tree_get_display_name(const SIMPLE_TREE_NODE *, uint32_t codepage, char *str_dname, size_t dn_size);
 static void ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode, int type, char *value, size_t vsize);
 
-uint32_t ab_tree_make_minid(uint8_t type, int value)
+uint32_t ab_tree_make_minid(minid_type type, int value)
 {
-	uint32_t minid;
-	
 	if (MINID_TYPE_ADDRESS == type && value <= 0x10) {
 		type = MINID_TYPE_RESERVED;
 	}
-	minid = type;
+	uint32_t minid = type;
 	minid <<= 29;
 	minid |= value;
 	return minid;
 }
 
-uint8_t ab_tree_get_minid_type(uint32_t minid)
+minid_type ab_tree_get_minid_type(uint32_t minid)
 {
-	uint8_t type;
-	
 	if (0 == (minid & 0x80000000)) {
 		return MINID_TYPE_ADDRESS;
 	}
-	type = minid >> 29;
+	auto type = static_cast<minid_type>(minid >> 29);
 	if (MINID_TYPE_RESERVED == type) {
 		return MINID_TYPE_ADDRESS;
 	}
@@ -171,6 +167,8 @@ static void ab_tree_put_abnode(AB_NODE *pabnode)
 		break;
 	case NODE_TYPE_CLASS:
 		delete static_cast<sql_class *>(pabnode->d_info);
+		break;
+	default:
 		break;
 	}
 	delete pabnode;
@@ -969,7 +967,7 @@ uint32_t ab_tree_get_node_minid(const SIMPLE_TREE_NODE *pnode)
 	return xab->minid;
 }
 
-uint8_t ab_tree_get_node_type(const SIMPLE_TREE_NODE *pnode)
+abnode_type ab_tree_get_node_type(const SIMPLE_TREE_NODE *pnode)
 {
 	auto pabnode = containerof(pnode, AB_NODE, stree);
 	if (pabnode->node_type != NODE_TYPE_REMOTE)
@@ -1054,6 +1052,8 @@ static void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode,
 		}
 		break;
 	}
+	default:
+		break;
 	}
 }
 
@@ -1764,6 +1764,8 @@ static BOOL ab_tree_resolve_node(SIMPLE_TREE_NODE *pnode,
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
 		}
+		break;
+	default:
 		break;
 	}
 	return FALSE;

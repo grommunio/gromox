@@ -2,7 +2,7 @@
 
 namespace gromox {
 
-enum {
+enum abnode_type {
 	NODE_TYPE_REMOTE = 0,
 	NODE_TYPE_PERSON = 1,
 	NODE_TYPE_MLIST = 2,
@@ -14,7 +14,7 @@ enum {
 	NODE_TYPE_CLASS = 0x83,
 };
 
-enum {
+enum minid_type {
 	MINID_TYPE_ADDRESS = 0,
 	MINID_TYPE_DOMAIN = 4,
 	MINID_TYPE_GROUP = 5,

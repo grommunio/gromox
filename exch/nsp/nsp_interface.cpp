@@ -2644,6 +2644,8 @@ static BOOL nsp_interface_resolve_node(const SIMPLE_TREE_NODE *pnode,
 			return TRUE;
 		}
 		break;
+	default:
+		break;
 	}
 	return FALSE;
 }
