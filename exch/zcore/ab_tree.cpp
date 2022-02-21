@@ -70,7 +70,7 @@ struct ZAB_NODE {
 	int id = 0;
 	uint32_t minid = 0;
 	void *d_info = nullptr;
-	abnode_type node_type = NODE_TYPE_REMOTE;
+	abnode_type node_type = abnode_type::remote;
 };
 using AB_NODE = ZAB_NODE;
 
@@ -78,7 +78,7 @@ namespace {
 
 struct GUID_ENUM {
 	int item_id;
-	int node_type;
+	abnode_type node_type;
 	uint64_t dgt;
 	const AB_NODE *pabnode;
 };
@@ -106,10 +106,9 @@ static void ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode, int type, char 
 
 uint32_t ab_tree_make_minid(minid_type type, int value)
 {
-	if (MINID_TYPE_ADDRESS == type && value <= 0x10) {
-		type = MINID_TYPE_RESERVED;
-	}
-	uint32_t minid = type;
+	if (type == minid_type::address && value <= 0x10)
+		type = minid_type::reserved;
+	auto minid = static_cast<uint32_t>(type);
 	minid <<= 29;
 	minid |= value;
 	return minid;
@@ -118,13 +117,10 @@ uint32_t ab_tree_make_minid(minid_type type, int value)
 minid_type ab_tree_get_minid_type(uint32_t minid)
 {
 	if (0 == (minid & 0x80000000)) {
-		return MINID_TYPE_ADDRESS;
+		return minid_type::address;
 	}
 	auto type = static_cast<minid_type>(minid >> 29);
-	if (MINID_TYPE_RESERVED == type) {
-		return MINID_TYPE_ADDRESS;
-	}
-	return type;
+	return type == minid_type::reserved ? minid_type::address : type;
 }
 
 int ab_tree_get_minid_value(uint32_t minid)
@@ -153,19 +149,19 @@ static AB_NODE* ab_tree_get_abnode()
 static void ab_tree_put_abnode(AB_NODE *pabnode)
 {
 	switch (pabnode->node_type) {
-	case NODE_TYPE_DOMAIN:
+	case abnode_type::domain:
 		delete static_cast<sql_domain *>(pabnode->d_info);
 		break;
-	case NODE_TYPE_PERSON:
-	case NODE_TYPE_ROOM:
-	case NODE_TYPE_EQUIPMENT:
-	case NODE_TYPE_MLIST:
+	case abnode_type::person:
+	case abnode_type::room:
+	case abnode_type::equipment:
+	case abnode_type::mlist:
 		delete static_cast<sql_user *>(pabnode->d_info);
 		break;
-	case NODE_TYPE_GROUP:
+	case abnode_type::group:
 		delete static_cast<sql_group *>(pabnode->d_info);
 		break;
-	case NODE_TYPE_CLASS:
+	case abnode_type::abclass:
 		delete static_cast<sql_class *>(pabnode->d_info);
 		break;
 	default:
@@ -280,17 +276,17 @@ static BOOL ab_tree_load_user(AB_NODE *pabnode, sql_user &&usr, AB_BASE *pbase)
 {
 	switch (usr.dtypx) {
 	case DT_ROOM:
-		pabnode->node_type = NODE_TYPE_ROOM;
+		pabnode->node_type = abnode_type::room;
 		break;
 	case DT_EQUIPMENT:
-		pabnode->node_type = NODE_TYPE_EQUIPMENT;
+		pabnode->node_type = abnode_type::equipment;
 		break;
 	default:
-		pabnode->node_type = NODE_TYPE_PERSON;
+		pabnode->node_type = abnode_type::person;
 		break;
 	}
 	pabnode->id = usr.id;
-	pabnode->minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, usr.id);
+	pabnode->minid = ab_tree_make_minid(minid_type::address, usr.id);
 	auto iter = pbase->phash.find(pabnode->minid);
 	pabnode->stree.pdata = iter != pbase->phash.end() ? iter->second : nullptr;
 	if (pabnode->stree.pdata == nullptr && !ab_tree_cache_node(pbase, pabnode))
@@ -301,9 +297,9 @@ static BOOL ab_tree_load_user(AB_NODE *pabnode, sql_user &&usr, AB_BASE *pbase)
 
 static BOOL ab_tree_load_mlist(AB_NODE *pabnode, sql_user &&usr, AB_BASE *pbase)
 {
-	pabnode->node_type = NODE_TYPE_MLIST;
+	pabnode->node_type = abnode_type::mlist;
 	pabnode->id = usr.id;
-	pabnode->minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, usr.id);
+	pabnode->minid = ab_tree_make_minid(minid_type::address, usr.id);
 	auto iter = pbase->phash.find(pabnode->minid);
 	pabnode->stree.pdata = iter != pbase->phash.end() ? iter->second : nullptr;
 	if (pabnode->stree.pdata == nullptr && !ab_tree_cache_node(pbase, pabnode))
@@ -328,9 +324,9 @@ static BOOL ab_tree_load_class(
 		if (NULL == pabnode) {
 			return FALSE;
 		}
-		pabnode->node_type = NODE_TYPE_CLASS;
+		pabnode->node_type = abnode_type::abclass;
 		pabnode->id = cls.child_id;
-		pabnode->minid = ab_tree_make_minid(MINID_TYPE_CLASS, cls.child_id);
+		pabnode->minid = ab_tree_make_minid(minid_type::abclass, cls.child_id);
 		if (pbase->phash.find(pabnode->minid) == pbase->phash.end() &&
 		    !ab_tree_cache_node(pbase, pabnode))
 			return FALSE;
@@ -400,9 +396,9 @@ static BOOL ab_tree_load_tree(int domain_id,
 	if (NULL == pabnode) {
 		return FALSE;
 	}
-	pabnode->node_type = NODE_TYPE_DOMAIN;
+	pabnode->node_type = abnode_type::domain;
 	pabnode->id = domain_id;
-	pabnode->minid = ab_tree_make_minid(MINID_TYPE_DOMAIN, domain_id);
+	pabnode->minid = ab_tree_make_minid(minid_type::domain, domain_id);
 	if (!ab_tree_cache_node(pbase, pabnode))
 		return FALSE;
 	if (!utf8_check(dinfo.name.c_str()))
@@ -425,9 +421,9 @@ static BOOL ab_tree_load_tree(int domain_id,
 		if (NULL == pabnode) {
 			return FALSE;
 		}
-		pabnode->node_type = NODE_TYPE_GROUP;
+		pabnode->node_type = abnode_type::group;
 		pabnode->id = grp.id;
-		pabnode->minid = ab_tree_make_minid(MINID_TYPE_GROUP, grp.id);
+		pabnode->minid = ab_tree_make_minid(minid_type::group, grp.id);
 		if (!ab_tree_cache_node(pbase, pabnode))
 			return FALSE;
 		auto grp_id = grp.id;
@@ -445,9 +441,9 @@ static BOOL ab_tree_load_tree(int domain_id,
 			if (NULL == pabnode) {
 				return FALSE;
 			}
-			pabnode->node_type = NODE_TYPE_CLASS;
+			pabnode->node_type = abnode_type::abclass;
 			pabnode->id = cls.child_id;
-			pabnode->minid = ab_tree_make_minid(MINID_TYPE_CLASS, cls.child_id);
+			pabnode->minid = ab_tree_make_minid(minid_type::abclass, cls.child_id);
 			if (pbase->phash.find(pabnode->minid) == pbase->phash.end() &&
 			    !ab_tree_cache_node(pbase, pabnode)) {
 				ab_tree_put_abnode(pabnode);
@@ -579,7 +575,7 @@ static BOOL ab_tree_load_base(AB_BASE *pbase) try
 		}
 		simple_tree_enum_from_node(proot, [&pbase](SIMPLE_TREE_NODE *nd) {
 			auto node_type = ab_tree_get_node_type(nd);
-			if (node_type > 0x80 || nd->pdata != nullptr)
+			if (node_type >= abnode_type::containers || nd->pdata != nullptr)
 				return;
 			pbase->gal_list.push_back(nd);
 		});
@@ -704,25 +700,25 @@ static int ab_tree_node_to_rpath(const SIMPLE_TREE_NODE *pnode,
 	auto pabnode = containerof(pnode, AB_NODE, stree);
 	
 	switch (pabnode->node_type) {
-	case NODE_TYPE_DOMAIN:
+	case abnode_type::domain:
 		len = sprintf(temp_buff, "d%d", pabnode->id);
 		break;
-	case NODE_TYPE_GROUP:
+	case abnode_type::group:
 		len = sprintf(temp_buff, "g%d", pabnode->id);
 		break;
-	case NODE_TYPE_CLASS:
+	case abnode_type::abclass:
 		len = sprintf(temp_buff, "c%d", pabnode->id);
 		break;
-	case NODE_TYPE_PERSON:
+	case abnode_type::person:
 		len = sprintf(temp_buff, "p%d", pabnode->id);
 		break;
-	case NODE_TYPE_MLIST:
+	case abnode_type::mlist:
 		len = sprintf(temp_buff, "l%d", pabnode->id);
 		break;
-	case NODE_TYPE_ROOM:
+	case abnode_type::room:
 		len = sprintf(temp_buff, "r%d", pabnode->id);
 		break;
-	case NODE_TYPE_EQUIPMENT:
+	case abnode_type::equipment:
 		len = sprintf(temp_buff, "e%d", pabnode->id);
 		break;
 	default:
@@ -743,7 +739,7 @@ static BOOL ab_tree_node_to_path(const SIMPLE_TREE_NODE *pnode,
 	AB_BASE_REF pbase;
 	auto xab = containerof(pnode, AB_NODE, stree);
 	
-	if (xab->node_type == NODE_TYPE_REMOTE) {
+	if (xab->node_type == abnode_type::remote) {
 		pbase = ab_tree_get_base(-xab->id);
 		if (pbase == nullptr)
 			return FALSE;
@@ -796,7 +792,7 @@ const SIMPLE_TREE_NODE *ab_tree_guid_to_node(AB_BASE *pbase, GUID guid)
 	               [&](const domain_node &dnode) { return dnode.domain_id == domain_id; });
 	if (pdomain == pbase->domain_list.end())
 		return NULL;
-	tmp_enum.node_type = (guid.time_low & 0xFF000000) >> 24;
+	tmp_enum.node_type = static_cast<abnode_type>((guid.time_low & 0xFF000000) >> 24);
 	tmp_enum.item_id = (((int)guid.time_hi_and_version) << 16)
 											| guid.time_mid;
 	tmp_enum.dgt = guid.node[0] |
@@ -836,12 +832,12 @@ static bool ab_tree_node_to_guid(const SIMPLE_TREE_NODE *pnode, GUID *pguid)
 	char temp_path[512];
 	auto pabnode = containerof(pnode, AB_NODE, stree);
 	
-	if (pabnode->node_type < 0x80 && NULL != pnode->pdata) {
+	if (pabnode->node_type < abnode_type::containers &&
+	    pnode->pdata != nullptr)
 		return ab_tree_node_to_guid(static_cast<const SIMPLE_TREE_NODE *>(pnode->pdata), pguid);
-	}
 	memset(pguid, 0, sizeof(GUID));
-	pguid->time_low = pabnode->node_type << 24;
-	if (NODE_TYPE_REMOTE == pabnode->node_type) {
+	pguid->time_low = static_cast<uint32_t>(pabnode->node_type) << 24;
+	if (pabnode->node_type == abnode_type::remote) {
 		pguid->time_low |= pabnode->id;
 		tmp_id = ab_tree_get_minid_value(pabnode->minid);
 		pguid->time_hi_and_version = (tmp_id & 0xFFFF0000) >> 16;
@@ -884,7 +880,7 @@ static BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode,
 	char hex_string1[32];
 	auto pabnode = containerof(pnode, AB_NODE, stree);
 	
-	if (NODE_TYPE_REMOTE == pabnode->node_type) {
+	if (pabnode->node_type == abnode_type::remote) {
 		pbase = ab_tree_get_base(-pabnode->id);
 		if (pbase == nullptr)
 			return FALSE;
@@ -895,9 +891,9 @@ static BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode,
 		pnode = &pabnode->stree;
 	}
 	switch (pabnode->node_type) {
-	case NODE_TYPE_DOMAIN:
-	case NODE_TYPE_GROUP:
-	case NODE_TYPE_CLASS:
+	case abnode_type::domain:
+	case abnode_type::group:
+	case abnode_type::abclass:
 		if (!ab_tree_node_to_guid(pnode, &guid))
 			return false;
 		snprintf(pbuff, 128,
@@ -910,9 +906,9 @@ static BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode,
 			guid.node[2], guid.node[3],
 			guid.node[4], guid.node[5]);
 		break;
-	case NODE_TYPE_PERSON:
-	case NODE_TYPE_ROOM:
-	case NODE_TYPE_EQUIPMENT:
+	case abnode_type::person:
+	case abnode_type::room:
+	case abnode_type::equipment:
 		id = pabnode->id;
 		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
 		ptoken = strchr(username, '@');
@@ -921,9 +917,8 @@ static BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode,
 		}
 		while ((pnode = pnode->get_parent()) != nullptr)
 			pabnode = containerof(pnode, AB_NODE, stree);
-		if (pabnode->node_type != NODE_TYPE_DOMAIN) {
+		if (pabnode->node_type != abnode_type::domain)
 			return FALSE;
-		}
 		domain_id = pabnode->id;
 		encode_hex_int(id, hex_string);
 		encode_hex_int(domain_id, hex_string1);
@@ -932,7 +927,7 @@ static BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode,
 			g_zcab_org_name, hex_string1, hex_string, username);
 		HX_strupper(pbuff);
 		break;
-	case NODE_TYPE_MLIST: try {
+	case abnode_type::mlist: try {
 		id = pabnode->id;
 		auto obj = static_cast<sql_user *>(pabnode->d_info);
 		std::string ustr = obj->username;
@@ -941,9 +936,8 @@ static BOOL ab_tree_node_to_dn(const SIMPLE_TREE_NODE *pnode,
 			ustr.erase(pos);
 		while ((pnode = pnode->get_parent()) != nullptr)
 			pabnode = containerof(pnode, AB_NODE, stree);
-		if (pabnode->node_type != NODE_TYPE_DOMAIN) {
+		if (pabnode->node_type != abnode_type::domain)
 			return FALSE;
-		}
 		domain_id = pabnode->id;
 		encode_hex_int(id, hex_string);
 		encode_hex_int(domain_id, hex_string1);
@@ -970,14 +964,14 @@ uint32_t ab_tree_get_node_minid(const SIMPLE_TREE_NODE *pnode)
 abnode_type ab_tree_get_node_type(const SIMPLE_TREE_NODE *pnode)
 {
 	auto pabnode = containerof(pnode, AB_NODE, stree);
-	if (pabnode->node_type != NODE_TYPE_REMOTE)
+	if (pabnode->node_type != abnode_type::remote)
 		return pabnode->node_type;
 	auto pbase = ab_tree_get_base(-pabnode->id);
 	if (pbase == nullptr)
-		return NODE_TYPE_REMOTE;
+		return abnode_type::remote;
 	auto iter = pbase->phash.find(pabnode->minid);
 	if (iter == pbase->phash.end())
-		return NODE_TYPE_REMOTE;
+		return abnode_type::remote;
 	return iter->second->node_type;
 }
 
@@ -991,24 +985,24 @@ static void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode,
 	if (dn_size > 0)
 		str_dname[0] = '\0';
 	switch (pabnode->node_type) {
-	case NODE_TYPE_DOMAIN: {
+	case abnode_type::domain: {
 		auto obj = static_cast<sql_domain *>(pabnode->d_info);
 		gx_strlcpy(str_dname, obj->title.c_str(), dn_size);
 		break;
 	}
-	case NODE_TYPE_GROUP: {
+	case abnode_type::group: {
 		auto obj = static_cast<sql_group *>(pabnode->d_info);
 		gx_strlcpy(str_dname, obj->title.c_str(), dn_size);
 		break;
 	}
-	case NODE_TYPE_CLASS: {
+	case abnode_type::abclass: {
 		auto obj = static_cast<sql_class *>(pabnode->d_info);
 		gx_strlcpy(str_dname, obj->name.c_str(), dn_size);
 		break;
 	}
-	case NODE_TYPE_PERSON:
-	case NODE_TYPE_ROOM:
-	case NODE_TYPE_EQUIPMENT: {
+	case abnode_type::person:
+	case abnode_type::room:
+	case abnode_type::equipment: {
 		auto obj = static_cast<sql_user *>(pabnode->d_info);
 		auto it = obj->propvals.find(PR_DISPLAY_NAME);
 		if (it != obj->propvals.cend()) {
@@ -1022,7 +1016,7 @@ static void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode,
 		}
 		break;
 	}
-	case NODE_TYPE_MLIST: {
+	case abnode_type::mlist: {
 		auto obj = static_cast<sql_user *>(pabnode->d_info);
 		auto it = obj->propvals.find(PR_DISPLAY_NAME);
 		switch (obj->list_type) {
@@ -1058,7 +1052,7 @@ static void ab_tree_get_display_name(const SIMPLE_TREE_NODE *pnode,
 }
 
 static std::vector<std::string>
-ab_tree_get_object_aliases(const SIMPLE_TREE_NODE *pnode, unsigned int type)
+ab_tree_get_object_aliases(const SIMPLE_TREE_NODE *pnode, abnode_type type)
 {
 	std::vector<std::string> alist;
 	auto pabnode = containerof(pnode, AB_NODE, stree);
@@ -1073,12 +1067,11 @@ static void ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode, int type,
 	auto pabnode = containerof(pnode, AB_NODE, stree);
 	
 	value[0] = '\0';
-	if (pabnode->node_type != NODE_TYPE_PERSON &&
-		pabnode->node_type != NODE_TYPE_ROOM &&
-		pabnode->node_type != NODE_TYPE_EQUIPMENT &&
-		pabnode->node_type != NODE_TYPE_REMOTE) {
+	if (pabnode->node_type != abnode_type::person &&
+	    pabnode->node_type != abnode_type::room &&
+	    pabnode->node_type != abnode_type::equipment &&
+	    pabnode->node_type != abnode_type::remote)
 		return;
-	}
 	auto u = static_cast<sql_user *>(pabnode->d_info);
 	unsigned int tag = 0;
 	switch (type) {
@@ -1104,8 +1097,8 @@ static void ab_tree_get_mlist_info(const SIMPLE_TREE_NODE *pnode,
 	char *mail_address, char *create_day, int *plist_privilege)
 {
 	auto pabnode = containerof(pnode, AB_NODE, stree);
-	if (pabnode->node_type != NODE_TYPE_MLIST &&
-		pabnode->node_type != NODE_TYPE_REMOTE) {
+	if (pabnode->node_type != abnode_type::mlist &&
+	    pabnode->node_type != abnode_type::remote) {
 		mail_address[0] = '\0';
 		*plist_privilege = 0;
 		return;
@@ -1127,7 +1120,7 @@ static void ab_tree_get_server_dn(const SIMPLE_TREE_NODE *pnode,
 	char hex_string[32];
 	auto xab = containerof(pnode, AB_NODE, stree);
 	
-	if (xab->node_type >= 0x80)
+	if (xab->node_type >= abnode_type::containers)
 		return;
 	memset(username, 0, sizeof(username));
 	ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
@@ -1138,7 +1131,7 @@ static void ab_tree_get_server_dn(const SIMPLE_TREE_NODE *pnode,
 	} else {
 		ptoken = username;
 	}
-	if (xab->node_type == NODE_TYPE_REMOTE)
+	if (xab->node_type == abnode_type::remote)
 		encode_hex_int(ab_tree_get_minid_value(xab->minid), hex_string);
 	else
 		encode_hex_int(xab->id, hex_string);
@@ -1158,7 +1151,7 @@ static void ab_tree_get_company_info(const SIMPLE_TREE_NODE *pnode,
 	AB_BASE_REF pbase;
 	auto pabnode = containerof(pnode, AB_NODE, stree);
 	
-	if (NODE_TYPE_REMOTE == pabnode->node_type) {
+	if (pabnode->node_type == abnode_type::remote) {
 		pbase = ab_tree_get_base(-pabnode->id);
 		if (pbase == nullptr) {
 			str_name[0] = '\0';
@@ -1189,7 +1182,7 @@ ab_tree_get_department_name(const SIMPLE_TREE_NODE *pnode, char *str_name)
 	AB_BASE_REF pbase;
 	auto pabnode = containerof(pnode, AB_NODE, stree);
 	
-	if (pabnode->node_type == NODE_TYPE_REMOTE) {
+	if (pabnode->node_type == abnode_type::remote) {
 		pbase = ab_tree_get_base(-pabnode->id);
 		if (pbase == nullptr) {
 			str_name[0] = '\0';
@@ -1205,9 +1198,8 @@ ab_tree_get_department_name(const SIMPLE_TREE_NODE *pnode, char *str_name)
 	}
 	do {
 		pabnode = containerof(pnode, AB_NODE, stree);
-		if (NODE_TYPE_GROUP == pabnode->node_type) {
+		if (pabnode->node_type == abnode_type::group)
 			break;
-		}
 	} while ((pnode = pnode->get_parent()) != nullptr);
 	if (NULL == pnode) {
 		str_name[0] = '\0';
@@ -1224,9 +1216,8 @@ BOOL ab_tree_has_child(const SIMPLE_TREE_NODE *pnode)
 		return FALSE;
 	}
 	do {
-		if (ab_tree_get_node_type(pnode) > 0x80) {
+		if (ab_tree_get_node_type(pnode) >= abnode_type::containers)
 			return TRUE;
-		}
 	} while ((pnode = pnode->get_sibling()) != nullptr);
 	return FALSE;
 }
@@ -1235,8 +1226,8 @@ static ec_error_t ab_tree_fetchprop(const SIMPLE_TREE_NODE *node,
     unsigned int proptag, void **prop)
 {
 	auto node_type = ab_tree_get_node_type(node);
-	if (node_type != NODE_TYPE_PERSON && node_type != NODE_TYPE_ROOM &&
-	    node_type != NODE_TYPE_EQUIPMENT && node_type != NODE_TYPE_MLIST)
+	if (node_type != abnode_type::person && node_type != abnode_type::room &&
+	    node_type != abnode_type::equipment && node_type != abnode_type::mlist)
 		return ecNotFound;
 	auto xab = containerof(node, AB_NODE, stree);
 	const auto &obj = *static_cast<sql_user *>(xab->d_info);
@@ -1308,12 +1299,11 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 	void *pvalue;
 	char dn[1280]{};
 	GUID temp_guid;
-	uint8_t node_type;
 	EXT_PUSH ext_push;
 	ADDRESSBOOK_ENTRYID ab_entryid;
 	
 	*ppvalue = nullptr;
-	node_type = ab_tree_get_node_type(pnode);
+	auto node_type = ab_tree_get_node_type(pnode);
 	/* Properties that need to be force-generated */
 	switch (proptag) {
 	case PROP_TAG_ABPROVIDERID: {
@@ -1326,9 +1316,8 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	}
 	case PROP_TAG_CONTAINERFLAGS:
-		if (node_type < 0x80) {
+		if (node_type < abnode_type::containers)
 			return TRUE;
-		}
 		pvalue = cu_alloc<uint32_t>();
 		if (NULL == pvalue) {
 			return FALSE;
@@ -1339,9 +1328,8 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	case PROP_TAG_DEPTH: {
-		if (node_type < 0x80) {
+		if (node_type < abnode_type::containers)
 			return TRUE;
-		}
 		auto v = cu_alloc<uint32_t>();
 		if (v == nullptr)
 			return FALSE;
@@ -1350,9 +1338,8 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	}
 	case PR_EMS_AB_IS_MASTER:
-		if (node_type < 0x80) {
+		if (node_type < abnode_type::containers)
 			return TRUE;
-		}
 		pvalue = cu_alloc<uint8_t>();
 		if (NULL == pvalue) {
 			return FALSE;
@@ -1361,9 +1348,8 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	case PR_EMS_AB_HOME_MDB:
-		if (node_type > 0x80) {
+		if (node_type >= abnode_type::containers)
 			return TRUE;
-		}
 		ab_tree_get_server_dn(pnode, dn, sizeof(dn));
 		strcat(dn, "/cn=Microsoft Private MDB");
 		pvalue = common_util_dup(dn);
@@ -1386,7 +1372,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		if (NULL == pvalue) {
 			return FALSE;
 		}
-		if (node_type > 0x80) {
+		if (node_type >= abnode_type::containers) {
 			*(uint32_t*)pvalue = ab_tree_get_node_minid(pnode);
 		} else {
 			pnode = pnode->get_parent();
@@ -1399,15 +1385,13 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	case PR_ADDRTYPE:
-		if (node_type > 0x80) {
+		if (node_type >= abnode_type::containers)
 			return TRUE;
-		}
 		*ppvalue = deconst("EX");
 		return TRUE;
 	case PR_EMAIL_ADDRESS:
-		if (node_type > 0x80) {
+		if (node_type >= abnode_type::containers)
 			return TRUE;
-		}
 		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 			return FALSE;
 		pvalue = common_util_dup(dn);
@@ -1416,42 +1400,38 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		}
 		*ppvalue = pvalue;
 		return TRUE;
-	case PR_OBJECT_TYPE:
-		pvalue = cu_alloc<uint32_t>();
-		if (NULL == pvalue) {
+	case PR_OBJECT_TYPE: {
+		auto v = cu_alloc<uint32_t>();
+		if (v == nullptr)
 			return FALSE;
-		}
-		*static_cast<uint32_t *>(pvalue) =
-			node_type > 0x80 ? MAPI_ABCONT :
-			node_type == NODE_TYPE_MLIST ? MAPI_DISTLIST :
-			node_type == NODE_TYPE_FOLDER ? MAPI_FOLDER : MAPI_MAILUSER;
-		*ppvalue = pvalue;
+		*v = node_type >= abnode_type::containers ? MAPI_ABCONT :
+		     node_type == abnode_type::mlist ? MAPI_DISTLIST :
+		     node_type == abnode_type::folder ? MAPI_FOLDER : MAPI_MAILUSER;
+		*ppvalue = v;
 		return TRUE;
-	case PR_DISPLAY_TYPE:
-		if (node_type > 0x80) {
+	}
+	case PR_DISPLAY_TYPE: {
+		if (node_type >= abnode_type::containers)
 			return TRUE;
-		}
-		pvalue = cu_alloc<uint32_t>();
-		if (NULL == pvalue) {
+		auto v = cu_alloc<uint32_t>();
+		if (v == nullptr)
 			return FALSE;
-		}
-		*static_cast<uint32_t *>(pvalue) = node_type == NODE_TYPE_MLIST ? DT_DISTLIST : DT_MAILUSER;
-		*ppvalue = pvalue;
+		*v = node_type == abnode_type::mlist ? DT_DISTLIST : DT_MAILUSER;
+		*ppvalue = v;
 		return TRUE;
-	case PR_DISPLAY_TYPE_EX:
-		if (node_type > 0x80) {
+	}
+	case PR_DISPLAY_TYPE_EX: {
+		if (node_type >= abnode_type::containers)
 			return TRUE;
-		}
-		pvalue = cu_alloc<uint32_t>();
-		if (NULL == pvalue) {
+		auto v = cu_alloc<uint32_t>();
+		if (v == nullptr)
 			return FALSE;
-		}
-		*static_cast<uint32_t *>(pvalue) =
-			node_type == NODE_TYPE_ROOM ? DT_ROOM :
-			node_type == NODE_TYPE_EQUIPMENT ? DT_EQUIPMENT :
+		*v = node_type == abnode_type::room ? DT_ROOM :
+		     node_type == abnode_type::equipment ? DT_EQUIPMENT :
 			DT_MAILUSER | DTE_FLAG_ACL_CAPABLE;
-		*ppvalue = pvalue;
+		*ppvalue = v;
 		return TRUE;
+	}
 	case PR_MAPPING_SIGNATURE: {
 		auto bv = cu_alloc<BINARY>();
 		if (bv == nullptr)
@@ -1480,13 +1460,12 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		ab_entryid.flags = 0;
 		ab_entryid.provider_uid = muidEMSAB;
 		ab_entryid.version = 1;
-		if (node_type > 0x80) {
+		if (node_type >= abnode_type::containers)
 			ab_entryid.type = DT_CONTAINER;
-		} else if (NODE_TYPE_MLIST == node_type) {
+		else if (node_type == abnode_type::mlist)
 			ab_entryid.type = DT_DISTLIST;
-		} else {
+		else
 			ab_entryid.type = DT_MAILUSER;
-		}
 		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 			return FALSE;
 		ab_entryid.px500dn = dn;
@@ -1499,9 +1478,8 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	}
 	case PR_SEARCH_KEY: {
-		if (node_type > 0x80) {
+		if (node_type >= abnode_type::containers)
 			return TRUE;
-		}
 		pvalue = cu_alloc<BINARY>();
 		if (NULL == pvalue) {
 			return FALSE;
@@ -1537,9 +1515,8 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	}
 	case PR_TRANSMITABLE_DISPLAY_NAME:
-		if (node_type > 0x80) {
+		if (node_type >= abnode_type::containers)
 			return TRUE;
-		}
 		[[fallthrough]];
 	case PR_DISPLAY_NAME:
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
@@ -1554,9 +1531,8 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	case PR_COMPANY_NAME:
-		if (node_type > 0x80) {
+		if (node_type >= abnode_type::containers)
 			return TRUE;
-		}
 		ab_tree_get_company_info(pnode, dn, NULL);
 		if ('\0' == dn[0]) {
 			return TRUE;
@@ -1568,9 +1544,8 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	case PR_DEPARTMENT_NAME:
-		if (node_type > 0x80) {
+		if (node_type >= abnode_type::containers)
 			return TRUE;
-		}
 		ab_tree_get_department_name(pnode, dn);
 		if ('\0' == dn[0]) {
 			return TRUE;
@@ -1583,15 +1558,14 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	case PR_ACCOUNT:
 	case PR_SMTP_ADDRESS:
-		if (NODE_TYPE_MLIST == node_type) {
+		if (node_type == abnode_type::mlist)
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
-		} else if (node_type == NODE_TYPE_PERSON ||
-			NODE_TYPE_EQUIPMENT == node_type ||
-			NODE_TYPE_ROOM == node_type) {
+		else if (node_type == abnode_type::person ||
+		    node_type == abnode_type::equipment ||
+		    node_type == abnode_type::room)
 			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
-		} else {
+		else
 			return TRUE;
-		}
 		if ('\0' == dn[0]) {
 			return TRUE;
 		}
@@ -1602,15 +1576,14 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		*ppvalue = pvalue;
 		return TRUE;
 	case PR_EMS_AB_PROXY_ADDRESSES: {
-		if (NODE_TYPE_MLIST == node_type) {
+		if (node_type == abnode_type::mlist)
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
-		} else if (node_type == NODE_TYPE_PERSON ||
-			NODE_TYPE_EQUIPMENT == node_type ||
-			NODE_TYPE_ROOM == node_type) {
+		else if (node_type == abnode_type::person ||
+		    node_type == abnode_type::equipment ||
+		    node_type == abnode_type::room)
 			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
-		} else {
+		else
 			return TRUE;
-		}
 		if ('\0' == dn[0]) {
 			return TRUE;
 		}
@@ -1643,9 +1616,8 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	}
 	case PROP_TAG_THUMBNAILPHOTO:
-		if (node_type != NODE_TYPE_PERSON) {
+		if (node_type != abnode_type::person)
 			return TRUE;
-		}
 		pvalue = cu_alloc<BINARY>();
 		if (NULL == pvalue) {
 			return FALSE;
@@ -1659,8 +1631,8 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	}
 	/* User-defined props */
-	if (node_type == NODE_TYPE_PERSON || node_type == NODE_TYPE_ROOM ||
-	    node_type == NODE_TYPE_EQUIPMENT || node_type == NODE_TYPE_MLIST) {
+	if (node_type == abnode_type::person || node_type == abnode_type::room ||
+	    node_type == abnode_type::equipment || node_type == abnode_type::mlist) {
 		auto ret = ab_tree_fetchprop(pnode, proptag, ppvalue);
 		if (ret == ecSuccess)
 			return TRUE;
@@ -1673,9 +1645,8 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 	 */
 	switch (proptag) {
 	case PR_SEND_RICH_INFO:
-		if (node_type > 0x80) {
+		if (node_type >= abnode_type::containers)
 			return TRUE;
-		}
 		pvalue = cu_alloc<uint8_t>();
 		if (NULL == pvalue) {
 			return FALSE;
@@ -1729,7 +1700,7 @@ static BOOL ab_tree_resolve_node(SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	}
 	switch(ab_tree_get_node_type(pnode)) {
-	case NODE_TYPE_PERSON:
+	case abnode_type::person:
 		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
@@ -1759,7 +1730,7 @@ static BOOL ab_tree_resolve_node(SIMPLE_TREE_NODE *pnode,
 			return TRUE;
 		}
 		break;
-	case NODE_TYPE_MLIST:
+	case abnode_type::mlist:
 		ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
@@ -1792,7 +1763,6 @@ static BOOL ab_tree_match_node(const SIMPLE_TREE_NODE *pnode,
 	int len;
 	char *ptoken;
 	void *pvalue;
-	uint8_t node_type;
 	
 	switch (pfilter->rt) {
 	case RES_AND:
@@ -1907,15 +1877,15 @@ static BOOL ab_tree_match_node(const SIMPLE_TREE_NODE *pnode,
 		}
 		return FALSE;
 	}
-	case RES_EXIST:
-		node_type = ab_tree_get_node_type(pnode);
-		if (node_type > 0x80) {
+	case RES_EXIST: {
+		auto node_type = ab_tree_get_node_type(pnode);
+		if (node_type >= abnode_type::containers)
 			return FALSE;
-		}
 		if (ab_tree_fetch_node_property(pnode, codepage,
 		    pfilter->exist->proptag, &pvalue) && pvalue != nullptr)
 			return TRUE;	
 		return FALSE;
+	}
 	default:
 		return FALSE;
 	}
@@ -1950,9 +1920,8 @@ BOOL ab_tree_match_minids(AB_BASE *pbase, uint32_t container_id,
 			return TRUE;
 		}
 		do {
-			if (ab_tree_get_node_type(pnode) > 0x80) {
+			if (ab_tree_get_node_type(pnode) >= abnode_type::containers)
 				continue;
-			}
 			if (!ab_tree_match_node(pnode, codepage, pfilter))
 				continue;
 			psnode1 = cu_alloc<SINGLE_LIST_NODE>();

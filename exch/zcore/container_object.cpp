@@ -787,9 +787,8 @@ container_object_get_specialtables_from_node(const SIMPLE_TREE_NODE *pnode,
 	if (b_depth && ab_tree_has_child(pnode)) {
 		pnode = pnode->get_child();
 		do {
-			if (ab_tree_get_node_type(pnode) < 0x80) {
+			if (ab_tree_get_node_type(pnode) < abnode_type::containers)
 				continue;
-			}
 			if (!container_object_get_specialtables_from_node(
 			    pnode, pproptags, TRUE, pset))
 				return FALSE;	
@@ -924,9 +923,8 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 			ptnode = ptnode->get_child();
 			if (ptnode != nullptr) {
 				do {
-					if (ab_tree_get_node_type(ptnode) < 0x80) {
+					if (ab_tree_get_node_type(ptnode) < abnode_type::containers)
 						continue;
-					}
 					if (!container_object_get_specialtables_from_node(ptnode,
 					    pproptags, b_depth, &tmp_set))
 						return FALSE;	
@@ -984,9 +982,8 @@ BOOL container_object::get_user_table_num(uint32_t *pnum)
 			if (pnode == nullptr)
 				return TRUE;
 			do {
-				if (ab_tree_get_node_type(pnode) > 0x80) {
+				if (ab_tree_get_node_type(pnode) >= abnode_type::containers)
 					continue;
-				}
 				(*pnum) ++;
 			} while ((pnode = pnode->get_sibling()) != nullptr);
 		}
@@ -1114,9 +1111,8 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 					return TRUE;
 				size_t i = 0;
 				do {
-					if (ab_tree_get_node_type(ptnode) > 0x80) {
+					if (ab_tree_get_node_type(ptnode) >= abnode_type::containers)
 						continue;
-					}
 					if (i < first_pos) {
 						continue;
 					}

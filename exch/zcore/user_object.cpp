@@ -35,7 +35,7 @@ BOOL user_object::check_valid()
 	pbase.reset();
 	if (pnode != nullptr)
 		return TRUE;
-	if (ab_tree_get_minid_type(puser->minid) != MINID_TYPE_ADDRESS ||
+	if (ab_tree_get_minid_type(puser->minid) != minid_type::address ||
 	    !system_services_get_username_from_id(ab_tree_get_minid_value(puser->minid),
 	    username, GX_ARRAY_SIZE(username)))
 		return FALSE;
@@ -85,7 +85,7 @@ BOOL user_object::get_properties(const PROPTAG_ARRAY *pproptags,
 			    pproptags->has(PR_EMAIL_ADDRESS) ||
 			    pproptags->has(PR_DISPLAY_NAME) ||
 			    pproptags->has(PR_ACCOUNT)) &&
-			    ab_tree_get_minid_type(puser->minid) == MINID_TYPE_ADDRESS &&
+			    ab_tree_get_minid_type(puser->minid) == minid_type::address &&
 			    system_services_get_username_from_id(ab_tree_get_minid_value(puser->minid),
 			    username, GX_ARRAY_SIZE(username))) {
 				if (pproptags->has(PR_SMTP_ADDRESS)) {

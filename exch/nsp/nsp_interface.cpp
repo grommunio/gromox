@@ -77,7 +77,6 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 	int temp_len;
 	char dn[1280]{};
 	GUID temp_guid;
-	uint8_t node_type;
 	uint32_t display_type;
 	EPHEMERAL_ENTRYID ephid;
 	PERMANENT_ENTRYID permeid;
@@ -85,16 +84,15 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 	temp_len = 1024;
 	pprop->proptag = proptag;
 	pprop->reserved = 0;
-	node_type = ab_tree_get_node_type(pnode);
+	auto node_type = ab_tree_get_node_type(pnode);
 	/* Properties that need to be force-generated */
 	switch (proptag) {
 	case PR_EMS_AB_HOME_MDB:
 	case PR_EMS_AB_HOME_MDB_A:
-		if (NODE_TYPE_ROOM != node_type &&
-		    node_type != NODE_TYPE_PERSON &&
-			NODE_TYPE_EQUIPMENT != node_type) {
+		if (node_type != abnode_type::room &&
+		    node_type != abnode_type::person &&
+		    node_type != abnode_type::equipment)
 			return ecNotFound;
-		}
 		ab_tree_get_server_dn(pnode, dn, sizeof(dn));
 		strcat(dn, "/cn=Microsoft Private MDB");
 		if (NULL == pbuff) {
@@ -145,16 +143,16 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		strcpy(pprop->value.pstr, dn);
 		return ecSuccess;
 	case PR_OBJECT_TYPE:
-		pprop->value.l = node_type == NODE_TYPE_MLIST ? MAPI_DISTLIST :
-		                 node_type == NODE_TYPE_FOLDER ? MAPI_FOLDER :
+		pprop->value.l = node_type == abnode_type::mlist ? MAPI_DISTLIST :
+		                 node_type == abnode_type::folder ? MAPI_FOLDER :
 		                 MAPI_MAILUSER;
 		return ecSuccess;
 	case PR_DISPLAY_TYPE:
-		pprop->value.l = node_type == NODE_TYPE_MLIST ? DT_DISTLIST : DT_MAILUSER;
+		pprop->value.l = node_type == abnode_type::mlist ? DT_DISTLIST : DT_MAILUSER;
 		return ecSuccess;
 	case PR_DISPLAY_TYPE_EX:
-		pprop->value.l = node_type == NODE_TYPE_ROOM ? DT_ROOM :
-		                 node_type == NODE_TYPE_EQUIPMENT ? DT_EQUIPMENT :
+		pprop->value.l = node_type == abnode_type::room ? DT_ROOM :
+		                 node_type == abnode_type::equipment ? DT_EQUIPMENT :
 		                 DT_MAILUSER | DTE_FLAG_ACL_CAPABLE;
 		return ecSuccess;
 	case PR_MAPPING_SIGNATURE:
@@ -170,7 +168,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		memcpy(pprop->value.bin.pb, &muidEMSAB, sizeof(muidEMSAB));
 		return ecSuccess;
 	case PR_TEMPLATEID:
-		display_type = node_type == NODE_TYPE_MLIST ? DT_DISTLIST : DT_MAILUSER;
+		display_type = node_type == abnode_type::mlist ? DT_DISTLIST : DT_MAILUSER;
 		if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 			return ecNotFound;
 		if (!common_util_set_permanententryid(display_type, nullptr, dn, &permeid) ||
@@ -180,7 +178,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 	case PR_ENTRYID:
 	case PR_RECORD_KEY:
 	case PR_ORIGINAL_ENTRYID:
-		display_type = node_type == NODE_TYPE_MLIST ? DT_DISTLIST : DT_MAILUSER;
+		display_type = node_type == abnode_type::mlist ? DT_DISTLIST : DT_MAILUSER;
 		if (!b_ephid) {
 			if (!ab_tree_node_to_dn(pnode, dn, GX_ARRAY_SIZE(dn)))
 				return ecNotFound;
@@ -228,11 +226,10 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		pprop->value.bin.pb[3] = (minid >> 24) & 0xFF;
 		return ecSuccess;
 	case PR_TRANSMITABLE_DISPLAY_NAME:
-		if (node_type != NODE_TYPE_PERSON &&
-			node_type != NODE_TYPE_EQUIPMENT &&
-			node_type != NODE_TYPE_ROOM) {
+		if (node_type != abnode_type::person &&
+		    node_type != abnode_type::equipment &&
+		    node_type != abnode_type::room)
 			return ecNotFound;
-		}
 		[[fallthrough]];
 	case PR_DISPLAY_NAME:
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
@@ -252,11 +249,10 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		strcpy(pprop->value.pstr, dn);
 		return ecSuccess;
 	case PR_TRANSMITABLE_DISPLAY_NAME_A:
-		if (node_type != NODE_TYPE_PERSON &&
-			node_type != NODE_TYPE_EQUIPMENT &&
-			node_type != NODE_TYPE_ROOM) {
+		if (node_type != abnode_type::person &&
+		    node_type != abnode_type::equipment &&
+		    node_type != abnode_type::room)
 			return ecNotFound;
-		}
 		[[fallthrough]];
 	case PR_DISPLAY_NAME_A:
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A:
@@ -380,15 +376,14 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 	case PR_ACCOUNT_A:
 	case PR_SMTP_ADDRESS:
 	case PROP_TAG_SMTPADDRESS_STRING8:
-		if (NODE_TYPE_MLIST == node_type) {
+		if (node_type == abnode_type::mlist)
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
-		} else if (node_type == NODE_TYPE_PERSON ||
-			NODE_TYPE_EQUIPMENT == node_type ||
-			NODE_TYPE_ROOM == node_type) {
+		else if (node_type == abnode_type::person ||
+		    node_type == abnode_type::equipment ||
+		    node_type == abnode_type::room)
 			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
-		} else {
+		else
 			return ecNotFound;
-		}
 		if ('\0' == dn[0]) {
 			return ecNotFound;
 		}
@@ -405,21 +400,20 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		return ecSuccess;
 	case PR_EMS_AB_PROXY_ADDRESSES:
 	case PR_EMS_AB_PROXY_ADDRESSES_A: {
-		if (NODE_TYPE_MLIST == node_type) {
+		if (node_type == abnode_type::mlist)
 			ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
-		} else if (node_type == NODE_TYPE_PERSON ||
-			NODE_TYPE_EQUIPMENT == node_type ||
-			NODE_TYPE_ROOM == node_type) {
+		else if (node_type == abnode_type::person ||
+		    node_type == abnode_type::equipment ||
+		    node_type == abnode_type::room)
 			ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
-		} else {
+		else
 			return ecNotFound;
-		}
 		if ('\0' == dn[0]) {
 			return ecNotFound;
 		}
 		std::vector<std::string> alias_list;
 		try {
-			alias_list = ab_tree_get_object_aliases(pnode, node_type);
+			alias_list = ab_tree_get_object_aliases(pnode);
 		} catch (...) {
 		}
 		pprop->value.string_array.count = 1 + alias_list.size();
@@ -474,7 +468,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		return ecSuccess;
 	}
 	case PROP_TAG_THUMBNAILPHOTO:
-		if (node_type != NODE_TYPE_PERSON)
+		if (node_type != abnode_type::person)
 			return ecNotFound;
 		ab_tree_get_user_info(pnode, USER_STORE_PATH, dn, GX_ARRAY_SIZE(dn));
 		strcat(dn, "/config/portrait.jpg");
@@ -483,8 +477,8 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		return ecSuccess;
 	}
 	/* User-defined props */
-	if (node_type == NODE_TYPE_PERSON || node_type == NODE_TYPE_ROOM ||
-	    node_type == NODE_TYPE_EQUIPMENT || node_type == NODE_TYPE_MLIST) {
+	if (node_type == abnode_type::person || node_type == abnode_type::room ||
+	    node_type == abnode_type::equipment || node_type == abnode_type::mlist) {
 		auto ret = ab_tree_fetchprop(pnode, codepage, proptag, pprop);
 		if (ret == ecSuccess)
 			return ret;
@@ -508,13 +502,11 @@ static uint32_t nsp_interface_fetch_row(const SIMPLE_TREE_NODE *pnode,
     NSP_PROPROW *prow)
 {
 	uint32_t err_val;
-	uint8_t node_type;
 	PROPERTY_VALUE *pprop;
 	
-	node_type = ab_tree_get_node_type(pnode);
-	if (node_type > 0x80) {
+	auto node_type = ab_tree_get_node_type(pnode);
+	if (node_type >= abnode_type::containers)
 		return ecInvalidObject;
-	}
 	for (size_t i = 0; i < pproptags->cvalues; ++i) {
 		pprop = common_util_propertyrow_enlarge(prow);
 		if (NULL == pprop) {
@@ -677,7 +669,7 @@ static void nsp_interface_position_in_table(const STAT *pstat,
 		row = 0;
 		pnode = pnode->get_child();
 		if (pnode != nullptr) do {
-			if (ab_tree_get_node_type(pnode) >= 0x80)
+			if (ab_tree_get_node_type(pnode) >= abnode_type::containers)
 				continue;
 			minid = ab_tree_get_node_minid(pnode);
 			if (0 != minid && minid == pstat->cur_rec) {
@@ -707,9 +699,8 @@ static uint32_t nsp_interface_minid_in_table(const SIMPLE_TREE_NODE *pnode,
 		if (count == row) {
 			return ab_tree_get_node_minid(pnode);
 		}
-		if (ab_tree_get_node_type(pnode) < 0x80) {
+		if (ab_tree_get_node_type(pnode) < abnode_type::containers)
 			count ++;
-		}
 	} while ((pnode = pnode->get_sibling()) != nullptr);
 	return 0;
 }
@@ -925,9 +916,8 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 			}
 		} else {
 			do {
-				if (ab_tree_get_node_type(pnode1) > 0x80) {
+				if (ab_tree_get_node_type(pnode1) >= abnode_type::containers)
 					continue;
-				}
 				if (i >= start_pos && i < start_pos + tmp_count) {
 					prow = common_util_proprowset_enlarge(*pprows);
 					if (NULL == prow || NULL ==
@@ -1159,9 +1149,8 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		} else {
 			auto pnode1 = pnode->get_child();
 			do {
-				if (ab_tree_get_node_type(pnode1) > 0x80) {
+				if (ab_tree_get_node_type(pnode1) >= abnode_type::containers)
 					continue;
-				}
 				if (row < start_pos) {
 					row ++;
 					continue;
@@ -1206,7 +1195,6 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
     uint32_t codepage, const NSPRES *pfilter)
 {
 	char *ptoken;
-	uint8_t node_type;
 	char temp_buff[1024];
 	PROPERTY_VALUE prop_val;
 	
@@ -1469,16 +1457,16 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 		return FALSE;
 	case RES_SIZE:
 		return FALSE;
-	case RES_EXIST:
-		node_type = ab_tree_get_node_type(pnode);
-		if (node_type > 0x80) {
+	case RES_EXIST: {
+		auto node_type = ab_tree_get_node_type(pnode);
+		if (node_type >= abnode_type::containers)
 			return FALSE;
-		}
 		if (nsp_interface_fetch_property(pnode, false, codepage,
 		    pfilter->res.res_exist.proptag, &prop_val, temp_buff,
 		    GX_ARRAY_SIZE(temp_buff)) != ecSuccess)
 			return FALSE;
 		return TRUE;
+	}
 	case RES_SUBRESTRICTION:
 		return FALSE;
 	}	
@@ -1807,7 +1795,7 @@ int nsp_interface_dntomid(NSPI_HANDLE handle, uint32_t reserved,
 	return ecSuccess;
 }
 
-static int nsp_interface_get_default_proptags(int node_type,
+static int nsp_interface_get_default_proptags(abnode_type node_type,
 	BOOL b_unicode, LPROPTAG_ARRAY *pproptags)
 {
 #define U(x) (b_unicode ? (x) : CHANGE_PROP_TYPE((x), PT_STRING8))
@@ -1836,13 +1824,13 @@ static int nsp_interface_get_default_proptags(int node_type,
 	t[z++] = PR_TEMPLATEID;
 	t[z++] = PR_EMS_AB_OBJECT_GUID;
 	switch (node_type) {
-	case NODE_TYPE_DOMAIN:
-	case NODE_TYPE_GROUP:
-	case NODE_TYPE_CLASS:
+	case abnode_type::domain:
+	case abnode_type::group:
+	case abnode_type::abclass:
 		return ecInvalidObject;
-	case NODE_TYPE_PERSON:
-	case NODE_TYPE_ROOM:
-	case NODE_TYPE_EQUIPMENT:
+	case abnode_type::person:
+	case abnode_type::room:
+	case abnode_type::equipment:
 		t[z++] = U(PR_NICKNAME);
 		t[z++] = U(PR_TITLE);
 		t[z++] = U(PR_PRIMARY_TELEPHONE_NUMBER);
@@ -1858,17 +1846,17 @@ static int nsp_interface_get_default_proptags(int node_type,
 		t[z++] = U(PR_EMS_AB_PROXY_ADDRESSES);
 		t[z++] = U(PR_EMS_AB_HOME_MDB);
 		t[z++] = PR_CREATION_TIME;
-		if (node_type == NODE_TYPE_PERSON)
+		if (node_type == abnode_type::person)
 			t[z++] = PROP_TAG_THUMBNAILPHOTO;
 		break;
-	case NODE_TYPE_MLIST:
+	case abnode_type::mlist:
 		t[z++] = U(PR_SMTP_ADDRESS);
 		t[z++] = U(PR_COMPANY_NAME);
 		t[z++] = U(PR_DEPARTMENT_NAME);
 		t[z++] = U(PR_EMS_AB_PROXY_ADDRESSES);
 		t[z++] = PR_CREATION_TIME;
 		break;
-	case NODE_TYPE_FOLDER:
+	case abnode_type::folder:
 		t[z++] = PR_COMPANY_NAME_A;
 		t[z++] = PR_DEPARTMENT_NAME_A;
 		break;
@@ -1994,9 +1982,8 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 			if (NULL != pnode1) {
 				size_t i = 0;
 				do {
-					if (ab_tree_get_node_type(pnode1) > 0x80) {
+					if (ab_tree_get_node_type(pnode1) >= abnode_type::containers)
 						continue;
-					}
 					i ++;
 					if (i == row) {
 						break;
@@ -2239,9 +2226,8 @@ static BOOL nsp_interface_has_child(const SIMPLE_TREE_NODE *pnode)
 		return FALSE;
 	}
 	do {
-		if (ab_tree_get_node_type(pnode) > 0x80) {
+		if (ab_tree_get_node_type(pnode) >= abnode_type::containers)
 			return TRUE;
-		}
 	} while ((pnode = pnode->get_sibling()) != nullptr);
 	return FALSE;
 }
@@ -2283,7 +2269,7 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 	if (has_child) {
 		auto pnode1 = pnode->get_child();
 		do {
-			if (ab_tree_get_node_type(pnode1) > 0x80) {
+			if (ab_tree_get_node_type(pnode1) >= abnode_type::containers) {
 				result = nsp_interface_get_specialtables_from_node(
 					pnode1, ppermeid, b_unicode, codepage, prows);
 				if (result != ecSuccess)
@@ -2408,9 +2394,9 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		goto EXIT_MOD_LINKATT;
 	}
 	switch (ab_tree_get_node_type(ptnode)) {
-	case NODE_TYPE_PERSON:
-	case NODE_TYPE_ROOM:
-	case NODE_TYPE_EQUIPMENT:
+	case abnode_type::person:
+	case abnode_type::room:
+	case abnode_type::equipment:
 		break;
 	default:
 		result = ecInvalidObject;
@@ -2608,7 +2594,7 @@ static BOOL nsp_interface_resolve_node(const SIMPLE_TREE_NODE *pnode,
 		return TRUE;
 	}
 	switch(ab_tree_get_node_type(pnode)) {
-	case NODE_TYPE_PERSON:
+	case abnode_type::person:
 		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, dn, GX_ARRAY_SIZE(dn));
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
@@ -2638,7 +2624,7 @@ static BOOL nsp_interface_resolve_node(const SIMPLE_TREE_NODE *pnode,
 			return TRUE;
 		}
 		break;
-	case NODE_TYPE_MLIST:
+	case abnode_type::mlist:
 		ab_tree_get_mlist_info(pnode, dn, NULL, NULL);
 		if (NULL != strcasestr(dn, pstr)) {
 			return TRUE;
@@ -2907,9 +2893,8 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			for (j = 0, pnode1 = pnode->get_child();
 				NULL!=pnode1&&j>=start_pos&&j<=last_row;
 			     pnode1 = pnode1->get_sibling()) {
-				if (ab_tree_get_node_type(pnode1) > 0x80) {
+				if (ab_tree_get_node_type(pnode1) >= abnode_type::containers)
 					continue;
-				}
 				if (nsp_interface_resolve_node(pnode1,
 				    pstat->codepage, ptoken)) {
 					if (MID_RESOLVED == *pproptag) {

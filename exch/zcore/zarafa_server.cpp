@@ -1118,7 +1118,6 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 	uint8_t type;
 	void *pobject;
 	int domain_id;
-	uint32_t minid;
 	uint8_t loc_type;
 	char essdn[1024];
 	char tmp_buff[16];
@@ -1210,7 +1209,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 			auto pnode = ab_tree_guid_to_node(pbase.get(), guid);
 			if (pnode == nullptr)
 				return ecNotFound;
-			minid = ab_tree_get_node_minid(pnode);
+			auto minid = ab_tree_get_node_minid(pnode);
 			type = CONTAINER_TYPE_ABTREE;
 			container_id.abtree_id.base_id = base_id;
 			container_id.abtree_id.minid = minid;
@@ -1226,7 +1225,7 @@ uint32_t zarafa_server_openabentry(GUID hsession,
 		if (domain_id != pinfo->domain_id &&
 		    !system_services_check_same_org(domain_id, pinfo->domain_id))
 			base_id = -domain_id;
-		minid = ab_tree_make_minid(MINID_TYPE_ADDRESS, user_id);
+		auto minid = ab_tree_make_minid(minid_type::address, user_id);
 		userobj = user_object::create(base_id, minid);
 		pobject = userobj.get();
 		if (userobj == nullptr)
