@@ -695,35 +695,20 @@ static void *zcoreab_scanwork(void *param)
 static int ab_tree_node_to_rpath(const SIMPLE_TREE_NODE *pnode,
 	char *pbuff, int length)
 {
-	int len;
-	char temp_buff[1024];
 	auto pabnode = containerof(pnode, AB_NODE, stree);
 	
 	switch (pabnode->node_type) {
-	case abnode_type::domain:
-		len = sprintf(temp_buff, "d%d", pabnode->id);
-		break;
-	case abnode_type::group:
-		len = sprintf(temp_buff, "g%d", pabnode->id);
-		break;
-	case abnode_type::abclass:
-		len = sprintf(temp_buff, "c%d", pabnode->id);
-		break;
-	case abnode_type::person:
-		len = sprintf(temp_buff, "p%d", pabnode->id);
-		break;
-	case abnode_type::mlist:
-		len = sprintf(temp_buff, "l%d", pabnode->id);
-		break;
-	case abnode_type::room:
-		len = sprintf(temp_buff, "r%d", pabnode->id);
-		break;
-	case abnode_type::equipment:
-		len = sprintf(temp_buff, "e%d", pabnode->id);
-		break;
-	default:
-		return 0;
+	case abnode_type::domain: k = 'd'; break;
+	case abnode_type::group: k = 'g'; break;
+	case abnode_type::abclass: k = 'c'; break;
+	case abnode_type::person: k = 'p'; break;
+	case abnode_type::mlist: k = 'l'; break;
+	case abnode_type::room: k = 'r'; break;
+	case abnode_type::equipment: k = 'e'; break;
+	default: return 0;
 	}
+	char temp_buff[HXSIZEOF_Z32+2];
+	auto len = sprintf(temp_buff, "%c%d", k, pabnode->id);
 	if (len >= length) {
 		return 0;
 	}
