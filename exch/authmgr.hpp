@@ -22,4 +22,4 @@ enum {
 	USER_PRIVILEGE_ARCHIVE = 1U << 7,
 };
 
-using authmgr_login_t = bool (*)(const char *username, const char *password, char *maildir, char *lang, char *reason, size_t rsnrsize, unsigned int privbits);
+using authmgr_login_t = bool (*)(const char *username, const char *password, char *maildir, size_t msize, char *lang, size_t lsize, char *reason, size_t rsnrsize, unsigned int privbits);

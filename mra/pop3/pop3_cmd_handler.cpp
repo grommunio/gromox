@@ -149,7 +149,8 @@ int pop3_cmd_handler_pass(const char* cmd_line, int line_length,
     temp_password[line_length - 5] = '\0';
 	HX_strltrim(temp_password);
 	if (system_services_auth_login(pcontext->username, temp_password,
-	    pcontext->maildir, nullptr, reason, arsizeof(reason),
+	    pcontext->maildir, arsizeof(pcontext->maildir), nullptr, 0,
+	    reason, arsizeof(reason),
 	    USER_PRIVILEGE_POP3)) {
 		pcontext->array.clear();
 		pcontext->total_size = 0;

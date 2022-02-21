@@ -57,8 +57,9 @@ void mysql_adaptor_stop()
 }
 
 BOOL mysql_adaptor_meta(const char *username, const char *password,
-    char *maildir, char *lang, char *reason, int length, unsigned int wantpriv,
-    char *encrypt_passwd, size_t encrypt_size, uint8_t *externid_present) try
+    char *maildir, size_t msize, char *lang, size_t lsize, char *reason,
+    int length, unsigned int wantpriv, char *encrypt_passwd,
+    size_t encrypt_size, uint8_t *externid_present) try
 {
 	char temp_name[UADDR_SIZE*2];
 

@@ -23,12 +23,14 @@ static decltype(ldap_adaptor_login2) *fptr_ldap_login;
 static unsigned int am_choice = A_EXTERNID;
 
 static bool login_gen(const char *username, const char *password,
-    char *maildir, char *lang, char *reason, size_t length, unsigned int wantpriv)
+    char *maildir, size_t msize, char *lang, size_t lsize, char *reason,
+    size_t length, unsigned int wantpriv)
 {
 	char ep[107]{};
 	uint8_t have_xid = 0xFF;
 	bool auth = false;
-	auto meta = fptr_mysql_meta(username, password, maildir, lang, reason,
+	auto meta = fptr_mysql_meta(username, password, maildir, msize,
+	            lang, lsize, reason,
 	            length, wantpriv, ep, sizeof(ep), &have_xid);
 	if (!meta || have_xid == 0xFF)
 		sleep(1);
