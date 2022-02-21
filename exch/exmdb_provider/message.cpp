@@ -3222,7 +3222,8 @@ static bool op_move_same(BOOL b_oof, const char *from_address,
 		return message_disable_rule(psqlite, false, prnode->id);
 	}
 	int tmp_id = 0, tmp_id1 = 0;
-	if (exmdb_server_check_private()) {
+	auto is_pvt = exmdb_server_check_private();
+	if (is_pvt) {
 		if (!common_util_get_id_from_username(account, &tmp_id))
 			return FALSE;
 	} else {
@@ -3262,8 +3263,9 @@ static bool op_move_same(BOOL b_oof, const char *from_address,
 	double_list_append_as_tail(pfolder_list, pnode1);
 	char tmp_buff[MAX_DIGLEN];
 	char *pmid_string = nullptr, *pdigest1 = nullptr;
-	if (pdigest != nullptr && common_util_get_mid_string(
-	    psqlite, dst_mid, &pmid_string) && NULL != pmid_string) {
+	if (is_pvt && pdigest != nullptr &&
+	    common_util_get_mid_string(psqlite, dst_mid, &pmid_string) &&
+	    pmid_string != nullptr) {
 		strcpy(tmp_buff, pdigest);
 		char mid_string[128];
 		sprintf(mid_string, "\"%s\"", pmid_string);
@@ -3676,7 +3678,8 @@ static bool opx_move(BOOL b_oof, const char *from_address,
 	if (!b_exist)
 		return message_disable_rule(psqlite, TRUE, prnode->id);
 	int tmp_id = 0, tmp_id1 = 0;
-	if (exmdb_server_check_private()) {
+	auto is_pvt = exmdb_server_check_private();
+	if (is_pvt) {
 		if (!common_util_get_id_from_username(account, &tmp_id))
 			return FALSE;
 	} else {
@@ -3712,8 +3715,9 @@ static bool opx_move(BOOL b_oof, const char *from_address,
 	double_list_append_as_tail(pfolder_list, pnode1);
 	char tmp_buff[MAX_DIGLEN];
 	char *pmid_string = nullptr, *pdigest1 = nullptr;
-	if (pdigest != nullptr && common_util_get_mid_string(
-	    psqlite, dst_mid, &pmid_string) && NULL != pmid_string) {
+	if (is_pvt && pdigest != nullptr &&
+	    common_util_get_mid_string(psqlite, dst_mid, &pmid_string) &&
+	    pmid_string != nullptr) {
 		strcpy(tmp_buff, pdigest);
 		char mid_string[128];
 		sprintf(mid_string, "\"%s\"", pmid_string);
@@ -4415,8 +4419,7 @@ BOOL exmdb_server_rule_new_message(const char *dir,
 	char *pdigest;
 	uint64_t fid_val;
 	uint64_t mid_val;
-	char *pmid_string;
-	char tmp_path[256];
+	char *pmid_string = nullptr, tmp_path[256];
 	DOUBLE_LIST msg_list;
 	MESSAGE_NODE *pmnode;
 	DOUBLE_LIST folder_list;
@@ -4425,12 +4428,13 @@ BOOL exmdb_server_rule_new_message(const char *dir,
 	auto pdb = db_engine_get_db(dir);
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
-	if (!exmdb_server_check_private())
+	auto is_pvt = exmdb_server_check_private();
+	if (!is_pvt)
 		exmdb_server_set_public_username(username);
 	fid_val = rop_util_get_gc_value(folder_id);
 	mid_val = rop_util_get_gc_value(message_id);
 	pdigest = NULL;
-	if (!common_util_get_mid_string(pdb->psqlite, mid_val, &pmid_string))
+	if (is_pvt && !common_util_get_mid_string(pdb->psqlite, mid_val, &pmid_string))
 		return FALSE;
 	if (NULL != pmid_string) {
 		snprintf(tmp_path, arsizeof(tmp_path), "%s/ext/%s",
