@@ -78,6 +78,17 @@ static void ftstream_producer_record_wsp(FTSTREAM_PRODUCER *pstream,
 	fprintf(stderr, "W-1604: ENOMEM\n");
 }
 
+static bool fxstream_producer_open(fxstream_producer &p)
+{
+	if (p.fd >= 0)
+		return true; /* already open */
+	p.fd = open(p.path.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
+	if (p.fd >= 0)
+		return true;
+	fprintf(stderr, "E-1338: open %s: %s\n", p.path.c_str(), strerror(errno));
+	return false;
+}
+
 static BOOL ftstream_producer_write_internal(
 	FTSTREAM_PRODUCER *pstream,
 	const void *pbuff, uint32_t size)
@@ -85,15 +96,8 @@ static BOOL ftstream_producer_write_internal(
 	if (size >= FTSTREAM_PRODUCER_BUFFER_LENGTH
 		|| FTSTREAM_PRODUCER_BUFFER_LENGTH -
 		pstream->buffer_offset < size) {
-		if (-1 == pstream->fd) {
-			pstream->fd = open(pstream->path.c_str(),
-				O_CREAT|O_RDWR|O_TRUNC, 0666);
-			if (-1 == pstream->fd) {
-				fprintf(stderr, "E-1338: open %s: %s\n",
-				        pstream->path.c_str(), strerror(errno));
-				return FALSE;
-			}
-		}
+		if (!fxstream_producer_open(*pstream))
+			return false;
 		if (0 != pstream->buffer_offset &&
 			pstream->buffer_offset != write(pstream->fd,
 			pstream->buffer, pstream->buffer_offset)) {
