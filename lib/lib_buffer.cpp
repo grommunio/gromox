@@ -20,15 +20,14 @@ static constexpr auto wsize_al = roundup(WSIZE, sizeof(std::max_align_t));
  *		pointer to LIB_BUFFER	structure
  *		NULL if error happened
  */
-LIB_BUFFER::LIB_BUFFER(size_t item_size, size_t item_num, BOOL is_thread_safe)
+LIB_BUFFER::LIB_BUFFER(size_t isize, size_t inum, BOOL thrsafe)
 {
 	void*	head_listp		= NULL;
 	
-	if (item_size <= 0 || item_num <= 0) {
+	if (isize <= 0 || inum <= 0)
 		throw std::invalid_argument("[lib_buffer]: lib_buffer_init, invalid parameter");
-	}
-	auto item_size_al = roundup(item_size, sizeof(std::max_align_t));
-	head_listp = malloc((item_size_al + wsize_al) * item_num);
+	auto item_size_al = roundup(isize, sizeof(std::max_align_t));
+	head_listp = malloc((item_size_al + wsize_al) * inum);
 	if (head_listp == nullptr) {
 		struct bad_alloc2 : public std::bad_alloc {
 			virtual const char *what() const noexcept {
@@ -38,7 +37,7 @@ LIB_BUFFER::LIB_BUFFER(size_t item_size, size_t item_num, BOOL is_thread_safe)
 		throw bad_alloc2();
 	}
 
-	memset(head_listp, 0, (item_size_al + wsize_al) * item_num);
+	memset(head_listp, 0, (item_size_al + wsize_al) * inum);
 	auto lib_buffer = this;
 	lib_buffer->heap_list_head	= head_listp;
 	lib_buffer->cur_heap_head	= head_listp;
@@ -46,19 +45,19 @@ LIB_BUFFER::LIB_BUFFER(size_t item_size, size_t item_num, BOOL is_thread_safe)
 	lib_buffer->free_list_head	= NULL;
 	lib_buffer->free_list_size	= 0;
 	lib_buffer->allocated_num	= 0;
-	lib_buffer->item_size		= item_size;
-	lib_buffer->item_num		= item_num;
-	lib_buffer->is_thread_safe	= is_thread_safe;
+	lib_buffer->item_size = isize;
+	lib_buffer->item_num = inum;
+	lib_buffer->is_thread_safe = thrsafe;
 }
 
-std::unique_ptr<LIB_BUFFER> LIB_BUFFER::create(size_t item_size,
-    size_t item_num, BOOL is_thread_safe) try
+std::unique_ptr<LIB_BUFFER> LIB_BUFFER::create(size_t isize,
+    size_t inum, BOOL is_thread_safe) try
 {
-	if (item_size <= 0 || item_num <= 0) {
+	if (isize <= 0 || inum <= 0) {
 		debug_info("[lib_buffer]: lib_buffer_init, invalid parameter");
 		return NULL;
 	}
-	return std::make_unique<LIB_BUFFER>(item_size, item_num, is_thread_safe);
+	return std::make_unique<LIB_BUFFER>(isize, inum, is_thread_safe);
 } catch (const std::bad_alloc &e) {
 	fprintf(stderr, "E-1658: ENOMEM\n");
 	debug_info(e.what());
