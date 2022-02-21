@@ -12,6 +12,7 @@
 #include <utility>
 #include <sys/wait.h>
 #include <libHX/string.h>
+#include <gromox/ab_tree.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>

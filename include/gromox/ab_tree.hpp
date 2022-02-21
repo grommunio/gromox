@@ -1,0 +1,25 @@
+#pragma once
+
+namespace gromox {
+
+enum {
+	NODE_TYPE_REMOTE = 0,
+	NODE_TYPE_PERSON = 1,
+	NODE_TYPE_MLIST = 2,
+	NODE_TYPE_ROOM = 3,
+	NODE_TYPE_EQUIPMENT = 4,
+	NODE_TYPE_FOLDER = 5,
+	NODE_TYPE_DOMAIN = 0x81,
+	NODE_TYPE_GROUP = 0x82,
+	NODE_TYPE_CLASS = 0x83,
+};
+
+enum {
+	MINID_TYPE_ADDRESS = 0,
+	MINID_TYPE_DOMAIN = 4,
+	MINID_TYPE_GROUP = 5,
+	MINID_TYPE_CLASS = 6,
+	MINID_TYPE_RESERVED = 7, /* NSPI reserves minids 0..0x10 */
+};
+
+}

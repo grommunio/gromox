@@ -10,15 +10,6 @@
 #include <gromox/simple_tree.hpp>
 #include <gromox/single_list.hpp>
 #include <gromox/int_hash.hpp>
-#define NODE_TYPE_DOMAIN					0x81
-#define NODE_TYPE_GROUP						0x82
-#define NODE_TYPE_CLASS						0x83
-#define NODE_TYPE_REMOTE					0x0
-#define NODE_TYPE_PERSON					0x1
-#define NODE_TYPE_MLIST						0x2
-#define NODE_TYPE_ROOM						0x3
-#define NODE_TYPE_EQUIPMENT					0x4
-#define NODE_TYPE_FOLDER					0x5
 #define USER_MAIL_ADDRESS					0
 #define USER_REAL_NAME						1
 #define USER_JOB_TITLE						2

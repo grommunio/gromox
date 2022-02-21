@@ -9,6 +9,7 @@
 #include <vector>
 #include <cstdint>
 #include <libHX/string.h>
+#include <gromox/ab_tree.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>

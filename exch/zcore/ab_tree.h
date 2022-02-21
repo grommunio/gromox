@@ -15,16 +15,6 @@
 #define	AB_SUBCONTAINERS					0x2
 #define	AB_UNMODIFIABLE						0x8
 
-#define NODE_TYPE_DOMAIN					0x81
-#define NODE_TYPE_GROUP						0x82
-#define NODE_TYPE_CLASS						0x83
-#define NODE_TYPE_REMOTE					0x0
-#define NODE_TYPE_PERSON					0x1
-#define NODE_TYPE_MLIST						0x2
-#define NODE_TYPE_ROOM						0x3
-#define NODE_TYPE_EQUIPMENT					0x4
-#define NODE_TYPE_FOLDER					0x5
-
 #define USER_MAIL_ADDRESS					0
 #define USER_REAL_NAME						1
 #define USER_JOB_TITLE						2
@@ -35,11 +25,6 @@
 #define USER_HOME_ADDRESS					7
 #define USER_CREATE_DAY						8
 #define USER_STORE_PATH						9
-
-#define MINID_TYPE_ADDRESS					0x0
-#define MINID_TYPE_DOMAIN					0x4
-#define MINID_TYPE_GROUP					0x5
-#define MINID_TYPE_CLASS					0x6
 
 struct domain_node {
 	domain_node(int);

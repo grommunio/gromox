@@ -14,6 +14,7 @@
 #include <vector>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/ab_tree.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
@@ -44,14 +45,6 @@
 #define BASE_STATUS_CONSTRUCTING			0
 #define BASE_STATUS_LIVING					1
 #define BASE_STATUS_DESTRUCTING				2
-
-#define MINID_TYPE_ADDRESS					0x0
-#define MINID_TYPE_DOMAIN					0x4
-#define MINID_TYPE_GROUP					0x5
-#define MINID_TYPE_CLASS					0x6
-
-/* 0x00 ~ 0x10 minid reserved by nspi */
-#define MINID_TYPE_RESERVED					7
 
 #define HGROWING_SIZE						100
 #undef containerof

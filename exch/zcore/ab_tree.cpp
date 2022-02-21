@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <gromox/ab_tree.hpp>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
@@ -46,9 +47,6 @@
 #define BASE_STATUS_CONSTRUCTING			0
 #define BASE_STATUS_LIVING					1
 #define BASE_STATUS_DESTRUCTING				2
-
-/* 0x00 ~ 0x10 minid reserved by nspi */
-#define MINID_TYPE_RESERVED					7
 
 #define HGROWING_SIZE						100
 #undef containerof

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <memory>
+#include <gromox/ab_tree.hpp>
 #include "system_services.h"
 #include "zarafa_server.h"
 #include "user_object.h"
