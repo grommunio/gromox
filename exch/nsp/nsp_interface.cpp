@@ -2266,17 +2266,17 @@ static uint32_t nsp_interface_get_specialtables_from_node(
 	    pnode->get_depth(), container_id,
 	    str_dname, ppermeid_parent, ppermeid))
 		return ecMAPIOOM;
-	if (has_child) {
-		auto pnode1 = pnode->get_child();
-		do {
-			if (ab_tree_get_node_type(pnode1) >= abnode_type::containers) {
-				result = nsp_interface_get_specialtables_from_node(
-					pnode1, ppermeid, b_unicode, codepage, prows);
-				if (result != ecSuccess)
-					return result;
-			}
-		} while ((pnode1 = pnode1->get_sibling()) != nullptr);
-	}
+	if (!has_child)
+		return ecSuccess;
+	auto pnode1 = pnode->get_child();
+	do {
+		if (ab_tree_get_node_type(pnode1) < abnode_type::containers)
+			continue;
+		result = nsp_interface_get_specialtables_from_node(
+		         pnode1, ppermeid, b_unicode, codepage, prows);
+		if (result != ecSuccess)
+			return result;
+	} while ((pnode1 = pnode1->get_sibling()) != nullptr);
 	return ecSuccess;
 }
 

@@ -696,6 +696,7 @@ static int ab_tree_node_to_rpath(const SIMPLE_TREE_NODE *pnode,
 	char *pbuff, int length)
 {
 	auto pabnode = containerof(pnode, AB_NODE, stree);
+	char k;
 	
 	switch (pabnode->node_type) {
 	case abnode_type::domain: k = 'd'; break;
