@@ -345,11 +345,6 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 			mdcl_notify_stop = true;
 			return 5;
 		}
-		auto &srv = mdcl_server_list.back();
-		if (launch_notify_listeners(srv) != 0) {
-			mdcl_notify_stop = true;
-			return 7;
-		}
 	}
 	if (mdcl_conn_num == 0)
 		return 0;
@@ -408,6 +403,7 @@ remote_conn_ref exmdb_client_get_connection(const char *dir)
 		return fc;
 	}
 	++i->active_handles;
+	launch_notify_listeners(*i);
 	return fc;
 }
 
