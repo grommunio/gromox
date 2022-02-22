@@ -6,6 +6,10 @@
 #endif
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
+#include <fcntl.h>
+#include <mutex>
+#include <unistd.h>
 #if __linux__ && defined(HAVE_SYS_RANDOM_H)
 #	include <sys/random.h>
 #endif
@@ -156,8 +160,33 @@ const uint8_t OLE_TAG[11] =
 const uint8_t ThirdPartyGlobalId[12] =
 	/* pg 68 // 7643616C2D55696401000000 */
 	{0x76, 0x43, 0x61, 0x6c, 0x2d, 0x55, 0x69, 0x64, 0x01, 0x00, 0x00, 0x00};
+static GUID machine_guid;
+static std::once_flag machine_guid_loaded;
 
 namespace gromox {
+
+static void machine_guid_read()
+{
+	int fd = open("/etc/machine-id", O_RDONLY);
+	if (fd >= 0) {
+		char txt[33];
+		auto r = read(fd, txt, 32);
+		if (r == 32) {
+			txt[32] = '\0';
+			machine_guid.from_str(txt);
+			close(fd);
+			return;
+		}
+		close(fd);
+	}
+	machine_guid = guid_random_new();
+}
+
+const GUID &guid_machine_id()
+{
+	std::call_once(machine_guid_loaded, machine_guid_read);
+	return machine_guid;
+}
 
 GUID guid_random_new()
 {

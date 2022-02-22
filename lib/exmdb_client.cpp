@@ -320,7 +320,8 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 		if (flags & EXMDB_CLIENT_SKIP_REMOTE && !local)
 			continue; /* mostly used by midb */
 		item.local = (flags & EXMDB_CLIENT_ALLOW_DIRECT) ? local : false;
-		guid_random_new().to_str(item.remote_id, arsizeof(item.remote_id));
+		guid_random_new().to_str(item.remote_id, arsizeof(item.remote_id), 32);
+		guid_machine_id().to_str(item.remote_id + 32, arsizeof(item.remote_id) - 32, 32);
 		if (item.local) try {
 			/* mostly used by exmdb_provider */
 			mdcl_server_list.emplace_back(std::move(item));
