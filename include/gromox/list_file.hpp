@@ -33,6 +33,7 @@ struct EXMDB_ITEM {
 		EXMDB_PRIVATE,
 		EXMDB_PUBLIC,
 	} type;
+	bool local = false;
 };
 
 extern GX_EXPORT std::unique_ptr<LIST_FILE> list_file_initd(const char *filename, const char *sdlist, const char *format, unsigned int mode = EMPTY_ON_ABSENCE);

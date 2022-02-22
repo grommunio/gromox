@@ -25,7 +25,6 @@
 namespace gromox {
 
 static constexpr unsigned int mdcl_socket_timeout = 60;
-static std::vector<EXMDB_ITEM> mdcl_local_list;
 static std::list<agent_thread> mdcl_agent_list;
 static std::list<remote_svr> mdcl_server_list;
 static std::mutex mdcl_server_lock;
@@ -298,10 +297,11 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 		auto local = gx_peer_is_local(item.host.c_str());
 		if (flags & EXMDB_CLIENT_SKIP_REMOTE && !local)
 			continue; /* mostly used by midb */
-		if (flags & EXMDB_CLIENT_ALLOW_DIRECT) try {
+		item.local = (flags & EXMDB_CLIENT_ALLOW_DIRECT) ? local : false;
+		if (item.local) try {
 			/* mostly used by exmdb_provider */
-			mdcl_local_list.push_back(std::move(item));
-			continue;
+			mdcl_server_list.emplace_back(std::move(item));
+			continue; /* do not start notify agent for locals */
 		} catch (const std::bad_alloc &) {
 			printf("exmdb_client: Failed to allocate memory\n");
 			mdcl_notify_stop = true;
@@ -363,9 +363,12 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 
 bool exmdb_client_check_local(const char *prefix, BOOL *pvt)
 {
-	auto i = std::find_if(mdcl_local_list.cbegin(), mdcl_local_list.cend(),
-	         [&](const EXMDB_ITEM &s) { return strncmp(s.prefix.c_str(), prefix, s.prefix.size()) == 0; });
-	if (i == mdcl_local_list.cend())
+	auto i = std::find_if(mdcl_server_list.cbegin(), mdcl_server_list.cend(),
+	         [&](const EXMDB_ITEM &s) {
+	         	return s.local && strncmp(s.prefix.c_str(),
+	         	       prefix, s.prefix.size()) == 0;
+	         });
+	if (i == mdcl_server_list.cend())
 		return false;
 	*pvt = i->type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
 	return true;
