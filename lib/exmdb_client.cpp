@@ -274,6 +274,31 @@ static void *cl_notif_reader(void *vargs)
 	return nullptr;
 }
 
+static int launch_notify_listeners(remote_svr &srv) try
+{
+	if (mdcl_event_proc == nullptr)
+		return 0;
+	for (unsigned int j = 0; j < mdcl_threads_num; ++j) {
+		mdcl_agent_list.push_back(agent_thread{});
+		auto &ag = mdcl_agent_list.back();
+		ag.pserver = &srv;
+		ag.sockd = -1;
+		auto ret = pthread_create(&ag.thr_id, nullptr, cl_notif_reader, &ag);
+		if (ret != 0) {
+			printf("exmdb_client: E-1449: pthread_create: %s\n", strerror(ret));
+			mdcl_agent_list.pop_back();
+			return 8;
+		}
+		char buf[32];
+		snprintf(buf, sizeof(buf), "mcn%u-%s", j, srv.host.c_str());
+		pthread_setname_np(ag.thr_id, buf);
+	}
+	return 0;
+} catch (const std::bad_alloc &) {
+	printf("exmdb_client: failed to allocate memory for exmdb\n");
+	return 7;
+}
+
 int exmdb_client_run(const char *cfgdir, unsigned int flags,
     void (*build_env)(const remote_svr &), void (*free_env)(),
     void (*event_proc)(const char *, BOOL, uint32_t, const DB_NOTIFY *))
@@ -282,7 +307,6 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 	mdcl_free_env = free_env;
 	mdcl_event_proc = event_proc;
 	std::vector<EXMDB_ITEM> xmlist;
-	size_t i = 0;
 
 	auto ret = list_file_read_exmdb("exmdb_list.txt", cfgdir, xmlist);
 	if (ret < 0) {
@@ -322,30 +346,10 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 			return 5;
 		}
 		auto &srv = mdcl_server_list.back();
-		for (unsigned int j = 0; event_proc != nullptr && j < mdcl_threads_num; ++j) {
-			try {
-				mdcl_agent_list.push_back(agent_thread{});
-			} catch (const std::bad_alloc &) {
-				printf("exmdb_client: fail to "
-					"allocate memory for exmdb\n");
-				mdcl_notify_stop = true;
-				return 7;
-			}
-			auto &ag = mdcl_agent_list.back();
-			ag.pserver = &srv;
-			ag.sockd = -1;
-			ret = pthread_create(&ag.thr_id, nullptr, cl_notif_reader, &ag);
-			if (ret != 0) {
-				printf("exmdb_client: E-1449: pthread_create: %s\n", strerror(ret));
-				mdcl_notify_stop = true;
-				mdcl_agent_list.pop_back();
-				return 8;
-			}
-			char buf[32];
-			snprintf(buf, sizeof(buf), "mdclntfy/%zu-%u", i, j);
-			pthread_setname_np(ag.thr_id, buf);
+		if (launch_notify_listeners(srv) != 0) {
+			mdcl_notify_stop = true;
+			return 7;
 		}
-		++i;
 	}
 	if (mdcl_conn_num == 0)
 		return 0;
