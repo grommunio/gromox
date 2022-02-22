@@ -47,9 +47,6 @@ struct remote_conn {
 struct GX_EXPORT remote_svr : public EXMDB_ITEM {
 	remote_svr(EXMDB_ITEM &&o) : EXMDB_ITEM(std::move(o)) {}
 	std::list<remote_conn> conn_list;
-	void (*build_env)(const remote_svr &) = nullptr;
-	void (*free_env)() = nullptr;
-	void (*event_proc)(const char *, BOOL, uint32_t, const DB_NOTIFY *) = nullptr;
 	std::atomic<unsigned int> active_handles{0};
 };
 

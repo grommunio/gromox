@@ -32,6 +32,9 @@ static std::mutex mdcl_server_lock;
 static atomic_bool mdcl_notify_stop;
 static unsigned int mdcl_conn_num, mdcl_threads_num;
 static pthread_t mdcl_scan_id;
+static void (*mdcl_build_env)(const remote_svr &);
+static void (*mdcl_free_env)();
+static void (*mdcl_event_proc)(const char *, BOOL, uint32_t, const DB_NOTIFY *);
 
 remote_conn_ref::remote_conn_ref(remote_conn_ref &&o)
 {
@@ -82,6 +85,9 @@ void exmdb_client_stop()
 	for (auto &srv : mdcl_server_list)
 		for (auto &conn : srv.conn_list)
 			close(conn.sockd);
+	mdcl_build_env = nullptr;
+	mdcl_free_env = nullptr;
+	mdcl_event_proc = nullptr;
 }
 
 static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
@@ -119,9 +125,9 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 		return -1;
 	}
 	free(bin.pb);
-	if (srv.build_env != nullptr)
-		srv.build_env(srv);
-	auto cl_0 = make_scope_exit([&]() { if (srv.free_env != nullptr) srv.free_env(); });
+	if (mdcl_build_env != nullptr)
+		mdcl_build_env(srv);
+	auto cl_0 = make_scope_exit([]() { if (mdcl_free_env != nullptr) mdcl_free_env(); });
 	if (!exmdb_client_read_socket(sockd, &bin, mdcl_socket_timeout * 1000))
 		return -1;
 	auto response_code = static_cast<exmdb_response>(bin.pb[0]);
@@ -231,8 +237,8 @@ static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
 	BINARY bin;
 	bin.cb = buff_len;
 	bin.pb = buff;
-	agent.pserver->build_env(*agent.pserver);
-	auto cl_0 = make_scope_exit(*agent.pserver->free_env);
+	mdcl_build_env(*agent.pserver);
+	auto cl_0 = make_scope_exit([]() { if (mdcl_free_env != nullptr) mdcl_free_env(); });
 	DB_NOTIFY_DATAGRAM notify;
 	auto resp_code = exmdb_ext_pull_db_notify(&bin, &notify) == EXT_ERR_SUCCESS ?
 	                 exmdb_response::success : exmdb_response::pull_error;
@@ -240,7 +246,7 @@ static int cl_notif_reader3(agent_thread &agent, pollfd &pfd,
 		return -1;
 	if (resp_code == exmdb_response::success)
 		for (size_t i = 0; i < notify.id_array.count; ++i)
-			agent.pserver->event_proc(notify.dir, notify.b_table,
+			mdcl_event_proc(notify.dir, notify.b_table,
 				notify.id_array.pl[i], &notify.db_notify);
 	buff_len = 0;
 	return 0;
@@ -273,6 +279,9 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
     void (*build_env)(const remote_svr &), void (*free_env)(),
     void (*event_proc)(const char *, BOOL, uint32_t, const DB_NOTIFY *))
 {
+	mdcl_build_env = build_env;
+	mdcl_free_env = free_env;
+	mdcl_event_proc = event_proc;
 	std::vector<EXMDB_ITEM> xmlist;
 	size_t i = 0;
 
@@ -313,9 +322,6 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 			return 5;
 		}
 		auto &srv = mdcl_server_list.back();
-		srv.build_env = build_env;
-		srv.free_env = free_env;
-		srv.event_proc = event_proc;
 		for (unsigned int j = 0; event_proc != nullptr && j < mdcl_threads_num; ++j) {
 			try {
 				mdcl_agent_list.push_back(agent_thread{});
