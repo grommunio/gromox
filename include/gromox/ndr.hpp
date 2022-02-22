@@ -1,20 +1,23 @@
 #pragma once
 #include <cstdint>
 #include <gromox/common_types.hpp>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/rpc_types.hpp>
 #include <gromox/double_list.hpp>
-#define NDR_ERR_SUCCESS					0
-#define NDR_ERR_FAILURE					1
-#define NDR_ERR_CHARCNV					2
-#define NDR_ERR_BUFSIZE					3
-#define NDR_ERR_ALLOC					4
-#define NDR_ERR_NDR64					5
-#define NDR_ERR_PADDING					6
-#define NDR_ERR_RANGE					7
-#define NDR_ERR_ARRAY_SIZE				8
-#define NDR_ERR_BAD_SWITCH				9
-#define NDR_ERR_IPV6ADDRESS				10
 
+enum {
+	NDR_ERR_SUCCESS = EXT_ERR_SUCCESS,
+	NDR_ERR_FAILURE = EXT_ERR_FAILURE,
+	NDR_ERR_CHARCNV = EXT_ERR_CHARCNV,
+	NDR_ERR_BUFSIZE = EXT_ERR_BUFSIZE,
+	NDR_ERR_ALLOC = EXT_ERR_ALLOC,
+	NDR_ERR_NDR64 = EXT_ERR_NDR64,
+	NDR_ERR_PADDING = EXT_ERR_PADDING,
+	NDR_ERR_RANGE = EXT_ERR_RANGE,
+	NDR_ERR_ARRAY_SIZE = EXT_ERR_ARRAY_SIZE,
+	NDR_ERR_BAD_SWITCH = EXT_ERR_BAD_SWITCH,
+	NDR_ERR_IPV6ADDRESS = EXT_ERR_IPV6ADDRESS,
+};
 
 #define NDR_FLAG_BIGENDIAN				(1<<0)
 #define NDR_FLAG_NOALIGN				(1<<1)

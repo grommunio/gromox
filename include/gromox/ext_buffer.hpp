@@ -6,17 +6,24 @@
 #include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
 
-#define EXT_ERR_SUCCESS						0
-#define EXT_ERR_FORMAT						1
-#define EXT_ERR_BUFSIZE						2
-#define EXT_ERR_ALLOC						3
-#define EXT_ERR_BAD_SWITCH					4
-#define EXT_ERR_CHARCNV						5
-#define EXT_ERR_LZXPRESS					6
-#define EXT_ERR_HEADER_FLAGS				7
-#define EXT_ERR_HEADER_SIZE					8
-#define EXT_ERR_RANGE						9
-#define EXT_ERR_INVALID_OBJECT				10
+enum {
+	EXT_ERR_SUCCESS = 0,
+	EXT_ERR_FAILURE,
+	EXT_ERR_FORMAT,
+	EXT_ERR_BUFSIZE,
+	EXT_ERR_ALLOC,
+	EXT_ERR_BAD_SWITCH,
+	EXT_ERR_CHARCNV,
+	EXT_ERR_LZXPRESS,
+	EXT_ERR_HEADER_FLAGS,
+	EXT_ERR_HEADER_SIZE,
+	EXT_ERR_RANGE,
+	EXT_ERR_INVALID_OBJECT,
+	EXT_ERR_NDR64,
+	EXT_ERR_PADDING,
+	EXT_ERR_ARRAY_SIZE,
+	EXT_ERR_IPV6ADDRESS,
+};
 
 enum {
 	EXT_FLAG_UTF16 = 1U << 0,
