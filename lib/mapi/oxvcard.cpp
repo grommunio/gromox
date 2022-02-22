@@ -703,22 +703,22 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	pvline = vcard_new_simple_line("PROFILE", "VCARD");
 	if (pvline == nullptr)
 		goto EXPORT_FAILURE;
-	vcard_append_line(pvcard, pvline);
+	pvcard->append_line(pvline);
 	
 	pvline = vcard_new_simple_line("VERSION", "4.0");
 	if (pvline == nullptr)
 		goto EXPORT_FAILURE;
-	vcard_append_line(pvcard, pvline);
+	pvcard->append_line(pvline);
 	
 	pvline = vcard_new_simple_line("MAILER", "gromox-oxvcard");
 	if (pvline == nullptr)
 		goto EXPORT_FAILURE;
-	vcard_append_line(pvcard, pvline);
+	pvcard->append_line(pvline);
 	
 	pvline = vcard_new_simple_line("PRODID", "gromox-oxvcard");
 	if (pvline == nullptr)
 		goto EXPORT_FAILURE;
-	vcard_append_line(pvcard, pvline);
+	pvcard->append_line(pvline);
 	pvalue = pmsg->proplist.get<char>(PR_DISPLAY_NAME);
 	if (pvalue == nullptr)
 		pvalue = pmsg->proplist.get<char>(PR_NORMALIZED_SUBJECT);
@@ -726,13 +726,13 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_simple_line("FN", pvalue);
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 	}
 	
 	pvline = vcard_new_line("N");
 	if (pvline == nullptr)
 		goto EXPORT_FAILURE;
-	vcard_append_line(pvcard, pvline);
+	pvcard->append_line(pvline);
 	for (size_t i = 0; i < 5; ++i) {
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
@@ -750,7 +750,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_simple_line("NICKNAME", pvalue);
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 	}
 	
 	for (size_t i = 0; i < 3; ++i) {
@@ -762,7 +762,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_line("EMAIL");
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 		pvparam = vcard_new_param("TYPE");
 		if (pvparam == nullptr)
 			goto EXPORT_FAILURE;
@@ -796,7 +796,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			pvline = vcard_new_line("PHOTO");
 			if (pvline == nullptr)
 				goto EXPORT_FAILURE;
-			vcard_append_line(pvcard, pvline);
+			pvcard->append_line(pvline);
 			pvparam = vcard_new_param("TYPE");
 			if (pvparam == nullptr)
 				goto EXPORT_FAILURE;
@@ -827,13 +827,13 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_simple_line("NOTE", pvalue);
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 	}
 	
 	pvline = vcard_new_line("ORG");
 	if (pvline == nullptr)
 		goto EXPORT_FAILURE;
-	vcard_append_line(pvcard, pvline);
+	pvcard->append_line(pvline);
 	pvvalue = vcard_new_value();
 	if (pvvalue == nullptr)
 		goto EXPORT_FAILURE;
@@ -866,12 +866,12 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	pvline = vcard_new_simple_line("CLASS", pvalue);
 	if (pvline == nullptr)
 		goto EXPORT_FAILURE;
-	vcard_append_line(pvcard, pvline);
+	pvcard->append_line(pvline);
 	
 	pvline = vcard_new_line("ADR");
 	if (pvline == nullptr)
 		goto EXPORT_FAILURE;
-	vcard_append_line(pvcard, pvline);
+	pvcard->append_line(pvline);
 	pvparam = vcard_new_param("TYPE");
 	if (pvparam == nullptr)
 		goto EXPORT_FAILURE;
@@ -898,7 +898,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	pvline = vcard_new_line("ADR");
 	if (pvline == nullptr)
 		goto EXPORT_FAILURE;
-	vcard_append_line(pvcard, pvline);
+	pvcard->append_line(pvline);
 	pvparam = vcard_new_param("TYPE");
 	if (pvparam == nullptr)
 		goto EXPORT_FAILURE;
@@ -923,7 +923,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	pvline = vcard_new_line("ADR");
 	if (pvline == nullptr)
 		goto EXPORT_FAILURE;
-	vcard_append_line(pvcard, pvline);
+	pvcard->append_line(pvline);
 	pvparam = vcard_new_param("TYPE");
 	if (pvparam == nullptr)
 		goto EXPORT_FAILURE;
@@ -952,7 +952,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_line("TEL");
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 		pvparam = vcard_new_param("TYPE");
 		if (pvparam == nullptr)
 			goto EXPORT_FAILURE;
@@ -972,7 +972,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			pvline = vcard_new_line("TEL");
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 		pvparam = vcard_new_param("TYPE");
 		if (pvparam == nullptr)
 			goto EXPORT_FAILURE;
@@ -996,7 +996,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			pvline = vcard_new_line("TEL");
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 		pvparam = vcard_new_param("TYPE");
 		if (pvparam == nullptr)
 			goto EXPORT_FAILURE;
@@ -1022,7 +1022,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_line("CATEGORIES");
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			goto EXPORT_FAILURE;
@@ -1037,7 +1037,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_simple_line("ROLE", pvalue);
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PR_PERSONAL_HOME_PAGE);
@@ -1045,7 +1045,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_line("URL");
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 		pvparam = vcard_new_param("TYPE");
 		if (pvparam == nullptr)
 			goto EXPORT_FAILURE;
@@ -1065,7 +1065,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_line("URL");
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 		pvparam = vcard_new_param("TYPE");
 		if (pvparam == nullptr)
 			goto EXPORT_FAILURE;
@@ -1087,7 +1087,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_simple_line("X-MS-OL-DESIGN", pvalue);
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 	}
 	
 	saval = pmsg->proplist.get<STRING_ARRAY>(PR_CHILDRENS_NAMES);
@@ -1096,7 +1096,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			pvline = vcard_new_simple_line("X-MS-CHILD", saval->ppstr[i]);
 			if (pvline == nullptr)
 				goto EXPORT_FAILURE;
-			vcard_append_line(pvcard, pvline);
+			pvcard->append_line(pvline);
 		}
 	}
 	
@@ -1109,7 +1109,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_simple_line("X-MS-TEXT", pvalue);
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 	}
 	
 	for (size_t i = 0; i < 5; ++i) {
@@ -1119,7 +1119,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_line("X-MS-TEL");
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 		pvparam = vcard_new_param("TYPE");
 		if (pvparam == nullptr)
 			goto EXPORT_FAILURE;
@@ -1139,7 +1139,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_line("X-MS-SPOUSE");
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 		pvparam = vcard_new_param("N");
 		if (pvparam == nullptr)
 			goto EXPORT_FAILURE;
@@ -1157,7 +1157,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_line("X-MS-MANAGER");
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 		pvparam = vcard_new_param("N");
 		if (pvparam == nullptr)
 			goto EXPORT_FAILURE;
@@ -1175,7 +1175,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_line("X-MS-ASSISTANT");
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 		pvparam = vcard_new_param("N");
 		if (pvparam == nullptr)
 			goto EXPORT_FAILURE;
@@ -1201,7 +1201,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_simple_line("UID", pvalue);
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 	}
 
 	propid = PROP_ID(g_fbl_proptag);
@@ -1211,7 +1211,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_simple_line("FBURL", pvalue);
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 	}
 	
 	saval = pmsg->proplist.get<STRING_ARRAY>(PR_HOBBIES);
@@ -1219,7 +1219,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_line("X-MS-INTERESTS");
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			goto EXPORT_FAILURE;
@@ -1234,7 +1234,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_line("KEY");
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 		pvparam = vcard_new_param("ENCODING");
 		if (pvparam == nullptr)
 			goto EXPORT_FAILURE;
@@ -1258,7 +1258,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	pvline = vcard_new_simple_line("TITLE", pvalue);
 	if (pvline == nullptr)
 		goto EXPORT_FAILURE;
-	vcard_append_line(pvcard, pvline);
+	pvcard->append_line(pvline);
 	
 	propid = PROP_ID(g_im_proptag);
 	proptag = PROP_TAG(PROP_TYPE(g_im_proptag), propids.ppropid[propid - 0x8000]);
@@ -1266,7 +1266,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	pvline = vcard_new_simple_line("X-MS-IMADDRESS", pvalue);
 	if (pvline == nullptr)
 		goto EXPORT_FAILURE;
-	vcard_append_line(pvcard, pvline);
+	pvcard->append_line(pvline);
 	
 	pvalue = pmsg->proplist.get<char>(PR_BIRTHDAY);
 	if (NULL != pvalue) {
@@ -1276,7 +1276,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_line("BDAY");
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 		pvparam = vcard_new_param("VALUE");
 		if (pvparam == nullptr)
 			goto EXPORT_FAILURE;
@@ -1299,7 +1299,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_line("REV");
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 		pvparam = vcard_new_param("VALUE");
 		if (pvparam == nullptr)
 			goto EXPORT_FAILURE;
@@ -1322,7 +1322,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvline = vcard_new_line("X-MS-ANNIVERSARY");
 		if (pvline == nullptr)
 			goto EXPORT_FAILURE;
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 		pvparam = vcard_new_param("VALUE");
 		if (pvparam == nullptr)
 			goto EXPORT_FAILURE;

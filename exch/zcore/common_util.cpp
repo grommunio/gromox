@@ -2387,9 +2387,8 @@ BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 	if (pvcf_bin->pv == nullptr) {
 		return FALSE;
 	}
-	if (!vcard_serialize(&vcard, pvcf_bin->pc, VCARD_MAX_BUFFER_LEN)) {
+	if (!vcard.serialize(pvcf_bin->pc, VCARD_MAX_BUFFER_LEN))
 		return FALSE;	
-	}
 	pvcf_bin->cb = strlen(pvcf_bin->pc);
 	if (!pmessage->write_message(pmsgctnt))
 		/* ignore */;
@@ -2408,9 +2407,8 @@ MESSAGE_CONTENT *common_util_vcf_to_message(store_object *pstore,
 	memcpy(pbuff, pvcf_bin->pb, pvcf_bin->cb);
 	pbuff[pvcf_bin->cb] = '\0';
 	vcard vcard;
-	if (!vcard_retrieve(&vcard, pbuff)) {
+	if (!vcard.retrieve(pbuff))
 		return nullptr;
-	}
 	common_util_set_dir(pstore->get_dir());
 	pmsgctnt = oxvcard_import(&vcard, common_util_get_propids_create);
 	return pmsgctnt;

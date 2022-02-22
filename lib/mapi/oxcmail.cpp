@@ -2318,7 +2318,7 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 				if (!utf8_check(pcontent.get() + content_len + 1))
 					utf8_filter(pcontent.get() + content_len + 1);
 				vcard vcard;
-				if (vcard_retrieve(&vcard, pcontent.get() + content_len + 1) &&
+				if (vcard.retrieve(pcontent.get() + content_len + 1) &&
 				    (pmsg = oxvcard_import(&vcard, pmime_enum->get_propids)) != nullptr) {
 					attachment_content_set_embedded_internal(pattachment, pmsg);
 					tmp_int32 = ATTACH_EMBEDDED_MSG;
@@ -5036,7 +5036,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 	vcard vcard;
 	if (b_vcard && oxvcard_export(pattachment->pembedded, &vcard, get_propids)) {
 		std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(VCARD_MAX_BUFFER_LEN));
-		if (pbuff != nullptr && vcard_serialize(&vcard, pbuff.get(),
+		if (pbuff != nullptr && vcard.serialize(pbuff.get(),
 		    VCARD_MAX_BUFFER_LEN)) {
 			if (!pmime->write_content(pbuff.get(),
 			    strlen(pbuff.get()), mime_encoding::automatic)) {

@@ -416,8 +416,9 @@ static void vcard_unescape_string(char *pstring)
 	}
 }
 
-BOOL vcard_retrieve(VCARD *pvcard, char *in_buff)
+BOOL vcard::retrieve(char *in_buff)
 {
+	auto pvcard = this;
 	char *pline;
 	char *pnext;
 	BOOL b_begin;
@@ -457,7 +458,7 @@ BOOL vcard_retrieve(VCARD *pvcard, char *in_buff)
 		if (NULL == pvline) {
 			break;
 		}
-		vcard_append_line(pvcard, pvline);
+		pvcard->append_line(pvline);
 		if (NULL != tmp_item.pvalue) {
 			if (0 == strcasecmp(pvline->name, "ORG") ||
 				0 == strcasecmp(pvline->name, "UID") ||
@@ -548,8 +549,9 @@ static size_t vcard_serialize_string(char *pbuff,
 	return offset;
 }
 
-BOOL vcard_serialize(VCARD *pvcard, char *out_buff, size_t max_length)
+BOOL vcard::serialize(char *out_buff, size_t max_length)
 {
+	auto pvcard = this;
 	size_t offset;
 	BOOL need_comma;
 	size_t line_begin;
@@ -684,9 +686,9 @@ VCARD_LINE* vcard_new_line(const char *name)
 	return pvline;
 }
 
-void vcard_append_line(VCARD *pvcard, VCARD_LINE *pvline)
+void vcard::append_line(VCARD_LINE *pvline)
 {
-	double_list_append_as_tail(&pvcard->line_list, &pvline->node);
+	double_list_append_as_tail(&line_list, &pvline->node);
 }
 
 VCARD_PARAM* vcard_new_param(const char*name)

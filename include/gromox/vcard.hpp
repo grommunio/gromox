@@ -26,15 +26,15 @@ struct GX_EXPORT vcard {
 	~vcard();
 	NOMOVE(vcard);
 	void clear();
+	BOOL retrieve(char *in_buff);
+	BOOL serialize(char *out_buff, size_t max_length);
+	void append_line(VCARD_LINE *);
 
 	DOUBLE_LIST line_list{};
 };
 using VCARD = vcard;
 
-BOOL vcard_retrieve(VCARD *pvcard, char *in_buff);
-BOOL vcard_serialize(VCARD *pvcard, char *out_buff, size_t max_length);
 VCARD_LINE* vcard_new_line(const char *name);
-void vcard_append_line(VCARD *pvcard, VCARD_LINE *pvline);
 VCARD_PARAM* vcard_new_param(const char*name);
 BOOL vcard_append_paramval(VCARD_PARAM *pvparam, const char *paramval);
 void vcard_append_param(VCARD_LINE *pvline, VCARD_PARAM *pvparam);

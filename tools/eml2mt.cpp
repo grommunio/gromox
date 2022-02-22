@@ -170,7 +170,7 @@ static std::unique_ptr<MESSAGE_CONTENT, mc_delete> do_vcard(const char *file)
 		return nullptr;
 	}
 	VCARD card;
-	if (!vcard_retrieve(&card, slurp_data.get())) {
+	if (!card.retrieve(slurp_data.get())) {
 		fprintf(stderr, "vcard_parse %s unsuccessful\n", file);
 		return nullptr;
 	}
