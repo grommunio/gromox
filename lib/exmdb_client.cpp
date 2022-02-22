@@ -17,6 +17,7 @@
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/guid.hpp>
 #include <gromox/list_file.hpp>
 #include <gromox/mapi_types.hpp>
 #include <gromox/scope.hpp>
@@ -104,17 +105,15 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 	        return -2;
 	}
 	auto cl_sock = make_scope_exit([&]() { close(sockd); });
-	char remote_id[128];
-	snprintf(remote_id, arsizeof(remote_id), "%s:%d", prog_id, getpid());
 	EXMDB_REQUEST rq;
 	if (!b_listen) {
 		rq.call_id = exmdb_callid::connect;
 		rq.payload.connect.prefix = deconst(srv.prefix.c_str());
-		rq.payload.connect.remote_id = remote_id;
+		rq.payload.connect.remote_id = srv.remote_id;
 		rq.payload.connect.b_private = srv.type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
 	} else {
 		rq.call_id = exmdb_callid::listen_notification;
-		rq.payload.listen_notification.remote_id = remote_id;
+		rq.payload.listen_notification.remote_id = srv.remote_id;
 	}
 	BINARY bin;
 	if (exmdb_ext_push_request(&rq, &bin) != EXT_ERR_SUCCESS)
@@ -289,9 +288,8 @@ static int launch_notify_listeners(remote_svr &srv) try
 			mdcl_agent_list.pop_back();
 			return 8;
 		}
-		char buf[32];
-		snprintf(buf, sizeof(buf), "mcn%u-%s", j, srv.host.c_str());
-		pthread_setname_np(ag.thr_id, buf);
+		auto thrtxt = "mcn" + std::to_string(j) + "-" + srv.remote_id;
+		pthread_setname_np(ag.thr_id, thrtxt.c_str());
 	}
 	return 0;
 } catch (const std::bad_alloc &) {
@@ -322,6 +320,7 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 		if (flags & EXMDB_CLIENT_SKIP_REMOTE && !local)
 			continue; /* mostly used by midb */
 		item.local = (flags & EXMDB_CLIENT_ALLOW_DIRECT) ? local : false;
+		guid_random_new().to_str(item.remote_id, arsizeof(item.remote_id));
 		if (item.local) try {
 			/* mostly used by exmdb_provider */
 			mdcl_server_list.emplace_back(std::move(item));
