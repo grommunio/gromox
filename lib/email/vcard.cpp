@@ -63,9 +63,9 @@ static char* vcard_get_semicolon(char *pstring)
 	return NULL;
 }
 
-void vcard_init(VCARD *pvcard)
+vcard::vcard()
 {
-	double_list_init(&pvcard->line_list);
+	double_list_init(&line_list);
 }
 
 static void vcard_free_param(VCARD_PARAM *pvparam)
@@ -112,13 +112,20 @@ static void vcard_free_line(VCARD_LINE *pvline)
 	free(pvline);
 }
 
-void vcard_free(VCARD *pvcard)
+vcard::~vcard()
+{
+	clear();
+	double_list_free(&line_list);
+}
+
+void vcard::clear()
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_pop_front(&pvcard->line_list)) != nullptr)
+	while ((pnode = double_list_pop_front(&line_list)) != nullptr)
 		vcard_free_line(static_cast<VCARD_LINE *>(pnode->pdata));
-	double_list_free(&pvcard->line_list);
+	double_list_free(&line_list);
+	double_list_init(&line_list);
 }
 
 static BOOL vcard_retrieve_line_item(char *pline, LINE_ITEM *pitem)

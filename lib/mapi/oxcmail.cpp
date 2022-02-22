@@ -2096,7 +2096,6 @@ static BOOL oxcmail_parse_applesingle(const MIME *pmime,
 
 static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 {
-	VCARD vcard;
 	const MIME *pmime1 = nullptr;
 	BOOL b_unifn;
 	char *ptoken;
@@ -2318,17 +2317,15 @@ static void oxcmail_enum_attachment(const MIME *pmime, void *pparam)
 			if (string_to_utf8(mime_charset, pcontent.get(), pcontent.get() + content_len + 1)) {
 				if (!utf8_check(pcontent.get() + content_len + 1))
 					utf8_filter(pcontent.get() + content_len + 1);
-				vcard_init(&vcard);
+				vcard vcard;
 				if (vcard_retrieve(&vcard, pcontent.get() + content_len + 1) &&
 				    (pmsg = oxvcard_import(&vcard, pmime_enum->get_propids)) != nullptr) {
 					attachment_content_set_embedded_internal(pattachment, pmsg);
 					tmp_int32 = ATTACH_EMBEDDED_MSG;
 					if (pattachment->proplist.set(PR_ATTACH_METHOD, &tmp_int32) == 0)
 						pmime_enum->b_result = true;
-					vcard_free(&vcard);
 					return;
 				}
-				vcard_free(&vcard);
 			}
 			/* parsing as vcard failed */
 			tmp_int32 = ATTACH_BY_VALUE;
@@ -4909,7 +4906,6 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
     std::shared_ptr<MIME_POOL> ppool, MIME *pmime)
 {
 	int tmp_len;
-	VCARD vcard;
 	BOOL b_vcard;
 	size_t offset;
 	time_t tmp_time;
@@ -5036,19 +5032,19 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 	if (str != nullptr && !pmime->set_field("Content-Base", str))
 		return FALSE;
 	
+	{
+	vcard vcard;
 	if (b_vcard && oxvcard_export(pattachment->pembedded, &vcard, get_propids)) {
 		std::unique_ptr<char[], stdlib_delete> pbuff(me_alloc<char>(VCARD_MAX_BUFFER_LEN));
 		if (pbuff != nullptr && vcard_serialize(&vcard, pbuff.get(),
 		    VCARD_MAX_BUFFER_LEN)) {
 			if (!pmime->write_content(pbuff.get(),
 			    strlen(pbuff.get()), mime_encoding::automatic)) {
-				vcard_free(&vcard);
 				return FALSE;
 			}
-			vcard_free(&vcard);
 			return TRUE;
 		}
-		vcard_free(&vcard);
+	}
 	}
 	
 	if (NULL != pattachment->pembedded) {

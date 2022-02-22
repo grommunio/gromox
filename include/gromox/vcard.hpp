@@ -21,12 +21,16 @@ struct VCARD_LINE {
 	DOUBLE_LIST value_list;
 };
 
-struct VCARD {
-	DOUBLE_LIST line_list;
-};
+struct GX_EXPORT vcard {
+	vcard();
+	~vcard();
+	NOMOVE(vcard);
+	void clear();
 
-void vcard_init(VCARD *pvcard);
-void vcard_free(VCARD *pvcard);
+	DOUBLE_LIST line_list{};
+};
+using VCARD = vcard;
+
 BOOL vcard_retrieve(VCARD *pvcard, char *in_buff);
 BOOL vcard_serialize(VCARD *pvcard, char *out_buff, size_t max_length);
 VCARD_LINE* vcard_new_line(const char *name);

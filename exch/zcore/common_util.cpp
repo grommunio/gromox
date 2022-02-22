@@ -2372,7 +2372,6 @@ BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 {
 	auto pstore = pmessage->get_store();
 	auto message_id = pmessage->get_id();
-	VCARD vcard;
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pinfo = zarafa_server_get_info();
@@ -2381,18 +2380,16 @@ BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 	    message_id, &pmsgctnt) || pmsgctnt == nullptr)
 		return FALSE;
 	common_util_set_dir(pstore->get_dir());
+	vcard vcard;
 	if (!oxvcard_export(pmsgctnt, &vcard, common_util_get_propids))
 		return FALSE;
 	pvcf_bin->pv = common_util_alloc(VCARD_MAX_BUFFER_LEN);
 	if (pvcf_bin->pv == nullptr) {
-		vcard_free(&vcard);
 		return FALSE;
 	}
 	if (!vcard_serialize(&vcard, pvcf_bin->pc, VCARD_MAX_BUFFER_LEN)) {
-		vcard_free(&vcard);
 		return FALSE;	
 	}
-	vcard_free(&vcard);
 	pvcf_bin->cb = strlen(pvcf_bin->pc);
 	if (!pmessage->write_message(pmsgctnt))
 		/* ignore */;
@@ -2402,7 +2399,6 @@ BOOL common_util_message_to_vcf(message_object *pmessage, BINARY *pvcf_bin)
 MESSAGE_CONTENT *common_util_vcf_to_message(store_object *pstore,
     const BINARY *pvcf_bin)
 {
-	VCARD vcard;
 	MESSAGE_CONTENT *pmsgctnt;
 	
 	auto pbuff = cu_alloc<char>(pvcf_bin->cb + 1);
@@ -2411,14 +2407,12 @@ MESSAGE_CONTENT *common_util_vcf_to_message(store_object *pstore,
 	}
 	memcpy(pbuff, pvcf_bin->pb, pvcf_bin->cb);
 	pbuff[pvcf_bin->cb] = '\0';
-	vcard_init(&vcard);
+	vcard vcard;
 	if (!vcard_retrieve(&vcard, pbuff)) {
-		vcard_free(&vcard);
 		return nullptr;
 	}
 	common_util_set_dir(pstore->get_dir());
 	pmsgctnt = oxvcard_import(&vcard, common_util_get_propids_create);
-	vcard_free(&vcard);
 	return pmsgctnt;
 }
 

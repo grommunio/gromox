@@ -699,7 +699,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	
 	if (!oxvcard_get_propids(&propids, get_propids))
 		return FALSE;
-	vcard_init(pvcard);
+	pvcard->clear();
 	pvline = vcard_new_simple_line("PROFILE", "VCARD");
 	if (pvline == nullptr)
 		goto EXPORT_FAILURE;
@@ -1339,6 +1339,5 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	return TRUE;
 	
  EXPORT_FAILURE:
-	vcard_free(pvcard);
 	return FALSE;
 }
