@@ -1157,7 +1157,7 @@ static int db_engine_compare_propval(
 	case PT_UNICODE:
 		return strcasecmp(static_cast<char *>(pvalue1), static_cast<char *>(pvalue2));
 	case PT_CLSID:
-		return guid_compare(static_cast<GUID *>(pvalue1), static_cast<GUID *>(pvalue2));
+		return static_cast<GUID *>(pvalue1)->compare(*static_cast<GUID *>(pvalue2));
 	case PT_BINARY: {
 		auto bv1 = static_cast<BINARY *>(pvalue1), bv2 = static_cast<BINARY *>(pvalue2);
 		if (bv1->cb == 0 && bv2->cb != 0)

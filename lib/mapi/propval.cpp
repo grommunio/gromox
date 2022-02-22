@@ -552,15 +552,15 @@ BOOL propval_compare_relop(uint8_t relop, uint16_t proptype,
 		return FALSE;
 	}
 	case PT_CLSID: {
-		auto g1 = static_cast<const GUID *>(pvalue1);
-		auto g2 = static_cast<const GUID *>(pvalue2);
+		auto &g1 = *static_cast<const GUID *>(pvalue1);
+		auto &g2 = *static_cast<const GUID *>(pvalue2);
 		switch (relop) {
-		case RELOP_LT: return guid_compare(g1, g2) < 0 ? TRUE : false;
-		case RELOP_LE: return guid_compare(g1, g2) <= 0 ? TRUE : false;
-		case RELOP_GT: return guid_compare(g1, g2) > 0 ? TRUE : false;
-		case RELOP_GE: return guid_compare(g1, g2) >= 0 ? TRUE : false;
-		case RELOP_EQ: return *g1 == *g2 ? TRUE : false;
-		case RELOP_NE: return *g1 != *g2 ? TRUE : false;
+		case RELOP_LT: return g1.compare(g2) < 0 ? TRUE : false;
+		case RELOP_LE: return g1.compare(g2) <= 0 ? TRUE : false;
+		case RELOP_GT: return g1.compare(g2) > 0 ? TRUE : false;
+		case RELOP_GE: return g1.compare(g2) >= 0 ? TRUE : false;
+		case RELOP_EQ: return g1 == g2 ? TRUE : false;
+		case RELOP_NE: return g1 != g2 ? TRUE : false;
 		}
 		return FALSE;
 	}

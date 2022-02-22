@@ -12,6 +12,8 @@
 #include <gromox/mapidefs.h>
 #include <gromox/guid.hpp>
 
+using namespace gromox;
+
 const FLATUID muidStoreWrap =
 	/* {10bba138-e505-1a10-a1bb-08002b2a56c2} */
 	{0x38, 0xA1, 0xBB, 0x10, 0x05, 0xE5, 0x10, 0x1A,
@@ -219,4 +221,16 @@ bool GUID::from_str(const char *s)
 	node[4] = v[9];
 	node[5] = v[10];
 	return true;
+}
+
+int GUID::compare(const GUID &o) const
+{
+	if (time_low != o.time_low)
+		return time_low > o.time_low ? 1 : -1;
+	if (time_mid != o.time_mid)
+		return time_mid > o.time_mid ? 1 : -1;
+	if (time_hi_and_version != o.time_hi_and_version)
+		return time_hi_and_version > o.time_hi_and_version ? 1 : -1;
+	auto r = memcmp(clock_seq, o.clock_seq, arsizeof(clock_seq));
+	return r != 0 ? r : memcmp(node, o.node, arsizeof(node));
 }
