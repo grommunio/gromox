@@ -54,7 +54,7 @@ BOOL exmdb_client_relay_delivery(const char *dir,
 	request.payload.delivery_message.cpid = cpid;
 	request.payload.delivery_message.pmsg = deconst(pmsg);
 	request.payload.delivery_message.pdigest = deconst(pdigest);
-	if (!exmdb_client_do_rpc(dir, &request, &response))
+	if (!exmdb_client_do_rpc(std::move(request), &response))
 		return FALSE;
 	*presult = response.payload.delivery_message.result;
 	return TRUE;

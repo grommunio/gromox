@@ -406,14 +406,13 @@ remote_conn_ref exmdb_client_get_connection(const char *dir)
 	return fc;
 }
 
-BOOL exmdb_client_do_rpc(const char *dir,
-    const EXMDB_REQUEST *rq, EXMDB_RESPONSE *rsp)
+BOOL exmdb_client_do_rpc(EXMDB_REQUEST &&rq, EXMDB_RESPONSE *rsp)
 {
 	BINARY bin;
 
-	if (exmdb_ext_push_request(rq, &bin) != EXT_ERR_SUCCESS)
+	if (exmdb_ext_push_request(&rq, &bin) != EXT_ERR_SUCCESS)
 		return false;
-	auto conn = exmdb_client_get_connection(dir);
+	auto conn = exmdb_client_get_connection(rq.dir);
 	if (conn == nullptr || !exmdb_client_write_socket(conn->sockd,
 	    &bin, mdcl_socket_timeout * 1000)) {
 		free(bin.pb);
@@ -426,7 +425,7 @@ BOOL exmdb_client_do_rpc(const char *dir,
 	conn.reset();
 	if (bin.cb < 5 || static_cast<exmdb_response>(bin.pb[0]) != exmdb_response::success)
 		return false;
-	rsp->call_id = rq->call_id;
+	rsp->call_id = rq.call_id;
 	bin.cb -= 5;
 	bin.pb += 5;
 	if (exmdb_ext_pull_response(&bin, rsp) != EXT_ERR_SUCCESS)

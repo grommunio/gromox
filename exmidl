@@ -48,7 +48,7 @@ while (<STDIN>) {
 			print "\trequest.payload.$func.$field = $field;\n";
 		}
 	}
-	print "\tif (!exmdb_client_do_rpc(dir, &request, &response))\n\t\treturn false;\n";
+	print "\tif (!exmdb_client_do_rpc(std::move(request), &response))\n\t\treturn false;\n";
 	for (@$oargs) {
 		my($type, $field) = @$_;
 		if ($type =~ m{^char\s*\*}) {
