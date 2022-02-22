@@ -360,7 +360,7 @@ static VCARD_LINE* vcard_retrieve_tag(char *ptag)
 		if (NULL == pvparam) {
 			return nullptr;
 		}
-		vcard_append_param(pvline, pvparam);
+		pvline->append_param(pvparam);
 	} while ((ptr = pnext) != NULL);
 	return pvline;
 }
@@ -378,7 +378,7 @@ static BOOL vcard_retrieve_value(VCARD_LINE *pvline, char *pvalue)
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
 			return FALSE;
-		vcard_append_value(pvline, pvvalue);
+		pvline->append_value(pvvalue);
 		pnext = vcard_get_semicolon(ptr);
 		ptr1 = ptr;
 		do {
@@ -477,7 +477,7 @@ BOOL vcard::retrieve(char *in_buff)
 				if (NULL == pvvalue) {
 					break;
 				}
-				vcard_append_value(pvline, pvvalue);
+				pvline->append_value(pvvalue);
 				vcard_unescape_string(tmp_item.pvalue);
 				if (!vcard_append_subval(pvvalue, tmp_item.pvalue))
 					break;
@@ -740,9 +740,9 @@ BOOL vcard_append_paramval(VCARD_PARAM *pvparam, const char *paramval)
 	return TRUE;
 }
 
-void vcard_append_param(VCARD_LINE *pvline, VCARD_PARAM *pvparam)
+void vcard_line::append_param(VCARD_PARAM *pvparam)
 {
-	double_list_append_as_tail(&pvline->param_list, &pvparam->node);
+	double_list_append_as_tail(&param_list, &pvparam->node);
 }
 
 VCARD_VALUE* vcard_new_value()
@@ -775,27 +775,23 @@ BOOL vcard_append_subval(VCARD_VALUE *pvvalue, const char *subval)
 	return TRUE;
 }
 
-void vcard_append_value(VCARD_LINE *pvline, VCARD_VALUE *pvvalue)
+void vcard_line::append_value(VCARD_VALUE *pvvalue)
 {
-	double_list_append_as_tail(&pvline->value_list, &pvvalue->node);
+	double_list_append_as_tail(&value_list, &pvvalue->node);
 }
 
-const char* vcard_get_first_subvalue(VCARD_LINE *pvline)
+const char *vcard_line::get_first_subval() const
 {
-	VCARD_VALUE *pvvalue;
-	DOUBLE_LIST_NODE *pnode;
-	DOUBLE_LIST_NODE *pnode1;
-	
-	pnode = double_list_get_head(&pvline->value_list);
+	auto pnode = double_list_get_head(&value_list);
 	if (NULL == pnode) {
 		return NULL;
 	}
-	pvvalue = (VCARD_VALUE*)pnode->pdata;
-	pnode1 = double_list_get_head(&pvvalue->subval_list);
+	auto pvvalue = static_cast<const VCARD_VALUE *>(pnode->pdata);
+	auto pnode1 = double_list_get_head(&pvvalue->subval_list);
 	if (NULL == pnode1) {
 		return NULL;
 	}
-	return static_cast<char *>(pnode1->pdata);
+	return static_cast<const char *>(pnode1->pdata);
 }
 
 VCARD_LINE* vcard_new_simple_line(const char *name, const char *value)
@@ -812,7 +808,7 @@ VCARD_LINE* vcard_new_simple_line(const char *name, const char *value)
 		vcard_free_line(pvline);
 		return NULL;
 	}
-	vcard_append_value(pvline, pvvalue);
+	pvline->append_value(pvvalue);
 	if (!vcard_append_subval(pvvalue, value)) {
 		vcard_free_line(pvline);
 		return NULL;
