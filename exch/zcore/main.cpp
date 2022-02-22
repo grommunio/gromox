@@ -232,8 +232,6 @@ int main(int argc, const char **argv) try
 	
 	exmdb_client_init(proxy_num, stub_num);
 	auto cl_8 = make_scope_exit(exmdb_client_stop);
-	rpc_parser_init(threads_num);
-	auto cl_6 = make_scope_exit(rpc_parser_stop);
 	table_size = pconfig->get_ll("user_table_size");
 	printf("[system]: hash table size is %d\n", table_size);
 
@@ -247,6 +245,8 @@ int main(int argc, const char **argv) try
 	
 	zarafa_server_init(table_size, cache_interval, ping_interval);
 	auto cl_7 = make_scope_exit(zarafa_server_stop);
+	rpc_parser_init(threads_num);
+	auto cl_6 = make_scope_exit(rpc_parser_stop);
 	listener_init();
 	auto cl_10 = make_scope_exit(listener_stop);
 	if (listener_run(g_config_file->get_value("zcore_listen")) != 0) {
