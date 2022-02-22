@@ -65,7 +65,7 @@ static char* vcard_get_semicolon(char *pstring)
 
 void vcard_init(VCARD *pvcard)
 {
-	double_list_init(pvcard);
+	double_list_init(&pvcard->line_list);
 }
 
 static void vcard_free_param(VCARD_PARAM *pvparam)
@@ -116,9 +116,9 @@ void vcard_free(VCARD *pvcard)
 {
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_pop_front(pvcard)) != nullptr)
+	while ((pnode = double_list_pop_front(&pvcard->line_list)) != nullptr)
 		vcard_free_line(static_cast<VCARD_LINE *>(pnode->pdata));
-	double_list_free(pvcard);
+	double_list_free(&pvcard->line_list);
 }
 
 static BOOL vcard_retrieve_line_item(char *pline, LINE_ITEM *pitem)
@@ -420,7 +420,7 @@ BOOL vcard_retrieve(VCARD *pvcard, char *in_buff)
 	VCARD_VALUE *pvvalue;
 	DOUBLE_LIST_NODE *pnode;
 	
-	while ((pnode = double_list_pop_front(pvcard)) != nullptr)
+	while ((pnode = double_list_pop_front(&pvcard->line_list)) != nullptr)
 		vcard_free_line(static_cast<VCARD_LINE *>(pnode->pdata));
 	b_begin = FALSE;
 	pline = in_buff;
@@ -480,7 +480,7 @@ BOOL vcard_retrieve(VCARD *pvcard, char *in_buff)
 		}
 		
 	} while ((pline = pnext) != NULL);
-	while ((pnode = double_list_pop_front(pvcard)) != nullptr)
+	while ((pnode = double_list_pop_front(&pvcard->line_list)) != nullptr)
 		vcard_free_line(static_cast<VCARD_LINE *>(pnode->pdata));
 	return FALSE;
 }
@@ -550,7 +550,6 @@ BOOL vcard_serialize(VCARD *pvcard, char *out_buff, size_t max_length)
 	BOOL need_semicolon;
 	VCARD_PARAM *pvparam;
 	VCARD_VALUE *pvvalue;
-	DOUBLE_LIST_NODE *pnode;
 	DOUBLE_LIST_NODE *pnode1;
 	DOUBLE_LIST_NODE *pnode2;
 	
@@ -559,8 +558,8 @@ BOOL vcard_serialize(VCARD *pvcard, char *out_buff, size_t max_length)
 	}
 	memcpy(out_buff, "BEGIN:VCARD\r\n", 13);
 	offset = 13;
-	for (pnode=double_list_get_head(pvcard); NULL!=pnode;
-		pnode=double_list_get_after(pvcard, pnode)) {
+	for (auto pnode = double_list_get_head(&pvcard->line_list); pnode != nullptr;
+	     pnode = double_list_get_after(&pvcard->line_list, pnode)) {
 		line_begin = offset;
 		pvline = (VCARD_LINE*)pnode->pdata;
 		offset += gx_snprintf(out_buff + offset,
@@ -680,7 +679,7 @@ VCARD_LINE* vcard_new_line(const char *name)
 
 void vcard_append_line(VCARD *pvcard, VCARD_LINE *pvline)
 {
-	double_list_append_as_tail(pvcard, &pvline->node);
+	double_list_append_as_tail(&pvcard->line_list, &pvline->node);
 }
 
 VCARD_PARAM* vcard_new_param(const char*name)

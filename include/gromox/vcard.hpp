@@ -1,8 +1,6 @@
 #pragma once
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
-#define VCARD				DOUBLE_LIST
-
 #define VCARD_NAME_LEN		32
 
 struct VCARD_PARAM {
@@ -21,6 +19,10 @@ struct VCARD_LINE {
 	char name[VCARD_NAME_LEN];
 	DOUBLE_LIST param_list;
 	DOUBLE_LIST value_list;
+};
+
+struct VCARD {
+	DOUBLE_LIST line_list;
 };
 
 void vcard_init(VCARD *pvcard);
