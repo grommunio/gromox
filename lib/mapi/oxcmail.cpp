@@ -1138,7 +1138,7 @@ static BOOL oxcmail_parse_content_class(char *field, MAIL *pmail,
 		if (NULL != ptoken) {
 			*ptoken = '\0';
 			ptoken ++;
-			if (guid_from_string(&tmp_guid, field + 13)) {
+			if (tmp_guid.from_str(field + 13)) {
 				PROPERTY_NAME propname = {MNID_ID, PSETID_COMMON,
 				                         PidLidInfoPathFromName};
 				if (namemap_add(phash, *plast_propid, std::move(propname)) != 0)

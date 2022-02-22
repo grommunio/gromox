@@ -535,7 +535,7 @@ MhEmsmdbPlugin::ProcRes MhEmsmdbPlugin::loadCookies(MhEmsmdbContext& ctx)
 	if (strcasecmp(ctx.request_value, "PING") != 0 &&
 	    strcasecmp(ctx.request_value, "NotificationWait") != 0) {
 		string = cookie_parser_get(pparser, "sequence");
-		if (string == nullptr || !guid_from_string(&ctx.sequence_guid, string))
+		if (string == nullptr || !ctx.sequence_guid.from_str(string))
 			return ctx.error_responsecode(RC_INVALID_CONTEXT_COOKIE);
 	}
 	std::unique_lock hl_hold(hashLock);

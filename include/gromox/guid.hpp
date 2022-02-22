@@ -3,7 +3,6 @@
 #include <gromox/mapidefs.h>
 
 int guid_compare(const GUID *u1, const GUID *u2);
-BOOL guid_from_string(GUID *guid, const char *guid_string);
 namespace gromox {
 extern GUID guid_random_new();
 }

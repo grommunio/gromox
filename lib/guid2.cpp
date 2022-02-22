@@ -190,3 +190,33 @@ void GUID::to_str(char *buf, size_t z, unsigned int type) const
 	         clock_seq[0], clock_seq[1], node[0], node[1], node[2],
 	         node[3], node[4], node[5]);
 }
+
+bool GUID::from_str(const char *s)
+{
+	auto z = strlen(s);
+	const char *fmt;
+	if (z == 32)
+		fmt = guidfmt32;
+	else if (z == 36)
+		fmt = guidfmt36;
+	else if (z == 38)
+		fmt = guidfmt38;
+	else
+		return false;
+	unsigned int v[11];
+	if (sscanf(s, fmt, &v[0], &v[1], &v[2], &v[3], &v[4], &v[5], &v[6],
+	    &v[7], &v[8], &v[9], &v[10]) != 11)
+		return false;
+	time_low = v[0];
+	time_mid = v[1];
+	time_hi_and_version = v[2];
+	clock_seq[0] = v[3];
+	clock_seq[1] = v[4];
+	node[0] = v[5];
+	node[1] = v[6];
+	node[2] = v[7];
+	node[3] = v[8];
+	node[4] = v[9];
+	node[5] = v[10];
+	return true;
+}

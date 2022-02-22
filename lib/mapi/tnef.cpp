@@ -1006,7 +1006,7 @@ static BOOL tnef_convert_to_propname(const std::string &input_tag,
 		return FALSE;
 	}
 	*ptr = '\0';
-	if (!guid_from_string(&ppropname->guid, tag_string))
+	if (!ppropname->guid.from_str(tag_string))
 		return FALSE;
 	ptr ++;
 	if (0 == strncmp(ptr, "lid:", 4)) {

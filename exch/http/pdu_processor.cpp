@@ -2659,7 +2659,7 @@ BOOL pdu_processor_rts_flowcontrolack_withdestination(
 	auto &fc = pkt.payload.rts.commands[1].command.flowcontrolack;
 	fc.bytes_received = bytes_received;
 	fc.available_window = available_window;
-	if (!guid_from_string(&fc.channel_cookie, channel_cookie)) {
+	if (!fc.channel_cookie.from_str(channel_cookie)) {
 		pdu_ndr_free_ncacnpkt(&pkt);
 		g_bnode_allocator->put(pblob_node);
 		return FALSE;

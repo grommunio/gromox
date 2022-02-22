@@ -287,7 +287,7 @@ static INFO_NODE *msgchg_grouping_load_gpinfo(const char *dir, const char *file_
 					"loading property group info\n");
 				return NULL;
 			}
-			if (!guid_from_string(&ptag_node->ppropname->guid, pline + 5)) {
+			if (!ptag_node->ppropname->guid.from_str(pline + 5)) {
 				free(ptag_node->ppropname);
 				free(ptag_node);
 				printf("[exchange_emsmdb]: guid string"

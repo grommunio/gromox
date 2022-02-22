@@ -693,9 +693,8 @@ static BINARY* common_util_get_mailbox_guid(sqlite3 *psqlite)
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return NULL;
-	if (!guid_from_string(&tmp_guid, S2A(sqlite3_column_text(pstmt, 0)))) {
+	if (!tmp_guid.from_str(S2A(sqlite3_column_text(pstmt, 0))))
 		return NULL;
-	}
 	pstmt.finalize();
 	auto ptmp_bin = cu_alloc<BINARY>();
 	if (NULL == ptmp_bin) {
@@ -735,7 +734,7 @@ BOOL common_util_get_mapping_guid(sqlite3 *psqlite,
 		*pb_found = FALSE;
 		return TRUE;
 	}
-	if (!guid_from_string(pguid, S2A(sqlite3_column_text(pstmt, 0)))) {
+	if (!pguid->from_str(S2A(sqlite3_column_text(pstmt, 0)))) {
 		fprintf(stderr, "E-1621: illegal GUID in dataset\n");
 		return false;
 	}
@@ -5042,7 +5041,7 @@ BOOL common_util_get_named_propnames(sqlite3 *psqlite,
 			goto NOT_FOUND_PROPNAME;
 		}
 		*ptoken++ = '\0';
-		if (!guid_from_string(&ppropnames->ppropname[i].guid, temp_name + 5))
+		if (!ppropnames->ppropname[i].guid.from_str(temp_name + 5))
 			goto NOT_FOUND_PROPNAME;
 		if (0 == strncasecmp(ptoken, "LID=", 4)) {
 			ppropnames->ppropname[i].kind = MNID_ID;

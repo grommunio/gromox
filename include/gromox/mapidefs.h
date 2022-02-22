@@ -1592,6 +1592,7 @@ struct GLOBCNT {
 
 struct GUID {
 	void to_str(char *, size_t, unsigned int type = 36) const;
+	bool from_str(const char *);
 
 	uint32_t time_low;
 	uint16_t time_mid;
