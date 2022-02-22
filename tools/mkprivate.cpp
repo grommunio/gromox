@@ -186,7 +186,6 @@ static BOOL create_search_folder(sqlite3 *psqlite, uint64_t folder_id,
 int main(int argc, const char **argv) try
 {
 	MYSQL *pmysql;
-	GUID tmp_guid;
 	uint16_t propid;
 	MYSQL_ROW myrow;
 	uint64_t nt_time;
@@ -464,9 +463,8 @@ int main(int argc, const char **argv) try
 	pstmt = gx_sql_prep(psqlite, "INSERT INTO configurations VALUES (?, ?)");
 	if (pstmt == nullptr)
 		return EXIT_FAILURE;
-	tmp_guid = guid_random_new();
 	char tmp_bguid[GUIDSTR_SIZE];
-	guid_to_string(&tmp_guid, tmp_bguid, arsizeof(tmp_bguid));
+	guid_random_new().to_str(tmp_bguid, arsizeof(tmp_bguid));
 	sqlite3_bind_int64(pstmt, 1, CONFIG_ID_MAILBOX_GUID);
 	sqlite3_bind_text(pstmt, 2, tmp_bguid, -1, SQLITE_STATIC);
 	if (sqlite3_step(pstmt) != SQLITE_DONE) {

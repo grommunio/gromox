@@ -124,7 +124,7 @@ BOOL exmdb_server_get_mapping_replid(const char *dir,
 	if (pdb == nullptr || pdb->psqlite == nullptr)
 		return FALSE;
 	char guid_string[GUIDSTR_SIZE], sql_string[128];
-	guid_to_string(&guid, guid_string, arsizeof(guid_string));
+	guid.to_str(guid_string, arsizeof(guid_string));
 	snprintf(sql_string, arsizeof(sql_string), "SELECT replid FROM "
 		"replca_mapping WHERE replguid='%s'", guid_string);
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);

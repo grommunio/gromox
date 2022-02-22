@@ -999,8 +999,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 	    &pbind->ctx_list[1].abstract_syntax, sizeof(SYNTAX_ID)) == 0 &&
 	    pbind->ctx_list[1].num_transfer_syntaxes > 0) {
 		char uuid_str[GUIDSTR_SIZE];
-		guid_to_string(&pbind->ctx_list[1].transfer_syntaxes[0].uuid,
-			uuid_str, sizeof(uuid_str));
+		pbind->ctx_list[1].transfer_syntaxes[0].uuid.to_str(uuid_str, sizeof(uuid_str));
 		if (0 == strncmp("6cb71c2c-9812-4540", uuid_str, 18)) {
 			b_negotiate = TRUE;
 		}
@@ -1009,7 +1008,7 @@ static BOOL pdu_processor_process_bind(DCERPC_CALL *pcall)
 					pcall->pprocessor->pendpoint, &uuid, if_version);
 	if (NULL == pinterface) {
 		char uuid_str[GUIDSTR_SIZE];
-		guid_to_string(&uuid, uuid_str, sizeof(uuid_str));
+		uuid.to_str(uuid_str, arsizeof(uuid_str));
 		debug_info("[pdu_processor]: interface %s/%d unknown when binding\n",
 			uuid_str, if_version);
 		/* we don't know about that interface */
@@ -1319,7 +1318,7 @@ static BOOL pdu_processor_process_alter(DCERPC_CALL *pcall)
 						&uuid, if_version);
 		if (NULL == pinterface) {
 			char uuid_str[GUIDSTR_SIZE];
-			guid_to_string(&uuid, uuid_str, sizeof(uuid_str));
+			uuid.to_str(uuid_str, arsizeof(uuid_str));
 			debug_info("[pdu_processor]: interface %s/%d unknown when altering\n",
 				uuid_str, if_version);
 			result = DCERPC_BIND_RESULT_PROVIDER_REJECT;
@@ -2134,11 +2133,11 @@ static BOOL pdu_processor_retrieve_conn_b1(DCERPC_CALL *pcall,
 	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[1].command.cookie, conn_cookie, conn_ck_size);
+	prts->commands[1].command.cookie.to_str(conn_cookie, conn_ck_size);
 	if (RTS_CMD_COOKIE != prts->commands[2].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[2].command.cookie, chan_cookie, chan_ck_size);
+	prts->commands[2].command.cookie.to_str(chan_cookie, chan_ck_size);
 	if (RTS_CMD_CHANNEL_LIFETIME != prts->commands[3].command_type) {
 		return FALSE;
 	}
@@ -2152,8 +2151,7 @@ static BOOL pdu_processor_retrieve_conn_b1(DCERPC_CALL *pcall,
 		prts->commands[5].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[5].command.associationgroupid,
-		associationgroupid, gid_size);
+	prts->commands[5].command.associationgroupid.to_str(associationgroupid, gid_size);
 	return TRUE;
 }
 
@@ -2176,11 +2174,11 @@ static BOOL pdu_processor_retrieve_conn_a1(DCERPC_CALL *pcall,
 	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[1].command.cookie, conn_cookie, conn_ck_size);
+	prts->commands[1].command.cookie.to_str(conn_cookie, conn_ck_size);
 	if (RTS_CMD_COOKIE != prts->commands[2].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[2].command.cookie, chan_cookie, chan_ck_size);
+	prts->commands[2].command.cookie.to_str(chan_cookie, chan_ck_size);
 	if (RTS_CMD_RECEIVE_WINDOW_SIZE != prts->commands[3].command_type) {
 		return FALSE;
 	}
@@ -2211,15 +2209,15 @@ static BOOL pdu_processor_retrieve_inr2_a1(DCERPC_CALL *pcall,
 	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[1].command.cookie, conn_cookie, conn_ck_size);
+	prts->commands[1].command.cookie.to_str(conn_cookie, conn_ck_size);
 	if (RTS_CMD_COOKIE != prts->commands[2].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[2].command.cookie, pred_cookie, pred_ck_size);
+	prts->commands[2].command.cookie.to_str(pred_cookie, pred_ck_size);
 	if (RTS_CMD_COOKIE != prts->commands[3].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[3].command.cookie, succ_cookie, succ_ck_size);
+	prts->commands[3].command.cookie.to_str(succ_cookie, succ_ck_size);
 	return TRUE;
 }
 
@@ -2241,7 +2239,7 @@ static BOOL pdu_processor_retrieve_inr2_a5(DCERPC_CALL *pcall,
 	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[1].command.cookie, succ_cookie, succ_ck_size);
+	prts->commands[1].command.cookie.to_str(succ_cookie, succ_ck_size);
 	return TRUE;
 }
 
@@ -2266,7 +2264,7 @@ static BOOL pdu_processor_retrieve_outr2_a7(DCERPC_CALL *pcall,
 	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[1].command.cookie, succ_cookie, succ_ck_size);
+	prts->commands[1].command.cookie.to_str(succ_cookie, succ_ck_size);
 	if (RTS_CMD_VERSION != prts->commands[2].command_type) {
 		return FALSE;
 	}
@@ -2297,15 +2295,15 @@ static BOOL pdu_processor_retrieve_outr2_a3(DCERPC_CALL *pcall,
 	if (RTS_CMD_COOKIE != prts->commands[1].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[1].command.cookie, conn_cookie, conn_ck_size);
+	prts->commands[1].command.cookie.to_str(conn_cookie, conn_ck_size);
 	if (RTS_CMD_COOKIE != prts->commands[2].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[2].command.cookie, pred_cookie, pred_ck_size);
+	prts->commands[2].command.cookie.to_str(pred_cookie, pred_ck_size);
 	if (RTS_CMD_COOKIE != prts->commands[3].command_type) {
 		return FALSE;
 	}
-	guid_to_string(&prts->commands[3].command.cookie, succ_cookie, succ_ck_size);
+	prts->commands[3].command.cookie.to_str(succ_cookie, succ_ck_size);
 	if (RTS_CMD_RECEIVE_WINDOW_SIZE != prts->commands[4].command_type) {
 		return FALSE;
 	}
@@ -3245,7 +3243,7 @@ static BOOL pdu_processor_register_interface(DCERPC_ENDPOINT *pendpoint,
 		return false;
 	}
 	char uuid_string[GUIDSTR_SIZE];
-	guid_to_string(&pinterface->uuid, uuid_string, arsizeof(uuid_string));
+	pinterface->uuid.to_str(uuid_string, arsizeof(uuid_string));
 	printf("[pdu_processor]: EP [%s]:%hu: registered interface %s {%s} (v %u.%02u)\n",
 	       pendpoint->host, pendpoint->tcp_port, pinterface->name,
 	       uuid_string, pinterface->version & 0xFFFF,

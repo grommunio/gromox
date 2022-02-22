@@ -178,3 +178,15 @@ GUID guid_random_new()
 }
 
 }
+
+static const char guidfmt32[] = "%08x%04x%04x%02x%02x%02x%02x%02x%02x%02x%02x";
+static const char guidfmt36[] = "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x";
+static const char guidfmt38[] = "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}";
+
+void GUID::to_str(char *buf, size_t z, unsigned int type) const
+{
+	auto fmt = type == 32 ? guidfmt32 : type == 38 ? guidfmt38 : guidfmt36;
+	snprintf(buf, z, fmt, time_low, time_mid, time_hi_and_version,
+	         clock_seq[0], clock_seq[1], node[0], node[1], node[2],
+	         node[3], node[4], node[5]);
+}

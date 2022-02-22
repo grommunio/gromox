@@ -979,7 +979,7 @@ static void tnef_convert_from_propname(const PROPERTY_NAME *ppropname,
 {
 	char tmp_guid[GUIDSTR_SIZE];
 	
-	guid_to_string(&ppropname->guid, tmp_guid, arsizeof(tmp_guid));
+	ppropname->guid.to_str(tmp_guid, arsizeof(tmp_guid));
 	if (ppropname->kind == MNID_ID)
 		snprintf(tag_string, tag_size, "%s:lid:%u", tmp_guid, ppropname->lid);
 	else

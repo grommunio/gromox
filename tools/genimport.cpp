@@ -151,7 +151,7 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 	}
 	case PT_CLSID: {
 		char guidstr[GUIDSTR_SIZE];
-		guid_to_string(static_cast<GUID *>(tp.pvalue), guidstr, arsizeof(guidstr));
+		static_cast<GUID *>(tp.pvalue)->to_str(guidstr, arsizeof(guidstr));
 		tlog("{%s}", guidstr);
 		break;
 	}
@@ -311,7 +311,7 @@ static void gi_dump_tpropval(unsigned int depth, const TAGGED_PROPVAL &tp)
 		tlog("={");
 		for (size_t i = 0; i < ga.count; ++i) {
 			char guidstr[GUIDSTR_SIZE];
-			guid_to_string(&ga.pguid[i], guidstr, arsizeof(guidstr));
+			ga.pguid[i].to_str(guidstr, arsizeof(guidstr));
 			tlog("{%s},", guidstr);
 		}
 		tlog("}");

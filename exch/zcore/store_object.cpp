@@ -50,7 +50,7 @@ using namespace gromox;
 static bool propname_to_packed(const PROPERTY_NAME &n, char *dst, size_t z)
 {
 	char guid[GUIDSTR_SIZE];
-	guid_to_string(&n.guid, guid, arsizeof(guid));
+	n.guid.to_str(guid, arsizeof(guid));
 	if (n.kind == MNID_ID)
 		snprintf(dst, z, "%s:lid:%u", guid, n.lid);
 	else if (n.kind == MNID_STRING)
