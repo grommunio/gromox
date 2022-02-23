@@ -74,6 +74,12 @@ static void *mdpls_thrwork(void *param)
 		}
 		if (std::find(g_acl_list.cbegin(), g_acl_list.cend(),
 		    client_hostip) == g_acl_list.cend()) {
+			static std::atomic<time_t> g_lastwarn_time;
+			auto prev = g_lastwarn_time.load();
+			auto next = prev + 60;
+			auto now = time(nullptr);
+			if (next <= now && g_lastwarn_time.compare_exchange_strong(prev, now))
+				fprintf(stderr, "I-1666: Rejecting %s: not allowed by exmdb_acl\n", client_hostip);
 			auto tmp_byte = exmdb_response::access_deny;
 			write(sockd, &tmp_byte, 1);
 			close(sockd);
