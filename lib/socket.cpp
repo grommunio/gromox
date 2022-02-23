@@ -275,7 +275,7 @@ int gx_peer_is_local2(const sockaddr *peer_sockaddr, socklen_t peer_socklen)
 
 bool gx_peer_is_local(const char *addr)
 {
-	static constexpr struct addrinfo hints = {AI_NUMERICHOST | AI_V4MAPPED};
+	static constexpr struct addrinfo hints = {AI_V4MAPPED};
 	std::unique_ptr<addrinfo, gx_sock_free> aires;
 	if (getaddrinfo(addr, nullptr, &hints, &unique_tie(aires)) < 0)
 		return false;
