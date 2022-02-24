@@ -36,15 +36,14 @@ BOOL exmdb_client_relay_delivery(const char *dir,
 	BOOL b_private;
 	EXMDB_REQUEST request;
 	EXMDB_RESPONSE response;
-	const char *orignal_dir;
 	
 	if (exmdb_client_check_local(dir, &b_private)) {
-		orignal_dir = exmdb_server_get_dir();
+		auto original_dir = exmdb_server_get_dir();
 		exmdb_server_set_dir(dir);
 		b_result = exmdb_server_delivery_message(
 					dir, from_address, account,
 					cpid, pmsg, pdigest, presult);
-		exmdb_server_set_dir(orignal_dir);
+		exmdb_server_set_dir(original_dir);
 		return b_result;
 	}
 	request.call_id = exmdb_callid::delivery_message;

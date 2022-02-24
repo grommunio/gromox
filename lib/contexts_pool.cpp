@@ -300,7 +300,6 @@ SCHEDULE_CONTEXT* contexts_pool_get_context(int type)
  */
 void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type)
 {
-	int orignal_type;
 	struct epoll_event tmp_ev;
 	
 	
@@ -323,7 +322,7 @@ void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type)
 	
 	/* append the context at the tail of the corresponding list */
 	std::lock_guard xhold(g_context_locks[type]);
-	orignal_type = pcontext->type;
+	auto original_type = pcontext->type;
 	pcontext->type = type;
 	tmp_ev.events = 0;
 	if (CONTEXT_POLLING == type) {
@@ -335,7 +334,7 @@ void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type)
 		}
 		tmp_ev.events |= EPOLLET | EPOLLONESHOT;
 		tmp_ev.data.ptr = pcontext;
-		if (CONTEXT_CONSTRUCTING == orignal_type) {
+		if (original_type == CONTEXT_CONSTRUCTING) {
 			if (-1 == epoll_ctl(g_epoll_fd, EPOLL_CTL_ADD,
 				contexts_pool_get_context_socket(pcontext), &tmp_ev)) {
 				pcontext->b_waiting = FALSE;
@@ -361,7 +360,7 @@ void contexts_pool_put_context(SCHEDULE_CONTEXT *pcontext, int type)
 				}
 			}
 		}
-	} else if (CONTEXT_FREE == type && CONTEXT_TURNING == orignal_type) {
+	} else if (type == CONTEXT_FREE && original_type == CONTEXT_TURNING) {
 		if (pcontext->b_waiting)
 			/* socket was removed by "close()" function automatically,
 				no need to call epoll_ctl with EPOLL_CTL_DEL */

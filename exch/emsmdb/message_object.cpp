@@ -172,7 +172,7 @@ BOOL message_object::check_importing() const
 	return FALSE;
 }
 
-BOOL message_object::check_orignal_touched(BOOL *pb_touched)
+BOOL message_object::check_original_touched(BOOL *pb_touched)
 {
 	auto pmessage = this;
 	uint64_t *pchange_num;

@@ -278,7 +278,7 @@ uint32_t rop_savechangesmessage(uint8_t save_flags, uint64_t *pmessage_id,
 		return ecAccessDenied;
 	}
 	if (SAVE_FLAG_FORCESAVE != save_flags) {
-		if (!pmessage->check_orignal_touched(&b_touched))
+		if (!pmessage->check_original_touched(&b_touched))
 			return ecError;
 		if (b_touched)
 			return ecObjectModified;

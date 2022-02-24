@@ -4069,7 +4069,7 @@ uint32_t zarafa_server_savechanges(GUID hsession, uint32_t hobject)
 		auto msg = static_cast<message_object *>(pobject);
 		if (!msg->check_writable())
 			return ecAccessDenied;
-		if (!msg->check_orignal_touched(&b_touched))
+		if (!msg->check_original_touched(&b_touched))
 			return ecError;
 		if (b_touched)
 			return ecObjectModified;

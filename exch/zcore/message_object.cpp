@@ -104,7 +104,7 @@ std::unique_ptr<message_object> message_object::create(store_object *pstore,
 	return pmessage;
 }
 
-BOOL message_object::check_orignal_touched(BOOL *pb_touched)
+BOOL message_object::check_original_touched(BOOL *pb_touched)
 {
 	auto pmessage = this;
 	uint64_t *pchange_num;

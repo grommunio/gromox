@@ -854,12 +854,12 @@ void common_util_remove_propvals(
 }
 
 BOOL common_util_retag_propvals(TPROPVAL_ARRAY *parray,
-	uint32_t orignal_proptag, uint32_t new_proptag)
+    uint32_t original_proptag, uint32_t new_proptag)
 {
 	int i;
 	
 	for (i=0; i<parray->count; i++) {
-		if (orignal_proptag == parray->ppropval[i].proptag) {
+		if (parray->ppropval[i].proptag == original_proptag) {
 			parray->ppropval[i].proptag = new_proptag;
 			return TRUE;
 		}

@@ -70,8 +70,7 @@ extern void cu_set_propval(TPROPVAL_ARRAY *, uint32_t tag, const void *data);
 static inline void common_util_set_propvals(TPROPVAL_ARRAY *a, const TAGGED_PROPVAL *v) { cu_set_propval(a, v->proptag, v->pvalue); }
 void common_util_remove_propvals(
 	TPROPVAL_ARRAY *parray, uint32_t proptag);
-BOOL common_util_retag_propvals(TPROPVAL_ARRAY *parray,
-	uint32_t orignal_proptag, uint32_t new_proptag);
+extern BOOL common_util_retag_propvals(TPROPVAL_ARRAY *, uint32_t orig_tag, uint32_t new_tag);
 void common_util_reduce_proptags(PROPTAG_ARRAY *pproptags_minuend,
 	const PROPTAG_ARRAY *pproptags_subtractor);
 PROPTAG_ARRAY* common_util_trim_proptags(const PROPTAG_ARRAY *pproptags);

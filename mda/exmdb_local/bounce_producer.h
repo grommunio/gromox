@@ -13,5 +13,4 @@ enum{
 extern void bounce_producer_init(const char *separator);
 extern int bounce_producer_run();
 extern BOOL bounce_producer_refresh();
-void bounce_producer_make(const char *from, const char *rcpt,
-	MAIL *pmail_original, time_t orignal_time, int bounce_type, MAIL *pmail);
+extern void bounce_producer_make(const char *from, const char *rcpt, MAIL *orig_mail, time_t orig_time, int bounce_type, MAIL *cur_mail);
