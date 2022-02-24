@@ -118,7 +118,7 @@ template<typename T, typename U> constexpr auto strange_roundup(T x, U y) -> dec
 #define SR_GROW_TPROPVAL_ARRAY 100U
 
 #ifdef COMPILE_DIAG
-/* snprintf takes about 2.65x the time */
+/* snprintf takes about 2.65x the time, but we get -Wformat-truncation diagnostics */
 #define gx_strlcpy(dst, src, dsize) snprintf((dst), (dsize), "%s", (src))
 #else
 #define gx_strlcpy(dst, src, dsize) HX_strlcpy((dst), (src), (dsize))
