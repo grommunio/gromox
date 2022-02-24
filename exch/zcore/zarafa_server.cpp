@@ -1627,7 +1627,7 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	proptag_buff[0] = PR_MESSAGE_SIZE_EXTENDED;
 	proptag_buff[1] = PR_STORAGE_QUOTA_LIMIT;
 	proptag_buff[2] = PR_ASSOC_CONTENT_COUNT;
-	proptag_buff[3] = PROP_TAG_CONTENTCOUNT;
+	proptag_buff[3] = PR_CONTENT_COUNT;
 	if (!pstore->get_properties(&tmp_proptags, &tmp_propvals))
 		return ecError;
 	auto pvalue = tmp_propvals.getval(PR_STORAGE_QUOTA_LIMIT);
@@ -1639,7 +1639,7 @@ uint32_t zarafa_server_createmessage(GUID hsession,
 	}
 	pvalue = tmp_propvals.getval(PR_ASSOC_CONTENT_COUNT);
 	uint32_t total_mail = pvalue != nullptr ? *static_cast<uint32_t *>(pvalue) : 0;
-	pvalue = tmp_propvals.getval(PROP_TAG_CONTENTCOUNT);
+	pvalue = tmp_propvals.getval(PR_CONTENT_COUNT);
 	if (pvalue != nullptr)
 		total_mail += *(uint32_t*)pvalue;
 	if (total_mail > g_max_message)
@@ -2903,10 +2903,9 @@ uint32_t zarafa_server_sorttable(GUID hsession,
 		if (PROP_TAG_DEPTH == tmp_proptag ||
 			PROP_TAG_INSTID == tmp_proptag ||
 			PROP_TAG_INSTANCENUM == tmp_proptag ||
-			PROP_TAG_CONTENTCOUNT == tmp_proptag ||
-			PROP_TAG_CONTENTUNREADCOUNT == tmp_proptag) {
+		    tmp_proptag == PR_CONTENT_COUNT ||
+		    tmp_proptag == PR_CONTENT_UNREAD)
 			return ecInvalidParam;
-		}	
 		switch (psortset->psort[i].table_sort) {
 		case TABLE_SORT_ASCEND:
 		case TABLE_SORT_DESCEND:

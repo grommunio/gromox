@@ -92,8 +92,8 @@ BOOL folder_object::check_readonly_property(uint32_t proptag)
 	case PR_ASSOC_CONTENT_COUNT:
 	case PROP_TAG_ATTRIBUTEREADONLY:
 	case PidTagChangeNumber:
-	case PROP_TAG_CONTENTCOUNT:
-	case PROP_TAG_CONTENTUNREADCOUNT:
+	case PR_CONTENT_COUNT:
+	case PR_CONTENT_UNREAD:
 	case PR_CREATION_TIME:
 	case PR_DELETED_COUNT_TOTAL:
 	case PR_DELETED_FOLDER_COUNT:
@@ -156,7 +156,7 @@ static BOOL folder_object_get_calculated_property(folder_object *pfolder,
 	static constexpr BINARY fake_bin = {gromox::arsizeof(bin_buff), {deconst(bin_buff)}};
 	
 	switch (proptag) {
-	case PROP_TAG_CONTENTUNREADCOUNT:
+	case PR_CONTENT_UNREAD:
 		if (!pfolder->plogon->check_private()) {
 			auto v = cu_alloc<uint32_t>();
 			*outvalue = v;

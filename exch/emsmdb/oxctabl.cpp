@@ -150,10 +150,9 @@ uint32_t rop_sorttable(uint8_t table_flags, const SORTORDER_SET *psort_criteria,
 		if (PROP_TAG_DEPTH == tmp_proptag ||
 			PROP_TAG_INSTID == tmp_proptag ||
 			PROP_TAG_INSTANCENUM == tmp_proptag ||
-			PROP_TAG_CONTENTCOUNT == tmp_proptag ||
-			PROP_TAG_CONTENTUNREADCOUNT == tmp_proptag) {
+		    tmp_proptag == PR_CONTENT_COUNT ||
+		    tmp_proptag == PR_CONTENT_UNREAD)
 			return ecInvalidParam;
-		}	
 		switch (psort_criteria->psort[i].table_sort) {
 		case TABLE_SORT_ASCEND:
 		case TABLE_SORT_DESCEND:

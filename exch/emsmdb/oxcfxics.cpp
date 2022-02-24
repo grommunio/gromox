@@ -250,7 +250,7 @@ uint32_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags,
 		proptag_buff[0] = PR_MESSAGE_SIZE_EXTENDED;
 		proptag_buff[1] = PR_STORAGE_QUOTA_LIMIT;
 		proptag_buff[2] = PR_ASSOC_CONTENT_COUNT;
-		proptag_buff[3] = PROP_TAG_CONTENTCOUNT;
+		proptag_buff[3] = PR_CONTENT_COUNT;
 		if (!plogon->get_properties(&tmp_proptags, &tmp_propvals))
 			return ecError;
 		auto pvalue = tmp_propvals.getval(PR_STORAGE_QUOTA_LIMIT);
@@ -265,7 +265,7 @@ uint32_t rop_fasttransferdestconfigure(uint8_t source_operation, uint8_t flags,
 			return ecQuotaExceeded;
 		pvalue = tmp_propvals.getval(PR_ASSOC_CONTENT_COUNT);
 		uint32_t total_mail = pvalue != nullptr ? *static_cast<uint32_t *>(pvalue) : 0;
-		pvalue = tmp_propvals.getval(PROP_TAG_CONTENTCOUNT);
+		pvalue = tmp_propvals.getval(PR_CONTENT_COUNT);
 		if (NULL != pvalue) {
 			total_mail += *(uint32_t*)pvalue;
 		}

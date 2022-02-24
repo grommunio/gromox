@@ -327,7 +327,7 @@ BOOL logon_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	pproptags->pproptag[pproptags->count++] = PR_MESSAGE_SIZE;
 	pproptags->pproptag[pproptags->count++] = PR_NORMAL_MESSAGE_SIZE;
 	pproptags->pproptag[pproptags->count++] = PR_USER_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PROP_TAG_CONTENTCOUNT;
+	pproptags->pproptag[pproptags->count++] = PR_CONTENT_COUNT;
 	pproptags->pproptag[pproptags->count++] = PR_ASSOC_CONTENT_COUNT;
 	pproptags->pproptag[pproptags->count++] = PR_TEST_LINE_SPEED;
 	return TRUE;
@@ -342,7 +342,7 @@ static BOOL lo_check_readonly_property(const logon_object *plogon, uint32_t prop
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE_A:
 	case PROP_TAG_CODEPAGEID:
-	case PROP_TAG_CONTENTCOUNT:
+	case PR_CONTENT_COUNT:
 	case PROP_TAG_DELETEAFTERSUBMIT:
 	case PR_DELETED_ASSOC_MESSAGE_SIZE:
 	case PR_DELETED_ASSOC_MESSAGE_SIZE_EXTENDED:

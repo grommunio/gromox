@@ -597,13 +597,13 @@ BOOL cu_get_proptags(db_table table_type, uint64_t id,
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
 		        "folder_properties WHERE folder_id=%llu", LLU(id));
 		proptags[i++] = PR_ASSOC_CONTENT_COUNT;
-		proptags[i++] = PROP_TAG_CONTENTCOUNT;
+		proptags[i++] = PR_CONTENT_COUNT;
 		proptags[i++] = PR_MESSAGE_SIZE_EXTENDED;
 		proptags[i++] = PR_ASSOC_MESSAGE_SIZE_EXTENDED;
 		proptags[i++] = PR_NORMAL_MESSAGE_SIZE_EXTENDED;
 		proptags[i++] = PROP_TAG_FOLDERCHILDCOUNT;
 		proptags[i++] = PR_FOLDER_TYPE;
-		proptags[i++] = PROP_TAG_CONTENTUNREADCOUNT;
+		proptags[i++] = PR_CONTENT_UNREAD;
 		proptags[i++] = PROP_TAG_SUBFOLDERS;
 		proptags[i++] = PROP_TAG_HASRULES;
 		proptags[i++] = PROP_TAG_FOLDERPATHNAME;
@@ -1664,7 +1664,7 @@ static GP_RESULT gp_storeprop(uint32_t tag, TAGGED_PROPVAL &pv, sqlite3 *db)
 		*v = common_util_get_store_state(db);
 		return GP_ADV;
 	}
-	case PROP_TAG_CONTENTCOUNT: {
+	case PR_CONTENT_COUNT: {
 		auto v = cu_alloc<uint32_t>();
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
@@ -1752,7 +1752,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 		*v = !!common_util_check_subfolders(db, id);
 		return GP_ADV;
 	}
-	case PROP_TAG_CONTENTCOUNT: {
+	case PR_CONTENT_COUNT: {
 		auto v = cu_alloc<uint32_t>();
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
@@ -1776,7 +1776,7 @@ static GP_RESULT gp_folderprop(uint32_t tag, TAGGED_PROPVAL &pv,
 		*v = common_util_calculate_childcount(id, db);
 		return GP_ADV;
 	}
-	case PROP_TAG_CONTENTUNREADCOUNT: {
+	case PR_CONTENT_UNREAD: {
 		auto v = cu_alloc<uint32_t>();
 		pv.pvalue = v;
 		if (pv.pvalue == nullptr)
@@ -2846,7 +2846,7 @@ BOOL cu_set_properties(db_table table_type,
 			switch (ppropvals->ppropval[i].proptag) {
 			case PR_STORE_STATE:
 			case PR_MESSAGE_SIZE:
-			case PROP_TAG_CONTENTCOUNT:
+			case PR_CONTENT_COUNT:
 			case PR_STORE_RECORD_KEY:
 			case PR_ASSOC_MESSAGE_SIZE:
 			case PR_NORMAL_MESSAGE_SIZE:
@@ -2869,10 +2869,10 @@ BOOL cu_set_properties(db_table table_type,
 			case PidTagParentFolderId:
 			case PROP_TAG_FOLDERFLAGS:
 			case PROP_TAG_SUBFOLDERS:
-			case PROP_TAG_CONTENTCOUNT:
+			case PR_CONTENT_COUNT:
 			case PR_ASSOC_CONTENT_COUNT:
 			case PROP_TAG_FOLDERCHILDCOUNT:
-			case PROP_TAG_CONTENTUNREADCOUNT:
+			case PR_CONTENT_UNREAD:
 			case PR_FOLDER_TYPE:
 			case PROP_TAG_HASRULES:
 			case PROP_TAG_FOLDERPATHNAME:

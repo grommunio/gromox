@@ -354,7 +354,7 @@ static BOOL store_object_check_readonly_property(store_object *pstore, uint32_t 
 	case PR_ACCESS_LEVEL:
 	case PR_EMS_AB_DISPLAY_NAME_PRINTABLE:
 	case PROP_TAG_CODEPAGEID:
-	case PROP_TAG_CONTENTCOUNT:
+	case PR_CONTENT_COUNT:
 	case PROP_TAG_DEFAULTSTORE:
 	case PROP_TAG_DELETEAFTERSUBMIT:
 	case PR_DELETED_ASSOC_MESSAGE_SIZE:
@@ -466,7 +466,7 @@ BOOL store_object::get_all_proptags(PROPTAG_ARRAY *pproptags)
 	pproptags->pproptag[pproptags->count++] = PR_DISPLAY_NAME;
 	pproptags->pproptag[pproptags->count++] = PROP_TAG_EXTENDEDRULESIZELIMIT;
 	pproptags->pproptag[pproptags->count++] = PR_USER_ENTRYID;
-	pproptags->pproptag[pproptags->count++] = PROP_TAG_CONTENTCOUNT;
+	pproptags->pproptag[pproptags->count++] = PR_CONTENT_COUNT;
 	pproptags->pproptag[pproptags->count++] = PR_OBJECT_TYPE;
 	pproptags->pproptag[pproptags->count++] = PR_PROVIDER_DISPLAY;
 	pproptags->pproptag[pproptags->count++] = PR_RESOURCE_FLAGS;

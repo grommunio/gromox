@@ -1789,7 +1789,7 @@ static BOOL table_column_content_tmptbl(
 		}
 		*ppvalue = common_util_column_sqlite_statement(pstmt, 7, PT_LONG);
 		return TRUE;
-	case PROP_TAG_CONTENTCOUNT:
+	case PR_CONTENT_COUNT:
 		if (CONTENT_ROW_MESSAGE == row_type) {
 			auto v = cu_alloc<uint32_t>();
 			*ppvalue = v;
@@ -1800,7 +1800,7 @@ static BOOL table_column_content_tmptbl(
 			*ppvalue = common_util_column_sqlite_statement(pstmt, 8, PT_LONG);
 		}
 		return TRUE;
-	case PROP_TAG_CONTENTUNREADCOUNT:
+	case PR_CONTENT_UNREAD:
 		if (CONTENT_ROW_MESSAGE == row_type) {
 			auto v = cu_alloc<uint32_t>();
 			*ppvalue = v;
@@ -3220,8 +3220,8 @@ BOOL exmdb_server_get_table_all_proptags(const char *dir,
 		tmp_proptags[pproptags->count++] = PROP_TAG_INSTANCENUM;
 		tmp_proptags[pproptags->count++] = PROP_TAG_ROWTYPE;
 		tmp_proptags[pproptags->count++] = PROP_TAG_DEPTH;
-		tmp_proptags[pproptags->count++] = PROP_TAG_CONTENTCOUNT;
-		tmp_proptags[pproptags->count++] = PROP_TAG_CONTENTUNREADCOUNT;
+		tmp_proptags[pproptags->count++] = PR_CONTENT_COUNT;
+		tmp_proptags[pproptags->count++] = PR_CONTENT_UNREAD;
 		pproptags->pproptag = cu_alloc<uint32_t>(pproptags->count);
 		if (NULL == pproptags->pproptag) {
 			pproptags->count = 0;

@@ -109,6 +109,8 @@ enum {
  */
 enum {
 	PR_NULL = PROP_TAG(PT_NULL, 0x0000), /* PidTagNull */
+	PR_CONTENT_COUNT = PROP_TAG(PT_LONG, 0x3602), /* PidTagContentCount */
+	PR_CONTENT_UNREAD = PROP_TAG(PT_LONG, 0x3603), /* PidTagContentUnreadCount */
 	// PR_ALTERNATE_RECIPIENT_ALLOWED = PROP_TAG(PT_BINARY, 0x0002), /* PidTagAlternateRecipientAllowed */
 	// PR_EMS_SCRIPT_BLOB = PROP_TAG(PT_BINARY, 0x0004), /* PidTagScriptData */
 	// PR_AUTO_FORWARD_COMMENT = PROP_TAG(PT_UNICODE, 0x0004), /* PidTagAutoForwardComment */
