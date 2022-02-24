@@ -911,22 +911,20 @@ static uint32_t common_util_get_folder_count(sqlite3 *psqlite,
 uint32_t common_util_get_folder_unread_count(
 	sqlite3 *psqlite, uint64_t folder_id)
 {
-	uint32_t count;
 	uint32_t folder_type;
-	char sql_string[256];
-	const char *username;
+	char sql_string[220];
 	
 	if (exmdb_server_check_private()) {
 		if (common_util_get_folder_type(psqlite, folder_id, &folder_type) &&
 		    folder_type == FOLDER_SEARCH) {
-			snprintf(sql_string, arsizeof(sql_string), "SELECT count(*)"
+			gx_snprintf(sql_string, arsizeof(sql_string), "SELECT count(*)"
 				" FROM messages JOIN search_result ON "
 				"search_result.folder_id=%llu AND "
 				"search_result.message_id=messages.message_id AND "
 				"messages.read_state=0 AND messages.is_associated=0",
 				LLU(folder_id));
 		} else {
-			snprintf(sql_string, arsizeof(sql_string), "SELECT count(*)"
+			gx_snprintf(sql_string, arsizeof(sql_string), "SELECT count(*)"
 				" FROM messages WHERE parent_fid=%llu AND "
 				"read_state=0 AND is_associated=0", LLU(folder_id));
 		}
@@ -934,29 +932,35 @@ uint32_t common_util_get_folder_unread_count(
 		return pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
 		       sqlite3_column_int64(pstmt, 0);
 	}
-	username = exmdb_server_get_public_username();
+	auto username = exmdb_server_get_public_username();
 	if (NULL == username) {
 		return 0;
 	}
-	snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM messages WHERE"
+	gx_snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM messages WHERE"
 				" parent_fid=%llu AND is_deleted=0 AND is_associated=0",
 				LLU(folder_id));
 	auto pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr || sqlite3_step(pstmt) != SQLITE_ROW)
 		return 0;
-	count = sqlite3_column_int64(pstmt, 0);
+	int64_t count = sqlite3_column_int64(pstmt, 0);
 	pstmt.finalize();
-	snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM read_states"
+	gx_snprintf(sql_string, arsizeof(sql_string), "SELECT count(*) FROM read_states"
 				" JOIN messages ON read_states.username=?"
 				" AND messages.parent_fid=%llu AND "
 				"messages.message_id=read_states.message_id"
+				" AND messages.is_deleted=0"
 				" AND messages.is_associated=0", LLU(folder_id));
 	pstmt = gx_sql_prep(psqlite, sql_string);
 	if (pstmt == nullptr)
 		return 0;
 	sqlite3_bind_text(pstmt, 1, username, -1, SQLITE_STATIC);
-	return sqlite3_step(pstmt) != SQLITE_ROW ? 0 :
-	       count - sqlite3_column_int64(pstmt, 0);
+	if (sqlite3_step(pstmt) != SQLITE_ROW)
+		return 0;
+	int64_t have_read = sqlite3_column_int64(pstmt, 0);
+	if (have_read > count)
+		fprintf(stderr, "W-1665: fid %llxh inconsistent read states for %s: %lld > %lld\n",
+		        LLU(folder_id), username, LLU(have_read), LLU(count));
+	return count - std::min(count, have_read);
 }
 
 static uint64_t common_util_get_folder_message_size(
