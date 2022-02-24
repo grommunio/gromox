@@ -894,8 +894,10 @@ uint32_t rop_syncimportmessagechange(uint8_t import_flags,
 	if (!common_util_binary_to_xid(pbin, &tmp_xid))
 		return ecError;
 	auto tmp_guid = plogon->guid();
-	if (tmp_guid != tmp_xid.guid)
+	if (tmp_guid != tmp_xid.guid) {
+		fprintf(stderr, "E-1664: message has GUID of another store, cannot import\n");
 		return ecInvalidParam;
+	}
 	auto message_id = rop_util_make_eid(1, tmp_xid.local_to_gc());
 	if (!exmdb_client_check_message(plogon->get_dir(), folder_id,
 	    message_id, &b_exist))
