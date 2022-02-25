@@ -145,11 +145,22 @@ static std::string sql_escape(MYSQL *sqh, const char *in)
 	return out;
 }
 
-static bool is_imap_propid(uint16_t id)
+static bool skip_property(uint16_t id)
 {
-	return id == PROP_ID(PR_EC_IMAP_ID) || id == PROP_ID(PR_EC_IMAP_SUBSCRIBED) ||
-	       id == PROP_ID(PR_EC_IMAP_MAX_ID) || id == PROP_ID(PR_EC_IMAP_EMAIL_SIZE) ||
-	       id == PROP_ID(PR_EC_IMAP_BODY) || id == PROP_ID(PR_EC_IMAP_BODYSTRUCTURE);
+	static constexpr uint16_t tags[] = {
+	/*
+	 * Skip importing IMAP data; midb rebuilds this anyway, and has its own
+	 * database for this so as to not clutter the store with what is
+	 * effectively computable data.
+	 */
+		PROP_ID(PR_EC_IMAP_ID), PROP_ID(PR_EC_IMAP_SUBSCRIBED),
+		PROP_ID(PR_EC_IMAP_MAX_ID), PROP_ID(PR_EC_IMAP_EMAIL_SIZE),
+		PROP_ID(PR_EC_IMAP_BODY), PROP_ID(PR_EC_IMAP_BODYSTRUCTURE),
+	/* Contains entryids and so on, pretty useless after import. */
+		PROP_ID(PR_ACL_DATA), PROP_ID(PR_RULES_DATA),
+		PROP_ID(PR_RW_RULES_STREAM),
+	};
+	return std::find(std::cbegin(tags), std::cend(tags), id) != std::cend(tags);
 }
 
 static void hid_to_tpropval_1(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)
@@ -164,12 +175,7 @@ static void hid_to_tpropval_1(driver &drv, const char *qstr, TPROPVAL_ARRAY *ar)
 		TAGGED_PROPVAL pv{};
 		pv.pvalue = &upv;
 
-		/*
-		 * Skip importing IMAP data; midb rebuilds this anyway, and has
-		 * its own database for this so as to not clutter the store
-		 * with what is effectively computable data.
-		 */
-		if (is_imap_propid(xtag))
+		if (skip_property(xtag))
 			continue;
 		switch (xtype) {
 		case PT_SHORT: upv.i = strtoul(znul(row[PCOL_ULONG]), nullptr, 0); break;

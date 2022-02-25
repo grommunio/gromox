@@ -340,6 +340,8 @@ enum {
 	// ? = PROP_TAG(PT_BINARY, 0x35EF), /* entryid to "Sharing" folder (EXC2019) */
 	// ? = PROP_TAG(PT_BINARY, 0x35FD), /* entryid to some non-existing folder (EXC2019) */
 	PR_FOLDER_TYPE = PROP_TAG(PT_LONG, 0x3601), /* PidTagFolderType */
+	PR_CONTENT_COUNT = PROP_TAG(PT_LONG, 0x3602), /* PidTagContentCount */
+	PR_CONTENT_UNREAD = PROP_TAG(PT_LONG, 0x3603), /* PidTagContentUnreadCount */
 	// PR_DETAILS_TABLE  = PROP_TAG(PT_OBJECT, 0x3605), /* PidTagDetailsTable */
 	// PR_SELECTABLE = PROP_TAG(PT_BOOLEAN, 0x3609), /* PidTagSelectable */
 	PR_CONTAINER_CLASS = PROP_TAG(PT_UNICODE, 0x3613), /* PidTagContainerClass */
@@ -475,7 +477,10 @@ enum {
 	// PR_INITIAL_DETAILS_PANE = PROP_TAG(PT_LONG, 0x3F08), /* MFCMAPI */
 	PR_INTERNET_CPID = PROP_TAG(PT_LONG, 0x3FDE), /* PidTagInternetCodepage */
 	PR_AUTO_RESPONSE_SUPPRESS = PROP_TAG(PT_LONG, 0x3FDF), /* PidTagAutoResponseSuppress */
-	// PR_ACL_DATA = PROP_TAG(PT_BINARY, 0x3FE0), /* PidTagAccessControlListData */
+	PR_ACL_DATA = PROP_TAG(PT_BINARY, 0x3FE0), /* PidTagAccessControlListData */
+	PR_ACL_TABLE = PROP_TAG(PT_OBJECT, 0x3FE0), /* PidTagAccessControlListTable */
+	PR_RULES_TABLE = PROP_TAG(PT_OBJECT, 0x3FE1), /* PidTagRulesTable */
+	PR_RULES_DATA = PROP_TAG(PT_BINARY, 0x3FE1), /* PidTagRulesData */
 	// PR_HAS_DAMS = PROP_TAG(PT_BOOLEAN, 0x3FEA), /* PidTagHasDeferredActionMessages */
 	PR_DEFERRED_SEND_NUMBER = PROP_TAG(PT_LONG, 0x3FEB), /* PidTagDeferredSendNumber */
 	PR_DEFERRED_SEND_UNITS = PROP_TAG(PT_LONG, 0x3FEC), /* PidTagDeferredSendUnits */
@@ -683,7 +688,7 @@ enum {
 	PR_SENDER_TELEPHONE_NUMBER = PROP_TAG(PT_UNICODE, 0x6802), /* PidTagSenderTelephoneNumber */
 	PR_SENDER_TELEPHONE_NUMBER_A = PROP_TAG(PT_STRING8, 0x6802),
 	// PR_OAB_CONTAINER_GUID = PROP_TAG(PT_STRING8, 0x6802), /* PidTagOfflineAddressBookContainerGuid */
-	// PR_RW_RULES_STREAM = PROP_TAG(PT_BINARY, 0x6802), /* PidTagRwRulesStream */
+	PR_RW_RULES_STREAM = PROP_TAG(PT_BINARY, 0x6802), /* PidTagRwRulesStream */
 	PidTagVoiceMessageSenderName = PROP_TAG(PT_UNICODE, 0x6803),
 	PidTagVoiceMessageSenderName_A = PROP_TAG(PT_STRING8, 0x6803),
 	// PR_OAB_MESSAGE_CLASS = PROP_TAG(PT_LONG, 0x6803), /* PidTagOfflineAddressBookMessageClass */
