@@ -64,6 +64,7 @@ int main(int argc, const char **argv) try
 		{"mysql_port", "3306"},
 		{"mysql_username", "root"},
 		{"mysql_dbname", "email"},
+		CFG_TABLE_END,
 	};
 	config_file_apply(*pconfig, cfg_default_values);
 	std::string mysql_host = znul(pconfig->get_value("mysql_host"));
