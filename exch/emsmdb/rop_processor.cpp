@@ -507,11 +507,19 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 		result = rop_dispatch(req, reinterpret_cast<ROP_RESPONSE **>(&pnode1->pdata),
 				prop_buff->phandles, prop_buff->hnum);
 		auto rsp = static_cast<ROP_RESPONSE *>(pnode1->pdata);
-		if (g_rop_debug >= 2 || (g_rop_debug >= 1 && result != 0))
-			fprintf(stderr, "rop_dispatch(%s) EC = %xh\n", rop_idtoname(req->rop_id), result);
-		if (rsp != nullptr && (g_rop_debug >= 2 ||
-		    (g_rop_debug >= 1 && rsp->result != 0)))
-			fprintf(stderr, "rop_dispatch(%s) RS = %xh\n", rop_idtoname(req->rop_id), rsp->result);
+		bool dbg = g_rop_debug >= 2;
+		if (g_rop_debug >= 1 && result != 0)
+			dbg = true;
+		if (g_rop_debug >= 1 && rsp != nullptr && rsp->result != 0)
+			dbg = true;
+		if (dbg) {
+			if (rsp != nullptr)
+				fprintf(stderr, "rop_dispatch(%s) EC=%xh RS=%xh\n",
+					rop_idtoname(req->rop_id), result, rsp->result);
+			else
+				fprintf(stderr, "rop_dispatch(%s) EC=%xh RS=none\n",
+					rop_idtoname(req->rop_id), result);
+		}
 		switch (result) {
 		case ecSuccess:
 			/* disable compression when RopReadStream
