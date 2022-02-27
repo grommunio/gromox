@@ -384,10 +384,10 @@ static BOOL vcard_retrieve_value(VCARD_LINE *pvline, char *pvalue)
 		do {
 			pnext1 = vcard_get_comma(ptr1);
 			if ('\0' == *ptr1) {
-				if (!vcard_append_subval(pvvalue, nullptr))
+				if (!pvvalue->append_subval(nullptr))
 					return FALSE;
 			} else {
-				if (!vcard_append_subval(pvvalue, ptr1))
+				if (!pvvalue->append_subval(ptr1))
 					return FALSE;
 			}
 		} while ((ptr1 = pnext1) != NULL);
@@ -479,7 +479,7 @@ BOOL vcard::retrieve(char *in_buff)
 				}
 				pvline->append_value(pvvalue);
 				vcard_unescape_string(tmp_item.pvalue);
-				if (!vcard_append_subval(pvvalue, tmp_item.pvalue))
+				if (!pvvalue->append_subval(tmp_item.pvalue))
 					break;
 			} else {
 				if (!vcard_retrieve_value(pvline, tmp_item.pvalue))
@@ -756,8 +756,9 @@ VCARD_VALUE* vcard_new_value()
 	return pvvalue;
 }
 
-BOOL vcard_append_subval(VCARD_VALUE *pvvalue, const char *subval)
+BOOL vcard_value::append_subval(const char *subval)
 {
+	auto pvvalue = this;
 	auto pnode = me_alloc<DOUBLE_LIST_NODE>();
 	if (NULL == pnode) {
 		return FALSE;
@@ -809,7 +810,7 @@ VCARD_LINE* vcard_new_simple_line(const char *name, const char *value)
 		return NULL;
 	}
 	pvline->append_value(pvvalue);
-	if (!vcard_append_subval(pvvalue, value)) {
+	if (!pvvalue->append_subval(value)) {
 		vcard_free_line(pvline);
 		return NULL;
 	}

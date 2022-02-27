@@ -9,10 +9,13 @@ struct VCARD_PARAM {
 	DOUBLE_LIST *pparamval_list;
 };
 
-struct VCARD_VALUE {
+struct GX_EXPORT vcard_value {
+	BOOL append_subval(const char *);
+
 	DOUBLE_LIST_NODE node;
 	DOUBLE_LIST subval_list;
 };
+using VCARD_VALUE = vcard_value;
 
 struct GX_EXPORT vcard_line {
 	void append_param(VCARD_PARAM *);
@@ -43,5 +46,4 @@ VCARD_LINE* vcard_new_line(const char *name);
 VCARD_PARAM* vcard_new_param(const char*name);
 BOOL vcard_append_paramval(VCARD_PARAM *pvparam, const char *paramval);
 extern VCARD_VALUE *vcard_new_value();
-BOOL vcard_append_subval(VCARD_VALUE *pvvalue, const char *subval);
 VCARD_LINE* vcard_new_simple_line(const char *name, const char *value);

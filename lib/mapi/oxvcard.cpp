@@ -741,7 +741,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvalue = pmsg->proplist.get<char>(g_n_proptags[i]);
 		if (pvalue == nullptr)
 			continue;
-		if (!vcard_append_subval(pvvalue, pvalue))
+		if (!pvvalue->append_subval(pvalue))
 			return false;
 	}
 	
@@ -775,7 +775,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvvalue == nullptr)
 			return false;
 		pvline->append_value(pvvalue);
-		if (!vcard_append_subval(pvvalue, pvalue))
+		if (!pvvalue->append_subval(pvalue))
 			return false;
 	}
 	
@@ -816,7 +816,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			if (encode64(bv->pb, bv->cb, tmp_buff, VCARD_MAX_BUFFER_LEN - 1, &out_len) != 0)
 				return false;
 			tmp_buff[out_len] = '\0';
-			if (!vcard_append_subval(pvvalue, tmp_buff))
+			if (!pvvalue->append_subval(tmp_buff))
 				return false;
 			break;
 		}
@@ -839,13 +839,13 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		return false;
 	pvline->append_value(pvvalue);
 	pvalue = pmsg->proplist.get<char>(PR_COMPANY_NAME);
-	vcard_append_subval(pvvalue, pvalue);
+	pvvalue->append_subval(pvalue);
 	pvvalue = vcard_new_value();
 	if (pvvalue == nullptr)
 		return false;
 	pvline->append_value(pvvalue);
 	pvalue = pmsg->proplist.get<char>(PR_DEPARTMENT_NAME);
-	vcard_append_subval(pvvalue, pvalue);
+	pvvalue->append_subval(pvalue);
 	
 	pvalue = pmsg->proplist.get<char>(PR_SENSITIVITY);
 	if (NULL == pvalue) {
@@ -888,7 +888,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvalue = pmsg->proplist.get<char>(proptag);
 		if (pvalue == nullptr)
 			continue;
-		vcard_append_subval(pvvalue, pvalue);
+		pvvalue->append_subval(pvalue);
 	}
 	pvvalue = vcard_new_value();
 	if (pvvalue == nullptr)
@@ -913,7 +913,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvalue = pmsg->proplist.get<char>(g_homeaddr_proptags[i]);
 		if (pvalue == nullptr)
 			continue;
-		vcard_append_subval(pvvalue, pvalue);
+		pvvalue->append_subval(pvalue);
 	}
 	pvvalue = vcard_new_value();
 	if (pvvalue == nullptr)
@@ -938,7 +938,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvalue = pmsg->proplist.get<char>(g_otheraddr_proptags[i]);
 		if (pvalue == nullptr)
 			continue;
-		vcard_append_subval(pvvalue, pvalue);
+		pvvalue->append_subval(pvalue);
 	}
 	pvvalue = vcard_new_value();
 	if (pvvalue == nullptr)
@@ -963,7 +963,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvvalue == nullptr)
 			return false;
 		pvline->append_value(pvvalue);
-		if (!vcard_append_subval(pvvalue, pvalue))
+		if (!pvvalue->append_subval(pvalue))
 			return false;
 	}
 	
@@ -987,7 +987,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvvalue == nullptr)
 			return false;
 		pvline->append_value(pvvalue);
-		if (!vcard_append_subval(pvvalue, pvalue))
+		if (!pvvalue->append_subval(pvalue))
 			return false;
 	}
 	
@@ -1011,7 +1011,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvvalue == nullptr)
 			return false;
 		pvline->append_value(pvvalue);
-		if (!vcard_append_subval(pvvalue, pvalue))
+		if (!pvvalue->append_subval(pvalue))
 			return false;
 	}
 	
@@ -1028,7 +1028,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			return false;
 		pvline->append_value(pvvalue);
 		for (size_t i = 0; i < saval->count; ++i)
-			if (!vcard_append_subval(pvvalue, saval->ppstr[i]))
+			if (!pvvalue->append_subval(saval->ppstr[i]))
 				return false;
 	}
 	
@@ -1056,7 +1056,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvvalue == nullptr)
 			return false;
 		pvline->append_value(pvvalue);
-		if (!vcard_append_subval(pvvalue, pvalue))
+		if (!pvvalue->append_subval(pvalue))
 			return false;
 	}
 	
@@ -1076,7 +1076,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvvalue == nullptr)
 			return false;
 		pvline->append_value(pvvalue);
-		if (!vcard_append_subval(pvvalue, pvalue))
+		if (!pvvalue->append_subval(pvalue))
 			return false;
 	}
 	
@@ -1130,7 +1130,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvvalue == nullptr)
 			return false;
 		pvline->append_value(pvvalue);
-		if (!vcard_append_subval(pvvalue, pvalue))
+		if (!pvvalue->append_subval(pvalue))
 			return false;
 	}
 	
@@ -1148,7 +1148,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvvalue == nullptr)
 			return false;
 		pvline->append_value(pvvalue);
-		if (!vcard_append_subval(pvvalue, pvalue))
+		if (!pvvalue->append_subval(pvalue))
 			return false;
 	}
 	
@@ -1166,7 +1166,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvvalue == nullptr)
 			return false;
 		pvline->append_value(pvvalue);
-		if (!vcard_append_subval(pvvalue, pvalue))
+		if (!pvvalue->append_subval(pvalue))
 			return false;
 	}
 	
@@ -1184,7 +1184,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvvalue == nullptr)
 			return false;
 		pvline->append_value(pvvalue);
-		if (!vcard_append_subval(pvvalue, pvalue))
+		if (!pvvalue->append_subval(pvalue))
 			return false;
 	}
 	
@@ -1225,7 +1225,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			return false;
 		pvline->append_value(pvvalue);
 		for (size_t i = 0; i < saval->count; ++i)
-			if (!vcard_append_subval(pvvalue, saval->ppstr[i]))
+			if (!pvvalue->append_subval(saval->ppstr[i]))
 				return false;
 	}
 	
@@ -1250,7 +1250,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		    VCARD_MAX_BUFFER_LEN - 1, &out_len))
 			return false;
 		tmp_buff[out_len] = '\0';
-		if (!vcard_append_subval(pvvalue, tmp_buff))
+		if (!pvvalue->append_subval(tmp_buff))
 			return false;
 	}
 	
@@ -1287,7 +1287,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvvalue == nullptr)
 			return false;
 		pvline->append_value(pvvalue);
-		if (!vcard_append_subval(pvvalue, tmp_buff))
+		if (!pvvalue->append_subval(tmp_buff))
 			return false;
 	}
 	
@@ -1310,7 +1310,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvvalue == nullptr)
 			return false;
 		pvline->append_value(pvvalue);
-		if (!vcard_append_subval(pvvalue, tmp_buff))
+		if (!pvvalue->append_subval(tmp_buff))
 			return false;
 	}
 	
@@ -1333,7 +1333,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvvalue == nullptr)
 			return false;
 		pvline->append_value(pvvalue);
-		if (!vcard_append_subval(pvvalue, tmp_buff))
+		if (!pvvalue->append_subval(tmp_buff))
 			return false;
 	}
 	return TRUE;
