@@ -767,9 +767,9 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvparam == nullptr)
 			return false;
 		pvline->append_param(pvparam);
-		if (!vcard_append_paramval(pvparam, "INTERNET"))
+		if (!pvparam->append_paramval("INTERNET"))
 			return false;
-		if (i == 0 && !vcard_append_paramval(pvparam, "PREF"))
+		if (i == 0 && !pvparam->append_paramval("PREF"))
 			return false;
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
@@ -801,13 +801,13 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			if (pvparam == nullptr)
 				return false;
 			pvline->append_param(pvparam);
-			if (!vcard_append_paramval(pvparam, photo_type))
+			if (!pvparam->append_paramval(photo_type))
 				return false;
 			pvparam = vcard_new_param("ENCODING");
 			if (pvparam == nullptr)
 				return false;
 			pvline->append_param(pvparam);
-			if (!vcard_append_paramval(pvparam, "B"))
+			if (!pvparam->append_paramval("B"))
 				return false;
 			pvvalue = vcard_new_value();
 			if (pvvalue == nullptr)
@@ -876,7 +876,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	if (pvparam == nullptr)
 		return false;
 	pvline->append_param(pvparam);
-	if (!vcard_append_paramval(pvparam, "WORK"))
+	if (!pvparam->append_paramval("WORK"))
 		return false;
 	for (size_t i = 0; i < 6; ++i) {
 		pvvalue = vcard_new_value();
@@ -903,7 +903,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	if (pvparam == nullptr)
 		return false;
 	pvline->append_param(pvparam);
-	if (!vcard_append_paramval(pvparam, "HOME"))
+	if (!pvparam->append_paramval("HOME"))
 		return false;
 	for (size_t i = 0; i < 6; ++i) {
 		pvvalue = vcard_new_value();
@@ -928,7 +928,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	if (pvparam == nullptr)
 		return false;
 	pvline->append_param(pvparam);
-	if (!vcard_append_paramval(pvparam, "POSTAL"))
+	if (!pvparam->append_paramval("POSTAL"))
 		return false;
 	for (size_t i = 0; i < 6; ++i) {
 		pvvalue = vcard_new_value();
@@ -957,7 +957,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvparam == nullptr)
 			return false;
 		pvline->append_param(pvparam);
-		if (!vcard_append_paramval(pvparam, tel_types[i]))
+		if (!pvparam->append_paramval(tel_types[i]))
 			return false;
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
@@ -977,7 +977,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvparam == nullptr)
 			return false;
 		pvline->append_param(pvparam);
-		if (!vcard_append_paramval(pvparam, "HOME"))
+		if (!pvparam->append_paramval("HOME"))
 			return false;
 		pvparam = vcard_new_param("FAX");
 		if (pvparam == nullptr)
@@ -1001,7 +1001,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvparam == nullptr)
 			return false;
 		pvline->append_param(pvparam);
-		if (!vcard_append_paramval(pvparam, "WORK"))
+		if (!pvparam->append_paramval("WORK"))
 			return false;
 		pvparam = vcard_new_param("FAX");
 		if (pvparam == nullptr)
@@ -1050,7 +1050,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvparam == nullptr)
 			return false;
 		pvline->append_param(pvparam);
-		if (!vcard_append_paramval(pvparam, "HOME"))
+		if (!pvparam->append_paramval("HOME"))
 			return false;
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
@@ -1070,7 +1070,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvparam == nullptr)
 			return false;
 		pvline->append_param(pvparam);
-		if (!vcard_append_paramval(pvparam, "WORK"))
+		if (!pvparam->append_paramval("WORK"))
 			return false;
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
@@ -1124,7 +1124,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvparam == nullptr)
 			return false;
 		pvline->append_param(pvparam);
-		if (!vcard_append_paramval(pvparam, ms_tel_types[i]))
+		if (!pvparam->append_paramval(ms_tel_types[i]))
 			return false;
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
@@ -1239,7 +1239,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvparam == nullptr)
 			return false;
 		pvline->append_param(pvparam);
-		if (!vcard_append_paramval(pvparam, "B"))
+		if (!pvparam->append_paramval("B"))
 			return false;
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
@@ -1281,7 +1281,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvparam == nullptr)
 			return false;
 		pvline->append_param(pvparam);
-		if (!vcard_append_paramval(pvparam, "DATE"))
+		if (!pvparam->append_paramval("DATE"))
 			return false;
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
@@ -1304,7 +1304,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvparam == nullptr)
 			return false;
 		pvline->append_param(pvparam);
-		if (!vcard_append_paramval(pvparam, "DATE-TIME"))
+		if (!pvparam->append_paramval("DATE-TIME"))
 			return false;
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)
@@ -1327,7 +1327,7 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		if (pvparam == nullptr)
 			return false;
 		pvline->append_param(pvparam);
-		if (!vcard_append_paramval(pvparam, "DATE"))
+		if (!pvparam->append_paramval("DATE"))
 			return false;
 		pvvalue = vcard_new_value();
 		if (pvvalue == nullptr)

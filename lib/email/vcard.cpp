@@ -327,7 +327,7 @@ static VCARD_PARAM* vcard_retrieve_param(char *ptag)
 	ptr ++;
 	do {
 		pnext = vcard_get_comma(ptr);
-		if (!vcard_append_paramval(pvparam, ptr)) {
+		if (!pvparam->append_paramval(ptr)) {
 			vcard_free_param(pvparam);
 			return nullptr;
 		}
@@ -703,8 +703,9 @@ VCARD_PARAM* vcard_new_param(const char*name)
 	return pvparam;
 }
 
-BOOL vcard_append_paramval(VCARD_PARAM *pvparam, const char *paramval)
+BOOL vcard_param::append_paramval(const char *paramval)
 {
+	auto pvparam = this;
 	BOOL b_list;
 	
 	if (NULL == pvparam->pparamval_list) {

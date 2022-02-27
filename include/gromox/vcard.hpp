@@ -3,11 +3,14 @@
 #include <gromox/double_list.hpp>
 #define VCARD_NAME_LEN		32
 
-struct VCARD_PARAM {
+struct GX_EXPORT vcard_param {
+	BOOL append_paramval(const char *paramval);
+
 	DOUBLE_LIST_NODE node;
 	char name[VCARD_NAME_LEN];
 	DOUBLE_LIST *pparamval_list;
 };
+using VCARD_PARAM = vcard_param;
 
 struct GX_EXPORT vcard_value {
 	BOOL append_subval(const char *);
@@ -44,6 +47,5 @@ using VCARD = vcard;
 
 VCARD_LINE* vcard_new_line(const char *name);
 VCARD_PARAM* vcard_new_param(const char*name);
-BOOL vcard_append_paramval(VCARD_PARAM *pvparam, const char *paramval);
 extern VCARD_VALUE *vcard_new_value();
 VCARD_LINE* vcard_new_simple_line(const char *name, const char *value);
