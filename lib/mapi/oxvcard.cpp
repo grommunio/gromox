@@ -700,34 +700,17 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	if (!oxvcard_get_propids(&propids, get_propids))
 		return FALSE;
 	pvcard->clear();
-	pvline = vcard_new_simple_line("PROFILE", "VCARD");
-	if (pvline == nullptr)
+	if (!pvcard->append_line("PROFILE", "VCARD") ||
+	    !pvcard->append_line("VERSION", "4.0") ||
+	    !pvcard->append_line("MAILER", "gromox-oxvcard") ||
+	    !pvcard->append_line("PRODID", "gromox-oxvcard"))
 		return false;
-	pvcard->append_line(pvline);
-	
-	pvline = vcard_new_simple_line("VERSION", "4.0");
-	if (pvline == nullptr)
-		return false;
-	pvcard->append_line(pvline);
-	
-	pvline = vcard_new_simple_line("MAILER", "gromox-oxvcard");
-	if (pvline == nullptr)
-		return false;
-	pvcard->append_line(pvline);
-	
-	pvline = vcard_new_simple_line("PRODID", "gromox-oxvcard");
-	if (pvline == nullptr)
-		return false;
-	pvcard->append_line(pvline);
+
 	pvalue = pmsg->proplist.get<char>(PR_DISPLAY_NAME);
 	if (pvalue == nullptr)
 		pvalue = pmsg->proplist.get<char>(PR_NORMALIZED_SUBJECT);
-	if (NULL != pvalue) {
-		pvline = vcard_new_simple_line("FN", pvalue);
-		if (pvline == nullptr)
-			return false;
-		pvcard->append_line(pvline);
-	}
+	if (pvalue != nullptr && !pvcard->append_line("FN", pvalue))
+		return false;
 	
 	pvline = vcard_new_line("N");
 	if (pvline == nullptr)
@@ -746,12 +729,8 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PR_NICKNAME);
-	if (NULL != pvalue) {
-		pvline = vcard_new_simple_line("NICKNAME", pvalue);
-		if (pvline == nullptr)
-			return false;
-		pvcard->append_line(pvline);
-	}
+	if (pvalue != nullptr && !pvcard->append_line("NICKNAME", pvalue))
+		return false;
 	
 	for (size_t i = 0; i < 3; ++i) {
 		propid = PROP_ID(g_email_proptags[i]);
@@ -823,12 +802,8 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PR_BODY);
-	if (NULL != pvalue) {
-		pvline = vcard_new_simple_line("NOTE", pvalue);
-		if (pvline == nullptr)
-			return false;
-		pvcard->append_line(pvline);
-	}
+	if (pvalue != nullptr && !pvcard->append_line("NOTE", pvalue))
+		return false;
 	
 	pvline = vcard_new_line("ORG");
 	if (pvline == nullptr)
@@ -863,10 +838,8 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 			break;
 		}
 	}
-	pvline = vcard_new_simple_line("CLASS", pvalue);
-	if (pvline == nullptr)
+	if (!pvcard->append_line("CLASS", pvalue))
 		return false;
-	pvcard->append_line(pvline);
 	
 	pvline = vcard_new_line("ADR");
 	if (pvline == nullptr)
@@ -1033,12 +1006,8 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PR_PROFESSION);
-	if (NULL != pvalue) {
-		pvline = vcard_new_simple_line("ROLE", pvalue);
-		if (pvline == nullptr)
-			return false;
-		pvcard->append_line(pvline);
-	}
+	if (pvalue != nullptr && !pvcard->append_line("ROLE", pvalue))
+		return false;
 	
 	pvalue = pmsg->proplist.get<char>(PR_PERSONAL_HOME_PAGE);
 	if (NULL != pvalue) {
@@ -1083,20 +1052,14 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	propid = PROP_ID(g_bcd_proptag);
 	proptag = PROP_TAG(PROP_TYPE(g_bcd_proptag), propids.ppropid[propid - 0x8000]);
 	pvalue = pmsg->proplist.get<char>(proptag);
-	if (NULL != pvalue) {
-		pvline = vcard_new_simple_line("X-MS-OL-DESIGN", pvalue);
-		if (pvline == nullptr)
-			return false;
-		pvcard->append_line(pvline);
-	}
+	if (pvalue != nullptr && !pvcard->append_line("X-MS-OL-DESIGN", pvalue))
+		return false;
 	
 	saval = pmsg->proplist.get<STRING_ARRAY>(PR_CHILDRENS_NAMES);
 	if (NULL != pvalue) {
 		for (size_t i = 0; i < saval->count; ++i) {
-			pvline = vcard_new_simple_line("X-MS-CHILD", saval->ppstr[i]);
-			if (pvline == nullptr)
+			if (!pvcard->append_line("X-MS-CHILD", saval->ppstr[i]))
 				return false;
-			pvcard->append_line(pvline);
 		}
 	}
 	
@@ -1106,10 +1069,8 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		pvalue = pmsg->proplist.get<char>(proptag);
 		if (pvalue == nullptr)
 			continue;
-		pvline = vcard_new_simple_line("X-MS-TEXT", pvalue);
-		if (pvline == nullptr)
+		if (!pvcard->append_line("X-MS-TEXT", pvalue))
 			return false;
-		pvcard->append_line(pvline);
 	}
 	
 	for (size_t i = 0; i < 5; ++i) {
@@ -1197,22 +1158,14 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 		fprintf(stderr, "E-1605: ENOMEM\n");
 		return false;
 	}
-	if (pvalue != nullptr) {
-		pvline = vcard_new_simple_line("UID", pvalue);
-		if (pvline == nullptr)
-			return false;
-		pvcard->append_line(pvline);
-	}
+	if (pvalue != nullptr && !pvcard->append_line("UID", pvalue))
+		return false;
 
 	propid = PROP_ID(g_fbl_proptag);
 	proptag = PROP_TAG(PROP_TYPE(g_fbl_proptag), propids.ppropid[propid - 0x8000]);
 	pvalue = pmsg->proplist.get<char>(proptag);
-	if (NULL != pvalue) {
-		pvline = vcard_new_simple_line("FBURL", pvalue);
-		if (pvline == nullptr)
-			return false;
-		pvcard->append_line(pvline);
-	}
+	if (pvalue != nullptr && !pvcard->append_line("FBURL", pvalue))
+		return false;
 	
 	saval = pmsg->proplist.get<STRING_ARRAY>(PR_HOBBIES);
 	if (NULL != pvalue) {
@@ -1255,18 +1208,14 @@ BOOL oxvcard_export(MESSAGE_CONTENT *pmsg, VCARD *pvcard, GET_PROPIDS get_propid
 	}
 	
 	pvalue = pmsg->proplist.get<char>(PR_TITLE);
-	pvline = vcard_new_simple_line("TITLE", pvalue);
-	if (pvline == nullptr)
+	if (!pvcard->append_line("TITLE", pvalue))
 		return false;
-	pvcard->append_line(pvline);
 	
 	propid = PROP_ID(g_im_proptag);
 	proptag = PROP_TAG(PROP_TYPE(g_im_proptag), propids.ppropid[propid - 0x8000]);
 	pvalue = pmsg->proplist.get<char>(proptag);
-	pvline = vcard_new_simple_line("X-MS-IMADDRESS", pvalue);
-	if (pvline == nullptr)
+	if (!pvcard->append_line("X-MS-IMADDRESS", pvalue))
 		return false;
-	pvcard->append_line(pvline);
 	
 	pvalue = pmsg->proplist.get<char>(PR_BIRTHDAY);
 	if (NULL != pvalue) {

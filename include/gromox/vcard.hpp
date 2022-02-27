@@ -40,6 +40,7 @@ struct GX_EXPORT vcard {
 	BOOL retrieve(char *in_buff);
 	BOOL serialize(char *out_buff, size_t max_length);
 	void append_line(VCARD_LINE *);
+	bool append_line(const char *, const char *);
 
 	DOUBLE_LIST line_list{};
 };
@@ -48,4 +49,3 @@ using VCARD = vcard;
 VCARD_LINE* vcard_new_line(const char *name);
 VCARD_PARAM* vcard_new_param(const char*name);
 extern VCARD_VALUE *vcard_new_value();
-VCARD_LINE* vcard_new_simple_line(const char *name, const char *value);

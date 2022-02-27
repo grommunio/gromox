@@ -796,24 +796,25 @@ const char *vcard_line::get_first_subval() const
 	return static_cast<const char *>(pnode1->pdata);
 }
 
-VCARD_LINE* vcard_new_simple_line(const char *name, const char *value)
+bool vcard::append_line(const char *name, const char *value)
 {
 	VCARD_LINE *pvline;
 	VCARD_VALUE *pvvalue;
 	
 	pvline = vcard_new_line(name);
 	if (NULL == pvline) {
-		return NULL;
+		return false;
 	}
 	pvvalue = vcard_new_value();
 	if (NULL == pvvalue) {
 		vcard_free_line(pvline);
-		return NULL;
+		return false;
 	}
 	pvline->append_value(pvvalue);
 	if (!pvvalue->append_subval(value)) {
 		vcard_free_line(pvline);
-		return NULL;
+		return false;
 	}
-	return pvline;
+	append_line(std::move(pvline));
+	return true;
 }
