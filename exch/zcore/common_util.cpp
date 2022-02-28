@@ -467,8 +467,10 @@ void common_util_free_environment()
 		return;
 	auto pctx = g_env_key;
 	g_env_key = nullptr;
-	if (pctx == nullptr)
+	if (pctx == nullptr) {
+		fprintf(stderr, "W-1908: T%lu: g_env_key already unset\n", gx_gettid());
 		return;
+	}
 	alloc_context_free(&pctx->allocator);
 	free(pctx);
 }
@@ -476,20 +478,29 @@ void common_util_free_environment()
 void* common_util_alloc(size_t size)
 {
 	auto pctx = g_env_key;
+	if (pctx == nullptr) {
+		fprintf(stderr, "E-1909: T%lu: g_env_key is unset, allocator is unset\n", gx_gettid());
+		return NULL;
+	}
 	return alloc_context_alloc(&pctx->allocator, size);
 }
 
 void common_util_set_clifd(int clifd)
 {
 	auto pctx = g_env_key;
-	if (pctx != nullptr)
+	if (pctx == nullptr)
+		fprintf(stderr, "E-1810: T%lu: g_env_key is unset, cannot set clifd\n", gx_gettid());
+	else
 		pctx->clifd = clifd;
 }
 
 int common_util_get_clifd()
 {
 	auto pctx = g_env_key;
-	return pctx == nullptr ? -1 : pctx->clifd;
+	if (pctx != nullptr)
+		return pctx->clifd;
+	fprintf(stderr, "E-1811: T%lu: g_env_key is unset, clifd is unset\n", gx_gettid());
+	return -1;
 }
 
 char* common_util_dup(const char *pstr)
