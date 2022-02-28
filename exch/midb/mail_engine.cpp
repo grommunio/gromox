@@ -1952,10 +1952,8 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	sqlite3 *psqlite;
 	uint32_t uidnext;
 	uint32_t uidnext1;
-	uint64_t message_id;
 	DOUBLE_LIST temp_list;
 	char sql_string[1024];
-	uint32_t message_flags;
 	DOUBLE_LIST_NODE *pnode;
 	
 	dir = common_util_get_maildir();
@@ -1998,31 +1996,25 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 		return FALSE;
 	}
 	for (size_t i = 0; i < rows.count; ++i) {
-		auto pvalue = rows.pparray[i]->getval(PidTagMid);
-		if (NULL == pvalue) {
+		auto num = rows.pparray[i]->get<const uint64_t>(PidTagMid);
+		if (num == nullptr)
 			continue;
-		}
-		message_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
-		pvalue = rows.pparray[i]->getval(PR_MESSAGE_FLAGS);
-		if (NULL == pvalue) {
+		auto message_id = rop_util_get_gc_value(*num);
+		auto flags = rows.pparray[i]->get<const uint32_t>(PR_MESSAGE_FLAGS);
+		if (flags == nullptr)
 			continue;
-		}
-		message_flags = *(uint64_t*)pvalue;
-		pvalue = rows.pparray[i]->getval(PR_LAST_MODIFICATION_TIME);
-		auto mod_time = pvalue != nullptr ? *static_cast<uint64_t *>(pvalue) : 0;
-		pvalue = rows.pparray[i]->getval(PROP_TAG_MESSAGEDELIVERYTIME);
-		auto received_time = pvalue != nullptr ? *static_cast<uint64_t *>(pvalue) : 0;
-		pvalue = rows.pparray[i]->getval(PidTagMidString);
+		auto mod_time = rows.pparray[i]->get<uint64_t>(PR_LAST_MODIFICATION_TIME);
+		auto recv_time = rows.pparray[i]->get<uint64_t>(PROP_TAG_MESSAGEDELIVERYTIME);
+		auto midstr = rows.pparray[i]->get<const char>(PidTagMidString);
 		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, message_id);
-		if (NULL == pvalue) {
+		if (midstr == nullptr)
 			sqlite3_bind_null(pstmt, 2);
-		} else {
-			sqlite3_bind_text(pstmt, 2, static_cast<char *>(pvalue), -1, SQLITE_STATIC);
-		}
-		sqlite3_bind_int64(pstmt, 3, mod_time);
-		sqlite3_bind_int64(pstmt, 4, message_flags);
-		sqlite3_bind_int64(pstmt, 5, received_time);
+		else
+			sqlite3_bind_text(pstmt, 2, midstr, -1, SQLITE_STATIC);
+		sqlite3_bind_int64(pstmt, 3, mod_time != nullptr ? *mod_time : 0);
+		sqlite3_bind_int64(pstmt, 4, *flags);
+		sqlite3_bind_int64(pstmt, 5, recv_time != nullptr ? *recv_time : 0);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			return FALSE;
 		}
@@ -2061,7 +2053,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 		return FALSE;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		message_id = sqlite3_column_int64(pstmt, 0);
+		uint64_t message_id = sqlite3_column_int64(pstmt, 0);
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, message_id);
 		if (SQLITE_ROW != sqlite3_step(pstmt1)) {
@@ -2109,7 +2101,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	}
 	double_list_init(&temp_list);
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		message_id = sqlite3_column_int64(pstmt, 0);
+		uint64_t message_id = sqlite3_column_int64(pstmt, 0);
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, message_id);
 		if (SQLITE_ROW != sqlite3_step(pstmt1)) {
