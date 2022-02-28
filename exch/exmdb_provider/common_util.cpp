@@ -3835,46 +3835,45 @@ BOOL common_util_check_folder_permission(
 	if (SQLITE_ROW == sqlite3_step(pstmt)) {
 		*ppermission = sqlite3_column_int64(pstmt, 0);
 		return TRUE;
-	} else {
-		if (NULL != username && '\0' != username[0]) {
-			snprintf(sql_string, arsizeof(sql_string), "SELECT username, permission"
-			          " FROM permissions WHERE folder_id=%llu", LLU(folder_id));
-			auto pstmt1 = gx_sql_prep(psqlite, sql_string);
-			if (pstmt1 == nullptr) {
-				return FALSE;
-			}
-			while (SQLITE_ROW == sqlite3_step(pstmt1)) {
-				if (common_util_check_mlist_include(S2A(sqlite3_column_text(pstmt1, 0)), username) == TRUE) {
-					*ppermission = sqlite3_column_int64(pstmt1, 1);
-					return TRUE;
-				}
-			}
-			pstmt1.finalize();
-			sqlite3_reset(pstmt);
-			sqlite3_bind_text(pstmt, 1, "default", -1, SQLITE_STATIC);
-			if (SQLITE_ROW == sqlite3_step(pstmt)) {
-				*ppermission = sqlite3_column_int64(pstmt, 0);
+	}
+	if (NULL != username && '\0' != username[0]) {
+		snprintf(sql_string, arsizeof(sql_string), "SELECT username, permission"
+		         " FROM permissions WHERE folder_id=%llu", LLU(folder_id));
+		auto pstmt1 = gx_sql_prep(psqlite, sql_string);
+		if (pstmt1 == nullptr) {
+			return FALSE;
+		}
+		while (SQLITE_ROW == sqlite3_step(pstmt1)) {
+			if (common_util_check_mlist_include(S2A(sqlite3_column_text(pstmt1, 0)), username) == TRUE) {
+				*ppermission = sqlite3_column_int64(pstmt1, 1);
 				return TRUE;
 			}
 		}
-		pstmt.finalize();
-		if (NULL == username || '\0' == username[0]) {
-			snprintf(sql_string, arsizeof(sql_string), "SELECT config_value "
-						"FROM configurations WHERE config_id=%d",
-						CONFIG_ID_ANONYMOUS_PERMISSION);
-		} else {
-			snprintf(sql_string, arsizeof(sql_string), "SELECT config_value "
-						"FROM configurations WHERE config_id=%d",
-						CONFIG_ID_DEFAULT_PERMISSION);
-		}
-		pstmt = gx_sql_prep(psqlite, sql_string);
-		if (pstmt == nullptr)
-			return FALSE;
+		pstmt1.finalize();
+		sqlite3_reset(pstmt);
+		sqlite3_bind_text(pstmt, 1, "default", -1, SQLITE_STATIC);
 		if (SQLITE_ROW == sqlite3_step(pstmt)) {
 			*ppermission = sqlite3_column_int64(pstmt, 0);
+			return TRUE;
 		}
-		return TRUE;
 	}
+	pstmt.finalize();
+	if (NULL == username || '\0' == username[0]) {
+		snprintf(sql_string, arsizeof(sql_string), "SELECT config_value "
+		         "FROM configurations WHERE config_id=%d",
+		         CONFIG_ID_ANONYMOUS_PERMISSION);
+	} else {
+		snprintf(sql_string, arsizeof(sql_string), "SELECT config_value "
+		         "FROM configurations WHERE config_id=%d",
+		         CONFIG_ID_DEFAULT_PERMISSION);
+	}
+	pstmt = gx_sql_prep(psqlite, sql_string);
+	if (pstmt == nullptr)
+		return FALSE;
+	if (SQLITE_ROW == sqlite3_step(pstmt)) {
+		*ppermission = sqlite3_column_int64(pstmt, 0);
+	}
+	return TRUE;
 }
 
 BINARY* common_util_username_to_addressbook_entryid(
