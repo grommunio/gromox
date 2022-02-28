@@ -3430,14 +3430,32 @@ BOOL cu_remove_properties(db_table table_type, uint64_t id,
 	return TRUE;
 }
 
+static inline const char *rule_tag_to_col(uint32_t tag)
+{
+	switch (tag) {
+	case PR_RULE_SEQUENCE: return "sequence";
+	case PR_RULE_STATE: return "state";
+	case PR_RULE_NAME: return "name";
+	case PR_RULE_PROVIDER: return "provider";
+	case PR_RULE_LEVEL: return "level";
+	case PR_RULE_USER_FLAGS: return "user_flags";
+	case PR_RULE_PROVIDER_DATA: return "provider_data";
+	case PR_RULE_CONDITION: return "condition";
+	case PR_RULE_ACTIONS: return "actions";
+	default: return nullptr;
+	}
+}
+
 BOOL common_util_get_rule_property(uint64_t rule_id,
 	sqlite3 *psqlite, uint32_t proptag, void **ppvalue)
 {
 	EXT_PULL ext_pull;
 	char sql_string[128];
 	
-	switch (proptag) {
-	case PR_RULE_ID: {
+	if (auto x = rule_tag_to_col(proptag)) {
+		snprintf(sql_string, arsizeof(sql_string), "SELECT %s "
+		         "FROM rules WHERE rule_id=%llu", x, LLU(rule_id));
+	} else if (proptag == PR_RULE_ID) {
 		auto v = cu_alloc<uint64_t>();
 		*ppvalue = v;
 		if (NULL == *ppvalue) {
@@ -3445,44 +3463,7 @@ BOOL common_util_get_rule_property(uint64_t rule_id,
 		}
 		*v = rop_util_make_eid_ex(1, rule_id);
 		return TRUE;
-	}
-	case PR_RULE_SEQUENCE:
-		snprintf(sql_string, arsizeof(sql_string), "SELECT sequence"
-		          " FROM rules WHERE rule_id=%llu", LLU(rule_id));
-		break;
-	case PR_RULE_STATE:
-		snprintf(sql_string, arsizeof(sql_string), "SELECT state "
-		          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
-		break;
-	case PR_RULE_NAME:
-		snprintf(sql_string, arsizeof(sql_string), "SELECT name "
-		          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
-		break;
-	case PR_RULE_PROVIDER:
-		snprintf(sql_string, arsizeof(sql_string), "SELECT provider"
-		          " FROM rules WHERE rule_id=%llu", LLU(rule_id));
-		break;
-	case PR_RULE_LEVEL:
-		snprintf(sql_string, arsizeof(sql_string), "SELECT level "
-		          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
-		break;
-	case PR_RULE_USER_FLAGS:
-		snprintf(sql_string, arsizeof(sql_string), "SELECT user_flags "
-		          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
-		break;
-	case PR_RULE_PROVIDER_DATA:
-		snprintf(sql_string, arsizeof(sql_string), "SELECT provider_data"
-		          " FROM rules WHERE rule_id=%llu", LLU(rule_id));
-		break;
-	case PR_RULE_CONDITION:
-		snprintf(sql_string, arsizeof(sql_string), "SELECT condition "
-		          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
-		break;
-	case PR_RULE_ACTIONS:
-		snprintf(sql_string, arsizeof(sql_string), "SELECT actions "
-		          "FROM rules WHERE rule_id=%llu", LLU(rule_id));
-		break;
-	default:
+	} else {
 		*ppvalue = NULL;
 		return TRUE;
 	}
