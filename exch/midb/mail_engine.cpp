@@ -2230,7 +2230,7 @@ static uint64_t mail_engine_get_top_folder_id(
 	}
 }
 
-static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
+static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 {
 	BOOL b_new;
 	const char *dir;
@@ -2379,7 +2379,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 				        "WHERE folder_id=%llu", encoded_name, LLU(folder_id));
 				gx_sql_exec(pidb->psqlite, sql_string);
 			}
-			if (gx_sql_col_uint64(pstmt1, 2) == commit_max)
+			if (gx_sql_col_uint64(pstmt1, 2) == commit_max && !force_resync)
 				continue;	
 			b_new = FALSE;
 		}
@@ -2476,7 +2476,7 @@ static IDB_REF mail_engine_peek_idb(const char *path)
 	return IDB_REF(pidb);
 }
 
-static IDB_REF mail_engine_get_idb(const char *path)
+static IDB_REF mail_engine_get_idb(const char *path, bool force_resync = false)
 {
 	BOOL b_load;
 	char temp_path[256];
@@ -2543,8 +2543,8 @@ static IDB_REF mail_engine_get_idb(const char *path)
 		hhold.unlock();
 		return {};
 	}
-	if (b_load) {
-		mail_engine_sync_mailbox(pidb);
+	if (b_load || force_resync) {
+		mail_engine_sync_mailbox(pidb, force_resync);
 	} else if (pidb->psqlite == nullptr) {
 		pidb->last_time = 0;
 		pidb->lock.unlock();
@@ -4841,6 +4841,54 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 	return 0;
 }
 
+static int mail_engine_xunld(int argc, char **argv, int sockd)
+{
+	if (argc != 2)
+		return MIDB_E_PARAMETER_ERROR;
+	std::lock_guard hhold(g_hash_lock);
+	auto it = g_hash_table.find(argv[1]);
+	if (it == g_hash_table.end())
+		return MIDB_E_STORE_NOT_LOADED;
+	auto pidb = &it->second;
+	if (pidb->reference != 0)
+		return MIDB_E_STORE_BUSY;
+	if (pidb->sub_id != 0)
+		exmdb_client::unsubscribe_notification(argv[1], pidb->sub_id);
+	g_hash_table.erase(it);
+	cmd_write(sockd, "TRUE 1\r\n", 8);
+	return 0;
+}
+
+static int mail_engine_xrsym(int argc, char **argv, int sockd)
+{
+	if (argc != 2)
+		return MIDB_E_PARAMETER_ERROR;
+	auto idb = mail_engine_peek_idb(argv[1]);
+	if (idb == nullptr) {
+		mail_engine_get_idb(argv[1], true);
+		cmd_write(sockd, "TRUE 2\r\n", 8);
+	} else if (!mail_engine_sync_mailbox(idb.get(), true)) {
+		cmd_write(sockd, "TRUE 0\r\n", 8);
+	} else {
+		cmd_write(sockd, "TRUE 1\r\n", 8);
+	}
+	return 0;
+}
+
+static int mail_engine_xrsyf(int argc, char **argv, int sockd)
+{
+	if (argc != 3)
+		return MIDB_E_PARAMETER_ERROR;
+	auto idb = mail_engine_get_idb(argv[1]);
+	if (idb == nullptr)
+		return MIDB_E_HASHTABLE_FULL;
+	if (!mail_engine_sync_contents(idb.get(), strtoul(argv[2], nullptr, 0)))
+		cmd_write(sockd, "FALSE 1\r\n", 9);
+	else
+		cmd_write(sockd, "TRUE 1\r\n", 8);
+	return 0;
+}
+
 static void mail_engine_add_notification_message(
 	IDB_ITEM *pidb, uint64_t folder_id, uint64_t message_id)
 {
@@ -5438,6 +5486,9 @@ int mail_engine_run()
 	cmd_parser_register_command("P-GFLG", mail_engine_pgflg);
 	cmd_parser_register_command("P-SRHL", mail_engine_psrhl);
 	cmd_parser_register_command("P-SRHU", mail_engine_psrhu);
+	cmd_parser_register_command("X-UNLD", mail_engine_xunld);
+	cmd_parser_register_command("X-RSYM", mail_engine_xrsym);
+	cmd_parser_register_command("X-RSYF", mail_engine_xrsyf);
 	exmdb_client_register_proc(reinterpret_cast<void *>(mail_engine_notification_proc));
 	return 0;
 }
