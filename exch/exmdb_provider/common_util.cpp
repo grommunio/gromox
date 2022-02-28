@@ -615,7 +615,7 @@ BOOL cu_get_proptags(db_table table_type, uint64_t id,
 		break;
 	case db_table::msg_props:
 		snprintf(sql_string, arsizeof(sql_string), "SELECT proptag FROM "
-		        "message_properties WHERE message_id=%llu", LLU(id));
+		        "message_properties WHERE message_id=%llu AND proptag NOT IN (0x0e05001e,0x0e05001f)", LLU(id));
 		proptags[i++] = PidTagMid;
 		proptags[i++] = PR_MESSAGE_SIZE;
 		proptags[i++] = PR_ASSOCIATED;
