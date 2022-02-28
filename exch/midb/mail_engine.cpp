@@ -2247,7 +2247,6 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	sqlite3 *psqlite;
 	uint32_t table_id;
 	uint32_t row_count;
-	uint64_t folder_id;
 	uint64_t parent_fid;
 	uint64_t commit_max;
 	char sql_string[1280];
@@ -2299,51 +2298,48 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 		return FALSE;
 	}
 	for (size_t i = 0; i < rows.count; ++i) {
-		const void *pvalue = rows.pparray[i]->getval(PR_ATTR_HIDDEN);
-		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+		auto flag = rows.pparray[i]->get<const uint8_t>(PR_ATTR_HIDDEN);
+		if (flag != nullptr && *flag != 0)
 			continue;
-		}
-		pvalue = rows.pparray[i]->getval(PR_CONTAINER_CLASS);
-		if (pvalue == nullptr || strcasecmp(static_cast<const char *>(pvalue), "IPF.Note") != 0)
+		auto str = rows.pparray[i]->get<const char>(PR_CONTAINER_CLASS);
+		if (str == nullptr || strcasecmp(str, "IPF.Note") != 0)
 			continue;
 		sqlite3_reset(pstmt);
-		pvalue = rows.pparray[i]->getval(PidTagFolderId);
-		if (NULL == pvalue) {
+		auto num = rows.pparray[i]->get<const uint64_t>(PidTagFolderId);
+		if (num == nullptr)
 			continue;
-		}
-		folder_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
+		auto folder_id = rop_util_get_gc_value(*num);
 		sqlite3_bind_int64(pstmt, 1, folder_id);
-		pvalue = rows.pparray[i]->getval(PidTagParentFolderId);
-		if (NULL == pvalue) {
+		num = rows.pparray[i]->get<uint64_t>(PidTagParentFolderId);
+		if (num == nullptr)
 			continue;
-		}
-		parent_fid = rop_util_get_gc_value(*(uint64_t*)pvalue);
+		parent_fid = rop_util_get_gc_value(*num);
 		sqlite3_bind_int64(pstmt, 2, parent_fid);
 		switch (folder_id) {
 		case PRIVATE_FID_INBOX:
-			pvalue = "inbox";
+			str = "inbox";
 			break;
 		case PRIVATE_FID_DRAFT:
-			pvalue = "draft";
+			str = "draft";
 			break;
 		case PRIVATE_FID_SENT_ITEMS:
-			pvalue = "sent";
+			str = "sent";
 			break;
 		case PRIVATE_FID_DELETED_ITEMS:
-			pvalue = "trash";
+			str = "trash";
 			break;
 		case PRIVATE_FID_JUNK:
-			pvalue = "junk";
+			str = "junk";
 			break;
 		default:
-			pvalue = rows.pparray[i]->getval(PR_DISPLAY_NAME);
-			if (pvalue == nullptr || strlen(static_cast<const char *>(pvalue)) >= 256)
+			str = rows.pparray[i]->get<char>(PR_DISPLAY_NAME);
+			if (str == nullptr || strlen(str) >= 256)
 				continue;
 			break;
 		}
-		sqlite3_bind_text(pstmt, 3, static_cast<const char *>(pvalue), -1, SQLITE_STATIC);
-		pvalue = rows.pparray[i]->getval(PR_LOCAL_COMMIT_TIME_MAX);
-		sqlite3_bind_int64(pstmt, 4, pvalue != nullptr ? *static_cast<const uint64_t *>(pvalue) : 0);
+		sqlite3_bind_text(pstmt, 3, str, -1, SQLITE_STATIC);
+		num = rows.pparray[i]->get<uint64_t>(PR_LOCAL_COMMIT_TIME_MAX);
+		sqlite3_bind_int64(pstmt, 4, num != nullptr ? *num : 0);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			return FALSE;
 		}
@@ -2372,7 +2368,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 		return false;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		folder_id = sqlite3_column_int64(pstmt, 0);
+		uint64_t folder_id = sqlite3_column_int64(pstmt, 0);
 		switch (mail_engine_get_top_folder_id(pstmt3, folder_id)) {
 		case PRIVATE_FID_OUTBOX:
 		case PRIVATE_FID_SYNC_ISSUES:
@@ -2437,7 +2433,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	}
 	double_list_init(&temp_list);
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		folder_id = sqlite3_column_int64(pstmt, 0);
+		uint64_t folder_id = sqlite3_column_int64(pstmt, 0);
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, folder_id);
 		if (SQLITE_ROW != sqlite3_step(pstmt1)) {
