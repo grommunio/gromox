@@ -7,6 +7,7 @@
 #include <cstring>
 #include <string>
 #include <unistd.h>
+#include <libHX/string.h>
 #include <gromox/svc_common.h>
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
@@ -29,6 +30,7 @@ static bool login_gen(const char *username, const char *password,
 	char ep[107]{};
 	uint8_t have_xid = 0xFF;
 	bool auth = false;
+	*reason = '\0';
 	auto meta = fptr_mysql_meta(username, password, maildir, msize,
 	            lang, lsize, reason,
 	            length, wantpriv, ep, sizeof(ep), &have_xid);
@@ -48,7 +50,10 @@ static bool login_gen(const char *username, const char *password,
 	else if (am_choice == A_EXTERNID)
 		auth = fptr_mysql_login(username, password, ep, sizeof(ep),
 		       reason, length);
-	return meta && auth;
+	auth = auth && meta;
+	if (!auth && *reason == '\0')
+		gx_strlcpy(reason, "Authentication rejected", length);
+	return auth;
 }
 
 static bool authmgr_reload()
