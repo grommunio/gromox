@@ -159,6 +159,8 @@ static bool skip_property(uint16_t id)
 	/* Contains entryids and so on, pretty useless after import. */
 		PROP_ID(PR_ACL_DATA), PROP_ID(PR_RULES_DATA),
 		PROP_ID(PR_RW_RULES_STREAM),
+	/* Computed property */
+		PROP_ID(PR_PARENT_DISPLAY), PROP_ID(PR_PARENT_DISPLAY_A),
 	};
 	return std::find(std::cbegin(tags), std::cend(tags), id) != std::cend(tags);
 }
