@@ -1793,8 +1793,7 @@ BOOL exmdb_server_copy_folder_internal(const char *dir,
 		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
 			return FALSE;
 	}
-	if (!cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE, normal_size, fai_size) &&
-	    gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+	if (!cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE, normal_size, fai_size))
 		return FALSE;
 	sql_transact.commit();
 	return TRUE;
@@ -1937,8 +1936,8 @@ BOOL exmdb_server_movecopy_folder(const char *dir,
 			    cpid, b_guest, username, src_val, TRUE, TRUE, TRUE,
 			    fid_val, &b_partial, &normal_size, &fai_size, nullptr))
 				return FALSE;
-			if (!cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE, normal_size, fai_size) &&
-			    gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+			if (!cu_adjust_store_size(pdb->psqlite, ADJ_INCREASE,
+			    normal_size, fai_size))
 				return FALSE;
 		}
 	}
