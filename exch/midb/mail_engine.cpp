@@ -1950,10 +1950,8 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	sqlite3 *psqlite;
 	uint32_t uidnext;
 	uint32_t uidnext1;
-	uint64_t message_id;
 	DOUBLE_LIST temp_list;
 	char sql_string[1024];
-	uint32_t message_flags;
 	DOUBLE_LIST_NODE *pnode;
 	
 	dir = common_util_get_maildir();
@@ -1996,31 +1994,25 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 		return FALSE;
 	}
 	for (size_t i = 0; i < rows.count; ++i) {
-		auto pvalue = rows.pparray[i]->getval(PidTagMid);
-		if (NULL == pvalue) {
+		auto num = rows.pparray[i]->get<const uint64_t>(PidTagMid);
+		if (num == nullptr)
 			continue;
-		}
-		message_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
-		pvalue = rows.pparray[i]->getval(PR_MESSAGE_FLAGS);
-		if (NULL == pvalue) {
+		auto message_id = rop_util_get_gc_value(*num);
+		auto flags = rows.pparray[i]->get<const uint32_t>(PR_MESSAGE_FLAGS);
+		if (flags == nullptr)
 			continue;
-		}
-		message_flags = *(uint64_t*)pvalue;
-		pvalue = rows.pparray[i]->getval(PR_LAST_MODIFICATION_TIME);
-		auto mod_time = pvalue != nullptr ? *static_cast<uint64_t *>(pvalue) : 0;
-		pvalue = rows.pparray[i]->getval(PROP_TAG_MESSAGEDELIVERYTIME);
-		auto received_time = pvalue != nullptr ? *static_cast<uint64_t *>(pvalue) : 0;
-		pvalue = rows.pparray[i]->getval(PidTagMidString);
+		auto mod_time = rows.pparray[i]->get<uint64_t>(PR_LAST_MODIFICATION_TIME);
+		auto recv_time = rows.pparray[i]->get<uint64_t>(PROP_TAG_MESSAGEDELIVERYTIME);
+		auto midstr = rows.pparray[i]->get<const char>(PidTagMidString);
 		sqlite3_reset(pstmt);
 		sqlite3_bind_int64(pstmt, 1, message_id);
-		if (NULL == pvalue) {
+		if (midstr == nullptr)
 			sqlite3_bind_null(pstmt, 2);
-		} else {
-			sqlite3_bind_text(pstmt, 2, static_cast<char *>(pvalue), -1, SQLITE_STATIC);
-		}
-		sqlite3_bind_int64(pstmt, 3, mod_time);
-		sqlite3_bind_int64(pstmt, 4, message_flags);
-		sqlite3_bind_int64(pstmt, 5, received_time);
+		else
+			sqlite3_bind_text(pstmt, 2, midstr, -1, SQLITE_STATIC);
+		sqlite3_bind_int64(pstmt, 3, mod_time != nullptr ? *mod_time : 0);
+		sqlite3_bind_int64(pstmt, 4, *flags);
+		sqlite3_bind_int64(pstmt, 5, recv_time != nullptr ? *recv_time : 0);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			return FALSE;
 		}
@@ -2059,7 +2051,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 		return FALSE;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		message_id = sqlite3_column_int64(pstmt, 0);
+		uint64_t message_id = sqlite3_column_int64(pstmt, 0);
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, message_id);
 		if (SQLITE_ROW != sqlite3_step(pstmt1)) {
@@ -2107,7 +2099,7 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	}
 	double_list_init(&temp_list);
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		message_id = sqlite3_column_int64(pstmt, 0);
+		uint64_t message_id = sqlite3_column_int64(pstmt, 0);
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, message_id);
 		if (SQLITE_ROW != sqlite3_step(pstmt1)) {
@@ -2153,6 +2145,18 @@ static BOOL mail_engine_sync_contents(IDB_ITEM *pidb, uint64_t folder_id)
 	return TRUE;
 }
 
+static const char *spfid_to_name(unsigned int z)
+{
+	switch (z) {
+	case PRIVATE_FID_INBOX: return "inbox";
+	case PRIVATE_FID_DRAFT: return "draft";
+	case PRIVATE_FID_SENT_ITEMS: return "sent";
+	case PRIVATE_FID_DELETED_ITEMS: return "trash";
+	case PRIVATE_FID_JUNK: return "junk";
+	default: return nullptr;
+	}
+}
+
 static BOOL mail_engine_get_encoded_name(sqlite3_stmt *pstmt,
 	uint64_t folder_id, char *encoded_name)
 {
@@ -2161,22 +2165,9 @@ static BOOL mail_engine_get_encoded_name(sqlite3_stmt *pstmt,
 	char temp_name[512];
 	DOUBLE_LIST temp_list;
 	DOUBLE_LIST_NODE *pnode;
-	
-	switch (folder_id) {
-	case PRIVATE_FID_INBOX:
-		strcpy(encoded_name, "inbox");
-		return TRUE;
-	case PRIVATE_FID_DRAFT:
-		strcpy(encoded_name, "draft");
-		return TRUE;
-	case PRIVATE_FID_SENT_ITEMS:
-		strcpy(encoded_name, "sent");
-		return TRUE;
-	case PRIVATE_FID_DELETED_ITEMS:
-		strcpy(encoded_name, "trash");
-		return TRUE;
-	case PRIVATE_FID_JUNK:
-		strcpy(encoded_name, "junk");
+
+	if (auto x = spfid_to_name(folder_id)) {
+		strcpy(encoded_name, x);
 		return TRUE;
 	}
 	double_list_init(&temp_list);
@@ -2237,7 +2228,7 @@ static uint64_t mail_engine_get_top_folder_id(
 	}
 }
 
-static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
+static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb, bool force_resync = false)
 {
 	BOOL b_new;
 	const char *dir;
@@ -2245,7 +2236,6 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	sqlite3 *psqlite;
 	uint32_t table_id;
 	uint32_t row_count;
-	uint64_t folder_id;
 	uint64_t parent_fid;
 	uint64_t commit_max;
 	char sql_string[1280];
@@ -2297,51 +2287,32 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 		return FALSE;
 	}
 	for (size_t i = 0; i < rows.count; ++i) {
-		const void *pvalue = rows.pparray[i]->getval(PR_ATTR_HIDDEN);
-		if (NULL != pvalue && 0 != *(uint8_t*)pvalue) {
+		auto flag = rows.pparray[i]->get<const uint8_t>(PR_ATTR_HIDDEN);
+		if (flag != nullptr && *flag != 0)
 			continue;
-		}
-		pvalue = rows.pparray[i]->getval(PR_CONTAINER_CLASS);
-		if (pvalue == nullptr || strcasecmp(static_cast<const char *>(pvalue), "IPF.Note") != 0)
+		auto str = rows.pparray[i]->get<const char>(PR_CONTAINER_CLASS);
+		if (str == nullptr || strcasecmp(str, "IPF.Note") != 0)
 			continue;
 		sqlite3_reset(pstmt);
-		pvalue = rows.pparray[i]->getval(PidTagFolderId);
-		if (NULL == pvalue) {
+		auto num = rows.pparray[i]->get<const uint64_t>(PidTagFolderId);
+		if (num == nullptr)
 			continue;
-		}
-		folder_id = rop_util_get_gc_value(*(uint64_t*)pvalue);
+		auto folder_id = rop_util_get_gc_value(*num);
 		sqlite3_bind_int64(pstmt, 1, folder_id);
-		pvalue = rows.pparray[i]->getval(PidTagParentFolderId);
-		if (NULL == pvalue) {
+		num = rows.pparray[i]->get<uint64_t>(PidTagParentFolderId);
+		if (num == nullptr)
 			continue;
-		}
-		parent_fid = rop_util_get_gc_value(*(uint64_t*)pvalue);
+		parent_fid = rop_util_get_gc_value(*num);
 		sqlite3_bind_int64(pstmt, 2, parent_fid);
-		switch (folder_id) {
-		case PRIVATE_FID_INBOX:
-			pvalue = "inbox";
-			break;
-		case PRIVATE_FID_DRAFT:
-			pvalue = "draft";
-			break;
-		case PRIVATE_FID_SENT_ITEMS:
-			pvalue = "sent";
-			break;
-		case PRIVATE_FID_DELETED_ITEMS:
-			pvalue = "trash";
-			break;
-		case PRIVATE_FID_JUNK:
-			pvalue = "junk";
-			break;
-		default:
-			pvalue = rows.pparray[i]->getval(PR_DISPLAY_NAME);
-			if (pvalue == nullptr || strlen(static_cast<const char *>(pvalue)) >= 256)
+		str = spfid_to_name(folder_id);
+		if (str == nullptr) {
+			str = rows.pparray[i]->get<char>(PR_DISPLAY_NAME);
+			if (str == nullptr || strlen(str) >= 256)
 				continue;
-			break;
 		}
-		sqlite3_bind_text(pstmt, 3, static_cast<const char *>(pvalue), -1, SQLITE_STATIC);
-		pvalue = rows.pparray[i]->getval(PR_LOCAL_COMMIT_TIME_MAX);
-		sqlite3_bind_int64(pstmt, 4, pvalue != nullptr ? *static_cast<const uint64_t *>(pvalue) : 0);
+		sqlite3_bind_text(pstmt, 3, str, -1, SQLITE_STATIC);
+		num = rows.pparray[i]->get<uint64_t>(PR_LOCAL_COMMIT_TIME_MAX);
+		sqlite3_bind_int64(pstmt, 4, num != nullptr ? *num : 0);
 		if (SQLITE_DONE != sqlite3_step(pstmt)) {
 			return FALSE;
 		}
@@ -2370,7 +2341,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 		return false;
 	}
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		folder_id = sqlite3_column_int64(pstmt, 0);
+		uint64_t folder_id = sqlite3_column_int64(pstmt, 0);
 		switch (mail_engine_get_top_folder_id(pstmt3, folder_id)) {
 		case PRIVATE_FID_OUTBOX:
 		case PRIVATE_FID_SYNC_ISSUES:
@@ -2404,7 +2375,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 				        "WHERE folder_id=%llu", encoded_name, LLU(folder_id));
 				gx_sql_exec(pidb->psqlite, sql_string);
 			}
-			if (gx_sql_col_uint64(pstmt1, 2) == commit_max)
+			if (gx_sql_col_uint64(pstmt1, 2) == commit_max && !force_resync)
 				continue;	
 			b_new = FALSE;
 		}
@@ -2432,7 +2403,7 @@ static BOOL mail_engine_sync_mailbox(IDB_ITEM *pidb)
 	}
 	double_list_init(&temp_list);
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		folder_id = sqlite3_column_int64(pstmt, 0);
+		uint64_t folder_id = sqlite3_column_int64(pstmt, 0);
 		sqlite3_reset(pstmt1);
 		sqlite3_bind_int64(pstmt1, 1, folder_id);
 		if (SQLITE_ROW != sqlite3_step(pstmt1)) {
@@ -2500,7 +2471,7 @@ static IDB_REF mail_engine_peek_idb(const char *path)
 	return IDB_REF(pidb);
 }
 
-static IDB_REF mail_engine_get_idb(const char *path)
+static IDB_REF mail_engine_get_idb(const char *path, bool force_resync = false)
 {
 	BOOL b_load;
 	char temp_path[256];
@@ -2567,8 +2538,8 @@ static IDB_REF mail_engine_get_idb(const char *path)
 		hhold.unlock();
 		return {};
 	}
-	if (b_load) {
-		mail_engine_sync_mailbox(pidb);
+	if (b_load || force_resync) {
+		mail_engine_sync_mailbox(pidb, force_resync);
 	} else if (pidb->psqlite == nullptr) {
 		pidb->last_time = 0;
 		pidb->lock.unlock();
@@ -2712,14 +2683,8 @@ static int mail_engine_menum(int argc, char **argv, int sockd)
 	temp_len = 32;
 	count = 0;
 	while (SQLITE_ROW == sqlite3_step(pstmt)) {
-		switch (sqlite3_column_int64(pstmt, 0)) {
-		case PRIVATE_FID_INBOX:
-		case PRIVATE_FID_DRAFT:
-		case PRIVATE_FID_SENT_ITEMS:
-		case PRIVATE_FID_DELETED_ITEMS:
-		case PRIVATE_FID_JUNK:
+		if (spfid_to_name(sqlite3_column_int64(pstmt, 0)) != nullptr)
 			continue;
-		}
 		temp_len += gx_snprintf(temp_buff + temp_len,
 		            GX_ARRAY_SIZE(temp_buff) - temp_len, "%s\r\n",
 					sqlite3_column_text(pstmt, 1));
@@ -4862,6 +4827,54 @@ static int mail_engine_psrhu(int argc, char **argv, int sockd)
 	return 0;
 }
 
+static int mail_engine_xunld(int argc, char **argv, int sockd)
+{
+	if (argc != 2)
+		return MIDB_E_PARAMETER_ERROR;
+	std::lock_guard hhold(g_hash_lock);
+	auto it = g_hash_table.find(argv[1]);
+	if (it == g_hash_table.end())
+		return MIDB_E_STORE_NOT_LOADED;
+	auto pidb = &it->second;
+	if (pidb->reference != 0)
+		return MIDB_E_STORE_BUSY;
+	if (pidb->sub_id != 0)
+		exmdb_client::unsubscribe_notification(argv[1], pidb->sub_id);
+	g_hash_table.erase(it);
+	cmd_write(sockd, "TRUE 1\r\n", 8);
+	return 0;
+}
+
+static int mail_engine_xrsym(int argc, char **argv, int sockd)
+{
+	if (argc != 2)
+		return MIDB_E_PARAMETER_ERROR;
+	auto idb = mail_engine_peek_idb(argv[1]);
+	if (idb == nullptr) {
+		mail_engine_get_idb(argv[1], true);
+		cmd_write(sockd, "TRUE 2\r\n", 8);
+	} else if (!mail_engine_sync_mailbox(idb.get(), true)) {
+		cmd_write(sockd, "TRUE 0\r\n", 8);
+	} else {
+		cmd_write(sockd, "TRUE 1\r\n", 8);
+	}
+	return 0;
+}
+
+static int mail_engine_xrsyf(int argc, char **argv, int sockd)
+{
+	if (argc != 3)
+		return MIDB_E_PARAMETER_ERROR;
+	auto idb = mail_engine_get_idb(argv[1]);
+	if (idb == nullptr)
+		return MIDB_E_HASHTABLE_FULL;
+	if (!mail_engine_sync_contents(idb.get(), strtoul(argv[2], nullptr, 0)))
+		cmd_write(sockd, "FALSE 1\r\n", 9);
+	else
+		cmd_write(sockd, "TRUE 1\r\n", 8);
+	return 0;
+}
+
 static void mail_engine_add_notification_message(
 	IDB_ITEM *pidb, uint64_t folder_id, uint64_t message_id)
 {
@@ -4983,25 +4996,10 @@ static BOOL mail_engine_add_notification_folder(
 	TPROPVAL_ARRAY propvals;
 	uint32_t tmp_proptags[4];
 	
-	switch (parent_id) {
-	case PRIVATE_FID_IPMSUBTREE:
-		break;
-	case PRIVATE_FID_INBOX:
-		strcpy(decoded_name, "inbox");
-		break;
-	case PRIVATE_FID_DRAFT:
-		strcpy(decoded_name, "draft");
-		break;
-	case PRIVATE_FID_SENT_ITEMS:
-		strcpy(decoded_name, "sent");
-		break;
-	case PRIVATE_FID_DELETED_ITEMS:
-		strcpy(decoded_name, "trash");
-		break;
-	case PRIVATE_FID_JUNK:
-		strcpy(decoded_name, "junk");
-		break;
-	default: {
+	if (auto x = spfid_to_name(parent_id)) {
+		strcpy(decoded_name, x);
+	} else if (parent_id == PRIVATE_FID_IPMSUBTREE) {
+	} else {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT name FROM"
 		          " folders WHERE folder_id=%llu", LLU(parent_id));
 		auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
@@ -5009,7 +5007,6 @@ static BOOL mail_engine_add_notification_folder(
 		    !decode_hex_binary(S2A(sqlite3_column_text(pstmt, 0)),
 		    decoded_name, sizeof(decoded_name)))
 			return FALSE;
-	}
 	}
 	proptags.count = 4;
 	proptags.pproptag = tmp_proptags;
@@ -5135,25 +5132,10 @@ static void mail_engine_move_notification_folder(
 		return;
 	}
 	pstmt.finalize();
-	switch (parent_id) {
-	case PRIVATE_FID_IPMSUBTREE:
-		break;
-	case PRIVATE_FID_INBOX:
-		strcpy(decoded_name, "inbox");
-		break;
-	case PRIVATE_FID_DRAFT:
-		strcpy(decoded_name, "draft");
-		break;
-	case PRIVATE_FID_SENT_ITEMS:
-		strcpy(decoded_name, "sent");
-		break;
-	case PRIVATE_FID_DELETED_ITEMS:
-		strcpy(decoded_name, "trash");
-		break;
-	case PRIVATE_FID_JUNK:
-		strcpy(decoded_name, "junk");
-		break;
-	default:
+	if (auto x = spfid_to_name(parent_id)) {
+		strcpy(decoded_name, x);
+	} else if (parent_id == PRIVATE_FID_IPMSUBTREE) {
+	} else {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT name FROM"
 		          " folders WHERE folder_id=%llu", LLU(parent_id));
 		pstmt = gx_sql_prep(pidb->psqlite, sql_string);
@@ -5209,15 +5191,8 @@ static void mail_engine_modify_notification_folder(
 	char encoded_name[1024];
 	TPROPVAL_ARRAY propvals;
 	
-	switch (folder_id) {	
-	case PRIVATE_FID_IPMSUBTREE:
-	case PRIVATE_FID_INBOX:
-	case PRIVATE_FID_DRAFT:
-	case PRIVATE_FID_SENT_ITEMS:
-	case PRIVATE_FID_DELETED_ITEMS:
-	case PRIVATE_FID_JUNK:
+	if (spfid_to_name(folder_id) != nullptr || folder_id == PRIVATE_FID_IPMSUBTREE)
 		return;
-	}
 	snprintf(sql_string, arsizeof(sql_string), "SELECT name FROM"
 	          " folders WHERE folder_id=%llu", LLU(folder_id));
 	auto pstmt = gx_sql_prep(pidb->psqlite, sql_string);
@@ -5497,6 +5472,9 @@ int mail_engine_run()
 	cmd_parser_register_command("P-GFLG", mail_engine_pgflg);
 	cmd_parser_register_command("P-SRHL", mail_engine_psrhl);
 	cmd_parser_register_command("P-SRHU", mail_engine_psrhu);
+	cmd_parser_register_command("X-UNLD", mail_engine_xunld);
+	cmd_parser_register_command("X-RSYM", mail_engine_xrsym);
+	cmd_parser_register_command("X-RSYF", mail_engine_xrsyf);
 	exmdb_client_register_proc(reinterpret_cast<void *>(mail_engine_notification_proc));
 	return 0;
 }

@@ -129,6 +129,8 @@ static constexpr std::pair<unsigned int, const char *> g_default_code_table[] = 
 	{2000 | MIDB_E_FOLDER_LIMIT, "reached the limitation of folders"},
 	{2000 | MIDB_E_MAILBOX_FULL, "mailbox is full"},
 	{2000 | MIDB_E_NO_DELETE, "midb: failed to delete the folder"},
+	{2000 | MIDB_E_STORE_NOT_LOADED, "midb: store not loaded"},
+	{2000 | MIDB_E_STORE_BUSY, "midb: store is being used"},
 };
 
 static std::unordered_map<unsigned int, std::string> g_def_code_table;

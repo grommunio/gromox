@@ -14,6 +14,7 @@
 #include <gromox/database_mysql.hpp>
 #include <gromox/dbop.h>
 #include <gromox/defs.h>
+#include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/svc_common.h>
 #include <mysql.h>
@@ -282,25 +283,25 @@ int mysql_adaptor_get_class_users(int class_id, std::vector<sql_user> &pfile) tr
 
 int mysql_adaptor_get_domain_users(int domain_id, std::vector<sql_user> &pfile) try
 {
-	char query[397];
+	char query[406];
 
 	auto conn = g_sqlconn_pool.get_wait();
 	if (conn.res == nullptr)
 		return false;
-	snprintf(query, GX_ARRAY_SIZE(query),
+	gx_snprintf(query, arsizeof(query),
 	         "SELECT u.username, a.aliasname FROM users AS u "
 	         "INNER JOIN aliases AS a ON u.domain_id=%d AND u.username=a.mainname", domain_id);
 	aliasmap_t amap;
 	aliasmap_load(conn.res, query, amap);
 
-	snprintf(query, GX_ARRAY_SIZE(query),
+	gx_snprintf(query, arsizeof(query),
 	         "SELECT u.id, p.proptag, p.propval_bin, p.propval_str FROM users AS u "
 	         "INNER JOIN user_properties AS p ON u.domain_id=%d AND u.id=p.user_id "
 	         "ORDER BY p.user_id, p.proptag, p.order_id", domain_id);
 	propmap_t pmap;
 	propmap_load(conn.res, query, pmap);
 
-	snprintf(query, GX_ARRAY_SIZE(query),
+	gx_snprintf(query, arsizeof(query),
 	         "SELECT u.id, u.username, up.propval_str AS dtypx, 9998, "
 	         "u.maildir, z.list_type, z.list_privilege, "
 	         "cl.classname, gr.title FROM users AS u "
