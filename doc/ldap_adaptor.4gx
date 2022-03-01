@@ -27,8 +27,8 @@ the purpose of metadata searches.
 Default: \fI4\fP
 .TP
 \fBldap_bind_user\fP
-An LDAP binddn to use for metadata searches. You cannot use SASL
-mechanisms/SASL users at this time.
+An LDAP binddn to use for metadata searches. You cannot use but Simple
+Authentication at this time.
 .br
 Default: (unset)
 .TP
