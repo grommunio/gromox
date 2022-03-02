@@ -1085,6 +1085,14 @@ static int do_database(std::unique_ptr<driver> &&drv, const char *title)
 	return 0;
 }
 
+static void terse_help()
+{
+	fprintf(stderr, "Usage: SRCPASS=sqlpass gromox-kdb2mt --src-sql kdb.lan "
+	        "--src-attach /tmp/at --src-mbox jdoe\n");
+	fprintf(stderr, "Option overview: gromox-kdb2mt -?\n");
+	fprintf(stderr, "Documentation: man gromox-kdb2mt\n");
+}
+
 int main(int argc, const char **argv)
 {
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -1094,15 +1102,16 @@ int main(int argc, const char **argv)
 		g_with_hidden = !g_splice;
 	if ((g_srcguid != nullptr) == (g_srcmbox != nullptr)) {
 		fprintf(stderr, "Exactly one of --src-guid or --src-mbox must be specified.\n");
+		terse_help();
 		return EXIT_FAILURE;
 	} else if (g_atxdir == nullptr) {
 		fprintf(stderr, "You need to specify the --src-at option.\n");
 		fprintf(stderr, "(To skip importing file-based attachments, use --src-at \"\".)\n");
+		terse_help();
 		return EXIT_FAILURE;
 	}
 	if (argc != 1) {
-		fprintf(stderr, "Usage: SRCPASS=sqlpass gromox-kdb2mt --src-sql kdb.lan "
-		        "--src-attach /tmp/at --src-mbox jdoe\n");
+		terse_help();
 		return EXIT_FAILURE;
 	}
 

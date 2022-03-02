@@ -368,13 +368,20 @@ static void gi_dump_thru_map(const gi_thru_map &map)
 		fprintf(stderr, "\t%04xh <-> %04xh\n", from, to);
 }
 
+static void terse_help()
+{
+	fprintf(stderr, "Usage: gromox-mt2exm -u target@mbox.de <stream.dump\n");
+	fprintf(stderr, "Option overview: gromox-mt2exm -?\n");
+	fprintf(stderr, "Documentation: man gromox-mt2exm\n");
+}
+
 int main(int argc, const char **argv) try
 {
 	setvbuf(stdout, nullptr, _IOLBF, 0);
 	if (HX_getopt(g_options_table, &argc, &argv, HXOPT_USAGEONERR) != HXOPT_ERR_SUCCESS)
 		return EXIT_FAILURE;
 	if (g_username == nullptr) {
-		fprintf(stderr, "Usage: gromox-mt2exm -u username\n");
+		terse_help();
 		return EXIT_FAILURE;
 	}
 

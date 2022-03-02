@@ -1167,6 +1167,13 @@ static int do_file(const char *filename) try
 	return -ECANCELED;
 }
 
+static void terse_help()
+{
+	fprintf(stderr, "Usage: gromox-pff2mt [-pst] input.pst | gromox-mt2.... \n");
+	fprintf(stderr, "Option overview: gromox-pff2mt -?\n");
+	fprintf(stderr, "Documentation: man gromox-pff2mt\n");
+}
+
 int main(int argc, const char **argv)
 {
 	setvbuf(stdout, nullptr, _IOLBF, 0);
@@ -1175,7 +1182,7 @@ int main(int argc, const char **argv)
 	if (g_with_hidden < 0)
 		g_with_hidden = !g_splice;
 	if (argc != 2) {
-		fprintf(stderr, "Usage: gromox-pff2mt [-pst] input.pst | gromox-mt2.... \n");
+		terse_help();
 		return EXIT_FAILURE;
 	}
 	if (isatty(STDOUT_FILENO)) {
