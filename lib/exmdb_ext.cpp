@@ -4087,10 +4087,10 @@ const char *exmdb_rpc_strerror(exmdb_response v)
 {
 	switch (v) {
 	case exmdb_response::access_deny: return "Access denied";
-	case exmdb_response::max_reached: return "Maximum connections reached in server";
-	case exmdb_response::lack_memory: return "mMximum connections reached in server";
-	case exmdb_response::misconfig_prefix: return "Maximum connections reached in server";
-	case exmdb_response::misconfig_mode: return "Maximum connections reached in server";
+	case exmdb_response::max_reached: return "Server reached maximum number of connections";
+	case exmdb_response::lack_memory: return "Out of memory";
+	case exmdb_response::misconfig_prefix: return "Prefix is not served";
+	case exmdb_response::misconfig_mode: return "Prefix has type mismatch";
 	case exmdb_response::connect_incomplete: return "No prior CONNECT RPC made";
 	case exmdb_response::pull_error: return "Invalid request/Server-side deserializing error";
 	case exmdb_response::dispatch_error: return "Dispatch error";
