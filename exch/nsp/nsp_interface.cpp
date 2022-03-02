@@ -493,7 +493,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 			"ncacn_http:%s", rpc_info.ep_host);
 		return ecSuccess;
 	}
-	case PROP_TAG_THUMBNAILPHOTO:
+	case PR_EMS_AB_THUMBNAIL_PHOTO:
 		if (node_type != abnode_type::person)
 			return ecNotFound;
 		ab_tree_get_user_info(pnode, USER_STORE_PATH, dn, GX_ARRAY_SIZE(dn));
@@ -1783,7 +1783,7 @@ static int nsp_interface_get_default_proptags(abnode_type node_type,
 		t[z++] = U(PR_EMS_AB_HOME_MDB);
 		t[z++] = PR_CREATION_TIME;
 		if (node_type == abnode_type::person)
-			t[z++] = PROP_TAG_THUMBNAILPHOTO;
+			t[z++] = PR_EMS_AB_THUMBNAIL_PHOTO;
 		break;
 	case abnode_type::mlist:
 		t[z++] = U(PR_SMTP_ADDRESS);

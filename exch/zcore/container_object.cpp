@@ -1011,7 +1011,7 @@ void container_object_get_user_table_all_proptags(
 		PR_ENTRYID, PR_RECORD_KEY, PR_ORIGINAL_ENTRYID, PR_SEARCH_KEY,
 		PR_INSTANCE_KEY, PR_MAPPING_SIGNATURE, PR_SEND_RICH_INFO,
 		PR_TEMPLATEID, PR_EMS_AB_OBJECT_GUID, PR_CREATION_TIME,
-		PROP_TAG_THUMBNAILPHOTO,
+		PR_EMS_AB_THUMBNAIL_PHOTO,
 	};
 	pproptags->count = arsizeof(p);
 	pproptags->pproptag = deconst(p);

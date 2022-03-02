@@ -815,6 +815,7 @@ enum {
 	// PR_EMS_AB_HAB_ROOT_DEPARTMENT = PROP_TAG(PT_STRING8, 0x8C98), /* PidTagAddressBookHierarchicalRootDepartment */
 	// PR_EMS_AB_HAB_PARENT_DEPARTMENT = PROP_TAG(PT_OBJECT, 0x8C99), /* PidTagAddressBookHierarchicalParentDepartment */
 	// PR_EMS_AB_HAB_CHILD_DEPARTMENTS = PROP_TAG(PT_OBJECT, 0x8C9A), /* PidTagAddressBookHierarchicalChildDepartments */
+	PR_EMS_AB_THUMBNAIL_PHOTO = PROP_TAG(PT_BINARY, 0x8C9E), /* PidTagThumbnailPhoto */
 	// PR_EMS_AB_HAB_SENIORITY_INDEX = PROP_TAG(PT_LONG, 0x8CA0), /* PidTagAddressBookSeniorityIndex */
 	// PR_EMS_AB_ORG_UNIT_ROOT_DN = PROP_TAG(PT_UNICODE, 0x8CA8), /* PidTagAddressBookOrganizationalUnitRootDistinguishedName */
 	// PR_EMS_AB_DL_SENDER_HINT_TRANSLATIONS = PROP_TAG(PT_MV_UNICODE, 0x8CAC), /* PidTagAddressBookSenderHintTranslations */

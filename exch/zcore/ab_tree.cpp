@@ -1571,7 +1571,7 @@ static BOOL ab_tree_fetch_node_property(const SIMPLE_TREE_NODE *pnode,
 		*ppvalue = sa;
 		return TRUE;
 	}
-	case PROP_TAG_THUMBNAILPHOTO:
+	case PR_EMS_AB_THUMBNAIL_PHOTO:
 		if (node_type != abnode_type::person)
 			return TRUE;
 		pvalue = cu_alloc<BINARY>();

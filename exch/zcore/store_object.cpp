@@ -1387,7 +1387,7 @@ BOOL store_object::set_properties(const TPROPVAL_ARRAY *ppropvals)
 				system_services_set_timezone(pstore->account,
 					static_cast<char *>(ppropvals->ppropval[i].pvalue));
 			break;
-		case PROP_TAG_THUMBNAILPHOTO: {
+		case PR_EMS_AB_THUMBNAIL_PHOTO: {
 			if (!pstore->b_private)
 				break;
 			int fd = -1;
