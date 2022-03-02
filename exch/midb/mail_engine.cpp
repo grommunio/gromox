@@ -4997,7 +4997,7 @@ static BOOL mail_engine_add_notification_folder(
 	uint32_t tmp_proptags[4];
 	
 	if (auto x = spfid_to_name(parent_id)) {
-		strcpy(decoded_name, x);
+		gx_strlcpy(decoded_name, x, arsizeof(decoded_name));
 	} else if (parent_id == PRIVATE_FID_IPMSUBTREE) {
 	} else {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT name FROM"
@@ -5133,7 +5133,7 @@ static void mail_engine_move_notification_folder(
 	}
 	pstmt.finalize();
 	if (auto x = spfid_to_name(parent_id)) {
-		strcpy(decoded_name, x);
+		gx_strlcpy(decoded_name, x, arsizeof(decoded_name));
 	} else if (parent_id == PRIVATE_FID_IPMSUBTREE) {
 	} else {
 		snprintf(sql_string, arsizeof(sql_string), "SELECT name FROM"
