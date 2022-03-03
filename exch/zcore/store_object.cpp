@@ -1190,7 +1190,7 @@ static BOOL store_object_set_oof_property(const char *maildir,
 	case PR_EC_EXTERNAL_SUBJECT: {
 		try {
 			autoreply_path = maildir;
-			autoreply_path += proptag == PR_EC_OUTOFOFFICE_MSG ?
+			autoreply_path += proptag == PR_EC_OUTOFOFFICE_SUBJECT ?
 			             "/config/internal-reply" : "/config/external-reply";
 		} catch (const std::bad_alloc &) {
 			fprintf(stderr, "E-1485: ENOMEM\n");
