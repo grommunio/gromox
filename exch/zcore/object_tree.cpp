@@ -3,7 +3,9 @@
 // This file is part of Gromox.
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <libHX/string.h>
+#include <gromox/clock.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
@@ -48,6 +50,7 @@ struct root_object {
 	char *maildir = nullptr;
 	TPROPVAL_ARRAY *pprivate_proplist = nullptr;
 	TARRAY_SET *pprof_set = nullptr;
+	std::mutex writeout_mtx;
 };
 
 }
@@ -138,6 +141,7 @@ static void object_tree_write_root(root_object *prootobj)
 		return;
 	snprintf(tmp_path, arsizeof(tmp_path), "%s/config/zarafa.dat",
 		prootobj->maildir);
+	std::lock_guard lk(prootobj->writeout_mtx);
 	fd = open(tmp_path, O_CREAT|O_WRONLY|O_TRUNC, 0666);
 	if (fd < 0)
 		return;
@@ -334,7 +338,16 @@ BOOL OBJECT_TREE::set_zstore_propval(const TAGGED_PROPVAL *ppropval)
 	}
 	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
-	return prootobj->pprivate_proplist->set(*ppropval) == 0 ? TRUE : false;
+	auto ret = prootobj->pprivate_proplist->set(*ppropval);
+	if (ret != 0)
+		return false;
+	/*
+	 * g-web touches PR_EC_WEBACCESS_SETTINGS_JSON every now and then even
+	 * if just browing one's store/settings panel. Occurrence seems still
+	 * acceptable that we may not need to add an age check.
+	 */
+	object_tree_write_root(prootobj);
+	return TRUE;
 }
 
 void OBJECT_TREE::remove_zstore_propval(uint32_t proptag)
@@ -347,6 +360,7 @@ void OBJECT_TREE::remove_zstore_propval(uint32_t proptag)
 	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
 	prootobj->pprivate_proplist->erase(proptag);
+	object_tree_write_root(prootobj);
 }
 
 TPROPVAL_ARRAY *OBJECT_TREE::get_profile_sec(GUID sec_guid)
@@ -386,6 +400,7 @@ void OBJECT_TREE::touch_profile_sec()
 	}
 	auto prootobj = static_cast<root_object *>(static_cast<OBJECT_NODE *>(proot->pdata)->pobject);
 	prootobj->b_touched = TRUE;
+	object_tree_write_root(prootobj);
 }
 
 uint32_t OBJECT_TREE::get_store_handle(BOOL b_private, int account_id)
