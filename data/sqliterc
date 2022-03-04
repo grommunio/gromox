@@ -1,0 +1,3 @@
+# ~/.sqliterc
+.mode column
+PRAGMA foreign_keys=ON;

@@ -1,0 +1,8 @@
+# ~/.gdbinit
+
+# for debug info processing
+set auto-load safe-path /
+
+# ignore typical signals
+handle SIGPIPE nostop noprint
+handle SIGTSTP nostop noprint
