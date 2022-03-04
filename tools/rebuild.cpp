@@ -144,7 +144,7 @@ int main(int argc, const char **argv)
 		if (gx_sql_exec(psqlite, q) != SQLITE_OK)
 			return 9;
 	sql_transact.commit();
-	sqlite3_exec(psqlite, "DETACH DATABASE source_db", NULL, NULL, NULL);
+	gx_sql_exec(psqlite, "DETACH DATABASE source_db");
 	if (gx_sql_exec(psqlite, "REINDEX") != SQLITE_OK)
 		return 9;
 	auto pstmt = gx_sql_prep(psqlite, "PRAGMA integrity_check");

@@ -5,9 +5,13 @@
 #include <sqlite3.h>
 #include <gromox/database.h>
 
+unsigned int gx_sqlite_debug;
+
 xstmt gx_sql_prep(sqlite3 *db, const char *query)
 {
 	xstmt out;
+	if (gx_sqlite_debug >= 1)
+		fprintf(stderr, "> sqlite3_prep(%s)\n", query);
 	int ret = sqlite3_prepare_v2(db, query, -1, &out.m_ptr, nullptr);
 	if (ret != SQLITE_OK)
 		fprintf(stderr, "sqlite3_prepare_v2 \"%s\": %s\n",
@@ -45,6 +49,8 @@ xtransaction gx_sql_begin_trans(sqlite3 *db)
 int gx_sql_exec(sqlite3 *db, const char *query, unsigned int flags)
 {
 	char *estr = nullptr;
+	if (gx_sqlite_debug >= 1)
+		fprintf(stderr, "> sqlite3_exec(%s)\n", query);
 	auto ret = sqlite3_exec(db, query, nullptr, nullptr, &estr);
 	if (ret == SQLITE_OK)
 		return ret;

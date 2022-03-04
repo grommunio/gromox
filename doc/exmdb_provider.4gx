@@ -106,6 +106,13 @@ Default: \fI10\fP
 \fBseparator_for_bounce\fP
 Default: \fI;\fP
 .TP
+\fBsqlite_debug\fP
+If set to 1, every query given to SQLite prepare/execute is logged.
+If set to 0, only failed queries are logged. (It cannot be made completely
+silent, since our queries ought to never fail.)
+.br
+Default: \fI0\fP
+.TP
 \fBsqlite_mmap_size\fP
 See https://www.sqlite.org/pragma.html#pragma_mmap_size for details.
 .br

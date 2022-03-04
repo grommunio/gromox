@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
+#include <gromox/database.h>
 #include <gromox/defs.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
@@ -69,6 +70,7 @@ static constexpr cfg_directive midb_cfg_defaults[] = {
 	{"notify_stub_threads_num", "10", CFG_SIZE, "1", "200"},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "1", "200"},
 	{"service_plugin_path", PKGLIBDIR},
+	{"sqlite_debug", "0"},
 	{"sqlite_mmap_size", "0", CFG_SIZE},
 	{"sqlite_synchronous", "off", CFG_BOOL},
 	{"sqlite_wal_mode", "true", CFG_BOOL},
@@ -161,7 +163,8 @@ int main(int argc, const char **argv) try
 	
 	int mime_num = pconfig->get_ll("midb_mime_number");
 	printf("[system]: mime number is %d\n", mime_num);
-	
+
+	gx_sqlite_debug = pconfig->get_ll("sqlite_debug");
 	uint64_t mmap_size = pconfig->get_ll("sqlite_mmap_size");
 	if (0 == mmap_size) {
 		printf("[system]: sqlite mmap_size is disabled\n");

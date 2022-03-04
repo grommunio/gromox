@@ -8,6 +8,7 @@
 #include <utility>
 #include <libHX/string.h>
 #include <gromox/config_file.hpp>
+#include <gromox/database.h>
 #include <gromox/defs.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
@@ -47,6 +48,7 @@ static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"populating_threads_num", "50", CFG_SIZE, "1", "50"},
 	{"rpc_proxy_connection_num", "10", CFG_SIZE, "0"},
 	{"separator_for_bounce", ";"},
+	{"sqlite_debug", "0"},
 	{"sqlite_mmap_size", "0", CFG_SIZE},
 	{"sqlite_synchronous", "false", CFG_BOOL},
 	{"sqlite_wal_mode", "false", CFG_BOOL},
@@ -72,6 +74,7 @@ static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 	}
 	config_file_apply(*pconfig, exmdb_cfg_defaults);
 	g_exrpc_debug = pconfig->get_ll("exrpc_debug");
+	gx_sqlite_debug = pconfig->get_ll("sqlite_debug");
 	g_dbg_synth_content = pconfig->get_ll("dbg_synthesize_content");
 	g_enable_dam = parse_bool(pconfig->get_value("enable_dam"));
 	g_mbox_contention_warning = pconfig->get_ll("mbox_contention_warning");

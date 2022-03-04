@@ -51,3 +51,5 @@ static inline uint64_t gx_sql_col_uint64(sqlite3_stmt *s, int c)
 	auto x = sqlite3_column_int64(s, c);
 	return x >= 0 ? x : 0;
 }
+
+extern GX_EXPORT unsigned int gx_sqlite_debug;
