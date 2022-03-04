@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
 #include <gromox/common_types.hpp>
@@ -28,10 +29,10 @@
 
 using namespace gromox;
 
-static size_t g_threads_num;
+static unsigned int g_threads_num;
 static gromox::atomic_bool g_notify_stop;
 static int g_timeout_interval;
-static std::unique_ptr<pthread_t[]> g_thread_ids;
+static std::vector<pthread_t> g_thread_ids;
 static std::mutex g_connection_lock, g_cond_mutex;
 static std::condition_variable g_waken_cond;
 static DOUBLE_LIST g_connection_list;
@@ -44,9 +45,10 @@ static int cmd_parser_generate_args(char* cmd_line, int cmd_len, char** argv);
 
 static int cmd_parser_ping(int argc, char **argv, int sockd);
 
-void cmd_parser_init(size_t threads_num, int timeout, unsigned int debug)
+void cmd_parser_init(unsigned int threads_num, int timeout, unsigned int debug)
 {
 	g_threads_num = threads_num;
+	g_thread_ids.reserve(g_threads_num);
 	g_timeout_interval = timeout;
 	g_cmd_debug = debug;
 	double_list_init(&g_connection_list);
@@ -86,31 +88,24 @@ void cmd_parser_put_connection(MIDB_CONNECTION *pconnection)
 
 int cmd_parser_run()
 {
-	size_t i;
 	pthread_attr_t thr_attr;
 	pthread_attr_init(&thr_attr);
 	auto cl_0 = make_scope_exit([&]() { pthread_attr_destroy(&thr_attr); });
 
 	cmd_parser_register_command("PING", cmd_parser_ping);
-	try {
-		g_thread_ids = std::make_unique<pthread_t[]>(g_threads_num);
-	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1646: ENOMEM\n");
-		return -1;
-	}
-	memset(g_thread_ids.get(), 0, sizeof(pthread_t) * g_threads_num);
 	g_notify_stop = false;
 
-	for (i=0; i<g_threads_num; i++) {
-		int ret = pthread_create(&g_thread_ids[i], &thr_attr,
-		          midcp_thrwork, nullptr);
+	for (unsigned int i = 0; i < g_threads_num; ++i) {
+		pthread_t tid;
+		auto ret = pthread_create(&tid, &thr_attr, midcp_thrwork, nullptr);
 		if (ret != 0) {
 			printf("[cmd_parser]: failed to create pool thread: %s\n", strerror(ret));
 			return -1;
 		}
 		char buf[32];
-		snprintf(buf, sizeof(buf), "cmd_parser/%zu", i);
-		pthread_setname_np(g_thread_ids[i], buf);
+		snprintf(buf, sizeof(buf), "cmd_parser/%u", i);
+		pthread_setname_np(tid, buf);
+		g_thread_ids.push_back(tid);
 	}
 	return 0;
 }
@@ -134,12 +129,11 @@ void cmd_parser_stop()
 		}	
 	}
 	chold.unlock();
-	if (g_thread_ids != nullptr)
-		for (size_t i = 0; i < g_threads_num; ++i)
-			if (!pthread_equal(g_thread_ids[i], {})) {
-				pthread_kill(g_thread_ids[i], SIGALRM);
-				pthread_join(g_thread_ids[i], NULL);
-			}
+	for (auto tid : g_thread_ids) {
+		pthread_kill(tid, SIGALRM);
+		pthread_join(tid, nullptr);
+	}
+	g_thread_ids.clear();
 	while ((pnode = double_list_pop_front(&g_connection_list)) != nullptr) {
 		pconnection = static_cast<MIDB_CONNECTION *>(pnode->pdata);
 		if (-1 != pconnection->sockd) {

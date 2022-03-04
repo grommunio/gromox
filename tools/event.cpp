@@ -267,32 +267,28 @@ int main(int argc, const char **argv) try
 			pthread_join(tid, nullptr);
 		}
 	});
-	size_t i;
-	for (i=0; i<g_threads_num; i++) {
+	for (unsigned int i = 0; i < g_threads_num; ++i) {
 		pthread_t tid;
 		ret = pthread_create(&tid, &thr_attr, ev_enqwork, nullptr);
 		if (ret != 0) {
+			g_notify_stop = true;
 			printf("[system]: failed to create enqueue pool thread: %s\n", strerror(ret));
-			break;
+			return 9;
 		}
-		tidlist.push_back(tid);
 		char buf[32];
-		snprintf(buf, sizeof(buf), "enqueue/%zu", i);
+		snprintf(buf, sizeof(buf), "enqueue/%u", i);
 		pthread_setname_np(tid, buf);
+		tidlist.push_back(tid);
 
 		ret = pthread_create(&tid, &thr_attr, ev_deqwork, nullptr);
 		if (ret != 0) {
+			g_notify_stop = true;
 			printf("[system]: failed to create dequeue pool thread: %s\n", strerror(ret));
-			break;
+			return 9;
 		}
-		tidlist.push_back(tid);
-		snprintf(buf, sizeof(buf), "dequeue/%zu", i);
+		snprintf(buf, sizeof(buf), "dequeue/%u", i);
 		pthread_setname_np(tid, buf);
-	}
-	
-	if (i != g_threads_num) {
-		g_notify_stop = true;
-		return 9;
+		tidlist.push_back(tid);
 	}
 
 	ret = list_file_read_fixedstrings("event_acl.txt",

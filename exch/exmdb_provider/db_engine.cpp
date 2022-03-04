@@ -85,7 +85,7 @@ struct ROWDEL_NODE {
 static BOOL g_wal;
 static BOOL g_async;
 static size_t g_table_size; /* hash table size */
-static int g_threads_num;
+static unsigned int g_threads_num;
 static gromox::atomic_bool g_notify_stop; /* stop signal for scaning thread */
 static pthread_t g_scan_tid;
 static uint64_t g_mmap_size;
@@ -664,7 +664,7 @@ static void *mdpeng_thrwork(void *param)
 }
 
 void db_engine_init(size_t table_size, int cache_interval,
-	BOOL b_async, BOOL b_wal, uint64_t mmap_size, int threads_num)
+	BOOL b_async, BOOL b_wal, uint64_t mmap_size, unsigned int threads_num)
 {
 	g_notify_stop = true;
 	g_table_size = table_size;
@@ -680,8 +680,6 @@ void db_engine_init(size_t table_size, int cache_interval,
 
 int db_engine_run()
 {
-	int i;
-	
 	if (SQLITE_OK != sqlite3_config(SQLITE_CONFIG_MULTITHREAD)) {
 		printf("[exmdb_provider]: warning! fail to change"
 			" to multiple thread mode for sqlite engine\n");
@@ -701,24 +699,24 @@ int db_engine_run()
 		return -4;
 	}
 	pthread_setname_np(g_scan_tid, "exmdbeng/scan");
-	for (i=0; i<g_threads_num; i++) {
-		ret = pthread_create(&g_thread_ids[i], nullptr, mdpeng_thrwork, nullptr);
+	for (unsigned int i = 0; i < g_threads_num; ++i) {
+		pthread_t tid;
+		ret = pthread_create(&tid, nullptr, mdpeng_thrwork, nullptr);
 		if (ret != 0) {
-			g_threads_num = i;
 			printf("[exmdb_provider]: E-1448: pthread_create: %s\n", strerror(ret));
 			db_engine_stop();
 			return -5;
 		}
 		char buf[32];
 		snprintf(buf, sizeof(buf), "exmdbeng/%u", i);
-		pthread_setname_np(g_thread_ids[i], buf);
+		pthread_setname_np(tid, buf);
+		g_thread_ids.push_back(tid);
 	}
 	return 0;
 }
 
 void db_engine_stop()
 {
-	int i;
 	DOUBLE_LIST_NODE *pnode;
 	POPULATING_NODE *psearch;
 	
@@ -729,9 +727,9 @@ void db_engine_stop()
 			pthread_join(g_scan_tid, NULL);
 		}
 		g_waken_cond.notify_all();
-		for (i=0; i<g_threads_num; i++) {
-			pthread_kill(g_thread_ids[i], SIGALRM);
-			pthread_join(g_thread_ids[i], NULL);
+		for (auto tid : g_thread_ids) {
+			pthread_kill(tid, SIGALRM);
+			pthread_join(tid, nullptr);
 		}
 	}
 	g_thread_ids.clear();

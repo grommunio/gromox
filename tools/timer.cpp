@@ -68,7 +68,7 @@ struct srcitem {
 }
 
 static gromox::atomic_bool g_notify_stop;
-static size_t g_threads_num;
+static unsigned int g_threads_num;
 static int g_last_tid;
 static int g_list_fd = -1;
 static std::string g_list_path;
@@ -219,7 +219,7 @@ int main(int argc, const char **argv) try
 	       *listen_ip == '\0' ? "*" : listen_ip, listen_port);
 
 	g_threads_num = pconfig->get_ll("timer_threads_num");
-	printf("[system]: processing threads number is %zu\n", g_threads_num);
+	printf("[system]: processing threads number is %u\n", g_threads_num);
 	g_threads_num ++;
 
 	auto sockd = gx_inet_listen(listen_ip, listen_port);
@@ -281,18 +281,6 @@ int main(int argc, const char **argv) try
 	auto cl_1 = make_scope_exit([&]() { close(g_list_fd); });
 
 	thr_ids.reserve(g_threads_num);
-	for (size_t i = 0; i < g_threads_num; ++i) {
-		pthread_t tid;
-		ret = pthread_create(&tid, nullptr, tmr_thrwork, nullptr);
-		if (ret != 0) {
-			printf("[system]: failed to create pool thread: %s\n", strerror(ret));
-			break;
-		}
-		thr_ids.push_back(tid);
-		char buf[32];
-		snprintf(buf, sizeof(buf), "worker/%zu", i);
-		pthread_setname_np(thr_ids[i], buf);
-	}
 	auto cl_2 = make_scope_exit([&]() {
 		/* thread might be waiting at the condvar */
 		g_waken_cond.notify_all();
@@ -302,9 +290,18 @@ int main(int argc, const char **argv) try
 			pthread_join(tid, nullptr);
 		}
 	});
-	if (thr_ids.size() != g_threads_num) {
-		g_notify_stop = true;
-		return 8;
+	for (unsigned int i = 0; i < g_threads_num; ++i) {
+		pthread_t tid;
+		ret = pthread_create(&tid, nullptr, tmr_thrwork, nullptr);
+		if (ret != 0) {
+			printf("[system]: failed to create pool thread: %s\n", strerror(ret));
+			g_notify_stop = true;
+			return 8;
+		}
+		char buf[32];
+		snprintf(buf, sizeof(buf), "worker/%u", i);
+		pthread_setname_np(thr_ids[i], buf);
+		thr_ids.push_back(tid);
 	}
 
 	ret = list_file_read_fixedstrings("timer_acl.txt",

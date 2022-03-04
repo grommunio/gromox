@@ -6,7 +6,7 @@ struct ECDOASYNCWAITEX_IN;
 struct ECDOASYNCWAITEX_OUT;
 
 extern void asyncemsmdb_interface_register_active(void *);
-void asyncemsmdb_interface_init(int threads_num);
+extern void asyncemsmdb_interface_init(unsigned int threads_num);
 extern int asyncemsmdb_interface_run();
 extern void asyncemsmdb_interface_stop();
 extern void asyncemsmdb_interface_free();

@@ -6,6 +6,7 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>
@@ -45,9 +46,9 @@ struct ASYNC_WAIT {
 }
 
 static constexpr size_t TAG_SIZE = UADDR_SIZE + 1 + HXSIZEOF_Z32;
-static int g_threads_num;
+static unsigned int g_threads_num;
 static pthread_t g_scan_id;
-static pthread_t *g_thread_ids;
+static std::vector<pthread_t> g_thread_ids;
 static gromox::atomic_bool g_notify_stop{true};
 static DOUBLE_LIST g_wakeup_list;
 static std::unordered_map<std::string, ASYNC_WAIT *> g_tag_hash;
@@ -68,24 +69,18 @@ void asyncemsmdb_interface_register_active(void *pproc)
 	active_hpm_context = reinterpret_cast<decltype(active_hpm_context)>(pproc);
 }
 
-void asyncemsmdb_interface_init(int threads_num)
+void asyncemsmdb_interface_init(unsigned int threads_num)
 {
-	g_thread_ids = NULL;
 	g_threads_num = threads_num;
+	g_thread_ids.reserve(threads_num);
 	double_list_init(&g_wakeup_list);
 }
 
 int asyncemsmdb_interface_run()
 {
-	int i;
 	int context_num;
 	
 	context_num = get_context_num();
-	g_thread_ids = me_alloc<pthread_t>(g_threads_num);
-	if (NULL == g_thread_ids) {
-		printf("[exchange_emsmdb]: Failed to allocate thread id buffer\n");
-		return -1;
-	}
 	g_async_hash = INT_HASH_TABLE::create(2 * context_num, sizeof(ASYNC_WAIT *));
 	if (NULL == g_async_hash) {
 		printf("[exchange_emsmdb]: Failed to init async ID hash table\n");
@@ -107,25 +102,25 @@ int asyncemsmdb_interface_run()
 		return -5;
 	}
 	pthread_setname_np(g_scan_id, "asyncems/scan");
-	for (i=0; i<g_threads_num; i++) {
-		ret = pthread_create(&g_thread_ids[i], nullptr, aemsi_thrwork, nullptr);
+	for (unsigned int i = 0; i < g_threads_num; ++i) {
+		pthread_t tid;
+		ret = pthread_create(&tid, nullptr, aemsi_thrwork, nullptr);
 		if (ret != 0) {
-			g_threads_num = i;
 			printf("[exchange_emsmdb]: failed to create wake up "
 			       "thread for asyncemsmdb: %s\n", strerror(ret));
+			asyncemsmdb_interface_stop();
 			return -6;
 		}
 		char buf[32];
 		snprintf(buf, sizeof(buf), "asyncems/%u", i);
-		pthread_setname_np(g_thread_ids[i], buf);
+		pthread_setname_np(tid, buf);
+		g_thread_ids.push_back(tid);
 	}
 	return 0;
 }
 
 void asyncemsmdb_interface_stop()
 {
-	int i;
-	
 	if (!g_notify_stop) {
 		g_notify_stop = true;
 		g_waken_cond.notify_all();
@@ -133,15 +128,12 @@ void asyncemsmdb_interface_stop()
 			pthread_kill(g_scan_id, SIGALRM);
 			pthread_join(g_scan_id, NULL);
 		}
-		for (i=0; i<g_threads_num; i++) {
-			pthread_kill(g_thread_ids[i], SIGALRM);
-			pthread_join(g_thread_ids[i], NULL);
+		for (auto tid : g_thread_ids) {
+			pthread_kill(tid, SIGALRM);
+			pthread_join(tid, nullptr);
 		}
 	}
-	if (NULL != g_thread_ids) {
-		free(g_thread_ids);
-		g_thread_ids = NULL;
-	}
+	g_thread_ids.clear();
 	g_tag_hash.clear();
 	g_wait_allocator.reset();
 	g_async_hash.reset();

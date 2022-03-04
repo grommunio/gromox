@@ -3,6 +3,7 @@
 #include <csignal>
 #include <cstdint>
 #include <mutex>
+#include <vector>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/zcore_rpc.hpp>
@@ -35,18 +36,19 @@ struct CLIENT_NODE {
 };
 }
 
-static int g_thread_num;
+static unsigned int g_thread_num;
 static gromox::atomic_bool g_notify_stop;
-static pthread_t *g_thread_ids;
+static std::vector<pthread_t> g_thread_ids;
 static DOUBLE_LIST g_conn_list;
 static std::condition_variable g_waken_cond;
 static std::mutex g_conn_lock, g_cond_mutex;
 unsigned int g_zrpc_debug;
 
-void rpc_parser_init(int thread_num)
+void rpc_parser_init(unsigned int thread_num)
 {
 	g_notify_stop = true;
 	g_thread_num = thread_num;
+	g_thread_ids.reserve(thread_num);
 }
 
 BOOL rpc_parser_activate_connection(int clifd)
@@ -778,44 +780,31 @@ static void *zcrp_thrwork(void *param)
 
 int rpc_parser_run()
 {
-	int i;
-	
-	g_thread_ids = gromox::me_alloc<pthread_t>(g_thread_num);
-	if (NULL == g_thread_ids) {
-		return -1;
-	}
 	g_notify_stop = false;
 	int ret = 0;
-	for (i=0; i<g_thread_num; i++) {
-		ret = pthread_create(&g_thread_ids[i], nullptr, zcrp_thrwork, nullptr);
-		if (ret != 0)
-			break;
+	for (unsigned int i = 0; i < g_thread_num; ++i) {
+		pthread_t tid;
+		ret = pthread_create(&tid, nullptr, zcrp_thrwork, nullptr);
+		if (ret != 0) {
+			printf("[rpc_parser]: failed to create pool thread: %s\n", strerror(ret));
+			rpc_parser_stop();
+			return -2;
+		}
 		char buf[32];
 		snprintf(buf, sizeof(buf), "rpc/%u", i);
-		pthread_setname_np(g_thread_ids[i], buf);
-	}
-	if (i < g_thread_num) {
-		g_notify_stop = true;
-		for (i=0; i<g_thread_num; i++) {
-			pthread_kill(g_thread_ids[i], SIGALRM);
-			pthread_join(g_thread_ids[i], nullptr);
-		}
-		free(g_thread_ids);
-		printf("[rpc_parser]: failed to create pool thread: %s\n", strerror(ret));
-		return -2;
+		pthread_setname_np(tid, buf);
+		g_thread_ids.push_back(tid);
 	}
 	return 0;
 }
 
 void rpc_parser_stop()
 {
-	int i;
-	
 	g_notify_stop = true;
 	g_waken_cond.notify_all();
-	for (i=0; i<g_thread_num; i++) {
-		pthread_kill(g_thread_ids[i], SIGALRM);
-		pthread_join(g_thread_ids[i], NULL);
+	for (auto tid : g_thread_ids) {
+		pthread_kill(tid, SIGALRM);
+		pthread_join(tid, nullptr);
 	}
-	free(g_thread_ids);
+	g_thread_ids.clear();
 }
