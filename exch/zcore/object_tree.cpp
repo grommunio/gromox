@@ -131,18 +131,18 @@ static void object_tree_write_root(root_object *prootobj)
 	EXT_PUSH ext_push;
 	char tmp_path[256];
 	
-	if (prootobj->b_touched &&
-	    ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT) &&
-	    ext_push.p_tpropval_a(*prootobj->pprivate_proplist) == EXT_ERR_SUCCESS &&
-	    ext_push.p_tarray_set(*prootobj->pprof_set) == EXT_ERR_SUCCESS) {
-		snprintf(tmp_path, arsizeof(tmp_path), "%s/config/zarafa.dat",
-			prootobj->maildir);
-		fd = open(tmp_path, O_CREAT|O_WRONLY|O_TRUNC, 0666);
-		if (-1 != fd) {
-			write(fd, ext_push.m_udata, ext_push.m_offset);
-			close(fd);
-		}
-	}
+	if (!prootobj->b_touched ||
+	    !ext_push.init(nullptr, 0, EXT_FLAG_WCOUNT) ||
+	    ext_push.p_tpropval_a(*prootobj->pprivate_proplist) != EXT_ERR_SUCCESS ||
+	    ext_push.p_tarray_set(*prootobj->pprof_set) != EXT_ERR_SUCCESS)
+		return;
+	snprintf(tmp_path, arsizeof(tmp_path), "%s/config/zarafa.dat",
+		prootobj->maildir);
+	fd = open(tmp_path, O_CREAT|O_WRONLY|O_TRUNC, 0666);
+	if (fd < 0)
+		return;
+	write(fd, ext_push.m_udata, ext_push.m_offset);
+	close(fd);
 }
 
 static void object_tree_free_root(root_object *prootobj)
