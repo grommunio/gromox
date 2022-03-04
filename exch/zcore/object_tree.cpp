@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+// SPDX-FileCopyrightText: 2022 grommunio GmbH
+// This file is part of Gromox.
 #include <cstdint>
 #include <memory>
 #include <libHX/string.h>
@@ -41,10 +43,11 @@ using namespace gromox;
 namespace {
 
 struct root_object {
-	BOOL b_touched;
-	char *maildir;
-	TPROPVAL_ARRAY *pprivate_proplist;
-	TARRAY_SET *pprof_set;
+	~root_object();
+	BOOL b_touched = false;
+	char *maildir = nullptr;
+	TPROPVAL_ARRAY *pprivate_proplist = nullptr;
+	TARRAY_SET *pprof_set = nullptr;
 };
 
 }
@@ -56,7 +59,17 @@ struct OBJECT_NODE {
 	void *pobject;
 };
 
-static root_object *object_tree_init_root(const char *maildir)
+root_object::~root_object()
+{
+	free(maildir);
+	if (pprivate_proplist != nullptr)
+		tpropval_array_free(pprivate_proplist);
+	if (pprof_set != nullptr)
+		tarray_set_free(pprof_set);
+}
+
+static std::unique_ptr<root_object>
+object_tree_init_root(const char *maildir) try
 {
 	EXT_PULL ext_pull;
 	char tmp_path[256];
@@ -64,13 +77,9 @@ static root_object *object_tree_init_root(const char *maildir)
 	struct stat node_stat;
 	TPROPVAL_ARRAY propvals;
 	
-	auto prootobj = me_alloc<root_object>();
-	if (NULL == prootobj) {
-		return NULL;
-	}
+	auto prootobj = std::make_unique<root_object>();
 	prootobj->maildir = strdup(maildir);
 	if (NULL == prootobj->maildir) {
-		free(prootobj);
 		return NULL;
 	}
 	prootobj->b_touched = FALSE;
@@ -79,61 +88,41 @@ static root_object *object_tree_init_root(const char *maildir)
 	if (fd.get() < 0 || fstat(fd.get(), &node_stat) != 0) {
 		prootobj->pprivate_proplist = tpropval_array_init();
 		if (NULL == prootobj->pprivate_proplist) {
-			free(prootobj->maildir);
-			free(prootobj);
 			return NULL;
 		}
 		prootobj->pprof_set = tarray_set_init();
 		if (NULL == prootobj->pprof_set) {
-			tpropval_array_free(prootobj->pprivate_proplist);
-			free(prootobj->maildir);
-			free(prootobj);
 			return NULL;
 		}
 		return prootobj;
 	}
-	auto pbuff = malloc(node_stat.st_size);
+	auto pbuff = std::make_unique<char[]>(node_stat.st_size);
 	if (NULL == pbuff) {
-		free(prootobj->maildir);
-		free(prootobj);
 		return NULL;
 	}
-	if (read(fd.get(), pbuff, node_stat.st_size) != node_stat.st_size) {
-		free(pbuff);
-		free(prootobj->maildir);
-		free(prootobj);
+	if (read(fd.get(), pbuff.get(), node_stat.st_size) != node_stat.st_size) {
 		return NULL;
 	}
-	ext_pull.init(pbuff, node_stat.st_size, common_util_alloc, EXT_FLAG_WCOUNT);
+	ext_pull.init(pbuff.get(), node_stat.st_size, common_util_alloc, EXT_FLAG_WCOUNT);
 	if (ext_pull.g_tpropval_a(&propvals) != EXT_ERR_SUCCESS) {
-		free(pbuff);
-		free(prootobj->maildir);
-		free(prootobj);
 		return NULL;
 	}
 	prootobj->pprivate_proplist = propvals.dup();
 	if (NULL == prootobj->pprivate_proplist) {
-		free(pbuff);
-		free(prootobj->maildir);
-		free(prootobj);
 		return NULL;
 	}
 	if (ext_pull.g_tarray_set(&prof_set) != EXT_ERR_SUCCESS) {
-		tpropval_array_free(prootobj->pprivate_proplist);
-		free(pbuff);
-		free(prootobj->maildir);
-		free(prootobj);
 		return NULL;
 	}
-	free(pbuff);
+	pbuff.reset();
 	prootobj->pprof_set = prof_set.dup();
 	if (NULL == prootobj->pprof_set) {
-		tpropval_array_free(prootobj->pprivate_proplist);
-		free(prootobj->maildir);
-		free(prootobj);
 		return NULL;
 	}
 	return prootobj;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1099: ENOMEM\n");
+	return nullptr;
 }
 
 static void object_tree_free_root(root_object *prootobj)
@@ -154,10 +143,7 @@ static void object_tree_free_root(root_object *prootobj)
 			close(fd);
 		}
 	}
-	tarray_set_free(prootobj->pprof_set);
-	tpropval_array_free(prootobj->pprivate_proplist);
-	free(prootobj->maildir);
-	free(prootobj);
+	delete prootobj;
 }
 
 static void object_tree_free_object(void *pobject, uint8_t type)
@@ -277,7 +263,6 @@ uint32_t OBJECT_TREE::add_object_handle(int parent_handle, int type, void *pobje
 
 std::unique_ptr<OBJECT_TREE> object_tree_create(const char *maildir)
 {
-	root_object *prootobj;
 	std::unique_ptr<OBJECT_TREE> pobjtree;
 	try {
 		pobjtree = std::make_unique<OBJECT_TREE>();
@@ -285,14 +270,15 @@ std::unique_ptr<OBJECT_TREE> object_tree_create(const char *maildir)
 		return NULL;
 	}
 	pobjtree->last_handle = 0;
-	prootobj = object_tree_init_root(maildir);
+	auto prootobj = object_tree_init_root(maildir);
 	if (NULL == prootobj) {
 		return NULL;
 	}
 	simple_tree_init(&pobjtree->tree);
-	auto handle = pobjtree->add_object_handle(-1, ZMG_ROOT, prootobj);
+	auto handle = pobjtree->add_object_handle(-1, ZMG_ROOT, prootobj.get());
 	if (handle == INVALID_HANDLE)
 		return nullptr;
+	prootobj.release();
 	return pobjtree;
 }
 
