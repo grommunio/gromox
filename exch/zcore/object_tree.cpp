@@ -125,7 +125,7 @@ object_tree_init_root(const char *maildir) try
 	return nullptr;
 }
 
-static void object_tree_free_root(root_object *prootobj)
+static void object_tree_write_root(root_object *prootobj)
 {
 	int fd;
 	EXT_PUSH ext_push;
@@ -143,6 +143,11 @@ static void object_tree_free_root(root_object *prootobj)
 			close(fd);
 		}
 	}
+}
+
+static void object_tree_free_root(root_object *prootobj)
+{
+	object_tree_write_root(prootobj);
 	delete prootobj;
 }
 
