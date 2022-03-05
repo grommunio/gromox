@@ -1,3 +1,46 @@
+1.16.192
+========
+
+Enhancements:
+
+* emsmdb: Faststream temporary state files are now written to
+  /var/tmp/gromox instead and with O_TMPFILE, because they need not
+  be persisted at all, and if /var/lib/gromox is a network filesystem,
+  the network roundtrip can be eliminated.
+* exmdb_provider: emit a log message when host not in exmdb_acl
+* zcore: user settings are saved to disk much more rapidly now
+  (Settings could get lost when zcore terminated unexpectedly because
+  of very long caching periods.)
+* zcore: allow reducing zarafa_threads_num directive to a minimum of 1
+
+Fixes:
+
+* oxcmail: conversion of recurring meeting requests from MAPI to IM/RFC5322
+  misconstructed the exmdb RPC for querying PidLidTimeZoneStruct,
+  likely failing the export as a whole.
+* exmdb_provider: avoid a SQL query error when placing a new message
+  into public folder
+* exmdb_provider: delete W-1595/W-1596 false positive warning
+* exmdb_provider: avoid giving a negative/wrapped unread message count for
+  folders (PR_CONTENT_UNREAD)
+* exmdb_provider: the presence of PR_PARENT_DISPLAY (normally a computed property)
+  in the sqlite db (hence not computed) had caused the READ_MESSAGE RPC to fail
+* kdb2mt: skip importing PR_PARENT_DISPLAY
+* kdb2mt: skip importing PR_ACL_DATA, PR_RULES_DATA, PR_EC_WEBACCESS_SETTINGS_JSON
+  (has KC-specific entryids that have no meaning when in Gromox)
+* zcore: cure an out-of-bounds access in
+  container_object_get_user_table_all_proptags
+* zcore: fix mis-setting of the internal/external OOF message
+* mkmidb: fix a startup crash (add missing CFG_TABLE_END marker)
+* authmgr: zero-terminate reason string
+
+Known issues:
+
+* emsmdb: Moving a message from one store to another in Cached Mode
+  is rejected; a new message "E-1664: message has GUID of another
+  store, cannot import" is produced until implemented.
+
+
 1.16 (2022-02-11)
 =================
 
