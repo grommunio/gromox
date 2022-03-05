@@ -47,6 +47,16 @@ static unsigned int g_dataconn_num = 4;
 static resource_pool<twoconn> g_conn_pool;
 
 static constexpr const char *no_attrs[] = {nullptr};
+static constexpr cfg_directive cfg_default_values[] = {
+	{"data_connections", "4", CFG_SIZE, "1"},
+	{"ldap_bind_pass", ""},
+	{"ldap_bind_user", ""},
+	{"ldap_host", "ldapi:///"},
+	{"ldap_mail_attr", "mail"},
+	{"ldap_search_base", ""},
+	{"ldap_start_tls", "false", CFG_BOOL},
+	CFG_TABLE_END,
+};
 
 /**
  * Make sure the response has exactly one entry and at most
@@ -187,30 +197,14 @@ static bool ldap_adaptor_load() try
 		       strerror(errno));
 		return false;
 	}
-
-	auto val = pfile->get_value("data_connections");
-	if (val != nullptr) {
-		g_dataconn_num = strtoul(val, nullptr, 0);
-		if (g_dataconn_num == 0)
-			g_dataconn_num = 1;
-	}
-
-	val = pfile->get_value("ldap_host");
-	g_ldap_host = znul(val);
-	g_use_tls = parse_bool(pfile->get_value("ldap_start_tls"));
-
-	val = pfile->get_value("ldap_bind_user");
-	if (val != nullptr)
-		g_bind_user = val;
-	val = pfile->get_value("ldap_bind_pass");
-	if (val != nullptr)
-		g_bind_pass = val;
-
-	val = pfile->get_value("ldap_mail_attr");
-	g_mail_attr = val != nullptr ? val : "mail";
-
-	val = pfile->get_value("ldap_search_base");
-	g_search_base = znul(val);
+	config_file_apply(*pfile, cfg_default_values);
+	g_dataconn_num = pfile->get_ll("data_connections");
+	g_ldap_host = pfile->get_value("ldap_host");
+	g_bind_user = pfile->get_value("ldap_bind_user");
+	g_bind_pass = pfile->get_value("ldap_bind_pass");
+	g_use_tls = pfile->get_ll("ldap_start_tls");
+	g_mail_attr = pfile->get_value("ldap_mail_attr");
+	g_search_base = pfile->get_value("ldap_search_base");
 	printf("[ldap_adaptor]: hosts <%s>%s, base <%s>, #conn=%d, mailattr=%s\n",
 	       g_ldap_host.c_str(), g_use_tls ? " +TLS" : "",
 	       g_search_base.c_str(), 2 * g_dataconn_num, g_mail_attr.c_str());

@@ -47,7 +47,10 @@ python\-ldap3 fail to connect.
 Default: (libldap default, see ldap.conf(5))
 .TP
 \fBldap_mail_attr\fP
-Default: \fImail\fP
+The name of the LDAP attribute which holds the primary e-mail address of the
+user. Pick \fBmail\fP (OpenLDAP as well as ActiveDirectory schemes).
+.br
+Default: (empty)
 .TP
 \fBldap_search_base\fP
 Default: (libldap default)
@@ -75,19 +78,15 @@ becoming the victim of a downgrade attack is a possibility.
 \fBldap_search_base\fP
 .TP
 \fBldap_start_tls\fP
-(These five as above)
+.TP
+\fBldap_mail_attr\fP
+(These six as above)
 .TP
 \fBldap_disabled\fP
 If true, Grommunio Admin API will not make use of LDAP (which generally just
 means synchronization). This directive has no effect on Gromox; users which
 have been synchronized previously and which exist in MySQL keep their validity
 as far as Gromox is concerned.
-.TP
-\fBldap_mail_attr\fP
-The name of the LDAP attribute which holds the primary e-mail address of the
-user. Pick \fBmail\fP (OpenLDAP+AD).
-.br
-Default: (empty)
 .TP
 \fBldap_object_id\fP
 The name of the LDAP attribute which holds a unique, unchanging object
@@ -98,14 +97,14 @@ Default: (empty)
 .TP
 \fBldap_user_filter\fP
 An LDAP search filter that specifies which users should be synchronized.
-Recommendations are \fB(objectClass=posixAccount)\fP for OpenLDAP,
+Recommendations are \fB(objectClass=posixAccount)\fP for OpenLDAP/RFC2307bis,
 \fB(objectClass=user)\fP for ActiveDirectory.
 .br
 Default: (empty)
 .TP
 \fBldap_user_display_name\fP
 The name of the LDAP attribute which holds the value for PR_DISPLAY_NAME. Pick
-\fBdisplayName\fP (OpenLDAP+AD).
+\fBdisplayName\fP (OpenLDAP as well as ActiveDirectory schemes).
 .br
 Default: (empty)
 .TP
