@@ -107,28 +107,39 @@ static ldap_ptr make_conn(bool perform_bind)
 
 static constexpr bool AVOID_BIND = false, DO_BIND = true;
 
-template<typename F, typename... Args>
-static auto gx_auto_retry_2(F &&func, ldap_ptr &ld, bool perform_bind, Args &&...args) ->
-    decltype(func(nullptr, std::forward<Args>(args)...))
+static int gx_ldap_bind(ldap_ptr &ld, const char *dn, struct berval *bv)
 {
 	if (ld == nullptr)
-		ld = make_conn(perform_bind);
+		ld = make_conn(AVOID_BIND);
 	if (ld == nullptr)
 		return LDAP_SERVER_DOWN;
-	auto ret = func(ld.get(), std::forward<Args>(args)...);
+	auto ret = ldap_sasl_bind_s(ld.get(), dn, LDAP_SASL_SIMPLE, bv,
+		   nullptr, nullptr, nullptr);
 	if (ret != LDAP_SERVER_DOWN)
 		return ret;
-	ld = make_conn(perform_bind);
+	ld = make_conn(AVOID_BIND);
 	if (ld == nullptr)
 		return ret;
-	return func(ld.get(), std::forward<Args>(args)...);
+	return ldap_sasl_bind_s(ld.get(), dn, LDAP_SASL_SIMPLE, bv,
+	       nullptr, nullptr, nullptr);
 }
 
-template<typename F, typename... Args>
-static auto gx_auto_retry(F &&func, ldap_ptr &ld, Args &&...args) ->
-    decltype(func(nullptr, std::forward<Args>(args)...))
+static int gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
+    char **attrs, LDAPMessage **msg)
 {
-	return gx_auto_retry_2(func, ld, DO_BIND, std::forward<Args>(args)...);
+	if (ld == nullptr)
+		ld = make_conn(DO_BIND);
+	if (ld == nullptr)
+		return LDAP_SERVER_DOWN;
+	auto ret = ldap_search_ext_s(ld.get(), base, LDAP_SCOPE_SUBTREE,
+	           filter, attrs, true, nullptr, nullptr, nullptr, 2, msg);
+	if (ret != LDAP_SERVER_DOWN)
+		return ret;
+	ld = make_conn(DO_BIND);
+	if (ld == nullptr)
+		return ret;
+	return ldap_search_ext_s(ld.get(), base, LDAP_SCOPE_SUBTREE,
+	       filter, attrs, true, nullptr, nullptr, nullptr, 2, msg);
 }
 
 BOOL ldap_adaptor_login2(const char *username, const char *password)
@@ -138,11 +149,9 @@ BOOL ldap_adaptor_login2(const char *username, const char *password)
 	std::unique_ptr<char[], stdlib_delete> freeme;
 	auto quoted = HX_strquote(username, HXQUOTE_LDAPRDN, &unique_tie(freeme));
 	auto filter = g_mail_attr + "="s + quoted;
-	auto ret = gx_auto_retry(ldap_search_ext_s, tok.res.meta,
-	           g_search_base.size() != 0 ? g_search_base.c_str() : nullptr,
-	           LDAP_SCOPE_SUBTREE, filter.c_str(),
-	           const_cast<char **>(no_attrs), true, nullptr, nullptr,
-	           nullptr, 2, &unique_tie(msg));
+	auto ret = gx_ldap_search(tok.res.meta,
+	      g_search_base.size() != 0 ? g_search_base.c_str() : nullptr,
+	      filter.c_str(), const_cast<char **>(no_attrs), &unique_tie(msg));
 	if (ret != LDAP_SUCCESS) {
 		printf("[ldap_adaptor]: search with filter %s: %s\n",
 		       filter.c_str(), ldap_err2string(ret));
@@ -163,8 +172,7 @@ BOOL ldap_adaptor_login2(const char *username, const char *password)
 	struct berval bv;
 	bv.bv_val = deconst(znul(password));
 	bv.bv_len = password != nullptr ? strlen(password) : 0;
-	ret = gx_auto_retry_2(ldap_sasl_bind_s, tok.res.bind, AVOID_BIND, dn,
-	      LDAP_SASL_SIMPLE, &bv, nullptr, nullptr, nullptr);
+	ret = gx_ldap_bind(tok.res.bind, dn, &bv);
 	if (ret == LDAP_SUCCESS)
 		return TRUE;
 	printf("[ldap_adaptor]: ldap_simple_bind %s: %s\n", dn, ldap_err2string(ret));
