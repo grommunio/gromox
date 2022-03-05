@@ -26,6 +26,12 @@ the purpose of metadata searches.
 .br
 Default: \fI4\fP
 .TP
+\fBldap_edirectory_workarounds\fP
+Attempt to deal with wire protocol violations brought about by Novell/NetIQ
+eDirectory server implementations.
+.br
+Default: \fIfalse\fP
+.TP
 \fBldap_bind_user\fP
 An LDAP binddn to use for metadata searches. You cannot use but Simple
 Authentication at this time.

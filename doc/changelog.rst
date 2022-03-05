@@ -8,6 +8,7 @@ Enhancements:
   be persisted at all, and if /var/lib/gromox is a network filesystem,
   the network roundtrip can be eliminated.
 * exmdb_provider: emit a log message when host not in exmdb_acl
+* ldap_adaptor: add a "ldap_edirectory_workarounds" config directive
 * zcore: user settings are saved to disk much more rapidly now
   (Settings could get lost when zcore terminated unexpectedly because
   of very long caching periods.)

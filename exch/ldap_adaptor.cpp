@@ -44,6 +44,7 @@ static std::string g_ldap_host, g_search_base, g_mail_attr;
 static std::string g_bind_user, g_bind_pass;
 static bool g_use_tls;
 static unsigned int g_dataconn_num = 4;
+static unsigned int g_edir_workaround; /* server sends garbage sometimes */
 static resource_pool<twoconn> g_conn_pool;
 
 static constexpr const char *no_attrs[] = {nullptr};
@@ -55,6 +56,7 @@ static constexpr cfg_directive cfg_default_values[] = {
 	{"ldap_mail_attr", "mail"},
 	{"ldap_search_base", ""},
 	{"ldap_start_tls", "false", CFG_BOOL},
+	{"ldap_edirectory_workaround", "false", CFG_BOOL},
 	CFG_TABLE_END,
 };
 
@@ -125,7 +127,9 @@ static int gx_ldap_bind(ldap_ptr &ld, const char *dn, struct berval *bv)
 		return LDAP_SERVER_DOWN;
 	auto ret = ldap_sasl_bind_s(ld.get(), dn, LDAP_SASL_SIMPLE, bv,
 		   nullptr, nullptr, nullptr);
-	if (ret != LDAP_SERVER_DOWN)
+	if (ret == LDAP_LOCAL_ERROR && g_edir_workaround)
+		/* try full reconnect */;
+	else if (ret != LDAP_SERVER_DOWN)
 		return ret;
 	ld = make_conn(AVOID_BIND);
 	if (ld == nullptr)
@@ -143,7 +147,9 @@ static int gx_ldap_search(ldap_ptr &ld, const char *base, const char *filter,
 		return LDAP_SERVER_DOWN;
 	auto ret = ldap_search_ext_s(ld.get(), base, LDAP_SCOPE_SUBTREE,
 	           filter, attrs, true, nullptr, nullptr, nullptr, 2, msg);
-	if (ret != LDAP_SERVER_DOWN)
+	if (ret == LDAP_LOCAL_ERROR && g_edir_workaround)
+		/* try full reconnect */;
+	else if (ret != LDAP_SERVER_DOWN)
 		return ret;
 	ld = make_conn(DO_BIND);
 	if (ld == nullptr)
@@ -205,8 +211,10 @@ static bool ldap_adaptor_load() try
 	g_use_tls = pfile->get_ll("ldap_start_tls");
 	g_mail_attr = pfile->get_value("ldap_mail_attr");
 	g_search_base = pfile->get_value("ldap_search_base");
-	printf("[ldap_adaptor]: hosts <%s>%s, base <%s>, #conn=%d, mailattr=%s\n",
+	g_edir_workaround = pfile->get_ll("ldap_edirectory_workaround");
+	printf("[ldap_adaptor]: hosts <%s>%s%s, base <%s>, #conn=%d, mailattr=%s\n",
 	       g_ldap_host.c_str(), g_use_tls ? " +TLS" : "",
+	       g_edir_workaround ? " +EDIRECTORY_WORKAROUNDS" : "",
 	       g_search_base.c_str(), 2 * g_dataconn_num, g_mail_attr.c_str());
 	g_conn_pool.resize(g_dataconn_num);
 	g_conn_pool.bump();
