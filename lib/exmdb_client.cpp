@@ -30,7 +30,7 @@ static std::list<agent_thread> mdcl_agent_list;
 static std::list<remote_svr> mdcl_server_list;
 static std::mutex mdcl_server_lock;
 static atomic_bool mdcl_notify_stop;
-static unsigned int mdcl_conn_num, mdcl_threads_num;
+static unsigned int mdcl_conn_max, mdcl_threads_max;
 static pthread_t mdcl_scan_id;
 static void (*mdcl_build_env)(const remote_svr &);
 static void (*mdcl_free_env)();
@@ -59,16 +59,16 @@ void remote_conn_ref::reset(bool lost)
 	}
 }
 
-void exmdb_client_init(unsigned int conn_num, unsigned int threads_num)
+void exmdb_client_init(unsigned int conn_max, unsigned int threads_max)
 {
 	mdcl_notify_stop = true;
-	mdcl_conn_num = conn_num;
-	mdcl_threads_num = threads_num;
+	mdcl_conn_max = conn_max;
+	mdcl_threads_max = threads_max;
 }
 
 void exmdb_client_stop()
 {
-	if (mdcl_conn_num != 0 && !mdcl_notify_stop) {
+	if (mdcl_conn_max != 0 && !mdcl_notify_stop) {
 		mdcl_notify_stop = true;
 		if (!pthread_equal(mdcl_scan_id, {})) {
 			pthread_kill(mdcl_scan_id, SIGALRM);
@@ -277,7 +277,7 @@ static int launch_notify_listeners(remote_svr &srv) try
 {
 	if (mdcl_event_proc == nullptr)
 		return 0;
-	for (unsigned int j = 0; j < mdcl_threads_num; ++j) {
+	for (unsigned int j = 0; j < mdcl_threads_max; ++j) {
 		mdcl_agent_list.push_back(agent_thread{});
 		auto &ag = mdcl_agent_list.back();
 		ag.pserver = &srv;
@@ -331,7 +331,7 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 			mdcl_notify_stop = true;
 			return 3;
 		}
-		if (mdcl_conn_num == 0) {
+		if (mdcl_conn_max == 0) {
 			printf("exmdb_client: there's remote store media "
 				"in exmdb list, but rpc proxy connection number is 0\n");
 			mdcl_notify_stop = true;
@@ -346,7 +346,7 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 			return 5;
 		}
 	}
-	if (mdcl_conn_num == 0)
+	if (mdcl_conn_max == 0)
 		return 0;
 	if (!(flags & EXMDB_CLIENT_ASYNC_CONNECT))
 		cl_pinger2();
@@ -387,9 +387,9 @@ remote_conn_ref exmdb_client_get_connection(const char *dir)
 		fc.tmplist.splice(fc.tmplist.end(), i->conn_list, i->conn_list.begin());
 		return fc;
 	}
-	if (i->active_handles >= mdcl_conn_num) {
+	if (i->active_handles >= mdcl_conn_max) {
 		fprintf(stderr, "exmdb_client: reached maximum connections (%u) to [%s]:%hu/%s\n",
-		        mdcl_conn_num, i->host.c_str(), i->port, i->prefix.c_str());
+		        mdcl_conn_max, i->host.c_str(), i->port, i->prefix.c_str());
 		return fc;
 	}
 	fc.tmplist.emplace_back(remote_conn{&*i});
