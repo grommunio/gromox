@@ -250,7 +250,7 @@ NSP_ROWSET* common_util_proprowset_init()
 		return NULL;
 	}
 	memset(pset, 0, sizeof(NSP_ROWSET));
-	auto count = strange_roundup(pset->crows, SR_GROW_NSP_PROPROW);
+	auto count = strange_roundup(pset->crows, SR_GROW_NSP_ROWSET);
 	pset->prows = ndr_stack_anew<NSP_PROPROW>(NDR_STACK_OUT, count);
 	if (NULL == pset->prows) {
 		return NULL;
