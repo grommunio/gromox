@@ -39,6 +39,10 @@ enum {
 	ecDoAsyncConnectEx = 14,
 };
 
+enum {
+	ecDoAsyncWaitEx = 0,
+};
+
 static int exchange_emsmdb_ndr_pull(int opnum, NDR_PULL* pndr, void **pin);
 
 static int exchange_emsmdb_dispatch(int opnum, const GUID *pobject,
@@ -412,7 +416,7 @@ static int exchange_async_emsmdb_ndr_pull(int opnum,
 	NDR_PULL* pndr, void **ppin)
 {
 	switch (opnum) {
-	case 0:
+	case ecDoAsyncWaitEx:
 		*ppin = ndr_stack_anew<ECDOASYNCWAITEX_IN>(NDR_STACK_IN);
 		if (NULL == *ppin) {
 			return NDR_ERR_ALLOC;
@@ -430,7 +434,7 @@ static int exchange_async_emsmdb_dispatch(int opnum, const GUID *pobject,
 	uint32_t async_id;
 	
 	switch (opnum) {
-	case 0:
+	case ecDoAsyncWaitEx:
 		*ppout = ndr_stack_anew<ECDOASYNCWAITEX_OUT>(NDR_STACK_OUT);
 		if (NULL == *ppout) {
 			return DISPATCH_FAIL;
@@ -456,7 +460,7 @@ static int exchange_async_emsmdb_ndr_push(int opnum,
 	NDR_PUSH *pndr, void *pout)
 {
 	switch (opnum) {
-	case 0:
+	case ecDoAsyncWaitEx:
 		return asyncemsmdb_ndr_push_ecdoasyncwaitex(pndr, static_cast<ECDOASYNCWAITEX_OUT *>(pout));
 	default:
 		return NDR_ERR_BAD_SWITCH;
