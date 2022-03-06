@@ -1628,8 +1628,9 @@ static BOOL pdu_processor_reply_request(DCERPC_CALL *pcall,
 	ndr_push_set_ptrcnt(&ndr_push, pcall->ptr_cnt);
 	
 	/* marshaling the NDR out param data */
-	if (NDR_ERR_SUCCESS != pcall->pcontext->pinterface->ndr_push(
-		prequest->opnum, &ndr_push, pout)) {
+	auto ret = pcall->pcontext->pinterface->ndr_push(prequest->opnum, &ndr_push, pout);
+	if (ret != EXT_ERR_SUCCESS) {
+		fprintf(stderr, "E-1918: ndr_push failed with result code %d\n", ret);
 		free(pdata);
 		pdu_processor_free_stack_root(pstack_root);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_NDR);
