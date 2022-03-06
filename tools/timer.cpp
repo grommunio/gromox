@@ -300,7 +300,7 @@ int main(int argc, const char **argv) try
 		}
 		char buf[32];
 		snprintf(buf, sizeof(buf), "worker/%u", i);
-		pthread_setname_np(thr_ids[i], buf);
+		pthread_setname_np(tid, buf);
 		thr_ids.push_back(tid);
 	}
 
