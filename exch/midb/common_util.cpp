@@ -6,6 +6,7 @@
 #include "exmdb_client.h"
 #include "common_util.h"
 #include <gromox/ext_buffer.hpp>
+#include <gromox/fileio.h>
 #include <gromox/rop_util.hpp>
 #include <gromox/pcl.hpp>
 #include <arpa/inet.h>
@@ -26,9 +27,21 @@ struct COMMAND_CONTEXT {
 }
 
 static thread_local COMMAND_CONTEXT *g_ctx_key;
+static thread_local unsigned int g_ctx_refcount;
 
 BOOL common_util_build_environment(const char *maildir)
 {
+	/*
+	 * cu_build_env is already called by midb, and then it _may_ occur
+	 * another time during exmdb_client_connect_exmdb, but the latter only
+	 * cares about exrpc_alloc succeeding, not the maildir.
+	 */
+	if (++g_ctx_refcount > 1) {
+		if (*maildir != '\0' && strcmp(g_ctx_key->maildir, maildir) != 0)
+			fprintf(stderr, "W-1901: T%lu: g_ctx_key->maildir mismatch %s vs %s\n",
+			        gx_gettid(), g_ctx_key->maildir, maildir);
+		return TRUE;
+	}
 	auto pctx = me_alloc<COMMAND_CONTEXT>();
 	if (NULL == pctx) {
 		return FALSE;
@@ -42,6 +55,8 @@ BOOL common_util_build_environment(const char *maildir)
 
 void common_util_free_environment()
 {
+	if (--g_ctx_refcount > 0)
+		return;
 	auto pctx = g_ctx_key;
 	if (NULL == pctx) {
 		return;

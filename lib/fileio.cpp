@@ -76,4 +76,17 @@ std::string lb_reader::preadustr(size_t offset) const
 	       tmp.size() * sizeof(char16_t), "UTF-16LE", "UTF-8");
 }
 
+unsigned long gx_gettid()
+{
+#if defined(__linux__) && defined(__GLIBC__) && (__GLIBC__ > 2 || (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 30))
+	return gettid();
+#elif defined(__linux__)
+	return syscall(SYS_gettid);
+#elif defined(__OpenBSD__)
+	return getthrid();
+#else
+	return (unsigned long)pthread_self();
+#endif
+}
+
 } /* namespace */
