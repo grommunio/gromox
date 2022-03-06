@@ -79,6 +79,52 @@ static constexpr const char *g_dfl_svc_plugins[] = {
 
 static void term_handler(int signo);
 
+static constexpr cfg_directive cfg_default_values[] = {
+	{"block_interval_auths", "1min", CFG_TIME, "1s"},
+	{"config_file_path", PKGSYSCONFDIR "/http:" PKGSYSCONFDIR},
+	{"context_average_mem", "256K", CFG_SIZE, "192K"},
+	{"context_num", "400", CFG_SIZE},
+	{"data_file_path", PKGDATADIR "/http:" PKGDATADIR},
+	{"fastcgi_cache_size", "256K", CFG_SIZE, "64K"},
+	{"fastcgi_exec_timeout", "10min", CFG_TIME, "1min"},
+	{"fastcgi_max_size", "4M", CFG_SIZE, "64K"},
+	{"hpm_cache_size", "512K", CFG_SIZE, "64K"},
+	{"hpm_max_size", "4M", CFG_SIZE, "64K"},
+	{"hpm_plugin_ignore_errors", "false", CFG_BOOL},
+	{"hpm_plugin_path", PKGLIBDIR},
+	{"http_auth_times", "10", CFG_SIZE, "1"},
+	{"http_conn_timeout", "3min", CFG_TIME, "30s"},
+	{"http_debug", "0"},
+	{"http_support_ssl", "false", CFG_BOOL},
+	{"listen_port", "80"},
+	{"listen_ssl_port", "0"},
+	{"msrpc_debug", "0"},
+	{"proc_plugin_ignore_errors", "false", CFG_BOOL},
+	{"proc_plugin_path", PKGLIBDIR},
+	{"request_max_mem", "4M", CFG_SIZE, "1M"},
+	{"running_identity", "gromox"},
+	{"service_plugin_ignore_errors", "false", CFG_BOOL},
+	{"service_plugin_path", PKGLIBDIR},
+	{"state_path", PKGSTATEDIR},
+	{"tcp_max_segment", "0", CFG_SIZE},
+	{"thread_charge_num", "20", CFG_SIZE, "4"},
+	{"thread_init_num", "5", CFG_SIZE},
+	{"user_default_lang", "en"},
+	CFG_TABLE_END,
+};
+
+static bool http_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
+{
+	if (cfg == nullptr)
+		cfg = config_file_prg(opt_config_file, "http.cfg");
+	if (opt_config_file != nullptr && cfg == nullptr) {
+		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
+		return false;
+	}
+	config_file_apply(*cfg, cfg_default_values);
+	return true;
+}
+
 int main(int argc, const char **argv) try
 {
 	struct rlimit rl;
@@ -109,42 +155,8 @@ int main(int argc, const char **argv) try
 	g_config_file = config_file_prg(opt_config_file, "http.cfg");
 	if (opt_config_file != nullptr && g_config_file == nullptr)
 		printf("[resource]: config_file_init %s: %s\n", opt_config_file, strerror(errno));
-	if (g_config_file == nullptr)
+	if (g_config_file == nullptr || !http_reload_config(g_config_file))
 		return EXIT_FAILURE;
-
-	static constexpr cfg_directive cfg_default_values[] = {
-		{"block_interval_auths", "1min", CFG_TIME, "1s"},
-		{"config_file_path", PKGSYSCONFDIR "/http:" PKGSYSCONFDIR},
-		{"context_average_mem", "256K", CFG_SIZE, "192K"},
-		{"context_num", "400", CFG_SIZE},
-		{"data_file_path", PKGDATADIR "/http:" PKGDATADIR},
-		{"fastcgi_cache_size", "256K", CFG_SIZE, "64K"},
-		{"fastcgi_exec_timeout", "10min", CFG_TIME, "1min"},
-		{"fastcgi_max_size", "4M", CFG_SIZE, "64K"},
-		{"hpm_cache_size", "512K", CFG_SIZE, "64K"},
-		{"hpm_max_size", "4M", CFG_SIZE, "64K"},
-		{"hpm_plugin_ignore_errors", "false", CFG_BOOL},
-		{"hpm_plugin_path", PKGLIBDIR},
-		{"http_auth_times", "10", CFG_SIZE, "1"},
-		{"http_conn_timeout", "3min", CFG_TIME, "30s"},
-		{"http_debug", "0"},
-		{"http_support_ssl", "false", CFG_BOOL},
-		{"listen_port", "80"},
-		{"listen_ssl_port", "0"},
-		{"proc_plugin_ignore_errors", "false", CFG_BOOL},
-		{"proc_plugin_path", PKGLIBDIR},
-		{"request_max_mem", "4M", CFG_SIZE, "1M"},
-		{"running_identity", "gromox"},
-		{"service_plugin_ignore_errors", "false", CFG_BOOL},
-		{"service_plugin_path", PKGLIBDIR},
-		{"state_path", PKGSTATEDIR},
-		{"tcp_max_segment", "0", CFG_SIZE},
-		{"thread_charge_num", "20", CFG_SIZE, "4"},
-		{"thread_init_num", "5", CFG_SIZE},
-		{"user_default_lang", "en"},
-		CFG_TABLE_END,
-	};
-	config_file_apply(*g_config_file, cfg_default_values);
 
 	auto str_val = resource_get_string("HOST_ID");
 	if (str_val == NULL) {
@@ -463,6 +475,7 @@ int main(int argc, const char **argv) try
 	while (!g_notify_stop) {
 		sleep(3);
 		if (g_hup_signalled.exchange(false)) {
+			http_reload_config(nullptr);
 			service_reload_all();
 			hpm_processor_reload();
 			pdu_processor_reload();
