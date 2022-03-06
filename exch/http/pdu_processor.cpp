@@ -1920,7 +1920,7 @@ static void pdu_processor_async_reply(uint32_t async_id, void *pout)
 	g_async_allocator->put(pasync_node);
 }
 
-static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_aync)
+static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_async)
 {
 	GUID *pobject;
 	uint32_t flags;
@@ -1978,7 +1978,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_aync)
 	handle = pcall->pcontext->assoc_group_id;
 	handle <<= 32;
 	handle |= pcall->pcontext->context_id;
-	*pb_aync = FALSE;
+	*pb_async = false;
 	/* call the dispatch function */
 	switch (pcontext->pinterface->dispatch(prequest->opnum,
 			pobject, handle, pin, &pout)) {
@@ -1988,7 +1988,7 @@ static BOOL pdu_processor_process_request(DCERPC_CALL *pcall, BOOL *pb_aync)
 			pcontext->pinterface->name, prequest->opnum);
 		return pdu_processor_fault(pcall, DCERPC_FAULT_OP_RNG_ERROR);
 	case DISPATCH_PENDING:
-		*pb_aync = TRUE;
+		*pb_async = TRUE;
 		return TRUE;
 	case DISPATCH_SUCCESS:
 		return pdu_processor_reply_request(pcall, pstack_root, pout);
