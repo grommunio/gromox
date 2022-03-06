@@ -273,24 +273,22 @@ static void *cl_notif_reader(void *vargs)
 	return nullptr;
 }
 
-static int launch_notify_listeners(remote_svr &srv) try
+static int launch_notify_listener(remote_svr &srv) try
 {
 	if (mdcl_event_proc == nullptr)
 		return 0;
-	for (unsigned int j = 0; j < mdcl_threads_max; ++j) {
-		mdcl_agent_list.push_back(agent_thread{});
-		auto &ag = mdcl_agent_list.back();
-		ag.pserver = &srv;
-		ag.sockd = -1;
-		auto ret = pthread_create(&ag.thr_id, nullptr, cl_notif_reader, &ag);
-		if (ret != 0) {
-			printf("exmdb_client: E-1449: pthread_create: %s\n", strerror(ret));
-			mdcl_agent_list.pop_back();
-			return 8;
-		}
-		auto thrtxt = "mcn" + std::to_string(j) + "-" + srv.remote_id;
-		pthread_setname_np(ag.thr_id, thrtxt.c_str());
+	mdcl_agent_list.push_back(agent_thread{});
+	auto &ag = mdcl_agent_list.back();
+	ag.pserver = &srv;
+	ag.sockd = -1;
+	auto ret = pthread_create(&ag.thr_id, nullptr, cl_notif_reader, &ag);
+	if (ret != 0) {
+		printf("exmdb_client: E-1449: pthread_create: %s\n", strerror(ret));
+		mdcl_agent_list.pop_back();
+		return 8;
 	}
+	auto thrtxt = std::string("mcn") + srv.remote_id;
+	pthread_setname_np(ag.thr_id, thrtxt.c_str());
 	return 0;
 } catch (const std::bad_alloc &) {
 	printf("exmdb_client: failed to allocate memory for exmdb\n");
@@ -403,7 +401,8 @@ remote_conn_ref exmdb_client_get_connection(const char *dir)
 		return fc;
 	}
 	++i->active_handles;
-	launch_notify_listeners(*i);
+	if (mdcl_agent_list.size() < mdcl_threads_max)
+		launch_notify_listener(*i);
 	return fc;
 }
 
