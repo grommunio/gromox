@@ -900,36 +900,44 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 		size_t i = 0;
 		if (0 == pstat->container_id) {
 			for (auto ptr : pbase->gal_list) {
-				if (i >= start_pos && i < start_pos + tmp_count) {
-					prow = common_util_proprowset_enlarge(*pprows);
-					if (NULL == prow || NULL ==
-						common_util_propertyrow_init(prow)) {
-						result = ecMAPIOOM;
-						goto EXIT_QUERY_ROWS;
-					}
-					result = nsp_interface_fetch_row(ptr,
-						b_ephid, pstat->codepage, pproptags, prow);
-					if (result != ecSuccess)
-						goto EXIT_QUERY_ROWS;
+				if (i >= start_pos + tmp_count)
+					break;
+				if (i < start_pos) {
+					++i;
+					continue;
 				}
+				prow = common_util_proprowset_enlarge(*pprows);
+				if (NULL == prow || NULL ==
+				    common_util_propertyrow_init(prow)) {
+					result = ecMAPIOOM;
+					goto EXIT_QUERY_ROWS;
+				}
+				result = nsp_interface_fetch_row(ptr,
+				         b_ephid, pstat->codepage, pproptags, prow);
+				if (result != ecSuccess)
+					goto EXIT_QUERY_ROWS;
 				i ++;
 			}
 		} else {
 			do {
 				if (ab_tree_get_node_type(pnode1) >= abnode_type::containers)
 					continue;
-				if (i >= start_pos && i < start_pos + tmp_count) {
-					prow = common_util_proprowset_enlarge(*pprows);
-					if (NULL == prow || NULL ==
-						common_util_propertyrow_init(prow)) {
-						result = ecMAPIOOM;
-						goto EXIT_QUERY_ROWS;
-					}
-					result = nsp_interface_fetch_row(pnode1,
-						b_ephid, pstat->codepage, pproptags, prow);
-					if (result != ecSuccess)
-						goto EXIT_QUERY_ROWS;
+				if (i >= start_pos + tmp_count)
+					break;
+				if (i < start_pos) {
+					++i;
+					continue;
 				}
+				prow = common_util_proprowset_enlarge(*pprows);
+				if (NULL == prow || NULL ==
+				    common_util_propertyrow_init(prow)) {
+					result = ecMAPIOOM;
+					goto EXIT_QUERY_ROWS;
+				}
+				result = nsp_interface_fetch_row(pnode1,
+				         b_ephid, pstat->codepage, pproptags, prow);
+				if (result != ecSuccess)
+					goto EXIT_QUERY_ROWS;
 				i ++;
 			} while ((pnode1 = pnode1->get_sibling()) != nullptr);
 		}
