@@ -35,6 +35,7 @@ static pthread_t mdcl_scan_id;
 static void (*mdcl_build_env)(const remote_svr &);
 static void (*mdcl_free_env)();
 static void (*mdcl_event_proc)(const char *, BOOL, uint32_t, const DB_NOTIFY *);
+static char mdcl_remote_id[128];
 
 remote_conn_ref::remote_conn_ref(remote_conn_ref &&o)
 {
@@ -64,6 +65,9 @@ void exmdb_client_init(unsigned int conn_max, unsigned int threads_max)
 	mdcl_notify_stop = true;
 	mdcl_conn_max = conn_max;
 	mdcl_threads_max = threads_max;
+	snprintf(mdcl_remote_id, arsizeof(mdcl_remote_id), "%llx.", static_cast<unsigned long long>(time(nullptr)));
+	auto z = strlen(mdcl_remote_id);
+	guid_machine_id().to_str(mdcl_remote_id + z, arsizeof(mdcl_remote_id) - z);
 }
 
 void exmdb_client_stop()
@@ -109,11 +113,11 @@ static int exmdb_client_connect_exmdb(remote_svr &srv, bool b_listen,
 	if (!b_listen) {
 		rq.call_id = exmdb_callid::connect;
 		rq.payload.connect.prefix = deconst(srv.prefix.c_str());
-		rq.payload.connect.remote_id = srv.remote_id;
+		rq.payload.connect.remote_id = mdcl_remote_id;
 		rq.payload.connect.b_private = srv.type == EXMDB_ITEM::EXMDB_PRIVATE ? TRUE : false;
 	} else {
 		rq.call_id = exmdb_callid::listen_notification;
-		rq.payload.listen_notification.remote_id = srv.remote_id;
+		rq.payload.listen_notification.remote_id = mdcl_remote_id;
 	}
 	BINARY bin;
 	if (exmdb_ext_push_request(&rq, &bin) != EXT_ERR_SUCCESS)
@@ -287,7 +291,7 @@ static int launch_notify_listener(remote_svr &srv) try
 		mdcl_agent_list.pop_back();
 		return 8;
 	}
-	auto thrtxt = std::string("mcn") + srv.remote_id;
+	auto thrtxt = std::string("mcn") + mdcl_remote_id;
 	pthread_setname_np(ag.thr_id, thrtxt.c_str());
 	return 0;
 } catch (const std::bad_alloc &) {
@@ -318,8 +322,6 @@ int exmdb_client_run(const char *cfgdir, unsigned int flags,
 		if (flags & EXMDB_CLIENT_SKIP_REMOTE && !local)
 			continue; /* mostly used by midb */
 		item.local = (flags & EXMDB_CLIENT_ALLOW_DIRECT) ? local : false;
-		guid_random_new().to_str(item.remote_id, arsizeof(item.remote_id), 32);
-		guid_machine_id().to_str(item.remote_id + 32, arsizeof(item.remote_id) - 32, 32);
 		if (item.local) try {
 			/* mostly used by exmdb_provider */
 			mdcl_server_list.emplace_back(std::move(item));
