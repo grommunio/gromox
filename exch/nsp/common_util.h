@@ -27,9 +27,11 @@
 #define	AB_UNMODIFIABLE					0x8
 
 /* positioning of MID */
-#define MID_BEGINNING_OF_TABLE			0x0
-#define MID_CURRENT						0x1
-#define MID_END_OF_TABLE				0x2
+enum {
+	MID_BEGINNING_OF_TABLE = STREAM_SEEK_SET,
+	MID_CURRENT = STREAM_SEEK_CUR,
+	MID_END_OF_TABLE = STREAM_SEEK_END,
+};
 
 /* resolve types of names */
 #define MID_UNRESOLVED					0x0
