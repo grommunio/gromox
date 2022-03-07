@@ -1078,18 +1078,18 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 				tmp_minid = ptable->pproptag[i];
 				row = i;
 			}
-			if (0 != tmp_minid) {
-				prow = common_util_proprowset_enlarge(*pprows);
-				if (NULL == prow || NULL ==
-					common_util_propertyrow_init(prow)) {
-					result = ecMAPIOOM;
-					goto EXIT_SEEK_ENTRIES;
-				}
-				result = nsp_interface_fetch_row(pnode1, TRUE,
-							pstat->codepage, pproptags, prow);
-				if (result != ecSuccess)
-					nsp_interface_make_ptyperror_row(pproptags, prow);
+			if (tmp_minid == 0)
+				continue;
+			prow = common_util_proprowset_enlarge(*pprows);
+			if (NULL == prow || NULL ==
+				common_util_propertyrow_init(prow)) {
+				result = ecMAPIOOM;
+				goto EXIT_SEEK_ENTRIES;
 			}
+			result = nsp_interface_fetch_row(pnode1, TRUE,
+			         pstat->codepage, pproptags, prow);
+			if (result != ecSuccess)
+				nsp_interface_make_ptyperror_row(pproptags, prow);
 		}
 		
 		if (0 == tmp_minid) {
@@ -1130,21 +1130,21 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 				auto ptr = pbase->gal_list[row];
 				ab_tree_get_display_name(ptr,
 					pstat->codepage, temp_name, arsizeof(temp_name));
-				if (strcasecmp(temp_name, ptarget->value.pstr) >= 0) {
-					prow = common_util_proprowset_enlarge(*pprows);
-					if (NULL == prow ||
-						NULL == common_util_propertyrow_init(prow)) {
-						result = ecMAPIOOM;
-						goto EXIT_SEEK_ENTRIES;
-					}
-					if (nsp_interface_fetch_row(ptr,
-					    TRUE, pstat->codepage, pproptags,
-					    prow) != ecSuccess) {
-						result = ecError;
-						goto EXIT_SEEK_ENTRIES;
-					}
-					break;
+				if (strcasecmp(temp_name, ptarget->value.pstr) < 0)
+					continue;
+				prow = common_util_proprowset_enlarge(*pprows);
+				if (NULL == prow ||
+				    NULL == common_util_propertyrow_init(prow)) {
+					result = ecMAPIOOM;
+					goto EXIT_SEEK_ENTRIES;
 				}
+				if (nsp_interface_fetch_row(ptr,
+				    TRUE, pstat->codepage, pproptags,
+				    prow) != ecSuccess) {
+					result = ecError;
+					goto EXIT_SEEK_ENTRIES;
+				}
+				break;
 			}
 			if (row == pbase->gal_list.size()) {
 				result = ecNotFound;
@@ -1162,22 +1162,23 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 				}
 				ab_tree_get_display_name(pnode1, pstat->codepage,
 					temp_name, arsizeof(temp_name));
-				if (strcasecmp(temp_name, ptarget->value.pstr) >= 0) {
-					prow = common_util_proprowset_enlarge(*pprows);
-					if (NULL == prow ||
-						NULL == common_util_propertyrow_init(prow)) {
-						result = ecMAPIOOM;
-						goto EXIT_SEEK_ENTRIES;
-					}
-					if (nsp_interface_fetch_row(pnode1,
-					    TRUE, pstat->codepage, pproptags,
-					    prow) != ecSuccess) {
-						result = ecError;
-						goto EXIT_SEEK_ENTRIES;
-					}
-					break;
+				if (strcasecmp(temp_name, ptarget->value.pstr) < 0) {
+					++row;
+					continue;
 				}
-				row ++;
+				prow = common_util_proprowset_enlarge(*pprows);
+				if (NULL == prow ||
+				    NULL == common_util_propertyrow_init(prow)) {
+					result = ecMAPIOOM;
+					goto EXIT_SEEK_ENTRIES;
+				}
+				if (nsp_interface_fetch_row(pnode1,
+				    TRUE, pstat->codepage, pproptags,
+				    prow) != ecSuccess) {
+					result = ecError;
+					goto EXIT_SEEK_ENTRIES;
+				}
+				break;
 			} while ((pnode1 = pnode1->get_sibling()) != nullptr);
 			if (NULL == pnode1) {
 				result = ecNotFound;
@@ -1242,49 +1243,35 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 				if (NULL != strcasestr(temp_buff, ptoken + 1)) {
 					return TRUE;
 				}
-			} else {
-				if (0 == strcasecmp(temp_buff,
-					pfilter->res.res_property.pprop->value.pstr)) {
-					return TRUE;
-				}
+			} else if (strcasecmp(temp_buff, pfilter->res.res_property.pprop->value.pstr) == 0) {
+				return TRUE;
 			}
 			if (nsp_interface_fetch_property(pnode, false, codepage,
 			    PR_DISPLAY_NAME, &prop_val, temp_buff,
-			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess) {
-				if (NULL != strcasestr(temp_buff,
-					pfilter->res.res_property.pprop->value.pstr)) {
-					return TRUE;
-				}
-			}
+			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess &&
+			    strcasestr(temp_buff, pfilter->res.res_property.pprop->value.pstr) != nullptr)
+				return TRUE;
 			return FALSE;
 		} else if (PROP_TAG_ANR_STRING8 == pfilter->res.res_property.proptag) {
 			if (nsp_interface_fetch_property(pnode, false, codepage,
 			    PR_ACCOUNT_A, &prop_val, temp_buff,
-			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess) {
-				if (NULL != strcasestr(temp_buff,
-					pfilter->res.res_property.pprop->value.pstr)) {
-					return TRUE;
-				}
-			}
+			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess &&
+			    strcasestr(temp_buff, pfilter->res.res_property.pprop->value.pstr) != nullptr)
+				return TRUE;
 			/* =SMTP:user@company.com */
 			ptoken = strchr(pfilter->res.res_property.pprop->value.pstr, ':');
 			if (NULL != ptoken) {
 				if (NULL != strcasestr(temp_buff, ptoken + 1)) {
 					return TRUE;
 				}
-			} else {
-				if (0 == strcasecmp(temp_buff,
-					pfilter->res.res_property.pprop->value.pstr)) {
-					return TRUE;
-				}
+			} else if (strcasecmp(temp_buff, pfilter->res.res_property.pprop->value.pstr) == 0) {
+				return TRUE;
 			}
 			if (nsp_interface_fetch_property(pnode, false, codepage,
 			    PR_DISPLAY_NAME_A, &prop_val, temp_buff,
-			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess) {
-				if (NULL != strcasestr(temp_buff,
-					pfilter->res.res_property.pprop->value.pstr)) {
-					return TRUE;
-				}
+			    GX_ARRAY_SIZE(temp_buff)) == ecSuccess &&
+			    strcasestr(temp_buff, pfilter->res.res_property.pprop->value.pstr) != nullptr) {
+				return TRUE;
 			}
 			return FALSE;
 		}
@@ -1911,13 +1898,11 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		}
 	} else {
 		pnode1 = ab_tree_minid_to_node(pbase.get(), pstat->cur_rec);
-		if (NULL != pnode1) {
-			if (0 != pstat->container_id) {
-				auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
-				if (NULL == pnode) {
-					result = ecInvalidBookmark;
-					goto EXIT_GET_PROPS;
-				}
+		if (pnode1 != nullptr && pstat->container_id != 0) {
+			auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
+			if (NULL == pnode) {
+				result = ecInvalidBookmark;
+				goto EXIT_GET_PROPS;
 			}
 		}
 	}
@@ -1951,29 +1936,28 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		result = nsp_interface_fetch_row(pnode1, b_ephid,
 					pstat->codepage, pproptags, *pprows);
 	}
-	if (result == ecSuccess) {
-		if (!b_proptags) {
-			size_t count = 0;
-			for (size_t i = 0; i < (*pprows)->cvalues; ++i) {
-				if (PROP_TYPE((*pprows)->pprops[i].proptag) == PT_ERROR &&
-				    (*pprows)->pprops[i].value.err == ecNotFound)
-					continue;
-				if (i != count) {
-					(*pprows)->pprops[count] = (*pprows)->pprops[i];
-				}
-				count ++;
+	if (result != ecSuccess)
+		goto EXIT_GET_PROPS;
+	if (!b_proptags) {
+		size_t count = 0;
+		for (size_t i = 0; i < (*pprows)->cvalues; ++i) {
+			if (PROP_TYPE((*pprows)->pprops[i].proptag) == PT_ERROR &&
+			    (*pprows)->pprops[i].value.err == ecNotFound)
+				continue;
+			if (i != count) {
+				(*pprows)->pprops[count] = (*pprows)->pprops[i];
 			}
-			(*pprows)->cvalues = count;
-		} else {
-			for (size_t i = 0; i < (*pprows)->cvalues; ++i) {
-				if (PROP_TYPE((*pprows)->pprops[i].proptag) == PT_ERROR) {
-					result = ecWarnWithErrors;
-					break;
-				}
+			count++;
+		}
+		(*pprows)->cvalues = count;
+	} else {
+		for (size_t i = 0; i < (*pprows)->cvalues; ++i) {
+			if (PROP_TYPE((*pprows)->pprops[i].proptag) == PT_ERROR) {
+				result = ecWarnWithErrors;
+				break;
 			}
 		}
 	}
-	
  EXIT_GET_PROPS:
 	if (result != ecSuccess && result != ecWarnWithErrors)
 		*pprows = NULL;
@@ -2374,12 +2358,12 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 			DOUBLE_LIST_NODE *pnode;
 			for (pnode=double_list_get_head(&tmp_list); NULL!=pnode;
 				pnode=double_list_get_after(&tmp_list, pnode)) {
-				if (strcasecmp(username, static_cast<char *>(pnode->pdata)) == 0) {
-					double_list_remove(&tmp_list, pnode);
-					free(pnode->pdata);
-					free(pnode);
-					break;
-				}
+				if (strcasecmp(username, static_cast<char *>(pnode->pdata)) != 0)
+					continue;
+				double_list_remove(&tmp_list, pnode);
+				free(pnode->pdata);
+				free(pnode);
+				break;
 			}
 		} else {
 			DOUBLE_LIST_NODE *pnode;
