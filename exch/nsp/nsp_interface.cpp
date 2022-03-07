@@ -924,26 +924,20 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 	}
 	size_t i = 0;
 	if (0 == pstat->container_id) {
-		for (auto ptr : pbase->gal_list) {
-			if (i >= start_pos + tmp_count)
-				break;
-			if (i < start_pos) {
-				++i;
-				continue;
-			}
+		for (i = start_pos; i < pbase->gal_list.size() &&
+		     i < start_pos + tmp_count; ++i) {
 			prow = common_util_proprowset_enlarge(*pprows);
 			if (NULL == prow || NULL ==
 			    common_util_propertyrow_init(prow)) {
 				*pprows = nullptr;
 				return ecServerOOM;
 			}
-			result = nsp_interface_fetch_row(ptr,
+			result = nsp_interface_fetch_row(pbase->gal_list[i],
 				 b_ephid, pstat->codepage, pproptags, prow);
 			if (result != ecSuccess) {
 				*pprows = nullptr;
 				return result;
 			}
-			i++;
 		}
 	} else {
 		do {
