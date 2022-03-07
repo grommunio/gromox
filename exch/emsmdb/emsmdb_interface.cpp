@@ -78,7 +78,7 @@ struct HANDLE_DATA {
 	int rop_num = 0;
 	uint16_t rop_left = 0; /* size left in rop response buffer */
 	uint16_t cxr = 0;
-	EMSMDB_INFO info{};
+	emsmdb_info info;
 	DOUBLE_LIST notify_list{};
 };
 
@@ -103,6 +103,16 @@ static std::unordered_map<std::string, NOTIFY_ITEM> g_notify_hash;
 static size_t g_handle_hash_max, g_user_hash_max, g_notify_hash_max;
 
 static void *emsi_scanwork(void *);
+
+emsmdb_info::emsmdb_info(emsmdb_info &&o) noexcept :
+	cpid(o.cpid), lcid_string(o.lcid_string), lcid_sort(o.lcid_sort),
+	client_mode(o.client_mode), plogmap(o.plogmap),
+	upctx_ref(o.upctx_ref.load())
+{
+	memcpy(client_version, o.client_version, sizeof(client_version));
+	o.plogmap = nullptr;
+	o.upctx_ref = 0;
+}
 
 static uint32_t emsmdb_interface_get_timestamp()
 {
@@ -270,11 +280,12 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 		return FALSE;
 	}
 	HANDLE_DATA *phandle;
+
 	try {
 		auto xp = g_handle_hash.emplace(temp_handle.guid, std::move(temp_handle));
 		phandle = &xp.first->second;
 	} catch (const std::bad_alloc &) {
-		fprintf(stderr, "E-1578: ENOMEM|n");
+		fprintf(stderr, "E-1578: ENOMEM\n");
 		return false;
 	}
 	auto plogmap = rop_processor_create_logmap();

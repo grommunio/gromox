@@ -1,18 +1,21 @@
 #pragma once
+#include <atomic>
 #include <cstdint>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rpc_types.hpp>
 
 struct LOGMAP;
-struct EMSMDB_INFO {
-	uint32_t cpid;
-	uint32_t lcid_string;
-	uint32_t lcid_sort;
-	uint16_t client_version[4];
-	uint16_t client_mode;
-	LOGMAP *plogmap;
-	int upctx_ref;
+struct emsmdb_info {
+	emsmdb_info() = default;
+	emsmdb_info(emsmdb_info &&) noexcept;
+	void operator=(emsmdb_info &&) noexcept = delete;
+
+	uint32_t cpid = 0, lcid_string = 0, lcid_sort = 0;
+	uint16_t client_version[4]{}, client_mode = 0;
+	LOGMAP *plogmap = nullptr;
+	std::atomic<int> upctx_ref{0};
 };
+using EMSMDB_INFO = emsmdb_info;
 
 extern const char* (*emsmdb_interface_cpid_to_charset)(uint32_t cpid);
 extern void emsmdb_interface_init();
