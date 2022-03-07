@@ -106,7 +106,7 @@ static BOOL (*get_lang)(uint32_t codepage,
 
 static void *nspab_scanwork(void *);
 
-static uint32_t ab_tree_make_minid(minid_type type, int value)
+static uint32_t ab_tree_make_minid(minid_type type, uint32_t value)
 {
 	if (type == minid_type::address && value <= 0x10)
 		type = minid_type::reserved;
@@ -116,7 +116,7 @@ static uint32_t ab_tree_make_minid(minid_type type, int value)
 	return minid;
 }
 
-static int ab_tree_get_minid_value(uint32_t minid)
+static uint32_t ab_tree_get_minid_value(uint32_t minid)
 {
 	if (0 == (minid & 0x80000000)) {
 		return minid;

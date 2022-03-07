@@ -104,7 +104,7 @@ static void *zcoreab_scanwork(void *);
 static void ab_tree_get_display_name(const SIMPLE_TREE_NODE *, uint32_t codepage, char *str_dname, size_t dn_size);
 static void ab_tree_get_user_info(const SIMPLE_TREE_NODE *pnode, int type, char *value, size_t vsize);
 
-uint32_t ab_tree_make_minid(minid_type type, int value)
+uint32_t ab_tree_make_minid(minid_type type, uint32_t value)
 {
 	if (type == minid_type::address && value <= 0x10)
 		type = minid_type::reserved;
@@ -123,7 +123,7 @@ minid_type ab_tree_get_minid_type(uint32_t minid)
 	return type == minid_type::reserved ? minid_type::address : type;
 }
 
-int ab_tree_get_minid_value(uint32_t minid)
+uint32_t ab_tree_get_minid_value(uint32_t minid)
 {
 	if (0 == (minid & 0x80000000)) {
 		return minid;
