@@ -94,7 +94,7 @@ USER_INFO::USER_INFO()
 	double_list_init(&sink_list);
 }
 
-USER_INFO::USER_INFO(USER_INFO &&o) :
+USER_INFO::USER_INFO(USER_INFO &&o) noexcept :
 	hsession(o.hsession), user_id(o.user_id), domain_id(o.domain_id),
 	org_id(o.org_id), username(std::move(o.username)),
 	lang(std::move(o.lang)), maildir(std::move(o.maildir)),

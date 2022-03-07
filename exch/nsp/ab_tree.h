@@ -26,7 +26,7 @@ struct PROPERTY_VALUE;
 
 struct domain_node {
 	domain_node(int);
-	domain_node(domain_node &&);
+	domain_node(domain_node &&) noexcept;
 	~domain_node();
 	int domain_id = -1;
 	SIMPLE_TREE tree{};

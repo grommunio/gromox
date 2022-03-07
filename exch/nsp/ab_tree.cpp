@@ -281,7 +281,7 @@ domain_node::domain_node(int id) : domain_id(id)
 	simple_tree_init(&tree);
 }
 
-domain_node::domain_node(domain_node &&o) :
+domain_node::domain_node(domain_node &&o) noexcept :
 	domain_id(o.domain_id), tree(std::move(o.tree))
 {
 	o.tree = {};

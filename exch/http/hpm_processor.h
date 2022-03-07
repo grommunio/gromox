@@ -14,9 +14,9 @@ struct hpm_service_node {
 
 struct HPM_PLUGIN {
 	HPM_PLUGIN() = default;
-	HPM_PLUGIN(HPM_PLUGIN &&);
+	HPM_PLUGIN(HPM_PLUGIN &&) noexcept;
 	~HPM_PLUGIN();
-	void operator=(HPM_PLUGIN &&) = delete;
+	void operator=(HPM_PLUGIN &&) noexcept = delete;
 
 	std::vector<hpm_service_node> list_reference;
 	HPM_INTERFACE interface{};

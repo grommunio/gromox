@@ -40,9 +40,9 @@ struct service_entry {
 
 struct SVC_PLUG_ENTITY {
 	SVC_PLUG_ENTITY() = default;
-	SVC_PLUG_ENTITY(SVC_PLUG_ENTITY &&);
+	SVC_PLUG_ENTITY(SVC_PLUG_ENTITY &&) noexcept;
 	~SVC_PLUG_ENTITY();
-	void operator=(SVC_PLUG_ENTITY &&) = delete;
+	void operator=(SVC_PLUG_ENTITY &&) noexcept = delete;
 
 	std::vector<std::shared_ptr<service_entry>> list_service;
 	std::atomic<int> ref_count = 0;
@@ -190,7 +190,7 @@ static int service_load_library(const char *path)
 	return PLUGIN_LOAD_OK;
 }
 
-SVC_PLUG_ENTITY::SVC_PLUG_ENTITY(SVC_PLUG_ENTITY &&o) :
+SVC_PLUG_ENTITY::SVC_PLUG_ENTITY(SVC_PLUG_ENTITY &&o) noexcept :
 	list_service(std::move(o.list_service)), ref_count(o.ref_count.load()),
 	handle(o.handle), lib_main(o.lib_main),
 	file_name(std::move(o.file_name)), full_path(std::move(o.full_path)),

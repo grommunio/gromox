@@ -13,7 +13,7 @@ struct OBJECT_TREE;
 
 struct USER_INFO {
 	USER_INFO();
-	USER_INFO(USER_INFO &&);
+	USER_INFO(USER_INFO &&) noexcept;
 	void operator=(USER_INFO &&) = delete;
 	~USER_INFO();
 	inline const char *get_username() const { return username.c_str(); }

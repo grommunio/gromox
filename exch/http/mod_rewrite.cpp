@@ -23,7 +23,7 @@ using namespace gromox;
 namespace {
 struct REWRITE_NODE {
 	REWRITE_NODE() = default;
-	REWRITE_NODE(REWRITE_NODE &&);
+	REWRITE_NODE(REWRITE_NODE &&) noexcept;
 	~REWRITE_NODE();
 	void operator=(REWRITE_NODE &&) = delete;
 	regex_t search_pattern{};
@@ -34,7 +34,7 @@ struct REWRITE_NODE {
 
 static std::vector<REWRITE_NODE> g_rewrite_list;
 
-REWRITE_NODE::REWRITE_NODE(REWRITE_NODE &&o) :
+REWRITE_NODE::REWRITE_NODE(REWRITE_NODE &&o) noexcept :
     replace_string(std::move(o.replace_string))
 {
 	if (reg_set)

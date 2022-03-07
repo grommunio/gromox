@@ -301,7 +301,7 @@ static void *hpm_processor_queryservice(const char *service, const std::type_inf
 	return ret_addr;
 }
 
-HPM_PLUGIN::HPM_PLUGIN(HPM_PLUGIN &&o) :
+HPM_PLUGIN::HPM_PLUGIN(HPM_PLUGIN &&o) noexcept :
 	list_reference(std::move(o.list_reference)), interface(o.interface),
 	handle(o.handle), lib_main(o.lib_main),
 	file_name(std::move(o.file_name)), completed_init(o.completed_init)

@@ -3271,7 +3271,7 @@ PROC_PLUGIN::PROC_PLUGIN()
 	double_list_init(&list_reference);
 }
 
-PROC_PLUGIN::PROC_PLUGIN(PROC_PLUGIN &&o) :
+PROC_PLUGIN::PROC_PLUGIN(PROC_PLUGIN &&o) noexcept :
 	list_reference(o.list_reference), lib_main(o.lib_main),
 	file_name(std::move(o.file_name)), completed_init(o.completed_init)
 {

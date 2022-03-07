@@ -31,9 +31,9 @@ struct DCERPC_ENDPOINT {
 
 struct PROC_PLUGIN {
 	PROC_PLUGIN();
-	PROC_PLUGIN(PROC_PLUGIN &&);
+	PROC_PLUGIN(PROC_PLUGIN &&) noexcept;
 	~PROC_PLUGIN();
-	void operator=(PROC_PLUGIN &&) = delete;
+	void operator=(PROC_PLUGIN &&) noexcept = delete;
 
 	DOUBLE_LIST list_reference{};
 	void *handle = nullptr;
