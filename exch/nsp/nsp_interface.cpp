@@ -740,11 +740,10 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 			if (row > last_row) {
 				row = last_row + 1;
 			}
+		} else if (static_cast<unsigned int>(-pstat->delta) >= row) {
+			row = 0;
 		} else {
-			if (static_cast<unsigned int>(abs(pstat->delta)) >= row)
-				row = 0;
-			else
-				row -= abs(pstat->delta);
+			row += pstat->delta;
 		}
 	}
 	if (row == last_row + 1) {
@@ -881,11 +880,10 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 			if (start_pos >= total) {
 				start_pos = total;
 			}
+		} else if (static_cast<unsigned int>(-pstat->delta) > pstat->num_pos) {
+			start_pos = 0;
 		} else {
-			if (static_cast<unsigned int>(abs(pstat->delta)) > pstat->num_pos)
-				start_pos = 0;
-			else
-				start_pos -= abs(pstat->delta);
+			start_pos += pstat->delta;
 		}
 
 		auto tmp_count = total - start_pos;
