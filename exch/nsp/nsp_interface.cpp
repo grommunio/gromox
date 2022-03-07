@@ -94,7 +94,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		    node_type != abnode_type::equipment)
 			return ecNotFound;
 		ab_tree_get_server_dn(pnode, dn, sizeof(dn));
-		strcat(dn, "/cn=Microsoft Private MDB");
+		HX_strlcat(dn, "/cn=Microsoft Private MDB", arsizeof(dn));
 		if (NULL == pbuff) {
 			pprop->value.pv = ndr_stack_alloc(
 				NDR_STACK_OUT, strlen(dn) + 1);
@@ -471,7 +471,7 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 		if (node_type != abnode_type::person)
 			return ecNotFound;
 		ab_tree_get_user_info(pnode, USER_STORE_PATH, dn, GX_ARRAY_SIZE(dn));
-		strcat(dn, "/config/portrait.jpg");
+		HX_strlcat(dn, "/config/portrait.jpg", arsizeof(dn));
 		if (!common_util_load_file(dn, &pprop->value.bin))
 			return ecNotFound;
 		return ecSuccess;
