@@ -20,7 +20,7 @@ request.
 Default: \fno\fP
 .TP
 \fBmysql_dbname\fP
-Default: \fIarchive\fP
+Default: \fIemail\fP
 .TP
 \fBmysql_host\fP
 The hostname/IP address for contacting the SQL server.
