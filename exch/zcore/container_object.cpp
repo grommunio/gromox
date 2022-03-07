@@ -1012,17 +1012,12 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 				pset->count ++;
 			}
 		} else if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_GAL) {
-			size_t i = 0;
-			for (auto e : pbase->gal_list) {
-				if (i < first_pos) {
-					++i;
-					continue;
-				}
+			for (size_t i = first_pos; i < pbase->gal_list.size(); ++i) {
 				pset->pparray[pset->count] = cu_alloc<TPROPVAL_ARRAY>();
 				if (NULL == pset->pparray[pset->count]) {
 					return FALSE;
 				}
-				if (!ab_tree_fetch_node_properties(e,
+				if (!ab_tree_fetch_node_properties(pbase->gal_list[i],
 				    pproptags, pset->pparray[pset->count])) {
 					return FALSE;
 				}
@@ -1030,7 +1025,6 @@ BOOL container_object::query_user_table(const PROPTAG_ARRAY *pproptags,
 				if (pset->count == row_count) {
 					break;
 				}
-				++i;
 			}
 		} else if (pcontainer->id.abtree_id.minid == SPECIAL_CONTAINER_EMPTY) {
 			return TRUE;
