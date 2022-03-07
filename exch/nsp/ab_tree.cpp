@@ -108,8 +108,7 @@ static void *nspab_scanwork(void *);
 
 static uint32_t ab_tree_make_minid(minid_type type, uint32_t value)
 {
-	if (type == minid_type::address && value <= 0x10)
-		type = minid_type::reserved;
+	value += 0x10;
 	auto minid = static_cast<uint32_t>(type);
 	minid <<= 29;
 	minid |= value;
@@ -119,9 +118,9 @@ static uint32_t ab_tree_make_minid(minid_type type, uint32_t value)
 static uint32_t ab_tree_get_minid_value(uint32_t minid)
 {
 	if (0 == (minid & 0x80000000)) {
-		return minid;
+		return (minid - 0x10);
 	}
-	return minid & 0x1FFFFFFF;
+	return (minid & 0x1FFFFFFF) - 0x10;
 }
 
 uint32_t ab_tree_get_leaves_num(const SIMPLE_TREE_NODE *pnode)
