@@ -1293,167 +1293,80 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 		    temp_buff, GX_ARRAY_SIZE(temp_buff)) != ecSuccess)
 			return FALSE;
 		switch (PROP_TYPE(pfilter->res.res_property.proptag)) {
-		case PT_SHORT:
+		case PT_SHORT: {
+			auto s = pfilter->res.res_property.pprop->value.s;
 			switch (pfilter->res.res_property.relop) {
 			case RELOP_LT:
-				if (prop_val.value.s <
-					pfilter->res.res_property.pprop->value.s) {
-					return TRUE;
-				}
-				return FALSE;
+				return prop_val.value.s < s ? TRUE : false;
 			case RELOP_LE:
-				if (prop_val.value.s <=
-					pfilter->res.res_property.pprop->value.s) {
-					return TRUE;
-				}
-				return FALSE;
+				return prop_val.value.s <= s ? TRUE : false;
 			case RELOP_GT:
-				if (prop_val.value.s >
-					pfilter->res.res_property.pprop->value.s) {
-					return TRUE;
-				}
-				return FALSE;
+				return prop_val.value.s > s ? TRUE : false;
 			case RELOP_GE:
-				if (prop_val.value.s >=
-					pfilter->res.res_property.pprop->value.s) {
-					return TRUE;
-				}
-				return FALSE;
+				return prop_val.value.s >= s ? TRUE : false;
 			case RELOP_EQ:
-				if (prop_val.value.s ==
-					pfilter->res.res_property.pprop->value.s) {
-					return TRUE;
-				}
-				return FALSE;
+				return prop_val.value.s == s ? TRUE : false;
 			case RELOP_NE:
-				if (prop_val.value.s !=
-					pfilter->res.res_property.pprop->value.s) {
-					return TRUE;
-				}
-				return FALSE;
+				return prop_val.value.s != s ? TRUE : false;
 			}
 			return FALSE;
-		case PT_LONG:
+		}
+		case PT_LONG: {
+			auto l = pfilter->res.res_property.pprop->value.l;
 			switch (pfilter->res.res_property.relop) {
 			case RELOP_LT:
-				if (prop_val.value.l <
-					pfilter->res.res_property.pprop->value.l) {
-					return TRUE;
-				}
-				return FALSE;
+				return prop_val.value.l < l ? TRUE : false;
 			case RELOP_LE:
-				if (prop_val.value.l <=
-					pfilter->res.res_property.pprop->value.l) {
-					return TRUE;
-				}
-				return FALSE;
+				return prop_val.value.l <= l ? TRUE : false;
 			case RELOP_GT:
-				if (prop_val.value.l >
-					pfilter->res.res_property.pprop->value.l) {
-					return TRUE;
-				}
-				return FALSE;
+				return prop_val.value.l > l ? TRUE : false;
 			case RELOP_GE:
-				if (prop_val.value.l >=
-					pfilter->res.res_property.pprop->value.l) {
-					return TRUE;
-				}
-				return FALSE;
+				return prop_val.value.l >= l ? TRUE : false;
 			case RELOP_EQ:
-				if (prop_val.value.l ==
-					pfilter->res.res_property.pprop->value.l) {
-					return TRUE;
-				}
-				return FALSE;
+				return prop_val.value.l == l ? TRUE : false;
 			case RELOP_NE:
-				if (prop_val.value.l !=
-					pfilter->res.res_property.pprop->value.l) {
-					return TRUE;
-				}
-				return FALSE;
+				return prop_val.value.l != l ? TRUE : false;
 			}
 			return FALSE;
-		case PT_BOOLEAN:
+		}
+		case PT_BOOLEAN: {
+			auto b = pfilter->res.res_property.pprop->value.b;
 			switch (pfilter->res.res_property.relop) {
 			case RELOP_LT:
-				if (prop_val.value.b <
-					pfilter->res.res_property.pprop->value.b) {
-					return TRUE;
-				}
-				return FALSE;
+				return prop_val.value.b < b ? TRUE : false;
 			case RELOP_LE:
-				if (prop_val.value.b <=
-					pfilter->res.res_property.pprop->value.b) {
-					return TRUE;
-				}
-				return FALSE;
+				return prop_val.value.b <= b ? TRUE : false;
 			case RELOP_GT:
-				if (prop_val.value.b >
-					pfilter->res.res_property.pprop->value.b) {
-					return TRUE;
-				}
-				return FALSE;
+				return prop_val.value.b > b ? TRUE : false;
 			case RELOP_GE:
-				if (prop_val.value.b >=
-					pfilter->res.res_property.pprop->value.b) {
-					return TRUE;
-				}
-				return FALSE;
+				return prop_val.value.b >= b ? TRUE : false;
 			case RELOP_EQ:
-				if (prop_val.value.b ==
-					pfilter->res.res_property.pprop->value.b) {
-					return TRUE;
-				}
-				return FALSE;
+				return prop_val.value.b == b ? TRUE : false;
 			case RELOP_NE:
-				if (prop_val.value.b !=
-					pfilter->res.res_property.pprop->value.b) {
-					return TRUE;
-				}
-				return FALSE;
+				return prop_val.value.b != b ? TRUE : false;
 			}
 			return FALSE;
+		}
 		case PT_STRING8:
-		case PT_UNICODE:
+		case PT_UNICODE: {
+			auto cmp = strcasecmp(prop_val.value.pstr,
+			           pfilter->res.res_property.pprop->value.pstr);
 			switch (pfilter->res.res_property.relop) {
 			case RELOP_LT:
-				if (strcasecmp(prop_val.value.pstr,
-					pfilter->res.res_property.pprop->value.pstr) < 0) {
-					return TRUE;
-				}
-				return FALSE;
+				return cmp < 0 ? TRUE : false;
 			case RELOP_LE:
-				if (strcasecmp(prop_val.value.pstr,
-					pfilter->res.res_property.pprop->value.pstr) <= 0) {
-					return TRUE;
-				}
-				return FALSE;
+				return cmp <= 0 ? TRUE : false;
 			case RELOP_GT:
-				if (strcasecmp(prop_val.value.pstr,
-					pfilter->res.res_property.pprop->value.pstr) > 0) {
-					return TRUE;
-				}
-				return FALSE;
+				return cmp > 0 ? TRUE : false;
 			case RELOP_GE:
-				if (strcasecmp(prop_val.value.pstr,
-					pfilter->res.res_property.pprop->value.pstr) >= 0) {
-					return TRUE;
-				}
-				return FALSE;
+				return cmp >= 0 ? TRUE : false;
 			case RELOP_EQ:
-				if (strcasecmp(prop_val.value.pstr,
-					pfilter->res.res_property.pprop->value.pstr) == 0) {
-					return TRUE;
-				}
-				return FALSE;
+				return cmp == 0 ? TRUE : false;
 			case RELOP_NE:
-				if (strcasecmp(prop_val.value.pstr,
-					pfilter->res.res_property.pprop->value.pstr) != 0) {
-					return TRUE;
-				}
-				return FALSE;
+				return cmp != 0 ? TRUE : false;
 			}
 			return FALSE;
+		}
 		}
 		return FALSE;
 	case RES_PROPCOMPARE:
