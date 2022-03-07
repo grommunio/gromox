@@ -556,11 +556,11 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
 	int domain_id;
 	
 	auto rpc_info = get_rpc_info();
-	if (0 != (flags & FLAG_ANONYMOUSLOGIN)) {
+	if (flags & fAnonymousLogin) {
 		memset(phandle, 0, sizeof(NSPI_HANDLE));
 		return MAPI_E_FAILONEPROVIDER;
 	}
-	if (CODEPAGE_UNICODE == pstat->codepage) {
+	if (pstat->codepage == CP_WINUNICODE) {
 		memset(phandle, 0, sizeof(NSPI_HANDLE));
 		return ecNotSupported;
 	}
@@ -714,9 +714,8 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 	uint32_t last_row;
 	const SIMPLE_TREE_NODE *pnode = nullptr;
 	
-	if (NULL == pstat || CODEPAGE_UNICODE == pstat->codepage) {
+	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE)
 		return ecNotSupported;
-	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
 		return ecError;
@@ -795,9 +794,9 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 	uint32_t last_row;
 	uint32_t start_pos, total;
 	NSP_PROPROW *prow;
-	BOOL b_ephid = (flags & FLAG_EPHID) ? TRUE : false;
+	BOOL b_ephid = (flags & fEphID) ? TRUE : false;
 	
-	if (NULL == pstat || CODEPAGE_UNICODE == pstat->codepage) {
+	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE) {
 		*pprows = NULL;
 		return ecNotSupported;
 	}
@@ -998,7 +997,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	uint32_t tmp_minid;
 	char temp_name[1024];
 	
-	if (NULL == pstat || CODEPAGE_UNICODE == pstat->codepage) {
+	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE) {
 		*pprows = NULL;
 		return ecNotSupported;
 	}
@@ -1006,13 +1005,13 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		*pprows = NULL;
 		return ecNotSupported;
 	}
-	if (SORT_TYPE_DISPLAYNAME == pstat->sort_type) {
+	if (pstat->sort_type == SortTypeDisplayName) {
 		if (ptarget->proptag != PR_DISPLAY_NAME &&
 		    ptarget->proptag != PR_DISPLAY_NAME_A) {
 			*pprows = NULL;
 			return ecError;
 		}
-	} else if (SORT_TYPE_PHONETICDISPLAYNAME == pstat->sort_type) {
+	} else if (pstat->sort_type == SortTypePhoneticDisplayName) {
 		if (ptarget->proptag != PR_EMS_AB_PHONETIC_DISPLAY_NAME &&
 		    ptarget->proptag != PR_EMS_AB_PHONETIC_DISPLAY_NAME_A) {
 			*pprows = NULL;
@@ -1489,15 +1488,15 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 {
 	PROPERTY_VALUE prop_val;
 	
-	if (NULL == pstat || CODEPAGE_UNICODE == pstat->codepage) {
+	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE) {
 		*ppoutmids = NULL;
 		*pprows = NULL;
 		return ecNotSupported;
 	}
-	if (SORT_TYPE_DISPLAYNAME != pstat->sort_type &&
-		SORT_TYPE_PHONETICDISPLAYNAME != pstat->sort_type &&
-		SORT_TYPE_DISPLAYNAME_RO != pstat->sort_type &&
-		SORT_TYPE_DISPLAYNAME_W != pstat->sort_type) {
+	if (pstat->sort_type != SortTypeDisplayName &&
+	    pstat->sort_type != SortTypePhoneticDisplayName &&
+	    pstat->sort_type != SortTypeDisplayName_RO &&
+	    pstat->sort_type != SortTypeDisplayName_W) {
 		*ppoutmids = NULL;
 		*pprows = NULL;
 		return ecNotSupported;
@@ -1701,7 +1700,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 	BOOL b_found;
 	char temp_buff[1024];
 	
-	if (NULL == pstat || CODEPAGE_UNICODE == pstat->codepage) {
+	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE) {
 		*ppoutmids = NULL;
 		return ecNotSupported;
 	}
@@ -1893,7 +1892,7 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 		*ppproptags = NULL;
 		return ecInvalidObject;
 	}
-	BOOL b_unicode = codepage == CODEPAGE_UNICODE ? TRUE : false;
+	BOOL b_unicode = codepage == CP_WINUNICODE ? TRUE : false;
 	*ppproptags = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (NULL == *ppproptags) {
 		return ecMAPIOOM;
@@ -1943,13 +1942,13 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		*pprows = NULL;
 		return ecNotSupported;
 	}
-	BOOL b_ephid = (flags & FLAG_EPHID) ? TRUE : false;
+	BOOL b_ephid = (flags & fEphID) ? TRUE : false;
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
 		*pprows = NULL;
 		return ecError;
 	}
-	BOOL b_unicode = pstat->codepage == CODEPAGE_UNICODE ? TRUE : false;
+	BOOL b_unicode = pstat->codepage == CP_WINUNICODE ? TRUE : false;
 	if (b_unicode && pproptags != nullptr) {
 		for (size_t i = 0; i < pproptags->cvalues; ++i) {
 			if (PROP_TYPE(pproptags->pproptag[i]) == PT_STRING8) {
@@ -2079,9 +2078,8 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 	uint32_t minid;
 	int pos1, pos2;
 	
-	if (NULL != pstat && CODEPAGE_UNICODE == pstat->codepage) {
+	if (pstat != nullptr && pstat->codepage == CP_WINUNICODE)
 		return ecNotSupported;
-	}
 	base_id = ab_tree_get_guid_base_id(handle.guid);
 	if (0 == base_id || HANDLE_EXCHANGE_NSP != handle.handle_type) {
 		return ecError;
@@ -2307,16 +2305,15 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 	NSP_PROPROW *prow;
 	PERMANENT_ENTRYID permeid;
 	
-	
-	if (flags & FLAG_CREATIONTEMPLATES) {
+	if (flags & NspiAddressCreationTemplates) {
 		*pprows = NULL;
 		/* creation of templates table */
 		return ecSuccess;
 	}
-	BOOL b_unicode = (flags & FLAG_UNICODESTRINGS) ? TRUE : false;
+	BOOL b_unicode = (flags & NspiUnicodeStrings) ? TRUE : false;
 	uint32_t codepage = pstat == nullptr ? 1252 : pstat->codepage;
 	/* in MS-OXNSPI 3.1.4.1.3 server processing rules */
-	if (!b_unicode && codepage == CODEPAGE_UNICODE) {
+	if (!b_unicode && codepage == CP_WINUNICODE) {
 		*pprows = NULL;
 		return ecNotSupported;
 	}
@@ -2525,7 +2522,7 @@ int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
 	uint32_t flags, LPROPTAG_ARRAY **ppcolumns)
 {
 	LPROPTAG_ARRAY *pcolumns;
-	BOOL b_unicode = (flags & FLAG_UNICODEPROPTYPES) ? TRUE : false;
+	BOOL b_unicode = (flags & NspiUnicodeProptypes) ? TRUE : false;
 	
 	pcolumns = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_OUT);
 	if (NULL == pcolumns) {
@@ -2756,7 +2753,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	uint32_t *pproptag;
 	NSP_PROPROW *prow;
 	
-	if (CODEPAGE_UNICODE == pstat->codepage) {
+	if (pstat->codepage == CP_WINUNICODE) {
 		*ppmids = NULL;
 		*pprows = NULL;
 		return ecNotSupported;

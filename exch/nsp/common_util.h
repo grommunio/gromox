@@ -6,20 +6,30 @@
 #define HANDLE_EXCHANGE_NSP				1
 
 /* bitmap NspiBind flags */
-#define FLAG_ANONYMOUSLOGIN				0x00000020
+enum {
+	fAnonymousLogin = 0x20U,
+};
 
 /* bitmap NspiQueryRows flags */
-#define FLAG_SKIPOBJECTS				0x00000001
-#define FLAG_EPHID						0x00000002
+enum {
+	fSkipObjects = 0x1U,
+	fEphID = 0x2U,
+};
 
 /* bitmap NspiGetSpecialTable flags */
-#define FLAG_CREATIONTEMPLATES			0x00000002
-#define FLAG_UNICODESTRINGS				0x00000004
+enum {
+	NspiAddressCreationTemplates = 0x2U,
+	NspiUnicodeStrings = 0x4U,
+};
 
 /* bitmap NspiQueryColumns flags */
-#define FLAG_UNICODEPROPTYPES			0x80000000
+enum {
+	NspiUnicodeProptypes = 0x80000000U,
+};
 
-#define CODEPAGE_UNICODE				0x04B0
+enum {
+	CP_WINUNICODE = 1200,
+};
 
 /* PROP_TAG_CONTAINERFLAGS values */
 #define	AB_RECIPIENTS					0x1
@@ -38,10 +48,12 @@ enum {
 #define MID_AMBIGUOUS					0x1
 #define MID_RESOLVED					0x2
 
-#define SORT_TYPE_DISPLAYNAME			0x00000000
-#define SORT_TYPE_PHONETICDISPLAYNAME	0x00000003
-#define SORT_TYPE_DISPLAYNAME_RO		0x000003E8
-#define SORT_TYPE_DISPLAYNAME_W			0x000003E9
+enum {
+	SortTypeDisplayName = 0,
+	SortTypePhoneticDisplayName = 0x3,
+	SortTypeDisplayName_RO = 0x3e8,
+	SortTypeDisplayName_W = 0x3e9,
+};
 
 #define EPOCH_DIFF 						11644473600LL
 
