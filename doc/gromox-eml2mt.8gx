@@ -1,0 +1,15 @@
+.TH gromox\-eml2mt 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+gromox\-eml2mt \(em Utility to import Internet Mail messages
+.SH Synopsis
+\fBgromox\-eml2mt\fP \fIfile.eml\fP[...]
+.SH Description
+gromox\-eml2mt reads one or more RFC5322-formatted e-mail messages and
+re-exports the data in a Gromox-specific mailbox transfer format to stdout for
+consumption by pipe by the gromox-mt2exm(8gx) program.
+.SH Examples
+Import of an RFC5322 message (sometimes with .eml file extension) to drafts:
+.PP
+gromox\-eml2mt msg.eml | gromox\-mt2exm \-u target@mailbox.de \-B drafts
+.SH See also
+\fBgromox\fP(7), \fBgromox\-mt2exm\fP(8gx)

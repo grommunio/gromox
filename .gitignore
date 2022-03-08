@@ -33,6 +33,7 @@ Makefile.in
 /gromox-abktconv
 /gromox-dbop
 /gromox-e2ghelper
+/gromox-eml2mt
 /gromox-exm2eml
 /gromox-kdb2mt
 /gromox-mailq
