@@ -1051,7 +1051,7 @@ static int nsp_ndr_push_prop_val_union(NDR_PUSH *pndr, unsigned int flag,
 static int nsp_ndr_pull_property_value(NDR_PULL *pndr, unsigned int flag, PROPERTY_VALUE *r)
 {
 	if (flag & FLAG_HEADER) {
-		uint32_t type;
+		uint32_t type = PT_UNSPECIFIED;
 		TRY(ndr_pull_align(pndr, 5));
 		TRY(ndr_pull_uint32(pndr, &r->proptag));
 		TRY(ndr_pull_uint32(pndr, &r->reserved));
@@ -1602,7 +1602,7 @@ static int nsp_ndr_push_restriction_union(NDR_PUSH *pndr, unsigned int flag,
 static int nsp_ndr_pull_restriction(NDR_PULL *pndr, unsigned int flag, NSPRES *r)
 {
 	if (flag & FLAG_HEADER) {
-		uint32_t type;
+		uint32_t type = RES_NULL;
 		TRY(ndr_pull_align(pndr, 4));
 		TRY(ndr_pull_uint32(pndr, &r->res_type));
 		TRY(nsp_ndr_pull_restriction_union(pndr, FLAG_HEADER, &type, &r->res));
