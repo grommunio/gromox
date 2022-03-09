@@ -764,7 +764,7 @@ int dbop_mysql_recentversion()
 int dbop_mysql_upgrade(MYSQL *conn)
 {
 	auto current = dbop_mysql_schemaversion(conn);
-	printf("Current schema n%d\n", current);
+	printf("Current database schema: gx-%d\n", current);
 	if (current < 0)
 		return EXIT_FAILURE;
 
@@ -773,7 +773,7 @@ int dbop_mysql_upgrade(MYSQL *conn)
 		++entry;
 
 	for (; entry->v != 0; ++entry) {
-		printf("Upgrading schema to n%u\n", entry->v);
+		printf("Upgrading schema to gx-%u\n", entry->v);
 		auto ret = mysql_real_query(conn, entry->command, strlen(entry->command));
 		if (ret != 0) {
 			printf("\"%s\": %s\n", entry->command, mysql_error(conn));

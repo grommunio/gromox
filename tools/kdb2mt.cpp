@@ -405,8 +405,8 @@ kdb_open_by_guid_1(std::unique_ptr<driver> &&drv, const char *guid)
 	}
 	drv->schema_vers = strtoul(row[0], nullptr, 0);
 	if (drv->schema_vers < 61)
-		throw YError("PK-1004: Database schema n%u is not supported.\n", drv->schema_vers);
-	fprintf(stderr, "Database schema n%u\n", drv->schema_vers);
+		throw YError("PK-1004: Database schema kdb-%u is not supported.\n", drv->schema_vers);
+	fprintf(stderr, "Database schema is kdb-%u\n", drv->schema_vers);
 
 	/* user_id available from n61 */
 	snprintf(qstr, arsizeof(qstr), "SELECT hierarchy_id, user_id, type FROM stores WHERE guid=0x%.32s", guid);
