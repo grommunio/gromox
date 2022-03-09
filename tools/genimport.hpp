@@ -76,7 +76,7 @@ using tpropval_array_ptr = std::unique_ptr<TPROPVAL_ARRAY, gi_delete>;
 using tarray_set_ptr = std::unique_ptr<TARRAY_SET, gi_delete>;
 
 extern const char *g_storedir;
-extern unsigned int g_show_tree, g_show_props, g_wet_run, g_public_folder;
+extern unsigned int g_user_id, g_show_tree, g_show_props, g_wet_run, g_public_folder;
 
 extern void tree(unsigned int d);
 extern void tlog(const char *f, ...) __attribute__((format(printf, 1, 2)));

@@ -24,6 +24,7 @@ Makefile.in
 /cgkrepair
 /delivery
 /delivery-queue
+/delmsg
 /digest
 /event
 /freebusy

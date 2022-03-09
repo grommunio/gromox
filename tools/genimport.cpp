@@ -41,10 +41,9 @@ using namespace gromox;
 namespace exmdb_client = exmdb_client_remote;
 
 static std::string g_dstuser;
-static unsigned int g_user_id;
 static std::string g_storedir_s;
 const char *g_storedir;
-unsigned int g_show_tree, g_show_props, g_wet_run = 1, g_public_folder;
+unsigned int g_user_id, g_show_tree, g_show_props, g_wet_run = 1, g_public_folder;
 
 YError::YError(const std::string &s) : m_str(s)
 {}

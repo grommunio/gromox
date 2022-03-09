@@ -1,0 +1,23 @@
+.TH delmsg 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+\fBdelmsg\fP \(em Mail message deletion from the command-line
+.SH Synopsis
+\fB/usr/libexec/gromox/delmsg \-u\fP \fIu@d.de\fP \fB\-f\fP \fIfolder_id
+message_id\fP[,...]
+.SH Description
+\fBdelmsg\fP deletes messages from a store. This utility does not perform a
+"surgical" operation on the SQLite database directly, but connects to an exmdb
+server and issues the delete_messages RPC. This deletes not only messages, but
+also updates the foloder structure for the sake of Cached Mode clients.
+.PP
+The folder and message IDs taken as arguments on the command-line should be
+of the GC-value form, i.e. as they appear in the the SQLite database, though.
+.SH Options
+.TP
+\fB\-\-soft\fP
+Perform a soft deletion. Soft deletion is not the same as moving to
+wastebasket; soft deletion sets a deleted flag and the mail stays in its folder
+(albeit invisibly).
+.TP
+\fB\-u\fP \fIu@d.de\fP
+Mailbox to operate on.
