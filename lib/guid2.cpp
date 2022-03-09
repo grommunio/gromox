@@ -173,9 +173,10 @@ static void machine_guid_read()
 		auto r = read(fd, txt, 32);
 		if (r == 32) {
 			txt[32] = '\0';
-			machine_guid.from_str(txt);
-			close(fd);
-			return;
+			if (machine_guid.from_str(txt)) {
+				close(fd);
+				return;
+			}
 		}
 		close(fd);
 	}
