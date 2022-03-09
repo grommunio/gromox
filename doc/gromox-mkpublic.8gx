@@ -3,7 +3,7 @@
 gromox\-mkpublic \(em Tool for creating a blank public store
 .SH Synopsis
 \fBgromox\-mkpublic\fP [\fB\-c\fP \fIconfig\fP] [\fB\-d\fP \fIdata_path\fP]
-\fIdomainname\fP
+[\fB\-f\fP] \fIdomainname\fP
 .SH Options
 .TP
 \fB\-c\fP \fIconfig\fP
@@ -15,6 +15,10 @@ parameters if that file exists.
 \fB\-d\fP \fIdatapath\fP
 This option can be used to override the \fIdata_file_path\fP variable from the
 config file.
+.TP
+\fB\-f\fP
+Force overwrite when an existing SQLite database is detected for the user.
+By default, mkprivate will not touch exchange.sqlite3.
 .TP
 \fB\-?\fP
 Display option summary.
@@ -28,6 +32,8 @@ of a public store.
 .IP \(bu 4
 \fIdata_file_path\fP/sqlite3_public.txt: SQLite instructions to generate part
 of a public store.
+.IP \(bu 4
+\fI/var/lib/gromox/...\fP/exmdb/exchange.sqlite3: MAPI object database.
 .SH See also
 \fBgromox\fP(7), \fBgromox\-mkprivate\fP(8gx), \fBmysql_adaptor\fP(4gx),
 \fBsa.cfg\fP(5gx)

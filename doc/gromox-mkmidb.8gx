@@ -3,7 +3,7 @@
 gromox\-mkmidb \(em Tool for creating a blank message index database
 .SH Synopsis
 \fBgromox\-mkmidb\fP [\fB\-c\fP \fIconfig\fP] [\fB\-d\fP \fIdatapath\fP]
-\fIusername\fP
+[\fB\-fP\fP] \fIusername\fP
 .SH Options
 .TP
 \fB\-c\fP \fIconfig\fP
@@ -16,11 +16,17 @@ parameters if that file exists.
 This option can be used to override the \fIdata_file_path\fP variable from the
 config file.
 .TP
+\fB\-f\fP
+Force overwrite when an existing SQLite database is detected for the user.
+By default, mkprivate will not touch midb.sqlite3.
+.TP
 \fB\-?\fP
 Display option summary.
 .SH Files
 .IP \(bu 4
 \fIdata_file_path\fP/sqlite3_midb.txt: SQLite instructions to generate a
 message index database.
+.IP \(bu 4
+\fI/var/lib/gromox/...\fP/exmdb/midb.sqlite3: Message index database for IMAP.
 .SH See also
 \fBgromox\fP(7), \fBmysql_adaptor\fP(4gx), \fBsa.cfg\fP(5gx)

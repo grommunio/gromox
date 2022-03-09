@@ -42,10 +42,12 @@ static uint32_t g_last_art;
 static uint64_t g_last_cn = CHANGE_NUMBER_BEGIN;
 static uint64_t g_last_eid = ALLOCATED_EID_RANGE;
 static char *opt_config_file, *opt_datadir;
+static unsigned int opt_force;
 
 static constexpr HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
 	{nullptr, 'd', HXTYPE_STRING, &opt_datadir, nullptr, nullptr, 0, "Data directory", "DIR"},
+	{nullptr, 'f', HXTYPE_NONE, &opt_force, nullptr, nullptr, 0, "Allow overwriting exchange.sqlite3"},
 	HXOPT_AUTOHELP,
 	HXOPT_TABLEEND,
 };
@@ -205,12 +207,18 @@ int main(int argc, const char **argv) try
 	 * EXCL semantics ahead of time.
 	 */
 	auto temp_path = dir + "/exmdb/exchange.sqlite3";
-	auto tfd = open(temp_path.c_str(), O_RDWR | O_CREAT | O_EXCL, 0600);
+	unsigned int tfdflags = O_RDWR | O_CREAT | O_EXCL;
+	if (opt_force) {
+		tfdflags = ~O_EXCL;
+		tfdflags |= O_TRUNC;
+	}
+	auto tfd = open(temp_path.c_str(), tfdflags, 0660);
 	if (tfd >= 0) {
 		adjust_rights(tfd);
 		close(tfd);
 	} else if (errno == EEXIST) {
-		printf("can not create store database, %s already exists\n", temp_path.c_str());
+		printf("mkpublic: %s already exists\n", temp_path.c_str());
+		printf("mkpublic: Use the -f option to force overwrite.\n");
 		return EXIT_FAILURE;
 	}
 	
