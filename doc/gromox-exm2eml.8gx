@@ -1,0 +1,10 @@
+.TH gromox\-exm2eml 8gx "" "Gromox" "Gromox admin reference"
+.SH Name
+gromox\-exm2eml(8gx) \(em Utility to export messages as Internet Mail
+.SH Synopsis
+\fBgromox\-exm2eml \-u\fP \fIu@d.de\fP \fImessage_id\fP
+.SH Description
+This tool serves as a development aid to test the conversion from MAPI message
+to Internet Mail (RFC 5322).
+.SH See also
+\fBgromox\fP(7)
