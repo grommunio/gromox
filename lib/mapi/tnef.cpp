@@ -2129,11 +2129,9 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 	auto alloc = ext.tnef_alloc;
 	auto get_propname = ext.tnef_getpropname;
 	BOOL b_key;
-	BINARY key_bin;
 	uint8_t tmp_byte;
 	REND_DATA tmp_rend;
 	char tmp_buff[4096];
-	TNEF_PROPLIST tnef_proplist;
 	ATTACHMENT_CONTENT *pattachment;
 	
 	if (pext->p_uint32(0x223e9f78) != EXT_ERR_SUCCESS ||
@@ -2375,6 +2373,8 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 	}
 	/* ATTRIBUTE_ID_MSGPROPS */
 	b_key = FALSE;
+	BINARY key_bin, tmp_bin;
+	TNEF_PROPLIST tnef_proplist;
 	tnef_proplist.count = 0;
 	tnef_proplist.ppropval = static_cast<TNEF_PROPVAL *>(alloc(sizeof(TNEF_PROPVAL) *
 	                         (pmsg->proplist.count + 1)));
@@ -2544,7 +2544,6 @@ static BOOL tnef_serialize_internal(tnef_push &ext, BOOL b_embedded,
 						pattachment->proplist.ppropval[j].pvalue;
 		}
 		if (NULL != pattachment->pembedded) {
-			BINARY tmp_bin;
 			tmp_bin.cb = 0xFFFFFFFF;
 			tmp_bin.pv = pattachment->pembedded;
 			tnef_proplist.ppropval[tnef_proplist.count].propid = PROP_ID(PR_ATTACH_DATA_OBJ);
