@@ -65,7 +65,9 @@ namespace {
 
 struct HANDLE_DATA {
 	HANDLE_DATA();
+	HANDLE_DATA(HANDLE_DATA &&) noexcept;
 	~HANDLE_DATA();
+	void operator=(HANDLE_DATA &&) noexcept = delete;
 
 	GUID guid{};
 	char username[UADDR_SIZE]{};
@@ -232,6 +234,16 @@ HANDLE_DATA::HANDLE_DATA() :
 	double_list_init(&notify_list);
 }
 
+HANDLE_DATA::HANDLE_DATA(HANDLE_DATA &&o) noexcept :
+	guid(o.guid), b_processing(o.b_processing), b_occupied(o.b_occupied),
+	last_time(o.last_time), last_handle(o.last_handle), rop_num(o.rop_num),
+	rop_left(o.rop_left), cxr(o.cxr), info(std::move(o.info)),
+	notify_list(std::move(o.notify_list))
+{
+	strcpy(username, o.username);
+	o.notify_list = {};
+}
+
 HANDLE_DATA::~HANDLE_DATA()
 {
 	double_list_free(&notify_list);
@@ -259,7 +271,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	}
 	HANDLE_DATA *phandle;
 	try {
-		auto xp = g_handle_hash.emplace(temp_handle.guid, temp_handle);
+		auto xp = g_handle_hash.emplace(temp_handle.guid, std::move(temp_handle));
 		phandle = &xp.first->second;
 	} catch (const std::bad_alloc &) {
 		fprintf(stderr, "E-1578: ENOMEM|n");
@@ -267,24 +279,24 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	}
 	auto plogmap = rop_processor_create_logmap();
 	if (NULL == plogmap) {
-		g_handle_hash.erase(temp_handle.guid);
+		g_handle_hash.erase(phandle->guid);
 		return FALSE;
 	}
 	phandle->info.plogmap = plogmap;
 	
-	auto uh_iter = g_user_hash.find(temp_handle.username);
+	auto uh_iter = g_user_hash.find(phandle->username);
 	if (uh_iter == g_user_hash.end()) {
 		if (g_user_hash.size() >= g_user_hash_max) {
-			g_handle_hash.erase(temp_handle.guid);
+			g_handle_hash.erase(phandle->guid);
 			gl_hold.unlock();
 			rop_processor_release_logmap(plogmap);
 			return FALSE;
 		}
 		try {
-			auto xp = g_user_hash.emplace(temp_handle.username, std::vector<HANDLE_DATA *>{});
+			auto xp = g_user_hash.emplace(phandle->username, std::vector<HANDLE_DATA *>{});
 			uh_iter = xp.first;
 		} catch (const std::bad_alloc &) {
-			g_handle_hash.erase(temp_handle.guid);
+			g_handle_hash.erase(phandle->guid);
 			gl_hold.unlock();
 			rop_processor_release_logmap(plogmap);
 			fprintf(stderr, "E-1579: ENOMEM\n");
@@ -292,18 +304,18 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 		}
 	} else {
 		if (uh_iter->second.size() >= MAX_HANDLE_PER_USER) {
-			g_handle_hash.erase(temp_handle.guid);
+			fprintf(stderr, "W-1580: user %s reached maximum number of handles (%u)\n",
+			        phandle->username, MAX_HANDLE_PER_USER);
+			g_handle_hash.erase(phandle->guid);
 			gl_hold.unlock();
 			rop_processor_release_logmap(plogmap);
-			fprintf(stderr, "W-1580: user %s reached maximum number of handles (%u)\n",
-			        temp_handle.username, MAX_HANDLE_PER_USER);
 			return FALSE;
 		}
 	}
 	if (!emsmdb_interface_alloc_cxr(uh_iter->second, phandle)) {
 		if (uh_iter->second.empty())
-			g_user_hash.erase(temp_handle.username);
-		g_handle_hash.erase(temp_handle.guid);
+			g_user_hash.erase(phandle->username);
+		g_handle_hash.erase(phandle->guid);
 		gl_hold.unlock();
 		rop_processor_release_logmap(plogmap);
 		return FALSE;
@@ -311,7 +323,7 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 	*pcxr = phandle->cxr;
 	gl_hold.unlock();
 	pcxh->handle_type = HANDLE_EXCHANGE_EMSMDB;
-	pcxh->guid = temp_handle.guid;
+	pcxh->guid = phandle->guid;
 	return TRUE;
 }
 
