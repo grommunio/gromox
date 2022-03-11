@@ -1870,8 +1870,8 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		} else {
 			auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 			if (NULL == pnode) {
-				result = ecInvalidBookmark;
-				goto EXIT_GET_PROPS;
+				*pprows = nullptr;
+				return ecInvalidBookmark;
 			}
 			nsp_interface_position_in_table(pstat,
 					pnode, &row, &last_row, &total);
@@ -1893,8 +1893,8 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		if (pnode1 != nullptr && pstat->container_id != 0) {
 			auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 			if (NULL == pnode) {
-				result = ecInvalidBookmark;
-				goto EXIT_GET_PROPS;
+				*pprows = nullptr;
+				return ecInvalidBookmark;
 			}
 		}
 	}
@@ -1903,22 +1903,25 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		b_proptags = FALSE;
 		auto nt = ndr_stack_anew<LPROPTAG_ARRAY>(NDR_STACK_IN);
 		if (nt == nullptr) {
-			result = ecMAPIOOM;
-			goto EXIT_GET_PROPS;
+			*pprows = nullptr;
+			return ecMAPIOOM;
 		}
 		pproptags = nt;
 		result = nsp_interface_get_default_proptags(
 			ab_tree_get_node_type(pnode1), b_unicode, nt);
-		if (result != ecSuccess)
-			goto EXIT_GET_PROPS;
+		if (result != ecSuccess) {
+			if (result != ecWarnWithErrors)
+				*pprows = nullptr;
+			return result;
+		}
 	} else if (pproptags->cvalues > 100) {
-		result = ecTableTooBig;
-		goto EXIT_GET_PROPS;
+		*pprows = nullptr;
+		return ecTableTooBig;
 	}
 	*pprows = common_util_propertyrow_init(NULL);
 	if (NULL == *pprows) {
-		result = ecMAPIOOM;
-		goto EXIT_GET_PROPS;
+		*pprows = nullptr;
+		return ecMAPIOOM;
 	}
 	/* MS-OXNSPI 3.1.4.1.7.11 */
 	if (NULL == pnode1) {
@@ -1928,8 +1931,11 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 		result = nsp_interface_fetch_row(pnode1, b_ephid,
 					pstat->codepage, pproptags, *pprows);
 	}
-	if (result != ecSuccess)
-		goto EXIT_GET_PROPS;
+	if (result != ecSuccess) {
+		if (result != ecWarnWithErrors)
+			*pprows = nullptr;
+		return result;
+	}
 	if (!b_proptags) {
 		size_t count = 0;
 		for (size_t i = 0; i < (*pprows)->cvalues; ++i) {
@@ -1950,7 +1956,6 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 			}
 		}
 	}
- EXIT_GET_PROPS:
 	if (result != ecSuccess && result != ecWarnWithErrors)
 		*pprows = NULL;
 	return result;
