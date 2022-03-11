@@ -48,6 +48,30 @@ static void exchange_nsp_unbind(uint64_t handle);
 DECLARE_PROC_API();
 static DCERPC_ENDPOINT *ep_6001, *ep_6004;
 
+static constexpr cfg_directive nsp_cfg_defaults[] = {
+	{"cache_interval", "5min", CFG_TIME, "1s", "1d"},
+	{"hash_table_size", "3000", CFG_SIZE, "1"},
+	{"max_item_num", "100k", CFG_SIZE, "1"},
+	{"session_check", "1", CFG_BOOL},
+	{"x500_org_name", "Gromox default"},
+	CFG_TABLE_END,
+};
+
+static bool exch_nsp_reload(std::shared_ptr<CONFIG_FILE> cfg) try
+{
+	if (cfg == nullptr)
+		cfg = config_file_initd("exchange_nsp.cfg", get_config_path());
+	if (cfg == nullptr) {
+		fprintf(stderr, "[exchange_nsp]: config_file_initd exchange_nsp.cfg: %s\n",
+		        strerror(errno));
+		return false;
+	}
+	config_file_apply(*cfg, nsp_cfg_defaults);
+	return true;
+} catch (const cfg_error &) {
+	return false;
+}
+
 static constexpr DCERPC_INTERFACE interface = {
 	"exchangeNSP",
 	/* {f5cc5a18-4264-101a-8c59-08002b2f8426} */
@@ -81,35 +105,19 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 			       cfg_path.c_str(), strerror(errno));
 			return FALSE;
 		}
+		if (!exch_nsp_reload(pfile))
+			return false;
 		org_name = pfile->get_value("X500_ORG_NAME");
-		if (NULL == org_name) {
-			org_name = "Gromox default";
-		}
 		printf("[exchange_nsp]: x500 org name is \"%s\"\n", org_name);
-		auto str_value = pfile->get_value("HASH_TABLE_SIZE");
-		table_size = str_value != nullptr ? strtol(str_value, nullptr, 0) : 3000;
-		if (table_size <= 0)
-			table_size = 3000;
+		table_size = pfile->get_ll("hash_table_size");
 		printf("[exchange_nsp]: hash table size is %d\n", table_size);
-		str_value = pfile->get_value("CACHE_INTERVAL");
-		if (NULL == str_value) {
-			cache_interval = 300;
-		} else {
-			cache_interval = atoitvl(str_value);
-			if (cache_interval > 24 * 3600 || cache_interval < 60)
-				cache_interval = 300;
-		}
+		cache_interval = pfile->get_ll("cache_interval");
 		itvltoa(cache_interval, temp_buff);
 		printf("[exchange_nsp]: address book tree item"
 				" cache interval is %s\n", temp_buff);
-		str_value = pfile->get_value("MAX_ITEM_NUM");
-		max_item_num = str_value != nullptr ? strtol(str_value, nullptr, 0) : 100000;
-		if (max_item_num <= 0)
-			max_item_num = 100000;
+		max_item_num = pfile->get_ll("max_item_num");
 		printf("[exchange_nsp]: maximum item number is %d\n", max_item_num);
-		str_value = pfile->get_value("SESSION_CHECK");
-		b_check = str_value != nullptr && (strcasecmp(str_value, "on") == 0 ||
-		          strcasecmp(str_value, "true") == 0);
+		b_check = pfile->get_ll("session_check");
 		if (b_check)
 			printf("[exchange_nsp]: bind session will be checked\n");
 		ab_tree_init(org_name, table_size, cache_interval, max_item_num);
