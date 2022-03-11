@@ -700,8 +700,6 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 	uint32_t reserved, STAT *pstat, int32_t *pdelta)
 {
 	int base_id;
-	uint32_t row;
-	uint32_t total;
 	const SIMPLE_TREE_NODE *pnode = nullptr;
 	
 	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE)
@@ -713,29 +711,24 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 	auto pbase = ab_tree_get_base(base_id);
 	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid))
 		return ecError;
+	uint32_t init_row = 0, total = 0;
 	if (0 == pstat->container_id) {
 		nsp_interface_position_in_list(pstat,
-			&pbase->gal_list, &row, &total);
+			&pbase->gal_list, &init_row, &total);
 	} else {
 		pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 		if (NULL == pnode) {
 			return ecInvalidBookmark;
 		}
-		nsp_interface_position_in_table(pstat, pnode, &row, &total);
+		nsp_interface_position_in_table(pstat, pnode, &init_row, &total);
 	}
-	if (pstat->delta != 0) {
-		/* adjust row  by delta */
-		if (pstat->delta > 0) {
-			row += pstat->delta;
-			if (row >= total)
-				row = total;
-		} else if (static_cast<unsigned int>(-pstat->delta) >= row) {
-			row = 0;
-		} else {
-			row += pstat->delta;
-		}
-	}
+	uint32_t row = init_row;
+	if (pstat->delta < 0 && static_cast<unsigned int>(-pstat->delta) >= row)
+		row = 0;
+	else
+		row += pstat->delta;
 	if (row >= total) {
+		row = total;
 		pstat->cur_rec = MID_END_OF_TABLE;
 	} else {
 		pstat->cur_rec = pstat->container_id == 0 ?
@@ -747,7 +740,7 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 		}
 	}
 	if (NULL != pdelta) {
-		*pdelta = row - pstat->num_pos;
+		*pdelta = row - init_row;
 	}
 	pstat->delta = 0;
 	pstat->num_pos = row;
