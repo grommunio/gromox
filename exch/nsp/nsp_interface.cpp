@@ -737,15 +737,13 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 	}
 	if (row >= total) {
 		pstat->cur_rec = MID_END_OF_TABLE;
-	} else if (0 == row) {
-		pstat->cur_rec = MID_BEGINNING_OF_TABLE;
 	} else {
 		pstat->cur_rec = pstat->container_id == 0 ?
 		                 nsp_interface_minid_in_list(&pbase->gal_list, row) :
 		                 nsp_interface_minid_in_table(pnode, row);
 		if (0 == pstat->cur_rec) {
-			row = 0;
-			pstat->cur_rec = MID_BEGINNING_OF_TABLE;
+			row = total;
+			pstat->cur_rec = MID_END_OF_TABLE;
 		}
 	}
 	if (NULL != pdelta) {
@@ -950,15 +948,13 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 
 	if (start_pos + tmp_count >= total) {
 		pstat->cur_rec = MID_END_OF_TABLE;
-	} else if (0 == start_pos + tmp_count) {
-		pstat->cur_rec = MID_BEGINNING_OF_TABLE;
 	} else {
 		pstat->cur_rec = pstat->container_id == 0 ?
 		                 nsp_interface_minid_in_list(&pbase->gal_list, start_pos + tmp_count) :
 		                 nsp_interface_minid_in_table(pnode, start_pos + tmp_count);
 		if (0 == pstat->cur_rec) {
-			pstat->cur_rec = MID_BEGINNING_OF_TABLE;
-			start_pos = 0;
+			pstat->cur_rec = MID_END_OF_TABLE;
+			start_pos = total;
 			tmp_count = 0;
 		}
 	}
@@ -1632,6 +1628,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 	}
 	pstat->total_rec = count;
 	if (!b_found) {
+		/* OXNSPI v13 pg 52 p 8 */
 		pstat->cur_rec = MID_BEGINNING_OF_TABLE;
 		pstat->num_pos = 0;
 	}
