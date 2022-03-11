@@ -2254,7 +2254,6 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
     uint32_t proptag, uint32_t mid, const BINARY_ARRAY *pentry_ids) try
 {
 	int base_id, fd;
-	uint32_t result;
 	uint32_t tmp_mid;
 	char maildir[256];
 	char username[UADDR_SIZE];
@@ -2275,12 +2274,10 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	auto pbase = ab_tree_get_base(base_id);
 	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid))
 		return ecError;
-	std::unordered_set<std::string> tmp_list;
 	std::string dlg_path;
 	auto ptnode = ab_tree_minid_to_node(pbase.get(), mid);
 	if (NULL == ptnode) {
-		result = ecInvalidObject;
-		goto EXIT_MOD_LINKATT;
+		return ecInvalidObject;
 	}
 	switch (ab_tree_get_node_type(ptnode)) {
 	case abnode_type::person:
@@ -2288,25 +2285,22 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	case abnode_type::equipment:
 		break;
 	default:
-		result = ecInvalidObject;
-		goto EXIT_MOD_LINKATT;
+		return ecInvalidObject;
 	}
 	ab_tree_get_user_info(ptnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
 	if (0 != strcasecmp(username, rpc_info.username)) {
-		result = ecAccessDenied;
-		goto EXIT_MOD_LINKATT;
+		return ecAccessDenied;
 	}
 	if (!get_maildir(username, maildir, arsizeof(maildir))) {
-		result = ecError;
-		goto EXIT_MOD_LINKATT;
+		return ecError;
 	}
 	try {
 		dlg_path = maildir + "/config/delegates.txt"s;
 	} catch (const std::bad_alloc &) {
-		result = ecMAPIOOM;
 		fprintf(stderr, "E-1526: ENOMEM\n");
-		goto EXIT_MOD_LINKATT;
+		return ecMAPIOOM;
 	}
+	std::unordered_set<std::string> tmp_list;
 	pfile = list_file_initd(dlg_path.c_str(), nullptr, dlgitem_format);
 	if (NULL != pfile) {
 		item_num = pfile->get_size();
@@ -2340,8 +2334,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	if (tmp_list.size() != item_num) {
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (-1 == fd) {
-			result = ecError;
-			goto EXIT_MOD_LINKATT;
+			return ecError;
 		}
 		for (const auto &username : tmp_list) {
 			write(fd, username.c_str(), username.size());
@@ -2349,10 +2342,7 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		}
 		close(fd);
 	}
-	result = ecSuccess;
-	
- EXIT_MOD_LINKATT:
-	return result;
+	return ecSuccess;
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1919: ENOMEM\n");
 	return ecMAPIOOM;
