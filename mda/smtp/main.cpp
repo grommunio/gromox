@@ -86,7 +86,7 @@ int main(int argc, const char **argv) try
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
 
-	static constexpr cfg_directive cfg_default_values[] = {
+	static constexpr cfg_directive smtp_cfg_defaults[] = {
 		{"block_interval_auths", "1min", CFG_TIME, "1s"},
 		{"block_interval_session", "1min", CFG_TIME, "1s"},
 		{"command_protocol", "both"},
@@ -111,7 +111,7 @@ int main(int argc, const char **argv) try
 		{"thread_charge_num", "400", CFG_SIZE, "4"},
 		CFG_TABLE_END,
 	};
-	config_file_apply(*g_config_file, cfg_default_values);
+	config_file_apply(*g_config_file, smtp_cfg_defaults);
 
 	if (0 != resource_run()) { 
 		printf("[system]: Failed to load resource\n");

@@ -84,7 +84,7 @@ int main(int argc, const char **argv) try
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
 
-	static constexpr cfg_directive cfg_default_values[] = {
+	static constexpr cfg_directive imap_cfg_defaults[] = {
 		{"block_interval_auths", "1min", CFG_TIME, "1s"},
 		{"config_file_path", PKGSYSCONFDIR "/imap:" PKGSYSCONFDIR},
 		{"context_average_mem", "128K", CFG_SIZE, "128K"},
@@ -108,7 +108,7 @@ int main(int argc, const char **argv) try
 		{"thread_init_num", "5", CFG_SIZE},
 		CFG_TABLE_END,
 	};
-	config_file_apply(*g_config_file, cfg_default_values);
+	config_file_apply(*g_config_file, imap_cfg_defaults);
 
 	int listen_port = 0, listen_ssl_port = 0;
 	g_config_file->get_int("LISTEN_PORT", &listen_port);

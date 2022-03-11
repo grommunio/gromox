@@ -77,13 +77,13 @@ static BOOL svc_timer_agent(int reason, void **ppdata) try
 			return FALSE;
 		}
 
-		static constexpr cfg_directive cfg_default_values[] = {
+		static constexpr cfg_directive timer_agent_cfg_defaults[] = {
 			{"connection_num", "8", CFG_SIZE, "1"},
 			{"timer_host", "::1"},
 			{"timer_port", "6666"},
 			CFG_TABLE_END,
 		};
-		config_file_apply(*pfile, cfg_default_values);
+		config_file_apply(*pfile, timer_agent_cfg_defaults);
 
 		size_t conn_num = pfile->get_ll("connection_num");
 		printf("[timer_agent]: timer connection number is %zu\n", conn_num);

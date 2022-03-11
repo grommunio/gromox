@@ -54,7 +54,7 @@ static constexpr const char *g_dfl_svc_plugins[] = {
 	NULL,
 };
 
-static constexpr cfg_directive cfg_default_values[] = {
+static constexpr cfg_directive midb_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR "/midb:" PKGSYSCONFDIR},
 	{"data_path", PKGDATADIR "/midb:" PKGDATADIR},
 	{"default_charset", "windows-1252"},
@@ -90,7 +90,7 @@ static bool midb_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return false;
 	}
-	config_file_apply(*pconfig, cfg_default_values);
+	config_file_apply(*pconfig, midb_cfg_defaults);
 	g_cmd_debug = pconfig->get_ll("midb_cmd_debug");
 	return true;
 }

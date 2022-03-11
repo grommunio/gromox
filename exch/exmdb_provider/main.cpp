@@ -29,7 +29,7 @@ DECLARE_SVC_API();
 
 static std::shared_ptr<CONFIG_FILE> g_config_during_init;
 
-static constexpr cfg_directive cfg_default_values[] = {
+static constexpr cfg_directive exmdb_cfg_defaults[] = {
 	{"cache_interval", "2h", CFG_TIME, "1s"},
 	{"dbg_synthesize_content", "0"},
 	{"exrpc_debug", "0"},
@@ -63,14 +63,14 @@ static bool exmdb_provider_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 	if (pconfig == nullptr) {
 		pconfig = config_file_initd("exmdb_provider.cfg", get_config_path());
 		if (pconfig != nullptr)
-			config_file_apply(*pconfig, cfg_default_values);
+			config_file_apply(*pconfig, exmdb_cfg_defaults);
 	}
 	if (pconfig == nullptr) {
 		printf("[exmdb_provider]: config_file_initd exmdb_provider.cfg: %s\n",
 		       strerror(errno));
 		return false;
 	}
-	config_file_apply(*pconfig, cfg_default_values);
+	config_file_apply(*pconfig, exmdb_cfg_defaults);
 	g_exrpc_debug = pconfig->get_ll("exrpc_debug");
 	g_dbg_synth_content = pconfig->get_ll("dbg_synthesize_content");
 	g_enable_dam = parse_bool(pconfig->get_value("enable_dam"));

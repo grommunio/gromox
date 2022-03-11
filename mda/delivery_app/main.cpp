@@ -81,7 +81,7 @@ int main(int argc, const char **argv) try
 	if (g_config_file == nullptr)
 		return EXIT_FAILURE;
 
-	static constexpr cfg_directive cfg_default_values[] = {
+	static constexpr cfg_directive delivery_cfg_defaults[] = {
 		{"admin_mailbox", "root@localhost"},
 		{"config_file_path", PKGSYSCONFDIR "/delivery:" PKGSYSCONFDIR},
 		{"context_average_mime", "8", CFG_SIZE, "1"},
@@ -96,7 +96,7 @@ int main(int argc, const char **argv) try
 		{"work_threads_min", "16", CFG_SIZE, "1"},
 		CFG_TABLE_END,
 	};
-	config_file_apply(*g_config_file, cfg_default_values);
+	config_file_apply(*g_config_file, delivery_cfg_defaults);
 
 	auto str_val = g_config_file->get_value("host_id");
 	if (str_val == NULL) {

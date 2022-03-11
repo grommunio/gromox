@@ -61,7 +61,7 @@ static constexpr const char *g_dfl_svc_plugins[] = {
 	NULL,
 };
 
-static constexpr cfg_directive cfg_default_values[] = {
+static constexpr cfg_directive zcore_cfg_defaults[] = {
 	{"address_cache_interval", "5min", CFG_TIME, "1min", "1day"},
 	{"address_item_num", "100000", CFG_SIZE, "1"},
 	{"address_table_size", "3000", CFG_SIZE, "1"},
@@ -107,7 +107,7 @@ static bool zcore_reload_config(std::shared_ptr<CONFIG_FILE> pconfig)
 		       opt_config_file, strerror(errno));
 		return false;
 	}
-	config_file_apply(*pconfig, cfg_default_values);
+	config_file_apply(*pconfig, zcore_cfg_defaults);
 	g_zrpc_debug = pconfig->get_ll("zrpc_debug");
 	return true;
 }

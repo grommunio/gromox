@@ -61,14 +61,14 @@ int main(int argc, const char **argv) try
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 	if (pconfig == nullptr)
 		return EXIT_FAILURE;
-	static constexpr cfg_directive cfg_default_values[] = {
+	static constexpr cfg_directive mkmidb_cfg_defaults[] = {
 		{"mysql_host", "localhost"},
 		{"mysql_port", "3306"},
 		{"mysql_username", "root"},
 		{"mysql_dbname", "email"},
 		CFG_TABLE_END,
 	};
-	config_file_apply(*pconfig, cfg_default_values);
+	config_file_apply(*pconfig, mkmidb_cfg_defaults);
 	std::string mysql_host = znul(pconfig->get_value("mysql_host"));
 	uint16_t mysql_port = pconfig->get_ll("mysql_port");
 	std::string mysql_user = znul(pconfig->get_value("mysql_username"));

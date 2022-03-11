@@ -202,7 +202,7 @@ int main(int argc, const char **argv) try
 	if (pconfig == nullptr)
 		return 2;
 
-	static constexpr cfg_directive cfg_default_values[] = {
+	static constexpr cfg_directive timer_cfg_defaults[] = {
 		{"config_file_path", PKGSYSCONFDIR "/timer:" PKGSYSCONFDIR},
 		{"timer_listen_ip", "::1"},
 		{"timer_listen_port", "6666"},
@@ -210,7 +210,7 @@ int main(int argc, const char **argv) try
 		{"timer_threads_num", "50", CFG_SIZE, "5", "50"},
 		CFG_TABLE_END,
 	};
-	config_file_apply(*pconfig, cfg_default_values);
+	config_file_apply(*pconfig, timer_cfg_defaults);
 
 	g_list_path = pconfig->get_value("timer_state_path");
 	uint16_t listen_port = pconfig->get_ll("timer_listen_port");

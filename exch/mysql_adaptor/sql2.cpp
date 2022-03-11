@@ -403,7 +403,7 @@ void mysql_adaptor_init(mysql_adaptor_init_param &&parm)
 	g_sqlconn_pool.bump();
 }
 
-static constexpr cfg_directive cfg_default_values[] = {
+static constexpr cfg_directive mysql_adaptor_cfg_defaults[] = {
 	{"connection_num", "8", CFG_SIZE},
 	{"enable_firsttime_password", "no", CFG_BOOL},
 	{"mysql_host", "localhost"},
@@ -420,14 +420,14 @@ static bool mysql_adaptor_reload_config(std::shared_ptr<CONFIG_FILE> cfg) try
 	if (cfg == nullptr) {
 		cfg = config_file_initd("mysql_adaptor.cfg", get_config_path());
 		if (cfg != nullptr)
-			config_file_apply(*cfg, cfg_default_values);
+			config_file_apply(*cfg, mysql_adaptor_cfg_defaults);
 	}
 	if (cfg == nullptr) {
 		printf("[mysql_adaptor]: config_file_initd mysql_adaptor.cfg: %s\n",
 		       strerror(errno));
 		return false;
 	}
-	config_file_apply(*cfg, cfg_default_values);
+	config_file_apply(*cfg, mysql_adaptor_cfg_defaults);
 	mysql_adaptor_init_param par;
 	par.conn_num = cfg->get_ll("connection_num");
 	par.host = cfg->get_value("mysql_host");

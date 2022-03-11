@@ -66,7 +66,7 @@ static void exchange_async_emsmdb_reclaim(uint32_t async_id);
 DECLARE_PROC_API();
 static DCERPC_ENDPOINT *ep_6001;
 
-static constexpr cfg_directive cfg_default_values[] = {
+static constexpr cfg_directive emsmdb_cfg_defaults[] = {
 	{"async_threads_num", "4", CFG_SIZE, "1", "20"},
 	{"average_handles", "1000", CFG_SIZE, "100"},
 	{"average_mem", "4K", CFG_SIZE, "4K"},
@@ -93,7 +93,7 @@ static bool exch_emsmdb_reload(std::shared_ptr<CONFIG_FILE> pconfig) try
 		       strerror(errno));
 		return false;
 	}
-	config_file_apply(*pconfig, cfg_default_values);
+	config_file_apply(*pconfig, emsmdb_cfg_defaults);
 	g_rop_debug = pconfig->get_ll("rop_debug");
 	return true;
 } catch (const cfg_error &) {

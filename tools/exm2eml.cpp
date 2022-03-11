@@ -60,7 +60,7 @@ static void terse_help()
 static constexpr const char *g_svc_plugins[] =
 	{"libgxs_mysql_adaptor.so", "libgxs_textmaps.so", nullptr};
 
-static constexpr cfg_directive cfg_default_values[] = {
+static constexpr cfg_directive exm2eml_cfg_defaults[] = {
 	{"config_file_path", PKGSYSCONFDIR},
 	{"data_path", PKGDATADIR},
 	{"service_plugin_path", PKGLIBEXECDIR},
@@ -84,7 +84,7 @@ int main(int argc, const char **argv) try
 		fprintf(stderr, "Something went wrong with config files\n");
 		return EXIT_FAILURE;
 	}
-	config_file_apply(*g_config_file, cfg_default_values);
+	config_file_apply(*g_config_file, exm2eml_cfg_defaults);
 	service_init({g_config_file->get_value("service_plugin_path"),
 		g_config_file->get_value("config_file_path"),
 		g_config_file->get_value("data_path"),

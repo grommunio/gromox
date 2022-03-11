@@ -79,7 +79,7 @@ static constexpr const char *g_dfl_svc_plugins[] = {
 
 static void term_handler(int signo);
 
-static constexpr cfg_directive cfg_default_values[] = {
+static constexpr cfg_directive http_cfg_defaults[] = {
 	{"block_interval_auths", "1min", CFG_TIME, "1s"},
 	{"config_file_path", PKGSYSCONFDIR "/http:" PKGSYSCONFDIR},
 	{"context_average_mem", "256K", CFG_SIZE, "192K"},
@@ -121,7 +121,7 @@ static bool http_reload_config(std::shared_ptr<CONFIG_FILE> cfg)
 		printf("config_file_init %s: %s\n", opt_config_file, strerror(errno));
 		return false;
 	}
-	config_file_apply(*cfg, cfg_default_values);
+	config_file_apply(*cfg, http_cfg_defaults);
 	return true;
 }
 

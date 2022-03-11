@@ -48,7 +48,7 @@ static unsigned int g_edir_workaround; /* server sends garbage sometimes */
 static resource_pool<twoconn> g_conn_pool;
 
 static constexpr const char *no_attrs[] = {nullptr};
-static constexpr cfg_directive cfg_default_values[] = {
+static constexpr cfg_directive ldap_adaptor_cfg_defaults[] = {
 	{"data_connections", "4", CFG_SIZE, "1"},
 	{"ldap_bind_pass", ""},
 	{"ldap_bind_user", ""},
@@ -203,7 +203,7 @@ static bool ldap_adaptor_load() try
 		       strerror(errno));
 		return false;
 	}
-	config_file_apply(*pfile, cfg_default_values);
+	config_file_apply(*pfile, ldap_adaptor_cfg_defaults);
 	g_dataconn_num = pfile->get_ll("data_connections");
 	g_ldap_host = pfile->get_value("ldap_host");
 	g_bind_user = pfile->get_value("ldap_bind_user");

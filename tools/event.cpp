@@ -209,14 +209,14 @@ int main(int argc, const char **argv) try
 	if (pconfig == nullptr)
 		return 2;
 
-	static constexpr cfg_directive cfg_default_values[] = {
+	static constexpr cfg_directive event_cfg_defaults[] = {
 		{"config_file_path", PKGSYSCONFDIR "/event:" PKGSYSCONFDIR},
 		{"event_listen_ip", "::1"},
 		{"event_listen_port", "33333"},
 		{"event_threads_num", "50", CFG_SIZE, "1", "1000"},
 		CFG_TABLE_END,
 	};
-	config_file_apply(*pconfig, cfg_default_values);
+	config_file_apply(*pconfig, event_cfg_defaults);
 
 	auto listen_ip = pconfig->get_value("event_listen_ip");
 	uint16_t listen_port = pconfig->get_ll("event_listen_port");

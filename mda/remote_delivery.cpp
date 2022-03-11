@@ -406,13 +406,13 @@ static BOOL remote_delivery_entry(int request, void **apidata) try
 		       filename.c_str(), strerror(errno));
 		return false;
 	}
-	static constexpr cfg_directive cfg_default_values[] = {
+	static constexpr cfg_directive remote_delivery_cfg_defaults[] = {
 		{"mx_host", "::1"},
 		{"mx_port", "25", 0, "1", "65535"},
 		{"starttls_support", "on", CFG_BOOL},
 		CFG_TABLE_END,
 	};
-	config_file_apply(*cfg_file, cfg_default_values);
+	config_file_apply(*cfg_file, remote_delivery_cfg_defaults);
 	g_files_allocator = LIB_BUFFER::create(FILE_ALLOC_SIZE,
 	                    256 * get_threads_num(), TRUE);
 	if (g_files_allocator == nullptr)
