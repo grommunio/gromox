@@ -83,13 +83,12 @@ struct sort_item {
 }
 
 static size_t g_base_size;
-static int g_file_blocks, g_ab_cache_interval;
+static int g_ab_cache_interval;
 static gromox::atomic_bool g_notify_stop;
 static pthread_t g_scan_id;
 static char g_nsp_org_name[256];
 static std::unordered_map<int, AB_BASE> g_base_hash;
 static std::mutex g_base_lock, g_remote_lock;
-static std::unique_ptr<LIB_BUFFER> g_file_allocator;
 
 static decltype(mysql_adaptor_get_org_domains) *get_org_domains;
 static decltype(mysql_adaptor_get_domain_info) *get_domain_info;
@@ -194,13 +193,11 @@ const SIMPLE_TREE_NODE *ab_tree_minid_to_node(const AB_BASE *pbase, uint32_t min
 	return NULL;
 }
 
-void ab_tree_init(const char *org_name, size_t base_size,
-	int cache_interval, int file_blocks)
+void ab_tree_init(const char *org_name, size_t base_size, int cache_interval)
 {
 	gx_strlcpy(g_nsp_org_name, org_name, arsizeof(g_nsp_org_name));
 	g_base_size = base_size;
 	g_ab_cache_interval = cache_interval;
-	g_file_blocks = file_blocks;
 	g_notify_stop = true;
 }
 
@@ -225,12 +222,6 @@ int ab_tree_run()
 	E(get_mlist_ids, "get_mlist_ids");
 	E(get_lang, "get_lang");
 #undef E
-	g_file_allocator = LIB_BUFFER::create(FILE_ALLOC_SIZE,
-	                   g_file_blocks, TRUE);
-	if (NULL == g_file_allocator) {
-		printf("[exchange_nsp]: Failed to allocate file blocks\n");
-		return -3;
-	}
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, nspab_scanwork, nullptr);
 	if (ret != 0) {
@@ -301,7 +292,6 @@ void ab_tree_stop()
 		}
 	}
 	g_base_hash.clear();
-	g_file_allocator.reset();
 }
 
 static BOOL ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode) try

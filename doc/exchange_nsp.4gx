@@ -14,9 +14,6 @@ Default: \fI5 minutes\fP
 \fBhash_table_size\fP
 Default: \fI3000\fP
 .TP
-\fBmax_iten_num\fP
-Default: \fI100000\fP
-.TP
 \fBsession_check\fP
 Default: \fIfalse\fP
 .TP

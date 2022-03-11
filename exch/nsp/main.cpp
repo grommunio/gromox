@@ -51,7 +51,6 @@ static DCERPC_ENDPOINT *ep_6001, *ep_6004;
 static constexpr cfg_directive nsp_cfg_defaults[] = {
 	{"cache_interval", "5min", CFG_TIME, "1s", "1d"},
 	{"hash_table_size", "3000", CFG_SIZE, "1"},
-	{"max_item_num", "100k", CFG_SIZE, "1"},
 	{"session_check", "1", CFG_BOOL},
 	{"x500_org_name", "Gromox default"},
 	CFG_TABLE_END,
@@ -85,7 +84,6 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 	BOOL b_check;
 	const char *org_name;
 	int table_size;
-	int max_item_num;
 	int cache_interval;
 	char temp_buff[45];
 	
@@ -115,12 +113,10 @@ static BOOL proc_exchange_nsp(int reason, void **ppdata)
 		itvltoa(cache_interval, temp_buff);
 		printf("[exchange_nsp]: address book tree item"
 				" cache interval is %s\n", temp_buff);
-		max_item_num = pfile->get_ll("max_item_num");
-		printf("[exchange_nsp]: maximum item number is %d\n", max_item_num);
 		b_check = pfile->get_ll("session_check");
 		if (b_check)
 			printf("[exchange_nsp]: bind session will be checked\n");
-		ab_tree_init(org_name, table_size, cache_interval, max_item_num);
+		ab_tree_init(org_name, table_size, cache_interval);
 
 #define regsvr(n) register_service(#n, n)
 		if (!regsvr(nsp_interface_bind) ||
