@@ -429,16 +429,17 @@ static BOOL db_engine_search_folder(const char *dir,
 			}
 			count = 0;
 		}
-		if (common_util_evaluate_message_restriction(
-			pdb->psqlite, cpid, pmessage_ids->pids[i], prestriction)) {
-			snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO search_result "
-				"(folder_id, message_id) VALUES (%llu, %llu)",
-				LLU(search_fid), LLU(pmessage_ids->pids[i]));
-			if (gx_sql_exec(pdb->psqlite, sql_string) == SQLITE_OK)
-				db_engine_proc_dynamic_event(pdb, cpid,
-					DYNAMIC_EVENT_NEW_MESSAGE, search_fid,
-					pmessage_ids->pids[i], 0);
-		}
+		if (!common_util_evaluate_message_restriction(pdb->psqlite,
+		    cpid, pmessage_ids->pids[i], prestriction))
+			continue;
+		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO search_result "
+		         "(folder_id, message_id) VALUES (%llu, %llu)",
+		         LLU(search_fid), LLU(pmessage_ids->pids[i]));
+		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+			continue;
+		db_engine_proc_dynamic_event(pdb, cpid,
+			DYNAMIC_EVENT_NEW_MESSAGE, search_fid,
+			pmessage_ids->pids[i], 0);
 	}
 	return TRUE;
 }
