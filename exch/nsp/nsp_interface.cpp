@@ -6,6 +6,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 #include <vector>
 #include <cstdint>
 #include <libHX/string.h>
@@ -2250,7 +2251,7 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 }
 
 int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
-    uint32_t proptag, uint32_t mid, const BINARY_ARRAY *pentry_ids)
+    uint32_t proptag, uint32_t mid, const BINARY_ARRAY *pentry_ids) try
 {
 	int base_id, fd;
 	uint32_t result;
@@ -2258,7 +2259,6 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	char maildir[256];
 	char username[UADDR_SIZE];
 	char temp_path[256];
-	DOUBLE_LIST tmp_list;
 	std::unique_ptr<LIST_FILE> pfile;
 	size_t item_num = 0;
 	
@@ -2275,8 +2275,8 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	auto pbase = ab_tree_get_base(base_id);
 	if (pbase == nullptr || (g_session_check && pbase->guid != handle.guid))
 		return ecError;
+	std::unordered_set<std::string> tmp_list;
 	std::string dlg_path;
-	double_list_init(&tmp_list);
 	auto ptnode = ab_tree_minid_to_node(pbase.get(), mid);
 	if (NULL == ptnode) {
 		result = ecInvalidObject;
@@ -2311,20 +2311,8 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	if (NULL != pfile) {
 		item_num = pfile->get_size();
 		auto pitem = static_cast<const dlgitem *>(pfile->get_list());
-		for (size_t i = 0; i < item_num; ++i) {
-			auto pnode = me_alloc<DOUBLE_LIST_NODE>();
-			if (NULL == pnode) {
-				result = ecMAPIOOM;
-				goto EXIT_MOD_LINKATT;
-			}
-			pnode->pdata = strdup(pitem[i].user);
-			if (NULL == pnode->pdata) {
-				free(pnode);
-				result = ecMAPIOOM;
-				goto EXIT_MOD_LINKATT;
-			}
-			double_list_append_as_tail(&tmp_list, pnode);
-		}
+		for (size_t i = 0; i < item_num; ++i)
+			tmp_list.emplace(pitem[i].user);
 	}
 	for (size_t i = 0; i < pentry_ids->count; ++i) {
 		if (pentry_ids->pbin[i].cb < 32) {
@@ -2344,48 +2332,19 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 		}
 		ab_tree_get_user_info(ptnode, USER_MAIL_ADDRESS, username, GX_ARRAY_SIZE(username));
 		if (flags & MOD_FLAG_DELETE) {
-			DOUBLE_LIST_NODE *pnode;
-			for (pnode=double_list_get_head(&tmp_list); NULL!=pnode;
-				pnode=double_list_get_after(&tmp_list, pnode)) {
-				if (strcasecmp(username, static_cast<char *>(pnode->pdata)) != 0)
-					continue;
-				double_list_remove(&tmp_list, pnode);
-				free(pnode->pdata);
-				free(pnode);
-				break;
-			}
+			tmp_list.erase(username);
 		} else {
-			DOUBLE_LIST_NODE *pnode;
-			for (pnode=double_list_get_head(&tmp_list); NULL!=pnode;
-				pnode=double_list_get_after(&tmp_list, pnode)) {
-				if (strcasecmp(username, static_cast<char *>(pnode->pdata)) == 0)
-					break;
-			}
-			if (NULL == pnode) {
-				pnode = me_alloc<DOUBLE_LIST_NODE>();
-				if (NULL == pnode) {
-					result = ecMAPIOOM;
-					goto EXIT_MOD_LINKATT;
-				}
-				pnode->pdata = strdup(username);
-				if (NULL == pnode->pdata) {
-					free(pnode);
-					result = ecMAPIOOM;
-					goto EXIT_MOD_LINKATT;
-				}
-				double_list_append_as_tail(&tmp_list, pnode);
-			}
+			tmp_list.emplace(username);
 		}
 	}
-	if (item_num != double_list_get_nodes_num(&tmp_list)) {
+	if (tmp_list.size() != item_num) {
 		fd = open(temp_path, O_CREAT|O_TRUNC|O_WRONLY, 0666);
 		if (-1 == fd) {
 			result = ecError;
 			goto EXIT_MOD_LINKATT;
 		}
-		for (auto pnode = double_list_get_head(&tmp_list); pnode != nullptr;
-			pnode=double_list_get_after(&tmp_list, pnode)) {
-			write(fd, pnode->pdata, strlen(static_cast<char *>(pnode->pdata)));
+		for (const auto &username : tmp_list) {
+			write(fd, username.c_str(), username.size());
 			write(fd, "\r\n", 2);
 		}
 		close(fd);
@@ -2393,13 +2352,10 @@ int nsp_interface_mod_linkatt(NSPI_HANDLE handle, uint32_t flags,
 	result = ecSuccess;
 	
  EXIT_MOD_LINKATT:
-	DOUBLE_LIST_NODE *pnode;
-	while ((pnode = double_list_pop_front(&tmp_list)) != nullptr) {
-		free(pnode->pdata);
-		free(pnode);
-	}
-	double_list_free(&tmp_list);
 	return result;
+} catch (const std::bad_alloc &) {
+	fprintf(stderr, "E-1919: ENOMEM\n");
+	return ecMAPIOOM;
 }
 
 int nsp_interface_query_columns(NSPI_HANDLE handle, uint32_t reserved,
