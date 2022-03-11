@@ -963,7 +963,6 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 {
 	int base_id;
 	uint32_t result;
-	uint32_t start_pos, total;
 	NSP_PROPROW *prow;
 	uint32_t tmp_minid;
 	char temp_name[1024];
@@ -1077,6 +1076,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	}
 
 	const SIMPLE_TREE_NODE *pnode = nullptr;
+	uint32_t start_pos = 0, total = 0;
 	if (0 == pstat->container_id) {
 		nsp_interface_position_in_list(pstat,
 			&pbase->gal_list, &start_pos, &total);
@@ -1162,6 +1162,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		pstat->cur_rec = ab_tree_get_node_minid(pnode1);
 	}
 	pstat->num_pos = row;
+	pstat->total_rec = total;
 	return ecSuccess;
 }
 
