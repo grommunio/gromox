@@ -1966,7 +1966,6 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 {
 	int i;
 	int base_id;
-	uint32_t result;
 	uint32_t minid;
 	int pos1, pos2;
 	
@@ -1997,13 +1996,11 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 	} else {
 		auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 		if (NULL == pnode) {
-			result = ecInvalidBookmark;
-			goto EXIT_COMPARE_MIDS;
+			return ecInvalidBookmark;
 		}
 		pnode = pnode->get_child();
 		if (NULL == pnode) {
-			result = ecInvalidBookmark;
-			goto EXIT_COMPARE_MIDS;
+			return ecInvalidBookmark;
 		}
 		do {
 			minid = ab_tree_get_node_minid(pnode);
@@ -2018,15 +2015,10 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 	}
 	
 	if (-1 == pos1 || -1 == pos2) {
-		result = ecError;
-		goto EXIT_COMPARE_MIDS;
+		return ecError;
 	}
 	*presult = pos2 - pos1;
-	
-	result = ecSuccess;
-	
- EXIT_COMPARE_MIDS:
-	return result;
+	return ecSuccess;
 }
 
 int nsp_interface_mod_props(NSPI_HANDLE handle, uint32_t reserved,
