@@ -1433,27 +1433,30 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	if (pstat->container_id == PR_EMS_AB_PUBLIC_DELEGATES) {
 		auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->cur_rec);
 		if (NULL == pnode) {
-			result = ecInvalidBookmark;
-			goto EXIT_GET_MATCHES;
+			*ppoutmids = nullptr;
+			*pprows = nullptr;
+			return ecInvalidBookmark;
 		}
 		char maildir[256], temp_buff[1024];
 		ab_tree_get_user_info(pnode, USER_MAIL_ADDRESS, temp_buff, GX_ARRAY_SIZE(temp_buff));
 		if (!get_maildir(temp_buff, maildir, arsizeof(maildir))) {
-			result = ecError;
-			goto EXIT_GET_MATCHES;
+			*ppoutmids = nullptr;
+			*pprows = nullptr;
+			return ecError;
 		}
 		std::string dlg_path;
 		try {
 			dlg_path = maildir + "/config/delegates.txt"s;
 		} catch (const std::bad_alloc &) {
-			result = ecMAPIOOM;
+			*ppoutmids = nullptr;
+			*pprows = nullptr;
 			fprintf(stderr, "E-1525: ENOMEM\n");
-			goto EXIT_GET_MATCHES;
+			return ecMAPIOOM;
 		}
 		auto pfile = list_file_initd(dlg_path.c_str(), nullptr, dlgitem_format);
 		if (NULL == pfile) {
-			result = ecSuccess;
-			goto EXIT_GET_MATCHES;
+			pstat->container_id = pstat->cur_rec; /* MS-OXNSPI 3.1.4.1.10.16 */
+			return ecSuccess;
 		}
 		auto item_num = pfile->get_size();
 		auto pitem = static_cast<const dlgitem *>(pfile->get_list());
@@ -1471,8 +1474,9 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 				continue;	
 			auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 			if (NULL == pproptag) {
-				result = ecMAPIOOM;
-				goto EXIT_GET_MATCHES;
+				*ppoutmids = nullptr;
+				*pprows = nullptr;
+				return ecMAPIOOM;
 			}
 			*pproptag = ab_tree_get_node_minid(pnode);
 		}
@@ -1486,8 +1490,9 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		    temp_buff, GX_ARRAY_SIZE(temp_buff)) == ecSuccess) {
 			auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 			if (NULL == pproptag) {
-				result = ecMAPIOOM;
-				goto EXIT_GET_MATCHES;
+				*ppoutmids = nullptr;
+				*pprows = nullptr;
+				return ecMAPIOOM;
 			}
 			*pproptag = ab_tree_get_node_minid(pnode);
 		}
@@ -1502,8 +1507,9 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			if (nsp_interface_match_node(ptr, pstat->codepage, pfilter)) {
 				auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 				if (NULL == pproptag) {
-					result = ecMAPIOOM;
-					goto EXIT_GET_MATCHES;
+					*ppoutmids = nullptr;
+					*pprows = nullptr;
+					return ecMAPIOOM;
 				}
 				*pproptag = ab_tree_get_node_minid(ptr);
 			}
@@ -1511,16 +1517,17 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	} else {
 		auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 		if (NULL == pnode) {
-			result = ecInvalidBookmark;
-			goto EXIT_GET_MATCHES;
+			*ppoutmids = nullptr;
+			*pprows = nullptr;
+			return ecInvalidBookmark;
 		}
 		uint32_t start_pos, last_row, total;
 		nsp_interface_position_in_table(pstat,
 			pnode, &start_pos, &last_row, &total);
 		pnode = pnode->get_child();
 		if (NULL == pnode) {
-			result = ecSuccess;
-			goto EXIT_GET_MATCHES;
+			pstat->container_id = pstat->cur_rec; /* MS-OXNSPI 3.1.4.1.10.16 */
+			return ecSuccess;
 		}
 		size_t i = 0;
 		do {
@@ -1534,8 +1541,9 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			    pstat->codepage, pfilter)) {
 				auto pproptag = common_util_proptagarray_enlarge(*ppoutmids);
 				if (NULL == pproptag) {
-					result = ecMAPIOOM;
-					goto EXIT_GET_MATCHES;
+					*ppoutmids = nullptr;
+					*pprows = nullptr;
+					return ecMAPIOOM;
 				}
 				*pproptag = ab_tree_get_node_minid(pnode);
 			}
@@ -1549,8 +1557,9 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			auto prow = common_util_proprowset_enlarge(*pprows);
 			if (NULL == prow || NULL ==
 				common_util_propertyrow_init(prow)) {
-				result = ecMAPIOOM;
-				goto EXIT_GET_MATCHES;
+				*ppoutmids = nullptr;
+				*pprows = nullptr;
+				return ecMAPIOOM;
 			}
 			auto pnode = ab_tree_minid_to_node(pbase.get(), (*ppoutmids)->pproptag[i]);
 			if (NULL == pnode) {
@@ -1564,17 +1573,8 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		}
 	}
 	
-	result = ecSuccess;
-	
- EXIT_GET_MATCHES:
-	if (result != ecSuccess) {
-		*ppoutmids = NULL;
-		*pprows = NULL;
-	} else {
-		/* MS-OXNSPI 3.1.4.1.10.16 */
-		pstat->container_id = pstat->cur_rec;
-	}
-	return result;
+	pstat->container_id = pstat->cur_rec; /* MS-OXNSPI 3.1.4.1.10.16 */
+	return ecSuccess;
 }
 
 static int nsp_interface_cmpstring(const void *p1, const void *p2)
