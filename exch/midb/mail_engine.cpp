@@ -2678,6 +2678,14 @@ static int mail_engine_menum(int argc, char **argv, int sockd)
 	return 0;
 }
 
+/*
+ * List mails in folder, returning the digests.
+ * Request:
+ * 	M-LIST <dir> <folder> <sort-field> <ascdesc> <idx> <msgcount>
+ * Response:
+ * 	TRUE <msgcount>
+ * 	<ext digest> (repeat x msgcount)
+ */
 static int mail_engine_mlist(int argc, char **argv, int sockd)
 {
 	BOOL b_asc;
@@ -3029,6 +3037,11 @@ static int mail_engine_minst(int argc, char **argv, int sockd)
 	return 0;
 }
 
+/*
+ * Mail deletion
+ *
+ * M-DELE <dir> <folder> <midstr>
+ */
 static int mail_engine_mdele(int argc, char **argv, int sockd)
 {
 	int i;
@@ -3631,6 +3644,14 @@ static int mail_engine_punid(int argc, char **argv, int sockd)
 	return 0;
 }
 
+/*
+ * Folder Details
+ * Request:
+ * 	P-FDDT <dir> <folder> <sortfield> <ascdesc>
+ * Response:
+ * 	TRUE <msgcount> <#recents> <#unreads> <uidvalidity(folder_id)> <uidnext> <offset>
+ * offset is first unread msg. minus 1?!
+ */
 static int mail_engine_pfddt(int argc, char **argv, int sockd)
 {
 	BOOL b_asc;
@@ -3802,6 +3823,14 @@ static int mail_engine_psubl(int argc, char **argv, int sockd)
 	return 0;
 }
 
+/*
+ * List mails in folder, returning the MIDs.
+ * Request:
+ * 	P-SIML <dir> <folder> <sort-field> <ascdesc> <idx> <msgcount>
+ * Response:
+ * 	TRUE <msgcount>
+ * 	<mid> <uid> <flags> (repeat x msgcount)
+ */
 static int mail_engine_psiml(int argc, char **argv, int sockd)
 {
 	BOOL b_asc;
@@ -4190,6 +4219,11 @@ static int mail_engine_psimu(int argc, char **argv, int sockd)
 	return 0;
 }
 
+/*
+ * List Deleted-flagged mails
+ *
+ * P-DELL <dir> <folder> <sort-field> <az>
+ */
 static int mail_engine_pdell(int argc, char **argv, int sockd)
 {
 	BOOL b_asc;
@@ -4426,6 +4460,13 @@ static int mail_engine_pdtlu(int argc, char **argv, int sockd)
 	return 0;
 }
 
+/*
+ * Set flags on message. For (S)een and (U)nsent, exmdb is contacted(!), which
+ * is different from GFLG.
+ *
+ * Request:
+ * 	P-SFLG <dir> <folder> <midstr> <flags>
+ */
 static int mail_engine_psflg(int argc, char **argv, int sockd)
 {
 	uint64_t read_cn;
@@ -4507,6 +4548,12 @@ static int mail_engine_psflg(int argc, char **argv, int sockd)
 	return 0;
 }
 
+/*
+ * Remove flags on message. Flags (S)een and (U)nsent trigger contact to exmdb.
+ *
+ * Request:
+ * 	P-RFLG <dir> <folder> <midstr> <flags>
+ */
 static int mail_engine_prflg(int argc, char **argv, int sockd)
 {
 	uint64_t read_cn;
@@ -4588,6 +4635,18 @@ static int mail_engine_prflg(int argc, char **argv, int sockd)
 	return 0;
 }
 
+/*
+ * Get flags on message from midb.sqlite without contacting exmdb.
+ * You better hope that the change notification socket is working,
+ * because otherwise changes from SFLG/RFLG won't be visible.
+ *
+ * Request:
+ * 	P-GFLG <dir> <folder> <midstr>
+ * Response:
+ * 	TRUE (<flags>)
+ * flags e.g. Answered(A), Unsent(U), Flagged(F), Deleted(D), Read/Seen(S),
+ * Recent(R), Forwarded(W)
+ */
 static int mail_engine_pgflg(int argc, char **argv, int sockd)
 {
 	int temp_len;
@@ -4652,6 +4711,16 @@ static int mail_engine_pgflg(int argc, char **argv, int sockd)
 	return 0;
 }
 
+/*
+ * Search and list messages
+ *
+ * Request:
+ * 	P-SRHL <dir> <foldername> <charset> <condition-tree-spec>
+ * ct-spec: \0 terminated list of strings (individually terminated by \0 too)
+ * ct-spec e.g. "UNDELETED\x00\x00"
+ * Response:
+ * 	TRUE <uidlist>
+ */
 static int mail_engine_psrhl(int argc, char **argv, int sockd)
 {
 	int result;
@@ -4730,6 +4799,12 @@ static int mail_engine_psrhl(int argc, char **argv, int sockd)
 	return 0;
 }
 
+/*
+ * Search by UIDs
+ *
+ * Request:
+ * 	P-SHRU <dir> <folder> <charset> <uid...>
+ */
 static int mail_engine_psrhu(int argc, char **argv, int sockd)
 {
 	int result;
