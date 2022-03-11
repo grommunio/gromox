@@ -131,16 +131,6 @@ uint32_t ab_tree_get_minid_value(uint32_t minid)
 	return minid & 0x1FFFFFFF;
 }
 
-static SINGLE_LIST_NODE* ab_tree_get_snode()
-{
-	return new(std::nothrow) SINGLE_LIST_NODE;
-}
-
-static void ab_tree_put_snode(SINGLE_LIST_NODE *psnode)
-{
-	delete psnode;
-}
-
 static AB_NODE* ab_tree_get_abnode()
 {
 	return new(std::nothrow) AB_NODE;
@@ -189,9 +179,6 @@ void ab_tree_init(const char *org_name, int base_size,
 
 int ab_tree_run()
 {
-	int i;
-	SINGLE_LIST_NODE *psnode;
-
 	g_file_allocator = LIB_BUFFER::create(FILE_ALLOC_SIZE,
 	                   g_file_blocks, TRUE);
 	if (NULL == g_file_allocator) {
@@ -206,12 +193,6 @@ int ab_tree_run()
 		return -3;
 	}
 	pthread_setname_np(g_scan_id, "abtree/scan");
-	for (i=0; i<2*g_file_blocks; i++) {
-		psnode = ab_tree_get_snode();
-		if (NULL != psnode) {
-			ab_tree_put_snode(psnode);
-		}
-	}
 	return 0;
 }
 
