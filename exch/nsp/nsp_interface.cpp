@@ -860,20 +860,18 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 		} else {
 			pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 			if (NULL == pnode) {
-				result = ecInvalidBookmark;
-				goto EXIT_QUERY_ROWS;
+				*pprows = nullptr;
+				return ecInvalidBookmark;
 			}
 			nsp_interface_position_in_table(pstat,
 				pnode, &start_pos, &last_row, &total);
 			pnode1 = pnode->get_child();
 			if (NULL == pnode1) {
-				result = ecSuccess;
-				goto EXIT_QUERY_ROWS;
+				return ecSuccess;
 			}
 		}
 		if (0 == total) {
-			result = ecSuccess;
-			goto EXIT_QUERY_ROWS;
+			return ecSuccess;
 		}
 		if (pstat->delta >= 0) {
 			start_pos += pstat->delta;
@@ -891,8 +889,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 			tmp_count = count;
 		}
 		if (0 == tmp_count) {
-			result = ecSuccess;
-			goto EXIT_QUERY_ROWS;
+			return ecSuccess;
 		}
 		size_t i = 0;
 		if (0 == pstat->container_id) {
@@ -906,13 +903,15 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 				prow = common_util_proprowset_enlarge(*pprows);
 				if (NULL == prow || NULL ==
 				    common_util_propertyrow_init(prow)) {
-					result = ecMAPIOOM;
-					goto EXIT_QUERY_ROWS;
+					*pprows = nullptr;
+					return ecMAPIOOM;
 				}
 				result = nsp_interface_fetch_row(ptr,
 				         b_ephid, pstat->codepage, pproptags, prow);
-				if (result != ecSuccess)
-					goto EXIT_QUERY_ROWS;
+				if (result != ecSuccess) {
+					*pprows = nullptr;
+					return result;
+				}
 				i ++;
 			}
 		} else {
@@ -928,13 +927,15 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 				prow = common_util_proprowset_enlarge(*pprows);
 				if (NULL == prow || NULL ==
 				    common_util_propertyrow_init(prow)) {
-					result = ecMAPIOOM;
-					goto EXIT_QUERY_ROWS;
+					*pprows = nullptr;
+					return ecMAPIOOM;
 				}
 				result = nsp_interface_fetch_row(pnode1,
 				         b_ephid, pstat->codepage, pproptags, prow);
-				if (result != ecSuccess)
-					goto EXIT_QUERY_ROWS;
+				if (result != ecSuccess) {
+					*pprows = nullptr;
+					return result;
+				}
 				i ++;
 			} while ((pnode1 = pnode1->get_sibling()) != nullptr);
 		}
@@ -956,13 +957,14 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 		pstat->delta = 0;
 		pstat->num_pos = start_pos + tmp_count;
 		pstat->total_rec = total;
+		return ecSuccess;
 	} else {
 		for (size_t i = 0; i < table_count; ++i) {
 			prow = common_util_proprowset_enlarge(*pprows);
 			if (NULL == prow || NULL ==
 				common_util_propertyrow_init(prow)) {
-				result = ecMAPIOOM;
-				goto EXIT_QUERY_ROWS;
+				*pprows = nullptr;
+				return ecMAPIOOM;
 			}
 			auto pnode = ab_tree_minid_to_node(pbase.get(), ptable[i]);
 			if (NULL == pnode) {
@@ -974,13 +976,8 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 			if (result != ecSuccess)
 				nsp_interface_make_ptyperror_row(pproptags, prow);
 		}
+		return ecSuccess;
 	}
-	result = ecSuccess;
-	
- EXIT_QUERY_ROWS:
-	if (result != ecSuccess)
-		*pprows = NULL;
-	return result;
 }
 
 int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
