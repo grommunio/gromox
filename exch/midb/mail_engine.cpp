@@ -1682,40 +1682,31 @@ static uint64_t mail_engine_get_folder_id(IDB_ITEM *pidb, const char *name)
 	       sqlite3_column_int64(pstmt, 0);
 }
 
+static const char *field_to_col(unsigned int sf)
+{
+	switch (sf) {
+	case FIELD_RECEIVED: return "received";
+	case FIELD_SUBJECT: return "subject";
+	case FIELD_FROM: return "sender";
+	case FIELD_RCPT: return "rcpt";
+	case FIELD_SIZE: return "size";
+	case FIELD_READ: return "read";
+	case FIELD_FLAG: return "flagged";
+	default: return nullptr;
+	}
+}
+
 static BOOL mail_engine_sort_folder(IDB_ITEM *pidb,
 	const char *folder_name, int sort_field)
 {
 	uint32_t idx;
 	uint64_t folder_id;
-	char field_name[16];
 	char sql_string[1024];
 	
-	switch (sort_field) {
-	case FIELD_RECEIVED:
-		strcpy(field_name, "received");
-		break;
-	case FIELD_SUBJECT:
-		strcpy(field_name, "subject");
-		break;
-	case FIELD_FROM:
-		strcpy(field_name, "sender");
-		break;
-	case FIELD_RCPT:
-		strcpy(field_name, "rcpt");
-		break;
-	case FIELD_SIZE:
-		strcpy(field_name, "size");
-		break;
-	case FIELD_READ:
-		strcpy(field_name, "read");
-		break;
-	case FIELD_FLAG:
-		strcpy(field_name, "flagged");
-		break;
-	default:
-		strcpy(field_name, "uid");
+	auto field_name = field_to_col(sort_field);
+	if (field_name == nullptr) {
+		field_name = "uid";
 		sort_field = FIELD_UID;
-		break;
 	}
 	auto pstmt = gx_sql_prep(pidb->psqlite, "SELECT folder_id,"
 	             " sort_field FROM folders WHERE name=?");
