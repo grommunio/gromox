@@ -2707,8 +2707,9 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		for (size_t i = 0; i < pstrs->count; ++i) {
 			pproptag = common_util_proptagarray_enlarge(*ppmids);
 			if (NULL == pproptag) {
-				result = ecMAPIOOM;
-				goto EXIT_RESOLVE_NAMESW;
+				*ppmids = nullptr;
+				*pprows = nullptr;
+				return ecMAPIOOM;
 			}
 			if (pstrs->ppstr[i] == nullptr) {
 				*pproptag = MID_UNRESOLVED;
@@ -2730,12 +2731,16 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 					prow = common_util_proprowset_enlarge(*pprows);
 					if (NULL == prow || NULL ==
 					    common_util_propertyrow_init(prow)) {
-						result = ecMAPIOOM;
-						goto EXIT_RESOLVE_NAMESW;
+						*ppmids = nullptr;
+						*pprows = nullptr;
+						return ecMAPIOOM;
 					}
 					result = nsp_interface_fetch_smtp_row(pstrs->ppstr[i] + 6, pproptags, prow);
-					if (result != ecSuccess)
-						goto EXIT_RESOLVE_NAMESW;
+					if (result != ecSuccess) {
+						*ppmids = nullptr;
+						*pprows = nullptr;
+						return result;
+					}
 					*pproptag = MID_RESOLVED;
 				} else {
 					*pproptag = MID_UNRESOLVED;
@@ -2746,27 +2751,34 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 			prow = common_util_proprowset_enlarge(*pprows);
 			if (NULL == prow || NULL ==
 			    common_util_propertyrow_init(prow)) {
-				result = ecMAPIOOM;
-				goto EXIT_RESOLVE_NAMESW;
+				*ppmids = nullptr;
+				*pprows = nullptr;
+				return ecMAPIOOM;
 			}
 			result = nsp_interface_fetch_row(pnode, TRUE,
 			         pstat->codepage, pproptags, prow);
-			if (result != ecSuccess)
-				goto EXIT_RESOLVE_NAMESW;
+			if (result != ecSuccess) {
+				*ppmids = nullptr;
+				*pprows = nullptr;
+				return result;
+			}
 		}
+		return ecSuccess;
 	} else {
 		auto pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 		if (NULL == pnode) {
-			result = ecInvalidBookmark;
-			goto EXIT_RESOLVE_NAMESW;
+			*ppmids = nullptr;
+			*pprows = nullptr;
+			return ecInvalidBookmark;
 		}
 		nsp_interface_position_in_table(pstat,
 			pnode, &start_pos, &last_row, &total);
 		for (size_t i = 0; i < pstrs->count; ++i) {
 			pproptag = common_util_proptagarray_enlarge(*ppmids);
 			if (NULL == pproptag) {
-				result = ecMAPIOOM;
-				goto EXIT_RESOLVE_NAMESW;
+				*ppmids = nullptr;
+				*pprows = nullptr;
+				return ecMAPIOOM;
 			}
 			if (pstrs->ppstr[i] == nullptr) {
 				*pproptag = MID_UNRESOLVED;
@@ -2803,24 +2815,21 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 				prow = common_util_proprowset_enlarge(*pprows);
 				if (NULL == prow || NULL ==
 					common_util_propertyrow_init(prow)) {
-					result = ecMAPIOOM;
-					goto EXIT_RESOLVE_NAMESW;
+					*ppmids = nullptr;
+					*pprows = nullptr;
+					return ecMAPIOOM;
 				}
 				result = nsp_interface_fetch_row(pnode2, TRUE,
 							pstat->codepage, pproptags, prow);
-				if (result != ecSuccess)
-					goto EXIT_RESOLVE_NAMESW;
+				if (result != ecSuccess) {
+					*ppmids = nullptr;
+					*pprows = nullptr;
+					return result;
+				}
 			}
 		}
+		return ecSuccess;
 	}
-	result = ecSuccess;
-	
- EXIT_RESOLVE_NAMESW:
-	if (result != ecSuccess) {
-		*ppmids = NULL;
-		*pprows = NULL;
-	}
-	return result;
 }
 
 void nsp_interface_unbind_rpc_handle(uint64_t hrpc)
