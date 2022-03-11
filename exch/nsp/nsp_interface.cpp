@@ -609,25 +609,22 @@ nsp_interface_minid_in_list(const gal_list_t *plist, size_t row)
 }
 
 static void nsp_interface_position_in_list(const STAT *pstat,
-    const gal_list_t *plist, uint32_t *pout_row, uint32_t *pout_last_row,
-    uint32_t *pcount)
+    const gal_list_t *plist, uint32_t *pout_row, uint32_t *pcount)
 {
 	auto &list = *plist;
 	uint32_t row;
 
 	*pcount = std::min(list.size(), static_cast<size_t>(UINT32_MAX));
-	uint32_t last_row = *pcount > 0 ? *pcount - 1 : 0;
 	if (MID_CURRENT == pstat->cur_rec) {
 		/* fractional positioning MS-OXNSPI 3.1.4.5.2 */
-		row = pstat->num_pos * (last_row + 1) / pstat->total_rec;
-		if (row > last_row) {
-			row = last_row;
-		}
+		row = *pcount * pstat->num_pos / pstat->total_rec;
+		if (row > 0 && row >= *pcount)
+			row = *pcount - 1; /* v13 pg72 §3.1.4.5.2 point 5 */
 	} else if (pstat->cur_rec == MID_BEGINNING_OF_TABLE) {
 		/* absolute positioning MS-OXNSPI 3.1.4.5.1 */
 		row = 0;
 	} else if (pstat->cur_rec == MID_END_OF_TABLE) {
-		row = last_row + 1;
+		row = *pcount;
 	} else {
 		auto it = std::find_if(list.cbegin(), list.cend(),
 		          [&pstat](SIMPLE_TREE_NODE *ptr) {
@@ -641,30 +638,24 @@ static void nsp_interface_position_in_list(const STAT *pstat,
 		row = it != list.cend() ? it - list.cbegin() : 0;
 	}
 	*pout_row = row;
-	*pout_last_row = last_row;
 }
 
 static void nsp_interface_position_in_table(const STAT *pstat,
-    const SIMPLE_TREE_NODE *pnode, uint32_t *pout_row,
-	uint32_t *pout_last_row, uint32_t *pcount)
+    const SIMPLE_TREE_NODE *pnode, uint32_t *pout_row, uint32_t *pcount)
 {
 	BOOL b_found;
 	uint32_t row;
 	uint32_t minid;
 
 	*pcount = ab_tree_get_leaves_num(pnode);
-	uint32_t last_row = *pcount > 0 ? *pcount - 1 : 0;
 	if (MID_CURRENT == pstat->cur_rec) {
 		/* fractional positioning MS-OXNSPI 3.1.4.5.2 */
-		row = pstat->num_pos * (last_row + 1) / pstat->total_rec;
-		if (row > last_row) {
-			row = last_row;
-		}
+		row = std::min(*pcount, *pcount * pstat->num_pos / pstat->total_rec);
 	} else if (pstat->cur_rec == MID_BEGINNING_OF_TABLE) {
 		/* absolute positioning MS-OXNSPI 3.1.4.5.1 */
 		row = 0;
 	} else if (pstat->cur_rec == MID_END_OF_TABLE) {
-		row = last_row + 1;
+		row = *pcount;
 	} else {
 		b_found = FALSE;
 		row = 0;
@@ -685,7 +676,6 @@ static void nsp_interface_position_in_table(const STAT *pstat,
 			row = 0;
 	}
 	*pout_row = row;
-	*pout_last_row = last_row;
 }
 
 static uint32_t nsp_interface_minid_in_table(const SIMPLE_TREE_NODE *pnode,
@@ -712,7 +702,6 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 	int base_id;
 	uint32_t row;
 	uint32_t total;
-	uint32_t last_row;
 	const SIMPLE_TREE_NODE *pnode = nullptr;
 	
 	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE)
@@ -726,28 +715,27 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 		return ecError;
 	if (0 == pstat->container_id) {
 		nsp_interface_position_in_list(pstat,
-			&pbase->gal_list, &row, &last_row, &total);
+			&pbase->gal_list, &row, &total);
 	} else {
 		pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 		if (NULL == pnode) {
 			return ecInvalidBookmark;
 		}
-		nsp_interface_position_in_table(pstat, pnode, &row, &last_row, &total);
+		nsp_interface_position_in_table(pstat, pnode, &row, &total);
 	}
 	if (pstat->delta != 0) {
 		/* adjust row  by delta */
 		if (pstat->delta > 0) {
 			row += pstat->delta;
-			if (row > last_row) {
-				row = last_row + 1;
-			}
+			if (row >= total)
+				row = total;
 		} else if (static_cast<unsigned int>(-pstat->delta) >= row) {
 			row = 0;
 		} else {
 			row += pstat->delta;
 		}
 	}
-	if (row == last_row + 1) {
+	if (row >= total) {
 		pstat->cur_rec = MID_END_OF_TABLE;
 	} else if (0 == row) {
 		pstat->cur_rec = MID_BEGINNING_OF_TABLE;
@@ -791,7 +779,6 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 {
 	int base_id;
 	uint32_t result;
-	uint32_t last_row;
 	uint32_t start_pos, total;
 	NSP_PROPROW *prow;
 	BOOL b_ephid = (flags & fEphID) ? TRUE : false;
@@ -877,7 +864,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 	const SIMPLE_TREE_NODE *pnode = nullptr, *pnode1 = nullptr;
 	if (0 == pstat->container_id) {
 		nsp_interface_position_in_list(pstat,
-			&pbase->gal_list, &start_pos, &last_row, &total);
+			&pbase->gal_list, &start_pos, &total);
 	} else {
 		pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 		if (NULL == pnode) {
@@ -885,7 +872,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 			return ecInvalidBookmark;
 		}
 		nsp_interface_position_in_table(pstat,
-			pnode, &start_pos, &last_row, &total);
+			pnode, &start_pos, &total);
 		pnode1 = pnode->get_child();
 		if (NULL == pnode1) {
 			return ecSuccess;
@@ -961,7 +948,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 		} while ((pnode1 = pnode1->get_sibling()) != nullptr);
 	}
 
-	if (start_pos + tmp_count == last_row + 1) {
+	if (start_pos + tmp_count >= total) {
 		pstat->cur_rec = MID_END_OF_TABLE;
 	} else if (0 == start_pos + tmp_count) {
 		pstat->cur_rec = MID_BEGINNING_OF_TABLE;
@@ -987,7 +974,6 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 {
 	int base_id;
 	uint32_t result;
-	uint32_t last_row;
 	uint32_t start_pos, total;
 	NSP_PROPROW *prow;
 	uint32_t tmp_minid;
@@ -1104,7 +1090,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	const SIMPLE_TREE_NODE *pnode = nullptr;
 	if (0 == pstat->container_id) {
 		nsp_interface_position_in_list(pstat,
-			&pbase->gal_list, &start_pos, &last_row, &total);
+			&pbase->gal_list, &start_pos, &total);
 	} else {
 		pnode = ab_tree_minid_to_node(pbase.get(), pstat->container_id);
 		if (NULL == pnode) {
@@ -1112,7 +1098,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 			return ecInvalidBookmark;
 		}
 		nsp_interface_position_in_table(pstat,
-			pnode, &start_pos, &last_row, &total);
+			pnode, &start_pos, &total);
 		auto pnode1 = pnode->get_child();
 		if (NULL == pnode1) {
 			*pprows = nullptr;
@@ -1498,10 +1484,10 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			*pproptag = ab_tree_get_node_minid(pnode);
 		}
 	} else if (pstat->container_id == 0) {
-		uint32_t start_pos, last_row, total;
+		uint32_t start_pos, total;
 		nsp_interface_position_in_list(pstat,
-			&pbase->gal_list, &start_pos, &last_row, &total);
-		for (size_t i = start_pos; i <= last_row &&
+			&pbase->gal_list, &start_pos, &total);
+		for (size_t i = start_pos; i < total &&
 		     (*ppoutmids)->cvalues <= requested &&
 		     i < pbase->gal_list.size(); ++i) {
 			auto ptr = pbase->gal_list[i];
@@ -1522,9 +1508,9 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 			*pprows = nullptr;
 			return ecInvalidBookmark;
 		}
-		uint32_t start_pos, last_row, total;
+		uint32_t start_pos, total;
 		nsp_interface_position_in_table(pstat,
-			pnode, &start_pos, &last_row, &total);
+			pnode, &start_pos, &total);
 		pnode = pnode->get_child();
 		if (NULL == pnode) {
 			pstat->container_id = pstat->cur_rec; /* MS-OXNSPI 3.1.4.1.10.16 */
@@ -1532,7 +1518,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		}
 		size_t i = 0;
 		do {
-			if (i > last_row || (*ppoutmids)->cvalues > requested) {
+			if (i >= total || (*ppoutmids)->cvalues > requested) {
 				break;
 			} else if (i < start_pos) {
 				i++;
@@ -1826,7 +1812,6 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	uint32_t total;
 	BOOL b_proptags;
 	uint32_t result;
-	uint32_t last_row;
 	const SIMPLE_TREE_NODE *pnode1;
 	
 	if (NULL == pstat) {
@@ -1864,7 +1849,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 				it = pbase->gal_list.cend();
 			} else {
 				nsp_interface_position_in_list(pstat,
-					&pbase->gal_list, &row, &last_row, &total);
+					&pbase->gal_list, &row, &total);
 				it = pbase->gal_list.cbegin() + row;
 			}
 			pnode1 = it == pbase->gal_list.cend() ? nullptr : *it;
@@ -1875,7 +1860,7 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 				return ecInvalidBookmark;
 			}
 			nsp_interface_position_in_table(pstat,
-					pnode, &row, &last_row, &total);
+					pnode, &row, &total);
 			pnode1 = pnode->get_child();
 			if (NULL != pnode1) {
 				size_t i = 0;
@@ -2578,7 +2563,6 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 	char *ptoken;
 	uint32_t result;
 	BOOL b_ambiguous;
-	uint32_t last_row;
 	uint32_t start_pos, total;
 	uint32_t *pproptag;
 	NSP_PROPROW *prow;
@@ -2716,7 +2700,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		return ecInvalidBookmark;
 	}
 	nsp_interface_position_in_table(pstat,
-		pnode, &start_pos, &last_row, &total);
+		pnode, &start_pos, &total);
 	for (size_t i = 0; i < pstrs->count; ++i) {
 		pproptag = common_util_proptagarray_enlarge(*ppmids);
 		if (NULL == pproptag) {
@@ -2739,7 +2723,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
 		size_t j;
 		const SIMPLE_TREE_NODE *pnode1, *pnode2 = nullptr;
 		for (j = 0, pnode1 = pnode->get_child();
-		     NULL != pnode1 && j >= start_pos && j <= last_row;
+		     NULL != pnode1 && j >= start_pos && j < total;
 		     pnode1 = pnode1->get_sibling()) {
 			if (ab_tree_get_node_type(pnode1) >= abnode_type::containers)
 				continue;
