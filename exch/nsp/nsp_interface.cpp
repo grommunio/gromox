@@ -62,6 +62,7 @@ enum {
 	TI_SCRIPT = 0x4,
 };
 
+unsigned int g_nsp_trace;
 static BOOL g_session_check;
 static bool (*verify_cpid)(uint32_t cpid);
 static decltype(mysql_adaptor_get_domain_ids) *get_domain_ids;
@@ -69,6 +70,27 @@ static decltype(mysql_adaptor_get_id_from_username) *get_id_from_username;
 static decltype(mysql_adaptor_get_maildir) *get_maildir;
 static decltype(gromox::abkt_tojson) *nsp_abktojson;
 static decltype(gromox::abkt_tobinary) *nsp_abktobinary;
+
+static void nsp_trace(const char *func, bool is_exit, const STAT &s,
+    int *delta = nullptr, NSP_ROWSET *outrows = nullptr)
+{
+	if (g_nsp_trace == 0)
+		return;
+	fprintf(stderr, "%s %s:", is_exit ? "Leaving" : "Entering", func);
+	fprintf(stderr," {container=%xh record=%xh delta=%d fpos=%u/%u} ",
+		s.container_id, s.cur_rec, s.delta, s.num_pos, s.total_rec);
+	if (delta != nullptr)
+		fprintf(stderr, "{*pdelta=%d}", *delta);
+	if (outrows != nullptr) {
+		fprintf(stderr, "{#outrows=%u}\n", outrows->crows);
+		for (size_t k = 0; k < outrows->crows; ++k) {
+			auto dispn = outrows->prows[k].getval(PR_DISPLAY_NAME);
+			fprintf(stderr, "\t#%zu  %s\n", k, znul(dispn->pstr));
+		}
+	} else {
+		fprintf(stderr, "\n");
+	}
+}
 
 static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
     BOOL b_ephid, uint32_t codepage, uint32_t proptag, PROPERTY_VALUE *pprop,
@@ -88,6 +110,9 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 	auto node_type = ab_tree_get_node_type(pnode);
 	/* Properties that need to be force-generated */
 	switch (proptag) {
+	case PR_CREATION_TIME:
+		pprop->value.ftime = {};
+		return ecSuccess;
 	case PR_EMS_AB_HOME_MDB:
 	case PR_EMS_AB_HOME_MDB_A:
 		if (node_type != abnode_type::room &&
@@ -494,7 +519,19 @@ static uint32_t nsp_interface_fetch_property(const SIMPLE_TREE_NODE *pnode,
 	case PR_SEND_RICH_INFO:
 		pprop->value.b = 1;
 		return ecSuccess;
+	case PR_BUSINESS_TELEPHONE_NUMBER:
+	case PR_TITLE:
+	case PR_NICKNAME:
+	case PR_PRIMARY_TELEPHONE_NUMBER:
+	case PR_HOME_ADDRESS_STREET:
+	case PR_MOBILE_TELEPHONE_NUMBER:
+	case PR_COMMENT:
+#define PR_EMS_AB_ORG_UNIT_ROOT_DN PROP_TAG(PT_UNICODE, 0x8CA8)
+	case PR_EMS_AB_ORG_UNIT_ROOT_DN:
+		pprop->value.pstr = deconst("N/A");
+		return ecSuccess;
 	}
+	fprintf(stderr, "E-1920: unhandled property %xh\n", proptag);
 	return ecNotFound;
 }		
 
@@ -553,6 +590,7 @@ int nsp_interface_run()
 int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
     FLATUID *pserver_guid, NSPI_HANDLE *phandle)
 {
+	nsp_trace(__func__, 0, *pstat);
 	int org_id;
 	int domain_id;
 	
@@ -592,6 +630,7 @@ int nsp_interface_bind(uint64_t hrpc, uint32_t flags, const STAT *pstat,
 	if (NULL != pserver_guid) {
 		*(GUID*)pserver_guid = common_util_get_server_guid();
 	}
+	nsp_trace(__func__, 1, *pstat);
 	return ecSuccess;
 }
 
@@ -699,6 +738,7 @@ static uint32_t nsp_interface_minid_in_table(const SIMPLE_TREE_NODE *pnode,
 int nsp_interface_update_stat(NSPI_HANDLE handle,
 	uint32_t reserved, STAT *pstat, int32_t *pdelta)
 {
+	nsp_trace(__func__, 0, *pstat, pdelta);
 	int base_id;
 	const SIMPLE_TREE_NODE *pnode = nullptr;
 	
@@ -745,6 +785,7 @@ int nsp_interface_update_stat(NSPI_HANDLE handle,
 	pstat->delta = 0;
 	pstat->num_pos = row;
 	pstat->total_rec = total;
+	nsp_trace(__func__, 1, *pstat, pdelta);
 	return ecSuccess;
 }
 
@@ -768,6 +809,13 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
     uint32_t table_count, uint32_t *ptable, uint32_t count,
     const LPROPTAG_ARRAY *pproptags, NSP_ROWSET **pprows)
 {
+	/*
+	 * OXNSPI says "implementations SHOULD return as many rows as possible
+	 * to improve usability of the server for clients", but then, if you
+	 * return more than @count entries, Outlook 2019/2021 crashes.
+	 */
+	fprintf(stderr, "QROWS table_count=%u count=%u\n", table_count, count);
+	nsp_trace(__func__, 0, *pstat);
 	int base_id;
 	uint32_t result;
 	uint32_t start_pos, total;
@@ -849,6 +897,7 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 			if (result != ecSuccess)
 				nsp_interface_make_ptyperror_row(pproptags, prow);
 		}
+		nsp_trace(__func__, 1, *pstat);
 		return ecSuccess;
 	}
 
@@ -954,6 +1003,17 @@ int nsp_interface_query_rows(NSPI_HANDLE handle, uint32_t flags, STAT *pstat,
 	pstat->delta = 0;
 	pstat->num_pos = start_pos + tmp_count;
 	pstat->total_rec = total;
+#if 0
+	if ((*pprows)->crows == 0) {
+		auto prow = common_util_proprowset_enlarge(*pprows);
+		if (prow == nullptr || common_util_propertyrow_init(prow) == nullptr) {
+			*pprows = nullptr;
+			return ecMAPIOOM;
+		}
+		nsp_interface_make_ptyperror_row(pproptags, prow);
+	}
+#endif
+	nsp_trace(__func__, 1, *pstat, nullptr, *pprows);
 	return ecSuccess;
 }
 
@@ -961,6 +1021,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
     STAT *pstat, PROPERTY_VALUE *ptarget, const MID_ARRAY *ptable,
     const LPROPTAG_ARRAY *pproptags, NSP_ROWSET **pprows)
 {
+	nsp_trace(__func__, 0, *pstat);
 	int base_id;
 	uint32_t result;
 	NSP_PROPROW *prow;
@@ -1072,6 +1133,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		pstat->total_rec = (*pprows)->crows;
 		pstat->cur_rec = tmp_minid;
 		pstat->num_pos = row;
+		nsp_trace(__func__, 1, *pstat);
 		return ecSuccess;
 	}
 
@@ -1164,6 +1226,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 	}
 	pstat->num_pos = row;
 	pstat->total_rec = total;
+	nsp_trace(__func__, 1, *pstat, nullptr, *pprows);
 	return ecSuccess;
 }
 
@@ -1324,6 +1387,9 @@ static BOOL nsp_interface_match_node(const SIMPLE_TREE_NODE *pnode,
 			}
 			return FALSE;
 		}
+		default:
+			fprintf(stderr, "E-1922: unhandled proptag %xh\n", pfilter->res.res_property.proptag);
+			return false;
 		}
 		return FALSE;
 	case RES_PROPCOMPARE:
@@ -1354,6 +1420,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
     uint32_t requested, MID_ARRAY **ppoutmids, const LPROPTAG_ARRAY *pproptags,
     NSP_ROWSET **pprows)
 {
+	nsp_trace(__func__, 0, *pstat);
 	PROPERTY_VALUE prop_val;
 	
 	if (pstat == nullptr || pstat->codepage == CP_WINUNICODE) {
@@ -1434,6 +1501,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		auto pfile = list_file_initd(dlg_path.c_str(), nullptr, dlgitem_format);
 		if (NULL == pfile) {
 			pstat->container_id = pstat->cur_rec; /* MS-OXNSPI 3.1.4.1.10.16 */
+			nsp_trace(__func__, 1, *pstat);
 			return ecSuccess;
 		}
 		auto item_num = pfile->get_size();
@@ -1505,6 +1573,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 		pnode = pnode->get_child();
 		if (NULL == pnode) {
 			pstat->container_id = pstat->cur_rec; /* MS-OXNSPI 3.1.4.1.10.16 */
+			nsp_trace(__func__, 1, *pstat);
 			return ecSuccess;
 		}
 		size_t i = 0;
@@ -1552,6 +1621,7 @@ int nsp_interface_get_matches(NSPI_HANDLE handle, uint32_t reserved1,
 	}
 	
 	pstat->container_id = pstat->cur_rec; /* MS-OXNSPI 3.1.4.1.10.16 */
+	nsp_trace(__func__, 1, *pstat);
 	return ecSuccess;
 }
 
@@ -1564,6 +1634,7 @@ static int nsp_interface_cmpstring(const void *p1, const void *p2)
 int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
     STAT *pstat, const MID_ARRAY *pinmids, MID_ARRAY **ppoutmids)
 {
+	nsp_trace(__func__, 0, *pstat);
 	int base_id;
 	BOOL b_found;
 	char temp_buff[1024];
@@ -1627,6 +1698,7 @@ int nsp_interface_resort_restriction(NSPI_HANDLE handle, uint32_t reserved,
 		pstat->cur_rec = MID_BEGINNING_OF_TABLE;
 		pstat->num_pos = 0;
 	}
+	nsp_trace(__func__, 1, *pstat);
 	return ecSuccess;
 }
 
@@ -1799,6 +1871,7 @@ int nsp_interface_get_proplist(NSPI_HANDLE handle, uint32_t flags,
 int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
     const STAT *pstat, const LPROPTAG_ARRAY *pproptags, NSP_PROPROW **pprows)
 {
+	nsp_trace(__func__, 0, *pstat);
 	int base_id;
 	uint32_t row;
 	uint32_t total;
@@ -1936,12 +2009,14 @@ int nsp_interface_get_props(NSPI_HANDLE handle, uint32_t flags,
 	}
 	if (result != ecSuccess && result != ecWarnWithErrors)
 		*pprows = NULL;
+	nsp_trace(__func__, 1, *pstat);
 	return result;
 }
 
 int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
     const STAT *pstat, uint32_t mid1, uint32_t mid2, uint32_t *presult)
 {
+	nsp_trace(__func__, 0, *pstat);
 	int i;
 	int base_id;
 	uint32_t minid;
@@ -1996,12 +2071,14 @@ int nsp_interface_compare_mids(NSPI_HANDLE handle, uint32_t reserved,
 		return ecError;
 	}
 	*presult = pos2 - pos1;
+	nsp_trace(__func__, 1, *pstat);
 	return ecSuccess;
 }
 
 int nsp_interface_mod_props(NSPI_HANDLE handle, uint32_t reserved,
     const STAT *pstat, const LPROPTAG_ARRAY *pproptags, const NSP_PROPROW *prow)
 {
+	nsp_trace(__func__, 1, *pstat);
 	return ecNotSupported;
 }
 
@@ -2162,6 +2239,7 @@ static uint32_t nsp_interface_get_tree_specialtables(const SIMPLE_TREE *ptree,
 int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
     const STAT *pstat, uint32_t *pversion, NSP_ROWSET **pprows)
 {
+	nsp_trace(__func__, 0, *pstat);
 	int base_id;
 	uint32_t result;
 	NSP_PROPROW *prow;
@@ -2224,6 +2302,7 @@ int nsp_interface_get_specialtable(NSPI_HANDLE handle, uint32_t flags,
 			return result;
 		}
 	}
+	nsp_trace(__func__, 1, *pstat);
 	return ecSuccess;
 }
 
@@ -2521,6 +2600,7 @@ static uint32_t nsp_interface_fetch_smtp_property(
 		strcpy(pprop->value.pstr, paddress);
 		break;
 	default:
+		fprintf(stderr, "E-1921: unhandled proptag %xh\n", proptag);
 		return ecNotFound;
 	}
 	return ecSuccess;
@@ -2551,6 +2631,7 @@ int nsp_interface_resolve_namesw(NSPI_HANDLE handle, uint32_t reserved,
     const STAT *pstat, const LPROPTAG_ARRAY *pproptags,
     const STRINGS_ARRAY *pstrs, MID_ARRAY **ppmids, NSP_ROWSET **pprows)
 {
+	nsp_trace(__func__, 0, *pstat);
 	int base_id;
 	char *ptoken;
 	uint32_t result;

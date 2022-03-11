@@ -74,6 +74,17 @@ struct PROPERTY_VALUE {
 };
 
 struct NSP_PROPROW {
+	PROPERTY_VALUE *find(uint32_t tag) const {
+		for (size_t i = 0; i < cvalues; ++i)
+			if (pprops[i].proptag == tag)
+				return &pprops[i];
+		return nullptr;
+	}
+	inline PROP_VAL_UNION *getval(uint32_t tag) const {
+		auto v = find(tag);
+		return v != nullptr ? &v->value : nullptr;
+	}
+
 	uint32_t reserved;
 	uint32_t cvalues;
 	PROPERTY_VALUE *pprops;

@@ -27,3 +27,5 @@ extern int nsp_interface_resolve_names(NSPI_HANDLE, uint32_t reserved, const STA
 extern int nsp_interface_resolve_namesw(NSPI_HANDLE, uint32_t reserved, const STAT *, const LPROPTAG_ARRAY *, const STRINGS_ARRAY *, MID_ARRAY **, NSP_ROWSET **);
 /* clean NSPI_HANDLE by system, not operation of interface */
 void nsp_interface_unbind_rpc_handle(uint64_t hrpc);
+
+extern unsigned int g_nsp_trace;
