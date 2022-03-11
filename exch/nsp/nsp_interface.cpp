@@ -1100,6 +1100,7 @@ int nsp_interface_seek_entries(NSPI_HANDLE handle, uint32_t reserved,
 		return ecNotFound;
 	}
 	size_t row = 0;
+	start_pos = 0;
 	if (0 == pstat->container_id) {
 		for (row = start_pos; row < pbase->gal_list.size(); ++row) {
 			auto ptr = pbase->gal_list[row];
