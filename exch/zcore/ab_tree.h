@@ -59,8 +59,7 @@ struct ab_tree_del {
 
 using AB_BASE_REF = std::unique_ptr<AB_BASE, ab_tree_del>;
 
-void ab_tree_init(const char *org_name, int base_size,
-	int cache_interval, int file_blocks);
+extern void ab_tree_init(const char *org_name, int base_size, int cache_interval);
 extern int ab_tree_run();
 extern void ab_tree_stop();
 extern AB_BASE_REF ab_tree_get_base(int base_id);

@@ -188,10 +188,7 @@ int main(int argc, const char **argv) try
 	printf("[system]: address book tree item"
 		" cache interval is %s\n", temp_buff);
 
-	int max_item_num = pconfig->get_ll("address_item_num");
-	printf("[system]: maximum item number is %d\n", max_item_num);
-	
-	ab_tree_init(g_config_file->get_value("x500_org_name"), table_size, cache_interval, max_item_num);
+	ab_tree_init(g_config_file->get_value("x500_org_name"), table_size, cache_interval);
 	auto cl_5 = make_scope_exit(ab_tree_stop);
 	bounce_producer_init(g_config_file->get_value("separator_for_bounce"));
 

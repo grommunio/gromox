@@ -92,13 +92,12 @@ struct sort_item {
 }
 
 static size_t g_base_size;
-static int g_file_blocks, g_ab_cache_interval;
+static int g_ab_cache_interval;
 static gromox::atomic_bool g_notify_stop;
 static pthread_t g_scan_id;
 static char g_zcab_org_name[256];
 static std::unordered_map<int, AB_BASE> g_base_hash;
 static std::mutex g_base_lock;
-static std::unique_ptr<LIB_BUFFER> g_file_allocator;
 
 static void *zcoreab_scanwork(void *);
 static void ab_tree_get_display_name(const SIMPLE_TREE_NODE *, uint32_t codepage, char *str_dname, size_t dn_size);
@@ -167,24 +166,16 @@ ab_tree_minid_to_node(const AB_BASE *pbase, uint32_t minid)
 	return iter != pbase->phash.end() ? &iter->second->stree : nullptr;
 }
 
-void ab_tree_init(const char *org_name, int base_size,
-	int cache_interval, int file_blocks)
+void ab_tree_init(const char *org_name, int base_size, int cache_interval)
 {
 	gx_strlcpy(g_zcab_org_name, org_name, arsizeof(g_zcab_org_name));
 	g_base_size = base_size;
 	g_ab_cache_interval = cache_interval;
-	g_file_blocks = file_blocks;
 	g_notify_stop = true;
 }
 
 int ab_tree_run()
 {
-	g_file_allocator = LIB_BUFFER::create(FILE_ALLOC_SIZE,
-	                   g_file_blocks, TRUE);
-	if (NULL == g_file_allocator) {
-		printf("[exchange_nsp]: Failed to allocate file blocks\n");
-		return -2;
-	}
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, zcoreab_scanwork, nullptr);
 	if (ret != 0) {
@@ -242,7 +233,6 @@ void ab_tree_stop()
 		}
 	}
 	g_base_hash.clear();
-	g_file_allocator.reset();
 }
 
 static BOOL ab_tree_cache_node(AB_BASE *pbase, AB_NODE *pabnode) try

@@ -26,9 +26,6 @@ Display option summary.
 \fBaddress_cache_internal\fP
 Default: \fI5 minutes\fP
 .TP
-\fBaddress_item_num\fP
-Default: \fI100000\fP
-.TP
 \fBaddress_table_size\fP
 Default: \fI3000\fP
 .TP
