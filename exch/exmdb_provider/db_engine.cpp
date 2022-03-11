@@ -435,7 +435,14 @@ static BOOL db_engine_search_folder(const char *dir,
 		snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO search_result "
 		         "(folder_id, message_id) VALUES (%llu, %llu)",
 		         LLU(search_fid), LLU(pmessage_ids->pids[i]));
-		if (gx_sql_exec(pdb->psqlite, sql_string) != SQLITE_OK)
+		auto ret = gx_sql_exec(pdb->psqlite, sql_string, SQLEXEC_SILENT_CONSTRAINT);
+		if (ret == SQLITE_CONSTRAINT)
+			/*
+			 * Search folder is closed (deleted) already, INSERT
+			 * does not succeed, and neither will subsequent queries.
+			 */
+			break;
+		else if (ret != SQLITE_OK)
 			continue;
 		db_engine_proc_dynamic_event(pdb, cpid,
 			DYNAMIC_EVENT_NEW_MESSAGE, search_fid,

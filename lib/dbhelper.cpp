@@ -42,18 +42,17 @@ xtransaction gx_sql_begin_trans(sqlite3 *db)
 	return xtransaction(db);
 }
 
-int gx_sql_exec(sqlite3 *db, const char *query)
+int gx_sql_exec(sqlite3 *db, const char *query, unsigned int flags)
 {
 	char *estr = nullptr;
 	auto ret = sqlite3_exec(db, query, nullptr, nullptr, &estr);
 	if (ret == SQLITE_OK)
 		return ret;
-	if (estr == nullptr) {
-		fprintf(stderr, "sqlite3_exec \"%s\": %s\n",
-		        query, sqlite3_errstr(ret));
-		return ret;
-	}
-	fprintf(stderr, "sqlite3_exec \"%s\": %s\n", query, estr);
+	else if (ret == SQLITE_CONSTRAINT && (flags & SQLEXEC_SILENT_CONSTRAINT))
+		;
+	else
+		fprintf(stderr, "sqlite3_exec \"%s\": %s\n", query,
+		        estr != nullptr ? estr : sqlite3_errstr(ret));
 	sqlite3_free(estr);
 	return ret;
 }

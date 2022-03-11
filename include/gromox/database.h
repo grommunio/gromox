@@ -38,9 +38,13 @@ struct xstmt {
 	sqlite3_stmt *m_ptr = nullptr;
 };
 
+enum {
+	SQLEXEC_SILENT_CONSTRAINT = 0x1U,
+};
+
 extern GX_EXPORT struct xstmt gx_sql_prep(sqlite3 *, const char *);
 extern GX_EXPORT xtransaction gx_sql_begin_trans(sqlite3 *);
-extern GX_EXPORT int gx_sql_exec(sqlite3 *, const char *query);
+extern GX_EXPORT int gx_sql_exec(sqlite3 *, const char *query, unsigned int flags = 0);
 
 static inline uint64_t gx_sql_col_uint64(sqlite3_stmt *s, int c)
 {
