@@ -1,28 +1,26 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #define DECLARE_SVC_API_STATIC
+#include <cerrno>
 #include <csignal>
 #include <cstdint>
-#include <string>
-#include <libHX/string.h>
-#include <gromox/atomic.hpp>
-#include <gromox/defs.h>
-#include <gromox/fileio.h>
-#include <gromox/socket.h>
-#include <gromox/svc_common.h>
-#include <gromox/double_list.hpp>
-#include <gromox/config_file.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
-#include <cerrno>
-#include <unistd.h>
-#include <csignal>
-#include <pthread.h>
-#include <sys/types.h>  
-#include <sys/socket.h>
 #include <poll.h>
-
+#include <pthread.h>
+#include <string>
+#include <unistd.h>
+#include <libHX/string.h>
+#include <sys/socket.h>
+#include <sys/types.h>  
+#include <gromox/atomic.hpp>
+#include <gromox/config_file.hpp>
+#include <gromox/defs.h>
+#include <gromox/double_list.hpp>
+#include <gromox/fileio.h>
+#include <gromox/socket.h>
+#include <gromox/svc_common.h>
 
 #define SOCKET_TIMEOUT          60
 
