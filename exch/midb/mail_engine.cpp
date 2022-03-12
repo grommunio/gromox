@@ -1873,7 +1873,7 @@ static void mail_engine_insert_message(sqlite3_stmt *pstmt,
 		tmp_len = strlen(temp_buff);
 		memcpy(temp_buff + tmp_len, "}", 2);
 		tmp_len ++;
-		sprintf(mid_string1, "%ld.%d.midb", time(NULL),
+		sprintf(mid_string1, "%lld.%d.midb", static_cast<long long>(time(nullptr)),
 			mail_engine_get_sequence_id());
 		mid_string = mid_string1;
 		sprintf(temp_path, "%s/ext/%s", dir, mid_string1);
