@@ -19,22 +19,14 @@ struct GX_EXPORT LIB_BUFFER {
 	void *get_raw();
 	template<typename T> inline T *get()
 	{
-		static_assert(std::is_trivially_constructible_v<T>);
-		return static_cast<T *>(get_raw());
-	}
-	template<typename T> inline T *get_unconstructed() {
-		static_assert(!std::is_trivially_constructible_v<T>);
-		return static_cast<T *>(get_raw());
+		auto p = get_raw();
+		if (p == nullptr)
+			return nullptr;
+		return new(p) T;
 	}
 	void put_raw(void *);
 	template<typename T> inline void put(T *i)
 	{
-		static_assert(std::is_trivially_destructible_v<T>);
-		put_raw(i);
-	}
-	template<typename T> inline void destroy_and_put(T *i)
-	{
-		static_assert(!std::is_trivially_destructible_v<T>);
 		i->~T();
 		put_raw(i);
 	}

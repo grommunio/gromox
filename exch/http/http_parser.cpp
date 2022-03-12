@@ -448,7 +448,7 @@ static int http_end(HTTP_CONTEXT *ctx)
 					conn->pcontext_in = nullptr;
 				conn.put();
 			}
-			g_inchannel_allocator->destroy_and_put(chan);
+			g_inchannel_allocator->put(chan);
 		} else {
 			auto chan = static_cast<RPC_OUT_CHANNEL *>(ctx->pchannel);
 			auto conn = http_parser_get_vconnection(ctx->host,
@@ -458,7 +458,7 @@ static int http_end(HTTP_CONTEXT *ctx)
 					conn->pcontext_out = nullptr;
 				conn.put();
 			}
-			g_outchannel_allocator->destroy_and_put(chan);
+			g_outchannel_allocator->put(chan);
 		}
 		ctx->pchannel = nullptr;
 	}
@@ -787,22 +787,18 @@ static int htp_delegate_rpc(HTTP_CONTEXT *pcontext, size_t stream_1_written)
 	if (pcontext->total_length > 0x10) {
 		if (0 == strcmp(pcontext->request.method, "RPC_IN_DATA")) {
 			pcontext->channel_type = CHANNEL_TYPE_IN;
-			auto ch = g_inchannel_allocator->get_unconstructed<RPC_IN_CHANNEL>();
-			pcontext->pchannel = ch;
+			pcontext->pchannel = g_inchannel_allocator->get<RPC_IN_CHANNEL>();
 			if (NULL == pcontext->pchannel) {
 				http_5xx(pcontext, "Resources exhausted", 503);
 				return X_LOOP;
 			}
-			new(ch) RPC_IN_CHANNEL;
 		} else {
 			pcontext->channel_type = CHANNEL_TYPE_OUT;
-			auto ch = g_outchannel_allocator->get_unconstructed<RPC_OUT_CHANNEL>();
-			pcontext->pchannel = ch;
+			pcontext->pchannel = g_outchannel_allocator->get<RPC_OUT_CHANNEL>();
 			if (NULL == pcontext->pchannel) {
 				http_5xx(pcontext, "Resources exhausted", 503);
 				return X_LOOP;
 			}
-			new(ch) RPC_OUT_CHANNEL;
 		}
 	}
 	pcontext->bytes_rw = stream_1_written;
