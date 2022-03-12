@@ -54,15 +54,6 @@ enum{
     MULTI_PARTS_MAIL
 };
 
-/* stats of parsing the each part of multi-parts mail */
-enum{
-    PARSING_MAIL_HEAD = 0,
-    PARSING_NEST_MIME,        /* system is now finding the begin of nested mime*/
-    PARSING_BLOCK_HEAD,
-    PARSING_BLOCK_CONTENT,
-    PARSING_END
-};
-
 enum {
     ENCODING_UNKNOWN    = 0,
     ENCODING_7BIT,
@@ -102,7 +93,6 @@ struct MAIL_INFO {
 };
 
 struct PARSING_BLOCK {
-    int             state;
     char            block_mime[MAX_BLOCK_MIME_LEN];
     size_t          block_mime_len;
     int             last_block_ID;    /* last block ID for as filter */

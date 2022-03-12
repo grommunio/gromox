@@ -262,19 +262,10 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			 the part of boundary string into the clear stream
 			 */
 			if (MULTI_PARTS_MAIL == pcontext->mail.head.mail_part) {
-				if (PARSING_BLOCK_CONTENT == pcontext->block_info.state ||
-					PARSING_NEST_MIME == pcontext->block_info.state) {
-					memcpy(pbuff, pcontext->block_info.block_mime,
-						   pcontext->block_info.block_mime_len);
-					pcontext->stream.fwd_write_ptr(pcontext->block_info.block_mime_len);
-					pcontext->block_info.block_mime_len = 0;
-					pcontext->pre_rstlen = 0;
-				} else {
 					/* or, copy the last 4 bytes into the clear stream */
 					memcpy(pbuff, pcontext->last_bytes, 4);
 					pcontext->stream.fwd_write_ptr(4);
 					pcontext->pre_rstlen = 4;
-				}
 			} else if (SINGLE_PART_MAIL == pcontext->mail.head.mail_part) {
 				memcpy(pbuff, pcontext->last_bytes, 4);
 				pcontext->stream.fwd_write_ptr(4);
@@ -577,13 +568,10 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 	 ignore the last 4 bytes.
 	 */
 	if (!is_whole) {
-		if((PARSING_BLOCK_CONTENT != pcontext->block_info.state &&
-		   PARSING_NEST_MIME != pcontext->block_info.state) ||
-		   SINGLE_PART_MAIL == pcontext->mail.head.mail_part) {
+		if (pcontext->mail.head.mail_part == SINGLE_PART_MAIL)
 			pcontext->stream.rewind_write_ptr(4);
-		} else {
+		else
 			pcontext->stream.rewind_write_ptr(pcontext->block_info.block_mime_len);
-		}
 	}    
 	flusher_put_to_queue(pcontext);
 	return PROCESS_SLEEPING;
@@ -754,7 +742,6 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
 	memset(&pcontext->block_info.block_mime, 0, arsizeof(pcontext->block_info.block_mime));
 	pcontext->block_info.block_mime_len    = 0;
 	pcontext->block_info.last_block_ID     = 0;
-	pcontext->block_info.state             = 0;
 	pcontext->block_info.remains_len       = 0;
 	pcontext->last_cmd                     = 0;
 	pcontext->is_spam                      = FALSE;
