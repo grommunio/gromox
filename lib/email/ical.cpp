@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
 #include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <list>
 #include <memory>
 #include <new>
@@ -10,13 +13,10 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
+#include <gromox/ical.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/timezone.hpp>
-#include <gromox/ical.hpp>
 #include <gromox/util.hpp>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
 #define MAX_LINE							73
 
 using namespace gromox;

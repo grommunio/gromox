@@ -1,24 +1,24 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <cstdio>
+#include <cstring>
+#include <fcntl.h>
 #include <memory>
 #include <string>
+#include <unistd.h>
 #include <utility>
 #include <libHX/ctype_helper.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/mail.hpp>
-#include <gromox/mime_pool.hpp>
-#include <gromox/util.hpp>
-#include <gromox/mjson.hpp>
 #include <gromox/mail_func.hpp>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <cstring>
-#include <cstdio>
+#include <gromox/mime_pool.hpp>
+#include <gromox/mjson.hpp>
+#include <gromox/util.hpp>
 #define MAX_RFC822_DEPTH	5
 
 #define MAX_DIGLEN			256*1024

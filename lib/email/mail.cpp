@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cstdio>
+#include <cstring>
 #include <memory>
 #include <utility>
 #include <libHX/defs.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/mail.hpp>
-#include <gromox/util.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mime_pool.hpp>
 #include <gromox/scope.hpp>
-#include <cstring>
-#include <cstdio>
+#include <gromox/util.hpp>
 
 using namespace gromox;
 

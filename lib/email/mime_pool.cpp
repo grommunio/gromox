@@ -2,8 +2,8 @@
 #include <memory>
 #include <mutex>
 #include <libHX/defs.h>
-#include <gromox/util.hpp>
 #include <gromox/mime_pool.hpp>
+#include <gromox/util.hpp>
 
 /*
  *	@param

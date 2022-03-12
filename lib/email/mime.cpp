@@ -6,18 +6,17 @@
  * will then maintain its own buffer.
  */
 #include <algorithm>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <unistd.h>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
 #include <gromox/mail.hpp>
-#include <gromox/mime.hpp>
-#include <gromox/util.hpp>
-#include <gromox/mail.hpp>
 #include <gromox/mail_func.hpp>
+#include <gromox/mime.hpp>
 #include <gromox/scope.hpp>
-#include <cstring>
-#include <cstdlib>
-#include <unistd.h>
-#include <cstdio>
+#include <gromox/util.hpp>
 
 using namespace gromox;
 

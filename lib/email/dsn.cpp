@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <gromox/fileio.h>
-#include <gromox/mail_func.hpp>
-#include <gromox/dsn.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <gromox/dsn.hpp>
+#include <gromox/fileio.h>
+#include <gromox/mail_func.hpp>
 
 namespace {
 
