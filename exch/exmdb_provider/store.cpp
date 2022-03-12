@@ -26,7 +26,7 @@ struct dlgitem {
 };
 }
 
-static constexpr size_t MAXIMUM_ALLOCATION_NUMBER = 0x7fffffffffffLL;
+static constexpr uint64_t MAXIMUM_ALLOCATION_NUMBER = 0x7fffffffffff;
 
 BOOL exmdb_server_ping_store(const char *dir)
 {
@@ -293,8 +293,8 @@ BOOL exmdb_server_allocate_ids(const char *dir,
 		return FALSE;
 	snprintf(sql_string, arsizeof(sql_string), "SELECT range_begin, "
 				"range_end, is_system FROM allocated_eids"
-				" WHERE allocate_time>=%lu",
-				time(NULL) - ALLOCATION_INTERVAL);
+	         " WHERE allocate_time>=%lld",
+	         static_cast<long long>(time(nullptr)) - ALLOCATION_INTERVAL);
 	auto pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;

@@ -14,14 +14,13 @@
 #include "common_util.h"
 #include "db_engine.h"
 #include "exmdb_server.h"
-#define LLD(x) static_cast<long long>(x)
-#define LLU(x) static_cast<unsigned long long>(x)
-
 #define MAXIMUM_RECIEVE_FOLDERS				2000
 #define MAXIMUM_STORE_FOLDERS				10000
 #define SYSTEM_ALLOCATED_EID_RANGE			10000
 
 using namespace gromox;
+using LLD = long long;
+using LLU = unsigned long long;
 
 /* private only */
 BOOL exmdb_server_get_folder_by_class(const char *dir,
@@ -113,7 +112,7 @@ BOOL exmdb_server_set_folder_by_class(const char *dir,
 		return FALSE;
 	pstmt.finalize();
 	snprintf(sql_string, arsizeof(sql_string), "REPLACE INTO receive_table"
-			" VALUES (?, ?, %lu)", rop_util_current_nttime());
+	         " VALUES (?, ?, %llu)", LLU(rop_util_current_nttime()));
 	pstmt = gx_sql_prep(pdb->psqlite, sql_string);
 	if (pstmt == nullptr) {
 		return FALSE;

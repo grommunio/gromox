@@ -2767,7 +2767,8 @@ static BOOL cu_set_object_cid_value(sqlite3 *psqlite, db_table table_type,
 			        path.c_str(), strerror(errno));
 	});
 	auto bv = static_cast<BINARY *>(ppropval->pvalue);
-	if (write(fd.get(), bv->pv, bv->cb) != bv->cb ||
+	auto ret = write(fd.get(), bv->pv, bv->cb);
+	if (ret < 0 || static_cast<size_t>(ret) != bv->cb ||
 	    !cu_update_object_cid(psqlite, table_type, message_id,
 	    ppropval->proptag, cid))
 		return FALSE;

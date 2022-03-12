@@ -89,7 +89,8 @@ void notification_agent_thread_work(std::shared_ptr<ROUTER_CONNECTION> &&prouter
 		while (dg.pb != nullptr) {
 			auto bytes_written = write(prouter->sockd, dg.pb, dg.cb);
 			free(dg.pb);
-			if (bytes_written != dg.cb ||
+			if (bytes_written < 0 ||
+			    static_cast<size_t>(bytes_written) != dg.cb ||
 			    !notification_agent_read_response(prouter))
 				goto EXIT_THREAD;
 			std::lock_guard rt_lock(prouter->lock);

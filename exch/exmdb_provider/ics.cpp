@@ -500,7 +500,7 @@ BOOL exmdb_server_get_content_sync(const char *dir,
 		if (stm_select_rd == nullptr ||
 		    sqlite3_step(stm_select_rd) != SQLITE_ROW)
 			return FALSE;
-		ssize_t count = sqlite3_column_int64(stm_select_rd, 0);
+		uint64_t count = sqlite3_column_int64(stm_select_rd, 0);
 		stm_select_rd.finalize();
 		pread_mids->count = 0;
 		punread_mids->count = 0;
