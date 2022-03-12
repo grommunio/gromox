@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include <gromox/double_list.hpp>
-#include <gromox/lib_buffer.hpp>
+#include <gromox/util.hpp>
 #define MAX_KEY_LENGTH      512
 
 using PSTR_HASH_FUNC = size_t (*)(const char *key);

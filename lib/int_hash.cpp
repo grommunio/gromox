@@ -51,8 +51,7 @@ INT_HASH_TABLE::INT_HASH_TABLE(size_t max_items, size_t item_size)
 	for (i = 0; i < table->entry_num; i++) {
 		double_list_init(&hash_map[i]);
 	}
-	table->buf_pool = LIB_BUFFER::create(inthashitem_al + item_size,
-	                  max_items, false);
+	table->buf_pool = LIB_BUFFER::create(inthashitem_al + item_size, max_items);
 	if (NULL == table->buf_pool)
 		throw std::bad_alloc();
 	table->capacity		= max_items;

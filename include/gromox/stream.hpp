@@ -1,6 +1,6 @@
 #pragma once
 #include <gromox/double_list.hpp>
-#include <gromox/lib_buffer.hpp>
+#include <gromox/util.hpp>
 #define STREAM_BLOCK_SIZE    0x10000
 #define STREAM_ALLOC_SIZE    (STREAM_BLOCK_SIZE + sizeof(DOUBLE_LIST_NODE))
 

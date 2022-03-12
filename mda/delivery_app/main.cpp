@@ -12,7 +12,6 @@
 #include <gromox/atomic.hpp>
 #include <gromox/config_file.hpp>
 #include <gromox/fileio.h>
-#include <gromox/lib_buffer.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>

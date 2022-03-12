@@ -232,7 +232,7 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 			return false;
 		if (g_file_ratio > 0) {
 			g_file_allocator = LIB_BUFFER::create(FILE_ALLOC_SIZE,
-			                   get_context_num() * g_file_ratio, TRUE);
+			                   get_context_num() * g_file_ratio);
 			if (NULL == g_file_allocator) {
 				printf("[midb_agent]: failed to init memory pool\n");
 				return FALSE;

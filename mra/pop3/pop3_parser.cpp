@@ -15,7 +15,6 @@
 #include <libHX/string.h>
 #include <openssl/err.h>
 #include <gromox/defs.h>
-#include <gromox/lib_buffer.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>

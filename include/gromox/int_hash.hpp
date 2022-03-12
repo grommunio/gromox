@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include <gromox/double_list.hpp>
-#include <gromox/lib_buffer.hpp>
+#include <gromox/util.hpp>
 
 struct INT_HASH_ITEM {
     int         hash_key;

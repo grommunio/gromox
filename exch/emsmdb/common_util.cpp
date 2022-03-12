@@ -2146,7 +2146,7 @@ int common_util_run()
 		return -2;
 	}
 	g_file_allocator = LIB_BUFFER::create(FILE_ALLOC_SIZE,
-	                   g_average_blocks * context_num, TRUE);
+	                   g_average_blocks * context_num);
 	if (NULL == g_file_allocator) {
 		printf("[exchange_emsmdb]: Failed to init mem file allocator\n");
 		return -3;

@@ -1,6 +1,7 @@
 #pragma once
-#include <gromox/lib_buffer.hpp>
+#include <cstddef>
 
+struct LIB_BUFFER;
 void blocks_allocator_init(size_t blocks);
 extern int blocks_allocator_run();
 extern void blocks_allocator_stop();

@@ -7,7 +7,6 @@
 #include <cstring>
 #include <unistd.h>
 #include <gromox/common_types.hpp>
-#include <gromox/lib_buffer.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
 

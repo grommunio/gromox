@@ -99,7 +99,7 @@ static int mjson_rfc822_fetch_internal(MJSON *pjson, const char *storage_path,
 
 std::unique_ptr<LIB_BUFFER> mjson_allocator_init(size_t max_size)
 {
-	return LIB_BUFFER::create(sizeof(MJSON_MIME), max_size, TRUE);
+	return LIB_BUFFER::create(sizeof(MJSON_MIME), max_size);
 }
 
 /*

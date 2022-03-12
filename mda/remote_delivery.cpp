@@ -20,7 +20,6 @@
 #include <gromox/config_file.hpp>
 #include <gromox/fileio.h>
 #include <gromox/hook_common.h>
-#include <gromox/lib_buffer.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/socket.h>
 #include <gromox/tie.hpp>
@@ -414,7 +413,7 @@ static BOOL remote_delivery_entry(int request, void **apidata) try
 	};
 	config_file_apply(*cfg_file, remote_delivery_cfg_defaults);
 	g_files_allocator = LIB_BUFFER::create(FILE_ALLOC_SIZE,
-	                    256 * get_threads_num(), TRUE);
+	                    256 * get_threads_num());
 	if (g_files_allocator == nullptr)
 		return false;
 	g_mx_host = cfg_file->get_value("mx_host");

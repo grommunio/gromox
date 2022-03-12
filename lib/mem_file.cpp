@@ -4,7 +4,6 @@
  *	  memory, it is virtual file. Caution: Not thread-safe.
  */
 #include <cstring>
-#include <gromox/lib_buffer.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/util.hpp>
 

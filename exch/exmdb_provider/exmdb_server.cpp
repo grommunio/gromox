@@ -2,8 +2,8 @@
 #include <cstdio>
 #include <memory>
 #include <pthread.h>
-#include <gromox/lib_buffer.hpp>
 #include <gromox/svc_common.h>
+#include <gromox/util.hpp>
 #include "common_util.h"
 #include "db_engine.h"
 #include "exmdb_server.h"
@@ -31,7 +31,7 @@ void (*exmdb_server_event_proc)(const char *dir,
 int exmdb_server_run()
 {
 	g_ctx_allocator = LIB_BUFFER::create(sizeof(ENVIRONMENT_CONTEXT),
-	                  2 * get_context_num(), TRUE);
+	                  2 * get_context_num());
 	if (NULL == g_ctx_allocator) {
 		printf("[exmdb_provider]: Failed to init environment allocator\n");
 		return -1;

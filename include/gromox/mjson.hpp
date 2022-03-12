@@ -1,8 +1,9 @@
 #pragma once
 #include <memory>
-#include <gromox/lib_buffer.hpp>
 #include <gromox/mime_pool.hpp>
 #include <gromox/simple_tree.hpp>
+#include <gromox/util.hpp>
+
 #define MJSON_MIME_NONE			0
 
 #define MJSON_MIME_SINGLE		1

@@ -245,7 +245,7 @@ int transporter_run()
         return -4;
 	}
 	g_file_allocator = LIB_BUFFER::create(FILE_ALLOC_SIZE,
-	                   FILENUM_PER_CONTROL * (g_free_num + g_threads_max), TRUE);
+	                   FILENUM_PER_CONTROL * (g_free_num + g_threads_max));
 	if (NULL == g_file_allocator) {
         transporter_collect_resource();
 		printf("[transporter]: Failed to init file allocator\n");

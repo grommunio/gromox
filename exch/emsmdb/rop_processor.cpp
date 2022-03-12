@@ -12,7 +12,6 @@
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include <gromox/int_hash.hpp>
-#include <gromox/lib_buffer.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/simple_tree.hpp>
 #include <gromox/str_hash.hpp>
@@ -411,19 +410,18 @@ int rop_processor_run()
 	
 	context_num = get_context_num();
 	g_logmap_allocator = LIB_BUFFER::create(256 * sizeof(LOGON_ITEM *),
-	                     context_num * MAX_HANDLES_ON_CONTEXT, TRUE);
+	                     context_num * MAX_HANDLES_ON_CONTEXT);
 	if (NULL == g_logmap_allocator) {
 		printf("[exchange_emsmdb]: Failed to init logon map allocator\n");
 		return -1;
 	}
-	g_logitem_allocator = LIB_BUFFER::create(sizeof(LOGON_ITEM),
-	                      256 * context_num, TRUE);
+	g_logitem_allocator = LIB_BUFFER::create(sizeof(LOGON_ITEM), 256 * context_num);
 	if (NULL == g_logitem_allocator) {
 		printf("[exchange_emsmdb]: Failed to init object map allocator\n");
 		return -2;
 	}
 	g_handle_allocator = LIB_BUFFER::create(sizeof(OBJECT_NODE),
-	                     g_average_handles * context_num, TRUE);
+	                     g_average_handles * context_num);
 	if (NULL == g_handle_allocator) {
 		printf("[exchange_emsmdb]: Failed to init object handle allocator\n");
 		return -3;

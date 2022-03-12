@@ -1094,7 +1094,7 @@ static BOOL mime_read_multipart_content(MIME *pmime,
 		return false;
 	}
 	std::unique_ptr<LIB_BUFFER> pallocator(LIB_BUFFER::create(STREAM_ALLOC_SIZE,
-		tmp_size / STREAM_BLOCK_SIZE + 1, FALSE));
+		tmp_size / STREAM_BLOCK_SIZE + 1));
 	if (NULL == pallocator) {
 		debug_info("[mime]: Failed to init lib buffer"
 		           " in mime_read_multipart_content");
@@ -1304,7 +1304,7 @@ BOOL MIME::read_content(char *out_buff, size_t *plength)
 			return FALSE;
 		}
 		std::unique_ptr<LIB_BUFFER> pallocator(LIB_BUFFER::create(STREAM_ALLOC_SIZE,
-			mail_len / STREAM_BLOCK_SIZE + 1, FALSE));
+			mail_len / STREAM_BLOCK_SIZE + 1));
 		if (NULL == pallocator) {
 			debug_info("[mime]: Failed to init lib buffer in MIME::read_content");
 			*plength = 0;

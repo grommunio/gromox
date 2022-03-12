@@ -2294,7 +2294,7 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 		return false;
 	}
 	std::unique_ptr<LIB_BUFFER> pallocator(LIB_BUFFER::create(STREAM_ALLOC_SIZE,
-		mail_len / STREAM_BLOCK_SIZE + 1, FALSE));
+		mail_len / STREAM_BLOCK_SIZE + 1));
 	if (NULL == pallocator) {
 		return FALSE;
 	}

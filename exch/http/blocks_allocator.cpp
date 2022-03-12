@@ -4,8 +4,8 @@
  */
 #include <memory>
 #include <gromox/common_types.hpp>
-#include <gromox/lib_buffer.hpp>
 #include <gromox/stream.hpp>
+#include <gromox/util.hpp>
 #include "blocks_allocator.h"
 
 static size_t g_blocks_num;
@@ -18,7 +18,7 @@ void blocks_allocator_init(size_t blocks)
 
 int blocks_allocator_run() 
 {
-	g_allocator = LIB_BUFFER::create(STREAM_ALLOC_SIZE, g_blocks_num, TRUE);
+	g_allocator = LIB_BUFFER::create(STREAM_ALLOC_SIZE, g_blocks_num);
     if (NULL == g_allocator) {
         return -1;
     }

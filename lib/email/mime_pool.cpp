@@ -22,8 +22,7 @@ MIME_POOL::MIME_POOL(size_t num, int ratio)
 	} else if (ratio > 256) {
 		ratio = 256;
 	}
-	pmime_pool->allocator = LIB_BUFFER::create(FILE_ALLOC_SIZE,
-	                        num * ratio, TRUE);
+	pmime_pool->allocator = LIB_BUFFER::create(FILE_ALLOC_SIZE, num * ratio);
 	if (NULL == pmime_pool->allocator) {
 		throw std::bad_alloc();
 	}

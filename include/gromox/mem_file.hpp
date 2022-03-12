@@ -2,8 +2,7 @@
 #include <sys/types.h>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
-#include <gromox/lib_buffer.hpp>
-
+#include <gromox/util.hpp>
 #define MEM_END_OF_FILE         0xFFFFFFFF      
 
 /* enumeration for indicating the seek relative position */

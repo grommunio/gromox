@@ -238,14 +238,14 @@ int main(int argc, const char **argv) try
 	
 	g_threads_num ++;
 	g_fifo_alloc = LIB_BUFFER::create(sizeof(MEM_FILE) + EXTRA_FIFOITEM_SIZE,
-	               g_threads_num * FIFO_AVERAGE_LENGTH, TRUE);
+	               g_threads_num * FIFO_AVERAGE_LENGTH);
 	if (NULL == g_fifo_alloc) {
 		printf("[system]: Failed to init queue allocator\n");
 		return 3;
 	}
 	auto cl_0 = make_scope_exit([&]() { g_fifo_alloc.reset(); });
 	g_file_alloc = LIB_BUFFER::create(FILE_ALLOC_SIZE,
-	               g_threads_num * FIFO_AVERAGE_LENGTH, TRUE);
+	               g_threads_num * FIFO_AVERAGE_LENGTH);
 	if (NULL == g_file_alloc) {
 		printf("[system]: Failed to init file allocator\n");
 		return 4;

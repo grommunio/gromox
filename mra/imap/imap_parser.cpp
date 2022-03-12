@@ -25,7 +25,6 @@
 #include <gromox/clock.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
-#include <gromox/lib_buffer.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mime_pool.hpp>
 #include <gromox/mjson.hpp>
@@ -210,7 +209,7 @@ int imap_parser_run()
 	if (num < 1024*1024) {
 		num = 1024*1024;
 	}
-	g_alloc_file = LIB_BUFFER::create(FILE_ALLOC_SIZE, num, TRUE);
+	g_alloc_file = LIB_BUFFER::create(FILE_ALLOC_SIZE, num);
 	if (NULL == g_alloc_file) {
 		printf("[imap_parser]: Failed to init mem file allocator\n");
 		return -5;
@@ -230,7 +229,7 @@ int imap_parser_run()
 		return -6;
 	}
 	g_alloc_xarray = LIB_BUFFER::create(sizeof(MITEM) + EXTRA_XARRAYNODE_SIZE,
-	                 g_average_num * g_context_num, TRUE);
+	                 g_average_num * g_context_num);
 	if (NULL == g_alloc_xarray) {
 		printf("[imap_parser]: Failed to init mem file allocator\n");
 		return -7;
@@ -240,7 +239,7 @@ int imap_parser_run()
 	if (num < 1000) {
 		num = 1000;
 	}
-	g_alloc_dir = LIB_BUFFER::create(sizeof(DIR_NODE), num, TRUE);
+	g_alloc_dir = LIB_BUFFER::create(sizeof(DIR_NODE), num);
 	if (NULL == g_alloc_dir) {
 		printf("[imap_parser]: Failed to init dir node allocator\n");
 		return -8;

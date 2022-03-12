@@ -16,7 +16,6 @@
 #include <gromox/defs.h>
 #include <gromox/double_list.hpp>
 #include <gromox/int_hash.hpp>
-#include <gromox/lib_buffer.hpp>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
 #include "asyncemsmdb_interface.h"
@@ -86,8 +85,7 @@ int asyncemsmdb_interface_run()
 		printf("[exchange_emsmdb]: Failed to init async ID hash table\n");
 		return -2;
 	}
-	g_wait_allocator = LIB_BUFFER::create(sizeof(ASYNC_WAIT),
-	                   2 * context_num, TRUE);
+	g_wait_allocator = LIB_BUFFER::create(sizeof(ASYNC_WAIT), 2 * context_num);
 	if (NULL == g_wait_allocator) {
 		printf("[exchange_emsmdb]: Failed to init async wait allocator\n");
 		return -3;

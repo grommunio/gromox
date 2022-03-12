@@ -1,12 +1,46 @@
 #pragma once
+#include <atomic>
 #include <cstdint>
 #include <ctime>
+#include <memory>
 #include <string>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
+#define FILE_BLOCK_SIZE 0x100
+#define FILE_ALLOC_SIZE (FILE_BLOCK_SIZE + sizeof(DOUBLE_LIST_NODE))
 
 enum {
 	QP_MIME_HEADER = 1U << 0,
+};
+
+struct GX_EXPORT LIB_BUFFER {
+	LIB_BUFFER(size_t size, size_t items);
+	static std::unique_ptr<LIB_BUFFER> create(size_t item_size, size_t item_num);
+	void *get_raw();
+	template<typename T> inline T *get()
+	{
+		static_assert(std::is_trivially_constructible_v<T>);
+		return static_cast<T *>(get_raw());
+	}
+	template<typename T> inline T *get_unconstructed() {
+		static_assert(!std::is_trivially_constructible_v<T>);
+		return static_cast<T *>(get_raw());
+	}
+	void put_raw(void *);
+	template<typename T> inline void put(T *i)
+	{
+		static_assert(std::is_trivially_destructible_v<T>);
+		put_raw(i);
+	}
+	template<typename T> inline void destroy_and_put(T *i)
+	{
+		static_assert(!std::is_trivially_destructible_v<T>);
+		i->~T();
+		put_raw(i);
+	}
+
+	std::atomic<size_t> allocated_num{0};
+	size_t item_size = 0, max_items = 0;
 };
 
 BOOL utf8_check(const char *str);

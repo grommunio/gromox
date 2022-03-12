@@ -5148,7 +5148,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		if (mail_len < 0)
 			return false;
 		std::unique_ptr<LIB_BUFFER> pallocator(LIB_BUFFER::create(STREAM_ALLOC_SIZE,
-		             mail_len / STREAM_BLOCK_SIZE + 1, false));
+		             mail_len / STREAM_BLOCK_SIZE + 1));
 		if (pallocator == nullptr)
 			return FALSE;
 		STREAM tmp_stream(pallocator.get());

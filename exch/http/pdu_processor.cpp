@@ -22,7 +22,6 @@
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/int_hash.hpp>
-#include <gromox/lib_buffer.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/util.hpp>
@@ -215,33 +214,28 @@ int pdu_processor_run()
 	int context_num;
 	
 	g_call_allocator = LIB_BUFFER::create(sizeof(DCERPC_CALL),
-	                   g_connection_num * g_connection_ratio, TRUE);
+	                   g_connection_num * g_connection_ratio);
 	if (NULL == g_call_allocator) {
 		return -1;
 	}
 	context_num = g_connection_num*g_connection_ratio;
-	g_context_allocator = LIB_BUFFER::create(sizeof(DCERPC_CONTEXT),
-	                      context_num, TRUE);
+	g_context_allocator = LIB_BUFFER::create(sizeof(DCERPC_CONTEXT), context_num);
 	if (NULL == g_context_allocator) {
 		return -2;
 	}
-	g_auth_allocator = LIB_BUFFER::create(sizeof(DCERPC_AUTH_CONTEXT),
-	                   context_num, TRUE);
+	g_auth_allocator = LIB_BUFFER::create(sizeof(DCERPC_AUTH_CONTEXT), context_num);
 	if (NULL == g_auth_allocator) {
 		return -3;
 	}
-	g_bnode_allocator = LIB_BUFFER::create(sizeof(BLOB_NODE),
-	                    g_connection_num * 32, TRUE);
+	g_bnode_allocator = LIB_BUFFER::create(sizeof(BLOB_NODE), g_connection_num * 32);
 	if (NULL == g_bnode_allocator) {
 		return -5;
 	}
-	g_async_allocator = LIB_BUFFER::create(sizeof(ASYNC_NODE),
-	                    context_num * 2, TRUE);
+	g_async_allocator = LIB_BUFFER::create(sizeof(ASYNC_NODE), context_num * 2);
 	if (NULL == g_async_allocator) {
 		return -6;
 	}
-	g_stack_allocator = LIB_BUFFER::create(sizeof(NDR_STACK_ROOT),
-	                    context_num * 4, TRUE);
+	g_stack_allocator = LIB_BUFFER::create(sizeof(NDR_STACK_ROOT), context_num * 4);
 	if (NULL == g_stack_allocator) {
 		return -7;
 	}

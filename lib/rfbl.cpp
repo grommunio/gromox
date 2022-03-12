@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later, OR GPL-2.0-or-later WITH linking exception
-// SPDX-FileCopyrightText: 2021 grommunio GmbH
+// SPDX-FileCopyrightText: 2021-2022 grommunio GmbH
 // This file is part of Gromox.
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
@@ -46,6 +46,50 @@ class hxmc_deleter {
 using namespace gromox;
 
 static int gx_reexec_top_fd = -1;
+
+LIB_BUFFER::LIB_BUFFER(size_t isize, size_t inum) :
+	item_size(isize), max_items(inum)
+{
+	if (isize <= 0 || inum <= 0)
+		throw std::invalid_argument("[lib_buffer]: lib_buffer_init, invalid parameter");
+}
+
+std::unique_ptr<LIB_BUFFER> LIB_BUFFER::create(size_t isize, size_t inum) try
+{
+	return std::make_unique<LIB_BUFFER>(isize, inum);
+} catch (const std::bad_alloc &e) {
+	fprintf(stderr, "E-1658: ENOMEM\n");
+	debug_info(e.what());
+	return nullptr;
+} catch (const std::invalid_argument &e) {
+	fprintf(stderr, "E-1669: EINVAL: %s\n", e.what());
+	debug_info(e.what());
+	return nullptr;
+}
+
+void *LIB_BUFFER::get_raw()
+{
+	do {
+		auto exp = allocated_num.load();
+		if (exp >= max_items) {
+			errno = ENOMEM;
+			return nullptr;
+		}
+		auto des = exp + 1;
+		if (allocated_num.compare_exchange_strong(exp, des))
+			break;
+	} while (true);
+	auto ptr = malloc(item_size);
+	if (ptr == nullptr)
+		--allocated_num;
+	return ptr;
+}
+
+void LIB_BUFFER::put_raw(void *item)
+{
+	free(item);
+	--allocated_num;
+}
 
 char **read_file_by_line(const char *file)
 {

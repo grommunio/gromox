@@ -2,9 +2,9 @@
 #include <list>
 #include <memory>
 #include <mutex>
-#include <gromox/lib_buffer.hpp>
 #include <gromox/mime.hpp>
 #include <gromox/single_list.hpp>
+#include <gromox/util.hpp>
 
 struct MIME_POOL;
 struct MIME_POOL_NODE {
@@ -27,7 +27,7 @@ struct GX_EXPORT MIME_POOL {
 	static void put_mime(MIME *);
 
 	std::unique_ptr<LIB_BUFFER> allocator;
-	std::list<MIME_POOL_NODE> pbegin; /* effectively references allocator::heap* */
+	std::list<MIME_POOL_NODE> pbegin;
 	std::list<MIME_POOL_NODE *> free_list; /* references pbegin nodes */
 	std::mutex mutex;
 };

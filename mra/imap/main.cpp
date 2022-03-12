@@ -15,7 +15,6 @@
 #include <gromox/config_file.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/fileio.h>
-#include <gromox/lib_buffer.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/threads_pool.hpp>
