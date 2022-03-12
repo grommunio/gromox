@@ -4,20 +4,20 @@
 #include <cstring>
 #include <dirent.h>
 #include <string>
-#include <sys/types.h>
 #include <libHX/string.h>
+#include <sys/types.h>
 #include <gromox/defs.h>
-#include <gromox/element_data.hpp>
-#include <gromox/mapidefs.h>
-#include "msgchg_grouping.h"
 #include <gromox/double_list.hpp>
+#include <gromox/element_data.hpp>
 #include <gromox/fileio.h>
+#include <gromox/guid.hpp>
 #include <gromox/list_file.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/guid.hpp>
 #include <gromox/util.hpp>
 #include "common_util.h"
+#include "msgchg_grouping.h"
 
 using namespace std::string_literals;
 using namespace gromox;

@@ -2,8 +2,8 @@
 #include <cstdint>
 #include <memory>
 #include <gromox/defs.h>
-#include <gromox/mapi_types.hpp>
 #include <gromox/double_list.hpp>
+#include <gromox/mapi_types.hpp>
 
 /* message_object and attachment_object are friend classes,
 	so they can operate internal variables of each other */

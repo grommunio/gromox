@@ -1,8 +1,8 @@
 #pragma once
 #include <cstdint>
 #include <gromox/defs.h>
-#include <gromox/mapi_types.hpp>
 #include <gromox/element_data.hpp>
+#include <gromox/mapi_types.hpp>
 
 extern void exmdb_client_init();
 extern int exmdb_client_run();

@@ -1,31 +1,31 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <libHX/string.h>
-#include <gromox/defs.h>
-#include <gromox/paths.h>
-#include <gromox/guid.hpp>
-#include <gromox/util.hpp>
-#include <gromox/rop_util.hpp>
-#include <gromox/mail_func.hpp>
-#include "emsmdb_ndr.h"
-#include <gromox/proc_common.h>
-#include "common_util.h"
 #include <gromox/config_file.hpp>
-#include "logon_object.h"
-#include "exmdb_client.h"
-#include "rop_processor.h"
-#include "bounce_producer.h"
-#include "msgchg_grouping.h"
-#include "asyncemsmdb_ndr.h"
-#include "emsmdb_interface.h"
+#include <gromox/defs.h>
+#include <gromox/guid.hpp>
+#include <gromox/mail_func.hpp>
+#include <gromox/paths.h>
+#include <gromox/proc_common.h>
+#include <gromox/rop_util.hpp>
+#include <gromox/util.hpp>
 #include "asyncemsmdb_interface.h"
-#include <cstring>
-#include <cstdio>
+#include "asyncemsmdb_ndr.h"
+#include "bounce_producer.h"
+#include "common_util.h"
+#include "emsmdb_interface.h"
+#include "emsmdb_ndr.h"
+#include "exmdb_client.h"
+#include "logon_object.h"
+#include "msgchg_grouping.h"
 #include "rop_dispatch.h"
+#include "rop_processor.h"
 
 using namespace std::string_literals;
 using namespace gromox;

@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
 #include <cstdint>
-#include <memory>
-#include <utility>
-#include <gromox/defs.h>
-#include <gromox/mapidefs.h>
-#include <gromox/proc_common.h>
-#include "emsmdb_interface.h"
-#include "folder_object.h"
-#include "logon_object.h"
-#include "exmdb_client.h"
-#include "common_util.h"
-#include <gromox/ext_buffer.hpp>
-#include <gromox/rop_util.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
+#include <utility>
+#include <gromox/defs.h>
+#include <gromox/ext_buffer.hpp>
+#include <gromox/mapidefs.h>
+#include <gromox/proc_common.h>
+#include <gromox/rop_util.hpp>
+#include "common_util.h"
+#include "emsmdb_interface.h"
+#include "exmdb_client.h"
+#include "folder_object.h"
+#include "logon_object.h"
 
 std::unique_ptr<folder_object> folder_object::create(logon_object *plogon,
 	uint64_t folder_id, uint8_t type, uint32_t tag_access)

@@ -3,15 +3,15 @@
 #include <cstring>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
-#include "emsmdb_interface.h"
-#include "rop_processor.h"
-#include "logon_object.h"
-#include "common_util.h"
-#include <gromox/proc_common.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/lzxpress.hpp>
+#include <gromox/proc_common.h>
+#include "common_util.h"
+#include "emsmdb_interface.h"
+#include "logon_object.h"
 #include "rop_ext.h"
 #include "rop_ids.h"
+#include "rop_processor.h"
 #define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
 
 using namespace gromox;

@@ -3,9 +3,9 @@
 #include <list>
 #include <memory>
 #include <string>
-#include <gromox/mapi_types.hpp>
-#include <gromox/double_list.hpp>
 #include <sys/types.h>
+#include <gromox/double_list.hpp>
+#include <gromox/mapi_types.hpp>
 #define FTSTREAM_PRODUCER_POINT_LENGTH			1024
 #define FTSTREAM_PRODUCER_BUFFER_LENGTH			4*1024*1024
 #define STRING_OPTION_NONE						0x00

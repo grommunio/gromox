@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
+#include <gromox/ext_buffer.hpp>
+#include <gromox/proc_common.h>
+#include "common_util.h"
 #include "emsmdb_interface.h"
 #include "exmdb_client.h"
-#include "common_util.h"
-#include <gromox/proc_common.h>
-#include <gromox/ext_buffer.hpp>
-#include <cstdio>
-
 #define SERVICE_ID_LANG_TO_CHARSET							1
 #define SERVICE_ID_CPID_TO_CHARSET							2
 #define SERVICE_ID_GET_USER_DISPLAYNAME						3

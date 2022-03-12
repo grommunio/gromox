@@ -2,43 +2,42 @@
 #ifdef HAVE_CONFIG_H
 #	include "config.h"
 #endif
+#include <cerrno>
+#include <cstdarg>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <fcntl.h>
+#include <iconv.h>
 #include <memory>
 #include <mutex>
+#include <unistd.h>
 #include <utility>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <gromox/defs.h>
+#include <gromox/element_data.hpp>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/mime_pool.hpp>
-#include <gromox/socket.h>
-#include <gromox/pcl.hpp>
-#include <gromox/util.hpp>
 #include <gromox/oxcmail.hpp>
-#include <gromox/rop_util.hpp>
-#include <gromox/ext_buffer.hpp>
+#include <gromox/pcl.hpp>
 #include <gromox/proc_common.h>
-#include "common_util.h"
-#include "exmdb_client.h"
-#include <gromox/element_data.hpp>
 #include <gromox/proptag_array.hpp>
+#include <gromox/rop_util.hpp>
+#include <gromox/socket.h>
+#include <gromox/util.hpp>
 #include "bounce_producer.h"
+#include "common_util.h"
 #include "emsmdb_interface.h"
+#include "exmdb_client.h"
 #include "logon_object.h"
-#include <ctime>
-#include <cerrno>
-#include <cstdio>
-#include <iconv.h>
-#include <fcntl.h>
-#include <cstdarg>
-#include <cstdlib>
-#include <unistd.h>
-#include <cstring>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-
 #define SOCKET_TIMEOUT						60
 
 using namespace gromox;

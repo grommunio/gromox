@@ -3,9 +3,9 @@
 #include <memory>
 #include "common_util.h"
 #include "emsmdb_interface.h"
+#include "exmdb_client.h"
 #include "logon_object.h"
 #include "subscription_object.h"
-#include "exmdb_client.h"
 
 std::unique_ptr<subscription_object>
 subscription_object::create(logon_object *plogon, uint8_t logon_id,

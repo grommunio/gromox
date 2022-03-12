@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <gromox/defs.h>
-#include <gromox/rop_util.hpp>
 #include <gromox/ext_buffer.hpp>
-#include "common_util.h"
 #include <gromox/proc_common.h>
+#include <gromox/rop_util.hpp>
+#include "common_util.h"
 #include "exmdb_client.h"
-#include "logon_object.h"
-#include "table_object.h"
 #include "folder_object.h"
+#include "logon_object.h"
+#include "processor_types.h"
 #include "rop_funcs.hpp"
 #include "rop_ids.h"
 #include "rop_processor.h"
-#include "processor_types.h"
+#include "table_object.h"
 
 uint32_t rop_modifyrules(uint8_t flags, uint16_t count, const RULE_DATA *prow,
     LOGMAP *plogmap, uint8_t logon_id, uint32_t hin)

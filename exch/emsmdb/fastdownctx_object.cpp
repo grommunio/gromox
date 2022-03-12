@@ -2,19 +2,19 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <utility>
-#include "fastdownctx_object.h"
+#include <gromox/eid_array.hpp>
+#include <gromox/proc_common.h>
+#include "common_util.h"
 #include "emsmdb_interface.h"
 #include "exmdb_client.h"
+#include "fastdownctx_object.h"
 #include "ftstream_producer.h"
 #include "ics_state.h"
 #include "logon_object.h"
-#include "common_util.h"
-#include <gromox/proc_common.h>
-#include <gromox/eid_array.hpp>
-#include <cstdlib>
-#include <cstring>
 
 enum {
 	FUNC_ID_UINT32,

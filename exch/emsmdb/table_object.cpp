@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
 #include <cstdio>
-#include <memory>
-#include <gromox/restriction.hpp>
-#include <gromox/proc_common.h>
-#include "exmdb_client.h"
-#include "table_object.h"
-#include <gromox/sortorder_set.hpp>
-#include "folder_object.h"
-#include <gromox/proptag_array.hpp>
-#include "rop_ids.h"
-#include "rop_processor.h"
-#include "message_object.h"
-#include "processor_types.h"
-#include "emsmdb_interface.h"
 #include <cstdlib>
 #include <cstring>
+#include <memory>
+#include <gromox/proc_common.h>
+#include <gromox/proptag_array.hpp>
+#include <gromox/restriction.hpp>
+#include <gromox/sortorder_set.hpp>
 #include "common_util.h"
+#include "emsmdb_interface.h"
+#include "exmdb_client.h"
+#include "folder_object.h"
+#include "message_object.h"
+#include "processor_types.h"
+#include "rop_ids.h"
+#include "rop_processor.h"
+#include "table_object.h"
 
 namespace {
 

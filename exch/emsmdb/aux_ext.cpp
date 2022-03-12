@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <cstring>
 #include <gromox/lzxpress.hpp>
 #include <gromox/proc_common.h>
-#include "common_util.h"
 #include "aux_ext.h"
 #include "aux_types.h"
-#include <cstring>
+#include "common_util.h"
 #define AUX_ALIGN_SIZE									4
 #define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
 

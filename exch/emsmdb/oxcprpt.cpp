@@ -7,19 +7,19 @@
 #include <utility>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
-#include <gromox/propval.hpp>
-#include "common_util.h"
 #include <gromox/proc_common.h>
+#include <gromox/propval.hpp>
+#include "attachment_object.h"
+#include "common_util.h"
+#include "emsmdb_interface.h"
 #include "exmdb_client.h"
-#include "logon_object.h"
 #include "folder_object.h"
-#include "stream_object.h"
-#include "rop_funcs.hpp"
-#include "rop_processor.h"
+#include "logon_object.h"
 #include "message_object.h"
 #include "processor_types.h"
-#include "emsmdb_interface.h"
-#include "attachment_object.h"
+#include "rop_funcs.hpp"
+#include "rop_processor.h"
+#include "stream_object.h"
 
 uint32_t rop_getpropertyidsfromnames(uint8_t flags,
     const PROPNAME_ARRAY *ppropnames, PROPID_ARRAY *ppropids, LOGMAP *plogmap,

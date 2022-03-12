@@ -2,23 +2,23 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <utility>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/guid.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
-#include "emsmdb_interface.h"
-#include "msgchg_grouping.h"
-#include "logon_object.h"
-#include "exmdb_client.h"
-#include "common_util.h"
 #include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
-#include <gromox/guid.hpp>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
+#include "common_util.h"
+#include "emsmdb_interface.h"
+#include "exmdb_client.h"
+#include "logon_object.h"
+#include "msgchg_grouping.h"
 
 using namespace std::string_literals;
 using namespace gromox;

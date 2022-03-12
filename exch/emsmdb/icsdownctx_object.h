@@ -4,8 +4,8 @@
 #include <memory>
 #include <vector>
 #include <gromox/element_data.hpp>
-#include <gromox/mem_file.hpp>
 #include <gromox/mapi_types.hpp>
+#include <gromox/mem_file.hpp>
 
 struct folder_object;
 struct fxstream_producer;

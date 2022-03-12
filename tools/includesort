@@ -1,0 +1,19 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+my @data = sort {
+	my($x, $y) = ($a, $b);
+	$x =~ s{^\s*\#\s*include\s*}{};
+	$y =~ s{^\s*\#\s*include\s*}{};
+	return -1 if (substr($x, 0, 1) eq "<" && substr($y, 0, 1) ne "<");
+	return  1 if (substr($x, 0, 1) ne "<" && substr($y, 0, 1) eq "<");
+	return -1 if (substr($x, 0, 8) ne "<gromox/" && substr($y, 0, 8) eq "<gromox/");
+	return  1 if (substr($x, 0, 8) eq "<gromox/" && substr($y, 0, 8) ne "<gromox/");
+	my $xc = ($x =~ tr{/}{/});
+	my $yc = ($y =~ tr{/}{/});
+	return $xc <=> $yc if ($xc != $yc);
+	return $x cmp $y;
+} <>;
+my @unique = do { my %seen; grep { !$seen{$_}++ } @data };
+print @unique;

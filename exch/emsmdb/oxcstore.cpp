@@ -2,9 +2,9 @@
 #include <cstdint>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
 #include "common_util.h"
-#include <gromox/proc_common.h>
 #include "exmdb_client.h"
 #include "logon_object.h"
 #include "rop_funcs.hpp"

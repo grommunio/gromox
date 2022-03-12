@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <memory>
-#include <gromox/mapi_types.hpp>
-#include "common_util.h"
-#include "ics_state.h"
-#include <gromox/rop_util.hpp>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
+#include <gromox/mapi_types.hpp>
+#include <gromox/rop_util.hpp>
+#include "common_util.h"
+#include "ics_state.h"
 
 static ics_state *ics_state_init(ics_state *pstate, logon_object *plogon, int type)
 {

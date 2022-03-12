@@ -5,27 +5,26 @@
 #include <utility>
 #include <vector>
 #include <gromox/defs.h>
-#include <gromox/mapidefs.h>
-#include <gromox/mapi_types.hpp>
-#include <gromox/guid.hpp>
-#include <gromox/pcl.hpp>
-#include <gromox/rop_util.hpp>
 #include <gromox/eid_array.hpp>
-#include "common_util.h"
-#include <gromox/defs.h>
+#include <gromox/guid.hpp>
+#include <gromox/mapi_types.hpp>
+#include <gromox/mapidefs.h>
+#include <gromox/pcl.hpp>
 #include <gromox/proc_common.h>
+#include <gromox/rop_util.hpp>
+#include "attachment_object.h"
+#include "common_util.h"
+#include "emsmdb_interface.h"
 #include "exmdb_client.h"
+#include "fastdownctx_object.h"
+#include "fastupctx_object.h"
 #include "folder_object.h"
+#include "ics_state.h"
+#include "icsdownctx_object.h"
+#include "icsupctx_object.h"
+#include "message_object.h"
 #include "rop_funcs.hpp"
 #include "rop_processor.h"
-#include "message_object.h"
-#include "icsupctx_object.h"
-#include "ics_state.h"
-#include "emsmdb_interface.h"
-#include "fastupctx_object.h"
-#include "icsdownctx_object.h"
-#include "attachment_object.h"
-#include "fastdownctx_object.h"
 
 static EID_ARRAY *oxcfxics_load_folder_messages(logon_object *plogon,
     uint64_t folder_id, const char *username, BOOL b_fai)

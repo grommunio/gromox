@@ -2,7 +2,6 @@
 #include <cstdint>
 #include <memory>
 #include <gromox/mapi_types.hpp>
-
 #define MAX_LENGTH_FOR_FOLDER						64*1024
 
 struct stream_object {

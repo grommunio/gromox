@@ -3,13 +3,13 @@
 #include <cstdio>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/ext_buffer.hpp>
+#include <gromox/util.hpp>
+#include "common_util.h"
 #include "emsmdb_interface.h"
 #include "rop_dispatch.h"
-#include "common_util.h"
-#include <gromox/ext_buffer.hpp>
 #include "rop_funcs.hpp"
 #include "rop_ids.h"
-#include <gromox/util.hpp>
 
 using namespace gromox;
 

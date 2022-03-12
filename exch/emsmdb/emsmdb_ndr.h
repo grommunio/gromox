@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
-#include <gromox/rpc_types.hpp>
 #include <gromox/proc_common.h>
+#include <gromox/rpc_types.hpp>
 #include <gromox/zz_ndr_stack.hpp>
 
 struct ECDODISCONNECT_IN {

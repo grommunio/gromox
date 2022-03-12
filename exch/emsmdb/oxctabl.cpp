@@ -5,14 +5,13 @@
 #include <gromox/mapidefs.h>
 #include <gromox/safeint.hpp>
 #include "common_util.h"
+#include "emsmdb_interface.h"
 #include "exmdb_client.h"
-#include "table_object.h"
+#include "processor_types.h"
 #include "rop_funcs.hpp"
 #include "rop_ids.h"
 #include "rop_processor.h"
-#include "processor_types.h"
-#include "emsmdb_interface.h"
-
+#include "table_object.h"
 #define MAXIMUM_CONTENT_ROWS				127
 
 static BOOL oxctable_verify_columns_and_sorts(

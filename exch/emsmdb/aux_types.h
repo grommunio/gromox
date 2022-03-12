@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
-#include <gromox/rpc_types.hpp>
 #include <gromox/double_list.hpp>
+#include <gromox/rpc_types.hpp>
 #define AUX_VERSION_1								0x1
 #define AUX_VERSION_2								0x2
 #define AUX_TYPE_PERF_REQUESTID						0x01

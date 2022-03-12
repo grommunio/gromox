@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <cstdio>
 #include <string>
 #include <libHX/string.h>
 #include <gromox/fileio.h>
-#include "emsmdb_interface.h"
-#include "message_object.h"
-#include "rop_processor.h"
-#include "logon_object.h"
-#include "exmdb_client.h"
-#include <gromox/proc_common.h>
-#include "common_util.h"
 #include <gromox/list_file.hpp>
+#include <gromox/proc_common.h>
 #include <gromox/rop_util.hpp>
-#include <cstdio>
+#include "common_util.h"
+#include "emsmdb_interface.h"
+#include "exmdb_client.h"
+#include "logon_object.h"
+#include "message_object.h"
 #include "rop_funcs.hpp"
+#include "rop_processor.h"
 
 using namespace std::string_literals;
 using namespace gromox;

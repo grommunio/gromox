@@ -1,25 +1,25 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <fcntl.h>
 #include <memory>
 #include <string>
+#include <unistd.h>
 #include <utility>
-#include "ftstream_parser.h"
-#include "rop_processor.h"
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/proc_common.h>
-#include "common_util.h"
 #include <gromox/util.hpp>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <cstring>
-#include <cstdlib>
-#include <unistd.h>
-#include <fcntl.h>
-#include <cstdio>
+#include "common_util.h"
+#include "ftstream_parser.h"
+#include "rop_processor.h"
 
 using namespace std::string_literals;
 

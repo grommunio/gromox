@@ -1,24 +1,24 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <fcntl.h>
 #include <memory>
 #include <string>
-#include <gromox/mapidefs.h>
-#include "ftstream_producer.h"
-#include "emsmdb_interface.h"
-#include "common_util.h"
+#include <unistd.h>
+#include <sys/stat.h>
 #include <gromox/element_data.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/paths.h>
 #include <gromox/proc_common.h>
 #include <gromox/util.hpp>
-#include <sys/stat.h>
-#include <cstring>
-#include <unistd.h>
-#include <cstdlib>
-#include <fcntl.h>
-#include <cstdio>
+#include "common_util.h"
+#include "emsmdb_interface.h"
+#include "ftstream_producer.h"
 #include "logon_object.h"
 
 using namespace std::string_literals;

@@ -1,28 +1,28 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
-#include <memory>
-#include <libHX/string.h>
-#include <gromox/defs.h>
-#include <gromox/mapidefs.h>
-#include <gromox/mapi_types.hpp>
-#include "attachment_object.h"
-#include "emsmdb_interface.h"
-#include "message_object.h"
-#include <gromox/proptag_array.hpp>
-#include "ics_state.h"
-#include "logon_object.h"
-#include "stream_object.h"
-#include "exmdb_client.h"
-#include "common_util.h"
-#include <gromox/proc_common.h>
-#include <gromox/ext_buffer.hpp>
-#include <gromox/rop_util.hpp>
-#include <gromox/guid.hpp>
-#include <gromox/util.hpp>
-#include <gromox/pcl.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
+#include <libHX/string.h>
+#include <gromox/defs.h>
+#include <gromox/ext_buffer.hpp>
+#include <gromox/guid.hpp>
+#include <gromox/mapi_types.hpp>
+#include <gromox/mapidefs.h>
+#include <gromox/pcl.hpp>
+#include <gromox/proc_common.h>
+#include <gromox/proptag_array.hpp>
+#include <gromox/rop_util.hpp>
+#include <gromox/util.hpp>
+#include "attachment_object.h"
+#include "common_util.h"
+#include "emsmdb_interface.h"
+#include "exmdb_client.h"
+#include "ics_state.h"
+#include "logon_object.h"
+#include "message_object.h"
+#include "stream_object.h"
 
 using namespace gromox;
 

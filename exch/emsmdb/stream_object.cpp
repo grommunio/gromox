@@ -2,19 +2,19 @@
 #include <algorithm>
 #include <climits>
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <memory>
-#include <gromox/util.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
 #include <gromox/safeint.hpp>
+#include <gromox/util.hpp>
+#include "attachment_object.h"
 #include "common_util.h"
-#include "rop_processor.h"
-#include "stream_object.h"
 #include "folder_object.h"
 #include "message_object.h"
-#include "attachment_object.h"
-#include <cstdlib>
-#include <cstring>
+#include "rop_processor.h"
+#include "stream_object.h"
 #define STREAM_INIT_BUFFER_LENGTH						4096
 
 std::unique_ptr<stream_object> stream_object::create(void *pparent,

@@ -3,21 +3,21 @@
 // This file is part of Gromox.
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <memory>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
+#include <gromox/rop_util.hpp>
 #include "attachment_object.h"
-#include "fastupctx_object.h"
-#include "ftstream_parser.h"
+#include "common_util.h"
 #include "emsmdb_interface.h"
+#include "exmdb_client.h"
+#include "fastupctx_object.h"
+#include "folder_object.h"
+#include "ftstream_parser.h"
 #include "logon_object.h"
 #include "message_object.h"
-#include "folder_object.h"
-#include "exmdb_client.h"
-#include "common_util.h"
-#include <gromox/rop_util.hpp>
-#include <cstdlib>
 
 std::unique_ptr<fastupctx_object> fastupctx_object::create(logon_object *plogon,
     void *pobject, int root_element)
