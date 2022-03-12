@@ -5,18 +5,18 @@
  *
  */
 #include <cerrno>
-#include <string>
-#include <unordered_map>
-#include <utility>
-#include <libHX/string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
-#include "resource.h"
 #include <gromox/util.hpp>
-#include <cstring>
-#include <cstdlib>
-#include <cstdio>
+#include <libHX/string.h>
+#include "resource.h"
+#include <string>
+#include <unordered_map>
+#include <utility>
 #define MAX_FILE_LINE_LEN       1024
 
 using namespace gromox;

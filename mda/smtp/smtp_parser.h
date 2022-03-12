@@ -3,12 +3,12 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <openssl/ssl.h>
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/flusher_common.h>
-#include <gromox/stream.hpp>
 #include <gromox/mem_file.hpp>
-#include <openssl/ssl.h>
+#include <gromox/stream.hpp>
 #define MAX_BLOCK_MIME_LEN                  4096
 #define MAX_EXTRA_DATA_INDEX                8
 #define MAX_EXTRA_DATA_TAGLEN               16

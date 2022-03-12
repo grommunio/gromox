@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
-#include <gromox/config_file.hpp>
 #include <gromox/common_types.hpp>
+#include <gromox/config_file.hpp>
 
 extern int resource_run();
 extern void resource_stop();

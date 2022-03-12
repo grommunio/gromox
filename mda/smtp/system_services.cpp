@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cstdio>
 #include <typeinfo>
 #include <gromox/defs.h>
-#include "system_services.h"
 #include "service.h"
-#include <cstdio>
+#include "system_services.h"
 
 #define E(s) decltype(system_services_ ## s) system_services_ ## s;
 E(judge_ip)

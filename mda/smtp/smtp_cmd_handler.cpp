@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 /* collection of functions for handling the smtp command
  */ 
-#include <cstring>
 #include <cstdio>
+#include <cstring>
 #include <unistd.h>
 #include <utility>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
+#include <gromox/mail_func.hpp>
+#include <gromox/util.hpp>
+#include "blocks_allocator.h"
+#include "resource.h"
 #include "smtp_cmd_handler.h"
 #include "system_services.h"
-#include "resource.h"
-#include "blocks_allocator.h"
-#include <gromox/util.hpp>
-#include <gromox/mail_func.hpp>
 
 using namespace gromox;
 
