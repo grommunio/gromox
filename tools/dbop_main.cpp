@@ -5,12 +5,12 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
-#include <string>
 #include <mysql.h>
+#include <string>
 #include <libHX/option.h>
+#include <gromox/config_file.hpp>
 #include <gromox/dbop.h>
 #include <gromox/paths.h>
-#include <gromox/config_file.hpp>
 
 using namespace std::string_literals;
 

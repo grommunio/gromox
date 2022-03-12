@@ -1,30 +1,30 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
+#include <fcntl.h>
 #include <memory>
+#include <mysql.h>
 #include <optional>
+#include <sqlite3.h>
 #include <string>
+#include <unistd.h>
 #include <libHX/io.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <gromox/config_file.hpp>
 #include <gromox/database.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
-#include <gromox/config_file.hpp>
-#include <ctime>
-#include <cstdio>
-#include <fcntl.h>
-#include <cstdint>
-#include <cstdlib>
-#include <unistd.h>
-#include <cstring>
-#include <sqlite3.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <mysql.h>
-#include "exch/mysql_adaptor/mysql_adaptor.h"
 #include "mkshared.hpp"
+#include "exch/mysql_adaptor/mysql_adaptor.h"
 using namespace std::string_literals;
 using namespace gromox;
 

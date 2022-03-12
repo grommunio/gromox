@@ -9,12 +9,12 @@
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <mysql.h>
 #include <string>
+#include <unistd.h>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <mysql.h>
-#include <unistd.h>
 #include <zlib.h>
 #include <libHX/option.h>
 #include <gromox/database_mysql.hpp>

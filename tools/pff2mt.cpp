@@ -10,11 +10,11 @@
 #include <cstring>
 #include <ctime>
 #include <iconv.h>
+#include <libpff.h>
 #include <memory>
 #include <string>
 #include <unistd.h>
 #include <utility>
-#include <libpff.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
 #include <gromox/endian.hpp>

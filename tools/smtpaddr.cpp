@@ -6,9 +6,10 @@
  *	License as published by the Free Software Foundation; either
  *	version 3 or (at your option) any later version.
  */
+#include <cstdio>
 #include <memory>
 #include <stdexcept>
-#include <cstdio>
+// Windows pains
 #include <mapix.h>
 #include <mapiutil.h>
 #ifdef _WIN32

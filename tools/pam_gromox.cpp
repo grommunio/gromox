@@ -11,12 +11,12 @@
 #include <typeinfo>
 #include <libHX/misc.h>
 #include <security/pam_modules.h>
+#include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/tie.hpp>
-#include <gromox/config_file.hpp>
 #include <gromox/util.hpp>
 #include "../exch/authmgr.hpp"
 #include "../exch/http/service.h"

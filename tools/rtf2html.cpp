@@ -3,16 +3,16 @@
 #	include "config.h"
 #endif
 #include <cerrno>
-#include <memory>
-#include <libHX/option.h>
-#include <gromox/paths.h>
-#include <gromox/rtf.hpp>
-#include <gromox/rtfcp.hpp>
-#include <gromox/list_file.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <unistd.h>
+#include <libHX/option.h>
+#include <gromox/list_file.hpp>
+#include <gromox/paths.h>
+#include <gromox/rtf.hpp>
+#include <gromox/rtfcp.hpp>
 
 namespace {
 
