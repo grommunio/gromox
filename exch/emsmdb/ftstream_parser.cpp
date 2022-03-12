@@ -100,7 +100,8 @@ static char* ftstream_parser_read_wstring(
 	if (NULL == pbuff) {
 		return NULL;
 	}
-	if (len != read(pstream->fd, pbuff, len)) {
+	auto ret = read(pstream->fd, pbuff, len);
+	if (ret < 0 || static_cast<size_t>(ret) != len) {
 		free(pbuff);
 		return NULL;
 	}
@@ -145,9 +146,9 @@ static char* ftstream_parser_read_string(
 	if (NULL == pbuff) {
 		return NULL;
 	}
-	if (len != read(pstream->fd, pbuff, len)) {
+	auto ret = read(pstream->fd, pbuff, len);
+	if (ret < 0 || static_cast<size_t>(ret) != len)
 		return NULL;
-	}
 	pstream->offset += len;
 	/* if trail null not found, append it */
 	if ('\0' != pbuff[len - 1]) {
@@ -241,7 +242,8 @@ static BOOL ftstream_parser_read_svreid(
 			psvreid->pbin->pv = common_util_alloc(psvreid->pbin->cb);
 			if (psvreid->pbin->pv == nullptr)
 				return FALSE;
-			if (read(pstream->fd, psvreid->pbin->pv, psvreid->pbin->cb) != psvreid->pbin->cb)
+			auto ret = read(pstream->fd, psvreid->pbin->pv, psvreid->pbin->cb);
+			if (ret < 0 || static_cast<size_t>(ret) != psvreid->pbin->cb)
 				return FALSE;
 			pstream->offset += psvreid->pbin->cb;
 		}
@@ -283,7 +285,8 @@ static BOOL ftstream_parser_read_binary(
 	pbin->pv = common_util_alloc(pbin->cb);
 	if (pbin->pv == nullptr)
 		return FALSE;
-	if (read(pstream->fd, pbin->pv, pbin->cb) != pbin->cb)
+	auto ret = read(pstream->fd, pbin->pv, pbin->cb);
+	if (ret < 0 || static_cast<size_t>(ret) != pbin->cb)
 		return FALSE;
 	pstream->offset += pbin->cb;
 	return TRUE;
@@ -785,10 +788,9 @@ BOOL FTSTREAM_PARSER::write_buffer(const BINARY *ptransfer_data)
 {
 	auto pstream = this;
 	lseek(pstream->fd, 0, SEEK_END);
-	if (ptransfer_data->cb != write(pstream->fd,
-		ptransfer_data->pb, ptransfer_data->cb)) {
+	auto ret = write(pstream->fd, ptransfer_data->pb, ptransfer_data->cb);
+	if (ret < 0 || static_cast<size_t>(ret) != ptransfer_data->cb)
 		return FALSE;	
-	}
 	pstream->st_size += ptransfer_data->cb;
 	return TRUE;
 }

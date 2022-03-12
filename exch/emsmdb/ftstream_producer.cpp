@@ -109,18 +109,17 @@ static BOOL ftstream_producer_write_internal(
 		pstream->buffer_offset < size) {
 		if (!fxstream_producer_open(*pstream))
 			return false;
-		if (0 != pstream->buffer_offset &&
-			pstream->buffer_offset != write(pstream->fd,
-			pstream->buffer, pstream->buffer_offset)) {
+		auto ret = write(pstream->fd, pstream->buffer, pstream->buffer_offset);
+		if (pstream->buffer_offset != 0 &&
+		    (ret < 0 || static_cast<size_t>(ret) != pstream->buffer_offset))
 			return FALSE;	
-		}
 		pstream->buffer_offset = 0;
 		pstream->read_offset = 0;
 	}
 	if (size >= FTSTREAM_PRODUCER_BUFFER_LENGTH) {
-		if (size != write(pstream->fd, pbuff, size)) {
+		auto ret = write(pstream->fd, pbuff, size);
+		if (ret < 0 || static_cast<size_t>(ret) != size)
 			return FALSE;
-		}
 	} else {
 		memcpy(pstream->buffer + pstream->buffer_offset, pbuff, size);
 		pstream->buffer_offset += size;
@@ -919,11 +918,10 @@ BOOL ftstream_producer::read_buffer(void *pbuff, uint16_t *plen, BOOL *pb_last)
 			ftstream_producer_record_nbp(pstream, pstream->offset);
 		pstream->b_read = TRUE;
 		if (-1 != pstream->fd) {
-			if (0 != pstream->buffer_offset &&
-				pstream->buffer_offset != write(pstream->fd,
-				pstream->buffer, pstream->buffer_offset)) {
+			auto ret = write(pstream->fd, pstream->buffer, pstream->buffer_offset);
+			if (pstream->buffer_offset != 0 &&
+			    (ret < 0 || static_cast<size_t>(ret) != pstream->buffer_offset))
 				return FALSE;
-			}
 			lseek(pstream->fd, 0, SEEK_SET);
 		}
 		cur_offset = 0;
