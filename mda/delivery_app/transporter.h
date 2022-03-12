@@ -1,7 +1,7 @@
 #pragma once
-#include "message_dequeue.h"
-#include <gromox/plugin.hpp>
 #include <gromox/mail.hpp>
+#include <gromox/plugin.hpp>
+#include "message_dequeue.h"
 
 extern void transporter_init(const char *path, const char *const *names, unsigned int threads_min, unsigned int threads_max, unsigned int free_num, unsigned int mime_ratio, bool ignerr);
 extern int transporter_run();

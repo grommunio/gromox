@@ -13,10 +13,10 @@
 #include <string>
 #include <unistd.h>
 #include <utility>
-#include <openssl/err.h>
-#include <openssl/ssl.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 #include <gromox/config_file.hpp>
 #include <gromox/fileio.h>
 #include <gromox/hook_common.h>

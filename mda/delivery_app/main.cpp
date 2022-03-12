@@ -1,26 +1,26 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <csignal>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <memory>
+#include <unistd.h>
 #include <libHX/misc.h>
 #include <libHX/option.h>
+#include <sys/types.h>
 #include <gromox/atomic.hpp>
+#include <gromox/config_file.hpp>
 #include <gromox/fileio.h>
+#include <gromox/lib_buffer.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
-#include <gromox/config_file.hpp>
+#include <gromox/util.hpp>
 #include "message_dequeue.h" 
-#include "system_services.h"
-#include "transporter.h" 
-#include <gromox/lib_buffer.hpp>
 #include "resource.h" 
 #include "service.h" 
-#include <gromox/util.hpp>
-#include <sys/types.h>
-#include <csignal>
-#include <unistd.h>
-#include <cstdio>
+#include "system_services.h"
+#include "transporter.h" 
 
 using namespace gromox;
 

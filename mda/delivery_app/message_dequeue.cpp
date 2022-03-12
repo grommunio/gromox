@@ -11,28 +11,28 @@
  */
 #include <cerrno>
 #include <csignal>
+#include <cstdio>
 #include <cstring>
+#include <dirent.h>
+#include <fcntl.h>
 #include <mutex>
+#include <pthread.h>
 #include <string>
+#include <unistd.h>
 #include <libHX/string.h>
+#include <sys/ipc.h>
+#include <sys/mman.h>
+#include <sys/msg.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <gromox/atomic.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/fileio.h>
-#include "message_dequeue.h"
-#include "system_services.h"
-#include <gromox/util.hpp>
 #include <gromox/int_hash.hpp>
 #include <gromox/scope.hpp>
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <dirent.h>
-#include <pthread.h>
-#include <cstdio>
+#include <gromox/util.hpp>
+#include "message_dequeue.h"
+#include "system_services.h"
 #include "transporter.h"
 #define DEF_MODE    S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 #define TOKEN_MESSAGE_QUEUE		1

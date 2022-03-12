@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include "system_services.h"
-#include "service.h"
 #include <cstdio>
+#include "service.h"
+#include "system_services.h"
 
 void (*system_services_log_info)(unsigned int, const char *, ...);
 int (*system_services_check_domain)(const char *);

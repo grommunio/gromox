@@ -11,11 +11,20 @@
 #include <csignal>
 #include <cstdio>
 #include <cstring>
+#include <dirent.h>
+#include <fcntl.h>
 #include <list>
+#include <pthread.h>
 #include <string>
 #include <typeinfo>
+#include <unistd.h>
 #include <utility>
 #include <libHX/string.h>
+#include <sys/ipc.h>
+#include <sys/mman.h>
+#include <sys/msg.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <gromox/atomic.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
@@ -27,16 +36,6 @@
 #include <gromox/plugin.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <cstdio>
-#include <unistd.h>
-#include <fcntl.h>
-#include <dirent.h>
-#include <pthread.h>
 #define TOKEN_MESSAGE_QUEUE     1
 #define MAX_LINE_LENGTH			64*1024
 
