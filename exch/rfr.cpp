@@ -4,7 +4,7 @@
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/proc_common.h>
-#include <gromox/ndr_stack.hpp>
+#include <gromox/zz_ndr_stack.hpp>
 #include <gromox/util.hpp>
 #include <gromox/guid.hpp>
 #include <cstring>

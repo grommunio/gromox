@@ -24,7 +24,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/proptags.hpp>
 #include "ab_tree.h"
-#include <gromox/ndr_stack.hpp>
+#include <gromox/zz_ndr_stack.hpp>
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>

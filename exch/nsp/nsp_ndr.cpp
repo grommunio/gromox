@@ -3,7 +3,7 @@
 #include <memory>
 #include <gromox/mapidefs.h>
 #include <gromox/proc_common.h>
-#include <gromox/ndr_stack.hpp>
+#include <gromox/zz_ndr_stack.hpp>
 #include "nsp_ndr.h"
 #include <iconv.h>
 #include <cstring>

@@ -4,7 +4,7 @@
 #include "common_util.h"
 #include <gromox/fileio.h>
 #include <gromox/proc_common.h>
-#include <gromox/ndr_stack.hpp>
+#include <gromox/zz_ndr_stack.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/rop_util.hpp>
 #include <sys/types.h>

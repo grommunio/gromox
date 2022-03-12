@@ -21,7 +21,7 @@
 #include "nsp_interface.h"
 #include "common_util.h"
 #include <gromox/proc_common.h>
-#include <gromox/ndr_stack.hpp>
+#include <gromox/zz_ndr_stack.hpp>
 #include <gromox/list_file.hpp>
 #include "ab_tree.h"
 #include <gromox/guid.hpp>
