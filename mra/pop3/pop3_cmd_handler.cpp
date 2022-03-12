@@ -6,22 +6,22 @@
 #	include "config.h"
 #endif
 #include <cerrno>
+#include <cstdio>
+#include <cstring>
+#include <fcntl.h>
 #include <string>
 #include <unistd.h>
 #include <libHX/string.h>
-#include <gromox/defs.h>
-#include <gromox/fileio.h>
-#include "pop3_cmd_handler.h"
-#include "system_services.h"
-#include "resource.h"
-#include "blocks_allocator.h"
-#include <gromox/util.hpp>
-#include <gromox/mail_func.hpp>
-#include <cstring>
-#include <cstdio>
-#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <gromox/defs.h>
+#include <gromox/fileio.h>
+#include <gromox/mail_func.hpp>
+#include <gromox/util.hpp>
+#include "blocks_allocator.h"
+#include "pop3_cmd_handler.h"
+#include "resource.h"
+#include "system_services.h"
 #include "../../exch/authmgr.hpp"
 
 #define MIDB_RESULT_OK          0

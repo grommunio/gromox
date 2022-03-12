@@ -2,13 +2,13 @@
 #include <chrono>
 #include <cstdint>
 #include <deque>
+#include <openssl/ssl.h>
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/generic_connection.hpp>
 #include <gromox/msg_unit.hpp>
 #include <gromox/single_list.hpp>
 #include <gromox/stream.hpp>
-#include <openssl/ssl.h>
 #define MAX_LINE_LENGTH    64*1024
 
 namespace gromox {
