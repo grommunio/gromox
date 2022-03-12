@@ -808,9 +808,8 @@ int STREAM::dump(int fd)
 	reset_reading();
 	while ((pbuff = get_read_buf(&size)) != nullptr) {
 		auto wr_result = ::write(fd, pbuff, size);
-		if (size != wr_result) {
+		if (wr_result < 0 || static_cast<size_t>(wr_result) != size)
 			return STREAM_DUMP_FAIL;
-		}
 		size = STREAM_BLOCK_SIZE;
 	}
 	return STREAM_DUMP_OK;
