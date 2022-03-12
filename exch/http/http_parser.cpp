@@ -468,12 +468,7 @@ static int http_end(HTTP_CONTEXT *ctx)
 		ctx->pchannel = nullptr;
 	}
 
-	if (ctx->connection.ssl != nullptr) {
-		SSL_shutdown(ctx->connection.ssl);
-		SSL_free(ctx->connection.ssl);
-		ctx->connection.ssl = nullptr;
-	}
-	close(ctx->connection.sockd);
+	ctx->connection.reset();
 	if (system_services_container_remove_ip != nullptr)
 		system_services_container_remove_ip(ctx->connection.client_ip);
 	http_parser_context_clear(ctx);
@@ -1906,7 +1901,6 @@ HTTP_CONTEXT::HTTP_CONTEXT() :
 	stream_out(stream_in.allocator)
 {
 	auto pcontext = this;
-    pcontext->connection.sockd = -1;
 	mem_file_init(&pcontext->request.f_request_uri, g_file_allocator.get());
 	mem_file_init(&pcontext->request.f_host, g_file_allocator.get());
 	mem_file_init(&pcontext->request.f_user_agent, g_file_allocator.get());
@@ -1926,8 +1920,7 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
     if (NULL == pcontext) {
         return;
     }
-	pcontext->connection = decltype(pcontext->connection){};
-    pcontext->connection.sockd = -1;
+	pcontext->connection.reset();
 	pcontext->sched_stat = 0;
 	
 	http_parser_request_clear(&pcontext->request);
@@ -1980,15 +1973,6 @@ HTTP_CONTEXT::~HTTP_CONTEXT()
 	mem_file_free(&pcontext->request.f_transfer_encoding);
 	mem_file_free(&pcontext->request.f_cookie);
 	mem_file_free(&pcontext->request.f_others);
-	
-	if (NULL != pcontext->connection.ssl) {
-		SSL_shutdown(pcontext->connection.ssl);
-		SSL_free(pcontext->connection.ssl);
-		pcontext->connection.ssl = NULL;
-	}
-	if (-1 != pcontext->connection.sockd) {
-		close(pcontext->connection.sockd);
-	}
 	if (hpm_processor_check_context(pcontext))
 		hpm_processor_put_context(pcontext);
 	else if (pcontext->pfast_context != nullptr)

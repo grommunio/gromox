@@ -38,8 +38,7 @@
 #define TLS_BUFFER_RATIO    3
 #define TLS_BUFFER_BUS_ALLIN(size)                  \
 		(sizeof(void*)*((int)((size)/sizeof(void*))+1))
-
-#define SLEEP_BEFORE_CLOSE    usleep(1000)
+#define SLEEP_BEFORE_CLOSE true
 
 using namespace gromox;
 
@@ -304,13 +303,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			write(pcontext->connection.sockd, smtp_reply_str, string_length);
 		}
 		smtp_parser_log_info(pcontext, LV_ERR, "flushing queue permanent failure");
-		if (NULL != pcontext->connection.ssl) {
-			SSL_shutdown(pcontext->connection.ssl);
-			SSL_free(pcontext->connection.ssl);
-			pcontext->connection.ssl = NULL;
-		}
-		SLEEP_BEFORE_CLOSE;
-		close(pcontext->connection.sockd);
+		pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 		if (system_services_container_remove_ip != nullptr)
 			system_services_container_remove_ip(pcontext->connection.client_ip);
 		smtp_parser_context_clear(pcontext);
@@ -325,8 +318,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 				auto smtp_reply_str = resource_get_smtp_code(418, 1, &string_length);
 				write(pcontext->connection.sockd, smtp_reply_str, string_length);
 				smtp_parser_log_info(pcontext, LV_ERR, "out of SSL object");
-				SLEEP_BEFORE_CLOSE;
-				close(pcontext->connection.sockd);
+				pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 				if (system_services_container_remove_ip != nullptr)
 					system_services_container_remove_ip(pcontext->connection.client_ip);
 		        smtp_parser_context_clear(pcontext);
@@ -348,11 +340,10 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 				auto smtp_reply_str = resource_get_smtp_code(412, 1, &string_length);
 				write(pcontext->connection.sockd, smtp_reply_str, string_length);
 				smtp_parser_log_info(pcontext, LV_DEBUG, "time out");
-				SLEEP_BEFORE_CLOSE;
+				pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
+			} else {
+				pcontext->connection.reset();
 			}
-			SSL_free(pcontext->connection.ssl);
-			pcontext->connection.ssl = NULL;
-			close(pcontext->connection.sockd);
 			if (system_services_container_remove_ip != nullptr)
 				system_services_container_remove_ip(pcontext->connection.client_ip);
 			smtp_parser_context_clear(pcontext);
@@ -384,13 +375,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		if (0 != pcontext->flusher.flush_ID) {
 			flusher_cancel(pcontext);
 		}
-		if (NULL != pcontext->connection.ssl) {
-			SSL_shutdown(pcontext->connection.ssl);
-			SSL_free(pcontext->connection.ssl);
-			pcontext->connection.ssl = NULL;
-		}
-		SLEEP_BEFORE_CLOSE;
-		close(pcontext->connection.sockd);
+		pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 		if (system_services_container_remove_ip != nullptr)
 			system_services_container_remove_ip(pcontext->connection.client_ip);
 		smtp_parser_context_clear(pcontext);
@@ -407,13 +392,8 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 		if (0 != pcontext->flusher.flush_ID) {
 			flusher_cancel(pcontext);
 		}
-		if (NULL != pcontext->connection.ssl) {
-			SSL_shutdown(pcontext->connection.ssl);
-			SSL_free(pcontext->connection.ssl);
-			pcontext->connection.ssl = NULL;
-		}
 		smtp_parser_log_info(pcontext, LV_DEBUG, "connection lost");
-		close(pcontext->connection.sockd);
+		pcontext->connection.reset();
 		if (system_services_container_remove_ip != nullptr)
 			system_services_container_remove_ip(pcontext->connection.client_ip);
 		smtp_parser_context_clear(pcontext);
@@ -439,13 +419,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			if (0 != pcontext->flusher.flush_ID) {
 				flusher_cancel(pcontext);
 			}
-			if (NULL != pcontext->connection.ssl) {
-				SSL_shutdown(pcontext->connection.ssl);
-				SSL_free(pcontext->connection.ssl);
-				pcontext->connection.ssl = NULL;
-			}
-			SLEEP_BEFORE_CLOSE;
-			close(pcontext->connection.sockd);
+			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 			if (system_services_container_remove_ip != nullptr)
 				system_services_container_remove_ip(pcontext->connection.client_ip);
 			smtp_parser_context_clear(pcontext);
@@ -467,13 +441,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 				write(pcontext->connection.sockd, smtp_reply_str, string_length);
 			}
 			smtp_parser_log_info(pcontext, LV_DEBUG, "envelope line too long");
-			if (NULL != pcontext->connection.ssl) {
-				SSL_shutdown(pcontext->connection.ssl);
-				SSL_free(pcontext->connection.ssl);
-				pcontext->connection.ssl = NULL;
-			}
-			SLEEP_BEFORE_CLOSE;
-			close(pcontext->connection.sockd);
+			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 			if (system_services_container_remove_ip != nullptr)
 				system_services_container_remove_ip(pcontext->connection.client_ip);
 			smtp_parser_context_clear(pcontext);
@@ -488,13 +456,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 					switch (smtp_parser_dispatch_cmd(line, line_length, 
 							pcontext)) {
 					case DISPATCH_SHOULD_CLOSE:
-						if (NULL != pcontext->connection.ssl) {
-							SSL_shutdown(pcontext->connection.ssl);
-							SSL_free(pcontext->connection.ssl);
-							pcontext->connection.ssl = NULL;
-						}
-						SLEEP_BEFORE_CLOSE;
-						close(pcontext->connection.sockd);
+						pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 						if (system_services_container_remove_ip != nullptr)
 							system_services_container_remove_ip(pcontext->connection.client_ip);
 						smtp_parser_context_clear(pcontext);
@@ -515,12 +477,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 					default:
 						debug_info("[smtp_parser] :error occurs in "
 									"smtp_dispatch_cmd\n");
-						if (NULL != pcontext->connection.ssl) {
-							SSL_shutdown(pcontext->connection.ssl);
-							SSL_free(pcontext->connection.ssl);
-							pcontext->connection.ssl = NULL;
-						}
-						close(pcontext->connection.sockd);
+						pcontext->connection.reset();
 						if (system_services_container_remove_ip != nullptr)
 							system_services_container_remove_ip(pcontext->connection.client_ip);
 						smtp_parser_context_clear(pcontext);
@@ -559,16 +516,7 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			       smtp_parser_try_flush_mail(pcontext, false);
 		}
 	}
-
-	if (NULL != pcontext->connection.ssl) {
-		SSL_shutdown(pcontext->connection.ssl);
-		SSL_free(pcontext->connection.ssl);
-		pcontext->connection.ssl = NULL;
-	}
-
-	if (pcontext->connection.sockd >= 0) {
-		close(pcontext->connection.sockd);
-	}
+	pcontext->connection.reset();
 	if (system_services_container_remove_ip != nullptr)
 		system_services_container_remove_ip(pcontext->connection.client_ip);
 	smtp_parser_context_clear(pcontext);
@@ -595,13 +543,7 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 		if (0 != pcontext->flusher.flush_ID) {
 			flusher_cancel(pcontext);
 		}
-		if (NULL != pcontext->connection.ssl) {
-			SSL_shutdown(pcontext->connection.ssl);
-			SSL_free(pcontext->connection.ssl);
-			pcontext->connection.ssl = NULL;
-		}
-		SLEEP_BEFORE_CLOSE;
-		close(pcontext->connection.sockd);
+		pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 		if (system_services_container_remove_ip != nullptr)
 			system_services_container_remove_ip(pcontext->connection.client_ip);
 		smtp_parser_context_clear(pcontext);
@@ -619,13 +561,7 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 		if (0 != pcontext->flusher.flush_ID) {
 			flusher_cancel(pcontext);
 		}
-		if (NULL != pcontext->connection.ssl) {
-			SSL_shutdown(pcontext->connection.ssl);
-			SSL_free(pcontext->connection.ssl);
-			pcontext->connection.ssl = NULL;
-		}
-		SLEEP_BEFORE_CLOSE;
-		close(pcontext->connection.sockd);
+		pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 		if (system_services_container_remove_ip != nullptr)
 			system_services_container_remove_ip(pcontext->connection.client_ip);
 		smtp_parser_context_clear(pcontext);
@@ -785,7 +721,6 @@ SMTP_CONTEXT::SMTP_CONTEXT() :
 {
 	auto pcontext = this;
 	auto &palloc_file = g_files_allocator;
-	pcontext->connection.sockd = -1;
 	mem_file_init(&pcontext->block_info.f_last_blkmime, palloc_file.get());
 	mem_file_init(&pcontext->mail.envelope.f_rcpt_to, palloc_file.get());
 	mem_file_init(&pcontext->mail.head.f_mime_to, palloc_file.get());
@@ -804,8 +739,7 @@ static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext)
 	if (NULL == pcontext) {
 		return;
 	}
-	pcontext->connection = GENERIC_CONNECTION();
-	pcontext->connection.sockd      = -1;
+	pcontext->connection.reset();
 	pcontext->session_num           = 0;
 	pcontext->stream_second.reset();
 	pcontext->mail.envelope.is_login = false;
@@ -874,15 +808,6 @@ SMTP_CONTEXT::~SMTP_CONTEXT()
 	mem_file_free(&pcontext->mail.head.f_content_type);
 	mem_file_free(&pcontext->mail.head.f_others);
 	mem_file_free(&pcontext->mail.body.f_mail_parts);
-	if (NULL != pcontext->connection.ssl) {
-		SSL_shutdown(pcontext->connection.ssl);
-		SSL_free(pcontext->connection.ssl);
-		pcontext->connection.ssl = NULL;
-	}
-	if (-1 != pcontext->connection.sockd) {
-		close(pcontext->connection.sockd);
-		pcontext->connection.sockd = -1;
-	}
 }
 
 /*

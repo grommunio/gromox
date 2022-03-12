@@ -371,13 +371,8 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 	current_time = time_point::clock::now();
 	if (0 == read_len) {
  LOST_READ:
-		if (NULL != pcontext->connection.ssl) {
-			SSL_shutdown(pcontext->connection.ssl);
-			SSL_free(pcontext->connection.ssl);
-			pcontext->connection.ssl = NULL;
-		}
 		pop3_parser_log_info(pcontext, LV_DEBUG, "connection lost");
-		close(pcontext->connection.sockd);
+		pcontext->connection.reset();
 		if (system_services_container_remove_ip != nullptr)
 			system_services_container_remove_ip(pcontext->connection.client_ip);
 		pop3_parser_context_clear(pcontext);
@@ -396,13 +391,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 				write(pcontext->connection.sockd, pop3_reply_str, string_length);
 			}
 			pop3_parser_log_info(pcontext, LV_DEBUG, "time out");
-			if (NULL != pcontext->connection.ssl) {
-				SSL_shutdown(pcontext->connection.ssl);
-				SSL_free(pcontext->connection.ssl);
-				pcontext->connection.ssl = NULL;
-			}
-			SLEEP_BEFORE_CLOSE;
-			close(pcontext->connection.sockd);
+			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 			if (system_services_container_remove_ip != nullptr)
 				system_services_container_remove_ip(pcontext->connection.client_ip);
 			pop3_parser_context_clear(pcontext);
@@ -430,13 +419,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 			case DISPATCH_CONTINUE:
 				return PROCESS_CONTINUE;
 			case DISPATCH_SHOULD_CLOSE:
-				if (NULL != pcontext->connection.ssl) {
-					SSL_shutdown(pcontext->connection.ssl);
-					SSL_free(pcontext->connection.ssl);
-					pcontext->connection.ssl = NULL;
-				}
-				SLEEP_BEFORE_CLOSE;
-				close(pcontext->connection.sockd);
+				pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 				if (system_services_container_remove_ip != nullptr)
 					system_services_container_remove_ip(pcontext->connection.client_ip);
 				pop3_parser_context_clear(pcontext);
@@ -482,12 +465,7 @@ int pop3_parser_process(POP3_CONTEXT *pcontext)
 		close(pcontext->message_fd);
 		pcontext->message_fd = -1;
 	}
-	if (NULL != pcontext->connection.ssl) {
-		SSL_shutdown(pcontext->connection.ssl);
-		SSL_free(pcontext->connection.ssl);
-		pcontext->connection.ssl = NULL;
-	}
-	close(pcontext->connection.sockd);
+	pcontext->connection.reset();
 	if (system_services_container_remove_ip != nullptr)
 		system_services_container_remove_ip(pcontext->connection.client_ip);
 	pop3_parser_context_clear(pcontext);
@@ -678,7 +656,6 @@ POP3_CONTEXT::POP3_CONTEXT() :
 	stream(blocks_allocator_get_allocator())
 {
 	auto pcontext = this;
-    pcontext->connection.sockd = -1;
 	single_list_init(&pcontext->list);
 }
 
@@ -687,8 +664,7 @@ static void pop3_parser_context_clear(POP3_CONTEXT *pcontext)
     if (NULL == pcontext) {
         return;
     }
-	pcontext->connection = decltype(pcontext->connection){};
-    pcontext->connection.sockd = -1;
+	pcontext->connection.reset();
 	pcontext->message_fd = -1;
 	pcontext->array.clear();
 	single_list_init(&pcontext->list);
@@ -715,14 +691,6 @@ POP3_CONTEXT::~POP3_CONTEXT()
 {
 	auto pcontext = this;
 	pcontext->array.clear();
-	if (NULL != pcontext->connection.ssl) {
-		SSL_shutdown(pcontext->connection.ssl);
-		SSL_free(pcontext->connection.ssl);
-		pcontext->connection.ssl = NULL;
-	}
-	if (-1 != pcontext->connection.sockd) {
-		close(pcontext->connection.sockd);
-	}
 	if (-1 != pcontext->message_fd) {
 		close(pcontext->message_fd);
 	}

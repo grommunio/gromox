@@ -42,8 +42,7 @@
     (defined(OPENSSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER < 0x1010000fL)
 #	define OLD_SSL 1
 #endif
-#define SLEEP_BEFORE_CLOSE		usleep(1000)
-
+#define SLEEP_BEFORE_CLOSE true
 #define FILENUM_PER_MIME		8
 
 #define SCAN_INTERVAL			3600
@@ -384,8 +383,7 @@ static int ps_stat_stls(IMAP_CONTEXT *pcontext)
 			auto imap_reply_str = resource_get_imap_code(1814, 1, &string_length);
 			write(pcontext->connection.sockd, imap_reply_str, string_length);
 			imap_parser_log_info(pcontext, LV_WARN, "out of memory for TLS object");
-			SLEEP_BEFORE_CLOSE;
-			close(pcontext->connection.sockd);
+			pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 			if (system_services_container_remove_ip != nullptr)
 				system_services_container_remove_ip(pcontext->connection.client_ip);
 			imap_parser_context_clear(pcontext);
@@ -423,11 +421,10 @@ static int ps_stat_stls(IMAP_CONTEXT *pcontext)
 		write(pcontext->connection.sockd, "* ", 2);
 		write(pcontext->connection.sockd, imap_reply_str, string_length);
 		imap_parser_log_info(pcontext, LV_DEBUG, "time out");
-		SLEEP_BEFORE_CLOSE;
+		pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
+	} else {
+		pcontext->connection.reset();
 	}
-	SSL_free(pcontext->connection.ssl);
-	pcontext->connection.ssl = NULL;
-	close(pcontext->connection.sockd);
 	if (system_services_container_remove_ip != nullptr)
 		system_services_container_remove_ip(pcontext->connection.client_ip);
 	imap_parser_context_clear(pcontext);
@@ -1085,13 +1082,7 @@ static int ps_end_processing(IMAP_CONTEXT *pcontext,
 			write(pcontext->connection.sockd, imap_reply_str, string_length);
 		}
 	}
-	if (NULL != pcontext->connection.ssl) {
-		SSL_shutdown(pcontext->connection.ssl);
-		SSL_free(pcontext->connection.ssl);
-		pcontext->connection.ssl = NULL;
-	}
-	SLEEP_BEFORE_CLOSE;
-	close(pcontext->connection.sockd);
+	pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
 	if (PROTO_STAT_SELECT == pcontext->proto_stat) {
 		imap_parser_remove_select(pcontext);
 		pcontext->proto_stat = PROTO_STAT_AUTH;
@@ -1566,8 +1557,7 @@ static void imap_parser_context_clear(IMAP_CONTEXT *pcontext)
     if (NULL == pcontext) {
         return;
     }
-	pcontext->connection = decltype(pcontext->connection){};
-    pcontext->connection.sockd = -1;
+	pcontext->connection.reset();
 	pcontext->proto_stat = 0;
 	pcontext->sched_stat = 0;
 	pcontext->mid[0] = '\0';
@@ -1598,14 +1588,6 @@ IMAP_CONTEXT::~IMAP_CONTEXT()
 {
 	auto pcontext = this;
 	mem_file_free(&pcontext->f_flags);
-	if (NULL != pcontext->connection.ssl) {
-		SSL_shutdown(pcontext->connection.ssl);
-		SSL_free(pcontext->connection.ssl);
-		pcontext->connection.ssl = NULL;
-	}
-	if (-1 != pcontext->connection.sockd) {
-		close(pcontext->connection.sockd);
-	}
 	if (-1 != pcontext->message_fd) {
 		close(pcontext->message_fd);
 	}
