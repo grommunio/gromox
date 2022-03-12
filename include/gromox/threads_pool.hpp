@@ -25,8 +25,9 @@ enum{
 };
 
 using THREADS_EVENT_PROC = int (*)(int);
+struct schedule_context;
 
-extern GX_EXPORT void threads_pool_init(unsigned int init_pool_num, int (*process_func)(SCHEDULE_CONTEXT *));
+extern GX_EXPORT void threads_pool_init(unsigned int init_pool_num, int (*process_func)(schedule_context *));
 extern int threads_pool_run();
 extern void threads_pool_stop();
 int threads_pool_get_param(int type);

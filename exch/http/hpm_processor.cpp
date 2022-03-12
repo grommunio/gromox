@@ -3,6 +3,8 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
+#include <dlfcn.h>
+#include <fcntl.h>
 #include <list>
 #include <string>
 #include <typeinfo>
@@ -10,18 +12,16 @@
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <gromox/defs.h>
 #include <gromox/paths.h>
+#include <gromox/util.hpp>
 #include "hpm_processor.h"
-#include "pdu_processor.h"
 #include "http_parser.h"
+#include "pdu_processor.h"
 #include "resource.h"
 #include "service.h"
-#include <gromox/util.hpp>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dlfcn.h>
-#include <fcntl.h>
 
 using namespace std::string_literals;
 using namespace gromox;

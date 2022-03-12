@@ -8,26 +8,26 @@
 #include <cerrno>
 #include <csignal>
 #include <cstdint>
-#include <libHX/string.h>
-#include <gromox/atomic.hpp>
-#include <gromox/fileio.h>
-#include <gromox/socket.h>
-#include "listener.h"
-#include "system_services.h"
-#include <gromox/contexts_pool.hpp>
-#include "http_parser.h"
-#include <gromox/util.hpp>
-#include "resource.h"
 #include <cstdio>
-#include <unistd.h>
-#include <fcntl.h>
 #include <cstdlib>
-#include <sys/types.h>
-#include <sys/socket.h>
+#include <cstring>
+#include <fcntl.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <libHX/string.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <pthread.h>
-#include <cstring>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <gromox/atomic.hpp>
+#include <gromox/contexts_pool.hpp>
+#include <gromox/fileio.h>
+#include <gromox/socket.h>
+#include <gromox/util.hpp>
+#include "http_parser.h"
+#include "listener.h"
+#include "resource.h"
+#include "system_services.h"
 
 using namespace gromox;
 

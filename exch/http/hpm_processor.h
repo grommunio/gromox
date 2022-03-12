@@ -1,9 +1,9 @@
 #pragma once
 #include <string>
 #include <vector>
-#include <gromox/plugin.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/hpm_common.h>
+#include <gromox/plugin.hpp>
 
 struct HTTP_CONTEXT;
 

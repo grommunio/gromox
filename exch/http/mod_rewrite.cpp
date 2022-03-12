@@ -2,20 +2,19 @@
 // SPDX-FileCopyrightText: 2021 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <memory>
+#include <regex.h>
 #include <string>
-#include <vector>
 #include <utility>
+#include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
-#include "mod_rewrite.h"
 #include <gromox/util.hpp>
-#include <cstring>
-#include <cstdlib>
-#include <cstdio>
-#include <regex.h>
-
+#include "mod_rewrite.h"
 #define MAX_LINE					16*1024
 
 using namespace gromox;

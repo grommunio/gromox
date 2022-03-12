@@ -1,35 +1,35 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
 #include <cstdint>
+#include <cstdio>
+#include <cstring>
+#include <dlfcn.h>
+#include <fcntl.h>
 #include <list>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <typeinfo>
+#include <unistd.h>
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
-#include <gromox/defs.h>
-#include <gromox/endian.hpp>
-#include <gromox/paths.h>
-#include "pdu_processor.h"
-#include "hpm_processor.h"
-#include <gromox/alloc_context.hpp>
-#include "http_parser.h"
-#include <gromox/lib_buffer.hpp>
-#include <gromox/int_hash.hpp>
-#include "resource.h"
-#include "service.h"
-#include <gromox/guid.hpp>
-#include <gromox/util.hpp>
-#include <fcntl.h>
-#include <cstdio>
-#include <dlfcn.h>
-#include <unistd.h>
-#include <cstring>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/stat.h>
+#include <gromox/alloc_context.hpp>
+#include <gromox/defs.h>
+#include <gromox/endian.hpp>
+#include <gromox/guid.hpp>
+#include <gromox/int_hash.hpp>
+#include <gromox/lib_buffer.hpp>
+#include <gromox/paths.h>
+#include <gromox/util.hpp>
+#include "hpm_processor.h"
+#include "http_parser.h"
+#include "pdu_processor.h"
+#include "resource.h"
+#include "service.h"
 #define ASSOC_GROUP_HASH_SIZE			10000
 #define ASSOC_GROUP_HASH_GROWING		1000
 

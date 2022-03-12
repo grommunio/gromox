@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
-#include <gromox/defs.h>
-#include "pdu_ndr.h"
-#include <gromox/common_types.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/socket.h>
+#include <gromox/common_types.hpp>
+#include <gromox/defs.h>
+#include "pdu_ndr.h"
 #define TRY(expr) do { int klfdv = (expr); if (klfdv != NDR_ERR_SUCCESS) return klfdv; } while (false)
 #define IPV6_BYTES		16
 

@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
 #include <atomic>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <dlfcn.h>
 #include <list>
 #include <string>
 #include <typeinfo>
@@ -8,16 +12,12 @@
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
+#include <sys/types.h>
 #include <gromox/defs.h>
 #include <gromox/paths.h>
+#include <gromox/util.hpp>
 #include "resource.h"
 #include "service.h"
-#include <gromox/util.hpp>
-#include <sys/types.h>
-#include <cstring>
-#include <cstdlib>
-#include <dlfcn.h>
-#include <cstdio>
 
 using namespace std::string_literals;
 using namespace gromox;
