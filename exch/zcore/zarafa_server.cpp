@@ -49,6 +49,7 @@
 
 using namespace std::string_literals;
 using namespace gromox;
+using LLU = unsigned long long;
 
 namespace {
 
@@ -3485,7 +3486,7 @@ uint32_t zarafa_server_submitmessage(GUID hsession, uint32_t hmessage)
 			snprintf(command_buff, 1024, "%s %s %llu",
 				common_util_get_submit_command(),
 			         pstore->get_account(),
-			         static_cast<unsigned long long>(rop_util_get_gc_value(pmessage->get_id())));
+			         LLU(rop_util_get_gc_value(pmessage->get_id())));
 			timer_id = system_services_add_timer(
 					command_buff, deferred_time);
 			if (0 == timer_id) {
@@ -5149,12 +5150,13 @@ uint32_t zarafa_server_getuseravailability(GUID hsession,
 	}
 	if (strcasecmp(pinfo->get_username(), username) == 0) {
 		tmp_len = gx_snprintf(cookie_buff, GX_ARRAY_SIZE(cookie_buff),
-			"starttime=%lu;endtime=%lu;dirs=1;dir0=%s",
-			starttime, endtime, maildir);
+		          "starttime=%llu;endtime=%llu;dirs=1;dir0=%s",
+		          LLU(starttime), LLU(endtime), maildir);
 	} else {
 		tmp_len = gx_snprintf(cookie_buff, GX_ARRAY_SIZE(cookie_buff),
-			"username=%s;starttime=%lu;endtime=%lu;dirs=1;dir0=%s",
-		          pinfo->get_username(), starttime, endtime, maildir);
+		          "username=%s;starttime=%llu;endtime=%llu;dirs=1;dir0=%s",
+		          pinfo->get_username(),
+		          LLU(starttime), LLU(endtime), maildir);
 	}
 	pinfo.reset();
 	 if (-1 == pipe(pipes_in)) {

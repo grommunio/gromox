@@ -1139,7 +1139,8 @@ static BOOL store_object_set_oof_property(const char *maildir,
 		if (NULL == pconfig) {
 			return FALSE;
 		}
-		sprintf(temp_buff, "%lu", rop_util_nttime_to_unix(*(uint64_t*)pvalue));
+		long long t = rop_util_nttime_to_unix(*static_cast<const uint64_t *>(pvalue));
+		snprintf(temp_buff, arsizeof(temp_buff), "%lld", t);
 		pconfig->set_value(proptag == PR_EC_OUTOFOFFICE_FROM ?
 		                      "START_TIME" : "END_TIME", temp_buff);
 		return pconfig->save();
