@@ -825,12 +825,13 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 					"push stdin record for mod_fastcgi");
 				return FALSE;
 			}
-			if (ndr_push.offset != write(cli_sockd,
-				ndr_buff, ndr_push.offset)) {
+			auto ret = write(cli_sockd, ndr_buff, ndr_push.offset);
+			if (ret < 0 || static_cast<size_t>(ret) != ndr_push.offset) {
 				close(cli_sockd);
-				http_parser_log_info(phttp, LV_DEBUG, "fail to "
-					"write record to fastcgi back-end %s",
-					phttp->pfast_context->pfnode->sock_path.c_str());
+				http_parser_log_info(phttp, LV_DEBUG, "failed to "
+					"write record to fastcgi back-end %s (ret=%zd, %s)",
+					phttp->pfast_context->pfnode->sock_path.c_str(),
+					ret, strerror(errno));
 				return FALSE;
 			}
 			if (phttp->pfast_context->content_length == 0)
@@ -864,12 +865,13 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 					"push stdin record for mod_fastcgi");
 				return FALSE;
 			}
-			if (ndr_push.offset != write(cli_sockd,
-				ndr_buff, ndr_push.offset)) {
+			auto ret = write(cli_sockd, ndr_buff, ndr_push.offset);
+			if (ret < 0 || static_cast<size_t>(ret) != ndr_push.offset) {
 				close(cli_sockd);
-				http_parser_log_info(phttp, LV_DEBUG, "fail to "
-					"write record to fastcgi back-end %s",
-					phttp->pfast_context->pfnode->sock_path.c_str());
+				http_parser_log_info(phttp, LV_DEBUG, "failed to "
+					"write record to fastcgi back-end %s (ret=%zd, %s)",
+					phttp->pfast_context->pfnode->sock_path.c_str(),
+					ret, strerror(errno));
 				return FALSE;
 			}
 		}
@@ -884,12 +886,13 @@ BOOL mod_fastcgi_relay_content(HTTP_CONTEXT *phttp)
 			"last empty stdin record for mod_fastcgi");
 		return FALSE;
 	}
-	if (ndr_push.offset != write(cli_sockd,
-		ndr_buff, ndr_push.offset)) {
+	auto ret = write(cli_sockd, ndr_buff, ndr_push.offset);
+	if (ret < 0 || static_cast<size_t>(ret) != ndr_push.offset) {
 		close(cli_sockd);
-		http_parser_log_info(phttp, LV_DEBUG, "fail to write"
-			" last empty stdin to fastcgi back-end %s",
-			phttp->pfast_context->pfnode->sock_path.c_str());
+		http_parser_log_info(phttp, LV_DEBUG, "failed to write"
+			" last empty stdin to fastcgi back-end %s (ret=%zd, %s)",
+			phttp->pfast_context->pfnode->sock_path.c_str(),
+			ret, strerror(errno));
 		return FALSE;
 	}
 	phttp->pfast_context->cli_sockd = cli_sockd;

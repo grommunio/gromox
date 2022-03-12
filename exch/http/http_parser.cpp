@@ -582,7 +582,7 @@ static int htparse_rdhead_mt(HTTP_CONTEXT *pcontext, char *line, unsigned int li
 	HX_strltrim(field_name);
 
 	ptoken++;
-	while (ptoken - line < line_length) {
+	while (static_cast<size_t>(ptoken - line) < line_length) {
 		if (' ' != *ptoken && '\t' != *ptoken) {
 			break;
 		}
@@ -1161,9 +1161,9 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 		if (pchannel_out->available_window < 1024) {
 			return PROCESS_IDLE;
 		}
-		if (written_len > pchannel_out->available_window) {
+		if (written_len >= 0 && static_cast<size_t>(written_len) >
+		    pchannel_out->available_window)
 			written_len = pchannel_out->available_window;
-		}
 	}
 	if (pcontext->write_buff == nullptr && written_len > 0)
 		fprintf(stderr, "W-1534: wl=%zd. report me.\n", written_len);

@@ -559,16 +559,14 @@ static BOOL mod_cache_parse_range_value(char *value,
 		*ptoken1 = '\0';
 		ptoken1 ++;
 		auto first_bpos = strtol(plast_token, nullptr, 0);
-		if (first_bpos >= size) {
+		if (first_bpos >= 0 && static_cast<unsigned long>(first_bpos) >= size)
 			return FALSE;
-		}
 		auto last_bpos = strtol(ptoken1, nullptr, 0);
 		if (0 == last_bpos) {
 			last_bpos = size - 1;
 		}
-		if (last_bpos < 0 || last_bpos >= size) {
+		if (last_bpos < 0 || static_cast<unsigned long>(last_bpos) >= size)
 			return FALSE;
-		}
 		if (first_bpos <= last_bpos) {
 			ranges[range_num].begin = first_bpos;
 			ranges[range_num].end = last_bpos;
