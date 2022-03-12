@@ -3,12 +3,12 @@
  *	  stream is specified for smtp protocol
  */
 #include <cassert>
+#include <cstdio>
 #include <cstring>
+#include <unistd.h>
 #include <gromox/common_types.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
-#include <cstdio>
-#include <unistd.h>
 
 #define CR			0x100
 #define LF			0x101

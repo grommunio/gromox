@@ -12,8 +12,8 @@
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/scope.hpp>
 #define TRY(expr) do { int v = (expr); if (v != EXT_ERR_SUCCESS) return v; } while (false)
 
 using namespace gromox;

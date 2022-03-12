@@ -8,13 +8,13 @@
  *		synchronized problems. 
  */
 #include <cstddef>
+#include <cstring>
 #include <memory>
 #include <stdexcept>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/int_hash.hpp>
 #include <gromox/util.hpp>
-#include <cstring>
 
 static size_t g_num_of_collision;
 static constexpr auto inthashitem_al = roundup(sizeof(INT_HASH_ITEM), sizeof(std::max_align_t));

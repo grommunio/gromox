@@ -3,6 +3,7 @@
  * A simple string hash table data structure
  */
 #include <cstddef>
+#include <cstring>
 #include <memory>
 #include <stdexcept>
 #include <libHX/string.h>
@@ -10,7 +11,6 @@
 #include <gromox/defs.h>
 #include <gromox/str_hash.hpp>
 #include <gromox/util.hpp>
-#include <cstring>
 
 static size_t g_num_of_collision;
 static constexpr auto strhashitem_al = roundup(sizeof(STR_HASH_ITEM), sizeof(std::max_align_t));

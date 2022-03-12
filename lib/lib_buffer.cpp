@@ -4,8 +4,8 @@
 #include <cstring>
 #include <memory>
 #include <gromox/defs.h>
-#include <gromox/util.hpp>
 #include <gromox/lib_buffer.hpp>
+#include <gromox/util.hpp>
 
 static constexpr auto wsize_al = roundup(WSIZE, sizeof(std::max_align_t));
 

@@ -8,24 +8,23 @@
  */
 #include <algorithm>
 #include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <fcntl.h>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <unistd.h>
 #include <libHX/defs.h>
 #include <libHX/string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/paths.h>
-#include <gromox/config_file.hpp>
 #include <gromox/util.hpp>
-#include <unistd.h>
-#include <cstdlib>
-#include <cstring>
-#include <cstdio>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-
 #define MAX_LINE_LEN		1024
 #define EXT_ENTRY_NUM		64
 

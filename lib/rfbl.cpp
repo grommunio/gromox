@@ -5,8 +5,6 @@
 #	include "config.h"
 #endif
 #define _GNU_SOURCE 1 /* unistd.h:environ */
-#include <list>
-#include <memory>
 #include <cerrno>
 #include <cstdarg>
 #include <cstdint>
@@ -14,22 +12,23 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <fcntl.h>
+#include <list>
 #include <memory>
+#include <spawn.h>
 #include <string>
 #include <string_view>
+#include <unistd.h>
 #include <utility>
 #include <vector>
-#include <fcntl.h>
-#include <spawn.h>
-#include <unistd.h>
 #if __linux__ && defined(HAVE_SYS_RANDOM_H)
 #	include <sys/random.h>
 #endif
-#include <sys/wait.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/io.h>
 #include <libHX/proc.h>
 #include <libHX/string.h>
+#include <sys/wait.h>
 #include <gromox/config_file.hpp>
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>

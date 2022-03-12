@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <gromox/xarray.hpp>
-#include <gromox/util.hpp>
 #include <cstring>
+#include <gromox/util.hpp>
+#include <gromox/xarray.hpp>
 
 /*
  *	init a xarray with the specified size of data and max capacity.

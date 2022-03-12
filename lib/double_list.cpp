@@ -4,8 +4,8 @@
  *	push ... Caution: double_list is not thread-safe, use mutex to control
  *	the visiting of double list.
  */
-#include <gromox/double_list.hpp>
 #include <gromox/common_types.hpp>
+#include <gromox/double_list.hpp>
 #include <gromox/util.hpp>
 
 void double_list_init(DOUBLE_LIST* plist)

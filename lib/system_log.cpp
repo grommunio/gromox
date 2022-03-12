@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
-#include <unistd.h>
-#include <libHX/string.h>
-#include <gromox/defs.h>
-#include <gromox/system_log.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <cstdio>
 #include <cstdarg>
+#include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <fcntl.h>
+#include <unistd.h>
+#include <libHX/string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <gromox/defs.h>
+#include <gromox/system_log.h>
 #define DEF_MODE            S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 
 static char g_log_path[256];

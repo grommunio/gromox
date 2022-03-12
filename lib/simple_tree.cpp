@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <gromox/defs.h>
-#include <gromox/util.hpp>
-#include <gromox/simple_tree.hpp>
 #include <cstring>
+#include <gromox/defs.h>
+#include <gromox/simple_tree.hpp>
+#include <gromox/util.hpp>
 
 static void simple_tree_destroy_group(SIMPLE_TREE *ptree, 
 	SIMPLE_TREE_NODE *pnode, SIMPLE_TREE_DELETE del_func);

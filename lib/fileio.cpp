@@ -3,11 +3,11 @@
 // This file is part of Gromox.
 #include <cmath>
 #include <cstring>
-#include <string>
 #include <iconv.h>
+#include <string>
 #include <gromox/binrdwr.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/scope.hpp>
 
 using namespace std::string_literals;
 

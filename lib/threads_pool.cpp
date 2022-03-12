@@ -2,19 +2,19 @@
 #include <chrono>
 #include <condition_variable>
 #include <csignal>
+#include <cstdio>
 #include <cstring>
 #include <memory>
 #include <mutex>
+#include <unistd.h>
 #include <gromox/atomic.hpp>
-#include <gromox/defs.h>
 #include <gromox/common_types.hpp>
-#include <gromox/double_list.hpp>
 #include <gromox/contexts_pool.hpp>
+#include <gromox/defs.h>
+#include <gromox/double_list.hpp>
 #include <gromox/lib_buffer.hpp>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
-#include <cstdio>
-#include <unistd.h>
 
 #define MAX_TIMES_NOT_SERVED			100
 

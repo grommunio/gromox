@@ -13,8 +13,8 @@
 #if __linux__ && defined(HAVE_SYS_RANDOM_H)
 #	include <sys/random.h>
 #endif
-#include <gromox/mapidefs.h>
 #include <gromox/guid.hpp>
+#include <gromox/mapidefs.h>
 
 using namespace gromox;
 

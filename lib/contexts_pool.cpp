@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cerrno>
 #include <csignal>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <mutex>
+#include <pthread.h>
+#include <unistd.h>
+#include <sys/epoll.h>
+#include <sys/socket.h>
 #include <gromox/atomic.hpp>
-#include <gromox/defs.h>
 #include <gromox/contexts_pool.hpp>
+#include <gromox/defs.h>
 #include <gromox/threads_pool.hpp>
 #include <gromox/util.hpp>
-#include <sys/socket.h>
-#include <sys/epoll.h>
-#include <pthread.h>
-#include <cstdlib>
-#include <unistd.h>
-#include <cstdio>
-#include <cerrno>
 
 using namespace gromox;
 

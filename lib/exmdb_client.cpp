@@ -9,9 +9,9 @@
 #include <list>
 #include <mutex>
 #include <poll.h>
-#include <vector>
 #include <pthread.h>
 #include <unistd.h>
+#include <vector>
 #include <gromox/atomic.hpp>
 #include <gromox/endian.hpp>
 #include <gromox/exmdb_client.hpp>

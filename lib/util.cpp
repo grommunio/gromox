@@ -3,21 +3,20 @@
  *	this file includes some utility functions that will be used by many 
  *	programs
  */
+#include <crypt.h>
+#include <cstdarg>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <ctime>
+#include <iconv.h>
+#include <unistd.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
 #include <gromox/util.hpp>
-#include <ctime>
-#include <cstdio>
-#include <crypt.h>
-#include <iconv.h>
-#include <cstdlib>
-#include <cstring>
-#include <cstdarg>
-#include <unistd.h>
 #if __linux__
 #	include <sys/random.h>
 #endif

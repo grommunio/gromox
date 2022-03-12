@@ -3,6 +3,7 @@
 // This file is part of Gromox.
 #include <cerrno>
 #include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <string>
 #include <utility>
@@ -12,8 +13,6 @@
 #include <gromox/list_file.hpp>
 #include <gromox/paths.h>
 #include <gromox/util.hpp>
-#include <cstring>
-#include <cstdlib>
 #define MAX_LINE			1024
 
 using namespace gromox;

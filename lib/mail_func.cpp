@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <string>
 #include <unistd.h>
@@ -18,7 +19,6 @@
 #include <gromox/mail_func.hpp>
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
-#include <cstring>
 
 using namespace gromox;
 
