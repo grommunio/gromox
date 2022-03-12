@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
-#include <gromox/defs.h>
-#include "common_util.h"
-#include <gromox/fileio.h>
-#include <gromox/proc_common.h>
-#include <gromox/zz_ndr_stack.hpp>
-#include <gromox/guid.hpp>
-#include <gromox/rop_util.hpp>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
+#include <cstdio>
 #include <cstring>
+#include <ctime>
 #include <fcntl.h>
 #include <iconv.h>
-#include <cstdio>
-#include <ctime>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <gromox/defs.h>
+#include <gromox/fileio.h>
+#include <gromox/guid.hpp>
+#include <gromox/proc_common.h>
+#include <gromox/rop_util.hpp>
+#include <gromox/zz_ndr_stack.hpp>
+#include "common_util.h"
 
 using namespace gromox;
 

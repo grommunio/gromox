@@ -1,8 +1,8 @@
 #pragma once
 #include <cstdint>
 #include <gromox/mapidefs.h>
-#include <gromox/rpc_types.hpp>
 #include <gromox/proptags.hpp>
+#include <gromox/rpc_types.hpp>
 #define MOD_FLAG_DELETE						0x000000001
 
 #define MAPI_E_UNBINDSUCCESS 0x000000001

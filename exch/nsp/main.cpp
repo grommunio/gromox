@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <cstdio>
+#include <cstring>
 #include <string>
 #include <libHX/string.h>
+#include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/guid.hpp>
+#include <gromox/proc_common.h>
 #include <gromox/util.hpp>
-#include "nsp_ndr.h"
+#include <gromox/zz_ndr_stack.hpp>
 #include "ab_tree.h"
 #include "common_util.h"
-#include <gromox/proc_common.h>
-#include <gromox/zz_ndr_stack.hpp>
-#include <gromox/config_file.hpp>
 #include "nsp_interface.h"
-#include <cstring>
-#include <cstdio>
+#include "nsp_ndr.h"
 
 using namespace gromox;
 
