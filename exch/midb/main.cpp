@@ -1,34 +1,34 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <csignal>
+#include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <memory>
+#include <unistd.h>
 #include <libHX/misc.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <sys/resource.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <gromox/atomic.hpp>
+#include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
+#include <gromox/mail_func.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
-#include "service.h"
-#include "listener.h"
-#include <gromox/mail_func.hpp>
 #include "cmd_parser.h"
 #include "common_util.h"
-#include <gromox/config_file.hpp>
-#include "mail_engine.h"
 #include "exmdb_client.h"
+#include "listener.h"
+#include "mail_engine.h"
+#include "service.h"
 #include "system_services.h"
-#include <cstdio>
-#include <unistd.h>
-#include <cstring>
-#include <csignal>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/resource.h>
 
 using namespace gromox;
 

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <gromox/defs.h>
-#include "system_services.h"
-#include "service.h"
 #include <cstdio>
+#include <gromox/defs.h>
+#include "service.h"
+#include "system_services.h"
 
 bool (*system_services_get_user_lang)(const char *, char *, size_t);
 bool (*system_services_get_timezone)(const char *, char *, size_t);

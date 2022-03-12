@@ -2,8 +2,8 @@
 #include <cstdint>
 #include <cstdlib>
 #include <type_traits>
-#include <gromox/defs.h>
 #include <gromox/common_types.hpp>
+#include <gromox/defs.h>
 #include <gromox/element_data.hpp>
 #define SOCKET_TIMEOUT										60
 #define MAX_DIGLEN											256*1024

@@ -1,6 +1,6 @@
 #pragma once
-#include <gromox/double_list.hpp>
 #include <pthread.h>
+#include <gromox/double_list.hpp>
 
 struct MIDB_CONNECTION {
 	DOUBLE_LIST_NODE node;
