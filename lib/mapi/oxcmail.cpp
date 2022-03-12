@@ -5148,7 +5148,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		if (mail_len < 0)
 			return false;
 		LIB_BUFFER pallocator(STREAM_ALLOC_SIZE, mail_len / STREAM_BLOCK_SIZE + 1);
-		STREAM tmp_stream(pallocator.get());
+		STREAM tmp_stream(&pallocator);
 		if (!imail.serialize(&tmp_stream)) {
 			return FALSE;
 		}

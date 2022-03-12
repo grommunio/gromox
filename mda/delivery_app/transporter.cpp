@@ -247,13 +247,13 @@ int transporter_run()
 	g_file_allocator = LIB_BUFFER(FILE_ALLOC_SIZE,
 	                   FILENUM_PER_CONTROL * (g_free_num + g_threads_max));
 	for (size_t i = 0; i < g_threads_max; ++i) {
-		mem_file_init(&g_data_ptr[i].fake_context.mail_control.f_rcpt_to, g_file_allocator.get());
+		mem_file_init(&g_data_ptr[i].fake_context.mail_control.f_rcpt_to, &g_file_allocator);
 		g_data_ptr[i].fake_context.mail = MAIL(g_mime_pool);
 		g_data_ptr[i].fake_context.context.pmail = &g_data_ptr[i].fake_context.mail;
 		g_data_ptr[i].fake_context.context.pcontrol = &g_data_ptr[i].fake_context.mail_control;
 	}
 	for (size_t i = 0; i < g_free_num; ++i) {
-		mem_file_init(&g_free_ptr[i].mail_control.f_rcpt_to, g_file_allocator.get());
+		mem_file_init(&g_free_ptr[i].mail_control.f_rcpt_to, &g_file_allocator);
 		g_free_ptr[i].mail = MAIL(g_mime_pool);
 		g_free_ptr[i].context.pmail = &g_free_ptr[i].mail;
 		g_free_ptr[i].context.pcontrol = &g_free_ptr[i].mail_control;

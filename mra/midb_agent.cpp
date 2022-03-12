@@ -1636,7 +1636,7 @@ static int list_detail(const char *path, const char *folder, XARRAY *pxarray,
 				    "uid", &mitem.uid)) {
 					mitem.id = count;
 					mitem.flag_bits = FLAG_LOADED | di_to_flagbits(temp_line, line_pos);
-					mem_file_init(&mitem.f_digest, g_file_allocator.get());
+					mem_file_init(&mitem.f_digest, &g_file_allocator);
 					mitem.f_digest.write(temp_line, line_pos);
 					pxarray->append(&mitem, mitem.uid);
 				} else {
@@ -1968,7 +1968,7 @@ static int fetch_detail(const char *path, const char *folder,
 							auto pitem = static_cast<AGENT_MITEM *>(pxarray->get_item(num - 1));
 							pitem->id = pseq->min + count - 1;
 							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(temp_line, line_pos);
-							mem_file_init(&pitem->f_digest, g_file_allocator.get());
+							mem_file_init(&pitem->f_digest, &g_file_allocator);
 							pitem->f_digest.write(temp_line, line_pos);
 						}
 					} else {
@@ -2277,7 +2277,7 @@ static int fetch_detail_uid(const char *path, const char *folder,
 							auto pitem = static_cast<AGENT_MITEM *>(pxarray->get_item(num - 1));
 							pitem->id = strtol(temp_line, nullptr, 0) + 1;
 							pitem->flag_bits = FLAG_LOADED | di_to_flagbits(pspace, temp_len);
-							mem_file_init(&pitem->f_digest, g_file_allocator.get());
+							mem_file_init(&pitem->f_digest, &g_file_allocator);
 							pitem->f_digest.write(pspace, temp_len);
 						}
 					} else {

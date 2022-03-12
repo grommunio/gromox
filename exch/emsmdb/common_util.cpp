@@ -2076,7 +2076,7 @@ BOOL common_util_send_message(logon_object *plogon,
 
 LIB_BUFFER* common_util_get_allocator()
 {
-	return g_file_allocator.get();
+	return &g_file_allocator;
 }
 
 void common_util_init(const char *org_name, int average_blocks,

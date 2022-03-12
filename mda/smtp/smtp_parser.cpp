@@ -666,7 +666,7 @@ void envelope_info::clear()
 }
 
 SMTP_CONTEXT::SMTP_CONTEXT() :
-	stream(blocks_allocator_get_allocator()), menv(g_files_allocator.get())
+	stream(blocks_allocator_get_allocator()), menv(&g_files_allocator)
 {}
 
 static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext)

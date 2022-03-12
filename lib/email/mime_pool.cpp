@@ -24,7 +24,7 @@ MIME_POOL::MIME_POOL(size_t num, int ratio)
 	}
 	pmime_pool->allocator = LIB_BUFFER(FILE_ALLOC_SIZE, num * ratio);
 	for (size_t i = 0; i < num; ++i) {
-		pbegin.emplace_back(pmime_pool->allocator.get(), this);
+		pbegin.emplace_back(&pmime_pool->allocator, this);
 		free_list.push_back(&pbegin.back());
 	}
 }

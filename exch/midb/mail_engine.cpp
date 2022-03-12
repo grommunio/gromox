@@ -629,7 +629,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 						break;
 					b_loaded = TRUE;
 				}
-				MJSON temp_mjson(g_alloc_mjson.get());
+				MJSON temp_mjson(&g_alloc_mjson);
 				snprintf(temp_buff, 256, "%s/eml",
 						common_util_get_maildir());
 				if (temp_mjson.retrieve(digest_buff, strlen(digest_buff), temp_buff)) {
@@ -925,7 +925,7 @@ static BOOL mail_engine_ct_match_mail(sqlite3 *psqlite,
 				}
 				if (b_result1)
 					break;
-				MJSON temp_mjson(g_alloc_mjson.get());
+				MJSON temp_mjson(&g_alloc_mjson);
 				snprintf(temp_buff, 256, "%s/eml",
 						common_util_get_maildir());
 				if (temp_mjson.retrieve(digest_buff, strlen(digest_buff), temp_buff)) {

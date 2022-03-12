@@ -1921,7 +1921,7 @@ void http_request::clear()
 }
 
 HTTP_CONTEXT::HTTP_CONTEXT() :
-	request(g_file_allocator.get()),
+	request(&g_file_allocator),
 	stream_in(blocks_allocator_get_allocator()),
 	stream_out(stream_in.allocator)
 {

@@ -19,7 +19,6 @@ struct GX_EXPORT LIB_BUFFER {
 	LIB_BUFFER(size_t size, size_t items);
 	LIB_BUFFER &operator=(LIB_BUFFER &&) noexcept;
 	inline LIB_BUFFER *operator->() { return this; }
-	inline LIB_BUFFER *get() { return this; }
 	void *get_raw();
 	template<typename T> inline T *get()
 	{

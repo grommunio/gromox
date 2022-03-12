@@ -801,7 +801,7 @@ BOOL MAIL::dup(MAIL *pmail_dst)
 	if (mail_len < 0)
 		return false;
 	LIB_BUFFER pallocator(STREAM_ALLOC_SIZE, mail_len / STREAM_BLOCK_SIZE + 1);
-	STREAM tmp_stream(pallocator.get());
+	STREAM tmp_stream(&pallocator);
 	if (!pmail_src->serialize(&tmp_stream)) {
 		return FALSE;
 	}
@@ -851,7 +851,7 @@ BOOL MAIL::transfer_dot(MAIL *pmail_dst)
 	if (mail_len < 0)
 		return false;
 	LIB_BUFFER pallocator(STREAM_ALLOC_SIZE, mail_len / STREAM_BLOCK_SIZE + 1);
-	STREAM tmp_stream(pallocator.get());
+	STREAM tmp_stream(&pallocator);
 	if (!pmail_src->serialize(&tmp_stream)) {
 		return FALSE;
 	}

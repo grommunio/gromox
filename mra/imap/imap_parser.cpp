@@ -90,12 +90,12 @@ static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 
 LIB_BUFFER* imap_parser_get_xpool()
 {
-	return g_alloc_xarray.get();
+	return &g_alloc_xarray;
 }
 
 LIB_BUFFER* imap_parser_get_dpool()
 {
-	return g_alloc_dir.get();
+	return &g_alloc_dir;
 }
 
 void imap_parser_init(int context_num, int average_num, size_t cache_size,
@@ -1324,7 +1324,7 @@ void imap_parser_echo_modify(IMAP_CONTEXT *pcontext, STREAM *pstream)
 	char mid_string[256];
 	MEM_FILE temp_file;
 	
-	mem_file_init(&temp_file, g_alloc_file.get());
+	mem_file_init(&temp_file, &g_alloc_file);
 	std::unique_lock hl_hold(g_hash_lock);
 	b_modify = pcontext->b_modify;
 	pcontext->b_modify = FALSE;
@@ -1525,7 +1525,7 @@ IMAP_CONTEXT::IMAP_CONTEXT() :
 	pcontext->hash_node.pdata = pcontext;
 	pcontext->sleeping_node.pdata = pcontext;
     pcontext->connection.sockd = -1;
-	mem_file_init(&pcontext->f_flags, g_alloc_file.get());
+	mem_file_init(&pcontext->f_flags, &g_alloc_file);
 }
 
 static void imap_parser_context_clear(IMAP_CONTEXT *pcontext)
@@ -1754,7 +1754,7 @@ static void *imps_scanwork(void *argp)
 		
 		i = 0;
 		
-		mem_file_init(&temp_file, g_alloc_file.get());
+		mem_file_init(&temp_file, &g_alloc_file);
 		std::unique_lock hl_hold(g_hash_lock);
 		time(&cur_time);
 		auto iter = g_select_hash->make_iter();
@@ -1788,7 +1788,7 @@ static void *imps_scanwork(void *argp)
 
 LIB_BUFFER* imap_parser_get_allocator()
 {
-	return g_alloc_file.get();
+	return &g_alloc_file;
 }
 
 std::shared_ptr<MIME_POOL> imap_parser_get_mpool()
@@ -1798,7 +1798,7 @@ std::shared_ptr<MIME_POOL> imap_parser_get_mpool()
 
 LIB_BUFFER* imap_parser_get_jpool()
 {
-	return g_alloc_mjson.get();
+	return &g_alloc_mjson;
 }
 
 int imap_parser_get_sequence_ID()

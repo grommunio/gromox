@@ -470,7 +470,7 @@ static void *ev_enqwork(void *param)
 				continue;
 			}
 			snprintf(pdequeue->res_id, arsizeof(pdequeue->res_id), "%s", penqueue->line + 7);
-			pdequeue->fifo = FIFO(g_fifo_alloc.get(), sizeof(MEM_FILE), FIFO_AVERAGE_LENGTH);
+			pdequeue->fifo = FIFO(&g_fifo_alloc, sizeof(MEM_FILE), FIFO_AVERAGE_LENGTH);
 			std::unique_lock hl_hold(g_host_lock);
 			auto host_it = std::find_if(g_host_list.begin(), g_host_list.end(),
 			               [&](const HOST_NODE &h) { return strcmp(h.res_id, penqueue->line + 7) == 0; });
@@ -614,7 +614,7 @@ static void *ev_enqwork(void *param)
 				if (phost->list.size() > 0) {
 					auto pdequeue = phost->list.front();
 					phost->list.erase(phost->list.begin());
-					mem_file_init(&temp_file, g_file_alloc.get());
+					mem_file_init(&temp_file, &g_file_alloc);
 					temp_file.write(penqueue->line, strlen(penqueue->line));
 					std::unique_lock dl_hold(pdequeue->lock);
 					b_result = pdequeue->fifo.enqueue(&temp_file);

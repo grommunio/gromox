@@ -2294,7 +2294,7 @@ BOOL common_util_message_to_rfc822(store_object *pstore,
 		return false;
 	}
 	LIB_BUFFER pallocator(STREAM_ALLOC_SIZE, mail_len / STREAM_BLOCK_SIZE + 1);
-	STREAM tmp_stream(pallocator.get());
+	STREAM tmp_stream(&pallocator);
 	if (!imail.serialize(&tmp_stream)) {
 		return FALSE;
 	}

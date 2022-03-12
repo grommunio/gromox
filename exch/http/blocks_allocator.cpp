@@ -23,5 +23,5 @@ int blocks_allocator_run()
 
 LIB_BUFFER* blocks_allocator_get_allocator()
 {
-	return g_allocator.get();
+	return &g_allocator;
 }
