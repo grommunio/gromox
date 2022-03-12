@@ -4,29 +4,28 @@
 #include <climits>
 #include <cstdarg>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <fcntl.h>
 #include <memory>
 #include <string>
 #include <unistd.h>
 #include <libHX/string.h>
+#include <gromox/alloc_context.hpp>
 #include <gromox/exmdb_rpc.hpp>
-#include <gromox/util.hpp>
 #include <gromox/guid.hpp>
+#include <gromox/list_file.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/oxcmail.hpp>
-#include <gromox/str_hash.hpp>
 #include <gromox/rop_util.hpp>
-#include <gromox/list_file.hpp>
+#include <gromox/str_hash.hpp>
+#include <gromox/util.hpp>
+#include "auto_response.h"
+#include "bounce_audit.h"
 #include "cache_queue.h"
 #include "exmdb_local.h"
 #include "net_failure.h"
-#include "bounce_audit.h"
-#include "auto_response.h"
-#include <gromox/alloc_context.hpp>
-#include <cstdio>
-#include <fcntl.h>
-
 
 #define MAX_DIGLEN				256*1024
 

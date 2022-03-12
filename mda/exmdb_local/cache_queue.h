@@ -1,7 +1,7 @@
 #pragma once
-#include "bounce_producer.h"
 #include <ctime>
 #include <gromox/hook_common.h>
+#include "bounce_producer.h"
 
 void cache_queue_init(const char *path, int scan_interval, int retrying_times);
 extern int cache_queue_run();

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cstdio>
 #include <cstring>
-#include <mutex>
-#include <libHX/string.h>
+#include <ctime>
 #include <gromox/defs.h>
-#include "net_failure.h"
 #include <gromox/hook_common.h>
 #include <gromox/util.hpp>
-#include <cstdio>
-#include <ctime>
+#include <libHX/string.h>
+#include <mutex>
+#include "net_failure.h"
 #define HTML_01 \
 "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\r\n\
 <HTML><HEAD>\

@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
+#include <ctime>
+#include <fcntl.h>
+#include <unistd.h>
 #include <libHX/string.h>
-#include <gromox/defs.h>
-#include "auto_response.h"
-#include "bounce_audit.h"
-#include "exmdb_local.h"
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <gromox/config_file.hpp>
+#include <gromox/defs.h>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/hook_common.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/util.hpp>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <cstdio>
-#include <ctime>
+#include "auto_response.h"
+#include "bounce_audit.h"
+#include "exmdb_local.h"
 
 using namespace gromox;
 

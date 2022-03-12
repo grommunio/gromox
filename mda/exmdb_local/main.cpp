@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <cstdio>
 #include <cstring>
 #include <string>
 #include <libHX/string.h>
+#include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/fileio.h>
 #include <gromox/hook_common.h>
-#include <gromox/config_file.hpp>
-#include "exmdb_local.h"
-#include "cache_queue.h"
-#include "net_failure.h"
+#include <gromox/util.hpp>
 #include "bounce_audit.h"
 #include "bounce_producer.h"
-#include <gromox/util.hpp>
-#include <cstdio>
+#include "cache_queue.h"
+#include "exmdb_local.h"
+#include "net_failure.h"
 
 using namespace gromox;
 

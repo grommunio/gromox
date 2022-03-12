@@ -7,12 +7,12 @@
 #include <unistd.h>
 #include <unordered_map>
 #include <libHX/string.h>
-#include "bounce_audit.h"
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <gromox/hook_common.h>
 #include <gromox/mail_func.hpp>
 #include <gromox/util.hpp>
-#include <sys/types.h>
-#include <sys/stat.h>
+#include "bounce_audit.h"
 
 /* private global variable */
 static int g_audit_num;
