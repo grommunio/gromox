@@ -59,42 +59,8 @@ enum {
 struct ENVELOPE_INFO : public ENVELOPE_INFO_BASE {
 };
 
-struct MAIL_HEAD {
-    MEM_FILE    f_mime_from;      /* from message in mime including nick name */
-    MEM_FILE    f_mime_to;        /* to message in mime */
-    MEM_FILE    f_mime_cc;        /* cc message in mime */
-    MEM_FILE    f_mime_delivered_to;    /* deliver to  message in mime */
-    MEM_FILE    f_xmailer;        /* x mailer information in mime */
-    MEM_FILE    f_subject;        /* subject information in mime */
-    MEM_FILE    f_content_type;   /* content type in mime */
-    MEM_FILE    f_others;          /* other mail header field */
-    char        x_priority;       /* x priority */
-	char x_original_ip[40]; /* oringinal ip information in mime */
-    char        compose_time[64];    /* compose time in mime */
-};
-
-struct MAIL_BODY {
-    size_t          mail_length;
-    int             parts_num;
-    MEM_FILE        f_mail_parts;
-};
-
 struct MAIL_INFO {
 	ENVELOPE_INFO envelope;
-    MAIL_HEAD       head;
-    MAIL_BODY       body;
-};
-
-struct PARSING_BLOCK {
-    char            block_mime[MAX_BLOCK_MIME_LEN];
-    size_t          block_mime_len;
-    int             last_block_ID;    /* last block ID for as filter */
-    size_t          block_body_len;
-    int             encode_type;
-    char            block_type[256];
-    MEM_FILE        f_last_blkmime;
-    char            remains_encode[4];
-    int             remains_len;
 };
 
 struct EXT_DATA {
@@ -119,7 +85,6 @@ struct SMTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	unsigned int session_num = 0; /* session number of the context */
 	size_t total_length = 0; /* mail total length */
 	char last_bytes[4]{}; /* last bytes for part mail */
-	PARSING_BLOCK block_info{}; /* parsing block information */
 	int pre_rstlen{}; /* previous bytes rested by last flushing */
 	EXT_DATA ext_data{};
 };
