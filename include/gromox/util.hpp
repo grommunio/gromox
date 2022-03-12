@@ -20,7 +20,6 @@ struct GX_EXPORT LIB_BUFFER {
 	LIB_BUFFER &operator=(LIB_BUFFER &&) noexcept;
 	inline LIB_BUFFER *operator->() { return this; }
 	inline LIB_BUFFER *get() { return this; }
-	inline void reset() const {}
 	void *get_raw();
 	template<typename T> inline T *get()
 	{

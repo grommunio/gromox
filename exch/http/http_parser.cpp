@@ -222,12 +222,9 @@ int http_parser_run()
 
 void http_parser_stop()
 {
-	g_inchannel_allocator.reset();
-	g_outchannel_allocator.reset();
 	g_context_list2.clear();
 	g_context_list.reset();
 	g_vconnection_hash.clear();
-	g_file_allocator.reset();
 	if (g_support_ssl && g_ssl_ctx != nullptr) {
 		SSL_CTX_free(g_ssl_ctx);
 		g_ssl_ctx = NULL;

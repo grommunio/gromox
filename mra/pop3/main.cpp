@@ -303,7 +303,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: can not run blocks allocator\n"); 
 		return EXIT_FAILURE;
 	}
-	auto cleanup_12 = make_scope_exit(blocks_allocator_stop);
 
 	pop3_parser_init(context_num, context_max_mem, pop3_conn_timeout,
 		pop3_auth_times, block_interval_auth, pop3_support_stls,

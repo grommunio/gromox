@@ -2162,7 +2162,6 @@ int common_util_run()
 
 void common_util_stop()
 {
-	g_file_allocator.reset();
 	g_mime_pool.reset();
 }
 

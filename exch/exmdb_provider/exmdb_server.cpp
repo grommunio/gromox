@@ -32,11 +32,6 @@ int exmdb_server_run()
 	return 0;
 }
 
-void exmdb_server_stop()
-{
-	g_ctx_allocator.reset();
-}
-
 void exmdb_server_build_environment(BOOL b_local,
 	BOOL b_private, const char *dir)
 {

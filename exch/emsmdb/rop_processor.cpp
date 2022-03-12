@@ -439,9 +439,6 @@ void rop_processor_stop()
 			pthread_join(g_scan_id, NULL);
 		}
 	}
-	g_logmap_allocator.reset();
-	g_logitem_allocator.reset();
-	g_handle_allocator.reset();
 	g_logon_hash.reset();
 }
 

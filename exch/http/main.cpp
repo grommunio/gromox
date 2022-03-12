@@ -371,8 +371,6 @@ int main(int argc, const char **argv) try
 	}
 
 	blocks_allocator_init(context_num * context_aver_mem);     
-	auto cleanup_8b = make_scope_exit(blocks_allocator_stop);
- 
 	if (0 != blocks_allocator_run()) { 
 		printf("[system]: can not run blocks allocator\n"); 
 		return EXIT_FAILURE;

@@ -9,7 +9,6 @@ extern void (*exmdb_server_event_proc)(const char *dir,
 	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify);
 
 extern int exmdb_server_run();
-extern void exmdb_server_stop();
 void exmdb_server_build_environment(BOOL b_local,
 	BOOL b_private, const char *dir);
 extern void exmdb_server_free_environment();

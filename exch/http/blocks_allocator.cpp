@@ -21,12 +21,6 @@ int blocks_allocator_run()
     return 0;
 }
 
-void blocks_allocator_stop()
-{
-	g_allocator.reset();
-    g_blocks_num = 0;
-}
-
 LIB_BUFFER* blocks_allocator_get_allocator()
 {
 	return g_allocator.get();

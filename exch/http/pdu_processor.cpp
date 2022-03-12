@@ -287,12 +287,6 @@ void pdu_processor_stop()
 
 	g_plugin_list.clear();
 	g_endpoint_list.clear();
-	g_stack_allocator.reset();
-	g_async_allocator.reset();
-	g_bnode_allocator.reset();
-	g_call_allocator.reset();
-	g_context_allocator.reset();
-	g_auth_allocator.reset();
 	g_async_hash.reset();
 	g_plugins_path[0] = '\0';
 	g_plugin_names = NULL;

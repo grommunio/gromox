@@ -321,7 +321,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: can not run blocks allocator\n"); 
 		return EXIT_FAILURE;
 	}
-	auto cleanup_12 = make_scope_exit(blocks_allocator_stop);
 
 	smtp_parser_init(scfg);
 	if (0 != smtp_parser_run()) { 

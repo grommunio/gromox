@@ -60,7 +60,6 @@ void threads_pool_init(unsigned int init_pool_num, int (*process_func)(SCHEDULE_
 		g_threads_pool_min_num = g_threads_pool_max_num;
 	}
 	g_threads_pool_cur_thr_num = 0;
-	g_threads_data_buff.reset();
 	g_threads_event_proc = NULL;
 	double_list_init(&g_threads_data_list);
 }
@@ -77,7 +76,6 @@ int threads_pool_run()
 	auto ret = pthread_create(&g_scan_id, nullptr, tpol_scanwork, nullptr);
 	if (ret != 0) {
 		printf("[threads_pool]: failed to create scan thread: %s\n", strerror(ret));
-		g_threads_data_buff.reset();
 		return -2;
 	}
 	pthread_setname_np(g_scan_id, "ep_pool/scan");
@@ -136,8 +134,6 @@ void threads_pool_stop()
 		if (b_should_exit)
 			break;
 	}
-	g_threads_data_buff.reset();
-	g_threads_data_buff.reset();
 	g_threads_pool_min_num = 0;
 	g_threads_pool_max_num = 0;
 	g_threads_pool_cur_thr_num = 0;

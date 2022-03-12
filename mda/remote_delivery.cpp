@@ -387,7 +387,6 @@ static BOOL remote_delivery_entry(int request, void **apidata) try
 	if (request == PLUGIN_FREE) {
 		g_tls_ctx.reset();
 		g_tls_mutex_buf.reset();
-		g_files_allocator.reset();
 		return TRUE;
 	}
 	if (request != PLUGIN_INIT)

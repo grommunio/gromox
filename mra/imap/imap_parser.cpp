@@ -291,11 +291,7 @@ void imap_parser_stop()
 	
 	g_context_list2.clear();
 	g_context_list.reset();
-	g_alloc_file.reset();
 	g_mime_pool.reset();
-	g_alloc_xarray.reset();
-	g_alloc_dir.reset();
-	g_alloc_mjson.reset();
 	g_select_hash.reset();
 	if (g_support_starttls && g_ssl_ctx != nullptr) {
 		SSL_CTX_free(g_ssl_ctx);

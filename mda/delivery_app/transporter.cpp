@@ -346,7 +346,6 @@ static void transporter_collect_hooks()
  */
 static void transporter_collect_resource()
 {
-	g_file_allocator.reset();
 	g_mime_pool.reset();
 	g_data_ptr.reset();
 	g_free_ptr.reset();

@@ -292,7 +292,6 @@ int main(int argc, const char **argv) try
 		printf("[system]: can not run blocks allocator\n"); 
 		return EXIT_FAILURE;
 	}
-	auto cleanup_10 = make_scope_exit(blocks_allocator_stop);
 
 	imap_parser_init(context_num, context_aver_mitem, context_max_mem,
 		imap_conn_timeout, autologout_time, imap_auth_times,

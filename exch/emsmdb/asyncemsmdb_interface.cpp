@@ -129,7 +129,6 @@ void asyncemsmdb_interface_stop()
 	}
 	g_thread_ids.clear();
 	g_tag_hash.clear();
-	g_wait_allocator.reset();
 	g_async_hash.reset();
 }
 

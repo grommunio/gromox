@@ -280,7 +280,6 @@ static BOOL svc_midb_agent(int reason, void **ppdata)
 			}
 		}
 		g_server_list.clear();
-		g_file_allocator.reset();
 		return TRUE;
 	}
 	return TRUE;

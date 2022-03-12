@@ -205,7 +205,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		}
 		if (exmdb_parser_run(get_config_path()) != 0) {
 			printf("[exmdb_provider]: failed to run exmdb parser\n");
-			exmdb_server_stop();
 			db_engine_stop();
 			db_engine_free();
 			return FALSE;
@@ -214,7 +213,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 			printf("[exmdb_provider]: fail to trigger exmdb listener\n");
 			exmdb_listener_stop();
 			exmdb_parser_stop();
-			exmdb_server_stop();
 			db_engine_stop();
 			db_engine_free();
 			return FALSE;
@@ -223,7 +221,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 			printf("[exmdb_provider]: failed to run exmdb client\n");
 			exmdb_listener_stop();
 			exmdb_parser_stop();
-			exmdb_server_stop();
 			db_engine_stop();
 			db_engine_free();
 			return FALSE;
@@ -244,7 +241,6 @@ static BOOL svc_exmdb_provider(int reason, void **ppdata) try
 		exmdb_parser_stop();
 		db_engine_stop();
 		db_engine_free();
-		exmdb_server_stop();
 		return TRUE;
 	}
 	return TRUE;

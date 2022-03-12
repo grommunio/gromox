@@ -5492,7 +5492,6 @@ int mail_engine_run()
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_tid, nullptr, midbme_scanwork, nullptr);
 	if (ret != 0) {
-		g_alloc_mjson.reset();
 		printf("[mail_engine]: failed to create scan thread: %s\n", strerror(ret));
 		return -5;
 	}
@@ -5539,5 +5538,4 @@ void mail_engine_stop()
 	}
 	g_hash_table.clear();
 	g_mime_pool.reset();
-	g_alloc_mjson.reset();
 }
