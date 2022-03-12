@@ -9,8 +9,8 @@
 #include <map>
 #include <mutex>
 #include <string>
-#include <gromox/svc_common.h>
 #include <gromox/config_file.hpp>
+#include <gromox/svc_common.h>
 
 using namespace std::string_literals;
 static std::map<std::string, size_t> g_cont_tbl;

@@ -1,8 +1,8 @@
 #pragma once
 #include <cstring>
+#include <mysql.h>
 #include <string>
 #include <vector>
-#include <mysql.h>
 #include <gromox/resource_pool.hpp>
 #include "mysql_adaptor.h"
 

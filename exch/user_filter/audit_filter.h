@@ -1,6 +1,6 @@
 #pragma once
-#include <gromox/common_types.hpp>
 #include <ctime>
+#include <gromox/common_types.hpp>
 
 void audit_filter_init(BOOL case_sensitive, int audit_num, int audit_interval, 
     int audit_times);

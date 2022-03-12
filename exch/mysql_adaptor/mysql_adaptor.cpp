@@ -2,22 +2,22 @@
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
 #include <algorithm>
+#include <cstdio>
 #include <cstring>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <mysql.h>
 #include <set>
 #include <string>
+#include <unistd.h>
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/database_mysql.hpp>
 #include <gromox/defs.h>
-#include "mysql_adaptor.h"
 #include <gromox/util.hpp>
-#include <cstdio>
-#include <unistd.h>
-#include <mysql.h>
+#include "mysql_adaptor.h"
 #include "sql2.hpp"
 #define MLIST_PRIVILEGE_ALL				0
 #define MLIST_PRIVILEGE_INTERNAL		1

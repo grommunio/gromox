@@ -13,8 +13,8 @@
 #include <string>
 #include <utility>
 #include <gromox/clock.hpp>
-#include <gromox/svc_common.h>
 #include <gromox/config_file.hpp>
+#include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 
 using namespace std::string_literals;

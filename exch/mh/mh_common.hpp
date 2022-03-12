@@ -5,12 +5,12 @@
 #include <cstddef>
 #include <cstdio>
 #include <utility>
+#include <libHX/string.h>
 #include <gromox/clock.hpp>
 #include <gromox/defs.h>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/guid.hpp>
 #include <gromox/hpm_common.h>
-#include <libHX/string.h>
 
 namespace hpm_mh {
 

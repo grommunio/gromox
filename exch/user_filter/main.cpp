@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <cstdio>
 #include <cstdlib>
+#include <cstring>
+#include <fcntl.h>
 #include <string>
 #include <unistd.h>
 #include <libHX/string.h>
+#include <sys/types.h>
+#include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/svc_common.h>
-#include "str_filter.h"
-#include <gromox/config_file.hpp>
 #include <gromox/util.hpp>
-#include <fcntl.h>
-#include <cstdio>
-#include <cstring>
-#include <sys/types.h>
+#include "str_filter.h"
 
 using namespace std::string_literals;
 using namespace gromox;

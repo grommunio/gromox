@@ -8,17 +8,17 @@
  *  it will never pass through this module.
  *
  */
+#include <cstdio>
+#include <fcntl.h>
 #include <mutex>
 #include <string>
 #include <unistd.h>
 #include <unordered_map>
 #include <libHX/string.h>
-#include "str_filter.h"
-#include "audit_filter.h"
-#include <gromox/util.hpp>
-#include <cstdio>
-#include <fcntl.h>
 #include <sys/time.h>
+#include <gromox/util.hpp>
+#include "audit_filter.h"
+#include "str_filter.h"
 
 namespace {
 struct STR_AUDIT {

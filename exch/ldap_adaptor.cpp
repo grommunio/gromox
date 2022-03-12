@@ -3,20 +3,20 @@
 // This file is part of Gromox.
 #define DECLARE_SVC_API_STATIC
 #include <cerrno>
-#include <typeinfo>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ldap.h>
 #include <memory>
 #include <string>
+#include <typeinfo>
 #include <utility>
-#include <ldap.h>
 #include <libHX/string.h>
+#include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/resource_pool.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/tie.hpp>
-#include <gromox/config_file.hpp>
 #include <gromox/util.hpp>
 #include "ldap_adaptor.hpp"
 #include "mysql_adaptor/mysql_adaptor.h"

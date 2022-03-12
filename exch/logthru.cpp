@@ -14,7 +14,9 @@
 #include <gromox/config_file.hpp>
 #include <gromox/fileio.h>
 #include <gromox/svc_common.h>
+
 using namespace gromox;
+
 static unsigned int g_max_loglevel = LV_WARN;
 static std::string g_log_filename;
 static std::shared_mutex g_log_mutex;

@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #define DECLARE_PROC_API_STATIC
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <libHX/string.h>
 #include <gromox/defs.h>
-#include <gromox/proc_common.h>
-#include <gromox/zz_ndr_stack.hpp>
-#include <gromox/util.hpp>
 #include <gromox/guid.hpp>
-#include <cstring>
-#include <cstdlib>
-#include <cstdio>
+#include <gromox/proc_common.h>
+#include <gromox/util.hpp>
+#include <gromox/zz_ndr_stack.hpp>
 #define TRY(expr) do { int v = (expr); if (v != NDR_ERR_SUCCESS) return v; } while (false)
 
 using namespace gromox;

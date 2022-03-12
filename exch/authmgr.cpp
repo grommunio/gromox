@@ -8,9 +8,9 @@
 #include <string>
 #include <unistd.h>
 #include <libHX/string.h>
-#include <gromox/svc_common.h>
 #include <gromox/common_types.hpp>
 #include <gromox/config_file.hpp>
+#include <gromox/svc_common.h>
 #include "authmgr.hpp"
 #include "ldap_adaptor.hpp"
 #include "mysql_adaptor/mysql_adaptor.h"

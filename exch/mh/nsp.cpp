@@ -10,10 +10,10 @@
 #include <optional>
 #include <pthread.h>
 #include <string>
+#include <unistd.h>
 #include <unordered_map>
 #include <utility>
 #include <variant>
-#include <unistd.h>
 #include <libHX/ctype_helper.h>
 #include <libHX/string.h>
 #include <gromox/atomic.hpp>

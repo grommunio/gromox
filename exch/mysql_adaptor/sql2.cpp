@@ -5,7 +5,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <errmsg.h>
 #include <map>
+#include <mysql.h>
 #include <string>
 #include <typeinfo>
 #include <utility>
@@ -17,8 +19,6 @@
 #include <gromox/fileio.h>
 #include <gromox/mapidefs.h>
 #include <gromox/svc_common.h>
-#include <mysql.h>
-#include <errmsg.h>
 #include "mysql_adaptor.h"
 #include "sql2.hpp"
 

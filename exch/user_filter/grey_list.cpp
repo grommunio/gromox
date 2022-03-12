@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <cstdio>
 #include <cstring>
+#include <fcntl.h>
 #include <mutex>
 #include <shared_mutex>
 #include <string>
@@ -8,15 +10,13 @@
 #include <unordered_map>
 #include <utility>
 #include <libHX/string.h>
+#include <sys/time.h>
 #include <gromox/defs.h>
-#include "str_filter.h"
-#include "grey_list.h"
 #include <gromox/list_file.hpp>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
-#include <sys/time.h>
-#include <fcntl.h>
-#include <cstdio>
+#include "grey_list.h"
+#include "str_filter.h"
 
 using namespace gromox;
 

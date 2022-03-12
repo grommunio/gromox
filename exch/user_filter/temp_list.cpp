@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cstring>
+#include <ctime>
+#include <fcntl.h>
 #include <mutex>
 #include <unistd.h>
 #include <libHX/string.h>
-#include "temp_list.h"
-#include "str_filter.h"
 #include <gromox/str_hash.hpp>
-#include "grey_list.h"
 #include <gromox/util.hpp>
-#include <fcntl.h>
-#include <ctime>
-#include <cstring>
+#include "grey_list.h"
+#include "str_filter.h"
+#include "temp_list.h"
 
 static int temp_list_collect_string_entry();
 
