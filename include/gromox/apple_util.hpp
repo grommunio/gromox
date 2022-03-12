@@ -1,8 +1,8 @@
 #pragma once
 #include <cstdint>
+#include <gromox/applefile.hpp>
 #include <gromox/binhex.hpp>
 #include <gromox/macbinary.hpp>
-#include <gromox/applefile.hpp>
 
 BINARY* apple_util_binhex_to_appledouble(const BINHEX *pbinhex);
 BINARY* apple_util_macbinary_to_appledouble(const MACBINARY *pmacbin);

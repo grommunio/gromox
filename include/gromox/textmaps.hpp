@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
-#include <gromox/defs.h>
 #include <gromox/common_types.hpp>
+#include <gromox/defs.h>
 namespace gromox {
 extern GX_EXPORT void textmaps_init(const char *datapath);
 extern GX_EXPORT bool verify_cpid(uint32_t);

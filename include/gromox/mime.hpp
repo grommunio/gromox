@@ -1,8 +1,8 @@
 #pragma once
-#include <gromox/stream.hpp>
+#include <openssl/ssl.h>
 #include <gromox/mem_file.hpp>
 #include <gromox/simple_tree.hpp>
-#include <openssl/ssl.h>
+#include <gromox/stream.hpp>
 #define VALUE_LEN	256
 
 enum{

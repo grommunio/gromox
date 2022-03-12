@@ -1,9 +1,9 @@
 #pragma once
 #include <memory>
 #include <mutex>
-#include <gromox/single_list.hpp>
 #include <gromox/lib_buffer.hpp>
 #include <gromox/mime.hpp>
+#include <gromox/single_list.hpp>
 
 struct MIME_POOL;
 struct MIME_POOL_NODE {

@@ -2,8 +2,8 @@
 #include <memory>
 #include <gromox/defs.h>
 #include <gromox/mime.hpp>
-#include <gromox/stream.hpp>
 #include <gromox/simple_tree.hpp>
+#include <gromox/stream.hpp>
 #define	MIME_INSERT_BEFORE	SIMPLE_TREE_INSERT_BEFORE
 #define MIME_INSERT_AFTER	SIMPLE_TREE_INSERT_AFTER
 #define MIME_ADD_FIRST		SIMPLE_TREE_ADD_FIRST

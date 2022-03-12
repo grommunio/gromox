@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
-#include <gromox/defs.h>
 #include <gromox/common_types.hpp>
+#include <gromox/defs.h>
 #include <gromox/generic_connection.hpp>
 #include <gromox/mem_file.hpp>
 

@@ -1,11 +1,11 @@
 #pragma once
 #include <cstdint>
 #include <typeinfo>
-#include <gromox/dcerpc.hpp>
 #include <gromox/common_types.hpp>
+#include <gromox/dcerpc.hpp>
+#include <gromox/ndr.hpp>
 #include <gromox/plugin.hpp>
 #include <gromox/rpc_types.hpp>
-#include <gromox/ndr.hpp>
 #define NDR_STACK_IN				0
 #define NDR_STACK_OUT				1
 

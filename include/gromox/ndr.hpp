@@ -1,9 +1,9 @@
 #pragma once
 #include <cstdint>
 #include <gromox/common_types.hpp>
+#include <gromox/double_list.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/rpc_types.hpp>
-#include <gromox/double_list.hpp>
 
 enum {
 	NDR_ERR_SUCCESS = EXT_ERR_SUCCESS,

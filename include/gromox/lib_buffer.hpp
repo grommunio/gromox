@@ -3,10 +3,10 @@
 #include <cstring>
 #include <memory>
 #include <mutex>
+#include <pthread.h>
 #include <type_traits>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
-#include <pthread.h>
 #define FILE_BLOCK_SIZE 0x100
 #define FILE_ALLOC_SIZE (FILE_BLOCK_SIZE + sizeof(DOUBLE_LIST_NODE))
 #define WSIZE           sizeof(void*)  /* word size (bytes) */

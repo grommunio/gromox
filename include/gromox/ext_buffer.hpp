@@ -3,8 +3,8 @@
 #include <cstdint>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
-#include <gromox/mapidefs.h>
 #include <gromox/mapi_types.hpp>
+#include <gromox/mapidefs.h>
 
 enum {
 	EXT_ERR_SUCCESS = 0,

@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <list>
 #include <gromox/defs.h>
-#include <gromox/mapi_types.hpp>		
+#include <gromox/mapi_types.hpp>
 
 enum {
 	PCL_CONFLICT = 0,
