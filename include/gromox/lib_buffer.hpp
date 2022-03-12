@@ -11,13 +11,6 @@
 #define FILE_ALLOC_SIZE (FILE_BLOCK_SIZE + sizeof(DOUBLE_LIST_NODE))
 #define WSIZE           sizeof(void*)  /* word size (bytes) */
 
-enum PARAM_TYPE {
-    FREE_LIST_SIZE,
-    ALLOCATED_NUM,
-    MEM_ITEM_SIZE,
-    MEM_ITEM_NUM
-};
-
 struct GX_EXPORT LIB_BUFFER {
 	LIB_BUFFER(size_t size, size_t items, BOOL thr_safe);
 	~LIB_BUFFER();
@@ -46,7 +39,6 @@ struct GX_EXPORT LIB_BUFFER {
 		i->~T();
 		put_raw(i);
 	}
-	size_t get_param(PARAM_TYPE type);
 
 	void *heap_list_head = nullptr, *free_list_head = nullptr, *cur_heap_head = nullptr;
 	size_t free_list_size = 0, allocated_num = 0, item_size = 0, item_num = 0;

@@ -167,30 +167,3 @@ void LIB_BUFFER::put_raw(void *item)
 	m_buf->free_list_size += 1;
 	m_buf->allocated_num  -= 1;
 }
-
-size_t LIB_BUFFER::get_param(PARAM_TYPE type)
-{
-	auto m_buf = this;
-	size_t	ret_val = 0xFFFFFFFF;
-	std::unique_lock tlock(m_buf->m_mutex, std::defer_lock_t{});
-	if (m_buf->is_thread_safe)
-		tlock.lock();
-	switch (type) {
-	case FREE_LIST_SIZE:
-		ret_val = m_buf->free_list_size;
-		break;
-	case ALLOCATED_NUM:
-		ret_val = m_buf->allocated_num;
-		break;
-	case MEM_ITEM_SIZE:
-		ret_val = m_buf->item_size;
-		break;
-	case MEM_ITEM_NUM:
-		ret_val = m_buf->item_num;
-		break;
-	default:
-		debug_info("[lib_buffer]: unknown type %d", type);
-	}
-	return ret_val;
-}
-

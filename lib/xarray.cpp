@@ -24,10 +24,9 @@ XARRAY::XARRAY(LIB_BUFFER *pbuf_pool, size_t dsize)
 	double_list_init(&pxarray->mlist);
 	pxarray->mbuf_pool	 = pbuf_pool;
 	pxarray->data_size = dsize;
-	if (dsize > pbuf_pool->get_param(MEM_ITEM_SIZE) - EXTRA_XARRAYNODE_SIZE) {
+	if (dsize > pbuf_pool->item_size - EXTRA_XARRAYNODE_SIZE)
 		debug_info("[xarray]: xarray_init warning: xarray data"
 			" size larger than allocator item size");
-	}
 }
 
 XARRAY::~XARRAY()

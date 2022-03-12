@@ -4,6 +4,7 @@
  *	  memory, it is virtual file. Caution: Not thread-safe.
  */
 #include <cstring>
+#include <gromox/lib_buffer.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/util.hpp>
 
@@ -24,7 +25,7 @@ void mem_file_init(MEM_FILE *pfile, LIB_BUFFER *palloc)
 	double_list_init(&pfile->list);
 
 #ifdef _DEBUG_UMTA
-	if (palloc->get_param(MEM_ITEM_SIZE) - sizeof(DOUBLE_LIST_NODE) < FILE_BLOCK_SIZE) {
+	if (palloc->item_size - sizeof(DOUBLE_LIST_NODE) < FILE_BLOCK_SIZE) {
 		debug_info("[mem_file]: item size in allocator is too small");
 		return;
 	}

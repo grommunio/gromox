@@ -7,6 +7,7 @@
 #include <cstring>
 #include <unistd.h>
 #include <gromox/common_types.hpp>
+#include <gromox/lib_buffer.hpp>
 #include <gromox/stream.hpp>
 #include <gromox/util.hpp>
 
@@ -35,11 +36,9 @@ STREAM::STREAM(LIB_BUFFER *palloc) :
 	double_list_init(&pstream->list);
 
 #ifdef _DEBUG_UMTA
-	if (palloc->get_param(MEM_ITEM_SIZE) - sizeof(DOUBLE_LIST_NODE) <
-		STREAM_BLOCK_SIZE) {
+	if (palloc->item_size - sizeof(DOUBLE_LIST_NODE) < STREAM_BLOCK_SIZE)
 		throw std::invalid_parameter("[stream]: item size in stream allocator is too "
 					"small in stream_init");
-	}
 #endif
 	/* allocate the first node in initialization */
 	bappend = stream_append_node(pstream);
