@@ -31,8 +31,8 @@ int smtp_cmd_handler_helo(const char* cmd_line, int line_length,
 			return 506;
         } else {
             /* copy parameter to hello_domain */
-			memcpy(pcontext->mail.envelope.hello_domain, cmd_line + 5, line_length - 5);
-			pcontext->mail.envelope.hello_domain[line_length - 5] = '\0';
+			memcpy(pcontext->menv.hello_domain, cmd_line + 5, line_length - 5);
+			pcontext->menv.hello_domain[line_length-5] = '\0';
         }
     } else if(line_length > 255 + 1 + 4) {
         /* domain name too long */
@@ -57,8 +57,8 @@ static int smtp_cmd_handler_xhlo(const char *cmd_line, int line_length,
 			return 506;
         } else {
             /* copy parameter to hello_domain */
-			memcpy(pcontext->mail.envelope.hello_domain, cmd_line + 5, line_length - 5);
-			pcontext->mail.envelope.hello_domain[line_length - 5] = '\0';
+			memcpy(pcontext->menv.hello_domain, cmd_line + 5, line_length - 5);
+			pcontext->menv.hello_domain[line_length-5] = '\0';
         }
     } else if(line_length > 255 + 1 + 4) {
         /* domain name too long */
@@ -115,7 +115,7 @@ int smtp_cmd_handler_starttls(const char *cmd_line, int line_length,
 	if (!g_param.support_starttls)
 		return 506;
 	pcontext->last_cmd = T_STARTTLS_CMD;
-	memset(pcontext->mail.envelope.hello_domain, 0, arsizeof(pcontext->mail.envelope.hello_domain));
+	memset(pcontext->menv.hello_domain, 0, arsizeof(pcontext->menv.hello_domain));
 	smtp_parser_reset_context_envelope(pcontext);
 	return 210;
 }
@@ -178,7 +178,7 @@ int smtp_cmd_handler_mail(const char* cmd_line, int line_length,
             T_MAIL_CMD == pcontext->last_cmd ||
             T_END_MAIL == pcontext->last_cmd) {
             pcontext->last_cmd = T_MAIL_CMD;
-			snprintf(pcontext->mail.envelope.from, arsizeof(pcontext->mail.envelope.from), "%s@%s",
+			snprintf(pcontext->menv.from, arsizeof(pcontext->menv.from), "%s@%s",
                 email_addr.local_part, email_addr.domain);
             /* 250 OK */
 			return 205;
@@ -239,7 +239,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 				}
 				system_services_log_info(LV_NOTICE, "remote=%s from=%s to=%s  RCPT address is invalid",
 					pcontext->connection.client_ip,
-					pcontext->mail.envelope.from, buff);
+					pcontext->menv.from, buff);
                 return DISPATCH_CONTINUE;		
             }
             if ('\0' != path[0] && NULL != system_services_check_full &&
@@ -257,7 +257,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
 				}
 				system_services_log_info(LV_NOTICE, "remote=%s from=%s to=%s  Mailbox is full",
 					pcontext->connection.client_ip,
-					pcontext->mail.envelope.from, buff);
+					pcontext->menv.from, buff);
 				return DISPATCH_CONTINUE;		
             }
 		}
@@ -265,7 +265,7 @@ int smtp_cmd_handler_rcpt(const char* cmd_line, int line_length,
         /* everything is OK */
 		snprintf(buff, arsizeof(buff), "%s@%s", email_addr.local_part,
             email_addr.domain);
-		pcontext->mail.envelope.f_rcpt_to.writeline(buff);
+		pcontext->menv.f_rcpt_to.writeline(buff);
         /* 250 OK */
 		return 205;
     } else {
@@ -297,7 +297,7 @@ int smtp_cmd_handler_data(const char* cmd_line, int line_length,
 	unsigned int size = STREAM_BLOCK_SIZE;
 	void *pbuff = pcontext->stream.get_read_buf(&size);
     if (NULL == pbuff) {
-		/* clear stream, all envelope imformation is recorded in mail.envelope */
+		/* clear stream, all envelope imformation is recorded in menv */
 		pcontext->stream.clear();
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, smtp_reply_str, string_length);

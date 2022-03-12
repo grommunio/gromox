@@ -650,9 +650,9 @@ static int smtp_parser_dispatch_cmd(const char *cmd, int len, SMTP_CONTEXT *ctx)
 
 void smtp_parser_reset_context_envelope(SMTP_CONTEXT *pcontext)
 {
-	pcontext->mail.envelope.from[0] = '\0';
-	strcpy(pcontext->mail.envelope.parsed_domain, "unknown");
-	pcontext->mail.envelope.f_rcpt_to.clear();
+	pcontext->menv.from[0] = '\0';
+	strcpy(pcontext->menv.parsed_domain, "unknown");
+	pcontext->menv.f_rcpt_to.clear();
 }
 
 SMTP_CONTEXT::SMTP_CONTEXT() :
@@ -660,7 +660,7 @@ SMTP_CONTEXT::SMTP_CONTEXT() :
 {
 	auto pcontext = this;
 	auto &palloc_file = g_files_allocator;
-	mem_file_init(&pcontext->mail.envelope.f_rcpt_to, palloc_file.get());
+	mem_file_init(&pcontext->menv.f_rcpt_to, palloc_file.get());
 }
 
 static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext)
@@ -689,17 +689,17 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
 	pcontext->total_length                 = 0;
 	pcontext->pre_rstlen                   = 0;
 	pcontext->stream.clear();
-	strcpy(pcontext->mail.envelope.parsed_domain, "unknown");
-	memset(&pcontext->mail.envelope.hello_domain, 0, arsizeof(pcontext->mail.envelope.hello_domain));
-	memset(&pcontext->mail.envelope.from, 0, arsizeof(pcontext->mail.envelope.from));
-	pcontext->mail.envelope.f_rcpt_to.clear();
+	strcpy(pcontext->menv.parsed_domain, "unknown");
+	memset(&pcontext->menv.hello_domain, 0, arsizeof(pcontext->menv.hello_domain));
+	memset(&pcontext->menv.from, 0, arsizeof(pcontext->menv.from));
+	pcontext->menv.f_rcpt_to.clear();
 	memset(&pcontext->flusher, 0, sizeof(FLUSH_INFO));
 }
 
 SMTP_CONTEXT::~SMTP_CONTEXT()
 {
 	auto pcontext = this;
-	mem_file_free(&pcontext->mail.envelope.f_rcpt_to);
+	mem_file_free(&pcontext->menv.f_rcpt_to);
 }
 
 /*
@@ -722,12 +722,12 @@ void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,
 	vasprintf(&unique_tie(line_buf), format, ap);
 	va_end(ap);
 	
-	pcontext->mail.envelope.f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
+	pcontext->menv.f_rcpt_to.seek(MEM_FILE_READ_PTR, 0, MEM_FILE_SEEK_BEGIN);
 	char rcpt[UADDR_SIZE];
 	std::string all_rcpts;
 	static constexpr size_t limit = 3;
 	for (i = 0; i < limit; ++i) {
-		auto size_read = pcontext->mail.envelope.f_rcpt_to.readline(rcpt, arsizeof(rcpt));
+		auto size_read = pcontext->menv.f_rcpt_to.readline(rcpt, arsizeof(rcpt));
 		if (size_read == MEM_END_OF_FILE) {
 			break;
 		}
@@ -735,13 +735,13 @@ void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level,
 			all_rcpts += ' ';
 		all_rcpts += rcpt;
 	}
-	while (pcontext->mail.envelope.f_rcpt_to.readline(rcpt, arsizeof(rcpt)) != MEM_END_OF_FILE)
+	while (pcontext->menv.f_rcpt_to.readline(rcpt, arsizeof(rcpt)) != MEM_END_OF_FILE)
 		++i;
 	if (i > limit)
 		all_rcpts += " + " + std::to_string(i - limit) + " others";
 	system_services_log_info(level, "remote=[%s] from=<%s> to={%s} %s",
 		pcontext->connection.client_ip,
-		pcontext->mail.envelope.from, all_rcpts.c_str(), line_buf.get());
+		pcontext->menv.from, all_rcpts.c_str(), line_buf.get());
 } catch (const std::bad_alloc &) {
 	fprintf(stderr, "E-1609: ENOMEM\n");
 }

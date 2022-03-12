@@ -24,7 +24,7 @@ enum {
 
 struct STREAM;
 
-struct ENVELOPE_INFO_BASE {
+struct envelope_info {
 	char parsed_domain[UDOM_SIZE]; /* parsed domain according connection*/
 	char hello_domain[UDOM_SIZE]; /* domain name after helo */
 	char from[UADDR_SIZE]; /* envelope's from message */
@@ -43,7 +43,7 @@ struct FLUSH_ENTITY final {
 	STREAM *pstream = nullptr;
 	GENERIC_CONNECTION *pconnection = nullptr;
 	FLUSH_INFO *pflusher = nullptr; /* the flusher for saving mail information */
-	ENVELOPE_INFO_BASE *penvelope = nullptr;
+	envelope_info *penvelope = nullptr;
 	BOOL is_spam = false; /* whether the mail is spam */
 	int context_ID = 0;
 	unsigned int command_protocol = 0;

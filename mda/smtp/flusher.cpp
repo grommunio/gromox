@@ -112,7 +112,7 @@ BOOL flusher_put_to_queue(SMTP_CONTEXT *pcontext) try
 	
 	pentity->is_spam        = pcontext->is_spam;
 	pentity->pconnection    = &pcontext->connection;
-	pentity->penvelope      = &pcontext->mail.envelope;
+	pentity->penvelope      = &pcontext->menv;
 	pentity->pflusher       = &pcontext->flusher;
 	pentity->pstream        = &pcontext->stream;
 	pentity->context_ID     = pcontext->context_id;
@@ -153,7 +153,7 @@ void flusher_cancel(SMTP_CONTEXT *pcontext)
 	FLUSH_ENTITY entity;
 	entity.is_spam      = pcontext->is_spam;
 	entity.pconnection  = &pcontext->connection;
-	entity.penvelope    = &pcontext->mail.envelope;
+	entity.penvelope    = &pcontext->menv;
 	entity.pflusher     = &pcontext->flusher;
 	entity.pstream      = &pcontext->stream;
 

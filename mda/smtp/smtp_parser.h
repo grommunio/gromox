@@ -56,13 +56,6 @@ enum {
     ENCODING_QUOTED_PRINTABLE
 };
 
-struct ENVELOPE_INFO : public ENVELOPE_INFO_BASE {
-};
-
-struct MAIL_INFO {
-	ENVELOPE_INFO envelope;
-};
-
 struct EXT_DATA {
     char             ext_data[MAX_EXTRA_DATA_INDEX][MAX_EXTRA_DATA_DATALEN];
     char             ext_tag[MAX_EXTRA_DATA_INDEX][MAX_EXTRA_DATA_TAGLEN];
@@ -79,7 +72,7 @@ struct SMTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	std::optional<STREAM> stream_second; /* stream for recording splitted data */
 	unsigned int command_protocol = 0;
 	int last_cmd = 0; /* indicate SMTP state of the connection */
-	MAIL_INFO mail{}; /* for recording the mail information */
+	envelope_info menv{}; /* for recording the mail information */
 	FLUSH_INFO flusher{}; /* the flusher for saving mail information */
 	BOOL is_spam = false; /* whether the mail is spam */
 	unsigned int session_num = 0; /* session number of the context */
