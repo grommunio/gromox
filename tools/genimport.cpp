@@ -464,7 +464,7 @@ void gi_folder_map_write(const gi_folder_map_t &map)
 	ret = write(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
 	if (ret < 0)
 		throw YError("PG-1106: %s", strerror(-ret));
-	else if (ret != ep.m_offset)
+	else if (static_cast<size_t>(ret) != ep.m_offset)
 		throw YError("PG-1107");
 }
 
@@ -515,7 +515,7 @@ void gi_name_map_write(const gi_name_map &map)
 	ret = write(STDOUT_FILENO, ep.m_vdata, ep.m_offset);
 	if (ret < 0)
 		throw YError("PG-1114: %s", strerror(-ret));
-	else if (ret != ep.m_offset)
+	else if (static_cast<size_t>(ret) != ep.m_offset)
 		throw YError("PG-1115");
 }
 

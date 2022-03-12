@@ -523,8 +523,8 @@ static void *tmr_thrwork(void *param)
 			std::unique_lock li_hold(g_list_lock);
 			auto ptimer = put_timer(std::move(tmr));
 
-			temp_len = sprintf(temp_line, "%d\t%ld\t", ptimer->t_id,
-						ptimer->exec_time);
+			temp_len = sprintf(temp_line, "%d\t%lld\t", ptimer->t_id,
+			           static_cast<long long>(ptimer->exec_time));
 			encode_line(ptimer->command.c_str(), temp_line + temp_len);
 			temp_len = strlen(temp_line);
 			temp_line[temp_len] = '\n';

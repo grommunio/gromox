@@ -726,8 +726,8 @@ static void output_event(time_t start_time, time_t end_time,
 	char tmp_buff[4096];
 	
 	if (NULL == g_tz_component) {
-		printf("{\"StartTime\":%lu, ", start_time);
-		printf("\"EndTime\":%lu, ", end_time);
+		printf("{\"StartTime\":%lld, ", static_cast<long long>(start_time));
+		printf("\"EndTime\":%lld, ", static_cast<long long>(end_time));
 	} else {
 		ical_utc_to_datetime(g_tz_component, start_time, &itime);
 		printf("{\"StartTime\":\"%d-%02d-%02dT%02d:%02d:%02d\", ",
