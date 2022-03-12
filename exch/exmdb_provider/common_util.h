@@ -1,14 +1,14 @@
 #pragma once
 #include <cstdint>
 #include <cstdlib>
+#include <sqlite3.h>
 #include <string>
 #include <type_traits>
-#include <gromox/defs.h>
-#include <gromox/mail.hpp>
 #include <gromox/common_types.hpp>
+#include <gromox/defs.h>
 #include <gromox/element_data.hpp>
 #include <gromox/exmdb_rpc.hpp>
-#include <sqlite3.h>
+#include <gromox/mail.hpp>
 #include "../mysql_adaptor/mysql_adaptor.h"
 
 #define SOCKET_TIMEOUT										60

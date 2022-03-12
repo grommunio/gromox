@@ -1,36 +1,36 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <chrono>
+#include <condition_variable>
 #include <csignal>
 #include <cstdint>
-#include <condition_variable>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
 #include <mutex>
+#include <pthread.h>
 #include <string>
+#include <unistd.h>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 #include <gromox/atomic.hpp>
 #include <gromox/database.h>
-#include <gromox/exmdb_rpc.hpp>
-#include <gromox/mapidefs.h>
-#include <gromox/util.hpp>
-#include <gromox/guid.hpp>
-#include <gromox/scope.hpp>
-#include "db_engine.h"
-#include <gromox/eid_array.hpp>
-#include <gromox/ext_buffer.hpp>
 #include <gromox/double_list.hpp>
-#include <gromox/restriction.hpp>
-#include "common_util.h"
-#include "exmdb_server.h"
-#include <gromox/sortorder_set.hpp>
+#include <gromox/eid_array.hpp>
+#include <gromox/exmdb_rpc.hpp>
+#include <gromox/ext_buffer.hpp>
+#include <gromox/guid.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
+#include <gromox/restriction.hpp>
+#include <gromox/scope.hpp>
+#include <gromox/sortorder_set.hpp>
+#include <gromox/util.hpp>
+#include "common_util.h"
+#include "db_engine.h"
+#include "exmdb_server.h"
 #include "notification_agent.h"
-#include <ctime>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <unistd.h>
-#include <pthread.h>
 #define LLD(x) static_cast<long long>(x)
 #define LLU(x) static_cast<unsigned long long>(x)
 

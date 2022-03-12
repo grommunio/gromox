@@ -1,9 +1,9 @@
 #pragma once
 #include <cstdint>
-#include <gromox/defs.h>
-#include <gromox/mapi_types.hpp>
-#include <gromox/element_data.hpp>
 #include <gromox/alloc_context.hpp>
+#include <gromox/defs.h>
+#include <gromox/element_data.hpp>
+#include <gromox/mapi_types.hpp>
 
 extern void (*exmdb_server_event_proc)(const char *dir,
 	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify);

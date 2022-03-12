@@ -1,31 +1,31 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <algorithm>
 #include <cerrno>
+#include <cstdio>
 #include <cstring>
+#include <ctime>
+#include <dirent.h>
+#include <fcntl.h>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
 #include <string>
+#include <unistd.h>
 #include <utility>
 #include <vector>
 #include <libHX/string.h>
-#include <gromox/defs.h>
-#include "bounce_producer.h"
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <gromox/database.h>
+#include <gromox/defs.h>
 #include <gromox/dsn.hpp>
 #include <gromox/fileio.h>
-#include <gromox/svc_common.h>
-#include "common_util.h"
 #include <gromox/mail_func.hpp>
+#include <gromox/svc_common.h>
 #include <gromox/timezone.hpp>
 #include <gromox/util.hpp>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
-#include <unistd.h>
-#include <cstdio>
-#include <fcntl.h>
-#include <ctime>
+#include "bounce_producer.h"
+#include "common_util.h"
 
 using namespace gromox;
 

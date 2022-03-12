@@ -3,10 +3,10 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
-#include <gromox/element_data.hpp>
-#include <gromox/double_list.hpp>
-#include <gromox/mapi_types.hpp>
 #include <sqlite3.h>
+#include <gromox/double_list.hpp>
+#include <gromox/element_data.hpp>
+#include <gromox/mapi_types.hpp>
 #define CONTENT_ROW_HEADER						1
 #define CONTENT_ROW_MESSAGE						2
 

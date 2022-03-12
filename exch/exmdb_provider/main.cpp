@@ -1,26 +1,26 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <string>
 #include <utility>
 #include <libHX/string.h>
+#include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/paths.h>
-#include "bounce_producer.h"
 #include <gromox/svc_common.h>
-#include "exmdb_listener.h"
-#include "exmdb_client.h"
-#include "exmdb_server.h"
-#include "exmdb_parser.h"
-#include "common_util.h"
-#include <gromox/config_file.hpp>
-#include "db_engine.h"
 #include <gromox/util.hpp>
-#include <cstring>
-#include <cstdlib>
-#include <cstdio>
+#include "bounce_producer.h"
+#include "common_util.h"
+#include "db_engine.h"
+#include "exmdb_client.h"
+#include "exmdb_listener.h"
+#include "exmdb_parser.h"
+#include "exmdb_server.h"
 
 using namespace std::string_literals;
 using namespace gromox;

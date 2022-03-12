@@ -5,10 +5,10 @@
 #include <list>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
-#include "exmdb_client.h"
-#include "exmdb_server.h"
 #include "common_util.h"
+#include "exmdb_client.h"
 #include "exmdb_ext.h"
+#include "exmdb_server.h"
 
 using namespace gromox;
 

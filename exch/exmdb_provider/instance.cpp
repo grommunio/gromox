@@ -14,15 +14,14 @@
 #include <gromox/database.h>
 #include <gromox/endian.hpp>
 #include <gromox/fileio.h>
+#include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
-#include <gromox/scope.hpp>
-#include "exmdb_server.h"
-#include "common_util.h"
-#include "db_engine.h"
-#include <gromox/mail_func.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
+#include "common_util.h"
+#include "db_engine.h"
+#include "exmdb_server.h"
 #define UI(x) static_cast<unsigned int>(x)
 #define LLU(x) static_cast<unsigned long long>(x)
 

@@ -6,16 +6,16 @@
 #include <memory>
 #include <string>
 #include <gromox/fileio.h>
+#include <gromox/html.hpp>
+#include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
+#include <gromox/rop_util.hpp>
+#include <gromox/rtf.hpp>
+#include <gromox/rtfcp.hpp>
 #include <gromox/scope.hpp>
 #include <gromox/tie.hpp>
 #include "common_util.h"
 #include "exmdb_server.h"
-#include <gromox/html.hpp>
-#include <gromox/mail_func.hpp>
-#include <gromox/rtf.hpp>
-#include <gromox/rtfcp.hpp>
-#include <gromox/rop_util.hpp>
 
 using namespace gromox;
 

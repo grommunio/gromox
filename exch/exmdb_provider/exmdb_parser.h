@@ -3,11 +3,11 @@
 #include <list>
 #include <memory>
 #include <mutex>
+#include <pthread.h>
 #include <string>
 #include <gromox/atomic.hpp>
 #include <gromox/common_types.hpp>
 #include <gromox/double_list.hpp>
-#include <pthread.h>
 
 class EXMDB_CONNECTION : public std::enable_shared_from_this<EXMDB_CONNECTION> {
 	public:

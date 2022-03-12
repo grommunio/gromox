@@ -1,9 +1,9 @@
 #pragma once
 #include <cstdint>
 #include <gromox/defs.h>
-#include <gromox/mapi_types.hpp>
 #include <gromox/element_data.hpp>
 #include <gromox/exmdb_rpc.hpp>
+#include <gromox/mapi_types.hpp>
 
 struct EXMDB_REQUEST;
 struct EXMDB_RESPONSE;

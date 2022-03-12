@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
-#include <gromox/database.h>
-#include <gromox/mapidefs.h>
-#include "exmdb_server.h"
-#include "common_util.h"
-#include <gromox/list_file.hpp>
-#include "db_engine.h"
-#include <gromox/rop_util.hpp>
-#include <gromox/guid.hpp>
-#include <gromox/scope.hpp>
-#include <gromox/util.hpp>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <cstdio>
 #include <ctime>
+#include <gromox/database.h>
+#include <gromox/guid.hpp>
+#include <gromox/list_file.hpp>
+#include <gromox/mapidefs.h>
+#include <gromox/rop_util.hpp>
+#include <gromox/scope.hpp>
+#include <gromox/util.hpp>
+#include "common_util.h"
+#include "db_engine.h"
+#include "exmdb_server.h"
 #define ALLOCATION_INTERVAL						24*60*60
 
 using namespace gromox;

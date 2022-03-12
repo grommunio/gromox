@@ -1,6 +1,6 @@
 #pragma once
-#include <gromox/mail.hpp>
 #include <sqlite3.h>
+#include <gromox/mail.hpp>
 
 enum{
     BOUNCE_AUTO_RESPONSE,

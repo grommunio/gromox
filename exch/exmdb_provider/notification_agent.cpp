@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <chrono>
 #include <cstdint>
+#include <ctime>
 #include <memory>
 #include <mutex>
+#include <poll.h>
+#include <unistd.h>
 #include <utility>
 #include <gromox/exmdb_rpc.hpp>
 #include "common_util.h"
-#include "notification_agent.h"
+#include "exmdb_ext.h"
 #include "exmdb_parser.h"
 #include "exmdb_server.h"
-#include "exmdb_ext.h"
-#include <unistd.h>
-#include <ctime>
-#include <poll.h>
+#include "notification_agent.h"
 
 void notification_agent_backward_notify(const char *remote_id,
     const DB_NOTIFY_DATAGRAM *pnotify)
