@@ -120,7 +120,7 @@ static std::mutex g_queue_lock, g_cond_mutex, g_mpc_list_lock, g_count_lock;
 static std::condition_variable g_waken_cond;
 static thread_local THREAD_DATA *g_tls_key;
 static pthread_t		 g_scan_id;
-static std::unique_ptr<LIB_BUFFER> g_file_allocator;
+static LIB_BUFFER g_file_allocator;
 static std::shared_ptr<MIME_POOL> g_mime_pool;
 static std::unique_ptr<THREAD_DATA[]> g_data_ptr;
 static std::unique_ptr<FREE_CONTEXT[]> g_free_ptr;
@@ -244,13 +244,8 @@ int transporter_run()
 		printf("[transporter]: Failed to init MIME pool\n");
         return -4;
 	}
-	g_file_allocator = LIB_BUFFER::create(FILE_ALLOC_SIZE,
+	g_file_allocator = LIB_BUFFER(FILE_ALLOC_SIZE,
 	                   FILENUM_PER_CONTROL * (g_free_num + g_threads_max));
-	if (NULL == g_file_allocator) {
-        transporter_collect_resource();
-		printf("[transporter]: Failed to init file allocator\n");
-        return -5;
-    }
 	for (size_t i = 0; i < g_threads_max; ++i) {
 		mem_file_init(&g_data_ptr[i].fake_context.mail_control.f_rcpt_to, g_file_allocator.get());
 		g_data_ptr[i].fake_context.mail = MAIL(g_mime_pool);

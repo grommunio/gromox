@@ -97,7 +97,7 @@ struct HOST_NODE {
 
 static gromox::atomic_bool g_notify_stop;
 static unsigned int g_threads_num;
-static std::unique_ptr<LIB_BUFFER> g_fifo_alloc, g_file_alloc;
+static LIB_BUFFER g_fifo_alloc, g_file_alloc;
 static std::vector<std::string> g_acl_list;
 static std::list<ENQUEUE_NODE> g_enqueue_list, g_enqueue_list1;
 static std::vector<std::shared_ptr<DEQUEUE_NODE>> g_dequeue_list1;
@@ -237,20 +237,10 @@ int main(int argc, const char **argv) try
 		return 7;
 	
 	g_threads_num ++;
-	g_fifo_alloc = LIB_BUFFER::create(sizeof(MEM_FILE) + EXTRA_FIFOITEM_SIZE,
+	g_fifo_alloc = LIB_BUFFER(sizeof(MEM_FILE) + EXTRA_FIFOITEM_SIZE,
 	               g_threads_num * FIFO_AVERAGE_LENGTH);
-	if (NULL == g_fifo_alloc) {
-		printf("[system]: Failed to init queue allocator\n");
-		return 3;
-	}
-	auto cl_0 = make_scope_exit([&]() { g_fifo_alloc.reset(); });
-	g_file_alloc = LIB_BUFFER::create(FILE_ALLOC_SIZE,
+	g_file_alloc = LIB_BUFFER(FILE_ALLOC_SIZE,
 	               g_threads_num * FIFO_AVERAGE_LENGTH);
-	if (NULL == g_file_alloc) {
-		printf("[system]: Failed to init file allocator\n");
-		return 4;
-	}
-	auto cl_1 = make_scope_exit([&]() { g_file_alloc.reset(); });
 	g_dequeue_list1.reserve(g_threads_num);
 	pthread_attr_init(&thr_attr);
 	auto cl_3 = make_scope_exit([&]() { pthread_attr_destroy(&thr_attr); });

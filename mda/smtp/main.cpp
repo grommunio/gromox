@@ -34,7 +34,7 @@ gromox::atomic_bool g_notify_stop;
 std::shared_ptr<CONFIG_FILE> g_config_file;
 static char *opt_config_file;
 static gromox::atomic_bool g_hup_signalled;
-std::unique_ptr<LIB_BUFFER> g_files_allocator;
+LIB_BUFFER g_files_allocator;
 
 static struct HXoption g_options_table[] = {
 	{nullptr, 'c', HXTYPE_STRING, &opt_config_file, nullptr, nullptr, 0, "Config file to read", "FILE"},
@@ -315,13 +315,7 @@ int main(int argc, const char **argv) try
 	auto cleanup_8 = make_scope_exit(system_services_stop);
 
 	size_t fa_blocks_num = scfg.context_num * 128;
-	g_files_allocator = LIB_BUFFER::create(FILE_ALLOC_SIZE, fa_blocks_num);
-	if (g_files_allocator == nullptr) {
-		printf("[system]: can not run file allocator\n"); 
-		return EXIT_FAILURE;
-	}
-	auto cleanup_9 = make_scope_exit([&]() { g_files_allocator.reset(); });
-
+	g_files_allocator = LIB_BUFFER(FILE_ALLOC_SIZE, fa_blocks_num);
 	blocks_allocator_init(scfg.context_num * context_aver_mem);
 	if (0 != blocks_allocator_run()) { 
 		printf("[system]: can not run blocks allocator\n"); 

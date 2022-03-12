@@ -32,7 +32,7 @@ struct THR_DATA {
 static pthread_t g_scan_id;
 static gromox::atomic_bool g_notify_stop{true};
 static unsigned int g_threads_pool_min_num, g_threads_pool_max_num, g_threads_pool_cur_thr_num;
-static std::unique_ptr<LIB_BUFFER> g_threads_data_buff;
+static LIB_BUFFER g_threads_data_buff;
 static DOUBLE_LIST g_threads_data_list;
 static THREADS_EVENT_PROC g_threads_event_proc;
 static std::mutex g_threads_pool_data_lock, g_threads_pool_cond_mutex;
@@ -71,11 +71,7 @@ int threads_pool_run()
 	pthread_attr_t attr;
 	
 	/* g_threads_data_buff is protected by g_threads_pool_data_lock */
-	g_threads_data_buff = LIB_BUFFER::create(sizeof(THR_DATA), g_threads_pool_max_num);
-	if (NULL == g_threads_data_buff) {
-		printf("[threads_pool]: Failed to allocate memory for threads pool\n");
-		return -1;
-	}
+	g_threads_data_buff = LIB_BUFFER(sizeof(THR_DATA), g_threads_pool_max_num);
 	/* list is also protected by g_threads_pool_data_lock */
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, tpol_scanwork, nullptr);

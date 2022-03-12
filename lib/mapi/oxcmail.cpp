@@ -5147,10 +5147,7 @@ static BOOL oxcmail_export_attachment(ATTACHMENT_CONTENT *pattachment,
 		auto mail_len = imail.get_length();
 		if (mail_len < 0)
 			return false;
-		std::unique_ptr<LIB_BUFFER> pallocator(LIB_BUFFER::create(STREAM_ALLOC_SIZE,
-		             mail_len / STREAM_BLOCK_SIZE + 1));
-		if (pallocator == nullptr)
-			return FALSE;
+		LIB_BUFFER pallocator(STREAM_ALLOC_SIZE, mail_len / STREAM_BLOCK_SIZE + 1);
 		STREAM tmp_stream(pallocator.get());
 		if (!imail.serialize(&tmp_stream)) {
 			return FALSE;

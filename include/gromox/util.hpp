@@ -14,8 +14,13 @@ enum {
 };
 
 struct GX_EXPORT LIB_BUFFER {
+	LIB_BUFFER() = default;
+	LIB_BUFFER(LIB_BUFFER &&) noexcept = delete;
 	LIB_BUFFER(size_t size, size_t items);
-	static std::unique_ptr<LIB_BUFFER> create(size_t item_size, size_t item_num);
+	LIB_BUFFER &operator=(LIB_BUFFER &&) noexcept;
+	inline LIB_BUFFER *operator->() { return this; }
+	inline LIB_BUFFER *get() { return this; }
+	inline void reset() const {}
 	void *get_raw();
 	template<typename T> inline T *get()
 	{

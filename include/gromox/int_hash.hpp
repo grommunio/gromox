@@ -34,7 +34,7 @@ struct GX_EXPORT INT_HASH_TABLE {
 	size_t capacity = 0, entry_num = 0, data_size = 0, item_num = 0;
 	DOUBLE_LIST iter_list{};
 	std::unique_ptr<DOUBLE_LIST[]> hash_map;
-	std::unique_ptr<LIB_BUFFER> buf_pool;
+	LIB_BUFFER buf_pool;
 };
 
 struct INT_HASH_ITER {

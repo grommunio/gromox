@@ -800,12 +800,7 @@ BOOL MAIL::dup(MAIL *pmail_dst)
 	auto mail_len = get_length();
 	if (mail_len < 0)
 		return false;
-	std::unique_ptr<LIB_BUFFER> pallocator(LIB_BUFFER::create(STREAM_ALLOC_SIZE,
-		mail_len / STREAM_BLOCK_SIZE + 1));
-	if (NULL == pallocator) {
-		debug_info("[mail]: Failed to init lib buffer in mail_dup");
-		return FALSE;
-	}
+	LIB_BUFFER pallocator(STREAM_ALLOC_SIZE, mail_len / STREAM_BLOCK_SIZE + 1);
 	STREAM tmp_stream(pallocator.get());
 	if (!pmail_src->serialize(&tmp_stream)) {
 		return FALSE;
@@ -855,12 +850,7 @@ BOOL MAIL::transfer_dot(MAIL *pmail_dst)
 	auto mail_len = get_length();
 	if (mail_len < 0)
 		return false;
-	std::unique_ptr<LIB_BUFFER> pallocator(LIB_BUFFER::create(STREAM_ALLOC_SIZE,
-		mail_len / STREAM_BLOCK_SIZE + 1));
-	if (NULL == pallocator) {
-		debug_info("[mail]: Failed to init lib buffer in mail_dup");
-		return FALSE;
-	}
+	LIB_BUFFER pallocator(STREAM_ALLOC_SIZE, mail_len / STREAM_BLOCK_SIZE + 1);
 	STREAM tmp_stream(pallocator.get());
 	if (!pmail_src->serialize(&tmp_stream)) {
 		return FALSE;

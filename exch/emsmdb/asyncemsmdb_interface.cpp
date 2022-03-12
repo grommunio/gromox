@@ -55,7 +55,7 @@ static size_t g_tag_hash_max;
 static std::mutex g_list_lock, g_async_lock;
 static std::condition_variable g_waken_cond;
 static std::unique_ptr<INT_HASH_TABLE> g_async_hash;
-static std::unique_ptr<LIB_BUFFER> g_wait_allocator;
+static LIB_BUFFER g_wait_allocator;
 
 static void *aemsi_scanwork(void *);
 static void *aemsi_thrwork(void *);
@@ -85,11 +85,7 @@ int asyncemsmdb_interface_run()
 		printf("[exchange_emsmdb]: Failed to init async ID hash table\n");
 		return -2;
 	}
-	g_wait_allocator = LIB_BUFFER::create(sizeof(ASYNC_WAIT), 2 * context_num);
-	if (NULL == g_wait_allocator) {
-		printf("[exchange_emsmdb]: Failed to init async wait allocator\n");
-		return -3;
-	}
+	g_wait_allocator = LIB_BUFFER(sizeof(ASYNC_WAIT), 2 * context_num);
 	g_tag_hash_max = context_num;
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_id, nullptr, aemsi_scanwork, nullptr);

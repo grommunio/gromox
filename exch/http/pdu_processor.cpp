@@ -124,7 +124,7 @@ static bool g_ign_loaderr;
 static bool support_negotiate = false; /* possibly nonfunctional */
 static std::unique_ptr<INT_HASH_TABLE> g_async_hash;
 static std::list<PDU_PROCESSOR *> g_processor_list; /* ptrs owned by VIRTUAL_CONNECTION */
-static std::unique_ptr<LIB_BUFFER> g_call_allocator, g_auth_allocator,
+static LIB_BUFFER g_call_allocator, g_auth_allocator,
 	g_async_allocator, g_bnode_allocator, g_stack_allocator,
 	g_context_allocator;
 static const char *const *g_plugin_names;
@@ -213,32 +213,14 @@ int pdu_processor_run()
 {
 	int context_num;
 	
-	g_call_allocator = LIB_BUFFER::create(sizeof(DCERPC_CALL),
+	g_call_allocator = LIB_BUFFER(sizeof(DCERPC_CALL),
 	                   g_connection_num * g_connection_ratio);
-	if (NULL == g_call_allocator) {
-		return -1;
-	}
 	context_num = g_connection_num*g_connection_ratio;
-	g_context_allocator = LIB_BUFFER::create(sizeof(DCERPC_CONTEXT), context_num);
-	if (NULL == g_context_allocator) {
-		return -2;
-	}
-	g_auth_allocator = LIB_BUFFER::create(sizeof(DCERPC_AUTH_CONTEXT), context_num);
-	if (NULL == g_auth_allocator) {
-		return -3;
-	}
-	g_bnode_allocator = LIB_BUFFER::create(sizeof(BLOB_NODE), g_connection_num * 32);
-	if (NULL == g_bnode_allocator) {
-		return -5;
-	}
-	g_async_allocator = LIB_BUFFER::create(sizeof(ASYNC_NODE), context_num * 2);
-	if (NULL == g_async_allocator) {
-		return -6;
-	}
-	g_stack_allocator = LIB_BUFFER::create(sizeof(NDR_STACK_ROOT), context_num * 4);
-	if (NULL == g_stack_allocator) {
-		return -7;
-	}
+	g_context_allocator = LIB_BUFFER(sizeof(DCERPC_CONTEXT), context_num);
+	g_auth_allocator = LIB_BUFFER(sizeof(DCERPC_AUTH_CONTEXT), context_num);
+	g_bnode_allocator = LIB_BUFFER(sizeof(BLOB_NODE), g_connection_num * 32);
+	g_async_allocator = LIB_BUFFER(sizeof(ASYNC_NODE), context_num * 2);
+	g_stack_allocator = LIB_BUFFER(sizeof(NDR_STACK_ROOT), context_num * 4);
 	g_async_hash = INT_HASH_TABLE::create(context_num * 2, sizeof(ASYNC_NODE *));
 	if (NULL == g_async_hash) {
 		return -8;

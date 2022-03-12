@@ -74,7 +74,7 @@ static int g_average_handles;
 static gromox::atomic_bool g_notify_stop{true};
 static std::mutex g_hash_lock;
 static std::unique_ptr<STR_HASH_TABLE> g_logon_hash;
-static std::unique_ptr<LIB_BUFFER> g_logmap_allocator, g_handle_allocator, g_logitem_allocator;
+static LIB_BUFFER g_logmap_allocator, g_handle_allocator, g_logitem_allocator;
 
 LOGMAP *rop_processor_create_logmap()
 {
@@ -408,23 +408,11 @@ int rop_processor_run()
 	int context_num;
 	
 	context_num = get_context_num();
-	g_logmap_allocator = LIB_BUFFER::create(256 * sizeof(LOGON_ITEM *),
+	g_logmap_allocator = LIB_BUFFER(256 * sizeof(LOGON_ITEM *),
 	                     context_num * MAX_HANDLES_ON_CONTEXT);
-	if (NULL == g_logmap_allocator) {
-		printf("[exchange_emsmdb]: Failed to init logon map allocator\n");
-		return -1;
-	}
-	g_logitem_allocator = LIB_BUFFER::create(sizeof(LOGON_ITEM), 256 * context_num);
-	if (NULL == g_logitem_allocator) {
-		printf("[exchange_emsmdb]: Failed to init object map allocator\n");
-		return -2;
-	}
-	g_handle_allocator = LIB_BUFFER::create(sizeof(OBJECT_NODE),
+	g_logitem_allocator = LIB_BUFFER(sizeof(LOGON_ITEM), 256 * context_num);
+	g_handle_allocator = LIB_BUFFER(sizeof(OBJECT_NODE),
 	                     g_average_handles * context_num);
-	if (NULL == g_handle_allocator) {
-		printf("[exchange_emsmdb]: Failed to init object handle allocator\n");
-		return -3;
-	}
 	g_logon_hash = STR_HASH_TABLE::create(get_context_num() * 256, sizeof(uint32_t), nullptr);
 	if (NULL == g_logon_hash) {
 		printf("[exchange_emsmdb]: Failed to init logon hash\n");

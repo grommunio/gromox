@@ -77,7 +77,7 @@ static pthread_t g_scan_id;
 static gromox::atomic_bool g_notify_stop;
 static std::unique_ptr<IMAP_CONTEXT[]> g_context_list;
 static std::vector<SCHEDULE_CONTEXT *> g_context_list2;
-static std::unique_ptr<LIB_BUFFER> g_alloc_file, g_alloc_mjson, g_alloc_xarray, g_alloc_dir;
+static LIB_BUFFER g_alloc_file, g_alloc_mjson, g_alloc_xarray, g_alloc_dir;
 static std::shared_ptr<MIME_POOL> g_mime_pool;
 static std::unique_ptr<STR_HASH_TABLE> g_select_hash;
 static std::mutex g_hash_lock, g_list_lock;
@@ -209,12 +209,7 @@ int imap_parser_run()
 	if (num < 1024*1024) {
 		num = 1024*1024;
 	}
-	g_alloc_file = LIB_BUFFER::create(FILE_ALLOC_SIZE, num);
-	if (NULL == g_alloc_file) {
-		printf("[imap_parser]: Failed to init mem file allocator\n");
-		return -5;
-	}
-	
+	g_alloc_file = LIB_BUFFER(FILE_ALLOC_SIZE, num);
 	num = 4*g_context_num;
 	if (num < 200) {
 		num = 200;
@@ -228,32 +223,18 @@ int imap_parser_run()
 		printf("[imap_parser]: Failed to init MIME pool\n");
 		return -6;
 	}
-	g_alloc_xarray = LIB_BUFFER::create(sizeof(MITEM) + EXTRA_XARRAYNODE_SIZE,
+	g_alloc_xarray = LIB_BUFFER(sizeof(MITEM) + EXTRA_XARRAYNODE_SIZE,
 	                 g_average_num * g_context_num);
-	if (NULL == g_alloc_xarray) {
-		printf("[imap_parser]: Failed to init mem file allocator\n");
-		return -7;
-	}
-	
 	num = 10*g_context_num;
 	if (num < 1000) {
 		num = 1000;
 	}
-	g_alloc_dir = LIB_BUFFER::create(sizeof(DIR_NODE), num);
-	if (NULL == g_alloc_dir) {
-		printf("[imap_parser]: Failed to init dir node allocator\n");
-		return -8;
-	}
-	
+	g_alloc_dir = LIB_BUFFER(sizeof(DIR_NODE), num);
 	num = 4*g_context_num;
 	if (num < 400) {
 		num = 400;
 	}
 	g_alloc_mjson = mjson_allocator_init(num);
-	if (NULL == g_alloc_mjson) {
-		printf("[imap_parser]: Failed to init mjson allocator\n");
-		return -9;
-	}
 	
 	try {
 		g_context_list = std::make_unique<IMAP_CONTEXT[]>(g_context_num);

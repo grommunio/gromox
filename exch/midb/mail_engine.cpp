@@ -176,7 +176,7 @@ static pthread_t g_scan_tid;
 static int g_cache_interval;          /* maximum living interval in table */
 static char g_org_name[256];
 static std::shared_ptr<MIME_POOL> g_mime_pool;
-static std::unique_ptr<LIB_BUFFER> g_alloc_mjson;
+static LIB_BUFFER g_alloc_mjson;
 static char g_default_charset[32];
 static char g_default_timezone[64];
 static std::mutex g_hash_lock;
@@ -5489,10 +5489,6 @@ int mail_engine_run()
 		return -3;
 	}
 	g_alloc_mjson = mjson_allocator_init(g_table_size * 10);
-	if (NULL == g_alloc_mjson) {
-		printf("[mail_engine]: Failed to init buffer pool for mjson\n");
-		return -4;
-	}
 	g_notify_stop = false;
 	auto ret = pthread_create(&g_scan_tid, nullptr, midbme_scanwork, nullptr);
 	if (ret != 0) {

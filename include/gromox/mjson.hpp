@@ -89,4 +89,4 @@ enum {
 	MJSON_MIME_ENTIRE
 };
 
-extern GX_EXPORT std::unique_ptr<LIB_BUFFER> mjson_allocator_init(size_t max_size);
+extern GX_EXPORT LIB_BUFFER mjson_allocator_init(size_t max_size);

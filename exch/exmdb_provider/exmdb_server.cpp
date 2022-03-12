@@ -1,7 +1,4 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <cstdio>
-#include <memory>
-#include <pthread.h>
 #include <gromox/svc_common.h>
 #include <gromox/util.hpp>
 #include "common_util.h"
@@ -23,19 +20,15 @@ struct ENVIRONMENT_CONTEXT {
 static thread_local const char *g_id_key;
 static thread_local const char *g_public_username_key;
 static thread_local ENVIRONMENT_CONTEXT *g_env_key;
-static std::unique_ptr<LIB_BUFFER> g_ctx_allocator;
+static LIB_BUFFER g_ctx_allocator;
 
 void (*exmdb_server_event_proc)(const char *dir,
 	BOOL b_table, uint32_t notify_id, const DB_NOTIFY *pdb_notify);
 
 int exmdb_server_run()
 {
-	g_ctx_allocator = LIB_BUFFER::create(sizeof(ENVIRONMENT_CONTEXT),
+	g_ctx_allocator = LIB_BUFFER(sizeof(ENVIRONMENT_CONTEXT),
 	                  2 * get_context_num());
-	if (NULL == g_ctx_allocator) {
-		printf("[exmdb_provider]: Failed to init environment allocator\n");
-		return -1;
-	}
 	return 0;
 }
 

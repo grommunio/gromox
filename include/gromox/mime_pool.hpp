@@ -26,7 +26,7 @@ struct GX_EXPORT MIME_POOL {
 	MIME *get_mime();
 	static void put_mime(MIME *);
 
-	std::unique_ptr<LIB_BUFFER> allocator;
+	LIB_BUFFER allocator;
 	std::list<MIME_POOL_NODE> pbegin;
 	std::list<MIME_POOL_NODE *> free_list; /* references pbegin nodes */
 	std::mutex mutex;

@@ -50,21 +50,17 @@ static int gx_reexec_top_fd = -1;
 LIB_BUFFER::LIB_BUFFER(size_t isize, size_t inum) :
 	item_size(isize), max_items(inum)
 {
-	if (isize <= 0 || inum <= 0)
-		throw std::invalid_argument("[lib_buffer]: lib_buffer_init, invalid parameter");
+	if (isize == 0 || inum == 0)
+		fprintf(stderr, "E-1669: Invalid parameters passed to LIB_BUFFER ctor\n");
 }
 
-std::unique_ptr<LIB_BUFFER> LIB_BUFFER::create(size_t isize, size_t inum) try
+LIB_BUFFER &LIB_BUFFER::operator=(LIB_BUFFER &&o) noexcept
 {
-	return std::make_unique<LIB_BUFFER>(isize, inum);
-} catch (const std::bad_alloc &e) {
-	fprintf(stderr, "E-1658: ENOMEM\n");
-	debug_info(e.what());
-	return nullptr;
-} catch (const std::invalid_argument &e) {
-	fprintf(stderr, "E-1669: EINVAL: %s\n", e.what());
-	debug_info(e.what());
-	return nullptr;
+	allocated_num += o.allocated_num.load(); /* allow freeing previous takes */
+	o.allocated_num = 0;
+	item_size = o.item_size;
+	max_items = o.max_items;
+	return *this;
 }
 
 void *LIB_BUFFER::get_raw()
