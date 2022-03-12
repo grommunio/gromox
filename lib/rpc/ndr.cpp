@@ -4,12 +4,12 @@
 #include <cassert>
 #include <climits>
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/ndr.hpp>
-#include <cstdlib>
-#include <cstring>
 #define TRY(expr) do { int klfdv = (expr); if (klfdv != NDR_ERR_SUCCESS) return klfdv; } while (false)
 #define NDR_BE(pndr) ((pndr->flags & NDR_FLAG_BIGENDIAN) != 0)
 

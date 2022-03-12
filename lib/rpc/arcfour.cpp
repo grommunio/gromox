@@ -19,8 +19,8 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include <gromox/arcfour.hpp>
 #include <cstdint>
+#include <gromox/arcfour.hpp>
 #include <gromox/mapidefs.h>
 
 /* initialise the arcfour sbox with key */
