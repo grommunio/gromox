@@ -297,7 +297,7 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 		auto count = pcontext->array.size();
 		for (size_t i = 0; i < count; ++i) {
 			auto punit = sa_get_item(pcontext->array, i);
-			string_length = sprintf(temp_buff, "%zu %ld\r\n", i + 1, punit->size);
+			string_length = sprintf(temp_buff, "%zu %zu\r\n", i + 1, punit->size);
 			pcontext->stream.write(temp_buff, string_length);
 		}
 		pcontext->stream.write(".\r\n", 3);
@@ -321,7 +321,7 @@ int pop3_cmd_handler_list(const char* cmd_line, int line_length,
 	int n = strtol(temp_command + 5, nullptr, 0);
 	if (n > 0 && static_cast<size_t>(n) <= pcontext->array.size()) {
 		auto punit = sa_get_item(pcontext->array, n - 1);
-		string_length = sprintf(temp_buff, "+OK %d %ld\r\n", n, punit->size);	
+		string_length = sprintf(temp_buff, "+OK %d %zu\r\n", n, punit->size);	
 		if (NULL != pcontext->connection.ssl) {
 			SSL_write(pcontext->connection.ssl, temp_buff, string_length);
 		} else {
