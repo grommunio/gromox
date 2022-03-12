@@ -79,7 +79,7 @@ static int smtp_cmd_handler_xhlo(const char *cmd_line, int line_length,
     
     string_length += sprintf(buff + string_length, 
         "250-HELP\r\n"
-        "250-SIZE %ld\r\n"
+		"250-SIZE %zu\r\n"
         "250 8BITMIME\r\n",
         /* send the size of "SIZE" command */
 		g_param.max_mail_length);
