@@ -2,22 +2,22 @@
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <memory>
 #include <libHX/string.h>
-#include <gromox/mapidefs.h>
-#include "container_object.h"
-#include "zarafa_server.h"
-#include "common_util.h"
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mail_func.hpp>
+#include <gromox/mapidefs.h>
+#include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include "ab_tree.h"
+#include "common_util.h"
+#include "container_object.h"
 #include "exmdb_client.h"
-#include "store_object.h"
 #include "object_tree.h"
-#include <gromox/propval.hpp>
-#include <cstdio>
+#include "store_object.h"
+#include "zarafa_server.h"
 
 using namespace gromox;
 

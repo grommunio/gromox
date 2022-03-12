@@ -5,25 +5,25 @@
 #include <climits>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <vector>
 #include <gromox/mapidefs.h>
-#include "object_tree.h"
-#include <gromox/restriction.hpp>
-#include "exmdb_client.h"
-#include "table_object.h"
-#include <gromox/sortorder_set.hpp>
-#include "folder_object.h"
 #include <gromox/proptag_array.hpp>
-#include "zarafa_server.h"
-#include "message_object.h"
-#include "container_object.h"
-#include "store_object.h"
 #include <gromox/propval.hpp>
-#include <cstdlib>
-#include <cstring>
+#include <gromox/restriction.hpp>
+#include <gromox/sortorder_set.hpp>
 #include "common_util.h"
+#include "container_object.h"
+#include "exmdb_client.h"
+#include "folder_object.h"
+#include "message_object.h"
+#include "object_tree.h"
+#include "store_object.h"
 #include "system_services.h"
+#include "table_object.h"
+#include "zarafa_server.h"
 
 static void table_object_reset(table_object *);
 static BOOL table_object_get_store_table_all_proptags(PROPTAG_ARRAY *);

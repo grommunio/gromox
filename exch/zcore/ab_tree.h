@@ -6,10 +6,10 @@
 #include <unordered_map>
 #include <vector>
 #include <gromox/ab_tree.hpp>
+#include <gromox/int_hash.hpp>
+#include <gromox/mapi_types.hpp>
 #include <gromox/simple_tree.hpp>
 #include <gromox/single_list.hpp>
-#include <gromox/mapi_types.hpp>
-#include <gromox/int_hash.hpp>
 
 /* PROP_TAG_CONTAINERFLAGS values */
 #define	AB_RECIPIENTS						0x1

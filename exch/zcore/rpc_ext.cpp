@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/zcore_rpc.hpp>
-#include "rpc_ext.h"
-#include <gromox/ext_buffer.hpp>
 #include "common_util.h"
+#include "rpc_ext.h"
 #define QRF(expr) do { if ((expr) != EXT_ERR_SUCCESS) return false; } while (false)
 
 using RPC_REQUEST = ZCORE_RPC_REQUEST;

@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
+#include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <gromox/defs.h>
 #include <gromox/mapidefs.h>
-#include "attachment_object.h"
 #include <gromox/proptag_array.hpp>
+#include <gromox/rop_util.hpp>
+#include "attachment_object.h"
+#include "common_util.h"
 #include "exmdb_client.h"
 #include "store_object.h"
-#include "common_util.h"
-#include <gromox/rop_util.hpp>
-#include <cstdlib>
-#include <cstring>
 
 std::unique_ptr<attachment_object> attachment_object::create(message_object *pparent, uint32_t attachment_num)
 {

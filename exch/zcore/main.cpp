@@ -2,38 +2,38 @@
 // SPDX-FileCopyrightText: 2020–2021 grommunio GmbH
 // This file is part of Gromox.
 #include <cerrno>
+#include <csignal>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <memory>
+#include <unistd.h>
 #include <libHX/misc.h>
 #include <libHX/option.h>
 #include <libHX/string.h>
+#include <sys/resource.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <gromox/atomic.hpp>
+#include <gromox/config_file.hpp>
 #include <gromox/exmdb_client.hpp>
 #include <gromox/exmdb_rpc.hpp>
 #include <gromox/fileio.h>
+#include <gromox/mail_func.hpp>
 #include <gromox/paths.h>
 #include <gromox/scope.hpp>
 #include <gromox/util.hpp>
-#include "service.h"
 #include "ab_tree.h"
-#include "listener.h"
-#include <gromox/mail_func.hpp>
-#include "rpc_parser.h"
-#include "common_util.h"
-#include <gromox/config_file.hpp>
-#include "exmdb_client.h"
-#include "zarafa_server.h"
-#include "msgchg_grouping.h"
 #include "bounce_producer.h"
+#include "common_util.h"
+#include "exmdb_client.h"
+#include "listener.h"
+#include "msgchg_grouping.h"
+#include "rpc_parser.h"
+#include "service.h"
 #include "system_services.h"
-#include <cstdio>
-#include <unistd.h>
-#include <cstring>
-#include <csignal>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/resource.h>
+#include "zarafa_server.h"
 
 using namespace gromox;
 

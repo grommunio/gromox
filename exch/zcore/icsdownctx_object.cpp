@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
-#include <memory>
-#include "icsdownctx_object.h"
-#include <gromox/mapi_types.hpp>
-#include <gromox/proptag_array.hpp>
-#include "zarafa_server.h"
-#include "exmdb_client.h"
-#include <gromox/restriction.hpp>
-#include <gromox/ext_buffer.hpp>
-#include <gromox/eid_array.hpp>
-#include <gromox/rop_util.hpp>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
+#include <gromox/eid_array.hpp>
+#include <gromox/ext_buffer.hpp>
+#include <gromox/mapi_types.hpp>
+#include <gromox/proptag_array.hpp>
+#include <gromox/restriction.hpp>
+#include <gromox/rop_util.hpp>
 #include "common_util.h"
+#include "exmdb_client.h"
 #include "folder_object.h"
 #include "ics_state.h"
+#include "icsdownctx_object.h"
 #include "store_object.h"
+#include "zarafa_server.h"
 
 std::unique_ptr<icsdownctx_object>
 icsdownctx_object::create(folder_object *pfolder, uint8_t sync_type)

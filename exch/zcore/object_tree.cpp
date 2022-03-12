@@ -2,35 +2,35 @@
 // SPDX-FileCopyrightText: 2022 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <cstdio>
+#include <fcntl.h>
 #include <memory>
 #include <mutex>
+#include <unistd.h>
 #include <libHX/string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <gromox/clock.hpp>
 #include <gromox/defs.h>
-#include <gromox/fileio.h>
-#include <gromox/mapidefs.h>
-#include <gromox/util.hpp>
-#include <gromox/guid.hpp>
-#include <gromox/scope.hpp>
 #include <gromox/ext_buffer.hpp>
-#include "common_util.h"
-#include "object_tree.h"
-#include "user_object.h"
-#include "store_object.h"
-#include "table_object.h"
-#include "folder_object.h"
-#include "zarafa_server.h"
-#include "message_object.h"
-#include "system_services.h"
-#include "icsupctx_object.h"
-#include "container_object.h"
-#include "icsdownctx_object.h"
+#include <gromox/fileio.h>
+#include <gromox/guid.hpp>
+#include <gromox/mapidefs.h>
+#include <gromox/scope.hpp>
+#include <gromox/util.hpp>
 #include "attachment_object.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <cstdio>
+#include "common_util.h"
+#include "container_object.h"
+#include "folder_object.h"
+#include "icsdownctx_object.h"
+#include "icsupctx_object.h"
+#include "message_object.h"
+#include "object_tree.h"
+#include "store_object.h"
+#include "system_services.h"
+#include "table_object.h"
+#include "user_object.h"
+#include "zarafa_server.h"
 #define HGROWING_SIZE					250
 
 /* maximum handle number per session */

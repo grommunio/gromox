@@ -1,22 +1,21 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
 #include <csignal>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <pthread.h>
 #include <unistd.h>
-#include <netinet/in.h>
-#include <sys/stat.h>
 #include <libHX/string.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/un.h>
 #include <gromox/atomic.hpp>
 #include <gromox/defs.h>
 #include "listener.h"
 #include "rpc_parser.h"
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <unistd.h>
-#include <cstdlib>
-#include <cstring>
-#include <cstdio>
 
 static gromox::atomic_bool g_notify_stop;
 static int g_listen_sockd;

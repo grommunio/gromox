@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
-#include <memory>
-#include "common_util.h"
-#include <gromox/ext_buffer.hpp>
-#include <gromox/mapi_types.hpp>
-#include "ics_state.h"
-#include <gromox/rop_util.hpp>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
+#include <gromox/ext_buffer.hpp>
+#include <gromox/mapi_types.hpp>
+#include <gromox/rop_util.hpp>
+#include "common_util.h"
+#include "ics_state.h"
 
 static void ics_state_clear(ICS_STATE *pstate)
 {

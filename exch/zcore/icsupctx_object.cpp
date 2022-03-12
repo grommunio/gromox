@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <cstdlib>
 #include <memory>
 #include <gromox/mapi_types.hpp>
-#include "folder_object.h"
-#include "icsupctx_object.h"
-#include "ics_state.h"
 #include "common_util.h"
-#include <cstdlib>
+#include "folder_object.h"
+#include "ics_state.h"
+#include "icsupctx_object.h"
 
 std::unique_ptr<icsupctx_object>
 icsupctx_object::create(folder_object *pfolder, uint8_t sync_type)

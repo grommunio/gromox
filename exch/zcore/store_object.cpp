@@ -5,20 +5,21 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <fcntl.h>
 #include <memory>
 #include <string>
+#include <unistd.h>
 #include <utility>
 #include <libHX/string.h>
-#include "msgchg_grouping.h"
-#include "system_services.h"
-#include "zarafa_server.h"
-#include "store_object.h"
-#include "exmdb_client.h"
-#include "common_util.h"
-#include "object_tree.h"
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <gromox/config_file.hpp>
 #include <gromox/defs.h>
 #include <gromox/fileio.h>
+#include <gromox/guid.hpp>
 #include <gromox/int_hash.hpp>
 #include <gromox/mail_func.hpp>
 #include <gromox/mapidefs.h>
@@ -27,14 +28,13 @@
 #include <gromox/str_hash.hpp>
 #include <gromox/textmaps.hpp>
 #include <gromox/util.hpp>
-#include <gromox/guid.hpp>
-#include <cstdio>
-#include <fcntl.h>
-#include <unistd.h>
-#include <cstdlib>
-#include <cstring>
-#include <sys/stat.h>
-#include <sys/types.h>
+#include "common_util.h"
+#include "exmdb_client.h"
+#include "msgchg_grouping.h"
+#include "object_tree.h"
+#include "store_object.h"
+#include "system_services.h"
+#include "zarafa_server.h"
 
 #define HGROWING_SIZE									0x500
 

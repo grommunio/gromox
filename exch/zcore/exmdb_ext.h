@@ -1,8 +1,8 @@
 #pragma once
 #include <cstdint>
 #include <gromox/defs.h>
-#include "common_util.h"
 #include <gromox/ext_buffer.hpp>
+#include "common_util.h"
 
 int exmdb_ext_push_request(const EXMDB_REQUEST *prequest,
 	BINARY *pbin_out);
