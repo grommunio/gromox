@@ -45,17 +45,9 @@
 
 #define HGROWING_SIZE					250
 
-namespace {
-
 struct LOGON_ITEM {
 	std::unique_ptr<INT_HASH_TABLE> phash;
 	SIMPLE_TREE tree;
-};
-
-}
-
-struct LOGMAP {
-	LOGON_ITEM *p[256];
 };
 
 static int g_scan_interval;
@@ -70,13 +62,9 @@ unsigned int emsmdb_max_obh_per_session = 500;
 unsigned int emsmdb_max_cxh_per_user = 100;
 unsigned int emsmdb_max_hoc = 10;
 
-LOGMAP *rop_processor_create_logmap()
+logmap_ptr rop_processor_create_logmap()
 {
-	auto plogmap = g_logmap_allocator->get<LOGMAP>();
-	if (NULL != plogmap) {
-		memset(plogmap, 0, sizeof(LOGMAP));
-	}
-	return plogmap;
+	return logmap_ptr(g_logmap_allocator->get<LOGMAP>());
 }
 
 object_node::object_node(object_node &&o) noexcept :
@@ -193,7 +181,7 @@ static void rop_processor_release_logon_item(LOGON_ITEM *plogitem)
 	}
 }
 
-void rop_processor_release_logmap(LOGMAP *plogmap)
+void logmap_delete::operator()(LOGMAP *plogmap) const
 {
 	int i;
 	
@@ -595,7 +583,7 @@ static int rop_processor_execute_and_push(uint8_t *pbuff,
 		}
 		uint32_t last_offset = ext_push.m_offset;
 		auto pnotify = static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload);
-		auto pobject = rop_processor_get_object(pemsmdb_info->plogmap, pnotify->logon_id, pnotify->handle, &type);
+		auto pobject = rop_processor_get_object(pemsmdb_info->plogmap.get(), pnotify->logon_id, pnotify->handle, &type);
 		if (NULL != pobject) {
 			if (OBJECT_TYPE_TABLE == type &&
 				NULL != pnotify->notification_data.ptable_event &&

@@ -105,11 +105,10 @@ static void *emsi_scanwork(void *);
 
 emsmdb_info::emsmdb_info(emsmdb_info &&o) noexcept :
 	cpid(o.cpid), lcid_string(o.lcid_string), lcid_sort(o.lcid_sort),
-	client_mode(o.client_mode), plogmap(o.plogmap),
+	client_mode(o.client_mode), plogmap(std::move(o.plogmap)),
 	upctx_ref(o.upctx_ref.load())
 {
 	memcpy(client_version, o.client_version, sizeof(client_version));
-	o.plogmap = nullptr;
 	o.upctx_ref = 0;
 }
 
@@ -278,6 +277,10 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 		fprintf(stderr, "W-1577: g_handle_hash is full\n");
 		return FALSE;
 	}
+	temp_handle.info.plogmap = rop_processor_create_logmap();
+	if (temp_handle.info.plogmap == nullptr)
+		return false;
+
 	HANDLE_DATA *phandle;
 
 	try {
@@ -287,19 +290,11 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 		fprintf(stderr, "E-1578: ENOMEM\n");
 		return false;
 	}
-	auto plogmap = rop_processor_create_logmap();
-	if (NULL == plogmap) {
-		g_handle_hash.erase(phandle->guid);
-		return FALSE;
-	}
-	phandle->info.plogmap = plogmap;
-	
 	auto uh_iter = g_user_hash.find(phandle->username);
 	if (uh_iter == g_user_hash.end()) {
 		if (g_user_hash.size() >= g_user_hash_max) {
 			g_handle_hash.erase(phandle->guid);
 			gl_hold.unlock();
-			rop_processor_release_logmap(plogmap);
 			return FALSE;
 		}
 		try {
@@ -308,7 +303,6 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 		} catch (const std::bad_alloc &) {
 			g_handle_hash.erase(phandle->guid);
 			gl_hold.unlock();
-			rop_processor_release_logmap(plogmap);
 			fprintf(stderr, "E-1579: ENOMEM\n");
 			return FALSE;
 		}
@@ -318,7 +312,6 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 			        phandle->username, emsmdb_max_cxh_per_user);
 			g_handle_hash.erase(phandle->guid);
 			gl_hold.unlock();
-			rop_processor_release_logmap(plogmap);
 			return FALSE;
 		}
 	}
@@ -327,7 +320,6 @@ static BOOL emsmdb_interface_create_handle(const char *username,
 			g_user_hash.erase(phandle->username);
 		g_handle_hash.erase(phandle->guid);
 		gl_hold.unlock();
-		rop_processor_release_logmap(plogmap);
 		return FALSE;
 	}
 	*pcxr = phandle->cxr;
@@ -374,15 +366,14 @@ static void emsmdb_interface_remove_handle(CXH *pcxh)
 		if (uhv.empty())
 			g_user_hash.erase(phandle->username);
 	}
-	auto plogmap = phandle->info.plogmap;
 	while ((pnode = double_list_pop_front(&phandle->notify_list)) != nullptr) {
 		notify_response_free(static_cast<NOTIFY_RESPONSE *>(static_cast<ROP_RESPONSE *>(pnode->pdata)->ppayload));
 		free(pnode->pdata);
 		free(pnode);
 	}
+	auto plogmap = std::move(phandle->info.plogmap);
 	g_handle_hash.erase(pcxh->guid);
 	gl_hold.unlock();
-	rop_processor_release_logmap(plogmap);
 }
 
 void emsmdb_interface_init()

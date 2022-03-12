@@ -1970,7 +1970,7 @@ static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
-		auto plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap, r->logon_id);
+		auto plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap.get(), r->logon_id);
 		if (plogon == nullptr)
 			return EXT_ERR_INVALID_OBJECT;
 		return rop_ext_pull_writeperuserinformation_request(pext,
@@ -2216,7 +2216,7 @@ static int rop_ext_pull_rop_request(EXT_PULL *pext, ROP_REQUEST *r)
 		if (r->ppayload == nullptr)
 			return EXT_ERR_ALLOC;
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
-		auto plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap, r->logon_id);
+		auto plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap.get(), r->logon_id);
 		if (plogon == nullptr)
 			return EXT_ERR_INVALID_OBJECT;
 		return rop_ext_pull_setmessagereadflag_request(pext,
@@ -2661,7 +2661,7 @@ int rop_ext_push_rop_response(EXT_PUSH *pext,
 	switch (r->rop_id) {
 	case ropLogon: {
 		pemsmdb_info = emsmdb_interface_get_emsmdb_info();
-		auto plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap, logon_id);
+		auto plogon = rop_processor_get_logon_object(pemsmdb_info->plogmap.get(), logon_id);
 		if (plogon == nullptr)
 			return EXT_ERR_INVALID_OBJECT;
 		if (plogon->check_private())

@@ -3,8 +3,8 @@
 #include <cstdint>
 #include <gromox/mapi_types.hpp>
 #include <gromox/rpc_types.hpp>
+#include "rop_processor.h"
 
-struct LOGMAP;
 struct emsmdb_info {
 	emsmdb_info() = default;
 	emsmdb_info(emsmdb_info &&) noexcept;
@@ -12,7 +12,7 @@ struct emsmdb_info {
 
 	uint32_t cpid = 0, lcid_string = 0, lcid_sort = 0;
 	uint16_t client_version[4]{}, client_mode = 0;
-	LOGMAP *plogmap = nullptr;
+	logmap_ptr plogmap;
 	std::atomic<int> upctx_ref{0};
 };
 using EMSMDB_INFO = emsmdb_info;

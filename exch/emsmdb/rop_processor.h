@@ -17,7 +17,15 @@
 #define OBJECT_TYPE_ICSUPCTX				10
 #define OBJECT_TYPE_SUBSCRIPTION			11
 
-struct LOGMAP;
+struct LOGON_ITEM;
+struct LOGMAP {
+	LOGON_ITEM *p[256]{};
+};
+
+struct logmap_delete {
+	void operator()(LOGMAP *) const;
+};
+
 struct object_node {
 	object_node() { node.pdata = this; }
 	template<typename T> object_node(uint8_t t, std::unique_ptr<T> &&p) :
@@ -36,9 +44,9 @@ struct object_node {
 	void *pobject = nullptr;
 };
 using OBJECT_NODE = object_node;
+using logmap_ptr = std::unique_ptr<LOGMAP, logmap_delete>;
 
-extern LOGMAP *rop_processor_create_logmap();
-extern void rop_processor_release_logmap(LOGMAP *);
+extern logmap_ptr rop_processor_create_logmap();
 void rop_processor_init(int average_handles, int scan_interval);
 extern int rop_processor_run();
 extern void rop_processor_stop();
