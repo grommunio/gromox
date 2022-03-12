@@ -1,7 +1,7 @@
 #pragma once
-#include <gromox/simple_tree.hpp>
 #include <gromox/lib_buffer.hpp>
 #include <gromox/mem_file.hpp>
+#include <gromox/simple_tree.hpp>
 
 struct DIR_NODE {
 	SIMPLE_TREE_NODE node;

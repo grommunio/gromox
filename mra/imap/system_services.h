@@ -1,9 +1,9 @@
 #pragma once
 #include <gromox/common_types.hpp>
-#include <gromox/mem_file.hpp>
-#include <gromox/xarray.hpp>
 #include <gromox/double_list.hpp>
+#include <gromox/mem_file.hpp>
 #include <gromox/single_list.hpp>
+#include <gromox/xarray.hpp>
 #include "../exch/authmgr.hpp"
 
 extern int system_services_run();

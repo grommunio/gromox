@@ -6,9 +6,9 @@
 #include <gromox/common_types.hpp>
 #include <gromox/contexts_pool.hpp>
 #include <gromox/generic_connection.hpp>
-#include <gromox/stream.hpp>
 #include <gromox/mem_file.hpp>
 #include <gromox/mime_pool.hpp>
+#include <gromox/stream.hpp>
 #define MAX_LINE_LENGTH			64*1024
 #define FLAG_RECENT				0x1
 #define FLAG_ANSWERED			0x2
