@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <string>
 #include <unordered_map>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/guid.hpp>
+#include <gromox/int_hash.hpp>
 #include <gromox/mapidefs.h>
 #include <gromox/proptag_array.hpp>
+#include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
 #include <gromox/scope.hpp>
-#include <gromox/int_hash.hpp>
-#include <gromox/propval.hpp>
 #include <gromox/tnef.hpp>
-#include <gromox/guid.hpp>
 #include <gromox/util.hpp>
-#include <cstdlib>
-#include <cstdio>
-#include <ctime>
 #define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
 #define TNEF_LEGACY								0x0001

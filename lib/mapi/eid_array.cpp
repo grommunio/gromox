@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
-#include <gromox/eid_array.hpp>
 #include <cassert>
 #include <cstdlib>
 #include <cstring>
+#include <gromox/eid_array.hpp>
 
 using namespace gromox;
 

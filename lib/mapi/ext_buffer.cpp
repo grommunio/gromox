@@ -6,14 +6,14 @@
 #include <limits>
 #include <memory>
 #include <string>
+#include <libHX/string.h>
 #include <gromox/defs.h>
-#include <gromox/endian.hpp>
-#include <gromox/mapidefs.h>
 #include <gromox/element_data.hpp>
+#include <gromox/endian.hpp>
 #include <gromox/ext_buffer.hpp>
 #include <gromox/mapi_types.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/util.hpp>
-#include <libHX/string.h>
 #define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 
 using namespace gromox;

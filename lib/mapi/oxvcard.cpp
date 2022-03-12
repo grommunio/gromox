@@ -2,17 +2,17 @@
 // SPDX-FileCopyrightText: 2020 grommunio GmbH
 // This file is part of Gromox.
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <ctime>
 #include <gromox/defs.h>
 #include <gromox/guid.hpp>
 #include <gromox/mapidefs.h>
-#include <gromox/rop_util.hpp>
 #include <gromox/oxvcard.hpp>
-#include <gromox/vcard.hpp>
+#include <gromox/rop_util.hpp>
 #include <gromox/util.hpp>
-#include <cstring>
-#include <cstdlib>
-#include <cstdio>
-#include <ctime>
+#include <gromox/vcard.hpp>
 
 using namespace gromox;
 

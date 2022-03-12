@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cerrno>
-#include <gromox/mapidefs.h>
-#include <gromox/util.hpp>
-#include <gromox/propval.hpp>
 #include <cstdlib>
 #include <cstring>
+#include <gromox/mapidefs.h>
+#include <gromox/propval.hpp>
+#include <gromox/util.hpp>
 
 static bool tpropval_array_append(TPROPVAL_ARRAY *parray, uint32_t proptag,
     const void *xpropval)

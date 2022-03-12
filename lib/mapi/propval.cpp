@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <gromox/defs.h>
-#include <gromox/mapidefs.h>
 #include <gromox/guid.hpp>
-#include <gromox/util.hpp>
+#include <gromox/mapidefs.h>
 #include <gromox/propval.hpp>
 #include <gromox/restriction.hpp>
 #include <gromox/rule_actions.hpp>
-#include <cstdlib>
-#include <cstring>
+#include <gromox/util.hpp>
 
 using namespace gromox;
 

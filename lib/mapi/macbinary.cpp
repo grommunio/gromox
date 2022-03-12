@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <cstring>
 #include <libHX/string.h>
 #include <gromox/endian.hpp>
 #include <gromox/macbinary.hpp>
 #include <gromox/util.hpp>
-#include <cstring>
 #define TRY(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return klfdv; } while (false)
 #define macbinary_push_int32(e, v) macbinary_push_uint32((e), (v))
 

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <gromox/binhex.hpp>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/util.hpp>
-#include <gromox/binhex.hpp>
-#include <cstring>
-#include <cstdlib>
 #define HEADERMATCH					40
 #define MAXLINELEN					64
 

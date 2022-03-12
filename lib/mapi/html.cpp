@@ -2,6 +2,11 @@
 #include <cassert>
 #include <cctype>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <gumbo.h>
+#include <iconv.h>
 #include <map>
 #include <memory>
 #include <string>
@@ -9,18 +14,13 @@
 #include <vector>
 #include <libHX/string.h>
 #include <gromox/defs.h>
+#include <gromox/double_list.hpp>
+#include <gromox/ext_buffer.hpp>
 #include <gromox/fileio.h>
 #include <gromox/html.hpp>
-#include <gromox/util.hpp>
 #include <gromox/int_hash.hpp>
 #include <gromox/str_hash.hpp>
-#include <gromox/ext_buffer.hpp>
-#include <gromox/double_list.hpp>
-#include <cstdio>
-#include <gumbo.h>
-#include <iconv.h>
-#include <cstdlib>
-#include <cstring>
+#include <gromox/util.hpp>
 #define QRF(expr) do { int klfdv = (expr); if (klfdv != EXT_ERR_SUCCESS) return false; } while (false)
 #define RTF_PARAGRAPHALIGN_DEFAULT			0
 #define RTF_PARAGRAPHALIGN_LEFT				1

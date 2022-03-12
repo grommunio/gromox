@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
+#include <cstring>
+#include <gromox/common_types.hpp>
 #include <gromox/defs.h>
 #include <gromox/endian.hpp>
 #include <gromox/lzxpress.hpp>
-#include <gromox/common_types.hpp>
-#include <cstring>
 #define WINDOWS_SIZE				0x20
 
 #define CLASSIC_MATCH_LENGTH		9	/* 3 + 6 */

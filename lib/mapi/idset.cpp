@@ -2,14 +2,14 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <optional>
 #include <vector>
 #include <gromox/endian.hpp>
 #include <gromox/mapi_types.hpp>
-#include <gromox/util.hpp>
 #include <gromox/rop_util.hpp>
-#include <cstdlib>
-#include <cstring>
+#include <gromox/util.hpp>
 
 namespace {
 struct STACK_NODE {

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only WITH linking exception
 #include <cstdint>
-#include <gromox/apple_util.hpp>
-#include <gromox/ext_buffer.hpp>
-#include <cstring>
 #include <cstdlib>
+#include <cstring>
+#include <gromox/apple_util.hpp>
 #include <gromox/defs.h>
+#include <gromox/ext_buffer.hpp>
 
 using namespace gromox;
 
