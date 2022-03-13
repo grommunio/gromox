@@ -35,72 +35,39 @@ bool MAIL::set_header(const char *hdr, const char *val)
 	return static_cast<MIME *>(node->pdata)->set_field(hdr, val);
 }
 
-void mime_init(MIME *pmime, LIB_BUFFER *palloc)
+MIME::MIME(LIB_BUFFER *palloc)
 {
+	auto pmime = this;
 #ifdef _DEBUG_UMTA
-	if (NULL == pmime || NULL == palloc) {
+	if (palloc == nullptr) {
 		debug_info("[mime]: NULL pointer found in mime_init");
 		return;
 	}
 #endif
-	memset(&pmime->node, 0, sizeof(SIMPLE_TREE_NODE));
 	pmime->node.pdata		 = pmime;
-	pmime->mime_type         = NONE_MIME;
-	pmime->content_type[0]	 = '\0';
-	pmime->boundary_string[0]= '\0';
-	pmime->boundary_len		 = 0;
-	pmime->head_touched		 = FALSE;
-	pmime->content_touched	 = FALSE;
-	pmime->head_begin		 = NULL;
-	pmime->head_length		 = 0;
-	pmime->content_begin	 = NULL;
-	pmime->content_length	 = 0;
-	pmime->first_boundary    = NULL;
-	pmime->last_boundary     = NULL;
 	mem_file_init(&pmime->f_type_params, palloc);
 	mem_file_init(&pmime->f_other_fields, palloc);
-	
 }
 
-void mime_free(MIME *pmime)
+MIME::~MIME()
 {
-	MIME *pmime_child;
-#ifdef _DEBUG_UMTA
-	if (NULL == pmime) {
-		debug_info("[mime]: NULL pointer found in mime_free");
-		return;
-	}
-#endif
+	auto pmime = this;
+
 	if (SINGLE_MIME == pmime->mime_type) {
 		if (pmime->content_touched && NULL != pmime->content_begin) {
 			if (0 != pmime->content_length) {
 				free(pmime->content_begin);
 			}
-			pmime->content_begin = NULL;
-			pmime->content_length = 0;
 		}
 	} else if (MULTIPLE_MIME == pmime->mime_type) {
 		auto pnode = pmime->node.get_child();
         while (NULL != pnode) {
-			pmime_child = (MIME*)pnode->pdata;
-            mime_free(pmime_child);
+			delete static_cast<MIME *>(pnode->pdata);
 			pnode = pnode->get_sibling();
         }
 	}
 	mem_file_free(&pmime->f_type_params);
 	mem_file_free(&pmime->f_other_fields);
-	pmime->content_type[0]	 = '\0';
-	pmime->boundary_string[0]= '\0';
-	pmime->boundary_len		 = 0;
-	pmime->head_touched		 = FALSE;
-	pmime->content_touched	 = FALSE;
-	pmime->head_begin		 = NULL;
-	pmime->head_length		 = 0;
-	pmime->content_begin	 = NULL;
-	pmime->content_length	 = 0;
-	pmime->first_boundary    = NULL;
-	pmime->last_boundary     = NULL;
-
 }
 
 /*

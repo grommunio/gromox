@@ -21,8 +21,13 @@ enum{
 
 using MIME_FIELD_ENUM = BOOL (*)(const char *, char *, void *);
 
+struct LIB_BUFFER;
 struct MAIL;
 struct GX_EXPORT MIME {
+	MIME(LIB_BUFFER *);
+	NOMOVE(MIME);
+	~MIME();
+
 	BOOL retrieve(MIME *parent, char *in_buf, size_t len);
 	void clear();
 	BOOL write_content(const char *content, size_t len, int encoding_type);
@@ -52,22 +57,13 @@ struct GX_EXPORT MIME {
 	MIME *get_sibling();
 	inline size_t get_children_num() const { return node.get_children_num(); }
 
-	SIMPLE_TREE_NODE node;
-	int			mime_type;
-	char 		content_type[VALUE_LEN];
-	char		boundary_string[VALUE_LEN];
-	int			boundary_len;
-	MEM_FILE	f_type_params;
-	MEM_FILE	f_other_fields;
-	BOOL		head_touched;
-	BOOL		content_touched;
-	char		*head_begin;
-	size_t		head_length;
-	char		*content_begin;
-	size_t		content_length;
-	char		*first_boundary;
-	char		*last_boundary;
+	SIMPLE_TREE_NODE node{};
+	int mime_type = NONE_MIME, boundary_len = 0;
+	char content_type[VALUE_LEN]{}, boundary_string[VALUE_LEN]{};
+	MEM_FILE f_type_params{}, f_other_fields{};
+	BOOL head_touched = false, content_touched = false;
+	char *head_begin = nullptr;
+	char *content_begin = nullptr;
+	size_t head_length = 0, content_length = 0;
+	char *first_boundary = nullptr, *last_boundary = nullptr;
 };
-
-void mime_init(MIME *pmime, LIB_BUFFER *palloc);
-void mime_free(MIME *pmime);

@@ -8,11 +8,9 @@
 
 struct MIME_POOL;
 struct MIME_POOL_NODE {
-	MIME_POOL_NODE(LIB_BUFFER *b, MIME_POOL *p) : pool(p) { mime_init(&mime, b); }
-	~MIME_POOL_NODE() { mime_free(&mime); }
-	NOMOVE(MIME_POOL_NODE);
+	MIME_POOL_NODE(LIB_BUFFER *b, MIME_POOL *p) : mime(b), pool(p) {}
 
-	MIME mime{};
+	MIME mime;
 	MIME_POOL *pool = nullptr;
 };
 
