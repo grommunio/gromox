@@ -25,10 +25,15 @@ enum {
 struct STREAM;
 
 struct envelope_info {
-	char parsed_domain[UDOM_SIZE]; /* parsed domain according connection*/
-	char hello_domain[UDOM_SIZE]; /* domain name after helo */
-	char from[UADDR_SIZE]; /* envelope's from message */
-	MEM_FILE f_rcpt_to; /* envelope's rcpt to message */
+	envelope_info(LIB_BUFFER *);
+	NOMOVE(envelope_info);
+	~envelope_info();
+	void clear();
+
+	char parsed_domain[UDOM_SIZE]{}; /* parsed domain according connection*/
+	char hello_domain[UDOM_SIZE]{}; /* domain name after helo */
+	char from[UADDR_SIZE]{}; /* envelope's from message */
+	MEM_FILE f_rcpt_to{}; /* envelope's rcpt to message */
 };
 
 struct FLUSH_INFO {

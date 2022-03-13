@@ -648,20 +648,27 @@ static int smtp_parser_dispatch_cmd(const char *cmd, int len, SMTP_CONTEXT *ctx)
 	return ret & DISPATCH_ACTMASK;
 }
 
-void smtp_parser_reset_context_envelope(SMTP_CONTEXT *pcontext)
+envelope_info::envelope_info(LIB_BUFFER *b)
 {
-	pcontext->menv.from[0] = '\0';
-	strcpy(pcontext->menv.parsed_domain, "unknown");
-	pcontext->menv.f_rcpt_to.clear();
+	strcpy(parsed_domain, "unknown");
+	mem_file_init(&f_rcpt_to, b);
+}
+
+envelope_info::~envelope_info()
+{
+	mem_file_free(&f_rcpt_to);
+}
+
+void envelope_info::clear()
+{
+	from[0] = '\0';
+	strcpy(parsed_domain, "unknown");
+	f_rcpt_to.clear();
 }
 
 SMTP_CONTEXT::SMTP_CONTEXT() :
-	stream(blocks_allocator_get_allocator())
-{
-	auto pcontext = this;
-	auto &palloc_file = g_files_allocator;
-	mem_file_init(&pcontext->menv.f_rcpt_to, palloc_file.get());
-}
+	stream(blocks_allocator_get_allocator()), menv(g_files_allocator.get())
+{}
 
 static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext)
 {
@@ -689,17 +696,9 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
 	pcontext->total_length                 = 0;
 	pcontext->pre_rstlen                   = 0;
 	pcontext->stream.clear();
-	strcpy(pcontext->menv.parsed_domain, "unknown");
+	pcontext->menv.clear();
 	memset(&pcontext->menv.hello_domain, 0, arsizeof(pcontext->menv.hello_domain));
-	memset(&pcontext->menv.from, 0, arsizeof(pcontext->menv.from));
-	pcontext->menv.f_rcpt_to.clear();
 	memset(&pcontext->flusher, 0, sizeof(FLUSH_INFO));
-}
-
-SMTP_CONTEXT::~SMTP_CONTEXT()
-{
-	auto pcontext = this;
-	mem_file_free(&pcontext->menv.f_rcpt_to);
 }
 
 /*

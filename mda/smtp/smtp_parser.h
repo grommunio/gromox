@@ -64,7 +64,6 @@ struct EXT_DATA {
 
 struct SMTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	SMTP_CONTEXT();
-	~SMTP_CONTEXT();
 	NOMOVE(SMTP_CONTEXT);
 
 	GENERIC_CONNECTION connection;
@@ -72,7 +71,7 @@ struct SMTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	std::optional<STREAM> stream_second; /* stream for recording splitted data */
 	unsigned int command_protocol = 0;
 	int last_cmd = 0; /* indicate SMTP state of the connection */
-	envelope_info menv{}; /* for recording the mail information */
+	envelope_info menv; /* for recording the mail information */
 	FLUSH_INFO flusher{}; /* the flusher for saving mail information */
 	BOOL is_spam = false; /* whether the mail is spam */
 	unsigned int session_num = 0; /* session number of the context */
@@ -106,7 +105,6 @@ const char* smtp_parser_get_extra_tag(SMTP_CONTEXT *pcontext, int pos);
 const char* smtp_parser_get_extra_value(SMTP_CONTEXT *pcontext, int pos);
 extern SCHEDULE_CONTEXT **smtp_parser_get_contexts_list();
 int smtp_parser_threads_event_proc(int action);
-extern void smtp_parser_reset_context_envelope(SMTP_CONTEXT *);
 extern void smtp_parser_log_info(SMTP_CONTEXT *pcontext, int level, const char *format, ...);
 
 extern std::unique_ptr<LIB_BUFFER> g_files_allocator;

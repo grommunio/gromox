@@ -39,7 +39,7 @@ int smtp_cmd_handler_helo(const char* cmd_line, int line_length,
 		return 502;
     }
     /* 250 OK */
-	smtp_parser_reset_context_envelope(pcontext);
+	pcontext->menv.clear();
     pcontext->last_cmd = T_HELO_CMD;
 	return 205;
 }    
@@ -64,7 +64,7 @@ static int smtp_cmd_handler_xhlo(const char *cmd_line, int line_length,
         /* domain name too long */
 		return 202;
     }
-	smtp_parser_reset_context_envelope(pcontext);
+	pcontext->menv.clear();
 	/* SAME AS HELO [end] */
 
     /* inform client side the esmtp type*/
@@ -116,7 +116,7 @@ int smtp_cmd_handler_starttls(const char *cmd_line, int line_length,
 		return 506;
 	pcontext->last_cmd = T_STARTTLS_CMD;
 	memset(pcontext->menv.hello_domain, 0, arsizeof(pcontext->menv.hello_domain));
-	smtp_parser_reset_context_envelope(pcontext);
+	pcontext->menv.clear();
 	return 210;
 }
 
@@ -372,7 +372,7 @@ int smtp_cmd_handler_rset(const char* cmd_line, int line_length,
 	if (!smtp_cmd_handler_check_onlycmd(cmd_line, line_length, pcontext))
 		return DISPATCH_CONTINUE;
     pcontext->last_cmd = T_RSET_CMD;
-	smtp_parser_reset_context_envelope(pcontext);
+	pcontext->menv.clear();
     /* 250 OK */
 	return 205;
 }    
