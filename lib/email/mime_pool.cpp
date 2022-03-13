@@ -13,8 +13,7 @@
  *	@return
  *		mime pool object
  */
-MIME_POOL::MIME_POOL(size_t num, int ratio) :
-	pbegin(std::make_unique<MIME_POOL_NODE[]>(num))
+MIME_POOL::MIME_POOL(size_t num, int ratio)
 {
 	auto pmime_pool = this;
 
@@ -29,23 +28,8 @@ MIME_POOL::MIME_POOL(size_t num, int ratio) :
 		throw std::bad_alloc();
 	}
 	for (size_t i = 0; i < num; ++i) {
-		auto ptemp_mime = &pmime_pool->pbegin[i];
-		ptemp_mime->pool = pmime_pool;
-		mime_init(&ptemp_mime->mime, pmime_pool->allocator.get());
-		free_list.push_back(ptemp_mime);
-	}
-	pmime_pool->number = num;
-}
-
-MIME_POOL::~MIME_POOL()
-{
-	auto pmime_pool = this;
-	if (free_list.size() != number)
-		debug_info("[mime_pool]: there's still some mimes unfree");
-	pmime_pool->number = 0;
-	if (NULL != pmime_pool->pbegin) {
-		for (size_t i = 0; i < pmime_pool->number; ++i)
-			mime_free(&pmime_pool->pbegin[i].mime);
+		pbegin.emplace_back(pmime_pool->allocator.get(), this);
+		free_list.push_back(&pbegin.back());
 	}
 }
 

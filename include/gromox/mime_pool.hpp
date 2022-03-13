@@ -8,8 +8,12 @@
 
 struct MIME_POOL;
 struct MIME_POOL_NODE {
-	MIME				mime;
-	MIME_POOL *pool;
+	MIME_POOL_NODE(LIB_BUFFER *b, MIME_POOL *p) : pool(p) { mime_init(&mime, b); }
+	~MIME_POOL_NODE() { mime_free(&mime); }
+	NOMOVE(MIME_POOL_NODE);
+
+	MIME mime{};
+	MIME_POOL *pool = nullptr;
 };
 
 /*
@@ -19,16 +23,13 @@ struct MIME_POOL_NODE {
  */
 struct GX_EXPORT MIME_POOL {
 	MIME_POOL(size_t number, int ratio);
-	~MIME_POOL();
-	NOMOVE(MIME_POOL);
 
 	static std::shared_ptr<MIME_POOL> create(size_t number, int ratio);
 	MIME *get_mime();
 	static void put_mime(MIME *);
 
-	std::list<MIME_POOL_NODE *> free_list;
-	std::mutex mutex;
-	std::unique_ptr<MIME_POOL_NODE[]> pbegin;
-	size_t number = 0;
 	std::unique_ptr<LIB_BUFFER> allocator;
+	std::list<MIME_POOL_NODE> pbegin; /* effectively references allocator::heap* */
+	std::list<MIME_POOL_NODE *> free_list; /* references pbegin nodes */
+	std::mutex mutex;
 };
