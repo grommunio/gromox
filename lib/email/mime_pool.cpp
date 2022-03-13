@@ -28,13 +28,11 @@ MIME_POOL::MIME_POOL(size_t num, int ratio) :
 	if (NULL == pmime_pool->allocator) {
 		throw std::bad_alloc();
 	}
-	single_list_init(&pmime_pool->free_list);
 	for (size_t i = 0; i < num; ++i) {
 		auto ptemp_mime = &pmime_pool->pbegin[i];
-		ptemp_mime->node.pdata = ptemp_mime;
 		ptemp_mime->pool = pmime_pool;
 		mime_init(&ptemp_mime->mime, pmime_pool->allocator.get());
-		single_list_append_as_tail(&pmime_pool->free_list, &ptemp_mime->node);
+		free_list.push_back(ptemp_mime);
 	}
 	pmime_pool->number = num;
 }
@@ -42,9 +40,8 @@ MIME_POOL::MIME_POOL(size_t num, int ratio) :
 MIME_POOL::~MIME_POOL()
 {
 	auto pmime_pool = this;
-	if (pmime_pool->number != single_list_get_nodes_num(&pmime_pool->free_list)) {
+	if (free_list.size() != number)
 		debug_info("[mime_pool]: there's still some mimes unfree");
-	}
 	pmime_pool->number = 0;
 	if (NULL != pmime_pool->pbegin) {
 		for (size_t i = 0; i < pmime_pool->number; ++i)
@@ -70,11 +67,11 @@ std::shared_ptr<MIME_POOL> MIME_POOL::create(size_t number, int ratio) try
 MIME *MIME_POOL::get_mime()
 {
 	std::lock_guard lk(mutex);
-	auto pnode = single_list_pop_front(&free_list);
-	if (NULL != pnode) {
-		return &static_cast<MIME_POOL_NODE *>(pnode->pdata)->mime;
-	}
-	return NULL;
+	if (free_list.size() == 0)
+		return nullptr;
+	auto ptr = free_list.front();
+	free_list.pop_front();
+	return &ptr->mime;
 }
 
 /*
@@ -97,5 +94,5 @@ void MIME_POOL::put_mime(MIME *pmime)
 	}
 #endif
 	std::lock_guard lk(pmime_pool->mutex);
-	single_list_append_as_tail(&pmime_pool->free_list, &pmime_node->node);
+	pmime_pool->free_list.push_back(pmime_node);
 }

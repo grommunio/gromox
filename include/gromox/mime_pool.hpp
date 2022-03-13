@@ -1,4 +1,5 @@
 #pragma once
+#include <list>
 #include <memory>
 #include <mutex>
 #include <gromox/lib_buffer.hpp>
@@ -7,7 +8,6 @@
 
 struct MIME_POOL;
 struct MIME_POOL_NODE {
-	SINGLE_LIST_NODE	node;
 	MIME				mime;
 	MIME_POOL *pool;
 };
@@ -26,7 +26,7 @@ struct GX_EXPORT MIME_POOL {
 	MIME *get_mime();
 	static void put_mime(MIME *);
 
-	SINGLE_LIST free_list{};
+	std::list<MIME_POOL_NODE *> free_list;
 	std::mutex mutex;
 	std::unique_ptr<MIME_POOL_NODE[]> pbegin;
 	size_t number = 0;
