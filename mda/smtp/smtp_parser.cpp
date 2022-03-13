@@ -261,16 +261,9 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 			 when state is parsing block content, check if need to rewrite
 			 the part of boundary string into the clear stream
 			 */
-			if (MULTI_PARTS_MAIL == pcontext->mail.head.mail_part) {
-					/* or, copy the last 4 bytes into the clear stream */
-					memcpy(pbuff, pcontext->last_bytes, 4);
-					pcontext->stream.fwd_write_ptr(4);
-					pcontext->pre_rstlen = 4;
-			} else if (SINGLE_PART_MAIL == pcontext->mail.head.mail_part) {
 				memcpy(pbuff, pcontext->last_bytes, 4);
 				pcontext->stream.fwd_write_ptr(4);
 				pcontext->pre_rstlen = 4;
-			}
 			pcontext->flusher.flush_result = FLUSH_NONE;
 			/* let the context continue to be processed */
 		}
@@ -568,10 +561,7 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 	 ignore the last 4 bytes.
 	 */
 	if (!is_whole) {
-		if (pcontext->mail.head.mail_part == SINGLE_PART_MAIL)
 			pcontext->stream.rewind_write_ptr(4);
-		else
-			pcontext->stream.rewind_write_ptr(pcontext->block_info.block_mime_len);
 	}    
 	flusher_put_to_queue(pcontext);
 	return PROCESS_SLEEPING;
@@ -748,7 +738,6 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
 	pcontext->total_length                 = 0;
 	pcontext->pre_rstlen                   = 0;
 	pcontext->mail.head.x_priority         = 0;
-	pcontext->mail.head.mail_part          = 0;
 	pcontext->mail.body.mail_length        = 0;
 	pcontext->mail.body.parts_num          = 0;
 	pcontext->stream.clear();

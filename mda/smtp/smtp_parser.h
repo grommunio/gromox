@@ -48,12 +48,6 @@ enum{
     TYPE_NUM
 };
 
-/* single part mail or multi-part mail */
-enum{
-    SINGLE_PART_MAIL,
-    MULTI_PARTS_MAIL
-};
-
 enum {
     ENCODING_UNKNOWN    = 0,
     ENCODING_7BIT,
@@ -77,7 +71,6 @@ struct MAIL_HEAD {
     char        x_priority;       /* x priority */
 	char x_original_ip[40]; /* oringinal ip information in mime */
     char        compose_time[64];    /* compose time in mime */
-    int         mail_part;             /* single part mail or multi-parts */
 };
 
 struct MAIL_BODY {
