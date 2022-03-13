@@ -57,8 +57,6 @@ static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext);
 static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext);
 
 static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole);
-static BOOL smtp_parser_pass_statistic(SMTP_CONTEXT *pcontext,
-	char *reason, int length);
 static void smtp_parser_reset_stream_reading(SMTP_CONTEXT *pcontext);
 
 static int g_ssl_port;
@@ -510,7 +508,6 @@ int smtp_parser_process(SMTP_CONTEXT *pcontext)
 
 static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 {
-	char buff[1024];
 	size_t string_length = 0;
 	
 	pcontext->total_length += pcontext->stream.get_total_length() - pcontext->pre_rstlen;
@@ -535,23 +532,6 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 	}
 	smtp_parser_reset_stream_reading(pcontext);
 	pcontext->flusher.flush_action = is_whole ? FLUSH_WHOLE_MAIL : FLUSH_PART_MAIL;
-	/* a mail is recieved pass it in anti-spamming auditor&filter&statistic */
-	if (is_whole && !smtp_parser_pass_statistic(pcontext, buff, 1024)) {
-		if (NULL != pcontext->connection.ssl) {
-			SSL_write(pcontext->connection.ssl, buff, strlen(buff));
-		} else {
-			write(pcontext->connection.sockd, buff, strlen(buff));
-		}
-		if (0 != pcontext->flusher.flush_ID) {
-			flusher_cancel(pcontext);
-		}
-		pcontext->connection.reset(SLEEP_BEFORE_CLOSE);
-		if (system_services_container_remove_ip != nullptr)
-			system_services_container_remove_ip(pcontext->connection.client_ip);
-		smtp_parser_context_clear(pcontext);
-		return PROCESS_CLOSE;
-	}
-
 	pcontext->stream.reset_reading();
 	/* 
 	 when block_info state is parsing block content and the possible boundary
@@ -565,19 +545,6 @@ static int smtp_parser_try_flush_mail(SMTP_CONTEXT *pcontext, BOOL is_whole)
 	}    
 	flusher_put_to_queue(pcontext);
 	return PROCESS_SLEEPING;
-}
-
-/*
- *   pass the mail into statistic
- *   @param
- *       pcontext [in]    indicate the context object
- *       reason [out]     buffer for echo the reason in case of FALSE
- *       length           length of reason buffer
- */
-static BOOL smtp_parser_pass_statistic(SMTP_CONTEXT *pcontext, char *reason,
-	int length)
-{
-	return TRUE;
 }
 
 /* 
