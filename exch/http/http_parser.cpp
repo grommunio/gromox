@@ -111,7 +111,6 @@ static std::unique_ptr<std::mutex[]> g_ssl_mutex_buf;
 static std::mutex g_vconnection_lock;
 
 static void http_parser_context_clear(HTTP_CONTEXT *pcontext);
-static void http_parser_request_clear(HTTP_REQUEST *prequest);
 
 void http_parser_init(size_t context_num, time_duration timeout,
 	int max_auth_times, int block_auth_fail, BOOL support_ssl,
@@ -1040,7 +1039,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 		case HPM_RETRIEVE_DONE:
 			if (pcontext->b_close)
 				return X_RUNOFF;
-			http_parser_request_clear(&pcontext->request);
+			pcontext->request.clear();
 			hpm_processor_put_context(pcontext);
 			pcontext->sched_stat = SCHED_STAT_RDHEAD;
 			pcontext->stream_out.clear();
@@ -1055,7 +1054,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 			}
 			pcontext->stream_in.clear();
 			pcontext->stream_out.clear();
-			http_parser_request_clear(&pcontext->request);
+			pcontext->request.clear();
 			unsigned int tmp_len = STREAM_BLOCK_SIZE;
 			pcontext->write_buff = pcontext->stream_out.get_write_buf(&tmp_len);
 			pcontext->write_length = 0;
@@ -1079,7 +1078,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 			    pcontext->stream_out.get_total_length() == 0) {
 				if (pcontext->b_close)
 					return X_RUNOFF;
-				http_parser_request_clear(&pcontext->request);
+				pcontext->request.clear();
 				pcontext->sched_stat = SCHED_STAT_RDHEAD;
 				pcontext->stream_out.clear();
 				return PROCESS_CONTINUE;
@@ -1097,7 +1096,7 @@ static int htparse_wrrep_nobuf(HTTP_CONTEXT *pcontext)
 		if (pcontext->stream_out.get_total_length() == 0) {
 			if (pcontext->b_close)
 				return X_RUNOFF;
-			http_parser_request_clear(&pcontext->request);
+			pcontext->request.clear();
 			pcontext->sched_stat = SCHED_STAT_RDHEAD;
 			pcontext->stream_out.clear();
 			return PROCESS_CONTINUE;
@@ -1271,7 +1270,7 @@ static int htparse_wrrep(HTTP_CONTEXT *pcontext)
 	} else {
 		if (pcontext->b_close)
 			return X_RUNOFF;
-		http_parser_request_clear(&pcontext->request);
+		pcontext->request.clear();
 		pcontext->sched_stat = SCHED_STAT_RDHEAD;
 	}
 	pcontext->stream_out.clear();
@@ -1896,22 +1895,59 @@ SCHEDULE_CONTEXT **http_parser_get_contexts_list()
 	return g_context_list2.data();
 }
 
+http_request::http_request(LIB_BUFFER *b)
+{
+	mem_file_init(&f_request_uri, b);
+	mem_file_init(&f_host, b);
+	mem_file_init(&f_user_agent, b);
+	mem_file_init(&f_accept, b);
+	mem_file_init(&f_accept_language, b);
+	mem_file_init(&f_accept_encoding, b);
+	mem_file_init(&f_content_type, b);
+	mem_file_init(&f_content_length, b);
+	mem_file_init(&f_transfer_encoding, b);
+	mem_file_init(&f_cookie, b);
+	mem_file_init(&f_others, b);
+}
+
+http_request::~http_request()
+{
+	mem_file_free(&f_request_uri);
+	mem_file_free(&f_host);
+	mem_file_free(&f_user_agent);
+	mem_file_free(&f_accept);
+	mem_file_free(&f_accept_language);
+	mem_file_free(&f_accept_encoding);
+	mem_file_free(&f_content_type);
+	mem_file_free(&f_content_length);
+	mem_file_free(&f_transfer_encoding);
+	mem_file_free(&f_cookie);
+	mem_file_free(&f_others);
+}
+
+void http_request::clear()
+{
+	method[0] = '\0';
+	version[0] = '\0';
+	f_request_uri.clear();
+	f_host.clear();
+	f_user_agent.clear();
+	f_accept.clear();
+	f_accept_language.clear();
+	f_accept_encoding.clear();
+	f_content_type.clear();
+	f_content_length.clear();
+	f_transfer_encoding.clear();
+	f_cookie.clear();
+	f_others.clear();
+}
+
 HTTP_CONTEXT::HTTP_CONTEXT() :
+	request(g_file_allocator.get()),
 	stream_in(blocks_allocator_get_allocator()),
 	stream_out(stream_in.allocator)
 {
 	auto pcontext = this;
-	mem_file_init(&pcontext->request.f_request_uri, g_file_allocator.get());
-	mem_file_init(&pcontext->request.f_host, g_file_allocator.get());
-	mem_file_init(&pcontext->request.f_user_agent, g_file_allocator.get());
-	mem_file_init(&pcontext->request.f_accept, g_file_allocator.get());
-	mem_file_init(&pcontext->request.f_accept_language, g_file_allocator.get());
-	mem_file_init(&pcontext->request.f_accept_encoding, g_file_allocator.get());
-	mem_file_init(&pcontext->request.f_content_type, g_file_allocator.get());
-	mem_file_init(&pcontext->request.f_content_length, g_file_allocator.get());
-	mem_file_init(&pcontext->request.f_transfer_encoding, g_file_allocator.get());
-	mem_file_init(&pcontext->request.f_cookie, g_file_allocator.get());
-	mem_file_init(&pcontext->request.f_others, g_file_allocator.get());
 	pcontext->node.pdata = pcontext;
 }
 
@@ -1922,8 +1958,7 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
     }
 	pcontext->connection.reset();
 	pcontext->sched_stat = 0;
-	
-	http_parser_request_clear(&pcontext->request);
+	pcontext->request.clear();
 	pcontext->stream_in.clear();
 	pcontext->stream_out.clear();
 	pcontext->write_buff = NULL;
@@ -1941,38 +1976,9 @@ static void http_parser_context_clear(HTTP_CONTEXT *pcontext)
 	pcontext->pfast_context = NULL;
 }
 
-static void http_parser_request_clear(HTTP_REQUEST *prequest)
-{
-	
-	prequest->method[0] = '\0';
-	prequest->version[0] = '\0';
-	prequest->f_request_uri.clear();
-	prequest->f_host.clear();
-	prequest->f_user_agent.clear();
-	prequest->f_accept.clear();
-	prequest->f_accept_language.clear();
-	prequest->f_accept_encoding.clear();
-	prequest->f_content_type.clear();
-	prequest->f_content_length.clear();
-	prequest->f_transfer_encoding.clear();
-	prequest->f_cookie.clear();
-	prequest->f_others.clear();
-}
-
 HTTP_CONTEXT::~HTTP_CONTEXT()
 {
 	auto pcontext = this;
-	mem_file_free(&pcontext->request.f_request_uri);
-	mem_file_free(&pcontext->request.f_host);
-	mem_file_free(&pcontext->request.f_user_agent);
-	mem_file_free(&pcontext->request.f_accept);
-	mem_file_free(&pcontext->request.f_accept_language);
-	mem_file_free(&pcontext->request.f_accept_encoding);
-	mem_file_free(&pcontext->request.f_content_type);
-	mem_file_free(&pcontext->request.f_content_length);
-	mem_file_free(&pcontext->request.f_transfer_encoding);
-	mem_file_free(&pcontext->request.f_cookie);
-	mem_file_free(&pcontext->request.f_others);
 	if (hpm_processor_check_context(pcontext))
 		hpm_processor_put_context(pcontext);
 	else if (pcontext->pfast_context != nullptr)

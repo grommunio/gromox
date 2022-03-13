@@ -16,6 +16,8 @@
 #define HPM_RETRIEVE_DONE			4
 #define HPM_RETRIEVE_SOCKET			5
 
+struct LIB_BUFFER;
+
 struct HPM_INTERFACE {
 	BOOL (*preproc)(int);
 	BOOL (*proc)(int, const void*, uint64_t);
@@ -25,21 +27,19 @@ struct HPM_INTERFACE {
 	void (*term)(int);
 };
 
-struct HTTP_REQUEST {
-	char		method[32];
-	MEM_FILE	f_request_uri;
-	char		version[8];
-	MEM_FILE	f_host;
-	MEM_FILE    f_user_agent;
-    MEM_FILE    f_accept;
-	MEM_FILE	f_accept_language;
-	MEM_FILE	f_accept_encoding;
-	MEM_FILE	f_content_type;
-	MEM_FILE	f_content_length;
-	MEM_FILE	f_transfer_encoding;
-	MEM_FILE	f_cookie;
-    MEM_FILE    f_others;
+struct http_request {
+	http_request(LIB_BUFFER *);
+	NOMOVE(http_request);
+	~http_request();
+	void clear();
+
+	char method[32]{}, version[8]{};
+	MEM_FILE f_request_uri{}, f_host{}, f_user_agent{}, f_accept{};
+	MEM_FILE f_accept_language{}, f_accept_encoding{}, f_content_type{};
+	MEM_FILE f_content_length{}, f_transfer_encoding{}, f_cookie{};
+	MEM_FILE f_others{};
 };
+using HTTP_REQUEST = http_request;
 
 struct HTTP_AUTH_INFO {
 	BOOL b_authed;

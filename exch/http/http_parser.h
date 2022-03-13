@@ -57,7 +57,7 @@ struct HTTP_CONTEXT final : public SCHEDULE_CONTEXT {
 	NOMOVE(HTTP_CONTEXT);
 
 	GENERIC_CONNECTION connection;
-	HTTP_REQUEST request{};
+	http_request request;
 	uint64_t total_length = 0, bytes_rw = 0;
 	unsigned int sched_stat = 0;
 	STREAM stream_in, stream_out;
