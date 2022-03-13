@@ -11,6 +11,7 @@
 #include <gromox/mapidefs.h>
 #include <gromox/propval.hpp>
 #include <gromox/rop_util.hpp>
+#include <gromox/safeint.hpp>
 #include "ab_tree.h"
 #include "common_util.h"
 #include "container_object.h"
@@ -937,21 +938,18 @@ BOOL container_object::query_container_table(const PROPTAG_ARRAY *pproptags,
 	if (NULL == pset->pparray) {
 		return FALSE;
 	}
-	ssize_t end_pos = start_pos + row_needed;
-	if (row_needed > 0) {
+	uint32_t end_pos = safe_add_s(start_pos, row_needed, nullptr);
+	if (row_needed >= 0) {
 		if (end_pos > tmp_set.count) {
 			end_pos = tmp_set.count;
 		}
-		for (ssize_t i = start_pos; i < end_pos; ++i) {
+		for (size_t i = start_pos; i < end_pos; ++i)
 			pset->pparray[pset->count++] = tmp_set.pparray[i];
-		}
 	} else {
-		if (end_pos < -1) {
-			end_pos = -1;
-		}
-		for (ssize_t i = start_pos; i > end_pos; --i) {
-			pset->pparray[pset->count++] = tmp_set.pparray[i];
-		}
+		fprintf(stderr, "I-1663: report me (c=%u s=%u n=%d)\n",
+		        static_cast<unsigned int>(tmp_set.count),
+		        static_cast<unsigned int>(start_pos),
+		        static_cast<int>(row_needed));
 	}
 	return TRUE;
 }
