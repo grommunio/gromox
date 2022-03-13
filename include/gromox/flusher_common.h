@@ -28,9 +28,7 @@ struct ENVELOPE_INFO_BASE {
 	char parsed_domain[UDOM_SIZE]; /* parsed domain according connection*/
 	char hello_domain[UDOM_SIZE]; /* domain name after helo */
 	char from[UADDR_SIZE]; /* envelope's from message */
-	char username[UADDR_SIZE]; /* user name for login */
 	MEM_FILE f_rcpt_to; /* envelope's rcpt to message */
-	BOOL        is_login;          /* user is logged in */
 };
 
 struct FLUSH_INFO {

@@ -706,12 +706,7 @@ static int smtp_parser_dispatch_cmd(const char *cmd, int len, SMTP_CONTEXT *ctx)
 
 void smtp_parser_reset_context_envelope(SMTP_CONTEXT *pcontext)
 {
-	if (pcontext->mail.envelope.is_login)
-		pcontext->mail.envelope.auth_times = 0;
-	/* prevent some client send reset after auth */
-	/* pcontext->mail.envelope.is_login = false; */
 	pcontext->mail.envelope.from[0] = '\0';
-	/* pcontext->mail.envelope.username[0] = '\0'; */
 	strcpy(pcontext->mail.envelope.parsed_domain, "unknown");
 	pcontext->mail.envelope.f_rcpt_to.clear();
 }
@@ -742,8 +737,6 @@ static void smtp_parser_context_clear(SMTP_CONTEXT *pcontext)
 	pcontext->connection.reset();
 	pcontext->session_num           = 0;
 	pcontext->stream_second.reset();
-	pcontext->mail.envelope.is_login = false;
-	memset(&pcontext->mail.envelope.username, 0, arsizeof(pcontext->mail.envelope.username));
 	smtp_parser_reset_context_session(pcontext);    
 }
 
@@ -769,7 +762,6 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
 	pcontext->pre_rstlen                   = 0;
 	pcontext->mail.head.x_priority         = 0;
 	pcontext->mail.head.mail_part          = 0;
-	pcontext->mail.envelope.auth_times     = 0;
 	pcontext->mail.body.mail_length        = 0;
 	pcontext->mail.body.parts_num          = 0;
 	pcontext->stream.clear();
@@ -777,8 +769,6 @@ static void smtp_parser_reset_context_session(SMTP_CONTEXT *pcontext)
 	strcpy(pcontext->mail.envelope.parsed_domain, "unknown");
 	memset(&pcontext->mail.envelope.hello_domain, 0, arsizeof(pcontext->mail.envelope.hello_domain));
 	memset(&pcontext->mail.envelope.from, 0, arsizeof(pcontext->mail.envelope.from));
-	if (!pcontext->mail.envelope.is_login)
-		memset(&pcontext->mail.envelope.username, 0, arsizeof(pcontext->mail.envelope.username));
 	pcontext->mail.envelope.f_rcpt_to.clear();
 	pcontext->mail.head.f_mime_to.clear();
 	pcontext->mail.head.f_mime_from.clear();

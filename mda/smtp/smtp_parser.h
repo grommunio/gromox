@@ -72,7 +72,6 @@ enum {
 };
 
 struct ENVELOPE_INFO : public ENVELOPE_INFO_BASE {
-    int         auth_times;        /* recording the times of auth */
 };
 
 struct MAIL_HEAD {
